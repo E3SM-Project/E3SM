@@ -6,8 +6,6 @@
 
   <!--
       Values to use by default for creation of DICE model namelists.
-      The element names are the same as the corresponding namelist
-      variables.
 
       strm_year_first is the first year of the stream data that will be used
       strm_year_last  is the last  year of the stream data that will be used
@@ -18,26 +16,41 @@
       %ym   = year-month from the range yearfirst to yearlast with all 12 months
       %ymd  = year-month-day from the range yearfirst to yearlast with all 12 months
 
-      Currently the following datamode values are supported
-      NULL
-      COPYALL
-      SSTDATA
 
-      **********IMPORTANT NOTE: *************
-      In the value matches below, regular expressions are used ****
+      NOTE: In the value matches below, regular expressions are used ****
       If two matches are equivalent, the FIRST one will be used, so need to make sure
       that matches are not equivalent if possible
 
 	 As an example, say dice_mode=SSMI_IAF
-
-         the following order would result in an INCORRECT setting of streams for this dice_mode
-              <value dice_mode="ssmi"    >SSMI</value>
-              <value dice_mode="ssmi_iaf">SSMI_IAF</value>
-
-         the following order would result in an CORRECT setting of streams for this dice_mode
-              <value dice_mode="ssmi$"   >SSMI</value>
-              <value dice_mode="ssmi_iaf">SSMI_IAF</value>
+         the following order would result in an incorrect setting of streams for this dice_mode
+              <value dice_mode="ssmi"    >ssmi</value>
+              <value dice_mode="ssmi_iaf">ssmi_iaf</value>
+         the following order would result in an correct setting of streams for this dice_mode
+              <value dice_mode="ssmi$"   >ssmi</value>
+              <value dice_mode="ssmi_iaf">ssmi_iaf</value>
   -->
+
+  <!-- =========================================  -->
+  <!--- dice_nml datamode values                  -->
+  <!-- =========================================  -->
+
+  <entry id="datamode">
+    <type>char</type>
+    <category>streams</category>
+    <group>dice_nml</group>
+    <valid_values>ssmi,ssmi_iaf</valid_values>
+    <desc>
+      general method that operates on the data.
+      Is a prognostic mode. It requires data be sent to the ice  model.
+      Ice fraction (extent) data is read from an input stream,
+      atmosphere state variables are received from the mediator, and then
+      atmosphere-ice surface fluxes are computed and sent to the mediator.
+    </desc>
+    <values>
+      <value dice_mode="ssmi_iaf">ssmi_iaf</value>
+      <value dice_mode="ssmi">ssmi</value>
+    </values>
+  </entry>
 
   <!-- ========================================================================================  -->
   <!-- Stream file variables                                                                     -->
@@ -49,7 +62,6 @@
     <group>streams_file</group>
     <desc>List of streams used for the given dice_mode.</desc>
     <values>
-      <value dice_mode="null">null</value>
       <value dice_mode="ssmi$">ssmi</value>
       <value dice_mode="ssmi_iaf">ssmi_iaf</value>
     </values>
@@ -344,33 +356,6 @@
   <!-- =========================================  -->
   <!--- dice_nml -->
   <!-- =========================================  -->
-
-  <entry id="datamode">
-    <type>char</type>
-    <category>streams</category>
-    <group>dice_nml</group>
-    <valid_values>null,ssmi,ssmi_iaf,copyall</valid_values>
-    <desc>
-      general method that operates on the data.
-      ==> datamode = "null"
-      Turns off the data model as a provider of data to the coupler.  The
-      ice_present flag will be set to false and the coupler will assume no
-      exchange of data to or from the data model.
-      ==>  dataMode = "copyall"
-      Copies all fields directly from the input data streams Any required
-      fields not found on an input stream will be set to zero.
-      ==> dataMode = "ssmi"
-      Is a prognostic mode. It requires data be sent to the ice  model.
-      Ice fraction (extent) data is read from an input stream,
-      atmosphere state variables are received from the mediator, and then
-      atmosphere-ice surface fluxes are computed and sent to the mediator.
-    </desc>
-    <values>
-      <value dice_mode="null">null</value>
-      <value dice_mode="ssmi_iaf">ssmi_iaf</value>
-      <value dice_mode="ssmi">ssmi</value>
-    </values>
-  </entry>
 
   <entry id="model_meshfile" modify_via_xml="ICE_DOMAIN_MESH">
     <type>char</type>

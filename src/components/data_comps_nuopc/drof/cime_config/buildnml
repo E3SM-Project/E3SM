@@ -47,8 +47,6 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     # Check for incompatible options.
     expect(rof_grid != "null",
            "ROF_GRID cannot be null")
-    expect(drof_mode != "NULL",
-           "DROF_MODE cannot be NULL")
 
     # Log some settings.
     logger.debug("DROF mode is {}".format(drof_mode))

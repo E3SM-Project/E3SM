@@ -16,15 +16,86 @@
       %y    = year from the range yearfirst to yearlast
       %ym   = year-month from the range yearfirst to yearlast with all 12 months
       %ymd  = year-month-day from the range yearfirst to yearlast with all 12 months
-
-      Each mode below, except for presaero, has a set of streams associated with it
-      The presaero stream, is associated with all modes
-
-      Currently the following datamods are supported
-      prescribed    SSTDATA     (Run with prescribed SST, ICE_COV)
-      som           SOM         (Slab ocean model)
-      null          NULL        (NULL mode)
   -->
+
+  <!-- =========================================  -->
+  <!--- docn_nml datamode                         -->
+  <!-- =========================================  -->
+
+  <entry id="datamode">
+    <type>char</type>
+    <category>docn</category>
+    <group>docn_nml</group>
+    <valid_values>sstdata,sst_aquap1,sst_aquap2,sst_aquap3,sst_aquap4,sst_aquap5,sst_aquap6,sst_aquap7,sst_aquap8,sst_aquap9,sst_aquap10,sst_aquapfile,sst_aquap_constant,som,som_aquap,iaf,null</valid_values>
+    <desc>
+      General method that operates on the data.
+      ==> dataMode = "sstdata"
+      sstdata mode assumes the only field in the input stream is SST.
+      It also assumes the SST is in Celsius and must be converted to Kelvin.
+      All other fields are set to zero.
+      NOTE: Normally the ice fraction data is found in the same data files that
+      provide SST data to the data ocean model. They are normally found in
+      the same file because the SST and ice fraction data are derived from
+      the same observational data sets and are consistent with each other.
+      to the data ocean model. They are normally found in the same file
+      because the SST and ice fraction data are derived from the same
+      observational data sets and are consistent with each other.
+      ==> dataMode = "iaf"
+      iaf is the interannually varying version of sstdata
+      The ocean salinity is set to a constant reference salinity value.
+      All other fields other than SST and ocean salinity are set to zero.
+      ==> dataMode = "som"
+      som ("slab ocean model") mode is a prognostic mode.  This mode
+      computes a prognostic sea surface temperature and a freeze/melt
+      potential (surface Q-flux) used by the sea ice model.  This
+      calculation requires an external SOM forcing data file that includes
+      ocean mixed layer depths and bottom-of-the-slab Q-fluxes.
+      Scientifically appropriate bottom-of-the-slab Q-fluxes are normally
+      ocean resolution dependent and are derived from the ocean model output
+      of a fully coupled CCSM run.  Note that while this mode runs out of
+      the box, the default SOM forcing file is not scientifically
+      appropriate and is provided for testing and development purposes only.
+      Users must create scientifically appropriate data for their particular
+      application.  A tool is available to derive valid SOM forcing.
+
+      (1) map the xml variable DOCN_MODE => config variable docn_mode => namelist variable datamode
+        compset="_DOCN%NULL_"     => docn_mode=null                => datamode=null              
+        compset="_DOCN%DOM_"      => docn_mode=prescribed          => datamode=prescribed        
+        compset="_DOCN%IAF_"      => docn_mode=interannual         => datamode=interannual       
+        compset="_DOCN%SOM_"      => docn_mode=som                 => datamode=som               
+        compset="_DOCN%SOMAQP_"   => docn_mode=som_aquap           => datamode=som_aquap         
+        compset="_DOCN%AQP1_"     => docn_mode=sst_aquap1          => datamode=sst_aquap1        
+        compset="_DOCN%AQP2_"     => docn_mode=sst_aquap2          => datamode=sst_aquap2        
+        compset="_DOCN%AQP3_"     => docn_mode=sst_aquap3          => datamode=sst_aquap3        
+        compset="_DOCN%AQP4_"     => docn_mode=sst_aquap4          => datamode=sst_aquap4        
+        compset="_DOCN%AQP5_"     => docn_mode=sst_aquap5          => datamode=sst_aquap5        
+        compset="_DOCN%AQP6_"     => docn_mode=sst_aquap6          => datamode=sst_aquap6        
+        compset="_DOCN%AQP7_"     => docn_mode=sst_aquap7          => datamode=sst_aquap7        
+        compset="_DOCN%AQP8_"     => docn_mode=sst_aquap8          => datamode=sst_aquap8        
+        compset="_DOCN%AQP9_"     => docn_mode=sst_aquap9          => datamode=sst_aquap9        
+        compset="_DOCN%AQP10_"    => docn_mode=sst_aquap10         => datamode=sst_aquap10       
+        compset="_DOCN%AQPFILE_"  => docn_mode=sst_aquapfile       => datamode=sst_aquap_file    
+        compset="_DOCN%AQPCONST_" => docn_mode=sst_aquap_constant  => datamode=sst_aquap_constant
+     </desc>
+    <values>
+      <value docn_mode="prescribed">sstdata</value>
+      <value docn_mode="som$">som</value>
+      <value docn_mode="som_aquap">som_aquap</value>
+      <value docn_mode="interannual">iaf</value>
+      <value docn_mode="sst_aquap1$">sst_aquap1</value>
+      <value docn_mode="sst_aquap2$">sst_aquap2</value>
+      <value docn_mode="sst_aquap3$">sst_aquap3</value>
+      <value docn_mode="sst_aquap4$">sst_aquap4</value>
+      <value docn_mode="sst_aquap5$">sst_aquap5</value>
+      <value docn_mode="sst_aquap6$">sst_aquap6</value>
+      <value docn_mode="sst_aquap7$">sst_aquap7</value>
+      <value docn_mode="sst_aquap8$">sst_aquap8</value>
+      <value docn_mode="sst_aquap9$">sst_aquap9</value>
+      <value docn_mode="sst_aquap10$">sst_aquap10</value>
+      <value docn_mode="sst_aquapfile$">sst_aquap_file</value>
+      <value docn_mode="sst_aquap_constant$">sst_aquap_constant</value>
+    </values>
+  </entry>
 
   <!-- ========================================================================================  -->
   <!-- Stream xml file variables                                                                 -->
@@ -36,11 +107,16 @@
     <group>streams_file</group>
     <desc>
       List of streams that docn supports.
-      Currently 5 streams are supported: prescribed, aquapfile, som, interannual, and blank.
+      The following are supported: prescribed, aquapfile, som, som_aquqp, interannual, and blank.
+      The streamslist 
     </desc>
     <values>
       <value docn_mode="prescribed">prescribed</value>
       <value docn_mode="interannual">interannual</value>
+      <value docn_mode="som">som</value>
+      <value docn_mode="som_aquap">som_aquap</value>
+      <value docn_mode="sst_aquap_file">aquapfile</value>
+      <value docn_mode="sst_aquap_constant">''</value>
       <value docn_mode="sst_aquap1">''</value>
       <value docn_mode="sst_aquap2">''</value>
       <value docn_mode="sst_aquap3">''</value>
@@ -51,10 +127,6 @@
       <value docn_mode="sst_aquap8">''</value>
       <value docn_mode="sst_aquap9">''</value>
       <value docn_mode="sst_aquap10">''</value>
-      <value docn_mode="sst_aquap_constant">''</value>
-      <value docn_mode="sst_aquapfile">aquapfile</value>
-      <value docn_mode="som">som</value>
-      <value docn_mode="som_aquap">som</value>
     </values>
   </entry>
 
@@ -64,26 +136,38 @@
     <group>streams_file</group>
     <desc>Stream mesh files</desc>
     <values>
-      <value>
+      <value stream="prescribed">
 	$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_1x1_clim_c101029_ESMFmesh_120520.nc
       </value>
-      <value grid="_oi%T31">
+      <value stream="prescribed" grid="_oi%T31">
 	$DIN_LOC_ROOT/share/meshes/T31_040122_ESMFmesh.nc
       </value>
-      <value grid="_oi%1.9x2.5">
+      <value stream="prescribed" grid="_oi%1.9x2.5">
 	$DIN_LOC_ROOT/share/meshes/fv1.9x2.5_141008_ESMFmesh.nc
       </value>
-      <value grid="_oi%0.9x1.25">
+      <value stream="prescribed"  grid="_oi%0.9x1.25">
 	$DIN_LOC_ROOT/share/meshes/fv0.9x1.25_141008_polemod_ESMFmesh.nc
       </value>
-      <value grid="_oi%0.47x0.63">
+      <value stream="prescribed" grid="_oi%0.47x0.63">
 	$DIN_LOC_ROOT/share/meshes/fv0.47x0.63_141008_ESMFmesh.nc
       </value>
-      <value grid="_oi%0.23x0.31">
+      <value stream="prescribed" grid="_oi%0.23x0.31">
         <!-- fill this in -->
       </value>
-      <value grid="oi%4x5">
+      <value stream="prescribed" grid="oi%4x5">
 	$DIN_LOC_ROOT/share/meshes/fv4x5_050615_polemod_ESMFmesh.nc
+      </value>
+      <value stream="som">
+	$DIN_LOC_ROOT/ocn/docn7/SOM/pop_frc.1x1d.SCRIP.030620_ESMFmesh.nc 
+     </value>
+      <value stream="som_aquap" grid="_oi%1.9x2.5">
+	$DIN_LOC_ROOT/share/meshes/fv1.9x2.5_141008_ESMFmesh.nc
+      </value>
+      <value stream="som_aquap" grid="_oi%0.9x1.25">
+	$DIN_LOC_ROOT/share/meshes/fv0.9x1.25_141008_polemod_ESMFmesh.nc
+      </value>
+      <value stream="aquapfile" grid="_oi%0.9x1.25">
+	$DIN_LOC_ROOT/share/meshes/fv0.9x1.25_141008_polemod_ESMFmesh.nc
       </value>
     </values>
   </entry>
@@ -97,14 +181,17 @@
       <value stream="prescribed" >
 	$SSTICE_DATA_FILENAME
       </value>
-      <value stream="aquapfile">
-	$DIN_LOC_ROOT/ocn/docn7/AQUAPLANET/$DOCN_AQP_FILENAME
-      </value>
       <value stream="som">
-	$DIN_LOC_ROOT/ocn/docn7/SOM/$DOCN_SOM_FILENAME
+	$DIN_LOC_ROOT/ocn/docn7/SOM/pop_frc.1x1d.090130.nc
       </value>
-      <value stream="interannual">
-	$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_1x1_1850_2014_c150416.nc
+      <value stream="som_aquap" grid="oi%1.9x2.5">
+        $DIN_LOC_ROOT/ocn/docn7/SOM/default.som.forcing.aquaplanet.Qflux0_h30_sstQOBS.2degFV_c20170421.nc
+      </value>
+      <value stream="som_aquap" grid="oi%0.9x1.25">
+        $DIN_LOC_ROOT/ocn/docn7/SOM/default.som.forcing.aquaplanet.Qflux0_h30_sstQOBS.1degFV_c20170421.nc
+      </value>
+      <value stream="aquapfile" grid="_oi%0.9x1.25">
+        sst_c4aquasom_0.9x1.25_clim.c170512.nc
       </value>
     </values>
   </entry>
@@ -115,10 +202,17 @@
     <group>streams_file</group>
     <desc>Stream data variable name(s).</desc>
     <values>
-      <value>
-        sst    So_t
-      </value>
       <value stream="som">
+        T     So_t
+        S     So_s
+        U     So_u
+        V     So_v
+        dhdx  So_dhdx
+        dhdy  So_dhdy
+        hblt  So_h
+        qdp   So_qbot
+      </value>
+      <value stream="som_aquap">
         T     So_t
         S     So_s
         U     So_u
@@ -131,7 +225,7 @@
       <value stream="interannual">
         SST_cpl So_t
       </value>
-      <value stream="prescribed" sstice_stream="CAMDATA">
+      <value stream="prescribed">
         SST_cpl So_t
       </value>
       <value stream="aquapfile">
@@ -213,7 +307,7 @@
     <type>char(30)</type>
     <category>streams</category>
     <group>streams_file</group>
-    <valid_values>copy,bilinear,nn,nnoni,nnonj,spval</valid_values>
+    <valid_values>bilinear,nn</valid_values>
     <desc>
       type of mapping from stream mesh -> model mesh
     </desc>
@@ -321,113 +415,8 @@
   </entry>
 
   <!-- =========================================  -->
-  <!--- docn_nml                -->
+  <!--- docn_nml other variables                  -->
   <!-- =========================================  -->
-
-  <entry id="datamode">
-    <type>char</type>
-    <category>docn</category>
-    <group>docn_nml</group>
-    <valid_values>SSTDATA,SST_AQUAP1,SST_AQUAP2,SST_AQUAP3,SST_AQUAP4,SST_AQUAP5,SST_AQUAP6,SST_AQUAP7,SST_AQUAP8,SST_AQUAP9,SST_AQUAP10,SST_AQUAPFILE,SST_AQUAP_CONSTANT,SOM,SOM_AQUAP,IAF,NULL,COPYALL</valid_values>
-    <desc>
-      General method that operates on the data. This is generally
-      implemented in the data models but is set in the strdata method for
-      convenience.
-
-      datamode = "NULL"
-      NULL is always a valid option and means no data will be generated.
-      Turns off the data model as a provider of data to the coupler.  The
-      ice_present flag will be set to false and the coupler will assume no
-      exchange of data to or from the data model.
-      dataMode = "COPYALL"
-      Copies all fields directly from the input data streams Any required
-      fields not found on an input stream will be set to zero.
-      dataMode = "SSTDATA"
-      SSTDATA mode assumes the only field in the input stream is SST.
-      It also assumes the SST is in Celsius and must be converted to Kelvin.
-      All other fields are set to zero except for ocean salinity, which
-      is set to a constant reference salinity value.
-      Normally the ice fraction data is found in the same data files that
-      provide SST data to the data ocean model. They are normally found in
-      the same file because the SST and ice fraction data are derived from
-      the same observational data sets and are consistent with each other.
-      to the data ocean model. They are normally found in the same file
-      because the SST and ice fraction data are derived from the same
-      observational data sets and are consistent with each other.
-      dataMode = "IAF"
-      IAF is the interannually varying version of SSTDATA
-      dataMode = "SOM"
-      SOM ("slab ocean model") mode is a prognostic mode.  This mode
-      computes a prognostic sea surface temperature and a freeze/melt
-      potential (surface Q-flux) used by the sea ice model.  This
-      calculation requires an external SOM forcing data file that includes
-      ocean mixed layer depths and bottom-of-the-slab Q-fluxes.
-      Scientifically appropriate bottom-of-the-slab Q-fluxes are normally
-      ocean resolution dependent and are derived from the ocean model output
-      of a fully coupled CCSM run.  Note that while this mode runs out of
-      the box, the default SOM forcing file is not scientifically
-      appropriate and is provided for testing and development purposes only.
-      Users must create scientifically appropriate data for their particular
-      application.  A tool is available to derive valid SOM forcing.
-
-      (1) map the xml variable DOCN_MODE => config variable docn_mode
-        compset="_DOCN%NULL_"     => docn_mode=null
-        compset="_DOCN%DOM_"      => docn_mode=prescribed
-        compset="_DOCN%SOM_"      => docn_mode=som
-        compset="_DOCN%SOMAQP_"   => docn_mode=som_aquap
-        compset="_DOCN%IAF_"      => docn_mode=interannual
-        compset="_DOCN%AQP1_"     => docn_mode=sst_aquap1
-        compset="_DOCN%AQP2_"     => docn_mode=sst_aquap2
-        compset="_DOCN%AQP3_"     => docn_mode=sst_aquap3
-        compset="_DOCN%AQP4_"     => docn_mode=sst_aquap4
-        compset="_DOCN%AQP5_"     => docn_mode=sst_aquap5
-        compset="_DOCN%AQP6_"     => docn_mode=sst_aquap6
-        compset="_DOCN%AQP7_"     => docn_mode=sst_aquap7
-        compset="_DOCN%AQP8_"     => docn_mode=sst_aquap8
-        compset="_DOCN%AQP9_"     => docn_mode=sst_aquap9
-        compset="_DOCN%AQP10_"    => docn_mode=sst_aquap10
-        compset="_DOCN%AQPFILE_"  => docn_mode=sst_aquapfile
-        compset="_DOCN%AQPCONST_" => docn_mode=sst_aquap_constant
-
-      (2) map the config variable docn_mode => namelist variable datamode
-        docn_mode="null"                => datamode=NULL
-        docn_mode="prescribed"          => datamode=SSTDATA
-        docn_mode="sst_aquap1$"         => datamode=SST_AQUAP1
-        docn_mode="sst_aquap2$"         => datamode=SST_AQUAP2
-        docn_mode="sst_aquap3$"         => datamode=SST_AQUAP3
-        docn_mode="sst_aquap4$"         => datamode=SST_AQUAP4
-        docn_mode="sst_aquap5$"         => datamode=SST_AQUAP5
-        docn_mode="sst_aquap6$"         => datamode=SST_AQUAP6
-        docn_mode="sst_aquap7$"         => datamode=SST_AQUAP7
-        docn_mode="sst_aquap8$"         => datamode=SST_AQUAP8
-        docn_mode="sst_aquap9$"         => datamode=SST_AQUAP9
-        docn_mode="sst_aquap10$"        => datamode=SST_AQUAP10
-        docn_mode="sst_aquapfile$"      => datamode=SST_AQUAPFILE
-        docn_mode="sst_aquap_constant$" => datamode=SST_AQUAP_CONSTANT
-        docn_mode="som$"                => datamode=SOM
-        docn_mode="som_aquap"           => datamode=SOM_AQUAP
-        docn_mode="interannual"         => datamode=IAF
-     </desc>
-    <values>
-      <value docn_mode="null">NULL</value>
-      <value docn_mode="prescribed">SSTDATA</value>
-      <value docn_mode="som$">SOM</value>
-      <value docn_mode="som_aquap">SOM_AQUAP</value>
-      <value docn_mode="interannual">IAF</value>
-      <value docn_mode="sst_aquap1$">SST_AQUAP1</value>
-      <value docn_mode="sst_aquap2$">SST_AQUAP2</value>
-      <value docn_mode="sst_aquap3$">SST_AQUAP3</value>
-      <value docn_mode="sst_aquap4$">SST_AQUAP4</value>
-      <value docn_mode="sst_aquap5$">SST_AQUAP5</value>
-      <value docn_mode="sst_aquap6$">SST_AQUAP6</value>
-      <value docn_mode="sst_aquap7$">SST_AQUAP7</value>
-      <value docn_mode="sst_aquap8$">SST_AQUAP8</value>
-      <value docn_mode="sst_aquap9$">SST_AQUAP9</value>
-      <value docn_mode="sst_aquap10$">SST_AQUAP10</value>
-      <value docn_mode="sst_aquapfile$">SST_AQUAPFILE</value>
-      <value docn_mode="sst_aquap_constant$">SST_AQUAP_CONSTANT</value>
-    </values>
-  </entry>
 
   <entry id="model_meshfile" modify_via_xml="OCN_DOMAIN_MESH">
     <type>char</type>
@@ -501,16 +490,6 @@
     </desc>
     <values>
       <value>undefined</value>
-    </values>
-  </entry>
-
-  <entry id="force_prognostic_true">
-    <type>logical</type>
-    <category>docn</category>
-    <group>docn_nml</group>
-    <desc>If TRUE, prognostic is forced to true. (default=false)</desc>
-    <values>
-      <value>.false.</value>
     </values>
   </entry>
 

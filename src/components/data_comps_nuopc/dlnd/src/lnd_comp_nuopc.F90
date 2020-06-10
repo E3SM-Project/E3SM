@@ -236,23 +236,19 @@ contains
     endif
 
     ! Validate sdat datamode
-    if (trim(datamode) == 'NULL' .or. trim(datamode) == 'COPYALL') then
+    if (trim(datamode) == 'copyall') then
        if (my_task == master_task) write(logunit,*) 'dlnd datamode = ',trim(datamode)
     else
        call shr_sys_abort(' ERROR illegal dlnd datamode = '//trim(datamode))
     end if
-    if (trim(datamode) /= 'NULL') then
-       call NUOPC_CompAttributeGet(gcomp, name='glc_nec', value=cvalue, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       read(cvalue,*) glc_nec
-       call ESMF_LogWrite('glc_nec = '// trim(cvalue), ESMF_LOGMSG_INFO)
-    end if
+    call NUOPC_CompAttributeGet(gcomp, name='glc_nec', value=cvalue, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    read(cvalue,*) glc_nec
+    call ESMF_LogWrite('glc_nec = '// trim(cvalue), ESMF_LOGMSG_INFO)
 
     ! Advertise the export fields
-    if (trim(datamode) /= 'NULL') then
-       call dlnd_comp_advertise(importState, exportState, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
+    call dlnd_comp_advertise(importState, exportState, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine InitializeAdvertise
 
@@ -562,6 +558,7 @@ contains
             logunit=logunit, masterproc=masterproc, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
+       first_time = .false.
     end if
 
     !--------------------
@@ -575,10 +572,7 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('dlnd_strdata_advance')
 
-    !--------------------
     ! copy all fields from streams to export state as default
-    !--------------------
-
     ! This automatically will update the fields in the export state
     call t_barrierf('dlnd_comp_strdata_copy_BARRIER', mpicom)
     call t_startf('dlnd_strdata_copy')
@@ -586,20 +580,15 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call t_stopf('dlnd_strdata_copy')
 
-    !-------------------------------------------------
     ! determine data model behavior based on the mode
-    !-------------------------------------------------
-
     call t_startf('dlnd_datamode')
     select case (trim(datamode))
-    case('COPYALL')
+    case('copyall')
        ! do nothing extra
     end select
+
     call t_stopf('dlnd_datamode')
-
     call t_stopf('DLND_RUN')
-
-    first_time = .false.
 
   end subroutine dlnd_comp_run
 
