@@ -35,7 +35,7 @@ struct FortranData {
   Array2 pratot, prctot;
   Array3 p3_tend_out;
   Array2 mu_c, lamc;
-  Array2 liq_ice_exchange,vap_liq_exchange,vap_ice_exchange,vap_cld_exchange;
+  Array2 liq_ice_exchange,vap_liq_exchange,vap_ice_exchange;
 
   FortranData(Int ncol, Int nlev);
 };

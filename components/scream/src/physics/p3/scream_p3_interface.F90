@@ -158,7 +158,6 @@ contains
     real(kind=c_real) :: liq_ice_exchange(pcols,pver) ! sum of liq-ice phase change tendenices
     real(kind=c_real) :: vap_liq_exchange(pcols,pver) ! sum of vap-liq phase change tendenices
     real(kind=c_real) :: vap_ice_exchange(pcols,pver) ! sum of vap-ice phase change tendenices
-    real(kind=c_real) :: vap_cld_exchange(pcols,pver) ! sum of vap-cld phase change tendenices
     real(kind=c_real) :: qc_relvar(pcols,pver)        ! 1/(var(qc)/mean(qc)**2) for P3 subgrid qc.
     real(kind=c_real) :: inv_cp
 

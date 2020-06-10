@@ -28,7 +28,7 @@ extern "C" {
                  Real* rflx, Real* sflx, // 1 extra column size
                  Real* rcldm, Real* lcldm, Real* icldm, Real* pratot, Real* prctot,
                  Real* p3_tend_out, Real* mu_c, Real* lamc, Real* liq_ice_exchange,
-                 Real* vap_liq_exchange, Real* vap_ice_exchange, Real* vap_cld_exchange);
+                 Real* vap_liq_exchange, Real* vap_ice_exchange);
 }
 
 namespace scream {
@@ -84,7 +84,6 @@ FortranData::FortranData (Int ncol_, Int nlev_)
   liq_ice_exchange = Array2("sum of liq-ice phase change tendenices", ncol, nlev);
   vap_liq_exchange = Array2("sum of vap-liq phase change tendenices", ncol, nlev);
   vap_ice_exchange = Array2("sum of vap-ice phase change tendenices", ncol, nlev);
-  vap_cld_exchange = Array2("sum of vap-cld phase change tendenices", ncol, nlev);
 }
 
 FortranDataIterator::FortranDataIterator (const FortranData::Ptr& d) {
@@ -100,7 +99,7 @@ void FortranDataIterator::init (const FortranData::Ptr& dp) {
         d_->name.data(),                                                \
         d_->name.size()})
   fdipb(qv); fdipb(th); fdipb(pres);
-  fdipb(dzq); fdipb(ncnuc); fdipb(naai); fdipb(qc_relvar); fdipb(qc); 
+  fdipb(dzq); fdipb(ncnuc); fdipb(naai); fdipb(qc_relvar); fdipb(qc);
   fdipb(nc); fdipb(qr); fdipb(nr); fdipb(qitot); fdipb(nitot);
   fdipb(qirim); fdipb(birim); fdipb(prt_liq); fdipb(prt_sol);
   fdipb(diag_ze); fdipb(diag_effc); fdipb(diag_effi);
@@ -110,7 +109,7 @@ void FortranDataIterator::init (const FortranData::Ptr& dp) {
   fdipb(rcldm); fdipb(lcldm); fdipb(icldm);
   fdipb(pratot); fdipb(prctot);
   fdipb(mu_c); fdipb(lamc); fdipb(liq_ice_exchange); fdipb(vap_liq_exchange);
-  fdipb(vap_ice_exchange); fdipb(vap_cld_exchange);
+  fdipb(vap_ice_exchange);;
 #undef fdipb
 }
 
@@ -155,7 +154,7 @@ void p3_main (const FortranData& d) {
             d.rflx.data(), d.sflx.data(),
             d.rcldm.data(), d.lcldm.data(), d.icldm.data(),d.pratot.data(),d.prctot.data(),
             d.p3_tend_out.data(),d.mu_c.data(),d.lamc.data(),d.liq_ice_exchange.data(),
-            d.vap_liq_exchange.data(),d.vap_ice_exchange.data(),d.vap_cld_exchange.data());
+            d.vap_liq_exchange.data(),d.vap_ice_exchange.data());
 }
 
 int test_FortranData () {
