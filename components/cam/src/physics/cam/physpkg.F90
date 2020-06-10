@@ -729,7 +729,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use nudging,            only: Nudge_Model,nudging_init
     use output_aerocom_aie, only: output_aerocom_aie_init, do_aerocom_ind3
 
-
     ! Input/output arguments
     type(physics_state), pointer       :: phys_state(:)
     type(physics_tend ), pointer       :: phys_tend(:)

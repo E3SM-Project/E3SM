@@ -73,7 +73,6 @@ subroutine crm_physics_register()
                                   crm_nx_rad, crm_ny_rad
 #ifdef MMF_SAMXX
    use cpp_interface_mod,   only: setparm
-   use gator_mod, only: gator_init
 #elif defined(MMF_SAM)
    use setparm_mod      ,   only: setparm
 #endif
@@ -95,9 +94,6 @@ subroutine crm_physics_register()
    integer, dimension(5) :: dims_crm_aer = (/pcols, crm_nx_rad, crm_ny_rad, crm_nz, ntot_amode/)
 #endif
    !----------------------------------------------------------------------------
-#ifdef MMF_SAMXX
-   call gator_init()
-#endif
    call phys_getopts( use_ECPP_out = use_ECPP)
    call phys_getopts( MMF_microphysics_scheme_out = MMF_microphysics_scheme)
 

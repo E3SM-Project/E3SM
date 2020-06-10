@@ -97,6 +97,9 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    use scamMod,          only: single_column
    use cam_pio_utils,    only: init_pio_subsystem
    use cam_instance,     only: inst_suffix
+#if defined(MMF_SAMXX) || defined(RRTMGPXX)
+    use gator_mod, only: gator_init
+#endif
 
 #if ( defined SPMD )   
    real(r8) :: mpi_wtime  ! External
@@ -123,6 +126,10 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    integer :: dtime_cam        ! Time-step
    logical :: log_print        ! Flag to print out log information or not
    character(len=cs) :: filein ! Input namelist filename
+
+#if defined(MMF_SAMXX) || defined(RRTMGPXX)
+    call gator_init()
+#endif
    !-----------------------------------------------------------------------
    etamid = nan
    !

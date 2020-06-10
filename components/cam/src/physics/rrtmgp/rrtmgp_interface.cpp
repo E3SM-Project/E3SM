@@ -42,22 +42,17 @@ extern "C" void gas_names_to_string1d() {
 
 
 // TODO: create string1d "gas_names" before calling this function
-// TODO: Make a fortran wrapper to transform character arrays into c-style
 extern "C" void rrtmgp_initialize_cpp(char *coefficients_file_sw, char *coefficients_file_lw) {
   GasConcs gas_concentrations;
-  // PCOLS and PLEV don't actually matter here. This GasConcs object is only telling us which gas names are available
-  // There is no set_vmr or get_vmr called on the object called gas_names in this scope.
-  gas_concentrations.init(gas_names , PCOLS , PLEV+1);
+  // Only set gas_names. This GasConcs object is for storing available gasses, not concentrations
+  gas_concentrations.init(gas_names);
   load_and_init(k_dist_sw , coefficients_file_sw , gas_concentrations);
   load_and_init(k_dist_lw , coefficients_file_lw , gas_concentrations);
 }
 
 
+// Currently this is never called
 extern "C" int rrtmgp_finalize() {
-  gas_names_vec = std::vector<std::string>();
-  gas_names = string1d();
-  k_dist_lw.finalize();
-  k_dist_sw.finalize();
   return 0;
 }
 
