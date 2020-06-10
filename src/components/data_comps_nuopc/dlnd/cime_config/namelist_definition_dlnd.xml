@@ -36,7 +36,6 @@
     <group>dlnd_nml</group>
     <valid_values>copyall</valid_values>
     <desc>
-      datamode = "copyall"
       Copies all fields directly from the input data streams Any required
       fields not found on an input stream will be set to zero.
     </desc>
@@ -91,9 +90,9 @@
     <desc>Stream data variable name(s).</desc>
     <values>
       <value stream="sno.cplhist">
-        lndImp_Sl_tsrf%glc     lndImp_Sl_tsrf_elev%glc
-        lndImp_Sl_topo%glc     lndImp_Sl_topo_elev%glc
-        lndImp_Flgl_qice%glc   lndImp_Flgl_qice_elev%glc
+        l2x1yr_glc_Sl_tsrf%glc     Sl_tsrf_elev%glc
+        l2x1yr_glc_Sl_topo%glc     Sl_topo_elev%glc
+        l2x1yr_glc_Flgl_qice%glc   Flgl_qice_elev%glc
       </value>
     </values>
   </entry>
