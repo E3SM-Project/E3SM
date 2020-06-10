@@ -421,6 +421,9 @@ module CNCarbonFluxType
      real(r8), pointer :: allocation_stem 		  (:) ! check allocation to stem for dynamic allocation scheme
      real(r8), pointer :: allocation_froot 		  (:) ! check allocation to fine root for dynamic allocation scheme
 
+     ! C4MIP output variable
+     real(r8), pointer :: plant_c_to_cwdc                 (:) ! sum of gap, fire, dynamic land use, and harvest mortality, plant carbon flux to CWD
+
      ! new variables for clm_interface_funcsMod & pflotran
      !------------------------------------------------------------------------
      real(r8), pointer :: externalc_to_decomp_cpools_col            (:,:,:) ! col (gC/m3/s) net C fluxes associated with litter/som-adding/removal to decomp pools
@@ -849,6 +852,9 @@ contains
      allocate(this%allocation_leaf       (begp:endp)) ; this%allocation_leaf       (:) = nan
      allocate(this%allocation_stem       (begp:endp)) ; this%allocation_stem       (:) = nan
      allocate(this%allocation_froot      (begp:endp)) ; this%allocation_froot      (:) = nan
+
+     ! C4MIP output variable
+     allocate(this%plant_c_to_cwdc       (begc:endc)) ; this%plant_c_to_cwdc       (:)  =nan
 
      ! clm_interface & pflotran
      !------------------------------------------------------------------------
@@ -2186,6 +2192,20 @@ contains
        this%landuptake_col(c) = &
             this%nee_col(c) - &
             this%landuseflux_col(c)
+    end do
+
+    ! C4MIP output variable, plant carbon flux to cwd (a part of fVegLitter)
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%plant_c_to_cwdc(c) = 0._r8
+       do j = 1, nlevdecomp
+          this%plant_c_to_cwdc(c) = this%plant_c_to_cwdc(c) + &
+             this%gap_mortality_c_to_cwdc_col(c,j)* dzsoi_decomp(j) + &
+             this%fire_mortality_c_to_cwdc_col(c,j)* dzsoi_decomp(j)+ &
+             this%harvest_c_to_cwdc_col(c,j)* dzsoi_decomp(j)       + &
+             this%dwt_livecrootc_to_cwdc_col(c,j)* dzsoi_decomp(j)  + &
+             this%dwt_deadcrootc_to_cwdc_col(c,j)* dzsoi_decomp(j)
+       end do
     end do
 
     if  (.not. is_active_betr_bgc) then

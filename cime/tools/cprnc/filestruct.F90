@@ -128,7 +128,8 @@ contains
     real, pointer :: attreal1(:), attreal2(:)
     double precision, pointer :: attdouble1(:),attdouble2(:)
     integer, pointer :: attint1(:),attint2(:)
-    character(len=8192) :: attchar1, attchar2
+    integer, parameter :: maxstrlen=32767
+    character(len=maxstrlen) :: attchar1, attchar2
     logical :: found
 
 
@@ -149,8 +150,12 @@ contains
        attname = ''
        ierr = nf90_inq_attname(file1%fh, id1, i, attname)
        ierr = nf90_inquire_attribute(file1%fh, id1, trim(attname), atttype, attlen)
+
        select case(atttype)
        case(nf90_char)
+          if (attlen > maxstrlen) then
+             stop 'maximum string length exceeded'
+          endif
           attchar1=' '
           attchar2=' '
 
@@ -213,7 +218,7 @@ contains
           end if
           deallocate(attdouble1, attdouble2)
        case default
-          print *,' Did not recognize attribute type ',atttype, trim(attname), attlen
+          print *,' Did not recognize attribute with id: ',i,' type: ',atttype, ' name: ',trim(attname), ' len: ',attlen
        end select
     end do
 

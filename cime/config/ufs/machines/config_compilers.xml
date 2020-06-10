@@ -1,0 +1,584 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config_compilers version="2.0">
+<!--
+========================================================================
+This file defines compiler flags for building CESM.  General flags are listed first
+followed by flags specific to particular operating systems, followed by particular machines.
+
+More general flags are replaced by more specific flags.
+
+Attributes indicate that an if clause should be added to the Macros so that these flags are added
+only under the conditions described by the attribute(s).
+
+The env_mach_specific file may set environment variables or load modules which set environment variables
+which are then  used in the Makefile.   For example the NETCDF_PATH on many machines is set by a module.
+
+========================================================================
+Serial/MPI compiler specification
+========================================================================
+
+SCC   and  SFC specifies the serial compiler
+MPICC and  MPICC specifies the mpi compiler
+
+if $MPILIB is set to mpi-serial then
+CC = $SCC
+FC = $SFC
+MPICC = $SCC
+MPIFC = $SFC
+INC_MPI = $(CIMEROOT)/src/externals/mct/mpi-serial
+
+========================================================================
+Options for including C++ code in the build
+========================================================================
+
+SUPPORTS_CXX (TRUE/FALSE): Whether we have defined all the necessary
+settings for including C++ code in the build for this compiler (or
+this compiler/machine combination). See below for a description of the
+necessary settings.
+
+The following are required for a compiler to support the inclusion of
+C++ code:
+
+SCXX: serial C++ compiler
+
+MPICXX: mpi C++ compiler
+
+CXX_LINKER (CXX/FORTRAN): When C++ code is included in the build, do
+we use a C++ or Fortran linker?
+
+In addition, some compilers require additional libraries or link-time
+flags, specified via CXX_LIBS or CXX_LDFLAGS, as in the following
+examples:
+
+<CXX_LIBS> -L/path/to/directory -lfoo </CXX_LIBS>
+
+or
+
+<CXX_LDFLAGS> -cxxlib </CXX_LDFLAGS>
+
+Note that these libraries or LDFLAGS will be added on the link line,
+regardless of whether we are using a C++ or Fortran linker. For
+example, if CXX_LINKER=CXX, then the above CXX_LIBS line should
+specify extra libraries needed when linking C++ and fortran code using
+a C++ linker. If CXX_LINKER=FORTRAN, then the above CXX_LDFLAGS line
+should specify extra LDFLAGS needed when linking C++ and fortran code
+using a fortran linker.
+
+-->
+<!-- Define default values that can be overridden by specific
+     compilers -->
+<compiler>
+  <CPPDEFS>
+    <!-- This should be removed AFTER MOM6 cap is fully unified -->
+    <append> -DCESMCOUPLED </append>
+    <append MODEL="pop"> -D_USE_FLOW_CONTROL </append>
+    <append MODEL="ufsatm"> -DSPMD </append>
+  </CPPDEFS>
+
+  <INCLDIR>
+        <append MODEL="ufsatm"> -I$(EXEROOT)/atm/obj/FMS </append>
+  </INCLDIR>
+  <FFLAGS>
+    <append MODEL="ufsatm"> $(FC_AUTO_R8) </append>
+    <append MODEL="mom"> $(FC_AUTO_R8) -Duse_LARGEFILE</append>
+  </FFLAGS>
+  <SUPPORTS_CXX>FALSE</SUPPORTS_CXX>
+</compiler>
+
+<compiler COMPILER="cray">
+  <CFLAGS>
+    <append compile_threaded="FALSE"> -h noomp </append>
+    <append DEBUG="TRUE"> -g -O0 </append>
+    <append DEBUG="FALSE"> -O2 </append>
+  </CFLAGS>
+  <CPPDEFS>
+    <!--http://docs.cray.com/cgi-bin/craydoc.cgi?mode=View;id=S-3901-83;idx=books_search;this_sort=;q=;type=books;title=Cray%20Fortran%20Reference%20Manual -->
+    <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRCRAY</append>
+    <append MODEL="pop"> -DDIR=NOOP </append>
+    <append MODEL="moby"> -DDIR=NOOP </append>
+  </CPPDEFS>
+  <FC_AUTO_R8>
+    <base> -s real64 </base>
+  </FC_AUTO_R8>
+  <FFLAGS>
+    <base> -f free -N 255  -h byteswapio -x dir </base>
+    <append compile_threaded="FALSE"> -h noomp </append>
+    <append DEBUG="TRUE"> -g -O0 -K trap=fp  -m1 </append>
+    <append DEBUG="FALSE"> -O2,ipa2 -em </append>
+  </FFLAGS>
+  <FFLAGS_NOOPT>
+    <base> -O1,fp2,ipa0,scalar0,vector0 </base>
+  </FFLAGS_NOOPT>
+  <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
+  <LDFLAGS>
+    <base> -Wl,--allow-multiple-definition -h byteswapio </base>
+  </LDFLAGS>
+</compiler>
+
+<compiler COMPILER="gnu">
+  <CFLAGS>
+    <base> -std=gnu99 </base>
+    <append compile_threaded="TRUE"> -fopenmp </append>
+    <append DEBUG="TRUE"> -g -Wall -Og -fbacktrace -ffpe-trap=invalid,zero,overflow -fcheck=bounds </append>
+    <append DEBUG="FALSE"> -O </append>
+  </CFLAGS>
+  <CPPDEFS>
+    <!-- http://gcc.gnu.org/onlinedocs/gfortran/ -->
+    <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRGNU</append>
+  </CPPDEFS>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <FC_AUTO_R8>
+    <base> -fdefault-real-8 </base>
+  </FC_AUTO_R8>
+  <FFLAGS>
+    <base>  -fconvert=big-endian -ffree-line-length-none  -fcray-pointer -fno-range-check -fbacktrace</base>
+    <append compile_threaded="TRUE"> -fopenmp </append>
+    <!-- Ideally, we would also have 'invalid' in the ffpe-trap list. But at
+         least with some versions of gfortran (confirmed with 5.4.0, 6.3.0 and
+         7.1.0), gfortran's isnan (which is called in cime via the
+         CPRGNU-specific shr_infnan_isnan) causes a floating point exception
+         when called on a signaling NaN. -->
+    <append DEBUG="TRUE"> -g -Wall -Og -fbacktrace -ffpe-trap=zero,overflow -fcheck=bounds </append>
+    <append DEBUG="FALSE"> -O </append>
+  </FFLAGS>
+  <FC_32BIT>
+    <base> -DOVERLOAD_R4 -DOVERLOAD_R8 </base>
+  </FC_32BIT>
+  <FC_64BIT>
+    <base> -fdefault-real-8 -fdefault-double-8 </base>
+  </FC_64BIT>
+  <FFLAGS_NOOPT>
+    <base> -O0 </base>
+  </FFLAGS_NOOPT>
+  <FIXEDFLAGS>
+    <base>  -ffixed-form </base>
+  </FIXEDFLAGS>
+  <FREEFLAGS>
+    <base> -ffree-form </base>
+  </FREEFLAGS>
+  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
+  <LDFLAGS>
+    <append compile_threaded="TRUE"> -fopenmp </append>
+  </LDFLAGS>
+  <MPICC> mpicc  </MPICC>
+  <MPICXX> mpicxx </MPICXX>
+  <MPIFC> mpif90 </MPIFC>
+  <SCC> gcc </SCC>
+  <SCXX> g++ </SCXX>
+  <SFC> gfortran </SFC>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+</compiler>
+
+<compiler COMPILER="ibm">
+  <CFLAGS>
+    <base> -g -qfullpath -qmaxmem=-1 </base>
+    <append DEBUG="FALSE"> -O3  </append>
+    <append compile_threaded="TRUE"> -qsmp=omp </append>
+    <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
+  </CFLAGS>
+  <CPPDEFS>
+    <!-- http://publib.boulder.ibm.com/infocenter/comphelp/v7v91/index.jsp
+ Notes:  (see xlf user's guide for the details)
+  -lmass          => IBM-tuned intrinsic lib
+  -qsmp=noauto    => enable SMP directives, but don't add any
+  -qsmp=omp       => enable SMP directives, strict omp
+  -qstrict        => don't turn divides into multiplies, etc
+  -qhot           => higher-order-transformations (eg. loop padding)
+  -qalias=noaryovrlp => assume no array overlap wrt equivalance, etc
+  -qmaxmem=-1     => memory available to compiler during optimization
+  -qipa=level=2   => InterProcedure Analysis (eg. inlining) => slow compiles
+  -p -pg          => enable profiling (use in both FFLAGS and LDFLAGS)
+  -qreport        => for smp/omp only
+  -g              => always leave it on because overhead is minimal
+  -qflttrap=...   => enable default sigtrap (core dump)
+  -C              => runtime array bounds checking (runs slow)
+  -qinitauto=...  => initializes automatic variables
+  -->
+    <append> -DFORTRAN_SAME -DCPRIBM </append>
+  </CPPDEFS>
+  <CPRE>-WF,-D</CPRE>
+  <FC_AUTO_R8>
+    <base> -qrealsize=8 </base>
+  </FC_AUTO_R8>
+  <FFLAGS>
+    <base> -g -qfullpath -qmaxmem=-1 </base>
+    <append DEBUG="FALSE"> -O2 -qstrict -qinline=auto </append>
+    <append compile_threaded="TRUE"> -qsmp=omp </append>
+    <append DEBUG="TRUE"> -qinitauto=7FF7FFFF -qflttrap=ov:zero:inv:en </append>
+    <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
+    <append DEBUG="TRUE" MODEL="pop"> -C </append>
+  </FFLAGS>
+  <FIXEDFLAGS>
+    <base>  -qsuffix=f=f -qfixed=132 </base>
+  </FIXEDFLAGS>
+  <FREEFLAGS>
+    <base> -qsuffix=f=f90:cpp=F90  </base>
+  </FREEFLAGS>
+  <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
+  <LDFLAGS>
+    <append compile_threaded="TRUE"> -qsmp=omp </append>
+    <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
+  </LDFLAGS>
+</compiler>
+
+<compiler COMPILER="intel">
+  <CFLAGS>
+    <base> -fp-model consistent -sox -std=gnu99 </base>
+    <append compile_threaded="TRUE"> -qopenmp </append>
+    <append DEBUG="FALSE"> -O2 -debug minimal </append>
+    <append DEBUG="TRUE"> -O0 -g </append>
+  </CFLAGS>
+  <CPPDEFS>
+    <!-- http://software.intel.com/en-us/articles/intel-composer-xe/ -->
+    <append> -DFORTRANUNDERSCORE -DCPRINTEL</append>
+  </CPPDEFS>
+  <CXX_LDFLAGS>
+    <base> -cxxlib </base>
+  </CXX_LDFLAGS>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <FC_AUTO_R8>
+    <base> -r8 </base>
+  </FC_AUTO_R8>
+  <FC_32BIT>
+    <base> -i4 -real-size 32 </base>
+  </FC_32BIT>
+  <FC_64BIT>
+    <base> -i4 -real-size 64 </base>
+  </FC_64BIT>
+  <FC_REPRO>
+    <base> -qno-opt-dynamic-align -fp-model consistent </base>
+  </FC_REPRO>
+  <FC_FAST>
+    <base>  -xCORE-AVX2 -no-prec-div -no-prec-sqrt </base>
+  </FC_FAST>
+  <FFLAGS>
+    <base> -fpp -fno-alias -auto -safe-cray-ptr -ftz -assume byterecl -nowarn -sox -align array64byte</base>
+    <append compile_threaded="TRUE"> -qopenmp </append>
+
+    <append DEBUG="TRUE">  -g -O0 -check -check noarg_temp_created -check nopointer -warn -warn noerrors -fp-stack-check -fstack-protector-all -debug -traceback -fpe0 -ftrapuv </append>
+    <append DEBUG="FALSE"> -O2 -debug minimal</append>
+  </FFLAGS>
+  <FFLAGS_NOOPT>
+    <base> -O0 </base>
+  </FFLAGS_NOOPT>
+  <FIXEDFLAGS>
+    <base> -fixed  </base>
+  </FIXEDFLAGS>
+  <FREEFLAGS>
+    <base> -free </base>
+  </FREEFLAGS>
+  <LDFLAGS>
+    <append compile_threaded="TRUE"> -qopenmp </append>
+  </LDFLAGS>
+  <MPICC> mpicc  </MPICC>
+  <MPICXX> mpicxx </MPICXX>
+  <MPIFC> mpif90 </MPIFC>
+  <SCC> icc </SCC>
+  <SCXX> icpc </SCXX>
+  <SFC> ifort </SFC>
+  <SLIBS>
+    <append MPILIB="mpich"> -mkl=cluster </append>
+    <append MPILIB="mpich2"> -mkl=cluster </append>
+    <append MPILIB="mvapich"> -mkl=cluster </append>
+    <append MPILIB="mvapich2"> -mkl=cluster </append>
+    <append MPILIB="mpt"> -mkl=cluster </append>
+    <append MPILIB="openmpi"> -mkl=cluster </append>
+    <append MPILIB="impi"> -mkl=cluster </append>
+    <append MPILIB="mpi-serial"> -mkl </append>
+  </SLIBS>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+</compiler>
+
+<compiler COMPILER="nag">
+  <CFLAGS>
+    <base> -std=gnu99 </base>
+    <append DEBUG="TRUE"> -g </append>
+  </CFLAGS>
+  <CPPDEFS>
+    <append> -DFORTRANUNDERSCORE -DNO_CRAY_POINTERS -DNO_SHR_VMATH -DCPRNAG </append>
+  </CPPDEFS>
+  <FC_AUTO_R8>
+    <base> -r8 </base>
+  </FC_AUTO_R8>
+  <FFLAGS>
+    <!-- The indirect flag below is to deal with MPI functions that violate    -->
+    <!-- the Fortran standard, by adding a large set of arguments from a file. -->
+    <base>-Wp,-macro=no_com -convert=BIG_ENDIAN -indirect $ENV{CIMEROOT}/config/cesm/machines/nag_mpi_argument.txt</base>
+    <!-- DEBUG vs. non-DEBUG runs.                                             -->
+    <append DEBUG="FALSE"> -ieee=full -O2 </append>
+    <!-- The "-gline" option is nice, but it doesn't work with OpenMP.         -->
+    <!-- Runtime checks with OpenMP (in fact, all OpenMP cases) are WIP.       -->
+    <append DEBUG="TRUE"> -C=all -g -time -f2003 -ieee=stop </append>
+    <append DEBUG="TRUE" compile_threaded="FALSE"> -gline </append>
+    <!-- The SLAP library (which is part of the CISM build) has many instances of
+       arguments being passed to different types. So disable argument type
+       checking when building CISM. This can be removed once we remove SLAP from
+       CISM. -->
+    <append MODEL="cism"> -mismatch_all </append>
+  </FFLAGS>
+  <FFLAGS_NOOPT>
+    <base> -O0 </base>
+  </FFLAGS_NOOPT>
+  <FIXEDFLAGS>
+    <base> -fixed </base>
+  </FIXEDFLAGS>
+  <FREEFLAGS>
+    <base> -free </base>
+  </FREEFLAGS>
+  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
+  <MPICC> mpicc </MPICC>
+  <MPIFC> mpif90 </MPIFC>
+  <SCC> gcc </SCC>
+  <SFC> nagfor </SFC>
+
+  <LDFLAGS>
+    <append> -lpthread </append>
+  </LDFLAGS>
+  <CONFIG_ARGS>
+    <append> FCLIBS="-Wl,--as-needed,--allow-shlib-undefined  -L$(COMPILER_PATH)/lib/NAG_Fortran -lf62rts" </append>
+  </CONFIG_ARGS>
+</compiler>
+
+
+<compiler COMPILER="pgi">
+  <CFLAGS>
+    <base> -gopt  -time </base>
+    <append compile_threaded="TRUE"> -mp </append>
+  </CFLAGS>
+  <CPPDEFS>
+    <!-- http://www.pgroup.com/resources/docs.htm                                              -->
+    <!-- Notes:  (see pgi man page & user's guide for the details) -->
+    <!--  -Mextend        => Allow 132-column source lines -->
+    <!--  -Mfixed         => Assume fixed-format source -->
+    <!--  -Mfree          => Assume free-format source -->
+    <!--  -byteswapio     => Swap byte-order for unformatted i/o (big/little-endian) -->
+    <!--  -target=linux   => Specifies the target architecture to Compute Node Linux (CNL only) -->
+    <!--  -fast           => Chooses generally optimal flags for the target platform -->
+    <!--  -Mnovect        => Disables automatic vector pipelining -->
+    <!--  -Mvect=nosse    => Don't generate SSE, SSE2, 3Dnow, and prefetch instructions in loops    -->
+    <!--  -Mflushz        => Set SSE to flush-to-zero mode (underflow) loops where possible  -->
+    <!--  -Kieee          => Perform fp ops in strict conformance with the IEEE 754 standard.  -->
+    <!--                     Some optimizations disabled, slightly slower, more accurate math.  -->
+    <!--  -mp=nonuma      => Don't use thread/processors affinity (for NUMA architectures)  -->
+    <!-- -->
+    <!--  -g              => Generate symbolic debug information. Turns off optimization.   -->
+    <!--  -gopt           => Generate information for debugger without disabling optimizations  -->
+    <!--  -Mbounds        => Add array bounds checking  -->
+    <!--  -Ktrap=fp       => Determine IEEE Trap conditions fp => inv,divz,ovf   -->
+    <!--                     * inv: invalid operands         -->
+    <!--                     * divz divide by zero           -->
+    <!--                     * ovf: floating point overflow   -->
+    <!--  -Mlist          => Create a listing file             -->
+    <!--  -F              => leaves file.f for each preprocessed file.F file  -->
+    <!--  -time           => Print execution time for each compiler step  -->
+    <append> -DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16  -DCPRPGI </append>
+  </CPPDEFS>
+  <CXX_LINKER>CXX</CXX_LINKER>
+  <FC_AUTO_R8>
+    <base> -r8 </base>
+  </FC_AUTO_R8>
+  <FFLAGS>
+    <base>  -i4 -gopt  -time -Mextend -byteswapio -Mflushz -Kieee  </base>
+    <append compile_threaded="TRUE"> -mp </append>
+    <append DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </append>
+    <append MODEL="datm"> -Mnovect </append>
+    <append MODEL="dlnd"> -Mnovect </append>
+    <append MODEL="drof"> -Mnovect </append>
+    <append MODEL="dwav"> -Mnovect </append>
+    <append MODEL="dice"> -Mnovect </append>
+    <append MODEL="docn"> -Mnovect </append>
+  </FFLAGS>
+  <FFLAGS_NOOPT>
+    <base> -O0 </base>
+  </FFLAGS_NOOPT>
+  <FIXEDFLAGS>
+    <base> -Mfixed </base>
+  </FIXEDFLAGS>
+  <FREEFLAGS>
+    <base> -Mfree </base>
+  </FREEFLAGS>
+  <!-- Note that SUPPORTS_CXX is false for pgi in general, because we
+       need some machine-specific libraries - see hopper pgi for an
+       example -->
+  <!-- Technically, PGI does recognize this keyword during parsing,
+       but support is either buggy or incomplete, notably in that
+       the "contiguous" attribute is incompatible with "intent".-->
+  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
+  <LDFLAGS>
+    <base> -time -Wl,--allow-multiple-definition </base>
+    <append compile_threaded="TRUE"> -mp </append>
+  </LDFLAGS>
+  <MPICC> mpicc </MPICC>
+  <MPICXX> mpicxx </MPICXX>
+  <MPIFC> mpif90 </MPIFC>
+  <SCC> pgcc </SCC>
+  <SCXX> pgc++ </SCXX>
+  <SFC> pgf95 </SFC>
+</compiler>
+
+<compiler OS="AIX" COMPILER="ibm">
+  <CFLAGS>
+    <append> -qarch=auto -qtune=auto -qcache=auto </append>
+  </CFLAGS>
+  <CONFIG_SHELL> /usr/bin/bash </CONFIG_SHELL>
+  <FFLAGS>
+    <append> -qarch=auto -qtune=auto -qcache=auto -qsclk=micro </append>
+    <append MODEL="cam"> -qspill=6000 </append>
+  </FFLAGS>
+  <LDFLAGS>
+    <append DEBUG="TRUE"> -qsigtrap=xl__trcedump </append>
+    <append> -bdatapsize:64K -bstackpsize:64K -btextpsize:32K </append>
+  </LDFLAGS>
+  <MPICC> mpcc_r </MPICC>
+  <MPIFC> mpxlf2003_r </MPIFC>
+  <SCC> cc_r </SCC>
+  <SFC> xlf2003_r </SFC>
+  <SLIBS>
+    <append> -lmassv -lessl </append>
+    <append DEBUG="FALSE"> -lmass </append>
+  </SLIBS>
+</compiler>
+
+<compiler OS="BGQ" COMPILER="ibm">
+  <CONFIG_ARGS>
+    <base> --build=powerpc-bgp-linux --host=powerpc64-suse-linux </base>
+  </CONFIG_ARGS>
+  <CPPDEFS>
+    <append> -DLINUX  </append>
+  </CPPDEFS>
+  <FFLAGS>
+    <base> -g -qfullpath -qmaxmem=-1 -qspillsize=2500 -qextname=flush </base>
+    <append DEBUG="FALSE"> -O3 -qstrict -qinline=auto </append>
+    <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp </append>
+    <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
+  </FFLAGS>
+  <LDFLAGS>
+    <base>  -Wl,--relax -Wl,--allow-multiple-definition </base>
+  </LDFLAGS>
+</compiler>
+
+<compiler OS="CNL">
+  <CMAKE_OPTS>
+    <base> -DCMAKE_SYSTEM_NAME=Catamount</base>
+  </CMAKE_OPTS>
+  <CPPDEFS>
+    <append> -DLINUX </append>
+    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY  </append>
+  </CPPDEFS>
+  <MPICC> cc </MPICC>
+  <MPICXX> CC </MPICXX>
+  <MPIFC> ftn </MPIFC>
+  <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <PNETCDF_PATH>$ENV{PARALLEL_NETCDF_DIR}</PNETCDF_PATH>
+  <SCC> cc </SCC>
+  <SCXX> CC </SCXX>
+  <SFC> ftn </SFC>
+</compiler>
+
+<compiler OS="Darwin">
+  <CPPDEFS>
+    <append> -DSYSDARWIN </append>
+  </CPPDEFS>
+  <LDFLAGS>
+    <append> -Wl,-rpath $ENV{NETCDF}/lib</append>
+  </LDFLAGS>
+</compiler>
+
+<compiler OS="Darwin" COMPILER="intel">
+  <FFLAGS>
+    <append compile_threaded="FALSE"> -heap-arrays </append>
+  </FFLAGS>
+</compiler>
+
+<compiler MACH="cheyenne">
+  <CPPDEFS>
+    <!-- these flags enable nano timers -->
+    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
+  </CPPDEFS>
+  <NETCDF_PATH>$ENV{NETCDF}</NETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
+  <PNETCDF_PATH>$ENV{PNETCDF}</PNETCDF_PATH>
+</compiler>
+
+<compiler MACH="cheyenne" COMPILER="gnu">
+  <CPPDEFS>
+    <append MODEL="pio1"> -DNO_MPIMOD </append>
+  </CPPDEFS>
+  <SLIBS>
+    <append> -ldl </append>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="cheyenne" COMPILER="intel">
+  <CFLAGS>
+    <append> -qopt-report -xCORE-AVX2 </append>
+  </CFLAGS>
+  <FFLAGS>
+    <append> -qopt-report -xCORE-AVX2 </append>
+  </FFLAGS>
+  <CMAKE_OPTS>
+    <append DEBUG="TRUE"> -DPIO_ENABLE_LOGGING=ON </append>
+  </CMAKE_OPTS>
+  <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="FALSE">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.2.8_cheyenne_Intel17.0.1_noMPI_noOpenMP</PFUNIT_PATH>
+  <PFUNIT_PATH MPILIB="mpt" compile_threaded="TRUE">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.2.8_cheyenne_Intel17.0.1_MPI_openMP</PFUNIT_PATH>
+  <!-- SET to FALSE for intel 17 and 18 TRUE otherwise -->
+  <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
+</compiler>
+
+<compiler MACH="hera" COMPILER="intel">
+  <CFLAGS>
+    <append> -qopt-report -xCORE-AVX2 </append>
+  </CFLAGS>
+  <FFLAGS>
+    <append> -qopt-report -xCORE-AVX2 </append>
+  </FFLAGS>
+</compiler>
+
+<compiler COMPILER="intel" MACH="orion">
+  <MPICC> mpiicc </MPICC>
+  <MPICXX> mpiicpc </MPICXX>
+  <MPIFC> mpiifort </MPIFC>
+</compiler>
+
+<compiler COMPILER="intel" MACH="jet">
+  <MPICC> mpiicc  </MPICC>
+  <MPICXX> mpiicpc </MPICXX>
+  <MPIFC> mpif90 </MPIFC>
+</compiler>
+
+<compiler MACH="macos" COMPILER="gnu">
+  <LDFLAGS>
+    <!-- These LDFLAGS provide lapack and blas support on a Mac. This
+         may require installation of the Apple Developer Tools. -->
+    <append> -framework Accelerate </append>
+  </LDFLAGS>
+</compiler>
+
+<compiler MACH="stampede2-skx">
+  <CPPDEFS>
+    <append> -DHAVE_NANOTIME </append>
+  </CPPDEFS>
+  <NETCDF_PATH>$ENV{TACC_NETCDF_DIR}</NETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <PNETCDF_PATH>$ENV{TACC_PNETCDF_DIR}</PNETCDF_PATH>
+</compiler>
+
+<compiler MACH="stampede2-skx" COMPILER="intel">
+  <CFLAGS>
+    <append> -xCOMMON-AVX512 -no-fma </append>
+  </CFLAGS>
+  <FFLAGS>
+    <append> -xCOMMON-AVX512 -no-fma </append>
+    <append MPILIB="mpi-serial"> -mcmodel medium </append>
+  </FFLAGS>
+  <LDFLAGS>
+    <append>-L$ENV{TACC_HDF5_LIB} -lhdf5 -zmuldefs -xCOMMON-AVX512</append>
+  </LDFLAGS>
+  <SLIBS>
+    <append>$SHELL{${NETCDF_PATH}/bin/nf-config --flibs} -L$ENV{TACC_HDF5_LIB} -lhdf5</append>
+  </SLIBS>
+  <TRILINOS_PATH>$ENV{TRILINOS_PATH}</TRILINOS_PATH>
+  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
+</compiler>
+</config_compilers>

@@ -8,7 +8,7 @@ This allows us to save these results if we want to run the case again.
 from standard_script_setup import *
 
 from CIME.case       import Case
-from CIME.hist_utils import copy
+from CIME.hist_utils import copy_histfiles
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -28,7 +28,7 @@ OR
 
     CIME.utils.setup_standard_logging_options(parser)
 
-    parser.add_argument("suffix",
+    parser.add_argument("--suffix",
                         help="Suffix to append to hist files")
 
     parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
@@ -43,7 +43,7 @@ def _main_func(description):
 ###############################################################################
     suffix, caseroot = parse_command_line(sys.argv, description)
     with Case(caseroot) as case:
-        copy(case, suffix)
+        copy_histfiles(case, suffix)
 
 if __name__ == "__main__":
     _main_func(__doc__)

@@ -58,7 +58,7 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
         config['aqua_planet_sst_type'] = docn_mode
     else:
         config['aqua_planet_sst_type'] = 'none'
-        
+
     if case.get_value('RUN_TYPE') == 'startup':
         config['run_type'] = 'startup'
     elif case.get_value('RUN_TYPE') == 'hybrid':
@@ -210,6 +210,11 @@ def write_seq_maps_file(case, nmlgen, confdir):
                 ignore_component[comp_class.lower()] = True
             else:
                 ignore_component[comp_class.lower()] = False
+
+    # The ATM grid may contain vertical grid information ("zxx" where xx is a number of levels)
+    # it's not desirable here, remove it.
+    if 'atm' in gridvalue and re.match(r'z\d',gridvalue['atm']):
+        gridvalue['atm'] = (gridvalue['atm'])[0:gridvalue['atm'].rfind('z')]
 
     # Currently, hard-wire values of mapping file names to ignore
     # TODO: for rof2ocn_fmapname -needs to be resolved since this is currently
