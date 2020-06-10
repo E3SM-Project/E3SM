@@ -240,13 +240,14 @@ contains
        if ( convproc_do_aer ) then 
           do m = 1,gas_pcnst
              call cnst_get_ind( solsym(m), l, abort=.false. )
-             if ( ( history_aerosol ) .and. &
-                  (species_class(l) == spec_class_gas) ) then !RCE - only output WD_xxx and DF_xxx for gases
-                wetdep_name = 'WD_'//trim(solsym(m))
-                depflx_name = 'DF_'//trim(solsym(m)) 
-                nspc = get_het_ndx(solsym(m)) 
-                if (nspc > 0) call add_default( wetdep_name, 1, ' ' )
-                call add_default( depflx_name, 1, ' ' )
+             if ( ( history_aerosol ) .and. (l > 0) ) then
+                if  ( species_class(l) == spec_class_gas ) then !RCE - only output WD_xxx and DF_xxx for gases
+                   wetdep_name = 'WD_'//trim(solsym(m))
+                   depflx_name = 'DF_'//trim(solsym(m)) 
+                   nspc = get_het_ndx(solsym(m)) 
+                   if (nspc > 0) call add_default( wetdep_name, 1, ' ' )
+                   call add_default( depflx_name, 1, ' ' )
+                endif
              endif
           end do ! m = 1,gas_pcnst
        endif
