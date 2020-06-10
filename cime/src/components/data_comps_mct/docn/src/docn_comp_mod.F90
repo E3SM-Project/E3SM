@@ -175,7 +175,8 @@ CONTAINS
        if (my_task == master_task) &
             write(logunit,F05) ' scm lon lat = ',scmlon,scmlat
        call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', &
-            scmmode=scmmode,scmlon=scmlon,scmlat=scmlat, calendar=calendar, reset_domain_mask=.true.)
+            scmmode=scmmode,iop_mode=iop_mode,scmlon=scmlon,scmlat=scmlat, &
+            calendar=calendar, reset_domain_mask=.true.)
     else
        if (datamode == 'SST_AQUAPANAL' .or. datamode == 'SST_AQUAPFILE' .or. &
            datamode == 'SOM_AQUAP' .or. datamode == 'SST_AQUAP_CONSTANT' ) then
