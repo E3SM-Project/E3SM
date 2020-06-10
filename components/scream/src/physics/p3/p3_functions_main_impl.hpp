@@ -318,7 +318,6 @@ void Functions<S,D>
   const uview_1d<Spack>& oprain,
   const uview_1d<Spack>& onevapr,
   const uview_1d<Spack>& oprer_evap,
-  const uview_1d<Spack>& ovap_cld_exchange,
   const uview_1d<Spack>& ovap_liq_exchange,
   const uview_1d<Spack>& ovap_ice_exchange,
   const uview_1d<Spack>& oliq_ice_exchange,
@@ -682,7 +681,6 @@ void Functions<S,D>
     ovap_ice_exchange(k).set(not_skip_all, qidep - qisub + qinuc);
     ovap_liq_exchange(k).set(not_skip_all, -qrevp + qcnuc);
     oliq_ice_exchange(k).set(not_skip_all, qcheti + qrheti - qimlt + qiberg + qccol + qrcol);
-    ovap_cld_exchange(k).set(not_skip_all, qcnuc);
 
     // clipping for small hydrometeor values
     const auto qc_small    = oqc(k) < qsmall    && not_skip_all;
@@ -808,7 +806,6 @@ void Functions<S,D>
   const uview_1d<Spack>& oprain,
   const uview_1d<Spack>& onevapr,
   const uview_1d<Spack>& oprer_evap,
-  const uview_1d<Spack>& ovap_cld_exchange,
   const uview_1d<Spack>& ovap_liq_exchange,
   const uview_1d<Spack>& ovap_ice_exchange,
   const uview_1d<Spack>& oliq_ice_exchange,
@@ -852,7 +849,6 @@ void Functions<S,D>
       oqv(k)              .set(qc_small, oqv(k)+oqc(k));
       oth(k)              .set(qc_small, oth(k)-oexner(k)*oqc(k)*oxxlv(k)*inv_cp);
       ovap_liq_exchange(k).set(qc_small, ovap_liq_exchange(k) - oqc(k));
-      ovap_cld_exchange(k).set(qc_small, ovap_cld_exchange(k) - oqc(k));
       oqc(k)              .set(qc_small, 0);
       onc(k)              .set(qc_small, 0);
     }
@@ -1001,8 +997,7 @@ void Functions<S,D>
   const view_2d<Spack>& prctot,           // autoconversion of cloud to rain
   const view_2d<Spack>& liq_ice_exchange, // sum of liq-ice phase change tendenices
   const view_2d<Spack>& vap_liq_exchange, // sum of vap-liq phase change tendenices
-  const view_2d<Spack>& vap_ice_exchange, // sum of vap-ice phase change tendenices
-  const view_2d<Spack>& vap_cld_exchange) // sum of vap-cld phase change tendenices
+  const view_2d<Spack>& vap_ice_exchange) // sum of vap-ice phase change tendenices
 {
   using ExeSpace = typename KT::ExeSpace;
 
@@ -1131,7 +1126,6 @@ void Functions<S,D>
     const auto oliq_ice_exchange = util::subview(liq_ice_exchange, i);
     const auto ovap_liq_exchange = util::subview(vap_liq_exchange, i);
     const auto ovap_ice_exchange = util::subview(vap_ice_exchange, i);
-    const auto ovap_cld_exchange = util::subview(vap_cld_exchange, i);
     const auto oxxlv             = util::subview(xxlv, i);
     const auto oxxls             = util::subview(xxls, i);
     const auto oxlf              = util::subview(xlf, i);
@@ -1168,7 +1162,7 @@ void Functions<S,D>
       team, nk_pack, log_predictNc, dt, odt,
       dnu, itab, itabcol, revap_table,
       opres, opdel, odzq, oncnuc, oexner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, onaai, oqc_relvar, oicldm, olcldm, orcldm,
-      t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqitot, onitot, oqirim, obirim, oxxlv, oxxls, oxlf, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld, omu_c, nu, olamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, ocmeiout, oprain, onevapr, oprer_evap, ovap_cld_exchange, ovap_liq_exchange, ovap_ice_exchange, oliq_ice_exchange, opratot, oprctot,
+      t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqitot, onitot, oqirim, obirim, oxxlv, oxxls, oxlf, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld, omu_c, nu, olamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, ocmeiout, oprain, onevapr, oprer_evap, ovap_liq_exchange, ovap_ice_exchange, oliq_ice_exchange, opratot, oprctot,
       log_hydrometeorsPresent);
 
     //NOTE: At this point, it is possible to have negative (but small) nc, nr, nitot.  This is not
@@ -1221,7 +1215,7 @@ void Functions<S,D>
       team, nk_pack, log_predictNc, dt, odt,
       dnu, itab, itabcol, revap_table,
       opres, opdel, odzq, oncnuc, oexner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, onaai, oicldm, olcldm, orcldm,
-      t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqitot, onitot, oqirim, obirim, oxxlv, oxxls, oxlf, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld, omu_c, nu, olamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, ocmeiout, oprain, onevapr, oprer_evap, ovap_cld_exchange, ovap_liq_exchange, ovap_ice_exchange, oliq_ice_exchange, opratot, oprctot, ze_rain, ze_ice, odiag_vmi, odiag_effi, odiag_di, odiag_rhoi, odiag_ze, tmparr1);
+      t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqitot, onitot, oqirim, obirim, oxxlv, oxxls, oxlf, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld, omu_c, nu, olamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, ocmeiout, oprain, onevapr, oprer_evap, ovap_liq_exchange, ovap_ice_exchange, oliq_ice_exchange, opratot, oprctot, ze_rain, ze_ice, odiag_vmi, odiag_effi, odiag_di, odiag_rhoi, odiag_ze, tmparr1);
 
     //
     // merge ice categories with similar properties
