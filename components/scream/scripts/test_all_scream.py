@@ -2,7 +2,7 @@ from utils import run_cmd, run_cmd_no_fail, check_minimum_python_version, get_cu
     get_current_commit, get_current_branch, expect, is_repo_clean, cleanup_repo,  \
     get_common_ancestor, merge_git_ref, checkout_git_ref, print_last_commit
 
-from machines_specs import get_mach_compilation_resources, get_mach_testing_resources
+from machines_specs import get_mach_compilation_resources, get_mach_testing_resources, setup_mach_env
 
 check_minimum_python_version(3, 4)
 
@@ -16,7 +16,8 @@ class TestAllScream(object):
 
     ###########################################################################
     def __init__(self, cxx, kokkos=None, submit=False, parallel=False, fast_fail=False, baseline_ref=None,
-                 baseline_dir=None, machine=None, no_tests=False, keep_tree=False, custom_cmake_opts=(), tests=(),
+                 baseline_dir=None, machine=None, no_tests=False, keep_tree=False,
+                 custom_cmake_opts=(), custom_env_vars=(), tests=(),
                  integration_test="JENKINS_HOME" in os.environ, root_dir=None, dry_run=False,
                  make_parallel_level=0, ctest_parallel_level=0):
     ###########################################################################
@@ -32,6 +33,7 @@ class TestAllScream(object):
         self._keep_tree         = keep_tree
         self._baseline_dir      = baseline_dir
         self._custom_cmake_opts = custom_cmake_opts
+        self._custom_env_vars   = custom_env_vars
         self._tests             = tests
         self._root_dir          = root_dir
         self._integration_test  = integration_test
@@ -378,6 +380,15 @@ class TestAllScream(object):
     ###############################################################################
     def test_all_scream(self):
     ###############################################################################
+
+        # Setup the env on this machine
+        setup_mach_env(self._machine)
+
+        # Add any override the user may have requested
+        for env_var in self._custom_env_vars:
+            key,val = env_var.split("=",2)
+            os.environ.update( { key : val } )
+
         success = True
         try:
             # First, create build directories (one per test)

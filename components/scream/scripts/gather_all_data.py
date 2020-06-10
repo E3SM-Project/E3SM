@@ -2,7 +2,7 @@ from utils import run_cmd_no_fail
 
 import os, pathlib
 import concurrent.futures as threading3
-from machine_specs import get_mach_env, get_mach_cxx_compiler, get_mach_batch_command, get_mach_testing_resources
+from machine_specs import get_mach_env_setup_command, get_mach_cxx_compiler, get_mach_batch_command, get_mach_testing_resources
 
 ###############################################################################
 class GatherAllData(object):
@@ -23,7 +23,7 @@ class GatherAllData(object):
     ###########################################################################
     def formulate_command(self, machine):
     ###########################################################################
-        env_setup = get_mach_env(machine)
+        env_setup = get_mach_env_setup_command(machine)
         compiler  = get_mach_cxx_compiler(machine)
         batch     = get_mach_batch_command(machine)
 

@@ -5,7 +5,8 @@
 #       On CPU machines, the two will usually coincide, while on GPU
 #       machines they are going to be different (compile on CPU, run on GPU).
 
-from utils import expect, get_cpu_core_count
+from utils import expect, get_cpu_core_count, run_cmd_no_fail
+import os
 
 MACHINE_METADATA = {
     "melvin"   : (["module purge", "module load sems-env", "module load sems-gcc/7.3.0 sems-openmpi/1.10.1 sems-gcc/7.3.0 sems-git/2.10.1 sems-cmake/3.12.2 sems-python/3.5.2"],
@@ -58,7 +59,7 @@ MACHINE_METADATA = {
                 "srun --time 02:00:00 --nodes=1 --constraint=knl,quad,cache --exclusive -q regular --account e3sm",
                 68,
                 68),
-    "generic-desktop" : ([],"$(which mpicxx)","", get_cpu_core_count(), get_cpu_core_count()),
+    "generic-desktop" : (["source ~/.bashrc", "load gcc", "load netcdf"],"$(which mpicxx)","", get_cpu_core_count(), get_cpu_core_count()),
     "generic-desktop-debug" : ([],"$(which mpicxx)","", get_cpu_core_count(), get_cpu_core_count()),
     "generic-desktop-serial" : ([],"$(which mpicxx)","", get_cpu_core_count(), get_cpu_core_count()),
 }
@@ -70,7 +71,7 @@ def is_machine_supported (machine):
     return machine in MACHINE_METADATA.keys()
 
 ###############################################################################
-def get_mach_env (machine):
+def get_mach_env_setup_command (machine):
 ###############################################################################
 
     expect (is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
@@ -108,3 +109,31 @@ def get_mach_testing_resources (machine):
     expect (is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
 
     return MACHINE_METADATA[machine][4]
+
+###############################################################################
+def setup_mach_env (machine):
+###############################################################################
+
+    expect (is_machine_supported(machine), "Error! Machine {} is not currently supported by scream testing system.".format(machine))
+
+    env_setup = get_mach_env_setup_command(machine)
+
+    # Do something only if this machine has env specs
+    if env_setup != []:
+        # Running the env command only modifies the env in the subprocess
+        # But we can return the resulting PATH, and update current env with that
+
+        # Get the whole env string after running the env_setup command
+        path = run_cmd_no_fail("{{ {};  }} > /dev/null && env | sort".format(";".join(env_setup)))
+
+        # Split by line
+        path_list = path.split("\n")
+
+        # For each line, split the string at the 1st '='.
+        # The resulting length-2 stirng is (ENV_VAR_NAME, ENV_VAR_VALUE);
+        # use it to update the os environment
+        for item in path_list:
+            # 2 means only 1st occurence will cause a split.
+            # Just in case some env var value contains '='
+            item_list = item.split("=",2)
+            os.environ.update( dict( { item_list[0] : item_list[1] } ) )
