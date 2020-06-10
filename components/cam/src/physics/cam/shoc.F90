@@ -830,9 +830,9 @@ subroutine update_prognostics_implicit( &
   real(rtype) :: wsmin, ksrfmin
   real(rtype) :: timeres
 
-  wsmin = 1._rtype      ! Minimum wind speed for ksrfturb computation [ m/s ]
-  ksrfmin = 1.e-4_rtype ! Minimum surface drag coefficient  [ kg/s/m^2 ]
-  timeres = 7200._rtype ! Relaxation time scale of residual stress ( >= dt ) [s]
+  !wsmin = 1._rtype      ! Minimum wind speed for ksrfturb computation [ m/s ]
+  !ksrfmin = 1.e-4_rtype ! Minimum surface drag coefficient  [ kg/s/m^2 ]
+  !timeres = 7200._rtype ! Relaxation time scale of residual stress ( >= dt ) [s]
 
   ! linearly interpolate tkh, tk, and air density onto the interface grids
   call linear_interp(zt_grid,zi_grid,tkh,tkh_zi,nlev,nlevi,shcol,0._rtype)
@@ -855,16 +855,16 @@ subroutine update_prognostics_implicit( &
   wtke_flux(1:shcol) = compute_tke_srf_flux_term(shcol, uw_sfc, vw_sfc)
 
   ! define terms needed for the implicit surface stress
-  do i=1,shcol
-    taux(i) = rho_zi(i,nlevi)*uw_sfc(i) ! stress in N/m2
-    tauy(i) = rho_zi(i,nlevi)*vw_sfc(i) ! stress in N/m2
+  !do i=1,shcol
+  !  taux(i) = rho_zi(i,nlevi)*uw_sfc(i) ! stress in N/m2
+  !  tauy(i) = rho_zi(i,nlevi)*vw_sfc(i) ! stress in N/m2
     ! compute the wind speed
-    ws(i) = max(sqrt(u_wind(i,nlev)**2._rtype + v_wind(i,nlev)**2._rtype),wsmin)
-    tau(i) = sqrt( taux(i)**2._rtype + tauy(i)**2._rtype )
+  !  ws(i) = max(sqrt(u_wind(i,nlev)**2._rtype + v_wind(i,nlev)**2._rtype),wsmin)
+  !  tau(i) = sqrt( taux(i)**2._rtype + tauy(i)**2._rtype )
     !ksrf(i) = max(tau(i) / ws(i), ksrfmin)
-    ustar=max(sqrt(sqrt(uw_sfc(i)**2 + vw_sfc(i)**2)),0.01_rtype)
+  !  ustar=max(sqrt(sqrt(uw_sfc(i)**2 + vw_sfc(i)**2)),0.01_rtype)
     !wtke_flux(i) = ustar**3
-  enddo
+  !enddo
 
   ! Apply the surface fluxes explicitly for temperature and moisture
   !thetal(:,nlev) = thetal(:,nlev) + dtime * (ggr * rho_zi(:,nlevi) * rdp_zt(:,nlev)) * wthl_sfc(:)
