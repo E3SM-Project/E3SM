@@ -850,7 +850,6 @@ struct Functions
     const uview_1d<Spack>& prain,
     const uview_1d<Spack>& nevapr,
     const uview_1d<Spack>& prer_evap,
-    const uview_1d<Spack>& vap_cld_exchange,
     const uview_1d<Spack>& vap_liq_exchange,
     const uview_1d<Spack>& vap_ice_exchange,
     const uview_1d<Spack>& liq_ice_exchange,
