@@ -184,6 +184,9 @@ module radiation
    ! this mean?)
    integer, public, allocatable :: tot_chnk_till_this_prc(:,:,:)
 
+   ! Indices to pbuf fields
+   integer :: cldfsnow_idx = 0
+
    !============================================================================
 
 contains
@@ -453,8 +456,6 @@ contains
       integer :: history_budget_histfile_num ! output history file number for budget fields
       integer :: err
       integer :: dtime  ! time step
-      integer :: cldfsnow_idx = 0 
-
       logical :: use_MMF  ! SPCAM flag
 
       character(len=128) :: error_message
@@ -1208,6 +1209,8 @@ contains
       ! Radiative fluxes
       type(ty_fluxes_byband) :: fluxes_allsky, fluxes_clrsky
 
+      ! Zero-array for cloud properties if not diagnosed by microphysics
+      real(r8), target, dimension(pcols,pver) :: zeros
 
       !----------------------------------------------------------------------
 
@@ -1221,16 +1224,24 @@ contains
 
       ! Get fields from pbuf for optics
       call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cld)
-      call pbuf_get_field(pbuf, pbuf_get_index('CLDFSNOW'), cldfsnow)
       call pbuf_get_field(pbuf, pbuf_get_index('ICLWP'), iclwp)
       call pbuf_get_field(pbuf, pbuf_get_index('ICIWP'), iciwp)
-      call pbuf_get_field(pbuf, pbuf_get_index('ICSWP'), icswp)
       call pbuf_get_field(pbuf, pbuf_get_index('DEI'), dei)
-      call pbuf_get_field(pbuf, pbuf_get_index('DES'), des)
       call pbuf_get_field(pbuf, pbuf_get_index('REL'), rel)
       call pbuf_get_field(pbuf, pbuf_get_index('REI'), rei)
       call pbuf_get_field(pbuf, pbuf_get_index('LAMBDAC'), lambdac)
       call pbuf_get_field(pbuf, pbuf_get_index('MU'), mu)
+      ! May or may not have snow properties depending on microphysics
+      if (do_snow_optics()) then
+         call pbuf_get_field(pbuf, pbuf_get_index('CLDFSNOW'), cldfsnow)
+         call pbuf_get_field(pbuf, pbuf_get_index('ICSWP'), icswp)
+         call pbuf_get_field(pbuf, pbuf_get_index('DES'), des)
+      else
+         zeros = 0
+         cldfsnow => zeros
+         icswp => zeros
+         des => zeros
+      end if
 
       ! Initialize clearsky-heating rates to make sure we do not get garbage
       ! for columns beyond ncol or nday
@@ -1812,7 +1823,6 @@ contains
       use mo_fluxes_byband, only: ty_fluxes_byband
       use mo_optical_props, only: ty_optical_props_1scl
       use mo_gas_concentrations, only: ty_gas_concs
-      use radiation_state, only: set_rad_state
       use radiation_utils, only: calculate_heating_rate
 
       ! Inputs
