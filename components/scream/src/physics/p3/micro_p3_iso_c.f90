@@ -863,11 +863,11 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
  end subroutine p3_main_pre_main_loop_c
 
  subroutine p3_main_main_loop_c(kts, kte, kbot, ktop, kdir, log_predictNc, dt, odt, &
-       pres, pdel, dzq, npccn, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, naai, qc_relvar, icldm, lcldm, rcldm,&
-       t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, qitot, nitot, &
+       pres, pdel, dzq, ncnuc, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, naai, qc_relvar, icldm, lcldm, rcldm,&
+       t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, qitot, nitot, &
        qirim, birim, xxlv, xxls, xlf, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, &
        nitot_incld, birim_incld, mu_c, nu, lamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, cmeiout, prain, &
-       nevapr, prer_evap, vap_cld_exchange, vap_liq_exchange, vap_ice_exchange, liq_ice_exchange, pratot, &
+       nevapr, prer_evap, vap_liq_exchange, vap_ice_exchange, liq_ice_exchange, pratot, &
        prctot, log_hydrometeorsPresent) bind(C)
 
    use micro_p3, only: p3_main_main_loop
@@ -877,13 +877,13 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
    logical(kind=c_bool), value, intent(in) :: log_predictNc
    real(kind=c_real), value, intent(in) :: dt, odt
 
-   real(kind=c_real), intent(in), dimension(kts:kte) :: pres, pdel, dzq, npccn, exner, inv_exner, inv_lcldm, inv_icldm, &
+   real(kind=c_real), intent(in), dimension(kts:kte) :: pres, pdel, dzq, ncnuc, exner, inv_exner, inv_lcldm, inv_icldm, &
         inv_rcldm, naai, qc_relvar, icldm, lcldm, rcldm
 
-   real(kind=c_real), intent(inout), dimension(kts:kte) :: t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci, acn, &
+   real(kind=c_real), intent(inout), dimension(kts:kte) :: t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, acn, &
         qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, xlf, qc_incld, qr_incld, &
         qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld, mu_c, nu, lamc, cdist, cdist1, &
-        cdistr, mu_r, lamr, logn0r, cmeiout, prain, nevapr, prer_evap, vap_cld_exchange, vap_liq_exchange, &
+        cdistr, mu_r, lamr, logn0r, cmeiout, prain, nevapr, prer_evap, vap_liq_exchange, &
         vap_ice_exchange, liq_ice_exchange, pratot, prctot
 
    logical(kind=c_bool), intent(out) :: log_hydrometeorsPresent
@@ -892,11 +892,11 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
    real(kind=c_real), dimension(kts:kte,49) :: p3_tend_out
 
    call p3_main_main_loop(kts, kte, kbot, ktop, kdir, log_predictNc, dt, odt, &
-        pres, pdel, dzq, npccn, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, naai, qc_relvar, icldm, lcldm, rcldm,&
-        t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, qitot, nitot, &
+        pres, pdel, dzq, ncnuc, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, naai, qc_relvar, icldm, lcldm, rcldm,&
+        t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, qitot, nitot, &
         qirim, birim, xxlv, xxls, xlf, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, &
         nitot_incld, birim_incld, mu_c, nu, lamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, cmeiout, prain, &
-        nevapr, prer_evap, vap_cld_exchange, vap_liq_exchange, vap_ice_exchange, liq_ice_exchange, pratot, &
+        nevapr, prer_evap, vap_liq_exchange, vap_ice_exchange, liq_ice_exchange, pratot, &
         prctot, p3_tend_out, log_hydrometeorsPresent)
 
  end subroutine p3_main_main_loop_c

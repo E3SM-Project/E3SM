@@ -278,7 +278,6 @@ void Functions<S,D>
   const uview_1d<Spack>& inv_rho,
   const uview_1d<Spack>& qvs,
   const uview_1d<Spack>& qvi,
-  const uview_1d<Spack>& sup,
   const uview_1d<Spack>& supi,
   const uview_1d<Spack>& rhofacr,
   const uview_1d<Spack>& rhofaci,
@@ -317,7 +316,6 @@ void Functions<S,D>
   const uview_1d<Spack>& prain,
   const uview_1d<Spack>& nevapr,
   const uview_1d<Spack>& prer_evap,
-  const uview_1d<Spack>& vap_cld_exchange,
   const uview_1d<Spack>& vap_liq_exchange,
   const uview_1d<Spack>& vap_ice_exchange,
   const uview_1d<Spack>& liq_ice_exchange,
@@ -343,7 +341,7 @@ void Functions<S,D>
 
     // if relatively dry and no hydrometeors at this level, skip to end of k-loop (i.e. skip this level)
     const auto skip_all = !(qc(k) >= qsmall || qr(k) >= qsmall || qitot(k) >= qsmall) &&
-      ( (t(k) < zerodegc && supi(k) < -0.05) || (t(k) >= zerodegc && sup(k) < -0.05) );
+      (t(k) < zerodegc && supi(k) < -0.05);
     const auto not_skip_all = !skip_all;
     if (skip_all.all()) {
       return; // skip all process rates
@@ -357,10 +355,8 @@ void Functions<S,D>
       qrevp   (0), // rain evaporation
       qcaut   (0), // cloud droplet autoconversion to rain
       ncacc   (0), // change in cloud droplet number from accretion by rain
-      ncnuc   (0), // change in cloud droplet number from activation of CCN
       ncslf   (0), // change in cloud droplet number from self-collection  (Not in paper?)
       ncautc  (0), // change in cloud droplet number from autoconversion
-      qcnuc   (0), // activation of cloud droplets from CCN
       nrslf   (0), // change in rain number from self-collection  (Not in paper?)
       nrevp   (0), // change in rain number from evaporation
       ncautr  (0), // change in rain number from autoconversion of cloud water
@@ -658,9 +654,8 @@ void Functions<S,D>
     nevapr(k)          .set(not_skip_all, qisub + qrevp);
     prer_evap(k)       .set(not_skip_all, qrevp);
     vap_ice_exchange(k).set(not_skip_all, qidep - qisub + qinuc);
-    vap_liq_exchange(k).set(not_skip_all, -qrevp + qcnuc);
+    vap_liq_exchange(k).set(not_skip_all, -qrevp);
     liq_ice_exchange(k).set(not_skip_all, qcheti + qrheti - qimlt + qiberg + qccol + qrcol);
-    vap_cld_exchange(k).set(not_skip_all, qcnuc);
 
     // clipping for small hydrometeor values
     const auto qc_small    = qc(k) < qsmall    && not_skip_all;

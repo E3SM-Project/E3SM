@@ -186,7 +186,6 @@ static void run_bfb_p3_main_main_loop()
     std::make_pair(0, 1), // inv_rho
     std::make_pair(0, 1), // qvs
     std::make_pair(0, 1), // qvi
-    std::make_pair(sup_lower -.05, sup_upper + .05), // sup
     std::make_pair(sup_lower -.05, sup_upper + .05), // supi
     std::make_pair(0, 1), // rhofacr
     std::make_pair(0, 1), // rhofaci
@@ -225,7 +224,6 @@ static void run_bfb_p3_main_main_loop()
     std::make_pair(0, 1), // prain
     std::make_pair(0, 1), // nevapr
     std::make_pair(0, 1), // prer_evap
-    std::make_pair(0, 1), // vap_cld_exchange
     std::make_pair(0, 1), // vap_liq_exchange
     std::make_pair(0, 1), // vap_ice_exchange
     std::make_pair(0, 1), // liq_ice_exchange
@@ -262,11 +260,11 @@ static void run_bfb_p3_main_main_loop()
     P3MainMainLoopData& d = isds_cxx[i];
     p3_main_main_loop_f(
       d.kts, d.kte, d.kbot, d.ktop, d.kdir, d.log_predictNc, d.dt, d.odt,
-      d.pres, d.pdel, d.dzq, d.npccn, d.exner, d.inv_exner, d.inv_lcldm, d.inv_icldm, d.inv_rcldm, d.naai, d.qc_relvar, d.icldm, d.lcldm, d.rcldm,
-      d.t, d.rho, d.inv_rho, d.qvs, d.qvi, d.sup, d.supi, d.rhofacr, d.rhofaci, d.acn, d.qv, d.th, d.qc, d.nc, d.qr, d.nr, d.qitot, d.nitot,
+      d.pres, d.pdel, d.dzq, d.ncnuc, d.exner, d.inv_exner, d.inv_lcldm, d.inv_icldm, d.inv_rcldm, d.naai, d.qc_relvar, d.icldm, d.lcldm, d.rcldm,
+      d.t, d.rho, d.inv_rho, d.qvs, d.qvi, d.supi, d.rhofacr, d.rhofaci, d.acn, d.qv, d.th, d.qc, d.nc, d.qr, d.nr, d.qitot, d.nitot,
       d.qirim, d.birim, d.xxlv, d.xxls, d.xlf, d.qc_incld, d.qr_incld, d.qitot_incld, d.qirim_incld, d.nc_incld, d.nr_incld,
       d.nitot_incld, d.birim_incld, d.mu_c, d.nu, d.lamc, d.cdist, d.cdist1, d.cdistr, d.mu_r, d.lamr, d.logn0r, d.cmeiout, d.prain,
-      d.nevapr, d.prer_evap, d.vap_cld_exchange, d.vap_liq_exchange, d.vap_ice_exchange, d.liq_ice_exchange, d.pratot,
+      d.nevapr, d.prer_evap, d.vap_liq_exchange, d.vap_ice_exchange, d.liq_ice_exchange, d.pratot,
       d.prctot, &d.log_hydrometeorsPresent);
   }
 
@@ -281,7 +279,6 @@ static void run_bfb_p3_main_main_loop()
       REQUIRE(isds_fortran[i].inv_rho[k]          == isds_cxx[i].inv_rho[k]);
       REQUIRE(isds_fortran[i].qvs[k]              == isds_cxx[i].qvs[k]);
       REQUIRE(isds_fortran[i].qvi[k]              == isds_cxx[i].qvi[k]);
-      REQUIRE(isds_fortran[i].sup[k]              == isds_cxx[i].sup[k]);
       REQUIRE(isds_fortran[i].supi[k]             == isds_cxx[i].supi[k]);
       REQUIRE(isds_fortran[i].rhofacr[k]          == isds_cxx[i].rhofacr[k]);
       REQUIRE(isds_fortran[i].rhofaci[k]          == isds_cxx[i].rhofaci[k]);
@@ -320,7 +317,6 @@ static void run_bfb_p3_main_main_loop()
       REQUIRE(isds_fortran[i].prain[k]            == isds_cxx[i].prain[k]);
       REQUIRE(isds_fortran[i].nevapr[k]           == isds_cxx[i].nevapr[k]);
       REQUIRE(isds_fortran[i].prer_evap[k]        == isds_cxx[i].prer_evap[k]);
-      REQUIRE(isds_fortran[i].vap_cld_exchange[k] == isds_cxx[i].vap_cld_exchange[k]);
       REQUIRE(isds_fortran[i].vap_liq_exchange[k] == isds_cxx[i].vap_liq_exchange[k]);
       REQUIRE(isds_fortran[i].vap_ice_exchange[k] == isds_cxx[i].vap_ice_exchange[k]);
       REQUIRE(isds_fortran[i].liq_ice_exchange[k] == isds_cxx[i].liq_ice_exchange[k]);

@@ -737,7 +737,6 @@ struct Functions
     const uview_1d<Spack>& inv_rho,
     const uview_1d<Spack>& qvs,
     const uview_1d<Spack>& qvi,
-    const uview_1d<Spack>& sup,
     const uview_1d<Spack>& supi,
     const uview_1d<Spack>& rhofacr,
     const uview_1d<Spack>& rhofaci,
@@ -776,7 +775,6 @@ struct Functions
     const uview_1d<Spack>& prain,
     const uview_1d<Spack>& nevapr,
     const uview_1d<Spack>& prer_evap,
-    const uview_1d<Spack>& vap_cld_exchange,
     const uview_1d<Spack>& vap_liq_exchange,
     const uview_1d<Spack>& vap_ice_exchange,
     const uview_1d<Spack>& liq_ice_exchange,
@@ -923,8 +921,7 @@ struct Functions
     const view_2d<Spack>& prctot,           // autoconversion of cloud to rain
     const view_2d<Spack>& liq_ice_exchange, // sum of liq-ice phase change tendencies
     const view_2d<Spack>& vap_liq_exchange, // sum of vap-liq phase change tendencies
-    const view_2d<Spack>& vap_ice_exchange, // sum of vap-ice phase change tendencies
-    const view_2d<Spack>& vap_cld_exchange); // sum of vap-cld phase change tendencies
+    const view_2d<Spack>& vap_ice_exchange);// sum of vap-ice phase change tendencies
 };
 
 template <typename ScalarT, typename DeviceT>
