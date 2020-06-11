@@ -11,12 +11,13 @@ namespace p3 {
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::ice_cldliq_wet_growth(const Spack& rho, const Spack& temp, const Spack& pres, const Spack& rhofaci, const Spack& f1pr05,
-                        const Spack& f1pr14, const Spack& xxlv, const Spack& xlf, const Spack& dv,
-                        const Spack& kap, const Spack& mu, const Spack& sc, const Spack& qv, const Spack& qc_incld,
-                        const Spack& qitot_incld, const Spack& nitot_incld, const Spack& qr_incld,
-                        Smask& log_wetgrowth, Spack& qrcol, Spack& qccol, Spack& qwgrth, Spack& nrshdr, Spack& qcshd,
-                        const Smask& context)
+::ice_cldliq_wet_growth(
+  const Spack& rho, const Spack& temp, const Spack& pres, const Spack& rhofaci, const Spack& f1pr05,
+  const Spack& f1pr14, const Spack& xxlv, const Spack& xlf, const Spack& dv,
+  const Spack& kap, const Spack& mu, const Spack& sc, const Spack& qv, const Spack& qc_incld,
+  const Spack& qitot_incld, const Spack& nitot_incld, const Spack& qr_incld,
+  Smask& log_wetgrowth, Spack& qrcol, Spack& qccol, Spack& qwgrth, Spack& nrshdr, Spack& qcshd,
+  const Smask& context)
 {
   using physics = scream::physics::Functions<Scalar, Device>;
 

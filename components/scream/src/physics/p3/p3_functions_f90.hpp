@@ -1125,7 +1125,7 @@ void p3_main_pre_main_loop_f(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct P3MainMainLoopData
+struct P3MainLoopData
 {
   static constexpr size_t NUM_ARRAYS = 62;
 
@@ -1144,12 +1144,12 @@ struct P3MainMainLoopData
 
   bool log_hydrometeorsPresent;
 
-  P3MainMainLoopData(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
+  P3MainLoopData(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
                      bool log_predictNc_, Real dt_,
                      const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
 
   // deep copy
-  P3MainMainLoopData(const P3MainMainLoopData& rhs);
+  P3MainLoopData(const P3MainLoopData& rhs);
 
   Int nk() const { return m_nk; }
 
@@ -1159,7 +1159,7 @@ struct P3MainMainLoopData
   std::vector<Real> m_data;
 };
 
-void p3_main_main_loop(P3MainMainLoopData& d);
+void p3_main_main_loop(P3MainLoopData& d);
 
 extern "C" {
 

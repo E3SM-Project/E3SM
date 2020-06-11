@@ -148,7 +148,8 @@ void Functions<S,D>
   // find index for scaled mean rain size
   // if no rain, then just choose dumj = 1 and do not calculate rain-ice collection processes
   const auto qsmall = C::QSMALL;
-  const auto gt_small = qr > qsmall && nr > 0.0;
+  const auto gt_small = qr > qsmall && nr > 0.0 && context;
+  const auto lt_small = !gt_small && context;
 
   // calculate scaled mean size for consistency with ice lookup table
   Spack dumlr(1);
@@ -164,8 +165,8 @@ void Functions<S,D>
   t.dumj = pack::max(1, t.dumj);
   t.dumj = pack::min(P3C::rcollsize-1, t.dumj);
 
-  t.dumj.set(context && !gt_small, 1);
-  t.dum3.set(context && !gt_small, 1);
+  t.dumj.set(lt_small, 1);
+  t.dum3.set(lt_small, 1);
 
   // adjust for 0-based indexing
   t.dumj -= 1;

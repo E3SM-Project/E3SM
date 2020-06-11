@@ -1004,7 +1004,7 @@ void p3_main_pre_main_loop(P3MainPreLoopData& d)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-P3MainMainLoopData::P3MainMainLoopData(
+P3MainLoopData::P3MainLoopData(
   Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
   bool log_predictNc_, Real dt_,
   const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges) :
@@ -1034,7 +1034,7 @@ P3MainMainLoopData::P3MainMainLoopData(
   }
 }
 
-P3MainMainLoopData::P3MainMainLoopData(const P3MainMainLoopData& rhs) :
+P3MainLoopData::P3MainLoopData(const P3MainLoopData& rhs) :
   kts(rhs.kts), kte(rhs.kte), kbot(rhs.kbot), ktop(rhs.ktop), kdir(rhs.kdir),
   log_predictNc(rhs.log_predictNc), dt(rhs.dt), odt(rhs.odt),
   m_nk(rhs.m_nk),
@@ -1058,7 +1058,7 @@ P3MainMainLoopData::P3MainMainLoopData(const P3MainMainLoopData& rhs) :
   }
 }
 
-void p3_main_main_loop(P3MainMainLoopData& d)
+void p3_main_main_loop(P3MainLoopData& d)
 {
   p3_init(true);
   p3_main_main_loop_c(
@@ -3210,7 +3210,7 @@ void p3_main_main_loop_f(
   const Int nk_pack = scream::pack::npack<Spack>(nk);
 
   // Set up views
-  Kokkos::Array<view_1d, P3MainMainLoopData::NUM_ARRAYS> temp_d;
+  Kokkos::Array<view_1d, P3MainLoopData::NUM_ARRAYS> temp_d;
 
   pack::host_to_device({pres, pdel, dzq, ncnuc, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, naai, qc_relvar, icldm, lcldm, rcldm,
         t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, acn,

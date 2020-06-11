@@ -166,7 +166,7 @@ static void run_bfb_p3_main_main_loop()
   constexpr Scalar sup_upper = -0.05;
   constexpr Scalar sup_lower = -0.1;
 
-  const std::array< std::pair<Real, Real>, P3MainMainLoopData::NUM_ARRAYS > ranges = {
+  const std::array< std::pair<Real, Real>, P3MainLoopData::NUM_ARRAYS > ranges = {
     std::make_pair(0, 1), // pres
     std::make_pair(0, 1), // pdel
     std::make_pair(0, 1), // dzq
@@ -231,23 +231,23 @@ static void run_bfb_p3_main_main_loop()
     std::make_pair(0, 1)  // prctot
   };
 
-  P3MainMainLoopData isds_fortran[] = {
+  P3MainLoopData isds_fortran[] = {
     //              kts, kte, ktop, kbot, kdir, log_predictNc,        dt, ranges
-    P3MainMainLoopData(1,  72,    1,   72,    1, false,         1.800E+03, ranges),
-    P3MainMainLoopData(1,  72,    1,   72,    1, true,          1.800E+03, ranges),
-    P3MainMainLoopData(1,  72,   72,    1,   -1, false,         1.800E+03, ranges),
-    P3MainMainLoopData(1,  72,   72,    1,   -1, true,          1.800E+03, ranges),
+    P3MainLoopData(1,  72,    1,   72,    1, false,         1.800E+03, ranges),
+    P3MainLoopData(1,  72,    1,   72,    1, true,          1.800E+03, ranges),
+    P3MainLoopData(1,  72,   72,    1,   -1, false,         1.800E+03, ranges),
+    P3MainLoopData(1,  72,   72,    1,   -1, true,          1.800E+03, ranges),
   };
 
-  static constexpr Int num_runs = sizeof(isds_fortran) / sizeof(P3MainMainLoopData);
+  static constexpr Int num_runs = sizeof(isds_fortran) / sizeof(P3MainLoopData);
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
   // inout data is in original state
-  P3MainMainLoopData isds_cxx[num_runs] = {
-    P3MainMainLoopData(isds_fortran[0]),
-    P3MainMainLoopData(isds_fortran[1]),
-    P3MainMainLoopData(isds_fortran[2]),
-    P3MainMainLoopData(isds_fortran[3]),
+  P3MainLoopData isds_cxx[num_runs] = {
+    P3MainLoopData(isds_fortran[0]),
+    P3MainLoopData(isds_fortran[1]),
+    P3MainLoopData(isds_fortran[2]),
+    P3MainLoopData(isds_fortran[3]),
   };
 
     // Get data from fortran
@@ -257,7 +257,7 @@ static void run_bfb_p3_main_main_loop()
 
   // Get data from cxx
   for (Int i = 0; i < num_runs; ++i) {
-    P3MainMainLoopData& d = isds_cxx[i];
+    P3MainLoopData& d = isds_cxx[i];
     p3_main_main_loop_f(
       d.kts, d.kte, d.kbot, d.ktop, d.kdir, d.log_predictNc, d.dt, d.odt,
       d.pres, d.pdel, d.dzq, d.ncnuc, d.exner, d.inv_exner, d.inv_lcldm, d.inv_icldm, d.inv_rcldm, d.naai, d.qc_relvar, d.icldm, d.lcldm, d.rcldm,

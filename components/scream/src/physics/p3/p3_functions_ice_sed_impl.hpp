@@ -27,8 +27,9 @@ Functions<S,D>
   Spack rho_rime(0);
 
   Smask bi_rim_gt_small = (bi_rim >= bsmall) && context;
+  Smask bi_rim_lt_small = (bi_rim <  bsmall) && context;
   if (bi_rim_gt_small.any()) {
-    rho_rime.set(context && bi_rim_gt_small, qi_rim / bi_rim);
+    rho_rime.set(bi_rim_gt_small, qi_rim / bi_rim);
   }
 
   Smask rho_rime_lt_min = rho_rime < rho_rime_min;
@@ -42,9 +43,9 @@ Functions<S,D>
     bi_rim.set(adjust, qi_rim / rho_rime);
   }
 
-  qi_rim.set  (context && !bi_rim_gt_small, 0);
-  bi_rim.set  (context && !bi_rim_gt_small, 0);
-  rho_rime.set(context && !bi_rim_gt_small, 0);
+  qi_rim.set  (bi_rim_lt_small, 0);
+  bi_rim.set  (bi_rim_lt_small, 0);
+  rho_rime.set(bi_rim_lt_small, 0);
 
   // set upper constraint qi_rim <= qi_tot
   Smask qi_rim_gt_qi = (qi_rim > qi_tot) && (rho_rime > 0) && context;
