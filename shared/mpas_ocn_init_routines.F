@@ -347,6 +347,8 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       if (config_hmix_scaleWithMesh) then
          if (config_hmix_use_ref_cell_width) then
             ! Mesh scaling is set by areaCell and config_hmix_ref_cell_width
+            ! See description of config_hmix_ref_cell_width in Registry.xml for
+            ! more detail.
             do iEdge = 1, nEdges
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
