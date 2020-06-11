@@ -82,7 +82,7 @@ def buildlib(bldroot, installpath, case):
     if not os.path.isdir(pio_dir):
         os.makedirs(pio_dir)
     casetools = case.get_value("CASETOOLS")
-    if pio_version == 1:
+    if pio_version == 1 or scorpio_src_root_dir:
         cmake_opts = "\"-D GENF90_PATH=$CIMEROOT/src/externals/genf90 \""
     else:
         cmake_opts = "\"-D GENF90_PATH=$CIMEROOT/src/externals/pio2/scripts/ \""
