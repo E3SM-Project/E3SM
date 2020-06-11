@@ -9,7 +9,7 @@
 # Disable these because this is our standard setup
 # pylint: disable=wildcard-import,unused-wildcard-import,wrong-import-position
 
-import os, sys, glob, re
+import os, sys, re
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","..","..")
 sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
@@ -82,7 +82,7 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     if model_meshfile == 'create_mesh':
         nmlgen.set_value("model_createmesh_fromfile",os.path.join(ocn_domain_path,ocn_domain_file))
 
-    # Set constant value sst 
+    # Set constant value sst
     if docn_mode == 'docn_aquap_constant':
         value = [case.get_value('DOCN_AQPCONST_VALUE')]
         nmlgen.set_value("sst_constant_value",value)
@@ -97,7 +97,7 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     else:
         generate_stream_file = True
     if generate_stream_file:
-        # Create stream xml file - docn.streams.xml 
+        # Create stream xml file - docn.streams.xml
         # first construct the list of streams - this uses the "streamlist" namelist_definition_docn.xml values
         streams = nmlgen.get_streams()
         stream_path = os.path.join(confdir, "docn.streams"+inst_string+".xml" )

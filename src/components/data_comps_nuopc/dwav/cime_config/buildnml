@@ -8,7 +8,7 @@
 # Disable these because this is our standard setup
 # pylint: disable=wildcard-import,unused-wildcard-import,wrong-import-position
 
-import os, sys, glob
+import os, sys
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","..","..")
 sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))

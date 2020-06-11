@@ -9,7 +9,7 @@
 # Disable these because this is our standard setup
 # pylint: disable=wildcard-import,unused-wildcard-import,wrong-import-position
 
-import os, sys, glob
+import os, sys
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","..","..")
 sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
@@ -79,7 +79,6 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     # Create stream xml files - first construct the list of streams
     #----------------------------------------------------
     streams = nmlgen.get_streams()
-    skip_streams = False
     stream_path = os.path.join(confdir, "dice.streams"+inst_string+".xml" )
     nmlgen.create_nuopc_stream_files(config, caseroot, streams, stream_path, data_list_path)
 
