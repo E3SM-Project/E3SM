@@ -1832,66 +1832,66 @@
     <values>
       <value>null</value>
       <value  stream="CLM1PT.1x1_mexicocityMEX">
-        ZBOT     z
-        TBOT     tbot
-        RH       rh
-        WIND     wind
-        PRECTmms precn
-        FSDS     swdn
-        FSDSdir  swdndr
-        FSDSdif  swdndf
-        PSRF     pbot
-        FLDS     lwdn
+        ZBOT     Sa_z
+        TBOT     Sa_tbot
+        RH       Sa_rh
+        WIND     Sa__wind
+        PSRF     Sa_pbot
+        PRECTmms Faxa_precn
+        FSDS     Faxa_swdn
+        FSDSdir  Faxa_swdndr
+        FSDSdif  Faxa_swdndf
+        FLDS     Faxa_lwdn
       </value>
       <value  stream="CLM1PT.1x1_vancouverCAN">
-        ZBOT     z
-        TBOT     tbot
-        RH       rh
-        WIND     wind
+        ZBOT     Sa_z
+        TBOT     Sa_tbot
+        RH       Sa_rh
+        WIND     Sa_wind
+        PSRF     Sa_pbot
         PRECTmms precn
-        FSDS     swdn
-        FSDSdir  swdndr
-        FSDSdif  swdndf
-        PSRF     pbot
-        FLDS     lwdn
+        FSDS     Faxa_swdn
+        FSDSdir  Faxa_swdndr
+        FSDSdif  Faxa_swdndf
+        FLDS     Faxa_lwdn
       </value>
       <value   stream="CLM1PT.1x1_urbanc_alpha">
-        ZBOT     z
-        TBOT     tbot
-        QBOT     shum
-        WIND     wind
-        PRECTmms precn
-        FSDS     swdn
-        FSDSdir  swdndr
-        FSDSdif  swdndf
-        PSRF     pbot
-        FLDS     lwdn
+        ZBOT     Sa_z
+        TBOT     Sa_tbot
+        QBOT     Sa_shum
+        WIND     Sa_wind
+        PSRF     Sa_pbot
+        PRECTmms Faxa_precn
+        FSDS     Faxa_swdn
+        FSDSdir  Faxa_swdndr
+        FSDSdif  Faxa_swdndf
+        FLDS     Faxa_lwdn
       </value>
       <value  stream="CLM1PT.CLM_USRDAT">
-        ZBOT     z
-        TBOT     tbot
-        RH       rh
-        WIND     wind
-        PRECTmms precn
-        FSDS     swdn
-        PSRF     pbot
-        FLDS     lwdn
+        ZBOT     Sa_z
+        TBOT     Sa_tbot
+        RH       Sa_rh
+        WIND     Sa_wind
+        PSRF     Sa_pbot
+        PRECTmms Faxa_precn
+        FSDS     Faxa_swdn
+        FLDS     Faxa_lwdn
       </value>
       <!-- ===================-->
       <!-- datamode CPLHIST   -->
       <!-- ===================-->
       <value stream="CPLHISTForcing.Solar">
-        a2x1hi_Faxa_swndr swndr
-        a2x1hi_Faxa_swvdr swvdr
-        a2x1hi_Faxa_swndf swndf
-        a2x1hi_Faxa_swvdf swvdf
+        a2x1hi_Faxa_swndr Faxa_swndr
+        a2x1hi_Faxa_swvdr Faxa_swvdr
+        a2x1hi_Faxa_swndf Faxa_swndf
+        a2x1hi_Faxa_swvdf Faxa_swvdf
       </value>
       <value stream="CPLHISTForcing.nonSolarFlux">
-        a2x3h_Faxa_rainc rainc
-        a2x3h_Faxa_rainl rainl
-        a2x3h_Faxa_snowc snowc
-        a2x3h_Faxa_snowl snowl
-        a2x3h_Faxa_lwdn  lwdn
+        a2x3h_Faxa_rainc Faxa_rainc
+        a2x3h_Faxa_rainl Faxa_rainl
+        a2x3h_Faxa_snowc Faxa_snowc
+        a2x3h_Faxa_snowl Faxa_snowl
+        a2x3h_Faxa_lwdn  Faxa_lwdn
       </value>
       <value stream="CPLHISTForcing.State3hr">
         a2x3h_Sa_z       Sa_z

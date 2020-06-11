@@ -43,6 +43,7 @@ module datm_datamode_core2_mod
   real(r8), pointer :: Faxa_swvdr(:) => null()
   real(r8), pointer :: Faxa_swvdf(:) => null()
   real(r8), pointer :: Faxa_swnet(:) => null()
+  real(r8), pointer :: Faxa_swdn(:)  => null()
 
   ! stream data
   real(r8), pointer :: strm_prec(:)      => null()
@@ -116,6 +117,7 @@ contains
     call dshr_fldList_add(fldsExport, 'Faxa_swvdf' )
     call dshr_fldList_add(fldsExport, 'Faxa_swnet' )
     call dshr_fldList_add(fldsExport, 'Faxa_lwdn'  )
+    call dshr_fldList_add(fldsExport, 'Faxa_swdn'  )
 
     if (flds_co2) then
        call dshr_fldList_add(fldsExport, 'Sa_co2prog')

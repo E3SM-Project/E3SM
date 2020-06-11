@@ -47,6 +47,7 @@ module datm_datamode_clmncep_mod
   real(r8), pointer :: Faxa_swvdr(:)        => null()
   real(r8), pointer :: Faxa_swvdf(:)        => null()
   real(r8), pointer :: Faxa_swnet(:)        => null()
+  real(r8), pointer :: Faxa_swdn(:)         => null()
 
   ! stream data
   real(r8), pointer :: strm_z(:)         => null()
@@ -73,7 +74,7 @@ module datm_datamode_clmncep_mod
   real(r8), pointer :: strm_precn_18O(:) => null() ! water isoptopes
   real(r8), pointer :: strm_precn_HDO(:) => null() ! water isoptopes
 
-  ! stream data bias corretion
+  ! stream data bias correction
   real(r8), pointer :: strm_precsf(:)    => null()
 
   ! stream data anomonly forcing
@@ -152,6 +153,7 @@ contains
     call dshr_fldList_add(fldsExport, 'Faxa_swvdf' )
     call dshr_fldList_add(fldsExport, 'Faxa_swnet' )
     call dshr_fldList_add(fldsExport, 'Faxa_lwdn'  )
+    call dshr_fldList_add(fldsExport, 'Faxa_swdn'  )
     if (flds_co2) then
        call dshr_fldList_add(fldsExport, 'Sa_co2prog')
        call dshr_fldList_add(fldsExport, 'Sa_co2diag')
