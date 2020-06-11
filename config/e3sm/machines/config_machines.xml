@@ -154,7 +154,7 @@
       </modules>
 
       <modules>
-        <command name="swap">craype craype/2.5.18</command>
+        <command name="swap">craype craype/2.6.2</command>
         <command name="rm">pmi</command>
         <command name="load">pmi/5.0.14</command>
         <command name="rm">craype-mic-knl</command>
@@ -196,6 +196,7 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
+      <env name="CRAYPE_LINK_TYPE">static</env>
     </environment_variables>
     <environment_variables compiler="intel">
       <env name="FORT_BUFFERED">yes</env>
@@ -311,7 +312,7 @@
       </modules>
 
       <modules>
-        <command name="swap">craype craype/2.5.18</command>
+        <command name="swap">craype craype/2.6.2</command>
         <command name="rm">pmi</command>
         <command name="load">pmi/5.0.14</command>
         <command name="rm">craype-haswell</command>
@@ -355,6 +356,7 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
+      <env name="CRAYPE_LINK_TYPE">static</env>      
     </environment_variables>
 
     <environment_variables mpilib="mpt">
