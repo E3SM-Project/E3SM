@@ -5,25 +5,24 @@
 <entry_id version="2.0">
 
   <!--
-      Values to use by default for creation of DLND model dlnd namelists.
+      Values to use by default for creation of DLND streams and input model namelist
+      The stream list is determined by the configuration variable dlnd_mode
+      - this is determined by the xml variable $DLND_MODE
+      The datamode determines how each stream is treated by the dlnd model
+      - the only datamode is copyall
 
-      For cplhist forcing - the following substitutions will be made below
-      Replace any instance of the following substring indicators with the appropriate values:
-      %y    => year from the range yearfirst to yearlast
-             obtained from values of <strm_year_start> -> <strm_year_end> below
-      %ym   => year-month from the range yearfirst to yearlast with all 12 months
-             obtained from values of <strm_year_start> -> <strm_year_end> below
-      %ymd  => year-month-day from the range yearfirst to yearlast with all 12 months
-             obtained from values of <strm_year_start> -> <strm_year_end> below
-
-      For strm_datvar - the following substitutions will be made below
-      Replace any instance of the following substring indicators with the appropriate values:
-      %glc  => GLC elevation class from the range 0 to GLC_NEC, obtained from the GLC_NEC xml variable
+      The following substitutions will be made below below
+      %glc => GLC elevation class from the range 0 to GLC_NEC, obtained from the GLC_NEC xml variable
+      %y   => year from the range yearfirst to yearlast
+              obtained from values of <strm_year_start> -> <strm_year_end> below
+      %ym  => year-month from the range yearfirst to yearlast with all 12 months
+              obtained from values of <strm_year_start> -> <strm_year_end> below
+      %ymd => year-month-day from the range yearfirst to yearlast with all 12 months
+               obtained from values of <strm_year_start> -> <strm_year_end> below
 
      NOTE: in the value matches below, regular expressions are used
-         If two matches are equivalent, the FIRST one will be used
+     If two matches are equivalent, the FIRST one will be used
 
-     The only datamode is copyall - the streams are determined by the xml variable $DROF_MODE
   -->
 
   <!-- =========================================  -->
@@ -52,10 +51,10 @@
     <type>char(100)</type>
     <category>streams</category>
     <group>streams_file</group>
-    <desc>List of streams used for each supported datamode</desc>
+    <desc>List of streams used for each supported dlnd_mode</desc>
     <values>
-      <value dlnd_mode="^CPLHIST$">lnd.cplhist</value>
-      <value dlnd_mode="GLC_CPLHIST">sno.cplhist</value>
+      <value dlnd_mode="LCPL">lnd.cplhist</value>
+      <value dlnd_mode="SCPL">sno.cplhist</value>
     </values>
   </entry>
 
@@ -65,9 +64,7 @@
     <group>streams_file</group>
     <desc>Stream domain file directory.</desc>
     <values>
-      <value stream="sno.cplhist">
-        $LND_DOMAIN_MESH
-      </value>
+      <value stream="sno.cplhist">$LND_DOMAIN_MESH</value>
     </values>
   </entry>
 
@@ -77,9 +74,7 @@
     <group>streams_file</group>
     <desc>Stream data file path(s).</desc>
     <values>
-      <value stream="sno.cplhist">
-        $DLND_CPLHIST_DIR/$DLND_CPLHIST_CASE.cpl.hl2x1yr_glc.%y-01-01.nc
-      </value>
+      <value stream="sno.cplhist">$DLND_CPLHIST_DIR/$DLND_CPLHIST_CASE.cpl.hl2x1yr_glc.%y-01-01.nc</value>
     </values>
   </entry>
 
@@ -159,7 +154,7 @@
     <group>streams_file</group>
     <valid_values>bilinear,nn</valid_values>
     <desc>
-      fill algorithms associated with the array of streams. 
+      fill algorithms associated with the array of streams.
       valid values: nn,bilinear
     </desc>
     <values>
@@ -216,9 +211,9 @@
     <group>streams_file</group>
     <valid_values>single,full_file</valid_values>
     <desc>
-      reading mode associated with the array of streams.  
+      reading mode associated with the array of streams.
       specifies the mode of reading temporal stream dataset.
-      valid options are 
+      valid options are
       "single" (read temporal dataset one at a time) or
       "full_file" (read all entires of temporal dataset in a given netcdf file)
       valid values: single,full_file

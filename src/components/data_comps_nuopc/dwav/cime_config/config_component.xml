@@ -11,8 +11,7 @@
        This file may have wav desc entries.
   -->
   <description modifier_mode="1">
-    <desc wav="DWAV[%NULL][%CLIMO]">Data wave model (DWAV)</desc>
-    <desc option="NULL">null mode</desc>
+    <desc wav="DWAV[%CLIMO]">Data wave model (DWAV)</desc>
     <desc option="CLIMO">climatological mode</desc>
   </description>
 
@@ -27,17 +26,14 @@
 
   <entry id="DWAV_MODE">
     <type>char</type>
-    <valid_values>NULL,CLIMO</valid_values>
-    <default_value>NULL</default_value>
+    <valid_values>CLIMO</valid_values>
+    <default_value>CLIMO</default_value>
     <values match="last">
-      <value compset="_DWAV%NULL">NULL</value>
       <value compset="_DWAV%CLIMO">CLIMO</value>
     </values>
     <group>run_component_dwav</group>
     <file>env_run.xml</file>
-    <desc>DWAV mode. Values are null and copyall.
-      In null mode, land forcing is set to zero and not used.
-      default is copyall</desc>
+    <desc>DWAV mode</desc>
   </entry>
 
   <help>

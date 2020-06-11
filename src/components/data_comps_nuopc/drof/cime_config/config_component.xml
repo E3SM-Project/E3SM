@@ -34,19 +34,20 @@
 
   <entry id="DROF_MODE">
     <type>char</type>
-    <valid_values>CPLHIST,DIATREN_ANN_RX1,DIATREN_IAF_RX1,DIATREN_IAF_AIS00_RX1,DIATREN_IAF_AIS45_RX1,DIATREN_IAF_AIS55_RX1,IAF_JRA</valid_values>
+    <valid_values>CPLHIST,DIATREN_ANN_RX1,DIATREN_IAF_RX1,DIATREN_IAF_AIS00_RX1,DIATREN_IAF_AIS45_RX1,DIATREN_IAF_AIS55_RX1,IAF_JRA,IAF_JRA_1p4_2018</valid_values>
     <default_value>DIATREN_ANN_RX1</default_value>
     <values match="last">
-      <value compset="_DROF%NYF"      >DIATREN_ANN_RX1      </value>
-      <value compset="_DROF%IAF"      >DIATREN_IAF_RX1      </value>
+      <value compset="_DROF%NYF" >DIATREN_ANN_RX1</value>
       <value compset="_DROF%NYFAIS00" >DIATREN_ANN_AIS00_RX1</value>
       <value compset="_DROF%NYFAIS45" >DIATREN_ANN_AIS45_RX1</value>
       <value compset="_DROF%NYFAIS55" >DIATREN_ANN_AIS55_RX1</value>
+      <value compset="_DROF%IAF" >DIATREN_IAF_RX1</value>
       <value compset="_DROF%IAFAIS00" >DIATREN_IAF_AIS00_RX1</value>
       <value compset="_DROF%IAFAIS45" >DIATREN_IAF_AIS45_RX1</value>
       <value compset="_DROF%IAFAIS55" >DIATREN_IAF_AIS55_RX1</value>
-      <value compset="_DROF%CPLHIST"  >CPLHIST              </value>
-      <value compset="_DROF%JRA"      >IAF_JRA              </value>
+      <value compset="_DROF%CPLHIST">CPLHIST</value>
+      <value compset="_DROF%JRA" >IAF_JRA</value>
+      <value compset="_DROF%JRA-1p4-2018" >IAF_JRA_1p4_2018</value>
     </values>
     <group>run_component_drof</group>
     <file>env_run.xml</file>

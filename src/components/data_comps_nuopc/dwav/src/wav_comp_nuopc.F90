@@ -65,7 +65,6 @@ module wav_comp_nuopc
   character(CL)                :: model_meshfile = nullstr            ! full pathname to model meshfile
   character(CL)                :: model_maskfile = nullstr            ! full pathname to obtain mask from
   character(CL)                :: model_createmesh_fromfile = nullstr ! full pathname to obtain mask from
-  logical                      :: force_prognostic_true = .false.     ! if true set prognostic true
   character(CL)                :: restfilm = nullstr                  ! model restart file namelist
   integer                      :: nx_global
   integer                      :: ny_global
@@ -153,7 +152,7 @@ contains
     !-------------------------------------------------------------------------------
 
     namelist / dwav_nml / datamode, model_meshfile, model_maskfile, model_createmesh_fromfile, &
-         restfilm, force_prognostic_true, nx_global, ny_global
+         restfilm, nx_global, ny_global
 
     rc = ESMF_SUCCESS
 
@@ -189,7 +188,6 @@ contains
        write(logunit,F01)' nx_global = ',nx_global
        write(logunit,F01)' ny_global = ',ny_global
        write(logunit,F00)' restfilm = ',trim(restfilm)
-       write(logunit,F02)' force_prognostic_true = ',force_prognostic_true
 
        ! check that files exists
        if (model_createmesh_fromfile /= nullstr) then
@@ -222,18 +220,15 @@ contains
     call shr_mpi_bcast(nx_global                 , mpicom, 'nx_global')
     call shr_mpi_bcast(ny_global                 , mpicom, 'ny_global')
     call shr_mpi_bcast(restfilm                  , mpicom, 'restfilm')
-    call shr_mpi_bcast(force_prognostic_true     , mpicom, 'force_prognostic_true')
 
     ! Call advertise phase
-    if (trim(datamode) == 'NULL' .or. trim(datamode) == 'COPYALL') then
+    if (trim(datamode) == 'copyall') then
        if (my_task == master_task) write(logunit,*) 'dwav datamode = ',trim(datamode)
     else
        call shr_sys_abort(' ERROR illegal dwav datamode = '//trim(datamode))
     end if
-    if (trim(datamode) /= 'NULL') then
-       call dwav_comp_advertise(importState, exportState, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
+    call dwav_comp_advertise(importState, exportState, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
   end subroutine InitializeAdvertise
 
@@ -256,8 +251,6 @@ contains
     character(CL)   :: cvalue       ! temporary
     character(len=*), parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
-
-    if (datamode == 'NULL') RETURN
 
     rc = ESMF_SUCCESS
 
@@ -328,8 +321,6 @@ contains
     character(CL)           :: case_name     ! case name
     character(len=*),parameter :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
-
-    if (datamode == 'NULL') RETURN
 
     rc = ESMF_SUCCESS
 
@@ -462,13 +453,13 @@ contains
 
     ! Create stream-> export state mapping
 
-    call dshr_dfield_add(dfields, sdat, state_fld='Sw_lamult' , strm_fld='lamult' , state=exportstate, &
+    call dshr_dfield_add(dfields, sdat, state_fld='Sw_lamult' , strm_fld='Sw_lamult' , state=exportstate, &
          logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, state_fld='Sw_ustokes', strm_fld='ustokes', state=exportstate, &
+    call dshr_dfield_add(dfields, sdat, state_fld='Sw_ustokes', strm_fld='Sw_ustokes', state=exportstate, &
          logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(dfields, sdat, state_fld='Sw_vstokes', strm_fld='vstokes', state=exportstate, &
+    call dshr_dfield_add(dfields, sdat, state_fld='Sw_vstokes', strm_fld='Sw_vstokes', state=exportstate, &
          logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -520,7 +511,7 @@ contains
 
     call t_startf('dwav_datamode')
     select case (trim(datamode))
-    case('COPYALL')
+    case('copyall')
        ! do nothing
     end select
     call t_stopf('dwav_datamode')
