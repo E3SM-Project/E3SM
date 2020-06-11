@@ -335,6 +335,10 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
     if mpilib == "mpi-serial":
         libs.insert(0, mpilib)
 
+    if comp_interface == "nuopc":
+        libs.insert(0, "fox")
+
+
     if uses_kokkos(case):
         libs.append("kokkos")
 

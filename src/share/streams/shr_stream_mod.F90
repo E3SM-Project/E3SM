@@ -32,7 +32,7 @@ module shr_stream_mod
   use shr_file_mod   ! file methods
   use shr_cal_mod    ! calendar methods
 
-  use shr_log_mod, only : s_loglev   => shr_log_Level
+!  use shr_log_mod, only : s_loglev   => shr_log_Level
   use shr_log_mod, only : s_logunit  => shr_log_Unit
   use shr_log_mod, only : OOBMsg => shr_log_OOBMsg
   use shr_log_mod, only: errMsg => shr_log_errMsg
@@ -159,10 +159,13 @@ module shr_stream_mod
   !----- parameters -----
   real(SHR_KIND_R8)   ,parameter :: spd = SHR_CONST_CDAY ! seconds per day
   integer(SHR_KIND_IN),parameter :: initarr_size = 3     ! size of initarr
-  integer(SHR_KIND_IN),save :: debug = 0        ! edit/turn-on for debug write statements
+  integer(SHR_KIND_IN),save :: debug = 10        ! edit/turn-on for debug write statements
   logical             ,save :: doabort = .true. ! flag if abort on error
   character(len=*), parameter :: sourcefile = &
        __FILE__
+
+  integer :: s_loglev = 10
+
 !===============================================================================
 contains
 !===============================================================================

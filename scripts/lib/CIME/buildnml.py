@@ -6,7 +6,8 @@ These are used by components/<model_type>/<component>/cime_config/buildnml
 
 from CIME.XML.standard_module_setup import *
 from CIME.utils import expect, parse_args_and_handle_standard_logging_options, setup_standard_logging_options
-import sys, os, argparse
+from CIME.utils import safe_copy
+import sys, os, argparse, glob
 
 logger = logging.getLogger(__name__)
 
@@ -120,3 +121,21 @@ def create_namelist_infile(case, user_nl_file, namelist_infile, infile_text=""):
     lines_output.append("/ \n")
     with open(namelist_infile, "w") as file_infile:
         file_infile.write("\n".join(lines_output))
+
+def copy_inputs_to_rundir(caseroot, compname, confdir, rundir, inst_string):
+
+    if os.path.isdir(rundir):
+        filename = compname + "_in"
+        file_src  = os.path.join(confdir, filename)
+        file_dest = os.path.join(rundir, filename)
+        if inst_string:
+            file_dest += inst_string
+        safe_copy(file_src,file_dest)
+
+        for xmlfile in glob.glob(os.path.join(confdir, "*streams*.xml")):
+            casexml = os.path.join(caseroot,os.path.basename(xmlfile))
+            if os.path.exists(casexml):
+                logger.info("Using {} for {} streams".format(casexml, compname))
+                safe_copy(casexml, rundir)
+            else:
+                safe_copy(xmlfile, rundir)

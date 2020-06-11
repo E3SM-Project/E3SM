@@ -6,10 +6,6 @@
 
   <!--
      Values to use by default for creation of DWAV model dwav namelists.
-     The element names are the same as the corresponding namelist
-     variables.  Values that depend on the model configuration use
-     attributes to express the dependency.  The recognized attributes
-     are: grid.attributes from the config_cache.xml file (with keys converted to upper-case).
 
      strm_year_first is the first year of the stream data that will be used
      strm_year_last  is the last  year of the stream data that will be used
@@ -23,21 +19,30 @@
               obtained from values of <strm_year_start> -> <strm_year_end> below
      %ymd  => year-month-day from the range yearfirst to yearlast with all 12 months
               obtained from values of <strm_year_start> -> <strm_year_end> below
-
-     Replace any instance of $VARNAME with the xml variable value obtained from any
-     of the $CASEROOT/env*xml files
-
-     In dwav_in,  streams namelist input has the form
-     streams = 'stream1.txt year_align year_first year_last ',
-               'stream2.txt year_align year_first year_last ',
-               ...
-               'streamN.txt year_align year_first year_last '
-
-     Currently the following streams are supported
-         wav.cplhist
-         wav.diatren_ann_rx1
-         wav.diatren_iaf_rx1
    -->
+
+  <!-- =========================================  -->
+  <!--- dwav_nml datamode                         -->
+  <!-- =========================================  -->
+
+  <entry id="datamode">
+    <type>char</type>
+    <category>dwav</category>
+    <group>dwav_nml</group>
+    <valid_values>copyall</valid_values>
+    <desc>
+      The wave data is associated with the wave model
+      and is normally on a different grid than the ocean data.
+      datamode = "copyall"
+      Copies all fields directly from the input data streams Any required
+      fields not found on an input stream will be set to zero.
+      Set by the following xml variables in env_run.xml DWAV_MODE
+      specifies values for wav mode: copyall,null
+    </desc>
+    <values>
+      <value>copyall</value>
+    </values>
+  </entry>
 
   <!-- ========================================================================================  -->
   <!-- Stream file variables                                                                     -->
@@ -49,54 +54,19 @@
     <group>streams_file</group>
     <desc>List of streams used for the given dwav_mode.</desc>
     <values>
-      <value dwav_mode="NULL">null</value>
       <value dwav_mode="CLIMO">climo</value>
     </values>
   </entry>
 
-  <entry id="strm_domdir" skip_default_entry="true">
+  <entry id="strm_mesh" skip_default_entry="true">
     <type>char</type>
     <category>streams</category>
     <group>streams_file</group>
     <desc>Stream domain file directory.</desc>
     <values>
-      <value stream="climo">$DIN_LOC_ROOT/wav/dwav</value>
-    </values>
-  </entry>
-
-  <entry id="strm_domfil" skip_default_entry="true">
-    <type>char</type>
-    <category>streams</category>
-    <group>streams_file</group>
-    <desc>Stream domain file path(s).</desc>
-    <values>
-      <value stream="climo">waveclim.mon.ww3a.150612.nc</value>
-    </values>
-  </entry>
-
-  <entry id="strm_domvar" skip_default_entry="true">
-    <type>char</type>
-    <category>streams</category>
-    <group>streams_file</group>
-    <desc>Stream domain variable name(s).</desc>
-    <values>
       <value stream="climo">
-        time   time
-        xc     lon
-        yc     lat
-        area   area
-        mask   mask
+	$DIN_LOC_ROOT/share/meshes/ww3a_120222_ESMFmesh.nc
       </value>
-    </values>
-  </entry>
-
-  <entry id="strm_datdir" skip_default_entry="true">
-    <type>char</type>
-    <category>streams</category>
-    <group>streams_file</group>
-    <desc>Stream data file directory.</desc>
-    <values>
-      <value stream="climo">$DIN_LOC_ROOT/wav/dwav</value>
     </values>
   </entry>
 
@@ -106,7 +76,9 @@
     <group>streams_file</group>
     <desc>Stream data file path(s).</desc>
     <values>
-      <value stream="climo">waveclim.mon.ww3a.150612.nc</value>
+      <value stream="climo">
+        $DIN_LOC_ROOT/wav/dwav/waveclim.mon.ww3a.150612.nc
+      </value>
     </values>
   </entry>
 
@@ -117,9 +89,9 @@
     <desc>Stream data variable name(s).</desc>
     <values>
       <value stream="climo">
-        lamult  lamult
-        ustokes ustokes
-        vstokes vstokes
+        lamult  Sw_lamult
+        ustokes Sw_ustokes
+        vstokes Sw_vstokes
       </value>
     </values>
   </entry>
@@ -140,7 +112,7 @@
     <group>streams_file</group>
     <desc>Simulation year to align stream to.</desc>
     <values>
-      <value stream="climo">1</value>
+      <value>1</value>
     </values>
   </entry>
 
@@ -150,7 +122,7 @@
     <group>streams_file</group>
     <desc>First year of stream.</desc>
     <values>
-      <value stream="climo">1</value>
+      <value>1</value>
     </values>
   </entry>
 
@@ -160,77 +132,14 @@
     <group>streams_file</group>
     <desc>Last year of stream.</desc>
     <values>
-      <value   stream="climo">1</value>
-    </values>
-  </entry>
-
-  <!-- ========================================================================================  -->
-  <!-- DWAV Namelists                                                                            -->
-  <!-- ========================================================================================  -->
-
-  <!-- =========================================  -->
-  <!--- shr_strmdata_nml -->
-  <!-- =========================================  -->
-
-  <entry id="nx_global" modify_via_xml="WAV_NX">
-    <type>integer</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      global size of nx
-    </desc>
-    <values>
-      <value>$WAV_NX</value>
-    </values>
-  </entry>
-
-  <entry id="ny_global" modify_via_xml="WAV_NY">
-    <type>integer</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      global size of ny
-    </desc>
-    <values>
-      <value>$WAV_NY</value>
-    </values>
-  </entry>
-
-  <entry id="fillalgo"  per_stream_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <valid_values>copy,bilinear,nn,nnoni,nnonj,spval</valid_values>
-    <desc>
-      array (up to 30 elements) of fill algorithms associated with the array
-      of streams.  valid options are just copy (ie. no fill), special value,
-      nearest neighbor, nearest neighbor in "i" direction, or nearest
-      neighbor in "j" direction.
-      valid values:  'copy','spval','nn','nnoni','nnonj'
-    </desc>
-    <values>
-      <value>nn</value>
-    </values>
-  </entry>
-
-  <entry id="fillmask"  per_stream_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <valid_values>nomask,srcmask,dstmask,bothmask</valid_values>
-    <desc>
-      plays no role is fill algorithm at the present time.
-      valid values: "nomask,srcmask,dstmask,bothmask"
-    </desc>
-    <values>
-      <value>nomask</value>
+      <value>1</value>
     </values>
   </entry>
 
   <entry id="mapmask" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <valid_values>nomask,srcmask,dstmask,bothmask</valid_values>
     <desc>
       array (up to 30 elements) of masking algorithms for mapping input data
@@ -247,14 +156,11 @@
   <entry id="mapalgo" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <valid_values>copy,bilinear,nn,nnoni,nnonj,spval</valid_values>
+    <group>streams_file</group>
+    <valid_values>bilinear,nn</valid_values>
     <desc>
-      array (up to 30 elements) of fill algorithms associated with the array
-      of streams.  valid options are copy by index, set to special value,
-      nearest neighbor, nearest neighbor in "i" direction, nearest neighbor
-      in "j" direction, or bilinear.
-      valid values: copy,spval,nn,nnoni,nnonj,bilinear
+      array (up to 30 elements) of fill algorithms associated with the array of streams
+      valid values: nn,bilinear
     </desc>
     <values>
       <value>bilinear</value>
@@ -264,7 +170,7 @@
   <entry id="tintalgo" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <valid_values>coszen,nearest,linear,lower,upper</valid_values>
     <desc>
       array (up to 30 elements) of time interpolation options associated with the array of
@@ -284,7 +190,7 @@
   <entry id="taxmode" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <valid_values>extend,cycle,limit</valid_values>
     <desc>
       array of time axis modes associated with the array of streams for
@@ -306,7 +212,7 @@
   <entry id="readmode" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <valid_values>single,full_file</valid_values>
     <desc>
       array (up to 30 elements) of reading mode associated with the array of
@@ -323,7 +229,7 @@
   <entry id="dtlimit" per_stream_entry="true">
     <type>real(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <desc>
       array (up to 30 elements) of delta time ratio limits placed on the
       time interpolation associated with the array of streams.  this real
@@ -346,7 +252,7 @@
   <entry id="vectors">
     <type>char</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <desc>
       list of paired colon delimited field names that should be treated as
       vectors when carrying out spatial interpolation.  unlike other
@@ -361,49 +267,70 @@
     </values>
   </entry>
 
-  <entry id="streams">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      character array (up to 30 elements) of stream input files.  this
-      string is actually parsed by a stream method and so the format is
-      specified by the stream module.  this string consists of a
-      "stream_input_filename year_align year_first year_last".  the
-      stream_input_filename is a stream text input file and the format and
-      options are described elsewhere.  year_align, year_first, and
-      year_last provide information about the time axis of the file and how
-      to relate the input time axis to the model time axis.
-    </desc>
-    <values>
-      <value></value>
-    </values>
-  </entry>
-
   <!-- =========================================  -->
   <!--- dwav_nml -->
   <!-- =========================================  -->
 
-  <entry id="datamode">
+  <entry id="model_meshfile" modify_via_xml="WAV_DOMAIN_MESH">
     <type>char</type>
-    <category>dwav</category>
+    <category>streams</category>
+    <input_pathname>abs</input_pathname>
     <group>dwav_nml</group>
-    <valid_values>NULL,COPYALL</valid_values>
     <desc>
-      The wave data is associated with the wave model
-      and is normally on a different grid than the ocean data.
-      datamode = "NULL"
-      Is always a valid option and means no data will be generated.
-      Turns off the data model as a provider of data to the coupler.
-      datamode = "COPYALL"
-      Copies all fields directly from the input data streams Any required
-      fields not found on an input stream will be set to zero.
-      Set by the following xml variables in env_run.xml DWAV_MODE
-      specifies values for wav mode: copyall,null
+      file specifying model mesh
     </desc>
     <values>
-      <value>COPYALL</value>
-      <value dwav_mode="NULL">NULL</value>
+      <value>$WAV_DOMAIN_MESH</value>
+    </values>
+  </entry>
+
+  <entry id="model_maskfile">
+    <type>char</type>
+    <category>streams</category>
+    <input_pathname>abs</input_pathname>
+    <group>dwav_nml</group>
+    <desc>
+      file specifying model mask if not obtained from input model mesh
+    </desc>
+    <values>
+      <value>$WAV_DOMAIN_MESH</value>
+    </values>
+  </entry>
+
+  <entry id="model_createmesh_fromfile" skip_default_entry="true">
+    <type>char</type>
+    <category>streams</category>
+    <input_pathname>abs</input_pathname>
+    <group>dwav_nml</group>
+    <desc>
+      file specifying model mesh
+    </desc>
+    <values>
+      <value>$WAV_DOMAIN_MESH</value>
+    </values>
+  </entry>
+
+  <entry id="nx_global" modify_via_xml="WAV_NX">
+    <type>integer</type>
+    <category>streams</category>
+    <group>dwav_nml</group>
+    <desc>
+      global size of nx
+    </desc>
+    <values>
+      <value>$WAV_NX</value>
+    </values>
+  </entry>
+
+  <entry id="ny_global" modify_via_xml="WAV_NY">
+    <type>integer</type>
+    <category>streams</category>
+    <group>dwav_nml</group>
+    <desc>
+      global size of ny
+    </desc>
+    <values>
+      <value>$WAV_NY</value>
     </values>
   </entry>
 
@@ -416,28 +343,6 @@
     </desc>
     <values>
       <value>undefined</value>
-    </values>
-  </entry>
-
-  <entry id="restfils">
-    <type>char</type>
-    <category>dwav</category>
-    <group>dwav_nml</group>
-    <desc>
-      Stream restart file name for dwav model, needed for branch simulations
-    </desc>
-    <values>
-      <value>undefined</value>
-    </values>
-  </entry>
-
-  <entry id="force_prognostic_true">
-    <type>logical</type>
-    <category>dwav</category>
-    <group>dwav_nml</group>
-    <desc>If TRUE, prognostic is forced to true. </desc>
-    <values>
-      <value>.false.</value>
     </values>
   </entry>
 

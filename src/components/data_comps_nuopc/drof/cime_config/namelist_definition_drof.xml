@@ -5,17 +5,13 @@
 <entry_id version="2.0">
 
   <!--
-      Values to use by default for creation of DOCN model docn namelists.
-      The element names are the same as the corresponding namelist
-      variables.  Values that depend on the model configuration use
-      attributes to express the dependency.  The recognized attributes
-      are: grid.attributes from the config_cache.xml file (with keys converted to upper-case).
+      Values to use by default for creation of DROF model drof namelists.
 
       strm_year_first is the first year of the stream data that will be used
       strm_year_last  is the last  year of the stream data that will be used
       strm_year_align is the model year that will be aligned with stream data for year_first
 
-      For cplhist forcing - the following substitutions will be made belwo
+      For cplhist forcing - the following substitutions will be made below
       Replace any instance of the following substring indicators with the appropriate values:
       %y    => year from the range yearfirst to yearlast
                obtained from values of <strm_year_start> -> <strm_year_end> below
@@ -23,24 +19,31 @@
                obtained from values of <strm_year_start> -> <strm_year_end> below
       %ymd  => year-month-day from the range yearfirst to yearlast with all 12 months
                obtained from values of <strm_year_start> -> <strm_year_end> below
-
-      Replace any instance of $VARNAME with the xml variable value obtained from any
-      of the $CASEROOT/env*xml files
-
-      In drof_in,  streams namelist input has the form
-      streams = 'stream1.txt year_align year_first year_last ',
-                'stream2.txt year_align year_first year_last ',
-                ...
-                'streamN.txt year_align year_first year_last '
-
-     Currently the following streams are supported
-        rof.cplhist
-        rof.diatren_ann_rx1
-        rof.diatren_iaf_rx1
   -->
 
+  <!-- =========================================  -->
+  <!--- datamode in drof_nml                      -->
+  <!-- =========================================  -->
+
+  <entry id="datamode">
+    <type>char</type>
+    <category>drof</category>
+    <group>drof_nml</group>
+    <valid_values>copyall</valid_values>
+    <desc>
+      The runoff data is associated with the river model.
+      Copies all fields directly from the input data streams Any required
+      fields not found on an input stream will be set to zero.
+      The only datamode is copyall - the streams are determined by the xml variable $DROF_MODE
+      dataMode = "copyall"
+    </desc>
+    <values>
+      <value>copyall</value>
+    </values>
+  </entry>
+
   <!-- ========================================================================================  -->
-  <!-- Stream file variables                                                                     -->
+  <!-- Stream xml file variables                                                                 -->
   <!-- ========================================================================================  -->
 
   <entry id="streamslist">
@@ -49,127 +52,66 @@
     <group>streams_file</group>
     <desc>List of streams used for the given drof_mode.</desc>
     <values>
-      <value drof_mode="NULL"                 >NULL</value>
-      <value drof_mode="CPLHIST"              >rof.cplhist</value>
+      <value drof_mode="CPLHIST">rof.cplhist</value>
       <value drof_mode="DIATREN_ANN_RX1"      >rof.diatren_ann_rx1</value>
       <value drof_mode="DIATREN_ANN_AIS00_RX1">rof.diatren_ann_ais00_rx1</value>
       <value drof_mode="DIATREN_ANN_AIS45_RX1">rof.diatren_ann_ais45_rx1</value>
       <value drof_mode="DIATREN_ANN_AIS55_RX1">rof.diatren_ann_ais55_rx1</value>
-      <value drof_mode="DIATREN_IAF_RX1"      >rof.diatren_iaf_rx1</value>
       <value drof_mode="DIATREN_IAF_AIS00_RX1">rof.diatren_iaf_ais00_rx1</value>
+      <value drof_mode="DIATREN_IAF_RX1"      >rof.diatren_iaf_rx1</value>
       <value drof_mode="DIATREN_IAF_AIS45_RX1">rof.diatren_iaf_ais45_rx1</value>
       <value drof_mode="DIATREN_IAF_AIS55_RX1">rof.diatren_iaf_ais55_rx1</value>
+      <value drof_mode="IAF_JRA_1p4_2018"     >rof.iaf_jra_1p4_2018</value>
       <value drof_mode="IAF_JRA"              >rof.iaf_jra</value>
     </values>
   </entry>
 
-  <entry id="strm_domdir"  skip_default_entry="true">
+  <entry id="strm_mesh" skip_default_entry="true">
     <type>char</type>
     <category>streams</category>
     <group>streams_file</group>
-    <desc>Stream domain file directory.</desc>
+    <desc>Stream mesh</desc>
     <values>
-      <value>$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.diatren_ann_rx1"      >$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.diatren_ann_ais00_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.diatren_ann_ais45_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.diatren_ann_ais55_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.diatren_iaf_rx1"      >$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.diatren_iaf_ais00_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.diatren_iaf_ais45_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.diatren_iaf_ais55_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.iaf_jra"              >$DIN_LOC_ROOT/lnd/dlnd7/JRA55</value>
-      <value stream="rof.cplhist"              >null</value>
-    </values>
-  </entry>
-
-  <entry id="strm_domfil" skip_default_entry="true">
-    <type>char</type>
-    <category>streams</category>
-    <group>streams_file</group>
-    <desc>Stream domain file path(s).</desc>
-    <values>
-      <value stream="rof.diatren_ann_rx1"      >runoff.daitren.annual.20190226.nc</value>
-      <value stream="rof.diatren_ann_ais00_rx1">runoff.daitren.annual.20190226.nc</value>
-      <value stream="rof.diatren_ann_ais45_rx1">runoff.daitren.annual.20190226.nc</value>
-      <value stream="rof.diatren_ann_ais55_rx1">runoff.daitren.annual.20190226.nc</value>
-      <value stream="rof.diatren_iaf_rx1"      >runoff.daitren.iaf.20120419.nc</value>
-      <value stream="rof.diatren_iaf_ais00_rx1">runoff.daitren.iaf-AISx00.20120419.nc</value>
-      <value stream="rof.diatren_iaf_ais45_rx1">runoff.daitren.iaf-AISx45.20120419.nc</value>
-      <value stream="rof.diatren_iaf_ais55_rx1">runoff.daitren.iaf-AISx55.20120419.nc</value>
-      <value stream="rof.iaf_jra"              >domain.roff.JRA025.170111.nc</value>
-      <value stream="rof.cplhist"              >null</value>
-    </values>
-  </entry>
-
-  <entry id="strm_domvar"  skip_default_entry="true">
-    <type>char</type>
-    <category>streams</category>
-    <group>streams_file</group>
-    <desc>Stream domain variable name(s).</desc>
-    <values>
-      <value>
-        time   time
-        xc     lon
-        yc     lat
-        area   area
-        mask   mask
+      <value stream="rof.diatren_ann_rx1">
+	$DIN_LOC_ROOT/lnd/dlnd7/RX1/runoff.daitren.annual_ESMFmesh_120520.nc
       </value>
-      <value stream="rof.diatren_iaf_rx1">
-        time   time
-        xc     lon
-        yc     lat
-        arear  area
-        mask   mask
+      <value stream="rof.diatren_ann_ais00_rx1">
+	$DIN_LOC_ROOT/lnd/dlnd7/RX1/runoff.daitren.annual_ESMFmesh_120520.nc
+      </value>
+      <value stream="rof.diatren_ann_ais45_rx1">
+	$DIN_LOC_ROOT/lnd/dlnd7/RX1/runoff.daitren.annual_ESMFmesh_120520.nc
+      </value>
+      <value stream="rof.diatren_ann_ais55_rx1">
+	$DIN_LOC_ROOT/lnd/dlnd7/RX1/runoff.daitren.annual_ESMFmesh_120520.nc
       </value>
       <value stream="rof.diatren_iaf_ais00_rx1">
-        time   time
-        xc     lon
-        yc     lat
-        arear  area
-        mask   mask
+	$DIN_LOC_ROOT/lnd/dlnd7/RX1/runoff.daitren.annual_ESMFmesh_120520.nc
+      </value>
+      <value stream="rof.diatren_iaf_rx1">
+	$DIN_LOC_ROOT/lnd/dlnd7/RX1/runoff.daitren.annual_ESMFmesh_120520.nc
       </value>
       <value stream="rof.diatren_iaf_ais45_rx1">
-        time   time
-        xc     lon
-        yc     lat
-        arear  area
-        mask   mask
+	$DIN_LOC_ROOT/lnd/dlnd7/RX1/runoff.daitren.annual_ESMFmesh_120520.nc
       </value>
       <value stream="rof.diatren_iaf_ais55_rx1">
-        time   time
-        xc     lon
-        yc     lat
-        arear  area
-        mask   mask
+	$DIN_LOC_ROOT/lnd/dlnd7/RX1/runoff.daitren.annual_ESMFmesh_120520.nc
+      </value>
+      <value stream="rof.diatren_ann_rx1">
+	$DIN_LOC_ROOT/lnd/dlnd7/RX1/runoff.daitren.annual_ESMFmesh_120520.nc
+      </value>
+      <value stream="rof.diatren_iaf_rx1">
+	$DIN_LOC_ROOT/lnd/dlnd7/RX1/runoff.daitren.iaf_ESMFmesh_120520.nc
+      </value>
+      <value stream="rof.diatren_iaf_rx1">
+	$DIN_LOC_ROOT/lnd/dlnd7/RX1/runoff.daitren.iaf_ESMFmesh_120520.nc
+      </value>
+      <value stream="rof.iaf_jra">
+        <!-- create mesh for   -->
+        <!-- $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.4.runoff.1958.190214.nc -->
       </value>
       <value stream="rof.cplhist">
-        time           time
-        domrb_lon      lon
-        domrb_lat      lat
-        domrb_aream    area
-        domrb_mask     mask
+	$ROF_DOMAIN_MESH
       </value>
-    </values>
-  </entry>
-
-  <entry id="strm_datdir"  skip_default_entry="true">
-    <type>char</type>
-    <category>streams</category>
-    <group>streams_file</group>
-    <desc>Stream data file directory.</desc>
-    <values>
-      <value>$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.diatren_ann_rx1"      >$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.diatren_ann_ais00_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.diatren_ann_ais45_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.diatren_ann_ais55_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.diatren_iaf_rx1"      >$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.diatren_iaf_ais00_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.diatren_iaf_ais45_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.diatren_iaf_ais55_rx1">$DIN_LOC_ROOT/lnd/dlnd7/RX1</value>
-      <value stream="rof.iaf_jra"              >$DIN_LOC_ROOT/lnd/dlnd7/JRA55</value>
-      <value stream="rof.cplhist"              >$DROF_CPLHIST_DIR</value>
     </values>
   </entry>
 
@@ -179,76 +121,100 @@
     <group>streams_file</group>
     <desc>Stream data file path(s).</desc>
     <values>
-      <value stream="rof.diatren_ann_rx1"      >runoff.daitren.annual.20190226.nc</value>
-      <value stream="rof.diatren_ann_ais00_rx1">runoff.daitren.annual.20190226.nc</value>
-      <value stream="rof.diatren_ann_ais45_rx1">runoff.daitren.annual.20190226.nc</value>
-      <value stream="rof.diatren_ann_ais55_rx1">runoff.daitren.annual.20190226.nc</value>
-      <value stream="rof.diatren_iaf_rx1"      >runoff.daitren.iaf.20120419.nc</value>
-      <value stream="rof.diatren_iaf_ais00_rx1">runoff.daitren.iaf-AISx00.20120419.nc</value>
-      <value stream="rof.diatren_iaf_ais45_rx1">runoff.daitren.iaf-AISx45.20120419.nc</value>
-      <value stream="rof.diatren_iaf_ais55_rx1">runoff.daitren.iaf-AISx55.20120419.nc</value>
-      <value stream="rof.iaf_jra">
-           JRA.v1.1.runoff.1958.170807.nc
-           JRA.v1.1.runoff.1959.170807.nc
-           JRA.v1.1.runoff.1960.170807.nc
-           JRA.v1.1.runoff.1961.170807.nc
-           JRA.v1.1.runoff.1962.170807.nc
-           JRA.v1.1.runoff.1963.170807.nc
-           JRA.v1.1.runoff.1964.170807.nc
-           JRA.v1.1.runoff.1965.170807.nc
-           JRA.v1.1.runoff.1966.170807.nc
-           JRA.v1.1.runoff.1967.170807.nc
-           JRA.v1.1.runoff.1968.170807.nc
-           JRA.v1.1.runoff.1969.170807.nc
-           JRA.v1.1.runoff.1970.170807.nc
-           JRA.v1.1.runoff.1971.170807.nc
-           JRA.v1.1.runoff.1972.170807.nc
-           JRA.v1.1.runoff.1973.170807.nc
-           JRA.v1.1.runoff.1974.170807.nc
-           JRA.v1.1.runoff.1975.170807.nc
-           JRA.v1.1.runoff.1976.170807.nc
-           JRA.v1.1.runoff.1977.170807.nc
-           JRA.v1.1.runoff.1978.170807.nc
-           JRA.v1.1.runoff.1979.170807.nc
-           JRA.v1.1.runoff.1980.170807.nc
-           JRA.v1.1.runoff.1981.170807.nc
-           JRA.v1.1.runoff.1982.170807.nc
-           JRA.v1.1.runoff.1983.170807.nc
-           JRA.v1.1.runoff.1984.170807.nc
-           JRA.v1.1.runoff.1985.170807.nc
-           JRA.v1.1.runoff.1986.170807.nc
-           JRA.v1.1.runoff.1987.170807.nc
-           JRA.v1.1.runoff.1988.170807.nc
-           JRA.v1.1.runoff.1989.170807.nc
-           JRA.v1.1.runoff.1990.170807.nc
-           JRA.v1.1.runoff.1991.170807.nc
-           JRA.v1.1.runoff.1992.170807.nc
-           JRA.v1.1.runoff.1993.170807.nc
-           JRA.v1.1.runoff.1994.170807.nc
-           JRA.v1.1.runoff.1995.170807.nc
-           JRA.v1.1.runoff.1996.170807.nc
-           JRA.v1.1.runoff.1997.170807.nc
-           JRA.v1.1.runoff.1998.170807.nc
-           JRA.v1.1.runoff.1999.170807.nc
-           JRA.v1.1.runoff.2000.170807.nc
-           JRA.v1.1.runoff.2001.170807.nc
-           JRA.v1.1.runoff.2002.170807.nc
-           JRA.v1.1.runoff.2003.170807.nc
-           JRA.v1.1.runoff.2004.170807.nc
-           JRA.v1.1.runoff.2005.170807.nc
-           JRA.v1.1.runoff.2006.170807.nc
-           JRA.v1.1.runoff.2007.170807.nc
-           JRA.v1.1.runoff.2008.170807.nc
-           JRA.v1.1.runoff.2009.170807.nc
-           JRA.v1.1.runoff.2010.170807.nc
-           JRA.v1.1.runoff.2011.170807.nc
-           JRA.v1.1.runoff.2012.170807.nc
-           JRA.v1.1.runoff.2013.170807.nc
-           JRA.v1.1.runoff.2014.170807.nc
-           JRA.v1.1.runoff.2015.170807.nc
-           JRA.v1.1.runoff.2016.170807.nc
+      <value stream="rof.diatren_ann_rx1">
+        $DIN_LOC_ROOT/lnd/dlnd7/RX1/runoff.daitren.annual.20190226.nc
       </value>
-      <value stream="rof.cplhist">$DROF_CPLHIST_CASE.cpl.hr2x.%ym.nc</value>
+      <value stream="rof.diatren_ann_ais00_rx1">
+        $DIN_LOC_ROOT/lnd/dlnd7/RX1/runoff.daitren.annual.20190226.nc
+      </value>
+      <value stream="rof.diatren_ann_ais45_rx1">
+        $DIN_LOC_ROOT/lnd/dlnd7/RX1/runoff.daitren.annual.20190226.nc
+      </value>
+      <value stream="rof.diatren_ann_ais55_rx1">
+        $DIN_LOC_ROOT/lnd/dlnd7/RX1/runoff.daitren.annual.20190226.nc
+      </value>
+      <value stream="rof.diatren_iaf_rx1">
+        $DIN_LOC_ROOT/lnd/dlnd7/RX1/runoff.daitren.iaf.20120419.nc
+      </value>
+      <value stream="rof.diatren_iaf_ais00_rx1">
+        $DIN_LOC_ROOT/lnd/dlnd7/RX1/runoff.daitren.iaf-AISx00.20120419.nc
+      </value>
+      <value stream="rof.diatren_iaf_ais45_rx1">
+        $DIN_LOC_ROOT/lnd/dlnd7/RX1/runoff.daitren.iaf-AISx45.20120419.nc
+      </value>
+      <value stream="rof.diatren_iaf_ais55_rx1">
+        $DIN_LOC_ROOT/lnd/dlnd7/RX1/runoff.daitren.iaf-AISx55.20120419.nc
+      </value>
+      <value stream="rof.diatren_ann_rx1">
+	$DIN_LOC_ROOT/lnd/dlnd7/RX1/runoff.daitren.annual.20190226.nc
+      </value>
+      <value stream="rof.diatren_iaf_rx1">
+	$DIN_LOC_ROOT/lnd/dlnd7/RX1/runoff.daitren.iaf.20120419.nc
+      </value>
+      <value stream="rof.iaf_jra">
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1958.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1959.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1960.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1961.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1962.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1963.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1964.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1965.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1966.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1967.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1968.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1969.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1970.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1971.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1972.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1973.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1974.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1975.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1976.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1977.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1978.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1979.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1980.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1981.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1982.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1983.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1984.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1985.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1986.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1987.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1988.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1989.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1990.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1991.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1992.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1993.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1994.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1995.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1996.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1997.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1998.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.1999.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.2000.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.2001.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.2002.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.2003.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.2004.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.2005.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.2006.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.2007.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.2008.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.2009.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.2010.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.2011.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.2012.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.2013.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.2014.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.2015.170807.nc
+        $DIN_LOC_ROOT/lnd/dlnd7/JRA55/JRA.v1.1.runoff.2016.170807.nc
+      </value>
+      <value stream="rof.cplhist">
+	$DROF_CPLHIST_DIR/$DROF_CPLHIST_CASE.cpl.hr2x.%ym.nc
+      </value>
     </values>
   </entry>
 
@@ -258,25 +224,43 @@
     <group>streams_file</group>
     <desc>Stream data variable name(s).</desc>
     <values>
-      <value>
-        runoff rofl
-      </value>
       <value stream="rof.diatren_ann_rx1">
-        runoff rofl
+        runoff Forr_rofl
+      </value>
+      <value stream="rof.diatren_ann_ais00_rx1">
+        runoff Forr_rofl
+      </value>
+      <value stream="rof.diatren_ann_ais45_rx1">
+        runoff Forr_rofl
+      </value>
+      <value stream="rof.diatren_ann_ais55_rx1">
+        runoff Forr_rofl
       </value>
       <value stream="rof.diatren_iaf_rx1">
-        runoff rofl
+        runoff Forr_rofl
+      </value>
+      <value stream="rof.diatren_iaf_ais00_rx1">
+        runoff Forr_rofl
       </value>
       <value stream="rof.diatren_iaf_ais45_rx1">
-        runoff rofl
+        runoff Forr_rofl
+      </value>
+      <value stream="rof.diatren_iaf_ais55_rx1">
+        runoff Forr_rofl
+      </value>
+      <value stream="rof.diatren_ann_rx1">
+        runoff Forr_rofl
+      </value>
+      <value stream="rof.diatren_iaf_rx1">
+        runoff Forr_rofl
       </value>
       <value stream="rof.iaf_jra">
-        rofl  rofl
-        rofi  rofi
+        rofl Forr_rofl
+        rofi Forr_rofi
       </value>
       <value stream="rof.cplhist">
-        r2x_Forr_rofl  rofl
-        r2x_Forr_rofi  rofi
+        rofImp_Forr_rofl  Forr_rofl
+        rofImp_Forr_rofi  Forr_rofi
       </value>
     </values>
   </entry>
@@ -299,15 +283,11 @@
     <desc>Simulation year to align stream to.</desc>
     <values>
       <value>1</value>
-      <value stream="rof.diatren_ann_rx1">1</value>
-      <value stream="rof.diatren_iaf_rx1">1</value>
-      <value stream="rof.diatren_iaf_ais45_rx1">1</value>
-      <value stream="rof.iaf_jra">1</value>
       <value stream="rof.cplhist">$DROF_CPLHIST_YR_ALIGN</value>
     </values>
   </entry>
 
-  <entry id="strm_year_start"   skip_default_entry="true">
+  <entry id="strm_year_start" skip_default_entry="true">
     <type>integer</type>
     <category>streams</category>
     <group>streams_file</group>
@@ -321,8 +301,8 @@
       <value stream="rof.diatren_iaf_ais00_rx1">1948</value>
       <value stream="rof.diatren_iaf_ais45_rx1">1948</value>
       <value stream="rof.diatren_iaf_ais55_rx1">1948</value>
-      <value stream="rof.iaf_jra"              >1958</value>
-      <value stream="rof.cplhist"              >$DROF_CPLHIST_YR_START</value>
+      <value stream="rof.iaf_jra.*"            >1958</value>
+      <value stream="rof.cplhist">$DROF_CPLHIST_YR_START</value>
     </values>
   </entry>
 
@@ -340,78 +320,16 @@
       <value stream="rof.diatren_iaf_ais00_rx1">2009</value>
       <value stream="rof.diatren_iaf_ais45_rx1">2009</value>
       <value stream="rof.diatren_iaf_ais55_rx1">2009</value>
+      <value stream="rof.iaf_jra_1p4_2018"     >2018</value>
       <value stream="rof.iaf_jra"              >2016</value>
       <value stream="rof.cplhist"              >$DROF_CPLHIST_YR_END</value>
-    </values>
-  </entry>
-
-  <!-- ========================================================================================  -->
-  <!-- DROF Namelists                                                                            -->
-  <!-- ========================================================================================  -->
-
-  <!-- =========================================  -->
-  <!--- shr_strmdata_nml       -->
-  <!-- =========================================  -->
-
-  <entry id="nx_global" modify_via_xml="ROF_NX">
-    <type>integer</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      global size of nx
-    </desc>
-    <values>
-      <value>$ROF_NX</value>
-    </values>
-  </entry>
-
-  <entry id="ny_global" modify_via_xml="ROF_NY">
-    <type>integer</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      global size of ny
-    </desc>
-    <values>
-      <value>$ROF_NY</value>
-    </values>
-  </entry>
-
-  <entry id="fillalgo"  per_stream_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <valid_values>copy,bilinear,nn,nnoni,nnonj,spval</valid_values>
-    <desc>
-      array (up to 30 elements) of fill algorithms associated with the array
-      of streams.  valid options are just copy (ie. no fill), special value,
-      nearest neighbor, nearest neighbor in "i" direction, or nearest
-      neighbor in "j" direction.
-      valid values:  'copy','spval','nn','nnoni','nnonj'
-    </desc>
-    <values>
-      <value>nn</value>
-    </values>
-  </entry>
-
-  <entry id="fillmask"  per_stream_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <valid_values>nomask,srcmask,dstmask,bothmask</valid_values>
-    <desc>
-      plays no role is fill algorithm at the present time.
-      valid values: "nomask,srcmask,dstmask,bothmask"
-    </desc>
-    <values>
-      <value>nomask</value>
     </values>
   </entry>
 
   <entry id="mapmask"  per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <valid_values>nomask,srcmask,dstmask,bothmask</valid_values>
     <desc>
       array (up to 30 elements) of masking algorithms for mapping input data
@@ -428,14 +346,12 @@
   <entry id="mapalgo"  per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <valid_values>copy,bilinear,nn,nnoni,nnonj,spval</valid_values>
+    <group>streams_file</group>
+    <valid_values>bilinear,nn</valid_values>
     <desc>
-      array (up to 30 elements) of fill algorithms associated with the array
-      of streams.  valid options are copy by index, set to special value,
-      nearest neighbor, nearest neighbor in "i" direction, nearest neighbor
-      in "j" direction, or bilinear.
-      valid values: copy,spval,nn,nnoni,nnonj,bilinear
+      array (up to 30 elements) of fill algorithms associated with the array  of streams.  
+      default value: bilinear
+      valid values: bilinear, nn
     </desc>
     <values>
       <value>bilinear</value>
@@ -445,11 +361,10 @@
   <entry id="tintalgo"  per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <valid_values>coszen,nearest,linear,lower,upper</valid_values>
     <desc>
-      array (up to 30 elements) of time interpolation options associated with the array of
-      streams.
+      array (up to 30 elements) of time interpolation options associated with the array of streams.
       valid values: lower,upper,nearest,linear,coszen
       lower   = Use lower time-value
       upper   = Use upper time-value
@@ -469,7 +384,7 @@
   <entry id="taxmode"  per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <valid_values>extend,cycle,limit</valid_values>
     <desc>
       array of time axis modes associated with the array of streams for
@@ -491,11 +406,11 @@
   <entry id="readmode" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <valid_values>single,full_file</valid_values>
     <desc>
-      array (up to 30 elements) of reading mode associated with the array of
-      streams.  specifies the mode of reading temporal stream dataset.
+      array (up to 30 elements) of reading mode associated with the array of streams.  
+      specifies the mode of reading temporal stream dataset.
       valid options are "single" (read temporal dataset one at a time) or
       "full_file" (read all entires of temporal dataset in a given netcdf file)
       valid values: single,full_file
@@ -508,7 +423,7 @@
   <entry id="dtlimit"  per_stream_entry="true">
     <type>real(30)</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <desc>
       array (up to 30 elements) of delta time ratio limits placed on the
       time interpolation associated with the array of streams.  this real
@@ -531,7 +446,7 @@
   <entry id="vectors">
     <type>char</type>
     <category>streams</category>
-    <group>shr_strdata_nml</group>
+    <group>streams_file</group>
     <desc>
       list of paired colon delimited field names that should be treated as
       vectors when carrying out spatial interpolation.  unlike other
@@ -546,58 +461,70 @@
     </values>
   </entry>
 
-  <entry id="streams" skip_default_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      character array (up to 30 elements) of stream input files.  this
-      string is actually parsed by a stream method and so the format is
-      specified by the stream module.  this string consists of a
-      "stream_input_filename year_align year_first year_last".  the
-      stream_input_filename is a stream text input file and the format and
-      options are described elsewhere.  year_align, year_first, and
-      year_last provide information about the time axis of the file and how
-      to relate the input time axis to the model time axis.
-    </desc>
-    <values>
-      <value></value>
-    </values>
-  </entry>
-
   <!-- =========================================  -->
-  <!--- drof_nml                -->
+  <!--- drof_nml                                  -->
   <!-- =========================================  -->
 
-  <entry id="datamode">
+  <entry id="model_meshfile" modify_via_xml="ROF_DOMAIN_MESH">
     <type>char</type>
-    <category>drof</category>
+    <category>streams</category>
+    <input_pathname>abs</input_pathname>
     <group>drof_nml</group>
-    <valid_values>NULL,COPYALL</valid_values>
     <desc>
-      The runoff data is associated with the river model.
-      datamode = "NULL"
-      NULL is always a valid option and means no data will be generated.
-      Turns off the data model as a provider of data to the coupler.  The
-      rof_present flag will be set to false and the coupler will assume no
-      exchange of data to or from the data model.
-      dataMode = "COPYALL"
-      Copies all fields directly from the input data streams Any required
-      fields not found on an input stream will be set to zero.
+      file specifying model mesh
     </desc>
     <values>
-      <value>COPYALL</value>
-      <value drof_mode="NULL">NULL</value>
+      <value>$ROF_DOMAIN_MESH</value>
     </values>
   </entry>
 
-  <entry id="force_prognostic_true">
-    <type>logical</type>
-    <category>drof</category>
+  <entry id="model_maskfile">
+    <type>char</type>
+    <category>streams</category>
+    <input_pathname>abs</input_pathname>
     <group>drof_nml</group>
-    <desc>If true, prognostic is forced to true.</desc>
+    <desc>
+      file specifying model mask if not obtained from input model mesh
+    </desc>
     <values>
-      <value>.false.</value>
+      <value>$ROF_DOMAIN_MESH</value>
+    </values>
+  </entry>
+
+  <entry id="model_createmesh_fromfile" skip_default_entry="true">
+    <type>char</type>
+    <category>streams</category>
+    <input_pathname>abs</input_pathname>
+    <group>drof_nml</group>
+    <desc>
+      file specifying model mesh
+    </desc>
+    <values>
+      <value>$ROF_DOMAIN_MESH</value>
+    </values>
+  </entry>
+
+  <entry id="nx_global" modify_via_xml="ROF_NX">
+    <type>integer</type>
+    <category>streams</category>
+    <group>drof_nml</group>
+    <desc>
+      global size of nx
+    </desc>
+    <values>
+      <value>$ROF_NX</value>
+    </values>
+  </entry>
+
+  <entry id="ny_global" modify_via_xml="ROF_NY">
+    <type>integer</type>
+    <category>streams</category>
+    <group>drof_nml</group>
+    <desc>
+      global size of ny
+    </desc>
+    <values>
+      <value>$ROF_NY</value>
     </values>
   </entry>
 
@@ -606,16 +533,6 @@
     <category>drof</category>
     <group>drof_nml</group>
     <desc>Master restart file name for drof model</desc>
-    <values>
-      <value>undefined</value>
-    </values>
-  </entry>
-
-  <entry id="restfils">
-    <type>char</type>
-    <category>drof</category>
-    <group>drof_nml</group>
-    <desc>Stream restart file name for drof model, needed for branch simulations</desc>
     <values>
       <value>undefined</value>
     </values>

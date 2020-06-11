@@ -13,8 +13,7 @@
   -->
 
   <description modifier_mode="1">
-    <desc rof="DROF[%NULL][%NYF][%IAF][%IAFAIS00][%IAFAIS45][%IAFAIS55][%CPLHIST][%JRA]">Data runoff model</desc>
-    <desc option="NULL"     >NULL mode</desc>
+    <desc rof="DROF[%NYF][%IAF][%IAFAIS00][%IAFAIS45][%IAFAIS55][%CPLHIST][%JRA]">Data runoff model</desc>
     <desc option="NYF"      >COREv2 normal year forcing:</desc>
     <desc option="IAF"      >COREv2 interannual year forcing:</desc>
     <desc option="IAFAIS00" >COREv2 interannual year forcing:</desc>
@@ -35,10 +34,9 @@
 
   <entry id="DROF_MODE">
     <type>char</type>
-    <valid_values>CPLHIST,DIATREN_ANN_RX1,DIATREN_IAF_RX1,DIATREN_IAF_AIS00_RX1,DIATREN_IAF_AIS45_RX1,DIATREN_IAF_AIS55_RX1,IAF_JRA,NULL</valid_values>
+    <valid_values>CPLHIST,DIATREN_ANN_RX1,DIATREN_IAF_RX1,DIATREN_IAF_AIS00_RX1,DIATREN_IAF_AIS45_RX1,DIATREN_IAF_AIS55_RX1,IAF_JRA,IAF_JRA_1p4_2018</valid_values>
     <default_value>DIATREN_ANN_RX1</default_value>
     <values match="last">
-      <value compset="_DROF%NULL">NULL</value>
       <value compset="_DROF%NYF" >DIATREN_ANN_RX1</value>
       <value compset="_DROF%NYFAIS00" >DIATREN_ANN_AIS00_RX1</value>
       <value compset="_DROF%NYFAIS45" >DIATREN_ANN_AIS45_RX1</value>
@@ -49,43 +47,17 @@
       <value compset="_DROF%IAFAIS55" >DIATREN_IAF_AIS55_RX1</value>
       <value compset="_DROF%CPLHIST">CPLHIST</value>
       <value compset="_DROF%JRA" >IAF_JRA</value>
-      <value compset=".+" grid="r%null">NULL</value> <!-- overwrites above if runoff grid is null -->
+      <value compset="_DROF%JRA-1p4-2018" >IAF_JRA_1p4_2018</value>
     </values>
     <group>run_component_drof</group>
     <file>env_run.xml</file>
-    <desc>DROF mode. Values are CPLHIST, *_RX1, and NULL. In *_RX1 mode,
+    <desc>DROF mode. Values are CPLHIST, *_RX1. In *_RX1 mode,
     observational climatological or interannual
     1-degree runoff data is used. In CPLHIST mode, runoff
-    data from a previous model run is read in. In NULL mode, the runoff
-    data is set to zero. In CPLHIST mode, runoff forcing data from a previous
-    model run is output by the coupler and read in by the data rof
-    model. In NULL mode, runoff forcing is set to zero and not used. The
+    data from a previous model run is read in.
+    In CPLHIST mode, runoff forcing data from a previous
+    model run is output by the coupler and read in by the data model.
     default is DIATREN_ANN_RX1.</desc>
-  </entry>
-
-  <entry id="DROF_CPLHIST_DOMAIN_FILE">
-    <type>char</type>
-    <valid_values></valid_values>
-    <default_value>null</default_value>
-    <group>run_component_drof</group>
-    <file>env_run.xml</file>
-    <desc>
-      Full pathname for domain file for drof when DROF_MODE is
-      CPLHIST.  NOTE: if this is set to 'null' (the default), then
-      domain information is read in from the first coupler history
-      file in the target stream and it is assumed that the first
-      coupler stream file that is pointed to contains the domain
-      information for that stream.
-    </desc>
-  </entry>
-
-  <entry id="DROF_CPLHIST_DIR">
-    <type>char</type>
-    <valid_values></valid_values>
-    <default_value>UNSET</default_value>
-    <group>run_component_drof</group>
-    <file>env_run.xml</file>
-    <desc>directory for coupler history data mode (only used when DROF_MODE is CPLHIST mode)</desc>
   </entry>
 
   <entry id="DROF_CPLHIST_CASE">

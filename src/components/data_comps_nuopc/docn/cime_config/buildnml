@@ -9,7 +9,7 @@
 # Disable these because this is our standard setup
 # pylint: disable=wildcard-import,unused-wildcard-import,wrong-import-position
 
-import os, sys, glob, re
+import os, sys, re
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","..","..")
 sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
@@ -19,7 +19,7 @@ from CIME.case import Case
 from CIME.XML.files import Files
 from CIME.nmlgen import NamelistGenerator
 from CIME.utils import expect, safe_copy
-from CIME.buildnml import create_namelist_infile, parse_input
+from CIME.buildnml import create_namelist_infile, parse_input, copy_inputs_to_rundir
 
 logger = logging.getLogger(__name__)
 
@@ -39,15 +39,13 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     # Get a bunch of information from the case.
     #----------------------------------------------------
     caseroot = case.get_value("CASEROOT")
+    docn_mode = case.get_value("DOCN_MODE")
     ocn_domain_file = case.get_value("OCN_DOMAIN_FILE")
     ocn_domain_path = case.get_value("OCN_DOMAIN_PATH")
-    docn_mode = case.get_value("DOCN_MODE")
     ocn_grid = case.get_value("OCN_GRID")
-    sstice_stream = case.get_value("SSTICE_STREAM")
     atm_nx = case.get_value("ATM_NX")
-    ocn_nx = case.get_value("OCN_NX")
     atm_ny = case.get_value("ATM_NY")
-    ocn_ny = case.get_value("OCN_NY")
+    grid = case.get_value("GRID")
 
     #----------------------------------------------------
     # Check for incompatible options.
@@ -64,77 +62,52 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     logger.debug("DOCN grid is {}".format(ocn_grid))
 
     #----------------------------------------------------
-    # Create configuration information.
+    # Create docn_in and docn.streams.xml files
     #----------------------------------------------------
     config = {}
+    config['grid'] = grid
     config['ocn_grid'] = ocn_grid
     config['docn_mode'] = docn_mode
-    config['sstice_stream'] = sstice_stream
 
-    #----------------------------------------------------
-    # Initialize namelist defaults
-    #----------------------------------------------------
     nmlgen.init_defaults(infile, config)
 
-    #----------------------------------------------------
-    # Determine if need to obtain model mask from a 
-    # separate file
-    #----------------------------------------------------
+    # Determine if need to obtain model mask from a separate file
+    ocn_nx = case.get_value("OCN_NX")
+    ocn_ny = case.get_value("OCN_NY")
     if (ocn_nx == atm_nx and ocn_ny == atm_ny and "aquap" not in docn_mode):
         nmlgen.set_value("model_maskfile",os.path.join(ocn_domain_path,ocn_domain_file))
 
-    #----------------------------------------------------
-    # Construct the list of streams.
-    #----------------------------------------------------
-    streams = nmlgen.get_streams()
+    # Determine if will create mesh by reading in a domain file
+    model_meshfile = case.get_value("OCN_DOMAIN_MESH")
+    if model_meshfile == 'create_mesh':
+        nmlgen.set_value("model_createmesh_fromfile",os.path.join(ocn_domain_path,ocn_domain_file))
 
-    #----------------------------------------------------
-    # For each stream, create stream text file and update
-    # shr_strdata_nml group and input data list.
-    #----------------------------------------------------
-    for stream in streams:
-
-        # Ignore null values.
-        if stream is None or stream in ("NULL", ""):
-            continue
-
-        inst_stream = stream + inst_string
-        logger.debug("DOCN stream is {}".format(inst_stream))
-        stream_path = os.path.join(confdir, "docn.streams.txt." + inst_stream)
-        nmlgen.create_stream_file_and_update_shr_strdata_nml(config, caseroot, 
-                                                             stream, stream_path, data_list_path)
-
-    # For aquaplanet prescribed have no streams
-    match = re.match(r'^sst_aquap\d+',docn_mode)
-    if match is not None:
-        if match.group(0):
-            value = ['null']
-            nmlgen.set_value("streams",value)
-
-    # globally uniform SST mode
-    if docn_mode=='sst_aquap_constant':
-        value = ['null']
-        nmlgen.set_value("streams",value)
+    # Set constant value sst
+    if docn_mode == 'docn_aquap_constant':
         value = [case.get_value('DOCN_AQPCONST_VALUE')]
         nmlgen.set_value("sst_constant_value",value)
 
-    #----------------------------------------------------
-    # Create `shr_strdata_nml` namelist group.
-    #----------------------------------------------------
-    # set per-stream variables
-    nmlgen.create_shr_strdata_nml()
-
-    #----------------------------------------------------
-    # Finally, write out all the namelists.
-    #----------------------------------------------------
+    # Generate docn_in
     namelist_file = os.path.join(confdir, "docn_in")
-    nmlgen.write_output_file(namelist_file, data_list_path, groups=['docn_nml','shr_strdata_nml'])
+    nmlgen.write_output_file(namelist_file, data_list_path, groups=['docn_nml'])
+
+    # Generate stream xml file if needed
+    if (re.search(r'sst_aquap[0-9]+',docn_mode) is not None) or (docn_mode == 'sst_aquap_constant'):
+        generate_stream_file = False
+    else:
+        generate_stream_file = True
+    if generate_stream_file:
+        # Create stream xml file - docn.streams.xml
+        # first construct the list of streams - this uses the "streamlist" namelist_definition_docn.xml values
+        streams = nmlgen.get_streams()
+        stream_path = os.path.join(confdir, "docn.streams"+inst_string+".xml" )
+        nmlgen.create_nuopc_stream_files(config, caseroot, streams, stream_path, data_list_path)
 
 ###############################################################################
 def buildnml(case, caseroot, compname):
 ###############################################################################
 
-    # Build the component namelist and required stream txt files
+    # Build the component namelist and required stream xml files
     if compname != "docn":
         raise AttributeError
 
@@ -172,8 +145,7 @@ def buildnml(case, caseroot, compname):
     #----------------------------------------------------
     # Clear out old data.
     #----------------------------------------------------
-    data_list_path = os.path.join(case.get_case_root(), "Buildconf",
-                                  "docn.input_data_list")
+    data_list_path = os.path.join(case.get_case_root(), "Buildconf", "docn.input_data_list")
     if os.path.exists(data_list_path):
         os.remove(data_list_path)
 
@@ -209,21 +181,11 @@ def buildnml(case, caseroot, compname):
         # create namelist and stream file(s) data component
         _create_namelists(case, confdir, inst_string, namelist_infile, nmlgen, data_list_path)
 
-        # copy namelist files and stream text files, to rundir
-        if os.path.isdir(rundir):
-            filename = compname + "_in"
-            file_src  = os.path.join(confdir, filename)
-            file_dest = os.path.join(rundir, filename)
-            if inst_string:
-                file_dest += inst_string
-            safe_copy(file_src,file_dest)
-
-            for txtfile in glob.glob(os.path.join(confdir, "*txt*")):
-                safe_copy(txtfile, rundir)
+        copy_inputs_to_rundir(caseroot, compname, confdir, rundir, inst_string)
 
 ###############################################################################
 def _main_func():
-    # Build the component namelist and required stream txt files
+    # Build the component namelist and required stream xml files
     caseroot = parse_input(sys.argv)
     with Case(caseroot) as case:
         buildnml(case, caseroot, "docn")

@@ -32,7 +32,6 @@ contains
     type(fldlist_type), pointer       :: fldlists
     integer, optional , intent(in)    :: ungridded_lbound
     integer, optional , intent(in)    :: ungridded_ubound
-
     ! local variables
     type(fldlist_type), pointer :: fldlist_new
     integer :: rc
@@ -48,7 +47,7 @@ contains
        fldlist_new%ungridded_ubound = ungridded_ubound
     end if
   end subroutine dshr_fldlist_add
-  
+
   !===============================================================================
 
   subroutine dshr_fldlist_realize(state, fldLists, flds_scalar_name, flds_scalar_num, mesh, tag, rc)
