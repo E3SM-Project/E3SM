@@ -22,6 +22,7 @@
 		<template file="zonal_mean.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<template file="eddy_product_variables.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<template file="ocean_heat_content.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+		<template file="mixed_layer_heat_budget.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<option name="config_pio_num_iotasks">1</option>
  		<option name="config_pio_stride">4</option>
 	</namelist>
@@ -87,6 +88,10 @@
 		</stream>
 		<template file="ocean_heat_content.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<stream name="oceanHeatContentOutput">
+			<attribute name="output_interval">0000_00:00:01</attribute>
+		</stream>
+		<template file="mixed_layer_heat_budget.xml" path_base="script_core_dir" path="templates/analysis_members"/>
+		<stream name="mixedLayerHeatBudgetOutput">
 			<attribute name="output_interval">0000_00:00:01</attribute>
 		</stream>
 	</streams>

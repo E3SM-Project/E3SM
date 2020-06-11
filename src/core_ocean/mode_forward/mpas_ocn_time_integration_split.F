@@ -210,6 +210,7 @@ module ocn_time_integration_split
         activeTracerVerticalAdvectionTendency,        &
         activeTracerSurfaceFluxTendency,              &
         activeTracerNonLocalTendency,                 &
+        activeTracerHorMixTendency,                   &
         activeTracerHorizontalAdvectionEdgeFlux
 
       real (kind=RKIND), dimension(:,:), pointer :: &
@@ -1673,6 +1674,7 @@ module ocn_time_integration_split
                   call mpas_pool_get_array(diagnosticsPool,'activeTracerSurfaceFluxTendency',activeTracerSurfaceFluxTendency)
                   call mpas_pool_get_array(diagnosticsPool,'temperatureShortWaveTendency',temperatureShortWaveTendency)
                   call mpas_pool_get_array(diagnosticsPool,'activeTracerNonLocalTendency',activeTracerNonLocalTendency)
+                  call mpas_pool_get_array(diagnosticsPool,'activeTracerHorMixTendency',activeTracerHorMixTendency)
                   call mpas_pool_get_array(diagnosticsPool,'activeTracerHorizontalAdvectionEdgeFlux', &
                           activeTracerHorizontalAdvectionEdgeFlux)
                   call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
@@ -1697,6 +1699,10 @@ module ocn_time_integration_split
                         activeTracerVerticalAdvectionTendency(:,k,iCell) = &
                            activeTracerVerticalAdvectionTendency(:,k,iCell) / &
                            layerThicknessNew(k,iCell)
+
+                        activeTracerHorMixTendency(:,k,iCell) = &
+                             activeTracerHorMixTendency(:,k,iCell) / &
+                             layerThicknessNew(k,iCell)
 
                         activeTracerSurfaceFluxTendency(:,k,iCell) = &
                            activeTracerSurfaceFluxTendency(:,k,iCell) / &
