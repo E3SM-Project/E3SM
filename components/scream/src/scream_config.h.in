@@ -1,0 +1,40 @@
+#ifndef SCREAM_CONFIG_H
+#define SCREAM_CONFIG_H
+
+// If defined, Real is double; if not, Real is float.
+#cmakedefine SCREAM_DOUBLE_PRECISION
+
+// If defined, enable floating point exceptions.
+#cmakedefine SCREAM_FPE
+
+// If defined, scream::pack objects check indices against bounds.
+#cmakedefine SCREAM_PACK_CHECK_BOUNDS
+
+// The number of scalars in a scream::pack::Pack and Mask.
+#cmakedefine SCREAM_PACK_SIZE ${SCREAM_PACK_SIZE}
+
+// The number of scalars in a scream::pack::SmallPack and SmallMask.
+#cmakedefine SCREAM_SMALL_PACK_SIZE ${SCREAM_SMALL_PACK_SIZE}
+
+// The number of scalars in a possibly-no-pack. Use this packsize when a routine does better with pksize=1 on some architectures (SKX).
+#cmakedefine SCREAM_POSSIBLY_NO_PACK_SIZE ${SCREAM_POSSIBLY_NO_PACK_SIZE}
+
+// Whether MPI errors should abort
+#cmakedefine SCREAM_MPI_ERRORS_ARE_FATAL
+
+// Whether we allow use of CONSTEXPR_ASSERT macro
+#cmakedefine SCREAM_CONSTEXPR_ASSERT
+
+// Mimic GPU to correctness-test inter-column parallelism on non-GPU platform
+#cmakedefine SCREAM_MIMIC_GPU
+
+// Whether this is a CUDA build
+#cmakedefine CUDA_BUILD
+
+// Whether fp model is strict
+#cmakedefine SCREAM_STRICT_FP
+
+// Whether SCREAM should perform sanity checks
+#cmakedefine SCREAM_DEBUG
+
+#endif // SCREAM_CONFIG_H

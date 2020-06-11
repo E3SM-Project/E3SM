@@ -95,7 +95,7 @@ CONTAINS
        seq_flds_x2o_fields, seq_flds_o2x_fields, &
        SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
        inst_suffix, inst_name, logunit, read_restart, &
-       scmMode, scmlat, scmlon)
+       scmMode, iop_mode, scmlat, scmlon)
 
     ! !DESCRIPTION: initialize docn model
     use pio        , only : iosystem_desc_t
@@ -119,6 +119,9 @@ CONTAINS
     integer(IN)            , intent(in)    :: logunit             ! logging unit number
     logical                , intent(in)    :: read_restart        ! start from restart
     logical                , intent(in)    :: scmMode             ! single column mode
+    logical                , intent(in)    :: iop_mode            ! IOP mode 
+                                                                  ! cover planet with
+                                                                  ! identical surface
     real(R8)               , intent(in)    :: scmLat              ! single column lat
     real(R8)               , intent(in)    :: scmLon              ! single column lon
 
@@ -172,7 +175,8 @@ CONTAINS
        if (my_task == master_task) &
             write(logunit,F05) ' scm lon lat = ',scmlon,scmlat
        call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', &
-            scmmode=scmmode,scmlon=scmlon,scmlat=scmlat, calendar=calendar, reset_domain_mask=.true.)
+            scmmode=scmmode,iop_mode=iop_mode,scmlon=scmlon,scmlat=scmlat, &
+            calendar=calendar, reset_domain_mask=.true.)
     else
        if (datamode == 'SST_AQUAPANAL' .or. datamode == 'SST_AQUAPFILE' .or. &
            datamode == 'SOM_AQUAP' .or. datamode == 'SST_AQUAP_CONSTANT' ) then

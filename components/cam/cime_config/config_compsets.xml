@@ -87,6 +87,16 @@
   </compset>
 
   <compset>
+    <alias>F1850S-AR5-superfast</alias>
+    <lname>1850S_CAM5%AR5sf_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  
+  <compset>
+    <alias>F20TRS-AR5-superfast</alias>
+    <lname>20TRS_CAM5%AR5sf_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  
+  <compset>
     <alias>F1950C5-CMIP6-LR</alias>
     <lname>1950_CAM5%CMIP6-LR_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
@@ -325,7 +335,7 @@
   <compset>
     <alias>F-EAMv1-AQP7</alias>
     <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQP7_SROF_SGLC_SWAV</lname>
-  </compset>
+  </compset> 
   <compset>
     <alias>F-EAMv1-AQP8</alias>
     <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQP8_SROF_SGLC_SWAV</lname>
@@ -342,6 +352,30 @@
     <alias>F-EAMv1-AQPFILE</alias>
     <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQPFILE_SROF_SGLC_SWAV</lname>
   </compset>
+  
+  <!-- *********************************** -->
+  <!-- SCREAM compsets -->
+  <!-- *********************************** -->  
+  
+  <compset>
+    <alias>FSCREAM-LR</alias>
+    <lname>2000_CAM5%SCREAM-LR_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset> 
+  
+  <compset>
+    <alias>FSCREAM-HR</alias>
+    <lname>2000_CAM5%SCREAM-HR_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset> 
+
+  <compset>
+    <alias>FSCREAM-LR-DYAMOND1</alias>
+    <lname>2000_CAM5%SCREAM-LR-DYAMOND1_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FSCREAM-HR-DYAMOND1</alias>
+    <lname>2000_CAM5%SCREAM-HR-DYAMOND1_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
 
   <!-- *********************************** -->
   <!-- Radiative-Convective Equilibrium (RCE) -->
@@ -354,6 +388,11 @@
   <!-- *********************************** -->
   <!-- idealized / adiabatic -->
   <!-- *********************************** -->
+  
+  <compset>
+    <alias>FSCRAV1C-L</alias>
+    <lname>2000_SCREAM%AV1C-L_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>  
 
   <compset>
     <alias>FIDEAL</alias>
@@ -481,6 +520,8 @@
 	<value  compset="C2R4_CAM">2004-01-01</value>
 	<value  compset="AR95_CAM">1995-07-18</value>
 	<value  compset="AR97_CAM">1997-06-19</value>
+    <value  compset="_CAM5%SCREAM-LR-DYAMOND1">2016-08-01</value>
+    <value  compset="_CAM5%SCREAM-HR-DYAMOND1">2016-08-01</value>
       </values>
     </entry>
 
@@ -533,8 +574,8 @@
       <values>
         <value compset="AR9[57]_CAM">262.5</value>
       </values>
-    </entry>
-
+    </entry> 
+    
   </entries>
 
 </compsets>

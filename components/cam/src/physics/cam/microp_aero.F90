@@ -192,7 +192,7 @@ subroutine microp_aero_init
    call cnst_get_ind('NUMICE', numice_idx)
 
    select case(trim(eddy_scheme))
-   case ('diag_TKE')
+   case ('diag_TKE', 'SHOC_SGS')
       tke_idx      = pbuf_get_index('tke')   
    case ('CLUBB_SGS')
       wp2_idx = pbuf_get_index('WP2_nadv')
@@ -592,7 +592,7 @@ subroutine microp_aero_run ( &
    ! Set to be zero at the surface by initialization.
 
    select case (trim(eddy_scheme))
-   case ('diag_TKE')
+   case ('diag_TKE', 'SHOC_SGS')
       call pbuf_get_field(pbuf, tke_idx, tke)
    case ('CLUBB_SGS')
       itim_old = pbuf_old_tim_idx()
@@ -617,8 +617,9 @@ subroutine microp_aero_run ( &
       do i = 1, ncol
 
          select case (trim(eddy_scheme))
-         case ('diag_TKE', 'CLUBB_SGS')
+         case ('diag_TKE', 'CLUBB_SGS', 'SHOC_SGS')
             wsub(i,k) = sqrt(0.5_r8*(tke(i,k) + tke(i,k+1))*(2._r8/3._r8))
+!            write(*,*) 'WSUB ', wsub(i,k), tke(i,k)
             wsub(i,k) = min(wsub(i,k),10._r8)
             wsig(i,k) = max(0.001_r8, wsub(i,k))
          case default 

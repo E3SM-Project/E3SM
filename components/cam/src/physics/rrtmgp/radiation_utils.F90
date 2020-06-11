@@ -7,7 +7,7 @@ module radiation_utils
    private
 
    public :: compress_day_columns, expand_day_columns, &
-             calculate_heating_rate, clip_values, &
+             calculate_heating_rate, clip_values, check_range, &
              handle_error
 
    ! Interface blocks for overloaded procedures
@@ -22,6 +22,12 @@ module radiation_utils
    interface clip_values
       module procedure clip_values_1d, clip_values_2d
    end interface clip_values
+
+   ! Procedure to check range, with extra arguments to print lat/lon location
+   ! where errors occur
+   interface check_range
+      module procedure check_range_2d, check_range_3d
+   end interface
 
    ! Name of this module for error messages
    character(len=*), parameter :: module_name = 'radiation_utils'
@@ -279,10 +285,87 @@ contains
 
    end subroutine clip_values_2d
 
+   !-------------------------------------------------------------------------------
+   subroutine check_range_2d(v, vmin, vmax, vname, lat, lon, abort_on_error, clip_values)
+      use cam_abortutils, only: endrun
+      real(r8), intent(inout) :: v(:,:)
+      real(r8), intent(in) :: vmin, vmax
+      character(len=*), intent(in) :: vname
+      real(r8), intent(in) :: lat(:), lon(:)
+      logical, intent(in), optional :: abort_on_error, clip_values
+      logical :: abort_on_error_local, clip_values_local
+      integer :: ix, iz
+      if (present(abort_on_error)) then
+         abort_on_error_local = abort_on_error
+      else
+         abort_on_error_local = .true.
+      end if
+      if (present(clip_values)) then
+         clip_values_local = clip_values
+      else
+         clip_values_local = .false.
+      end if
+      do iz = 1,size(v, 2)
+         do ix = 1,size(v, 1)
+            if (v(ix,iz) < vmin .or. v(ix,iz) > vmax) then
+               print *, 'WARNING: ' // trim(vname) // &
+                        ' out of range; value = ', v(ix,iz), &
+                        '; lat, lon, lev = ', lat(ix), lon(ix), iz
+               if (clip_values_local) then
+                  if (v(ix,iz) < vmin) v(ix,iz) = vmin
+                  if (v(ix,iz) > vmax) v(ix,iz) = vmax
+               else if (abort_on_error_local) then
+                  call endrun('check_range failed for ' // trim(vname))
+               end if
+            end if
+         end do
+      end do
+   end subroutine check_range_2d
+   !-------------------------------------------------------------------------------
+   subroutine check_range_3d(v, vmin, vmax, vname, lat, lon, abort_on_error, clip_values)
+      use cam_abortutils, only: endrun
+      real(r8), intent(inout) :: v(:,:,:)
+      real(r8), intent(in) :: vmin, vmax
+      character(len=*), intent(in) :: vname
+      real(r8), intent(in) :: lat(:), lon(:)
+      logical, intent(in), optional :: abort_on_error, clip_values
+      logical :: abort_on_error_local, clip_values_local
+      integer :: ix, iy, iz
+      if (present(abort_on_error)) then
+         abort_on_error_local = abort_on_error
+      else
+         abort_on_error_local = .true.
+      end if
+      if (present(clip_values)) then
+         clip_values_local = clip_values
+      else
+         clip_values_local = .false.
+      end if
+      do iz = 1,size(v, 3)
+         do iy = 1,size(v,2)
+            do ix = 1,size(v, 1)
+               if (v(ix,iy,iz) < vmin .or. v(ix,iy,iz) > vmax) then
+                  print *, 'WARNING: ' // trim(vname) // &
+                           ' out of range; value = ', v(ix,iy,iz), &
+                           '; lat, lon, lev = ', lat(ix), lon(ix), iz
+                  if (clip_values_local) then
+                     if (v(ix,iy,iz) < vmin) v(ix,iy,iz) = vmin
+                     if (v(ix,iy,iz) > vmax) v(ix,iy,iz) = vmax
+                  else if (abort_on_error_local) then
+                     call endrun('check_range failed for ' // trim(vname))
+                  end if
+               end if
+            end do
+         end do
+      end do
+   end subroutine check_range_3d
+   !-------------------------------------------------------------------------------
+
    !----------------------------------------------------------------------------
 
    subroutine handle_error(error_message, stop_on_error)
       use cam_abortutils, only: endrun
+      use cam_logfile, only: iulog
       character(len=*), intent(in) :: error_message
       logical, intent(in), optional :: stop_on_error
       logical :: stop_on_error_local = .true.
@@ -301,6 +384,8 @@ contains
       if (len(trim(error_message)) > 0) then
          if (stop_on_error_local) then
             call endrun(module_name // ': ' // error_message)
+         else
+            write(iulog,*) 'WARNING: ', error_message
          end if
       end if
    end subroutine handle_error

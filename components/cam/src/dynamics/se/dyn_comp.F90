@@ -89,7 +89,6 @@ CONTAINS
     use rgrid,               only: fullgrid
     use spmd_utils,          only: mpi_integer, mpicom, mpi_logical
     use spmd_dyn,            only: spmd_readnl
-    use native_mapping,      only: create_native_mapping_files, native_mapping_readnl
     use time_manager,        only: get_nstep, dtime
 
     use dimensions_mod,   only: globaluniquecols, nelem, nelemd, nelemdmax
@@ -167,6 +166,9 @@ CONTAINS
        neltmp(1) = 0
        neltmp(2) = 0
        neltmp(3) = 0
+       allocate(elem(nelemd))
+       dyn_in%elem => elem
+       dyn_out%elem => elem
     endif
 
     dyndecomp_set = .true.
@@ -182,13 +184,6 @@ CONTAINS
           call set_horiz_grid_cnt_d(neltmp(3))
        endif
     endif
-
-    !
-    ! This subroutine creates mapping files using SE basis functions if requested
-    !
-    call native_mapping_readnl(NLFileName)
-    call create_native_mapping_files( par, elem,'native')
-    call create_native_mapping_files( par, elem,'bilin')
 
     ! Dynamics timestep
     !
@@ -337,7 +332,7 @@ CONTAINS
   subroutine dyn_run( dyn_state, rc )
 
     ! !USES:
-    use scamMod,          only: single_column, use_3dfrc
+    use scamMod,          only: single_column, iop_mode, use_3dfrc
     use se_single_column_mod, only: apply_SC_forcing
     use parallel_mod,     only : par
     use prim_driver_mod,  only: prim_run_subcycle
@@ -355,6 +350,7 @@ CONTAINS
     integer ::  n
     integer :: nets, nete, ithr
     integer :: ie
+    logical :: single_column_in, do_prim_run
 
     ! !DESCRIPTION:
     !
@@ -373,12 +369,33 @@ CONTAINS
        nete=dom_mt(ithr)%end
        hybrid = hybrid_create(par,ithr,hthreads)
 
-       if (.not. use_3dfrc) then
+       do_prim_run = .true. ! Always do prim_run_subcycle
+                            ! Unless turned off by SCM for specific cases
+
+       single_column_in = single_column
+       
+       ! if IOP mode we want dycore to operate in non-SCM mode,
+       !   thus turn this switch to false for dycore input.  NOTE that
+       !   dycore in SCM mode means that only the large scale vertical 
+       !   advection is computed (i.e. no horizontal communication)
+       if (iop_mode) then
+         single_column_in = .false.
+       endif
+       
+       ! if true SCM mode (not IOP mode) do not call 
+       !   dynamical core if 3D forcing is prescribed
+       !   (since large scale vertical advection is accounted for
+       !   in that forcing)
+       if (single_column .and. .not. iop_mode) then
+         if (use_3dfrc) do_prim_run = .false.
+       endif
+       
+       if (do_prim_run) then
          do n=1,se_nsplit
            ! forward-in-time RK, with subcycling
            call t_startf("prim_run_sybcycle")
            call prim_run_subcycle(dyn_state%elem,hybrid,nets,nete,&
-               tstep, single_column, TimeLevel, hvcoord, n)
+               tstep, single_column_in, TimeLevel, hvcoord, n)
            call t_stopf("prim_run_sybcycle")
          end do
        endif

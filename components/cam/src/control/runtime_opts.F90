@@ -95,6 +95,10 @@ character(len=256) :: cam_branch_file = ' '
 !
 ! seed_clock           logical: if .true., XOR the system_clock with the seed,
 !                      wheter it includes a custom seed or not. Default .false.
+! 
+! phys_chnk_fdim       Declared first dimension for physics variables (chunks).
+!                      See phys_grid module.  
+integer :: phys_chnk_fdim
 !
 ! phys_alltoall        Dynamics/physics transpose option. See phys_grid module.
 !
@@ -164,12 +168,13 @@ logical  :: scm_observed_aero
 logical  :: swrad_off
 logical  :: lwrad_off
 logical  :: precip_off
+logical  :: iop_mode
 
 contains
 
 !=======================================================================
 
-  subroutine read_namelist(single_column_in, scmlon_in, scmlat_in, nlfilename_in )
+  subroutine read_namelist(single_column_in, scmlon_in, scmlat_in, iop_mode_in, nlfilename_in )
 
    !----------------------------------------------------------------------- 
    ! 
@@ -237,6 +242,7 @@ contains
    use radiation_data,      only: rad_data_readnl
    use modal_aer_opt,       only: modal_aer_opt_readnl
    use clubb_intr,          only: clubb_readnl
+   use shoc_intr,           only: shoc_readnl
    use chemistry,           only: chem_readnl
    use lin_strat_chem,      only: linoz_readnl
    use prescribed_volcaero, only: prescribed_volcaero_readnl
@@ -265,6 +271,7 @@ contains
 !---------------------------Arguments-----------------------------------
 
    logical , intent(in), optional :: single_column_in 
+   logical , intent(in), optional :: iop_mode_in
    real(r8), intent(in), optional :: scmlon_in
    real(r8), intent(in), optional :: scmlat_in
    character(len=*)    , optional :: nlfilename_in
@@ -301,6 +308,7 @@ contains
                      tracers_flag, &
                      indirect, &
                      print_step_cost,  &
+                     phys_chnk_fdim,  &
                      phys_alltoall, phys_loadbalance, phys_twin_algorithm, &
                      phys_chnk_per_thd, phys_chnk_cost_write
 
@@ -334,6 +342,7 @@ contains
 
    ! Get default values of runtime options for physics chunking.
    call phys_grid_defaultopts(                      &
+      phys_chnk_fdim_out      =phys_chnk_fdim,      &
       phys_loadbalance_out    =phys_loadbalance,    &
       phys_twin_algorithm_out =phys_twin_algorithm, &
       phys_alltoall_out       =phys_alltoall,       &
@@ -358,6 +367,7 @@ contains
         swrad_off_out=swrad_off, &
         lwrad_off_out=lwrad_off, &
         precip_off_out=precip_off, &
+        iop_mode_out=iop_mode, &
         scm_clubb_iop_name_out=scm_clubb_iop_name)
    end if
 
@@ -406,6 +416,7 @@ contains
 
    ! Set runtime options for physics chunking.
    call phys_grid_setopts(                          &
+       phys_chnk_fdim_in      =phys_chnk_fdim,      &
        phys_loadbalance_in    =phys_loadbalance,    &
        phys_twin_algorithm_in =phys_twin_algorithm, &
        phys_alltoall_in       =phys_alltoall,       &
@@ -416,12 +427,13 @@ contains
    call check_energy_setopts( &
       print_energy_errors_in = print_energy_errors )
 
-   ! Set runtime options for single column mode
+   ! Set runtime options for single column mode 
    if (present(single_column_in) .and. present(scmlon_in) .and. present(scmlat_in)) then 
       if (single_column_in) then
          single_column = single_column_in
          scmlon = scmlon_in
          scmlat = scmlat_in
+         iop_mode = iop_mode_in
          call scam_setopts( scmlat_in=scmlat,scmlon_in=scmlon, &
                             iopfile_in=iopfile,single_column_in=single_column,&
                             scm_iop_srf_prop_in=scm_iop_srf_prop,&
@@ -434,6 +446,7 @@ contains
                             swrad_off_in=swrad_off, &
                             lwrad_off_in=lwrad_off, &
                             precip_off_in=precip_off, &
+                            iop_mode_in=iop_mode,&
                             scm_clubb_iop_name_in=scm_clubb_iop_name)
       end if
    endif
@@ -462,6 +475,7 @@ contains
    call microp_driver_readnl(nlfilename)
    call microp_aero_readnl(nlfilename)
    call clubb_readnl(nlfilename)
+   call shoc_readnl(nlfilename)
    call subcol_readnl(nlfilename)
    call cldfrc_readnl(nlfilename)
    call cldfrc2m_readnl(nlfilename)
@@ -626,6 +640,7 @@ subroutine distnl
    call mpibcast (indirect     , 1 ,mpilog, 0,mpicom)
 
    ! Physics chunk tuning
+   call mpibcast (phys_chnk_fdim     ,1,mpiint,0,mpicom)
    call mpibcast (phys_loadbalance   ,1,mpiint,0,mpicom)
    call mpibcast (phys_twin_algorithm,1,mpiint,0,mpicom)
    call mpibcast (phys_alltoall      ,1,mpiint,0,mpicom)

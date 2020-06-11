@@ -475,7 +475,7 @@ contains
       ! methods).
       type(ty_gas_concs) :: available_gases
 
-      real(r8), target :: sw_band_midpoints(nswbands), lw_band_midpoints(nlwbands)
+      real(r8), allocatable :: sw_band_midpoints(:), lw_band_midpoints(:)
       character(len=32) :: subname = 'radiation_init'
 
       character(len=10), dimension(3) :: dims_crm_rad = (/'crm_nx_rad','crm_ny_rad','crm_nz    '/)
@@ -588,11 +588,13 @@ contains
       !
       
       ! Register new dimensions
+      allocate(sw_band_midpoints(nswbands), lw_band_midpoints(nlwbands))
       sw_band_midpoints(:) = get_band_midpoints(nswbands, k_dist_sw)
       lw_band_midpoints(:) = get_band_midpoints(nlwbands, k_dist_lw)
       call assert(all(sw_band_midpoints > 0), subname // ': negative sw_band_midpoints')
       call add_hist_coord('swband', nswbands, 'Shortwave band', 'wavelength', sw_band_midpoints)
       call add_hist_coord('lwband', nlwbands, 'Longwave band', 'wavelength', lw_band_midpoints)
+      deallocate(sw_band_midpoints, lw_band_midpoints)
 
       ! Shortwave radiation
       call addfld('TOT_CLD_VISTAU', (/ 'lev' /), 'A',   '1', &
@@ -1316,6 +1318,9 @@ contains
          aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw
       real(r8), dimension(pcols,pver,nswgpts) :: &
          cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw
+      ! NOTE: these are diagnostic only
+      real(r8), dimension(pcols,pver,nswbands) :: liq_tau_bnd_sw, ice_tau_bnd_sw, snw_tau_bnd_sw
+      real(r8), dimension(pcols,pver,nlwbands) :: liq_tau_bnd_lw, ice_tau_bnd_lw, snw_tau_bnd_lw
 
       !----------------------------------------------------------------------
 
@@ -1570,7 +1575,8 @@ contains
                            ncol, pver, nswbands, do_snow_optics(), &
                            cld, cldfsnow, iclwp, iciwp, icswp, &
                            lambdac, mu, dei, des, rel, rei, &
-                           cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw &
+                           cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw, &
+                           liq_tau_bnd_sw, ice_tau_bnd_sw, snw_tau_bnd_sw &
                         )
                         call sample_cloud_optics_sw( &
                            ncol, pver, nswgpts, k_dist_sw%get_gpoint_bands(), &
@@ -1595,7 +1601,7 @@ contains
                         call get_cloud_optics_lw( &
                            ncol, pver, nlwbands, do_snow_optics(), cld, cldfsnow, iclwp, iciwp, icswp, &
                            lambdac, mu, dei, des, rei, &
-                           cld_tau_bnd_lw &
+                           cld_tau_bnd_lw, liq_tau_bnd_lw, ice_tau_bnd_lw, snw_tau_bnd_lw &
                         )
                         call sample_cloud_optics_lw( &
                            ncol, pver, nlwgpts, k_dist_lw%get_gpoint_bands(), &

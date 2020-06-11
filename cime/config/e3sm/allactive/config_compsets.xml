@@ -14,7 +14,7 @@
     TIME_ATM[%phys]_LND[%phys]_ICE[%phys]_OCN[%phys]_ROF[%phys]_GLC[%phys]_WAV[%phys][_ESP%phys][_BGC%phys]
     Where for the CAM specific compsets below the following is supported
     TIME = Time period (e.g. 2000, HIST, RCP8...)
-    ATM  = [CAM4, CAM5, SATM]
+    ATM  = [CAM4, CAM5, SATM, SCREAM]
     LND  = [CLM45,  SLND]
     ICE  = [MPASSI, CICE, DICE, SICE]
     OCN  = [MPASO, DOCN, SOCN]
@@ -70,6 +70,16 @@
 </compset>
 
 <!-- E3SM v1 science compsets -->
+
+<compset>
+  <alias>A_WCYCL1850_AR5emis_superfast</alias>
+  <lname>1850_CAM5%AR5sf_CLM45%SPBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>A_WCYCL20TR_AR5emis_superfast</alias>
+  <lname>20TR_CAM5%AR5sf_CLM45%SPBC_MPASSI%SPUNUP_MPASO%SPUNUP_MOSART_SGLC_SWAV</lname>
+</compset>
 
 <compset>
   <alias>A_WCYCL2000</alias>

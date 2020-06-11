@@ -27,12 +27,15 @@
   </entry>
 
   <entry id="CAM_TARGET">
-         <type>char</type>
-         <valid_values>preqx,preqx_kokkos,preqx_acc,theta-l</valid_values>
-         <default_value>preqx</default_value>
-         <group>build_component_cam</group>
-         <file>env_build.xml</file>
-         <desc>CAM-SE cmake target (only used with CAM_DYCORE == 'se')</desc>
+    <type>char</type>
+    <valid_values>preqx,preqx_kokkos,preqx_acc,theta-l</valid_values>
+    <default_value>preqx</default_value>
+	<values>
+	   <value compset="_CAM5%SCREAM-HR">theta-l</value>
+	</values>
+    <group>build_component_cam</group>
+    <file>env_build.xml</file>
+    <desc>CAM-SE cmake target (only used with CAM_DYCORE == 'se')</desc>
   </entry>
 
   <entry id="CAM_CONFIG_OPTS">
@@ -61,6 +64,7 @@
       <value compset="_CAM5%CMIP6-LR"    >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_CAM5%CMIP6-LRtunedHR"    >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="1950_CAM5%CMIP6-[LH]R"    >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -cppdefs -DAPPLY_POST_DECK_BUGFIXES -nlev 72</value>
+      <value compset="_CAM5%AR5sf"    >-clubb_sgs -microphys mg2 -chem superfast_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="2010_CAM5%CMIP6-[LH]R"    >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -cppdefs -DAPPLY_POST_DECK_BUGFIXES -nlev 72</value>
       <value compset="_CAM5%AV1F"     >-clubb_sgs -microphys mg2 -chem trop_mam4_resus      -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_CAM5%AV1F-00"  >-clubb_sgs -microphys mg2 -chem trop_mam4_resus      -rain_evap_to_coarse_aero -nlev 72</value>
@@ -148,12 +152,17 @@
       <value compset="_CAM%IDEAL"     >-phys ideal</value>              
       <value compset="_CAM%ADIAB"     >-phys adiabatic</value>              
 
+      <!-- SCREAM configurations -->
+      <value compset="_CAM5%SCREAM-LR">-phys cam5 -shoc_sgs -microphys p3 -chem none -nlev 72 -rad rrtmgp</value>
+      <value compset="_CAM5%SCREAM-HR">-phys cam5 -shoc_sgs -microphys p3 -chem none -nlev 128 -rad rrtmgp</value>
+
       <!-- Aquaplanet -->
       <value compset="_CAM5%AQUA"   >-phys cam5 -nlev 72 -clubb_sgs -microphys mg2 -aquaplanet -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates </value>
 
+      <value compset="_CLM45%[^_]*BC"     >-bc_dep_to_snow_updates</value>
+
       <!-- Radiative-Convective Equilibrium (RCE) -->
       <value compset="_CAM5%RCE"    >-phys cam5  -rad rrtmgp -nlev 72 -clubb_sgs -microphys mg2 -aquaplanet -rce -chem none </value>
-
 
     </values>
     <group>build_component_cam</group>
@@ -223,6 +232,8 @@
       <value compset="1950_CAM5.*CMIP6-LRtunedHR"  >1950_cam5_CMIP6-LRtunedHR</value>
       <value compset="1850_CAM5.*CMIP6.*_BGC%B"  >1850_cam5_CMIP6_bgc</value>
       <value compset="2010S_CAM5.*CMIP6"  >2010S_cam5_CMIP6</value>
+      <value compset="1850_CAM5.*AR5sf"   >1850_E3SMv1_superfast_ar5-emis</value>
+      <value compset="1850S_CAM5.*AR5sf"  >1850S_E3SMv1_superfast_ar5-emis</value>
       <value compset="2000_CAM5.*AV1C-01">2000_cam5_av1c-01</value>
       <value compset="2000_CAM5.*AV1C-02">2000_cam5_av1c-02</value>
       <value compset="2000_CAM5.*AV1C-03">2000_cam5_av1c-03</value>
@@ -252,6 +263,9 @@
       <value compset="SSP585_CAM5.*CMIP6.*_BGC%B">SSP585_cam5_CMIP6_bgc</value>
       <value compset="2010_CAM5.*CMIP6-LR"  >2010_cam5_CMIP6-LR</value>
       <value compset="2010_CAM5.*CMIP6-HR"  >2010_cam5_CMIP6-HR</value>
+      <value compset="20TR_CAM5.*AR5sf" >20TR_E3SMv1_superfast_ar5-emis</value>
+      <value compset="20TRS_CAM5.*AR5sf">20TRS_E3SMv1_superfast_ar5-emis</value>
+
       <value compset="2000_CAM5%COSP"   >2000_cam5_cosp</value>
       <value compset="2000_CAM4%WCMX"   >waccmx_2000_cam4</value>
       <value compset="1996_CAM4%WCMX"   >waccmx_1996_cam4</value>
@@ -285,6 +299,8 @@
       <value compset="AR97_CAM[45]"     >scam_arm97</value>
       <value compset="SCAM_CAM5"        >scam_generic</value>
       <value compset="PIPD_CAM5"        >1850-PD_cam5</value>
+      <value compset="2000_CAM5.*SCREAM-LR" >2000_scream_lr</value>
+      <value compset="2000_CAM5.*SCREAM-HR" >2000_scream_hr</value>
       <!-- Aqua planet -->
       <value compset="_CAM5%AQUA"     >aquaplanet_EAMv1</value>
       <!-- Radiative-Convective Equilibrium (RCE) -->
@@ -353,6 +369,7 @@
     <desc compset="_CAM5.*CMIP6-HR" >high-res (ne120 w/ 18to6 ocn) 72 layer E3SM v1 atmos model with CMIP6 forcings </desc>
     <desc compset="_CAM5.*CMIP6-LR" >low-res (ne30 w/ oECv3 ocn) 72 layer E3SM v1 atmos model with CMIP6 forcings </desc>
     <desc compset="_CAM5.*CMIP6-LRtunedHR" >low-res (ne30 w/ oECv3 ocn) 72 layer E3SM v1 atmos model with CMIP6 forcings *with high-res tunings* </desc>
+    <desc compset="_CAM5.*AR5sf"    >E3SM plus super-fast chemistry with AR5 emissions:</desc>
     <desc compset="_CAM5.*AV1F"     >CAM with familiar set of E3SM atmospheric mods for V1 (72 Layers model):</desc>
     <desc compset="_CAM5.*AV1F-00"  >CAM with familiar set of E3SM atmospheric mods for V1 (72 Layers model)- v00:</desc>
     <desc compset="_CAM5.*AV1F-01"  >CAM with familiar set of E3SM atmospheric mods for V1 (72 Layers model) and ACES4BGC SOAG emissions- v01:</desc>
@@ -397,6 +414,10 @@
     <desc compset="_CAM5%MG1M"   >MG1.0 w/ modified activation:</desc>
     <desc compset="_CAM5%UNI"    >UNICON (modified mg1.0):</desc>
     <desc compset="CAM[45].*_BGC%B">CAM prognostic CO2 cycle turned on.</desc>
+    <desc compset="_CAM5.*SCREAM-LR-DYAMOND1">Fortran version of SCREAM with SHOC, P3, RRTMGP, and prescribed aerosol. Initialized for DYAMOND1 (2016-08-01).</desc>
+    <desc compset="_CAM5.*SCREAM-HR-DYAMOND1">Fortran version of SCREAM with NH dycore, SHOC, P3, RRTMGP, prescribed aerosol, and no deep convection. Initialized for DYAMOND1 (2016-08-01).</desc>
+    <desc compset="_CAM5.*SCREAM-LR_">Fortran version of SCREAM with SHOC, P3, RRTMGP, and prescribed aerosol.</desc>
+    <desc compset="_CAM5.*SCREAM-HR_">Fortran version of SCREAM with NH dycore, SHOC, P3, RRTMGP, prescribed aerosol, and no deep convection.</desc>
     <!-- old MMF / Super-Parameterization -->
     <desc compset="_CAM5%SP1V1_"    >SP-E3SM with 64x1km CRM, RRTMG radiation, 1-mom micro, prescribed aerosol</desc>
     <desc compset="_CAM5%SP2V1_"    >SP-E3SM with 64x1km CRM, RRTMG radiation, 2-mom micro, prognostic aerosol</desc>

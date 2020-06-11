@@ -54,6 +54,7 @@ module check_energy
   public :: check_energy_fix       ! add global mean energy difference as a heating
   public :: check_tracers_init      ! initialize tracer integrals and cumulative boundary fluxes
   public :: check_tracers_chng      ! check changes in integrals against cumulative boundary fluxes
+  public :: check_tracers_fini      ! free memory associated with check_tracers_data type variable
 
   public :: qflx_gmean              ! calculate global mean of qflx for water conservation check 
   public :: check_qflx              ! output qflx at certain locations for water conservation check  
@@ -82,8 +83,8 @@ module check_energy
   integer  :: dtcore_idx = 0       ! dtcore index in physics buffer 
 
   type check_tracers_data
-     real(r8) :: tracer(pcols,pcnst)       ! initial vertically integrated total (kinetic + static) energy
-     real(r8) :: tracer_tnd(pcols,pcnst)   ! cumulative boundary flux of total energy
+     real(r8), allocatable :: tracer(:,:) ! initial vertically integrated total (kinetic + static) energy
+     real(r8), allocatable :: tracer_tnd(:,:) ! cumulative boundary flux of total energy
      integer :: count(pcnst)               ! count of values with significant imbalances
   end type check_tracers_data
 
@@ -266,6 +267,7 @@ end subroutine check_energy_get_integrals
     real(r8) :: ws(state%ncol)                     ! vertical integral of snow
     integer :: ixrain
     integer :: ixsnow
+    integer :: ixrim                               ! Index for RIME constituent
 !-----------------------------------------------------------------------
 
     lchnk = state%lchnk
@@ -274,6 +276,7 @@ end subroutine check_energy_get_integrals
     call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
     call cnst_get_ind('RAINQM', ixrain, abort=.false.)
     call cnst_get_ind('SNOWQM', ixsnow, abort=.false.)
+    call cnst_get_ind('BVRIM ',  ixrim,  abort=.false.)
 
     ! cpairv_loc needs to be allocated to a size which matches state and ptend
     ! If psetcols == pcols, cpairv is the correct size and just copy into cpairv_loc
@@ -319,15 +322,22 @@ end subroutine check_energy_get_integrals
        end do
     end if
 
-    if (ixrain   > 1  .and.  ixsnow   > 1 ) then
+    if (ixrain   > 1) then
        do k = 1, pver
           do i = 1, ncol
              wr(i) = wr(i) + state%q(i,k,ixrain)*state%pdel(i,k)/gravit
+          end do
+       end do
+    end if
+!AaronDonahue P3 doesn't have snow but MG does, so it is necessary to 
+!separate snow mass from rain mass to accurately track mass conservation
+    if (ixsnow > 1) then 
+       do k = 1, pver
+          do i = 1, ncol
              ws(i) = ws(i) + state%q(i,k,ixsnow)*state%pdel(i,k)/gravit
           end do
        end do
     end if
-
 
 ! Compute vertical integrals of frozen static energy and total water.
     do i = 1, ncol
@@ -415,6 +425,7 @@ end subroutine check_energy_get_integrals
     real(r8) :: ws(state%ncol)                     ! vertical integral of snow
     integer :: ixrain
     integer :: ixsnow
+    integer :: ixrim                               ! Index for RIME constituent
 !-----------------------------------------------------------------------
 
     lchnk = state%lchnk
@@ -423,6 +434,7 @@ end subroutine check_energy_get_integrals
     call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
     call cnst_get_ind('RAINQM', ixrain, abort=.false.)
     call cnst_get_ind('SNOWQM', ixsnow, abort=.false.)
+    call cnst_get_ind('BVRIM ',  ixrim,  abort=.false.)
 
     ! cpairv_loc needs to be allocated to a size which matches state and ptend
     ! If psetcols == pcols, cpairv is the correct size and just copy into cpairv_loc
@@ -468,10 +480,18 @@ end subroutine check_energy_get_integrals
        end do
     end if
 
-    if (ixrain   > 1  .and.  ixsnow   > 1 ) then
+    if (ixrain   > 1) then
        do k = 1, pver
           do i = 1, ncol
              wr(i) = wr(i) + state%q(i,k,ixrain)*state%pdel(i,k)/gravit
+          end do
+       end do
+    end if
+!AaronDonahue P3 doesn't have snow but MG does, so it is necessary to 
+!separate snow mass from rain mass to accurately track mass conservation
+    if (ixsnow > 1) then 
+       do k = 1, pver
+          do i = 1, ncol
              ws(i) = ws(i) + state%q(i,k,ixsnow)*state%pdel(i,k)/gravit
           end do
        end do
@@ -887,6 +907,7 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     real(r8) :: trpdel(pcols, pver)                ! pdel for tracer
 
     integer ncol                                   ! number of atmospheric columns
+    integer ierror                                 ! allocate status return
     integer  i,k,m                                 ! column, level,constituent indices
     integer :: ixcldice, ixcldliq                  ! CLDICE and CLDLIQ and tracer indices
     integer :: ixrain, ixsnow                      ! RAINQM and SNOWQM indices
@@ -894,6 +915,12 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
 !-----------------------------------------------------------------------
 
     ncol  = state%ncol
+    allocate (tracerint%tracer(pcols,pcnst), stat=ierror)
+    if ( ierror /= 0 ) call endrun('CHECK_TRACERS_INIT error: allocation error tracer')
+
+    allocate (tracerint%tracer_tnd(pcols,pcnst), stat=ierror)
+    if ( ierror /= 0 ) call endrun('CHECK_TRACERS_INIT error: allocation error tracer_tnd')
+
     call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
     call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
     call cnst_get_ind('RAINQM', ixrain,   abort=.false.)
@@ -932,6 +959,25 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
 
     return
   end subroutine check_tracers_init
+
+!===============================================================================
+  subroutine check_tracers_fini(tracerint)
+
+!-----------------------------------------------------------------------
+! Deallocate storage assoicated with check_tracers_data type variable
+!-----------------------------------------------------------------------
+
+!------------------------------Arguments--------------------------------
+
+    type(check_tracers_data), intent(inout)   :: tracerint
+
+!-----------------------------------------------------------------------
+
+    deallocate(tracerint%tracer)
+    deallocate(tracerint%tracer_tnd)
+
+    return
+  end subroutine check_tracers_fini
 
 !===============================================================================
   subroutine check_tracers_chng(state, tracerint, name, nstep, ztodt, cflx)

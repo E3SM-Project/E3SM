@@ -38,7 +38,7 @@ module shr_dmodel_mod
   end interface shr_dmodel_gsmapCreate
 
   interface shr_dmodel_mapSet; module procedure &
-      !shr_dmodel_mapSet_dest, &
+       !shr_dmodel_mapSet_dest, &
        shr_dmodel_mapSet_global
   end interface shr_dmodel_mapSet
 
@@ -191,12 +191,12 @@ CONTAINS
 
   subroutine shr_dmodel_readgrid( gGrid, gsMap, nxgo, nygo, nzgo, filename, compid, mpicom, &
        decomp, lonname, latname, hgtname, maskname, areaname, fracname, readfrac, &
-       scmmode, scmlon, scmlat)
+       scmmode, iop_mode, scmlon, scmlat)
 
     use shr_file_mod  , only : shr_file_noprefix, shr_file_queryprefix, shr_file_get
     use shr_string_mod, only : shr_string_lastindex
     use shr_ncread_mod, only : shr_ncread_domain, shr_ncread_vardimsizes
-    use shr_ncread_mod, only : shr_ncread_varexists, shr_ncread_vardimnum,  shr_ncread_field4dG 
+    use shr_ncread_mod, only : shr_ncread_varexists, shr_ncread_vardimnum,  shr_ncread_field4dG
 
     !----- arguments -----
     type(mct_gGrid)  ,          intent(inout) :: gGrid
@@ -216,6 +216,7 @@ CONTAINS
     character(len=*) ,optional, intent(in)    :: fracname ! name of frac variable in file
     logical          ,optional, intent(in)    :: readfrac ! T <=> also read frac  in file
     logical          ,optional, intent(in)    :: scmmode  ! single column mode
+    logical          ,optional, intent(in)    :: iop_mode ! iop mode
     real(R8)         ,optional, intent(in)    :: scmlon   ! single column lon
     real(R8)         ,optional, intent(in)    :: scmlat   ! single column lat
 
@@ -243,9 +244,11 @@ CONTAINS
     integer(IN)   :: ndims       ! number of dims
     integer(IN)   :: nlon,nlat,narea,nmask,nfrac,nhgt
     logical       :: lscmmode    ! local scm mode
+    logical       :: liopmode    ! local iop mode
     real(R8)      :: dist,mind   ! scmmode point search
     integer(IN)   :: ni,nj       ! scmmode point search
     real(R8)      :: lscmlon     ! local copy of scmlon
+    integer(IN)   :: i_scm, j_scm
 
     real   (R8),allocatable ::  lon(:,:) ! temp array for domain lon  info
     real   (R8),allocatable ::  lat(:,:) ! temp array for domain lat  info
@@ -278,14 +281,20 @@ CONTAINS
     master_task = 0
 
     lscmmode = .false.
+    liopmode = .false. 
     if (present(scmmode)) then
        lscmmode = scmmode
+       liopmode = iop_mode
+       if (liopmode .and. .not. lscmmode) then
+         write(logunit,*) subname, ' ERROR: IOP mode must be run with SCM functionality'
+         call shr_sys_abort(subname//' ERROR: IOP not in SCM mode')
+       endif       
        if (lscmmode) then
           if (.not.present(scmlon) .or. .not.present(scmlat)) then
              write(logunit,*) subname,' ERROR: scmmode must supply scmlon and scmlat'
              call shr_sys_abort(subname//' ERROR: scmmode1 lon lat')
           endif
-          if (my_task > 0) then
+          if (my_task > 0 .and. .not. liopmode) then
              write(logunit,*) subname,' ERROR: scmmode must be run on one pe'
              call shr_sys_abort(subname//' ERROR: scmmode2 tasks')
           endif
@@ -352,7 +361,7 @@ CONTAINS
     call shr_mpi_bcast(nxg,mpicom)
     call shr_mpi_bcast(nyg,mpicom)
     call shr_mpi_bcast(nzg,mpicom)
-    if (lscmmode) then
+    if (lscmmode .and. .not. liopmode) then
        nxgo = 1
        nygo = 1
        nzgo = -1
@@ -450,8 +459,9 @@ CONTAINS
 
           !--- start with wraparound ---
 
-          !--- determine whether dealing with 2D input files (typical of Eulerian 
+          !--- determine whether dealing with 2D input files (typical of Eulerian
           !--- dynamical core) or 1D files (typical of Spectral Element)
+  
           if (nyg .ne. 1) then
             ni = 1
             mind = abs(lscmlon - (lon(1,1)+360.0_r8))
@@ -474,6 +484,7 @@ CONTAINS
             enddo
 
             j = nj
+            j_scm = nj
 
           else ! lat and lon are on 1D arrays
 
@@ -488,18 +499,48 @@ CONTAINS
             enddo
 
             j = 1
+            j_scm = 1
 
           endif
 
-          n = 1
-          i = ni
+          i_scm = ni
 
-          gGridRoot%data%rAttr(nlat ,n) = lat(i,j)
-          gGridRoot%data%rAttr(nlon ,n) = lon(i,j)
-          gGridRoot%data%rAttr(narea,n) = area(i,j)
-          gGridRoot%data%rAttr(nmask,n) = real(mask(i,j),R8)
-          gGridRoot%data%rAttr(nfrac,n) = frac(i,j)
-          gGridRoot%data%rAttr(nhgt, n) = 1
+          if (liopmode) then 
+  
+            ! If IOP mode, then we want the surface to be 
+            !   covered homogeneously, with the same lat and lon
+            !   as close to the lat/lon in IOP forcing file as possible
+            i_scm = ni
+
+            n=0
+            do k=1,abs(nzg)
+              do j=1,nyg
+                do i=1,nxg
+                  n=n+1
+                  gGridRoot%data%rAttr(nlat ,n) = lat(i_scm,j_scm)
+                  gGridRoot%data%rAttr(nlon ,n) = lon(i_scm,j_scm)
+                  gGridRoot%data%rAttr(narea,n) = area(i_scm,j_scm)
+                  gGridRoot%data%rAttr(nmask,n) = real(mask(i_scm,j_scm),R8)
+                  gGridRoot%data%rAttr(nfrac,n) = frac(i_scm,j_scm)
+                  gGridRoot%data%rAttr(nhgt ,n) = hgt(k)
+                enddo
+              enddo
+            enddo
+    
+            else  
+  
+            i = ni
+            n = 1
+
+            gGridRoot%data%rAttr(nlat ,n) = lat(i,j)
+            gGridRoot%data%rAttr(nlon ,n) = lon(i,j)
+            gGridRoot%data%rAttr(narea,n) = area(i,j)
+            gGridRoot%data%rAttr(nmask,n) = real(mask(i,j),R8)
+            gGridRoot%data%rAttr(nfrac,n) = frac(i,j)
+            gGridRoot%data%rAttr(nhgt, n) = 1
+    
+          endif
+    
        else
           n=0
           do k=1,abs(nzg)
@@ -1395,7 +1436,6 @@ CONTAINS
     integer(IN), pointer :: idst(:)
     real(R8)   , pointer :: wgts(:)
     type(mct_sMat) :: sMat0
-
     character(*), parameter :: subname = '(shr_dmodel_mapSet_global) '
     character(*), parameter :: F00   = "('(shr_dmodel_mapSet_global) ',8a)"
     character(*), parameter :: F01   = "('(shr_dmodel_mapSet_global) ',a,5i8)"
@@ -1491,20 +1531,19 @@ CONTAINS
        lstrategy = trim(strategy)
     endif
 
+
     if (my_task == master_task) then
        call shr_map_get(shrmap,shr_map_fs_nsrc,nsrc)
        call shr_map_get(shrmap,shr_map_fs_ndst,ndst)
        call shr_map_get(shrmap,shr_map_fs_nwts,nwts)
-       allocate(isrc(nwts),idst(nwts),wgts(nwts))
-       call shr_map_get(shrmap,isrc,idst,wgts)
-       call shr_map_clean(shrmap)
 
+       call shr_map_getARptr(shrmap,isrc,idst,wgts)
        call mct_sMat_init(sMat0,ndst,nsrc,nwts)
 
        call mct_sMat_ImpGColI (sMat0,isrc,nwts)
        call mct_sMat_ImpGRowI (sMat0,idst,nwts)
        call mct_sMat_ImpMatrix(sMat0,wgts,nwts)
-       deallocate(isrc,idst,wgts)
+       call shr_map_clean(shrmap)
     endif
 
     call mct_sMatP_Init(sMatP,sMat0,gsmapS,gsmapD,lstrategy,master_task,mpicom,compid)
@@ -1576,7 +1615,6 @@ CONTAINS
 
     call MPI_COMM_RANK(mpicom,my_task,ierr)
     master_task = 0
-
     !--- get sizes and allocate for SRC ---
 
     lsizeS = mct_aVect_lsize(ggridS%data)

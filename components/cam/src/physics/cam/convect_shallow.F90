@@ -442,7 +442,7 @@ end subroutine convect_shallow_init_cnst
    use constituents,    only : pcnst, cnst_get_ind, cnst_get_type_byind
    use hk_conv,         only : cmfmca
    use uwshcu,          only : compute_uwshcu_inv
-   use unicon_cam,      only : unicon_out_t, unicon_cam_tend
+   use unicon_cam,      only : unicon_out_t, unicon_cam_tend, unicon_cam_tend_free
 
    use time_manager,    only : get_nstep, is_first_step
    use wv_saturation,   only : qsat
@@ -608,7 +608,7 @@ end subroutine convect_shallow_init_cnst
 
    select case (shallow_scheme)
 
-   case('off', 'CLUBB_SGS') ! None
+   case('off', 'CLUBB_SGS', 'SHOC_SGS') ! None
 
       lq(:) = .TRUE.
       call physics_ptend_init( ptend_loc, state%psetcols, 'convect_shallow_off', ls=.true., lq=lq ) ! Initialize local ptend type
@@ -763,6 +763,8 @@ end subroutine convect_shallow_init_cnst
       cmflq(:ncol,:) = unicon_out%qtflx(:ncol,:) * latvap
 
       call outfld( 'PRECSH' , precc  , pcols, lchnk )
+
+      call unicon_cam_tend_free(unicon_out)
 
    end select
 

@@ -23,6 +23,8 @@ module scamMod
   use cam_abortutils,   only: endrun
   use phys_control, only: phys_getopts
   use dycore, only: dycore_is
+  use spmd_utils,   only: masterproc
+  use mpishorthand
 !
   implicit none
 
@@ -65,6 +67,7 @@ module scamMod
   logical, public ::  l_conv                ! use flux divergence terms for T and q?     
   logical, public ::  l_divtr               ! use flux divergence terms for constituents?
   logical, public ::  l_diag                ! do we want available diagnostics?
+  logical, public ::  iop_mode              ! do IOP mode configuration
 
   integer, public ::  error_code            ! Error code from netCDF reads
   integer, public ::  initTimeIdx
@@ -134,10 +137,10 @@ module scamMod
   real(r8), public ::      divu(plev)          ! Horiz Divergence of E/W
   real(r8), public ::      divv(plev)          ! Horiz Divergence of N/S
                                                ! mo_drydep algorithm
-					       
+       
   real(r8), public ::  scm_relaxation_low      ! lowest level to apply relaxation
   real(r8), public ::  scm_relaxation_high     ! highest level to apply relaxation
-					       
+       
   real(r8), public, pointer :: loniop(:)
   real(r8), public, pointer :: latiop(:)
 !
@@ -202,10 +205,11 @@ module scamMod
 
 
 subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
-	single_column_out,scm_iop_srf_prop_out, scm_relaxation_out, &
-	scm_relaxation_low_out, scm_relaxation_high_out, &
+        single_column_out,scm_iop_srf_prop_out, scm_relaxation_out, &
+        scm_relaxation_low_out, scm_relaxation_high_out, &
         scm_diurnal_avg_out, scm_crm_mode_out, scm_observed_aero_out, &
-	swrad_off_out, lwrad_off_out, precip_off_out, scm_clubb_iop_name_out)
+        swrad_off_out, lwrad_off_out, precip_off_out, scm_clubb_iop_name_out,&
+        iop_mode_out)
 !-----------------------------------------------------------------------
    real(r8), intent(out), optional :: scmlat_out,scmlon_out
    character*(max_path_len), intent(out), optional ::  iopfile_out
@@ -218,6 +222,7 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    logical, intent(out), optional ::  swrad_off_out
    logical, intent(out), optional ::  lwrad_off_out
    logical, intent(out), optional ::  precip_off_out
+   logical, intent(out), optional ::  iop_mode_out
    real(r8), intent(out), optional ::  scm_relaxation_low_out
    real(r8), intent(out), optional ::  scm_relaxation_high_out   
    character(len=*), intent(out), optional ::  scm_clubb_iop_name_out
@@ -236,15 +241,17 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    if ( present(swrad_off_out))         swrad_off_out = .false.
    if ( present(lwrad_off_out))         lwrad_off_out = .false.
    if ( present(precip_off_out))        precip_off_out = .false.
+   if ( present(iop_mode_out))          iop_mode_out = .false.
    if ( present(scm_clubb_iop_name_out) ) scm_clubb_iop_name_out  = ' '
 
 end subroutine scam_default_opts
 
 subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
                          scm_iop_srf_prop_in, scm_relaxation_in, &
-			 scm_relaxation_low_in, scm_relaxation_high_in, &
+                         scm_relaxation_low_in, scm_relaxation_high_in, &
                          scm_diurnal_avg_in, scm_crm_mode_in, scm_observed_aero_in, &
-			 swrad_off_in, lwrad_off_in, precip_off_in, scm_clubb_iop_name_in)
+                         swrad_off_in, lwrad_off_in, precip_off_in, scm_clubb_iop_name_in,&
+                         iop_mode_in)
 !-----------------------------------------------------------------------
   real(r8), intent(in), optional       :: scmlon_in, scmlat_in
   character*(max_path_len), intent(in), optional :: iopfile_in
@@ -257,6 +264,7 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   logical, intent(in), optional        :: swrad_off_in
   logical, intent(in), optional        :: lwrad_off_in
   logical, intent(in), optional        :: precip_off_in
+  logical, intent(in), optional        :: iop_mode_in
   character(len=*), intent(in), optional :: scm_clubb_iop_name_in
   real(r8), intent(in), optional       :: scm_relaxation_low_in
   real(r8), intent(in), optional       :: scm_relaxation_high_in  
@@ -266,6 +274,10 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   
   if (present (single_column_in ) ) then 
      single_column=single_column_in
+  endif
+  
+  if (present (iop_mode_in ) ) then 
+     iop_mode=iop_mode_in
   endif
 
   if (present (scm_iop_srf_prop_in)) then
@@ -315,10 +327,24 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   if (present (iopfile_in)) then
      iopfile=trim(iopfile_in)
   endif
+  
+#ifdef SPMD
+  call mpibcast(scm_iop_srf_prop,1,mpilog,0,mpicom)
+  call mpibcast(scm_relaxation,1,mpilog,0,mpicom)
+  call mpibcast(scm_relaxation_high,1,mpir8,0,mpicom)
+  call mpibcast(scm_relaxation_low,1,mpir8,0,mpicom)
+  call mpibcast(scm_diurnal_avg,1,mpilog,0,mpicom)
+  call mpibcast(scm_crm_mode,1,mpilog,0,mpicom)
+  call mpibcast(scm_observed_aero,1,mpilog,0,mpicom)
+  call mpibcast(swrad_off,1,mpilog,0,mpicom)
+  call mpibcast(lwrad_off,1,mpilog,0,mpicom)
+  call mpibcast(precip_off,1,mpilog,0,mpicom)
+#endif
 
   if( single_column) then
-     
-     if (plon /= 1 .or. plat /=1 ) then 
+
+  if (masterproc) then     
+     if (plon /= 1 .and. plat /= 1 .and. .not. iop_mode ) then 
         call endrun('SCAM_SETOPTS: must compile model for SCAM mode when namelist parameter single_column is .true.')
      endif
      
@@ -330,23 +356,23 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
            call endrun('SCAM_SETOPTS: must specify IOP file for single column mode')
         endif
         call wrap_open (iopfile, NF90_NOWRITE, ncid)
-	
-	if ( nf90_inquire_attribute( ncid, NF90_GLOBAL, 'E3SM_GENERATED_FORCING', attnum=i ).EQ. NF90_NOERR ) then
+
+        if ( nf90_inquire_attribute( ncid, NF90_GLOBAL, 'E3SM_GENERATED_FORCING', attnum=i ).EQ. NF90_NOERR ) then
            use_replay = .true.
         else
            use_replay = .false.
         endif
-	
-	if (dycore_is('SE') .and. use_replay) then
-	  call wrap_inq_dimid( ncid, 'ncol', londimid   )
-	  call wrap_inq_dimlen( ncid, londimid, lonsiz   )
-	  latsiz=lonsiz
-	else 
-	  call wrap_inq_dimid( ncid, 'lon', londimid   )
+
+        if (dycore_is('SE') .and. use_replay) then
+          call wrap_inq_dimid( ncid, 'ncol', londimid   )
+          call wrap_inq_dimlen( ncid, londimid, lonsiz   )
+          latsiz=lonsiz
+        else 
+          call wrap_inq_dimid( ncid, 'lon', londimid   )
           call wrap_inq_dimid( ncid, 'lat', latdimid   )
           call wrap_inq_dimlen( ncid, londimid, lonsiz   )
           call wrap_inq_dimlen( ncid, latdimid, latsiz   )
-	endif
+        endif
 
         call wrap_inq_varid( ncid, 'lon', lonid   )
         call wrap_inq_varid( ncid, 'lat', latid   )
@@ -398,11 +424,17 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
 !!jt      iyear_AD_out     = 1950
 !!jt   end if
 
+  endif
+
   else
      if (plon ==1 .and. plat ==1) then 
         call endrun('SCAM_SETOPTS: single_column namelist option must be set to true when running in single column mode')
      endif
   endif
+  
+#ifdef SPMD
+  call mpibcast(use_iop,1,mpilog,0,mpicom)
+#endif
 
 
 end subroutine scam_setopts

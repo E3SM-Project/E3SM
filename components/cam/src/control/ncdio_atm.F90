@@ -18,7 +18,7 @@ module ncdio_atm
   use shr_scam_mod,   only: shr_scam_getCloseLatLon  ! Standardized system subroutines
   use spmd_utils,     only: masterproc
   use cam_abortutils, only: endrun
-  use scamMod,        only: scmlat,scmlon,single_column
+  use scamMod,        only: scmlat,scmlon,single_column,iop_mode
   use cam_logfile,    only: iulog
   !
   ! !PUBLIC TYPES:
@@ -104,6 +104,10 @@ contains
     ! Offsets for reading global variables
     integer                   :: strt(1) = 1 ! start ncol index for netcdf 1-d
     integer                   :: cnt (1) = 1 ! ncol count for netcdf 1-d
+        
+    ! Offsets for reading global variables for IOP mode
+    integer                   :: strt_iop(2) = 1 ! start ncol index for netcdf 1-d
+    integer                   :: cnt_iop (2) = 1 ! ncol count for netcdf 1-d
     character(len=PIO_MAX_NAME) :: tmpname
     character(len=128)        :: errormsg
 
@@ -113,6 +117,8 @@ contains
     ! For SCAM
     real(r8)                  :: closelat, closelon
     integer                   :: lonidx, latidx
+   
+    real(r8), allocatable :: field_iop(:,:)
 
     nullify(iodesc)
 
@@ -155,6 +161,7 @@ contains
     ! Check if field is on file; get netCDF variable id
     !
     call cam_pio_check_var(ncid, varname, varid, ndims, dimids, dimlens, readvar_tmp)
+    
     !
     ! If field is on file:
     !
@@ -199,13 +206,29 @@ contains
       end if
 
       if (single_column .and. dim1e == 1) then
+      
         ! Specifically, this condition is for when the single column model 
         !  is run in the Spectral Element dycore
         cnt(1) = 1 
         call shr_scam_getCloseLatLon(ncid,scmlat,scmlon,closelat,closelon,latidx,lonidx)
         strt(1) = lonidx
         ierr = pio_get_var(ncid, varid, strt, cnt, field)
+        if (iop_mode) field(:,:) = field(dim1b,dim2b)
 
+      else if (iop_mode) then
+      
+        cnt_iop(1) = 1
+        cnt_iop(2) = 1 
+        call shr_scam_getCloseLatLon(ncid,scmlat,scmlon,closelat,closelon,latidx,lonidx)
+        strt_iop(1) = lonidx
+        strt_iop(2) = 1
+        allocate(field_iop(1:cnt_iop(1),1:cnt_iop(2)))
+        ierr = pio_get_var(ncid, varid, strt_iop, cnt_iop, field_iop)
+
+        field(:,:) = field_iop(1,1)
+        
+        deallocate(field_iop)
+      
       else
 
       ! NB: strt and cnt were initialized to 1
@@ -262,6 +285,9 @@ contains
     !EOP
     !
     ! !LOCAL VARIABLES:
+    
+    real(r8), allocatable :: field_iop(:,:,:)
+    
     type(io_desc_t), pointer  :: iodesc
     integer                   :: grid_map  ! grid ID for data mapping
     integer                   :: i, j      ! indices
@@ -282,6 +308,9 @@ contains
     integer                   :: cnt (2) ! lon, lat counts for netcdf 2-d
     character(len=PIO_MAX_NAME) :: tmpname
     character(len=128)        :: errormsg
+    
+    integer                   :: strt_iop(3) ! start lon, lat indices for netcdf 2-d
+    integer                   :: cnt_iop (3) ! lon, lat counts for netcdf 2-d
 
     real(r8), pointer         :: tmp2d(:,:) ! input data for permutation
 
@@ -388,12 +417,31 @@ contains
 
         field_dnames(1) = dimname1
         field_dnames(2) = dimname2
-        if (single_column) then	
+        if (single_column) then
           ! This could be generalized but for now only handles a single point
           strt(1) = dim1b
           strt(2) = dim2b
           cnt = arraydimsize
           call shr_scam_getCloseLatLon(ncid,scmlat,scmlon,closelat,closelon,latidx,lonidx)
+
+          if (iop_mode) then
+
+            strt_iop(1) = lonidx
+            strt_iop(2) = 1
+            strt_iop(3) = 1
+            cnt_iop(1) = 1
+            cnt_iop(2) = cnt(2)
+            cnt_iop(3) = 1
+            allocate(field_iop(1:cnt_iop(1), 1:cnt_iop(2), 1:cnt_iop(3)))
+            ierr = pio_get_var(ncid, varid, strt_iop, cnt_iop, field_iop)
+    
+            do i = dim1b, dim1e 
+              field(i,:) = field_iop(1,:,1)
+            enddo
+            deallocate(field_iop)
+
+          else ! if not small planet
+  
           if (trim(field_dnames(1)) == 'lon') then
             strt(1) = lonidx ! First dim always lon for Eulerian dycore
           else
@@ -425,6 +473,8 @@ contains
           else
             ierr = pio_get_var(ncid, varid, strt, cnt, field)
           end if
+  
+          endif ! if iop_mode
         else
           ! All distributed array processing
           call cam_grid_get_decomp(grid_map, arraydimsize, dimlens(1:2),      &
@@ -802,7 +852,7 @@ contains
         field_dnames(2) = dimname2
         field_dnames(3) = dimname3
 
-        if (single_column) then	
+        if (single_column) then
           ! This could be generalized but for now only handles a single point
           strt(1) = dim1b
           strt(2) = dim2b

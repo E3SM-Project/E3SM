@@ -8,6 +8,7 @@ module ice_scam
   ! single column control variables (only used for latlon grid)
 
   logical :: single_column       ! true => single column mode
+  logical :: iop_mode            ! true => IOP mode
   real (kind=dbl_kind) scmlat    ! single column latitude (degrees)
   real (kind=dbl_kind) scmlon    ! single column longitude (degrees)
 

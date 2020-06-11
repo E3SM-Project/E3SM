@@ -92,7 +92,8 @@ module aero_model
 
   ! Namelist variables
   integer :: mam_amicphys_optaa
-  logical :: sscav_tuning, convproc_do_aer, convproc_do_gas, resus_fix  
+  logical :: sscav_tuning, convproc_do_aer, convproc_do_gas, resus_fix 
+  logical :: get_presc_aero_data 
   character(len=16) :: wetdep_list(pcnst) = ' '
   character(len=16) :: drydep_list(pcnst) = ' '
   real(r8)          :: sol_facti_cloud_borne = 1._r8
@@ -222,6 +223,7 @@ contains
          convproc_do_aer_out = convproc_do_aer, & 
          convproc_do_gas_out = convproc_do_gas, &
          resus_fix_out       = resus_fix,       &
+         get_presc_aero_data_out = get_presc_aero_data, &
          mam_amicphys_optaa_out = mam_amicphys_optaa ) ! REASTER 08/04/2015
 
 
@@ -240,13 +242,14 @@ contains
        if ( convproc_do_aer ) then 
           do m = 1,gas_pcnst
              call cnst_get_ind( solsym(m), l, abort=.false. )
-             if ( ( history_aerosol ) .and. &
-                  (species_class(l) == spec_class_gas) ) then !RCE - only output WD_xxx and DF_xxx for gases
-                wetdep_name = 'WD_'//trim(solsym(m))
-                depflx_name = 'DF_'//trim(solsym(m)) 
-                nspc = get_het_ndx(solsym(m)) 
-                if (nspc > 0) call add_default( wetdep_name, 1, ' ' )
-                call add_default( depflx_name, 1, ' ' )
+             if ( ( history_aerosol ) .and. (l > 0) ) then
+                if  ( species_class(l) == spec_class_gas ) then !RCE - only output WD_xxx and DF_xxx for gases
+                   wetdep_name = 'WD_'//trim(solsym(m))
+                   depflx_name = 'DF_'//trim(solsym(m)) 
+                   nspc = get_het_ndx(solsym(m)) 
+                   if (nspc > 0) call add_default( wetdep_name, 1, ' ' )
+                   call add_default( depflx_name, 1, ' ' )
+                endif
              endif
           end do ! m = 1,gas_pcnst
        endif
@@ -681,7 +684,6 @@ contains
 
           if ( history_aerosol ) then 
              if (history_verbose) then
-                call add_default( cnst_name_cw(n), 1, ' ' )
                 call add_default (trim(cnst_name_cw(n))//'GVF', 1, ' ')
                 call add_default (trim(cnst_name_cw(n))//'TBF', 1, ' ')
                 call add_default (trim(cnst_name_cw(n))//'SFSBS', 1, ' ')      
@@ -689,9 +691,16 @@ contains
                 call add_default (trim(cnst_name_cw(n))//'SFSBC', 1, ' ')
                 call add_default (trim(cnst_name_cw(n))//'SFSIS', 1, ' ')
              endif
+
+             if (get_presc_aero_data .or. history_verbose) then 
+                call add_default( cnst_name_cw(n), 1, ' ' )
+             endif
+
              call add_default (trim(cnst_name_cw(n))//'SFWET', 1, ' ') 
              call add_default (trim(cnst_name_cw(n))//'DDF', 1, ' ')
-          endif
+
+          endif  
+         
        endif
     enddo
 
@@ -1368,7 +1377,8 @@ contains
        ptend                                                                    ) !Intent-out
 
     use modal_aero_deposition, only: set_srf_wetdep
-    use wetdep,                only: wetdepa_v2, wetdep_inputs_set, wetdep_inputs_t
+    use wetdep,                only: wetdepa_v2, wetdep_inputs_set, &
+                                     wetdep_inputs_unset, wetdep_inputs_t
     use modal_aero_data
     use modal_aero_calcsize,   only: modal_aero_calcsize_sub
     use modal_aero_wateruptake,only: modal_aero_wateruptake_dr
@@ -2260,8 +2270,9 @@ do_lphase2_conditional: &
        call t_stopf('ma_convproc')       
     endif
 
+    call wetdep_inputs_unset(dep_inputs)
 
-  endsubroutine aero_model_wetdep
+  end subroutine aero_model_wetdep
 
 
   !=============================================================================

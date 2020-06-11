@@ -115,10 +115,16 @@ flags should be captured within MPAS CMake files.
   <CFLAGS>
     <base> -mcmodel=medium </base>
     <append compile_threaded="TRUE"> -fopenmp </append>
-    <append DEBUG="TRUE"> -g -Wall -Og -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow</append>
+    <append DEBUG="TRUE"> -g -Wall -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow</append>
     <append DEBUG="FALSE"> -O </append>
     <append COMP_NAME="csm_share"> -std=c99 </append>
   </CFLAGS>
+  <CXXFLAGS>
+    <base> -std=c++11 </base>
+    <append compile_threaded="TRUE"> -fopenmp </append>
+    <append DEBUG="TRUE"> -g -Wall -fbacktrace </append>
+    <append DEBUG="FALSE"> -O </append>
+  </CXXFLAGS>
   <CMAKE_OPTS>
     <append COMP_NAME="cism"> -D CISM_GNU=ON </append>
   </CMAKE_OPTS>
@@ -140,55 +146,7 @@ flags should be captured within MPAS CMake files.
          7.1.0, 8.2.0, 8.3.0), gfortran's isnan (which is called in cime via the
          CPRGNU-specific shr_infnan_isnan) causes a floating point exception
          when called on a signaling NaN. -->
-    <append DEBUG="TRUE"> -g -Wall -Og -fbacktrace -fcheck=bounds -ffpe-trap=zero,overflow</append>
-    <append DEBUG="FALSE"> -O </append>
-  </FFLAGS>
-  <FFLAGS_NOOPT>
-    <base> -O0 </base>
-  </FFLAGS_NOOPT>
-  <FIXEDFLAGS>
-    <base>  -ffixed-form </base>
-  </FIXEDFLAGS>
-  <FREEFLAGS>
-    <base> -ffree-form </base>
-  </FREEFLAGS>
-  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
-  <LDFLAGS>
-    <append compile_threaded="TRUE"> -fopenmp </append>
-  </LDFLAGS>
-  <MPICC> mpicc  </MPICC>
-  <MPICXX> mpicxx </MPICXX>
-  <MPIFC> mpif90 </MPIFC>
-  <SCC> gcc </SCC>
-  <SCXX> g++ </SCXX>
-  <SFC> gfortran </SFC>
-  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
-</compiler>
-
-<compiler COMPILER="gnu7">
-  <CFLAGS>
-    <base> -mcmodel=medium </base>
-    <append compile_threaded="TRUE"> -fopenmp </append>
-    <append DEBUG="TRUE"> -g -Wall -Og -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow</append>
-    <append DEBUG="FALSE"> -O </append>
-  </CFLAGS>
-  <CMAKE_OPTS>
-    <append COMP_NAME="cism"> -D CISM_GNU=ON </append>
-  </CMAKE_OPTS>
-  <CPPDEFS>
-    <!-- http://gcc.gnu.org/onlinedocs/gfortran/ -->
-    <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRGNU</append>
-  </CPPDEFS>
-  <CXX_LINKER>FORTRAN</CXX_LINKER>
-  <FC_AUTO_R8>
-    <base> -fdefault-real-8 </base>
-  </FC_AUTO_R8>
-  <FFLAGS>
-    <!-- -ffree-line-length-none and -ffixed-line-length-none need to be in FFLAGS rather than in FIXEDFLAGS/FREEFLAGS
-       so that these are passed to cmake builds (cmake builds don't use FIXEDFLAGS and FREEFLAGS). -->
-    <base> -mcmodel=medium -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </base>
-    <append compile_threaded="TRUE"> -fopenmp </append>
-    <append DEBUG="TRUE"> -g -Wall -Og -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow</append>
+    <append DEBUG="TRUE"> -g -Wall -fbacktrace -fcheck=bounds -ffpe-trap=zero,overflow</append>
     <append DEBUG="FALSE"> -O </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
@@ -687,7 +645,7 @@ flags should be captured within MPAS CMake files.
     <base> --host=Linux </base>
   </CONFIG_ARGS>
   <CXX_LIBS>
-    <base>-lstdc++ -lmpi_cxx</base>
+    <base>-lstdc++</base>
   </CXX_LIBS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
@@ -697,6 +655,9 @@ flags should be captured within MPAS CMake files.
   </SLIBS>
   <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH>
   <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
+  <HDF5_PATH>$ENV{HDF5_PATH}</HDF5_PATH>
+  <SZIP_PATH>$ENV{SZIP_PATH}</SZIP_PATH>
+  <ZLIB_PATH>$ENV{ZLIB_PATH}</ZLIB_PATH>
 </compiler>
 
 <compiler MACH="anvil" COMPILER="gnu">
@@ -1489,7 +1450,6 @@ flags should be captured within MPAS CMake files.
   </FFLAGS>
   <NETCDF_PATH>$ENV{NETCDFROOT}</NETCDF_PATH>
   <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="FALSE">$ENV{SEMS_PFUNIT_ROOT}</PFUNIT_PATH>
-  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
     <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -lblas -llapack</append>
   </SLIBS>
@@ -2144,16 +2104,17 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   </CPPDEFS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
-    <append DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </append>
+    <append DEBUG="TRUE"> -g -traceback -fpe1 -O0 -check  all -check noarg_temp_created -ftrapuv </append>
   </FFLAGS>
   <SLIBS>
     <append> -llapack -lblas</append>
   </SLIBS>
   <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
-  <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.2-intel-18.0.1/</MPI_PATH>
-  <NETCDF_PATH>/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</NETCDF_PATH>
+  <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.3-intel-19.0.4/</MPI_PATH>
+  <NETCDF_PATH>/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-19.0.4/</NETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
-    <append>$SHELL{/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/bin/nf-config --flibs}</append>
+    <append>$SHELL{/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-19.0.4/bin/nf-config --flibs}</append>
   </SLIBS>
 </compiler>
 
@@ -2169,16 +2130,17 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   </CPPDEFS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
-    <append DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </append>
+    <append DEBUG="TRUE"> -g -traceback  -fpe1 -O0 -check  all -check noarg_temp_created -ftrapuv </append>
   </FFLAGS>
   <SLIBS>
     <append> -llapack -lblas</append>
   </SLIBS>
   <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
-  <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.2-intel-18.0.1/</MPI_PATH>
-  <NETCDF_PATH>/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</NETCDF_PATH>
+  <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.3-intel-19.0.4/</MPI_PATH>
+  <NETCDF_PATH>/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-19.0.4/</NETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
-    <append>$SHELL{/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/bin/nf-config --flibs}</append>
+    <append>$SHELL{/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-19.0.4/bin/nf-config --flibs}</append>
   </SLIBS>
 </compiler>
 
@@ -2342,29 +2304,40 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <SCC>gcc</SCC>
   <SCXX>g++</SCXX>
   <SLIBS>
-    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
-    <append>$ENV{MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a $ENV{MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group $ENV{MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm -z muldefs</append>
+    <append>$SHELL{nc-config --libs} </append>
+    <append>$SHELL{nf-config --flibs} -lnetcdff -llapack -lblas </append>
+    <append>$ENV{MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a $ENV{MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group $ENV{MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm -lz </append>
   </SLIBS>
   <CXX_LIBS>
-    <base>-lstdc++ -lmpi_cxx</base>
+    <base> -lstdc++ -lmpi_cxx </base>
   </CXX_LIBS>
+  <NETCDF_C_PATH>$ENV{NETCDF_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
 </compiler>
 
 <compiler MACH="grizzly" COMPILER="intel">
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <MPICC>mpicc</MPICC>
-  <MPIFC>mpif90</MPIFC>
-  <MPICXX>mpic++</MPICXX>
+  <MPICC  MPILIB="impi">mpiicc</MPICC>
+  <MPICXX MPILIB="impi">mpiicpc</MPICXX>
+  <MPIFC  MPILIB="impi">mpiifort</MPIFC>
+  <MPICC  MPILIB="!impi">mpicc</MPICC>
+  <MPICXX MPILIB="!impi">mpic++</MPICXX>
+  <MPIFC  MPILIB="!impi">mpif90</MPIFC>
   <SFC>ifort</SFC>
   <SCC>icc</SCC>
   <SCXX>icpc</SCXX>
   <SLIBS>
-    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
+    <append>$SHELL{$ENV{NETCDF_ROOT}/bin/nc-config --libs}</append>
+    <append>$SHELL{$ENV{NETCDF_ROOT}/bin/nf-config --flibs} -lnetcdff -llapack -lblas</append>
     <append>-mkl -lpthread</append>
   </SLIBS>
   <CXX_LIBS>
-    <base>-lstdc++ -lmpi_cxx</base>
+    <base>-lstdc++</base>
   </CXX_LIBS>
+  <NETCDF_C_PATH>$ENV{NETCDF_ROOT}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_ROOT}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_ROOT}</PNETCDF_PATH>
 </compiler>
 
 <compiler MACH="badger" COMPILER="gnu">
@@ -2376,38 +2349,40 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <SCC>gcc</SCC>
   <SCXX>g++</SCXX>
   <SLIBS>
-    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
-    <append>$ENV{MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a $ENV{MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group $ENV{MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm -z muldefs</append>
+    <append>$SHELL{nc-config --libs} </append>
+    <append>$SHELL{nf-config --flibs} -lnetcdff -llapack -lblas </append>
+    <append>$ENV{MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a $ENV{MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group $ENV{MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm -lz </append>
   </SLIBS>
   <CXX_LIBS>
-    <base>-lstdc++ -lmpi_cxx</base>
+    <base> -lstdc++ -lmpi_cxx </base>
   </CXX_LIBS>
+  <NETCDF_C_PATH>$ENV{NETCDF_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
 </compiler>
 
 <compiler MACH="badger" COMPILER="intel">
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <MPICC>mpicc</MPICC>
-  <MPIFC>mpif90</MPIFC>
-  <MPICXX>mpic++</MPICXX>
+  <MPICC  MPILIB="impi">mpiicc</MPICC>
+  <MPICXX MPILIB="impi">mpiicpc</MPICXX>
+  <MPIFC  MPILIB="impi">mpiifort</MPIFC>
+  <MPICC  MPILIB="!impi">mpicc</MPICC>
+  <MPICXX MPILIB="!impi">mpic++</MPICXX>
+  <MPIFC  MPILIB="!impi">mpif90</MPIFC>
   <SFC>ifort</SFC>
   <SCC>icc</SCC>
   <SCXX>icpc</SCXX>
   <SLIBS>
-    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
+    <append>$SHELL{$ENV{NETCDF_ROOT}/bin/nc-config --libs}</append>
+    <append>$SHELL{$ENV{NETCDF_ROOT}/bin/nf-config --flibs} -lnetcdff -llapack -lblas</append>
     <append>-mkl -lpthread</append>
   </SLIBS>
   <CXX_LIBS>
     <base>-lstdc++ -lmpi_cxx</base>
   </CXX_LIBS>
-  <CFLAGS>
-    <base>compile_threaded="TRUE"> -qopenmp</base>
-  </CFLAGS>
-  <FFLAGS>
-    <base>compile_threaded="TRUE"> -qopenmp</base>
-  </FFLAGS>
-  <LDFLAGS>
-    <base>compile_threaded="TRUE"> -qopenmp</base>
-  </LDFLAGS>
+  <NETCDF_C_PATH>$ENV{NETCDF_ROOT}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_ROOT}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_ROOT}</PNETCDF_PATH>
 </compiler>
 
 <compiler COMPILER="gnu" MACH="modex">

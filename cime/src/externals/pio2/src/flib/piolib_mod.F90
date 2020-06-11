@@ -939,8 +939,8 @@ contains
     integer(i4), intent(in) :: rearr
     type (iosystem_desc_t), intent(out)  :: iosystem  ! io descriptor to initalize
     integer(i4), intent(in),optional :: base
-    type (pio_rearr_opt_t), intent(in), optional :: rearr_opts
-
+    type (pio_rearr_opt_t), intent(in), target, optional :: rearr_opts
+    
     integer :: lbase
     integer :: ierr
     interface
@@ -953,7 +953,7 @@ contains
          integer(C_INT), value :: stride
          integer(C_INT), value :: base
          integer(C_INT), value :: rearr
-         type(pio_rearr_opt_t) :: rearr_opts
+         type(C_PTR) :: rearr_opts
          integer(C_INT) :: iosysidp
        end function PIOc_Init_Intracomm_from_F90
     end interface
@@ -966,8 +966,11 @@ contains
 #endif
     lbase=0
     if(present(base)) lbase=base
-    ierr = PIOc_Init_Intracomm_from_F90(comp_comm,num_iotasks,stride,lbase,rearr,rearr_opts,iosystem%iosysid)
-
+    if(present(rearr_opts)) then
+       ierr = PIOc_Init_Intracomm_from_F90(comp_comm,num_iotasks,stride,lbase,rearr,C_LOC(rearr_opts),iosystem%iosysid)
+    else
+       ierr = PIOc_Init_Intracomm_from_F90(comp_comm,num_iotasks,stride,lbase,rearr,C_NULL_PTR,iosystem%iosysid)
+    endif
     call CheckMPIReturn("Bad Initialization in PIO_Init_Intracomm:  ", ierr,__FILE__,__LINE__)
 #ifdef TIMING
     call t_stopf("PIO:init")

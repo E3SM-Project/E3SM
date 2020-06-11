@@ -318,6 +318,11 @@ Toggle to turn on the logging module (only relevant if FATES is being used).
 Toggle to turn on plant hydraulics(only relevant if FATES is on).
 </entry>
 
+<entry id="use_fates_cohort_age_tracking" type="logical" category="physics"
+       group="clm_inparm" valid_values="" value=".false.">
+ Toggle to turn on cohort age tracking (only relevant if FATES is on).
+</entry>
+
 <entry id="use_fates_ed_st3" type="logical" category="physics"
         group="clm_inparm" valid_values="" value=".false.">
 Toggle to turn on Static Stand Structure Mode (only relevant if FATES is being used).

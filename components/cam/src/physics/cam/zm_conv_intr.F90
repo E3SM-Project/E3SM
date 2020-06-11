@@ -78,18 +78,6 @@ subroutine zm_conv_register
 
   integer idx
 
-! Flux of precipitation from deep convection (kg/m2/s)
-   call pbuf_add_field('DP_FLXPRC','global',dtype_r8,(/pcols,pverp/),dp_flxprc_idx) 
-
-! Flux of snow from deep convection (kg/m2/s) 
-   call pbuf_add_field('DP_FLXSNW','global',dtype_r8,(/pcols,pverp/),dp_flxsnw_idx) 
-
-! deep gbm cloud liquid water (kg/kg)
-   call pbuf_add_field('DP_CLDLIQ','global',dtype_r8,(/pcols,pver/), dp_cldliq_idx)  
-
-! deep gbm cloud liquid water (kg/kg)    
-   call pbuf_add_field('DP_CLDICE','global',dtype_r8,(/pcols,pver/), dp_cldice_idx)  
-
 !<songxl 2014-05-20-------------
 !  if(trigmem)then
 ! moist static energy at n-1 time step (J/kg)
@@ -241,6 +229,10 @@ subroutine zm_conv_init(pref_edge)
     no_deep_pbl = phys_deepconv_pbl()
     call zm_convi(limcnv,no_deep_pbl_in = no_deep_pbl)
 
+    dp_flxprc_idx   = pbuf_get_index('DP_FLXPRC')
+    dp_flxsnw_idx   = pbuf_get_index('DP_FLXSNW')
+    dp_cldliq_idx   = pbuf_get_index('DP_CLDLIQ')
+    dp_cldice_idx   = pbuf_get_index('DP_CLDICE')
     cld_idx         = pbuf_get_index('CLD')
     icwmrdp_idx     = pbuf_get_index('ICWMRDP')
     rprddp_idx      = pbuf_get_index('RPRDDP')

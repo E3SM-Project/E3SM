@@ -46,6 +46,13 @@ module convect_deep
    integer     ::  tpert_idx       = 0 
    integer     ::  prec_dp_idx     = 0
    integer     ::  snow_dp_idx     = 0
+   
+   integer     ::  dp_cldliq_idx   = 0
+   integer     ::  dp_cldice_idx   = 0
+   integer     ::  dp_flxprc_idx   = 0
+   integer     ::  dp_flxsnw_idx   = 0
+   
+   integer     ::  dp_frac_idx     = 0
 
    integer     ::  ttend_dp_idx        = 0
 
@@ -93,8 +100,24 @@ subroutine convect_deep_register
   select case ( deep_scheme )
   case('ZM') !    Zhang-McFarlane (default)
      call zm_conv_register
-  end select
+  end select 
 
+! Add PBUF variables that are related to deep convection that 
+!  are expected by the E3SM code, no matter which deep convection scheme
+!  is used.
+
+! Flux of precipitation from deep convection (kg/m2/s)
+   call pbuf_add_field('DP_FLXPRC','global',dtype_r8,(/pcols,pverp/),dp_flxprc_idx) 
+
+! Flux of snow from deep convection (kg/m2/s) 
+   call pbuf_add_field('DP_FLXSNW','global',dtype_r8,(/pcols,pverp/),dp_flxsnw_idx) 
+
+! deep gbm cloud liquid water (kg/kg)
+   call pbuf_add_field('DP_CLDLIQ','global',dtype_r8,(/pcols,pver/), dp_cldliq_idx)  
+
+! deep gbm cloud liquid water (kg/kg)    
+   call pbuf_add_field('DP_CLDICE','global',dtype_r8,(/pcols,pver/), dp_cldice_idx) 
+  
   call pbuf_add_field('ICWMRDP',    'physpkg',dtype_r8,(/pcols,pver/),icwmrdp_idx)
   call pbuf_add_field('RPRDDP',     'physpkg',dtype_r8,(/pcols,pver/),rprddp_idx)
   call pbuf_add_field('NEVAPR_DPCU','physpkg',dtype_r8,(/pcols,pver/),nevapr_dpcu_idx)
@@ -112,7 +135,7 @@ end subroutine convect_deep_register
 
 
 
-subroutine convect_deep_init(pref_edge)
+subroutine convect_deep_init(pref_edge,pbuf2d)
 
 !----------------------------------------
 ! Purpose:  declare output fields, initialize variables needed by convection
@@ -124,15 +147,27 @@ subroutine convect_deep_init(pref_edge)
   use zm_conv_intr,  only: zm_conv_init
   use cam_abortutils,    only: endrun
   
-  use physics_buffer, only: physics_buffer_desc, pbuf_get_index
+  use physics_buffer, only: physics_buffer_desc, pbuf_get_index, pbuf_set_field
 
   implicit none
 
   real(r8),intent(in) :: pref_edge(plevp)        ! reference pressures at interfaces
+  type(physics_buffer_desc), pointer    :: pbuf2d(:,:)
+
+  dp_frac_idx = pbuf_get_index('DP_FRAC')
+  icwmrdp_idx = pbuf_get_index('ICWMRDP')
 
   select case ( deep_scheme )
   case('off') !     ==> no deep convection
      if (masterproc) write(iulog,*)'convect_deep: no deep convection selected'
+     call pbuf_set_field(pbuf2d, dp_cldliq_idx, 0._r8)
+     call pbuf_set_field(pbuf2d, dp_cldice_idx, 0._r8)
+     call pbuf_set_field(pbuf2d, dp_flxprc_idx, 0._r8)
+     call pbuf_set_field(pbuf2d, dp_flxsnw_idx, 0._r8)
+     call pbuf_set_field(pbuf2d, dp_frac_idx, 0._r8)
+     call pbuf_set_field(pbuf2d, icwmrdp_idx, 0._r8)
+     call pbuf_set_field(pbuf2d, rprddp_idx, 0._r8)
+     call pbuf_set_field(pbuf2d, nevapr_dpcu_idx, 0._r8)
   case('CLUBB_SGS')
      if (masterproc) write(iulog,*)'convect_deep: CLUBB_SGS selected'
   case('ZM') !    1 ==> Zhang-McFarlane (default)

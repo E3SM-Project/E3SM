@@ -44,12 +44,12 @@ module crm_physics
 
    type(physics_state)                     :: state_save
    type(physics_tend)                      :: tend_save
-   real(r8), dimension(pcols, pver)        :: cldo_save     ! saved cloud fraction
-   real(r8), dimension(pcols, pver, pcnst) :: q_aero        ! used to keep aerosol changes from offline physics
+   real(r8), dimension(:,:), allocatable   :: cldo_save     ! saved cloud fraction
+   real(r8), dimension(:,:,:), allocatable :: q_aero        ! used to keep aerosol changes from offline physics
 #ifdef MODAL_AERO
-   real(r8)          :: qqcw_save(pcols,pver,pcnst)
-   real(r8)          :: qqcw_all(pcols,pver,pcnst)
-   real(r8)          :: dgnumwet_save(pcols, pver, ntot_amode)
+   real(r8), dimension(:,:,:), allocatable :: qqcw_save
+   real(r8), dimension(:,:,:), allocatable :: qqcw_all
+   real(r8), dimension(:,:,:), allocatable :: dgnumwet_save
    real(r8),pointer  :: dgnumwet(:,:,:)
 #endif
 
@@ -80,15 +80,24 @@ subroutine crm_physics_register()
    integer idx
    logical           :: use_ECPP
    character(len=16) :: MMF_microphysics_scheme
-   integer, dimension(1) :: dims_gcm_1D  = (/pcols/)
-   integer, dimension(2) :: dims_gcm_2D  = (/pcols, pver/)
-   integer, dimension(3) :: dims_crm_2D  = (/pcols, crm_nx, crm_ny/)
-   integer, dimension(4) :: dims_crm_3D  = (/pcols, crm_nx, crm_ny, crm_nz/)
-   integer, dimension(4) :: dims_crm_rad = (/pcols, crm_nx_rad, crm_ny_rad, crm_nz/)
+   integer, dimension(1) :: dims_gcm_1D
+   integer, dimension(2) :: dims_gcm_2D
+   integer, dimension(3) :: dims_crm_2D
+   integer, dimension(4) :: dims_crm_3D
+   integer, dimension(4) :: dims_crm_rad
 #ifdef MODAL_AERO
-   integer, dimension(5) :: dims_crm_aer = (/pcols, crm_nx_rad, crm_ny_rad, crm_nz, ntot_amode/)
+   integer, dimension(5) :: dims_crm_aer
 #endif
    !----------------------------------------------------------------------------
+   dims_gcm_1D  = (/pcols/)
+   dims_gcm_2D  = (/pcols, pver/)
+   dims_crm_2D  = (/pcols, crm_nx, crm_ny/)
+   dims_crm_3D  = (/pcols, crm_nx, crm_ny, crm_nz/)
+   dims_crm_rad = (/pcols, crm_nx_rad, crm_ny_rad, crm_nz/)
+#ifdef MODAL_AERO
+   dims_crm_aer = (/pcols, crm_nx_rad, crm_ny_rad, crm_nz, ntot_amode/)
+#endif
+
    call phys_getopts( use_ECPP_out = use_ECPP)
    call phys_getopts( MMF_microphysics_scheme_out = MMF_microphysics_scheme)
 
@@ -214,6 +223,7 @@ subroutine crm_physics_init(species_class)
    !----------------------------------------------------------------------------
    ! local variables
    integer :: m
+   integer :: ierror   ! Error code
    logical :: use_ECPP
    character(len=16) :: MMF_microphysics_scheme
    !----------------------------------------------------------------------------
@@ -225,6 +235,23 @@ subroutine crm_physics_init(species_class)
       ! Initialize ECPP driver
       call papampollu_init()
    end if
+#endif
+
+   allocate (cldo_save(pcols,pver), stat=ierror)
+   if ( ierror /= 0 ) call endrun('CRM_PHYSICS_INIT error: allocation error cldo_save')
+
+   allocate (q_aero(pcols,pver,pcnst), stat=ierror)
+   if ( ierror /= 0 ) call endrun('CRM_PHYSICS_INIT error: allocation error q_aero')
+
+#ifdef MODAL_AERO
+   allocate (qqcw_save(pcols,pver,pcnst), stat=ierror)
+   if ( ierror /= 0 ) call endrun('CRM_PHYSICS_INIT error: allocation error qqcw_save')
+
+   allocate (qqcw_all(pcols,pver,pcnst), stat=ierror)
+   if ( ierror /= 0 ) call endrun('CRM_PHYSICS_INIT error: allocation error qqcw_all')
+
+   allocate (dgnumwet_save(pcols,pver,ntot_amode), stat=ierror)
+   if ( ierror /= 0 ) call endrun('CRM_PHYSICS_INIT error: allocation error dgnumwet')
 #endif
 
    call crm_history_init(species_class)

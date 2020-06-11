@@ -505,38 +505,6 @@ add_default($nl, 'config_proc_decomp_file_prefix');
 add_default($nl, 'config_dt');
 add_default($nl, 'config_time_integrator');
 
-#####################################
-# Namelist group: ALE_vertical_grid #
-#####################################
-
-add_default($nl, 'config_vert_coord_movement');
-add_default($nl, 'config_ALE_thickness_proportionality');
-add_default($nl, 'config_vert_taper_weight_depth_1');
-add_default($nl, 'config_vert_taper_weight_depth_2');
-add_default($nl, 'config_use_min_max_thickness');
-add_default($nl, 'config_min_thickness');
-add_default($nl, 'config_max_thickness_factor');
-add_default($nl, 'config_dzdk_positive');
-
-####################################################
-# Namelist group: ALE_frequency_filtered_thickness #
-####################################################
-
-add_default($nl, 'config_use_freq_filtered_thickness');
-add_default($nl, 'config_thickness_filter_timescale');
-add_default($nl, 'config_use_highFreqThick_restore');
-add_default($nl, 'config_highFreqThick_restore_time');
-add_default($nl, 'config_use_highFreqThick_del2');
-add_default($nl, 'config_highFreqThick_del2');
-
-########################################
-# Namelist group: partial_bottom_cells #
-########################################
-
-add_default($nl, 'config_alter_ICs_for_pbcs');
-add_default($nl, 'config_pbc_alteration_type');
-add_default($nl, 'config_min_pbc_fraction');
-
 ########################
 # Namelist group: hmix #
 ########################
@@ -604,20 +572,6 @@ add_default($nl, 'config_eddying_resolution_ramp_min');
 add_default($nl, 'config_eddying_resolution_ramp_max');
 
 ####################################
-# Namelist group: hmix_del2_tensor #
-####################################
-
-add_default($nl, 'config_use_mom_del2_tensor');
-add_default($nl, 'config_mom_del2_tensor');
-
-####################################
-# Namelist group: hmix_del4_tensor #
-####################################
-
-add_default($nl, 'config_use_mom_del4_tensor');
-add_default($nl, 'config_mom_del4_tensor');
-
-####################################
 # Namelist group: Rayleigh_damping #
 ####################################
 
@@ -626,98 +580,6 @@ add_default($nl, 'config_Rayleigh_damping_coeff');
 add_default($nl, 'config_Rayleigh_damping_depth_variable');
 add_default($nl, 'config_Rayleigh_bottom_friction');
 add_default($nl, 'config_Rayleigh_bottom_damping_coeff');
-
-#########################
-# Namelist group: cvmix #
-#########################
-
-add_default($nl, 'config_use_cvmix');
-add_default($nl, 'config_cvmix_prandtl_number');
-add_default($nl, 'config_use_cvmix_background');
-add_default($nl, 'config_cvmix_background_diffusion');
-add_default($nl, 'config_cvmix_background_viscosity');
-add_default($nl, 'config_use_cvmix_convection');
-add_default($nl, 'config_cvmix_convective_diffusion');
-add_default($nl, 'config_cvmix_convective_viscosity');
-add_default($nl, 'config_cvmix_convective_basedOnBVF');
-add_default($nl, 'config_cvmix_convective_triggerBVF');
-add_default($nl, 'config_use_cvmix_shear');
-add_default($nl, 'config_cvmix_num_ri_smooth_loops');
-add_default($nl, 'config_cvmix_use_BLD_smoothing');
-add_default($nl, 'config_cvmix_shear_mixing_scheme');
-add_default($nl, 'config_cvmix_shear_PP_nu_zero');
-add_default($nl, 'config_cvmix_shear_PP_alpha');
-add_default($nl, 'config_cvmix_shear_PP_exp');
-add_default($nl, 'config_cvmix_shear_KPP_nu_zero');
-add_default($nl, 'config_cvmix_shear_KPP_Ri_zero');
-add_default($nl, 'config_cvmix_shear_KPP_exp');
-add_default($nl, 'config_use_cvmix_tidal_mixing');
-add_default($nl, 'config_use_cvmix_double_diffusion');
-add_default($nl, 'config_use_cvmix_kpp');
-add_default($nl, 'config_use_cvmix_fixed_boundary_layer');
-add_default($nl, 'config_cvmix_kpp_boundary_layer_depth');
-add_default($nl, 'config_cvmix_kpp_criticalBulkRichardsonNumber');
-add_default($nl, 'config_cvmix_kpp_matching');
-add_default($nl, 'config_cvmix_kpp_EkmanOBL');
-add_default($nl, 'config_cvmix_kpp_MonObOBL');
-add_default($nl, 'config_cvmix_kpp_interpolationOMLType');
-add_default($nl, 'config_cvmix_kpp_surface_layer_extent');
-add_default($nl, 'config_cvmix_kpp_surface_layer_averaging');
-add_default($nl, 'configure_cvmix_kpp_minimum_OBL_under_sea_ice');
-add_default($nl, 'config_cvmix_kpp_stop_OBL_search');
-add_default($nl, 'config_cvmix_kpp_use_enhanced_diff');
-add_default($nl, 'config_cvmix_kpp_nonlocal_with_implicit_mix');
-add_default($nl, 'config_cvmix_kpp_use_theory_wave');
-add_default($nl, 'config_cvmix_kpp_langmuir_mixing_opt');
-add_default($nl, 'config_cvmix_kpp_langmuir_entrainment_opt');
-
-##############################
-# Namelist group: vmix_const #
-##############################
-
-add_default($nl, 'config_use_const_visc');
-add_default($nl, 'config_use_const_diff');
-add_default($nl, 'config_vert_visc');
-add_default($nl, 'config_vert_diff');
-
-##############################
-# Namelist group: vmix_const #
-##############################
-
-add_default($nl, 'config_use_const_visc');
-add_default($nl, 'config_use_const_diff');
-add_default($nl, 'config_vert_visc');
-add_default($nl, 'config_vert_diff');
-
-#############################
-# Namelist group: vmix_rich #
-#############################
-
-add_default($nl, 'config_use_rich_visc');
-add_default($nl, 'config_use_rich_diff');
-add_default($nl, 'config_bkrd_vert_visc');
-add_default($nl, 'config_bkrd_vert_diff');
-add_default($nl, 'config_rich_mix');
-
-########################
-# Namelist group: vmix #
-########################
-
-add_default($nl, 'config_convective_visc');
-add_default($nl, 'config_convective_diff');
-
-#############################
-# Namelist group: vmix_tanh #
-#############################
-
-add_default($nl, 'config_use_tanh_visc');
-add_default($nl, 'config_use_tanh_diff');
-add_default($nl, 'config_max_visc_tanh');
-add_default($nl, 'config_min_visc_tanh');
-add_default($nl, 'config_max_diff_tanh');
-add_default($nl, 'config_min_diff_tanh');
-add_default($nl, 'config_zMid_tanh');
-add_default($nl, 'config_zWidth_tanh');
 
 #########################
 # Namelist group: cvmix #
@@ -907,13 +769,29 @@ add_default($nl, 'config_btr_gam2_SSHWt1');
 add_default($nl, 'config_btr_gam3_velWt2');
 add_default($nl, 'config_btr_solve_SSH2');
 
-###########################
-# Namelist group: testing #
-###########################
+#####################################
+# Namelist group: ALE_vertical_grid #
+#####################################
 
-add_default($nl, 'config_conduct_tests');
-add_default($nl, 'config_test_tensors');
-add_default($nl, 'config_tensor_test_function');
+add_default($nl, 'config_vert_coord_movement');
+add_default($nl, 'config_ALE_thickness_proportionality');
+add_default($nl, 'config_vert_taper_weight_depth_1');
+add_default($nl, 'config_vert_taper_weight_depth_2');
+add_default($nl, 'config_use_min_max_thickness');
+add_default($nl, 'config_min_thickness');
+add_default($nl, 'config_max_thickness_factor');
+add_default($nl, 'config_dzdk_positive');
+
+####################################################
+# Namelist group: ALE_frequency_filtered_thickness #
+#####################################################
+
+add_default($nl, 'config_use_freq_filtered_thickness');
+add_default($nl, 'config_thickness_filter_timescale');
+add_default($nl, 'config_use_highFreqThick_restore');
+add_default($nl, 'config_highFreqThick_restore_time');
+add_default($nl, 'config_use_highFreqThick_del2');
+add_default($nl, 'config_highFreqThick_del2');
 
 #########################
 # Namelist group: debug #
@@ -947,6 +825,14 @@ add_default($nl, 'config_disable_tr_sflux');
 add_default($nl, 'config_disable_tr_nonlocalflux');
 add_default($nl, 'config_disable_redi_k33');
 add_default($nl, 'config_read_nearest_restart');
+
+###########################
+# Namelist group: testing #
+###########################
+
+add_default($nl, 'config_conduct_tests');
+add_default($nl, 'config_test_tensors');
+add_default($nl, 'config_tensor_test_function');
 
 ##########################################
 # Namelist group: constrain_Haney_number #
@@ -1565,6 +1451,16 @@ add_default($nl, 'config_AM_mocStreamfunction_normal_velocity_value');
 add_default($nl, 'config_AM_mocStreamfunction_region_group');
 add_default($nl, 'config_AM_mocStreamfunction_transect_group');
 
+#######################################
+# Namelist group: AM_oceanHeatContent #
+#######################################
+
+add_default($nl, 'config_AM_oceanHeatContent_enable');
+add_default($nl, 'config_AM_oceanHeatContent_compute_interval');
+add_default($nl, 'config_AM_oceanHeatContent_output_stream');
+add_default($nl, 'config_AM_oceanHeatContent_compute_on_startup');
+add_default($nl, 'config_AM_oceanHeatContent_write_on_startup');
+
 #-----------------------------------------------------------------------------------------------
 # *** Write output namelist file (mpaso_in) and input dataset list (mpaso.input_data_list) ***
 #-----------------------------------------------------------------------------------------------
@@ -1576,9 +1472,6 @@ my @groups = qw(run_modes
                 io
                 decomposition
                 time_integration
-                ale_vertical_grid
-                ale_frequency_filtered_thickness
-                partial_bottom_cells
                 hmix
                 hmix_del2
                 hmix_del4
@@ -1586,13 +1479,7 @@ my @groups = qw(run_modes
                 redi_isopycnal_mixing
                 gm_eddy_parameterization
                 mesoscale_eddy_parameterizations
-                hmix_del2_tensor
-                hmix_del4_tensor
                 rayleigh_damping
-                vmix
-                vmix_const
-                vmix_rich
-                vmix_tanh
                 cvmix
                 forcing
                 coupling
@@ -1606,8 +1493,10 @@ my @groups = qw(run_modes
                 eos
                 eos_linear
                 split_explicit_ts
-                testing
+                ale_vertical_grid
+                ale_frequency_filtered_thickness
                 debug
+                testing
                 constrain_haney_number
                 tracer_forcing_activetracers
                 tracer_forcing_debugtracers
@@ -1643,6 +1532,7 @@ my @groups = qw(run_modes
                 am_transecttransport
                 am_eddyproductvariables
                 am_mocstreamfunction
+                am_oceanheatcontent
                 );
 
 # Check for variables in the "derived" group, add them to appropriate group

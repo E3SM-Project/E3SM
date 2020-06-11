@@ -345,21 +345,24 @@ subroutine nucleate_ice_cam_init(mincld_in, bulk_scale_in)
          call endrun(routine//': ERROR required mode-species type not found')
       end if
 
-
-      call rad_cnst_get_info(0, mode_coarse_idx, nspec=nspec)
-      do n = 1, nspec
-         call rad_cnst_get_info(0, mode_coarse_idx, n, spec_type=str32)
-         select case (trim(str32))
-         case ('sulfate')
-            coarse_so4_idx = n
-         end select
-      end do
+      if (mode_coarse_idx > 0) then
+         call rad_cnst_get_info(0, mode_coarse_idx, nspec=nspec)
+         do n = 1, nspec
+            call rad_cnst_get_info(0, mode_coarse_idx, n, spec_type=str32)
+            select case (trim(str32))
+            case ('sulfate')
+               coarse_so4_idx = n
+            end select
+         end do
+      end if
 
       ! Check that required mode specie types were found
-      if ( coarse_so4_idx == -1) then
-         write(iulog,*) routine//': ERROR required mode-species type not found - indicies:', &
-            coarse_so4_idx
-         call endrun(routine//': ERROR required mode-species type not found')
+      if (mode_coarse_idx > 0) then
+         if ( coarse_so4_idx == -1) then
+            write(iulog,*) routine//': ERROR required mode-species type not found - indicies:', &
+               coarse_so4_idx
+            call endrun(routine//': ERROR required mode-species type not found')
+         end if
       end if
 
 #if (defined MODAL_AERO_4MODE_MOM)
@@ -583,8 +586,11 @@ subroutine nucleate_ice_cam_calc( &
       ! mode specie mass m.r.
       call rad_cnst_get_aer_mmr(0, mode_coarse_dst_idx, coarse_dust_idx, 'a', state, pbuf, coarse_dust)
       call rad_cnst_get_aer_mmr(0, mode_coarse_slt_idx, coarse_nacl_idx, 'a', state, pbuf, coarse_nacl)
+    
+      if (mode_coarse_idx > 0) then
+         call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_so4_idx, 'a', state, pbuf, coarse_so4)
+      end if
 
-      call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_so4_idx, 'a', state, pbuf, coarse_so4)
       if (use_nie_nucleate .or. use_dem_nucleate) then
          call rad_cnst_get_aer_mmr(0, mode_fine_dst_idx, fine_dust_idx, 'a', state, pbuf, fine_dust)
       end if
@@ -706,7 +712,10 @@ subroutine nucleate_ice_cam_calc( &
                soot_num = num_accum(i,k)*rho(i,k)*1.0e-6_r8
                dmc  = coarse_dust(i,k)*rho(i,k)
                ssmc = coarse_nacl(i,k)*rho(i,k)
-               so4mc  = coarse_so4(i,k)*rho(i,k)
+
+               if (mode_coarse_idx > 0) then
+                  so4mc  = coarse_so4(i,k)*rho(i,k)
+               endif
 
 #if (defined MODAL_AERO_4MODE_MOM)
                mommc  = coarse_mom(i,k)*rho(i,k)

@@ -122,15 +122,18 @@ else
   CPPDEFS += -DHAVE_MPI
 endif
 
-ifeq ($(strip $(PIO_VERSION)),1)
-  CPPDEFS += -DPIO1
-else
-  USE_CXX = TRUE
-endif
-
 ifeq (,$(SHAREDPATH))
   SHAREDPATH = $(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)/$(COMP_INTERFACE)
   INSTALL_SHAREDPATH = $(EXEROOT)/$(SHAREDPATH)
+endif
+
+ifeq ($(PIO_VERSION),2)
+  ifneq ($(COMPILER),nag)
+    # Needed by SCORPIO not default PIO, does not work with NAG compiler
+    USE_CXX := TRUE
+  endif
+else
+  CPPDEFS += -DPIO1
 endif
 
 ifeq ($(USE_CXX), TRUE)
@@ -262,13 +265,6 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
   include $(ALBANY_PATH)/export_albany.in
 endif
 
-ifeq ($(strip $(USE_KOKKOS)), TRUE)
-  include $(INSTALL_SHAREDPATH)/Makefile.kokkos
-  SLIBS += $(KOKKOS_LIBS)
-  CXXFLAGS += $(KOKKOS_CXXFLAGS)
-  CXX_LDFLAGS += $(KOKKOS_LDFLAGS)
-endif
-
 # Set MOAB info if it is being used
 ifeq ($(strip $(USE_MOAB)), TRUE)
   ifdef MOAB_PATH
@@ -296,14 +292,6 @@ ifeq ($(findstring -DLINUX,$(CPPDEFS)),-DLINUX)
       CPPDEFS += -DHAVE_SLASHPROC
     endif
   endif
-endif
-
-# Atleast on Titan+cray mpi, MPI_Irsends() are buggy, causing hangs during I/O
-# Force PIO to use MPI_Isends instead of the default, MPI_Irsends
-ifeq ($(PIO_VERSION),2)
-  EXTRA_PIO_CPPDEFS = -DUSE_MPI_ISEND_FOR_FC
-else
-  EXTRA_PIO_CPPDEFS = -D_NO_MPI_RSEND
 endif
 
 ifdef LIB_PNETCDF
@@ -577,11 +565,13 @@ ifeq ($(findstring -cosp,$(CAM_CONFIG_OPTS)),-cosp)
   endif
 endif
 
-CAM_DYCORE ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) CAM_DYCORE --value)
-
-ifeq ($(CAM_DYCORE),fv3)
-FV3CORE_LIBDIR:=$(abspath $(EXEROOT)/atm/obj/atmos_cubed_sphere)
-INCLDIR+=-I$(FV3CORE_LIBDIR) -I$(FV3CORE_LIBDIR)/../ -I../$(INSTALL_SHAREDPATH)/include -I../$(CSM_SHR_INCLUDE) -I$(abspath $(EXEROOT)/FMS) -I$(CIMEROOT)/../libraries/FMS/src/include
+COMP_ATM ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMP_ATM --value)
+ifeq ($(strip $(COMP_ATM)),cam)
+  CAM_DYCORE ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) CAM_DYCORE --value)
+  ifeq ($(CAM_DYCORE),fv3)
+    FV3CORE_LIBDIR:=$(abspath $(EXEROOT)/atm/obj/atmos_cubed_sphere)
+    INCLDIR+=-I$(FV3CORE_LIBDIR) -I$(FV3CORE_LIBDIR)/../ -I../$(INSTALL_SHAREDPATH)/include -I../$(CSM_SHR_INCLUDE) -I$(abspath $(EXEROOT)/FMS) -I$(CIMEROOT)/../libraries/FMS/src/include
+  endif
 endif
 
 
@@ -753,6 +743,14 @@ else ifeq ($(NETCDF_SEPARATE), TRUE)
   # installation of Fortran NetCDF for PIO
   CMAKE_OPTS += -D NetCDF_C_PATH:PATH=$(NETCDF_C_PATH) \
                 -D NetCDF_Fortran_PATH:PATH=$(NETCDF_FORTRAN_PATH)
+endif
+
+ifdef ZLIB_PATH
+        CMAKE_OPTS += -D LIBZ_PATH:STRING="$(ZLIB_PATH)"
+endif
+
+ifdef SZIP_PATH
+        CMAKE_OPTS += -D SZIP_PATH:STRING="$(SZIP_PATH)"
 endif
 
 ifdef HDF5_PATH

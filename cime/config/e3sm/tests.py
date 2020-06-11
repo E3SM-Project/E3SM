@@ -21,7 +21,7 @@ _TESTS = {
             "ERS.f19_g16.I1850CNECACNTBC.clm-eca",
             "ERS.f19_g16.I1850CNECACTCBC.clm-eca",
             "SMS_Ly2_P1x1.1x1_smallvilleIA.ICLM45CNCROP.clm-force_netcdf_pio",
-            "ERS_Ld3.f45_f45.ICLM45ED.clm-fates",
+            "ERS_Ld20.f45_f45.ICLM45ED.clm-fates",
             "ERS.f19_g16.I1850CLM45.clm-betr",
             "ERS.f19_g16.I1850CLM45.clm-vst",
             "ERS.f09_g16.I1850CLM45CN.clm-bgcinterface",
@@ -32,7 +32,6 @@ _TESTS = {
             "ERS.f19_g16.I1850GSWCNPRDCTCBC.clm-ctc_f19_g16_I1850GSWCNPRDCTCBC",
             "ERS.f19_g16.I20TRGSWCNPRDCTCBC.clm-ctc_f19_g16_I20TRGSWCNPRDCTCBC",
             "ERS.f09_g16.ICLM45BC",
-            "SMS.r05_r05.I1850CLM45CN",
             "SMS_Ly2_P1x1.1x1_smallvilleIA.ICLM45CNCROP.clm-lulcc_sville",
             )
         },
@@ -132,8 +131,8 @@ _TESTS = {
             "HOMME_P24.f19_g16_rx1.A",
             "HOMMEBFB_P24.f19_g16_rx1.A",
             )
-        },    
-    
+        },
+
     "e3sm_integration" : {
         "inherit" : ("e3sm_developer", "e3sm_atm_integration"),
         "time"    : "03:00:00",
@@ -154,7 +153,8 @@ _TESTS = {
             "SMS.ne30_oECv3.BGCEXP_BCRC_CNPRDCTC_1850.clm-bgcexp",
             "SMS_D_Ld1.T62_oEC60to30v3.DTESTM",
             "SMS_D_Ld1.ne30_r05_oECv3.A_WCYCL1850",
-            "ERP_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1-TEST.cam-crmout",
+            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1-TEST.cam-crmout",
+            "SMS.r05_r05.I1850CLM45CN",
             )
         },
 
@@ -336,7 +336,7 @@ _TESTS = {
     "e3sm_bench_lores_g" : {
         "share"    : True,
         "time"     : "01:00:00",
-        "tests"    : ( 
+        "tests"    : (
                  "PFS_P320.T62_oEC60to30v3.GMPAS-IAF.bench-gmpas_noio",
                  "PFS_P480.T62_oEC60to30v3.GMPAS-IAF.bench-gmpas_noio",
                  "PFS_P640.T62_oEC60to30v3.GMPAS-IAF.bench-gmpas_noio",
@@ -366,4 +366,19 @@ _TESTS = {
         "time"    : "01:00:00",
     },
 
+    "e3sm_scream" : {
+        "time"  : "03:00:00",
+        "tests" : (
+            "SMS_D.ne4_ne4.FSCREAM-HR",
+            "SMS_D.ne4_ne4.FSCREAM-LR",
+            "ERS.ne4_ne4.FSCREAM-HR",
+            "ERS.ne4_ne4.FSCREAM-LR",
+            "ERP.ne4_ne4.FSCREAM-HR.cam-double_memleak_tol",
+            "ERP.ne4_ne4.FSCREAM-LR.cam-double_memleak_tol",
+            "REP.ne4_ne4.FSCREAM-HR",
+            "REP.ne4_ne4.FSCREAM-LR",
+            "PEM.ne4_ne4.FSCREAM-HR",
+            "PEM.ne4_ne4.FSCREAM-LR",
+            )
+    }
 }

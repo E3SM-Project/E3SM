@@ -1,0 +1,7 @@
+#ifndef SCREAM_CONFIG_F
+#define SCREAM_CONFIG_F
+
+! If defined, Real is double; if not, Real is float.
+#cmakedefine SCREAM_DOUBLE_PRECISION
+
+#endif

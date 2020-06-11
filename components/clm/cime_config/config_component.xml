@@ -86,6 +86,9 @@
       <value compset="SSP585_CAM5%CMIP6_CLM45.*_BGC%B">2015-2100_SSP585_CMIP6bgc_transient</value> 
       <value compset="2010_CAM5%CMIP6-LR_CLM">2010_CMIP6LR_control</value>
       <value compset="2010_CAM5%CMIP6-HR_CLM">2010_CMIP6HR_control</value>
+      <!-- superfast chemistry compsets (use CMIP6 land configuration)-->
+      <value compset="1850_CAM5%AR5sf_CLM">1850_CMIP6_control</value>
+      <value compset="20TR_CAM5%AR5sf_CLM">20thC_CMIP6_transient</value>
     </values>
     <group>run_component_clm</group>
     <file>env_run.xml</file>

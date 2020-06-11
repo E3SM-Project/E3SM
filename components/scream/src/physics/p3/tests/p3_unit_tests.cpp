@@ -1,0 +1,1297 @@
+#include "catch2/catch.hpp"
+
+#include "ekat/scream_types.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/scream_kokkos.hpp"
+#include "ekat/scream_pack.hpp"
+#include "ekat/util/scream_kokkos_utils.hpp"
+#include "ekat/util/scream_arch.hpp"
+#include "physics/p3/p3_functions.hpp"
+#include "physics/p3/p3_functions_f90.hpp"
+
+#include "p3_unit_tests_common.hpp"
+
+#include <thread>
+#include <array>
+#include <algorithm>
+#include <random>
+
+namespace scream {
+namespace p3 {
+namespace unit_test {
+/*
+ * Unit-tests for p3_functions.
+ */
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestP3Conservation
+{
+
+  static void cloud_water_conservation_tests_device() {
+
+    using KTH = KokkosTypes<HostDevice>;
+
+    CloudWaterConservationData cwdc[1] = {{sp(1e-5), sp(1.1), sp(1e-4), 0.0, 0.0, 0.0, 0.0, 0.0, sp(1.0), sp(1.0)}};
+
+    // Sync to device
+    KTH::view_1d<CloudWaterConservationData> cwdc_host("cwdc_host", 1);
+    view_1d<CloudWaterConservationData> cwdc_device("cwdc_host", 1);
+
+    // This copy only copies the input variables.
+    std::copy(&cwdc[0], &cwdc[0] + 1, cwdc_host.data());
+    Kokkos::deep_copy(cwdc_device, cwdc_host);
+
+    // Run the lookup from a kernel and copy results back to host
+    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+      Spack qc(cwdc_device(0).qc);
+      Spack qcaut(cwdc_device(0).qcaut);
+      Spack qcacc(cwdc_device(0).qcacc);
+      Spack qccol(cwdc_device(0).qccol);
+      Spack qcheti(cwdc_device(0).qcheti);
+      Spack qcshd(cwdc_device(0).qcshd);
+      Spack qiberg(cwdc_device(0).qiberg);
+      Spack qisub(cwdc_device(0).qisub);
+      Spack qidep(cwdc_device(0).qidep);
+
+      Functions::cloud_water_conservation(qc, cwdc_device(0).dt, qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep);
+
+      cwdc_device(0).qc = qc[0];
+      cwdc_device(0).qcaut = qcaut[0];
+      cwdc_device(0).qcacc = qcacc[0];
+      cwdc_device(0).qccol = qccol[0];
+      cwdc_device(0).qcheti = qcheti[0];
+      cwdc_device(0).qcshd = qcshd[0];
+      cwdc_device(0).qiberg = qiberg[0];
+      cwdc_device(0).qisub = qisub[0];
+      cwdc_device(0).qidep = qidep[0];
+    });
+
+    // Sync back to host
+    Kokkos::deep_copy(cwdc_host, cwdc_device);
+
+    const auto ratio = cwdc[0].qc/(cwdc[0].qcaut * cwdc[0].dt);
+    REQUIRE(std::abs(cwdc_host(0).qcaut - cwdc[0].qcaut*ratio) <= C::Tol);
+    REQUIRE(cwdc_host(0).qcacc == 0.0);
+    REQUIRE(cwdc_host(0).qccol == 0.0);
+    REQUIRE(cwdc_host(0).qcheti == 0.0);
+    REQUIRE(cwdc_host(0).qcshd == 0.0);
+    REQUIRE(cwdc_host(0).qiberg == 0.0);
+    REQUIRE(std::abs(cwdc_host(0).qisub -(1.0 - ratio)) <= C::Tol);
+    REQUIRE(std::abs(cwdc_host(0).qidep - (1.0 - ratio)) <= C::Tol);
+    REQUIRE(cwdc_host[0].qcaut * cwdc[0].dt <= cwdc_host[0].qc);
+  }
+
+  static void rain_water_conservation_tests_device() {
+    using KTH = KokkosTypes<HostDevice>;
+
+    RainWaterConservationData rwdc[1] = {{sp(1e-5), 0.0, 0.0, 0.0, 0.0, sp(1.1), sp(1e-4), 0.0, 0.0 }};
+
+    // Sync to device
+    KTH::view_1d<RainWaterConservationData> rwdc_host("rwdc_host", 1);
+    view_1d<RainWaterConservationData> rwdc_device("rwdc_host", 1);
+
+    // This copy only copies the input variables.
+    std::copy(&rwdc[0], &rwdc[0] + 1, rwdc_host.data());
+    Kokkos::deep_copy(rwdc_device, rwdc_host);
+
+    // Run the lookup from a kernel and copy results back to host
+    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+      Spack qr(rwdc_device(0).qr);
+      Spack qcaut(rwdc_device(0).qcaut);
+      Spack qcacc(rwdc_device(0).qcacc);
+      Spack qimlt(rwdc_device(0).qimlt);
+      Spack qcshd(rwdc_device(0).qcshd);
+      Spack qrevp(rwdc_device(0).qrevp);
+      Spack qrcol(rwdc_device(0).qrcol);
+      Spack qrheti(rwdc_device(0).qrheti);
+
+      Functions::rain_water_conservation(qr, qcaut, qcacc, qimlt, qcshd, rwdc_device(0).dt, qrevp, qrcol, qrheti);
+
+      rwdc_device(0).qr = qr[0];
+      rwdc_device(0).qcaut = qcaut[0];
+      rwdc_device(0).qcacc = qcacc[0];
+      rwdc_device(0).qimlt = qimlt[0];
+      rwdc_device(0).qcshd = qcshd[0];
+      rwdc_device(0).qrevp = qrevp[0];
+      rwdc_device(0).qrcol = qrcol[0];
+      rwdc_device(0).qrheti = qrheti[0];
+    });
+
+    // Sync back to host
+    Kokkos::deep_copy(rwdc_host, rwdc_device);
+    const auto ratio = rwdc[0].qr/(rwdc[0].qrevp * rwdc[0].dt);
+
+    //Here we check cases where source > sinks and sinks > 1e-20
+    REQUIRE(rwdc_host(0).qcaut == 0.0);
+    REQUIRE(rwdc_host(0).qcacc == 0.0);
+    REQUIRE(rwdc_host(0).qimlt == 0.0);
+    REQUIRE(rwdc_host(0).qcshd == 0.0);
+
+    //Check the value of qrevp
+    REQUIRE(std::abs(rwdc_host(0).qrevp- rwdc[0].qrevp*ratio)<= C::Tol);
+
+    //Now test that conservation has actually been enforced
+    REQUIRE( rwdc_host(0).qrevp * rwdc_host(0).dt  <= rwdc_host(0).qr);
+  }
+
+  static void ice_water_conservation_tests_device(){
+    using KTH = KokkosTypes<HostDevice>;
+
+    IceWaterConservationData iwdc[1] = {{sp(1e-5), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, sp(1.1), sp(1e-4), 0.0}};
+
+    // Sync to device
+    KTH::view_1d<IceWaterConservationData> iwdc_host("iwdc_host", 1);
+    view_1d<IceWaterConservationData> iwdc_device("iwdc_host", 1);
+
+    // This copy only copies the input variables.
+    std::copy(&iwdc[0], &iwdc[0] + 1, iwdc_host.data());
+    Kokkos::deep_copy(iwdc_device, iwdc_host);
+
+    // Run the lookup from a kernel and copy results back to host
+    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+      Spack qitot(iwdc_device(0).qitot);
+      Spack qidep(iwdc_device(0).qidep);
+      Spack qinuc(iwdc_device(0).qinuc);
+      Spack qrcol(iwdc_device(0).qrcol);
+      Spack qccol(iwdc_device(0).qccol);
+      Spack qrheti(iwdc_device(0).qrheti);
+      Spack qcheti(iwdc_device(0).qcheti);
+      Spack qiberg(iwdc_device(0).qiberg);
+      Spack qisub(iwdc_device(0).qisub);
+      Spack qimlt(iwdc_device(0).qimlt);
+
+      Functions::ice_water_conservation(qitot, qidep, qinuc, qrcol, qccol, qrheti, qcheti, qiberg, iwdc_device(0).dt, qisub, qimlt);
+
+      iwdc_device(0).qitot = qitot[0];
+      iwdc_device(0).qidep = qidep[0];
+      iwdc_device(0).qinuc = qinuc[0];
+      iwdc_device(0).qrcol = qrcol[0];
+      iwdc_device(0).qccol = qccol[0];
+      iwdc_device(0).qrheti = qrheti[0];
+      iwdc_device(0).qcheti = qcheti[0];
+      iwdc_device(0).qiberg = qiberg[0];
+      iwdc_device(0).qisub = qisub[0];
+      iwdc_device(0).qimlt = qimlt[0];
+    });
+
+  }
+
+  static void run()
+  {
+    cloud_water_conservation_tests_device();
+
+    rain_water_conservation_tests_device();
+
+    ice_water_conservation_tests_device();
+  }
+
+  static void cloud_water_conservation_unit_bfb_tests(){
+
+    using KTH = KokkosTypes<HostDevice>;
+
+    // These static asserts are important for many tests. If this test gets
+    // removed, please put these lines in another test.
+    static_assert(Spack::n <= max_pack_size,     "Unit testing infrastructure does not support this pack size (too big)");
+    static_assert(max_pack_size % Spack::n == 0, "Unit testing infrastructure does not support this pack size (does not evenly divide 16)");
+
+    CloudWaterConservationData cwdc[max_pack_size] = {
+      //qc, cwdc_device(0).dt, qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep
+      {9.9999999999999995e-7, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+      {6.4285714285714288e-5, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326E-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7},
+      {0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+      {7.1428571428571434e-5, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7},
+
+      {9.9999999999999995e-7, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+      {6.4285714285714288e-5, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326E-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7},
+      {0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+      {7.1428571428571434e-5, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7},
+
+      {9.9999999999999995e-7, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+      {6.4285714285714288e-5, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326E-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7},
+      {0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+      {7.1428571428571434e-5, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7},
+
+      {9.9999999999999995e-7, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+      {6.4285714285714288e-5, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326E-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7},
+      {0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+      {7.1428571428571434e-5, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7}
+    };
+
+    // Sync to device
+    KTH::view_1d<CloudWaterConservationData> cwdc_host("cwdc_host", max_pack_size);
+    view_1d<CloudWaterConservationData> cwdc_device("cwdc_host", max_pack_size);
+
+    // This copy only copies the input variables.
+    std::copy(&cwdc[0], &cwdc[0] + max_pack_size, cwdc_host.data());
+    Kokkos::deep_copy(cwdc_device, cwdc_host);
+
+    // Get data from fortran
+    for (Int i = 0; i < max_pack_size; ++i) {
+      cloud_water_conservation(cwdc[i]);
+    }
+
+    // Run the lookup from a kernel and copy results back to host
+    Kokkos::parallel_for(RangePolicy(0, num_test_itrs), KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
+
+      // Init pack inputs
+      Spack qc, qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep;
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        qc[s]     = cwdc_device(vs).qc;
+        qcaut[s]  = cwdc_device(vs).qcaut;
+        qcacc[s]  = cwdc_device(vs).qcacc;
+        qccol[s]  = cwdc_device(vs).qccol;
+        qcheti[s] = cwdc_device(vs).qcheti;
+        qcshd[s]  = cwdc_device(vs).qcshd;
+        qiberg[s] = cwdc_device(vs).qiberg;
+        qisub[s]  = cwdc_device(vs).qisub;
+        qidep[s]  = cwdc_device(vs).qidep;
+      }
+
+      Functions::cloud_water_conservation(qc, cwdc_device(0).dt, qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep);
+      // Copy results back into views
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        cwdc_device(vs).qc     = qc[s];
+        cwdc_device(vs).qcaut  = qcaut[s];
+        cwdc_device(vs).qcacc  = qcacc[s];
+        cwdc_device(vs).qccol  = qccol[s];
+        cwdc_device(vs).qcheti = qcheti[s];
+        cwdc_device(vs).qiberg = qiberg[s];
+        cwdc_device(vs).qisub  = qisub[s];
+        cwdc_device(vs).qidep  = qidep[s];
+      }
+
+    });
+    // Sync back to host
+    Kokkos::deep_copy(cwdc_host, cwdc_device);
+
+    // Validate results
+    for (Int s = 0; s < max_pack_size; ++s) {
+      REQUIRE(cwdc[s].qc     == cwdc_host(s).qc);
+      REQUIRE(cwdc[s].qcaut  == cwdc_host(s).qcaut);
+      REQUIRE(cwdc[s].qcacc  == cwdc_host(s).qcacc);
+      REQUIRE(cwdc[s].qccol  == cwdc_host(s).qccol);
+      REQUIRE(cwdc[s].qcheti == cwdc_host(s).qcheti);
+      REQUIRE(cwdc[s].qiberg == cwdc_host(s).qiberg);
+      REQUIRE(cwdc[s].qisub  == cwdc_host(s).qisub);
+      REQUIRE(cwdc[s].qidep  == cwdc_host(s).qidep);
+    }
+
+  }
+
+  static void ice_water_conservation_unit_bfb_tests()
+  {
+    using KTH = KokkosTypes<HostDevice>;
+
+    IceWaterConservationData iwdc[max_pack_size] = {
+      // qitot, qidep, qinuc, qiberg, qrcol, qccol, qrheti, qcheti, iwdc_device(0).dt, qisub, qimlt
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 1.9205467584100191e-4},
+      {5.0e-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 1.8234653652173277e-7, 0.0},
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 2.3237448636383435e-3},
+      {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0},
+
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 1.9205467584100191e-4},
+      {5.0e-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 1.8234653652173277e-7, 0.0},
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 2.3237448636383435e-3},
+      {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0},
+
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 1.9205467584100191e-4},
+      {5.0e-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 1.8234653652173277e-7, 0.0},
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 2.3237448636383435e-3},
+      {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0},
+
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 1.9205467584100191e-4},
+      {5.0e-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 1.8234653652173277e-7, 0.0},
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 2.3237448636383435e-3},
+      {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0}
+    };
+
+    // Sync to device
+    KTH::view_1d<IceWaterConservationData> iwdc_host("iwdc_host", max_pack_size);
+    view_1d<IceWaterConservationData> iwdc_device("iwdc_host", max_pack_size);
+
+    // This copy only copies the input variables.
+    std::copy(&iwdc[0], &iwdc[0] + max_pack_size, iwdc_host.data());
+    Kokkos::deep_copy(iwdc_device, iwdc_host);
+
+    // Get data from fortran
+    for (Int i = 0; i < max_pack_size; ++i) {
+      ice_water_conservation(iwdc[i]);
+    }
+
+    // Run the lookup from a kernel and copy results back to host
+    Kokkos::parallel_for(RangePolicy(0, num_test_itrs), KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
+
+      // Init pack inputs
+      Spack qitot,qidep,qinuc,qiberg,qrcol,qccol,qrheti,qcheti,qisub,qimlt;
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        qitot[s]  = iwdc_device(vs).qitot;
+        qidep[s]  = iwdc_device(vs).qidep;
+        qinuc[s]  = iwdc_device(vs).qinuc;
+        qiberg[s] = iwdc_device(vs).qiberg;
+        qrcol[s]  = iwdc_device(vs).qrcol;
+        qccol[s]  = iwdc_device(vs).qccol;
+        qrheti[s] = iwdc_device(vs).qrheti;
+        qcheti[s] = iwdc_device(vs).qcheti;
+        qisub[s] = iwdc_device(vs).qisub;
+        qimlt[s] = iwdc_device(vs).qimlt;
+      }
+
+      Functions::ice_water_conservation(qitot, qidep, qinuc, qiberg, qrcol, qccol, qrheti, qcheti, iwdc_device(0).dt, qisub, qimlt);
+      // Copy results back into views
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        iwdc_device(vs).qitot = qitot[s];
+        iwdc_device(vs).qidep = qidep[s];
+        iwdc_device(vs).qinuc = qinuc[s];
+        iwdc_device(vs).qiberg = qiberg[s];
+        iwdc_device(vs).qrcol = qrcol[s];
+        iwdc_device(vs).qccol = qccol[s];
+        iwdc_device(vs).qrheti = qrheti[s];
+        iwdc_device(vs).qcheti = qcheti[s];
+        iwdc_device(vs).qisub = qisub[s];
+        iwdc_device(vs).qimlt = qimlt[s];
+      }
+    });
+
+    // Sync back to host
+    Kokkos::deep_copy(iwdc_host, iwdc_device);
+
+    // Validate results
+    for (Int s = 0; s < max_pack_size; ++s) {
+      REQUIRE(iwdc[s].qitot == iwdc_host(s).qitot);
+      REQUIRE(iwdc[s].qidep == iwdc_host(s).qidep );
+      REQUIRE(iwdc[s].qinuc == iwdc_host(s).qinuc);
+      REQUIRE(iwdc[s].qiberg == iwdc_host(s).qiberg);
+      REQUIRE(iwdc[s].qrcol  == iwdc_host(s).qrcol);
+      REQUIRE(iwdc[s].qccol == iwdc_host(s).qccol);
+      REQUIRE(iwdc[s].qrheti == iwdc_host(s).qrheti);
+      REQUIRE(iwdc[s].qcheti == iwdc_host(s).qcheti);
+      REQUIRE(iwdc[s].qisub == iwdc_host(s).qisub);
+      REQUIRE(iwdc[s].qimlt == iwdc_host(s).qimlt);
+    }
+
+  }
+
+  static void rain_water_conservation_unit_bfb_tests(){
+
+    using KTH = KokkosTypes<HostDevice>;
+
+    RainWaterConservationData rwdc[max_pack_size] = {
+      // qr, qcaut, qcacc, qimlt, qcshd, rwdc_device(0).dt, qrevp, qrcol, qrheti
+      {0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0, 0.0},
+      {3.6842105263157901e-6, 1.8910609577335389e-12, 6.5659507736611415e-9, 2.0267066625093075e-3, 1.3686661018890648e-9, 1800.0, 0.0, 0.0, 0.0},
+      {1.0000000000000001e-5, 1.3239078166546396e-11, 4.5967389456540289e-8, 0.0, 0.0, 1800.0, 0.0, 1.4619847302347994e-33, 1.3104200383028957e-8},
+      {8.9473684210526319e-6, 1.1338778389922441e-11, 3.9369360589471763e-8, 0.0, 0.0, 1800.0, 0.0, 1.4495908589465900e-33, 8.5051489557327688e-10},
+
+      {0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0, 0.0},
+      {3.6842105263157901e-6, 1.8910609577335389e-12, 6.5659507736611415e-9, 2.0267066625093075e-3, 1.3686661018890648e-9, 1800.0, 0.0, 0.0, 0.0},
+      {1.0000000000000001e-5, 1.3239078166546396e-11, 4.5967389456540289e-8, 0.0, 0.0, 1800.0, 0.0, 1.4619847302347994e-33, 1.3104200383028957e-8},
+      {8.9473684210526319e-6, 1.1338778389922441e-11, 3.9369360589471763e-8, 0.0, 0.0, 1800.0, 0.0, 1.4495908589465900e-33, 8.5051489557327688e-10},
+
+      {0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0, 0.0},
+      {3.6842105263157901e-6, 1.8910609577335389e-12, 6.5659507736611415e-9, 2.0267066625093075e-3, 1.3686661018890648e-9, 1800.0, 0.0, 0.0, 0.0},
+      {1.0000000000000001e-5, 1.3239078166546396e-11, 4.5967389456540289e-8, 0.0, 0.0, 1800.0, 0.0, 1.4619847302347994e-33, 1.3104200383028957e-8},
+      {8.9473684210526319e-6, 1.1338778389922441e-11, 3.9369360589471763e-8, 0.0, 0.0, 1800.0, 0.0, 1.4495908589465900e-33, 8.5051489557327688e-10},
+
+      {0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0, 0.0},
+      {3.6842105263157901e-6, 1.8910609577335389e-12, 6.5659507736611415e-9, 2.0267066625093075e-3, 1.3686661018890648e-9, 1800.0, 0.0, 0.0, 0.0},
+      {1.0000000000000001e-5, 1.3239078166546396e-11, 4.5967389456540289e-8, 0.0, 0.0, 1800.0, 0.0, 1.4619847302347994e-33, 1.3104200383028957e-8},
+      {8.9473684210526319e-6, 1.1338778389922441e-11, 3.9369360589471763e-8, 0.0, 0.0, 1800.0, 0.0, 1.4495908589465900e-33, 8.5051489557327688e-10}
+    };
+
+    // Sync to device
+    KTH::view_1d<RainWaterConservationData> rwdc_host("rwdc_host", max_pack_size);
+    view_1d<RainWaterConservationData> rwdc_device("rwdc_host", max_pack_size);
+
+    // This copy only copies the input variables.
+    std::copy(&rwdc[0], &rwdc[0] + max_pack_size, rwdc_host.data());
+    Kokkos::deep_copy(rwdc_device, rwdc_host);
+
+    // Get data from fortran
+    for (Int i = 0; i < max_pack_size; ++i) {
+      rain_water_conservation(rwdc[i]);
+    }
+
+    // Run the lookup from a kernel and copy results back to host
+    Kokkos::parallel_for(RangePolicy(0, num_test_itrs), KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
+
+      // Init pack inputs
+      Spack qr, qcaut, qcacc, qimlt, qcshd, qrevp, qrcol, qrheti;
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        qr[s]     = rwdc_device(vs).qr;
+        qcaut[s]  = rwdc_device(vs).qcaut;
+        qcacc[s]  = rwdc_device(vs).qcacc;
+        qimlt[s]  = rwdc_device(vs).qimlt;
+        qcshd[s]  = rwdc_device(vs).qcshd;
+        qrevp[s]  = rwdc_device(vs).qrevp;
+        qrcol[s]  = rwdc_device(vs).qrcol;
+        qrheti[s] = rwdc_device(vs).qrheti;
+      }
+
+      Functions::rain_water_conservation(qr, qcaut, qcacc, qimlt, qcshd, rwdc_device(0).dt, qrevp, qrcol, qrheti);
+      // Copy results back into views
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        rwdc_device(vs).qr     = qr[s];
+        rwdc_device(vs).qcaut  = qcaut[s];
+        rwdc_device(vs).qcacc  = qcacc[s];
+        rwdc_device(vs).qimlt  = qimlt[s];
+        rwdc_device(vs).qcshd  = qcshd[s];
+        rwdc_device(vs).qrevp  = qrevp[s];
+        rwdc_device(vs).qrcol  = qrcol[s];
+        rwdc_device(vs).qrheti = qrheti[s];
+      }
+
+    });
+
+    // Sync back to host
+    Kokkos::deep_copy(rwdc_host, rwdc_device);
+
+    // Validate results
+    for (Int s = 0; s < max_pack_size; ++s) {
+      REQUIRE(rwdc[s].qr     == rwdc_host(s).qr);
+      REQUIRE(rwdc[s].qcaut  == rwdc_host(s).qcaut);
+      REQUIRE(rwdc[s].qcacc  == rwdc_host(s).qcacc);
+      REQUIRE(rwdc[s].qimlt  == rwdc_host(s).qimlt);
+      REQUIRE(rwdc[s].qcshd  == rwdc_host(s).qcshd);
+      REQUIRE(rwdc[s].qrevp  == rwdc_host(s).qrevp);
+      REQUIRE(rwdc[s].qrcol  == rwdc_host(s).qrcol);
+      REQUIRE(rwdc[s].qrheti == rwdc_host(s).qrheti);
+    }
+  }
+
+  static void run_bfb() {
+    cloud_water_conservation_unit_bfb_tests();
+
+    rain_water_conservation_unit_bfb_tests();
+
+    ice_water_conservation_unit_bfb_tests();
+  }
+
+};
+
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
+{
+  static void update_prognostic_ice_unit_bfb_tests() {
+
+    constexpr Scalar nmltratio     = C::nmltratio;
+    constexpr Scalar dt            = 1.8000E+03;
+    constexpr bool   log_predictNc = true;
+
+    //fortran generated data is input to the following
+    P3UpdatePrognosticIceData pupidc[max_pack_size] = {
+
+      {4.9078E-19, 1.5312E-09, 4.4387E-09, 3.7961E+06, 1.7737E-04, 0.0000E+00, 3.8085E-08, 5.1281E+04, 1.9251E-15,
+       3.4778E-04, 3.5801E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.1386E-07, 0.0000E+00, 0.0000E+00, 2.7053E-02,
+       0.0000E+00, 1.9209E-10, 1.0686E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       4.5312E+02, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       6.4286E-05, 1.0000E-02},
+
+      {2.1097E-18, 2.7648E-09, 3.8261E-09, 3.7754E+06, 6.8685E-04, 0.0000E+00, 4.1018E-08, 5.1227E+04, 4.8876E-15,
+       1.3468E-03, 2.8059E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 7.1049E-07, 0.0000E+00, 0.0000E+00, 2.4547E-02,
+       0.0000E+00, 2.8615E-10, 1.0741E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       3.4890E+02, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       7.1429E-05, 1.0000E-02},
+
+      {8.9820E-18, 4.2529E-09, 2.9520E-09, 3.7537E+06, 2.6598E-03, 0.0000E+00, 4.3700E-08, 5.1171E+04, 1.4266E-14,
+       5.2153E-03, 1.9880E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 9.0244E-07, 0.0000E+00, 0.0000E+00, 2.1083E-02,
+       0.0000E+00, 3.7631E-10, 1.0796E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       2.8656E+02, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       7.8571E-05, 1.0000E-02},
+
+      {3.7942E-17, 6.0115E-09, 1.8004E-09, 3.7310E+06, 1.0300E-02, 0.0000E+00, 4.6119E-08, 5.1112E+04, 4.4518E-14,
+       2.0196E-02, 1.1226E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 1.0879E-06, 0.0000E+00, 0.0000E+00, 1.7646E-02,
+       0.0000E+00, 4.5891E-10, 1.0853E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       2.4570E+02, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       8.5714E-05, 1.0000E-02},
+
+      {4.9078E-19, 1.5312E-09, 4.4387E-09, 3.7961E+06, 1.7737E-04, 0.0000E+00, 3.8085E-08, 5.1281E+04, 1.9251E-15,
+       3.4778E-04, 3.5801E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.1386E-07, 0.0000E+00, 0.0000E+00, 2.7053E-02,
+       0.0000E+00, 1.9209E-10, 1.0686E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       4.5312E+02, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       6.4286E-05, 1.0000E-02},
+
+      {2.1097E-18, 2.7648E-09, 3.8261E-09, 3.7754E+06, 6.8685E-04, 0.0000E+00, 4.1018E-08, 5.1227E+04, 4.8876E-15,
+       1.3468E-03, 2.8059E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 7.1049E-07, 0.0000E+00, 0.0000E+00, 2.4547E-02,
+       0.0000E+00, 2.8615E-10, 1.0741E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       3.4890E+02, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       7.1429E-05, 1.0000E-02},
+
+      {8.9820E-18, 4.2529E-09, 2.9520E-09, 3.7537E+06, 2.6598E-03, 0.0000E+00, 4.3700E-08, 5.1171E+04, 1.4266E-14,
+       5.2153E-03, 1.9880E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 9.0244E-07, 0.0000E+00, 0.0000E+00, 2.1083E-02,
+       0.0000E+00, 3.7631E-10, 1.0796E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       2.8656E+02, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       7.8571E-05, 1.0000E-02},
+
+      {3.7942E-17, 6.0115E-09, 1.8004E-09, 3.7310E+06, 1.0300E-02, 0.0000E+00, 4.6119E-08, 5.1112E+04, 4.4518E-14,
+       2.0196E-02, 1.1226E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 1.0879E-06, 0.0000E+00, 0.0000E+00, 1.7646E-02,
+       0.0000E+00, 4.5891E-10, 1.0853E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       2.4570E+02, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       8.5714E-05, 1.0000E-02},
+
+      {4.9078E-19, 1.5312E-09, 4.4387E-09, 3.7961E+06, 1.7737E-04, 0.0000E+00, 3.8085E-08, 5.1281E+04, 1.9251E-15,
+       3.4778E-04, 3.5801E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.1386E-07, 0.0000E+00, 0.0000E+00, 2.7053E-02,
+       0.0000E+00, 1.9209E-10, 1.0686E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       4.5312E+02, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       6.4286E-05, 1.0000E-02},
+
+      {2.1097E-18, 2.7648E-09, 3.8261E-09, 3.7754E+06, 6.8685E-04, 0.0000E+00, 4.1018E-08, 5.1227E+04, 4.8876E-15,
+       1.3468E-03, 2.8059E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 7.1049E-07, 0.0000E+00, 0.0000E+00, 2.4547E-02,
+       0.0000E+00, 2.8615E-10, 1.0741E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       3.4890E+02, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       7.1429E-05, 1.0000E-02},
+
+      {8.9820E-18, 4.2529E-09, 2.9520E-09, 3.7537E+06, 2.6598E-03, 0.0000E+00, 4.3700E-08, 5.1171E+04, 1.4266E-14,
+       5.2153E-03, 1.9880E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 9.0244E-07, 0.0000E+00, 0.0000E+00, 2.1083E-02,
+       0.0000E+00, 3.7631E-10, 1.0796E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       2.8656E+02, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       7.8571E-05, 1.0000E-02},
+
+      {3.7942E-17, 6.0115E-09, 1.8004E-09, 3.7310E+06, 1.0300E-02, 0.0000E+00, 4.6119E-08, 5.1112E+04, 4.4518E-14,
+       2.0196E-02, 1.1226E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 1.0879E-06, 0.0000E+00, 0.0000E+00, 1.7646E-02,
+       0.0000E+00, 4.5891E-10, 1.0853E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       2.4570E+02, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       8.5714E-05, 1.0000E-02},
+
+      {4.9078E-19, 1.5312E-09, 4.4387E-09, 3.7961E+06, 1.7737E-04, 0.0000E+00, 3.8085E-08, 5.1281E+04, 1.9251E-15,
+       3.4778E-04, 3.5801E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.1386E-07, 0.0000E+00, 0.0000E+00, 2.7053E-02,
+       0.0000E+00, 1.9209E-10, 1.0686E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       4.5312E+02, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       6.4286E-05, 1.0000E-02},
+
+      {2.1097E-18, 2.7648E-09, 3.8261E-09, 3.7754E+06, 6.8685E-04, 0.0000E+00, 4.1018E-08, 5.1227E+04, 4.8876E-15,
+       1.3468E-03, 2.8059E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 7.1049E-07, 0.0000E+00, 0.0000E+00, 2.4547E-02,
+       0.0000E+00, 2.8615E-10, 1.0741E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       3.4890E+02, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       7.1429E-05, 1.0000E-02},
+
+      {8.9820E-18, 4.2529E-09, 2.9520E-09, 3.7537E+06, 2.6598E-03, 0.0000E+00, 4.3700E-08, 5.1171E+04, 1.4266E-14,
+       5.2153E-03, 1.9880E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 9.0244E-07, 0.0000E+00, 0.0000E+00, 2.1083E-02,
+       0.0000E+00, 3.7631E-10, 1.0796E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       2.8656E+02, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       7.8571E-05, 1.0000E-02},
+
+      {3.7942E-17, 6.0115E-09, 1.8004E-09, 3.7310E+06, 1.0300E-02, 0.0000E+00, 4.6119E-08, 5.1112E+04, 4.4518E-14,
+       2.0196E-02, 1.1226E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 1.0879E-06, 0.0000E+00, 0.0000E+00, 1.7646E-02,
+       0.0000E+00, 4.5891E-10, 1.0853E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       2.4570E+02, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       8.5714E-05, 1.0000E-02},
+    };
+
+    // Sync to device
+    view_1d<P3UpdatePrognosticIceData> pupidc_device("pupidc", max_pack_size);
+    auto pupidc_host = Kokkos::create_mirror_view(pupidc_device);
+
+    // This copy only copies the input variables.
+    std::copy(&pupidc[0], &pupidc[0] + max_pack_size, pupidc_host.data());
+    Kokkos::deep_copy(pupidc_device, pupidc_host);
+
+    // Get data from fortran
+    for (Int i = 0; i < max_pack_size; ++i) {
+      update_prognostic_ice(pupidc[i]);
+    }
+
+    // Run the lookup from a kernel and copy results back to host
+    Kokkos::parallel_for(RangePolicy(0, num_test_itrs), KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
+
+      // Init pack inputs
+      Spack qcheti, qccol, qcshd, nccol, ncheti, ncshdc, qrcol, nrcol, qrheti, nrheti, nrshdr,
+        qimlt, nimlt, qisub, qidep, qinuc, ninuc, nislf, nisub, qiberg, exner, xlf, xxls,
+        rhorime_c, th, qv, qc, nc, qr, nr, qitot, nitot, qirim, birim;
+      Scalar dt;
+      bool log_predictNc;
+      Smask log_wetgrowth;
+
+      // variables with single values assigned outside of the for loop
+      dt            = pupidc_device(0).dt;
+      log_predictNc = pupidc_device(0).log_predictNc;
+
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        qcheti[s] = pupidc_device(vs).qcheti;
+        qccol[s]  = pupidc_device(vs).qccol;
+        qcshd[s]  = pupidc_device(vs).qcshd;
+        nccol[s]  = pupidc_device(vs).nccol;
+        ncheti[s] = pupidc_device(vs).ncheti;
+        ncshdc[s] = pupidc_device(vs).ncshdc;
+        qrcol[s]  = pupidc_device(vs).qrcol;
+        nrcol[s]  = pupidc_device(vs).nrcol;
+        qrheti[s] = pupidc_device(vs).qrheti;
+        nrheti[s] = pupidc_device(vs).nrheti;
+        nrshdr[s] = pupidc_device(vs).nrshdr;
+        qimlt[s]  = pupidc_device(vs).qimlt;
+        nimlt[s]  = pupidc_device(vs).nimlt;
+        qisub[s]  = pupidc_device(vs).qisub;
+        qidep[s]  = pupidc_device(vs).qidep;
+        qinuc[s]  = pupidc_device(vs).qinuc;
+        ninuc[s]  = pupidc_device(vs).ninuc;
+        nislf[s]  = pupidc_device(vs).nislf;
+        nisub[s]  = pupidc_device(vs).nisub;
+        qiberg[s] = pupidc_device(vs).qiberg;
+        exner[s]  = pupidc_device(vs).exner;
+        xlf[s]    = pupidc_device(vs).xlf;
+        xxls[s]   = pupidc_device(vs).xxls;
+
+        rhorime_c[s] = pupidc_device(vs).rhorime_c;
+        th[s]    = pupidc_device(vs).th;
+        qv[s]    = pupidc_device(vs).qv;
+        qc[s]    = pupidc_device(vs).qc;
+        nc[s]    = pupidc_device(vs).nc;
+        qr[s]    = pupidc_device(vs).qr;
+        nr[s]    = pupidc_device(vs).nr;
+        qitot[s] = pupidc_device(vs).qitot;
+        nitot[s] = pupidc_device(vs).nitot;
+        qirim[s] = pupidc_device(vs).qirim;
+        birim[s] = pupidc_device(vs).birim;
+
+        log_wetgrowth.set(s, pupidc_device(vs).log_wetgrowth);
+      }
+
+      Functions::update_prognostic_ice(qcheti, qccol, qcshd, nccol, ncheti,ncshdc,
+                                       qrcol,   nrcol,  qrheti,  nrheti,  nrshdr,
+                                       qimlt,  nimlt,  qisub,  qidep,  qinuc,  ninuc,
+                                       nislf,  nisub,  qiberg,  exner,  xxls,  xlf,
+                                       log_predictNc, log_wetgrowth,  dt,  pupidc_device(0).nmltratio,
+                                       rhorime_c, th, qv, qitot, nitot, qirim,
+                                       birim, qc, nc, qr, nr);
+
+      // Copy results back into views
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        pupidc_device(vs).th    = th[s];
+        pupidc_device(vs).qv    = qv[s];
+        pupidc_device(vs).qc    = qc[s];
+        pupidc_device(vs).nc    = nc[s];
+        pupidc_device(vs).qr    = qr[s];
+        pupidc_device(vs).nr    = nr[s];
+        pupidc_device(vs).qitot = qitot[s];
+        pupidc_device(vs).nitot = nitot[s];
+        pupidc_device(vs).qirim = qirim[s];
+        pupidc_device(vs).birim = birim[s];
+      }
+
+    });
+
+    // Sync back to host
+    Kokkos::deep_copy(pupidc_host, pupidc_device);
+
+    // Validate results
+    for (Int s = 0; s < max_pack_size; ++s) {
+      REQUIRE(pupidc[s].th    == pupidc_host(s).th);
+      REQUIRE(pupidc[s].qc    == pupidc_host(s).qc);
+      REQUIRE(pupidc[s].nr    == pupidc_host(s).nr);
+      REQUIRE(pupidc[s].qr    == pupidc_host(s).qr);
+      REQUIRE(pupidc[s].qv    == pupidc_host(s).qv);
+      REQUIRE(pupidc[s].nc    == pupidc_host(s).nc);
+      REQUIRE(pupidc[s].qitot == pupidc_host(s).qitot);
+      REQUIRE(pupidc[s].nitot == pupidc_host(s).nitot);
+      REQUIRE(pupidc[s].qirim == pupidc_host(s).qirim);
+      REQUIRE(pupidc[s].birim == pupidc_host(s).birim );
+    }
+  }
+
+  static void run_bfb(){
+    update_prognostic_ice_unit_bfb_tests();
+  }
+
+}; //TestP3UpdatePrognosticIce
+
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables
+{
+  static void get_time_space_phys_variables_unit_bfb_tests(){
+
+    //fortran generated data is input to the following
+    GetTimeSpacePhysVarsData gtspvd[max_pack_size] = {
+      //        t,       pres,        rho,       xxlv,       xxls,        qvs,        qvi
+      {2.9792E+02, 9.8711E+04, 1.1532E+00, 2.5010E+06, 2.8347E+06, 2.0321E-02, 2.0321E-02},
+      {2.9792E+02, 9.8711E+04, 1.1532E+00, 2.5010E+06, 2.8347E+06, 2.0321E-02, 2.0321E-02},
+      {2.9583E+02, 9.7322E+04, 1.1449E+00, 2.5010E+06, 2.8347E+06, 1.8120E-02, 1.8120E-02},
+      {2.9375E+02, 9.5933E+04, 1.1366E+00, 2.5010E+06, 2.8347E+06, 1.6134E-02, 1.6134E-02},
+      {2.8959E+02, 9.3156E+04, 1.1196E+00, 2.5010E+06, 2.8347E+06, 1.2729E-02, 1.2729E-02},
+      {2.8750E+02, 9.1767E+04, 1.1109E+00, 2.5010E+06, 2.8347E+06, 1.1279E-02, 1.1279E-02},
+      {2.8542E+02, 9.0378E+04, 1.1020E+00, 2.5010E+06, 2.8347E+06, 9.9759E-03, 9.9759E-03},
+      {2.8334E+02, 8.8989E+04, 1.0931E+00, 2.5010E+06, 2.8347E+06, 8.8076E-03, 8.8076E-03},
+      {2.8125E+02, 8.7600E+04, 1.0840E+00, 2.5010E+06, 2.8347E+06, 7.7615E-03, 7.7615E-03},
+      {2.7917E+02, 8.6211E+04, 1.0748E+00, 2.5010E+06, 2.8347E+06, 6.8265E-03, 6.8265E-03},
+      {2.7709E+02, 8.4822E+04, 1.0654E+00, 2.5010E+06, 2.8347E+06, 5.9921E-03, 5.9921E-03},
+      {2.7501E+02, 8.3433E+04, 1.0559E+00, 2.5010E+06, 2.8347E+06, 5.2488E-03, 5.2488E-03},
+      {2.7292E+02, 8.2044E+04, 1.0463E+00, 2.5010E+06, 2.8347E+06, 4.5879E-03, 4.5766E-03},
+      {2.7084E+02, 8.0656E+04, 1.0365E+00, 2.5010E+06, 2.8347E+06, 4.0015E-03, 3.9112E-03},
+      {2.6876E+02, 7.9267E+04, 1.0265E+00, 2.5010E+06, 2.8347E+06, 3.4821E-03, 3.3349E-03},
+      {2.6667E+02, 7.7878E+04, 1.0164E+00, 2.5010E+06, 2.8347E+06, 3.0231E-03, 2.8368E-03},
+    };
+
+    // Sync to device
+    view_1d<GetTimeSpacePhysVarsData> gtspvd_device("gtspvd", max_pack_size);
+    auto gtspvd_host = Kokkos::create_mirror_view(gtspvd_device);
+
+    // This copy only copies the input variables.
+    std::copy(&gtspvd[0], &gtspvd[0] + max_pack_size, gtspvd_host.data());
+    Kokkos::deep_copy(gtspvd_device, gtspvd_host);
+
+    // Get data from fortran
+    for (Int i = 0; i < max_pack_size; ++i) {
+      get_time_space_phys_variables(gtspvd[i]);
+    }
+
+    // Run the lookup from a kernel and copy results back to host
+    Kokkos::parallel_for(RangePolicy(0, num_test_itrs), KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
+
+      // Init pack inputs
+      Spack t, pres, rho, xxlv, xxls, qvs, qvi, mu, dv, sc, dqsdt, dqsidt, ab, abi, kap, eii;
+
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        t[s]      = gtspvd_device(vs).t;
+        pres[s]   = gtspvd_device(vs).pres;
+        rho[s]    = gtspvd_device(vs).rho;
+        xxlv[s]   = gtspvd_device(vs).xxlv;
+        xxls[s]   = gtspvd_device(vs).xxls;
+        qvs[s]    = gtspvd_device(vs).qvs;
+        qvi[s]    = gtspvd_device(vs).qvi;
+
+        mu[s]     = gtspvd_device(vs).mu;
+        dv[s]     = gtspvd_device(vs).dv;
+        sc[s]     = gtspvd_device(vs).sc;
+        dqsdt[s]  = gtspvd_device(vs).dqsdt;
+        dqsidt[s] = gtspvd_device(vs).dqsidt;
+        ab[s]     = gtspvd_device(vs).ab;
+        abi[s]    = gtspvd_device(vs).abi;
+        kap[s]    = gtspvd_device(vs).kap;
+        eii[s]    = gtspvd_device(vs).eii;
+      }
+
+      Functions::get_time_space_phys_variables(t, pres, rho, xxlv, xxls, qvs, qvi, mu, dv, sc, dqsdt, dqsidt,
+                                               ab, abi, kap, eii);
+
+      // Copy results back into views
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        gtspvd_device(vs).t      = t[s];
+        gtspvd_device(vs).pres   = pres[s];
+        gtspvd_device(vs).rho    = rho[s];
+        gtspvd_device(vs).xxlv   = xxlv[s];
+        gtspvd_device(vs).xxls   = xxls[s];
+        gtspvd_device(vs).qvs    = qvs[s];
+        gtspvd_device(vs).qvi    = qvi[s];
+
+        gtspvd_device(vs).mu     = mu[s];
+        gtspvd_device(vs).dv     = dv[s];
+        gtspvd_device(vs).sc     = sc[s];
+        gtspvd_device(vs).dqsdt  = dqsdt[s];
+        gtspvd_device(vs).dqsidt = dqsidt[s];
+        gtspvd_device(vs).ab     = ab[s];
+        gtspvd_device(vs).abi    = abi[s];
+        gtspvd_device(vs).kap    = kap[s];
+        gtspvd_device(vs).eii    = eii[s];
+      }
+    });
+
+    // Sync back to host
+    Kokkos::deep_copy(gtspvd_host, gtspvd_device);
+
+    // Validate results
+    for (Int s = 0; s < max_pack_size; ++s) {
+      REQUIRE(gtspvd[s].mu     == gtspvd_host(s).mu);
+      REQUIRE(gtspvd[s].dv     == gtspvd_host(s).dv);
+      REQUIRE(gtspvd[s].sc     == gtspvd_host(s).sc);
+      REQUIRE(gtspvd[s].dqsdt  == gtspvd_host(s).dqsdt);
+      REQUIRE(gtspvd[s].dqsidt == gtspvd_host(s).dqsidt);
+      REQUIRE(gtspvd[s].ab     == gtspvd_host(s).ab);
+      REQUIRE(gtspvd[s].abi    == gtspvd_host(s).abi);
+      REQUIRE(gtspvd[s].kap    == gtspvd_host(s).kap);
+      REQUIRE(gtspvd[s].eii    == gtspvd_host(s).eii);
+    }
+  }
+
+  static void run_bfb(){
+    get_time_space_phys_variables_unit_bfb_tests();
+  }
+}; //TestGetTimeSpacePhysVariables
+
+
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestEvapSublPrecip
+{
+  static void evaporate_sublimate_precip_unit_bfb_tests(){
+
+    //fortran generated data is input to the following
+    //This subroutine has 12 args, only 10 are supplied here for invoking it as last 2 are intent-outs
+    EvapSublimatePrecipData espd[max_pack_size] = {
+      {1.0010E-06,1.0000E-06,6.3726E+05,0.0000E+00,1.0000E+00,1.0000E+00,2.0321E-02,4.0889E+00,1.0080E-03,5.0000E-02},
+      {5.2632E-07,0.0000E+00,3.3506E+05,0.0000E+00,1.0000E+00,1.0000E+00,1.8120E-02,3.7933E+00,5.2700E-04,4.7222E-04},
+      {1.0526E-06,0.0000E+00,6.7013E+05,0.0000E+00,1.0000E+00,1.0000E+00,1.6134E-02,3.5224E+00,1.0480E-03,4.5833E-04},
+      {1.5789E-06,0.0000E+00,1.0000E+06,0.0000E+00,1.0000E+00,1.0000E+00,1.4342E-02,3.2745E+00,1.5575E-03,4.4444E-04},
+      {2.1053E-06,0.0000E+00,1.0000E+06,0.0000E+00,1.0000E+00,1.0000E+00,1.2729E-02,3.0478E+00,1.7094E-03,4.3056E-04},
+      {9.3221E-07,9.8393E-07,5.9346E+05,0.0000E+00,1.0000E+00,1.0000E+00,2.0948E-02,4.1736E+00,9.3997E-04,5.0000E-02},
+      {1.0000E-02,5.1000E-03,1.0000E+06,5.1000E-03,1.0000E+00,1.0000E+00,9.9759E-03,2.6520E+00,6.7694E-02,5.0000E-03},
+      {1.0000E-02,5.1000E-03,1.0000E+06,5.1000E-03,1.0000E+00,1.0000E+00,8.8076E-03,2.4801E+00,6.7248E-02,5.0000E-03},
+      {5.8084E-05,0.0000E+00,8.6199E+05,0.0000E+00,1.0000E+00,1.0000E+00,1.3928E-02,3.2192E+00,5.3678E-03,4.3266E-04},
+      {1.0000E-02,5.1000E-03,1.0000E+06,5.1000E-03,1.0000E+00,1.0000E+00,6.8265E-03,2.1817E+00,6.6348E-02,5.0000E-03},
+      {1.0000E-02,5.1000E-03,1.0000E+06,5.1000E-03,1.0000E+00,1.0000E+00,5.9921E-03,2.0529E+00,6.5893E-02,5.0000E-03},
+      {0.0000E+00,0.0000E+00,1.0000E-16,1.1762E-03,1.0000E+00,1.0000E+00,4.6974E-03,1.8502E+00,0.0000E+00,4.6667E-03},
+      {1.0000E-02,5.1000E-03,1.0000E+06,5.1000E-03,1.0000E+00,1.0000E+00,4.5879E-03,1.8310E+00,6.4975E-02,5.0000E-03},
+      {9.3232E-07,9.8402E-07,5.9353E+05,0.0000E+00,1.0000E+00,1.0000E+00,2.2254E-02,4.3493E+00,9.4247E-04,5.0000E-02},
+      {1.0000E-02,5.1000E-03,1.0000E+06,5.1000E-03,1.0000E+00,1.0000E+00,3.4821E-03,1.6504E+00,6.4044E-02,5.0000E-03},
+      {1.0000E-02,5.1000E-03,1.0000E+06,5.1000E-03,1.0000E+00,1.0000E+00,3.0231E-03,1.5735E+00,6.3574E-02,5.0000E-03},
+    };
+
+    // Sync to device
+    view_1d<EvapSublimatePrecipData> espd_device("espd", max_pack_size);
+    auto espd_host = Kokkos::create_mirror_view(espd_device);
+
+    // This copy only copies the input variables.
+    std::copy(&espd[0], &espd[0] + max_pack_size, espd_host.data());
+    Kokkos::deep_copy(espd_device, espd_host);
+
+    // Get data from fortran
+    for (Int i = 0; i < max_pack_size; ++i) {
+      evaporate_sublimate_precip(espd[i]);
+    }
+
+    // Run the lookup from a kernel and copy results back to host
+    Kokkos::parallel_for(RangePolicy(0, num_test_itrs), KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
+
+      // Init pack inputs
+      Spack qr_incld, qc_incld, nr_incld, qitot_incld, lcldm, rcldm, qvs, ab, epsr, qv, qrevp, nrevp;
+
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        qr_incld[s]    = espd_device(vs).qr_incld;
+        qc_incld[s]    = espd_device(vs).qc_incld;
+        nr_incld[s]    = espd_device(vs).nr_incld;
+        qitot_incld[s] = espd_device(vs).qitot_incld;
+        lcldm[s]       = espd_device(vs).lcldm;
+        rcldm[s]       = espd_device(vs).rcldm;
+        qvs[s]         = espd_device(vs).qvs;
+        ab[s]          = espd_device(vs).ab;
+        epsr[s]        = espd_device(vs).epsr;
+        qv[s]          = espd_device(vs).qv;
+        qrevp[s]       = espd_device(vs).qrevp;
+        nrevp[s]       = espd_device(vs).nrevp;
+      }
+
+      Functions::evaporate_sublimate_precip(qr_incld, qc_incld, nr_incld, qitot_incld,  lcldm, rcldm, qvs, ab,
+                                            epsr, qv, qrevp, nrevp);
+
+      // Copy results back into views
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        espd_device(vs).qr_incld    = qr_incld[s];
+        espd_device(vs).qc_incld    = qc_incld[s];
+        espd_device(vs).nr_incld    = nr_incld[s];
+        espd_device(vs).qitot_incld = qitot_incld[s];
+        espd_device(vs).lcldm       = lcldm[s];
+        espd_device(vs).rcldm       = rcldm[s];
+        espd_device(vs).qvs         = qvs[s];
+        espd_device(vs).ab          = ab[s];
+        espd_device(vs).epsr        = epsr[s];
+        espd_device(vs).qv          = qv[s];
+        espd_device(vs).qrevp       = qrevp[s];
+        espd_device(vs).nrevp       = nrevp[s];
+      }
+    });
+
+    // Sync back to host
+    Kokkos::deep_copy(espd_host, espd_device);
+
+    // Validate results
+    for (Int s = 0; s < max_pack_size; ++s) {
+      REQUIRE(espd[s].qrevp == espd_host(s).qrevp);
+      REQUIRE(espd[s].nrevp == espd_host(s).nrevp);
+    }
+  }
+
+  static void run_bfb(){
+    evaporate_sublimate_precip_unit_bfb_tests();
+  }
+
+}; //TestEvapSublPrecip
+
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq
+{
+  static void  update_prognostic_liquid_unit_bfb_tests(){
+
+    //fortran generated data is input to the following
+    P3UpdatePrognosticLiqData pupldc[max_pack_size] = {
+
+      {1.0631E-12, 1.0631E+00, 1.5833E-12, 1.5833E+00, 2.4190E-02, 0.0000E+00, 0.0000E+00, 0.0000E+00, 4.2517E+00,
+       true      , 8.6718E-01, 1.0037E+00, 2.5010E+06, 1.8000E+03, 2.9902E+02, 5.0000E-02, 1.0000E-06, 1.0000E+06, 1.0010E-06,
+       6.3726E+05},
+
+      {3.2784E-08, 1.8780E+07, 2.1753E-11, 1.2461E+04, 7.8657E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.8748E+04,
+       true      , 9.8387E-01, 1.0741E+00, 2.5010E+06, 1.8000E+03, 2.9033E+02, 3.7211E-03, 5.9050E-05,-6.6723E+09,-5.9050E-05,
+       -8.6159E+07},
+
+      {3.2796E-09, 1.8778E+07, 1.8830E-12, 1.0782E+04, 6.8061E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 6.3698E+04,
+       true      , 9.0740E-01, 1.0293E+00, 2.5010E+06, 1.8000E+03, 2.9376E+02, 5.0000E-03, 5.9067E-06,-6.9543E+09, 1.0439E-04,
+       -1.6967E+07},
+
+      {6.5634E-09, 1.8778E+07, 3.8238E-12, 1.0940E+04, 6.9061E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 6.3181E+04,
+       true      , 9.1484E-01, 1.0339E+00, 2.5010E+06, 1.8000E+03, 2.9291E+02, 5.0000E-03, 1.1821E-05,-6.9282E+09, 1.0615E-04,
+       -2.8223E+07},
+
+      {9.8516E-09, 1.8779E+07, 5.8258E-12, 1.1105E+04, 7.0101E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 6.2655E+04,
+       true      , 9.2251E-01, 1.0386E+00, 2.5010E+06, 1.8000E+03, 2.9206E+02, 5.0000E-03, 1.7743E-05,-6.9009E+09, 1.0790E-04,
+       -3.9628E+07},
+
+      {1.3145E-08, 1.8779E+07, 7.8929E-12, 1.1276E+04, 7.1180E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 6.2122E+04,
+       true      , 9.3043E-01, 1.0433E+00, 2.5010E+06, 1.8000E+03, 2.9123E+02, 5.0000E-03, 2.3674E-05,-6.8725E+09, 1.0963E-04,
+       -5.1189E+07},
+
+      {1.6443E-08, 1.8779E+07, 1.0029E-11, 1.1454E+04, 7.2303E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 6.1581E+04,
+       true      , 9.3860E-01, 1.0482E+00, 2.5010E+06, 1.8000E+03, 2.9040E+02, 5.0000E-03, 2.9615E-05,-6.8428E+09, 1.1136E-04,
+       -6.2915E+07},
+
+      {1.9746E-08, 1.8779E+07, 1.2238E-11, 1.1639E+04, 7.3471E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 6.1031E+04,
+       true      , 9.4705E-01, 1.0531E+00, 2.5010E+06, 1.8000E+03, 2.8958E+02, 5.0000E-03, 3.5565E-05,-6.8117E+09, 1.1308E-04,
+       -7.4813E+07},
+
+      {2.3047E-08, 1.8779E+07, 1.4521E-11, 1.1832E+04, 7.4688E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 6.0474E+04,
+       true      , 9.5579E-01, 1.0582E+00, 2.5010E+06, 1.8000E+03, 2.8941E+02, 4.7949E-03, 4.1510E-05,-6.7792E+09, 1.4787E-05,
+       -8.2885E+07},
+
+      {2.6289E-08, 1.8779E+07, 1.6845E-11, 1.2033E+04, 7.5955E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.9907E+04,
+       true      , 9.6483E-01, 1.0634E+00, 2.5010E+06, 1.8000E+03, 2.8972E+02, 4.4341E-03, 4.7350E-05,-6.7452E+09,-4.7350E-05,
+       -8.3634E+07},
+
+      {2.9533E-08, 1.8779E+07, 1.9253E-11, 1.2242E+04, 7.7277E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.9332E+04,
+       true      , 9.7418E-01, 1.0686E+00, 2.5010E+06, 1.8000E+03, 2.9002E+02, 4.0751E-03, 5.3194E-05,-6.7096E+09,-5.3194E-05,
+       -8.4862E+07},
+
+      {3.2784E-08, 1.8780E+07, 2.1753E-11, 1.2461E+04, 7.8657E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.8748E+04,
+       true      , 9.8387E-01, 1.0741E+00, 2.5010E+06, 1.8000E+03, 2.9033E+02, 3.7211E-03, 5.9050E-05,-6.6723E+09,-5.9050E-05,
+       -8.6159E+07},
+
+      {3.6045E-08, 1.8780E+07, 2.4356E-11, 1.2689E+04, 8.0098E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.8154E+04,
+       true      , 9.9391E-01, 1.0796E+00, 2.5010E+06, 1.8000E+03, 2.9063E+02, 3.3756E-03, 6.4925E-05,-6.6333E+09,-6.4925E-05,
+       -8.7530E+07},
+
+      {3.9321E-08, 1.8780E+07, 2.7069E-11, 1.2928E+04, 8.1605E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.7552E+04,
+       true      , 1.0043E+00, 1.0853E+00, 2.5010E+06, 1.8000E+03, 2.9092E+02, 3.0417E-03, 7.0827E-05,-6.5924E+09,-7.0827E-05,
+       -8.8982E+07},
+
+      {4.2614E-08, 1.8780E+07, 2.9903E-11, 1.3178E+04, 8.3182E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.6939E+04,
+       true      , 1.0151E+00, 1.0911E+00, 2.5010E+06, 1.8000E+03, 2.9119E+02, 2.7224E-03, 7.6760E-05,-6.5494E+09,-7.6760E-05,
+       -9.0523E+07},
+
+      {4.5927E-08, 1.8780E+07, 3.2867E-11, 1.3440E+04, 8.4833E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.6317E+04,
+       true      , 1.0263E+00, 1.0970E+00, 2.5010E+06, 1.8000E+03, 2.9143E+02, 2.4202E-03, 8.2728E-05,-6.5044E+09,-8.2728E-05,
+       -9.0778E+07},
+    };
+
+    // Sync to device
+    view_1d<P3UpdatePrognosticLiqData> pupldc_device("pupldc", max_pack_size);
+    auto pupldc_host = Kokkos::create_mirror_view(pupldc_device);
+
+    // This copy only copies the input variables.
+    std::copy(&pupldc[0], &pupldc[0] + max_pack_size, pupldc_host.data());
+    Kokkos::deep_copy(pupldc_device, pupldc_host);
+
+    // Get data from fortran
+    for (Int i = 0; i < max_pack_size; ++i) {
+      update_prognostic_liquid(pupldc[i]);
+    }
+
+    // Run the lookup from a kernel and copy results back to host
+    Kokkos::parallel_for(RangePolicy(0, num_test_itrs), KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
+
+      // Init pack inputs
+      Spack qcacc, ncacc, qcaut, ncautc, ncautr, ncslf, qrevp, nrevp, nrslf, inv_rho,
+        exner, xxlv, th, qv, qc, nc, qr, nr;
+      bool log_predictNc;
+      Scalar dt;
+
+      // variables with single values assigned outside of the for loop
+      dt            = pupldc_device(0).dt;
+      log_predictNc = pupldc_device(0).log_predictNc;
+
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        qcacc[s]   = pupldc_device(vs).qcacc;
+        ncacc[s]   = pupldc_device(vs).ncacc;
+        qcaut[s]   = pupldc_device(vs).qcaut;
+        ncautc[s]  = pupldc_device(vs).ncautc;
+        ncautr[s]  = pupldc_device(vs).ncautr;
+        ncslf[s]   = pupldc_device(vs).ncslf;
+        qrevp[s]   = pupldc_device(vs).qrevp;
+        nrevp[s]   = pupldc_device(vs).nrevp;
+        nrslf[s]   = pupldc_device(vs).nrslf;
+        inv_rho[s] = pupldc_device(vs).inv_rho;
+        exner[s]   = pupldc_device(vs).exner;
+        xxlv[s]    = pupldc_device(vs).xxlv;
+
+        th[s]      = pupldc_device(vs).th;
+        qv[s]      = pupldc_device(vs).qv;
+        qc[s]      = pupldc_device(vs).qc;
+        nc[s]      = pupldc_device(vs).nc;
+        qr[s]      = pupldc_device(vs).qr;
+        nr[s]      = pupldc_device(vs).nr;
+      }
+
+      Functions::update_prognostic_liquid(qcacc, ncacc, qcaut, ncautc, ncautr, ncslf,
+                                          qrevp, nrevp, nrslf, log_predictNc, inv_rho, exner,
+                                          xxlv, dt, th, qv, qc, nc, qr, nr);
+
+      // Copy results back into views
+      pupldc_device(0).dt            = dt;
+      pupldc_device(0).log_predictNc = log_predictNc;
+
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        pupldc_device(vs).qcacc   = qcacc[s];
+        pupldc_device(vs).ncacc   = ncacc[s];
+        pupldc_device(vs).qcaut   = qcaut[s];
+        pupldc_device(vs).ncautc  = ncautc[s];
+        pupldc_device(vs).ncautr  = ncautr[s];
+        pupldc_device(vs).ncslf   = ncslf[s];
+        pupldc_device(vs).qrevp   = qrevp[s];
+        pupldc_device(vs).nrevp   = nrevp[s];
+        pupldc_device(vs).nrslf   = nrslf[s];
+        pupldc_device(vs).inv_rho = inv_rho[s];
+        pupldc_device(vs).exner   = exner[s];
+        pupldc_device(vs).xxlv    = xxlv[s];
+
+        pupldc_device(vs).th      = th[s];
+        pupldc_device(vs).qv      = qv[s];
+        pupldc_device(vs).qc      = qc[s];
+        pupldc_device(vs).nc      = nc[s];
+        pupldc_device(vs).qr      = qr[s];
+        pupldc_device(vs).nr      = nr[s];
+      }
+    });
+
+    // Sync back to host
+    Kokkos::deep_copy(pupldc_host, pupldc_device);
+
+    // Validate results
+    for (Int s = 0; s < max_pack_size; ++s) {
+      REQUIRE(pupldc[s].th == pupldc_host(s).th);
+      REQUIRE(pupldc[s].qv == pupldc_host(s).qv);
+      REQUIRE(pupldc[s].qc == pupldc_host(s).qc);
+      REQUIRE(pupldc[s].nc == pupldc_host(s).nc);
+      REQUIRE(pupldc[s].qr == pupldc_host(s).qr);
+      REQUIRE(pupldc[s].nr == pupldc_host(s).nr);
+    }
+  }
+
+  static void run_bfb(){
+    update_prognostic_liquid_unit_bfb_tests();
+  }
+
+}; //TestP3UpdatePrognosticLiq
+
+
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestP3IceDepSublimation
+{
+  static void  ice_deposition_sublimation_unit_bfb_tests(){
+
+    //fortran generated data is input to the following
+    //NOTE: This array has 8 values instead of 12 as 4 are intent-out at the end and we do not need
+    // to pass those (they are assumed to be zero)
+    IceDepSublimationData ids[max_pack_size] = {
+      {1.0000E-04,4.5010E+05,2.8750E+02,1.1279E-02,1.1279E-02,0.0000E+00,3.3648E+00,5.0000E-03},
+      {5.1000E-03,4.5370E+05,2.8542E+02,9.9759E-03,9.9759E-03,0.0000E+00,3.1223E+00,5.0000E-03},
+      {5.1000E-03,4.5742E+05,2.8334E+02,8.8076E-03,8.8076E-03,0.0000E+00,2.9014E+00,5.0000E-03},
+      {5.1000E-03,4.6125E+05,2.8125E+02,7.7615E-03,7.7615E-03,0.0000E+00,2.7005E+00,5.0000E-03},
+      {5.1000E-03,4.6521E+05,2.7917E+02,6.8265E-03,6.8265E-03,0.0000E+00,2.5180E+00,5.0000E-03},
+      {5.1000E-03,4.6930E+05,2.7709E+02,5.9921E-03,5.9921E-03,0.0000E+00,2.3526E+00,5.0000E-03},
+      {5.1000E-03,4.7353E+05,2.7501E+02,5.2488E-03,5.2488E-03,0.0000E+00,2.2028E+00,5.0000E-03},
+      {5.1000E-03,4.7790E+05,2.7292E+02,4.5879E-03,4.5766E-03,6.2108E-02,2.0649E+00,5.0000E-03},
+      {5.1000E-03,4.8241E+05,2.7084E+02,4.0015E-03,3.9112E-03,6.1911E-02,1.9241E+00,5.0000E-03},
+      {5.1000E-03,4.8709E+05,2.6876E+02,3.4821E-03,3.3349E-03,6.1708E-02,1.8002E+00,5.0000E-03},
+      {5.1000E-03,4.9193E+05,2.6667E+02,3.0231E-03,2.8368E-03,6.1502E-02,1.6914E+00,5.0000E-03},
+      {5.1000E-03,4.9695E+05,2.6459E+02,2.6183E-03,2.4074E-03,6.1290E-02,1.5960E+00,5.0000E-03},
+      {5.1000E-03,5.0216E+05,2.6251E+02,2.2621E-03,2.0379E-03,6.1073E-02,1.5125E+00,5.0000E-03},
+      {5.1000E-03,5.0756E+05,2.6042E+02,1.9495E-03,1.7207E-03,6.0850E-02,1.4397E+00,5.0000E-03},
+      {5.1000E-03,5.1317E+05,2.5834E+02,1.6757E-03,1.4491E-03,6.0620E-02,1.3763E+00,5.0000E-03},
+      {5.0000E-08,5.4479E+05,2.4793E+02,7.5430E-04,5.8895E-04,4.6769E-04,1.1661E+00,1.5278E-04},
+    };
+
+    // Sync to device
+    view_1d<IceDepSublimationData> ids_device("ids", max_pack_size);
+    auto ids_host = Kokkos::create_mirror_view(ids_device);
+
+    // This copy only copies the input variables.
+    std::copy(&ids[0], &ids[0] + max_pack_size, ids_host.data());
+    Kokkos::deep_copy(ids_device, ids_host);
+
+    // Get data from fortran
+    for (Int i = 0; i < max_pack_size; ++i) {
+      ice_deposition_sublimation(ids[i]);
+    }
+
+    // Run the lookup from a kernel and copy results back to host
+    Kokkos::parallel_for(RangePolicy(0, num_test_itrs), KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
+
+      // Init pack inputs
+      Spack qitot_incld, nitot_incld, t, qvs, qvi, epsi, abi, qv, qidep, qisub, nisub, qiberg;
+
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        qitot_incld[s] = ids_device(vs).qitot_incld;
+        nitot_incld[s] = ids_device(vs).nitot_incld;
+        t[s]           = ids_device(vs).t;
+        qvs[s]         = ids_device(vs).qvs;
+        qvi[s]         = ids_device(vs).qvi;
+        epsi[s]        = ids_device(vs).epsi;
+        abi[s]         = ids_device(vs).abi;
+        qv[s]          = ids_device(vs).qv;
+        qidep[s]       = ids_device(vs).qidep;
+        qisub[s]       = ids_device(vs).qisub;
+        nisub[s]       = ids_device(vs).nisub;
+        qiberg[s]      = ids_device(vs).qiberg;
+      }
+
+      Functions::ice_deposition_sublimation(qitot_incld, nitot_incld, t, qvs, qvi, epsi, abi, qv,
+                                            qidep, qisub, nisub, qiberg);
+
+      // Copy results back into views
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        ids_device(vs).qitot_incld = qitot_incld[s];
+        ids_device(vs).nitot_incld = nitot_incld[s];
+        ids_device(vs).t           = t[s];
+        ids_device(vs).qvs         = qvs[s];
+        ids_device(vs).qvi         = qvi[s];
+        ids_device(vs).epsi        = epsi[s];
+        ids_device(vs).abi         = abi[s];
+        ids_device(vs).qv          = qv[s];
+        ids_device(vs).qidep       = qidep[s];
+        ids_device(vs).qisub       = qisub[s];
+        ids_device(vs).nisub       = nisub[s];
+        ids_device(vs).qiberg      = qiberg[s];
+      }
+    });
+
+    // Sync back to host
+    Kokkos::deep_copy(ids_host, ids_device);
+
+    // Validate results
+    for (Int s = 0; s < max_pack_size; ++s) {
+      REQUIRE(ids[s].qidep  == ids_host(s).qidep);
+      REQUIRE(ids[s].qisub  == ids_host(s).qisub);
+      REQUIRE(ids[s].nisub  == ids_host(s).nisub);
+      REQUIRE(ids[s].qiberg == ids_host(s).qiberg);
+    }
+  }
+
+  static void run_bfb(){
+    ice_deposition_sublimation_unit_bfb_tests();
+  }
+
+}; //TestP3UpdatePrognosticLiq
+
+
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi
+{
+  static void impose_max_total_ni_bfb_test(){
+    constexpr Scalar max_total_Ni = C::max_total_Ni;
+
+    ImposeMaxTotalNiData dc[max_pack_size]= {
+      // nitot_local, max_total_Ni, inv_rho_local
+      {0.000E0, max_total_Ni, 5.466E3},
+      {3.358E4, max_total_Ni, 9.691E-1},
+      {0.000E0, max_total_Ni, 9.105E-1},
+      {0.000E3, max_total_Ni, 3.371E0},
+
+      {0.000E0, max_total_Ni, 5.466E3},
+      {3.358E4, max_total_Ni, 9.691E-1},
+      {0.000E0, max_total_Ni, 9.105E-1},
+      {0.000E3, max_total_Ni, 3.371E0},
+
+      {0.000E0, max_total_Ni, 5.466E3},
+      {3.358E4, max_total_Ni, 9.691E-1},
+      {0.000E0, max_total_Ni, 9.105E-1},
+      {0.000E3, max_total_Ni, 3.371E0},
+
+      {0.000E0, max_total_Ni, 5.466E3},
+      {3.358E4, max_total_Ni, 9.691E-1},
+      {0.000E0, max_total_Ni, 9.105E-1},
+      {0.000E3, max_total_Ni, 3.371E0},
+    };
+
+    //Sync to device
+    view_1d<ImposeMaxTotalNiData> dc_device("dc", max_pack_size);
+    auto dc_host = Kokkos::create_mirror_view(dc_device);
+
+    //This copy only copies the input variables.
+    std::copy(&dc[0], &dc[0] + max_pack_size, dc_host.data());
+    Kokkos::deep_copy(dc_device, dc_host);
+
+    //Get data from fortran
+    for (Int i = 0; i < max_pack_size; ++i) {
+      impose_max_total_Ni(dc[i]);
+    }
+
+    //Run function from a kernal and copy results back to the host
+    Kokkos::parallel_for(RangePolicy(0, num_test_itrs), KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
+
+      // Init pack inputs
+      Spack nitot_local, inv_rho_local;
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        nitot_local[s]   = dc_device(vs).nitot_local;
+        inv_rho_local[s] = dc_device(vs).inv_rho_local;
+      }
+
+      Functions::impose_max_total_Ni(nitot_local, dc_device(0).max_total_Ni, inv_rho_local);
+      // Copy results back into views
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        dc_device(vs).nitot_local   = nitot_local[s];
+        dc_device(vs).inv_rho_local = inv_rho_local[s];
+      }
+    });
+
+    // Sync back to host
+    Kokkos::deep_copy(dc_host, dc_device);
+
+    // Validate results
+    for (Int s = 0; s < max_pack_size; ++s) {
+      REQUIRE(dc[s].nitot_local   == dc_host(s).nitot_local);
+      REQUIRE(dc[s].inv_rho_local == dc_host(s).inv_rho_local);
+    }
+  }
+
+  static void run_bfb(){
+    impose_max_total_ni_bfb_test();
+  }
+
+}; // TestP3FunctionsImposeMaxTotalNi
+
+}//namespace unit_test
+}//namespace p3
+}//namespace scream
+
+namespace {
+
+TEST_CASE("p3_conservation_test", "[p3_unit_tests]"){
+  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3Conservation::run();
+  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3Conservation::run_bfb();
+}
+
+TEST_CASE("p3_get_time_space_phys_variables_test", "[p3_unit_tests]"){
+  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestGetTimeSpacePhysVariables::run_bfb();
+}
+
+TEST_CASE("p3_update_prognostic_ice_test", "[p3_unit_tests]"){
+  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3UpdatePrognosticIce::run_bfb();
+}
+
+TEST_CASE("p3_update_prognostic_liquid_test", "[p3_unit_tests]"){
+  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3UpdatePrognosticLiq::run_bfb();
+}
+
+TEST_CASE("p3_evaporate_sublimate_precip_test", "[p3_unit_tests]"){
+  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestEvapSublPrecip::run_bfb();
+}
+
+TEST_CASE("p3_ice_deposition_sublimation_test", "[p3_unit_tests]"){
+  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3IceDepSublimation::run_bfb();
+}
+
+TEST_CASE("p3_impose_max_total_ni_test", "[p3_unit_tests]"){
+  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3FunctionsImposeMaxTotalNi::run_bfb();
+}
+
+} // namespace

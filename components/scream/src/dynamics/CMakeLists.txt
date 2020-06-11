@@ -1,0 +1,8 @@
+IF ("${SCREAM_DYNAMICS_DYCORE}" STREQUAL "HOMME")
+  ADD_SUBDIRECTORY(homme)
+ELSEIF("${SCREAM_DYNAMICS_DYCORE}" STREQUAL "NONE")
+  MESSAGE ("SCREAM_DYNAMICS_DYCORE set to 'NONE'. Scream won't enable any test/code that needs dynamics.\n")
+ELSE()
+  MESSAGE (FATAL_ERROR "The dynamics dycore '${SCREAM_DYNAMICS_DYCORE}' is currently not supported."
+                       "If you wish to disable dynamics, do not specify anything for SCREAM_DYNAMICS_DYCORE, or set it to 'NONE'.")
+ENDIF()

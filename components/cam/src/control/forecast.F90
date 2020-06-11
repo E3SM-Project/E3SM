@@ -4,7 +4,8 @@ subroutine forecast(lat, psm1, psm2,ps, &
                    t3, t3m1, t3m2, &
                    q3, q3m1, q3m2, ztodt, t2, &
                    fu, fv, qfcst,etamid, &
-                   qminus, nlon)
+                   qminus, nlon, &
+                   tdiff_ret,qdiff_ret)
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -53,6 +54,8 @@ subroutine forecast(lat, psm1, psm2,ps, &
    real(r8), intent(inout) :: q3m2(plev,pcnst)   ! constituent conc(time n: h2o first)
    real(r8), intent(in) :: etamid(plev)       ! vertical coords at midpoints
    real(r8), intent(inout) :: qfcst(plon,plev,pcnst)
+   real(r8), intent(out) :: tdiff_ret(plev)  ! temperature difference compared to obs
+   real(r8), intent(out) :: qdiff_ret(plev)  ! q difference compared to obs
 
    real(r8), intent(in) :: ztodt                       ! twice time step unless nstep=0
    integer lat               ! latitude index for S->N storage
@@ -78,7 +81,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
    real(r8) pdelm1f(plev)  ! pdel(k)   = pint  (k+1)-pint  (k)
    real(r8) pdelb(plon,plev)  ! pressure diff bet intfcs (press defined using the "B" part 
    real(r8) pdela(plon,plev)
-   real(r8) weight,fac
+   real(r8) weight,fac,fac_t
    real(r8) psfcst
    real(r8) tfcst(plev)
    real(r8) ufcst(plev)
@@ -133,6 +136,8 @@ subroutine forecast(lat, psm1, psm2,ps, &
    real(r8) rtau(plev)
    real(r8) relaxt(plev)
    real(r8) relaxq(plev)
+   real(r8) relaxu(plev)
+   real(r8) relaxv(plev)   
    logical relax
 !
 !  diagnostic variables for estimating vertical advection terms
@@ -186,7 +191,23 @@ subroutine forecast(lat, psm1, psm2,ps, &
 !  advection calculation.  Skip to diagnostic estimates of vertical term.
       i=1
       do k=1,plev
-         tfcst(k) = t3m2(k) + ztodt*t2(k) + ztodt*divt3d(k)
+      ! If IOP mode, do not consider physics temperature tendency
+      !   since that will be redundant.  In pure SCM mode, that section 
+      !   of dycore is not called and thus needs to be added here.  
+#ifdef MODEL_THETA_L
+        ! theta_l model prog variable is temp tendency
+        if (iop_mode) then 
+          tfcst(k) = t3m2(k) + divt3d(k)
+        else
+          tfcst(k) = t3m2(k) + t2(k) + divt3d(k)
+        endif
+#else
+        if (iop_mode) then
+          tfcst(k) = t3m2(k) + ztodt*divt3d(k)
+        else
+          tfcst(k) = t3m2(k) + ztodt*t2(k) + ztodt*divt3d(k)
+        endif
+#endif
       end do
       do m=1,pcnst
          do k=1,plev
@@ -196,7 +217,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
 
       go to 1000
 
-   end if
+   end if 
 
 !
 !  provide an eulerian forecast.  First check to ensure that 2d forcing
@@ -254,22 +275,39 @@ subroutine forecast(lat, psm1, psm2,ps, &
 ! TIME FOR VERTICAL ADVECTION STEP
 !
 !
-!  Eularian forecast for u,v and t
+!  Eulerian forecast for u,v,t, and q
 !
+!  If three-dimensional forcing is not provided in the IOP-forcing file
+!    then we need to add the effects of large-scale vertical advection for
+!    t, u, v, and q.  Use the prescribed large-scale vertical velocity and 
+!    an Eulerian calculation for this.
 
-   if (dycore_is('EUL')) then 
+   if (iop_mode) then 
 
      do k=2,plev-1
        fac = ztodt/(2.0_r8*pdelm1(k))
+#ifdef MODEL_THETA_L  
+       fac_t = 1.0_r8/(2.0_r8*pdelm1(k))
+       tfcst(k) = t3m2(k) &
+           - fac_t*(wfldint(k+1)*(t3m1(k+1) - t3m1(k)) &
+           + wfldint(k)*(t3m1(k) - t3m1(k-1)))
+#else
        tfcst(k) = t3m2(k) &
            - fac*(wfldint(k+1)*(t3m1(k+1) - t3m1(k)) &
            + wfldint(k)*(t3m1(k) - t3m1(k-1)))
+#endif
        vfcst(k) = v3m2(k) &
            - fac*(wfldint(k+1)*(v3m1(k+1) - v3m1(k)) &
            + wfldint(k)*(v3m1(k) - v3m1(k-1)))
        ufcst(k) = u3m2(k) &
            - fac*(wfldint(k+1)*(u3m1(k+1) - u3m1(k)) &
            + wfldint(k)*(u3m1(k) - u3m1(k-1)))
+   
+       do m=1,pcnst
+         qfcst(1,k,m) = qminus(1,k,m) & 
+           - fac*(wfldint(k+1) * (qminus(1,k+1,m) - qminus(1,k,m)) &
+           + wfldint(k)*(qminus(1,k,m) - qminus(1,k-1,m)))
+       enddo 
 
      end do
 
@@ -279,15 +317,33 @@ subroutine forecast(lat, psm1, psm2,ps, &
 
      k = 1
      fac = ztodt/(2.0_r8*pdelm1(k))
+#ifdef MODEL_THETA_L
+     fac_t = 1.0_r8/(2.0_r8*pdelm1(k))
+     tfcst(k) = t3m2(k) - fac_t*(wfldint(k+1)*(t3m1(k+1) - t3m1(k)))
+#else
      tfcst(k) = t3m2(k) - fac*(wfldint(k+1)*(t3m1(k+1) - t3m1(k)))
+#endif
      vfcst(k) = v3m2(k) - fac*(wfldint(k+1)*(v3m1(k+1) - v3m1(k)))
      ufcst(k) = u3m2(k) - fac*(wfldint(k+1)*(u3m1(k+1) - u3m1(k)))
+     do m=1,pcnst
+       qfcst(1,k,m) = qminus(1,k,m) - fac * (wfldint(k+1) * &
+         (qminus(1,k+1,m) - qminus(1,k,m)))
+     enddo
 
      k = plev
      fac = ztodt/(2.0_r8*pdelm1(plev))
+#ifdef MODEL_THETA_L
+     fac_t = 1.0_r8/(2.0_r8*pdelm1(plev))
+     tfcst(k) = t3m2(k) - fac_t*(wfldint(k)*(t3m1(k) - t3m1(k-1)))
+#else
      tfcst(k) = t3m2(k) - fac*(wfldint(k)*(t3m1(k) - t3m1(k-1)))
+#endif
      vfcst(k) = v3m2(k) - fac*(wfldint(k)*(v3m1(k) - v3m1(k-1)))
      ufcst(k) = u3m2(k) - fac*(wfldint(k)*(u3m1(k) - u3m1(k-1)))
+     do m=1,pcnst
+       qfcst(1,k,m) = qminus(1,k,m) - fac * (wfldint(k) * &
+         (qminus(1,k,m) - qminus(1,k-1,m)))
+     enddo
 
 !
 !  SLT is used for constituents only
@@ -303,7 +359,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
        end do
      end do
    
-   else if (dycore_is('SE')) then
+   else
    
      tfcst(:) = t3m2(:)
      qfcst(1,:,:) = q3m2(:,:)
@@ -463,8 +519,26 @@ end if
 !
 
    do k=1,plev
-     tfcst(k) = tfcst(k) + ztodt*wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) &
+     ! If IOP mode, do not consider physics temperature tendency
+     !   since that will be redundant.  In pure SCM mode, that section 
+     !   of dycore is not called and thus needs to be added here.   
+#ifdef MODEL_THETA_L
+     ! in theta_l model, prog variable is temp tendency, not temp 
+     if (iop_mode) then
+       tfcst(k) = tfcst(k) + wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) + divt(k)     
+     else
+       tfcst(k) = tfcst(k) + wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) &
+         + (t2(k) + divt(k))
+     endif
+#else
+     if (iop_mode) then
+       tfcst(k) = tfcst(k) + ztodt*wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) &
+         + ztodt*(divt(k))     
+     else
+       tfcst(k) = tfcst(k) + ztodt*wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) &
          + ztodt*(t2(k) + divt(k))
+     endif
+#endif
      do m=1,pcnst
        qfcst(1,k,m) = qfcst(1,k,m) + ztodt*divq(k,m)
      end do
@@ -523,22 +597,39 @@ end if
       enddo
    endif
 !
+   
    if(.not.l_uvadvect) then
-      if (use_iop .and. have_v .and. have_u) then
+
+      if (use_iop .and. have_v .and. have_u .and. .not. iop_mode) then
          do k=1,plev
             ufcst(k) = uobs(k)
             vfcst(k) = vobs(k)
          enddo
-!
+
       else
-!
+
          do k=1,plev
             ufcst(k) = u3m2(k)
             vfcst(k) = v3m2(k)
          enddo
-!
+ 
+         ! Relax winds for IOP mode
+         if (iop_mode) then
+ 
+           do k=1,plev
+             rtau(k) = 10800._r8
+             rtau(k) = max(ztodt,rtau(k))
+             relaxu(k) = -(ufcst(k) - uobs(k))/rtau(k)
+             relaxv(k) = -(vfcst(k) - vobs(k))/rtau(k)
+   
+             ufcst(k) = ufcst(k) + relaxu(k)*ztodt
+             vfcst(k) = vfcst(k) + relaxv(k)*ztodt
+           enddo
+   
+         endif
+
       endif      ! from  if (use_iop .and. have_v .and. have_u) 
-!      
+      
    else
 !
       do k=1,plev
@@ -605,6 +696,9 @@ end if
       qdiff(k) = q3(k,1) - qobs(k)
       udiff(k) = u3(k)   - uobs(k)
       vdiff(k) = v3(k)   - vobs(k)
+      
+      tdiff_ret(k) = tdiff(k)
+      qdiff_ret(k) = qdiff(k)
    end do
 
 !
@@ -619,8 +713,6 @@ end if
 
    call outfld('TOBS',tobs,plon,lat)
    call outfld('QOBS',qobs,plon,lat)
-   call outfld('TDIFF',tdiff,plon,lat)
-   call outfld('QDIFF',qdiff,plon,lat)
    if( use_iop ) then
       call outfld('DIVQ',divq,plon,lat)
       call outfld('DIVT',divt,plon,lat)
