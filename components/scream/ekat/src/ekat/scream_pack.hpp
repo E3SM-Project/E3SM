@@ -7,6 +7,7 @@
 #include "scream_types.hpp"
 #include "util/scream_utils.hpp"
 #include "scream_macros.hpp"
+#include "ekat_scalar_traits.hpp"
 
 namespace scream {
 namespace pack {
@@ -150,11 +151,8 @@ struct Pack {
 
   KOKKOS_FORCEINLINE_FUNCTION
   explicit Pack () {
-#ifndef KOKKOS_ENABLE_CUDA
-    // Quiet NaNs don't work on Cuda.
     vector_simd for (int i = 0; i < n; ++i)
-      d[i] = std::numeric_limits<scalar>::quiet_NaN();
-#endif
+      d[i] = ScalarTraits<scalar>::quiet_NaN();
   }
 
   // Init all slots to scalar v.
@@ -179,13 +177,8 @@ struct Pack {
   explicit Pack (const Mask<PackSize>& m, const PackIn& p) {
     static_assert(static_cast<int>(PackIn::n) == PackSize,
                   "Pack::n must be the same.");
-#ifndef KOKKOS_ENABLE_CUDA
     vector_simd for (int i = 0; i < n; ++i)
-      d[i] = m[i] ? p[i] : std::numeric_limits<scalar>::quiet_NaN();
-#else
-    vector_simd for (int i = 0; i < n; ++i)
-      d[i] = m[i] ? p[i] : 0;
-#endif
+      d[i] = m[i] ? p[i] : ScalarTraits<scalar>::quiet_NaN();
   }
 
   KOKKOS_FORCEINLINE_FUNCTION const scalar& operator[] (const int& i) const { return d[i]; }
