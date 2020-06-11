@@ -113,7 +113,6 @@ module ocn_mesh
       vertCoordMovementWeights, &! weights for distributing height perturb
       meshScalingDel2, &! mesh scaling factor for use in del2 diffusion
       meshScalingDel4, &! mesh scaling factor for use in del4 diffusion
-      meshScaling, &! general scaling of mesh size
       meshDensity, &! density of mesh
       angleEdge        ! angle the edge normal makes with local east
 
@@ -408,8 +407,6 @@ contains
                                   meshScalingDel2)
          call mpas_pool_get_array(meshPool, 'meshScalingDel4', &
                                   meshScalingDel4)
-         call mpas_pool_get_array(meshPool, 'meshScaling', &
-                                  meshScaling)
          call mpas_pool_get_array(meshPool, 'meshDensity', &
                                   meshDensity)
          call mpas_pool_get_array(meshPool, 'angleEdge', &
@@ -571,7 +568,6 @@ contains
          !$acc                   vertCoordMovementWeights, &
          !$acc                   meshScalingDel2,          &
          !$acc                   meshScalingDel4,          &
-         !$acc                   meshScaling,              &
          !$acc                   meshDensity,              &
          !$acc                   angleEdge,                &
          !$acc                   edgeMask,                 &
@@ -709,7 +705,6 @@ contains
       !$acc                  vertCoordMovementWeights, &
       !$acc                  meshScalingDel2,   &
       !$acc                  meshScalingDel4,   &
-      !$acc                  meshScaling,       &
       !$acc                  meshDensity,       &
       !$acc                  angleEdge,         &
       !$acc                  edgeMask,          &
@@ -799,7 +794,6 @@ contains
                vertCoordMovementWeights, &
                meshScalingDel2, &
                meshScalingDel4, &
-               meshScaling, &
                meshDensity, &
                angleEdge, &
                weightsOnEdge, &
@@ -995,8 +989,6 @@ contains
       !                                    meshScalingDel2)
       !call mpas_pool_get_array(meshPool, 'meshScalingDel4',   &
       !                                    meshScalingDel4)
-      !call mpas_pool_get_array(meshPool, 'meshScaling',       &
-      !                                    meshScaling)
       !call mpas_pool_get_array(meshPool, 'meshDensity',       &
       !                                    meshDensity)
       !call mpas_pool_get_array(meshPool, 'angleEdge',         &
@@ -1149,7 +1141,6 @@ contains
       !$acc               vertCoordMovementWeights, &
       !$acc               meshScalingDel2,          &
       !$acc               meshScalingDel4,          &
-      !$acc               meshScaling,              &
       !$acc               meshDensity,              &
       !$acc               angleEdge,                &
       !$acc               edgeMask,                 &
