@@ -256,6 +256,8 @@ contains
                                  clrsky_flux_up, clrsky_flux_dn, clrsky_flux_net, &
                                  clrsky_bnd_flux_up, clrsky_bnd_flux_dn, clrsky_bnd_flux_net, &
                                  col_dry, t_lev, inc_flux, n_gauss_angles) result(error)
+    use perf_mod, only: t_startf, t_stopf
+    implicit none
     integer, intent(in) :: ngas, ncol, nlay, nbnd, ngpt
     character(len=*), dimension(ngas), intent(in) :: gas_names
     real(wp), dimension(ngas,ncol,nlay), intent(in   ) :: gas_vmr
@@ -280,11 +282,13 @@ contains
       call push_gas_name(to_c_char(gas_names(igas)))
     enddo
     call gas_names_to_string1d()
+    call t_startf("rrtmgp_run_lw_cpp")
     call rrtmgp_run_lw_cpp(ngas, ncol, nlay, nbnd, ngpt, gas_vmr, p_lay, t_lay, p_lev, t_sfc,           &
                            sfc_emis, cld_tau, aer_tau, allsky_flux_up, allsky_flux_dn, allsky_flux_net, &
                            allsky_bnd_flux_up, allsky_bnd_flux_dn, allsky_bnd_flux_net, clrsky_flux_up, &
                            clrsky_flux_dn, clrsky_flux_net, clrsky_bnd_flux_up, clrsky_bnd_flux_dn,     &
                            clrsky_bnd_flux_net, t_lev, n_gauss_angles)
+    call t_stopf("rrtmgp_run_lw_cpp")
 
     error = 0;
   end function rrtmgp_run_lw
@@ -299,6 +303,8 @@ contains
                                  clrsky_flux_up, clrsky_flux_dn, clrsky_flux_net, &
                                  clrsky_bnd_flux_up, clrsky_bnd_flux_dn, clrsky_bnd_flux_net, clrsky_bnd_flux_dn_dir, &
                                  col_dry, inc_flux, tsi_scaling  ) result(error)
+    use perf_mod, only: t_startf, t_stopf
+    implicit none
     integer, intent(in) :: ngas, ncol, nlay, nbnd, ngpt
     character(len=*), dimension(ngas),     intent(in   ) :: gas_names
     real(wp), dimension(ngas,ncol,nlay),   intent(in   ) :: gas_vmr
@@ -323,6 +329,7 @@ contains
       call push_gas_name(to_c_char(gas_names(igas)))
     enddo
     call gas_names_to_string1d()
+    call t_startf("rrtmgp_run_sw_cpp")
     call rrtmgp_run_sw_cpp(ngas, ncol, nlay, nbnd, ngpt, gas_vmr, p_lay, t_lay, p_lev,                          &
                            mu0, sfc_alb_dir, sfc_alb_dif, cld_tau, cld_ssa, cld_asm,                            &
                            aer_tau, aer_ssa, aer_asm, allsky_flux_up, allsky_flux_dn,                           &
@@ -330,6 +337,7 @@ contains
                            allsky_bnd_flux_dn_dir, clrsky_flux_up, clrsky_flux_dn, clrsky_flux_net,             &
                            clrsky_bnd_flux_up, clrsky_bnd_flux_dn, clrsky_bnd_flux_net, clrsky_bnd_flux_dn_dir, &
                            tsi_scaling)
+    call t_stopf("rrtmgp_run_sw_cpp")
 
     error = 0
   end function rrtmgp_run_sw 
@@ -536,6 +544,8 @@ contains
         clrsky_flux_up, clrsky_flux_dn, clrsky_flux_net, &
         clrsky_bnd_flux_up, clrsky_bnd_flux_dn, clrsky_bnd_flux_net, &
         col_dry, t_lev, inc_flux, n_gauss_angles) result(error)
+      use perf_mod, only: t_startf, t_stopf
+      implicit none
       integer, intent(in) :: ngas, ncol, nlay, nbnd, ngpt
       character(len=*), dimension(ngas), intent(in) :: gas_names
       real(wp), dimension(ngas,ncol,nlay), intent(in   ) :: gas_vmr
@@ -569,6 +579,8 @@ contains
       integer :: igas
       logical :: top_at_1
       character(128) :: error_msg
+
+      call t_startf("rrtmgp_run_lw")
 
       ! Initialize error status to 0
       error = 0
@@ -635,6 +647,7 @@ contains
   
       ! Clean up
       call sources%finalize()
+      call t_stopf("rrtmgp_run_lw")
    end function rrtmgp_run_lw
    ! --------------------------------------------------
    integer function rrtmgp_run_sw( &
@@ -648,6 +661,8 @@ contains
           clrsky_flux_up, clrsky_flux_dn, clrsky_flux_net, &
           clrsky_bnd_flux_up, clrsky_bnd_flux_dn, clrsky_bnd_flux_net, clrsky_bnd_flux_dn_dir, &
           col_dry, inc_flux, tsi_scaling  ) result(error)
+      use perf_mod, only: t_startf, t_stopf
+      implicit none
       integer, intent(in) :: ngas, ncol, nlay, nbnd, ngpt
       character(len=*), dimension(ngas), intent(in   ) :: gas_names
       real(wp), dimension(ngas,ncol,nlay), intent(in   ) :: gas_vmr
@@ -680,6 +695,8 @@ contains
       integer :: igas
       logical :: top_at_1
       character(len=128) :: error_msg
+
+      call t_startf("rrtmgp_run_sw")
 
       ! Initialize error status to 0
       error = 0
@@ -757,6 +774,7 @@ contains
          allsky_fluxes             &
       )
       handle_error(error_msg)
+      call t_stopf("rrtmgp_run_sw")
    end function rrtmgp_run_sw 
 
 #endif  /*ifdef RRTMGPXX*/
