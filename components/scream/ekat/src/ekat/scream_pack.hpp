@@ -90,9 +90,9 @@ using OnlyMaskReturn = typename std::enable_if<MaskType::masktag,ReturnType>::ty
 #define scream_mask_gen_bin_op_mm(op, impl)                   \
   template <typename Mask> KOKKOS_INLINE_FUNCTION             \
   OnlyMask<Mask> operator op (const Mask& a, const Mask& b) { \
-    Mask m(false);                                            \
+    Mask m;                                                   \
     vector_simd for (int i = 0; i < Mask::n; ++i)             \
-      if (a[i] impl b[i]) m.set(i, true);                     \
+      m.set(i, a[i] impl b[i]);                               \
     return m;                                                 \
   }
 
@@ -100,9 +100,9 @@ using OnlyMaskReturn = typename std::enable_if<MaskType::masktag,ReturnType>::ty
 #define scream_mask_gen_bin_op_mb(op, impl)                   \
   template <typename Mask> KOKKOS_INLINE_FUNCTION             \
   OnlyMask<Mask> operator op (const Mask& a, const bool b) {  \
-    Mask m(false);                                            \
+    Mask m;                                                   \
     vector_simd for (int i = 0; i < Mask::n; ++i)             \
-      if (a[i] impl b) m.set(i, true);                        \
+      m.set(i, a[i] impl b);                                  \
     return m;                                                 \
   }
 
@@ -453,9 +453,9 @@ OnlyPack<PackType> shift_left (const typename PackType::scalar& pp1, const PackT
   KOKKOS_INLINE_FUNCTION                                  \
   OnlyPackReturn<PackType, Mask<PackType::n> >            \
   operator op (const PackType& a, const PackType& b) {    \
-    Mask<PackType::n> m(false);                           \
+    Mask<PackType::n> m;                           \
     vector_simd for (int i = 0; i < PackType::n; ++i)     \
-      if (a[i] op b[i]) m.set(i, true);                   \
+      m.set(i, a[i] op b[i]);                             \
     return m;                                             \
   }
 #define scream_mask_gen_bin_op_ps(op)                               \
@@ -463,9 +463,9 @@ OnlyPack<PackType> shift_left (const typename PackType::scalar& pp1, const PackT
   KOKKOS_INLINE_FUNCTION                                            \
   OnlyPackReturn<PackType, Mask<PackType::n> >                      \
   operator op (const PackType& a, const ScalarType& b) {            \
-    Mask<PackType::n> m(false);                                     \
+    Mask<PackType::n> m;                                     \
     vector_simd for (int i = 0; i < PackType::n; ++i)               \
-      if (a[i] op b) m.set(i, true);                                \
+      m.set(i, a[i] op b);                                          \
     return m;                                                       \
   }
 #define scream_mask_gen_bin_op_sp(op)                               \
@@ -473,9 +473,9 @@ OnlyPack<PackType> shift_left (const typename PackType::scalar& pp1, const PackT
   KOKKOS_INLINE_FUNCTION                                            \
   OnlyPackReturn<PackType, Mask<PackType::n> >                      \
   operator op (const ScalarType& a, const PackType& b) {            \
-    Mask<PackType::n> m(false);                                     \
+    Mask<PackType::n> m;                                     \
     vector_simd for (int i = 0; i < PackType::n; ++i)               \
-      if (a op b[i]) m.set(i, true);                                \
+      m.set(i, a op b[i]);                                          \
     return m;                                                       \
   }
 #define scream_mask_gen_bin_op_all(op)          \
