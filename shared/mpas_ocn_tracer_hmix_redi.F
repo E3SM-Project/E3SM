@@ -145,8 +145,6 @@ contains
       real(kind=RKIND), dimension(:, :), allocatable :: fluxRediZTop
       err = 0
 
-      if (.not. config_use_Redi) return
-
       call mpas_timer_start("tracer redi")
 
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
@@ -500,8 +498,8 @@ contains
          if (config_eddying_resolution_taper == 'none') then
             ! Nothing to do, as we just keep the same assignment as above.
          else if (config_eddying_resolution_taper == 'ramp') then
-            sqrtPiInv2 = 1.0_RKIND/sqrt(pii)
             !$omp do schedule(runtime) 
+            do iEdge=1,nEdges
                if (dcEdge(iEdge) <= config_eddying_resolution_ramp_min) then
                   RediKappa(iEdge) = 0.0_RKIND
                else if (dcEdge(iEdge) >= config_eddying_resolution_ramp_max) then
