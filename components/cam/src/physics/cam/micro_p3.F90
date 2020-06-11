@@ -411,8 +411,8 @@ contains
           nc(k) = 0._rtype
        else
           log_hydrometeorsPresent = .true.    ! updated further down
-      !--- Apply droplet activation here (before other microphysical processes) for consistency with qc increase by saturation 
-      !    adjustment already applied in macrophysics. If prescribed drop number is used, this is also a good place to 
+      !--- Apply droplet activation here (before other microphysical processes) for consistency with qc increase by saturation
+      !    adjustment already applied in macrophysics. If prescribed drop number is used, this is also a good place to
       !    prescribe that value
           if (.not.(log_predictNc)) then
             nc(k) = nccnst*inv_rho(k)
@@ -548,18 +548,14 @@ contains
     real(rtype)    :: f1pr03   ! ice collection within a category     See lines  809 -  928  nagg
     real(rtype)    :: f1pr04   ! collection of cloud water by ice     See lines  929 - 1009  nrwat
     real(rtype)    :: f1pr05   ! melting                              See lines 1212 - 1279  vdep
-    real(rtype)    :: f1pr06   ! effective radius                     See lines 1281 - 1356  eff
     real(rtype)    :: f1pr07   ! collection of rain number by ice     See lines 1010 - 1209  nrrain
     real(rtype)    :: f1pr08   ! collection of rain mass by ice       See lines 1010 - 1209  qrrain
     real(rtype)    :: f1pr09   ! minimum ice number (lambda limiter)  See lines  704 -  705  nlarge
     real(rtype)    :: f1pr10   ! maximum ice number (lambda limiter)  See lines  704 -  705  nsmall
-    real(rtype)    :: f1pr13   ! reflectivity                         See lines  731 -  808  refl
     real(rtype)    :: f1pr14   ! melting (ventilation term)           See lines 1212 - 1279  vdep1
-    real(rtype)    :: f1pr15   ! mass-weighted mean diameter          See lines 1212 - 1279  dmm
-    real(rtype)    :: f1pr16   ! mass-weighted mean particle density  See lines 1212 - 1279  rhomm
 
     real(rtype)    :: mu,dv,sc,dqsdt,ab,kap,epsr,epsc,epsi,epsi_tot, &
-         dum,dum1,dum3,dum4,dum5,dum6,dqsidt,abi,rhop,vtrmi1,eii
+         dum1,dum3,dum4,dum5,dum6,dqsidt,abi,rhop,vtrmi1,eii
 
     integer :: dumi,k,dumj,dumii,dumjj,dumzz
 
@@ -954,6 +950,145 @@ contains
 
  END SUBROUTINE p3_main_main_loop
 
+ subroutine p3_main_post_loop(kts, kte, kbot, ktop, kdir, &
+      exner, lcldm, rcldm, &
+      rho, inv_rho, rhofaci, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, &
+      mu_c, nu, lamc, mu_r, lamr, vap_liq_exchange, &
+      ze_rain, ze_ice, diag_vmi, diag_effi, diag_di, diag_rhoi, diag_ze, diag_effc)
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   !use micro_p3_iso_f, only: p3_main_pre_main_loop_f
+#endif
+
+   implicit none
+
+   ! args
+
+   integer, intent(in) :: kts, kte, kbot, ktop, kdir
+
+   real(rtype), intent(in), dimension(kts:kte) :: exner, lcldm, rcldm
+
+   real(rtype), intent(inout), dimension(kts:kte) :: rho, inv_rho, rhofaci, &
+        qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, &
+        mu_c, nu, lamc, mu_r, &
+        lamr, vap_liq_exchange, &
+        ze_rain, ze_ice, diag_vmi, diag_effi, diag_di, diag_rhoi, diag_ze, diag_effc
+
+   ! locals
+   integer :: k, dumi, dumii, dumjj, dumzz
+   real(rtype) :: tmp1, tmp2, dum1, dum4, dum5, dum6, rhop
+   real(rtype)    :: f1pr02   ! mass-weighted fallspeed              See lines  731 -  808  ums
+   real(rtype)    :: f1pr06   ! effective radius                     See lines 1281 - 1356  eff
+   real(rtype)    :: f1pr09   ! minimum ice number (lambda limiter)  See lines  704 -  705  nlarge
+   real(rtype)    :: f1pr10   ! maximum ice number (lambda limiter)  See lines  704 -  705  nsmall
+   real(rtype)    :: f1pr13   ! reflectivity                         See lines  731 -  808  refl
+   real(rtype)    :: f1pr15   ! mass-weighted mean diameter          See lines 1212 - 1279  dmm
+   real(rtype)    :: f1pr16   ! mass-weighted mean particle density  See lines 1212 - 1279  rhomm
+
+   k_loop_final_diagnostics:  do k = kbot,ktop,kdir
+
+      ! cloud:
+      if (qc(k).ge.qsmall) then
+         call get_cloud_dsd2(qc(k),nc(k),mu_c(k),rho(k),nu(k),dnu,lamc(k),  &
+              tmp1,tmp2,lcldm(k))
+         diag_effc(k) = 0.5_rtype*(mu_c(k)+3._rtype)/lamc(k)
+      else
+         qv(k) = qv(k)+qc(k)
+         th(k) = th(k)-exner(k)*qc(k)*xxlv(k)*inv_cp
+         vap_liq_exchange(k) = vap_liq_exchange(k) - qc(k)
+         qc(k) = 0._rtype
+         nc(k) = 0._rtype
+      endif
+
+      ! rain:
+      if (qr(k).ge.qsmall) then
+
+         call get_rain_dsd2(qr(k),nr(k),mu_r(k),lamr(k),tmp1,tmp2,rcldm(k))
+
+         ze_rain(k) = nr(k)*(mu_r(k)+6._rtype)*(mu_r(k)+5._rtype)*(mu_r(k)+4._rtype)*           &
+              (mu_r(k)+3._rtype)*(mu_r(k)+2._rtype)*(mu_r(k)+1._rtype)/lamr(k)**6
+         ze_rain(k) = max(ze_rain(k),1.e-22_rtype)
+      else
+         qv(k) = qv(k)+qr(k)
+         th(k) = th(k)-exner(k)*qr(k)*xxlv(k)*inv_cp
+         vap_liq_exchange(k) = vap_liq_exchange(k) - qr(k)
+         qr(k) = 0._rtype
+         nr(k) = 0._rtype
+      endif
+
+      ! ice:
+
+      call impose_max_total_Ni(nitot(k),max_total_Ni,inv_rho(k))
+
+      qi_not_small:  if (qitot(k).ge.qsmall) then
+
+         !impose lower limits to prevent taking log of # < 0
+         nitot(k) = max(nitot(k),nsmall)
+         nr(k)    = max(nr(k),nsmall)
+
+         call calc_bulkRhoRime(qitot(k),qirim(k),birim(k),rhop)
+
+         ! if (.not. tripleMoment_on) zitot(k) = diag_mom6(qitot(k),nitot(k),rho(k))
+         call find_lookupTable_indices_1a(dumi,dumjj,dumii,dumzz,dum1,dum4,          &
+              dum5,dum6,isize,rimsize,densize,     &
+              qitot(k),nitot(k),           &
+              qirim(k),rhop)
+         !qirim(k),zitot(k),rhop)
+
+         call access_lookup_table(dumjj,dumii,dumi, 2,dum1,dum4,dum5,f1pr02)
+         call access_lookup_table(dumjj,dumii,dumi, 6,dum1,dum4,dum5,f1pr06)
+         call access_lookup_table(dumjj,dumii,dumi, 7,dum1,dum4,dum5,f1pr09)
+         call access_lookup_table(dumjj,dumii,dumi, 8,dum1,dum4,dum5,f1pr10)
+         call access_lookup_table(dumjj,dumii,dumi, 9,dum1,dum4,dum5,f1pr13)
+         call access_lookup_table(dumjj,dumii,dumi,11,dum1,dum4,dum5,f1pr15)
+         call access_lookup_table(dumjj,dumii,dumi,12,dum1,dum4,dum5,f1pr16)
+
+         ! impose mean ice size bounds (i.e. apply lambda limiters)
+         ! note that the Nmax and Nmin are normalized and thus need to be multiplied by existing N
+         nitot(k) = min(nitot(k),f1pr09*nitot(k))
+         nitot(k) = max(nitot(k),f1pr10*nitot(k))
+
+         !--this should already be done in s/r 'calc_bulkRhoRime'
+         if (qirim(k).lt.qsmall) then
+            qirim(k) = 0._rtype
+            birim(k) = 0._rtype
+         endif
+         !==
+
+         ! note that reflectivity from lookup table is normalized, so we need to multiply by N
+         diag_vmi(k)   = f1pr02*rhofaci(k)
+         diag_effi(k)  = f1pr06 ! units are in m
+         diag_di(k)    = f1pr15
+         diag_rhoi(k)  = f1pr16
+         ! note factor of air density below is to convert from m^6/kg to m^6/m^3
+         ze_ice(k) = ze_ice(k) + 0.1892_rtype*f1pr13*nitot(k)*rho(k)   ! sum contribution from each ice category (note: 0.1892 = 0.176/0.93)
+         ze_ice(k) = max(ze_ice(k),1.e-22_rtype)
+
+      else
+
+         qv(k) = qv(k) + qitot(k)
+         th(k) = th(k) - exner(k)*qitot(k)*xxls(k)*inv_cp
+         qitot(k) = 0._rtype
+         nitot(k) = 0._rtype
+         qirim(k) = 0._rtype
+         birim(k) = 0._rtype
+         diag_di(k) = 0._rtype
+
+      endif qi_not_small
+
+      ! sum ze components and convert to dBZ
+      diag_ze(k) = 10._rtype*log10((ze_rain(k) + ze_ice(k))*1.e18_rtype)
+
+      ! if qr is very small then set Nr to 0 (needs to be done here after call
+      ! to ice lookup table because a minimum Nr of nsmall will be set otherwise even if qr=0)
+      if (qr(k).lt.qsmall) then
+         nr(k) = 0._rtype
+      endif
+
+   enddo k_loop_final_diagnostics
+
+ end subroutine p3_main_post_loop
+
   !==========================================================================================!
 
   SUBROUTINE p3_main(qc,nc,qr,nr,th,qv,dt,qitot,qirim,nitot,birim,   &
@@ -1066,36 +1201,16 @@ contains
 
     ! -- scalar locals -- !
 
-    real(rtype) :: dum1, dum4, dum5, dum6, odt, rhop, timeScaleFactor, tmp1, tmp2
+    real(rtype) :: odt, timeScaleFactor
 
-    integer :: dumi,i,k,dumj,dumii,dumjj,dumzz,      &
-         ktop,kbot,kdir
+    integer :: ktop,kbot,kdir,i
 
     logical(btype) :: log_nucleationPossible, log_hydrometeorsPresent
-
-    ! quantities related to process rates/parameters, interpolated from lookup tables:
-    ! For a more in depth reference to where these came from consult the file
-    ! "create_p3_lookupTable_1.F90-v4.1".  All line numbers below reference this
-    ! file.
-
-    real(rtype)    :: f1pr02   ! mass-weighted fallspeed              See lines  731 -  808  ums
-    real(rtype)    :: f1pr03   ! ice collection within a category     See lines  809 -  928  nagg
-    real(rtype)    :: f1pr04   ! collection of cloud water by ice     See lines  929 - 1009  nrwat
-    real(rtype)    :: f1pr05   ! melting                              See lines 1212 - 1279  vdep
-    real(rtype)    :: f1pr06   ! effective radius                     See lines 1281 - 1356  eff
-    real(rtype)    :: f1pr07   ! collection of rain number by ice     See lines 1010 - 1209  nrrain
-    real(rtype)    :: f1pr08   ! collection of rain mass by ice       See lines 1010 - 1209  qrrain
-    real(rtype)    :: f1pr09   ! minimum ice number (lambda limiter)  See lines  704 -  705  nlarge
-    real(rtype)    :: f1pr10   ! maximum ice number (lambda limiter)  See lines  704 -  705  nsmall
-    real(rtype)    :: f1pr13   ! reflectivity                         See lines  731 -  808  refl
-    real(rtype)    :: f1pr14   ! melting (ventilation term)           See lines 1212 - 1279  vdep1
-    real(rtype)    :: f1pr15   ! mass-weighted mean diameter          See lines 1212 - 1279  dmm
-    real(rtype)    :: f1pr16   ! mass-weighted mean particle density  See lines 1212 - 1279  rhomm
 
     !--These will be added as namelist parameters in the future
     logical(btype), parameter :: debug_ON     = .true.  !.true. to switch on debugging checks/traps throughout code  TODO: Turn this back off as default once the tlay error is found.
     logical(btype), parameter :: debug_ABORT  = .false.  !.true. will result in forced abort in s/r 'check_values'
-    
+
     real(rtype),dimension(its:ite,kts:kte) :: qc_old, nc_old, qr_old, nr_old, qitot_old, nitot_old, qv_old, th_old
 
     !-----------------------------------------------------------------------------------!
@@ -1200,7 +1315,7 @@ contains
       p3_tend_out(i,:,46) = ( qitot(i,:) - qitot_old(i,:) ) * odt ! Ice  microphysics tendency, measure
       p3_tend_out(i,:,47) = ( nitot(i,:) - nitot_old(i,:) ) * odt ! Ice  # microphysics tendency, measure
       p3_tend_out(i,:,48) = ( qv(i,:)    - qv_old(i,:) ) * odt    ! Vapor  microphysics tendency, measure
-      p3_tend_out(i,:,49) = ( th(i,:)    - th_old(i,:) ) * odt    ! Pot. Temp. microphysics tendency, measure      
+      p3_tend_out(i,:,49) = ( th(i,:)    - th_old(i,:) ) * odt    ! Pot. Temp. microphysics tendency, measure
        !NOTE: At this point, it is possible to have negative (but small) nc, nr, nitot.  This is not
        !      a problem; those values get clipped to zero in the sedimentation section (if necessary).
        !      (This is not done above simply for efficiency purposes.)
@@ -1257,110 +1372,12 @@ contains
        !...................................................
        ! final checks to ensure consistency of mass/number
        ! and compute diagnostic fields for output
-
-       k_loop_final_diagnostics:  do k = kbot,ktop,kdir
-
-          ! cloud:
-          if (qc(i,k).ge.qsmall) then
-             call get_cloud_dsd2(qc(i,k),nc(i,k),mu_c(i,k),rho(i,k),nu(i,k),dnu,lamc(i,k),  &
-                  tmp1,tmp2,lcldm(i,k))
-             diag_effc(i,k) = 0.5_rtype*(mu_c(i,k)+3._rtype)/lamc(i,k)
-          else
-             qv(i,k) = qv(i,k)+qc(i,k)
-             th(i,k) = th(i,k)-exner(i,k)*qc(i,k)*xxlv(i,k)*inv_cp
-             vap_liq_exchange(i,k) = vap_liq_exchange(i,k) - qc(i,k)
-             qc(i,k) = 0._rtype
-             nc(i,k) = 0._rtype
-          endif
-
-          ! rain:
-          if (qr(i,k).ge.qsmall) then
-
-             call get_rain_dsd2(qr(i,k),nr(i,k),mu_r(i,k),lamr(i,k),   &
-                  !                        cdistr(i,k),logn0r(i,k))
-                  tmp1,tmp2,rcldm(i,k))
-
-             ze_rain(i,k) = nr(i,k)*(mu_r(i,k)+6._rtype)*(mu_r(i,k)+5._rtype)*(mu_r(i,k)+4._rtype)*           &
-                  (mu_r(i,k)+3._rtype)*(mu_r(i,k)+2._rtype)*(mu_r(i,k)+1._rtype)/lamr(i,k)**6
-             ze_rain(i,k) = max(ze_rain(i,k),1.e-22_rtype)
-          else
-             qv(i,k) = qv(i,k)+qr(i,k)
-             th(i,k) = th(i,k)-exner(i,k)*qr(i,k)*xxlv(i,k)*inv_cp
-             vap_liq_exchange(i,k) = vap_liq_exchange(i,k) - qr(i,k)
-             qr(i,k) = 0._rtype
-             nr(i,k) = 0._rtype
-          endif
-
-          ! ice:
-
-          call impose_max_total_Ni(nitot(i,k),max_total_Ni,inv_rho(i,k))
-
-          qi_not_small:  if (qitot(i,k).ge.qsmall) then
-
-             !impose lower limits to prevent taking log of # < 0
-             nitot(i,k) = max(nitot(i,k),nsmall)
-             nr(i,k)         = max(nr(i,k),nsmall)
-
-             call calc_bulkRhoRime(qitot(i,k),qirim(i,k),birim(i,k),rhop)
-
-             ! if (.not. tripleMoment_on) zitot(i,k) = diag_mom6(qitot(i,k),nitot(i,k),rho(i,k))
-             call find_lookupTable_indices_1a(dumi,dumjj,dumii,dumzz,dum1,dum4,          &
-                  dum5,dum6,isize,rimsize,densize,     &
-                  qitot(i,k),nitot(i,k),           &
-                  qirim(i,k),rhop)
-             !qirim(i,k),zitot(i,k),rhop)
-
-             call access_lookup_table(dumjj,dumii,dumi, 2,dum1,dum4,dum5,f1pr02)
-             call access_lookup_table(dumjj,dumii,dumi, 6,dum1,dum4,dum5,f1pr06)
-             call access_lookup_table(dumjj,dumii,dumi, 7,dum1,dum4,dum5,f1pr09)
-             call access_lookup_table(dumjj,dumii,dumi, 8,dum1,dum4,dum5,f1pr10)
-             call access_lookup_table(dumjj,dumii,dumi, 9,dum1,dum4,dum5,f1pr13)
-             call access_lookup_table(dumjj,dumii,dumi,11,dum1,dum4,dum5,f1pr15)
-             call access_lookup_table(dumjj,dumii,dumi,12,dum1,dum4,dum5,f1pr16)
-
-             ! impose mean ice size bounds (i.e. apply lambda limiters)
-             ! note that the Nmax and Nmin are normalized and thus need to be multiplied by existing N
-             nitot(i,k) = min(nitot(i,k),f1pr09*nitot(i,k))
-             nitot(i,k) = max(nitot(i,k),f1pr10*nitot(i,k))
-
-             !--this should already be done in s/r 'calc_bulkRhoRime'
-             if (qirim(i,k).lt.qsmall) then
-                qirim(i,k) = 0._rtype
-                birim(i,k) = 0._rtype
-             endif
-             !==
-
-             ! note that reflectivity from lookup table is normalized, so we need to multiply by N
-             diag_vmi(i,k)   = f1pr02*rhofaci(i,k)
-             diag_effi(i,k)  = f1pr06 ! units are in m
-             diag_di(i,k)    = f1pr15
-             diag_rhoi(i,k)  = f1pr16
-             ! note factor of air density below is to convert from m^6/kg to m^6/m^3
-             ze_ice(i,k) = ze_ice(i,k) + 0.1892_rtype*f1pr13*nitot(i,k)*rho(i,k)   ! sum contribution from each ice category (note: 0.1892 = 0.176/0.93)
-             ze_ice(i,k) = max(ze_ice(i,k),1.e-22_rtype)
-
-          else
-
-             qv(i,k) = qv(i,k) + qitot(i,k)
-             th(i,k) = th(i,k) - exner(i,k)*qitot(i,k)*xxls(i,k)*inv_cp
-             qitot(i,k) = 0._rtype
-             nitot(i,k) = 0._rtype
-             qirim(i,k) = 0._rtype
-             birim(i,k) = 0._rtype
-             diag_di(i,k) = 0._rtype
-
-          endif qi_not_small
-
-          ! sum ze components and convert to dBZ
-          diag_ze(i,k) = 10._rtype*log10((ze_rain(i,k) + ze_ice(i,k))*1.e18_rtype)
-
-          ! if qr is very small then set Nr to 0 (needs to be done here after call
-          ! to ice lookup table because a minimum Nr of nsmall will be set otherwise even if qr=0)
-          if (qr(i,k).lt.qsmall) then
-             nr(i,k) = 0._rtype
-          endif
-
-       enddo k_loop_final_diagnostics
+       call p3_main_post_loop(kts, kte, kbot, ktop, kdir, &
+            exner(i,:), lcldm(i,:), rcldm(i,:), &
+            rho(i,:), inv_rho(i,:), rhofaci(i,:), qv(i,:), th(i,:), qc(i,:), nc(i,:), qr(i,:), nr(i,:), qitot(i,:), nitot(i,:), &
+            qirim(i,:), birim(i,:), xxlv(i,:), xxls(i,:), &
+            mu_c(i,:), nu(i,:), lamc(i,:), mu_r(i,:), lamr(i,:), vap_liq_exchange(i,:), &
+            ze_rain(i,:), ze_ice(i,:), diag_vmi(i,:), diag_effi(i,:), diag_di(i,:), diag_rhoi(i,:), diag_ze(i,:), diag_effc(i,:))
 
        !   if (debug_ON) call check_values(qv,Ti,it,debug_ABORT,800,col_location)
 
@@ -3016,7 +3033,7 @@ subroutine cloud_water_autoconversion(rho,qc_incld,nc_incld,qc_relvar,    &
    real(rtype), intent(out) :: ncautc
    real(rtype), intent(out) :: ncautr
 
-   real(rtype) :: dum, sbgrd_var_coef
+   real(rtype) :: sbgrd_var_coef
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
    if (use_cxx) then
@@ -3701,15 +3718,13 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
    logical(btype) :: log_qxpresent
    integer :: k
-   integer :: k_qxtop, k_qxbot, k_temp
-   integer :: tmpint1
+   integer :: k_qxtop, k_qxbot
    integer, parameter :: num_arrays = 2
    type(realptr), dimension(num_arrays) :: vs, fluxes, qnr
 
    real(rtype) :: dt_left
    real(rtype) :: prt_accum
    real(rtype) :: Co_max
-   real(rtype) :: dt_sub
    real(rtype) :: nu
    real(rtype), dimension(kts:kte), target :: V_qc
    real(rtype), dimension(kts:kte), target :: V_nc
@@ -3855,7 +3870,7 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
    logical(btype) :: log_qxpresent
    integer :: k
-   integer :: k_qxtop, k_qxbot, k_temp
+   integer :: k_qxtop, k_qxbot
    integer, parameter :: num_arrays = 2
    type(realptr), dimension(num_arrays) :: vs, fluxes, qnr
 
@@ -4035,15 +4050,13 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
 
    logical(btype) :: log_qxpresent
    integer :: k
-   integer :: k_qxtop, k_qxbot, k_temp
-   integer :: tmpint1
+   integer :: k_qxtop, k_qxbot
    integer, parameter :: num_arrays = 4
    type(realptr), dimension(num_arrays) :: vs, fluxes, qnr
 
    real(rtype) :: dt_left
    real(rtype) :: prt_accum
    real(rtype) :: Co_max
-   real(rtype) :: dt_sub
    real(rtype) :: rhop
    real(rtype), dimension(kts:kte), target :: V_qit
    real(rtype), dimension(kts:kte), target :: V_nit
@@ -4179,7 +4192,7 @@ subroutine generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_
 
    type(realptr), intent(in), dimension(num_arrays), target :: vs, fluxes, qnx
 
-   integer :: tmpint1, k_temp, k, i
+   integer :: tmpint1, k_temp, i
    real(rtype) :: dt_sub
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
