@@ -150,7 +150,7 @@ module ocn_tracer_advection
       else
          call ocn_tracer_advection_std_tend(tracers, advCoefs, advCoefs3rd, &
             nAdvCellsForEdge, advCellsForEdge, normalThicknessFlux, w, layerThickness, &
-            layerThickness, dt, meshPool, scratchPool, tend, maxLevelCell, maxLevelEdgeTop, &
+            layerThickness, dt, meshPool, tend, maxLevelCell, maxLevelEdgeTop, &
             highOrderAdvectionMask, edgeSignOnCell)
       endif
 
