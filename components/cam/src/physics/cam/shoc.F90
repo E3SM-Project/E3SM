@@ -810,7 +810,7 @@ subroutine update_prognostics_implicit( &
   real(rtype), intent(inout) :: tke(shcol,nlev)
 
 ! LOCAL VARIABLES
-  integer :: i, k, p
+  integer     :: p
   real(rtype) :: rdp_zt(shcol,nlev)
   real(rtype) :: tmpi(shcol,nlevi)
   real(rtype) :: tkh_zi(shcol,nlevi)
@@ -818,9 +818,7 @@ subroutine update_prognostics_implicit( &
   real(rtype) :: rho_zi(shcol,nlevi)
 
   real(rtype) :: flux_dummy(shcol)
-  real(rtype) :: ws(shcol)
-  real(rtype) :: tau(shcol), taux(shcol), tauy(shcol)
-  real(rtype) :: ksrf(shcol), ustar, wtke_flux(shcol)
+  real(rtype) :: ksrf(shcol), wtke_flux(shcol)
 
   real(rtype) :: ca(shcol,nlev) ! superdiagonal for solver
   real(rtype) :: cc(shcol,nlev) ! subdiagonal for solver
@@ -841,14 +839,14 @@ subroutine update_prognostics_implicit( &
   call dp_inverse(nlev, nlevi, shcol, rho_zt, dz_zt, rdp_zt)
 
   ! compute terms needed for the implicit surface stress (ksrf)
-  ksrf(1:shcol)      = compute_impli_srf_stress_term(shcol, nlev, nlevi, rho_zi, &
+  ksrf(1:shcol)      = impli_srf_stress_term(shcol, nlev, nlevi, rho_zi, &
       uw_sfc, vw_sfc, u_wind, v_wind)
 
   !compute term needed for tke flux calc (wtke_flux)
-  wtke_flux(1:shcol) = compute_tke_srf_flux_term(shcol, uw_sfc, vw_sfc)
+  wtke_flux(1:shcol) = tke_srf_flux_term(shcol, uw_sfc, vw_sfc)
 
   ! compute surface fluxes for liq. potential temp, water and tke
-  call compute_sfc_fluxes(shcol, nlev, nlevi, dtime, rho_zi, rdp_zt, &
+  call sfc_fluxes(shcol, nlev, nlevi, dtime, rho_zi, rdp_zt, &
        wthl_sfc, wqw_sfc, wtke_flux, &
        thetal, qw, tke)
 
@@ -904,7 +902,7 @@ subroutine compute_tmpi(nlevi, shcol, dtime, rho_zi, dz_zi, tmpi)
   integer :: i, k
 
   tmpi(:,1) = 0._rtype
-  ! tmpi = dt*(g*rho)**2/dp, where dp = g*rho*dz, therefore tmpi = dt*g*rho/dz
+  ! eqn: tmpi = dt*(g*rho)**2/dp, where dp = g*rho*dz, therefore tmpi = dt*g*rho/dz
   do k = 2, nlevi
     do i = 1, shcol
        tmpi(i,k) = dtime * (ggr*rho_zi(i,k)) / dz_zi(i,k)
@@ -930,15 +928,13 @@ subroutine dp_inverse(nlev, nlevi, shcol, rho_zt, dz_zt, rdp_zt)
 
   do k = 1, nlev
     do i = 1, shcol
-
       rdp_zt(i,k) = 1._rtype/(ggr*rho_zt(i,k)*dz_zt(i,k))
-
     enddo
   enddo
 
 end subroutine dp_inverse
 
-pure function compute_impli_srf_stress_term(shcol, nlev, nlevi, rho_zi, uw_sfc, &
+pure function impli_srf_stress_term(shcol, nlev, nlevi, rho_zi, uw_sfc, &
      vw_sfc, u_wind, v_wind) result (ksrf)
 
   !intent-ins
@@ -985,9 +981,9 @@ pure function compute_impli_srf_stress_term(shcol, nlev, nlevi, rho_zi, uw_sfc, 
   enddo
 
   return
-end function compute_impli_srf_stress_term
+end function impli_srf_stress_term
 
-pure function compute_tke_srf_flux_term(shcol, uw_sfc, vw_sfc) result(wtke_flux)
+pure function tke_srf_flux_term(shcol, uw_sfc, vw_sfc) result(wtke_flux)
 
   !intent-ins
   integer,     intent(in) :: shcol
@@ -1010,16 +1006,15 @@ pure function compute_tke_srf_flux_term(shcol, uw_sfc, vw_sfc) result(wtke_flux)
   do i = 1, shcol
      uw           = uw_sfc(i)
      vw           = vw_sfc(i)
-     !ustar        = max(sqrt(sqrt(uw**2._rtype + vw**2._rtype)),ustarmin)
-     ustar        =max(sqrt(sqrt(uw**2._rtype + vw**2._rtype)),ustarmin)
+     ustar        = max(sqrt(sqrt(uw**2._rtype + vw**2._rtype)),ustarmin)
      wtke_flux(i) = ustar**3
   enddo
 
   return
-end function compute_tke_srf_flux_term
+end function tke_srf_flux_term
 
 
-subroutine compute_sfc_fluxes(shcol, nlev, nlevi, dtime, rho_zi, rdp_zt, &
+subroutine sfc_fluxes(shcol, nlev, nlevi, dtime, rho_zi, rdp_zt, &
      wthl_sfc, wqw_sfc, wtke_flux, thetal, qw, tke)
 
   implicit none
@@ -1060,7 +1055,7 @@ subroutine compute_sfc_fluxes(shcol, nlev, nlevi, dtime, rho_zi, rdp_zt, &
      tke(i,nlev)    = tke(i,nlev)    + fac * wtke_flux(i)
   enddo
 
-end subroutine compute_sfc_fluxes
+end subroutine sfc_fluxes
 
 
 !=======================================================
