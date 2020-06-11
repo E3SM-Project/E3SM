@@ -198,6 +198,7 @@
     <values>
       <value component="rtm"      >$SRCROOT/components/rtm/</value>
       <value component="mosart"      >$SRCROOT/components/mosart/</value>
+      <value component="mizuroute" >$SRCROOT/components/mizuRoute/</value>
       <value component="drof"      >$CIMEROOT/src/components/data_comps_$COMP_INTERFACE/drof</value>
       <value component="srof"      >$CIMEROOT/src/components/stub_comps_$COMP_INTERFACE/srof</value>
       <value component="xrof"      >$CIMEROOT/src/components/xcpl_comps_$COMP_INTERFACE/xrof</value>
@@ -313,6 +314,7 @@
       <value component="nemo"   >$COMP_ROOT_DIR_OCN/cime_config/config_archive.xml</value>
       <value component="rtm"      >$COMP_ROOT_DIR_ROF/cime_config/config_archive.xml</value>
       <value component="mosart"   >$COMP_ROOT_DIR_ROF/cime_config/config_archive.xml</value>
+      <value component="mizuroute">$COMP_ROOT_DIR_ROF/cime_config/config_archive.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -333,6 +335,7 @@
       <value component="cism">$COMP_ROOT_DIR_GLC/cime_config/SystemTests</value>
       <value component="rtm">$COMP_ROOT_DIR_ROF/cime_config/SystemTests</value>
       <value component="mosart">$COMP_ROOT_DIR_ROF/cime_config/SystemTests</value>
+      <value component="mizuroute">$COMP_ROOT_DIR_ROF/cime_config/SystemTests</value>
     </values>
     <group>test</group>
     <file>env_test.xml</file>
@@ -354,6 +357,7 @@
       <value component="nemo"   >$COMP_ROOT_DIR_OCN/cime_config/testdefs/testlist_nemo.xml</value>
       <value component="rtm"      >$COMP_ROOT_DIR_ROF/cime_config/testdefs/testlist_rtm.xml</value>
       <value component="mosart"   >$COMP_ROOT_DIR_ROF/cime_config/testdefs/testlist_mosart.xml</value>
+      <value component="mizuroute">$COMP_ROOT_DIR_ROF/cime_config/testdefs/testlist_mizuRoute.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -373,6 +377,7 @@
       <value component="cice"     >$COMP_ROOT_DIR_ICE/cime_config/testdefs/testmods_dirs</value>
       <value component="rtm"      >$COMP_ROOT_DIR_ROF/cime_config/testdefs/testmods_dirs</value>
       <value component="mosart"   >$COMP_ROOT_DIR_ROF/cime_config/testdefs/testmods_dirs</value>
+      <value component="mizuroute">$COMP_ROOT_DIR_ROF/cime_config/testdefs/testmods_dirs</value>
       <value component="pop"      >$COMP_ROOT_DIR_OCN/cime_config/testdefs/testmods_dirs</value>
       <value component="mom"      >$COMP_ROOT_DIR_OCN/cime_config/testdefs/testmods_dirs</value>
       <value component="nemo"   >$COMP_ROOT_DIR_OCN/cime_config/testdefs/testmods_dirs</value>
@@ -394,6 +399,7 @@
       <value component="cice"     >$COMP_ROOT_DIR_ICE/cime_config/usermods_dirs</value>
       <value component="rtm"      >$COMP_ROOT_DIR_ROF/cime_config/usermods_dirs</value>
       <value component="mosart"   >$COMP_ROOT_DIR_ROF/cime_config/usermods_dirs</value>
+      <value component="mizuroute">$COMP_ROOT_DIR_ROF/cime_config/usermods_dirs</value>
       <value component="pop"      >$COMP_ROOT_DIR_OCN/cime_config/usermods_dirs</value>
       <value component="mom"      >$COMP_ROOT_DIR_OCN/cime_config/usermods_dirs</value>
       <value component="nemo"   >$COMP_ROOT_DIR_OCN/cime_config/usermods_dirs</value>

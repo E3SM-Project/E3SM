@@ -458,8 +458,17 @@ class Case(object):
         logger.debug(" Possible components for COMPSETS_SPEC_FILE are {}".format(components))
 
         self.set_lookup_value("COMP_INTERFACE", driver)
+        if self._cime_model == 'ufs':
+            config = {}
+            if 'ufsatm' in compset_name:
+                config['component']='nems'
+            else:
+                config['component']='cpl'
+            comp_root_dir_cpl = files.get_value("COMP_ROOT_DIR_CPL", attribute=config)
+
         if self._cime_model == 'cesm':
             comp_root_dir_cpl = files.get_value("COMP_ROOT_DIR_CPL")
+        if self._cime_model in ('cesm','ufs'):
             self.set_lookup_value("COMP_ROOT_DIR_CPL",comp_root_dir_cpl)
 
         # Loop through all of the files listed in COMPSETS_SPEC_FILE and find the file
@@ -958,7 +967,8 @@ class Case(object):
         nodenames = machobj.get_node_names()
         nodenames = [x for x in nodenames if
                      '_system' not in x and '_variables' not in x and 'mpirun' not in x and\
-                     'COMPILER' not in x and 'MPILIB' not in x]
+                     'COMPILER' not in x and 'MPILIB' not in x and 'MAX_MPITASKS_PER_NODE' not in x and\
+                     'MAX_TASKS_PER_NODE' not in x]
 
         for nodename in nodenames:
             value = machobj.get_value(nodename, resolved=False)
@@ -981,6 +991,11 @@ class Case(object):
             expect(machobj.is_valid_MPIlib(mpilib, {"compiler":compiler}),
                    "MPIlib {} is not supported on machine {}".format(mpilib, machine_name))
         self.set_value("MPILIB",mpilib)
+        for name in ("MAX_TASKS_PER_NODE","MAX_MPITASKS_PER_NODE"):
+            dmax = machobj.get_value(name,{'compiler':compiler})
+            if not dmax:
+                dmax = machobj.get_value(name)
+            self.set_value(name, dmax)
 
         machdir = machobj.get_machines_dir()
         self.set_value("MACHDIR", machdir)
@@ -1129,13 +1144,14 @@ class Case(object):
         return batchobj.get_jobs()
 
     def _set_pio_xml(self):
-        pioobj = PIO()
+        pioobj = PIO(self._component_classes)
         grid = self.get_value("GRID")
         compiler = self.get_value("COMPILER")
         mach = self.get_value("MACH")
         compset = self.get_value("COMPSET")
         mpilib = self.get_value("MPILIB")
-        defaults = pioobj.get_defaults(grid=grid,compset=compset,mach=mach,compiler=compiler, mpilib=mpilib)
+
+        defaults = pioobj.get_defaults(grid=grid, compset=compset, mach=mach, compiler=compiler, mpilib=mpilib)
 
         for vid, value in defaults.items():
             self.set_value(vid,value)

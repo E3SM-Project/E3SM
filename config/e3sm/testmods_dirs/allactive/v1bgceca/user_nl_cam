@@ -1,0 +1,12 @@
+! Users should add all user specific namelist changes below in the form of 
+! namelist_var = new_namelist_value 
+ 
+ nhtfrq =  0, -24, -3, -3
+ mfilt  = 1, 365, 120, 120
+ avgflag_pertape = 'A','A','I','A'
+ fexcl1 = 'CFAD_SR532_CAL','ANSNOW','ANRAIN','AQSNOW','AQRAIN','SNOWQM'
+ fincl1 = 'RHREFHT','DF_O3','AQSO4_O3','AQSO4_H2O2','TREFHTMN:M','TREFHTMX:X','FLUT','PRECT','PRECC','U200','U850','TMQ','OMEGA500','IEFLX'
+ fincl2 = 'U200','U850','V200','V850','Z500','UBOT','VBOT','OMEGA500','TREFHT','TS','TMQ','TREFHTMN:M','TREFHTMX:X','QREFHT','RHREFHT','PS','PSL','PRECT','PRECC','PRECSC','PRECSL','SNOWHLND','SNOWHICE','FLUT'
+ fincl3 = 'PSL','T200','T500','U850','V850','UBOT','VBOT','TREFHT','TMQ'
+ fincl4 = 'FLNT','FSNT','U200','U850','OMEGA500','PRECT','PRECC','FSDS','FSNS','FLDS','FLNS','SHFLX', 'LHFLX','QFLX','TS','TBOT','QBOT','TREFHT','QREFHT','PBLH','TUQ','TVQ','TUH','TVH','DTENDTQ','DTENDTH','FSNTC','FLNTC','FSNSC','FLNSC','CLDTOT','TGCLDLWP','TGCLDIWP'
+ clubb_c14 = 1.17D0

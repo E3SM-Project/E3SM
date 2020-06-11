@@ -26,25 +26,26 @@
 
   <grids>
     <model_grid_defaults>
-      <grid name="atm"    compset="SATM"  >null</grid>
-      <grid name="lnd"    compset="SLND"  >null</grid>
-      <grid name="ocnice" compset="SOCN"  >null</grid>
-      <grid name="rof"    compset="SROF"  >null</grid>
-      <grid name="rof"    compset="DWAV"  >rx1</grid>
-      <grid name="rof"    compset="RTM"	  >r05</grid>
-      <grid name="rof"    compset="MOSART">r05</grid>
-      <grid name="rof"    compset="DROF"  >rx1</grid>
-      <grid name="rof"    compset="DROF%CPLHIST">r05</grid>
-      <grid name="rof"    compset="XROF"  >r05</grid>
-      <grid name="glc"	  compset="SGLC"  >null</grid>
-      <grid name="glc"	  compset="CISM1" >gland5UM</grid>
-      <grid name="glc"	  compset="CISM2" >gland4</grid>
-      <grid name="glc"    compset="XGLC"  >gland4</grid>
-      <grid name="wav"	  compset="SWAV"  >null</grid>
-      <grid name="wav"	  compset="DWAV"  >ww3a</grid>
-      <grid name="wav"	  compset="WW3"	  >ww3a</grid>
-      <grid name="wav"    compset="XWAV"  >ww3a</grid>
-      <grid name="iac"    compset="SIAC"  >null</grid>
+      <grid name="atm"       compset="SATM"        >null</grid>
+      <grid name="lnd"       compset="SLND"        >null</grid>
+      <grid name="ocnice"    compset="SOCN"        >null</grid>
+      <grid name="rof"       compset="SROF"        >null</grid>
+      <grid name="rof"       compset="DWAV"        >rx1</grid>
+      <grid name="rof"       compset="RTM"	   >r05</grid>
+      <grid name="rof"       compset="MOSART"      >r05</grid>
+      <grid name="rof"       compset="MIZUROUTE"   >HDMA</grid>
+      <grid name="rof"       compset="DROF"        >rx1</grid>
+      <grid name="rof"       compset="DROF%CPLHIST">r05</grid>
+      <grid name="rof"       compset="XROF"        >r05</grid>
+      <grid name="glc"	     compset="SGLC"        >null</grid>
+      <grid name="glc"	     compset="CISM1"       >gland5UM</grid>
+      <grid name="glc"	     compset="CISM2"       >gland4</grid>
+      <grid name="glc"       compset="XGLC"        >gland4</grid>
+      <grid name="wav"	     compset="SWAV"        >null</grid>
+      <grid name="wav"	     compset="DWAV"        >ww3a</grid>
+      <grid name="wav"	     compset="WW3"	   >ww3a</grid>
+      <grid name="wav"       compset="XWAV"        >ww3a</grid>
+      <grid name="iac"       compset="SIAC"        >null</grid>
     </model_grid_defaults>
 
     <model_grid alias="g16_g16" compset="DATM.+DROF">
@@ -119,6 +120,12 @@
       <grid name="atm">5x5_amazon</grid>
       <grid name="lnd">5x5_amazon</grid>
       <grid name="rof">null</grid>
+    </model_grid>
+
+    <model_grid alias="5x5_amazon_r05" compset="DATM.+CLM.+MIZUROUTE">
+      <grid name="atm">5x5_amazon</grid>
+      <grid name="lnd">5x5_amazon</grid>
+      <grid name="rof">r05_amazon</grid>
     </model_grid>
 
     <!-- Regional NLDAS-2 grid over the U.S. (0.125 degree resolution;
@@ -576,6 +583,14 @@
       <grid name="lnd">1.9x2.5</grid>
       <grid name="ocnice">gx1v7</grid>
       <grid name="rof">r01</grid>
+      <mask>gx1v7</mask>
+    </model_grid>
+
+    <model_grid alias="f19_g17_r05">
+      <grid name="atm">1.9x2.5</grid>
+      <grid name="lnd">1.9x2.5</grid>
+      <grid name="ocnice">gx1v7</grid>
+      <grid name="rof">r05</grid>
       <mask>gx1v7</mask>
     </model_grid>
 
@@ -1774,6 +1789,18 @@
       <nx>720</nx> <ny>360</ny>
       <mesh driver="nuopc">$DIN_LOC_ROOT/share/meshes/r05_nomask_c110308_ESMFmesh.nc</mesh>
       <desc>r05 is 1/2 degree river routing grid:</desc>
+    </domain>
+
+    <domain name="r05_amazon">
+      <nx>816</nx> <ny>1</ny>
+      <mesh driver="nuopc">$DIN_LOC_ROOT/rof/mizuRoute/meshes/r05_amazon_360_c110308_cdf5_ESMFmesh_c20200507.nc</mesh>
+      <desc>r05_amazon is the regular 1/2 degree river routing grid, but just over a region in the Amazon (corresponds to the 5x5_amazon region for CTSM):</desc>
+    </domain>
+
+    <domain name="HDMA">
+      <nx>295335</nx> <ny>1</ny>
+      <mesh driver="nuopc">$DIN_LOC_ROOT/rof/mizuRoute/meshes/HDMA_global_ESMFmesh_c20191209.nc</mesh>
+      <desc>HDMA is a medium resolution river routing grid for mizuRoute:</desc>
     </domain>
 
     <domain name="r01">

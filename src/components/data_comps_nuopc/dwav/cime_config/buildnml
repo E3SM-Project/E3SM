@@ -38,17 +38,12 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     # Initialize namelist defaults and write out model namelist file
     #----------------------------------------------------
     caseroot = case.get_value("CASEROOT")
-    wav_domain_file = case.get_value("WAV_DOMAIN_FILE")
-    wav_domain_path = case.get_value("WAV_DOMAIN_PATH")
     dwav_mode = case.get_value("DWAV_MODE")
     wav_grid = case.get_value("WAV_GRID")
-
 
     # Check for incompatible options.
     expect(wav_grid != "null",
            "WAV_GRID cannot be null")
-    expect(dwav_mode != "NULL",
-           "DWAV_MODE cannot be NULL")
 
     # Log some settings.
     logger.debug("DWAV mode is {}".format(dwav_mode))

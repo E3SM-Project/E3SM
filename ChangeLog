@@ -1,6 +1,217 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 6-3-2020
+Tag: cime5.8.24
+Answer Changes: Round Off on izumi
+Tests: scripts_regression_tests, izumi tests 
+Dependencies:
+
+Brief Summary:
+    - Machine configuration updates for izumi.
+    - Add Makefile target to write various flags.
+    - Improve PET test baseline generation and comparison.
+    - Allow gptl build to recognize ESMF_LIBDIR.
+    - When writing .env_mach_specific files, only write settings for main job.
+    - Start adding option for MizuRoute.
+    - Merge ACME branch 2020-05-15.
+    - Allow compiler to modify MAX_TASKS_PER_NODE and MAX_MPITASKS_PER_NODE.
+    - Improve cime buildlib function debug logging.
+    - Fix cime_model to stdout issue.
+    - Extend allowed string length.
+    - Fix div0s in cprnc comparisons.
+    - Change type to double for derived vars in cprnc.
+    - Fix typo.
+
+User interface changes: 
+    - New component added for cesm.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+837ffbf25 Merge pull request #3560 from ESMCI/fischer/izumi_update
+99a0b1f96 Merge pull request #3558 from billsacks/makefile_rule_write_link_flags
+cacf02562 Merge pull request #3434 from ESMCI/wpcoomb/improve_PETtest_baseline_generation_and_comparison
+2547d0d11 Merge pull request #3551 from billsacks/gptl_esmflibdir
+27021a67d Merge pull request #3555 from billsacks/env_mach_specific_main_job
+1b049969f Merge pull request #3529 from ekluzek/mizuRoute
+b847e9fb1 Merge pull request #3538 from ESMCI/jgfouca/branch-for-acme-split-2020-05-15
+64e9f9202 Merge pull request #3545 from jedwards4b/modify_max_with_compiler
+588039c8e Merge pull request #3539 from ESMCI/wpcoomb/improve_cime_buildlib_function
+50a0edc49 Merge pull request #3536 from jedwards4b/cime_model_fix
+29508e9d6 Merge pull request #3535 from jedwards4b/cprnc_improvement
+9b650d311 Merge pull request #3530 from rgknox/fix-div0-compare_vars
+f914cb653 Merge pull request #3531 from jedwards4b/cprnc_improvement
+34c9b8f19 Merge pull request #3524 from christophergeiger3/patch-1
+
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/config_files.xml
+M	config/cesm/config_grids.xml
+M	config/cesm/machines/config_machines.xml
+M	config/config_tests.xml
+M	config/e3sm/allactive/config_compsets.xml
+M	config/e3sm/allactive/config_pesall.xml
+M	config/e3sm/config_grids.xml
+M	config/e3sm/machines/Depends.summit.cmake
+A	config/e3sm/machines/Depends.summit.pgigpu
+A	config/e3sm/machines/Depends.summit.pgigpu.cmake
+M	config/e3sm/machines/config_batch.xml
+M	config/e3sm/machines/config_compilers.xml
+M	config/e3sm/machines/config_machines.xml
+M	config/e3sm/machines/config_pio.xml
+M	config/e3sm/machines/template.case.run.sh
+A	config/e3sm/testmods_dirs/allactive/v1bgc/shell_commands
+A	config/e3sm/testmods_dirs/allactive/v1bgc/user_nl_cam
+A	config/e3sm/testmods_dirs/allactive/v1bgc/user_nl_clm
+A	config/e3sm/testmods_dirs/allactive/v1bgc/user_nl_mpaso
+A	config/e3sm/testmods_dirs/allactive/v1bgc_1850/shell_commands
+A	config/e3sm/testmods_dirs/allactive/v1bgc_1850/user_nl_cam
+A	config/e3sm/testmods_dirs/allactive/v1bgc_1850/user_nl_clm
+A	config/e3sm/testmods_dirs/allactive/v1bgc_1850/user_nl_mpaso
+A	config/e3sm/testmods_dirs/allactive/v1bgceca/shell_commands
+A	config/e3sm/testmods_dirs/allactive/v1bgceca/user_nl_cam
+A	config/e3sm/testmods_dirs/allactive/v1bgceca/user_nl_clm
+A	config/e3sm/testmods_dirs/allactive/v1bgceca/user_nl_mpaso
+A	config/e3sm/testmods_dirs/allactive/v1bgceca_1850/shell_commands
+A	config/e3sm/testmods_dirs/allactive/v1bgceca_1850/user_nl_cam
+A	config/e3sm/testmods_dirs/allactive/v1bgceca_1850/user_nl_clm
+A	config/e3sm/testmods_dirs/allactive/v1bgceca_1850/user_nl_mpaso
+M	config/e3sm/testmods_dirs/allactive/v1cmip6/shell_commands
+M	config/e3sm/tests.py
+M	config/xml_schemas/config_machines.xsd
+M	doc/source/what_cime/index.rst
+M	scripts/Tools/Makefile
+M	scripts/Tools/cime_bisect
+M	scripts/lib/CIME/BuildTools/configure.py
+M	scripts/lib/CIME/BuildTools/makemacroswriter.py
+M	scripts/lib/CIME/SystemTests/system_tests_common.py
+M	scripts/lib/CIME/XML/archive_base.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/env_mach_specific.py
+M	scripts/lib/CIME/XML/generic_xml.py
+M	scripts/lib/CIME/XML/grids.py
+M	scripts/lib/CIME/XML/pio.py
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/case/case.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/utils.py
+M	scripts/lib/CIME/wait_for_tests.py
+M	scripts/lib/jenkins_generic_job.py
+M	scripts/tests/scripts_regression_tests.py
+M	src/build_scripts/buildlib.internal_components
+M	src/drivers/mct/cime_config/config_component_e3sm.xml
+M	src/drivers/mct/main/cime_comp_mod.F90
+M	src/drivers/mct/main/prep_rof_mod.F90
+M	src/drivers/mct/shr/seq_flds_mod.F90
+M	src/share/timing/Makefile
+M	src/share/util/shr_mem_mod.F90
+M	tools/cprnc/Makefile
+M	tools/cprnc/compare_vars_mod.F90.in
+M	tools/cprnc/filestruct.F90
+D	tools/cprnc/test.csh
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 4-19-2020
+Tag: cime5.8.23
+Answer Changes: roundoff for some compsets, bfb for others
+Tests: scripts_regressions_tests
+Dependencies:
+
+Brief Summary:
+    - Improvement to scripts regression tests on the Melvin machine.
+    - Fix atm level spec so that it does not match 1x1_brazil.
+    - Document provenance from COARE/Fairall surface flux scheme option.
+    - Add missing ROF2OCN grid for r05_TO_gx3v7.
+    - Updates to CIME used for 0.1 degree JRA-forced G run with BGC enabled. 
+    - FV3 bug fix and Makefile update.
+    - Update cheyenne ESMF libs.
+    - case.setup: fix merge error from prev PR.
+    - case.setup: fix case.setup --clean.
+    - First steps to ESMF data models.
+    - Allow user to specify an extra machines directory in create_newcase.
+    - Remove code specific to ORNL machine.
+
+
+User interface changes: 
+    - Adds --extra-machines-dir argument to create_newcase.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+332d8c9b3 Merge pull request #3522 from ESMCI/wpcoomb/melvin_regression_tests_improvements
+6d745aa6b Merge pull request #3519 from jedwards4b/atm_level_fix
+850bef781 Merge pull request #3520 from mt5555/patch-1
+ebb9dd6c9 Merge pull request #3517 from ESMCI/fischer/r05_gx3v7
+5805a40a5 Merge pull request #3515 from mnlevy1981/highres_JRA_BGC
+1bc586676 Merge pull request #3516 from jtruesdal/fv3_3452
+6a00e248c Merge pull request #3514 from ESMCI/fischer/esmf_libs
+793764fd2 Merge pull request #3513 from ESMCI/jgfouca/fix_case_setup
+25840072d Merge pull request #3511 from ESMCI/jgfouca/fix_case_clean
+509f2bfa8 Merge pull request #3505 from ESMCI/mvertens/dmodels_refactor_to_esmfpre
+51ac93be5 Merge pull request #3508 from billsacks/alternate_dot_cime_location
+7303682ed Merge pull request #3502 from jedwards4b/remove_titan_piocode
+
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/config_grids.xml
+M	config/cesm/config_grids_common.xml
+M	config/cesm/machines/config_machines.xml
+M	config/xml_schemas/config_machines_template.xml
+M	scripts/Tools/Makefile
+M	scripts/create_newcase
+M	scripts/fortran_unit_testing/run_tests.py
+M	scripts/lib/CIME/BuildTools/configure.py
+M	scripts/lib/CIME/SystemTests/erio.py
+M	scripts/lib/CIME/XML/batch.py
+M	scripts/lib/CIME/XML/compilers.py
+M	scripts/lib/CIME/XML/machines.py
+M	scripts/lib/CIME/case/case.py
+M	scripts/lib/CIME/case/case_setup.py
+M	scripts/tests/scripts_regression_tests.py
+M	src/build_scripts/buildlib.csm_share
+M	src/components/data_comps_nuopc/datm/cime_config/buildnml
+M	src/components/data_comps_nuopc/datm/cime_config/namelist_definition_datm.xml
+M	src/components/data_comps_nuopc/datm/src/atm_comp_nuopc.F90
+D	src/components/data_comps_nuopc/datm/src/datm_comp_mod.F90
+M	src/components/data_comps_nuopc/dice/cime_config/buildnml
+M	src/components/data_comps_nuopc/dice/cime_config/namelist_definition_dice.xml
+D	src/components/data_comps_nuopc/dice/src/dice_comp_mod.F90
+M	src/components/data_comps_nuopc/dice/src/ice_comp_nuopc.F90
+M	src/components/data_comps_nuopc/dlnd/cime_config/buildnml
+M	src/components/data_comps_nuopc/dlnd/cime_config/namelist_definition_dlnd.xml
+D	src/components/data_comps_nuopc/dlnd/src/dlnd_comp_mod.F90
+M	src/components/data_comps_nuopc/dlnd/src/lnd_comp_nuopc.F90
+M	src/components/data_comps_nuopc/docn/cime_config/buildnml
+M	src/components/data_comps_nuopc/docn/cime_config/namelist_definition_docn.xml
+D	src/components/data_comps_nuopc/docn/src/docn_comp_mod.F90
+M	src/components/data_comps_nuopc/docn/src/ocn_comp_nuopc.F90
+M	src/components/data_comps_nuopc/drof/cime_config/buildnml
+M	src/components/data_comps_nuopc/drof/cime_config/namelist_definition_drof.xml
+D	src/components/data_comps_nuopc/drof/src/drof_comp_mod.F90
+M	src/components/data_comps_nuopc/drof/src/rof_comp_nuopc.F90
+M	src/components/data_comps_nuopc/dshr_nuopc/dshr_dfield_mod.F90
+M	src/components/data_comps_nuopc/dshr_nuopc/dshr_fldlist_mod.F90
+R063	src/components/data_comps_nuopc/dshr_nuopc/dshr_nuopc_mod.F90	src/components/data_comps_nuopc/dshr_nuopc/dshr_mod.F90
+M	src/components/data_comps_nuopc/dwav/cime_config/buildnml
+M	src/components/data_comps_nuopc/dwav/cime_config/namelist_definition_dwav.xml
+D	src/components/data_comps_nuopc/dwav/src/dwav_comp_mod.F90
+M	src/components/data_comps_nuopc/dwav/src/wav_comp_nuopc.F90
+M	src/drivers/mct/cime_config/buildnml
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_component_cesm.xml
+M	src/share/streams/shr_stream_mod.F90
+R058	src/components/data_comps_nuopc/dshr_nuopc/dshr_methods_mod.F90	src/share/streams_nuopc/dshr_methods_mod.F90
+A	src/share/streams_nuopc/dshr_strdata_mod.F90
+A	src/share/streams_nuopc/dshr_stream_mod.F90
+A	src/share/streams_nuopc/dshr_tInterp_mod.F90
+M	src/share/util/shr_flux_mod.F90
+M	utils/perl5lib/Config/SetupTools.pm
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 4-26-2020
 Tag: cime5.8.22
 Answer Changes: b4b
