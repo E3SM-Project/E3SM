@@ -11,5 +11,6 @@ module pio_mods
                            PIO_inq_dimlen
     use piodarray,  only : PIO_write_darray, PIO_read_darray 
     use pionfatt_mod, only : PIO_put_att   => put_att
+    use pionfput_mod, only : PIO_put_var   => put_var
 
 end module pio_mods

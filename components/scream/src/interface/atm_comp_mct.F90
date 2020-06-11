@@ -1,7 +1,6 @@
 module atm_comp_mct
 
   ! !USES:
-  use pioExample ! AaronDonahue - example PIO code, to use temporarily until a "real" PIO interface can be built
   use scream_scorpio_interface, only: eam_h_define, eam_init_pio, eam_h_finalize, eam_h_write
   use esmf
   use mct_mod
@@ -32,7 +31,6 @@ module atm_comp_mct
   public :: atm_run_mct
   public :: atm_final_mct
 
-  type(pioExampleClass), public :: pioExInst ! AaronDonahue - example pio structure to hold on important PIO information
   !--------------------------------------------------------------------------
   ! Private module data
   !--------------------------------------------------------------------------
@@ -45,7 +43,6 @@ module atm_comp_mct
   integer(IN)            :: compid              ! mct comp id
   real(r8) ,  pointer    :: gbuf(:,:)           ! model grid
   integer(IN),parameter  :: master_task=0       ! task number of master task
-  integer                :: internal_step! internal step counter for frames of PIO output variable
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -95,10 +92,7 @@ CONTAINS
     logical                          :: atm_prognostic ! if true, component is prognostic
     integer (kind=SHR_KIND_IN)       :: start_tod, start_ymd
 
-    !--- PIO Example variables ---
-    type(pioExampleClass) :: pioExInst
     !-------------------------------------------------------------------------------
-    internal_step = 0
     ! Set cdata pointers to derived types (in coupler)
     call seq_cdata_setptrs(cdata, &
          id=compid, &
@@ -172,16 +166,7 @@ CONTAINS
     !----------------------------------------------------------------------------
     ! Initialize pio
     !----------------------------------------------------------------------------
-    print *, 'EAM_INIT_PIO'
-    call eam_init_pio(mpicom_atm,compid,2,4)
-!    call eam_h_define(2, (/ 20, 0 /), (/ "x", "t" /))
- 
-    call pioExInst%init(mpicom_atm)
-    call pioExInst%createDecomp()
-    call pioExInst%createFile()
-    call pioExInst%defineVar()
-    call pioExInst%writeVar(0)
-    print *, 'EAM_INIT_PIO - DONE'
+    call eam_init_pio(mpicom_atm,compid,3,7)
 
   end subroutine atm_init_mct
 
@@ -219,8 +204,6 @@ CONTAINS
     character(*), parameter :: subName = "(atm_run_mct) "
     real(kind=c_double)              :: dt_scream
     !-------------------------------------------------------------------------------
-    internal_step = internal_step+1
-    if (my_task==0) print *, 'atm_run_start', internal_step
     ! Reset shr logging to my log file
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
@@ -246,11 +229,7 @@ CONTAINS
     !----------------------------------------------------------------------------
     ! Run pio
     !----------------------------------------------------------------------------
-    print *, 'EAM_RUN_PIO'
-    call eam_h_write(internal_step)
-    !call pioExInst%writeVar(internal_step)
-    !call pioExInst%readVar()
-    if (my_task==0) print *, 'atm_run_finish', internal_step
+    call eam_h_write()
 
   end subroutine atm_run_mct
 
@@ -279,13 +258,9 @@ CONTAINS
     !-------------------------------------------------------------------------------
 
     !----------------------------------------------------------------------------
-    ! Run pio
+    ! Finalize pio
     !----------------------------------------------------------------------------
-    print *, 'EAM_FINALIZE_PIO'
-    !call pioExInst%closeFile()
     call eam_h_finalize()
-    !call pioExInst%cleanUp()
-    print *, 'EAM_FINALIZE_PIO - DONE'
     !----------------------------------------------------------------------------
     ! Finish the rest of ATM model
     !----------------------------------------------------------------------------
