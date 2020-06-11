@@ -165,6 +165,10 @@
 <config_use_standardGM ocn_grid="oRRS15to5">.false.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oARRM60to10">.false.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oARRM60to6">.false.</config_use_standardGM>
+<config_gm_lat_variable_c2>.true.</config_gm_lat_variable_c2>
+<config_gm_kappa_lat_depth_variable>.true.</config_gm_kappa_lat_depth_variable>
+<config_gm_min_stratification_ratio>0.1</config_gm_min_stratification_ratio>
+<config_gm_min_phase_speed>0.1</config_gm_min_phase_speed>
 <config_use_Redi_surface_layer_tapering>.false.</config_use_Redi_surface_layer_tapering>
 <config_Redi_surface_layer_tapering_extent>0.0</config_Redi_surface_layer_tapering_extent>
 <config_use_Redi_bottom_layer_tapering>.false.</config_use_Redi_bottom_layer_tapering>

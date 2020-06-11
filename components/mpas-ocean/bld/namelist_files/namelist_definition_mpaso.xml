@@ -561,6 +561,38 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_gm_lat_variable_c2" type="logical"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
+If true, spatially variable phase speed is used Following Ferrari et al (2010)
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_gm_kappa_lat_depth_variable" type="logical"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
+If true, spatitally and deph varying Bolus Kappa is used, following Danabasoglu et al (2007)
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_gm_min_stratification_ratio" type="real"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
+minimum value for N2/Nmax2 ratio
+
+Valid values: small positive reals
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_gm_min_phase_speed" type="real"
+	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
+minimum allowed phase speed for spatially variable computation
+
+Valid values: small positive reals
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_use_Redi_surface_layer_tapering" type="logical"
 	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
 If true, the Redi K33 vertical mixing is limited in and just below the ocean boundary layer.

@@ -830,6 +830,12 @@ def buildnml(case, caseroot, compname):
         if not ocn_grid.startswith("oRRS1"):
             lines.append('    <var name="normalGMBolusVelocity"/>')
             lines.append('    <var name="vertGMBolusVelocityTop"/>')
+            lines.append('    <var name="GMBolusVelocityZonal"/>')
+            lines.append('    <var name="GMBolusVelocityMeridional"/>')
+            lines.append('    <var name="kappaGM3D"/>')
+            lines.append('    <var name="cGMphaseSpeed"/>')
+            lines.append('    <var name="velocityZonalTimesTemperature_GM"/>')
+            lines.append('    <var name="velocityMeridionalTimesTemperature_GM"/>')
 
         lines.append('    <var_struct name="tracersSurfaceFlux"/>')
         lines.append('    <var name="penetrativeTemperatureFlux"/>')
