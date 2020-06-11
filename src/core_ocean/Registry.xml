@@ -2490,19 +2490,19 @@
     />
 		<var name="kappaGMCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="NA"
 			description="spatially and depth varying GM kappa"
-			packages="forwardMode;analysisMode"
+			packages="gm"
 		/>
     <var name="kappaRediCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="NA"
 			description="spatially and depth varying GM kappa"
-			packages="forwardMode;analysisMode"
+			packages="gm"
 		/>
 		<var name="kappaRediSfcTaper" type="real" dimensions="nVertLevelsP1 nCells Time" units="NA"
 			description="spatially and depth varying Redi kappa"
-			packages="forwardMode;analysisMode"
+			packages="gm"
 		/>
 		<var name="rediLimiterCount" type="integer" dimensions="nVertLevels nCells Time" units="NA"
 			description="count of times redi limiter is invoked on a timestep"
-			packages="forwardMode;analysisMode"
+			packages="gm"
 		/>
 		<var name="GMBolusVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, x-direction"
