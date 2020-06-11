@@ -1011,7 +1011,7 @@ pure function compute_tke_srf_flux_term(shcol, uw_sfc, vw_sfc) result(wtke_flux)
      uw           = uw_sfc(i)
      vw           = vw_sfc(i)
      !ustar        = max(sqrt(sqrt(uw**2._rtype + vw**2._rtype)),ustarmin)
-     ustar        =max(sqrt(sqrt(uw**2 + vw**2)),ustarmin)
+     ustar        =max(sqrt(sqrt(uw**2._rtype + vw**2._rtype)),ustarmin)
      wtke_flux(i) = ustar**3
   enddo
 
