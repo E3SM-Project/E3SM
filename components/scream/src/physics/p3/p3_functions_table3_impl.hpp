@@ -35,7 +35,7 @@ void Functions<S,D>
       t.dumii[s] = dumii;
     }
   }
-  const auto dum1_gte = context && ! dum1_lt;
+  const auto dum1_gte = context && !dum1_lt;
   if (dum1_gte.any()) {
     scream_masked_loop(dum1_gte, s) {
       const auto inv_dum3 = C::THIRD * sp(0.1);

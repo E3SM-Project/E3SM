@@ -14,13 +14,14 @@ namespace p3 {
 template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::calc_liq_relaxation_timescale(const view_2d_table& revap_table,
-                                const Spack& rho, const Scalar& f1r, const Scalar& f2r,
-                                const Spack& dv, const Spack& mu, const Spack& sc,
-                                const Spack& mu_r, const Spack& lamr, const Spack& cdistr,
-                                const Spack& cdist, const Spack& qr_incld, const Spack& qc_incld,
-                                Spack& epsr, Spack& epsc,
-                                const Smask& context)
+::calc_liq_relaxation_timescale(
+  const view_2d_table& revap_table,
+  const Spack& rho, const Scalar& f1r, const Scalar& f2r,
+  const Spack& dv, const Spack& mu, const Spack& sc,
+  const Spack& mu_r, const Spack& lamr, const Spack& cdistr,
+  const Spack& cdist, const Spack& qr_incld, const Spack& qc_incld,
+  Spack& epsr, Spack& epsc,
+  const Smask& context)
 {
   constexpr Scalar qsmall = C::QSMALL;
   constexpr Scalar pi = C::Pi;

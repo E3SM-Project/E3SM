@@ -14,16 +14,17 @@ namespace p3 {
 template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::calc_rime_density(const Spack& t, const Spack& rhofaci,
-                    const Spack& f1pr02, const Spack& acn,
-                    const Spack& lamc, const Spack& mu_c,
-                    const Spack& qc_incld, const Spack& qccol,
-                    Spack& vtrmi1, Spack& rhorime_c,
-                    const Smask& context)
+::calc_rime_density(
+  const Spack& t, const Spack& rhofaci,
+  const Spack& f1pr02, const Spack& acn,
+  const Spack& lamc, const Spack& mu_c,
+  const Spack& qc_incld, const Spack& qccol,
+  Spack& vtrmi1, Spack& rhorime_c,
+  const Smask& context)
 {
-  constexpr Scalar qsmall = C::QSMALL;
+  constexpr Scalar qsmall   = C::QSMALL;
   constexpr Scalar ZeroDegC = C::ZeroDegC;
-  constexpr Scalar bcn = C::bcn;
+  constexpr Scalar bcn      = C::bcn;
 
   const auto qccol_not_small_and_t_freezing = (qccol >= qsmall) &&
                                               (t < ZeroDegC) && context;

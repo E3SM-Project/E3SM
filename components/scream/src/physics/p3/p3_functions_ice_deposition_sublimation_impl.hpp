@@ -18,7 +18,7 @@ void Functions<S,D>
 {
   constexpr Scalar QSMALL   = C::QSMALL;
   constexpr Scalar ZERODEGC = C::ZeroDegC;
-  const auto oabi           = sp(1.0)/abi;
+  const auto oabi           = 1 / abi;
 
   const auto qitot_incld_not_small = qitot_incld >= QSMALL && context;
   const auto qitot_incld_small     = qitot_incld < QSMALL  && context;

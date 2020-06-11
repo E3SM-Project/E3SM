@@ -10,10 +10,11 @@ namespace p3 {
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::get_time_space_phys_variables(const Spack& t, const Spack& pres, const Spack& rho, const Spack& xxlv, const Spack& xxls,
-				const Spack& qvs, const Spack& qvi, Spack& mu, Spack& dv, Spack& sc, Spack& dqsdt,
-				Spack& dqsidt, Spack& ab, Spack& abi, Spack& kap, Spack& eii,
-                                const Smask& context)
+::get_time_space_phys_variables(
+  const Spack& t, const Spack& pres, const Spack& rho, const Spack& xxlv, const Spack& xxls,
+  const Spack& qvs, const Spack& qvi, Spack& mu, Spack& dv, Spack& sc, Spack& dqsdt,
+  Spack& dqsidt, Spack& ab, Spack& abi, Spack& kap, Spack& eii,
+  const Smask& context)
 {
   //time/space varying physical variables
   mu.set(context, sp(1.496e-6) * pow(t,sp(1.5))/(t+120));

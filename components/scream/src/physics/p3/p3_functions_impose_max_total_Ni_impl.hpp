@@ -9,8 +9,9 @@ namespace p3 {
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::impose_max_total_Ni(Spack& nitot_local, const Scalar& max_total_Ni, const Spack& inv_rho_local,
-                      const Smask& context)
+::impose_max_total_Ni(
+  Spack& nitot_local, const Scalar& max_total_Ni, const Spack& inv_rho_local,
+  const Smask& context)
 {
   //--------------------------------------------------------------------------------
   // Impose maximum total ice number concentration (total of all ice categories).

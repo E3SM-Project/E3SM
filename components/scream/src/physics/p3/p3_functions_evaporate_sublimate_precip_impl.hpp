@@ -10,10 +10,11 @@ namespace p3 {
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::evaporate_sublimate_precip(const Spack& qr_incld, const Spack& qc_incld, const Spack& nr_incld, const Spack& qitot_incld,
-			     const Spack& lcldm, const Spack& rcldm, const Spack& qvs, const Spack& ab, const Spack& epsr,
-			     const Spack& qv, Spack& qrevp, Spack& nrevp,
-                             const Smask& context)
+::evaporate_sublimate_precip(
+  const Spack& qr_incld, const Spack& qc_incld, const Spack& nr_incld, const Spack& qitot_incld,
+  const Spack& lcldm, const Spack& rcldm, const Spack& qvs, const Spack& ab, const Spack& epsr,
+  const Spack& qv, Spack& qrevp, Spack& nrevp,
+  const Smask& context)
 {
   /* It is assumed that macrophysics handles condensation/evaporation of qc and
      that there is no condensation of rain. Thus qccon, qrcon and qcevp have
@@ -29,7 +30,7 @@ void Functions<S,D>
 
   Spack cld;
   cld.set(set_cld_zero, 0);
-  cld.set(!set_cld_zero && context,lcldm);
+  cld.set(!set_cld_zero && context, lcldm);
 
   //Only calculate if there is some rain fraction > cloud fraction
   qrevp = 0;

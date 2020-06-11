@@ -9,15 +9,16 @@ namespace p3 {
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::ice_cldliq_collection(const Spack& rho, const Spack& temp,
-                        const Spack& rhofaci, const Spack& f1pr04,
-                        const Spack& qitot_incld, const Spack& qc_incld,
-                        const Spack& nitot_incld, const Spack& nc_incld,
-                        Spack& qccol, Spack& nccol, Spack& qcshd, Spack& ncshdc,
-                        const Smask& context)
+::ice_cldliq_collection(
+  const Spack& rho, const Spack& temp,
+  const Spack& rhofaci, const Spack& f1pr04,
+  const Spack& qitot_incld, const Spack& qc_incld,
+  const Spack& nitot_incld, const Spack& nc_incld,
+  Spack& qccol, Spack& nccol, Spack& qcshd, Spack& ncshdc,
+  const Smask& context)
 {
   constexpr Scalar qsmall = C::QSMALL;
-  constexpr Scalar tmelt = C::Tmelt;
+  constexpr Scalar tmelt  = C::Tmelt;
 
   // set up masks
   const auto t_is_negative        = temp < tmelt;
@@ -44,13 +45,14 @@ void Functions<S,D>
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::ice_rain_collection(const Spack& rho, const Spack& temp,
-                      const Spack& rhofaci, const Spack& logn0r,
-                      const Spack& f1pr07, const Spack& f1pr08,
-                      const Spack& qitot_incld, const Spack& nitot_incld,
-                      const Spack& qr_incld,
-                      Spack& qrcol, Spack& nrcol,
-                      const Smask& context)
+::ice_rain_collection(
+  const Spack& rho, const Spack& temp,
+  const Spack& rhofaci, const Spack& logn0r,
+  const Spack& f1pr07, const Spack& f1pr08,
+  const Spack& qitot_incld, const Spack& nitot_incld,
+  const Spack& qr_incld,
+  Spack& qrcol, Spack& nrcol,
+  const Smask& context)
 {
   constexpr Scalar qsmall = C::QSMALL;
   constexpr Scalar tmelt  = C::Tmelt;
@@ -85,11 +87,12 @@ void Functions<S,D>
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::ice_self_collection(const Spack& rho, const Spack& rhofaci,
-                      const Spack& f1pr03, const Spack& eii,
-                      const Spack& qirim_incld, const Spack& qitot_incld,
-                      const Spack& nitot_incld, Spack& nislf,
-                      const Smask& context)
+::ice_self_collection(
+  const Spack& rho, const Spack& rhofaci,
+  const Spack& f1pr03, const Spack& eii,
+  const Spack& qirim_incld, const Spack& qitot_incld,
+  const Spack& nitot_incld, Spack& nislf,
+  const Smask& context)
 {
   constexpr Scalar qsmall = C::QSMALL;
   constexpr Scalar zero = C::ZERO;

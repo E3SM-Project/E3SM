@@ -14,19 +14,20 @@ namespace p3 {
 template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::back_to_cell_average(const Spack& lcldm, const Spack& rcldm,
-                       const Spack& icldm, Spack& qcacc, Spack& qrevp,
-                       Spack& qcaut, Spack& ncacc, Spack& ncslf,
-                       Spack& ncautc, Spack& nrslf, Spack& nrevp,
-                       Spack& ncautr,
-                       Spack& qisub, Spack& nrshdr, Spack& qcheti,
-                       Spack& qrcol, Spack& qcshd, Spack& qimlt,
-                       Spack& qccol, Spack& qrheti, Spack& nimlt,
-                       Spack& nccol, Spack& ncshdc, Spack& ncheti,
-                       Spack& nrcol, Spack& nislf, Spack& qidep,
-                       Spack& nrheti, Spack& nisub, Spack& qinuc,
-                       Spack& ninuc, Spack& qiberg,
-                       const Smask& context)
+::back_to_cell_average(
+  const Spack& lcldm, const Spack& rcldm,
+  const Spack& icldm, Spack& qcacc, Spack& qrevp,
+  Spack& qcaut, Spack& ncacc, Spack& ncslf,
+  Spack& ncautc, Spack& nrslf, Spack& nrevp,
+  Spack& ncautr,
+  Spack& qisub, Spack& nrshdr, Spack& qcheti,
+  Spack& qrcol, Spack& qcshd, Spack& qimlt,
+  Spack& qccol, Spack& qrheti, Spack& nimlt,
+  Spack& nccol, Spack& ncshdc, Spack& ncheti,
+  Spack& nrcol, Spack& nislf, Spack& qidep,
+  Spack& nrheti, Spack& nisub, Spack& qinuc,
+  Spack& ninuc, Spack& qiberg,
+  const Smask& context)
 {
   Spack ir_cldm, il_cldm, lr_cldm;
   ir_cldm = min(icldm,rcldm); // Intersection of ICE and RAIN cloud

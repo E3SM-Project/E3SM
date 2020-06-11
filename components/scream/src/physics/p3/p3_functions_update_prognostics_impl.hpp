@@ -9,18 +9,19 @@ namespace p3 {
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::update_prognostic_ice(const Spack& qcheti,      const Spack& qccol,  const Spack& qcshd,     const Spack& nccol,
-                        const Spack& ncheti,      const Spack& ncshdc, const Spack& qrcol,     const Spack& nrcol,
-                        const Spack& qrheti,      const Spack& nrheti, const Spack& nrshdr,    const Spack& qimlt,
-                        const Spack& nimlt,       const Spack& qisub,  const Spack& qidep,     const Spack& qinuc,
-                        const Spack& ninuc,       const Spack& nislf,  const Spack& nisub,     const Spack& qiberg,
-                        const Spack& exner,       const Spack& xxls,   const Spack& xlf,       const bool log_predictNc,
-                        const Smask& log_wetgrowth, const Scalar dt,  const Scalar& nmltratio, const Spack& rhorime_c,
-                        Spack& th, Spack& qv, Spack& qitot, Spack& nitot, Spack& qirim, Spack& birim, Spack& qc,
-                        Spack& nc, Spack& qr, Spack& nr,
-                        const Smask& context)
+::update_prognostic_ice(
+  const Spack& qcheti,      const Spack& qccol,  const Spack& qcshd,     const Spack& nccol,
+  const Spack& ncheti,      const Spack& ncshdc, const Spack& qrcol,     const Spack& nrcol,
+  const Spack& qrheti,      const Spack& nrheti, const Spack& nrshdr,    const Spack& qimlt,
+  const Spack& nimlt,       const Spack& qisub,  const Spack& qidep,     const Spack& qinuc,
+  const Spack& ninuc,       const Spack& nislf,  const Spack& nisub,     const Spack& qiberg,
+  const Spack& exner,       const Spack& xxls,   const Spack& xlf,       const bool log_predictNc,
+  const Smask& log_wetgrowth, const Scalar dt,  const Scalar& nmltratio, const Spack& rhorime_c,
+  Spack& th, Spack& qv, Spack& qitot, Spack& nitot, Spack& qirim, Spack& birim, Spack& qc,
+  Spack& nc, Spack& qr, Spack& nr,
+  const Smask& context)
 {
-  constexpr Scalar QSMALL    = C::QSMALL;
+  constexpr Scalar QSMALL          = C::QSMALL;
   constexpr Scalar INV_RHO_RIMEMAX = C::INV_RHO_RIMEMAX;
 
   qc.set(context, qc + (-qcheti-qccol-qcshd-qiberg)*dt);
@@ -79,16 +80,16 @@ void Functions<S,D>
                                 (qrcol + qccol + qcheti + qrheti - qimlt + qiberg) * xlf * INV_CP) * dt);
 }
 
-
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::update_prognostic_liquid(const Spack& qcacc, const Spack& ncacc,
-			   const Spack& qcaut,const Spack& ncautc, const Spack& ncautr,
-			   const Spack& ncslf, const Spack& qrevp, const Spack& nrevp, const Spack& nrslf,
-			   const bool log_predictNc, const Spack& inv_rho, const Spack& exner, const Spack& xxlv,
-			   const Scalar dt, Spack& th, Spack& qv, Spack& qc, Spack& nc, Spack& qr, Spack& nr,
-                           const Smask& context)
+::update_prognostic_liquid(
+  const Spack& qcacc, const Spack& ncacc,
+  const Spack& qcaut,const Spack& ncautc, const Spack& ncautr,
+  const Spack& ncslf, const Spack& qrevp, const Spack& nrevp, const Spack& nrslf,
+  const bool log_predictNc, const Spack& inv_rho, const Spack& exner, const Spack& xxlv,
+  const Scalar dt, Spack& th, Spack& qv, Spack& qc, Spack& nc, Spack& qr, Spack& nr,
+  const Smask& context)
 {
   constexpr Scalar NCCNST = C::NCCNST;
   constexpr int IPARAM    = C::IPARAM;

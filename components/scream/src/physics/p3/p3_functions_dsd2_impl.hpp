@@ -13,14 +13,16 @@ namespace p3 {
 
 template <typename S, typename D>
 void Functions<S,D>::
-get_cloud_dsd2(const Spack& qc, Spack& nc, Spack& mu_c, const Spack& rho, Spack& nu,
-               const view_dnu_table& dnu, Spack& lamc, Spack& cdist, Spack& cdist1, const Spack& lcldm, const Smask& context)
+get_cloud_dsd2(
+  const Spack& qc, Spack& nc, Spack& mu_c, const Spack& rho, Spack& nu,
+  const view_dnu_table& dnu, Spack& lamc, Spack& cdist, Spack& cdist1, const Spack& lcldm,
+  const Smask& context)
 {
-  lamc.set(context, 0);
-  cdist.set(context, 0);
-  cdist1.set(context, 0);
-  nu.set(context, 0);
-  mu_c.set(context, 0);
+  lamc.set(context   , 0);
+  cdist.set(context  , 0);
+  cdist1.set(context , 0);
+  nu.set(context     , 0);
+  mu_c.set(context   , 0);
 
   constexpr Scalar qsmall = C::QSMALL;
   const auto qc_gt_small = qc >= qsmall && context;
@@ -71,15 +73,15 @@ get_cloud_dsd2(const Spack& qc, Spack& nc, Spack& mu_c, const Spack& rho, Spack&
 template <typename S, typename D>
 void Functions<S,D>::
 get_rain_dsd2 (
-    const Spack& qr, Spack& nr, Spack& mu_r,
-    Spack& lamr, Spack& cdistr, Spack& logn0r, const Spack& rcldm,
-    const Smask& context)
+  const Spack& qr, Spack& nr, Spack& mu_r,
+  Spack& lamr, Spack& cdistr, Spack& logn0r, const Spack& rcldm,
+  const Smask& context)
 {
   constexpr auto nsmall = C::NSMALL;
   constexpr auto qsmall = C::QSMALL;
   constexpr auto cons1  = C::CONS1;
 
-  lamr.set(context, 0);
+  lamr.set(context  , 0);
   cdistr.set(context, 0);
   logn0r.set(context, 0);
 
