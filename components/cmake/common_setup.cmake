@@ -259,6 +259,7 @@ endif()
 if (COMP_INTERFACE STREQUAL "moab")
   if (MOAB_PATH)
     set(CPPDEFS "${CPPDEFS} -DHAVE_MOAB")
+    set(USE_CXX TRUE)
     if (NOT INC_MOAB)
       set(INC_MOAB ${MOAB_PATH}/include)
     endif()
@@ -446,7 +447,7 @@ endif()
 
 # Add MOAB libraries.
 if (COMP_INTERFACE STREQUAL "moab")
-  set(SLIBS "${SLIBS} ${IMESH_LIBRARIES} -lTempestRemap -lstdc++")
+  set(SLIBS "${SLIBS} ${IMESH_LIBRARIES}")
 endif()
 
 # Add libraries and flags that we need on the link line when C++ code is included
