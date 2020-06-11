@@ -541,7 +541,7 @@ contains
          if(config_Redi_set_RediKappa_to_GMKappa) then
             !$omp do schedule(runtime)
             do iEdge = 1, nEdges
-               RediKappa(iEdge) = gmBolusKappa(iEdge)
+               RediKappa(iEdge) = gmResolutionTaper(iEdge)*gmBolusKappa(iEdge)
             end do
             !$omp end do
          endif
@@ -744,12 +744,12 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
-      real(kind=RKIND) :: avgCellDiameter, sqrtPiInv, sphereRadius
+      real(kind=RKIND) :: sphereRadius
 
       type(block_type), pointer :: block
       type(mpas_pool_type), pointer :: meshPool
       type(mpas_pool_type), pointer :: diagnosticsPool
-      real(kind=RKIND), dimension(:), pointer :: areaCell
+      real(kind=RKIND), dimension(:), pointer :: dcEdge 
 
       integer :: iEdge
       integer, pointer :: nEdges
@@ -771,7 +771,7 @@ contains
          call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(diagnosticsPool, 'gmBolusKappa', gmBolusKappa)
-         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+         call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
          call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
          call mpas_pool_get_array(diagnosticsPool, 'gmResolutionTaper', gmResolutionTaper)
          if (config_Redi_use_slope_taper) then
@@ -844,18 +844,16 @@ contains
             !$omp end do
             ! Nothing to do, as we just keep the same assignment as above.
          else if (config_eddying_resolution_taper == 'ramp') then
-            sqrtPiInv = 1.0_RKIND/sqrt(pii)
-            !$omp do schedule(runtime) private( avgCellDiameter)
+            !$omp do schedule(runtime) 
             do iEdge = 1, nEdges
-               avgCellDiameter = sqrtPiInv*(sqrt(areaCell(cellsOnEdge(1, iEdge))) + sqrt(areaCell(cellsOnEdge(2, iEdge))))
-               if (avgCellDiameter <= config_eddying_resolution_ramp_min) then
+               if (dcEdge(iEdge) <= config_eddying_resolution_ramp_min) then
                   gmResolutionTaper(iEdge) = 0.0_RKIND
-               else if (avgCellDiameter >= config_eddying_resolution_ramp_max) then
+               else if (dcEdge(iEdge) >= config_eddying_resolution_ramp_max) then
                   gmResolutionTaper(iEdge) = 1.0_RKIND 
                else
-                  gmResolutionTaper(iEdge) = gmResolutionTaper(iEdge) &
+                  gmResolutionTaper(iEdge) = 1.0_RKIND &
                                         /(config_eddying_resolution_ramp_max - config_eddying_resolution_ramp_min) &
-                                        *(avgCellDiameter - config_eddying_resolution_ramp_min)
+                                        *(dcEdge(iEdge) - config_eddying_resolution_ramp_min)
                end if
             end do
             !$omp end do
