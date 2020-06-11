@@ -1184,56 +1184,6 @@
 					possible_values="'linear_x', 'linear_y', 'linear_arb_rot', 'power_x', 'power_y', 'power_arb_rot', 'sin_arb_rot', 'sph_solid_body', 'sph_Williamson', 'sph_uCosCos', 'sph_vCosCos', 'sph_ELonLon_CosCos', 'sph_ELatLat_CosCos', 'sph_ELonLat_CosCos'"
 		/>
 	</nml_record>
-	<nml_record name="constrain_Haney_number" mode="init">
-		<nml_option name="config_use_rx1_constraint" type="logical" default_value=".false." units="unitless"
-					description="Initialize using Haney number constraint under ice shelves"
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_rx1_outer_iter_count" type="integer" default_value="20" units="unitless"
-					description="The number of outer iterations (first smoothing then rx1 constraint) during initialization of the vertical grid."
-					possible_values="any positive integer"
-		/>
-		<nml_option name="config_rx1_inner_iter_count" type="integer" default_value="10" units="unitless"
-					description="The number of iterations used to constrain rx1 in each layer."
-					possible_values="any positive integer"
-		/>
-		<nml_option name="config_rx1_init_inner_weight" type="real" default_value="0.1" units="unitless"
-					description="The weight by which layer thicknesses are altered at the beginning of inner iteration. This weight linearly increases to 1.0 by the final iteration."
-					possible_values="a positive value less than or equal to 1"
-		/>
-		<nml_option name="config_rx1_max" type="real" default_value="5.0" units="unitless"
-					description="The maximum value rx1Max of the Haney number (rx1) after modification of the vertical grid"
-					possible_values="any positive value, typically greater than or equal to 1"
-		/>
-		<nml_option name="config_rx1_horiz_smooth_weight" type="real" default_value="1.0" units="unitless"
-					description="Relative weight of horizontal neighbors compared to this cell when smoothing vertical stretching"
-					possible_values="A non-negative number"
-		/>
-		<nml_option name="config_rx1_vert_smooth_weight" type="real" default_value="1.0" units="unitless"
-					description="Relative weight of vertical neighbors compared to this cell when smoothing vertical stretching"
-					possible_values="A non-negative number"
-		/>
-		<nml_option name="config_rx1_slope_weight" type="real" default_value="1e-1" units="unitless"
-					description="Weight used to nudge level interfaces toward being flat (thus decreasing the Haney number)"
-					possible_values="A non-negative number"
-		/>
-		<nml_option name="config_rx1_zstar_weight" type="real" default_value="1.0" units="unitless"
-					description="Weight used to nudge vertical stretching toward z-star during each outer iteration"
-					possible_values="A non-negative number"
-		/>
-		<nml_option name="config_rx1_horiz_smooth_open_ocean_cells" type="integer" default_value="20" units="unitless"
-					description="The size (in cells) of a buffer region around land ice for smoothing.  Smoothing is performed under land ice and in the buffer region of open ocean."
-					possible_values="any non-negative integer, 0 indiates no buffer region."
-		/>
-		<nml_option name="config_rx1_min_levels" type="integer" default_value="3" units="unitless"
-					description="The minimum number of layers in the ocean column in the smoothed region."
-					possible_values="a positive integer"
-		/>
-		<nml_option name="config_rx1_min_layer_thickness" type="real" default_value="1.0" units="m"
-					description="The minimum layer thickness in the smoothed region."
-					possible_values="an positive value"
-		/>
-	</nml_record>
 	<packages>
 		<package name="timeVaryingAtmosphericForcingPKG" description="This package includes variables required for time varying atmospheric forcing"/>
 		<package name="timeVaryingLandIceForcingPKG" description="This package includes variavles required for time varying land-ice forcing"/>
@@ -2198,6 +2148,14 @@
 		<var name="temperatureShortWaveTendency" dimensions="nVertLevels nCells Time" units="degrees Celsius per second" packages="tracerBudget" name_in_code="temperatureShortWaveTendency" type="real"
 				 description="potential temperature tendency due to penetrating shortwave"
 		/>
+		<var_array name="activeTracerHorMixTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
+			<var name="temperatureHorMixTendency" array_group="activeTracerHmixTendGroup" units="degrees Celsius per second" name_in_code="temperatureHorMixTendency"
+				description="potential temperature tendency due to horizontal mixing (including Redi)"
+			/>
+			<var name="salinityHorMixTendency" array_group="activeTracerHmixTendGroup" units="PSU per second" name_in_code="salinityHorMixTendency"
+				description="salinity tendency due to horizontal mixing (including Redi)"
+			/>
+		</var_array>
 		<var_array name="activeTracerNonLocalTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
 			  <var name="temperatureNonLocalTendency" array_group="activeTracerNLTendGroup" units="degrees Celsius per second" name_in_code="temperatureNonLocalTendency"
 				 description="potential temperature tendency due to kpp non-local flux"

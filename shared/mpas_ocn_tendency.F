@@ -504,9 +504,10 @@ contains
       real (kind=RKIND), dimension(:,:,:), pointer :: tracerGroupInteriorRestoringRate, tracerGroupInteriorRestoringValue
 
       real (kind=RKIND), dimension(:,:,:), pointer :: &
-        slopeTriadUp, slopeTriadDown, &
+        slopeTriadUp, slopeTriadDown,                 &
         activeTracerSurfaceFluxTendency,              &
-        activeTracerNonLocalTendency,    &
+        activeTracerNonLocalTendency,                 &
+        activeTracerHorMixTendency,                   &
         kappaRediEdge
 
       real (kind=RKIND), dimension(:,:), pointer :: &
@@ -596,6 +597,7 @@ contains
          call mpas_pool_get_array(diagnosticsPool,'activeTracerSurfaceFluxTendency',activeTracerSurfaceFluxTendency)
          call mpas_pool_get_array(diagnosticsPool,'temperatureShortWaveTendency',temperatureShortWaveTendency)
          call mpas_pool_get_array(diagnosticsPool,'activeTracerNonLocalTendency',activeTracerNonLocalTendency)
+         call mpas_pool_get_array(diagnosticsPool,'activeTracerHorMixTendency',activeTracerHorMixTendency)
       endif
 
       if(config_disable_tr_all_tend) return
@@ -873,11 +875,32 @@ contains
                !
 
                isActiveTracer = .false.
-               if(trim(groupItr % memberName)=='activeTracers') isActiveTracer = .true.
+               if(trim(groupItr % memberName)=='activeTracers') then
+                 isActiveTracer = .true.
+                 if (config_compute_active_tracer_budgets) then
+                    !$omp do schedule(runtime)
+                    do iCell = 1, nCells
+                      activeTracerHorMixTendency(:,:,iCell) = tracerGroupTend(:,:,iCell)
+                    enddo
+                    !$omp end do
+                 endif
+               endif
                call ocn_tracer_hmix_tend(meshPool, scratchPool, layerThicknessEdge, layerThickness, zMid, tracerGroup, &
                                          RediKappa, slopeTriadUp, slopeTriadDown, dt, isActiveTracer, &
                                          kappaRediSfcTaper, kappaGMCell, rediLimiterCount, tracerGroupTend, err)
 
+               if(trim(groupItr % memberName)=='activeTracers') then
+                 isActiveTracer = .true.
+                 if (config_compute_active_tracer_budgets) then
+                    !$omp do schedule(runtime)
+                    do iCell = 1, nCells
+                      activeTracerHorMixTendency(:,:,iCell) = tracerGroupTend(:,:,iCell) - &
+                                  activeTracerHorMixTendency(:,:,iCell)
+                    enddo
+                    !$omp end do
+                 endif
+               endif
+ 
                !
                ! convert the surface tracer flux into a tracer tendency by distributing the flux across some number
                ! of surface layers
