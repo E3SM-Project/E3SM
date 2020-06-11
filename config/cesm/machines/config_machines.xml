@@ -357,8 +357,6 @@ This allows using a different mpirun command to launch unit tests
     <NODENAME_REGEX>casper*</NODENAME_REGEX>
     <!-- MPT sometimes timesout at model start time, the next two lines cause
     case_run.py to detect the timeout and retry FORCE_SPARE_NODES times -->
-    <MPIRUN_RETRY_REGEX>openmpi: Launcher network accept (MPI_LAUNCH_TIMEOUT) timed out</MPIRUN_RETRY_REGEX>
-    <MPIRUN_RETRY_COUNT>10</MPIRUN_RETRY_COUNT>
     <OS>LINUX</OS>
     <COMPILERS>pgi</COMPILERS>
     <MPILIBS compiler="pgi" >openmpi</MPILIBS>
@@ -369,7 +367,7 @@ This allows using a different mpirun command to launch unit tests
     <BASELINE_ROOT>$ENV{CESMDATAROOT}/cesm_baselines</BASELINE_ROOT>
     <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
-    <SUPPORTED_BY>cseg</SUPPORTED_BY>
+    <SUPPORTED_BY>CISL-STP</SUPPORTED_BY>
     <!-- have not seen any performance benefit in smt -->
     <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>36</MAX_MPITASKS_PER_NODE>
@@ -413,12 +411,12 @@ This allows using a different mpirun command to launch unit tests
         <command name="load">ncarcompilers/0.5.0</command>
       </modules>
     </module_system>
-    <environment_variables>
+    <environment_variables> 
       <env name="MODULEPATH">/glade/u/apps/dav/modulefiles/default/compilers:/glade/u/apps/dav/modulefiles/default/idep</env>
       <env name="OMP_STACKSIZE">256M</env>
       <env name="TMPDIR">/glade/scratch/$USER</env> 
       <env name="CESMDATAROOT">/glade/p/cesmdata/cseg</env>
-      <env name="NETCDF_PATH">/glade/u/apps/dav/opt/netcdf-mpi/4.7.3/openmpi/3.1.4/pgi/20.4</env>
+      <env name="NETCDF_PATH">$ENV{NETCDF}</env>
     </environment_variables> 
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>

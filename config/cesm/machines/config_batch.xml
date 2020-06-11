@@ -218,8 +218,7 @@
       <arg flag="-p" name="$JOB_QUEUE"/>
       <arg flag="--gres=gpu:v100:4"/>
       <arg flag="--account" name="$PROJECT"/>
-      <arg flag="--mem=0"/>
-      <arg flag="--export=MODULEPATH=/glade/u/apps/dav/modulefiles/default/compilers:/glade/u/apps/dav/modulefiles/default/idep"/>
+      <arg flag="--mem=0"/> 
     </submit_args>
     <queues>
       <queue nodemin="1" nodemax="96" default="true">dav</queue>
