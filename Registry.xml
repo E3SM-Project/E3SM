@@ -199,6 +199,14 @@
 					description="Global maximum of the mesh density"
 					possible_values="Any positive real number. If set any negative real number, config_maxMeshDensity is computed during the initialization of each simulation."
 		/>
+		<nml_option name="config_hmix_use_ref_cell_width" type="logical" default_value=".false." units="unitless"
+					description="If true, hmix coefficient values are set with reference to config_hmix_ref_cell_width. If false, hmix coefficient values are referenced to smallest gridcell in the mesh. The false setting is for backwards compatilibity. When false, hmix coefficient flags must be adjusted for every new mesh with a different minimum-sized cell."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_hmix_ref_cell_width" type="real" default_value="30.0e3" units="m"
+					description="Reference cell width. If config_hmix_use_ref_cell_width = .true., then hmix coefficients are set to be nu_{2h} = config_mom_del2*(cellWidth / config_hmix_use_ref_cell_width) and nu_{4h} = config_mom_del4*(cellWidth / config_hmix_use_ref_cell_width)^3 where cellWidth is the effective cell width computed as 2*sqrt(areaCell/pi). See Hoch et al 2020 JAMES eq 1,2. This relation applies within a simulation, but also generally among multiple simulations, so the parameters config_mom_del2, config_mom_del4, and config_hmix_use_ref_cell_width can generally remain at their standard values, and just be adjusted for fine tuning."
+					possible_values="Any positive real number, but typically a resolution number such as 30km."
+		/>
 		<nml_option name="config_apvm_scale_factor" type="real" default_value="0.0" units="unitless"
 					description="Anticipated potential vorticity (APV) method scale factor, $c_{apv}$. When zero, APV is off."
 					possible_values="Any non-negative number, typically between zero and one."
@@ -209,16 +217,16 @@
 					description="If true, Laplacian horizontal mixing is used on the momentum equation."
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_mom_del2" type="real" default_value="1.0e3" units="m^2 s^{-1}"
+					description="Horizontal viscosity, $\nu_{2h}$. If config_hmix_use_ref_cell_width = .true. then $\nu_h$ = config_mom_del2*(cellWidth / config_hmix_use_ref_cell_width). If config_hmix_use_ref_cell_width = .false. then it is referenced to the smallest cell."
+					possible_values="any positive real"
+		/>
 		<nml_option name="config_use_tracer_del2" type="logical" default_value=".false." units="unitless"
 					description="If true, Laplacian horizontal mixing is used on the tracer equation."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_mom_del2" type="real" default_value="10.0" units="m^2 s^{-1}"
-					description="Horizonal viscosity, $\nu_h$."
-					possible_values="any positive real"
-		/>
 		<nml_option name="config_tracer_del2" type="real" default_value="10.0" units="m^2 s^{-1}"
-					description="Horizonal diffusion, $\kappa_h$."
+					description="Horizontal diffusion, $\kappa_{2h}$. If config_hmix_use_ref_cell_width = .true. then $\kappa_h$ = config_tracer_del2*(cellWidth / config_hmix_use_ref_cell_width). If config_hmix_use_ref_cell_width = .false. then it is referenced to the smallest cell."
 					possible_values="any positive real"
 		/>
 	</nml_record>
@@ -227,20 +235,20 @@
 					description="If true, biharmonic horizontal mixing is used on the momentum equation."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_use_tracer_del4" type="logical" default_value=".false." units="unitless"
-					description="If true, biharmonic horizontal mixing is used on the tracer equation."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_mom_del4" type="real" default_value="5.0e13" units="m^4 s^{-1}"
-					description="Coefficient for horizontal biharmonic operator on momentum."
+		<nml_option name="config_mom_del4" type="real" default_value="1.2e11" units="m^4 s^{-1}"
+					description="Coefficient for horizontal biharmonic operator on momentum.  If config_hmix_use_ref_cell_width = .true. then $\nu_{4h}$ = config_mom_del4*(cellWidth / config_hmix_use_ref_cell_width)^3. If config_hmix_use_ref_cell_width = .false. then it is referenced to the smallest cell."
 					possible_values="any positive real"
 		/>
 		<nml_option name="config_mom_del4_div_factor" type="real" default_value="1.0" units="non-dimensional"
 					description="The divergence portion of the del4 operator is scaled by this factor."
 					possible_values="any positive real"
 		/>
+		<nml_option name="config_use_tracer_del4" type="logical" default_value=".false." units="unitless"
+					description="If true, biharmonic horizontal mixing is used on the tracer equation."
+					possible_values=".true. or .false."
+		/>
 		<nml_option name="config_tracer_del4" type="real" default_value="0.0" units="m^4 s^{-1}"
-					description="Coefficient for horizontal biharmonic operator on tracers."
+					description="Coefficient for horizontal biharmonic operator on tracers.  If config_hmix_use_ref_cell_width = .true. then $\nu_{4h}$ = config_tracer_del4*(cellWidth / config_hmix_use_ref_cell_width)^3. If config_hmix_use_ref_cell_width = .false. then it is referenced to the smallest cell."
 					possible_values="any positive real"
 		/>
 	</nml_record>
@@ -1052,7 +1060,7 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_highFreqThick_del2" type="real" default_value="100.0" units="m^2 s^{-1}"
-					description="Horizonal high frequency thickness diffusion, $\kappa_{hhf}$."
+					description="Horizontal high frequency thickness diffusion, $\kappa_{hhf}$."
 					possible_values="any positive real"
 		/>
 	</nml_record>
@@ -1182,56 +1190,6 @@
 		<nml_option name="config_tensor_test_function" type="character" default_value="sph_uCosCos" units="unitless"
 					description="Character string to choose tensor test fuction"
 					possible_values="'linear_x', 'linear_y', 'linear_arb_rot', 'power_x', 'power_y', 'power_arb_rot', 'sin_arb_rot', 'sph_solid_body', 'sph_Williamson', 'sph_uCosCos', 'sph_vCosCos', 'sph_ELonLon_CosCos', 'sph_ELatLat_CosCos', 'sph_ELonLat_CosCos'"
-		/>
-	</nml_record>
-	<nml_record name="constrain_Haney_number" mode="init">
-		<nml_option name="config_use_rx1_constraint" type="logical" default_value=".false." units="unitless"
-					description="Initialize using Haney number constraint under ice shelves"
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_rx1_outer_iter_count" type="integer" default_value="20" units="unitless"
-					description="The number of outer iterations (first smoothing then rx1 constraint) during initialization of the vertical grid."
-					possible_values="any positive integer"
-		/>
-		<nml_option name="config_rx1_inner_iter_count" type="integer" default_value="10" units="unitless"
-					description="The number of iterations used to constrain rx1 in each layer."
-					possible_values="any positive integer"
-		/>
-		<nml_option name="config_rx1_init_inner_weight" type="real" default_value="0.1" units="unitless"
-					description="The weight by which layer thicknesses are altered at the beginning of inner iteration. This weight linearly increases to 1.0 by the final iteration."
-					possible_values="a positive value less than or equal to 1"
-		/>
-		<nml_option name="config_rx1_max" type="real" default_value="5.0" units="unitless"
-					description="The maximum value rx1Max of the Haney number (rx1) after modification of the vertical grid"
-					possible_values="any positive value, typically greater than or equal to 1"
-		/>
-		<nml_option name="config_rx1_horiz_smooth_weight" type="real" default_value="1.0" units="unitless"
-					description="Relative weight of horizontal neighbors compared to this cell when smoothing vertical stretching"
-					possible_values="A non-negative number"
-		/>
-		<nml_option name="config_rx1_vert_smooth_weight" type="real" default_value="1.0" units="unitless"
-					description="Relative weight of vertical neighbors compared to this cell when smoothing vertical stretching"
-					possible_values="A non-negative number"
-		/>
-		<nml_option name="config_rx1_slope_weight" type="real" default_value="1e-1" units="unitless"
-					description="Weight used to nudge level interfaces toward being flat (thus decreasing the Haney number)"
-					possible_values="A non-negative number"
-		/>
-		<nml_option name="config_rx1_zstar_weight" type="real" default_value="1.0" units="unitless"
-					description="Weight used to nudge vertical stretching toward z-star during each outer iteration"
-					possible_values="A non-negative number"
-		/>
-		<nml_option name="config_rx1_horiz_smooth_open_ocean_cells" type="integer" default_value="20" units="unitless"
-					description="The size (in cells) of a buffer region around land ice for smoothing.  Smoothing is performed under land ice and in the buffer region of open ocean."
-					possible_values="any non-negative integer, 0 indiates no buffer region."
-		/>
-		<nml_option name="config_rx1_min_levels" type="integer" default_value="3" units="unitless"
-					description="The minimum number of layers in the ocean column in the smoothed region."
-					possible_values="a positive integer"
-		/>
-		<nml_option name="config_rx1_min_layer_thickness" type="real" default_value="1.0" units="m"
-					description="The minimum layer thickness in the smoothed region."
-					possible_values="an positive value"
 		/>
 	</nml_record>
 	<packages>
@@ -1832,7 +1790,7 @@
 
 	<var_struct name="state" time_levs="2">
 		<var name="normalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
-			 description="horizonal velocity, normal component to an edge"
+			 description="horizontal velocity, normal component to an edge"
 		/>
 		<var name="layerThickness" type="real" dimensions="nVertLevels nCells Time" units="m"
 			 description="layer thickness"
@@ -1963,9 +1921,6 @@
 		/>
 		<var name="meshScalingDel4" type="real" dimensions="nEdges" units="unitless"
 			 description="Coefficient to biharmonic mixing terms in momentum and tracer equations, so that biharmonic viscosity and diffusion coefficients scale with mesh."
-		/>
-		<var name="meshScaling" type="real" dimensions="nEdges" units="unitless"
-			 description="Coefficient used for mesh scaling, such as the Leith parameter."
 		/>
 		<var name="cellsOnEdge" type="integer" dimensions="TWO nEdges" units="unitless"
 			 description="List of cells that straddle each edge."
@@ -2198,6 +2153,14 @@
 		<var name="temperatureShortWaveTendency" dimensions="nVertLevels nCells Time" units="degrees Celsius per second" packages="tracerBudget" name_in_code="temperatureShortWaveTendency" type="real"
 				 description="potential temperature tendency due to penetrating shortwave"
 		/>
+		<var_array name="activeTracerHorMixTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
+			<var name="temperatureHorMixTendency" array_group="activeTracerHmixTendGroup" units="degrees Celsius per second" name_in_code="temperatureHorMixTendency"
+				description="potential temperature tendency due to horizontal mixing (including Redi)"
+			/>
+			<var name="salinityHorMixTendency" array_group="activeTracerHmixTendGroup" units="PSU per second" name_in_code="salinityHorMixTendency"
+				description="salinity tendency due to horizontal mixing (including Redi)"
+			/>
+		</var_array>
 		<var_array name="activeTracerNonLocalTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
 			  <var name="temperatureNonLocalTendency" array_group="activeTracerNLTendGroup" units="degrees Celsius per second" name_in_code="temperatureNonLocalTendency"
 				 description="potential temperature tendency due to kpp non-local flux"
@@ -2365,7 +2328,7 @@
 		/>
 
 		<var name="kineticEnergyCell" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-2}"
-			 description="kinetic energy of horizonal velocity on cells"
+			 description="kinetic energy of horizontal velocity on cells"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="viscosity" type="real" dimensions="nVertLevels nEdges Time" units="m^2 s^{-1}"
@@ -2373,7 +2336,7 @@
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="divergence" type="real" dimensions="nVertLevels nCells Time" units="s^{-1}"
-			 description="divergence of horizonal velocity"
+			 description="divergence of horizontal velocity"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="circulation" type="real" dimensions="nVertLevels nVertices Time" units="m^2 s^{-1}"
@@ -3150,12 +3113,12 @@
 		<var name="kineticEnergyVertex"
 			persistence="scratch"
 			type="real" dimensions="nVertLevels nVertices Time" units="m^2 s^{-2}"
-			description="kinetic energy of horizonal velocity defined at vertices"
+			description="kinetic energy of horizontal velocity defined at vertices"
 		/>
 		<var name="kineticEnergyVertexOnCells"
 			persistence="scratch"
 			type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-2}"
-			description="kinetic energy of horizonal velocity defined at vertices"
+			description="kinetic energy of horizontal velocity defined at vertices"
 		/>
 		<var name="densitySurfaceDisplaced"
 			persistence="scratch"
@@ -3177,12 +3140,12 @@
 		<var name="normalVelocityTest"
 			 persistence="scratch"
 			 type="real" dimensions="nVertLevels nEdges" units="m s^{-1}"
-			 description="horizonal velocity, normal component to an edge, for testing"
+			 description="horizontal velocity, normal component to an edge, for testing"
 		/>
 		<var name="tangentialVelocityTest"
 			 persistence="scratch"
 			 type="real" dimensions="nVertLevels nEdges" units="m s^{-1}"
-			 description="horizonal velocity, tangential component to an edge, for testing"
+			 description="horizontal velocity, tangential component to an edge, for testing"
 		/>
 		<var name="strainRateR3Cell"
 			 persistence="scratch"
