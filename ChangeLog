@@ -1,6 +1,38 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 6-8-2020
+Tag: cime5.8.25
+Answer Changes: None
+Tests: scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+    - Change grid alias for artic var-res grids.
+    - Couples HYCOM with data atmosphere for UFS HAFS application.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+e8dfe9356 Merge pull request #3566 from ESMCI/fischer/var_res_grids
+3d03e31f2 Merge pull request #3556 from ESMCI/ufs-hafs-app_updated_v2
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/config_grids.xml
+M       config/ufs/config_files.xml
+M       config/ufs/config_grids.xml
+M       config/ufs/machines/config_compilers.xml
+M       config/ufs/machines/config_machines.xml
+M       scripts/lib/CIME/XML/files.py
+M       scripts/lib/CIME/case/case.py
+M       src/components/data_comps_nuopc/datm/src/atm_comp_nuopc.F90
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 6-3-2020
 Tag: cime5.8.24
 Answer Changes: Round Off on izumi

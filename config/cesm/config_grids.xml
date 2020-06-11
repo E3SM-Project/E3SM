@@ -1093,14 +1093,14 @@
       <mask>tx0.1v2</mask>
     </model_grid>
 
-    <model_grid alias="ne0np4.ARCTIC.ne30x4_mt12" not_compset="_POP">
+    <model_grid alias="ne0ARCTICne30x4_ne0ARCTICne30x4_mt12" not_compset="_POP">
       <grid name="atm">ne0np4.ARCTIC.ne30x4</grid>
       <grid name="lnd">ne0np4.ARCTIC.ne30x4</grid>
       <grid name="ocnice">ne0np4.ARCTIC.ne30x4</grid>
       <mask>tx0.1v2</mask>
     </model_grid>
 
-    <model_grid alias="ne0np4.ARCTICGRIS.ne30x8_mt12" not_compset="_POP">
+    <model_grid alias="ne0ARCTICGRISne30x8_ne0ARCTICGRISne30x8_mt12" not_compset="_POP">
       <grid name="atm">ne0np4.ARCTICGRIS.ne30x8</grid>
       <grid name="lnd">ne0np4.ARCTICGRIS.ne30x8</grid>
       <grid name="ocnice">ne0np4.ARCTICGRIS.ne30x8</grid>

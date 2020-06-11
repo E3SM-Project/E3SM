@@ -18,8 +18,11 @@ class Grids(GenericXML):
             infile = files.get_value("GRIDS_SPEC_FILE")
         logger.debug(" Grid specification file is {}".format(infile))
         schema = files.get_schema("GRIDS_SPEC_FILE")
+        try:
+            GenericXML.__init__(self, infile, schema)
+        except:
+            expect(False, "Could not initialize Grids")
 
-        GenericXML.__init__(self, infile, schema)
         self._version = self.get_version()
 
         self._comp_gridnames = self._get_grid_names()
