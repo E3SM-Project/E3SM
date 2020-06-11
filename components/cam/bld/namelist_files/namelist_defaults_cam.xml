@@ -369,7 +369,7 @@
 <mam_pom  rad="rrtmgp">atm/cam/physprops/ocpho_rrtmg_c130709.nc</mam_pom>
 <mam_soa  rad="rrtmgp">atm/cam/physprops/ocphi_rrtmg_c100508.nc</mam_soa>
 <mam_bc   rad="rrtmgp">atm/cam/physprops/bcpho_rrtmg_c100508.nc</mam_bc>
-<mam_dst  rad="rrtmgp">atm/cam/physprops/dust4_rrtmg_c090521.nc</mam_dst>
+<mam_dst  rad="rrtmgp">atm/cam/physprops/dust_aeronet_rrtmg_c141106.nc</mam_dst>
 <mam_ncl  rad="rrtmgp">atm/cam/physprops/ssam_rrtmg_c100508.nc</mam_ncl>
 <mam_nh4  rad="rrtmgp">atm/cam/physprops/sulfate_rrtmg_c080918.nc</mam_nh4>
 
@@ -444,9 +444,9 @@
 <mam3_mode2_file rad="rrtmgp">atm/cam/physprops/mam3_mode2_rrtmg_c110318.nc</mam3_mode2_file>
 <mam3_mode3_file rad="rrtmgp">atm/cam/physprops/mam3_mode3_rrtmg_c110318.nc</mam3_mode3_file>
 
-<mam4_mode1_file rad="rrtmgp">atm/cam/physprops/mam4_mode1_rrtmg_c130628.nc</mam4_mode1_file>
+<mam4_mode1_file rad="rrtmgp">atm/cam/physprops/mam4_mode1_rrtmg_aeronetdust_c141106.nc</mam4_mode1_file>
 <mam4_mode2_file rad="rrtmgp">atm/cam/physprops/mam4_mode2_rrtmg_c130628.nc</mam4_mode2_file>
-<mam4_mode3_file rad="rrtmgp">atm/cam/physprops/mam4_mode3_rrtmg_c130628.nc</mam4_mode3_file>
+<mam4_mode3_file rad="rrtmgp">atm/cam/physprops/mam4_mode3_rrtmg_aeronetdust_c141106.nc</mam4_mode3_file>
 <mam4_mode4_file rad="rrtmgp">atm/cam/physprops/mam4_mode4_rrtmg_c130628.nc</mam4_mode4_file>
 
 <mam7_mode1_file rad="rrtmgp">atm/cam/physprops/mam7_mode1_rrtmg_c120904.nc</mam7_mode1_file>
@@ -1077,7 +1077,7 @@
 
 <!-- dust emission tuning factor -->
 <dust_emis_fact                                                         >2.76D0</dust_emis_fact>
-<dust_emis_fact          hgrid="ne30np4"   phys="cam5"                  >0.95D0</dust_emis_fact>
+<dust_emis_fact          hgrid="ne30np4"   phys="cam5"                  >1.38D0</dust_emis_fact>
 <dust_emis_fact          hgrid="ne120np4"  phys="cam5"                  >1.2D0</dust_emis_fact>
 
 <dust_emis_fact                                         chem="trop_bam"	>4.2D0 </dust_emis_fact>
