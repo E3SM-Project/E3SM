@@ -288,7 +288,6 @@ end subroutine restart_printopts
       use restart_physics,  only: read_restart_physics
       use restart_dynamics, only: read_restart_dynamics
       use chem_surfvals,    only: chem_surfvals_init
-      use phys_grid,        only: phys_grid_init
       use camsrfexch,       only: hub2atm_alloc, atm2hub_alloc
 #if (defined SPMD)
       use spmd_dyn,         only: spmdbuf
@@ -395,8 +394,6 @@ end subroutine restart_printopts
 
    call initcom ()
    call read_restart_dynamics(File, dyn_in, dyn_out, NLFileName)   
-
-   call phys_grid_init
 
    call hub2atm_alloc( cam_in )
    call atm2hub_alloc( cam_out )

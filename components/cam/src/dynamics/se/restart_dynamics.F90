@@ -379,7 +379,12 @@ CONTAINS
     use pio, only : file_desc_t, pio_global, pio_double, pio_offset_kind, &
          pio_get_att, pio_inq_dimid, pio_inq_dimlen, pio_initdecomp, pio_inq_varid, &
          pio_read_darray, pio_setframe, file_desc_t, io_desc_t, pio_double
-    use dyn_comp, only : dyn_init1, dyn_init2
+    use dyn_comp, only : dyn_init1, dyn_init2, frontgf_idx, frontga_idx
+    use phys_grid, only: phys_grid_init
+    use physpkg, only: phys_register
+    use phys_control, only: use_gw_front
+    use physics_buffer, only: pbuf_add_field, dtype_r8
+    use ppgrid, only: pcols, pver
     use dimensions_mod, only : nlev, nlevp, np, ne, nelemd, qsize_d
     use cam_abortutils,   only: endrun
     use namelist_mod, only: readnl
@@ -415,6 +420,21 @@ CONTAINS
 !is hy restart run from nh ok?
 
     call dyn_init1(file, NLFileName, dyn_in, dyn_out)
+
+    ! Define physics data structures
+    if(par%masterproc  ) write(iulog,*) 'Running phys_grid_init()'
+    call phys_grid_init()
+
+    ! Initialize index values for advected and non-advected tracers
+    call phys_register()
+
+    ! Frontogenesis indices
+    if (use_gw_front) then
+       call pbuf_add_field("FRONTGF", "global", dtype_r8, (/pcols,pver/), &
+            frontgf_idx)
+       call pbuf_add_field("FRONTGA", "global", dtype_r8, (/pcols,pver/), &
+            frontga_idx)
+    end if
 
    if (par%dynproc) then
     elem=>dyn_in%elem

@@ -91,7 +91,7 @@ module phys_grid
 !-----------------------------------------------------------------------
    use shr_kind_mod,     only: r8 => shr_kind_r8, r4 => shr_kind_r4
    use physconst,        only: pi
-   use ppgrid,           only: ppcols, pcols, pver, begchunk, endchunk
+   use ppgrid,           only: pcols, pver, begchunk, endchunk
 #if ( defined SPMD )
    use spmd_dyn,         only: block_buf_nrecs, chunk_buf_nrecs, &
                                local_dp_map
@@ -279,7 +279,10 @@ module phys_grid
 
 ! Physics fields data structure (chunk) first dimension:
    integer, private, parameter :: min_pcols = 1
-   integer, private, parameter :: def_pcols = ppcols               ! default 
+!pw   integer, private, parameter :: def_pcols = ppcols             ! default 
+!pw++
+   integer, private, parameter :: def_pcols = -1                 ! default 
+!pw--
 
 ! Physics grid decomposition options:  
 ! -1: each chunk is a dynamics block
@@ -677,7 +680,10 @@ contains
     allocate( gs_col_num(0:npes-1) )
     npchunks(:) = 0
     gs_col_num(:) = 0
-
+!pw++
+!pw temporary, for development purposes
+    pcols = 16
+!pw--
     !
     ! Option -1: each dynamics block is a single chunk
     !          
@@ -1557,16 +1563,16 @@ logical function phys_grid_initialized ()
         endif
 #else
         pcols = phys_chnk_fdim_in
-        if (pcols < min_pcols) then
-           if (masterproc) then
-              write(iulog,*)                                          &
-                 'PHYS_GRID_SETOPTS:  ERROR:  phys_chnk_fdim=', &
-                 phys_chnk_fdim_in,                             &
-                 '  is out of range.  It must be at least as large as ',      &
-                 min_pcols
-           endif
-           call endrun
-        endif
+!pw        if (pcols < min_pcols) then
+!pw           if (masterproc) then
+!pw              write(iulog,*)                                          &
+!pw                 'PHYS_GRID_SETOPTS:  ERROR:  phys_chnk_fdim=', &
+!pw                 phys_chnk_fdim_in,                             &
+!pw                 '  is out of range.  It must be at least as large as ',      &
+!pw                 min_pcols
+!pw           endif
+!pw           call endrun
+!pw        endif
 #endif
      endif
 !
