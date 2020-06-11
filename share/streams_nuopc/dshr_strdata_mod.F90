@@ -5,7 +5,7 @@ module dshr_strdata_mod
 
   use ESMF
 
-  use shr_kind_mod     , only : r8=>shr_kind_r8, cs=>shr_kind_cs, cl=>shr_kind_cl, cxx=>shr_kind_cxx, r4=>shr_kind_r4
+  use shr_kind_mod     , only : r8=>shr_kind_r8, cs=>shr_kind_cs, cl=>shr_kind_cl, cxx=>shr_kind_cxx, r4=>shr_kind_r4, i2=>shr_kind_I2
   use shr_sys_mod      , only : shr_sys_abort
   use shr_const_mod    , only : shr_const_pi, shr_const_cDay, shr_const_spval
   use shr_cal_mod      , only : shr_cal_calendarname, shr_cal_timeSet
@@ -19,7 +19,6 @@ module dshr_strdata_mod
   use dshr_stream_mod  , only : shr_stream_taxis_cycle, shr_stream_taxis_extend, shr_stream_findBounds
   use dshr_stream_mod  , only : shr_stream_getCurrFile, shr_stream_setCurrFile, shr_stream_getMeshFilename
   use dshr_stream_mod  , only : shr_stream_init_from_xml, shr_stream_init_from_inline
-!  use dshr_stream_mod  , only : shr_stream_restWrite, shr_stream_restRead
   use dshr_stream_mod  , only : shr_stream_getnextfilename, shr_stream_getprevfilename, shr_stream_getData
   use dshr_tinterp_mod , only : shr_tInterp_getCosz, shr_tInterp_getAvgCosz, shr_tInterp_getFactors
   use dshr_methods_mod , only : dshr_fldbun_getfldptr, dshr_fldbun_getfieldN, dshr_fldbun_fldchk, chkerr
@@ -32,7 +31,7 @@ module dshr_strdata_mod
   use pio              , only : pio_inq_dimlen, pio_inq_vartype, pio_inq_dimname
   use pio              , only : pio_double, pio_real, pio_int, pio_offset_kind
   use pio              , only : pio_read_darray, pio_setframe, pio_fill_double, pio_get_att
-  use pio              , only : PIO_BCAST_ERROR, PIO_RETURN_ERROR, PIO_NOERR, PIO_INTERNAL_ERROR
+  use pio              , only : PIO_BCAST_ERROR, PIO_RETURN_ERROR, PIO_NOERR, PIO_INTERNAL_ERROR, PIO_SHORT
   use perf_mod         , only : t_startf, t_stopf, t_adj_detailf
 
   implicit none
@@ -115,7 +114,6 @@ module dshr_strdata_mod
      real(r8), allocatable          :: tavCoszen(:)                    ! cosz t-interp data
   end type shr_strdata_type
 
-  integer          ,parameter :: iotype_std_netcdf = -99 ! non pio option
   real(r8)         ,parameter :: deg2rad = SHR_CONST_PI/180.0_r8
   character(*)     ,parameter :: u_FILE_u = &
        __FILE__
@@ -209,6 +207,7 @@ contains
 
   end subroutine shr_strdata_init_from_xml
 
+
   !===============================================================================
   subroutine shr_strdata_init_from_inline(sdat, my_task, logunit, compid, model_clock, model_mesh,&
        stream_meshfile, stream_filenames, stream_fldlistFile, stream_fldListModel, &
@@ -265,6 +264,7 @@ contains
   end subroutine shr_strdata_init_from_inline
 
   !===============================================================================
+
   subroutine shr_strdata_init_model_domain( sdat, rc)
 
     ! ----------------------------------------------
@@ -1182,6 +1182,9 @@ contains
     integer                       :: pio_iovartype
     real(r8), pointer             :: nv_coords(:), nu_coords(:), data_u_dst(:), data_v_dst(:)
     real(r8)                      :: lat, lon, sinlat, sinlon, coslat, coslon
+    real(r8)                      :: scale_factor, add_offset
+    integer(i2), allocatable      :: data_short(:)
+    integer(i2)                   :: fillvalue_i2
     character(CS)                 :: uname, vname
     character(*), parameter       :: subname = '(shr_strdata_readstrm) '
     character(*), parameter       :: F00   = "('(shr_strdata_readstrm) ',8a)"
@@ -1258,6 +1261,8 @@ contains
 
        if (pio_iovartype == PIO_REAL .and. .not. allocated(data_real)) then
           allocate(data_real(lsize))
+       else if(pio_iovartype == PIO_SHORT .and. .not. allocated(data_short)) then
+          allocate(data_short(lsize))
        endif
 
        handlefill = .false.
@@ -1266,6 +1271,16 @@ contains
           rcode = pio_get_att(pioid, varid, "_FillValue", fillvalue_r4)
        else if (pio_iovartype == PIO_DOUBLE) then
           rcode = pio_get_att(pioid, varid, "_FillValue", fillvalue_r8)
+       else if (pio_iovartype == PIO_SHORT) then
+          rcode = pio_get_att(pioid, varid, "scale_factor", scale_factor)
+          if(rcode /= PIO_NOERR) then
+             call shr_sys_abort('DATATYPE PIO_SHORT requires attributes scale_factor and add_offset')
+          endif
+          rcode = pio_get_att(pioid, varid, "add_offset", add_offset)
+          if(rcode /= PIO_NOERR) then
+             call shr_sys_abort('DATATYPE PIO_SHORT requires attributes scale_factor and add_offset')
+          endif
+          rcode = pio_get_att(pioid, varid, "_FillValue", fillvalue_i2)
        endif
        if(rcode == PIO_NOERR) handlefill=.true.
        call PIO_seterrorhandling(pioid, old_error_handle)
@@ -1304,8 +1319,26 @@ contains
                 endif
              enddo
           endif
+       elseif (pio_iovartype == PIO_SHORT) then
+          call pio_read_darray(pioid, varid, pio_iodesc, data_short, rcode)
+          if ( rcode /= PIO_NOERR ) then
+             call shr_sys_abort(' ERROR: reading in variable: '// trim(fldlist_stream(nf)))
+          end if
+          if(handlefill) then
+             do n=1,lsize
+                if(data_short(n).eq.fillvalue_i2) then
+                   dataptr(n) = r8fill
+                else
+                   dataptr(n) = real(data_short(n),r8) * scale_factor + add_offset
+                endif
+             enddo
+          else
+             do n=1,lsize
+                dataptr(n) = real(data_short(n),r8) * scale_factor + add_offset
+             enddo
+          endif
        else
-          call shr_sys_abort(subName//"ERROR: only real and double types are subborted for stream read")
+          call shr_sys_abort(subName//"ERROR: only double, real and short types are supported for stream read")
        end if
        if(associated(dataptr2d_src) .and. trim(fldlist_model(nf)) .eq. uname) then
           ! save in dataptr2d_src
