@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-This script creates historgram plots of the initial condition.
+This script creates histogram plots of the initial condition.
 """
 # import modules
 from netCDF4 import Dataset
