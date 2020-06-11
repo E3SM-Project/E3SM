@@ -114,9 +114,9 @@ scream_mask_gen_bin_op_mb(||, ||)
 // Negate the mask.
 template <typename MaskType> KOKKOS_INLINE_FUNCTION
 OnlyMask<MaskType> operator ! (const MaskType& m) {
-  MaskType nm(false);
-  vector_simd for (int i = 0; i < MaskType::n; ++i) nm.set(i, ! m[i]);
-  return nm;
+  MaskType not_m;
+  vector_simd for (int i = 0; i < MaskType::n; ++i) not_m.set(i, ! m[i]);
+  return not_m;
 }
 
 // Implementation detail for generating Pack assignment operators. _p means the
