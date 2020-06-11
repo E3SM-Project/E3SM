@@ -211,6 +211,20 @@
     </queues>
   </batch_system>
 
+  <batch_system type="slurm" MACH="casper">
+    <batch_submit>sbatch</batch_submit>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-p" name="$JOB_QUEUE"/>
+      <arg flag="--gres=gpu:v100:4"/>
+      <arg flag="--account" name="$PROJECT"/>
+      <arg flag="--mem=0"/> 
+    </submit_args>
+    <queues>
+      <queue nodemin="1" nodemax="96" default="true">dav</queue>
+    </queues>
+  </batch_system>
+
   <batch_system MACH="cheyenne" type="pbs">
     <directives queue="regular">
       <directive default="/bin/bash" > -S {{ shell }}  </directive>

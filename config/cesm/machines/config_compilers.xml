@@ -653,6 +653,23 @@ using a fortran linker.
   </SLIBS>
 </compiler>
 
+<compiler MACH="casper" COMPILER="pgi">
+  <FFLAGS>
+    <append> -Mnofma -acc -ta=tesla:cc70 -Minfo=accel </append>
+    <append> -I$(EXEROOT)/ocn/obj/FMS </append>
+  </FFLAGS>
+  <CFLAGS>
+    <append> -Mnofma -acc -ta=tesla:cc70 -Minfo=accel </append>
+  </CFLAGS>
+  <LDFLAGS>
+    <append> -acc -ta=tesla:cc70 -Minfo=accel </append>
+  </LDFLAGS>
+  <SLIBS>
+    <append> -llapack -lblas -ldl </append>
+    <append MPILIB="mpi-serial"> -ldl </append>
+  </SLIBS>
+</compiler>
+
 <compiler MACH="cheyenne">
   <CPPDEFS>
     <!-- these flags enable nano timers -->
