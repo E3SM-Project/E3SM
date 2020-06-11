@@ -139,7 +139,7 @@ contains
 
       real(kind=RKIND) :: tempTracer, invAreaCell1, invAreaCell2, invAreaCell, areaEdge
       real(kind=RKIND) :: flux, flux_term1, flux_term2, flux_term3, dTracerDx, coef
-      real(kind=RKIND) :: areaSum, r_tmp, tracer_turb_flux, kappaRediEdgeVal
+      real(kind=RKIND) :: r_tmp, tracer_turb_flux, kappaRediEdgeVal
       real(kind=RKIND), dimension(:), pointer :: areaCell, dvEdge, dcEdge
       real(kind=RKIND), dimension(:), allocatable :: minimumVal, rediKappaCell
       real(kind=RKIND), dimension(:, :), allocatable :: fluxRediZTop
@@ -184,13 +184,11 @@ contains
       nCells = nCellsArray(2)
       do iCell = 1,nCells
         rediKappaCell(iCell) = 0.0_RKIND
-        areaSum = 0.0_RKIND
         do i = 1, nEdgesOnCell(iCell)
           iEdge = edgesOnCell(i, iCell)
-          areaSum = areaSum + 0.5_RKIND*dvEdge(iEdge)*dcEdge(iEdge)
-          rediKappaCell(iCell) = rediKappaCell(iCell) + 0.5_RKIND*RediKappa(iEdge) * dvEdge(iEdge) * dcEdge(iEdge)
+          rediKappaCell(iCell) = rediKappaCell(iCell) + 0.25_RKIND*RediKappa(iEdge) * dvEdge(iEdge) * dcEdge(iEdge)
         enddo
-        rediKappaCell(iCell) = rediKappaCell(iCell) / areaSum
+        rediKappaCell(iCell) = rediKappaCell(iCell) / areaCell(iCell)
       enddo
 
       nCells = nCellsArray(1)
@@ -218,8 +216,6 @@ contains
             else  ! cell2 == iCell
                iCellSelf = 2
             endif
-
-      !      rediKappaCell(iCell) = rediKappaCell(iCell) + 0.5_RKIND*RediKappa(iEdge) * invAreaCell * dvEdge(iEdge) * dcEdge(iEdge)
 
             r_tmp = dvEdge(iEdge)/dcEdge(iEdge)
             coef = dvEdge(iEdge)
@@ -338,9 +334,10 @@ contains
                ! Add tendency for Term 3: d/dz ( h S grad phi) = ( S grad phi) fluxes
                ! 2.0 in next line is because a dot product on a C-grid
                ! requires a factor of 1/2 to average to the cell center.
-               flux_term3 = rediKappaCell(iCell)*2.0_RKIND* &
-                            (kappaRediSfcTaper(k, iCell)*kappaRediCell(k, iCell)*fluxRediZTop(iTr, k) - &
-                             kappaRediSfcTaper(k + 1, iCell)*kappaRediCell(k + 1, iCell)*fluxRediZTop(iTr, k + 1))
+               flux_term3 = RediKappa(iCell)*2.0_RKIND* &
+                            (kappaRediSfcTaper(k, iCell)*kappaRediCell(k, iCell)*fluxRediZTop(iTr, k)  &
+                            * invAreaCell - kappaRediSfcTaper(k + 1, iCell)*kappaRediCell(k + 1, iCell) &
+                            *fluxRediZTop(iTr, k + 1) * invAreaCell)
 
                redi_term3(iTr, k, iCell) = redi_term3(iTr, k, iCell) + flux_term3
             end do
@@ -455,12 +452,11 @@ contains
       type(mpas_pool_type), pointer :: forcingPool
 
       real(kind=RKIND), dimension(:), pointer :: RediKappa, RediKappaData
-      real(kind=RKIND), dimension(:), pointer :: areaCell
+      real(kind=RKIND), dimension(:), pointer :: dcEdge
       integer, dimension(:,:), pointer :: cellsOnEdge
 
       integer :: k, iEdge
       integer, pointer :: nVertLevels, nEdges
-      real(kind=RKIND) :: sqrtPiInv2, avgCellDiameter
 
       err = 0
 
@@ -479,11 +475,10 @@ contains
          call mpas_pool_get_subpool(block%structs, 'forcing', forcingPool)
          call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
          call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
          call mpas_pool_get_array(diagnosticsPool, 'RediKappa', RediKappa)
          call mpas_pool_get_array(forcingPool, 'RediKappaData', RediKappaData)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-
+         call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
          ! initialize Redi kappa array
          if (config_Redi_closure == 'constant') then
             !$omp do schedule(runtime)
@@ -506,17 +501,14 @@ contains
             ! Nothing to do, as we just keep the same assignment as above.
          else if (config_eddying_resolution_taper == 'ramp') then
             sqrtPiInv2 = 1.0_RKIND/sqrt(pii)
-            !$omp do schedule(runtime) private(avgCellDiameter)
-            do iEdge = 1, nEdges
-               avgCellDiameter = sqrtPiInv2*(sqrt(areaCell(cellsOnEdge(1, iEdge))) + sqrt(areaCell(cellsOnEdge(2, iEdge))))
-
-               if (avgCellDiameter <= config_eddying_resolution_ramp_min) then
+            !$omp do schedule(runtime) 
+               if (dcEdge(iEdge) <= config_eddying_resolution_ramp_min) then
                   RediKappa(iEdge) = 0.0_RKIND
-               else if (avgCellDiameter >= config_eddying_resolution_ramp_max) then
+               else if (dcEdge(iEdge) >= config_eddying_resolution_ramp_max) then
                   ! nothing to do, i.e. RediKappa(iCell) = RediKappa(iCell)
                else
                   RediKappa(iEdge) = RediKappa(iEdge) &
-                                     *(avgCellDiameter - config_eddying_resolution_ramp_min) &
+                                     *(dcEdge(iEdge) - config_eddying_resolution_ramp_min) &
                                      /(config_eddying_resolution_ramp_max - config_eddying_resolution_ramp_min)
                end if
             end do ! iCell
