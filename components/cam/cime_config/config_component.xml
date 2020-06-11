@@ -63,6 +63,9 @@
       <value compset="_CAM5%CMIP6-HR"    >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_CAM5%CMIP6-LR"    >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_CAM5%CMIP6-LRtunedHR"    >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
+      <value compset="1950_CAM5%CMIP6-[LH]R"    >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -cppdefs -DAPPLY_POST_DECK_BUGFIXES -nlev 72</value>
+      <value compset="_CAM5%AR5sf"    >-clubb_sgs -microphys mg2 -chem superfast_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
+      <value compset="2010_CAM5%CMIP6-[LH]R"    >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -cppdefs -DAPPLY_POST_DECK_BUGFIXES -nlev 72</value>
       <value compset="_CAM5%AV1F"     >-clubb_sgs -microphys mg2 -chem trop_mam4_resus      -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_CAM5%AV1F-00"  >-clubb_sgs -microphys mg2 -chem trop_mam4_resus      -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_CAM5%AV1F-01"  >-clubb_sgs -microphys mg2 -chem trop_mam4_resus_soag -rain_evap_to_coarse_aero -nlev 72</value>
@@ -99,6 +102,40 @@
       <value compset="_CAM[45]%WCBC"  >-carma bc_strat</value>
       <value compset="_CAM4%WCSF"     >-chem waccm_mozart_sulfur -carma sulfate</value>
       <value compset="_CAM[45]%WCMX"  >-waccmx</value>
+      <!-- old MMF / super-parameterization compsets -->
+      <!-- These are needed to test against the ECP fork  -->
+      <!-- they will be removed in a future PR -->
+      <value compset="_CAM5%SP[12]V1"        >-use_MMF -crm_adv MPDATA -nlev 72 -crm_nz 58 -crm_dx 1000 -crm_dt 5 </value>
+      <value compset="_CAM5%SP[12]V1"        >-microphys mg2  </value>
+      <value compset="_CAM5%SP[12]V1"        >-cppdefs ' -DMMF_DIR_NS ' </value>
+      <value compset="_CAM5%SP[12]V1"        >-rad rrtmg </value>
+      <value compset="_CAM5%SP1V1"           >-MMF_microphysics_scheme sam1mom -chem none </value>
+      <value compset="_CAM5%SP2V1"           >-MMF_microphysics_scheme m2005 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero </value>
+      <value compset="_CAM5%SP[12]V1_"       >-crm_nx 64 -crm_ny 1 -crm_nx_rad 16 -crm_ny_rad 1 </value>
+      <value compset="_CAM5%SP[12]V1-TEST_"  >-crm_nx  8 -crm_ny 1 -crm_nx_rad  1 -crm_ny_rad 1 </value>
+      <value compset="_CAM5%SP1V1-MAML"      >-use_MAML -crm_ny 1 -crm_ny_rad 1 </value>
+      <value compset="_CAM5%SP1V1-MAML_"     >-crm_nx 64 -crm_nx_rad 64 </value>
+      <value compset="_CAM5%SP1V1-MAML-TEST" >-crm_nx 8 -crm_nx_rad 8 </value>
+      <value compset="_CAM5%SP2V1-ECPP-TEST" >-crm_nx  8 -crm_ny 1 -crm_nx_rad  1 -crm_ny_rad 1 </value>
+      <value compset="_CAM5%SP2V1-ECPP"      >-use_ECPP </value>
+      <!-- New MMF / super-parameterization compsets -->
+      <value compset="_CAM5%MMF[12]"           >-use_MMF -crm_adv MPDATA -nlev 72 -crm_nz 58 </value>
+      <value compset="_CAM5%MMF[12]"           >-crm_dx 1000 -crm_dt 5 </value>
+      <value compset="_CAM5%MMF[12]"           >-microphys mg2  </value>
+      <value compset="_CAM5%MMF[12]"           >-cppdefs ' -DMMF_DIR_NS ' </value>
+      <value compset="_CAM5%MMF[12]"           >-rad rrtmgp </value>
+      <value compset="_CAM5%MMF1"              >-MMF_microphysics_scheme sam1mom</value>
+      <value compset="_CAM5%MMF1"              >-chem none </value>
+      <value compset="_CAM5%MMF2"              >-MMF_microphysics_scheme m2005 </value>
+      <value compset="_CAM5%MMF2"              >-chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero </value>
+      <value compset="_CAM5%MMF[12]-MAML"      >-use_MAML </value>
+      <value compset="_CAM5%MMF2-ECPP"         >-use_ECPP </value>
+      <value compset="_CAM5%MMF[12]_"          >-crm_nx 64 -crm_nx_rad 16 -crm_ny 1 -crm_ny_rad 1 </value>
+      <value compset="_CAM5%MMF[12]-MAML_"     >-crm_nx 64 -crm_nx_rad 64 -crm_ny 1 -crm_ny_rad 1 </value>
+      <value compset="_CAM5%MMF[12]-TEST_"     >-crm_nx  8 -crm_nx_rad  2 -crm_ny 1 -crm_ny_rad 1 </value>
+      <value compset="_CAM5%MMF[12]-MAML-TEST" >-crm_nx  8 -crm_nx_rad  8 -crm_ny 1 -crm_ny_rad 1 </value>
+      <value compset="_CAM5%MMF2-ECPP-TEST"    >-crm_nx  8 -crm_nx_rad  1 -crm_ny 1 -crm_ny_rad 1 </value>
+      <!--  -->
       <value compset="GEOS_CAM"       >-offline_dyn</value>
       <value compset="GEOS_CAM4"      >-nlev 56</value>
       <value compset="GEOS_CAM5"      >-nlev 56</value>
@@ -195,6 +232,8 @@
       <value compset="1950_CAM5.*CMIP6-LRtunedHR"  >1950_cam5_CMIP6-LRtunedHR</value>
       <value compset="1850_CAM5.*CMIP6.*_BGC%B"  >1850_cam5_CMIP6_bgc</value>
       <value compset="2010S_CAM5.*CMIP6"  >2010S_cam5_CMIP6</value>
+      <value compset="1850_CAM5.*AR5sf"   >1850_E3SMv1_superfast_ar5-emis</value>
+      <value compset="1850S_CAM5.*AR5sf"  >1850S_E3SMv1_superfast_ar5-emis</value>
       <value compset="2000_CAM5.*AV1C-01">2000_cam5_av1c-01</value>
       <value compset="2000_CAM5.*AV1C-02">2000_cam5_av1c-02</value>
       <value compset="2000_CAM5.*AV1C-03">2000_cam5_av1c-03</value>
@@ -219,8 +258,14 @@
       <value compset="20TR_CAM5.*AV1C-H01B">20TR_cam5_av1c-h01b</value>
       <value compset="20TR_CAM5.*AV1C-H01C">20TR_cam5_av1c-h01c</value>
       <value compset="20TR_CAM5.*CMIP6"  >20TR_cam5_CMIP6</value>
-      <value compset="20TR_CAM5.*CMIP6*_BGC%B"  >20TR_cam5_CMIP6_bgc</value>
-      <value compset="SSP585_CAM5.*CMIP6"  >SSP585_cam5_CMIP6</value>          <!-- PJC -->
+      <value compset="20TR_CAM5.*CMIP6.*_BGC%B"  >20TR_cam5_CMIP6_bgc</value>
+      <value compset="SSP585_CAM5.*CMIP6">SSP585_cam5_CMIP6</value>
+      <value compset="SSP585_CAM5.*CMIP6.*_BGC%B">SSP585_cam5_CMIP6_bgc</value>
+      <value compset="2010_CAM5.*CMIP6-LR"  >2010_cam5_CMIP6-LR</value>
+      <value compset="2010_CAM5.*CMIP6-HR"  >2010_cam5_CMIP6-HR</value>
+      <value compset="20TR_CAM5.*AR5sf" >20TR_E3SMv1_superfast_ar5-emis</value>
+      <value compset="20TRS_CAM5.*AR5sf">20TRS_E3SMv1_superfast_ar5-emis</value>
+
       <value compset="2000_CAM5%COSP"   >2000_cam5_cosp</value>
       <value compset="2000_CAM4%WCMX"   >waccmx_2000_cam4</value>
       <value compset="1996_CAM4%WCMX"   >waccmx_1996_cam4</value>
@@ -260,6 +305,11 @@
       <value compset="_CAM5%AQUA"     >aquaplanet_EAMv1</value>
       <!-- Radiative-Convective Equilibrium (RCE) -->
       <value compset="_CAM5%RCE"      >RCEMIP_EAMv1</value>
+      <!-- MMF / Super-Parameterization -->
+      <value compset="2000_CAM5%SP1"     >2000_cam5_av1c-04p2-MMF-1mom</value>
+      <value compset="2000_CAM5%SP2"     >2000_cam5_av1c-04p2-MMF-2mom</value>
+      <value compset="2000_CAM5%MMF1"    >2000_cam5_av1c-04p2-MMF-1mom</value>
+      <value compset="2000_CAM5%MMF2"    >2000_cam5_av1c-04p2-MMF-2mom</value>
     </values>
     <group>run_component_cam</group>
     <file>env_run.xml</file>
@@ -283,9 +333,9 @@
     <values>
       <value compset="_CAM.*%RCO2"> scenario_ghg=&apos;RAMP_CO2_ONLY&apos;ramp_co2_annual_rate=1 </value> 
       <value compset="_BGC%BDRD"> co2_cycle_rad_passive=.true. </value>
-      <value compset="_BGC%BCRC"> co2_cycle_rad_passive=.true. co2vmr_rad=284.7e-6  </value>
+      <value compset="_BGC%BCRC"> co2_cycle_rad_passive=.true. co2vmr_rad=284.317e-6  </value>
       <value compset="_BGC%BCRD"> co2_cycle_rad_passive=.true. </value>
-      <value compset="_BGC%BDRC"> co2_cycle_rad_passive=.true. co2vmr_rad=284.7e-6 </value>
+      <value compset="_BGC%BDRC"> co2_cycle_rad_passive=.true. co2vmr_rad=284.317e-6 </value>
     </values>
     <group>run_component_cam</group>
     <file>env_run.xml</file>
@@ -319,6 +369,7 @@
     <desc compset="_CAM5.*CMIP6-HR" >high-res (ne120 w/ 18to6 ocn) 72 layer E3SM v1 atmos model with CMIP6 forcings </desc>
     <desc compset="_CAM5.*CMIP6-LR" >low-res (ne30 w/ oECv3 ocn) 72 layer E3SM v1 atmos model with CMIP6 forcings </desc>
     <desc compset="_CAM5.*CMIP6-LRtunedHR" >low-res (ne30 w/ oECv3 ocn) 72 layer E3SM v1 atmos model with CMIP6 forcings *with high-res tunings* </desc>
+    <desc compset="_CAM5.*AR5sf"    >E3SM plus super-fast chemistry with AR5 emissions:</desc>
     <desc compset="_CAM5.*AV1F"     >CAM with familiar set of E3SM atmospheric mods for V1 (72 Layers model):</desc>
     <desc compset="_CAM5.*AV1F-00"  >CAM with familiar set of E3SM atmospheric mods for V1 (72 Layers model)- v00:</desc>
     <desc compset="_CAM5.*AV1F-01"  >CAM with familiar set of E3SM atmospheric mods for V1 (72 Layers model) and ACES4BGC SOAG emissions- v01:</desc>
@@ -367,6 +418,25 @@
     <desc compset="_CAM5.*SCREAM-HR-DYAMOND1">Fortran version of SCREAM with NH dycore, SHOC, P3, RRTMGP, prescribed aerosol, and no deep convection. Initialized for DYAMOND1 (2016-08-01).</desc>
     <desc compset="_CAM5.*SCREAM-LR_">Fortran version of SCREAM with SHOC, P3, RRTMGP, and prescribed aerosol.</desc>
     <desc compset="_CAM5.*SCREAM-HR_">Fortran version of SCREAM with NH dycore, SHOC, P3, RRTMGP, prescribed aerosol, and no deep convection.</desc>
+    <!-- old MMF / Super-Parameterization -->
+    <desc compset="_CAM5%SP1V1_"    >SP-E3SM with 64x1km CRM, RRTMG radiation, 1-mom micro, prescribed aerosol</desc>
+    <desc compset="_CAM5%SP2V1_"    >SP-E3SM with 64x1km CRM, RRTMG radiation, 2-mom micro, prognostic aerosol</desc>
+    <desc compset="_CAM5%SP1V1-MAML">SP-E3SM with 64x1km CRM, RRTMG radiation, 1-mom micro, prescribed aerosol, MAML</desc>
+    <desc compset="_CAM5%SP2V1-ECPP">SP-E3SM with 64x1km CRM, RRTMG radiation, 2-mom micro, prognostic aerosol, ECPP</desc>
+    <desc compset="_CAM5%SP1V1-TEST"     >SP-E3SM with 8x1km CRM, RRTMG radiation, 1-mom micro, prescribed aerosol</desc>
+    <desc compset="_CAM5%SP2V1-TEST"     >SP-E3SM with 8x1km CRM, RRTMG radiation, 2-mom micro, prognostic aerosol</desc>
+    <desc compset="_CAM5%SP1V1-MAML-TEST">SP-E3SM with 8x1km CRM, RRTMG radiation, 1-mom micro, prescribed aerosol, MAML </desc>
+    <desc compset="_CAM5%SP2V1-ECPP-TEST">SP-E3SM with 8x1km CRM, RRTMG radiation, 2-mom micro, prognostic aerosol, ECPP </desc>
+    <!-- new MMF / Super-Parameterization -->
+    <desc compset="_CAM5%MMF1_"    >E3SM-MMF with 64x1km CRM, RRTMGP radiation, 1-mom micro, prescribed aerosol</desc>
+    <desc compset="_CAM5%MMF2_"    >E3SM-MMF with 64x1km CRM, RRTMGP radiation, 2-mom micro, prognostic aerosol</desc>
+    <desc compset="_CAM5%MMF1-MAML">E3SM-MMF with 64x1km CRM, RRTMGP radiation, 1-mom micro, prescribed aerosol, MAML </desc>
+    <desc compset="_CAM5%MMF2-ECPP">E3SM-MMF with 64x1km CRM, RRTMGP radiation, 2-mom micro, prognostic aerosol, ECPP </desc>
+    <desc compset="_CAM5%MMF1-TEST"     >E3SM-MMF test config with 8x1km CRM, RRTMGP radiation, 1-mom micro, prescribed aerosol</desc>
+    <desc compset="_CAM5%MMF2-TEST"     >E3SM-MMF test config with 8x1km CRM, RRTMGP radiation, 2-mom micro, prognostic aerosol</desc>
+    <desc compset="_CAM5%MMF1-MAML-TEST">E3SM-MMF test config with 8x1km CRM, RRTMGP radiation, 1-mom micro, prescribed aerosol, MAML </desc>
+    <desc compset="_CAM5%MMF2-ECPP-TEST">E3SM-MMF test config with 8x1km CRM, RRTMGP radiation, 2-mom micro, prognostic aerosol, ECPP </desc>
+    <!--  -->
   </description>
 
   <!-- Aqua planet uses this for setting orbital parameters -->
@@ -378,6 +448,9 @@
     <value compset="DOCN%AQP">$SRCROOT/components/cam/cime_config/usermods_dirs/aquap</value>
     <value compset="DOCN%SOMAQP">$SRCROOT/components/cam/cime_config/usermods_dirs/aquap</value>
     <value compset="CAM5%RCE">$SRCROOT/components/cam/cime_config/usermods_dirs/rcemip</value>
+    <!-- MAML uses this for setting NINST, NINST_LAYOUT -->
+    <value compset="SP1V1-MAML_">$SRCROOT/components/cam/cime_config/usermods_dirs/maml</value>
+    <value compset="SP1V1-MAML-TEST">$SRCROOT/components/cam/cime_config/usermods_dirs/maml-test</value>
     </values>
     <group>run_component_cam</group>
     <file>env_case.xml</file>

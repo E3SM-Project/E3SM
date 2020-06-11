@@ -74,6 +74,12 @@ OR
     parser.add_argument("-r", "--test-root", default=default_testroot,
                         help="Path to test results that are being blessed")
 
+    parser.add_argument("--new-test-root",
+                        help="If bless_test_results needs to create cases (for blessing namelists), use this root area")
+
+    parser.add_argument("--new-test-id",
+                        help="If bless_test_results needs to create cases (for blessing namelists), use this test id")
+
     parser.add_argument("-t", "--test-id",
                         help="Limit processes to case dirs matching this test-id. Can be useful if mutiple runs dumped into the same dir.")
 
@@ -90,17 +96,19 @@ OR
     expect(not (args.namelists_only and args.hist_only),
            "Makes no sense to use --namelists-only and --hist-only simultaneously")
 
-    return args.baseline_name, args.baseline_root, args.test_root, args.compiler, args.test_id, args.namelists_only, args.hist_only, args.report_only, args.force, args.bless_tests, args.no_skip_pass
+    return args.baseline_name, args.baseline_root, args.test_root, args.compiler, args.test_id, args.namelists_only, args.hist_only, args.report_only, args.force, args.bless_tests, args.no_skip_pass, args.new_test_root, args.new_test_id
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    baseline_name, baseline_root, test_root, compiler, test_id, namelists_only, hist_only, report_only, force, bless_tests, no_skip_pass = \
+    baseline_name, baseline_root, test_root, compiler, test_id, namelists_only, hist_only, \
+        report_only, force, bless_tests, no_skip_pass, new_test_root, new_test_id = \
         parse_command_line(sys.argv, description)
 
     success = bless_test_results(baseline_name, baseline_root, test_root, compiler,
                                  test_id=test_id, namelists_only=namelists_only, hist_only=hist_only,
-                                 report_only=report_only, force=force, bless_tests=bless_tests, no_skip_pass=no_skip_pass)
+                                 report_only=report_only, force=force, bless_tests=bless_tests, no_skip_pass=no_skip_pass,
+                                 new_test_root=new_test_root, new_test_id=new_test_id)
     sys.exit(0 if success else 1)
 
 ###############################################################################

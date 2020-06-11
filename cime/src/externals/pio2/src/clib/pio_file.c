@@ -23,10 +23,12 @@
  */
 
 /* This is the next ncid that will be used when a file is opened or
-   created. We start at 16 so that it will be easy for us to notice
+   created. We start at 128 so that it will be easy for us to notice
    that it's not netcdf (starts at 4), pnetcdf (starts at 0) or
-   netCDF-4/HDF5 (starts at 65xxx). */
-int pio_next_ncid = 16;
+   netCDF-4/HDF5 (starts at 65xxx). Also, when used with netCDF
+   intgration, this will allow the user to have 127 normal netCDF
+   files open, as well as many PIO ones. */
+int pio_next_ncid = 128;
 
 #ifdef USE_MPE
 /* The event numbers for MPE logging. */
@@ -159,16 +161,9 @@ PIOc_createfile(int iosysid, int *ncidp, int *iotype, const char *filename,
     if ((ret = PIOc_createfile_int(iosysid, ncidp, iotype, filename, mode, 0)))
         return pio_err(ios, NULL, ret, __FILE__, __LINE__);
 
-    /* Run this on all tasks if async is not in use, but only on
-     * non-IO tasks if async is in use. (Because otherwise, in async
-     * mode, set_fill would be called twice by each IO task, since
-     * PIOc_createfile() will already be called on each IO task.) */
-    if (!ios->async || !ios->ioproc)
-    {
-        /* Set the fill mode to NOFILL. */
-        if ((ret = PIOc_set_fill(*ncidp, NC_NOFILL, NULL)))
-            return ret;
-    }
+    /* Set the fill mode to NOFILL. */
+    if ((ret = PIOc_set_fill(*ncidp, NC_NOFILL, NULL)))
+        return ret;
 
     return ret;
 }

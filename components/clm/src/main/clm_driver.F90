@@ -1184,8 +1184,7 @@ contains
              
              call alm_fates%dynamics_driv( bounds_clump, top_as,          &
                   top_af, atm2lnd_vars, soilstate_vars, temperature_vars, &
-                  waterstate_vars, canopystate_vars, carbonflux_vars,     &
-                  frictionvel_vars)
+                  canopystate_vars, carbonflux_vars, frictionvel_vars)
 
              
              ! TODO(wjs, 2016-04-01) I think this setFilters call should be replaced by a

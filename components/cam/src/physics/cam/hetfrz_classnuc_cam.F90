@@ -424,6 +424,23 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
    ! constituents in these lists is arbitrary.
 
    if (nmodes == MAM3_nmodes) then
+#if (defined RAIN_EVAP_TO_COARSE_AERO)
+      ncnst = 14
+      so4_accum  =  1
+      bc_accum   =  2
+      pom_accum  =  3
+      soa_accum  =  4
+      dst_accum  =  5
+      ncl_accum  =  6
+      num_accum  =  7
+      dst_coarse =  8
+      ncl_coarse =  9
+      so4_coarse =  10
+      bc_coarse  =  11
+      pom_coarse =  12
+      soa_coarse =  13
+      num_coarse =  14
+#else
       ncnst = 11
       so4_accum  =  1
       bc_accum   =  2
@@ -436,6 +453,7 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
       ncl_coarse =  9
       so4_coarse = 10
       num_coarse = 11
+#endif
    else if (nmodes == MAM7_nmodes) then
       ncnst = 15
       so4_accum    =  1

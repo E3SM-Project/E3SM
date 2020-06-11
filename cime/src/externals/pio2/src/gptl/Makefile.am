@@ -20,4 +20,6 @@ perf_mod.mod: perf_mod.$(OBJEXT)
 #if BUILD_FORTRAN
 #endif
 
-EXTRA_DIST = CMakeLists.txt
+EXTRA_DIST = CMakeLists.txt GPTLget_memusage.c GPTLprint_memusage.c	\
+GPTLutil.c f_wrappers.c gptl.c gptl_papi.c threadutil.c gptl.inc	\
+gptl.h private.h

@@ -53,6 +53,8 @@
           This is an optional attribute that is mainly useful for variables
           that have only a small number of allowed values.
                                                                         -->
+<!-- There is a duplicated nml definitions for nudging parameters 
+     in the current master branch, and it is removed in the PR          -->
 <!-- Nudging Parameters -->
 
 <entry id="Nudge_Model" type="logical" category="nudging"
@@ -265,217 +267,52 @@
        Default: none
        </entry>
 
-
-<!-- Nudging Parameters -->
-
-<entry id="Nudge_Model" type="logical" category="nudging"
+<entry id="Nudge_Method" type="char*80" category="nudging"
        group="nudging_nl" valid_values="" >
-       Toggle Model Nudging ON/OFF.
+       Method to perform Nudging analyses.
+       1. Step: the model meteorology is nudged toward the same (future) time 
+          slice of the constraining data within each nudging window (e.g., 6-hr).
+       2. Linear: the model meteorology is nudged toward the state at the next 
+          model time step, which is linearly interpolated between two neighboring 
+          time slices of the constraining data. 
+       3. IMT: the model meteorology is nudged toward the constraining data at 
+          the same model time step and nudging is only applied when the constrainging 
+          data is available.
+       Default: Linear
+       </entry>
+
+<entry id="Nudge_Tau" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Use user-defined relaxation time scale (unit: hour).
+       If Nudge_Tau > 0, the relaxation time scale is determined by Nudge_Tau;
+       If not, the relaxation time scale is determined by Nudge_Times_Per_Day and nudging strength specified in the namelist (e.g. Nudge_Ucoef).
+       Default: -999
+       </entry>
+
+<entry id="Nudge_Loc_PhysOut" type="logical" category="nudging"
+       group="nudging_nl" valid_values="" >
+       If TRUE, change the location of calculation of nudging tendency to 
+       the same location where the model state variables are written out.
+       If FALSE, calculate the nudging tendency at the beginning of 
+       tphysbc (the same as the default model).
+       Default: TRUE
+       </entry>
+
+<entry id="Nudge_CurrentStep" type="logical" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Linearly interpolate nudging data to current (set to TRUE) or future 
+       (set to FALSE, used by the default model) model time step.
        Default: FALSE
        </entry>
 
-<entry id="Nudge_Path" type="char*256" input_pathname="abs" category="nudging"
+<entry id="Nudge_File_Ntime" type="integer" category="nudging"
        group="nudging_nl" valid_values="" >
-       Full pathname of analyses data to use for nudging.
-       Default: none
-       </entry>
-
-<entry id="Nudge_File_Template" type="char*80" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Template for Nudging analyses file names.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Times_Per_Day" type="integer" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Number of analyses files per day.
-       Default: none
-       </entry>
-
-<entry id="Model_Times_Per_Day" type="integer" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Number of time to update model data per day.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Uprof" type="integer" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Profile index for U nudging.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Ucoef" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Coeffcient for U nudging.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Vprof" type="integer" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Profile index for V nudging.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Vcoef" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Coeffcient for V nudging.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Tprof" type="integer" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Profile index for T nudging.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Tcoef" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Coeffcient for T nudging.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Qprof" type="integer" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Profile index for Q nudging.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Qcoef" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Coeffcient for Q nudging.
-       Default: none
-       </entry>
-
-<entry id="Nudge_PSprof" type="integer" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Profile index for PS nudging.
-       Default: none
-       </entry>
-
-<entry id="Nudge_PScoef" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Coeffcient for PS nudging.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Beg_Year" type="integer" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Year at which Nudging Begins.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Beg_Month" type="integer" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Month at which Nudging Begins.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Beg_Day" type="integer" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Day at which Nudging Begins.
-       Default: none
-       </entry>
-
-<entry id="Nudge_End_Year" type="integer" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Year at which Nudging Ends.
-       Default: none
-       </entry>
-
-<entry id="Nudge_End_Month" type="integer" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Month at which Nudging Ends.
-       Default: none
-       </entry>
-
-<entry id="Nudge_End_Day" type="integer" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Day at which Nudging Ends.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Hwin_lo" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       LOW Coeffcient for Horizontal Window.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Hwin_hi" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       HIGH Coeffcient for Horizontal Window.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Hwin_lat0" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       LAT0 of Horizonalt Window.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Hwin_latWidth" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Width of LAT Window.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Hwin_latDelta" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Steepness of LAT Window.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Hwin_lon0" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       LON0 of Horizontal Window.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Hwin_lonWidth" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Width of LON Window.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Hwin_lonDelta" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Steepness of LON Window.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Vwin_lo" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       LOW Coeffcient for Vertical Window.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Vwin_hi" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       HIGH Coeffcient for Vertical Window.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Vwin_Hindex" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       HIGH Level Index for Verical Window.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Vwin_Hdelta" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Steepness of HIGH end of Vertical Window.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Vwin_Lindex" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       LOW Level Index for Verical Window.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Vwin_Ldelta" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Steepness of LOW end of Vertical Window.
-       Default: none
+       Number of time slices per nudging data file
+       The current nudging code only works for the nudging data file with one-day data. 
+       It does not work correctly when the nudging data file contains multiple-day data.
+       Thus, Nudge_File_Ntime has to equal to 1 or Nudge_Times_Per_Day.
+       Set default Nudge_File_Ntime to 0 to force the user to set its value correctly.
+       Default: 0
        </entry>
 
 <!-- Aerosols: Data (CAM version) -->
@@ -493,6 +330,28 @@ Default: FALSE
 </entry>
 
 <!-- Coupler between Physics and Dynamics -->
+
+<entry id="phys_chnk_fdim" type="integer"  category="perf_dp_coup"
+       group="cam_inparm" valid_values="">
+The basic data structure for fields in the physics is the chunk. The
+horizontal (column) dimension is factored between the first chunk dimension
+and the number of chunks, with the size of the first dimension influencing
+serial performance (e.g. vectorization or fit into cache) and the
+number of chunks limiting the available MPI and OpenMP parallelism. 
+The number of chunks is always chosen to provide an equal number of chunks
+per computational thread (subject to the constraint that each chunk is
+assigned at least one column). However, the declared size of the first
+dimension is a free parameter, indicating the maximum number of columns
+that can be assigned to a chunk (thus also impacting the total number of
+chunks). This was originally specified at compile-time, based on 
+experiments in the early 2000s indicating that the compilers at the time
+generated more efficient code when the first dimension was known
+at compile time, perhaps for improved alignment in memory layout or improved
+vectorization. This is now exposed as a runtime parameter, and the
+previous compile-time maximum (PCOLS) is simply used to define the default
+value of the runtime variable. Must be greater than or equal to 1.
+Default: PCOLS
+</entry>
 
 <entry id="phys_alltoall" type="integer"  category="perf_dp_coup"
        group="cam_inparm" valid_values="0,1,2,11,12,13">
@@ -3864,7 +3723,8 @@ Default: set by build-namelist
                                          linoz_mam3,linoz_mam4_resus,
 					 linoz_mam4_resus_soag,linoz_mam4_resus_mom,
 					 linoz_mam4_resus_mom_soag,
-                                         super_fast_llnl,super_fast_llnl_mam3,none " >
+                                         super_fast_llnl,super_fast_llnl_mam3,
+					 superfast_mam4_resus_mom_soag,none " >
 Name of the CAM chemistry package.  N.B. this variable may not be set by
 the user.  It is set by build-namelist via information in the configure
 cache file to be consistent with how CAM was built.
@@ -4497,6 +4357,53 @@ Default: current model time of day
 Use spectral scaling in the radiation heating 
 Default: false
 </entry>
+
+<!-- MMF -->
+<entry id="use_MMF" type="logical"  category="conv"
+       group="phys_ctl_nl" valid_values="" >
+Turn on super parameterized CAM
+Default: false
+</entry>
+
+<entry id="use_ECPP" type="logical"  category="conv"
+       group="phys_ctl_nl" valid_values="" >
+Turn on explicit cloud parameterized pollutants
+Default: false
+</entry>
+
+<entry id="use_MAML" type="logical"  category="conv"
+       group="phys_ctl_nl" valid_values="" >
+Turn on Multiple Atmosphere and Multiple Land option 
+Default: false
+</entry>
+
+<entry id="MMF_microphysics_scheme" type="char*16" category="conv"
+       group="phys_ctl_nl" valid_values="m2005, sam1mom" >
+Type of SPCAM microphysics scheme employed.
+Default: sam1mom
+</entry>
+
+<!-- MMF Mean State Acceleration(MSA) definitions -->
+<entry id="use_crm_accel" type="logical" category="conv"
+       group="phys_ctl_nl" valid_values="">
+Enables CRM mean-state acceleration when using SPCAM.
+Default: true
+</entry>
+
+<entry id="crm_accel_factor" type="real" category="conv"
+       group="phys_ctl_nl" valid_values="">
+CRM acceleration factor to apply if use_crm_accel is true
+Default: 2.0
+</entry>
+
+<entry id="crm_accel_uv" type="logical" category="conv"
+       group="phys_ctl_nl" valid_values="">
+Turn on CRM mean-state acceleration for u,v when use_crm_accel is true.
+If crm_accel_uv is false and use_crm_accel is true, then mean-state
+acceleration will only be applied to scalar fields (liquid/ice static 
+energy and non-precipitating total water mixing ratio). This has
+no effect when use_crm_accel is false.
+Default: true
 
 <!-- Test Tracers -->
 
@@ -5581,6 +5488,12 @@ Default: 30.0e-9
        group="linoz_nl" valid_values="" >
 Tunable Linoz e-fold time scale (in seconds) in the boundary layer
 Default: 172800.0
+</entry>
+
+<entry id="linoz_psc_T" type="real" category="linoz"
+       group="linoz_nl" valid_values="" >
+Tunable Linoz PSC ozone loss temperature (K) threshold
+Default: 193.0
 </entry>
 
 <entry id="tracer_cnst_datapath" type="char*256" input_pathname="abs" category="cam_chem"
