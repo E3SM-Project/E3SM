@@ -696,8 +696,8 @@
     <group>build_def</group>
     <file>env_build.xml</file>
     <desc>TRUE implies always build model for openmp capability
-      If FALSE, component libraries are built with OpenMP capability only if
-      the NTHREADS_ setting for that component is greater than 1 in env_mach_pes.xml.
+      If FALSE, component libraries are built with OpenMP capability if
+      the NTHREADS_ setting for any component is greater than 1 in env_mach_pes.xml.
       If TRUE, the component libraries are always built with OpenMP capability.</desc>
   </entry>
 
@@ -2035,6 +2035,14 @@
     <desc>Machines directory location</desc>
   </entry>
 
+  <entry id="EXTRA_MACHDIR">
+    <type>char</type>
+    <default_value></default_value>
+    <group>case_def</group>
+    <file>env_case.xml</file>
+    <desc>Path to an extra directory containing supplementary machines files</desc>
+  </entry>
+
   <entry id="RUNDIR">
     <type>char</type>
     <default_value>$CIME_OUTPUT_ROOT/$CASE/run</default_value>
@@ -2530,16 +2538,16 @@
      be computed based on PIO_NUMTASKS and number of compute tasks
     </desc>
     <values>
-      <value compclass="ATM"></value>
-      <value compclass="CPL"></value>
-      <value compclass="OCN"></value>
-      <value compclass="WAV"></value>
-      <value compclass="GLC"></value>
-      <value compclass="ICE"></value>
-      <value compclass="ROF"></value>
-      <value compclass="LND"></value>
-      <value compclass="ESP"></value>
-      <value compclass="IAC"></value>
+      <value compclass="ATM">$MAX_MPITASKS_PER_NODE</value>
+      <value compclass="CPL">$MAX_MPITASKS_PER_NODE</value>
+      <value compclass="OCN">$MAX_MPITASKS_PER_NODE</value>
+      <value compclass="WAV">$MAX_MPITASKS_PER_NODE</value>
+      <value compclass="GLC">$MAX_MPITASKS_PER_NODE</value>
+      <value compclass="ICE">$MAX_MPITASKS_PER_NODE</value>
+      <value compclass="ROF">$MAX_MPITASKS_PER_NODE</value>
+      <value compclass="LND">$MAX_MPITASKS_PER_NODE</value>
+      <value compclass="ESP">$MAX_MPITASKS_PER_NODE</value>
+      <value compclass="IAC">$MAX_MPITASKS_PER_NODE</value>
     </values>
   </entry>
 
@@ -2550,17 +2558,16 @@
     <file>env_run.xml</file>
     <desc>pio rearranger choice box=1, subset=2 </desc>
     <values>
-      <value>$PIO_VERSION</value>
-      <value compclass="ATM"></value>
-      <value compclass="CPL"></value>
-      <value compclass="OCN"></value>
-      <value compclass="WAV"></value>
-      <value compclass="GLC"></value>
-      <value compclass="ICE"></value>
-      <value compclass="ROF"></value>
-      <value compclass="LND"></value>
-      <value compclass="ESP"></value>
-      <value compclass="IAC"></value>
+      <value compclass="ATM">$PIO_VERSION</value>
+      <value compclass="CPL">$PIO_VERSION</value>
+      <value compclass="OCN">$PIO_VERSION</value>
+      <value compclass="WAV">$PIO_VERSION</value>
+      <value compclass="GLC">$PIO_VERSION</value>
+      <value compclass="ICE">$PIO_VERSION</value>
+      <value compclass="ROF">$PIO_VERSION</value>
+      <value compclass="LND">$PIO_VERSION</value>
+      <value compclass="ESP">$PIO_VERSION</value>
+      <value compclass="IAC">$PIO_VERSION</value>
     </values>
   </entry>
 
@@ -2754,7 +2761,7 @@
     <default_value>UNSET</default_value>
     <group>test</group>
     <file>env_test.xml</file>
-    <desc>standard full pathname of the cprnc executable</desc>
+    <desc>standard full pathname of the cprnc executable. One can skip defining the xml entry, CCSM_CPRNC, and the sharedlib build system will automatically build cprnc</desc>
   </entry>
 
   <!-- ===================================================================== -->

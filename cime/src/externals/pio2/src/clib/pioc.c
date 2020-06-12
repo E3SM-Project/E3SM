@@ -19,8 +19,12 @@ extern int event_num[2][NUM_EVENTS];
 #endif /* USE_MPE */
 
 #ifdef NETCDF_INTEGRATION
-/* Have we initialized? */
+/* Have we initialized the netcdf integration code? */
 extern int ncint_initialized;
+
+/* This is used as the default iosysid for the netcdf integration
+ * code. */
+extern int diosysid;
 #endif /* NETCDF_INTEGRATION */
 
 /**
@@ -727,8 +731,9 @@ PIOc_InitDecomp(int iosysid, int pio_type, int ndims, const int *gdimlen, int ma
           iodesc->ioid, iodesc->nrecvs, iodesc->ndof, iodesc->ndims, iodesc->num_aiotasks,
           iodesc->rearranger, iodesc->maxregions, iodesc->needsfill, iodesc->llen,
           iodesc->maxiobuflen));
-    for (int j = 0; j < iodesc->llen; j++)
-        PLOG((3, "rindex[%d] = %lld", j, iodesc->rindex[j]));
+    if (iodesc->rindex)
+	for (int j = 0; j < iodesc->llen; j++)
+	    PLOG((3, "rindex[%d] = %lld", j, iodesc->rindex[j]));
 #endif /* PIO_ENABLE_LOGGING */
 
     /* This function only does something if pre-processor macro
@@ -865,7 +870,7 @@ PIOc_InitDecomp_bc(int iosysid, int pio_type, int ndims, const int *gdimlen,
     }
     for (i = 0; i < maplen; i++)
     {
-        compmap[i] = 0;
+        compmap[i] = 1;
         for (n = ndims - 1; n >= 0; n--)
             compmap[i] += (start[n] + loc[n]) * prod[n];
 
@@ -1736,6 +1741,16 @@ PIOc_init_async(MPI_Comm world, int num_io_procs, int *io_proc_list,
         /* Add this id to the list of PIO iosystem ids. */
         iosysidp[cmp] = pio_add_to_iosystem_list(my_iosys);
         PLOG((2, "new iosys ID added to iosystem_list iosysidp[%d] = %d", cmp, iosysidp[cmp]));
+
+#ifdef NETCDF_INTEGRATION
+        if (in_io || in_cmp)
+        {
+            /* Remember the io system id. */
+            diosysid = iosysidp[cmp];
+            PLOG((3, "diosysid = %d", iosysidp[cmp]));
+        }
+#endif /* NETCDF_INTEGRATION */
+
     } /* next computational component */
 
     /* Now call the function from which the IO tasks will not return

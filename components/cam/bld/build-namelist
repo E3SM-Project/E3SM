@@ -721,7 +721,7 @@ my $rad_prog_bcarb = (($prog_species =~ "BC"   or $aero_chem) and !($chem_rad_pa
 my $rad_prog_sulf  = (($prog_species =~ "SO4"  or $aero_chem or $chem =~ "super_fast_llnl") and !($chem_rad_passive));
 my $rad_prog_dust  = (($prog_species =~ "DST"  or $aero_chem) and !($chem_rad_passive));
 my $rad_prog_sslt  = (($prog_species =~ "SSLT" or $aero_chem) and !($chem_rad_passive));
-my $rad_prog_ozone = (($chem =~ "mozart" or $chem =~ "trop_strat" or $chem =~ "super_fast_llnl" or $chem =~ "linoz") and !($chem_rad_passive));
+my $rad_prog_ozone = (($chem =~ "mozart" or $chem =~ "trop_strat" or $chem =~ "super_fast_llnl" or $chem =~ "superfast" or $chem =~ "linoz") and !($chem_rad_passive));
 
 # Check for eruptive volcano emissions.  These will be radiatively active by default, but
 # only if using BAM and the camrt radiation package (cam4 physics)
@@ -1629,12 +1629,28 @@ if ($nl->get_value('strat_aero_feedback') =~ /$TRUE/io) {
 
 add_default($nl, 'rad_climate', 'val'=>$radval);
 
-# Cloud optics
+# Cloud optics; for MMF be specific about which optics package to use
 if ($rad_pkg eq 'rrtmg' or $rad_pkg eq 'rrtmgp') {
-    add_default($nl, 'liqcldoptics');
-    add_default($nl, 'icecldoptics');
+    if ($cfg->get('use_MMF')) {
+        if ($cfg->get('MMF_microphysics_scheme') eq 'sam1mom') {
+            add_default($nl, 'liqcldoptics', 'val' => 'slingo');
+            add_default($nl, 'icecldoptics', 'val' => 'ebertcurry');
+        } else {
+            add_default($nl, 'liqcldoptics', 'val' => 'gammadist');
+            add_default($nl, 'icecldoptics', 'val' => 'mitchell');
+        }
+    } else {
+        add_default($nl, 'liqcldoptics');
+        add_default($nl, 'icecldoptics');
+    }
     add_default($nl, 'liqopticsfile');
     add_default($nl, 'iceopticsfile');
+}
+
+# Run radiation every time step with MMF
+if ($cfg->get('use_MMF')) {
+  add_default($nl, 'iradsw', 'val' => '1');
+  add_default($nl, 'iradlw', 'val' => '1');
 }
 
 # Gaseous absorption coefficients files for RRTMGP
@@ -2994,6 +3010,139 @@ if ($chem eq 'linoz_mam4_resus_mom' || $chem eq 'linoz_mam4_resus_mom_soag') {
     }
 }
 
+if ($chem eq 'superfast_mam4_resus_mom_soag') {
+
+    # Surface emission datasets:
+    my %species;
+
+    %species = (
+	        'CH2O   -> ' => 'ch2o_emis_file',
+	        'CO     -> ' => 'co_emis_file',
+	        'DMS    -> ' => 'dms_emis_file',
+		'NO     -> ' => 'nox_emis_file',
+		'SO2    -> ' => 'so2_emis_file',
+		'bc_a4  -> ' => 'bc_a4_emis_file',
+		'pom_a4 -> ' => 'pom_a4_emis_file',
+                'so4_a1 -> ' => 'so4_a1_emis_file',
+                'so4_a2 -> ' => 'so4_a2_emis_file',
+		'num_a1 -> ' => 'mam7_num_a1_emis_file',
+                'num_a2 -> ' => 'num_a2_emis_file',
+		'num_a4 -> ' => 'mam7_num_a3_emis_file',
+                );
+    if (! $megan_emis ) {
+      %species = ( %species,
+		'ISOP   -> ' => 'isop_emis_file',  );
+    }
+    my %verhash = ('ver'=>'mam');
+    my $first = 1;
+    my $pre = "";
+    my $val = "";
+    foreach my $id (sort keys %species) {
+        my $rel_filepath = get_default_value($species{$id}, \%verhash );
+	my $abs_filepath = set_abs_filepath($rel_filepath, $inputdata_rootdir);
+	$val .= $pre . quote_string($id . $abs_filepath);
+	if ($first) {
+	    $pre = ",";
+	    $first = 0;
+	}
+    }
+    add_default($nl, 'srf_emis_specifier', 'val'=>$val);
+    unless (defined $nl->get_value('srf_emis_type')) {
+	add_default($nl, 'srf_emis_type',      'val'=>'CYCLICAL');
+	add_default($nl, 'srf_emis_cycle_yr',  'val'=>2000);
+    }
+
+    # Vertical emission datasets:
+    %species = ();
+    %species = ('SO2         -> ' => 'so2_ext_file',
+		'SOAG        -> ' => 'soag_ext_file',
+                'so4_a1      -> ' => 'so4_a1_ext_file', 
+                'so4_a2      -> ' => 'so4_a2_ext_file',
+		'pom_a4      -> ' => 'pom_a4_ext_file',
+		'bc_a4       -> ' => 'bc_a4_ext_file',
+		'num_a1      -> ' => 'mam7_num_a1_ext_file',
+		'num_a2      -> ' => 'num_a2_ext_file',
+		'num_a4      -> ' => 'mam7_num_a3_ext_file', );
+    $first = 1; $pre = ""; $val = "";
+    foreach my $id (sort keys %species) {
+        my $rel_filepath = get_default_value($species{$id}, \%verhash );
+        my $abs_filepath = set_abs_filepath($rel_filepath, $inputdata_rootdir);
+        $val .= $pre . quote_string($id . $abs_filepath);
+        if ($first) {
+            $pre = ",";
+            $first = 0;
+        }
+    }
+    add_default($nl, 'ext_frc_specifier', 'val'=>$val);
+    unless (defined $nl->get_value('ext_frc_type')) {
+	add_default($nl, 'ext_frc_type', 'val'=>"'CYCLICAL'");
+	add_default($nl, 'ext_frc_cycle_yr',  'val'=>2000);
+    }
+
+    # Species with fixed stratosphere values
+    $val = "'NO','NO2','HNO3','CO'";
+    add_default($nl, 'fstrat_list', 'val'=>$val);
+
+    # Datasets
+#    my @files = ('airpl_emis_file', 'soil_erod_file', 'flbc_file', 'fstrat_file',
+    my @files = ('airpl_emis_file', 'soil_erod_file', 'fstrat_file',
+                 'sulf_file', 'tuv_xsect_file', 'o2_xsect_file', 'xs_long_file', 'rsf_file', 
+                 'solar_parms_file', 'exo_coldens_file', 'sad_file', 
+                 'linoz_data_path' , 'linoz_data_file', 'chlorine_loading_file' );
+    foreach my $file (@files) {
+	add_default($nl, $file);
+    }
+    unless (defined $nl->get_value('sad_type')) {
+	add_default($nl, 'sad_type',  'val'=>'CYCLICAL');
+	add_default($nl, 'sad_cycle_yr',  'val'=>'1990');
+    }
+#    unless (defined $nl->get_value('flbc_type')) {
+#	add_default($nl, 'flbc_type',  'val'=>'CYCLICAL');
+#	add_default($nl, 'flbc_cycle_yr',  'val'=>'2000');
+#    }
+    unless (defined $nl->get_value('linoz_data_type')) {
+	add_default($nl, 'linoz_data_type',  'val'=>'CYCLICAL');
+	add_default($nl, 'linoz_data_cycle_yr',  'val'=>'0');
+    }
+    unless (defined $nl->get_value('chlorine_loading_type')) {
+	add_default($nl, 'chlorine_loading_type',  'val'=>'FIXED');
+	add_default($nl, 'chlorine_loading_fixed_ymd',  'val'=>'20000101');
+    }
+    add_default($nl, 'xactive_prates', 'val'=>'.false.');
+
+    # Prescribed species
+    my $val = "'CH4','NO3'";
+    add_default($nl, 'tracer_cnst_specifier', 'val'=>$val);
+    my @files = ( 'tracer_cnst_datapath','tracer_cnst_file', 'tracer_cnst_filelist');
+    foreach my $file (@files) {
+	add_default($nl, $file, 'ver'=>'fixed_ch4');
+    }
+    unless (defined $nl->get_value('tracer_cnst_type')) {
+	add_default($nl, 'tracer_cnst_type',    'ver'=>'fixed_ch4');
+	add_default($nl, 'tracer_cnst_cycle_yr','ver'=>'fixed_ch4');
+    }
+    
+    my $val = "'prsd_ch4:CH4'";
+    add_default($nl, 'prescribed_ghg_specifier', 'val'=>$val);
+    my @files = ( 'prescribed_ghg_datapath','prescribed_ghg_file', 'prescribed_ghg_filelist');
+    foreach my $file (@files) {
+	add_default($nl, $file, 'ver'=>'fixed_ch4');
+    }
+    unless (defined $nl->get_value('prescribed_ghg_type')) {
+	add_default($nl, 'prescribed_ghg_type',    'ver'=>'fixed_ch4');
+	add_default($nl, 'prescribed_ghg_cycle_yr','ver'=>'fixed_ch4');
+    }
+
+    # Marine organic matter specification
+    my @files = ('mam_mom_specifier', 'mam_mom_filename',
+		 'mam_mom_datapath', 'mam_mom_datatype',
+		 'mam_mom_cycle_yr', 'mam_mom_fixed_ymd',
+		 'mam_mom_fixed_tod' );
+    foreach my $file (@files) {
+        add_default($nl, $file);
+    }
+}
+
 if ($chem eq 'trop_mam9') {
 
     my %species;
@@ -3542,6 +3691,16 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'relvar_fix');
    add_default($nl, 'clubb_use_sgv');
 }
+
+# MMF Microphysics scheme
+add_default($nl, 'MMF_microphysics_scheme');
+add_default($nl, 'use_MMF');
+add_default($nl, 'use_ECPP');
+
+# MMF CRM mean-state acceleration
+add_default($nl, 'use_crm_accel');
+add_default($nl, 'crm_accel_uv');
+add_default($nl, 'crm_accel_factor');
 
 add_default($nl, 'do_aerocom_ind3');
 my $aerocom_ind3 = $nl->get_value('do_aerocom_ind3');

@@ -118,6 +118,9 @@ public :: get_number_sw_bands, &
           get_ref_solar_band_irrad, &
           get_ref_total_solar_irrad, &
           get_solar_band_fraction_irrad, &
+          get_band_index_sw, &
+          get_band_index_lw, &
+          test_get_band_index, &
           check_wavenumber_bounds
 
 contains
@@ -250,6 +253,95 @@ subroutine get_sw_spectral_boundaries(lower_bounds, upper_bounds, units)
    end select
 
 end subroutine get_sw_spectral_boundaries
+
+!------------------------------------------------------------------------------
+
+integer function get_band_index_sw(band, units) result(band_index)
+   use assertions, only: assert
+   real(r8), intent(in) :: band
+   character(len=*), intent(in) :: units
+   real(r8) :: band_wavenum
+   integer :: idx
+   character(len=128) :: err
+
+   ! Spectral bands are in wavenumber, so look for band in wavenumber space
+   select case (units)
+   case ('inv_cm','cm^-1','cm-1')
+      band_wavenum = band
+   case('m','meter','meters')
+      band_wavenum = 1.e-2_r8 / band
+   case('nm','nanometer','nanometers')
+      band_wavenum = 1.e7_r8/band
+   case('um','micrometer','micrometers','micron','microns')
+      band_wavenum = 1.e4_r8/band
+   case('cm','centimeter','centimeters')
+      band_wavenum  = 1._r8/band
+   case default
+      call endrun('get_band_index_sw: spectral units not acceptable'//units)
+   end select
+
+   ! Look for band
+   band_index = -1
+   do idx = 1,size(wavenum_sw_lower)
+      if (band_wavenum > wavenum_sw_lower(idx) .and. band_wavenum <= wavenum_sw_upper(idx)) then
+         band_index = idx
+         exit
+      end if
+   end do
+
+   ! Make sure we found a valid band
+   write(err,*) 'get_band_index_sw: index not found for', band, trim(units)
+   call assert(band_index > 0, err)
+end function get_band_index_sw
+
+!-------------------------------------------------------------------------------
+
+integer function get_band_index_lw(band, units) result(band_index)
+   use assertions, only: assert
+   real(r8), intent(in) :: band
+   character(len=*), intent(in) :: units
+   real(r8) :: band_wavenum
+   integer :: idx
+   character(len=128) :: err
+
+   ! Spectral bands are in wavenumber, so look for band in wavenumber space
+   select case (units)
+   case ('inv_cm','cm^-1','cm-1')
+      band_wavenum = band
+   case('m','meter','meters')
+      band_wavenum = 1.e-2_r8 / band
+   case('nm','nanometer','nanometers')
+      band_wavenum = 1.e7_r8/band
+   case('um','micrometer','micrometers','micron','microns')
+      band_wavenum = 1.e4_r8/band
+   case('cm','centimeter','centimeters')
+      band_wavenum  = 1._r8/band
+   case default
+      call endrun('get_band_index_lw: spectral units not acceptable'//units)
+   end select
+
+   ! Look for band
+   band_index = -1
+   do idx = 1,size(wavenum_lw_lower)
+      if (band_wavenum > wavenum_lw_lower(idx) .and. band_wavenum <= wavenum_lw_upper(idx)) then
+         band_index = idx
+         exit
+      end if
+   end do
+
+   ! Make sure we found a valid band
+   write(err,*) 'get_band_index_lw: index not found for', band, trim(units)
+   call assert(band_index > 0, err)
+end function get_band_index_lw
+
+!-------------------------------------------------------------------------------
+
+! Unit test for get_band_index function
+subroutine test_get_band_index()
+   use assertions, only: assert
+   call assert(get_band_index_sw(0.67_r8, 'micron') == 10, 'get_band_index_sw(0.67 micron) /= 10')
+   call assert(get_band_index_lw(10.5_r8, 'micron') == 6 , 'get_band_index_lw(10.5 micron) /= 6' )
+end subroutine
 
 !------------------------------------------------------------------------------
 

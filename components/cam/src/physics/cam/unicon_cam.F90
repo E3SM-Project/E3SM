@@ -10,7 +10,7 @@ module unicon_cam
 
 use shr_kind_mod,     only: r8 => shr_kind_r8, i4 => shr_kind_i4
 use spmd_utils,       only: masterproc
-use ppgrid,           only: pcols, pver, pverp, begchunk, endchunk
+use ppgrid,           only: mix => pcols, pver, pverp, begchunk, endchunk
 use physconst,        only: rair, cpair, gravit, latvap, latice, zvir, mwdry
 
 use constituents,     only: pcnst, cnst_add, qmin, cnst_get_type_byind, cnst_get_ind, cnst_name
@@ -43,6 +43,7 @@ public :: &
    unicon_init_cnst,       &
    unicon_out_t,           &
    unicon_cam_tend,        &
+   unicon_cam_tend_free,   &
    unicon_cam_org_diags
 
 ! namelist variables
@@ -57,7 +58,7 @@ real(r8) :: cp     ! Specific heat of dry air
 
 integer, parameter :: &
    nseg = 1,      &! Number of updraft segments [ # ]
-   mix  = pcols,  &! Maximum number of columns
+!  mix  = pcols,  &! Maximum number of columns  [MIX NOW DEFINED AS PCOLS IN USE STATEMENT]
    mkx  = pver,   &! Number of vertical layers
    ncnst = pcnst   ! Number of advected constituents
 
@@ -119,13 +120,13 @@ integer :: ixcldliq, ixcldice, ixnumliq, ixnumice
 
 ! unicon output fields
 type unicon_out_t
-   real(r8) :: cmfmc(mix,mkx+1)   ! Upward     convective mass flux at the interface [ kg / s / m2 ]
-   real(r8) :: slflx(mix,mkx+1)   ! Net upward convective flux of liquid static energy [ J / s / m2 ]
-   real(r8) :: qtflx(mix,mkx+1)   ! Net upward convective flux of total specific humidity [ kg / s / m2 ]
-   real(r8) :: rqc(mix,mkx)       ! Prod of suspended LWC+IWC by expel of excessive in-cumulus condensate [ kg / kg / s ] > 0
-   real(r8) :: rliq(mix)          ! Vertical integral of 'rqc' in flux unit [ m / s ]
-   real(r8) :: cnt(mix)           ! Cloud top  interface index ( ki = kpen )
-   real(r8) :: cnb(mix)           ! Cloud base interface index ( ki = krel-1 )
+   real(r8), allocatable :: cmfmc(:,:) ! Upward     convective mass flux at the interface [ kg / s / m2 ]
+   real(r8), allocatable :: slflx(:,:) ! Net upward convective flux of liquid static energy [ J / s / m2 ]
+   real(r8), allocatable :: qtflx(:,:) ! Net upward convective flux of total specific humidity [ kg / s / m2 ]
+   real(r8), allocatable :: rqc(:,:)   ! Prod of suspended LWC+IWC by expel of excessive in-cumulus condensate [ kg / kg / s ] > 0
+   real(r8), allocatable :: rliq(:)    ! Vertical integral of 'rqc' in flux unit [ m / s ]
+   real(r8), allocatable :: cnt(:)     ! Cloud top  interface index ( ki = kpen )
+   real(r8), allocatable :: cnb(:)     ! Cloud base interface index ( ki = krel-1 )
 end type unicon_out_t
 
 ! logical array to identify constituents that are mode number concentrations
@@ -927,6 +928,7 @@ subroutine unicon_cam_tend(dt, state, cam_in, sgh30, &
    ! Local variables !
    ! --------------- !
 
+   integer :: ierror
    integer :: iend
    integer :: lchnk     
    integer :: itim
@@ -1095,6 +1097,26 @@ subroutine unicon_cam_tend(dt, state, cam_in, sgh30, &
    ! --------- !
    ! Main body !
    ! --------- !
+   allocate (out%cmfmc(mix,mkx+1), stat=ierror)
+   if ( ierror /= 0 ) call endrun('UNICOM_CAM_TEND error: allocation error cmfmc')
+
+   allocate (out%slflx(mix,mkx+1), stat=ierror)
+   if ( ierror /= 0 ) call endrun('UNICOM_CAM_TEND error: allocation error slflx')
+
+   allocate (out%qtflx(mix,mkx+1), stat=ierror)
+   if ( ierror /= 0 ) call endrun('UNICOM_CAM_TEND error: allocation error qtflx')
+
+   allocate (out%rqc(mix,mkx), stat=ierror)
+   if ( ierror /= 0 ) call endrun('UNICOM_CAM_TEND error: allocation error rqc')
+
+   allocate (out%rliq(mix), stat=ierror)
+   if ( ierror /= 0 ) call endrun('UNICOM_CAM_TEND error: allocation error rliq')
+
+   allocate (out%cnt(mix), stat=ierror)
+   if ( ierror /= 0 ) call endrun('UNICOM_CAM_TEND error: allocation error cnt')
+
+   allocate (out%cnb(mix), stat=ierror)
+   if ( ierror /= 0 ) call endrun('UNICOM_CAM_TEND error: allocation error cnb')
 
 #ifdef USE_UNICON
 
@@ -1409,11 +1431,37 @@ subroutine unicon_cam_tend(dt, state, cam_in, sgh30, &
       end if
    end do
 #else
-   out = unicon_out_t(cmfmc=0.0_r8,slflx=0.0_r8,qtflx=0.0_r8,&
-                      rqc=0.0_r8,rliq=0.0_r8,cnt=0.0_r8,cnb=0.0_r8)
+   out%cmfmc(:,:) = 0.0_r8
+   out%slflx(:,:) = 0.0_r8
+   out%qtflx(:,:) = 0.0_r8
+   out%rqc  (:,:) = 0.0_r8
+   out%rliq (:)   = 0.0_r8
+   out%cnt  (:)   = 0.0_r8
+   out%cnb  (:)   = 0.0_r8
 #endif
 
 end subroutine unicon_cam_tend
+
+subroutine unicon_cam_tend_free(out)
+
+   ! ---------------------- !
+   ! Input-output Arguments !
+   ! ---------------------- !
+
+   type(unicon_out_t),        intent(inout) :: out        ! parameterization outputs
+
+   ! --------- !
+   ! Main body !
+   ! --------- !
+   deallocate (out%cmfmc)
+   deallocate (out%slflx)
+   deallocate (out%qtflx)
+   deallocate (out%rqc)
+   deallocate (out%rliq)
+   deallocate (out%cnt)
+   deallocate (out%cnb)
+
+end subroutine unicon_cam_tend_free
 
 subroutine unicon_cam_org_diags(state, pbuf)
 

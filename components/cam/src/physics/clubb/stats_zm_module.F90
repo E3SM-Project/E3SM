@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-! $Id$
+! $Id: stats_zm_module.F90 7377 2014-11-11 02:43:45Z bmg2@uwm.edu $
 !===============================================================================
 module stats_zm_module
 
@@ -10,7 +10,7 @@ module stats_zm_module
   public :: stats_init_zm
 
   ! Constant parameters
-  integer, parameter, public :: nvarmax_zm = 300  ! Maximum variables allowed
+  integer, parameter, public :: nvarmax_zm = 250  ! Maximum variables allowed
 
   contains
 
@@ -38,37 +38,24 @@ module stats_zm_module
         irtpthlp, & 
         iwprtp, & 
         iwpthlp, & 
-        iwp3_zm, &
-        ithlp3_zm, &
-        irtp3_zm, &
+        iwp3_zm, & 
         iwp4, & 
         iwpthvp, & 
         irtpthvp, & 
         ithlpthvp, & 
         itau_zm, & 
-        itau_zm_simp, &
         iKh_zm, & 
         iK_hm, & 
         iwprcp, & 
-        irc_coef_zm, &
+        irc_coef, &
         ithlprcp, & 
         irtprcp, & 
         ircp2,   &
-        iSkw_zm, &
-        iSkthl_zm, &
-        iSkrt_zm
+        iSkw_zm
 
     use stats_variables, only: &
         iupwp, & 
         ivpwp, & 
-        iupthlp, &
-        iuprtp, &
-        ivpthlp, &
-        ivprtp, &
-        iupthvp, &
-        iuprcp, &
-        ivpthvp, &
-        ivprcp, &
         irho_zm, & 
         isigma_sqd_w, &
         irho_ds_zm, &
@@ -99,11 +86,9 @@ module stats_zm_module
         iup2_dp2, & 
         iup2_pr1, & 
         iup2_pr2, & 
-        iup2_sdmp, & 
-        iup2_pd, &
         iup2_cl, & 
+        iup2_pd, &
         iup2_sf, &
-        iup2_splat, &
         ivp2_bt, & 
         ivp2_ta, & 
         ivp2_tp, & 
@@ -112,14 +97,9 @@ module stats_zm_module
         ivp2_dp2, & 
         ivp2_pr1, & 
         ivp2_pr2, & 
-        ivp2_sdmp, & 
-        ivp2_pd, & 
         ivp2_cl, & 
-        ivp2_sf, &
-        ivp2_splat
-
-    use stats_variables, only: &
-        icoef_wp4_implicit
+        ivp2_pd, & 
+        ivp2_sf
 
     use stats_variables, only: & 
         iwpNcp
@@ -150,11 +130,9 @@ module stats_zm_module
         iwp2_pr3, & 
         iwp2_dp1, & 
         iwp2_dp2, &
-        iwp2_sdmp, & 
-        iwp2_pd, &
         iwp2_cl, & 
-        iwp2_sf, &
-        iwp2_splat
+        iwp2_pd, &
+        iwp2_sf
 
     use stats_variables, only: & 
         iwprtp_bt, & 
@@ -190,34 +168,6 @@ module stats_zm_module
         iwpthlp_sicl, &
         iwpthlp_forcing, &
         iwpthlp_mc
-
-    use stats_variables, only: &
-        iupwp_bt,  &
-        iupwp_ma,  &
-        iupwp_ta,  &
-        iupwp_tp,  &
-        iupwp_ac,  &
-        iupwp_bp,  &
-        iupwp_pr1, &
-        iupwp_pr2, &
-        iupwp_pr3, &
-        iupwp_pr4, &
-        iupwp_dp1, &
-        iupwp_mfl, &
-        iupwp_cl,  &
-        ivpwp_bt,  &
-        ivpwp_ma,  &
-        ivpwp_ta,  &
-        ivpwp_tp,  &
-        ivpwp_ac,  &
-        ivpwp_bp,  &
-        ivpwp_pr1, &
-        ivpwp_pr2, &
-        ivpwp_pr3, &
-        ivpwp_pr4, &
-        ivpwp_dp1, &
-        ivpwp_mfl, &
-        ivpwp_cl
 
     use stats_variables, only: & 
         irtp2_bt, & 
@@ -274,13 +224,6 @@ module stats_zm_module
         irtm_zm, &
         ithlm_zm
 
-    use stats_variables, only: &
-        iw_1_zm, & ! Variable(s)
-        iw_2_zm, &
-        ivarnce_w_1_zm, &
-        ivarnce_w_2_zm, &
-        imixt_frac_zm
-
     use stats_variables, only: & 
         isclrprtp, & 
         isclrp2, & 
@@ -303,24 +246,13 @@ module stats_zm_module
         iC6thl_Skw_fnc, &
         iC7_Skw_fnc, &
         iC1_Skw_fnc, &
-        ibrunt_vaisala_freq_sqd, &
-        iRichardson_num, &
-        ishear_sqd, &
         ihydrometp2, &
         iwphydrometp, &
         irtphmp, &
-        ithlphmp, &
-        ihmxphmyp
+        ithlphmp
 
     use stats_variables, only: &
         irtp2_from_chi
-
-    use stats_variables, only: &
-        ilh_rtp2_mc, &
-        ilh_thlp2_mc, &
-        ilh_wprtp_mc, &
-        ilh_wpthlp_mc, &
-        ilh_rtpthlp_mc
 
     use stats_type_utilities, only: & 
         stat_assign ! Procedure
@@ -348,11 +280,13 @@ module stats_zm_module
     ! Local Varables
     integer :: tot_zm_loops
 
-    integer :: hm_idx, hmx_idx, hmy_idx
+    integer :: hm_idx
 
-    character(len=10) :: hm_type, hmx_type, hmy_type
+    character(len=10) :: hm_type
 
     integer :: i, j, k
+
+    logical :: l_found
 
     character(len=50) :: sclr_idx
 
@@ -363,14 +297,12 @@ module stats_zm_module
     allocate( iwphydrometp(1:hydromet_dim) )
     allocate( irtphmp(1:hydromet_dim) )
     allocate( ithlphmp(1:hydromet_dim) )
-    allocate( ihmxphmyp(1:hydromet_dim,1:hydromet_dim) )
     allocate( iK_hm(1:hydromet_dim) )
 
     ihydrometp2(:) = 0
     iwphydrometp(:) = 0
     irtphmp(:) = 0
     ithlphmp(:) = 0
-    ihmxphmyp(:,:) = 0
     iK_hm(:) = 0
 
     ! Allocate and then zero out passive scalar arrays on the stats_zm grid (fluxes,
@@ -437,113 +369,13 @@ module stats_zm_module
        tot_zm_loops = tot_zm_loops + 1
     endif
 
-    if ( any( vars_zm == "hmxphmyp" ) ) then
-       ! Correct for number of variables found under "hmxphmyp".
-       ! Subtract the number of overall covariances of two hydrometeors, which
-       ! is found by:  (1/2) * hydromet_dim * ( hydromet_dim - 1 );
-       ! from the loop size.
-       tot_zm_loops = tot_zm_loops - hydromet_dim * ( hydromet_dim - 1 ) / 2
-       ! Add 1 for "hmxphmyp" to the loop size.
-       tot_zm_loops = tot_zm_loops + 1
-    endif
-
     if ( any( vars_zm == "K_hm" ) ) then
        ! Correct for number of variables found under "K_hm".
        ! Subtract 1 from the loop size for each hydrometeor.
        tot_zm_loops = tot_zm_loops - hydromet_dim
-       ! Add 1 for "K_hm" to the loop size.
+       ! Add 1 for "thlphmp" to the loop size.
        tot_zm_loops = tot_zm_loops + 1
     endif
-
-     if ( any( vars_zm == "sclrprtp" ) ) then
-       ! Correct for number of variables found under "sclrprtp".
-       ! Subtract 1 from the loop size for each scalar.
-       tot_zm_loops = tot_zm_loops - sclr_dim
-       ! Add 1 for "sclrprtp" to the loop size.
-       tot_zm_loops = tot_zm_loops + 1
-    endif   
-
-    if ( any( vars_zm == "sclrp2" ) ) then
-       ! Correct for number of variables found under "sclrp2".
-       ! Subtract 1 from the loop size for each scalar.
-       tot_zm_loops = tot_zm_loops - sclr_dim
-       ! Add 1 for "sclrp2" to the loop size.
-       tot_zm_loops = tot_zm_loops + 1
-    endif
-
-    if ( any( vars_zm == "sclrpthvp" ) ) then 
-       ! Correct for number of variables found under "sclrpthvp".
-       ! Subtract 1 from the loop size for each scalar.
-       tot_zm_loops = tot_zm_loops - sclr_dim
-       ! Add 1 for "sclrpthvp" to the loop size.
-       tot_zm_loops = tot_zm_loops + 1
-    endif
-
-    if ( any( vars_zm == "sclrpthlp" ) ) then 
-       ! Correct for number of variables found under "sclrpthlp".
-       ! Subtract 1 from the loop size for each scalar.
-       tot_zm_loops = tot_zm_loops - sclr_dim
-       ! Add 1 for "sclrpthlp" to the loop size.
-       tot_zm_loops = tot_zm_loops + 1
-    endif
-
-    if ( any( vars_zm == "sclrprcp" ) ) then 
-       ! Correct for number of variables found under "sclrprcp".
-       ! Subtract 1 from the loop size for each scalar.
-       tot_zm_loops = tot_zm_loops - sclr_dim
-       ! Add 1 for "sclrprcp" to the loop size.
-       tot_zm_loops = tot_zm_loops + 1
-    endif
-
-    if ( any( vars_zm == "wpsclrp" ) ) then 
-       ! Correct for number of variables found under "wpsclrp".
-       ! Subtract 1 from the loop size for each scalar.
-       tot_zm_loops = tot_zm_loops - sclr_dim
-       ! Add 1 for "wpsclrp" to the loop size.
-       tot_zm_loops = tot_zm_loops + 1
-    endif
-
-    if ( any( vars_zm == "wpsclrp2" ) ) then 
-       ! Correct for number of variables found under "wpsclrp2".
-       ! Subtract 1 from the loop size for each scalar.
-       tot_zm_loops = tot_zm_loops - sclr_dim
-       ! Add 1 for "wpsclrp2" to the loop size.
-       tot_zm_loops = tot_zm_loops + 1
-    endif
-
-    if ( any( vars_zm == "wp2sclrp" ) ) then 
-       ! Correct for number of variables found under "wp2sclrp".
-       ! Subtract 1 from the loop size for each scalar.
-       tot_zm_loops = tot_zm_loops - sclr_dim
-       ! Add 1 for "wp2sclrp" to the loop size.
-       tot_zm_loops = tot_zm_loops + 1
-    endif
-
-    if ( any( vars_zm == "wpsclrprtp" ) ) then 
-       ! Correct for number of variables found under "wpsclrprtp".
-       ! Subtract 1 from the loop size for each scalar.
-       tot_zm_loops = tot_zm_loops - sclr_dim
-       ! Add 1 for "wpsclrprtp" to the loop size.
-       tot_zm_loops = tot_zm_loops + 1
-    endif
-
-    if ( any( vars_zm == "wpsclrpthlp" ) ) then 
-       ! Correct for number of variables found under "wpsclrpthlp".
-       ! Subtract 1 from the loop size for each scalar.
-       tot_zm_loops = tot_zm_loops - sclr_dim
-       ! Add 1 for "wpsclrpthlp" to the loop size.
-       tot_zm_loops = tot_zm_loops + 1
-    endif
-
-    if ( any( vars_zm == "wpedsclrp" ) ) then 
-       ! Correct for number of variables found under "wpedsclrp".
-       ! Subtract 1 from the loop size for each scalar.
-       tot_zm_loops = tot_zm_loops - edsclr_dim
-       ! Add 1 for "wpedsclrp" to the loop size.
-       tot_zm_loops = tot_zm_loops + 1
-  endif
-
-
 
     k = 1
 
@@ -602,20 +434,6 @@ module stats_zm_module
              var_units="(m^3)/(s^3)", l_silhs=.false., grid_kind=stats_zm )
         k = k + 1
 
-      case ('thlp3_zm')
-        ithlp3_zm = k
-        call stat_assign( var_index=ithlp3_zm, var_name="thlp3_zm", &
-             var_description="thl'^3 interpolated to moment. levels [K^3]", &
-             var_units="K^3", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('rtp3_zm')
-        irtp3_zm = k
-        call stat_assign( var_index=irtp3_zm, var_name="rtp3_zm", &
-             var_description="rt'^3 interpolated to moment. levels [kg^3/kg^3]", &
-             var_units="(kg^3)/(kg^3)", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
       case ('wp4')
         iwp4 = k
         call stat_assign( var_index=iwp4, var_name="wp4", var_description="w'^4 [m^4/s^4]", &
@@ -649,15 +467,6 @@ module stats_zm_module
              var_description="Time-scale tau on momentum levels [s]", var_units="s", &
              l_silhs=.false., grid_kind=stats_zm )
         k = k + 1
-
-      case ('tau_zm_simp')
-        itau_zm_simp = k
-
-        call stat_assign( var_index=itau_zm_simp, var_name="tau_zm_simp", &
-             var_description="simple tau on momentum levels [s]", var_units="s", &
-             l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
 
       case ('Kh_zm')
         iKh_zm = k
@@ -696,11 +505,11 @@ module stats_zm_module
              l_silhs=.false., grid_kind=stats_zm )
         k = k + 1
       
-      case ('rc_coef_zm')
-        irc_coef_zm = k
-        call stat_assign( var_index=irc_coef_zm, var_name="rc_coef_zm", &
-             var_description="Coefficient of X'r_c' [K/(kg/kg)]", &
-             var_units="K/(kg/kg)", l_silhs=.false., grid_kind=stats_zm )
+      case ('rc_coef')
+        irc_coef = k
+        call stat_assign( var_index=irc_coef, var_name="rc_coef", &
+             var_description="Coefficient of X' R_l' in Eq. (34)", var_units="[-]", &
+             l_silhs=.false., grid_kind=stats_zm )
         k = k + 1
 
       case ('thlprcp')
@@ -735,54 +544,6 @@ module stats_zm_module
         call stat_assign( var_index=ivpwp, var_name="vpwp", &
              var_description="v'w', Vertical north-south momentum flux [m^2/s^2]", &
              var_units="m^2/s^2", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-      case ('upthlp')
-        iupthlp = k
-        call stat_assign( var_index=iupthlp, var_name="upthlp", &
-             var_description="u'thl', Eastward theta_l flux [(m/s)K]", &
-             var_units="(m/s)K", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-      case ('uprtp')
-        iuprtp = k
-        call stat_assign( var_index=iuprtp, var_name="uprtp", &
-             var_description="u'rt', Eastward total water flux [(m/s)(kg/kg)]", &
-             var_units="(m/s)(kg/kg)", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-      case ('vpthlp')
-        ivpthlp = k
-        call stat_assign( var_index=ivpthlp, var_name="vpthlp", &
-             var_description="v'thl', Northward theta_l flux [(m/s)K]", &
-             var_units="(m/s)K", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-      case ('vprtp')
-        ivprtp = k
-        call stat_assign( var_index=ivprtp, var_name="vprtp", &
-             var_description="v'rt', Northward total water flux [(m/s)(kg/kg)]", &
-             var_units="(m/s)(kg/kg)", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-      case ('upthvp')
-        iupthvp = k
-        call stat_assign( var_index=iupthvp, var_name="upthvp", &
-             var_description="u'thv', Eastward theta_v flux [(m/s)K]", &
-             var_units="(m/s)K", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-      case ('uprcp')
-        iuprcp = k
-        call stat_assign( var_index=iuprcp, var_name="uprcp", &
-             var_description="u'rc', Eastward liquid water flux [(m/s)(kg/kg)]", &
-             var_units="(m/s)(kg/kg)", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-      case ('vpthvp')
-        ivpthvp = k
-        call stat_assign( var_index=ivpthvp, var_name="vpthvp", &
-             var_description="v'thv', Northward theta_v flux [(m/s)K]", &
-             var_units="(m/s)K", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-      case ('vprcp')
-        ivprcp = k
-        call stat_assign( var_index=ivprcp, var_name="vprcp", &
-             var_description="v'rc', Northward liquid water flux [(m/s)(kg/kg)]", &
-             var_units="(m/s)(kg/kg)", l_silhs=.false., grid_kind=stats_zm )
         k = k + 1
       case ('rho_zm')
         irho_zm = k
@@ -1044,71 +805,6 @@ module stats_zm_module
 
          enddo ! hm_idx = 1, hydromet_dim, 1
 
-      case ('hmxphmyp')
-
-         do hmx_idx = 1, hydromet_dim, 1
-
-            hmx_type = hydromet_list(hmx_idx)
-
-            do hmy_idx = hmx_idx+1, hydromet_dim, 1
-
-               hmy_type = hydromet_list(hmy_idx)
-
-               ! The covariance (overall) of hmx and hmy.
-               ihmxphmyp(hmy_idx,hmx_idx) = k
-
-               if ( l_mix_rat_hm(hmx_idx) .and. l_mix_rat_hm(hmy_idx) ) then
-
-                  ! Both hydrometeors are mixing ratios.
-                  call stat_assign( var_index=ihmxphmyp(hmy_idx,hmx_idx), &
-                                    var_name=trim( hmx_type(1:2) )//"p" &
-                                    // trim( hmy_type(1:2) )//"p", &
-                                    var_description="Covariance of " &
-                                    // hmx_type(1:1)//"_"//trim(hmx_type(2:2)) &
-                                    // " and " &
-                                    // hmy_type(1:1)//"_"//trim(hmy_type(2:2)) &
-                                    // " [(kg/kg)^2]", &
-                                    var_units="(kg/kg)^2", l_silhs=.false., &
-                                    grid_kind=stats_zm )
-
-               elseif ( ( .not. l_mix_rat_hm(hmx_idx) ) &
-                        .and. ( .not. l_mix_rat_hm(hmy_idx) ) ) then
-
-                  ! Both hydrometeors are concentrations.
-                  call stat_assign( var_index=ihmxphmyp(hmy_idx,hmx_idx), &
-                                    var_name=trim( hmx_type(1:2) )//"p" &
-                                    // trim( hmy_type(1:2) )//"p", &
-                                    var_description="Covariance of " &
-                                    // hmx_type(1:1)//"_"//trim(hmx_type(2:2)) &
-                                    // " and " &
-                                    // hmy_type(1:1)//"_"//trim(hmy_type(2:2)) &
-                                    // " [(num/kg)^2]", &
-                                    var_units="(num/kg)^2", l_silhs=.false., &
-                                    grid_kind=stats_zm )
-
-               else
-
-                  ! One hydrometeor is a mixing ratio and the other hydrometeor
-                  ! is a concentration.
-                  call stat_assign( var_index=ihmxphmyp(hmy_idx,hmx_idx), &
-                                    var_name=trim( hmx_type(1:2) )//"p" &
-                                    // trim( hmy_type(1:2) )//"p", &
-                                    var_description="Covariance of " &
-                                    // hmx_type(1:1)//"_"//trim(hmx_type(2:2)) &
-                                    // " and " &
-                                    // hmy_type(1:1)//"_"//trim(hmy_type(2:2)) &
-                                    // " [(kg/kg) num/kg]", &
-                                    var_units="(kg/kg) num/kg", &
-                                    l_silhs=.false., grid_kind=stats_zm )
-
-               endif
-
-               k = k + 1
-
-            enddo ! hmy_idx = hmx_idx+1, hydromet_dim, 1
-
-         enddo ! hmx_idx = 1, hydromet_dim, 1
-
       case ('VNr')
         iVNr = k
 
@@ -1291,13 +987,6 @@ module stats_zm_module
 
         k = k + 1
 
-      case ('wp2_sdmp')
-        iwp2_sdmp = k
-        call stat_assign( var_index=iwp2_sdmp, var_name="wp2_sdmp", &
-             var_description="wp2 budget: wp2 sponge damping term [m^2/s^3]", var_units="m^2/s^3", &
-             l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
       case ('wp2_cl')
         iwp2_cl = k
 
@@ -1323,15 +1012,6 @@ module stats_zm_module
              var_description="wp2 budget: wp2 surface variance [m^2/s^3]", var_units="m2/s3", &
              l_silhs=.false., grid_kind=stats_zm )
              
-        k = k + 1
-
-      case ('wp2_splat')
-        iwp2_splat = k
-
-        call stat_assign( var_index=iwp2_splat, var_name="wp2_splat", &
-             var_description="wp2 budget: wp2 splatting [m^2/s^3]", &
-             var_units="m^2/s^3", l_silhs=.false., grid_kind=stats_zm )
-
         k = k + 1
 
       case ('wprtp_bt')
@@ -1575,188 +1255,6 @@ module stats_zm_module
         call stat_assign( var_index=iwpthlp_mc, var_name="wpthlp_mc", &
              var_description="Microphysics tendency for wpthlp (not in budget) [(m K)/s^2]", &
              var_units="(m K)/s^2", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('upwp_bt')
-        iupwp_bt = k
-        call stat_assign( var_index=iupwp_bt, var_name="upwp_bt", &
-             var_description="upwp budget: upwp time tendency [m^2/s^3]", &
-             var_units="m^2/s^3", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('upwp_ma')
-        iupwp_ma = k
-        call stat_assign( var_index=iupwp_ma, var_name="upwp_ma", &
-             var_description="upwp budget: upwp mean advection [m^2/s^3]", &
-             var_units="m^2/s^3", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('upwp_ta')
-        iupwp_ta = k
-        call stat_assign( var_index=iupwp_ta, var_name="upwp_ta", &
-             var_description="upwp budget: upwp turbulent advection [m^2/s^3]", &
-             var_units="m^2/s^3", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('upwp_tp')
-        iupwp_tp = k
-        call stat_assign( var_index=iupwp_tp, var_name="upwp_tp", &
-             var_description="upwp budget: upwp turbulent production [m^2/s^3]", &
-             var_units="m^2/s^3", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('upwp_ac')
-        iupwp_ac = k
-        call stat_assign( var_index=iupwp_ac, var_name="upwp_ac", &
-             var_description="upwp budget: upwp accumulation term [m^2/s^3]", &
-             var_units="m^2/s^3", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('upwp_bp')
-        iupwp_bp = k
-        call stat_assign( var_index=iupwp_bp, var_name="upwp_bp", &
-             var_description="upwp budget: upwp buoyancy production [m^2/s^3]", &
-             var_units="m^2/s^3", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('upwp_pr1')
-        iupwp_pr1 = k
-        call stat_assign( var_index=iupwp_pr1, var_name="upwp_pr1", &
-             var_description="upwp budget: upwp pressure term 1 [m^2/s^3]", &
-             var_units="m^2/s^3", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('upwp_pr2')
-        iupwp_pr2 = k
-        call stat_assign( var_index=iupwp_pr2, var_name="upwp_pr2", &
-             var_description="upwp budget: upwp pressure term 2 [m^2/s^3]", &
-             var_units="m^2/s^3", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('upwp_pr3')
-        iupwp_pr3 = k
-        call stat_assign( var_index=iupwp_pr3, var_name="upwp_pr3", &
-             var_description="upwp budget: upwp pressure term 3 [m^2/s^3]", &
-             var_units="m^2/s^3", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('upwp_pr4')
-        iupwp_pr4 = k
-        call stat_assign( var_index=iupwp_pr4, var_name="upwp_pr4", &
-             var_description="upwp budget: upwp pressure term 4 [m^2/s^3]", &
-             var_units="m^2/s^3", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('upwp_dp1')
-        iupwp_dp1 = k
-        call stat_assign( var_index=iupwp_dp1, var_name="upwp_dp1", &
-             var_description="upwp budget: upwp dissipation term 1 [m^2/s^3]", &
-             var_units="m^2/s^3", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('upwp_mfl')
-        iupwp_mfl = k
-        call stat_assign( var_index=iupwp_mfl, var_name="upwp_mfl", &
-             var_description="upwp budget: upwp monotonic flux limiter [m^2/s^3]", &
-             var_units="m^2/s^3", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('upwp_cl')
-        iupwp_cl = k
-        call stat_assign( var_index=iupwp_cl, var_name="upwp_cl", &
-             var_description="upwp budget: upwp clipping term [m^2/s^3]", &
-             var_units="m^2/s^3", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('vpwp_bt')
-        ivpwp_bt = k
-        call stat_assign( var_index=ivpwp_bt, var_name="vpwp_bt", &
-             var_description="vpwp budget: vpwp time tendency [m^2/s^3]", &
-             var_units="m^2/s^3", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('vpwp_ma')
-        ivpwp_ma = k
-        call stat_assign( var_index=ivpwp_ma, var_name="vpwp_ma", &
-             var_description="vpwp budget: vpwp mean advection [m^2/s^3]", &
-             var_units="m^2/s^3", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('vpwp_ta')
-        ivpwp_ta = k
-        call stat_assign( var_index=ivpwp_ta, var_name="vpwp_ta", &
-             var_description="vpwp budget: vpwp turbulent advection [m^2/s^3]", &
-             var_units="m^2/s^3", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('vpwp_tp')
-        ivpwp_tp = k
-        call stat_assign( var_index=ivpwp_tp, var_name="vpwp_tp", &
-             var_description="vpwp budget: vpwp turbulent production [m^2/s^3]", &
-             var_units="m^2/s^3", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('vpwp_ac')
-        ivpwp_ac = k
-        call stat_assign( var_index=ivpwp_ac, var_name="vpwp_ac", &
-             var_description="vpwp budget: vpwp accumulation term [m^2/s^3]", &
-             var_units="m^2/s^3", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('vpwp_bp')
-        ivpwp_bp = k
-        call stat_assign( var_index=ivpwp_bp, var_name="vpwp_bp", &
-             var_description="vpwp budget: vpwp buoyancy production [m^2/s^3]", &
-             var_units="m^2/s^3", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('vpwp_pr1')
-        ivpwp_pr1 = k
-        call stat_assign( var_index=ivpwp_pr1, var_name="vpwp_pr1", &
-             var_description="vpwp budget: vpwp pressure term 1 [m^2/s^3]", &
-             var_units="m^2/s^3", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('vpwp_pr2')
-        ivpwp_pr2 = k
-        call stat_assign( var_index=ivpwp_pr2, var_name="vpwp_pr2", &
-             var_description="vpwp budget: vpwp pressure term 2 [m^2/s^3]", &
-             var_units="m^2/s^3", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('vpwp_pr3')
-        ivpwp_pr3 = k
-        call stat_assign( var_index=ivpwp_pr3, var_name="vpwp_pr3", &
-             var_description="vpwp budget: vpwp pressure term 3 [m^2/s^3]", &
-             var_units="m^2/s^3", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('vpwp_pr4')
-        ivpwp_pr4 = k
-        call stat_assign( var_index=ivpwp_pr4, var_name="vpwp_pr4", &
-             var_description="vpwp budget: vpwp pressure term 4 [m^2/s^3]", &
-             var_units="m^2/s^3", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('vpwp_dp1')
-        ivpwp_dp1 = k
-        call stat_assign( var_index=ivpwp_dp1, var_name="vpwp_dp1", &
-             var_description="vpwp budget: vpwp dissipation term 1 [m^2/s^3]", &
-             var_units="m^2/s^3", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('vpwp_mfl')
-        ivpwp_mfl = k
-        call stat_assign( var_index=ivpwp_mfl, var_name="vpwp_mfl", &
-             var_description="vpwp budget: vpwp monotonic flux limiter [m^2/s^3]", &
-             var_units="m^2/s^3", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('vpwp_cl')
-        ivpwp_cl = k
-        call stat_assign( var_index=ivpwp_cl, var_name="vpwp_cl", &
-             var_description="vpwp budget: vpwp clipping term [m^2/s^3]", &
-             var_units="m^2/s^3", l_silhs=.false., grid_kind=stats_zm )
         k = k + 1
 
         ! Variance budgets
@@ -2042,13 +1540,6 @@ module stats_zm_module
              l_silhs=.false., grid_kind=stats_zm )
         k = k + 1
 
-      case ('up2_sdmp')
-        iup2_sdmp = k
-        call stat_assign( var_index=iup2_sdmp, var_name="up2_sdmp", &
-             var_description="up2 budget: up2 sponge damping term [m^2/s^3]", var_units="m^2/s^3", &
-             l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
       case ('up2_cl')
         iup2_cl = k
         call stat_assign( var_index=iup2_cl, var_name="up2_cl", &
@@ -2067,13 +1558,6 @@ module stats_zm_module
         iup2_sf = k
         call stat_assign( var_index=iup2_sf, var_name="up2_sf", &
              var_description="up2 budget: up2 surface variance [m^2/s^3]", var_units="m^2/s^3", &
-             l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('up2_splat')
-        iup2_splat = k
-        call stat_assign( var_index=iup2_splat, var_name="up2_splat", &
-             var_description="up2 budget: up2 splatting [m^2/s^3]", var_units="m^2/s^3", &
              l_silhs=.false., grid_kind=stats_zm )
         k = k + 1
 
@@ -2133,13 +1617,6 @@ module stats_zm_module
              l_silhs=.false., grid_kind=stats_zm )
         k = k + 1
 
-      case ('vp2_sdmp')
-        ivp2_sdmp = k
-        call stat_assign( var_index=ivp2_sdmp, var_name="vp2_sdmp", &
-             var_description="vp2 budget: vp2 sponge damping term [m^2/s^3]", var_units="m^2/s^3", &
-             l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
       case ('vp2_cl')
         ivp2_cl = k
         call stat_assign( var_index=ivp2_cl, var_name="vp2_cl", &
@@ -2158,13 +1635,6 @@ module stats_zm_module
         ivp2_sf = k
         call stat_assign( var_index=ivp2_sf, var_name="vp2_sf", &
              var_description="vp2 budget: vp2 surface variance [m^2/s^3]", var_units="m^2/s^3", &
-             l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('vp2_splat')
-        ivp2_splat = k
-        call stat_assign( var_index=ivp2_splat, var_name="vp2_splat", &
-             var_description="vp2 budget: vp2 splatting [m^2/s^3]", var_units="m^2/s^3", &
              l_silhs=.false., grid_kind=stats_zm )
         k = k + 1
 
@@ -2234,7 +1704,7 @@ module stats_zm_module
       case ('cloud_frac_zm')
         icloud_frac_zm = k
         call stat_assign( var_index=icloud_frac_zm, var_name="cloud_frac_zm", &
-          var_description="Cloud fraction [-]", var_units="-", l_silhs=.false., grid_kind=stats_zm)
+          var_description="Cloud fraction", var_units="count", l_silhs=.false., grid_kind=stats_zm)
         k = k + 1
       
       case ('ice_supersat_frac_zm')
@@ -2265,41 +1735,6 @@ module stats_zm_module
              grid_kind=stats_zm )
         k = k + 1
 
-      case ('w_1_zm')
-        iw_1_zm = k
-        call stat_assign( var_index=iw_1_zm, var_name="w_1_zm", &
-             var_description="pdf parameter zm: mean w of component 1 [m/s]", &
-             var_units="m/s", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('w_2_zm')
-        iw_2_zm = k
-        call stat_assign( var_index=iw_2_zm, var_name="w_2_zm", &
-             var_description="pdf parameter zm: mean w of component 2 [m/s]", &
-             var_units="m/s", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('varnce_w_1_zm')
-        ivarnce_w_1_zm = k
-        call stat_assign( var_index=ivarnce_w_1_zm, var_name="varnce_w_1_zm", &
-             var_description="pdf parameter zm: w variance of component 1 [m^2/s^2]", &
-             var_units="m^2/s^2", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('varnce_w_2_zm')
-        ivarnce_w_2_zm = k
-        call stat_assign( var_index=ivarnce_w_2_zm, var_name="varnce_w_2_zm", &
-             var_description="pdf parameter zm: w variance of component 2 [m^2/s^2]", &
-             var_units="m^2/s^2", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ('mixt_frac_zm')
-        imixt_frac_zm = k
-        call stat_assign( var_index=imixt_frac_zm, var_name="mixt_frac_zm", &
-             var_description="pdf parameter zm: mixture fraction [-]", &
-             var_units="-", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
       case ( 'Skw_velocity' )
         iSkw_velocity = k
         call stat_assign( var_index=iSkw_velocity, var_name="Skw_velocity", &
@@ -2310,65 +1745,35 @@ module stats_zm_module
       case ( 'gamma_Skw_fnc' )
         igamma_Skw_fnc = k
         call stat_assign( var_index=igamma_Skw_fnc, var_name="gamma_Skw_fnc", &
-             var_description="Gamma as a function of skewness [-]", var_units="-", &
+             var_description="Gamma as a function of skewness [-]", var_units="count", &
              l_silhs=.false., grid_kind=stats_zm )
         k = k + 1
 
       case ( 'C6rt_Skw_fnc' )
         iC6rt_Skw_fnc = k
         call stat_assign( var_index=iC6rt_Skw_fnc, var_name="C6rt_Skw_fnc", &
-             var_description="C_6rt parameter with Sk_w applied [-]", var_units="-", &
+             var_description="C_6rt parameter with Sk_w applied [-]", var_units="count", &
              l_silhs=.false., grid_kind=stats_zm )
         k = k + 1
 
       case ( 'C6thl_Skw_fnc' )
         iC6thl_Skw_fnc = k
         call stat_assign( var_index=iC6thl_Skw_fnc, var_name="C6thl_Skw_fnc", &
-             var_description="C_6thl parameter with Sk_w applied [-]", var_units="-", &
+             var_description="C_6thl parameter with Sk_w applied [-]", var_units="count", &
              l_silhs=.false., grid_kind=stats_zm )
         k = k + 1
 
       case ( 'C7_Skw_fnc' )
         iC7_Skw_fnc = k
         call stat_assign( var_index=iC7_Skw_fnc, var_name="C7_Skw_fnc", &
-             var_description="C_7 parameter with Sk_w applied [-]", var_units="-", &
+             var_description="C_7 parameter with Sk_w applied [-]", var_units="count", &
              l_silhs=.false., grid_kind=stats_zm )
         k = k + 1
 
       case ( 'C1_Skw_fnc' )
         iC1_Skw_fnc = k
         call stat_assign( var_index=iC1_Skw_fnc, var_name="C1_Skw_fnc", &
-             var_description="C_1 parameter with Sk_w applied [-]", var_units="-", &
-             l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ( 'coef_wp4_implicit' )
-        icoef_wp4_implicit = k
-        call stat_assign( var_index=icoef_wp4_implicit, &
-                          var_name="coef_wp4_implicit", &
-                          var_description="wp4 = coef_wp4_implicit * wp2^2" &
-                                          // " (new PDF) [-]", &
-                          var_units="-", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ( 'brunt_vaisala_freq_sqd' )
-        ibrunt_vaisala_freq_sqd = k
-        call stat_assign( var_index=ibrunt_vaisala_freq_sqd, var_name="brunt_vaisala_freq_sqd", &
-             var_description="Brunt-Vaisala freqency squared, N^2 [1/s^2]", var_units="1/s^2", &
-             l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ( 'Richardson_num' )
-        iRichardson_num = k
-        call stat_assign( var_index=iRichardson_num, var_name="Richardson_num", &
-             var_description="Richardson number [-]", var_units="-", &
-             l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ( 'shear_sqd' )
-        ishear_sqd = k
-        call stat_assign( var_index=ishear_sqd, var_name="shear_sqd", &
-             var_description="shear_sqd [-]", var_units="-", &
+             var_description="C_1 parameter with Sk_w applied [-]", var_units="count", &
              l_silhs=.false., grid_kind=stats_zm )
         k = k + 1
 
@@ -2393,20 +1798,6 @@ module stats_zm_module
              l_silhs=.false., grid_kind=stats_zm )
         k = k + 1
 
-      case ( 'Skthl_zm' )
-        iSkthl_zm = k
-        call stat_assign( var_index=iSkthl_zm, var_name="Skthl_zm", &
-             var_description="Skewness of thl on momentum levels [-]", var_units="-", &
-             l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ( 'Skrt_zm' )
-        iSkrt_zm = k
-        call stat_assign( var_index=iSkrt_zm, var_name="Skrt_zm", &
-             var_description="Skewness of rt on momentum levels [-]", var_units="-", &
-             l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
       case ( 'stability_correction' )
         istability_correction = k
         call stat_assign( var_index=istability_correction, var_name="stability_correction", &
@@ -2419,167 +1810,135 @@ module stats_zm_module
         call stat_assign( var_index=irtp2_from_chi, var_name="rtp2_from_chi", &
              var_description="Variance of rt, computed from the chi/eta distribution [(kg/kg)^2]", &
              var_units="(kg/kg)^2", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
 
-      case ( 'lh_rtp2_mc' )
-        ilh_rtp2_mc = k
-        call stat_assign( var_index=ilh_rtp2_mc, var_name="lh_rtp2_mc", &
-             var_description="LH est. of rtp2_mc [(kg/kg)^2/s]", &
-             var_units="(kg/kg)^2/s", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ( 'lh_thlp2_mc' )
-        ilh_thlp2_mc = k
-        call stat_assign( var_index=ilh_thlp2_mc, var_name="lh_thlp2_mc", &
-             var_description="LH est. of thlp2_mc [K^2/s]", &
-             var_units="K^2/s", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ( 'lh_wprtp_mc' )
-        ilh_wprtp_mc = k
-        call stat_assign( var_index=ilh_wprtp_mc, var_name="lh_wprtp_mc", &
-             var_description="LH est. of wprtp_mc [(m kg/kg)/s^2]", &
-             var_units="(m kg/kg)/s^2", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ( 'lh_wpthlp_mc' )
-        ilh_wpthlp_mc = k
-        call stat_assign( var_index=ilh_wpthlp_mc, var_name="lh_wpthlp_mc", &
-             var_description="LH est. of wpthlp_mc [(m K)/s^2]", &
-             var_units="(m K)/s^2", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ( 'lh_rtpthlp_mc' )
-        ilh_rtpthlp_mc = k
-        call stat_assign( var_index=ilh_rtpthlp_mc, var_name="lh_rtpthlp_mc", &
-             var_description="LH est. of rtpthlp_mc [(K kg/kg)/s]", &
-             var_units="(K kg/kg)/s", l_silhs=.false., grid_kind=stats_zm )
-        k = k + 1
-
-      case ( 'sclrprtp' )
-        do j = 1, sclr_dim, 1
-          write( sclr_idx, * ) j
-          sclr_idx = adjustl(sclr_idx)
-          isclrprtp(j) = k
-          call stat_assign( var_index=isclrprtp(j), var_name="sclr"//trim(sclr_idx)//"prtp", &
-            var_description="scalar("//trim(sclr_idx)//")'rt'", var_units="unknown", &
-            l_silhs=.false., grid_kind=stats_zm )
-          k = k + 1
-        end do
-
-      case ( 'sclrp2' )
-        do j = 1, sclr_dim, 1
-          write( sclr_idx, * ) j
-          sclr_idx = adjustl(sclr_idx)
-          isclrp2(j) = k
-          call stat_assign( var_index=isclrp2(j), var_name="sclr"//trim(sclr_idx)//"p2", &
-            var_description="scalar("//trim(sclr_idx)//")'^2'", var_units="unknown", &
-            l_silhs=.false., grid_kind=stats_zm )
-          k = k + 1
-        end do
-
-      case ( 'sclrpthvp' )
-        do j = 1, sclr_dim, 1
-          write( sclr_idx, * ) j
-          sclr_idx = adjustl(sclr_idx)
-          isclrpthvp(j) = k
-          call stat_assign( var_index=isclrpthvp(j), var_name="sclr"//trim(sclr_idx)//"pthvp", &
-            var_description="scalar("//trim(sclr_idx)//")'th_v'", var_units="unknown", &
-            l_silhs=.false., grid_kind=stats_zm )
-          k = k + 1
-        end do
-
-      case ( 'sclrpthlp' )
-        do j = 1, sclr_dim, 1
-          write( sclr_idx, * ) j
-          sclr_idx = adjustl(sclr_idx)
-          isclrpthlp(j) = k
-          call stat_assign( var_index=isclrpthlp(j), var_name="sclr"//trim(sclr_idx)//"pthlp", &
-            var_description="scalar("//trim(sclr_idx)//")'th_l'", var_units="unknown", &
-            l_silhs=.false., grid_kind=stats_zm )
-          k = k + 1
-        end do
-
-      case ( 'sclrprcp' )
-        do j = 1, sclr_dim, 1
-          write( sclr_idx, * ) j
-          sclr_idx = adjustl(sclr_idx)
-          isclrprcp(j) = k
-          call stat_assign( var_index=isclrprcp(j), var_name="sclr"//trim(sclr_idx)//"prcp", &
-            var_description="scalar("//trim(sclr_idx)//")'rc'", var_units="unknown", &
-            l_silhs=.false., grid_kind=stats_zm )
-          k = k + 1
-        end do
-
-      case ( 'wpsclrp' )
-        do j = 1, sclr_dim, 1
-          write( sclr_idx, * ) j
-          sclr_idx = adjustl(sclr_idx)
-          iwpsclrp(j) = k
-          call stat_assign( var_index=iwpsclrp(j), var_name="wpsclr"//trim(sclr_idx)//"p", &
-            var_description="'w'scalar("//trim(sclr_idx)//")", var_units="unknown", &
-            l_silhs=.false., grid_kind=stats_zm )
-          k = k + 1
-        end do
-
-      case ( 'wpsclrp2' )
-        do j = 1, sclr_dim, 1
-          write( sclr_idx, * ) j
-          sclr_idx = adjustl(sclr_idx)
-          iwpsclrp2(j) = k
-          call stat_assign( var_index=iwpsclrp2(j), var_name="wpsclr"//trim(sclr_idx)//"p2", &
-            var_description="'w'scalar("//trim(sclr_idx)//")'^2'", var_units="unknown", &
-            l_silhs=.false., grid_kind=stats_zm )
-          k = k + 1
-        end do
-
-      case ( 'wp2sclrp' )
-        do j = 1, sclr_dim, 1
-          write( sclr_idx, * ) j
-          sclr_idx = adjustl(sclr_idx)
-          iwp2sclrp(j) = k          
-          call stat_assign( var_index=iwp2sclrp(j), var_name="wp2sclr"//trim(sclr_idx)//"p", &
-            var_description="'w'^2 scalar("//trim(sclr_idx)//")", var_units="unknown", &
-            l_silhs=.false., grid_kind=stats_zm )
-          k = k + 1
-        end do
-
-      case ( 'wpsclrprtp' )
-        do j = 1, sclr_dim, 1
-          write( sclr_idx, * ) j
-          sclr_idx = adjustl(sclr_idx)
-          iwpsclrprtp(j) = k
-          call stat_assign( var_index=iwpsclrprtp(j), var_name="wpsclr"//trim(sclr_idx)//"prtp", &
-            var_description="'w' scalar("//trim(sclr_idx)//")'rt'", var_units="unknown", &
-            l_silhs=.false., grid_kind=stats_zm )
-          k = k + 1
-        end do
-
-      case ( 'wpsclrpthlp' )
-        do j = 1, sclr_dim, 1
-          write( sclr_idx, * ) j
-          sclr_idx = adjustl(sclr_idx)
-          iwpsclrpthlp(j) = k
-          call stat_assign( var_index=iwpsclrpthlp(j), var_name="wpsclr"//trim(sclr_idx)//"pthlp", &
-            var_description="'w' scalar("//trim(sclr_idx)//")'th_l'", var_units="unknown", &
-            l_silhs=.false., grid_kind=stats_zm )
-          k = k + 1
-        end do
-
-      case ( 'wpedsclrp' )
-        do j = 1, edsclr_dim, 1
-          write( sclr_idx, * ) j
-          sclr_idx = adjustl(sclr_idx)
-          iwpedsclrp(j) = k
-          call stat_assign( var_index=iwpedsclrp(j), var_name="wpedsclr"//trim(sclr_idx)//"p", &
-            var_description="eddy scalar("//trim(sclr_idx)//")'w'", var_units="unknown", &
-            l_silhs=.false., grid_kind=stats_zm )
-          k = k + 1
-        end do
-          
       case default
-        write(fstderr,*) 'Error:  unrecognized variable in vars_zm:  ',  trim(vars_zm(i))
-        l_error = .true.  ! This will stop the run.
+        l_found = .false.
+
+        j = 1
+
+        do while( j <= sclr_dim .and. .not. l_found )
+          write( sclr_idx, * ) j
+          sclr_idx = adjustl(sclr_idx)
+
+          if( trim(vars_zm(i)) == 'sclr'//trim(sclr_idx)//'prtp'.and. .not. l_found ) then
+            isclrprtp(j) = k
+
+        call stat_assign( var_index=isclrprtp(j), var_name="sclr"//trim(sclr_idx)//"prtp", &
+             var_description="scalar("//trim(sclr_idx)//")'rt'", var_units="unknown", &
+             l_silhs=.false., grid_kind=stats_zm )
+            k = k + 1
+            l_found = .true.
+          end if
+          if( trim(vars_zm(i)) == 'sclr'//trim(sclr_idx)//'p2'.and. .not. l_found ) then
+            isclrp2(j) = k
+        call stat_assign( var_index=isclrp2(j), var_name="sclr"//trim(sclr_idx)//"p2", &
+             var_description="scalar("//trim(sclr_idx)//")'^2'", var_units="unknown", &
+             l_silhs=.false., grid_kind=stats_zm )
+            k = k + 1
+            l_found = .true.
+          end if
+          if( trim(vars_zm(i)) == 'sclr'//trim(sclr_idx)//'pthvp'.and. .not. l_found ) then
+            isclrpthvp(j) = k
+        call stat_assign( var_index=isclrpthvp(j), var_name="sclr"//trim(sclr_idx)//"pthvp", &
+             var_description="scalar("//trim(sclr_idx)//")'th_v'", var_units="unknown", &
+             l_silhs=.false., grid_kind=stats_zm )
+            k = k + 1
+            l_found = .true.
+          end if
+          if( trim(vars_zm(i)) == 'sclr'//trim(sclr_idx)//'pthlp'.and. .not. l_found ) then
+            isclrpthlp(j) = k
+
+        call stat_assign( var_index=isclrpthlp(j), var_name="sclr"//trim(sclr_idx)//"pthlp", &
+             var_description="scalar("//trim(sclr_idx)//")'th_l'", var_units="unknown", &
+             l_silhs=.false., grid_kind=stats_zm )
+            k = k + 1
+            l_found = .true.
+          end if
+          if( trim(vars_zm(i)) == 'sclr'//trim(sclr_idx)//'prcp'.and. .not. l_found ) then
+
+            isclrprcp(j) = k
+
+        call stat_assign( var_index=isclrprcp(j), var_name="sclr"//trim(sclr_idx)//"prcp", &
+             var_description="scalar("//trim(sclr_idx)//")'rc'", var_units="unknown", &
+             l_silhs=.false., grid_kind=stats_zm )
+            k = k + 1
+            l_found = .true.
+          end if
+          if( trim(vars_zm(i)) == 'wpsclr'//trim(sclr_idx)//'p'.and. .not. l_found ) then
+            iwpsclrp(j) = k
+
+        call stat_assign( var_index=iwpsclrp(j), var_name="wpsclr"//trim(sclr_idx)//"p", &
+             var_description="'w'scalar("//trim(sclr_idx)//")", var_units="unknown", &
+             l_silhs=.false., grid_kind=stats_zm )
+            k = k + 1
+            l_found = .true.
+          end if
+          if( trim(vars_zm(i)) == 'wpsclr'//trim(sclr_idx)//'p2'.and. .not. l_found ) then
+
+            iwpsclrp2(j) = k
+
+        call stat_assign( var_index=iwpsclrp2(j), var_name="wpsclr"//trim(sclr_idx)//"p2", &
+             var_description="'w'scalar("//trim(sclr_idx)//")'^2'", var_units="unknown", &
+             l_silhs=.false., grid_kind=stats_zm )
+            k = k + 1
+            l_found = .true.
+          end if
+          if( trim(vars_zm(i)) == 'wp2sclr'//trim(sclr_idx)//'p'.and. .not. l_found ) then
+
+            iwp2sclrp(j) = k
+
+        call stat_assign( var_index=iwp2sclrp(j), var_name="wp2sclr"//trim(sclr_idx)//"p", &
+             var_description="'w'^2 scalar("//trim(sclr_idx)//")", var_units="unknown", &
+             l_silhs=.false., grid_kind=stats_zm )
+            k = k + 1
+            l_found = .true.
+          end if
+          if( trim(vars_zm(i)) == 'wpsclr'//trim(sclr_idx)//'prtp'.and. .not. l_found ) then
+            iwpsclrprtp(j) = k
+
+        call stat_assign( var_index=iwpsclrprtp(j), var_name="wpsclr"//trim(sclr_idx)//"prtp", &
+             var_description="'w' scalar("//trim(sclr_idx)//")'rt'", var_units="unknown", &
+             l_silhs=.false., grid_kind=stats_zm )
+            k = k + 1
+            l_found = .true.
+          end if
+          if( trim(vars_zm(i)) == 'wpsclr'//trim(sclr_idx)//'pthlp'.and. .not. l_found ) then
+            iwpsclrpthlp(j) = k
+
+        call stat_assign( var_index=iwpsclrpthlp(j), var_name="wpsclr"//trim(sclr_idx)//"pthlp", &
+             var_description="'w' scalar("//trim(sclr_idx)//")'th_l'", var_units="unknown", &
+             l_silhs=.false., grid_kind=stats_zm )
+            k = k + 1
+            l_found = .true.
+          end if
+          j = j + 1
+        end do
+
+        j = 1
+
+        do while( j <= edsclr_dim .and. .not. l_found )
+
+          write( sclr_idx, * ) j
+          sclr_idx = adjustl(sclr_idx)
+
+          if( trim(vars_zm(i)) == 'wpedsclr'//trim(sclr_idx)//'p'.and. .not. l_found ) then
+            iwpedsclrp(j) = k
+
+        call stat_assign( var_index=iwpedsclrp(j), var_name="wpedsclr"//trim(sclr_idx)//"p", &
+             var_description="eddy scalar("//trim(sclr_idx)//")'w'", var_units="unknown", &
+             l_silhs=.false., grid_kind=stats_zm )
+            k = k + 1
+            l_found = .true.
+          end if
+
+          j = j + 1
+
+        end do
+
+        if ( .not. l_found ) then
+          write(fstderr,*) 'Error:  unrecognized variable in vars_zm:  ',  trim(vars_zm(i))
+          l_error = .true.  ! This will stop the run.
+        end if
 
       end select
 

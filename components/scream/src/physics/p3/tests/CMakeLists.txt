@@ -27,7 +27,6 @@ set(P3_TESTS_SRCS
   p3_ice_nucleation_unit_tests.cpp
   p3_ice_melting_unit_tests.cpp
   p3_saturation_unit_tests.cpp
-  p3_droplet_activation_unit_tests.cpp
   p3_ice_cldliq_wet_growth_unit_tests.cpp
   p3_get_latent_heat_unit_tests.cpp
   p3_subgrid_variance_scaling_unit_tests.cpp

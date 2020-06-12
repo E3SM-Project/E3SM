@@ -1,9 +1,9 @@
 #include "shoc_functions_f90.hpp"
 
-#include "share/scream_assert.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/util/scream_kokkos_utils.hpp"
-#include "share/scream_pack_kokkos.hpp"
+#include "ekat/scream_assert.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/util/scream_kokkos_utils.hpp"
+#include "ekat/scream_pack_kokkos.hpp"
 #include "shoc_f90.hpp"
 
 #include <random>

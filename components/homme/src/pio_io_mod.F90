@@ -513,6 +513,7 @@ contains
                    end if
                    varptr%ndims=dimcnt
                    varptr%varname=varname(i)
+                   varptr%vtype=vartype(i)
                    varptr%required = varrequired(i)
 
                    ierr = PIO_def_var(ncdf%FileID, varname(i), vartype(i), vardims(1:dimcnt), &

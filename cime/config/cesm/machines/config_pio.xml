@@ -17,21 +17,12 @@
     </values>
   </entry>
   -->
-
-  <entry id="PIO_STRIDE">
-    <values>
-      <value>$MAX_MPITASKS_PER_NODE</value>
-      <value mach="yellowstone" grid="a%ne120.+oi%gx1">60</value>
-    </values>
-  </entry>
-
-  <!--
   <entry id="PIO_VERSION">
     <values>
-      <value mach="stampede2-skx">1</value>
+      <value mpilib="mpi-serial">2</value>
     </values>
   </entry>
-  -->
+
 
   <!--- uncomment and fill in relevant sections
   <entry id="PIO_ROOT">
@@ -49,18 +40,16 @@
   </entry>
   -->
 
-  <entry id="PIO_TYPENAME">
-    <values>
-      <value>pnetcdf</value>
-      <value mpilib="mpi-serial">netcdf</value>
-    </values>
-  </entry>
-
+<!--
   <entry id="PIO_REARRANGER">
     <values>
-      <!-- Note: problem not using box rearranger with nuopc caps -->
-      <!-- <value>$PIO_VERSION</value> -->
       <value>1</value>
+    </values>
+  </entry>
+-->
+  <entry id="PIO_REARRANGER">
+    <values>
+      <value compset="DATM">1</value>
     </values>
   </entry>
 
@@ -240,10 +229,16 @@
   </entry>
   -->
 
+  <entry id="PIO_TYPENAME">
+    <values>
+      <value>pnetcdf</value>
+      <value mpilib="mpi-serial">netcdf</value>
+    </values>
+  </entry>
 
   <entry id="ATM_PIO_TYPENAME">
     <values>
-      <value compset="DATM">netcdf</value>
+      <value compset=".*DATM.*">netcdf</value>
     </values>
   </entry>
 
