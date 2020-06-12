@@ -27,7 +27,7 @@ class GatherAllData(object):
         compiler  = get_mach_cxx_compiler(machine)
         batch     = get_mach_batch_command(machine)
 
-        env_setup_str = " && ".join(env_setup) + "CTEST_PARALLEL_LEVEL={}".format(get_mach_testing_resources(machine))
+        env_setup_str = " && ".join(env_setup) + " CTEST_PARALLEL_LEVEL={}".format(get_mach_testing_resources(machine))
 
         root_dir = pathlib.Path(str(self._root_dir).replace("$machine", machine))
 
