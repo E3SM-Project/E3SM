@@ -528,9 +528,9 @@ contains
           if (k.eq.1) then
             norminfJ0(i,j) = max(norminfJ0(i,j),(abs(JacD(i,j,k))+abs(JacU(i,j,k))))
           elseif (k.eq.nlev) then
-            norminfJ0(i,j) = max(norminfJ0(i,j),(abs(JacL(k-1,i,j))+abs(JacD(i,j,k))))
+            norminfJ0(i,j) = max(norminfJ0(i,j),(abs(JacL(i,j,k-1))+abs(JacD(i,j,k))))
           else
-            norminfJ0(i,j) = max(norminfJ0(i,j),(abs(JacL(k-1,i,j))+abs(JacD(i,j,k))+ &
+            norminfJ0(i,j) = max(norminfJ0(i,j),(abs(JacL(i,j,k-1))+abs(JacD(i,j,k))+ &
               abs(JacU(i,j,k))))
           end if
       end do
