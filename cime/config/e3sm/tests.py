@@ -21,7 +21,7 @@ _TESTS = {
             "ERS.f19_g16.I1850CNECACNTBC.clm-eca",
             "ERS.f19_g16.I1850CNECACTCBC.clm-eca",
             "SMS_Ly2_P1x1.1x1_smallvilleIA.ICLM45CNCROP.clm-force_netcdf_pio",
-            "ERS_Ld3.f45_f45.ICLM45ED.clm-fates",
+            "ERS_Ld20.f45_f45.ICLM45ED.clm-fates",
             "ERS.f19_g16.I1850CLM45.clm-betr",
             "ERS.f19_g16.I1850CLM45.clm-vst",
             "ERS.f09_g16.I1850CLM45CN.clm-bgcinterface",
@@ -32,21 +32,19 @@ _TESTS = {
             "ERS.f19_g16.I1850GSWCNPRDCTCBC.clm-ctc_f19_g16_I1850GSWCNPRDCTCBC",
             "ERS.f19_g16.I20TRGSWCNPRDCTCBC.clm-ctc_f19_g16_I20TRGSWCNPRDCTCBC",
             "ERS.f09_g16.ICLM45BC",
-            "SMS.r05_r05.I1850CLM45CN",
             "SMS_Ly2_P1x1.1x1_smallvilleIA.ICLM45CNCROP.clm-lulcc_sville",
             )
         },
 
     "e3sm_atm_developer" : {
+        "inherit" : ("eam_theta_pg2"),
         "tests"   : (
             "ERP_Ln9.ne4_ne4.FC5AV1C-L",
             "SMS_Ln9.ne4_ne4.FC5AV1C-L.cam-outfrq9s",
             "SMS.ne4_ne4.FC5AV1C-L.cam-cosplite",
             "SMS_R_Ld5.ne4_ne4.FSCM5A97",
             "SMS_D_Ln5.ne4_ne4.FC5AV1C-L",
-            "SMS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L",
-            "SMS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L.cam-thetahy_pg2",
-            "SMS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L.cam-thetahy_sl_pg2",
+            "SMS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L"
             )
         },
 
@@ -59,6 +57,7 @@ _TESTS = {
             "PET_Ln5.ne4_ne4.FC5AV1C-L.allactive-mach-pet",
             "PEM_Ln5.ne4_ne4.FC5AV1C-L",
             "SMS_D_Ln5.ne4_ne4.FC5AV1C-L.cam-cosplite_nhtfrq5",
+            "SMS_Ln1.ne4_ne4.FC5AV1C-L.cam-chem_pp",
             "ERS_Ld5.ne4_ne4.FC5AV1C-L.cam-rrtmgp",
             "ERS_Ld5.ne4_ne4.FC5AV1C-L.cam-gust_param",
             "REP_Ln5.ne4_ne4.FC5AV1C-L",
@@ -132,8 +131,8 @@ _TESTS = {
             "HOMME_P24.f19_g16_rx1.A",
             "HOMMEBFB_P24.f19_g16_rx1.A",
             )
-        },    
-    
+        },
+
     "e3sm_integration" : {
         "inherit" : ("e3sm_developer", "e3sm_atm_integration"),
         "time"    : "03:00:00",
@@ -154,6 +153,8 @@ _TESTS = {
             "SMS.ne30_oECv3.BGCEXP_BCRC_CNPRDCTC_1850.clm-bgcexp",
             "SMS_D_Ld1.T62_oEC60to30v3.DTESTM",
             "SMS_D_Ld1.ne30_r05_oECv3.A_WCYCL1850",
+            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1-TEST.cam-crmout",
+            "SMS.r05_r05.I1850CLM45CN",
             )
         },
 
@@ -181,6 +182,21 @@ _TESTS = {
             "SMS_D_Ln5.conusx4v1_conusx4v1.FC5AV1C-L",
             "SMS_D_Ln5.enax4v1_enax4v1.FC5AV1C-L",
             "SMS_D_Ln5.twpx4v1_twpx4v1.FC5AV1C-L",
+            )
+        },
+
+    #e3sm MMF tests for development
+    "e3sm_mmf" : {
+        "time" : "02:00:00",
+        "tests" : (
+            # MMF tests
+            "ERP_Ln9_P96x1.ne4_ne4.F-MMF1-TEST.cam-crmout",
+            "ERP_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF2-TEST",
+            "ERP_Ln9_P96x1.ne4_ne4.F-MMF2-ECPP-TEST",
+            "SMS_D_Ln3_P96x1.ne4_ne4.F-MMF1-TEST",
+            "SMS_D_Ln3_P96x1.ne4pg2_ne4pg2.F-MMF2-TEST",
+            # non-MMF tests with RRTMGP
+            "ERP_Ln9.ne4pg2_ne4pg2.FC5AV1C-L.cam-rrtmgp",
             )
         },
 
@@ -249,6 +265,15 @@ _TESTS = {
                  "ERS.ne4_ne4.FC5AV1C-L.cam-thetanh_ftype2",
                  )
     },
+    "eam_theta_pg2" : {
+        "share"    : True,
+        "time"     : "02:00:00",
+        "tests"    : (
+                 "SMS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L.cam-thetahy_pg2",
+                 "SMS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L.cam-thetahy_sl_pg2",
+                 "ERS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L.cam-thetahy_sl_pg2"
+                 )
+    },
     "e3sm_bench_hires_g" : {
         "share"    : True,
         "time"     : "01:00:00",
@@ -311,7 +336,7 @@ _TESTS = {
     "e3sm_bench_lores_g" : {
         "share"    : True,
         "time"     : "01:00:00",
-        "tests"    : ( 
+        "tests"    : (
                  "PFS_P320.T62_oEC60to30v3.GMPAS-IAF.bench-gmpas_noio",
                  "PFS_P480.T62_oEC60to30v3.GMPAS-IAF.bench-gmpas_noio",
                  "PFS_P640.T62_oEC60to30v3.GMPAS-IAF.bench-gmpas_noio",

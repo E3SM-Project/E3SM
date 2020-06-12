@@ -168,10 +168,15 @@ int set_fill_handler(iosystem_desc_t *ios)
  */
 int create_file_handler(iosystem_desc_t *ios)
 {
-    int ncid;
+    int ncid = 0;
     int len;
     int iotype;
     int mode;
+    int use_ext_ncid;
+    char ncidp_present;
+#ifdef NETCDF_INTEGRATION
+    int iosysid;
+#endif /* NETCDF_INTEGRATION */
     int mpierr;
 
     PLOG((1, "create_file_handler comproot = %d", ios->comproot));
@@ -191,12 +196,39 @@ int create_file_handler(iosystem_desc_t *ios)
         return check_mpi(ios, NULL, mpierr, __FILE__, __LINE__);
     if ((mpierr = MPI_Bcast(&mode, 1, MPI_INT, 0, ios->intercomm)))
         return check_mpi(ios, NULL, mpierr, __FILE__, __LINE__);
-    PLOG((1, "create_file_handler got parameters len = %d filename = %s iotype = %d mode = %d",
-          len, filename, iotype, mode));
+    if ((mpierr = MPI_Bcast(&use_ext_ncid, 1, MPI_INT, 0, ios->intercomm)))
+        return check_mpi(ios, NULL, mpierr, __FILE__, __LINE__);
+    if ((mpierr = MPI_Bcast(&ncidp_present, 1, MPI_CHAR, 0, ios->intercomm)))
+        return check_mpi(ios, NULL, mpierr, __FILE__, __LINE__);
+    if (ncidp_present)
+        if ((mpierr = MPI_Bcast(&ncid, 1, MPI_INT, 0, ios->intercomm)))
+            return check_mpi(ios, NULL, mpierr, __FILE__, __LINE__);
+    PLOG((1, "create_file_handler len %d filename %s iotype %d mode %d "
+          "use_ext_ncid %d ncidp_present %d ncid %d", len,
+          filename, iotype, mode, use_ext_ncid, ncidp_present, ncid));
+#ifdef NETCDF_INTEGRATION
+    if ((mpierr = MPI_Bcast(&iosysid, 1, MPI_INT, 0, ios->intercomm)))
+        return check_mpi(ios, NULL, mpierr, __FILE__, __LINE__);
+    PLOG((1, "create_file_handler iosysid %d", iosysid));
+#endif /* NETCDF_INTEGRATION */
 
     /* Call the create file function. */
-    PIOc_createfile(ios->iosysid, &ncid, &iotype, filename, mode);
+    if (use_ext_ncid)
+    {
+#ifdef NETCDF_INTEGRATION
+        /* Set the IO system ID. */
+        nc_set_iosystem(iosysid);
 
+        PLOG((2, "about to call nc_create() having set iosysid to %d", iosysid));
+        nc_create(filename, mode|NC_UDF0, &ncid);
+#endif /* NETCDF_INTEGRATION */
+    }
+    else
+    {
+        PLOG((2, "about to call PIOc_createfile_int()"));
+        PIOc_createfile_int(ios->iosysid, &ncid, &iotype, filename, mode,
+                            use_ext_ncid);
+    }
 
     PLOG((1, "create_file_handler succeeded!"));
     return PIO_NOERR;
@@ -1948,6 +1980,10 @@ int open_file_handler(iosystem_desc_t *ios)
     int len;
     int iotype;
     int mode;
+    int use_ext_ncid;
+#ifdef NETCDF_INTEGRATION
+    int iosysid;
+#endif /* NETCDF_INTEGRATION */
     int mpierr;
 
     PLOG((1, "open_file_handler comproot = %d", ios->comproot));
@@ -1968,13 +2004,34 @@ int open_file_handler(iosystem_desc_t *ios)
         return check_mpi(ios, NULL, mpierr, __FILE__, __LINE__);
     if ((mpierr = MPI_Bcast(&mode, 1, MPI_INT, 0, ios->intercomm)))
         return check_mpi(ios, NULL, mpierr, __FILE__, __LINE__);
-
-    PLOG((2, "open_file_handler got parameters len = %d filename = %s iotype = %d mode = %d",
-          len, filename, iotype, mode));
+    if ((mpierr = MPI_Bcast(&use_ext_ncid, 1, MPI_INT, 0, ios->intercomm)))
+        return check_mpi(ios, NULL, mpierr, __FILE__, __LINE__);
+    PLOG((2, "len %d filename %s iotype %d mode %d use_ext_ncid %d",
+          len, filename, iotype, mode, use_ext_ncid));
+#ifdef NETCDF_INTEGRATION
+    if ((mpierr = MPI_Bcast(&iosysid, 1, MPI_INT, 0, ios->intercomm)))
+        return check_mpi(ios, NULL, mpierr, __FILE__, __LINE__);
+    PLOG((2, "iosysid %d", iosysid));
+#endif /* NETCDF_INTEGRATION */
 
     /* Call the open file function. Errors are handled within
      * function, so return code can be ignored. */
-    PIOc_openfile_retry(ios->iosysid, &ncid, &iotype, filename, mode, 0, 0);
+    if (use_ext_ncid)
+    {
+#ifdef NETCDF_INTEGRATION
+        /* Set the IO system ID. */
+        nc_set_iosystem(iosysid);
+
+        PLOG((2, "about to call nc_create() having set iosysid to %d",
+              iosysid));
+        nc_open(filename, mode|NC_UDF0, &ncid);
+#endif /* NETCDF_INTEGRATION */
+    }
+    else
+    {
+        PIOc_openfile_retry(ios->iosysid, &ncid, &iotype, filename, mode, 0,
+                            use_ext_ncid);
+    }
 
     return PIO_NOERR;
 }
@@ -2223,8 +2280,7 @@ int write_darray_multi_handler(iosystem_desc_t *ios)
 }
 
 /**
- * This function is run on the IO tasks to...
- * NOTE: not yet implemented
+ * This function is run on the IO tasks to read distributed arrays.
  *
  * @param ios pointer to the iosystem_desc_t data.
  *
@@ -2233,9 +2289,34 @@ int write_darray_multi_handler(iosystem_desc_t *ios)
  * @internal
  * @author Ed Hartnett
  */
-int readdarray_handler(iosystem_desc_t *ios)
+int read_darray_handler(iosystem_desc_t *ios)
 {
+    int ncid;
+    int varid;
+    int ioid;
+    int arraylen;
+    void *data = NULL;
+    int mpierr;
+
+    PLOG((1, "read_darray_handler called"));
     assert(ios);
+
+    /* Get the parameters for this function that the the comp master
+     * task is broadcasting. */
+    if ((mpierr = MPI_Bcast(&ncid, 1, MPI_INT, 0, ios->intercomm)))
+        return check_mpi(ios, NULL, mpierr, __FILE__, __LINE__);
+    if ((mpierr = MPI_Bcast(&varid, 1, MPI_INT, 0, ios->intercomm)))
+        return check_mpi(ios, NULL, mpierr, __FILE__, __LINE__);
+    if ((mpierr = MPI_Bcast(&ioid, 1, MPI_INT, 0, ios->intercomm)))
+        return check_mpi(ios, NULL, mpierr, __FILE__, __LINE__);
+    if ((mpierr = MPI_Bcast(&arraylen, 1, MPI_OFFSET, 0, ios->intercomm)))
+        return check_mpi(ios, NULL, mpierr, __FILE__, __LINE__);
+    PLOG((2, "ncid %d varid %d ioid %d arraylen %d", ncid, varid,
+          ioid, arraylen));
+
+    PIOc_read_darray(ncid, varid, ioid, arraylen, data);
+
+    PLOG((1, "read_darray_handler succeeded!"));
     return PIO_NOERR;
 }
 
@@ -2700,7 +2781,7 @@ int pio_msg_handler2(int io_rank, int component_count, iosystem_desc_t **iosys,
             ret = advanceframe_handler(my_iosys);
             break;
         case PIO_MSG_READDARRAY:
-            ret = readdarray_handler(my_iosys);
+            ret = read_darray_handler(my_iosys);
             break;
         case PIO_MSG_SETERRORHANDLING:
             ret = seterrorhandling_handler(my_iosys);

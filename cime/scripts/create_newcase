@@ -148,6 +148,12 @@ def parse_command_line(args, cimeroot, description):
                         help="Use when you've requested a machine that you aren't on. "
                         "Will reduce errors for missing directories etc.")
 
+    parser.add_argument("--extra-machines-dir",
+                        help="Optional path to a directory containing one or more of:"
+                        "\nconfig_machines.xml, config_compilers.xml, config_batch.xml."
+                        "\nIf provided, the contents of these files will be appended to"
+                        "\nthe standard machine files (and any files in ~/.cime).")
+
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     if args.srcroot is not None:
@@ -180,7 +186,8 @@ def parse_command_line(args, cimeroot, description):
         args.user_mods_dir, args.pesfile, \
         args.gridfile, args.srcroot, args.test, args.multi_driver, \
         args.ninst, args.walltime, args.queue, args.output_root, args.script_root, \
-        run_unsupported, args.answer, args.input_dir, args.driver, args.workflow, args.non_local
+        run_unsupported, args.answer, args.input_dir, args.driver, args.workflow, args.non_local, \
+        args.extra_machines_dir
 
 ###############################################################################
 def _main_func(description):
@@ -193,7 +200,7 @@ def _main_func(description):
         gridfile, srcroot, test, multi_driver, ninst, walltime, \
         queue, output_root, script_root, run_unsupported, \
         answer, input_dir, driver, \
-        workflow, non_local = parse_command_line(sys.argv, cimeroot, description)
+        workflow, non_local, extra_machines_dir = parse_command_line(sys.argv, cimeroot, description)
 
 
     if script_root is None:
@@ -219,7 +226,8 @@ def _main_func(description):
                     multi_driver=multi_driver, ninst=ninst, test=test,
                     walltime=walltime, queue=queue, output_root=output_root,
                     run_unsupported=run_unsupported, answer=answer,
-                    input_dir=input_dir, driver=driver, workflowid=workflow, non_local=non_local)
+                    input_dir=input_dir, driver=driver, workflowid=workflow, non_local=non_local,
+                    extra_machines_dir=extra_machines_dir)
 
 ###############################################################################
 

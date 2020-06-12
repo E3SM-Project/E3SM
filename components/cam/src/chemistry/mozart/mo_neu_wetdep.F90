@@ -1339,9 +1339,16 @@ upper_level : &
                    write(*,*) ' '
                  endif
                endif
-               DCA = (RCXA*FCXA*CLOLDPCT)/(RCA*FCA)*DCXA + & 
-                     (RCXB*FCXB*CLNEWPCT)/(RCA*FCA)*DCXB + &
-                     (RAX*FAX*AMCLPCT)/(RCA*FCA)*DAX
+
+               if (RCA > zero) then
+                  DCA = (RCXA*FCXA*CLOLDPCT)/(RCA*FCA)*DCXA + & 
+                        (RCXB*FCXB*CLNEWPCT)/(RCA*FCA)*DCXB + &
+                        (RAX*FAX*AMCLPCT)/(RCA*FCA)*DAX
+               else
+                  DCA = zero
+                  FCA = zero
+               endif
+
              else
                FCA = zero
                DCA = zero

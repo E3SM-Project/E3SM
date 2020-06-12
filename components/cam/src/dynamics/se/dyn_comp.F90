@@ -89,7 +89,6 @@ CONTAINS
     use rgrid,               only: fullgrid
     use spmd_utils,          only: mpi_integer, mpicom, mpi_logical
     use spmd_dyn,            only: spmd_readnl
-    use native_mapping,      only: create_native_mapping_files, native_mapping_readnl
     use time_manager,        only: get_nstep, dtime
 
     use dimensions_mod,   only: globaluniquecols, nelem, nelemd, nelemdmax
@@ -167,6 +166,9 @@ CONTAINS
        neltmp(1) = 0
        neltmp(2) = 0
        neltmp(3) = 0
+       allocate(elem(nelemd))
+       dyn_in%elem => elem
+       dyn_out%elem => elem
     endif
 
     dyndecomp_set = .true.
@@ -182,13 +184,6 @@ CONTAINS
           call set_horiz_grid_cnt_d(neltmp(3))
        endif
     endif
-
-    !
-    ! This subroutine creates mapping files using SE basis functions if requested
-    !
-    call native_mapping_readnl(NLFileName)
-    call create_native_mapping_files( par, elem,'native')
-    call create_native_mapping_files( par, elem,'bilin')
 
     ! Dynamics timestep
     !

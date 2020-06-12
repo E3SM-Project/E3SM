@@ -16,6 +16,13 @@
 #include <bget.h>
 #include <limits.h>
 #include <math.h>
+#include <netcdf.h>
+#ifdef _NETCDF4
+#include <netcdf_par.h>
+#endif
+#ifdef _PNETCDF
+#include <pnetcdf.h>
+#endif
 #ifdef TIMING
 #include <gptl.h>
 #endif
@@ -23,6 +30,13 @@
 #ifdef USE_MPE
 #include <mpe.h>
 #endif /* USE_MPE */
+
+#ifndef MPI_OFFSET
+/** MPI_OFFSET is an integer type of size sufficient to represent the
+ * size (in bytes) of the largest file supported by MPI. In some MPI
+ * implementations MPI_OFFSET is not properly defined.  */
+#define MPI_OFFSET  MPI_LONG_LONG
+#endif
 
 /* These are the sizes of types in netCDF files. Do not replace these
  * constants with sizeof() calls for C types. They are not the
@@ -182,7 +196,8 @@ extern "C" {
 
     /* List operations for var_desc_t list. */
     int add_to_varlist(int varid, int rec_var, int pio_type, int pio_type_size,
-                       MPI_Datatype mpi_type, int mpi_type_size, var_desc_t **varlist);
+                       MPI_Datatype mpi_type, int mpi_type_size, int ndim,
+                       var_desc_t **varlist);
     int get_var_desc(int varid, var_desc_t **varlist, var_desc_t **var_desc);
     int delete_var_desc(int varid, var_desc_t **varlist);
 

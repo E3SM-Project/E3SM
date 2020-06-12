@@ -55,7 +55,8 @@ module ocn_comp_mct
    use ocn_tracer_short_wave_absorption_variable
    use ocn_tracer_ecosys
    use ocn_tracer_surface_restoring
-
+   use ocn_gm
+   use ocn_config
 !
 ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -961,6 +962,12 @@ contains
             call mpas_timer_stop("land_ice_build_arrays")
 
             call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, diagnosticsPool, statePool, ierr)
+
+            ! Compute normalGMBolusVelocity, relativeSlope and RediDiffVertCoef if respective flags are turned on
+            if (config_use_Redi.or.config_use_GM) then
+              call ocn_gm_compute_Bolus_velocity(statePool, diagnosticsPool, meshPool, scratchPool, timeLevelIn=1)
+            endif
+
             block_ptr => block_ptr % next
          end do
          if (debugOn) call mpas_log_write('   Finished building forcing arrays')

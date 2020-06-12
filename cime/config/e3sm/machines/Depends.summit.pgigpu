@@ -1,0 +1,222 @@
+
+ACCFLAGS :=  -Minline -ta=nvidia,cc70,fastmath,loadcache:L1,unroll,fma,managed,ptxinfo -Mcuda -Minfo=accel
+
+advect_scalar.o : advect_scalar.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+advect_scalar2D.o : advect_scalar2D.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+advect_scalar3D.o : advect_scalar3D.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+advection.o : advection.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+accelerate_crm.o : accelerate_crm.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+adams.o : adams.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+cloud.o : cloud.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+micro_params.o : micro_params.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+microphysics.o : microphysics.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+precip_init.o : precip_init.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+precip_proc.o : precip_proc.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+precip_proc_clubb.o : precip_proc_clubb.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+advect2_mom_xy.o : advect2_mom_xy.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+diffuse_mom.o : diffuse_mom.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+diffuse_mom2D.o : diffuse_mom2D.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+diffuse_mom3D.o : diffuse_mom3D.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+diffuse_scalar.o : diffuse_scalar.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+diffuse_scalar2D.o : diffuse_scalar2D.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+diffuse_scalar3D.o : diffuse_scalar3D.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+sgs.o : sgs.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+shear_prod2D.o : shear_prod2D.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+shear_prod3D.o : shear_prod3D.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+tke_full.o : tke_full.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+abcoefs.o : abcoefs.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+advect2_mom_z.o : advect2_mom_z.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+advect_all_scalars.o : advect_all_scalars.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+buoyancy.o : buoyancy.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+crm_module.o : crm_module.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+advect_mom.o : advect_mom.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+atmosphere.o : atmosphere.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+bound_duvdt.o : bound_duvdt.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+bound_exchange.o : bound_exchange.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+boundaries.o : boundaries.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+coriolis.o : coriolis.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+compress3D.o : compress3D.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+crmtracers.o : crmtracers.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+crm_ecpp_output_module.o : crm_ecpp_output_module.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+crm_input_module.o : crm_input_module.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+crmsurface.o : crmsurface.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+crm_output_module.o : crm_output_module.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+crm_rad_module.o : crm_rad_module.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+crm_state_module.o : crm_state_module.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+damping.o : damping.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+grid.o : grid.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+diagnose.o : diagnose.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+params.o : params.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+dmdf.o : dmdf.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+domain.o : domain.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+ecppvars.o : ecppvars.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+fft.o : fft.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+fftpack5.o : fftpack5.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+fftpack5_1d.o : fftpack5_1d.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+forcing.o : forcing.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+ice_fall.o : ice_fall.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+kurant.o : kurant.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+press_grad.o : press_grad.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+module_ecpp_stats.o : module_ecpp_stats.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+setparm.o : setparm.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+module_ecpp_crm_driver.o : module_ecpp_crm_driver.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+press_rhs.o : press_rhs.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+pressure.o : pressure.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+periodic.o : periodic.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+scalar_momentum.o : scalar_momentum.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+random.o : random.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+setperturb.o : setperturb.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+task_init.o : task_init.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+task_util_NOMPI.o : task_util_NOMPI.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+utils.o : utils.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+uvw.o : uvw.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+vars.o : vars.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+zero.o : zero.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+openacc_utils.o : openacc_utils.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
+sat.o : sat.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(ACCFLAGS) $(FREEFLAGS) $<
+
