@@ -151,8 +151,9 @@ struct Pack {
 
   KOKKOS_FORCEINLINE_FUNCTION
   explicit Pack () {
-    vector_simd for (int i = 0; i < n; ++i)
-      d[i] = ScalarTraits<scalar>::quiet_NaN();
+    vector_simd for (int i = 0; i < n; ++i) {
+      d[i] = ScalarTraits<scalar>::invalid();
+    }
   }
 
   // Init all slots to scalar v.
@@ -177,8 +178,9 @@ struct Pack {
   explicit Pack (const Mask<PackSize>& m, const PackIn& p) {
     static_assert(static_cast<int>(PackIn::n) == PackSize,
                   "Pack::n must be the same.");
-    vector_simd for (int i = 0; i < n; ++i)
-      d[i] = m[i] ? p[i] : ScalarTraits<scalar>::quiet_NaN();
+    vector_simd for (int i = 0; i < n; ++i) {
+      d[i] = m[i] ? p[i] : ScalarTraits<scalar>::invalid();
+    }
   }
 
   KOKKOS_FORCEINLINE_FUNCTION const scalar& operator[] (const int& i) const { return d[i]; }
