@@ -124,15 +124,26 @@ def setup_mach_env (machine):
         # But we can return the resulting PATH, and update current env with that
 
         # Get the whole env string after running the env_setup command
-        path = run_cmd_no_fail("{{ {};  }} > /dev/null && env | sort".format(";".join(env_setup)))
+        curr_env = run_cmd_no_fail("{{ {};  }} > /dev/null && env | sort".format(";".join(env_setup)))
 
-        # Split by line
-        path_list = path.split("\n")
+        # Split by line. We are assuming that each env variable is *exactly* on one line
+        curr_env_list = curr_env.split("\n")
 
         # For each line, split the string at the 1st '='.
         # The resulting length-2 stirng is (ENV_VAR_NAME, ENV_VAR_VALUE);
         # use it to update the os environment
-        for item in path_list:
+        for item in curr_env_list:
+            # On fedora systems, the environment contains the annoying entry (on 2 lines)
+            #
+            # BASH_FUNC_module()=() {  eval `/usr/bin/modulecmd bash $*`
+            # }
+            # Which breaks the assumption that each env var is on one line.
+            # To get around this, discard lines that either do not contain '=',
+            # or that start with BASH_FUNC_module.
+            if item.find("BASH_FUNC_module") != -1 or item.find("=") == -1:
+                continue
+
+
             # 2 means only 1st occurence will cause a split.
             # Just in case some env var value contains '='
             item_list = item.split("=",2)
