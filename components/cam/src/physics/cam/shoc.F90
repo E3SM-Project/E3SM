@@ -265,7 +265,7 @@ subroutine shoc_main ( &
   ! eddy coefficent for heat [m2/s]
   real(rtype), intent(inout) :: tkh(shcol,nlev)
   ! Cloud fraction [-]
-  real(rtype), intent(inout) :: shoc_cldfrac(shcol,nlev)  
+  real(rtype), intent(inout) :: shoc_cldfrac(shcol,nlev)
   ! cloud liquid mixing ratio [kg/kg]
   real(rtype), intent(inout) :: shoc_ql(shcol,nlev)
 
@@ -415,7 +415,7 @@ subroutine shoc_main ( &
        isotropy,tkh,tk,&                      ! Input
        dz_zi,zt_grid,zi_grid,shoc_mix, &      ! Input
        wthl_sfc, wqw_sfc, uw_sfc, vw_sfc, &   ! Input
-       wtracer_sfc, &                         ! Input       
+       wtracer_sfc, &                         ! Input
        thl_sec, qw_sec,wthl_sec,wqw_sec,&     ! Output
        qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Output
        wtracer_sec,&                          ! Output
@@ -909,7 +909,7 @@ subroutine update_prognostics_implicit( &
 end subroutine update_prognostics_implicit
 
 !=======================================================
-! SHOC Diagnose the second order moments, 
+! SHOC Diagnose the second order moments,
 !  main routine
 
 subroutine diag_second_shoc_moments(&
@@ -924,10 +924,10 @@ subroutine diag_second_shoc_moments(&
          qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Output
          wtracer_sec,&                          ! Output
          w_sec)                                 ! Output
-	 
+
   ! This is the main routine to compute the second
-  !   order moments in SHOC. 	 
-	 
+  !   order moments in SHOC.
+
   implicit none
 
 ! INPUT VARIABLES
@@ -975,9 +975,9 @@ subroutine diag_second_shoc_moments(&
   ! Surface momentum flux (v-direction) [m3/s3]
   real(rtype), intent(in) :: vw_sfc(shcol)
   ! Tracer flux [varies m/s]
-  real(rtype), intent(in) :: wtracer_sfc(shcol,num_tracer)  
-  
-! OUTPUT VARIABLES  
+  real(rtype), intent(in) :: wtracer_sfc(shcol,num_tracer)
+
+! OUTPUT VARIABLES
   ! second order liquid wat. potential temp. [K^2]
   real(rtype), intent(out) :: thl_sec(shcol,nlevi)
   ! second order total water mixing rat. [kg^2/kg^2]
@@ -999,7 +999,7 @@ subroutine diag_second_shoc_moments(&
   ! second order vertical velocity [m2/s2]
   real(rtype), intent(out) :: w_sec(shcol,nlev)
 
-    ! Diagnose the second order moments, 
+    ! Diagnose the second order moments,
     !  calculate surface boundary conditions
     call diag_second_moments_lbycond(&
        shcol,nlev,nlevi,&                   ! Input
@@ -1013,7 +1013,7 @@ subroutine diag_second_shoc_moments(&
        qwthl_sec,uw_sec,vw_sec,wtke_sec,&   ! Output
        wtracer_sec)                         ! Output
 
-    ! Diagnose the second order moments, 
+    ! Diagnose the second order moments,
     !  for points away from boundaries
     call diag_second_moments(&
        shcol,nlev,nlevi, &                    ! Input
@@ -1034,12 +1034,12 @@ subroutine diag_second_shoc_moments(&
        wthl_sec,wqw_sec,&                     ! Input/Output
        qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Input/Output
        wtracer_sec)                           ! Input/Output
- 
+
   return
 end subroutine diag_second_shoc_moments
 
 !==============================================================
-! SHOC Diagnose the second order moments, 
+! SHOC Diagnose the second order moments,
 !  lower boundary conditions
 
 subroutine diag_second_moments_lbycond(&
@@ -1055,12 +1055,12 @@ subroutine diag_second_moments_lbycond(&
          wtracer_sec)                           ! Output
 
   ! Purpose of this subroutine is to diagnose the lower
-  !  boundary condition for the second order moments needed 
-  !  for the SHOC parameterization.  
-  ! The thermodymnamic, tracer, and momentum fluxes are set 
+  !  boundary condition for the second order moments needed
+  !  for the SHOC parameterization.
+  ! The thermodymnamic, tracer, and momentum fluxes are set
   !  to the surface fluxes for the host model, while the
   !  thermodynamic variances and covariances are computed
-  !  according to that of Andre et al. 1978.  
+  !  according to that of Andre et al. 1978.
 
   implicit none
 
@@ -1196,14 +1196,14 @@ subroutine diag_second_moments(&
          qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Input/Output
          wtracer_sec,&                          ! Input/Output
          w_sec)                                 ! Output
-	 
+
   ! Purpose of this subroutine is to diagnose the second
   !  order moments needed for the SHOC parameterization.
   !  Namely these are variances of thetal, qw, and vertical
   !  velocity.  In addition the vertical fluxes of thetal, qw,
   !  u, v, TKE, and tracers are computed here as well as the
-  !  correlation of qw and thetal.	 
-	 
+  !  correlation of qw and thetal.
+
   implicit none
 
 ! INPUT VARIABLES
@@ -1242,8 +1242,8 @@ subroutine diag_second_moments(&
   real(rtype), intent(in) :: dz_zi(shcol,nlevi)
   ! Mixing length [m]
   real(rtype), intent(in) :: shoc_mix(shcol,nlev)
-  
-! INPUT/OUTPUT VARIABLES  
+
+! INPUT/OUTPUT VARIABLES
   ! second order liquid wat. potential temp. [K^2]
   real(rtype), intent(inout) :: thl_sec(shcol,nlevi)
   ! second order total water mixing rat. [kg^2/kg^2]
@@ -1341,14 +1341,14 @@ subroutine diag_second_moments_ubycond(&
          wthl_sec,wqw_sec,&                     ! Input/Output
          qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Input/Output
          wtracer_sec)                           ! Input/Output
-	 
+
   ! Purpose of this subroutine is to diagnose the upper
-  !  boundary condition for the second order moments 
+  !  boundary condition for the second order moments
   !  needed for the SHOC parameterization.  Currently
-  !  set all to zero. 	 
-	 
+  !  set all to zero.
+
   implicit none
-  
+
   ! INPUT VARIABLES
   ! number of SHOC columns
   integer, intent(in) :: shcol
@@ -2055,8 +2055,53 @@ subroutine shoc_tke(&
   real(rtype), intent(out) :: isotropy(shcol,nlev)
 
 ! LOCAL VARIABLES
-  real(rtype) :: sterm(shcol,nlevi), sterm_zt(shcol,nlev)  
-  real(rtype) :: brunt_int(shcol)
+  !real(rtype) :: sterm(shcol,nlevi), sterm_zt(shcol,nlev)
+  !real(rtype) :: brunt_int(shcol)
+
+!bsingh-dbg
+! LOCAL VARIABLES
+  real(rtype) :: shear_prod(shcol,nlevi)
+  real(rtype) :: sterm(shcol,nlevi), sterm_zt(shcol,nlev)
+  real(rtype) :: shear_prod_zt(shcol,nlev)
+  real(rtype) :: grd,betdz,Ck,Ckh,Ckm,Ce
+  real(rtype) :: Ckh_s,Ckm_s,Ces,Ce1,Ce2,smix,Cee,Cs
+  real(rtype) :: buoy_sgs,ratio,a_prod_sh,a_prod_bu,a_diss
+  real(rtype) :: lstarn, lstarp, bbb, omn, omp, ustar
+  real(rtype) :: qsatt,dqsat,tk_in, u_grad, v_grad
+  real(rtype) :: tscale1,lambda,buoy_sgs_save,grid_dzw,grw1,grid_dz
+  real(rtype) :: lambda_low,lambda_high,lambda_slope, brunt_low
+  real(rtype) :: brunt_int(shcol), z_over_L
+  real(rtype) :: zL_crit_val, pbl_trans
+  integer i,j,k,kc,kb,kt
+
+  lambda_low=0.001_rtype
+  lambda_high=0.04_rtype
+  lambda_slope=0.65_rtype
+  brunt_low=0.02_rtype
+
+  ! Critical value of dimensionless Monin-Obukhov length
+  zL_crit_val = 100.0_rtype
+  ! Transition depth [m] above PBL top to allow
+  !   stability diffusivities
+  pbl_trans = 200.0_rtype
+
+  ! Turbulent coefficients
+  Cs=0.15_rtype
+  Ck=0.1_rtype
+  ! eddy coefficients for diffusivities
+  Ckh=0.1_rtype
+  Ckm=0.1_rtype
+  ! eddy coefficients for stable PBL diffusivities
+  Ckh_s=1.0_rtype
+  Ckm_s=1.0_rtype
+  Ce=Ck**3/Cs**4
+
+  Ce1=Ce/0.7_rtype*0.19_rtype
+  Ce2=Ce/0.7_rtype*0.51_rtype
+
+  Cee=Ce1+Ce2
+
+!bsingh-dbg-ends
 
   ! Compute integrated column stability in lower troposphere
   call integ_column_stability(nlev, shcol, brunt_int, dz_zt, pres, brunt)
@@ -2069,9 +2114,72 @@ subroutine shoc_tke(&
   ! Interpolate shear term from interface to thermo grid
   call linear_interp(zi_grid,zt_grid,sterm,sterm_zt,nlevi,nlev,shcol,0._rtype)
 
-  call adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
-       pblh, zt_grid, sterm_zt, brunt_int, brunt, tkh, tk, &
-       obklen, tke, isotropy)
+   do k=1,nlev
+    do i=1,shcol
+
+      smix=shoc_mix(i,k)
+      ! Compute buoyant production term
+      a_prod_bu=(ggr/basetemp)*wthv_sec(i,k)
+
+      tke(i,k)=max(0._rtype,tke(i,k))
+
+      ! Shear production term, use diffusivity from
+      !  previous timestep
+      a_prod_sh=tk(i,k)*sterm_zt(i,k)
+
+      ! Dissipation term
+      a_diss=Cee/shoc_mix(i,k)*tke(i,k)**1.5
+
+      ! March equation forward one timestep
+      tke(i,k)=max(0._rtype,tke(i,k)+dtime*(max(0._rtype,a_prod_sh+a_prod_bu)-a_diss))
+
+      tke(i,k)=min(tke(i,k),maxtke)
+
+      ! Compute the return to isotropic timescale as per
+      ! Canuto et al. 2004.  This is used to define the
+      ! eddy coefficients as well as to diagnose higher
+      ! moments in SHOC
+
+      ! define the time scale
+      tscale1=(2.0_rtype*tke(i,k))/a_diss
+
+      ! define a damping term "lambda" based on column stability
+      lambda=lambda_low+((brunt_int(i)/ggr)-brunt_low)*lambda_slope
+      lambda=max(lambda_low,min(lambda_high,lambda))
+
+      buoy_sgs_save=brunt(i,k)
+      if (buoy_sgs_save .le. 0._rtype) lambda=0._rtype
+
+            ! Compute the return to isotropic timescale
+      isotropy(i,k)=min(maxiso,tscale1/(1._rtype+lambda*buoy_sgs_save*tscale1**2))
+
+      ! Dimensionless Okukhov length considering only
+      !  the lowest model grid layer height to scale
+      z_over_L = zt_grid(i,nlev)/obklen(i)
+
+      if (z_over_L .gt. zL_crit_val .and. (zt_grid(i,k) .lt. pblh(i)+pbl_trans)) then
+        ! If surface layer is moderately to very stable, based on near surface
+        !  dimensionless Monin-Obukov use modified coefficients of
+        !  tkh and tk that are primarily based on shear production
+        !  and SHOC length scale, to promote mixing within the PBL
+        !  and to a height slighty above to ensure smooth transition.
+        tkh(i,k)=Ckh_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
+        tk(i,k)=Ckm_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
+      else
+                 ! Default definition of eddy diffusivity for heat and momentum
+
+        tkh(i,k)=Ckh*isotropy(i,k)*tke(i,k)
+        tk(i,k)=Ckm*isotropy(i,k)*tke(i,k)
+      endif
+
+      tke(i,k) = max(mintke,tke(i,k))
+
+    enddo ! end i loop
+  enddo ! end k loop
+
+  !call adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
+  !     pblh, zt_grid, sterm_zt, brunt_int, brunt, tkh, tk, &
+  !     obklen, tke, isotropy)
 
   return
 
@@ -2096,13 +2204,13 @@ subroutine integ_column_stability(nlev, shcol, brunt_int, dz_zt, pres, brunt)
   real(rtype), intent(out) :: brunt_int(shcol)
 
   !local variables
-  integer :: icol, klev
+  integer :: i, k
 
   brunt_int(1:shcol) = 0._rtype
-  do klev = 1, nlev
-     do icol = 1, shcol
-        if (pres(icol,klev) .gt. troppres) then
-           brunt_int(icol) = brunt_int(icol) + dz_zt(icol,klev)*brunt(icol,klev)
+  do k = 1, nlev
+     do i = 1, shcol
+        if (pres(i,k) .gt. troppres) then
+           brunt_int(i) = brunt_int(i) + dz_zt(i,k)*brunt(i,k)
         endif
      enddo
   enddo
@@ -2129,19 +2237,19 @@ subroutine compute_shr_prod(nlevi, nlev, shcol, dz_zi, u_wind, v_wind, sterm)
   real(rtype), intent(out) :: sterm(shcol,nlevi)
 
   !local variables
-  integer :: icol, klev, km1
+  integer :: i, k, km1
   real(rtype) :: grid_dz, u_grad, v_grad
 
   !compute shear production term
-  do klev = 2, nlev
-     km1 = klev - 1
-     do icol = 1, shcol
-        grid_dz = 1._rtype/dz_zi(icol,klev)
+  do k = 2, nlev
+     km1 = k - 1
+     do i = 1, shcol
+        grid_dz = 1._rtype/dz_zi(i,k)
 
         ! calculate vertical gradient of u&v wind
-        u_grad = grid_dz*(u_wind(icol,km1)-u_wind(icol,klev))
-        v_grad = grid_dz*(v_wind(icol,km1)-v_wind(icol,klev))
-        sterm(icol,klev) = u_grad**2+v_grad**2
+        u_grad = grid_dz*(u_wind(i,km1)-u_wind(i,k))
+        v_grad = grid_dz*(v_wind(i,km1)-v_wind(i,k))
+        sterm(i,k) = u_grad**2+v_grad**2
      enddo
   enddo
 
@@ -2198,7 +2306,7 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
   real(rtype), intent(out) :: isotropy(shcol,nlev)
 
   !local variables
-  integer :: icol, klev 
+  integer :: i, k
   real(rtype) :: z_over_L
 
   !parameters
@@ -2209,7 +2317,7 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
 
   ! Critical value of dimensionless Monin-Obukhov length
   real(rtype), parameter :: zL_crit_val = 100.0_rtype
-  ! Transition depth [m] above PBL top to allow 
+  ! Transition depth [m] above PBL top to allow
   !   stability diffusivities
   real(rtype), parameter :: pbl_trans = 200.0_rtype
 
@@ -2229,67 +2337,67 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
 
   real(rtype) :: a_prod_bu, a_prod_sh, a_diss, buoy_sgs_save, tscale, lambda
 
-  do klev = 1, nlev
-     do icol = 1, shcol
+  do k = 1, nlev
+     do i = 1, shcol
 
         ! Compute buoyant production term
-        a_prod_bu=(ggr/basetemp)*wthv_sec(icol,klev)
+        a_prod_bu=(ggr/basetemp)*wthv_sec(i,k)
 
-        tke(icol,klev)=max(0._rtype,tke(icol,klev))
+        tke(i,k)=max(0._rtype,tke(i,k))
 
         ! Shear production term
-        a_prod_sh=tk(icol,klev)*sterm_zt(icol,klev)
+        a_prod_sh=tk(i,k)*sterm_zt(i,k)
 
         ! Dissipation term
-        a_diss=Cee/shoc_mix(icol,klev)*tke(icol,klev)**1.5
+        a_diss=Cee/shoc_mix(i,k)*tke(i,k)**1.5
 
         ! March equation forward one timestep
-        tke(icol,klev)=max(0._rtype,tke(icol,klev)+ &
+        tke(i,k)=max(0._rtype,tke(i,k)+ &
 	   dtime*(max(0._rtype,a_prod_sh+a_prod_bu)-a_diss))
 
-        tke(icol,klev)=min(tke(icol,klev),maxtke)
-	
+        tke(i,k)=min(tke(i,k),maxtke)
+
         ! Compute the return to isotropic timescale as per
         ! Canuto et al. 2004.  This is used to define the
         ! eddy coefficients as well as to diagnose higher
         ! moments in SHOC
 
         ! define the time scale
-        tscale=(2.0_rtype*tke(icol,klev))/a_diss
+        tscale=(2.0_rtype*tke(i,k))/a_diss
 
         ! define a damping term "lambda" based on column stability
-        lambda=lambda_low+((brunt_int(icol)/ggr)-brunt_low)*lambda_slope
+        lambda=lambda_low+((brunt_int(i)/ggr)-brunt_low)*lambda_slope
         lambda=max(lambda_low,min(lambda_high,lambda))
 
-        buoy_sgs_save=brunt(icol,klev)
+        buoy_sgs_save=brunt(i,k)
         if (buoy_sgs_save .le. 0._rtype) lambda=0._rtype
 
         ! Compute the return to isotropic timescale
-        isotropy(icol,klev)=min(maxiso,tscale/ &
+        isotropy(i,k)=min(maxiso,tscale/ &
 	   (1._rtype+lambda*buoy_sgs_save*tscale**2))
-	
-        ! Dimensionless Okukhov length considering only 
-        !  the lowest model grid layer height to scale
-        z_over_L = zt_grid(icol,klev)/obklen(icol)
 
-        if (z_over_L .gt. zL_crit_val .and. (zt_grid(icol,klev) .lt. pblh(icol)+pbl_trans)) then	
-          ! If surface layer is moderately to very stable, based on near surface 
-          !  dimensionless Monin-Obukov use modified coefficients of 
-          !  tkh and tk that are primarily based on shear production 
+        ! Dimensionless Okukhov length considering only
+        !  the lowest model grid layer height to scale
+        z_over_L = zt_grid(i,k)/obklen(i)
+
+        if (z_over_L .gt. zL_crit_val .and. (zt_grid(i,k) .lt. pblh(i)+pbl_trans)) then
+          ! If surface layer is moderately to very stable, based on near surface
+          !  dimensionless Monin-Obukov use modified coefficients of
+          !  tkh and tk that are primarily based on shear production
           !  and SHOC length scale, to promote mixing within the PBL
           !  and to a height slighty above to ensure smooth transition.
-          tkh(icol,klev)=Ckh_s*(shoc_mix(icol,klev)**2)*sqrt(sterm_zt(icol,klev))
-          tk(icol,klev)=Ckm_s*(shoc_mix(icol,klev)**2)*sqrt(sterm_zt(icol,klev))
+          tkh(i,k)=Ckh_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
+          tk(i,k)=Ckm_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
         else
           ! Default definition of eddy diffusivity for heat and momentum
-          tkh(icol,klev)=Ckh*isotropy(icol,klev)*tke(icol,klev)
-          tk(icol,klev)=Ckm*isotropy(icol,klev)*tke(icol,klev)
+          tkh(i,k)=Ckh*isotropy(i,k)*tke(i,k)
+          tk(i,k)=Ckm*isotropy(i,k)*tke(i,k)
         endif
- 
-        tke(icol,klev) = max(mintke,tke(icol,klev))
 
-     enddo ! end icol loop
-  enddo ! end klev loop
+        tke(i,k) = max(mintke,tke(i,k))
+
+     enddo ! end i loop
+  enddo ! end k loop
 
   return
 
