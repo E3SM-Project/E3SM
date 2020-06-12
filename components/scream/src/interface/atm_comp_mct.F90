@@ -1,7 +1,7 @@
 module atm_comp_mct
 
   ! !USES:
-  use scream_scorpio_interface, only: eam_h_define, eam_init_pio, eam_h_finalize, eam_h_write
+  use scream_scorpio_interface, only: eam_init_pio_1, eam_init_pio_2, eam_h_finalize, eam_h_write
   use esmf
   use mct_mod
   use perf_mod
@@ -62,14 +62,7 @@ CONTAINS
         integer (kind=c_int), intent(in) :: start_tod, start_ymd, f_comm
       end subroutine scream_init
     end interface
-!    interface
-!      subroutine eam_init_pio_c(f_comm,atmid,numdim,numvar) bind(c)
-!        use iso_c_binding, only: c_int
-!        !
-!        ! Arguments
-!        !
-!        integer (kind=c_int), intent(in) :: f_comm, atmid, numdim, numvar
-!    end interface
+
     ! !DESCRIPTION: initialize dead atm model
 
     ! !INPUT/OUTPUT PARAMETERS:
@@ -166,7 +159,8 @@ CONTAINS
     !----------------------------------------------------------------------------
     ! Initialize pio
     !----------------------------------------------------------------------------
-    call eam_init_pio(mpicom_atm,compid,3,7)
+    call eam_init_pio_1(mpicom_atm,compid)
+    call eam_init_pio_2()
 
   end subroutine atm_init_mct
 
