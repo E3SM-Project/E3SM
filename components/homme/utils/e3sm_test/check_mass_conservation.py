@@ -34,6 +34,19 @@ def uncompress(filename):
         return filename[:-3]
     return filename
 
+def parse_tracer_index(atm_log_fn, tracer_name):
+    state = 0
+    with open(atm_log_fn, 'r') as f:
+        for ln in f:
+            if state == 0:
+                if 'Advected constituent list:' in ln: state = 1
+            elif state == 1:
+                if tracer_name in ln:
+                    toks = ln.split()
+                    tracer_idx = int(toks[0])
+                    break
+    return tracer_idx
+
 def parsetime(ln):
     toks = ln.split()
     val = float(toks[3])
@@ -67,11 +80,15 @@ def conservative(label, time, mass, tol_per_year, verbose):
         print('{:20s}: mass rel err {:1.3e} tol: {:1.3e}'.format(label, mass_rel, thr))
     return mass_rel <= thr
 
+tracer_name = 'CO2_FFF'
+
 case_dir = sys.argv[1]
 run_dir = read_atm_modelio(case_dir)
 atm_fn = get_atm_log(run_dir)
 atm_fn = uncompress(atm_fn)
-tracer_idx = 42
+print('Using log file {}'.format(atm_fn))
+tracer_idx = parse_tracer_index(atm_fn, tracer_name)
+print('Tracer {} has index {}'.format(tracer_name, tracer_idx))
 d = gather_mass_data(atm_fn, tracer_idx)
 good = (conservative('dry M', d['day'], d['dryM'], 1e-11, True) and
         conservative('tracer {}'.format(tracer_idx), d['day'], d['qmass'], 1e-13, True))
