@@ -9,9 +9,10 @@ namespace p3 {
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::rain_self_collection(const Spack& rho, const Spack& qr_incld, const Spack& nr_incld, Spack& nrslf)
+::rain_self_collection(
+  const Spack& rho, const Spack& qr_incld, const Spack& nr_incld, Spack& nrslf,
+  const Smask& context)
 {
-
   // ------------------------------------------------------
   // self-collection and breakup of rain
   // (breakup following modified Verlinde and Cotton scheme)
@@ -20,7 +21,7 @@ void Functions<S,D>
   constexpr Scalar rhow   = C::RhoH2O;
   constexpr Scalar pi     = C::Pi;
 
-  const auto qr_incld_not_small = qr_incld >= qsmall;
+  const auto qr_incld_not_small = qr_incld >= qsmall && context;
 
   if (qr_incld_not_small.any()) {
     const Real dum1 = 280.e-6;

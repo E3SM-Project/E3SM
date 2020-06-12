@@ -19,36 +19,36 @@ void Functions<S,D>
 ::p3_main_init(
   const MemberType& team,
   const Int& nk_pack,
-  const uview_1d<const Spack>& oicldm,
-  const uview_1d<const Spack>& olcldm,
-  const uview_1d<const Spack>& orcldm,
-  const uview_1d<const Spack>& oexner,
-  const uview_1d<const Spack>& oth,
-  const uview_1d<Spack>& opratot,
-  const uview_1d<Spack>& oprctot,
+  const uview_1d<const Spack>& icldm,
+  const uview_1d<const Spack>& lcldm,
+  const uview_1d<const Spack>& rcldm,
+  const uview_1d<const Spack>& exner,
+  const uview_1d<const Spack>& th,
+  const uview_1d<Spack>& pratot,
+  const uview_1d<Spack>& prctot,
   const uview_1d<Spack>& prec,
   const uview_1d<Spack>& mu_r,
-  const uview_1d<Spack>& odiag_ze,
+  const uview_1d<Spack>& diag_ze,
   const uview_1d<Spack>& ze_ice,
   const uview_1d<Spack>& ze_rain,
-  const uview_1d<Spack>& odiag_effc,
-  const uview_1d<Spack>& odiag_effi,
-  const uview_1d<Spack>& odiag_vmi,
-  const uview_1d<Spack>& odiag_di,
-  const uview_1d<Spack>& odiag_rhoi,
-  const uview_1d<Spack>& ocmeiout,
-  const uview_1d<Spack>& oprain,
-  const uview_1d<Spack>& onevapr,
-  const uview_1d<Spack>& orflx,
-  const uview_1d<Spack>& osflx,
+  const uview_1d<Spack>& diag_effc,
+  const uview_1d<Spack>& diag_effi,
+  const uview_1d<Spack>& diag_vmi,
+  const uview_1d<Spack>& diag_di,
+  const uview_1d<Spack>& diag_rhoi,
+  const uview_1d<Spack>& cmeiout,
+  const uview_1d<Spack>& prain,
+  const uview_1d<Spack>& nevapr,
+  const uview_1d<Spack>& rflx,
+  const uview_1d<Spack>& sflx,
   const uview_1d<Spack>& inv_icldm,
   const uview_1d<Spack>& inv_lcldm,
   const uview_1d<Spack>& inv_rcldm,
-  const uview_1d<Spack>& omu_c,
-  const uview_1d<Spack>& olamc,
+  const uview_1d<Spack>& mu_c,
+  const uview_1d<Spack>& lamc,
   const uview_1d<Spack>& inv_exner,
   const uview_1d<Spack>& t,
-  const uview_1d<Spack>& oqv,
+  const uview_1d<Spack>& qv,
   Scalar& prt_liq,
   Scalar& prt_sol)
 {
@@ -58,31 +58,31 @@ void Functions<S,D>
   Kokkos::parallel_for(
     Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
 
-    opratot(k)    = 0;
-    oprctot(k)    = 0;
-    prec(k)       = 0;
-    mu_r(k)       = 0;
-    odiag_ze(k)   = -99;
-    ze_ice(k)     = 1.e-22;
-    ze_rain(k)    = 1.e-22;
-    odiag_effc(k) = 10.e-6;
-    odiag_effi(k) = 25.e-6;
-    odiag_vmi(k)  = 0;
-    odiag_di(k)   = 0;
-    odiag_rhoi(k) = 0;
-    ocmeiout(k)   = 0;
-    oprain(k)     = 0;
-    onevapr(k)    = 0;
-    orflx(k)      = 0;
-    osflx(k)      = 0;
-    inv_icldm(k)  = 1 / oicldm(k);
-    inv_lcldm(k)  = 1 / olcldm(k);
-    inv_rcldm(k)  = 1 / orcldm(k);
-    omu_c(k)      = 0;
-    olamc(k)      = 0;
-    inv_exner(k)  = 1 / oexner(k);
-    t(k)          = oth(k) * inv_exner(k);
-    oqv(k)        = pack::max(oqv(k), 0);
+    pratot(k)    = 0;
+    prctot(k)    = 0;
+    prec(k)      = 0;
+    mu_r(k)      = 0;
+    diag_ze(k)   = -99;
+    ze_ice(k)    = 1.e-22;
+    ze_rain(k)   = 1.e-22;
+    diag_effc(k) = 10.e-6;
+    diag_effi(k) = 25.e-6;
+    diag_vmi(k)  = 0;
+    diag_di(k)   = 0;
+    diag_rhoi(k) = 0;
+    cmeiout(k)   = 0;
+    prain(k)     = 0;
+    nevapr(k)    = 0;
+    rflx(k)      = 0;
+    sflx(k)      = 0;
+    inv_icldm(k) = 1 / icldm(k);
+    inv_lcldm(k) = 1 / lcldm(k);
+    inv_rcldm(k) = 1 / rcldm(k);
+    mu_c(k)      = 0;
+    lamc(k)      = 0;
+    inv_exner(k) = 1 / exner(k);
+    t(k)         = th(k) * inv_exner(k);
+    qv(k)        = pack::max(qv(k), 0);
   });
   team.team_barrier();
 }
@@ -95,18 +95,18 @@ void Functions<S,D>
   const Int& nk,
   const bool& log_predictNc,
   const Scalar& dt,
-  const uview_1d<const Spack>& opres,
-  const uview_1d<const Spack>& opdel,
-  const uview_1d<const Spack>& odzq,
-  const uview_1d<const Spack>& oncnuc,
-  const uview_1d<const Spack>& oexner,
+  const uview_1d<const Spack>& pres,
+  const uview_1d<const Spack>& pdel,
+  const uview_1d<const Spack>& dzq,
+  const uview_1d<const Spack>& ncnuc,
+  const uview_1d<const Spack>& exner,
   const uview_1d<const Spack>& inv_exner,
   const uview_1d<const Spack>& inv_lcldm,
   const uview_1d<const Spack>& inv_icldm,
   const uview_1d<const Spack>& inv_rcldm,
-  const uview_1d<const Spack>& oxxlv,
-  const uview_1d<const Spack>& oxxls,
-  const uview_1d<const Spack>& oxlf,
+  const uview_1d<const Spack>& xxlv,
+  const uview_1d<const Spack>& xxls,
+  const uview_1d<const Spack>& xlf,
   const uview_1d<Spack>& t,
   const uview_1d<Spack>& rho,
   const uview_1d<Spack>& inv_rho,
@@ -116,16 +116,16 @@ void Functions<S,D>
   const uview_1d<Spack>& rhofacr,
   const uview_1d<Spack>& rhofaci,
   const uview_1d<Spack>& acn,
-  const uview_1d<Spack>& oqv,
-  const uview_1d<Spack>& oth,
-  const uview_1d<Spack>& oqc,
-  const uview_1d<Spack>& onc,
-  const uview_1d<Spack>& oqr,
-  const uview_1d<Spack>& onr,
-  const uview_1d<Spack>& oqitot,
-  const uview_1d<Spack>& onitot,
-  const uview_1d<Spack>& oqirim,
-  const uview_1d<Spack>& obirim,
+  const uview_1d<Spack>& qv,
+  const uview_1d<Spack>& th,
+  const uview_1d<Spack>& qc,
+  const uview_1d<Spack>& nc,
+  const uview_1d<Spack>& qr,
+  const uview_1d<Spack>& nr,
+  const uview_1d<Spack>& qitot,
+  const uview_1d<Spack>& nitot,
+  const uview_1d<Spack>& qirim,
+  const uview_1d<Spack>& birim,
   const uview_1d<Spack>& qc_incld,
   const uview_1d<Spack>& qr_incld,
   const uview_1d<Spack>& qitot_incld,
@@ -137,7 +137,6 @@ void Functions<S,D>
   bool& log_nucleationPossible,
   bool& log_hydrometeorsPresent)
 {
-
   // Get access to saturation functions
   using physics = scream::physics::Functions<Scalar, Device>;
 
@@ -171,12 +170,12 @@ void Functions<S,D>
     const auto range_pack = scream::pack::range<IntSmallPack>(k*Spack::n);
     const auto range_mask = range_pack < nk;
 
-    rho(k)     = opdel(k)/odzq(k) / g;
+    rho(k)     = pdel(k)/dzq(k) / g;
     inv_rho(k) = 1 / rho(k);
-    qvs(k)     = physics::qv_sat(t(k), opres(k), 0);
-    qvi(k)     = physics::qv_sat(t(k), opres(k), 1);
+    qvs(k)     = physics::qv_sat(t(k), pres(k), 0);
+    qvi(k)     = physics::qv_sat(t(k), pres(k), 1);
 
-    supi(k) = oqv(k) / qvi(k) - 1;
+    supi(k) = qv(k) / qvi(k) - 1;
 
     rhofacr(k) = pack::pow(rhosur * inv_rho(k), sp(.54));
     rhofaci(k) = pack::pow(rhosui * inv_rho(k), sp(.54));
@@ -189,58 +188,58 @@ void Functions<S,D>
 
     // apply mass clipping if dry and mass is sufficiently small
     // (implying all mass is expected to evaporate/sublimate in one time step)
-    auto drymass = oqc(k) < qsmall;
+    auto drymass = qc(k) < qsmall;
     auto not_drymass = !drymass && range_mask;
-    oqv(k).set(drymass, oqv(k) + oqc(k));
-    oth(k).set(drymass, oth(k) - oexner(k) * oqc(k) * oxxlv(k) * inv_cp);
-    oqc(k).set(drymass, 0);
-    onc(k).set(drymass, 0);
+    qv(k).set(drymass, qv(k) + qc(k));
+    th(k).set(drymass, th(k) - exner(k) * qc(k) * xxlv(k) * inv_cp);
+    qc(k).set(drymass, 0);
+    nc(k).set(drymass, 0);
     if ( not_drymass.any() ) {
       log_hydrometeorsPresent = true; // updated further down
-      // Apply droplet activation here (before other microphysical processes) for consistency with qc increase by saturation 
-      // adjustment already applied in macrophysics. If prescribed drop number is used, this is also a good place to 
+      // Apply droplet activation here (before other microphysical processes) for consistency with qc increase by saturation
+      // adjustment already applied in macrophysics. If prescribed drop number is used, this is also a good place to
       // prescribe that value
       if (!log_predictNc) {
-         onc(k).set(not_drymass, nccnst*inv_rho(k));
+         nc(k).set(not_drymass, nccnst*inv_rho(k));
       } else {
-         onc(k).set(not_drymass, pack::max(onc(k) + oncnuc(k) * dt,0.0));
+         nc(k).set(not_drymass, pack::max(nc(k) + ncnuc(k) * dt, 0.0));
       }
     }
 
-    drymass = oqr(k) < qsmall;
+    drymass = qr(k) < qsmall;
     not_drymass = !drymass && range_mask;
-    oqv(k).set(drymass, oqv(k) + oqr(k));
-    oth(k).set(drymass, oth(k) - oexner(k) * oqr(k) * oxxlv(k) * inv_cp);
-    oqr(k).set(drymass, 0);
-    onr(k).set(drymass, 0);
+    qv(k).set(drymass, qv(k) + qr(k));
+    th(k).set(drymass, th(k) - exner(k) * qr(k) * xxlv(k) * inv_cp);
+    qr(k).set(drymass, 0);
+    nr(k).set(drymass, 0);
     if ( not_drymass.any() ) {
       log_hydrometeorsPresent = true; // updated further down
     }
 
-    drymass = (oqitot(k) < qsmall || (oqitot(k) < 1.e-8 && supi(k) < -0.1));
+    drymass = (qitot(k) < qsmall || (qitot(k) < 1.e-8 && supi(k) < -0.1));
     not_drymass = !drymass && range_mask;
-    oqv(k).set(drymass, oqv(k) + oqitot(k));
-    oth(k).set(drymass, oth(k) - oexner(k) * oqitot(k) * oxxls(k) * inv_cp);
-    oqitot(k).set(drymass, 0);
-    onitot(k).set(drymass, 0);
-    oqirim(k).set(drymass, 0);
-    obirim(k).set(drymass, 0);
+    qv(k).set(drymass, qv(k) + qitot(k));
+    th(k).set(drymass, th(k) - exner(k) * qitot(k) * xxls(k) * inv_cp);
+    qitot(k).set(drymass, 0);
+    nitot(k).set(drymass, 0);
+    qirim(k).set(drymass, 0);
+    birim(k).set(drymass, 0);
     if ( not_drymass.any() ) {
       log_hydrometeorsPresent = true; // final update
     }
 
-    drymass = (oqitot(k) >= qsmall && oqitot(k) < 1.e-8 && t(k) >= zerodegc);
-    oqr(k).set(drymass, oqr(k) + oqitot(k));
-    oth(k).set(drymass, oth(k) - oexner(k) * oqitot(k) * oxlf(k) * inv_cp);
-    oqitot(k).set(drymass, 0);
-    onitot(k).set(drymass, 0);
-    oqirim(k).set(drymass, 0);
-    obirim(k).set(drymass, 0);
+    drymass = (qitot(k) >= qsmall && qitot(k) < 1.e-8 && t(k) >= zerodegc);
+    qr(k).set(drymass, qr(k) + qitot(k));
+    th(k).set(drymass, th(k) - exner(k) * qitot(k) * xlf(k) * inv_cp);
+    qitot(k).set(drymass, 0);
+    nitot(k).set(drymass, 0);
+    qirim(k).set(drymass, 0);
+    birim(k).set(drymass, 0);
 
-    t(k) = oth(k) * inv_exner(k);
+    t(k) = th(k) * inv_exner(k);
 
     calculate_incloud_mixingratios(
-      oqc(k), oqr(k), oqitot(k), oqirim(k), onc(k), onr(k), onitot(k), obirim(k),
+      qc(k), qr(k), qitot(k), qirim(k), nc(k), nr(k), nitot(k), birim(k),
       inv_lcldm(k), inv_icldm(k), inv_rcldm(k),
       qc_incld(k), qr_incld(k), qitot_incld(k), qirim_incld(k), nc_incld(k), nr_incld(k), nitot_incld(k), birim_incld(k));
   });
@@ -260,43 +259,42 @@ void Functions<S,D>
   const view_itab_table& itab,
   const view_itabcol_table& itabcol,
   const view_2d_table& revap_table,
-  const uview_1d<const Spack>& opres,
-  const uview_1d<const Spack>& opdel,
-  const uview_1d<const Spack>& odzq,
-  const uview_1d<const Spack>& oncnuc,
-  const uview_1d<const Spack>& oexner,
+  const uview_1d<const Spack>& pres,
+  const uview_1d<const Spack>& pdel,
+  const uview_1d<const Spack>& dzq,
+  const uview_1d<const Spack>& ncnuc,
+  const uview_1d<const Spack>& exner,
   const uview_1d<const Spack>& inv_exner,
   const uview_1d<const Spack>& inv_lcldm,
   const uview_1d<const Spack>& inv_icldm,
   const uview_1d<const Spack>& inv_rcldm,
-  const uview_1d<const Spack>& onaai,
-  const uview_1d<const Spack>& oqc_relvar,
-  const uview_1d<const Spack>& oicldm,
-  const uview_1d<const Spack>& olcldm,
-  const uview_1d<const Spack>& orcldm,
+  const uview_1d<const Spack>& naai,
+  const uview_1d<const Spack>& qc_relvar,
+  const uview_1d<const Spack>& icldm,
+  const uview_1d<const Spack>& lcldm,
+  const uview_1d<const Spack>& rcldm,
   const uview_1d<Spack>& t,
   const uview_1d<Spack>& rho,
   const uview_1d<Spack>& inv_rho,
   const uview_1d<Spack>& qvs,
   const uview_1d<Spack>& qvi,
-  const uview_1d<Spack>& sup,
   const uview_1d<Spack>& supi,
   const uview_1d<Spack>& rhofacr,
   const uview_1d<Spack>& rhofaci,
   const uview_1d<Spack>& acn,
-  const uview_1d<Spack>& oqv,
-  const uview_1d<Spack>& oth,
-  const uview_1d<Spack>& oqc,
-  const uview_1d<Spack>& onc,
-  const uview_1d<Spack>& oqr,
-  const uview_1d<Spack>& onr,
-  const uview_1d<Spack>& oqitot,
-  const uview_1d<Spack>& onitot,
-  const uview_1d<Spack>& oqirim,
-  const uview_1d<Spack>& obirim,
-  const uview_1d<Spack>& oxxlv,
-  const uview_1d<Spack>& oxxls,
-  const uview_1d<Spack>& oxlf,
+  const uview_1d<Spack>& qv,
+  const uview_1d<Spack>& th,
+  const uview_1d<Spack>& qc,
+  const uview_1d<Spack>& nc,
+  const uview_1d<Spack>& qr,
+  const uview_1d<Spack>& nr,
+  const uview_1d<Spack>& qitot,
+  const uview_1d<Spack>& nitot,
+  const uview_1d<Spack>& qirim,
+  const uview_1d<Spack>& birim,
+  const uview_1d<Spack>& xxlv,
+  const uview_1d<Spack>& xxls,
+  const uview_1d<Spack>& xlf,
   const uview_1d<Spack>& qc_incld,
   const uview_1d<Spack>& qr_incld,
   const uview_1d<Spack>& qitot_incld,
@@ -305,24 +303,24 @@ void Functions<S,D>
   const uview_1d<Spack>& nr_incld,
   const uview_1d<Spack>& nitot_incld,
   const uview_1d<Spack>& birim_incld,
-  const uview_1d<Spack>& omu_c,
+  const uview_1d<Spack>& mu_c,
   const uview_1d<Spack>& nu,
-  const uview_1d<Spack>& olamc,
+  const uview_1d<Spack>& lamc,
   const uview_1d<Spack>& cdist,
   const uview_1d<Spack>& cdist1,
   const uview_1d<Spack>& cdistr,
   const uview_1d<Spack>& mu_r,
   const uview_1d<Spack>& lamr,
   const uview_1d<Spack>& logn0r,
-  const uview_1d<Spack>& ocmeiout,
-  const uview_1d<Spack>& oprain,
-  const uview_1d<Spack>& onevapr,
-  const uview_1d<Spack>& oprer_evap,
-  const uview_1d<Spack>& ovap_liq_exchange,
-  const uview_1d<Spack>& ovap_ice_exchange,
-  const uview_1d<Spack>& oliq_ice_exchange,
-  const uview_1d<Spack>& opratot,
-  const uview_1d<Spack>& oprctot,
+  const uview_1d<Spack>& cmeiout,
+  const uview_1d<Spack>& prain,
+  const uview_1d<Spack>& nevapr,
+  const uview_1d<Spack>& prer_evap,
+  const uview_1d<Spack>& vap_liq_exchange,
+  const uview_1d<Spack>& vap_ice_exchange,
+  const uview_1d<Spack>& liq_ice_exchange,
+  const uview_1d<Spack>& pratot,
+  const uview_1d<Spack>& prctot,
   bool& log_hydrometeorsPresent)
 {
   constexpr Scalar qsmall       = C::QSMALL;
@@ -334,12 +332,16 @@ void Functions<S,D>
   constexpr Scalar nmltratio    = C::nmltratio;
   constexpr Scalar inv_cp       = C::INV_CP;
 
+  team.team_barrier();
+  log_hydrometeorsPresent = false;
+  team.team_barrier();
+
   Kokkos::parallel_for(
     Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
 
     // if relatively dry and no hydrometeors at this level, skip to end of k-loop (i.e. skip this level)
-    const auto skip_all = !(oqc(k) >= qsmall || oqr(k) >= qsmall || oqitot(k) >= qsmall) &&
-      ( (t(k) < zerodegc && supi(k) < -0.05) || (t(k) >= zerodegc && sup(k) < -0.05) );
+    const auto skip_all = !(qc(k) >= qsmall || qr(k) >= qsmall || qitot(k) >= qsmall) &&
+      (t(k) < zerodegc && supi(k) < -0.05);
     const auto not_skip_all = !skip_all;
     if (skip_all.all()) {
       return; // skip all process rates
@@ -353,10 +355,8 @@ void Functions<S,D>
       qrevp   (0), // rain evaporation
       qcaut   (0), // cloud droplet autoconversion to rain
       ncacc   (0), // change in cloud droplet number from accretion by rain
-      ncnuc   (0), // change in cloud droplet number from activation of CCN
       ncslf   (0), // change in cloud droplet number from self-collection  (Not in paper?)
       ncautc  (0), // change in cloud droplet number from autoconversion
-      qcnuc   (0), // activation of cloud droplets from CCN
       nrslf   (0), // change in rain number from self-collection  (Not in paper?)
       nrevp   (0), // change in rain number from evaporation
       ncautr  (0), // change in rain number from autoconversion of cloud water
@@ -426,20 +426,19 @@ void Functions<S,D>
     // skip micro process calculations except nucleation/acvtivation if there no hydrometeors are present
     const auto skip_micro = skip_all || !(qc_incld(k) >= qsmall || qr_incld(k) >= qsmall || qitot_incld(k) >= qsmall);
     const auto not_skip_micro = !skip_micro;
-
     if (not_skip_micro.any()) {
       // time/space varying physical variables
-      // TODO: needs smask protection (not_skip_micro)
       get_time_space_phys_variables(
-        t(k), opres(k), rho(k), oxxlv(k), oxxls(k), qvs(k), qvi(k),
-        mu, dv, sc, dqsdt, dqsidt, ab, abi, kap, eii);
+        t(k), pres(k), rho(k), xxlv(k), xxls(k), qvs(k), qvi(k),
+        mu, dv, sc, dqsdt, dqsidt, ab, abi, kap, eii, not_skip_micro);
 
-      get_cloud_dsd2(not_skip_micro, qc_incld(k), nc_incld(k), omu_c(k), rho(k), nu(k), dnu, olamc(k), cdist(k), cdist1(k), olcldm(k));
+      get_cloud_dsd2(qc_incld(k), nc_incld(k), mu_c(k), rho(k), nu(k), dnu, lamc(k), cdist(k), cdist1(k), lcldm(k), not_skip_micro);
+      nc(k).set(not_skip_micro, nc_incld(k) * lcldm(k));
 
-      get_rain_dsd2(not_skip_micro, qr_incld(k), nr_incld(k), mu_r(k), lamr(k), cdist(k), cdist1(k), orcldm(k));
+      get_rain_dsd2(qr_incld(k), nr_incld(k), mu_r(k), lamr(k), cdistr(k), logn0r(k), rcldm(k), not_skip_micro);
+      nr(k).set(not_skip_micro, nr_incld(k) * rcldm(k));
 
-      // TODO: needs smask protection
-      impose_max_total_Ni(nitot_incld(k), max_total_Ni, inv_rho(k));
+      impose_max_total_Ni(nitot_incld(k), max_total_Ni, inv_rho(k), not_skip_micro);
 
       const auto qitot_gt_small = qitot_incld(k) >= qsmall && not_skip_micro;
 
@@ -448,27 +447,27 @@ void Functions<S,D>
         nitot_incld(k).set(qitot_gt_small, pack::max(nitot_incld(k), nsmall));
         nr_incld(k).set(qitot_gt_small, pack::max(nr_incld(k), nsmall));
 
-        const auto rhop = calc_bulk_rho_rime(qitot_gt_small, qitot_incld(k), qirim_incld(k), birim_incld(k));
+        const auto rhop = calc_bulk_rho_rime(qitot_incld(k), qirim_incld(k), birim_incld(k), qitot_gt_small);
 
         TableIce table_ice;
-        lookup_ice(qitot_gt_small, qitot_incld(k), nitot_incld(k), qirim_incld(k), rhop, table_ice);
+        lookup_ice(qitot_incld(k), nitot_incld(k), qirim_incld(k), rhop, table_ice, qitot_gt_small);
 
         TableRain table_rain;
-        lookup_rain(qitot_gt_small, qr_incld(k), nr_incld(k), table_rain);
+        lookup_rain(qr_incld(k), nr_incld(k), table_rain, qitot_gt_small);
 
         // call to lookup table interpolation subroutines to get process rates
-        f1pr02.set(qitot_gt_small, apply_table_ice(qitot_gt_small, 1,  itab, table_ice));
-        f1pr03.set(qitot_gt_small, apply_table_ice(qitot_gt_small, 2,  itab, table_ice));
-        f1pr04.set(qitot_gt_small, apply_table_ice(qitot_gt_small, 3,  itab, table_ice));
-        f1pr05.set(qitot_gt_small, apply_table_ice(qitot_gt_small, 4,  itab, table_ice));
-        f1pr09.set(qitot_gt_small, apply_table_ice(qitot_gt_small, 8,  itab, table_ice));
-        f1pr10.set(qitot_gt_small, apply_table_ice(qitot_gt_small, 9,  itab, table_ice));
-        f1pr14.set(qitot_gt_small, apply_table_ice(qitot_gt_small, 13, itab, table_ice));
+        f1pr02.set(qitot_gt_small, apply_table_ice(1, itab, table_ice, qitot_gt_small));
+        f1pr03.set(qitot_gt_small, apply_table_ice(2, itab, table_ice, qitot_gt_small));
+        f1pr04.set(qitot_gt_small, apply_table_ice(3, itab, table_ice, qitot_gt_small));
+        f1pr05.set(qitot_gt_small, apply_table_ice(4, itab, table_ice, qitot_gt_small));
+        f1pr09.set(qitot_gt_small, apply_table_ice(6, itab, table_ice, qitot_gt_small));
+        f1pr10.set(qitot_gt_small, apply_table_ice(7, itab, table_ice, qitot_gt_small));
+        f1pr14.set(qitot_gt_small, apply_table_ice(9, itab, table_ice, qitot_gt_small));
 
         // ice-rain collection processes
         const auto qr_gt_small = qr_incld(k) >= qsmall && qitot_gt_small;
-        f1pr07.set(qr_gt_small, apply_table_coll(qitot_gt_small, 0, itabcol, table_ice, table_rain));
-        f1pr08.set(qr_gt_small, apply_table_coll(qitot_gt_small, 1, itabcol, table_ice, table_rain));
+        f1pr07.set(qr_gt_small, apply_table_coll(0, itabcol, table_ice, table_rain, qitot_gt_small));
+        f1pr08.set(qr_gt_small, apply_table_coll(1, itabcol, table_ice, table_rain, qitot_gt_small));
 
         // adjust Ni if needed to make sure mean size is in bounds (i.e. apply lambda limiters)
         // note that the Nmax and Nmin are normalized and thus need to be multiplied by existing N
@@ -484,64 +483,55 @@ void Functions<S,D>
       // ice processes
       // ......................................................................
 
-      // TODO: needs smask protection (not_skip_micro)
       // collection of droplets
       ice_cldliq_collection(
         rho(k), t(k), rhofaci(k), f1pr04, qitot_incld(k), qc_incld(k), nitot_incld(k), nc_incld(k),
-        qccol, nccol, qcshd, ncshdc);
+        qccol, nccol, qcshd, ncshdc, not_skip_micro);
 
-      // TODO: needs smask protection
       // collection of rain
       ice_rain_collection(
         rho(k), t(k), rhofaci(k), logn0r(k), f1pr07, f1pr08, qitot_incld(k), nitot_incld(k), qr_incld(k),
-        qrcol, nrcol);
+        qrcol, nrcol, not_skip_micro);
 
       // collection between ice categories
 
       // PMC nCat deleted lots of stuff here.
 
-      // TODO: needs smask protection
       // self-collection of ice
       ice_self_collection(
         rho(k), rhofaci(k), f1pr03, eii, qirim_incld(k), qitot_incld(k), nitot_incld(k),
-        nislf);
+        nislf, not_skip_micro);
 
-      // TODO: needs smask protection
       // melting
       ice_melting(
-        rho(k), t(k), opres(k), rhofaci(k), f1pr05, f1pr14, oxxlv(k), oxlf(k), dv, sc, mu, kap, oqv(k), qitot_incld(k), nitot_incld(k),
-        qimlt, nimlt);
+        rho(k), t(k), pres(k), rhofaci(k), f1pr05, f1pr14, xxlv(k), xlf(k), dv, sc, mu, kap, qv(k), qitot_incld(k), nitot_incld(k),
+        qimlt, nimlt, not_skip_micro);
 
-      // TODO: needs smask protection
       // calculate wet growth
       ice_cldliq_wet_growth(
-        rho(k), t(k), opres(k), rhofaci(k), f1pr05, f1pr14, oxxlv(k), oxlf(k), dv, kap, mu, sc, oqv(k), qc_incld(k), qitot_incld(k), nitot_incld(k), qr_incld(k),
-        log_wetgrowth, qrcol, qccol, qwgrth, nrshdr, qcshd);
+        rho(k), t(k), pres(k), rhofaci(k), f1pr05, f1pr14, xxlv(k), xlf(k), dv, kap, mu, sc, qv(k), qc_incld(k), qitot_incld(k), nitot_incld(k), qr_incld(k),
+        log_wetgrowth, qrcol, qccol, qwgrth, nrshdr, qcshd, not_skip_micro);
 
-      // TODO: needs smask protection
       // calcualte total inverse ice relaxation timescale combined for all ice categories
       // note 'f1pr' values are normalized, so we need to multiply by N
       ice_relaxation_timescale(
         rho(k), t(k), rhofaci(k), f1pr05, f1pr14, dv, mu, sc, qitot_incld(k), nitot_incld(k),
-        epsi, epsi_tot);
+        epsi, epsi_tot, not_skip_micro);
 
-      // TODO: needs smask protection
       // calculate rime density
       calc_rime_density(
-        t(k), rhofaci(k), f1pr02, acn(k), olamc(k), omu_c(k), qc_incld(k), qccol,
-        vtrmi1, rhorime_c);
+        t(k), rhofaci(k), f1pr02, acn(k), lamc(k), mu_c(k), qc_incld(k), qccol,
+        vtrmi1, rhorime_c, not_skip_micro);
 
-      // TODO: needs smask protection
       // contact and immersion freezing droplets
       cldliq_immersion_freezing(
-	t(k), olamc(k), omu_c(k), cdist1(k), qc_incld(k), oqc_relvar(k),
-        qcheti, ncheti);
+	t(k), lamc(k), mu_c(k), cdist1(k), qc_incld(k), qc_relvar(k),
+        qcheti, ncheti, not_skip_micro);
 
-      // TODO: needs smask protection
       // for future: get rid of log statements below for rain freezing
       rain_immersion_freezing(
         t(k), lamr(k), mu_r(k), cdistr(k), qr_incld(k),
-        qrheti, nrheti);
+        qrheti, nrheti, not_skip_micro);
 
       //  rime splintering (Hallet-Mossop 1974)
       // PMC comment: Morrison and Milbrandt 2015 part 1 and 2016 part 3 both say
@@ -552,63 +542,54 @@ void Functions<S,D>
       //  condensation/evaporation/deposition/sublimation
       //    (use semi-analytic formulation)
 
-      // TODO: needs smask protection
       //  calculate rain evaporation including ventilation
       calc_liq_relaxation_timescale(
         revap_table, rho(k), f1r, f2r, dv, mu, sc, mu_r(k), lamr(k), cdistr(k), cdist(k), qr_incld(k), qc_incld(k),
-        epsr, epsc);
+        epsr, epsc, not_skip_micro);
 
-      // TODO: needs smask protection
       evaporate_sublimate_precip(
-        qr_incld(k), qc_incld(k), nr_incld(k), qitot_incld(k), olcldm(k), orcldm(k), qvs(k), ab, epsr, oqv(k),
-        qrevp, nrevp);
+        qr_incld(k), qc_incld(k), nr_incld(k), qitot_incld(k), lcldm(k), rcldm(k), qvs(k), ab, epsr, qv(k),
+        qrevp, nrevp, not_skip_micro);
 
-      // TODO: needs smask protection
       ice_deposition_sublimation(
-        qitot_incld(k), nitot_incld(k), t(k), qvs(k), qvi(k), epsi, abi, oqv(k),
-        qidep, qisub, nisub, qiberg);
-      }
+        qitot_incld(k), nitot_incld(k), t(k), qvs(k), qvi(k), epsi, abi, qv(k),
+        qidep, qisub, nisub, qiberg, not_skip_micro);
+    }
 
-    // TODO: needs smask protection (not_skip_all)
     // deposition/condensation-freezing nucleation
     ice_nucleation(
-      t(k), inv_rho(k), onitot(k), onaai(k), supi(k), odt, log_predictNc,
-      qinuc, ninuc);
+      t(k), inv_rho(k), nitot(k), naai(k), supi(k), odt, log_predictNc,
+      qinuc, ninuc, not_skip_all);
 
-    // TODO: needs smask protection
     // cloud water autoconversion
     // NOTE: cloud_water_autoconversion must be called before droplet_self_collection
     cloud_water_autoconversion(
-      rho(k), qc_incld(k), nc_incld(k), oqc_relvar(k),
-      qcaut, ncautc, ncautr);
+      rho(k), qc_incld(k), nc_incld(k), qc_relvar(k),
+      qcaut, ncautc, ncautr, not_skip_all);
 
-    // TODO: needs smask protection
     // self-collection of droplets
     droplet_self_collection(
       rho(k), inv_rho(k), qc_incld(k),
-      omu_c(k), nu(k), ncautc, ncslf);
+      mu_c(k), nu(k), ncautc, ncslf, not_skip_all);
 
-    // TODO: needs smask protection
     // accretion of cloud by rain
     cloud_rain_accretion(
-      rho(k), inv_rho(k), qc_incld(k), nc_incld(k), qr_incld(k),oqc_relvar(k),
-      qcacc, ncacc);
+      rho(k), inv_rho(k), qc_incld(k), nc_incld(k), qr_incld(k), qc_relvar(k),
+      qcacc, ncacc, not_skip_all);
 
-    // TODO: needs smask protection
     // self-collection and breakup of rain
     // (breakup following modified Verlinde and Cotton scheme)
     rain_self_collection(
       rho(k), qr_incld(k), nr_incld(k),
-      nrslf);
+      nrslf, not_skip_all);
 
-    // TODO: needs smask protection
     // Here we map the microphysics tendency rates back to CELL-AVERAGE quantities for updating
     // cell-average quantities.
     back_to_cell_average(
-      olcldm(k), orcldm(k), oicldm(k), qcacc, qrevp, qcaut,
+      lcldm(k), rcldm(k), icldm(k), qcacc, qrevp, qcaut,
       ncacc, ncslf, ncautc, nrslf, nrevp, ncautr, qisub, nrshdr, qcheti,
       qrcol, qcshd, qimlt, qccol, qrheti, nimlt, nccol, ncshdc, ncheti, nrcol, nislf,
-      qidep, nrheti, nisub, qinuc, ninuc, qiberg);
+      qidep, nrheti, nisub, qinuc, ninuc, qiberg, not_skip_all);
 
     //
     // conservation of water
@@ -633,106 +614,99 @@ void Functions<S,D>
     //   1) Should we be taking qinuc into consideration too?
     //   2) Is MG correct in NOT limiting qisub?
 
-    // TODO: needs smask protection
-    prevent_ice_overdepletion(opres(k), t(k), oqv(k), oxxls(k), odt, qidep, qisub);
+    prevent_ice_overdepletion(pres(k), t(k), qv(k), xxls(k), odt, qidep, qisub, not_skip_all);
 
     // vapor -- not needed, since all sinks already have limits imposed and the sum, therefore,
     //          cannot possibly overdeplete qv
 
     // cloud
-    // TODO: needs smask protection
     cloud_water_conservation(
-      oqc(k), dt,
-      qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep);
+      qc(k), dt,
+      qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep, not_skip_all);
 
     // rain
-    // TODO: needs smask protection
     rain_water_conservation(
-      oqr(k), qcaut, qcacc, qimlt, qcshd, dt,
-      qrevp, qrcol, qrheti);
+      qr(k), qcaut, qcacc, qimlt, qcshd, dt,
+      qrevp, qrcol, qrheti, not_skip_all);
 
     // ice
-    // TODO: needs smask protection
     ice_water_conservation(
-      oqitot(k), qidep, qinuc, qiberg, qrcol, qccol, qrheti, qcheti, dt,
-      qisub, qimlt);
+      qitot(k), qidep, qinuc, qiberg, qrcol, qccol, qrheti, qcheti, dt,
+      qisub, qimlt, not_skip_all);
 
     //---------------------------------------------------------------------------------
     // update prognostic microphysics and thermodynamics variables
     //---------------------------------------------------------------------------------
 
-    // TODO: needs smask protection
     //-- ice-phase dependent processes:
     update_prognostic_ice(
-      qcheti, qccol, qcshd, nccol, ncheti, ncshdc, qrcol, nrcol,  qrheti, nrheti, nrshdr, qimlt, nimlt, qisub, qidep, qinuc, ninuc, nislf, nisub, qiberg, oexner(k), oxxls(k), oxlf(k), log_predictNc, log_wetgrowth, dt, nmltratio, rhorime_c,
-      oth(k), oqv(k), oqitot(k), onitot(k), oqirim(k), obirim(k), oqc(k), onc(k), oqr(k), onr(k));
+      qcheti, qccol, qcshd, nccol, ncheti, ncshdc, qrcol, nrcol,  qrheti, nrheti, nrshdr, qimlt, nimlt, qisub, qidep, qinuc, ninuc, nislf, nisub, qiberg, exner(k), xxls(k), xlf(k), log_predictNc, log_wetgrowth, dt, nmltratio, rhorime_c,
+      th(k), qv(k), qitot(k), nitot(k), qirim(k), birim(k), qc(k), nc(k), qr(k), nr(k), not_skip_all);
 
-    // TODO: needs smask protection
     //-- warm-phase only processes:
     update_prognostic_liquid(
-      qcacc, ncacc, qcaut, ncautc, ncautr, ncslf, qrevp, nrevp, nrslf, log_predictNc, inv_rho(k), oexner(k), oxxlv(k), dt,
-      oth(k), oqv(k), oqc(k), onc(k), oqr(k), onr(k));
+      qcacc, ncacc, qcaut, ncautc, ncautr, ncslf, qrevp, nrevp, nrslf, log_predictNc, inv_rho(k), exner(k), xxlv(k), dt,
+      th(k), qv(k), qc(k), nc(k), qr(k), nr(k), not_skip_all);
 
     // AaronDonahue - Add extra variables needed from microphysics by E3SM:
-    ocmeiout(k)         .set(not_skip_all, qidep - qisub + qinuc);
-    oprain(k)           .set(not_skip_all, qcacc + qcaut + qcshd + qccol);
-    onevapr(k)          .set(not_skip_all, qisub + qrevp);
-    oprer_evap(k)       .set(not_skip_all, qrevp);
-    ovap_ice_exchange(k).set(not_skip_all, qidep - qisub + qinuc);
-    ovap_liq_exchange(k).set(not_skip_all, -qrevp + qcnuc);
-    oliq_ice_exchange(k).set(not_skip_all, qcheti + qrheti - qimlt + qiberg + qccol + qrcol);
+    cmeiout(k)         .set(not_skip_all, qidep - qisub + qinuc);
+    prain(k)           .set(not_skip_all, qcacc + qcaut + qcshd + qccol);
+    nevapr(k)          .set(not_skip_all, qisub + qrevp);
+    prer_evap(k)       .set(not_skip_all, qrevp);
+    vap_ice_exchange(k).set(not_skip_all, qidep - qisub + qinuc);
+    vap_liq_exchange(k).set(not_skip_all, -qrevp);
+    liq_ice_exchange(k).set(not_skip_all, qcheti + qrheti - qimlt + qiberg + qccol + qrcol);
 
     // clipping for small hydrometeor values
-    const auto qc_small    = oqc(k) < qsmall    && not_skip_all;
-    const auto qr_small    = oqr(k) < qsmall    && not_skip_all;
-    const auto qitot_small = oqitot(k) < qsmall && not_skip_all;
+    const auto qc_small    = qc(k) < qsmall    && not_skip_all;
+    const auto qr_small    = qr(k) < qsmall    && not_skip_all;
+    const auto qitot_small = qitot(k) < qsmall && not_skip_all;
 
-    const auto qc_not_small    = oqc(k) >= qsmall    && not_skip_all;
-    const auto qr_not_small    = oqr(k) >= qsmall    && not_skip_all;
-    const auto qitot_not_small = oqitot(k) >= qsmall && not_skip_all;
+    const auto qc_not_small    = qc(k) >= qsmall    && not_skip_all;
+    const auto qr_not_small    = qr(k) >= qsmall    && not_skip_all;
+    const auto qitot_not_small = qitot(k) >= qsmall && not_skip_all;
 
-    oqv(k).set(qc_small, oqv(k) + oqc(k));
-    oth(k).set(qc_small, oth(k) - oexner(k) * oqc(k) * oxxlv(k) * inv_cp);
-    oqc(k).set(qc_small, 0);
-    onc(k).set(qc_small, 0);
+    qv(k).set(qc_small, qv(k) + qc(k));
+    th(k).set(qc_small, th(k) - exner(k) * qc(k) * xxlv(k) * inv_cp);
+    qc(k).set(qc_small, 0);
+    nc(k).set(qc_small, 0);
 
     if (qc_not_small.any()) {
       log_hydrometeorsPresent = true;
     }
 
-    oqv(k).set(qr_small, oqv(k) + oqr(k));
-    oth(k).set(qr_small, oth(k) - oexner(k) * oqr(k) * oxxlv(k) * inv_cp);
-    oqr(k).set(qr_small, 0);
-    onr(k).set(qr_small, 0);
+    qv(k).set(qr_small, qv(k) + qr(k));
+    th(k).set(qr_small, th(k) - exner(k) * qr(k) * xxlv(k) * inv_cp);
+    qr(k).set(qr_small, 0);
+    nr(k).set(qr_small, 0);
 
     if (qr_not_small.any()) {
       log_hydrometeorsPresent = true;
     }
 
-    oqv(k).set(qitot_small, oqv(k) + oqitot(k));
-    oth(k).set(qitot_small, oth(k) - oexner(k) * oqitot(k) * oxxls(k) * inv_cp);
-    oqitot(k).set(qitot_small, 0);
-    onitot(k).set(qitot_small, 0);
-    oqirim(k).set(qitot_small, 0);
-    obirim(k).set(qitot_small, 0);
+    qv(k).set(qitot_small, qv(k) + qitot(k));
+    th(k).set(qitot_small, th(k) - exner(k) * qitot(k) * xxls(k) * inv_cp);
+    qitot(k).set(qitot_small, 0);
+    nitot(k).set(qitot_small, 0);
+    qirim(k).set(qitot_small, 0);
+    birim(k).set(qitot_small, 0);
 
     if (qitot_not_small.any()) {
       log_hydrometeorsPresent = true;
     }
 
-    // TODO: needs smask protection
-    impose_max_total_Ni(onitot(k), max_total_Ni, inv_rho(k));
+    impose_max_total_Ni(nitot(k), max_total_Ni, inv_rho(k), not_skip_all);
 
     // Outputs associated with aerocom comparison:
-    opratot(k) = qcacc; // cloud drop accretion by rain
-    oprctot(k) = qcaut; // cloud drop autoconversion to rain
+    pratot(k).set(not_skip_all, qcacc); // cloud drop accretion by rain
+    prctot(k).set(not_skip_all, qcaut); // cloud drop autoconversion to rain
 
-    // TODO: needs smask protection
     // Recalculate in-cloud values for sedimentation
     calculate_incloud_mixingratios(
-      oqc(k), oqr(k), oqitot(k), oqirim(k), onc(k), onr(k), onitot(k), obirim(k), inv_lcldm(k), inv_icldm(k), inv_rcldm(k),
-      qc_incld(k), qr_incld(k), qitot_incld(k), qirim_incld(k), nc_incld(k), nr_incld(k), nitot_incld(k), birim_incld(k));
-    });
+      qc(k), qr(k), qitot(k), qirim(k), nc(k), nr(k), nitot(k), birim(k), inv_lcldm(k), inv_icldm(k), inv_rcldm(k),
+      qc_incld(k), qr_incld(k), qitot_incld(k), qirim_incld(k), nc_incld(k), nr_incld(k), nitot_incld(k), birim_incld(k), not_skip_all);
+
+  });
   team.team_barrier();
 }
 
@@ -749,19 +723,19 @@ void Functions<S,D>
   const view_itab_table& itab,
   const view_itabcol_table& itabcol,
   const view_2d_table& revap_table,
-  const uview_1d<const Spack>& opres,
-  const uview_1d<const Spack>& opdel,
-  const uview_1d<const Spack>& odzq,
-  const uview_1d<const Spack>& oncnuc,
-  const uview_1d<const Spack>& oexner,
+  const uview_1d<const Spack>& pres,
+  const uview_1d<const Spack>& pdel,
+  const uview_1d<const Spack>& dzq,
+  const uview_1d<const Spack>& ncnuc,
+  const uview_1d<const Spack>& exner,
   const uview_1d<const Spack>& inv_exner,
   const uview_1d<const Spack>& inv_lcldm,
   const uview_1d<const Spack>& inv_icldm,
   const uview_1d<const Spack>& inv_rcldm,
-  const uview_1d<const Spack>& onaai,
-  const uview_1d<const Spack>& oicldm,
-  const uview_1d<const Spack>& olcldm,
-  const uview_1d<const Spack>& orcldm,
+  const uview_1d<const Spack>& naai,
+  const uview_1d<const Spack>& icldm,
+  const uview_1d<const Spack>& lcldm,
+  const uview_1d<const Spack>& rcldm,
   const uview_1d<Spack>& t,
   const uview_1d<Spack>& rho,
   const uview_1d<Spack>& inv_rho,
@@ -772,19 +746,19 @@ void Functions<S,D>
   const uview_1d<Spack>& rhofacr,
   const uview_1d<Spack>& rhofaci,
   const uview_1d<Spack>& acn,
-  const uview_1d<Spack>& oqv,
-  const uview_1d<Spack>& oth,
-  const uview_1d<Spack>& oqc,
-  const uview_1d<Spack>& onc,
-  const uview_1d<Spack>& oqr,
-  const uview_1d<Spack>& onr,
-  const uview_1d<Spack>& oqitot,
-  const uview_1d<Spack>& onitot,
-  const uview_1d<Spack>& oqirim,
-  const uview_1d<Spack>& obirim,
-  const uview_1d<Spack>& oxxlv,
-  const uview_1d<Spack>& oxxls,
-  const uview_1d<Spack>& oxlf,
+  const uview_1d<Spack>& qv,
+  const uview_1d<Spack>& th,
+  const uview_1d<Spack>& qc,
+  const uview_1d<Spack>& nc,
+  const uview_1d<Spack>& qr,
+  const uview_1d<Spack>& nr,
+  const uview_1d<Spack>& qitot,
+  const uview_1d<Spack>& nitot,
+  const uview_1d<Spack>& qirim,
+  const uview_1d<Spack>& birim,
+  const uview_1d<Spack>& xxlv,
+  const uview_1d<Spack>& xxls,
+  const uview_1d<Spack>& xlf,
   const uview_1d<Spack>& qc_incld,
   const uview_1d<Spack>& qr_incld,
   const uview_1d<Spack>& qitot_incld,
@@ -793,31 +767,31 @@ void Functions<S,D>
   const uview_1d<Spack>& nr_incld,
   const uview_1d<Spack>& nitot_incld,
   const uview_1d<Spack>& birim_incld,
-  const uview_1d<Spack>& omu_c,
+  const uview_1d<Spack>& mu_c,
   const uview_1d<Spack>& nu,
-  const uview_1d<Spack>& olamc,
+  const uview_1d<Spack>& lamc,
   const uview_1d<Spack>& cdist,
   const uview_1d<Spack>& cdist1,
   const uview_1d<Spack>& cdistr,
   const uview_1d<Spack>& mu_r,
   const uview_1d<Spack>& lamr,
   const uview_1d<Spack>& logn0r,
-  const uview_1d<Spack>& ocmeiout,
-  const uview_1d<Spack>& oprain,
-  const uview_1d<Spack>& onevapr,
-  const uview_1d<Spack>& oprer_evap,
-  const uview_1d<Spack>& ovap_liq_exchange,
-  const uview_1d<Spack>& ovap_ice_exchange,
-  const uview_1d<Spack>& oliq_ice_exchange,
-  const uview_1d<Spack>& opratot,
-  const uview_1d<Spack>& oprctot,
+  const uview_1d<Spack>& cmeiout,
+  const uview_1d<Spack>& prain,
+  const uview_1d<Spack>& nevapr,
+  const uview_1d<Spack>& prer_evap,
+  const uview_1d<Spack>& vap_liq_exchange,
+  const uview_1d<Spack>& vap_ice_exchange,
+  const uview_1d<Spack>& liq_ice_exchange,
+  const uview_1d<Spack>& pratot,
+  const uview_1d<Spack>& prctot,
   const uview_1d<Spack>& ze_rain,
   const uview_1d<Spack>& ze_ice,
-  const uview_1d<Spack>& odiag_vmi,
-  const uview_1d<Spack>& odiag_effi,
-  const uview_1d<Spack>& odiag_di,
-  const uview_1d<Spack>& odiag_rhoi,
-  const uview_1d<Spack>& odiag_ze,
+  const uview_1d<Spack>& diag_vmi,
+  const uview_1d<Spack>& diag_effi,
+  const uview_1d<Spack>& diag_di,
+  const uview_1d<Spack>& diag_rhoi,
+  const uview_1d<Spack>& diag_ze,
   const uview_1d<Spack>& tmparr1)
 {
   constexpr Scalar qsmall       = C::QSMALL;
@@ -841,98 +815,97 @@ void Functions<S,D>
 
     // Cloud
     {
-      const auto qc_gt_small = oqc(k) >= qsmall;
+      const auto qc_gt_small = qc(k) >= qsmall;
       const auto qc_small    = !qc_gt_small;
-      get_cloud_dsd2(
-        qc_gt_small, oqc(k), onc(k), omu_c(k), rho(k), nu(k), dnu, olamc(k), ignore1, ignore2, olcldm(k));
+      get_cloud_dsd2(qc(k), nc(k), mu_c(k), rho(k), nu(k), dnu, lamc(k), ignore1, ignore2, lcldm(k));
 
-      oqv(k)              .set(qc_small, oqv(k)+oqc(k));
-      oth(k)              .set(qc_small, oth(k)-oexner(k)*oqc(k)*oxxlv(k)*inv_cp);
-      ovap_liq_exchange(k).set(qc_small, ovap_liq_exchange(k) - oqc(k));
-      oqc(k)              .set(qc_small, 0);
-      onc(k)              .set(qc_small, 0);
+      qv(k)              .set(qc_small, qv(k)+qc(k));
+      th(k)              .set(qc_small, th(k)-exner(k)*qc(k)*xxlv(k)*inv_cp);
+      vap_liq_exchange(k).set(qc_small, vap_liq_exchange(k) - qc(k));
+      qc(k)              .set(qc_small, 0);
+      nc(k)              .set(qc_small, 0);
     }
 
     // Rain
     {
-      const auto qr_gt_small = oqr(k) >= qsmall;
+      const auto qr_gt_small = qr(k) >= qsmall;
       const auto qr_small    = !qr_gt_small;
       get_rain_dsd2(
-        qr_gt_small, oqr(k), onr(k), mu_r(k), lamr(k), ignore1, ignore2, orcldm(k));
+        qr(k), nr(k), mu_r(k), lamr(k), ignore1, ignore2, rcldm(k));
 
-      ze_rain(k).set(qr_gt_small, onr(k)*(mu_r(k)+6)*(mu_r(k)+5)*(mu_r(k)+4)*
+      ze_rain(k).set(qr_gt_small, nr(k)*(mu_r(k)+6)*(mu_r(k)+5)*(mu_r(k)+4)*
                      (mu_r(k)+3)*(mu_r(k)+2)*(mu_r(k)+1)/pow(lamr(k), 6));
       ze_rain(k).set(qr_gt_small, pack::max(ze_rain(k), 1.e-22));
 
-      oqv(k)              .set(qr_small, oqv(k) + oqr(k));
-      oth(k)              .set(qr_small, oth(k) - oexner(k)*oqr(k)*oxxlv(k)*inv_cp);
-      ovap_liq_exchange(k).set(qr_small, ovap_liq_exchange(k) - oqr(k));
-      oqr(k)              .set(qr_small, 0);
-      onr(k)              .set(qr_small, 0);
+      qv(k)              .set(qr_small, qv(k) + qr(k));
+      th(k)              .set(qr_small, th(k) - exner(k)*qr(k)*xxlv(k)*inv_cp);
+      vap_liq_exchange(k).set(qr_small, vap_liq_exchange(k) - qr(k));
+      qr(k)              .set(qr_small, 0);
+      nr(k)              .set(qr_small, 0);
     }
 
     // Ice
     {
-      impose_max_total_Ni(onitot(k), max_total_Ni, inv_rho(k));
+      impose_max_total_Ni(nitot(k), max_total_Ni, inv_rho(k));
 
-      const auto qi_gt_small = oqitot(k) >= qsmall;
+      const auto qi_gt_small = qitot(k) >= qsmall;
       const auto qi_small    = !qi_gt_small;
 
       // impose lower limits to prevent taking log of # < 0
-      onitot(k) = pack::max(onitot(k), nsmall);
-      onr(k)    = pack::max(onr(k), nsmall);
+      nitot(k) = pack::max(nitot(k), nsmall);
+      nr(k)    = pack::max(nr(k), nsmall);
 
-      const auto rhop = calc_bulk_rho_rime(qi_gt_small, oqitot(k), oqirim(k), obirim(k));
+      const auto rhop = calc_bulk_rho_rime(qitot(k), qirim(k), birim(k), qi_gt_small);
 
       TableIce table_ice;
-      lookup_ice(qi_gt_small, oqitot(k), onitot(k), oqirim(k), rhop, table_ice);
+      lookup_ice(qitot(k), nitot(k), qirim(k), rhop, table_ice, qi_gt_small);
 
-      f1pr02.set(qi_gt_small, apply_table_ice(qi_gt_small, 1,  itab, table_ice));
-      f1pr06.set(qi_gt_small, apply_table_ice(qi_gt_small, 5,  itab, table_ice));
-      f1pr09.set(qi_gt_small, apply_table_ice(qi_gt_small, 6,  itab, table_ice));
-      f1pr10.set(qi_gt_small, apply_table_ice(qi_gt_small, 7,  itab, table_ice));
-      f1pr13.set(qi_gt_small, apply_table_ice(qi_gt_small, 8,  itab, table_ice));
-      f1pr15.set(qi_gt_small, apply_table_ice(qi_gt_small, 10, itab, table_ice));
-      f1pr16.set(qi_gt_small, apply_table_ice(qi_gt_small, 11, itab, table_ice));
+      f1pr02.set(qi_gt_small, apply_table_ice(1,  itab, table_ice, qi_gt_small));
+      f1pr06.set(qi_gt_small, apply_table_ice(5,  itab, table_ice, qi_gt_small));
+      f1pr09.set(qi_gt_small, apply_table_ice(6,  itab, table_ice, qi_gt_small));
+      f1pr10.set(qi_gt_small, apply_table_ice(7,  itab, table_ice, qi_gt_small));
+      f1pr13.set(qi_gt_small, apply_table_ice(8,  itab, table_ice, qi_gt_small));
+      f1pr15.set(qi_gt_small, apply_table_ice(10, itab, table_ice, qi_gt_small));
+      f1pr16.set(qi_gt_small, apply_table_ice(11, itab, table_ice, qi_gt_small));
 
       // impose mean ice size bounds (i.e. apply lambda limiters)
       // note that the Nmax and Nmin are normalized and thus need to be multiplied by existing N
-      onitot(k).set(qi_gt_small, pack::min(onitot(k), f1pr09 * onitot(k)));
-      onitot(k).set(qi_gt_small, pack::max(onitot(k), f1pr10 * onitot(k)));
+      nitot(k).set(qi_gt_small, pack::min(nitot(k), f1pr09 * nitot(k)));
+      nitot(k).set(qi_gt_small, pack::max(nitot(k), f1pr10 * nitot(k)));
 
       // --this should already be done in s/r 'calc_bulkRhoRime'
-      const auto qirim_small = oqirim(k) < qsmall && qi_gt_small;
-      oqirim(k).set(qirim_small, 0);
-      obirim(k).set(qirim_small, 0);
+      const auto qirim_small = qirim(k) < qsmall && qi_gt_small;
+      qirim(k).set(qirim_small, 0);
+      birim(k).set(qirim_small, 0);
 
       // note that reflectivity from lookup table is normalized, so we need to multiply by N
-      odiag_vmi(k) .set(qi_gt_small, f1pr02 * rhofaci(k));
-      odiag_effi(k).set(qi_gt_small, f1pr06); // units are in m
-      odiag_di(k)  .set(qi_gt_small, f1pr15);
-      odiag_rhoi(k).set(qi_gt_small, f1pr16);
+      diag_vmi(k) .set(qi_gt_small, f1pr02 * rhofaci(k));
+      diag_effi(k).set(qi_gt_small, f1pr06); // units are in m
+      diag_di(k)  .set(qi_gt_small, f1pr15);
+      diag_rhoi(k).set(qi_gt_small, f1pr16);
 
       // note factor of air density below is to convert from m^6/kg to m^6/m^3
-      ze_ice(k).set(qi_gt_small, ze_ice(k) + sp(0.1892)*f1pr13*onitot(k)*rho(k)); // sum contribution from each ice category (note: 0.1892 = 0.176/0.93);
+      ze_ice(k).set(qi_gt_small, ze_ice(k) + sp(0.1892)*f1pr13*nitot(k)*rho(k)); // sum contribution from each ice category (note: 0.1892 = 0.176/0.93);
       ze_ice(k).set(qi_gt_small, pack::max(ze_ice(k), 1.e-22));
 
-      oqv(k)     .set(qi_small, oqv(k) + oqitot(k));
-      oth(k)     .set(qi_small, oth(k) - oexner(k)*oqitot(k)*oxxls(k)*inv_cp);
-      oqitot(k)  .set(qi_small, 0);
-      onitot(k)  .set(qi_small, 0);
-      oqirim(k)  .set(qi_small, 0);
-      obirim(k)  .set(qi_small, 0);
-      odiag_di(k).set(qi_small, 0);
+      qv(k)     .set(qi_small, qv(k) + qitot(k));
+      th(k)     .set(qi_small, th(k) - exner(k)*qitot(k)*xxls(k)*inv_cp);
+      qitot(k)  .set(qi_small, 0);
+      nitot(k)  .set(qi_small, 0);
+      qirim(k)  .set(qi_small, 0);
+      birim(k)  .set(qi_small, 0);
+      diag_di(k).set(qi_small, 0);
     }
 
     // sum ze components and convert to dBZ
-    odiag_ze(k) = 10 * pack::log10((ze_rain(k) + ze_ice(k))*sp(1.e18));
+    diag_ze(k) = 10 * pack::log10((ze_rain(k) + ze_ice(k))*sp(1.e18));
 
     // if qr is very small then set Nr to 0 (needs to be done here after call
     // to ice lookup table because a minimum Nr of nsmall will be set otherwise even if qr=0)
-    onr(k).set(oqr(k) < qsmall, 0);
+    nr(k).set(qr(k) < qsmall, 0);
 
 #ifndef NDEBUG
-    tmparr1(k) = oth(k) * inv_exner(k);
+    tmparr1(k) = th(k) * inv_exner(k);
 #endif
   });
   team.team_barrier();
@@ -1011,10 +984,6 @@ void Functions<S,D>
   WorkspaceManager<Spack, Device> workspace_mgr(nk_pack, 100, policy);
 
   // load constants into local vars
-  constexpr Scalar qsmall       = C::QSMALL;
-  constexpr Scalar nsmall       = C::NSMALL;
-  constexpr Scalar inv_cp       = C::INV_CP;
-  constexpr Scalar max_total_Ni = C::max_total_Ni;
   const     Scalar odt          = 1 / dt;
   constexpr Int    kdir         = -1;
   const     Int    ktop         = kdir == -1 ? 0    : nk-1;
@@ -1152,17 +1121,13 @@ void Functions<S,D>
       return; // this is how you do a "continue" in a kokkos lambda
     }
 
-    team.team_barrier();
-    log_hydrometeorsPresent = false; // reset value; used again below
-    team.team_barrier();
-
     // ------------------------------------------------------------------------------------------
     // main k-loop (for processes):
     p3_main_main_loop(
       team, nk_pack, log_predictNc, dt, odt,
       dnu, itab, itabcol, revap_table,
       opres, opdel, odzq, oncnuc, oexner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, onaai, oqc_relvar, oicldm, olcldm, orcldm,
-      t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqitot, onitot, oqirim, obirim, oxxlv, oxxls, oxlf, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld, omu_c, nu, olamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, ocmeiout, oprain, onevapr, oprer_evap, ovap_liq_exchange, ovap_ice_exchange, oliq_ice_exchange, opratot, oprctot,
+      t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqitot, onitot, oqirim, obirim, oxxlv, oxxls, oxlf, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld, omu_c, nu, olamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, ocmeiout, oprain, onevapr, oprer_evap, ovap_liq_exchange, ovap_ice_exchange, oliq_ice_exchange, opratot, oprctot,
       log_hydrometeorsPresent);
 
     //NOTE: At this point, it is possible to have negative (but small) nc, nr, nitot.  This is not

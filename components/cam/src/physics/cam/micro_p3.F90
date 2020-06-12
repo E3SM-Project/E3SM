@@ -471,7 +471,7 @@ contains
        prctot, p3_tend_out, log_hydrometeorsPresent)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    !use micro_p3_iso_f, only: p3_main_main_loop_f
+    use micro_p3_iso_f, only: p3_main_main_loop_f
 #endif
 
     implicit none
@@ -493,7 +493,7 @@ contains
 
     real(rtype), intent(inout), dimension(kts:kte,49) :: p3_tend_out ! micro physics tendencies
 
-    logical(btype), intent(inout) :: log_hydrometeorsPresent
+    logical(btype), intent(out) :: log_hydrometeorsPresent
 
     ! -------- locals ------- !
 
@@ -567,12 +567,19 @@ contains
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
    if (use_cxx) then
-      ! call p3_main_main_loop_f(
-      ! return
+      call p3_main_main_loop_f(kts, kte, kbot, ktop, kdir, log_predictNc, dt, odt, &
+           pres, pdel, dzq, ncnuc, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, naai, qc_relvar, icldm, lcldm, rcldm,&
+           t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, qitot, nitot, &
+           qirim, birim, xxlv, xxls, xlf, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, &
+           nitot_incld, birim_incld, mu_c, nu, lamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, cmeiout, prain, &
+           nevapr, prer_evap, vap_liq_exchange, vap_ice_exchange, liq_ice_exchange, pratot, &
+           prctot, log_hydrometeorsPresent)
+      return
    endif
 #endif
 
    rhorime_c = 400._rtype
+   log_hydrometeorsPresent = .false.
 
    !------------------------------------------------------------------------------------------!
    !   main k-loop (for processes):
@@ -727,7 +734,6 @@ contains
       call calc_rime_density(t(k),rhofaci(k),&
            f1pr02,acn(k),lamc(k),mu_c(k),qc_incld(k),qccol,&
            vtrmi1,rhorime_c)
-
       !............................................................
       ! contact and immersion freezing droplets
       call cldliq_immersion_freezing(t(k),&
@@ -765,7 +771,6 @@ contains
            qidep,qisub,nisub,qiberg)
 
 444   continue
-
       !................................................................
       ! deposition/condensation-freezing nucleation
       call ice_nucleation(t(k),inv_rho(k),&
@@ -801,7 +806,6 @@ contains
            ncacc, ncslf, ncautc, nrslf, nrevp, ncautr, qisub, nrshdr, qcheti,&
            qrcol, qcshd, qimlt, qccol, qrheti, nimlt, nccol, ncshdc, ncheti, nrcol, nislf,&
            qidep, nrheti, nisub, qinuc, ninuc, qiberg)
-
 
       !.................................................................
       ! conservation of water
@@ -868,6 +872,7 @@ contains
       vap_ice_exchange(k) = qidep - qisub + qinuc
       vap_liq_exchange(k) = - qrevp
       liq_ice_exchange(k) = qcheti + qrheti - qimlt + qiberg + qccol + qrcol
+
       ! clipping for small hydrometeor values
       if (qc(k).lt.qsmall) then
          qv(k) = qv(k) + qc(k)
@@ -1178,8 +1183,6 @@ contains
 
        !jump to end of i-loop if log_nucleationPossible=.false.  (i.e. skip everything)
        if (.not. (log_nucleationPossible .or. log_hydrometeorsPresent)) goto 333
-
-       log_hydrometeorsPresent = .false.   ! reset value; used again below
 
        call p3_main_main_loop(kts, kte, kbot, ktop, kdir, log_predictNc, dt, odt, &
             pres(i,:), pdel(i,:), dzq(i,:), ncnuc(i,:), exner(i,:), inv_exner(i,:), inv_lcldm(i,:), inv_icldm(i,:), inv_rcldm(i,:), naai(i,:), qc_relvar(i,:), icldm(i,:), lcldm(i,:), rcldm(i,:),&
@@ -2372,7 +2375,7 @@ f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld,    &
 
    if (qitot_incld .ge.qsmall .and. t.gt.zerodegc) then
       qsat0 = qv_sat( zerodegc,pres,0 )
-      
+
       qimlt = ((f1pr05+f1pr14*bfb_cbrt(sc)*bfb_sqrt(rhofaci*rho/mu))*((t-   &
       zerodegc)*kap-rho*xxlv*dv*(qsat0-qv))*2._rtype*pi/xlf)*nitot_incld
 
@@ -2668,24 +2671,24 @@ end subroutine calc_rime_density
 function subgrid_variance_scaling(relvar, expon) result(res)
   ! Finds a coefficient for process rates based on the inverse relative variance
   ! of cloud water.
-  
+
 #ifdef SCREAM_CONFIG_IS_CMAKE
    use micro_p3_iso_f, only: subgrid_variance_scaling_f
 #endif
-    
+
   real(rtype), intent(in) :: relvar
   real(rtype), intent(in) :: expon
   real(rtype) :: res
-  
+
 #ifdef SCREAM_CONFIG_IS_CMAKE
    if (use_cxx) then
       res = subgrid_variance_scaling_f(relvar,expon)
       return
    endif
 #endif
-  
+
   res = bfb_gamma(relvar+expon)/(bfb_gamma(relvar)*bfb_pow(relvar,expon))
-   
+
 end function subgrid_variance_scaling
 
 subroutine cldliq_immersion_freezing(t,lamc,mu_c,cdist1,qc_incld,qc_relvar,    &
@@ -3347,12 +3350,10 @@ subroutine update_prognostic_ice(qcheti,qccol,qcshd,    &
    endif
 #endif
 
-
    qc = qc + (-qcheti-qccol-qcshd-qiberg)*dt
    if (log_predictNc) then
       nc = nc + (-nccol-ncheti)*dt
    endif
-
    qr = qr + (-qrcol+qimlt-qrheti+qcshd)*dt
 
    ! apply factor to source for rain number from melting of ice, (ad-hoc
@@ -3370,14 +3371,12 @@ subroutine update_prognostic_ice(qcheti,qccol,qcshd,    &
    qitot = qitot + (qidep+qinuc+qiberg)*dt + dum
    qirim = qirim + dum
 
-
    birim = birim + (qrcol*inv_rho_rimeMax+qccol/rhorime_c+(qrheti+ &
         qcheti)*inv_rho_rimeMax)*dt
 
    nitot = nitot + (ninuc-nimlt-nisub-nislf+nrheti+ncheti)*dt
 
    !PMC nCat deleted interactions_loop
-
 
    if (qirim.lt.0._rtype) then
       qirim = 0._rtype
@@ -3402,8 +3401,7 @@ subroutine update_prognostic_ice(qcheti,qccol,qcshd,    &
    qv = qv + (-qidep+qisub-qinuc)*dt
 
    th = th + exner*((qidep-qisub+qinuc)*xxls*inv_cp +(qrcol+qccol+   &
-        qcheti+qrheti-qimlt+qiberg)* xlf*inv_cp)*dt
-
+       qcheti+qrheti-qimlt+qiberg)* xlf*inv_cp)*dt
 end subroutine update_prognostic_ice
 
 subroutine update_prognostic_liquid(qcacc,ncacc,qcaut,ncautc,ncautr,ncslf,    &
@@ -3942,6 +3940,7 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
       prt_liq = prt_liq + prt_accum*inv_rhow*odt
 
    endif qr_present
+
    qr_tend(:) = ( qr(:) - qr_tend(:) ) * odt ! Rain sedimentation tendency, measure
    nr_tend(:) = ( nr(:) - nr_tend(:) ) * odt ! Rain # sedimentation tendency, measure
 
@@ -3975,11 +3974,9 @@ subroutine compute_rain_fall_velocity(qr_incld, rcldm, rhofacr, nr, nr_incld, mu
 
    !Compute Vq, Vn:
 
-   call get_rain_dsd2(qr_incld,nr_incld,mu_r,lamr,     &
-   tmp1,tmp2,rcldm)
+   call get_rain_dsd2(qr_incld,nr_incld,mu_r,lamr,tmp1,tmp2,rcldm)
 
-   call find_lookupTable_indices_3(dumii,dumjj,dum1,rdumii,rdumjj,inv_dum3, &
-   mu_r,lamr)
+   call find_lookupTable_indices_3(dumii,dumjj,dum1,rdumii,rdumjj,inv_dum3,mu_r,lamr)
 
    nr = nr_incld*rcldm
 
@@ -4001,7 +3998,6 @@ subroutine compute_rain_fall_velocity(qr_incld, rcldm, rhofacr, nr, nr_incld, mu
 
    V_nr = dum1+(rdumjj-real(dumjj))*(dum2-dum1)            !interpolated
    V_nr = V_nr*rhofacr               !corrected for air density
-
 end subroutine compute_rain_fall_velocity
 
 subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
