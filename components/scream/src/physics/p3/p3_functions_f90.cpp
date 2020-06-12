@@ -205,6 +205,13 @@ void p3_main_main_loop_c(
   Real* nevapr, Real* prer_evap, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* liq_ice_exchange, Real* pratot,
   Real* prctot, bool* log_hydrometeorsPresent);
 
+void p3_main_post_main_loop_c(
+  Int kts, Int kte, Int kbot, Int ktop, Int kdir,
+  Real* exner, Real* lcldm, Real* rcldm,
+  Real* rho, Real* inv_rho, Real* rhofaci, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* xxlv, Real* xxls,
+  Real* mu_c, Real* nu, Real* lamc, Real* mu_r, Real* lamr, Real* vap_liq_exchange,
+  Real*  ze_rain, Real* ze_ice, Real* diag_vmi, Real* diag_effi, Real* diag_di, Real* diag_rhoi, Real* diag_ze, Real* diag_effc);
+
 }
 
 namespace scream {
@@ -1069,6 +1076,66 @@ void p3_main_main_loop(P3MainLoopData& d)
     d.nitot_incld, d.birim_incld, d.mu_c, d.nu, d.lamc, d.cdist, d.cdist1, d.cdistr, d.mu_r, d.lamr, d.logn0r, d.cmeiout, d.prain,
     d.nevapr, d.prer_evap, d.vap_liq_exchange, d.vap_ice_exchange, d.liq_ice_exchange, d.pratot,
     d.prctot, &d.log_hydrometeorsPresent);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+P3MainPostLoopData::P3MainPostLoopData(
+  Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
+  const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges) :
+  kts(kts_), kte(kte_), kbot(kbot_), ktop(ktop_), kdir(kdir_),
+  m_nk((kte_ - kts_) + 1),
+  m_data( NUM_ARRAYS * m_nk, 0.0)
+{
+  std::array<Real**, NUM_ARRAYS> ptrs = {
+    &exner, &lcldm, &rcldm,
+    &rho, &inv_rho, &rhofaci,
+    &qv, &th, &qc, &nc, &qr, &nr, &qitot, &nitot, &qirim, &birim, &xxlv, &xxls,
+    &mu_c, &nu, &lamc, &mu_r,
+    &lamr, &vap_liq_exchange,
+    &ze_rain, &ze_ice, &diag_vmi, &diag_effi, &diag_di, &diag_rhoi, &diag_ze, &diag_effc
+  };
+
+  gen_random_data(ranges, ptrs, m_data.data(), m_nk);
+
+  // overwrite invs
+  for (Int k = 0; k < m_nk; ++k) {
+    inv_rho[k]   = 1 / rho[k];
+  }
+}
+
+P3MainPostLoopData::P3MainPostLoopData(const P3MainPostLoopData& rhs) :
+  kts(rhs.kts), kte(rhs.kte), kbot(rhs.kbot), ktop(rhs.ktop), kdir(rhs.kdir),
+  m_nk(rhs.m_nk),
+  m_data(rhs.m_data)
+{
+  Int offset = 0;
+  Real* data_begin = m_data.data();
+
+  std::array<Real**, NUM_ARRAYS> ptrs = {
+    &exner, &lcldm, &rcldm,
+    &rho, &inv_rho, &rhofaci,
+    &qv, &th, &qc, &nc, &qr, &nr, &qitot, &nitot, &qirim, &birim, &xxlv, &xxls,
+    &mu_c, &nu, &lamc, &mu_r,
+    &lamr, &vap_liq_exchange,
+    &ze_rain, &ze_ice, &diag_vmi, &diag_effi, &diag_di, &diag_rhoi, &diag_ze, &diag_effc
+  };
+
+  for (size_t i = 0; i < NUM_ARRAYS; ++i) {
+    *ptrs[i] = data_begin + offset;
+    offset += m_nk;
+  }
+}
+
+void p3_main_post_main_loop(P3MainPostLoopData& d)
+{
+  p3_init(true);
+  p3_main_post_main_loop_c(
+    d.kts, d.kte, d.kbot, d.ktop, d.kdir,
+    d.exner, d.lcldm, d.rcldm,
+    d.rho, d.inv_rho, d.rhofaci, d.qv, d.th, d.qc, d.nc, d.qr, d.nr, d.qitot, d.nitot, d.qirim, d.birim, d.xxlv, d.xxls,
+    d.mu_c, d.nu, d.lamc, d.mu_r, d.lamr, d.vap_liq_exchange,
+    d. ze_rain, d.ze_ice, d.diag_vmi, d.diag_effi, d.diag_di, d.diag_rhoi, d.diag_ze, d.diag_effc);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -3389,6 +3456,179 @@ void p3_main_main_loop_f(
   Kokkos::deep_copy(bools_h, bools_d);
 
   *log_hydrometeorsPresent = bools_h(0);
+}
+
+void p3_main_post_main_loop_f(
+  Int kts, Int kte, Int kbot, Int ktop, Int kdir,
+  Real* exner, Real* lcldm, Real* rcldm,
+  Real* rho, Real* inv_rho, Real* rhofaci, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* xxlv, Real* xxls,
+  Real* mu_c, Real* nu, Real* lamc, Real* mu_r, Real* lamr, Real* vap_liq_exchange,
+  Real*  ze_rain, Real* ze_ice, Real* diag_vmi, Real* diag_effi, Real* diag_di, Real* diag_rhoi, Real* diag_ze, Real* diag_effc)
+{
+  using P3F  = Functions<Real, DefaultDevice>;
+
+  using Spack      = typename P3F::Spack;
+  using view_1d    = typename P3F::view_1d<Spack>;
+  using KT         = typename P3F::KT;
+  using ExeSpace   = typename KT::ExeSpace;
+  using MemberType = typename P3F::MemberType;
+  using uview_1d   = typename P3F::uview_1d<Spack>;
+
+  scream_require_msg(kts == 1, "kts must be 1, got " << kts);
+
+  // Adjust for 0-based indexing
+  kts  -= 1;
+  kte  -= 1;
+  ktop -= 1;
+  kbot -= 1;
+
+  const Int nk = (kte - kts) + 1;
+  const Int nk_pack = scream::pack::npack<Spack>(nk);
+
+  // Set up views
+  Kokkos::Array<view_1d, P3MainLoopData::NUM_ARRAYS> temp_d;
+
+  pack::host_to_device({
+      exner, lcldm, rcldm,
+      rho, inv_rho, rhofaci,
+      qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls,
+      mu_c, nu, lamc, mu_r,
+      lamr, vap_liq_exchange,
+      ze_rain, ze_ice, diag_vmi, diag_effi, diag_di, diag_rhoi, diag_ze, diag_effc
+    },
+    nk, temp_d);
+
+  view_1d
+    exner_d            (temp_d[0]),
+    lcldm_d            (temp_d[1]),
+    rcldm_d            (temp_d[2]),
+    rho_d              (temp_d[3]),
+    inv_rho_d          (temp_d[4]),
+    rhofaci_d          (temp_d[5]),
+    qv_d               (temp_d[6]),
+    th_d               (temp_d[7]),
+    qc_d               (temp_d[8]),
+    nc_d               (temp_d[9]),
+    qr_d               (temp_d[10]),
+    nr_d               (temp_d[11]),
+    qitot_d            (temp_d[12]),
+    nitot_d            (temp_d[13]),
+    qirim_d            (temp_d[14]),
+    birim_d            (temp_d[15]),
+    xxlv_d             (temp_d[16]),
+    xxls_d             (temp_d[17]),
+    mu_c_d             (temp_d[18]),
+    nu_d               (temp_d[19]),
+    lamc_d             (temp_d[20]),
+    mu_r_d             (temp_d[21]),
+    lamr_d             (temp_d[22]),
+    vap_liq_exchange_d (temp_d[23]),
+    ze_rain_d          (temp_d[24]),
+    ze_ice_d           (temp_d[25]),
+    diag_vmi_d         (temp_d[26]),
+    diag_effi_d        (temp_d[27]),
+    diag_di_d          (temp_d[28]),
+    diag_rhoi_d        (temp_d[29]),
+    diag_ze_d          (temp_d[30]),
+    diag_effc_d        (temp_d[31]);
+#if 0
+  // Call core function from kernel
+  const auto dnu         = P3GlobalForFortran::dnu();
+  const auto itab        = P3GlobalForFortran::itab();
+  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+
+    view_1d
+      upres_d             (pres_d),
+      updel_d             (pdel_d),
+      udzq_d              (dzq_d),
+      uncnuc_d            (ncnuc_d),
+      uexner_d            (exner_d),
+      uinv_exner_d        (inv_exner_d),
+      uinv_lcldm_d        (inv_lcldm_d),
+      uinv_icldm_d        (inv_icldm_d),
+      uinv_rcldm_d        (inv_rcldm_d),
+      unaai_d             (naai_d),
+      uqc_relvar_d        (qc_relvar_d),
+      uicldm_d            (icldm_d),
+      ulcldm_d            (lcldm_d),
+      urcldm_d            (rcldm_d),
+      ut_d                (t_d),
+      urho_d              (rho_d),
+      uinv_rho_d          (inv_rho_d),
+      uqvs_d              (qvs_d),
+      uqvi_d              (qvi_d),
+      usupi_d             (supi_d),
+      urhofacr_d          (rhofacr_d),
+      urhofaci_d          (rhofaci_d),
+      uacn_d              (acn_d),
+      uqv_d               (qv_d),
+      uth_d               (th_d),
+      uqc_d               (qc_d),
+      unc_d               (nc_d),
+      uqr_d               (qr_d),
+      unr_d               (nr_d),
+      uqitot_d            (qitot_d),
+      unitot_d            (nitot_d),
+      uqirim_d            (qirim_d),
+      ubirim_d            (birim_d),
+      uxxlv_d             (xxlv_d),
+      uxxls_d             (xxls_d),
+      uxlf_d              (xlf_d),
+      uqc_incld_d         (qc_incld_d),
+      uqr_incld_d         (qr_incld_d),
+      uqitot_incld_d      (qitot_incld_d),
+      uqirim_incld_d      (qirim_incld_d),
+      unc_incld_d         (nc_incld_d),
+      unr_incld_d         (nr_incld_d),
+      unitot_incld_d      (nitot_incld_d),
+      ubirim_incld_d      (birim_incld_d),
+      umu_c_d             (mu_c_d),
+      unu_d               (nu_d),
+      ulamc_d             (lamc_d),
+      ucdist_d            (cdist_d),
+      ucdist1_d           (cdist1_d),
+      ucdistr_d           (cdistr_d),
+      umu_r_d             (mu_r_d),
+      ulamr_d             (lamr_d),
+      ulogn0r_d           (logn0r_d),
+      ucmeiout_d          (cmeiout_d),
+      uprain_d            (prain_d),
+      unevapr_d           (nevapr_d),
+      uprer_evap_d        (prer_evap_d),
+      uvap_liq_exchange_d (vap_liq_exchange_d),
+      uvap_ice_exchange_d (vap_ice_exchange_d),
+      uliq_ice_exchange_d (liq_ice_exchange_d),
+      upratot_d           (pratot_d),
+      uprctot_d           (prctot_d);
+
+    P3F::p3_main_main_loop(
+      team, nk_pack, log_predictNc, dt, odt, dnu, itab, itabcol, revap_table,
+      upres_d, updel_d, udzq_d, uncnuc_d, uexner_d, uinv_exner_d, uinv_lcldm_d, uinv_icldm_d, uinv_rcldm_d, unaai_d, uqc_relvar_d, uicldm_d, ulcldm_d, urcldm_d,
+      ut_d, urho_d, uinv_rho_d, uqvs_d, uqvi_d, usupi_d, urhofacr_d, urhofaci_d, uacn_d,
+      uqv_d, uth_d, uqc_d, unc_d, uqr_d, unr_d, uqitot_d, unitot_d, uqirim_d, ubirim_d, uxxlv_d, uxxls_d, uxlf_d, uqc_incld_d, uqr_incld_d,
+      uqitot_incld_d, uqirim_incld_d, unc_incld_d, unr_incld_d, unitot_incld_d, ubirim_incld_d, umu_c_d, unu_d, ulamc_d, ucdist_d, ucdist1_d,
+      ucdistr_d, umu_r_d, ulamr_d, ulogn0r_d, ucmeiout_d, uprain_d, unevapr_d, uprer_evap_d, uvap_liq_exchange_d,
+      uvap_ice_exchange_d, uliq_ice_exchange_d, upratot_d, uprctot_d,
+      bools_d(0));
+  });
+
+  // Sync back to host
+  Kokkos::Array<view_1d, 48> inout_views = {
+    t_d, rho_d, inv_rho_d, qvs_d, qvi_d, supi_d, rhofacr_d, rhofaci_d, acn_d,
+    qv_d, th_d, qc_d, nc_d, qr_d, nr_d, qitot_d, nitot_d, qirim_d, birim_d, xxlv_d, xxls_d, xlf_d, qc_incld_d, qr_incld_d,
+    qitot_incld_d, qirim_incld_d, nc_incld_d, nr_incld_d, nitot_incld_d, birim_incld_d, mu_c_d, nu_d, lamc_d, cdist_d, cdist1_d,
+    cdistr_d, mu_r_d, lamr_d, logn0r_d, cmeiout_d, prain_d, nevapr_d, prer_evap_d, vap_liq_exchange_d,
+    vap_ice_exchange_d, liq_ice_exchange_d, pratot_d, prctot_d
+  };
+
+  pack::device_to_host({t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, acn,
+        qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, xlf, qc_incld, qr_incld,
+        qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld, mu_c, nu, lamc, cdist, cdist1,
+        cdistr, mu_r, lamr, logn0r, cmeiout, prain, nevapr, prer_evap, vap_liq_exchange,
+        vap_ice_exchange, liq_ice_exchange, pratot, prctot},
+    nk, inout_views);
+#endif
 }
 
 } // namespace p3
