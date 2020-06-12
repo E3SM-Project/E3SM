@@ -1048,7 +1048,7 @@ subroutine sfc_fluxes(shcol, nlev, nlevi, dtime, rho_zi, rdp_zt, &
 
   ! Apply the surface fluxes explicitly for temperature and moisture
   do i = 1, shcol
-     cmnfac       =  dtime * ggr * rho_zi(i,nlevi) * rdp_zt(i,nlev) !a common factor for the following 3 equations
+     cmnfac       =  dtime * (ggr * rho_zi(i,nlevi) * rdp_zt(i,nlev)) !a common factor for the following 3 equations
 
      thetal(i,nlev) = thetal(i,nlev) + cmnfac * wthl_sfc(i)
      qw(i,nlev)     = qw(i,nlev)     + cmnfac * wqw_sfc(i)
