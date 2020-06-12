@@ -644,7 +644,7 @@ contains
 
     ! Compare y and b
     relerr = maxval(abs(y - b), 3)/maxval(abs(b), 3)
-    if (hybrid%masterthread .and. maxval(relerr) > 1e3*epsilon(1.0_real_kind)) then
+    if (hybrid%masterthread .and. maxval(relerr) > 1e5*epsilon(1.0_real_kind)) then
        write(iulog,*) 'FAIL test_tridiag_solver', maxval(relerr)
     end if
   end subroutine test_tridiag_solver
