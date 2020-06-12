@@ -1303,7 +1303,7 @@
     </domain>
 
     <domain name="5x5_amazon">
-      <nx>1</nx> <ny>1</ny>
+      <nx>5</nx> <ny>5</ny>
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.5x5pt-amazon_navy.090715.nc</file>
       <mesh driver="nuopc">create_mesh</mesh>
       <desc>5x5 Amazon regional case -- only valid for DATM/CLM compset</desc>
