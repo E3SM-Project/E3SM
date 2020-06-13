@@ -96,8 +96,9 @@ CONTAINS
     use parallel_mod,     only: par, initmp
     use namelist_mod,     only: readnl
     use control_mod,      only: runtype, qsplit, rsplit, dt_tracer_factor, dt_remap_factor, &
-         timestep_make_eam_parameters_consistent
+         timestep_make_eam_parameters_consistent, moisture, use_moisture
     use time_mod,         only: tstep
+    use cam_control_mod,  only: moist_physics
     use phys_control,     only: use_gw_front
     use physics_buffer,   only: pbuf_add_field, dtype_r8
     use ppgrid,           only: pcols, pver
@@ -135,6 +136,9 @@ CONTAINS
 
     ! override the setting in the SE namelist, it's redundant anyway
     if (.not. is_first_step()) runtype = 1
+    use_moisture = moist_physics
+    moisture='dry'
+    if (use_moisture) moisture='wet'
 
     ! Initialize hybrid coordinate arrays.
     call hycoef_init(fh)
@@ -225,7 +229,7 @@ CONTAINS
     use hycoef,           only: ps0
     use parallel_mod,     only: par
     use time_mod,         only: time_at
-    use control_mod,      only: moisture, runtype
+    use control_mod,      only: runtype
     use cam_control_mod,  only: aqua_planet, ideal_phys, adiabatic
     use comsrf,           only: landm, sgh, sgh30
     use cam_instance,     only: inst_index
@@ -257,10 +261,8 @@ CONTAINS
        nete=dom_mt(ithr)%end
        hybrid = hybrid_create(par,ithr,hthreads)
 
-       moisture='moist'
 
        if(adiabatic) then
-          moisture='dry'
           if(runtype == 0) then
              do ie=nets,nete
                 elem(ie)%state%q(:,:,:,:)=0.0_r8
@@ -268,7 +270,6 @@ CONTAINS
              end do
           end if
        else if(ideal_phys) then
-          moisture='dry'
           if(runtype == 0) then
              do ie=nets,nete
                 elem(ie)%state%ps_v(:,:,:) =ps0
