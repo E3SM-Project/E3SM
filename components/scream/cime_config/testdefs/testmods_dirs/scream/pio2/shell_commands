@@ -1,2 +1,0 @@
-#!/bin/bash
-./xmlchange PIO_VERSION=2

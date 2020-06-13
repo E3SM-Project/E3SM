@@ -1,7 +1,7 @@
 module atm_comp_mct
 
   ! !USES:
-  use scream_scorpio_interface, only: eam_init_pio_1, eam_init_pio_2, eam_h_finalize, eam_h_write
+  use scream_scorpio_interface, only: eam_init_pio_1, eam_init_pio_2, eam_history_finalize, eam_history_write
   use esmf
   use mct_mod
   use perf_mod
@@ -223,7 +223,7 @@ CONTAINS
     !----------------------------------------------------------------------------
     ! Run pio
     !----------------------------------------------------------------------------
-    call eam_h_write()
+    call eam_history_write()
 
   end subroutine atm_run_mct
 
@@ -254,7 +254,7 @@ CONTAINS
     !----------------------------------------------------------------------------
     ! Finalize pio
     !----------------------------------------------------------------------------
-    call eam_h_finalize()
+    call eam_history_finalize()
     !----------------------------------------------------------------------------
     ! Finish the rest of ATM model
     !----------------------------------------------------------------------------

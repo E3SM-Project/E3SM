@@ -8,33 +8,33 @@ module scream_scorpio_interface
 ! Initialization:
 ! 1) Gather the pio_subsystem and pio_iotype information for the EAM component
 ! as assigned by the component coupler.
-!    This is accomplished during eam_init_pio by calling
+!    This is accomplished during eam_init_pio_1 by calling
 !    'eam_init_pio_subsystem'
 ! 2) For each output file "create" a file in PIO and record the unique file
 ! descriptor. 
-!    This is accomplished during the eam_init_pio by calling
+!    This is accomplished during the eam_init_pio_1 by calling
 !    'eam_pio_createfile'
 ! 3) For each output file define the "header" information, which is essentially
 ! a set of metadata strings that describe the output file.
-!    This is accomplished during eam_init_pio by calling 'eam_pio_createHeader'
+!    This is accomplished during eam_init_pio_1 by calling 'eam_pio_createHeader'
 ! 4) Define all of the dimensions that variables in this file will be defined
 ! on.  Examples would time, lat, lon, vertical coordinate, # of consituents,
 ! etc.
-!    This is accomplished during 'h_define' by repeated calls to 'PIO_def_dim'
+!    This is accomplished during 'register_dimension' by which calls 'PIO_def_dim'
 ! 5) Define all of the variables that will be written to this file.  This
 ! includes any dimension that should also be defined as a variable, such as lat,
 ! lon, time.
-!    This is accomplished during 'h_define' by repeated calls to 'PIO_def_var'
+!    This is accomplished during 'register_variable' which calls to 'PIO_def_var'
 ! 6) Determine the unique PIO identifiers for each domain decomposition.  This
 ! is essentially a decomposition of what will be written to the file, multiple
 ! variables can have the same decomposition.  Every arrangement of dimensions
 ! requires a pio decomposition.
-!    This is accomplished during 'h_define' by repeated calls to
+!    This is accomplished during 'register_variable' by calling
 !    'PIO_initdecomp'
 ! 7) Close the PIO file definition step.  In other words, tell PIO that all of
 ! the dimensions, variables and decompositions associated with this output have
 ! been defined and no new ones will be added.
-!    This is accomplished during eam_init_pio by calling 'PIO_enddef'
+!    This is accomplished during eam_init_pio_2 by calling 'PIO_enddef'
 !
 ! Writing Output:
 ! 
@@ -44,19 +44,26 @@ module scream_scorpio_interface
  
   use shr_pio_mod,  only: shr_pio_getrearranger
   use shr_kind_mod,   only: rtype=>shr_kind_r8, rtype_short=>shr_kind_r4  ! Need to change this to use scream real types
-  use pio_mods, only: io_desc_t, iosystem_desc_t, file_desc_t, var_desc_t, pio_global, &
-                      pio_init, var_desc_t, pio_unlimited, pio_int, pio_def_dim,& 
-                      pio_def_var, pio_enddef, pio_noerr, pio_closefile, pio_inq_dimid, &
-                      pio_real, pio_double, pio_initdecomp, pio_inq_dimlen, pio_setframe, &
-                      pio_offset_kind, pio_write_darray, pio_syncfile, pio_put_var
+  use piolib_mod, only : PIO_init, PIO_finalize, PIO_createfile, PIO_closefile, &
+      PIO_initdecomp, PIO_freedecomp, PIO_syncfile, PIO_openfile, PIO_setframe
+  use pio_types,  only : iosystem_desc_t, file_desc_t, &
+      pio_noerr, PIO_iotype_netcdf, var_desc_t, io_desc_t, PIO_int, &
+      pio_clobber, PIO_nowrite, PIO_unlimited, pio_global, PIO_real, &
+      PIO_double
+  use pio_kinds,  only : PIO_OFFSET_KIND, i4 
+  use pio_nf,     only : PIO_redef, PIO_def_dim, PIO_def_var, PIO_enddef, PIO_inq_dimid, &
+                         PIO_inq_dimlen
+  use piodarray,  only : PIO_write_darray, PIO_read_darray 
+  use pionfatt_mod, only : PIO_put_att   => put_att
+  use pionfput_mod, only : PIO_put_var   => put_var
 
   implicit none
   save
                      
   public :: eam_init_pio_1,    &  ! Get pio subsystem info from main code, create PIO files
             eam_init_pio_2,    &  ! Register variables and dimensions with PIO files
-            eam_h_finalize,    &
-            eam_h_write,       &
+            eam_history_finalize,    &
+            eam_history_write,       &
             register_variable, &
             register_dimension 
  
@@ -194,10 +201,6 @@ contains
     call get_pio_atm_file("example_pio_structured.nc",current_atm_file,found)
     if (found) call errorHandle("PIO Error: Creating file: "//trim("example_pio_structured.nc")//" already exists",999)
     current_atm_file%numRecs = 0
-
-    ! Set the filename TODO: Allow for mutliple files
-    current_atm_file%filename = "example_pio_structured.nc"
-
     ! Create the new file via PIO
     call eam_pio_createfile(current_atm_file%pioFileDesc,trim(current_atm_file%filename))
     ! Create the header for the new PIO file
@@ -208,7 +211,6 @@ contains
     call get_pio_atm_file("example_pio_structured_v2.nc",current_atm_file,found)
     if (found) call errorHandle("PIO Error: Creating file: "//trim("example_pio_structured_v2.nc")//" already exists",999)
     current_atm_file%numRecs = 0
-    current_atm_file%filename = "example_pio_structured_v2.nc"
     ! Create the new file via PIO
     call eam_pio_createfile(current_atm_file%pioFileDesc,trim(current_atm_file%filename))
 
@@ -408,7 +410,7 @@ contains
 
   end subroutine get_pio_file
 !=====================================================================!
-  subroutine eam_h_write()
+  subroutine eam_history_write()
 
     type(pio_atm_output),pointer :: pio_atm_file
     type(hist_var_t), pointer :: var 
@@ -474,18 +476,18 @@ contains
     call grid_write_data_array("example_pio_structured_v2.nc", fdata_real_2d, "foo_flip")
     call PIO_syncfile(pio_atm_file%pioFileDesc)
     
-  end subroutine eam_h_write
+  end subroutine eam_history_write
 !=====================================================================!
-  subroutine eam_h_finalize()
+  subroutine eam_history_finalize()
 
   ! For now nothing to do, could be used in the future.  If not, should be
   ! deleted.
 
-  end subroutine eam_h_finalize
+  end subroutine eam_history_finalize
 !=====================================================================!
   subroutine eam_pio_createHeader(File)
 
-    use pio_mods, only : PIO_put_att
+    !use pionfatt_mod, only : PIO_put_att   => put_att
 
     type(file_desc_t), intent(in) :: File             ! Pio file Handle
     integer :: retval
@@ -525,7 +527,8 @@ contains
   end subroutine eam_init_pio_subsystem
 !=====================================================================!
   subroutine eam_pio_createfile(File,fname)
-    use pio_mods, only:  pio_createfile, pio_clobber
+    !use piolib_mod, only: pio_createfile
+    !use pio_type,   only: pio_clobber
 
     type(file_desc_t), intent(inout) :: File             ! Pio file Handle
     character(len=*),  intent(in)    :: fname
@@ -539,8 +542,8 @@ contains
   end subroutine eam_pio_createfile
 !=====================================================================!
   subroutine eam_pio_finalize()
-
-    use pio_mods, only: pio_finalize
+    ! May not be needed, possibly handled by PIO directly.
+    !use pioilib_mod, only: pio_finalize
 
     integer :: ierr
 
@@ -701,6 +704,7 @@ contains
     allocate(prev%next)
     curr => prev%next
     allocate(curr%pio_file)
+    curr%pio_file%filename = trim(filename)
     pio_atm_file => curr%pio_file  
 
   end subroutine get_pio_atm_file
@@ -711,8 +715,8 @@ contains
   !
   !---------------------------------------------------------------------------
   subroutine grid_write_darray_1d_int(filename, hbuf, varname)
-    use pio,           only: file_desc_t
-    use pio,           only: pio_write_darray, PIO_INT
+    !use pio_types,           only: file_desc_t, PIO_INT
+    !use piodarry,            only: pio_write_darray
 
     ! Dummy arguments
     character(len=*),          intent(in)    :: filename       ! PIO filename
@@ -737,8 +741,8 @@ contains
   !
   !---------------------------------------------------------------------------
   subroutine grid_write_darray_2d_int(filename, hbuf, varname)
-    use pio,           only: file_desc_t
-    use pio,           only: pio_write_darray, PIO_INT
+    !use pio,           only: file_desc_t
+    !use pio,           only: pio_write_darray, PIO_INT
 
     ! Dummy arguments
     character(len=*),          intent(in)    :: filename       ! PIO filename
@@ -765,8 +769,8 @@ contains
   !
   !---------------------------------------------------------------------------
   subroutine grid_write_darray_3d_int(filename, hbuf, varname)
-    use pio,           only: file_desc_t
-    use pio,           only: pio_write_darray, PIO_INT
+    !use pio,           only: file_desc_t
+    !use pio,           only: pio_write_darray, PIO_INT
 
     ! Dummy arguments
     character(len=*),          intent(in)    :: filename       ! PIO filename
@@ -793,8 +797,8 @@ contains
   !
   !---------------------------------------------------------------------------
   subroutine grid_write_darray_1d_double(filename, hbuf, varname)
-    use pio,           only: file_desc_t
-    use pio,           only: pio_write_darray, PIO_DOUBLE
+    !use pio,           only: file_desc_t
+    !use pio,           only: pio_write_darray, PIO_DOUBLE
 
     ! Dummy arguments
     character(len=*),          intent(in)    :: filename       ! PIO filename
@@ -819,8 +823,8 @@ contains
   !
   !---------------------------------------------------------------------------
   subroutine grid_write_darray_2d_double(filename, hbuf, varname)
-    use pio,           only: file_desc_t
-    use pio,           only: pio_write_darray, PIO_DOUBLE
+    !use pio,           only: file_desc_t
+    !use pio,           only: pio_write_darray, PIO_DOUBLE
 
     ! Dummy arguments
     character(len=*),          intent(in)    :: filename       ! PIO filename
@@ -847,8 +851,8 @@ contains
   !
   !---------------------------------------------------------------------------
   subroutine grid_write_darray_3d_double(filename, hbuf, varname)
-    use pio,           only: file_desc_t
-    use pio,           only: pio_write_darray, PIO_DOUBLE
+    !use pio,           only: file_desc_t
+    !use pio,           only: pio_write_darray, PIO_DOUBLE
 
     ! Dummy arguments
     character(len=*),          intent(in)    :: filename       ! PIO filename
@@ -876,8 +880,8 @@ contains
   !
   !---------------------------------------------------------------------------
   subroutine grid_write_darray_1d_real(filename, hbuf, varname)
-    use pio,           only: file_desc_t
-    use pio,           only: pio_write_darray, PIO_REAL
+    !use pio,           only: file_desc_t
+    !use pio,           only: pio_write_darray, PIO_REAL
 
     ! Dummy arguments
     character(len=*),          intent(in)    :: filename       ! PIO filename
@@ -902,8 +906,8 @@ contains
   !
   !---------------------------------------------------------------------------
   subroutine grid_write_darray_2d_real(filename, hbuf, varname)
-    use pio,           only: file_desc_t
-    use pio,           only: pio_write_darray, PIO_REAL
+    !use pio,           only: file_desc_t
+    !use pio,           only: pio_write_darray, PIO_REAL
 
     ! Dummy arguments
     character(len=*),          intent(in)    :: filename       ! PIO filename
@@ -930,8 +934,8 @@ contains
   !
   !---------------------------------------------------------------------------
   subroutine grid_write_darray_3d_real(filename, hbuf, varname)
-    use pio,           only: file_desc_t
-    use pio,           only: pio_write_darray, PIO_REAL
+    !use pio,           only: file_desc_t
+    !use pio,           only: pio_write_darray, PIO_REAL
 
     ! Dummy arguments
     character(len=*),          intent(in)    :: filename       ! PIO filename
