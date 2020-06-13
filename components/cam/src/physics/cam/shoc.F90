@@ -2200,6 +2200,13 @@ subroutine shoc_tke(&
 
   ! Interpolate shear term from interface to thermo grid
   call linear_interp(zi_grid,zt_grid,sterm,sterm_zt,nlevi,nlev,shcol,0._rtype)
+
+
+  call adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
+       pblh, zt_grid, sterm_zt, brunt_int, brunt, tkh, tk, &
+       obklen, tke, isotropy)
+
+
   if(.false.) then
    do k=1,nlev
     do i=1,shcol
@@ -2264,9 +2271,6 @@ subroutine shoc_tke(&
     enddo ! end i loop
   enddo ! end k loop
   endif
-  call adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
-       pblh, zt_grid, sterm_zt, brunt_int, brunt, tkh, tk, &
-       obklen, tke, isotropy)
 
   return
 
@@ -2465,7 +2469,7 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
 
         ! Dimensionless Okukhov length considering only
         !  the lowest model grid layer height to scale
-        z_over_L = zt_grid(i,k)/obklen(i)
+        z_over_L = zt_grid(i,nlev)/obklen(i)
 
         if (z_over_L .gt. zL_crit_val .and. (zt_grid(i,k) .lt. pblh(i)+pbl_trans)) then
           ! If surface layer is moderately to very stable, based on near surface
