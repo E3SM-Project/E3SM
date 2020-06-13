@@ -60,12 +60,12 @@ module scream_scorpio_interface
   implicit none
   save
                      
-  public :: eam_init_pio_1,    &  ! Get pio subsystem info from main code, create PIO files
-            eam_init_pio_2,    &  ! Register variables and dimensions with PIO files
-            eam_history_finalize,    &
-            eam_history_write,       &
-            register_variable, &
-            register_dimension 
+  public :: eam_init_pio_1,       & ! Get pio subsystem info from main code, create PIO files
+            eam_init_pio_2,       & ! Register variables and dimensions with PIO files
+            eam_history_finalize, & ! Run any final PIO commands (currently unused)
+            eam_history_write,    & ! Write updated data for each variable to file
+            register_variable,    & ! Register a variable with a particular pio output file  
+            register_dimension      ! Register a dimension with a particular pio output file
  
   private :: errorHandle
 
@@ -85,32 +85,32 @@ module scream_scorpio_interface
 
 !----------------------------------------------------------------------
   type, public :: hist_coord_t
-    character(len=max_hcoordname_len) :: name = ''  ! coordinate name
-    integer                  :: dimsize = 0       ! size of dimension
-    integer                  :: dimid             ! Unique PIO Id for this dimension
-    character(len=max_chars) :: long_name = ''    ! 'long_name' attribute
-    character(len=max_chars) :: units = ''        ! 'units' attribute
-    character(len=max_chars) :: bounds_name = ''  ! 'bounds' attribute (& name of bounds variable)
-    character(len=max_chars) :: standard_name = ''! 'standard_name' attribute
-    character(len=4)         :: positive = ''     ! 'positive' attribute ('up' or 'down')
+    character(len=max_hcoordname_len) :: name = ''          ! coordinate name
+    integer                  :: dimsize = 0                 ! size of dimension
+    integer                  :: dimid                       ! Unique PIO Id for this dimension
+    character(len=max_chars) :: long_name = ''              ! 'long_name' attribute
+    character(len=max_chars) :: units = ''                  ! 'units' attribute
+    character(len=max_chars) :: bounds_name = ''            ! 'bounds' attribute (& name of bounds variable)
+    character(len=max_chars) :: standard_name = ''          ! 'standard_name' attribute
+    character(len=4)         :: positive = ''               ! 'positive' attribute ('up' or 'down')
     integer,  pointer        :: integer_values(:) => null() ! dim values if integer
-    real(rtype), pointer     :: real_values(:) => null() ! dim values if real
-    real(rtype), pointer     :: bounds(:,:) => null() ! dim bounds
-    logical                  :: integer_dim       ! .true. iff dim has integral values
-    logical                  :: vertical_coord    ! .true. iff dim is vertical
+    real(rtype), pointer     :: real_values(:) => null()    ! dim values if real
+    real(rtype), pointer     :: bounds(:,:) => null()       ! dim bounds
+    logical                  :: integer_dim                 ! .true. iff dim has integral values
+    logical                  :: vertical_coord              ! .true. iff dim is vertical
   end type hist_coord_t
 !----------------------------------------------------------------------
   type, public :: hist_var_t
     character(len=max_hvarname_len) :: name   ! coordinate name
     character(len=max_chars) :: long_name     ! 'long_name' attribute
     character(len=max_chars) :: units         ! 'units' attribute
-    type(var_desc_t) :: piovar                    ! netCDF variable ID
-    integer          :: dtype                     ! data type
-    integer          :: numdims                   ! Number of dimensions in out field
-    type(io_desc_t), pointer  :: iodesc           ! PIO decomp associated with this variable
-    integer, allocatable :: compdof(:)            ! Global locations in output array for this process
-    integer, allocatable :: dimid(:)              ! array of PIO dimension id's for this variable
-    integer, allocatable :: dimlen(:)             ! array of PIO dimension lengths for this variable
+    type(var_desc_t) :: piovar                ! netCDF variable ID
+    integer          :: dtype                 ! data type
+    integer          :: numdims               ! Number of dimensions in out field
+    type(io_desc_t), pointer  :: iodesc       ! PIO decomp associated with this variable
+    integer, allocatable :: compdof(:)        ! Global locations in output array for this process
+    integer, allocatable :: dimid(:)          ! array of PIO dimension id's for this variable
+    integer, allocatable :: dimlen(:)         ! array of PIO dimension lengths for this variable
   end type hist_var_t
 !----------------------------------------------------------------------
   ! The iodesc_list allows us to cache existing PIO decompositions
@@ -119,26 +119,26 @@ module scream_scorpio_interface
   ! decompositions will be require
   integer, parameter      :: tag_len           = 48
   type iodesc_list
-    character(tag_len)          :: tag
-    type(io_desc_t),    pointer :: iodesc => NULL()
-    type(iodesc_list),  pointer :: next => NULL()
+    character(tag_len)          :: tag              ! Unique tag associated with this decomposition
+    type(io_desc_t),    pointer :: iodesc => NULL() ! PIO - decomposition
+    type(iodesc_list),  pointer :: next => NULL()   ! Needed for recursive definition
   end type iodesc_list
   ! Define the first iodesc_list 
   type(iodesc_list), target :: iodesc_list_top
 !----------------------------------------------------------------------
   type hist_coord_list
-    type(hist_coord_t),    pointer :: coord => NULL()
-    type(hist_coord_list), pointer :: next => NULL()
+    type(hist_coord_t),    pointer :: coord => NULL() ! Pointer to a history dimension structure
+    type(hist_coord_list), pointer :: next => NULL()  ! Needed for recursive definition
   end type hist_coord_list
 !----------------------------------------------------------------------
   type hist_var_list
-    type(hist_var_t),    pointer :: var => NULL()
-    type(hist_var_list), pointer :: next => NULL()
+    type(hist_var_t),    pointer :: var => NULL()  ! Pointer to a history variable structure
+    type(hist_var_list), pointer :: next => NULL() ! Needed for recursive definition
   end type hist_var_list
 !----------------------------------------------------------------------
   type pio_file_list
-    type(pio_atm_output), pointer :: pio_file => NULL()
-    type(pio_file_list),  pointer :: next => NULL()
+    type(pio_atm_output), pointer :: pio_file => NULL() ! Pointer to an atm. pio file
+    type(pio_file_list),  pointer :: next => NULL()     ! Needed for recursive definition
   end type pio_file_list
   ! Define the first pio_file_list
   type(pio_file_list), target :: pio_file_list_top
@@ -487,8 +487,6 @@ contains
 !=====================================================================!
   subroutine eam_pio_createHeader(File)
 
-    !use pionfatt_mod, only : PIO_put_att   => put_att
-
     type(file_desc_t), intent(in) :: File             ! Pio file Handle
     integer :: retval
 
@@ -527,8 +525,6 @@ contains
   end subroutine eam_init_pio_subsystem
 !=====================================================================!
   subroutine eam_pio_createfile(File,fname)
-    !use piolib_mod, only: pio_createfile
-    !use pio_type,   only: pio_clobber
 
     type(file_desc_t), intent(inout) :: File             ! Pio file Handle
     character(len=*),  intent(in)    :: fname
@@ -543,7 +539,6 @@ contains
 !=====================================================================!
   subroutine eam_pio_finalize()
     ! May not be needed, possibly handled by PIO directly.
-    !use pioilib_mod, only: pio_finalize
 
     integer :: ierr
 
@@ -562,12 +557,12 @@ contains
 
     if (retVal .ne. PIO_NOERR) then
       write(*,*) retVal,errMsg
-!      ! Close all the PIO Files before aborting run
-!      curr => pio_file_list_top
-!      do while (associated(curr))
-!        call PIO_closefile(curr%pio_file%pioFileDesc)
-!        curr => curr%next
-!      end do
+      ! Close all the PIO Files before aborting run
+      curr => pio_file_list_top
+      do while (associated(curr))
+        if (associated(curr%pio_file)) call PIO_closefile(curr%pio_file%pioFileDesc)
+        curr => curr%next
+      end do
       ! Kill run
       call mpi_abort(pio_mpicom,0,retVal)
     end if
@@ -682,13 +677,11 @@ contains
     type(pio_atm_output), pointer :: pio_atm_file
     logical,optional,intent(out)  :: found
 
-    integer :: ii
     type(pio_file_list), pointer :: curr => NULL(), prev => NULL()
 
     if (present(found)) found = .false.
 
     curr => pio_file_list_top
-    ii = 0
     do while (associated(curr))
       if (associated(curr%pio_file)) then
         if (trim(filename)==trim(curr%pio_file%filename)) then
@@ -697,7 +690,6 @@ contains
           return
         end if
       end if
-      ii = ii + 1
       prev => curr
       curr => prev%next
     end do
@@ -715,8 +707,6 @@ contains
   !
   !---------------------------------------------------------------------------
   subroutine grid_write_darray_1d_int(filename, hbuf, varname)
-    !use pio_types,           only: file_desc_t, PIO_INT
-    !use piodarry,            only: pio_write_darray
 
     ! Dummy arguments
     character(len=*),          intent(in)    :: filename       ! PIO filename
@@ -741,8 +731,6 @@ contains
   !
   !---------------------------------------------------------------------------
   subroutine grid_write_darray_2d_int(filename, hbuf, varname)
-    !use pio,           only: file_desc_t
-    !use pio,           only: pio_write_darray, PIO_INT
 
     ! Dummy arguments
     character(len=*),          intent(in)    :: filename       ! PIO filename
@@ -769,8 +757,6 @@ contains
   !
   !---------------------------------------------------------------------------
   subroutine grid_write_darray_3d_int(filename, hbuf, varname)
-    !use pio,           only: file_desc_t
-    !use pio,           only: pio_write_darray, PIO_INT
 
     ! Dummy arguments
     character(len=*),          intent(in)    :: filename       ! PIO filename
@@ -797,8 +783,6 @@ contains
   !
   !---------------------------------------------------------------------------
   subroutine grid_write_darray_1d_double(filename, hbuf, varname)
-    !use pio,           only: file_desc_t
-    !use pio,           only: pio_write_darray, PIO_DOUBLE
 
     ! Dummy arguments
     character(len=*),          intent(in)    :: filename       ! PIO filename
@@ -823,8 +807,6 @@ contains
   !
   !---------------------------------------------------------------------------
   subroutine grid_write_darray_2d_double(filename, hbuf, varname)
-    !use pio,           only: file_desc_t
-    !use pio,           only: pio_write_darray, PIO_DOUBLE
 
     ! Dummy arguments
     character(len=*),          intent(in)    :: filename       ! PIO filename
@@ -851,8 +833,6 @@ contains
   !
   !---------------------------------------------------------------------------
   subroutine grid_write_darray_3d_double(filename, hbuf, varname)
-    !use pio,           only: file_desc_t
-    !use pio,           only: pio_write_darray, PIO_DOUBLE
 
     ! Dummy arguments
     character(len=*),          intent(in)    :: filename       ! PIO filename
@@ -880,8 +860,6 @@ contains
   !
   !---------------------------------------------------------------------------
   subroutine grid_write_darray_1d_real(filename, hbuf, varname)
-    !use pio,           only: file_desc_t
-    !use pio,           only: pio_write_darray, PIO_REAL
 
     ! Dummy arguments
     character(len=*),          intent(in)    :: filename       ! PIO filename
@@ -906,8 +884,6 @@ contains
   !
   !---------------------------------------------------------------------------
   subroutine grid_write_darray_2d_real(filename, hbuf, varname)
-    !use pio,           only: file_desc_t
-    !use pio,           only: pio_write_darray, PIO_REAL
 
     ! Dummy arguments
     character(len=*),          intent(in)    :: filename       ! PIO filename
@@ -934,8 +910,6 @@ contains
   !
   !---------------------------------------------------------------------------
   subroutine grid_write_darray_3d_real(filename, hbuf, varname)
-    !use pio,           only: file_desc_t
-    !use pio,           only: pio_write_darray, PIO_REAL
 
     ! Dummy arguments
     character(len=*),          intent(in)    :: filename       ! PIO filename
