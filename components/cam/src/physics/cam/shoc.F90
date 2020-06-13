@@ -2200,7 +2200,7 @@ subroutine shoc_tke(&
 
   ! Interpolate shear term from interface to thermo grid
   call linear_interp(zi_grid,zt_grid,sterm,sterm_zt,nlevi,nlev,shcol,0._rtype)
-
+  if(.false.) then
    do k=1,nlev
     do i=1,shcol
 
@@ -2263,10 +2263,10 @@ subroutine shoc_tke(&
 
     enddo ! end i loop
   enddo ! end k loop
-
-  !call adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
-  !     pblh, zt_grid, sterm_zt, brunt_int, brunt, tkh, tk, &
-  !     obklen, tke, isotropy)
+  endif
+  call adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
+       pblh, zt_grid, sterm_zt, brunt_int, brunt, tkh, tk, &
+       obklen, tke, isotropy)
 
   return
 
