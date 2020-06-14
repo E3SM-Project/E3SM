@@ -15,7 +15,8 @@ module prim_state_mod
   use time_mod,         only: tstep, secpday, timelevel_t, TimeLevel_Qdp, time_at
   use control_mod,      only: integration, test_case,  use_moisture, &
                               qsplit, ftype, rsplit,&
-                              theta_hydrostatic_mode
+                              theta_hydrostatic_mode, &
+                              dt_remap_factor, dt_tracer_factor
   use hybvcoord_mod,    only: hvcoord_t
   use global_norms_mod, only: global_integral, linf_snorm, l1_snorm, l2_snorm
   use element_mod,      only: element_t
@@ -142,7 +143,7 @@ contains
     real(kind=real_kind) :: relvort
     real(kind=real_kind) :: v1, v2, vco(np,np,2,nlev)
 
-    real (kind=real_kind) :: time, time2,time1, scale, dt, dt_f
+    real (kind=real_kind) :: time, time2,time1, scale, dt, dt_f, dt_hv, dt_remap, dt_run_sub
     real (kind=real_kind) :: IEvert1,IEvert2,PEvert1,PEvert2
     real (kind=real_kind) :: T1,T2,S1,S2,P1,P2
     real (kind=real_kind) :: PEhorz1,PEhorz2
@@ -172,11 +173,23 @@ contains
     n0=tl%n0
     call TimeLevel_Qdp( tl, qsplit, n0q) !get n0 level into t2_qdp 
 
-
+!some old code
     dt=tstep*qsplit
     if (rsplit>0) dt = tstep*qsplit*rsplit  ! vertical REMAP timestep 
     dt_f=dt
+
+!new mods
+!forcing
+    if (ftype==2) dt_f=tstep*dt_remap_factor
     if (ftype==4) dt_f=tstep
+!remap
+    dt_remap=tstep*dt_remap_factor
+!hv
+    dt_hv=tstep
+!dt_run_subcycle
+    dt_run_sub=tstep*dt_tracer_factor
+
+
 
     !
     !   dynamics variables in n0 are at time =  'time' 
@@ -768,13 +781,38 @@ contains
 
        ! changes due to viscosity were with tstep
        ! changes due to forcing depend on ftype
-       write(iulog,'(a)') 'Change from dribbled phys tendencies, viscosity, remap, CAAR:'
-       write(iulog,'(a,4e15.7)') 'dKE/dt(W/m^2): ',(KEner(1)-KEner(3))/dt_f,&
-            (KEner(6)-KEner(5))/tstep,(KEner(2)-KEner(4))/dt,         (KEner(5)-KEner(7))/tstep
-       write(iulog,'(a,4e15.7)') 'dIE/dt(W/m^2): ',(IEner(1)-IEner(3))/dt_f,&
-            (IEner(6)-IEner(5))/tstep,(IEner(2)-IEner(4))/dt,         (IEner(5)-IEner(7))/tstep
-       write(iulog,'(a,4e15.7)') 'dPE/dt(W/m^2): ',(PEner(1)-PEner(3))/dt_f,&
-            (PEner(6)-PEner(5))/tstep,(PEner(2)-PEner(4))/dt,         (PEner(5)-PEner(7))/tstep
+       write(iulog,'(a)') 'Change from dribbled phys tendencies, viscosity, remap, CAAR, all together (run_subcy):'
+
+       if(ftype==1) then
+!hack
+       write(iulog,'(a,5e15.7)') 'dKE/dt(W/m^2): ',0.0/dt_f,&
+            (KEner(6)-KEner(5))/dt_hv,(KEner(2)-KEner(4))/dt_remap, &
+            (KEner(5)-KEner(7))/tstep, (KEner(2)-KEner(3))/dt_run_sub
+
+       write(iulog,'(a,5e15.7)') 'dIE/dt(W/m^2): ',0.0/dt_f,&
+            (IEner(6)-IEner(5))/dt_hv,(IEner(2)-IEner(4))/dt_remap, &
+            (IEner(5)-IEner(7))/tstep, (IEner(2)-IEner(3))/dt_run_sub
+       
+       write(iulog,'(a,5e15.7)') 'dPE/dt(W/m^2): ',0.0/dt_f,&
+            (PEner(6)-PEner(5))/dt_hv,(PEner(2)-PEner(4))/dt_remap, &
+            (PEner(5)-PEner(7))/tstep, (PEner(2)-PEner(3))/dt_run_sub
+
+       else
+
+       write(iulog,'(a,5e15.7)') 'dKE/dt(W/m^2): ',(KEner(1)-KEner(3))/dt_f,&
+            (KEner(6)-KEner(5))/dt_hv,(KEner(2)-KEner(4))/dt_remap, &
+            (KEner(5)-KEner(7))/tstep, (KEner(2)-KEner(3))/dt_run_sub
+
+       write(iulog,'(a,5e15.7)') 'dIE/dt(W/m^2): ',(IEner(1)-IEner(3))/dt_f,&
+            (IEner(6)-IEner(5))/dt_hv,(IEner(2)-IEner(4))/dt_remap, &
+            (IEner(5)-IEner(7))/tstep, (IEner(2)-IEner(3))/dt_run_sub
+
+       write(iulog,'(a,5e15.7)') 'dPE/dt(W/m^2): ',(PEner(1)-PEner(3))/dt_f,&
+            (PEner(6)-PEner(5))/dt_hv,(PEner(2)-PEner(4))/dt_remap, &
+            (PEner(5)-PEner(7))/tstep, (PEner(2)-PEner(3))/dt_run_sub
+
+       endif
+
        q=1
        if (qsize>0) write(iulog,'(a,2e15.7)') 'dQ1/dt(kg/sm^2)',(Qmass(q,1)-Qmass(q,3))/dt
 
