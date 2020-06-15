@@ -48,11 +48,8 @@ CONTAINS
 !#######################################################################
 
 subroutine dyn_init(file, nlfilename)
-   use phys_control, only : use_gw_front
    use dyn_grid,     only: define_cam_grids, initgrid
    use scamMod,      only: single_column
-   use physics_buffer,  only : pbuf_add_field, dtype_r8
-   use ppgrid,          only : pcols, pver
 
    ! ARGUMENTS:
    type(file_desc_t), intent(in) :: file       ! PIO file handle for initial or restart file
@@ -79,13 +76,6 @@ subroutine dyn_init(file, nlfilename)
 #endif 
 
   !----------------------------------------------------------------------
-
-  if (use_gw_front) then
-     call pbuf_add_field("FRONTGF", "global", dtype_r8, (/pcols,pver/), &
-          frontgf_idx)
-     call pbuf_add_field("FRONTGA", "global", dtype_r8, (/pcols,pver/), &
-          frontga_idx)
-  end if
 
    ! Initialize hybrid coordinate arrays
    call hycoef_init(file)

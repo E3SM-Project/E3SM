@@ -381,8 +381,14 @@ subroutine init_restart_dynamics(File, dyn_out)
   !#######################################################################
 
   subroutine read_restart_dynamics (File, dyn_in, dyn_out, NLFileName)
-    use dyn_comp, only : dyn_init, dyn_import_t, dyn_export_t
-    use cam_pio_utils, only : pio_subsystem
+    use dyn_comp,        only: dyn_init, dyn_import_t, dyn_export_t, &
+                               frontgf_idx, frontga_idx
+    use phys_grid,       only: phys_grid_init
+    use physpkg,         only: phys_register
+    use phys_control,    only: use_gw_front
+    use physics_buffer,  only: pbuf_add_field, dtype_r8
+    use ppgrid,          only: pcols, pver
+    use cam_pio_utils,   only: pio_subsystem
 
     use pmgrid,          only: plon, plat, beglat, endlat
     use scanslt,         only: scanslt_alloc
@@ -391,7 +397,6 @@ subroutine init_restart_dynamics(File, dyn_out)
 #endif
     use massfix,         only: alpha, hw1, hw2, hw3
     use prognostics,     only:  ptimelevels, n3m2, n3m1, n3, initialize_prognostics
-    use ppgrid,          only: pver
     use constituents,    only: pcnst
     use eul_control_mod, only: fixmas, tmass0
 
@@ -418,6 +423,20 @@ subroutine init_restart_dynamics(File, dyn_out)
     type(var_desc_t), pointer :: vdesc
 
     call dyn_init(file, nlfilename)
+
+    ! Define physics data structures
+    call phys_grid_init()
+
+    ! Initialize index values for advected and non-advected tracers
+    call phys_register()
+
+    ! Frontogenesis indices
+    if (use_gw_front) then
+       call pbuf_add_field("FRONTGF", "global", dtype_r8, (/pcols,pver/), &
+            frontgf_idx)
+       call pbuf_add_field("FRONTGA", "global", dtype_r8, (/pcols,pver/), &
+            frontga_idx)
+    end if
 
     call initialize_prognostics
 	

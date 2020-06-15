@@ -442,8 +442,9 @@ CONTAINS
 
   subroutine read_restart_dynamics (File, dyn_in, dyn_out, NLFileName)
     use dyn_comp,        only: dyn_init, dyn_import_t, dyn_export_t
+    use phys_grid,       only: phys_grid_init
+    use physpkg,         only: phys_register
     use cam_pio_utils,   only: pio_subsystem
-    use dyn_comp,        only: dyn_init
     use prognostics,     only: initialize_prognostics, n3, n3m1
     use pmgrid,          only: plon, plat, plevp, plev, beglat, endlat
     use constituents,    only: pcnst
@@ -476,6 +477,12 @@ CONTAINS
     integer, pointer :: ldof(:)
 
     call dyn_init(file, NLFileName)
+
+    ! Define physics data structures
+    call phys_grid_init()
+
+    ! Initialize index values for advected and non-advected tracers
+    call phys_register()
 
     call initialize_prognostics
     call slt_alloc()

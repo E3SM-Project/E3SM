@@ -410,9 +410,15 @@ CONTAINS
     use cam_pio_utils, only : pio_subsystem
 
     use pmgrid
-    use dyn_comp, only : dyn_init
+    use dyn_comp,           only : dyn_init, frontgf_idx, &
+                                   frontga_idx, uzm_idx
     use dyn_internal_state, only : get_dyn_state
-
+    use phys_grid,          only : phys_grid_init
+    use physpkg,            only : phys_register
+    use phys_control,       only : use_gw_front
+    use physics_buffer,     only : pbuf_add_field, dtype_r8
+    use ppgrid,             only : pcols, pver
+    use qbo,                only : qbo_use_forcing
 
     type(file_desc_t) :: File
     type(dyn_export_t) :: dyn_out
@@ -443,6 +449,25 @@ CONTAINS
     dyn_state => get_dyn_state()
 
     call dyn_init(file, dyn_state, dyn_in, dyn_out, NLFileName )
+
+    ! Define physics data structures
+    call phys_grid_init()
+
+    ! Initialize index values for advected and non-advected tracers
+    call phys_register()
+
+    ! Frontogenesis indices
+    if (use_gw_front) then
+       call pbuf_add_field("FRONTGF", "global", dtype_r8, (/pcols,pver/), &
+            frontgf_idx)
+       call pbuf_add_field("FRONTGA", "global", dtype_r8, (/pcols,pver/), &
+            frontga_idx)
+    end if
+
+    if (qbo_use_forcing) then
+       call pbuf_add_field("UZM", "global", dtype_r8, (/pcols,pver/), &
+            uzm_idx)
+    end if
 
     dims3d(1)=(endlonxy-beglonxy+1)
     dims3d(2)=(endlatxy-beglatxy+1)

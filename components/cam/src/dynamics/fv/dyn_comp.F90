@@ -198,10 +198,6 @@ subroutine dyn_init(file, dyn_state, dyn_in, dyn_out, NLFileName )
                                cpair,             &
                                zvir,              &
                                pi
-   use phys_control,    only : use_gw_front
-   use qbo,             only : qbo_use_forcing
-   use physics_buffer,  only : pbuf_add_field, dtype_r8
-   use ppgrid,          only : pcols, pver
 
    ! ARGUMENTS:
    type(file_desc_t),       intent(in)  :: file       ! PIO file handle for initial or restart file
@@ -261,18 +257,6 @@ subroutine dyn_init(file, dyn_state, dyn_in, dyn_out, NLFileName )
 #endif
 
   !----------------------------------------------------------------------
-
-  if (use_gw_front) then
-     call pbuf_add_field("FRONTGF", "global", dtype_r8, (/pcols,pver/), &
-          frontgf_idx)
-     call pbuf_add_field("FRONTGA", "global", dtype_r8, (/pcols,pver/), &
-          frontga_idx)
-  end if
-
-  if (qbo_use_forcing) then
-     call pbuf_add_field("UZM", "global", dtype_r8, (/pcols,pver/), &
-          uzm_idx)
-  end if
 
   ! Initialize hybrid coordinate arrays
   call hycoef_init(file)

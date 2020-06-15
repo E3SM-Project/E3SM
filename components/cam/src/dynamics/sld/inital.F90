@@ -16,6 +16,7 @@ subroutine cam_initial(dyn_in, dyn_out, nlfilename)
    use dyn_comp,             only: dyn_import_t, dyn_export_t, dyn_init
    use prognostics,          only: initialize_prognostics
    use phys_grid,            only: phys_grid_init
+   use physpkg,              only: phys_register
    use chem_surfvals,        only: chem_surfvals_init
    use scanslt,              only: slt_alloc
    use cam_initfiles,        only: initial_file_get_id
@@ -31,20 +32,23 @@ subroutine cam_initial(dyn_in, dyn_out, nlfilename)
    character(len=*), intent(in) :: nlfilename
    !-----------------------------------------------------------------------
 
+   call dyn_init(initial_file_get_id(), nlfilename)
+
+   ! Define physics data structures
+   call phys_grid_init()
+
+   ! Initialize index values for advected and non-advected tracers
+   call phys_register()
+
    ! Initialize ghg surface values before default initial distributions
    ! are set in inidat.
    call chem_surfvals_init()
-
-   call dyn_init(initial_file_get_id(), nlfilename)
 
    ! Initialize prognostics variables
    call initialize_prognostics
    call slt_alloc()
 
    call initcom
-
-   ! Define physics data structures
-   call phys_grid_init
 
 #if (defined SPMD)
    ! Allocate communication buffers for
