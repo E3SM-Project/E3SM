@@ -792,8 +792,8 @@ void Functions<S,D>
         qr(k), nr(k), mu_r(k), lamr(k), ignore1, ignore2, rcldm(k), qr_gt_small);
 
       ze_rain(k).set(qr_gt_small, nr(k)*(mu_r(k)+6)*(mu_r(k)+5)*(mu_r(k)+4)*
-                     (mu_r(k)+3)*(mu_r(k)+2)*(mu_r(k)+1)/pow(lamr(k), 6));
-      ze_rain(k).set(qr_gt_small, pack::max(ze_rain(k), 1.e-22));
+                     (mu_r(k)+3)*(mu_r(k)+2)*(mu_r(k)+1)/pow(lamr(k), sp(6.0))); // once f90 is gone, 6 can be int
+      ze_rain(k).set(qr_gt_small, pack::max(ze_rain(k), sp(1.e-22)));
 
       qv(k)              .set(qr_small, qv(k) + qr(k));
       th(k)              .set(qr_small, th(k) - exner(k)*qr(k)*xxlv(k)*inv_cp);
@@ -844,7 +844,7 @@ void Functions<S,D>
 
       // note factor of air density below is to convert from m^6/kg to m^6/m^3
       ze_ice(k).set(qi_gt_small, ze_ice(k) + sp(0.1892)*f1pr13*nitot(k)*rho(k)); // sum contribution from each ice category (note: 0.1892 = 0.176/0.93);
-      ze_ice(k).set(qi_gt_small, pack::max(ze_ice(k), 1.e-22));
+      ze_ice(k).set(qi_gt_small, pack::max(ze_ice(k), sp(1.e-22)));
 
       qv(k)     .set(qi_small, qv(k) + qitot(k));
       th(k)     .set(qi_small, th(k) - exner(k)*qitot(k)*xxls(k)*inv_cp);
