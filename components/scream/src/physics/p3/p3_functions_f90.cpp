@@ -3317,7 +3317,7 @@ void p3_main_post_main_loop_f(
   const Int nk_pack = scream::pack::npack<Spack>(nk);
 
   // Set up views
-  Kokkos::Array<view_1d, P3MainLoopData::NUM_ARRAYS> temp_d;
+  Kokkos::Array<view_1d, P3MainPostLoopData::NUM_ARRAYS> temp_d;
 
   pack::host_to_device({
       exner, lcldm, rcldm,

@@ -774,9 +774,9 @@ void Functions<S,D>
     {
       const auto qc_gt_small = qc(k) >= qsmall;
       const auto qc_small    = !qc_gt_small;
-      get_cloud_dsd2(qc(k), nc(k), mu_c(k), rho(k), nu(k), dnu, lamc(k), ignore1, ignore2, lcldm(k));
+      get_cloud_dsd2(qc(k), nc(k), mu_c(k), rho(k), nu(k), dnu, lamc(k), ignore1, ignore2, lcldm(k), qc_gt_small);
 
-      diag_effc(k)       .set(!qc_small, sp(0.5) * (mu_c(k) + 3) / lamc(k));
+      diag_effc(k)       .set(qc_gt_small, sp(0.5) * (mu_c(k) + 3) / lamc(k));
       qv(k)              .set(qc_small, qv(k)+qc(k));
       th(k)              .set(qc_small, th(k)-exner(k)*qc(k)*xxlv(k)*inv_cp);
       vap_liq_exchange(k).set(qc_small, vap_liq_exchange(k) - qc(k));
@@ -789,7 +789,7 @@ void Functions<S,D>
       const auto qr_gt_small = qr(k) >= qsmall;
       const auto qr_small    = !qr_gt_small;
       get_rain_dsd2(
-        qr(k), nr(k), mu_r(k), lamr(k), ignore1, ignore2, rcldm(k));
+        qr(k), nr(k), mu_r(k), lamr(k), ignore1, ignore2, rcldm(k), qr_gt_small);
 
       ze_rain(k).set(qr_gt_small, nr(k)*(mu_r(k)+6)*(mu_r(k)+5)*(mu_r(k)+4)*
                      (mu_r(k)+3)*(mu_r(k)+2)*(mu_r(k)+1)/pow(lamr(k), 6));
