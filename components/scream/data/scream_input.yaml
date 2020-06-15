@@ -6,11 +6,13 @@ Atmosphere Driver:
     Schedule Type: Sequential
     Process 0:
       Process Name: P3
-      Grid:         Physics
+      Grid:         SE Physics
     Process 1:
       Process Name: SHOC
-      Grid:         Physics
+      Grid:         SE Physics
   Grids Manager:
-    Type: User Provided
-    Reference Grid: Physics
+    Type: Physics Only
+    Reference Grid: SE Physics
+    Physics Only:
+      Number of global columns: 1024
 ...
