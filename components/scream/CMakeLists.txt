@@ -170,6 +170,9 @@ else()
   buildEkat("SINGLE" PREFIX "SCREAM")
 endif()
 
+# Init scream TPLs info to whatever EKAT set.
+set (SCREAM_TPL_LIBRARIES ${EKAT_TPL_LIBRARIES})
+set (SCREAM_TPL_INCLUDE_DIRS ${EKAT_TPL_INCLUDE_DIRS})
 
 # Set compiler-specific flags
 include(EkatSetCompilerFlags)
@@ -203,6 +206,8 @@ print_var(SCREAM_LINK_FLAGS)
 print_var(SCREAM_FPMODEL)
 print_var(SCREAM_MPIRUN_EXE)
 print_var(SCREAM_LIB_ONLY)
+print_var(SCREAM_TPL_LIBRARIES)
+print_var(SCREAM_TPL_INCLUDE_DIRS)
 
 # This must be done using add_definitions because it is used to determine
 # whether to include scream_config.h.
