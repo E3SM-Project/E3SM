@@ -8,7 +8,7 @@ module atm_comp_mct
   use seq_cdata_mod   , only: seq_cdata, seq_cdata_setptrs
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_putdata, seq_infodata_getdata
   use seq_comm_mct    , only: seq_comm_inst, seq_comm_name, seq_comm_suffix
-  use shr_kind_mod    , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
+  use shr_kind_mod    , only: shr_kind_in, shr_kind_r8, shr_kind_cs, shr_kind_cl
   use shr_strdata_mod , only: shr_strdata_type
   use shr_file_mod    , only: shr_file_getunit, shr_file_getlogunit, shr_file_getloglevel
   use shr_file_mod    , only: shr_file_setlogunit, shr_file_setloglevel, shr_file_setio
@@ -34,15 +34,15 @@ module atm_comp_mct
   !--------------------------------------------------------------------------
   ! Private module data
   !--------------------------------------------------------------------------
-  integer(IN)            :: mpicom              ! mpi communicator
-  integer(IN)            :: my_task             ! my task in mpi communicator mpicom
-  integer                :: inst_index          ! number of current instance (ie. 1)
-  character(len=16)      :: inst_name           ! fullname of current instance (ie. "lnd_0001")
-  character(len=16)      :: inst_suffix = ""    ! char string associated with instance (ie. "_0001" or "")
-  integer(IN)            :: logunit             ! logging unit number
-  integer(IN)            :: compid              ! mct comp id
-  real(r8) ,  pointer    :: gbuf(:,:)           ! model grid
-  integer(IN),parameter  :: master_task=0       ! task number of master task
+  integer(kind=shr_kind_in)           :: mpicom              ! mpi communicator
+  integer(kind=shr_kind_in)           :: my_task             ! my task in mpi communicator mpicom
+  integer                             :: inst_index          ! number of current instance (ie. 1)
+  character(len=16)                   :: inst_name           ! fullname of current instance (ie. "lnd_0001")
+  character(len=16)                   :: inst_suffix = ""    ! char string associated with instance (ie. "_0001" or "")
+  integer(kind=shr_kind_in)           :: logunit             ! logging unit number
+  integer(kind=shr_kind_in)           :: compid              ! mct comp id
+  integer(kind=shr_kind_in),parameter :: master_task=0       ! task number of master task
+  real(kind=shr_kind_r8), pointer          :: gbuf(:,:)           ! model grid
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
@@ -76,12 +76,12 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    integer(IN)                      :: shrlogunit     ! original log unit
-    integer(IN)                      :: shrloglev      ! original log level
-    integer(IN)                      :: nxg            ! global dim i-direction
-    integer(IN)                      :: nyg            ! global dim j-direction
-    integer(IN)                      :: phase          ! initialization phase
-    integer(IN)                      :: ierr           ! error code
+    integer(shr_kind_in)             :: shrlogunit     ! original log unit
+    integer(shr_kind_in)             :: shrloglev      ! original log level
+    integer(shr_kind_in)             :: nxg            ! global dim i-direction
+    integer(shr_kind_in)             :: nyg            ! global dim j-direction
+    integer(shr_kind_in)             :: phase          ! initialization phase
+    integer(shr_kind_in)             :: ierr           ! error code
     logical                          :: atm_present    ! if true, component is present
     logical                          :: atm_prognostic ! if true, component is prognostic
     integer (kind=SHR_KIND_IN)       :: start_tod, start_ymd
@@ -189,10 +189,10 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    integer(IN)                      :: shrlogunit     ! original log unit
-    integer(IN)                      :: shrloglev      ! original log level
-    real(R8)                         :: nextsw_cday    ! calendar of next atm sw
-    character(*), parameter :: subName = "(atm_run_mct) "
+    integer(kind=shr_kind_in)        :: shrlogunit     ! original log unit
+    integer(kind=shr_kind_in)        :: shrloglev      ! original log level
+    real(kind=shr_kind_r8)           :: nextsw_cday    ! calendar of next atm sw
+    character(*), parameter          :: subName = "(atm_run_mct) "
     real(kind=c_double)              :: dt_scream
     !-------------------------------------------------------------------------------
 
