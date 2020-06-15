@@ -1,7 +1,7 @@
 #ifndef SCREAM_PHYSICS_COMMON_HPP
 #define SCREAM_PHYSICS_COMMON_HPP
 
-#include "share/scream_types.hpp"
+#include "ekat/scream_types.hpp"
 
 using scream::Real;
 

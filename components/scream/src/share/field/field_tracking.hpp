@@ -1,10 +1,11 @@
 #ifndef SCREAM_FIELD_TRACKING_HPP
 #define SCREAM_FIELD_TRACKING_HPP
 
-#include "share/util/time_stamp.hpp"
-#include "share/util/string_utils.hpp"
-#include "share/util/scream_std_utils.hpp"
-#include "share/scream_assert.hpp"
+#include "share/field/field_utils.hpp"
+#include "ekat/util/time_stamp.hpp"
+#include "ekat/util/string_utils.hpp"
+#include "ekat/util/scream_std_utils.hpp"
+#include "ekat/scream_assert.hpp"
 
 #include <memory>   // For std::weak_ptr
 #include <string>
@@ -14,6 +15,7 @@ namespace scream {
 
 // Forward declarations
 class AtmosphereProcess;
+class FieldInitializer;
 
 class FieldTracking {
 public:
@@ -22,7 +24,8 @@ public:
   using atm_proc_ptr_type = std::weak_ptr<AtmosphereProcess>;
   using atm_proc_set_type = std::set<atm_proc_ptr_type>;
 
-  FieldTracking() = default;
+  FieldTracking() = delete;
+  FieldTracking(const std::string&);
   FieldTracking(const FieldTracking&) = default;
 
   // No assignment, to prevent tampering with tracking (e.g., rewinding time stamps)
@@ -37,6 +40,8 @@ public:
   // List of providers/customers for this field
   const atm_proc_set_type& get_providers () const { return m_providers; }
   const atm_proc_set_type& get_customers () const { return m_customers; }
+  const std::weak_ptr<FieldInitializer>& get_initializer () const { return m_initializer; }
+  InitType get_init_type () const { return m_init_type; }
 
   // List of field groups that this field belongs to
   const std::set<ci_string>& get_groups_names () const { return m_groups; }
@@ -46,6 +51,8 @@ public:
   // Add to the list of providers/customers
   void add_provider (const std::weak_ptr<AtmosphereProcess>& provider);
   void add_customer (const std::weak_ptr<AtmosphereProcess>& customer);
+  void set_initializer (const std::weak_ptr<FieldInitializer>& initializer);
+  void set_init_type (const InitType init_type);
 
   // Add the field to a given group
   void add_to_group (const std::string& group_name);
@@ -54,6 +61,9 @@ public:
   void update_time_stamp (const util::TimeStamp& ts);
 
 protected:
+
+  // We keep the field name just to make debugging messages more helpful
+  std::string m_name;
 
   // Tracking the updates of the field
   util::TimeStamp         m_time_stamp;
@@ -69,6 +79,13 @@ protected:
   // NOTE: do NOT use shared_ptr, since you would create circular references.
   atm_proc_set_type       m_providers;
   atm_proc_set_type       m_customers;
+
+  // How this field will be initialized (if at all needed)
+  InitType                m_init_type;
+
+  // The initializer is a class that claims the responsibility of initializing the field
+  // at the beginning of the simulation. There can be ONLY one initializer.
+  std::weak_ptr<FieldInitializer>       m_initializer;
 
   // Groups are used to bundle together fields, so that a process can request all of them
   // without knowing/listing all their names. For instance, the dynamics process needs to

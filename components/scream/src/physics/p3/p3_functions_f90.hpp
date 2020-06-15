@@ -1,8 +1,8 @@
 #ifndef SCREAM_P3_FUNCTIONS_F90_HPP
 #define SCREAM_P3_FUNCTIONS_F90_HPP
 
-#include "share/util/scream_utils.hpp"
-#include "share/scream_types.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/scream_types.hpp"
 
 #include "p3_functions.hpp"
 
@@ -187,7 +187,7 @@ extern "C"{
                               Real* qcacc, Real* qrevp, Real* qcaut,
                               Real* ncacc, Real* ncslf, Real* ncautc,
                               Real* nrslf, Real* nrevp, Real* ncautr,
-                              Real* qcnuc, Real* ncnuc, Real* qisub,
+                              Real* qisub,
                               Real* nrshdr, Real* qcheti, Real* qrcol,
                               Real* qcshd, Real* qimlt, Real* qccol,
                               Real* qrheti, Real* nimlt, Real* nccol,
@@ -220,7 +220,7 @@ extern "C"{
 struct CloudWaterConservationData
 {
   // inputs
-  Real qc, qcnuc, dt;
+  Real qc, dt;
 
   //output
   Real qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep;
@@ -229,7 +229,7 @@ struct CloudWaterConservationData
 void cloud_water_conservation(CloudWaterConservationData& d);
 
 extern "C"{
-  void cloud_water_conservation_f(Real qc, Real qcnuc, Real dt, Real* qcaut, Real* qcacc, Real* qccol,
+  void cloud_water_conservation_f(Real qc, Real dt, Real* qcaut, Real* qcacc, Real* qccol,
     Real* qcheti, Real* qcshd, Real* qiberg, Real* qisub, Real* qidep);
 }
 
@@ -287,7 +287,7 @@ extern "C"{
 struct CldliqImmersionFreezingData
 {
   // inputs
-  Real t, lamc, mu_c, cdist1, qc_incld;
+  Real t, lamc, mu_c, cdist1, qc_incld, qc_relvar;
 
   // output
   Real qcheti, ncheti;
@@ -296,7 +296,7 @@ struct CldliqImmersionFreezingData
 void cldliq_immersion_freezing(CldliqImmersionFreezingData& d);
 extern "C"{
   void cldliq_immersion_freezing_f(Real t, Real lamc, Real mu_c,
-    Real cdist1, Real qc_incld, Real* qcheti, Real* ncheti);
+       Real cdist1, Real qc_incld, Real qc_relvar, Real* qcheti, Real* ncheti);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -340,7 +340,7 @@ extern "C"{
 struct CloudRainAccretionData
 {
   // inputs
-  Real rho, inv_rho, qc_incld, nc_incld, qr_incld;
+  Real rho, inv_rho, qc_incld, nc_incld, qr_incld, qc_relvar;
 
   // output
   Real qcacc, ncacc;
@@ -350,7 +350,7 @@ void cloud_rain_accretion(CloudRainAccretionData& d);
 extern "C"{
 
   void cloud_rain_accretion_f(Real rho, Real inv_rho, Real qc_incld,
-    Real nc_incld, Real qr_incld, Real* qcacc, Real* ncacc);
+       Real nc_incld, Real qr_incld, Real qc_relvar, Real* qcacc, Real* ncacc);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -361,6 +361,7 @@ struct CloudWaterAutoconversionData
   Real rho;
   Real qc_incld;
   Real nc_incld;
+  Real qc_relvar;
 
   // output
   Real qcaut;
@@ -371,7 +372,7 @@ struct CloudWaterAutoconversionData
 void cloud_water_autoconversion(CloudWaterAutoconversionData& d);
 extern "C"{
 
-  void cloud_water_autoconversion_f(Real rho, Real qc_incld, Real nc_incld,
+  void cloud_water_autoconversion_f(Real rho, Real qc_incld, Real nc_incld, Real qc_relvar,
     Real* qcaut, Real* ncautc, Real* ncautr);
 }
 
@@ -420,9 +421,24 @@ struct IceMeltingData
 };
 
 void ice_melting(IceMeltingData& d);
-extern "C"{
 
+extern "C"{
 void ice_melting_f(Real rho,Real t,Real pres,Real rhofaci,Real f1pr05,Real f1pr14,Real xxlv,Real xlf,Real dv,Real sc,Real mu,Real kap,Real qv,Real qitot_incld,Real nitot_incld,Real* qimlt,Real* nimlt);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct SubgridVarianceScalingData
+{
+  // inputs
+  Real relvar,expon;
+  // no outputs - is a function
+};
+
+Real subgrid_variance_scaling(SubgridVarianceScalingData& d);
+
+extern "C"{
+  Real subgrid_variance_scaling_f(Real relvar,Real expon);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -808,7 +824,7 @@ Real lcldm, Real rcldm, Real qvs, Real ab, Real epsr, Real qv, Real* qrevp, Real
 struct P3UpdatePrognosticLiqData
 {
   // Inputs
-  Real qcacc, ncacc, qcaut, ncautc, qcnuc, ncautr, ncslf, qrevp, nrevp, nrslf;
+  Real qcacc, ncacc, qcaut, ncautc, ncautr, ncslf, qrevp, nrevp, nrslf;
 
   bool log_predictNc;
 
@@ -822,7 +838,7 @@ void update_prognostic_liquid(P3UpdatePrognosticLiqData& d);
 
 extern "C"{
 
-void update_prognostic_liquid_f( Real qcacc, Real ncacc, Real qcaut, Real ncautc, Real qcnuc, Real ncautr,
+void update_prognostic_liquid_f( Real qcacc, Real ncacc, Real qcaut, Real ncautc, Real ncautr,
 Real ncslf, Real  qrevp, Real nrevp, Real nrslf , bool log_predictNc,
 Real inv_rho, Real exner, Real xxlv, Real dt, Real* th, Real* qv,
 Real* qc, Real* nc, Real* qr, Real* nr);
@@ -957,25 +973,6 @@ void ice_nucleation_f(Real temp, Real inv_rho, Real nitot, Real naai,
                       Real* qinuc, Real* ninuc);
 }
 
-struct DropletActivationData
-{
-  // Inputs
-  Real temp, pres, qv, qc, inv_rho, sup, xxlv, npccn, odt;
-
-  bool log_predictNc;
-
-  // In/Outputs
-  Real qcnuc, ncnuc;
-};
-void droplet_activation(DropletActivationData& d);
-
-extern "C" {
-void droplet_activation_f(Real temp, Real pres, Real qv, Real qc,
-                          Real inv_rho, Real sup, Real xxlv, Real npccn,
-                          bool log_predictNc, Real odt,
-                          Real* qcnuc, Real* ncnuc);
-}
-
 struct IceWetGrowthData
 {
   // Inputs
@@ -1073,6 +1070,108 @@ void calculate_incloud_mixingratios_f(Real qc, Real qr, Real qitot, Real qirim, 
                                       Real inv_lcldm, Real inv_icldm, Real inv_rcldm,
                                       Real* qc_incld, Real* qr_incld, Real* qitot_incld, Real* qirim_incld,
                                       Real* nc_incld, Real* nr_incld, Real* nitot_incld, Real* birim_incld);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct P3MainPreLoopData
+{
+  static constexpr size_t NUM_ARRAYS = 39;
+
+  // Inputs
+  Int kts, kte, kbot, ktop, kdir;
+  bool log_predictNc;
+  Real dt;
+  Real* pres, *pdel, *dzq, *ncnuc, *exner, *inv_exner, *inv_lcldm, *inv_icldm, *inv_rcldm, *xxlv, *xxls, *xlf;
+
+  // In/out
+  Real* t, *rho, *inv_rho, *qvs, *qvi, *supi, *rhofacr, *rhofaci,
+    *acn, *qv, *th, *qc, *nc, *qr, *nr, *qitot, *nitot, *qirim, *birim, *qc_incld, *qr_incld, *qitot_incld,
+    *qirim_incld, *nc_incld, *nr_incld, *nitot_incld, *birim_incld;
+
+  // Output
+  bool log_nucleationPossible, log_hydrometeorsPresent;
+
+  P3MainPreLoopData(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
+                    bool log_predictNc_, Real dt_,
+                    const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+
+  // deep copy
+  P3MainPreLoopData(const P3MainPreLoopData& rhs);
+
+  Int nk() const { return m_nk; }
+
+ private:
+  // Internals
+  Int m_nk;
+  std::vector<Real> m_data;
+};
+
+void p3_main_pre_main_loop(P3MainPreLoopData& d);
+
+extern "C" {
+
+void p3_main_pre_main_loop_f(
+  Int kts, Int kte, Int kbot, Int ktop, Int kdir,
+  bool log_predictNc,
+  Real dt,
+  Real* pres, Real* pdel, Real* dzq, Real* ncnuc, Real* exner, Real* inv_exner, Real* inv_lcldm, Real* inv_icldm, Real* inv_rcldm, Real* xxlv, Real* xxls, Real* xlf,
+  Real* t, Real* rho, Real* inv_rho, Real* qvs, Real* qvi, Real* supi, Real* rhofacr, Real* rhofaci,
+  Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* qc_incld, Real* qr_incld, Real* qitot_incld,
+  Real* qirim_incld, Real* nc_incld, Real* nr_incld, Real* nitot_incld, Real* birim_incld,
+  bool* log_nucleationPossible, bool* log_hydrometeorsPresent);
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct P3MainLoopData
+{
+  static constexpr size_t NUM_ARRAYS = 62;
+
+  // Inputs
+  Int kts, kte, kbot, ktop, kdir;
+  bool log_predictNc;
+  Real dt, odt;
+  Real* pres, *pdel, *dzq, *ncnuc, *exner, *inv_exner, *inv_lcldm, *inv_icldm, *inv_rcldm, *naai, *qc_relvar, *icldm, *lcldm, *rcldm;
+
+  // In/out
+  Real* t, *rho, *inv_rho, *qvs, *qvi, *supi, *rhofacr, *rhofaci, *acn,
+    *qv, *th, *qc, *nc, *qr, *nr, *qitot, *nitot, *qirim, *birim, *xxlv, *xxls, *xlf, *qc_incld, *qr_incld,
+    *qitot_incld, *qirim_incld, *nc_incld, *nr_incld, *nitot_incld, *birim_incld, *mu_c, *nu, *lamc, *cdist, *cdist1,
+    *cdistr, *mu_r, *lamr, *logn0r, *cmeiout, *prain, *nevapr, *prer_evap, *vap_liq_exchange,
+    *vap_ice_exchange, *liq_ice_exchange, *pratot, *prctot;
+
+  bool log_hydrometeorsPresent;
+
+  P3MainLoopData(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
+                     bool log_predictNc_, Real dt_,
+                     const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+
+  // deep copy
+  P3MainLoopData(const P3MainLoopData& rhs);
+
+  Int nk() const { return m_nk; }
+
+ private:
+  // Internals
+  Int m_nk;
+  std::vector<Real> m_data;
+};
+
+void p3_main_main_loop(P3MainLoopData& d);
+
+extern "C" {
+
+void p3_main_main_loop_f(
+  Int kts, Int kte, Int kbot, Int ktop, Int kdir, bool log_predictNc, Real dt, Real odt,
+  Real* pres, Real* pdel, Real* dzq, Real* ncnuc, Real* exner, Real* inv_exner, Real* inv_lcldm, Real* inv_icldm, Real* inv_rcldm, Real* naai, Real* qc_relvar, Real* icldm, Real* lcldm, Real* rcldm,
+  Real* t, Real* rho, Real* inv_rho, Real* qvs, Real* qvi, Real* supi, Real* rhofacr, Real* rhofaci, Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot,
+  Real* qirim, Real* birim, Real* xxlv, Real* xxls, Real* xlf, Real* qc_incld, Real* qr_incld, Real* qitot_incld, Real* qirim_incld, Real* nc_incld, Real* nr_incld,
+  Real* nitot_incld, Real* birim_incld, Real* mu_c, Real* nu, Real* lamc, Real* cdist, Real* cdist1, Real* cdistr, Real* mu_r, Real* lamr, Real* logn0r, Real* cmeiout, Real* prain,
+  Real* nevapr, Real* prer_evap, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* liq_ice_exchange, Real* pratot,
+  Real* prctot, bool* log_hydrometeorsPresent);
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////

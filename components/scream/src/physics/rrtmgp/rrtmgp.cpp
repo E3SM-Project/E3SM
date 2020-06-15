@@ -1,9 +1,9 @@
 #include "rrtmgp.hpp"
 
 namespace scream {
-namespace rrtmgp {
+    namespace rrtmgp {
 
-int rrtmgp_stub() { return 42; }
+        int rrtmgp_stub() { return 42; }
 
-}  // namespace rrtmgp
+    }  // namespace rrtmgp
 }  // namespace scream

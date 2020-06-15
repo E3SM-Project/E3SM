@@ -1,7 +1,8 @@
 #include "p3_ic_cases.hpp"
 #include "physics_constants.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/scream_assert.hpp"
+
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/scream_assert.hpp"
 
 namespace scream {
 namespace p3 {
@@ -55,7 +56,11 @@ FortranData::Ptr make_mixed (const Int ncol) {
     for (k = 0; k < nk; ++k) d.icldm(i,k) = 1.0;
     for (k = 0; k < nk; ++k) d.lcldm(i,k) = 1.0;
     for (k = 0; k < nk; ++k) d.rcldm(i,k) = 1.0;
-
+    // qc_relvar=mean(qc)/var(qc) measures subgrid qc variability. It is computed in SHOC
+    // and used by P3. It can range between 0.1 and 10.0. Setting to a typical value of 1.0
+    // here.
+    for (k = 0; k < nk; ++k) d.qc_relvar(i,k) = 1.0;
+    
     // To get potential temperature, start by making absolute temperature vary
     // between 150K at top of atmos and 300k at surface, then convert to potential
     // temp.

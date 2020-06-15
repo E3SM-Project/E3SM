@@ -1,12 +1,12 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/scream_kokkos.hpp"
-#include "share/scream_pack.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/scream_kokkos.hpp"
+#include "ekat/scream_pack.hpp"
+#include "ekat/util/scream_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
-#include "share/util/scream_kokkos_utils.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -29,9 +29,6 @@ static void run_phys()
 
 static void run_bfb()
 {
-  static constexpr Int max_pack_size = 16;
-  REQUIRE(Spack::n <= max_pack_size);
-
   // This is the threshold for whether the qc and qr cloud mixing ratios are
   // large enough to affect the warm-phase process rates qcacc and ncacc.
   constexpr Scalar qsmall = C::QSMALL;
@@ -46,64 +43,68 @@ static void run_bfb()
   constexpr Scalar qr_incld_not_small = 2.0 * qsmall;
   constexpr Scalar nc_incld1 = 9.952E+05, nc_incld2 = 9.952E+06,
                    nc_incld3 = 1.734E+07, nc_incld4 = 9.952E+08;
+  constexpr Scalar qc_relvar_val = 1;
 
   CloudRainAccretionData cloud_rain_acc_data[max_pack_size] = {
-    // rho, inv_rho, qc_incld, nc_incld, qr_incld, qcacc, ncacc
-    {rho1, inv_rho1, qc_incld_small, nc_incld1, qr_incld_small},
-    {rho2, inv_rho2, qc_incld_small, nc_incld2, qr_incld_small},
-    {rho3, inv_rho3, qc_incld_small, nc_incld3, qr_incld_small},
-    {rho4, inv_rho4, qc_incld_small, nc_incld4, qr_incld_small},
+    // rho, inv_rho, qc_incld, nc_incld, qr_incld, qcacc, ncacc, qc_relvar
+    {rho1, inv_rho1, qc_incld_small, nc_incld1, qr_incld_small,qc_relvar_val},
+    {rho2, inv_rho2, qc_incld_small, nc_incld2, qr_incld_small,qc_relvar_val},
+    {rho3, inv_rho3, qc_incld_small, nc_incld3, qr_incld_small,qc_relvar_val},
+    {rho4, inv_rho4, qc_incld_small, nc_incld4, qr_incld_small,qc_relvar_val},
 
-    {rho1, inv_rho1, qc_incld_small, nc_incld1, qr_incld_not_small},
-    {rho2, inv_rho2, qc_incld_small, nc_incld2, qr_incld_not_small},
-    {rho3, inv_rho3, qc_incld_small, nc_incld3, qr_incld_not_small},
-    {rho4, inv_rho4, qc_incld_small, nc_incld4, qr_incld_not_small},
+    {rho1, inv_rho1, qc_incld_small, nc_incld1, qr_incld_not_small,qc_relvar_val},
+    {rho2, inv_rho2, qc_incld_small, nc_incld2, qr_incld_not_small,qc_relvar_val},
+    {rho3, inv_rho3, qc_incld_small, nc_incld3, qr_incld_not_small,qc_relvar_val},
+    {rho4, inv_rho4, qc_incld_small, nc_incld4, qr_incld_not_small,qc_relvar_val},
 
-    {rho1, inv_rho1, qc_incld_not_small, nc_incld1, qr_incld_small},
-    {rho2, inv_rho2, qc_incld_not_small, nc_incld2, qr_incld_small},
-    {rho3, inv_rho3, qc_incld_not_small, nc_incld3, qr_incld_small},
-    {rho4, inv_rho4, qc_incld_not_small, nc_incld4, qr_incld_small},
+    {rho1, inv_rho1, qc_incld_not_small, nc_incld1, qr_incld_small,qc_relvar_val},
+    {rho2, inv_rho2, qc_incld_not_small, nc_incld2, qr_incld_small,qc_relvar_val},
+    {rho3, inv_rho3, qc_incld_not_small, nc_incld3, qr_incld_small,qc_relvar_val},
+    {rho4, inv_rho4, qc_incld_not_small, nc_incld4, qr_incld_small,qc_relvar_val},
 
-    {rho1, inv_rho1, qc_incld_not_small, nc_incld1, qr_incld_not_small},
-    {rho2, inv_rho2, qc_incld_not_small, nc_incld2, qr_incld_not_small},
-    {rho3, inv_rho3, qc_incld_not_small, nc_incld3, qr_incld_not_small},
-    {rho4, inv_rho4, qc_incld_not_small, nc_incld4, qr_incld_not_small}
+    {rho1, inv_rho1, qc_incld_not_small, nc_incld1, qr_incld_not_small,qc_relvar_val},
+    {rho2, inv_rho2, qc_incld_not_small, nc_incld2, qr_incld_not_small,qc_relvar_val},
+    {rho3, inv_rho3, qc_incld_not_small, nc_incld3, qr_incld_not_small,qc_relvar_val},
+    {rho4, inv_rho4, qc_incld_not_small, nc_incld4, qr_incld_not_small,qc_relvar_val}
   };
 
   // Sync to device
-  view_1d<CloudRainAccretionData> device_data("cloud_rain_acc", Spack::n);
+  view_1d<CloudRainAccretionData> device_data("cloud_rain_acc", max_pack_size);
   const auto host_data = Kokkos::create_mirror_view(device_data);
-  std::copy(&cloud_rain_acc_data[0], &cloud_rain_acc_data[0] + Spack::n,
+  std::copy(&cloud_rain_acc_data[0], &cloud_rain_acc_data[0] + max_pack_size,
             host_data.data());
   Kokkos::deep_copy(device_data, host_data);
 
   // Run the Fortran subroutine.
-  for (Int i = 0; i < Spack::n; ++i) {
+  for (Int i = 0; i < max_pack_size; ++i) {
     cloud_rain_accretion(cloud_rain_acc_data[i]);
   }
 
   // Run the lookup from a kernel and copy results back to host
-  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+  Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
+    const Int offset = i * Spack::n;
+
     // Init pack inputs
-    Spack rho, inv_rho, qc_incld, nc_incld, qr_incld;
-    for (Int s = 0; s < Spack::n; ++s) {
-      rho[s]            = device_data(s).rho;
-      inv_rho[s]        = device_data(s).inv_rho;
-      qc_incld[s]       = device_data(s).qc_incld;
-      nc_incld[s]       = device_data(s).nc_incld;
-      qr_incld[s]       = device_data(s).qr_incld;
+    Spack rho, inv_rho, qc_incld, nc_incld, qr_incld, qc_relvar;
+    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      rho[s]            = device_data(vs).rho;
+      inv_rho[s]        = device_data(vs).inv_rho;
+      qc_incld[s]       = device_data(vs).qc_incld;
+      nc_incld[s]       = device_data(vs).nc_incld;
+      qr_incld[s]       = device_data(vs).qr_incld;
+      qc_relvar[s]      = device_data(vs).qc_relvar;
     }
 
     Spack qcacc{0.0};
     Spack ncacc{0.0};
 
     Functions::cloud_rain_accretion(rho, inv_rho, qc_incld, nc_incld, qr_incld,
-                                    qcacc, ncacc);
+                                    qc_relvar, qcacc, ncacc);
 
     // Copy results back into views
-    for (Int s = 0; s < Spack::n; ++s) {
-      device_data(s).qcacc  = qcacc[s];
-      device_data(s).ncacc  = ncacc[s];
+    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      device_data(vs).qcacc  = qcacc[s];
+      device_data(vs).ncacc  = ncacc[s];
     }
   });
 
@@ -111,11 +112,10 @@ static void run_bfb()
   Kokkos::deep_copy(host_data, device_data);
 
   // Validate results.
-  for (Int s = 0; s < Spack::n; ++s) {
+  for (Int s = 0; s < max_pack_size; ++s) {
     REQUIRE(cloud_rain_acc_data[s].qcacc == host_data[s].qcacc);
     REQUIRE(cloud_rain_acc_data[s].ncacc == host_data[s].ncacc);
   }
-
 }
 
 };

@@ -199,6 +199,19 @@
     </values>
   </entry>
 
+  <entry id="rof_heat">
+    <type>logical</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>
+      If set to .true., adds fields needed to calculate heat in the river model
+    </desc>
+    <values>
+      <value>.false.</value>
+      <value cime_model='e3sm'>.true.</value>
+    </values>
+  </entry>
+
   <!-- =========================== -->
   <!-- -group seq_cplflds_custom   -->
   <!-- =========================== -->
@@ -4822,8 +4835,8 @@
        Surface albedo for direct radiation
     </desc>
     <values>
-      <value>0.06</value>
-      <value aqua_planet_sst_type="sst_aquap11">0.07</value>
+      <value>0.06D0</value>
+      <value aqua_planet_sst_type="sst_aquap_constant">0.07D0</value>
     </values>
   </entry>
 
@@ -4835,7 +4848,7 @@
        Surface albedo for diffuse radiation
     </desc>
     <values>
-      <value>0.07</value>
+      <value>0.07D0</value>
     </values>
   </entry>
 
@@ -4847,8 +4860,8 @@
        minimum wind speed for atmOcn flux calculations
     </desc>
     <values>
-      <value>0.5</value>
-      <value aqua_planet_sst_type="sst_aquap_constant">1.0</value>
+      <value>0.5D0</value>
+      <value aqua_planet_sst_type="sst_aquap_constant">1.0D0</value>
     </values>
   </entry>
 

@@ -16,7 +16,8 @@ KOKKOS_FUNCTION
 typename Functions<S,D>::Spack
 Functions<S,D>
 ::calc_bulk_rho_rime(
-  const Smask& qi_gt_small, const Spack& qi_tot, Spack& qi_rim, Spack& bi_rim)
+  const Spack& qi_tot, Spack& qi_rim, Spack& bi_rim,
+  const Smask& context)
 {
   constexpr Scalar bsmall       = C::BSMALL;
   constexpr Scalar qsmall       = C::QSMALL;
@@ -25,9 +26,10 @@ Functions<S,D>
 
   Spack rho_rime(0);
 
-  Smask bi_rim_gt_small = (bi_rim >= bsmall) && qi_gt_small;
+  Smask bi_rim_gt_small = (bi_rim >= bsmall) && context;
+  Smask bi_rim_lt_small = (bi_rim <  bsmall) && context;
   if (bi_rim_gt_small.any()) {
-    rho_rime.set(qi_gt_small && bi_rim_gt_small, qi_rim / bi_rim);
+    rho_rime.set(bi_rim_gt_small, qi_rim / bi_rim);
   }
 
   Smask rho_rime_lt_min = rho_rime < rho_rime_min;
@@ -41,19 +43,19 @@ Functions<S,D>
     bi_rim.set(adjust, qi_rim / rho_rime);
   }
 
-  qi_rim.set  (qi_gt_small && !bi_rim_gt_small, 0);
-  bi_rim.set  (qi_gt_small && !bi_rim_gt_small, 0);
-  rho_rime.set(qi_gt_small && !bi_rim_gt_small, 0);
+  qi_rim.set  (bi_rim_lt_small, 0);
+  bi_rim.set  (bi_rim_lt_small, 0);
+  rho_rime.set(bi_rim_lt_small, 0);
 
   // set upper constraint qi_rim <= qi_tot
-  Smask qi_rim_gt_qi = (qi_rim > qi_tot) && (rho_rime > 0) && qi_gt_small;
+  Smask qi_rim_gt_qi = (qi_rim > qi_tot) && (rho_rime > 0) && context;
   if (qi_rim_gt_qi.any()) {
     qi_rim.set(qi_rim_gt_qi, qi_tot);
     bi_rim.set(qi_rim_gt_qi, qi_rim / rho_rime);
   }
 
   // impose consistency
-  Smask qi_rim_lt_small = (qi_rim < qsmall) && qi_gt_small;
+  Smask qi_rim_lt_small = (qi_rim < qsmall) && context;
   qi_rim.set(qi_rim_lt_small, 0);
   bi_rim.set(qi_rim_lt_small, 0);
 
@@ -138,15 +140,15 @@ void Functions<S,D>
           // impose lower limits to prevent log(<0)
           nitot_incld(pk).set(qi_gt_small, pack::max(nitot_incld(pk), nsmall));
 
-          const auto rhop = calc_bulk_rho_rime(qi_gt_small, qitot_incld(pk), qirim_incld(pk), birim_incld(pk));
+          const auto rhop = calc_bulk_rho_rime(qitot_incld(pk), qirim_incld(pk), birim_incld(pk), qi_gt_small);
 
           TableIce t;
-          lookup_ice(qi_gt_small, qitot_incld(pk), nitot_incld(pk), qirim_incld(pk), rhop, t);
+          lookup_ice(qitot_incld(pk), nitot_incld(pk), qirim_incld(pk), rhop, t, qi_gt_small);
 
-          const auto f1pr01 = apply_table_ice(qi_gt_small, 0, itab, t);
-          const auto f1pr02 = apply_table_ice(qi_gt_small, 1, itab, t);
-          const auto f1pr09 = apply_table_ice(qi_gt_small, 6, itab, t);
-          const auto f1pr10 = apply_table_ice(qi_gt_small, 7, itab, t);
+          const auto f1pr01 = apply_table_ice(0, itab, t, qi_gt_small);
+          const auto f1pr02 = apply_table_ice(1, itab, t, qi_gt_small);
+          const auto f1pr09 = apply_table_ice(6, itab, t, qi_gt_small);
+          const auto f1pr10 = apply_table_ice(7, itab, t, qi_gt_small);
 
           // impose mean ice size bounds (i.e. apply lambda limiters)
           // note that the Nmax and Nmin are normalized and thus need to be multiplied by existing N

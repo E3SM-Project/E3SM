@@ -5,3 +5,4 @@ ENDIF()
 
 add_subdirectory(scream_p3)
 add_subdirectory(scream_p3_shoc)
+add_subdirectory(rrtmgp)

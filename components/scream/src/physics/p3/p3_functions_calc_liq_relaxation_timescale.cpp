@@ -1,5 +1,5 @@
 #include "p3_functions_calc_liq_relaxation_timescale_impl.hpp"
-#include "share/scream_types.hpp"
+#include "ekat/scream_types.hpp"
 
 namespace scream {
 namespace p3 {

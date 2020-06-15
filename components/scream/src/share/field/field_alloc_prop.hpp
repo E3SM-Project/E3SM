@@ -1,10 +1,10 @@
 #ifndef SCREAM_FIELD_ALLOC_PROP_HPP
 #define SCREAM_FIELD_ALLOC_PROP_HPP
 
-#include "share/scream_assert.hpp"
-#include "share/scream_types.hpp"
+#include "ekat/scream_assert.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/util/scream_utils.hpp"
 #include "share/field/field_identifier.hpp"
-#include "share/util/scream_utils.hpp"
 
 #include <vector>
 

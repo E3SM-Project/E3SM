@@ -19,6 +19,10 @@
 	     """
 [runtime]
   [[set_external_workflow<member>]]
-    script = cd {{ case_path_string }} ./xmlchange EXTERNAL_WORKFLOW=TRUE
+    script = cd {{ case_path_string }}\
+             ./xmlchange EXTERNAL_WORKFLOW=TRUE;\
+	     cp env_batch.xml LockedFiles;
   [[st_archive<member>]]
-    script = cd {{ case_path_string }} ./case.submit --job case.st_archive; ./xmlchange CONTINUE_RUN=TRUE
+    script = cd {{ case_path_string }} \
+             ./case.submit --job case.st_archive;\
+	     ./xmlchange CONTINUE_RUN=TRUE

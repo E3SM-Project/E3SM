@@ -1,12 +1,12 @@
 #ifndef SCREAM_ATMOSPHERE_DRIVER_HPP
 #define SCREAM_ATMOSPHERE_DRIVER_HPP
 
-#include "share/scream_types.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/util/time_stamp.hpp"
+#include "ekat/mpi/scream_comm.hpp"
+#include "ekat/scream_parameter_list.hpp"
 #include "share/field/field_repository.hpp"
-#include "share/mpi/scream_comm.hpp"
-#include "share/scream_parameter_list.hpp"
 #include "share/grid/grids_manager.hpp"
-#include "share/util/time_stamp.hpp"
 
 #include <memory>
 
@@ -64,12 +64,17 @@ public:
   const util::TimeStamp& get_atm_time_stamp () const { return m_current_ts; }
 protected:
 
+  void init_atm_inputs ();
+  void inspect_atm_dag ();
+#ifdef SCREAM_DEBUG
   void create_bkp_device_field_repo ();
+#endif
 
   FieldRepository<Real,device_type>           m_device_field_repo;
 #ifdef SCREAM_DEBUG
   FieldRepository<Real,device_type>           m_bkp_device_field_repo;
 #endif
+  std::set<std::weak_ptr<FieldInitializer>>   m_field_initializers;
 
   std::shared_ptr<AtmosphereProcessGroup>     m_atm_process_group;
 

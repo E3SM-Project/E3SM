@@ -4,7 +4,11 @@ SET (p3Lib p3)
 SET (NEED_LIBS ${p3Lib} scream_control scream_share)
 
 # Test atmosphere processes
-CreateUnitTest(p3_stand_alone "p3_stand_alone.cpp" "${NEED_LIBS}")
+CreateUnitTest(p3_stand_alone "p3_stand_alone.cpp" "${NEED_LIBS}" LABELS "p3;physics")
+
+# Copy yaml input file to run directory
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
+               ${CMAKE_CURRENT_BINARY_DIR}/input.yaml COPYONLY)
 
 # Copy p3 lookup tables to local data directory
 FILE (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)

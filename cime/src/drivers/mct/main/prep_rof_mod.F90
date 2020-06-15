@@ -75,9 +75,6 @@ module prep_rof_mod
 
   ! other module variables
   integer :: mpicom_CPLID  ! MPI cpl communicator
-  logical :: rof_present   ! .true.  => rof is present
-  logical :: lnd_present   ! .true.  => lnd is present
-  logical :: atm_present   ! .true.  => atm is present
 
   ! field names and lists, for fields that need to be treated specially
   character(len=*), parameter :: irrig_flux_field = 'Flrl_irrig'
@@ -113,6 +110,7 @@ contains
     logical                     :: esmf_map_flag ! .true. => use esmf for mapping
     logical                     :: rof_present   ! .true.  => rof is present
     logical                     :: lnd_present   ! .true.  => lnd is present
+    logical                     :: atm_present   ! .true.  => atm is present
     logical                     :: iamroot_CPLID ! .true. => CPLID masterproc
     character(CL)               :: atm_gnam      ! atm grid
     character(CL)               :: lnd_gnam      ! lnd grid
@@ -171,7 +169,7 @@ contains
 
        allocate(l2r_rx(num_inst_rof))
        do eri = 1,num_inst_rof
-          call mct_avect_init(l2r_rx(eri), rList=seq_flds_x2r_fields, lsize=lsize_r)
+          call mct_avect_init(l2r_rx(eri), rList=seq_flds_l2x_fluxes_to_rof, lsize=lsize_r)
           call mct_avect_zero(l2r_rx(eri))
        end do
 
@@ -188,12 +186,11 @@ contains
                string='mapper_Fl2r initialization', esmf_map=esmf_map_flag)
 
           ! We'll map irrigation specially, so exclude this from the list of l2r fields
-          ! that are mapped "normally". Note that the following assumes that all
-          ! x2r_fluxes are lnd2rof (as opposed to coming from some other component).
+          ! that are mapped "normally".
           !
           ! (This listDiff works even if have_irrig_field is false.)
           call shr_string_listDiff( &
-               list1 = seq_flds_x2r_fluxes, &
+               list1 = seq_flds_l2x_fluxes_to_rof, &
                list2 = irrig_flux_field, &
                listout = lnd2rof_normal_fluxes)
        endif
@@ -220,7 +217,7 @@ contains
 
        allocate(a2r_rx(num_inst_rof))
        do eri = 1,num_inst_rof
-          call mct_avect_init(a2r_rx(eri), rList=seq_flds_x2r_fields, lsize=lsize_r)
+          call mct_avect_init(a2r_rx(eri), rList=seq_flds_a2x_fields_to_rof, lsize=lsize_r)
           call mct_avect_zero(a2r_rx(eri))
        end do
 
@@ -332,13 +329,20 @@ contains
     !---------------------------------------------------------------
 
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
-    do eri = 1,num_inst_rof
-       eli = mod((eri-1),num_inst_lnd) + 1
-       call mct_avect_avg(l2racc_lx(eli),l2racc_lx_cnt)
-       eai = mod((eri-1),num_inst_atm) + 1
-       call mct_avect_avg(a2racc_ax(eai),a2racc_ax_cnt)
-    end do
+    if(l2racc_lx_cnt > 1) then
+       do eri = 1,num_inst_rof
+          eli = mod((eri-1),num_inst_lnd) + 1
+          call mct_avect_avg(l2racc_lx(eli),l2racc_lx_cnt)
+       enddo
+    endif
     l2racc_lx_cnt = 0
+
+    if((a2racc_ax_cnt > 1) .and. rof_heat) then
+       do eri = 1,num_inst_rof
+          eai = mod((eri-1),num_inst_atm) + 1
+          call mct_avect_avg(a2racc_ax(eai),a2racc_ax_cnt)
+       enddo
+    endif
     a2racc_ax_cnt = 0
     call t_drvstopf (trim(timer))
 
@@ -346,7 +350,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_rof_mrg(infodata, fractions_rx, timer_mrg)
+  subroutine prep_rof_mrg(infodata, fractions_rx, timer_mrg, cime_model)
 
     !---------------------------------------------------------------
     ! Description
@@ -356,6 +360,7 @@ contains
     type(seq_infodata_type) , intent(in)    :: infodata
     type(mct_aVect)         , intent(in)    :: fractions_rx(:)
     character(len=*)        , intent(in)    :: timer_mrg
+    character(len=*)        , intent(in)    :: cime_model
     !
     ! Local Variables
     integer                  :: eri, efi
@@ -368,7 +373,7 @@ contains
        efi = mod((eri-1),num_inst_frc) + 1
 
        x2r_rx => component_get_x2c_cx(rof(eri))  ! This is actually modifying x2r_rx
-       call prep_rof_merge(l2r_rx(eri), a2r_rx(eri), fractions_rx(efi), x2r_rx)
+       call prep_rof_merge(l2r_rx(eri), a2r_rx(eri), fractions_rx(efi), x2r_rx, cime_model)
     end do
     call t_drvstopf (trim(timer_mrg))
 
@@ -376,7 +381,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_rof_merge(l2x_r, a2x_r, fractions_r, x2r_r)
+  subroutine prep_rof_merge(l2x_r, a2x_r, fractions_r, x2r_r, cime_model)
 
     !-----------------------------------------------------------------------
     ! Description
@@ -387,6 +392,7 @@ contains
     type(mct_aVect),intent(in)    :: a2x_r
     type(mct_aVect),intent(in)    :: fractions_r
     type(mct_aVect),intent(inout) :: x2r_r
+    character(len=*)        , intent(in)    :: cime_model
     !
     ! Local variables
     integer       :: i
@@ -474,7 +480,10 @@ contains
           index_l2x_Flrl_irrig  = mct_aVect_indexRA(l2x_r,'Flrl_irrig' )
        end if
        index_l2x_Flrl_rofi   = mct_aVect_indexRA(l2x_r,'Flrl_rofi' )
-       index_l2x_Flrl_demand = mct_aVect_indexRA(l2x_r,'Flrl_demand' )
+       if(trim(cime_model) .eq. 'e3sm') then
+          index_l2x_Flrl_demand = mct_aVect_indexRA(l2x_r,'Flrl_demand' )
+          index_x2r_Flrl_demand = mct_aVect_indexRA(x2r_r,'Flrl_demand' )
+       endif
        index_x2r_Flrl_rofsur = mct_aVect_indexRA(x2r_r,'Flrl_rofsur' )
        index_x2r_Flrl_rofgwl = mct_aVect_indexRA(x2r_r,'Flrl_rofgwl' )
        index_x2r_Flrl_rofsub = mct_aVect_indexRA(x2r_r,'Flrl_rofsub' )
@@ -484,11 +493,13 @@ contains
        if (have_irrig_field) then
           index_x2r_Flrl_irrig  = mct_aVect_indexRA(x2r_r,'Flrl_irrig' )
        end if
-       index_l2x_Flrl_Tqsur = mct_aVect_indexRA(l2x_r,'Flrl_Tqsur' )
-       index_l2x_Flrl_Tqsub = mct_aVect_indexRA(l2x_r,'Flrl_Tqsub' )
-       index_x2r_Flrl_Tqsur = mct_aVect_indexRA(x2r_r,'Flrl_Tqsur' )
-       index_x2r_Flrl_Tqsub = mct_aVect_indexRA(x2r_r,'Flrl_Tqsub' )	   
-	   
+       if(trim(cime_model) .eq. 'e3sm') then
+         index_l2x_Flrl_Tqsur = mct_aVect_indexRA(l2x_r,'Flrl_Tqsur' )
+         index_l2x_Flrl_Tqsub = mct_aVect_indexRA(l2x_r,'Flrl_Tqsub' )
+         index_x2r_Flrl_Tqsur = mct_aVect_indexRA(x2r_r,'Flrl_Tqsur' )
+         index_x2r_Flrl_Tqsub = mct_aVect_indexRA(x2r_r,'Flrl_Tqsub' )
+       endif
+
        index_l2x_Flrl_rofl_16O = mct_aVect_indexRA(l2x_r,'Flrl_rofl_16O', perrWith='quiet' )
        if ( index_l2x_Flrl_rofl_16O /= 0 ) flds_wiso_rof = .true.
        if ( flds_wiso_rof ) then
@@ -520,14 +531,18 @@ contains
             'lfrac*l2x%Flrl_rofdto'
        mrgstr(index_x2r_Flrl_rofi) = trim(mrgstr(index_x2r_Flrl_rofi))//' = '// &
             'lfrac*l2x%Flrl_rofi'
-       mrgstr(index_x2r_Flrl_demand) = trim(mrgstr(index_x2r_Flrl_demand))//' = '// &
-             'lfrac*l2x%Flrl_demand'
+       if (trim(cime_model).eq.'e3sm') then
+          mrgstr(index_x2r_Flrl_demand) = trim(mrgstr(index_x2r_Flrl_demand))//' = '// &
+               'lfrac*l2x%Flrl_demand'
+       endif
        if (have_irrig_field) then
           mrgstr(index_x2r_Flrl_irrig) = trim(mrgstr(index_x2r_Flrl_irrig))//' = '// &
                'lfrac*l2x%Flrl_irrig'
        end if
-       mrgstr(index_x2r_Flrl_Tqsur) = trim(mrgstr(index_x2r_Flrl_Tqsur))//' = '//'l2x%Flrl_Tqsur'
-       mrgstr(index_x2r_Flrl_Tqsur) = trim(mrgstr(index_x2r_Flrl_Tqsub))//' = '//'l2x%Flrl_Tqsub'
+       if(trim(cime_model) .eq. 'e3sm') then
+          mrgstr(index_x2r_Flrl_Tqsur) = trim(mrgstr(index_x2r_Flrl_Tqsur))//' = '//'l2x%Flrl_Tqsur'
+          mrgstr(index_x2r_Flrl_Tqsur) = trim(mrgstr(index_x2r_Flrl_Tqsub))//' = '//'l2x%Flrl_Tqsub'
+       endif
        if ( flds_wiso_rof ) then
           mrgstr(index_x2r_Flrl_rofl_16O) = trim(mrgstr(index_x2r_Flrl_rofl_16O))//' = '// &
                'lfrac*l2x%Flrl_rofl_16O'
@@ -543,38 +558,41 @@ contains
                'lfrac*l2x%Flrl_rofi_HDO'
        end if
 	   
-       index_a2x_Sa_tbot    = mct_aVect_indexRA(a2x_r,'Sa_tbot')
-       index_a2x_Sa_pbot    = mct_aVect_indexRA(a2x_r,'Sa_pbot')
-       index_a2x_Sa_u       = mct_aVect_indexRA(a2x_r,'Sa_u')
-       index_a2x_Sa_v       = mct_aVect_indexRA(a2x_r,'Sa_v')
-       index_a2x_Sa_shum    = mct_aVect_indexRA(a2x_r,'Sa_shum')
-       index_a2x_Faxa_swndr = mct_aVect_indexRA(a2x_r,'Faxa_swndr')
-       index_a2x_Faxa_swndf = mct_aVect_indexRA(a2x_r,'Faxa_swndf')
-       index_a2x_Faxa_swvdr = mct_aVect_indexRA(a2x_r,'Faxa_swvdr')
-       index_a2x_Faxa_swvdf = mct_aVect_indexRA(a2x_r,'Faxa_swvdf')
-       index_a2x_Faxa_lwdn  = mct_aVect_indexRA(a2x_r,'Faxa_lwdn')
+       if ( rof_heat ) then
+          index_a2x_Sa_tbot    = mct_aVect_indexRA(a2x_r,'Sa_tbot')
+          index_a2x_Sa_pbot    = mct_aVect_indexRA(a2x_r,'Sa_pbot')
+          index_a2x_Sa_u       = mct_aVect_indexRA(a2x_r,'Sa_u')
+          index_a2x_Sa_v       = mct_aVect_indexRA(a2x_r,'Sa_v')
+          index_a2x_Sa_shum    = mct_aVect_indexRA(a2x_r,'Sa_shum')
+          index_a2x_Faxa_swndr = mct_aVect_indexRA(a2x_r,'Faxa_swndr')
+          index_a2x_Faxa_swndf = mct_aVect_indexRA(a2x_r,'Faxa_swndf')
+          index_a2x_Faxa_swvdr = mct_aVect_indexRA(a2x_r,'Faxa_swvdr')
+          index_a2x_Faxa_swvdf = mct_aVect_indexRA(a2x_r,'Faxa_swvdf')
+          index_a2x_Faxa_lwdn  = mct_aVect_indexRA(a2x_r,'Faxa_lwdn')
      
-       index_x2r_Sa_tbot    = mct_aVect_indexRA(x2r_r,'Sa_tbot')
-       index_x2r_Sa_pbot    = mct_aVect_indexRA(x2r_r,'Sa_pbot')
-       index_x2r_Sa_u       = mct_aVect_indexRA(x2r_r,'Sa_u')
-       index_x2r_Sa_v       = mct_aVect_indexRA(x2r_r,'Sa_v')
-       index_x2r_Sa_shum    = mct_aVect_indexRA(x2r_r,'Sa_shum')
-       index_x2r_Faxa_swndr = mct_aVect_indexRA(x2r_r,'Faxa_swndr')
-       index_x2r_Faxa_swndf = mct_aVect_indexRA(x2r_r,'Faxa_swndf')
-       index_x2r_Faxa_swvdr = mct_aVect_indexRA(x2r_r,'Faxa_swvdr')
-       index_x2r_Faxa_swvdf = mct_aVect_indexRA(x2r_r,'Faxa_swvdf')
-       index_x2r_Faxa_lwdn  = mct_aVect_indexRA(x2r_r,'Faxa_lwdn')
-     
-       mrgstr(index_x2r_Sa_tbot)    = trim(mrgstr(index_x2r_Sa_tbot))//' = '//'a2x%Sa_tbot'
-       mrgstr(index_x2r_Sa_pbot)    = trim(mrgstr(index_x2r_Sa_pbot))//' = '//'a2x%Sa_pbot'
-       mrgstr(index_x2r_Sa_u)       = trim(mrgstr(index_x2r_Sa_u))//' = '//'a2x%Sa_u'
-       mrgstr(index_x2r_Sa_v)       = trim(mrgstr(index_x2r_Sa_v))//' = '//'a2x%Sa_v'
-       mrgstr(index_x2r_Sa_shum)    = trim(mrgstr(index_x2r_Sa_shum))//' = '//'a2x%Sa_shum'
-       mrgstr(index_x2r_Faxa_swndr) = trim(mrgstr(index_x2r_Faxa_swndr))//' = '//'a2x%Faxa_swndr'
-       mrgstr(index_x2r_Faxa_swndf) = trim(mrgstr(index_x2r_Faxa_swndf))//' = '//'a2x%Faxa_swndf'
-       mrgstr(index_x2r_Faxa_swvdr) = trim(mrgstr(index_x2r_Faxa_swvdr))//' = '//'a2x%Faxa_swvdr'
-       mrgstr(index_x2r_Faxa_swvdf) = trim(mrgstr(index_x2r_Faxa_swvdf))//' = '//'a2x%Faxa_swvdf'
-       mrgstr(index_x2r_Faxa_lwdn)  = trim(mrgstr(index_x2r_Faxa_lwdn))//' = '//'a2x%Faxa_lwdn'
+          index_x2r_Sa_tbot    = mct_aVect_indexRA(x2r_r,'Sa_tbot')
+          index_x2r_Sa_pbot    = mct_aVect_indexRA(x2r_r,'Sa_pbot')
+          index_x2r_Sa_u       = mct_aVect_indexRA(x2r_r,'Sa_u')
+          index_x2r_Sa_v       = mct_aVect_indexRA(x2r_r,'Sa_v')
+          index_x2r_Sa_shum    = mct_aVect_indexRA(x2r_r,'Sa_shum')
+          index_x2r_Faxa_swndr = mct_aVect_indexRA(x2r_r,'Faxa_swndr')
+          index_x2r_Faxa_swndf = mct_aVect_indexRA(x2r_r,'Faxa_swndf')
+          index_x2r_Faxa_swvdr = mct_aVect_indexRA(x2r_r,'Faxa_swvdr')
+          index_x2r_Faxa_swvdf = mct_aVect_indexRA(x2r_r,'Faxa_swvdf')
+          index_x2r_Faxa_lwdn  = mct_aVect_indexRA(x2r_r,'Faxa_lwdn')
+
+          mrgstr(index_x2r_Sa_tbot)    = trim(mrgstr(index_x2r_Sa_tbot))//' = '//'a2x%Sa_tbot'
+          mrgstr(index_x2r_Sa_pbot)    = trim(mrgstr(index_x2r_Sa_pbot))//' = '//'a2x%Sa_pbot'
+          mrgstr(index_x2r_Sa_u)       = trim(mrgstr(index_x2r_Sa_u))//' = '//'a2x%Sa_u'
+          mrgstr(index_x2r_Sa_v)       = trim(mrgstr(index_x2r_Sa_v))//' = '//'a2x%Sa_v'
+          mrgstr(index_x2r_Sa_shum)    = trim(mrgstr(index_x2r_Sa_shum))//' = '//'a2x%Sa_shum'
+          mrgstr(index_x2r_Faxa_swndr) = trim(mrgstr(index_x2r_Faxa_swndr))//' = '//'a2x%Faxa_swndr'
+          mrgstr(index_x2r_Faxa_swndf) = trim(mrgstr(index_x2r_Faxa_swndf))//' = '//'a2x%Faxa_swndf'
+          mrgstr(index_x2r_Faxa_swvdr) = trim(mrgstr(index_x2r_Faxa_swvdr))//' = '//'a2x%Faxa_swvdr'
+          mrgstr(index_x2r_Faxa_swvdf) = trim(mrgstr(index_x2r_Faxa_swvdf))//' = '//'a2x%Faxa_swvdf'
+          mrgstr(index_x2r_Faxa_lwdn)  = trim(mrgstr(index_x2r_Faxa_lwdn))//' = '//'a2x%Faxa_lwdn'
+       endif 
+
     end if
 
     do i = 1,lsize
@@ -584,12 +602,16 @@ contains
        x2r_r%rAttr(index_x2r_Flrl_rofsub,i) = l2x_r%rAttr(index_l2x_Flrl_rofsub,i) * lfrac
        x2r_r%rAttr(index_x2r_Flrl_rofdto,i) = l2x_r%rAttr(index_l2x_Flrl_rofdto,i) * lfrac
        x2r_r%rAttr(index_x2r_Flrl_rofi,i) = l2x_r%rAttr(index_l2x_Flrl_rofi,i) * lfrac
-       x2r_r%rAttr(index_x2r_Flrl_demand,i) = l2x_r%rAttr(index_l2x_Flrl_demand,i) * lfrac
+       if (trim(cime_model).eq.'e3sm') then
+          x2r_r%rAttr(index_x2r_Flrl_demand,i) = l2x_r%rAttr(index_l2x_Flrl_demand,i) * lfrac
+       endif
        if (have_irrig_field) then
           x2r_r%rAttr(index_x2r_Flrl_irrig,i) = l2x_r%rAttr(index_l2x_Flrl_irrig,i) * lfrac
        end if
-       x2r_r%rAttr(index_x2r_Flrl_Tqsur,i) = l2x_r%rAttr(index_l2x_Flrl_Tqsur,i)
-       x2r_r%rAttr(index_x2r_Flrl_Tqsub,i) = l2x_r%rAttr(index_l2x_Flrl_Tqsub,i)
+       if(trim(cime_model) .eq. 'e3sm') then
+         x2r_r%rAttr(index_x2r_Flrl_Tqsur,i) = l2x_r%rAttr(index_l2x_Flrl_Tqsur,i)
+         x2r_r%rAttr(index_x2r_Flrl_Tqsub,i) = l2x_r%rAttr(index_l2x_Flrl_Tqsub,i)
+       endif
        if ( flds_wiso_rof ) then
           x2r_r%rAttr(index_x2r_Flrl_rofl_16O,i) = l2x_r%rAttr(index_l2x_Flrl_rofl_16O,i) * lfrac
           x2r_r%rAttr(index_x2r_Flrl_rofi_16O,i) = l2x_r%rAttr(index_l2x_Flrl_rofi_16O,i) * lfrac
@@ -598,17 +620,19 @@ contains
           x2r_r%rAttr(index_x2r_Flrl_rofl_HDO,i) = l2x_r%rAttr(index_l2x_Flrl_rofl_HDO,i) * lfrac
           x2r_r%rAttr(index_x2r_Flrl_rofi_HDO,i) = l2x_r%rAttr(index_l2x_Flrl_rofi_HDO,i) * lfrac
        end if
-
-       x2r_r%rAttr(index_x2r_Sa_tbot,i)    = a2x_r%rAttr(index_a2x_Sa_tbot,i)
-       x2r_r%rAttr(index_x2r_Sa_pbot,i)    = a2x_r%rAttr(index_a2x_Sa_pbot,i)
-       x2r_r%rAttr(index_x2r_Sa_u,i)       = a2x_r%rAttr(index_a2x_Sa_u,i)
-       x2r_r%rAttr(index_x2r_Sa_v,i)       = a2x_r%rAttr(index_a2x_Sa_v,i)
-       x2r_r%rAttr(index_x2r_Sa_shum,i)    = a2x_r%rAttr(index_a2x_Sa_shum,i)
-       x2r_r%rAttr(index_x2r_Faxa_swndr,i) = a2x_r%rAttr(index_a2x_Faxa_swndr,i)
-       x2r_r%rAttr(index_x2r_Faxa_swndf,i) = a2x_r%rAttr(index_a2x_Faxa_swndf,i)
-       x2r_r%rAttr(index_x2r_Faxa_swvdr,i) = a2x_r%rAttr(index_a2x_Faxa_swvdr,i)
-       x2r_r%rAttr(index_x2r_Faxa_swvdf,i) = a2x_r%rAttr(index_a2x_Faxa_swvdf,i)
-       x2r_r%rAttr(index_x2r_Faxa_lwdn,i)  = a2x_r%rAttr(index_a2x_Faxa_lwdn,i)
+      
+       if ( rof_heat ) then
+          x2r_r%rAttr(index_x2r_Sa_tbot,i)    = a2x_r%rAttr(index_a2x_Sa_tbot,i)
+          x2r_r%rAttr(index_x2r_Sa_pbot,i)    = a2x_r%rAttr(index_a2x_Sa_pbot,i)
+          x2r_r%rAttr(index_x2r_Sa_u,i)       = a2x_r%rAttr(index_a2x_Sa_u,i)
+          x2r_r%rAttr(index_x2r_Sa_v,i)       = a2x_r%rAttr(index_a2x_Sa_v,i)
+          x2r_r%rAttr(index_x2r_Sa_shum,i)    = a2x_r%rAttr(index_a2x_Sa_shum,i)
+          x2r_r%rAttr(index_x2r_Faxa_swndr,i) = a2x_r%rAttr(index_a2x_Faxa_swndr,i)
+          x2r_r%rAttr(index_x2r_Faxa_swndf,i) = a2x_r%rAttr(index_a2x_Faxa_swndf,i)
+          x2r_r%rAttr(index_x2r_Faxa_swvdr,i) = a2x_r%rAttr(index_a2x_Faxa_swvdr,i)
+          x2r_r%rAttr(index_x2r_Faxa_swvdf,i) = a2x_r%rAttr(index_a2x_Faxa_swvdf,i)
+          x2r_r%rAttr(index_x2r_Faxa_lwdn,i)  = a2x_r%rAttr(index_a2x_Faxa_lwdn,i)
+       endif
 
     end do
 
@@ -693,8 +717,8 @@ contains
     do eri = 1,num_inst_rof
        eai = mod((eri-1),num_inst_atm) + 1
        r2x_rx => component_get_c2x_cx(rof(eri))
-       call seq_map_map(mapper_Sa2r, a2racc_ax(eai), a2r_rx(eri), fldlist=seq_flds_a2x_states, norm=.true.)
-       call seq_map_map(mapper_Fa2r, a2racc_ax(eai), a2r_rx(eri), fldlist=seq_flds_a2x_fluxes, norm=.true.)
+       call seq_map_map(mapper_Sa2r, a2racc_ax(eai), a2r_rx(eri), fldlist=seq_flds_a2x_states_to_rof, norm=.true.)
+       call seq_map_map(mapper_Fa2r, a2racc_ax(eai), a2r_rx(eri), fldlist=seq_flds_a2x_fluxes_to_rof, norm=.true.)
     end do
     call t_drvstopf  (trim(timer))
 
