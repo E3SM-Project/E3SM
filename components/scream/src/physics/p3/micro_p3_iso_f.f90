@@ -569,6 +569,26 @@ subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
 
  end subroutine p3_main_main_loop_f
 
+ subroutine p3_main_post_main_loop_f(kts, kte, kbot, ktop, kdir, &
+      exner, lcldm, rcldm, &
+      rho, inv_rho, rhofaci, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, &
+      mu_c, nu, lamc, mu_r, lamr, vap_liq_exchange, &
+      ze_rain, ze_ice, diag_vmi, diag_effi, diag_di, diag_rhoi, diag_ze, diag_effc) bind(C)
+
+   use iso_c_binding
+
+   ! args
+
+   integer(kind=c_int), value, intent(in) :: kts, kte, kbot, ktop, kdir
+   real(kind=c_real), intent(in), dimension(kts:kte) :: exner, lcldm, rcldm
+   real(kind=c_real), intent(inout), dimension(kts:kte) :: rho, inv_rho, rhofaci, &
+        qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, &
+        mu_c, nu, lamc, mu_r, &
+        lamr, vap_liq_exchange, &
+        ze_rain, ze_ice, diag_vmi, diag_effi, diag_di, diag_rhoi, diag_ze, diag_effc
+
+ end subroutine p3_main_post_main_loop_f
+
   !
   ! These are some routine math operations that are not BFB between
   ! fortran and C++ on all platforms, so fortran will need to use

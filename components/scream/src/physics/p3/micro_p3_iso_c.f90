@@ -900,4 +900,30 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
 
  end subroutine p3_main_main_loop_c
 
+ subroutine p3_main_post_main_loop_c(kts, kte, kbot, ktop, kdir, &
+      exner, lcldm, rcldm, &
+      rho, inv_rho, rhofaci, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, &
+      mu_c, nu, lamc, mu_r, lamr, vap_liq_exchange, &
+      ze_rain, ze_ice, diag_vmi, diag_effi, diag_di, diag_rhoi, diag_ze, diag_effc) bind(C)
+
+   use micro_p3, only: p3_main_post_main_loop
+
+   ! args
+
+   integer(kind=c_int), value, intent(in) :: kts, kte, kbot, ktop, kdir
+   real(kind=c_real), intent(in), dimension(kts:kte) :: exner, lcldm, rcldm
+   real(kind=c_real), intent(inout), dimension(kts:kte) :: rho, inv_rho, rhofaci, &
+        qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, &
+        mu_c, nu, lamc, mu_r, &
+        lamr, vap_liq_exchange, &
+        ze_rain, ze_ice, diag_vmi, diag_effi, diag_di, diag_rhoi, diag_ze, diag_effc
+
+   call p3_main_post_main_loop(kts, kte, kbot, ktop, kdir, &
+        exner, lcldm, rcldm, &
+        rho, inv_rho, rhofaci, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, &
+        mu_c, nu, lamc, mu_r, lamr, vap_liq_exchange, &
+        ze_rain, ze_ice, diag_vmi, diag_effi, diag_di, diag_rhoi, diag_ze, diag_effc)
+
+ end subroutine p3_main_post_main_loop_c
+
 end module micro_p3_iso_c

@@ -950,14 +950,14 @@ contains
 
  END SUBROUTINE p3_main_main_loop
 
- subroutine p3_main_post_loop(kts, kte, kbot, ktop, kdir, &
+ subroutine p3_main_post_main_loop(kts, kte, kbot, ktop, kdir, &
       exner, lcldm, rcldm, &
       rho, inv_rho, rhofaci, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, &
       mu_c, nu, lamc, mu_r, lamr, vap_liq_exchange, &
       ze_rain, ze_ice, diag_vmi, diag_effi, diag_di, diag_rhoi, diag_ze, diag_effc)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-   !use micro_p3_iso_f, only: p3_main_pre_main_loop_f
+   use micro_p3_iso_f, only: p3_main_post_main_loop_f
 #endif
 
    implicit none
@@ -984,6 +984,17 @@ contains
    real(rtype)    :: f1pr13   ! reflectivity                         See lines  731 -  808  refl
    real(rtype)    :: f1pr15   ! mass-weighted mean diameter          See lines 1212 - 1279  dmm
    real(rtype)    :: f1pr16   ! mass-weighted mean particle density  See lines 1212 - 1279  rhomm
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call p3_main_post_main_loop_f(kts, kte, kbot, ktop, kdir, &
+           exner, lcldm, rcldm, &
+           rho, inv_rho, rhofaci, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, &
+           mu_c, nu, lamc, mu_r, lamr, vap_liq_exchange, &
+           ze_rain, ze_ice, diag_vmi, diag_effi, diag_di, diag_rhoi, diag_ze, diag_effc)
+      return
+   endif
+#endif
 
    k_loop_final_diagnostics:  do k = kbot,ktop,kdir
 
@@ -1087,7 +1098,7 @@ contains
 
    enddo k_loop_final_diagnostics
 
- end subroutine p3_main_post_loop
+ end subroutine p3_main_post_main_loop
 
   !==========================================================================================!
 
@@ -1372,7 +1383,7 @@ contains
        !...................................................
        ! final checks to ensure consistency of mass/number
        ! and compute diagnostic fields for output
-       call p3_main_post_loop(kts, kte, kbot, ktop, kdir, &
+       call p3_main_post_main_loop(kts, kte, kbot, ktop, kdir, &
             exner(i,:), lcldm(i,:), rcldm(i,:), &
             rho(i,:), inv_rho(i,:), rhofaci(i,:), qv(i,:), th(i,:), qc(i,:), nc(i,:), qr(i,:), nr(i,:), qitot(i,:), nitot(i,:), &
             qirim(i,:), birim(i,:), xxlv(i,:), xxls(i,:), &
