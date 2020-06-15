@@ -1177,17 +1177,17 @@ is the value of that variable from the *previous* time level!
                      description="X-component of observed surface velocity" />
                 <var name="observedSurfaceVelocityY" type="real" dimensions="nCells Time" units="m s^{-1}"
                      description="Y-component of observed surface velocity" />
-                <var name="observedSurfaceVelocityUncertainty" type="real" dimensions="nCells Time" units="m s^{-1}"
+                <var name="observedSurfaceVelocityUncertainty" type="real" dimensions="nCells Time" units="m s^{-1}" default_value="1.0e20"
                      description="uncertainty in observed surface velocity magnitude" />
                 <var name="observedThicknessTendency" type="real" dimensions="nCells Time" units="m s^{-1}"
                         description="observed tendency in thickness (dH/dt)" />
-                <var name="observedThicknessTendencyUncertainty" type="real" dimensions="nCells Time" units="m s^{-1}"
+                <var name="observedThicknessTendencyUncertainty" type="real" dimensions="nCells Time" units="m s^{-1}" default_value="1.0e20"
                         description="uncertainty in observed tendency in thickness (dH/dt)" />
-                <var name="sfcMassBalUncertainty" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                <var name="sfcMassBalUncertainty" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" default_value="1.0e20"
                         description="uncertainty in observed surface mass balance" />
-                <var name="thicknessUncertainty" type="real" dimensions="nCells Time" units="m"
+                <var name="thicknessUncertainty" type="real" dimensions="nCells Time" units="m" default_value="0.0"
                         description="uncertainty in observed thickness" />
-                <var name="floatingBasalMassBalUncertainty" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                <var name="floatingBasalMassBalUncertainty" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" default_value="1.0e20"
                         description="uncertainty in observed floating basal mass balance" />
         </var_struct>
 

@@ -76,6 +76,7 @@ std::vector<double> smbUncertaintyData;
 std::vector<double> bmbData, bmbUncertaintyData;
 std::vector<double> observedVeloXData, observedVeloYData, observedVeloUncertaintyData;
 std::vector<double> observedDHDtData, observedDHDtUncertaintyData;
+std::vector<double> surfaceAirTemperatureData, basalHeatFluxData;
 std::vector<int> indexToCellIDData;
 
 int numBoundaryEdges;
@@ -263,8 +264,9 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
 
   if (!isDomainEmpty) {
 
-    std::map<int, int> bdExtensionMap;
-    importFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, stiffnessFactor_F, effecPress_F, muFriction_F, temperature_F, smb_F,  minThickness);
+    std::map<int, int> floatBdyExtensionMap;
+    std::map<int, int> grdMarineBdyExtensionMap;
+    importFields(floatBdyExtensionMap, grdMarineBdyExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, stiffnessFactor_F, effecPress_F, muFriction_F, temperature_F, smb_F,  minThickness);
 
     std::vector<double> regulThk(thicknessData);
     for (int index = 0; index < nVertices; index++)
@@ -1091,7 +1093,7 @@ double signedTriangleAreaOnSphere(const double* x, const double* y,
 }
 
 
-void importFields(std::map<int, int> bdExtensionMap, double const* bedTopography_F, double const * lowerSurface_F, double const * thickness_F,
+void importFields(std::map<int, int>& floatBdyExtensionMap, std::map<int, int>& grdMarineBdyExtensionMap,  double const* bedTopography_F, double const * lowerSurface_F, double const * thickness_F,
     double const * beta_F, double const* stiffnessFactor_F, double const* effecPress_F, double const* muFriction_F,
     double const * temperature_F, double const * smb_F, double eps) {
 
@@ -1122,7 +1124,7 @@ void importFields(std::map<int, int> bdExtensionMap, double const* bedTopography
     if (beta_F != 0)
       betaData[index] = beta_F[iCell] / unit_length;
     if (smb_F != 0)
-      smbData[index] = smb_F[iCell] / unit_length * secondsInAYear/rho_ice;
+      smbData[index] = smb_F[iCell] * secondsInAYear/rho_ice;
     if (stiffnessFactor_F != 0)
       stiffnessFactorData[index] = stiffnessFactor_F[iCell];
     if (effecPress_F != 0)
@@ -1185,7 +1187,7 @@ void importFields(std::map<int, int> bdExtensionMap, double const* bedTopography
            double elev = thickness_F[c] + lowerSurface_F[c]; // - 1e-8*std::sqrt(pow(xCell_F[c0],2)+std::pow(yCell_F[c0],2));
            if (elev < elevTemp) {
              elevTemp = elev;
-             bdExtensionMap[iV] = c;
+             floatBdyExtensionMap[iV] = c;
              foundNeighbor = true;
            }
            }
@@ -1202,14 +1204,20 @@ void importFields(std::map<int, int> bdExtensionMap, double const* bedTopography
          }
       } else {
         // non-floating ("grounded") boundary
+        // This can either be terrestrial (bed above sea level) or marine (bed below sea level)
         // If this margin location is below sea level, we need to force it to have reasonable values.
         // Otherwise, it will have a surface elevation below sea level,
         // which is unphysical and can cause large slopes and other issues.
         if (bedTopographyData[iV] < 0.0) {
-          if (std::find(dirichletNodesIDs.begin(), dirichletNodesIDs.end(), indexToVertexID[iV]*vertexLayerShift) != dirichletNodesIDs.end()) { // Don't do this if location is a Dirichlet node!
+          if (std::find(dirichletNodesIDs.begin(), dirichletNodesIDs.end(), indexToVertexID[iV]*vertexLayerShift) != dirichletNodesIDs.end()) 
+          { // Don't do this if location is a Dirichlet node!
           } else {
+            grdMarineBdyExtensionMap[iV] = c; // Save this map for use in other areas
             thicknessData[iV] = eps*2.0; // insert special small value here to make identifying these points easier in exo output
-            elevationData[iV] = (1.0 - rho_ice / rho_ocean) * thicknessData[iV];  // floating surface
+            //set elevation depending on whether it's floating or not (for bed_topography of the order
+            //of -eps, the ice could be grounded)
+            elevationData[iV] = std::max((1.0 - rho_ice / rho_ocean) * thicknessData[iV],
+                bedTopographyData[iV] + thicknessData[iV]);  // floating surface
           }
         } // if below sea level
       }  // floating or not
@@ -1217,8 +1225,8 @@ void importFields(std::map<int, int> bdExtensionMap, double const* bedTopography
   }  // vertex loop
 
   // Apply floating extension where needed
-  for (std::map<int, int>::iterator it = bdExtensionMap.begin();
-      it != bdExtensionMap.end(); ++it) {
+  for (std::map<int, int>::iterator it = floatBdyExtensionMap.begin();
+      it != floatBdyExtensionMap.end(); ++it) {
     int iv = it->first;
     int ic = it->second;
     thicknessData[iv] = std::max(thickness_F[ic] / unit_length, eps);
@@ -1227,7 +1235,7 @@ void importFields(std::map<int, int> bdExtensionMap, double const* bedTopography
     if (beta_F != 0)
       betaData[iv] = beta_F[ic] / unit_length;
     if (smb_F != 0)
-      smbData[iv] = smb_F[ic] / unit_length * secondsInAYear/rho_ice;
+      smbData[iv] = smb_F[ic] * secondsInAYear/rho_ice;
     if (stiffnessFactor_F != 0)
       stiffnessFactorData[iv] = stiffnessFactor_F[ic];
     if (effecPress_F != 0)
@@ -1238,13 +1246,18 @@ void importFields(std::map<int, int> bdExtensionMap, double const* bedTopography
 
 }
 
-void import2DFieldsObservations(std::map<int, int> bdExtensionMap,
+void import2DFieldsObservations(std::map<int, int>& floatBdyExtensionMap,
+            std::map<int, int>& grdMarineBdyExtensionMap,
             double const * thicknessUncertainty_F,
             double const * smbUncertainty_F,
             double const * bmb_F, double const * bmbUncertainty_F,
             double const * observedSurfaceVelocityX_F, double const * observedSurfaceVelocityY_F,
             double const * observedSurfaceVelocityUncertainty_F,
             double const * observedThicknessTendency_F, double const * observedThicknessTendencyUncertainty_F,
+            // these last 2 thermal fields are not necessarily observations but
+            // they are not needed except for exporting to ascii format, so including
+            // them in this function.
+            double const* surfaceAirTemperature_F, double const* basalHeatFlux_F,
             int const * indexToCellID_F) {
 
   thicknessUncertaintyData.assign(nVertices, 1e10);
@@ -1256,6 +1269,8 @@ void import2DFieldsObservations(std::map<int, int> bdExtensionMap,
   observedVeloUncertaintyData.assign(nVertices, 1e10);
   observedDHDtData.assign(nVertices, 1e10);
   observedDHDtUncertaintyData.assign(nVertices, 1e10);
+  surfaceAirTemperatureData.assign(nVertices, 1e10);
+  basalHeatFluxData.assign(nVertices, 1e10);
   indexToCellIDData.assign(nVertices, -1);
 
 
@@ -1264,28 +1279,56 @@ void import2DFieldsObservations(std::map<int, int> bdExtensionMap,
     int iCell = vertexToFCell[index];
 
     thicknessUncertaintyData[index] = thicknessUncertainty_F[iCell] / unit_length;
-    smbUncertaintyData[index] = smbUncertainty_F[iCell] / unit_length * secondsInAYear / rho_ice;
-    bmbData[index] = bmb_F[iCell] / unit_length * secondsInAYear / rho_ice;
-    bmbUncertaintyData[index] = bmbUncertainty_F[iCell] / unit_length * secondsInAYear / rho_ice;
+    smbUncertaintyData[index] = smbUncertainty_F[iCell] * secondsInAYear / rho_ice;
+    bmbData[index] = bmb_F[iCell] * secondsInAYear / rho_ice;
+    bmbUncertaintyData[index] = bmbUncertainty_F[iCell] * secondsInAYear / rho_ice;
 
     observedVeloXData[index] = observedSurfaceVelocityX_F[iCell] * secondsInAYear;
     observedVeloYData[index] = observedSurfaceVelocityY_F[iCell] * secondsInAYear;
     observedVeloUncertaintyData[index] = observedSurfaceVelocityUncertainty_F[iCell] * secondsInAYear;
 
-    observedDHDtData[index] = observedThicknessTendency_F[iCell] / unit_length * secondsInAYear;
-    observedDHDtUncertaintyData[index] = observedThicknessTendencyUncertainty_F[iCell] / unit_length * secondsInAYear;
+    observedDHDtData[index] = observedThicknessTendency_F[iCell] * secondsInAYear;
+    observedDHDtUncertaintyData[index] = observedThicknessTendencyUncertainty_F[iCell] * secondsInAYear;
+
+    surfaceAirTemperatureData[index] = surfaceAirTemperature_F[iCell];
+    basalHeatFluxData[index] = basalHeatFlux_F[iCell];
 
     indexToCellIDData[index] = indexToCellID_F[iCell];
   }
 
+  /* for now disable the extension, it is not clear whether it is useful
+
   //extend to the border for floating vertices (using map created by importFields above)
-  for (std::map<int, int>::iterator it = bdExtensionMap.begin();
-      it != bdExtensionMap.end(); ++it) {
+  for (std::map<int, int>::iterator it = floatBdyExtensionMap.begin();
+      it != floatBdyExtensionMap.end(); ++it) {
+    int iv = it->first;
+    int ic = it->second;
+
+    thicknessUncertaintyData[iv] = thicknessUncertainty_F[ic] / unit_length;
+    smbUncertaintyData[iv] = smbUncertainty_F[ic] * secondsInAYear / rho_ice;
+    bmbData[iv] = bmb_F[ic] * secondsInAYear / rho_ice;
+    bmbUncertaintyData[iv] = bmbUncertainty_F[ic] * secondsInAYear / rho_ice;
+
+    observedVeloXData[iv] = observedSurfaceVelocityX_F[ic] * secondsInAYear;
+    observedVeloYData[iv] = observedSurfaceVelocityY_F[ic] * secondsInAYear;
+    observedVeloUncertaintyData[iv] = observedSurfaceVelocityUncertainty_F[ic] * secondsInAYear;
+
+    observedDHDtData[iv] = observedThicknessTendency_F[ic] * secondsInAYear;
+    observedDHDtUncertaintyData[iv] = observedThicknessTendencyUncertainty_F[ic] * secondsInAYear;
+
+    surfaceAirTemperatureData[iv] = surfaceAirTemperature_F[ic];
+    basalHeatFluxData[iv] = basalHeatFlux_F[ic];
+  }
+
+  //extend to the border for grounded marine vertices (using map created by importFields above)
+  for (std::map<int, int>::iterator it = grdMarineBdyExtensionMap.begin();
+      it != grdMarineBdyExtensionMap.end(); ++it) {
     int iv = it->first;
     int ic = it->second;
 
     thicknessUncertaintyData[iv] = thicknessUncertainty_F[ic] / unit_length;
     smbUncertaintyData[iv] = smbUncertainty_F[ic] / unit_length * secondsInAYear / rho_ice;
+    // bmb should be 0 in these locations, but copying these anyway
     bmbData[iv] = bmb_F[ic] / unit_length * secondsInAYear / rho_ice;
     bmbUncertaintyData[iv] = bmbUncertainty_F[ic] / unit_length * secondsInAYear / rho_ice;
 
@@ -1296,7 +1339,10 @@ void import2DFieldsObservations(std::map<int, int> bdExtensionMap,
     observedDHDtData[iv] = observedThicknessTendency_F[ic] / unit_length * secondsInAYear;
     observedDHDtUncertaintyData[iv] = observedThicknessTendencyUncertainty_F[ic] / unit_length * secondsInAYear;
 
+    surfaceAirTemperatureData[iv] = surfaceAirTemperature_F[ic];
+    basalHeatFluxData[iv] = 0.0; // no geothermal under floating ice
   }
+  */
 }
 
 void exportDissipationHeat(double * dissipationHeat_F) {
@@ -1606,6 +1652,7 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
   void write_ascii_mesh(int const* indexToCellID_F,
     double const* bedTopography_F, double const* lowerSurface_F,
     double const* beta_F, double const* temperature_F,
+    double const* surfaceAirTemperature_F, double const* basalHeatFlux_F,
     double const* stiffnessFactor_F,
     double const* effecPress_F, double const* muFriction_F,
     double const* thickness_F, double const* thicknessUncertainty_F,
@@ -1683,18 +1730,32 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
     // individual field values
     // Call needed functions to process MPAS fields to Albany units/format
 
-    std::map<int, int> bdExtensionMap;  // local map to be created by importFields
-    importFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F,
+    std::map<int, int> floatBdyExtensionMap;  // local map to be created by importFields
+    std::map<int, int> grdMarineBdyExtensionMap;  // local map to be created by importFields
+    importFields(floatBdyExtensionMap, grdMarineBdyExtensionMap, 
+                   bedTopography_F, lowerSurface_F, thickness_F, beta_F,
                    stiffnessFactor_F, effecPress_F, muFriction_F, temperature_F, smb_F, minThickness);
 
-    import2DFieldsObservations(bdExtensionMap,
+    import2DFieldsObservations(floatBdyExtensionMap, grdMarineBdyExtensionMap,
                     thicknessUncertainty_F,
                     smbUncertainty_F,
                     bmb_F, bmbUncertainty_F,
                     observedSurfaceVelocityX_F, observedSurfaceVelocityY_F, observedSurfaceVelocityUncertainty_F,
                     observedThicknessTendency_F, observedThicknessTendencyUncertainty_F,
+                    surfaceAirTemperature_F, basalHeatFlux_F,
                     indexToCellID_F);
 
+    // apparent mass balance
+    std::vector<double> appMbData(smbData.size()),
+                        appMbUncertaintyData(smbData.size());
+ 
+    for (int i=0; i<smbData.size(); ++i) {
+      appMbData[i] = smbData[i]+bmbData[i]- observedDHDtData[i];
+      //assuming fields are uncorrelated
+      double variance = std::pow(smbUncertaintyData[i],2)+std::pow(bmbUncertaintyData[i],2)+std::pow(observedDHDtUncertaintyData[i],2);
+      appMbUncertaintyData[i] =std::sqrt(variance);
+    }
+   
 
     // Write out individual fields
     write_ascii_mesh_field_int(indexToCellIDData, "mpas_cellID");
@@ -1704,6 +1765,9 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
     write_ascii_mesh_field(elevationData, "surface_height");
     write_ascii_mesh_field(bedTopographyData, "bed_topography");
 
+    write_ascii_mesh_field(surfaceAirTemperatureData, "surface_air_temperature");
+    write_ascii_mesh_field(basalHeatFluxData, "basal_heat_flux");
+
     write_ascii_mesh_field(betaData, "basal_friction");
 
     write_ascii_mesh_field(smbData, "surface_mass_balance");
@@ -1711,6 +1775,14 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
 
     write_ascii_mesh_field(bmbData, "basal_mass_balance");
     write_ascii_mesh_field(bmbUncertaintyData, "basal_mass_balance_uncertainty");
+    
+    write_ascii_mesh_field(observedDHDtData, "dhdt");
+    write_ascii_mesh_field(observedDHDtUncertaintyData, "dhdt_uncertainty");
+    
+    write_ascii_mesh_field(appMbData, "apparent_mass_balance");
+    write_ascii_mesh_field(appMbUncertaintyData, "apparent_mass_balance_uncertainty");
+    
+    write_ascii_mesh_field(observedVeloUncertaintyData, "surface_velocity_uncertainty");
 
     write_ascii_mesh_field(effecPressData, "effective_pressure");
 
@@ -1737,7 +1809,7 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
       outfile.close();
     }
     else {
-       std::cout << "Failed to open tempertature ascii file!"<< std::endl;
+       std::cout << "Failed to open temperature ascii file!"<< std::endl;
     }
 
     std::cout << "Writing surface_velocity.ascii." << std::endl;
@@ -1754,10 +1826,27 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
        std::cout << "Failed to open surface velocity ascii file!"<< std::endl;
     }
 
-    write_ascii_mesh_field(observedVeloUncertaintyData, "surface_velocity_uncertainty");
+    //here we save the surface velocity as an extruded field,
+    //having two levels at sigma coords 0 and 1
+    //this enables Albany to prescribe surface velocity as Dirichlet BC
+    std::cout << "Writing extruded_surface_velocity.ascii." << std::endl;
+    outfile.open ("extruded_surface_velocity.ascii", std::ios::out | std::ios::trunc);
+    if (outfile.is_open()) {
+       outfile << nVertices << " " << 2 << " " << 2 << "\n";  //number of vertices, number of levels, number of components per vertex
+       outfile << 0.0 << "\n";
+       outfile << 1.0 << "\n";  // sigma coordinates for velocity
+       for(int il=0; il<2; ++il) {
+         for(int i = 0; i<nVertices; ++i)
+           outfile << observedVeloXData[i] << "\n";
+         for(int i = 0; i<nVertices; ++i)
+           outfile << observedVeloYData[i] << "\n";
+       }
+       outfile.close();
+    }
+    else {
+       std::cout << "Failed to open surface velocity ascii file!"<< std::endl;
+    }
 
-    write_ascii_mesh_field(observedDHDtData, "dhdt");
-    write_ascii_mesh_field(observedDHDtUncertaintyData, "dhdt_uncertainty");
 
     std::cout << "\nWriting of all Albany fields complete." << std::endl;
 
