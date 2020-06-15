@@ -17,8 +17,8 @@ MODULE MOSART_heat_mod
     implicit none
     real(r8), parameter :: TINYVALUE1 = 1.0e-14_r8  ! double precision variable has a significance of about 16 decimal digits
     real(r8), parameter :: Hthreshold = 0.05_r8  ! threshold value of channel water depth, if lower than this, headwater temp is calculated using the simplified formula, instead of heat balance equation
-    real(r8), parameter :: WaterAreaRatio = 0.125_r8  ! t
-  
+    real(r8), parameter :: WaterAreaRatio = 0.8_r8  ! dimensionless coefficient for effective surface area
+    real(r8), parameter :: WindSheltering = 0.8_r8  ! dimensionless coefficient for the wind shltering by riparian vegetation
 
 ! !PUBLIC MEMBER FUNCTIONS:
     contains
@@ -54,8 +54,8 @@ MODULE MOSART_heat_mod
                 TRunoff%tarea(iunit,nt_nliq) = WaterAreaRatio*TUnit%twidth(iunit) * TUnit%tlen(iunit)
                 THeat%Hs_t(iunit) = cr_swrad(THeat%forc_solar(iunit), TRunoff%tarea(iunit,nt_nliq))
                 THeat%Hl_t(iunit) = cr_lwrad(THeat%forc_lwrad(iunit), THeat%Tt(iunit), TRunoff%tarea(iunit,nt_nliq))
-                THeat%He_t(iunit) = cr_latentheat(THeat%forc_t(iunit), THeat%forc_pbot(iunit), THeat%forc_vp(iunit), THeat%forc_wind(iunit), 1._r8, THeat%Tt(iunit), TRunoff%tarea(iunit,nt_nliq))
-                THeat%Hh_t(iunit) = cr_sensibleheat(THeat%forc_t(iunit), THeat%forc_pbot(iunit), THeat%forc_wind(iunit), 1._r8, THeat%Tt(iunit), TRunoff%tarea(iunit,nt_nliq))
+                THeat%He_t(iunit) = cr_latentheat(THeat%forc_t(iunit), THeat%forc_pbot(iunit), THeat%forc_vp(iunit), THeat%forc_wind(iunit), WindSheltering, THeat%Tt(iunit), TRunoff%tarea(iunit,nt_nliq))
+                THeat%Hh_t(iunit) = cr_sensibleheat(THeat%forc_t(iunit), THeat%forc_pbot(iunit), THeat%forc_wind(iunit), WindSheltering, THeat%Tt(iunit), TRunoff%tarea(iunit,nt_nliq))
                 THeat%Hc_t(iunit) = cr_condheat(THeat%Hs_t(iunit),THeat%Hl_t(iunit),TRunoff%tarea(iunit,nt_nliq))
 
                 Qsur = (-TRunoff%ehout(iunit,nt_nliq)-TRunoff%ehout(iunit,nt_nice)) * TUnit%area(iunit) * TUnit%frac(iunit)
@@ -111,8 +111,8 @@ MODULE MOSART_heat_mod
                 end if
                 THeat%Hs_r(iunit) = cr_swrad(THeat%forc_solar(iunit), TRunoff%rarea(iunit,nt_nliq))
                 THeat%Hl_r(iunit) = cr_lwrad(THeat%forc_lwrad(iunit), THeat%Tr(iunit), TRunoff%rarea(iunit,nt_nliq))
-                THeat%He_r(iunit) = cr_latentheat(THeat%forc_t(iunit), THeat%forc_pbot(iunit), THeat%forc_vp(iunit), THeat%forc_wind(iunit), 1._r8, THeat%Tr(iunit), TRunoff%rarea(iunit,nt_nliq))
-                THeat%Hh_r(iunit) = cr_sensibleheat(THeat%forc_t(iunit), THeat%forc_pbot(iunit), THeat%forc_wind(iunit), 1._r8, THeat%Tr(iunit), TRunoff%rarea(iunit,nt_nliq))
+                THeat%He_r(iunit) = cr_latentheat(THeat%forc_t(iunit), THeat%forc_pbot(iunit), THeat%forc_vp(iunit), THeat%forc_wind(iunit), WindSheltering, THeat%Tr(iunit), TRunoff%rarea(iunit,nt_nliq))
+                THeat%Hh_r(iunit) = cr_sensibleheat(THeat%forc_t(iunit), THeat%forc_pbot(iunit), THeat%forc_wind(iunit), WindSheltering, THeat%Tr(iunit), TRunoff%rarea(iunit,nt_nliq))
                 THeat%Hc_r(iunit) = cr_condheat(THeat%Hs_r(iunit),THeat%Hl_r(iunit),TRunoff%rarea(iunit,nt_nliq))
                 
                 !do k=1,TUnit%nUp(iunit)
@@ -133,10 +133,6 @@ MODULE MOSART_heat_mod
             Ha_temp = cr_advectheat(TRunoff%erin(iunit,nt_nliq)+TRunoff%erin(iunit,nt_nice)+TRunoff%erlateral(iunit,nt_nliq)+TRunoff%erlateral(iunit,nt_nice),THeat%Tr(iunit))
             THeat%deltaM_r(iunit) = theDeltaT * (THeat%Ha_lateral(iunit) + THeat%Ha_rin(iunit) - Ha_temp)
             
-            !if(iunit == 85088) then
-            !  write(unit=2111,fmt="(i10, 6(e16.4))") iunit, THeat%Hs_r(iunit), THeat%Hl_r(iunit), THeat%He_r(iunit), THeat%Hc_r(iunit), THeat%Hh_r(iunit), TRunoff%rarea(iunit,nt_nliq)
-            !  write(unit=2112,fmt="(i10, f10.4, 6(e14.4))") iunit, THeat%Tr(iunit), THeat%ha_lateral(iunit), THeat%Ha_rin(iunit), Ha_temp, TRunoff%erin(iunit,nt_nliq), THeat%Ha_rout(iunit), TRunoff%erout(iunit,nt_nliq)
-            !end if
         !end if
     end subroutine mainchannelHeat
 
@@ -179,18 +175,21 @@ MODULE MOSART_heat_mod
         real(r8) :: Mt  !mass of water (Kg)
         real(r8) :: Ttmp1, Ttmp2  !
         
-            if((TRunoff%wt(iunit,nt_nliq)+TRunoff%wt(iunit,nt_nice)) > TINYVALUE1  .and. THeat%forc_t(iunit) > 200._r8) then
-                Mt = TRunoff%wt(iunit,nt_nliq) * denh2o + TRunoff%wt(iunit,nt_nice) * denice
-                THeat%Tt(iunit) = THeat%Tt(iunit) + (THeat%deltaH_t(iunit)+THeat%deltaM_t(iunit)) / (Mt * cpliq)
+        if((TRunoff%wt(iunit,nt_nliq)+TRunoff%wt(iunit,nt_nice)) > TINYVALUE1  .and. THeat%forc_t(iunit) > 200._r8) then
+            Mt = TRunoff%wt(iunit,nt_nliq) * denh2o + TRunoff%wt(iunit,nt_nice) * denice
+            THeat%Tt(iunit) = THeat%Tt(iunit) + (THeat%deltaH_t(iunit)+THeat%deltaM_t(iunit)) / (Mt * cpliq)
+        else
+            if(TRunoff%qsur(iunit,nt_nliq)+TRunoff%qsur(iunit,nt_nice) > TINYVALUE1) then
+                THeat%Tt(iunit) = THeat%Tqsur(iunit) * (TRunoff%qsur(iunit,nt_nliq)+TRunoff%qsur(iunit,nt_nice)) + THeat%Tqsub(iunit) * (TRunoff%qsub(iunit,nt_nliq)+TRunoff%qsub(iunit,nt_nice))
+                THeat%Tt(iunit) = THeat%Tt(iunit)/(TRunoff%qsur(iunit,nt_nliq)+TRunoff%qsur(iunit,nt_nice)+TRunoff%qsub(iunit,nt_nliq)+TRunoff%qsub(iunit,nt_nice))
             else
-                if(TRunoff%qsur(iunit,nt_nliq)+TRunoff%qsur(iunit,nt_nice) > TINYVALUE1) then
-                    THeat%Tt(iunit) = THeat%Tqsur(iunit) * (TRunoff%qsur(iunit,nt_nliq)+TRunoff%qsur(iunit,nt_nice)) + THeat%Tqsub(iunit) * (TRunoff%qsub(iunit,nt_nliq)+TRunoff%qsub(iunit,nt_nice))
-                    THeat%Tt(iunit) = THeat%Tt(iunit)/(TRunoff%qsur(iunit,nt_nliq)+TRunoff%qsur(iunit,nt_nice)+TRunoff%qsub(iunit,nt_nliq)+TRunoff%qsub(iunit,nt_nice))
-                else
-                    THeat%Tt(iunit) = THeat%Tqsur(iunit)
-                end if
+                THeat%Tt(iunit) = THeat%Tqsur(iunit)
             end if
+        end if
 
+        if(THeat%Tt(iunit) < 273.15_r8) then
+            THeat%Tt(iunit) = 273.15_r8
+        end if
         
     end subroutine subnetworkTemp
 
@@ -213,32 +212,23 @@ MODULE MOSART_heat_mod
     
     subroutine mainchannelTemp(iunit)
     ! !DESCRIPTION: calculate the water temperature of subnetwork channel.
-    use shr_sys_mod , only : shr_sys_flush
+        use shr_sys_mod , only : shr_sys_flush
         implicit none
         integer, intent(in) :: iunit
         
         real(r8) :: Mr  !mass of water (Kg)
         real(r8) :: Ttmp1, Ttmp2  !
         
-            if((TRunoff%wr(iunit,nt_nliq)+TRunoff%wr(iunit,nt_nice)) > TINYVALUE1 .and. THeat%forc_t(iunit) > 200._r8) then
-                Mr = TRunoff%wr(iunit,nt_nliq) * denh2o + TRunoff%wr(iunit,nt_nice) * denice
-                THeat%Tr(iunit) = THeat%Tr(iunit) + (THeat%deltaH_r(iunit)+THeat%deltaM_r(iunit)) / (Mr * cpliq)
-            else
-                THeat%Tr(iunit) = THeat%Tt(iunit)
-            end if
-            
-            !if(THeat%Tr(iunit) < 200._r8) then
-            ! if(iunit == 85088) then
-                
-            !  write(unit=1111,fmt="(i10, 6(f10.4), 2(e20.11))") iunit, THeat%Tr(iunit), THeat%forc_t(iunit), THeat%Tqsur(iunit), THeat%Tqsub(iunit), THeat%forc_lwrad(iunit), THeat%forc_solar(iunit), TRunoff%qsur(iunit,nt_nliq), TRunoff%qsub(iunit,nt_nliq)
-            !  write(unit=1112,fmt="(i10, 4(f10.4), 2(e20.11))") iunit, THeat%Tr(iunit), THeat%forc_t(iunit), THeat%forc_lwrad(iunit), THeat%forc_solar(iunit), THeat%deltaH_r(iunit), THeat%deltaM_r(iunit)
-            !end if
-            !if(THeat%Tr(iunit) < 200._r8) then
-            !if(iunit == 98784) then
-            !  write(unit=1113,fmt="(i10, 3(f10.4))") iunit, THeat%Tr(iunit), THeat%forc_lwrad(iunit), THeat%forc_solar(iunit)
-            !  write(unit=1112,fmt="(i10, 3(e20.11))") iunit, Mr, THeat%deltaH_r(iunit), THeat%deltaM_r(iunit)
-            !end if
-        
+        if((TRunoff%wr(iunit,nt_nliq)+TRunoff%wr(iunit,nt_nice)) > TINYVALUE1 .and. THeat%forc_t(iunit) > 200._r8) then
+            Mr = TRunoff%wr(iunit,nt_nliq) * denh2o + TRunoff%wr(iunit,nt_nice) * denice
+            THeat%Tr(iunit) = THeat%Tr(iunit) + (THeat%deltaH_r(iunit)+THeat%deltaM_r(iunit)) / (Mr * cpliq)
+        else
+            THeat%Tr(iunit) = THeat%Tt(iunit)
+        end if
+        if(THeat%Tr(iunit) < 273.15_r8) then
+            THeat%Tr(iunit) = 273.15_r8
+        end if
+
     end subroutine mainchannelTemp
 
     subroutine mainchannelTemp_simple(iunit)
@@ -319,15 +309,16 @@ MODULE MOSART_heat_mod
         real(r8) :: Le_    ! latent heat of vaporization (J/Kg)
         real(r8) :: Evap_     ! evaporation rate (mm/d)
         
-        call QSat(Ta_, Pbot_, esat_, esdT, qs, qsdT)        
+        call QSat(Tw_, Pbot_, esat_, esdT, qs, qsdT)        
         
         Kl_ = 0.211_r8 + 0.103_r8 * U_ * F_
-        Le_ = 2499.64_r8 - 2.51_r8 * (Tw_-273.15_r8)
+        Le_ = (2.495_r8 - 2.36_r8 * 1.e-3 * (Tw_-273.15_r8)) * 1.e6    ! S. L. Dingman (2009), Fluivial Hydraulics
         Evap_  = Kl_ * (esat_ - e_)/100._r8  ! 100 here is for conversion from Pa to hPa
         He_ = -denh2o * Evap_ * Le_ / (86.4e6)
         He_ = He_ * Aw_
         
         return
+        
     end function cr_latentheat
     
     function cr_sensibleheat(Ta_, Pbot_, U_, F_, Tw_, Aw_) result(Hh_)
@@ -344,7 +335,7 @@ MODULE MOSART_heat_mod
         real(r8) :: Pbot0 = 1013.25_r8 ! normal atmosphere pressure (hpa)
         
         Kl_ = 0.211_r8 + 0.103_r8 * U_ * F_
-        Le_ = 2499.64_r8 - 2.51_r8 * (Tw_-273.15_r8)
+        Le_ = (2.495_r8 - 2.36_r8 * 1.e-3 * (Tw_-273.15_r8)) * 1.e6    ! S. L. Dingman (2009), Fluivial Hydraulics
         Hh_ = -gamma * (Pbot_/100._r8/Pbot0) * Kl_ * Le_ * (Tw_ - Ta_) * denh2o/(86.4e6)
         Hh_ = Hh_ * Aw_
         
@@ -358,6 +349,7 @@ MODULE MOSART_heat_mod
         real(r8) :: Hc_ ! [J/s]
         
         Hc_ = 0.05_r8 * (Hsw_ + Hlw_)  !  [Wu et al., 2012]
+        Hc_ = 0._r8    ! TODO: will be better represented along with the groundwater-river water interactions
         
         return
     end function cr_condheat 
@@ -373,7 +365,7 @@ MODULE MOSART_heat_mod
         return
     end function cr_advectheat 
     
-    function cr_S_curve(iunit_,Ta_) result(Tw_)
+    function cr_linear_Tw_Ta(iunit_,Ta_) result(Tw_)
     ! closure relationship to calculate water temperature based on the linear relationship proposed by Stefan and Preudhomme (1993)
         implicit none
         integer, intent(in) :: iunit_ ! 
@@ -383,9 +375,9 @@ MODULE MOSART_heat_mod
         Tw_ = 5.0_r8 + 0.75_r8 * (Ta_ - 273.15_r8) + 273.15_r8
     
         return
-    end function cr_S_curve
+    end function cr_linear_Tw_Ta
 
-    function cr_S_curve_bkp(iunit_,Ta_) result(Tw_)
+    function cr_S_curve(iunit_,Ta_) result(Tw_)
     ! closure relationship to calculate water temperature based on the S-curve 
         implicit none
         integer, intent(in) :: iunit_ ! 
@@ -397,11 +389,11 @@ MODULE MOSART_heat_mod
         Ttmp2 = 1._r8 + exp(TPara%t_gamma(iunit_)*(TPara%t_beta(iunit_) - (Ta_-273.15_r8)))
         Tw_ = TPara%t_mu(iunit_) + Ttmp1/Ttmp2 + 273.15_r8
         if(Tw_ < 273.15_r8) then
-               Tw_ = 273.15_r8
+            Tw_ = 273.15_r8
         end if
     
         return
-    end function cr_S_curve_bkp
+    end function cr_S_curve
 
 !-----------------------------------------------------------------------
 !BOP
