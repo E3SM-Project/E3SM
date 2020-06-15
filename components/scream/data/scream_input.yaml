@@ -5,12 +5,9 @@ Atmosphere Driver:
     Number of Entries: 2
     Schedule Type: Sequential
     Process 0:
-      Process Name: SA
-      Grid:         Physics
-    Process 1:
       Process Name: P3
       Grid:         Physics
-    Process 2:
+    Process 1:
       Process Name: SHOC
       Grid:         Physics
   Grids Manager:
