@@ -278,35 +278,35 @@
 		<nml_option name="config_Redi_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
 					description="The Redi diffusion coefficient"
 					possible_values="Positive real numbers"
-          />
-    <nml_option name="config_Redi_set_RediKappa_to_GMKappa" type="logical" default_value=".true." units="unitless"
-          description="If true RediKappa is forced to be equal to gmBolusKappa"
-          possible_values=".true. or .false."
-          />
-    <nml_option name="config_Redi_maximum_slope" type="real" default_value="0.3" units="non-dimensional"
-        description="value of maximum allowed isopycnal slope from Danabasoglu et al 2008 equation (2)"
-        possible_values="positive real numbers, but small"
-    />
+		/>
+		<nml_option name="config_Redi_set_RediKappa_to_GMKappa" type="logical" default_value=".true." units="unitless"
+				description="If true RediKappa is forced to be equal to gmBolusKappa"
+				possible_values=".true. or .false."
+		/>
+		<nml_option name="config_Redi_maximum_slope" type="real" default_value="0.3" units="non-dimensional"
+				description="value of maximum allowed isopycnal slope from Danabasoglu et al 2008 equation (2)"
+				possible_values="positive real numbers, but small"
+		/>
 		<nml_option name="config_Redi_closure" type="character" default_value="constant" units="unitless"
-					description="Control what type of function is used for Redi $\kappa$. Only 'constant' is currently supported."
-					possible_values="'constant', 'data', 'match_GM'"
-    />
-    <nml_option name="config_Redi_use_slope_taper" type="logical" default_value=".true." units="unitless"
-      description="If true, Redi is tapered based on Danabasoglu and McWilliams 1995 (slope tapering)"
-      possible_values=".true. or .false."
-    />
-    <nml_option name="config_Redi_use_surface_taper" type="logical" default_value=".true." units="unitless"
-      description="If true, Redi slope is tapered near sfc based on Large et al 1997"
-      possible_values=".true. or .false."
-    />
-    <nml_option name="config_Redi_use_N2_based_taper" type="logical" default_value=".true." units="unitless"
-      description="If true apply the N2 limiting of Danabasoglu and Marshall 2007"
-      possible_values=".true. or .false."
-    />
-    <nml_option name="config_Redi_N2_limit_term1" type="logical" default_value=".true." units="unitless"
-      description="If true, the N2 limiting is applied to the horizontal diffusion term"
-      possible_values=".true. or .false."
-    />
+				description="Control what type of function is used for Redi $\kappa$. Only 'constant' is currently supported."
+				possible_values="'constant', 'data', 'match_GM'"
+		/>
+		<nml_option name="config_Redi_use_slope_taper" type="logical" default_value=".true." units="unitless"
+				description="If true, Redi is tapered based on Danabasoglu and McWilliams 1995 (slope tapering)"
+				possible_values=".true. or .false."
+		/>
+		<nml_option name="config_Redi_use_surface_taper" type="logical" default_value=".true." units="unitless"
+				description="If true, Redi slope is tapered near sfc based on Large et al 1997"
+				possible_values=".true. or .false."
+		/>
+		<nml_option name="config_Redi_use_N2_based_taper" type="logical" default_value=".true." units="unitless"
+				description="If true apply the N2 limiting of Danabasoglu and Marshall 2007"
+				possible_values=".true. or .false."
+		/>
+		<nml_option name="config_Redi_N2_limit_term1" type="logical" default_value=".true." units="unitless"
+				description="If true, the N2 limiting is applied to the horizontal diffusion term"
+				possible_values=".true. or .false."
+		/>
 	</nml_record>
 	<nml_record name="GM_eddy_parameterization" mode="forward">
 		<nml_option name="config_use_GM" type="logical" default_value=".false." units="NA"
@@ -319,31 +319,31 @@
 		<nml_option name="config_GM_closure" type="character" default_value="N2_dependent" units="unitless"
 					description="Control what method used to compute GM $\kappa$. Both 'constant' and 'N2_dependent' use the method in Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004). 'constant' uses a constant kappa in eqn 16a, while 'N2_dependent' varies kappa in the vertical according to Danabasoglu and Marshall 2007 (https://doi.org/10.1016/j.ocemod.2007.03.006). 'visbeck' implements a horizontally varying diffusivity of Visbeck et al 1997"
 					possible_values="'N2_dependent', 'constant', 'visbeck'"
-          />
-    <nml_option name="config_GM_baroclinic_mode" type="real" default_value="1.0" units="NA"
-          description="baroclinic wave mode chosen for the ferrari et al 2010 calculation"
-          possible_values="small positive numbers"
-    />
-    <nml_option name="config_GM_visbeck_alpha" type="real" default_value="0.005" units="NA"
-          description="scaling factor on the visbeck diffusivity parameterization"
-          possible_values="small positive numbers"
-          />
-    <nml_option name="config_GM_visbeck_min_depth" type="real" default_value="50.0" units="m"
-          description="minimum depth for calculation of vertical average"
-          possible_values="values between zero and bottom depth"
-          />
-    <nml_option name="config_GM_visbeck_max_depth" type="real" default_value="1000.0" units="m"
-          description="minimum depth for calculation of vertical average"
-          possible_values="values between zero and bottom depth"
-          />
-    <nml_option name="config_GM_visbeck_min_kappa" type="real" default_value="300.0" units="m^2 s^{-1}"
-          description="minimum value of bolus diffusivity for visbeck scheme"
-          possible_values="values around 100s"
-          />
-    <nml_option name="config_GM_visbeck_max_kappa" type="real" default_value="1800.0" units="m^2 s^{-1}"
-          description="minimum value of bolus diffusivity for visbeck scheme"
-          possible_values="values around 100s"
-          />
+		/>
+		<nml_option name="config_GM_baroclinic_mode" type="real" default_value="1.0" units="NA"
+					description="baroclinic wave mode chosen for the ferrari et al 2010 calculation"
+					possible_values="small positive numbers"
+		/>
+		<nml_option name="config_GM_visbeck_alpha" type="real" default_value="0.005" units="NA"
+					description="scaling factor on the visbeck diffusivity parameterization"
+					possible_values="small positive numbers"
+		/>
+		<nml_option name="config_GM_visbeck_min_depth" type="real" default_value="50.0" units="m"
+					description="minimum depth for calculation of vertical average"
+					possible_values="values between zero and bottom depth"
+		/>
+		<nml_option name="config_GM_visbeck_max_depth" type="real" default_value="1000.0" units="m"
+					description="minimum depth for calculation of vertical average"
+					possible_values="values between zero and bottom depth"
+		/>
+		<nml_option name="config_GM_visbeck_min_kappa" type="real" default_value="300.0" units="m^2 s^{-1}"
+					description="minimum value of bolus diffusivity for visbeck scheme"
+					possible_values="values around 100s"
+		/>
+		<nml_option name="config_GM_visbeck_max_kappa" type="real" default_value="1800.0" units="m^2 s^{-1}"
+					description="minimum value of bolus diffusivity for visbeck scheme"
+					possible_values="values around 100s"
+		/>
 		<nml_option name="config_GM_min_stratification_ratio" type="real" default_value="0.1" units="NA"
 					description="When using config_GM_closure='N2_dependent', the minimum value for N2/Nmax2 ratio."
 					possible_values="small positive reals"
@@ -2194,12 +2194,12 @@
 			/>
 		</var_array>
 		<var_array name="activeTracerNonLocalTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
-			  <var name="temperatureNonLocalTendency" array_group="activeTracerNLTendGroup" units="degrees Celsius per second" name_in_code="temperatureNonLocalTendency"
+			<var name="temperatureNonLocalTendency" array_group="activeTracerNLTendGroup" units="degrees Celsius per second" name_in_code="temperatureNonLocalTendency"
 				 description="potential temperature tendency due to kpp non-local flux"
-			  />
-			  <var name="salinityNonLocalTendency" array_group="activeTracerNLTendGroup" units="PSU per second" name_in_code="salinityNonLocalTendency"
+			/>
+			<var name="salinityNonLocalTendency" array_group="activeTracerNLTendGroup" units="PSU per second" name_in_code="salinityNonLocalTendency"
 				 description="salinity tendency due to kpp non-local flux"
-			  />
+			/>
 		</var_array>
 		<var_array name="activeTracerVerticalAdvectionTopFlux" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
 			<var name="temperatureVerticalAdvectionTopFlux" array_group="activeTracerVertTopFluxGroup" units="C m s^{-1}" name_in_code="temperatureVerticalAdvectionTopFlux"
@@ -2234,12 +2234,12 @@
 			/>
 		</var_array>
 		<var_array name="activeTracerVertMixTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
-			  <var name="temperatureVertMixTendency" array_group="activeTracerVertMixTendGroup" units="degrees Celsius per second" name_in_code="temperatureVertMixTendency"
+			<var name="temperatureVertMixTendency" array_group="activeTracerVertMixTendGroup" units="degrees Celsius per second" name_in_code="temperatureVertMixTendency"
 				 description="potential temperature tendency due to vertical mixing"
-			  />
-			  <var name="salinityVertMixTendency" array_group="activeTracerVertMixTendGroup" units="PSU per second" name_in_code="salinityVertMixTendency"
+			/>
+			<var name="salinityVertMixTendency" array_group="activeTracerVertMixTendGroup" units="PSU per second" name_in_code="salinityVertMixTendency"
 				 description="salinity tendency due to vertical mixing"
-			  />
+			/>
 		</var_array>
 		<var_array name="tracersSurfaceValue" type="real" dimensions="nCells Time">
 			<var name="temperatureSurfaceValue" array_group="surfaceValues" units="degrees Celsius" name_in_code="temperatureSurfaceValue"
@@ -2475,24 +2475,24 @@
 		<var name="cGMphaseSpeed" type="real" dimensions="nEdges Time" units="m s^{-1}"
 			description="phase speed for the bolus velocity calculation"
 			packages="forwardMode;analysisMode"
-      />
-    <var name="betaEdge" type="real" dimensions="nEdges Time" units="m^{-1} s^{-1}"
-      description="meridional gradient of the coriolis parameter"
-      />
-    <var name="c_visbeck" type="real" dimensions="nEdges Time" units="m s^{-1}"
-      description="baroclinic wave speed from visbeck parameterization"
-      />
-    <var name="eddyLength" type="real" dimensions="nEdges Time" units="m"
-      description="eddy length scale in visbeck 1997 closure"
-    />
-    <var name="eddyTime" type="real" dimensions="nEdges Time" units="s^{-1}"
-      description="inverse eddy time scale in visbeck 1997 closure"
-    />
+		/>
+		<var name="betaEdge" type="real" dimensions="nEdges Time" units="m^{-1} s^{-1}"
+			description="meridional gradient of the coriolis parameter"
+		/>
+		<var name="c_visbeck" type="real" dimensions="nEdges Time" units="m s^{-1}"
+			description="baroclinic wave speed from visbeck parameterization"
+		/>
+		<var name="eddyLength" type="real" dimensions="nEdges Time" units="m"
+			description="eddy length scale in visbeck 1997 closure"
+		/>
+		<var name="eddyTime" type="real" dimensions="nEdges Time" units="s^{-1}"
+			description="inverse eddy time scale in visbeck 1997 closure"
+		/>
 		<var name="kappaGMCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="NA"
 			description="spatially and depth varying GM kappa"
 			packages="gm"
 		/>
-    <var name="kappaRediCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="NA"
+		<var name="kappaRediCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="NA"
 			description="spatially and depth varying GM kappa"
 			packages="gm"
 		/>
