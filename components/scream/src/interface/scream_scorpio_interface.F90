@@ -429,7 +429,7 @@ contains
 !    allocate(curr%pio_file)
 !    pio_atm_file => curr%pio_file  
 !
-  end subroutine get_pio_file
+!  end subroutine get_pio_file
 !=====================================================================!
   subroutine eam_history_write()
     ! WARNING: THIS SUBROUTINE IS A PLACEHOLDER TO ROUTINE TO TEST OUTPUT

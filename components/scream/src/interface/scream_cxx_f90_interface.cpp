@@ -1,7 +1,8 @@
-#include "ekat/src/ekat/scream_session.hpp"
+#include "ekat/scream_session.hpp"
 
+#include "ekat/scream_parse_yaml_file.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
-#include "share/scream_pack.hpp"
+#include "ekat/scream_pack.hpp"
 #include "share/grid/user_provided_grids_manager.hpp"
 #include "share/grid/se_grid.hpp"
 #include "control/atmosphere_driver.hpp"
@@ -15,7 +16,7 @@
 #include "control/tests/dummy_grid.hpp"
 
 #include "interface/ScreamContext.hpp"
-#include "share/mpi/scream_comm.hpp"
+#include "ekat/mpi/scream_comm.hpp"
 
 extern "C"
 {
@@ -35,32 +36,32 @@ void scream_init (const MPI_Fint& f_comm, const int& start_ymd, const int& start
   MPI_Comm mpi_comm_c = MPI_Comm_f2c(f_comm);
   auto& comm = c.create<scream::Comm>(mpi_comm_c);
 
-  // Create a parameter list for inputs
+  //// Create a parameter list for inputs
+  //ParameterList ad_params("Atmosphere Driver");
+  //auto& proc_params = ad_params.sublist("Atmosphere Processes");
+
+  //proc_params.set("Number of Entries",2);
+  //proc_params.set<std::string>("Schedule Type","Sequential");
+
+  //auto& p0 = proc_params.sublist("Process 0");
+  //p0.set<std::string>("Process Name", "P3");
+  //p0.set<std::string>("Grid","Physics");
+  //auto& p1 = proc_params.sublist("Process 1");
+  //p1.set<std::string>("Process Name", "SHOC");
+  //p1.set<std::string>("Grid","Physics");
+
+  //auto& gm_params = ad_params.sublist("Grids Manager");
+  //gm_params.set<std::string>("Type","User Provided");
+  //gm_params.set<std::string>("Reference Grid","Physics");
+  // Load ad parameter list
+  std::string fname = "input.yaml";
   ParameterList ad_params("Atmosphere Driver");
-  auto& proc_params = ad_params.sublist("Atmosphere Processes");
-
-  proc_params.set("Number of Entries",3);
-  proc_params.set<std::string>("Schedule Type","Sequential");
-
-  auto& p0 = proc_params.sublist("Process 0");
-  p0.set<std::string>("Process Name", "SA");
-  p0.set<std::string>("Grid","Physics");
-  auto& p1 = proc_params.sublist("Process 1");
-  p1.set<std::string>("Process Name", "P3");
-  p1.set<std::string>("Grid","Physics");
-  auto& p2 = proc_params.sublist("Process 2");
-  p2.set<std::string>("Process Name", "SHOC");
-  p2.set<std::string>("Grid","Physics");
-
-  auto& gm_params = ad_params.sublist("Grids Manager");
-  gm_params.set<std::string>("Type","User Provided");
-  gm_params.set<std::string>("Reference Grid","Physics");
+  REQUIRE_NOTHROW ( parse_yaml_file(fname,ad_params) );
 
   // Need to register products in the factory *before* we create any AtmosphereProcessGroup,
   // which rely on factory for process creation. The initialize method of the AD does that.
   // While we're at it, check that the case insensitive key of the factory works.
   auto& proc_factory = AtmosphereProcessFactory::instance();
-  proc_factory.register_product("SA",&create_atmosphere_process<P3StandAloneInit>);
   proc_factory.register_product("p3",&create_atmosphere_process<P3Microphysics>);
   proc_factory.register_product("SHOC",&create_atmosphere_process<SHOCMacrophysics>);
 

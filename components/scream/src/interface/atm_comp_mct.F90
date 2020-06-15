@@ -83,7 +83,7 @@ CONTAINS
     integer(IN)                      :: ierr           ! error code
     logical                          :: atm_present    ! if true, component is present
     logical                          :: atm_prognostic ! if true, component is prognostic
-    integer (kind=SHR_KIND_IN)       :: start_tod, start_ymd
+    integer (IN)                     :: start_tod, start_ymd
 
     !-------------------------------------------------------------------------------
     ! Set cdata pointers to derived types (in coupler)

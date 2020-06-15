@@ -14,6 +14,10 @@ else()
   set(ESMFDIR "noesmf")
 endif()
 
+# Copy yaml input file to run directory
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
+               ${CMAKE_CURRENT_BINARY_DIR}/input.yaml COPYONLY)
+
 set(CSM_SHARE "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/csm_share")
 link_directories(${SCREAM_TPL_LIBRARY_DIRS})
 
