@@ -1,6 +1,6 @@
-#include "share/scream_session.hpp"
+#include "ekat/src/ekat/scream_session.hpp"
 
-#include "share/atmosphere_process.hpp"
+#include "share/atm_process/atmosphere_process.hpp"
 #include "share/scream_pack.hpp"
 #include "share/grid/user_provided_grids_manager.hpp"
 #include "share/grid/se_grid.hpp"
