@@ -763,6 +763,7 @@ subroutine li_velocity_external_write_albany_mesh(domain)
          observedSurfaceVelocityX, observedSurfaceVelocityY, observedSurfaceVelocityUncertainty
       real (kind=RKIND), dimension(:), pointer :: observedThicknessTendency, observedThicknessTendencyUncertainty
       real (kind=RKIND), dimension(:,:), pointer :: temperature
+      real (kind=RKIND), dimension(:), pointer :: surfaceAirTemperature, basalHeatFlux
       integer, dimension(:), pointer :: vertexMask, cellMask, edgeMask, floatingEdges, indexToCellID
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness
       real (kind=RKIND), dimension(:), pointer :: stiffnessFactor
@@ -835,6 +836,8 @@ subroutine li_velocity_external_write_albany_mesh(domain)
 
       ! Thermal variables
       call mpas_pool_get_array(thermalPool, 'temperature', temperature)
+      call mpas_pool_get_array(thermalPool, 'surfaceAirTemperature', surfaceAirTemperature)
+      call mpas_pool_get_array(thermalPool, 'basalHeatFlux', basalHeatFlux)
 
       ! hydro variables
       call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
@@ -867,7 +870,11 @@ subroutine li_velocity_external_write_albany_mesh(domain)
       floatingEdges = li_mask_is_floating_ice_int(edgeMask)
       call li_calculate_extrapolate_floating_edgemask(meshPool, vertexMask, floatingEdges)
 
-
+      ! Ensure BMB uncertainty is 0 for grounded ice (and no ice locations)
+      where (.not. (li_mask_is_floating_ice(cellMask)))
+         floatingBasalMassBalUncertainty = 0.0_RKIND
+      end where
+      
       ! Create FEM mesh
       call mpas_log_write("Generating new external velocity solver FEM grid.", flushNow=.true.)
       call generate_fem_grid(config_velocity_solver, vertexMask, cellMask, dirichletVelocityMask, &
@@ -877,6 +884,7 @@ subroutine li_velocity_external_write_albany_mesh(domain)
       call mpas_log_write("Writing Albany ASCII mesh.", flushNow=.true.)
       call write_ascii_mesh(indexToCellID, bedTopography, lowerSurface, &
               beta, temperature, &
+              surfaceAirTemperature, basalHeatFlux, &
               stiffnessFactor, &
               effectivePressure, muFriction, &
               thickness, thicknessUncertainty, &
