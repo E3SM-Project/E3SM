@@ -153,7 +153,6 @@ contains
       call ocn_tracer_hmix_del4_tend(meshPool, scratchPool, layerThicknessEdge, tracers, tend, err2)
       if (config_use_Redi) then
         call ocn_tracer_hmix_Redi_tend(meshPool, scratchPool, layerThickness, layerThicknessEdge, zMid, tracers, &
-                                     redi_term1, redi_term2, redi_term3,  &
                                      RediKappa, dt, isActiveTracer,        &
                                      slopeTriadUp, slopeTriadDown, kappaRediSfcTaper, &
                                      kappaRediCell, rediLimiterCount, tend, err1)
