@@ -789,7 +789,6 @@ struct Functions
     const view_dnu_table& dnu,
     const view_itab_table& itab,
     const uview_1d<const Spack>& exner,
-    const uview_1d<const Spack>& inv_exner,
     const uview_1d<const Spack>& lcldm,
     const uview_1d<const Spack>& rcldm,
     const uview_1d<Spack>& rho,
@@ -820,7 +819,7 @@ struct Functions
     const uview_1d<Spack>& diag_di,
     const uview_1d<Spack>& diag_rhoi,
     const uview_1d<Spack>& diag_ze,
-    const uview_1d<Spack>& tmparr1);
+    const uview_1d<Spack>& diag_effc);
 
   static void p3_main(
     // inputs

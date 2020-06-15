@@ -1797,26 +1797,11 @@ void cloud_sedimentation_f(
   WorkspaceManager<Spack> wsm(rho_d.extent(0), 4, policy);
   Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA(const MemberType& team, Real& prt_liq_k) {
 
-    uview_1d
-      uqc_incld_d(temp_d[0]),
-      urho_d     (temp_d[1]),
-      uinv_rho_d (temp_d[2]),
-      ulcldm_d   (temp_d[3]),
-      uacn_d     (temp_d[4]),
-      uinv_dzq_d (temp_d[5]),
-      uqc_d      (temp_d[6]),
-      unc_d      (temp_d[7]),
-      unc_incld_d(temp_d[8]),
-      umu_c_d    (temp_d[9]),
-      ulamc_d    (temp_d[10]),
-      uqc_tend_d (temp_d[11]),
-      unc_tend_d (temp_d[12]);
-
     P3F::cloud_sedimentation(
-      uqc_incld_d, urho_d, uinv_rho_d, ulcldm_d, uacn_d, uinv_dzq_d, dnu,
+      qc_incld_d, rho_d, inv_rho_d, lcldm_d, acn_d, inv_dzq_d, dnu,
       team, wsm.get_workspace(team),
       nk, ktop, kbot, kdir, dt, odt, log_predictNc,
-      uqc_d, unc_d, unc_incld_d, umu_c_d, ulamc_d, uqc_tend_d, unc_tend_d,
+      qc_d, nc_d, nc_incld_d, mu_c_d, lamc_d, qc_tend_d, nc_tend_d,
       prt_liq_k);
 
   }, *prt_liq);
@@ -1883,29 +1868,12 @@ void ice_sedimentation_f(
   Real my_prt_sol = 0;
   Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA(const MemberType& team, Real& prt_sol_k) {
 
-    uview_1d
-      urho_d        (temp_d[0]),
-      uinv_rho_d    (temp_d[1]),
-      urhofaci_d    (temp_d[2]),
-      uicldm_d      (temp_d[3]),
-      uinv_dzq_d    (temp_d[4]),
-      uqitot_d      (temp_d[5]),
-      uqitot_incld_d(temp_d[6]),
-      unitot_d      (temp_d[7]),
-      uqirim_d      (temp_d[8]),
-      uqirim_incld_d(temp_d[9]),
-      ubirim_d      (temp_d[10]),
-      ubirim_incld_d(temp_d[11]),
-      unitot_incld_d(temp_d[12]),
-      uqi_tend_d    (temp_d[13]),
-      uni_tend_d    (temp_d[14]);
-
     P3F::ice_sedimentation(
-      urho_d, uinv_rho_d, urhofaci_d, uicldm_d, uinv_dzq_d,
+      rho_d, inv_rho_d, rhofaci_d, icldm_d, inv_dzq_d,
       team, wsm.get_workspace(team),
       nk, ktop, kbot, kdir, dt, odt,
-      uqitot_d, uqitot_incld_d, unitot_d, unitot_incld_d, uqirim_d, uqirim_incld_d, ubirim_d, ubirim_incld_d,
-      uqi_tend_d, uni_tend_d, itab,
+      qitot_d, qitot_incld_d, nitot_d, nitot_incld_d, qirim_d, qirim_incld_d, birim_d, birim_incld_d,
+      qi_tend_d, ni_tend_d, itab,
       prt_sol_k);
 
   }, my_prt_sol);
@@ -1976,27 +1944,11 @@ void rain_sedimentation_f(
   Real my_prt_liq = 0;
   Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA(const MemberType& team, Real& prt_liq_k) {
 
-    uview_1d
-      uqr_incld_d   (temp_d[0]),
-      urho_d        (temp_d[1]),
-      uinv_rho_d    (temp_d[2]),
-      urhofacr_d    (temp_d[3]),
-      urcldm_d      (temp_d[4]),
-      uinv_dzq_d    (temp_d[5]),
-      uqr_d         (temp_d[6]),
-      unr_d         (temp_d[7]),
-      unr_incld_d   (temp_d[8]),
-      umu_r_d       (temp_d[9]),
-      ulamr_d       (temp_d[10]),
-      uqr_tend_d    (temp_d[11]),
-      unr_tend_d    (temp_d[12]),
-      urflx_d       (temp_d[13]);
-
     P3F::rain_sedimentation(
-      urho_d, uinv_rho_d, urhofacr_d, urcldm_d, uinv_dzq_d, uqr_incld_d,
+      rho_d, inv_rho_d, rhofacr_d, rcldm_d, inv_dzq_d, qr_incld_d,
       team, wsm.get_workspace(team), vn_table, vm_table,
       nk, ktop, kbot, kdir, dt, odt,
-      uqr_d, unr_d, unr_incld_d, umu_r_d, ulamr_d, urflx_d, uqr_tend_d, unr_tend_d,
+      qr_d, nr_d, nr_incld_d, mu_r_d, lamr_d, rflx_d, qr_tend_d, nr_tend_d,
       prt_liq_k);
 
   }, my_prt_liq);
@@ -2471,25 +2423,11 @@ void homogeneous_freezing_f(
   auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
-    uview_1d
-      ut_d    (temp_d[0]),
-      uexner_d(temp_d[1]),
-      uxlf_d  (temp_d[2]),
-      uqc_d   (temp_d[3]),
-      unc_d   (temp_d[4]),
-      uqr_d   (temp_d[5]),
-      unr_d   (temp_d[6]),
-      uqitot_d(temp_d[7]),
-      unitot_d(temp_d[8]),
-      uqirim_d(temp_d[9]),
-      ubirim_d(temp_d[10]),
-      uth_d   (temp_d[11]);
-
     P3F::homogeneous_freezing(
-      ut_d, uexner_d, uxlf_d,
+      t_d, exner_d, xlf_d,
       team,
       nk, ktop, kbot, kdir,
-      uqc_d, unc_d, uqr_d, unr_d, uqitot_d, unitot_d, uqirim_d, ubirim_d, uth_d);
+      qc_d, nc_d, qr_d, nr_d, qitot_d, nitot_d, qirim_d, birim_d, th_d);
   });
 
   // Sync back to host
@@ -2891,9 +2829,7 @@ void check_values_f(Real* qv, Real* temp, Int kstart, Int kend,
   auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
-    uview_1d uqv_d(qv_d), utemp_d(temp_d);
-
-    P3F::check_values(uqv_d, utemp_d, kstart, kend, timestepcount, force_abort, source_ind, team,
+    P3F::check_values(qv_d, temp_d, kstart, kend, timestepcount, force_abort, source_ind, team,
                       ucol_loc_d);
   });
 }
@@ -3178,53 +3114,12 @@ void p3_main_pre_main_loop_f(
   auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
-    uview_1d
-      upres_d        (temp_d[0]),
-      updel_d        (temp_d[1]),
-      udzq_d         (temp_d[2]),
-      uncnuc_d       (temp_d[3]),
-      uexner_d       (temp_d[4]),
-      uinv_exner_d   (temp_d[5]),
-      uinv_lcldm_d   (temp_d[6]),
-      uinv_icldm_d   (temp_d[7]),
-      uinv_rcldm_d   (temp_d[8]),
-      ut_d           (temp_d[9]),
-      urho_d         (temp_d[10]),
-      uinv_rho_d     (temp_d[11]),
-      uqvs_d         (temp_d[12]),
-      uqvi_d         (temp_d[13]),
-      usupi_d        (temp_d[14]),
-      urhofacr_d     (temp_d[15]),
-      urhofaci_d     (temp_d[16]),
-      uacn_d         (temp_d[17]),
-      uqv_d          (temp_d[18]),
-      uth_d          (temp_d[19]),
-      uqc_d          (temp_d[20]),
-      unc_d          (temp_d[21]),
-      uqr_d          (temp_d[22]),
-      unr_d          (temp_d[23]),
-      uqitot_d       (temp_d[24]),
-      unitot_d       (temp_d[25]),
-      uqirim_d       (temp_d[26]),
-      ubirim_d       (temp_d[27]),
-      uxxlv_d        (temp_d[28]),
-      uxxls_d        (temp_d[29]),
-      uxlf_d         (temp_d[30]),
-      uqc_incld_d    (temp_d[31]),
-      uqr_incld_d    (temp_d[32]),
-      uqitot_incld_d (temp_d[33]),
-      uqirim_incld_d (temp_d[34]),
-      unc_incld_d    (temp_d[35]),
-      unr_incld_d    (temp_d[36]),
-      unitot_incld_d (temp_d[37]),
-      ubirim_incld_d (temp_d[38]);
-
     P3F::p3_main_pre_main_loop(
       team, nk, log_predictNc, dt,
-      upres_d, updel_d, udzq_d, uncnuc_d, uexner_d, uinv_exner_d, uinv_lcldm_d, uinv_icldm_d, uinv_rcldm_d, uxxlv_d, uxxls_d, uxlf_d,
-      ut_d, urho_d, uinv_rho_d, uqvs_d, uqvi_d, usupi_d, urhofacr_d, urhofaci_d,
-      uacn_d, uqv_d, uth_d, uqc_d, unc_d, uqr_d, unr_d, uqitot_d, unitot_d, uqirim_d, ubirim_d, uqc_incld_d, uqr_incld_d, uqitot_incld_d,
-      uqirim_incld_d, unc_incld_d, unr_incld_d, unitot_incld_d, ubirim_incld_d,
+      pres_d, pdel_d, dzq_d, ncnuc_d, exner_d, inv_exner_d, inv_lcldm_d, inv_icldm_d, inv_rcldm_d, xxlv_d, xxls_d, xlf_d,
+      t_d, rho_d, inv_rho_d, qvs_d, qvi_d, supi_d, rhofacr_d, rhofaci_d,
+      acn_d, qv_d, th_d, qc_d, nc_d, qr_d, nr_d, qitot_d, nitot_d, qirim_d, birim_d, qc_incld_d, qr_incld_d, qitot_incld_d,
+      qirim_incld_d, nc_incld_d, nr_incld_d, nitot_incld_d, birim_incld_d,
       bools_d(0), bools_d(1));
   });
 
@@ -3361,78 +3256,14 @@ void p3_main_main_loop_f(
   auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
-    view_1d
-      upres_d             (pres_d),
-      updel_d             (pdel_d),
-      udzq_d              (dzq_d),
-      uncnuc_d            (ncnuc_d),
-      uexner_d            (exner_d),
-      uinv_exner_d        (inv_exner_d),
-      uinv_lcldm_d        (inv_lcldm_d),
-      uinv_icldm_d        (inv_icldm_d),
-      uinv_rcldm_d        (inv_rcldm_d),
-      unaai_d             (naai_d),
-      uqc_relvar_d        (qc_relvar_d),
-      uicldm_d            (icldm_d),
-      ulcldm_d            (lcldm_d),
-      urcldm_d            (rcldm_d),
-      ut_d                (t_d),
-      urho_d              (rho_d),
-      uinv_rho_d          (inv_rho_d),
-      uqvs_d              (qvs_d),
-      uqvi_d              (qvi_d),
-      usupi_d             (supi_d),
-      urhofacr_d          (rhofacr_d),
-      urhofaci_d          (rhofaci_d),
-      uacn_d              (acn_d),
-      uqv_d               (qv_d),
-      uth_d               (th_d),
-      uqc_d               (qc_d),
-      unc_d               (nc_d),
-      uqr_d               (qr_d),
-      unr_d               (nr_d),
-      uqitot_d            (qitot_d),
-      unitot_d            (nitot_d),
-      uqirim_d            (qirim_d),
-      ubirim_d            (birim_d),
-      uxxlv_d             (xxlv_d),
-      uxxls_d             (xxls_d),
-      uxlf_d              (xlf_d),
-      uqc_incld_d         (qc_incld_d),
-      uqr_incld_d         (qr_incld_d),
-      uqitot_incld_d      (qitot_incld_d),
-      uqirim_incld_d      (qirim_incld_d),
-      unc_incld_d         (nc_incld_d),
-      unr_incld_d         (nr_incld_d),
-      unitot_incld_d      (nitot_incld_d),
-      ubirim_incld_d      (birim_incld_d),
-      umu_c_d             (mu_c_d),
-      unu_d               (nu_d),
-      ulamc_d             (lamc_d),
-      ucdist_d            (cdist_d),
-      ucdist1_d           (cdist1_d),
-      ucdistr_d           (cdistr_d),
-      umu_r_d             (mu_r_d),
-      ulamr_d             (lamr_d),
-      ulogn0r_d           (logn0r_d),
-      ucmeiout_d          (cmeiout_d),
-      uprain_d            (prain_d),
-      unevapr_d           (nevapr_d),
-      uprer_evap_d        (prer_evap_d),
-      uvap_liq_exchange_d (vap_liq_exchange_d),
-      uvap_ice_exchange_d (vap_ice_exchange_d),
-      uliq_ice_exchange_d (liq_ice_exchange_d),
-      upratot_d           (pratot_d),
-      uprctot_d           (prctot_d);
-
     P3F::p3_main_main_loop(
       team, nk_pack, log_predictNc, dt, odt, dnu, itab, itabcol, revap_table,
-      upres_d, updel_d, udzq_d, uncnuc_d, uexner_d, uinv_exner_d, uinv_lcldm_d, uinv_icldm_d, uinv_rcldm_d, unaai_d, uqc_relvar_d, uicldm_d, ulcldm_d, urcldm_d,
-      ut_d, urho_d, uinv_rho_d, uqvs_d, uqvi_d, usupi_d, urhofacr_d, urhofaci_d, uacn_d,
-      uqv_d, uth_d, uqc_d, unc_d, uqr_d, unr_d, uqitot_d, unitot_d, uqirim_d, ubirim_d, uxxlv_d, uxxls_d, uxlf_d, uqc_incld_d, uqr_incld_d,
-      uqitot_incld_d, uqirim_incld_d, unc_incld_d, unr_incld_d, unitot_incld_d, ubirim_incld_d, umu_c_d, unu_d, ulamc_d, ucdist_d, ucdist1_d,
-      ucdistr_d, umu_r_d, ulamr_d, ulogn0r_d, ucmeiout_d, uprain_d, unevapr_d, uprer_evap_d, uvap_liq_exchange_d,
-      uvap_ice_exchange_d, uliq_ice_exchange_d, upratot_d, uprctot_d,
+      pres_d, pdel_d, dzq_d, ncnuc_d, exner_d, inv_exner_d, inv_lcldm_d, inv_icldm_d, inv_rcldm_d, naai_d, qc_relvar_d, icldm_d, lcldm_d, rcldm_d,
+      t_d, rho_d, inv_rho_d, qvs_d, qvi_d, supi_d, rhofacr_d, rhofaci_d, acn_d,
+      qv_d, th_d, qc_d, nc_d, qr_d, nr_d, qitot_d, nitot_d, qirim_d, birim_d, xxlv_d, xxls_d, xlf_d, qc_incld_d, qr_incld_d,
+      qitot_incld_d, qirim_incld_d, nc_incld_d, nr_incld_d, nitot_incld_d, birim_incld_d, mu_c_d, nu_d, lamc_d, cdist_d, cdist1_d,
+      cdistr_d, mu_r_d, lamr_d, logn0r_d, cmeiout_d, prain_d, nevapr_d, prer_evap_d, vap_liq_exchange_d,
+      vap_ice_exchange_d, liq_ice_exchange_d, pratot_d, prctot_d,
       bools_d(0));
   });
 
@@ -3531,104 +3362,33 @@ void p3_main_post_main_loop_f(
     diag_rhoi_d        (temp_d[29]),
     diag_ze_d          (temp_d[30]),
     diag_effc_d        (temp_d[31]);
-#if 0
+
   // Call core function from kernel
   const auto dnu         = P3GlobalForFortran::dnu();
   const auto itab        = P3GlobalForFortran::itab();
   auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
-    view_1d
-      upres_d             (pres_d),
-      updel_d             (pdel_d),
-      udzq_d              (dzq_d),
-      uncnuc_d            (ncnuc_d),
-      uexner_d            (exner_d),
-      uinv_exner_d        (inv_exner_d),
-      uinv_lcldm_d        (inv_lcldm_d),
-      uinv_icldm_d        (inv_icldm_d),
-      uinv_rcldm_d        (inv_rcldm_d),
-      unaai_d             (naai_d),
-      uqc_relvar_d        (qc_relvar_d),
-      uicldm_d            (icldm_d),
-      ulcldm_d            (lcldm_d),
-      urcldm_d            (rcldm_d),
-      ut_d                (t_d),
-      urho_d              (rho_d),
-      uinv_rho_d          (inv_rho_d),
-      uqvs_d              (qvs_d),
-      uqvi_d              (qvi_d),
-      usupi_d             (supi_d),
-      urhofacr_d          (rhofacr_d),
-      urhofaci_d          (rhofaci_d),
-      uacn_d              (acn_d),
-      uqv_d               (qv_d),
-      uth_d               (th_d),
-      uqc_d               (qc_d),
-      unc_d               (nc_d),
-      uqr_d               (qr_d),
-      unr_d               (nr_d),
-      uqitot_d            (qitot_d),
-      unitot_d            (nitot_d),
-      uqirim_d            (qirim_d),
-      ubirim_d            (birim_d),
-      uxxlv_d             (xxlv_d),
-      uxxls_d             (xxls_d),
-      uxlf_d              (xlf_d),
-      uqc_incld_d         (qc_incld_d),
-      uqr_incld_d         (qr_incld_d),
-      uqitot_incld_d      (qitot_incld_d),
-      uqirim_incld_d      (qirim_incld_d),
-      unc_incld_d         (nc_incld_d),
-      unr_incld_d         (nr_incld_d),
-      unitot_incld_d      (nitot_incld_d),
-      ubirim_incld_d      (birim_incld_d),
-      umu_c_d             (mu_c_d),
-      unu_d               (nu_d),
-      ulamc_d             (lamc_d),
-      ucdist_d            (cdist_d),
-      ucdist1_d           (cdist1_d),
-      ucdistr_d           (cdistr_d),
-      umu_r_d             (mu_r_d),
-      ulamr_d             (lamr_d),
-      ulogn0r_d           (logn0r_d),
-      ucmeiout_d          (cmeiout_d),
-      uprain_d            (prain_d),
-      unevapr_d           (nevapr_d),
-      uprer_evap_d        (prer_evap_d),
-      uvap_liq_exchange_d (vap_liq_exchange_d),
-      uvap_ice_exchange_d (vap_ice_exchange_d),
-      uliq_ice_exchange_d (liq_ice_exchange_d),
-      upratot_d           (pratot_d),
-      uprctot_d           (prctot_d);
-
-    P3F::p3_main_main_loop(
-      team, nk_pack, log_predictNc, dt, odt, dnu, itab, itabcol, revap_table,
-      upres_d, updel_d, udzq_d, uncnuc_d, uexner_d, uinv_exner_d, uinv_lcldm_d, uinv_icldm_d, uinv_rcldm_d, unaai_d, uqc_relvar_d, uicldm_d, ulcldm_d, urcldm_d,
-      ut_d, urho_d, uinv_rho_d, uqvs_d, uqvi_d, usupi_d, urhofacr_d, urhofaci_d, uacn_d,
-      uqv_d, uth_d, uqc_d, unc_d, uqr_d, unr_d, uqitot_d, unitot_d, uqirim_d, ubirim_d, uxxlv_d, uxxls_d, uxlf_d, uqc_incld_d, uqr_incld_d,
-      uqitot_incld_d, uqirim_incld_d, unc_incld_d, unr_incld_d, unitot_incld_d, ubirim_incld_d, umu_c_d, unu_d, ulamc_d, ucdist_d, ucdist1_d,
-      ucdistr_d, umu_r_d, ulamr_d, ulogn0r_d, ucmeiout_d, uprain_d, unevapr_d, uprer_evap_d, uvap_liq_exchange_d,
-      uvap_ice_exchange_d, uliq_ice_exchange_d, upratot_d, uprctot_d,
-      bools_d(0));
+    P3F::p3_main_post_main_loop(team, nk_pack, dnu, itab,
+                                exner_d, lcldm_d, rcldm_d,
+                                rho_d, inv_rho_d, rhofaci_d, qv_d, th_d, qc_d, nc_d, qr_d, nr_d, qitot_d, nitot_d, qirim_d, birim_d, xxlv_d, xxls_d,
+                                mu_c_d, nu_d, lamc_d, mu_r_d, lamr_d, vap_liq_exchange_d,
+                                ze_rain_d, ze_ice_d, diag_vmi_d, diag_effi_d, diag_di_d, diag_rhoi_d, diag_ze_d, diag_effc_d);
   });
 
   // Sync back to host
-  Kokkos::Array<view_1d, 48> inout_views = {
-    t_d, rho_d, inv_rho_d, qvs_d, qvi_d, supi_d, rhofacr_d, rhofaci_d, acn_d,
-    qv_d, th_d, qc_d, nc_d, qr_d, nr_d, qitot_d, nitot_d, qirim_d, birim_d, xxlv_d, xxls_d, xlf_d, qc_incld_d, qr_incld_d,
-    qitot_incld_d, qirim_incld_d, nc_incld_d, nr_incld_d, nitot_incld_d, birim_incld_d, mu_c_d, nu_d, lamc_d, cdist_d, cdist1_d,
-    cdistr_d, mu_r_d, lamr_d, logn0r_d, cmeiout_d, prain_d, nevapr_d, prer_evap_d, vap_liq_exchange_d,
-    vap_ice_exchange_d, liq_ice_exchange_d, pratot_d, prctot_d
+  Kokkos::Array<view_1d, 29> inout_views = {
+    rho_d, inv_rho_d, rhofaci_d, qv_d, th_d, qc_d, nc_d, qr_d, nr_d, qitot_d, nitot_d, qirim_d, birim_d, xxlv_d, xxls_d,
+    mu_c_d, nu_d, lamc_d, mu_r_d, lamr_d, vap_liq_exchange_d,
+    ze_rain_d, ze_ice_d, diag_vmi_d, diag_effi_d, diag_di_d, diag_rhoi_d, diag_ze_d, diag_effc_d
   };
 
-  pack::device_to_host({t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, acn,
-        qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, xlf, qc_incld, qr_incld,
-        qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld, mu_c, nu, lamc, cdist, cdist1,
-        cdistr, mu_r, lamr, logn0r, cmeiout, prain, nevapr, prer_evap, vap_liq_exchange,
-        vap_ice_exchange, liq_ice_exchange, pratot, prctot},
+  pack::device_to_host({
+      rho, inv_rho, rhofaci, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls,
+      mu_c, nu, lamc, mu_r, lamr, vap_liq_exchange,
+      ze_rain, ze_ice, diag_vmi, diag_effi, diag_di, diag_rhoi, diag_ze, diag_effc
+    },
     nk, inout_views);
-#endif
 }
 
 } // namespace p3

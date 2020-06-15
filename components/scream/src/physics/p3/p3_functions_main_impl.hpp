@@ -719,7 +719,6 @@ void Functions<S,D>
   const view_dnu_table& dnu,
   const view_itab_table& itab,
   const uview_1d<const Spack>& exner,
-  const uview_1d<const Spack>& inv_exner,
   const uview_1d<const Spack>& lcldm,
   const uview_1d<const Spack>& rcldm,
   const uview_1d<Spack>& rho,
@@ -750,7 +749,7 @@ void Functions<S,D>
   const uview_1d<Spack>& diag_di,
   const uview_1d<Spack>& diag_rhoi,
   const uview_1d<Spack>& diag_ze,
-  const uview_1d<Spack>& tmparr1)
+  const uview_1d<Spack>& diag_effc)
 {
   constexpr Scalar qsmall       = C::QSMALL;
   constexpr Scalar inv_cp       = C::INV_CP;
@@ -777,6 +776,7 @@ void Functions<S,D>
       const auto qc_small    = !qc_gt_small;
       get_cloud_dsd2(qc(k), nc(k), mu_c(k), rho(k), nu(k), dnu, lamc(k), ignore1, ignore2, lcldm(k));
 
+      diag_effc(k)       .set(!qc_small, sp(0.5) * (mu_c(k) + 3) / lamc(k));
       qv(k)              .set(qc_small, qv(k)+qc(k));
       th(k)              .set(qc_small, th(k)-exner(k)*qc(k)*xxlv(k)*inv_cp);
       vap_liq_exchange(k).set(qc_small, vap_liq_exchange(k) - qc(k));
@@ -861,10 +861,6 @@ void Functions<S,D>
     // if qr is very small then set Nr to 0 (needs to be done here after call
     // to ice lookup table because a minimum Nr of nsmall will be set otherwise even if qr=0)
     nr(k).set(qr(k) < qsmall, 0);
-
-#ifndef NDEBUG
-    tmparr1(k) = th(k) * inv_exner(k);
-#endif
   });
   team.team_barrier();
 }
@@ -1136,8 +1132,8 @@ void Functions<S,D>
     //
     p3_main_post_main_loop(
       team, nk_pack, dnu, itab,
-      oexner, inv_exner, olcldm, orcldm,
-      rho, inv_rho, rhofaci, oqv, oth, oqc, onc, oqr, onr, oqitot, onitot, oqirim, obirim, oxxlv, oxxls, omu_c, nu, olamc, mu_r, lamr, ovap_liq_exchange, ze_rain, ze_ice, odiag_vmi, odiag_effi, odiag_di, odiag_rhoi, odiag_ze, tmparr1);
+      oexner, olcldm, orcldm,
+      rho, inv_rho, rhofaci, oqv, oth, oqc, onc, oqr, onr, oqitot, onitot, oqirim, obirim, oxxlv, oxxls, omu_c, nu, olamc, mu_r, lamr, ovap_liq_exchange, ze_rain, ze_ice, odiag_vmi, odiag_effi, odiag_di, odiag_rhoi, odiag_ze, odiag_effc);
 
     //
     // merge ice categories with similar properties
@@ -1148,6 +1144,11 @@ void Functions<S,D>
     // PMC nCat deleted nCat>1 stuff
 
 #ifndef NDEBUG
+    Kokkos::parallel_for(
+      Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
+        tmparr1(k) = oth(k) * inv_exner(k);
+    });
+
     check_values(oqv, tmparr1, ktop, kbot, it, debug_ABORT, 900, team, ocol_location);
 #endif
 
