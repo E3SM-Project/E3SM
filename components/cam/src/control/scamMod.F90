@@ -729,7 +729,7 @@ end subroutine setiopupdate
 !======================================================
 !     read level data
 !     
-   status = NF90_INQ_DIMID( ncid, 'lev', lev_dimID )
+   status = NF90_INQ_DIMID( ncid, 'pressure', lev_dimID )
    if ( status .ne. nf90_noerr ) then
       write(iulog,* )'ERROR - readiopdata.F:Could not find variable dim ID  for lev'
       status = NF90_CLOSE ( ncid )
@@ -912,7 +912,7 @@ endif !scm_observed_aero
 
    if (.not. iop_update_phase1) then
 
-     status = nf90_inq_varid( ncid, 'Ps', varid   )
+     status = nf90_inq_varid( ncid, 'ps', varid   )
      if ( status .ne. nf90_noerr ) then
        have_ps = .false.
        write(iulog,*)'Could not find variable Ps'
@@ -963,7 +963,7 @@ endif !scm_observed_aero
 !=====================================================================
 
 
-     status =  nf90_inq_varid( ncid, 'Tsair', varid   )
+     status =  nf90_inq_varid( ncid, 'ts', varid   )
      if ( status .ne. nf90_noerr ) then
        have_tsair = .false.
      else
@@ -978,11 +978,11 @@ endif !scm_observed_aero
 
 !!!!!!!force fill_end to be .true in getinterpncdata () for temperature !!!!!!!!
      if ( use_replay ) then
-       call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx,'t', have_tsair, &
+       call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx,'temp', have_tsair, &
           tsair(1), .true. , scm_crm_mode, &
           dplevs, nlev, psobs, hyam, hybm, tobs, status )
      else
-       call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx,'T', have_tsair, &
+       call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx,'temp', have_tsair, &
           tsair(1), .true. , scm_crm_mode, &
           dplevs, nlev, psobs, hyam, hybm, tobs, status )
      endif
@@ -1006,7 +1006,7 @@ endif !scm_observed_aero
      !  for first radiation call, to ensure b4b (or close) reproducibility. 
      !  Else, for other SCM cases, it is fine initialize as a cold start.   
      if (is_first_step() .and. use_replay) then      
-       status = nf90_inq_varid( ncid, 'Tg', varid   )
+       status = nf90_inq_varid( ncid, 'ts', varid   )
        if (status .ne. nf90_noerr) then
          write(iulog,*)'Could not find variable Tg'
          if ( have_tsair ) then
@@ -1031,7 +1031,7 @@ endif !scm_observed_aero
      endif
 !
 !!!!!!!force fill_end to be .true in getinterpncdata () for humidity!!!!!!!!
-     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx,  'q', have_srf, &
+     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx,  'rv', have_srf, &
        srf(1), .true., scm_crm_mode, &
        dplevs, nlev,psobs, hyam, hybm, qobs, status )
      if ( status .ne. nf90_noerr ) then
@@ -1075,7 +1075,7 @@ endif !scm_observed_aero
      endif
 
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
-        'divq', have_srf, srf(1), fill_ends, scm_crm_mode, &
+        'rv_adv', have_srf, srf(1), fill_ends, scm_crm_mode, &
         dplevs, nlev,psobs, hyam, hybm, divq(:,1), status )
      if ( status .ne. nf90_noerr ) then
        have_divq = .false.
@@ -1249,7 +1249,7 @@ endif !scm_observed_aero
      endif
 
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
-       'divT', have_srf, srf(1), fill_ends, scm_crm_mode, &
+       'temp_adv', have_srf, srf(1), fill_ends, scm_crm_mode, &
        dplevs, nlev,psobs, hyam, hybm, divt, status )
      if ( status .ne. nf90_noerr ) then
        have_divt = .false.
@@ -1447,7 +1447,7 @@ endif !scm_observed_aero
    
    else ! if read in surface information
    
-     status = nf90_inq_varid( ncid, 'Tg', varid   )
+     status = nf90_inq_varid( ncid, 'ts', varid   )
      if (status .ne. nf90_noerr) then
        write(iulog,*)'Could not find variable Tg'
        if ( have_tsair ) then
@@ -1490,7 +1490,7 @@ endif !scm_observed_aero
        endif
      endif
    
-     status = nf90_inq_varid( ncid, 'lhflx', varid   )
+     status = nf90_inq_varid( ncid, 'sfc_lat_flx', varid   )
      if ( status .ne. nf90_noerr ) then
        status = nf90_inq_varid( ncid, 'lh', varid   )
        if ( status .ne. nf90_noerr ) then
@@ -1504,7 +1504,7 @@ endif !scm_observed_aero
        have_lhflx = .true.
      endif
 
-     status = nf90_inq_varid( ncid, 'shflx', varid   )
+     status = nf90_inq_varid( ncid, 'sfc_sens_flx', varid   )
      if ( status .ne. nf90_noerr ) then
        status = nf90_inq_varid( ncid, 'sh', varid   )
        if ( status .ne. nf90_noerr ) then
