@@ -28,6 +28,8 @@ struct ScalarTraits {
       return CUDART_NAN;
     } else {
       scream_kerror_msg ("Error! No NaN provided for this floating point type.\n");
+      // Silence compiler warning
+      return 0;
     }
 #else
     return std::numeric_limits<T>::quiet_NaN();
@@ -37,24 +39,26 @@ struct ScalarTraits {
   KOKKOS_INLINE_FUNCTION
   static const T invalid () {
     // For a floating point, return NaN. For an integer, return largest possible number
+    T val(0);
     if (std::is_floating_point<T>::value) {
-      return quiet_NaN();
+      val = quiet_NaN();
     } else {
-      // If cuda supported numeric_limits, we would not need this
+      // If cuda supported numeric_limits, we would not need all these ifs
       if (std::is_same<T,int>::value) {
-        return INT_MAX;
+        val = static_cast<T>(INT_MAX);
       } else if (std::is_same<T,unsigned int>::value) {
-        return UINT_MAX;
+        val = static_cast<T>(UINT_MAX);
       } else if (std::is_same<T,long>::value) {
-        return LONG_MAX;
+        val = static_cast<T>(LONG_MAX);
       } else if (std::is_same<T,unsigned long>::value) {
-        return ULONG_MAX;
+        val = static_cast<T>(ULONG_MAX);
       } else if (std::is_same<T,long long>::value) {
-        return LLONG_MAX;
+        val = static_cast<T>(LLONG_MAX);
       } else if (std::is_same<T,unsigned long long>::value) {
-        return ULLONG_MAX;
+        val = static_cast<T>(ULLONG_MAX);
       }
     }
+    return val;
   }
 };
 
