@@ -17,7 +17,10 @@ module radiation
    use scamMod,          only: scm_crm_mode, single_column, swrad_off
    use rad_constituents, only: N_DIAG
    use radconstants,     only: &
-      set_sw_spectral_boundaries, set_lw_spectral_boundaries, check_wavenumber_bounds
+      nswbands, nlwbands, &
+      set_sw_spectral_boundaries, set_lw_spectral_boundaries, &
+      get_sw_spectral_midpoints, get_lw_spectral_midpoints
+   use cam_history_support, only: add_hist_coord
 
    ! RRTMGP gas optics object to store coefficient information. This is imported
    ! here so that we can make the k_dist objects module data and only load them
@@ -139,26 +142,15 @@ module radiation
    ! variables.
    character(len=cl) :: coefficients_file_sw, coefficients_file_lw
 
+   ! Number of g-points in k-distribution (set based on absorption coefficient inputdata)
+   integer :: nswgpts, nlwgpts
+
+   ! Band midpoints; these need to be module variables because of how cam_history works;
+   ! add_hist_coord sets up pointers to these, so they need to persist.
+   real(r8), target :: sw_band_midpoints(nswbands), lw_band_midpoints(nlwbands)
+
    ! Set name for this module (for purpose of writing output and log files)
    character(len=*), parameter :: module_name = 'radiation'
-
-   ! Number of shortwave and longwave bands in use by the RRTMGP radiation code.
-   ! This information will be stored in the k_dist_sw and k_dist_lw objects and
-   ! may
-   ! be retrieved using the k_dist_sw%get_nband() and k_dist_lw%get_nband()
-   ! methods, but I think we need to save these as private module data so that
-   ! we
-   ! can automatically allocate arrays later in subroutine headers, i.e.:
-   !
-   !     real(r8) :: cld_tau(pcols,pver,nswbands)
-   !
-   ! and so forth. Previously some of this existed in radconstants.F90, but I do
-   ! not think we need to use that.
-   ! EDIT: maybe these JUST below in radconstants.F90?
-   integer :: nswbands, nlwbands
-
-   ! Also, save number of g-points as private module data
-   integer :: nswgpts, nlwgpts
 
    ! Gases that we want to use in the radiative calculations. These need to be set
    ! here, because the RRTMGP kdist initialization needs to know the names of the
@@ -424,7 +416,6 @@ contains
    !-------------------------------------------------------------------------------
       use physics_buffer,     only: pbuf_get_index
       use cam_history,        only: addfld, horiz_only, add_default
-      use cam_history_support, only: add_hist_coord
       use constituents,       only: cnst_get_ind
       use phys_control,       only: phys_getopts
       use rad_constituents,   only: N_DIAG, rad_cnst_get_call_list, rad_cnst_get_info
@@ -475,7 +466,6 @@ contains
       ! methods).
       type(ty_gas_concs) :: available_gases
 
-      real(r8), allocatable :: sw_band_midpoints(:), lw_band_midpoints(:)
       character(len=32) :: subname = 'radiation_init'
 
       character(len=10), dimension(3) :: dims_crm_rad = (/'crm_nx_rad','crm_ny_rad','crm_nz    '/)
@@ -507,17 +497,16 @@ contains
       call rrtmgp_load_coefficients(k_dist_sw, coefficients_file_sw, available_gases)
       call rrtmgp_load_coefficients(k_dist_lw, coefficients_file_lw, available_gases)
 
-      ! Get number of bands used in shortwave and longwave and set module data
-      ! appropriately so that these sizes can be used to allocate array sizes.
-      nswbands = k_dist_sw%get_nband()
-      nlwbands = k_dist_lw%get_nband()
+      ! Make sure number of bands in absorption coefficient files matches what we expect
+      call assert(nswbands == k_dist_sw%get_nband(), 'nswbands does not match absorption coefficient data')
+      call assert(nlwbands == k_dist_lw%get_nband(), 'nlwbands does not match absorption coefficient data')
 
       ! Set number of g-points for used for correlated-k. These are determined
       ! by the absorption coefficient data.
       nswgpts = k_dist_sw%get_ngpt()
       nlwgpts = k_dist_lw%get_ngpt()
 
-      ! Set values in radconstants
+      ! Set band intervals based on inputdata
       call set_sw_spectral_boundaries(k_dist_sw%get_band_lims_wavenumber())
       call set_lw_spectral_boundaries(k_dist_lw%get_band_lims_wavenumber())
 
@@ -530,7 +519,7 @@ contains
 
       ! Indices on radiation grid that correspond to top and bottom of the model
       ! grid...this is for cases where we want to add an extra layer above the
-      ! model top to deal with radiative heating above the model top...why???
+      ! model top to deal with radiative heating above the model top.
       ktop = nlev_rad - pver + 1
       kbot = nlev_rad
 
@@ -588,13 +577,10 @@ contains
       !
       
       ! Register new dimensions
-      allocate(sw_band_midpoints(nswbands), lw_band_midpoints(nlwbands))
-      sw_band_midpoints(:) = get_band_midpoints(nswbands, k_dist_sw)
-      lw_band_midpoints(:) = get_band_midpoints(nlwbands, k_dist_lw)
-      call assert(all(sw_band_midpoints > 0), subname // ': negative sw_band_midpoints')
-      call add_hist_coord('swband', nswbands, 'Shortwave band', 'wavelength', sw_band_midpoints)
-      call add_hist_coord('lwband', nlwbands, 'Longwave band', 'wavelength', lw_band_midpoints)
-      deallocate(sw_band_midpoints, lw_band_midpoints)
+      call get_sw_spectral_midpoints(sw_band_midpoints, 'cm-1')
+      call get_lw_spectral_midpoints(lw_band_midpoints, 'cm-1')
+      call add_hist_coord('swband', nswbands, 'Shortwave wavenumber', 'cm-1', sw_band_midpoints)
+      call add_hist_coord('lwband', nlwbands, 'Longwave wavenumber', 'cm-1', lw_band_midpoints)
 
       ! Shortwave radiation
       call addfld('TOT_CLD_VISTAU', (/ 'lev' /), 'A',   '1', &
@@ -1050,37 +1036,6 @@ contains
       call handle_error(gas_concentrations%init(gases_lowercase))
 
    end subroutine set_available_gases
-
-
-   ! Function to calculate band midpoints from kdist band limits
-   function get_band_midpoints(nbands, kdist) result(band_midpoints)
-      integer, intent(in) :: nbands
-      type(ty_gas_optics_rrtmgp), intent(in) :: kdist
-      real(r8) :: band_midpoints(nbands)
-      real(r8) :: band_limits(2,nbands)
-      integer :: i
-      character(len=32) :: subname = 'get_band_midpoints'
-
-      call assert(kdist%get_nband() == nbands, trim(subname) // ': kdist%get_nband() /= nbands')
-
-      band_limits = kdist%get_band_lims_wavelength()
-
-      call assert(size(band_limits, 1) == size(kdist%get_band_lims_wavelength(), 1), &
-                  subname // ': band_limits and kdist inconsistently sized')
-      call assert(size(band_limits, 2) == size(kdist%get_band_lims_wavelength(), 2), &
-                  subname // ': band_limits and kdist inconsistently sized')
-      call assert(size(band_limits, 2) == size(band_midpoints), &
-                  subname // ': band_limits and band_midpoints inconsistently sized')
-      call assert(all(band_limits > 0), subname // ': negative band limit wavelengths!')
-
-      band_midpoints(:) = 0._r8
-      do i = 1,nbands
-         band_midpoints(i) = (band_limits(1,i) + band_limits(2,i)) / 2._r8
-      end do
-      call assert(all(band_midpoints > 0), subname // ': negative band_midpoints!')
-
-   end function get_band_midpoints
-
 
    !===============================================================================
         
@@ -1584,6 +1539,7 @@ contains
                            cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw, &
                            cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw &
                         )
+                        call output_cloud_optics_sw(state, cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw)
                         call t_stopf('rad_cloud_optics_sw')
                         ! Do aerosol optics
                         call t_startf('rad_aerosol_optics_sw')
@@ -1608,6 +1564,7 @@ contains
                            state%pmid, cld, cldfsnow, &
                            cld_tau_bnd_lw, cld_tau_gpt_lw &
                         )
+                        call output_cloud_optics_lw(state, cld_tau_bnd_lw)
                         call t_stopf('rad_cloud_optics_lw')
                         ! Do aerosol optics
                         call t_startf('rad_aerosol_optics_lw')
@@ -2658,6 +2615,64 @@ contains
       call outfld('QRLC'//diag(icall), qrlc(1:ncol,1:pver)/cpair, ncol, state%lchnk)
 
    end subroutine output_fluxes_lw
+
+   !----------------------------------------------------------------------------
+
+   subroutine output_cloud_optics_sw(state, tau, ssa, asm)
+      use ppgrid, only: pver
+      use physics_types, only: physics_state
+      use cam_history, only: outfld
+      use radconstants, only: idx_sw_diag
+
+      type(physics_state), intent(in) :: state
+      real(r8), intent(in), dimension(:,:,:) :: tau, ssa, asm
+      character(len=*), parameter :: subname = 'output_cloud_optics_sw'
+
+      ! Check values
+      call assert_valid(tau(1:state%ncol,1:pver,1:nswbands), &
+                        trim(subname) // ': optics%optical_depth')
+      call assert_valid(ssa(1:state%ncol,1:pver,1:nswbands), &
+                        trim(subname) // ': optics%single_scattering_albedo')
+      call assert_valid(asm(1:state%ncol,1:pver,1:nswbands), &
+                        trim(subname) // ': optics%assymmetry_parameter')
+
+      ! Send outputs to history buffer
+      call outfld('CLOUD_TAU_SW', &
+                  tau(1:state%ncol,1:pver,1:nswbands), &
+                  state%ncol, state%lchnk)
+      call outfld('CLOUD_SSA_SW', &
+                  ssa(1:state%ncol,1:pver,1:nswbands), &
+                  state%ncol, state%lchnk)
+      call outfld('CLOUD_G_SW', &
+                  asm(1:state%ncol,1:pver,1:nswbands), &
+                  state%ncol, state%lchnk)
+      call outfld('TOT_ICLD_VISTAU', &
+                  tau(1:state%ncol,1:pver,idx_sw_diag), &
+                  state%ncol, state%lchnk)
+   end subroutine output_cloud_optics_sw
+
+   !----------------------------------------------------------------------------
+
+   subroutine output_cloud_optics_lw(state, tau)
+
+      use ppgrid, only: pver
+      use physics_types, only: physics_state
+      use cam_history, only: outfld
+
+      type(physics_state), intent(in) :: state
+      real(r8), intent(in), dimension(:,:,:) :: tau
+
+      ! Check values
+      call assert_valid(tau(1:state%ncol,1:pver,1:nlwbands), 'cld_tau_lw')
+
+      ! Output
+      call outfld('CLOUD_TAU_LW', &
+                  tau(1:state%ncol,1:pver,1:nlwbands), &
+                  state%ncol, state%lchnk)
+
+   end subroutine output_cloud_optics_lw
+
+   !----------------------------------------------------------------------------
 
 
    ! For some reason the RRTMGP flux objects do not include initialization
