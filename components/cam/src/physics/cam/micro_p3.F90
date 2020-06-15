@@ -1006,7 +1006,7 @@ contains
          call get_rain_dsd2(qr(k),nr(k),mu_r(k),lamr(k),tmp1,tmp2,rcldm(k))
 
          ze_rain(k) = nr(k)*(mu_r(k)+6._rtype)*(mu_r(k)+5._rtype)*(mu_r(k)+4._rtype)*           &
-              (mu_r(k)+3._rtype)*(mu_r(k)+2._rtype)*(mu_r(k)+1._rtype)/lamr(k)**6
+              (mu_r(k)+3._rtype)*(mu_r(k)+2._rtype)*(mu_r(k)+1._rtype)/bfb_pow(lamr(k), 6._rtype)
          ze_rain(k) = max(ze_rain(k),1.e-22_rtype)
       else
          qv(k) = qv(k)+qr(k)
@@ -1077,7 +1077,7 @@ contains
       endif qi_not_small
 
       ! sum ze components and convert to dBZ
-      diag_ze(k) = 10._rtype*log10((ze_rain(k) + ze_ice(k))*1.e18_rtype)
+      diag_ze(k) = 10._rtype*bfb_log10((ze_rain(k) + ze_ice(k))*1.e18_rtype)
 
       ! if qr is very small then set Nr to 0 (needs to be done here after call
       ! to ice lookup table because a minimum Nr of nsmall will be set otherwise even if qr=0)
