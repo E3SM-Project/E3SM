@@ -19,7 +19,8 @@ module RtmMod
                                frivinp_rtm, finidat_rtm, nrevsn_rtm, &
                                nsrContinue, nsrBranch, nsrStartup, nsrest, &
                                inst_index, inst_suffix, inst_name, wrmflag, inundflag, &
-                               smat_option, decomp_option, barrier_timers, heatflag, sediflag
+                               smat_option, decomp_option, barrier_timers, heatflag, sediflag, &
+                               isgrid2d
   use RtmFileUtils    , only : getfil, getavu, relavu
   use RtmTimeManager  , only : timemgr_init, get_nstep, get_curr_date, advance_timestep
   use RtmHistFlds     , only : RtmHistFldsInit, RtmHistFldsSet 
@@ -228,6 +229,7 @@ contains
     type(mct_avect)   :: avtmp, avtmpG        ! temporary avects
     type(mct_sMat)    :: sMat                 ! temporary sparse matrix, needed for sMatP
     character(len=*),parameter :: subname = '(Rtmini) '
+    integer           :: rtmn                 ! total number of cells
 
     real(r8) :: wd_chnl                       ! Channel water depth (m).
     real(r8) :: hydrR                         ! Hydraulic radius (= wet A / wet P) (m).
@@ -532,24 +534,34 @@ contains
     endif
 
     call ncd_pio_openfile (ncid, trim(locfn), 0)
-    call ncd_inqdid(ncid,'lon',dimid)
-    call ncd_inqdlen(ncid,dimid,rtmlon)
-    call ncd_inqdid(ncid,'lat',dimid)
-    call ncd_inqdlen(ncid,dimid,rtmlat)
+
+    call ncd_inqfdims(ncid, isgrid2d, rtmlon, rtmlat, rtmn)
 
     if (masterproc) then
        write(iulog,*) 'Values for rtmlon/rtmlat: ',rtmlon,rtmlat
        write(iulog,*) 'Successfully read MOSART dimensions'
+       if (isgrid2d) then
+        write(iulog,*) 'MOSART input is 2d'
+       else
+        write(iulog,*) 'MOSART input is 1d'
+       endif
        call shr_sys_flush(iulog)
     endif
 
     ! Allocate variables
-    allocate(rlonc(rtmlon), rlatc(rtmlat), &
-             rlonw(rtmlon), rlone(rtmlon), &
-             rlats(rtmlat), rlatn(rtmlat), &
-             rtmCTL%rlon(rtmlon),          &
-             rtmCTL%rlat(rtmlat),          &
-             stat=ier)
+    if (isgrid2d) then
+      allocate(rlonc(rtmlon), rlatc(rtmlat), &
+               rlonw(rtmlon), rlone(rtmlon), &
+               rlats(rtmlat), rlatn(rtmlat), &
+               rtmCTL%rlon(rtmlon),          &
+               rtmCTL%rlat(rtmlat),          &
+               stat=ier)
+    else
+      allocate(rlonc(rtmlon), rlatc(rtmlon), &
+               rtmCTL%rlon(rtmlon),          &
+               rtmCTL%rlat(rtmlon),          &
+               stat=ier)
+    endif
     if (ier /= 0) then
        write(iulog,*) subname,' : Allocation ERROR for rlon'
        call shr_sys_abort(subname//' ERROR alloc for rlon')
@@ -580,10 +592,17 @@ contains
     call ncd_io(ncid=ncid, varname='latixy', flag='read', data=tempr, readvar=found)
     if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART latitudes')
     if (masterproc) write(iulog,*) 'Read latixy ',minval(tempr),maxval(tempr)
-    do j=1,rtmlat
-       rtmCTL%rlat(j) = tempr(1,j)
-       rlatc(j) = tempr(1,j)
-    end do
+    if (isgrid2d) then
+      do j=1,rtmlat
+         rtmCTL%rlat(j) = tempr(1,j)
+         rlatc(j) = tempr(1,j)
+      end do
+    else
+      do j=1,rtmlon
+         rtmCTL%rlat(j) = tempr(j,1)
+         rlatc(j) = tempr(j,1)
+      end do
+    endif
     if (masterproc) write(iulog,*) 'rlatc ',minval(rlatc),maxval(rlatc)
 
     call ncd_io(ncid=ncid, varname='area', flag='read', data=tempr, readvar=found)
@@ -668,47 +687,51 @@ contains
     ! Derive gridbox edges
     !-------------------------------------------------------
 
-    ! assuming equispaced grid, calculate edges from rtmlat/rtmlon
-    ! w/o assuming a global grid
-    edgen = maxval(rlatc) + 0.5*abs(rlatc(1) - rlatc(2))
-    edges = minval(rlatc) - 0.5*abs(rlatc(1) - rlatc(2))
-    edgee = maxval(rlonc) + 0.5*abs(rlonc(1) - rlonc(2))
-    edgew = minval(rlonc) - 0.5*abs(rlonc(1) - rlonc(2))
+    if (isgrid2d) then
 
-    if ( edgen .ne.  90._r8 )then
-       if (masterproc) write(iulog,*) 'Regional grid: edgen = ', edgen
-    end if
-    if ( edges .ne. -90._r8 )then
-       if (masterproc) write(iulog,*) 'Regional grid: edges = ', edges
-    end if
-    if ( edgee .ne. 180._r8 )then
-       if (masterproc) write(iulog,*) 'Regional grid: edgee = ', edgee
-    end if
-    if ( edgew .ne.-180._r8 )then
-       if (masterproc) write(iulog,*) 'Regional grid: edgew = ', edgew
-    end if
+      ! assuming equispaced grid, calculate edges from rtmlat/rtmlon
+      ! w/o assuming a global grid
+      edgen = maxval(rlatc) + 0.5*abs(rlatc(1) - rlatc(2))
+      edges = minval(rlatc) - 0.5*abs(rlatc(1) - rlatc(2))
+      edgee = maxval(rlonc) + 0.5*abs(rlonc(1) - rlonc(2))
+      edgew = minval(rlonc) - 0.5*abs(rlonc(1) - rlonc(2))
 
-    ! Set edge latitudes (assumes latitudes are constant for a given longitude)
-    rlats(:) = edges
-    rlatn(:) = edgen
-    do j = 2, rtmlat
-       if (rlatc(2) > rlatc(1)) then ! South to North grid
-          rlats(j)   = (rlatc(j-1) + rlatc(j)) / 2._r8
-          rlatn(j-1) = rlats(j)
-       else  ! North to South grid
-          rlatn(j)   = (rlatc(j-1) + rlatc(j)) / 2._r8
-          rlats(j-1) = rlatn(j)
-       end if
-    end do
+      if ( edgen .ne.  90._r8 )then
+         if (masterproc) write(iulog,*) 'Regional grid: edgen = ', edgen
+      end if
+      if ( edges .ne. -90._r8 )then
+         if (masterproc) write(iulog,*) 'Regional grid: edges = ', edges
+      end if
+      if ( edgee .ne. 180._r8 )then
+         if (masterproc) write(iulog,*) 'Regional grid: edgee = ', edgee
+      end if
+      if ( edgew .ne.-180._r8 )then
+         if (masterproc) write(iulog,*) 'Regional grid: edgew = ', edgew
+      end if
 
-    ! Set edge longitudes
-    rlonw(:) = edgew
-    rlone(:) = edgee
-    dx = (edgee - edgew) / rtmlon
-    do i = 2, rtmlon
-       rlonw(i)   = rlonw(i) + (i-1)*dx
-       rlone(i-1) = rlonw(i)
-    end do
+      ! Set edge latitudes (assumes latitudes are constant for a given longitude)
+      rlats(:) = edges
+      rlatn(:) = edgen
+      do j = 2, rtmlat
+         if (rlatc(2) > rlatc(1)) then ! South to North grid
+            rlats(j)   = (rlatc(j-1) + rlatc(j)) / 2._r8
+            rlatn(j-1) = rlats(j)
+         else  ! North to South grid
+            rlatn(j)   = (rlatc(j-1) + rlatc(j)) / 2._r8
+            rlats(j-1) = rlatn(j)
+         end if
+      end do
+
+      ! Set edge longitudes
+      rlonw(:) = edgew
+      rlone(:) = edgee
+      dx = (edgee - edgew) / rtmlon
+      do i = 2, rtmlon
+         rlonw(i)   = rlonw(i) + (i-1)*dx
+         rlone(i-1) = rlonw(i)
+      end do
+
+    endif
 
     call t_stopf ('mosarti_grid')
 
@@ -3139,13 +3162,14 @@ contains
   type(io_desc_t)    :: iodesc_dbl ! pio io desc
   type(io_desc_t)    :: iodesc_int ! pio io desc
   integer, pointer   :: compdof(:) ! computational degrees of freedom for pio 
+  integer :: ndims                 ! number of dimensions in the input
   integer :: dids(2)               ! variable dimension ids 
   integer :: dsizes(2)             ! variable dimension lengths
-  integer :: ier                  ! error code
+  integer :: ier                   ! error code
   integer :: begr, endr, iunit, nn, n, cnt, nr, nt
   integer :: numDT_r, numDT_t
   integer :: lsize, gsize
-  integer :: igrow, igcol, iwgt
+  integer :: igrow, igcol, iwgt, idim
   type(mct_aVect) :: avtmp, avtmpG ! temporary avects
   type(mct_aVect) :: avsrc, avdst  ! temporary
   type(mct_sMat)  :: sMat          ! temporary sparse matrix, needed for sMatP
@@ -3157,6 +3181,7 @@ contains
   character(len=*),parameter :: subname = '(MOSART_init)'
   character(len=*),parameter :: FORMI = '(2A,2i10)'
   character(len=*),parameter :: FORMR = '(2A,2g15.7)'
+  !real(r8), pointer          :: e_eprof_in2(:,:)
  
   begr = rtmCTL%begr
   endr = rtmCTL%endr
@@ -3174,11 +3199,18 @@ contains
 
      ! setup iodesc based on frac dids
      ier = pio_inq_varid(ncid, name='frac', vardesc=vardesc)
-     ier = pio_inq_vardimid(ncid, vardesc, dids)
-     ier = pio_inq_dimlen(ncid, dids(1),dsizes(1))
-     ier = pio_inq_dimlen(ncid, dids(2),dsizes(2))
-     call pio_initdecomp(pio_subsystem, pio_double, dsizes, compDOF, iodesc_dbl)
-     call pio_initdecomp(pio_subsystem, pio_int   , dsizes, compDOF, iodesc_int)
+     if (isgrid2d) then
+        ndims = 2
+     else
+        ndims = 1
+     endif
+     ier = pio_inq_vardimid(ncid, vardesc, dids(1:ndims))
+     do idim = 1, ndims
+        ier = pio_inq_dimlen(ncid, dids(idim),dsizes(idim))
+     enddo
+     call pio_initdecomp(pio_subsystem, pio_double, dsizes(1:ndims), compDOF, iodesc_dbl)
+     call pio_initdecomp(pio_subsystem, pio_int   , dsizes(1:ndims), compDOF, iodesc_int)
+
      deallocate(compdof)
      call pio_seterrorhandling(ncid, PIO_BCAST_ERROR)
 
@@ -3515,63 +3547,12 @@ contains
           TUnit%wr_bf = 0.0_r8   
 
           allocate( TUnit%e_eprof_in2( 11, begr:endr ) )    
+          !allocate( e_eprof_in2( 11, begr:endr ) )  
+
           ! --------------------------------- 
           ! (assign elevation values to TUnit%e_eprof_in2( :, : ) ).
-           
-          ier = pio_inq_varid(ncid, name='ele0', vardesc=vardesc)
-          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(1,:), ier)
-          if (masterproc) write(iulog,FORMR) trim(subname),' read ele0 ',minval(TUnit%e_eprof_in2(1,:)),maxval(TUnit%e_eprof_in2(1,:))
-          call shr_sys_flush(iulog)
-          
-          ier = pio_inq_varid(ncid, name='ele1', vardesc=vardesc)
-          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(2,:), ier)
-          if (masterproc) write(iulog,FORMR) trim(subname),' read ele1 ',minval(TUnit%e_eprof_in2(2,:)),maxval(TUnit%e_eprof_in2(2,:))
-          call shr_sys_flush(iulog)
-          
-          ier = pio_inq_varid(ncid, name='ele2', vardesc=vardesc)
-          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(3,:), ier)
-          if (masterproc) write(iulog,FORMR) trim(subname),' read ele2 ',minval(TUnit%e_eprof_in2(3,:)),maxval(TUnit%e_eprof_in2(3,:))
-          call shr_sys_flush(iulog)
-          
-          ier = pio_inq_varid(ncid, name='ele3', vardesc=vardesc)
-          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(4,:), ier)
-          if (masterproc) write(iulog,FORMR) trim(subname),' read ele3 ',minval(TUnit%e_eprof_in2(4,:)),maxval(TUnit%e_eprof_in2(4,:))
-          call shr_sys_flush(iulog)
-          
-          ier = pio_inq_varid(ncid, name='ele4', vardesc=vardesc)
-          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(5,:), ier)
-          if (masterproc) write(iulog,FORMR) trim(subname),' read ele4 ',minval(TUnit%e_eprof_in2(5,:)),maxval(TUnit%e_eprof_in2(5,:))
-          call shr_sys_flush(iulog)
-          
-          ier = pio_inq_varid(ncid, name='ele5', vardesc=vardesc)
-          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(6,:), ier)
-          if (masterproc) write(iulog,FORMR) trim(subname),' read ele5 ',minval(TUnit%e_eprof_in2(6,:)),maxval(TUnit%e_eprof_in2(6,:))
-          call shr_sys_flush(iulog)
-          
-          ier = pio_inq_varid(ncid, name='ele6', vardesc=vardesc)
-          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(7,:), ier)
-          if (masterproc) write(iulog,FORMR) trim(subname),' read ele6 ',minval(TUnit%e_eprof_in2(7,:)),maxval(TUnit%e_eprof_in2(7,:))
-          call shr_sys_flush(iulog)
-          
-          ier = pio_inq_varid(ncid, name='ele7', vardesc=vardesc)
-          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(8,:), ier)
-          if (masterproc) write(iulog,FORMR) trim(subname),' read ele7 ',minval(TUnit%e_eprof_in2(8,:)),maxval(TUnit%e_eprof_in2(8,:))
-          call shr_sys_flush(iulog)
-          
-          ier = pio_inq_varid(ncid, name='ele8', vardesc=vardesc)
-          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(9,:), ier)
-          if (masterproc) write(iulog,FORMR) trim(subname),' read ele8 ',minval(TUnit%e_eprof_in2(9,:)),maxval(TUnit%e_eprof_in2(9,:))
-          call shr_sys_flush(iulog)
-          
-          ier = pio_inq_varid(ncid, name='ele9', vardesc=vardesc)
-          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(10,:), ier)
-          if (masterproc) write(iulog,FORMR) trim(subname),' read ele9 ',minval(TUnit%e_eprof_in2(10,:)),maxval(TUnit%e_eprof_in2(10,:))
-          call shr_sys_flush(iulog)
-          
-          ier = pio_inq_varid(ncid, name='ele10', vardesc=vardesc)
-          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(11,:), ier)
-          if (masterproc) write(iulog,FORMR) trim(subname),' read ele10 ',minval(TUnit%e_eprof_in2(11,:)),maxval(TUnit%e_eprof_in2(11,:))
-          call shr_sys_flush(iulog)
+
+          call read_elevation_profile(ncid, 'ele', TUnit%e_eprof_in2)
      
           ! --------------------------------- 
 
@@ -4047,6 +4028,64 @@ contains
   endif 
 
   end subroutine MOSART_init
+
+!----------------------------------------------------------------------------
+
+  subroutine read_elevation_profile(ncid, varname, e_eprof_in2)
+
+    implicit none
+    type(file_desc_t)      :: ncid       ! pio file desc
+    character(len=*)       :: varname    ! variable name
+    real(r8)               :: e_eprof_in2(:,:)
+
+    character(len=*),parameter :: subname = '(read_elevation_profile)'
+
+    type(var_desc_t)   :: vardesc    ! pio variable desc 
+    type(io_desc_t)    :: iodesc     ! pio io desc
+    integer            :: ndims      ! ndims for var      
+    integer            :: dsizes(3)  ! dim sizes
+    integer            :: dimids(3)  ! dim ids
+    integer, pointer   :: compdof(:) ! computational degrees of freedom for pio 
+    integer            :: begr, endr, cnt, m, n
+    integer            :: ier
+    integer            :: elesize    ! number of points for elevation profile
+    real(r8), pointer  :: ele(:,:)
+
+    begr = rtmCTL%begr
+    endr = rtmCTL%endr
+
+    ier = pio_inq_varid(ncid, name=varname, vardesc=vardesc)
+    ier = pio_inq_varndims(ncid, vardesc, ndims)
+    ier = pio_inq_vardimid(ncid, vardesc, dimids)
+
+    do n = 1,ndims
+      ier = pio_inq_dimlen(ncid,dimids(n),dsizes(n))
+    enddo
+
+    elesize = dsizes(ndims)
+    allocate(compdof(rtmCTL%lnumr*elesize)) ! dims(ndims): 
+    cnt = 0
+
+    do n = 1, elesize
+      do m = rtmCTL%begr,rtmCTL%endr
+        cnt = cnt + 1
+        compDOF(cnt) = (n-1)* rtmCTL%numr + rtmCTL%gindex(m)
+      enddo
+    enddo
+
+    call pio_initdecomp(pio_subsystem, pio_double, dsizes(1:ndims), compDOF, iodesc)
+    deallocate(compdof)
+
+    allocate(ele(begr:endr,1:elesize))
+    call pio_read_darray(ncid, vardesc, iodesc, ele, ier)
+
+    do n = 1, elesize
+      e_eprof_in2(n,:) = ele(:,n)
+    enddo
+
+    deallocate(ele)
+
+  end subroutine read_elevation_profile
 
 !----------------------------------------------------------------------------
 
