@@ -2207,7 +2207,7 @@ subroutine shoc_tke(&
        obklen, tke, isotropy)
 
 
-  if(.false.) then
+  !if(.false.) then
    do k=1,nlev
     do i=1,shcol
 
@@ -2235,17 +2235,17 @@ subroutine shoc_tke(&
       ! moments in SHOC
 
       ! define the time scale
-      tscale1=(2.0_rtype*tke(i,k))/a_diss
+      !Btscale1=(2.0_rtype*tke(i,k))/a_diss
 
       ! define a damping term "lambda" based on column stability
-      lambda=lambda_low+((brunt_int(i)/ggr)-brunt_low)*lambda_slope
-      lambda=max(lambda_low,min(lambda_high,lambda))
+      !Blambda=lambda_low+((brunt_int(i)/ggr)-brunt_low)*lambda_slope
+      !Blambda=max(lambda_low,min(lambda_high,lambda))
 
-      buoy_sgs_save=brunt(i,k)
-      if (buoy_sgs_save .le. 0._rtype) lambda=0._rtype
+      !Bbuoy_sgs_save=brunt(i,k)
+      !Bif (buoy_sgs_save .le. 0._rtype) lambda=0._rtype
 
             ! Compute the return to isotropic timescale
-      isotropy(i,k)=min(maxiso,tscale1/(1._rtype+lambda*buoy_sgs_save*tscale1**2))
+      !Bisotropy(i,k)=min(maxiso,tscale1/(1._rtype+lambda*buoy_sgs_save*tscale1**2))
 
       ! Dimensionless Okukhov length considering only
       !  the lowest model grid layer height to scale
@@ -2270,7 +2270,7 @@ subroutine shoc_tke(&
 
     enddo ! end i loop
   enddo ! end k loop
-  endif
+  !endif
 
   return
 
