@@ -1,6 +1,141 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 6-16-2020
+Tag: cime5.8.26
+Answer Changes: Climate Changin] 
+Tests:  hand tested with ERS_Vnuopc_D.f09_g17.A.cheyenne_intel modified for era5 
+        ../src/drivers/nuopc/cime_config/testdefs/testlist_drv.xml (cheyenne, intel)
+        scripts_regression_tests (with PIO_VERSION=2)
+Dependencies:
+
+Brief Summary:
+    - One line bug fix for regional amazon grid and nuopc rpointer name.
+    - scorpio (e3sm pio2 version) does not support the PIO_SHORT type added to the pio2 library.
+    - Add mvsource script.
+    - Add support for compressed ERA5 data streams.
+    - Major refactor of nuopc datamodel caps and share code.
+    - Changes to add NCAR's Casper/DAV systems to the machine lists.
+    - Updates to dry deposition data.
+    - Updates to the latest pio2 code.
+    - Allow a user supplied config_grids.xml file.
+    - Pleiades machines updates.
+    - Improved error message for incorrect setting of cime model.
+
+User interface changes: 
+    - For all CIME data models.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+c09bafe53 minor one line bug fixes for regional amazon grid and nuopc rpointer name
+cd1238247 Merge pull request #3575 from jedwards4b/fix_scorpio_bld
+50c768dec Merge pull request #3543 from jedwards4b/movesrc
+9e31c070f Merge pull request #3573 from jedwards4b/add_era5_support_nuopc_data_models
+dab733cba Merge pull request #3572 from ESMCI/esmf_datamodels
+bb4932212 Merge pull request #3548 from gdicker1/add_DAV
+72a32ce65 Merge pull request #3557 from fvitt/drydep_cime5.8.23
+0c7d278c1 Merge pull request #3568 from jedwards4b/pio2_update
+e2dbd62e6 Merge pull request #3565 from jedwards4b/user_mods_config_grids2
+84391ac37 Merge pull request #3546 from fvitt/pleiades_cime5.8.23
+31a009936 Merge pull request #3567 from ESMCI/wpcoomb/Improved_error_message_for_incorrect_setting_of_CIME_MODEL
+
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/config_grids.xml
+M	config/cesm/machines/config_batch.xml
+M	config/cesm/machines/config_compilers.xml
+M	config/cesm/machines/config_machines.xml
+M	scripts/Tools/Makefile
+A	scripts/Tools/mvsource
+M	scripts/lib/CIME/XML/grids.py
+M	scripts/lib/CIME/XML/machines.py
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/buildlib.py
+M	scripts/lib/CIME/buildnml.py
+M	scripts/lib/CIME/case/case.py
+M	scripts/lib/CIME/case/case_submit.py
+M	scripts/lib/CIME/case/preview_namelists.py
+M	scripts/lib/CIME/nmlgen.py
+M	scripts/lib/CIME/utils.py
+A	src/build_scripts/buildlib.fox
+M	src/build_scripts/buildlib.pio
+M	src/components/data_comps_mct/datm/cime_config/buildnml
+M	src/components/data_comps_nuopc/datm/cime_config/buildnml
+M	src/components/data_comps_nuopc/datm/cime_config/config_component.xml
+M	src/components/data_comps_nuopc/datm/cime_config/namelist_definition_datm.xml
+M	src/components/data_comps_nuopc/datm/src/atm_comp_nuopc.F90
+A	src/components/data_comps_nuopc/datm/src/datm_datamode_clmncep_mod.F90
+A	src/components/data_comps_nuopc/datm/src/datm_datamode_core2_mod.F90
+A	src/components/data_comps_nuopc/datm/src/datm_datamode_jra_mod.F90
+M	src/components/data_comps_nuopc/dice/cime_config/buildnml
+M	src/components/data_comps_nuopc/dice/cime_config/config_component.xml
+M	src/components/data_comps_nuopc/dice/cime_config/namelist_definition_dice.xml
+A	src/components/data_comps_nuopc/dice/src/dice_datamode_ssmi_mod.F90
+M	src/components/data_comps_nuopc/dice/src/ice_comp_nuopc.F90
+M	src/components/data_comps_nuopc/dlnd/cime_config/buildnml
+M	src/components/data_comps_nuopc/dlnd/cime_config/config_component.xml
+M	src/components/data_comps_nuopc/dlnd/cime_config/namelist_definition_dlnd.xml
+M	src/components/data_comps_nuopc/dlnd/src/lnd_comp_nuopc.F90
+M	src/components/data_comps_nuopc/docn/cime_config/buildnml
+M	src/components/data_comps_nuopc/docn/cime_config/config_component.xml
+M	src/components/data_comps_nuopc/docn/cime_config/namelist_definition_docn.xml
+A	src/components/data_comps_nuopc/docn/src/docn_datamode_aquaplanet_mod.F90
+A	src/components/data_comps_nuopc/docn/src/docn_datamode_copyall_mod.F90
+A	src/components/data_comps_nuopc/docn/src/docn_datamode_iaf_mod.F90
+A	src/components/data_comps_nuopc/docn/src/docn_datamode_som_mod.F90
+A	src/components/data_comps_nuopc/docn/src/docn_set_ofrac_mod.F90
+M	src/components/data_comps_nuopc/docn/src/ocn_comp_nuopc.F90
+M	src/components/data_comps_nuopc/drof/cime_config/buildnml
+M	src/components/data_comps_nuopc/drof/cime_config/config_component.xml
+M	src/components/data_comps_nuopc/drof/cime_config/namelist_definition_drof.xml
+M	src/components/data_comps_nuopc/drof/src/rof_comp_nuopc.F90
+M	src/components/data_comps_nuopc/dshr_nuopc/dshr_dfield_mod.F90
+M	src/components/data_comps_nuopc/dshr_nuopc/dshr_fldlist_mod.F90
+M	src/components/data_comps_nuopc/dshr_nuopc/dshr_mod.F90
+M	src/components/data_comps_nuopc/dwav/cime_config/buildnml
+M	src/components/data_comps_nuopc/dwav/cime_config/config_component.xml
+M	src/components/data_comps_nuopc/dwav/cime_config/namelist_definition_dwav.xml
+M	src/components/data_comps_nuopc/dwav/src/wav_comp_nuopc.F90
+M	src/drivers/mct/shr/seq_drydep_mod.F90
+M	src/externals/pio2/scripts/genf90.pl
+M	src/externals/pio2/set_flags.am
+M	src/externals/pio2/src/clib/pio_darray.c
+M	src/externals/pio2/src/clib/pio_nc.c
+M	src/externals/pio2/src/clib/pio_nc4.c
+M	src/externals/pio2/src/flib/CMakeLists.txt
+M	src/externals/pio2/src/flib/Makefile.am
+M	src/externals/pio2/src/flib/pio.F90
+M	src/externals/pio2/src/flib/pio_kinds.F90
+M	src/externals/pio2/src/flib/pio_types.F90
+M	src/externals/pio2/src/flib/piodarray.F90.in
+M	src/externals/pio2/src/flib/pionfatt_mod.F90.in
+M	src/externals/pio2/src/flib/pionfget_mod.F90.in
+M	src/externals/pio2/src/flib/pionfput_mod.F90.in
+M	src/externals/pio2/src/ncint/ncintdispatch.c
+M	src/externals/pio2/src/ncint/ncintdispatch.h
+M	src/externals/pio2/tests/cunit/test_async_3proc.c
+M	src/externals/pio2/tests/cunit/test_async_4proc.c
+M	src/externals/pio2/tests/cunit/test_async_simple.c
+M	src/externals/pio2/tests/cunit/test_pioc.c
+M	src/externals/pio2/tests/cunit/test_pioc_fill.c
+M	src/externals/pio2/tests/cunit/test_pioc_putget.c
+M	src/externals/pio2/tests/general/util/pio_tf_f90gen.pl
+M	src/externals/pio2/tests/general/util/pio_tutil.F90
+M	src/externals/pio2/tests/unit/ncdf_tests.F90
+M	src/share/nuopc/seq_drydep_mod.F90
+M	src/share/streams/shr_strdata_mod.F90
+M	src/share/streams/shr_stream_mod.F90
+M	src/share/streams_nuopc/dshr_methods_mod.F90
+M	src/share/streams_nuopc/dshr_strdata_mod.F90
+M	src/share/streams_nuopc/dshr_stream_mod.F90
+M	src/share/streams_nuopc/dshr_tInterp_mod.F90
+M	src/share/util/shr_cal_mod.F90
+M	src/share/util/shr_kind_mod.F90
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 6-8-2020
 Tag: cime5.8.25
 Answer Changes: None
