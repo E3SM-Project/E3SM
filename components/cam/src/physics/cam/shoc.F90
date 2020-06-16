@@ -109,14 +109,9 @@ real(rtype), parameter :: mintke = 0.0004_rtype
 
 !===================
 ! const parameter for Diagnosis of PBL depth
-real(rtype), parameter :: onet  = 1._rtype/3._rtype  ! 1/3 power in wind gradient expression
 real(rtype), parameter :: tiny = 1.e-36_rtype     ! lower bound for wind magnitude
 real(rtype), parameter :: fac  = 100._rtype       ! ustar parameter in height diagnosis
-real(rtype), parameter :: fak   =  8.5_rtype      ! Constant in surface temperature excess
 real(rtype), parameter :: ricr  =  0.3_rtype      ! Critical richardson number
-real(rtype), parameter :: betam = 15.0_rtype      ! Constant in wind gradient expression
-real(rtype), parameter :: sffrac=  0.1_rtype      ! Surface layer fraction of boundary layer
-real(rtype), parameter :: binm  = betam*sffrac ! betam * sffrac
 
 ! Maximum number of levels in pbl from surface
 integer :: npbl
@@ -3080,9 +3075,9 @@ subroutine pblintd(&
     real(rtype) :: thv(shcol,nlev)         ! virtual potential temperature
     real(rtype) :: tlv(shcol)              ! ref. level pot tmp + tmp excess
 
-    logical  :: unstbl(shcol)           ! pts w/unstbl pbl (positive virtual ht flx)
     logical  :: check(shcol)            ! True=>chk if Richardson no.>critcal
     logical  :: ocncldcheck(shcol)      ! True=>if ocean surface and cloud in lowest layer
+
     !
     ! Compute Obukhov length virtual temperature flux and various arrays for use later:
     !
@@ -3102,9 +3097,9 @@ subroutine pblintd(&
     ! PBL height calculation
     !
     call pblintd_height(&
-       shcol,nlev,nlevi,&             ! Input
+       shcol,nlev,&                   ! Input
        z,u,v,ustar,&                  ! Input
-       thv,tlv,    &                  ! Input
+       thv,    &                      ! Input
        pblh,rino,check)               ! Output
     !
     ! Estimate an effective surface temperature to account for surface
@@ -3113,7 +3108,7 @@ subroutine pblintd(&
     call pblintd_surf_temp(&
        shcol,nlev,nlevi,&          ! Input
        z,ustar,obklen,kbfs,thv,&   ! Input
-       phiminv,tlv,unstbl,&        ! Output
+       phiminv,tlv,&               ! Output
        pblh,check,rino)            ! InOutput
 
     !
@@ -3205,9 +3200,9 @@ subroutine pblintd_init(&
 end subroutine pblintd_init 
 
 subroutine pblintd_height(&
-       shcol,nlev,nlevi,&             ! Input
-       z,u,v,ustar,&                  ! Input
-       thv,tlv,    &                  ! Input
+       shcol,nlev,&              ! Input
+       z,u,v,ustar,&             ! Input
+       thv,   &                  ! Input
        pblh,rino,check)               ! Output
     !------------------------------Arguments--------------------------------
     !
@@ -3215,14 +3210,12 @@ subroutine pblintd_height(&
     !
     integer, intent(in) :: shcol                     ! number of atmospheric columns
     integer, intent(in) :: nlev                      ! number of mid-point layers
-    integer, intent(in) :: nlevi                     ! number of interface layers
 
     real(rtype), intent(in)  :: z(shcol,nlev)           ! height above surface [m]
     real(rtype), intent(in)  :: u(shcol,nlev)           ! windspeed x-direction [m/s]
     real(rtype), intent(in)  :: v(shcol,nlev)           ! windspeed y-direction [m/s]
     real(rtype), intent(in)  :: ustar(shcol)            ! surface friction velocity [m/s]
     real(rtype), intent(in)  :: thv(shcol,nlev)         ! virtual potential temperature
-    real(rtype), intent(in)  :: tlv(shcol)              ! ref. level pot tmp + tmp excess
 
     !
     ! Output arguments
@@ -3262,7 +3255,7 @@ end subroutine pblintd_height
 subroutine pblintd_surf_temp(&
        shcol,nlev,nlevi,&          ! Input
        z,ustar,obklen,kbfs,thv,&   ! Input
-       phiminv,tlv,unstbl,&        ! Output
+       phiminv,tlv,&               ! Output
        pblh,check,rino)            ! InOutput
     !------------------------------Arguments--------------------------------
     ! Input arguments
@@ -3279,7 +3272,6 @@ subroutine pblintd_surf_temp(&
 
     real(rtype), intent(out) :: phiminv(shcol)          ! inverse phi function for momentum
     real(rtype), intent(out) :: tlv(shcol)              ! ref. level pot tmp + tmp excess
-    logical, intent(out)  :: unstbl(shcol)              ! pts w/unstbl pbl (positive virtual ht flx)
     logical, intent(inout)  :: check(shcol)             ! True=>chk if Richardson no.>critcal
     real(rtype), intent(inout) :: rino(shcol,nlev)      ! bulk Richardson no. from level to ref lev
     real(rtype), intent(inout) :: pblh(shcol)              ! boundary-layer height [m]
@@ -3287,6 +3279,16 @@ subroutine pblintd_surf_temp(&
     !---------------------------Local workspace-----------------------------
     !
     integer  :: i                       ! longitude index
+    logical  :: unstbl(shcol)           ! pts w/unstbl pbl (positive virtual ht flx)
+
+    !===================
+    ! const parameter for Diagnosis of PBL depth
+    real(rtype), parameter :: onet  = 1._rtype/3._rtype  ! 1/3 power in wind gradient expression
+    real(rtype), parameter :: fak   =  8.5_rtype      ! Constant in surface temperature excess
+    real(rtype), parameter :: betam = 15.0_rtype      ! Constant in wind gradient expression
+    real(rtype), parameter :: sffrac=  0.1_rtype      ! Surface layer fraction of boundary layer
+    real(rtype), parameter :: binm  = betam*sffrac ! betam * sffrac
+
     !
     ! Estimate an effective surface temperature to account for surface
     ! fluctuations
