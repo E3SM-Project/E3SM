@@ -36,7 +36,6 @@ void scream_init (const MPI_Fint& f_comm,
   // Store the mask, so we can restore before returning.
   int fpe_mask = get_enabled_fpes();
   disable_all_fpes();
-  constexpr int num_cols  = 32;
 
   // First of all, initialize the scream session
   scream::initialize_scream_session();
@@ -61,22 +60,10 @@ void scream_init (const MPI_Fint& f_comm,
 
   auto& ad_params = scream_params.sublist("Atmosphere Driver");
 
-  // Need to register products in the factory *before* we create any AtmosphereProcessGroup,
-  // which rely on factory for process creation. The initialize method of the AD does that.
-  // While we're at it, check that the case insensitive key of the factory works.
+  // Need to register products in the factories *before* we attempt to create any.
+  // In particular, register all atm processes, and all grids managers.
   register_dynamics();
   register_physics();
-
-  // Need to register grids managers before we create the driver
-  auto& gm_factory = GridsManagerFactory::instance();
-  gm_factory.register_product("User Provided",create_user_provided_grids_manager);
-
-  // Set the dummy grid in the UserProvidedGridManager
-  // Recall that this class stores *static* members, so whatever
-  // we set here, will be reflected in the GM built by the factory.
-  auto& upgm = c.create<UserProvidedGridsManager>(); // upgm;
-  upgm.set_grid(std::make_shared<DummyPhysicsGrid>(num_cols));
-  upgm.set_reference_grid("Physics");
 
   // Create the bare ad, then init it
   auto& ad = c.create<AtmosphereDriver>();

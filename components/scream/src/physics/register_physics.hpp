@@ -16,7 +16,6 @@ namespace scream {
 inline void register_physics () {
   auto& proc_factory = AtmosphereProcessFactory::instance();
 
-  proc_factory.register_product("SA",&create_atmosphere_process<P3StandAloneInit>);
   proc_factory.register_product("p3",&create_atmosphere_process<P3Microphysics>);
   proc_factory.register_product("SHOC",&create_atmosphere_process<SHOCMacrophysics>);
 }
