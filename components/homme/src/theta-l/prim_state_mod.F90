@@ -783,6 +783,13 @@ contains
        ! changes due to forcing depend on ftype
        write(iulog,'(a)') 'Change from dribbled phys tendencies, viscosity, remap, CAAR, all together (run_subcy):'
 
+       write(iulog,'(a,5e15.7)') 'dt_f, dt_hv, dt_remap, tstep, dt_run_sub', dt_f, dt_hv, dt_remap, tstep, dt_run_sub
+       write(iulog,'(a,2e15.7)') 'dt_f, ', dt_f
+       write(iulog,'(a,2e15.7)') 'dt_hv', dt_hv
+       write(iulog,'(a,2e15.7)') 'dt_remap', dt_remap
+       write(iulog,'(a,2e15.7)') 'tstep',  tstep
+       write(iulog,'(a,2e15.7)') 'dt_run_sub', dt_run_sub
+
        if(ftype==1) then
 !hack
        write(iulog,'(a,5e15.7)') 'dKE/dt(W/m^2): ',0.0/dt_f,&
