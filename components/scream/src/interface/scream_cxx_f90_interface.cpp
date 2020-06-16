@@ -1,7 +1,7 @@
-#include "share/scream_session.hpp"
+#include "ekat/scream_session.hpp"
 
-#include "share/atmosphere_process.hpp"
-#include "share/scream_pack.hpp"
+#include "share/atm_process/atmosphere_process.hpp"
+#include "ekat/scream_pack.hpp"
 #include "share/grid/user_provided_grids_manager.hpp"
 #include "share/grid/se_grid.hpp"
 #include "control/atmosphere_driver.hpp"
@@ -16,8 +16,8 @@
 #include "control/tests/dummy_grid.hpp"
 
 #include "interface/ScreamContext.hpp"
-#include "share/mpi/scream_comm.hpp"
-#include "share/scream_parse_yaml_file.hpp"
+#include "ekat/mpi/scream_comm.hpp"
+#include "ekat/scream_parse_yaml_file.hpp"
 
 extern "C"
 {
@@ -66,6 +66,7 @@ void scream_init (const MPI_Fint& f_comm,
   // While we're at it, check that the case insensitive key of the factory works.
   register_dynamics();
   register_physics();
+
   // Need to register grids managers before we create the driver
   auto& gm_factory = GridsManagerFactory::instance();
   gm_factory.register_product("User Provided",create_user_provided_grids_manager);
@@ -78,7 +79,6 @@ void scream_init (const MPI_Fint& f_comm,
   upgm.set_reference_grid("Physics");
 
   // Create the bare ad, then init it
-  // TODO: uncomment once you have valid inputs. I fear AD may crash with no inputs.
   auto& ad = c.create<AtmosphereDriver>();
 
   // Recall that e3sm uses the int YYYYMMDD to store a date

@@ -1,7 +1,7 @@
 #ifndef SCREAM_REGISTER_DYNAMICS_PROCESS_HPP
 #define SCREAM_REGISTER_DYNAMICS_PROCESS_HPP
 
-#include "share/atmosphere_process.hpp"
+#include "share/atm_process/atmosphere_process.hpp"
 
 #ifdef SCREAM_HAS_HOMME
 #include "homme/atmosphere_dynamics.hpp"

@@ -1,7 +1,7 @@
 #ifndef SCREAM_REGISTER_PHYSICS_PROCESSES_HPP
 #define SCREAM_REGISTER_PHYSICS_PROCESSES_HPP
 
-#include "share/atmosphere_process.hpp"
+#include "share/atm_process/atmosphere_process.hpp"
 
 // TODO: in the future, you may want to guard these headers,
 //       in case we add more options for each parametrization,
