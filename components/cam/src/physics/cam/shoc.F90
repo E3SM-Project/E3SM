@@ -1488,9 +1488,9 @@ subroutine diag_third_shoc_moments(&
 
   ! perform clipping to prevent unrealistically large values from occuring
   call clipping_diag_third_shoc_momnets(&
-          nlevi,shcol,w_sec_zi,&    !Input 
+          nlevi,shcol,w_sec_zi,&    !Input
           w3)                       !Output
-  
+
   return
 
 end subroutine diag_third_shoc_moments
@@ -1533,7 +1533,7 @@ subroutine compute_diag_third_shoc_moment(&
   ! heights of interface points [m]
   real(rtype), intent(in) :: zi_grid(shcol,nlevi)
 
-  !Interpolated varaibles  
+  !Interpolated varaibles
   real(rtype), intent(in) :: isotropy_zi(shcol,nlevi)
   real(rtype), intent(in) :: brunt_zi(shcol,nlevi)
   real(rtype), intent(in) :: w_sec_zi(shcol,nlevi)
@@ -1551,7 +1551,7 @@ subroutine compute_diag_third_shoc_moment(&
   real(rtype) :: isosqrt, dthl2, dwthl, dtke, dw2, aw2
   real(rtype) :: buoy_sgs2,  grd, bet2, bet
   real(rtype) :: f0, f1, f2, f3, f4, f5
-  
+
   !LOCAL PARAMETERS
   real(rtype), parameter :: c=7.0_rtype
   real(rtype), parameter :: a0=(0.52_rtype*c**(-2))/(c-2._rtype)
@@ -1579,7 +1579,7 @@ subroutine compute_diag_third_shoc_moment(&
       isosqrt=iso**2
       buoy_sgs2=isosqrt*brunt_zi(i,k)
       bet2=ggr/thetal_zi(i,k)
- 
+
 
       f0=thedz2 * bet2**3 * iso**4 * wthl_sec(i,k) * &
          (thl_sec(i,kc)-thl_sec(i,kb))
@@ -1635,7 +1635,7 @@ subroutine compute_diag_third_shoc_moment(&
   w3(:,1) = 0._rtype
 
 end subroutine compute_diag_third_shoc_moment
- 
+
 subroutine clipping_diag_third_shoc_momnets(nlevi,shcol,w_sec_zi,w3)
 
   ! perform clipping to prevent unrealistically large values from occuring
@@ -1648,16 +1648,16 @@ subroutine clipping_diag_third_shoc_momnets(nlevi,shcol,w_sec_zi,w3)
   real(rtype), intent(in) :: w_sec_zi(shcol,nlevi)
   real(rtype), intent(inout) :: w3(shcol,nlevi)
 
-  real(rtype) :: tsign 
+  real(rtype) :: tsign
   real(rtype) :: cond
   real(rtype) :: theterm
 
   integer k, i
 
   do k=1, nlevi
-    do i=1, shcol 
+    do i=1, shcol
 
-      tsign = 1._rtype   
+      tsign = 1._rtype
       theterm = w_sec_zi(i,k)
       cond = w3clip * sqrt(2._rtype * theterm**3)
       if (w3(i,k) .lt. 0) tsign = -1._rtype
@@ -2426,25 +2426,26 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
 
   real(rtype), parameter :: Cee = Ce1 + Ce2
 
-  real(rtype) :: a_prod_bu, a_prod_sh, a_diss, buoy_sgs_save, tscale, lambda
+  real(rtype) :: a_prod_bu, a_prod_sh, a_diss, buoy_sgs_save, tscale1, lambda, smix
 
   do k = 1, nlev
      do i = 1, shcol
 
+        smix=shoc_mix(i,k)
         ! Compute buoyant production term
         a_prod_bu=(ggr/basetemp)*wthv_sec(i,k)
 
         tke(i,k)=max(0._rtype,tke(i,k))
 
-        ! Shear production term
+        ! Shear production term, use diffusivity from
+        !  previous timestep
         a_prod_sh=tk(i,k)*sterm_zt(i,k)
 
         ! Dissipation term
         a_diss=Cee/shoc_mix(i,k)*tke(i,k)**1.5
 
         ! March equation forward one timestep
-        tke(i,k)=max(0._rtype,tke(i,k)+ &
-	   dtime*(max(0._rtype,a_prod_sh+a_prod_bu)-a_diss))
+        tke(i,k)=max(0._rtype,tke(i,k)+dtime*(max(0._rtype,a_prod_sh+a_prod_bu)-a_diss))
 
         tke(i,k)=min(tke(i,k),maxtke)
 
@@ -2454,7 +2455,7 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
         ! moments in SHOC
 
         ! define the time scale
-        tscale=(2.0_rtype*tke(i,k))/a_diss
+        tscale1=(2.0_rtype*tke(i,k))/a_diss
 
         ! define a damping term "lambda" based on column stability
         lambda=lambda_low+((brunt_int(i)/ggr)-brunt_low)*lambda_slope
@@ -2464,25 +2465,25 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
         if (buoy_sgs_save .le. 0._rtype) lambda=0._rtype
 
         ! Compute the return to isotropic timescale
-        isotropy(i,k)=min(maxiso,tscale/ &
-	   (1._rtype+lambda*buoy_sgs_save*tscale**2))
+        isotropy(i,k)=min(maxiso,tscale1/(1._rtype+lambda*buoy_sgs_save*tscale1**2))
 
         ! Dimensionless Okukhov length considering only
         !  the lowest model grid layer height to scale
         z_over_L = zt_grid(i,nlev)/obklen(i)
 
         if (z_over_L .gt. zL_crit_val .and. (zt_grid(i,k) .lt. pblh(i)+pbl_trans)) then
-          ! If surface layer is moderately to very stable, based on near surface
-          !  dimensionless Monin-Obukov use modified coefficients of
-          !  tkh and tk that are primarily based on shear production
-          !  and SHOC length scale, to promote mixing within the PBL
-          !  and to a height slighty above to ensure smooth transition.
-          tkh(i,k)=Ckh_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
-          tk(i,k)=Ckm_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
+           ! If surface layer is moderately to very stable, based on near surface
+           !  dimensionless Monin-Obukov use modified coefficients of
+           !  tkh and tk that are primarily based on shear production
+           !  and SHOC length scale, to promote mixing within the PBL
+           !  and to a height slighty above to ensure smooth transition.
+           tkh(i,k)=Ckh_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
+           tk(i,k)=Ckm_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
         else
-          ! Default definition of eddy diffusivity for heat and momentum
-          tkh(i,k)=Ckh*isotropy(i,k)*tke(i,k)
-          tk(i,k)=Ckm*isotropy(i,k)*tke(i,k)
+           ! Default definition of eddy diffusivity for heat and momentum
+
+           tkh(i,k)=Ckh*isotropy(i,k)*tke(i,k)
+           tk(i,k)=Ckm*isotropy(i,k)*tke(i,k)
         endif
 
         tke(i,k) = max(mintke,tke(i,k))
@@ -2594,7 +2595,7 @@ subroutine shoc_length(&
   ! determine the convective velocity scale of
   !   the planetary boundary layer
   call compute_conv_vel_shoc_length(nlev,shcol,pblh,zt_grid,dz_zt,thv,wthv_sec,conv_vel)
-  
+
   ! computed quantity above is wstar3
   ! clip, to avoid negative values and take the cubed
   !   root to get the convective velocity scale
@@ -2610,7 +2611,7 @@ subroutine shoc_length(&
   ! Do checks on the length scale.  Make sure it is not
   !  larger than the grid mesh of the host model.
   call check_length_scale_shoc_length(nlev,shcol,host_dx,host_dy,shoc_mix)
-  
+
   return
 
 end subroutine shoc_length
@@ -3510,20 +3511,20 @@ real(rtype) function esatw_shoc(t)
 end
 
 
-subroutine compute_brunt_shoc_length(nlev,nlevi,shcol,dz_zt,thv,thv_zi,brunt) 
+subroutine compute_brunt_shoc_length(nlev,nlevi,shcol,dz_zt,thv,thv_zi,brunt)
 
   !=========================================================
   !
-  ! Computes the brunt_visala frequency 
+  ! Computes the brunt_visala frequency
 
   implicit none
-  integer, intent(in) :: nlev, nlevi, shcol  
+  integer, intent(in) :: nlev, nlevi, shcol
   ! Grid difference centereted on thermo grid [m]
   real(rtype), intent(in) :: dz_zt(shcol,nlev)
   ! virtual potential temperature [K]
   real(rtype), intent(in) :: thv(shcol,nlev)
-  ! virtual potential temperature [K] at interface 
-  real(rtype), intent(in) :: thv_zi(shcol,nlevi) 
+  ! virtual potential temperature [K] at interface
+  real(rtype), intent(in) :: thv_zi(shcol,nlevi)
   ! brunt vaisala frequency [s-1]
   real(rtype), intent(out) :: brunt(shcol, nlev)
   integer k, i
@@ -3545,10 +3546,10 @@ subroutine compute_l_inf_shoc_length(nlev,shcol,zt_grid,dz_zt,tke,l_inf)
   integer, intent(in) :: nlev, shcol
   real(rtype), intent(in) :: zt_grid(shcol,nlev), dz_zt(shcol,nlev), tke(shcol,nlev)
   real(rtype), intent(inout) :: l_inf(shcol)
-  real(rtype) :: tkes, numer(shcol), denom(shcol) 
+  real(rtype) :: tkes, numer(shcol), denom(shcol)
   integer k, i
-  
-  numer(:) = 0._rtype 
+
+  numer(:) = 0._rtype
   denom(:) = 0._rtype
 
   do k=1,nlev
@@ -3610,9 +3611,9 @@ subroutine compute_conv_time_shoc_length(shcol,pblh,conv_vel,tscale)
   ! Convective velocity scale
   real(rtype), intent(inout) :: conv_vel(shcol)
   ! Convective time scale
-  real(rtype), intent(inout) ::  tscale(shcol) 
+  real(rtype), intent(inout) ::  tscale(shcol)
 
-  integer i 
+  integer i
 
   do i=1,shcol
     conv_vel(i) = max(0._rtype,conv_vel(i))**(1._rtype/3._rtype)
@@ -3634,7 +3635,7 @@ subroutine compute_shoc_mix_shoc_length(nlev,shcol,tke,brunt,tscale,zt_grid,l_in
   real(rtype), intent(in) :: tke(shcol,nlev)
   ! brunt vaisala frequency [s-1]
   real(rtype), intent(in) :: brunt(shcol,nlev)
-  ! convective time scale 
+  ! convective time scale
   real(rtype), intent(in) :: tscale(shcol)
   ! heights, for thermo grid [m]
   real(rtype), intent(in) :: zt_grid(shcol,nlev)
@@ -3659,7 +3660,7 @@ subroutine compute_shoc_mix_shoc_length(nlev,shcol,tke,brunt,tscale,zt_grid,l_in
 
       shoc_mix(i,k)=min(maxlen,(2.8284_rtype*sqrt(1._rtype/((1._rtype/(tscale(i)*tkes*vk*zt_grid(i,k)))&
         +(1._rtype/(tscale(i)*tkes*l_inf(i)))+0.01_rtype*(brunt2(i,k)/tke(i,k)))))/length_fac)
-    enddo ! end i loop (column loop) 
+    enddo ! end i loop (column loop)
   enddo ! end k loop (vertical loop)
 
 end subroutine compute_shoc_mix_shoc_length
@@ -3670,8 +3671,8 @@ subroutine check_length_scale_shoc_length(nlev,shcol,host_dx,host_dy,shoc_mix)
 
   implicit none
   integer, intent(in) :: nlev, shcol
-  real(rtype), intent(in) :: host_dx(shcol), host_dy(shcol)  
-  ! Turbulent length scale [m]  
+  real(rtype), intent(in) :: host_dx(shcol), host_dy(shcol)
+  ! Turbulent length scale [m]
   real(rtype), intent(inout) :: shoc_mix(shcol, nlev)
   integer k, i
 
