@@ -22,22 +22,34 @@ class TestAllScream(object):
                  make_parallel_level=0, ctest_parallel_level=0):
     ###########################################################################
 
-        self._cxx               = cxx
-        self._kokkos            = kokkos
-        self._submit            = submit
-        self._parallel          = parallel
-        self._fast_fail         = fast_fail
-        self._baseline_ref      = baseline_ref
-        self._machine           = machine
-        self._perform_tests     = not no_tests
-        self._keep_tree         = keep_tree
-        self._baseline_dir      = baseline_dir
-        self._custom_cmake_opts = custom_cmake_opts
-        self._custom_env_vars   = custom_env_vars
-        self._tests             = tests
-        self._root_dir          = root_dir
-        self._integration_test  = integration_test
-        self._dry_run           = dry_run
+        self._cxx                     = cxx
+        self._kokkos                  = kokkos
+        self._submit                  = submit
+        self._parallel                = parallel
+        self._fast_fail               = fast_fail
+        self._baseline_ref            = baseline_ref
+        self._machine                 = machine
+        self._perform_tests           = not no_tests
+        self._keep_tree               = keep_tree
+        self._baseline_dir            = baseline_dir
+        self._custom_cmake_opts       = custom_cmake_opts
+        self._custom_env_vars         = custom_env_vars
+        self._tests                   = tests
+        self._root_dir                = root_dir
+        self._integration_test        = integration_test
+        self._dry_run                 = dry_run
+        self._must_generate_baselines = False
+        self._testing_dir             = "ctest-build"
+
+        ############################################
+        #  Sanity checks and helper structs setup  #
+        ############################################
+
+        expect (not self._baseline_dir or self._testing_dir != self._baseline_dir,
+                "Error! For your safety, do NOT use 'ctest-build' to store baselines. Move them to a different directory.")
+
+        expect(not (self._baseline_ref and self._baseline_dir),
+               "Makes no sense to specify a baseline generation commit if using pre-existing baselines ")
 
         self._tests_cmake_args = {"dbg" : [("CMAKE_BUILD_TYPE", "Debug")],
                                   "sp"  : [("CMAKE_BUILD_TYPE", "Debug"),
@@ -79,9 +91,10 @@ class TestAllScream(object):
 
         print_last_commit(git_ref=self._original_branch)
 
-        # Compute baseline info
-        expect(not (self._baseline_ref and self._baseline_dir),
-               "Makes no sense to specify a baseline generation commit if using pre-existing baselines ")
+        ###################################
+        #      Compute baseline info      #
+        ###################################
+
         if self._baseline_dir is None:
             if self._baseline_ref is None:
                 # Compute baseline ref
@@ -96,18 +109,46 @@ class TestAllScream(object):
                     if self._baseline_ref is None or self._baseline_ref == get_current_commit(commit="origin/master"):
                         self._baseline_ref = "origin/master"
 
-                print("Using baseline commit {}".format(self._baseline_ref))
         else:
             self._baseline_dir = pathlib.Path(self._baseline_dir).resolve()
             expect(self._baseline_dir.is_dir(), "Baseline_dir {} is not a dir".format(self._baseline_dir))
-            for test in self._tests:
-                test_baseline_dir = self.get_preexisting_baseline(test)
-                expect(test_baseline_dir.is_dir(), "Missing baseline {}".format(test_baseline_dir))
 
             if self._integration_test:
-                merge_git_ref(git_ref="origin/master",verbose=True)
+                self._baseline_ref = "origin/master"
+                merge_git_ref(git_ref=self._baseline_ref,verbose=True)
+            else:
+                for test in self._tests:
+                    test_baseline_dir = self.get_preexisting_baseline(test)
+                    expect(test_baseline_dir.is_dir(), "Missing baseline {}".format(test_baseline_dir))
 
-        # Deduce how many testing resources per test
+        # Whether we had baseline_dir or baseline_ref passed in, we need to establish a directory
+        # where to read/store baselines
+        if self._baseline_dir is None:
+            self._must_generate_baselines = True
+            self._baseline_dir = pathlib.Path(self._testing_dir,"baselines").resolve()
+
+        # Name of the file used to store/check the git sha of the repo used to generate baselines.
+        # Store it once to avoid typos-like bugs
+        self._baseline_sha_file = pathlib.Path(self._baseline_dir,"baseline_git_sha").resolve()
+
+        if self._integration_test:
+            master_sha = get_current_commit(commit=self._baseline_ref)
+            if not self.baselines_are_present():
+                print ("Baselines not found. Rebuilding them.")
+                self._must_generate_baselines = True
+            elif self.baselines_are_expired(expected_baseline_sha=master_sha):
+                print ("Baselines expired. Rebuilding them.")
+                self._must_generate_baselines = True
+            else:
+                print ("Baselines found and not expired. Skipping baselines generation.")
+
+        if self._must_generate_baselines:
+            print("Using commit {} to generate baselines".format(self._baseline_ref))
+
+        ##################################################
+        #   Deduce how many testing resources per test   #
+        ##################################################
+
         if ctest_parallel_level > 0:
             ctest_max_jobs = ctest_parallel_level
             print("Note: honoring requested value for ctest parallel level: {}".format(ctest_max_jobs))
@@ -173,15 +214,56 @@ class TestAllScream(object):
                    "you can pass `--keep-tree` to allow non-clean repo.")
 
     ###############################################################################
+    def get_baseline_dir(self, test):
+    ###############################################################################
+        return pathlib.Path(self._baseline_dir, self._test_full_names[test])
+
+    ###############################################################################
     def get_test_dir(self, test):
     ###############################################################################
-        return pathlib.Path(self._root_dir, "ctest-build", self._test_full_names[test])
+        return pathlib.Path(self._root_dir, self._testing_dir, self._test_full_names[test])
 
     ###############################################################################
     def get_preexisting_baseline(self, test):
     ###############################################################################
         expect(self._baseline_dir is not None, "Cannot supply preexisting baseline without baseline dir")
         return pathlib.Path(self._baseline_dir, self._test_full_names[test], "data")
+
+    ###############################################################################
+    def baselines_are_present (self):
+    ###############################################################################
+        # Check that all baselines are present (one subdir for all values of self._tests)
+
+        # Sanity check
+        expect(self._baseline_dir is not None, "Error! This routine should only be called when testing against pre-existing baselines.")
+
+        # Even if a single baseline is missing, we consider all the baselines not present
+        for test in self._tests:
+            test_baseline_dir = pathlib.Path(self._baseline_dir, self._test_full_names[test], "data")
+            if not test_baseline_dir.is_dir():
+                return False
+
+        # Note: inside this script we don't know what kind of file should be in the baseline dirs.
+        #       If the actual files are missing, some other part of the testing will crash.
+        return True
+
+    ###############################################################################
+    def baselines_are_expired (self, expected_baseline_sha):
+    ###############################################################################
+        # Baselines are expired if either:
+        #  2) there is no file in baseline_dir containing the sha of the baselines
+        #  3) the baselines sha does not match the one passed to this function
+
+        # Sanity check
+        expect(self._baseline_dir is not None, "Error! This routine should only be called when testing against pre-existing baselines.")
+
+        # No sha file => baselines expired
+        if not self._baseline_sha_file.exists():
+            return True
+
+        # Different sha => baselines expired
+        baseline_sha = run_cmd_no_fail("cat {}".format(self._baseline_sha_file))
+        return expected_baseline_sha != baseline_sha
 
     ###############################################################################
     def get_machine_file(self):
@@ -258,7 +340,7 @@ class TestAllScream(object):
     ###############################################################################
     def generate_baselines(self, test):
     ###############################################################################
-        test_dir = self.get_test_dir(test)
+        test_dir = self.get_baseline_dir(test)
 
         cmake_config = self.generate_cmake_config(self._tests_cmake_args[test])
 
@@ -296,6 +378,16 @@ class TestAllScream(object):
         print("Generating baselines for ref {}".format(self._baseline_ref))
         print("###############################################################################")
 
+        # First, create build directories (one per test)
+        for test in self._tests:
+            test_dir = self.get_baseline_dir(test)
+
+            # Create this test's build dir
+            if test_dir.exists():
+                shutil.rmtree(str(test_dir))
+
+            test_dir.mkdir(parents=True)
+
         checkout_git_ref(self._baseline_ref, verbose=True)
 
         success = True
@@ -313,6 +405,9 @@ class TestAllScream(object):
                 if not success and self._fast_fail:
                     print('Generation of baselines for build {} failed'.format(self._test_full_names[test]))
                     return False
+
+        # Store the sha used for baselines generation
+        run_cmd_no_fail("echo '{}' > {}".format(get_current_commit(commit=self._baseline_ref),self._baseline_sha_file))
 
         checkout_git_ref(git_head_ref, verbose=True)
 
@@ -346,6 +441,16 @@ class TestAllScream(object):
         print("###############################################################################")
         print("Running tests!")
         print("###############################################################################")
+
+        # First, create build directories (one per test)
+        for test in self._tests:
+            test_dir = self.get_test_dir(test)
+
+            # Create this test's build dir
+            if test_dir.exists():
+                shutil.rmtree(str(test_dir))
+
+            test_dir.mkdir(parents=True)
 
         success = True
         tests_success = {
@@ -391,18 +496,8 @@ class TestAllScream(object):
 
         success = True
         try:
-            # First, create build directories (one per test)
-            for test in self._tests:
-                test_dir = self.get_test_dir(test)
-
-                # Create this test's build dir
-                if test_dir.exists():
-                    shutil.rmtree(str(test_dir))
-
-                test_dir.mkdir(parents=True)
-
-            if self._baseline_dir is None:
-                # Second, generate baselines
+            # If needed, generate baselines first
+            if self._must_generate_baselines:
                 expect(self._baseline_ref is not None, "Missing baseline ref")
 
                 success = self.generate_all_baselines()
@@ -410,8 +505,8 @@ class TestAllScream(object):
                     print ("Error(s) occurred during baselines generation phase")
                     return False
 
+            # If requested, run tests
             if self._perform_tests:
-                # Finally, run the tests
                 success &= self.run_all_tests()
                 if not success:
                     print ("Error(s) occurred during test phase")
