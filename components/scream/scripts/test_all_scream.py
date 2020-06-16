@@ -343,6 +343,7 @@ class TestAllScream(object):
         test_dir = self.get_baseline_dir(test)
 
         cmake_config = self.generate_cmake_config(self._tests_cmake_args[test])
+        cmake_config += " -DSCREAM_BASELINES_ONLY=ON"
 
         print("===============================================================================")
         print("Generating baseline for test {} with config '{}'".format(self._test_full_names[test], cmake_config))

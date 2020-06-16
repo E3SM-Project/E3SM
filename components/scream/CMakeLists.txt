@@ -117,6 +117,11 @@ set(SCREAM_MPI_ERRORS_ARE_FATAL TRUE CACHE BOOL "Whether MPI errors should abort
 set(SCREAM_MPIRUN_EXE ${DEFAULT_MPIRUN_EXE} CACHE STRING "The executable name for mpirun")
 set(SCREAM_LIB_ONLY ${DEFAULT_LIB_ONLY} CACHE BOOL "Only build libraries, no exes")
 
+# Assuming SCREAM_LIB_ONLY is FALSE (else, no exec is built at all), we provide the option
+# of building only baseline-related execs. By default, this option is off (menaing "build everything).
+# However, when generating baselines, this can be useful to reduce the amount of stuff compiled.
+set(SCREAM_BASELINES_ONLY FALSE CACHE BOOL "Whether building only baselines-related executables")
+
 ## Work out pack sizes.
 # Determine the master pack size.
 set(SCREAM_PACK_SIZE ${DEFAULT_PACK_SIZE} CACHE STRING
