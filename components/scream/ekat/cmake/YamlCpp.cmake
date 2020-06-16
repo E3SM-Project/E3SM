@@ -18,8 +18,9 @@ if (NOT IS_YAMLCPP_ALREADY_BUILT)
   endif()
   set (YAMLCPP_BINARY_DIR ${CMAKE_BINARY_DIR}/externals/yaml-cpp)
 
-  # We don't want testing
-  set (BUILD_TESTING FALSE)
+  # We don't want testing or any yaml-cpp executable at all
+  set (YAML_CPP_BUILD_TESTS FALSE)
+  set (YAML_CPP_BUILD_TOOLS FALSE)
   add_subdirectory (${YAMLCPP_SOURCE_DIR} ${YAMLCPP_BINARY_DIR})
 
   set (YAMLCPP_INCLUDE_DIRS ${YAMLCPP_SOURCE_DIR}/include)
