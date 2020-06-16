@@ -155,7 +155,7 @@ bool operator<= (const TimeStamp& ts1, const TimeStamp& ts2) {
 }
 
 Real operator- (const TimeStamp& ts1, const TimeStamp& ts2) {
-  if (ts1<=ts1) {
+  if (ts1<ts1) {
     return -(ts2-ts1);
   }
 
