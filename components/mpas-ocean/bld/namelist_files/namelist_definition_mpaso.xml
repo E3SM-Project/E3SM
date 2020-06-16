@@ -219,6 +219,22 @@ Valid values: Any positive real number. If set any negative real number, config_
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_hmix_use_ref_cell_width" type="logical"
+	category="hmix" group="hmix">
+If true, hmix coefficient values are set with reference to config_hmix_ref_cell_width. If false, hmix coefficient values are referenced to smallest gridcell in the mesh. The false setting is for backwards compatilibity. When false, hmix coefficient flags must be adjusted for every new mesh with a different minimum-sized cell.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_hmix_ref_cell_width" type="real"
+	category="hmix" group="hmix">
+Reference cell width. If config_hmix_use_ref_cell_width = .true., then hmix coefficients are set to be nu_{2h} = config_mom_del2*(cellWidth / config_hmix_use_ref_cell_width) and nu_{4h} = config_mom_del4*(cellWidth / config_hmix_use_ref_cell_width)^3 where cellWidth is the effective cell width computed as 2*sqrt(areaCell/pi). See Hoch et al 2020 JAMES eq 1,2. This relation applies within a simulation, but also generally among multiple simulations, so the parameters config_mom_del2, config_mom_del4, and config_hmix_use_ref_cell_width can generally remain at their standard values, and just be adjusted for fine tuning.
+
+Valid values: Any positive real number, but typically a resolution number such as 30km.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_apvm_scale_factor" type="real"
 	category="hmix" group="hmix">
 Anticipated potential vorticity (APV) method scale factor, $c_{apv}$. When zero, APV is off.
@@ -238,6 +254,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_mom_del2" type="real"
+	category="hmix_del2" group="hmix_del2">
+Horizontal viscosity, $\nu_{2h}$. If config_hmix_use_ref_cell_width = .true. then $\nu_h$ = config_mom_del2*(cellWidth / config_hmix_use_ref_cell_width). If config_hmix_use_ref_cell_width = .false. then it is referenced to the smallest cell.
+
+Valid values: any positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_use_tracer_del2" type="logical"
 	category="hmix_del2" group="hmix_del2">
 If true, Laplacian horizontal mixing is used on the tracer equation.
@@ -246,17 +270,9 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_mom_del2" type="real"
-	category="hmix_del2" group="hmix_del2">
-Horizonal viscosity, $\nu_h$.
-
-Valid values: any positive real
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_tracer_del2" type="real"
 	category="hmix_del2" group="hmix_del2">
-Horizonal diffusion, $\kappa_h$.
+Horizontal diffusion, $\kappa_{2h}$. If config_hmix_use_ref_cell_width = .true. then $\kappa_h$ = config_tracer_del2*(cellWidth / config_hmix_use_ref_cell_width). If config_hmix_use_ref_cell_width = .false. then it is referenced to the smallest cell.
 
 Valid values: any positive real
 Default: Defined in namelist_defaults.xml
@@ -273,17 +289,9 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_use_tracer_del4" type="logical"
-	category="hmix_del4" group="hmix_del4">
-If true, biharmonic horizontal mixing is used on the tracer equation.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_mom_del4" type="real"
 	category="hmix_del4" group="hmix_del4">
-Coefficient for horizontal biharmonic operator on momentum.
+Coefficient for horizontal biharmonic operator on momentum.  If config_hmix_use_ref_cell_width = .true. then $\nu_{4h}$ = config_mom_del4*(cellWidth / config_hmix_use_ref_cell_width)^3. If config_hmix_use_ref_cell_width = .false. then it is referenced to the smallest cell.
 
 Valid values: any positive real
 Default: Defined in namelist_defaults.xml
@@ -297,9 +305,17 @@ Valid values: any positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_tracer_del4" type="logical"
+	category="hmix_del4" group="hmix_del4">
+If true, biharmonic horizontal mixing is used on the tracer equation.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_tracer_del4" type="real"
 	category="hmix_del4" group="hmix_del4">
-Coefficient for horizontal biharmonic operator on tracers.
+Coefficient for horizontal biharmonic operator on tracers.  If config_hmix_use_ref_cell_width = .true. then $\nu_{4h}$ = config_tracer_del4*(cellWidth / config_hmix_use_ref_cell_width)^3. If config_hmix_use_ref_cell_width = .false. then it is referenced to the smallest cell.
 
 Valid values: any positive real
 Default: Defined in namelist_defaults.xml
@@ -1567,7 +1583,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_highFreqThick_del2" type="real"
 	category="ALE_frequency_filtered_thickness" group="ALE_frequency_filtered_thickness">
-Horizonal high frequency thickness diffusion, $\kappa_{hhf}$.
+Horizontal high frequency thickness diffusion, $\kappa_{hhf}$.
 
 Valid values: any positive real
 Default: Defined in namelist_defaults.xml
@@ -1824,105 +1840,6 @@ Default: Defined in namelist_defaults.xml
 Character string to choose tensor test fuction
 
 Valid values: 'linear_x', 'linear_y', 'linear_arb_rot', 'power_x', 'power_y', 'power_arb_rot', 'sin_arb_rot', 'sph_solid_body', 'sph_Williamson', 'sph_uCosCos', 'sph_vCosCos', 'sph_ELonLon_CosCos', 'sph_ELatLat_CosCos', 'sph_ELonLat_CosCos'
-Default: Defined in namelist_defaults.xml
-</entry>
-
-
-<!-- constrain_Haney_number -->
-
-<entry id="config_use_rx1_constraint" type="logical"
-	category="constrain_Haney_number" group="constrain_Haney_number">
-Initialize using Haney number constraint under ice shelves
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_rx1_outer_iter_count" type="integer"
-	category="constrain_Haney_number" group="constrain_Haney_number">
-The number of outer iterations (first smoothing then rx1 constraint) during initialization of the vertical grid.
-
-Valid values: any positive integer
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_rx1_inner_iter_count" type="integer"
-	category="constrain_Haney_number" group="constrain_Haney_number">
-The number of iterations used to constrain rx1 in each layer.
-
-Valid values: any positive integer
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_rx1_init_inner_weight" type="real"
-	category="constrain_Haney_number" group="constrain_Haney_number">
-The weight by which layer thicknesses are altered at the beginning of inner iteration. This weight linearly increases to 1.0 by the final iteration.
-
-Valid values: a positive value less than or equal to 1
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_rx1_max" type="real"
-	category="constrain_Haney_number" group="constrain_Haney_number">
-The maximum value rx1Max of the Haney number (rx1) after modification of the vertical grid
-
-Valid values: any positive value, typically greater than or equal to 1
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_rx1_horiz_smooth_weight" type="real"
-	category="constrain_Haney_number" group="constrain_Haney_number">
-Relative weight of horizontal neighbors compared to this cell when smoothing vertical stretching
-
-Valid values: A non-negative number
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_rx1_vert_smooth_weight" type="real"
-	category="constrain_Haney_number" group="constrain_Haney_number">
-Relative weight of vertical neighbors compared to this cell when smoothing vertical stretching
-
-Valid values: A non-negative number
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_rx1_slope_weight" type="real"
-	category="constrain_Haney_number" group="constrain_Haney_number">
-Weight used to nudge level interfaces toward being flat (thus decreasing the Haney number)
-
-Valid values: A non-negative number
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_rx1_zstar_weight" type="real"
-	category="constrain_Haney_number" group="constrain_Haney_number">
-Weight used to nudge vertical stretching toward z-star during each outer iteration
-
-Valid values: A non-negative number
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_rx1_horiz_smooth_open_ocean_cells" type="integer"
-	category="constrain_Haney_number" group="constrain_Haney_number">
-The size (in cells) of a buffer region around land ice for smoothing.  Smoothing is performed under land ice and in the buffer region of open ocean.
-
-Valid values: any non-negative integer, 0 indiates no buffer region.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_rx1_min_levels" type="integer"
-	category="constrain_Haney_number" group="constrain_Haney_number">
-The minimum number of layers in the ocean column in the smoothed region.
-
-Valid values: a positive integer
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_rx1_min_layer_thickness" type="real"
-	category="constrain_Haney_number" group="constrain_Haney_number">
-The minimum layer thickness in the smoothed region.
-
-Valid values: an positive value
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -5057,6 +4974,49 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_AM_oceanHeatContent_write_on_startup" type="logical"
 	category="AM_oceanHeatContent" group="AM_oceanHeatContent">
+Logical flag determining if an analysis member write occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_mixedLayerHeatBudget -->
+
+<entry id="config_AM_mixedLayerHeatBudget_enable" type="logical"
+	category="AM_mixedLayerHeatBudget" group="AM_mixedLayerHeatBudget">
+If true, ocean analysis member mixedLayerHeatBudget is called.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_mixedLayerHeatBudget_compute_interval" type="char*1024"
+	category="AM_mixedLayerHeatBudget" group="AM_mixedLayerHeatBudget">
+Timestamp determining how often analysis member computation should be performed.
+
+Valid values: Any valid time stamp, 'dt', or 'output_interval'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_mixedLayerHeatBudget_output_stream" type="char*1024"
+	category="AM_mixedLayerHeatBudget" group="AM_mixedLayerHeatBudget">
+Name of the stream that the mixedLayerHeatBudget analysis member should be tied to.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_mixedLayerHeatBudget_compute_on_startup" type="logical"
+	category="AM_mixedLayerHeatBudget" group="AM_mixedLayerHeatBudget">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_mixedLayerHeatBudget_write_on_startup" type="logical"
+	category="AM_mixedLayerHeatBudget" group="AM_mixedLayerHeatBudget">
 Logical flag determining if an analysis member write occurs on start-up.
 
 Valid values: .true. or .false.

@@ -52,6 +52,8 @@ add_default($nl, 'config_time_integrator');
 
 add_default($nl, 'config_hmix_scaleWithMesh');
 add_default($nl, 'config_maxMeshDensity');
+add_default($nl, 'config_hmix_use_ref_cell_width');
+add_default($nl, 'config_hmix_ref_cell_width');
 add_default($nl, 'config_apvm_scale_factor');
 
 #############################
@@ -59,8 +61,8 @@ add_default($nl, 'config_apvm_scale_factor');
 #############################
 
 add_default($nl, 'config_use_mom_del2');
-add_default($nl, 'config_use_tracer_del2');
 add_default($nl, 'config_mom_del2');
+add_default($nl, 'config_use_tracer_del2');
 add_default($nl, 'config_tracer_del2');
 
 #############################
@@ -68,9 +70,9 @@ add_default($nl, 'config_tracer_del2');
 #############################
 
 add_default($nl, 'config_use_mom_del4');
-add_default($nl, 'config_use_tracer_del4');
 add_default($nl, 'config_mom_del4');
 add_default($nl, 'config_mom_del4_div_factor');
+add_default($nl, 'config_use_tracer_del4');
 add_default($nl, 'config_tracer_del4');
 
 ##############################
@@ -364,23 +366,6 @@ add_default($nl, 'config_read_nearest_restart');
 add_default($nl, 'config_conduct_tests');
 add_default($nl, 'config_test_tensors');
 add_default($nl, 'config_tensor_test_function');
-
-##########################################
-# Namelist group: constrain_Haney_number #
-##########################################
-
-add_default($nl, 'config_use_rx1_constraint');
-add_default($nl, 'config_rx1_outer_iter_count');
-add_default($nl, 'config_rx1_inner_iter_count');
-add_default($nl, 'config_rx1_init_inner_weight');
-add_default($nl, 'config_rx1_max');
-add_default($nl, 'config_rx1_horiz_smooth_weight');
-add_default($nl, 'config_rx1_vert_smooth_weight');
-add_default($nl, 'config_rx1_slope_weight');
-add_default($nl, 'config_rx1_zstar_weight');
-add_default($nl, 'config_rx1_horiz_smooth_open_ocean_cells');
-add_default($nl, 'config_rx1_min_levels');
-add_default($nl, 'config_rx1_min_layer_thickness');
 
 ################################################
 # Namelist group: tracer_forcing_activeTracers #
@@ -935,4 +920,14 @@ add_default($nl, 'config_AM_oceanHeatContent_compute_interval');
 add_default($nl, 'config_AM_oceanHeatContent_output_stream');
 add_default($nl, 'config_AM_oceanHeatContent_compute_on_startup');
 add_default($nl, 'config_AM_oceanHeatContent_write_on_startup');
+
+###########################################
+# Namelist group: AM_mixedLayerHeatBudget #
+###########################################
+
+add_default($nl, 'config_AM_mixedLayerHeatBudget_enable');
+add_default($nl, 'config_AM_mixedLayerHeatBudget_compute_interval');
+add_default($nl, 'config_AM_mixedLayerHeatBudget_output_stream');
+add_default($nl, 'config_AM_mixedLayerHeatBudget_compute_on_startup');
+add_default($nl, 'config_AM_mixedLayerHeatBudget_write_on_startup');
 

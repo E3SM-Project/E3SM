@@ -66,6 +66,8 @@
 <config_hmix_scaleWithMesh ocn_grid="oARRM60to10">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oARRM60to6">.true.</config_hmix_scaleWithMesh>
 <config_maxMeshDensity>-1.0</config_maxMeshDensity>
+<config_hmix_use_ref_cell_width>.false.</config_hmix_use_ref_cell_width>
+<config_hmix_ref_cell_width>30.0e3</config_hmix_ref_cell_width>
 <config_apvm_scale_factor>0.0</config_apvm_scale_factor>
 
 <!-- hmix_del2 -->
@@ -74,17 +76,16 @@
 <config_use_mom_del2 ocn_grid="oEC60to30v3">.true.</config_use_mom_del2>
 <config_use_mom_del2 ocn_grid="oEC60to30wLI">.true.</config_use_mom_del2>
 <config_use_mom_del2 ocn_grid="oEC60to30v3wLI">.true.</config_use_mom_del2>
-<config_use_tracer_del2>.false.</config_use_tracer_del2>
 <config_mom_del2>10.0</config_mom_del2>
 <config_mom_del2 ocn_grid="oEC60to30">1000.0</config_mom_del2>
 <config_mom_del2 ocn_grid="oEC60to30v3">1000.0</config_mom_del2>
 <config_mom_del2 ocn_grid="oEC60to30wLI">1000.0</config_mom_del2>
 <config_mom_del2 ocn_grid="oEC60to30v3wLI">1000.0</config_mom_del2>
+<config_use_tracer_del2>.false.</config_use_tracer_del2>
 <config_tracer_del2>10.0</config_tracer_del2>
 
 <!-- hmix_del4 -->
 <config_use_mom_del4>.true.</config_use_mom_del4>
-<config_use_tracer_del4>.false.</config_use_tracer_del4>
 <config_mom_del4 ocn_grid="oQU480">2.0e15</config_mom_del4>
 <config_mom_del4 ocn_grid="oQU240">2.0e14</config_mom_del4>
 <config_mom_del4 ocn_grid="oQU240wLI">2.0e14</config_mom_del4>
@@ -103,6 +104,7 @@
 <config_mom_del4 ocn_grid="oARRM60to10">1.5e10</config_mom_del4>
 <config_mom_del4 ocn_grid="oARRM60to6">3.2e09</config_mom_del4>
 <config_mom_del4_div_factor>1.0</config_mom_del4_div_factor>
+<config_use_tracer_del4>.false.</config_use_tracer_del4>
 <config_tracer_del4>0.0</config_tracer_del4>
 
 <!-- hmix_Leith -->
@@ -366,20 +368,6 @@
 <config_conduct_tests>.false.</config_conduct_tests>
 <config_test_tensors>.false.</config_test_tensors>
 <config_tensor_test_function>'sph_uCosCos'</config_tensor_test_function>
-
-<!-- constrain_Haney_number -->
-<config_use_rx1_constraint>.false.</config_use_rx1_constraint>
-<config_rx1_outer_iter_count>20</config_rx1_outer_iter_count>
-<config_rx1_inner_iter_count>10</config_rx1_inner_iter_count>
-<config_rx1_init_inner_weight>0.1</config_rx1_init_inner_weight>
-<config_rx1_max>5.0</config_rx1_max>
-<config_rx1_horiz_smooth_weight>1.0</config_rx1_horiz_smooth_weight>
-<config_rx1_vert_smooth_weight>1.0</config_rx1_vert_smooth_weight>
-<config_rx1_slope_weight>1e-1</config_rx1_slope_weight>
-<config_rx1_zstar_weight>1.0</config_rx1_zstar_weight>
-<config_rx1_horiz_smooth_open_ocean_cells>20</config_rx1_horiz_smooth_open_ocean_cells>
-<config_rx1_min_levels>3</config_rx1_min_levels>
-<config_rx1_min_layer_thickness>1.0</config_rx1_min_layer_thickness>
 
 <!-- tracer_forcing_activeTracers -->
 <config_use_activeTracers>.true.</config_use_activeTracers>
@@ -845,5 +833,12 @@
 <config_AM_oceanHeatContent_output_stream>'oceanHeatContentOutput'</config_AM_oceanHeatContent_output_stream>
 <config_AM_oceanHeatContent_compute_on_startup>.true.</config_AM_oceanHeatContent_compute_on_startup>
 <config_AM_oceanHeatContent_write_on_startup>.false.</config_AM_oceanHeatContent_write_on_startup>
+
+<!-- AM_mixedLayerHeatBudget -->
+<config_AM_mixedLayerHeatBudget_enable>.false.</config_AM_mixedLayerHeatBudget_enable>
+<config_AM_mixedLayerHeatBudget_compute_interval>'output_interval'</config_AM_mixedLayerHeatBudget_compute_interval>
+<config_AM_mixedLayerHeatBudget_output_stream>'mixedLayerHeatBudgetOutput'</config_AM_mixedLayerHeatBudget_output_stream>
+<config_AM_mixedLayerHeatBudget_compute_on_startup>.true.</config_AM_mixedLayerHeatBudget_compute_on_startup>
+<config_AM_mixedLayerHeatBudget_write_on_startup>.true.</config_AM_mixedLayerHeatBudget_write_on_startup>
 
 </namelist_defaults>

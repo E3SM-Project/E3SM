@@ -28,7 +28,6 @@ my @groups = qw(run_modes
                 ale_frequency_filtered_thickness
                 debug
                 testing
-                constrain_haney_number
                 tracer_forcing_activetracers
                 tracer_forcing_debugtracers
                 tracer_forcing_ecosystracers
@@ -64,4 +63,5 @@ my @groups = qw(run_modes
                 am_eddyproductvariables
                 am_mocstreamfunction
                 am_oceanheatcontent
+                am_mixedlayerheatbudget
                 );
