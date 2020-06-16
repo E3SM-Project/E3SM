@@ -77,6 +77,7 @@ module namelist_mod
     initial_total_mass,   & ! set > 0 to set the initial_total_mass
     u_perturb,     &        ! J&W baroclinic test perturbation size
     moisture,      &
+    use_moisture,      &
     vform,         &
     vfile_mid,     &
     vfile_int,     &
@@ -781,6 +782,12 @@ module namelist_mod
     call MPI_bcast(calc_nonlinear_stats, 1, MPIlogical_t, par%root, par%comm, ierr)
     call MPI_bcast(use_column_solver, 1, MPIlogical_t, par%root, par%comm, ierr)
 #endif
+
+    ! should we assume Q(:,:,:,1) has water vapor:
+    use_moisture = ( moisture /= "dry") 
+    if (qsize<1) use_moisture = .false.  
+
+
 
     ! use maximum available:
     if (NThreads == -1) NThreads = omp_get_max_threads()

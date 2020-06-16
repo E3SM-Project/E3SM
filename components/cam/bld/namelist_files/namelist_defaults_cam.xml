@@ -1542,7 +1542,7 @@
 <nu_div> -1.0 </nu_div>
 
 <!-- theta-l dycore uses nu_div=-1, except for historical ne4 test cases -->
-<nu_div hgrid="ne4np4" >  1.25e18 </nu_div>
+<nu_div dyn_target="preqx" hgrid="ne4np4" >  1.25e18 </nu_div>
 <nu_div dyn_target="preqx" hgrid="ne11np4" >  5.0e16 </nu_div>
 <nu_div dyn_target="preqx" hgrid="ne16np4" > 15.5e15 </nu_div>
 <nu_div dyn_target="preqx" hgrid="ne30np4" >  2.5e15 </nu_div>
