@@ -494,6 +494,7 @@ class Case(object):
 
         # Fill in compset name
         self._compsetname, self._components = self.valid_compset(self._compsetname, compset_alias, files)
+
         # if this is a valiid compset longname there will be at least 7 components.
         components = self.get_compset_components()
         expect(len(components) > 6, "No compset alias {} found and this does not appear to be a compset longname.".format(compset_name))
@@ -623,6 +624,7 @@ class Case(object):
     # is handled consistenly, this should not affect functionality.
     # Note: interstitial digits are included (e.g., in FV3GFS).
     __mod_match_re__ = re.compile(r"([^%]*[^0-9%]+)")
+
     def valid_compset(self, compset_name, compset_alias, files):
         """Add stub models missing in <compset_name>, return full compset name.
         <files> is used to collect set of all supported components.
@@ -773,16 +775,18 @@ class Case(object):
             comp_name  = self._components[i-1]
             root_dir_node_name = 'COMP_ROOT_DIR_' + comp_class
             node_name = 'CONFIG_' + comp_class + '_FILE'
-            comp_root_dir = files.get_value(root_dir_node_name, {"component":comp_name}, resolved=False)
+            compatt = {"component":comp_name}
+            comp_root_dir = files.get_value(root_dir_node_name, compatt, resolved=False)
             if comp_root_dir is not None:
                 self.set_value(root_dir_node_name, comp_root_dir)
 
-            compatt = {"component":comp_name}
             # Add the group and elements for the config_files.xml
+
             comp_config_file = files.get_value(node_name, compatt, resolved=False)
             expect(comp_config_file is not None,"No component {} found for class {}".format(comp_name, comp_class))
             self.set_value(node_name, comp_config_file)
             comp_config_file =  files.get_value(node_name, compatt)
+
             expect(comp_config_file is not None and os.path.isfile(comp_config_file),
                    "Config file {} for component {} not found.".format(comp_config_file, comp_name))
             compobj = Component(comp_config_file, comp_class)
@@ -935,6 +939,7 @@ class Case(object):
         #--------------------------------------------
         # component config data
         #--------------------------------------------
+
         self._get_component_config_data(files, driver=driver)
 
         # This needs to be called after self.set_comp_classes, which is called
@@ -1097,14 +1102,17 @@ class Case(object):
         env_batch = self.get_env("batch")
 
         batch_system_type = machobj.get_value("BATCH_SYSTEM")
+
         logger.info("Batch_system_type is {}".format(batch_system_type))
         batch = Batch(batch_system=batch_system_type, machine=machine_name, files=files,
                       extra_machines_dir=extra_machines_dir)
+
         workflow = Workflow(files=files)
-        bjobs = workflow.get_workflow_jobs(machine=machine_name, workflowid=workflowid)
-        env_workflow = self.get_env("workflow")
 
         env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
+
+        bjobs = workflow.get_workflow_jobs(machine=machine_name, workflowid=workflowid)
+        env_workflow = self.get_env("workflow")
         env_workflow.create_job_groups(bjobs, test)
 
         if walltime:
