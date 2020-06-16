@@ -73,12 +73,6 @@ real(rtype), parameter :: length_fac=0.5_rtype
 !  variance
 logical, parameter :: dothetal_skew = .false.
 
-! Use an implicit diffusion solver for SHOC
-!  If running with long timesteps (dt > 20 s), then
-!  this should be set to true. If set to false then
-!  an explicit solver will be used
-logical, parameter :: do_implicit = .true.
-
 ! ========
 ! Below define some parameters for SHOC
 
@@ -393,17 +387,15 @@ subroutine shoc_main ( &
        tke,tk,tkh,&                         ! Input/Output
        isotropy)                            ! Output
 
-    ! If implicit diffusion solver is used,
-    !  update SHOC prognostic variables here
-    if (do_implicit) then
-      call update_prognostics_implicit(&        ! Input
-         shcol,nlev,nlevi,num_qtracers,&    ! Input
-         dtime,dz_zt,dz_zi,rho_zt,&         ! Input
-         zt_grid,zi_grid,tk,tkh,&           ! Input
-         uw_sfc,vw_sfc,wthl_sfc,wqw_sfc,&   ! Input
-         thetal,qw,qtracers,tke,&           ! Input/Output
-         u_wind,v_wind)                     ! Input/Output
-    endif
+    ! Update SHOC prognostic variables here
+    !   via implicit diffusion solver
+    call update_prognostics_implicit(&      ! Input
+       shcol,nlev,nlevi,num_qtracers,&      ! Input
+       dtime,dz_zt,dz_zi,rho_zt,&           ! Input
+       zt_grid,zi_grid,tk,tkh,&             ! Input
+       uw_sfc,vw_sfc,wthl_sfc,wqw_sfc,&     ! Input
+       thetal,qw,qtracers,tke,&             ! Input/Output
+       u_wind,v_wind)                       ! Input/Output
 
     ! Diagnose the second order moments
     call diag_second_shoc_moments(&
@@ -429,25 +421,6 @@ subroutine shoc_main ( &
        dz_zt,dz_zi,&                        ! Input
        zt_grid,zi_grid,&                    ! Input
        w3)                                  ! Output
-
-    ! Update thetal, qw, tracers, and wind components
-    !   based on SGS mixing, if explicit scheme is used
-    if (.not. do_implicit) then
-      call update_prognostics(&
-         shcol,nlev,nlevi,    &             ! Input
-         dtime,dz_zt,wthl_sec,&             ! Input
-         wqw_sec,wtke_sec,uw_sec,&          ! Input
-         vw_sec,                 &          ! Input
-         rho_zt,zt_grid,zi_grid,&           ! Input
-         thetal,qw,tke,         &           ! Input/Output
-         u_wind,v_wind)                     ! Input/Output
-
-      call update_tracers( &
-         shcol,nlev,nlevi,num_qtracers,&    ! Input
-         dtime,dz_zt,wtracer_sec,&          ! Input
-         rho_zt,zt_grid,zi_grid,&           ! Input
-         qtracers)                          ! Input/Output
-    endif
 
     ! Call the PDF to close on SGS cloud and turbulence
     call shoc_assumed_pdf(&
@@ -577,178 +550,8 @@ subroutine shoc_grid( &
 end subroutine shoc_grid
 
 !==============================================================
-! Update T, q, tracers, tke, u, and v based on SGS mixing
-! using explicit diffusion solver.  Note that this routine
-! should only be called if using very small time steps
-! (< 20 s), otherwise the implicit diffusion solver should be used
-
-subroutine update_prognostics( &
-         shcol,nlev,nlevi,     &          ! Input
-         dtime,dz_zt,wthl_sec,&           ! Input
-         wqw_sec,wtke_sec,uw_sec,&        ! Input
-         vw_sec,                 &        ! Input
-         rho_zt,zt_grid,zi_grid,&         ! Input
-         thetal,qw,tke,       &           ! Input/Output
-         u_wind,v_wind)                   ! Input/Output
-
-! Purpose of this subroutine is to update T, q, u, v, tke, and
-!  tracers based on SGS mixing due to SHOC, using
-!  explicit diffusion solver
-
-  implicit none
-
-! INPUT VARIABLES
-  ! number of SHOC columns
-  integer, intent(in) :: shcol
-  ! number of vertical levels
-  integer, intent(in) :: nlev
-  ! number of interface levels
-  integer, intent(in) :: nlevi
-  ! time step [s]
-  real(rtype), intent(in) :: dtime
-  ! thickness of grid centered on thermo points [m]
-  real(rtype), intent(in) :: dz_zt(shcol,nlev)
-  ! vertical flux of heat [K m/s]
-  real(rtype), intent(in) :: wthl_sec(shcol,nlevi)
-  ! vertical flux of moisture [kg/kg m/s]
-  real(rtype), intent(in) :: wqw_sec(shcol,nlevi)
-  ! vertical zonal momentum flux [m2/s2]
-  real(rtype), intent(in) :: uw_sec(shcol,nlevi)
-  ! vertical meridional momentum flux [m2/s2]
-  real(rtype), intent(in) :: vw_sec(shcol,nlevi)
-  ! vertical flux of TKE [m3/s3]
-  real(rtype), intent(in) :: wtke_sec(shcol,nlevi)
-  ! air density [kg/m3]
-  real(rtype), intent(in) :: rho_zt(shcol,nlev)
-  ! heights centered on thermo points [m]
-  real(rtype), intent(in) :: zt_grid(shcol,nlev)
-  ! heights centered on interface points [m]
-  real(rtype), intent(in) :: zi_grid(shcol,nlevi)
-
-! IN/OUT VARIABLES
-  ! liquid water potential temperature [K]
-  real(rtype), intent(inout) :: thetal(shcol,nlev)
-  ! total water mixing ratio [kg/kg]
-  real(rtype), intent(inout) :: qw(shcol,nlev)
-  ! zonal wind [m/s]
-  real(rtype), intent(inout) :: u_wind(shcol,nlev)
-  ! meridional wind [m/s]
-  real(rtype), intent(inout) :: v_wind(shcol,nlev)
-  ! turbulent kinetic energy [m2/s2]
-  real(rtype), intent(inout) :: tke(shcol,nlev)
-
-! LOCAL VARIABLES
-  integer :: kb, kt, k, i, p
-  real(rtype) :: thedz, r1, r2, r3
-  real(rtype) :: rho_zi(shcol,nlevi)
-
-  ! linearly interpolate air density from thermo to interface grid
-  call linear_interp(zt_grid,zi_grid,rho_zt,rho_zi,nlev,nlevi,shcol,0._rtype)
-
-  do i=1,shcol
-    do k=1,nlev
-      kb=k+1
-
-      ! define air densities on various levels for mass weighted
-      !  diffusion for conservation of mass
-      r1=rho_zi(i,k)
-      r2=rho_zi(i,kb)
-      r3=rho_zt(i,k)
-
-      ! mass weighted 1/dz
-      thedz=1._rtype/(dz_zt(i,k)*r3)
-
-      ! Update temperature via vertical diffusion
-      thetal(i,k)=thetal(i,k)-dtime*(r1*wthl_sec(i,k)-r2*wthl_sec(i,kb))*thedz
-
-      ! Update total water mixing ratio via vertical diffusion
-      qw(i,k)=qw(i,k)-dtime*(r1*wqw_sec(i,k)-r2*wqw_sec(i,kb))*thedz
-
-      ! Update turbulent kinetic energy via vertical diffusion
-      tke(i,k)=tke(i,k)-dtime*(r1*wtke_sec(i,k)-r2*wtke_sec(i,kb))*thedz
-
-      ! Update the u and v wind components via vertical diffusion
-      u_wind(i,k)=u_wind(i,k)-dtime*(r1*uw_sec(i,k)-r2*uw_sec(i,kb))*thedz
-      v_wind(i,k)=v_wind(i,k)-dtime*(r1*vw_sec(i,k)-r2*vw_sec(i,kb))*thedz
-
-    enddo ! end i loop (column loop)
-  enddo ! end k loop (vertical loop)
-
-  return
-
-end subroutine update_prognostics
-
-!==============================================================
-! Update tracers based on SGS mixing
-! using explicit diffusion solver.  Note that this routine
-! should only be called if using very small time steps
-! (< 20 s), otherwise the implicit diffusion solver should be used
-
-subroutine update_tracers( &
-         shcol,nlev,nlevi,num_tracer,&    ! Input
-         dtime,dz_zt,wtracer_sec,&        ! Input
-         rho_zt,zt_grid,zi_grid,&         ! Input
-         tracer)                          ! Input/Output
-! INPUT VARIABLES
-  ! number of SHOC columns
-  integer, intent(in) :: shcol
-  ! number of vertical levels
-  integer, intent(in) :: nlev
-  ! number of interface levels
-  integer, intent(in) :: nlevi
-  ! number of tracers
-  integer, intent(in) :: num_tracer
-  ! time step [s]
-  real(rtype), intent(in) :: dtime
-  ! thickness of grid centered on thermo points [m]
-  real(rtype), intent(in) :: dz_zt(shcol,nlev)
-  ! vertical flux of tracers [varies]
-  real(rtype), intent(in) :: wtracer_sec(shcol,nlevi,num_tracer)
-  ! air density [kg/m3]
-  real(rtype), intent(in) :: rho_zt(shcol,nlev)
-  ! heights centered on thermo points [m]
-  real(rtype), intent(in) :: zt_grid(shcol,nlev)
-  ! heights centered on interface points [m]
-  real(rtype), intent(in) :: zi_grid(shcol,nlevi)
-
-! IN/OUT VARIABLES
-  ! tracers [varies]
-  real(rtype), intent(inout) :: tracer(shcol,nlev,num_tracer)
-
-! LOCAL VARIABLES
-  integer :: kb, kt, k, i, p
-  real(rtype) :: thedz, r1, r2, r3
-  real(rtype) :: rho_zi(shcol,nlevi)
-
-  ! linearly interpolate air density from thermo to interface grid
-  call linear_interp(zt_grid,zi_grid,rho_zt,rho_zi,nlev,nlevi,shcol,0._rtype)
-
-  do k=1,nlev
-    kb = k+1
-    do i=1,shcol
-      ! define air densities on various levels for mass weighted
-      !  diffusion for conservation of mass
-      r1=rho_zi(i,k)
-      r2=rho_zi(i,kb)
-      r3=rho_zt(i,k)
-      ! mass weighted 1/dz
-      thedz=1._rtype/(dz_zt(i,k)*r3)
-
-      ! Update tracers via vertical diffusion
-      do p=1,num_tracer
-        tracer(i,k,p)=tracer(i,k,p)-dtime*(r1*wtracer_sec(i,k,p)-r2*wtracer_sec(i,kb,p))*thedz
-      enddo
-    enddo ! end i loop (column loop)
-  enddo ! end k loop (vertical loop)
-
-end subroutine update_tracers
-!==============================================================
 ! Update T, q, tracers, tke, u, and v based on implicit diffusion
-! If running with time steps longer than ~ 20 s then to preserve
-! numerical stability, an implicit diffusion solver will need to be
-! used.  Here we use a backward Euler scheme.  This is the default
-! diffusion solver for SHOC.  Switching to an explicit scheme is possible
-! by setting do_implicit = .false.
+! Here we use a backward Euler scheme.  
 
 subroutine update_prognostics_implicit( &
          shcol,nlev,nlevi,num_tracer,&    ! Input
