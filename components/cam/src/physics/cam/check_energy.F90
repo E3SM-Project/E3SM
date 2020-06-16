@@ -448,6 +448,12 @@ end subroutine check_energy_get_integrals
     wr = 0._r8
     ws = 0._r8
 
+!print *, 'ixcldice = ' , ixcldice
+!print *, 'ixcldliq = ' , ixcldliq
+!print *, 'latvap, latice', latvap, latice
+!stop
+
+
     do k = 1, pver
        do i = 1, ncol
           ke(i) = ke(i) + 0.5_r8*(state%u(i,k)**2 + state%v(i,k)**2)*state%pdel(i,k)/gravit
