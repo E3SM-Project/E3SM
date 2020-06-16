@@ -208,7 +208,7 @@
     <DESC>Cori. XC40 Cray system at NERSC. KNL partition. os is CNL, 68 pes/node (for now only use 64), batch system is SLURM</DESC>
     <NODENAME_REGEX>cori</NODENAME_REGEX>
     <OS>CNL</OS>
-    <COMPILERS>intel,gnu,intel19</COMPILERS>
+    <COMPILERS>intel,gnu</COMPILERS>
     <MPILIBS>mpt,impi</MPILIBS>
     <PROJECT>e3sm</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
@@ -294,13 +294,7 @@
       <modules compiler="intel">
         <command name="load">PrgEnv-intel/6.0.5</command>
         <command name="rm">intel</command>
-        <command name="load">intel/18.0.1.163</command>
-      </modules>
-
-      <modules compiler="intel19">
-        <command name="load">PrgEnv-intel/6.0.5</command>
-        <command name="rm">intel</command>
-        <command name="load">intel/19.1.1.217</command>
+        <command name="load">intel/19.0.3.199</command>
       </modules>
 
       <modules compiler="gnu">
@@ -363,10 +357,7 @@
       <env name="MPICH_GNI_DYNAMIC_CONN">disabled</env>
     </environment_variables>
     <environment_variables compiler="intel">
-      <env name="FORT_BUFFERED">yes</env>
-      <env name="MPICH_MEMORY_REPORT">1</env>
-    </environment_variables>
-    <environment_variables compiler="intel19">
+      <!--env name="FORT_BUFFERED">yes</env-->
       <env name="MPICH_MEMORY_REPORT">1</env>
     </environment_variables>
   </machine>
