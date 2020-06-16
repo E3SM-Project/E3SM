@@ -1146,6 +1146,12 @@ flags should be captured within MPAS CMake files.
     <base> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml </base>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align </append>
   </FFLAGS>
+  <CXXFLAGS>
+    <base> -std=c++11 -fp-model consistent </base>
+    <append compile_threaded="TRUE"> -qopenmp </append>
+    <append DEBUG="TRUE"> -O0 -g </append>
+    <append DEBUG="FALSE"> -O2 </append>
+  </CXXFLAGS>    
   <PETSC_PATH>$ENV{PETSC_DIR}</PETSC_PATH>
   <SCC> icc </SCC>
   <SCXX> icpc </SCXX>
@@ -1173,6 +1179,12 @@ flags should be captured within MPAS CMake files.
     <append MPILIB="impi"> -xMIC-AVX512 </append>
     <append> -DHAVE_ERF_INTRINSICS </append>
   </FFLAGS>
+  <CXXFLAGS>
+    <base> -std=c++11 -fp-model consistent </base>
+    <append compile_threaded="TRUE"> -qopenmp </append>
+    <append DEBUG="TRUE"> -O0 -g </append>
+    <append DEBUG="FALSE"> -O2 </append>
+  </CXXFLAGS>  
   <MPICC MPILIB="impi"> mpiicc </MPICC>
   <MPICXX MPILIB="impi"> mpiicpc </MPICXX>
   <MPIFC MPILIB="impi"> mpiifort </MPIFC>
