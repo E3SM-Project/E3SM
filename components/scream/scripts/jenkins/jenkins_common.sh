@@ -27,7 +27,9 @@ if [ $skip_testing -eq 0 ]; then
       SUBMIT="" # We don't submit AT runs
   fi
 
-  ./scream/components/scream/scripts/gather-all-data "./scripts/test-all-scream \$compiler -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
+  BASELINES_DIR=/home/projects/e3sm/scream/pr-autotester/master-baselines/$SCREAM_MACHINE
+
+  ./scream/components/scream/scripts/gather-all-data "./scripts/test-all-scream --baseline-dir $BASELINES_DIR /home/projects/\$compiler -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
 else
   echo "Tests were skipped, since the Github label 'CI: Integrate Without Testing' was found.\n"
 fi
