@@ -4,6 +4,8 @@ if (NOT DEFINED PROJECT_NAME)
   set(CIME_BUILD FALSE)
 else()
   set(CIME_BUILD TRUE)
+  set (SCREAM_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+  set (SCREAM_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 endif()
 
 if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.12.0")
@@ -209,6 +211,13 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in ${CMAKE_CURREN
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.f.in ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
 
 set(SCREAM_DYNAMICS_DYCORE "NONE" CACHE STRING "The name of the dycore to be used for dynamics. If NONE, then any code/test requiring dynamics is disabled.")
+
+if (CIME_BUILD)
+  if ("${SCREAM_DYN_TARGET}" STREQUAL "preqx_kokkos")
+    set (SCREAM_DYNAMICS_DYCORE "Homme")
+  endif()
+endif()
+
 string(TOUPPER "${SCREAM_DYNAMICS_DYCORE}" SCREAM_DYNAMICS_DYCORE)
 if (NOT ${SCREAM_DOUBLE_PRECISION})
   # Homme cannot handle single precision, for now. This causes tests to fail.
