@@ -665,7 +665,7 @@ subroutine update_prognostics_implicit( &
 
 ! Call decomp for thermo variables
   flux_dummy(:) = 0._rtype ! fluxes applied explicitly, so zero fluxes out
-                        ! for implicit solver decomposition
+                           ! for implicit solver decomposition
   call vd_shoc_decomp(shcol,nlev,nlevi,tkh_zi,tmpi,rdp_zt,dtime,&
      flux_dummy,ca,cc,denom,ze)
 
