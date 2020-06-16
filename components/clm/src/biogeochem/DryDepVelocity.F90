@@ -464,18 +464,18 @@ CONTAINS
                   rclx(ispec) = cts + 1._r8/((heff(ispec)/(1.e5_r8*rcls(index_season,wesveg))) + & 
                        (foxd(ispec)/rclo(index_season,wesveg))) 
                   rlux(ispec) = cts + rlu(index_season,wesveg)/(1.e-5_r8*heff(ispec)+foxd(ispec)) 
+                  
+                  !-------------------------------------------------------------------------------------
+                  ! jfl : special case for PAN
+                  !-------------------------------------------------------------------------------------
+                  if( ispec == index_pan .or. ispec == index_xpan ) then
+                     dv_pan =  c0_pan(wesveg) * (1._r8 - exp( -k_pan(wesveg)*(dewm*rs*drat(ispec))*1.e-2_r8 ))
+                     if( dv_pan > 0._r8 .and. index_season /= 4 ) then
+                        rsmx(ispec) = ( 1._r8/dv_pan )
+                     end if
+                  end if
 
                endif
-
-               !-------------------------------------------------------------------------------------
-               ! jfl : special case for PAN
-               !-------------------------------------------------------------------------------------
-               if( ispec == index_pan .or. ispec == index_xpan ) then
-                  dv_pan =  c0_pan(wesveg) * (1._r8 - exp( -k_pan(wesveg)*(dewm*rs*drat(ispec))*1.e-2_r8 ))
-                  if( dv_pan > 0._r8 .and. index_season /= 4 ) then
-                     rsmx(ispec) = ( 1._r8/dv_pan )
-                  end if
-               end if
 
             end do species_loop1
 

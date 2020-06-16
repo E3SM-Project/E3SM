@@ -93,7 +93,6 @@ struct UnitWrap {
     struct TestIceRelaxationTimescale;
     struct TestCalcLiqRelaxationTimescale;
     struct TestIceNucleation;
-    struct TestDropletActivation;
     struct TestIceCldliqWetGrowth;
     struct TestLatentHeat;
     struct TestCheckValues;

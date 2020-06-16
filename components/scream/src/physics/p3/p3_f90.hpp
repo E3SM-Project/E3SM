@@ -27,7 +27,7 @@ struct FortranData {
   // In
   Real dt;
   Int it;
-  Array2 qv, th, pres, dzq, npccn, naai, qc_relvar, qc, nc, qr, nr,  qitot,
+  Array2 qv, th, pres, dzq, ncnuc, naai, qc_relvar, qc, nc, qr, nr,  qitot,
     nitot, qirim, birim, pdel, exner;
   // Out
   Array1 prt_liq, prt_sol;
@@ -35,7 +35,7 @@ struct FortranData {
   Array2 pratot, prctot;
   Array3 p3_tend_out;
   Array2 mu_c, lamc;
-  Array2 liq_ice_exchange,vap_liq_exchange,vap_ice_exchange,vap_cld_exchange;
+  Array2 liq_ice_exchange,vap_liq_exchange,vap_ice_exchange;
 
   FortranData(Int ncol, Int nlev);
 };

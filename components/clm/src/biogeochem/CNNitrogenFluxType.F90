@@ -413,6 +413,9 @@ module CNNitrogenFluxType
      real(r8), pointer :: hrv_nloss_litter                          (:)     ! total nloss from veg to litter pool due to harvest mortality
      real(r8), pointer :: sen_nloss_litter                          (:)     ! total nloss from veg to litter pool due to senescence
 
+     ! C4MIP output variable
+     real(r8), pointer :: plant_n_to_cwdn                           (:) ! sum of gap, fire, dynamic land use, and harvest mortality, plant nitrogen flux to CWD
+
    contains
 
      procedure , public  :: Init   
@@ -848,7 +851,10 @@ contains
     allocate(this%fire_nloss_litter           (begp:endp)) ; this%fire_nloss_litter                 (:) = nan
     allocate(this%hrv_nloss_litter            (begp:endp)) ; this%hrv_nloss_litter                  (:) = nan
     allocate(this%sen_nloss_litter            (begp:endp)) ; this%sen_nloss_litter                  (:) = nan
-    
+
+    ! C4MIP output variable
+    allocate(this%plant_n_to_cwdn             (begc:endc)) ; this%plant_n_to_cwdn                   (:)  =nan
+ 
   end subroutine InitAllocate
 
   !------------------------------------------------------------------------

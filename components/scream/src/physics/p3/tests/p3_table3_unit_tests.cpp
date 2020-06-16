@@ -61,12 +61,10 @@ struct UnitWrap::UnitTest<D>::TestTable3 {
   KOKKOS_FUNCTION static Spack interp (const view_2d_table& table, const Scalar& mu_r,
                                        const Scalar& lamr) {
     // Init the pack to all the same value, and compute in every pack slot.
-    Smask qr_gt_small(true);
     Spack mu_r_p(mu_r), lamr_p(lamr);
     Table3 t3;
-    Functions::lookup(qr_gt_small, mu_r_p, lamr_p, t3);
-    Spack val(qr_gt_small, Functions::apply_table(qr_gt_small, table, t3));
-    return val;
+    Functions::lookup(mu_r_p, lamr_p, t3);
+    return Functions::apply_table(table, t3);
   }
 
   static void run () {

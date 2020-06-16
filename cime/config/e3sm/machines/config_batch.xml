@@ -500,6 +500,18 @@
      </queues>
    </batch_system>
 
+   <batch_system MACH="summit-cpu" type="lsf" >
+     <directives>
+       <directive>-P {{ project }}</directive>
+     </directives>
+     <directives>
+       <directive>-alloc_flags smt2</directive>
+     </directives>
+     <queues>
+       <queue walltimemax="02:00" default="true">batch</queue>
+     </queues>
+   </batch_system>
+
    <batch_system MACH="summit" type="lsf" >
      <directives>
        <directive>-P {{ project }}</directive>
@@ -509,6 +521,12 @@
      </directives>
      <directives compiler="pgiacc">
        <directive>-alloc_flags "gpumps smt2"</directive>
+     </directives>
+     <directives compiler="!pgigpu">
+       <directive>-alloc_flags smt2</directive>
+     </directives>
+     <directives compiler="pgigpu">
+       <directive>-alloc_flags gpumps</directive>
      </directives>
      <queues>
        <queue walltimemax="02:00" default="true">batch</queue>
@@ -545,17 +563,6 @@
      </queues>
    </batch_system>
 
-   <batch_system MACH="lawrencium-lr2" type="slurm" >
-     <directives>
-       <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
-       <directive>--qos=lr_normal </directive>
-       <directive>--account={{ project }}</directive>
-     </directives>
-    <queues>
-      <queue walltimemax="01:00:00" default="true">lr2</queue>
-    </queues>
-   </batch_system>
-
    <batch_system MACH="lawrencium-lr3" type="slurm" >
      <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
@@ -570,7 +577,8 @@
    <batch_system MACH="lawrencium-lr6" type="slurm" >
      <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
-       <directive>--qos=condo_esd2 </directive>
+       <directive>--qos=lr_normal </directive>
+       <directive>--account={{ project }}</directive>
      </directives>
     <queues>
       <queue walltimemax="01:00:00" default="true">lr6</queue>

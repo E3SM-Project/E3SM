@@ -115,9 +115,9 @@ CONTAINS
     use parallel_mod,       only: par 
     use element_ops,        only : get_temperature
     use dyn_grid,           only: fv_nphys
-    use derivative_mod,     only: subcell_integration
     use prim_driver_mod, only     : deriv1
     use element_ops,        only : get_temperature
+    use gllfvremap_mod, only  : gfr_g2f_scalar, gfr_g2f_vector
     implicit none
     type(hybrid_t),        intent(in   ) :: hybrid
     type(element_t),target,intent(inout) :: elem(:)
@@ -130,13 +130,10 @@ CONTAINS
     integer :: k,kptr,i,j,ie,component
     real(kind=real_kind) :: frontgf_gll(np,np,nlev,nets:nete)
     real(kind=real_kind) :: gradth_gll(np,np,2,nlev,nets:nete)  ! grad(theta)
-    real(kind=real_kind) :: gradth_fv(fv_nphys,fv_nphys,2)      ! grad(theta)
     real(kind=real_kind) :: p(np,np)        ! pressure at mid points
     real(kind=real_kind) :: theta(np,np)    ! potential temperature at mid points
     real(kind=real_kind) :: temperature(np,np,nlev)  ! Temperature
-    real(kind=real_kind) :: C(np,np,2)     
-    real(r8), dimension(np,np)             :: tmp_area
-    real(r8), dimension(fv_nphys,fv_nphys) :: inv_area
+    real(kind=real_kind) :: C(np,np,2), wf1(nphys*nphys,nlev), wf2(nphys*nphys,nlev)
     !---------------------------------------------------------------------------
 
     do ie = nets,nete
@@ -166,11 +163,6 @@ CONTAINS
     if (par%dynproc) call bndry_exchangeV(hybrid,edge_g)
 
     do ie = nets,nete
-      ! Prepare weights for area averaging
-      if (fv_nphys>0) then
-        tmp_area(:,:) = 1.0_r8
-        inv_area(:,:) = 1.0_r8/subcell_integration(tmp_area,np,fv_nphys,elem(ie)%metdet(:,:))
-      end if
       ! unpack
      call edgeVunpack_nlyr(edge_g, elem(ie)%desc,frontgf_gll(:,:,:,ie),nlev,0,3*nlev)
      call edgeVunpack_nlyr(edge_g, elem(ie)%desc,gradth_gll(:,:,:,:,ie),2*nlev,nlev,3*nlev)
@@ -179,26 +171,23 @@ CONTAINS
         gradth_gll(:,:,1,k,ie) = gradth_gll(:,:,1,k,ie)*elem(ie)%rspheremp(:,:)
         gradth_gll(:,:,2,k,ie) = gradth_gll(:,:,2,k,ie)*elem(ie)%rspheremp(:,:)
         frontgf_gll(:,:,k,ie) = frontgf_gll(:,:,k,ie)*elem(ie)%rspheremp(:,:)
-        if (fv_nphys>0) then
-          frontgf(:,:,k,ie) = subcell_integration(frontgf_gll(:,:,k,ie),      &
-                              np, fv_nphys, elem(ie)%metdet(:,:) ) * inv_area
-          gradth_fv(:,:,1) = subcell_integration(gradth_gll(:,:,1,k,ie),      &
-                             np, fv_nphys, elem(ie)%metdet(:,:) ) * inv_area
-          gradth_fv(:,:,2) = subcell_integration(gradth_gll(:,:,2,k,ie),      &
-                             np, fv_nphys, elem(ie)%metdet(:,:) ) * inv_area
-          do j=1,fv_nphys
-            do i=1,fv_nphys
-              frontga(i,j,k,ie) = atan2(gradth_fv(i,j,2) , &
-                                        gradth_fv(i,j,1) + 1.e-10_r8 )
-            end do ! i
-          end do ! j
-        else ! physics on GLL nodes
+        if (fv_nphys == 0) then ! physics on GLL nodes
           frontgf(:,:,k,ie) = frontgf_gll(:,:,k,ie)
           ! Frontogenesis angle
           frontga(:,:,k,ie) = atan2(gradth_gll(:,:,2,k,ie) , &
                                     gradth_gll(:,:,1,k,ie) + 1.e-10_real_kind )
-        end if ! fv_nphys>0
+        end if
       end do ! k
+      if (fv_nphys > 0) then
+        call gfr_g2f_scalar(ie, elem(ie)%metdet, frontgf_gll(:,:,:,ie), wf1)
+        frontgf(:,:,:,ie) = reshape(wf1, (/nphys,nphys,nlev/))
+        call gfr_g2f_vector(ie, elem, &
+             gradth_gll(:,:,1,:,ie), gradth_gll(:,:,2,:,ie), &
+             wf1, wf2)
+        frontga(:,:,:,ie) = reshape( &
+             atan2(wf2, wf1 + 1.e-10_real_kind), &
+             (/nphys,nphys,nlev/))
+      end if
     end do ! ie
 
   end subroutine compute_frontogenesis

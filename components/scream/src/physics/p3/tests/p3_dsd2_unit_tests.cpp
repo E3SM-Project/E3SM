@@ -33,8 +33,6 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
     view_1d_table mu_r_table; view_dnu_table dnu;
     Functions::init_kokkos_tables(vn_table, vm_table, revap_table, mu_r_table, dnu);
 
-    constexpr Scalar qsmall = C::QSMALL;
-
     // Load some lookup inputs, need at least one per pack value
     GetCloudDsd2Data gcdd[max_pack_size] = {
       {0.998086E-06, 0.114746E+01, 0.100000E+01, 0.174298E+09},
@@ -82,9 +80,8 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
         nc[s]    = gcdd_device(vs).nc_in;
       }
 
-      Smask gt_small(qc > qsmall);
       Spack mu_c(0.0), nu(0.0), lamc(0.0), cdist(0.0), cdist1(0.0);
-      Functions::get_cloud_dsd2(gt_small, qc, nc, mu_c, rho, nu, dnu, lamc, cdist, cdist1, lcldm);
+      Functions::get_cloud_dsd2(qc, nc, mu_c, rho, nu, dnu, lamc, cdist, cdist1, lcldm);
 
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
@@ -119,8 +116,6 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
   static void run_rain_bfb()
   {
     using KTH = KokkosTypes<HostDevice>;
-
-    constexpr Scalar qsmall = C::QSMALL;
 
     GetRainDsd2Data grdd[max_pack_size] = {
       {0.100000E-01, 0.100000E+01, 0.124340E+05},
@@ -167,9 +162,8 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
         nr[s]    = grdd_device(vs).nr_in;
       }
 
-      Smask gt_small(qr > qsmall);
       Spack mu_r(0.0), lamr(0.0), cdistr(0.0), logn0r(0.0);
-      Functions::get_rain_dsd2(gt_small, qr, nr, mu_r, lamr, cdistr, logn0r, rcldm);
+      Functions::get_rain_dsd2(qr, nr, mu_r, lamr, cdistr, logn0r, rcldm);
 
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {

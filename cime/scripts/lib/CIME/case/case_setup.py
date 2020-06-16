@@ -67,11 +67,21 @@ def _build_usernl_files(case, model, comp):
                     safe_copy(model_nl, nlfile)
 
 ###############################################################################
-def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
+def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False, keep=None):
 ###############################################################################
     os.chdir(caseroot)
 
     non_local = case.get_value("NONLOCAL")
+
+    models = case.get_values("COMP_CLASSES")
+    mach = case.get_value("MACH")
+    compiler = case.get_value("COMPILER")
+    debug = case.get_value("DEBUG")
+    mpilib = case.get_value("MPILIB")
+    sysos = case.get_value("OS")
+    comp_interface = case.get_value("COMP_INTERFACE")
+    extra_machines_dir = case.get_value("EXTRA_MACHDIR")
+    expect(mach is not None, "xml variable MACH is not set")
 
     # Check that $DIN_LOC_ROOT exists - and abort if not a namelist compare tests
     if not non_local:
@@ -82,37 +92,47 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
     # Remove batch scripts
     if reset or clean:
-        # clean batch script
+        # clean setup-generated files
         batch_script = get_batch_script_for_job(case.get_primary_job())
-        if os.path.exists(batch_script):
-            os.remove(batch_script)
-            logger.info("Successfully cleaned batch script {}".format(batch_script))
+        files_to_clean = [batch_script, "env_mach_specific.xml", "Macros.make", "Macros.cmake"]
+        for file_to_clean in files_to_clean:
+            if os.path.exists(file_to_clean) and not (keep and file_to_clean in keep):
+                os.remove(file_to_clean)
+                logger.info("Successfully cleaned {}".format(file_to_clean))
 
         if not test_mode:
             # rebuild the models (even on restart)
             case.set_value("BUILD_COMPLETE", False)
 
+        # Cannot leave case in bad state (missing env_mach_specific.xml)
+        if clean and not os.path.isfile("env_mach_specific.xml"):
+            case.flush()
+            configure(Machines(machine=mach, extra_machines_dir=extra_machines_dir),
+                      caseroot, ["Makefile"], compiler, mpilib, debug, comp_interface, sysos, noenv=True,
+                      extra_machines_dir=extra_machines_dir)
+            case.read_xml()
+
     if not clean:
         if not non_local:
             case.load_env()
 
-        models = case.get_values("COMP_CLASSES")
-        mach = case.get_value("MACH")
-        compiler = case.get_value("COMPILER")
-        debug = case.get_value("DEBUG")
-        mpilib = case.get_value("MPILIB")
-        sysos = case.get_value("OS")
-        comp_interface = case.get_value("COMP_INTERFACE")
-        expect(mach is not None, "xml variable MACH is not set")
-
         # creates the Macros.make, Depends.compiler, Depends.machine, Depends.machine.compiler
         # and env_mach_specific.xml if they don't already exist.
         if not os.path.isfile("Macros.make") or not os.path.isfile("env_mach_specific.xml"):
-            configure(Machines(machine=mach), caseroot, ["Makefile"], compiler, mpilib, debug, comp_interface, sysos)
+            reread = not os.path.isfile("env_mach_specific.xml")
+            if reread:
+                case.flush()
+            configure(Machines(machine=mach, extra_machines_dir=extra_machines_dir),
+                      caseroot, ["Makefile"], compiler, mpilib, debug, comp_interface, sysos, noenv=True,
+                      extra_machines_dir=extra_machines_dir)
+            if reread:
+                case.read_xml()
 
         # Also write out Cmake macro file
         if not os.path.isfile("Macros.cmake"):
-            configure(Machines(machine=mach), caseroot, ["CMake"], compiler, mpilib, debug, comp_interface, sysos)
+            configure(Machines(machine=mach, extra_machines_dir=extra_machines_dir),
+                      caseroot, ["CMake"], compiler, mpilib, debug, comp_interface, sysos, noenv=True,
+                      extra_machines_dir=extra_machines_dir)
 
         # Set tasks to 1 if mpi-serial library
         if mpilib == "mpi-serial":
@@ -227,11 +247,11 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         logger.info("You can now run './preview_run' to get more info on how your case will be run")
 
 ###############################################################################
-def case_setup(self, clean=False, test_mode=False, reset=False):
+def case_setup(self, clean=False, test_mode=False, reset=False, keep=None):
 ###############################################################################
     caseroot, casebaseid = self.get_value("CASEROOT"), self.get_value("CASEBASEID")
     phase = "setup.clean" if clean else "case.setup"
-    functor = lambda: _case_setup_impl(self, caseroot, clean, test_mode, reset)
+    functor = lambda: _case_setup_impl(self, caseroot, clean=clean, test_mode=test_mode, reset=reset, keep=keep)
 
     if self.get_value("TEST") and not test_mode:
         test_name = casebaseid if casebaseid is not None else self.get_value("CASE")

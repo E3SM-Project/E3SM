@@ -10,4 +10,4 @@ SET(VCOORD_FILES ${HOMME_ROOT}/test/vcoord/*30*)
 
 # compare all of these files against baselines:
 SET(NC_OUTPUT_FILES 
-  dcmip2016_test1_pg2.nc)
+  dcmip2016_test1_pg21.nc)
