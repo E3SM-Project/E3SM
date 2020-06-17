@@ -9,7 +9,6 @@ module PhosphorusStateUpdate3Mod
   use shr_kind_mod        , only: r8 => shr_kind_r8
   use decompMod           , only : bounds_type
   use clm_varpar          , only: nlevdecomp,ndecomp_pools,ndecomp_cascade_transitions
-  !#py use clm_time_manager    , only : get_step_size
   use clm_varctl          , only : iulog, use_nitrif_denitrif
   use clm_varpar          , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
   use CNDecompCascadeConType , only : decomp_cascade_con
@@ -53,8 +52,6 @@ contains
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columps
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
-    !type(phosphorusflux_type)  , intent(inout)    :: phosphorusflux_vars
-    !type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     type(cnstate_type)         , intent(in)    :: cnstate_vars
     real(r8), intent(in) :: dt         ! radiation time step (seconds)
 
@@ -80,8 +77,6 @@ contains
          )
 
       ! set time steps
-      !#py dt = real( get_step_size(), r8 )
-
       !! immobilization/mineralization in litter-to-SOM and SOM-to-SOM fluxes
       !! - X.YANG
       do j = 1, nlevdecomp
@@ -117,7 +112,6 @@ contains
                   c = filter_soilc(fc)
                     flux_mineralization(c,j) = flux_mineralization(c,j) + &
                                                col_pf%decomp_cascade_sminp_flux_vr(c,j,k)*dt
-
                end do
              end do
            endif
@@ -141,14 +135,16 @@ contains
                smax_c = smax( isoilorder(c) )
                ks_sorption_c = ks_sorption( isoilorder(c) )
                temp_solutionp(c,j) = col_ps%solutionp_vr(c,j)
+               
                col_ps%solutionp_vr(c,j)      = col_ps%solutionp_vr(c,j)  + ( flux_mineralization(c,j) &
                     + col_pf%primp_to_labilep_vr(c,j)*dt &
                     + col_pf%secondp_to_labilep_vr(c,j)*dt &
                     + col_pf%supplement_to_sminp_vr(c,j)*dt - col_pf%sminp_to_plant_vr(c,j)*dt&
                     - col_pf%labilep_to_secondp_vr(c,j)*dt - col_pf%sminp_leached_vr(c,j)*dt ) / &
                     (1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+col_ps%solutionp_vr(c,j))**2._r8)
-
-               col_ps%labilep_vr(c,j) = col_ps%labilep_vr(c,j) + ((smax_c*ks_sorption_c)&
+             
+           
+                 col_ps%labilep_vr(c,j) = col_ps%labilep_vr(c,j) + ((smax_c*ks_sorption_c)&
                     /(ks_sorption_c+temp_solutionp(c,j))**2._r8 ) * &
                     ( flux_mineralization(c,j) + col_pf%primp_to_labilep_vr(c,j)*dt + col_pf%secondp_to_labilep_vr(c,j)*dt &
                     + col_pf%supplement_to_sminp_vr(c,j)*dt - col_pf%sminp_to_plant_vr(c,j)*dt &
@@ -160,7 +156,7 @@ contains
                                 + col_pf%supplement_to_sminp_vr(c,j) - col_pf%sminp_to_plant_vr(c,j) &
                                 - col_pf%labilep_to_secondp_vr(c,j) - col_pf%sminp_leached_vr(c,j) ) / &
                                 (1._r8+(smax_c*ks_sorption_c)/(ks_sorption_c+col_ps%solutionp_vr(c,j))**2._r8)
-
+              
                col_pf%adsorb_to_labilep_vr(c,j) = ((smax_c*ks_sorption_c)/(ks_sorption_c+temp_solutionp(c,j))**2._r8 ) * &
                              ( flux_mineralization(c,j)/dt + col_pf%primp_to_labilep_vr(c,j) + col_pf%secondp_to_labilep_vr(c,j) &
                              + col_pf%supplement_to_sminp_vr(c,j) - col_pf%sminp_to_plant_vr(c,j) &

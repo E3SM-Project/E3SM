@@ -51,11 +51,6 @@ contains
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                  , intent(in)    :: num_soilp       ! number of soil patchs in filter
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
-    !type(carbonstate_type)   , intent(inout) :: carbonstate_vars
-    !type(carbonstate_type)   , intent(inout) :: c13_carbonstate_vars
-    !type(carbonstate_type)   , intent(inout) :: c14_carbonstate_vars
-    !type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-    !type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     !
     ! !LOCAL VARIABLES:
     integer :: c,p,j,k,l  ! indices

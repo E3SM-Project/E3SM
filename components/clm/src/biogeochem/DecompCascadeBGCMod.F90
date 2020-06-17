@@ -658,9 +658,7 @@ contains
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
     type(canopystate_type) , intent(in)    :: canopystate_vars
     type(soilstate_type)   , intent(in)    :: soilstate_vars
-    !type(temperature_type) , intent(in)    :: temperature_vars
     type(ch4_type)         , intent(in)    :: ch4_vars
-    !type(carbonflux_type)  , intent(inout) :: carbonflux_vars
     type(cnstate_type)     , intent(inout) :: cnstate_vars
     real(r8)     , intent(in)  :: dt, days_per_year
     integer, intent(in) :: year, mon, day, sec          ! fraction of potential aerobic rate
@@ -729,7 +727,7 @@ contains
          )
 
       mino2lim = ParamsShareInst%mino2lim
-
+      print *,"mino2lim",mino2lim
       if ( use_century_tfunc .and. normalize_q10_to_century_tfunc ) then
          !#py call endrun(msg='ERROR: cannot have both use_century_tfunc and normalize_q10_to_century_tfunc set as true'//&
               !#py !#py errMsg(__FILE__, __LINE__))
@@ -1066,6 +1064,8 @@ contains
          do j = 1,nlevdecomp
             do fc = 1,num_soilc
                c = filter_soilc(fc)
+               print *, "k_l1,k_l2_l3,k_s1,k_s2,k_s3"
+               print *, k_l1,k_l2_l3,k_s1,k_s2,k_s3
                decomp_k(c,j,i_litr1) = k_l1    * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(c,j) * o_scalar(c,j)
                decomp_k(c,j,i_litr2) = k_l2_l3 * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(c,j) * o_scalar(c,j)
                decomp_k(c,j,i_litr3) = k_l2_l3 * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(c,j) * o_scalar(c,j)

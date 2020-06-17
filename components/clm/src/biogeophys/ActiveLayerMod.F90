@@ -1,5 +1,5 @@
 module ActiveLayerMod
-  
+
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
   ! Module holding routines for calculation of active layer dynamics
@@ -8,11 +8,10 @@ module ActiveLayerMod
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use shr_const_mod   , only : SHR_CONST_TKFRZ
   use clm_varctl      , only : iulog
-  use TemperatureType , only : temperature_type
   use CanopyStateType , only : canopystate_type
-  use GridcellType    , only : grc_pp       
+  use GridcellType    , only : grc_pp
   use ColumnType      , only : col_pp
-  use ColumnDataType  , only : col_es  
+  use ColumnDataType  , only : col_es
   !
   implicit none
   save
@@ -21,12 +20,12 @@ module ActiveLayerMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public:: alt_calc
   !-----------------------------------------------------------------------
-  
+
 contains
 
   !-----------------------------------------------------------------------
-  subroutine alt_calc(num_soilc, filter_soilc, &
-       temperature_vars, canopystate_vars) 
+  subroutine alt_calc(num_soilc, filter_soilc, canopystate_vars, year, mon, &
+                      day, sec, dtime)
     !
     ! !DESCRIPTION:
     !  define active layer thickness similarly to frost_table, except set as deepest thawed layer and define on nlevgrnd
@@ -41,7 +40,7 @@ contains
     !  a problem - it will just mean that values are not quite what they should be in the
     !  first timestep a point becomes active. Currently, it seems that these variables ARE
     !  initialized to valid values, so I think this is okay.
-    !
+    !$acc routine seq
     ! !USES:
     use shr_const_mod    , only : SHR_CONST_TKFRZ
     use clm_varpar       , only : nlevgrnd
@@ -52,57 +51,53 @@ contains
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    type(temperature_type) , intent(in)    :: temperature_vars
     type(canopystate_type) , intent(inout) :: canopystate_vars
+    integer, value, intent(in)  :: year     ! year (0, ...) for nstep+1
+    integer, value, intent(in)  :: mon      ! month (1, ..., 12) for nstep+1
+    integer, value, intent(in)  :: day      ! day of month (1, ..., 31) for nstep+1
+    integer, value, intent(in)  :: sec      ! seconds into current date for nstep+1
+    real(r8),value, intent(in) :: dtime    ! time step length in seconds
     !
     ! !LOCAL VARIABLES:
     integer  :: c, j, fc, g                     ! counters
     integer  :: alt_ind                         ! index of base of activel layer
-    integer  :: year                            ! year (0, ...) for nstep+1
-    integer  :: mon                             ! month (1, ..., 12) for nstep+1
-    integer  :: day                             ! day of month (1, ..., 31) for nstep+1
-    integer  :: sec                             ! seconds into current date for nstep+1
-    integer  :: dtime                           ! time step length in seconds
     integer  :: k_frz                           ! index of first nonfrozen soil layer
     logical  :: found_thawlayer                 ! used to break loop when first unfrozen layer reached
     real(r8) :: t1, t2, z1, z2                  ! temporary variables
     !-----------------------------------------------------------------------
 
-    associate(                                                                & 
-         t_soisno             =>    col_es%t_soisno        ,    & ! Input:   [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)                    
-         
-         alt                  =>    canopystate_vars%alt_col             ,    & ! Output:  [real(r8) (:)   ]  current depth of thaw                                                 
-         altmax               =>    canopystate_vars%altmax_col          ,    & ! Output:  [real(r8) (:)   ]  maximum annual depth of thaw                                          
-         altmax_lastyear      =>    canopystate_vars%altmax_lastyear_col ,    & ! Output:  [real(r8) (:)   ]  prior year maximum annual depth of thaw                               
-         alt_indx             =>    canopystate_vars%alt_indx_col        ,    & ! Output:  [integer  (:)   ]  current depth of thaw                                                  
-         altmax_indx          =>    canopystate_vars%altmax_indx_col     ,    & ! Output:  [integer  (:)   ]  maximum annual depth of thaw                                           
-         altmax_lastyear_indx =>    canopystate_vars%altmax_lastyear_indx_col & ! Output:  [integer  (:)   ]  prior year maximum annual depth of thaw                                
+    associate(                                                                &
+         t_soisno             =>    col_es%t_soisno        ,    & ! Input:   [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
+         alt                  =>    canopystate_vars%alt_col             ,    & ! Output:  [real(r8) (:)   ]  current depth of thaw
+         altmax               =>    canopystate_vars%altmax_col          ,    & ! Output:  [real(r8) (:)   ]  maximum annual depth of thaw
+         altmax_lastyear      =>    canopystate_vars%altmax_lastyear_col ,    & ! Output:  [real(r8) (:)   ]  prior year maximum annual depth of thaw
+         alt_indx             =>    canopystate_vars%alt_indx_col        ,    & ! Output:  [integer  (:)   ]  current depth of thaw
+         altmax_indx          =>    canopystate_vars%altmax_indx_col     ,    & ! Output:  [integer  (:)   ]  maximum annual depth of thaw
+         altmax_lastyear_indx =>    canopystate_vars%altmax_lastyear_indx_col & ! Output:  [integer  (:)   ]  prior year maximum annual depth of thaw
          )
 
       ! on a set annual timestep, update annual maxima
       ! make this 1 January for NH columns, 1 July for SH columns
-      call get_curr_date(year, mon, day, sec)
-      dtime =  get_step_size()
-      if ( (mon .eq. 1) .and. (day .eq. 1) .and. ( sec / dtime .eq. 1) ) then
+      if ( (mon .eq. 1) .and. (day .eq. 1) .and. ( sec / int(dtime) .eq. 1) ) then
          do fc = 1,num_soilc
             c = filter_soilc(fc)
             g = col_pp%gridcell(c)
-            if ( grc_pp%lat(g) > 0. ) then 
+            if ( grc_pp%lat(g) > 0.d0 ) then
                altmax_lastyear(c) = altmax(c)
                altmax_lastyear_indx(c) = altmax_indx(c)
-               altmax(c) = 0.
+               altmax(c) = 0.d0
                altmax_indx(c) = 0
             endif
          end do
       endif
-      if ( (mon .eq. 7) .and. (day .eq. 1) .and. ( sec / dtime .eq. 1) ) then
+      if ( (mon .eq. 7) .and. (day .eq. 1) .and. ( sec / int(dtime) .eq. 1) ) then
          do fc = 1,num_soilc
             c = filter_soilc(fc)
             g = col_pp%gridcell(c)
-            if ( grc_pp%lat(g) <= 0. ) then 
+            if ( grc_pp%lat(g) <= 0.d0 ) then
                altmax_lastyear(c) = altmax(c)
                altmax_lastyear_indx(c) = altmax_indx(c)
-               altmax(c) = 0.
+               altmax(c) = 0.d0
                altmax_indx(c) = 0
             endif
          end do
@@ -151,8 +146,8 @@ contains
 
       end do
 
-    end associate 
+    end associate
 
   end subroutine alt_calc
-  
+
 end module ActiveLayerMod

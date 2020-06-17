@@ -82,6 +82,7 @@ contains
     real(r8) :: t_grnd0(bounds%begc:bounds%endc)                   ! t_grnd of previous time step
     real(r8) :: lw_grnd
     real(r8) :: fsno_eff
+    real(r8) :: temp
     !-----------------------------------------------------------------------
 
     associate(                                                                &
@@ -162,11 +163,6 @@ contains
          errsoi_patch            => veg_ef%errsoi              & ! Output: [real(r8) (:)   ]  pft-level soil/lake energy conservation error (W/m**2)
          )
 
-      ! Get step size
-
-      !#py dtime = get_step_size()
-
-      !#py call t_startf('bgp2_loop_1')
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
          j = col_pp%snl(c)+1
@@ -308,7 +304,7 @@ contains
          end if
 
          ! Total fluxes (vegetation + ground)
-
+        
          eflx_sh_tot(p) = eflx_sh_veg(p) + eflx_sh_grnd(p)
          qflx_evap_tot(p) = qflx_evap_veg(p) + qflx_evap_soi(p)
          eflx_lh_tot(p)= hvap*qflx_evap_veg(p) + htvp(c)*qflx_evap_soi(p)
@@ -373,9 +369,7 @@ contains
          errsoi_patch(p) = eflx_soil_grnd(p) - xmf(c) - xmf_h2osfc(c) &
          - frac_h2osfc(c)*(t_h2osfc(c)-t_h2osfc_bef(c)) &
               *(c_h2osfc(c)/dtime)
-
          errsoi_patch(p) =  errsoi_patch(p)+eflx_h2osfc_to_snow_col(c)
-
          ! For urban sunwall, shadewall, and roof columns, the "soil" energy balance check
          ! must include the heat flux from the interior of the building.
          if (col_pp%itype(c)==icol_sunwall .or. col_pp%itype(c)==icol_shadewall .or. col_pp%itype(c)==icol_roof) then
@@ -390,10 +384,22 @@ contains
             if ((col_pp%itype(c) /= icol_sunwall .and. col_pp%itype(c) /= icol_shadewall &
                  .and. col_pp%itype(c) /= icol_roof) .or. ( j <= nlevurb)) then
                ! area weight heat absorbed by snow layers
-               if (j >= col_pp%snl(c)+1 .and. j < 1) errsoi_patch(p) = errsoi_patch(p) &
-                    - frac_sno_eff(c)*(t_soisno(c,j)-tssbef(c,j))/fact(c,j)
-               if (j >= 1) errsoi_patch(p) = errsoi_patch(p) &
-                    - (t_soisno(c,j)-tssbef(c,j))/fact(c,j)
+               if (j >= col_pp%snl(c)+1 .and. j < 1) then
+                       errsoi_patch(p) = errsoi_patch(p) &
+                         - frac_sno_eff(c)*(t_soisno(c,j)-tssbef(c,j))/fact(c,j)
+                end if 
+                
+                if (j >= 1) then 
+                       temp = t_soisno(c,j)-tssbef(c,j)
+                       temp = temp/fact(c,j)
+                       ! print *, "j>=1,diff/fact, fact, snow, BEFORE:"
+                        !print *,temp,fact(c,j),errsoi_patch(p) 
+                       errsoi_patch(p) = errsoi_patch(p) - temp
+                 
+                !print *,"snow AFTER"
+                !print *, p, errsoi_patch(p)
+                end if 
+
             end if
          end do
       end do
@@ -441,8 +447,11 @@ contains
       ! therefore obtain column-level radiative temperature
 
       call p2c(bounds, num_nolakec, filter_nolakec, &
-           errsoi_patch, &
-           errsoi_col)
+           errsoi_patch(bounds%begp:bounds%endp), &
+           errsoi_col(bounds%begc:bounds%endc))
+     ! call p2c(bounds, num_nolakec, filter_nolakec, &
+     !      errsoi_patch, &
+     !      errsoi_col)
 
       !#py call t_stopf('bgp2_loop_4')
 

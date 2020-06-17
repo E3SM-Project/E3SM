@@ -1,5 +1,5 @@
 module clm_driver
-
+  !
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
   ! This module provides the main CLM driver physics calling sequence.  Most
@@ -8,11 +8,12 @@ module clm_driver
   ! parallelized by looping over clumps on each process using shared memory OpenMP.
   !
   ! !USES:
+  use clm_varcon , only : zsoi
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use shr_sys_mod            , only : shr_sys_flush
   use shr_log_mod            , only : errMsg => shr_log_errMsg
   use clm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates
-  use clm_varpar             , only : nlevtrc_soil, nlevsoi
+  use clm_varpar             , only : nlevtrc_soil, nlevsoi, nlevdecomp_full
   use clm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates, use_betr
   use clm_varctl             , only : use_cn, use_lch4, use_voc, use_noio, use_c13, use_c14
   use clm_varctl             , only : use_erosion
@@ -26,7 +27,8 @@ module clm_driver
   use restFileMod            , only : restFile_write, restFile_filename
   use abortutils             , only : endrun
   !
-  use dynSubgridDriverMod    , only : dynSubgrid_driver
+  use dynSubgridDriverMod    , only : dynSubgrid_driver,dynSubgrid_wrapup_weight_changes
+  use dynSubgridDriverMod    , only : prior_weights, column_state_updater, patch_state_updater
   use BalanceCheckMod        , only : BeginColWaterBalance, ColWaterBalanceCheck
   use BalanceCheckMod        , only : BeginGridWaterBalance, GridBalanceCheck
   !
@@ -66,7 +68,7 @@ module clm_driver
   use EcosystemBalanceCheckMod      , only : EndGridCBalanceAfterDynSubgridDriver
   use EcosystemBalanceCheckMod      , only : EndGridNBalanceAfterDynSubgridDriver
   use EcosystemBalanceCheckMod      , only : EndGridPBalanceAfterDynSubgridDriver
-  use VerticalProfileMod   , only : decomp_vertprofiles
+  use VerticalProfileMod   , only : decomp_vertprofiles,decomp_vertprofiles2
   use FireMod              , only : FireInterp
   use SatellitePhenologyMod  , only : SatellitePhenology, interpMonthlyVeg
   use ndepStreamMod          , only : ndep_interp
@@ -81,9 +83,9 @@ module clm_driver
   !
   use atm2lndMod             , only : downscale_forcings
   use lnd2atmMod             , only : lnd2atm
-  use lnd2glcMod             , only : lnd2glc_type
+  use lnd2glcMod             , only : lnd2glc_type, update_lnd2glc_GPU
   !
-  use seq_drydep_mod_elm         , only : n_drydep, drydep_method, DD_XLND
+  use seq_drydep_mod_elm     , only : n_drydep, drydep_method, DD_XLND
   use DryDepVelocity         , only : depvel_compute
   !
   use DaylengthMod           , only : UpdateDaylength, first_step
@@ -130,25 +132,41 @@ module clm_driver
   use CNEcosystemDynBetrMod  , only : CNEcosystemDynBetr, CNFluxStateBetrSummary
   use UrbanParamsType        , only : urbanparams_vars
 
-  use GridcellType           , only : grc_pp
-  use GridcellDataType       , only : grc_cs, c13_grc_cs, c14_grc_cs
-  use GridcellDataType       , only : grc_cf, c13_grc_cf, c14_grc_cf
-  use GridcellDataType       , only : grc_nf, grc_pf
-  use TopounitDataType       , only : top_as, top_af
-  use LandunitType           , only : lun_pp
-  use ColumnType             , only : col_pp
-  use ColumnDataType         , only : col_es, col_ef, col_ws, col_wf
-  use ColumnDataType         , only : col_cs, c13_col_cs, c14_col_cs
-  use ColumnDataType         , only : col_cf, c13_col_cf, c14_col_cf
-  use ColumnDataType         , only : col_ns, col_nf
-  use ColumnDataType         , only : col_ps, col_pf
-  use VegetationType         , only : veg_pp
-  use VegetationDataType     , only : veg_es, veg_ws, veg_wf
-  use VegetationDataType     , only : veg_cs, c13_veg_cs, c14_veg_cs
-  use VegetationDataType     , only : veg_ns, veg_nf
-  use VegetationDataType     , only : veg_ps, veg_pf
-  use VegetationDataType     , only : veg_cf, veg_ef
+  use GridcellType             , only : grc_pp
+  use GridcellDataType         , only : grc_cs, c13_grc_cs, c14_grc_cs
+  use GridcellDataType         , only : grc_cf, c13_grc_cf, c14_grc_cf
+  use GridcellDataType         , only : grc_nf, grc_pf, grc_ef, grc_wf, grc_ws
+  use GridcellDataType         , only : grc_es, grc_ns, grc_ps
+  use TopounitDataType         , only : top_as, top_af
+  use TopounitType             , only : top_pp
+  use LandunitType             , only : lun_pp
+  use ColumnType               , only : col_pp
+  use ColumnDataType           , only : col_es, col_ef, col_ws, col_wf
+  use ColumnDataType           , only : col_cs, c13_col_cs, c14_col_cs
+  use ColumnDataType           , only : col_cf, c13_col_cf, c14_col_cf
+  use ColumnDataType           , only : col_ns, col_nf
+  use ColumnDataType           , only : col_ps, col_pf
+  use VegetationType           , only : veg_pp
+  use VegetationDataType       , only : veg_es, veg_ws, veg_wf
+  use VegetationDataType       , only : veg_cs, c13_veg_cs, c14_veg_cs
+  use VegetationDataType       , only : c13_veg_cf, c14_veg_cf
+  use VegetationDataType       , only : veg_ns, veg_nf
+  use VegetationDataType       , only : veg_ps, veg_pf
+  use VegetationDataType       , only : veg_cf, veg_ef
   use VegetationPropertiesType , only : veg_vp
+  use PhotosynthesisMod        , only : params_inst
+  use SharedParamsMod          , only : ParamsShareInst
+  use CH4Mod                   , only : CH4ParamsInst
+  use CNDecompCascadeConType   , only : decomp_cascade_con
+  use DecompCascadeBGCMod      , only : DecompBGCParamsInst
+  use GapMortalityMod          , only : cngapmortparamsinst
+  use DecompCascadeCNMod       , only : DecompCNParamsInst
+  use NitrifDenitrifMod        , only : NitrifDenitrifParamsInst
+  use SoilLittDecompMod        , only : cndecompparamsinst
+  use AllocationMod            , only : AllocParamsInst
+  use LandunitDataType         , only : lun_ef, lun_es, lun_ws, lun_wf
+  use glc2lndMod                , only : glc2lnd_vars_update_glc2lnd_acc
+
 
   !----------------------------------------------------------------------------
   ! bgc interface & pflotran:
@@ -170,11 +188,34 @@ module clm_driver
   use WaterBudgetMod              , only : WaterBudget_SetEndingMonthlyStates
   use clm_varctl                  , only : do_budgets, budget_inst, budget_daily, budget_month
   use clm_varctl                  , only : budget_ann, budget_ltann, budget_ltend
+  use clm_varctl                  , only : spinup_state, nyears_ad_carbon_only, spinup_mortality_factor
+  use clm_varctl                  , only : carbon_only , carbonphosphorus_only, carbonnitrogen_only
   use decompMod                   , only : clumps, procinfo
   use domainMod                   , only : ldomain
   use verificationMod
-  use timeinfoMod
-  !use openacc
+  use update_accMod
+  use cudafor
+  use Method_procs_acc
+  use histGPUMod
+  use NitrogenDynamicsMod, only : CNNDynamicsParamsInst
+  use dynSubgridControlMod , only : dyn_subgrid_control_inst
+  use dynInitColumnsMod    , only : initialize_new_columns
+  use dynConsBiogeophysMod , only : dyn_hwcontent_init, dyn_hwcontent_final
+  use dynConsBiogeochemMod , only : dyn_cnbal_patch, dyn_cnbal_column
+  use reweightMod          , only : reweight_wrapup
+  use subgridWeightsMod    , only : compute_higher_order_weights, set_subgrid_diagnostic_fields
+  use subgridWeightsMod    , only : subgrid_weights_diagnostics
+  use CarbonStateUpdate1Mod   , only : CarbonStateUpdateDynPatch
+  use NitrogenStateUpdate1Mod   , only : NitrogenStateUpdateDynPatch
+  use PhosphorusStateUpdate1Mod     , only : PhosphorusStateUpdateDynPatch
+  use dynUpdateModAcc , only : update_column_state_acc, update_patch_stateAcc
+  use dynUpdateModAcc , only : patch_set_new_weightsAcc, column_set_new_weightsAcc
+  use dynPriorWeightsMod , only : set_prior_weights_acc
+  use dynPatchStateUpdaterMod  , only : patch_state_set_old_weights_acc
+  use dynColumnStateUpdaterMod , only : column_state_set_old_weights_acc
+  use ForcingUpdateMod         , only : update_forcings_CPLBYPASS
+  use clm_varctl
+
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -191,7 +232,7 @@ module clm_driver
 contains
 
   !-----------------------------------------------------------------------
-  subroutine clm_drv(doalb, nextsw_cday, declinp1, declin, rstwr, nlend, rdate)
+  subroutine clm_drv(step_count, rstwr, nlend, rdate)
     !
     ! !DESCRIPTION:
     !
@@ -200,44 +241,43 @@ contains
     !
     ! !USES:
     !
+    use shr_const_mod   , only : SHR_CONST_TKFRZ
     use clm_time_manager
+    use timeinfoMod
+    use histfileMod   , only : clmptr_rs, tape, clmptr_ra
+    use accumulGPUMod
+    use decompMod     , only : init_proc_clump_info, gpu_clumps, gpu_procinfo
+    use clm_varorb
+    use shr_orb_mod_elm
     !
     ! !ARGUMENTS:
     implicit none
-    logical ,        intent(in) :: doalb       ! true if time for surface albedo calc
-    real(r8),        intent(in) :: nextsw_cday ! calendar day for nstep+1
-    real(r8),        intent(in) :: declinp1    ! declination angle for next time step
-    real(r8),        intent(in) :: declin      ! declination angle for current time step
+    integer, intent(inout)  :: step_count
+    !logical ,        intent(in) :: doalb       ! true if time for surface albedo calc
+    !real(r8),        intent(in) :: nextsw_cday ! calendar day for nstep+1
+    !real(r8),        intent(in) :: declinp1    ! declination angle for next time step
+    !real(r8),        intent(in) :: declin      ! declination angle for current time step
     logical,         intent(in) :: rstwr       ! true => write restart file this step
     logical,         intent(in) :: nlend       ! true => end of run on this step
     character(len=*),intent(in) :: rdate       ! restart file time stamp for name
     !
     ! !LOCAL VARIABLES:
-    integer              :: nstep                   ! time step number
-    real(r8)             :: dtime, dayspyr          ! land model time step (sec)
-    integer              :: nc, c, p, l, g, fc      ! indices
+    integer              :: nc, c, p, l, g, fc, j   ! indices
     integer              :: nclumps                 ! number of clumps on this processor
-    integer              :: yrp1                    ! year (0, ...) for nstep+1
-    integer              :: monp1                   ! month (1, ..., 12) for nstep+1
-    integer              :: dayp1                   ! day of month (1, ..., 31) for nstep+1
-    integer              :: secp1                   ! seconds into current date for nstep+1
-    integer              :: year                      ! year (0, ...)
-    integer              :: mon                     ! month (1, ..., 12)
-    integer              :: day                     ! day of month (1, ..., 31)
-    integer              :: secs                    ! seconds of the day
-    integer              :: tod, offset
-    integer              :: ncdate                  ! current date
-    integer              :: nbdate                  ! base date (reference date)
-    integer              :: kyr                     ! thousand years, equals 2 at end of first year
     character(len=256)   :: filer                   ! restart file name
     integer              :: ier                     ! error code
     character(len=256)   :: dateTimeString
     type(bounds_type)    :: bounds_clump
     type(bounds_type)    :: bounds_proc
-    integer   ::  mygpu, ngpus, cid, fp
-    real*8   :: sto
-    integer , parameter :: gpu = 0
-    character(len=256) :: in_file_vars = 'output_vars.txt'
+    integer   ::  mygpu, ngpus, cid, fp, idle
+    logical :: found_thawlayer
+    integer :: k_frz
+    real*8    :: sto
+    integer , parameter :: gpu = 1
+    #if _CUDA
+    integer(kind=cuda_count_kind) :: heapsize,free1,free2,total
+    integer  :: istat, val
+    #endif
     !-----------------------------------------------------------------------
 
     call get_curr_time_string(dateTimeString)
@@ -245,16 +285,164 @@ contains
        write(iulog,*)'Beginning timestep   : ',trim(dateTimeString)
        call shr_sys_flush(iulog)
     endif
-    ! Determine processor bounds and clumps for this processor
+    !!!===================constants that may need updates ============== !!!
 
+    idle = -1
+    if(nstep_mod == -1 ) idle = 0
+    do while (idle == 0)
+        idle = idle + 0
+        call sleep(1)
+    end do
+    #if _CUDA
+    istat = cudaDeviceGetLimit(heapsize, cudaLimitMallocHeapSize)
+    print *, "SETTING Heap Limit from", heapsize
+    heapsize = 10_8*1024_8*1024_8
+    print *, "TO:",heapsize
+    istat = cudaDeviceSetLimit(cudaLimitMallocHeapSize,heapsize)
+    istat = cudaMemGetInfo(free1, total)
+    print *, "Free1:",free1
+    #endif
+    ! Determine processor bounds and clumps for this processor
     call get_proc_bounds(bounds_proc)
     nclumps = get_proc_clumps()
-    !!!===================constants that may need updates ============== !!!
-    dtime = get_step_size()
-    call set_time_vars()
-    call get_curr_date(year, mon, day, tod, offset)
-    call get_curr_date(year, mon, day, secs)
-    dayspyr = get_days_per_year()
+    print *, "step:", step_count
+    if(step_count == 0 ) then
+      print *, "transferring data to GPU"
+       call init_proc_clump_info()
+       !$acc update device( &
+       !$acc        spinup_state            &
+       !$acc       , nyears_ad_carbon_only   &
+       !$acc       , spinup_mortality_factor &
+       !$acc       , carbon_only &
+       !$acc       , carbonphosphorus_only &
+       !$acc       , carbonnitrogen_only &
+       !$acc       ,use_crop            &
+       !$acc       ,use_snicar_frc      &
+       !$acc       ,use_snicar_ad       &
+       !$acc       ,use_vancouver       &
+       !$acc       ,use_mexicocity      &
+       !$acc       ,use_noio            &
+       !$acc       ,use_var_soil_thick  &
+       !$acc       ,NFIX_PTASE_plant &
+       !$acc       ,tw_irr &
+       !$acc       ,use_erosion &
+       !$acc       ,ero_ccycle  &
+       !$acc       ,anoxia &
+       !$acc       , glc_do_dynglacier &
+       !$acc       , all_active &
+       !$acc       , co2_ppmv &
+       !$acc       , const_climate_hist &
+       !$acc     )
+       !$acc update device(first_step, nlevgrnd, eccen, obliqr, lambm0, mvelpp )
+       call update_acc_variables()
+       !
+       !$acc enter data copyin(filter(:), &
+       !$acc filter_inactive_and_active(:), gpu_clumps(:), gpu_procinfo )
+       !
+        !$acc enter data copyin(&
+        !$acc aerosol_vars     , &
+        !$acc AllocParamsInst  , &
+        !$acc atm2lnd_vars     , &
+        !$acc c13_col_cf     , &
+        !$acc c13_col_cs     , &
+        !$acc c13_grc_cf     , &
+        !$acc c13_veg_cf     , &
+        !$acc c13_veg_cs     , &
+        !$acc c14_col_cf     , &
+        !$acc c14_col_cs     , &
+        !$acc c14_grc_cf     , &
+        !$acc c14_veg_cf     , &
+        !$acc c14_veg_cs     , &
+        !$acc canopystate_vars, &
+        !$acc CH4ParamsInst     , &
+        !$acc ch4_vars          , &
+        !$acc CNDecompParamsInst     , &
+        !$acc CNGapMortParamsInst     , &
+        !$acc CNNDynamicsParamsInst     , &
+        !$acc cnstate_vars     , &
+        !$acc column_state_updater     , &
+        !$acc col_cf     , &
+        !$acc col_cs     , &
+        !$acc col_ef     , &
+        !$acc col_es     , &
+        !$acc col_nf     , &
+        !$acc col_ns     , &
+        !$acc col_pf     , &
+        !$acc col_pp     , &
+        !$acc col_ps     , &
+        !$acc col_wf     , &
+        !$acc col_ws     , &
+        !$acc crop_vars     , &
+        !$acc dyn_subgrid_control_inst , &
+        !$acc subgrid_weights_diagnostics, &
+        !$acc DecompBGCParamsInst     , &
+        !$acc DecompCNParamsInst     , &
+        !$acc decomp_cascade_con     , &
+        !$acc drydepvel_vars     , &
+        !$acc dust_vars     , &
+        !$acc energyflux_vars     , &
+        !$acc frictionvel_vars     , &
+        !$acc glc2lnd_vars     , &
+        !$acc grc_cf     , &
+        !$acc grc_cs     , &
+        !$acc grc_ef     , &
+        !$acc grc_es     , &
+        !$acc grc_nf     , &
+        !$acc grc_ns     , &
+        !$acc grc_pf     , &
+        !$acc grc_pp     , &
+        !$acc grc_ps     , &
+        !$acc grc_wf     , &
+        !$acc grc_ws     , &
+        !$acc lakestate_vars , &
+        !$acc ldomain  ,&
+        !$acc lnd2glc_vars   , &
+        !$acc lnd2atm_vars   , &
+        !$acc lun_ef     , &
+        !$acc lun_es     , &
+        !$acc lun_pp     , &
+        !$acc lun_ws     , &
+        !$acc NitrifDenitrifParamsInst     , &
+        !$acc ParamsShareInst     , &
+        !$acc params_inst     , &
+        !$acc patch_state_updater     , &
+        !$acc photosyns_vars     , &
+        !$acc prior_weights     , &
+        !$acc sedflux_vars     , &
+        !$acc soilhydrology_vars     , &
+        !$acc soilstate_vars     , &
+        !$acc solarabs_vars     , &
+        !$acc surfalb_vars     , &
+        !$acc surfrad_vars     , &
+        !$acc top_af     , &
+        !$acc top_as     , &
+        !$acc top_pp     , &
+        !$acc urbanparams_vars     , &
+        !$acc veg_cf     , &
+        !$acc veg_cs     , &
+        !$acc veg_ef     , &
+        !$acc veg_es     , &
+        !$acc veg_nf     , &
+        !$acc veg_ns     , &
+        !$acc veg_pf     , &
+        !$acc veg_pp     , &
+        !$acc veg_ps     , &
+        !$acc veg_vp     , &
+        !$acc veg_wf     , &
+        !$acc veg_ws     , &
+        !$acc vocemis_vars &
+        !$acc   )
+        !$acc enter data copyin(tape_gpu,clmptr_ra,clmptr_rs)
+        !$acc enter data copyin( doalb, declinp1, declin )
+        
+        #if _CUDA
+              istat = cudaMemGetInfo(free2, total)
+              print *, "Transferred:", free1-free2
+              print *, "Total:",total
+              print *, "Free:", free2
+        #endif
+      end if
+     
     if (do_budgets) call WaterBudget_Reset()
 
     ! ============================================================================
@@ -266,7 +454,8 @@ contains
           ! For dry-deposition need to call CLMSP so that mlaidiff is obtained
           if ( n_drydep > 0 .and. drydep_method == DD_XLND ) then
              call t_startf('interpMonthlyVeg')
-             call interpMonthlyVeg(bounds_proc, canopystate_vars)
+             print *, "TURNED OFF INTERPMONTHLYVEG"
+             !call interpMonthlyVeg(bounds_proc, canopystate_vars)
              call t_stopf('interpMonthlyVeg')
           endif
 
@@ -278,31 +467,40 @@ contains
           ! weights obtained here are used in subroutine SatellitePhenology to obtain time
           ! interpolated values.
           if (doalb .or. ( n_drydep > 0 .and. drydep_method == DD_XLND )) then
-             call t_startf('interpMonthlyVeg')
-             call interpMonthlyVeg(bounds_proc, canopystate_vars)
+             print *, "TURNED OFF INTERPMONTHLYVEG"
+              call t_startf('interpMonthlyVeg')
+             !call interpMonthlyVeg(bounds_proc, canopystate_vars)
              call t_stopf('interpMonthlyVeg')
           end if
        end if
     end if
 
-
-    ! ==================================================================================
-    ! Determine decomp vertical profiles
-    !
-    ! These routines (alt_calc & decomp_vertprofiles) need to be called before
-    ! pftdyn_cnbal, and it appears that they need to be called before pftdyn_interp and
-    ! the associated filter updates, too (otherwise we get a carbon balance error)
-    ! ==================================================================================
-
-    !$OMP PARALLEL DO PRIVATE (nc,bounds_clump)
-    do nc = 1,nclumps
-       call get_clump_bounds(nc, bounds_clump)
-
-       call t_startf("decomp_vert")
-       call alt_calc(filter(nc)%num_soilc, filter(nc)%soilc, &
-            temperature_vars, canopystate_vars)
-
-       if (use_cn) then
+    !$acc serial default(present)
+    call increment_time_vars()
+    call shr_orb_decl(thiscalday_mod , eccen, mvelpp, lambm0, obliqr, declin  , eccf )
+    call shr_orb_decl(nextsw_cday_mod, eccen, mvelpp, lambm0, obliqr, declinp1, eccf )
+    !$acc end serial
+    
+   print *, "first loop!"
+  !$acc parallel default(present)
+   !$acc loop independent gang private(nc, bounds_clump)
+    do nc = 1, nclumps
+      call get_clump_bounds_gpu(nc, bounds_clump)
+      !
+      if (nstep_mod > 1) then
+        call update_forcings_CPLBYPASS(bounds_clump, atm2lnd_vars, int(dtime_mod),&
+                  thiscalday_mod, secs_curr, year_curr, mon_curr, nstep_mod)
+      end if
+       ! ==================================================================================
+       ! Determine decomp vertical profiles
+       !
+       ! These routines (alt_calc & decomp_vertprofiles) need to be called before
+       ! pftdyn_cnbal, and it appears that they need to be called before pftdyn_interp and
+       ! the associated filter updates, too (otherwise we get a carbon balance error)
+       ! ==================================================================================
+      call alt_calc(filter(nc)%num_soilc, filter(nc)%soilc, canopystate_vars, &
+                      year_curr, mon_curr,day_curr,secs_curr, dtime_mod)
+      if (use_cn) then
           !  Note (WJS, 6-12-13): Because of this routine's placement in the driver sequence
           !  (it is called very early in each timestep, before weights are adjusted and
           !  filters are updated), it may be necessary for this routine to compute values over
@@ -310,163 +508,182 @@ contains
           !  active) - so that's what is done now. Currently, it seems to be okay to do this,
           !  because the variables computed here seem to only depend on quantities that are
           !  valid over inactive as well as active points.
-
-          call decomp_vertprofiles(bounds_clump, &
-               filter_inactive_and_active(nc)%num_soilc, &
-               filter_inactive_and_active(nc)%soilc, &
-               filter_inactive_and_active(nc)%num_soilp, &
-               filter_inactive_and_active(nc)%soilp, &
+          call decomp_vertprofiles2(bounds_clump, &
+               filter_inactive_and_active(nc), &
                soilstate_vars, canopystate_vars, cnstate_vars)
        end if
+       ! ============================================================================
+       ! Zero fluxes for transient land cover
+       ! ============================================================================
 
-       call t_stopf("decomp_vert")
-    end do
-    !$OMP END PARALLEL DO
-
-    ! ============================================================================
-    ! Zero fluxes for transient land cover
-    ! ============================================================================
-
-    !$OMP PARALLEL DO PRIVATE (nc,bounds_clump)
-    do nc = 1,nclumps
-       call get_clump_bounds(nc, bounds_clump)
-
-       call t_startf('beggridwbal')
        call BeginGridWaterBalance(bounds_clump,               &
             filter(nc)%num_nolakec, filter(nc)%nolakec,       &
             filter(nc)%num_lakec, filter(nc)%lakec,           &
             filter(nc)%num_hydrologyc, filter(nc)%hydrologyc, &
             soilhydrology_vars)
-       call t_stopf('beggridwbal')
 
-       if (use_betr) then
-         dtime=get_step_size(); nstep=get_nstep()
-         call ep_betr%SetClock(dtime= dtime, nelapstep=nstep)
-         call ep_betr%BeginMassBalanceCheck(bounds_clump)
-       endif
+      call elm_zero_fluxes(bounds_clump)
 
-       if (use_cn) then
-          call t_startf('cnpinit')
+      if (use_cn) then
+        call vegcs_Summary_acc(veg_cs,bounds_clump, &
+             filter(nc)%num_soilc, filter(nc)%soilc, &
+             filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
+        call colcs_Summary_acc(col_cs,bounds_clump, &
+             filter(nc)%num_soilc, filter(nc)%soilc)
 
-          call veg_cs%ZeroDwt(bounds_clump)
+        call vegns_Summary_acc(veg_ns,bounds_clump, &
+             filter(nc)%num_soilc, filter(nc)%soilc, &
+             filter(nc)%num_soilp, filter(nc)%soilp, col_ns)
 
-          call grc_cf%ZeroDWT(bounds_clump)
-          call col_cf%ZeroDWT(bounds_clump)
-          if (use_c13) then
-             call c13_grc_cf%ZeroDWT(bounds_clump)
-             call c13_col_cf%ZeroDWT(bounds_clump)
-          end if
-          if (use_c14) then
-             call c14_grc_cf%ZeroDWT(bounds_clump)
-             call c14_col_cf%ZeroDWT(bounds_clump)
-          end if
+        call colns_Summary_acc(col_ns, bounds_clump, &
+             filter(nc)%num_soilc, filter(nc)%soilc)
 
-          call veg_ns%ZeroDWT(bounds_clump)
+        call vegps_Summary_acc(veg_ps, bounds_clump, &
+             filter(nc)%num_soilc, filter(nc)%soilc, &
+             filter(nc)%num_soilp, filter(nc)%soilp, col_ps)
+        call colps_Summary_acc(col_ps, bounds_clump, &
+             filter(nc)%num_soilc, filter(nc)%soilc)
 
-          call grc_nf%ZeroDWT(bounds_clump)
-          call col_nf%ZeroDWT(bounds_clump)
+        call BeginGridCBalanceBeforeDynSubgridDriver(bounds_clump, col_cs, grc_cs)
+        call BeginGridNBalanceBeforeDynSubgridDriver(bounds_clump)
+        call BeginGridPBalanceBeforeDynSubgridDriver(bounds_clump)
 
-          call veg_ps%ZeroDWT(bounds_clump)
+     end if
 
-          call grc_pf%ZeroDWT(bounds_clump)
-          call col_pf%ZeroDWT(bounds_clump)
+   end do
+  !$acc end parallel
+     
+  !$acc parallel default(present)
 
-          call veg_cs%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
-          call col_cs%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc)
+      !$acc loop independent gang private(nc, bounds_clump)
+      do nc = 1, nclumps
+          call get_clump_bounds_gpu(nc,bounds_clump)
 
-          call veg_ns%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp, col_ns)
-          call col_ns%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc)
+        ! ============================================================================
+        ! Update subgrid weights with dynamic landcover (prescribed transient patches,
+        ! and or dynamic landunits), and do related adjustments. Note that this
+        ! call needs to happen outside loops over nclumps.
+        ! ============================================================================
 
-          call veg_ps%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp, col_ps)
-          call col_ps%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc)
+       call dyn_hwcontent_init(bounds_clump, &
+            filter(nc)%num_nolakec, filter(nc)%nolakec, &
+            filter(nc)%num_lakec, filter(nc)%lakec, &
+            urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars, &
+            energyflux_vars)
 
-          call BeginGridCBalanceBeforeDynSubgridDriver(bounds_clump, col_cs, grc_cs)
-          call BeginGridNBalanceBeforeDynSubgridDriver(bounds_clump)
-          call BeginGridPBalanceBeforeDynSubgridDriver(bounds_clump)
+       call set_prior_weights_acc(prior_weights, bounds_clump)
+       call patch_state_set_old_weights_acc  (patch_state_updater,bounds_clump)
+       call column_state_set_old_weights_acc(column_state_updater,bounds_clump)
 
-          call t_stopf('cnpinit')
+       if (create_glacier_mec_landunit) then
+          call glc2lnd_vars_update_glc2lnd_acc(glc2lnd_vars ,bounds_clump)
        end if
 
+       ! Everything following this point in this loop only needs to be called if we have
+       ! actually changed some weights in this time step. This is also required in the
+       ! first time step of the run to update filters to reflect state of CISM
+       ! (particularly mask that is past through coupler).
+       call dynSubgrid_wrapup_weight_changes(bounds_clump, glc2lnd_vars)
+
+       call patch_set_new_weightsAcc (patch_state_updater ,bounds_clump)
+       call column_set_new_weightsAcc(column_state_updater,bounds_clump, nc)
+
+       call set_subgrid_diagnostic_fields(bounds_clump)
+
+       call initialize_new_columns(bounds_clump, &
+                prior_weights%cactive(bounds_clump%begc:bounds_clump%endc) , &
+                soilhydrology_vars)
+
+       call dyn_hwcontent_final(bounds_clump, &
+            filter(nc)%num_nolakec, filter(nc)%nolakec, &
+            filter(nc)%num_lakec, filter(nc)%lakec, &
+            urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars, &
+            energyflux_vars, dtime_mod)
+
+       if (use_cn) then
+          call dyn_cnbal_patch(bounds_clump, &
+               filter_inactive_and_active(nc)%num_soilp, filter_inactive_and_active(nc)%soilp, &
+               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
+               prior_weights, &
+               patch_state_updater, &
+               canopystate_vars, photosyns_vars, cnstate_vars, &
+               veg_cs, c13_veg_cs, c14_veg_cs, &
+               veg_ns, veg_ps, dtime_mod)
+
+          call CarbonStateUpdateDynPatch(bounds_clump, &
+               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
+               grc_cs, grc_cf, col_cs, col_cf, dtime_mod)
+
+          call NitrogenStateUpdateDynPatch(bounds_clump, &
+               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc,dtime_mod)
+
+          call PhosphorusStateUpdateDynPatch(bounds_clump, &
+               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc,dtime_mod)
+
+          call dyn_cnbal_column(bounds_clump, nc, column_state_updater, &
+               col_cs, c13_col_cs, c14_col_cs, &
+               col_ns, col_ps )
+       end if
+
+
     end do
-    !$OMP END PARALLEL DO
-
-    ! ============================================================================
-    ! Update subgrid weights with dynamic landcover (prescribed transient patches,
-    ! and or dynamic landunits), and do related adjustments. Note that this
-    ! call needs to happen outside loops over nclumps.
-    ! ============================================================================
-
-    call t_startf('dyn_subgrid')
-    call dynSubgrid_driver(bounds_proc,                                      &
-       urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars, &
-       waterstate_vars, waterflux_vars, temperature_vars, energyflux_vars,   &
-       canopystate_vars, photosyns_vars, cnstate_vars,                       &
-       veg_cs, c13_veg_cs, c14_veg_cs,         &
-       col_cs, c13_col_cs, c14_col_cs, col_cf,  &
-       grc_cs, grc_cf ,&
-       carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,            &
-       nitrogenstate_vars, nitrogenflux_vars, glc2lnd_vars,                  &
-       phosphorusstate_vars,phosphorusflux_vars, crop_vars)
-    call t_stopf('dyn_subgrid')
+    !$acc end parallel
+    
+    !call dynSubgrid_driver(bounds_proc,                                      &
+  !   urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars, &
+  !   energyflux_vars,  canopystate_vars, photosyns_vars, cnstate_vars,     &
+  !   veg_cs, c13_veg_cs, c14_veg_cs,         &
+  !   col_cs, c13_col_cs, c14_col_cs, col_cf,  &
+  !   grc_cs, grc_cf, glc2lnd_vars, crop_vars, dtime_mod )
 
     if (.not. use_fates)then
        if (use_cn) then
-          nstep = get_nstep()
-
-          if (nstep < 2 )then
+          if (nstep_mod < 2 )then
              if (masterproc) then
                 write(iulog,*) '--WARNING-- skipping CN balance check for first timestep'
              end if
           else
-             call t_startf('cnbalchk_at_grid')
+            !$acc parallel default(present)
 
-             !$OMP PARALLEL DO PRIVATE (nc,bounds_clump)
+              !$acc loop independent gang private(nc, bounds_clump)
+
              do nc = 1,nclumps
-                call get_clump_bounds(nc, bounds_clump)
-
-                call veg_cs%Summary(bounds_clump, &
+                call get_clump_bounds_gpu(nc, bounds_clump)
+                call vegcs_summary_acc(veg_cs, bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
                      filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
-                call col_cs%Summary(bounds_clump, &
+
+                call colcs_Summary_acc(col_cs, bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc)
 
-                call veg_ns%Summary(bounds_clump, &
+                call vegns_Summary_acc(veg_ns,bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
                      filter(nc)%num_soilp, filter(nc)%soilp, col_ns)
-                call col_ns%Summary(bounds_clump, &
+
+                call colns_Summary_acc(col_ns,bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc)
 
-                call veg_ps%Summary(bounds_clump, &
+                call vegps_Summary_acc(veg_ps,bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
                      filter(nc)%num_soilp, filter(nc)%soilp, col_ps)
-                call col_ps%Summary(bounds_clump, &
+
+                call colps_Summary_acc(col_ps,bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc)
 
                 call EndGridCBalanceAfterDynSubgridDriver(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
-                     col_cs, grc_cs, dtime)
+                     col_cs, grc_cs, dtime_mod)
 
                 call EndGridNBalanceAfterDynSubgridDriver(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
-                     dtime)
+                     dtime_mod)
 
                 call EndGridPBalanceAfterDynSubgridDriver(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
-                     dtime)
+                     dtime_mod)
 
              end do
-             !$OMP END PARALLEL DO
-             call t_stopf('cnbalchk_at_grid')
-
+            !$acc end parallel
           end if
        end if
     end if
@@ -485,39 +702,37 @@ contains
     ! For CNP: This needs to be done after dynSubgrid_driver, because the
     ! changes due to dynamic area adjustments can break column-level conservation
     ! ============================================================================
+    !$acc parallel default(present)
 
-    !$OMP PARALLEL DO PRIVATE (nc,bounds_clump)
-    do nc = 1,nclumps
-       call get_clump_bounds(nc, bounds_clump)
+      !$acc loop independent gang private(nc, bounds_clump)
+     do nc = 1,nclumps
+       call get_clump_bounds_gpu(nc, bounds_clump)
 
-       call t_startf('begwbal')
        call BeginColWaterBalance(bounds_clump,                &
             filter(nc)%num_nolakec, filter(nc)%nolakec,       &
             filter(nc)%num_lakec, filter(nc)%lakec,           &
             filter(nc)%num_hydrologyc, filter(nc)%hydrologyc, &
             soilhydrology_vars)
-       call t_stopf('begwbal')
 
        if (use_cn) then
-          call t_startf('begcnpbal')
-
           ! call veg summary before col summary, for p2c
-          call veg_cs%Summary(bounds_clump, &
+          call vegcs_Summary_acc(veg_cs,bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
-          call col_cs%Summary(bounds_clump, &
+          call colcs_Summary_acc(col_cs,bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc)
 
-          call veg_ns%Summary(bounds_clump, &
+          call vegns_Summary_acc(veg_ns,bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                filter(nc)%num_soilp, filter(nc)%soilp, col_ns)
-          call col_ns%Summary(bounds_clump, &
+          call colns_Summary_acc(col_ns,bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc)
 
-          call veg_ps%Summary(bounds_clump, &
+          call vegps_Summary_acc(veg_ps,bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                filter(nc)%num_soilp, filter(nc)%soilp, col_ps)
-          call col_ps%Summary(bounds_clump, &
+
+          call colps_Summary_acc(col_ps, bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc)
 
           call BeginColCBalance(bounds_clump, &
@@ -529,15 +744,15 @@ contains
 
           call BeginColPBalance(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc)
-          call t_stopf('begcnpbal')
        end if
 
        if (do_budgets) then
-          call WaterBudget_SetBeginningMonthlyStates(bounds_clump)
+          call WaterBudget_SetBeginningMonthlyStates(bounds_clump , nstep_mod, day_curr, secs_curr &
+                                        , day_prev, secs_prev)
        endif
 
     end do
-    !$OMP END PARALLEL DO
+   !$acc end parallel
 
     ! ============================================================================
     ! Update dynamic N deposition field, on albedo timestep
@@ -561,10 +776,8 @@ contains
     ! ============================================================================
 
     if (use_cn) then
-       call t_startf('pdep_interp')
        ! PET: switching CN timestep
        call pdep_interp(bounds_proc, atm2lnd_vars)
-       call t_stopf('pdep_interp')
     end if
 
 #endif
@@ -578,16 +791,14 @@ contains
     ! ============================================================================
 
 
-    !$OMP PARALLEL DO PRIVATE (nc,l,c, bounds_clump)
+    print *, "main loop"
+  !$acc parallel vector_length(32) default(present)
+
+    !$acc loop independent gang private(nc, bounds_clump)
     do nc = 1,nclumps
 
-       call get_clump_bounds(nc, bounds_clump)
-
-       !call t_startf('drvinit')
-
+       call get_clump_bounds_gpu(nc, bounds_clump)
        call UpdateDaylength(bounds_clump, declin)
-       call update_vars_UpdateDaylength(gpu)
-
        ! Initialze variables needed for new driver time step
        call clm_drv_init(bounds_clump, &
             filter(nc)%num_nolakec, filter(nc)%nolakec, &
@@ -596,16 +807,9 @@ contains
             canopystate_vars, photosyns_vars, &
             col_wf, col_ef)
 
-       call update_vars_clm_drv_init(gpu)
-
        call downscale_forcings(bounds_clump, &
             filter(nc)%num_do_smb_c, filter(nc)%do_smb_c, &
             atm2lnd_vars)
-
-        call update_vars_downscale_forcings(gpu)
-
-       !call t_stopf('drvinit')
-
        ! ============================================================================
        ! Canopy Hydrology
        ! (1) water storage of intercepted precipitation
@@ -613,24 +817,15 @@ contains
        ! (3) fraction of foliage covered by water and the fraction is dry and transpiring
        ! (4) snow layer initialization if the snow accumulation exceeds 10 mm.
        ! ============================================================================
-
-       !call t_startf('canhydro')
-
        call CanopyHydrology(bounds_clump, &
                   filter(nc)%num_nolakec, filter(nc)%nolakec, &
                   filter(nc)%num_nolakep, filter(nc)%nolakep, &
                   atm2lnd_vars, canopystate_vars, &
-                  aerosol_vars, dtime)
-
-        call update_vars_CanopyHydrology(gpu)
-
-       !call t_stopf('canhydro')
+                  aerosol_vars, dtime_mod)
 
        ! ============================================================================
        ! Surface Radiation
        ! ============================================================================
-
-       !call t_startf('surfrad')
 
        ! Surface Radiation primarily for non-urban columns
 
@@ -640,25 +835,18 @@ contains
        ! The nourbanp filter is set in dySubgrid_driver (earlier in this call)
        ! over the patch index range defined by bounds_clump%begp:bounds_proc%endp
 
-       if(use_fates) then
-          !call alm_fates%wrap_sunfrac(bounds_clump, top_af, canopystate_vars)
-       else
           call CanopySunShadeFractions(filter(nc)%num_nourbanp, filter(nc)%nourbanp,    &
                                        atm2lnd_vars, surfalb_vars, canopystate_vars,    &
                                        solarabs_vars)
-          call update_vars_CanopySunShadeFractions(gpu)
-       end if
 
-       call SurfaceRadiation(bounds_clump,                        &
+          call SurfaceRadiation(bounds_clump,                        &
                    filter(nc)%num_nourbanp, filter(nc)%nourbanp,  &
                    filter(nc)%num_urbanp, filter(nc)%urbanp    ,  &
                    filter(nc)%num_urbanc, filter(nc)%urbanc,      &
                    atm2lnd_vars, canopystate_vars, surfalb_vars, &
-                   solarabs_vars, surfrad_vars, dtime, secs)
-        call update_vars_SurfaceRadiation(gpu)
+                   solarabs_vars, surfrad_vars, dtime_mod, secs_curr)
 
        ! Surface Radiation for only urban columns
-
        call UrbanRadiation(bounds_clump,                                       &
                  filter(nc)%num_nourbanl, filter(nc)%nourbanl,                      &
                  filter(nc)%num_urbanl, filter(nc)%urbanl,                          &
@@ -667,58 +855,36 @@ contains
                  atm2lnd_vars, urbanparams_vars, &
                  solarabs_vars, surfalb_vars, energyflux_vars)
 
-        call update_vars_UrbanRadiation(gpu)
-       !call t_stopf('surfrad')
 
        ! ============================================================================
        ! Determine leaf temperature and surface fluxes based on ground
        ! temperature from previous time step.
        ! ============================================================================
-
-       !call t_startf('bgp1')
        call CanopyTemperature(bounds_clump,                                   &
                    filter(nc)%num_nolakec, filter(nc)%nolakec,                       &
                    filter(nc)%num_nolakep, filter(nc)%nolakep,                       &
                    atm2lnd_vars, canopystate_vars, soilstate_vars, frictionvel_vars, &
                    energyflux_vars)
-       !call t_stopf('bgp1')
-       call update_vars_CanopyTemperature(gpu)
-       ! ============================================================================
        ! Determine fluxes
-       ! ============================================================================
-
-       !call t_startf('bgflux')
-
-       !call col_wf%Reset(bounds_clump, filter(nc)%num_nolakec , filter(nc)%nolakec)
-       do fc = 1, filter(nc)%num_nolakec
-         c = filter(nc)%nolakec(fc)
-         col_wf%qflx_snow2topsoi     (c)   = 0._r8
-         col_wf%qflx_h2osfc2topsoi   (c)   = 0._r8
-       enddo
-
+       ! =======================================================================
+       call col_wf_reset(col_wf,filter(nc)%num_nolakec, filter(nc)%nolakec)
+       !========================================================================
        call BareGroundFluxes(bounds_clump,                               &
                 filter(nc)%num_nolakeurbanp, filter(nc)%nolakeurbanp,    &
                 atm2lnd_vars, canopystate_vars, soilstate_vars,          &
                 frictionvel_vars, ch4_vars )
 
-       !call t_stopf('bgflux')
-       call update_vars_BareGroundFluxes(gpu)
        ! non-bareground fluxes for all patches except lakes and urban landunits
        ! Calculate canopy temperature, latent and sensible fluxes from the canopy,
        ! and leaf water change by evapotranspiration
        !call t_startf('canflux')
-
        call CanopyFluxes(bounds_clump,                                                   &
                 filter(nc)%num_nolakeurbanp, filter(nc)%nolakeurbanp,                        &
                 atm2lnd_vars, canopystate_vars, cnstate_vars, energyflux_vars,               &
                 frictionvel_vars, soilstate_vars, solarabs_vars, surfalb_vars,               &
-                ch4_vars, photosyns_vars, dtime, year, mon, day, secs)
+                ch4_vars, photosyns_vars, dtime_mod, year_curr, mon_curr, day_curr, secs_curr)
 
-       !call t_stopf('canflux')
-       call update_vars_CanopyFluxes(gpu)
        ! Fluxes for all urban landunits
-
-       !call t_startf('uflux')
        call UrbanFluxes(bounds_clump,                            &
                 filter(nc)%num_nourbanl, filter(nc)%nourbanl,    &
                 filter(nc)%num_urbanl, filter(nc)%urbanl,        &
@@ -726,105 +892,69 @@ contains
                 filter(nc)%num_urbanp, filter(nc)%urbanp,        &
                 atm2lnd_vars, urbanparams_vars, soilstate_vars,  &
                 frictionvel_vars, energyflux_vars, &
-                nstep, dtime, year, mon, day, secs)
-       !call t_stopf('uflux')
-       call update_vars_UrbanFluxes(gpu)
+                nstep_mod, dtime_mod, year_curr, mon_curr, day_curr, secs_curr)
        ! Fluxes for all lake landunits
-
-       !call t_startf('bgplake')
        call LakeFluxes(bounds_clump,                                         &
                    filter(nc)%num_lakec, filter(nc)%lakec,                          &
                    filter(nc)%num_lakep, filter(nc)%lakep,                          &
                    atm2lnd_vars, solarabs_vars, frictionvel_vars, &
                    energyflux_vars,  lakestate_vars)
 
-        call update_vars_LakeFluxes(gpu)
        ! ============================================================================
        ! DUST and VOC emissions
        ! ============================================================================
-
-       !call t_startf('bgc')
 
        ! Dust mobilization (C. Zender's modified codes)
        call DustEmission(bounds_clump,                        &
               filter(nc)%num_nolakep, filter(nc)%nolakep,     &
               atm2lnd_vars, soilstate_vars, canopystate_vars, &
               frictionvel_vars, dust_vars)
-       call update_vars_DustEmission(gpu)
        ! Dust dry deposition (C. Zender's modified codes)
        call DustDryDep(bounds_clump,atm2lnd_vars, frictionvel_vars, dust_vars)
-
-       call update_vars_DustDryDep(gpu)
-       ! VOC emission (A. Guenther's MEGAN (2006) model)
-       !if (use_voc) then
-      !    call VOCEmission(bounds_clump,                                         &
-      !         filter(nc)%num_soilp, filter(nc)%soilp,                           &
-      !         atm2lnd_vars, canopystate_vars, photosyns_vars, temperature_vars, &
-      !         vocemis_vars)
-       !end if
-
-       !call t_stopf('bgc')
 
        ! ============================================================================
        ! Determine temperatures
        ! ============================================================================
-       !if(use_betr)then
-      !   call ep_betr%BeTRSetBiophysForcing(bounds_clump, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=waterstate_vars)
-      !   call ep_betr%PreDiagSoilColWaterFlux(filter(nc)%num_nolakec , filter(nc)%nolakec)
-       !endif
-       ! Set lake temperature
 
+       ! Set lake temperature
+       print *, "Lake Temperature:"
        call LakeTemperature(bounds_clump,                  &
                   filter(nc)%num_lakec, filter(nc)%lakec,  &
                   filter(nc)%num_lakep, filter(nc)%lakep,  &
                   solarabs_vars, soilstate_vars, ch4_vars, &
-                  energyflux_vars, lakestate_vars, dtime)
+                  energyflux_vars, lakestate_vars, dtime_mod)
        !call t_stopf('bgplake')
-       call update_vars_LakeTemperature(gpu)
        ! Set soil/snow temperatures including ground temperature
-
-       !call t_startf('soiltemperature')
+       print *, "SoilTemperture"
        call SoilTemperature(bounds_clump,                            &
                    filter(nc)%num_urbanl  , filter(nc)%urbanl,       &
                    filter(nc)%num_nolakec , filter(nc)%nolakec,      &
                    atm2lnd_vars, urbanparams_vars, canopystate_vars, &
-                   solarabs_vars, soilstate_vars, energyflux_vars, dtime)
-       !call t_stopf('soiltemperature')
+                   solarabs_vars, soilstate_vars, energyflux_vars, dtime_mod)
 
-       call update_vars_SoilTemperature(gpu)
-       !if(use_betr)then
-      !   call ep_betr%BeTRSetBiophysForcing(bounds_clump, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=waterstate_vars)
-      !   call ep_betr%DiagnoseDtracerFreezeThaw(bounds_clump, filter(nc)%num_nolakec , filter(nc)%nolakec, col_pp, lun_pp)
-       !endif
        ! ============================================================================
        ! update surface fluxes for new ground temperature.
        ! ============================================================================
-
-       !call t_startf('bgp2')
+       print *, "SoilFluxes"
        call SoilFluxes(bounds_clump,                                &
                    filter(nc)%num_urbanl,  filter(nc)%urbanl,       &
                    filter(nc)%num_nolakec, filter(nc)%nolakec,      &
                    filter(nc)%num_nolakep, filter(nc)%nolakep,      &
                    atm2lnd_vars, solarabs_vars,  canopystate_vars,  &
-                   energyflux_vars, dtime)
-       !call t_stopf('bgp2')
-       call update_vars_SoilFluxes(gpu)
+                   energyflux_vars, dtime_mod)
        ! ============================================================================
        ! Perform averaging from patch level to column level
        ! ============================================================================
 
-       call t_startf('patch2col')
        call clm_drv_patch2col(bounds_clump, filter(nc)%num_nolakec, filter(nc)%nolakec, &
             energyflux_vars)
-       call t_stopf('patch2col')
        ! ============================================================================
        ! Vertical (column) soil and surface hydrology
        ! ============================================================================
 
        ! Note that filter_snowc and filter_nosnowc are returned by
        ! LakeHydrology after the new snow filter is built
-
-       !call t_startf('hydro without drainage')
+        print *, "NoDraingae"
 
        call HydrologyNoDrainage(bounds_clump,                     &
             filter(nc)%num_nolakec, filter(nc)%nolakec,           &
@@ -834,9 +964,8 @@ contains
             filter(nc)%num_snowc, filter(nc)%snowc,               &
             filter(nc)%num_nosnowc, filter(nc)%nosnowc,           &
             canopystate_vars,atm2lnd_vars, soilstate_vars, energyflux_vars,        &
-            soilhydrology_vars, aerosol_vars, dtime)
+            soilhydrology_vars, aerosol_vars, dtime_mod)
 
-       call update_vars_HydrologyNoDrainage(gpu)
        !  Calculate column-integrated aerosol masses, and
        !  mass concentrations for radiative calculations and output
        !  (based on new snow level state, after SnowFilter is rebuilt.
@@ -846,55 +975,39 @@ contains
        call AerosolMasses( bounds=bounds_clump,                                   &
                    num_on=filter(nc)%num_snowc, filter_on=filter(nc)%snowc,       &
                    num_off=filter(nc)%num_nosnowc, filter_off=filter(nc)%nosnowc, &
-                   aerosol_vars=aerosol_vars, dtime=dtime)
-       call update_vars_AerosolMasses(gpu)
-       !call t_stopf('hydro without drainage')
+                   aerosol_vars=aerosol_vars, dtime=dtime_mod)
+
        ! ============================================================================
        ! Lake hydrology
        ! ============================================================================
-
+        print *, "Lkae Hydrology"
        ! Note that filter_lakesnowc and filter_lakenosnowc are returned by
        ! LakeHydrology after the new snow filter is built
-
-      !call t_startf('hylake')
       call LakeHydrology(bounds_clump,                                  &
                   filter(nc)%num_lakec, filter(nc)%lakec,                      &
                   filter(nc)%num_lakep, filter(nc)%lakep,                      &
                   filter(nc)%num_lakesnowc, filter(nc)%lakesnowc,              &
                   filter(nc)%num_lakenosnowc, filter(nc)%lakenosnowc,          &
                   atm2lnd_vars,  soilstate_vars,  &
-                  energyflux_vars, aerosol_vars, lakestate_vars, dtime)
-       call update_vars_LakeHydrology(gpu)
+                  energyflux_vars, aerosol_vars, lakestate_vars, dtime_mod)
+
 
        !  Calculate column-integrated aerosol masses, and
        !  mass concentrations for radiative calculations and output
        !  (based on new snow level state, after SnowFilter is rebuilt.
        !  NEEDS TO BE AFTER SnowFiler is rebuilt, otherwise there
        !  can be zero snow layers but an active column in filter)
-       call AerosolMasses( bounds=bounds_clump,                                   &
-                   num_on=filter(nc)%num_lakesnowc, filter_on=filter(nc)%lakesnowc, &
+
+       call AerosolMasses(bounds=bounds_clump,                                   &
+                   num_on=filter(nc)%num_lakesnowc,    filter_on=filter(nc)%lakesnowc,   &
                    num_off=filter(nc)%num_lakenosnowc, filter_off=filter(nc)%lakenosnowc, &
-                   aerosol_vars=aerosol_vars,dtime=dtime)
-       call update_vars_AerosolMasses(gpu)
-       ! Must be done here because must use a snow filter for lake columns
-       call SnowAge_grain(bounds_clump,                         &
+                   aerosol_vars=aerosol_vars,  dtime=dtime_mod)
+
+           call SnowAge_grain(bounds_clump,                         &
                    filter(nc)%num_lakesnowc, filter(nc)%lakesnowc,     &
-                   filter(nc)%num_lakenosnowc, filter(nc)%lakenosnowc, dtime)
+                   filter(nc)%num_lakenosnowc, filter(nc)%lakenosnowc, dtime_mod)
 
-       call update_vars_SnowAge_grain(gpu)
-       !call t_stopf('hylake')
-
-       ! ============================================================================
-       ! ! Fraction of soil covered by snow (Z.-L. Yang U. Texas)
-       ! ============================================================================
-
-       do c = bounds_clump%begc,bounds_clump%endc
-          l = col_pp%landunit(c)
-          if (lun_pp%urbpoi(l)) then
-             ! Urban landunit use Bonan 1996 (LSM Technical Note)
-             col_ws%frac_sno(c) = min( col_ws%snow_depth(c)/0.05_r8, 1._r8)
-          end if
-       end do
+       call set_fracsno(bounds_clump)
 
        ! ============================================================================
        ! Snow aging routine based on Flanner and Zender (2006), Linking snowpack
@@ -903,61 +1016,24 @@ contains
        ! ============================================================================
        ! Note the snow filters here do not include lakes
        ! TODO: move this up
-
-       !call t_startf('snow_init')
        call SnowAge_grain(bounds_clump,                         &
-                   filter(nc)%num_lakesnowc, filter(nc)%lakesnowc,     &
-                   filter(nc)%num_lakenosnowc, filter(nc)%lakenosnowc, dtime)
-       !call t_stopf('snow_init')
-       call update_vars_SnowAge_grain(gpu)
+                   filter(nc)%num_snowc, filter(nc)%snowc,     &
+                   filter(nc)%num_nosnowc, filter(nc)%nosnowc, dtime_mod)
        ! ============================================================================
        ! Update sediment fluxes from land unit
        ! ============================================================================
 
        if (use_erosion) then
-          !call t_startf('erosion')
           call SoilErosion(bounds_clump, filter(nc)%num_hydrologyc, filter(nc)%hydrologyc, &
-               atm2lnd_vars, canopystate_vars, soilstate_vars, sedflux_vars, dtime)
-          !call t_stopf('erosion')
+               atm2lnd_vars, canopystate_vars, soilstate_vars, sedflux_vars, dtime_mod)
        end if
-       call update_vars_SoilErosion(gpu)
        ! ============================================================================
        ! Ecosystem dynamics: Uses CN, or static parameterizations
        ! ============================================================================
 
-       if ((mon == 1 .and. day == 1 .and. secs == 0) .and. .not. is_first_step()) then
-          do fp = 1, filter(nc)%num_pcropp
-             p = filter(nc)%pcropp(fp)
-             crop_vars%nyrs_crop_active_patch(p) = crop_vars%nyrs_crop_active_patch(p) + 1
-          end do
+       if ((mon_curr == 1 .and. day_curr == 1 .and. secs_curr == 0) .and. nstep_mod > 1) then
+          call crop_vars_CropIncrementYear(filter(nc)%num_pcropp,filter(nc)%pcropp,crop_vars)
        end if
-
-       !call t_startf('ecosysdyn')
-       !#betr_py if(use_betr)then
-         !right now betr bgc is intended only for non-ed mode
-
-         !!!if(is_active_betr_bgc)then
-        !!!   !this returns the plant nutrient demand to soil bgc
-        !!!   call CNEcosystemDynBetr(bounds_clump,                                &
-        !!!         filter(nc)%num_soilc, filter(nc)%soilc,                        &
-        !!!         filter(nc)%num_soilp, filter(nc)%soilp,                        &
-        !!!         filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,               &
-        !!!         cnstate_vars, carbonflux_vars, carbonstate_vars,               &
-        !!!         c13_carbonflux_vars, c13_carbonstate_vars,                     &
-        !!!         c14_carbonflux_vars, c14_carbonstate_vars,                     &
-        !!!         nitrogenflux_vars, nitrogenstate_vars,                         &
-        !!!         atm2lnd_vars, waterstate_vars, waterflux_vars,                 &
-        !!!         canopystate_vars, soilstate_vars, temperature_vars, crop_vars, &
-        !!!         photosyns_vars, soilhydrology_vars, energyflux_vars,&
-        !!!         PlantMicKinetics_vars,                                         &
-        !!!         phosphorusflux_vars, phosphorusstate_vars)
-
-        !!!   call AnnualUpdate(bounds_clump,            &
-        !!!          filter(nc)%num_soilc, filter(nc)%soilc, &
-        !!!          filter(nc)%num_soilp, filter(nc)%soilp, &
-        !!!          cnstate_vars, dtime )
-         !!!endif
-       !#betr_py endif
 
          ! FIX(SPM,032414)  push these checks into the routines below and/or make this consistent.
        if (.not. use_fates) then
@@ -978,74 +1054,9 @@ contains
                                     cnstate_vars, atm2lnd_vars,                    &
                                     canopystate_vars, soilstate_vars, crop_vars,   &
                                     ch4_vars, photosyns_vars,                                        &
-                                    dtime, dayspyr,year, mon, day, secs)
-             call update_vars_EcosystemDynNoLeaching1(gpu)
+                                    dtime_mod, dayspyr_mod,year_curr, mon_curr, day_curr, secs_curr)
              !--------------------------------------------------------------------------------
-            ! if (use_clm_interface) then
-            !     ! STEP-1: pass data from CLM to clm_interface_data (INTERFACE DATA TYPE)
-            !     call get_clm_data(clm_interface_data,bounds_clump,                     &
-            !               filter(nc)%num_soilc, filter(nc)%soilc,                      &
-            !               filter(nc)%num_soilp, filter(nc)%soilp,                      &
-            !               atm2lnd_vars, soilstate_vars,                                &
-            !               waterstate_vars, waterflux_vars,                             &
-            !               temperature_vars, energyflux_vars,                           &
-            !               cnstate_vars, carbonflux_vars, carbonstate_vars,             &
-            !               nitrogenflux_vars, nitrogenstate_vars,                       &
-            !               phosphorusflux_vars, phosphorusstate_vars,                   &
-            !               ch4_vars)
-            !
-            !
-            !     if (use_pflotran .and. pf_cmode) then
-            !        call t_startf('pflotran')
-            !        ! -------------------------------------------------------------------------
-            !        ! PFLOTRAN calling for solving below-ground and ground-surface processes,
-            !        ! including thermal, hydrological and biogeochemical processes
-            !        ! STEP-2: (1) pass data from clm_interface_data to pflotran
-            !        ! STEP-2: (2) run pflotran
-            !        ! STEP-2: (3) update clm_interface_data from pflotran
-            !        ! -------------------------------------------------------------------------
-            !        call clm_pf_run(clm_interface_data, bounds_clump, filter, nc)
-            !
-            !        ! STEP-3: update CLM from clm_interface_data
-            !        call update_bgc_data_pf2clm(clm_interface_data%bgc,         &
-            !               bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc, &
-            !               filter(nc)%num_soilp, filter(nc)%soilp,              &
-            !               cnstate_vars, carbonflux_vars, carbonstate_vars,     &
-            !               nitrogenflux_vars, nitrogenstate_vars,               &
-            !               phosphorusflux_vars, phosphorusstate_vars,           &
-            !               ch4_vars)
-            !
-            !        call t_stopf('pflotran')
-            !
-            !     elseif (use_clm_bgc) then
-            !        call t_startf('clm-bgc via interface')
-            !        ! -------------------------------------------------------------------------
-            !        ! run clm-bgc (SoilLittDecompAlloc) through interface
-            !        ! STEP-2: (1) pass data from clm_interface_data to SoilLittDecompAlloc
-            !        ! STEP-2: (2) run SoilLittDecompAlloc
-            !        ! STEP-2: (3) update clm_interface_data from SoilLittDecompAlloc
-            !        ! -------------------------------------------------------------------------
-            !        call clm_bgc_run(clm_interface_data, bounds_clump,          &
-            !               filter(nc)%num_soilc, filter(nc)%soilc,              &
-            !               filter(nc)%num_soilp, filter(nc)%soilp,              &
-            !               canopystate_vars, soilstate_vars,                    &
-            !               temperature_vars, waterstate_vars,                   &
-            !               cnstate_vars, ch4_vars,                              &
-            !               carbonstate_vars, carbonflux_vars,                   &
-            !               nitrogenstate_vars, nitrogenflux_vars,               &
-            !               phosphorusstate_vars,phosphorusflux_vars)
-            !
-            !        ! STEP-3: update CLM from clm_interface_data
-            !        call update_bgc_data_clm2clm(clm_interface_data%bgc,        &
-            !               bounds_clump, filter(nc)%num_soilc, filter(nc)%soilc,&
-            !               filter(nc)%num_soilp, filter(nc)%soilp,              &
-            !               cnstate_vars, carbonflux_vars, carbonstate_vars,     &
-            !               nitrogenflux_vars, nitrogenstate_vars,               &
-            !               phosphorusflux_vars, phosphorusstate_vars,           &
-            !               ch4_vars)
-            !        call t_stopf('clm-bgc via interface')
-            !     end if !if (use_pflotran .and. pf_cmode)
-            ! end if !if (use_clm_interface)
+
              !--------------------------------------------------------------------------------
 
              call EcosystemDynNoLeaching2(bounds_clump,                                   &
@@ -1055,18 +1066,15 @@ contains
                                  cnstate_vars, atm2lnd_vars,canopystate_vars,&
                                  soilstate_vars, crop_vars, ch4_vars, &
                                  photosyns_vars, soilhydrology_vars, energyflux_vars, sedflux_vars, &
-                                 year, mon, day, secs, tod, offset, dayspyr, dtime, nstep)
+                                 year_curr, mon_curr, day_curr, secs_curr, secs_curr, 0, dayspyr_mod, dtime_mod, nstep_mod)
 
-             call update_vars_EcosystemDynNoLeaching2(gpu)
-             !===========================================================================================
              ! clm_interface: 'EcosystemDynNoLeaching' is divided into 2 subroutines (1 & 2): END
              !===========================================================================================
 
              call AnnualUpdate(bounds_clump,            &
                   filter(nc)%num_soilc, filter(nc)%soilc, &
                   filter(nc)%num_soilp, filter(nc)%soilp, &
-                  cnstate_vars, dtime)
-            call update_vars_AnnualUpdate(gpu)
+                  cnstate_vars, dtime_mod)
            else ! not use_cn
 
              if (doalb) then
@@ -1075,85 +1083,37 @@ contains
                 call SatellitePhenology(bounds_clump,               &
                      filter(nc)%num_nolakep, filter(nc)%nolakep,    &
                      canopystate_vars)
-                call update_vars_SatellitePhenology(gpu)
              end if
 
           end if  ! end of if-use_cn
-          end if ! end of is_active_betr_bgc
-        end if  ! end of if-use_fates
+          end if  ! end of is_active_betr_bgc
+        end if    ! end of if-use_fates
 
 
-
-         !call t_stopf('ecosysdyn')
 
          ! Dry Deposition of chemical tracers (Wesely (1998) parameterizaion)
-         !call t_startf('depvel')
          call depvel_compute(bounds_clump, &
               atm2lnd_vars, canopystate_vars, frictionvel_vars, &
               photosyns_vars, drydepvel_vars)
-         call update_vars_depvel_compute(gpu)
-         !call t_stopf('depvel')
 
-         ! if (use_betr)then
-         !   call ep_betr%CalcSmpL(bounds_clump, 1, nlevsoi, filter(nc)%num_soilc, filter(nc)%soilc, &
-         !      col_es%t_soisno(bounds_clump%begc:bounds_clump%endc,1:nlevsoi), &
-         !      soilstate_vars, waterstate_vars, soil_water_retention_curve)
-         !
-         !   call ep_betr%SetBiophysForcing(bounds_clump, col_pp, veg_pp,            &
-         !     carbonflux_vars=carbonflux_vars,                                      &
-         !     waterstate_vars=waterstate_vars,         waterflux_vars=waterflux_vars,         &
-         !     temperature_vars=temperature_vars,       soilhydrology_vars=soilhydrology_vars, &
-         !     atm2lnd_vars=atm2lnd_vars,               canopystate_vars=canopystate_vars,     &
-         !     chemstate_vars=chemstate_vars,           soilstate_vars=soilstate_vars, &
-         !     cnstate_vars = cnstate_vars, carbonstate_vars=carbonstate_vars)
-         !
-         !   if(is_active_betr_bgc)then
-         !     call ep_betr%PlantSoilBGCSend(bounds_clump, col_pp, veg_pp, &
-         !       filter(nc)%num_soilc,  filter(nc)%soilc, cnstate_vars, &
-         !       carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, nitrogenflux_vars, phosphorusflux_vars,&
-         !       PlantMicKinetics_vars)
-         !   endif
-         !   call ep_betr%StepWithoutDrainage(bounds_clump, col_pp, veg_pp)
-         ! endif  !end use_betr
 
          if (use_lch4 .and. .not. is_active_betr_bgc) then
            !warning: do not call ch4 before AnnualUpdate, which will fail the ch4 model
-           call t_startf('ch4')
            call CH4 (bounds_clump,                                                                  &
                filter(nc)%num_soilc, filter(nc)%soilc,                                             &
                filter(nc)%num_lakec, filter(nc)%lakec,                                             &
                filter(nc)%num_soilp, filter(nc)%soilp,                                             &
                atm2lnd_vars, lakestate_vars, canopystate_vars, soilstate_vars, soilhydrology_vars, &
-               energyflux_vars, ch4_vars, lnd2atm_vars, dtime )
-           call update_vars_CH4(gpu)
-           call t_stopf('ch4')
+               energyflux_vars, ch4_vars, lnd2atm_vars, dtime_mod )
          end if
 
        ! Dry Deposition of chemical tracers (Wesely (1998) parameterizaion)
-       call t_startf('depvel')
        call depvel_compute(bounds_clump, &
             atm2lnd_vars, canopystate_vars, frictionvel_vars, &
             photosyns_vars, drydepvel_vars)
-       call update_vars_depvel_compute(gpu)
-       call t_stopf('depvel')
        ! ============================================================================
        ! Calculate soil/snow hydrology with drainage (subsurface runoff)
        ! ============================================================================
-
-       call t_startf('hydro2 drainage')
-
-       if (use_clm_interface .and. (use_pflotran .and. pf_hmode)) then
-         ! pflotran only works on 'soilc' (already done above).
-         ! here for non-soil hydrology columns
-         call HydrologyDrainage(bounds_clump,                     &
-            filter(nc)%num_nolakec, filter(nc)%nolakec,           &
-            filter(nc)%num_hydrononsoic, filter(nc)%hydrononsoic, &
-            filter(nc)%num_urbanc, filter(nc)%urbanc,             &
-            filter(nc)%num_do_smb_c, filter(nc)%do_smb_c,         &
-            atm2lnd_vars, glc2lnd_vars,         &
-            soilhydrology_vars, soilstate_vars, dtime)
-
-       else
 
          call HydrologyDrainage(bounds_clump,                 &
             filter(nc)%num_nolakec, filter(nc)%nolakec,       &
@@ -1161,83 +1121,7 @@ contains
             filter(nc)%num_urbanc, filter(nc)%urbanc,         &
             filter(nc)%num_do_smb_c, filter(nc)%do_smb_c,     &
             atm2lnd_vars, glc2lnd_vars,     &
-            soilhydrology_vars, soilstate_vars, dtime)
-        call update_vars_HydrologyDrainage(gpu)
-
-       end if
-
-       call t_stopf('hydro2 drainage')
-
-      ! if (use_betr) then
-      !    call t_startf('betr drainage')
-      !    call ep_betr%StepWithDrainage(bounds_clump, col_pp)
-      !    call t_stopf('betr drainage')
-      !
-      !    call t_startf('betr balchk')
-      !    call ep_betr%MassBalanceCheck(bounds_clump)
-      !    call t_stopf('betr balchk')
-      !    call ep_betr%HistRetrieval(bounds_clump, filter(nc)%num_nolakec, filter(nc)%nolakec)
-      !
-      !    if(is_active_betr_bgc)then
-      !
-      !      !extract nitrogen pool and flux from betr
-      !      call ep_betr%PlantSoilBGCRecv(bounds_clump, col_pp, veg_pp, filter(nc)%num_soilc, filter(nc)%soilc,&
-      !         carbonstate_vars, carbonflux_vars, c13_carbonstate_vars, c13_carbonflux_vars, &
-      !         c14_carbonstate_vars, c14_carbonflux_vars, &
-      !         nitrogenstate_vars, nitrogenflux_vars, phosphorusstate_vars, phosphorusflux_vars)
-      !      !summarize total column nitrogen and carbon
-      !      call CNFluxStateBetrSummary(bounds_clump, col_pp, veg_pp, &
-      !           filter(nc)%num_soilc, filter(nc)%soilc,                       &
-      !           filter(nc)%num_soilp, filter(nc)%soilp,                       &
-      !           carbonflux_vars, carbonstate_vars,                            &
-      !           c13_carbonflux_vars, c13_carbonstate_vars,                    &
-      !           c14_carbonflux_vars, c14_carbonstate_vars,                    &
-      !           nitrogenflux_vars, nitrogenstate_vars,                        &
-      !           phosphorusflux_vars, phosphorusstate_vars)
-      !    endif
-      ! endif  !end use_betr
-
-       ! Execute FATES dynamics
-       ! if ( use_fates ) then
-       !    if ( is_beg_curr_day() ) then ! run ED at the start of each day
-       !
-       !       if ( masterproc ) then
-       !          write(iulog,*)  'clm: calling FATES model ', get_nstep()
-       !       end if
-       !
-       !       call alm_fates%dynamics_driv( bounds_clump, top_as,          &
-       !            top_af, atm2lnd_vars, soilstate_vars, temperature_vars, &
-       !            waterstate_vars, canopystate_vars, carbonflux_vars,     &
-       !            frictionvel_vars)
-       !
-       !
-       !       ! TODO(wjs, 2016-04-01) I think this setFilters call should be replaced by a
-       !       ! call to reweight_wrapup, if it's needed at all.
-       !       ! (FATES-INTERF) Note that setFilters is commented out
-       !       !! call setFilters( bounds_clump, glc_behavior )
-       !
-       !    end if
-       !
-       !    ! ------------------------------------------------------------------------------
-       !    ! Perform reduced capacity soil-bgc only calculations when FATES/ED is on
-       !    ! ------------------------------------------------------------------------------
-       !
-       !    call FatesBGCDyn(bounds_clump,                           &
-       !         filter(nc)%num_soilc, filter(nc)%soilc,             &
-       !         filter(nc)%num_soilp, filter(nc)%soilp,             &
-       !         carbonflux_vars, carbonstate_vars, cnstate_vars,    &
-       !         c13_carbonflux_vars, c13_carbonstate_vars,          &
-       !         c14_carbonflux_vars, c14_carbonstate_vars,          &
-       !         canopystate_vars, soilstate_vars, temperature_vars, &
-       !         ch4_vars, nitrogenflux_vars, nitrogenstate_vars,    &
-       !         phosphorusstate_vars, phosphorusflux_vars,          &
-       !         alm_fates, crop_vars)
-       !
-       ! end if
-
-       ! ============================================================================
-       ! Check the energy and water balance, also carbon and nitrogen balance
-       ! ============================================================================
+            soilhydrology_vars, soilstate_vars, dtime_mod)
 
        if (.not. use_fates) then
 
@@ -1251,61 +1135,51 @@ contains
                         filter(nc)%num_soilp, filter(nc)%soilp,      &
                         filter(nc)%num_pcropp,filter(nc)%pcropp, doalb,  &
                         cnstate_vars, frictionvel_vars, canopystate_vars,&
-                        dtime )
-              !call update_vars_EcosystemDynLeaching(gpu)
+                        dtime_mod )
              end if
 
              if (doalb) then
                 call VegStructUpdate(filter(nc)%num_soilp, filter(nc)%soilp,   &
                      frictionvel_vars, cnstate_vars, &
-                     canopystate_vars, crop_vars, dtime)
-                call update_vars_VegStructUpdate(gpu)
+                     canopystate_vars, crop_vars, dtime_mod)
              end if
 
           end if
        end if
 
-       call t_startf('balchk')
        call ColWaterBalanceCheck(bounds_clump, &
             filter(nc)%num_do_smb_c, filter(nc)%do_smb_c, &
             atm2lnd_vars, glc2lnd_vars, solarabs_vars, &
-            energyflux_vars, canopystate_vars,surfalb_vars, dtime, nstep)
-       call t_stopf('balchk')
+            energyflux_vars, canopystate_vars,surfalb_vars, dtime_mod, nstep_mod)
 
-       call t_startf('gridbalchk')
-       call GridBalanceCheck(bounds_clump                             , &
-            filter(nc)%num_do_smb_c, filter(nc)%do_smb_c              , &
+       call GridBalanceCheck(bounds_clump                , &
+            filter(nc)%num_do_smb_c, filter(nc)%do_smb_c , &
             atm2lnd_vars, glc2lnd_vars, solarabs_vars, &
             energyflux_vars, canopystate_vars        , &
-            soilhydrology_vars,surfalb_vars, dtime)
-       call t_stopf('gridbalchk')
+            soilhydrology_vars,surfalb_vars, dtime_mod)
 
-       call WaterBudget_SetEndingMonthlyStates(bounds_clump, nstep, year, mon, day, secs)
+       call WaterBudget_SetEndingMonthlyStates(bounds_clump, nstep_mod, year_curr, mon_curr, day_curr, secs_curr)
 
        if (.not. use_fates)then
           if (use_cn) then
-             !#py nstep = get_nstep()
-
-             if (nstep < 2 )then
+             if (nstep_mod < 2 )then
                 if (masterproc) then
                    write(iulog,*) '--WARNING-- skipping CN balance check for first timestep'
                 end if
              else
-                call t_startf('cnbalchk')
 
                 call ColCBalanceCheck(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
-                     col_cs, dtime)
+                     col_cs, dtime_mod)
 
                 call ColNBalanceCheck(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
-                     dtime, year, mon, day, secs)
+                     dtime_mod, year_curr, mon_curr, day_curr, secs_curr)
 
                 call ColPBalanceCheck(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
-                     dtime, year, mon, day, secs)
+                     dtime_mod, year_curr, mon_curr, day_curr, secs_curr)
 
-                call t_stopf('cnbalchk')
              end if
           end if
        end if
@@ -1315,9 +1189,7 @@ contains
        ! ============================================================================
 
        if (doalb) then
-
           ! Albedos for non-urban columns
-          call t_startf('surfalb')
           call SurfaceAlbedo(bounds_clump,                      &
                filter_inactive_and_active(nc)%num_nourbanc,     &
                filter_inactive_and_active(nc)%nourbanc,         &
@@ -1327,15 +1199,11 @@ contains
                filter_inactive_and_active(nc)%urbanc,           &
                filter_inactive_and_active(nc)%num_urbanp,       &
                filter_inactive_and_active(nc)%urbanp,           &
-               nextsw_cday, declinp1,                           &
+               nextsw_cday_mod, declinp1,                           &
                aerosol_vars, canopystate_vars, &
                lakestate_vars,  surfalb_vars )
-          call update_vars_SurfaceAlbedo(gpu)
-          call t_stopf('surfalb')
-
           ! Albedos for urban columns
           if (filter_inactive_and_active(nc)%num_urbanl > 0) then
-             call t_startf('urbsurfalb')
              call UrbanAlbedo(bounds_clump,                  &
                   filter_inactive_and_active(nc)%num_urbanl, &
                   filter_inactive_and_active(nc)%urbanl,     &
@@ -1344,112 +1212,76 @@ contains
                   filter_inactive_and_active(nc)%num_urbanp, &
                   filter_inactive_and_active(nc)%urbanp,     &
                   urbanparams_vars, solarabs_vars, surfalb_vars)
-             call update_vars_UrbanAlbedo(gpu)
-             call t_stopf('urbsurfalb')
           end if
 
        end if
+      ! ============================================================================
+      ! Determine gridcell averaged properties to send to atm
+      ! ===========================================================================
+       call lnd2atm(bounds_clump,                          &
+                atm2lnd_vars, surfalb_vars,  frictionvel_vars, &
+               energyflux_vars, solarabs_vars, drydepvel_vars,&
+               vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, lnd2atm_vars)
+
+        ! ============================================================================
+        ! Determine gridcell averaged properties to send to glc
+        ! ============================================================================
+
+        if (create_glacier_mec_landunit) then
+             call update_lnd2glc_GPU(lnd2glc_vars, bounds_clump,       &
+                  filter(nc)%num_do_smb_c, filter(nc)%do_smb_c, .false.)
+        end if
+        ! ============================================================================
+        ! Update accumulators
+        ! ============================================================================
+
+        ! FIX(SPM,032414) double check why this isn't called for ED
+
+        if (nstep_mod > 0) then
+              call get_clump_bounds_gpu(nc, bounds_clump)
+              call atm2lnd_UpdateAccVars(atm2lnd_vars, bounds_clump, nstep_mod)
+              !call top_as%UpdateAccVars(bounds_proc)  !!only needed if use_fates
+              call update_acc_vars_top_afGPU (top_af, bounds_clump, nstep_mod)
+
+              call update_acc_vars_veg_es_GPU(veg_es, bounds_clump, int(dtime_mod), nstep_mod, &
+                        end_cd_mod, mon_curr,day_curr, secs_curr)
+
+              call CanopyState_UpdateAccVars (canopystate_vars, bounds_clump, int(dtime_mod),nstep_mod)
+
+              if (crop_prog) then
+                call crop_vars_UpdateAccVars(crop_vars, bounds_clump, int(dtime_mod), nstep_mod)
+              end if
+
+              call CNState_UpdateAccVars (cnstate_vars, bounds_clump, nstep_mod)
+        end if
 
     end do
-    !$OMP END PARALLEL DO
 
-
-    !$acc shutdown device_type(acc_device_nvidia)
-
-    call mpi_barrier(mpicom,ier)
-
-    call endrun("done with clump loop")
-    ! ============================================================================
-    ! Determine gridcell averaged properties to send to atm
-    ! ============================================================================
-
-    if(use_betr)then
-      call ep_betr%DiagnoseLnd2atm(bounds_proc, col_pp, lnd2atm_vars)
-    endif
-
-    call t_startf('lnd2atm')
-    call lnd2atm(bounds_proc,                                            &
-         atm2lnd_vars, surfalb_vars,  frictionvel_vars, &
-         waterstate_vars, waterflux_vars, energyflux_vars,               &
-         solarabs_vars, carbonflux_vars, drydepvel_vars,                 &
-         vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, lnd2atm_vars)
-    call t_stopf('lnd2atm')
-
-    ! ============================================================================
-    ! Determine gridcell averaged properties to send to glc
-    ! ============================================================================
-
-    if (create_glacier_mec_landunit) then
-       call t_startf('lnd2glc')
-       !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
-       do nc = 1,nclumps
-          call get_clump_bounds(nc, bounds_clump)
-          call lnd2glc_vars%update_lnd2glc(bounds_clump,       &
-               filter(nc)%num_do_smb_c, filter(nc)%do_smb_c,   &
-               temperature_vars, waterflux_vars,               &
-               init=.false.)
-       end do
-       !$OMP END PARALLEL DO
-       call t_stopf('lnd2glc')
-    end if
-
+    !$acc end parallel
     ! ============================================================================
     ! Write global average diagnostics to standard output
     ! ============================================================================
 
-    nstep = get_nstep()
-    if (wrtdia) call mpi_barrier(mpicom,ier)
-    call t_startf('wrtdiag')
-    call write_diagnostic(bounds_proc, wrtdia, nstep, lnd2atm_vars)
-    call t_stopf('wrtdiag')
-
-    ! ============================================================================
-    ! Update accumulators
-    ! ============================================================================
-
-    ! FIX(SPM,032414) double check why this isn't called for ED
-
-    if (nstep > 0) then
-
-       call t_startf('accum')
-
-       call atm2lnd_vars%UpdateAccVars(bounds_proc)
-
-       call top_as%UpdateAccVars(bounds_proc)
-
-       call top_af%UpdateAccVars(bounds_proc)
-
-       call veg_es%UpdateAccVars(bounds_proc)
-
-       call canopystate_vars%UpdateAccVars(bounds_proc)
-
-       if (crop_prog) then
-          call crop_vars%UpdateAccVars(bounds_proc, temperature_vars)
-       end if
-
-       call cnstate_vars%UpdateAccVars(bounds_proc)
-
-       call t_stopf('accum')
-
-    end if
+    !!if (wrtdia) call mpi_barrier( mpicom,ier)
+    !!call t_startf('wrtdiag')
+    !!call write_diagnostic(bounds_proc, wrtdia, nstep_mod, lnd2atm_vars)
+    !!call t_stopf('wrtdiag')
 
     ! ============================================================================
     ! Update history buffer
     ! ============================================================================
-
-    call t_startf('hbuf')
-    call hist_update_hbuf(bounds_proc)
-    call t_stopf('hbuf')
+    
+    call hist_update_hbuf_gpu(mod(step_count,24), bounds_proc)
 
     ! ============================================================================
     ! Compute water budget
     ! ============================================================================
     if (get_nstep()>0 .and. do_budgets) then
-       call WaterBudget_Run(bounds_proc, atm2lnd_vars, lnd2atm_vars, waterstate_vars, &
+       call WaterBudget_Run(bounds_clump, atm2lnd_vars, lnd2atm_vars,  &
             soilhydrology_vars)
        call WaterBudget_Accum()
        call WaterBudget_Print(budget_inst,  budget_daily,  budget_month,  &
-            budget_ann,  budget_ltann,  budget_ltend)
+            budget_ann,  budget_ltann,  budget_ltend,year_curr, mon_curr, day_curr, secs_curr)
     endif
 
     ! ============================================================================
@@ -1463,17 +1295,18 @@ contains
        ! Create history and write history tapes if appropriate
        call t_startf('clm_drv_io_htapes')
 
-       call hist_htapes_wrapup( rstwr, nlend, bounds_proc,                    &
+       call hist_htapes_wrapup(step_count,24, rstwr, nlend, bounds_proc,                    &
             soilstate_vars%watsat_col(bounds_proc%begc:bounds_proc%endc, 1:), &
             soilstate_vars%sucsat_col(bounds_proc%begc:bounds_proc%endc, 1:), &
             soilstate_vars%bsw_col(bounds_proc%begc:bounds_proc%endc, 1:),    &
             soilstate_vars%hksat_col(bounds_proc%begc:bounds_proc%endc, 1:))
-
-       call t_stopf('clm_drv_io_htapes')
+        call set_gpu_tape()
+        call t_stopf('clm_drv_io_htapes')
 
        ! Write restart/initial files if appropriate
        if (rstwr) then
           call t_startf('clm_drv_io_wrest')
+          print *, "RDATE:",rdate
           filer = restFile_filename(rdate=rdate)
 
           call restFile_write( bounds_proc, filer,                                            &
@@ -1500,10 +1333,12 @@ contains
 
     end if
 
-    if (use_pflotran .and. nstep>=nestep) then
+    if (use_pflotran .and. nstep_mod>=nestep) then
        call clm_pf_finalize()
     end if
-
+    if (step_count == 24) stop
+    step_count = step_count + 1
+     
   end subroutine clm_drv
 
   !-----------------------------------------------------------------------
@@ -1624,7 +1459,48 @@ contains
     integer :: num_allc          ! number of active column points
     integer :: filter_allc(bounds%endp-bounds%begp+1)    ! filter for all active column points
     ! -----------------------------------------------------------------
-
+    associate( &
+      h2ocan_patch       => veg_ws%h2ocan , &
+      h2ocan_col         => col_ws%h2ocan , &
+      qflx_ev_snow_patch => veg_wf%qflx_ev_snow , &
+      qflx_ev_snow_col   => col_wf%qflx_ev_snow, &
+      qflx_ev_soil_patch =>veg_wf%qflx_ev_soil ,&
+      qflx_ev_soil_col   =>col_wf%qflx_ev_soil ,&
+      qflx_ev_h2osfc_patch => veg_wf%qflx_ev_h2osfc , &
+      qflx_ev_h2osfc_col   => col_wf%qflx_ev_h2osfc , &
+      qflx_evap_soi_patch => veg_wf%qflx_evap_soi   , &
+      qflx_evap_soi_col   => col_wf%qflx_evap_soi   , &
+      qflx_evap_tot_patch => veg_wf%qflx_evap_tot   , &
+      qflx_evap_tot_col   => col_wf%qflx_evap_tot   , &
+      qflx_rain_grnd_patch => veg_wf%qflx_rain_grnd , &
+      qflx_rain_grnd_col   => col_wf%qflx_rain_grnd , &
+      qflx_snow_grnd_patch => veg_wf%qflx_snow_grnd , &
+      qflx_snow_grnd_col   => col_wf%qflx_snow_grnd , &
+      qflx_snwcp_liq_patch => veg_wf%qflx_snwcp_liq , &
+      qflx_snwcp_liq_col   => col_wf%qflx_snwcp_liq , &
+      qflx_snwcp_ice_patch => veg_wf%qflx_snwcp_ice , &
+      qflx_snwcp_ice_col   => col_wf%qflx_snwcp_ice , &
+      qflx_tran_veg_patch  => veg_wf%qflx_tran_veg  , &
+      qflx_tran_veg_col    => col_wf%qflx_tran_veg  , &
+      qflx_evap_grnd_patch => veg_wf%qflx_evap_grnd , &
+      qflx_evap_grnd_col   => col_wf%qflx_evap_grnd , &
+      qflx_prec_grnd_patch => veg_wf%qflx_prec_grnd , &
+      qflx_prec_grnd_col   => col_wf%qflx_prec_grnd , &
+      qflx_dew_grnd_patch  => veg_wf%qflx_dew_grnd  , &
+      qflx_dew_grnd_col    => col_wf%qflx_dew_grnd  , &
+      qflx_dirct_rain_patch => veg_wf%qflx_dirct_rain , &
+      qflx_dirct_rain_col   => col_wf%qflx_dirct_rain , &
+      qflx_leafdrip_patch   => veg_wf%qflx_leafdrip   , &
+      qflx_leafdrip_col     => col_wf%qflx_leafdrip   , &
+      qflx_sub_snow_patch   => veg_wf%qflx_sub_snow   , &
+      qflx_sub_snow_col     => col_wf%qflx_sub_snow   , &
+      qflx_dew_snow_patch   => veg_wf%qflx_dew_snow   , &
+      qflx_dew_snow_col     => col_wf%qflx_dew_snow   , &
+      qflx_irrig_patch     => veg_wf%qflx_irrig_patch , &
+      qflx_irrig_col       => col_wf%qflx_irrig       , &
+      qflx_evap_veg_patch  => veg_wf%qflx_evap_veg    , &
+      qflx_evap_veg_col    => col_wf%qflx_evap_veg     &
+      )
     ! Set up a filter for all active column points
 
     fc = 0
@@ -1648,44 +1524,45 @@ contains
     ! Averaging for patch water state variables
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
-         veg_ws%h2ocan, &
-         col_ws%h2ocan)
+         h2ocan_patch(bounds%begp:bounds%endp), &
+         h2ocan_col(bounds%begc:bounds%endc))
 
     ! Averaging for patch evaporative flux variables
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
-         veg_wf%qflx_ev_snow, &
-         col_wf%qflx_ev_snow)
+         qflx_ev_snow_patch(bounds%begp:bounds%endp), &
+         qflx_ev_snow_col(bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
-         veg_wf%qflx_ev_soil, &
-         col_wf%qflx_ev_soil)
+         qflx_ev_soil_patch(bounds%begp:bounds%endp), &
+         qflx_ev_soil_col  (bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
-         veg_wf%qflx_ev_h2osfc, &
-         col_wf%qflx_ev_h2osfc)
+         qflx_ev_h2osfc_patch(bounds%begp:bounds%endp), &
+         qflx_ev_h2osfc_col  (bounds%begc:bounds%endc))
 
     ! Averaging for patch water flux variables
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
-         veg_wf%qflx_evap_soi, &
-         col_wf%qflx_evap_soi)
+         qflx_evap_soi_patch(bounds%begp:bounds%endp), &
+         qflx_evap_soi_col  (bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
-         veg_wf%qflx_evap_tot, &
-         col_wf%qflx_evap_tot)
+         qflx_evap_tot_patch(bounds%begp:bounds%endp), &
+         qflx_evap_tot_col(bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
-         veg_wf%qflx_rain_grnd, &
-         col_wf%qflx_rain_grnd)
+         qflx_rain_grnd_patch(bounds%begp:bounds%endp), &
+         qflx_rain_grnd_col  (bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
-         veg_wf%qflx_snow_grnd, &
-         col_wf%qflx_snow_grnd)
+         qflx_snow_grnd_patch(bounds%begp:bounds%endp), &
+         qflx_snow_grnd_col  (bounds%begc:bounds%endc))
 
     call p2c (bounds, num_allc, filter_allc, &
-         veg_wf%qflx_snwcp_liq, &
-         col_wf%qflx_snwcp_liq)
+         qflx_snwcp_liq_patch(bounds%begp:bounds%endp), &
+         qflx_snwcp_liq_col  (bounds%begc:bounds%endc))
+
     !TODO - WJS has suggested that at this point qflx_snwcp_liq_patch should
     ! now be set to nan in order to ensure that this variable is not used
     ! for the remainder of the timestep - other variables where this should
@@ -1698,49 +1575,61 @@ contains
     ! level.
 
     call p2c (bounds, num_allc, filter_allc, &
-         veg_wf%qflx_snwcp_ice, &
-         col_wf%qflx_snwcp_ice)
+         qflx_snwcp_ice_patch(bounds%begp:bounds%endp), &
+         qflx_snwcp_ice_col  (bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
-         veg_wf%qflx_tran_veg, &
-         col_wf%qflx_tran_veg)
+         qflx_tran_veg_patch(bounds%begp:bounds%endp), &
+         qflx_tran_veg_col  (bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
-         veg_wf%qflx_evap_grnd, &
-         col_wf%qflx_evap_grnd)
+         qflx_evap_grnd_patch(bounds%begp:bounds%endp), &
+         qflx_evap_grnd_col  (bounds%begc:bounds%endc))
 
     call p2c (bounds, num_allc, filter_allc, &
-         veg_wf%qflx_evap_soi, &
-         col_wf%qflx_evap_soi)
+         qflx_evap_soi_patch(bounds%begp:bounds%endp), &
+         qflx_evap_soi_col  (bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
-         veg_wf%qflx_prec_grnd, &
-         col_wf%qflx_prec_grnd)
+         qflx_prec_grnd_patch(bounds%begp:bounds%endp), &
+         qflx_prec_grnd_col  (bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
-         veg_wf%qflx_dew_grnd, &
-         col_wf%qflx_dew_grnd)
+         qflx_dew_grnd_patch(bounds%begp:bounds%endp), &
+         qflx_dew_grnd_col  (bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
-         veg_wf%qflx_sub_snow, &
-         col_wf%qflx_sub_snow)
+         qflx_dirct_rain_patch(bounds%begp:bounds%endp), &
+         qflx_dirct_rain_col  (bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
-         veg_wf%qflx_dew_snow, &
-         col_wf%qflx_dew_snow)
+         qflx_leafdrip_patch(bounds%begp:bounds%endp), &
+         qflx_leafdrip_col  (bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
-         veg_wf%qflx_irrig_patch, &
-         col_wf%qflx_irrig)
+         qflx_sub_snow_patch(bounds%begp:bounds%endp), &
+         qflx_sub_snow_col  (bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
-         veg_wf%qflx_tran_veg, &
-         col_wf%qflx_tran_veg )
+         qflx_dew_snow_patch(bounds%begp:bounds%endp), &
+         qflx_dew_snow_col  (bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
-         veg_wf%qflx_evap_veg, &
-         col_wf%qflx_evap_veg )
+         qflx_irrig_patch(bounds%begp:bounds%endp), &
+         qflx_irrig_col  (bounds%begc:bounds%endc))
+
+    call p2c (bounds, num_nolakec, filter_nolakec, &
+         qflx_tran_veg_patch(bounds%begp:bounds%endp), &
+         qflx_tran_veg_col  (bounds%begc:bounds%endc) )
+
+    call p2c (bounds, num_nolakec, filter_nolakec, &
+         qflx_evap_veg_patch(bounds%begp:bounds%endp), &
+         qflx_evap_veg_col  (bounds%begc:bounds%endc))
+
+    end associate
+
   end subroutine clm_drv_patch2col
+
 
   !------------------------------------------------------------------------
   subroutine write_diagnostic (bounds, wrtdia, nstep, lnd2atm_vars)

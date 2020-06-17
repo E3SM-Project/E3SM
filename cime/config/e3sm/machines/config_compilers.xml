@@ -955,7 +955,7 @@ flags should be captured within MPAS CMake files.
     <append MODEL="driver">-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf </append>
     <append MODEL="driver">-L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 -lhdf5hl_fortran -lhdf5_fortran </append>
     <append MODEL="driver">-L$(LAPACK_LIBDIR) -llapack -lblas</append>
-    <append MODEL="driver">-acc -Mcuda</append>
+    <append MODEL="driver">-acc -Mcuda -ta=tesla:deepcopy -Minfo=accel</append>
   </LDFLAGS>
   <FFLAGS>
 	  <append MODEL="clm"></append>

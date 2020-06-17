@@ -380,9 +380,9 @@ contains
 
       tk_h2osfc(begc:endc) = spval
       call SoilThermProp(bounds, num_nolakec, filter_nolakec, &
-           tk, &
-           cv, &
-           tk_h2osfc, &
+           tk(begc:endc, :), &
+           cv(begc:endc, :), &
+           tk_h2osfc(begc:endc), &
            urbanparams_vars, soilstate_vars)
 
       ! Net ground heat flux into the surface and its temperature derivative
@@ -390,12 +390,12 @@ contains
       ! all Patches on the column. Precalculate the terms that do not depend on PFT.
 
       call ComputeGroundHeatFluxAndDeriv(bounds, num_nolakec, filter_nolakec, &
-           hs_h2osfc,       &
-           hs_top_snow,     &
-           hs_soil,         &
-           hs_top,          &
-           dhsdT,           &
-           sabg_lyr_col,                            &
+           hs_h2osfc( begc:endc ),                                            &
+           hs_top_snow( begc:endc ),                                          &
+           hs_soil( begc:endc ),                                              &
+           hs_top( begc:endc ),                                               &
+           dhsdT( begc:endc ),                                                &
+           sabg_lyr_col( begc:endc, -nlevsno+1: ),                            &
            atm2lnd_vars, urbanparams_vars, canopystate_vars, &
            solarabs_vars, energyflux_vars)
 
@@ -405,10 +405,10 @@ contains
 
       call ComputeHeatDiffFluxAndFactor(bounds, num_nolakec, filter_nolakec, &
            dtime,                                                            &
-           tk,                                     &
-           cv,                                     &
-           fn,                                     &
-           fact,                                   &
+           tk( begc:endc, -nlevsno+1: ),                                     &
+           cv( begc:endc, -nlevsno+1: ),                                     &
+           fn( begc:endc, -nlevsno+1: ),                                     &
+           fact( begc:endc, -nlevsno+1: ),                                   &
            energyflux_vars)
 
       ! compute thermal properties of h2osfc
@@ -457,22 +457,22 @@ contains
               num_nolakec_and_nourbanc,               &
               filter_nolakec_and_nourbanc,            &
               dtime,                                  &
-              hs_h2osfc,                 &
-              hs_top_snow,               &
-              hs_soil,                   &
-              hs_top,                    &
-              dhsdT,                     &
-              sabg_lyr_col , &
-              tk,           &
-              tk_h2osfc,                 &
-              fact,         &
-              fn,           &
-              c_h2osfc,                  &
-              dz_h2osfc,                 &
-              jtop,                      &
-              jbot,                      &
+              hs_h2osfc( begc:endc ),                 &
+              hs_top_snow( begc:endc ),               &
+              hs_soil( begc:endc ),                   &
+              hs_top( begc:endc ),                    &
+              dhsdT( begc:endc ),                     &
+              sabg_lyr_col (begc:endc, -nlevsno+1: ), &
+              tk( begc:endc, -nlevsno+1: ),           &
+              tk_h2osfc( begc:endc ),                 &
+              fact( begc:endc, -nlevsno+1: ),         &
+              fn( begc:endc, -nlevsno+1: ),           &
+              c_h2osfc( begc:endc ),                  &
+              dz_h2osfc( begc:endc ),                 &
+              jtop( begc:endc ),                      &
+              jbot( begc:endc ),                      &
               urban_column,                           &
-              tvector_nourbanc)
+              tvector_nourbanc( begc:endc, -nlevsno: ))
 
       case (petsc_thermal_model)
 #ifdef USE_PETSC_LIB
@@ -511,22 +511,22 @@ contains
            num_nolakec_and_urbanc,                 &
            filter_nolakec_and_urbanc,              &
            dtime,                                  &
-           hs_h2osfc,                 &
-           hs_top_snow,               &
-           hs_soil,                   &
-           hs_top,                    &
-           dhsdT,                     &
-           sabg_lyr_col , &
-           tk,           &
-           tk_h2osfc,                 &
-           fact,         &
-           fn,           &
-           c_h2osfc,                  &
-           dz_h2osfc,                 &
-           jtop,                      &
-           jbot,                      &
+           hs_h2osfc( begc:endc ),                 &
+           hs_top_snow( begc:endc ),               &
+           hs_soil( begc:endc ),                   &
+           hs_top( begc:endc ),                    &
+           dhsdT( begc:endc ),                     &
+           sabg_lyr_col (begc:endc, -nlevsno+1: ), &
+           tk( begc:endc, -nlevsno+1: ),           &
+           tk_h2osfc( begc:endc ),                 &
+           fact( begc:endc, -nlevsno+1: ),         &
+           fn( begc:endc, -nlevsno+1: ),           &
+           c_h2osfc( begc:endc ),                  &
+           dz_h2osfc( begc:endc ),                 &
+           jtop( begc:endc ),                      &
+           jbot( begc:endc ),                      &
            urban_column,                           &
-           tvector_urbanc)
+           tvector_urbanc( begc:endc, -nlevsno: ))
 
       ! return temperatures to original array
 
@@ -628,10 +628,10 @@ contains
       end do
 
       call PhaseChangeH2osfc (bounds, num_nolakec, filter_nolakec, &
-           dhsdT, energyflux_vars,dtime )
+           dhsdT(bounds%begc:bounds%endc), energyflux_vars,dtime )
 
       call Phasechange_beta (bounds, num_nolakec, filter_nolakec, &
-           dhsdT, soilstate_vars, energyflux_vars, dtime)
+           dhsdT(bounds%begc:bounds%endc), soilstate_vars, energyflux_vars, dtime)
 
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
@@ -763,43 +763,46 @@ contains
          )
 
       ! Enforce expected array sizes
-
     call SetRHSVec(bounds, num_filter, filter,   &
          dtime,                                  &
-         hs_h2osfc,                 &
-         hs_top_snow,               &
-         hs_soil,                   &
-         hs_top,                    &
-         dhsdT,                     &
-         sabg_lyr_col , &
-         tk,           &
-         tk_h2osfc,                 &
-         fact,         &
-         fn,           &
-         c_h2osfc,                  &
-         dz_h2osfc,                 &
+         hs_h2osfc( begc:endc ),                 &
+         hs_top_snow( begc:endc ),               &
+         hs_soil( begc:endc ),                   &
+         hs_top( begc:endc ),                    &
+         dhsdT( begc:endc ),                     &
+         sabg_lyr_col (begc:endc, -nlevsno+1: ), &
+         tk( begc:endc, -nlevsno+1: ),           &
+         tk_h2osfc( begc:endc ),                 &
+         fact( begc:endc, -nlevsno+1: ),         &
+         fn( begc:endc, -nlevsno+1: ),           &
+         c_h2osfc( begc:endc ),                  &
+         dz_h2osfc( begc:endc ),                 &
          urban_column,                           &
-         rvector)
+         rvector( begc:endc, -nlevsno: ))
 
     ! Set up the banded diagonal matrix
 
     call SetMatrix(bounds, num_filter, filter,   &
          dtime,                                  &
          nband,                                  &
-         dhsdT,                     &
-         tk,           &
-         tk_h2osfc,                 &
-         fact,         &
-         c_h2osfc,                  &
-         dz_h2osfc,                 &
+         dhsdT( begc:endc ),                     &
+         tk( begc:endc, -nlevsno+1: ),           &
+         tk_h2osfc( begc:endc ),                 &
+         fact( begc:endc, -nlevsno+1: ),         &
+         c_h2osfc( begc:endc ),                  &
+         dz_h2osfc( begc:endc ),                 &
          urban_column,                           &
-         bmatrix)
+         bmatrix( begc:endc, 1:, -nlevsno: ))
+
 
     ! Solve the system
     !#py call t_startf( 'SoilTempBandDiag')
-    call BandDiagonal(bounds, -nlevsno, nlevgrnd, jtop, jbot, &
-         num_filter, filter, nband, bmatrix, &
-         rvector, tvector)
+    call BandDiagonal(bounds, -nlevsno, nlevgrnd, jtop(begc:endc), jbot(begc:endc), &
+         num_filter, filter, nband, bmatrix(begc:endc, :, :), &
+         rvector(begc:endc, :), tvector(begc:endc, :))
+    !call BandDiagonal(bounds, -nlevsno, nlevgrnd, jtop, jbot, &
+    !     num_filter, filter, nband, bmatrix, &
+    !     rvector, tvector)
     !#py call t_stopf( 'SoilTempBandDiag')
 
   end associate
@@ -842,8 +845,6 @@ contains
     real(r8)               , intent(out)   :: tk( bounds%begc: , -nlevsno+1: ) ! thermal conductivity at the layer interface [W/(m K) ] [col, lev]
     real(r8)               , intent(out)   :: tk_h2osfc( bounds%begc: )        ! thermal conductivity of h2osfc [W/(m K)              ] [col]
     type(urbanparams_type) , intent(in)    :: urbanparams_vars
-    !type(temperature_type) , intent(in)    :: temperature_vars
-    !type(waterstate_type)  , intent(inout) :: waterstate_vars
     type(soilstate_type)   , intent(inout) :: soilstate_vars
     !
     ! !LOCAL VARIABLES:
@@ -856,40 +857,37 @@ contains
     real(r8) :: satw                      ! relative total water content of soil.
     real(r8) :: zh2osfc
     !-----------------------------------------------------------------------
-
-    !#py call t_startf( 'SoilThermProp' )
-
     ! Enforce expected array sizes
 
     associate(                                                 &
-         snl          =>    col_pp%snl			     , & ! Input:  [integer  (:)   ]  number of snow layers
-         dz           =>    col_pp%dz			     , & ! Input:  [real(r8) (:,:) ]  layer depth (m)
-         zi           =>    col_pp%zi			     , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)
-         z            =>    col_pp%z			     , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)
+         snl          =>    col_pp%snl                       , & ! Input:  [integer  (:)   ]  number of snow layers
+         dz           =>    col_pp%dz                        , & ! Input:  [real(r8) (:,:) ]  layer depth (m)
+         zi           =>    col_pp%zi                        , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)
+         z            =>    col_pp%z                         , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)
          nlev2bed     =>    col_pp%nlevbed                      , & ! Input:  [integer  (:)   ]  number of layers to bedrock
 
          nlev_improad =>    urbanparams_vars%nlev_improad    , & ! Input:  [integer  (:)   ]  number of impervious road layers
-         tk_wall      =>    urbanparams_vars%tk_wall	     , & ! Input:  [real(r8) (:,:) ]  thermal conductivity of urban wall
-         tk_roof      =>    urbanparams_vars%tk_roof	     , & ! Input:  [real(r8) (:,:) ]  thermal conductivity of urban roof
-         tk_improad   =>    urbanparams_vars%tk_improad	     , & ! Input:  [real(r8) (:,:) ]  thermal conductivity of urban impervious road
-         cv_wall      =>    urbanparams_vars%cv_wall	     , & ! Input:  [real(r8) (:,:) ]  thermal conductivity of urban wall
-         cv_roof      =>    urbanparams_vars%cv_roof	     , & ! Input:  [real(r8) (:,:) ]  thermal conductivity of urban roof
-         cv_improad   =>    urbanparams_vars%cv_improad	     , & ! Input:  [real(r8) (:,:) ]  thermal conductivity of urban impervious road
+         tk_wall      =>    urbanparams_vars%tk_wall         , & ! Input:  [real(r8) (:,:) ]  thermal conductivity of urban wall
+         tk_roof      =>    urbanparams_vars%tk_roof         , & ! Input:  [real(r8) (:,:) ]  thermal conductivity of urban roof
+         tk_improad   =>    urbanparams_vars%tk_improad      , & ! Input:  [real(r8) (:,:) ]  thermal conductivity of urban impervious road
+         cv_wall      =>    urbanparams_vars%cv_wall         , & ! Input:  [real(r8) (:,:) ]  thermal conductivity of urban wall
+         cv_roof      =>    urbanparams_vars%cv_roof         , & ! Input:  [real(r8) (:,:) ]  thermal conductivity of urban roof
+         cv_improad   =>    urbanparams_vars%cv_improad      , & ! Input:  [real(r8) (:,:) ]  thermal conductivity of urban impervious road
 
          t_soisno     =>    col_es%t_soisno    , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
 
          frac_sno     =>    col_ws%frac_sno_eff , & ! Input:  [real(r8) (:)   ]  fractional snow covered area
-         h2osfc       =>    col_ws%h2osfc	     , & ! Input:  [real(r8) (:)   ]  surface (mm H2O)
-         h2osno       =>    col_ws%h2osno	     , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)
+         h2osfc       =>    col_ws%h2osfc            , & ! Input:  [real(r8) (:)   ]  surface (mm H2O)
+         h2osno       =>    col_ws%h2osno            , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)
          h2osoi_liq   =>    col_ws%h2osoi_liq   , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
          h2osoi_ice   =>    col_ws%h2osoi_ice   , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)
-         bw           =>    col_ws%bw	     , & ! Output: [real(r8) (:,:) ]  partial density of water in the snow pack (ice + liquid) [kg/m3]
+         bw           =>    col_ws%bw        , & ! Output: [real(r8) (:,:) ]  partial density of water in the snow pack (ice + liquid) [kg/m3]
 
-         tkmg         =>    soilstate_vars%tkmg_col	     , & ! Input:  [real(r8) (:,:) ]  thermal conductivity, soil minerals  [W/m-K]
-         tkdry        =>    soilstate_vars%tkdry_col	     , & ! Input:  [real(r8) (:,:) ]  thermal conductivity, dry soil (W/m/Kelvin)
-         csol         =>    soilstate_vars%csol_col	     , & ! Input:  [real(r8) (:,:) ]  heat capacity, soil solids (J/m**3/Kelvin)
-         watsat       =>    soilstate_vars%watsat_col	     , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
-         tksatu       =>    soilstate_vars%tksatu_col	     , & ! Input:  [real(r8) (:,:) ]  thermal conductivity, saturated soil [W/m-K]
+         tkmg         =>    soilstate_vars%tkmg_col          , & ! Input:  [real(r8) (:,:) ]  thermal conductivity, soil minerals  [W/m-K]
+         tkdry        =>    soilstate_vars%tkdry_col         , & ! Input:  [real(r8) (:,:) ]  thermal conductivity, dry soil (W/m/Kelvin)
+         csol         =>    soilstate_vars%csol_col          , & ! Input:  [real(r8) (:,:) ]  heat capacity, soil solids (J/m**3/Kelvin)
+         watsat       =>    soilstate_vars%watsat_col        , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
+         tksatu       =>    soilstate_vars%tksatu_col        , & ! Input:  [real(r8) (:,:) ]  thermal conductivity, saturated soil [W/m-K]
          thk          =>    soilstate_vars%thk_col             & ! Output: [real(r8) (:,:) ]  thermal conductivity of each layer  [W/m-K]
          )
 
@@ -901,7 +899,7 @@ contains
       do j = -nlevsno+1,nlevgrnd
          do fc = 1, num_nolakec
             c = filter_nolakec(fc)
-     	    nlevbed = nlev2bed(c)
+            nlevbed = nlev2bed(c)
 
             ! Only examine levels from 1->nlevgrnd
             if (j >= 1) then
@@ -1001,7 +999,7 @@ contains
          do fc = 1,num_nolakec
             c = filter_nolakec(fc)
             l = col_pp%landunit(c)
-     	    nlevbed = nlev2bed(c)
+            nlevbed = nlev2bed(c)
             if ((col_pp%itype(c) == icol_sunwall .OR. col_pp%itype(c) == icol_shadewall) .and. j <= nlevurb) then
                cv(c,j) = cv_wall(l,j) * dz(c,j)
             else if (col_pp%itype(c) == icol_roof .and. j <= nlevurb) then
@@ -1040,7 +1038,6 @@ contains
             end if
          end do
       end do
-      !#py call t_stopf( 'SoilThermProp' )
 
     end associate
 
@@ -1086,9 +1083,6 @@ contains
     real(r8) :: c1
     real(r8) :: c2
     !-----------------------------------------------------------------------
-
-    !#py call t_startf( 'PhaseChangeH2osfc' )
-
     ! Enforce expected array sizes
 
     associate(                                                                   &
@@ -1260,7 +1254,6 @@ contains
             endif
          endif
       enddo
-      !#py call t_stopf( 'PhaseChangeH2osfc' )
 
     end associate
 
@@ -1319,8 +1312,6 @@ contains
     real(r8) :: tinc(bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)  !t(n+1)-t(n) (K)
     real(r8) :: smp                                !frozen water potential (mm)
     !-----------------------------------------------------------------------
-
-    !#py call t_startf( 'PhaseChangebeta' )
 
     ! Enforce expected array sizes
 
@@ -1653,7 +1644,6 @@ contains
          end if
       end do
 
-      !#py call t_stopf( 'PhaseChangebeta' )
       do j = -nlevsno+1,0
          do fc = 1,num_nolakec
             c = filter_nolakec(fc)
@@ -2082,48 +2072,47 @@ contains
       ! Initialize
       rvector(begc:endc, :) = spval
 
-      ! Set entries in RHS vector for snow layers
       call SetRHSVec_Snow(bounds, num_filter, filter, &
-           hs_top_snow,                           &
-           hs_top,                                &
-           dhsdT,                                 &
-           sabg_lyr_col ,             &
-           fact,                     &
-           fn,                       &
-           t_soisno ,                &
-           t_h2osfc ,                             &
+           hs_top_snow( begc:endc ),                           &
+           hs_top( begc:endc ),                                &
+           dhsdT( begc:endc ),                                 &
+           sabg_lyr_col (begc:endc, -nlevsno+1: ),             &
+           fact( begc:endc, -nlevsno+1: ),                     &
+           fn( begc:endc, -nlevsno+1: ),                       &
+           t_soisno ( begc:endc, -nlevsno+1: ),                & 
+           t_h2osfc ( begc:endc ),                             & 
            urban_column,                                       &
-           rt_snow)
+           rt_snow( begc:endc, -nlevsno:))
 
       ! Set entries in RHS vector for surface water layer
       call SetRHSVec_StandingSurfaceWater(bounds, num_filter, filter, &
            dtime,                                                              &
-           hs_h2osfc,                                             &
-           dhsdT,                                                 &
-           tk_h2osfc,                                             &
-           c_h2osfc,                                              &
-           dz_h2osfc,                                             &
-           fn_h2osfc,                                             &
-           t_soisno ,                                &
-           t_h2osfc ,                                              &
-           rt_ssw)
+           hs_h2osfc( begc:endc ),                                             &
+           dhsdT( begc:endc ),                                                 &
+           tk_h2osfc( begc:endc ),                                             &
+           c_h2osfc( begc:endc ),                                              &
+           dz_h2osfc( begc:endc ),                                             &
+           fn_h2osfc( begc:endc ),                                             &
+           t_soisno ( begc:endc, -nlevsno+1: ),                                & 
+           t_h2osfc ( begc:endc),                                              &
+           rt_ssw( begc:endc, 1:1))
 
       ! Set entries in RHS vector for soil layers
       call SetRHSVec_Soil(bounds, num_filter, filter, &
-           hs_top_snow,                           &
-           hs_soil,                               &
-           hs_top,                                &
-           dhsdT,                                 &
-           sabg_lyr_col ,             &
-           fact,                     &
-           fn,                       &
-           fn_h2osfc,                             &
-           c_h2osfc,                              &
-           frac_h2osfc ,                           &
-           frac_sno_eff,                           &
-           t_soisno ,                &
+           hs_top_snow( begc:endc ),                           &
+           hs_soil( begc:endc ),                               &
+           hs_top( begc:endc ),                                &
+           dhsdT( begc:endc ),                                 &
+           sabg_lyr_col (begc:endc, -nlevsno+1: ),             &
+           fact( begc:endc, -nlevsno+1: ),                     &
+           fn( begc:endc, -nlevsno+1: ),                       &
+           fn_h2osfc( begc:endc ),                             &
+           c_h2osfc( begc:endc ),                              &
+           frac_h2osfc ( begc:endc),                           &
+           frac_sno_eff( begc:endc),                           &
+           t_soisno ( begc:endc, -nlevsno+1: ),                & 
            urban_column,                                       &
-           rt_soil)
+           rt_soil( begc:endc, 1: ))
 
       ! Combine the RHS vector
       do fc = 1,num_filter
@@ -2178,26 +2167,26 @@ contains
 
       if (urban_column) then
          call SetRHSVec_SnowUrban(bounds, num_filter, filter, &
-              hs_top_snow,                                &
-              hs_top,                                     &
-              dhsdT,                                      &
-              sabg_lyr_col ,                  &
-              fact,                          &
-              fn,                            &
-              t_soisno ,                     &
-              t_h2osfc ,                                  &
-              rt)
+              hs_top_snow( begc:endc ),                                &
+              hs_top( begc:endc ),                                     &
+              dhsdT( begc:endc ),                                      &
+              sabg_lyr_col (begc:endc, -nlevsno+1: ),                  &
+              fact( begc:endc, -nlevsno+1: ),                          &
+              fn( begc:endc, -nlevsno+1: ),                            &
+              t_soisno ( begc:endc, -nlevsno+1: ),                     & 
+              t_h2osfc ( begc:endc ),                                  & 
+              rt( begc:endc, -nlevsno:))
 
       else
          call SetRHSVec_SnowNonUrban(bounds, num_filter, filter, &
-              hs_top_snow,                                   &
-              hs_top,                                        &
-              dhsdT,                                         &
-              sabg_lyr_col ,                     &
-              fact,                             &
-              fn,                               &
-              t_soisno ,                        &
-              rt)
+              hs_top_snow( begc:endc ),                                   &
+              hs_top( begc:endc ),                                        &
+              dhsdT( begc:endc ),                                         &
+              sabg_lyr_col (begc:endc, -nlevsno+1: ),                     &
+              fact( begc:endc, -nlevsno+1: ),                             &
+              fn( begc:endc, -nlevsno+1: ),                               &
+              t_soisno ( begc:endc, -nlevsno+1: ),                        & 
+              rt( begc:endc, -nlevsno:))
       endif
 
     end associate
@@ -2247,25 +2236,25 @@ contains
          )
 
       call SetRHSVec_SnowUrbanNonRoad(bounds, num_filter, filter, &
-           hs_top_snow,                                       &
-           hs_top,                                            &
-           dhsdT,                                             &
-           sabg_lyr_col ,                         &
-           fact,                                 &
-           fn,                                   &
-           t_soisno,                             &
-           rt)
+           hs_top_snow( begc:endc ),                                       &
+           hs_top( begc:endc ),                                            &
+           dhsdT( begc:endc ),                                             &
+           sabg_lyr_col (begc:endc, -nlevsno+1: ),                         &
+           fact( begc:endc, -nlevsno+1: ),                                 &
+           fn( begc:endc, -nlevsno+1: ),                                   &
+           t_soisno( begc:endc, -nlevsno+1: ),                             &
+           rt( begc:endc, -nlevsno:))
 
       call SetRHSVec_SnowUrbanRoad(bounds, num_filter, filter, &
-           hs_top_snow,                                    &
-           hs_top,                                         &
-           dhsdT,                                          &
-           sabg_lyr_col ,                      &
-           fact,                              &
-           fn,                                &
-           t_soisno,                          &
-           t_h2osfc,                                        &
-           rt)
+           hs_top_snow( begc:endc ),                                    &
+           hs_top( begc:endc ),                                         &
+           dhsdT( begc:endc ),                                          &
+           sabg_lyr_col (begc:endc, -nlevsno+1: ),                      &
+           fact( begc:endc, -nlevsno+1: ),                              &
+           fn( begc:endc, -nlevsno+1: ),                                &
+           t_soisno( begc:endc, -nlevsno+1: ),                          &
+           t_h2osfc( begc:endc),                                        &
+           rt( begc:endc, -nlevsno:))
 
     end associate
 
@@ -2600,48 +2589,47 @@ contains
 
       if (urban_column) then
          call SetRHSVec_SoilUrban(bounds, num_filter, filter, &
-              hs_top_snow,                                &
-              hs_soil,                                    &
-              hs_top,                                     &
-              dhsdT,                                      &
-              sabg_lyr_col ,                  &
-              fact,                          &
-              fn,                            &
-              fn_h2osfc,                                  &
-              c_h2osfc,                                   &
-              frac_sno_eff,                               &
-              t_soisno,                      &
-              rt)
-
+              hs_top_snow( begc:endc ),                                &
+              hs_soil( begc:endc ),                                    &
+              hs_top( begc:endc ),                                     &
+              dhsdT( begc:endc ),                                      &
+              sabg_lyr_col (begc:endc, -nlevsno+1: ),                  &
+              fact( begc:endc, -nlevsno+1: ),                          &
+              fn( begc:endc, -nlevsno+1: ),                            &
+              fn_h2osfc( begc:endc ),                                  &
+              c_h2osfc( begc:endc ),                                   &
+              frac_sno_eff( begc:endc ),                               &
+              t_soisno( begc:endc, -nlevsno+1: ),                      &
+              rt( begc:endc, 1: ))
       else
          call SetRHSVec_SoilNonUrban(bounds, num_filter, filter, &
-              hs_top_snow,                                   &
-              hs_soil,                                       &
-              hs_top,                                        &
-              dhsdT,                                         &
-              sabg_lyr_col ,                     &
-              fact,                             &
-              fn,                               &
-              fn_h2osfc,                                     &
-              c_h2osfc,                                      &
-              frac_sno_eff,                                    &
-              t_soisno,                         &
-              rt)
+              hs_top_snow( begc:endc ),                                   &
+              hs_soil( begc:endc ),                                       &
+              hs_top( begc:endc ),                                        &
+              dhsdT( begc:endc ),                                         &
+              sabg_lyr_col (begc:endc, -nlevsno+1: ),                     &
+              fact( begc:endc, -nlevsno+1: ),                             &
+              fn( begc:endc, -nlevsno+1: ),                               &
+              fn_h2osfc( begc:endc ),                                     &
+              c_h2osfc( begc:endc ),                                      &
+              frac_sno_eff(begc:endc),                                    &
+              t_soisno( begc:endc, -nlevsno+1: ),                         &
+              rt( begc:endc, 1: ))
       endif
 
       call SetRHSVec_Soil_StandingSurfaceWater(bounds, num_filter, filter, &
-           hs_top_snow,                                                &
-           hs_soil,                                                    &
-           hs_top,                                                     &
-           dhsdT,                                                      &
-           sabg_lyr_col ,                                  &
-           fact,                                          &
-           fn,                                            &
-           fn_h2osfc,                                                  &
-           c_h2osfc,                                                   &
-           frac_h2osfc,                                                  &
-           t_soisno,                                      &
-           rt)
+           hs_top_snow( begc:endc ),                                                &
+           hs_soil( begc:endc ),                                                    &
+           hs_top( begc:endc ),                                                     &
+           dhsdT( begc:endc ),                                                      &
+           sabg_lyr_col (begc:endc, -nlevsno+1: ),                                  &
+           fact( begc:endc, -nlevsno+1: ),                                          &
+           fn( begc:endc, -nlevsno+1: ),                                            &
+           fn_h2osfc( begc:endc ),                                                  &
+           c_h2osfc( begc:endc ),                                                   &
+           frac_h2osfc(begc:endc),                                                  &
+           t_soisno( begc:endc, -nlevsno+1: ),                                      &
+           rt( begc:endc, 1: ))
 
     end associate
 
@@ -2692,31 +2680,31 @@ contains
          )
 
       call SetRHSVec_SoilUrbanNonRoad(bounds, num_filter, filter, &
-           hs_top_snow,                                       &
-           hs_soil,                                           &
-           hs_top,                                            &
-           dhsdT,                                             &
-           sabg_lyr_col ,                         &
-           fact,                                 &
-           fn,                                   &
-           fn_h2osfc,                                         &
-           c_h2osfc,                                          &
-           t_soisno,                             &
-           rt)
+           hs_top_snow( begc:endc ),                                       &
+           hs_soil( begc:endc ),                                           &
+           hs_top( begc:endc ),                                            &
+           dhsdT( begc:endc ),                                             &
+           sabg_lyr_col (begc:endc, -nlevsno+1: ),                         &
+           fact( begc:endc, -nlevsno+1: ),                                 &
+           fn( begc:endc, -nlevsno+1: ),                                   &
+           fn_h2osfc( begc:endc ),                                         &
+           c_h2osfc( begc:endc ),                                          &
+           t_soisno( begc:endc, -nlevsno+1: ),                             &
+           rt( begc:endc, 1: ))
 
       call SetRHSVec_SoilUrbanRoad(bounds, num_filter, filter, &
-           hs_top_snow,                                    &
-           hs_soil,                                        &
-           hs_top,                                         &
-           dhsdT,                                          &
-           sabg_lyr_col ,                      &
-           fact,                              &
-           fn,                                &
-           fn_h2osfc,                                      &
-           c_h2osfc,                                       &
-           frac_sno_eff,                                   &
-           t_soisno,                          &
-           rt)
+           hs_top_snow( begc:endc ),                                    &
+           hs_soil( begc:endc ),                                        &
+           hs_top( begc:endc ),                                         &
+           dhsdT( begc:endc ),                                          &
+           sabg_lyr_col (begc:endc, -nlevsno+1: ),                      &
+           fact( begc:endc, -nlevsno+1: ),                              &
+           fn( begc:endc, -nlevsno+1: ),                                &
+           fn_h2osfc( begc:endc ),                                      &
+           c_h2osfc( begc:endc ),                                       &
+           frac_sno_eff( begc:endc ),                                   &
+           t_soisno( begc:endc, -nlevsno+1: ),                          &
+           rt( begc:endc, 1: ))
 
     end associate
 
@@ -3085,70 +3073,71 @@ contains
       ! Assemble smaller matrices
 
       call SetMatrix_Snow(bounds, num_filter, filter, nband, &
-           dhsdT,                                        &
-           tk,                              &
-           fact,                            &
-           frac_sno_eff,                                   &
+           dhsdT( begc:endc ),                                        &
+           tk( begc:endc, -nlevsno+1: ),                              &
+           fact( begc:endc, -nlevsno+1: ),                            &
+           frac_sno_eff(begc:endc),                                   &
            urban_column,                                              &
-           bmatrix_snow)
+           bmatrix_snow( begc:endc, 1:, -nlevsno: ))
 
       call SetMatrix_Snow_Soil(bounds, num_filter, filter, nband, &
-           tk,                                   &
-           fact,                                 &
+           tk( begc:endc, -nlevsno+1: ),                                   &
+           fact( begc:endc, -nlevsno+1: ),                                 &
            urban_column,                                                   &
-           bmatrix_snow_soil)
+           bmatrix_snow_soil( begc:endc, 1:, -1: ))
 
       call SetMatrix_Soil(bounds, num_filter, filter, nband, &
-           dhsdT,                                        &
-           tk,                              &
-           tk_h2osfc,                                    &
-           dz_h2osfc,                                    &
-           fact,                            &
-           frac_h2osfc,                                    &
-           frac_sno_eff,                                   &
+           dhsdT( begc:endc ),                                        &
+           tk( begc:endc, -nlevsno+1: ),                              &
+           tk_h2osfc( begc:endc ),                                    &
+           dz_h2osfc( begc:endc ),                                    &
+           fact( begc:endc, -nlevsno+1: ),                            &
+           frac_h2osfc(begc:endc),                                    &
+           frac_sno_eff(begc:endc),                                   &
            urban_column,                                              &
-           bmatrix_soil)
+           bmatrix_soil( begc:endc, 1:, 1: ))
 
       call SetMatrix_Soil_Snow(bounds, num_filter, filter, nband, &
-           tk,                                   &
-           fact,                                 &
-           frac_sno_eff,                                        &
+           tk( begc:endc, -nlevsno+1: ),                                   &
+           fact( begc:endc, -nlevsno+1: ),                                 &
+           frac_sno_eff(begc:endc),                                        &
            urban_column,                                                   &
-           bmatrix_soil_snow)
+           bmatrix_soil_snow( begc:endc, 1:, 1: ))
 
       call SetMatrix_StandingSurfaceWater(bounds, num_filter, filter, dtime, nband, &
-           dhsdT,                                                               &
-           tk,                                                     &
-           tk_h2osfc,                                                           &
-           fact,                                                   &
-           c_h2osfc,                                                            &
-           dz_h2osfc,                                                           &
-           bmatrix_ssw)
+           dhsdT( begc:endc ),                                                               &
+           tk( begc:endc, -nlevsno+1: ),                                                     &
+           tk_h2osfc( begc:endc ),                                                           &
+           fact( begc:endc, -nlevsno+1: ),                                                   &
+           c_h2osfc( begc:endc ),                                                            &
+           dz_h2osfc( begc:endc ),                                                           &
+           bmatrix_ssw( begc:endc, 1:, 0: ))
 
       call SetMatrix_StandingSurfaceWater_Soil(bounds, num_filter, filter, dtime, nband, &
-           tk,                                                          &
-           tk_h2osfc,                                                                &
-           fact,                                                        &
-           c_h2osfc,                                                                 &
-           dz_h2osfc,                                                                &
-           bmatrix_ssw_soil)
+           tk( begc:endc, -nlevsno+1: ),                                                          &
+           tk_h2osfc( begc:endc ),                                                                &
+           fact( begc:endc, -nlevsno+1: ),                                                        &
+           c_h2osfc( begc:endc ),                                                                 &
+           dz_h2osfc( begc:endc ),                                                                &
+           bmatrix_ssw_soil( begc:endc, 1:, 0: ))
 
       call SetMatrix_Soil_StandingSurfaceWater(bounds, num_filter, filter, nband, &
-           tk_h2osfc,                                                         &
-           fact,                                                 &
-           dz_h2osfc,                                                         &
-           frac_h2osfc,                                                         &
-           bmatrix_soil_ssw)
+           tk_h2osfc( begc:endc ),                                                         &
+           fact( begc:endc, -nlevsno+1: ),                                                 &
+           dz_h2osfc( begc:endc ),                                                         &
+           frac_h2osfc(begc:endc),                                                         &
+           bmatrix_soil_ssw( begc:endc, 1:, 1: ))
 
       call AssembleMatrixFromSubmatrices(bounds, num_filter, filter, nband, &
-           bmatrix_snow,                                 &
-           bmatrix_ssw,                                         &
-           bmatrix_soil,                                        &
-           bmatrix_snow_soil,                                  &
-           bmatrix_ssw_soil,                                    &
-           bmatrix_soil_snow,                                   &
-           bmatrix_soil_ssw,                                    &
-           bmatrix)
+           bmatrix_snow( begc:endc, 1:, -nlevsno: ),                                 &
+           bmatrix_ssw( begc:endc, 1:, 0: ),                                         &
+           bmatrix_soil( begc:endc, 1:, 1: ),                                        &
+           bmatrix_snow_soil( begc:endc, 1:, -1: ),                                  &
+           bmatrix_ssw_soil( begc:endc, 1:, 0: ),                                    &
+           bmatrix_soil_snow( begc:endc, 1:, 1: ),                                   &
+           bmatrix_soil_ssw( begc:endc, 1:, 1: ),                                    &
+           bmatrix( begc:endc, 1:, -nlevsno: ))
+    
 
     end associate
 
@@ -3303,16 +3292,16 @@ contains
 
       if (urban_column) then
          call SetMatrix_SnowUrban(bounds, num_filter, filter, nband, &
-              dhsdT,                                             &
-              tk,                                   &
-              fact,                                 &
-              bmatrix_snow)
+              dhsdT( begc:endc ),                                             &
+              tk( begc:endc, -nlevsno+1: ),                                   &
+              fact( begc:endc, -nlevsno+1: ),                                 &
+              bmatrix_snow( begc:endc, 1:, -nlevsno: ))
       else
          call SetMatrix_SnowNonUrban(bounds, num_filter, filter, nband, &
-              dhsdT,                                                &
-              tk,                                      &
-              fact,                                    &
-              bmatrix_snow)
+              dhsdT( begc:endc ),                                                &
+              tk( begc:endc, -nlevsno+1: ),                                      &
+              fact( begc:endc, -nlevsno+1: ),                                    &
+              bmatrix_snow( begc:endc, 1:, -nlevsno: ))
       endif
 
     end associate
@@ -3354,16 +3343,16 @@ contains
          )
 
       call SetMatrix_SnowUrbanNonRoad(bounds, num_filter, filter, nband, &
-           dhsdT,                                                    &
-           tk,                                          &
-           fact,                                        &
-           bmatrix_snow)
+           dhsdT( begc:endc ),                                                    &
+           tk( begc:endc, -nlevsno+1: ),                                          &
+           fact( begc:endc, -nlevsno+1: ),                                        &
+           bmatrix_snow( begc:endc, 1:, -nlevsno: ))
 
       call SetMatrix_SnowUrbanRoad(bounds, num_filter, filter, nband, &
-           dhsdT,                                                 &
-           tk,                                       &
-           fact,                                     &
-           bmatrix_snow)
+           dhsdT( begc:endc ),                                                 &
+           tk( begc:endc, -nlevsno+1: ),                                       &
+           fact( begc:endc, -nlevsno+1: ),                                     &
+           bmatrix_snow( begc:endc, 1:, -nlevsno: ))
 
     end associate
 
@@ -3629,14 +3618,14 @@ contains
 
       if (urban_column) then
          call SetMatrix_Snow_SoilUrban(bounds, num_filter, filter, nband, &
-              tk,                                        &
-              fact,                                      &
-              bmatrix_snow_soil)
+              tk( begc:endc, -nlevsno+1: ),                                        &
+              fact( begc:endc, -nlevsno+1: ),                                      &
+              bmatrix_snow_soil( begc:endc, 1:, -1: ))
       else
          call SetMatrix_Snow_SoilNonUrban(bounds, num_filter, filter, nband, &
-              tk,                                           &
-              fact,                                         &
-              bmatrix_snow_soil)
+              tk( begc:endc, -nlevsno+1: ),                                           &
+              fact( begc:endc, -nlevsno+1: ),                                         &
+              bmatrix_snow_soil( begc:endc, 1:, -1: ))
       endif
 
     end associate
@@ -3675,14 +3664,14 @@ contains
          )
 
       call SetMatrix_Snow_SoilUrbanNonRoad(bounds, num_filter, filter, nband, &
-           tk,                                               &
-           fact,                                             &
-           bmatrix_snow_soil)
+           tk( begc:endc, -nlevsno+1: ),                                               &
+           fact( begc:endc, -nlevsno+1: ),                                             &
+           bmatrix_snow_soil( begc:endc, 1:, -1: ))
 
       call SetMatrix_Snow_SoilUrbanRoad(bounds, num_filter, filter, nband, &
-           tk,                                            &
-           fact,                                          &
-           bmatrix_snow_soil)
+           tk( begc:endc, -nlevsno+1: ),                                            &
+           fact( begc:endc, -nlevsno+1: ),                                          &
+           bmatrix_snow_soil( begc:endc, 1:, -1: ))
 
     end associate
 
@@ -3930,24 +3919,24 @@ contains
 
       if (urban_column) then
          call SetMatrix_SoilUrban(bounds, num_filter, filter, nband, &
-              dhsdT,                                             &
-              tk,                                   &
-              tk_h2osfc,                                         &
-              dz_h2osfc,                                         &
-              fact,                                 &
-              frac_sno_eff,                                        &
-              bmatrix_soil)
+              dhsdT( begc:endc ),                                             &
+              tk( begc:endc, -nlevsno+1: ),                                   &
+              tk_h2osfc( begc:endc ),                                         &
+              dz_h2osfc( begc:endc ),                                         &
+              fact( begc:endc, -nlevsno+1: ),                                 &
+              frac_sno_eff(begc:endc),                                        &     
+              bmatrix_soil( begc:endc, 1:, 1: ))
 
       else
-
+         
          call SetMatrix_SoilNonUrban(bounds, num_filter, filter, nband, &
-              dhsdT,                                                &
-              tk,                                      &
-              tk_h2osfc,                                            &
-              dz_h2osfc,                                            &
-              fact,                                    &
-              frac_sno_eff,                                           &
-              bmatrix_soil)
+              dhsdT( begc:endc ),                                                &
+              tk( begc:endc, -nlevsno+1: ),                                      &
+              tk_h2osfc( begc:endc ),                                            &
+              dz_h2osfc( begc:endc ),                                            &
+              fact( begc:endc, -nlevsno+1: ),                                    &
+              frac_sno_eff(begc:endc),                                           &     
+              bmatrix_soil( begc:endc, 1:, 1: ))
       endif
 
       ! the solution will be organized as (snow:h2osfc:soil) to minimize
@@ -4007,23 +3996,23 @@ contains
          )
 
       call SetMatrix_SoilUrbanNonRoad(bounds, num_filter, filter, nband, &
-           dhsdT,                                                    &
-           tk,                                          &
-           tk_h2osfc,                                                &
-           dz_h2osfc,                                                &
-           fact,                                        &
-           bmatrix_soil)
+           dhsdT( begc:endc ),                                                    &
+           tk( begc:endc, -nlevsno+1: ),                                          &
+           tk_h2osfc( begc:endc ),                                                &
+           dz_h2osfc( begc:endc ),                                                &
+           fact( begc:endc, -nlevsno+1: ),                                        &
+           bmatrix_soil( begc:endc, 1:, 1: ))
 
       call SetMatrix_SoilUrbanRoad(bounds, num_filter, filter, nband, &
-           dhsdT,                                                 &
-           tk,                                       &
-           tk_h2osfc,                                             &
-           dz_h2osfc,                                             &
-           fact,                                     &
-           frac_sno_eff,                                            &
-           bmatrix_soil)
-
-    end associate
+           dhsdT( begc:endc ),                                                 &
+           tk( begc:endc, -nlevsno+1: ),                                       &
+           tk_h2osfc( begc:endc ),                                             &
+           dz_h2osfc( begc:endc ),                                             &
+           fact( begc:endc, -nlevsno+1: ),                                     &
+           frac_sno_eff(begc:endc),                                            &
+           bmatrix_soil( begc:endc, 1:, 1: ))
+    
+   end associate
 
   end subroutine SetMatrix_SoilUrban
 
@@ -4334,16 +4323,16 @@ contains
 
       if (urban_column) then
          call SetMatrix_Soil_SnowUrban(bounds, num_filter, filter, nband, &
-              tk,                                        &
-              fact,                                      &
-              frac_sno_eff,                                                &
-              bmatrix_soil_snow)
+              tk( begc:endc, -nlevsno+1: ),                                        &
+              fact( begc:endc, -nlevsno+1: ),                                      &
+              frac_sno_eff(begc:endc),                                                &
+              bmatrix_soil_snow( begc:endc, 1:, 1: ))
       else
          call SetMatrix_Soil_SnowNonUrban(bounds, num_filter, filter, nband, &
-              tk,                                           &
-              fact,                                         &
-              frac_sno_eff,                                                &
-              bmatrix_soil_snow)
+              tk( begc:endc, -nlevsno+1: ),                                           &
+              fact( begc:endc, -nlevsno+1: ),                                         &
+              frac_sno_eff(begc:endc),                                                &
+              bmatrix_soil_snow( begc:endc, 1:, 1: ))
       endif
 
     end associate
@@ -4384,15 +4373,15 @@ contains
          )
 
       call SetMatrix_Soil_SnowUrbanNonRoad(bounds, num_filter, filter, nband, &
-           tk,                                               &
-           fact,                                             &
-           bmatrix_soil_snow)
+           tk( begc:endc, -nlevsno+1: ),                                               &
+           fact( begc:endc, -nlevsno+1: ),                                             &
+           bmatrix_soil_snow( begc:endc, 1:, 1: ))
 
       call SetMatrix_Soil_SnowUrbanRoad(bounds, num_filter, filter, nband, &
-           tk,                                            &
-           fact,                                          &
-           frac_sno_eff,                                                 &
-           bmatrix_soil_snow)
+           tk( begc:endc, -nlevsno+1: ),                                            &
+           fact( begc:endc, -nlevsno+1: ),                                          &
+           frac_sno_eff(begc:endc),                                                 &
+           bmatrix_soil_snow( begc:endc, 1:, 1: ))
 
     end associate
 

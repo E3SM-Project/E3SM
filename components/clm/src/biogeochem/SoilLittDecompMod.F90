@@ -211,11 +211,10 @@ contains
          actual_immob_vr                  =>    col_nf%actual_immob_vr                  , &
          actual_immob_p_vr                =>    col_pf%actual_immob_p_vr                &
          )
-
+ 
       !-------------------------------------------------------------------------------------------------
       ! call decomp_rate_constants_bgc() or decomp_rate_constants_cn(): now called in EcosystemDynNoLeaching1
       !-------------------------------------------------------------------------------------------------
-
       ! set initial values for potential C and N fluxes
       p_decomp_cpool_loss(bounds%begc : bounds%endc, :, :) = 0._r8
       pmnf_decomp_cascade(bounds%begc : bounds%endc, :, :) = 0._r8
@@ -281,10 +280,11 @@ contains
          do j = 1,nlevdecomp
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-
+                
                if (decomp_cpools_vr(c,j,cascade_donor_pool(k)) > 0._r8 .and. &
                     decomp_k(c,j,cascade_donor_pool(k)) > 0._r8 ) then
-                  p_decomp_cpool_loss(c,j,k) = decomp_cpools_vr(c,j,cascade_donor_pool(k)) &
+                  
+                 p_decomp_cpool_loss(c,j,k) = decomp_cpools_vr(c,j,cascade_donor_pool(k)) &
                        * decomp_k(c,j,cascade_donor_pool(k))  * pathfrac_decomp_cascade(c,j,k)
                   if ( .not. floating_cn_ratio_decomp_pools(cascade_receiver_pool(k)) ) then  !! not transition of cwd to litter
 
@@ -294,7 +294,6 @@ contains
                         if (decomp_npools_vr(c,j,cascade_donor_pool(k)) > 0._r8) then
                            ratio = cn_decomp_pools(c,j,cascade_receiver_pool(k))/cn_decomp_pools(c,j,cascade_donor_pool(k))
                         endif
-
                         pmnf_decomp_cascade(c,j,k) = (p_decomp_cpool_loss(c,j,k) * (1.0_r8 - rf_decomp_cascade(c,j,k) - ratio) &
                              / cn_decomp_pools(c,j,cascade_receiver_pool(k)) )
 
@@ -413,11 +412,11 @@ contains
       ! resolution of plant/heterotroph  competition for mineral N
 
 
-	  !-------------------------------------------------------------------------------------------------
-	  ! delete c:n,c:p ratios calculation, they have been calculated at the beginning of this subroutine
-	  !-------------------------------------------------------------------------------------------------
+          !-------------------------------------------------------------------------------------------------
+          ! delete c:n,c:p ratios calculation, they have been calculated at the beginning of this subroutine
+          !-------------------------------------------------------------------------------------------------
 
-	  ! upon return from CNAllocation, the fraction of potential immobilization
+          ! upon return from CNAllocation, the fraction of potential immobilization
       ! has been set (cnstate_vars%fpi_vr_col). now finish the decomp calculations.
       ! Only the immobilization steps are limited by fpi_vr (pmnf > 0)
       ! Also calculate denitrification losses as a simple proportion
@@ -505,7 +504,7 @@ contains
             do j = 1,nlevdecomp
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
-             	  if (pmnf_decomp_cascade(c,j,k) <= 0._r8) then
+                  if (pmnf_decomp_cascade(c,j,k) <= 0._r8) then
                       gross_nmin_vr(c,j) = gross_nmin_vr(c,j) - 1.0_r8*pmnf_decomp_cascade(c,j,k)
                   end if
                   if (pmpf_decomp_cascade(c,j,k) <= 0._r8) then
@@ -534,7 +533,7 @@ contains
          do j = 1,nlevdecomp
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-          	   if (pmnf_decomp_cascade(c,j,k) > 0._r8) then
+                   if (pmnf_decomp_cascade(c,j,k) > 0._r8) then
                    soil_n_immob_flux(c) = soil_n_immob_flux(c) + pmnf_decomp_cascade(c,j,k)*dzsoi_decomp(j)
                    soil_n_immob_flux_vr(c,j) = soil_n_immob_flux_vr(c,j) + pmnf_decomp_cascade(c,j,k)
                else
@@ -630,21 +629,10 @@ contains
     type(photosyns_type)     , intent(in)    :: photosyns_vars
     type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(soilstate_type)     , intent(in)    :: soilstate_vars
-    !type(temperature_type)   , intent(in)    :: temperature_vars
-    !type(waterstate_type)    , intent(in)    :: waterstate_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
     type(ch4_type)           , intent(in)    :: ch4_vars
-    !type(carbonstate_type)   , intent(inout) :: carbonstate_vars
-    !type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    !type(carbonflux_type)    , intent(inout) :: c13_carbonflux_vars
-    !type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
-    !type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-    !type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
     type(crop_type)          , intent(inout) :: crop_vars
     type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
-    !! add phosphorus --
-    !type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
-    !type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
     real(r8), intent(in) :: dt                                           ! time step (seconds)
 
     !
@@ -687,7 +675,6 @@ contains
          col_plant_ndemand_vr             =>    col_nf%plant_ndemand_vr                 , & ! Input:  [real(r8) (:)     ]  col N uptake (gN/m2/s)
 
          plant_ndemand_col                =>    col_nf%plant_ndemand                    , & ! Output:  [real(r8) (:,:) ]
-         plant_pdemand_col                =>    col_pf%plant_pdemand                  , & ! Output:  [real(r8) (:,:) ]
 
          w_scalar                         =>    col_cf%w_scalar                           , & ! Input:  [real(r8) (:,:)   ]  fraction by which decomposition is limited by moisture availability
          decomp_cascade_hr_vr             =>    col_cf%decomp_cascade_hr_vr               , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
@@ -702,12 +689,11 @@ contains
          )
 
       ! set time steps
-      !#py dt = real( get_step_size(), r8 )
-	    !------------------------------------------------------------------
-	    ! 'call decomp_vertprofiles()' moved to EcosystemDynNoLeaching1
-	    !------------------------------------------------------------------
-	    smin_nh4_to_plant_vr_loc(:,:) = 0._r8
-	    smin_no3_to_plant_vr_loc(:,:) = 0._r8
+            !------------------------------------------------------------------
+            ! 'call decomp_vertprofiles()' moved to EcosystemDynNoLeaching1
+            !------------------------------------------------------------------
+            smin_nh4_to_plant_vr_loc(:,:) = 0._r8
+            smin_no3_to_plant_vr_loc(:,:) = 0._r8
 
 
       ! MUST have already updated needed bgc variables from PFLOTRAN by this point

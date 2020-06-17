@@ -390,10 +390,10 @@ module CNEcosystemDynBetrMod
 
        call PhosphorusStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, dt)
 
-       if (get_do_harvest()) then
-          call CNHarvest(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               cnstate_vars, days_per_year)
-       end if
+       !!if (get_do_harvest()) then
+       !!   call CNHarvest(num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       !!        cnstate_vars, days_per_year)
+       !!end if
 
        if ( use_c13 ) then
           call CarbonIsoFlux2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &

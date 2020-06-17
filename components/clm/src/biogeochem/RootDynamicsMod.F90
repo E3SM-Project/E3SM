@@ -204,8 +204,8 @@ contains
       !------------------------------------------------------------------
 
       call init_vegrootfr(bounds, nlevsoi, nlevgrnd, &
-                   nlevbed, &
-                   rootfr_coarse)
+                   nlevbed(bounds%begc:bounds%endc), &
+                   rootfr_coarse(bounds%begp:bounds%endp,1:nlevgrnd))
 
       !--------------------------------------------------------------------
       ! Now calculate the density of roots in each soil layer for each pft

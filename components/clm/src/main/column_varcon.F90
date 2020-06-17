@@ -106,7 +106,7 @@ contains
     !
     ! !DESCRIPTION:
     ! Convert a col_pp%itype value (for an icemec landunit) into an icemec class (1..maxpatch_glcmec)
-    !
+    !$acc routine seq 
     ! !USES:
     use clm_varpar, only : maxpatch_glcmec
     use landunit_varcon, only : istice_mec
@@ -117,7 +117,6 @@ contains
     !
     ! !LOCAL VARIABLES:
 
-    character(len=*), parameter :: subname = 'col_itype_to_icemec_class'
     !-----------------------------------------------------------------------
 
     icemec_class = col_itype - istice_mec*100

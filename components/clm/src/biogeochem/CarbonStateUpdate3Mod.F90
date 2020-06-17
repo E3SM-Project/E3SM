@@ -39,7 +39,6 @@ contains
     !
       !$acc routine seq
     use tracer_varcon       , only : is_active_betr_bgc
-    use subgridAveMod       , only : p2c
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns

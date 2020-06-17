@@ -55,7 +55,6 @@ contains
     character(len=255)                :: subname ='Tridiagonal_sr'
     !-----------------------------------------------------------------------
 
-
     ! Solve the matrix
     if(present(is_col_active))then
        l_is_col_active(:) = is_col_active(:)

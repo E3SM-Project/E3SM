@@ -19,37 +19,39 @@ module dynPatchStateUpdaterMod
   ! !USES:
 #include "shr_assert.h"
   use shr_kind_mod         , only : r8 => shr_kind_r8
-  use shr_infnan_mod       , only : nan => shr_infnan_nan, assignment(=)
+  use shr_infnan_mod       , only : nan => shr_infnan_nan
   use shr_log_mod          , only : errMsg => shr_log_errMsg
   use decompMod            , only : bounds_type, BOUNDS_LEVEL_PROC
   use VegetationType       , only : veg_pp
   use ColumnType           , only : col_pp
   use clm_varpar           , only : mxpft
   use abortutils           , only : endrun
+  use clm_varcon           , only : spval
   !
   implicit none
   private
   !
   ! !PUBLIC TYPES:
   public :: patch_state_updater_type
+  public :: patch_state_set_old_weights_acc
 
-  type patch_state_updater_type
-     private
-     real(r8), allocatable :: pwtgcell_old(:) ! old patch weights on the gridcell
-     real(r8), allocatable :: pwtgcell_new(:) ! new patch weights on the gridcell
+  type, public :: patch_state_updater_type
 
-     real(r8), allocatable :: cwtgcell_old(:) ! old column weights on the gridcell
+     real(r8), pointer :: pwtgcell_old(:) => null() ! old patch weights on the gridcell
+     real(r8), pointer :: pwtgcell_new(:) => null()! new patch weights on the gridcell
+
+     real(r8), pointer :: cwtgcell_old(:) => null()! old column weights on the gridcell
 
      ! (pwtgcell_new - pwtgcell_old) from last call to set_new_weights
-     real(r8), allocatable :: dwt(:)
+     real(r8), pointer :: dwt(:) => null()
 
      ! (pwtgcell_old / pwtgcell_new) from last call to set_new_weights; only valid for
      ! growing patches
-     real(r8), allocatable :: growing_old_fraction(:)
+     real(r8), pointer :: growing_old_fraction(:) => null()
 
      ! (dwt / pwtgcell_new) from last call to set_new_weights; only valid for growing
      ! patches
-     real(r8), allocatable :: growing_new_fraction(:)
+     real(r8), pointer :: growing_new_fraction(:) => null()
 
    contains
      ! Public routines
@@ -82,6 +84,7 @@ module dynPatchStateUpdaterMod
   interface patch_state_updater_type
      module procedure constructor
   end interface patch_state_updater_type
+
 
   character(len=*), parameter, private :: sourcefile = &
        __FILE__
@@ -119,17 +122,17 @@ contains
     endc = bounds%endc
 
     allocate(this%pwtgcell_old(begp:endp))
-    this%pwtgcell_old(:) = nan
+    this%pwtgcell_old(:) = spval
     allocate(this%pwtgcell_new(begp:endp))
-    this%pwtgcell_new(:) = nan
+    this%pwtgcell_new(:) = spval
     allocate(this%cwtgcell_old(begc:endc))
-    this%cwtgcell_old(:) = nan
+    this%cwtgcell_old(:) = spval
     allocate(this%dwt(begp:endp))
-    this%dwt(:) = nan
+    this%dwt(:) = spval
     allocate(this%growing_old_fraction(begp:endp))
-    this%growing_old_fraction(:) = nan
+    this%growing_old_fraction(:) = spval
     allocate(this%growing_new_fraction(begp:endp))
-    this%growing_new_fraction(:) = nan
+    this%growing_new_fraction(:) = spval
 
   end function constructor
 
@@ -163,6 +166,32 @@ contains
     end do
 
   end subroutine set_old_weights
+
+  !----------------------------------------------------------------------
+  !-----------------------------------------------------------------------
+  subroutine patch_state_set_old_weights_acc(patch_state, bounds)
+    !
+    ! !DESCRIPTION:
+    ! Set subgrid weights before dyn subgrid updates
+    !
+    ! !USES:
+    !$acc routine seq
+    ! !ARGUMENTS:
+    type(patch_state_updater_type), intent(inout) :: patch_state
+    type(bounds_type), intent(in) :: bounds
+    !
+    ! !LOCAL VARIABLES:
+    integer :: p
+    integer :: c
+    !-----------------------------------------------------------------------
+
+    do p = bounds%begp, bounds%endp
+       c = veg_pp%column(p)
+       patch_state%pwtgcell_old(p) = veg_pp%wtgcell(p)
+       patch_state%cwtgcell_old(c) = col_pp%wtgcell(c)
+    end do
+
+  end subroutine patch_state_set_old_weights_acc
 
   !-----------------------------------------------------------------------
   subroutine set_new_weights(this, bounds)
@@ -257,25 +286,20 @@ contains
     character(len=*), parameter :: subname = 'update_patch_state'
     !-----------------------------------------------------------------------
 
-    SHR_ASSERT_ALL((ubound(var) == (/bounds%endp/)), errMsg(sourcefile, __LINE__))
 
     if (present(flux_out_col_area)) then
-       SHR_ASSERT_ALL((ubound(flux_out_col_area) == (/bounds%endp/)), errMsg(sourcefile, __LINE__))
     end if
 
     if (present(flux_out_grc_area)) then
-       SHR_ASSERT_ALL((ubound(flux_out_grc_area) == (/bounds%endp/)), errMsg(sourcefile, __LINE__))
     end if
 
     if (present(seed)) then
-       SHR_ASSERT_ALL((ubound(seed) == (/bounds%endp/)), errMsg(sourcefile, __LINE__))
     end if
 
     if (present(seed_addition)) then
        if (.not. present(seed)) then
           call endrun(subname//' ERROR: seed_addition can only be provided if seed is provided')
        end if
-       SHR_ASSERT_ALL((ubound(seed_addition) == (/bounds%endp/)), errMsg(sourcefile, __LINE__))
     end if
 
     do fp = 1, num_filterp_with_inactive
@@ -319,7 +343,6 @@ contains
     ! based on pft type.
     !
     ! !USES:
-    !
     ! !ARGUMENTS:
     class(patch_state_updater_type), intent(in) :: this
     type(bounds_type), intent(in) :: bounds
@@ -353,7 +376,6 @@ contains
     character(len=*), parameter :: subname = 'update_patch_state_partition_flux_by_type'
     !-----------------------------------------------------------------------
 
-    SHR_ASSERT_ALL((ubound(flux1_fraction_by_pft_type) == (/mxpft/)), errMsg(sourcefile, __LINE__))
 
     total_flux_out(bounds%begp:bounds%endp) = 0._r8
     call this%update_patch_state(bounds, &

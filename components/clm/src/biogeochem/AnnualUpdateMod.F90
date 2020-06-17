@@ -31,7 +31,7 @@ contains
     !
     ! !USES:
     !#py use clm_time_manager, only: get_step_size, get_days_per_year
-      !$acc routine seq 
+      !$acc routine seq
     use clm_varcon      , only: secspday
     use SubgridAveMod   , only: p2c
     !
@@ -50,54 +50,63 @@ contains
     integer :: fp,fc        ! lake filter indices
     real(r8) :: dayspyr = 365.d0
     !-----------------------------------------------------------------------
-
-    ! set time steps
-    !#py dt = real( get_step_size(), r8 )
-
+    associate(&
+      annsum_counter_col          => cnstate_vars%annsum_counter_col , &
+      annsum_potential_gpp_patch  => cnstate_vars%annsum_potential_gpp_patch , &
+      tempsum_potential_gpp_patch => cnstate_vars%tempsum_potential_gpp_patch , &
+      annmax_retransn_patch       => cnstate_vars%annmax_retransn_patch  , &
+      tempmax_retransn_patch      => cnstate_vars%tempmax_retransn_patch  , &
+      annmax_retransp_patch       => cnstate_vars%annmax_retransp_patch  , &
+      tempmax_retransp_patch      => cnstate_vars%tempmax_retransp_patch  , &
+      annavg_t2m_patch            => cnstate_vars%annavg_t2m_patch    , &
+      tempavg_t2m_patch           => cnstate_vars%tempavg_t2m_patch    , &
+      annsum_npp                  => veg_cf%annsum_npp   , &
+      tempsum_npp                 => veg_cf%tempsum_npp  , &
+      annsum_npp_col              => col_cf%annsum_npp      , &
+      annavg_t2m_col              => cnstate_vars%annavg_t2m_col &
+      )
     ! column loop
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       cnstate_vars%annsum_counter_col(c) = cnstate_vars%annsum_counter_col(c) + dt
+       annsum_counter_col(c) = annsum_counter_col(c) + dt
     end do
 
     if (num_soilc > 0) then
-
-      if (cnstate_vars%annsum_counter_col(filter_soilc(1)) >= dayspyr * secspday) then
-
+      if (annsum_counter_col(filter_soilc(1)) >= dayspyr * secspday) then
           ! patch loop
           do fp = 1,num_soilp
              p = filter_soilp(fp)
 
              ! update annual plant ndemand accumulator
-             cnstate_vars%annsum_potential_gpp_patch(p)  = cnstate_vars%tempsum_potential_gpp_patch(p)
-             cnstate_vars%tempsum_potential_gpp_patch(p) = 0._r8
+             annsum_potential_gpp_patch(p)  = tempsum_potential_gpp_patch(p)
+             tempsum_potential_gpp_patch(p) = 0._r8
 
              ! update annual total N retranslocation accumulator
-             cnstate_vars%annmax_retransn_patch(p)  = cnstate_vars%tempmax_retransn_patch(p)
-             cnstate_vars%tempmax_retransn_patch(p) = 0._r8
+             annmax_retransn_patch(p)  = tempmax_retransn_patch(p)
+             tempmax_retransn_patch(p) = 0._r8
 
              ! update annual total P retranslocation accumulator
-             cnstate_vars%annmax_retransp_patch(p)  = cnstate_vars%tempmax_retransp_patch(p)
-             cnstate_vars%tempmax_retransp_patch(p) = 0._r8
+             annmax_retransp_patch(p)  = tempmax_retransp_patch(p)
+             tempmax_retransp_patch(p) = 0._r8
 
              ! update annual average 2m air temperature accumulator
-             cnstate_vars%annavg_t2m_patch(p)  = cnstate_vars%tempavg_t2m_patch(p)
-             cnstate_vars%tempavg_t2m_patch(p) = 0._r8
+             annavg_t2m_patch(p)  = tempavg_t2m_patch(p)
+             tempavg_t2m_patch(p) = 0._r8
 
              ! update annual NPP accumulator, convert to annual total
-             veg_cf%annsum_npp(p) = veg_cf%tempsum_npp(p) * dt
-             veg_cf%tempsum_npp(p) = 0._r8
+             annsum_npp(p) = tempsum_npp(p) * dt
+             tempsum_npp(p) = 0._r8
 
           end do
           ! use p2c routine to get selected column-average pft-level fluxes and states
 
           call p2c(bounds, num_soilc, filter_soilc, &
-               veg_cf%annsum_npp, &
-               col_cf%annsum_npp)
+               annsum_npp(bounds%begp:bounds%endp), &
+               annsum_npp_col(bounds%begc:bounds%endc))
 
           call p2c(bounds, num_soilc, filter_soilc, &
-               cnstate_vars%annavg_t2m_patch, &
-               cnstate_vars%annavg_t2m_col)
+               annavg_t2m_patch(bounds%begp:bounds%endp), &
+               annavg_t2m_col(bounds%begc:bounds%endc))
        end if
 
     end if
@@ -105,10 +114,12 @@ contains
     ! column loop
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       if (cnstate_vars%annsum_counter_col(c) >= dayspyr * secspday) then
-          cnstate_vars%annsum_counter_col(c) = 0._r8
+       if (annsum_counter_col(c) >= dayspyr * secspday) then
+           annsum_counter_col(c) = 0._r8
        end if
     end do
+
+  end associate
 
  end subroutine AnnualUpdate
 

@@ -79,7 +79,7 @@ contains
 
        case (leepielke_1992)
           call calc_beta_leepielke1992(bounds, num_nolakec, filter_nolakec, &
-               soilstate_vars, soilbeta)
+               soilstate_vars, soilbeta(bounds%begc:bounds%endc))
 
        case default
           !#py call endrun(subname // ':: a soilevap stress function must be specified!')
@@ -116,7 +116,6 @@ contains
      integer               , intent(in)    :: num_nolakec
      integer               , intent(in)    :: filter_nolakec(:)
      type(soilstate_type)  , intent(in)    :: soilstate_vars
-     !type(waterstate_type) , intent(in)    :: waterstate_vars
      real(r8)              , intent(inout) :: soilbeta(bounds%begc:bounds%endc)
 
      !local variables

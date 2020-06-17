@@ -14,8 +14,6 @@ module NitrogenStateUpdate1Mod
   use VegetationPropertiesType         , only : veg_vp
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNStateType            , only : cnstate_type
-  use CNNitrogenFluxType     , only : nitrogenflux_type
-  use CNNitrogenStateType    , only : nitrogenstate_type
   use GridcellDataType       , only : grc_ns, grc_nf
   use ColumnDataType         , only : col_ns, col_nf
   use VegetationType         , only : veg_pp
@@ -50,13 +48,11 @@ contains
     !
     ! !DESCRIPTION:
     ! Update nitrogen states based on fluxes from dyn_cnbal_patch
-    !
+    !$acc routine seq
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_soilc_with_inactive       ! number of columns in soil filter
     integer                  , intent(in)    :: filter_soilc_with_inactive(:) ! soil column filter that includes inactive points
-    !type(nitrogenflux_type)  , intent(in)    :: nitrogenflux_vars
-    !type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
     real(r8), intent(in)                      :: dt                            ! time step (seconds)
 
     !

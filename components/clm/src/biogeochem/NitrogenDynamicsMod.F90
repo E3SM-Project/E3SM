@@ -14,11 +14,7 @@ module NitrogenDynamicsMod
   use clm_varctl          , only : use_nitrif_denitrif, use_vertsoilc
   use subgridAveMod       , only : p2c
   use atm2lndType         , only : atm2lnd_type
-  use CNCarbonFluxType    , only : carbonflux_type
-  use CNNitrogenFluxType  , only : nitrogenflux_type
-  use CNNitrogenStateType , only : nitrogenstate_type
   use CNStateType         , only : cnstate_type
-  use WaterStateType      , only : waterstate_type
   use WaterFluxType       , only : waterflux_type
   use CropType            , only : crop_type
   use ColumnType          , only : col_pp
@@ -27,9 +23,6 @@ module NitrogenDynamicsMod
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_cs, veg_ns, veg_nf
   use VegetationPropertiesType  , only : veg_vp
-  use CNCarbonStateType   , only : carbonstate_type
-  use TemperatureType     , only : temperature_type
-  use PhosphorusStateType , only : phosphorusstate_type
   use clm_varctl          , only : NFIX_PTASE_plant
 
   !
@@ -50,8 +43,8 @@ module NitrogenDynamicsMod
   !
   ! !PRIVATE DATA:
   type, public :: CNNDynamicsParamsType
-     real(r8):: sf        ! soluble fraction of mineral N (unitless)
-     real(r8):: sf_no3    ! soluble fraction of NO3 (unitless)
+     real(r8), pointer :: sf     => null()    ! soluble fraction of mineral N (unitless)
+     real(r8), pointer :: sf_no3 => null()    ! soluble fraction of NO3 (unitless)
   end type CNNDynamicsParamsType
 
   type(CNNDynamicsParamsType), public ::  CNNDynamicsParamsInst
@@ -62,61 +55,63 @@ module NitrogenDynamicsMod
 contains
 
   !-----------------------------------------------------------------------
-   subroutine NitrogenDynamicsInit ( )
-     !
-     ! !DESCRIPTION:
-     ! Initialize module variables
-     !-----------------------------------------------------------------------
-
-     if (nfix_timeconst .eq. -1.2345_r8) then
-        ! If nfix_timeconst is equal to the junk default value, then it
-        ! wasn't specified by the user namelist and we need to assign
-        ! it the correct default value. If the user specified it in the
-        ! name list, we leave it alone.
-        if (use_nitrif_denitrif) then
-           nfix_timeconst = 10._r8
-        else
-           nfix_timeconst = 0._r8
-        end if
-     end if
-
-   end subroutine NitrogenDynamicsInit
+  subroutine NitrogenDynamicsInit ( )
+    !
+    ! !DESCRIPTION:
+    ! Initialize module variables
+    !-----------------------------------------------------------------------
+!#py
+    if (nfix_timeconst .eq. -1.2345_r8) then
+       ! If nfix_timeconst is equal to the junk default value, then it
+       ! wasn't specified by the user namelist and we need to assign
+       ! it the correct default value. If the user specified it in the
+       ! name list, we leave it alone.
+       if (use_nitrif_denitrif) then
+          nfix_timeconst = 10._r8
+       else
+          nfix_timeconst = 0._r8
+       end if
+    end if
+!#py
+  end subroutine NitrogenDynamicsInit
 
   !-----------------------------------------------------------------------
-   subroutine readNitrogenDynamicsParams ( ncid )
-     !
-     ! !DESCRIPTION:
-     ! Read in parameters
-     !
-     ! !USES:
-     use ncdio_pio   , only : file_desc_t,ncd_io
-     use abortutils  , only : endrun
-     use shr_log_mod , only : errMsg => shr_log_errMsg
-     !
-     ! !ARGUMENTS:
-     type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
-     !
-     ! !LOCAL VARIABLES:
-     character(len=32)  :: subname = 'CNNDynamicsParamsType'
-     character(len=100) :: errCode = '-Error reading in parameters file:'
-     logical            :: readv ! has variable been read in or not
-     real(r8)           :: tempr ! temporary to read in constant
-     character(len=100) :: tString ! temp. var for reading
-     !-----------------------------------------------------------------------
-
-     call NitrogenDynamicsInit()
-
-     tString='sf_minn'
-     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
-     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-     CNNDynamicsParamsInst%sf=tempr
-
-     tString='sf_no3'
-     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
-     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-     CNNDynamicsParamsInst%sf_no3=tempr
-
-   end subroutine readNitrogenDynamicsParams
+  subroutine readNitrogenDynamicsParams ( ncid )
+    !
+    ! !DESCRIPTION:
+    ! Read in parameters
+    !
+    ! !USES:
+    use ncdio_pio   , only : file_desc_t,ncd_io
+    use abortutils  , only : endrun
+    use shr_log_mod , only : errMsg => shr_log_errMsg
+    !
+    ! !ARGUMENTS:
+    type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
+    !
+    ! !LOCAL VARIABLES:
+    character(len=32)  :: subname = 'CNNDynamicsParamsType'
+    character(len=100) :: errCode = '-Error reading in parameters file:'
+    logical            :: readv ! has variable been read in or not
+    real(r8)           :: tempr ! temporary to read in constant
+    character(len=100) :: tString ! temp. var for reading
+    !-----------------------------------------------------------------------
+!#py
+    call NitrogenDynamicsInit()
+!#py
+    allocate(CNNDynamicsParamsInst%sf)
+    allocate(CNNDynamicsParamsInst%sf_no3)
+    tString='sf_minn'
+    call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+    CNNDynamicsParamsInst%sf=tempr
+!#py
+    tString='sf_no3'
+    call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
+    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+    CNNDynamicsParamsInst%sf_no3=tempr
+!#py
+  end subroutine readNitrogenDynamicsParams
 
   !-----------------------------------------------------------------------
   subroutine NitrogenDeposition( bounds, &
@@ -172,9 +167,6 @@ contains
     ! !ARGUMENTS:
     integer                 , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                 , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    !type(waterflux_type)     , intent(in)    :: waterflux_vars
-    !type(carbonflux_type)   , intent(inout) :: carbonflux_vars
-    !type(nitrogenflux_type) , intent(inout) :: nitrogenflux_vars
     real(r8), intent(in) :: dayspyr               ! days per year
 
     !
@@ -195,7 +187,6 @@ contains
          nfix_to_sminn  => col_nf%nfix_to_sminn   & ! Output: [real(r8) (:)]  symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s)
          )
 
-      !#py dayspyr = get_days_per_year()
 
       if (do_et_bnf) then
          secspyr = dayspyr * 86400._r8
@@ -245,16 +236,11 @@ contains
     ! !USES:
       !$acc routine seq
     use clm_varpar       , only : nlevdecomp, nlevsoi
-    !#py use clm_time_manager , only : get_step_size
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
-    !type(waterstate_type)    , intent(in)    :: waterstate_vars
-    !type(waterflux_type)     , intent(in)    :: waterflux_vars
-    !type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-    !type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
     real(r8)                 , intent(in)    :: dt          ! radiation time step (seconds)
 
     !
@@ -474,8 +460,8 @@ contains
          )
 
       call p2c(bounds, num_soilc, filter_soilc, &
-           fert, &
-           fert_to_sminn)
+           fert(bounds%begp:bounds%endp), &
+           fert_to_sminn(bounds%begc:bounds%endc))
 
     end associate
   end subroutine NitrogenFert
@@ -613,8 +599,8 @@ contains
       end do
 
       call p2c(bounds, num_soilc, filter_soilc, &
-           soyfixn, &
-           soyfixn_to_sminn)
+           soyfixn(bounds%begp:bounds%endp), &
+           soyfixn_to_sminn(bounds%begc:bounds%endc))
 
     end associate
 

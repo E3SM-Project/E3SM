@@ -33,7 +33,7 @@ module SoilMoistStressMod
   logical,  private :: perchroot     = .false.  ! true => btran is based only on unfrozen soil levels
   logical,  private :: perchroot_alt = .false.  ! true => btran is based on active layer (defined over two years);
   !$acc declare create(root_moist_stress_method)
-  !$acc declare create(moist_stress_clm_default)
+  !$acc declare copyin(moist_stress_clm_default)
   !$acc declare create(perchroot)
   !$acc declare create(perchroot_alt)
 
@@ -70,7 +70,7 @@ contains
     perchroot = perchroot_global
     perchroot_alt = perchroot_alt_global
 
-
+    !$acc update device(perchroot, perchroot_alt)
   end subroutine set_perchroot_opt
 
   !--------------------------------------------------------------------------------
@@ -83,7 +83,6 @@ contains
     ! !USES
       !$acc routine seq
     use shr_kind_mod   , only : r8 => shr_kind_r8
-    !#py !#py use shr_log_mod    , only : errMsg => shr_log_errMsg
     use decompMod      , only : bounds_type
     use ColumnType     , only : col_pp
     !
@@ -93,8 +92,8 @@ contains
     integer           , intent(in)    :: ubj                             ! lbinning level indices
     integer           , intent(in)    :: numf                            ! filter dimension
     integer           , intent(in)    :: filter(:)                       ! filter
-    real(r8)          , intent(in)    :: watsat( bounds%begc: , 1: )     ! soil porosity
-    real(r8)          , intent(in)    :: h2osoi_ice( bounds%begc: , 1: ) ! ice water content, kg H2o/m2
+    real(r8)          , intent(in)    :: watsat( bounds%begc:, 1: )     ! soil porosity
+    real(r8)          , intent(in)    :: h2osoi_ice( bounds%begc:,1 : ) ! ice water content, kg H2o/m2
     real(r8)          , intent(in)    :: denice                          ! ice density, kg/m3
     real(r8)          , intent(inout) :: eff_por( bounds%begc: ,1: )     ! effective porosity
     !
@@ -112,7 +111,6 @@ contains
           c = filter(fc)
           !compute the volumetric ice content
           vol_ice=min(watsat(c,j), h2osoi_ice(c,j)/(denice*col_pp%dz(c,j)))
-
           !compute the maximum soil space to fill liquid water and air
           eff_por(c,j) = watsat(c,j) - vol_ice
        enddo
@@ -152,7 +150,6 @@ contains
     ubj = 0
 
     ! Enforce expected array sizes
-
     !main calculation loop
 
     !it assumes snow layer ends at 0
@@ -227,14 +224,11 @@ contains
     ! !USES
       !$acc routine seq
     use shr_kind_mod    , only: r8 => shr_kind_r8
-    !#py !#py use shr_log_mod     , only : errMsg => shr_log_errMsg
     use clm_varcon      , only : tfrz      !temperature where water freezes [K], this is taken as constant at the moment
     use decompMod       , only : bounds_type
     use CanopyStateType , only : canopystate_type
     use EnergyFluxType  , only : energyflux_type
-    use TemperatureType , only : temperature_type
     use SoilStateType   , only : soilstate_type
-    use WaterSTateType  , only : waterstate_type
     use SimpleMathMod   , only : array_normalization
     use VegetationType       , only : veg_pp
     !
@@ -246,7 +240,6 @@ contains
     integer                , intent(in)    :: filterp(:)                                 !filter
     type(canopystate_type) , intent(in)    :: canopystate_vars
     type(soilstate_type)   , intent(in)    :: soilstate_vars
-    !type(temperature_type) , intent(in)    :: temperature_vars
     real(r8)               , intent(inout) :: rootfr_unf(bounds%begp:bounds%endp, 1:ubj) !normalized root fraction in unfrozen layers
     !
     ! !LOCAL VARIABLES:
@@ -292,7 +285,6 @@ contains
                do f = 1, fn
                   p = filterp(f)
                   c = veg_pp%column(p)
-
                   if (t_soisno(c,j) >= tfrz) then
                      rootfr_unf(p,j) = rootfr(p,j)
                   else
@@ -306,7 +298,7 @@ contains
 
       !normalize the root fraction for each pft
       call array_normalization(bounds%begp, bounds%endp, 1, ubj, &
-           fn, filterp, rootfr_unf)
+           fn, filterp, rootfr_unf(bounds%begp:bounds%endp, 1:ubj))
 
     end associate
 
@@ -323,15 +315,11 @@ contains
     ! USES
       !$acc routine seq
     use shr_kind_mod         , only : r8 => shr_kind_r8
-    !#py !#py use shr_log_mod          , only : errMsg => shr_log_errMsg
     use decompMod            , only : bounds_type
     use clm_varcon           , only : tfrz      !temperature where water freezes [K], this is taken as constant at the moment
     use VegetationPropertiesType     , only : veg_vp
-    !use TemperatureType      , only : temperature_type
     use SoilStateType        , only : soilstate_type
     use EnergyFluxType       , only : energyflux_type
-    !use WaterSTateType       , only : waterstate_type
-    !use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
     use VegetationType            , only : veg_pp
     use clm_varctl       , only : use_hydrstress
     !
@@ -344,9 +332,6 @@ contains
     real(r8)               , intent(in)    :: rootfr_unf(bounds%begp: , 1: )
     type(energyflux_type)  , intent(inout) :: energyflux_vars
     type(soilstate_type)   , intent(inout) :: soilstate_vars
-    !type(temperature_type) , intent(in)    :: temperature_vars
-    !type(waterstate_type)  , intent(inout) :: waterstate_vars
-    !class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
     !
     ! !LOCAL VARIABLES:
     real(r8), parameter :: btran0 = 0.0_r8  ! initial value
@@ -377,7 +362,6 @@ contains
          h2osoi_vol    => col_ws%h2osoi_vol    , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
          h2osoi_liqvol => col_ws%h2osoi_liqvol   & ! Output: [real(r8) (:,:) ]  liquid volumetric moisture, will be used for BeTR
          )
-
       do j = 1,nlevgrnd
          do f = 1, fn
             p = filterp(f)
@@ -387,18 +371,17 @@ contains
             ! Root resistance factors
             ! rootr effectively defines the active root fraction in each layer
             if (h2osoi_liqvol(c,j) .le. 0._r8 .or. t_soisno(c,j) .le. tfrz + tc_stress) then
-               rootr(p,j) = 0._r8
+                    rootr(p,j) = 0._r8
             else
                s_node = max(h2osoi_liqvol(c,j)/eff_porosity(c,j),0.01_r8)
-
                !smp_node = max(smpsc(veg_pp%itype(p)), -sucsat(c,j)*s_node**(-bsw(c,j)))
                !call soil_water_retention_curve%soil_suction(sucsat(c,j), s_node, bsw(c,j), smp_node)
+               smp_node = -sucsat(c,j)*s_node**( -bsw(c,j) )
+
                smp_node = max(smpsc(veg_pp%itype(p)), smp_node)
 
                rresis(p,j) = min( (eff_porosity(c,j)/watsat(c,j))* &
                     (smp_node - smpsc(veg_pp%itype(p))) / (smpso(veg_pp%itype(p)) - smpsc(veg_pp%itype(p))), 1._r8)
-
-
                if (.not. (perchroot .or. perchroot_alt) ) then
                   rootr(p,j) = rootfr(p,j)*rresis(p,j)
                else
@@ -414,6 +397,7 @@ contains
                s_node = h2osoi_vol(c,j)/watsat(c,j)
 
                !call soil_water_retention_curve%soil_suction(sucsat(c,j), s_node, bsw(c,j), smp_node_lf)
+               smp_node_lf = -sucsat(c,j)*s_node**( -bsw(c,j) )
 
                !smp_node_lf =  -sucsat(c,j)*(h2osoi_vol(c,j)/watsat(c,j))**(-bsw(c,j))
                smp_node_lf = max(smpsc(veg_pp%itype(p)), smp_node_lf)
@@ -448,16 +432,11 @@ contains
     ! USES
       !$acc routine seq
     use shr_kind_mod    , only : r8 => shr_kind_r8
-    !#py !#py use shr_log_mod     , only : errMsg => shr_log_errMsg
     use clm_varcon      , only : tfrz      !temperature where water freezes [K], this is taken as constant at the moment
     use decompMod       , only : bounds_type
     use CanopyStateType , only : canopystate_type
     use EnergyFluxType  , only : energyflux_type
-    !use TemperatureType , only : temperature_type
     use SoilStateType   , only : soilstate_type
-    !use WaterSTateType  , only : waterstate_type
-    !use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
-    !#py use abortutils      , only : endrun
     !
     ! !ARGUMENTS:
     implicit none
@@ -468,18 +447,13 @@ contains
     type(canopystate_type) , intent(in)    :: canopystate_vars
     type(energyflux_type)  , intent(inout) :: energyflux_vars
     type(soilstate_type)   , intent(inout) :: soilstate_vars
-    !type(temperature_type) , intent(in)    :: temperature_vars
-    !type(waterstate_type)  , intent(inout) :: waterstate_vars
-    !class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
     !
     ! !LOCAL VARIABLES:
     integer :: p, f, j, c, l                                   ! indices
     real(r8) :: smp_node, s_node                               ! temporary variables
     real(r8) :: rootfr_unf(bounds%begp:bounds%endp,1:nlevgrnd) ! Rootfraction defined for unfrozen layers only.
-    character(len=32) :: subname = 'calc_root_moist_stress'    ! subroutine name
     !------------------------------------------------------------------------------
 
-    !define normalized rootfraction for unfrozen soil
     !define normalized rootfraction for unfrozen soil
     rootfr_unf(bounds%begp:bounds%endp,1:nlevgrnd) = 0._r8
 
@@ -489,7 +463,7 @@ contains
          filterp = filterp,                 &
          canopystate_vars=canopystate_vars, &
          soilstate_vars=soilstate_vars,     &
-         rootfr_unf=rootfr_unf)
+         rootfr_unf=rootfr_unf(bounds%begp:bounds%endp,1:nlevgrnd))
 
     !suppose h2osoi_liq, eff_porosity are already computed somewhere else
 
@@ -503,10 +477,9 @@ contains
             filterp = filterp,                          &
             energyflux_vars=energyflux_vars,            &
             soilstate_vars=soilstate_vars,              &
-            rootfr_unf=rootfr_unf)
+            rootfr_unf=rootfr_unf(bounds%begp:bounds%endp,1:nlevgrnd))
 
     case default
-       !#py call endrun(subname // ':: a root moisture stress function must be specified!')
     end select
 
   end subroutine calc_root_moist_stress

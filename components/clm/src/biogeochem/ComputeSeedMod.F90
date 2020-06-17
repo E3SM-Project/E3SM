@@ -14,8 +14,8 @@ module ComputeSeedMod
   use SpeciesMod             , only : CN_SPECIES_C12, CN_SPECIES_C13, CN_SPECIES_C14
   use SpeciesMod             , only : CN_SPECIES_N, CN_SPECIES_P
   use VegetationPropertiesType , only : veg_vp
-  use VegetationType           , only : veg_pp                
-  use LandunitType             , only : lun_pp                
+  use VegetationType           , only : veg_pp
+  use LandunitType             , only : lun_pp
   !
   ! !PUBLIC ROUTINES:
   implicit none
@@ -35,6 +35,11 @@ module ComputeSeedMod
   integer  , parameter :: COMPONENT_SEED       = 3
   real(r8) , parameter :: leafc_seed_param     = 1._r8
   real(r8) , parameter :: deadstemc_seed_param = 0.1_r8
+  !$acc declare copyin (COMPONENT_LEAF      )
+  !$acc declare copyin (COMPONENT_DEADWOOD  )
+  !$acc declare copyin (COMPONENT_SEED      )
+  !$acc declare copyin (leafc_seed_param    )
+  !$acc declare copyin (deadstemc_seed_param)
 
   character(len=*), parameter, private :: sourcefile = &
        __FILE__
@@ -62,6 +67,7 @@ contains
     ! here.
     !
     ! !USES:
+      !$acc routine seq
     use pftvarcon       , only : noveg
     use landunit_varcon , only : istsoil, istcrop
     !
@@ -96,31 +102,19 @@ contains
     real(r8) :: pleaf
     real(r8) :: pstor
     real(r8) :: pxfer
-
-    character(len=*), parameter :: subname = 'ComputeSeedAmounts'
     !-----------------------------------------------------------------------
 
     begp = bounds%begp
     endp = bounds%endp
 
-    SHR_ASSERT_ALL((ubound(leaf_patch                 ) == (/endp/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(leaf_storage_patch         ) == (/endp/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(leaf_xfer_patch            ) == (/endp/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(compute_here_patch         ) == (/endp/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(ignore_current_state_patch ) == (/endp/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(seed_leaf_patch            ) == (/endp/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(seed_leaf_storage_patch    ) == (/endp/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(seed_leaf_xfer_patch       ) == (/endp/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(seed_deadstem_patch        ) == (/endp/)), errMsg(__FILE__, __LINE__))
-    
+
     if (present(pool_seed_patch)) then
-       SHR_ASSERT_ALL((ubound(pool_seed_patch         ) == (/endp/)), errMsg(__FILE__, __LINE__))
        if (.not. present(pool_seed_param)) then
-          call endrun(subname//': pool_seed_patch can only be provided with pool_seed_param')          
+          stop ': pool_seed_patch can only be provided with pool_seed_param'
        end if
     end if
 
-    
+
     do p = bounds%begp,bounds%endp
        c = veg_pp%column(p)
 
@@ -185,6 +179,7 @@ contains
     ! !USES:
     !
     ! !ARGUMENTS:
+      !$acc routine seq
     integer , intent(in)  :: pft_type
     logical , intent(in)  :: ignore_current_state
     real(r8), intent(in)  :: leaf         ! g/m2 leaf C or N
@@ -229,7 +224,7 @@ contains
     ! this value into an appropriate value for c13, c14, n or p.
     !
     ! !USES:
-    !
+    !$acc routine seq
     ! !ARGUMENTS:
     real(r8)            :: multiplier ! function result
     integer, intent(in) :: species    ! which C/N species we're operating on; should be one of the values in SpeciesMod
@@ -238,7 +233,6 @@ contains
     !
     ! !LOCAL VARIABLES:
 
-    character(len=*), parameter :: subname = 'SpeciesTypeMultiplier'
     !-----------------------------------------------------------------------
 
     select case (species)
@@ -269,8 +263,7 @@ contains
              multiplier = 0._r8
           end if
        case default
-          write(iulog,*) subname//' ERROR: unknown component: ', component
-          call endrun(subname//': unknown component')
+          print *, ' ERROR: unknown component: ', component
        end select
 
     case (CN_SPECIES_P)
@@ -286,13 +279,11 @@ contains
              multiplier = 0._r8
           end if
        case default
-          write(iulog,*) subname//' ERROR: unknown component: ', component
-          call endrun(subname//': unknown component')
+          print *, ' ERROR: unknown component: ', component
        end select
 
     case default
-       write(iulog,*) subname//' ERROR: unknown species: ', species
-       call endrun(subname//': unknown species')
+       print *, ' ERROR: unknown species: ', species
     end select
 
   end function SpeciesTypeMultiplier

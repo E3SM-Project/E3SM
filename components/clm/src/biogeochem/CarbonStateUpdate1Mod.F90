@@ -5,9 +5,6 @@ module CarbonStateUpdate1Mod
   !
   ! !USES:
   use shr_kind_mod            , only : r8 => shr_kind_r8
-  !#py !#py use shr_log_mod        , only : errMsg => shr_log_errMsg
-  !#py use abortutils              , only : endrun
-  !#py use clm_time_manager        , only : get_step_size
   use decompMod               , only : bounds_type
   use clm_varpar              , only : ndecomp_cascade_transitions, nlevdecomp
   use clm_varpar              , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
@@ -44,7 +41,7 @@ contains
     !
     ! !DESCRIPTION:
     ! Update carbon states based on fluxes from dyn_cnbal_patch
-    !
+    !$acc routine seq
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
     integer                , intent(in)    :: num_soilc_with_inactive       ! number of columns in soil filter
@@ -61,11 +58,6 @@ contains
     integer  :: fc  ! column filter index
     integer  :: g   ! gridcell index
     integer  :: j   ! level index
-
-    character(len=*), parameter :: subname = 'CarbonStateUpdateDynPatch'
-    !-----------------------------------------------------------------------
-
-    !#py dt = real( get_step_size(), r8 )
 
     if (.not.use_fates) then
 
@@ -139,7 +131,6 @@ contains
     !
       !$acc routine seq
     use tracer_varcon       , only : is_active_betr_bgc
-    use subgridAveMod       , only : p2c
     use decompMod           , only : bounds_type
     ! !ARGUMENTS:
     type(bounds_type)            , intent(in)    :: bounds
@@ -169,8 +160,6 @@ contains
          )
 
       ! set time steps
-      !#py dt = real( get_step_size(), r8 )
-
       ! column level fluxes
 
       if(.not.use_fates) then

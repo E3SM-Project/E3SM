@@ -6,7 +6,6 @@ module EcosystemDynMod
   ! !USES:
   use dynSubgridControlMod, only : get_do_harvest
   use shr_kind_mod        , only : r8 => shr_kind_r8
-   !#py use shr_sys_mod         , only : shr_sys_flush
   use clm_varctl          , only : use_c13, use_c14, use_fates, use_dynroot
   use decompMod           , only : bounds_type
    use perf_mod            , only : t_startf, t_stopf
@@ -130,39 +129,27 @@ contains
      type(frictionvel_type)   , intent(in)    :: frictionvel_vars
      type(canopystate_type)   , intent(inout) :: canopystate_vars
      real(r8)                 , intent(in)    :: dt
-
      integer :: bulk, c13, c14
      c13 = 0; c14 = 1; bulk = 2;
      !-----------------------------------------------------------------------
 
      ! only do if ed is off
      if( .not. use_fates) then
-        !if(.not.(use_pflotran.and.pf_cmode)) then
-              !#py call t_startf('PhosphorusWeathering')
               call PhosphorusWeathering(num_soilc, filter_soilc, &
                    cnstate_vars, dt)
-              !#py call t_stopf('PhosphorusWeathering')
 
-              !#py call t_startf('PhosphorusAdsportion')
               call PhosphorusAdsportion(num_soilc, filter_soilc, &
                    cnstate_vars, dt)
-              !#py call t_stopf('PhosphorusAdsportion')
 
-              !#py call t_startf('PhosphorusDesoprtion')
               call PhosphorusDesoprtion(num_soilc, filter_soilc, &
                    cnstate_vars, dt)
-              !#py call t_stopf('PhosphorusDesoprtion')
 
-              !#py call t_startf('PhosphorusOcclusion')
               call PhosphorusOcclusion(num_soilc, filter_soilc, &
                    cnstate_vars, dt)
-              !#py call t_stopf('PhosphorusOcclusion')
 
               if (.not. nu_com_phosphatase) then
-                 !#py call t_startf('PhosphorusBiochemMin')
                  call PhosphorusBiochemMin(bounds,num_soilc, filter_soilc, &
                       cnstate_vars, dt)
-                 !#py call t_stopf('PhosphorusBiochemMin')
               else
                  ! nu_com_phosphatase is true
                  !call t_startf('PhosphorusBiochemMin')
@@ -181,18 +168,12 @@ contains
         end if !(.not. (pf_cmode .and. pf_hmode))
         !-----------------------------------------------------------------------
 
-        !#py call t_startf('CNUpdate3')
-
         call NitrogenStateUpdate3(num_soilc, filter_soilc, num_soilp, filter_soilp,dt)
-        !#py call t_stopf('CNUpdate3')
+        
 
-
-        !#py call t_startf('PUpdate3')
         call PhosphorusStateUpdate3(bounds,num_soilc, filter_soilc, num_soilp, filter_soilp, &
              cnstate_vars, dt)
-        !#py call t_stopf('PUpdate3')
 
-        !#py call t_startf('CNPsum')
         call PrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp )
 
         call colcf_summary_for_ch4_acc(col_cf, bounds, num_soilc, filter_soilc)
@@ -233,7 +214,6 @@ contains
         call vegps_summary_acc(veg_ps,bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_ps)
         call colps_summary_acc(col_ps,bounds, num_soilc, filter_soilc)
 
-        !#py call t_stopf('CNPsum')
 
      end if !end of if not use_fates block
 
@@ -327,29 +307,19 @@ contains
        call vegpf_SetValues_acc(veg_pf,num_soilp, filter_soilp, 0._r8)
        call colpf_SetValues_acc(col_pf,num_soilc, filter_soilc, 0._r8)
 
-        !#py call t_stopf('CNZero')
-
        ! --------------------------------------------------
        ! Nitrogen Deposition, Fixation and Respiration, phosphorus dynamics
        ! --------------------------------------------------
 
-        !#py call t_startf('CNDeposition')
        call NitrogenDeposition(bounds, &
             atm2lnd_vars, dt)
-        !#py call t_stopf('CNDeposition')
 
        if (.not. nu_com_nfix) then
-           !#py call t_startf('CNFixation')
           call NitrogenFixation( num_soilc, filter_soilc, dayspyr)
-           !#py call t_stopf('CNFixation')
        else
           ! nu_com_nfix is true
-           !#py call t_startf('CNFixation')
           call NitrogenFixation_balance( num_soilc, filter_soilc,cnstate_vars)
-           !#py call t_stopf('CNFixation')
        end if
-
-        !#py call t_startf('MaintenanceResp')
        if (crop_prog) then
           call NitrogenFert(bounds, num_soilc,filter_soilc)
 
@@ -358,27 +328,20 @@ contains
        end if
        call MaintenanceResp(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
             canopystate_vars, soilstate_vars, photosyns_vars)
-        !#py call t_stopf('MaintenanceResp')
 
        if ( nu_com .ne. 'RD') then
           ! for P competition purpose, calculate P fluxes that will potentially increase solution P pool
           ! then competitors take up solution P
-           !#py call t_startf('PhosphorusWeathering')
           call PhosphorusWeathering(num_soilc, filter_soilc, &
                cnstate_vars, dt)
-           !#py call t_stopf('PhosphorusWeathering')
 
           if (.not. nu_com_phosphatase) then
-              !#py call t_startf('PhosphorusBiochemMin')
              call PhosphorusBiochemMin(bounds,num_soilc, filter_soilc, &
                   cnstate_vars, dt)
-              !#py call t_stopf('PhosphorusBiochemMin')
           else
              ! nu_com_phosphatase is true
-              !#py call t_startf('PhosphorusBiochemMin')
              call PhosphorusBiochemMin_balance(bounds,num_soilc, filter_soilc, &
                   cnstate_vars, dt)
-              !#py call t_stopf('PhosphorusBiochemMin')
           end if
        end if
 
@@ -386,10 +349,8 @@ contains
        ! Phosphorus Deposition ! X.SHI
        ! --------------------------------------------------
 
-        !#py call t_startf('PhosphorusDeposition')
        call PhosphorusDeposition(bounds, &
             atm2lnd_vars)
-        !#py call t_stopf('PhosphorusDeposition')
 
        !-------------------------------------------------------------------------------------------------
        ! plfotran: 'decomp_rate_constants' must be calculated before entering "clm_interface"
@@ -418,7 +379,6 @@ contains
                 photosyns_vars, crop_vars, canopystate_vars, cnstate_vars   , &
                 dt, year)
 
-        !#py call t_stopf('CNAllocation - phase-1')
 
     end if !end of if not use_fates block
 

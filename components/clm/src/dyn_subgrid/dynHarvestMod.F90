@@ -1,6 +1,6 @@
 module dynHarvestMod
 
- #include "shr_assert.h"
+#include "shr_assert.h"
 
   !---------------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -23,7 +23,7 @@ module dynHarvestMod
   use CNNitrogenStateType   , only : nitrogenstate_type
   use CNCarbonFluxType      , only : carbonflux_type
   use CNNitrogenFluxType    , only : nitrogenflux_type
-  use VegetationPropertiesType        , only : veg_vp
+   use VegetationPropertiesType        , only : veg_vp
   use clm_varcon            , only : grlnd
   use PhosphorusStateType   , only : phosphorusstate_type
   use PhosphorusFluxType    , only : phosphorusflux_type
@@ -50,129 +50,131 @@ module dynHarvestMod
   ! Note that, since we have our own dynHarvest_file object (distinct from dynpft_file),
   ! we could theoretically have a separate file providing harvest data from that providing
   ! the pftdyn data
-    type(dyn_file_type), target :: dynHarvest_file ! information for the file containing harvest data
+  type(dyn_file_type), target :: dynHarvest_file ! information for the file containing harvest data
 
   ! Define the underlying harvest variables
   integer, parameter :: num_harvest_vars = 5
-    character(len=64), parameter :: harvest_varnames(num_harvest_vars) = &
-         [character(len=64) :: 'HARVEST_VH1', 'HARVEST_VH2', 'HARVEST_SH1', 'HARVEST_SH2', 'HARVEST_SH3']
+  character(len=64), parameter :: harvest_varnames(num_harvest_vars) = &
+       [character(len=64) :: 'HARVEST_VH1', 'HARVEST_VH2', 'HARVEST_SH1', 'HARVEST_SH2', 'HARVEST_SH3']
 
-    type(dyn_var_time_uninterp_type) :: harvest_vars(num_harvest_vars)   ! value of each harvest variable
+  type(dyn_var_time_uninterp_type) :: harvest_vars(num_harvest_vars)   ! value of each harvest variable
 
   real(r8) , allocatable   :: harvest(:) ! harvest rates
   logical                  :: do_harvest ! whether we're in a period when we should do harvest
+
+  !$acc declare create(harvest)
   !$acc declare create(do_harvest)
-  !$acc declare create(harvest(:))
   !---------------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
-    subroutine dynHarvest_init(bounds, harvest_filename)
-      !
-      ! !DESCRIPTION:
-      ! Initialize data structures for harvest information.
-      ! This should be called once, during model initialization.
-      !
-      ! This also calls dynHarvest_interp for the initial time
-      !
-      ! !USES:
-      use clm_varctl            , only : use_cn
-      use dynVarTimeUninterpMod , only : dyn_var_time_uninterp_type
-      use dynTimeInfoMod        , only : YEAR_POSITION_START_OF_TIMESTEP
-      use dynTimeInfoMod        , only : YEAR_POSITION_END_OF_TIMESTEP
-      !
-      ! !ARGUMENTS:
-      type(bounds_type), intent(in) :: bounds           ! proc-level bounds
-      character(len=*) , intent(in) :: harvest_filename ! name of file containing harvest information
-      !
-      ! !LOCAL VARIABLES:
-      integer :: varnum     ! counter for harvest variables
-      integer :: num_points ! number of spatial points
-      integer :: ier        ! error code
+  subroutine dynHarvest_init(bounds, harvest_filename)
+    !
+    ! !DESCRIPTION:
+    ! Initialize data structures for harvest information.
+    ! This should be called once, during model initialization.
+    !
+    ! This also calls dynHarvest_interp for the initial time
+    !
+    ! !USES:
+    use clm_varctl            , only : use_cn
+    use dynVarTimeUninterpMod , only : dyn_var_time_uninterp_type
+    use dynTimeInfoMod        , only : YEAR_POSITION_START_OF_TIMESTEP
+    use dynTimeInfoMod        , only : YEAR_POSITION_END_OF_TIMESTEP
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds           ! proc-level bounds
+    character(len=*) , intent(in) :: harvest_filename ! name of file containing harvest information
+    !
+    ! !LOCAL VARIABLES:
+    integer :: varnum     ! counter for harvest variables
+    integer :: num_points ! number of spatial points
+    integer :: ier        ! error code
 
-      character(len=*), parameter :: subname = 'dynHarvest_init'
-      !-----------------------------------------------------------------------
+    character(len=*), parameter :: subname = 'dynHarvest_init'
+    !-----------------------------------------------------------------------
 
+    SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
 
-      allocate(harvest(bounds%begg:bounds%endg),stat=ier)
-      if (ier /= 0) then
-             call endrun(msg=' allocation error for harvest'//errMsg(__FILE__, __LINE__))
-      end if
+    allocate(harvest(bounds%begg:bounds%endg),stat=ier)
+    if (ier /= 0) then
+       call endrun(msg=' allocation error for harvest'//errMsg(__FILE__, __LINE__))
+    end if
 
-      !dynHarvest_file = dyn_file_type(harvest_filename, YEAR_POSITION_START_OF_TIMESTEP)
-      dynHarvest_file = dyn_file_type(harvest_filename, YEAR_POSITION_END_OF_TIMESTEP)
+    !dynHarvest_file = dyn_file_type(harvest_filename, YEAR_POSITION_START_OF_TIMESTEP)
+    dynHarvest_file = dyn_file_type(harvest_filename, YEAR_POSITION_END_OF_TIMESTEP)
 
-      ! Get initial harvest data
-      if (use_cn) then
-         num_points = (bounds%endg - bounds%begg + 1)
-         do varnum = 1, num_harvest_vars
-            harvest_vars(varnum) = dyn_var_time_uninterp_type( &
-                 dyn_file=dynHarvest_file, varname=harvest_varnames(varnum), &
-                 dim1name=grlnd, conversion_factor=1.0_r8, &
-                 do_check_sums_equal_1=.false., data_shape=[num_points])
-         end do
-         call dynHarvest_interp(bounds)
-      end if
+    ! Get initial harvest data
+    if (use_cn) then
+       num_points = (bounds%endg - bounds%begg + 1)
+       do varnum = 1, num_harvest_vars
+          harvest_vars(varnum) = dyn_var_time_uninterp_type( &
+               dyn_file=dynHarvest_file, varname=harvest_varnames(varnum), &
+               dim1name=grlnd, conversion_factor=1.0_r8, &
+               do_check_sums_equal_1=.false., data_shape=[num_points])
+       end do
+       call dynHarvest_interp(bounds)
+    end if
 
-    end subroutine dynHarvest_init
+  end subroutine dynHarvest_init
 
 
   !-----------------------------------------------------------------------
-   subroutine dynHarvest_interp(bounds)
-     !
-     ! !DESCRIPTION:
-     ! Get harvest data for model time, when needed.
-     !
-     ! Note that harvest data are stored as rates (not weights) and so time interpolation
-     ! is not necessary - the harvest rate is held constant through the year.  This is
-     ! consistent with the treatment of changing PFT weights, where interpolation of the
-     ! annual endpoint weights leads to a constant rate of change in PFT weight through the
-     ! year, with abrupt changes in the rate at annual boundaries.
-     !
-     ! !USES:
-     use clm_varctl     , only : use_cn
-     use dynTimeInfoMod , only : time_info_type
-     !
-     ! !ARGUMENTS:
-     type(bounds_type), intent(in) :: bounds  ! proc-level bounds
-     !
-     ! !LOCAL VARIABLES:
-     integer               :: varnum       ! counter for harvest variables
-     real(r8), allocatable :: this_data(:) ! data for a single harvest variable
+  subroutine dynHarvest_interp(bounds)
+    !
+    ! !DESCRIPTION:
+    ! Get harvest data for model time, when needed.
+    !
+    ! Note that harvest data are stored as rates (not weights) and so time interpolation
+    ! is not necessary - the harvest rate is held constant through the year.  This is
+    ! consistent with the treatment of changing PFT weights, where interpolation of the
+    ! annual endpoint weights leads to a constant rate of change in PFT weight through the
+    ! year, with abrupt changes in the rate at annual boundaries.
+    !
+    ! !USES:
+    use clm_varctl     , only : use_cn
+    use dynTimeInfoMod , only : time_info_type
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds  ! proc-level bounds
+    !
+    ! !LOCAL VARIABLES:
+    integer               :: varnum       ! counter for harvest variables
+    real(r8), allocatable :: this_data(:) ! data for a single harvest variable
 
-     character(len=*), parameter :: subname = 'dynHarvest_interp'
-     !-----------------------------------------------------------------------
+    character(len=*), parameter :: subname = 'dynHarvest_interp'
+    !-----------------------------------------------------------------------
 
+    SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
 
-     ! As a workaround for an internal compiler error with ifort 13.1.2 on goldbach, call
-     ! the specific name of this procedure rather than using its generic name
-     call dynHarvest_file%time_info%set_current_year_get_year()
+    ! As a workaround for an internal compiler error with ifort 13.1.2 on goldbach, call
+    ! the specific name of this procedure rather than using its generic name
+    call dynHarvest_file%time_info%set_current_year_get_year()
 
-     ! Get total harvest for this time step
-     if (use_cn) then
-        harvest(bounds%begg:bounds%endg) = 0._r8
+    ! Get total harvest for this time step
+    if (use_cn) then
+       harvest(bounds%begg:bounds%endg) = 0._r8
 
-        if (dynHarvest_file%time_info%is_before_time_series()) then
-           ! Turn off harvest before the start of the harvest time series
-           do_harvest = .false.
-        else
-           ! Note that do_harvest stays true even past the end of the time series. This
-           ! means that harvest rates will be maintained at the rate given in the last
-           ! year of the file for all years past the end of this specified time series.
-           do_harvest = .true.
-           allocate(this_data(bounds%begg:bounds%endg))
-           do varnum = 1, num_harvest_vars
-              call harvest_vars(varnum)%get_current_data(this_data)
-              harvest(bounds%begg:bounds%endg) = harvest(bounds%begg:bounds%endg) + &
-                                                 this_data(bounds%begg:bounds%endg)
-           end do
-           deallocate(this_data)
-        end if
-     end if
+       if (dynHarvest_file%time_info%is_before_time_series()) then
+          ! Turn off harvest before the start of the harvest time series
+          do_harvest = .false.
+       else
+          ! Note that do_harvest stays true even past the end of the time series. This
+          ! means that harvest rates will be maintained at the rate given in the last
+          ! year of the file for all years past the end of this specified time series.
+          do_harvest = .true.
+          allocate(this_data(bounds%begg:bounds%endg))
+          do varnum = 1, num_harvest_vars
+             call harvest_vars(varnum)%get_current_data(this_data)
+             harvest(bounds%begg:bounds%endg) = harvest(bounds%begg:bounds%endg) + &
+                                                this_data(bounds%begg:bounds%endg)
+          end do
+          deallocate(this_data)
+       end if
+    end if
 
-   end subroutine dynHarvest_interp
-
+  end subroutine dynHarvest_interp
 
   !-----------------------------------------------------------------------
   subroutine CNHarvest (num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -195,13 +197,6 @@ contains
     type(cnstate_type)       , intent(in)    :: cnstate_vars
     real(r8)   ,intent(in)   :: days_per_year             ! days per year
 
-    !type(carbonstate_type)   , intent(in)    :: carbonstate_vars
-    !type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
-    !type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    !type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-
-    !type(phosphorusstate_type) , intent(in)    :: phosphorusstate_vars
-    !type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
     !
     ! !LOCAL VARIABLES:
     integer :: p                         ! patch index
@@ -492,13 +487,7 @@ contains
    integer                   , intent(in)    :: num_soilc       ! number of soil columns in filter
    integer                   , intent(in)    :: filter_soilc(:) ! soil column filter
    type(cnstate_type)        , intent(in)    :: cnstate_vars
-   !type(carbonstate_type)    , intent(in)    :: carbonstate_vars
-   !type(nitrogenstate_type)  , intent(in)    :: nitrogenstate_vars
-   !type(carbonflux_type)     , intent(inout) :: carbonflux_vars
-   !type(nitrogenflux_type)   , intent(inout) :: nitrogenflux_vars
-   !type(phosphorusstate_type), intent(in)    :: phosphorusstate_vars
-   !type(phosphorusflux_type) , intent(inout) :: phosphorusflux_vars
-   !
+      !
    ! !LOCAL VARIABLES:
    integer :: fc,c,pi,p,j               ! indices
    !-----------------------------------------------------------------------

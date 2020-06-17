@@ -85,13 +85,21 @@ module  PhotosynthesisMod
   integer, parameter, private :: stomatalcond_mtd_medlyn2011 = 2   ! Medlyn 2011 method for photosynthesis
   ! !PUBLIC VARIABLES:
 
+  !$acc declare copyin(sun )
+  !$acc declare copyin(sha )
+  !$acc declare copyin(xyl )
+  !$acc declare copyin(root)
+  !$acc declare copyin(veg )
+  !$acc declare copyin(soil)
+  !$acc declare copyin(stomatalcond_mtd_bb1987)
+  !$acc declare copyin(stomatalcond_mtd_medlyn2011)
   type :: photo_params_type
-     real(r8), allocatable, public  :: krmax              (:)
-     real(r8), allocatable, private :: kmax               (:,:)
-     real(r8), allocatable, private :: psi50              (:,:)
-     real(r8), allocatable, private :: ck                 (:,:)
-     real(r8), allocatable, public  :: psi_soil_ref       (:)
-     real(r8), allocatable, private :: lmr_intercept_atkin(:)
+     real(r8),pointer , public  :: krmax              (:)   => null()  
+     real(r8),pointer , private :: kmax               (:,:) => null()
+     real(r8),pointer , private :: psi50              (:,:) => null()
+     real(r8),pointer , private :: ck                 (:,:) => null()
+     real(r8),pointer , public  :: psi_soil_ref       (:)   => null() 
+     real(r8),pointer , private :: lmr_intercept_atkin(:)   => null() 
   contains
      procedure, private :: allocParams
      procedure, public :: readParams
@@ -152,12 +160,10 @@ contains
     real(r8)           :: temp2d(0:mxpft,nvegwcs) ! temporary to read in parameter
     character(len=100) :: tString ! temp. var for reading
     !-----------------------------------------------------------------------
-!#py
     ! read in parameters
-!#py
-!#py
     call params_inst%allocParams()
-!#py
+    
+    
     tString = "krmax"
     call ncd_io(varname=trim(tString),data=temp1d, flag='read', ncid=ncid,readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
@@ -182,8 +188,16 @@ contains
     call ncd_io(varname=trim(tString),data=temp2d, flag='read', ncid=ncid,readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     params_inst%ck=temp2d
-!#py
-  end subroutine readParams
+    
+    !$acc update device(            &
+    !$acc params_inst%krmax       , &
+    !$acc params_inst%kmax        , &
+    !$acc params_inst%psi50       , &
+    !$acc params_inst%ck          , &
+    !$acc params_inst%psi_soil_ref, &
+    !$acc params_inst%lmr_intercept_atkin ) 
+
+ end subroutine readParams
 
 
 
@@ -219,14 +233,11 @@ contains
     real(r8)               , intent(in)    :: btran( bounds%begp: )          ! transpiration wetness factor (0 to 1) [pft]
     real(r8)               , intent(in)    :: dayl_factor( bounds%begp: )    ! scalar (0-1) for daylength
     type(atm2lnd_type)     , intent(inout)    :: atm2lnd_vars
-    !type(temperature_type) , intent(inout)    :: temperature_vars
     type(surfalb_type)     , intent(inout)    :: surfalb_vars
     type(solarabs_type)    , intent(inout)    :: solarabs_vars
     type(canopystate_type) , intent(inout)    :: canopystate_vars
     type(photosyns_type)   , intent(inout)    :: photosyns_vars
-    !type(nitrogenstate_type),intent(inout)    :: nitrogenstate_vars
-    !type(phosphorusstate_type), intent(inout) :: phosphorusstate_vars
-    integer       , intent(in)    :: phase                          ! 'sun' or 'sha'
+    integer,value       , intent(in)    :: phase                          ! 'sun' or 'sha'
 
     !
     ! !LOCAL VARIABLES:
@@ -289,9 +300,6 @@ contains
     real(r8) :: gs                ! leaf stomatal conductance (m/s)
     real(r8) :: hs                ! fractional humidity at leaf surface (dimensionless)
     real(r8) :: sco               ! relative specificity of rubisco
-    real(r8) :: ft                ! photosynthesis temperature response (statement function)
-    real(r8) :: fth               ! photosynthesis temperature inhibition (statement function)
-    real(r8) :: fth25             ! ccaling factor for photosynthesis temperature inhibition (statement function)
     real(r8) :: tl                ! leaf temperature in photosynthesis temperature function (K)
     real(r8) :: ha                ! activation energy in photosynthesis temperature function (J/mol)
     real(r8) :: hd                ! deactivation energy in photosynthesis temperature function (J/mol)
@@ -344,11 +352,9 @@ contains
     real(r8) :: lpc(bounds%begp:bounds%endp)   ! leaf P concentration (gP leaf/m^2)
     real(r8) :: sum_nscaler
     real(r8) :: total_lai
+    integer  :: rad_layers_patch
     !------------------------------------------------------------------------------
     ! Temperature and soil water response functions
-    ft(tl,ha) = exp( ha / (rgas*1.e-3_r8*(tfrz+25._r8)) * (1._r8 - (tfrz+25._r8)/tl) )
-    fth(tl,hd,se,scaleFactor) = scaleFactor / ( 1._r8 + exp( (-hd+se*tl) / (rgas*1.e-3_r8*tl) ) )
-    fth25(hd,se) = 1._r8 + exp( (-hd+se*(tfrz+25._r8)) / (rgas*1.e-3_r8*(tfrz+25._r8)) )
 
     associate(                                                       &
          c3psn         => veg_vp%c3psn                         , & ! Input:  [real(r8) (:)   ]  photosynthetic pathway: 0. = c4, 1. = c3
@@ -568,7 +574,6 @@ contains
                sum_nscaler = 0.0_r8
                laican      = 0.0_r8
                total_lai   = 0.0_r8
-
                do iv = 1, nrad(p)
                   if (iv == 1) then
                      laican = 0.5_r8 * tlai_z(p,iv)
@@ -689,7 +694,6 @@ contains
 
             lmr25top = 2.525e-6_r8 * (ParamsShareInst%Q10_mr ** ((25._r8 - 20._r8)/10._r8))
             lmr25top = lmr25top * lnc(p) / 12.e-06_r8
-
          else
             ! Leaf maintenance respiration in proportion to vcmax25top
 
@@ -702,10 +706,10 @@ contains
 
          ! Loop through canopy layers (above snow). Respiration needs to be
          ! calculated every timestep. Others are calculated only if daytime
-
          laican = 0._r8
-         do iv = 1, nrad(p)
-
+         rad_layers_patch = nrad(p)
+         !do iv = 1, rad_layers_patch
+         iv =1
             ! Cumulative lai at middle of layer
 
             if (iv == 1) then
@@ -713,7 +717,6 @@ contains
             else
                laican = laican + 0.5_r8 * (tlai_z(p,iv-1)+tlai_z(p,iv))
             end if
-
             ! Scale for leaf nitrogen profile. If multi-layer code, use explicit
             ! profile. If sun/shade big leaf code, use canopy integrated factor.
 
@@ -778,8 +781,7 @@ contains
 
             vcmax_z(p,iv) = vcmax_z(p,iv) * btran(p)
             lmr_z(p,iv) = lmr_z(p,iv) * btran(p)
-
-         end do       ! canopy layer loop
+         !!end do       ! canopy layer loop
       end do          ! patch loop
 
       !==============================================================================!
@@ -800,8 +802,8 @@ contains
          gb_mol(p) = gb * cf
 
          ! Loop through canopy layers (above snow). Only do calculations if daytime
-
-         do iv = 1, nrad(p)
+        iv =1
+        ! do iv = 1, nrad(p)
 
             if (par_z(p,iv) <= 0._r8) then           ! night time
 
@@ -908,7 +910,7 @@ contains
                end if
 
             end if    ! night or day if branch
-         end do       ! canopy layer loop
+         !end do       ! canopy layer loop
       end do          ! patch loop
 
       !==============================================================================!
@@ -929,7 +931,8 @@ contains
          lmrcan = 0._r8
          gscan = 0._r8
          laican = 0._r8
-         do iv = 1, nrad(p)
+         iv =1
+         !do iv = 1, nrad(p)
             psncan = psncan + psn_z(p,iv) * lai_z(p,iv)
             psncan_wc = psncan_wc + psn_wc_z(p,iv) * lai_z(p,iv)
             psncan_wj = psncan_wj + psn_wj_z(p,iv) * lai_z(p,iv)
@@ -937,7 +940,7 @@ contains
             lmrcan = lmrcan + lmr_z(p,iv) * lai_z(p,iv)
             gscan = gscan + lai_z(p,iv) / (rb(p)+rs_z(p,iv))
             laican = laican + lai_z(p,iv)
-         end do
+         !end do
          if (laican > 0._r8) then
             psn(p) = psncan / laican
             psn_wc(p) = psncan_wc / laican

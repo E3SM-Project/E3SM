@@ -50,7 +50,7 @@ module accumulMod
      character(len=128) :: desc     !field description
      character(len=  8) :: units    !field units
      character(len=  8) :: acctype  !accumulation type: ["timeavg","runmean","runaccum"]
-     character(len=  8) :: type1d   !subgrid type: ["gridcell","landunit","column" or "pft"]
+     character(len=  8) :: type1d   !subgrid type: ["gridcell","topounit","landunit","column" or "pft"]
      character(len=  8) :: type2d   !type2d ('','levsoi','numrad',..etc. )
      integer            :: beg1d    !subgrid type beginning index
      integer            :: end1d    !subgrid type ending index
@@ -64,12 +64,9 @@ module accumulMod
   real(r8), parameter, public :: accumResetVal = -99999._r8 ! used to do an annual reset ( put in for bug 1858)
 
   integer, parameter :: max_accum = 100    !maximum number of accumulated fields
-  type (accum_field) :: accum(max_accum)   !array accumulated fields
-  integer :: naccflds = 0                  !accumulator field counter
-
-  integer :: iflag_interp = 1
-  integer :: iflag_copy   = 2
-  integer :: iflag_skip   = 3
+  type (accum_field),public :: accum(max_accum)   !array accumulated fields
+  integer,public :: naccflds = 0                  !accumulator field counter
+  !$acc declare copyin(naccflds)
   !------------------------------------------------------------------------
 
 contains
@@ -99,7 +96,7 @@ contains
     character(len=*), intent(in)           :: desc         !field description
     character(len=*), intent(in)           :: accum_type   !field type: tavg, runm, runa, ins
     integer , intent(in)                   :: accum_period !field accumulation period
-    character(len=*), intent(in)           :: subgrid_type !["gridcell","landunit","column" or "pft"]
+    character(len=*), intent(in)           :: subgrid_type !["gridcell","topounit","landunit","column" or "pft"]
     integer , intent(in)                   :: numlev       !number of vertical levels
     real(r8), intent(in)                   :: init_value   !field initial or reset value
     character(len=*), intent(in), optional :: type2d       !level type (optional) - needed if numlev > 1
@@ -115,7 +112,7 @@ contains
     integer :: begg, endg   ! per-proc gridcell ending gridcell indices
     integer :: begCohort, endCohort   ! per-proc beg end cohort indices
     integer :: numg         ! total number of gridcells across all processors
-    integer :: numt         ! total number of topographic units across all processors
+    integer :: numt         ! total number of topographic units all processors
     integer :: numl         ! total number of landunits across all processors
     integer :: numc         ! total number of columns across all processors
     integer :: nump         ! total number of pfts across all processors
@@ -157,6 +154,10 @@ contains
        beg1d = begg
        end1d = endg
        num1d = numg
+    case ('topounit')
+       beg1d = begt
+       end1d = endt
+       num1d = numt
     case ('landunit')
        beg1d = begl
        end1d = endl
@@ -575,10 +576,9 @@ contains
     ! Read/write accumulation restart data
     !
     ! !USES:
-    use clm_time_manager, only : is_restart
     use clm_varcon      , only : ispval
-    use ncdio_pio
-    use pio
+    use restUtilMod     , only : restartvar
+    use ncdio_pio       , only : file_desc_t, ncd_double, ncd_int
     !
     ! !ARGUMENTS:
     implicit none
@@ -586,12 +586,8 @@ contains
     character(len=*) , intent(in) :: flag   !'define','read', or 'write'
     !
     ! !LOCAL VARIABLES:
-    integer :: nf,k,j                         ! indices
-    integer :: beg1d, end1d                   ! buffer bounds
-    integer :: ier                            ! error status
+    integer :: nf                             ! indices
     logical :: readvar                        ! determine if variable is on initial file
-    real(r8), pointer  :: rbuf1d(:)           ! temporary 1d buffer
-    type(var_desc_t)   :: vardesc             ! local vardesc
     character(len=128) :: varname             ! temporary
     character(len= 32) :: subname='AccumRest' ! subroutine name
     !------------------------------------------------------------------------
@@ -602,54 +598,26 @@ contains
        ! accum(nf)%val is always 2d
 
        varname = trim(accum(nf)%name) // '_VALUE'
-       if (flag == 'define') then
-          if (accum(nf)%numlev == 1) then
-             call ncd_defvar(ncid=ncid, varname=varname, xtype=ncd_double,  &
-                  dim1name=accum(nf)%type1d, &
-                  long_name=accum(nf)%desc, units=accum(nf)%units) 
-             ier = PIO_inq_varid(ncid, trim(varname), vardesc)
-             ier = PIO_put_att(ncid, vardesc%varid, 'interpinic_flag', iflag_interp)
-          else
-             call ncd_defvar(ncid=ncid, varname=varname, xtype=ncd_double,  &
-                  dim1name=accum(nf)%type1d, dim2name=accum(nf)%type2d, &
-                  long_name=accum(nf)%desc, units=accum(nf)%units) 
-          end if
-       else if (flag == 'read' .or. flag == 'write') then
-          if (accum(nf)%numlev == 1) then
-             beg1d = accum(nf)%beg1d
-             end1d = accum(nf)%end1d
-             allocate(rbuf1d(beg1d:end1d))
-             if (flag == 'write') then
-                rbuf1d(beg1d:end1d) = accum(nf)%val(beg1d:end1d,1) 
-             end if
-             call ncd_io(varname=varname, data=rbuf1d, &
-                  dim1name=accum(nf)%type1d, ncid=ncid, flag=flag, readvar=readvar)
-             if (flag == 'read' .and. readvar) then
-                accum(nf)%val(beg1d:end1d,1) = rbuf1d(beg1d:end1d)
-             end if
-             deallocate(rbuf1d)
-          else
-             call ncd_io(varname=varname, data=accum(nf)%val, &
-                  dim1name=accum(nf)%type1d, ncid=ncid, flag=flag, readvar=readvar)
-          end if
-          if (flag=='read' .and. .not. readvar) then
-             if (is_restart()) call shr_sys_abort()
-          end if
+       if (accum(nf)%numlev == 1) then
+          call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double, &
+               dim1name=accum(nf)%type1d, &
+               long_name=accum(nf)%desc, units=accum(nf)%units, &
+               interpinic_flag='interp', &
+               data=accum(nf)%val, readvar=readvar)
+       else
+          call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_double, &
+               dim1name=accum(nf)%type1d, dim2name=accum(nf)%type2d, &
+               long_name=accum(nf)%desc, units=accum(nf)%units, &
+               interpinic_flag='interp', &
+               data=accum(nf)%val, readvar=readvar)
        end if
 
        varname = trim(accum(nf)%name) // '_PERIOD'
-       if (flag == 'define') then
-          call ncd_defvar(ncid=ncid, varname=varname, xtype=ncd_int,  &
-               long_name='', units='time steps', imissing_value=ispval, &
-               ifill_value=huge(1))
-          ier = PIO_inq_varid(ncid, trim(varname), vardesc)
-          ier = PIO_put_att(ncid, vardesc%varid, 'interpinic_flag', iflag_copy)
-       else if (flag == 'read' .or. flag == 'write') then
-          call ncd_io(varname=varname, data=accum(nf)%period, ncid=ncid, flag=flag, readvar=readvar)
-          if (flag=='read' .and. .not. readvar) then
-             if (is_restart()) call shr_sys_abort()
-          end if
-       end if
+       call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_int, &
+            long_name='', units='time steps', &
+            imissing_value=ispval, ifill_value=huge(1), &
+            interpinic_flag='copy', &
+            data=accum(nf)%period, readvar=readvar)
 
     end do
 

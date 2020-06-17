@@ -171,7 +171,6 @@ contains
       ! Determine step size
 
       !#py dtime = get_step_size()
-
       ! Determine initial snow/no-snow filters (will be modified possibly by
       ! routines CombineSnowLayers and DivideSnowLayers below
 
@@ -547,7 +546,6 @@ contains
 
          h2osno_top(c)      = 0._r8
          snw_rds(c,:)       = 0._r8
-
          ! top-layer diagnostics (spval is not averaged when computing history fields)
          snot_top(c)        = spval
          dTdz_top(c)        = spval

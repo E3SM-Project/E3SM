@@ -70,7 +70,7 @@ module ColumnType
      real(r8), pointer :: lakedepth    (:)   => null() ! variable lake depth (m)
 
      ! other column characteristics
-     logical , pointer :: hydrologically_active(:)   ! true if this column is a hydrologically active type
+     logical , pointer :: hydrologically_active(:) => null()  ! true if this column is a hydrologically active type
 
    contains
 

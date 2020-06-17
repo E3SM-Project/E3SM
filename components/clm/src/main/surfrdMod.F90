@@ -140,6 +140,7 @@ contains
     ! !USES:
     use clm_varcon, only : spval, re
     use domainMod , only : domain_type, domain_init, domain_clean, lon1d, lat1d
+    use domainMod , only : domain_check
     use fileutils , only : getfil
     use clm_varctl, only : use_pflotran
     !
@@ -175,7 +176,6 @@ contains
     ! pflotran:end-----------------------------
     character(len=32) :: subname = 'surfrd_get_grid'     ! subroutine name
 !-----------------------------------------------------------------------
-
     if (masterproc) then
        if (filename == ' ') then
           write(iulog,*) trim(subname),' ERROR: filename must be specified '
@@ -191,6 +191,10 @@ contains
     
     ! pflotran:beg-----------------------------------------------
     call ncd_inqdlen(ncid, dimid, nv, 'nv')
+    if(not(associated(ldomain%nv))) then
+         allocate(ldomain%nv)
+    end if 
+
     if (nv>0) then
        ldomain%nv = nv
     else
@@ -200,7 +204,6 @@ contains
 
     ! Determine isgrid2d flag for domain
     call domain_init(ldomain, isgrid2d=isgrid2d, ni=ni, nj=nj, nbeg=begg, nend=endg)
-        
     ! Determine type of file - old style grid file or new style domain file
     call check_var(ncid=ncid, varname='LONGXY', vardesc=vardesc, readvar=readvar) 
     if (readvar) istype_domain = .false.
@@ -621,9 +624,10 @@ contains
     end if
 
     call ncd_inqfdims(ncid, isgrid2d, ni, nj, ns)
+    if(not(associated(surfdata_domain%nv) ) ) allocate(surfdata_domain%nv)
+
     surfdata_domain%nv = 0   ! must be initialized to 0 here prior to call 'domain_init'
     call domain_init(surfdata_domain, isgrid2d, ni, nj, begg, endg, clmlevel=grlnd)
-
     call ncd_io(ncid=ncid, varname=lon_var, flag='read', data=surfdata_domain%lonc, &
          dim1name=grlnd, readvar=readvar)
     if (.not. readvar) call endrun( msg=' ERROR: lon var NOT on surface dataset'//errMsg(__FILE__, __LINE__))

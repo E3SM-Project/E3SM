@@ -80,6 +80,7 @@ module clm_instMod
 
   !
   implicit none
+  save
 
  public   ! By default everything is public
   !
@@ -133,7 +134,6 @@ module clm_instMod
   public :: clm_inst_biogeophys
   public :: alm_fates
 
-!$acc declare create(photosyns_vars)
 contains
 
 
@@ -183,36 +183,31 @@ contains
                c12_carbonstate_vars=col_cs)
           call c14_veg_cs%Init(begp, endp, carbon_type='c14', ratio=c14ratio)
        end if
-       print *, " made it 1"
+
        ! Note - always initialize the memory for the c13_carbonflux_vars and
        ! c14_carbonflux_vars data structure so that they can be used in
        ! associate statements (nag compiler complains otherwise)
 
        call grc_cf%Init(begg, endg, carbon_type='c12')
        call col_cf%Init(begc, endc, carbon_type='c12')
-       print *, "did col_cf"
        call veg_cf%Init(begp, endp, carbon_type='c12')
-       print *, "did veg_cf"
        if (use_c13) then
           call c13_grc_cf%Init(begg, endg, carbon_type='c13')
           call c13_col_cf%Init(begc, endc, carbon_type='c13')
           call c13_veg_cf%Init(begp, endp, carbon_type='c13')
-       print *, "done with cf13"
        end if
        if (use_c14) then
           call c14_grc_cf%Init(begg, endg, carbon_type='c14')
           call c14_col_cf%Init(begc, endc, carbon_type='c14')
           call c14_veg_cf%Init(begp, endp, carbon_type='c14')
-       print *, "done with cf14"
        end if
     endif
 
-       print *, " made it 2"
     if (use_cn) then
        call grc_ns%Init(begg, endg)
        call col_ns%Init(begc, endc, col_cs)
        call veg_ns%Init(begp, endp, veg_cs)
-
+       
        call grc_nf%Init(begg, endg)
        call col_nf%Init(begc, endc)
        call veg_nf%Init(begp, endp)
@@ -231,12 +226,12 @@ contains
          call PlantMicKinetics_vars%Init(bounds_proc)
        endif
     end if
-       
+    
     ! Initialize the Functionaly Assembled Terrestrial Ecosystem Simulator (FATES)
     if (use_fates) then
        call alm_fates%Init(bounds_proc)
     end if
-
+       
     call hist_printflds()
 
   end subroutine clm_inst_biogeochem
@@ -282,6 +277,7 @@ contains
     begp = bounds_proc%begp; endp = bounds_proc%endp
     begc = bounds_proc%begc; endc = bounds_proc%endc
     begl = bounds_proc%begl; endl = bounds_proc%endl
+
     allocate (h2osno_col(begc:endc))
     allocate (snow_depth_col(begc:endc))
 
@@ -360,7 +356,7 @@ contains
     call lun_es%Init(bounds_proc%begl_all, bounds_proc%endl_all)
     call col_es%Init(bounds_proc%begc_all, bounds_proc%endc_all)
     call veg_es%Init(bounds_proc%begp_all, bounds_proc%endp_all)
-
+    
     call canopystate_vars%init(bounds_proc)
 
     call soilstate_vars%init(bounds_proc)
@@ -384,6 +380,7 @@ contains
     call grc_wf%Init(bounds_proc%begg_all, bounds_proc%endg_all, bounds_proc)
     call col_wf%Init(bounds_proc%begc_all, bounds_proc%endc_all)
     call veg_wf%Init(bounds_proc%begp_all, bounds_proc%endp_all)
+
     call chemstate_vars%Init(bounds_proc)
     ! WJS (6-24-14): Without the following write statement, the assertion in
     ! energyflux_vars%init fails with pgi 13.9 on yellowstone. So for now, I'm leaving
@@ -415,16 +412,20 @@ contains
     call dust_vars%Init(bounds_proc)
 
     call glc_diagnostics_vars%Init(bounds_proc)
+
     ! Once namelist options are added to control the soil water retention curve method,
     ! we'll need to either pass the namelist file as an argument to this routine, or pass
     ! the namelist value itself (if the namelist is read elsewhere).
     allocate(soil_water_retention_curve, &
          source=create_soil_water_retention_curve())
 
+
     ! Note - always initialize the memory for ch4_vars
     call ch4_vars%Init(bounds_proc, soilstate_vars%cellorg_col(begc:endc, 1:))
+
     ! Note - always initialize the memory for cnstate_vars (used in biogeophys/)
     call cnstate_vars%Init(bounds_proc)
+
     call sedflux_vars%Init(bounds_proc)
     ! --------------------------------------------------------------
     ! Initialise the BeTR
@@ -436,5 +437,5 @@ contains
     end subroutine clm_inst_biogeophys
 
 
-
 end module clm_instMod
+

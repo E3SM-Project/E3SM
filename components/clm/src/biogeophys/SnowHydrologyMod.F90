@@ -14,17 +14,15 @@ module SnowHydrologyMod
   !
   ! !USES:
   use shr_kind_mod    , only : r8 => shr_kind_r8
-  !#py !#py use shr_log_mod     , only : errMsg => shr_log_errMsg
+  use shr_log_mod     , only : errMsg => shr_log_errMsg
   use decompMod       , only : bounds_type
-  !#py use abortutils      , only : endrun
+  use abortutils      , only : endrun
   use clm_varpar      , only : nlevsno
   use clm_varctl      , only : iulog
   use clm_varcon      , only : namec
   use atm2lndType     , only : atm2lnd_type
   use AerosolType     , only : aerosol_type
-  use TemperatureType , only : temperature_type
   use WaterfluxType   , only : waterflux_type
-  use WaterstateType  , only : waterstate_type
   use LandunitType    , only : lun_pp
   use ColumnType      , only : col_pp
   use ColumnDataType  , only : col_es, col_ef, col_ws, col_wf
@@ -65,6 +63,16 @@ module SnowHydrologyMod
   real(r8), public, parameter :: scvng_fct_mlt_dst2  = 0.02_r8 ! scavenging factor for dust species 2 inclusion in meltwater  [frc]
   real(r8), public, parameter :: scvng_fct_mlt_dst3  = 0.01_r8 ! scavenging factor for dust species 3 inclusion in meltwater  [frc]
   real(r8), public, parameter :: scvng_fct_mlt_dst4  = 0.01_r8 ! scavenging factor for dust species 4 inclusion in meltwater  [frc]
+
+  !$acc declare copyin(scvng_fct_mlt_bcphi)
+  !$acc declare copyin(scvng_fct_mlt_bcpho)
+  !$acc declare copyin(scvng_fct_mlt_ocphi)
+  !$acc declare copyin(scvng_fct_mlt_ocpho)
+  !$acc declare copyin(scvng_fct_mlt_dst1 )
+  !$acc declare copyin(scvng_fct_mlt_dst2 )
+  !$acc declare copyin(scvng_fct_mlt_dst3 )
+  !$acc declare copyin(scvng_fct_mlt_dst4 )
+
   !-----------------------------------------------------------------------
   !H. Wang ++
   !  "Rfast" parameters used by Flanner et al (2012, ACP)
@@ -112,8 +120,6 @@ contains
     integer               , intent(in)    :: num_nosnowc       ! number of non-snow points in column filter
     integer               , intent(in)    :: filter_nosnowc(:) ! column filter for non-snow points
     type(atm2lnd_type)    , intent(in)    :: atm2lnd_vars
-    !type(waterflux_type)  , intent(inout) :: waterflux_vars
-    !type(waterstate_type) , intent(inout) :: waterstate_vars
     type(aerosol_type)    , intent(inout) :: aerosol_vars
     real(r8), intent(in)  :: dtime
     !
@@ -695,9 +701,6 @@ contains
      integer                , intent(inout) :: num_snowc       ! number of column snow points in column filter
      integer                , intent(inout) :: filter_snowc(:) ! column filter for snow points
      type(aerosol_type)     , intent(inout) :: aerosol_vars
-     !type(temperature_type) , intent(inout) :: temperature_vars
-     !type(waterflux_type)   , intent(inout) :: waterflux_vars
-     !type(waterstate_type)  , intent(inout) :: waterstate_vars
      real(r8), intent(in)  :: dtime
      !
      ! !LOCAL VARIABLES:
@@ -854,7 +857,6 @@ contains
                       mss_dst3(c,i)    = mss_dst3(c,i-1)
                       mss_dst4(c,i)    = mss_dst4(c,i-1)
                       snw_rds(c,i)     = snw_rds(c,i-1)
-
                       dz(c,i)         = dz(c,i-1)
                    end do
                 end if
@@ -979,6 +981,7 @@ contains
                    mss_dst4(c,j)=mss_dst4(c,j)+mss_dst4(c,l)
 
                    ! mass-weighted combination of effective grain size:
+
                    snw_rds(c,j) = (snw_rds(c,j)*(h2osoi_liq(c,j)+h2osoi_ice(c,j)) + &
                         snw_rds(c,l)*(h2osoi_liq(c,l)+h2osoi_ice(c,l))) / &
                         (h2osoi_liq(c,j)+h2osoi_ice(c,j)+h2osoi_liq(c,l)+h2osoi_ice(c,l))
@@ -1209,7 +1212,6 @@ contains
                 mdst4(c,1) = mdst4(c,1)/2._r8
                 mdst4(c,2) = mdst4(c,1)
                 rds(c,2) = rds(c,1)
-
              end if
           end if
 
@@ -1274,15 +1276,14 @@ contains
              !mgf++ bugfix
              rds(c,2) = (rds(c,2)*(swliq(c,2)+swice(c,2)) + rds(c,1)*(zwliq+zwice))/(swliq(c,2)+swice(c,2)+zwliq+zwice)
                if ((rds(c,2) < 30.) .or. (rds(c,2) > 1500.)) then
-                  !#py write (iulog,*) "2. SNICAR ERROR: snow grain radius of",rds(c,2),rds(c,1)
-                  !#py write (iulog,*) "swliq, swice, zwliq, zwice", swliq(c,2), swice(c,2),zwliq, zwice
-                  !#py write (iulog,*) "layers ", msno
+                  print *, "2. SNICAR ERROR: snow grain radius of",rds(c,2),rds(c,1)
+                  print *,  "swliq, swice, zwliq, zwice", swliq(c,2), swice(c,2),zwliq, zwice
+                  print *,  "layers ", msno
                endif
              !mgf--
 #else
              rds(c,2) = rds(c,1) ! (combo)
 #endif
-
                 call Combo (dzsno(c,2), swliq(c,2), swice(c,2), tsno(c,2), drr, &
                      zwliq, zwice, tsno(c,1))
 
@@ -1661,7 +1662,6 @@ contains
                 mss_dst3(c,j)    = mdst3(c,j-snl(c))
                 mss_dst4(c,j)    = mdst4(c,j-snl(c))
                 snw_rds(c,j)     = rds(c,j-snl(c))
-
              end if
           end do
        end do

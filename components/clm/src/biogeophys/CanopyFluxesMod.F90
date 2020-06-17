@@ -446,11 +446,9 @@ contains
       end if
       ! Determine step size
 
-      !#py dtime = get_step_size()
       irrig_nsteps_per_day = ((irrig_length + (dtime - 1))/dtime)  ! round up
       ! First - set the following values over points where frac vegetation covered by snow is zero
       ! (e.g. btran, t_veg, rootr, rresis)
-
       do fp = 1,num_nolakeurbanp
          p = filter_nolakeurbanp(fp)
          c = veg_pp%column(p)
@@ -468,7 +466,6 @@ contains
             end do
          end if
       end do
-
       ! -----------------------------------------------------------------
       ! Time step initialization of photosynthesis variables
       ! -----------------------------------------------------------------
@@ -506,6 +503,7 @@ contains
          btran(p)  = btran0
          btran2(p)  = btran0
       end do
+
       ! calculate daylength control for Vcmax
       do f = 1, fn
          p=filterp(f)
@@ -526,24 +524,25 @@ contains
       call calc_effective_soilporosity(bounds,                          &
            ubj = nlevgrnd,                                              &
            numf = fn,                                                   &
-           filter = filterc_tmp,                                  &
-           watsat = watsat,        &
-           h2osoi_ice = h2osoi_ice, &
+           filter = filterc_tmp(1:fn),                                  &
+           watsat = watsat(bounds%begc:bounds%endc, 1:nlevgrnd),        &
+           h2osoi_ice = h2osoi_ice(bounds%begc:bounds%endc,1:nlevgrnd), &
            denice = denice,                                             &
-           eff_por=eff_porosity )
+           eff_por=eff_porosity(bounds%begc:bounds%endc, 1:nlevgrnd) )
 
       !compute volumetric liquid water content
       jtop(bounds%begc:bounds%endc) = 1
+
       call calc_volumetric_h2oliq(bounds,                                    &
-           jtop = jtop,                             &
+           jtop = jtop(bounds%begc:bounds%endc),                             &
            lbj = 1,                                                          &
            ubj = nlevgrnd,                                                   &
            numf = fn,                                                        &
-           filter = filterc_tmp,                                       &
-           eff_porosity = eff_porosity, &
-           h2osoi_liq = h2osoi_liq,     &
+           filter = filterc_tmp(1:fn),                                       &
+           eff_porosity = eff_porosity(bounds%begc:bounds%endc, 1:nlevgrnd), &
+           h2osoi_liq = h2osoi_liq(bounds%begc:bounds%endc, 1:nlevgrnd),     &
            denh2o = denh2o,                                                  &
-           vol_liq = h2osoi_liqvol )
+           vol_liq = h2osoi_liqvol(bounds%begc:bounds%endc, 1:nlevgrnd) )
 
       !set up perchroot options
       call set_perchroot_opt(perchroot_canopyflux, perchroot_alt_canopyflux)
@@ -658,7 +657,6 @@ contains
          z0mv(p)   = exp(egvf * log(z0mv(p)) + (1._r8 - egvf) * log(z0mg(c)))
          z0hv(p)   = z0mv(p)
          z0qv(p)   = z0mv(p)
-
       end do
 
       found = .false.
@@ -695,13 +693,13 @@ contains
 
          taf(p) = (t_grnd(c) + thm(p))/2._r8
          qaf(p) = (forc_q(t)+qg(c))/2._r8
-
-         ur(p) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
-         dth(p) = thm(p)-taf(p)
-         dqh(p) = forc_q(t)-qaf(p)
-         delq(p) = qg(c) - qaf(p)
-         dthv(p) = dth(p)*(1._r8+0.61_r8*forc_q(t))+0.61_r8*forc_th(t)*dqh(p)
+         ur(p)    = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
+         dth(p)   = thm(p)-taf(p)
+         dqh(p)   = forc_q(t)-qaf(p)
+         delq(p)  = qg(c) - qaf(p)
+         dthv(p)  = dth(p)*(1._r8+0.61_r8*forc_q(t))+0.61_r8*forc_th(t)*dqh(p)
          zldis(p) = forc_hgt_u_patch(p) - displa(p)
+         
 
          ! Check to see if the forcing height is below the canopy height
          if (zldis(p) < 0._r8) then
@@ -741,11 +739,10 @@ contains
 
          ! Determine friction velocity, and potential temperature and humidity
          ! profiles of the surface boundary layer
-
          call FrictionVelocity (begp, endp, fn, filterp, &
-              displa, z0mv, z0hv, z0qv, &
-              obu, itlef+1, ur, um, ustar, &
-              temp1, temp2, temp12m, temp22m, fm, &
+              displa(begp:endp), z0mv(begp:endp), z0hv(begp:endp), z0qv(begp:endp), &
+              obu(begp:endp), itlef+1, ur(begp:endp), um(begp:endp), ustar(begp:endp), &
+              temp1(begp:endp), temp2(begp:endp), temp12m(begp:endp), temp22m(begp:endp), fm(begp:endp), &
               frictionvel_vars)
 
          do f = 1, fn
@@ -758,7 +755,6 @@ contains
             del2(p) = del(p)
 
             ! Determine aerodynamic resistances
-
             ram1(p)  = 1._r8/(ustar(p)*ustar(p)/um(p))
             rah(p,1) = 1._r8/(temp1(p)*ustar(p))
             raw(p,1) = 1._r8/(temp2(p)*ustar(p))
@@ -835,10 +831,12 @@ contains
             c = veg_pp%column(p)
             if(.not.veg_pp%is_fates(p)) then
                if (veg_pp%itype(p) == nsoybean .or. veg_pp%itype(p) == nsoybeanirrig) then
+
                   btran(p) = min(1._r8, btran(p) * 1.25_r8)
                end if
             end if
          end do
+         
 
          if ( use_fates ) then
 
@@ -851,16 +849,16 @@ contains
 
             if ( use_hydrstress ) then
                call PhotosynthesisHydraulicStress (bounds, fn, filterp, &
-                    svpts, eah, o2, co2, rb, bsun, &
-                    bsha, btran, dayl_factor, &
-                    qsatl, qaf,     &
+                    svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), bsun(begp:endp), &
+                    bsha(begp:endp), btran(begp:endp), dayl_factor(begp:endp), &
+                    qsatl(begp:endp), qaf(begp:endp),     &
                     atm2lnd_vars, soilstate_vars, surfalb_vars, solarabs_vars,    &
                     canopystate_vars, photosyns_vars)
             else
-              call Photosynthesis (bounds, fn, filterp, &
-                   svpts, eah, o2, co2, rb, btran, &
-                   dayl_factor, atm2lnd_vars, surfalb_vars, solarabs_vars, &
-                   canopystate_vars, photosyns_vars, 1)
+               call Photosynthesis (bounds, fn, filterp, &
+                        svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
+                        dayl_factor(begp:endp), atm2lnd_vars,  surfalb_vars, solarabs_vars, &
+                        canopystate_vars, photosyns_vars, 1)
             end if
 
             if ( use_c13 ) then
@@ -879,8 +877,8 @@ contains
 
             if ( .not. use_hydrstress ) then
               call Photosynthesis (bounds, fn, filterp, &
-                   svpts, eah, o2, co2, rb, btran, &
-                   dayl_factor, atm2lnd_vars,surfalb_vars, solarabs_vars, &
+                   svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
+                   dayl_factor(begp:endp), atm2lnd_vars,surfalb_vars, solarabs_vars, &
                    canopystate_vars, photosyns_vars, 0)
             end if
 
@@ -905,15 +903,14 @@ contains
             wta    = 1._r8/rah(p,1)             ! air
             wtl    = (elai(p)+esai(p))/rb(p)    ! leaf
             wtg(p) = 1._r8/rah(p,2)             ! ground
-            wtshi  = 1._r8/(wta+wtl+wtg(p))
-
+            wtshi  = 1._r8/(wta+wtl+wtg(p))     
             wtl0(p) = wtl*wtshi         ! leaf
             wtg0    = wtg(p)*wtshi      ! ground
             wta0(p) = wta*wtshi         ! air
 
             wtga    = wta0(p)+wtg0      ! ground + air
             wtal(p) = wta0(p)+wtl0(p)   ! air + leaf
-
+            
             ! Fraction of potential evaporation from leaf
 
             if (fdry(p) > 0._r8) then
@@ -922,12 +919,12 @@ contains
             else
                rppdry = 0._r8
             end if
-
+            
             ! Calculate canopy conductance for methane / oxygen (e.g. stomatal conductance & leaf bdy cond)
             if (use_lch4) then
                canopy_cond(p) = (laisun(p)/(rb(p)+rssun(p)) + laisha(p)/(rb(p)+rssha(p)))/max(elai(p), 0.01_r8)
             end if
-
+            
             efpot = forc_rho(t)*wtl*(qsatl(p)-qaf(p))
             ! When the hydraulic stress parameterization is active calculate rpp
             ! but not transpiration
@@ -1012,7 +1009,7 @@ contains
             lw_grnd=(frac_sno(c)*t_soisno(c,snl(c)+1)**4 &
                  +(1._r8-frac_sno(c)-frac_h2osfc(c))*t_soisno(c,1)**4 &
                  +frac_h2osfc(c)*t_h2osfc(c)**4)
-
+            
             dt_veg(p) = (sabv(p) + air(p) + bir(p)*t_veg(p)**4 + &
                  cir(p)*lw_grnd - efsh - efe(p)) / &
                  (- 4._r8*bir(p)*t_veg(p)**3 +dc1*wtga +dc2*wtgaq*qsatldT(p))
@@ -1060,7 +1057,6 @@ contains
 
             ! The energy loss due to above two limits is added to
             ! the sensible heat flux.
-
             eflx_sh_veg(p) = efsh + dc1*wtga*dt_veg(p) + err(p) + erre + hvap*ecidif
 
             ! Re-calculate saturated vapor pressure, specific humidity, and their

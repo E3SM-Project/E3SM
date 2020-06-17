@@ -418,7 +418,6 @@ contains
           call subgrid_get_gcellinfo (ln, ntopounits=itopounits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
               ncohorts=icohorts, glcmask=glcmask(ln))
        else
-          write(*,*) "subgrid_get_gcellinfo",ln,itopounits,ilunits,icols,ipfts,icohorts
           call subgrid_get_gcellinfo (ln, ntopounits=itopounits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
                ncohorts=icohorts )
        endif

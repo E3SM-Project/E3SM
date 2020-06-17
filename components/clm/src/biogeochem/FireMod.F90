@@ -12,36 +12,30 @@ module FireMod
   ! climatological lightning data.
   !
   ! !USES:
-  use shr_kind_mod      , only : r8 => shr_kind_r8, CL => shr_kind_CL
-  use shr_const_mod     , only : SHR_CONST_PI,SHR_CONST_TKFRZ
-  use shr_infnan_mod   , only : shr_infnan_isnan
-  use shr_strdata_mod  , only : shr_strdata_type, shr_strdata_create, shr_strdata_print
-  use shr_strdata_mod  , only : shr_strdata_advance
-  use shr_log_mod      , only : errMsg => shr_log_errMsg
-  use clm_varctl        , only : iulog
-  use clm_varpar        , only : nlevdecomp, ndecomp_pools
-  use clm_varcon        , only : dzsoi_decomp
-  use pftvarcon         , only : fsr_pft, fd_pft, noveg
-  use spmdMod           , only : masterproc, mpicom, comp_id
-  use fileutils         , only : getavu, relavu
-  use controlMod        , only : NLFilename
-  use decompMod         , only : gsmap_lnd_gdc2glo
-  use domainMod         , only : ldomain
-  use abortutils        , only : endrun
+  use shr_kind_mod           , only : r8 => shr_kind_r8, CL => shr_kind_CL
+  use shr_const_mod          , only : SHR_CONST_PI,SHR_CONST_TKFRZ
+  use shr_infnan_mod         , only : shr_infnan_isnan
+  use shr_strdata_mod        , only : shr_strdata_type, shr_strdata_create, shr_strdata_print
+  use shr_strdata_mod        , only : shr_strdata_advance
+  use shr_log_mod            , only : errMsg => shr_log_errMsg
+  use clm_varctl             , only : iulog
+  use clm_varpar             , only : nlevdecomp, ndecomp_pools
+  use clm_varcon             , only : dzsoi_decomp
+  use pftvarcon              , only : fsr_pft, fd_pft, noveg
+  use spmdMod                , only : masterproc, mpicom, comp_id
+  use fileutils              , only : getavu, relavu
+  use controlMod             , only : NLFilename
+  use decompMod              , only : gsmap_lnd_gdc2glo
+  use domainMod              , only : ldomain
+  use abortutils             , only : endrun
   use decompMod              , only : bounds_type
   use subgridAveMod          , only : p2c
   use CNDecompCascadeConType , only : decomp_cascade_con
   use VegetationPropertiesType         , only : veg_vp
   use atm2lndType            , only : atm2lnd_type
   use CNStateType            , only : cnstate_type
-  use CNCarbonFluxType       , only : carbonflux_type
-  use CNCarbonStateType      , only : carbonstate_type
-  use CNNitrogenFluxType     , only : nitrogenflux_type
-  use CNNitrogenStateType    , only : nitrogenstate_type
   use EnergyFluxType         , only : energyflux_type
   use SoilHydrologyType      , only : soilhydrology_type
-  use TemperatureType        , only : temperature_type
-  use WaterstateType         , only : waterstate_type
   use GridcellType           , only : grc_pp
   use TopounitDataType       , only : top_as, top_af ! atmospheric state and flux variables
   use ColumnType             , only : col_pp
@@ -51,8 +45,6 @@ module FireMod
   use VegetationDataType     , only : veg_cs, veg_cf, veg_ns, veg_nf
   use VegetationDataType     , only : veg_ps, veg_pf
   use mct_mod
-  use PhosphorusFluxType     , only : phosphorusflux_type
-  use PhosphorusStateType    , only : phosphorusstate_type
   use clm_varctl             , only : nu_com
   !
   implicit none
@@ -74,50 +66,50 @@ module FireMod
   ! !PRIVATE MEMBER DATA:
   real(r8), pointer     :: forc_lnfm(:)        ! Lightning frequency
   real(r8), pointer     :: forc_hdm(:)         ! Human population density
-  !!$acc declare create(forc_lnfm)
-  !!$acc declare create(forc_hdm )
+  !$acc declare create(forc_lnfm)
+  !$acc declare create(forc_hdm )
   real(r8), parameter   :: secsphr = 3600._r8  ! Seconds in an hour
   real(r8), parameter   :: borealat = 40._r8   ! Latitude for boreal peat fires
   !$acc declare copyin(secsphr )
   !$acc declare copyin(borealat)
 
-  type(shr_strdata_type) :: sdat_hdm    ! Human population density input data stream
-  type(shr_strdata_type) :: sdat_lnfm   ! Lightning input data stream
+ type(shr_strdata_type) :: sdat_hdm    ! Human population density input data stream
+ type(shr_strdata_type) :: sdat_lnfm   ! Lightning input data stream
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
-   subroutine FireInit( bounds )
-     !
-     ! !DESCRIPTION:
-     ! Initialize CN Fire module
-     !
-     ! !ARGUMENTS:
-     type(bounds_type), intent(in) :: bounds
-     !-----------------------------------------------------------------------
- #ifndef CPL_BYPASS
-     call hdm_init(bounds)
-     call hdm_interp(bounds)
-     call lnfm_init(bounds)
-     call lnfm_interp(bounds)
- #endif
-   end subroutine FireInit
+  subroutine FireInit( bounds )
+    !
+    ! !DESCRIPTION:
+    ! Initialize CN Fire module
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds
+    !-----------------------------------------------------------------------
+#ifndef CPL_BYPASS
+    call hdm_init(bounds)
+    call hdm_interp(bounds)
+    call lnfm_init(bounds)
+    call lnfm_interp(bounds)
+#endif
+  end subroutine FireInit
 
   !-----------------------------------------------------------------------
-   subroutine FireInterp(bounds)
-     !
-     ! !DESCRIPTION:
-     ! Interpolate CN Fire datasets
-     !
-     ! !ARGUMENTS:
-     type(bounds_type), intent(in) :: bounds
-     !-----------------------------------------------------------------------
- #ifndef CPL_BYPASS
-     call hdm_interp(bounds)
-     call lnfm_interp(bounds)
- #endif
-   end subroutine FireInterp
+  subroutine FireInterp(bounds)
+    !
+    ! !DESCRIPTION:
+    ! Interpolate CN Fire datasets
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds
+    !-----------------------------------------------------------------------
+#ifndef CPL_BYPASS
+    call hdm_interp(bounds)
+    call lnfm_interp(bounds)
+#endif
+  end subroutine FireInterp
 
   !-----------------------------------------------------------------------
   subroutine FireArea (bounds, &
@@ -129,10 +121,8 @@ contains
     ! !DESCRIPTION:
     ! Computes column-level burned area
     !
+      !$acc routine seq
     ! !USES:
-    !$acc routine seq
-
-    !#py use clm_time_manager     , only: get_step_size, get_days_per_year, get_curr_date, get_nstep
     use clm_varpar           , only: max_patch_per_col
     use clm_varcon           , only: secspday
     use clm_varctl           , only: use_nofire, spinup_state, spinup_mortality_factor
@@ -147,12 +137,9 @@ contains
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
-    !type(temperature_type)   , intent(in)    :: temperature_vars
     type(energyflux_type)    , intent(in)    :: energyflux_vars
     type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
-    !type(waterstate_type)    , intent(in)    :: waterstate_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
-    !type(carbonstate_type)   , intent(inout) :: carbonstate_vars
     real(r8), intent(in) :: dt       ! time step variable (s)
     real(r8), intent(in) :: dayspyr  ! days per year
     integer,  intent(in) :: kyr, kmo, kda, mcsec, nstep
@@ -202,10 +189,10 @@ contains
          forc_t             =>    top_as%tbot                               , & ! Input:  [real(r8) (:)     ]  atmospheric temperature (Kelvin)
          forc_rain          =>    top_af%rain                               , & ! Input:  [real(r8) (:)     ]  rain rate (kg H2O/m**2/s, or mm liquid H2O/s)
          forc_snow          =>    top_af%snow                               , & ! Input:  [real(r8) (:)     ]  snow rate (kg H2O/m**2/s, or mm liquid H2O/s)
-!#ifdef CPL_BYPASS
+#ifdef CPL_BYPASS
          forc_hdm           =>    atm2lnd_vars%forc_hdm                     , & ! Input:  [real(r8) (:)     ]  population density
          forc_lnfm          =>    atm2lnd_vars%forc_lnfm                    , & ! Input:  [real(r8) (:)     ]  ligntning data
-!#endif
+#endif
          prec60             =>    top_af%prec60d                            , & ! Input:  [real(r8) (:)     ]  60-day running mean of tot. precipitation, mm liquid H2O/s
          prec10             =>    top_af%prec10d                            , & ! Input:  [real(r8) (:)     ]  10-day running mean of tot. precipitation, mm liquid H2O/s
 
@@ -270,37 +257,31 @@ contains
 
       !pft to column average
       call p2c(bounds, num_soilc, filter_soilc, &
-           totvegc, &
-           totvegc_col)
+           totvegc(bounds%begp:bounds%endp), &
+           totvegc_col(bounds%begc:bounds%endc))
 
       call p2c(bounds, num_soilc, filter_soilc, &
-           leafc, &
-           leafc_col)
-
+           leafc(bounds%begp:bounds%endp), &
+           leafc_col(bounds%begc:bounds%endc))
+     
       call p2c(bounds, num_soilc, filter_soilc, &
-           deadstemc, &
-           deadstemc_col)
-
-       !#py call get_curr_date (kyr, kmo, kda, mcsec)
-       !#py dayspyr = get_days_per_year()
-     ! Get model step size
-       !#py  dt      = real( get_step_size(), r8 )
+           deadstemc(bounds%begp:bounds%endp), &
+           deadstemc_col(bounds%begc:bounds%endc))
      !
      ! On first time-step, just set area burned to zero and exit
      !
-
-      if ( nstep == 0 )then
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             farea_burned(c) = 0._r8
-             baf_crop(c)     = 0._r8
-             baf_peatf(c)    = 0._r8
-             fbac(c)         = 0._r8
-             fbac1(c)        = 0._r8
-             cropf_col(c)    = 0._r8
-          end do
-          return
-       end if
+     if ( nstep == 0 )then
+        do fc = 1,num_soilc
+           c = filter_soilc(fc)
+           farea_burned(c) = 0._r8
+           baf_crop(c)     = 0._r8
+           baf_peatf(c)    = 0._r8
+           fbac(c)         = 0._r8
+           fbac1(c)        = 0._r8
+           cropf_col(c)    = 0._r8
+        end do
+        return
+     end if
      !
      ! Calculate fraction of crop (cropf_col) and non-crop and non-bare-soil
      ! vegetation (lfwt) in vegetated column
@@ -673,7 +654,6 @@ contains
       !$acc routine seq
    use pftvarcon            , only: cc_leaf,cc_lstem,cc_dstem,cc_other,fm_leaf,fm_lstem,fm_other,fm_root,fm_lroot,fm_droot
    use pftvarcon            , only: nc3crop,lf_flab,lf_fcel,lf_flig,fr_flab,fr_fcel,fr_flig
-   !#py use clm_time_manager     , only: get_step_size,get_days_per_year,get_curr_date
    use clm_varpar           , only: max_patch_per_col
    use clm_varctl           , only: spinup_state, spinup_mortality_factor
    use dynSubgridControlMod , only: get_flanduse_timeseries
@@ -689,14 +669,6 @@ contains
    real(r8), intent(in)  :: dt                   ! time step variable (s)
    real(r8), intent(in)  :: dayspyr              ! days per year
    integer,    intent(in) :: kyr, kmo, kda, mcsec
-   !type(carbonstate_type)   , intent(inout) :: carbonstate_vars
-   !type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
-   !type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-   !type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-
-   ! ! adding phosphorus state and flux variables
-   !type(phosphorusstate_type) , intent(in)    :: phosphorusstate_vars
-   !type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
    !
    ! !LOCAL VARIABLES:
    integer :: g,c,p,j,l,pi   ! indices
@@ -1027,9 +999,6 @@ contains
 
      ! Get model step size
      ! calculate burned area fraction per sec
-     !#py dt = real( get_step_size(), r8 )
-
-     !#py dayspyr = get_days_per_year()
      !
      ! patch loop
      !
@@ -1526,307 +1495,286 @@ contains
  end subroutine FireFluxes
 
  !-----------------------------------------------------------------------
-   subroutine hdm_init( bounds )
-     !
-     ! !DESCRIPTION:
-     ! Initialize data stream information for population density.
-     !
-     ! !USES:
-     use clm_varctl       , only : inst_name
-     use clm_time_manager , only : get_calendar
-     use ncdio_pio        , only : pio_subsystem
-     use shr_pio_mod      , only : shr_pio_getiotype
-     use clm_nlUtilsMod   , only : find_nlgroup_name
-     use ndepStreamMod    , only : clm_domain_mct
-     use histFileMod      , only : hist_addfld1d
-     !
-     ! !ARGUMENTS:
-     implicit none
-     type(bounds_type), intent(in) :: bounds
-     !
-     ! !LOCAL VARIABLES:
-     integer            :: stream_year_first_popdens   ! first year in pop. dens. stream to use
-     integer            :: stream_year_last_popdens    ! last year in pop. dens. stream to use
-     integer            :: model_year_align_popdens    ! align stream_year_first_hdm with
-     integer            :: nu_nml                      ! unit for namelist file
-     integer            :: nml_error                   ! namelist i/o error flag
-     type(mct_ggrid)    :: dom_clm                     ! domain information
-     character(len=CL)  :: stream_fldFileName_popdens  ! population density streams filename
-     character(len=CL)  :: popdensmapalgo = 'bilinear' ! mapping alogrithm for population density
-     character(*), parameter :: subName = "('hdmdyn_init')"
-     character(*), parameter :: F00 = "('(hdmdyn_init) ',4a)"
-     !-----------------------------------------------------------------------
 
-     namelist /popd_streams/          &
-          stream_year_first_popdens,  &
-          stream_year_last_popdens,   &
-          model_year_align_popdens,   &
-          popdensmapalgo,             &
-          stream_fldFileName_popdens
-
-     ! Allocate pop dens forcing data
-     allocate( forc_hdm(bounds%begg:bounds%endg) )
-
-     ! Default values for namelist
-     stream_year_first_popdens  = 1       ! first year in stream to use
-     stream_year_last_popdens   = 1       ! last  year in stream to use
-     model_year_align_popdens   = 1       ! align stream_year_first_popdens with this model year
-     stream_fldFileName_popdens = ' '
-
-     ! Read popd_streams namelist
-     if (masterproc) then
-        nu_nml = getavu()
-        open( nu_nml, file=trim(NLFilename), status='old', iostat=nml_error )
-        call find_nlgroup_name(nu_nml, 'popd_streams', status=nml_error)
-        if (nml_error == 0) then
-           read(nu_nml, nml=popd_streams,iostat=nml_error)
-           if (nml_error /= 0) then
-              call endrun(msg='ERROR reading popd_streams namelist'//errMsg(__FILE__, __LINE__))
-           end if
-        end if
-        close(nu_nml)
-        call relavu( nu_nml )
-     endif
-
-     call shr_mpi_bcast(stream_year_first_popdens, mpicom)
-     call shr_mpi_bcast(stream_year_last_popdens, mpicom)
-     call shr_mpi_bcast(model_year_align_popdens, mpicom)
-     call shr_mpi_bcast(stream_fldFileName_popdens, mpicom)
-
-     if (masterproc) then
-        write(iulog,*) ' '
-        write(iulog,*) 'popdens_streams settings:'
-        write(iulog,*) '  stream_year_first_popdens  = ',stream_year_first_popdens
-        write(iulog,*) '  stream_year_last_popdens   = ',stream_year_last_popdens
-        write(iulog,*) '  model_year_align_popdens   = ',model_year_align_popdens
-        write(iulog,*) '  stream_fldFileName_popdens = ',stream_fldFileName_popdens
-        write(iulog,*) ' '
-     endif
-
-     call clm_domain_mct (bounds, dom_clm)
-
-     call shr_strdata_create(sdat_hdm,name="clmhdm",     &
-          pio_subsystem=pio_subsystem,                   &
-          pio_iotype=shr_pio_getiotype(inst_name),       &
-          mpicom=mpicom, compid=comp_id,                 &
-          gsmap=gsmap_lnd_gdc2glo, ggrid=dom_clm,        &
-          nxg=ldomain%ni, nyg=ldomain%nj,                &
-          yearFirst=stream_year_first_popdens,           &
-          yearLast=stream_year_last_popdens,             &
-          yearAlign=model_year_align_popdens,            &
-          offset=0,                                      &
-          domFilePath='',                                &
-          domFileName=trim(stream_fldFileName_popdens),  &
-          domTvarName='time',                            &
-          domXvarName='lon' ,                            &
-          domYvarName='lat' ,                            &
-          domAreaName='area',                            &
-          domMaskName='mask',                            &
-          filePath='',                                   &
-          filename=(/trim(stream_fldFileName_popdens)/) , &
-          fldListFile='hdm',                             &
-          fldListModel='hdm',                            &
-          fillalgo='none',                               &
-          mapalgo=popdensmapalgo,                        &
-          calendar=get_calendar(),                       &
-          tintalgo='nearest',                            &
-          taxmode='extend'                           )
-
-     if (masterproc) then
-        call shr_strdata_print(sdat_hdm,'population density data')
-     endif
-
-     ! Add history fields
-     call hist_addfld1d (fname='HDM', units='counts/km^2',      &
-           avgflag='A', long_name='human population density',   &
-           ptr_lnd=forc_hdm, default='inactive')
-
-  end subroutine hdm_init
+ subroutine hdm_init( bounds )
+   !
+   ! !DESCRIPTION:
+   ! Initialize data stream information for population density.
+   !
+   ! !USES:
+   use clm_varctl       , only : inst_name
+   use clm_time_manager , only : get_calendar
+   use ncdio_pio        , only : pio_subsystem
+   use shr_pio_mod      , only : shr_pio_getiotype
+   use clm_nlUtilsMod   , only : find_nlgroup_name
+   use ndepStreamMod    , only : clm_domain_mct
+   use histFileMod      , only : hist_addfld1d
+   !
+   ! !ARGUMENTS:
+   implicit none
+   type(bounds_type), intent(in) :: bounds
+   !
+   ! !LOCAL VARIABLES:
+   integer            :: stream_year_first_popdens   ! first year in pop. dens. stream to use
+   integer            :: stream_year_last_popdens    ! last year in pop. dens. stream to use
+   integer            :: model_year_align_popdens    ! align stream_year_first_hdm with
+   integer            :: nu_nml                      ! unit for namelist file
+   integer            :: nml_error                   ! namelist i/o error flag
+   type(mct_ggrid)    :: dom_clm                     ! domain information
+   character(len=CL)  :: stream_fldFileName_popdens  ! population density streams filename
+   character(len=CL)  :: popdensmapalgo = 'bilinear' ! mapping alogrithm for population density
+   character(*), parameter :: subName = "('hdmdyn_init')"
+   character(*), parameter :: F00 = "('(hdmdyn_init) ',4a)"
+   !-----------------------------------------------------------------------
+   namelist /popd_streams/          &
+        stream_year_first_popdens,  &
+        stream_year_last_popdens,   &
+        model_year_align_popdens,   &
+        popdensmapalgo,             &
+        stream_fldFileName_popdens
+  
+! Allocate pop dens forcing data
+   allocate( forc_hdm(bounds%begg:bounds%endg) )
+   ! Default values for namelist
+   stream_year_first_popdens  = 1       ! first year in stream to use
+   stream_year_last_popdens   = 1       ! last  year in stream to use
+   model_year_align_popdens   = 1       ! align stream_year_first_popdens with this model year
+   stream_fldFileName_popdens = ' '
+   
+   
+   ! Read popd_streams namelist
+   if (masterproc) then
+      nu_nml = getavu()
+      open( nu_nml, file=trim(NLFilename), status='old', iostat=nml_error )
+      call find_nlgroup_name(nu_nml, 'popd_streams', status=nml_error)
+      if (nml_error == 0) then
+         read(nu_nml, nml=popd_streams,iostat=nml_error)
+         if (nml_error /= 0) then
+            call endrun(msg='ERROR reading popd_streams namelist'//errMsg(__FILE__, __LINE__))
+         end if
+      end if
+      close(nu_nml)
+      call relavu( nu_nml )
+   endif
+   
+   call shr_mpi_bcast(stream_year_first_popdens, mpicom)
+   call shr_mpi_bcast(stream_year_last_popdens, mpicom)
+   call shr_mpi_bcast(model_year_align_popdens, mpicom)
+   call shr_mpi_bcast(stream_fldFileName_popdens, mpicom)
+   
+   if (masterproc) then
+      write(iulog,*) ' '
+      write(iulog,*) 'popdens_streams settings:'
+      write(iulog,*) '  stream_year_first_popdens  = ',stream_year_first_popdens
+      write(iulog,*) '  stream_year_last_popdens   = ',stream_year_last_popdens
+      write(iulog,*) '  model_year_align_popdens   = ',model_year_align_popdens
+      write(iulog,*) '  stream_fldFileName_popdens = ',stream_fldFileName_popdens
+      write(iulog,*) ' '
+   endif
+   
+   call clm_domain_mct (bounds, dom_clm)
+   
+   
+   call shr_strdata_create(sdat_hdm,name="clmhdm",     &
+        pio_subsystem=pio_subsystem,                   &
+        pio_iotype=shr_pio_getiotype(inst_name),       &
+        mpicom=mpicom, compid=comp_id,                 &
+        gsmap=gsmap_lnd_gdc2glo, ggrid=dom_clm,        &
+        nxg=ldomain%ni, nyg=ldomain%nj,                &
+        yearFirst=stream_year_first_popdens,           &
+        yearLast=stream_year_last_popdens,             &
+        yearAlign=model_year_align_popdens,            &
+        offset=0,                                      &
+        domFilePath='',                                &
+        domFileName=trim(stream_fldFileName_popdens),  &
+        domTvarName='time',                            &
+        domXvarName='lon' ,                            &
+        domYvarName='lat' ,                            &
+        domAreaName='area',                            &
+        domMaskName='mask',                            &
+        filePath='',                                   &
+        filename=(/trim(stream_fldFileName_popdens)/) , &
+        fldListFile='hdm',                             &
+        fldListModel='hdm',                            &
+        fillalgo='none',                               &
+        mapalgo=popdensmapalgo,                        &
+        calendar=get_calendar(),                       &
+        tintalgo='nearest',                            &
+        taxmode='extend'                           )
+   if (masterproc) then
+      call shr_strdata_print(sdat_hdm,'population density data')
+   endif
+   ! Add history fields
+   call hist_addfld1d (fname='HDM', units='counts/km^2',      &
+         avgflag='A', long_name='human population density',   &
+         ptr_lnd=forc_hdm, default='inactive')
+end subroutine hdm_init
 
 !-----------------------------------------------------------------------
-  subroutine hdm_interp(bounds)
-    !
-    ! !DESCRIPTION:
-    ! Interpolate data stream information for population density.
-    !
-    ! !USES:
-      use clm_time_manager, only : get_curr_date
-    !
-    ! !ARGUMENTS:
-    type(bounds_type), intent(in) :: bounds
-    !
-    ! !LOCAL VARIABLES:
-    integer :: g, ig
-    integer :: year    ! year (0, ...) for nstep+1
-    integer :: mon     ! month (1, ..., 12) for nstep+1
-    integer :: day     ! day of month (1, ..., 31) for nstep+1
-    integer :: sec     ! seconds into current date for nstep+1
-    integer :: mcdate  ! Current model date (yyyymmdd)
-    !-----------------------------------------------------------------------
-
-       call get_curr_date(year, mon, day, sec)
-     mcdate = year*10000 + mon*100 + day
-
-     call shr_strdata_advance(sdat_hdm, mcdate, sec, mpicom, 'hdmdyn')
-
-     ig = 0
-     do g = bounds%begg,bounds%endg
-        ig = ig+1
-        forc_hdm(g) = sdat_hdm%avs(1)%rAttr(1,ig)
-     end do
-
-  end subroutine hdm_interp
+subroutine hdm_interp(bounds)
+  !
+  ! !DESCRIPTION:
+  ! Interpolate data stream information for population density.
+  !
+  ! !USES:
+  use clm_time_manager, only : get_curr_date
+  !
+  ! !ARGUMENTS:
+  type(bounds_type), intent(in) :: bounds
+  !
+  ! !LOCAL VARIABLES:
+  integer :: g, ig
+  integer :: year    ! year (0, ...) for nstep+1
+  integer :: mon     ! month (1, ..., 12) for nstep+1
+  integer :: day     ! day of month (1, ..., 31) for nstep+1
+  integer :: sec     ! seconds into current date for nstep+1
+  integer :: mcdate  ! Current model date (yyyymmdd)
+  !-----------------------------------------------------------------------
+   call get_curr_date(year, mon, day, sec)
+   mcdate = year*10000 + mon*100 + day
+   call shr_strdata_advance(sdat_hdm, mcdate, sec, mpicom, 'hdmdyn')
+   ig = 0
+   do g = bounds%begg,bounds%endg
+      ig = ig+1
+      forc_hdm(g) = sdat_hdm%avs(1)%rAttr(1,ig)
+   end do
+end subroutine hdm_interp
 
 !-----------------------------------------------------------------------
-  subroutine lnfm_init( bounds )
-    !
-    ! !DESCRIPTION:
-    !
-    ! Initialize data stream information for Lightning.
-    !
-    ! !USES:
-    use clm_varctl       , only : inst_name
-    use clm_time_manager , only : get_calendar
-    use ncdio_pio        , only : pio_subsystem
-    use shr_pio_mod      , only : shr_pio_getiotype
-    use clm_nlUtilsMod   , only : find_nlgroup_name
-    use ndepStreamMod    , only : clm_domain_mct
-    use histFileMod      , only : hist_addfld1d
-    !
-    ! !ARGUMENTS:
-    implicit none
-    type(bounds_type), intent(in) :: bounds
-    !
-    ! !LOCAL VARIABLES:
-    integer            :: stream_year_first_lightng  ! first year in Lightning stream to use
-    integer            :: stream_year_last_lightng   ! last year in Lightning stream to use
-    integer            :: model_year_align_lightng   ! align stream_year_first_lnfm with
-    integer            :: nu_nml                     ! unit for namelist file
-    integer            :: nml_error                  ! namelist i/o error flag
-    type(mct_ggrid)    :: dom_clm                    ! domain information
-    character(len=CL)  :: stream_fldFileName_lightng ! lightning stream filename to read
-    character(len=CL)  :: lightngmapalgo = 'bilinear'! Mapping alogrithm
-    character(*), parameter :: subName = "('lnfmdyn_init')"
-    character(*), parameter :: F00 = "('(lnfmdyn_init) ',4a)"
-    !-----------------------------------------------------------------------
-
-     namelist /light_streams/         &
-          stream_year_first_lightng,  &
-          stream_year_last_lightng,   &
-          model_year_align_lightng,   &
-          lightngmapalgo,             &
-          stream_fldFileName_lightng
-
-     ! Allocate lightning forcing data
-     allocate( forc_lnfm(bounds%begg:bounds%endg) )
-
-     ! Default values for namelist
-      stream_year_first_lightng  = 1      ! first year in stream to use
-      stream_year_last_lightng   = 1      ! last  year in stream to use
-      model_year_align_lightng   = 1      ! align stream_year_first_lnfm with this model year
-      stream_fldFileName_lightng = ' '
-
-     ! Read light_streams namelist
-     if (masterproc) then
-        nu_nml = getavu()
-        open( nu_nml, file=trim(NLFilename), status='old', iostat=nml_error )
-        call find_nlgroup_name(nu_nml, 'light_streams', status=nml_error)
-        if (nml_error == 0) then
-           read(nu_nml, nml=light_streams,iostat=nml_error)
-           if (nml_error /= 0) then
-              call endrun(msg='ERROR reading light_streams namelist'//errMsg(__FILE__, __LINE__))
-           end if
-        end if
-        close(nu_nml)
-        call relavu( nu_nml )
-     endif
-
-     call shr_mpi_bcast(stream_year_first_lightng, mpicom)
-     call shr_mpi_bcast(stream_year_last_lightng, mpicom)
-     call shr_mpi_bcast(model_year_align_lightng, mpicom)
-     call shr_mpi_bcast(stream_fldFileName_lightng, mpicom)
-
-     if (masterproc) then
-        write(iulog,*) ' '
-        write(iulog,*) 'light_stream settings:'
-        write(iulog,*) '  stream_year_first_lightng  = ',stream_year_first_lightng
-        write(iulog,*) '  stream_year_last_lightng   = ',stream_year_last_lightng
-        write(iulog,*) '  model_year_align_lightng   = ',model_year_align_lightng
-        write(iulog,*) '  stream_fldFileName_lightng = ',stream_fldFileName_lightng
-        write(iulog,*) ' '
-     endif
-
-     call clm_domain_mct (bounds, dom_clm)
-
-     call shr_strdata_create(sdat_lnfm,name="clmlnfm",  &
-          pio_subsystem=pio_subsystem,                  &
-          pio_iotype=shr_pio_getiotype(inst_name),      &
-          mpicom=mpicom, compid=comp_id,                &
-          gsmap=gsmap_lnd_gdc2glo, ggrid=dom_clm,       &
-          nxg=ldomain%ni, nyg=ldomain%nj,               &
-          yearFirst=stream_year_first_lightng,          &
-          yearLast=stream_year_last_lightng,            &
-          yearAlign=model_year_align_lightng,           &
-          offset=0,                                     &
-          domFilePath='',                               &
-          domFileName=trim(stream_fldFileName_lightng), &
-          domTvarName='time',                           &
-          domXvarName='lon' ,                           &
-          domYvarName='lat' ,                           &
-          domAreaName='area',                           &
-          domMaskName='mask',                           &
-          filePath='',                                  &
-          filename=(/trim(stream_fldFileName_lightng)/),&
-          fldListFile='lnfm',                           &
-          fldListModel='lnfm',                          &
-          fillalgo='none',                              &
-          mapalgo=lightngmapalgo,                       &
-          calendar=get_calendar(),                      &
-          taxmode='cycle'                            )
-
-     if (masterproc) then
-        call shr_strdata_print(sdat_lnfm,'Lightning data')
-     endif
-
-     ! Add history fields
-     call hist_addfld1d (fname='LNFM', units='counts/km^2/hr',  &
-           avgflag='A', long_name='Lightning frequency',        &
-           ptr_lnd=forc_lnfm, default='inactive')
-
-  end subroutine lnfm_init
+subroutine lnfm_init( bounds )
+  !
+  ! !DESCRIPTION:
+  !
+  ! Initialize data stream information for Lightning.
+  !
+  ! !USES:
+  use clm_varctl       , only : inst_name
+  use clm_time_manager , only : get_calendar
+  use ncdio_pio        , only : pio_subsystem
+  use shr_pio_mod      , only : shr_pio_getiotype
+  use clm_nlUtilsMod   , only : find_nlgroup_name
+  use ndepStreamMod    , only : clm_domain_mct
+  use histFileMod      , only : hist_addfld1d
+  !
+  ! !ARGUMENTS:
+  implicit none
+  type(bounds_type), intent(in) :: bounds
+  !
+  ! !LOCAL VARIABLES:
+  integer            :: stream_year_first_lightng  ! first year in Lightning stream to use
+  integer            :: stream_year_last_lightng   ! last year in Lightning stream to use
+  integer            :: model_year_align_lightng   ! align stream_year_first_lnfm with
+  integer            :: nu_nml                     ! unit for namelist file
+  integer            :: nml_error                  ! namelist i/o error flag
+  type(mct_ggrid)    :: dom_clm                    ! domain information
+  character(len=CL)  :: stream_fldFileName_lightng ! lightning stream filename to read
+  character(len=CL)  :: lightngmapalgo = 'bilinear'! Mapping alogrithm
+  character(*), parameter :: subName = "('lnfmdyn_init')"
+  character(*), parameter :: F00 = "('(lnfmdyn_init) ',4a)"
+  !-----------------------------------------------------------------------
+   namelist /light_streams/         &
+        stream_year_first_lightng,  &
+        stream_year_last_lightng,   &
+        model_year_align_lightng,   &
+        lightngmapalgo,             &
+        stream_fldFileName_lightng
+   ! Allocate lightning forcing data
+   allocate( forc_lnfm(bounds%begg:bounds%endg) )
+   ! Default values for namelist
+    stream_year_first_lightng  = 1      ! first year in stream to use
+    stream_year_last_lightng   = 1      ! last  year in stream to use
+    model_year_align_lightng   = 1      ! align stream_year_first_lnfm with this model year
+    stream_fldFileName_lightng = ' '
+   ! Read light_streams namelist
+   if (masterproc) then
+      nu_nml = getavu()
+      open( nu_nml, file=trim(NLFilename), status='old', iostat=nml_error )
+      call find_nlgroup_name(nu_nml, 'light_streams', status=nml_error)
+      if (nml_error == 0) then
+         read(nu_nml, nml=light_streams,iostat=nml_error)
+         if (nml_error /= 0) then
+            call endrun(msg='ERROR reading light_streams namelist'//errMsg(__FILE__, __LINE__))
+         end if
+      end if
+      close(nu_nml)
+      call relavu( nu_nml )
+   endif
+   call shr_mpi_bcast(stream_year_first_lightng, mpicom)
+   call shr_mpi_bcast(stream_year_last_lightng, mpicom)
+   call shr_mpi_bcast(model_year_align_lightng, mpicom)
+   call shr_mpi_bcast(stream_fldFileName_lightng, mpicom)
+   if (masterproc) then
+      write(iulog,*) ' '
+      write(iulog,*) 'light_stream settings:'
+      write(iulog,*) '  stream_year_first_lightng  = ',stream_year_first_lightng
+      write(iulog,*) '  stream_year_last_lightng   = ',stream_year_last_lightng
+      write(iulog,*) '  model_year_align_lightng   = ',model_year_align_lightng
+      write(iulog,*) '  stream_fldFileName_lightng = ',stream_fldFileName_lightng
+      write(iulog,*) ' '
+   endif
+   call clm_domain_mct (bounds, dom_clm)
+   call shr_strdata_create(sdat_lnfm,name="clmlnfm",  &
+        pio_subsystem=pio_subsystem,                  &
+        pio_iotype=shr_pio_getiotype(inst_name),      &
+        mpicom=mpicom, compid=comp_id,                &
+        gsmap=gsmap_lnd_gdc2glo, ggrid=dom_clm,       &
+        nxg=ldomain%ni, nyg=ldomain%nj,               &
+        yearFirst=stream_year_first_lightng,          &
+        yearLast=stream_year_last_lightng,            &
+        yearAlign=model_year_align_lightng,           &
+        offset=0,                                     &
+        domFilePath='',                               &
+        domFileName=trim(stream_fldFileName_lightng), &
+        domTvarName='time',                           &
+        domXvarName='lon' ,                           &
+        domYvarName='lat' ,                           &
+        domAreaName='area',                           &
+        domMaskName='mask',                           &
+        filePath='',                                  &
+        filename=(/trim(stream_fldFileName_lightng)/),&
+        fldListFile='lnfm',                           &
+        fldListModel='lnfm',                          &
+        fillalgo='none',                              &
+        mapalgo=lightngmapalgo,                       &
+        calendar=get_calendar(),                      &
+        taxmode='cycle'                            )
+   if (masterproc) then
+      call shr_strdata_print(sdat_lnfm,'Lightning data')
+   endif
+   ! Add history fields
+   call hist_addfld1d (fname='LNFM', units='counts/km^2/hr',  &
+         avgflag='A', long_name='Lightning frequency',        &
+         ptr_lnd=forc_lnfm, default='inactive')
+end subroutine lnfm_init
 
 !-----------------------------------------------------------------------
-  subroutine lnfm_interp(bounds )
-    !
-    ! !DESCRIPTION:
-    ! Interpolate data stream information for Lightning.
-    !
-    ! !USES:
-      use clm_time_manager, only : get_curr_date
-    !
-    ! !ARGUMENTS:
-    type(bounds_type), intent(in) :: bounds
-    !
-    ! !LOCAL VARIABLES:
-    integer :: g, ig
-    integer :: year    ! year (0, ...) for nstep+1
-    integer :: mon     ! month (1, ..., 12) for nstep+1
-    integer :: day     ! day of month (1, ..., 31) for nstep+1
-    integer :: sec     ! seconds into current date for nstep+1
-    integer :: mcdate  ! Current model date (yyyymmdd)
-    !-----------------------------------------------------------------------
-
-       call get_curr_date(year, mon, day, sec)
-     mcdate = year*10000 + mon*100 + day
-
-     call shr_strdata_advance(sdat_lnfm, mcdate, sec, mpicom, 'lnfmdyn')
-
-     ig = 0
-     do g = bounds%begg,bounds%endg
-        ig = ig+1
-        forc_lnfm(g) = sdat_lnfm%avs(1)%rAttr(1,ig)
-     end do
-
-  end subroutine lnfm_interp
+subroutine lnfm_interp(bounds )
+  !
+  ! !DESCRIPTION:
+  ! Interpolate data stream information for Lightning.
+  !
+  ! !USES:
+  use clm_time_manager, only : get_curr_date
+  !
+  ! !ARGUMENTS:
+  type(bounds_type), intent(in) :: bounds
+  !
+  ! !LOCAL VARIABLES:
+  integer :: g, ig
+  integer :: year    ! year (0, ...) for nstep+1
+  integer :: mon     ! month (1, ..., 12) for nstep+1
+  integer :: day     ! day of month (1, ..., 31) for nstep+1
+  integer :: sec     ! seconds into current date for nstep+1
+  integer :: mcdate  ! Current model date (yyyymmdd)
+  !-----------------------------------------------------------------------
+   call get_curr_date(year, mon, day, sec)
+   mcdate = year*10000 + mon*100 + day
+   call shr_strdata_advance(sdat_lnfm, mcdate, sec, mpicom, 'lnfmdyn')
+   ig = 0
+   do g = bounds%begg,bounds%endg
+      ig = ig+1
+      forc_lnfm(g) = sdat_lnfm%avs(1)%rAttr(1,ig)
+   end do
+end subroutine lnfm_interp
 
 end module FireMod

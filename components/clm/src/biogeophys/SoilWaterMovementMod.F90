@@ -723,25 +723,25 @@ contains
             jbot(c) = nlev2bed(c)
       	 end do
          call Tridiagonal(bounds, 1, nlevgrnd+1, &
-              jtop,     &
-              jbot,     &
+              jtop(bounds%begc:bounds%endc),     &
+              jbot(bounds%begc:bounds%endc),     &
               num_hydrologyc, filter_hydrologyc, &
-              amx,   &
-              bmx,   &
-              cmx,   &
-              rmx,   &
-              dwat2 )
+              amx(bounds%begc:bounds%endc, :),   &
+              bmx(bounds%begc:bounds%endc, :),   &
+              cmx(bounds%begc:bounds%endc, :),   &
+              rmx(bounds%begc:bounds%endc, :),   &
+              dwat2(bounds%begc:bounds%endc, :) )
       else
          call Tridiagonal(bounds, 1, nlevsoi+1, &
-              jtop, &
+              jtop(bounds%begc:bounds%endc), &
               num_hydrologyc, filter_hydrologyc, &
-              amx, &
-              bmx, &
-              cmx, &
-              rmx, &
-              dwat2 )
+              amx(bounds%begc:bounds%endc, :), &
+              bmx(bounds%begc:bounds%endc, :), &
+              cmx(bounds%begc:bounds%endc, :), &
+              rmx(bounds%begc:bounds%endc, :), &
+              dwat2(bounds%begc:bounds%endc, :) )
       end if
-
+      
       ! Renew the mass of liquid water
       ! also compute qcharge from dwat in aquifer layer
       ! update in drainage for case jwt < nlevsoi

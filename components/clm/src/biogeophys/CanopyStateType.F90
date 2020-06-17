@@ -69,9 +69,6 @@ module CanopyStateType
   end type CanopyState_type
   !------------------------------------------------------------------------
 
-    type(CanopyState_type)  :: canopystate_vars
-
-    !$acc declare create(canopystate_vars)
 contains
   !------------------------------------------------------------------------
   subroutine Init(this, bounds)

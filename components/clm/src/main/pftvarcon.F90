@@ -1131,20 +1131,14 @@ contains
     if ( .not. readv ) gcpsi(:) = 0._r8
     call ncd_io('pftcc',pftcc, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) pftcc(:) = 1._r8
-!#py
     call ncd_io('mergetoclmpft', mergetoclmpft, 'read', ncid, readvar=readv)
-!#py
     if ( .not. readv ) then
        do i = 0, mxpft
           mergetoclmpft(i) = i
        end do
     end if
-!#py
     call ncd_pio_closefile(ncid)
-!#py
-!#py
     do i = 0, mxpft
-!#py
        ! (FATES-INTERF) Later, depending on how the team plans to structure the crop model
        ! or other modules that co-exist while FATES is on, we may want to preserve these pft definitions
        ! on non-fates columns.  For now, they are incompatible, and this check is warranted (rgk 04-2017)
@@ -1155,7 +1149,6 @@ contains
              call endrun(msg='pftconrd: bad name for pft on paramfile dataset'//errMsg(__FILE__, __LINE__))
           end if
        end if
-!#py
        if ( trim(pftname(i)) == 'not_vegetated'                       ) noveg                = i
        if ( trim(pftname(i)) == 'needleleaf_evergreen_temperate_tree' ) ndllf_evr_tmp_tree   = i
        if ( trim(pftname(i)) == 'needleleaf_evergreen_boreal_tree'    ) ndllf_evr_brl_tree   = i
@@ -1182,14 +1175,11 @@ contains
        if ( trim(pftname(i)) == 'soybean'                             ) nsoybean             = i
        if ( trim(pftname(i)) == 'irrigated_soybean'                   ) nsoybeanirrig        = i
     end do
-!#py
     ntree                = nbrdlf_dcd_brl_tree  ! value for last type of tree
     npcropmin            = ncorn                ! first prognostic crop
     npcropmax            = nsoybeanirrig        ! last prognostic crop in list
-!#py
     call set_is_pft_known_to_model()
     call set_num_cfts_known_to_model()
-!#py
     if( .not. use_fates ) then
        if ( npcropmax /= mxpft )then
           call endrun(msg=' ERROR: npcropmax is NOT the last value'//errMsg(__FILE__, __LINE__))
@@ -1222,12 +1212,10 @@ contains
           end if
        end do
     end if
-!#py
     if (masterproc) then
        write(iulog,*) 'Successfully read PFT physiological data'
        write(iulog,*)
     end if
-!#py
   end subroutine pftconrd
 
   !-----------------------------------------------------------------------

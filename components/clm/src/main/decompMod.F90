@@ -23,11 +23,16 @@ module decompMod
   integer, parameter, public :: BOUNDS_SUBGRID_COLUMN   = 3
   integer, parameter, public :: BOUNDS_SUBGRID_PATCH    = 4
   integer, parameter, public :: BOUNDS_SUBGRID_COHORT   = 5
-
+  !$acc declare copyin(BOUNDS_SUBGRID_GRIDCELL )
+  !$acc declare copyin(BOUNDS_SUBGRID_LANDUNIT )
+  !$acc declare copyin(BOUNDS_SUBGRID_COLUMN   )
+  !$acc declare copyin(BOUNDS_SUBGRID_PATCH    )
+  !$acc declare copyin(BOUNDS_SUBGRID_COHORT   )
   !
   ! Define possible bounds levels
   integer, parameter, public :: BOUNDS_LEVEL_PROC  = 1
   integer, parameter, public :: BOUNDS_LEVEL_CLUMP = 2
+  !$acc declare copyin(BOUNDS_LEVEL_PROC, BOUNDS_LEVEL_CLUMP)
   !
   ! !PUBLIC MEMBER FUNCTIONS:
 
@@ -53,6 +58,8 @@ module decompMod
   public get_proc_bounds    ! this processor beg and end gridcell,landunit,column,pft
   public get_clump_bounds_gpu
 
+  public :: init_proc_clump_info
+
   ! !PRIVATE MEMBER FUNCTIONS:
   !
   ! !PRIVATE TYPES:
@@ -68,12 +75,12 @@ module decompMod
 
   type bounds_type
      ! The following variables correspond to "Local" quantities
-     integer :: begg, endg                       ! beginning and ending gridcell index
-     integer :: begt, endt                       ! beginning and ending topographic unit index
-     integer :: begl, endl                       ! beginning and ending landunit index
-     integer :: begc, endc                       ! beginning and ending column index
-     integer :: begp, endp                       ! beginning and ending pft index
-     integer :: begCohort, endCohort             ! beginning and ending cohort indices
+     integer :: begg, endg             ! beginning and ending gridcell index
+     integer :: begt, endt             ! beginning and ending topographic unit index
+     integer :: begl, endl             ! beginning and ending landunit index
+     integer :: begc, endc             ! beginning and ending column index
+     integer :: begp, endp             ! beginning and ending pft index
+     integer :: begCohort, endCohort   ! beginning and ending cohort indices
 
      ! The following variables correspond to "Ghost/Halo" quantites
      integer :: begg_ghost, endg_ghost           ! beginning and ending gridcell index
@@ -95,6 +102,35 @@ module decompMod
      integer :: clump_index                      ! if defined on the clump level, this gives the clump index
   end type bounds_type
   public bounds_type
+
+  type :: bounds_type_gpu
+     ! The following variables correspond to "Local" quantities
+     integer, pointer :: begg, endg            => null() ! beginning and ending gridcell index
+     integer, pointer :: begt, endt            => null() ! beginning and ending topographic unit index
+     integer, pointer :: begl, endl            => null() ! beginning and ending landunit index
+     integer, pointer :: begc, endc            => null() ! beginning and ending column index
+     integer, pointer :: begp, endp            => null() ! beginning and ending pft index
+     integer, pointer :: begCohort, endCohort  => null() ! beginning and ending cohort indices
+
+     ! The following variables correspond to "Ghost/Halo" quantites
+     integer, pointer :: begg_ghost, endg_ghost           => null() ! beginning and ending gridcell index
+     integer, pointer :: begt_ghost, endt_ghost           => null() ! beginning and ending topounit index
+     integer, pointer :: begl_ghost, endl_ghost           => null() ! beginning and ending landunit index
+     integer, pointer :: begc_ghost, endc_ghost           => null() ! beginning and ending column index
+     integer, pointer :: begp_ghost, endp_ghost           => null() ! beginning and ending pft index
+     integer, pointer :: begCohort_ghost, endCohort_ghost => null() ! beginning and ending cohort indices
+
+     ! The following variables correspond to "ALL" (=Local + Ghost) quantites
+     integer, pointer :: begg_all, endg_all           => null()   ! beginning and ending gridcell index
+     integer, pointer :: begt_all, endt_all           => null()   ! beginning and ending topounit index
+     integer, pointer :: begl_all, endl_all           => null()   ! beginning and ending landunit index
+     integer, pointer :: begc_all, endc_all           => null()   ! beginning and ending column index
+     integer, pointer :: begp_all, endp_all           => null()   ! beginning and ending pft index
+     integer, pointer :: begCohort_all, endCohort_all => null()   ! beginning and ending cohort indices
+
+     integer, pointer :: level       => null()      ! whether defined on the proc or clump level
+     integer, pointer :: clump_index => null()      ! if defined on the clump level, this gives the clump index
+  end type bounds_type_gpu
 
   !---global information on each pe
   type processor_type
@@ -142,10 +178,16 @@ module decompMod
      integer         :: begc_all, endc_all               ! beginning and ending column index
      integer         :: begp_all, endp_all               ! beginning and ending pft index
      integer         :: begCohort_all, endCohort_all     ! beginning and ending cohort indices
-
   end type processor_type
   public processor_type
-  type(processor_type),public :: procinfo
+  type(processor_type), public :: procinfo
+
+  type :: processor_type_gpu
+     integer, pointer :: nclumps   => null()             ! number of clumps for processor_type iam
+     integer, pointer :: cid(:)    => null()             ! clump indices
+
+  end type processor_type_gpu
+  type(processor_type_gpu), public :: gpu_procinfo
 
   !---global information on each pe
   type clump_type
@@ -165,6 +207,30 @@ module decompMod
   end type clump_type
   public clump_type
   type(clump_type),public, allocatable :: clumps(:)
+
+
+    type clump_type_gpu
+       integer, pointer :: owner          => null()  ! process id owning clump
+       integer, pointer :: ncells         => null()  ! number of gridcells in clump
+       integer, pointer :: ntopounits     => null()  ! number of topographic units in clump
+       integer, pointer :: nlunits        => null()  ! number of landunits in clump
+       integer, pointer :: ncols          => null()  ! number of columns in clump
+       integer, pointer :: npfts          => null()  ! number of pfts in clump
+       integer, pointer :: nCohorts       => null()  ! number of cohorts in clump
+       integer, pointer :: begg           => null()
+       integer, pointer :: endg           => null()  ! beginning and ending gridcell index
+       integer, pointer :: begt           => null()
+       integer, pointer :: endt           => null()  ! beginning and ending topographic unit index
+       integer, pointer :: begl           => null()
+       integer, pointer :: endl           => null()  ! beginning and ending landunit index
+       integer, pointer :: begc           => null()
+       integer, pointer :: endc           => null()  ! beginning and ending column index
+       integer, pointer :: begp           => null()
+       integer, pointer :: endp           => null()  ! beginning and ending pft index
+       integer, pointer :: begCohort      => null()
+       integer, pointer :: endCohort      => null()  ! beginning and ending cohort indices
+    end type clump_type_gpu
+    type(clump_type_gpu), public, allocatable :: gpu_clumps(:)
 
 
   !---global information on each pe
@@ -188,8 +254,59 @@ module decompMod
   !$acc declare create(clumps)
   !$acc declare create(procinfo)
 
-contains
+  !$acc declare create(gpu_clumps, gpu_procinfo)
 
+contains
+  subroutine init_proc_clump_info()
+    implicit none
+
+    integer :: nc
+
+    allocate(gpu_clumps(nclumps))
+    allocate(gpu_procinfo%cid(nclumps))
+    do nc = 1 , nclumps
+      allocate(gpu_procinfo%nclumps); gpu_procinfo%nclumps = procinfo%nclumps
+      gpu_procinfo%cid(nc) = procinfo%cid(nc)
+      allocate(gpu_clumps(nc)%owner          )
+      allocate(gpu_clumps(nc)%ncells          )
+      allocate(gpu_clumps(nc)%ntopounits      )
+      allocate(gpu_clumps(nc)%nlunits         )
+      allocate(gpu_clumps(nc)%ncols           )
+      allocate(gpu_clumps(nc)%npfts           )
+      allocate(gpu_clumps(nc)%nCohorts        )
+      allocate(gpu_clumps(nc)%begg       )
+      allocate(gpu_clumps(nc)%endg       )
+      allocate(gpu_clumps(nc)%begt       )
+      allocate(gpu_clumps(nc)%endt       )
+      allocate(gpu_clumps(nc)%begl       )
+      allocate(gpu_clumps(nc)%endl       )
+      allocate(gpu_clumps(nc)%begc       )
+      allocate(gpu_clumps(nc)%endc       )
+      allocate(gpu_clumps(nc)%begp       )
+      allocate(gpu_clumps(nc)%endp       )
+      allocate(gpu_clumps(nc)%begCohort  )
+      allocate(gpu_clumps(nc)%endCohort  )
+    end do
+    do nc = 1, nclumps
+      gpu_clumps(nc)%owner      = clumps(nc)%owner
+      gpu_clumps(nc)%ncells     = clumps(nc)%ncells
+      gpu_clumps(nc)%ntopounits = clumps(nc)%ntopounits
+      gpu_clumps(nc)%nlunits    = clumps(nc)%nlunits
+      gpu_clumps(nc)%ncols      = clumps(nc)%ncols
+      gpu_clumps(nc)%npfts      = clumps(nc)%npfts
+      gpu_clumps(nc)%nCohorts   = clumps(nc)%nCohorts
+      gpu_clumps(nc)%begg = clumps(nc)%begg; gpu_clumps(nc)%endg = clumps(nc)%endg
+      gpu_clumps(nc)%begt = clumps(nc)%begt; gpu_clumps(nc)%endt = clumps(nc)%endt
+      gpu_clumps(nc)%begl = clumps(nc)%begl; gpu_clumps(nc)%endl = clumps(nc)%endl
+      gpu_clumps(nc)%begc = clumps(nc)%begc; gpu_clumps(nc)%endc = clumps(nc)%endc
+      gpu_clumps(nc)%begp = clumps(nc)%begp; gpu_clumps(nc)%endp = clumps(nc)%endp
+      gpu_clumps(nc)%begCohort = clumps(nc)%begCohort
+      gpu_clumps(nc)%endCohort = clumps(nc)%endCohort
+    
+    end do
+
+    !$acc enter data copyin(gpu_clumps, gpu_procinfo)
+  end subroutine
   !-----------------------------------------------------------------------
   pure function get_beg(bounds, subgrid_level) result(beg_index)
     !
@@ -285,14 +402,14 @@ contains
      ! !LOCAL VARIABLES:
      character(len=32), parameter :: subname = 'get_clump_bounds'  ! Subroutine name
      integer :: cid                                                ! clump id
-#ifdef _OPENMP
+     #ifdef _OPENMP
      integer, external :: OMP_GET_MAX_THREADS
      integer, external :: OMP_GET_NUM_THREADS
      integer, external :: OMP_GET_THREAD_NUM
-#endif
+     #endif
      !------------------------------------------------------------------------------
      !    Make sure this IS being called from a threaded region
-#ifdef _OPENMP
+     #ifdef _OPENMP
      ! FIX(SPM, 090314) - for debugging ED and openMP
      !write(iulog,*) 'SPM omp debug decompMod 1 ', &
           !OMP_GET_NUM_THREADS(),OMP_GET_MAX_THREADS(),OMP_GET_THREAD_NUM()
@@ -300,7 +417,7 @@ contains
      if ( OMP_GET_NUM_THREADS() == 1 .and. OMP_GET_MAX_THREADS() > 1 )then
         call shr_sys_abort( trim(subname)//' ERROR: Calling from inside a non-threaded region)')
      end if
-#endif
+     #endif
 
      cid  = procinfo%cid(n)
      bounds%begp = clumps(cid)%begp
@@ -313,21 +430,6 @@ contains
      bounds%endt = clumps(cid)%endt
      bounds%begg = clumps(cid)%begg
      bounds%endg = clumps(cid)%endg
-
-  !   print *, procinfo%cid(n)
-  !   print *, clumps(cid)%begp
-  !   print *, clumps(cid)%endp
-  !   print *, clumps(cid)%begc
-  !   print *, clumps(cid)%endc
-  !   print *, clumps(cid)%begl
-  !   print *, clumps(cid)%endl
-  !   print *, clumps(cid)%begt
-  !   print *, clumps(cid)%endt
-  !   print *, clumps(cid)%begg
-  !   print *, clumps(cid)%endg
-
-
-
 
      ! clumps have no ghost quantites
      bounds%begp_ghost = 0
@@ -650,30 +752,27 @@ contains
 
    end subroutine get_proc_total_ghosts
 
-   subroutine get_clump_bounds_gpu (n, bounds)
+   subroutine get_clump_bounds_gpu(n, bounds)
      !$acc routine seq
      ! !DESCRIPTION:
      ! Determine clump bounds
      !
      ! !ARGUMENTS:
-     integer, intent(in)  :: n                ! processor clump index
+     integer, value, intent(in)  :: n                ! processor clump index
      type(bounds_type), intent(inout) :: bounds ! clump bounds
      !
      ! !LOCAL VARIABLES:
-     integer :: cid                                                ! clump id
 
-     cid  = procinfo%cid(n)
-
-     bounds%begp = clumps(cid)%begp
-     bounds%endp = clumps(cid)%endp
-     bounds%begc = clumps(cid)%begc
-     bounds%endc = clumps(cid)%endc
-     bounds%begl = clumps(cid)%begl
-     bounds%endl = clumps(cid)%endl
-     bounds%begt = clumps(cid)%begt
-     bounds%endt = clumps(cid)%endt
-     bounds%begg = clumps(cid)%begg
-     bounds%endg = clumps(cid)%endg
+     bounds%begp = gpu_clumps(n)%begp
+     bounds%endp = gpu_clumps(n)%endp
+     bounds%begc = gpu_clumps(n)%begc
+     bounds%endc = gpu_clumps(n)%endc
+     bounds%begl = gpu_clumps(n)%begl
+     bounds%endl = gpu_clumps(n)%endl
+     bounds%begt = gpu_clumps(n)%begt
+     bounds%endt = gpu_clumps(n)%endt
+     bounds%begg = gpu_clumps(n)%begg
+     bounds%endg = gpu_clumps(n)%endg
 
      ! clumps have no ghost quantites
      bounds%begp_ghost = 0
@@ -688,19 +787,19 @@ contains
      bounds%endg_ghost = 0
 
      ! Since clumps have no ghost quantites, all = local
-     bounds%begp_all = clumps(cid)%begp
-     bounds%endp_all = clumps(cid)%endp
-     bounds%begc_all = clumps(cid)%begc
-     bounds%endc_all = clumps(cid)%endc
-     bounds%begl_all = clumps(cid)%begl
-     bounds%endl_all = clumps(cid)%endl
-     bounds%begt_all = clumps(cid)%begt
-     bounds%endt_all = clumps(cid)%endt
-     bounds%begg_all = clumps(cid)%begg
-     bounds%endg_all = clumps(cid)%endg
+     bounds%begp_all = gpu_clumps(n)%begp
+     bounds%endp_all = gpu_clumps(n)%endp
+     bounds%begc_all = gpu_clumps(n)%begc
+     bounds%endc_all = gpu_clumps(n)%endc
+     bounds%begl_all = gpu_clumps(n)%begl
+     bounds%endl_all = gpu_clumps(n)%endl
+     bounds%begt_all = gpu_clumps(n)%begt
+     bounds%endt_all = gpu_clumps(n)%endt
+     bounds%begg_all = gpu_clumps(n)%begg
+     bounds%endg_all = gpu_clumps(n)%endg
 
-     bounds%begCohort = clumps(cid)%begCohort
-     bounds%endCohort = clumps(cid)%endCohort
+     bounds%begCohort = gpu_clumps(n)%begCohort
+     bounds%endCohort = gpu_clumps(n)%endCohort
 
      bounds%level = BOUNDS_LEVEL_CLUMP
      bounds%clump_index = n

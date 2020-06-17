@@ -1034,14 +1034,16 @@ contains
            ptr_col=data2dptr, no_snow_behavior=no_snow_normal, default='inactive')
 
     this%t_soisno(begc:endc,:) = spval
+    data2dptr => this%t_soisno(:,1:nlevgrnd)
      call hist_addfld2d (fname='TSOI',  units='K', type2d='levgrnd', &
           avgflag='A', long_name='soil temperature (vegetated landunits only)', &
-           ptr_col=this%t_soisno, l2g_scale_type='veg')
+           ptr_col=data2dptr, l2g_scale_type='veg')
 
     this%t_soisno(begc:endc,:) = spval
+     data2dptr => this%t_soisno(:,1:nlevgrnd)
      call hist_addfld2d (fname='TSOI_ICE',  units='K', type2d='levgrnd', &
           avgflag='A', long_name='soil temperature (ice landunits only)', &
-           ptr_col=this%t_soisno, l2g_scale_type='ice')
+           ptr_col=data2dptr, l2g_scale_type='ice')
 
     this%t_h2osfc(begc:endc) = spval
      call hist_addfld1d (fname='TH2OSFC',  units='K',  &
@@ -1345,14 +1347,16 @@ contains
            ptr_col=data2dptr, no_snow_behavior=no_snow_normal, default='inactive')
 
     this%h2osoi_liq(begc:endc,:) = spval
+    data2dptr => this%h2osoi_liq(:,1:nlevgrnd)
      call hist_addfld2d (fname='SOILLIQ',  units='kg/m2', type2d='levgrnd', &
           avgflag='A', long_name='soil liquid water (vegetated landunits only)', &
-           ptr_col=this%h2osoi_liq, l2g_scale_type='veg')
+           ptr_col=data2dptr, l2g_scale_type='veg')
 
     this%h2osoi_ice(begc:endc,:) = spval
+    data2dptr => this%h2osoi_ice(begc:endc,1:nlevgrnd)
      call hist_addfld2d (fname='SOILICE',  units='kg/m2', type2d='levgrnd', &
           avgflag='A', long_name='soil ice (vegetated landunits only)', &
-           ptr_col=this%h2osoi_ice, l2g_scale_type='veg')
+           ptr_col=data2dptr, l2g_scale_type='veg')
 
     this%h2osfc(begc:endc) = spval
      call hist_addfld1d (fname='H2OSFC',  units='mm',  &

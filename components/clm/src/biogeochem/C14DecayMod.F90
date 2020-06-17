@@ -54,7 +54,6 @@ contains
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
     integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
-    !type(carbonstate_type) , intent(inout) :: c14_carbonstate_vars
     type(cnstate_type)     , intent(in)    :: cnstate_vars
     real(r8), intent(in) :: dt , days_per_year          ! radiation time step (seconds)
     integer, intent(in)  :: yr, mon, day, tod, offset
@@ -69,7 +68,6 @@ contains
 
     associate(                                                                    &
          spinup_factor      =>    decomp_cascade_con%spinup_factor              , & ! Input:   [real(r8) (:)     ]  factor for AD spinup associated with each pool
-
          decomp_cpools_vr   =>    c14_col_cs%decomp_cpools_vr     , & ! Output:  [real(r8) (:,:,:) ]  (gC/m3)  vertically-resolved decomposing (litter, cwd, soil) c pools
          seedc              =>    c14_col_cs%seedc                , & ! Output:  [real(r8) (:)     ]
          cpool              =>    c14_veg_cs%cpool              , & ! Output:  [real(r8) (:)     ]  (gC/m2) temporary photosynthate C pool

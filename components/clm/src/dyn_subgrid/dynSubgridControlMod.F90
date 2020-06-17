@@ -11,9 +11,9 @@ module dynSubgridControlMod
   ! pass around the single instance just to query these control flags.
   !
   ! !USES:
-    #include "shr_assert.h"
-    use shr_log_mod        , only : errMsg => shr_log_errMsg
-   use abortutils         , only : endrun
+  #include "shr_assert.h"
+  use shr_log_mod        , only : errMsg => shr_log_errMsg
+  use abortutils         , only : endrun
   use clm_varctl         , only : fname_len
   !
   implicit none
@@ -36,17 +36,17 @@ module dynSubgridControlMod
   ! !PRIVATE TYPES:
   type, public :: dyn_subgrid_control_type
 
-     character(len=fname_len) :: flanduse_timeseries = ' ' ! transient landuse dataset
-     logical :: do_transient_pfts  = .false. ! whether to apply transient natural PFTs from dataset
-     logical :: do_transient_crops = .false. ! whether to apply transient crops from dataset
-     logical :: do_harvest         = .false. ! whether to apply harvest from dataset
+     character(len=256),pointer :: flanduse_timeseries => null() ! transient landuse dataset
+     logical, pointer :: do_transient_pfts  => null() ! whether to apply transient natural PFTs from dataset
+     logical, pointer :: do_transient_crops => null() ! whether to apply transient crops from dataset
+     logical, pointer :: do_harvest         => null() ! whether to apply harvest from dataset
 
      ! The following is only meant for testing: Whether area changes are allowed at times
      ! other than the year boundary. This should only arise in some test configurations
      ! where we artificially create changes more frequently so that we can run short
      ! tests. This flag is only used for error-checking, not controlling any model
      ! behavior.
-     logical :: for_testing_allow_non_annual_changes = .false.
+     logical, pointer :: for_testing_allow_non_annual_changes => null()
 
      ! The following is only meant for testing: If .true., set the dynbal water and
      ! energy fluxes to zero. This is needed in some tests where we have daily rather
@@ -54,13 +54,14 @@ module dynSubgridControlMod
      ! those tests, we end up with sensible heat fluxes of thousands of W m-2 or more,
      ! which causes CAM to blow up. However, note that setting it to true will break
      ! water and energy conservation!
-     logical :: for_testing_zero_dynbal_fluxes = .false.
+     logical,pointer :: for_testing_zero_dynbal_fluxes => null()
 
-     logical :: initialized        = .false. ! whether this object has been initialized
+     logical,pointer  :: initialized  => null() ! whether this object has been initialized
   end type dyn_subgrid_control_type
 
   type(dyn_subgrid_control_type), public :: dyn_subgrid_control_inst
   !$acc declare create(dyn_subgrid_control_inst)
+
   character(len=*), parameter, private :: sourcefile = &
        __FILE__
 
@@ -73,118 +74,112 @@ contains
      ! Initialize the dyn_subgrid_control settings.
      !
      ! !USES:
-     use spmdMod           , only : masterproc
+    use spmdMod           , only : masterproc
      !
      ! !ARGUMENTS:
      character(len=*), intent(in) :: NLFilename ! Namelist filename
      !
      ! !LOCAL VARIABLES:
 
-     character(len=*), parameter :: subname = 'dynSubgridControl_init'
+    character(len=*), parameter :: subname = 'dynSubgridControl_init'
      !-----------------------------------------------------------------------
+     allocate(dyn_subgrid_control_inst%initialized            )
+     allocate(    dyn_subgrid_control_inst%flanduse_timeseries  )
+     allocate(    dyn_subgrid_control_inst%do_transient_pfts    )
+     allocate(    dyn_subgrid_control_inst%do_transient_crops   )
+     allocate(    dyn_subgrid_control_inst%do_harvest           )
+     allocate(dyn_subgrid_control_inst%for_testing_allow_non_annual_changes)
+     allocate(dyn_subgrid_control_inst%for_testing_zero_dynbal_fluxes      )
 
-     call read_namelist( NLFilename )
-     if (masterproc) then
-        call check_namelist_consistency
-     end if
+    call read_namelist( NLFilename )
+    if (masterproc) then
+       call check_namelist_consistency
+    end if
 
-     dyn_subgrid_control_inst%initialized = .true.
-      dyn_subgrid_control_inst%flanduse_timeseries = ' ' ! transient landuse dataset
-      dyn_subgrid_control_inst%do_transient_pfts  = .false. ! whether to apply transient natural PFTs from dataset
-      dyn_subgrid_control_inst%do_transient_crops = .false. ! whether to apply transient crops from dataset
-      dyn_subgrid_control_inst%do_harvest         = .false. ! whether to apply harvest from dataset
-      dyn_subgrid_control_inst%for_testing_allow_non_annual_changes = .false.
-      dyn_subgrid_control_inst%for_testing_zero_dynbal_fluxes = .false.
-      dyn_subgrid_control_inst%initialized        = .true. ! whether this object has been initialized
+
+    dyn_subgrid_control_inst%initialized = .true.
 
    end subroutine dynSubgridControl_init
 
   !-----------------------------------------------------------------------
-   subroutine read_namelist( NLFilename )
-     !
-     ! !DESCRIPTION:
-     ! Read dyn_subgrid_control namelist variables
-     !
-     ! !USES:
-     use fileutils      , only : getavu, relavu
-     use clm_nlUtilsMod , only : find_nlgroup_name
-     use clm_varctl     , only : iulog
-     use spmdMod        , only : masterproc, mpicom
-     use shr_mpi_mod    , only : shr_mpi_bcast
-     !
-     ! !ARGUMENTS:
-     character(len=*), intent(in) :: NLFilename   ! Namelist filename
-     !
-     ! !LOCAL VARIABLES:
-     ! temporary variables corresponding to the components of dyn_subgrid_control_type:
-     character(len=fname_len) :: flanduse_timeseries
-     logical :: do_transient_pfts
-     logical :: do_transient_crops
-     logical :: do_harvest
-     logical :: for_testing_allow_non_annual_changes
-     logical :: for_testing_zero_dynbal_fluxes
-     ! other local variables:
-     integer :: nu_nml    ! unit for namelist file
-     integer :: nml_error ! namelist i/o error flag
+  subroutine read_namelist( NLFilename )
+    !
+    ! !DESCRIPTION:
+    ! Read dyn_subgrid_control namelist variables
+    !
+    ! !USES:
+    use fileutils      , only : getavu, relavu
+    use clm_nlUtilsMod , only : find_nlgroup_name
+    use clm_varctl     , only : iulog
+    use spmdMod        , only : masterproc, mpicom
+    use shr_mpi_mod    , only : shr_mpi_bcast
+    !
+    ! !ARGUMENTS:
+    character(len=*), intent(in) :: NLFilename   ! Namelist filename
+    !
+    ! !LOCAL VARIABLES:
+    ! temporary variables corresponding to the components of dyn_subgrid_control_type:
+    character(len=fname_len) :: flanduse_timeseries
+    logical :: do_transient_pfts
+    logical :: do_transient_crops
+    logical :: do_harvest
+    logical :: for_testing_allow_non_annual_changes
+    logical :: for_testing_zero_dynbal_fluxes
+    ! other local variables:
+    integer :: nu_nml    ! unit for namelist file
+    integer :: nml_error ! namelist i/o error flag
+    character(len=*), parameter :: subname = 'read_namelist'
+    !-----------------------------------------------------------------------
+    namelist /dynamic_subgrid/ &
+         flanduse_timeseries, &
+         do_transient_pfts, &
+         do_transient_crops, &
+         do_harvest, &
+         for_testing_allow_non_annual_changes, &
+         for_testing_zero_dynbal_fluxes
+    ! Initialize options to default values, in case they are not specified in the namelist
+    flanduse_timeseries = ' '
+    do_transient_pfts  = .false.
+    do_transient_crops = .false.
+    do_harvest         = .false.
+    for_testing_allow_non_annual_changes = .false.
+    for_testing_zero_dynbal_fluxes = .false.
+    if (masterproc) then
+       nu_nml = getavu()
+       open( nu_nml, file=trim(NLFilename), status='old', iostat=nml_error )
+       call find_nlgroup_name(nu_nml, 'dynamic_subgrid', status=nml_error)
+       if (nml_error == 0) then
+          read(nu_nml, nml=dynamic_subgrid, iostat=nml_error)
+          if (nml_error /= 0) then
+             call endrun(msg='ERROR reading dynamic_subgrid namelist'//errMsg(sourcefile, __LINE__))
+          end if
+       else
+          call endrun(msg='ERROR finding dynamic_subgrid namelist'//errMsg(sourcefile, __LINE__))
+       end if
+       close(nu_nml)
+       call relavu( nu_nml )
+    endif
+    call shr_mpi_bcast (flanduse_timeseries, mpicom)
+    call shr_mpi_bcast (do_transient_pfts, mpicom)
+    call shr_mpi_bcast (do_transient_crops, mpicom)
+    call shr_mpi_bcast (do_harvest, mpicom)
+    call shr_mpi_bcast (for_testing_allow_non_annual_changes, mpicom)
+    call shr_mpi_bcast (for_testing_zero_dynbal_fluxes, mpicom)
 
-     character(len=*), parameter :: subname = 'read_namelist'
-     !-----------------------------------------------------------------------
+    dyn_subgrid_control_inst%flanduse_timeseries = flanduse_timeseries
+    dyn_subgrid_control_inst%do_transient_pfts = do_transient_pfts
+    dyn_subgrid_control_inst%do_transient_crops = do_transient_crops
+    dyn_subgrid_control_inst%do_harvest = do_harvest
+    dyn_subgrid_control_inst%for_testing_allow_non_annual_changes = for_testing_allow_non_annual_changes
+    dyn_subgrid_control_inst%for_testing_zero_dynbal_fluxes = for_testing_zero_dynbal_fluxes
+    if (masterproc) then
+       write(iulog,*) ' '
+       write(iulog,*) 'dynamic_subgrid settings:'
+       write(iulog,nml=dynamic_subgrid)
+       write(iulog,*) ' '
+    end if
 
-     namelist /dynamic_subgrid/ &
-          flanduse_timeseries, &
-          do_transient_pfts, &
-          do_transient_crops, &
-          do_harvest, &
-          for_testing_allow_non_annual_changes, &
-          for_testing_zero_dynbal_fluxes
-
-     ! Initialize options to default values, in case they are not specified in the namelist
-     flanduse_timeseries = ' '
-     do_transient_pfts  = .false.
-     do_transient_crops = .false.
-     do_harvest         = .false.
-     for_testing_allow_non_annual_changes = .false.
-     for_testing_zero_dynbal_fluxes = .false.
-
-     if (masterproc) then
-        nu_nml = getavu()
-        open( nu_nml, file=trim(NLFilename), status='old', iostat=nml_error )
-        call find_nlgroup_name(nu_nml, 'dynamic_subgrid', status=nml_error)
-        if (nml_error == 0) then
-           read(nu_nml, nml=dynamic_subgrid, iostat=nml_error)
-           if (nml_error /= 0) then
-              call endrun(msg='ERROR reading dynamic_subgrid namelist'//errMsg(sourcefile, __LINE__))
-           end if
-        else
-           call endrun(msg='ERROR finding dynamic_subgrid namelist'//errMsg(sourcefile, __LINE__))
-        end if
-        close(nu_nml)
-        call relavu( nu_nml )
-     endif
-
-     call shr_mpi_bcast (flanduse_timeseries, mpicom)
-     call shr_mpi_bcast (do_transient_pfts, mpicom)
-     call shr_mpi_bcast (do_transient_crops, mpicom)
-     call shr_mpi_bcast (do_harvest, mpicom)
-     call shr_mpi_bcast (for_testing_allow_non_annual_changes, mpicom)
-     call shr_mpi_bcast (for_testing_zero_dynbal_fluxes, mpicom)
-
-     dyn_subgrid_control_inst = dyn_subgrid_control_type( &
-          flanduse_timeseries = flanduse_timeseries, &
-          do_transient_pfts = do_transient_pfts, &
-          do_transient_crops = do_transient_crops, &
-          do_harvest = do_harvest, &
-          for_testing_allow_non_annual_changes = for_testing_allow_non_annual_changes, &
-          for_testing_zero_dynbal_fluxes = for_testing_zero_dynbal_fluxes)
-
-     if (masterproc) then
-        write(iulog,*) ' '
-        write(iulog,*) 'dynamic_subgrid settings:'
-        write(iulog,nml=dynamic_subgrid)
-        write(iulog,*) ' '
-     end if
-
-   end subroutine read_namelist
+  end subroutine read_namelist
 
   !-----------------------------------------------------------------------
   subroutine check_namelist_consistency
@@ -204,51 +199,51 @@ contains
 
     if (dyn_subgrid_control_inst%flanduse_timeseries == ' ') then
        if (dyn_subgrid_control_inst%do_transient_pfts) then
-           write(iulog,*) 'ERROR: do_transient_pfts can only be true if you are running with'
-           write(iulog,*) 'a flanduse_timeseries file (currently flanduse_timeseries is blank)'
-            call endrun(msg=errMsg(sourcefile, __LINE__))
+          write(iulog,*) 'ERROR: do_transient_pfts can only be true if you are running with'
+          write(iulog,*) 'a flanduse_timeseries file (currently flanduse_timeseries is blank)'
+          call endrun(msg=errMsg(sourcefile, __LINE__))
        end if
        if (dyn_subgrid_control_inst%do_transient_crops) then
-           write(iulog,*) 'ERROR: do_transient_crops can only be true if you are running with'
-           write(iulog,*) 'a flanduse_timeseries file (currently flanduse_timeseries is blank)'
-            call endrun(msg=errMsg(sourcefile, __LINE__))
+          write(iulog,*) 'ERROR: do_transient_crops can only be true if you are running with'
+          write(iulog,*) 'a flanduse_timeseries file (currently flanduse_timeseries is blank)'
+          call endrun(msg=errMsg(sourcefile, __LINE__))
        end if
        if (dyn_subgrid_control_inst%do_harvest) then
-           write(iulog,*) 'ERROR: do_harvest can only be true if you are running with'
-           write(iulog,*) 'a flanduse_timeseries file (currently flanduse_timeseries is blank)'
-            call endrun(msg=errMsg(sourcefile, __LINE__))
+          write(iulog,*) 'ERROR: do_harvest can only be true if you are running with'
+          write(iulog,*) 'a flanduse_timeseries file (currently flanduse_timeseries is blank)'
+          call endrun(msg=errMsg(sourcefile, __LINE__))
        end if
     end if
 
     if (dyn_subgrid_control_inst%do_transient_pfts) then
        if (use_fates) then
-           write(iulog,*) 'ERROR: do_transient_pfts is incompatible with use_fates'
-            call endrun(msg=errMsg(sourcefile, __LINE__))
+          write(iulog,*) 'ERROR: do_transient_pfts is incompatible with use_fates'
+          call endrun(msg=errMsg(sourcefile, __LINE__))
        end if
     end if
 
     if (dyn_subgrid_control_inst%do_transient_crops) then
        if (.not. use_crop) then
-           write(iulog,*) 'ERROR: do_transient_crops can only be true if use_crop is true'
-            call endrun(msg=errMsg(sourcefile, __LINE__))
+          write(iulog,*) 'ERROR: do_transient_crops can only be true if use_crop is true'
+          call endrun(msg=errMsg(sourcefile, __LINE__))
        end if
        if (use_fates) then
           ! NOTE(wjs, 2017-01-13) ED / FATES does not currently have a mechanism for
           ! changing its column areas, with the consequent changes in aboveground biomass
           ! per unit area. See https://github.com/NGEET/ed-clm/issues/173
-           write(iulog,*) 'ERROR: do_transient_crops does not currently work with use_fates'
-            call endrun(msg=errMsg(sourcefile, __LINE__))
+          write(iulog,*) 'ERROR: do_transient_crops does not currently work with use_fates'
+          call endrun(msg=errMsg(sourcefile, __LINE__))
        end if
     end if
 
     if (dyn_subgrid_control_inst%do_harvest) then
        if (.not. use_cn) then
-           write(iulog,*) 'ERROR: do_harvest can only be true if use_cn is true'
-            call endrun(msg=errMsg(sourcefile, __LINE__))
+          write(iulog,*) 'ERROR: do_harvest can only be true if use_cn is true'
+          call endrun(msg=errMsg(sourcefile, __LINE__))
        end if
        if (use_fates) then
-           write(iulog,*) 'ERROR: do_harvest currently does not work with use_fates'
-            call endrun(msg=errMsg(sourcefile, __LINE__))
+          write(iulog,*) 'ERROR: do_harvest currently does not work with use_fates'
+          call endrun(msg=errMsg(sourcefile, __LINE__))
        end if
     end if
 
@@ -313,7 +308,7 @@ contains
 
   !-----------------------------------------------------------------------
   logical function get_for_testing_allow_non_annual_changes()
-    !
+    !$acc routine seq
     ! !DESCRIPTION:
     ! Return true if the user has requested to allow area changes at times other than the
     ! year boundary. (This should typically only be true for testing.) (This only
@@ -326,7 +321,7 @@ contains
 
   !-----------------------------------------------------------------------
   logical function get_for_testing_zero_dynbal_fluxes()
-    !
+    !$acc routine seq
     ! !DESCRIPTION:
     ! Return true if the user has requested to set the dynbal water and energy fluxes to
     ! zero. This should typically only be true for testing: This is needed in some tests

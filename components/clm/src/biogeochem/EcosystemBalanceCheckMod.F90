@@ -6,26 +6,22 @@ module EcosystemBalanceCheckMod
   !
   ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
-  !#py !#py use shr_infnan_mod      , only : nan => shr_infnan_nan, assignment(=)
-  !#py !#py use shr_log_mod         , only : errMsg => shr_log_errMsg
+  use shr_log_mod         , only : errMsg => shr_log_errMsg
   use decompMod           , only : bounds_type
-  !#py use abortutils          , only : endrun
+  use abortutils          , only : endrun
   use clm_varctl          , only : iulog, use_nitrif_denitrif, use_fates
-  !#py use clm_time_manager    , only : get_step_size,get_nstep
   use clm_varpar          , only : crop_prog
   use clm_varpar          , only : nlevdecomp
   use clm_varcon          , only : dzsoi_decomp
   use clm_varctl          , only : nu_com
   use clm_varctl          , only : ECA_Pconst_RGspin
+
   use CNDecompCascadeConType , only : decomp_cascade_con
   use clm_varpar          , only: ndecomp_cascade_transitions
   use subgridAveMod       , only : p2c, c2g
-  ! soil erosion
-  use clm_varctl          , only : use_erosion, ero_ccycle
   ! bgc interface & pflotran:
   use clm_varctl          , only : use_pflotran, pf_cmode, pf_hmode
   ! forest fertilization experiment
-  !#py use clm_time_manager    , only : get_curr_date
   use CNStateType         , only : fert_type , fert_continue, fert_dose, fert_start, fert_end
   use clm_varctl          , only : forest_fert_exp
   use pftvarcon           , only: noveg
@@ -38,13 +34,12 @@ module EcosystemBalanceCheckMod
   use ColumnDataType      , only : col_ns, col_nf, col_ps, col_pf
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_cf, veg_nf, veg_pf
-
-
   !
   implicit none
   save
   private
   real(r8), parameter :: balance_check_tolerance = 1e-8_r8
+  !$acc declare copyin(balance_check_tolerance)
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: BeginColCBalance
@@ -70,7 +65,7 @@ contains
     ! !DESCRIPTION:
     ! On the radiation time step, calculate the beginning carbon balance for mass
     ! conservation checks.
-    !
+    !$acc routine seq
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
@@ -98,12 +93,12 @@ contains
   end subroutine BeginColCBalance
 
   !-----------------------------------------------------------------------
-  subroutine BeginColNBalance(bounds, num_soilc, filter_soilc)
+  subroutine BeginColNBalance(bounds, num_soilc, filter_soilc )
     !
     ! !DESCRIPTION:
     ! On the radiation time step, calculate the beginning nitrogen balance for mass
     ! conservation checks.
-    !
+    !$acc routine seq
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_soilc       ! number of soil columns filter
@@ -135,7 +130,7 @@ contains
     ! !DESCRIPTION:
     ! On the radiation time step, calculate the beginning phosphorus balance for mass
     ! conservation checks.
-    !
+    !$acc routine seq
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_soilc       ! number of soil columns filter
@@ -201,7 +196,6 @@ contains
          col_prod1c_loss           =>    col_cf%prod1c_loss               , & ! Input:  [real(r8) (:) ]  (gC/m2/s) crop leafc harvested
          col_hrv_xsmrpool_to_atm   =>    col_cf%hrv_xsmrpool_to_atm       , & ! Input:  [real(r8) (:) ]  (gC/m2/s) excess MR pool harvest mortality
          som_c_leached             =>    col_cf%som_c_leached             , & ! Input:  [real(r8) (:) ]  (gC/m^2/s)total SOM C loss from vertical transport
-         som_c_yield               =>    col_cf%somc_yield                , & ! Input:  [real(r8) (:) ]  (gC/m^2/s)total SOM C loss by erosion
          col_decompc_delta         =>    col_cf%externalc_to_decomp_delta , & ! Input:  [real(r8) (:) ]  (gC/m2/s) summarized net change of whole column C i/o to decomposing pool bwtn time-step
          hrv_deadstemc_to_prod10c  =>    col_cf%hrv_deadstemc_to_prod10c  , & ! Input:  [real(r8) (:) ]  (gC/m2/s) dead stem C harvest mortality to 10-year product pool
          hrv_deadstemc_to_prod100c =>    col_cf%hrv_deadstemc_to_prod100c , & ! Input:  [real(r8) (:) ]  (gC/m2/s) dead stem C harvest mortality to 100-year product pool
@@ -211,8 +205,6 @@ contains
          )
 
       ! set time steps
-      !#py dt = real( get_step_size(), r8 )
-
       err_found = .false.
       ! column loop
       do fc = 1,num_soilc
@@ -239,11 +231,6 @@ contains
          ! subtract leaching flux
          col_coutputs = col_coutputs - som_c_leached(c)
 
-         ! add erosion flux
-         if (ero_ccycle) then
-            col_coutputs = col_coutputs + som_c_yield(c)
-         end if
-
          ! calculate the total column-level carbon balance error for this time step
          col_errcb(c) = (col_cinputs - col_coutputs)*dt - (col_endcb(c) - col_begcb(c))
 
@@ -266,23 +253,19 @@ contains
       if (.not. use_fates) then
          if (err_found) then
             c = err_index
-            !#py write(iulog,*)'column cbalance error = ', col_errcb(c), c
-            !#py write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
-            !#py write(iulog,*)'input                 = ',col_cinputs*dt
-            !#py write(iulog,*)'output                = ',col_coutputs*dt
-            !#py write(iulog,*)'er                    = ',er(c)*dt,col_cf%hr(c)*dt
-            !#py write(iulog,*)'fire                  = ',col_fire_closs(c)*dt
-            !#py write(iulog,*)'hrv_to_atm            = ',col_hrv_xsmrpool_to_atm(c)*dt
-            !#py write(iulog,*)'hrv_to_prod10         = ',hrv_deadstemc_to_prod10c(c)*dt
-            !#py write(iulog,*)'hrv_to_prod100        = ',hrv_deadstemc_to_prod100c(c)*dt
-            !#py write(iulog,*)'leach                 = ',som_c_leached(c)*dt
-            !#py write(iulog,*)'begcb                 = ',col_begcb(c)
-            !#py write(iulog,*)'endcb                 = ',col_endcb(c),col_cs%totsomc(c)
-            !#py write(iulog,*)'delta store           = ',col_endcb(c)-col_begcb(c)
-
-            if (ero_ccycle) then
-               write(iulog,*)'erosion               = ',som_c_yield(c)*dt
-            end if
+            print *, 'column cbalance error = ', col_errcb(c), c
+            print *, 'Latdeg,Londeg         = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
+            print *, 'input                 = ',col_cinputs*dt
+            print *, 'output                = ',col_coutputs*dt
+            print *, 'er                    = ',er(c)*dt,col_cf%hr(c)*dt
+            print *, 'fire                  = ',col_fire_closs(c)*dt
+            print *, 'hrv_to_atm            = ',col_hrv_xsmrpool_to_atm(c)*dt
+            print *, 'hrv_to_prod10         = ',hrv_deadstemc_to_prod10c(c)*dt
+            print *, 'hrv_to_prod100        = ',hrv_deadstemc_to_prod100c(c)*dt
+            print *, 'leach                 = ',som_c_leached(c)*dt
+            print *, 'begcb                 = ',col_begcb(c)
+            print *, 'endcb                 = ',col_endcb(c),col_cs%totsomc(c)
+            print *, 'delta store           = ',col_endcb(c)-col_begcb(c)
 
             if (use_pflotran .and. pf_cmode) then
                !#py write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
@@ -341,7 +324,6 @@ contains
          hrv_deadstemn_to_prod10n  =>    col_nf%hrv_deadstemn_to_prod10n  , & ! Input:  [real(r8) (:)]  (gN/m2/s) dead stem C harvest mortality to 10-year product pool
          hrv_deadstemn_to_prod100n =>    col_nf%hrv_deadstemn_to_prod100n , & ! Input:  [real(r8) (:)]  (gN/m2/s) dead stem C harvest mortality to 100-year product pool
          som_n_leached             =>    col_nf%som_n_leached             , & ! Input:  [real(r8) (:)]  total SOM N loss from vertical transport
-         som_n_yield               =>    col_nf%somn_yield                , & ! Input:  [real(r8) (:)]  total SOM N loss by erosion
          supplement_to_plantn      =>    veg_nf%supplement_to_plantn      , &
          ! pflotran:
          col_decompn_delta         =>    col_nf%externaln_to_decomp_delta , & ! Input: [real(r8) (:) ] (gN/m2/s) summarized net change of whole column N i/o to decomposing pool bwtn time-step
@@ -424,11 +406,6 @@ contains
 
          col_noutputs(c) = col_noutputs(c) - som_n_leached(c)
 
-         ! subtracted erosion flux
-         if (ero_ccycle) then
-            col_noutputs(c) = col_noutputs(c) + som_n_yield(c)
-         end if
-
          ! calculate the total column-level nitrogen balance error for this time step
          col_errnb(c) = (col_ninputs(c) - col_noutputs(c))*dt - &
               (col_endnb(c) - col_begnb(c))
@@ -449,30 +426,26 @@ contains
 
       if (err_found) then
          c = err_index
-         !#py !#py write(iulog,*)'column nbalance error = ',col_errnb(c), c, get_nstep()
-         !#py write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
-         !#py write(iulog,*)'begnb                 = ',col_begnb(c)
-         !#py write(iulog,*)'endnb                 = ',col_endnb(c)
-         !#py write(iulog,*)'delta store           = ',col_endnb(c)-col_begnb(c)
-         !#py write(iulog,*)'input mass            = ',col_ninputs(c)*dt
-         !#py write(iulog,*)'output mass           = ',col_noutputs(c)*dt
-         !#py write(iulog,*)'net flux              = ',(col_ninputs(c)-col_noutputs(c))*dt
-         !#py write(iulog,*)'denit                 = ',denit(c)*dt
-         !#py write(iulog,*)'n2onit                = ',f_n2o_nit(c)*dt
-         !#py write(iulog,*)'no3 leach             = ',smin_no3_leached(c)*dt
-         !#py write(iulog,*)'no3 runof             = ',smin_no3_runoff(c)*dt
-         !#py write(iulog,*)'ndep                  = ',ndep_to_sminn(c)*dt
-         !#py write(iulog,*)'nfix                  = ',nfix_to_sminn(c)*dt
-         !#py write(iulog,*)'nsup                  = ',supplement_to_sminn(c)*dt
+         print *,'column nbalance error = ',col_errnb(c), c
+         print *, 'Latdeg,Londeg         = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
+         print *, 'begnb                 = ',col_begnb(c)
+         print *, 'endnb                 = ',col_endnb(c)
+         print *, 'delta store           = ',col_endnb(c)-col_begnb(c)
+         print *, 'input mass            = ',col_ninputs(c)*dt
+         print *, 'output mass           = ',col_noutputs(c)*dt
+         print *, 'net flux              = ',(col_ninputs(c)-col_noutputs(c))*dt
+         print *, 'denit                 = ',denit(c)*dt
+         print *, 'n2onit                = ',f_n2o_nit(c)*dt
+         print *, 'no3 leach             = ',smin_no3_leached(c)*dt
+         print *, 'no3 runof             = ',smin_no3_runoff(c)*dt
+         print *, 'ndep                  = ',ndep_to_sminn(c)*dt
+         print *, 'nfix                  = ',nfix_to_sminn(c)*dt
+         print *, 'nsup                  = ',supplement_to_sminn(c)*dt
          if(crop_prog) then
             !#py write(iulog,*)'fertm                 = ',fert_to_sminn(c)*dt
             !#py write(iulog,*)'soyfx                 = ',soyfixn_to_sminn(c)*dt
          endif
          !#py write(iulog,*)'fire                  = ',col_fire_nloss(c)*dt
-
-         if (ero_ccycle) then
-            write(iulog,*)'erosion               = ',som_n_yield(c)*dt
-         end if
 
          if (use_pflotran .and. pf_cmode) then
             !#py write(iulog,*)'pf_delta_decompn      = ',col_decompn_delta(c)*dt
@@ -528,11 +501,6 @@ contains
          primp_to_labilep          => col_pf%primp_to_labilep          , &
          secondp_to_occlp          => col_pf%secondp_to_occlp          , &
          fert_p_to_sminp           => col_pf%fert_p_to_sminp           , &
-         som_p_yield               => col_pf%somp_yield                , & ! Input:  [real(r8) (:)]  SOM P pool loss by erosion (gP/m^2/s)
-         labilep_yield             => col_pf%labilep_yield             , & ! Input:  [real(r8) (:)]  soil labile mineral P loss by erosion (gP/m^s/s)
-         secondp_yield             => col_pf%secondp_yield             , & ! Input:  [real(r8) (:)]  soil secondary mineral P loss by erosion (gP/m^s/s)
-         occlp_yield               => col_pf%occlp_yield               , & ! Input:  [real(r8) (:)]  soil occluded mineral P loss by erosion (gP/m^s/s)
-         primp_yield               => col_pf%primp_yield               , & ! Input:  [real(r8) (:)]  soil primary mineral P loss by erosion (gP/m^s/s)
          supplement_to_plantp      => veg_pf%supplement_to_plantp          , &
          col_prod1p_loss           => col_pf%prod1p_loss               , & ! Input:  [real(r8) (:) ]  (gP/m2/s) crop leafc harvested
          col_pinputs               => col_pf%pinputs                   , & ! Output: [real(r8) (:)]  column-level P inputs (gP/m2/s)
@@ -553,17 +521,15 @@ contains
          )
 
       ! set time steps
-      !#py dt = real( get_step_size(), r8 )
-      !#py call get_curr_date(kyr, kmo, kda, mcsec)
-
       err_found = .false.
 
       call p2c(bounds,num_soilc,filter_soilc, &
-           leafp_to_litter, &
-           leafp_to_litter_col)
+           leafp_to_litter(bounds%begp:bounds%endp), &
+           leafp_to_litter_col(bounds%begc:bounds%endc))
+      
       call p2c(bounds,num_soilc,filter_soilc, &
-           frootp_to_litter, &
-           frootp_to_litter_col)
+           frootp_to_litter(bounds%begp:bounds%endp), &
+           frootp_to_litter_col(bounds%begc:bounds%endc))
 
       !! immobilization/mineralization in litter-to-SOM and SOM-to-SOM fluxes
       ! column loop
@@ -643,14 +609,7 @@ contains
          end if
 
          col_poutputs(c) = col_poutputs(c) + col_prod1p_loss(c)
-        
-         !NEW FROM MASTER
-         ! soil erosion
-         if (ero_ccycle) then
-            col_poutputs(c) = col_poutputs(c) + som_p_yield(c) + labilep_yield(c) + &
-               secondp_yield(c) !+ occlp_yield(c) + primp_yield(c)
-         end if
-         
+
          ! calculate the total column-level phosphorus balance error for this time step
          col_errpb(c) = (col_pinputs(c) - col_poutputs(c))*dt - &
               (col_endpb(c) - col_begpb(c))
@@ -664,18 +623,15 @@ contains
 
       if (err_found) then
          c = err_index
-         write(iulog,*)'column pbalance error = ', col_errpb(c), c
-         write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
-         write(iulog,*)'begpb       = ',col_begpb(c)
-         write(iulog,*)'endpb       = ',col_endpb(c)
-         write(iulog,*)'delta store = ',col_endpb(c)-col_begpb(c)
-         write(iulog,*)'input mass  = ',col_pinputs(c)*dt
-         write(iulog,*)'output mass = ',col_poutputs(c)*dt
-         write(iulog,*)'net flux    = ',(col_pinputs(c)-col_poutputs(c))*dt
-         if (ero_ccycle) then
-            write(iulog,*)'SOP erosion = ',som_p_yield(c)*dt
-            write(iulog,*)'SIP erosion = ',(labilep_yield(c)+secondp_yield(c)+occlp_yield(c)+primp_yield(c))*dt
-         end if
+         !#py write(iulog,*)'column pbalance error = ', col_errpb(c), c
+         !#py write(iulog,*)'Latdeg,Londeg=',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
+         !#py write(iulog,*)'begpb       = ',col_begpb(c)
+         !#py write(iulog,*)'endpb       = ',col_endpb(c)
+         !#py write(iulog,*)'delta store = ',col_endpb(c)-col_begpb(c)
+         !#py write(iulog,*)'input mass  = ',col_pinputs(c)*dt
+         !#py write(iulog,*)'output mass = ',col_poutputs(c)*dt
+         !#py write(iulog,*)'net flux    = ',(col_pinputs(c)-col_poutputs(c))*dt
+         !#py !#py call endrun(msg=errMsg(__FILE__, __LINE__))
       end if
 
     end associate
@@ -690,6 +646,7 @@ contains
     ! at grid cell level
     !
     ! !ARGUMENTS:
+      !$acc routine seq
     type(bounds_type)          , intent(in)    :: bounds
     type(column_carbon_state)  , intent(inout) :: col_cs
     type(gridcell_carbon_state), intent(inout) :: grc_cs
@@ -719,6 +676,7 @@ contains
     ! at grid cell level
     !
     ! !ARGUMENTS:
+      !$acc routine seq
     type(bounds_type)        , intent(in)    :: bounds
     !-----------------------------------------------------------------------
 
@@ -745,6 +703,7 @@ contains
     ! at grid cell level
     !
     ! !ARGUMENTS:
+      !$acc routine seq
     type(bounds_type)          , intent(in)    :: bounds
     !
     !-----------------------------------------------------------------------
@@ -775,6 +734,7 @@ contains
     ! at grid level after dynamic subgrid driver has been called
     !
     ! !ARGUMENTS:
+      !$acc routine seq
     type(bounds_type)          , intent(in)    :: bounds
     integer                    , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                    , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -803,7 +763,6 @@ contains
          )
 
       ! set time steps
-      !#py dt = real( get_step_size(), r8 )
 
       err_found = .false.
 
@@ -824,12 +783,12 @@ contains
               dwt_conv_cflux_grc(g)        + &
               dwt_prod10c_gain_grc(g)      + &
               dwt_prod100c_gain_grc(g)
-
-
+        
          errcb_grc(g) = (grc_cinputs - grc_coutputs)*dt - (endcb_grc(g) - begcb_grc(g))
 
          ! check for significant errors
          if (abs(errcb_grc(g)) > balance_check_tolerance) then
+            print *, "ERROR FOUND!"
             err_found = .true.
             err_index = g
          end if
@@ -838,16 +797,16 @@ contains
 
       if (err_found) then
          g = err_index
-         !#py write(iulog,*)'Grid cbalance error   = ',errcb_grc(g), g
-         !#py write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(g),grc_pp%londeg(g)
-         !#py write(iulog,*)'input                 = ',grc_cinputs*dt
-         !#py write(iulog,*)'output                = ',grc_coutputs*dt
-         !#py write(iulog,*)'error                 = ',errcb_grc(g)*dt
-         !#py write(iulog,*)'begcb                 = ',begcb_grc(g)
-         !#py write(iulog,*)'endcb                 = ',endcb_grc(g)
-         !#py write(iulog,*)'delta store           = ',endcb_grc(g)-begcb_grc(g)
-         !#py !#py call endrun(msg=errMsg(__FILE__, __LINE__))
-      end if
+         print *,'Grid cbalance error   = ',errcb_grc(g), g
+         print *,'Latdeg,Londeg         = ',grc_pp%latdeg(g),grc_pp%londeg(g)
+         print *,'input                 = ',grc_cinputs*dt
+         print *,'output                = ',grc_coutputs*dt
+         print *,'error                 = ',errcb_grc(g)*dt
+         print *,'begcb                 = ',begcb_grc(g)
+         print *,'endcb                 = ',endcb_grc(g)
+         print *,'delta store           = ',endcb_grc(g)-begcb_grc(g)
+        stop     
+       end if
 
     end associate
 
@@ -862,6 +821,7 @@ contains
     ! at grid level after dynamic subgrid driver has been called
     !
     ! !ARGUMENTS:
+      !$acc routine seq
     type(bounds_type)      , intent(in)    :: bounds
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -923,22 +883,21 @@ contains
 
       if (err_found) then
          g = err_index
-         !#py write(iulog,*)'Grid nbalance error   = ',errnb_grc(g), g
-         !#py write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(g),grc_pp%londeg(g)
-         !#py write(iulog,*)'input                 = ',grc_ninputs*dt
-         !#py write(iulog,*)'output                = ',grc_noutputs*dt
-         !#py write(iulog,*)'error                 = ',errnb_grc(g)*dt
-         !#py write(iulog,*)'begcb                 = ',begnb_grc(g)
-         !#py write(iulog,*)'endcb                 = ',endnb_grc(g)
-         !#py write(iulog,*)'delta store           = ',endnb_grc(g)-begnb_grc(g)
-         !#py write(iulog,*)''
-         !#py write(iulog,*)'dwt_conv                ',dwt_conv_nflux_grc(g)
-         !#py write(iulog,*)'dwt_prod10              ',dwt_prod10n_gain_grc(g)
-         !#py write(iulog,*)'dwt_prod100             ',dwt_prod100n_gain_grc(g)
-         !#py write(iulog,*)''
-         !#py write(iulog,*)'dwt_seedn_leaf          ',dwt_seedn_to_leaf_grc(g)
-         !#py write(iulog,*)'dwt_seedn_deadstem      ',dwt_seedn_to_deadstem_grc(g)
-         !#py !#py call endrun(msg=errMsg(__FILE__, __LINE__))
+         print *, 'Grid nbalance error   = ',errnb_grc(g), g
+         print *, 'Latdeg,Londeg         = ',grc_pp%latdeg(g),grc_pp%londeg(g)
+         print *, 'input                 = ',grc_ninputs*dt
+         print *, 'output                = ',grc_noutputs*dt
+         print *, 'error                 = ',errnb_grc(g)*dt
+         print *, 'begcb                 = ',begnb_grc(g)
+         print *, 'endcb                 = ',endnb_grc(g)
+         print *, 'delta store           = ',endnb_grc(g)-begnb_grc(g)
+         print *, ''
+         print *, 'dwt_conv                ',dwt_conv_nflux_grc(g)
+         print *, 'dwt_prod10              ',dwt_prod10n_gain_grc(g)
+         print *, 'dwt_prod100             ',dwt_prod100n_gain_grc(g)
+         print *, ''
+         print *, 'dwt_seedn_leaf          ',dwt_seedn_to_leaf_grc(g)
+         print *, 'dwt_seedn_deadstem      ',dwt_seedn_to_deadstem_grc(g)
       end if
 
     end associate
@@ -955,6 +914,7 @@ contains
     ! at grid level after dynamic subgrid driver has been called
     !
     ! !ARGUMENTS:
+      !$acc routine seq
     type(bounds_type)      , intent(in)    :: bounds
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -1015,14 +975,14 @@ contains
 
       if (err_found) then
          g = err_index
-         !#py write(iulog,*)'Grid pbalance error   = ',errpb_grc(g), g
-         !#py write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(g),grc_pp%londeg(g)
-         !#py write(iulog,*)'input                 = ',grc_pinputs*dt
-         !#py write(iulog,*)'output                = ',grc_poutputs*dt
-         !#py write(iulog,*)'error                 = ',errpb_grc(g)*dt
-         !#py write(iulog,*)'begcb                 = ',begpb_grc(g)
-         !#py write(iulog,*)'endcb                 = ',endpb_grc(g)
-         !#py write(iulog,*)'delta store           = ',endpb_grc(g)-begpb_grc(g)
+         print *, 'Grid pbalance error   = ',errpb_grc(g), g
+         print *, 'Latdeg,Londeg         = ',grc_pp%latdeg(g),grc_pp%londeg(g)
+         print *, 'input                 = ',grc_pinputs*dt
+         print *, 'output                = ',grc_poutputs*dt
+         print *, 'error                 = ',errpb_grc(g)*dt
+         print *, 'begcb                 = ',begpb_grc(g)
+         print *, 'endcb                 = ',endpb_grc(g)
+         print *, 'delta store           = ',endpb_grc(g)-begpb_grc(g)
          !#py !#py call endrun(msg=errMsg(__FILE__, __LINE__))
       end if
 

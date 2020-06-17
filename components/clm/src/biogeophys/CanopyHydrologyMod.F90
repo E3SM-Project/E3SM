@@ -167,7 +167,7 @@ contains
      real(r8) :: snowmelt
      integer  :: j
 
-	 !--------------------------------------------------- ! initializing variables used to adjust irrigation on local processer
+         !--------------------------------------------------- ! initializing variables used to adjust irrigation on local processer
      real(r8) :: qflx_irrig_grid(bounds%begg:bounds%endg)      ! irrigation at grid level [mm/s]
      real(r8) :: irrig_rate_grid(bounds%begg:bounds%endg)
 
@@ -254,7 +254,6 @@ contains
 
        ! Compute time step
 
-       !#py dtime = get_step_size()
 
        if (tw_irr) then
        !--------------- temp solution for the irrigation mapping issue, if ELM and MOSART share the same grid, no such problem
@@ -271,7 +270,7 @@ contains
          irrig_rate_grid , &
          p2c_scale_type=0, c2l_scale_type= 0, l2g_scale_type=0)
 
-		! initialize the qflx_irrig_grid
+                ! initialize the qflx_irrig_grid
          do gg = bounds%begg,bounds%endg
             qflx_irrig_grid(gg) = 0
          end do
@@ -329,7 +328,6 @@ contains
        end if
 
        ! Start pft loop
-       !$acc loop seq
        do f = 1, num_nolakep
           p = filter_nolakep(f)
           g = pgridcell(p)
@@ -341,7 +339,6 @@ contains
 
           ! Canopy interception and precipitation onto ground surface
           ! Add precipitation to leaf water
-
           if (ltype(l)==istsoil .or. ltype(l)==istwet .or. urbpoi(l) .or. &
                ltype(l)==istcrop) then
              qflx_candrip = 0._r8      ! rate of canopy runoff
@@ -350,14 +347,13 @@ contains
              qflx_prec_intr(p) = 0._r8    ! total intercepted precipitation
              fracsnow = 0._r8          ! fraction of input precip that is snow
              fracrain = 0._r8          ! fraction of input precip that is rain
-
+             
              if (ctype(c) /= icol_sunwall .and. ctype(c) /= icol_shadewall) then
                 if (frac_veg_nosno(p) == 1 .and. (forc_rain(t) + forc_snow(t)) > 0._r8) then
 
                    ! determine fraction of input precipitation that is snow and rain
                    fracsnow = forc_snow(t)/(forc_snow(t) + forc_rain(t))
                    fracrain = forc_rain(t)/(forc_snow(t) + forc_rain(t))
-
                    ! The leaf water capacities for solid and liquid are different,
                    ! generally double for snow, but these are of somewhat less
                    ! significance for the water budget because of lower evap. rate at
@@ -370,6 +366,7 @@ contains
                    fpi = 0.25_r8*(1._r8 - exp(-0.5_r8*(elai(p) + esai(p))))
 
                    ! Direct throughfall
+                   
                    qflx_through_snow = forc_snow(t) * (1._r8-fpi)
                    qflx_through_rain = forc_rain(t) * (1._r8-fpi)
 
@@ -378,7 +375,6 @@ contains
 
                    ! Water storage of intercepted precipitation and dew
                    h2ocan(p) = max(0._r8, h2ocan(p) + dtime*qflx_prec_intr(p))
-
                    ! Initialize rate of canopy runoff and snow falling off canopy
                    qflx_candrip = 0._r8
 
@@ -434,7 +430,7 @@ contains
              n_irrig_steps_left(p) = n_irrig_steps_left(p) - 1
           else
              qflx_irrig(p) = 0._r8
-			       qflx_irrig_grid(g) = 0._r8
+             qflx_irrig_grid(g) = 0._r8
           end if
 
           ! Add irrigation water directly onto ground (bypassing canopy interception)
@@ -442,10 +438,10 @@ contains
               if (tw_irr) then ! else one way
                 qflx_supply(p) = atm2lnd_vars%supply_grc(g) !!! original supply from WM, need to be updated based on the demand after interpolation
 
-               if (qflx_irrig(p) > 0._r8) then	!this pft needs water
+               if (qflx_irrig(p) > 0._r8) then  !this pft needs water
                qflx_surf_irrig(p) = atm2lnd_vars%supply_grc(g)/adjust_f/pgwgt(p)    ! original supply at grid level (mm/s) concentrate
                                                                                     ! to grid cells that need water  and then project
-																		            ! to pft level
+                                                                                    ! to pft level
                if (pgwgt(p) < 1.0e-16_r8) then ! avoid super small fraction of irrigated land
                    qflx_surf_irrig(p) = atm2lnd_vars%supply_grc(g)/adjust_f
                end if
@@ -481,7 +477,7 @@ contains
                qflx_over_supply(p) = 0
 
                if (qflx_irrig(p) > 0) then
-                 !#py write(iulog,*)'warning irrigp>0 but irrigg is not',qflx_irrig(p),qflx_irrig_grid(g)
+                 print *, 'warning irrigp>0 but irrigg is not',qflx_irrig(p),qflx_irrig_grid(g)
                end if
              end if
 
@@ -499,12 +495,10 @@ contains
           !qflx_prec_grnd_rain(p) = qflx_prec_grnd_rain(p) + qflx_irrig(p)
 
           ! Done irrigation
-
           qflx_prec_grnd(p) = qflx_prec_grnd_snow + qflx_prec_grnd_rain
           if (do_capsnow(c)) then
              qflx_snwcp_liq(p) = qflx_prec_grnd_rain
              qflx_snwcp_ice(p) = qflx_prec_grnd_snow
-
              qflx_snow_grnd_patch(p) = 0._r8
              qflx_rain_grnd(p) = 0._r8
           else
@@ -523,24 +517,25 @@ contains
             canopystate_vars)
 
        ! Update column level state variables for snow.
-
+       
        call p2c(bounds, num_nolakec, filter_nolakec, &
-            qflx_snow_grnd_patch, &
-            qflx_snow_grnd_col)
+            qflx_snow_grnd_patch(bounds%begp:bounds%endp), &
+            qflx_snow_grnd_col(bounds%begc:bounds%endc))
+                        
+       ! Update column level irrigation supple for balance check       
+       call p2c(bounds, num_nolakec, filter_nolakec, &      
+            qflx_over_supply(bounds%begp:bounds%endp), &
+            qflx_over_supply_col(bounds%begc:bounds%endc))
 
-		! Update column level irrigation supple for balance check
-       call p2c(bounds, num_nolakec, filter_nolakec, &
-            qflx_over_supply    , &
-            qflx_over_supply_col)
+       call p2c(bounds, num_nolakec, filter_nolakec, &      
+            qflx_surf_irrig(bounds%begp:bounds%endp), &
+            qflx_surf_irrig_col(bounds%begc:bounds%endc))
+            
+       call p2c(bounds, num_nolakec, filter_nolakec, &      
+            qflx_grnd_irrig(bounds%begp:bounds%endp), &
+            qflx_grnd_irrig_col(bounds%begc:bounds%endc))
 
-       call p2c(bounds, num_nolakec, filter_nolakec, &
-            qflx_surf_irrig    , &
-            qflx_surf_irrig_col)
-
-       call p2c(bounds, num_nolakec, filter_nolakec, &
-            qflx_grnd_irrig    , &
-            qflx_grnd_irrig_col)
-
+       
        ! apply gridcell flood water flux to non-lake columns
        !$acc loop seq
        do f = 1, num_nolakec
@@ -601,7 +596,6 @@ contains
 
              ! set shape factor for accumulation of snow
              accum_factor=0.1
-
              if (h2osno(c) > 0.0) then
 
                 !======================  FSCA PARAMETERIZATIONS  ======================
@@ -753,9 +747,7 @@ contains
              aerosol_vars%mss_dst_col_col(c)  = 0._r8
              aerosol_vars%mss_dst_top_col(c)  = 0._r8
 
-             ! call waterstate_vars%Reset(column=c)
              col_ws%snw_rds(c,0) = snw_rds_min
-
           end if
 
           ! The change of ice partial density of surface node due to precipitation.
