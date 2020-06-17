@@ -15,7 +15,6 @@ module lnd2glcMod
   !
   ! !USES:
   use shr_kind_mod    , only : r8 => shr_kind_r8
-  use shr_infnan_mod  , only : nan => shr_infnan_nan, assignment(=)
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use decompMod       , only : get_proc_bounds, bounds_type
   use domainMod       , only : ldomain
@@ -27,9 +26,9 @@ module lnd2glcMod
   use abortutils      , only : endrun
   use WaterFluxType   , only : waterflux_type
   use TemperatureType , only : temperature_type
-  use LandunitType    , only : lun_pp                
+  use LandunitType    , only : lun_pp
   use ColumnType      , only : col_pp
-  use ColumnDataType  , only : col_es, col_wf  
+  use ColumnDataType  , only : col_es, col_wf
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -52,13 +51,14 @@ module lnd2glcMod
   end type lnd2glc_type
 
   ! !PUBLIC MEMBER FUNCTIONS:
-  
+
   ! The following is public simply to support unit testing, and should not generally be
   ! called from outside this module.
   !
   ! Note that it is not a type-bound procedure, because it doesn't actually involve the
   ! lnd2glc_type. This suggests that perhaps it belongs in some other module.
   public :: bareland_normalization ! compute normalization factor for fluxes from the bare land portion of the grid cell
+  public :: update_lnd2glc_GPU
   !------------------------------------------------------------------------
 
 contains
@@ -67,11 +67,11 @@ contains
   subroutine Init(this, bounds)
 
     class(lnd2glc_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
 
     call this%InitAllocate(bounds)
     call this%InitHistory(bounds)
-    
+
   end subroutine Init
 
   !------------------------------------------------------------------------
@@ -86,10 +86,10 @@ contains
     !
     ! !ARGUMENTS:
     class(lnd2glc_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
-    integer :: begg,endg 
+    integer :: begg,endg
     !------------------------------------------------------------------------
 
     begg = bounds%begg; endg = bounds%endg
@@ -104,11 +104,11 @@ contains
   subroutine InitHistory(this, bounds)
     !
     ! !USES:
-    use histFileMod, only : hist_addfld1d,hist_addfld2d 
+    use histFileMod, only : hist_addfld1d,hist_addfld2d
     !
     ! !ARGUMENTS:
     class(lnd2glc_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
     real(r8), pointer :: data2dptr(:,:)
@@ -152,7 +152,7 @@ contains
     !
     ! !ARGUMENTS:
     class(lnd2glc_type)    , intent(inout) :: this
-    type(bounds_type)      , intent(in)    :: bounds  
+    type(bounds_type)      , intent(in)    :: bounds
     integer                , intent(in)    :: num_do_smb_c       ! number of columns in filter_do_smb_c
     integer                , intent(in)    :: filter_do_smb_c(:) ! column filter: columns where smb calculations are performed
     type(temperature_type) , intent(in)    :: temperature_vars
@@ -171,8 +171,8 @@ contains
 
     this%qice_grc(bounds%begg : bounds%endg, :) = 0._r8
     this%tsrf_grc(bounds%begg : bounds%endg, :) = tfrz
-    this%topo_grc(bounds%begg : bounds%endg, :) = 0._r8     
-  
+    this%topo_grc(bounds%begg : bounds%endg, :) = 0._r8
+
     ! Fill the lnd->glc data on the clm grid
 
     allocate(fields_assigned(bounds%begg:bounds%endg, 0:maxpatch_glcmec))
@@ -181,9 +181,9 @@ contains
     do fc = 1, num_do_smb_c
       c = filter_do_smb_c(fc)
       l = col_pp%landunit(c)
-      g = col_pp%gridcell(c) 
+      g = col_pp%gridcell(c)
 
-      ! Set vertical index and a flux normalization, based on whether the column in question is glacier or vegetated.  
+      ! Set vertical index and a flux normalization, based on whether the column in question is glacier or vegetated.
       if (lun_pp%itype(l) == istice_mec) then
          n = col_itype_to_icemec_class(col_pp%itype(c))
          flux_normalization = 1.0_r8
@@ -230,12 +230,82 @@ contains
     end do
 
     deallocate(fields_assigned)
-                
+
   end subroutine update_lnd2glc
+
+  !------------------------------------------------------------------------------
+  subroutine update_lnd2glc_GPU(lnd2glc_vars, bounds, &
+            num_do_smb_c, filter_do_smb_c, init)
+    !
+    ! !DESCRIPTION:
+    ! Assign values to lnd2glc
+    !$acc routine seq
+    ! !ARGUMENTS:
+    type(lnd2glc_type)    , intent(inout)  :: lnd2glc_vars
+    type(bounds_type)      , intent(in)    :: bounds
+    integer                , intent(in)    :: num_do_smb_c       ! number of columns in filter_do_smb_c
+    integer                , intent(in)    :: filter_do_smb_c(:) ! column filter: columns where smb calculations are performed
+    logical                , intent(in)    :: init               ! if true=>only set a subset of fields
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: c, l, g, n, fc                   ! indices
+    real(r8) :: flux_normalization               ! factor by which fluxes should be normalized
+
+    !------------------------------------------------------------------------------
+
+    ! Initialize to reasonable defaults
+
+    lnd2glc_vars%qice_grc(bounds%begg : bounds%endg, :) = 0._r8
+    lnd2glc_vars%tsrf_grc(bounds%begg : bounds%endg, :) = tfrz
+    lnd2glc_vars%topo_grc(bounds%begg : bounds%endg, :) = 0._r8
+
+    ! Fill the lnd->glc data on the clm grid
+
+    do fc = 1, num_do_smb_c
+      c = filter_do_smb_c(fc)
+      l = col_pp%landunit(c)
+      g = col_pp%gridcell(c)
+
+      ! Set vertical index and a flux normalization, based on whether the column in question is glacier or vegetated.
+      if (lun_pp%itype(l) == istice_mec) then
+         n = col_itype_to_icemec_class( col_pp%itype(c) )
+         flux_normalization = 1.0_r8
+      else if (lun_pp%itype(l) == istsoil) then
+         n = 0  !0-level index (bareland information)
+         flux_normalization = bareland_normalization(c)
+      else
+         ! Other landunit types do not pass information in the lnd2glc fields.
+         ! Note: for this to be acceptable, we need virtual vegetated columns in any grid
+         ! cell that is made up solely of glacier plus some other special landunit (e.g.,
+         ! glacier + lake) -- otherwise CISM wouldn't have any information for the non-
+         ! glaciated portion of the grid cell.
+         cycle
+      end if
+
+      ! Send surface temperature, topography, and SMB flux (qice) to coupler.
+      ! t_soisno and glc_topo are valid even in initialization, so tsrf and topo
+      ! are set here regardless of the value of init. But qflx_glcice is not valid
+      ! until the run loop; thus, in initialization, we will use the default value
+      ! for qice, as set above.
+      lnd2glc_vars%tsrf_grc(g,n) = col_es%t_soisno(c,1)
+      lnd2glc_vars%topo_grc(g,n) = col_pp%glc_topo(c)
+      if (.not. init) then
+         lnd2glc_vars%qice_grc(g,n) = col_wf%qflx_glcice(c) * flux_normalization
+
+         ! Check for bad values of qice
+         if ( abs(lnd2glc_vars%qice_grc(g,n)) > 1.0_r8) then
+            print * , 'WARNING: qice out of bounds: g, n, qice =', g, n, lnd2glc_vars%qice_grc(g,n)
+         end if
+      end if
+
+    end do
+
+
+  end subroutine update_lnd2glc_GPU
 
   !-----------------------------------------------------------------------
   real(r8) function bareland_normalization(c)
-    !
+    !$acc routine seq
     ! !DESCRIPTION:
     ! Compute normalization factor for fluxes from the bare land portion of the grid
     ! cell. Fluxes should be multiplied by this factor before being sent to CISM.
@@ -280,11 +350,8 @@ contains
     real(r8) :: area_this_col ! fractional area of column c in the grid cell
 
     real(r8), parameter :: tol = 1.e-13_r8  ! tolerance for checking subgrid weight equality
-    character(len=*), parameter :: subname = 'bareland_normalization'
     !-----------------------------------------------------------------------
-
     t = col_pp%topounit(c)
-    
     area_glacier = get_landunit_weight(t, istice_mec)
 
     if (abs(area_glacier - 1.0_r8) < tol) then
@@ -299,4 +366,3 @@ contains
   end function bareland_normalization
 
 end module lnd2glcMod
-

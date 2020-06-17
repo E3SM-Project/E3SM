@@ -4,20 +4,14 @@ module SoilLittVertTranspMod
   ! calculate vertical mixing of all decomposing C and N pools
   !
   use shr_kind_mod           , only : r8 => shr_kind_r8
-    use shr_log_mod            , only : errMsg => shr_log_errMsg
+  use shr_log_mod            , only : errMsg => shr_log_errMsg
   use clm_varctl             , only : iulog, use_c13, use_c14, spinup_state, use_vertsoilc, use_fates
   use clm_varcon             , only : secspday
   use decompMod              , only : bounds_type
-   use abortutils             , only : endrun
+  use abortutils             , only : endrun
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CanopyStateType        , only : canopystate_type
-  use CNCarbonFluxType       , only : carbonflux_type
-  use CNCarbonStateType      , only : carbonstate_type
   use CNStateType            , only : cnstate_type
-  use CNNitrogenFluxType     , only : nitrogenflux_type
-  use CNNitrogenStateType    , only : nitrogenstate_type
-  use PhosphorusFluxType     , only : phosphorusflux_type
-  use PhosphorusStateType    , only : phosphorusstate_type
   use clm_varctl             , only : nu_com
   use ColumnDataType         , only : col_cs, c13_col_cs, c14_col_cs
   use ColumnDataType         , only : col_cf, c13_col_cf, c14_col_cf
@@ -30,13 +24,12 @@ module SoilLittVertTranspMod
   public :: readSoilLittVertTranspParams
 
   type, private :: SoilLittVertTranspParamsType
-     real(r8) :: som_diffus                 ! Soil organic matter diffusion
-     real(r8) :: cryoturb_diffusion_k       ! The cryoturbation diffusive constant
-                                            ! cryoturbation to the active layer thickness
-     real(r8) :: max_altdepth_cryoturbation ! (m) maximum active layer thickness for cryoturbation to occur
+     real(r8),pointer  :: som_diffus                => null() ! Soil organic matter diffusion
+     real(r8),pointer  :: cryoturb_diffusion_k      => null() ! The cryoturbation diffusive constant cryoturbation to the active layer thickness
+     real(r8),pointer  :: max_altdepth_cryoturbation => null() ! (m) maximum active layer thickness for cryoturbation to occur
   end type SoilLittVertTranspParamsType
 
-  type(SoilLittVertTranspParamsType),     private ::  SoilLittVertTranspParamsInst
+  type(SoilLittVertTranspParamsType), public ::  SoilLittVertTranspParamsInst
   !$acc declare create(SoilLittVertTranspParamsInst)
 
   !
@@ -55,43 +48,48 @@ module SoilLittVertTranspMod
 contains
 
   !-----------------------------------------------------------------------
-   subroutine readSoilLittVertTranspParams ( ncid )
-     !
-     use ncdio_pio   , only : file_desc_t,ncd_io
-     !
-     type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
-     !
-     character(len=32)  :: subname = 'SoilLittVertTranspType'
-     character(len=100) :: errCode = '-Error reading in parameters file:'
-     logical            :: readv ! has variable been read in or not
-     real(r8)           :: tempr ! temporary to read in constant
-     character(len=100) :: tString ! temp. var for reading
-     !-----------------------------------------------------------------------
-     !
-     ! read in parameters
-     !
-      tString='som_diffus'
-      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-      !SoilLittVertTranspParamsInst%som_diffus=tempr
-      ! FIX(SPM,032414) - can't be pulled out since division makes things not bfb
-      SoilLittVertTranspParamsInst%som_diffus = 1e-4_r8 / (secspday * 365._r8)
+  subroutine readSoilLittVertTranspParams ( ncid )
+    !
+    use ncdio_pio   , only : file_desc_t,ncd_io
+    !
+    type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
+    !
+    character(len=32)  :: subname = 'SoilLittVertTranspType'
+    character(len=100) :: errCode = '-Error reading in parameters file:'
+    logical            :: readv ! has variable been read in or not
+    real(r8)           :: tempr ! temporary to read in constant
+    character(len=100) :: tString ! temp. var for reading
+    !-----------------------------------------------------------------------
+    !
+    ! read in parameters
+    !
+    allocate(SoilLittVertTranspParamsInst%som_diffus                )
+    allocate(SoilLittVertTranspParamsInst%cryoturb_diffusion_k      )
+    allocate(SoilLittVertTranspParamsInst%max_altdepth_cryoturbation)
+     tString='som_diffus'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     !SoilLittVertTranspParamsInst%som_diffus=tempr
+     ! FIX(SPM,032414) - can't be pulled out since division makes things not bfb
+     SoilLittVertTranspParamsInst%som_diffus = 1e-4_r8 / (secspday * 365._r8)
+     
+     tString='cryoturb_diffusion_k'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     !SoilLittVertTranspParamsInst%cryoturb_diffusion_k=tempr
+     !FIX(SPM,032414) Todo.  This constant cannot be on file since the divide makes things
+     !SPM Todo.  This constant cannot be on file since the divide makes things
+     !not bfb
+     
+     SoilLittVertTranspParamsInst%cryoturb_diffusion_k = 5e-4_r8 / (secspday * 365._r8)  ! [m^2/sec] = 5 cm^2 / yr = 1m^2 / 200 yr
+     
+     tString='max_altdepth_cryoturbation'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     SoilLittVertTranspParamsInst%max_altdepth_cryoturbation=tempr
 
-      tString='cryoturb_diffusion_k'
-      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-      !SoilLittVertTranspParamsInst%cryoturb_diffusion_k=tempr
-      !FIX(SPM,032414) Todo.  This constant cannot be on file since the divide makes things
-      !SPM Todo.  This constant cannot be on file since the divide makes things
-      !not bfb
-      SoilLittVertTranspParamsInst%cryoturb_diffusion_k = 5e-4_r8 / (secspday * 365._r8)  ! [m^2/sec] = 5 cm^2 / yr = 1m^2 / 200 yr
-
-      tString='max_altdepth_cryoturbation'
-      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-      SoilLittVertTranspParamsInst%max_altdepth_cryoturbation=tempr
-
-   end subroutine readSoilLittVertTranspParams
+     !$acc enter data copyin(SoilLittVertTranspParamsInst)
+  end subroutine readSoilLittVertTranspParams
 
   !-----------------------------------------------------------------------
   subroutine SoilLittVertTransp(bounds, num_soilc, filter_soilc,   &
@@ -104,7 +102,7 @@ contains
     ! Initial code by C. Koven and W. Riley
     !
     ! !USES:
-    !#py use clm_time_manager , only : get_step_size, get_curr_date
+    use clm_time_manager , only : get_step_size, get_curr_date
       !$acc routine seq
     use clm_varpar       , only : nlevdecomp, ndecomp_pools, nlevdecomp_full
     use clm_varcon       , only : zsoi, dzsoi_decomp, zisoi
@@ -118,6 +116,18 @@ contains
     type(cnstate_type)       , intent(inout) :: cnstate_vars
     real(r8), intent(in) :: dtime
     integer, intent(in)  :: year, mon, day, sec                      ! land model time step (sec)
+
+    !type(carbonstate_type)   , intent(inout) :: carbonstate_vars
+    !type(carbonstate_type)   , intent(inout) :: c13_carbonstate_vars
+    !type(carbonstate_type)   , intent(inout) :: c14_carbonstate_vars
+    !type(carbonflux_type)    , intent(inout) :: carbonflux_vars
+    !type(carbonflux_type)    , intent(inout) :: c13_carbonflux_vars
+    !type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
+    !type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
+    !type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
+
+    !type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    !type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
     !
     ! !LOCAL VARIABLES:
     real(r8) :: diffus (bounds%begc:bounds%endc,1:nlevdecomp+1)    ! diffusivity (m2/s)  (includes spinup correction, if any)
@@ -432,14 +442,13 @@ contains
 
                   ! Solve for the concentration profile for this time step
                   call Tridiagonal(bounds, 0, nlevdecomp+1, &
-                       jtop, &
+                       jtop(bounds%begc:bounds%endc), &
                        num_soilc, filter_soilc, &
-                       a_tri, &
-                       b_tri, &
-                       c_tri, &
-                       r_tri, &
-                       conc_trcr)
-
+                       a_tri(bounds%begc:bounds%endc, :), &
+                       b_tri(bounds%begc:bounds%endc, :), &
+                       c_tri(bounds%begc:bounds%endc, :), &
+                       r_tri(bounds%begc:bounds%endc, :), &
+                       conc_trcr(bounds%begc:bounds%endc,0:nlevdecomp+1))
 
                   ! add post-transport concentration to calculate tendency term
                   do fc = 1, num_soilc

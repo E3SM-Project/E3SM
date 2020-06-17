@@ -111,7 +111,7 @@ module PhenologyMod
   integer, pointer     :: inhemi(:)           ! Hemisphere that pft is in
   integer, allocatable :: minplantjday(:,:) ! minimum planting julian day
   integer, allocatable :: maxplantjday(:,:) ! maximum planting julian day
-  integer              :: jdayyrstart(inSH) ! julian day of start of year
+  integer              :: jdayyrstart(2) ! julian day of start of year
   !$acc declare create(inhemi        )
   !$acc declare create(minplantjday)
   !$acc declare create(maxplantjday)
@@ -308,7 +308,7 @@ contains
     ! !ARGUMENTS:
     implicit none
     type(bounds_type), intent(in) :: bounds
-    real(r8) :: dt 
+    real(r8) :: dt
     !------------------------------------------------------------------------
 
     !
@@ -361,6 +361,29 @@ contains
     ! -----------------------------------------
 
     if ( crop_prog ) call CropPhenologyInit(bounds)
+
+    !$acc update device(&
+    !$acc   fracday         &
+    !$acc  , crit_dayl       &
+    !$acc  , crit_dayl_stress&
+    !$acc  , cumprec_onset   &
+    !$acc  , ndays_on        &
+    !$acc  , ndays_off       &
+    !$acc  , fstor2tran      &
+    !$acc  , crit_onset_fdd  &
+    !$acc  , crit_onset_swi  &
+    !$acc  , soilpsi_on      &
+    !$acc  , crit_offset_fdd &
+    !$acc  , crit_offset_swi &
+    !$acc  , soilpsi_off     &
+    !$acc  , lwtop           &
+    !$acc  , p1d, p1v       &
+    !$acc  , hti   &
+    !$acc  , tbase &
+    !$acc  , inhemi       &
+    !$acc  , minplantjday &
+    !$acc  , maxplantjday &
+    !$acc  , jdayyrstart )
 
   end subroutine PhenologyInit
 
@@ -416,10 +439,10 @@ contains
       ! set time steps
       dt = dtime_mod
       dayspyr = dayspyr_mod
-      kyr = year_mod
-      kda = day_mod
-      kmo = mon_mod
-      mcsec = secs_mod
+      kyr = year_curr
+      kda = day_curr
+      kmo = mon_curr
+      mcsec = secs_curr
       !#py dayspyr = get_days_per_year()
 
       do fp = 1,num_soilp
@@ -470,7 +493,7 @@ contains
     ! For coupled carbon-nitrogen code (CN).
     !
     ! !USES:
-      !$acc routine seq
+    !$acc routine seq
     use clm_varcon       , only : secspday
     !#py use clm_time_manager , only : get_days_per_year
     !
@@ -616,12 +639,12 @@ contains
          deadstemn_xfer_to_deadstemn         =>    veg_nf%deadstemn_xfer_to_deadstemn   , & ! Output:  [real(r8) (:)   ]
          livecrootn_xfer_to_livecrootn       =>    veg_nf%livecrootn_xfer_to_livecrootn , & ! Output:  [real(r8) (:)   ]
          deadcrootn_xfer_to_deadcrootn       =>    veg_nf%deadcrootn_xfer_to_deadcrootn , & ! Output:  [real(r8) (:)   ]
-         leafn_xfer                          =>    veg_ns%leafn_xfer                   , & ! Output:  [real(r8) (:)   ]  (gN/m2) leaf N transfer
-         frootn_xfer                         =>    veg_ns%frootn_xfer                  , & ! Output:  [real(r8) (:)   ]  (gN/m2) fine root N transfer
-         livestemn_xfer                      =>    veg_ns%livestemn_xfer               , & ! Output:  [real(r8) (:)   ]  (gN/m2) live stem N transfer
-         deadstemn_xfer                      =>    veg_ns%deadstemn_xfer               , & ! Output:  [real(r8) (:)   ]  (gN/m2) dead stem N transfer
-         livecrootn_xfer                     =>    veg_ns%livecrootn_xfer              , & ! Output:  [real(r8) (:)   ]  (gN/m2) live coarse root N transfer
-         deadcrootn_xfer                     =>    veg_ns%deadcrootn_xfer              , & ! Output:  [real(r8) (:)   ]  (gN/m2) dead coarse root N transfer
+         leafn_xfer                          =>    veg_ns%leafn_xfer                    , & ! Output:  [real(r8) (:)   ]  (gN/m2) leaf N transfer
+         frootn_xfer                         =>    veg_ns%frootn_xfer                   , & ! Output:  [real(r8) (:)   ]  (gN/m2) fine root N transfer
+         livestemn_xfer                      =>    veg_ns%livestemn_xfer                , & ! Output:  [real(r8) (:)   ]  (gN/m2) live stem N transfer
+         deadstemn_xfer                      =>    veg_ns%deadstemn_xfer                , & ! Output:  [real(r8) (:)   ]  (gN/m2) dead stem N transfer
+         livecrootn_xfer                     =>    veg_ns%livecrootn_xfer               , & ! Output:  [real(r8) (:)   ]  (gN/m2) live coarse root N transfer
+         deadcrootn_xfer                     =>    veg_ns%deadcrootn_xfer               , & ! Output:  [real(r8) (:)   ]  (gN/m2) dead coarse root N transfer
          leafn_storage_to_xfer               =>    veg_nf%leafn_storage_to_xfer         , & ! Output:  [real(r8) (:)   ]
          frootn_storage_to_xfer              =>    veg_nf%frootn_storage_to_xfer        , & ! Output:  [real(r8) (:)   ]
          livestemn_storage_to_xfer           =>    veg_nf%livestemn_storage_to_xfer     , & ! Output:  [real(r8) (:)   ]
@@ -635,12 +658,12 @@ contains
          deadstemp_xfer_to_deadstemp         =>    veg_pf%deadstemp_xfer_to_deadstemp   , & ! Output:  [real(r8) (:)   ]
          livecrootp_xfer_to_livecrootp       =>    veg_pf%livecrootp_xfer_to_livecrootp , & ! Output:  [real(r8) (:)   ]
          deadcrootp_xfer_to_deadcrootp       =>    veg_pf%deadcrootp_xfer_to_deadcrootp , & ! Output:  [real(r8) (:)   ]
-         leafp_xfer                          =>    veg_ps%leafp_xfer                   , & ! Output:  [real(r8) (:)   ]  (gP/m2) leaf P transfer
-         frootp_xfer                         =>    veg_ps%frootp_xfer                  , & ! Output:  [real(r8) (:)   ]  (gP/m2) fine root P transfer
-         livestemp_xfer                      =>    veg_ps%livestemp_xfer               , & ! Output:  [real(r8) (:)   ]  (gP/m2) live stem P transfer
-         deadstemp_xfer                      =>    veg_ps%deadstemp_xfer               , & ! Output:  [real(r8) (:)   ]  (gP/m2) dead stem P transfer
-         livecrootp_xfer                     =>    veg_ps%livecrootp_xfer              , & ! Output:  [real(r8) (:)   ]  (gP/m2) live coarse root P transfer
-         deadcrootp_xfer                     =>    veg_ps%deadcrootp_xfer              , & ! Output:  [real(r8) (:)   ]  (gP/m2) dead coarse root P transfer
+         leafp_xfer                          =>    veg_ps%leafp_xfer                    , & ! Output:  [real(r8) (:)   ]  (gP/m2) leaf P transfer
+         frootp_xfer                         =>    veg_ps%frootp_xfer                   , & ! Output:  [real(r8) (:)   ]  (gP/m2) fine root P transfer
+         livestemp_xfer                      =>    veg_ps%livestemp_xfer                , & ! Output:  [real(r8) (:)   ]  (gP/m2) live stem P transfer
+         deadstemp_xfer                      =>    veg_ps%deadstemp_xfer                , & ! Output:  [real(r8) (:)   ]  (gP/m2) dead stem P transfer
+         livecrootp_xfer                     =>    veg_ps%livecrootp_xfer               , & ! Output:  [real(r8) (:)   ]  (gP/m2) live coarse root P transfer
+         deadcrootp_xfer                     =>    veg_ps%deadcrootp_xfer               , & ! Output:  [real(r8) (:)   ]  (gP/m2) dead coarse root P transfer
          leafp_storage_to_xfer               =>    veg_pf%leafp_storage_to_xfer         , & ! Output:  [real(r8) (:)   ]
          frootp_storage_to_xfer              =>    veg_pf%frootp_storage_to_xfer        , & ! Output:  [real(r8) (:)   ]
          livestemp_storage_to_xfer           =>    veg_pf%livestemp_storage_to_xfer     , & ! Output:  [real(r8) (:)   ]
@@ -1462,10 +1485,10 @@ contains
       !#py call get_curr_date(kyr, kmo, kda, mcsec)
       dt = dtime_mod
       dayspyr = dayspyr_mod
-      kyr = year_mod
-      kda = day_mod
-      kmo = mon_mod
-      mcsec = secs_mod
+      kyr = year_curr
+      kda = day_curr
+      kmo = mon_curr
+      mcsec = secs_curr
       jday  = jday_mod
 
       ndays_on = 20._r8 ! number of days to fertilize
@@ -2191,10 +2214,10 @@ contains
       if (num_pcropp > 0) then
          ! get time-related info
          !#py call get_curr_date(kyr, kmo, kda, mcsec)
-         kyr = year_mod
-         kmo = mon_mod
-         kda = day_mod
-         mcsec = secs_mod
+         kyr = year_curr
+         kmo = mon_curr
+         kda = day_curr
+         mcsec = secs_curr
       end if
 
       do fp = 1,num_pcropp
@@ -2373,9 +2396,7 @@ contains
          )
 
       ! patch loop
-
       dt = dtime_mod
-      print *, "dt, t1:",dt,t1
       do fp = 1,num_soilp
          p = filter_soilp(fp)
 

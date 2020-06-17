@@ -67,6 +67,8 @@ contains
     use perf_mod         , only : t_startf, t_stopf
     use mct_mod
     use ESMF
+    use accumulGPUMod   ,  only : init_accum_gpu
+    use histGPUMod
     !
     ! !ARGUMENTS:
     type(ESMF_Clock),           intent(inout) :: EClock           ! Input synchronization clock
@@ -75,7 +77,7 @@ contains
     character(len=*), optional, intent(in)    :: NLFilename       ! Namelist filename to read
     !
     ! !LOCAL VARIABLES:
-    integer                          :: LNDID	     ! Land identifyer
+    integer                          :: LNDID        ! Land identifyer
     integer                          :: mpicom_lnd   ! MPI communicator
     type(mct_gsMap),         pointer :: GSMap_lnd    ! Land model MCT GS map
     type(mct_gGrid),         pointer :: dom_l        ! Land model domain
@@ -120,7 +122,6 @@ contains
     !-----------------------------------------------------------------------
 
     ! Set cdata data
-
     call seq_cdata_setptrs(cdata_l, ID=LNDID, mpicom=mpicom_lnd, &
          gsMap=GSMap_lnd, dom=dom_l, infodata=infodata)
 
@@ -132,6 +133,7 @@ contains
 
     call spmd_init( mpicom_lnd, LNDID )
     #ifdef _OPENACC
+    print *, " initializing acc"
     call acc_initialization()
     #endif
 #if (defined _MEMTRACE)
@@ -251,6 +253,10 @@ contains
 
     ! Read namelist, grid and surface data
 
+    spin = 1
+    do while (spin == 0) 
+       call  sleep(1)
+    end do 
     call initialize1( )
 
     ! If no land then exit out of initialization
@@ -286,11 +292,8 @@ contains
     call mct_aVect_zero(l2x_l)
 
     ! Finish initializing clm
-    print *, " call initialize2 "
     call initialize2()
-    print *, "call initialize3"
     call initialize3()
-    print *, "done with initialize3"
 
     ! Check that clm internal dtime aligns with clm coupling interval
 
@@ -345,6 +348,8 @@ contains
     endif
 #endif
 
+    call htape_gpu_init()
+    call init_accum_gpu()
   end subroutine lnd_init_mct
 
   !====================================================================================
@@ -355,8 +360,9 @@ contains
     ! Run clm model
     !
     ! !USES:
+    use MPI 
     use shr_kind_mod    ,  only : r8 => shr_kind_r8
-    use clm_instMod     , only : lnd2atm_vars, atm2lnd_vars, lnd2glc_vars, glc2lnd_vars
+    use clm_instMod     ,  only : lnd2atm_vars, atm2lnd_vars, lnd2glc_vars, glc2lnd_vars
     use clm_driver      ,  only : clm_drv
     use clm_time_manager,  only : get_curr_date, get_nstep, get_curr_calday, get_step_size
     use clm_time_manager,  only : advance_timestep, set_nextsw_cday,update_rad_dtime
@@ -413,6 +419,8 @@ contains
     real(r8)     :: recip                ! reciprical
     logical,save :: first_call = .true.  ! first call work
     logical      :: atm_present
+    integer      :: step_count
+    real*8       :: starttime, stoptime 
     type(seq_infodata_type),pointer :: infodata             ! CESM information from the driver
     type(mct_gGrid),        pointer :: dom_l                ! Land model domain data
     type(bounds_type)               :: bounds               ! bounds
@@ -447,6 +455,7 @@ contains
     dtime = get_step_size()
 
     call seq_infodata_GetData(infodata, atm_present=atm_present)
+    print *, "ATM PRESENT:", atm_present
     if (.not. atm_present) then
       !Calcualte next radiation calendar day (since atm model did not run to set this)
       !DMR:  NOTE this assumes a no-leap calendar and equal input/model timesteps
@@ -458,7 +467,8 @@ contains
     write(rdate,'(i4.4,"-",i2.2,"-",i2.2,"-",i5.5)') yr_sync,mon_sync,day_sync,tod_sync
     nlend_sync = seq_timemgr_StopAlarmIsOn( EClock )
     rstwr_sync = seq_timemgr_RestartAlarmIsOn( EClock )
-
+     print *,"sync times:", yr_sync, mon_sync, day_sync, tod_sync
+     print *, "end restart times:", nlend_sync, rstwr_sync
     ! Map MCT to land data type
     ! Perform downscaling if appropriate
 
@@ -468,73 +478,70 @@ contains
     call t_startf ('lc_lnd_import')
     call lnd_import( bounds, x2l_l%rattr, atm2lnd_vars, glc2lnd_vars)
     call t_stopf ('lc_lnd_import')
-
+    !
     ! Use infodata to set orbital values if updated mid-run
-
+    !
     call seq_infodata_GetData( infodata, orb_eccen=eccen, orb_mvelpp=mvelpp, &
          orb_lambm0=lambm0, orb_obliqr=obliqr )
-
+    
+    print *, "doing drv run"
+    starttime = mpi_wtime()
     ! Loop over time steps in coupling interval
-
     dosend = .false.
+    step_count = 0
     do while(.not. dosend)
-
        ! Determine if dosend
        ! When time is not updated at the beginning of the loop - then return only if
        ! are in sync with clock before time is updated
 
-       call get_curr_date( yr, mon, day, tod )
-       ymd = yr*10000 + mon*100 + day
-       tod = tod
-       dosend = (seq_timemgr_EClockDateInSync( EClock, ymd, tod))
+       !call get_curr_date( yr, mon, day, tod )
+       !ymd = yr*10000 + mon*100 + day
+       !tod = tod
+       !dosend = (seq_timemgr_EClockDateInSync( EClock, ymd, tod))
 
        ! Determine doalb based on nextsw_cday sent from atm model
 
-       nstep = get_nstep()
-       caldayp1 = get_curr_calday(offset=dtime)
-       if (nstep == 0) then
-	        doalb = .false.
-       else if (nstep == 1) then
-          doalb = (abs(nextsw_cday- caldayp1) < 1.e-10_r8)
-       else
-          doalb = (nextsw_cday >= -0.5_r8)
-       end if
-       call update_rad_dtime(doalb)
+       !nstep = get_nstep()
+       !caldayp1 = get_curr_calday(offset=dtime)
+       !call update_rad_dtime(doalb)
 
        ! Determine if time to write cam restart and stop
 
-       rstwr = .false.
+       !rstwr = .false.
        if (rstwr_sync .and. dosend) rstwr = .true.
        nlend = .false.
        if (nlend_sync .and. dosend) nlend = .true.
 
        ! Run clm
-       call t_barrierf('sync_clm_run1', mpicom)
-       call t_startf ('clm_run')
-       call t_startf ('shr_orb_decl')
-       calday = get_curr_calday()
-       call shr_orb_decl( calday     , eccen, mvelpp, lambm0, obliqr, declin  , eccf )
-       call shr_orb_decl( nextsw_cday, eccen, mvelpp, lambm0, obliqr, declinp1, eccf )
-       call t_stopf ('shr_orb_decl')
-       call clm_drv(doalb, nextsw_cday, declinp1, declin, rstwr, nlend, rdate)
-       call t_stopf ('clm_run')
+       !call t_barrierf('sync_clm_run1', mpicom)
+       !call t_startf ('clm_run')
+       !call t_startf ('shr_orb_decl')
+       !calday = get_curr_calday()
+       !call shr_orb_decl( calday     , eccen, mvelpp, lambm0, obliqr, declin  , eccf )
+       !call shr_orb_decl( nextsw_cday, eccen, mvelpp, lambm0, obliqr, declinp1, eccf )
+       
+       !call t_stopf ('shr_orb_decl')
+       call clm_drv(step_count, rstwr, nlend, rdate)
+       !call t_stopf ('clm_run')
 
        ! Create l2x_l export state - add river runoff input to l2x_l if appropriate
 
-#ifndef CPL_BYPASS
-       call t_startf ('lc_lnd_export')
-       call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, l2x_l%rattr)
-       call t_stopf ('lc_lnd_export')
-#endif
+       #ifndef CPL_BYPASS
+        call t_startf ('lc_lnd_export')
+        call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, l2x_l%rattr)
+        call t_stopf ('lc_lnd_export')
+       #endif
 
        ! Advance clm time step
 
-       call t_startf ('lc_clm2_adv_timestep')
+       !call t_startf ('lc_clm2_adv_timestep')
        call advance_timestep()
-       call t_stopf ('lc_clm2_adv_timestep')
-
+       !call t_stopf ('lc_clm2_adv_timestep')
+       if (step_count == 24+1) dosend = .true.
     end do
-
+    stoptime = mpi_wtime()
+    print *, "TIME FOR CLM DRIVER(seconds):", stoptime-starttime 
+    stop
     ! Check that internal clock is in sync with master clock
 
     call get_curr_date( yr, mon, day, tod, offset=-dtime )

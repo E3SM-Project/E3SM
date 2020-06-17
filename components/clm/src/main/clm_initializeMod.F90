@@ -116,13 +116,14 @@ contains
        write(iulog,*)
        call shr_sys_flush(iulog)
     endif
-
+        
     call control_init()
     call clm_varpar_init()
     call clm_varcon_init()
     call landunit_varcon_init()
     call ncd_pio_init()
     call clm_petsc_init()
+    print *, "soil_temperature"
     call init_soil_temperature()
 
     if (masterproc) call control_print()
@@ -139,6 +140,7 @@ contains
        write(iulog,*) 'Attempting to read global land mask from ',trim(fatmlndfrc)
        call shr_sys_flush(iulog)
     endif
+    print *, "surfrd_get_globmask"
     call surfrd_get_globmask(filename=fatmlndfrc, mask=amask, ni=ni, nj=nj)
 
     ! Exit early if no valid land points
@@ -166,7 +168,7 @@ contains
     ! ------------------------------------------------------------------------
     ! Determine clm gridcell decomposition and processor bounds for gridcells
     ! ------------------------------------------------------------------------
-
+    print *, "Decompinit:"
     select case (trim(domain_decomp_type))
     case ("round_robin")
        call decompInit_lnd(ni, nj, amask)
@@ -190,7 +192,7 @@ contains
     ! twice and the gridcell information is just filled in twice
 
     call get_proc_bounds(begg, endg)
-
+    print *, "begg, endg:"
     ! ------------------------------------------------------------------------
     ! Get grid and land fraction (set ldomain)
     ! ------------------------------------------------------------------------
@@ -223,7 +225,7 @@ contains
     ! that will call surfrd_get_special which in turn calls check_urban
     call UrbanInput(begg, endg, mode='initialize')
     ! Allocate surface grid dynamic memory (just gridcell bounds dependent)
-
+    print *, "allocating weights"
     allocate (wt_lunit     (begg:endg, max_lunit           ))
     allocate (urban_valid  (begg:endg                      ))
     allocate (wt_nat_patch (begg:endg, natpft_lb:natpft_ub ))
@@ -250,10 +252,10 @@ contains
     if (use_fates) then
        call FatesReadPFTs()
     end if
-
+    print *, "surfrd_get_data??"
     ! Read surface dataset and set up subgrid weight arrays
     call surfrd_get_data(begg, endg, ldomain, fsurdat)
-
+    print *, "done with surfrd_get_data"
     ! ------------------------------------------------------------------------
     ! Ask Fates to evaluate its own dimensioning needs.
     ! This determines the total amount of space it requires in its largest
@@ -288,7 +290,7 @@ contains
     ! This is needed here BEFORE the following call to initGridcells
     ! Note that the assumption is made that none of the subgrid initialization
     ! can depend on other elements of the subgrid in the calls below
-
+    print *, "beginning inits"
     ! Initialize the gridcell data types
     call grc_pp%Init (bounds_proc%begg_all, bounds_proc%endg_all)
 
@@ -327,7 +329,7 @@ contains
     endif
 
     ! Set filters
-
+        print *, "filters"
     call t_startf('init_filters')
     call allocFilters()
     call t_stopf('init_filters')
@@ -868,8 +870,7 @@ contains
 
     if (nsrest == nsrStartup) then
        call t_startf('init_map2gc')
-       call lnd2atm_minimal(bounds_proc, &
-            waterstate_vars, surfalb_vars, energyflux_vars, lnd2atm_vars)
+       call lnd2atm_minimal(bounds_proc, surfalb_vars, energyflux_vars, lnd2atm_vars)
        call t_stopf('init_map2gc')
     end if
 

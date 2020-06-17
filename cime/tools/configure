@@ -82,6 +82,7 @@ def parse_command_line(args):
         machobj = Machines(infile=machines_file, machine=args.machine)
     else:
         model = get_model()
+        print "model is :", model
         if model is not None:
             machobj = Machines(machine=args.machine)
         else:

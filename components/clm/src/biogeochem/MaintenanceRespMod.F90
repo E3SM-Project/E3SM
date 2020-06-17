@@ -70,7 +70,7 @@ contains
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
      br_mr_Inst = tempr
-
+     
    end subroutine readMaintenanceRespParams
 
   !-----------------------------------------------------------------------
@@ -93,11 +93,7 @@ contains
     integer                  , intent(in)    :: filter_soilp(:) ! patch filter for soil points
     type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(soilstate_type)     , intent(in)    :: soilstate_vars
-  !  type(temperature_type)   , intent(in)    :: temperature_vars
     type(photosyns_type)     , intent(in)    :: photosyns_vars
-    !type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    !type(carbonstate_type)   , intent(in)    :: carbonstate_vars
-    !type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
     !
     ! !LOCAL VARIABLES:
     integer :: c,p,j ! indices
@@ -164,6 +160,7 @@ contains
             ! calculate temperature corrections for each soil layer, for use in
             ! estimating fine root maintenance respiration with depth
             tcsoi(c,j) = Q10**((t_soisno(c,j)-SHR_CONST_TKFRZ - 20.0_r8)/10.0_r8)
+        
          end do
       end do
 
@@ -176,15 +173,12 @@ contains
          ! Leaf and live wood MR
 
          tc = Q10**((t_ref2m(p)-SHR_CONST_TKFRZ - 20.0_r8)/10.0_r8)
-
          if (frac_veg_nosno(p) == 1) then
-
             leaf_mr(p) = lmrsun(p) * laisun(p) * 12.011e-6_r8 + &
                          lmrsha(p) * laisha(p) * 12.011e-6_r8
 
          else !nosno
-
-            leaf_mr(p) = 0._r8
+             leaf_mr(p) = 0._r8
 
          end if
 
@@ -220,7 +214,6 @@ contains
             ! layer.  This is used with the layer temperature correction
             ! to estimate the total fine root maintenance respiration as a
             ! function of temperature and N content.
-
             froot_mr(p) = froot_mr(p) + frootn(p)*br_mr*tcsoi(c,j)*rootfr(p,j)
          end do
       end do

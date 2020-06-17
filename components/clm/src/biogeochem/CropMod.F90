@@ -3,7 +3,7 @@ module CropMod
   ! !MODULE: CropMod
   !
   ! !DESCRIPTION:
-  ! Module holding routines used in crop model 
+  ! Module holding routines used in crop model
   !
   ! !USES:
   use shr_kind_mod        , only : r8 => shr_kind_r8
@@ -37,6 +37,7 @@ contains
     !         (delta + gamma*(1+0.34*u2))
 
     ! !USES:
+      !$acc routine seq
     use clm_varcon       , only : tfrz
 
     ! !ARGUMENTS:
@@ -75,7 +76,7 @@ contains
     es_c  = esc1*exp((esc2*t_c)/(t_c+c5))
 
     ! vapor pressure
-    ea   = (rh/100)*(es_c) 
+    ea   = (rh/100)*(es_c)
 
     ! calculate the slope of the vapor pressure curve
     delta = (dc1 * (esc1 * exp((esc2 * t_c)/(t_c + c5)))) / &
@@ -97,8 +98,10 @@ contains
     ! calculates the plant month based on the type of seasonality
 
     ! !USES:
+      !$acc routine seq
     use pftvarcon        , only : planttemp
-    use CropType          , only : tcvp, tcvt, cst
+    use CropType         , only : tcvp, tcvt, cst
+    use SimpleMathMod    , only : MAXLOC_
     ! !ARGUMENTS:
     implicit none
     integer,  intent(in)  :: p
@@ -132,10 +135,10 @@ contains
           if (minval(temp) .lt. cst)then ! cold season exists
               plantmonth = t_m
           else                            ! no cold season
-              plantmonth = month(maxloc(p2e))
+              plantmonth = month(MAXLOC_(p2e))
           end if
        else                     ! precipitation seasonality
-         plantmonth = month(maxloc(p2e))
+         plantmonth = month(MAXLOC_(p2e))
        end if
     else if (cvt > tcvt) then   ! temperature seasonality
        plantmonth = t_m
@@ -147,4 +150,3 @@ contains
   end subroutine plant_month
 
 end module CropMod
-

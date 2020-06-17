@@ -224,30 +224,30 @@ contains
       if (num_urbanl > 0) then
          call net_longwave (bounds,       &
               num_urbanl, filter_urbanl,  &
-              canyon_hwr,      &
-              wtroad_perv,     &
-              lwdown,          &
-              em_roof_s,       &
-              em_improad_s,    &
-              em_perroad_s,    &
-              em_wall,         &
-              t_roof,          &
-              t_improad,       &
-              t_perroad,       &
-              t_sunwall,       &
-              t_shadewall,     &
-              lwnet_roof,      &
-              lwnet_improad,   &
-              lwnet_perroad,   &
-              lwnet_sunwall,   &
-              lwnet_shadewall, &
-              lwnet_canyon,    &
-              lwup_roof,       &
-              lwup_improad,    &
-              lwup_perroad,    &
-              lwup_sunwall,    &
-              lwup_shadewall,  &
-              lwup_canyon,     &
+              canyon_hwr(begl:endl),      &
+              wtroad_perv(begl:endl),     &
+              lwdown(begl:endl),          &
+              em_roof_s(begl:endl),       &
+              em_improad_s(begl:endl),    &
+              em_perroad_s(begl:endl),    &
+              em_wall(begl:endl),         &
+              t_roof(begl:endl),          &
+              t_improad(begl:endl),       &
+              t_perroad(begl:endl),       &
+              t_sunwall(begl:endl),       &
+              t_shadewall(begl:endl),     &
+              lwnet_roof(begl:endl),      &
+              lwnet_improad(begl:endl),   &
+              lwnet_perroad(begl:endl),   &
+              lwnet_sunwall(begl:endl),   &
+              lwnet_shadewall(begl:endl), &
+              lwnet_canyon(begl:endl),    &
+              lwup_roof(begl:endl),       &
+              lwup_improad(begl:endl),    &
+              lwup_perroad(begl:endl),    &
+              lwup_sunwall(begl:endl),    &
+              lwup_shadewall(begl:endl),  &
+              lwup_canyon(begl:endl),     &
               urbanparams_vars)
       end if
 

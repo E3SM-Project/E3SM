@@ -143,7 +143,7 @@ module clm_varctl
 
   ! true => make ALL patches, cols & landunits active (even if weight is 0)
   logical, public :: all_active = .false.
-
+  !$acc declare copyin(all_active)
   !----------------------------------------------------------
   ! BGC logic and datasets
   !----------------------------------------------------------
@@ -168,9 +168,9 @@ module clm_varctl
   logical, public :: override_bgc_restart_mismatch_dump = .false.
 
   ! Set in AllocationInit (TO DO - had to move it here to avoid circular dependency)
-  logical, private:: carbon_only
-  logical, private:: carbonnitrogen_only
-  logical, private:: carbonphosphorus_only
+  logical, public :: carbon_only
+  logical, public :: carbonnitrogen_only
+  logical, public :: carbonphosphorus_only
   !$acc declare create(carbon_only          )
   !$acc declare create(carbonnitrogen_only  )
   !$acc declare create(carbonphosphorus_only)
@@ -186,10 +186,10 @@ module clm_varctl
 
   ! atmospheric CO2 molar ratio (by volume) (umol/mol)
   real(r8), public :: co2_ppmv     = 355._r8            !
-
+  !$acc declare copyin(co2_ppmv)
   ! Use constant climate during transient run (CPL_BYPASS only)
   logical, public :: const_climate_hist  = .false.
-
+  !$acc declare copyin(const_climate_hist)
 
   !----------------------------------------------------------
   ! C isotopes
@@ -255,7 +255,7 @@ module clm_varctl
 
   ! true => CLM glacier area & topography changes dynamically
   logical , public :: glc_do_dynglacier = .false.
-
+  !$acc declare copyin(glc_do_dynglacier)
   ! true => downscale precip division into rain & snow
   logical , public :: glcmec_downscale_rain_snow_convert = .false.
 
@@ -403,7 +403,7 @@ module clm_varctl
 
   !$acc declare copyin(use_pheno_flux_limiter)
   !$acc declare copyin(use_erosion)
-  !$acc declare copyin(ero_ccycle)
+  !$acc declare copyin(ero_ccycle )
   !-----------------------------------------------------------------------
   ! bgc & pflotran interface
   !

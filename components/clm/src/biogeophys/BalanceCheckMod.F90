@@ -6,12 +6,9 @@ module BalanceCheckMod
   !
   ! !USES:
   use shr_kind_mod       , only : r8 => shr_kind_r8
-  !#py !#py use shr_log_mod        , only : errMsg => shr_log_errMsg
   use decompMod          , only : bounds_type
-  !#py use abortutils         , only : endrun
   use clm_varctl         , only : iulog, use_var_soil_thick, tw_irr
   use clm_varcon         , only : namep, namec
-  !#py use GetGlobalValuesMod , only : GetGlobalIndex
   use atm2lndType        , only : atm2lnd_type
   use glc2lndMod         , only : glc2lnd_type
   use EnergyFluxType     , only : energyflux_type
@@ -45,7 +42,7 @@ contains
        num_nolakec, filter_nolakec, num_lakec, filter_lakec, &
        num_hydrologyc, filter_hydrologyc, &
        soilhydrology_vars)
-    !
+    !$acc routine seq
     ! !DESCRIPTION:
     ! Initialize column-level water balance at beginning of time step
     !
@@ -91,12 +88,12 @@ contains
       call p2c(bounds, num_nolakec, filter_nolakec, &
             h2ocan_patch(bounds%begp:bounds%endp), &
             h2ocan_col(bounds%begc:bounds%endc))
-
+      
       if (use_var_soil_thick) then
-	 do f = 1, num_hydrologyc
+         do f = 1, num_hydrologyc
             c = filter_hydrologyc(f)
-      	    wa(c) = 0._r8                ! Made 0 for variable soil thickness
-	 end do
+            wa(c) = 0._r8                ! Made 0 for variable soil thicknes
+         end do
       end if
 
       do f = 1, num_nolakec
@@ -169,8 +166,6 @@ contains
      use landunit_varcon   , only : istice_mec, istdlak, istsoil,istcrop,istwet
      use clm_varctl        , only : create_glacier_mec_landunit
      use domainMod         , only : ldomain
-     !#py use clm_time_manager  , only : get_step_size, get_nstep
-     !#py use clm_initializeMod , only : surfalb_vars !TODO FIGURE THIS OUT
      use CanopyStateType   , only : canopystate_type
      use subgridAveMod
      !
@@ -288,9 +283,6 @@ contains
           )
 
        ! Get step size and time step
-
-       !#py nstep = get_nstep()
-       !#py dtime = get_step_size()
 
        ! Determine column level incoming snow and rain.
        ! Assume that all columns on a topounit have the same atmospheric forcing.
@@ -714,7 +706,7 @@ contains
     !
     ! !DESCRIPTION:
     ! Initialize column-level water balance at beginning of time step
-    !
+    !$acc routine seq
     ! !USES:
     use subgridAveMod , only : p2c,c2g
     use clm_varpar    , only : nlevgrnd, nlevsoi, nlevurb
@@ -855,14 +847,12 @@ contains
      ! !DESCRIPTION:
      !
      ! !USES:
-      !$acc routine seq 
+      !$acc routine seq
      use clm_varcon        , only : spval
      use column_varcon     , only : icol_roof, icol_sunwall, icol_shadewall
      use column_varcon     , only : icol_road_perv, icol_road_imperv
      use landunit_varcon   , only : istice_mec, istdlak, istsoil,istcrop,istwet
      use clm_varctl        , only : create_glacier_mec_landunit
-     !#py use clm_time_manager  , only : get_step_size, get_nstep
-     !#py use clm_initializeMod , only : surfalb_vars
      use CanopyStateType   , only : canopystate_type
      use subgridAveMod
      !
@@ -1033,37 +1023,40 @@ contains
 
       end do
 
-      call c2g(bounds, endwb_col             , &
-           endwb_grc                         , &
+      call c2g(bounds, endwb_col(bounds%begc:bounds%endc)             , &
+           endwb_grc(bounds%begg:bounds%endg)                         , &
            c2l_scale_type= 1, l2g_scale_type=0 )
 
-      call c2g(bounds, wa_local_col          , &
-           end_wa_grc                        , &
+      call c2g(bounds, wa_local_col(bounds%begc:bounds%endc)          , &
+           end_wa_grc(bounds%begg:bounds%endg)                        , &
+           c2l_scale_type= 1, l2g_scale_type=0 )
+           
+
+      call c2g(bounds, h2ocan_col(bounds%begc:bounds%endc)            , &
+           end_h2ocan_grc(bounds%begg:bounds%endg)                    , &
+           c2l_scale_type= 1, l2g_scale_type=0 )
+           
+
+      call c2g(bounds, h2osno_col(bounds%begc:bounds%endc)            , &
+           end_h2osno_grc(bounds%begg:bounds%endg)                    , &
            c2l_scale_type= 1, l2g_scale_type=0 )
 
-      call c2g(bounds, h2ocan_col            , &
-           end_h2ocan_grc                    , &
+      call c2g(bounds, h2osfc_col(bounds%begc:bounds%endc)            , &
+           end_h2osfc_grc(bounds%begg:bounds%endg)                    , &
            c2l_scale_type= 1, l2g_scale_type=0 )
 
-      call c2g(bounds, h2osno_col            , &
-           end_h2osno_grc                    , &
+      call c2g(bounds, h2osoi_liq_depth_intg(bounds%begc:bounds%endc) , &
+           end_h2osoi_liq_grc(bounds%begg:bounds%endg)                , &
            c2l_scale_type= 1, l2g_scale_type=0 )
 
-      call c2g(bounds, h2osfc_col            , &
-           end_h2osfc_grc                    , &
+      call c2g(bounds, h2osoi_ice_depth_intg(bounds%begc:bounds%endc) , &
+           end_h2osoi_ice_grc(bounds%begg:bounds%endg)                , &
            c2l_scale_type= 1, l2g_scale_type=0 )
 
-      call c2g(bounds, h2osoi_liq_depth_intg , &
-           end_h2osoi_liq_grc                , &
+      call c2g(bounds, errh2o(bounds%begc:bounds%endc)                , &
+           errh2o_grc(bounds%begg:bounds%endg)                        , &
            c2l_scale_type= 1, l2g_scale_type=0 )
 
-      call c2g(bounds, h2osoi_ice_depth_intg , &
-           end_h2osoi_ice_grc                , &
-           c2l_scale_type= 1, l2g_scale_type=0 )
-
-      call c2g(bounds, errh2o                , &
-           errh2o_grc                        , &
-           c2l_scale_type= 1, l2g_scale_type=0 )
 
     end associate
 

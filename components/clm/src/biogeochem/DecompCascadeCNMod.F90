@@ -741,7 +741,6 @@ contains
        ! set time steps
        !#py dt = real( get_step_size(), r8 )
        dtd = dt/secspday
-
        ! set initial base rates for decomposition mass loss (1/day)
        ! (from Biome-BGC v4.2.0, using three SOM pools)
        ! Value inside log function is the discrete-time values for a
@@ -768,16 +767,11 @@ contains
        k_s2 = 1.0_r8-exp(-k_s2*dtd)
        k_s3 = 1.0_r8-exp(-k_s3*dtd)
        k_s4 = 1.0_r8-exp(-k_s4*dtd)
-
        k_frag = 1.0_r8-exp(-k_frag*dtd)
-
        minpsi=DecompCNParamsInst%minpsi_cn
-
        Q10 = ParamsShareInst%Q10_hr
-
        ! set "froz_q10" parameter
        froz_q10  = ParamsShareInst%froz_q10
-
        if (use_vertsoilc) then
           ! Set "decomp_depth_efolding" parameter
           decomp_depth_efolding = ParamsShareInst%decomp_depth_efolding
@@ -820,6 +814,8 @@ contains
           k_s2 = k_s2 * DecompCNParamsInst%spinup_vector(5)
           k_s3 = k_s3 * DecompCNParamsInst%spinup_vector(6)
           k_s4 = k_s4 * DecompCNParamsInst%spinup_vector(7)
+
+
           if (.not.use_fates) k_frag = k_frag * DecompCNParamsInst%spinup_vector(8)
        endif
 
@@ -1054,6 +1050,8 @@ contains
                 decomp_k(c,j,i_soil2) = k_s2 * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(c,j) * o_scalar(c,j) / dt
                 decomp_k(c,j,i_soil3) = k_s3 * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(c,j) * o_scalar(c,j) / dt
                 decomp_k(c,j,i_soil4) = k_s4 * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(c,j) * o_scalar(c,j) / dt
+
+
              end do
           end do
           if (.not.use_fates) then

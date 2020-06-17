@@ -37,12 +37,14 @@ module SnowSnicarMod
   logical,  public, parameter :: DO_SNO_OC =    .false.   ! parameter to include organic carbon (OC)
                                                           ! in snowpack radiative calculations
   logical,  public, parameter :: DO_SNO_AER =   .true.    ! parameter to include aerosols in snowpack radiative calculations
-
+  !$acc declare copyin(sno_nbr_aer,DO_SNO_OC,DO_SNO_AER)
   ! !PRIVATE DATA MEMBERS:
   integer,  parameter :: numrad_snw  =   5               ! number of spectral bands used in snow model [nbr]
   integer,  parameter :: nir_bnd_bgn =   2               ! first band index in near-IR spectrum [idx]
   integer,  parameter :: nir_bnd_end =   5               ! ending near-IR band index [idx]
-
+  !$acc declare copyin(numrad_snw )
+  !$acc declare copyin(nir_bnd_bgn)
+  !$acc declare copyin(nir_bnd_end)
   integer,  parameter :: idx_Mie_snw_mx = 1471           ! number of effective radius indices used in Mie lookup table [idx]
   integer,  parameter :: idx_T_max      = 11             ! maxiumum temperature index used in aging lookup table [idx]
   integer,  parameter :: idx_T_min      = 1              ! minimum temperature index used in aging lookup table [idx]
@@ -50,6 +52,13 @@ module SnowSnicarMod
   integer,  parameter :: idx_Tgrd_min   = 1              ! minimum temperature gradient index used in aging lookup table [idx]
   integer,  parameter :: idx_rhos_max   = 8              ! maxiumum snow density index used in aging lookup table [idx]
   integer,  parameter :: idx_rhos_min   = 1              ! minimum snow density index used in aging lookup table [idx]
+  !$acc declare copyin(idx_Mie_snw_mx)
+  !$acc declare copyin(idx_T_max     )
+  !$acc declare copyin(idx_T_min     )
+  !$acc declare copyin(idx_Tgrd_max  )
+  !$acc declare copyin(idx_Tgrd_min  )
+  !$acc declare copyin(idx_rhos_max  )
+  !$acc declare copyin(idx_rhos_min  )
 
 #ifdef MODAL_AER
   !mgf++
@@ -58,6 +67,10 @@ module SnowSnicarMod
   integer,  parameter :: idx_bcint_icerds_min   = 1      ! minimum index for snow grain size in optics lookup table for within-ice BC
   integer,  parameter :: idx_bcint_icerds_max   = 8      ! maximum index for snow grain size in optics lookup table for within-ice BC
   !mgf--
+  !$acc declare copyin(idx_bc_nclrds_min)
+  !$acc declare copyin(idx_bc_nclrds_max)
+  !$acc declare copyin(idx_bcint_icerds_min)
+  !$acc declare copyin(idx_bcint_icerds_max)
 #endif
 
 
@@ -66,9 +79,12 @@ module SnowSnicarMod
   integer,  parameter :: snw_rds_min_tbl = 30            ! minimium effective radius defined in Mie lookup table [microns]
   real(r8), parameter :: snw_rds_max     = 1500._r8      ! maximum allowed snow effective radius [microns]
   real(r8), parameter :: snw_rds_refrz   = 1000._r8      ! effective radius of re-frozen snow [microns]
-
+  !$acc declare copyin(snw_rds_max_tbl)
+  !$acc declare copyin(snw_rds_min_tbl)
+  !$acc declare copyin(snw_rds_max    )
+  !$acc declare copyin(snw_rds_refrz  )
   real(r8), parameter :: min_snw = 1.0E-30_r8            ! minimum snow mass required for SNICAR RT calculation [kg m-2]
-
+  !$acc declare copyin(min_snw)
   !real(r8), parameter :: C1_liq_Brun89 = 1.28E-17_r8    ! constant for liquid water grain growth [m3 s-1],
                                                          ! from Brun89
   real(r8), parameter :: C1_liq_Brun89 = 0._r8           ! constant for liquid water grain growth [m3 s-1],
@@ -82,12 +98,14 @@ module SnowSnicarMod
                                                          ! [s-1] (50% mass removal/year)
   real(r8), parameter :: tim_cns_dst_rmv = 2.2E-8_r8     ! time constant for removal of dust in snow on sea-ice
                                                          ! [s-1] (50% mass removal/year)
+  !$acc declare copyin(C1_liq_Brun89, C2_liq_Brun89, &
+  !$acc tim_cns_bc_rmv, tim_cns_oc_rmv, tim_cns_dst_rmv)
 
   ! scaling of the snow aging rate (tuning option):
   logical :: flg_snoage_scl    = .false.                 ! flag for scaling the snow aging rate by some arbitrary factor
   !$acc declare copyin(flg_snoage_scl)
   real(r8), parameter :: xdrdt = 1.0_r8                  ! arbitrary factor applied to snow aging rate
-
+  !$acc declare copyin(xdrdt)
   ! snow and aerosol Mie parameters:
   ! (arrays declared here, but are set in iniTimeConst)
   ! (idx_Mie_snw_mx is number of snow radii with defined parameters (i.e. from 30um to 1500um))
@@ -105,7 +123,6 @@ module SnowSnicarMod
   !$acc declare create(ss_alb_snw_drc     )
   !$acc declare create(asm_prm_snw_drc    )
   !$acc declare create(ext_cff_mss_snw_drc)
-
   !$acc declare create(ss_alb_snw_dfs     )
   !$acc declare create(asm_prm_snw_dfs    )
   !$acc declare create(ext_cff_mss_snw_dfs)
@@ -264,7 +281,6 @@ contains
     ! !USES:
       !$acc routine seq
     use clm_varpar       , only : nlevsno, numrad
-    !#py use clm_time_manager , only : get_nstep
     use shr_const_mod    , only : SHR_CONST_PI
     !
     ! !ARGUMENTS:
@@ -281,7 +297,6 @@ contains
     real(r8)          , intent(in)  :: albsfc         ( bounds%begc: , 1: )               ! albedo of surface underlying snow (col,bnd) [frc]
     real(r8)          , intent(out) :: albout         ( bounds%begc: , 1: )               ! snow albedo, averaged into 2 bands (=0 if no sun or no snow) (col,bnd) [frc]
     real(r8)          , intent(out) :: flx_abs        ( bounds%begc: , -nlevsno+1: , 1: ) ! absorbed flux in each layer per unit flux incident (col, lyr, bnd)
-    !type(waterstate_type) , intent(in)  :: waterstate_vars
     !
     ! !LOCAL VARIABLES:
     !
@@ -348,7 +363,6 @@ contains
     real(r8):: g_star(-nlevsno+1:0)               ! transformed (i.e. Delta-Eddington) asymmetry paramater of snow+aerosol layer
                                                   ! (lyr) [frc]
 
-    integer :: nstep                              ! current timestep [nbr] (debugging only)
     integer :: g_idx, c_idx, l_idx                ! gridcell, column, and landunit indices [idx]
     integer :: bnd_idx                            ! spectral band index (1 <= bnd_idx <= numrad_snw) [idx]
     integer :: rds_idx                            ! snow effective radius index for retrieving
@@ -1083,9 +1097,9 @@ contains
                ! Incident direct+diffuse radiation equals (absorbed+bulk_transmitted+bulk_reflected)
                energy_sum = (mu_not*pi*flx_slrd_lcl(bnd_idx)) + flx_slri_lcl(bnd_idx) - (F_abs_sum + F_btm_net + F_sfc_pls)
                if (abs(energy_sum) > 0.00001_r8) then
-                  !#py write (iulog,"(a,e13.6,a,i6,a,i6)") "SNICAR ERROR: Energy conservation error of : ", energy_sum, &
-                       !#py " at timestep: ", nstep, " at column: ", c_idx
-                  !#py !#py call endrun(decomp_index=c_idx, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
+                    print *, "SNICAR ERROR: Energy conservation error of : ", energy_sum
+                    stop
+                    !#call endrun(decomp_index=c_idx, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
                endif
 
                albout_lcl(bnd_idx) = albedo
@@ -1093,8 +1107,8 @@ contains
                ! Check that albedo is less than 1
                if (albout_lcl(bnd_idx) > 1.0) then
 
-                  print *, "SNICAR ERROR: Albedo > 1.0 at c: ", c_idx, " NSTEP= ",nstep
-                  !#py write (iulog,*) "SNICAR STATS: bnd_idx= ",bnd_idx
+                  print *, "SNICAR ERROR: Albedo > 1.0 at c: ", c_idx
+                  print *, "SNICAR STATS: bnd_idx= ",bnd_idx
                   !#py write (iulog,*) "SNICAR STATS: albout_lcl(bnd)= ",albout_lcl(bnd_idx), &
                        !#py " albsfc_lcl(bnd_idx)= ",albsfc_lcl(bnd_idx)
                   !#py write (iulog,*) "SNICAR STATS: landtype= ", sfctype
@@ -1120,6 +1134,7 @@ contains
                   !#py write (iulog,*) "SNICAR STATS: snw_rds(0)= ", snw_rds(c_idx,0)
 
                   !#py !#py call endrun(decomp_index=c_idx, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
+                  stop
                endif
 
             enddo   ! loop over wvl bands
@@ -1198,7 +1213,6 @@ contains
     !   I am aware.
     !
     ! !USES:
-    !#py use clm_time_manager , only : get_step_size, get_nstep
       !$acc routine seq
     use clm_varpar       , only : nlevsno
     use clm_varcon       , only : spval
@@ -1210,9 +1224,6 @@ contains
     integer                , intent(in)    :: filter_snowc(:)   ! column filter for snow points
     integer                , intent(in)    :: num_nosnowc       ! number of column non-snow points in column filter
     integer                , intent(in)    :: filter_nosnowc(:) ! column filter for non-snow points
-    !type(waterflux_type)   , intent(in)    :: waterflux_vars
-    !type(waterstate_type)  , intent(inout) :: waterstate_vars
-    !type(temperature_type) , intent(inout) :: temperature_vars
     real(r8), intent(in) :: dtime                       ! land model time step [sec]
 
     !
@@ -1267,18 +1278,13 @@ contains
          snot_top           => col_es%snot_top      , & ! Output: [real(r8) (:)   ]  temperature in top snow layer (col) [K]
          dTdz_top           => col_es%dTdz_top        & ! Output: [real(r8) (:)   ]  temperature gradient in top layer (col) [K m-1]
          )
-
-
       ! set timestep and step interval
-      !#py dtime = get_step_size()
-
       ! loop over columns that have at least one snow layer
       do fc = 1, num_snowc
          c_idx = filter_snowc(fc)
 
          snl_btm = 0
          snl_top = snl(c_idx) + 1
-
          cdz(snl_top:snl_btm)=frac_sno(c_idx)*dz(c_idx,snl_top:snl_btm)
 
          ! loop over snow layers
@@ -1342,7 +1348,6 @@ contains
             bst_kappa = snowage_kappa(rhos_idx,Tgrd_idx,T_idx)
             bst_drdt0 = snowage_drdt0(rhos_idx,Tgrd_idx,T_idx)
 
-
             ! change in snow effective radius, using best-fit parameters
             ! added checks suggested by mgf. --HW 10/15/2015
             dr_fresh = snw_rds(c_idx,i)-snw_rds_min
@@ -1354,7 +1359,6 @@ contains
                !#py write(iulog,*) "dr_fresh = ", dr_fresh
                !#py call endrun( "dr_fresh < 0" )
             end if
-
             dr = (bst_drdt0*(bst_tau/(dr_fresh+bst_tau))**(1._r8/bst_kappa)) * (dtime/3600._r8)
 #else
             dr = (bst_drdt0*(bst_tau/(dr_fresh+bst_tau))**(1/bst_kappa)) * (dtime/3600)
@@ -1459,44 +1463,49 @@ contains
 
   !-----------------------------------------------------------------------
     subroutine SnowOptics_init( )
-!#py
+
       use fileutils  , only : getfil
       use CLM_varctl , only : fsnowoptics
       use spmdMod    , only : masterproc
       use ncdio_pio  , only : file_desc_t, ncd_io, ncd_pio_openfile, ncd_pio_closefile
       use ncdio_pio  , only : ncd_pio_openfile, ncd_inqfdims, ncd_pio_closefile, ncd_inqdid, ncd_inqdlen
-!#py
+
       type(file_desc_t)  :: ncid                        ! netCDF file id
       character(len=256) :: locfn                       ! local filename
       character(len= 32) :: subname = 'SnowOptics_init' ! subroutine name
       integer            :: ier                         ! error status
-!#py
      !mgf++
      logical :: readvar      ! determine if variable was read from NetCDF file
      !mgf--
-!#py
       !
       ! Open optics file:
       if(masterproc) write(iulog,*) 'Attempting to read snow optical properties .....'
       call getfil (fsnowoptics, locfn, 0)
       call ncd_pio_openfile(ncid, locfn, 0)
       if(masterproc) write(iulog,*) subname,trim(fsnowoptics)
-!#py
       ! direct-beam snow Mie parameters:
       call ncd_io('ss_alb_ice_drc', ss_alb_snw_drc,            'read', ncid, posNOTonfile=.true.)
       call ncd_io( 'asm_prm_ice_drc',asm_prm_snw_drc,          'read', ncid, posNOTonfile=.true.)
       call ncd_io( 'ext_cff_mss_ice_drc', ext_cff_mss_snw_drc, 'read', ncid, posNOTonfile=.true.)
-!#py
+      !
       ! diffuse snow Mie parameters
       call ncd_io( 'ss_alb_ice_dfs', ss_alb_snw_dfs,           'read', ncid, posNOTonfile=.true.)
       call ncd_io( 'asm_prm_ice_dfs', asm_prm_snw_dfs,         'read', ncid, posNOTonfile=.true.)
       call ncd_io( 'ext_cff_mss_ice_dfs', ext_cff_mss_snw_dfs, 'read', ncid, posNOTonfile=.true.)
-!#py
+      !$acc update device( &
+      !$acc ss_alb_snw_drc     ,&
+      !$acc asm_prm_snw_drc    ,&
+      !$acc ext_cff_mss_snw_drc,&
+      !$acc ss_alb_snw_dfs     ,&
+      !$acc asm_prm_snw_dfs    ,&
+      !$acc ext_cff_mss_snw_dfs &
+      !$acc )
+      !
  #ifdef MODAL_AER
      !mgf++
      ! size-dependent BC parameters and BC enhancement factors
      if (masterproc) write(iulog,*) 'Attempting to read optical properties for within-ice BC (modal aerosol treatment) ...'
-!#py
+     !
      ! BC species 1 Mie parameters
      call ncd_io( 'ss_alb_bc_mam', ss_alb_bc1,           'read', ncid, readvar=readvar, posNOTonfile=.true.)
      if (.not. readvar) call endrun()
@@ -1504,7 +1513,7 @@ contains
      if (.not. readvar) call endrun()
      call ncd_io( 'ext_cff_mss_bc_mam', ext_cff_mss_bc1, 'read', ncid, readvar=readvar, posNOTonfile=.true.)
      if (.not. readvar) call endrun()
-!#py
+     !
      ! BC species 2 Mie parameters (identical, before enhancement factors applied)
      call ncd_io( 'ss_alb_bc_mam', ss_alb_bc2,           'read', ncid, readvar=readvar, posNOTonfile=.true.)
      if (.not. readvar) call endrun()
@@ -1512,60 +1521,89 @@ contains
      if (.not. readvar) call endrun()
      call ncd_io( 'ext_cff_mss_bc_mam', ext_cff_mss_bc2, 'read', ncid, readvar=readvar, posNOTonfile=.true.)
      if (.not. readvar) call endrun()
-!#py
+     !
      ! size-dependent BC absorption enhancement factors for within-ice BC
      call ncd_io( 'bcint_enh_mam', bcenh, 'read', ncid, readvar=readvar, posNOTonfile=.true.)
      if (.not. readvar) call endrun()
-!#py
+     !$acc update device(bcenh)
+     !
  #else
      ! bulk aerosol treatment
       ! BC species 1 Mie parameters
       call ncd_io( 'ss_alb_bcphil', ss_alb_bc1,           'read', ncid, posNOTonfile=.true.)
       call ncd_io( 'asm_prm_bcphil', asm_prm_bc1,         'read', ncid, posNOTonfile=.true.)
       call ncd_io( 'ext_cff_mss_bcphil', ext_cff_mss_bc1, 'read', ncid, posNOTonfile=.true.)
-!#py
+      !
       ! BC species 2 Mie parameters
       call ncd_io( 'ss_alb_bcphob', ss_alb_bc2,           'read', ncid, posNOTonfile=.true.)
       call ncd_io( 'asm_prm_bcphob', asm_prm_bc2,         'read', ncid, posNOTonfile=.true.)
       call ncd_io( 'ext_cff_mss_bcphob', ext_cff_mss_bc2, 'read', ncid, posNOTonfile=.true.)
-!#py
+      !
      !mgf--
  #endif
-!#py
+ !$acc update device( &
+ !$acc ss_alb_bc1     , &
+ !$acc asm_prm_bc1    , &
+ !$acc ext_cff_mss_bc1, &
+ !$acc ss_alb_bc2     , &
+ !$acc asm_prm_bc2    , &
+ !$acc ext_cff_mss_bc2  &
+ !$acc )
+      !
       ! OC species 1 Mie parameters
-      call ncd_io( 'ss_alb_ocphil', ss_alb_oc1,           'read', ncid, posNOTonfile=.true.)
-      call ncd_io( 'asm_prm_ocphil', asm_prm_oc1,         'read', ncid, posNOTonfile=.true.)
+      call ncd_io( 'ss_alb_ocphil',      ss_alb_oc1 ,           'read', ncid, posNOTonfile=.true.)
+      call ncd_io( 'asm_prm_ocphil',     asm_prm_oc1,         'read', ncid, posNOTonfile=.true.)
       call ncd_io( 'ext_cff_mss_ocphil', ext_cff_mss_oc1, 'read', ncid, posNOTonfile=.true.)
-!#py
+      !
       ! OC species 2 Mie parameters
       call ncd_io( 'ss_alb_ocphob', ss_alb_oc2,           'read', ncid, posNOTonfile=.true.)
       call ncd_io( 'asm_prm_ocphob', asm_prm_oc2,         'read', ncid, posNOTonfile=.true.)
       call ncd_io( 'ext_cff_mss_ocphob', ext_cff_mss_oc2, 'read', ncid, posNOTonfile=.true.)
-!#py
+      !
       ! dust species 1 Mie parameters
       call ncd_io( 'ss_alb_dust01', ss_alb_dst1,           'read', ncid, posNOTonfile=.true.)
       call ncd_io( 'asm_prm_dust01', asm_prm_dst1,         'read', ncid, posNOTonfile=.true.)
       call ncd_io( 'ext_cff_mss_dust01', ext_cff_mss_dst1, 'read', ncid, posNOTonfile=.true.)
-!#py
+      !
       ! dust species 2 Mie parameters
       call ncd_io( 'ss_alb_dust02', ss_alb_dst2,           'read', ncid, posNOTonfile=.true.)
       call ncd_io( 'asm_prm_dust02', asm_prm_dst2,         'read', ncid, posNOTonfile=.true.)
       call ncd_io( 'ext_cff_mss_dust02', ext_cff_mss_dst2, 'read', ncid, posNOTonfile=.true.)
-!#py
+      !
       ! dust species 3 Mie parameters
       call ncd_io( 'ss_alb_dust03', ss_alb_dst3,           'read', ncid, posNOTonfile=.true.)
       call ncd_io( 'asm_prm_dust03', asm_prm_dst3,         'read', ncid, posNOTonfile=.true.)
       call ncd_io( 'ext_cff_mss_dust03', ext_cff_mss_dst3, 'read', ncid, posNOTonfile=.true.)
-!#py
+      !
       ! dust species 4 Mie parameters
       call ncd_io( 'ss_alb_dust04', ss_alb_dst4,           'read', ncid, posNOTonfile=.true.)
       call ncd_io( 'asm_prm_dust04', asm_prm_dst4,         'read', ncid, posNOTonfile=.true.)
       call ncd_io( 'ext_cff_mss_dust04', ext_cff_mss_dst4, 'read', ncid, posNOTonfile=.true.)
-!#py
-!#py
+      !
+      !
+      !$acc update device( &
+      !$acc ss_alb_oc1     ,&
+      !$acc asm_prm_oc1    ,&
+      !$acc ext_cff_mss_oc1,&
+      !$acc ss_alb_oc2     ,&
+      !$acc asm_prm_oc2    ,&
+      !$acc ext_cff_mss_oc2,&
+      !$acc ss_alb_dst1    ,&
+      !$acc asm_prm_dst1   ,&
+      !$acc ext_cff_mss_dst1,&
+      !$acc ss_alb_dst2     ,&
+      !$acc asm_prm_dst2    ,&
+      !$acc ext_cff_mss_dst2,&
+      !$acc ss_alb_dst3     ,&
+      !$acc asm_prm_dst3    ,&
+      !$acc ext_cff_mss_dst3,&
+      !$acc ss_alb_dst4     ,&
+      !$acc asm_prm_dst4    ,&
+      !$acc ext_cff_mss_dst4 )
+
       call ncd_pio_closefile(ncid)
       if (masterproc) then
-!#py
+        !
          write(iulog,*) 'Successfully read snow optical properties'
          ! print some diagnostics:
          write (iulog,*) 'SNICAR: Mie single scatter albedos for direct-beam ice, rds=100um: ', &
@@ -1579,7 +1617,7 @@ contains
          else
             write (iulog,*) 'SNICAR: Excluding OC aerosols from snow radiative transfer calculations'
          endif
-!#py
+         !
  #ifdef MODAL_AER
         !mgf++
         ! unique dimensionality for modal aerosol optical properties
@@ -1600,7 +1638,7 @@ contains
          write (iulog,*) 'SNICAR: Mie single scatter albedos for hydrophobic BC: ', &
               ss_alb_bc2(1), ss_alb_bc2(2), ss_alb_bc2(3), ss_alb_bc2(4), ss_alb_bc2(5)
  #endif
-!#py
+        !
          if (DO_SNO_OC) then
             write (iulog,*) 'SNICAR: Mie single scatter albedos for hydrophillic OC: ', &
                  ss_alb_oc1(1), ss_alb_oc1(2), ss_alb_oc1(3), ss_alb_oc1(4), ss_alb_oc1(5)
@@ -1617,7 +1655,7 @@ contains
               ss_alb_dst4(1), ss_alb_dst4(2), ss_alb_dst4(3), ss_alb_dst4(4), ss_alb_dst4(5)
          write(iulog,*)
       end if
-!#py
+      !
     end subroutine SnowOptics_init
 
    !-----------------------------------------------------------------------
@@ -1626,40 +1664,44 @@ contains
      use fileutils       , only : getfil
      use spmdMod         , only : masterproc
      use ncdio_pio       , only : file_desc_t, ncd_io, ncd_pio_openfile, ncd_pio_closefile
-!#py
+
      type(file_desc_t)  :: ncid                        ! netCDF file id
      character(len=256) :: locfn                       ! local filename
      character(len= 32) :: subname = 'SnowOptics_init' ! subroutine name
      integer            :: varid                       ! netCDF id's
      integer            :: ier                         ! error status
-!#py
+     !
      ! Open snow aging (effective radius evolution) file:
      allocate(snowage_tau(idx_rhos_max,idx_Tgrd_max,idx_T_max))
      allocate(snowage_kappa(idx_rhos_max,idx_Tgrd_max,idx_T_max))
      allocate(snowage_drdt0(idx_rhos_max,idx_Tgrd_max,idx_T_max))
-!#py
+     !
      if(masterproc)  write(iulog,*) 'Attempting to read snow aging parameters .....'
      call getfil (fsnowaging, locfn, 0)
      call ncd_pio_openfile(ncid, locfn, 0)
      if(masterproc) write(iulog,*) subname,trim(fsnowaging)
-!#py
+     !
      ! snow aging parameters
-!#py
+     !
      call ncd_io('tau', snowage_tau,       'read', ncid, posNOTonfile=.true.)
      call ncd_io('kappa', snowage_kappa,   'read', ncid, posNOTonfile=.true.)
      call ncd_io('drdsdt0', snowage_drdt0, 'read', ncid, posNOTonfile=.true.)
-!#py
+     !
+
      call ncd_pio_closefile(ncid)
+
      if (masterproc) then
-!#py
+       !
         write(iulog,*) 'Successfully read snow aging properties'
-!#py
+        !
         ! print some diagnostics:
         write (iulog,*) 'SNICAR: snowage tau for T=263K, dTdz = 100 K/m, rhos = 150 kg/m3: ', snowage_tau(3,11,9)
         write (iulog,*) 'SNICAR: snowage kappa for T=263K, dTdz = 100 K/m, rhos = 150 kg/m3: ', snowage_kappa(3,11,9)
         write (iulog,*) 'SNICAR: snowage dr/dt_0 for T=263K, dTdz = 100 K/m, rhos = 150 kg/m3: ', snowage_drdt0(3,11,9)
      endif
-!#py
+     !$acc update device(snowage_tau, snowage_kappa, snowage_drdt0)
+
+     !
     end subroutine SnowAge_init
 
    !-----------------------------------------------------------------------
@@ -1772,7 +1814,6 @@ contains
      real(r8):: g_star(-nlevsno+1:0)               ! transformed (i.e. Delta-Eddington) asymmetry paramater of snow+aerosol layer
                                                    ! (lyr) [frc]
 
-     integer :: nstep                              ! current timestep [nbr] (debugging only)
      integer :: g_idx, c_idx, l_idx                ! gridcell, column, and landunit indices [idx]
      integer :: bnd_idx                            ! spectral band index (1 <= bnd_idx <= numrad_snw) [idx]
      integer :: rds_idx                            ! snow effective radius index for retrieving

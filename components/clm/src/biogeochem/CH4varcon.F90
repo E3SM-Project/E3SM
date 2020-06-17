@@ -72,17 +72,17 @@ module CH4varcon
 
   !-----------------------------------------------------------------------
 
-  !$acc declare copyin(allowlakeprod)
-  !$acc declare copyin(replenishlakec)
-  !$acc declare copyin(fin_use_fsat)
-  !$acc declare copyin(ch4offline)
-  !$acc declare copyin(ch4rmcnlim)
+  !$acc declare copyin(allowlakeprod   )
+  !$acc declare copyin(replenishlakec  )
+  !$acc declare copyin(fin_use_fsat    )
+  !$acc declare copyin(ch4offline      )
+  !$acc declare copyin(ch4rmcnlim      )
   !$acc declare copyin(anoxicmicrosites)
-  !$acc declare copyin(ch4frzout)
-  !$acc declare copyin(usefrootc)
-  !$acc declare copyin(transpirationloss)
-  !$acc declare copyin(use_aereoxid_prog)
-  !$acc declare copyin(usephfact)
+  !$acc declare copyin(ch4frzout        )
+  !$acc declare copyin(usefrootc        )
+  !$acc declare copyin(transpirationloss )
+  !$acc declare copyin(use_aereoxid_prog )
+  !$acc declare copyin(usephfact         )
 
   public :: CH4conrd ! Read and initialize CH4 constants
   !-----------------------------------------------------------------------
@@ -183,6 +183,19 @@ contains
        write(iulog,*)
 
     end if
+
+    !$acc update device(&
+    !$acc allowlakeprod    &
+    !$acc ,replenishlakec  &
+    !$acc ,fin_use_fsat    &
+    !$acc ,ch4offline      &
+    !$acc ,ch4rmcnlim      &
+    !$acc ,anoxicmicrosites&
+    !$acc ,ch4frzout       &
+    !$acc ,usefrootc       &
+    !$acc ,transpirationloss &
+    !$acc ,use_aereoxid_prog &
+    !$acc ,usephfact        )
 
   end subroutine CH4conrd
 

@@ -299,7 +299,7 @@ contains
          end if
       end do
       if (found) then
-         !#py write(iulog,*) 'p2l_1d error: sumwt is greater than 1.0 at l= ',index
+         print *,  'p2l_1d error: sumwt is greater than 1.0 at l= ',index
          !#py !#py call endrun(msg=errMsg(__FILE__, __LINE__))
       end if
 

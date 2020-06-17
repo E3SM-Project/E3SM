@@ -8,7 +8,6 @@ module reweightMod
   !
   !
   ! !USES:
-#include "shr_assert.h"
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use shr_kind_mod   , only : r8 => shr_kind_r8
   !
@@ -20,7 +19,7 @@ module reweightMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: reweight_wrapup               ! do modifications and error-checks after modifying subgrid weights
-  
+
   !-----------------------------------------------------------------------
 
 contains
@@ -36,23 +35,20 @@ contains
     ! landunit weights on the grid cell, etc.).
     !
     ! !USES:
+      !$acc routine seq
     use filterMod         , only : setFilters
     use subgridWeightsMod , only : set_active, check_weights
-    use decompMod         , only : bounds_type, BOUNDS_LEVEL_CLUMP
+    use decompMod         , only : bounds_type
     !
     ! !ARGUMENTS:
     type(bounds_type) , intent(in) :: bounds                      ! clump bounds
     real(r8)          , intent(in) :: icemask_grc( bounds%begg: ) ! ice sheet grid coverage mask [gridcell]
     !------------------------------------------------------------------------
-
-    SHR_ASSERT(bounds%level == BOUNDS_LEVEL_CLUMP, errMsg(__FILE__, __LINE__))
-
     call set_active(bounds)
     call check_weights(bounds, active_only=.false.)
     call check_weights(bounds, active_only=.true.)
-    write(*,*) "icemask_grc", icemask_grc
-    call setFilters(bounds, icemask_grc(bounds%begg:bounds%endg))
-
+    call setFilters(bounds, icemask_grc(bounds%begg:bounds%endg) )
+        
   end subroutine reweight_wrapup
 
 end module reweightMod

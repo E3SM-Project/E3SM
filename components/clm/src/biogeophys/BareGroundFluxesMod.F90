@@ -181,6 +181,7 @@ contains
       !---------------------------------------------------
       ! Filter patches where frac_veg_nosno IS ZERO
       !---------------------------------------------------
+      iter = 0
 
       beta = 1._r8 ! previously set as a constant for all columns in CanopyTemperature()
 
@@ -223,21 +224,18 @@ contains
          ! Initialize Monin-Obukhov length and wind speed
 
          call MoninObukIni(ur(p), thv(c), dthv, zldis(p), z0mg_patch(p), um(p), obu(p))
-         !print *, "ur(p), thv(c), dthv, zldis(p), z0mg_patch(p), um(p), obu(p)"
-         ! print *, ur(p), thv(c), dthv, zldis(p), z0mg_patch(p), um(p), obu(p)
 
       end do
 
       ! Perform stability iteration
       ! Determine friction velocity, and potential temperature and humidity
       ! profiles of the surface boundary layer
-
-      do iter = 1, niters
-
+      ITERATION : do while( iter < niters)
+        
          call FrictionVelocity(begp, endp, fn, filterp, &
-              displa, z0mg_patch, z0hg_patch, z0qg_patch, &
-              obu, iter, ur, um, ustar, &
-              temp1, temp2, temp12m, temp22m, fm, &
+              displa(begp:endp), z0mg_patch(begp:endp), z0hg_patch(begp:endp), z0qg_patch(begp:endp), &
+              obu(begp:endp), iter+1, ur(begp:endp), um(begp:endp), ustar(begp:endp), &
+              temp1(begp:endp), temp2(begp:endp), temp12m(begp:endp), temp22m(begp:endp), fm(begp:endp), &
               frictionvel_vars)
 
          do f = 1, fn
@@ -263,15 +261,9 @@ contains
             end if
             obu(p) = zldis(p)/zeta
 
-           ! print *, "iter, p, c , t , g", iter, p, c , t , g
-           ! print *, "z0mg_patch(p), z0hg_patch(p), forc_q(t), forc_th(t)"
-           ! print *, z0mg_patch(p), z0hg_patch(p), forc_q(t), forc_th(t)
-           ! print *, "tstar, qstar,grav"
-           ! print *, tstar, qstar,grav
-
          end do
-
-      end do ! end stability iteration
+         iter = iter + 1
+      end do ITERATION! end stability iteration
 
       do f = 1, fn
          p = filterp(f)

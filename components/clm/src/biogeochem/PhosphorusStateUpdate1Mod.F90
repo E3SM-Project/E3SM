@@ -15,8 +15,6 @@ module PhosphorusStateUpdate1Mod
   use VegetationPropertiesType         , only : veg_vp
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNStateType            , only : cnstate_type
-  use PhosphorusFluxType     , only : phosphorusflux_type
-  use PhosphorusStateType    , only : phosphorusstate_type
   use VegetationType              , only : veg_pp
   use tracer_varcon          , only : is_active_betr_bgc
   ! bgc interface & pflotran:
@@ -50,13 +48,11 @@ contains
     !
     ! !DESCRIPTION:
     ! Update phosphorus states based on fluxes from dyn_cnbal_patch
-    !
+    !$acc routine seq
     ! !ARGUMENTS:
     type(bounds_type)          , intent(in)    :: bounds
     integer                    , intent(in)    :: num_soilc_with_inactive       ! number of columns in soil filter
     integer                    , intent(in)    :: filter_soilc_with_inactive(:) ! soil column filter that includes inactive points
-    !type(phosphorusflux_type)  , intent(in)    :: phosphorusflux_vars
-    !type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     !
     real(r8)                   , intent(in)   :: dt
     ! !LOCAL VARIABLES:
@@ -65,9 +61,7 @@ contains
     integer                                    :: g                             ! gridcell index
     integer                                    :: j                             ! level index
 
-    !character(len=*)           , parameter     :: subname = 'PhosphorusStateUpdateDynPatch'
     !-----------------------------------------------------------------------
-      !#py dt = real( get_step_size(), r8 )
 
       if (.not.use_fates) then
 

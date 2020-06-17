@@ -107,7 +107,7 @@ module clm_varcon
   real(r8), parameter :: preind_atm_del13c = -6.0   ! preindustrial value for atmospheric del13C
   real(r8), parameter :: preind_atm_ratio = SHR_CONST_PDB + (preind_atm_del13c * SHR_CONST_PDB)/1000.0  ! 13C/12C
   real(r8) :: c13ratio = preind_atm_ratio/(1.0+preind_atm_ratio) ! 13C/(12+13)C preind atmosphere
-
+  !$acc declare copyin(c13ratio) 
    ! typical del13C for C3 photosynthesis (permil, relative to PDB)
   real(r8), parameter :: c3_del13c = -28._r8
 

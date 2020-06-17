@@ -30,6 +30,11 @@ module SpeciesMod
   integer, parameter, public :: CN_SPECIES_C14 = 3
   integer, parameter, public :: CN_SPECIES_N   = 4
   integer, parameter, public :: CN_SPECIES_P   = 5
+  !$acc declare copyin(CN_SPECIES_C12)
+  !$acc declare copyin(CN_SPECIES_C13)
+  !$acc declare copyin(CN_SPECIES_C14)
+  !$acc declare copyin(CN_SPECIES_N  )
+  !$acc declare copyin(CN_SPECIES_P  )
 
   public :: species_from_string  ! convert a string representation to one of the constants defined here
 

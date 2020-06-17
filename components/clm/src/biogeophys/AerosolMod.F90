@@ -24,6 +24,8 @@ module AerosolMod
   !
   ! !PUBLIC DATA MEMBERS:
   real(r8), public, parameter :: snw_rds_min = 54.526_r8       ! minimum allowed snow effective radius (also "fresh snow" value) [microns
+  !$acc declare copyin(snw_rds_min)
+
   !-----------------------------------------------------------------------
 
 contains
@@ -45,8 +47,6 @@ contains
     integer               , intent(in)    :: filter_on(:)   ! column filter for filter-ON points
     integer               , intent(in)    :: num_off        ! number of column non filter-OFF points
     integer               , intent(in)    :: filter_off(:)  ! column filter for filter-OFF points
-    !type(waterflux_type)  , intent(in)    :: waterflux_vars
-    !type(waterstate_type) , intent(inout) :: waterstate_vars
     type(aerosol_type)    , intent(inout) :: aerosol_vars
     real(r8), intent(in)                  :: dtime           ! land model time step (sec)
 

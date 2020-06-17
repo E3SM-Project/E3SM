@@ -229,7 +229,6 @@ contains
       do c = bounds%begc, bounds%endc
          l = col_pp%landunit(c)
          if (lun_pp%lakpoi(l)) then
-             print *, "IN LAKESTATETYPE SETTING UST_LAKE_COL:"
             ! Set lake ice fraction and top eddy conductivity from previous timestep
             ! Always initialize with no ice to prevent excessive ice sheets from forming when
             ! starting with old lake model that has unrealistically cold lake conseratures.

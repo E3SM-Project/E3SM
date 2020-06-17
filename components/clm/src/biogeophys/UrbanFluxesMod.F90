@@ -276,10 +276,6 @@ contains
       beta(begl:endl) = 1._r8             ! Should be set to the same values as in Biogeophysics1Mod
       zii(begl:endl)  = 1000._r8          ! Should be set to the same values as in Biogeophysics1Mod
 
-      ! Get current date
-      !#py dtime = get_step_size()
-      !#py call get_curr_date (year, month, day, secs)
-
       ! Compute canyontop wind using Masson (2000)
 
       do fl = 1, num_urbanl
@@ -383,13 +379,12 @@ contains
 
          ! Get friction velocity, relation for potential
          ! temperature and humidity profiles of surface boundary layer.
-         iter = iter + 1 
          if (num_urbanl > 0) then
             call FrictionVelocity(begl, endl, &
                  num_urbanl, filter_urbanl, &
-                 z_d_town, z_0_town, z_0_town, z_0_town, &
-                 obu, iter, ur, um, ustar, &
-                 temp1, temp2, temp12m, temp22m, fm, &
+                 z_d_town(begl:endl), z_0_town(begl:endl), z_0_town(begl:endl), z_0_town(begl:endl), &
+                 obu(begl:endl), iter+1, ur(begl:endl), um(begl:endl), ustar(begl:endl), &
+                 temp1(begl:endl), temp2(begl:endl), temp12m(begl:endl), temp22m(begl:endl), fm(begl:endl), &
                  frictionvel_vars, landunit_index=.true.)
          end if
         
@@ -661,6 +656,7 @@ contains
             obu(l) = zldis(l)/zeta
          end do
 
+         iter = iter + 1 
       end do ITERATION  ! end iteration
 
       ! Determine fluxes from canyon surfaces
@@ -882,6 +878,7 @@ contains
             if (ctype(c) == icol_road_perv) then
                rootr(p,j) = rootr_road_perv(c,j)
             else
+
                rootr(p,j) = 0._r8
             end if
          end do
@@ -909,7 +906,6 @@ contains
          rh_ref2m_u(p) = rh_ref2m(p)
 
          ! Variables needed by history tape
-
          t_veg(p) = forc_t(t)
 
       end do

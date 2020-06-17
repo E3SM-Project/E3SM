@@ -17,32 +17,27 @@ module dynConsBiogeochemMod
   use CanopyStateType          , only : canopystate_type
   use PhotosynthesisType       , only : photosyns_type
   use CNStateType              , only : cnstate_type
-  use CNCarbonFluxType         , only : carbonflux_type
-  use CNCarbonStateType        , only : carbonstate_type
-  use CNNitrogenFluxType       , only : nitrogenflux_type
-  use CNNitrogenStateType      , only : nitrogenstate_type
-  use PhosphorusFluxType       , only : phosphorusflux_type
-  use PhosphorusStateType      , only : phosphorusstate_type
   use GridcellDataType         , only : grc_cf, c13_grc_cf, c14_grc_cf
   use GridcellDataType         , only : grc_nf, grc_pf
-  use LandunitType             , only : lun_pp                
-  use ColumnType               , only : col_pp  
+  use LandunitType             , only : lun_pp
+  use ColumnType               , only : col_pp
   use ColumnDataType           , only : column_carbon_state, column_nitrogen_state
   use ColumnDataType           , only : column_phosphorus_state
-  use ColumnDataType           , only : col_cf, c13_col_cf, c14_col_cf  
-  use ColumnDataType           , only : col_nf, col_pf  
+  use ColumnDataType           , only : col_cf, c13_col_cf, c14_col_cf
+  use ColumnDataType           , only : col_nf, col_pf
   use VegetationType           , only : veg_pp
-  use VegetationDataType       , only : vegetation_carbon_state, vegetation_carbon_flux 
-  use VegetationDataType       , only : vegetation_nitrogen_state 
-  use VegetationDataType       , only : vegetation_phosphorus_state 
-  use VegetationDataType       , only : veg_cf, c13_veg_cf, c14_veg_cf  
-  use VegetationDataType       , only : veg_nf, veg_pf  
+  use VegetationDataType       , only : vegetation_carbon_state, vegetation_carbon_flux
+  use VegetationDataType       , only : vegetation_nitrogen_state
+  use VegetationDataType       , only : vegetation_phosphorus_state
+  use VegetationDataType       , only : veg_cf, c13_veg_cf, c14_veg_cf
+  use VegetationDataType       , only : veg_nf, veg_pf
   use clm_varcon               , only : c3_r2, c4_r2, c14ratio
   use dynPatchStateUpdaterMod  , only : patch_state_updater_type
+  !!TODO: see if these can be reconfigured to prevent allocations
   use dynSubgridAdjustmentsMod , only : dyn_veg_cs_Adjustments, dyn_col_cs_Adjustments
   use dynSubgridAdjustmentsMod , only : dyn_veg_ns_Adjustments, dyn_col_ns_Adjustments
   use dynSubgridAdjustmentsMod , only : dyn_veg_ps_Adjustments, dyn_col_ps_Adjustments
-  
+
 
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -50,7 +45,7 @@ module dynConsBiogeochemMod
   private
 
   save
-  
+
   public :: dyn_cnbal_patch
   public :: dyn_cnbal_column
   !-----------------------------------------------------------------------
@@ -65,27 +60,23 @@ contains
        patch_state_updater, &
        canopystate_vars, photosyns_vars, cnstate_vars, &
        veg_cs, c13_veg_cs, c14_veg_cs, &
-       carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, &
-       nitrogenstate_vars, nitrogenflux_vars, &
-       veg_ns, &
-       phosphorusstate_vars,phosphorusflux_vars, &
-       veg_ps)
+       veg_ns, veg_ps, dt)
     !
     ! !DESCRIPTION:
     ! Modify pft-level state and flux variables to maintain carbon and nitrogen balance with
     ! dynamic pft-weights.
     !
     ! !USES:
+      !$acc routine seq
     use shr_const_mod      , only : SHR_CONST_PDB
     use landunit_varcon    , only : istsoil, istcrop
     use clm_varpar         , only : numveg, nlevdecomp, max_patch_per_col
     use pftvarcon          , only : pconv, pprod10, pprod100
     use clm_varcon         , only : c13ratio, c14ratio
-    use clm_time_manager   , only : get_step_size
     use dynPriorWeightsMod , only : prior_weights_type
     !
     ! !ARGUMENTS:
-    type(bounds_type)              , intent(in)    :: bounds        
+    type(bounds_type)              , intent(in)    :: bounds
     integer                        , intent(in)    :: num_soilp_with_inactive ! number of points in filter
     integer                        , intent(in)    :: filter_soilp_with_inactive(:) ! soil patch filter that includes inactive points
     integer                        , intent(in)    :: num_soilc_with_inactive ! number of points in filter
@@ -98,21 +89,14 @@ contains
     type(vegetation_carbon_state)  , intent(inout) :: veg_cs
     type(vegetation_carbon_state)  , intent(inout) :: c13_veg_cs
     type(vegetation_carbon_state)  , intent(inout) :: c14_veg_cs
-    type(carbonflux_type)          , intent(inout) :: carbonflux_vars
-    type(carbonflux_type)          , intent(inout) :: c13_carbonflux_vars
-    type(carbonflux_type)          , intent(inout) :: c14_carbonflux_vars
-    type(nitrogenstate_type)       , intent(inout) :: nitrogenstate_vars
-    type(nitrogenflux_type)        , intent(inout) :: nitrogenflux_vars
     type(vegetation_nitrogen_state), intent(inout) :: veg_ns
-    type(phosphorusstate_type)     , intent(inout) :: phosphorusstate_vars
-    type(phosphorusflux_type)      , intent(inout) :: phosphorusflux_vars
     type(vegetation_phosphorus_state),intent(inout) :: veg_ps
-    !
+    real(r8)                         ,intent(in)    :: dt                            ! land model time step (sec)
+
     ! !LOCAL VARIABLES:
     integer                       :: pi,p,c,l,g,j                  ! indices
     integer                       :: ier                           ! error code
     real(r8)                      :: dwt                           ! change in pft weight (relative to column)
-    real(r8)                      :: dt                            ! land model time step (sec)
     real(r8)                      :: init_h2ocan                   ! initial canopy water mass
     real(r8)                      :: new_h2ocan                    ! canopy water mass after weight shift
     real(r8), allocatable         :: dwt_leafc_seed(:)             ! pft-level mass gain due to seeding of new area
@@ -143,7 +127,7 @@ contains
     character(len=32)             :: subname='dyn_cbal'            ! subroutine name
 
     ! ! add phosphorus local variables
-    real(r8), allocatable         :: dwt_leafp_seed(:)             ! pft-level mass gain due to seeding of new area    
+    real(r8), allocatable         :: dwt_leafp_seed(:)             ! pft-level mass gain due to seeding of new area
     real(r8), allocatable         :: dwt_deadstemp_seed(:)         ! pft-level mass gain due to seeding of new area
     real(r8), allocatable         :: dwt_ppool_seed(:)             ! pft-level mass gain due to seeding of new area
     real(r8), allocatable, target :: dwt_frootp_to_litter(:)       ! pft-level mass loss due to weight shift
@@ -181,19 +165,14 @@ contains
     real(r8) :: froot, croot
     real(r8) :: fr_flab, fr_fcel, fr_flig
     !-----------------------------------------------------------------------
-    
-    associate(&
-         cs     => veg_cs    , &
-         c13_cs => c13_veg_cs, &
-         c14_cs => c14_veg_cs, &
-         cf     => carbonflux_vars     , &
-         c13_cf => c13_carbonflux_vars , &
-         c14_cf => c14_carbonflux_vars , &
-         ns     => veg_ns  , &
-         nf     => nitrogenflux_vars   ,  &
-         ps     => veg_ps  , &
-         pf     => phosphorusflux_vars     &
-         )
+
+    !!associate(&
+    !!     cs     => veg_cs    , &
+    !!     c13_cs => c13_veg_cs, &
+    !!     c14_cs => c14_veg_cs, &
+    !!     ns     => veg_ns  , &
+    !!     ps     => veg_ps   &
+    !!     )
 
 
     ! Allocate pft-level mass loss arrays
@@ -251,10 +230,8 @@ contains
        allocate(prod100_c14flux            (bounds%begp:bounds%endp), stat=ier)
        allocate(crop_product_c14flux       (bounds%begp:bounds%endp), stat=ier)
     endif
-    
+
     ! Get time step
-    dt = real( get_step_size(), r8 )
-    
     do p = bounds%begp,bounds%endp
        c = veg_pp%column(p)
        ! initialize all the pft-level local flux arrays
@@ -267,7 +244,7 @@ contains
        prod10_cflux(p)             = 0._r8
        prod100_cflux(p)            = 0._r8
        crop_product_cflux(p)       = 0._r8
-       
+
        dwt_leafn_seed(p)           = 0._r8
        dwt_deadstemn_seed(p)       = 0._r8
        dwt_npool_seed(p)           = 0._r8
@@ -278,7 +255,7 @@ contains
        prod10_nflux(p)             = 0._r8
        prod100_nflux(p)            = 0._r8
        crop_product_nflux(p)       = 0._r8
-       
+
        dwt_leafp_seed(p)           = 0._r8
        dwt_deadstemp_seed(p)       = 0._r8
        dwt_ppool_seed(p)           = 0._r8
@@ -301,7 +278,7 @@ contains
           prod100_c13flux(p)            = 0._r8
           crop_product_c13flux(p)       = 0._r8
        endif
-       
+
        if ( use_c14 ) then
           dwt_leafc14_seed(p)           = 0._r8
           dwt_deadstemc14_seed(p)       = 0._r8
@@ -313,52 +290,69 @@ contains
           prod100_c14flux(p)            = 0._r8
           crop_product_c14flux(p)       = 0._r8
        endif
-       
+
        l = veg_pp%landunit(p)
        if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
-          
+
           ! calculate the change in weight for the timestep
           dwt = veg_pp%wtcol(p)-prior_weights%pwtcol(p)
           cnstate_vars%lfpftd_patch(p) = -dwt
 
           ! Patches for which weight increases on this timestep
           if (dwt > 0._r8) then
-             
+
              ! first identify Patches that are initiating on this timestep
              ! and set all the necessary state and flux variables
              if (prior_weights%pwtcol(p) == 0._r8) then
-                
+
                 ! set initial conditions for PFT that is being initiated
                 ! in this time step.  Based on the settings in cnIniTimeVar.
-                
+
                 ! pft-level carbon state variables
-                call CarbonStateVarsInit     (cs, p)
+                call CarbonStateVarsInit     (veg_cs, p)
                 call NitrogenStateVarsInit   (veg_ns, p)
                 call PhosphorusStateVarsInit (veg_ps, p)
                 call CanopyStateVarsInit     (canopystate_vars, p)
                 call CNStateVarsInit         (cnstate_vars, p, c)
                 call CarbonFluxVarsInit      (veg_cf, p)
-                call NitrogenFluxVarsInit    (nf, p)
-                call PhosphorusFluxVarsInit  (pf, p)
-                
+                call NitrogenFluxVarsInit    ( p)
+                call PhosphorusFluxVarsInit  ( p)
+
                 if ( use_c13 ) then
-                   call CarbonStateVarsInit(c13_cs, p)
+                   call CarbonStateVarsInit(c13_veg_cs, p)
                 endif
-                
+
                 if ( use_c14 ) then
-                   call CarbonStateVarsInit(c14_cs, p)
+                   call CarbonStateVarsInit(c14_veg_cs, p)
                 endif
-                                 
+
                 ! add phosphorus related variables
 
-                call photosyns_vars%NewPatchinit(p)
-                
+                !call photosyns_vars%NewPatchinit(p)
+                if ( use_c13 ) then
+                   photosyns_vars%alphapsnsun_patch(p) = 0._r8
+                   photosyns_vars%alphapsnsha_patch(p) = 0._r8
+                   photosyns_vars%rc13_canair_patch(p) = 0._r8
+                   photosyns_vars%rc13_psnsun_patch(p) = 0._r8
+                   photosyns_vars%rc13_psnsha_patch(p) = 0._r8
+                   photosyns_vars%c13_psnsun_patch(p) = 0._r8
+                   photosyns_vars%c13_psnsha_patch(p) = 0._r8
+
+                endif
+
+                photosyns_vars%psnsun_patch(p) = 0._r8
+                photosyns_vars%psnsha_patch(p) = 0._r8
+                if ( use_c14 ) then
+                   photosyns_vars%c14_psnsun_patch(p) = 0._r8
+                   photosyns_vars%c14_psnsha_patch(p) = 0._r8
+                end if
+
              end if  ! end initialization of new pft
-                                                    
+
           end if       ! weight decreasing
        end if           ! is soil
     end do               ! patch loop
-    
+
     call dyn_veg_cs_Adjustments(    &
          bounds,                        &
          num_soilp_with_inactive,       &
@@ -529,7 +523,7 @@ contains
             veg_pf%dwt_seedp_to_ppool(p)
 
     end do
-    
+
     ! calculate patch-to-column slash fluxes into litter and CWD pools
     do p = bounds%begp, bounds%endp
        c = veg_pp%column(p)
@@ -583,8 +577,8 @@ contains
                 fr_flab = veg_vp%fr_flab(veg_pp%itype(p))
                 fr_fcel = veg_vp%fr_fcel(veg_pp%itype(p))
                 fr_flig = veg_vp%fr_flig(veg_pp%itype(p))
-                
-                
+
+
                 ! fine root litter carbon fluxes
                 col_cf%dwt_frootc_to_litr_met_c(c,j) = &
                      col_cf%dwt_frootc_to_litr_met_c(c,j) + &
@@ -597,8 +591,8 @@ contains
                 col_cf%dwt_frootc_to_litr_lig_c(c,j) = &
                      col_cf%dwt_frootc_to_litr_lig_c(c,j) + &
                      (dwt_frootc_to_litter(p)* fr_flig)/dt * froot
-                
-                
+
+
                 ! fine root litter nitrogen fluxes
                 col_nf%dwt_frootn_to_litr_met_n(c,j) = &
                      col_nf%dwt_frootn_to_litr_met_n(c,j) + &
@@ -611,7 +605,7 @@ contains
                 col_nf%dwt_frootn_to_litr_lig_n(c,j) = &
                      col_nf%dwt_frootn_to_litr_lig_n(c,j) + &
                      (dwt_frootn_to_litter(p)* fr_flig)/dt * froot
-                
+
 
                 ! fine root litter phosphorus fluxes
                 col_pf%dwt_frootp_to_litr_met_p(c,j) = &
@@ -634,7 +628,7 @@ contains
                 col_nf%dwt_livecrootn_to_cwdn(c,j) = &
                      col_nf%dwt_livecrootn_to_cwdn(c,j) + &
                      (dwt_livecrootn_to_litter(p))/dt * croot
-                
+
                 col_pf%dwt_livecrootp_to_cwdp(c,j) = &
                      col_pf%dwt_livecrootp_to_cwdp(c,j) + &
                      (dwt_livecrootp_to_litter(p))/dt * croot
@@ -647,7 +641,7 @@ contains
                 col_nf%dwt_deadcrootn_to_cwdn(c,j) = &
                      col_nf%dwt_deadcrootn_to_cwdn(c,j) + &
                      (dwt_deadcrootn_to_litter(p))/dt * croot
-             
+
                 col_pf%dwt_deadcrootp_to_cwdp(c,j) = &
                      col_pf%dwt_deadcrootp_to_cwdp(c,j) + &
                      (dwt_deadcrootp_to_litter(p))/dt * croot
@@ -675,10 +669,10 @@ contains
                    c13_col_cf%dwt_deadcrootc_to_cwdc(c,j) = &
                         c13_col_cf%dwt_deadcrootc_to_cwdc(c,j) + &
                         (dwt_deadcrootc13_to_litter(p))/dt * croot
-                   
+
                 endif
-                
-                if ( use_c14 ) then                   
+
+                if ( use_c14 ) then
                    ! C14 fine root litter fluxes
                    c14_col_cf%dwt_frootc_to_litr_met_c(c,j) = &
                         c14_col_cf%dwt_frootc_to_litr_met_c(c,j) + &
@@ -702,7 +696,7 @@ contains
                         c14_col_cf%dwt_deadcrootc_to_cwdc(c,j) + &
                         (dwt_deadcrootc14_to_litter(p))/dt * croot
                 endif
-                
+
              end if
           end do
        end do
@@ -713,7 +707,7 @@ contains
           if (pi <= col_pp%npfts(c)) then
              p = col_pp%pfti(c) + pi - 1
              g = veg_pp%gridcell(p)
-             
+
              ! column-level fluxes are accumulated as positive fluxes.
              ! column-level C flux updates
              col_cf%dwt_conv_cflux(c) = col_cf%dwt_conv_cflux(c) - conv_cflux(p)/dt
@@ -739,7 +733,7 @@ contains
                 c13_grc_cf%dwt_prod100c_gain(g)   = c13_grc_cf%dwt_prod100c_gain(g) + c13_veg_cf%dwt_prod100c_gain(p)
 
              endif
-             
+
              if ( use_c14 ) then
                 ! C14 column-level flux updates
                 c14_col_cf%dwt_conv_cflux(c) = c14_col_cf%dwt_conv_cflux(c) - conv_c14flux(p)/dt
@@ -753,12 +747,12 @@ contains
                 c14_grc_cf%dwt_prod100c_gain(g)   = c14_grc_cf%dwt_prod100c_gain(g) + c14_veg_cf%dwt_prod100c_gain(p)
 
              endif
-             
+
              ! column-level N flux updates
              col_nf%dwt_conv_nflux(c) = col_nf%dwt_conv_nflux(c) - conv_nflux(p)/dt
              col_nf%dwt_prod10n_gain(c) = col_nf%dwt_prod10n_gain(c) - prod10_nflux(p)/dt
              col_nf%dwt_prod100n_gain(c) = col_nf%dwt_prod100n_gain(c) - prod100_nflux(p)/dt
-             
+
              veg_nf%dwt_prod10n_gain(p) = -prod10_nflux(p)/dt
              grc_nf%dwt_prod10n_gain(g)   = grc_nf%dwt_prod10n_gain(g) + veg_nf%dwt_prod10n_gain(p)
 
@@ -780,7 +774,7 @@ contains
           end if
        end do
     end do
-    
+
     do p = bounds%begp, bounds%endp
        g = veg_pp%gridcell(p)
 
@@ -864,7 +858,7 @@ contains
        deallocate(prod100_c13flux)
        deallocate(crop_product_c13flux)
     endif
-             
+
     if ( use_c14 ) then
        deallocate(dwt_leafc14_seed)
        deallocate(dwt_deadstemc14_seed)
@@ -876,22 +870,22 @@ contains
        deallocate(prod100_c14flux)
        deallocate(crop_product_c14flux)
     endif
-    
-   end associate
+
  end subroutine dyn_cnbal_patch
- 
+
  !-----------------------------------------------------------------------
  subroutine CarbonStateVarsInit(cs, p)
    !
    ! !DESCRIPTION:
    ! Initializes p-th patch of carbonstate_type
    !
+      !$acc routine seq
    implicit none
    !
    ! !ARGUMENT
    type(vegetation_carbon_state), intent(inout) :: cs
    integer                    , intent(in)    :: p
-   
+
    cs%leafc(p)              = 0._r8
    cs%leafc_storage(p)      = 0._r8
    cs%leafc_xfer(p)         = 0._r8
@@ -928,12 +922,13 @@ contains
    ! !DESCRIPTION:
    ! Initializes p-th patch of nitrogenstate_type
    !
+      !$acc routine seq
    implicit none
    !
    ! !ARGUMENT
    type(vegetation_nitrogen_state), intent(inout) :: veg_ns
    integer                 , intent(in)    :: p
-   
+
    veg_ns%leafn(p)              = 0._r8
    veg_ns%leafn_storage(p)      = 0._r8
    veg_ns%leafn_xfer(p)         = 0._r8
@@ -968,6 +963,7 @@ contains
    ! !DESCRIPTION:
    ! Initializes p-th patch of phosphorusstate_type
    !
+      !$acc routine seq
    implicit none
    !
    ! !ARGUMENT
@@ -1008,6 +1004,7 @@ contains
    ! !DESCRIPTION:
    ! Initializes p-th patch of canopystate_type
    !
+      !$acc routine seq
    implicit none
    !
    ! !ARGUMENT
@@ -1025,6 +1022,7 @@ contains
    ! !DESCRIPTION:
    ! Initializes p-th patch of cnstate_type
    !
+      !$acc routine seq
    use clm_varcon, only : c14ratio
    implicit none
    !
@@ -1078,6 +1076,7 @@ contains
    ! !DESCRIPTION:
    ! Initializes p-th patch of carbonflux_type
    !
+      !$acc routine seq
    use clm_varcon, only : c13ratio
    !
    implicit none
@@ -1103,15 +1102,15 @@ contains
  end subroutine CarbonFluxVarsInit
 
  !-----------------------------------------------------------------------
- subroutine NitrogenFluxVarsInit(nf, p)
+ subroutine NitrogenFluxVarsInit( p)
    !
    ! !DESCRIPTION:
    ! Initializes p-th patch of nitrogenflux_type
    !
+      !$acc routine seq
    implicit none
    !
    ! !ARGUMENT
-   type(nitrogenflux_type), intent(inout) :: nf
    integer                , intent(in)    :: p
 
    veg_nf%plant_ndemand(p)         = 0._r8
@@ -1121,15 +1120,15 @@ contains
  end subroutine NitrogenFluxVarsInit
 
  !-----------------------------------------------------------------------
- subroutine PhosphorusFluxVarsInit(pf, p)
+ subroutine PhosphorusFluxVarsInit(p)
    !
    ! !DESCRIPTION:
    ! Initializes p-th patch of phosphorusflux_type
    !
+      !$acc routine seq
    implicit none
    !
    ! !ARGUMENT
-   type(phosphorusflux_type), intent(inout) :: pf
    integer                  , intent(in)    :: p
 
    veg_pf%plant_pdemand(p)         = 0._r8
@@ -1141,13 +1140,14 @@ contains
  !-----------------------------------------------------------------------
  subroutine dyn_cnbal_column( bounds, clump_index, column_state_updater, &
        col_cs, c13_col_cs, c14_col_cs, &
-       phosphorusstate_vars, col_ns, col_ps)
+       col_ns, col_ps)
    !
    ! !DESCRIPTION:
    ! Modify column-level state variables to maintain carbon, nitrogen
    ! and phosphorus balance with dynamic column weights.
    !
    ! !USES:
+      !$acc routine seq
    use dynColumnStateUpdaterMod, only : column_state_updater_type
    use dynPriorWeightsMod      , only : prior_weights_type
    use clm_varctl              , only : use_lch4
@@ -1159,22 +1159,12 @@ contains
    type(column_carbon_state)       , intent(inout) :: col_cs
    type(column_carbon_state)       , intent(inout) :: c13_col_cs
    type(column_carbon_state)       , intent(inout) :: c14_col_cs
-   type(phosphorusstate_type)      , intent(inout) :: phosphorusstate_vars
    type(column_nitrogen_state)     , intent(inout) :: col_ns
    type(column_phosphorus_state)   , intent(inout) :: col_ps
    !
    ! !LOCAL VARIABLES:
 
-   character(len=*), parameter :: subname = 'dyn_cnbal_col'
    !-----------------------------------------------------------------------
-
-   associate(&
-         cs     => col_cs,     &
-         c13_cs => c13_col_cs, &
-         c14_cs => c14_col_cs, &
-         ns     => col_ns  , &
-         ps     => phosphorusstate_vars  &
-         )
 
     call dyn_col_cs_Adjustments(bounds, clump_index, column_state_updater, col_cs)
 
@@ -1191,8 +1181,6 @@ contains
    call dyn_col_ps_Adjustments(bounds, clump_index, column_state_updater, col_ps)
 
    ! DynamicColumnAdjustments for CH4 needs to be implemented
-
- end associate
 
 end subroutine dyn_cnbal_column
 

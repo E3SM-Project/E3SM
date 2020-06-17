@@ -16,131 +16,131 @@ module VegetationPropertiesType
   !
   ! !PUBLIC TYPES:
   type, public :: vegetation_properties_type
-     integer , allocatable :: noveg         (:)   ! value for not vegetated
-     integer , allocatable :: tree          (:)   ! tree or not?
-     real(r8), allocatable :: smpso         (:)   ! soil water potential at full stomatal opening (mm)
-     real(r8), allocatable :: smpsc         (:)   ! soil water potential at full stomatal closure (mm)
-     real(r8), allocatable :: fnitr         (:)   ! foliage nitrogen limitation factor (-)
-     real(r8), allocatable :: foln          (:)   ! foliage nitrogen (%)
-     real(r8), allocatable :: dleaf         (:)   ! characteristic leaf dimension (m)
-     real(r8), allocatable :: c3psn         (:)   ! photosynthetic pathway: 0. = c4, 1. = c3
-     real(r8), allocatable :: xl            (:)   ! leaf/stem orientation index
-     real(r8), allocatable :: rhol          (:,:) ! leaf reflectance: 1=vis, 2=nir   (numrad)
-     real(r8), allocatable :: rhos          (:,:) ! stem reflectance: 1=vis, 2=nir   (numrad)
-     real(r8), allocatable :: taul          (:,:) ! leaf transmittance: 1=vis, 2=nir (numrad)
-     real(r8), allocatable :: taus          (:,:) ! stem transmittance: 1=vis, 2=nir (numrad)
-     real(r8), allocatable :: z0mr          (:)   ! ratio of momentum roughness length to canopy top height (-)
-     real(r8), allocatable :: displar       (:)   ! ratio of displacement height to canopy top height (-)
-     real(r8), allocatable :: roota_par     (:)   ! rooting distribution parameter [1/m]
-     real(r8), allocatable :: rootb_par     (:)   ! rooting distribution parameter [1/m]
-     real(r8), allocatable :: rootprof_beta (:)   ! rooting distribution parameter for C and N inputs [unitless]
-     real(r8), allocatable :: dwood         (:)   ! wood density (gC/m3)
-     real(r8), allocatable :: slatop        (:)   ! specific leaf area at top of canopy, projected area basis [m^2/gC]
+     integer , pointer :: noveg         (:)   => null() ! value for not vegetated
+     integer , pointer :: tree          (:)   => null() ! tree or not?
+     real(r8), pointer :: smpso         (:)   => null() ! soil water potential at full stomatal opening (mm)
+     real(r8), pointer :: smpsc         (:)   => null() ! soil water potential at full stomatal closure (mm)
+     real(r8), pointer :: fnitr         (:)   => null() ! foliage nitrogen limitation factor (-)
+     real(r8), pointer :: foln          (:)   => null() ! foliage nitrogen (%)
+     real(r8), pointer :: dleaf         (:)   => null() ! characteristic leaf dimension (m)
+     real(r8), pointer :: c3psn         (:)   => null() ! photosynthetic pathway: 0. = c4, 1. = c3
+     real(r8), pointer :: xl            (:)   => null() ! leaf/stem orientation index
+     real(r8), pointer :: rhol          (:,:) => null() ! leaf reflectance: 1=vis, 2=nir   (numrad)
+     real(r8), pointer :: rhos          (:,:) => null() ! stem reflectance: 1=vis, 2=nir   (numrad)
+     real(r8), pointer :: taul          (:,:) => null() ! leaf transmittance: 1=vis, 2=nir (numrad)
+     real(r8), pointer :: taus          (:,:) => null() ! stem transmittance: 1=vis, 2=nir (numrad)
+     real(r8), pointer :: z0mr          (:)   => null() ! ratio of momentum roughness length to canopy top height (-)
+     real(r8), pointer :: displar       (:)   => null() ! ratio of displacement height to canopy top height (-)
+     real(r8), pointer :: roota_par     (:)   => null() ! rooting distribution parameter [1/m]
+     real(r8), pointer :: rootb_par     (:)   => null() ! rooting distribution parameter [1/m]
+     real(r8), pointer :: rootprof_beta (:)   => null() ! rooting distribution parameter for C and N inputs [unitless]
+     real(r8), pointer :: dwood         (:)   => null() ! wood density (gC/m3)
+     real(r8), pointer :: slatop        (:)   => null() ! specific leaf area at top of canopy, projected area basis [m^2/gC]
 ! for plant hydraulics
-     real(r8), allocatable :: root_radius   (:)   ! root radius (m)
-     real(r8), allocatable :: root_density  (:)   ! root density (gC/m3)
+     real(r8), pointer :: root_radius   (:) => null()   ! root radius (m)
+     real(r8), pointer :: root_density  (:) => null()   ! root density (gC/m3)
 !
-     real(r8), allocatable :: dsladlai      (:)   ! dSLA/dLAI, projected area basis [m^2/gC]
-     real(r8), allocatable :: leafcn        (:)   ! leaf C:N (gC/gN)
-     real(r8), allocatable :: flnr          (:)   ! fraction of leaf N in the Rubisco enzyme (gN Rubisco / gN leaf)
-     real(r8), allocatable :: woody         (:)   ! binary flag for woody lifeform (1=woody, 0=not woody)
-     real(r8), allocatable :: lflitcn       (:)   ! leaf litter C:N (gC/gN)
-     real(r8), allocatable :: frootcn       (:)   ! fine root C:N (gC/gN)
-     real(r8), allocatable :: livewdcn      (:)   ! live wood (phloem and ray parenchyma) C:N (gC/gN)
-     real(r8), allocatable :: deadwdcn      (:)   ! dead wood (xylem and heartwood) C:N (gC/gN)
-     real(r8), allocatable :: graincn       (:)   ! grain C:N (gC/gN) for prognostic crop model
-     real(r8), allocatable :: froot_leaf    (:)   ! allocation parameter: new fine root C per new leaf C (gC/gC)
-     real(r8), allocatable :: stem_leaf     (:)   ! allocation parameter: new stem c per new leaf C (gC/gC)
-     real(r8), allocatable :: croot_stem    (:)   ! allocation parameter: new coarse root C per new stem C (gC/gC)
-     real(r8), allocatable :: flivewd       (:)   ! allocation parameter: fraction of new wood that is live
-                                                  ! (phloem and ray parenchyma) (no units)
-     real(r8), allocatable :: fcur          (:)   ! allocation parameter: fraction of allocation that goes
-                                                  ! to currently displayed growth, remainder to storage
-     real(r8), allocatable :: lf_flab       (:)   ! leaf litter labile fraction
-     real(r8), allocatable :: lf_fcel       (:)   ! leaf litter cellulose fraction
-     real(r8), allocatable :: lf_flig       (:)   ! leaf litter lignin fraction
-     real(r8), allocatable :: fr_flab       (:)   ! fine root litter labile fraction
-     real(r8), allocatable :: fr_fcel       (:)   ! fine root litter cellulose fraction
-     real(r8), allocatable :: fr_flig       (:)   ! fine root litter lignin fraction
-     real(r8), allocatable :: leaf_long     (:)   ! leaf longevity (yrs)
-     real(r8), allocatable :: froot_long    (:)   ! fine root longevity (yrs)
-     real(r8), allocatable :: evergreen     (:)   ! binary flag for evergreen leaf habit (0 or 1)
-     real(r8), allocatable :: stress_decid  (:)   ! binary flag for stress-deciduous leaf habit (0 or 1)
-     real(r8), allocatable :: season_decid  (:)   ! binary flag for seasonal-deciduous leaf habit (0 or 1)
-     real(r8), allocatable :: cc_leaf       (:)   ! combustion completeness factor for leaf (0 to 1)
-     real(r8), allocatable :: cc_lstem      (:)   ! combustion completeness factor for live stem (0 to 1)
-     real(r8), allocatable :: cc_dstem      (:)   ! combustion completeness factor for dead stem (0 to 1)
-     real(r8), allocatable :: cc_other      (:)   ! combustion completeness factor for other plant tissues (0 to 1)
-     real(r8), allocatable :: fm_leaf       (:)   ! fire-related mortality factor for leaf (0 to 1)
-     real(r8), allocatable :: fm_lstem      (:)   ! fire-related mortality factor for live stem (0 to 1)
-     real(r8), allocatable :: fm_dstem      (:)   ! fire-related mortality factor for dead stem (0 to 1)
-     real(r8), allocatable :: fm_other      (:)   ! fire-related mortality factor for other plant tissues (0 to 1)
-     real(r8), allocatable :: fm_root       (:)   ! fire-related mortality factor for fine roots (0 to 1)
-     real(r8), allocatable :: fm_lroot      (:)   ! fire-related mortality factor for live roots (0 to 1)
-     real(r8), allocatable :: fm_droot      (:)   ! fire-related mortality factor for dead roots (0 to 1)
-     real(r8), allocatable :: fertnitro     (:)   ! fertilizer applied (crop)
-     real(r8), allocatable :: fleafcn       (:)   ! C:N during grain fill; leaf (crop)
-     real(r8), allocatable :: ffrootcn      (:)   ! C:N during grain fill; froot (crop)
-     real(r8), allocatable :: fstemcn       (:)   ! C:N during grain fill; stem (crop)
-     real(r8), allocatable :: presharv      (:)   ! porportion of residue harvested (crop)
-     real(r8), allocatable :: convfact      (:)   ! converstion factor to bu/acre (crop)
-     real(r8), allocatable :: fyield        (:)   ! fraction of grain that is actually harvested (crop)
+     real(r8), pointer :: dsladlai      (:) => null()  ! dSLA/dLAI, projected area basis [m^2/gC]
+     real(r8), pointer :: leafcn        (:) => null()  ! leaf C:N (gC/gN)
+     real(r8), pointer :: flnr          (:) => null()  ! fraction of leaf N in the Rubisco enzyme (gN Rubisco / gN leaf)
+     real(r8), pointer :: woody         (:) => null()  ! binary flag for woody lifeform (1=woody, 0=not woody)
+     real(r8), pointer :: lflitcn       (:) => null()  ! leaf litter C:N (gC/gN)
+     real(r8), pointer :: frootcn       (:) => null()  ! fine root C:N (gC/gN)
+     real(r8), pointer :: livewdcn      (:) => null()  ! live wood (phloem and ray parenchyma) C:N (gC/gN)
+     real(r8), pointer :: deadwdcn      (:) => null()  ! dead wood (xylem and heartwood) C:N (gC/gN)
+     real(r8), pointer :: graincn       (:) => null()  ! grain C:N (gC/gN) for prognostic crop model
+     real(r8), pointer :: froot_leaf    (:) => null()  ! allocation parameter: new fine root C per new leaf C (gC/gC)
+     real(r8), pointer :: stem_leaf     (:) => null()  ! allocation parameter: new stem c per new leaf C (gC/gC)
+     real(r8), pointer :: croot_stem    (:) => null()  ! allocation parameter: new coarse root C per new stem C (gC/gC)
+     real(r8), pointer :: flivewd       (:) => null()  ! allocation parameter: fraction of new wood that is live
+                                                       ! (phloem and ray parenchyma) (no units)
+     real(r8), pointer :: fcur          (:) => null()  ! allocation parameter: fraction of allocation that goes
+                                                       ! to currently displayed growth, remainder to storage
+     real(r8), pointer :: lf_flab       (:) => null()  ! leaf litter labile fraction
+     real(r8), pointer :: lf_fcel       (:) => null()  ! leaf litter cellulose fraction
+     real(r8), pointer :: lf_flig       (:) => null()  ! leaf litter lignin fraction
+     real(r8), pointer :: fr_flab       (:) => null()  ! fine root litter labile fraction
+     real(r8), pointer :: fr_fcel       (:) => null()  ! fine root litter cellulose fraction
+     real(r8), pointer :: fr_flig       (:) => null()  ! fine root litter lignin fraction
+     real(r8), pointer :: leaf_long     (:) => null()  ! leaf longevity (yrs)
+     real(r8), pointer :: froot_long    (:) => null()  ! fine root longevity (yrs)
+     real(r8), pointer :: evergreen     (:) => null()  ! binary flag for evergreen leaf habit (0 or 1)
+     real(r8), pointer :: stress_decid  (:) => null()  ! binary flag for stress-deciduous leaf habit (0 or 1)
+     real(r8), pointer :: season_decid  (:) => null()  ! binary flag for seasonal-deciduous leaf habit (0 or 1)
+     real(r8), pointer :: cc_leaf       (:) => null()  ! combustion completeness factor for leaf (0 to 1)
+     real(r8), pointer :: cc_lstem      (:) => null()  ! combustion completeness factor for live stem (0 to 1)
+     real(r8), pointer :: cc_dstem      (:) => null()  ! combustion completeness factor for dead stem (0 to 1)
+     real(r8), pointer :: cc_other      (:) => null()  ! combustion completeness factor for other plant tissues (0 to 1)
+     real(r8), pointer :: fm_leaf       (:) => null()  ! fire-related mortality factor for leaf (0 to 1)
+     real(r8), pointer :: fm_lstem      (:) => null()  ! fire-related mortality factor for live stem (0 to 1)
+     real(r8), pointer :: fm_dstem      (:) => null()  ! fire-related mortality factor for dead stem (0 to 1)
+     real(r8), pointer :: fm_other      (:) => null()  ! fire-related mortality factor for other plant tissues (0 to 1)
+     real(r8), pointer :: fm_root       (:) => null()  ! fire-related mortality factor for fine roots (0 to 1)
+     real(r8), pointer :: fm_lroot      (:) => null()  ! fire-related mortality factor for live roots (0 to 1)
+     real(r8), pointer :: fm_droot      (:) => null()  ! fire-related mortality factor for dead roots (0 to 1)
+     real(r8), pointer :: fertnitro     (:) => null()  ! fertilizer applied (crop)
+     real(r8), pointer :: fleafcn       (:) => null()  ! C:N during grain fill; leaf (crop)
+     real(r8), pointer :: ffrootcn      (:) => null()  ! C:N during grain fill; froot (crop)
+     real(r8), pointer :: fstemcn       (:) => null()  ! C:N during grain fill; stem (crop)
+     real(r8), pointer :: presharv      (:) => null()  ! porportion of residue harvested (crop)
+     real(r8), pointer :: convfact      (:) => null()  ! converstion factor to bu/acre (crop)
+     real(r8), pointer :: fyield        (:) => null()  ! fraction of grain that is actually harvested (crop)
 
-     real(r8), allocatable :: leafcp        (:)   ! leaf C:P (gC/gP)
-     real(r8), allocatable :: lflitcp       (:)   ! leaf litter C:P (gC/gP)
-     real(r8), allocatable :: frootcp       (:)   ! fine root C:P (gC/gP)
-     real(r8), allocatable :: livewdcp      (:)   ! live wood (phloem and ray parenchyma) C:P (gC/gP)
-     real(r8), allocatable :: deadwdcp      (:)   ! dead wood (xylem and heartwood) C:P (gC/gP)
-     real(r8), allocatable :: graincp       (:)   ! grain C:P (gC/gP) for prognostic crop model
+     real(r8), pointer :: leafcp        (:) => null()  ! leaf C:P (gC/gP)
+     real(r8), pointer :: lflitcp       (:) => null()  ! leaf litter C:P (gC/gP)
+     real(r8), pointer :: frootcp       (:) => null()  ! fine root C:P (gC/gP)
+     real(r8), pointer :: livewdcp      (:) => null()  ! live wood (phloem and ray parenchyma) C:P (gC/gP)
+     real(r8), pointer :: deadwdcp      (:) => null()  ! dead wood (xylem and heartwood) C:P (gC/gP)
+     real(r8), pointer :: graincp       (:) => null()  ! grain C:P (gC/gP) for prognostic crop model
 
      ! pft dependent parameters for phosphorus for nutrient competition
-     real(r8), allocatable :: vmax_plant_nh4(:)        ! vmax for plant nh4 uptake
-     real(r8), allocatable :: vmax_plant_no3(:)        ! vmax for plant no3 uptake
-     real(r8), allocatable :: vmax_plant_p(:)          ! vmax for plant p uptake
-     real(r8), allocatable :: vmax_minsurf_p_vr(:,:)   ! vmax for p adsorption
-     real(r8), allocatable :: km_plant_nh4(:)          ! km for plant nh4 uptake
-     real(r8), allocatable :: km_plant_no3(:)          ! km for plant no3 uptake
-     real(r8), allocatable :: km_plant_p(:)            ! km for plant p uptake
-     real(r8), allocatable :: km_minsurf_p_vr(:,:)     ! km for p adsorption
-     real(r8)              :: km_decomp_nh4            ! km for microbial decomposer nh4 uptake
-     real(r8)              :: km_decomp_no3            ! km for microbial decomposer no3 uptake
-     real(r8)              :: km_decomp_p              ! km for microbial decomposer p uptake
-     real(r8)              :: km_nit                   ! km for nitrifier nh4 uptake
-     real(r8)              :: km_den                   ! km for denitrifier no3 uptake
-     real(r8), allocatable :: decompmicc_patch_vr(:,:) ! microbial decomposer biomass gc/m3
-     real(r8), allocatable :: vmax_nfix(:)             ! vmax of symbiotic n2 fixation
-     real(r8), allocatable :: km_nfix(:)               ! km of symbiotic n2 fixation
-     real(r8), allocatable :: vmax_ptase(:)            ! vmax of biochemical p production
-     real(r8)              :: km_ptase                 ! km of biochemical p production
-     real(r8)              :: lamda_ptase              ! critical value that incur biochemical production
-     real(r8), allocatable :: i_vc(:)                  ! intercept of photosynthesis vcmax ~ leaf n content regression model
-     real(r8), allocatable :: s_vc(:)                  ! slope of photosynthesis vcmax ~ leaf n content regression model
+     real(r8), pointer :: vmax_plant_nh4(:)      => null()   ! vmax for plant nh4 uptake
+     real(r8), pointer :: vmax_plant_no3(:)      => null()   ! vmax for plant no3 uptake
+     real(r8), pointer :: vmax_plant_p(:)        => null()   ! vmax for plant p uptake
+     real(r8), pointer :: vmax_minsurf_p_vr(:,:) => null()   ! vmax for p adsorption
+     real(r8), pointer :: km_plant_nh4(:)        => null()   ! km for plant nh4 uptake
+     real(r8), pointer :: km_plant_no3(:)        => null()   ! km for plant no3 uptake
+     real(r8), pointer :: km_plant_p(:)          => null()   ! km for plant p uptake
+     real(r8), pointer :: km_minsurf_p_vr(:,:)   => null()   ! km for p adsorption
+     real(r8), pointer :: km_decomp_nh4          => null()  ! km for microbial decomposer nh4 uptake
+     real(r8), pointer :: km_decomp_no3          => null()  ! km for microbial decomposer no3 uptake
+     real(r8), pointer :: km_decomp_p            => null()  ! km for microbial decomposer p uptake
+     real(r8), pointer :: km_nit                 => null()  ! km for nitrifier nh4 uptake
+     real(r8), pointer :: km_den                 => null()  ! km for denitrifier no3 uptake
+     real(r8), pointer :: decompmicc_patch_vr(:,:) => null()! microbial decomposer biomass gc/m3
+     real(r8), pointer :: vmax_nfix(:)             => null()! vmax of symbiotic n2 fixation
+     real(r8), pointer :: km_nfix(:)               => null()! km of symbiotic n2 fixation
+     real(r8), pointer :: vmax_ptase(:)            => null()! vmax of biochemical p production
+     real(r8), pointer :: km_ptase                 => null()! km of biochemical p production
+     real(r8), pointer :: lamda_ptase              => null()! critical value that incur biochemical production
+     real(r8), pointer :: i_vc(:)          => null()        ! intercept of photosynthesis vcmax ~ leaf n content regression model
+     real(r8), pointer :: s_vc(:)          => null()        ! slope of photosynthesis vcmax ~ leaf n content regression model
 
-     real(r8), allocatable :: alpha_nfix(:)            ! fraction of fixed N goes directly to plant
-     real(r8), allocatable :: alpha_ptase(:)           ! fraction of phosphatase produced P goes directly to plant
-     real(r8), allocatable :: ccost_nfix(:)            ! plant C cost per unit N produced by N2 fixation
-     real(r8), allocatable :: ccost_ptase(:)           ! plant C cost per unit P produced by phosphatase
-     real(r8), allocatable :: fnr(:)              !fraction of nitrogen in RuBisCO
-     real(r8), allocatable :: act25(:)
-     real(r8), allocatable :: kcha(:)             !Activation energy for kc
-     real(r8), allocatable :: koha(:)             !Activation energy for ko
-     real(r8), allocatable :: cpha(:)             !Activation energy for cp
-     real(r8), allocatable :: vcmaxha(:)          !Activation energy for vcmax
-     real(r8), allocatable :: jmaxha(:)           !Activation energy for jmax
-     real(r8), allocatable :: tpuha(:)            !Activation energy for tpu
-     real(r8), allocatable :: lmrha(:)            !Acitivation energy for lmr
-     real(r8), allocatable :: vcmaxhd(:)          !Deactivation energy for vcmax
-     real(r8), allocatable :: jmaxhd(:)           !Deactivation energy for jmax
-     real(r8), allocatable :: tpuhd(:)            !Deactivation energy for tpu
-     real(r8), allocatable :: lmrhd(:)            !Deacitivation energy for lmr
-     real(r8), allocatable :: lmrse(:)            !SE for lmr
-     real(r8), allocatable :: qe(:)               !Quantum efficiency
-     real(r8), allocatable :: theta_cj(:)         !
-     real(r8), allocatable :: bbbopt(:)           !Ball-Berry stomatal conductance intercept
-     real(r8), allocatable :: mbbopt(:)           !Ball-Berry stomatal conductance slope
-     real(r8), allocatable :: nstor(:)            !Nitrogen storage pool timescale
-     real(r8), allocatable :: br_xr(:)            !Base rate for excess respiration
-     real(r8)              :: tc_stress           !Critial temperature for moisture stress
+     real(r8), pointer :: alpha_nfix(:)    => null()        ! fraction of fixed N goes directly to plant
+     real(r8), pointer :: alpha_ptase(:)   => null()        ! fraction of phosphatase produced P goes directly to plant
+     real(r8), pointer :: ccost_nfix(:)    => null()        ! plant C cost per unit N produced by N2 fixation
+     real(r8), pointer :: ccost_ptase(:)   => null()        ! plant C cost per unit P produced by phosphatase
+     real(r8), pointer :: fnr(:)           => null()   !fraction of nitrogen in RuBisCO
+     real(r8), pointer :: act25(:)         => null()   !
+     real(r8), pointer :: kcha(:)          => null()   !Activation energy for kc
+     real(r8), pointer :: koha(:)          => null()   !Activation energy for ko
+     real(r8), pointer :: cpha(:)          => null()   !Activation energy for cp
+     real(r8), pointer :: vcmaxha(:)       => null()   !Activation energy for vcmax
+     real(r8), pointer :: jmaxha(:)        => null()   !Activation energy for jmax
+     real(r8), pointer :: tpuha(:)         => null()   !Activation energy for tpu
+     real(r8), pointer :: lmrha(:)         => null()   !Acitivation energy for lmr
+     real(r8), pointer :: vcmaxhd(:)       => null()   !Deactivation energy for vcmax
+     real(r8), pointer :: jmaxhd(:)        => null()   !Deactivation energy for jmax
+     real(r8), pointer :: tpuhd(:)         => null()   !Deactivation energy for tpu
+     real(r8), pointer :: lmrhd(:)         => null()   !Deacitivation energy for lmr
+     real(r8), pointer :: lmrse(:)         => null()   !SE for lmr
+     real(r8), pointer :: qe(:)            => null()   !Quantum efficiency
+     real(r8), pointer :: theta_cj(:)      => null()   !
+     real(r8), pointer :: bbbopt(:)        => null()   !Ball-Berry stomatal conductance intercept
+     real(r8), pointer :: mbbopt(:)        => null()   !Ball-Berry stomatal conductance slope
+     real(r8), pointer :: nstor(:)         => null()   !Nitrogen storage pool timescale
+     real(r8), pointer :: br_xr(:)         => null()   !Base rate for excess respiration
+     real(r8), pointer :: tc_stress        => null()   !Critial temperature for moisture stress
 
 
    contains
@@ -288,7 +288,14 @@ contains
     allocate( this%mbbopt(0:numpft))                             ; this%mbbopt(:)                =spval
     allocate( this%nstor(0:numpft))                              ; this%nstor(:)                 =spval
     allocate( this%br_xr(0:numpft))                              ; this%br_xr(:)                 =spval
-
+    allocate(this%km_decomp_nh4)
+    allocate(this%km_decomp_no3)
+    allocate(this%km_decomp_p  )
+    allocate(this%km_nit       )
+    allocate(this%km_den       )
+    allocate(this%km_ptase     )
+    allocate(this%lamda_ptase  )
+    allocate(this%tc_stress    )
     do m = 0,numpft
 
        if (m <= ntree) then
@@ -425,7 +432,6 @@ contains
     this%km_den        = km_den
     this%km_ptase      = km_ptase
     this%lamda_ptase   = lamda_ptase
-
     this%tc_stress     = tc_stress
 
   end subroutine veg_vp_init

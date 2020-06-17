@@ -55,29 +55,29 @@ module AllocationMod
 
   type :: AllocParamsType
 
-     real(r8) :: bdnr              ! bulk denitrification rate (1/s)
-     real(r8) :: dayscrecover      ! number of days to recover negative cpool
-     real(r8) :: compet_plant_no3  ! (unitless) relative compettiveness of plants for NO3
-     real(r8) :: compet_plant_nh4  ! (unitless) relative compettiveness of plants for NH4
-     real(r8) :: compet_decomp_no3 ! (unitless) relative competitiveness of immobilizers for NO3
-     real(r8) :: compet_decomp_nh4 ! (unitless) relative competitiveness of immobilizers for NH4
-     real(r8) :: compet_denit      ! (unitless) relative competitiveness of denitrifiers for NO3
-     real(r8) :: compet_nit        ! (unitless) relative competitiveness of nitrifiers for NH4
+     real(r8), pointer :: bdnr              => null() ! bulk denitrification rate (1/s)
+     real(r8), pointer :: dayscrecover      => null() ! number of days to recover negative cpool
+     real(r8), pointer :: compet_plant_no3  => null() ! (unitless) relative compettiveness of plants for NO3
+     real(r8), pointer :: compet_plant_nh4  => null() ! (unitless) relative compettiveness of plants for NH4
+     real(r8), pointer :: compet_decomp_no3 => null() ! (unitless) relative competitiveness of immobilizers for NO3
+     real(r8), pointer :: compet_decomp_nh4 => null() ! (unitless) relative competitiveness of immobilizers for NH4
+     real(r8), pointer :: compet_denit      => null() ! (unitless) relative competitiveness of denitrifiers for NO3
+     real(r8), pointer :: compet_nit        => null() ! (unitless) relative competitiveness of nitrifiers for NH4
 
   end type AllocParamsType
   !
   ! AllocParamsInst is populated in readCNAllocParams which is called in
-  type(AllocParamsType)  ,  protected ::  AllocParamsInst
+  type(AllocParamsType)  ,  public ::  AllocParamsInst
   !$acc declare create(AllocParamsInst)
 
   !
   ! !PUBLIC DATA MEMBERS:
-  character(len=*), parameter, public :: suplnAll='ALL'  ! Supplemental Nitrogen for all PFT's
-  character(len=*), parameter, public :: suplnNon='NONE' ! No supplemental Nitrogen
+  character(len=3), parameter, public :: suplnAll='ALL'  ! Supplemental Nitrogen for all PFT's
+  character(len=4), parameter, public :: suplnNon='NONE' ! No supplemental Nitrogen
   character(len=15), public :: suplnitro = suplnNon      ! Supplemental Nitrogen mode
   !! add phosphorus  - X. YANG
-  character(len=*), parameter, public :: suplpAll='ALL'  ! Supplemental Phosphorus for all PFT's
-  character(len=*), parameter, public :: suplpNon='NONE' ! No supplemental Phosphorus
+  character(len=3), parameter, public :: suplpAll='ALL'  ! Supplemental Phosphorus for all PFT's
+  character(len=4), parameter, public :: suplpNon='NONE' ! No supplemental Phosphorus
   character(len=15), public :: suplphos = suplpAll    ! Supplemental Phosphorus mode
   !! add competition, - Q. Zhu
   logical,          public :: nu_com_leaf_physiology = .false.
@@ -111,16 +111,17 @@ module AllocationMod
 
   real(r8), parameter   :: E_plant_scalar  = 0.0000125_r8 ! scaling factor for plant fine root biomass to calculate nutrient carrier enzyme abundance
   real(r8), parameter   :: E_decomp_scalar = 0.05_r8      ! scaling factor for plant fine root biomass to calculate nutrient carrier enzyme abundance
-
+  !$acc declare copyin(E_plant_scalar, E_decomp_scalar)
   real(r8)              :: e_km_nh4                       ! temp variable of sum(E/KM) for NH4 competition BGC mode
   real(r8)              :: e_km_no3                       ! temp variable of sum(E/KM) for NO3 competition BGC mode
   real(r8)              :: e_km_p                         ! temp variable of sum(E/KM) for P competition
   real(r8)              :: e_km_n                         ! temp variable of sum(E/KM) for N competition CN mode
   !$acc declare create(decompmicc)
-  !$acc declare create(e_km_nh4)
-  !$acc declare create(e_km_no3)
-  !$acc declare create(e_km_p  )
-  !$acc declare create(e_km_n  )
+  !$acc declare create(e_km_nh4  )
+  !$acc declare create(e_km_no3  )
+  !$acc declare create(e_km_p    )
+  !$acc declare create(e_km_n    )
+  !$acc declare copyin(crop_supln)
   !-----------------------------------------------------------------------
 
 contains
@@ -130,7 +131,6 @@ contains
     !
     ! !USES:
     use ncdio_pio , only : file_desc_t,ncd_io
-!#py
     ! !ARGUMENTS:
     implicit none
     type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
@@ -142,49 +142,55 @@ contains
     real(r8)           :: tempr ! temporary to read in parameter
     character(len=100) :: tString ! temp. var for reading
     !-----------------------------------------------------------------------
-!#py
+    allocate(AllocParamsInst%bdnr              )
+    allocate(AllocParamsInst%dayscrecover      )
+    allocate(AllocParamsInst%compet_plant_no3  )
+    allocate(AllocParamsInst%compet_plant_nh4  )
+    allocate(AllocParamsInst%compet_decomp_no3 )
+    allocate(AllocParamsInst%compet_decomp_nh4 )
+    allocate(AllocParamsInst%compet_denit      )
+    allocate(AllocParamsInst%compet_nit        )
     ! read in parameters
-!#py
     tString='bdnr'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     AllocParamsInst%bdnr=tempr
-!#py
+
     tString='dayscrecover'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     AllocParamsInst%dayscrecover=tempr
-!#py
+
     tString='compet_plant_no3'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     AllocParamsInst%compet_plant_no3=tempr
-!#py
+
     tString='compet_plant_nh4'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     AllocParamsInst%compet_plant_nh4=tempr
-!#py
+
     tString='compet_decomp_no3'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     AllocParamsInst%compet_decomp_no3=tempr
-!#py
+
     tString='compet_decomp_nh4'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     AllocParamsInst%compet_decomp_nh4=tempr
-!#py
+
     tString='compet_denit'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     AllocParamsInst%compet_denit=tempr
-!#py
+
     tString='compet_nit'
     call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     AllocParamsInst%compet_nit=tempr
-!#py
+
   end subroutine readCNAllocParams
 
   !-----------------------------------------------------------------------
@@ -309,8 +315,7 @@ contains
        photosyns_vars, crop_vars, canopystate_vars, cnstate_vars, dt, yr)
     ! PHASE-1 of Allocation: loop over patches to assess the total plant N demand and P demand
     ! !USES:
-    !#py use shr_sys_mod      , only: shr_sys_flush
-      !$acc routine seq
+    !$acc routine seq
     use clm_varctl       , only: iulog,cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
                                  cnallocate_carbonphosphorus_only
     use pftvarcon        , only: npcropmin, declfact, bfact, aleaff, arootf, astemf, noveg
@@ -318,8 +323,6 @@ contains
     use clm_varpar       , only: nlevdecomp
     use clm_varcon       , only: nitrif_n2o_loss_frac, secspday
     use clm_varctl       , only: cnallocate_carbon_only_set
-!    use landunit_varcon  , only: istsoil, istcrop
-    !#py use clm_time_manager , only: get_step_size, get_curr_date
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -331,45 +334,10 @@ contains
     type(crop_type)          , intent(in)    :: crop_vars
     type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
-    !type(carbonstate_type)   , intent(in)    :: carbonstate_vars
-    !type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    !type(carbonflux_type)    , intent(inout) :: c13_carbonflux_vars
-    !type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
-    !type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-    !type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-!     !!  add phosphorus  -X.YANG
-    !type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
-    !type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
     real(r8), intent(in) :: dt
     integer, intent(in) :: yr
     !
     ! !LOCAL VARIABLES:
-    real(r8) :: compet_decomp_no3      ! (unitless) relative competitiveness of immobilizers for NO3 for BGC module
-    real(r8) :: compet_decomp_nh4      ! (unitless) relative competitiveness of immobilizers for NH4 for BGC module
-    real(r8) :: compet_decomp_n        ! (unitless) relative competitiveness of immobilizers for N for CN module
-    real(r8) :: compet_denit           ! (unitless) relative competitiveness of denitrifiers for NO3
-    real(r8) :: compet_nit             ! (unitless) relative competitiveness of nitrifiers for NH4
-
-    real(r8) :: fpi_no3_vr(bounds%begc:bounds%endc,1:nlevdecomp) ! fraction of potential immobilization supplied by no3(no units)
-    real(r8) :: fpi_nh4_vr(bounds%begc:bounds%endc,1:nlevdecomp) ! fraction of potential immobilization supplied by nh4 (no units)
-    real(r8) :: sum_nh4_demand_vr(bounds%begc:bounds%endc,1:nlevdecomp)
-    real(r8) :: sum_nh4_demand_scaled(bounds%begc:bounds%endc,1:nlevdecomp)
-    real(r8) :: sum_no3_demand_vr(bounds%begc:bounds%endc,1:nlevdecomp)
-    real(r8) :: sum_no3_demand_scaled(bounds%begc:bounds%endc,1:nlevdecomp)
-
-    real(r8) :: sum_pdemand_scaled(bounds%begc:bounds%endc,1:nlevdecomp)  ! sum of total P demand, scaled with relative competitiveness
-    real(r8) :: excess_immob_nh4_vr(bounds%begc:bounds%endc,1:nlevdecomp) ! nh4 excess flux, if soil microbes are more P limited
-    real(r8) :: excess_immob_no3_vr(bounds%begc:bounds%endc,1:nlevdecomp) ! no3 excess flux, if soil microbes are more P limited
-    real(r8) :: excess_immob_p_vr(bounds%begc:bounds%endc,1:nlevdecomp)   ! P excess flux, if soil microbes are more N limited
-    real(r8) :: compet_plant_no3(bounds%begp:bounds%endp)                 ! (unitless) relative compettiveness of plants for NO3 BGC mode
-    real(r8) :: compet_plant_nh4(bounds%begp:bounds%endp)                 ! (unitless) relative compettiveness of plants for NH4 BGC mode
-    real(r8) :: compet_plant_n(bounds%begp:bounds%endp)                   ! (unitless) relative compettiveness of plants for N CN mode
-    real(r8) :: compet_plant_p(bounds%begp:bounds%endp)                   ! (unitless) relative competitiveness of plant for P
-    real(r8) :: compet_leach_no3                                          ! (unitless) relative competitiveness of leaching for NO3
-    real(r8) :: compet_decomp_p                                           ! (unitless) relative competitiveness of immobilizer for P
-    real(r8) :: compet_minsurf_p                                          ! (unitless) relative competitiveness of mineral surface for P
-    real(r8) :: compet_leach_p                                            ! (unitless) relative competitiveness of leaching for P
-
     !
     integer :: c,p,l,j                                               !indices
     integer :: fp                                                    !lake filter pft index
@@ -379,57 +347,19 @@ contains
     real(r8):: cnl,cnfr,cnlw,cndw                                    !C:N ratios for leaf, fine root, and wood
 
     real(r8):: curmr, curmr_ratio                                    !xsmrpool temporary variables
-!    real(r8):: sum_ndemand_vr(bounds%begc:bounds%endc, 1:nlevdecomp) !total column N demand (gN/m3/s) at a given level
-!    real(r8):: sminn_tot(bounds%begc:bounds%endc)
     real(r8):: nuptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
 
     real(r8) f5                                                      !grain allocation parameter
     real(r8) cng                                                     !C:N ratio for grain (= cnlw for now; slevis)
     real(r8) fleaf                                                   !fraction allocated to leaf
     real(r8) t1                                                      !temporary variable
-    integer :: mon, day, sec
 
     !! Local P variables
     real(r8):: cpl,cpfr,cplw,cpdw,cpg                                    !C:N ratios for leaf, fine root, and wood
-    real(r8):: sum_pdemand_vr(bounds%begc:bounds%endc, 1:nlevdecomp)     !total column P demand (gN/m3/s) at a given level
     real(r8):: puptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
-    real(r8):: solutionp_tot(bounds%begc:bounds%endc)
-    integer :: plimit(bounds%begc:bounds%endc,0:nlevdecomp)              !flag for P limitation
-    real(r8):: residual_sminp_vr(bounds%begc:bounds%endc, 1:nlevdecomp)
-    real(r8):: residual_sminp(bounds%begc:bounds%endc)
-    real(r8):: residual_plant_pdemand(bounds%begc:bounds%endc)
-    real(r8):: sum_ndemand_scaled(bounds%begc:bounds%endc, 1:nlevdecomp) !total column N demand (gN/m3/s) at a given level
 
-    real(r8):: temp_sminn_to_plant(bounds%begc:bounds%endc)
-    real(r8):: temp_sminp_to_plant(bounds%begc:bounds%endc)
 
-    real(r8), pointer :: sminp_to_plant_patch         (:)
-    real(r8), pointer :: desorb_to_solutionp_vr       (:,:)
-    real(r8), pointer :: primp_to_labilep_vr_col      (:,:)
-    real(r8), pointer :: biochem_pmin_vr_col          (:,:)
-    real(r8), pointer :: secondp_to_labilep_vr_col    (:,:)
-    real(r8), pointer :: labilep_to_secondp_vr_col    (:,:)
-    real(r8), pointer :: adsorb_to_labilep_vr         (:,:)
-    real(r8), pointer :: plant_pdemand_vr_patch       (:,:)
-    real(r8), pointer :: plant_n_uptake_flux          (:)
-
-    real(r8), pointer :: labilep_vr                   (:,:)
-    real(r8), pointer :: secondp_vr                   (:,:)
-    real(r8), pointer :: leafp                        (:)
-    real(r8), pointer :: plant_p_uptake_flux          (:)
-
-    real(r8), pointer :: col_plant_ndemand_vr         (:,:)
-    real(r8), pointer :: col_plant_nh4demand_vr       (:,:)
-    real(r8), pointer :: col_plant_no3demand_vr       (:,:)
-    real(r8), pointer :: col_plant_pdemand_vr         (:,:)
-    real(r8), pointer :: plant_nh4demand_vr_patch     (:,:)
-    real(r8), pointer :: plant_no3demand_vr_patch     (:,:)
-    real(r8), pointer :: plant_ndemand_vr_patch       (:,:)
-    real(r8), pointer :: actual_immob_no3             (:)
-    real(r8), pointer :: actual_immob_nh4             (:)
-    real(r8), pointer :: benefit_pgpp_pleafc          (:)
-
-    !-----------------------------------------------------------------------
+  !-----------------------------------------------------------------------
 
     associate(                                                                                   &
          ivt                          => veg_pp%itype                                             , & ! Input:  [integer  (:) ]  pft vegetation type
@@ -581,8 +511,6 @@ contains
          pot_f_denit_vr               => col_nf%pot_f_denit_vr                  , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) potential soil denitrification flux
          f_nit_vr                     => col_nf%f_nit_vr                        , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) soil nitrification flux
          f_denit_vr                   => col_nf%f_denit_vr                      , & ! Output: [real(r8) (:,:) ]  (gN/m3/s) soil denitrification flux
-         actual_immob_no3_vr          => col_nf%actual_immob_no3_vr             , & ! Output: [real(r8) (:,:) ]
-         actual_immob_nh4_vr          => col_nf%actual_immob_nh4_vr             , & ! Output: [real(r8) (:,:) ]
          smin_no3_to_plant_vr         => col_nf%smin_no3_to_plant_vr            , & ! Output: [real(r8) (:,:) ]
          smin_nh4_to_plant_vr         => col_nf%smin_nh4_to_plant_vr            , & ! Output: [real(r8) (:,:) ]
          n2_n2o_ratio_denit_vr        => col_nf%n2_n2o_ratio_denit_vr           , & ! Output: [real(r8) (:,:) ]  ratio of N2 to N2O production by denitrification [gN/gN]
@@ -659,40 +587,11 @@ contains
          smin_no3_to_plant_patch      => veg_nf%smin_no3_to_plant             , &
          sminn_to_plant_patch         => veg_nf%sminn_to_plant                , &
          pnup_pfrootc                 => veg_ns%pnup_pfrootc                 , &
-         leafn                        => veg_ns%leafn                          &
+         leafn                        => veg_ns%leafn                         , &
+         benefit_pgpp_pleafc          => veg_ns%benefit_pgpp_pleafc     &
          )
 
-
-      sminp_to_plant_patch         => veg_pf%sminp_to_plant
-      secondp_vr                   => col_ps%secondp_vr
-      leafp                        => veg_ps%leafp
-      col_plant_ndemand_vr         => col_nf%col_plant_ndemand_vr
-      col_plant_nh4demand_vr       => col_nf%col_plant_nh4demand_vr
-      col_plant_no3demand_vr       => col_nf%col_plant_no3demand_vr
-      col_plant_pdemand_vr         => col_pf%col_plant_pdemand_vr
-      plant_nh4demand_vr_patch     => veg_nf%plant_nh4demand_vr
-      plant_no3demand_vr_patch     => veg_nf%plant_no3demand_vr
-      plant_ndemand_vr_patch       => veg_nf%plant_ndemand_vr
-      plant_pdemand_vr_patch       => veg_pf%plant_pdemand_vr
-      actual_immob_no3             => col_nf%actual_immob_no3
-      actual_immob_nh4             => col_nf%actual_immob_nh4
-      adsorb_to_labilep_vr         => col_pf%adsorb_to_labilep_vr
-      desorb_to_solutionp_vr       => col_pf%desorb_to_solutionp_vr
-      primp_to_labilep_vr_col      => col_pf%primp_to_labilep_vr
-      biochem_pmin_vr_col          => col_pf%biochem_pmin_vr
-      secondp_to_labilep_vr_col    => col_pf%secondp_to_labilep_vr
-      labilep_to_secondp_vr_col    => col_pf%labilep_to_secondp_vr
-      labilep_vr                   => col_ps%labilep_vr
-      benefit_pgpp_pleafc          => veg_ns%benefit_pgpp_pleafc
-
-      ! for debug
-      plant_n_uptake_flux          => col_nf%plant_n_uptake_flux
-      plant_p_uptake_flux          => col_pf%plant_p_uptake_flux
-
       ! set time steps
-      !#py dt = real( get_step_size(), r8 )
-
-      !#py call get_curr_date(yr, mon, day, sec)
       if (spinup_state == 1 .and. yr .gt. nyears_ad_carbon_only) then
         call cnallocate_carbon_only_set(.false.)
       end if
@@ -1033,15 +932,15 @@ contains
 
       ! now use the p2c routine to get the column-averaged plant_ndemand
       call p2c(bounds, num_soilc, filter_soilc, &
-           plant_ndemand, &
-           col_plant_ndemand)
+           plant_ndemand(bounds%begp:bounds%endp), &
+           col_plant_ndemand(bounds%begc:bounds%endc))
 
       !!! add phosphorus
       call p2c(bounds, num_soilc, filter_soilc, &
-           plant_pdemand, &
-           col_plant_pdemand)
-
-      !!! Starting resolving N limitation
+           plant_pdemand(bounds%begp:bounds%endp), &
+           col_plant_pdemand(bounds%begc:bounds%endc))
+      
+   !!! Starting resolving N limitation
       !! new subroutines to calculate nuptake_prof & puptake_prof
       if (nu_com .eq. 'RD') then ! 'RD' : relative demand approach
          call calc_nuptake_prof(bounds, num_soilc, filter_soilc, cnstate_vars, nuptake_prof)
@@ -1098,16 +997,7 @@ contains
     integer                  , intent(in)    :: num_soilp        ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:)  ! filter for soil patches
     type(cnstate_type)       , intent(inout) :: cnstate_vars
-    !type(carbonstate_type)   , intent(in)    :: carbonstate_vars
-    !type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    !type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-    !type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-!     !!  add phosphorus  -X.YANG
-    !type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
-    !type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
-
     type(soilstate_type)     , intent(in)    :: soilstate_vars
-    !type(waterstate_type)    , intent(in)    :: waterstate_vars
     real(r8)  ,  intent(in)  :: dt
     !
     ! !LOCAL VARIABLES:
@@ -1166,7 +1056,6 @@ contains
     real(r8):: sum_ndemand_scaled(bounds%begc:bounds%endc, 1:nlevdecomp) !total column N demand (gN/m3/s) at a given level
 
     real(r8) :: compet_minsurf_p                                          ! (unitless) relative competitiveness of mineral surface for P
-    real(r8) :: compet_leach_p                                            ! (unitless) relative competitiveness of leaching for P
     real(r8) :: compet_decomp_p                                           ! (unitless) relative competitiveness of immobilizer for P
     real(r8) :: dsolutionp_dt(bounds%begc:bounds%endc, 1:nlevdecomp)      ! derivative of solution P pool to time
     real(r8):: solution_nh4conc(bounds%begc:bounds%endc, 1:nlevdecomp)    ! temp solution concentration g nutrient per m3 water, because VMAX/KM are measured in hydroponic chamber
@@ -1286,7 +1175,6 @@ contains
 
          biochem_pmin_vr_col          => col_pf%biochem_pmin_vr               , &
          secondp_to_labilep_vr_col    => col_pf%secondp_to_labilep_vr         , &
-         labilep_to_secondp_vr_col    => col_pf%labilep_to_secondp_vr         , &
          labilep_vr                   => col_ps%labilep_vr                   , &
 
          pdep_to_sminp                => col_pf%pdep_to_sminp                 , &
@@ -2864,15 +2752,7 @@ contains
 
     type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
-    !type(carbonstate_type)   , intent(in)    :: carbonstate_vars
-    !type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    !type(carbonflux_type)    , intent(inout) :: c13_carbonflux_vars
-    !type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
-    !type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-    !type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-!    !!  add phosphorus  -X.YANG
-    !type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
-    !type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
+
     type(crop_type)          , intent(inout) :: crop_vars
     real(r8)                  , intent(in)   :: dt
     !
@@ -3927,11 +3807,12 @@ contains
           temp_sminp_to_plant(bounds%begc:bounds%endc) = sminp_to_plant(bounds%begc:bounds%endc)
 
           call p2c(bounds,num_soilc,filter_soilc, &
-                sminn_to_npool, &
-                sminn_to_plant)
+                sminn_to_npool(bounds%begp:bounds%endp), &
+                sminn_to_plant(bounds%begc:bounds%endc))
+         
           call p2c(bounds,num_soilc,filter_soilc,       &
-              sminp_to_ppool, &
-              sminp_to_plant)
+              sminp_to_ppool(bounds%begp:bounds%endp), &
+              sminp_to_plant(bounds%begc:bounds%endc))
 
           do j = 1, nlevdecomp
                do fc=1,num_soilc
@@ -3955,8 +3836,8 @@ contains
         if( cnallocate_carbonnitrogen_only() )then
 
           call p2c(bounds,num_soilc,filter_soilc, &
-                  sminp_to_ppool, &
-                  sminp_to_plant)
+                  sminp_to_ppool(bounds%begp:bounds%endp), &
+                  sminp_to_plant(bounds%begc:bounds%endc))
 
           call calc_puptake_prof(bounds, num_soilc, filter_soilc, &
                   cnstate_vars, puptake_prof)
@@ -3981,12 +3862,12 @@ contains
           temp_sminp_to_plant(bounds%begc:bounds%endc) = sminp_to_plant(bounds%begc:bounds%endc)
 
             call p2c(bounds,num_soilc,filter_soilc, &
-                sminn_to_npool, &
-                sminn_to_plant)
+                sminn_to_npool(bounds%begp:bounds%endp), &
+                sminn_to_plant(bounds%begc:bounds%endc))
 
             call p2c(bounds,num_soilc,filter_soilc, &
-                sminp_to_ppool, &
-                sminp_to_plant)
+                sminp_to_ppool(bounds%begp:bounds%endp), &
+                sminp_to_plant(bounds%begc:bounds%endc))
 
 
             do j = 1, nlevdecomp
@@ -4017,11 +3898,10 @@ contains
           temp_sminp_to_plant(bounds%begc:bounds%endc) = sminp_to_plant(bounds%begc:bounds%endc)
 
             call p2c(bounds,num_soilc,filter_soilc, &
-                sminp_to_ppool, &
-                sminp_to_plant)
-
-
-            do j = 1, nlevdecomp
+                sminp_to_ppool(bounds%begp:bounds%endp), &
+                sminp_to_plant(bounds%begc:bounds%endc))
+            
+           do j = 1, nlevdecomp
                do fc=1,num_soilc
                   c = filter_soilc(fc)
 

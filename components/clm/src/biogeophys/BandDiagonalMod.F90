@@ -31,6 +31,7 @@ contains
     !
     ! !ARGUMENTS:
       !$acc routine seq
+    use lapack_acc_seq 
     implicit none
     type(bounds_type), intent(in) :: bounds
     integer , intent(in)    :: lbj, ubj                        ! lbinning and ubing level indices

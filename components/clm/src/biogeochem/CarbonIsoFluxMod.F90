@@ -26,6 +26,7 @@ module CarbonIsoFluxMod
   private
   integer, parameter :: c13 = 0
   integer, parameter :: c14 = 1
+  !$acc declare copyin(c13,c14)
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public  :: CarbonIsoFlux1
@@ -1350,6 +1351,7 @@ contains
         else
            ciso_flux(i) = 0._r8
         end if
+        print *, "ciso_flux/tot:",i,ciso_flux(i), ctot_flux(i)
 
         if (diag == 1) then
            ! put diagnostic print statements here for isoC flux calculations

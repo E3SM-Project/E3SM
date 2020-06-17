@@ -10,12 +10,9 @@ module CanopyTemperatureMod
 
   !
   ! !USES:
-  !#py use shr_sys_mod          , only : shr_sys_flush
   use shr_kind_mod         , only : r8 => shr_kind_r8
-  !#py !#py use shr_log_mod          , only : errMsg => shr_log_errMsg
   use shr_const_mod        , only : SHR_CONST_PI
   use decompMod            , only : bounds_type
-  !#py use abortutils           , only : endrun
   use clm_varctl           , only : iulog, use_fates
   use PhotosynthesisMod    , only : Photosynthesis, PhotosynthesisTotal, Fractionation
   !#py use CLMFatesInterfaceMod , only : hlm_fates_interface_type

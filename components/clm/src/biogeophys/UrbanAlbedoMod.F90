@@ -288,13 +288,13 @@ contains
          if (num_urbanl > 0) then
             call incident_direct (bounds, &
                  num_urbanl, filter_urbanl, &
-                 canyon_hwr, &
-                 coszen, &
-                 zen, &
-                 sdir, &
-                 sdir_road, &
-                 sdir_sunwall, &
-                 sdir_shadewall)
+                 canyon_hwr(begl:endl), &
+                 coszen(begl:endl), &
+                 zen(begl:endl), &
+                 sdir(begl:endl, :), &
+                 sdir_road(begl:endl, :), &
+                 sdir_sunwall(begl:endl, :), &
+                 sdir_shadewall(begl:endl, :))
          end if
 
          ! Incident diffuse radiation for
@@ -303,11 +303,11 @@ contains
          if (num_urbanl > 0) then
             call incident_diffuse (bounds, &
                  num_urbanl, filter_urbanl, &
-                 canyon_hwr, &
-                 sdif, &
-                 sdif_road, &
-                 sdif_sunwall, &
-                 sdif_shadewall, &
+                 canyon_hwr(begl:endl), &
+                 sdif(begl:endl, :), &
+                 sdif_road(begl:endl, :), &
+                 sdif_sunwall(begl:endl, :), &
+                 sdif_shadewall(begl:endl, :), &
                  urbanparams_vars)
          end if
 
@@ -316,20 +316,20 @@ contains
             ic = 0
             call SnowAlbedo(bounds, &
                  num_urbanc, filter_urbanc, &
-                 coszen, &
+                 coszen(begl:endl), &
                  ic, &
-                 albsnd_roof, &
-                 albsnd_improad, &
-                 albsnd_perroad)
+                 albsnd_roof(begl:endl, :), &
+                 albsnd_improad(begl:endl, :), &
+                 albsnd_perroad(begl:endl, :) )
 
             ic = 1
             call SnowAlbedo(bounds, &
                  num_urbanc, filter_urbanc, &
-                 coszen, &
+                 coszen(begl:endl), &
                  ic, &
-                 albsni_roof, &
-                 albsni_improad, &
-                 albsni_perroad)
+                 albsni_roof(begl:endl, :), &
+                 albsni_improad(begl:endl, :), &
+                 albsni_perroad(begl:endl, :) )
          end if
 
          ! Combine snow-free and snow albedos
@@ -363,35 +363,35 @@ contains
          if (num_urbanl > 0) then
             call net_solar (bounds, &
                  num_urbanl, filter_urbanl, &
-                 coszen             , &
-                 canyon_hwr         , &
-                 wtroad_perv        , &
-                 sdir               , &
-                 sdif               , &
-                 alb_improad_dir_s  , &
-                 alb_perroad_dir_s  , &
-                 alb_wall_dir       , &
-                 alb_roof_dir_s     , &
-                 alb_improad_dif_s  , &
-                 alb_perroad_dif_s  , &
-                 alb_wall_dif       , &
-                 alb_roof_dif_s     , &
-                 sdir_road          , &
-                 sdir_sunwall       , &
-                 sdir_shadewall     ,  &
-                 sdif_road          , &
-                 sdif_sunwall       , &
-                 sdif_shadewall     ,  &
-                 sref_improad_dir   , &
-                 sref_perroad_dir   , &
-                 sref_sunwall_dir   , &
-                 sref_shadewall_dir , &
-                 sref_roof_dir      , &
-                 sref_improad_dif   , &
-                 sref_perroad_dif   , &
-                 sref_sunwall_dif   , &
-                 sref_shadewall_dif , &
-                 sref_roof_dif      , &
+                 coszen             (begl:endl), &
+                 canyon_hwr         (begl:endl), &
+                 wtroad_perv        (begl:endl), &
+                 sdir               (begl:endl, :), &
+                 sdif               (begl:endl, :), &
+                 alb_improad_dir_s  (begl:endl, :), &
+                 alb_perroad_dir_s  (begl:endl, :), &
+                 alb_wall_dir       (begl:endl, :), &
+                 alb_roof_dir_s     (begl:endl, :), &
+                 alb_improad_dif_s  (begl:endl, :), &
+                 alb_perroad_dif_s  (begl:endl, :), &
+                 alb_wall_dif       (begl:endl, :), &
+                 alb_roof_dif_s     (begl:endl, :), &
+                 sdir_road          (begl:endl, :), &
+                 sdir_sunwall       (begl:endl, :), &
+                 sdir_shadewall     (begl:endl, :),  &
+                 sdif_road          (begl:endl, :), &
+                 sdif_sunwall       (begl:endl, :), &
+                 sdif_shadewall     (begl:endl, :),  &
+                 sref_improad_dir   (begl:endl, :), &
+                 sref_perroad_dir   (begl:endl, :), &
+                 sref_sunwall_dir   (begl:endl, :), &
+                 sref_shadewall_dir (begl:endl, :), &
+                 sref_roof_dir      (begl:endl, :), &
+                 sref_improad_dif   (begl:endl, :), &
+                 sref_perroad_dif   (begl:endl, :), &
+                 sref_sunwall_dif   (begl:endl, :), &
+                 sref_shadewall_dif (begl:endl, :), &
+                 sref_roof_dif      (begl:endl, :), &
                  urbanparams_vars, solarabs_vars)
          end if
 

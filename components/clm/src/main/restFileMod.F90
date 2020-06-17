@@ -172,7 +172,10 @@ contains
     else
        ptrfile = .true.
     end if
-
+    !$acc exit data copyout(atm2lnd_vars, canopystate_vars, energyflux_vars,&
+    !$acc col_ef, veg_ef, frictionvel_vars, lakestate_vars, photosyns_vars, &
+    !$acc  soilhydrology_vars, soilstate_vars, solarabs_vars, grc_wf, col_wf,&
+    !$acc  veg_wf, lun_es, col_es, veg_es )
     ! --------------------------------------------
     ! Open restart file
     ! --------------------------------------------
@@ -254,6 +257,10 @@ contains
     if (use_lch4) then
        call ch4_vars%restart(bounds, ncid, flag='define')
     end if
+    !$acc exit data copyout(lun_ws, col_ws, veg_ws, aerosol_vars, surfalb_vars,&
+    !$acc cnstate_vars, col_cs, veg_cs, c13_col_cs, c13_veg_cs, c14_col_cs,&
+    !$acc c14_veg_cs, c14_veg_cs, col_cf, veg_cf, col_ns, veg_ns, &
+    !$acc col_nf,veg_nf,col_ps,veg_ps, col_pf,veg_pf, crop_vars )
 
     if (use_cn) then
 

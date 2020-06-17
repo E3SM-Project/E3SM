@@ -12,7 +12,6 @@ module PhosphorusDynamicsMod
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use decompMod           , only : bounds_type
   use clm_varcon          , only : dzsoi_decomp, zisoi
-  use subgridAveMod       , only : p2c
   use atm2lndType         , only : atm2lnd_type
   use CNCarbonFluxType    , only : carbonflux_type
   use clm_varpar          , only : nlevdecomp
@@ -102,8 +101,6 @@ contains
     integer                 , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                 , intent(in)    :: filter_soilc(:) ! filter for soil columns
     type(cnstate_type)       , intent(in)    :: cnstate_vars
-    !type(phosphorusstate_type), intent(in) ::  phosphorusstate_vars
-    !type(phosphorusflux_type) , intent(inout) :: phosphorusflux_vars
     real(r8), intent(in):: dt           !decomp timestep (seconds)
 
     !
@@ -124,27 +121,19 @@ contains
          isoilorder     => cnstate_vars%isoilorder                 ,&
          primp          => col_ps%primp_vr       ,&
          primp_to_labilep => col_pf%primp_to_labilep_vr  &
-
          )
 
-      !#py dayspyr = get_days_per_year()
-
       ! set time steps
-      !#py dt = real( get_step_size(), r8 )
       dtd = dt/(30._r8*secspday)
 
       do j = 1,nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-
             !! read in monthly rate is converted to that in half hour
             r_weather_c = r_weather( isoilorder(c) )
             rr=-log(1._r8-r_weather_c)
             r_weather_c=1._r8-exp(-rr*dtd)
-
             primp_to_labilep(c,j) = primp(c,j)*r_weather_c/dt
-      !     primp_to_labilep(c,j) = 0.005_r8/(365._r8*24._r8*3600._r8)
-      !     primp_to_labilep(c,j) = 0._r8
          end do
       enddo
     end associate

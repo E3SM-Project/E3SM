@@ -61,7 +61,7 @@ module TopounitType
   !-----------------------------------------------------------------------
   ! declare the public instances of topounit physical property type
   type(topounit_physical_properties),  public, target :: top_pp
-
+  !$acc declare create(top_pp)
   contains
 
   !-----------------------------------------------------------------------
