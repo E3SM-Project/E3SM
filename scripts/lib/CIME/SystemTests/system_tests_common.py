@@ -149,15 +149,19 @@ class SystemTestsCommon(object):
                 self._test_status.set_status(RUN_PHASE, TEST_PEND_STATUS)
 
             if self._case.get_value("BATCH_SYSTEM") != "none":
-                resub_val = self._case.get_value("RESUBMIT")
+                resub_val = self._case.get_value("IS_FIRST_RUN")
             else:
-                resub_val = 0
+                resub_val = True
 
+            print("wpcb. resub_val is {}".format(resub_val))
+            logger.info("wpcb0. resub_val is {} self._case.get_value(IS_FIRST_RUN) is {}".format(resub_val, self._case.get_value("IS_FIRST_RUN")))
+            logger.debug("wpcb1. resub_val is {} self._case.get_value(IS_FIRST_RUN) is {}".format(resub_val, self._case.get_value("IS_FIRST_RUN")))
+            #logging.warning("wpcc0. resub_val is {} resub_val is {}".format(resub_val, resub_val))
             self.run_phase()
-            if self._case.get_value("GENERATE_BASELINE") and resub_val == 0:
+            if self._case.get_value("GENERATE_BASELINE") and resub_val:
                 self._phase_modifying_call(GENERATE_PHASE, self._generate_baseline)
 
-            if self._case.get_value("COMPARE_BASELINE") and resub_val == 0:
+            if self._case.get_value("COMPARE_BASELINE") and resub_val:
                 self._phase_modifying_call(BASELINE_PHASE,   self._compare_baseline)
                 self._phase_modifying_call(MEMCOMP_PHASE,    self._compare_memory)
                 self._phase_modifying_call(THROUGHPUT_PHASE, self._compare_throughput)
@@ -632,10 +636,6 @@ fi
                        sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTRUNDIFFRESUBMIT(TESTRUNDIFF):
-    if "TESTRUNDIFF_ALTERNATE" in os.environ:
-        print("TESTRUNDIFF_ALTERNATE is {}".format(os.environ["TESTRUNDIFF_ALTERNATE"]))
-    else:
-        print("Did not detect TESTRUNDIFF_ALTERNATE in os.environ")
     pass
 
 class TESTTESTDIFF(FakeTest):
