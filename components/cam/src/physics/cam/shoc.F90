@@ -2402,10 +2402,17 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
 
   !real(rtype) :: lambda_low,lambda_high,lambda_slope, brunt_low
   !real(rtype) :: zL_crit_val, pbl_trans
-  !real(rtype) :: Ck,Ckh,Ckm
+  !real(rtype) :: Ck
+  !real(rtype) :: Cs
+  real(rtype) :: Ckh
+  real(rtype) :: Ckm
   real(rtype) :: Ce
-  real(rtype) :: Ckh_s,Ckm_s,Ce1,Ce2,Cee!,Cs
 
+  real(rtype) :: Ckh_s
+  real(rtype) :: Ckm_s
+  real(rtype) :: Ce1
+  real(rtype) :: Ce2
+  real(rtype) :: Cee
 
   !parameters
   real(rtype), parameter :: lambda_low   = 0.001_rtype
@@ -2422,8 +2429,8 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
   ! Turbulent coefficients
   real(rtype), parameter :: Cs  = 0.15_rtype
   real(rtype), parameter :: Ck  = 0.1_rtype
-  real(rtype), parameter :: Ckh = 0.1_rtype
-  real(rtype), parameter :: Ckm = 0.1_rtype
+  !real(rtype), parameter :: Ckh = 0.1_rtype
+  !real(rtype), parameter :: Ckm = 0.1_rtype
   !real(rtype), parameter :: Ckh_s = 1.0_rtype
   !real(rtype), parameter :: Ckm_s = 1.0_rtype
   !real(rtype), parameter :: Ce  = Ck**3/Cs**4
@@ -2449,8 +2456,8 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
   !Cs=0.15_rtype
   !Ck=0.1_rtype
   ! eddy coefficients for diffusivities
-  !Ckh=0.1_rtype
-  !Ckm=0.1_rtype
+  Ckh=0.1_rtype
+  Ckm=0.1_rtype
   ! eddy coefficients for stable PBL diffusivities
   Ckh_s=1.0_rtype
   Ckm_s=1.0_rtype
