@@ -1743,20 +1743,21 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
 
         # Generate some baselines
         for test_name in test_names:
+            logging.debug("wpc0. test_name is {} out of test_names {}".format(test_name, test_names))
             if CIME.utils.get_model() == "e3sm":
-                genargs = ["-g", "-o", "-b", self._baseline_name, test_name]
-                compargs = ["-c", "-b", self._baseline_name, test_name]
+                genargs = ["-g", "-o", "-b", self._baseline_name, test_name, "--wait"]
+                compargs = ["-c", "-b", self._baseline_name, test_name, "--wait"]
             else:
                 genargs = ["-g", self._baseline_name, "-o", test_name,
-                           "--baseline-root ", self._baseline_area]
+                           "--baseline-root ", self._baseline_area, "--wait"]
                 compargs = ["-c", self._baseline_name, test_name,
-                            "--baseline-root ", self._baseline_area]
+                            "--baseline-root ", self._baseline_area, "--wait"]
 
             self._create_test(genargs)
-
+            logging.debug("wpc1. test_name is {} out of test_names {}".format(test_name, test_names))
             # Hist compare should pass
             self._create_test(compargs)
-
+            logging.debug("wpc2. test_name is {} out of test_names {}".format(test_name, test_names))
             # Change behavior
             os.environ["TESTRUNDIFF_ALTERNATE"] = "True"
 
@@ -1766,25 +1767,28 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
                 self._create_test(compargs, test_id=test_id, run_errors=True)
             else:
                 self._create_test(compargs, test_id=test_id)
+            logging.debug("wpc3. test_name is {} out of test_names {}".format(test_name, test_names))
 
+            logging.debug("wpc4. test_id is {} self._baseline_name is {}".format(test_id, self._baseline_name))
             # compare_test_results should detect the fail
             cpr_cmd = "{}/compare_test_results --test-root {} -t {} 2>&1" \
                     .format(TOOLS_DIR, self._testroot, test_id)
             output = run_cmd_assert_result(self, cpr_cmd, expected_stat=CIME.utils.TESTS_FAILED_ERR_CODE)
 
+            logging.debug("wpc5. test_name is {} out of test_names {}".format(test_name, test_names))
             # use regex
             expected_pattern = re.compile(r'FAIL %s[^\s]* BASELINE' % test_name)
             the_match = expected_pattern.search(output)
             self.assertNotEqual(the_match, None,
                                 msg="Cmd '%s' failed to display failed test %s in output:\n%s" % (cpr_cmd, test_name, output))
-
+            logging.debug("wpc6. test_name is {} out of test_names {}".format(test_name, test_names))
             # Bless
             run_cmd_no_fail("{}/bless_test_results --test-root {} --hist-only --force -t {}"
                             .format(TOOLS_DIR, self._testroot, test_id))
-
+            logging.debug("wpc7. test_name is {} out of test_names {}".format(test_name, test_names))
             # Hist compare should now pass again
             self._create_test(compargs)
-
+            logging.debug("wpc8. test_name is {} out of test_names {}".format(test_name, test_names))
             verify_perms(self, self._baseline_area)
 
     ###############################################################################

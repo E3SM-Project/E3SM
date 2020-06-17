@@ -11,7 +11,7 @@ from CIME.provenance import save_test_time, get_test_success
 from CIME.locked_files import LOCKED_DIR, lock_file, is_locked
 import CIME.build as build
 
-import glob, gzip, time, traceback, six
+import glob, gzip, time, traceback, six, os
 
 logger = logging.getLogger(__name__)
 
@@ -632,6 +632,10 @@ fi
                        sharedlib_only=sharedlib_only, model_only=model_only)
 
 class TESTRUNDIFFRESUBMIT(TESTRUNDIFF):
+    if "TESTRUNDIFF_ALTERNATE" in os.environ:
+        print("TESTRUNDIFF_ALTERNATE is {}".format(os.environ["TESTRUNDIFF_ALTERNATE"]))
+    else:
+        print("Did not detect TESTRUNDIFF_ALTERNATE in os.environ")
     pass
 
 class TESTTESTDIFF(FakeTest):
