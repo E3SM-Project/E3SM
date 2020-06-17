@@ -2648,15 +2648,6 @@
     <desc>Is first run of test</desc>
   </entry>
 
-  <entry id="IS_LAST_RUN">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>TRUE</default_value>
-    <group>test</group>
-    <file>env_test.xml</file>
-    <desc>Is last run of test</desc>
-  </entry>
-
   <entry id="TEST_ARGV">
     <type>char</type>
     <default_value>UNSET</default_value>
