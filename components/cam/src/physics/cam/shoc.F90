@@ -2207,7 +2207,7 @@ subroutine shoc_tke(&
        obklen, tke, isotropy)
 
 
-  !if(.false.) then
+  if(.false.) then
    do k=1,nlev
     do i=1,shcol
 
@@ -2235,17 +2235,17 @@ subroutine shoc_tke(&
       ! moments in SHOC
 
       ! define the time scale
-      !Btscale1=(2.0_rtype*tke(i,k))/a_diss
+      tscale1=(2.0_rtype*tke(i,k))/a_diss
 
       ! define a damping term "lambda" based on column stability
-      !Blambda=lambda_low+((brunt_int(i)/ggr)-brunt_low)*lambda_slope
-      !Blambda=max(lambda_low,min(lambda_high,lambda))
+      lambda=lambda_low+((brunt_int(i)/ggr)-brunt_low)*lambda_slope
+      lambda=max(lambda_low,min(lambda_high,lambda))
 
-      !Bbuoy_sgs_save=brunt(i,k)
-      !Bif (buoy_sgs_save .le. 0._rtype) lambda=0._rtype
+      buoy_sgs_save=brunt(i,k)
+      if (buoy_sgs_save .le. 0._rtype) lambda=0._rtype
 
             ! Compute the return to isotropic timescale
-      !Bisotropy(i,k)=min(maxiso,tscale1/(1._rtype+lambda*buoy_sgs_save*tscale1**2))
+      isotropy(i,k)=min(maxiso,tscale1/(1._rtype+lambda*buoy_sgs_save*tscale1**2))
 
       ! Dimensionless Okukhov length considering only
       !  the lowest model grid layer height to scale
@@ -2270,7 +2270,7 @@ subroutine shoc_tke(&
 
     enddo ! end i loop
   enddo ! end k loop
-  !endif
+  endif
 
   return
 
@@ -2400,33 +2400,65 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
   integer :: i, k
   real(rtype) :: z_over_L
 
+  real(rtype) :: lambda_low,lambda_high,lambda_slope, brunt_low
+  real(rtype) :: zL_crit_val, pbl_trans
+  real(rtype) :: Ck,Ckh,Ckm,Ce
+  real(rtype) :: Ckh_s,Ckm_s,Ce1,Ce2,Cee,Cs
+
+
   !parameters
-  real(rtype), parameter :: lambda_low   = 0.001_rtype
-  real(rtype), parameter :: lambda_high  = 0.04_rtype
-  real(rtype), parameter :: lambda_slope = 0.65_rtype
-  real(rtype), parameter :: brunt_low    = 0.02_rtype
+  !real(rtype), parameter :: lambda_low   = 0.001_rtype
+  !real(rtype), parameter :: lambda_high  = 0.04_rtype
+  !real(rtype), parameter :: lambda_slope = 0.65_rtype
+  !real(rtype), parameter :: brunt_low    = 0.02_rtype
 
   ! Critical value of dimensionless Monin-Obukhov length
-  real(rtype), parameter :: zL_crit_val = 100.0_rtype
+  !real(rtype), parameter :: zL_crit_val = 100.0_rtype
   ! Transition depth [m] above PBL top to allow
   !   stability diffusivities
-  real(rtype), parameter :: pbl_trans = 200.0_rtype
+  !real(rtype), parameter :: pbl_trans = 200.0_rtype
 
   ! Turbulent coefficients
-  real(rtype), parameter :: Cs  = 0.15_rtype
-  real(rtype), parameter :: Ck  = 0.1_rtype
-  real(rtype), parameter :: Ckh = 0.1_rtype
-  real(rtype), parameter :: Ckm = 0.1_rtype
-  real(rtype), parameter :: Ckh_s = 1.0_rtype
-  real(rtype), parameter :: Ckm_s = 1.0_rtype
-  real(rtype), parameter :: Ce  = Ck**3/Cs**4
+  !real(rtype), parameter :: Cs  = 0.15_rtype
+  !real(rtype), parameter :: Ck  = 0.1_rtype
+  !real(rtype), parameter :: Ckh = 0.1_rtype
+  !Breal(rtype), parameter :: Ckm = 0.1_rtype
+  !real(rtype), parameter :: Ckh_s = 1.0_rtype
+  !real(rtype), parameter :: Ckm_s = 1.0_rtype
+  !real(rtype), parameter :: Ce  = Ck**3/Cs**4
 
-  real(rtype), parameter :: Ce1 = Ce/0.7_rtype*0.19_rtype
-  real(rtype), parameter :: Ce2 = Ce/0.7_rtype*0.51_rtype
+  !real(rtype), parameter :: Ce1 = Ce/0.7_rtype*0.19_rtype
+  !real(rtype), parameter :: Ce2 = Ce/0.7_rtype*0.51_rtype
 
-  real(rtype), parameter :: Cee = Ce1 + Ce2
-
+  !real(rtype), parameter :: Cee = Ce1 + Ce2
   real(rtype) :: a_prod_bu, a_prod_sh, a_diss, buoy_sgs_save, tscale1, lambda, smix
+
+  lambda_low=0.001_rtype
+  lambda_high=0.04_rtype
+  lambda_slope=0.65_rtype
+  brunt_low=0.02_rtype
+
+  ! Critical value of dimensionless Monin-Obukhov length
+  zL_crit_val = 100.0_rtype
+  ! Transition depth [m] above PBL top to allow
+  !   stability diffusivities
+  pbl_trans = 200.0_rtype
+
+  ! Turbulent coefficients
+  Cs=0.15_rtype
+  Ck=0.1_rtype
+  ! eddy coefficients for diffusivities
+  Ckh=0.1_rtype
+  Ckm=0.1_rtype
+  ! eddy coefficients for stable PBL diffusivities
+  Ckh_s=1.0_rtype
+  Ckm_s=1.0_rtype
+  Ce=Ck**3/Cs**4
+
+  Ce1=Ce/0.7_rtype*0.19_rtype
+  Ce2=Ce/0.7_rtype*0.51_rtype
+
+  Cee=Ce1+Ce2
 
   do k = 1, nlev
      do i = 1, shcol
