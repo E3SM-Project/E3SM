@@ -4084,6 +4084,7 @@ contains
     enddo
 
     deallocate(ele)
+    call pio_freedecomp(ncid, iodesc)
 
   end subroutine read_elevation_profile
 
