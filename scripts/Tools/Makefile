@@ -124,7 +124,7 @@ endif
 ifeq ($(COMP_INTERFACE), nuopc)
    CPPDEFS += -DNUOPC_INTERFACE
    FoX_LIBS := $(shell $(INSTALL_SHAREDPATH)/bin/FoX-config --libs)
-   SLIBS += $(FoX_LIBS)
+   SLIBS += -ldshr -lstreams $(FoX_LIBS)
 else
    CPPDEFS += -DMCT_INTERFACE
 endif

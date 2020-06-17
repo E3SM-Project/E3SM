@@ -28,7 +28,7 @@ def create_dirs(self):
     dirs_to_make.extend([exeroot, libroot, incroot, rundir, docdir])
 
     for dir_to_make in dirs_to_make:
-        if (not os.path.isdir(dir_to_make)):
+        if (not os.path.isdir(dir_to_make) and not os.path.islink(dir_to_make)):
             try:
                 logger.debug("Making dir '{}'".format(dir_to_make))
                 os.makedirs(dir_to_make)

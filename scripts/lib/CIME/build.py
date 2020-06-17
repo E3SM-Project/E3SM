@@ -34,9 +34,9 @@ def get_standard_cmake_args(case, sharedpath, shared_lib=False):
     ocn_model = case.get_value("COMP_OCN")
     atm_model = case.get_value("COMP_ATM")
     if ocn_model == 'mom' or atm_model == "fv3gfs":
-        cmake_args += " -DUSE_FMS=TRUE"
+        cmake_args += " -DUSE_FMS=TRUE "
 
-    cmake_args += " -DINSTALL_SHAREDPATH={}".format(os.path.join(case.get_value("EXEROOT"), sharedpath))
+    cmake_args += " -DINSTALL_SHAREDPATH={} ".format(os.path.join(case.get_value("EXEROOT"), sharedpath))
 
     if not shared_lib:
         cmake_args += " -DUSE_KOKKOS={} ".format(stringify_bool(uses_kokkos(case)))
@@ -338,9 +338,14 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
     if comp_interface == "nuopc":
         libs.insert(0, "fox")
 
-
     if uses_kokkos(case):
         libs.append("kokkos")
+
+    # Build shared code of CDEPS nuopc data models
+    if comp_interface == "nuopc":
+        compset = case.get_value("COMPSET")
+        if "_D" in compset:
+            libs.append("CDEPS")
 
     sharedlibroot = os.path.abspath(case.get_value("SHAREDLIBROOT"))
     # Check if we need to build our own cprnc
