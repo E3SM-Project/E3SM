@@ -2771,6 +2771,9 @@ subroutine micro_mg_tend ( &
         !-----------------------------------------------------------------
         if (dumc(i,k).ge.qsmall) then
 
+           if (ncnst.gt.1.e6_r8) then !! > 1/cm3 
+              nctend(i,k)=( max(nc(i,k)+nctend(i,k)*deltat, ncnst/rho(i,k)) - nc(i,k))/deltat
+           end if
 
            ! switch for specification of droplet and crystal number
            if (nccons) then
