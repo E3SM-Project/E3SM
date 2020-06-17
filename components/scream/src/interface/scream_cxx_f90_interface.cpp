@@ -126,9 +126,9 @@ void scream_finalize (/* args ? */) {
 
   // Get the AD, and finalize it
   auto& ad = c.getNonConst<AtmosphereDriver>();
-  auto& upgm = c.getNonConst<UserProvidedGridsManager>();
   ad.finalize();
-  upgm.clean_up();
+
+  // Clean up also P3 stuff
   p3::P3GlobalForFortran::deinit();
 
   // Restore the FPE flag as it was when control was handed to us.
