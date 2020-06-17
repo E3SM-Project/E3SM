@@ -156,6 +156,18 @@ class Dataset():
         return variables[0] if len(variables) == 1 else variables
 
 
+    def get_static_variable(self, static_var, primary_var):
+        if self.ref:
+            # Get the reference variable from timeseries files.
+            data_path = self.parameters.reference_data_path
+        elif self.test:
+            # Get the test variable from timeseries files.
+            data_path = self.parameters.test_data_path
+        file_path = self._get_timeseries_file_path(primary_var, data_path)
+        with cdms2.open(file_path) as f:
+            return f(static_var)
+
+
     def is_timeseries(self):
         """
         Return True if this dataset is for timeseries data.

@@ -159,6 +159,23 @@ class TestAllSets(unittest.TestCase):
                 TestAllSets.results_dir, set_name, case_id_lower)
             self.check_html_image(html_path, png_path)
 
+    def check_streamflow_plots(self):
+        case_id = 'seasonality'
+        case_id_lower = case_id.lower()
+        set_name = 'streamflow'
+        variables = ['RIVER_DISCHARGE_OVER_LAND_LIQ']
+        for variable in variables:
+            variable_lower = variable.lower()
+            png_path = '{}/{}/{}.png'.format(
+                set_name, case_id_lower, case_id_lower)
+            full_png_path = '{}{}'.format(TestAllSets.results_dir, png_path)
+            # Expected: streamflow_diags_model_to_model_local/streamflow/seasonality/seasonality.png
+            self.assertTrue(os.path.exists(full_png_path))
+            html_path = '{}viewer/{}/{}/{}/plot.html'.format(
+                TestAllSets.results_dir, set_name, case_id_lower, case_id_lower)
+            # Expected: streamflow_diags_model_to_model_local/viewer/streamflow/seasonality/seasonality/plot.html
+            self.check_html_image(html_path, png_path)
+
     # Test results_dir
     def test_results_dir(self):
         self.assertTrue(TestAllSets.results_dir.endswith('all_sets_results_test/'))
@@ -231,6 +248,9 @@ class TestAllSets(unittest.TestCase):
         html_path = '{}viewer/{}/variable/{}/plot.html'.format(
             TestAllSets.results_dir, set_name, case_id_lower)
         self.check_html_image(html_path, png_path)
+
+    def test_streamflow(self):
+        self.check_streamflow_plots()
 
     def test_zonal_mean_2d(self):
         self.check_plots_2d('zonal_mean_2d')
