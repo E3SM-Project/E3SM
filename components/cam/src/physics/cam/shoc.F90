@@ -2408,8 +2408,8 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
   !real(rtype) :: Ckm
   real(rtype) :: Ce
 
-  real(rtype) :: Ckh_s
-  real(rtype) :: Ckm_s
+  !real(rtype) :: Ckh_s
+  !real(rtype) :: Ckm_s
   real(rtype) :: Ce1
   real(rtype) :: Ce2
   real(rtype) :: Cee
@@ -2431,8 +2431,8 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
   !real(rtype), parameter :: Ck  = 0.1_rtype
   real(rtype), parameter :: Ckh = 0.1_rtype
   real(rtype), parameter :: Ckm = 0.1_rtype
-  !real(rtype), parameter :: Ckh_s = 1.0_rtype
-  !real(rtype), parameter :: Ckm_s = 1.0_rtype
+  real(rtype), parameter :: Ckh_s = 1.0_rtype
+  real(rtype), parameter :: Ckm_s = 1.0_rtype
   !real(rtype), parameter :: Ce  = Ck**3/Cs**4
 
   !real(rtype), parameter :: Ce1 = Ce/0.7_rtype*0.19_rtype
@@ -2459,8 +2459,8 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
   !Ckh=0.1_rtype
   !Ckm=0.1_rtype
   ! eddy coefficients for stable PBL diffusivities
-  Ckh_s=1.0_rtype
-  Ckm_s=1.0_rtype
+  !Ckh_s=1.0_rtype
+  !Ckm_s=1.0_rtype
   Ce=Ck**3/Cs**4
 
   Ce1=Ce/0.7_rtype*0.19_rtype
