@@ -1270,6 +1270,11 @@ contains
     inv_lcldm = 1.0_rtype/lcldm
     inv_rcldm = 1.0_rtype/rcldm
 
+    prer_evap = 0._rtype
+    liq_ice_exchange = 0._rtype
+    vap_liq_exchange = 0._rtype
+    vap_ice_exchange = 0._rtype
+
     mu_c = 0.0_rtype
     lamc = 0.0_rtype
     ! AaronDonahue added exner term to replace all instances of th(i,k)/t(i,k), since th(i,k) is updated but t(i,k) is not, and this was
