@@ -5,6 +5,8 @@ set(ATM_SRC
   dead_data_mod.F90
   dead_mod.F90
   scream_scorpio_interface.F90
+  scream_scorpio_interface.cpp
+  scream_scorpio_interface_iso_c.F90
 )
 
 if (USE_ESMF_LIB)

@@ -15,15 +15,17 @@
 #include "control/tests/dummy_grid.hpp"
 
 #include "interface/ScreamContext.hpp"
+#include "interface/scream_scorpio_interface.hpp"
 #include "share/mpi/scream_comm.hpp"
 
 extern "C"
 {
 
 /*===============================================================================================*/
-void scream_init (const MPI_Fint& f_comm, const int& start_ymd, const int& start_tod) {
+void scream_init (const MPI_Fint& f_comm, const int& start_ymd, const int& start_tod, const int& compid) {
   using namespace scream;
   using namespace scream::control;
+  using namespace scream::scorpio;
 
   constexpr int num_iters = 10;
   constexpr int num_cols  = 32;
@@ -90,12 +92,15 @@ void scream_init (const MPI_Fint& f_comm, const int& start_ymd, const int& start
   (void) start_ymd;
   (void) start_tod;
   (void) f_comm;
+  (void) eam_init_pio_1(f_comm,compid);
+  (void) eam_init_pio_2();
 }
 /*===============================================================================================*/
 void scream_run (const double& dt) {
   // TODO: uncomment once you have valid inputs. I fear AD may crash with no inputs.
   using namespace scream;
   using namespace scream::control;
+  using namespace scream::scorpio;
 
   // Get the context
   auto& c = ScreamContext::singleton();
@@ -103,10 +108,10 @@ void scream_run (const double& dt) {
   // Get the AD, and run it
   auto& ad = c.getNonConst<AtmosphereDriver>();
   ad.run(dt);
+  (void) eam_history_write();
 
   (void) dt;
 }
-
 /*===============================================================================================*/
 void scream_finalize (/* args ? */) {
   // TODO: uncomment once you have valid inputs. I fear AD may crash with no inputs.
