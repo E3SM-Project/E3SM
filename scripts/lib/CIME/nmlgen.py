@@ -63,24 +63,19 @@ _stream_nuopc_file_template = """
    <tInterpAlgo>{tintalgo}</tInterpAlgo>
    <readMode>{readmode}</readMode>
    <mapalgo>{mapalgo}</mapalgo>
-   <mapmask>{mapmask}</mapmask>
    <dtlimit>{dtlimit}</dtlimit>
    <yearFirst>{yearFirst}</yearFirst>
    <yearLast>{yearLast}</yearLast>
    <yearAlign>{yearAlign}</yearAlign>
    <stream_vectors>{vectors}</stream_vectors>
-   <stream_mesh_file>
-      {data_meshfile}
-   </stream_mesh_file>
+   <stream_mesh_file>{data_meshfile}</stream_mesh_file>
    <stream_data_files>
       {data_filenames}
    </stream_data_files>
    <stream_data_variables>
       {data_varnames}
    </stream_data_variables>
-   <stream_offset>
-      {offset}
-   </stream_offset>
+   <stream_offset>{offset}</stream_offset>
  </stream_info>
 
 """
@@ -451,8 +446,8 @@ class NamelistGenerator(object):
         pred = "<{}>".format(delimiter)
         postd = "</{}>".format(delimiter)
         for n,_ in enumerate(list_to_deliminate):
-            list_to_deliminate[n] = pred + list_to_deliminate[n]+ postd
-        return "\n".join(list_to_deliminate)
+            list_to_deliminate[n] = pred + list_to_deliminate[n].strip() + postd
+        return "\n      ".join(list_to_deliminate)
 
 
     def create_stream_file_and_update_shr_strdata_nml(self, config, caseroot, #pylint:disable=too-many-locals
@@ -600,7 +595,6 @@ class NamelistGenerator(object):
                 taxmode = self.get_default("taxmode", config)[0]
                 tintalgo = self.get_default("tintalgo", config)[0]
                 dtlimit = self.get_default("dtlimit", config)[0]
-                mapmask = self.get_default("mapmask", config)[0]
                 mapalgo = self.get_default("mapalgo", config)[0]
                 readmode = self.get_default("readmode", config)[0]
                 vectors = self.get_default("vectors", config)
@@ -625,7 +619,6 @@ class NamelistGenerator(object):
                     readmode=readmode,
                     dtlimit=dtlimit,
                     taxmode=taxmode,
-                    mapmask=mapmask,
                     mapalgo=mapalgo,
                     tintalgo=tintalgo)
                 with open(stream_path, 'a') as stream_file:
@@ -733,7 +726,7 @@ class NamelistGenerator(object):
                     # NOTE - these are hard-coded here and a better way is to make these extensible
                     if file_path == 'UNSET' or file_path == 'idmap' or file_path == 'idmap_ignore' or file_path == 'unset':
                         continue
-                    if file_path == 'null':
+                    if file_path in ('null','create_mesh'):
                         continue
                     file_path = self.set_abs_file_path(file_path)
                     if not os.path.exists(file_path):
