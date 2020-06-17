@@ -1246,9 +1246,11 @@ class TestCreateTestCommon(unittest.TestCase):
         full_run = (set(extra_args) & set(["-n", "--namelist-only", "--no-setup", "--no-build"])) == set()
 
         if self._hasbatch:
-            expected_stat = 0 if not pre_run_errors else CIME.utils.TESTS_FAILED_ERR_CODE
+            expected_stat = 0 if not pre_run_errors and not run_errors else CIME.utils.TESTS_FAILED_ERR_CODE
         else:
             expected_stat = 0 if not pre_run_errors and not run_errors else CIME.utils.TESTS_FAILED_ERR_CODE
+        if env_changes=="NODEFAIL_NUM_FAILS=5":
+            expected_stat = 0 if not pre_run_errors else CIME.utils.TESTS_FAILED_ERR_CODE
 
         run_cmd_assert_result(self, "{} {}/create_test {}".format(env_changes, SCRIPT_DIR, " ".join(extra_args)),
                               expected_stat=expected_stat)
@@ -1737,7 +1739,7 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
     ###############################################################################
         # Test resubmit scenario if Machine has a batch system
         if MACHINE.has_batch_system():
-            test_names = ["TESTRUNDIFF_P1.f19_g16_rx1.A", "TESTRUNDIFFRESUBMIT_P1.f19_g16_rx1.A"]
+            test_names = ["TESTRUNDIFFRESUBMIT_P1.f19_g16_rx1.A", "TESTRUNDIFF_P1.f19_g16_rx1.A"]
         else:
             test_names = ["TESTRUNDIFF_P1.f19_g16_rx1.A"]
 
@@ -1751,21 +1753,23 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
                            "--baseline-root ", self._baseline_area]
                 compargs = ["-c", self._baseline_name, test_name,
                             "--baseline-root ", self._baseline_area]
+            if test_name == "TESTRUNDIFFRESUBMIT_P1.f19_g16_rx1.A":
+                genargs.append("--wait")
+                compargs.append("--wait")
 
             self._create_test(genargs)
-
             # Hist compare should pass
             self._create_test(compargs)
-
             # Change behavior
             os.environ["TESTRUNDIFF_ALTERNATE"] = "True"
 
             # Hist compare should now fail
             test_id = "%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
             if test_name == "TESTRUNDIFF_P1.f19_g16_rx1.A":
+                compargs.append("--wait")
                 self._create_test(compargs, test_id=test_id, run_errors=True)
             else:
-                self._create_test(compargs, test_id=test_id)
+                self._create_test(compargs, test_id=test_id, run_errors=True)
 
             # compare_test_results should detect the fail
             cpr_cmd = "{}/compare_test_results --test-root {} -t {} 2>&1" \
@@ -1777,15 +1781,14 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
             the_match = expected_pattern.search(output)
             self.assertNotEqual(the_match, None,
                                 msg="Cmd '%s' failed to display failed test %s in output:\n%s" % (cpr_cmd, test_name, output))
-
             # Bless
             run_cmd_no_fail("{}/bless_test_results --test-root {} --hist-only --force -t {}"
                             .format(TOOLS_DIR, self._testroot, test_id))
-
             # Hist compare should now pass again
             self._create_test(compargs)
-
             verify_perms(self, self._baseline_area)
+            if "TESTRUNDIFF_ALTERNATE" in os.environ:
+                del os.environ["TESTRUNDIFF_ALTERNATE"]
 
     ###############################################################################
     def test_rebless_namelist(self):
