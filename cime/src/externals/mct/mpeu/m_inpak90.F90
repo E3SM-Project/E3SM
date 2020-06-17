@@ -297,7 +297,7 @@
   character(len=*),parameter :: myname='MCT(MPEU)::m_inpak90'
 !-----------------------------------------------------------------------
 
-    integer,parameter :: i90_MXDEP = 4
+    integer,parameter :: i90_MXDEP = 5
     integer,save      :: i90_depth = 0
     type(inpak90),save,pointer :: i90_now
 
