@@ -2,7 +2,8 @@ from utils import run_cmd, run_cmd_no_fail, check_minimum_python_version, get_cu
     get_current_commit, get_current_branch, expect, is_repo_clean, cleanup_repo,  \
     get_common_ancestor, merge_git_ref, checkout_git_ref, print_last_commit
 
-from machines_specs import get_mach_compilation_resources, get_mach_testing_resources, setup_mach_env
+from machines_specs import get_mach_compilation_resources, get_mach_testing_resources, \
+                           get_mach_baseline_root_dir, setup_mach_env
 
 check_minimum_python_version(3, 4)
 
@@ -95,6 +96,7 @@ class TestAllScream(object):
         #      Compute baseline info      #
         ###################################
 
+        default_baselines_root_dir = pathlib.Path(self._testing_dir,"baselines")
         if self._baseline_dir is None:
             if self._baseline_ref is None:
                 # Compute baseline ref
@@ -108,9 +110,16 @@ class TestAllScream(object):
                     # Prefer a symbolic ref if possible
                     if self._baseline_ref is None or self._baseline_ref == get_current_commit(commit="origin/master"):
                         self._baseline_ref = "origin/master"
+            self._must_generate_baselines = True
+
+            self._baseline_dir = default_baselines_root_dir
 
         else:
-            self._baseline_dir = pathlib.Path(self._baseline_dir).resolve()
+            # We treat the "AUTO" string as a request for automatic baseline dir.
+            if self._baseline_dir == "AUTO":
+                self._baseline_dir = get_mach_baseline_root_dir(self._machine,default_baselines_root_dir)
+
+            # Make sure the baseline root directory exists
             expect(self._baseline_dir.is_dir(), "Baseline_dir {} is not a dir".format(self._baseline_dir))
 
             if self._integration_test:
@@ -120,12 +129,6 @@ class TestAllScream(object):
                 for test in self._tests:
                     test_baseline_dir = self.get_preexisting_baseline(test)
                     expect(test_baseline_dir.is_dir(), "Missing baseline {}".format(test_baseline_dir))
-
-        # Whether we had baseline_dir or baseline_ref passed in, we need to establish a directory
-        # where to read/store baselines
-        if self._baseline_dir is None:
-            self._must_generate_baselines = True
-            self._baseline_dir = pathlib.Path(self._testing_dir,"baselines").resolve()
 
         # Name of the file used to store/check the git sha of the repo used to generate baselines.
         # Store it once to avoid typos-like bugs

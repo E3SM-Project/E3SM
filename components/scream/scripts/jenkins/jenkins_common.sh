@@ -27,7 +27,9 @@ if [ $skip_testing -eq 0 ]; then
       SUBMIT="" # We don't submit AT runs
   fi
 
-  BASELINES_DIR=/home/projects/e3sm/scream/pr-autotester/master-baselines/$SCREAM_MACHINE
+  # The special string "AUTO" makes test-all-scream look for a baseline dir in the machine_specs.py file.
+  # IF such dir is not found, then the default (ctest-build/baselines) is used
+  BASELINES_DIR=AUTO
 
   ./scream/components/scream/scripts/gather-all-data "./scripts/test-all-scream --baseline-dir $BASELINES_DIR /home/projects/\$compiler -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
 else
