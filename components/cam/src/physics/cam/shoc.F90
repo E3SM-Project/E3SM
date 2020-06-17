@@ -2400,23 +2400,23 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
   integer :: i, k
   real(rtype) :: z_over_L
 
-  real(rtype) :: lambda_low,lambda_high,lambda_slope, brunt_low
-  real(rtype) :: zL_crit_val, pbl_trans
+  !real(rtype) :: lambda_low,lambda_high,lambda_slope, brunt_low
+  !real(rtype) :: zL_crit_val, pbl_trans
   real(rtype) :: Ck,Ckh,Ckm,Ce
   real(rtype) :: Ckh_s,Ckm_s,Ce1,Ce2,Cee,Cs
 
 
   !parameters
-  !real(rtype), parameter :: lambda_low   = 0.001_rtype
-  !real(rtype), parameter :: lambda_high  = 0.04_rtype
-  !real(rtype), parameter :: lambda_slope = 0.65_rtype
-  !real(rtype), parameter :: brunt_low    = 0.02_rtype
+  real(rtype), parameter :: lambda_low   = 0.001_rtype
+  real(rtype), parameter :: lambda_high  = 0.04_rtype
+  real(rtype), parameter :: lambda_slope = 0.65_rtype
+  real(rtype), parameter :: brunt_low    = 0.02_rtype
 
   ! Critical value of dimensionless Monin-Obukhov length
-  !real(rtype), parameter :: zL_crit_val = 100.0_rtype
+  real(rtype), parameter :: zL_crit_val = 100.0_rtype
   ! Transition depth [m] above PBL top to allow
   !   stability diffusivities
-  !real(rtype), parameter :: pbl_trans = 200.0_rtype
+  real(rtype), parameter :: pbl_trans = 200.0_rtype
 
   ! Turbulent coefficients
   !real(rtype), parameter :: Cs  = 0.15_rtype
@@ -2433,16 +2433,16 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
   !real(rtype), parameter :: Cee = Ce1 + Ce2
   real(rtype) :: a_prod_bu, a_prod_sh, a_diss, buoy_sgs_save, tscale1, lambda, smix
 
-  lambda_low=0.001_rtype
-  lambda_high=0.04_rtype
-  lambda_slope=0.65_rtype
-  brunt_low=0.02_rtype
+  !lambda_low=0.001_rtype
+  !lambda_high=0.04_rtype
+  !lambda_slope=0.65_rtype
+  !brunt_low=0.02_rtype
 
   ! Critical value of dimensionless Monin-Obukhov length
-  zL_crit_val = 100.0_rtype
+  !zL_crit_val = 100.0_rtype
   ! Transition depth [m] above PBL top to allow
   !   stability diffusivities
-  pbl_trans = 200.0_rtype
+  !pbl_trans = 200.0_rtype
 
   ! Turbulent coefficients
   Cs=0.15_rtype
