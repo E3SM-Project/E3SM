@@ -11,7 +11,7 @@ from CIME.provenance import save_test_time, get_test_success
 from CIME.locked_files import LOCKED_DIR, lock_file, is_locked
 import CIME.build as build
 
-import glob, gzip, time, traceback, six, os
+import glob, gzip, time, traceback, six
 
 logger = logging.getLogger(__name__)
 
