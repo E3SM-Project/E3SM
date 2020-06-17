@@ -1,4 +1,4 @@
-#include "physics/p3/p3_standalone_field_initializer.hpp"
+#include "physics/p3/p3_inputs_initializer.hpp"
 #include "physics/p3/scream_p3_interface.hpp"
 
 #include <array>
@@ -6,7 +6,7 @@
 namespace scream
 {
 
-void P3StandAloneInit::add_field (const field_type &f)
+void P3InputsInitializer::add_field (const field_type &f)
 {
   const auto& id = f.get_header().get_identifier();
   
@@ -15,7 +15,7 @@ void P3StandAloneInit::add_field (const field_type &f)
 }
 
 // =========================================================================================
-void P3StandAloneInit::initialize_fields ()
+void P3InputsInitializer::initialize_fields ()
 {
   // Safety check: if we're asked to init anything at all,
   // then we should have been asked to init 7 fields.
@@ -34,7 +34,7 @@ void P3StandAloneInit::initialize_fields ()
   }
 
   scream_require_msg (count==8,
-    "Error! P3StandAloneInit is expected to init 'q','T','ast','naai','ncnuc','pmid','dp','zi'.\n"
+    "Error! P3InputsInitializer is expected to init 'q','T','ast','naai','ncnuc','pmid','dp','zi'.\n"
     "       Only " + std::to_string(count) + " of those have been found.\n"
     "       Please, check the atmosphere processes you are using,"
     "       and make sure they agree on who's initializing each field.\n");

@@ -79,10 +79,6 @@ void scream_init (const MPI_Fint& f_comm,
   // or you'll clear the field repo!)
   ad.initialize(atm_comm,ad_params,time);
 
-  (void) start_ymd;
-  (void) start_tod;
-  (void) f_comm;
-
   // Restore the FPE flag as it was when control was handed to us.
   disable_all_fpes();
   enable_fpes(fpe_mask);

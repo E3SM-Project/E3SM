@@ -9,7 +9,7 @@ Atmosphere Processes:
   Process 0:
     Process Name: P3
     Grid: Physics
-    Standalone: true
+    Can Initialize All Inputs: true
 
 Grids Manager:
   Type: User Provided
