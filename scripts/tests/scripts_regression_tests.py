@@ -1745,13 +1745,16 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
         for test_name in test_names:
             logging.debug("wpc0. test_name is {} out of test_names {}".format(test_name, test_names))
             if CIME.utils.get_model() == "e3sm":
-                genargs = ["-g", "-o", "-b", self._baseline_name, test_name, "--wait"]
-                compargs = ["-c", "-b", self._baseline_name, test_name, "--wait"]
+                genargs = ["-g", "-o", "-b", self._baseline_name, test_name]
+                compargs = ["-c", "-b", self._baseline_name, test_name]
             else:
                 genargs = ["-g", self._baseline_name, "-o", test_name,
-                           "--baseline-root ", self._baseline_area, "--wait"]
+                           "--baseline-root ", self._baseline_area]
                 compargs = ["-c", self._baseline_name, test_name,
-                            "--baseline-root ", self._baseline_area, "--wait"]
+                            "--baseline-root ", self._baseline_area]
+            if test_name == "TESTRUNDIFFRESUBMIT_P1.f19_g16_rx1.A":
+                genargs = genargs + "--wait"
+                compargs = compargs + "--wait"
 
             self._create_test(genargs)
             logging.debug("wpc1. test_name is {} out of test_names {}".format(test_name, test_names))
