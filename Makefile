@@ -1,5 +1,8 @@
 MODEL_FORMULATION = 
 
+ifneq "${MPAS_SHELL}" ""
+        SHELL = ${MPAS_SHELL}
+endif
 
 dummy:
 	( $(MAKE) error )
