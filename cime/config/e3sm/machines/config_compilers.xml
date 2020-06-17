@@ -2307,7 +2307,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <append>$ENV{MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a $ENV{MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group $ENV{MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm -lz </append>
   </SLIBS>
   <CXX_LIBS>
-    <base> -lstdc++ -lmpi_cxx </base>
+    <base> -lstdc++</base>
   </CXX_LIBS>
   <NETCDF_C_PATH>$ENV{NETCDF_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_PATH}</NETCDF_FORTRAN_PATH>
@@ -2352,7 +2352,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <append>$ENV{MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a $ENV{MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group $ENV{MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm -lz </append>
   </SLIBS>
   <CXX_LIBS>
-    <base> -lstdc++ -lmpi_cxx </base>
+    <base> -lstdc++ </base>
   </CXX_LIBS>
   <NETCDF_C_PATH>$ENV{NETCDF_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_PATH}</NETCDF_FORTRAN_PATH>
@@ -2376,7 +2376,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <append>-mkl -lpthread</append>
   </SLIBS>
   <CXX_LIBS>
-    <base>-lstdc++ -lmpi_cxx</base>
+    <base>-lstdc++</base>
   </CXX_LIBS>
   <NETCDF_C_PATH>$ENV{NETCDF_ROOT}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_ROOT}</NETCDF_FORTRAN_PATH>
