@@ -73,6 +73,8 @@ ifeq ($(strip $(USE_KOKKOS)), TRUE)
   USE_CXX = TRUE
 endif
 
+SLIBS ?= $(USER_SLIBS)
+
 ifeq ($(strip $(USE_FMS)), TRUE)
   SLIBS += -lfms
 endif
@@ -92,7 +94,7 @@ include $(CASEROOT)/Macros.make
 # Unless DEBUG mode is enabled, use NDEBUG to turn off assert statements.
 ifeq ($(strip $(DEBUG)),TRUE)
   # e3sm still has components that cannot build with -DDEBUG
-  ifeq ($(CIME_MODEL),cesm)
+  ifneq ($(CIME_MODEL),e3sm)
     CPPDEFS += -DDEBUG
   endif
 else
@@ -120,15 +122,18 @@ else
   CPPDEFS += -DHAVE_MPI
 endif
 
-ifeq ($(strip $(PIO_VERSION)),1)
-  CPPDEFS += -DPIO1
-else
-  USE_CXX = TRUE
-endif
-
 ifeq (,$(SHAREDPATH))
   SHAREDPATH = $(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)/$(COMP_INTERFACE)
   INSTALL_SHAREDPATH = $(EXEROOT)/$(SHAREDPATH)
+endif
+
+ifeq ($(PIO_VERSION),2)
+  ifneq ($(COMPILER),nag)
+    # Needed by SCORPIO not default PIO, does not work with NAG compiler
+    USE_CXX := TRUE
+  endif
+else
+  CPPDEFS += -DPIO1
 endif
 
 ifeq ($(USE_CXX), TRUE)
@@ -289,14 +294,6 @@ ifeq ($(findstring -DLINUX,$(CPPDEFS)),-DLINUX)
   endif
 endif
 
-# Atleast on Titan+cray mpi, MPI_Irsends() are buggy, causing hangs during I/O
-# Force PIO to use MPI_Isends instead of the default, MPI_Irsends
-ifeq ($(PIO_VERSION),2)
-  EXTRA_PIO_CPPDEFS = -DUSE_MPI_ISEND_FOR_FC
-else
-  EXTRA_PIO_CPPDEFS = -D_NO_MPI_RSEND
-endif
-
 ifdef LIB_PNETCDF
    CPPDEFS += -D_PNETCDF
    SLIBS += -L$(LIB_PNETCDF) -lpnetcdf
@@ -334,6 +331,7 @@ GLC_PRESENT ?= TRUE
 WAV_PRESENT ?= TRUE
 ESP_PRESENT ?= TRUE
 IAC_PRESENT ?= TRUE
+MED_PRESENT ?= TRUE
 ifeq ($(ULIBDEP),$(null))
   ifneq ($(LIBROOT),$(null))
     ifeq ($(ATM_PRESENT),TRUE)
@@ -370,6 +368,9 @@ ifeq ($(ULIBDEP),$(null))
     endif
     ifeq ($(IAC_PRESENT),TRUE)
       ULIBDEP += $(LIBROOT)/libiac.a
+    endif
+    ifeq ($(MED_PRESENT),TRUE)
+      CPPDEFS += -DMED_PRESENT
     endif
   endif
 endif
@@ -564,6 +565,16 @@ ifeq ($(findstring -cosp,$(CAM_CONFIG_OPTS)),-cosp)
   endif
 endif
 
+COMP_ATM ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) COMP_ATM --value)
+ifeq ($(strip $(COMP_ATM)),cam)
+  CAM_DYCORE ?= $(shell $(CASEROOT)/xmlquery --caseroot $(CASEROOT) CAM_DYCORE --value)
+  ifeq ($(CAM_DYCORE),fv3)
+    FV3CORE_LIBDIR:=$(abspath $(EXEROOT)/atm/obj/atmos_cubed_sphere)
+    INCLDIR+=-I$(FV3CORE_LIBDIR) -I$(FV3CORE_LIBDIR)/../ -I../$(INSTALL_SHAREDPATH)/include -I../$(CSM_SHR_INCLUDE) -I$(abspath $(EXEROOT)/FMS) -I$(CIMEROOT)/../libraries/FMS/src/include
+  endif
+endif
+
+
 ifeq ($(MODEL),cam)
   # These RRTMG files take an extraordinarily long time to compile with optimization.
   # Until mods are made to read the data from files, just remove optimization from
@@ -585,15 +596,21 @@ $(COSP_LIBDIR)/libcosp.a: cam_abortutils.o
 cospsimulator_intr.o: $(COSP_LIBDIR)/libcosp.a
 endif
 
+ifdef FV3CORE_LIBDIR
+$(FV3CORE_LIBDIR)/libfv3core.a: $(EXEROOT)/FMS/libfms.a
+	$(MAKE) -C $(FV3CORE_LIBDIR) complib COMPLIB='$(FV3CORE_LIBDIR)/libfv3core.a' F90='$(FC)' CC='$(CC)' FFLAGS='$(FFLAGS) $(FC_AUTO_R8)'  CFLAGS='$(CFLAGS)' INCLDIR='$(INCLDIR)' FC_TYPE='$(COMPILER)'
+
+dyn_grid.o: $(FV3CORE_LIBDIR)/libfv3core.a
+endif
 endif
 
 
 # System libraries (netcdf, mpi, pnetcdf, esmf, trilinos, etc.)
-ifndef SLIBS
+ifeq (,$(findstring netcdf,$(SLIBS)))
   ifeq ($(NETCDF_SEPARATE), FALSE)
-    SLIBS := -L$(LIB_NETCDF) -lnetcdff -lnetcdf
+    SLIBS += -L$(LIB_NETCDF) -lnetcdff -lnetcdf
   else ifeq ($(NETCDF_SEPARATE), TRUE)
-    SLIBS := -L$(LIB_NETCDF_FORTRAN) -L$(LIB_NETCDF_C) -lnetcdff -lnetcdf
+    SLIBS += -L$(LIB_NETCDF_FORTRAN) -L$(LIB_NETCDF_C) -lnetcdff -lnetcdf
   endif
 endif
 
@@ -728,6 +745,14 @@ else ifeq ($(NETCDF_SEPARATE), TRUE)
                 -D NetCDF_Fortran_PATH:PATH=$(NETCDF_FORTRAN_PATH)
 endif
 
+ifdef ZLIB_PATH
+        CMAKE_OPTS += -D LIBZ_PATH:STRING="$(ZLIB_PATH)"
+endif
+
+ifdef SZIP_PATH
+        CMAKE_OPTS += -D SZIP_PATH:STRING="$(SZIP_PATH)"
+endif
+
 ifdef HDF5_PATH
         CMAKE_OPTS += -D HDF5_PATH:STRING="$(HDF5_PATH)"
 endif
@@ -841,7 +866,7 @@ test_esmf: test_esmf.o
 #-------------------------------------------------------------------------------
 # create list of component libraries - hard-wired for current ccsm components
 #-------------------------------------------------------------------------------
-ifeq ($(CIME_MODEL),cesm)
+ifneq ($(CIME_MODEL),e3sm)
   ifeq ($(COMP_LND),clm)
     USE_SHARED_CLM=TRUE
   else
@@ -887,6 +912,10 @@ ifdef COSP_LIBDIR
   endif
 endif
 
+ifdef FV3CORE_LIBDIR
+  ULIBDEP += $(FV3CORE_LIBDIR)/libfv3core.a
+  ULIBDEP += $(EXEROOT)/FMS/libfms.a
+endif
 
 ifndef CLIBS
    ifdef ULIBDEP
@@ -1029,7 +1058,7 @@ cleanrof:
 
 cleanlnd:
 	$(RM) -f $(LIBROOT)/$(LNDLIB)
-	$(RM) -fr $(EXEROOT)/lnd/obj
+	$(RM) -fr $(LNDOBJDIR)
 
 cleancsmshare:
 	$(RM) -f $(CSMSHARELIB)

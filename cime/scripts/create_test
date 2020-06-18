@@ -135,7 +135,7 @@ def parse_command_line(args, description):
                         help="Specify the mpilib. To see list of supported MPI libraries for each machine, "
                         "\ninvoke ./query_config. The default is the first listing .")
 
-    if model == "cesm":
+    if model in ["cesm","ufs"]:
         parser.add_argument("-c", "--compare",
                             help="While testing, compare baselines against the given compare directory. ")
 
@@ -297,6 +297,14 @@ def parse_command_line(args, description):
                         help="Use when you've requested a machine that you aren't on. "
                         "Will reduce errors for missing directories etc.")
 
+    if config and config.has_option('main','workflow'):
+        workflow_default = config.get('main', 'workflow')
+    else:
+        workflow_default = "default"
+
+    parser.add_argument("--workflow",default=workflow_default,
+                        help="A workflow from config_workflow.xml to apply to this case. ")
+
     CIME.utils.add_mail_type_args(parser)
 
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
@@ -304,7 +312,7 @@ def parse_command_line(args, description):
     CIME.utils.resolve_mail_type_args(args)
 
     # generate and compare flags may not point to the same directory
-    if model == "cesm":
+    if model in ["cesm", "ufs"]:
         if args.generate is not None:
             expect(not (args.generate == args.compare),
                    "Cannot generate and compare baselines at the same time")
@@ -367,7 +375,7 @@ def parse_command_line(args, description):
 
     # Compute list of fully-resolved test_names
     test_extra_data = {}
-    if model == "cesm":
+    if model in ["cesm","ufs"]:
         machine_name = args.xml_machine if args.machine is None else args.machine
 
         # If it's still unclear what machine to use, look at test names
@@ -422,7 +430,7 @@ def parse_command_line(args, description):
     baseline_cmp_name = None
     baseline_gen_name = None
     if args.compare or args.generate:
-        if model == "cesm":
+        if model in ["cesm", "ufs"]:
             if args.compare is not None:
                 baseline_cmp_name = args.compare
             if args.generate is not None:
@@ -457,7 +465,7 @@ def parse_command_line(args, description):
         args.namelists_only, args.project, \
         args.test_id, args.parallel_jobs, args.walltime, \
         args.single_submit, args.proc_pool, args.use_existing, args.save_timing, args.queue, \
-        args.allow_baseline_overwrite, args.output_root, args.wait, args.force_procs, args.force_threads, args.mpilib, args.input_dir, args.pesfile, args.retry, args.mail_user, args.mail_type, args.wait_check_throughput, args.wait_check_memory, args.wait_ignore_namelists, args.wait_ignore_memleak, args.allow_pnl, args.non_local, args.single_exe
+        args.allow_baseline_overwrite, args.output_root, args.wait, args.force_procs, args.force_threads, args.mpilib, args.input_dir, args.pesfile, args.retry, args.mail_user, args.mail_type, args.wait_check_throughput, args.wait_check_memory, args.wait_ignore_namelists, args.wait_ignore_memleak, args.allow_pnl, args.non_local, args.single_exe, args.workflow
 
 ###############################################################################
 def get_default_setting(config, varname, default_if_not_found, check_main=False):
@@ -539,7 +547,7 @@ def single_submit_impl(machine_name, test_id, proc_pool, _, args, job_cost_map, 
         "tasks_per_node": tasks_per_node,
         "totaltasks" : tasks_per_node * num_nodes,
         "job_wallclock_time": wall_time_bab,
-        "job_queue": queue
+        "job_queue": env_batch.text(queue)
         }
 
     directives = env_batch.get_batch_directives(case, "case.test", overrides=overrides)
@@ -565,7 +573,8 @@ def create_test(test_names, test_data, compiler, machine_name, no_run, no_build,
                 baseline_root, clean, baseline_cmp_name, baseline_gen_name, namelists_only, project, test_id, parallel_jobs,
                 walltime, single_submit, proc_pool, use_existing, save_timing, queue, allow_baseline_overwrite, output_root, wait,
                 force_procs, force_threads, mpilib, input_dir, pesfile, mail_user, mail_type,
-                wait_check_throughput, wait_check_memory, wait_ignore_namelists, wait_ignore_memleak, allow_pnl, non_local, single_exe):
+                wait_check_throughput, wait_check_memory, wait_ignore_namelists, wait_ignore_memleak, 
+                allow_pnl, non_local, single_exe, workflow):
 ###############################################################################
     impl = TestScheduler(test_names, test_data=test_data,
                          no_run=no_run, no_build=no_build, no_setup=no_setup, no_batch=no_batch,
@@ -579,7 +588,7 @@ def create_test(test_names, test_data, compiler, machine_name, no_run, no_build,
                          queue=queue, allow_baseline_overwrite=allow_baseline_overwrite,
                          output_root=output_root, force_procs=force_procs, force_threads=force_threads,
                          mpilib=mpilib, input_dir=input_dir, pesfile=pesfile, mail_user=mail_user, mail_type=mail_type, allow_pnl=allow_pnl,
-                         non_local=non_local, single_exe=single_exe)
+                         non_local=non_local, single_exe=single_exe, workflow=workflow)
 
     success = impl.run_tests(wait=wait,
                              wait_check_throughput=wait_check_throughput,
@@ -618,7 +627,8 @@ def _main_func(description):
     test_root, baseline_root, clean, baseline_cmp_name, baseline_gen_name, namelists_only, \
     project, test_id, parallel_jobs, walltime, single_submit, proc_pool, use_existing, \
     save_timing, queue, allow_baseline_overwrite, output_root, wait, force_procs, force_threads, mpilib, input_dir, pesfile, \
-    retry, mail_user, mail_type, wait_check_throughput, wait_check_memory, wait_ignore_namelists, wait_ignore_memleak, allow_pnl, non_local, single_exe = \
+    retry, mail_user, mail_type, wait_check_throughput, wait_check_memory, wait_ignore_namelists, wait_ignore_memleak, allow_pnl, \
+    non_local, single_exe, workflow = \
         parse_command_line(sys.argv, description)
 
     success = False
@@ -629,7 +639,8 @@ def _main_func(description):
                               baseline_root, clean, baseline_cmp_name, baseline_gen_name, namelists_only,
                               project, test_id, parallel_jobs, walltime, single_submit, proc_pool, use_existing, save_timing,
                               queue, allow_baseline_overwrite, output_root, wait, force_procs, force_threads, mpilib, input_dir, pesfile,
-                              mail_user, mail_type, wait_check_throughput, wait_check_memory, wait_ignore_namelists, wait_ignore_memleak, allow_pnl, non_local, single_exe)
+                              mail_user, mail_type, wait_check_throughput, wait_check_memory, wait_ignore_namelists, wait_ignore_memleak, 
+                              allow_pnl, non_local, single_exe, workflow)
         run_count += 1
 
         # For testing only

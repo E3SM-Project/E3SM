@@ -326,7 +326,7 @@ endif
 #===========================================
 
 ### NOTE: you must be setup with access to the E3SM repository before you can clone the repository. For access, see
-###       https://acme-climate.atlassian.net/wiki/display/Docs/Installing+the+ACME+Model
+###       https://acme-climate.atlassian.net/wiki/spaces/ED/pages/7996902/Installing+E3SM+on+a+cluster+or+HPC+platform
 
 if ( `lowercase $fetch_code` == true ) then
   e3sm_print 'Downloading code from the E3SM git repository.'
@@ -355,27 +355,23 @@ if ( `lowercase $fetch_code` == true ) then
 
   e3sm_print 'Cloning repository into $tag_name = '$tag_name'  under $code_root_dir = '$code_root_dir
   mkdir -p $code_root_dir
-  git clone git@github.com:ACME-Climate/ACME.git $code_root_dir/$tag_name     # This will put repository, with all code, in directory $tag_name
-  ## Setup git hooks
-  rm -rf $code_root_dir/$tag_name/.git/hooks
-  git clone git@github.com:ACME-Climate/ACME-Hooks.git $code_root_dir/$tag_name/.git/hooks         # checkout with write permission.
-#  git clone git://github.com/ACME-Climate/ACME-Hooks.git .git/hooks      # checkout read-only.
-  cd $code_root_dir/$tag_name
-  git config commit.template $code_root_dir/$tag_name/.git/hooks/commit.template
-  ## Bring in MPAS ocean/ice repo
-  git submodule update --init --recursive
 
-  if ( `lowercase $e3sm_tag` == master ) then
-    e3sm_newline
-    ##e3sm_print 'Detaching from the master branch to avoid accidental changes to master by user.'
-    ##git checkout --detach
-    echo 'KLUDGE: git version on anvil (1.7.1) is too old to be able to detach'
-    echo 'edison uses git version 1.8.5.6 and it can git checkout --detach'
+  if ( `lowercase $e3sm_tag` == master ) then  
+    git clone git@github.com:E3SM-Project/E3SM.git $code_root_dir/$tag_name     # This will put repository, with all code, in directory $tag_name
   else
     e3sm_newline
     e3sm_print 'Checking out branch ${e3sm_tag} = '${e3sm_tag}
-    git checkout ${e3sm_tag}
+    git clone -b ${e3sm_tag} git@github.com:E3SM-Project/E3SM.git $code_root_dir/$tag_name     # This will put repository, with all code, in directory $tag_name    
   endif
+  
+  ## Setup git hooks
+  rm -rf $code_root_dir/$tag_name/.git/hooks
+  git clone git@github.com:E3SM-Project/E3SM-Hooks.git $code_root_dir/$tag_name/.git/hooks         # checkout with write permission.
+  cd $code_root_dir/$tag_name
+  git config commit.template $code_root_dir/$tag_name/.git/hooks/commit.template
+
+  ## Update submodules (including MPAS).
+  git submodule update --init --recursive
 
 endif
 
@@ -568,10 +564,10 @@ endif
 # within the project. This should take care of it. Create top level 
 # directory and set the default group to 'acme', permissions for 
 # group read access for top level and all files underneath (Chris Golaz).
-if ( $machine == 'cori*' || $machine == 'edison' ) then
+if ( $machine == 'cori*' ) then
   mkdir -p ${e3sm_simulations_dir}/${case_name}
   cd ${e3sm_simulations_dir}
-  chgrp acme ${case_name}
+  chgrp e3sm ${case_name}
   chmod 750 ${case_name}
   chmod g+s ${case_name}
   setfacl -d -m g::rx ${case_name}
@@ -721,8 +717,8 @@ else if ( `lowercase $processor_config` == 'customknl' ) then
 
   e3sm_print 'using custom layout for cori-knl because $processor_config = '$processor_config
 
-  ${xmlchange_exe} MAX_TASKS_PER_NODE="64"
-  ${xmlchange_exe} PES_PER_NODE="256"
+  ${xmlchange_exe} MAX_MPITASKS_PER_NODE="64"
+  ${xmlchange_exe} MAX_TASKS_PER_NODE="256"
 
   ${xmlchange_exe} NTASKS_ATM="5400"
   ${xmlchange_exe} ROOTPE_ATM="0"
@@ -783,9 +779,9 @@ endif
 #       https://acme-climate.atlassian.net/wiki/display/WORKFLOW/ACME+Input+Data+Repository
 
 #set input_data_dir = 'input_data_dir_NOT_SET'
-#if ( $machine == 'cori*' || $machine == 'edison' ) then
-#  set input_data_dir = '/project/projectdirs/m411/ACME_inputdata'    # PJC-NERSC
-## set input_data_dir = '/project/projectdirs/ccsm1/inputdata'        # NERSC
+#if ( $machine == 'cori*' ) then
+#  set input_data_dir = '/global/cfs/cdirs/m411/ACME_inputdata'    # PJC-NERSC
+## set input_data_dir = '/global/cfs/cdirs/ccsm1/inputdata'        # NERSC
 #else if ( $machine == 'titan' || $machine == 'eos' ) then
 #  set input_data_dir = '/lustre/atlas/proj-shared/cli112/pjcs/ACME_inputdata'    # PJC-OLCF
 #endif
@@ -903,11 +899,6 @@ ln -s $run_root_dir $run_dir_link
 if ( `uppercase $debug_compile` != 'TRUE' && `uppercase $debug_compile` != 'FALSE' ) then
   e3sm_print 'ERROR: $debug_compile can be true or false but is instead '$debug_compile
   exit 220
-endif
-
-if ( $machine == 'edison' && `uppercase $debug_compile` == 'TRUE' ) then
-  e3sm_print 'ERROR: Edison currently has a compiler bug and crashes when compiling in debug mode (Nov 2015)'
-  exit 222
 endif
 
 $xmlchange_exe --id DEBUG --val `uppercase $debug_compile`
@@ -1028,7 +1019,7 @@ $preview_namelists_exe
 
 mkdir -p batch_output      ### Make directory that stdout and stderr will go into.
 
-if ( $machine =~ 'cori*' || $machine == edison ) then
+if ( $machine =~ 'cori*' ) then
     $xmlchange_exe --subgroup case.run BATCH_COMMAND_FLAGS="--job-name=${job_name} --output=batch_output/${case_name}.o%j"
     $xmlchange_exe --subgroup case.st_archive BATCH_COMMAND_FLAGS="--job-name=ST+${job_name} --output=batch_output/ST+${case_name}.o%j --account=${project}"
 else if ( $machine == titan || $machine == eos ) then
@@ -1062,12 +1053,6 @@ endif
 # HINT: To change queue after run submitted, the following works on most machines:
 #       qalter -lwalltime=00:29:00 <run_descriptor>
 #       qalter -W queue=debug <run_descriptor>
-
-### Only specially authorized people can use the special_e3sm qos on Cori or Edison. Don't uncomment unless you're one.
-#if ( `lowercase $debug_queue` == false && $machine == edison ) then
-#  set batch_options = `$xmlquery_exe BATCH_COMMAND_FLAGS --value`
-#  $xmlchange_exe BATCH_COMMAND_FLAGS="${batch_options} --qos=special_e3sm"
-#endif
 
 #============================================
 # SETUP SHORT TERM ARCHIVING

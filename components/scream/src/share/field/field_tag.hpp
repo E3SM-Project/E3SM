@@ -1,7 +1,7 @@
 #ifndef SCREAM_FIELD_TAG_HPP
 #define SCREAM_FIELD_TAG_HPP
 
-#include "share/scream_assert.hpp"
+#include "ekat/scream_assert.hpp"
 
 #include <string>
 
@@ -44,31 +44,31 @@ inline std::string tag2string (const FieldTag ft) {
       name = "Invalid";
       break;
     case FieldTag::Element:
-      name = "Element";
+      name = "EL";
       break;
     case FieldTag::VerticalLevel:
-      name = "VerticalLevel";
+      name = "VL";
       break;
     case FieldTag::TimeLevel:
-      name = "TimeLevel";
+      name = "TL";
       break;
     case FieldTag::Column:
-      name = "Column";
+      name = "COL";
       break;
     case FieldTag::GaussPoint:
-      name = "GaussPoint";
+      name = "GP";
       break;
     case FieldTag::Component:
-      name = "Component";
+      name = "CMP";
       break;
     case FieldTag::ComponentX:
-      name = "ComponentX";
+      name = "CMPX";
       break;
     case FieldTag::ComponentY:
-      name = "ComponentY";
+      name = "CMPY";
       break;
     case FieldTag::Variable:
-      name = "Variable";
+      name = "VAR";
       break;
     default:
       scream_error_msg("Error! Unrecognized field tag.");

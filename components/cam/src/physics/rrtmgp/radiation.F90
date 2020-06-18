@@ -17,7 +17,8 @@ module radiation
    use scamMod,          only: scm_crm_mode, single_column, swrad_off
    use rad_constituents, only: N_DIAG
    use radconstants,     only: &
-      set_sw_spectral_boundaries, set_lw_spectral_boundaries, check_wavenumber_bounds
+      set_sw_spectral_boundaries, set_lw_spectral_boundaries, check_wavenumber_bounds, &
+      get_band_index_sw, get_band_index_lw, test_get_band_index
 
    ! RRTMGP gas optics object to store coefficient information. This is imported
    ! here so that we can make the k_dist objects module data and only load them
@@ -461,7 +462,7 @@ contains
       integer :: err
       integer :: dtime  ! time step
 
-      logical :: use_SPCAM  ! SPCAM flag
+      logical :: use_MMF  ! SPCAM flag
 
       character(len=128) :: error_message
 
@@ -963,7 +964,6 @@ contains
        endif
           
        if (is_first_restart_step()) then
-          cosp_cnt(begchunk:endchunk)=cosp_cnt_init
           if (pergro_mods) then
              !--------------------------------------
              !Read seeds from restart file
@@ -981,7 +981,6 @@ contains
              enddo
           endif
        else
-          cosp_cnt(begchunk:endchunk)=0           
           if (pergro_mods) then
              !---------------------------------------
              !create seeds based off of column ids
@@ -1109,6 +1108,9 @@ contains
       use aer_rad_props, only: aer_rad_props_lw
       use physconst, only: pi
 
+      ! For running CFMIP Observation Simulator Package (COSP)
+      use cospsimulator_intr, only: docosp, cospsimulator_intr_run, cosp_nradsteps
+
       ! ---------------------------------------------------------------------------
       ! Arguments
       ! ---------------------------------------------------------------------------
@@ -1174,12 +1176,21 @@ contains
       ! Cosine solar zenith angle for all columns in chunk
       real(r8) :: coszrs(pcols)
 
-      ! Cloud optical properties
+      ! Cloud, snow, and aerosol optical properties
       real(r8), dimension(pcols,pver,nswgpts ) :: cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw
       real(r8), dimension(pcols,pver,nswbands) :: cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw
       real(r8), dimension(pcols,pver,nswbands) :: aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw
       real(r8), dimension(pcols,pver,nlwbands) :: cld_tau_bnd_lw, aer_tau_bnd_lw
       real(r8), dimension(pcols,pver,nlwgpts ) :: cld_tau_gpt_lw
+      ! NOTE: these are diagnostic only
+      real(r8), dimension(pcols,pver,nswbands) :: liq_tau_bnd_sw, ice_tau_bnd_sw, snw_tau_bnd_sw
+      real(r8), dimension(pcols,pver,nlwbands) :: liq_tau_bnd_lw, ice_tau_bnd_lw, snw_tau_bnd_lw
+
+      ! Needed for COSP: cloud lw emissivity and gridbox mean snow sw and lw optical depth
+      real(r8), dimension(pcols,pver) :: cld_emis_lw, gb_snow_tau_sw, gb_snow_tau_lw
+
+      ! COSP simulator bands
+      integer :: cosp_swband, cosp_lwband
 
       ! Gas volume mixing ratios
       real(r8), dimension(size(active_gases),pcols,pver) :: gas_vmr
@@ -1304,9 +1315,10 @@ contains
          ! Do shortwave cloud optics calculations
          call t_startf('rad_cld_optics_sw')
          call get_cloud_optics_sw( &
-            ncol, pver, nswbands, cld, cldfsnow, iclwp, iciwp, icswp, &
+            ncol, pver, nswbands, do_snow_optics(), cld, cldfsnow, iclwp, iciwp, icswp, &
             lambdac, mu, dei, des, rel, rei, &
-            cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw &
+            cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw, &
+            liq_tau_bnd_sw, ice_tau_bnd_sw, snw_tau_bnd_sw &
          )
          call sample_cloud_optics_sw( &
             ncol, pver, nswgpts, k_dist_sw%get_gpoint_bands(), &
@@ -1391,9 +1403,9 @@ contains
 
          call t_startf('rad_cld_optics_lw')
          call get_cloud_optics_lw( &
-            ncol, pver, nlwbands, cld, cldfsnow, iclwp, iciwp, icswp, &
+            ncol, pver, nlwbands, do_snow_optics(), cld, cldfsnow, iclwp, iciwp, icswp, &
             lambdac, mu, dei, des, rei, &
-            cld_tau_bnd_lw &
+            cld_tau_bnd_lw, liq_tau_bnd_lw, ice_tau_bnd_lw, snw_tau_bnd_lw &
          )
          call sample_cloud_optics_lw( &
             ncol, pver, nlwgpts, k_dist_lw%get_gpoint_bands(), &
@@ -1462,6 +1474,40 @@ contains
       if (conserve_energy) then
          qrs(1:ncol,1:pver) = qrs(1:ncol,1:pver) * state%pdel(1:ncol,1:pver)
          qrl(1:ncol,1:pver) = qrl(1:ncol,1:pver) * state%pdel(1:ncol,1:pver)
+      end if
+
+      ! If we ran radiation this timestep, check if we should run COSP
+      if (radiation_do('sw') .or. radiation_do('lw')) then
+         if (docosp) then
+            ! Advance counter and run COSP if new count value is equal to cosp_nradsteps
+            cosp_cnt(state%lchnk) = cosp_cnt(state%lchnk) + 1
+            if (cosp_cnt(state%lchnk) == cosp_nradsteps) then
+
+               ! Find bands used for cloud simulator calculations
+               cosp_lwband = get_band_index_lw(10.5_r8, 'micron')
+               cosp_swband = get_band_index_sw(0.67_r8, 'micron')
+
+               ! Compute quantities needed for COSP
+               cld_emis_lw = 1._r8 - exp(-cld_tau_bnd_lw(:,:,cosp_lwband))
+               gb_snow_tau_sw = cldfsnow * snw_tau_bnd_sw(:,:,cosp_swband)
+               gb_snow_tau_lw = cldfsnow * snw_tau_bnd_lw(:,:,cosp_lwband)
+
+               ! Run COSP; note that "snow" is passed as LW absorption optical depth, even though
+               ! the argument name in "snow_emis_in". Optical depth is apparently converted to
+               ! emissivity somewhere in the COSP routines. This should probably be changed in the
+               ! future for clarity, but is consistent with the implementation in RRTMG.
+               call t_startf('cospsimulator_intr_run')
+               call cospsimulator_intr_run( &
+                  state, pbuf, cam_in, cld_emis_lw, coszrs, &
+                  cld_swtau_in=cld_tau_bnd_sw(:,:,cosp_swband), &
+                  snow_tau_in=gb_snow_tau_sw, snow_emis_in=gb_snow_tau_lw &
+               )
+               call t_stopf('cospsimulator_intr_run')
+
+               ! Reset counter
+               cosp_cnt(state%lchnk) = 0
+            end if
+         end if
       end if
 
    end subroutine radiation_tend
@@ -2661,5 +2707,22 @@ contains
       end do
 
    end subroutine expand_day_fluxes
+
+   ! Should we do snow optics? Check for existence of "cldfsnow" variable
+   logical function do_snow_optics()
+      use physics_buffer, only: pbuf_get_index
+      use cam_abortutils, only: endrun
+      real(r8), pointer :: pbuf(:)
+      integer :: err, idx
+
+      idx = pbuf_get_index('CLDFSNOW', errcode=err)
+      if (idx > 0) then
+         do_snow_optics = .true.
+      else
+         do_snow_optics = .false.
+      end if
+
+      return
+   end function do_snow_optics 
 
 end module radiation

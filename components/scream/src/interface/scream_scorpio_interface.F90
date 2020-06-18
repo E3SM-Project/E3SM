@@ -210,7 +210,8 @@ contains
     type(pio_atm_output), pointer :: current_atm_file => null()
     integer :: ierr
     logical :: found
-
+    call register_outfile("example_pio_structured.nc")
+    call register_outfile("example_pio_structured_v2.nc")
     ! Register all dimensions with the output file
     call register_dimension("example_pio_structured.nc","x","horizontal distance",10)
     call register_dimension("example_pio_structured.nc","y","vertical distance",3)
@@ -278,6 +279,9 @@ contains
     ! Get a new dimension pointer in coord_list
     curr => pio_atm_file%coord_list_top
     do while (associated(curr))
+      if (associated(curr%coord)) then 
+        if(trim(curr%coord%name)==trim(shortname)) call errorHandle("PIO Error: Could not register dimension"//trim(shortname)//" and file: "//trim(pio_atm_filename)//". Already exists.",-999)
+      end if
       prev => curr
       curr => prev%next
     end do
@@ -332,6 +336,9 @@ contains
     ! Get a new variable pointer in var_list
     curr => pio_atm_file%var_list_top
     do while (associated(curr))
+      if (associated(curr%var)) then
+        if (trim(curr%var%name)==trim(shortname)) call errorHandle("PIO Error: Could not register variable"//trim(shortname)//" and file: "//trim(pio_atm_filename)//". Already exists.",-999)
+      end if
       prev => curr
       curr => prev%next
     end do

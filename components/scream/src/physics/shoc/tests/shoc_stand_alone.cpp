@@ -1,5 +1,5 @@
 #include <catch2/catch.hpp>
-#include "share/atmosphere_process.hpp"
+#include "share/atm_process/atmosphere_process.hpp"
 #include "share/scream_pack.hpp"
 #include "share/grid/user_provided_grids_manager.hpp"
 #include "share/grid/se_grid.hpp"
@@ -68,7 +68,7 @@ TEST_CASE("shoc-stand-alone", "") {
   AtmosphereDriver ad;
 
   // Init and run (do not finalize, or you'll clear the field repo!)
-  util::TimeStamp time (0,0,0);
+  util::TimeStamp time (0,0,0,0);
   ad.initialize(atm_comm,ad_params,time);
   for (int i=0; i<num_iters; ++i) {
     ad.run(300.0);

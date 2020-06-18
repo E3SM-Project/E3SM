@@ -1,11 +1,14 @@
-from utils import run_cmd, check_minimum_python_version, get_current_head,     \
+from utils import run_cmd, run_cmd_no_fail, check_minimum_python_version, get_current_head,     \
     get_current_commit, get_current_branch, expect, is_repo_clean, cleanup_repo,  \
     get_common_ancestor, merge_git_ref, checkout_git_ref, print_last_commit
+
+from machines_specs import get_mach_compilation_resources, get_mach_testing_resources, setup_mach_env
 
 check_minimum_python_version(3, 4)
 
 import os, shutil, pathlib
 import concurrent.futures as threading3
+import itertools
 
 ###############################################################################
 class TestAllScream(object):
@@ -13,8 +16,10 @@ class TestAllScream(object):
 
     ###########################################################################
     def __init__(self, cxx, kokkos=None, submit=False, parallel=False, fast_fail=False, baseline_ref=None,
-                 baseline_dir=None, machine=None, no_tests=False, keep_tree=False, custom_cmake_opts=(), tests=(),
-                 integration_test="JENKINS_HOME" in os.environ, root_dir=None, dry_run=False):
+                 baseline_dir=None, machine=None, no_tests=False, keep_tree=False,
+                 custom_cmake_opts=(), custom_env_vars=(), tests=(),
+                 integration_test="JENKINS_HOME" in os.environ, root_dir=None, dry_run=False,
+                 make_parallel_level=0, ctest_parallel_level=0):
     ###########################################################################
 
         self._cxx               = cxx
@@ -28,6 +33,7 @@ class TestAllScream(object):
         self._keep_tree         = keep_tree
         self._baseline_dir      = baseline_dir
         self._custom_cmake_opts = custom_cmake_opts
+        self._custom_env_vars   = custom_env_vars
         self._tests             = tests
         self._root_dir          = root_dir
         self._integration_test  = integration_test
@@ -71,7 +77,7 @@ class TestAllScream(object):
         if self._submit:
             expect(self._machine, "If dashboard submit request, must provide machine name")
 
-        print_last_commit(git_ref="HEAD")
+        print_last_commit(git_ref=self._original_branch)
 
         # Compute baseline info
         expect(not (self._baseline_ref and self._baseline_dir),
@@ -83,7 +89,7 @@ class TestAllScream(object):
                     self._baseline_ref = "HEAD"
                 elif self._integration_test:
                     self._baseline_ref = "origin/master"
-                    merge_git_ref(git_ref="origin/master")
+                    merge_git_ref(git_ref="origin/master",verbose=True)
                 else:
                     self._baseline_ref = get_common_ancestor("origin/master")
                     # Prefer a symbolic ref if possible
@@ -99,43 +105,56 @@ class TestAllScream(object):
                 expect(test_baseline_dir.is_dir(), "Missing baseline {}".format(test_baseline_dir))
 
             if self._integration_test:
-                merge_git_ref(git_ref="origin/master")
+                merge_git_ref(git_ref="origin/master",verbose=True)
 
-        # Deduce how many resources per test
-        proc_count = 4
+        # Deduce how many testing resources per test
+        if ctest_parallel_level > 0:
+            ctest_max_jobs = ctest_parallel_level
+            print("Note: honoring requested value for ctest parallel level: {}".format(ctest_max_jobs))
+        else:
+            ctest_max_jobs = get_mach_testing_resources(self._machine)
+            print("Note: no value passed for --ctest-parallel-level. Using the default for this machine: {}".format(ctest_max_jobs))
 
-        proc_set = False
-        if "CTEST_PARALLEL_LEVEL" in os.environ:
-            try:
-                proc_count = int(os.environ["CTEST_PARALLEL_LEVEL"])
-                proc_set = True
-            except ValueError:
-                pass
+        self._testing_res_count = {"dbg" : ctest_max_jobs,
+                                   "sp"  : ctest_max_jobs,
+                                   "fpe" : ctest_max_jobs}
 
-        if not proc_set:
-            print("WARNING: env var CTEST_PARALLEL_LEVEL unset, defaulting to {} which probably underutilizes your machine".\
-                      format(proc_count))
+        # Deduce how many compilation resources per test
+        if make_parallel_level > 0:
+            make_max_jobs = make_parallel_level
+            print("Note: honoring requested value for make parallel level: {}".format(make_max_jobs))
+        else:
+            make_max_jobs = get_mach_compilation_resources(self._machine)
+            print("Note: no value passed for --make-parallel-level. Using the default for this machine: {}".format(make_max_jobs))
 
-        self._proc_count = {"dbg" : proc_count,
-                            "sp"  : proc_count,
-                            "fpe" : proc_count}
+        self._compile_res_count = {"dbg" : make_max_jobs,
+                                   "sp"  : make_max_jobs,
+                                   "fpe" : make_max_jobs}
 
         if self._parallel:
             # We need to be aware that other builds may be running too.
             # (Do not oversubscribe the machine)
-            remainder = proc_count % len(self._tests)
-            proc_count = proc_count // len(self._tests)
+            make_remainder = make_max_jobs % len(self._tests)
+            make_count     = make_max_jobs // len(self._tests)
+            ctest_remainder = ctest_max_jobs % len(self._tests)
+            ctest_count     = ctest_max_jobs // len(self._tests)
 
             # In case we have more tests than cores (unlikely)
-            if proc_count == 0:
-                proc_count = 1
+            if make_count == 0:
+                make_count = 1
+            if ctest_count == 0:
+                ctest_count = 1
 
             for test in self._tests:
-                self._proc_count[test] = proc_count
-                if self._tests.index(test)<remainder:
-                    self._proc_count[test] = proc_count + 1
+                self._compile_res_count[test] = make_count
+                if self._tests.index(test)<make_remainder:
+                    self._compile_res_count[test] = make_count + 1
 
-                print("test {} has {} procs".format(test,self._proc_count[test]))
+                self._testing_res_count[test] = ctest_count
+                if self._tests.index(test)<ctest_remainder:
+                    self._testing_res_count[test] = ctest_count + 1
+
+                print("test {} can use {} jobs to compile, and {} jobs for testing".format(test,self._compile_res_count[test],self._testing_res_count[test]))
 
         if self._keep_tree:
             expect(not is_repo_clean(silent=True), "Makes no sense to use --keep-tree when repo is clean")
@@ -195,9 +214,14 @@ class TestAllScream(object):
     ###############################################################################
     def get_taskset_id(self, test):
     ###############################################################################
-        myid = self._tests.index(test)
-        start = myid * self._proc_count[test]
-        end   = (myid+1) * self._proc_count[test] - 1
+        # Note: we need to loop through the whole list, since the compile_res_count
+        #       might not be the same for all test.
+
+        it = itertools.takewhile(lambda name: name!=test, self._tests)
+        offset = sum(self._compile_res_count[prevs] for prevs in it)
+
+        start = offset
+        end   = offset + self._compile_res_count[test] - 1
 
         return start, end
 
@@ -209,7 +233,7 @@ class TestAllScream(object):
         if self._submit:
             result += "CIME_MACHINE={} ".format(self._machine)
 
-        result += "CTEST_PARALLEL_LEVEL={} ctest -V --output-on-failure ".format(self._proc_count[test])
+        result += "CTEST_PARALLEL_LEVEL={} ctest -V --output-on-failure ".format(self._testing_res_count[test])
 
         if self._baseline_dir is not None:
             cmake_config += " -DSCREAM_TEST_DATA_DIR={}".format(self.get_preexisting_baseline(test))
@@ -250,7 +274,7 @@ class TestAllScream(object):
             print ("WARNING: Failed to configure baselines:\n{}".format(err))
             return False
 
-        cmd = "make -j{} && make baseline".format(self._proc_count[test])
+        cmd = "make -j{} && make -j{} baseline".format(self._compile_res_count[test],self._compile_res_count[test])
         if self._parallel:
             start, end = self.get_taskset_id(test)
             cmd = "taskset -c {}-{} sh -c '{}'".format(start,end,cmd)
@@ -307,6 +331,11 @@ class TestAllScream(object):
         cmake_config = self.generate_cmake_config(self._tests_cmake_args[test], for_ctest=True)
         ctest_config = self.generate_ctest_config(cmake_config, [], test)
 
+        # This directory might have been used also to build the model to generate baselines.
+        # Although it's ok to build in the same dir, we MUST make sure to erase cmake's cache
+        # and internal files from the previous build (CMakeCache.txt and CMakeFiles folder)
+        run_cmd_no_fail("rm -rf CMake*", from_dir=test_dir)
+
         success = run_cmd(ctest_config, from_dir=test_dir, arg_stdout=None, arg_stderr=None, verbose=True, dry_run=self._dry_run)[0] == 0
 
         return success
@@ -351,6 +380,15 @@ class TestAllScream(object):
     ###############################################################################
     def test_all_scream(self):
     ###############################################################################
+
+        # Setup the env on this machine
+        setup_mach_env(self._machine)
+
+        # Add any override the user may have requested
+        for env_var in self._custom_env_vars:
+            key,val = env_var.split("=",2)
+            os.environ.update( { key : val } )
+
         success = True
         try:
             # First, create build directories (one per test)

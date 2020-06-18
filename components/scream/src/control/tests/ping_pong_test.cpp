@@ -1,9 +1,9 @@
 #include <catch2/catch.hpp>
 #include "share/grid/user_provided_grids_manager.hpp"
+#include "ekat/scream_parse_yaml_file.hpp"
 #include "control/atmosphere_driver.hpp"
 
-#include "dummy_grid.hpp"
-#include "dummy_atm_proc.hpp"
+#include "dummy_atm_setup.hpp"
 
 #include <numeric>
 
@@ -11,67 +11,28 @@ namespace scream {
 
 TEST_CASE("ping-pong", "") {
   using namespace scream;
-  using namespace scream::control;
-
-  using device_type = AtmosphereDriver::device_type;
 
   constexpr int num_cols   = 2;
-  constexpr int vec_length = 4;
 
-  // Create a parameter list for inputs
+  // Load ad parameter list
+  std::string fname = "ping_pong.yaml";
   ParameterList ad_params("Atmosphere Driver");
-  auto& proc_params = ad_params.sublist("Atmosphere Processes");
-
-  proc_params.set("Number of Entries",2);
-  proc_params.set<std::string>("Schedule Type","Sequential");
-
-  auto& p0 = proc_params.sublist("Process 0");
-  p0.set<std::string>("Process Name", "Physics_fwd");
-  p0.set<int>("Number of vector components",vec_length);
-
-  auto& p1 = proc_params.sublist("Process 1");
-  p1.set<std::string>("Process Name", "Physics_bwd");
-  p1.set<int>("Number of vector components",vec_length);
-
-  auto& gm_params = ad_params.sublist("Grids Manager");
-  gm_params.set<std::string>("Reference Grid","Physics_fwd");
-  gm_params.set<std::string>("Type","User Provided");
-
-  // Need to register products in the factory *before* we create any AtmosphereProcessGroup,
-  // which rely on factory for process creation. The initialize method of the AD does that.
-  // While we're at it, check that the case insensitive key of the factory works.
-  auto& proc_factory = AtmosphereProcessFactory::instance();
-  proc_factory.register_product("physics_fwd",&create_atmosphere_process<DummyProcess<device_type,2,true>>);
-  proc_factory.register_product("physics_bwd",&create_atmosphere_process<DummyProcess<device_type,4,false>>);
-
-  // Need to register grids managers before we create the driver
-  auto& gm_factory = GridsManagerFactory::instance();
-  gm_factory.register_product("User Provided",create_user_provided_grids_manager);
-
-  // Set the dummy grid in the UserProvidedGridManager
-  // Recall that this class stores *static* members, so whatever
-  // we set here, will be reflected in the GM built by the factory.
-  UserProvidedGridsManager upgm;
-  auto dummy_grid_fwd = std::make_shared<DummyPhysicsGrid>(num_cols,true);
-  auto dummy_grid_bwd = std::make_shared<DummyPhysicsGrid>(num_cols,false);
-
-  upgm.set_grid(dummy_grid_fwd);
-  upgm.set_grid(dummy_grid_bwd);
-  upgm.set_reference_grid("Physics_fwd");
-  using remapper_type = DummyPhysicsGridRemapper<Real,device_type>;
-  upgm.set_remapper(std::make_shared<remapper_type>(dummy_grid_fwd,dummy_grid_bwd));
-  upgm.set_remapper(std::make_shared<remapper_type>(dummy_grid_bwd,dummy_grid_fwd));
+  REQUIRE_NOTHROW ( parse_yaml_file(fname,ad_params) );
+  const int vec_length = ad_params.sublist("Atmosphere Processes").sublist("Process 0").get<int>("Number of vector components");
 
   // Create a comm
   Comm atm_comm (MPI_COMM_WORLD);
 
+  // Setup the atm factories and grid manager
+  dummy_atm_init (num_cols);
+
   // Create the driver
-  AtmosphereDriver ad;
+  control::AtmosphereDriver ad;
 
   // Init and run (to finalize, wait till checks are completed,
   // or you'll clear the field repo!)
-  util::TimeStamp init_time(2019,0,0);
-  util::TimeStamp end_time (2019,1,0);
+  util::TimeStamp init_time(2019,0,0,0);
+  util::TimeStamp end_time (2019,0,1,0);
   const Real dt = 3500.0; // This should trigger an adjustment of the last time step
   ad.initialize(atm_comm,ad_params,init_time);
 
@@ -103,7 +64,7 @@ TEST_CASE("ping-pong", "") {
     Real dt_adj = dt;
     bool adjusted = false;
     if (end_time<(ts+dt)) {
-      dt_adj = (end_time-ts).get_seconds();
+      dt_adj = end_time-ts;
       adjusted = true;
     }
     std::cout << "    - time step: " << dt_adj << (adjusted ? "s (adjusted to hit final time)\n" : "s\n");
@@ -111,9 +72,10 @@ TEST_CASE("ping-pong", "") {
     ad.run(dt_adj);
 
     // Prepare the answer
-    // Every atm proc does out(:) = sin(in(:)). There are 2 atm process, with
-    // input and output swapped, that do this update, so at every
-    // time step we should get f(i) = sin(sin(f(i))).
+    // Every atm proc does out(:) = in(:) op 2.0, where op is +,*,-,/
+    // in a cyclic fashion, in that order (one op per iter).
+    // Since there are two atm procs, doing the very same op,
+    // we can exactly compute what the answer should be.
     int rem = iter % 4;
     for (int i=0; i<size; ++i) {
       switch (rem) {
@@ -135,7 +97,8 @@ TEST_CASE("ping-pong", "") {
   // Finalize and clean up
   ad.finalize();
 
-  upgm.clean_up();
+  // Clean up factories and grids manager
+  dummy_atm_cleanup ();
 }
 
 } // empty namespace

@@ -3,7 +3,7 @@
 #include "dynamics/homme/physics_dynamics_remapper.hpp"
 
 #include "share/grid/se_grid.hpp"
-#include "share/remap/inverse_remapper.hpp"
+#include "share/grid/remap/inverse_remapper.hpp"
 
 // Get all Homme's config properties
 #include "hommexx_dimensions.hpp"
@@ -43,7 +43,7 @@ void DynamicsDrivenGridsManager::build_grid (const std::string& grid_name)
     build_dynamics_grid();
   }
 
-  if (grid_name==m_params.get<std::string>("Reference Grid","Physics")) {
+  if (grid_name==m_params.get<std::string>("Reference Grid")) {
     m_grids["Reference"] = get_grid(grid_name);
   }
 }

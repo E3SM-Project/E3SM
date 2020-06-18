@@ -132,9 +132,9 @@ module shoc_intr
     call cnst_add('SHOC_TKE',0._r8,0._r8,0._r8,ixtke,longname='turbulent kinetic energy',cam_outfld=.false.)
   
     ! Fields that are not prognostic should be added to PBUF
-    call pbuf_add_field('WTHV', 'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), wthv_idx)
-    call pbuf_add_field('TKH', 'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), tkh_idx) 
-    call pbuf_add_field('TK', 'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), tk_idx) 
+    call pbuf_add_field('WTHV', 'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), wthv_idx)
+    call pbuf_add_field('TKH', 'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), tkh_idx) 
+    call pbuf_add_field('TK', 'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), tk_idx) 
 
     call pbuf_add_field('pblh',       'global', dtype_r8, (/pcols/), pblh_idx)
     call pbuf_add_field('tke',        'global', dtype_r8, (/pcols, pverp/), tke_idx)
@@ -303,7 +303,7 @@ end function shoc_implements_cnst
     dp_frac_idx = pbuf_get_index('DP_FRAC')     ! Deep convection cloud fraction
     icwmrdp_idx = pbuf_get_index('ICWMRDP')     ! In-cloud deep convective mixing ratio
     sh_frac_idx = pbuf_get_index('SH_FRAC')     ! Shallow convection cloud fraction
-    relvar_idx  = pbuf_get_index('RELVAR')      ! Relative cloud water variance
+    relvar_idx      = pbuf_get_index('RELVAR')      ! Relative cloud water variance
     accre_enhan_idx = pbuf_get_index('ACCRE_ENHAN') ! accretion enhancement for MG
     prer_evap_idx   = pbuf_get_index('PRER_EVAP')
     qrl_idx         = pbuf_get_index('QRL')
@@ -316,6 +316,9 @@ end function shoc_implements_cnst
       call pbuf_set_field(pbuf2d, tkh_idx, 0.0_r8) 
       call pbuf_set_field(pbuf2d, tk_idx, 0.0_r8) 
       call pbuf_set_field(pbuf2d, fice_idx, 0.0_r8)
+      call pbuf_set_field(pbuf2d, tke_idx, tke_tol)
+      call pbuf_set_field(pbuf2d, alst_idx, 0.0_r8)
+      call pbuf_set_field(pbuf2d, aist_idx, 0.0_r8)
       
       call pbuf_set_field(pbuf2d, vmag_gust_idx,    1.0_r8)
       
@@ -366,6 +369,7 @@ end function shoc_implements_cnst
     call addfld('ISOTROPY',(/'lev'/),'A', 's', 'timescale')
     call addfld('CONCLD',(/'lev'/),  'A',        'fraction', 'Convective cloud cover')
     call addfld('BRUNT',(/'lev'/), 'A', 's-1', 'Brunt frequency')
+    call addfld('RELVAR',(/'lev'/), 'A', 'kg/kg', 'SHOC cloud liquid relative variance')
 
     call add_default('SHOC_TKE', 1, ' ')
     call add_default('WTHV_SEC', 1, ' ')
@@ -386,6 +390,8 @@ end function shoc_implements_cnst
     call add_default('ISOTROPY',1,' ')
     call add_default('CONCLD',1,' ')
     call add_default('BRUNT',1,' ')
+    call add_default('RELVAR',1,' ')
+
     ! ---------------------------------------------------------------!
     ! Initialize SHOC                                                !
     ! ---------------------------------------------------------------!
@@ -510,6 +516,7 @@ end function shoc_implements_cnst
    real(r8) :: rvm(pcols,pver)
    real(r8) :: rtm(pcols,pver)
    real(r8) :: rcm(pcols,pver)
+   real(r8) :: rcm2(pcols,pver)                 ! cloud liquid variance                         [kg/kg]
    real(r8) :: ksrftms(pcols)                   ! Turbulent mountain stress surface drag        [kg/s/m2]
    real(r8) :: tautmsx(pcols)                   ! U component of turbulent mountain stress      [N/m2]
    real(r8) :: tautmsy(pcols)                   ! V component of turbulent mountain stress      [N/m2]
@@ -524,7 +531,7 @@ end function shoc_implements_cnst
    real(r8) :: host_temp(pcols,pver)
    real(r8) :: host_dx_in(pcols), host_dy_in(pcols)  
    real(r8) :: shoc_mix_out(pcols,pver), tk_in(pcols,pver), tkh_in(pcols,pver)
-   real(r8) :: isotropy_out(pcols,pver)
+   real(r8) :: isotropy_out(pcols,pver), tke_zt(pcols,pver)
    real(r8) :: w_sec_out(pcols,pver), thl_sec_out(pcols,pverp)
    real(r8) :: qw_sec_out(pcols,pverp), qwthl_sec_out(pcols,pverp)
    real(r8) :: wthl_sec_out(pcols,pverp), wqw_sec_out(pcols,pverp)
@@ -558,7 +565,7 @@ end function shoc_implements_cnst
    ! Pointers        !
    ! --------------- !
   
-   real(r8), pointer, dimension(:,:) :: tke  ! turbulent kinetic energy 
+   real(r8), pointer, dimension(:,:) :: tke_zi  ! turbulent kinetic energy, interface
    real(r8), pointer, dimension(:,:) :: wthv ! buoyancy flux
    real(r8), pointer, dimension(:,:) :: tkh 
    real(r8), pointer, dimension(:,:) :: tk
@@ -583,7 +590,8 @@ end function shoc_implements_cnst
    real(r8), pointer, dimension(:,:) :: accre_enhan
    real(r8), pointer, dimension(:,:) :: relvar
    
-   logical :: lqice(pcnst)   
+   logical :: lqice(pcnst)
+   real(r8) :: relvarmax
    
    !------------------------------------------------------------------!
    !------------------------------------------------------------------!
@@ -615,7 +623,7 @@ end function shoc_implements_cnst
    itim_old = pbuf_old_tim_idx()     
    
    !  Establish associations between pointers and physics buffer fields   
-   call pbuf_get_field(pbuf, tke_idx,     tke)
+   call pbuf_get_field(pbuf, tke_idx,     tke_zi)
    call pbuf_get_field(pbuf, wthv_idx,     wthv,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))  
    call pbuf_get_field(pbuf, tkh_idx,      tkh,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))  
    call pbuf_get_field(pbuf, tk_idx,       tk,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))  
@@ -719,7 +727,11 @@ end function shoc_implements_cnst
        thlm(i,k) = state1%t(i,k)*exner(i,k)-(latvap/cpair)*state1%q(i,k,ixcldliq)
        thv(i,k) = state1%t(i,k)*exner(i,k)*(1.0_r8+zvir*state1%q(i,k,ixq)-state1%q(i,k,ixcldliq)) 
  
-       tke(i,k) = max(tke_tol,state1%q(i,k,ixtke))
+       tke_zt(i,k) = max(tke_tol,state1%q(i,k,ixtke))
+       
+       ! Cloud fraction needs to be initialized for first 
+       !  PBL height calculation call
+       cloud_frac(i,k) = alst(i,k) 
      
      enddo
    enddo         
@@ -789,15 +801,16 @@ end function shoc_implements_cnst
 	wpthlp_sfc(:ncol), wprtp_sfc(:ncol), upwp_sfc(:ncol), vpwp_sfc(:ncol), & ! Input
 	wtracer_sfc(:ncol,:), edsclr_dim, wm_zt(:ncol,:), & ! Input
 	exner(:ncol,:),state1%phis(:ncol), & ! Input
-	shoc_s(:ncol,:), tke(:ncol,:), thlm(:ncol,:), rtm(:ncol,:), & ! Input/Ouput
+	shoc_s(:ncol,:), tke_zt(:ncol,:), thlm(:ncol,:), rtm(:ncol,:), & ! Input/Ouput
 	um(:ncol,:), vm(:ncol,:), edsclr_in(:ncol,:,:), & ! Input/Output
-	wthv(:ncol,:),tkh(:ncol,:),tk(:ncol,:), rcm(:ncol,:), & ! Input/Output
-        cloud_frac(:ncol,:), pblh(:ncol), & ! Output
+	wthv(:ncol,:),tkh(:ncol,:),tk(:ncol,:), & ! Input/Output
+	rcm(:ncol,:),cloud_frac(:ncol,:), & ! Input/Output
+        pblh(:ncol), & ! Output
         shoc_mix_out(:ncol,:), isotropy_out(:ncol,:), & ! Output (diagnostic)
         w_sec_out(:ncol,:), thl_sec_out(:ncol,:), qw_sec_out(:ncol,:), qwthl_sec_out(:ncol,:), & ! Output (diagnostic)   
         wthl_sec_out(:ncol,:), wqw_sec_out(:ncol,:), wtke_sec_out(:ncol,:), & ! Output (diagnostic)
         uw_sec_out(:ncol,:), vw_sec_out(:ncol,:), w3_out(:ncol,:), & ! Output (diagnostic)
-        wqls_out(:ncol,:),brunt_out(:ncol,:)) ! Output (diagnostic)
+        wqls_out(:ncol,:),brunt_out(:ncol,:),rcm2(:ncol,:)) ! Output (diagnostic)
    
    ! Transfer back to pbuf variables
    
@@ -813,13 +826,18 @@ end function shoc_implements_cnst
      enddo
    enddo
 
+   ! Eddy diffusivities and TKE are needed for aerosol activation code.
+   !   Linearly interpolate from midpoint grid and onto the interface grid.
+   !   The output variables for these routines (khzm, khzt, and tke_zi)
+   !   are PBUF pointers
    call linear_interp(state%zm(:ncol,:pver),state%zi(:ncol,:pverp),&
                 tk(:ncol,:pver),khzm(:ncol,:pverp),pver,pverp,ncol,0._r8)
    call linear_interp(state%zm(:ncol,:pver),state%zi(:ncol,:pverp),&
                 tkh(:ncol,:pver),khzt(:ncol,:pverp),pver,pverp,ncol,0._r8)
+   call linear_interp(state%zm(:ncol,:pver),state%zi(:ncol,:pverp),&
+                tke_zt(:ncol,:pver),tke_zi(:ncol,:pverp),pver,pverp,ncol,tke_tol)
 
-   !  Now compute the tendencies of SHOC to CAM, note that pverp is the ghost point
-   !  for all variables and therefore is never called in this loop
+   !  Now compute the tendencies of SHOC to E3SM
    do k=1,pver
      do i=1,ncol
        
@@ -829,7 +847,7 @@ end function shoc_implements_cnst
        ptend_loc%q(i,k,ixcldliq) = (rcm(i,k)-state1%q(i,k,ixcldliq))/hdtime   ! Tendency of liquid water
        ptend_loc%s(i,k) = (shoc_s(i,k)-state1%s(i,k))/hdtime
        
-       ptend_loc%q(i,k,ixtke)=(tke(i,k)-state1%q(i,k,ixtke))/hdtime ! TKE
+       ptend_loc%q(i,k,ixtke)=(tke_zt(i,k)-state1%q(i,k,ixtke))/hdtime ! TKE
        
    !  Apply tendencies to ice mixing ratio, liquid and ice number, and aerosol constituents.
    !  Loading up this array doesn't mean the tendencies are applied.  
@@ -917,10 +935,16 @@ end function shoc_implements_cnst
     call physics_ptend_sum(ptend_loc,ptend_all,ncol)
     call physics_update(state1,ptend_loc,hdtime)
    
-    ! For purposes of this implementaiton, just set relvar and accre_enhan to 1
-    relvar(:,:) = 1.0_r8   
+    ! For purposes of this implementation, just set relvar and accre_enhan to 1
+    relvar(:,:) = 1.0_r8
     accre_enhan(:,:) = 1._r8  
    
+! +++ JShpund: add relative cloud liquid variance (a vectorized version based on CLUBB)
+!     TODO: double check the hardcoded values ('relvarmax', '0.001_r8')
+    relvarmax = 10.0_r8
+    where (rcm(:ncol,:pver) /= 0.0 .and. rcm2(:ncol,:pver) /= 0.0) &
+           relvar(:ncol,:pver) = min(relvarmax,max(0.001_r8,rcm(:ncol,:pver)**2.0/rcm2(:ncol,:pver)))
+
     ! --------------------------------------------------------------------------------- ! 
     !  Diagnose some quantities that are computed in macrop_tend here.                  !
     !  These are inputs required for the microphysics calculation.                      !
@@ -1038,7 +1062,7 @@ end function shoc_implements_cnst
       enddo
     enddo
 
-    call outfld('SHOC_TKE', tke, pcols, lchnk)
+    call outfld('SHOC_TKE', tke_zt, pcols, lchnk)
     call outfld('WTHV_SEC', wthv_output, pcols, lchnk)
     call outfld('SHOC_MIX', shoc_mix_out, pcols, lchnk)
     call outfld('TK', tk, pcols, lchnk)
@@ -1057,6 +1081,7 @@ end function shoc_implements_cnst
     call outfld('ISOTROPY',isotropy_out, pcols,lchnk)
     call outfld('CONCLD',concld,pcols,lchnk)
     call outfld('BRUNT',brunt_out,pcols,lchnk)
+    call outfld('RELVAR',relvar,pcols,lchnk)
 
 #endif    
     return         

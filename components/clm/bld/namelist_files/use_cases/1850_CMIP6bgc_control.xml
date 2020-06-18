@@ -31,9 +31,6 @@
 
 <!-- CMIP6 DECK compsets -->
       
-<finidat>lnd/clm2/initdata/180227_cplhist_BGCspinup_ne30_ne30_ICB1850CNPRDCTCBC.clm2.r.0701-01-01-00000.nc </finidat>
-<check_finidat_fsurdat_consistency>.false.</check_finidat_fsurdat_consistency>
-<check_finidat_year_consistency>.false.</check_finidat_year_consistency>
 <fsurdat>lnd/clm2/surfdata_map/surfdata_ne30np4_simyr1850_2015_c171018.nc </fsurdat>
 <flanduse_timeseries>lnd/clm2/surfdata_map/landuse.timeseries_ne30np4_hist_simyr1850_c20171102.nc </flanduse_timeseries>
 </namelist_defaults>

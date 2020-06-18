@@ -1,8 +1,8 @@
 #include "scream_scorpio_interface.hpp"
 
-#include "share/scream_assert.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/scream_types.hpp"
+#include "ekat/scream_assert.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/scream_types.hpp"
 
 using scream::Real;
 using scream::Int;
@@ -13,7 +13,7 @@ extern "C" {
   void eam_history_write_c();
   void eam_init_pio_subsystem_c(const int mpicom, const int compid);
   void register_outfile_c(char* filename_f);
-  void eam_init_pio_1_c(const int mpicom, const int compid);
+//  void eam_init_pio_1_c(const int mpicom, const int compid);
   void eam_init_pio_2_c();
 
 } // extern C

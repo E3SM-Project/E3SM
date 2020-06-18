@@ -9,8 +9,15 @@ include(Sourcelist_utils)
 set(PHYSICS_COMMON_SRCS
   physics_common_iso_f.F90
   physics_common.cpp
+  physics_only_grids_manager.cpp
   ${SCREAM_BASE_DIR}/../cam/src/physics/cam/physics_utils.F90
 )
+
+# Add ETI source files if not on CUDA
+if (NOT CUDA_BUILD)
+  list(APPEND P3_SRCS
+  physics_saturation.cpp)
+endif()
 
 add_library(physics_common ${PHYSICS_COMMON_SRCS})
 target_include_directories(physics_common PUBLIC ${SCREAM_INCLUDE_DIRS})

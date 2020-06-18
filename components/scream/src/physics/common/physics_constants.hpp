@@ -1,7 +1,7 @@
 #ifndef PHYSICS_CONSTANTS_HPP
 #define PHYSICS_CONSTANTS_HPP
 
-#include "share/scream_types.hpp"
+#include "ekat/scream_types.hpp"
 
 #include <vector>
 
@@ -62,8 +62,9 @@ struct Constants
   static constexpr Scalar ZERO          = 0.0;
   static constexpr Scalar ONE           = 1.0;
   static constexpr Scalar P0            = 100000.0;        // reference pressure, Pa
-  static constexpr Scalar RD            = 287.15;          // gas constant for dry air, J/kg/K
+  static constexpr Scalar RD            = Rair;          // gas constant for dry air, J/kg/K
   static constexpr Scalar RHOSUR        = P0/(RD*Tmelt);
+  static constexpr Scalar rhosui        = 60000/(RD*253.15);
   static constexpr Scalar CP            = Cpair;          // heat constant of air at constant pressure, J/kg
   static constexpr Scalar INV_CP        = 1.0/CP;
   //  static constexpr Scalar Tol           = util::is_single_precision<Real>::value ? 2e-5 : 1e-14;
@@ -86,6 +87,10 @@ struct Constants
   static constexpr Scalar MWWV          = 18.016;
   static constexpr Scalar RWV           = Rgas / MWWV;
   static constexpr Scalar ZVIR          = (RWV / Rair) - 1.0;
+  static constexpr Scalar max_total_Ni  = 500.e+3;  // maximum total ice concentration (sum of all categories) (m)
+  static constexpr Scalar f1r           = 0.78;
+  static constexpr Scalar f2r           = 0.32;
+  static constexpr Scalar nmltratio     = 0.2; // ratio of rain number produced to ice number loss from melting
 
   // Table dimension constants
   static constexpr int VTABLE_DIM0    = 300;

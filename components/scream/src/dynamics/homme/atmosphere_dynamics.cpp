@@ -1,6 +1,6 @@
 #include "atmosphere_dynamics.hpp"
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
-#include "share/scream_assert.hpp"
+#include "ekat/scream_assert.hpp"
 #include "dynamics/homme/scream_homme_interface.hpp"
 #include "dynamics/homme/hommexx_dimensions.hpp"
 
@@ -230,9 +230,8 @@ void HommeDynamics::set_required_field_impl (const Field<const Real, device_type
   // in the Homme's view, and be done with it.
   m_dyn_fields_in.emplace(f.get_header().get_identifier().name(),f);
 
-
   // Add myself as customer to the field
-  f.get_header_ptr()->get_tracking().add_customer(weak_from_this());
+  this->add_me_as_customer(f);
 }
 
 void HommeDynamics::set_computed_field_impl (const Field<      Real, device_type>& f) {
@@ -244,7 +243,7 @@ void HommeDynamics::set_computed_field_impl (const Field<      Real, device_type
   m_dyn_fields_out.emplace(name,f);
 
   // Add myself as provider for the field
-  f.get_header_ptr()->get_tracking().add_provider(weak_from_this());
+  this->add_me_as_provider(f);
 
   // Set extra data specifying whether this state corresponds to tracers,
   // as well as the current time level index (to be used, e.g., during

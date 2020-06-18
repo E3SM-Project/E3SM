@@ -2,7 +2,7 @@
 #define SCREAM_ABSTRACT_GRID_HPP
 
 #include "share/grid/grid_utils.hpp"
-#include "share/scream_types.hpp"
+#include "ekat/scream_types.hpp"
 
 namespace scream
 {

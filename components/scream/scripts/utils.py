@@ -291,28 +291,13 @@ def get_current_branch(repo=None):
 ###############################################################################
     """
     Return the name of the current branch for a repository
-
-    >>> if "GIT_BRANCH" in os.environ:
-    ...     get_current_branch() is not None
-    ... else:
-    ...     os.environ["GIT_BRANCH"] = "foo"
-    ...     get_current_branch() == "foo"
-    True
+    If in detached HEAD state, returns None
     """
-    if ("GIT_BRANCH" in os.environ):
-        # This approach works better for Jenkins jobs because the Jenkins
-        # git plugin does not use local tracking branches, it just checks out
-        # to a commit
-        branch = os.environ["GIT_BRANCH"]
-        if (branch.startswith("origin/")):
-            branch = branch.replace("origin/", "", 1)
-        return branch
-    else:
-        stat, output, _ = run_cmd("git symbolic-ref HEAD", from_dir=repo)
-        if (stat != 0):
-            return None
-        else:
-            return output.replace("refs/heads/", "")
+
+    stat, output, err = run_cmd("git rev-parse --abbrev-ref HEAD", from_dir=repo)
+    expect (stat==0, "Error! The command 'git rev-parse --abbrev-ref HEAD' failed with error: {}".format(err))
+
+    return None if output=="HEAD" else output
 
 ###############################################################################
 def get_current_commit(short=False, repo=None, tag=False, commit=None):
@@ -373,15 +358,27 @@ def update_submodules(repo=None):
     run_cmd_no_fail("git submodule update --init --recursive", from_dir=repo)
 
 ###############################################################################
-def merge_git_ref(git_ref, repo=None):
+def merge_git_ref(git_ref, repo=None, verbose=False):
 ###############################################################################
     """
     Merge given git ref into the current branch, and updates submodules
     """
+
+    # Even thoguh it can allow some extra corner cases (dirty repo, but ahead of git_ref),
+    # this check is mostly for debugging purposes, as it will inform that no merge occurred
+    out = get_common_ancestor(git_ref)
+    if out==get_current_commit(commit=git_ref):
+        if verbose:
+            print ("Merge of '{}' not necessary. Current HEAD is already ahead.".format(git_ref))
+        return
+
     expect(is_repo_clean(repo=repo), "Cannot merge ref '{}'. The repo is not clean.".format(git_ref))
     run_cmd_no_fail("git merge {} -m 'Automatic merge of {}'".format(git_ref,git_ref), from_dir=repo)
     update_submodules(repo=repo)
     expect(is_repo_clean(repo=repo), "Something went wrong while performing the merge of '{}'".format(git_ref))
+    if verbose:
+        print ("merged {} successfully merged.".format(git_ref))
+        print_last_commit()
 
 ###############################################################################
 def print_last_commit(git_ref=None, repo=None):
@@ -441,3 +438,12 @@ def cleanup_repo(orig_branch, orig_commit, repo=None):
     # Is this also a pointless check?
     if curr_commit != orig_commit:
         run_cmd_no_fail("git reset --hard {}".format(orig_commit), from_dir=repo)
+
+###############################################################################
+def get_cpu_core_count ():
+###############################################################################
+    """
+    Get the number of CPU processors available on the current node
+    """
+
+    return int(run_cmd_no_fail("cat /proc/cpuinfo | grep processor | wc -l"))
