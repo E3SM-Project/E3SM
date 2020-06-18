@@ -116,6 +116,7 @@ flags should be captured within MPAS CMake files.
     <base> -mcmodel=medium </base>
     <append compile_threaded="TRUE"> -fopenmp </append>
     <append DEBUG="TRUE"> -g -Wall -Og -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow</append>
+    <append DEBUG="FALSE"> -O </append>
     <append COMP_NAME="csm_share"> -std=c99 </append>
   </CFLAGS>
   <CMAKE_OPTS>
@@ -140,6 +141,7 @@ flags should be captured within MPAS CMake files.
          CPRGNU-specific shr_infnan_isnan) causes a floating point exception
          when called on a signaling NaN. -->
     <append DEBUG="TRUE"> -g -Wall -Og -fbacktrace -fcheck=bounds -ffpe-trap=zero,overflow</append>
+    <append DEBUG="FALSE"> -O </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
     <base> -O0 </base>
