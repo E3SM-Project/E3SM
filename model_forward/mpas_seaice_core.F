@@ -5,6 +5,7 @@ module seaice_core
    use seaice_analysis_driver
    use seaice_column
    use mpas_threading
+   use mpas_timer, only: mpas_timer_start, mpas_timer_stop
    use mpas_log, only: mpas_log_write
 
    private
@@ -124,7 +125,10 @@ module seaice_core
       ! bootstrap analysis has used config_do_restart: now modify for rest of code
       if (trim(config_initial_condition_type) == "restart") config_do_restart = .true.
 
+      call mpas_timer_start("seaice_init")
       call mpas_init_block(domain, dt)
+      call mpas_timer_stop("seaice_init")
+
 
    end function seaice_core_init
 
@@ -255,7 +259,6 @@ module seaice_core
       use mpas_derived_types
       use mpas_kind_types
       use mpas_stream_manager
-      use mpas_timer
       use seaice_time_integration, only: seaice_timestep_finalize
       use seaice_forcing, only: &
            seaice_forcing_get, &
