@@ -31,8 +31,8 @@ TEST_CASE("ping-pong", "") {
 
   // Init and run (to finalize, wait till checks are completed,
   // or you'll clear the field repo!)
-  util::TimeStamp init_time(2019,0,0);
-  util::TimeStamp end_time (2019,1,0);
+  util::TimeStamp init_time(2019,0,0,0);
+  util::TimeStamp end_time (2019,0,1,0);
   const Real dt = 3500.0; // This should trigger an adjustment of the last time step
   ad.initialize(atm_comm,ad_params,init_time);
 
@@ -64,7 +64,7 @@ TEST_CASE("ping-pong", "") {
     Real dt_adj = dt;
     bool adjusted = false;
     if (end_time<(ts+dt)) {
-      dt_adj = (end_time-ts).get_seconds();
+      dt_adj = end_time-ts;
       adjusted = true;
     }
     std::cout << "    - time step: " << dt_adj << (adjusted ? "s (adjusted to hit final time)\n" : "s\n");

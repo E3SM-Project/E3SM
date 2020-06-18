@@ -49,17 +49,18 @@ CONTAINS
 
   !===============================================================================
   subroutine atm_init_mct( EClock, cdata, x2d, d2x, NLFilename )
-
+    use iso_c_binding, only: C_CHAR, C_NULL_CHAR
     !
     ! F90<->CXX interfaces
     !
     interface
-      subroutine scream_init(f_comm,start_ymd,start_tod) bind(c)
-        use iso_c_binding, only: c_int
+      subroutine scream_init(f_comm,start_ymd,start_tod,yaml_fname) bind(c)
+        use iso_c_binding, only: c_int, C_CHAR
         !
         ! Arguments
         !
-        integer (kind=c_int), intent(in) :: start_tod, start_ymd, f_comm
+        integer (kind=c_int),   intent(in) :: start_tod, start_ymd, f_comm
+        character(kind=C_CHAR), target, intent(in) :: yaml_fname(*)
       end subroutine scream_init
     end interface
 
@@ -84,8 +85,9 @@ CONTAINS
     logical                          :: atm_present    ! if true, component is present
     logical                          :: atm_prognostic ! if true, component is prognostic
     integer (IN)                     :: start_tod, start_ymd
-
+    character(kind=C_CHAR,len=80)    :: yaml_fname = "data/scream_input.yaml"
     !-------------------------------------------------------------------------------
+
     ! Set cdata pointers to derived types (in coupler)
     call seq_cdata_setptrs(cdata, &
          id=compid, &
@@ -134,7 +136,7 @@ CONTAINS
          inst_index, inst_suffix, inst_name, logunit, nxg, nyg)
 
     call seq_timemgr_EClockGetData(EClock, start_ymd=start_ymd, start_tod=start_tod)
-    call scream_init (mpicom_atm, INT(start_ymd, KIND=c_int), INT(start_tod, KIND=c_int))
+    call scream_init (mpicom_atm, INT(start_ymd, KIND=c_int), INT(start_tod, KIND=c_int),TRIM(yaml_fname)//C_NULL_CHAR)
     if (nxg == 0 .and. nyg == 0) then
        atm_present = .false.
        atm_prognostic = .false.
@@ -198,6 +200,7 @@ CONTAINS
     character(*), parameter :: subName = "(atm_run_mct) "
     real(kind=c_double)              :: dt_scream
     !-------------------------------------------------------------------------------
+
     ! Reset shr logging to my log file
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)

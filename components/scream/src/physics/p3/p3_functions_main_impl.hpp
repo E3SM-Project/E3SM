@@ -716,36 +716,14 @@ void Functions<S,D>
 ::p3_main_post_main_loop(
   const MemberType& team,
   const Int& nk_pack,
-  const bool& log_predictNc,
-  const Scalar& dt,
-  const Scalar& odt,
   const view_dnu_table& dnu,
   const view_itab_table& itab,
-  const view_itabcol_table& itabcol,
-  const view_2d_table& revap_table,
-  const uview_1d<const Spack>& pres,
-  const uview_1d<const Spack>& pdel,
-  const uview_1d<const Spack>& dzq,
-  const uview_1d<const Spack>& ncnuc,
   const uview_1d<const Spack>& exner,
-  const uview_1d<const Spack>& inv_exner,
-  const uview_1d<const Spack>& inv_lcldm,
-  const uview_1d<const Spack>& inv_icldm,
-  const uview_1d<const Spack>& inv_rcldm,
-  const uview_1d<const Spack>& naai,
-  const uview_1d<const Spack>& icldm,
   const uview_1d<const Spack>& lcldm,
   const uview_1d<const Spack>& rcldm,
-  const uview_1d<Spack>& t,
   const uview_1d<Spack>& rho,
   const uview_1d<Spack>& inv_rho,
-  const uview_1d<Spack>& qvs,
-  const uview_1d<Spack>& qvi,
-  const uview_1d<Spack>& sup,
-  const uview_1d<Spack>& supi,
-  const uview_1d<Spack>& rhofacr,
   const uview_1d<Spack>& rhofaci,
-  const uview_1d<Spack>& acn,
   const uview_1d<Spack>& qv,
   const uview_1d<Spack>& th,
   const uview_1d<Spack>& qc,
@@ -758,33 +736,12 @@ void Functions<S,D>
   const uview_1d<Spack>& birim,
   const uview_1d<Spack>& xxlv,
   const uview_1d<Spack>& xxls,
-  const uview_1d<Spack>& xlf,
-  const uview_1d<Spack>& qc_incld,
-  const uview_1d<Spack>& qr_incld,
-  const uview_1d<Spack>& qitot_incld,
-  const uview_1d<Spack>& qirim_incld,
-  const uview_1d<Spack>& nc_incld,
-  const uview_1d<Spack>& nr_incld,
-  const uview_1d<Spack>& nitot_incld,
-  const uview_1d<Spack>& birim_incld,
   const uview_1d<Spack>& mu_c,
   const uview_1d<Spack>& nu,
   const uview_1d<Spack>& lamc,
-  const uview_1d<Spack>& cdist,
-  const uview_1d<Spack>& cdist1,
-  const uview_1d<Spack>& cdistr,
   const uview_1d<Spack>& mu_r,
   const uview_1d<Spack>& lamr,
-  const uview_1d<Spack>& logn0r,
-  const uview_1d<Spack>& cmeiout,
-  const uview_1d<Spack>& prain,
-  const uview_1d<Spack>& nevapr,
-  const uview_1d<Spack>& prer_evap,
   const uview_1d<Spack>& vap_liq_exchange,
-  const uview_1d<Spack>& vap_ice_exchange,
-  const uview_1d<Spack>& liq_ice_exchange,
-  const uview_1d<Spack>& pratot,
-  const uview_1d<Spack>& prctot,
   const uview_1d<Spack>& ze_rain,
   const uview_1d<Spack>& ze_ice,
   const uview_1d<Spack>& diag_vmi,
@@ -792,7 +749,7 @@ void Functions<S,D>
   const uview_1d<Spack>& diag_di,
   const uview_1d<Spack>& diag_rhoi,
   const uview_1d<Spack>& diag_ze,
-  const uview_1d<Spack>& tmparr1)
+  const uview_1d<Spack>& diag_effc)
 {
   constexpr Scalar qsmall       = C::QSMALL;
   constexpr Scalar inv_cp       = C::INV_CP;
@@ -817,8 +774,9 @@ void Functions<S,D>
     {
       const auto qc_gt_small = qc(k) >= qsmall;
       const auto qc_small    = !qc_gt_small;
-      get_cloud_dsd2(qc(k), nc(k), mu_c(k), rho(k), nu(k), dnu, lamc(k), ignore1, ignore2, lcldm(k));
+      get_cloud_dsd2(qc(k), nc(k), mu_c(k), rho(k), nu(k), dnu, lamc(k), ignore1, ignore2, lcldm(k), qc_gt_small);
 
+      diag_effc(k)       .set(qc_gt_small, sp(0.5) * (mu_c(k) + 3) / lamc(k));
       qv(k)              .set(qc_small, qv(k)+qc(k));
       th(k)              .set(qc_small, th(k)-exner(k)*qc(k)*xxlv(k)*inv_cp);
       vap_liq_exchange(k).set(qc_small, vap_liq_exchange(k) - qc(k));
@@ -831,11 +789,11 @@ void Functions<S,D>
       const auto qr_gt_small = qr(k) >= qsmall;
       const auto qr_small    = !qr_gt_small;
       get_rain_dsd2(
-        qr(k), nr(k), mu_r(k), lamr(k), ignore1, ignore2, rcldm(k));
+        qr(k), nr(k), mu_r(k), lamr(k), ignore1, ignore2, rcldm(k), qr_gt_small);
 
       ze_rain(k).set(qr_gt_small, nr(k)*(mu_r(k)+6)*(mu_r(k)+5)*(mu_r(k)+4)*
-                     (mu_r(k)+3)*(mu_r(k)+2)*(mu_r(k)+1)/pow(lamr(k), 6));
-      ze_rain(k).set(qr_gt_small, pack::max(ze_rain(k), 1.e-22));
+                     (mu_r(k)+3)*(mu_r(k)+2)*(mu_r(k)+1)/pow(lamr(k), sp(6.0))); // once f90 is gone, 6 can be int
+      ze_rain(k).set(qr_gt_small, pack::max(ze_rain(k), sp(1.e-22)));
 
       qv(k)              .set(qr_small, qv(k) + qr(k));
       th(k)              .set(qr_small, th(k) - exner(k)*qr(k)*xxlv(k)*inv_cp);
@@ -886,7 +844,7 @@ void Functions<S,D>
 
       // note factor of air density below is to convert from m^6/kg to m^6/m^3
       ze_ice(k).set(qi_gt_small, ze_ice(k) + sp(0.1892)*f1pr13*nitot(k)*rho(k)); // sum contribution from each ice category (note: 0.1892 = 0.176/0.93);
-      ze_ice(k).set(qi_gt_small, pack::max(ze_ice(k), 1.e-22));
+      ze_ice(k).set(qi_gt_small, pack::max(ze_ice(k), sp(1.e-22)));
 
       qv(k)     .set(qi_small, qv(k) + qitot(k));
       th(k)     .set(qi_small, th(k) - exner(k)*qitot(k)*xxls(k)*inv_cp);
@@ -903,10 +861,6 @@ void Functions<S,D>
     // if qr is very small then set Nr to 0 (needs to be done here after call
     // to ice lookup table because a minimum Nr of nsmall will be set otherwise even if qr=0)
     nr(k).set(qr(k) < qsmall, 0);
-
-#ifndef NDEBUG
-    tmparr1(k) = th(k) * inv_exner(k);
-#endif
   });
   team.team_barrier();
 }
@@ -1177,10 +1131,9 @@ void Functions<S,D>
     // and compute diagnostic fields for output
     //
     p3_main_post_main_loop(
-      team, nk_pack, log_predictNc, dt, odt,
-      dnu, itab, itabcol, revap_table,
-      opres, opdel, odzq, oncnuc, oexner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, onaai, oicldm, olcldm, orcldm,
-      t, rho, inv_rho, qvs, qvi, sup, supi, rhofacr, rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqitot, onitot, oqirim, obirim, oxxlv, oxxls, oxlf, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld, omu_c, nu, olamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, ocmeiout, oprain, onevapr, oprer_evap, ovap_liq_exchange, ovap_ice_exchange, oliq_ice_exchange, opratot, oprctot, ze_rain, ze_ice, odiag_vmi, odiag_effi, odiag_di, odiag_rhoi, odiag_ze, tmparr1);
+      team, nk_pack, dnu, itab,
+      oexner, olcldm, orcldm,
+      rho, inv_rho, rhofaci, oqv, oth, oqc, onc, oqr, onr, oqitot, onitot, oqirim, obirim, oxxlv, oxxls, omu_c, nu, olamc, mu_r, lamr, ovap_liq_exchange, ze_rain, ze_ice, odiag_vmi, odiag_effi, odiag_di, odiag_rhoi, odiag_ze, odiag_effc);
 
     //
     // merge ice categories with similar properties
@@ -1191,6 +1144,11 @@ void Functions<S,D>
     // PMC nCat deleted nCat>1 stuff
 
 #ifndef NDEBUG
+    Kokkos::parallel_for(
+      Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
+        tmparr1(k) = oth(k) * inv_exner(k);
+    });
+
     check_values(oqv, tmparr1, ktop, kbot, it, debug_ABORT, 900, team, ocol_location);
 #endif
 

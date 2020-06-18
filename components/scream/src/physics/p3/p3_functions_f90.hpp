@@ -1175,6 +1175,49 @@ void p3_main_main_loop_f(
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+struct P3MainPostLoopData
+{
+  static constexpr size_t NUM_ARRAYS = 32;
+
+  // Inputs
+  Int kts, kte, kbot, ktop, kdir;
+  Real* exner, *lcldm, *rcldm;
+
+  // In/out
+  Real* rho, *inv_rho, *rhofaci,
+    *qv, *th, *qc, *nc, *qr, *nr, *qitot, *nitot, *qirim, *birim, *xxlv, *xxls,
+    *mu_c, *nu, *lamc, *mu_r,
+    *lamr, *vap_liq_exchange,
+    *ze_rain, *ze_ice, *diag_vmi, *diag_effi, *diag_di, *diag_rhoi, *diag_ze, *diag_effc;
+
+  P3MainPostLoopData(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
+                     const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+
+  // deep copy
+  P3MainPostLoopData(const P3MainPostLoopData& rhs);
+
+  Int nk() const { return m_nk; }
+
+ private:
+  // Internals
+  Int m_nk;
+  std::vector<Real> m_data;
+};
+
+void p3_main_post_main_loop(P3MainPostLoopData& d);
+
+extern "C" {
+
+void p3_main_post_main_loop_f(
+  Int kts, Int kte, Int kbot, Int ktop, Int kdir,
+  Real* exner, Real* lcldm, Real* rcldm,
+  Real* rho, Real* inv_rho, Real* rhofaci, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* xxlv, Real* xxls,
+  Real* mu_c, Real* nu, Real* lamc, Real* mu_r, Real* lamr, Real* vap_liq_exchange,
+  Real*  ze_rain, Real* ze_ice, Real* diag_vmi, Real* diag_effi, Real* diag_di, Real* diag_rhoi, Real* diag_ze, Real* diag_effc);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // BFB math stuff
 ///////////////////////////////////////////////////////////////////////////////
 

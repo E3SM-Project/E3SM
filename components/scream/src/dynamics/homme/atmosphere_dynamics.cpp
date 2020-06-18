@@ -1,6 +1,6 @@
 #include "atmosphere_dynamics.hpp"
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
-#include "share/scream_assert.hpp"
+#include "ekat/scream_assert.hpp"
 #include "dynamics/homme/scream_homme_interface.hpp"
 #include "dynamics/homme/hommexx_dimensions.hpp"
 
