@@ -2206,72 +2206,6 @@ subroutine shoc_tke(&
        pblh, zt_grid, sterm_zt, brunt_int, brunt, tkh, tk, &
        obklen, tke, isotropy)
 
-
-  if(.false.) then
-   do k=1,nlev
-    do i=1,shcol
-
-      smix=shoc_mix(i,k)
-      ! Compute buoyant production term
-      a_prod_bu=(ggr/basetemp)*wthv_sec(i,k)
-
-      tke(i,k)=max(0._rtype,tke(i,k))
-
-      ! Shear production term, use diffusivity from
-      !  previous timestep
-      a_prod_sh=tk(i,k)*sterm_zt(i,k)
-
-      ! Dissipation term
-      a_diss=Cee/shoc_mix(i,k)*tke(i,k)**1.5
-
-      ! March equation forward one timestep
-      tke(i,k)=max(0._rtype,tke(i,k)+dtime*(max(0._rtype,a_prod_sh+a_prod_bu)-a_diss))
-
-      tke(i,k)=min(tke(i,k),maxtke)
-
-      ! Compute the return to isotropic timescale as per
-      ! Canuto et al. 2004.  This is used to define the
-      ! eddy coefficients as well as to diagnose higher
-      ! moments in SHOC
-
-      ! define the time scale
-      tscale1=(2.0_rtype*tke(i,k))/a_diss
-
-      ! define a damping term "lambda" based on column stability
-      lambda=lambda_low+((brunt_int(i)/ggr)-brunt_low)*lambda_slope
-      lambda=max(lambda_low,min(lambda_high,lambda))
-
-      buoy_sgs_save=brunt(i,k)
-      if (buoy_sgs_save .le. 0._rtype) lambda=0._rtype
-
-            ! Compute the return to isotropic timescale
-      isotropy(i,k)=min(maxiso,tscale1/(1._rtype+lambda*buoy_sgs_save*tscale1**2))
-
-      ! Dimensionless Okukhov length considering only
-      !  the lowest model grid layer height to scale
-      z_over_L = zt_grid(i,nlev)/obklen(i)
-
-      if (z_over_L .gt. zL_crit_val .and. (zt_grid(i,k) .lt. pblh(i)+pbl_trans)) then
-        ! If surface layer is moderately to very stable, based on near surface
-        !  dimensionless Monin-Obukov use modified coefficients of
-        !  tkh and tk that are primarily based on shear production
-        !  and SHOC length scale, to promote mixing within the PBL
-        !  and to a height slighty above to ensure smooth transition.
-        tkh(i,k)=Ckh_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
-        tk(i,k)=Ckm_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
-      else
-                 ! Default definition of eddy diffusivity for heat and momentum
-
-        tkh(i,k)=Ckh*isotropy(i,k)*tke(i,k)
-        tk(i,k)=Ckm*isotropy(i,k)*tke(i,k)
-      endif
-
-      tke(i,k) = max(mintke,tke(i,k))
-
-    enddo ! end i loop
-  enddo ! end k loop
-  endif
-
   return
 
 end subroutine shoc_tke
@@ -2398,23 +2332,17 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
 
   !local variables
   integer :: i, k
-  real(rtype) :: z_over_L
+  real(rtype) :: z_over_L, a_prod_bu, a_prod_sh, a_diss, &
+       buoy_sgs_save, tscale1, lambda, smix
 
-  !real(rtype) :: lambda_low,lambda_high,lambda_slope, brunt_low
-  !real(rtype) :: zL_crit_val, pbl_trans
-  !real(rtype) :: Ck
+  real(rtype) :: Ck
   real(rtype) :: Cs
-  !real(rtype) :: Ckh
-  !real(rtype) :: Ckm
   real(rtype) :: Ce
-
-  !real(rtype) :: Ckh_s
-  !real(rtype) :: Ckm_s
   real(rtype) :: Ce1
   real(rtype) :: Ce2
   real(rtype) :: Cee
 
-  !parameters
+  !Parameters
   real(rtype), parameter :: lambda_low   = 0.001_rtype
   real(rtype), parameter :: lambda_high  = 0.04_rtype
   real(rtype), parameter :: lambda_slope = 0.65_rtype
@@ -2427,45 +2355,18 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
   real(rtype), parameter :: pbl_trans = 200.0_rtype
 
   ! Turbulent coefficients
-  !real(rtype), parameter :: Cs  = 0.15_rtype
-  real(rtype), parameter :: Ck  = 0.1_rtype
   real(rtype), parameter :: Ckh = 0.1_rtype
   real(rtype), parameter :: Ckm = 0.1_rtype
   real(rtype), parameter :: Ckh_s = 1.0_rtype
   real(rtype), parameter :: Ckm_s = 1.0_rtype
-  !real(rtype), parameter :: Ce  = Ck**3/Cs**4
 
-  !real(rtype), parameter :: Ce1 = Ce/0.7_rtype*0.19_rtype
-  !real(rtype), parameter :: Ce2 = Ce/0.7_rtype*0.51_rtype
 
-  !real(rtype), parameter :: Cee = Ce1 + Ce2
-  real(rtype) :: a_prod_bu, a_prod_sh, a_diss, buoy_sgs_save, tscale1, lambda, smix
-
-  !lambda_low=0.001_rtype
-  !lambda_high=0.04_rtype
-  !lambda_slope=0.65_rtype
-  !brunt_low=0.02_rtype
-
-  ! Critical value of dimensionless Monin-Obukhov length
-  !zL_crit_val = 100.0_rtype
-  ! Transition depth [m] above PBL top to allow
-  !   stability diffusivities
-  !pbl_trans = 200.0_rtype
-
-  ! Turbulent coefficients
   Cs=0.15_rtype
-  !Ck=0.1_rtype
-  ! eddy coefficients for diffusivities
-  !Ckh=0.1_rtype
-  !Ckm=0.1_rtype
-  ! eddy coefficients for stable PBL diffusivities
-  !Ckh_s=1.0_rtype
-  !Ckm_s=1.0_rtype
+  Ck=0.1_rtype
   Ce=Ck**3/Cs**4
 
   Ce1=Ce/0.7_rtype*0.19_rtype
   Ce2=Ce/0.7_rtype*0.51_rtype
-
   Cee=Ce1+Ce2
 
   do k = 1, nlev
