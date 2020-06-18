@@ -1,12 +1,12 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/scream_kokkos.hpp"
-#include "share/scream_pack.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/scream_kokkos.hpp"
+#include "ekat/scream_pack.hpp"
+#include "ekat/util/scream_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
-#include "share/util/scream_kokkos_utils.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -29,9 +29,6 @@ static void run_phys()
 
 static void run_bfb()
 {
-  static constexpr Int max_pack_size = 16;
-  REQUIRE(Spack::n <= max_pack_size);
-
   constexpr Scalar p1 = 0.1, p2 = 0.2, p3 = 0.3, p4 = 0.4;
   constexpr Scalar t1 = 0.2, t2 = 0.4, t3 = 0.6, t4 = 0.8;
   constexpr Scalar qv1 = 0.125, qv2 = 0.25, qv3 = 0.375, qv4 = 0.5;
@@ -64,36 +61,38 @@ static void run_bfb()
   };
 
   // Sync to device
-  view_1d<PreventIceOverdepletionData> device_data("prevent_ice_overdepletion", Spack::n);
+  view_1d<PreventIceOverdepletionData> device_data("prevent_ice_overdepletion", max_pack_size);
   const auto host_data = Kokkos::create_mirror_view(device_data);
-  std::copy(&prevent_ice_overdepletion_data[0], &prevent_ice_overdepletion_data[0] + Spack::n,
+  std::copy(&prevent_ice_overdepletion_data[0], &prevent_ice_overdepletion_data[0] + max_pack_size,
             host_data.data());
   Kokkos::deep_copy(device_data, host_data);
 
   // Run the Fortran subroutine.
-  for (Int i = 0; i < Spack::n; ++i) {
+  for (Int i = 0; i < max_pack_size; ++i) {
     prevent_ice_overdepletion(prevent_ice_overdepletion_data[i]);
   }
 
   // Run the lookup from a kernel and copy results back to host
-  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+  Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
+    const Int offset = i * Spack::n;
+
     // Init pack inputs
     Spack pres, t, qv, xxls, qidep, qisub;
-    for (Int s = 0; s < Spack::n; ++s) {
-      pres[s] = device_data(s).pres;
-      t[s]    = device_data(s).t;
-      qv[s]   = device_data(s).qv;
-      xxls[s] = device_data(s).xxls;
-      qidep[s]  = device_data(s).qidep;
-      qisub[s]  = device_data(s).qisub;
+    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      pres[s]  = device_data(vs).pres;
+      t[s]     = device_data(vs).t;
+      qv[s]    = device_data(vs).qv;
+      xxls[s]  = device_data(vs).xxls;
+      qidep[s] = device_data(vs).qidep;
+      qisub[s] = device_data(vs).qisub;
     }
 
     Functions::prevent_ice_overdepletion(pres, t, qv, xxls, device_data(0).odt, qidep, qisub);
 
     // Copy results back into views
-    for (Int s = 0; s < Spack::n; ++s) {
-      device_data(s).qidep  = qidep[s];
-      device_data(s).qisub  = qisub[s];
+    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      device_data(vs).qidep  = qidep[s];
+      device_data(vs).qisub  = qisub[s];
     }
   });
 
@@ -101,11 +100,10 @@ static void run_bfb()
   Kokkos::deep_copy(host_data, device_data);
 
   // Validate results.
-  for (Int s = 0; s < Spack::n; ++s) {
+  for (Int s = 0; s < max_pack_size; ++s) {
     REQUIRE(prevent_ice_overdepletion_data[s].qidep == host_data[s].qidep);
     REQUIRE(prevent_ice_overdepletion_data[s].qisub == host_data[s].qisub);
   }
-
 }
 
 };

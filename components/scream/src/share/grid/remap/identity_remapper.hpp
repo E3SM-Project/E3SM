@@ -8,7 +8,7 @@ namespace scream
 
 /*
  *  A remapper representing an 'identity'.
- *  
+ *
  *  This remapper effectively does nothing, since its source and target
  *  grids are the same. There is no *real* need for this routine,
  *  but it makes it easier to 'generically' and 'agnostically' create

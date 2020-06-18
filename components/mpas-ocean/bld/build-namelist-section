@@ -39,69 +39,12 @@ add_default($nl, 'config_number_of_blocks');
 add_default($nl, 'config_explicit_proc_decomp');
 add_default($nl, 'config_proc_decomp_file_prefix');
 
-##############################
-# Namelist group: init_setup #
-##############################
-
-add_default($nl, 'config_vert_levels');
-add_default($nl, 'config_init_configuration');
-add_default($nl, 'config_expand_sphere');
-add_default($nl, 'config_realistic_coriolis_parameter');
-add_default($nl, 'config_write_cull_cell_mask');
-add_default($nl, 'config_vertical_grid');
-
-################################
-# Namelist group: CVTgenerator #
-################################
-
-add_default($nl, 'config_1dCVTgenerator_stretch1');
-add_default($nl, 'config_1dCVTgenerator_stretch2');
-add_default($nl, 'config_1dCVTgenerator_dzSeed');
-
-################################################
-# Namelist group: init_ssh_and_landIcePressure #
-################################################
-
-add_default($nl, 'config_iterative_init_variable');
-
 ####################################
 # Namelist group: time_integration #
 ####################################
 
 add_default($nl, 'config_dt');
 add_default($nl, 'config_time_integrator');
-
-#####################################
-# Namelist group: ALE_vertical_grid #
-#####################################
-
-add_default($nl, 'config_vert_coord_movement');
-add_default($nl, 'config_ALE_thickness_proportionality');
-add_default($nl, 'config_vert_taper_weight_depth_1');
-add_default($nl, 'config_vert_taper_weight_depth_2');
-add_default($nl, 'config_use_min_max_thickness');
-add_default($nl, 'config_min_thickness');
-add_default($nl, 'config_max_thickness_factor');
-add_default($nl, 'config_dzdk_positive');
-
-####################################################
-# Namelist group: ALE_frequency_filtered_thickness #
-####################################################
-
-add_default($nl, 'config_use_freq_filtered_thickness');
-add_default($nl, 'config_thickness_filter_timescale');
-add_default($nl, 'config_use_highFreqThick_restore');
-add_default($nl, 'config_highFreqThick_restore_time');
-add_default($nl, 'config_use_highFreqThick_del2');
-add_default($nl, 'config_highFreqThick_del2');
-
-########################################
-# Namelist group: partial_bottom_cells #
-########################################
-
-add_default($nl, 'config_alter_ICs_for_pbcs');
-add_default($nl, 'config_pbc_alteration_type');
-add_default($nl, 'config_min_pbc_fraction');
 
 ########################
 # Namelist group: hmix #
@@ -139,42 +82,35 @@ add_default($nl, 'config_Leith_parameter');
 add_default($nl, 'config_Leith_dx');
 add_default($nl, 'config_Leith_visc2_max');
 
-###################################################
-# Namelist group: mesoscale_eddy_parameterization #
-###################################################
+#########################################
+# Namelist group: Redi_isopycnal_mixing #
+#########################################
 
-add_default($nl, 'config_use_standardGM');
-add_default($nl, 'config_gm_lat_variable_c2');
-add_default($nl, 'config_gm_kappa_lat_depth_variable');
-add_default($nl, 'config_gm_min_stratification_ratio');
-add_default($nl, 'config_gm_min_phase_speed');
-add_default($nl, 'config_use_Redi_surface_layer_tapering');
-add_default($nl, 'config_Redi_surface_layer_tapering_extent');
-add_default($nl, 'config_use_Redi_bottom_layer_tapering');
-add_default($nl, 'config_Redi_bottom_layer_tapering_depth');
-add_default($nl, 'config_GM_Bolus_kappa_function');
-add_default($nl, 'config_standardGM_tracer_kappa');
-add_default($nl, 'config_GM_Bolus_kappa_min');
-add_default($nl, 'config_GM_Bolus_kappa_max');
-add_default($nl, 'config_GM_Bolus_cell_size_min');
-add_default($nl, 'config_GM_Bolus_cell_size_max');
+add_default($nl, 'config_use_Redi');
 add_default($nl, 'config_Redi_kappa');
-add_default($nl, 'config_gravWaveSpeed_trunc');
-add_default($nl, 'config_max_relative_slope');
+add_default($nl, 'config_Redi_maximum_slope');
+add_default($nl, 'config_Redi_closure');
+add_default($nl, 'config_Redi_use_slope_taper');
+add_default($nl, 'config_Redi_use_surface_taper');
+add_default($nl, 'config_Redi_N2_limit_term1');
 
-####################################
-# Namelist group: hmix_del2_tensor #
-####################################
+############################################
+# Namelist group: GM_eddy_parameterization #
+############################################
 
-add_default($nl, 'config_use_mom_del2_tensor');
-add_default($nl, 'config_mom_del2_tensor');
+add_default($nl, 'config_use_GM');
+add_default($nl, 'config_GM_kappa');
+add_default($nl, 'config_GM_closure');
+add_default($nl, 'config_GM_min_stratification_ratio');
+add_default($nl, 'config_GM_constant_gravWaveSpeed');
 
-####################################
-# Namelist group: hmix_del4_tensor #
-####################################
+####################################################
+# Namelist group: mesoscale_eddy_parameterizations #
+####################################################
 
-add_default($nl, 'config_use_mom_del4_tensor');
-add_default($nl, 'config_mom_del4_tensor');
+add_default($nl, 'config_eddying_resolution_taper');
+add_default($nl, 'config_eddying_resolution_ramp_min');
+add_default($nl, 'config_eddying_resolution_ramp_max');
 
 ####################################
 # Namelist group: Rayleigh_damping #
@@ -182,6 +118,7 @@ add_default($nl, 'config_mom_del4_tensor');
 
 add_default($nl, 'config_Rayleigh_friction');
 add_default($nl, 'config_Rayleigh_damping_coeff');
+add_default($nl, 'config_Rayleigh_damping_depth_variable');
 add_default($nl, 'config_Rayleigh_bottom_friction');
 add_default($nl, 'config_Rayleigh_bottom_damping_coeff');
 
@@ -228,45 +165,6 @@ add_default($nl, 'config_cvmix_kpp_nonlocal_with_implicit_mix');
 add_default($nl, 'config_cvmix_kpp_use_theory_wave');
 add_default($nl, 'config_cvmix_kpp_langmuir_mixing_opt');
 add_default($nl, 'config_cvmix_kpp_langmuir_entrainment_opt');
-
-##############################
-# Namelist group: vmix_const #
-##############################
-
-add_default($nl, 'config_use_const_visc');
-add_default($nl, 'config_use_const_diff');
-add_default($nl, 'config_vert_visc');
-add_default($nl, 'config_vert_diff');
-
-#############################
-# Namelist group: vmix_rich #
-#############################
-
-add_default($nl, 'config_use_rich_visc');
-add_default($nl, 'config_use_rich_diff');
-add_default($nl, 'config_bkrd_vert_visc');
-add_default($nl, 'config_bkrd_vert_diff');
-add_default($nl, 'config_rich_mix');
-
-########################
-# Namelist group: vmix #
-########################
-
-add_default($nl, 'config_convective_visc');
-add_default($nl, 'config_convective_diff');
-
-#############################
-# Namelist group: vmix_tanh #
-#############################
-
-add_default($nl, 'config_use_tanh_visc');
-add_default($nl, 'config_use_tanh_diff');
-add_default($nl, 'config_max_visc_tanh');
-add_default($nl, 'config_min_visc_tanh');
-add_default($nl, 'config_max_diff_tanh');
-add_default($nl, 'config_min_diff_tanh');
-add_default($nl, 'config_zMid_tanh');
-add_default($nl, 'config_zWidth_tanh');
 
 ###########################
 # Namelist group: forcing #
@@ -402,22 +300,34 @@ add_default($nl, 'config_btr_gam2_SSHWt1');
 add_default($nl, 'config_btr_gam3_velWt2');
 add_default($nl, 'config_btr_solve_SSH2');
 
-###########################
-# Namelist group: testing #
-###########################
+#####################################
+# Namelist group: ALE_vertical_grid #
+#####################################
 
-add_default($nl, 'config_conduct_tests');
-add_default($nl, 'config_test_tensors');
-add_default($nl, 'config_tensor_test_function');
+add_default($nl, 'config_vert_coord_movement');
+add_default($nl, 'config_ALE_thickness_proportionality');
+add_default($nl, 'config_vert_taper_weight_depth_1');
+add_default($nl, 'config_vert_taper_weight_depth_2');
+add_default($nl, 'config_use_min_max_thickness');
+add_default($nl, 'config_min_thickness');
+add_default($nl, 'config_max_thickness_factor');
+add_default($nl, 'config_dzdk_positive');
+
+####################################################
+# Namelist group: ALE_frequency_filtered_thickness #
+####################################################
+
+add_default($nl, 'config_use_freq_filtered_thickness');
+add_default($nl, 'config_thickness_filter_timescale');
+add_default($nl, 'config_use_highFreqThick_restore');
+add_default($nl, 'config_highFreqThick_restore_time');
+add_default($nl, 'config_use_highFreqThick_del2');
+add_default($nl, 'config_highFreqThick_del2');
 
 #########################
 # Namelist group: debug #
 #########################
 
-add_default($nl, 'config_disable_redi_k33');
-add_default($nl, 'config_disable_redi_horizontal_term1');
-add_default($nl, 'config_disable_redi_horizontal_term2');
-add_default($nl, 'config_disable_redi_horizontal_term3');
 add_default($nl, 'config_check_zlevel_consistency');
 add_default($nl, 'config_check_ssh_consistency');
 add_default($nl, 'config_filter_btr_mode');
@@ -444,7 +354,16 @@ add_default($nl, 'config_disable_tr_hmix');
 add_default($nl, 'config_disable_tr_vmix');
 add_default($nl, 'config_disable_tr_sflux');
 add_default($nl, 'config_disable_tr_nonlocalflux');
+add_default($nl, 'config_disable_redi_k33');
 add_default($nl, 'config_read_nearest_restart');
+
+###########################
+# Namelist group: testing #
+###########################
+
+add_default($nl, 'config_conduct_tests');
+add_default($nl, 'config_test_tensors');
+add_default($nl, 'config_tensor_test_function');
 
 ##########################################
 # Namelist group: constrain_Haney_number #
@@ -485,6 +404,8 @@ add_default($nl, 'config_salinity_restoring_under_sea_ice');
 ###############################################
 
 add_default($nl, 'config_use_debugTracers');
+add_default($nl, 'config_reset_debugTracers_near_surface');
+add_default($nl, 'config_reset_debugTracers_top_nLayers');
 add_default($nl, 'config_use_debugTracers_surface_bulk_forcing');
 add_default($nl, 'config_use_debugTracers_surface_restoring');
 add_default($nl, 'config_use_debugTracers_interior_restoring');
@@ -1004,4 +925,14 @@ add_default($nl, 'config_AM_mocStreamfunction_vertical_velocity_value');
 add_default($nl, 'config_AM_mocStreamfunction_normal_velocity_value');
 add_default($nl, 'config_AM_mocStreamfunction_region_group');
 add_default($nl, 'config_AM_mocStreamfunction_transect_group');
+
+#######################################
+# Namelist group: AM_oceanHeatContent #
+#######################################
+
+add_default($nl, 'config_AM_oceanHeatContent_enable');
+add_default($nl, 'config_AM_oceanHeatContent_compute_interval');
+add_default($nl, 'config_AM_oceanHeatContent_output_stream');
+add_default($nl, 'config_AM_oceanHeatContent_compute_on_startup');
+add_default($nl, 'config_AM_oceanHeatContent_write_on_startup');
 

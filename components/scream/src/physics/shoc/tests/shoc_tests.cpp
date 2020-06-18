@@ -1,5 +1,5 @@
 #include "catch2/catch.hpp"
-#include "share/util/scream_test_utils.hpp"
+#include "ekat/util/scream_test_utils.hpp"
 #include "physics/shoc/shoc_f90.hpp"
 #include "physics/shoc/shoc_ic_cases.hpp"
 
@@ -14,7 +14,7 @@ TEST_CASE("FortranDataIterator", "shoc") {
   using scream::shoc::ic::Factory;
   const auto d = Factory::create(Factory::standard);
   scream::shoc::FortranDataIterator fdi(d);
-  REQUIRE(fdi.nfield() == 43);
+  REQUIRE(fdi.nfield() == 44);
   const auto& f = fdi.getfield(0);
   REQUIRE(f.dim == 2);
   REQUIRE(f.extent[0] == d->shcol);
@@ -50,7 +50,6 @@ bool generating_plot_scripts() {
 }
 
 TEST_CASE("shoc_ic_f", "shoc") {
-
   int nerr = scream::shoc::test_shoc_ic(true, generating_plot_scripts());
   REQUIRE(nerr == 0);
 }

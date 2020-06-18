@@ -3,13 +3,78 @@
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/atm_process/atmosphere_process_dag.hpp"
 #include "share/field/field_initializer.hpp"
-#include "share/scream_assert.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/util/string_utils.hpp"
+#include "ekat/scream_assert.hpp"
+#include "ekat/util/string_utils.hpp"
 
 namespace scream {
 
 namespace control {
+
+/*
+ * IMPORTANT: read carefully this banner before attempting any change to the initialize method!
+ *
+ * The order in which the AD initializes all its internal stuff matters. Here's the order in
+ * which operation currently happen, and why. If you alter the method, then a) make sure you
+ * are not breaking any logic here explained (or else fix it!), and b) modify this banner to
+ * update the explanation of the initialization sequence.
+ *
+ *  1) Create all atm processes. Each proc is allowed to start some sort of setup during creation,
+ *     but will not be able to fully set up its required/computed fields, due to lack of grids info.
+ *     However, and this is important, each process MUST establish what grid it needs.
+ *  2) Create the grid manager, and query the atm procs for the grids they need. The GM will then
+ *     proceed to build those grids (and only those grids).
+ *  3) The GM is passed back to the atm procs, which can grab the needed grids, from which they can
+ *     get the information needed to complete the setup of the FieldIdentifiers of their fields
+ *     (both required and computed). Their field identifiers MUST be completed upon return from
+ *     the 'set_grids' method.
+ *  4) Register all fields from all atm procs inside the field manager (or field repo, whatever you
+ *     want to call it).
+ *  5) Set all the fields into the atm procs. Before this point, all the atm procs had were the
+ *     FieldIdentifiers for their input/output fields. Now, we pass actual Field objects to them,
+ *     where both the data (Kokkos::View) and metadata (FieldHeader) inside will be shared across
+ *     all processes using the field. This allow data and metadata to be always in sync.
+ *     Note: output fields are passed to an atm proc as read-write (i.e., non-const data type),
+ *           while input fields are passed as read-only (i.e., const data type). Yes, the atm proc
+ *           could cheat, and cast away the const, but we can't prevent that. However, in debug builds,
+ *           we store 2 copies of each field, and use the extra copy to check, at run time, that
+ *           no process alters the values of any of its input fields.
+ *     Note: when setting input fields in an atm proc, the atm proc is also allowed to specify how
+ *           the field should be initialized. We only allow ONE process to attempt to do that,
+ *           so atm procs should ALWAYS check that no initialization is already set for that field.
+ *           Also, notice that the atm proc has no idea whether an initializer will be needed for
+ *           this field or not. Checking whether there are providers already registered for it
+ *           seems plausible, but it relies on atm procs being parsed in the correct order. Although
+ *           this IS currently the case, we don't want to rely on it. Therefore, an atm proc should
+ *           be aware that, even if it sets a certain type of initialization for a field, that
+ *           initialization may not be needed. E.g., proc A needs field F, and sets it to be init-ed
+ *           to 0. However, upon completion of the atm setup, proc B computes field F, and proc B
+ *           is evaluated *before* proc A in the atm DAG. Therefore, no initialization is needed
+ *           for field F.
+ *  6) The atm procs group builds the remappers. Remappers are objects that map fields from one grid
+ *     to another. Currently, we perform remappings only to/from a reference grid (set in the GM).
+ *     Before calling each atm proc in the group, the AtmosphereProcessGroup (APG) class will
+ *     remap all its inputs from the ref grid to the grid(s) needed by the atm proc. Similarly,
+ *     upon completion of the atm proc run call, all the outputs will be remapped back to the
+ *     ref grid.
+ *  7) All the atm process are initialized. During this call, atm process are able to set up
+ *     all the internal structures that they were not able to init previously.
+ *  8) All the atm inputs are initialized, according to the initialization type that was
+ *     specified during step 5. This MUST happen AFTER step 7, since it MIGHT depend on
+ *     an atm proc being fully init-ed. On the other hand, we cannot make this happen
+ *     inside step 7 (assuming a field is marked as to be init-ed by a specific atm proc),
+ *     since the atm proc does not yet know if the field needs to be inited or not (we haven't
+ *     yet built/parsed the atm DAG).
+ *  9) We build the atm DAG, and inspect its consistency. Each input of each atm proc must be
+ *     computed by some other atm proc (possibly at the previous time step) or have a FieldInitializer
+ *     set (could be the case for some geometry-related field, constant during the whole simulation).
+ *     Additionally, every field that comes from the previous time step (i.e., an input of the
+ *     atmosphere as a whole), MUST have an initializer structure set. If some dependency is not
+ *     met, the AD will error out, and store the atm DAG in a file.
+ * 10) Finally, set the initial time stamp on all fields, and perform some debug structure setup.
+ *
+ */
+
 
 void AtmosphereDriver::initialize (const Comm& atm_comm,
                                    const ParameterList& params,
@@ -31,8 +96,8 @@ void AtmosphereDriver::initialize (const Comm& atm_comm,
 
   // Tell the grid manager to build all the grids required
   // by the atm processes, as well as the reference grid
-  m_grids_manager->build_grids(m_atm_process_group->get_required_grids());
-  m_grids_manager->build_grid(gm_params.get<std::string>("Reference Grid"));
+  m_grids_manager->build_grids(m_atm_process_group->get_required_grids(),
+                               gm_params.get<std::string>("Reference Grid"));
 
   // Set the grids in the processes. Do this by passing the grids manager.
   // Each process will grab what they need
@@ -116,10 +181,7 @@ void AtmosphereDriver::init_atm_inputs () {
   for (const auto& id : atm_inputs) {
     auto& f = m_device_field_repo.get_field(id);
     auto init_type = f.get_header_ptr()->get_tracking().get_init_type();
-    if (init_type==InitType::Zero) {
-      // Zero-out field
-      Kokkos::deep_copy(f.get_view(),Real(0));
-    } else if (init_type==InitType::Initializer) {
+    if (init_type!=InitType::None) {
       auto initializer = f.get_header_ptr()->get_tracking().get_initializer().lock();
       scream_require_msg (static_cast<bool>(initializer),
                           "Error! Field '" + f.get_header().get_identifier().name() + "' has initialization type '" + e2str(init_type) + "',\n" +

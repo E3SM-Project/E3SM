@@ -2,10 +2,10 @@
 #define SCREAM_FIELD_TRACKING_HPP
 
 #include "share/field/field_utils.hpp"
-#include "share/util/time_stamp.hpp"
-#include "share/util/string_utils.hpp"
-#include "share/util/scream_std_utils.hpp"
-#include "share/scream_assert.hpp"
+#include "ekat/util/time_stamp.hpp"
+#include "ekat/util/string_utils.hpp"
+#include "ekat/util/scream_std_utils.hpp"
+#include "ekat/scream_assert.hpp"
 
 #include <memory>   // For std::weak_ptr
 #include <string>
@@ -52,7 +52,7 @@ public:
   void add_provider (const std::weak_ptr<AtmosphereProcess>& provider);
   void add_customer (const std::weak_ptr<AtmosphereProcess>& customer);
   void set_initializer (const std::weak_ptr<FieldInitializer>& initializer);
-  void set_init_type (const InitType init_type);
+  void set_value_initializer (const Real value);
 
   // Add the field to a given group
   void add_to_group (const std::string& group_name);
@@ -61,6 +61,8 @@ public:
   void update_time_stamp (const util::TimeStamp& ts);
 
 protected:
+
+  void set_init_type (const InitType init_type);
 
   // We keep the field name just to make debugging messages more helpful
   std::string m_name;

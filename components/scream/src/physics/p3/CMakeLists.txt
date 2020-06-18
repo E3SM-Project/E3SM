@@ -15,7 +15,7 @@ set(P3_SRCS
   ${SCREAM_BASE_DIR}/../cam/src/physics/cam/micro_p3.F90
   ${SCREAM_BASE_DIR}/../cam/src/physics/cam/micro_p3_utils.F90
   atmosphere_microphysics.cpp
-  p3_standalone_field_initializer.cpp
+  p3_inputs_initializer.cpp
   scream_p3_interface.F90
 )
 
@@ -50,12 +50,12 @@ if (NOT CUDA_BUILD)
     p3_functions_impose_max_total_Ni.cpp
     p3_functions_calc_liq_relaxation_timescale.cpp
     p3_functions_ice_relaxation_timescale.cpp
-    p3_functions_droplet_activation.cpp
     p3_functions_ice_nucleation.cpp
     p3_functions_ice_cldliq_wet_growth.cpp
     p3_functions_get_latent_heat.cpp
     p3_functions_check_values.cpp
     p3_functions_incloud_mixingratios.cpp
+    p3_functions_subgrid_variance_scaling.cpp
     p3_functions_main.cpp)
 endif()
 

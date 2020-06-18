@@ -9,11 +9,10 @@ Atmosphere Processes:
   Process 0:
     Process Name: P3
     Grid: Physics
-    Standalone: true
+    Can Initialize All Inputs: true
   Process 1:
     Process Name: SHOC
     Grid: Physics
-    Standalone: true
 
 Grids Manager:
   Type: User Provided

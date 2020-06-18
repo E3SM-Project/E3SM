@@ -1,14 +1,14 @@
 #include <catch2/catch.hpp>
+#include "ekat/scream_pack.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
-#include "share/scream_pack.hpp"
 #include "share/grid/user_provided_grids_manager.hpp"
 #include "share/grid/se_grid.hpp"
 #include "control/atmosphere_driver.hpp"
 
 /*
- * This will eventually contain a standalone test for the RRTMGP driver 
+ * This will eventually contain a standalone test for the RRTMGP driver
  * As of now, it is just a shell that at least requires RRTMGP to be built
- * with the SCREAM build and test system. 
+ * with the SCREAM build and test system.
  */
 
 #include "physics/rrtmgp/atmosphere_radiation.hpp"

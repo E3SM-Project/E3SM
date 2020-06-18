@@ -1,5 +1,6 @@
 #include "share/field/field_tracking.hpp"
 #include "share/field/field_initializer.hpp"
+#include "share/field/field_value_initializer.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 
 #include <algorithm>  // For std::find
@@ -8,6 +9,7 @@ namespace scream {
 
 FieldTracking::FieldTracking (const std::string& name)
  : m_name (name)
+ // , m_init_type (InitType::NotNeeded)
  , m_init_type (InitType::None)
 {
   // Nothing else to do
@@ -22,10 +24,8 @@ void FieldTracking::add_customer (const std::weak_ptr<AtmosphereProcess>& custom
 }
 
 void FieldTracking::set_initializer (const std::weak_ptr<FieldInitializer>& initializer) {
-  // Setting an initializer makes sense only if the field is expected to be init-ed by a process
-  scream_require_msg (
-    m_init_type==InitType::Initializer || m_init_type==InitType::None,
-    "Error! The field was not supposed to be init-ed by an initializer.\n");
+  // Try to set the init type. If init type was already set, or not needed, an error will be raised.
+  set_init_type (InitType::Initializer);
 
   // Make sure nobody else already claimed this role
   scream_require_msg (!static_cast<bool>(m_initializer.lock()),
@@ -37,16 +37,32 @@ void FieldTracking::set_initializer (const std::weak_ptr<FieldInitializer>& init
                       "Error! Input initializer process is invalid.\n");
 
   m_initializer = initializer;
+}
 
-  m_init_type = InitType::Initializer;
+void FieldTracking::set_value_initializer (const Real value) {
+
+  // Try to set the init type. If init type was already set, or not needed, an error will be raised.
+  set_init_type (InitType::Value);
+
+  // Make sure nobody else already claimed this role
+  scream_require_msg (!static_cast<bool>(m_initializer.lock()),
+                      "Error! There is already an initializer for field '" + m_name + "'.\n" +
+                      "       Current initializer: " + m_initializer.lock()->name() + "\n");
+
+  m_initializer = create_field_value_initializer(value);
 }
 
 void FieldTracking::set_init_type (const InitType init_type) {
+
+  // scream_require_msg(m_init_type!=InitType::NotNeeded,
+  //   "Error! This field was not expected to need an initialization.\n");
+
   // The following changes are the only allowed ones
   //  - None -> X = X
   //  - X -> X = X
   //  - X -> None = X
   // Any other attempt to modify the init type will result in an error.
+  // In particular, if m_init_type is NotNeeded, calling this method is an error.
   if (m_init_type==InitType::None) {
     m_init_type = init_type;
   } else if (init_type!=InitType::None) {

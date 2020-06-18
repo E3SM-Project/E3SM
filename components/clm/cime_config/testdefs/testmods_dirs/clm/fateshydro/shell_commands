@@ -1,0 +1,2 @@
+#!/bin/bash
+if [ `./xmlquery --value MACH` == bebop ]; then ./xmlchange --id LND_PIO_TYPENAME --val netcdf; fi

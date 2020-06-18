@@ -1,12 +1,12 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/scream_kokkos.hpp"
-#include "share/scream_pack.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/scream_kokkos.hpp"
+#include "ekat/scream_pack.hpp"
+#include "ekat/util/scream_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
-#include "share/util/scream_kokkos_utils.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -35,9 +35,6 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
     view_1d_table mu_r_table; view_dnu_table dnu;
     Functions::init_kokkos_tables(vn_table, vm_table, revap_table, mu_r_table, dnu);
 
-    static constexpr Int max_pack_size = 16;
-    REQUIRE(Spack::n <= max_pack_size);
-
     // Load some lookup inputs, need at least one per pack value
     IceCldliqCollectionData cldliq[max_pack_size] = {
       //  rho      temp      rhofaci     f1pr04     qitot      qc           nitot      nc
@@ -63,29 +60,31 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
     };
 
     // Sync to device
-    view_1d<IceCldliqCollectionData> cldliq_device("cldliq", Spack::n);
+    view_1d<IceCldliqCollectionData> cldliq_device("cldliq", max_pack_size);
     const auto cldliq_host = Kokkos::create_mirror_view(cldliq_device);
-    std::copy(&cldliq[0], &cldliq[0] + Spack::n, cldliq_host.data());
+    std::copy(&cldliq[0], &cldliq[0] + max_pack_size, cldliq_host.data());
     Kokkos::deep_copy(cldliq_device, cldliq_host);
 
     // Get data from fortran
-    for (Int i = 0; i < Spack::n; ++i) {
+    for (Int i = 0; i < max_pack_size; ++i) {
       ice_cldliq_collection(cldliq[i]);
     }
 
     // Run the lookup from a kernel and copy results back to host
-    Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
+
       // Init pack inputs
       Spack rho, temp, rhofaci, f1pr04, qitot_incld, qc_incld, nitot_incld, nc_incld;
-      for (Int s = 0; s < Spack::n; ++s) {
-        rho[s]            = cldliq_device(s).rho;
-        temp[s]           = cldliq_device(s).temp;
-        rhofaci[s]        = cldliq_device(s).rhofaci;
-        f1pr04[s]         = cldliq_device(s).f1pr04;
-        qitot_incld[s]    = cldliq_device(s).qitot_incld;
-        qc_incld[s]       = cldliq_device(s).qc_incld;
-        nitot_incld[s]    = cldliq_device(s).nitot_incld;
-        nc_incld[s]       = cldliq_device(s).nc_incld;
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        rho[s]            = cldliq_device(vs).rho;
+        temp[s]           = cldliq_device(vs).temp;
+        rhofaci[s]        = cldliq_device(vs).rhofaci;
+        f1pr04[s]         = cldliq_device(vs).f1pr04;
+        qitot_incld[s]    = cldliq_device(vs).qitot_incld;
+        qc_incld[s]       = cldliq_device(vs).qc_incld;
+        nitot_incld[s]    = cldliq_device(vs).nitot_incld;
+        nc_incld[s]       = cldliq_device(vs).nc_incld;
       }
 
       Spack qccol{0.0};
@@ -98,11 +97,11 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
                                        qccol, nccol, qcshd, ncshdc);
 
       // Copy results back into views
-      for (Int s = 0; s < Spack::n; ++s) {
-        cldliq_device(s).qccol  = qccol[s];
-        cldliq_device(s).nccol  = nccol[s];
-        cldliq_device(s).qcshd  = qcshd[s];
-        cldliq_device(s).ncshdc = ncshdc[s];
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        cldliq_device(vs).qccol  = qccol[s];
+        cldliq_device(vs).nccol  = nccol[s];
+        cldliq_device(vs).qcshd  = qcshd[s];
+        cldliq_device(vs).ncshdc = ncshdc[s];
       }
     });
 
@@ -110,7 +109,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
     Kokkos::deep_copy(cldliq_host, cldliq_device);
 
     // Validate results
-    for (Int s = 0; s < Spack::n; ++s) {
+    for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(cldliq[s].qccol   == cldliq_host(s).qccol);
       REQUIRE(cldliq[s].nccol   == cldliq_host(s).nccol);
       REQUIRE(cldliq[s].qcshd   == cldliq_host(s).qcshd);
@@ -126,9 +125,6 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
   static void run_ice_rain_bfb()
   {
     using KTH = KokkosTypes<HostDevice>;
-
-    static constexpr Int max_pack_size = 16;
-    REQUIRE(Spack::n <= max_pack_size);
 
     IceRainCollectionData rain[max_pack_size] = {
       //  rho      temp      rhofaci     logn0r     f1pr07    f1pr08        qitot      nitot    qr (required)
@@ -154,30 +150,32 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
     };
 
     // Sync to device
-    KTH::view_1d<IceRainCollectionData> rain_host("rain_host", Spack::n);
-    view_1d<IceRainCollectionData> rain_device("rain_host", Spack::n);
-    std::copy(&rain[0], &rain[0] + Spack::n, rain_host.data());
+    KTH::view_1d<IceRainCollectionData> rain_host("rain_host", max_pack_size);
+    view_1d<IceRainCollectionData> rain_device("rain_host", max_pack_size);
+    std::copy(&rain[0], &rain[0] + max_pack_size, rain_host.data());
     Kokkos::deep_copy(rain_device, rain_host);
 
     // Get data from fortran
-    for (Int i = 0; i < Spack::n; ++i) {
+    for (Int i = 0; i < max_pack_size; ++i) {
       ice_rain_collection(rain[i]);
     }
 
     // Run the lookup from a kernel and copy results back to host
-    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+    Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
+
       // Init pack inputs
       Spack rho, temp, rhofaci, logn0r, f1pr07, f1pr08, qitot_incld, nitot_incld, qr_incld;
-      for (Int s = 0; s < Spack::n; ++s) {
-        rho[s]         = rain_device(s).rho;
-        temp[s]        = rain_device(s).temp;
-        rhofaci[s]     = rain_device(s).rhofaci;
-        logn0r[s]      = rain_device(s).logn0r;
-        f1pr07[s]      = rain_device(s).f1pr07;
-        f1pr08[s]      = rain_device(s).f1pr08;
-        qitot_incld[s] = rain_device(s).qitot_incld;
-        nitot_incld[s] = rain_device(s).nitot_incld;
-        qr_incld[s]    = rain_device(s).qr_incld;
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        rho[s]         = rain_device(vs).rho;
+        temp[s]        = rain_device(vs).temp;
+        rhofaci[s]     = rain_device(vs).rhofaci;
+        logn0r[s]      = rain_device(vs).logn0r;
+        f1pr07[s]      = rain_device(vs).f1pr07;
+        f1pr08[s]      = rain_device(vs).f1pr08;
+        qitot_incld[s] = rain_device(vs).qitot_incld;
+        nitot_incld[s] = rain_device(vs).nitot_incld;
+        qr_incld[s]    = rain_device(vs).qr_incld;
       }
 
       Spack qrcol(0.0), nrcol(0.0);
@@ -185,11 +183,10 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
                                      qitot_incld, nitot_incld, qr_incld,
                                      qrcol, nrcol);
 
-
       // Copy results back into views
-      for (Int s = 0; s < Spack::n; ++s) {
-        rain_device(s).qrcol = qrcol[s];
-        rain_device(s).nrcol = nrcol[s];
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        rain_device(vs).qrcol = qrcol[s];
+        rain_device(vs).nrcol = nrcol[s];
       }
     });
 
@@ -197,7 +194,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
     Kokkos::deep_copy(rain_host, rain_device);
 
     // Validate results
-    for (Int s = 0; s < Spack::n; ++s) {
+    for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(rain[s].qrcol == rain_host(s).qrcol);
       REQUIRE(rain[s].nrcol == rain_host(s).nrcol);
     }
@@ -211,9 +208,6 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
   static void run_ice_self_bfb()
   {
     using KTH = KokkosTypes<HostDevice>;
-
-    static constexpr Int max_pack_size = 16;
-    REQUIRE(Spack::n <= max_pack_size);
 
     IceSelfCollectionData self[max_pack_size] = {
      //   rho      rhofaci    f1pr03     eii       qirim      qitot        nitot
@@ -239,42 +233,44 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
     };
 
     // Sync to device
-    KTH::view_1d<IceSelfCollectionData> self_host("self_host", Spack::n);
-    view_1d<IceSelfCollectionData> self_device("self_host", Spack::n);
-    std::copy(&self[0], &self[0] + Spack::n, self_host.data());
+    KTH::view_1d<IceSelfCollectionData> self_host("self_host", max_pack_size);
+    view_1d<IceSelfCollectionData> self_device("self_host", max_pack_size);
+    std::copy(&self[0], &self[0] + max_pack_size, self_host.data());
     Kokkos::deep_copy(self_device, self_host);
 
     // Get data from fortran
-    for (Int i = 0; i < Spack::n; ++i) {
+    for (Int i = 0; i < max_pack_size; ++i) {
       ice_self_collection(self[i]);
     }
 
     // Run the lookup from a kernel and copy results back to host
-    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
-    // Init pack inputs
+    Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
+
+      // Init pack inputs
       Spack rho, rhofaci, f1pr03, eii, qirim_incld, qitot_incld, nitot_incld;
-      for (Int s = 0; s < Spack::n; ++s) {
-        rho[s]         = self_device(s).rho;
-        rhofaci[s]     = self_device(s).rhofaci;
-        f1pr03[s]      = self_device(s).f1pr03;
-        eii[s]         = self_device(s).eii;
-        qirim_incld[s] = self_device(s).qirim_incld;
-        qitot_incld[s] = self_device(s).qitot_incld;
-        nitot_incld[s] = self_device(s).nitot_incld;
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        rho[s]         = self_device(vs).rho;
+        rhofaci[s]     = self_device(vs).rhofaci;
+        f1pr03[s]      = self_device(vs).f1pr03;
+        eii[s]         = self_device(vs).eii;
+        qirim_incld[s] = self_device(vs).qirim_incld;
+        qitot_incld[s] = self_device(vs).qitot_incld;
+        nitot_incld[s] = self_device(vs).nitot_incld;
       }
 
       Spack nislf{0.0};
       Functions::ice_self_collection(rho, rhofaci, f1pr03, eii, qirim_incld, qitot_incld, nitot_incld,
                                      nislf);
 
-      for (Int s = 0; s < Spack::n; ++s) {
-        self_device(s).nislf = nislf[s];
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        self_device(vs).nislf = nislf[s];
       }
     });
 
     Kokkos::deep_copy(self_host, self_device);
 
-    for (Int s = 0; s < Spack::n; ++s) {
+    for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(self[s].nislf == self_host(s).nislf);
     }
   }

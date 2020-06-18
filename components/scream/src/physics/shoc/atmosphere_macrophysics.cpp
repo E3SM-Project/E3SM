@@ -1,4 +1,4 @@
-#include "share/scream_assert.hpp"
+#include "ekat/scream_assert.hpp"
 #include "physics/shoc/scream_shoc_interface.hpp"
 #include "physics/shoc/atmosphere_macrophysics.hpp"
 

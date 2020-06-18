@@ -96,8 +96,8 @@ contains
     ! local
     real (kind=real_kind), pointer, dimension(:,:,:)   :: phi_np1
     real (kind=real_kind), pointer, dimension(:,:,:)   :: w_np1
-    real (kind=real_kind) :: JacD(nlev,np,np)  , JacL(nlev-1,np,np)
-    real (kind=real_kind) :: JacU(nlev-1,np,np), JacU2(nlev-2,np,np)
+    real (kind=real_kind) :: JacD(np,np,nlev)  , JacL(np,np,nlev-1)
+    real (kind=real_kind) :: JacU(np,np,nlev-1), JacU2(nlev-2,np,np)
     real (kind=real_kind) :: pnh(np,np,nlev)     ! nh (nonydro) pressure
     real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
     real (kind=real_kind) :: exner(np,np,nlev)     ! exner nh pressure
@@ -105,21 +105,28 @@ contains
     real (kind=real_kind) :: dphi(np,np,nlev)    
     real (kind=real_kind) :: dphi_n0(np,np,nlev)    
     real (kind=real_kind) :: phi_n0(np,np,nlevp)    
-    real (kind=real_kind) :: Ipiv(nlev,np,np)
-    real (kind=real_kind) :: Fn(np,np,nlev),x(nlev,np,np)
+    real (kind=real_kind) :: Fn(np,np,nlev),x(np,np,nlev)
     real (kind=real_kind) :: gwh_i(np,np,nlevp)  ! w hydrostatic
     real (kind=real_kind) :: v_i(np,np,2,nlevp)  ! w hydrostatic
 
-    real (kind=real_kind) :: Jac2D(nlev,np,np)  , Jac2L(nlev-1,np,np)
-    real (kind=real_kind) :: Jac2U(nlev-1,np,np)
-
+    real (kind=real_kind) :: Jac2D(np,np,nlev)  , Jac2L(np,np,nlev-1)
+    real (kind=real_kind) :: Jac2U(np,np,nlev-1)
 
     real (kind=real_kind) :: wmax
     integer :: maxiter
     real (kind=real_kind) :: deltatol,restol,deltaerr,reserr,rcond,min_rcond,anorm,dt3,alpha
-    real (kind=real_kind) :: dw,dx,alpha_k
-    integer :: i,j,k,l,ie,info(np,np),nt
+    real (kind=real_kind) :: dw,dx,alpha_k,alphas(np,np)
+    integer :: i,j,k,l,ie,nt
     integer :: nsafe
+
+!#define HOMME_IMEX_MKLSOLVE
+#ifdef HOMME_IMEX_MKLSOLVE
+    real (kind=real_kind) :: JacDt(nlev,np,np)  , JacLt(nlev-1,np,np)
+    real (kind=real_kind) :: JacUt(nlev-1,np,np), JacU2t(nlev-2,np,np)
+    real (kind=real_kind) :: Ipiv(nlev,np,np)
+    real (kind=real_kind) :: Fnt(np,np,nlev), xt(nlev,np,np)
+    integer :: info(np,np)
+#endif
 
 #undef NEWTONCOND
 #ifdef NEWTONCOND
@@ -226,7 +233,7 @@ contains
        enddo
        if (nsafe==1) then
           ! in rare cases when limter was triggered, just recompute:
-          do k=nlev,1,-1  ! scan                                                                                                      
+          do k=nlev,1,-1  ! scan
              phi_np1(:,:,k) = phi_np1(:,:,k+1)-dphi(:,:,k)
           enddo
           w_np1(:,:,1:nlev) = (phi_np1(:,:,1:nlev) -  phi_n0(:,:,1:nlev) )/(dt2*g)
@@ -237,49 +244,67 @@ contains
             (w_n0(:,:,1:nlev) + g*dt2 * (dpnh_dp_i(:,:,1:nlev)-1))
 
 
-
        itercount=0
        do while (itercount < maxiter) 
-
-          info(:,:) = 0
           ! numerical J:
           !call get_dirk_jacobian(JacL,JacD,JacU,dt2,elem(ie)%state%dp3d(:,:,:,np1),dphi,pnh,0,1d-4,hvcoord,dpnh_dp_i,vtheta_dp) 
           ! analytic J:
           call get_dirk_jacobian(JacL,JacD,JacU,dt2,elem(ie)%state%dp3d(:,:,:,np1),dphi,pnh,1) 
 
-          do i=1,np
-             do j=1,np
-                x(1:nlev,i,j) = -Fn(i,j,1:nlev)  
+          x(:,:,1:nlev) = -Fn(:,:,1:nlev)
+
+#ifdef HOMME_IMEX_MKLSOLVE
+          do j=1,np
+             do i=1,np
+                do k = 1,nlev-1
+                   JacLt(k,i,j) = JacL(i,j,k)
+                   JacUt(k,i,j) = JacU(i,j,k)
+                end do
+                do k = 1,nlev
+                   JacDt(k,i,j) = JacD(i,j,k)
+                   xt(k,i,j) = x(i,j,k)
+                end do
 #ifdef NEWTONCOND
                 ! nlev condition number: 500e3 with phi, 850e3 with dphi
-                anorm=DLANGT('1-norm', nlev, JacL(:,i,j),jacD(:,i,j),jacU(:,i,j))
-                call DGTTRF(nlev, JacL(:,i,j), JacD(:,i,j),JacU(:,i,j),JacU2(:,i,j), Ipiv(:,i,j), info )
-                call DGTCON('1',nlev,JacL(:,i,j),JacD(:,i,j),JacU(:,i,j),jacU2(:,i,j),Ipiv(:,i,j),&
+                anorm=DLANGT('1-norm', nlev, JacLt(:,i,j),JacDt(:,i,j),JacUt(:,i,j))
+                call DGTTRF(nlev, JacLt(:,i,j), JacDt(:,i,j),JacUt(:,i,j),JacU2t(:,i,j), Ipiv(:,i,j), info )
+                call DGTCON('1',nlev,JacLt(:,i,j),JacDt(:,i,j),JacUt(:,i,j),JacU2t(:,i,j),Ipiv(:,i,j),&
                      ANORM, RCOND, WORK, IWORK, info2 )
 #else
-                call DGTTRF(nlev, JacL(:,i,j), JacD(:,i,j),JacU(:,i,j),JacU2(:,i,j), Ipiv(:,i,j), info(i,j) )
+                call DGTTRF(nlev, JacLt(:,i,j), JacDt(:,i,j),JacUt(:,i,j),JacU2t(:,i,j), Ipiv(:,i,j), info(i,j) )
 #endif
                 ! Tridiagonal solve
-                call DGTTRS( 'N', nlev,1, JacL(:,i,j), JacD(:,i,j), JacU(:,i,j), JacU2(:,i,j), Ipiv(:,i,j),x(:,i,j), nlev, info(i,j) )
+                call DGTTRS( 'N', nlev,1, JacLt(:,i,j), JacDt(:,i,j), JacUt(:,i,j), JacU2t(:,i,j), Ipiv(:,i,j),xt(:,i,j), nlev, info(i,j) )
+                do k = 1,nlev
+                   x(i,j,k) = xt(k,i,j)
+                end do
+             end do
+          end do
+#else
+          call solve_strict_diag_dominant_tridiag(JacL, JacD, JacU, x)
+#endif
 
-                alpha = 1
-                do nsafe = 1,2
-                   do k = 1,nlev-1
-                      dphi(i,j,k) = dphi_n0(i,j,k) + &
-                           dt2*g*((w_np1(i,j,k+1) - w_np1(i,j,k)) + &
-                                  alpha*(x(k+1,i,j) - x(k,i,j)))
-                   end do
-                   dphi(i,j,nlev) = dphi_n0(i,j,nlev) - dt2*g*(w_np1(i,j,nlev) + alpha*x(nlev,i,j))
+          do k = 1,nlev-1
+             dphi(:,:,k) = dphi_n0(:,:,k) + &
+                  dt2*g*((w_np1(:,:,k+1) - w_np1(:,:,k)) + &
+                          (x(:,:,k+1) - x(:,:,k)))
+          end do
+          dphi(:,:,nlev) = dphi_n0(:,:,nlev) - dt2*g*(w_np1(:,:,nlev) + x(:,:,nlev))
 
-                   if (nsafe == 2 .or. maxval(dphi(i,j,1:nlev)) < 0) exit
+          alphas = 1
+          if (maxval(dphi(:,:,1:nlev)) >= 0) then
+             do j=1,np
+                do i=1,np
+                   if (maxval(dphi(i,j,1:nlev)) < 0) cycle
 
                    ! Step halfway to the distance at which at least one dphi is 0.
+                   alpha = 1
                    do k = 1,nlev
                       if (k < nlev) then
-                         dx = x(k+1,i,j) - x(k,i,j)
+                         dx = x(i,j,k+1) - x(i,j,k)
                          dw = w_np1(i,j,k+1) - w_np1(i,j,k)
                       else
-                         dx = -x(k,i,j)
+                         dx = -x(i,j,k)
                          dw = -w_np1(i,j,k)
                       end if
                       if (dx /= 0) then
@@ -288,15 +313,21 @@ contains
                       end if
                    end do
                    alpha = alpha/2
-                end do
-                w_np1(i,j,1:nlev) = w_np1(i,j,1:nlev) + alpha*x(1:nlev,i,j)
-                if (nsafe > 1) then
+                   alphas(i,j) = alpha
+
                    write(iulog,*) 'WARNING:IMEX is reducing step length from 1 to',alpha
-                end if
 
-
-
+                   do k = 1,nlev-1
+                      dphi(i,j,k) = dphi_n0(i,j,k) + &
+                           dt2*g*((w_np1(i,j,k+1) - w_np1(i,j,k)) + &
+                           alpha*(x(i,j,k+1) - x(i,j,k)))
+                   end do
+                   dphi(i,j,nlev) = dphi_n0(i,j,nlev) - dt2*g*(w_np1(i,j,nlev) + alpha*x(i,j,nlev))
+                end do
              end do
+          end if
+          do k = 1,nlev
+             w_np1(:,:,k) = w_np1(:,:,k) + alphas*x(:,:,k)
           end do
 
           call pnh_and_exner_from_eos2(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,np1),&
@@ -305,7 +336,6 @@ contains
 
           reserr=maxval(abs(Fn))/(wmax*abs(dt2)) 
           deltaerr=maxval(abs(x))/wmax
-
 
           ! update iteration count and error measure
           itercount=itercount+1
@@ -338,9 +368,6 @@ contains
   end subroutine compute_stage_value_dirk
 
 
-
-
-
   subroutine get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,dphi,pnh,exact,&
      epsie,hvcoord,dpnh_dp_i,vtheta_dp)
   !================================================================================
@@ -362,12 +389,12 @@ contains
   ! The rule-of-thumb optimal epsie  is epsie = norm(elem)*sqrt(macheps)
   !
   !===================================================================================
-    real (kind=real_kind), intent(out) :: JacD(nlev,np,np)
-    real (kind=real_kind), intent(out) :: JacL(nlev-1,np,np),JacU(nlev-1,np,np)
-    real (kind=real_kind), intent(in)    :: dp3d(np,np,nlev)
+    real (kind=real_kind), intent(out) :: JacD(np,np,nlev)
+    real (kind=real_kind), intent(out) :: JacL(np,np,nlev-1),JacU(np,np,nlev-1)
+    real (kind=real_kind), intent(in)  :: dp3d(np,np,nlev)
     real (kind=real_kind), intent(inout) :: pnh(np,np,nlev)
-    real (kind=real_kind), intent(in) :: dphi(np,np,nlev)
-    real (kind=real_kind), intent(in)    :: dt2
+    real (kind=real_kind), intent(in)  :: dphi(np,np,nlev)
+    real (kind=real_kind), intent(in)  :: dt2
 
     real (kind=real_kind), intent(in), optional :: epsie ! epsie is the differencing size in the approx. Jacobian
     real (kind=real_kind), intent(in), optional :: dpnh_dp_i(np,np,nlevp)
@@ -392,22 +419,22 @@ contains
        k  = 1 ! Jacobian row 1
        b  = a/dp3d(:,:,k)
        ck = pnh(:,:,k)/dphi(:,:,k)
-       JacU(k,:,:) = 2*b*ck
-       JacD(k,:,:) = 1 - JacU(k,:,:)
+       JacU(:,:,k) = 2*b*ck
+       JacD(:,:,k) = 1 - JacU(:,:,k)
        ckm1 = ck
        do k = 2,nlev-1 ! Jacobian row k
           b  = 2*a/(dp3d(:,:,k-1) + dp3d(:,:,k))
           ck = pnh(:,:,k)/dphi(:,:,k)
-          JacL(k-1,:,:) = b*ckm1
-          JacU(k,  :,:) = b*ck
-          JacD(k,  :,:) = 1 - JacL(k-1,:,:) - JacU(k,:,:)
+          JacL(:,:,k-1) = b*ckm1
+          JacU(:,:,k  ) = b*ck
+          JacD(:,:,k  ) = 1 - JacL(:,:,k-1) - JacU(:,:,k)
           ckm1 = ck
        end do
        k  = nlev ! Jacobian row nlev
        b  = 2*a/(dp3d(:,:,k) + dp3d(:,:,k-1))
        ck = pnh(:,:,k)/dphi(:,:,k)
-       JacL(k-1,:,:) = b*ckm1
-       JacD(k  ,:,:) = 1 - JacL(k-1,:,:) - b*ck
+       JacL(:,:,k-1) = b*ckm1
+       JacD(:,:,k  ) = 1 - JacL(:,:,k-1) - b*ck
 
     else ! use finite difference approximation to Jacobian with differencing size espie
       ! compute Jacobian of F(dphi) = phi +const + (dt*g)^2 *(1-dp/dpi) column wise
@@ -433,14 +460,14 @@ contains
            delta_mu(:,:,:)=(g*dt2)**2*(dpnh_dp_i(:,:,:)-dpnh_dp_i_epsie(:,:,:))/epsie
         end if
 
-        JacD(k,:,:) = 1 +  delta_mu(:,:,k)
+        JacD(:,:,k) = 1 +  delta_mu(:,:,k)
         if (k.eq.1) then
-           JacL(k,:,:) =   delta_mu(:,:,k+1)
+           JacL(:,:,k) =   delta_mu(:,:,k+1)
         elseif (k.eq.nlev) then
-           JacU(k-1,:,:) = delta_mu(:,:,k-1)
+           JacU(:,:,k-1) = delta_mu(:,:,k-1)
         else
-           JacL(k,:,:)   = delta_mu(:,:,k+1)
-           JacU(k-1,:,:) = delta_mu(:,:,k-1)
+           JacL(:,:,k)   = delta_mu(:,:,k+1)
+           JacU(:,:,k-1) = delta_mu(:,:,k-1)
         end if
 
       end do
@@ -456,10 +483,10 @@ contains
     type (TimeLevel_t), intent(in) :: tl  
     integer                        :: nets,nete
 
-    real (kind=real_kind) :: JacD(nlev,np,np)  , JacL(nlev-1,np,np)
-    real (kind=real_kind) :: JacU(nlev-1,np,np)
-    real (kind=real_kind) :: Jac2D(nlev,np,np)  , Jac2L(nlev-1,np,np)
-    real (kind=real_kind) :: Jac2U(nlev-1,np,np)
+    real (kind=real_kind) :: JacD(np,np,nlev)  , JacL(np,np,nlev-1)
+    real (kind=real_kind) :: JacU(np,np,nlev-1)
+    real (kind=real_kind) :: Jac2D(np,np,nlev)  , Jac2L(np,np,nlev-1)
+    real (kind=real_kind) :: Jac2U(np,np,nlev-1)
 
     real (kind=real_kind) :: dp3d(np,np,nlev), phis(np,np)
     real (kind=real_kind) :: phi_i(np,np,nlevp)
@@ -495,18 +522,18 @@ contains
 
       ! compute infinity norm of the initial Jacobian 
        norminfJ0=0.d0
+       do k=1,nlev
        do i=1,np
        do j=1,np
-         do k=1,nlev
           if (k.eq.1) then
-            norminfJ0(i,j) = max(norminfJ0(i,j),(abs(JacD(k,i,j))+abs(JacU(k,i,j))))
+            norminfJ0(i,j) = max(norminfJ0(i,j),(abs(JacD(i,j,k))+abs(JacU(i,j,k))))
           elseif (k.eq.nlev) then
-            norminfJ0(i,j) = max(norminfJ0(i,j),(abs(JacL(k-1,i,j))+abs(JacD(k,i,j))))
+            norminfJ0(i,j) = max(norminfJ0(i,j),(abs(JacL(i,j,k-1))+abs(JacD(i,j,k))))
           else
-            norminfJ0(i,j) = max(norminfJ0(i,j),(abs(JacL(k-1,i,j))+abs(JacD(k,i,j))+ &
-              abs(JacU(k,i,j))))
+            norminfJ0(i,j) = max(norminfJ0(i,j),(abs(JacL(i,j,k-1))+abs(JacD(i,j,k))+ &
+              abs(JacU(i,j,k))))
           end if
-        end do
+      end do
       end do
       end do
 
@@ -550,6 +577,76 @@ contains
        if (hybrid%masterthread) write(iulog,*)&
             'PASS. max error of analytic and exact Jacobian: ',minjacerr
     end if
+
+    call test_tridiag_solver(hybrid, JacL, JacD, JacU)
   end subroutine test_imex_jacobian
+
+  subroutine solve_strict_diag_dominant_tridiag(dl, d, du, x)
+    ! Solve a strictly diagonally dominant tridiagonal system. On
+    ! input, x is the RHS; on output, the solution. dl contains rows
+    ! 2:nlev of the lower diagonal; d, the diagonal; du, rows 1:nlev-1
+    ! of the upper diagonal. d is overwritten.
+
+    use dimensions_mod, only: npsq
+
+    real (kind=real_kind), intent(in) :: dl(npsq,nlev-1), du(npsq,nlev-1)
+    real (kind=real_kind), intent(inout) :: d(npsq,nlev), x(npsq,nlev)
+
+    real (kind=real_kind) :: dlk(npsq)
+    integer :: k
+
+    do k = 1,nlev-1
+       dlk = dl(:,k) / d(:,k)
+       d(:,k+1) = d(:,k+1) - dlk * du(:,k)
+       x(:,k+1) = x(:,k+1) - dlk * x(:,k)
+    end do
+    x(:,nlev) = x(:,nlev) / d(:,nlev)
+    do k = nlev-1,1,-1
+       x(:,k) = (x(:,k) - du(:,k) * x(:,k+1)) / d(:,k)
+    end do
+  end subroutine solve_strict_diag_dominant_tridiag
+
+  subroutine test_tridiag_solver(hybrid, dlc, dc, duc)
+    type(hybrid_t), intent(in) :: hybrid
+    real (kind=real_kind), intent(in) :: dlc(np,np,nlev-1), dc(np,np,nlev), duc(np,np,nlev-1)
+
+    real (kind=real_kind) :: &
+         dl(np,np,nlev-1), d(np,np,nlev), du(np,np,nlev-1), &
+         b(np,np,nlev), x(np,np,nlev), y(np,np,nlev), &
+         relerr(np,np)
+
+    integer :: i, j, k
+    
+    ! Make a RHS.
+    dl = dlc; d = dc; du = duc
+    do k = 1,nlev
+       do j = 1,np
+          do i = 1,np
+             b(i,j,k) = k + real(i, real_kind)/2 - real(j,real_kind)/3
+          end do
+       end do
+    end do
+    x = b
+
+    call solve_strict_diag_dominant_tridiag(dl, d, du, x)
+
+    ! y = A*x
+    y = 0
+    do k = 1,nlev-1
+       y(:,:,k+1) = dlc(:,:,k) * x(:,:,k)
+    end do
+    do k = 1,nlev
+       y(:,:,k) = y(:,:,k) + dc(:,:,k) * x(:,:,k)
+    end do
+    do k = 1,nlev-1
+       y(:,:,k) = y(:,:,k) + duc(:,:,k) * x(:,:,k+1)
+    end do
+
+    ! Compare y and b
+    relerr = maxval(abs(y - b), 3)/maxval(abs(b), 3)
+    if (hybrid%masterthread .and. maxval(relerr) > 1e5*epsilon(1.0_real_kind)) then
+       write(iulog,*) 'FAIL test_tridiag_solver', maxval(relerr)
+    end if
+  end subroutine test_tridiag_solver
 
 end module imex_mod

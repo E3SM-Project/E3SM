@@ -35,6 +35,7 @@ module micro_p3_interface
   use cam_logfile,    only: iulog
   use time_manager,   only: is_first_step
   use perf_mod,       only: t_startf, t_stopf
+  use micro_p3_utils, only: p3_QcAutoCon_Expon, p3_QcAccret_Expon
        
   implicit none
   save
@@ -133,7 +134,7 @@ subroutine micro_p3_readnl(nlfile)
 
   namelist /micro_nl/ &
        micro_p3_tableversion, micro_p3_lookup_dir, micro_aerosolactivation, micro_subgrid_cloud, &
-       micro_tend_output
+       micro_tend_output, p3_QcAutoCon_Expon, p3_QcAccret_Expon
 
   !-----------------------------------------------------------------------------
 
@@ -156,6 +157,8 @@ subroutine micro_p3_readnl(nlfile)
      write(iulog,'(A30,1x,L)')    'micro_aerosolactivation: ', micro_aerosolactivation
      write(iulog,'(A30,1x,L)')    'micro_subgrid_cloud: ',     micro_subgrid_cloud
      write(iulog,'(A30,1x,L)')    'micro_tend_output: ',       micro_tend_output
+     write(iulog,'(A30,1x,8e12.4)') 'p3_QcAutoCon_Expon',        p3_QcAutoCon_Expon
+     write(iulog,'(A30,1x,8e12.4)') 'p3_QcAccret_Expon',         p3_QcAccret_Expon
 
   end if
 
@@ -166,6 +169,8 @@ subroutine micro_p3_readnl(nlfile)
   call mpibcast(micro_aerosolactivation, 1,                          mpilog,  0, mpicom)
   call mpibcast(micro_subgrid_cloud,     1,                          mpilog,  0, mpicom)
   call mpibcast(micro_tend_output,       1,                          mpilog,  0, mpicom)
+  call mpibcast(p3_QcAutoCon_Expon,      1,                          mpir8,   0, mpicom)
+  call mpibcast(p3_QcAccret_Expon,       1,                          mpir8,   0, mpicom)
 
 #endif
 
@@ -272,9 +277,7 @@ end subroutine micro_p3_readnl
    call pbuf_add_field('CV_REFFLIQ', 'physpkg',dtype_r8,(/pcols,pver/), cv_reffliq_idx)
    call pbuf_add_field('CV_REFFICE', 'physpkg',dtype_r8,(/pcols,pver/), cv_reffice_idx)
  
-   !! module clubb_intr (AaronDonahue: I think these are for MG only.  Should
-   !  we remove?  If so, then we will have to make changes to CLUBB interface.
-   call pbuf_add_field('RELVAR',     'global',dtype_r8,(/pcols,pver/), relvar_idx)
+   call pbuf_add_field('RELVAR',     'global',dtype_r8,(/pcols,pver/),   relvar_idx)
    call pbuf_add_field('ACCRE_ENHAN','global',dtype_r8,(/pcols,pver/), accre_enhan_idx)
 
    if (masterproc) write(iulog,'(A20)') '    P3 register finished'
@@ -525,8 +528,6 @@ end subroutine micro_p3_readnl
    call addfld('vap_liq_exchange',  (/ 'lev' /), 'A', 'kg/kg/s', 'Tendency for conversion from/to vapor phase to/from liquid phase')
    call addfld('vap_ice_exchange',  (/ 'lev' /), 'A', 'kg/kg/s', 'Tendency for conversion from/to vapor phase to/from frozen phase')
    call addfld('liq_ice_exchange',  (/ 'lev' /), 'A', 'kg/kg/s', 'Tendency for conversion from/to liquid phase to/from frozen phase')
-   call addfld('vap_cld_exchange',  (/ 'lev' /), 'A', 'kg/kg/s', 'Tendency for conversion from/to vapor phase to/from cloud category')
-
 
    ! determine the add_default fields
    call phys_getopts(history_amwg_out           = history_amwg         , &
@@ -565,7 +566,6 @@ end subroutine micro_p3_readnl
       call add_default('vap_liq_exchange',  1, ' ')
       call add_default('vap_ice_exchange',  1, ' ')
       call add_default('liq_ice_exchange',  1, ' ')
-      call add_default('vap_cld_exchange',  1, ' ')
       ! Microphysics tendencies
       ! warm-phase process rates
       if (micro_tend_output) then
@@ -750,7 +750,6 @@ end subroutine micro_p3_readnl
     real(rtype), dimension(pcols,pver) :: liq_ice_exchange ! sum of liq-ice phase change tendenices
     real(rtype), dimension(pcols,pver) :: vap_liq_exchange ! sum of vap-liq phase change tendenices
     real(rtype), dimension(pcols,pver) :: vap_ice_exchange ! sum of vap-ice phase change tendenices
-    real(rtype), dimension(pcols,pver) :: vap_cld_exchange ! sum of vap-cld phase change tendenices
     real(rtype) :: dummy_out(pcols,pver)    ! dummy_output variable for p3_main to replace unused variables.
 
     ! PBUF Variables
@@ -765,6 +764,7 @@ end subroutine micro_p3_readnl
     real(rtype), pointer :: snow_str(:)    ! [Total] Sfc flux of snow from stratiform   [ m/s ]
     real(rtype), pointer :: snow_pcw(:)    ! Sfc flux of snow from microphysics [ m/s ]
     real(rtype), pointer :: snow_sed(:)    ! Surface flux of cloud ice from sedimentation
+    real(rtype), pointer :: relvar(:,:)    ! cloud liquid relative variance [-]
     real(rtype), pointer :: cldo(:,:)      ! Old cloud fraction
     real(rtype), pointer :: prer_evap(:,:) ! precipitation evaporation rate 
     !! wetdep 
@@ -786,8 +786,8 @@ end subroutine micro_p3_readnl
     real(rtype), pointer :: lambdac(:,:)      ! Size distribution slope parameter for radiation
     ! DONE PBUF
     ! For recording inputs/outputs to p3_main
-    real(rtype) :: p3_main_inputs(pcols,pver+1,16) ! Record of inputs for p3_main
-    real(rtype) :: p3_main_outputs(pcols,pver+1,32) ! Record of outputs for p3_main
+    real(rtype) :: p3_main_inputs(pcols,pver+1,17) ! Record of inputs for p3_main
+    real(rtype) :: p3_main_outputs(pcols,pver+1,31) ! Record of outputs for p3_main
 
     ! Derived Variables
     real(rtype) :: icimrst(pcols,pver) ! stratus ice mixing ratio - on grid
@@ -854,6 +854,8 @@ end subroutine micro_p3_readnl
     call pbuf_get_field(pbuf,    snow_pcw_idx,  snow_pcw)
     !============================ 
     ! All internal PBUF variables
+    ! INPUTS
+    call pbuf_get_field(pbuf,      relvar_idx,    relvar                                                   )
     ! OUTPUTS
     call pbuf_get_field(pbuf,        cldo_idx,      cldo, start=(/1,1,itim_old/), kount=(/psetcols,pver,1/))
     call pbuf_get_field(pbuf,         qme_idx,       qme                                                   )
@@ -991,6 +993,7 @@ end subroutine micro_p3_readnl
       p3_main_inputs(1,k,14) = qirim(1,k)
       p3_main_inputs(1,k,15) = rimvol(1,k)
       p3_main_inputs(1,k,16) = state%pdel(1,k)
+      p3_main_inputs(1,k,17) = relvar(1,k)
     end do
     p3_main_inputs(1,pver+1,5) = state%zi(1,pver+1)
 
@@ -1015,6 +1018,7 @@ end subroutine micro_p3_readnl
          dzq(its:ite,kts:kte),        & ! IN     vertical grid spacing            m
          npccn(its:ite,kts:kte),      & ! IN ccn activation number tendency kg-1 s-1
          naai(its:ite,kts:kte),       & ! IN activated ice nuclei concentration kg-1
+         relvar(its:ite,kts:kte),     & ! IN cloud liquid relative variance
          it,                          & ! IN     time step counter NOTE: starts at 1 for first time step
          prt_liq(its:ite),            & ! OUT    surface liquid precip rate       m s-1
          prt_sol(its:ite),            & ! OUT    surface frozen precip rate       m s-1
@@ -1049,8 +1053,7 @@ end subroutine micro_p3_readnl
          liq_ice_exchange(its:ite,kts:kte),& ! OUT sum of liq-ice phase change tendenices   
          vap_liq_exchange(its:ite,kts:kte),& ! OUT sun of vap-liq phase change tendencies
          vap_ice_exchange(its:ite,kts:kte),& ! OUT sum of vap-ice phase change tendencies
-         vap_cld_exchange(its:ite,kts:kte),& ! OUT sum of vap-cld phase change tendencies
-         col_location(its:ite,:3)          & ! IN column locations 
+         col_location(its:ite,:3)          & ! IN column locations
          )
 
     p3_main_outputs(:,:,:) = -999._rtype
@@ -1079,7 +1082,6 @@ end subroutine micro_p3_readnl
       p3_main_outputs(1,k,29) = liq_ice_exchange(1,k)
       p3_main_outputs(1,k,30) = vap_liq_exchange(1,k)
       p3_main_outputs(1,k,31) = vap_ice_exchange(1,k)
-      p3_main_outputs(1,k,32) = vap_cld_exchange(1,k)
     end do
     p3_main_outputs(1,1,11) = prt_liq(1)
     p3_main_outputs(1,1,12) = prt_sol(1)
@@ -1118,9 +1120,8 @@ end subroutine micro_p3_readnl
 
     ! Net micro_p3 condensation rate
     qme(:ncol,top_lev:pver) = cmeliq(:ncol,top_lev:pver) + cmeiout(:ncol,top_lev:pver)  ! cmeiout is output from p3 micro
-    ! Add cmeliq to  vap_liq_exchange and vap_cld_exchange
+    ! Add cmeliq to  vap_liq_exchange
     vap_liq_exchange(:ncol,top_lev:pver) = vap_liq_exchange(:ncol,top_lev:pver) + cmeliq(:ncol,top_lev:pver) 
-    vap_cld_exchange(:ncol,top_lev:pver) = vap_cld_exchange(:ncol,top_lev:pver) + cmeliq(:ncol,top_lev:pver)
 
 !====================== Export variables/Conservation START ======================!
      !For precip, accumulate only total precip in prec_pcw and snow_pcw variables.
@@ -1367,9 +1368,8 @@ end subroutine micro_p3_readnl
    call outfld('P3_mtend_TH',      tend_out(:,:,49), pcols, lchnk)
    ! Phase change tendencies 
    call outfld('vap_ice_exchange',      vap_ice_exchange,      pcols, lchnk)
-   call outfld('vap_liq_exchange',      vap_ice_exchange,      pcols, lchnk)
-   call outfld('liq_ice_exchange',      vap_ice_exchange,      pcols, lchnk)
-   call outfld('vap_cld_exchange',      vap_ice_exchange,      pcols, lchnk)
+   call outfld('vap_liq_exchange',      vap_liq_exchange,      pcols, lchnk)
+   call outfld('liq_ice_exchange',      liq_ice_exchange,      pcols, lchnk)
 
    call t_stopf('micro_p3_tend_finish')
   end subroutine micro_p3_tend

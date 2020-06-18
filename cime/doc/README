@@ -1,12 +1,17 @@
 
-This requires Sphinx v1.7 or greater. 
+This requires Sphinx v1.7 or greater, as well as some add-ons, which can
+be installed with:
+
+pip install sphinx
+pip install sphinxcontrib-programoutput
+pip install git+https://github.com/esmci/sphinx_rtd_theme.git@version-dropdown-with-fixes
 
 Check the sphinx version as follows:
 
 >sphinx-build --version
 
 The documentation source is stored with the CIME master code base. However, 
-the built html files are stored seperately in the orphan gh-pages branch
+the built html files are stored separately in the orphan gh-pages branch
 and can be viewed from a browser at URL:
 
 http://esmci.github.io/cime
@@ -19,17 +24,10 @@ https://github.com/ESMCI/cime/wiki/Working-with-Sphinx-and-reStructuredText
 Use the following commands to auto-build the html documentation from the main
 cime/doc directory:
 
->make clean
->make api
->make html
+make clean
+make api
+make html
 
-To copy the html to the orphan gh-pages, follow these steps:
-
->git clone -b gh-pages https://github.com/ESMCI/cime.git cime.gh-pages
->cd cime.gh-pages
->rm -rf *
->cp -R /path/to/cime-master/doc/build/html/* .
->git commit -m 'update HTML for PR #...'
->git push origin gh-pages
-
-
+To publish the docs to the orphan gh-pages branch, follow the steps in
+https://github.com/ESMCI/cime/wiki/Working-with-Sphinx-and-reStructuredText
+to ensure proper versioning of the documentation.

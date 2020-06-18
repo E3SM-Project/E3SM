@@ -1,0 +1,8 @@
+#!/bin/bash
+
+#Remove exe if chem pp exe (campp) already exists (it ensures that exe is always built)
+/bin/rm -f $CIMEROOT/../components/cam/chem_proc/campp
+
+#Invoke campp (using v1 mechanism file)
+./xmlchange --append CAM_CONFIG_OPTS='-usr_mech_infile $CIMEROOT/../components/cam/chem_proc/inputs/pp_linoz_mam4_resus_mom_soag.in'
+

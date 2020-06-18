@@ -2,8 +2,8 @@
 #define SCREAM_HOMME_DYNAMICS_HELPERS_HPP
 
 // Scream includes
-#include "share/scream_types.hpp"
-#include "share/util/scream_utils.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/util/scream_utils.hpp"
 
 // Homme includes
 #include "Types.hpp"
