@@ -371,6 +371,7 @@ _TESTS = {
         "tests" : (
             "SMS_D.ne4_ne4.FSCREAM-HR",
             "SMS_D.ne4_ne4.FSCREAM-LR",
+            "SMS_D.ne4_ne4.FSCREAM-SA",
             "ERS.ne4_ne4.FSCREAM-HR",
             "ERS.ne4_ne4.FSCREAM-LR",
             "ERP.ne4_ne4.FSCREAM-HR.cam-double_memleak_tol",
