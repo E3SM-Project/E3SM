@@ -1,5 +1,6 @@
 #include "ekat/scream_session.hpp"
 
+#include "ekat/scream_parse_yaml_file.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "ekat/scream_pack.hpp"
 #include "share/grid/user_provided_grids_manager.hpp"
@@ -15,9 +16,8 @@
 
 #include "control/tests/dummy_grid.hpp"
 
-#include "interface/ScreamContext.hpp"
+#include "mct_coupling/ScreamContext.hpp"
 #include "ekat/mpi/scream_comm.hpp"
-#include "ekat/scream_parse_yaml_file.hpp"
 
 extern "C"
 {
@@ -40,7 +40,7 @@ void scream_init (const MPI_Fint& f_comm,
   // First of all, initialize the scream session
   scream::initialize_scream_session();
 
-  // Create a the context
+  // Create the context
   auto& c = ScreamContext::singleton();
 
   // Create the C MPI_Comm from the Fortran one

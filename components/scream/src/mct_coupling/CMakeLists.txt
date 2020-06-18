@@ -55,6 +55,7 @@ set(ATM_SRC
   dead_mct_mod.F90
   dead_data_mod.F90
   dead_mod.F90
+  scream_scorpio_interface.F90
 )
 
 if (USE_ESMF_LIB)
@@ -62,7 +63,6 @@ if (USE_ESMF_LIB)
 else()
   set(ESMFDIR "noesmf")
 endif()
-
 set(CSM_SHARE "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/csm_share")
 
 # Add scream tpls lib dirs to linker search path
