@@ -13,6 +13,9 @@ namespace util {
 
 namespace {
 
+constexpr std::array<int,12> nonleap_days = {31,28,31,30,31,30,31,31,30,31,30,31};
+constexpr std::array<int,12> leap_days = {31,29,31,30,31,30,31,31,30,31,30,31};
+
 // Utility functions
 bool is_leap (const int yy) {
 #ifdef SCREAM_HAS_LEAP_YEAR
@@ -40,36 +43,38 @@ int dpy (const int yy) {
   return n;
 }
 
-std::pair<int,int> get_month_and_day (const int year, const int day) {
-  std::vector<int> months = {31, (is_leap(year) ? 29 : 28), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-  std::vector<int> offsets(1,0);
-  std::partial_sum (months.begin(), months.end(), std::back_inserter(offsets));
-
-  auto it = std::upper_bound(offsets.begin(),offsets.end(), day);
-  scream_require_msg (it!=offsets.end(), "Error! Something went wrong while retrieving month from day '" + std::to_string(day) + "'.\n");
-
-  int month = std::distance(offsets.begin(),it) - 1;
-  return std::make_pair(month,day-offsets[month]);
+int dpm (const int yy, const int mm) {
+  auto& arr = is_leap(yy) ? leap_days : nonleap_days;
+  return arr[mm];
 }
 
 } // anonymous namespace
 
 TimeStamp::TimeStamp()
  : m_yy (std::numeric_limits<int>::lowest())
+ , m_mm (std::numeric_limits<int>::lowest())
  , m_dd (std::numeric_limits<int>::lowest())
  , m_ss (std::numeric_limits<Real>::lowest())
 {
   // Nothing to do here
 }
 
-TimeStamp::TimeStamp(const int yy, const int dd, const Real ss)
+TimeStamp::TimeStamp(const int yy,
+                     const int mm,
+                     const int dd,
+                     const Real ss)
  : m_yy(yy)
+ , m_mm(mm)
  , m_dd(dd)
  , m_ss(ss)
 {
   // Check the days and seconds numbers are non-negative.
-  scream_require_msg (dd>=0, "Error! Days are negative.\n");
+  scream_require_msg (mm>=0, "Error! Month is negative.\n");
+  scream_require_msg (mm<=11, "Error! Month is too large.\n");
+  scream_require_msg (dd>=0, "Error! Day is negative.\n");
+  scream_require_msg (dd<(is_leap(m_yy) ? leap_days[mm] : nonleap_days[mm]), "Error! Day is too large.\n");
   scream_require_msg (ss>=0, "Error! Seconds are negative.\n");
+  scream_require_msg (ss<constants::seconds_per_day, "Error! Seconds are too large.\n");
 
   // Adjust if input numbers are too large
   int carry;
@@ -84,40 +89,35 @@ TimeStamp::TimeStamp(const int yy, const int dd, const Real ss)
 }
 
 std::string TimeStamp::to_string () const {
-  auto md = get_month_and_day (m_yy,m_dd);
   const int ss = static_cast<int>(m_ss);
   const int h =  ss / 3600;
   const int m = (ss % 3600) / 60;
   const int s = (ss % 3600) % 60;
   const std::string zero = "00";
   // For h:m:s, check if 0, and if so, use "00" rather than to_string, which returns "0"
-  return std::to_string(md.first+1) + "-" + std::to_string(md.second+1) + "-" + std::to_string(m_yy) + " " + 
+  return std::to_string(m_mm+1) + "-" + std::to_string(m_dd+1) + "-" + std::to_string(m_yy) + " " + 
          (h==0 ? zero : std::to_string(h)) + ":" + (m==0 ? zero : std::to_string(m)) + ":" + (s==0 ? zero : std::to_string(s));
 }
 
 TimeStamp& TimeStamp::operator+=(const Real seconds) {
-  return (*this += TimeStamp(0,0,seconds));
-}
-
-TimeStamp& TimeStamp::operator+=(const TimeStamp& dt) {
   scream_require_msg(is_valid(), "Error! The time stamp contains uninitialized values.\n"
                                  "       To use this object, use operator= with a valid rhs first.\n");
-  scream_require_msg(dt.is_valid(), "Error! The input time step contains uninitialized values.\n");
-  scream_require_msg(TimeStamp(0,0,0)<dt,
-                     "Error! Time can only shift forward during a simulation.\n");
-
-  const int ndays = dpy(m_yy);
 
   int carry;
-  m_ss += dt.get_seconds();
+  m_ss += seconds;
   carry = static_cast<int>(std::floor(m_ss / constants::seconds_per_day));
   m_ss  = std::fmod(m_ss, constants::seconds_per_day);
 
-  m_dd += dt.get_days() + carry;
-  carry = m_dd / ndays;
-  m_dd  = m_dd % ndays;
- 
-  m_yy += dt.get_years() + carry;
+  if (carry>0) {
+
+    m_dd += carry;
+    while (m_dd>dpm(m_yy,m_mm)) {
+      m_dd -= dpm(m_yy,m_mm);
+      ++m_mm;
+      m_yy += m_mm / 12;
+      m_mm  = m_mm % 12;
+    }
+  }
 
   return *this;
 }
@@ -154,30 +154,99 @@ bool operator<= (const TimeStamp& ts1, const TimeStamp& ts2) {
   return true;
 }
 
-TimeStamp operator- (const TimeStamp& ts1, const TimeStamp& ts2) {
-  scream_require_msg (ts2<ts1, "Error! We only allow to compute positive time stamp differences");
-
-  Real ss1 = ts1.get_seconds();
-  int dd1 = ts1.get_days();
-  int yy1 = ts1.get_years();
-
-
-  if (ss1 < ts2.get_seconds()) {
-    ss1 += constants::seconds_per_day;
-    --dd1;
-  }
-  if (dd1 < ts2.get_days()) {
-    dd1 += dpy(yy1);
-    --yy1;
+Real operator- (const TimeStamp& ts1, const TimeStamp& ts2) {
+  if (ts1<ts1) {
+    return -(ts2-ts1);
   }
 
-  return TimeStamp (yy1-ts2.get_years(),dd1-ts2.get_days(),ss1-ts2.get_seconds());
-}
+  constexpr int spd = constants::seconds_per_day;
+  Real dt = 0;
 
-TimeStamp operator+ (const TimeStamp& ts, const TimeStamp& dt) {
-  TimeStamp sum = ts;
-  sum += dt;
-  return sum;
+  const int y1 = ts1.get_years();
+  const int y2 = ts2.get_years();
+  const int m1 = ts1.get_months();
+  const int m2 = ts2.get_months();
+  const int d1 = ts1.get_days();
+  const int d2 = ts2.get_days();
+  const int s1 = ts1.get_seconds();
+  const int s2 = ts2.get_seconds();
+
+  if (y1!=y2) {
+    // 1. Process from ts2 till end of year
+
+    // Rest of day
+    dt += spd-s2;
+
+    // Rest of month
+    for (int d=d2+1; d<dpm(y2,m2); ++d) {
+      dt += spd;
+    }
+
+    // Rest of year
+    for (int m=m2+1; m<12; ++m) {
+      dt += spd*dpm(y2,m);
+    }
+
+    // 2. Process whole years till y1-1 (if any)
+    for (int y=y2+1; y<y1; ++y) {
+      dt += spd*dpy(y);
+    }
+
+    // 3. Process chunk of last year in ts1
+
+    // Previous months
+    for (int m=0; m<m1; ++m) {
+      dt += spd*dpm(y1,m);
+    }
+
+    // Previous days
+    for (int d=0; d<d1; ++d) {
+      dt += spd;
+    }
+
+    // Previous seconds
+    dt += s1;
+  } else if (m1!=m2) {
+    // 1. Process from ts2 till end of the month
+
+    // Rest of day
+    dt += spd-s2;
+
+    // Rest of month
+    for (int d=d2+1; d<dpm(y2,m2); ++d) {
+      dt += spd;
+    }
+
+    // 2. Process whole months till m1-1 (if any)
+    for (int m=m2+1; m<m1; ++m) {
+      dt += spd*dpm(y1,m);
+    }
+
+    // 3. Process chunk of last month in ts1
+
+    // Previous days
+    for (int d=0; d<d1; ++d) {
+      dt += spd;
+    }
+
+    // Previous seconds
+    dt += s1;
+  } else if (d1!=d2) {
+    // 1. Process from ts2 till end of the day
+    dt += spd-s2;
+
+    // 2. Process whole days till d1-1 (if any)
+    for (int d=d2+1; d<d1; ++d) {
+      dt += spd;
+    }
+
+    // 3. Process chunk of last day in ts1
+    dt += s1;
+  } else {
+    dt = s1 - s2;
+  }
+    
+  return dt;
 }
 
 TimeStamp operator+ (const TimeStamp& ts, const Real dt) {

@@ -3,9 +3,9 @@ if (NOT DEFINED PROJECT_NAME)
   cmake_policy(SET CMP0057 NEW)
   set(CIME_BUILD FALSE)
 else()
-  find_path(CXX_PATH ${MPICXX})
-  set(CMAKE_CXX_COMPILER ${CXX_PATH}/${MPICXX} CACHE STRING "" FORCE)
   set(CIME_BUILD TRUE)
+  set (SCREAM_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+  set (SCREAM_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 endif()
 
 if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.12.0")
@@ -170,6 +170,9 @@ else()
   buildEkat("SINGLE" PREFIX "SCREAM")
 endif()
 
+# Init scream TPLs info to whatever EKAT set.
+set (SCREAM_TPL_LIBRARIES ${EKAT_TPL_LIBRARIES})
+set (SCREAM_TPL_INCLUDE_DIRS ${EKAT_TPL_INCLUDE_DIRS})
 
 # Set compiler-specific flags
 include(EkatSetCompilerFlags)
@@ -203,6 +206,8 @@ print_var(SCREAM_LINK_FLAGS)
 print_var(SCREAM_FPMODEL)
 print_var(SCREAM_MPIRUN_EXE)
 print_var(SCREAM_LIB_ONLY)
+print_var(SCREAM_TPL_LIBRARIES)
+print_var(SCREAM_TPL_INCLUDE_DIRS)
 
 # This must be done using add_definitions because it is used to determine
 # whether to include scream_config.h.
@@ -211,6 +216,13 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in ${CMAKE_CURREN
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.f.in ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
 
 set(SCREAM_DYNAMICS_DYCORE "NONE" CACHE STRING "The name of the dycore to be used for dynamics. If NONE, then any code/test requiring dynamics is disabled.")
+
+if (CIME_BUILD)
+  if ("${SCREAM_DYN_TARGET}" STREQUAL "preqx_kokkos")
+    set (SCREAM_DYNAMICS_DYCORE "Homme")
+  endif()
+endif()
+
 string(TOUPPER "${SCREAM_DYNAMICS_DYCORE}" SCREAM_DYNAMICS_DYCORE)
 if (NOT ${SCREAM_DOUBLE_PRECISION})
   # Homme cannot handle single precision, for now. This causes tests to fail.

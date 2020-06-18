@@ -30,6 +30,8 @@ std::string active_avx_string () {
 
 std::string config_string () {
   std::stringstream ss;
+  ss << "ExecSpace name: " << DefaultDevice::execution_space::name() << "\n";
+  ss << "ExecSpace initialized: " << (DefaultDevice::execution_space::impl_is_initialized() ? "yes" : "no") << "\n";
   ss << "sizeof(Real) " << sizeof(Real)
      << " avx " << active_avx_string()
      // << " packsize " << SCREAM_PACK_SIZE
