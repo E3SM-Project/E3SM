@@ -132,7 +132,7 @@ else
 endif
 
 ifeq ($(PIO_VERSION),2)
-  ifneq ($(COMPILER),nag)
+  ifeq ($(CIME_MODEL),e3sm)
     # Needed by SCORPIO not default PIO, does not work with NAG compiler
     USE_CXX := TRUE
   endif
@@ -140,11 +140,11 @@ else
   CPPDEFS += -DPIO1
 endif
 
-ifeq ($(USE_CXX), TRUE)
-  ifeq ($(SUPPORTS_CXX), FALSE)
-    $(error Fatal attempt to include C++ code on a compiler/machine combo that has not been set up to support C++)
-  endif
-endif
+#ifeq ($(USE_CXX), TRUE)
+#  ifeq ($(SUPPORTS_CXX), FALSE)
+#    $(error Fatal attempt to include C++ code on a compiler/machine combo that has not been set up to support C++)
+#  endif
+#endif
 
 # Not clear how to escape commas for libraries with their own configure
 # script, and they don't need this defined anyway, so leave this out of
