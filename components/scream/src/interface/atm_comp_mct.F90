@@ -1,7 +1,7 @@
 module atm_comp_mct
 
   ! !USES:
-  use scream_scorpio_interface, only: eam_init_pio_1, eam_init_pio_2, eam_history_finalize, eam_history_write
+  use scream_scorpio_interface, only: eam_history_finalize, eam_history_write
   use esmf
   use mct_mod
   use perf_mod

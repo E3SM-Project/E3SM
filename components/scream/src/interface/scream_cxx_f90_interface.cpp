@@ -92,7 +92,11 @@ void scream_init (const MPI_Fint& f_comm, const int& start_ymd, const int& start
   (void) start_ymd;
   (void) start_tod;
   (void) f_comm;
-  (void) eam_init_pio_1(f_comm,compid);
+
+  (void) eam_init_pio_subsystem(f_comm,compid);
+  (void) register_outfile("example_pio_structured.nc");
+  (void) register_outfile("example_pio_structured_v2.nc");
+//  (void) eam_init_pio_1(f_comm,compid);
   (void) eam_init_pio_2();
 }
 /*===============================================================================================*/

@@ -14,14 +14,31 @@ module scream_scorpio_interface_iso_c
 !
 
 contains
+!!=====================================================================!
+!  subroutine eam_init_pio_1_c(mpicom,compid) bind(c)
+!    use scream_scorpio_interface, only : eam_init_pio_subsystem, register_outfile
+!    integer(kind=c_int), value, intent(in) :: mpicom
+!    integer(kind=c_int), value, intent(in) :: compid
+!    write(*,*) "ASD - Got this far: ", mpicom, compid
+!!    call eam_init_pio_subsystem(mpicom,compid)
+!    call register_outfile("example_pio_structured.nc")
+!    call register_outfile("example_pio_structured_v2.nc")
+!  end subroutine eam_init_pio_1_c
 !=====================================================================!
-  subroutine eam_init_pio_1_c(mpicom,compid) bind(c)
-    use scream_scorpio_interface, only : eam_init_pio_1
+  subroutine eam_init_pio_subsystem_c(mpicom,compid) bind(c)
+    use scream_scorpio_interface, only : eam_init_pio_subsystem
     integer(kind=c_int), value, intent(in) :: mpicom
     integer(kind=c_int), value, intent(in) :: compid
-    write(*,*) "ASD - Got this far: ", mpicom, compid
-    call eam_init_pio_1(mpicom,compid)
-  end subroutine eam_init_pio_1_c
+
+    call eam_init_pio_subsystem(mpicom,compid)
+  end subroutine eam_init_pio_subsystem_c
+!=====================================================================!
+  subroutine register_outfile_c(filename) bind(c)
+    use scream_scorpio_interface, only : register_outfile
+    character(len=*,kind=c_char), intent(in) :: filename
+
+    call register_outfile(filename)
+  end subroutine register_outfile_c
 !=====================================================================!
   subroutine eam_init_pio_2_c() bind(c)
     use scream_scorpio_interface, only : eam_init_pio_2
