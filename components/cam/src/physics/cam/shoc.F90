@@ -2142,56 +2142,12 @@ subroutine shoc_tke(&
   real(rtype), intent(out) :: isotropy(shcol,nlev)
 
 ! LOCAL VARIABLES
-  !real(rtype) :: sterm(shcol,nlevi), sterm_zt(shcol,nlev)
-  !real(rtype) :: brunt_int(shcol)
-
-!bsingh-dbg
-! LOCAL VARIABLES
-  real(rtype) :: shear_prod(shcol,nlevi)
   real(rtype) :: sterm(shcol,nlevi), sterm_zt(shcol,nlev)
-  real(rtype) :: shear_prod_zt(shcol,nlev)
-  real(rtype) :: grd,betdz,Ck,Ckh,Ckm,Ce
-  real(rtype) :: Ckh_s,Ckm_s,Ces,Ce1,Ce2,smix,Cee,Cs
-  real(rtype) :: buoy_sgs,ratio,a_prod_sh,a_prod_bu,a_diss
-  real(rtype) :: lstarn, lstarp, bbb, omn, omp, ustar
-  real(rtype) :: qsatt,dqsat,tk_in, u_grad, v_grad
-  real(rtype) :: tscale1,lambda,buoy_sgs_save,grid_dzw,grw1,grid_dz
-  real(rtype) :: lambda_low,lambda_high,lambda_slope, brunt_low
-  real(rtype) :: brunt_int(shcol), z_over_L
-  real(rtype) :: zL_crit_val, pbl_trans
-  integer i,j,k,kc,kb,kt
-
-  lambda_low=0.001_rtype
-  lambda_high=0.04_rtype
-  lambda_slope=0.65_rtype
-  brunt_low=0.02_rtype
-
-  ! Critical value of dimensionless Monin-Obukhov length
-  zL_crit_val = 100.0_rtype
-  ! Transition depth [m] above PBL top to allow
-  !   stability diffusivities
-  pbl_trans = 200.0_rtype
-
-  ! Turbulent coefficients
-  Cs=0.15_rtype
-  Ck=0.1_rtype
-  ! eddy coefficients for diffusivities
-  Ckh=0.1_rtype
-  Ckm=0.1_rtype
-  ! eddy coefficients for stable PBL diffusivities
-  Ckh_s=1.0_rtype
-  Ckm_s=1.0_rtype
-  Ce=Ck**3/Cs**4
-
-  Ce1=Ce/0.7_rtype*0.19_rtype
-  Ce2=Ce/0.7_rtype*0.51_rtype
-
-  Cee=Ce1+Ce2
-
-!bsingh-dbg-ends
+  !column integrated stability
+  real(rtype) :: brunt_int(shcol)
 
   ! Compute integrated column stability in lower troposphere
-  call integ_column_stability(nlev, shcol, brunt_int, dz_zt, pres, brunt)
+  call integ_column_stability(nlev, shcol, dz_zt, pres, brunt, brunt_int)
 
   ! Compute shear production term, which is on interface levels
   ! This follows the methods of Bretheron and Park (2010)
@@ -2201,10 +2157,9 @@ subroutine shoc_tke(&
   ! Interpolate shear term from interface to thermo grid
   call linear_interp(zi_grid,zt_grid,sterm,sterm_zt,nlevi,nlev,shcol,0._rtype)
 
-
-  call adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
-       pblh, zt_grid, sterm_zt, brunt_int, brunt, tkh, tk, &
-       obklen, tke, isotropy)
+  call adv_sgs_tke(nlev, shcol, dtime, brunt_int, pblh, &
+     obklen, shoc_mix, wthv_sec, sterm_zt, brunt, zt_grid,  &
+     tkh, tk, tke, isotropy)
 
   return
 
@@ -2213,8 +2168,9 @@ end subroutine shoc_tke
 !==============================================================
 ! Compute column integrated stability in lower troposphere
 
-subroutine integ_column_stability(nlev, shcol, brunt_int, dz_zt, pres, brunt)
+subroutine integ_column_stability(nlev, shcol, dz_zt, pres, brunt, brunt_int)
 
+  implicit none
   !intent-ins
   integer,     intent(in) :: nlev, shcol
   ! thickness on thermodynamic grid [m]
@@ -2249,6 +2205,8 @@ end subroutine integ_column_stability
 ! This follows the methods of Bretheron and Park (2010)
 
 subroutine compute_shr_prod(nlevi, nlev, shcol, dz_zi, u_wind, v_wind, sterm)
+
+  implicit none
 
   integer,     intent(in)  :: nlevi, nlev, shcol
   ! thickness on interface grid [m]
@@ -2292,31 +2250,34 @@ end subroutine compute_shr_prod
 !==============================================================
 ! Advance SGS TKE
 
-subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
-     pblh, zt_grid, sterm_zt, brunt_int, brunt, tkh, tk, &
-     obklen, tke, isotropy)
+subroutine adv_sgs_tke(nlev, shcol, dtime, brunt_int, pblh, &
+     obklen, shoc_mix, wthv_sec, sterm_zt, brunt, zt_grid,  &
+     tkh, tk, tke, isotropy)
+
+  implicit none
 
   !intent -ins
   integer, intent(in) :: nlev, shcol
 
   ! timestep [s]
   real(rtype), intent(in) :: dtime
+  !column integrated stability
+  real(rtype), intent(in) :: brunt_int(shcol)
+  ! PBL height [m]
+  real(rtype), intent(in) :: pblh(shcol)
+  ! Monin-Okbukov length [m]
+  real(rtype), intent(in) :: obklen(shcol)
   ! Mixing length [m]
   real(rtype), intent(in) :: shoc_mix(shcol,nlev)
   ! SGS buoyancy flux [K m/s]
   real(rtype), intent(in) :: wthv_sec(shcol,nlev)
   ! Interpolate shear production to thermo grid
   real(rtype), intent(in) :: sterm_zt(shcol,nlev)
-  !column integrated stability
-  real(rtype), intent(in) :: brunt_int(shcol)
   ! Brunt Vaisalla frequncy [/s]
   real(rtype), intent(in) :: brunt(shcol,nlev)
-  ! PBL height [m]
-  real(rtype), intent(in) :: pblh(shcol)
   ! Heights on the mid-point grid [m]
   real(rtype), intent(in) :: zt_grid(shcol,nlev)
-  ! Monin-Okbukov length [m]
-  real(rtype), intent(in) :: obklen(shcol)
+
 
   ! intent-inout
   ! eddy coefficient for heat [m2/s]
@@ -2333,14 +2294,9 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
   !local variables
   integer :: i, k
   real(rtype) :: z_over_L, a_prod_bu, a_prod_sh, a_diss, &
-       buoy_sgs_save, tscale1, lambda, smix
+       buoy_sgs_save, tscale, lambda
 
-  real(rtype) :: Ck
-  real(rtype) :: Cs
-  real(rtype) :: Ce
-  real(rtype) :: Ce1
-  real(rtype) :: Ce2
-  real(rtype) :: Cee
+  real(rtype) :: Ck, Cs, Ce, Ce1, Ce2, Cee
 
   !Parameters
   real(rtype), parameter :: lambda_low   = 0.001_rtype
@@ -2360,7 +2316,6 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
   real(rtype), parameter :: Ckh_s = 1.0_rtype
   real(rtype), parameter :: Ckm_s = 1.0_rtype
 
-
   Cs=0.15_rtype
   Ck=0.1_rtype
   Ce=Ck**3/Cs**4
@@ -2372,7 +2327,6 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
   do k = 1, nlev
      do i = 1, shcol
 
-        smix=shoc_mix(i,k)
         ! Compute buoyant production term
         a_prod_bu=(ggr/basetemp)*wthv_sec(i,k)
 
@@ -2396,7 +2350,7 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
         ! moments in SHOC
 
         ! define the time scale
-        tscale1=(2.0_rtype*tke(i,k))/a_diss
+        tscale=(2.0_rtype*tke(i,k))/a_diss
 
         ! define a damping term "lambda" based on column stability
         lambda=lambda_low+((brunt_int(i)/ggr)-brunt_low)*lambda_slope
@@ -2406,7 +2360,7 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
         if (buoy_sgs_save .le. 0._rtype) lambda=0._rtype
 
         ! Compute the return to isotropic timescale
-        isotropy(i,k)=min(maxiso,tscale1/(1._rtype+lambda*buoy_sgs_save*tscale1**2))
+        isotropy(i,k)=min(maxiso,tscale/(1._rtype+lambda*buoy_sgs_save*tscale**2))
 
         ! Dimensionless Okukhov length considering only
         !  the lowest model grid layer height to scale
