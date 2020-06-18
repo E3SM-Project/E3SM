@@ -3,6 +3,8 @@
 #include "ekat/scream_assert.hpp"
 #include "ekat/util/scream_arch.hpp"
 
+#include <vector>
+
 #ifdef SCREAM_FPE
 # include <xmmintrin.h>
 #endif
