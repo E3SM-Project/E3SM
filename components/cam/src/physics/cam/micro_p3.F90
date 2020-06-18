@@ -1109,6 +1109,10 @@ contains
        pratot,prctot,p3_tend_out,mu_c,lamc,liq_ice_exchange,vap_liq_exchange, &
        vap_ice_exchange,col_location)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: p3_main_f
+#endif
+
     !----------------------------------------------------------------------------------------!
     !                                                                                        !
     ! This is the main subroutine for the P3 microphysics scheme.  It is called from the     !
@@ -1186,7 +1190,10 @@ contains
     real(rtype), intent(out),   dimension(its:ite,kts:kte,49)   :: p3_tend_out ! micro physics tendencies
     real(rtype), intent(in),    dimension(its:ite,3)            :: col_location
     real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: qc_relvar
+
+    !
     !----- Local variables and parameters:  -------------------------------------------------!
+    !
 
     real(rtype), dimension(its:ite,kts:kte) :: mu_r  ! shape parameter of rain
     real(rtype), dimension(its:ite,kts:kte) :: t     ! temperature at the beginning of the microhpysics step [K]
@@ -1223,6 +1230,18 @@ contains
     logical(btype), parameter :: debug_ABORT  = .false.  !.true. will result in forced abort in s/r 'check_values'
 
     real(rtype),dimension(its:ite,kts:kte) :: qc_old, nc_old, qr_old, nr_old, qitot_old, nitot_old, qv_old, th_old
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call p3_main_f(qc,nc,qr,nr,th,qv,dt,qitot,qirim,nitot,birim,   &
+           pres,dzq,ncnuc,naai,qc_relvar,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
+           diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc, &
+           pdel,exner,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm,  &
+           pratot,prctot,mu_c,lamc,liq_ice_exchange,vap_liq_exchange, &
+           vap_ice_exchange,col_location)
+      return
+   endif
+#endif
 
     !-----------------------------------------------------------------------------------!
     !  End of variables/parameters declarations
@@ -1423,9 +1442,7 @@ contains
 
     !=== (end of section for diagnostic hydrometeor/precip types)
 
-
     ! end of main microphysics routine
-
 
     return
 

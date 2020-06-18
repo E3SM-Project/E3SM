@@ -1,1 +1,1 @@
-generic-desktop.cmake
+linux-generic.cmake

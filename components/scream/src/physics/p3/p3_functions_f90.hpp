@@ -1218,6 +1218,63 @@ void p3_main_post_main_loop_f(
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+struct P3MainData
+{
+  static constexpr size_t NUM_ARRAYS = 42;
+  static constexpr size_t NUM_INPUT_ARRAYS = 21;
+
+  // Inputs
+  Int its, ite, kts, kte, it;
+  Real* pres, *dzq, *ncnuc, *naai, *pdel, *exner, *icldm, *lcldm, *rcldm, *qc_relvar, *col_location;
+  Real dt;
+  bool log_predictNc;
+
+  // In/out
+  Real* qc, *nc, *qr, *nr, *qitot, *qirim, *nitot, *birim, *qv, *th;
+
+  // Out
+  Real* diag_ze, *diag_effc, *diag_effi, *diag_vmi, *diag_di, *diag_rhoi, *mu_c, *lamc, *cmeiout, *prain, *nevapr, *prer_evap, *pratot, *prctot, *liq_ice_exchange, *vap_liq_exchange, *vap_ice_exchange, *rflx, *sflx, *prt_liq, *prt_sol;
+
+  P3MainData(Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool log_predictNc_,
+             const std::array< std::pair<Real, Real>, NUM_INPUT_ARRAYS >& ranges);
+
+  template <util::TransposeDirection::Enum D>
+  void transpose()
+  {
+    // P3MainData d_trans(*this);
+    // util::transpose<D>(v, d_trans.v, m_ni, m_nk);
+    // util::transpose<D>(s, d_trans.s, m_ni, m_nk);
+    // util::transpose<D>(f, d_trans.f, m_ni, m_nk);
+
+    // *this = d_trans;
+  }
+
+  // deep copy
+  P3MainData(const P3MainData& rhs);
+
+  Int nt() const { return m_nt; }
+
+ private:
+  // Internals
+  Int m_nt;
+  std::vector<Real> m_data;
+};
+
+void p3_main(P3MainData& d);
+
+extern "C" {
+
+void p3_main_f(
+  Real* qc, Real* nc, Real* qr, Real* nr, Real* th, Real* qv, Real dt, Real* qitot, Real* qirim, Real* nitot, Real* birim,
+  Real* pres, Real* dzq, Real* ncnuc, Real* naai, Real* qc_relvar, Int it, Real* prt_liq, Real* prt_sol, Int its, Int ite, Int kts, Int kte, Real* diag_ze, Real* diag_effc,
+  Real* diag_effi, Real* diag_vmi, Real* diag_di, Real* diag_rhoi, bool log_predictNc,
+  Real* pdel, Real* exner, Real* cmeiout, Real* prain, Real* nevapr, Real* prer_evap, Real* rflx, Real* sflx, Real* rcldm, Real* lcldm, Real* icldm,
+  Real* pratot, Real* prctot, Real* mu_c, Real* lamc, Real* liq_ice_exchange, Real* vap_liq_exchange,
+  Real* vap_ice_exchange, Real* col_location);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // BFB math stuff
 ///////////////////////////////////////////////////////////////////////////////
 

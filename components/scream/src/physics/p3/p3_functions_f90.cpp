@@ -212,6 +212,14 @@ void p3_main_post_main_loop_c(
   Real* mu_c, Real* nu, Real* lamc, Real* mu_r, Real* lamr, Real* vap_liq_exchange,
   Real*  ze_rain, Real* ze_ice, Real* diag_vmi, Real* diag_effi, Real* diag_di, Real* diag_rhoi, Real* diag_ze, Real* diag_effc);
 
+void p3_main_c(
+  Real* qc, Real* nc, Real* qr, Real* nr, Real* th, Real* qv, Real dt, Real* qitot, Real* qirim, Real* nitot, Real* birim,
+  Real* pres, Real* dzq, Real* ncnuc, Real* naai, Real* qc_relvar, Int it, Real* prt_liq, Real* prt_sol, Int its, Int ite, Int kts, Int kte, Real* diag_ze, Real* diag_effc,
+  Real* diag_effi, Real* diag_vmi, Real* diag_di, Real* diag_rhoi, bool log_predictNc,
+  Real* pdel, Real* exner, Real* cmeiout, Real* prain, Real* nevapr, Real* prer_evap, Real* rflx, Real* sflx, Real* rcldm, Real* lcldm, Real* icldm,
+  Real* pratot, Real* prctot, Real* mu_c, Real* lamc, Real* liq_ice_exchange, Real* vap_liq_exchange,
+  Real* vap_ice_exchange, Real* col_location);
+
 }
 
 namespace scream {
@@ -220,11 +228,13 @@ namespace p3 {
 // helper functions
 namespace {
 
-template <size_t N>
+template <size_t N, size_t M>
 void gen_random_data(const std::array<std::pair<Real, Real>, N>& ranges,
-                     const std::array<Real**, N>& ptrs,
+                     const std::array<Real**, M>& ptrs,
                      Real* data, Int nk)
 {
+  static_assert(N <= M);
+
   Int offset = 0;
   std::default_random_engine generator;
 
@@ -235,6 +245,11 @@ void gen_random_data(const std::array<std::pair<Real, Real>, N>& ranges,
     for(Int k = 0; k < nk; ++k) {
       (*ptrs[i])[k] = data_dist(generator);
     }
+  }
+
+  for (size_t i = N; i < M; ++i) {
+    *ptrs[i] = data + offset;
+    offset += nk;
   }
 }
 
@@ -1140,6 +1155,58 @@ void p3_main_post_main_loop(P3MainPostLoopData& d)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+P3MainData::P3MainData(
+  Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool log_predictNc_,
+  const std::array< std::pair<Real, Real>, NUM_INPUT_ARRAYS >& ranges) :
+  its(its_), ite(ite_), kts(kts_), kte(kte_), it(it_), dt(dt_), log_predictNc(log_predictNc_),
+  m_nt( ((ite_ - its_) + 1) * ((kte_ - kts_) + 1) + 1),
+  m_data( NUM_ARRAYS * m_nt, 0.0)
+{
+  std::array<Real**, NUM_ARRAYS> ptrs = {
+    &pres, &dzq, &ncnuc, &naai, &pdel, &exner, &icldm, &lcldm, &rcldm, &qc_relvar, &col_location,
+    &qc, &nc, &qr, &nr, &qitot, &qirim, &nitot, &birim, &qv, &th,
+    &diag_ze, &diag_effc, &diag_effi, &diag_vmi, &diag_di, &diag_rhoi, &mu_c, &lamc, &cmeiout, &prain, &nevapr, &prer_evap, &pratot, &prctot, &liq_ice_exchange, &vap_liq_exchange, &vap_ice_exchange, &rflx, &sflx, &prt_liq, &prt_sol
+  };
+
+  gen_random_data(ranges, ptrs, m_data.data(), m_nt);
+}
+
+P3MainData::P3MainData(const P3MainData& rhs) :
+  its(rhs.its), ite(rhs.ite), kts(rhs.kts), kte(rhs.kte), it(rhs.it), dt(rhs.dt), log_predictNc(rhs.log_predictNc),
+  m_nt(rhs.m_nt),
+  m_data(rhs.m_data)
+{
+  Int offset = 0;
+  Real* data_begin = m_data.data();
+
+  std::array<Real**, NUM_ARRAYS> ptrs = {
+    &pres, &dzq, &ncnuc, &naai, &pdel, &exner, &icldm, &lcldm, &rcldm, &qc_relvar, &col_location,
+    &qc, &nc, &qr, &nr, &qitot, &qirim, &nitot, &birim, &qv, &th,
+    &diag_ze, &diag_effc, &diag_effi, &diag_vmi, &diag_di, &diag_rhoi, &mu_c, &lamc, &cmeiout, &prain, &nevapr, &prer_evap, &pratot, &prctot, &liq_ice_exchange, &vap_liq_exchange, &vap_ice_exchange, &rflx, &sflx, &prt_liq, &prt_sol
+  };
+
+  for (size_t i = 0; i < NUM_ARRAYS; ++i) {
+    *ptrs[i] = data_begin + offset;
+    offset += m_nt;
+  }
+}
+
+void p3_main(P3MainData& d)
+{
+  p3_init(true);
+  d.transpose<util::TransposeDirection::c2f>();
+  p3_main_c(
+    d.qc, d.nc, d.qr, d.nr, d.th, d.qv, d.dt, d.qitot, d.qirim, d.nitot, d.birim,
+    d.pres, d.dzq, d.ncnuc, d.naai, d.qc_relvar, d.it, d.prt_liq, d.prt_sol, d.its, d.ite, d.kts, d.kte, d.diag_ze, d.diag_effc,
+    d.diag_effi, d.diag_vmi, d.diag_di, d.diag_rhoi, d.log_predictNc,
+    d.pdel, d.exner, d.cmeiout, d.prain, d.nevapr, d.prer_evap, d.rflx, d.sflx, d.rcldm, d.lcldm, d.icldm,
+    d.pratot, d.prctot, d.mu_c, d.lamc, d.liq_ice_exchange, d.vap_liq_exchange,
+    d.vap_ice_exchange, d.col_location);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 std::shared_ptr<P3GlobalForFortran::Views> P3GlobalForFortran::s_views;
 
 const P3GlobalForFortran::Views& P3GlobalForFortran::get()
@@ -1756,7 +1823,6 @@ void cloud_sedimentation_f(
   using KT = typename P3F::KT;
   using ExeSpace = typename KT::ExeSpace;
   using MemberType = typename P3F::MemberType;
-  using uview_1d = typename P3F::uview_1d<Spack>;
 
   scream_require_msg(kts == 1, "kts must be 1, got " << kts);
 
@@ -1825,7 +1891,6 @@ void ice_sedimentation_f(
   using KT         = typename P3F::KT;
   using ExeSpace   = typename KT::ExeSpace;
   using MemberType = typename P3F::MemberType;
-  using uview_1d   = typename P3F::uview_1d<Spack>;
 
   scream_require_msg(kts == 1, "kts must be 1, got " << kts);
 
@@ -1898,7 +1963,6 @@ void rain_sedimentation_f(
   using KT         = typename P3F::KT;
   using ExeSpace   = typename KT::ExeSpace;
   using MemberType = typename P3F::MemberType;
-  using uview_1d   = typename P3F::uview_1d<Spack>;
 
   scream_require_msg(kts == 1, "kts must be 1, got " << kts);
 
@@ -2386,7 +2450,6 @@ void homogeneous_freezing_f(
   using KT         = typename P3F::KT;
   using ExeSpace   = typename KT::ExeSpace;
   using MemberType = typename P3F::MemberType;
-  using uview_1d   = typename P3F::uview_1d<Spack>;
 
   scream_require_msg(kts == 1, "kts must be 1, got " << kts);
 
@@ -2805,7 +2868,6 @@ void check_values_f(Real* qv, Real* temp, Int kstart, Int kend,
 {
   using P3F        = Functions<Real, DefaultDevice>;
   using Spack      = typename P3F::Spack;
-  using uview_1d   = typename P3F::uview_1d<Spack>;
   using view_1d    = typename P3F::view_1d<Spack>;
   using suview_1d  = typename P3F::uview_1d<Real>;
   using KT         = typename P3F::KT;
@@ -3046,7 +3108,6 @@ void p3_main_pre_main_loop_f(
   using KT         = typename P3F::KT;
   using ExeSpace   = typename KT::ExeSpace;
   using MemberType = typename P3F::MemberType;
-  using uview_1d   = typename P3F::uview_1d<Spack>;
 
   scream_require_msg(kts == 1, "kts must be 1, got " << kts);
 
@@ -3158,7 +3219,6 @@ void p3_main_main_loop_f(
   using KT         = typename P3F::KT;
   using ExeSpace   = typename KT::ExeSpace;
   using MemberType = typename P3F::MemberType;
-  using uview_1d   = typename P3F::uview_1d<Spack>;
 
   scream_require_msg(kts == 1, "kts must be 1, got " << kts);
 
@@ -3303,7 +3363,6 @@ void p3_main_post_main_loop_f(
   using KT         = typename P3F::KT;
   using ExeSpace   = typename KT::ExeSpace;
   using MemberType = typename P3F::MemberType;
-  using uview_1d   = typename P3F::uview_1d<Spack>;
 
   scream_require_msg(kts == 1, "kts must be 1, got " << kts);
 
@@ -3389,6 +3448,155 @@ void p3_main_post_main_loop_f(
       ze_rain, ze_ice, diag_vmi, diag_effi, diag_di, diag_rhoi, diag_ze, diag_effc
     },
     nk, inout_views);
+}
+
+void p3_main_f(
+  Real* qc, Real* nc, Real* qr, Real* nr, Real* th, Real* qv, Real dt, Real* qitot, Real* qirim, Real* nitot, Real* birim,
+  Real* pres, Real* dzq, Real* ncnuc, Real* naai, Real* qc_relvar, Int it, Real* prt_liq, Real* prt_sol, Int its, Int ite, Int kts, Int kte, Real* diag_ze, Real* diag_effc,
+  Real* diag_effi, Real* diag_vmi, Real* diag_di, Real* diag_rhoi, bool log_predictNc,
+  Real* pdel, Real* exner, Real* cmeiout, Real* prain, Real* nevapr, Real* prer_evap, Real* rflx, Real* sflx, Real* rcldm, Real* lcldm, Real* icldm,
+  Real* pratot, Real* prctot, Real* mu_c, Real* lamc, Real* liq_ice_exchange, Real* vap_liq_exchange,
+  Real* vap_ice_exchange, Real* col_location)
+{
+  using P3F  = Functions<Real, DefaultDevice>;
+
+  using Spack      = typename P3F::Spack;
+  using view_2d    = typename P3F::view_2d<Spack>;
+  using sview_1d   = typename P3F::view_1d<Real>;
+  using sview_2d   = typename P3F::view_2d<Real>;
+  using KT         = typename P3F::KT;
+
+  scream_require_msg(its == 1, "its must be 1, got " << its);
+  scream_require_msg(kts == 1, "kts must be 1, got " << kts);
+
+  // Adjust for 0-based indexing
+  its  -= 1;
+  ite  -= 1;
+  kts  -= 1;
+  kte  -= 1;
+
+  const Int ni    = (ite - its) + 1;
+  const Int nk    = (kte - kts) + 1;
+
+  // Set up views, pretend all views are input views for the sake of initializing kokkos views
+  Kokkos::Array<view_2d, P3MainData::NUM_ARRAYS> temp_d;
+  Kokkos::Array<size_t,  P3MainData::NUM_ARRAYS> dim1_sizes;
+  Kokkos::Array<size_t,  P3MainData::NUM_ARRAYS> dim2_sizes;
+  Kokkos::Array<const Real*, P3MainData::NUM_ARRAYS> ptr_array = {
+    pres, dzq, ncnuc, naai, pdel, exner, icldm, lcldm, rcldm, qc_relvar, col_location,
+    qc, nc, qr, nr, qitot, qirim, nitot, birim, qv, th,
+    diag_ze, diag_effc, diag_effi, diag_vmi, diag_di, diag_rhoi, mu_c, lamc, cmeiout, prain, nevapr, prer_evap, pratot, prctot, liq_ice_exchange, vap_liq_exchange, vap_ice_exchange, rflx, sflx, prt_liq, prt_sol
+  };
+
+  for (size_t i = 0; i < P3MainData::NUM_ARRAYS; ++i) dim1_sizes[i] = ni;
+  for (size_t i = 0; i < P3MainData::NUM_ARRAYS; ++i) dim2_sizes[i] = nk;
+
+  dim2_sizes[10] = 3; // col_location
+  dim2_sizes[38] = nk+1; // rflx
+  dim2_sizes[39] = nk+1; // sflx
+  dim1_sizes[40] = 1; dim2_sizes[40] = ni; // prt_liq
+  dim1_sizes[41] = 1; dim2_sizes[41] = ni; // prt_sol
+
+  // Initialize outputs to avoid uninitialized read warnings in memory checkers
+  for (size_t i = P3MainData::NUM_INPUT_ARRAYS; i < P3MainData::NUM_ARRAYS; ++i) {
+    for (size_t j = 0; j < dim1_sizes[i]*dim2_sizes[i]; ++j) {
+      const_cast<Real*>(ptr_array[i])[j] = 0;
+    }
+  }
+
+  pack::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d);
+
+  view_2d
+    pres_d             (temp_d[0]),
+    dzq_d              (temp_d[1]),
+    ncnuc_d            (temp_d[2]),
+    naai_d             (temp_d[3]),
+    pdel_d             (temp_d[4]),
+    exner_d            (temp_d[5]),
+    icldm_d            (temp_d[6]),
+    lcldm_d            (temp_d[7]),
+    rcldm_d            (temp_d[8]),
+    qc_relvar_d        (temp_d[9]),
+    col_location_temp_d(temp_d[10]),
+    qc_d               (temp_d[11]),
+    nc_d               (temp_d[12]),
+    qr_d               (temp_d[13]),
+    nr_d               (temp_d[14]),
+    qitot_d            (temp_d[15]),
+    qirim_d            (temp_d[16]),
+    nitot_d            (temp_d[17]),
+    birim_d            (temp_d[18]),
+    qv_d               (temp_d[19]),
+    th_d               (temp_d[20]),
+    diag_ze_d          (temp_d[21]),
+    diag_effc_d        (temp_d[22]),
+    diag_effi_d        (temp_d[23]),
+    diag_vmi_d         (temp_d[24]),
+    diag_di_d          (temp_d[25]),
+    diag_rhoi_d        (temp_d[26]),
+    mu_c_d             (temp_d[27]),
+    lamc_d             (temp_d[28]),
+    cmeiout_d          (temp_d[29]),
+    prain_d            (temp_d[30]),
+    nevapr_d           (temp_d[31]),
+    prer_evap_d        (temp_d[32]),
+    pratot_d           (temp_d[33]),
+    prctot_d           (temp_d[34]),
+    liq_ice_exchange_d (temp_d[35]),
+    vap_liq_exchange_d (temp_d[36]),
+    vap_ice_exchange_d (temp_d[37]),
+    rflx_d             (temp_d[38]),
+    sflx_d             (temp_d[39]),
+    prt_liq_temp_d     (temp_d[40]),
+    prt_sol_temp_d     (temp_d[41]);
+
+  // Special cases: prt_liq=1d<scalar>(ni), prt_sol=1d<scalar>(ni), col_location=2d<scalar>(ni, 3)
+  sview_1d prt_liq_d("prt_liq_d", ni), prt_sol_d("prt_sol_d", ni);
+  sview_2d col_location_d("col_location_d", ni, 3);
+
+  Kokkos::parallel_for(ni, KOKKOS_LAMBDA(const Int& i) {
+    prt_liq_d(i) = prt_liq_temp_d(0, i / Spack::n)[i % Spack::n];
+    prt_sol_d(i) = prt_sol_temp_d(0, i / Spack::n)[i % Spack::n];
+
+    Real* loc = reinterpret_cast<Real*>(util::subview(col_location_temp_d, i).data());
+    for (int j = 0; j < 3; ++j) {
+      col_location_d(i, j) = loc[j];
+    }
+  });
+
+  // TODO: need transpose
+
+  P3F::p3_main(pres_d, dzq_d, ncnuc_d, naai_d, qc_relvar_d, dt, ni, nk, it, log_predictNc, pdel_d, exner_d,
+               icldm_d, lcldm_d, rcldm_d, col_location_d, qc_d, nc_d, qr_d, nr_d, qitot_d, qirim_d, nitot_d,
+               birim_d, qv_d, th_d, prt_liq_d, prt_sol_d, diag_ze_d, diag_effc_d, diag_effi_d, diag_vmi_d, diag_di_d,
+               diag_rhoi_d, mu_c_d, lamc_d, cmeiout_d, prain_d, nevapr_d, prer_evap_d, rflx_d, sflx_d, pratot_d,
+               prctot_d, liq_ice_exchange_d, vap_liq_exchange_d, vap_ice_exchange_d);
+
+  // TODO: need transpose
+
+  Kokkos::parallel_for(ni, KOKKOS_LAMBDA(const Int& i) {
+    prt_liq_temp_d(0, i / Spack::n)[i % Spack::n] = prt_liq_d(i);
+    prt_sol_temp_d(0, i / Spack::n)[i % Spack::n] = prt_sol_d(i);
+  });
+
+  // Sync back to host
+  Kokkos::Array<view_2d, P3MainData::NUM_ARRAYS - 11> inout_views = {
+    qc_d, nc_d, qr_d, nr_d, qitot_d, qirim_d, nitot_d, birim_d, qv_d, th_d,
+    diag_ze_d, diag_effc_d, diag_effi_d, diag_vmi_d, diag_di_d, diag_rhoi_d, mu_c_d, lamc_d, cmeiout_d, prain_d, nevapr_d, prer_evap_d, pratot_d, prctot_d, liq_ice_exchange_d, vap_liq_exchange_d, vap_ice_exchange_d, rflx_d, sflx_d, prt_liq_temp_d, prt_sol_temp_d
+  };
+  Kokkos::Array<size_t,  P3MainData::NUM_ARRAYS - 11> dim1_sizes_out;
+  Kokkos::Array<size_t,  P3MainData::NUM_ARRAYS - 11> dim2_sizes_out;
+
+  dim2_sizes_out[27] = nk+1; // rflx
+  dim2_sizes_out[28] = nk+1; // sflx
+  dim1_sizes_out[29] = 1; dim2_sizes_out[29] = ni; // prt_liq
+  dim1_sizes_out[30] = 1; dim2_sizes_out[30] = ni; // prt_sol
+
+  pack::device_to_host({
+      qc, nc, qr, nr, qitot, qirim, nitot, birim, qv, th,
+      diag_ze, diag_effc, diag_effi, diag_vmi, diag_di, diag_rhoi, mu_c, lamc, cmeiout, prain, nevapr, prer_evap, pratot, prctot, liq_ice_exchange, vap_liq_exchange, vap_ice_exchange, rflx, sflx, prt_liq, prt_sol
+    },
+    dim1_sizes_out, dim2_sizes_out, inout_views);
 }
 
 } // namespace p3

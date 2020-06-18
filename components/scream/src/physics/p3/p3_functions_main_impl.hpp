@@ -866,7 +866,6 @@ void Functions<S,D>
 }
 
 template <typename S, typename D>
-KOKKOS_FUNCTION
 void Functions<S,D>
 ::p3_main(
   // inputs
