@@ -162,6 +162,7 @@ module five_intr
     use ppgrid,          only: pver, pverp, pcols
     
     ! Define PBUF for prognostics
+! HHLEE test global -> physpkg
     call pbuf_add_field('T_FIVE',       'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), t_five_idx)
     call pbuf_add_field('Q_FIVE',       'global', dtype_r8, (/pcols,pver_five,pcnst,dyn_time_lvls/), q_five_idx) 
     call pbuf_add_field('U_FIVE',       'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), u_five_idx)
@@ -718,9 +719,9 @@ module five_intr
                do k = 1, pver_five
                   ratio = (q_five(i,k,p)*pdel_five(i,k)/gravit)/five_water
                   q_five(i,k,p) = q_five(i,k,p) - diff*ratio
+                  q_five(i,k,p) = max(q_five(i,k,p),0._r8)
                end do
             end if
-
        end do
     end do
 
@@ -1287,14 +1288,14 @@ module five_intr
     implicit none
   
     real(r8), intent(in) :: e3sm_pmid(pver)
-    real(r8), intent(in) :: five_pmid(pver)
-    real(r8), intent(in) :: five_pint(pverp)
+    real(r8), intent(in) :: five_pmid(pver_five)
+    real(r8), intent(in) :: five_pint(pverp_five)
     integer, intent(in) :: top_lev_e3sm
     integer, intent(out) :: top_lev_five
     
     real(r8) :: pmid_target
     integer :: i, k
-    
+   
     pmid_target = e3sm_pmid(top_lev_e3sm)
     
     do k=1,pver_five
@@ -1302,16 +1303,16 @@ module five_intr
       !   retun the indicee where they are equal
       if (five_pmid(k) .eq. pmid_target) then
         top_lev_five = k
-	return
+        return
       endif     
 
       ! IF the best above didn't pass then see where
       !  the level lies between pressure interfaces      
-      if (five_pint(k) .lt. pmid_target .and. &
+      if (five_pint(k) .le. pmid_target .and. &
           five_pint(k+1) .gt. pmid_target) then
         top_lev_five = k
-	return	  
-      endif	      
+        return  
+      endif      
     enddo
     
   return    
