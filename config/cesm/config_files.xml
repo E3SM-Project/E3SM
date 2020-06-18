@@ -107,7 +107,7 @@
   <entry id="COMP_ROOT_DIR_ATM">
     <type>char</type>
     <values>
-      <value component="datm" comp_interface="nuopc"   >$CIMEROOT/src/components/CDEPS/datm</value>
+      <value component="datm" comp_interface="nuopc"   >$CIMEROOT/src/components/cdeps/datm</value>
       <value component="datm" comp_interface="mct"     >$CIMEROOT/src/components/data_comps_$COMP_INTERFACE/datm</value>
       <value component="satm"      >$CIMEROOT/src/components/stub_comps_$COMP_INTERFACE/satm</value>
       <value component="xatm"      >$CIMEROOT/src/components/xcpl_comps_$COMP_INTERFACE/xatm</value>
@@ -139,7 +139,7 @@
       <value component="mom"       >$SRCROOT/components/mom/</value>
       <value component="nemo"      >$SRCROOT/components/nemo/</value>
       <value component="docn"  comp_interface="mct"    >$CIMEROOT/src/components/data_comps_$COMP_INTERFACE/docn</value>
-      <value component="docn"  comp_interface="nuopc"    >$CIMEROOT/src/components/CDEPS/docn</value>
+      <value component="docn"  comp_interface="nuopc"    >$CIMEROOT/src/components/cdeps/docn</value>
       <value component="socn"      >$CIMEROOT/src/components/stub_comps_$COMP_INTERFACE/socn</value>
       <value component="xocn"      >$CIMEROOT/src/components/xcpl_comps_$COMP_INTERFACE/xocn</value>
     </values>
@@ -155,7 +155,7 @@
     <values>
       <value component="ww3"      >$SRCROOT/components/ww3/</value>
       <value component="dwav" comp_interface="mct"     >$CIMEROOT/src/components/data_comps_$COMP_INTERFACE/dwav</value>
-      <value component="dwav" comp_interface="nuopc"     >$CIMEROOT/src/components/CDEPS/dwav</value>
+      <value component="dwav" comp_interface="nuopc"     >$CIMEROOT/src/components/cdeps/dwav</value>
       <value component="swav"      >$CIMEROOT/src/components/stub_comps_$COMP_INTERFACE/swav</value>
       <value component="xwav"      >$CIMEROOT/src/components/xcpl_comps_$COMP_INTERFACE/xwav</value>
     </values>
@@ -186,7 +186,7 @@
     <values>
       <value component="cice"      >$SRCROOT/components/cice/</value>
       <value component="dice" comp_interface="mct"     >$CIMEROOT/src/components/data_comps_$COMP_INTERFACE/dice</value>
-      <value component="dice" comp_interface="nuopc"     >$CIMEROOT/src/components/CDEPS/dice</value>
+      <value component="dice" comp_interface="nuopc"     >$CIMEROOT/src/components/cdeps/dice</value>
       <value component="sice"      >$CIMEROOT/src/components/stub_comps_$COMP_INTERFACE/sice</value>
       <value component="xice"      >$CIMEROOT/src/components/xcpl_comps_$COMP_INTERFACE/xice</value>
     </values>
@@ -204,7 +204,7 @@
       <value component="mosart"      >$SRCROOT/components/mosart/</value>
       <value component="mizuroute" >$SRCROOT/components/mizuRoute/</value>
       <value component="drof" comp_interface="mct"     >$CIMEROOT/src/components/data_comps_$COMP_INTERFACE/drof</value>
-      <value component="drof" comp_interface="nuopc"     >$CIMEROOT/src/components/CDEPS/drof</value>
+      <value component="drof" comp_interface="nuopc"     >$CIMEROOT/src/components/cdeps/drof</value>
       <value component="srof"      >$CIMEROOT/src/components/stub_comps_$COMP_INTERFACE/srof</value>
       <value component="xrof"      >$CIMEROOT/src/components/xcpl_comps_$COMP_INTERFACE/xrof</value>
     </values>
@@ -220,7 +220,7 @@
     <values>
       <value component="clm"      >$SRCROOT/components/clm/</value>
       <value component="dlnd" comp_interface="mct"      >$CIMEROOT/src/components/data_comps_$COMP_INTERFACE/dlnd</value>
-      <value component="dlnd" comp_interface="nuopc"     >$CIMEROOT/src/components/CDEPS/dlnd</value>
+      <value component="dlnd" comp_interface="nuopc"     >$CIMEROOT/src/components/cdeps/dlnd</value>
       <value component="slnd"      >$CIMEROOT/src/components/stub_comps_$COMP_INTERFACE/slnd</value>
       <value component="xlnd"      >$CIMEROOT/src/components/xcpl_comps_$COMP_INTERFACE/xlnd</value>
     </values>

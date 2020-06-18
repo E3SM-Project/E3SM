@@ -107,7 +107,7 @@
   <entry id="COMP_ROOT_DIR_ATM">
     <type>char</type>
     <values>
-      <value component="datm"      >$CIMEROOT/src/components/data_comps_$COMP_INTERFACE/datm</value>
+      <value component="datm"      >$CIMEROOT/src/components/cdeps/datm</value>
       <value component="satm"      >$CIMEROOT/src/components/stub_comps_$COMP_INTERFACE/satm</value>
       <value component="xatm"      >$CIMEROOT/src/components/xcpl_comps_$COMP_INTERFACE/xatm</value>
       <value component="cam"       >$SRCROOT/components/cam/</value>
@@ -139,7 +139,7 @@
       <value component="mom"       >$SRCROOT/components/mom/</value>
       <value component="nemo"      >$SRCROOT/components/nemo/</value>
       <value component="hycom"     >$SRCROOT/src/model/HYCOM/</value>
-      <value component="docn"      >$CIMEROOT/src/components/data_comps_$COMP_INTERFACE/docn</value>
+      <value component="docn"      >$CIMEROOT/src/components/cdeps/docn</value>
       <value component="socn"      >$CIMEROOT/src/components/stub_comps_$COMP_INTERFACE/socn</value>
       <value component="xocn"      >$CIMEROOT/src/components/xcpl_comps_$COMP_INTERFACE/xocn</value>
     </values>
@@ -154,7 +154,7 @@
     <default_value>unset</default_value>
     <values>
       <value component="ww3"      >$SRCROOT/components/ww3/</value>
-      <value component="dwav"      >$CIMEROOT/src/components/data_comps_$COMP_INTERFACE/dwav</value>
+      <value component="dwav"      >$CIMEROOT/src/components/cdeps/dwav</value>
       <value component="swav"      >$CIMEROOT/src/components/stub_comps_$COMP_INTERFACE/swav</value>
       <value component="xwav"      >$CIMEROOT/src/components/xcpl_comps_$COMP_INTERFACE/xwav</value>
     </values>
@@ -169,7 +169,7 @@
     <default_value>unset</default_value>
     <values>
       <value component="cism"      >$SRCROOT/components/cism/</value>
-      <value component="dglc"      >$CIMEROOT/src/components/data_comps_$COMP_INTERFACE/dglc</value>
+      <value component="dglc"      >$CIMEROOT/src/components/cdeps/dglc</value>
       <value component="sglc"      >$CIMEROOT/src/components/stub_comps_$COMP_INTERFACE/sglc</value>
       <value component="xglc"      >$CIMEROOT/src/components/xcpl_comps_$COMP_INTERFACE/xglc</value>
     </values>
@@ -184,7 +184,7 @@
     <default_value>unset</default_value>
     <values>
       <value component="cice"      >$SRCROOT/components/cice/</value>
-      <value component="dice"      >$CIMEROOT/src/components/data_comps_$COMP_INTERFACE/dice</value>
+      <value component="dice"      >$CIMEROOT/src/components/cdeps/dice</value>
       <value component="sice"      >$CIMEROOT/src/components/stub_comps_$COMP_INTERFACE/sice</value>
       <value component="xice"      >$CIMEROOT/src/components/xcpl_comps_$COMP_INTERFACE/xice</value>
     </values>
@@ -200,7 +200,7 @@
     <values>
       <value component="rtm"      >$SRCROOT/components/rtm/</value>
       <value component="mosart"      >$SRCROOT/components/mosart/</value>
-      <value component="drof"      >$CIMEROOT/src/components/data_comps_$COMP_INTERFACE/drof</value>
+      <value component="drof"      >$CIMEROOT/src/components/cdeps/drof</value>
       <value component="srof"      >$CIMEROOT/src/components/stub_comps_$COMP_INTERFACE/srof</value>
       <value component="xrof"      >$CIMEROOT/src/components/xcpl_comps_$COMP_INTERFACE/xrof</value>
     </values>
@@ -215,7 +215,7 @@
     <default_value>unset</default_value>
     <values>
       <value component="clm"      >$SRCROOT/components/clm/</value>
-      <value component="dlnd"      >$CIMEROOT/src/components/data_comps_$COMP_INTERFACE/dlnd</value>
+      <value component="dlnd"      >$CIMEROOT/src/components/cdeps/dlnd</value>
       <value component="slnd"      >$CIMEROOT/src/components/stub_comps_$COMP_INTERFACE/slnd</value>
       <value component="xlnd"      >$CIMEROOT/src/components/xcpl_comps_$COMP_INTERFACE/xlnd</value>
     </values>
@@ -242,7 +242,7 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="desp"      >$CIMEROOT/src/components/data_comps_$COMP_INTERFACE/desp</value>
+      <value component="desp"      >$CIMEROOT/src/components/cdeps/desp</value>
       <value component="sesp"      >$CIMEROOT/src/components/stub_comps_$COMP_INTERFACE/sesp</value>
     </values>
     <group>case_comps</group>
@@ -407,12 +407,12 @@
     <values>
       <value component="drv" >$COMP_ROOT_DIR_CPL/cime_config/namelist_definition_drv.xml</value>
       <!-- data model components -->
-      <value component="drof">$CIMEROOT/src/components/data_comps_$COMP_INTERFACE/drof/cime_config/namelist_definition_drof.xml</value>
-      <value component="datm">$CIMEROOT/src/components/data_comps_$COMP_INTERFACE/datm/cime_config/namelist_definition_datm.xml</value>
-      <value component="dice">$CIMEROOT/src/components/data_comps_$COMP_INTERFACE/dice/cime_config/namelist_definition_dice.xml</value>
-      <value component="dlnd">$CIMEROOT/src/components/data_comps_$COMP_INTERFACE/dlnd/cime_config/namelist_definition_dlnd.xml</value>
-      <value component="docn">$CIMEROOT/src/components/data_comps_$COMP_INTERFACE/docn/cime_config/namelist_definition_docn.xml</value>
-      <value component="dwav">$CIMEROOT/src/components/data_comps_$COMP_INTERFACE/dwav/cime_config/namelist_definition_dwav.xml</value>
+      <value component="drof">$COMP_ROOT_DIR_ROF/cime_config/namelist_definition_drof.xml</value>
+      <value component="datm">$COMP_ROOT_DIR_ATM/cime_config/namelist_definition_datm.xml</value>
+      <value component="dice">$COMP_ROOT_DIR_ICE/cime_config/namelist_definition_dice.xml</value>
+      <value component="dlnd">$COMP_ROOT_DIR_LND/cime_config/namelist_definition_dlnd.xml</value>
+      <value component="docn">$COMP_ROOT_DIR_OCN/cime_config/namelist_definition_docn.xml</value>
+      <value component="dwav">$COMP_ROOT_DIR_WAV/cime_config/namelist_definition_dwav.xml</value>
       <!-- external model components -->
       <!--  TODO
       <value component="cam"      >$COMP_ROOT_DIR_ATM/bld/namelist_files/namelist_definition.xml</value>
