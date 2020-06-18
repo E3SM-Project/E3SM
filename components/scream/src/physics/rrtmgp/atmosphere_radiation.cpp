@@ -1,4 +1,4 @@
-#include "share/scream_assert.hpp"
+#include "ekat/scream_assert.hpp"
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "physics/rrtmgp/atmosphere_radiation.hpp"
 

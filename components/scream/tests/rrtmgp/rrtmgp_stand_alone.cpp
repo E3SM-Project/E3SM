@@ -72,7 +72,7 @@ namespace scream {
         AtmosphereDriver ad;
 
         // Dummy timestamp
-        util::TimeStamp time (0,0,0);
+        util::TimeStamp time (0,0,0,0);
 
         // Initialize the driver, run the driver, cleanup
         ad.initialize(atm_comm, ad_params, time);
