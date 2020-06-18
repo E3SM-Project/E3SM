@@ -230,6 +230,8 @@ contains
     integer :: ierr
     logical :: found
 
+    character(len=10) :: var_dim_list(3) ! Needed for cases with time and space dimensions, need to create the array of strings ahead of time for GCC.
+
     ! Register all dimensions with the output file
     call register_dimension("example_pio_structured.nc","x","horizontal distance",10)
     call register_dimension("example_pio_structured.nc","y","vertical distance",3)
@@ -240,10 +242,15 @@ contains
     call register_variable("example_pio_structured.nc","x","answer to space and time",1,(/ "x" /), PIO_double,"x-real")
     call register_variable("example_pio_structured.nc","y","answer to space and time",1,(/ "y" /), PIO_double,"y-real")
 
-    call register_variable("example_pio_structured.nc","real_foo","answer to space and time",2,(/ "x", "time" /), PIO_double,"xt-real")
     call register_variable("example_pio_structured.nc","bar2","answer to space and time",1,(/ "x" /), PIO_double,"x-real")
-    call register_variable("example_pio_structured.nc","foo","answer to space and time",2,(/ "x", "time" /),PIO_int,"xt-int")
-    call register_variable("example_pio_structured.nc","bar","answer to space and time",3,(/ "x", "y", "time" /), PIO_double,"xyt-real")
+    var_dim_list(1) = trim("x")
+    var_dim_list(2) = trim("time")
+    call register_variable("example_pio_structured.nc","real_foo","answer to space and time",2,var_dim_list(:2), PIO_double,"xt-real")
+    call register_variable("example_pio_structured.nc","foo","answer to space and time",2,var_dim_list(:2),PIO_int,"xt-int")
+    var_dim_list(1) = trim("x")
+    var_dim_list(2) = trim("y")
+    var_dim_list(3) = trim("time")
+    call register_variable("example_pio_structured.nc","bar","answer to space and time",3,var_dim_list, PIO_double,"xyt-real")
 
     ! Finish the "definition" phase of the PIO file.  This is an essential step
     ! for the netCDF file to be ready for variables to be written to it.
@@ -262,10 +269,16 @@ contains
     call register_variable("example_pio_structured_v2.nc","time","time",1,(/ "time" /), PIO_double,"t")
     call register_variable("example_pio_structured_v2.nc","x","answer to space and time",1,(/ "x" /), PIO_double,"x-real")
     call register_variable("example_pio_structured_v2.nc","y","answer to space and time",1,(/ "y" /), PIO_double,"y-real")
-    call register_variable("example_pio_structured_v2.nc","bar","answer to space and time",3,(/ "x", "y", "time" /), PIO_double,"xyt-real")
-    call register_variable("example_pio_structured_v2.nc","foo","answer to space and time",3,(/ "x", "y", "time" /), PIO_double,"xyt-real")
-    call register_variable("example_pio_structured_v2.nc","bar_flip","answer to space and time",3,(/ "y", "x", "time" /), PIO_double,"yxt-real")
-    call register_variable("example_pio_structured_v2.nc","foo_flip","answer to space and time",3,(/ "y", "x", "time" /), PIO_double,"yxt-real")
+    var_dim_list(1) = trim("x")
+    var_dim_list(2) = trim("y")
+    var_dim_list(3) = trim("time")
+    call register_variable("example_pio_structured_v2.nc","bar","answer to space and time",3,var_dim_list, PIO_double,"xyt-real")
+    call register_variable("example_pio_structured_v2.nc","foo","answer to space and time",3,var_dim_list, PIO_double,"xyt-real")
+    var_dim_list(1) = trim("y")
+    var_dim_list(2) = trim("x")
+    var_dim_list(3) = trim("time")
+    call register_variable("example_pio_structured_v2.nc","bar_flip","answer to space and time",3,var_dim_list, PIO_double,"yxt-real")
+    call register_variable("example_pio_structured_v2.nc","foo_flip","answer to space and time",3,var_dim_list, PIO_double,"yxt-real")
 
     call get_pio_atm_File(trim("example_pio_structured_v2.nc"),current_atm_file,found)
     ! It is essential that PIO_enddef is called when all dimensions and
@@ -298,7 +311,7 @@ contains
     curr => pio_atm_file%coord_list_top
     do while (associated(curr))
       if (associated(curr%coord)) then 
-        if(trim(curr%coord%name)==trim(shortname)) call errorHandle("PIO Error: Could not register dimension"//trim(shortname)//" and file: "//trim(pio_atm_filename)//". Already exists.",-999)
+        if(trim(curr%coord%name)==trim(shortname)) call errorHandle("PIO Error: Could not register dimension"//trim(shortname)//", already exists in file: "//trim(pio_atm_filename),-999)
       end if
       prev => curr
       curr => prev%next
@@ -355,7 +368,7 @@ contains
     curr => pio_atm_file%var_list_top
     do while (associated(curr))
       if (associated(curr%var)) then
-        if (trim(curr%var%name)==trim(shortname)) call errorHandle("PIO Error: Could not register variable"//trim(shortname)//" and file: "//trim(pio_atm_filename)//". Already exists.",-999)
+        if (trim(curr%var%name)==trim(shortname)) call errorHandle("PIO Error: Could not register variable"//trim(shortname)//", already exists in file: "//trim(pio_atm_filename),-999)
       end if
       prev => curr
       curr => prev%next

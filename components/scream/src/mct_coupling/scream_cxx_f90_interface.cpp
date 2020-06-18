@@ -16,7 +16,7 @@
 
 #include "control/tests/dummy_grid.hpp"
 
-#include "interface/ScreamContext.hpp"
+#include "mct_coupling/ScreamContext.hpp"
 #include "ekat/mpi/scream_comm.hpp"
 
 extern "C"
