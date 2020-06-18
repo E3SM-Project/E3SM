@@ -2675,7 +2675,7 @@
       </modules>
       <modules compiler="pgigpu">
         <command name="load">pgi/19.9</command>
-        <command name="load">cuda</command>
+        <command name="load">cuda/10.1.243</command>
       </modules>
       <modules compiler="ibm">
         <command name="load">xl/16.1.1-5</command>
