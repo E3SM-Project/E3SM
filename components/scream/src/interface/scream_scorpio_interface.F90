@@ -233,17 +233,17 @@ contains
     ! Register all dimensions with the output file
     call register_dimension("example_pio_structured.nc","x","horizontal distance",10)
     call register_dimension("example_pio_structured.nc","y","vertical distance",3)
-    call register_dimension("example_pio_structured.nc","time","time",0)
+    call register_dimension("example_pio_structured.nc","t","time",0)
 
     ! Register all variables with the output file
-    call register_variable("example_pio_structured.nc","time","time",1,(/ "time" /), PIO_double,"t")
+    call register_variable("example_pio_structured.nc","t","time",1,(/ "t" /), PIO_double,"t")
     call register_variable("example_pio_structured.nc","x","answer to space and time",1,(/ "x" /), PIO_double,"x-real")
     call register_variable("example_pio_structured.nc","y","answer to space and time",1,(/ "y" /), PIO_double,"y-real")
 
-    call register_variable("example_pio_structured.nc","real_foo","answer to space and time",2,(/ "x", "time" /), PIO_double,"xt-real")
+    call register_variable("example_pio_structured.nc","real_foo","answer to space and time",2,(/ "x", "t" /), PIO_double,"xt-real")
     call register_variable("example_pio_structured.nc","bar2","answer to space and time",1,(/ "x" /), PIO_double,"x-real")
-    call register_variable("example_pio_structured.nc","foo","answer to space and time",2,(/ "x", "time" /),PIO_int,"xt-int")
-    call register_variable("example_pio_structured.nc","bar","answer to space and time",3,(/ "x", "y", "time" /), PIO_double,"xyt-real")
+    call register_variable("example_pio_structured.nc","foo","answer to space and time",2,(/ "x", "t" /),PIO_int,"xt-int")
+    call register_variable("example_pio_structured.nc","bar","answer to space and time",3,(/ "x", "y", "t" /), PIO_double,"xyt-real")
 
     ! Finish the "definition" phase of the PIO file.  This is an essential step
     ! for the netCDF file to be ready for variables to be written to it.
@@ -257,15 +257,15 @@ contains
     ! Register all dimensions with the output file
     call register_dimension("example_pio_structured_v2.nc","x","horizontal distance",10)
     call register_dimension("example_pio_structured_v2.nc","y","vertical distance",3)
-    call register_dimension("example_pio_structured_v2.nc","time","time",0)
+    call register_dimension("example_pio_structured_v2.nc","t","time",0)
     ! Register all variables with the output file
-    call register_variable("example_pio_structured_v2.nc","time","time",1,(/ "time" /), PIO_double,"t")
+    call register_variable("example_pio_structured_v2.nc","t","time",1,(/ "t" /), PIO_double,"t")
     call register_variable("example_pio_structured_v2.nc","x","answer to space and time",1,(/ "x" /), PIO_double,"x-real")
     call register_variable("example_pio_structured_v2.nc","y","answer to space and time",1,(/ "y" /), PIO_double,"y-real")
-    call register_variable("example_pio_structured_v2.nc","bar","answer to space and time",3,(/ "x", "y", "time" /), PIO_double,"xyt-real")
-    call register_variable("example_pio_structured_v2.nc","foo","answer to space and time",3,(/ "x", "y", "time" /), PIO_double,"xyt-real")
-    call register_variable("example_pio_structured_v2.nc","bar_flip","answer to space and time",3,(/ "y", "x", "time" /), PIO_double,"yxt-real")
-    call register_variable("example_pio_structured_v2.nc","foo_flip","answer to space and time",3,(/ "y", "x", "time" /), PIO_double,"yxt-real")
+    call register_variable("example_pio_structured_v2.nc","bar","answer to space and time",3,(/ "x", "y", "t" /), PIO_double,"xyt-real")
+    call register_variable("example_pio_structured_v2.nc","foo","answer to space and time",3,(/ "x", "y", "t" /), PIO_double,"xyt-real")
+    call register_variable("example_pio_structured_v2.nc","bar_flip","answer to space and time",3,(/ "y", "x", "t" /), PIO_double,"yxt-real")
+    call register_variable("example_pio_structured_v2.nc","foo_flip","answer to space and time",3,(/ "y", "x", "t" /), PIO_double,"yxt-real")
 
     call get_pio_atm_File(trim("example_pio_structured_v2.nc"),current_atm_file,found)
     ! It is essential that PIO_enddef is called when all dimensions and
@@ -464,7 +464,7 @@ contains
     fdata_real_2d(:,1) = my_dummy_r
     fdata_real_2d(:,2) = my_dummy_r! + 1000
     ! Record TIME
-    call get_var(pio_atm_file,'time',var)
+    call get_var(pio_atm_file,'t',var)
     ierr = pio_put_var(pio_atm_file%pioFileDesc,var%piovar,(/ pio_atm_file%numRecs /), (/ 1 /), (/ time /))
     ! Record the outputs
     call grid_write_data_array("example_pio_structured.nc", fdata_int_1d,  "foo")
@@ -488,7 +488,7 @@ contains
       end do
     end do
     ! Record TIME
-    call get_var(pio_atm_file,'time',var)
+    call get_var(pio_atm_file,'t',var)
     ierr = pio_put_var(pio_atm_file%pioFileDesc,var%piovar,(/ pio_atm_file%numRecs /), (/ 1 /), (/ time /))
     ! Record outputs
     if (pio_atm_file%numRecs == 1) then
