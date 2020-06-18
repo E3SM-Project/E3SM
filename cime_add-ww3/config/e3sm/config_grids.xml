@@ -1515,6 +1515,36 @@
       <mask>gx1v6</mask>
     </model_grid>
 
+    <model_grid alias="T62_wQU50" compset="_WW3">
+      <grid name="atm">T62</grid>
+      <grid name="lnd">null</grid>
+      <grid name="ocnice">null</grid>
+      <grid name="rof">null</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">wQU50</grid>
+      <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="T62_wDE4" compset="_WW3">
+      <grid name="atm">T62</grid>
+      <grid name="lnd">null</grid>
+      <grid name="ocnice">null</grid>
+      <grid name="rof">null</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">wDE4</grid>
+      <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="CFSv2_wDE4" compset="_WW3">
+      <grid name="atm">CFSv2</grid>
+      <grid name="lnd">null</grid>
+      <grid name="ocnice">null</grid>
+      <grid name="rof">null</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">wDE4</grid>
+      <mask>gx1v6</mask>
+    </model_grid>
+
     <model_grid alias="T62_oQU480" compset="(DATM|XATM|SATM)">
       <grid name="atm">T62</grid>
       <grid name="lnd">T62</grid>
@@ -2416,6 +2446,22 @@
       <desc>WW3 90 x 50 global grid</desc>
     </domain>
 
+    <domain name="wQU50">
+      <nx>98182</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_wQU50.200603.nc</file>
+      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.T62_wQU50.200603.nc</file>
+      <desc>WW3 unstructured QU 50km global grid</desc>
+    </domain>
+
+    <domain name="wDE4">
+      <nx>98182</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_wDE4.200611.nc</file>
+      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.T62_wDE4.200611.nc</file>
+      <desc>WW3 unstructured global grid with 4km refinement in Deleware Bay</desc>
+    </domain>
+
     <!-- RRM grids -->
 
     <domain name="ne0np4_arm_x8v3_lowcon">
@@ -3246,6 +3292,18 @@
 
     <gridmap atm_grid="T62" wav_grid="ww3a">
       <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/T62/map_T62_TO_ww3a_bilin.150617.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="T62" wav_grid="wQU50">
+      <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/T62/map_T62_TO_wQU50_bilin.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="T62" wav_grid="wDE4">
+      <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/T62/map_T62_TO_wDE4_blin.20200611.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="CFSv2" wav_grid="wDE4">
+      <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/T62/map_CFSv2_TO_wDE4_blin.20200615.nc</map>
     </gridmap>
 
     <gridmap atm_grid="1.9x2.5" wav_grid="ww3a">
