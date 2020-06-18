@@ -3,6 +3,7 @@
 import glob, re
 from standard_script_setup import *
 from CIME.utils import expect, run_bld_cmd_ensure_logging, safe_copy
+from CIME.build import get_standard_makefile_args
 from CIME.case import Case
 
 logger = logging.getLogger(__name__)
@@ -44,25 +45,66 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 ###############################################################################
 def buildlib(bldroot, installpath, case):
 ###############################################################################
-    pio_version = case.get_value("PIO_VERSION")
-    mpilib = case.get_value("MPILIB")
+    cime_model = case.get_value("MODEL")
     caseroot = case.get_value("CASEROOT")
-    exeroot = case.get_value("EXEROOT")
+    pio_version = case.get_value("PIO_VERSION")
+    scorpio_src_root_dir = None
+    if cime_model == "e3sm":
+        srcroot = case.get_value("SRCROOT")
+        scorpio_src_root_dir = os.path.join(srcroot, "externals")
+        # Scorpio classic is derived from PIO1
+        scorpio_classic_dir = "scorpio_classic"
+        # Scorpio is derived from PIO2
+        scorpio_dir = "scorpio"
+        scorpio_classic_src_dir = os.path.join(scorpio_src_root_dir,
+                                    scorpio_classic_dir)
+        scorpio_src_dir = os.path.join(scorpio_src_root_dir, scorpio_dir)
+        if (not os.path.isdir(scorpio_src_root_dir) or
+            not os.path.isdir(scorpio_classic_src_dir) or
+            not os.path.isdir(scorpio_src_dir)):
+            scorpio_src_root_dir = None
+
+    # If variable PIO_VERSION_MAJOR is defined in the environment then
+    # we assume that PIO is installed on the system
+    # and expect to find
+    # PIO_LIBDIR, PIO_INCDIR, PIO_TYPENAME_VALID_VALUES
+    # also defined in the environment.  In this case we
+    # will use the installed pio and not build it here.
+    installed_pio_version = os.environ.get("PIO_VERSION_MAJOR")
+    logger.info("pio_version_major = {} pio_version = {}".format(installed_pio_version, pio_version))
+    if installed_pio_version is not None and int(installed_pio_version) == pio_version:
+        logger.info("Using installed PIO library")
+        _set_pio_valid_values(case, os.environ.get("PIO_TYPENAME_VALID_VALUES"))
+        return
+
     pio_model = "pio{}".format(pio_version)
     pio_dir = os.path.join(bldroot, pio_model)
-    compiler = case.get_value("COMPILER")
-    build_threaded = case.get_build_threaded()
     if not os.path.isdir(pio_dir):
         os.makedirs(pio_dir)
     casetools = case.get_value("CASETOOLS")
     cmake_opts = "\"-D GENF90_PATH=$CIMEROOT/src/externals/genf90 \""
-    gmake_opts = "{pio_dir}/Makefile -C {pio_dir} CASEROOT={caseroot} MODEL={pio_model} USER_CMAKE_OPTS={cmake_opts} "\
-        "PIO_LIBDIR={pio_dir} CASETOOLS={casetools} PIO_VERSION={pio_version} MPILIB={mpilib} "\
-        "SHAREDLIBROOT={bldroot} EXEROOT={exeroot} COMPILER={compiler} BUILD_THREADED={bt} "\
-        "USER_CPPDEFS=-DTIMING -f {casetools}/Makefile"\
-        .format(pio_dir=pio_dir, caseroot=caseroot, pio_model=pio_model, cmake_opts=cmake_opts,
-                casetools=casetools, pio_version=pio_version, mpilib=mpilib, bldroot=bldroot,
-                exeroot=exeroot, compiler=compiler, bt=build_threaded)
+    stdargs = get_standard_makefile_args(case, shared_lib=True)
+
+    gmake_vars =  "CASEROOT={caseroot} MODEL={pio_model} COMP_NAME={pio_model} "\
+                  "USER_CMAKE_OPTS={cmake_opts} "\
+                  "PIO_LIBDIR={pio_dir} CASETOOLS={casetools} "\
+                  "USER_CPPDEFS=-DTIMING"\
+                  .format(caseroot=caseroot, pio_model=pio_model,
+                          cmake_opts=cmake_opts, pio_dir=pio_dir,
+                          casetools=casetools)
+
+    if scorpio_src_root_dir is not None:
+        gmake_vars += " IO_LIB_SRCROOT={scorpio_src_root_dir} "\
+                      " IO_LIB_v1_SRCDIR={scorpio_classic_dir} "\
+                      " IO_LIB_v2_SRCDIR={scorpio_dir} "\
+                      .format(scorpio_src_root_dir=scorpio_src_root_dir,
+                              scorpio_classic_dir=scorpio_classic_dir,
+                              scorpio_dir=scorpio_dir)
+
+    gmake_opts =  "{pio_dir}/Makefile -C {pio_dir} "\
+                  " {gmake_vars} {stdargs} -f {casetools}/Makefile"\
+                  .format(pio_dir=pio_dir, gmake_vars=gmake_vars,
+                          casetools=casetools, stdargs=stdargs)
 
     gmake_cmd = case.get_value("GMAKE")
 
@@ -132,19 +174,22 @@ def buildlib(bldroot, installpath, case):
         valid_values += ",pnetcdf"
     if netcdf4_parallel_found:
         valid_values += ",netcdf4p,netcdf4c"
-    logger.warning("Updating valid_values for PIO_TYPENAME: {}".format(valid_values))
+    _set_pio_valid_values(case, valid_values)
 
-    case.set_valid_values("PIO_TYPENAME",valid_values)
+
+def _set_pio_valid_values(case, valid_values):
     # nothing means use the general default
     valid_values += ",nothing"
+    logger.warning("Updating valid_values for PIO_TYPENAME: {}".format(valid_values))
+    env_run = case.get_env("run")
+    env_run.set_valid_values("PIO_TYPENAME",valid_values)
 
     for comp in case.get_values("COMP_CLASSES"):
         comp_pio_typename = "{}_PIO_TYPENAME".format(comp)
-        case.set_valid_values(comp_pio_typename,valid_values)
         current_value = case.get_value(comp_pio_typename)
         if current_value not in valid_values:
             logger.warning("Resetting PIO_TYPENAME to netcdf for component {}".format(comp))
-            case.set_value(comp_pio_typename,"netcdf")
+            env_run.set_value(comp_pio_typename,"netcdf")
 
 def _main(argv, documentation):
     bldroot, installpath, caseroot = parse_command_line(argv, documentation)

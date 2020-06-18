@@ -64,37 +64,12 @@
 
 /* Number of computation components. */
 #define COMPONENT_COUNT 1
-
+        
 /* Lengths of dimensions. */
 int dim_len[NDIM3] = {NC_UNLIMITED, DIM_LEN_X, DIM_LEN_Y};
 
 /* Names of dimensions. */
 char dim_name[NDIM3][PIO_MAX_NAME + 1] = {"unlimted", "x", "y"};
-
-/* Handle MPI errors. This should only be used with MPI library
- * function calls. */
-#define MPIERR(e) do {                                                  \
-	MPI_Error_string(e, err_buffer, &resultlen);			\
-	printf("MPI error, line %d, file %s: %s\n", __LINE__, __FILE__, err_buffer); \
-	MPI_Finalize();							\
-	return 2;							\
-    } while (0)
-
-/* Handle non-MPI errors by finalizing the MPI library and exiting
- * with an exit code. */
-#define ERR(e) do {				\
-	MPI_Finalize();				\
-	return e;				\
-    } while (0)
-
-/* Global err buffer for MPI. When there is an MPI error, this buffer
- * is used to store the error message that is associated with the MPI
- * error. */
-char err_buffer[MPI_MAX_ERROR_STRING];
-
-/* This is the length of the most recent MPI error message, stored
- * int the global error string. */
-int resultlen;
 
 /* @brief Check the output file.
  *
@@ -117,7 +92,7 @@ int resultlen;
 /*     nc_type xtype;    /\* NetCDF data type of this variable. *\/ */
 /*     int ret;          /\* Return code for function calls. *\/ */
 /*     int dimids[NDIM3]; /\* Dimension ids for this variable. *\/ */
-/*     char var_name[NC_MAX_NAME];   /\* Name of the variable. *\/ */
+/*     char var_name[PIO_MAX_NAME];   /\* Name of the variable. *\/ */
 /*     /\* size_t start[NDIM3];           /\\* Zero-based index to start read. *\\/ *\/ */
 /*     /\* size_t count[NDIM3];           /\\* Number of elements to read. *\\/ *\/ */
 /*     /\* int buffer[DIM_LEN_X];          /\\* Buffer to read in data. *\\/ *\/ */
@@ -137,9 +112,9 @@ int resultlen;
 /*         return ERR_BAD; */
 /*     for (int d = 0; d < NDIM3; d++) */
 /*     { */
-/*         char my_dim_name[NC_MAX_NAME]; */
+/*         char my_dim_name[PIO_MAX_NAME]; */
 /*         PIO_Offset dimlen;  */
-
+        
 /*         if ((ret = PIOc_inq_dim(ncid, d, my_dim_name, &dimlen))) */
 /*             return ret; */
 /*         if (dimlen != (d ? dim_len[d] : NUM_TIMESTEPS) || strcmp(my_dim_name, dim_name[d])) */
@@ -161,7 +136,7 @@ int resultlen;
 /*     for (int t = 0; t < NUM_TIMESTEPS; t++) */
 /*     { */
 /*         int varid = 0; /\* There's only one var in sample file. *\/ */
-
+        
 /*         /\* This is the data we expect for this timestep. *\/ */
 /*         for (int i = 0; i < elements_per_pe; i++) */
 /*             buffer[i] = 100 * t + START_DATA_VAL + my_rank; */
@@ -222,7 +197,7 @@ int main(int argc, char* argv[])
     /* int ncid;     /\* The ncid of the netCDF file. *\/ */
     /* int dimid[NDIM3];    /\* The dimension ID. *\/ */
     /* int varid;    /\* The ID of the netCDF varable. *\/ */
-    /* char filename[NC_MAX_NAME + 1]; /\* Test filename. *\/ */
+    /* char filename[PIO_MAX_NAME + 1]; /\* Test filename. *\/ */
     /* int num_flavors = 0;            /\* Number of iotypes available in this build. *\/ */
     /* int format[NUM_NETCDF_FLAVORS]; /\* Different output flavors. *\/ */
     int ret;                        /* Return value. */
@@ -232,7 +207,7 @@ int main(int argc, char* argv[])
     if ((ret = GPTLinitialize ()))
         return ret;
 #endif
-
+        
     /* Initialize MPI. */
     if ((ret = MPI_Init(&argc, &argv)))
         MPIERR(ret);
@@ -264,7 +239,7 @@ int main(int argc, char* argv[])
 
     /* Num procs for computation. */
     int num_procs2[COMPONENT_COUNT] = {4};
-
+        
     /* Is the current process a computation task? */
     int comp_task = my_rank < NUM_IO_TASKS ? 0 : 1;
 
@@ -274,16 +249,16 @@ int main(int argc, char* argv[])
         ERR(ret);
 
 
-    /* The rest of the code executes on computation tasks only. As
-     * PIO functions are called on the computation tasks, the
-     * async system will call them on the IO task. When the
-     * computation tasks call PIO_finalize(), the IO task will get
-     * a message to shut itself down. */
+    /* The rest of the code executes on computation tasks only. As PIO
+     * functions are called on the computation tasks, the async system
+     * will call them on the IO task. When the computation tasks call
+     * PIO_finalize(), the IO task will get a message to shut itself
+     * down. */
     if (comp_task)
     {
         /* PIO_Offset elements_per_pe; /\* Array elements per processing unit. *\/ */
         /* int ioid;     /\* The I/O description ID. *\/ */
-
+            
         /* /\* How many elements on each computation task? *\/ */
         /* elements_per_pe = DIM_LEN_X * DIM_LEN_Y / NUM_COMP_TASKS; */
 
@@ -343,7 +318,7 @@ int main(int argc, char* argv[])
 /*                 /\* Create some data for this timestep. *\/ */
 /*                 for (int i = 0; i < elements_per_pe; i++) */
 /*                     buffer[i] = 100 * t + START_DATA_VAL + my_rank; */
-
+                
 /*                 /\* Write data to the file. *\/ */
 /*                 printf("rank: %d Writing sample data...\n", my_rank); */
 /*                 if ((ret = PIOc_setframe(ncid, varid, t))) */
@@ -374,7 +349,7 @@ int main(int argc, char* argv[])
 
         /* Finalize the IO system. Only call this from the computation tasks. */
         printf("%d %s Freeing PIO resources\n", my_rank, TEST_NAME);
-        if ((ret = PIOc_finalize(iosysid)))
+        if ((ret = PIOc_free_iosystem(iosysid)))
             ERR(ret);
     } /* endif comp_task */
 

@@ -248,12 +248,13 @@ int test_decomp_read_write(int iosysid, int ioid, int num_flavors, int *flavor, 
     char title_in[PIO_MAX_NAME + 1];   /* Optional title. */
     char history_in[PIO_MAX_NAME + 1]; /* Optional history. */
     int fortran_order_in; /* Indicates fortran vs. c order. */
-    int ret;              /* Return code. */
 
     /* Use PIO to create the decomp file in each of the four
      * available ways. */
     for (int fmt = 0; fmt < num_flavors; fmt++)
     {
+	int ret;              /* Return code. */
+	
         /* Create the filename. */
         sprintf(filename, "decomp_%s_iotype_%d.nc", TEST_NAME, flavor[fmt]);
 
@@ -361,8 +362,6 @@ int main(int argc, char **argv)
 {
     int my_rank;
     int ntasks;
-    int num_flavors; /* Number of PIO netCDF flavors in this build. */
-    int flavor[NUM_FLAVORS]; /* iotypes for the supported netCDF IO flavors. */
     MPI_Comm test_comm; /* A communicator for this test. */
     int ret;         /* Return code. */
 
@@ -381,7 +380,8 @@ int main(int argc, char **argv)
         int iosysid;  /* The ID for the parallel I/O system. */
         int ioproc_stride = 1;    /* Stride in the mpi rank between io tasks. */
         int ioproc_start = 0;     /* Zero based rank of first processor to be used for I/O. */
-        int ret;      /* Return code. */
+	int num_flavors; /* Number of PIO netCDF flavors in this build. */
+	int flavor[NUM_FLAVORS]; /* iotypes for the supported netCDF IO flavors. */
 
         /* Figure out iotypes. */
         if ((ret = get_iotypes(&num_flavors, flavor)))
@@ -401,7 +401,7 @@ int main(int argc, char **argv)
                 return ret;
 
             /* Finalize PIO system. */
-            if ((ret = PIOc_finalize(iosysid)))
+            if ((ret = PIOc_free_iosystem(iosysid)))
                 return ret;
 
         } /* next rearranger */

@@ -124,6 +124,33 @@ frobenius_norm(const ViewType view, bool ignore_nans = false) {
   return std::sqrt(norm);
 }
 
+template<typename T, int N, typename... Properties>
+KOKKOS_INLINE_FUNCTION
+void binary_search (ViewType<T[N],Properties...> array,
+                    const T& pivot, int& k) {
+  int lo,hi;
+
+  // Initialize lower and upper bounds
+  if (array(k)>pivot) {
+    lo = 0;
+    hi = k;
+  } else {
+    lo = k;
+    hi = N-1;
+  }
+
+  // Binary search until hi=lo+1
+  while (hi>lo+1) {
+    k = (lo+hi)/2;
+    if (array(k)>pivot) {
+      hi = k;
+    } else {
+      lo = k;
+    }
+  }
+  k = lo;
+}
+
 } // namespace Homme
 
 #endif // HOMMEXX_MATH_UTILS_HPP

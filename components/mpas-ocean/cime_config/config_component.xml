@@ -41,11 +41,12 @@
 
   <entry id="MPASO_ISMF">
         <type>char</type>
-        <valid_values>false,true</valid_values>
-        <default_value>false</default_value>
+        <valid_values>none,internal,coupled</valid_values>
+        <default_value>none</default_value>
         <values>
-           <value compset="MPASO_">false</value>
-           <value compset="_MPASO%.*ISMF">true</value>
+           <value compset="MPASO_">none</value>
+           <value compset="_MPASO%.*ISMF.*_SGLC">internal</value>
+           <value compset="_MPASO%.*ISMF.*_MALI">coupled</value>
         </values>
         <group>case_comp</group>
         <file>env_case.xml</file>
@@ -91,10 +92,10 @@
            <value compset="20TR_CAM5.*_MPASO%OIECO.*_BGC%BCRD">bcrd</value>
            <value compset="20TR_CAM5.*_MPASO%OIECO.*_BGC%BDRC">bdrc</value>
            <value compset="20TR_CAM5.*_MPASO%OIECO.*_BGC%BDRD">bdrd</value>
-           <value compset="SSP5_CAM5.*_MPASO%OIECO.*_BGC%BCRC">bcrc</value>
-           <value compset="SSP5_CAM5.*_MPASO%OIECO.*_BGC%BCRD">bcrd</value>
-           <value compset="SSP5_CAM5.*_MPASO%OIECO.*_BGC%BDRC">bdrc</value>
-           <value compset="SSP5_CAM5.*_MPASO%OIECO.*_BGC%BDRD">bdrd</value>
+           <value compset="SSP585_CAM5.*_MPASO%OIECO.*_BGC%BCRC">bcrc</value>
+           <value compset="SSP585_CAM5.*_MPASO%OIECO.*_BGC%BCRD">bcrd</value>
+           <value compset="SSP585_CAM5.*_MPASO%OIECO.*_BGC%BDRC">bdrc</value>
+           <value compset="SSP585_CAM5.*_MPASO%OIECO.*_BGC%BDRD">bdrd</value>
         </values>
         <group>case_comp</group>
         <file>env_case.xml</file>

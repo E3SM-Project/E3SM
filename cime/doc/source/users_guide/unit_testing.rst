@@ -35,7 +35,7 @@ These consist of:
 
 #. A Python script that provides a simple front end for the CMake-based tests.
 
-The Fortran unit tests use `pFUnit <https://sourceforge.net/projects/pfunit/>`_, which is a Fortran testing framework that follows conventions of other xUnit frameworks.
+The Fortran unit tests use `pFUnit <https://github.com/Goddard-Fortran-Ecosystem/pFUnit>`_, which is a Fortran testing framework that follows conventions of other xUnit frameworks.
 
 .. _running_unit_tests:
 
@@ -113,7 +113,10 @@ Building pFUnit
 
 For a serial build of pFUnit, follow these instructions:
 
-#. Download pFUnit from https://sourceforge.net/projects/pfunit/.
+#. Obtain pFUnit from https://github.com/Goddard-Fortran-Ecosystem/pFUnit (see
+   https://github.com/Goddard-Fortran-Ecosystem/pFUnit#obtaining-pfunit for details; note
+   that if you have an older version of cmake you may also need to use an older version of
+   pFUnit)
 
 #. Set up your environment to be similar to the environment used in CIME system builds.
    For example, load the appropriate compilers into your path.
@@ -125,6 +128,14 @@ For a serial build of pFUnit, follow these instructions:
 
    If you are doing an MPI-enabled build, also change the ``--mpilib`` argument.
    Then source either **./.env_mach_specific.sh** or **./.env_mach_specific.csh**, depending on your shell.
+
+   On some systems, you may still need to explicitly set the ``FC`` and ``CC`` environment
+   variables, e.g., with:
+
+   .. code-block:: shell
+
+      > export FC=ifort
+      > export CC=icc
 
 #. For convenience, set the ``PFUNIT`` environment variable to point to the location where you want to install pFUnit. For example (in bash):
 
@@ -165,7 +176,7 @@ For a serial build, your setting will look like this example:
 
 .. code-block:: xml
 
-     <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.2.8_cheyenne_Intel17.0.1_noMPI_noOpenMP</PFUNIT_PATH>
+     <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="FALSE">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.2.8_cheyenne_Intel17.0.1_noMPI_noOpenMP</PFUNIT_PATH>
 
 The ``MPILIB`` attribute should be either:
 
@@ -173,7 +184,7 @@ The ``MPILIB`` attribute should be either:
 
 * the name of the MPI library you used for a pFUnit build where ``-DMPI=YES``. (For example, you might use ``mpich``, which should be one of the machine's MPI libraries specified by ``MPILIBS`` in **config_machines.xml**.)
 
-The ``compile_threaded`` attribute should be either ``true`` or ``false`` depending on the value of ``-DOPENMP``.
+The ``compile_threaded`` attribute should be either ``TRUE`` or ``FALSE`` depending on the value of ``-DOPENMP``.
 
 Once you have specified the path for your build(s), you should be able to run the unit tests by following the instructions in :ref:`running_unit_tests`.
 
@@ -400,10 +411,8 @@ You can also see examples of the unit test build scripts by viewing the
 Other pFUnit documentation sources
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Some pFUnit documentation is available here: http://pfunit.sourceforge.net/.
-
-Extensive documentation and examples are included in the following when you download
-pFUnit from http://sourceforge.net/projects/pfunit/:
+Extensive documentation and examples are included in the following when you obtain
+pFUnit from https://github.com/Goddard-Fortran-Ecosystem/pFUnit:
 
 * documentation/pFUnit3-ReferenceManual.pdf
 

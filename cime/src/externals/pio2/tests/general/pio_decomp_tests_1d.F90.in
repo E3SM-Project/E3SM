@@ -139,7 +139,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_wr_rd_1d_bc
   PIO_TF_FC_DATA_TYPE, dimension(:), allocatable :: rbuf, wbuf, exp_val
   integer, dimension(1) :: dims
   integer :: pio_dim
-  integer :: i, ierr, lsz
+  integer :: i, ierr
   ! iotypes = valid io types
   integer, dimension(:), allocatable :: iotypes
   character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
@@ -249,7 +249,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_wr_1d_bc_with_holes
   PIO_TF_FC_DATA_TYPE, dimension(:), allocatable :: rbuf, wbuf, exp_val
   integer, dimension(1) :: dims
   integer :: pio_dim
-  integer :: i, ierr, lsz
+  integer :: i, ierr
   ! iotypes = valid io types
   integer, dimension(:), allocatable :: iotypes
   character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
@@ -263,7 +263,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_wr_1d_bc_with_holes
   allocate(exp_val(count(1)))
   do i=1,count(1)
     wbuf(i) = start(1) + i - 1
-    compdof(i) = wbuf(i)
+    compdof(i) = int(wbuf(i))
     exp_val(i) = wbuf(i)
   end do
 
@@ -316,7 +316,7 @@ PIO_TF_AUTO_TEST_SUB_END nc_wr_1d_bc_with_holes
 
 PIO_TF_TEMPLATE<PIO_TF_PREDEF_TYPENAME PIO_TF_DATA_TYPE, PIO_TF_PREDEF_TYPENAME PIO_TF_FC_DATA_TYPE>
 PIO_TF_AUTO_TEST_SUB_BEGIN nc_wr_1d_bc_random
-  use mpi, only : MPI_INT, MPI_SCATTER
+  use mpi, only : MPI_INT
   implicit none
   type(var_desc_t)  :: pio_var1, pio_var2
   type(file_desc_t) :: pio_file
@@ -327,7 +327,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_wr_1d_bc_random
   PIO_TF_FC_DATA_TYPE, dimension(:), allocatable :: rbuf, wbuf
   integer, dimension(1) :: dims
   integer :: pio_dim
-  integer :: i, j, ierr, lsz
+  integer :: i, j, ierr
   integer :: tmp
   real :: u
   ! iotypes = valid io types

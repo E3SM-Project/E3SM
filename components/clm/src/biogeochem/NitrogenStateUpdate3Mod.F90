@@ -11,8 +11,12 @@ module NitrogenStateUpdate3Mod
   use clm_time_manager    , only : get_step_size
   use clm_varctl          , only : iulog, use_nitrif_denitrif
   use clm_varpar          , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
+  use clm_varctl          , only : use_erosion, ero_ccycle
+  use CNDecompCascadeConType , only : decomp_cascade_con
   use CNNitrogenStateType , only : nitrogenstate_type
   use CNNitrogenFLuxType  , only : nitrogenflux_type
+  use ColumnDataType      , only : col_ns, col_nf
+  use VegetationDataType  , only : veg_ns, veg_nf
   ! bgc interface & pflotran:
   use clm_varctl          , only : use_pflotran, pf_cmode
   !
@@ -33,6 +37,7 @@ contains
     ! !DESCRIPTION:
     ! On the radiation time step, update all the prognostic nitrogen state
     ! variables affected by gap-phase mortality fluxes. Also the Sminn leaching flux.
+    ! Also include the erosion flux.
     ! NOTE - associate statements have been removed where there are
     ! no science equations. This increases readability and maintainability.
     !
@@ -67,31 +72,31 @@ contains
                
                if (.not. use_nitrif_denitrif) then
                   ! mineral N loss due to leaching
-                  ns%sminn_vr_col(c,j) = ns%sminn_vr_col(c,j) - nf%sminn_leached_vr_col(c,j) * dt
+                  col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) - col_nf%sminn_leached_vr(c,j) * dt
                else
                   ! mineral N loss due to leaching and runoff
-                  ns%smin_no3_vr_col(c,j) = max( ns%smin_no3_vr_col(c,j) - &
-                       ( nf%smin_no3_leached_vr_col(c,j) + nf%smin_no3_runoff_vr_col(c,j) ) * dt, 0._r8)
+                  col_ns%smin_no3_vr(c,j) = max( col_ns%smin_no3_vr(c,j) - &
+                       ( col_nf%smin_no3_leached_vr(c,j) + col_nf%smin_no3_runoff_vr(c,j) ) * dt, 0._r8)
                   
-                  ns%sminn_vr_col(c,j) = ns%smin_no3_vr_col(c,j) + ns%smin_nh4_vr_col(c,j)
+                  col_ns%sminn_vr(c,j) = col_ns%smin_no3_vr(c,j) + col_ns%smin_nh4_vr(c,j)
                   if (use_pflotran .and. pf_cmode) then 
-                        ns%sminn_vr_col(c,j) = ns%sminn_vr_col(c,j) + ns%smin_nh4sorb_vr_col(c,j)
+                        col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) + col_ns%smin_nh4sorb_vr(c,j)
                   end if
                end if
                
                if (.not.(use_pflotran .and. pf_cmode)) then
                    ! column level nitrogen fluxes from fire
                    ! pft-level wood to column-level CWD (uncombusted wood)
-                   ns%decomp_npools_vr_col(c,j,i_cwd) = ns%decomp_npools_vr_col(c,j,i_cwd) &
-                        + nf%fire_mortality_n_to_cwdn_col(c,j) * dt
+                   col_ns%decomp_npools_vr(c,j,i_cwd) = col_ns%decomp_npools_vr(c,j,i_cwd) &
+                        + col_nf%fire_mortality_n_to_cwdn(c,j) * dt
 
                    ! pft-level wood to column-level litter (uncombusted wood)
-                   ns%decomp_npools_vr_col(c,j,i_met_lit) = ns%decomp_npools_vr_col(c,j,i_met_lit) &
-                        + nf%m_n_to_litr_met_fire_col(c,j)* dt
-                   ns%decomp_npools_vr_col(c,j,i_cel_lit) = ns%decomp_npools_vr_col(c,j,i_cel_lit) &
-                        + nf%m_n_to_litr_cel_fire_col(c,j)* dt
-                   ns%decomp_npools_vr_col(c,j,i_lig_lit) = ns%decomp_npools_vr_col(c,j,i_lig_lit) &
-                        + nf%m_n_to_litr_lig_fire_col(c,j)* dt
+                   col_ns%decomp_npools_vr(c,j,i_met_lit) = col_ns%decomp_npools_vr(c,j,i_met_lit) &
+                        + col_nf%m_n_to_litr_met_fire(c,j)* dt
+                   col_ns%decomp_npools_vr(c,j,i_cel_lit) = col_ns%decomp_npools_vr(c,j,i_cel_lit) &
+                        + col_nf%m_n_to_litr_cel_fire(c,j)* dt
+                   col_ns%decomp_npools_vr(c,j,i_lig_lit) = col_ns%decomp_npools_vr(c,j,i_lig_lit) &
+                        + col_nf%m_n_to_litr_lig_fire(c,j)* dt
                end if !(.not.(use_pflotran .and. pf_cmode))
             end do ! end of column loop
          end do
@@ -102,68 +107,83 @@ contains
                ! column loop
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
-                  ns%decomp_npools_vr_col(c,j,l) = ns%decomp_npools_vr_col(c,j,l) - nf%m_decomp_npools_to_fire_vr_col(c,j,l) * dt
+                  col_ns%decomp_npools_vr(c,j,l) = col_ns%decomp_npools_vr(c,j,l) - col_nf%m_decomp_npools_to_fire_vr(c,j,l) * dt
                end do
             end do
          end do
 
       endif
+
+      ! SOM N losses due to erosion
+      if ( ero_ccycle ) then
+         do l = 1, ndecomp_pools
+            if ( decomp_cascade_con%is_soil(l) ) then
+               do j = 1, nlevdecomp
+                  do fc = 1, num_soilc
+                     c = filter_soilc(fc)
+                     col_ns%decomp_npools_vr(c,j,l) = col_ns%decomp_npools_vr(c,j,l) - col_nf%decomp_npools_yield_vr(c,j,l) * dt
+                  end do
+               end do
+            end if
+         end do
+      end if
+
       ! patch-level nitrogen fluxes 
       
       do fp = 1,num_soilp
          p = filter_soilp(fp)
          
          !from fire displayed pools
-         ns%leafn_patch(p)              =  ns%leafn_patch(p)      - nf%m_leafn_to_fire_patch(p)      * dt
-         ns%frootn_patch(p)             =  ns%frootn_patch(p)     - nf%m_frootn_to_fire_patch(p)     * dt
-         ns%livestemn_patch(p)          =  ns%livestemn_patch(p)  - nf%m_livestemn_to_fire_patch(p)  * dt
-         ns%deadstemn_patch(p)          =  ns%deadstemn_patch(p)  - nf%m_deadstemn_to_fire_patch(p)  * dt
-         ns%livecrootn_patch(p)         =  ns%livecrootn_patch(p) - nf%m_livecrootn_to_fire_patch(p) * dt
-         ns%deadcrootn_patch(p)         =  ns%deadcrootn_patch(p) - nf%m_deadcrootn_to_fire_patch(p) * dt
+         veg_ns%leafn(p)              =  veg_ns%leafn(p)      - veg_nf%m_leafn_to_fire(p)      * dt
+         veg_ns%frootn(p)             =  veg_ns%frootn(p)     - veg_nf%m_frootn_to_fire(p)     * dt
+         veg_ns%livestemn(p)          =  veg_ns%livestemn(p)  - veg_nf%m_livestemn_to_fire(p)  * dt
+         veg_ns%deadstemn(p)          =  veg_ns%deadstemn(p)  - veg_nf%m_deadstemn_to_fire(p)  * dt
+         veg_ns%livecrootn(p)         =  veg_ns%livecrootn(p) - veg_nf%m_livecrootn_to_fire(p) * dt
+         veg_ns%deadcrootn(p)         =  veg_ns%deadcrootn(p) - veg_nf%m_deadcrootn_to_fire(p) * dt
 
-         ns%leafn_patch(p)              =  ns%leafn_patch(p)      - nf%m_leafn_to_litter_fire_patch(p)           * dt
-         ns%frootn_patch(p)             =  ns%frootn_patch(p)     - nf%m_frootn_to_litter_fire_patch(p)          * dt
-         ns%livestemn_patch(p)          =  ns%livestemn_patch(p)  - nf%m_livestemn_to_litter_fire_patch(p)       * dt
-         ns%deadstemn_patch(p)          =  ns%deadstemn_patch(p)  - nf%m_deadstemn_to_litter_fire_patch(p)       * dt
-         ns%livecrootn_patch(p)         =  ns%livecrootn_patch(p) - nf%m_livecrootn_to_litter_fire_patch(p)      * dt
-         ns%deadcrootn_patch(p)         =  ns%deadcrootn_patch(p) - nf%m_deadcrootn_to_litter_fire_patch(p)      * dt
+         veg_ns%leafn(p)              =  veg_ns%leafn(p)      - veg_nf%m_leafn_to_litter_fire(p)           * dt
+         veg_ns%frootn(p)             =  veg_ns%frootn(p)     - veg_nf%m_frootn_to_litter_fire(p)          * dt
+         veg_ns%livestemn(p)          =  veg_ns%livestemn(p)  - veg_nf%m_livestemn_to_litter_fire(p)       * dt
+         veg_ns%deadstemn(p)          =  veg_ns%deadstemn(p)  - veg_nf%m_deadstemn_to_litter_fire(p)       * dt
+         veg_ns%livecrootn(p)         =  veg_ns%livecrootn(p) - veg_nf%m_livecrootn_to_litter_fire(p)      * dt
+         veg_ns%deadcrootn(p)         =  veg_ns%deadcrootn(p) - veg_nf%m_deadcrootn_to_litter_fire(p)      * dt
 
          ! storage pools
-         ns%leafn_storage_patch(p)      =  ns%leafn_storage_patch(p)      - nf%m_leafn_storage_to_fire_patch(p)      * dt
-         ns%frootn_storage_patch(p)     =  ns%frootn_storage_patch(p)     - nf%m_frootn_storage_to_fire_patch(p)     * dt
-         ns%livestemn_storage_patch(p)  =  ns%livestemn_storage_patch(p)  - nf%m_livestemn_storage_to_fire_patch(p)  * dt
-         ns%deadstemn_storage_patch(p)  =  ns%deadstemn_storage_patch(p)  - nf%m_deadstemn_storage_to_fire_patch(p)  * dt
-         ns%livecrootn_storage_patch(p) =  ns%livecrootn_storage_patch(p) - nf%m_livecrootn_storage_to_fire_patch(p) * dt
-         ns%deadcrootn_storage_patch(p) =  ns%deadcrootn_storage_patch(p) - nf%m_deadcrootn_storage_to_fire_patch(p) * dt
+         veg_ns%leafn_storage(p)      =  veg_ns%leafn_storage(p)      - veg_nf%m_leafn_storage_to_fire(p)      * dt
+         veg_ns%frootn_storage(p)     =  veg_ns%frootn_storage(p)     - veg_nf%m_frootn_storage_to_fire(p)     * dt
+         veg_ns%livestemn_storage(p)  =  veg_ns%livestemn_storage(p)  - veg_nf%m_livestemn_storage_to_fire(p)  * dt
+         veg_ns%deadstemn_storage(p)  =  veg_ns%deadstemn_storage(p)  - veg_nf%m_deadstemn_storage_to_fire(p)  * dt
+         veg_ns%livecrootn_storage(p) =  veg_ns%livecrootn_storage(p) - veg_nf%m_livecrootn_storage_to_fire(p) * dt
+         veg_ns%deadcrootn_storage(p) =  veg_ns%deadcrootn_storage(p) - veg_nf%m_deadcrootn_storage_to_fire(p) * dt
 
-         ns%leafn_storage_patch(p)      =  ns%leafn_storage_patch(p)      - nf%m_leafn_storage_to_litter_fire_patch(p)      * dt
-         ns%frootn_storage_patch(p)     =  ns%frootn_storage_patch(p)     - nf%m_frootn_storage_to_litter_fire_patch(p)     * dt
-         ns%livestemn_storage_patch(p)  =  ns%livestemn_storage_patch(p)  - nf%m_livestemn_storage_to_litter_fire_patch(p)  * dt
-         ns%deadstemn_storage_patch(p)  =  ns%deadstemn_storage_patch(p)  - nf%m_deadstemn_storage_to_litter_fire_patch(p)  * dt
-         ns%livecrootn_storage_patch(p) =  ns%livecrootn_storage_patch(p) - nf%m_livecrootn_storage_to_litter_fire_patch(p) * dt
-         ns%deadcrootn_storage_patch(p) =  ns%deadcrootn_storage_patch(p) - nf%m_deadcrootn_storage_to_litter_fire_patch(p) * dt
+         veg_ns%leafn_storage(p)      =  veg_ns%leafn_storage(p)      - veg_nf%m_leafn_storage_to_litter_fire(p)      * dt
+         veg_ns%frootn_storage(p)     =  veg_ns%frootn_storage(p)     - veg_nf%m_frootn_storage_to_litter_fire(p)     * dt
+         veg_ns%livestemn_storage(p)  =  veg_ns%livestemn_storage(p)  - veg_nf%m_livestemn_storage_to_litter_fire(p)  * dt
+         veg_ns%deadstemn_storage(p)  =  veg_ns%deadstemn_storage(p)  - veg_nf%m_deadstemn_storage_to_litter_fire(p)  * dt
+         veg_ns%livecrootn_storage(p) =  veg_ns%livecrootn_storage(p) - veg_nf%m_livecrootn_storage_to_litter_fire(p) * dt
+         veg_ns%deadcrootn_storage(p) =  veg_ns%deadcrootn_storage(p) - veg_nf%m_deadcrootn_storage_to_litter_fire(p) * dt
 
 
          ! transfer pools
-         ns%leafn_xfer_patch(p)         =  ns%leafn_xfer_patch(p)      - nf%m_leafn_xfer_to_fire_patch(p)      * dt
-         ns%frootn_xfer_patch(p)        =  ns%frootn_xfer_patch(p)     - nf%m_frootn_xfer_to_fire_patch(p)     * dt
-         ns%livestemn_xfer_patch(p)     =  ns%livestemn_xfer_patch(p)  - nf%m_livestemn_xfer_to_fire_patch(p)  * dt
-         ns%deadstemn_xfer_patch(p)     =  ns%deadstemn_xfer_patch(p)  - nf%m_deadstemn_xfer_to_fire_patch(p)  * dt
-         ns%livecrootn_xfer_patch(p)    =  ns%livecrootn_xfer_patch(p) - nf%m_livecrootn_xfer_to_fire_patch(p) * dt
-         ns%deadcrootn_xfer_patch(p)    =  ns%deadcrootn_xfer_patch(p) - nf%m_deadcrootn_xfer_to_fire_patch(p) * dt
+         veg_ns%leafn_xfer(p)         =  veg_ns%leafn_xfer(p)      - veg_nf%m_leafn_xfer_to_fire(p)      * dt
+         veg_ns%frootn_xfer(p)        =  veg_ns%frootn_xfer(p)     - veg_nf%m_frootn_xfer_to_fire(p)     * dt
+         veg_ns%livestemn_xfer(p)     =  veg_ns%livestemn_xfer(p)  - veg_nf%m_livestemn_xfer_to_fire(p)  * dt
+         veg_ns%deadstemn_xfer(p)     =  veg_ns%deadstemn_xfer(p)  - veg_nf%m_deadstemn_xfer_to_fire(p)  * dt
+         veg_ns%livecrootn_xfer(p)    =  veg_ns%livecrootn_xfer(p) - veg_nf%m_livecrootn_xfer_to_fire(p) * dt
+         veg_ns%deadcrootn_xfer(p)    =  veg_ns%deadcrootn_xfer(p) - veg_nf%m_deadcrootn_xfer_to_fire(p) * dt
 
-         ns%leafn_xfer_patch(p)         =  ns%leafn_xfer_patch(p)      - nf%m_leafn_xfer_to_litter_fire_patch(p)      * dt
-         ns%frootn_xfer_patch(p)        =  ns%frootn_xfer_patch(p)     - nf%m_frootn_xfer_to_litter_fire_patch(p)     * dt
-         ns%livestemn_xfer_patch(p)     =  ns%livestemn_xfer_patch(p)  - nf%m_livestemn_xfer_to_litter_fire_patch(p)  * dt
-         ns%deadstemn_xfer_patch(p)     =  ns%deadstemn_xfer_patch(p)  - nf%m_deadstemn_xfer_to_litter_fire_patch(p)  * dt
-         ns%livecrootn_xfer_patch(p)    =  ns%livecrootn_xfer_patch(p) - nf%m_livecrootn_xfer_to_litter_fire_patch(p) * dt
-         ns%deadcrootn_xfer_patch(p)    =  ns%deadcrootn_xfer_patch(p) - nf%m_deadcrootn_xfer_to_litter_fire_patch(p) * dt
+         veg_ns%leafn_xfer(p)         =  veg_ns%leafn_xfer(p)      - veg_nf%m_leafn_xfer_to_litter_fire(p)      * dt
+         veg_ns%frootn_xfer(p)        =  veg_ns%frootn_xfer(p)     - veg_nf%m_frootn_xfer_to_litter_fire(p)     * dt
+         veg_ns%livestemn_xfer(p)     =  veg_ns%livestemn_xfer(p)  - veg_nf%m_livestemn_xfer_to_litter_fire(p)  * dt
+         veg_ns%deadstemn_xfer(p)     =  veg_ns%deadstemn_xfer(p)  - veg_nf%m_deadstemn_xfer_to_litter_fire(p)  * dt
+         veg_ns%livecrootn_xfer(p)    =  veg_ns%livecrootn_xfer(p) - veg_nf%m_livecrootn_xfer_to_litter_fire(p) * dt
+         veg_ns%deadcrootn_xfer(p)    =  veg_ns%deadcrootn_xfer(p) - veg_nf%m_deadcrootn_xfer_to_litter_fire(p) * dt
 
          ! retranslocated N pool
-         ns%retransn_patch(p)           =  ns%retransn_patch(p) - nf%m_retransn_to_fire_patch(p)        * dt
-         ns%retransn_patch(p)           =  ns%retransn_patch(p) - nf%m_retransn_to_litter_fire_patch(p) * dt
-         ns%npool_patch(p)              =  ns%npool_patch(p)    - nf%m_npool_to_fire_patch(p)           * dt
-         ns%npool_patch(p)              =  ns%npool_patch(p)    - nf%m_npool_to_litter_fire_patch(p)    * dt
+         veg_ns%retransn(p)           =  veg_ns%retransn(p) - veg_nf%m_retransn_to_fire(p)        * dt
+         veg_ns%retransn(p)           =  veg_ns%retransn(p) - veg_nf%m_retransn_to_litter_fire(p) * dt
+         veg_ns%npool(p)              =  veg_ns%npool(p)    - veg_nf%m_npool_to_fire(p)           * dt
+         veg_ns%npool(p)              =  veg_ns%npool(p)    - veg_nf%m_npool_to_litter_fire(p)    * dt
       end do
 
     end associate 

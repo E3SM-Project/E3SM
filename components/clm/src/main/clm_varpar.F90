@@ -36,8 +36,10 @@ module clm_varpar
   integer, parameter :: nlevsno     =   5     ! maximum number of snow layers
   integer, parameter :: ngases      =   3     ! CH4, O2, & CO2
   integer, parameter :: nlevcan     =   1     ! number of leaf layers in canopy layer
+  integer, parameter :: nvegwcs     =   4     ! number of vegetation water conductance segments
   integer, parameter :: numwat      =   5     ! number of water types (soil, ice, 2 lakes, wetland)
   integer, parameter :: numrad      =   2     ! number of solar radiation bands: vis, nir
+  integer, parameter :: nmonth      =   12    ! number of months in year for crop planting
   integer, parameter :: ivis        =   1     ! index for visible band
   integer, parameter :: inir        =   2     ! index for near-infrared band
   integer, parameter :: numsolar    =   2     ! number of solar type bands: direct, diffuse
@@ -58,6 +60,8 @@ module clm_varpar
   integer :: maxpatch_pft        ! max number of plant functional types in naturally vegetated landunit (namelist setting)
 
   integer, parameter :: nsoilorder  =  15     ! number of soil orders
+
+  integer, parameter :: nlevslp = 11          ! number of slope percentile levels
 
   ! constants for decomposition cascade
 

@@ -246,13 +246,16 @@ contains
     use kinds,       only : real_kind
     use hybrid_mod,  only : hybrid_t
     use element_mod, only : element_t
+#ifdef MODEL_THETA_L
+    use element_state, only : nu_scale_top
+#endif
     use dimensions_mod, only : np,ne,nelem,nelemd,qsize
     use quadrature_mod, only : gausslobatto, quadrature_t
 
     use reduction_mod, only : ParallelMin,ParallelMax
     use physical_constants, only : rrearth, rearth,dd_pi
     use control_mod, only : nu, nu_q, nu_div, hypervis_order, nu_top, hypervis_power, &
-                            fine_ne, rk_stage_user, max_hypervis_courant, hypervis_scaling, dcmip16_mu,dcmip16_mu_s
+                            fine_ne, max_hypervis_courant, hypervis_scaling, dcmip16_mu,dcmip16_mu_s,dcmip16_mu_q
     use control_mod, only : tstep_type
     use parallel_mod, only : abortmp, global_shared_buf, global_shared_sum
     use edgetype_mod, only : EdgeBuffer_t 
@@ -272,7 +275,7 @@ contains
     real (kind=real_kind) :: normDinv_hypervis
     real (kind=real_kind) :: x, y, noreast, nw, se, sw
     real (kind=real_kind), dimension(np,np,nets:nete) :: zeta
-    real (kind=real_kind) :: lambda_max, lambda_vis, min_gw, lambda, nu_div_actual
+    real (kind=real_kind) :: lambda_max, lambda_vis, min_gw, lambda, nu_div_actual, nu_top_actual
     integer :: ie,corner, i, j, rowind, colind
     type (quadrature_t)    :: gp
 
@@ -522,45 +525,53 @@ contains
      if (hybrid%masterthread) then
        write(iulog,'(a,f10.2)') 'CFL estimates in terms of S=time step stability region'
        write(iulog,'(a,f10.2)') '(i.e. advection w/leapfrog: S=1, viscosity w/forward Euler: S=2)'
-       if (rk_stage_user>0) then
-          write(iulog,'(a,f10.2,a)') 'SSP preservation (120m/s) RKSSP euler step dt  < S *', &
-               min_gw/(120.0d0*max_normDinv*rrearth),'s'
-       endif
-       if (qsize>0) &
-          write(iulog,'(a,f10.2,a)') 'Stability: advective (120m/s)   dt_tracer < S *',&
-               1/(120.0d0*max_normDinv*lambda_max*rrearth),'s'
+       write(iulog,'(a,f10.2,a)') 'SSP preservation (120m/s) RKSSP euler step dt  < S *', &
+            min_gw/(120.0d0*max_normDinv*rrearth),'s'
+       write(iulog,'(a,f10.2,a)') 'Stability: advective (120m/s)   dt_tracer < S *',&
+            1/(120.0d0*max_normDinv*lambda_max*rrearth),'s'
        write(iulog,'(a,f10.2,a)') 'Stability: advective (120m/s)   dt_tracer < S *', &
                                    1/(120.0d0*max_normDinv*lambda_max*rrearth),'s'
        write(iulog,'(a,f10.2,a)') 'Stability: gravity wave(342m/s)   dt_dyn  < S *', &
                                    1/(342.0d0*max_normDinv*lambda_max*rrearth),'s'
        if (nu>0) then
           if (hypervis_order==1) then
-              write(iulog,'(a,f10.2,a)') 'Stability: viscosity dt < S *',1/(((rrearth*max_normDinv)**2)*lambda_vis),'s'
+              write(iulog,'(a,f10.2,a)') 'Stability: viscosity dt < S *',&
+                   1/(nu*((rrearth*max_normDinv)**2)*lambda_vis),'s'
           endif
           if (hypervis_order==2) then
              ! counrant number = dtnu*normDinv_hypervis  < S
              !  dt < S  1/nu*normDinv
              write(iulog,'(a,f10.2,a)') "Stability: nu_q   hyperviscosity dt < S *", 1/(nu_q*normDinv_hypervis),'s'
              write(iulog,'(a,f10.2,a)') "Stability: nu_vor hyperviscosity dt < S *", 1/(nu*normDinv_hypervis),'s'
-             
-             ! bug in nu_div implimentation:
+#ifdef MODEL_THETA_L
+             nu_div_actual = nu_div
+#else             
+             ! bug in preqx nu_div implimentation:
              ! we apply nu_ration=(nu_div/nu) in laplace, so it is applied 2x
              ! making the effective nu_div = nu * (nu_div/nu)**2 
              ! should be fixed - but need all CAM defaults adjusted, 
-             ! so we have to coordiante with CAM
              nu_div_actual = nu_div**2/nu
-             write(iulog,'(a,f10.2,a)') "Stability: nu_div hyperviscosity dt < S *", 1/(nu_div_actual*normDinv_hypervis),'s'
+#endif
+             write(iulog,'(a,f10.2,a)') "Stability: nu_div hyperviscosity dt < S *",&
+                  1/(nu_div_actual*normDinv_hypervis),'s'
           endif
        endif
        if(nu_top>0) then
-          write(iulog,'(a,f10.2,a)') 'TOP3 viscosity CFL: dt < S*', &
-                                  1.0d0/(4*nu_top*((rrearth*max_normDinv)**2)*lambda_vis),'s'
+#ifdef MODEL_THETA_L
+          nu_top_actual=maxval(nu_scale_top)*nu_top
+          write(iulog,'(a,f10.2,a)') 'scaled nu_top viscosity CFL: dt < S*', &
+               1.0d0/(nu_top_actual*((rrearth*max_normDinv)**2)*lambda_vis),'s'
+#else
+          nu_top_actual=4*nu_top
+          write(iulog,'(a,f10.2,a)') '4*nu_top viscosity CFL: dt < S*', &
+               1.0d0/(nu_top_actual*((rrearth*max_normDinv)**2)*lambda_vis),'s'
+#endif
        end if
 
       if(dcmip16_mu>0)  write(iulog,'(a,f10.2,a)') 'dcmip16_mu   viscosity CFL: dt < S*', &
-           1.0d0/(4*dcmip16_mu*  ((rrearth*max_normDinv)**2)*lambda_vis),'s'
+           1.0d0/(dcmip16_mu*  ((rrearth*max_normDinv)**2)*lambda_vis),'s'
       if(dcmip16_mu_s>0)write(iulog,'(a,f10.2,a)') 'dcmip16_mu_s viscosity CFL: dt < S*', &
-           1.0d0/(4*dcmip16_mu_s*((rrearth*max_normDinv)**2)*lambda_vis),'s'
+           1.0d0/(dcmip16_mu_s*((rrearth*max_normDinv)**2)*lambda_vis),'s'
 
       if (hypervis_power /= 0) then
         write(iulog,'(a,3e11.4)')'Hyperviscosity (dynamics): ave,min,max = ', &

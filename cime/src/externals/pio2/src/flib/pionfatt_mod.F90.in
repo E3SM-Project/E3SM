@@ -3,6 +3,15 @@
 !! @file
 !! @brief NetCDF attribute interface to PIO
 !<
+!>
+!!  @defgroup PIO_put_att Write Attributes
+!!  Writes an attribute to a file in Fortran.
+!<
+!>
+!! @defgroup PIO_get_att Read Attributes
+!! Reads an attribute from a file in Fortran.
+!<
+
 module pionfatt_mod
   use pio_kinds, only : r4, r8, i4, pio_offset_kind
   use pio_types
@@ -36,21 +45,10 @@ module pionfatt_mod
      module procedure get_att_1d_{TYPE}, get_att_desc_1d_{TYPE}, get_att_1d_id_{TYPE}
   end interface
 
-  !>
-  !!  @public
-  !!  @defgroup PIO_put_att PIO_put_att
-  !!  @brief Writes an netcdf attribute to a file
-  !<
-  !>
-  !! @public
-  !! @defgroup PIO_get_att PIO_get_att
-  !! @brief Reads  an netcdf attribute from a file
-  !<
-
+  !> @cond doxygen_cant_handle_so_exclude
   private :: modName
   character(len=*), parameter :: modName='pionfatt_mod'
   interface
-     !> @brief Write a netCDF text attribute.
      integer(C_INT) function PIOc_put_att_text (ncid, varid, name, len, op) &
           bind(C,name="PIOc_put_att_text")
        use iso_c_binding
@@ -143,7 +141,7 @@ module pionfatt_mod
        real(C_DOUBLE), intent(out)   :: op
      end function PIOc_get_att_double
   end interface
-
+  !> @endcond
 
 contains
 
@@ -153,9 +151,9 @@ contains
   !! @brief Writes an netcdf attribute to a file
   !! @details
   !! @param File @copydoc file_desc_t
-  !! @param varid : The netcdf variable identifier
+  !! @param vdesc : The netcdf variable descriptor
   !! @param name : name of the attribute to add
-  !! @param var : The value for the netcdf attribute
+  !! @param values : The value for the netcdf attribute
   !! @retval ierr @copydoc error_return
   !<
   integer function put_att_desc_{TYPE} (File, vdesc, name, values) result(ierr)
@@ -201,7 +199,7 @@ contains
     clen = len_trim(values)
     allocate(cvar(clen+1))
     cvar = C_NULL_CHAR
-    do i=1,clen
+    do i=1,int(clen)
        cvar(i) = values(i:i)
     end do
     ierr = PIOc_put_att_text (ncid,varid-1,trim(name)//C_NULL_CHAR, clen, cvar(1))
@@ -242,7 +240,6 @@ contains
     character(len=*), intent(in) :: name
     integer, intent(in) :: arrlen
     character(len=*), intent(in) :: values(arrlen)
-    integer :: vallen
 
 
     ierr = PIOc_put_att_text (ncid,varid-1,trim(name)//C_NULL_CHAR, int(arrlen,C_SIZE_T),values(1))
@@ -271,7 +268,7 @@ contains
   !! @ingroup PIO_put_att
   !! @brief Writes an netcdf attribute to a file
   !! @details
-  !! @param File @copydoc file_desc_t
+  !! @param ncid @copydoc file_desc_t
   !! @param varid : The netcdf variable identifier
   !! @param name : name of the attribute to add
   !! @param values : The value for the netcdf attribute
@@ -312,7 +309,7 @@ contains
   !! @param File @copydoc file_desc_t
   !! @param varDesc @copydoc var_desc_t
   !! @param name : name of the attribute to add
-  !! @param var : The value for the netcdf attribute
+  !! @param values : The value for the netcdf attribute
   !! @retval ierr @copydoc error_return
   !<
   integer function put_att_1d_desc_{TYPE} (File,varDesc,name,values) result(ierr)
@@ -336,7 +333,6 @@ contains
     ierr = put_att_1d_id_{TYPE} (File%fh,varid,name,value)
 
   end function put_att_1d_vid_{TYPE}
-
 
   !>
   !! @public
@@ -390,7 +386,7 @@ contains
   !! @ingroup PIO_get_att
   !! @brief Reads an netcdf attribute from a  file
   !! @details
-  !! @param File @copydoc file_desc_t
+  !! @param ncid : The netcdf file ID
   !! @param varid : The netcdf variable identifier
   !! @param name : name of the attribute to get
   !! @param values : The value for the netcdf attribute

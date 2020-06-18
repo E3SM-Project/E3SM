@@ -163,7 +163,6 @@ contains
     type (MPAS_Pool_Type), pointer :: shortwave
 
     logical :: exists
-    logical :: no_taskmap_output                     ! true then do not write out task-to-node mapping
     logical :: verbose_taskmap_output                ! true then use verbose task-to-node mapping format
 
     character(kind=c_char), dimension(StrKIND+1) :: c_filename       ! StrKIND+1 for C null-termination character
@@ -310,8 +309,6 @@ contains
 
     if (info_taskmap_comp > 0) then
 
-       no_taskmap_output = .false.
-
        if (info_taskmap_comp == 1) then
           verbose_taskmap_output = .false.
        else
@@ -329,19 +326,13 @@ contains
           call shr_sys_flush(iceLogUnit)
        endif
 
-    else
-
-       no_taskmap_output = .true.
-       verbose_taskmap_output = .false.
+       call t_startf("shr_taskmap_write")
+       call shr_taskmap_write(iceLogUnit, mpicom_i,                 &
+                              'ICE #'//trim(adjustl(c_inst_index)), &
+                              verbose=verbose_taskmap_output        )
+       call t_stopf("shr_taskmap_write")
 
     endif
-
-    call t_startf("shr_taskmap_write")
-    call shr_taskmap_write(iceLogUnit, mpicom_i,                 &
-                           'ICE #'//trim(adjustl(c_inst_index)), &
-                           verbose=verbose_taskmap_output,       &
-                           no_output=no_taskmap_output           )
-    call t_stopf("shr_taskmap_write")
 
     ! Setup function pointers for MPASSI core and domain types
     call seaice_setup_core(corelist)
@@ -356,7 +347,7 @@ contains
     end if
 
     ! Set core specific options here
-    ! Disable output from all but the master task for ACME!
+    ! Disable output from all but the master task for E3SM!
     ! (This overrides the default set by mpas_log_init based on MPAS_DEBUG setting.)
     if (iam /= 0) then
        domain % logInfo % outputLog % isActive = .false.
@@ -774,7 +765,7 @@ contains
 !!  local variables
 !!
 !!-----------------------------------------------------------------------
-! Variables related to ACME coupler
+! Variables related to E3SM coupler
       integer :: ymd, tod, ihour, iminute, isecond
       integer :: iyear, imonth, iday, curr_ymd, curr_tod
       integer :: shrloglev, shrlogunit

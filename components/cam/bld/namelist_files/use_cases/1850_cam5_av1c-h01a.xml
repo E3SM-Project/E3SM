@@ -55,8 +55,9 @@
 <clubb_C2rt>         1.75D0 </clubb_C2rt>
 <effgw_oro>          0.25    </effgw_oro>
 <seasalt_emis_scale> 0.85   </seasalt_emis_scale>
-<dust_emis_fact>     2.05D0 </dust_emis_fact>
+<dust_emis_fact>     1.2D0 </dust_emis_fact>
 <clubb_gamma_coef>   0.32   </clubb_gamma_coef>
+<clubb_gamma_coefb>   0.32   </clubb_gamma_coefb>
 <cldfrc2m_rhmaxi>    1.05D0 </cldfrc2m_rhmaxi>
 <clubb_c_K10>        0.3    </clubb_c_K10>
 <effgw_beres>        0.4    </effgw_beres>
@@ -69,11 +70,11 @@
 <zmconv_mx_bot_lyr_adj   >2</zmconv_mx_bot_lyr_adj>
 <taubgnd                 >2.5D-3 </taubgnd>
 <clubb_C1                >1.335</clubb_C1>
+<clubb_C1b                >1.335</clubb_C1b>
 <raytau0                 >5.0D0</raytau0>
 <prc_coef1               >30500.0D0</prc_coef1>
 <prc_exp                 >3.19D0</prc_exp>
 <prc_exp1                >-1.2D0</prc_exp1>
-<se_ftype                >2</se_ftype>
 <relvar_fix              >.true.</relvar_fix>
 <mg_prc_coeff_fix        >.true.</mg_prc_coeff_fix>
 <rrtmg_temp_fix          >.true.</rrtmg_temp_fix>

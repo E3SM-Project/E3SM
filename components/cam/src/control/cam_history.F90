@@ -145,8 +145,9 @@ module cam_history
   character(len=16)  :: logname             ! user name
   character(len=16)  :: host                ! host name
   character(len=max_string_len) :: ctitle = ' '      ! Case title
-  character(len=8)   :: inithist = 'YEARLY' ! If set to '6-HOURLY, 'DAILY', 'MONTHLY' or
+  character(len=8)   :: inithist = 'YEARLY' ! If set to 'NSTEPS','HOURLY', '6-HOURLY, 'DAILY', 'MONTHLY' or
   ! 'YEARLY' then write IC file 
+  integer :: inithist_nsteps = 1 ! interval to write IC file, when inithist == NSTEPS
   logical            :: inithist_all = .false. ! Flag to indicate set of fields to be 
                                           ! included on IC file
                                           !  .false.  include only required fields
@@ -541,8 +542,8 @@ CONTAINS
     integer                        :: interpolate_type(size(interpolate_info))
 
     ! History namelist items
-    namelist /cam_history_nl/ ndens, nhtfrq, mfilt, inithist, inithist_all,    &
-         avgflag_pertape, empty_htapes, lcltod_start, lcltod_stop,             &
+    namelist /cam_history_nl/ ndens, nhtfrq, mfilt, inithist, inithist_nsteps, &
+         inithist_all, avgflag_pertape, empty_htapes, lcltod_start, lcltod_stop, &
          fincl1lonlat, fincl2lonlat, fincl3lonlat, fincl4lonlat, fincl5lonlat, &
          fincl6lonlat, fincl7lonlat, fincl8lonlat, fincl9lonlat,               &
          fincl10lonlat, collect_column_output, hfilename_spec,                 &
@@ -567,6 +568,7 @@ CONTAINS
     nhtfrq(2:)               = -24
     mfilt                    = 30
     inithist                 = 'YEARLY'
+    inithist_nsteps          = 1
     inithist_all             = .false.
     empty_htapes             = .false.
     lcltod_start(:)          = 0
@@ -690,7 +692,8 @@ CONTAINS
       !
       ctemp = shr_string_toUpper(inithist) 
       inithist = trim(ctemp)
-      if ( (inithist /= '6-HOURLY') .and. (inithist /= 'DAILY')  .and.        &
+      if ( (inithist /= 'NSTEPS')   .and. (inithist /= 'HOURLY') .and.        &
+           (inithist /= '6-HOURLY') .and. (inithist /= 'DAILY')  .and.        &
            (inithist /= 'MONTHLY')  .and. (inithist /= 'YEARLY') .and.        &
            (inithist /= 'CAMIOP')   .and. (inithist /= 'ENDOFRUN')) then
         inithist = 'NONE'
@@ -750,7 +753,11 @@ CONTAINS
 
     ! Write out inithist info
     if (masterproc) then
-      if (inithist == '6-HOURLY' ) then
+      if (inithist == 'NSTEPS' ) then
+        write(iulog,*)'Initial conditions history files will be written every ',inithist_nsteps, 'steps.'
+      else if (inithist == 'HOURLY' ) then
+        write(iulog,*)'Initial conditions history files will be written hourly.'
+      else if (inithist == '6-HOURLY' ) then
         write(iulog,*)'Initial conditions history files will be written 6-hourly.'
       else if (inithist == 'DAILY' ) then
         write(iulog,*)'Initial conditions history files will be written daily.'
@@ -773,6 +780,7 @@ CONTAINS
     call mpi_bcast(nhtfrq, ptapes, mpi_integer, masterprocid, mpicom, ierr)
     call mpi_bcast(mfilt, ptapes, mpi_integer, masterprocid, mpicom, ierr)
     call mpi_bcast(inithist,len(inithist), mpi_character, masterprocid, mpicom, ierr)
+    call mpi_bcast(inithist_nsteps,1, mpi_integer, masterprocid, mpicom, ierr)
     call mpi_bcast(inithist_all,1, mpi_logical, masterprocid, mpicom, ierr)
     call mpi_bcast(lcltod_start, ptapes, mpi_integer, masterprocid, mpicom, ierr)
     call mpi_bcast(lcltod_stop,  ptapes, mpi_integer, masterprocid, mpicom, ierr)
@@ -3408,7 +3416,7 @@ end subroutine print_active_fldlst
       ierr=pio_inq_varid (tape(t)%File,'time_bnds',   tape(t)%tbndid)
       ierr=pio_inq_varid (tape(t)%File,'date_written',tape(t)%date_writtenid)
       ierr=pio_inq_varid (tape(t)%File,'time_written',tape(t)%time_writtenid)
-#if ( defined BFB_CAM_SCAM_IOP )
+#if ( defined E3SM_SCM_REPLAY )
       ierr=pio_inq_varid (tape(t)%File,'tsec    ',tape(t)%tsecid)
       ierr=pio_inq_varid (tape(t)%File,'bdate   ',tape(t)%bdateid)
 #endif
@@ -3662,7 +3670,6 @@ end subroutine print_active_fldlst
     integer                          :: mdimsize
     integer                          :: ierr
     integer,          allocatable    :: mdimids(:)
-    integer                          :: amode
     logical                          :: interpolate
     logical                          :: patch_output
 
@@ -3674,12 +3681,10 @@ end subroutine print_active_fldlst
       if(masterproc) write(iulog,*)'Opening netcdf history file ', trim(nhfil(t))
     end if
 
-    amode = PIO_CLOBBER
-
     if(restart) then
-      call cam_pio_createfile (tape(t)%File, hrestpath(t), amode)
+      call cam_pio_createfile (tape(t)%File, hrestpath(t))
     else
-      call cam_pio_createfile (tape(t)%File, nhfil(t), amode)
+      call cam_pio_createfile (tape(t)%File, nhfil(t))
     end if
     if(is_satfile(t)) then
       interpolate = .false. ! !!XXgoldyXX: Do we ever want to support this?
@@ -3764,8 +3769,8 @@ end subroutine print_active_fldlst
     str = 'CF-1.0'
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'Conventions', trim(str))
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'source', 'CAM')
-#if ( defined BFB_CAM_SCAM_IOP )
-    ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'CAM_GENERATED_FORCING','create SCAM IOP dataset')
+#if defined (E3SM_SCM_REPLAY)
+    ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'E3SM_GENERATED_FORCING','create SCM IOP dataset')
 #endif
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'case',caseid)
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'title',ctitle)
@@ -3825,7 +3830,7 @@ end subroutine print_active_fldlst
       str = 'base date (YYYYMMDD)'
       ierr=pio_put_att (tape(t)%File, tape(t)%nbdateid, 'long_name', trim(str))
 
-#if ( defined BFB_CAM_SCAM_IOP )
+#if ( defined E3SM_SCM_REPLAY )
       ierr=pio_def_var (tape(t)%File,'bdate',PIO_INT,tape(t)%bdateid)
       str = 'base date (YYYYMMDD)'
       ierr=pio_put_att (tape(t)%File, tape(t)%bdateid, 'long_name', trim(str))
@@ -3902,7 +3907,7 @@ end subroutine print_active_fldlst
       end if
 
 
-#if ( defined BFB_CAM_SCAM_IOP )
+#if ( defined E3SM_SCM_REPLAY )
       ierr=pio_def_var (tape(t)%File,'tsec ',pio_int,(/timdim/), tape(t)%tsecid)
       str = 'current seconds of current date needed for scam'
       ierr=pio_put_att (tape(t)%File, tape(t)%tsecid, 'long_name', trim(str))
@@ -4064,6 +4069,13 @@ end subroutine print_active_fldlst
                'h_define: cannot define units for '//trim(fname_tmp))
         end if
 
+        str = tape(t)%hlist(f)%field%mixing_ratio
+        if (len_trim(str) > 0) then
+          ierr=pio_put_att (tape(t)%File, varid, 'mixing_ratio', trim(str))
+          call cam_pio_handle_error(ierr,                                     &
+               'h_define: cannot define mixing_ratio for '//trim(fname_tmp))
+        end if
+
         str = tape(t)%hlist(f)%field%long_name
         ierr=pio_put_att (tape(t)%File, varid, 'long_name', trim(str))
         call cam_pio_handle_error(ierr,                                       &
@@ -4145,7 +4157,7 @@ end subroutine print_active_fldlst
 
       ierr = pio_put_var(tape(t)%File, tape(t)%nbdateid, (/nbdate/))
       call cam_pio_handle_error(ierr, 'h_define: cannot put nbdate')
-#if ( defined BFB_CAM_SCAM_IOP )
+#if ( defined E3SM_SCM_REPLAY )
       ierr = pio_put_var(tape(t)%File, tape(t)%bdateid, (/nbdate/))
       call cam_pio_handle_error(ierr, 'h_define: cannot put bdate')
 #endif
@@ -4456,7 +4468,13 @@ end subroutine print_active_fldlst
       nstep = get_nstep()
       call get_curr_date(yr, mon, day, ncsec)
 
-      if    (inithist == '6-HOURLY') then
+      if (inithist == 'HOURLY') then
+        dtime  = get_step_size()
+        write_inithist = nstep /= 0 .and. mod( nstep, nint(3600._r8/dtime) ) == 0
+      elseif (inithist == 'NSTEPS') then
+        dtime  = get_step_size()
+        write_inithist = nstep /= 0 .and. mod( nstep, inithist_nsteps ) == 0
+      elseif(inithist == '6-HOURLY') then
         dtime  = get_step_size()
         write_inithist = nstep /= 0 .and. mod( nstep, nint((6._r8*3600._r8)/dtime) ) == 0
       elseif(inithist == 'DAILY'   ) then
@@ -4526,7 +4544,7 @@ end subroutine print_active_fldlst
     character(len=max_string_len) :: fname ! Filename
     logical :: prev              ! Label file with previous date rather than current
     integer :: ierr
-#if ( defined BFB_CAM_SCAM_IOP )
+#if ( defined E3SM_SCM_REPLAY )
     integer :: tsec             ! day component of current time
     integer :: dtime            ! seconds component of current time
 #endif
@@ -4670,7 +4688,7 @@ end subroutine print_active_fldlst
           end if
 
           ierr = pio_put_var (tape(t)%File, tape(t)%datesecid,(/start/),(/count1/),(/ncsec/))
-#if ( defined BFB_CAM_SCAM_IOP )
+#if ( defined E3SM_SCM_REPLAY )
           dtime = get_step_size()
           tsec=dtime*nstep
           ierr = pio_put_var (tape(t)%File, tape(t)%tsecid,(/start/),(/count1/),(/tsec/))
@@ -4813,6 +4831,7 @@ end subroutine print_active_fldlst
     !-----------------------------------------------------------------------
     use cam_history_support, only: fillvalue, hist_coord_find_levels
     use cam_grid_support,    only: cam_grid_id
+    use constituents,        only: pcnst, cnst_get_ind, cnst_get_type_byind
 
     !
     ! Arguments
@@ -4836,9 +4855,11 @@ end subroutine print_active_fldlst
     !
     character(len=max_fieldname_len) :: fname_tmp ! local copy of fname
     character(len=128)               :: errormsg
+    character(len=3)                 :: mixing_ratio
     type(master_entry), pointer      :: listentry
 
     integer :: dimcnt
+    integer :: idx
 
     if (htapes_defined) then
       call endrun ('ADDFLD: Attempt to add field '//trim(fname)//' after history files set')
@@ -4871,6 +4892,14 @@ end subroutine print_active_fldlst
       call endrun ('ADDFLD:  '//fname//' already on list')
     end if
 
+    ! If the field is an advected constituent determine whether its concentration
+    ! is based on dry or wet air.
+    call cnst_get_ind(fname_tmp, idx, abort=.false.)
+    mixing_ratio = ''
+    if (idx > 0) then
+       mixing_ratio = cnst_get_type_byind(idx)
+    end if
+
     !
     ! Add field to Master Field List arrays fieldn and iflds
     !
@@ -4879,6 +4908,7 @@ end subroutine print_active_fldlst
     listentry%field%long_name   = long_name
     listentry%field%numlev      = 1        ! Will change if lev or ilev in shape
     listentry%field%units       = units
+    listentry%field%mixing_ratio = mixing_ratio
     listentry%field%meridional_complement = -1
     listentry%field%zonal_complement      = -1
     listentry%htapeindx(:) = -1

@@ -138,7 +138,7 @@ int main(int argc, char **argv)
          * numbers, like in Fortran! */
         for (int i = 0; i < MAPLEN; i++)
         {
-            wcompmap[i] = i % 2 ? my_rank * MAPLEN + i + 1 : 0; /* Even values missing. */
+            wcompmap[i] = (i % 2) ? my_rank * MAPLEN + i + 1 : 0; /* Even values missing. */
             rcompmap[i] = my_rank * MAPLEN + i + 1;
         }
 
@@ -174,18 +174,18 @@ int main(int argc, char **argv)
                  * values. */
                 for (int i = 0; i < MAPLEN; i++)
                 {
-                    byte_data[i] = i % 2 ? my_rank * MAPLEN + i + 1 : TEST_VAL_42;
-                    char_data[i] = i % 2 ? my_rank * MAPLEN + i + 1 : TEST_VAL_42;
-                    short_data[i] = i % 2 ? my_rank * MAPLEN + i + 1 : TEST_VAL_42;
-                    int_data[i] = i % 2 ? my_rank * MAPLEN + i + 1 : TEST_VAL_42;
-                    float_data[i] = i % 2 ? my_rank * MAPLEN + i + 1 : TEST_VAL_42;
-                    double_data[i] = i % 2 ? my_rank * MAPLEN + i + 1 : TEST_VAL_42;
+                    byte_data[i] = (i % 2) ? my_rank * MAPLEN + i + 1 : TEST_VAL_42;
+                    char_data[i] = (i % 2) ? my_rank * MAPLEN + i + 1 : TEST_VAL_42;
+                    short_data[i] = (i % 2) ? my_rank * MAPLEN + i + 1 : TEST_VAL_42;
+                    int_data[i] = (i % 2) ? my_rank * MAPLEN + i + 1 : TEST_VAL_42;
+                    float_data[i] = (i % 2) ? my_rank * MAPLEN + i + 1 : TEST_VAL_42;
+                    double_data[i] = (i % 2) ? my_rank * MAPLEN + i + 1 : TEST_VAL_42;
 #ifdef _NETCDF4
-                    ubyte_data[i] = i % 2 ? my_rank * MAPLEN + i + 1 : TEST_VAL_42;
-                    ushort_data[i] = i % 2 ? my_rank * MAPLEN + i + 1 : TEST_VAL_42;
-                    uint_data[i] = i % 2 ? my_rank * MAPLEN + i + 1 : TEST_VAL_42;
-                    int64_data[i] = i % 2 ? my_rank * MAPLEN + i + 1 : TEST_VAL_42;
-                    uint64_data[i] = i % 2 ? my_rank * MAPLEN + i + 1 : TEST_VAL_42;
+                    ubyte_data[i] = (i % 2) ? my_rank * MAPLEN + i + 1 : TEST_VAL_42;
+                    ushort_data[i] = (i % 2) ? my_rank * MAPLEN + i + 1 : TEST_VAL_42;
+                    uint_data[i] = (i % 2) ? my_rank * MAPLEN + i + 1 : TEST_VAL_42;
+                    int64_data[i] = (i % 2) ? my_rank * MAPLEN + i + 1 : TEST_VAL_42;
+                    uint64_data[i] = (i % 2) ? my_rank * MAPLEN + i + 1 : TEST_VAL_42;
 #endif /* _NETCDF4 */
                 }
 
@@ -194,18 +194,18 @@ int main(int argc, char **argv)
                  * it may be custom or default fill value. */
                 for (int i = 0; i < MAPLEN; i++)
                 {
-                    byte_expected[i] = i % 2 ? my_rank * MAPLEN + i + 1 : (fv ? byte_default_fill : byte_fill);
-                    char_expected[i] = i % 2 ? my_rank * MAPLEN + i + 1 : (fv ? char_default_fill : char_fill);
-                    short_expected[i] = i % 2 ? my_rank * MAPLEN + i + 1 : (fv ? short_default_fill : short_fill);
-                    int_expected[i] = i % 2 ? my_rank * MAPLEN + i + 1 : (fv ? int_default_fill : int_fill);
-                    float_expected[i] = i % 2 ? my_rank * MAPLEN + i + 1 : (fv ? float_default_fill : float_fill);
-                    double_expected[i] = i % 2 ? my_rank * MAPLEN + i + 1 : (fv ? double_default_fill : double_fill);
+                    byte_expected[i] = (i % 2) ? my_rank * MAPLEN + i + 1 : (fv ? byte_default_fill : byte_fill);
+                    char_expected[i] = (i % 2) ? my_rank * MAPLEN + i + 1 : (fv ? char_default_fill : char_fill);
+                    short_expected[i] = (i % 2) ? my_rank * MAPLEN + i + 1 : (fv ? short_default_fill : short_fill);
+                    int_expected[i] = (i % 2) ? my_rank * MAPLEN + i + 1 : (fv ? int_default_fill : int_fill);
+                    float_expected[i] = (i % 2) ? my_rank * MAPLEN + i + 1 : (fv ? float_default_fill : float_fill);
+                    double_expected[i] = (i % 2) ? my_rank * MAPLEN + i + 1 : (fv ? double_default_fill : double_fill);
 #ifdef _NETCDF4
-                    ubyte_expected[i] = i % 2 ? my_rank * MAPLEN + i + 1 : (fv ? ubyte_default_fill : ubyte_fill);
-                    ushort_expected[i] = i % 2 ? my_rank * MAPLEN + i + 1 : (fv ? ushort_default_fill : ushort_fill);
-                    uint_expected[i] = i % 2 ? my_rank * MAPLEN + i + 1 : (fv ? uint_default_fill : uint_fill);
-                    int64_expected[i] = i % 2 ? my_rank * MAPLEN + i + 1 : (fv ? int64_default_fill : int64_fill);
-                    uint64_expected[i] = i % 2 ? my_rank * MAPLEN + i + 1 : (fv ? uint64_default_fill : uint64_fill);
+                    ubyte_expected[i] = (i % 2) ? my_rank * MAPLEN + i + 1 : (fv ? ubyte_default_fill : ubyte_fill);
+                    ushort_expected[i] = (i % 2) ? my_rank * MAPLEN + i + 1 : (fv ? ushort_default_fill : ushort_fill);
+                    uint_expected[i] = (i % 2) ? my_rank * MAPLEN + i + 1 : (fv ? uint_default_fill : uint_fill);
+                    int64_expected[i] = (i % 2) ? my_rank * MAPLEN + i + 1 : (fv ? int64_default_fill : int64_fill);
+                    uint64_expected[i] = (i % 2) ? my_rank * MAPLEN + i + 1 : (fv ? uint64_default_fill : uint64_fill);
 #endif /* _NETCDF4 */
                 }
 
@@ -364,7 +364,7 @@ int main(int argc, char **argv)
         } /* next rearranger */
 
         /* Finalize PIO system. */
-        if ((ret = PIOc_finalize(iosysid)))
+        if ((ret = PIOc_free_iosystem(iosysid)))
             return ret;
 
     } /* endif my_rank < TARGET_NTASKS */

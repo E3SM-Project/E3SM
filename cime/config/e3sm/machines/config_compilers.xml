@@ -6,15 +6,13 @@ This file defines compiler flags for building CIME.  General flags are listed fi
 followed by flags specific to particular operating systems, followed by particular machines.
 
 More general flags are replaced by more specific flags.
-Flags of the sort ADD_FLAG indicate that the field should be appended to an already existing FLAG definition.
+Flags of the sort <append> indicate that the field should be appended to an already existing FLAG definition.
 
 Attributes indicate that an if clause should be added to the Macros so that these flags are added
 only under the conditions described by the attribute(s).
 
 The env_mach_specific file may set environment variables or load modules which set environment variables
 which are then  used in the Makefile.   For example the NETCDF_PATH on many machines is set by a module.
-
-Do not use variables CPPDEFS and SLIBS here, instead use ADD_CPPDEFS and ADD_SLIBS
 
 ========================================================================
  Serial/MPI compiler specification
@@ -67,10 +65,16 @@ a C++ linker. If CXX_LINKER=FORTRAN, then the above CXX_LDFLAGS line
 should specify extra LDFLAGS needed when linking C++ and fortran code
 using a fortran linker.
 
-These should NOT be specified via <ADD_SLIBS USE_CXX="true"> or
-<ADD_LDFLAGS USE_CXX="true">, because those mess up the configure step
+These should NOT be specified via <SLIBS> <append USE_CXX="true"> or
+<LDFLAGS> <append USE_CXX="true">, because those mess up the configure step
 for mct, etc.
 
+========================================================================
+ MPAS
+========================================================================
+
+MPAS has a semi-autonomous build from core E3SM. Component-specific (mali, mpassi)
+flags should be captured within MPAS CMake files.
 
 ===========================
 -->
@@ -82,42 +86,47 @@ for mct, etc.
 
 <compiler COMPILER="cray">
   <CFLAGS>
-    <append compile_threaded="false"> -h noomp </append>
+    <append compile_threaded="FALSE"> -h noomp </append>
   </CFLAGS>
   <CPPDEFS>
     <!--http://docs.cray.com/cgi-bin/craydoc.cgi?mode=View;id=S-3901-83;idx=books_search;this_sort=;q=;type=books;title=Cray%20Fortran%20Reference%20Manual -->
     <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRCRAY</append>
-    <append MODEL="moby"> -DDIR=NOOP </append>
+    <append COMP_NAME="moby"> -DDIR=NOOP </append>
   </CPPDEFS>
   <FC_AUTO_R8>
     <base> -s real64 </base>
   </FC_AUTO_R8>
   <FFLAGS>
     <base> -O2  -f free -N 255  -h byteswapio -em </base>
-    <append compile_threaded="false"> -h noomp </append>
+    <append compile_threaded="FALSE"> -h noomp </append>
     <append DEBUG="TRUE"> -g -trapuv  -Wuninitialized </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
     <base> -O0 </base>
-    <append compile_threaded="false"> -h noomp </append>
   </FFLAGS_NOOPT>
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
   <LDFLAGS>
     <base> -Wl,--allow-multiple-definition -h byteswapio </base>
-    <append compile_threaded="false"> -h noomp </append>
+    <append compile_threaded="FALSE"> -h noomp </append>
   </LDFLAGS>
 </compiler>
 
 <compiler COMPILER="gnu">
   <CFLAGS>
     <base> -mcmodel=medium </base>
-    <append compile_threaded="true"> -fopenmp </append>
-    <append DEBUG="TRUE"> -g -Wall -Og -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow</append>
+    <append compile_threaded="TRUE"> -fopenmp </append>
+    <append DEBUG="TRUE"> -g -Wall -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow</append>
     <append DEBUG="FALSE"> -O </append>
-    <append MODEL="csm_share"> -std=c99 </append>
+    <append COMP_NAME="csm_share"> -std=c99 </append>
   </CFLAGS>
+  <CXXFLAGS>
+    <base> -std=c++11 </base>
+    <append compile_threaded="TRUE"> -fopenmp </append>
+    <append DEBUG="TRUE"> -g -Wall -fbacktrace </append>
+    <append DEBUG="FALSE"> -O </append>
+  </CXXFLAGS>
   <CMAKE_OPTS>
-    <append MODEL="cism"> -D CISM_GNU=ON </append>
+    <append COMP_NAME="cism"> -D CISM_GNU=ON </append>
   </CMAKE_OPTS>
   <CPPDEFS>
     <!-- http://gcc.gnu.org/onlinedocs/gfortran/ -->
@@ -131,8 +140,13 @@ for mct, etc.
     <!-- -ffree-line-length-none and -ffixed-line-length-none need to be in FFLAGS rather than in FIXEDFLAGS/FREEFLAGS
        so that these are passed to cmake builds (cmake builds don't use FIXEDFLAGS and FREEFLAGS). -->
     <base> -mcmodel=medium -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </base>
-    <append compile_threaded="true"> -fopenmp </append>
-    <append DEBUG="TRUE"> -g -Wall -Og -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow</append>
+    <append compile_threaded="TRUE"> -fopenmp </append>
+    <!-- Ideally, we would also have 'invalid' in the ffpe-trap list. But at
+         least with some versions of gfortran (confirmed with 5.4.0, 6.3.0 and
+         7.1.0, 8.2.0, 8.3.0), gfortran's isnan (which is called in cime via the
+         CPRGNU-specific shr_infnan_isnan) causes a floating point exception
+         when called on a signaling NaN. -->
+    <append DEBUG="TRUE"> -g -Wall -fbacktrace -fcheck=bounds -ffpe-trap=zero,overflow</append>
     <append DEBUG="FALSE"> -O </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
@@ -146,55 +160,7 @@ for mct, etc.
   </FREEFLAGS>
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
   <LDFLAGS>
-    <append compile_threaded="true"> -fopenmp </append>
-  </LDFLAGS>
-  <MPICC> mpicc  </MPICC>
-  <MPICXX> mpicxx </MPICXX>
-  <MPIFC> mpif90 </MPIFC>
-  <SCC> gcc </SCC>
-  <SCXX> g++ </SCXX>
-  <SFC> gfortran </SFC>
-  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
-</compiler>
-
-<compiler COMPILER="gnu7">
-  <CFLAGS>
-    <base> -mcmodel=medium </base>
-    <append compile_threaded="true"> -fopenmp </append>
-    <append DEBUG="TRUE"> -g -Wall -Og -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow</append>
-    <append DEBUG="FALSE"> -O </append>
-  </CFLAGS>
-  <CMAKE_OPTS>
-    <append MODEL="cism"> -D CISM_GNU=ON </append>
-  </CMAKE_OPTS>
-  <CPPDEFS>
-    <!-- http://gcc.gnu.org/onlinedocs/gfortran/ -->
-    <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRGNU</append>
-  </CPPDEFS>
-  <CXX_LINKER>FORTRAN</CXX_LINKER>
-  <FC_AUTO_R8>
-    <base> -fdefault-real-8 </base>
-  </FC_AUTO_R8>
-  <FFLAGS>
-    <!-- -ffree-line-length-none and -ffixed-line-length-none need to be in FFLAGS rather than in FIXEDFLAGS/FREEFLAGS
-       so that these are passed to cmake builds (cmake builds don't use FIXEDFLAGS and FREEFLAGS). -->
-    <base> -mcmodel=medium -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </base>
-    <append compile_threaded="true"> -fopenmp </append>
-    <append DEBUG="TRUE"> -g -Wall -Og -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow</append>
-    <append DEBUG="FALSE"> -O </append>
-  </FFLAGS>
-  <FFLAGS_NOOPT>
-    <base> -O0 </base>
-  </FFLAGS_NOOPT>
-  <FIXEDFLAGS>
-    <base>  -ffixed-form </base>
-  </FIXEDFLAGS>
-  <FREEFLAGS>
-    <base> -ffree-form </base>
-  </FREEFLAGS>
-  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
-  <LDFLAGS>
-    <append compile_threaded="true"> -fopenmp </append>
+    <append compile_threaded="TRUE"> -fopenmp </append>
   </LDFLAGS>
   <MPICC> mpicc  </MPICC>
   <MPICXX> mpicxx </MPICXX>
@@ -209,8 +175,8 @@ for mct, etc.
   <CFLAGS>
     <base> -g -qfullpath -qmaxmem=-1 -qphsinfo </base>
     <append DEBUG="FALSE"> -O3  </append>
-    <append DEBUG="FALSE" compile_threaded="true"> -qsmp=omp -qsuppress=1520-045 </append>
-    <append DEBUG="TRUE" compile_threaded="true"> -qsmp=omp:noopt -qsuppress=1520-045 </append>
+    <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp </append>
+    <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
   </CFLAGS>
   <CPPDEFS>
     <!-- http://publib.boulder.ibm.com/infocenter/comphelp/v7v91/index.jsp
@@ -239,10 +205,13 @@ for mct, etc.
   <FFLAGS>
     <base> -g -qfullpath -qmaxmem=-1 -qphsinfo </base>
     <append DEBUG="FALSE"> -O2 -qstrict -Q </append>
-    <append DEBUG="FALSE" compile_threaded="true"> -qsmp=omp -qsuppress=1520-045 </append>
-    <append DEBUG="TRUE" compile_threaded="true"> -qsmp=omp:noopt -qsuppress=1520-045 </append>
+    <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp </append>
+    <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
     <append DEBUG="TRUE"> -qinitauto=7FF7FFFF -qflttrap=ov:zero:inv:en </append>
   </FFLAGS>
+  <FFLAGS_NOOPT>
+    <base> -O0 </base>
+  </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base>  -qsuffix=f=f -qfixed=132 </base>
   </FIXEDFLAGS>
@@ -255,12 +224,13 @@ for mct, etc.
 <compiler COMPILER="intel">
   <CFLAGS>
     <base> -O2 -fp-model precise -std=gnu99 </base>
-    <append compile_threaded="true"> -qopenmp </append>
+    <append compile_threaded="TRUE"> -qopenmp </append>
     <append DEBUG="FALSE"> -O2 -debug minimal </append>
     <append DEBUG="TRUE"> -O0 -g </append>
   </CFLAGS>
   <CXXFLAGS>
-    <base> -std=c++11 -fp-model source -qopenmp </base>
+    <base> -std=c++11 -fp-model source </base>
+    <append compile_threaded="TRUE"> -qopenmp </append>
     <append DEBUG="TRUE"> -O0 -g </append>
     <append DEBUG="FALSE"> -O2 </append>
   </CXXFLAGS>
@@ -277,19 +247,12 @@ for mct, etc.
   </FC_AUTO_R8>
   <FFLAGS>
     <base>  -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source </base>
-    <append compile_threaded="true"> -qopenmp </append>
-    <!-- WJS (8-11-14): For some reason, yellowstone-intel has starting giving lots of
-       messages about array temporaries, leading to a ton of standard output, and
-       sometimes causing runs to die. Adding '-check noarg_temp_created' to suppress these
-       diagnostics. This is a band-aid fix, which should really be addressed at the
-       system-level. (Note: I could not add this in the yellowstone-specific section,
-       beacuse apparently that overrides rather than adds to this ADD_FFLAGS list.) -->
+    <append compile_threaded="TRUE"> -qopenmp </append>
     <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </append>
     <append DEBUG="FALSE"> -O2 -debug minimal </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
     <base> -O0 </base>
-    <append compile_threaded="true"> -qopenmp </append>
   </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base> -fixed -132 </base>
@@ -299,7 +262,7 @@ for mct, etc.
   </FREEFLAGS>
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
   <LDFLAGS>
-    <append compile_threaded="true"> -qopenmp </append>
+    <append compile_threaded="TRUE"> -qopenmp </append>
   </LDFLAGS>
   <MPICC> mpicc  </MPICC>
   <MPICXX> mpicxx </MPICXX>
@@ -334,19 +297,9 @@ for mct, etc.
     <!-- The "-gline" option is nice, but it doesn't work with OpenMP.         -->
     <!-- Runtime checks with OpenMP (in fact, all OpenMP cases) are WIP.       -->
     <append DEBUG="TRUE"> -C=all -g -time -f2003 -ieee=stop </append>
-    <append DEBUG="TRUE" compile_threaded="false"> -gline </append>
-    <append compile_threaded="true"> -openmp </append>
+    <append DEBUG="TRUE" compile_threaded="FALSE"> -gline </append>
+    <append compile_threaded="TRUE"> -openmp </append>
   </FFLAGS>
-  <FFLAGS_NOOPT>
-    <base> $FFLAGS </base>
-    <append DEBUG="FALSE"> -ieee=full     </append>
-    <!-- Hack! If DEBUG="TRUE", put runtime checks in FFLAGS, but not into     -->
-    <!-- FFLAGS_NOOPT, allowing strict checks to be removed from files by      -->
-    <!-- having them use FFLAGS_NOOPT in Depends.nag                           -->
-    <append DEBUG="TRUE"> -g -time -f2003 -ieee=stop </append>
-    <append DEBUG="TRUE" compile_threaded="false"> -gline        </append>
-    <append compile_threaded="true"> -openmp </append>
-  </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base> -fixed </base>
   </FIXEDFLAGS>
@@ -355,7 +308,7 @@ for mct, etc.
   </FREEFLAGS>
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
   <LDFLAGS>
-    <append compile_threaded="true"> -openmp </append>
+    <append compile_threaded="TRUE"> -openmp </append>
   </LDFLAGS>
   <MPICC> mpicc </MPICC>
   <MPIFC> mpif90 </MPIFC>
@@ -365,7 +318,7 @@ for mct, etc.
 
 <compiler COMPILER="pathscale">
   <CFLAGS>
-    <append compile_threaded="true"> -mp </append>
+    <append compile_threaded="TRUE"> -mp </append>
   </CFLAGS>
   <CPPDEFS>
     <!-- http://www.pathscale.com/node/70 -->
@@ -376,7 +329,7 @@ for mct, etc.
   </FC_AUTO_R8>
   <FFLAGS>
     <base> -O -extend_source -ftpp -fno-second-underscore -funderscoring -byteswapio  </base>
-    <append compile_threaded="true"> -mp </append>
+    <append compile_threaded="TRUE"> -mp </append>
     <append DEBUG="TRUE"> -g -trapuv -Wuninitialized </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
@@ -384,7 +337,7 @@ for mct, etc.
   </FFLAGS_NOOPT>
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
   <LDFLAGS>
-    <append compile_threaded="true"> -mp </append>
+    <append compile_threaded="TRUE"> -mp </append>
   </LDFLAGS>
   <MPICC> mpicc  </MPICC>
   <MPIFC> mpif90 </MPIFC>
@@ -392,9 +345,8 @@ for mct, etc.
 
 <compiler COMPILER="pgi">
   <CFLAGS>
-    <base> -gopt -time </base>
-    <append compile_threaded="false"> </append>
-    <append compile_threaded="true"> -mp </append>
+    <base> -time </base>
+    <append compile_threaded="TRUE"> -mp </append>
   </CFLAGS>
   <CPPDEFS>
     <!-- http://www.pgroup.com/resources/docs.htm                                              -->
@@ -413,7 +365,6 @@ for mct, etc.
     <!--  -mp=nonuma      => Don't use thread/processors affinity (for NUMA architectures)  -->
     <!-- -->
     <!--  -g              => Generate symbolic debug information. Turns off optimization.   -->
-    <!--  -gopt           => Generate information for debugger without disabling optimizations  -->
     <!--  -Mbounds        => Add array bounds checking  -->
     <!--  -Ktrap=fp       => Determine IEEE Trap conditions fp => inv,divz,ovf   -->
     <!--                     * inv: invalid operands         -->
@@ -428,21 +379,18 @@ for mct, etc.
     <base> -r8 </base>
   </FC_AUTO_R8>
   <FFLAGS>
-    <base>  -i4 -gopt  -time -Mstack_arrays  -Mextend -byteswapio -Mflushz -Kieee -Mallocatable=03 </base>
-    <append compile_threaded="false"> </append>
-    <append compile_threaded="true"> -mp </append>
+    <base>  -i4 -time -Mstack_arrays  -Mextend -byteswapio -Mflushz -Kieee -Mallocatable=03 </base>
+    <append compile_threaded="TRUE"> -mp </append>
     <append DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </append>
-    <append MODEL="datm"> -Mnovect </append>
-    <append MODEL="dlnd"> -Mnovect </append>
-    <append MODEL="drof"> -Mnovect </append>
-    <append MODEL="dwav"> -Mnovect </append>
-    <append MODEL="dice"> -Mnovect </append>
-    <append MODEL="docn"> -Mnovect </append>
+    <append COMP_NAME="datm"> -Mnovect </append>
+    <append COMP_NAME="dlnd"> -Mnovect </append>
+    <append COMP_NAME="drof"> -Mnovect </append>
+    <append COMP_NAME="dwav"> -Mnovect </append>
+    <append COMP_NAME="dice"> -Mnovect </append>
+    <append COMP_NAME="docn"> -Mnovect </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
-    <base> -O0 -g -Ktrap=fp -Mbounds -Kieee  </base>
-    <append compile_threaded="false"> </append>
-    <append compile_threaded="true"> -mp </append>
+    <base> -O0 </base>
   </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base> -Mfixed </base>
@@ -458,8 +406,7 @@ for mct, etc.
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
   <LDFLAGS>
     <base> -time -Wl,--allow-multiple-definition </base>
-    <append compile_threaded="false"> </append>
-    <append compile_threaded="true"> -mp </append>
+    <append compile_threaded="TRUE"> -mp </append>
   </LDFLAGS>
   <MPICC> mpicc </MPICC>
   <MPICXX> mpicxx </MPICXX>
@@ -472,8 +419,7 @@ for mct, etc.
 <compiler COMPILER="pgiacc">
   <CFLAGS>
     <base> -time </base>
-    <append compile_threaded="false"> </append>
-    <append compile_threaded="true"> -mp </append>
+    <append compile_threaded="TRUE"> -mp </append>
   </CFLAGS>
   <CPPDEFS>
     <!-- http://www.pgroup.com/resources/docs.htm                                              -->
@@ -492,7 +438,6 @@ for mct, etc.
     <!--  -mp=nonuma      => Don't use thread/processors affinity (for NUMA architectures)  -->
     <!-- -->
     <!--  -g              => Generate symbolic debug information. Turns off optimization.   -->
-    <!--  -gopt           => Generate information for debugger without disabling optimizations  -->
     <!--  -Mbounds        => Add array bounds checking  -->
     <!--  -Ktrap=fp       => Determine IEEE Trap conditions fp => inv,divz,ovf   -->
     <!--                     * inv: invalid operands         -->
@@ -508,21 +453,18 @@ for mct, etc.
   </FC_AUTO_R8>
   <FFLAGS>
     <base>  -i4 -time -Mstack_arrays -Mextend -byteswapio -Mflushz -Kieee  </base>
-    <append compile_threaded="false"> </append>
-    <append compile_threaded="true"> -mp </append>
-    <append MODEL="cam"> </append>
+    <append compile_threaded="TRUE"> -mp </append>
+    <append COMP_NAME="cam"> </append>
     <append DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </append>
-    <append MODEL="datm"> -Mnovect </append>
-    <append MODEL="dlnd"> -Mnovect </append>
-    <append MODEL="drof"> -Mnovect </append>
-    <append MODEL="dwav"> -Mnovect </append>
-    <append MODEL="dice"> -Mnovect </append>
-    <append MODEL="docn"> -Mnovect </append>
+    <append COMP_NAME="datm"> -Mnovect </append>
+    <append COMP_NAME="dlnd"> -Mnovect </append>
+    <append COMP_NAME="drof"> -Mnovect </append>
+    <append COMP_NAME="dwav"> -Mnovect </append>
+    <append COMP_NAME="dice"> -Mnovect </append>
+    <append COMP_NAME="docn"> -Mnovect </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
-    <base> -O0 -g -Ktrap=fp -Mbounds -Kieee  </base>
-    <append compile_threaded="false"> </append>
-    <append compile_threaded="true"> -mp </append>
+    <base> -O0 </base>
   </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base> -Mfixed </base>
@@ -538,8 +480,7 @@ for mct, etc.
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
   <LDFLAGS>
     <base> -time -Wl,--allow-multiple-definition -acc</base>
-    <append compile_threaded="false"> </append>
-    <append compile_threaded="true"> -mp </append>
+    <append compile_threaded="TRUE"> -mp </append>
   </LDFLAGS>
   <MPICC> mpicc </MPICC>
   <MPICXX> mpicxx </MPICXX>
@@ -556,7 +497,7 @@ for mct, etc.
   <CONFIG_SHELL> /usr/bin/bash </CONFIG_SHELL>
   <FFLAGS>
     <append> -qarch=auto -qtune=auto -qcache=auto -qsclk=micro </append>
-    <append MODEL="cam"> -qspill=6000 </append>
+    <append COMP_NAME="cam"> -qspill=6000 </append>
   </FFLAGS>
   <LDFLAGS>
     <append DEBUG="TRUE"> -qsigtrap=xl__trcedump </append>
@@ -624,8 +565,8 @@ for mct, etc.
 
 <compiler OS="BGQ" COMPILER="ibm">
   <CFLAGS>
-    <append DEBUG="FALSE" compile_threaded="true"> -qsmp=omp:nested_par -qsuppress=1520-045 </append>
-    <append DEBUG="TRUE" compile_threaded="true"> -qsmp=omp:nested_par:noopt -qsuppress=1520-045 </append>
+    <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp:nested_par -qsuppress=1520-045 </append>
+    <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:nested_par:noopt -qsuppress=1520-045 </append>
   </CFLAGS>
   <CONFIG_ARGS>
     <base> --build=powerpc-bgp-linux --host=powerpc64-suse-linux </base>
@@ -636,8 +577,8 @@ for mct, etc.
   <FFLAGS>
     <base> -g -qfullpath -qmaxmem=-1 -qspillsize=2500 -qextname=flush -qphsinfo </base>
     <append DEBUG="FALSE"> -O3 -qstrict -Q </append>
-    <append DEBUG="FALSE" compile_threaded="true"> -qsmp=omp:nested_par -qsuppress=1520-045 </append>
-    <append DEBUG="TRUE" compile_threaded="true"> -qsmp=omp:nested_par:noopt -qsuppress=1520-045 </append>
+    <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp:nested_par -qsuppress=1520-045 </append>
+    <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:nested_par:noopt -qsuppress=1520-045 </append>
   </FFLAGS>
   <LDFLAGS>
     <base>  -Wl,--relax -Wl,--allow-multiple-definition </base>
@@ -650,7 +591,7 @@ for mct, etc.
   </CMAKE_OPTS>
   <CPPDEFS>
     <append> -DLINUX </append>
-    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY  </append>
+    <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY  </append>
   </CPPDEFS>
   <MPICC> cc </MPICC>
   <MPICXX> CC </MPICXX>
@@ -670,13 +611,13 @@ for mct, etc.
     <append> -DSYSDARWIN </append>
   </CPPDEFS>
   <LDFLAGS>
-    <append MODEL="driver"> -all_load </append>
+    <append COMP_CLASS="cpl"> -all_load </append>
   </LDFLAGS>
 </compiler>
 
 <compiler OS="Darwin" COMPILER="intel">
   <FFLAGS>
-    <append compile_threaded="false"> -heap-arrays </append>
+    <append compile_threaded="FALSE"> -heap-arrays </append>
   </FFLAGS>
   <SLIBS>
     <append MPILIB="mpich"> -mkl=cluster </append>
@@ -704,7 +645,7 @@ for mct, etc.
     <base> --host=Linux </base>
   </CONFIG_ARGS>
   <CXX_LIBS>
-    <base>-lstdc++ -lmpi_cxx</base>
+    <base>-lstdc++</base>
   </CXX_LIBS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
@@ -712,56 +653,134 @@ for mct, etc.
   <SLIBS>
     <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -lblas -llapack</append>
   </SLIBS>
+  <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
+  <HDF5_PATH>$ENV{HDF5_PATH}</HDF5_PATH>
+  <SZIP_PATH>$ENV{SZIP_PATH}</SZIP_PATH>
+  <ZLIB_PATH>$ENV{ZLIB_PATH}</ZLIB_PATH>
 </compiler>
 
 <compiler MACH="anvil" COMPILER="gnu">
   <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY</append>
+    <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY  </append>
   </CPPDEFS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
   <SLIBS>
-    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
+    <append>$SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --flibs}  -L$ENV{MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm -ldl </append>
+    <append> $SHELL{$ENV{NETCDF_C_PATH}/bin/nc-config --libs} </append>
   </SLIBS>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
+  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
 </compiler>
 
 <compiler MACH="anvil" COMPILER="intel">
   <CFLAGS>
-    <append compile_threaded="true"> -static-intel</append>
-    <append compile_threaded="true" DEBUG="TRUE">-heap-arrays</append>
+    <append compile_threaded="TRUE"> -static-intel</append>
+    <append compile_threaded="TRUE" DEBUG="TRUE">-heap-arrays</append>
   </CFLAGS>
   <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_SLASHPROC </append>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align</append>
-    <append compile_threaded="true"> -static-intel</append>
-    <append compile_threaded="true" DEBUG="TRUE">-heap-arrays</append>
+    <append> $SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --fflags} </append>
+    <append compile_threaded="TRUE"> -static-intel</append>
+    <append compile_threaded="TRUE" DEBUG="TRUE">-heap-arrays</append>
   </FFLAGS>
   <FFLAGS_NOOPT>
-    <append compile_threaded="true"> -static-intel</append>
+    <append compile_threaded="TRUE"> -static-intel</append>
   </FFLAGS_NOOPT>
   <LDFLAGS>
-    <append compile_threaded="true"> -static-intel</append>
+    <append compile_threaded="TRUE"> -static-intel</append>
   </LDFLAGS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
   <SLIBS>
-    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -Wl,-rpath -Wl,$ENV{NETCDF_PATH}/lib</append>
-    <append>-mkl</append>
+    <append> $SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --flibs} </append>
+    <append> $SHELL{$ENV{NETCDF_C_PATH}/bin/nc-config --libs} </append>
+    <append>-Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_sequential.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl</append>
   </SLIBS>
+  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
 </compiler>
 
-<compiler MACH="anvil" COMPILER="pgi">
+<compiler MACH="anvil" COMPILER="intel18">
+  <CPPDEFS>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
+  </CPPDEFS>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
   <SLIBS>
-    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
-    <append> -rpath $ENV{NETCDF_PATH}/lib </append>
+    <append> $SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --flibs} </append>
+    <append> $SHELL{$ENV{NETCDF_C_PATH}/bin/nc-config --libs} </append>
+    <append>-Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_sequential.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl</append>
   </SLIBS>
+  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
+  <CFLAGS>
+    <base> -O2 -fp-model precise -std=gnu99 </base>
+    <append compile_threaded="TRUE"> -qopenmp -static-intel</append>
+    <append compile_threaded="TRUE" DEBUG="TRUE">-heap-arrays</append>
+    <append DEBUG="FALSE"> -O2 -debug minimal </append>
+    <append DEBUG="TRUE"> -O0 -g </append>
+  </CFLAGS>
+  <CXXFLAGS>
+    <base> -std=c++11 -fp-model source </base>
+    <append compile_threaded="TRUE"> -qopenmp -static-intel</append>
+    <append DEBUG="TRUE"> -O0 -g </append>
+    <append DEBUG="FALSE"> -O2 </append>
+  </CXXFLAGS>
+  <CPPDEFS>
+    <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</append>
+  </CPPDEFS>
+  <CXX_LDFLAGS>
+    <base> -cxxlib </base>
+  </CXX_LDFLAGS>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <FC_AUTO_R8>
+    <base> -r8 </base>
+  </FC_AUTO_R8>
+  <FFLAGS>
+    <base> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source </base>
+    <append compile_threaded="TRUE"> -qopenmp -static-intel</append>
+    <append compile_threaded="TRUE" DEBUG="TRUE">-heap-arrays</append>
+    <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </append>
+    <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align </append>
+    <append> $SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --fflags} </append>
+  </FFLAGS>
+  <FFLAGS_NOOPT>
+    <base> -O0 </base>
+  </FFLAGS_NOOPT>
+  <FIXEDFLAGS>
+    <base> -fixed -132 </base>
+  </FIXEDFLAGS>
+  <FREEFLAGS>
+    <base> -free </base>
+  </FREEFLAGS>
+  <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
+  <LDFLAGS>
+    <append compile_threaded="TRUE"> -qopenmp -static-intel</append>
+  </LDFLAGS>
+  <MPICC> mpicc </MPICC>
+  <MPICXX> mpicxx </MPICXX>
+  <MPIFC> mpif90 </MPIFC>
+  <SCC> icc </SCC>
+  <SCXX> icpc </SCXX>
+  <SFC> ifort </SFC>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
 <compiler MACH="bebop" COMPILER="intel">
   <ALBANY_PATH>/soft/climate/AlbanyTrilinos_06262017/Albany/buildintel/install</ALBANY_PATH>
   <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_SLASHPROC </append>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
   <CXX_LIBS>
     <base>-lstdc++</base>
@@ -769,18 +788,37 @@ for mct, etc.
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align</append>
   </FFLAGS>
-  <MPICC> mpiicc  </MPICC>
-  <MPICXX> mpiicpc </MPICXX>
-  <MPIFC> mpiifort </MPIFC>
+  <MPICC  MPILIB="impi"> mpiicc  </MPICC>
+  <MPICXX MPILIB="impi"> mpiicpc </MPICXX>
+  <MPIFC  MPILIB="impi"> mpiifort </MPIFC>
   <SLIBS>
     <append>$SHELL{nf-config --flibs} -mkl</append>
   </SLIBS>
+  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
+</compiler>
+
+<compiler MACH="bebop" COMPILER="gnu">
+  <CPPDEFS>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
+  </CPPDEFS>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
+  <SLIBS>
+    <append>$SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --flibs} $SHELL{$ENV{NETCDF_C_PATH}/bin/nc-config --libs}</append> 
+    <append>-L$ENV{MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl</append>
+  </SLIBS>
+  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
 </compiler>
 
 <compiler MACH="blues" COMPILER="gnu">
   <ALBANY_PATH>/soft/climate/AlbanyTrilinos_06262017/Albany/build/install</ALBANY_PATH>
   <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY</append>
+    <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY</append>
   </CPPDEFS>
   <CXX_LIBS>
     <base>-lstdc++</base>
@@ -862,15 +900,15 @@ for mct, etc.
 
 <compiler MACH="cades" COMPILER="gnu">
   <CFLAGS>
-    <append compile_threaded="true"> -fopenmp </append>
+    <append compile_threaded="TRUE"> -fopenmp </append>
   </CFLAGS>
   <CMAKE_OPTS>
-    <append MODEL="cism"> -D CISM_GNU=ON </append>
+    <append COMP_NAME="cism"> -D CISM_GNU=ON </append>
   </CMAKE_OPTS>
   <CPPDEFS>
     <append> -DFORTRANUNDERSCORE -DNO_R16</append>
-    <!-- <append MODEL="clm"> -DCLM_PFLOTRAN </append>
-         <append MODEL="clm"> -DCOLUMN_MODE </append> -->
+    <!-- <append COMP_NAME="clm"> -DCLM_PFLOTRAN </append>
+         <append COMP_NAME="clm"> -DCOLUMN_MODE </append> -->
   </CPPDEFS>
   <CXX_LINKER>FORTRAN</CXX_LINKER>
   <FC_AUTO_R8>
@@ -880,13 +918,10 @@ for mct, etc.
     <!-- -ffree-line-length-none and -ffixed-line-length-none need to be in FFLAGS rather than in FIXEDFLAGS/FREEFLAGS
                                  so that these are passed to cmake builds (cmake builds don't use FIXEDFLAGS and FREEFLAGS). -->
     <base> -O -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none -fno-range-check</base>
-    <append compile_threaded="true"> -fopenmp </append>
+    <append compile_threaded="TRUE"> -fopenmp </append>
     <append DEBUG="TRUE"> -g -Wall </append>
-    <!-- <append MODEL="clm"> -I/lustre/or-hydra/cades-ccsi/$USER/models/pflotran-interface/src/clm-pflotran</append> -->
+    <!-- <append COMP_NAME="clm"> -I/lustre/or-hydra/cades-ccsi/$USER/models/pflotran-interface/src/clm-pflotran</append> -->
   </FFLAGS>
-  <FFLAGS_NOOPT>
-    <base> -O0 </base>
-  </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base>  -ffixed-form </base>
   </FIXEDFLAGS>
@@ -898,10 +933,12 @@ for mct, etc.
   <PNETCDF_PATH>/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/pnetcdf/1.9.0/centos7.2_gnu5.3.0</PNETCDF_PATH>
   <LAPACK_LIBDIR>/software/tools/compilers/intel_2017/mkl/lib/intel64</LAPACK_LIBDIR>
   <LDFLAGS>
-    <append compile_threaded="true"> -fopenmp </append>
-    <append MODEL="driver"> -L$NETCDF_PATH/lib -Wl,-rpath=$NETCDF_PATH/lib -lnetcdff -lnetcdf </append>
-    <!-- <append MODEL="driver"> -L$ENV{CLM_PFLOTRAN_SOURCE_DIR} -lpflotran $ENV{PETSC_LIB} </append> -->
+    <append compile_threaded="TRUE"> -fopenmp </append>
+    <!-- <append COMP_CLASS="cpl"> -L$ENV{CLM_PFLOTRAN_SOURCE_DIR} -lpflotran $ENV{PETSC_LIB} </append> -->
   </LDFLAGS>
+  <SLIBS>
+    <append> -L$NETCDF_PATH/lib -Wl,-rpath=$NETCDF_PATH/lib -lnetcdff -lnetcdf </append>
+  </SLIBS>
   <MPICC>mpicc</MPICC>
   <MPICXX>mpic++</MPICXX>
   <MPIFC>mpif90</MPIFC>
@@ -936,17 +973,9 @@ for mct, etc.
     <append> -DnoI8 </append>
   </CPPDEFS>
   <FFLAGS>
-    <!--  -C=Undefined flag doesn't work as it requires MPI and NETCDF to be
-      compiled with this flag, which is not available now. NAG has the following debug flags
-      <ADD_FFLAGS DEBUG="TRUE">  -gline  -C=all  -g  -C=undefined -C=recursion -nan -O0 -v  </ADD_FFLAGS>
-      "-nan" is an important flag. currently, it doesn't work for pio, it is only used for "cam" model.
- -->
     <append DEBUG="TRUE">  -C=all  -g  -O0 -v  </append>
-    <append DEBUG="TRUE" MODEL="cam">  -C=all  -g  -nan -O0 -v  </append>
+    <append DEBUG="TRUE" COMP_NAME="cam">  -C=all  -g  -nan -O0 -v  </append>
   </FFLAGS>
-  <LDFLAGS>
-    <append compile_threaded="true">  </append>
-  </LDFLAGS>
   <MPI_PATH MPILIB="mvapich2"> $ENV{MPI_LIB}</MPI_PATH>
   <NETCDF_PATH>$ENV{NETCDF_ROOT}</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
@@ -978,7 +1007,7 @@ for mct, etc.
   <SFC> mpixlf2003_r </SFC>
   <SLIBS>
     <append>-L$NETCDF_PATH/lib -lnetcdff -lnetcdf -L$HDF5_PATH/lib -lhdf5_hl -lhdf5 -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz -L/soft/libraries/alcf/current/xl/LAPACK/lib -llapack -L/soft/libraries/alcf/current/xl/BLAS/lib -lblas -L/bgsys/drivers/ppcfloor/comm/sys/lib </append>
-    <append compile_threaded="true"> -L$ENV{IBM_MAIN_DIR}/xlf/bg/14.1/bglib64 -lxlfmath -lxlf90_r -lxlopt -lxl -L$ENV{IBM_MAIN_DIR}/xlsmp/bg/3.1/bglib64 -lxlsmp </append>
+    <append compile_threaded="TRUE"> -L$ENV{IBM_MAIN_DIR}/xlf/bg/14.1/bglib64 -lxlfmath -lxlf90_r -lxlopt -lxl -L$ENV{IBM_MAIN_DIR}/xlsmp/bg/3.1/bglib64 -lxlsmp </append>
   </SLIBS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
@@ -1050,7 +1079,66 @@ for mct, etc.
   </SLIBS>
 </compiler>
 
+<compiler MACH="compy" COMPILER="intel">
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
+  </CFLAGS>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CPPDEFS>
+    <append> -DLINUX </append>
+  </CPPDEFS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+    <append DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv -init=snan</append>
+  </FFLAGS>
+  <NETCDF_PATH>$ENV{NETCDF_HOME}</NETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_HOME}</PNETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <SLIBS>
+    <base> -lpmi -L$NETCDF_PATH/lib -lnetcdf -lnetcdff -L$ENV{MKL_PATH}/lib/intel64/ -lmkl_rt $ENV{PNETCDF_LIBRARIES}</base>
+  </SLIBS>
+  <MPICC  MPILIB="impi">mpiicc</MPICC>
+  <MPICXX MPILIB="impi">mpiicpc</MPICXX>
+  <MPIFC  MPILIB="impi">mpiifort</MPIFC>
+</compiler>
+
+<compiler MACH="compy" COMPILER="pgi">
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
+  </CFLAGS>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CPPDEFS>
+    <append> -DLINUX </append>
+  </CPPDEFS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+    <append DEBUG="TRUE">-C -Mbounds -traceback -Mchkfpstk -Mchkstk -Mdalign  -Mdepchk  -Mextend -Miomutex -Mrecursive  -Ktrap=fp -O0 -g -byteswapio -Meh_frame</append>
+    <append COMP_NAME="cam">-Mnovect</append>
+  </FFLAGS>
+  <NETCDF_PATH> $ENV{NETCDF_HOME}</NETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <PNETCDF_PATH>$ENV{PNETCDF_HOME}</PNETCDF_PATH>
+  <SLIBS>
+    <append> -lpmi -L$NETCDF_PATH/lib -lnetcdf -lnetcdff -L$ENV{MKL_PATH}/lib/intel64/ -lmkl_rt $ENV{PNETCDF_LIBRARIES} </append>
+  </SLIBS>
+  <MPICC  MPILIB="impi">mpipgcc</MPICC>
+  <MPICXX MPILIB="impi">mpipgcxx</MPICXX>
+  <MPIFC  MPILIB="impi">mpipgf90</MPIFC>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+</compiler>
+
 <compiler MACH="cori-haswell" COMPILER="intel">
+  <ALBANY_PATH>/global/cfs/cdirs/acme/software/AlbanyTrilinos20190823/albany-build/install</ALBANY_PATH>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
   </CONFIG_ARGS>
@@ -1069,6 +1157,7 @@ for mct, etc.
 </compiler>
 
 <compiler MACH="cori-knl" COMPILER="intel">
+  <ALBANY_PATH>/global/cfs/cdirs/acme/software/AlbanyTrilinos20190823/albany-build/install</ALBANY_PATH>
   <CFLAGS>
     <append MPILIB="impi"> -axMIC-AVX512 -xCORE-AVX2 </append>
   </CFLAGS>
@@ -1082,6 +1171,7 @@ for mct, etc.
     <base> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml </base>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align</append>
     <append MPILIB="impi"> -xMIC-AVX512 </append>
+    <append> -DHAVE_ERF_INTRINSICS </append>
   </FFLAGS>
   <MPICC MPILIB="impi"> mpiicc </MPICC>
   <MPICXX MPILIB="impi"> mpiicpc </MPICXX>
@@ -1101,10 +1191,16 @@ for mct, etc.
 <compiler MACH="cori-knl" COMPILER="intel19">
   <CFLAGS>
     <base> -O2 -fp-model precise -std=gnu99 </base>
-    <append compile_threaded="true"> -qopenmp </append>
+    <append compile_threaded="TRUE"> -qopenmp </append>
     <append DEBUG="FALSE"> -O2 -debug minimal </append>
     <append DEBUG="TRUE"> -O0 -g </append>
   </CFLAGS>
+  <CXXFLAGS>
+    <base> -std=c++11 -fp-model consistent </base>
+    <append compile_threaded="TRUE"> -qopenmp </append>
+    <append DEBUG="TRUE"> -O0 -g </append>
+    <append DEBUG="FALSE"> -O2 </append>
+  </CXXFLAGS>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
   </CONFIG_ARGS>
@@ -1119,15 +1215,12 @@ for mct, etc.
     <base> -r8 </base>
   </FC_AUTO_R8>
   <FFLAGS>
-    <base> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml -fimf-use-svml=false:asin </base>
-    <append compile_threaded="true"> -qopenmp </append>
+    <base> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml </base>
+    <append compile_threaded="TRUE"> -qopenmp </append>
     <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </append>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align </append>
+    <append MPILIB="impi"> -xMIC-AVX512 </append>
   </FFLAGS>
-  <FFLAGS_NOOPT>
-    <base> -O0 </base>
-    <append compile_threaded="true"> -qopenmp </append>
-  </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base> -fixed -132 </base>
   </FIXEDFLAGS>
@@ -1136,12 +1229,17 @@ for mct, etc.
   </FREEFLAGS>
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
   <LDFLAGS>
-    <append compile_threaded="true"> -qopenmp </append>
+    <append compile_threaded="TRUE"> -qopenmp </append>
   </LDFLAGS>
   <PETSC_PATH>$ENV{PETSC_DIR}</PETSC_PATH>
   <SCC> icc </SCC>
   <SCXX> icpc </SCXX>
   <SFC> ifort </SFC>
+  <MPICC MPILIB="impi"> mpiicc </MPICC>
+  <MPICXX MPILIB="impi"> mpiicpc </MPICXX>
+  <MPIFC MPILIB="impi"> mpiifort </MPIFC>
+  <!-- When using Intel MPI, can't use the Cray compiler wrappers. Must also set environment variables in config_machines.xml -->
+  <MPI_LIB_NAME MPILIB="impi">impi</MPI_LIB_NAME>
   <SLIBS>
     <append> -L$ENV{NETCDF_DIR} -lnetcdff -Wl,--as-needed,-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf </append>
     <append> -mkl -lpthread </append>
@@ -1171,82 +1269,12 @@ for mct, etc.
 
 <compiler MACH="eddi" COMPILER="gnu">
   <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE </append>
+    <append COMP_NAME="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE </append>
   </CPPDEFS>
   <NETCDF_PATH>$ENV{NETCDF_HOME}</NETCDF_PATH>
   <SLIBS>
     <append> -L$ENV{NETCDF_HOME}/lib/ -lnetcdff -lnetcdf -lcurl -llapack -lblas </append>
   </SLIBS>
-</compiler>
-
-<compiler MACH="edison" COMPILER="intel">
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
-  <FFLAGS>
-    <base> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml </base>
-    <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align </append>
-  </FFLAGS>
-  <PETSC_PATH>$ENV{PETSC_DIR}</PETSC_PATH>
-  <SCC> icc </SCC>
-  <SCXX> icpc </SCXX>
-  <SFC> ifort </SFC>
-  <SLIBS>
-    <append> -L$ENV{NETCDF_DIR} -lnetcdff -Wl,--as-needed,-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf </append>
-    <append> -mkl -lpthread </append>
-  </SLIBS>
-</compiler>
-
-<!-- Edison still has intel18 compiler option for backward compat -->
-<compiler MACH="edison" COMPILER="intel18">
-  <CFLAGS>
-    <base> -O2 -fp-model precise -std=gnu99 </base>
-    <append compile_threaded="true"> -qopenmp </append>
-    <append DEBUG="FALSE"> -O2 -debug minimal </append>
-    <append DEBUG="TRUE"> -O0 -g </append>
-  </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
-  <CPPDEFS>
-    <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</append>
-  </CPPDEFS>
-  <CXX_LDFLAGS>
-    <base> -cxxlib </base>
-  </CXX_LDFLAGS>
-  <CXX_LINKER>FORTRAN</CXX_LINKER>
-  <FC_AUTO_R8>
-    <base> -r8 </base>
-  </FC_AUTO_R8>
-  <FFLAGS>
-    <base> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml </base>
-    <append compile_threaded="true"> -qopenmp </append>
-    <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </append>
-    <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align </append>
-  </FFLAGS>
-  <FFLAGS_NOOPT>
-    <base> -O0 </base>
-    <append compile_threaded="true"> -qopenmp </append>
-  </FFLAGS_NOOPT>
-  <FIXEDFLAGS>
-    <base> -fixed -132 </base>
-  </FIXEDFLAGS>
-  <FREEFLAGS>
-    <base> -free </base>
-  </FREEFLAGS>
-  <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
-  <LDFLAGS>
-    <append compile_threaded="true"> -qopenmp </append>
-  </LDFLAGS>
-  <PETSC_PATH>$ENV{PETSC_DIR}</PETSC_PATH>
-  <SCC> icc </SCC>
-  <SCXX> icpc </SCXX>
-  <SFC> ifort </SFC>
-  <SLIBS>
-    <append> -L$ENV{NETCDF_DIR} -lnetcdff -Wl,--as-needed,-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf </append>
-    <append> -mkl -lpthread </append>
-  </SLIBS>
-  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
 <compiler MACH="eos" COMPILER="intel">
@@ -1257,7 +1285,7 @@ for mct, etc.
     <base> --host=Linux </base>
   </CONFIG_ARGS>
   <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_PAPI </append>
+    <append COMP_NAME="gptl"> -DHAVE_PAPI </append>
   </CPPDEFS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
@@ -1273,7 +1301,7 @@ for mct, etc.
 </compiler>
 
 <compiler MACH="ghost" COMPILER="intel">
-  <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos_06262017/Albany/build/install</ALBANY_PATH>
+  <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos_20190904/albany-build/install</ALBANY_PATH>
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
@@ -1286,7 +1314,7 @@ for mct, etc.
   </FFLAGS>
   <MPI_PATH MPILIB="openmpi">/opt/openmpi-1.8-intel</MPI_PATH>
   <NETCDF_PATH>$ENV{NETCDFROOT}</NETCDF_PATH>
-  <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">/projects/ccsm/pfunit/3.2.9/mpi-serial</PFUNIT_PATH>
+  <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="FALSE">/projects/ccsm/pfunit/3.2.9/mpi-serial</PFUNIT_PATH>
   <PIO_FILESYSTEM_HINTS>lustre </PIO_FILESYSTEM_HINTS>
   <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
@@ -1299,7 +1327,7 @@ for mct, etc.
 <compiler MACH="itasca" COMPILER="intel">
   <CFLAGS>
     <base> -O2 -fp-model precise -I/soft/intel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
-    <append compile_threaded="true"> -openmp </append>
+    <append compile_threaded="TRUE"> -openmp </append>
   </CFLAGS>
   <CPPDEFS>
     <append> -DFORTRANUNDERSCORE -DNO_R16</append>
@@ -1314,13 +1342,10 @@ for mct, etc.
   </FC_AUTO_R8>
   <FFLAGS>
     <base> -fp-model source -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -I/soft/intel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
-    <append compile_threaded="true"> -openmp </append>
+    <append compile_threaded="TRUE"> -openmp </append>
     <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 </append>
     <append DEBUG="FALSE"> -O2 </append>
   </FFLAGS>
-  <FFLAGS_NOOPT>
-    <base> -O0 </base>
-  </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base> -fixed -132 </base>
   </FIXEDFLAGS>
@@ -1328,8 +1353,7 @@ for mct, etc.
     <base> -free </base>
   </FREEFLAGS>
   <LDFLAGS>
-    <append compile_threaded="true"> -openmp </append>
-    <append> -lnetcdff </append>
+    <append compile_threaded="TRUE"> -openmp </append>
   </LDFLAGS>
   <MPICC> mpiicc  </MPICC>
   <MPICXX> mpiicpc </MPICXX>
@@ -1343,20 +1367,9 @@ for mct, etc.
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
-<compiler MACH="lawrencium-lr2" COMPILER="intel">
-  <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </append>
-  </CPPDEFS>
-  <LAPACK_LIBDIR>/global/software/sl-6.x86_64/modules/intel/2016.1.150/lapack/3.6.0-intel/lib</LAPACK_LIBDIR>
-  <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
-  <SLIBS>
-    <append> -lnetcdff -lnetcdf -mkl</append>
-  </SLIBS>
-</compiler>
-
 <compiler MACH="lawrencium-lr3" COMPILER="intel">
   <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </append>
+    <append COMP_NAME="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </append>
   </CPPDEFS>
   <LAPACK_LIBDIR>/global/software/sl-6.x86_64/modules/intel/2016.1.150/lapack/3.6.0-intel/lib</LAPACK_LIBDIR>
   <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
@@ -1367,7 +1380,7 @@ for mct, etc.
 
 <compiler MACH="lawrencium-lr6" COMPILER="intel">
   <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </append>
+    <append COMP_NAME="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </append>
   </CPPDEFS>
   <LAPACK_LIBDIR>/global/software/sl-6.x86_64/modules/intel/2016.1.150/lapack/3.6.0-intel/lib</LAPACK_LIBDIR>
   <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
@@ -1399,10 +1412,11 @@ for mct, etc.
 </compiler>
 
 <compiler MACH="linux-generic" COMPILER="gnu">
-  <NETCDF_PATH> $ENV{NETCDF_PATH}</NETCDF_PATH>
+  <NETCDF_C_PATH> $ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH> $ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
   <PNETCDF_PATH> $ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <SLIBS>
-    <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} </append>
+    <append>$SHELL{$NETCDF_FORTRAN_PATH/bin/nf-config --flibs} </append>
   </SLIBS>
 </compiler>
 
@@ -1418,7 +1432,9 @@ for mct, etc.
 
 <compiler MACH="melvin" COMPILER="gnu">
   <ALBANY_PATH>/projects/install/rhel6-x86_64/ACME/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
-  <KOKKOS_OPTIONS> --with-openmp --with-options=aggressive_vectorization </KOKKOS_OPTIONS>
+  <CPPDEFS>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
+  </CPPDEFS>
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
@@ -1433,8 +1449,7 @@ for mct, etc.
     <append > -I$ENV{NETCDFROOT}/include  </append>
   </FFLAGS>
   <NETCDF_PATH>$ENV{NETCDFROOT}</NETCDF_PATH>
-  <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">$ENV{SEMS_PFUNIT_ROOT}</PFUNIT_PATH>
-  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
+  <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="FALSE">$ENV{SEMS_PFUNIT_ROOT}</PFUNIT_PATH>
   <SLIBS>
     <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -lblas -llapack</append>
   </SLIBS>
@@ -1442,6 +1457,9 @@ for mct, etc.
 
 <compiler MACH="melvin" COMPILER="intel">
   <ALBANY_PATH>/projects/install/rhel6-x86_64/ACME/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
+  <CPPDEFS>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
+  </CPPDEFS>
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
@@ -1468,12 +1486,9 @@ for mct, etc.
   <CXXFLAGS>
     <append>-expt-extended-lambda -DCUDA_BUILD</append>
   </CXXFLAGS>
-  <LDFLAGS>
-    <append> -lstdc++ -lcudart </append>
-  </LDFLAGS>
   <NETCDF_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_PATH>
   <SLIBS>
-    <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -lblas -llapack</append>
+    <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -lblas -llapack -lcudart -lstdc++</append>
   </SLIBS>
 </compiler>
 
@@ -1490,23 +1505,19 @@ for mct, etc.
     <base> -xCORE_AVX512 -mkl -std=c++11 </base>
     <append DEBUG="FALSE"> -O3 -g -debug minimal </append>
     <append DEBUG="TRUE"> -O0 -g </append>
-    <append compile_threaded="true"> -qopenmp </append>
+    <append compile_threaded="TRUE"> -qopenmp </append>
   </CXXFLAGS>
   <FFLAGS>
     <base> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -xCORE_AVX512 -mkl </base>
-    <append compile_threaded="true"> -qopenmp </append>
+    <append compile_threaded="TRUE"> -qopenmp </append>
     <append DEBUG="FALSE"> -O3 -g -debug minimal </append>
     <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </append>
   </FFLAGS>
   <LDFLAGS>
     <base> -mkl -lstdc++ </base>
-    <append compile_threaded="true"> -qopenmp </append>
-    <append MODEL="driver">-L$(NETCDF_FORTRAN_PATH)/lib64</append>
+    <append compile_threaded="TRUE"> -qopenmp </append>
+    <append>-L$(NETCDF_FORTRAN_PATH)/lib64</append>
   </LDFLAGS>
-  <FFLAGS_NOOPT>
-    <base> -O0 </base>
-    <append compile_threaded="true"> -qopenmp </append>
-  </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base> -fixed -132 </base>
   </FIXEDFLAGS>
@@ -1531,7 +1542,7 @@ for mct, etc.
   <CFLAGS>
     <base> -O2 -fp-model precise -I/soft/intel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/inc
 lude </base>
-    <append compile_threaded="true"> -openmp </append>
+    <append compile_threaded="TRUE"> -openmp </append>
   </CFLAGS>
   <CPPDEFS>
     <append> -DFORTRANUNDERSCORE -DNO_R16</append>
@@ -1547,13 +1558,10 @@ lude </base>
   <FFLAGS>
     <base> -fp-model source -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -I/soft/i
 ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
-    <append compile_threaded="true"> -openmp </append>
+    <append compile_threaded="TRUE"> -openmp </append>
     <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 </append>
     <append DEBUG="FALSE"> -O2 </append>
   </FFLAGS>
-  <FFLAGS_NOOPT>
-    <base> -O0 </base>
-  </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base> -fixed -132 </base>
   </FIXEDFLAGS>
@@ -1561,7 +1569,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <base> -free </base>
   </FREEFLAGS>
   <LDFLAGS>
-    <append compile_threaded="true"> -openmp </append>
+    <append compile_threaded="TRUE"> -openmp </append>
     <append> -lnetcdff </append>
   </LDFLAGS>
   <MPICC> mpiicc  </MPICC>
@@ -1600,7 +1608,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <SFC> mpixlf2003_r </SFC>
   <SLIBS>
     <append>-L$NETCDF_PATH/lib -lnetcdff -lnetcdf -L$HDF5_PATH/lib -lhdf5_hl -lhdf5 -L/soft/libraries/alcf/current/xl/ZLIB/lib -lz -L/soft/libraries/alcf/current/xl/LAPACK/lib -llapack -L/soft/libraries/alcf/current/xl/BLAS/lib -lblas -L/bgsys/drivers/ppcfloor/comm/sys/lib </append>
-    <append compile_threaded="true"> -L$ENV{IBM_MAIN_DIR}/xlf/bg/14.1/bglib64 -lxlfmath -lxlf90_r -lxlopt -lxl -L$ENV{IBM_MAIN_DIR}/xlsmp/bg/3.1/bglib64 -lxlsmp </append>
+    <append compile_threaded="TRUE"> -L$ENV{IBM_MAIN_DIR}/xlf/bg/14.1/bglib64 -lxlfmath -lxlf90_r -lxlopt -lxl -L$ENV{IBM_MAIN_DIR}/xlsmp/bg/3.1/bglib64 -lxlsmp </append>
   </SLIBS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
@@ -1662,7 +1670,10 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
 </compiler>
 
 <compiler MACH="sandiatoss3" COMPILER="intel">
-  <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos_06262017/Albany/build/install</ALBANY_PATH>
+  <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos_20190904/albany-build/install</ALBANY_PATH>
+  <CPPDEFS>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
+  </CPPDEFS>
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
@@ -1675,7 +1686,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   </FFLAGS>
   <MPI_PATH MPILIB="openmpi">$ENV{MPIHOME}</MPI_PATH>
   <NETCDF_PATH>$ENV{NETCDFROOT}</NETCDF_PATH>
-  <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">/projects/ccsm/pfunit/3.2.9/mpi-serial</PFUNIT_PATH>
+  <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="FALSE">/projects/ccsm/pfunit/3.2.9/mpi-serial</PFUNIT_PATH>
   <PIO_FILESYSTEM_HINTS>lustre </PIO_FILESYSTEM_HINTS>
   <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
   <SLIBS>
@@ -1729,7 +1740,6 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
 
 <compiler MACH="stampede2" COMPILER="intel">
   <CFLAGS>
-    <!--ADD_FFLAGS DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align -qopt-zmm-usage=high</ADD_FFLAGS-->
     <append> -xCORE-AVX2 </append>
   </CFLAGS>
   <CONFIG_ARGS>
@@ -1737,14 +1747,12 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DLINUX </append>
-    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
+    <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
     <append> -DARCH_MIC_KNL </append>
   </CPPDEFS>
   <FFLAGS>
     <base> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml </base>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align</append>
-    <!--ADD_FFLAGS> -xCORE-AVX512 </ADD_FFLAGS-->
-    <!--ADD_CFLAGS> -xCORE-AVX512 </ADD_CFLAGS-->
     <append> -xCORE-AVX2 </append>
   </FFLAGS>
   <HDF5_PATH>$ENV{TACC_HDF5_DIR}</HDF5_PATH>
@@ -1776,11 +1784,52 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </FFLAGS>
-  <LDFLAGS>
-    <append>-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
-    <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 </append>
-  </LDFLAGS>
+  <CPPDEFS>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
+  </CPPDEFS>
+  <SLIBS>
+    <append MPILIB="mpi-serial">-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
+    <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
+  </SLIBS>
+  <MPICC> mpicc </MPICC>
+  <MPICXX> mpiCC </MPICXX>
+  <MPIFC> mpif90 </MPIFC>
+  <SCC> gcc </SCC>
+  <SCXX> g++ </SCXX>
+  <SFC> gfortran </SFC>
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
+  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+</compiler>
+
+<compiler MACH="summit-cpu" COMPILER="gnu">
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2  </append>
+  </CFLAGS>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2  </append>
+  </FFLAGS>
+  <LDFLAGS>
+    <append>  -Wl,--relax -Wl,--allow-multiple-definition </append>
+  </LDFLAGS>
+  <SLIBS>
+    <append>-lxlopt -lxl -lxlsmp -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
+    <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 </append>
+  </SLIBS>
+  <MPICC> mpicc </MPICC>
+  <MPICXX> mpiCC </MPICXX>
+  <MPIFC> mpif90 </MPIFC>
+  <SCC> gcc </SCC>
+  <SCXX> g++ </SCXX>
+  <SFC> gfortran </SFC>
+  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
+  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
 <compiler MACH="summit" COMPILER="ibm">
@@ -1789,25 +1838,51 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DLINUX  </append>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
   <FFLAGS>
     <append> -qzerosize -qfree=f90 -qxlf2003=polymorphic</append>
     <append> -qspillsize=2500 -qextname=flush </append>
+    <append COMP_NAME="cice" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
   </FFLAGS>
-  <FFLAGS_NOOPT>
-    <append> -O0 -g -qfree=f90  </append>
-  </FFLAGS_NOOPT>
   <LDFLAGS>
-    <append>-lxlopt -lxl -lxlsmp -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
-    <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 </append>
     <append>  -Wl,--relax -Wl,--allow-multiple-definition </append>
   </LDFLAGS>
+  <SLIBS>
+    <append MPILIB="mpi-serial">-lxlopt -lxl -lxlsmp -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
+    <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -lxlopt -lxl -lxlsmp -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack </append>
+  </SLIBS>
+  <MPICC> mpicc </MPICC>
+  <MPICXX> mpiCC </MPICXX>
+  <MPIFC> mpif90 </MPIFC>
+  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
+  <SCC> xlc_r </SCC>
+  <SFC> xlf90_r </SFC>
+  <SCXX> xlc++_r </SCXX>
+  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+</compiler>
+
+<compiler MACH="summit-cpu" COMPILER="ibm">
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <FFLAGS>
+    <append> -qzerosize -qfree=f90 -qxlf2003=polymorphic</append>
+  </FFLAGS>
+  <SLIBS>
+    <append>-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib64 -llapack</append>
+    <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 </append>
+  </SLIBS>
   <MPICC> mpixlc </MPICC>
   <MPICXX> mpixlC </MPICXX>
   <MPIFC> mpixlf </MPIFC>
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
   <SCC> xlc_r </SCC>
   <SFC> xlf_r </SFC>
+  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
 </compiler>
 
 <compiler MACH="summit" COMPILER="pgi">
@@ -1820,16 +1895,100 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 -DSUMMITDEV_PGI </append>
   </FFLAGS>
+  <CPPDEFS>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
+  </CPPDEFS>
+  <SLIBS>
+    <append MPILIB="mpi-serial">-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
+    <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
+  </SLIBS>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
+  <!--
+  Summit (backup in case defaults are not picking up):
+  <CXX_LIBS>
+    <base>/sw/summit/gcc/6.4.0/lib/gcc/powerpc64le-none-linux-gnu/6.4.0/crtbegin.o -L/sw/summit/gcc/6.4.0/lib64 -lstdc++ -latomic</base>
+  </CXX_LIBS>
+  -->
+  <MPICC> mpicc </MPICC>
+  <MPICXX> mpiCC </MPICXX>
+  <MPIFC> mpif90 </MPIFC>
+  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
+  <SCC> pgcc </SCC>
+  <SCXX> pgc++ </SCXX>
+  <SFC> pgfortran </SFC>
+  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+</compiler>
+
+<compiler MACH="summit-cpu" COMPILER="pgi">
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2 -Mvect=nosimd </append>
+  </CFLAGS>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 -Mvect=nosimd -DSUMMITDEV_PGI </append>
+  </FFLAGS>
+  <FFLAGS>
+    <append DEBUG="TRUE"> -DSUMMITDEV_PGI </append>
+  </FFLAGS>
+  <CPPDEFS>
+    <append> -DGPU </append>
+  </CPPDEFS>
+  <KOKKOS_OPTIONS> --arch=Power9,Volta70 --with-cuda=$ENV{CUDA_DIR} --with-cuda-options=enable_lambda</KOKKOS_OPTIONS>
   <LDFLAGS>
+    <append>-ta=tesla:cc70,pinned</append>
+  </LDFLAGS>
+  <SLIBS>
     <append>-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
     <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 </append>
-  </LDFLAGS>
+  </SLIBS>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
   <MPICC> mpicc </MPICC>
   <MPICXX> mpiCC </MPICXX>
   <MPIFC> mpif90 </MPIFC>
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
   <SCC> pgcc </SCC>
   <SFC> pgfortran </SFC>
+  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+</compiler>
+
+<compiler MACH="summit" COMPILER="pgigpu">
+  <CPPDEFS>
+    <append> -DFORTRANUNDERSCORE </append>
+  </CPPDEFS>
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2 -Mvect=nosimd </append>
+  </CFLAGS>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 -Mvect=nosimd -DSUMMITDEV_PGI -DHAVE_IEEE_ARITHMETIC -DNO_R16 </append>
+  </FFLAGS>
+  <FFLAGS>
+    <append DEBUG="TRUE"> -DSUMMITDEV_PGI -DHAVE_IEEE_ARITHMETIC -DNO_R16 </append>
+  </FFLAGS>
+  <SLIBS>
+    <append>-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
+  </SLIBS>
+  <MPICC> mpicc </MPICC>
+  <MPICXX> mpiCC </MPICXX>
+  <MPIFC> mpif90 </MPIFC>
+  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
+  <SCC> pgcc </SCC>
+  <SFC> pgfortran </SFC>
+  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
 </compiler>
 
 <compiler MACH="summit" COMPILER="pgiacc">
@@ -1842,17 +2001,31 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 -DSUMMITDEV_PGI </append>
   </FFLAGS>
+  <CPPDEFS>
+    <append> -DGPU </append>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
+  </CPPDEFS>
+  <KOKKOS_OPTIONS> --arch=Power9,Volta70 --with-cuda=$ENV{CUDA_DIR} --with-cuda-options=enable_lambda</KOKKOS_OPTIONS>
   <LDFLAGS>
     <append>-ta=tesla:cc70,pinned</append>
-    <append>-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
-    <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 </append>
   </LDFLAGS>
+  <SLIBS>
+    <append MPILIB="mpi-serial">-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
+    <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
+  </SLIBS>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
   <MPICC> mpicc </MPICC>
   <MPICXX> mpiCC </MPICXX>
   <MPIFC> mpif90 </MPIFC>
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
   <SCC> pgcc </SCC>
   <SFC> pgfortran </SFC>
+  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
 <compiler MACH="summitdev" COMPILER="ibm">
@@ -1862,12 +2035,9 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <FFLAGS>
     <append> -qzerosize -qfree=f90 -qxlf2003=polymorphic</append>
   </FFLAGS>
-  <FFLAGS_NOOPT>
-    <append> -O0 -g -qfree=f90  </append>
-  </FFLAGS_NOOPT>
-  <LDFLAGS>
+  <SLIBS>
     <append>-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib64 -llapack</append>
-  </LDFLAGS>
+  </SLIBS>
   <MPICC> mpixlc </MPICC>
   <MPICXX> mpixlC </MPICXX>
   <MPIFC> mpixlf </MPIFC>
@@ -1886,9 +2056,9 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 -DSUMMITDEV_PGI </append>
   </FFLAGS>
-  <LDFLAGS>
+  <SLIBS>
     <append>-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
-  </LDFLAGS>
+  </SLIBS>
   <MPICC> mpicc </MPICC>
   <MPICXX> mpiCC </MPICXX>
   <MPIFC> mpif90 </MPIFC>
@@ -1910,8 +2080,10 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <LDFLAGS>
     <!-- Specifying cc60 implies cuda8.0, just making sure -->
     <append>-ta=tesla:cc60,cuda8.0,pinned</append>
-    <append>-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
   </LDFLAGS>
+  <SLIBS>
+    <append>-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
+  </SLIBS>
   <MPICC> mpicc </MPICC>
   <MPICXX> mpiCC </MPICXX>
   <MPIFC> mpif90 </MPIFC>
@@ -1934,9 +2106,9 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <append DEBUG="FALSE"> -O2 </append>
     <append DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </append>
   </FFLAGS>
-  <LDFLAGS>
+  <SLIBS>
     <append> -llapack -lblas</append>
-  </LDFLAGS>
+  </SLIBS>
   <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
   <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.2-intel-18.0.1/</MPI_PATH>
   <NETCDF_PATH>/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</NETCDF_PATH>
@@ -1959,9 +2131,9 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <append DEBUG="FALSE"> -O2 </append>
     <append DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </append>
   </FFLAGS>
-  <LDFLAGS>
+  <SLIBS>
     <append> -llapack -lblas</append>
-  </LDFLAGS>
+  </SLIBS>
   <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
   <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.2-intel-18.0.1/</MPI_PATH>
   <NETCDF_PATH>/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</NETCDF_PATH>
@@ -1976,13 +2148,18 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   </CONFIG_ARGS>
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
+    <append DEBUG="TRUE"> -O0 </append>
   </CFLAGS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
+    <append DEBUG="TRUE"> -O0 </append>
   </FFLAGS>
   <SLIBS>
     <append>$SHELL{nf-config --flibs}</append>
   </SLIBS>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
 </compiler>
 
 <compiler MACH="theta" COMPILER="intel">
@@ -1995,6 +2172,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <FFLAGS>
     <base>-convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent</base>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align -fp-speculation=off</append>
+    <append> -DHAVE_ERF_INTRINSICS </append>
   </FFLAGS>
   <SCC> icc </SCC>
   <SCXX> icpc </SCXX>
@@ -2078,7 +2256,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   </CXX_LIBS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
-    <append MODEL="glc"> -target-cpu=istanbul </append>
+    <append COMP_NAME="glc"> -target-cpu=istanbul </append>
   </FFLAGS>
   <SLIBS>
     <append MPILIB="mpich">$SHELL{nf-config --flibs} </append>
@@ -2124,29 +2302,40 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <SCC>gcc</SCC>
   <SCXX>g++</SCXX>
   <SLIBS>
-    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
-    <append>$ENV{MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a $ENV{MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group $ENV{MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm -z muldefs</append>
+    <append>$SHELL{nc-config --libs} </append>
+    <append>$SHELL{nf-config --flibs} -lnetcdff -llapack -lblas </append>
+    <append>$ENV{MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a $ENV{MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group $ENV{MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm -lz </append>
   </SLIBS>
   <CXX_LIBS>
-    <base>-lstdc++ -lmpi_cxx</base>
+    <base> -lstdc++</base>
   </CXX_LIBS>
+  <NETCDF_C_PATH>$ENV{NETCDF_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
 </compiler>
 
 <compiler MACH="grizzly" COMPILER="intel">
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <MPICC>mpicc</MPICC>
-  <MPIFC>mpif90</MPIFC>
-  <MPICXX>mpic++</MPICXX>
+  <MPICC  MPILIB="impi">mpiicc</MPICC>
+  <MPICXX MPILIB="impi">mpiicpc</MPICXX>
+  <MPIFC  MPILIB="impi">mpiifort</MPIFC>
+  <MPICC  MPILIB="!impi">mpicc</MPICC>
+  <MPICXX MPILIB="!impi">mpic++</MPICXX>
+  <MPIFC  MPILIB="!impi">mpif90</MPIFC>
   <SFC>ifort</SFC>
   <SCC>icc</SCC>
   <SCXX>icpc</SCXX>
   <SLIBS>
-    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
+    <append>$SHELL{$ENV{NETCDF_ROOT}/bin/nc-config --libs}</append>
+    <append>$SHELL{$ENV{NETCDF_ROOT}/bin/nf-config --flibs} -lnetcdff -llapack -lblas</append>
     <append>-mkl -lpthread</append>
   </SLIBS>
   <CXX_LIBS>
-    <base>-lstdc++ -lmpi_cxx</base>
+    <base>-lstdc++</base>
   </CXX_LIBS>
+  <NETCDF_C_PATH>$ENV{NETCDF_ROOT}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_ROOT}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_ROOT}</PNETCDF_PATH>
 </compiler>
 
 <compiler MACH="badger" COMPILER="gnu">
@@ -2158,41 +2347,59 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <SCC>gcc</SCC>
   <SCXX>g++</SCXX>
   <SLIBS>
-    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
-    <append>$ENV{MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a $ENV{MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group $ENV{MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm -z muldefs</append>
+    <append>$SHELL{nc-config --libs} </append>
+    <append>$SHELL{nf-config --flibs} -lnetcdff -llapack -lblas </append>
+    <append>$ENV{MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a -Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a $ENV{MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group $ENV{MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a -lpthread -lm -lz </append>
   </SLIBS>
   <CXX_LIBS>
-    <base>-lstdc++ -lmpi_cxx</base>
+    <base> -lstdc++ </base>
   </CXX_LIBS>
+  <NETCDF_C_PATH>$ENV{NETCDF_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
 </compiler>
 
 <compiler MACH="badger" COMPILER="intel">
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
-  <MPICC>mpicc</MPICC>
-  <MPIFC>mpif90</MPIFC>
-  <MPICXX>mpic++</MPICXX>
+  <MPICC  MPILIB="impi">mpiicc</MPICC>
+  <MPICXX MPILIB="impi">mpiicpc</MPICXX>
+  <MPIFC  MPILIB="impi">mpiifort</MPIFC>
+  <MPICC  MPILIB="!impi">mpicc</MPICC>
+  <MPICXX MPILIB="!impi">mpic++</MPICXX>
+  <MPIFC  MPILIB="!impi">mpif90</MPIFC>
   <SFC>ifort</SFC>
   <SCC>icc</SCC>
   <SCXX>icpc</SCXX>
   <SLIBS>
-    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
+    <append>$SHELL{$ENV{NETCDF_ROOT}/bin/nc-config --libs}</append>
+    <append>$SHELL{$ENV{NETCDF_ROOT}/bin/nf-config --flibs} -lnetcdff -llapack -lblas</append>
     <append>-mkl -lpthread</append>
   </SLIBS>
   <CXX_LIBS>
-    <base>-lstdc++ -lmpi_cxx</base>
+    <base>-lstdc++</base>
   </CXX_LIBS>
-  <CFLAGS>
-    <base>compile_threaded="true"> -qopenmp</base>
-  </CFLAGS>
+  <NETCDF_C_PATH>$ENV{NETCDF_ROOT}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_ROOT}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_ROOT}</PNETCDF_PATH>
+</compiler>
+
+<compiler COMPILER="gnu" MACH="modex">
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <CPPDEFS>
+     <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE </append>
+  </CPPDEFS>
   <FFLAGS>
-    <base>compile_threaded="true"> -qopenmp</base>
+    <append DEBUG="FALSE">-fno-unsafe-math-optimizations</append>
+    <append DEBUG="TRUE"> -g -fbacktrace -fbounds-check -ffpe-trap=invalid,zero,overflow</append>
   </FFLAGS>
-  <LDFLAGS>
-    <base>compile_threaded="true"> -qopenmp</base>
-  </LDFLAGS>
-  <FFLAGS_NOOPT>
-    <base>compile_threaded="true"> -qopenmp</base>
-  </FFLAGS_NOOPT>
+  <SLIBS>
+    <append> -L$ENV{HDF5_HOME}/lib -lhdf5_fortran -lhdf5 -lhdf5_hl -lhdf5hl_fortran </append>
+    <append> -L$ENV{NETCDF_PATH}/lib/ -lnetcdff -lnetcdf -lcurl -lblas -llapack</append>
+  </SLIBS>
+  <HDF5_PATH>$ENV{HDF5_HOME}</HDF5_PATH>
+  <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH>
+  <!--<SCC MPILIB="mpi-serial">gcc</SCC>
+  <SFC MPILIB="mpi-serial">gfortran</SFC>-->
 </compiler>
 
 <compiler MACH="userdefined">

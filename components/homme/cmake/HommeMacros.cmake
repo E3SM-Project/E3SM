@@ -42,7 +42,7 @@ MACRO (HommeConfigFile CONFIG_FILE_IN CONFIG_FILE_C CONFIG_FILE_F90)
 
     # Run sed to change '/*...*/' comments into '!/*...*/'
     EXECUTE_PROCESS(COMMAND sed "s;^/;!/;g"
-                    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+                    WORKING_DIRECTORY ${HOMME_BINARY_DIR}
                     INPUT_FILE ${CONFIG_FILE_C}
                     OUTPUT_FILE ${CONFIG_FILE_F90})
   ENDIF()
@@ -84,6 +84,10 @@ macro(createTestExec execName execType macroNP macroNC
     SET(PIO_INTERP TRUE)
   ENDIF ()
 
+  IF(BUILD_HOMME_WITHOUT_PIOLIBRARY AND (NOT PIO_INTERP))
+    MESSAGE(ERROR "For building without PIO library set PREQX_USE_PIO to false")
+  ENDIF ()
+
   IF (${macroWITH_ENERGY})
     SET(ENERGY_DIAGNOSTICS TRUE)
   ELSE()
@@ -110,7 +114,7 @@ macro(createTestExec execName execType macroNP macroNC
   ADD_EXECUTABLE(${execName} ${EXEC_SOURCES})
   SET_TARGET_PROPERTIES(${execName} PROPERTIES LINKER_LANGUAGE Fortran)
 
-  IF (${CXXLIB_SUPPORTED})
+  IF (CXXLIB_SUPPORTED_CACHE)
     MESSAGE(STATUS "   Linking Fortran with -cxxlib")
     TARGET_LINK_LIBRARIES(${execName} -cxxlib)
   ENDIF ()
@@ -123,8 +127,16 @@ macro(createTestExec execName execType macroNP macroNC
   # Add this executable to a list
   SET(EXEC_LIST ${EXEC_LIST} ${execName} CACHE INTERNAL "List of configured executables")
 
-  TARGET_LINK_LIBRARIES(${execName} pio timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
-  IF (DEFINED USE_KOKKOS_KERNELS)
+  TARGET_LINK_LIBRARIES(${execName} timing ${COMPOSE_LIBRARY} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+  IF(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
+    IF(HOMME_USE_SCORPIO)
+      TARGET_LINK_LIBRARIES(${execName} piof pioc)
+    ELSE ()
+      TARGET_LINK_LIBRARIES(${execName} pio)
+    ENDIF ()
+  ENDIF ()
+
+  IF (HOMME_USE_KOKKOS)
     link_to_kokkos(${execName})
   ENDIF ()
 
@@ -211,7 +223,7 @@ endmacro (copyDirFiles)
 macro (setUpTestDir TEST_DIR)
 
   SET(TEST_DIR_LIST ${TEST_DIR_LIST} ${TEST_DIR})
-  SET(THIS_BASELINE_TEST_DIR ${CMAKE_BINARY_DIR}/tests/baseline/${TEST_NAME})
+  SET(THIS_BASELINE_TEST_DIR ${HOMME_BINARY_DIR}/tests/baseline/${TEST_NAME})
 
   copyDirFiles(${TEST_DIR})
   copyDirFiles(${THIS_BASELINE_TEST_DIR})
@@ -248,7 +260,7 @@ macro (setUpTestDir TEST_DIR)
   SET (TEST_INDEX 1)
   FOREACH (singleFile ${NAMELIST_FILES})
     GET_FILENAME_COMPONENT(fileName ${singleFile} NAME)
-    FILE(APPEND ${THIS_TEST_SCRIPT} "TEST_${TEST_INDEX}=\"${CMAKE_CURRENT_BINARY_DIR}/${EXEC_NAME}/${EXEC_NAME} < ${TEST_DIR}/${fileName}\"\n")
+    FILE(APPEND ${THIS_TEST_SCRIPT} "TEST_${TEST_INDEX}=\"${CMAKE_CURRENT_BINARY_DIR}/${EXEC_NAME}/${EXEC_NAME} < ${fileName}\"\n")
     FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
     MATH(EXPR TEST_INDEX "${TEST_INDEX} + 1")
   ENDFOREACH ()
@@ -427,38 +439,18 @@ macro(printTestSummary)
 endmacro(printTestSummary)
 
 macro (set_homme_tests_parameters testFile profile)
-  if ("${testFile}" MATCHES ".*-moist.*")
+#example on how to customize tests lengths
+#  if ("${testFile}" MATCHES ".*-moist.*")
+  if ("${testFile}" MATCHES ".*-tensorhv-*")
     if ("${profile}" STREQUAL "dev")
       set (HOMME_TEST_NE 2)
       set (HOMME_TEST_NDAYS 1)
     elseif ("${profile}" STREQUAL "short")
       set (HOMME_TEST_NE 4)
-      set (HOMME_TEST_NDAYS 1)
-    else ()
-      set (HOMME_TEST_NE 4)
-      set (HOMME_TEST_NDAYS 2)
-    endif ()
-  elseif ("${testFile}" MATCHES ".*-tensorhv-dry.*" )
-    if ("${profile}" STREQUAL "dev")
-      set (HOMME_TEST_NE 2)
-      set (HOMME_TEST_NDAYS 1)
-    elseif ("${profile}" STREQUAL "short")
-      set (HOMME_TEST_NE 4)
-      set (HOMME_TEST_NDAYS 1)
-    else ()
-      set (HOMME_TEST_NE 4)
-      set (HOMME_TEST_NDAYS 2)
-    endif ()
-  elseif ("${testFile}" MATCHES ".*-q6-dry.*" )
-    if ("${profile}" STREQUAL "dev")
-      set (HOMME_TEST_NE 2)
-      set (HOMME_TEST_NDAYS 1)
-    elseif ("${profile}" STREQUAL "short")
-      set (HOMME_TEST_NE 4)
-      set (HOMME_TEST_NDAYS 1)
+      set (HOMME_TEST_NDAYS 3)
     else ()
       set (HOMME_TEST_NE 12)
-      set (HOMME_TEST_NDAYS 1)
+      set (HOMME_TEST_NDAYS 3)
     endif ()
   else ()
     if ("${profile}" STREQUAL "dev")
@@ -471,7 +463,7 @@ macro (set_homme_tests_parameters testFile profile)
       set (HOMME_TEST_NE 12)
       set (HOMME_TEST_NDAYS 9)
     endif ()
-  endif ()
+  endif()
 endmacro ()
 
 # Macro to create the individual tests
@@ -514,7 +506,7 @@ macro(createTest testFile)
     ENDIF()
 
     # Set up the directory
-    SET(THIS_TEST_DIR ${CMAKE_BINARY_DIR}/tests/${TEST_NAME})
+    SET(THIS_TEST_DIR ${HOMME_BINARY_DIR}/tests/${TEST_NAME})
 
     # Set up the test directory for both the baseline and the comparison tests
     setUpTestDir(${THIS_TEST_DIR})
@@ -530,7 +522,7 @@ macro(createTest testFile)
       # When run through the queue the runs are submitted and ran in
       #   submitAndRunTests, and diffed in the subsequent tests
       ADD_TEST(NAME ${THIS_TEST}
-               COMMAND ${CMAKE_BINARY_DIR}/tests/diff_output.sh ${TEST_NAME})
+               COMMAND ${HOMME_BINARY_DIR}/tests/diff_output.sh ${TEST_NAME})
 
       SET_TESTS_PROPERTIES(${THIS_TEST} PROPERTIES DEPENDS submitAndRunTests)
 
@@ -542,7 +534,7 @@ macro(createTest testFile)
       # When not run through a queue each run is ran and then diffed. This is handled by
       #  the submit_tests.sh script
       ADD_TEST(NAME ${THIS_TEST}
-               COMMAND ${CMAKE_BINARY_DIR}/tests/submit_tests.sh "${THIS_TEST_RUN_SCRIPT}" "${TEST_NAME}"
+               COMMAND ${HOMME_BINARY_DIR}/tests/submit_tests.sh "${THIS_TEST_RUN_SCRIPT}" "${TEST_NAME}"
                DEPENDS ${EXEC_NAME})
 
     ENDIF ()
@@ -558,9 +550,12 @@ macro(createTest testFile)
     SET(THIS_TEST_INDIV "test-${TEST_NAME}")
 
     ADD_CUSTOM_TARGET(${THIS_TEST_INDIV}
-             COMMAND ${CMAKE_BINARY_DIR}/tests/submit_tests.sh "${THIS_TEST_RUN_SCRIPT}" "${TEST_NAME}")
+             COMMAND ${HOMME_BINARY_DIR}/tests/submit_tests.sh "${THIS_TEST_RUN_SCRIPT}" "${TEST_NAME}")
 
     ADD_DEPENDENCIES(${THIS_TEST_INDIV} ${EXEC_NAME})
+
+    # test execs
+    ADD_DEPENDENCIES(test-execs ${EXEC_NAME})
 
     # Check target
     ADD_DEPENDENCIES(check ${EXEC_NAME})
@@ -580,7 +575,7 @@ macro(createTest testFile)
     #ADD_CUSTOM_COMMAND(TARGET ${THIS_TEST_INDIV}
     #                   COMMENT "Running the HOMME regression test: ${THIS_TEST}"
     #                   POST_BUILD COMMAND ${CMAKE_CTEST_COMMAND} ARGS --output-on-failure -R ${THIS_TEST_INDIV}
-    #                   WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+    #                   WORKING_DIRECTORY ${HOMME_BINARY_DIR})
 
   ENDIF ()
 endmacro(createTest)
@@ -653,8 +648,8 @@ ENDMACRO(CREATE_CXX_VS_F90_TESTS_WITH_PROFILE)
 macro(testQuadPrec HOMME_QUAD_PREC)
 
   TRY_COMPILE(COMPILE_RESULT_VAR
-              ${CMAKE_BINARY_DIR}/tests/compilerTests/
-              ${CMAKE_SOURCE_DIR}/cmake/compilerTests/quadTest.f90
+              ${HOMME_BINARY_DIR}/tests/compilerTests/
+              ${HOMME_SOURCE_DIR}/cmake/compilerTests/quadTest.f90
               OUTPUT_VARIABLE COMPILE_OUTPUT)
 
   IF (${COMPILE_RESULT_VAR})

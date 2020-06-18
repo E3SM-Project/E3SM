@@ -13,6 +13,7 @@ end setvalues
 ;  output_format = "X11"
 
   fave = addfile("hsmapave.nc","r")
+;  f = addfile("movies/held_suarez0-000480000-1.nc","r")
   f = addfile("movies/held_suarez01.nc","r")
 
 
@@ -130,6 +131,57 @@ end setvalues
     print("levels: [" + res@cnMinLevelValF +","+res@cnMaxLevelValF +"] spacing="+res@cnLevelSpacingF)
     res@tiMainString=sprintf("%3.0f",eta_mb)+"hPa"
     contour = gsn_csm_contour_map(wks,field,res)   
+
+;  climatology
+    if (isfilevar(fave,"omega500")) then
+    k=21
+    zrange=.25  ; means (level 23), no topo
+    ;zrange=.5  ; means (level 23), no topo
+    res@cnMinLevelValF = -zrange
+    res@cnMaxLevelValF =  zrange
+    res@cnLevelSpacingF = zrange/20
+    field = fave->omega500(:,:)
+    field@long_name = "OMEGA500"
+    print("omega500 climo min/max ="+min(field)+" "+max(field))
+    print("levels: [" + res@cnMinLevelValF +","+res@cnMaxLevelValF +"] spacing="+res@cnLevelSpacingF)
+    res@tiMainString="Climatology "+sprintf("%3.0f",eta_mb)+"hPa"
+    contour = gsn_csm_contour_map(wks,field,res)   
+    end if
+    
+;  climatology
+    if (isfilevar(fave,"omega850")) then
+    zrange=.4  ; means (level 23), no topo
+    res@cnMinLevelValF = -.4
+    res@cnMaxLevelValF =  1.4
+    res@cnLevelSpacingF = zrange/20
+    field = fave->omega850(:,:)
+    field@long_name = "OMEGA850"
+    print("omega850 climo min/max ="+min(field)+" "+max(field))
+    print("levels: [" + res@cnMinLevelValF +","+res@cnMaxLevelValF +"] spacing="+res@cnLevelSpacingF)
+    res@tiMainString="Climatology "+sprintf("%3.0f",eta_mb)+"hPa"
+    contour = gsn_csm_contour_map(wks,field,res)   
+    end if
+
+;  snapshots
+    if (isfilevar(f,"omega")) then
+    k=21
+    zrange=1.2  ; instantaneous
+    res@cnMinLevelValF = -zrange
+    res@cnMaxLevelValF =  zrange
+    res@cnLevelSpacingF = zrange/20
+
+    pnew=500
+    varlev = f->omega(0,:,:,:)
+    interp = 2     ; type of interpolation: 1 = linear, 2 = log, 3 = loglog
+    extrap = True  ; is extrapolation desired if data is outside the range of PS
+    P0mb = 1000    ; ps in Pa, but this argument must be in mb
+    field = vinth2p(varlev,f->hyam,f->hybm,pnew,f->ps(0,:,:),interp,P0mb,1,extrap)          
+    field@long_name = "OMEGA500"
+    print("omega snapshot min/max ="+min(field)+" "+max(field))
+    print("levels: [" + res@cnMinLevelValF +","+res@cnMaxLevelValF +"] spacing="+res@cnLevelSpacingF)
+    res@tiMainString=sprintf("%3.0f",eta_mb)+"hPa"
+    contour = gsn_csm_contour_map(wks,field,res)   
+    end if
 
   end do
 delete(wks)

@@ -136,7 +136,7 @@ module scamMod
                                                ! mo_drydep algorithm
 					       
   real(r8), public ::  scm_relaxation_low      ! lowest level to apply relaxation
-  real(r8), public ::  scm_relaxation_high     ! highest level to apply relaxation					       
+  real(r8), public ::  scm_relaxation_high     ! highest level to apply relaxation
 					       
   real(r8), public, pointer :: loniop(:)
   real(r8), public, pointer :: latiop(:)
@@ -186,7 +186,7 @@ module scamMod
   logical*4, public ::  swrad_off     ! turn off SW radiation (assume night)
   logical*4, public ::  lwrad_off     ! turn off LW radiation
   logical*4, public ::  precip_off    ! turn off precipitation processes
-  logical*4, public ::  use_camiop    ! use cam generated forcing 
+  logical*4, public ::  use_replay    ! use e3sm generated forcing 
   logical*4, public ::  use_3dfrc     ! use 3d forcing
   logical*4, public ::  have_heat_glob ! dataset contains global energy fixer
 
@@ -331,13 +331,13 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
         endif
         call wrap_open (iopfile, NF90_NOWRITE, ncid)
 	
-	if ( nf90_inquire_attribute( ncid, NF90_GLOBAL, 'CAM_GENERATED_FORCING', attnum=i ).EQ. NF90_NOERR ) then
-           use_camiop = .true.
+	if ( nf90_inquire_attribute( ncid, NF90_GLOBAL, 'E3SM_GENERATED_FORCING', attnum=i ).EQ. NF90_NOERR ) then
+           use_replay = .true.
         else
-           use_camiop = .false.
+           use_replay = .false.
         endif
 	
-	if (dycore_is('SE') .and. use_camiop) then
+	if (dycore_is('SE') .and. use_replay) then
 	  call wrap_inq_dimid( ncid, 'ncol', londimid   )
 	  call wrap_inq_dimlen( ncid, londimid, lonsiz   )
 	  latsiz=lonsiz
@@ -379,7 +379,7 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
                  scmlon=ioplon
                  write(iulog,*)'For CAM Generated IOP using closest dataset lat and lon'
               else
-                 if (use_camiop) then
+                 if (use_replay) then
                     call shr_scam_GetCloseLatLon(ncid,scmlat,scmlon,ioplat,ioplon,latidx,lonidx)
                     scmlat=ioplat
                     scmlon=ioplon
@@ -446,6 +446,7 @@ subroutine setiopupdate
    integer bdate, bdate_varID
    integer STATUS
    integer next_date, next_sec, last_date, last_sec
+   integer next_date_print, next_sec_print
    integer :: ncsec,ncdate                      ! current time of day,date
    integer :: yr, mon, day                      ! year, month, and day component
    integer :: start_ymd,start_tod
@@ -553,16 +554,16 @@ subroutine setiopupdate
 
       doiopupdate = .false.
       iopTimeIdx = iopTimeIdx
-      i=0
       doiter=.true.
       do while(doiter)
-        call timemgr_time_inc(bdate, 0, next_date, next_sec,inc_s=tsec(iopTimeIdx+i+1))
+        call timemgr_time_inc(bdate, 0, next_date, next_sec,inc_s=tsec(iopTimeIdx+1))
         if (ncdate .gt. next_date .or. (ncdate .eq. next_date &
           .and. ncsec .ge. next_sec)) then
 
           doiopupdate=.true.
-          i=i+1
           iopTimeIdx=iopTimeIdx+1
+	  next_date_print = next_date
+	  next_sec_print = next_sec
         else
           doiter=.false.
         endif
@@ -576,10 +577,11 @@ subroutine setiopupdate
 
       if (doiopupdate) then
 
-          write(iulog,*) 'iopTimeIdx =', iopTimeIdx
+          write(iulog,*) 'iopTimeIdx (IOP index) =', iopTimeIdx
           write(iulog,*) 'nstep = ',get_nstep()
-          write(iulog,*) 'ncdate=',ncdate,' ncsec=',ncsec
-          write(iulog,*) 'next_date=',next_date,' next_sec=',next_sec
+          write(iulog,*) 'ncdate (E3SM date) =',ncdate,' ncsec=',ncsec
+          write(iulog,*) 'next_date (IOP file date) =',next_date_print,&
+                         'next_sec=',next_sec_print
           write(iulog,*)'******* do iop update'
       endif
 
@@ -606,7 +608,7 @@ subroutine setiopupdate
 
 end subroutine setiopupdate
 
-  subroutine readiopdata(iop_update_surface,hyam,hybm)
+  subroutine readiopdata(iop_update_phase1,hyam,hybm)
 
 !-----------------------------------------------------------------------
 !     
@@ -631,7 +633,7 @@ end subroutine setiopupdate
 #endif
 !------------------------------Locals-----------------------------------
 !     
-   logical, intent(in) :: iop_update_surface
+   logical, intent(in) :: iop_update_phase1
    integer NCID, status
    integer time_dimID, lev_dimID,lev_varID,mod_dimID,&
            mod_varID,sps_varID,sps_dimID
@@ -678,13 +680,13 @@ end subroutine setiopupdate
        'readiopdata.F90', __LINE__)
 
 !
-!     if the dataset is a CAM generated dataset set use_camiop to true
-!       CAM IOP datasets have a global attribute called CAM_GENERATED_IOP      
+!     if the dataset is a CAM generated dataset set use_replay to true
+!       E3SM IOP datasets have a global attribute called E3SM_GENERATED_IOP      
 !
-   if ( nf90_inquire_attribute( ncid, NF90_GLOBAL, 'CAM_GENERATED_FORCING',attnum=i ).EQ. NF90_NOERR ) then
-      use_camiop = .true.
+   if ( nf90_inquire_attribute( ncid, NF90_GLOBAL, 'E3SM_GENERATED_FORCING',attnum=i ).EQ. NF90_NOERR ) then
+      use_replay = .true.
    else
-      use_camiop = .false.
+      use_replay = .false.
    endif
 
 !=====================================================================
@@ -752,7 +754,7 @@ end subroutine setiopupdate
 ! =====================================================
 !     read observed aersol data
 
- if(scm_observed_aero .and. .not. iop_update_surface) then
+ if(scm_observed_aero .and. .not. iop_update_phase1) then
    status = NF90_INQ_DIMID( ncid, 'mod', mod_dimID )
    if ( status .ne. nf90_noerr ) then
       write(iulog,* )'ERROR - readiopdata.F:Could not find variable dim ID  for lev'
@@ -870,7 +872,7 @@ endif !scm_observed_aero
 !
 !CAM generated forcing already has pressure on millibars
 !
-   if (.not. use_camiop) then
+   if (.not. use_replay) then
 !
 !     convert pressure to millibars ( lev is expressed in pascals in iop
 !     datasets )
@@ -892,7 +894,7 @@ endif !scm_observed_aero
    call wrap_inq_dimid(ncid, 'lev', levid)
    call wrap_inq_dimid(ncid, 'time', timeid)
 
-   if (dycore_is('SE') .and. use_camiop) then
+   if (dycore_is('SE') .and. use_replay) then
      strt4(1) = closelonidx
      strt4(2) = iopTimeIdx
      strt4(3) = 1
@@ -908,7 +910,7 @@ endif !scm_observed_aero
    cnt4(3)  = 1
    cnt4(4)  = 1
 
-   if (.not. iop_update_surface) then
+   if (.not. iop_update_phase1) then
 
      status = nf90_inq_varid( ncid, 'Ps', varid   )
      if ( status .ne. nf90_noerr ) then
@@ -931,7 +933,7 @@ endif !scm_observed_aero
 !  the dataset pressure levels to the current
 !  scam model levels
         
-     if ( use_camiop ) then
+     if ( use_replay ) then
        do i = 1, plev
          dplevs( i ) = 1000.0_r8 * hyam( i ) + psobs * hybm( i ) / 100.0_r8
        end do
@@ -950,7 +952,7 @@ endif !scm_observed_aero
          dplevs(i) = psobs/100.0_r8
        end if
      end do
-     if (.not. use_camiop ) then
+     if (.not. use_replay ) then
        nlev = total_levs
      endif
      if ( nlev .eq. 1 ) then
@@ -975,7 +977,7 @@ endif !scm_observed_aero
 !
 
 !!!!!!!force fill_end to be .true in getinterpncdata () for temperature !!!!!!!!
-     if ( use_camiop ) then
+     if ( use_replay ) then
        call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx,'t', have_tsair, &
           tsair(1), .true. , scm_crm_mode, &
           dplevs, nlev, psobs, hyam, hybm, tobs, status )
@@ -999,6 +1001,26 @@ endif !scm_observed_aero
      else
        have_t = .true.
      endif
+     
+     ! If using REPLAY need to be sure that surface temperature is read in 
+     !  for first radiation call, to ensure b4b (or close) reproducibility. 
+     !  Else, for other SCM cases, it is fine initialize as a cold start.   
+     if (is_first_step() .and. use_replay) then      
+       status = nf90_inq_varid( ncid, 'Tg', varid   )
+       if (status .ne. nf90_noerr) then
+         write(iulog,*)'Could not find variable Tg'
+         if ( have_tsair ) then
+           write(iulog,*) 'UsingTsair'
+           tground = tsair     ! use surface value from T field
+         else
+           write(iulog,*) 'UsingTat lowest level'
+           tground = tobs(plev) 
+         endif
+       else
+         call wrap_get_vara_realx (ncid,varid,strt4,cnt4,tground)
+         have_tg = .true.
+       endif    
+     endif      
 
      status = nf90_inq_varid( ncid, 'qsrf', varid   )
      if ( status .ne. nf90_noerr ) then
@@ -1286,22 +1308,6 @@ endif !scm_observed_aero
        ptend= srf(1)
      endif
 
-     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
-       'omega', .true., ptend, fill_ends, scm_crm_mode, &
-       dplevs, nlev,psobs, hyam, hybm, wfld, status )
-     if ( status .ne. nf90_noerr ) then
-       have_omega = .false.
-       write(iulog,*)'Could not find variable omega'
-       if ( .not. use_userdata ) then
-         status = nf90_close( ncid )
-         return
-       else
-         write(iulog,*) 'Using value from Analysis Dataset'
-       endif
-     else
-       have_omega = .true.
-     endif
-
      call plevs0(1    ,plon   ,plev    ,psobs   ,pint,pmid ,pdel)
      call shr_sys_flush( iulog )
 !
@@ -1456,9 +1462,25 @@ endif !scm_observed_aero
        have_tg = .true.
      endif
      
-     ! If camiop is used, then need to read in the global
+     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
+       'omega', .true., ptend, fill_ends, scm_crm_mode, &
+        dplevs, nlev,psobs, hyam, hybm, wfld, status )
+     if ( status .ne. nf90_noerr ) then
+        have_omega = .false.
+        write(iulog,*)'Could not find variable omega'
+        if ( .not. use_userdata ) then
+          status = nf90_close( ncid )
+          return
+        else
+          write(iulog,*) 'Using value from Analysis Dataset'
+        endif
+     else
+        have_omega = .true.
+     endif     
+     
+     ! If REPLAY is used, then need to read in the global
      !   energy fixer
-     if (use_camiop) then 
+     if (use_replay) then 
        status = nf90_inq_varid( ncid, 'heat_glob', varid   )
        if (status .ne. nf90_noerr) then
          have_heat_glob = .false.

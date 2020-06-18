@@ -35,10 +35,13 @@ module CH4Mod
   use WaterfluxType      , only : waterflux_type
   use WaterstateType     , only : waterstate_type
   use GridcellType       , only : grc_pp
-  use TopounitType       , only : top_as  ! for topounit-level atmospheric state forcing  
+  use TopounitDataType   , only : top_as  ! for topounit-level atmospheric state forcing  
   use LandunitType       , only : lun_pp                
-  use ColumnType         , only : col_pp                
-  use VegetationType          , only : veg_pp                
+  use ColumnType         , only : col_pp
+  use ColumnDataType     , only : col_es, col_ws, col_wf, col_cf, col_nf              
+  use VegetationType     , only : veg_pp
+  use VegetationDataType , only : veg_wf, veg_cs, veg_cf
+  
   !
   implicit none
   save
@@ -308,7 +311,6 @@ contains
     allocate(this%conc_o2_unsat_col          (begc:endc,1:nlevgrnd)) ;  this%conc_o2_unsat_col          (:,:) = nan
     allocate(this%o2_decomp_depth_sat_col    (begc:endc,1:nlevgrnd)) ;  this%o2_decomp_depth_sat_col    (:,:) = nan          
     allocate(this%o2_decomp_depth_unsat_col  (begc:endc,1:nlevgrnd)) ;  this%o2_decomp_depth_unsat_col  (:,:) = nan
-    allocate(this%ch4_surf_flux_tot_col      (begc:endc))            ;  this%ch4_surf_flux_tot_col      (:)   = nan
 
     allocate(this%grnd_ch4_cond_patch        (begp:endp)) ;  this%grnd_ch4_cond_patch(:) = nan
     allocate(this%grnd_ch4_cond_col          (begc:endc)) ;  this%grnd_ch4_cond_col  (:) = nan
@@ -676,7 +678,7 @@ contains
     use shr_kind_mod    , only : r8 => shr_kind_r8
     use clm_varpar      , only : nlevsoi, nlevgrnd, nlevdecomp
     use landunit_varcon , only : istsoil, istdlak, istcrop
-    use clm_varctl      , only : iulog
+    use clm_varctl      , only : iulog, fsurdat
     use CH4varcon       , only : allowlakeprod, usephfact, fin_use_fsat
     use spmdMod         , only : masterproc
     use fileutils       , only : getfil
@@ -695,6 +697,7 @@ contains
     real(r8)     ,pointer :: p3_in (:)   ! read in - p3 
     real(r8)     ,pointer :: pH_in (:)   ! read in - pH 
     logical               :: readvar 
+    character(len=256)    :: locfn
     !-----------------------------------------------------------------------
 
     SHR_ASSERT_ALL((ubound(cellorg_col) == (/bounds%endc, nlevgrnd/)), errMsg(__FILE__, __LINE__))
@@ -711,6 +714,8 @@ contains
     ! Methane code parameters for finundated
 
     if (.not. fin_use_fsat) then
+       call getfil (fsurdat, locfn, 0)
+       call ncd_pio_openfile (ncid, locfn, 0)
        call ncd_io(ncid=ncid, varname='ZWT0', flag='read', data=zwt0_in, dim1name=grlnd, readvar=readvar)
        if (.not. readvar) then
           call endrun(msg=' ERROR: Running with CH4 Model but ZWT0 not on surfdata file'//&
@@ -1352,8 +1357,8 @@ contains
          rootfr               =>   soilstate_vars%rootfr_patch               , & ! Input:  [real(r8) (:,:) ]  fraction of roots in each soil layer  (nlevgrnd)
          rootfr_col           =>   soilstate_vars%rootfr_col                 , & ! Output: [real(r8) (:,:) ]  fraction of roots in each soil layer  (nlevgrnd) (p2c)
 
-         frac_h2osfc          =>   waterstate_vars%frac_h2osfc_col           , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
-         qflx_surf            =>   waterflux_vars%qflx_surf_col              , & ! Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)                        
+         frac_h2osfc          =>   col_ws%frac_h2osfc           , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
+         qflx_surf            =>   col_wf%qflx_surf              , & ! Input:  [real(r8) (:)   ]  surface runoff (mm H2O /s)                        
 
          conc_o2_sat          =>   ch4_vars%conc_o2_sat_col                  , & ! Input:  [real(r8) (:,:) ]  O2 conc  in each soil layer (mol/m3) (nlevsoi)  
          zwt0                 =>   ch4_vars%zwt0_col                         , & ! Input:  [real(r8) (:)   ]  decay factor for finundated (m)                   
@@ -1963,19 +1968,19 @@ contains
          z              =>    col_pp%z                              , & ! Input:  [real(r8) (:,:)  ]  layer depth (m) (-nlevsno+1:nlevsoi)            
          zi             =>    col_pp%zi                             , & ! Input:  [real(r8) (:,:)  ]  interface level below a "z" level (m)           
 
-         t_soisno       =>    temperature_vars%t_soisno_col      , & ! Input:  [real(r8) (:,:)  ]  soil temperature (Kelvin)  (-nlevsno+1:nlevsoi) 
+         t_soisno       =>    col_es%t_soisno      , & ! Input:  [real(r8) (:,:)  ]  soil temperature (Kelvin)  (-nlevsno+1:nlevsoi) 
 
-         h2osoi_vol     =>    waterstate_vars%h2osoi_vol_col     , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
+         h2osoi_vol     =>    col_ws%h2osoi_vol     , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
 
-         rr             =>    carbonflux_vars%rr_patch           , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) root respiration (fine root MR + total root GR)
-         somhr          =>    carbonflux_vars%somhr_col          , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) soil organic matter heterotrophic respiration
-         lithr          =>    carbonflux_vars%lithr_col          , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) litter heterotrophic respiration        
-         hr_vr          =>    carbonflux_vars%hr_vr_col          , & ! Input:  [real(r8) (:,:)  ]  total vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
-         o_scalar       =>    carbonflux_vars%o_scalar_col       , & ! Input:  [real(r8) (:,:)  ]  fraction by which decomposition is limited by anoxia
-         col_rr         =>    carbonflux_vars%rr_col             , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) root respiration (fine root MR + total root GR)
-         fphr           =>    carbonflux_vars%fphr_col           , & ! Input:  [real(r8) (:,:)  ]  fraction of potential heterotrophic respiration 
+         rr             =>    veg_cf%rr           , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) root respiration (fine root MR + total root GR)
+         somhr          =>    col_cf%somhr          , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) soil organic matter heterotrophic respiration
+         lithr          =>    col_cf%lithr          , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) litter heterotrophic respiration        
+         hr_vr          =>    col_cf%hr_vr          , & ! Input:  [real(r8) (:,:)  ]  total vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
+         o_scalar       =>    col_cf%o_scalar       , & ! Input:  [real(r8) (:,:)  ]  fraction by which decomposition is limited by anoxia
+         col_rr         =>    col_cf%rr             , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) root respiration (fine root MR + total root GR)
+         fphr           =>    col_cf%fphr           , & ! Input:  [real(r8) (:,:)  ]  fraction of potential heterotrophic respiration 
 
-         pot_f_nit_vr   =>    nitrogenflux_vars%pot_f_nit_vr_col , & ! Input:  [real(r8) (:,:)  ]  (gN/m3/s) potential soil nitrification flux     
+         pot_f_nit_vr   =>    col_nf%pot_f_nit_vr , & ! Input:  [real(r8) (:,:)  ]  (gN/m3/s) potential soil nitrification flux     
 
          watsat         =>    soilstate_vars%watsat_col          , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water at saturation (porosity)  
          rootfr         =>    soilstate_vars%rootfr_patch        , & ! Input:  [real(r8) (:,:)  ]  fraction of roots in each soil layer  (nlevsoi) 
@@ -2279,12 +2284,12 @@ contains
     SHR_ASSERT_ALL((ubound(jwt) == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
 
     associate(                                          & 
-         h2osoi_vol => waterstate_vars%h2osoi_vol_col , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
+         h2osoi_vol => col_ws%h2osoi_vol , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
 
          smp_l      => soilstate_vars%smp_l_col       , & ! Input:  [real(r8) (: ,:) ]  soil matrix potential [mm]                      
          watsat     => soilstate_vars%watsat_col      , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water at saturation (porosity)  
 
-         t_soisno   => temperature_vars%t_soisno_col    & ! Input:  [real(r8) (:,:)  ]  soil temperature (Kelvin)  (-nlevsno+1:nlevsoi) 
+         t_soisno   => col_es%t_soisno    & ! Input:  [real(r8) (:,:)  ]  soil temperature (Kelvin)  (-nlevsno+1:nlevsoi) 
          )
 
       if (sat == 0) then                                   ! unsaturated
@@ -2455,24 +2460,24 @@ contains
 
          elai          =>    canopystate_vars%elai_patch         , & ! Input:  [real(r8) (:)    ]  one-sided leaf area index with burying by snow    
 
-         annsum_npp    =>    carbonflux_vars%annsum_npp_patch    , & ! Input:  [real(r8) (:)    ]  annual sum NPP (gC/m2/yr)                         
+         annsum_npp    =>    veg_cf%annsum_npp    , & ! Input:  [real(r8) (:)    ]  annual sum NPP (gC/m2/yr)                         
 
-         t_soisno      =>    temperature_vars%t_soisno_col       , & ! Input:  [real(r8) (:,:)  ]  soil temperature (Kelvin)  (-nlevsno+1:nlevsoi) 
+         t_soisno      =>    col_es%t_soisno       , & ! Input:  [real(r8) (:,:)  ]  soil temperature (Kelvin)  (-nlevsno+1:nlevsoi) 
 
          watsat        =>    soilstate_vars%watsat_col           , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water at saturation (porosity)   
          rootr         =>    soilstate_vars%rootr_patch          , & ! Input:  [real(r8) (:,:)  ]  effective fraction of roots in each soil layer  (nlevgrnd)
          rootfr        =>    soilstate_vars%rootfr_patch         , & ! Input:  [real(r8) (:,:)  ]  fraction of roots in each soil layer  (nlevsoi) 
 
-         h2osoi_vol    =>    waterstate_vars%h2osoi_vol_col      , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
+         h2osoi_vol    =>    col_ws%h2osoi_vol      , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
 
-         qflx_tran_veg =>    waterflux_vars%qflx_tran_veg_patch  , & ! Input:  [real(r8) (:)    ]  vegetation transpiration (mm H2O/s) (+ = to atm)  
+         qflx_tran_veg =>    veg_wf%qflx_tran_veg  , & ! Input:  [real(r8) (:)    ]  vegetation transpiration (mm H2O/s) (+ = to atm)  
 
          canopy_cond   =>    energyflux_vars%canopy_cond_patch   , & ! Input:  [real(r8) (:)    ]  tracer conductance for canopy [m/s]               
 
-         frootc        =>    carbonstate_vars%frootc_patch       , & ! Input:  [real(r8) (:)    ]  (gC/m2) fine root C                               
+         frootc        =>    veg_cs%frootc       , & ! Input:  [real(r8) (:)    ]  (gC/m2) fine root C                               
 
-         annavg_agnpp  =>    carbonflux_vars%annavg_agnpp_patch  , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) annual average aboveground NPP          
-         annavg_bgnpp  =>    carbonflux_vars%annavg_bgnpp_patch  , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) annual average belowground NPP          
+         annavg_agnpp  =>    veg_cf%annavg_agnpp  , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) annual average aboveground NPP          
+         annavg_bgnpp  =>    veg_cf%annavg_bgnpp  , & ! Input:  [real(r8) (:)    ]  (gC/m2/s) annual average belowground NPP          
 
          grnd_ch4_cond =>    ch4_vars%grnd_ch4_cond_patch        , & ! Input:  [real(r8) (:)    ]  tracer conductance for boundary layer [m/s]       
          c_atm         =>    ch4_vars%c_atm_grc                    & ! Input:  [real(r8) (: ,:) ]  CH4, O2, CO2 atmospheric conc  (mol/m3)         
@@ -2693,12 +2698,12 @@ contains
          zi           =>    col_pp%zi                             , & ! Input:  [real(r8) (:,:) ]  interface level below a "z" level (m)           
          lakedepth    =>    col_pp%lakedepth                      , & ! Input:  [real(r8) (:)   ]  column lake depth (m)                             
          forc_pbot    =>    top_as%pbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
-         t_soisno     =>    temperature_vars%t_soisno_col         , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevsoi) 
+         t_soisno     =>    col_es%t_soisno         , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevsoi) 
          lake_icefrac =>    lakestate_vars%lake_icefrac_col       , & ! Input:  [real(r8) (:,:) ]  mass fraction of lake layer that is frozen      
          watsat       =>    soilstate_vars%watsat_col             , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)  
-         h2osoi_vol   =>    waterstate_vars%h2osoi_vol_col        , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
-         h2osfc       =>    waterstate_vars%h2osfc_col            , & ! Input:  [real(r8) (:)   ]  surface water (mm)                                
-         frac_h2osfc  =>    waterstate_vars%frac_h2osfc_col         & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
+         h2osoi_vol   =>    col_ws%h2osoi_vol        , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
+         h2osfc       =>    col_ws%h2osfc            , & ! Input:  [real(r8) (:)   ]  surface water (mm)                                
+         frac_h2osfc  =>    col_ws%frac_h2osfc         & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
          )
 
       if (sat == 0) then                                   ! unsaturated
@@ -2889,17 +2894,17 @@ contains
          watsat        =>    soilstate_vars%watsat_col       , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)  
          cellorg       =>    soilstate_vars%cellorg_col      , & ! Input:  [real(r8) (:,:) ]  column 3D org (kg/m^3 organic matter) (nlevgrnd)
 
-         t_soisno      =>    temperature_vars%t_soisno_col   , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevsoi) 
-         t_grnd        =>    temperature_vars%t_grnd_col     , & ! Input:  [real(r8) (:)   ]  ground temperature (Kelvin)                       
-         t_h2osfc      =>    temperature_vars%t_h2osfc_col   , & ! Input:  [real(r8) (:)   ]  surface water temperature               
+         t_soisno      =>    col_es%t_soisno   , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevsoi) 
+         t_grnd        =>    col_es%t_grnd     , & ! Input:  [real(r8) (:)   ]  ground temperature (Kelvin)                       
+         t_h2osfc      =>    col_es%t_h2osfc   , & ! Input:  [real(r8) (:)   ]  surface water temperature               
 
-         frac_h2osfc   =>    waterstate_vars%frac_h2osfc_col , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
-         snow_depth    =>    waterstate_vars%snow_depth_col  , & ! Input:  [real(r8) (:)   ]  snow height (m)                                   
-         h2osoi_vol    =>    waterstate_vars%h2osoi_vol_col  , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
-         h2osoi_liq    =>    waterstate_vars%h2osoi_liq_col  , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2) [for snow & soil layers]   
-         h2osoi_ice    =>    waterstate_vars%h2osoi_ice_col  , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2) [for snow & soil layers]       
-         h2osno        =>    waterstate_vars%h2osno_col      , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                               
-         h2osfc        =>    waterstate_vars%h2osfc_col      , & ! Input:  [real(r8) (:)   ]  surface water (mm)                                
+         frac_h2osfc   =>    col_ws%frac_h2osfc , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
+         snow_depth    =>    col_ws%snow_depth  , & ! Input:  [real(r8) (:)   ]  snow height (m)                                   
+         h2osoi_vol    =>    col_ws%h2osoi_vol  , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
+         h2osoi_liq    =>    col_ws%h2osoi_liq  , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2) [for snow & soil layers]   
+         h2osoi_ice    =>    col_ws%h2osoi_ice  , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2) [for snow & soil layers]       
+         h2osno        =>    col_ws%h2osno      , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)                               
+         h2osfc        =>    col_ws%h2osfc      , & ! Input:  [real(r8) (:)   ]  surface water (mm)                                
 
          c_atm         =>    ch4_vars%c_atm_grc              , & ! Input:  [real(r8) (:,:) ]  CH4, O2, CO2 atmospheric conc  (mol/m3)         
 
@@ -3598,8 +3603,8 @@ contains
 
     associate(                                          & 
          watsat     => soilstate_vars%watsat_col      , & ! Input:  [real(r8) (:,:)  ] volumetric soil water at saturation (porosity)   
-         h2osoi_vol => waterstate_vars%h2osoi_vol_col , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
-         t_soisno   => temperature_vars%t_soisno_col    & ! Input:  [real(r8) (: ,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevsoi) 
+         h2osoi_vol => col_ws%h2osoi_vol , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]
+         t_soisno   => col_es%t_soisno    & ! Input:  [real(r8) (: ,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevsoi) 
          )
 
       f_sat = CH4ParamsInst%f_sat
@@ -3668,13 +3673,13 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                      & 
-         agnpp          =>    carbonflux_vars%agnpp_patch         , & ! Input:  [real(r8) (:) ]  (gC/m2/s) aboveground NPP                         
-         bgnpp          =>    carbonflux_vars%bgnpp_patch         , & ! Input:  [real(r8) (:) ]  (gC/m2/s) belowground NPP                         
-         somhr          =>    carbonflux_vars%somhr_col           , & ! Input:  [real(r8) (:) ]  (gC/m2/s) soil organic matter heterotrophic respiration
-         tempavg_agnpp  =>    carbonflux_vars%tempavg_agnpp_patch , & ! Output: [real(r8) (:) ]  temporary average above-ground NPP (gC/m2/s)      
-         annavg_agnpp   =>    carbonflux_vars%annavg_agnpp_patch  , & ! Output: [real(r8) (:) ]  annual average above-ground NPP (gC/m2/s)         
-         tempavg_bgnpp  =>    carbonflux_vars%tempavg_bgnpp_patch , & ! Output: [real(r8) (:) ]  temporary average below-ground NPP (gC/m2/s)      
-         annavg_bgnpp   =>    carbonflux_vars%annavg_bgnpp_patch  , & ! Output: [real(r8) (:) ]  annual average below-ground NPP (gC/m2/s)         
+         agnpp          =>    veg_cf%agnpp         , & ! Input:  [real(r8) (:) ]  (gC/m2/s) aboveground NPP                         
+         bgnpp          =>    veg_cf%bgnpp         , & ! Input:  [real(r8) (:) ]  (gC/m2/s) belowground NPP                         
+         somhr          =>    col_cf%somhr           , & ! Input:  [real(r8) (:) ]  (gC/m2/s) soil organic matter heterotrophic respiration
+         tempavg_agnpp  =>    veg_cf%tempavg_agnpp , & ! Output: [real(r8) (:) ]  temporary average above-ground NPP (gC/m2/s)      
+         annavg_agnpp   =>    veg_cf%annavg_agnpp  , & ! Output: [real(r8) (:) ]  annual average above-ground NPP (gC/m2/s)         
+         tempavg_bgnpp  =>    veg_cf%tempavg_bgnpp , & ! Output: [real(r8) (:) ]  temporary average below-ground NPP (gC/m2/s)      
+         annavg_bgnpp   =>    veg_cf%annavg_bgnpp  , & ! Output: [real(r8) (:) ]  annual average below-ground NPP (gC/m2/s)         
          
          finundated     =>    ch4_vars%finundated_col             , & ! Input:  [real(r8) (:) ]  fractional inundated area in soil column          
          annsum_counter =>    ch4_vars%annsum_counter_col         , & ! Output: [real(r8) (:) ]  seconds since last annual accumulator turnover    

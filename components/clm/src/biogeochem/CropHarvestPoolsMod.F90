@@ -16,6 +16,10 @@ module CropHarvestPoolsMod
   use CNNitrogenFluxType  , only : nitrogenflux_type
   use PhosphorusStateType , only : phosphorusstate_type
   use PhosphorusFluxType  , only : phosphorusflux_type
+  use ColumnDataType      , only : col_cs, c13_col_cs, c14_col_cs
+  use ColumnDataType      , only : col_cf, c13_col_cf, c14_col_cf
+  use ColumnDataType      , only : col_ns, col_nf
+  use ColumnDataType      , only : col_ps, col_pf
   !
   implicit none
   save
@@ -68,18 +72,18 @@ contains
        c = filter_soilc(fc)
 
        ! calculate fluxes (1/sec)
-       carbonflux_vars%prod1c_loss_col(c)    = carbonstate_vars%prod1c_col(c)    * kprod1
+       col_cf%prod1c_loss(c)    = col_cs%prod1c(c)    * kprod1
 
        if ( use_c13 ) then
-          c13_carbonflux_vars%prod1c_loss_col(c)  = c13_carbonstate_vars%prod1c_col(c)  * kprod1
+          c13_col_cf%prod1c_loss(c)  = c13_col_cs%prod1c(c)  * kprod1
        endif
 
        if ( use_c14 ) then
-          c14_carbonflux_vars%prod1c_loss_col(c)  = c14_carbonstate_vars%prod1c_col(c)  * kprod1
+          c14_col_cf%prod1c_loss(c)  = c14_col_cs%prod1c(c)  * kprod1
        endif
 
-       nitrogenflux_vars%prod1n_loss_col(c)    = nitrogenstate_vars%prod1n_col(c)    * kprod1
-       phosphorusflux_vars%prod1p_loss_col(c)  = phosphorusstate_vars%prod1p_col(c)  * kprod1
+       col_nf%prod1n_loss(c)    = col_ns%prod1n(c)    * kprod1
+       col_pf%prod1p_loss(c)  = col_ps%prod1p(c)  * kprod1
     end do
 
     ! set time steps
@@ -90,42 +94,29 @@ contains
        c = filter_soilc(fc)
 
        ! fluxes into wood product pools, from harvest
-       carbonstate_vars%prod1c_col(c)    = carbonstate_vars%prod1c_col(c)    + &
-            carbonflux_vars%hrv_cropc_to_prod1c_col(c)*dt
+       col_cs%prod1c(c)    = col_cs%prod1c(c)    + &
+            col_cf%hrv_cropc_to_prod1c(c)*dt     - & ! from harvest 
+            col_cf%prod1c_loss(c)*dt                 ! from decomposition 
 
        if ( use_c13 ) then
-          c13_carbonstate_vars%prod1c_col(c)  = c13_carbonstate_vars%prod1c_col(c)  + &
-               c13_carbonflux_vars%hrv_cropc_to_prod1c_col(c)*dt
+          c13_col_cs%prod1c(c)  = c13_col_cs%prod1c(c)  + &
+               c13_col_cf%hrv_cropc_to_prod1c(c)*dt     - & ! from harvest 
+               c13_col_cf%prod1c_loss(c)*dt                 ! from decomposition
        endif
 
        if ( use_c14 ) then
-          c14_carbonstate_vars%prod1c_col(c)  = c14_carbonstate_vars%prod1c_col(c)  + &
-               c14_carbonflux_vars%hrv_cropc_to_prod1c_col(c)*dt
+          c14_col_cs%prod1c(c)  = c14_col_cs%prod1c(c)  + &
+               c14_col_cf%hrv_cropc_to_prod1c(c)*dt     - & ! from harvest
+               c14_col_cf%prod1c_loss(c)*dt                 ! from decomposition
        endif
 
-       nitrogenstate_vars%prod1n_col(c)    = nitrogenstate_vars%prod1n_col(c)    + &
-            nitrogenflux_vars%hrv_cropn_to_prod1n_col(c)*dt
-       phosphorusstate_vars%prod1p_col(c)    = phosphorusstate_vars%prod1p_col(c)    + &
-            phosphorusflux_vars%hrv_cropp_to_prod1p_col(c)*dt
+       col_ns%prod1n(c)    = col_ns%prod1n(c)    + &
+            col_nf%hrv_cropn_to_prod1n(c)*dt     - & ! from harvest
+            col_nf%prod1n_loss(c)*dt                 ! from decomposition
 
-       ! fluxes out of wood product pools, from decomposition
-       carbonstate_vars%prod1c_col(c)    = carbonstate_vars%prod1c_col(c)    - &
-            carbonflux_vars%prod1c_loss_col(c)*dt
-
-       if ( use_c13 ) then
-          c13_carbonstate_vars%prod1c_col(c)  = c13_carbonstate_vars%prod1c_col(c)  - &
-               c13_carbonflux_vars%prod1c_loss_col(c)*dt
-       endif
-
-       if ( use_c14 ) then
-          c14_carbonstate_vars%prod1c_col(c)  = c14_carbonstate_vars%prod1c_col(c)  - &
-               c14_carbonflux_vars%prod1c_loss_col(c)*dt
-       endif
-
-       nitrogenstate_vars%prod1n_col(c)    = nitrogenstate_vars%prod1n_col(c)    - &
-            nitrogenflux_vars%prod1n_loss_col(c)*dt
-       phosphorusstate_vars%prod1p_col(c)  = phosphorusstate_vars%prod1p_col(c)  - &
-            phosphorusflux_vars%prod1p_loss_col(c)*dt
+       col_ps%prod1p(c)    = col_ps%prod1p(c)    + &
+            col_pf%hrv_cropp_to_prod1p(c)*dt     - & ! from harvest
+            col_pf%prod1p_loss(c)*dt                 ! from decomposition
 
     end do ! end of column loop
 

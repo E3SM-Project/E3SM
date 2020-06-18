@@ -1,13 +1,12 @@
 #!/bin/bash
 #
 #SBATCH --job-name d16-1-preqx 
-#SBATCH --account=FY150001
-#SBATCH -N 30
-#SBATCH --time=0:60:00
-#SBATCH -p ec
-#PBS -q acme
-#PBS -l walltime=30:00
-#PBS -l nodes=25
+#XXSBATCH --account=FY150001
+#XXSBATCH -p ec
+#SBATCH --account=condo
+#SBATCH -p acme-medium
+#SBATCH -N 25
+#SBATCH --time=0:30:00
 #
 # 25 nodes, 30min sufficient for all 5 runs
 # 12 nodes, 10min for r400 an r100
@@ -16,19 +15,16 @@
 export OMP_NUM_THREADS=1
 export OMP_STACKSIZE=16M     #  Cori has 96GB per node. had to lower to 8M on 3K nodes
 export MV2_ENABLE_AFFINITY=0
-NCPU=40
-if [ -n "$PBS_ENVIRONMENT" ]; then
-#  NCPU=$PBS_NNODES
-  [ "$PBS_ENVIRONMENT" = "PBS_BATCH" ] && cd $PBS_O_WORKDIR 
-  NCPU=$PBS_NNODES
-  let NCPU/=$OMP_NUM_THREADS
-fi
+NCPU=8
 if [ -n "$SLURM_NNODES" ]; then
-    NCPU=$SLURM_NNODES
-    let NCPU*=16
-    let NCPU/=$OMP_NUM_THREADS
+   patt='([[:digit:]]+)'
+   if [[ $SLURM_TASKS_PER_NODE =~ $patt ]]; then
+     PER_NODE=${BASH_REMATCH[1]}
+   else
+     PER_NODE=16
+   fi
+   NCPU=$(( $SLURM_NNODES * $PER_NODE ))
 fi
-let PPN=36/$OMP_NUM_THREADS
 
 # hydrostatic preqx
 EXEC=../../../test_execs/theta-l-nlev30/theta-l-nlev30
@@ -41,7 +37,7 @@ echo "NCPU = $NCPU"
 namelist=namelist-$prefix.nl
 \cp -f $namelist input.nl
 date
-mpirun -bind-to=core -ppn $PPN -np $NCPU $EXEC < input.nl
+srun -K -c 1 -n $NCPU -N $SLURM_NNODES $EXEC < input.nl
 date
 
 ncl plot-baroclinicwave-init.ncl

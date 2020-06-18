@@ -50,21 +50,25 @@ def parse_command_line(args, description):
     parser.add_argument("--download", action="store_true",
                         help="Attempt to download missing input files")
 
+    parser.add_argument("--chksum", action="store_true",
+                        help="chksum inputfiles against inputdata_chksum.dat (if available)")
+
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
-    return args.protocol, args.server, args.input_data_root, args.data_list_dir, args.download
+    return args.protocol, args.server, args.input_data_root, args.data_list_dir, args.download, args.chksum
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    protocol, address, input_data_root, data_list_dir, download = parse_command_line(sys.argv, description)
+    protocol, address, input_data_root, data_list_dir, download, chksum = parse_command_line(sys.argv, description)
 
     with Case() as case:
         sys.exit(0 if case.check_all_input_data(protocol=protocol,
                                                 address=address,
                                                 input_data_root=input_data_root,
                                                 data_list_dir=data_list_dir,
-                                                download=download) else 1)
+                                                download=download,
+                                                chksum=chksum) else 1)
 
 ###############################################################################
 

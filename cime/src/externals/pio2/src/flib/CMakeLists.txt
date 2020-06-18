@@ -38,6 +38,7 @@ endif ()
 
 # Include flib source and binary directories (for Fortran modules)
 target_include_directories (piof
+  PUBLIC ${CMAKE_BINARY_DIR}
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
   PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 

@@ -18,10 +18,10 @@ module RtmMod
   use RtmVar          , only : re, spval, rtmlon, rtmlat, iulog, ice_runoff, &
                                frivinp_rtm, finidat_rtm, nrevsn_rtm, &
                                nsrContinue, nsrBranch, nsrStartup, nsrest, &
-                               inst_index, inst_suffix, inst_name, wrmflag, &
-                               smat_option, decomp_option, barrier_timers
+                               inst_index, inst_suffix, inst_name, wrmflag, inundflag, &
+                               smat_option, decomp_option, barrier_timers, heatflag, sediflag
   use RtmFileUtils    , only : getfil, getavu, relavu
-  use RtmTimeManager  , only : timemgr_init, get_nstep, get_curr_date
+  use RtmTimeManager  , only : timemgr_init, get_nstep, get_curr_date, advance_timestep
   use RtmHistFlds     , only : RtmHistFldsInit, RtmHistFldsSet 
   use RtmHistFile     , only : RtmHistUpdateHbuf, RtmHistHtapesWrapup, RtmHistHtapesBuild, &
                                rtmhist_ndens, rtmhist_mfilt, rtmhist_nhtfrq,     &
@@ -31,18 +31,18 @@ module RtmMod
                                max_tapes, max_namlen
   use RtmRestFile     , only : RtmRestTimeManager, RtmRestGetFile, RtmRestFileRead, &
                                RtmRestFileWrite, RtmRestFileName
-  use RunoffMod       , only : RunoffInit, rtmCTL, Tctl, Tunit, TRunoff, Tpara, &
+  use RunoffMod       , only : RunoffInit, rtmCTL, Tctl, Tunit, TRunoff, Tpara, Theat, &
                                gsmap_r, &
                                SMatP_dnstrm, avsrc_dnstrm, avdst_dnstrm, &
-                               SMatP_direct, avsrc_direct, avdst_direct, &
-                               SMatP_eroutUp, avsrc_eroutUp, avdst_eroutUp
+                               SMatP_upstrm, avsrc_upstrm, avdst_upstrm, &
+                               SMatP_direct, avsrc_direct, avdst_direct
   use MOSART_physics_mod, only : Euler
   use MOSART_physics_mod, only : updatestate_hillslope, updatestate_subnetwork, &
                                  updatestate_mainchannel
-#ifdef INCLUDE_WRM
-  use WRM_subw_IO_mod , only : WRM_init
-  use WRM_modules     , only : Euler_WRM
-#endif
+  use WRM_type_mod    , only : ctlSubwWRM, WRMUnit, StorWater
+  use WRM_subw_IO_mod , only : WRM_init, WRM_computeRelease
+  use MOSARTinund_PreProcs_MOD, only : calc_chnlMannCoe, preprocess_elevProf
+  use MOSARTinund_Core_MOD    , only : MOSARTinund_simulate, ManningEq
   use RtmIO
   use mct_mod
   use perf_mod
@@ -84,9 +84,22 @@ module RtmMod
 !local (gdc)
   real(r8), save, pointer :: evel(:,:)       ! effective tracer velocity (m/s)
   real(r8), save, pointer :: flow(:,:)       ! mosart flow (m3/s)
-  real(r8), save, pointer :: erout_prev(:,:) ! erout previous timestep (m3/s)
+  real(r8), save, pointer :: eroup_lagi(:,:) ! erout previous timestep (m3/s)
+  real(r8), save, pointer :: eroup_lagf(:,:) ! erout current timestep (m3/s)
+  real(r8), save, pointer :: erowm_regi(:,:) ! erout previous timestep (m3/s)
+  real(r8), save, pointer :: erowm_regf(:,:) ! erout current timestep (m3/s)
   real(r8), save, pointer :: eroutup_avg(:,:)! eroutup average over coupling period (m3/s)
   real(r8), save, pointer :: erlat_avg(:,:)  ! erlateral average over coupling period (m3/s)
+
+  real(r8), save :: vol_chnl2fp                 ! Total volume of flows from main channels to floodplains (for all local grid cells and all sub-steps of coupling period) (m^3).
+  real(r8), save :: vol_fp2chnl                 ! Total volume of flows from floodplains to main channels (for all local grid cells and all sub-steps of coupling period) (m^3).
+
+  real(r8), save, pointer :: fa_fp_cplPeriod(:) ! Mean area of inundated floodplain (not including channel area) for all sub-steps of coupling period (m^2).
+
+  real(r8), save, pointer :: totalVelo_down(:)  ! Total downward flow velocity (for all local grid cells and all sub-steps of coupling period) (m/s).
+  real(r8), save, pointer :: totalVelo_up(:)    ! Total upward flow velocity (for all local grid cells and all sub-steps of coupling period) (m/s).
+  integer, save, pointer :: chnlNum_down(:)     ! Total number of channels with downward flow velocities (for all local grid cells and all sub-steps of coupling period) (dimensionless).
+  integer, save, pointer :: chnlNum_up(:)       ! Total number of channels with upward flow velocities (for all local grid cells and all sub-steps of coupling period) (dimensionless).
 
 ! global MOSART grid
   real(r8),pointer :: rlatc(:)    ! latitude of 1d grid cell (deg)
@@ -99,8 +112,8 @@ module RtmMod
   logical :: do_rtmflood
   logical :: do_rtm
 
-  character(len=256) :: nlfilename_rof = 'mosart_in' 
   real(r8), save :: delt_save             ! previous delt 
+
 !
 !EOP
 !-----------------------------------------------------------------------
@@ -169,6 +182,25 @@ contains
     integer  :: mon                           ! month (1, ..., 12)
     integer  :: day                           ! day of month (1, ..., 31)
     integer  :: numr                          ! tot num of roff pts on all pes
+    integer  :: RoutingMethod                 ! 1 = KW, 4 = DW
+    integer  :: DLevelH2R                     !
+    integer  :: DLevelR                       !
+    integer  :: OPT_inund                     ! Options for inundation
+    integer  :: OPT_trueDW                    ! Options for diffusion wave channel routing method:
+    integer  :: OPT_calcNr                    ! Options to calculate channel Manning roughness coefficients : 
+    real(r8) :: nr_max                        ! Max Manning coefficient for channels (when OPT_calcNr = 1, 2, 3) ( s*m^(-1/3) ).
+    real(r8) :: nr_min                        ! Min Manning coefficient for channels (when OPT_calcNr = 1, 2, 3) ( s*m^(-1/3) ).
+    real(r8) :: nr_uniform                    ! The uniform Manning coefficient for all channels (when OPT_calcNr = 4) ( s*m^(-1/3) ).
+    real(r8) :: rdepth_max                    ! Max channel depth (used when OPT_calcNr = 1, 2) (m).
+    real(r8) :: rdepth_min                    ! Min channel depth (used when OPT_calcNr = 1, 2) (m). 
+    real(r8) :: rwidth_max                    ! Max channel width (used when OPT_calcNr = 3) (m).
+    real(r8) :: rwidth_min                    ! Min channel width (used when OPT_calcNr = 3) (m). 
+    real(r8) :: rslp_assume                   ! Use this assumed riverbed slope when the input riverbed slope <= zero (dimensionless).
+    real(r8) :: minL_tribRouting              ! Min tributary channel length for using tributary routing (m).  
+    integer  :: OPT_elevProf                  ! Options of elevation profile data: 1 -- Use real data; 2 -- Use hypothetical values.
+    integer  :: npt_elevProf                  ! Number of dividing points in the elevation profile.
+    real(r8) :: threshold_slpRatio            ! Threshold of the ratio of the lowest section's slope to the second lowest section's slope in 
+                                              ! the elevation profile (used to alleviate the effect of DEM pits on elevation profiles).
     real(r8) :: dtover,dtovermax              ! ts calc temporaries
     type(file_desc_t) :: ncid                 ! netcdf file id
     integer  :: dimid                         ! netcdf dimension identifier
@@ -192,9 +224,14 @@ contains
     integer ,allocatable :: gindex(:)         ! global index
     integer           :: cnt, lsize, gsize    ! counter
     integer           :: igrow,igcol,iwgt     ! mct field indices
+    character(len=256):: nlfilename_rof       ! namelist filename
     type(mct_avect)   :: avtmp, avtmpG        ! temporary avects
     type(mct_sMat)    :: sMat                 ! temporary sparse matrix, needed for sMatP
     character(len=*),parameter :: subname = '(Rtmini) '
+
+    real(r8) :: wd_chnl                       ! Channel water depth (m).
+    real(r8) :: hydrR                         ! Hydraulic radius (= wet A / wet P) (m).
+    real(r8) :: v_chnl                        ! Channel flow velocity (m/s).#endif
 !-----------------------------------------------------------------------
 
     !-------------------------------------------------------
@@ -207,19 +244,49 @@ contains
          rtmhist_fincl1,  rtmhist_fincl2, rtmhist_fincl3, &
          rtmhist_fexcl1,  rtmhist_fexcl2, rtmhist_fexcl3, &
          rtmhist_avgflag_pertape, decomp_option, wrmflag, &
-         smat_option, delt_mosart
+         inundflag, smat_option, delt_mosart, barrier_timers, &
+         RoutingMethod, DLevelH2R, DLevelR, sediflag, heatflag
+
+    namelist /inund_inparm / opt_inund, &
+         opt_truedw, opt_calcnr, nr_max, nr_min, &
+         nr_uniform, rdepth_max, rdepth_min, rwidth_max, rwidth_min, &
+         rslp_assume, minl_tribrouting, opt_elevprof, npt_elevprof, &
+         threshold_slpratio
 
     ! Preset values
     do_rtm      = .true.
     do_rtmflood = .false.
     ice_runoff  = .true.
     wrmflag     = .false.
+    inundflag   = .false.
+    sediflag    = .false.
+    heatflag    = .false.
+    barrier_timers = .false.
     finidat_rtm = ' '
     nrevsn_rtm  = ' '
     coupling_period   = -1
     delt_mosart = 3600
     decomp_option = 'basin'
     smat_option = 'opt'
+    RoutingMethod = 1
+    DLevelH2R = 5
+    DLevelR = 3
+
+    OPT_inund = 0
+    OPT_trueDW = 2
+    OPT_calcNr = 1                
+    nr_max = 0.05_r8              
+    nr_min = 0.03_r8              
+    nr_uniform = 0.04_r8          
+    rdepth_max = 50.0_r8          
+    rdepth_min = 1.0_r8           
+    rwidth_max = 5000.0_r8        
+    rwidth_min = 20.0_r8          
+    rslp_assume = 0.00001_r8      
+    minL_tribRouting = 10.0_r8    
+    OPT_elevProf = 2              
+    npt_elevProf = 11             
+    threshold_slpRatio = 10.0_r8  
 
     nlfilename_rof = "mosart_in" // trim(inst_suffix)
     inquire (file = trim(nlfilename_rof), exist = lexist)
@@ -240,10 +307,26 @@ contains
           endif
        end do
        call relavu( unitn )
+       if (inundflag) then
+          unitn = getavu()
+          write(iulog,*) 'Read in inund_inparm namelist from: ', trim(nlfilename_rof)
+          open( unitn, file=trim(nlfilename_rof), status='old' )
+          ier = 1
+          do while ( ier /= 0 )
+             read(unitn, inund_inparm, iostat=ier)
+             if (ier < 0) then
+                call shr_sys_abort( subname//' encountered end-of-file on inund_inparm read' )
+             endif
+          end do
+          call relavu( unitn )
+       end if
     end if
 
     call mpi_bcast (coupling_period,   1, MPI_INTEGER, 0, mpicom_rof, ier)
     call mpi_bcast (delt_mosart    ,   1, MPI_INTEGER, 0, mpicom_rof, ier)
+    call mpi_bcast (RoutingMethod  ,   1, MPI_INTEGER, 0, mpicom_rof, ier)
+    call mpi_bcast (DLevelH2R      ,   1, MPI_INTEGER, 0, mpicom_rof, ier)
+    call mpi_bcast (DLevelR        ,   1, MPI_INTEGER, 0, mpicom_rof, ier)
 
     call mpi_bcast (finidat_rtm  , len(finidat_rtm)  , MPI_CHARACTER, 0, mpicom_rof, ier)
     call mpi_bcast (frivinp_rtm  , len(frivinp_rtm)  , MPI_CHARACTER, 0, mpicom_rof, ier)
@@ -251,10 +334,14 @@ contains
     call mpi_bcast (decomp_option, len(decomp_option), MPI_CHARACTER, 0, mpicom_rof, ier)
     call mpi_bcast (smat_option  , len(smat_option)  , MPI_CHARACTER, 0, mpicom_rof, ier)
 
-    call mpi_bcast (do_rtm,      1, MPI_LOGICAL, 0, mpicom_rof, ier)
-    call mpi_bcast (do_rtmflood, 1, MPI_LOGICAL, 0, mpicom_rof, ier)
-    call mpi_bcast (ice_runoff,  1, MPI_LOGICAL, 0, mpicom_rof, ier)
-    call mpi_bcast (wrmflag,     1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (do_rtm,         1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (do_rtmflood,    1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (ice_runoff,     1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (wrmflag,        1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (sediflag,       1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (heatflag,       1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (inundflag,      1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (barrier_timers, 1, MPI_LOGICAL, 0, mpicom_rof, ier)
 
     call mpi_bcast (rtmhist_nhtfrq, size(rtmhist_nhtfrq), MPI_INTEGER,   0, mpicom_rof, ier)
     call mpi_bcast (rtmhist_mfilt , size(rtmhist_mfilt) , MPI_INTEGER,   0, mpicom_rof, ier)
@@ -269,10 +356,50 @@ contains
 
     call mpi_bcast (rtmhist_avgflag_pertape, size(rtmhist_avgflag_pertape), MPI_CHARACTER, 0, mpicom_rof, ier)
 
+    if (inundflag) then
+       call mpi_bcast (OPT_inund,          1, MPI_INTEGER, 0, mpicom_rof, ier)
+       call mpi_bcast (OPT_trueDW,         1, MPI_INTEGER, 0, mpicom_rof, ier)
+       call mpi_bcast (OPT_calcNr,         1, MPI_INTEGER, 0, mpicom_rof, ier)
+       call mpi_bcast (nr_max,             1, MPI_REAL8  , 0, mpicom_rof, ier)
+       call mpi_bcast (nr_min,             1, MPI_REAL8  , 0, mpicom_rof, ier)
+       call mpi_bcast (nr_uniform,         1, MPI_REAL8  , 0, mpicom_rof, ier)
+       call mpi_bcast (rdepth_max,         1, MPI_REAL8  , 0, mpicom_rof, ier)
+       call mpi_bcast (rdepth_min,         1, MPI_REAL8  , 0, mpicom_rof, ier)
+       call mpi_bcast (rwidth_max,         1, MPI_REAL8  , 0, mpicom_rof, ier)
+       call mpi_bcast (rwidth_min,         1, MPI_REAL8  , 0, mpicom_rof, ier)
+       call mpi_bcast (rslp_assume,        1, MPI_REAL8  , 0, mpicom_rof, ier)
+       call mpi_bcast (minL_tribRouting,   1, MPI_REAL8  , 0, mpicom_rof, ier)
+       call mpi_bcast (OPT_elevProf,       1, MPI_INTEGER, 0, mpicom_rof, ier)
+       call mpi_bcast (npt_elevProf,       1, MPI_INTEGER, 0, mpicom_rof, ier)
+       call mpi_bcast (threshold_slpRatio, 1, MPI_REAL8  , 0, mpicom_rof, ier)
+    end if
+
     runtyp(:)               = 'missing'
     runtyp(nsrStartup  + 1) = 'initial'
     runtyp(nsrContinue + 1) = 'restart'
     runtyp(nsrBranch   + 1) = 'branch '
+
+    Tctl%RoutingMethod = RoutingMethod
+    Tctl%DLevelH2R     = DLevelH2R
+    Tctl%DLevelR       = DLevelR
+
+    if (inundflag) then
+       Tctl%OPT_inund = OPT_inund     !
+       Tctl%OPT_trueDW = OPT_trueDW   ! diffusion wave method
+       Tctl%OPT_calcNr = OPT_calcNr   ! method to calculate channel Manning
+       Tctl%nr_max = nr_max           ! Max Manning coefficient
+       Tctl%nr_min = nr_min           ! Min Manning coefficient
+       Tctl%nr_uniform = nr_uniform   ! uniform Manning for all channels
+       Tctl%rdepth_max = rdepth_max   ! Max channel depth
+       Tctl%rdepth_min = rdepth_min   ! Min channel depth
+       Tctl%rwidth_max = rwidth_max   ! Max channel width
+       Tctl%rwidth_min = rwidth_min   ! Min channel width
+       Tctl%rslp_assume = rslp_assume ! assumed riverbed slope if input slope<=0
+       Tctl%minL_tribRouting = minL_tribRouting
+       Tctl%OPT_elevProf = OPT_elevProf
+       Tctl%npt_elevProf = npt_elevProf
+       Tctl%threshold_slpRatio = threshold_slpRatio
+    end if
 
     if (masterproc) then
        write(iulog,*) 'define run:'
@@ -282,12 +409,38 @@ contains
       !write(iulog,*) '   hostname              = ',trim(hostname)
        write(iulog,*) '   coupling_period       = ',coupling_period
        write(iulog,*) '   delt_mosart           = ',delt_mosart
-       write(iulog,*) '   decomp option         = ',trim(decomp_option)
-       write(iulog,*) '   smat option           = ',trim(smat_option)
+       write(iulog,*) '   decomp_option         = ',trim(decomp_option)
+       write(iulog,*) '   smat_option           = ',trim(smat_option)
        write(iulog,*) '   wrmflag               = ',wrmflag
+       write(iulog,*) '   inundflag             = ',inundflag
+       write(iulog,*) '   sediflag              = ',inundflag
+       write(iulog,*) '   heatflag              = ',inundflag
+       write(iulog,*) '   barrier_timers        = ',barrier_timers
+       write(iulog,*) '   RoutingMethod         = ',Tctl%RoutingMethod
+       write(iulog,*) '   DLevelH2R             = ',Tctl%DLevelH2R
+       write(iulog,*) '   DLevelR               = ',Tctl%DLevelR
        if (nsrest == nsrStartup .and. finidat_rtm /= ' ') then
           write(iulog,*) '   MOSART initial data   = ',trim(finidat_rtm)
        end if
+       if (inundflag) then
+          write(iulog,*) ' '
+          write(iulog,*) 'inundation settings:'
+          write(iulog,*) '  OPT_inund          = ',Tctl%OPT_inund
+          write(iulog,*) '  OPT_trueDW         = ',Tctl%OPT_trueDW
+          write(iulog,*) '  OPT_calcNr         = ',Tctl%OPT_calcNr
+          write(iulog,*) '  nr_max             = ',Tctl%nr_max
+          write(iulog,*) '  nr_min             = ',Tctl%nr_min
+          write(iulog,*) '  nr_uniform         = ',Tctl%nr_uniform
+          write(iulog,*) '  rdepth_max         = ',Tctl%rdepth_max
+          write(iulog,*) '  rdepth_min         = ',Tctl%rdepth_min
+          write(iulog,*) '  rwidth_max         = ',Tctl%rwidth_max
+          write(iulog,*) '  rwidth_min         = ',Tctl%rwidth_min
+          write(iulog,*) '  rslp_assume        = ',Tctl%rslp_assume
+          write(iulog,*) '  minL_tribRouting   = ',Tctl%minL_tribRouting
+          write(iulog,*) '  OPT_elevProf       = ',Tctl%OPT_elevProf
+          write(iulog,*) '  npt_elevProf       = ',Tctl%npt_elevProf
+          write(iulog,*) '  threshold_slpRatio = ',Tctl%threshold_slpRatio
+       endif
     endif
 
     rtm_active = do_rtm
@@ -307,6 +460,10 @@ contains
        endif
        RETURN
     end if
+
+    if (wrmflag .and. inundflag) then
+       write(iulog,*) subname,' MOSART wrmflag and inundflag both set to be true'
+    endif
 
     if (coupling_period <= 0) then
        write(iulog,*) subname,' ERROR MOSART coupling_period invalid',coupling_period
@@ -519,16 +676,16 @@ contains
     edgew = minval(rlonc) - 0.5*abs(rlonc(1) - rlonc(2))
 
     if ( edgen .ne.  90._r8 )then
-       write(iulog,*) 'Regional grid: edgen = ', edgen
+       if (masterproc) write(iulog,*) 'Regional grid: edgen = ', edgen
     end if
     if ( edges .ne. -90._r8 )then
-       write(iulog,*) 'Regional grid: edges = ', edges
+       if (masterproc) write(iulog,*) 'Regional grid: edges = ', edges
     end if
     if ( edgee .ne. 180._r8 )then
-       write(iulog,*) 'Regional grid: edgee = ', edgee
+       if (masterproc) write(iulog,*) 'Regional grid: edgee = ', edgee
     end if
     if ( edgew .ne.-180._r8 )then
-       write(iulog,*) 'Regional grid: edgew = ', edgew
+       if (masterproc) write(iulog,*) 'Regional grid: edgew = ', edgew
     end if
 
     ! Set edge latitudes (assumes latitudes are constant for a given longitude)
@@ -554,6 +711,8 @@ contains
     end do
 
     call t_stopf ('mosarti_grid')
+
+    !!call t_stopf('mosarti_grid')   (Repetitive, removed on 6-1-17. --Inund.)
 
     !-------------------------------------------------------
     ! Determine mosart ocn/land mask (global, all procs)
@@ -593,25 +752,29 @@ contains
     nrof = 0
     nout = 0
     nmos = 0
+    ! over all MOSART grid cells
     do nr=1,rtmlon*rtmlat
+       ! if ocean outlet from land
        if (gmask(nr) == 3) then
           nout = nout + 1
           nbas = nbas + 1
           nmos = nmos + 1
           nrof = nrof + 1
+       ! if ocean
        elseif (gmask(nr) == 2) then
           nbas = nbas + 1
           nrof = nrof + 1
+       ! if land
        elseif (gmask(nr) == 1) then
           nmos = nmos + 1
           nrof = nrof + 1
        endif
     enddo
     if (masterproc) then
-       write(iulog,*) 'Number of outlet basins = ',nout
-       write(iulog,*) 'Number of total  basins = ',nbas
-       write(iulog,*) 'Number of mosart points = ',nmos
-       write(iulog,*) 'Number of runoff points = ',nrof
+       write(iulog,*) 'Number of outlet basins (if ocean) = ',nout
+       write(iulog,*) 'Number of total  basins (either ocean or land-ocean outlet) = ',nbas
+       write(iulog,*) 'Number of mosart points (either land or land-ocean outlet) = ',nmos
+       write(iulog,*) 'Number of runoff points (all grids)= ',nrof
     endif
 
     !-------------------------------------------------------
@@ -929,7 +1092,10 @@ contains
 
     allocate (evel    (rtmCTL%begr:rtmCTL%endr,nt_rtm), &
               flow    (rtmCTL%begr:rtmCTL%endr,nt_rtm), &
-              erout_prev(rtmCTL%begr:rtmCTL%endr,nt_rtm), &
+              eroup_lagi(rtmCTL%begr:rtmCTL%endr,nt_rtm), &
+              eroup_lagf(rtmCTL%begr:rtmCTL%endr,nt_rtm), &
+              erowm_regi(rtmCTL%begr:rtmCTL%endr,nt_rtm), &
+              erowm_regf(rtmCTL%begr:rtmCTL%endr,nt_rtm), &
               eroutup_avg(rtmCTL%begr:rtmCTL%endr,nt_rtm), &
               erlat_avg(rtmCTL%begr:rtmCTL%endr,nt_rtm), &
               stat=ier)
@@ -937,10 +1103,39 @@ contains
        write(iulog,*) subname,' Allocation ERROR for flow'
        call shr_sys_abort(subname//' Allocationt ERROR flow')
     end if
-    flow(:,:)    = 0._r8
-    erout_prev(:,:) = 0._r8
+    flow(:,:)        = 0._r8
+    eroup_lagi(:,:)  = 0._r8
+    eroup_lagf(:,:)  = 0._r8
+    erowm_regi(:,:)  = 0._r8
+    erowm_regf(:,:)  = 0._r8
     eroutup_avg(:,:) = 0._r8
-    erlat_avg(:,:) = 0._r8
+    erlat_avg(:,:)   = 0._r8
+
+    if (inundflag) then
+       ! If inundation scheme is turned on :
+       !if ( Tctl%OPT_inund .eq. 1 ) then
+       allocate ( fa_fp_cplPeriod(rtmCTL%begr : rtmCTL%endr), stat=ier )
+       if (ier /= 0) then
+          write(iulog, *) subname,' Allocation ERROR for "fa_fp_cplPeriod".'
+          call shr_sys_abort(subname//' Allocationt ERROR for "fa_fp_cplPeriod".')
+       end if
+       fa_fp_cplPeriod(:) = 0._r8
+       !end if
+
+       allocate ( totalVelo_down(nt_rtm), &
+            totalVelo_up(nt_rtm), &
+            chnlNum_down(nt_rtm), &
+            chnlNum_up(nt_rtm), &
+            stat=ier )
+       if (ier /= 0) then
+          write(iulog, *) subname,' Allocation ERROR for velocity variables.'
+          call shr_sys_abort(subname//' Allocationt ERROR for velocity variables.')
+       end if
+       totalVelo_down(:) = 0._r8
+       totalVelo_up(:) = 0._r8
+       chnlNum_down(:) = 0
+       chnlNum_up(:) = 0
+    end if
 
     !-------------------------------------------------------
     ! Allocate runoff datatype 
@@ -1037,7 +1232,6 @@ contains
        call shr_sys_abort(subname//' ERROR rtmCTL mask')
     endif
 
-
     !-------------------------------------------------------
     ! Compute Sparse Matrix for downstream advection
     !-------------------------------------------------------
@@ -1070,9 +1264,21 @@ contains
        do nr = rtmCTL%begr,rtmCTL%endr
           if (rtmCTL%dsig(nr) > 0) then
              cnt = cnt + 1
-             sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
-             sMat%data%iAttr(igrow,cnt) = rtmCTL%dsig(nr)
              sMat%data%iAttr(igcol,cnt) = rtmCTL%gindex(nr)
+             sMat%data%iAttr(igrow,cnt) = rtmCTL%dsig(nr)
+             sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
+          endif
+       enddo
+
+       call mct_sMatP_Init(sMatP_upstrm, sMat, gsMap_r, gsMap_r, 0, mpicom_rof, ROFID)
+
+       cnt = 0
+       do nr = rtmCTL%begr,rtmCTL%endr
+          if (rtmCTL%dsig(nr) > 0) then
+             cnt = cnt + 1
+             sMat%data%iAttr(igcol,cnt) = rtmCTL%dsig(nr)
+             sMat%data%iAttr(igrow,cnt) = rtmCTL%gindex(nr)
+             sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
           endif
        enddo
 
@@ -1091,6 +1297,7 @@ contains
           avtmp%rAttr(2,cnt) = rtmCTL%dsig(nr)
        enddo
        call mct_avect_gather(avtmp,avtmpG,gsmap_r,mastertask,mpicom_rof)
+       call mct_avect_clean(avtmp)
        if (masterproc) then
           cnt = 0
           do n = 1,rtmlon*rtmlat
@@ -1100,8 +1307,8 @@ contains
           enddo
 
           call mct_sMat_init(sMat, gsize, gsize, cnt)
+          igcol = mct_sMat_indexIA(sMat,'gcol')   ! src
           igrow = mct_sMat_indexIA(sMat,'grow')
-          igcol = mct_sMat_indexIA(sMat,'gcol')
           iwgt  = mct_sMat_indexRA(sMat,'weight')
 
           cnt = 0
@@ -1109,15 +1316,28 @@ contains
              if (avtmpG%rAttr(2,n) > 0) then
                 cnt = cnt + 1
                 sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
-                sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(2,n)
                 sMat%data%iAttr(igcol,cnt) = avtmpG%rAttr(1,n)
+                sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(2,n)
              endif
           enddo
-          call mct_avect_clean(avtmpG)
        else
           call mct_sMat_init(sMat,1,1,1)
        endif
-       call mct_avect_clean(avtmp)
+
+       call mct_sMatP_Init(sMatP_upstrm, sMat, gsMap_r, gsMap_r, smat_option, 0, mpicom_rof, ROFID)
+
+       if (masterproc) then
+          cnt = 0
+          do n = 1,rtmlon*rtmlat
+             if (avtmpG%rAttr(2,n) > 0) then
+                cnt = cnt + 1
+                sMat%data%iAttr(igcol,cnt) = avtmpG%rAttr(2,n)
+                sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(1,n)
+                sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
+             endif
+          enddo
+          call mct_avect_clean(avtmpG)
+       endif
 
        call mct_sMatP_Init(sMatP_dnstrm, sMat, gsMap_r, gsMap_r, smat_option, 0, mpicom_rof, ROFID)
 
@@ -1133,10 +1353,15 @@ contains
     do nt = 2,nt_rtm
        write(rList,'(a,i3.3)') trim(rList)//':tr',nt
     enddo
+    write(rList,'(a,i3.3)') trim(rList)//':tr',nt_rtm+1
     if (masterproc) write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
+    call mct_aVect_init(avsrc_upstrm,rList=rList,lsize=rtmCTL%lnumr)
+    call mct_aVect_init(avdst_upstrm,rList=rList,lsize=rtmCTL%lnumr)
     call mct_aVect_init(avsrc_dnstrm,rList=rList,lsize=rtmCTL%lnumr)
     call mct_aVect_init(avdst_dnstrm,rList=rList,lsize=rtmCTL%lnumr)
 
+    lsize = mct_smat_gNumEl(sMatP_upstrm%Matrix,mpicom_rof)
+    if (masterproc) write(iulog,*) subname," Done initializing SmatP_upstrm, nElements = ",lsize
     lsize = mct_smat_gNumEl(sMatP_dnstrm%Matrix,mpicom_rof)
     if (masterproc) write(iulog,*) subname," Done initializing SmatP_dnstrm, nElements = ",lsize
 
@@ -1160,21 +1385,21 @@ contains
        cnt = rtmCTL%endr - rtmCTL%begr + 1
 
        call mct_sMat_init(sMat, gsize, gsize, cnt)
+       igcol = mct_sMat_indexIA(sMat,'gcol')   ! src
        igrow = mct_sMat_indexIA(sMat,'grow')
-       igcol = mct_sMat_indexIA(sMat,'gcol')
        iwgt  = mct_sMat_indexRA(sMat,'weight')
        cnt = 0
        do nr = rtmCTL%begr,rtmCTL%endr
           if (rtmCTL%outletg(nr) > 0) then
              cnt = cnt + 1
-             sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
-             sMat%data%iAttr(igrow,cnt) = rtmCTL%outletg(nr)
              sMat%data%iAttr(igcol,cnt) = rtmCTL%gindex(nr)
+             sMat%data%iAttr(igrow,cnt) = rtmCTL%outletg(nr)
+             sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
           else
              cnt = cnt + 1
-             sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
-             sMat%data%iAttr(igrow,cnt) = rtmCTL%gindex(nr)
              sMat%data%iAttr(igcol,cnt) = rtmCTL%gindex(nr)
+             sMat%data%iAttr(igrow,cnt) = rtmCTL%gindex(nr)
+             sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
           endif
        enddo
        if (cnt /= rtmCTL%endr - rtmCTL%begr + 1) then
@@ -1202,22 +1427,22 @@ contains
           cnt = rtmlon*rtmlat
 
           call mct_sMat_init(sMat, gsize, gsize, cnt)
+          igcol = mct_sMat_indexIA(sMat,'gcol')   ! src
           igrow = mct_sMat_indexIA(sMat,'grow')
-          igcol = mct_sMat_indexIA(sMat,'gcol')
           iwgt  = mct_sMat_indexRA(sMat,'weight')
 
           cnt = 0
           do n = 1,rtmlon*rtmlat
              if (avtmpG%rAttr(2,n) > 0) then
                 cnt = cnt + 1
-                sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
-                sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(2,n)
                 sMat%data%iAttr(igcol,cnt) = avtmpG%rAttr(1,n)
+                sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(2,n)
+                sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
              else
                 cnt = cnt + 1
-                sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
-                sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(1,n)
                 sMat%data%iAttr(igcol,cnt) = avtmpG%rAttr(1,n)
+                sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(1,n)
+                sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
              endif
           enddo
           if (cnt /= rtmlon*rtmlat) then
@@ -1244,9 +1469,12 @@ contains
     do nt = 2,nt_rtm
        write(rList,'(a,i3.3)') trim(rList)//':tr',nt
     enddo
+    write(rList,'(a,i3.3)') trim(rList)//':tr',nt_rtm+1
     if (masterproc) write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
     call mct_aVect_init(avsrc_direct,rList=rList,lsize=rtmCTL%lnumr)
     call mct_aVect_init(avdst_direct,rList=rList,lsize=rtmCTL%lnumr)
+!    write(iulog,*) subname,' avsrc_direct lsize = ',iam,mct_aVect_lsize(avsrc_direct)
+!    write(iulog,*) subname,' avdst_direct lsize = ',iam,mct_aVect_lsize(avdst_direct)
 
     lsize = mct_smat_gNumEl(sMatP_direct%Matrix,mpicom_rof)
     if (masterproc) write(iulog,*) subname," Done initializing SmatP_direct, nElements = ",lsize
@@ -1307,13 +1535,13 @@ contains
 
     call t_stopf('mosarti_mosart_init')
 
-#ifdef INCLUDE_WRM
-    call t_startf('mosarti_wrm_init')
     if (wrmflag) then
-       call WRM_init()
-    endif
-    call t_startf('mosarti_wrm_init')
-#endif
+       call t_startf('mosarti_wrm_init')
+       if (wrmflag) then
+          call WRM_init()
+       endif
+       call t_startf('mosarti_wrm_init')
+    end if
 
     !-------------------------------------------------------
     ! Read restart/initial info
@@ -1334,6 +1562,22 @@ contains
        TRunoff%wt   = rtmCTL%wt
        TRunoff%wr   = rtmCTL%wr
        TRunoff%erout= rtmCTL%erout
+
+       if (inundflag) then
+          ! If inundation scheme is turned on :
+          if ( Tctl%OPT_inund .eq. 1 ) then
+             !TRunoff%wf_ini(:) = rtmCTL%wf(:, 1)
+             ! Innudation floodplain water volume (m3)
+             TRunoff%wf_ini(:) = rtmCTL%inundwf(:)
+             ! Inundation floodplain water depth (m)
+             TRunoff%hf_ini(:) = rtmCTL%inundhf(:)
+             ! Inundation floodplain fraction
+             TRunoff%ff_ini(:) = rtmCTL%inundff(:)
+             ! Inundation flooded fraction      
+             TRunoff%ffunit_ini(:) = rtmCTL%inundffunit(:)
+          end if
+       end if
+
     else
 !       do nt = 1,nt_rtm
 !       do nr = rtmCTL%begr,rtmCTL%endr
@@ -1342,17 +1586,140 @@ contains
 !          TRunoff%wr(nr,nt) = rtmCTL%area(nr) * river_depth_minimum * 10._r8
 !       enddo
 !       enddo
+
+        if (wrmflag) then
+           call WRM_computeRelease()
+        endif
+
     endif
 
-    do nt = 1,nt_rtm
-    do nr = rtmCTL%begr,rtmCTL%endr
+    !----------------------------------  
+    ! Set inital condition (water volumes and streamflows) :
+    !----------------------------------  
+
+    if (inundflag .and. nsrest .eq. nsrStartup) then
+
+      do nr = rtmCTL%begr, rtmCTL%endr
+        if ( rtmCTL%mask(nr) .eq. 1 .or. rtmCTL%mask(nr) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
+          ! Water volume (water depth) over hillslopes (m) :
+          rtmCTL%wh(nr, 1) = 0.001_r8   ! Assumed water depth.
+
+          ! Water volume in the subnetwork (tributary channels) (m^3) :
+          rtmCTL%wt(nr, 1) = TUnit%tlen( nr ) * TUnit%twidth( nr ) * 1._r8   ! Assumed water depth.
+
+          ! Water depth in the main channel (m) :
+          wd_chnl = TUnit%rdepth( nr ) * 0.9_r8   ! Assumed water depth (90% full).
+
+          ! Water volume in the main channel (m^3) :
+          rtmCTL%wr(nr, 1) = TUnit%rlen( nr ) * TUnit%rwidth( nr ) * wd_chnl
+
+          ! Hydraulic radius (m) :
+          hydrR = ( TUnit%rwidth( nr ) * wd_chnl ) / ( TUnit%rwidth( nr ) + 2._r8 * wd_chnl )
+
+          ! Estimate channel flow velocity with Manning equation (m/s) :
+          v_chnl = ManningEq ( TUnit%rslp( nr ), TUnit%nr( nr ), hydrR )
+
+          ! Main channel outflow (outflow is negative) (m^3/s) :
+          rtmCTL%erout( nr, 1 ) = - v_chnl * TUnit%rwidth( nr ) * wd_chnl
+
+          if ( Tctl%OPT_inund .eq. 1 ) then
+            rtmCTL%inundwf(nr) = 0._r8
+            rtmCTL%inundhf(nr) = 0._r8
+            rtmCTL%inundff(nr) = 0._r8
+            rtmCTL%inundffunit(nr) = 0._r8                                                           
+          end if
+
+        else
+
+          rtmCTL%wh(nr, 1) = 0._r8
+          rtmCTL%wt(nr, 1) = 0._r8
+          rtmCTL%wr(nr, 1) = 0._r8
+          rtmCTL%erout(nr, 1) = 0._r8
+          if ( Tctl%OPT_inund .eq. 1 ) then
+            rtmCTL%inundwf(nr) = 0._r8
+            rtmCTL%inundhf(nr) = 0._r8
+            rtmCTL%inundff(nr) = 0._r8
+            rtmCTL%inundffunit(nr) = 0._r8
+          end if
+
+        end if
+      end do
+
+      ! For tracer 2 :
+      rtmCTL%wh(:, 2) = 0._r8
+      rtmCTL%wt(:, 2) = 0._r8
+      rtmCTL%wr(:, 2) = 0._r8
+      rtmCTL%erout(:, 2) = 0._r8
+
+      TRunoff%wh   = rtmCTL%wh
+      TRunoff%wt   = rtmCTL%wt
+      TRunoff%wr   = rtmCTL%wr
+      TRunoff%erout= rtmCTL%erout
+
+      if ( Tctl%OPT_inund .eq. 1 ) then
+        TRunoff%wf_ini(:) = rtmCTL%inundwf(:)
+        TRunoff%hf_ini(:) = rtmCTL%inundhf(:)
+        TRunoff%ff_ini(:) = rtmCTL%inundff(:)
+        TRunoff%ffunit_ini(:) = rtmCTL%inundffunit(:)    
+      end if
+
+    end if
+!#endif
+
+    if (inundflag) then
+       do nr = rtmCTL%begr, rtmCTL%endr
+          !if ( TUnit%mask( nr ) .gt. 0 ) then
+          if ( rtmCTL%mask(nr) .eq. 1 .or. rtmCTL%mask(nr) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
+
+             ! Calculate water depth in subnetwork (tributary channels) : 
+             if (Tunit%tlen(nr) == 0.0_r8 .or. Tunit%twidth(nr) == 0.0_r8) then
+                TRunoff%yt( nr, 1 ) = 0.0_r8
+             else
+                TRunoff%yt( nr, 1 ) = TRunoff%wt( nr, 1 ) / TUnit%tlen( nr ) / TUnit%twidth( nr )
+             endif
+             ! Calculate water depth in main channel :
+             if (Tunit%rlen(nr) == 0.0_r8 .or. Tunit%rwidth(nr) == 0.0_r8) then
+                TRunoff%yr( nr, 1 ) = 0.0_r8
+             else
+                TRunoff%yr( nr, 1 ) = TRunoff%wr( nr, 1 ) / TUnit%rlen( nr ) / TUnit%rwidth( nr )
+             endif
+          end if
+       end do
+
+       if ( Tctl%OPT_inund == 1 ) then
+          do nr = rtmCTL%begr, rtmCTL%endr
+             !if ( TUnit%mask( nr ) .gt. 0 ) then
+             if ( rtmCTL%mask(nr) .eq. 1 .or. rtmCTL%mask(nr) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
+
+                ! Total water volume within a computation unit :
+                rtmCTL%volr(nr,1) = TRunoff%wt(nr,1) + TRunoff%wr(nr,1) + TRunoff%wh(nr,1)*rtmCTL%area(nr)*TUnit%frac(nr)     ! times "TUnit%frac( nr )" or not ?
+                if ( Tctl%OPT_inund .eq. 1 ) then
+                   rtmCTL%volr(nr,1) = rtmCTL%volr(nr,1) + TRunoff%wf_ini( nr )
+                endif
+             end if
+          end do
+       else
+          do nr = rtmCTL%begr, rtmCTL%endr
+             !if ( TUnit%mask( nr ) .gt. 0 ) then
+             if ( rtmCTL%mask(nr) .eq. 1 .or. rtmCTL%mask(nr) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
+
+                ! Total water volume within a computation unit :
+                rtmCTL%volr(nr,1) = TRunoff%wt(nr,1) + TRunoff%wr(nr,1) + TRunoff%wh(nr,1)*rtmCTL%area(nr)*TUnit%frac(nr)     ! times "TUnit%frac( nr )" or not ?
+             end if
+          end do
+       endif
+    else
+
+     do nt = 1,nt_rtm
+      do nr = rtmCTL%begr,rtmCTL%endr
        call UpdateState_hillslope(nr,nt)
        call UpdateState_subnetwork(nr,nt)
        call UpdateState_mainchannel(nr,nt)
        rtmCTL%volr(nr,nt) = (TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + &
                              TRunoff%wh(nr,nt)*rtmCTL%area(nr))
-    enddo
-    enddo
+      enddo
+     enddo
+    endif
 
     call t_stopf('mosarti_restart')
 
@@ -1370,10 +1737,10 @@ contains
        call RtmHistHtapesBuild()
     end if
     call RtmHistFldsSet()
+    delt_save = 0.0
 
     if (masterproc) write(iulog,*) subname,' done'
     if (masterproc) call shr_sys_flush(iulog)
-    delt_save = 0.0
 
     call t_stopf('mosarti_histinit')
 
@@ -1407,16 +1774,117 @@ contains
 !
 ! !LOCAL VARIABLES:
 !EOP
-    integer  :: i, j, n, nr, ns, nt, n2, nf ! indices
-    real(r8) :: budget_terms(30,nt_rtm)     ! BUDGET terms
-        ! BUDGET terms 1-10 are for volumes (m3)
-        ! BUDGET terms 11-30 are for flows (m3/s)
-    real(r8) :: budget_input, budget_output, budget_volume, budget_total, &
-                budget_euler, budget_eroutlag
+    integer  :: i, j, n, nr, ns, nt, n2, nf, idam ! indices
+    integer, parameter :: budget_terms_total = 80
+    logical  :: output_all_budget_terms = .false.   ! output flag
+    real(r8) :: budget_terms (budget_terms_total,nt_rtm)    ! local budget sums
+    real(r8) :: budget_global(budget_terms_total,nt_rtm)    ! global budget sums
+
+    real(r8) :: budget_glb_inund(budget_terms_total, nt_rtm)! Global values.
+    real(r8) :: budget_diff                 ! Percentage difference between water volume change and flux difference (%).
+    character( len = 9 ) :: tracerID
+
     real(r8),save :: budget_accum(nt_rtm)   ! BUDGET accumulator over run
     integer ,save :: budget_accum_cnt       ! counter for budget_accum
-    real(r8) :: budget_global(30,nt_rtm)    ! global budget sum
-    logical  :: budget_check                ! do global budget check
+    real(r8) :: budget_input, budget_output, budget_volume, budget_total, &
+                budget_other
+    logical  :: budget_check, budget_write  ! do global budget check
+
+    ! BUDGET term ids
+    ! budget computed in m3 over each coupling period
+    ! use delt_coupling to convert from rates to volumes
+    ! General equation is as follows
+    !   Vf = Vi + input - output + other
+    !     or
+    !   Vf-Vi - input + output - other == 0 for conservation
+    ! budget_volume = Vf-Vi
+    ! budget_input = input
+    ! budget_output = output
+    ! budget_other = other terms
+    ! budget_total = budget_volume - budget_input + budget_output - budget_other
+    ! bv_ generally accumulates a volume (m3)
+    ! br_ generally accumulates a rate (m3/s)
+
+    ! Storage/Volume TERMS (volumes, m3)
+    integer,parameter :: bv_volt_i = 1  ! initial total volume
+    integer,parameter :: bv_volt_f = 2  ! final   total volume
+    integer,parameter :: bv_wt_i   = 3  ! initial wt volume
+    integer,parameter :: bv_wt_f   = 4  ! final   wt volume
+    integer,parameter :: bv_wr_i   = 5  ! initial wr volume
+    integer,parameter :: bv_wr_f   = 6  ! final   wr volume
+    integer,parameter :: bv_wh_i   = 7  ! initial wh volume
+    integer,parameter :: bv_wh_f   = 8  ! final   wh volume
+    integer,parameter :: bv_dstor_i= 9  ! initial dam storage
+    integer,parameter :: bv_dstor_f= 10 ! final   dam storage
+
+    integer,parameter :: bv_fp_i   = 11 ! Initial water volume over floodplains.
+    integer,parameter :: bv_fp_f   = 12 ! Final water volume over floodplains.
+
+    integer,parameter :: bmask_lndErr   = 15 ! Tunit%mask() is land, but rtmCTL%mask() is not land.
+    integer,parameter :: bmask_outErr   = 16 ! Tunit%mask() is basin outlet, but rtmCTL%mask() is not basin outlet.
+    integer,parameter :: bmask_ocnErr   = 17 ! Tunit%mask() is ocean, but rtmCTL%mask() is not ocean.
+
+    integer,parameter :: bmask_uLndrLnd = 31 ! Tunit%mask() is land, rtmCTL%mask() is land.
+    integer,parameter :: bmask_uLndrOut = 32 ! Tunit%mask() is land, rtmCTL%mask() is outlet.
+    integer,parameter :: bmask_uLndrOcn = 33 ! Tunit%mask() is land, rtmCTL%mask() is ocean.
+
+    integer,parameter :: bmask_uOutrLnd = 34 ! Tunit%mask() is outlet, rtmCTL%mask() is land.
+    integer,parameter :: bmask_uOutrOut = 35 ! Tunit%mask() is outlet, rtmCTL%mask() is outlet.
+    integer,parameter :: bmask_uOutrOcn = 36 ! Tunit%mask() is outlet, rtmCTL%mask() is ocean.
+
+    integer,parameter :: bmask_uOcnrLnd = 37 ! Tunit%mask() is ocean, rtmCTL%mask() is land.
+    integer,parameter :: bmask_uOcnrOut = 38 ! Tunit%mask() is ocean, rtmCTL%mask() is outlet.
+    integer,parameter :: bmask_uOcnrOcn = 39 ! Tunit%mask() is ocean, rtmCTL%mask() is ocean.
+
+    ! Input TERMS (rates, m3/s)
+    integer,parameter :: br_qsur   = 20 ! input qsur
+    integer,parameter :: br_qsub   = 21 ! input qsub
+    integer,parameter :: br_qgwl   = 22 ! input qgwl
+    integer,parameter :: br_qdto   = 23 ! input qdto
+    integer,parameter :: br_qdem   = 24 ! input qdem
+
+    ! Output TERMS (rates m3/s or volumes m3)
+    integer,parameter :: br_ocnout = 40 ! runoff output to ocean
+    integer,parameter :: br_lndout = 41 ! runoff output on non ocean points
+    integer,parameter :: br_flood  = 42 ! flood term back to land
+    integer,parameter :: br_direct = 43 ! direct output term
+    integer,parameter :: bv_dsupp_i= 44 ! initial dam supply
+    integer,parameter :: bv_dsupp_f= 45 ! final   dam supply
+
+    integer,parameter :: bv_chnl2fp       = 46 ! Volume of flows from main channels to floodplains (m^3).
+    integer,parameter :: bv_fp2chnl       = 47 ! Volume of flows from floodplains to main channels (m^3).
+    integer,parameter :: br_landOutflow   = 48 ! Total streamflow (flow rate) from land to oceans (m^3/s).
+
+    integer,parameter :: bi_landArea      = 50 ! Total land area (m^2).
+    integer,parameter :: bi_floodedArea   = 51 ! Total flooded area (including channel area) (m^2).
+    integer,parameter :: bi_mainChnlArea  = 52 ! Total channel surface area (m^2).
+
+    integer,parameter :: bVelo_downward   = 55 ! Sum of all downward flow velocities (m/s).
+    integer,parameter :: bVelo_downChnlNo = 56 ! Total number of main channels with downward flow velocities (dimensionless).
+    integer,parameter :: bVelo_upward     = 57 ! Sum of all upward flow velocities (is negative) (m/s).
+    integer,parameter :: bVelo_upChnlNo   = 58 ! Total number of channels with upward flow velocities (dimensionless).
+
+    ! Other Diagnostic TERMS (rates, m3/s)
+    integer,parameter :: br_erolpo = 60 ! erout lag ocn previous
+    integer,parameter :: br_erolco = 61 ! erout lag ocn current
+    integer,parameter :: br_erorpo = 62 ! erout lag ocn previous   (for WRM module. --Inund.)
+    integer,parameter :: br_erorco = 63 ! erout lag ocn current   (for WRM module. --Inund.)
+    integer,parameter :: br_eroutup= 64 ! erout upstream average
+    integer,parameter :: br_erolpn = 65 ! erout lag non-ocn previous
+    integer,parameter :: br_erolcn = 66 ! erout lag non-ocn current
+    integer,parameter :: br_erorpn = 67 ! erout lag non-ocn previous   (for WRM module. --Inund.)
+    integer,parameter :: br_erorcn = 68 ! erout lag non-ocn current   (for WRM module. --Inund.)
+    integer,parameter :: br_erlat  = 69 ! erlateral 
+
+    ! Accumuluation TERMS
+    integer,parameter :: bv_naccum = 80 ! accumulated net budget
+
+    !   volume = 2 - 1 + bv_dstor_f - bv_dstor_i
+    !   input  = br_qsur + br_qsub + br_qgwl + br_qdto + br_qdem
+    !   output = br_ocnout + br_flood + br_direct + 42
+    !   total  = volume - input + output
+    !   erlag  = br_erolpn - br_erolcn
+
     real(r8) :: volr_init                   ! temporary storage to compute dvolrdt
     real(r8),parameter :: budget_tolerance = 1.0e-6   ! budget tolerance, m3/day
     logical  :: abort                       ! abort flag
@@ -1440,61 +1908,103 @@ contains
 !-----------------------------------------------------------------------
 
     call t_startf('mosartr_tot')
-    call shr_sys_flush(iulog)
-
-    call get_curr_date(yr, mon, day, tod)
-    ymd = yr*10000 + mon*100 + day
-    if (tod == 0 .and. masterproc) then
-       write(iulog,*) ' '
-       write(iulog,'(2a,i10,i6)') trim(subname),' model date is',ymd,tod
-    endif
 
     delt_coupling = coupling_period*1.0_r8
+    budget_check = .true.   ! leave this on all the time for now
     if (first_call) then
        budget_accum = 0._r8
        budget_accum_cnt = 0
        if (masterproc) write(iulog,'(2a,g20.12)') trim(subname),' MOSART coupling period ',delt_coupling
     end if
 
-    budget_check = .false.
-    if (day == 1 .and. mon == 1) budget_check = .true.
-    if (tod == 0) budget_check = .true.
     budget_terms = 0._r8
 
     flow = 0._r8
-    erout_prev = 0._r8
+    eroup_lagi = 0._r8
+    eroup_lagf = 0._r8
+    erowm_regi = 0._r8
+    erowm_regf = 0._r8
     eroutup_avg = 0._r8
     erlat_avg = 0._r8
-    rtmCTL%runoff = 0._r8
-    rtmCTL%direct = 0._r8
-    rtmCTL%flood = 0._r8
-    rtmCTL%runofflnd = spval
-    rtmCTL%runoffocn = spval
-    rtmCTL%dvolrdt = 0._r8
-    rtmCTL%dvolrdtlnd = spval
-    rtmCTL%dvolrdtocn = spval
+    rtmCTL%runoff = 0._r8              ! coupler return mosart basin derived flow [m3/s]
+    rtmCTL%direct = 0._r8              ! coupler return direct flow [m3/s]
+    rtmCTL%flood = 0._r8               ! coupler return flood water sent back to clm [m3/s]
+    rtmCTL%runofflnd = spval        ! runoff masked for land (m3 H2O/s) ( spval = 1.e36_r8 )
+    rtmCTL%runoffocn = spval       ! runoff masked for ocn  (m3 H2O/s)
+    rtmCTL%dvolrdt = 0._r8            ! RTM change in storage (mm/s)
+    rtmCTL%dvolrdtlnd = spval      ! dvolrdt masked for land (mm/s)
+    rtmCTL%dvolrdtocn = spval     ! dvolrdt masked for ocn  (mm/s)
 
-    ! BUDGET 
-    ! BUDGET terms 1-10 are for volumes (m3)
-    ! BUDGET terms 11-30 are for flows (m3/s)
-!    if (budget_check) then
+    if (inundflag) then
+       ! If inundation scheme is turned on :
+       if ( Tctl%OPT_inund .eq. 1 ) then
+          vol_chnl2fp = 0._r8
+          vol_fp2chnl = 0._r8
+          fa_fp_cplPeriod(:) = 0._r8
+       end if
+
+       totalVelo_down(:) = 0._r8
+       totalVelo_up(:) = 0._r8
+       chnlNum_down(:) = 0
+       chnlNum_up(:) = 0
+    end if
+
+    if(heatflag) then
+      rtmCTL%templand_Tqsur = spval
+      rtmCTL%templand_Tqsub = spval
+      rtmCTL%templand_Ttrib = spval
+      rtmCTL%templand_Tchanr = spval
+      do n = rtmCTL%begr,rtmCTL%endr
+          if (rtmCTL%mask(n) .eq. 1 .or. rtmCTL%mask(n) .eq. 3) then
+              rtmCTL%templand_Tqsur(n) = 0._r8
+              rtmCTL%templand_Tqsub(n) = 0._r8
+              rtmCTL%templand_Ttrib(n) = 0._r8
+              rtmCTL%templand_Tchanr(n) = 0._r8
+          end if
+      end do
+    end if
+    
+    if (budget_check) then
        call t_startf('mosartr_budget')
        do nt = 1,nt_rtm
        do nr = rtmCTL%begr,rtmCTL%endr
-          budget_terms( 1,nt) = budget_terms( 1,nt) + rtmCTL%volr(nr,nt)
-          budget_terms( 3,nt) = budget_terms( 3,nt) + TRunoff%wt(nr,nt)
-          budget_terms( 5,nt) = budget_terms( 5,nt) + TRunoff%wr(nr,nt)
-          budget_terms( 7,nt) = budget_terms( 7,nt) + TRunoff%wh(nr,nt)*rtmCTL%area(nr)
-          budget_terms(13,nt) = budget_terms(13,nt) + rtmCTL%qsur(nr,nt)
-          budget_terms(14,nt) = budget_terms(14,nt) + rtmCTL%qsub(nr,nt)
-          budget_terms(15,nt) = budget_terms(15,nt) + rtmCTL%qgwl(nr,nt)
-          budget_terms(16,nt) = budget_terms(16,nt) + rtmCTL%qdto(nr,nt)
-          budget_terms(17,nt) = budget_terms(17,nt) + rtmCTL%qsur(nr,nt) + rtmCTL%qsub(nr,nt) + &
-                               rtmCTL%qgwl(nr,nt) + rtmCTL%qdto(nr,nt)
+          budget_terms(bv_volt_i,nt) = budget_terms( bv_volt_i,nt) + rtmCTL%volr(nr,nt)
+          budget_terms(bv_wt_i,nt) = budget_terms(bv_wt_i,nt) + TRunoff%wt(nr,nt)
+          budget_terms(bv_wr_i,nt) = budget_terms(bv_wr_i,nt) + TRunoff%wr(nr,nt)
+          budget_terms(bv_wh_i,nt) = budget_terms(bv_wh_i,nt) + TRunoff%wh(nr,nt)*rtmCTL%area(nr)
+          budget_terms(br_qsur,nt) = budget_terms(br_qsur,nt) + rtmCTL%qsur(nr,nt)*delt_coupling     ! (rtmCTL%qsur 's unit is m^3/s. --Inund.)
+          budget_terms(br_qsub,nt) = budget_terms(br_qsub,nt) + rtmCTL%qsub(nr,nt)*delt_coupling
+          budget_terms(br_qgwl,nt) = budget_terms(br_qgwl,nt) + rtmCTL%qgwl(nr,nt)*delt_coupling
+          budget_terms(br_qdto,nt) = budget_terms(br_qdto,nt) + rtmCTL%qdto(nr,nt)*delt_coupling
+          budget_terms(br_qdem,nt) = budget_terms(br_qdem,nt) + rtmCTL%qdem(nr,nt)*delt_coupling
        enddo
        enddo
+
+       ! If inundation scheme is turned on :
+       if (inundflag .and. Tctl%OPT_inund .eq. 1 ) then
+         do nr = rtmCTL%begr, rtmCTL%endr
+
+           !if ( TUnit%mask( nr ) .gt. 0 ) then      ! 0--Ocean; 1--Land; 2--Basin outlet.
+           if ( rtmCTL%mask(nr) .eq. 1 .or. rtmCTL%mask(nr) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
+             budget_terms(bv_fp_i, 1) = budget_terms(bv_fp_i, 1) + TRunoff%wf_ini( nr )
+             !budget_terms(bv_fp_i, 1) = budget_terms(bv_fp_i, 1) + rtmCTL%inundwf(nr)        ! 17-6-7
+           endif
+
+         end do
+       end if
+
+       if (wrmflag) then
+          StorWater%supply = 0._r8             !initial supply at the start
+          nt = 1
+          do nr = rtmCTL%begr,rtmCTL%endr
+             budget_terms(bv_dsupp_i,nt) = budget_terms(bv_dsupp_i,nt) + StorWater%supply(nr)
+          enddo
+          do idam = 1,ctlSubwWRM%LocalNumDam
+             budget_terms(bv_dstor_i,nt) = budget_terms(bv_dstor_i,nt) + StorWater%storage(idam)
+          enddo
+       endif
        call t_stopf('mosartr_budget')
-!    endif
+    endif ! budget_check
 
     ! data for euler solver, in m3/s here
     do nr = rtmCTL%begr,rtmCTL%endr
@@ -1502,9 +2012,10 @@ contains
        TRunoff%qsur(nr,nt) = rtmCTL%qsur(nr,nt)
        TRunoff%qsub(nr,nt) = rtmCTL%qsub(nr,nt)
        TRunoff%qgwl(nr,nt) = rtmCTL%qgwl(nr,nt)
+       TRunoff%qdem(nr,nt) = rtmCTL%qdem(nr,nt)
     enddo
     enddo
-
+  
     !-----------------------------------
     ! Compute flood
     ! Remove water from mosart and send back to clm
@@ -1512,32 +2023,34 @@ contains
     ! rtmCTL%flood is m3/s here
     !-----------------------------------
 
-    call t_startf('mosartr_flood')
-    nt = 1 
-    rtmCTL%flood = 0._r8
-    do nr = rtmCTL%begr,rtmCTL%endr
-       ! initialize rtmCTL%flood to zero
-       if (rtmCTL%mask(nr) == 1) then
-          if (rtmCTL%volr(nr,nt) > rtmCTL%fthresh(nr)) then 
-             ! determine flux that is sent back to the land
-             ! this is in m3/s
-             rtmCTL%flood(nr) = &
-                  (rtmCTL%volr(nr,nt)-rtmCTL%fthresh(nr)) / (delt_coupling)
+    if (.not.inundflag) then
+       call t_startf('mosartr_flood')
+       nt = 1 
+       rtmCTL%flood = 0._r8
+       do nr = rtmCTL%begr,rtmCTL%endr
+          ! initialize rtmCTL%flood to zero
+          if (rtmCTL%mask(nr) == 1) then
+             if (rtmCTL%volr(nr,nt) > rtmCTL%fthresh(nr)) then 
+                ! determine flux that is sent back to the land
+                ! this is in m3/s
+                rtmCTL%flood(nr) = &
+                     (rtmCTL%volr(nr,nt)-rtmCTL%fthresh(nr)) / (delt_coupling)
 
-             ! rtmCTL%flood will be sent back to land - so must subtract this 
-             ! from the input runoff from land
-             ! tcraig, comment - this seems like an odd approach, you
-             !   might create negative forcing.  why not take it out of
-             !   the volr directly?  it's also odd to compute this
-             !   at the initial time of the time loop.  why not do
-             !   it at the end or even during the run loop as the
-             !   new volume is computed.  fluxout depends on volr, so
-             !   how this is implemented does impact the solution.
-             TRunoff%qsur(nr,nt) = TRunoff%qsur(nr,nt) - rtmCTL%flood(nr)
+                ! rtmCTL%flood will be sent back to land - so must subtract this 
+                ! from the input runoff from land
+                ! tcraig, comment - this seems like an odd approach, you
+                !   might create negative forcing.  why not take it out of
+                !   the volr directly?  it's also odd to compute this
+                !   at the initial time of the time loop.  why not do
+                !   it at the end or even during the run loop as the
+                !   new volume is computed.  fluxout depends on volr, so
+                !   how this is implemented does impact the solution.
+                TRunoff%qsur(nr,nt) = TRunoff%qsur(nr,nt) - rtmCTL%flood(nr)
+             endif
           endif
-       endif
-    enddo
-    call t_stopf('mosartr_flood')
+       enddo
+       call t_stopf('mosartr_flood')
+    endif
 
     !-----------------------------------
     ! DIRECT sMAT transfer to outlet point using sMat
@@ -1606,26 +2119,41 @@ contains
 
           !---- water outside the basin ---
           !---- *** DO NOT TURN THIS ONE OFF, conservation will fail *** ---
-          if (TUnit%mask(nr) > 0) then
-             ! mosart euler
+          if (inundflag) then
+             if ( rtmCTL%mask(nr) .eq. 1 .or. rtmCTL%mask(nr) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
+
+             else
+                avsrc_direct%rAttr(nt,cnt) = avsrc_direct%rAttr(nt,cnt) + &
+                     TRunoff%qsub(nr,nt) + &
+                     TRunoff%qsur(nr,nt) + &
+                     TRunoff%qgwl(nr,nt)
+                TRunoff%qsub(nr,nt) = 0._r8
+                TRunoff%qsur(nr,nt) = 0._r8
+                TRunoff%qgwl(nr,nt) = 0._r8
+             end if
+
           else
-             avsrc_direct%rAttr(nt,cnt) = avsrc_direct%rAttr(nt,cnt) + &
-                TRunoff%qsub(nr,nt) + &
-                TRunoff%qsur(nr,nt) + &
-                TRunoff%qgwl(nr,nt)
-             TRunoff%qsub(nr,nt) = 0._r8
-             TRunoff%qsur(nr,nt) = 0._r8
-             TRunoff%qgwl(nr,nt) = 0._r8
-          endif
+             if (TUnit%mask(nr) > 0) then
+                ! mosart euler
+             else
+                avsrc_direct%rAttr(nt,cnt) = avsrc_direct%rAttr(nt,cnt) + &
+                     TRunoff%qsub(nr,nt) + &
+                     TRunoff%qsur(nr,nt) + &
+                     TRunoff%qgwl(nr,nt)
+                TRunoff%qsub(nr,nt) = 0._r8
+                TRunoff%qsur(nr,nt) = 0._r8
+                TRunoff%qgwl(nr,nt) = 0._r8
+             end if
+          end if
 
           !---- all nt=2 water ---
           !---- can turn off euler_calc for this tracer ----
           if (nt == 2) then
              TUnit%euler_calc(nt) = .false.
              avsrc_direct%rAttr(nt,cnt) = avsrc_direct%rAttr(nt,cnt) + &
-                TRunoff%qsub(nr,nt) + &
-                TRunoff%qsur(nr,nt) + &
-                TRunoff%qgwl(nr,nt)
+                  TRunoff%qsub(nr,nt) + &
+                  TRunoff%qsur(nr,nt) + &
+                  TRunoff%qgwl(nr,nt)
              TRunoff%qsub(nr,nt) = 0._r8
              TRunoff%qsur(nr,nt) = 0._r8
              TRunoff%qgwl(nr,nt) = 0._r8
@@ -1664,12 +2192,12 @@ contains
        nsub = nsub + 1
     end if
     delt = delt_coupling/float(nsub)
+  
     if (delt /= delt_save) then
        if (masterproc) then
           write(iulog,'(2a,2g20.12,2i12)') trim(subname),' MOSART delt update from/to',delt_save,delt,nsub_save,nsub
        end if
     endif
-
     nsub_save = nsub
     delt_save = delt
     Tctl%DeltaT = delt
@@ -1679,41 +2207,44 @@ contains
     ! --- convert TRunoff fields from m3/s to m/s before calling Euler
     !-----------------------------------
 
-!    if (budget_check) then
-       call t_startf('mosartr_budget')
-       do nt = 1,nt_rtm
-       do nr = rtmCTL%begr,rtmCTL%endr
-          budget_terms(20,nt) = budget_terms(20,nt) + TRunoff%qsur(nr,nt) + &
-             TRunoff%qsub(nr,nt) + TRunoff%qgwl(nr,nt)
-          budget_terms(29,nt) = budget_terms(29,nt) + TRunoff%qgwl(nr,nt)
-       enddo
-       enddo
-       call t_stopf('mosartr_budget')
-!    endif
-
     do nt = 1,nt_rtm
     do nr = rtmCTL%begr,rtmCTL%endr
        TRunoff%qsur(nr,nt) = TRunoff%qsur(nr,nt) / rtmCTL%area(nr)
        TRunoff%qsub(nr,nt) = TRunoff%qsub(nr,nt) / rtmCTL%area(nr)
        TRunoff%qgwl(nr,nt) = TRunoff%qgwl(nr,nt) / rtmCTL%area(nr)
+       TRunoff%qdem(nr,nt) = TRunoff%qdem(nr,nt) / rtmCTL%area(nr) !m3 to m
     enddo
     enddo
 
     do ns = 1,nsub
 
-       if (wrmflag) then
-#ifdef INCLUDE_WRM
-          call t_startf('mosartr_euler')
-          call Euler_WRM()
-          call t_stopf('mosartr_euler')
-#else
-          call shr_sys_abort(trim(subname)//' ERROR WRM not compiled')
-#endif
-       else
-          call t_startf('mosartr_euler')
-          call Euler()
-          call t_stopf('mosartr_euler')
+       ! this advances the model time one coupling period when ns=1
+       ! we want the advance in the subcycling because of the new_month flag
+       ! this should really be advancing delt per ns, not coupling_period per call, but
+       ! need to modify clock initialization and restart for that to be supported
+       ! and make sure a rational timestep doesn't lead to accumulating errors
+       call advance_timestep(ns)
+
+       call get_curr_date(yr, mon, day, tod)
+       ymd = yr*10000 + mon*100 + day
+       if (tod == 0 .and. masterproc) then
+          write(iulog,*) ' '
+          write(iulog,'(2a,i4,a,i10,i6)') trim(subname),' subcycling=',ns,': model date=',ymd,tod
        endif
+     
+       !if (inundflag .and. wrmflag .eq. 0) then !use Luo's scheme when inundation is on and WM is off (keep it for now - tz)
+       !   call t_startf('mosartr_inund_sim')
+       !   call MOSARTinund_simulate ( )
+       !   call t_stopf('mosartr_inund_sim')
+       !else ! other cases
+       
+       call t_startf('mosartr_euler')
+#ifdef DEBUG
+       write(iulog,*) 'clm-mosart subT: (call Euler) ns=', ns
+#endif
+       call Euler()
+       call t_stopf('mosartr_euler')
+
 
 ! tcraig - NOT using this now, but leave it here in case it's useful in the future
 !   for some runoff terms.
@@ -1729,17 +2260,17 @@ contains
 !
 !       call t_startf('mosartr_SMdnstrm')
 !
-!       !--- copy fluxout into avsrc_dnstrm ---
+!       !--- copy fluxout into avsrc_upstrm ---
 !       cnt = 0
 !       do n = rtmCTL%begr,rtmCTL%endr
 !          cnt = cnt + 1
 !          do nt = 1,nt_rtm
-!             avsrc_dnstrm%rAttr(nt,cnt) = fluxout(n,nt)
+!             avsrc_upstrm%rAttr(nt,cnt) = fluxout(n,nt)
 !          enddo
 !       enddo
-!       call mct_avect_zero(avdst_dnstrm)
+!       call mct_avect_zero(avdst_upstrm)
 !
-!       call mct_sMat_avMult(avsrc_dnstrm, sMatP_dnstrm, avdst_dnstrm)
+!       call mct_sMat_avMult(avsrc_upstrm, sMatP_upstrm, avdst_upstrm)
 !
 !       !--- add mapped fluxout to sfluxin ---
 !       cnt = 0
@@ -1747,7 +2278,7 @@ contains
 !       do n = rtmCTL%begr,rtmCTL%endr
 !          cnt = cnt + 1
 !          do nt = 1,nt_rtm
-!             sfluxin(n,nt) = sfluxin(n,nt) + avdst_dnstrm%rAttr(nt,cnt)
+!             sfluxin(n,nt) = sfluxin(n,nt) + avdst_upstrm%rAttr(nt,cnt)
 !          enddo
 !       enddo
 !       call t_stopf('mosartr_SMdnstrm')
@@ -1759,12 +2290,79 @@ contains
        do nt = 1,nt_rtm
        do nr = rtmCTL%begr,rtmCTL%endr
           flow(nr,nt) = flow(nr,nt) + TRunoff%flow(nr,nt)
-          erout_prev(nr,nt) = erout_prev(nr,nt) + TRunoff%erout_prev(nr,nt)
+          eroup_lagi(nr,nt) = eroup_lagi(nr,nt) + TRunoff%eroup_lagi(nr,nt)
+          eroup_lagf(nr,nt) = eroup_lagf(nr,nt) + TRunoff%eroup_lagf(nr,nt)
+          erowm_regi(nr,nt) = erowm_regi(nr,nt) + TRunoff%erowm_regi(nr,nt)
+          erowm_regf(nr,nt) = erowm_regf(nr,nt) + TRunoff%erowm_regf(nr,nt)
           eroutup_avg(nr,nt) = eroutup_avg(nr,nt) + TRunoff%eroutup_avg(nr,nt)
           erlat_avg(nr,nt) = erlat_avg(nr,nt) + TRunoff%erlat_avg(nr,nt)
        enddo
        enddo
 
+
+       if (inundflag) then
+          ! If 'budget_check' is true & inundation scheme is turned on :
+          if ( inundflag .and. budget_check .and. Tctl%OPT_inund .eq. 1 ) then
+
+             do nt = 1, 1
+                do nr = rtmCTL%begr, rtmCTL%endr
+
+                   !if (Tunit%mask(nr) .eq. 1 .or. Tunit%mask(nr) .eq. 2) then     ! 1 -- Land; 2 -- Basin outlet.
+                   if (rtmCTL%mask(nr) .eq. 1 .or. rtmCTL%mask(nr) .eq. 3) then    ! 1 -- Land; 3 -- Basin outlet.
+
+                      ! Accumulate flow from main channel to floodplain (for all local grid cells and all sub-steps of coupling period):
+                      if ( TRunoff%se_rf(nr) .gt. 0._r8 ) then
+                         vol_chnl2fp = vol_chnl2fp + TRunoff%se_rf(nr)
+
+                         ! Accumulate flow from floodplain to main channel (for all local grid cells and all sub-steps of coupling period):
+                      elseif ( TRunoff%se_rf(nr) .lt. 0._r8 ) then
+                         vol_fp2chnl = vol_fp2chnl - TRunoff%se_rf(nr)
+                      end if
+
+                      ! Accumulate inundated floodplain area for all sub-steps of coupling period (for each land grid cell):
+                      fa_fp_cplPeriod(nr) = fa_fp_cplPeriod(nr) + TRunoff%fa_fp(nr)
+                   end if
+
+                end do
+             end do
+          end if
+
+          if ( budget_check ) then
+
+             do nt = 1, nt_rtm
+                do nr = rtmCTL%begr, rtmCTL%endr
+
+                   if (rtmCTL%mask(nr) .eq. 1 .or. rtmCTL%mask(nr) .eq. 3) then    ! 1 -- Land; 3 -- Basin outlet.
+                      !if (Tunit%mask(nr) .eq. 1 .or. Tunit%mask(nr) .eq. 2) then     ! 1 -- Land; 2 -- Basin outlet.
+
+                      ! Flow velocity is downward or zero:
+                      if ( TRunoff%vr( nr, nt ) .ge. 0._r8 ) then
+                         totalVelo_down(nt) = totalVelo_down(nt) + TRunoff%vr( nr, nt )
+                         chnlNum_down(nt) = chnlNum_down(nt) + 1
+
+                         ! Flow velocity is upward (is negative):
+                      else
+                         totalVelo_up(nt) = totalVelo_up(nt) + TRunoff%vr( nr, nt )
+                         chnlNum_up(nt) = chnlNum_up(nt) + 1
+                      end if
+
+                   end if
+                end do
+             end do
+          end if
+       end if
+
+       if(heatflag) then
+         do n = rtmCTL%begr,rtmCTL%endr
+             if (rtmCTL%mask(n) .eq. 1 .or. rtmCTL%mask(n) .eq. 3) then
+                 rtmCTL%templand_Tqsur(n) = rtmCTL%templand_Tqsur(n) + THeat%Tqsur(n)
+                 rtmCTL%templand_Tqsub(n) = rtmCTL%templand_Tqsub(n) + THeat%Tqsub(n)
+                 rtmCTL%templand_Ttrib(n) = rtmCTL%templand_Ttrib(n) + THeat%Tt_avg(n)
+                 rtmCTL%templand_Tchanr(n) = rtmCTL%templand_Tchanr(n) + THeat%Tr_avg(n)
+             end if
+         enddo
+       end if
+       
     enddo ! nsub
 
     !-----------------------------------
@@ -1772,9 +2370,17 @@ contains
     !-----------------------------------
 
     flow        = flow        / float(nsub)
-    erout_prev  = erout_prev  / float(nsub)
+    eroup_lagi  = eroup_lagi  / float(nsub)
+    eroup_lagf  = eroup_lagf  / float(nsub)
+    erowm_regi  = erowm_regi  / float(nsub)
+    erowm_regf  = erowm_regf  / float(nsub)
     eroutup_avg = eroutup_avg / float(nsub)
     erlat_avg   = erlat_avg   / float(nsub)
+
+    if (inundflag) then
+       ! Mean inundated floodplain area for all sub-steps of coupling period (for each land grid cell):
+       fa_fp_cplPeriod = fa_fp_cplPeriod / float(nsub)
+    endif
 
     !-----------------------------------
     ! update states when subsycling completed
@@ -1785,22 +2391,59 @@ contains
     rtmCTL%wr      = TRunoff%wr
     rtmCTL%erout   = TRunoff%erout
 
+    ! If inundation scheme is turned on :
+    if (inundflag .and. Tctl%OPT_inund .eq. 1 ) then
+      !rtmCTL%wf(:, 1) = TRunoff%wf_ini(:)
+      rtmCTL%inundwf(:) = TRunoff%wf_ini(:)
+      rtmCTL%inundhf(:) = TRunoff%hf_ini(:)
+      rtmCTL%inundff(:) = TRunoff%ff_ini(:)
+      rtmCTL%inundffunit(:) = TRunoff%ffunit_ini(:)
+    end if
+
+    if (heatflag) then
+      rtmCTL%Tqsur   = THeat%Tqsur
+      rtmCTL%Tqsub   = THeat%Tqsub
+      rtmCTL%Tt      = THeat%Tt
+      rtmCTL%Tr      = THeat%Tr
+      rtmCTL%Ha_rout   = THeat%Ha_rout
+    
+      do n = rtmCTL%begr,rtmCTL%endr
+         if(rtmCTL%mask(n) .eq. 1 .or. rtmCTL%mask(n) .eq. 3) then
+            rtmCTL%templand_Tqsur(n) = rtmCTL%templand_Tqsur(n) / float(nsub)
+            rtmCTL%templand_Tqsub(n) = rtmCTL%templand_Tqsub(n) / float(nsub)
+            rtmCTL%templand_Ttrib(n) = rtmCTL%templand_Ttrib(n) / float(nsub)
+            rtmCTL%templand_Tchanr(n) = rtmCTL%templand_Tchanr(n) / float(nsub)
+         else
+            rtmCTL%templand_Tqsur(n) = spval
+            rtmCTL%templand_Tqsub(n) = spval
+            rtmCTL%templand_Ttrib(n) = spval
+            rtmCTL%templand_Tchanr(n) = spval
+         end if
+      end do
+    end if
+
     do nt = 1,nt_rtm
     do nr = rtmCTL%begr,rtmCTL%endr
        volr_init = rtmCTL%volr(nr,nt)
        rtmCTL%volr(nr,nt) = (TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + &
-                             TRunoff%wh(nr,nt)*rtmCTL%area(nr))
+                             TRunoff%wh(nr,nt)*rtmCTL%area(nr)) * TUnit%frac(nr)
+       if (inundflag .and. Tctl%OPT_inund == 1 .and. nt == 1) then
+          rtmCTL%volr(nr,nt) = rtmCTL%volr(nr,nt) + TRunoff%wf_ini(nr)
+       endif
        rtmCTL%dvolrdt(nr,nt) = (rtmCTL%volr(nr,nt) - volr_init) / delt_coupling
        rtmCTL%runoff(nr,nt) = flow(nr,nt)
 
-       rtmCTL%runofftot(nr,nt) = rtmCTL%direct(nr,nt)
-       if (rtmCTL%mask(nr) == 1) then
-          rtmCTL%runofflnd(nr,nt) = rtmCTL%runoff(nr,nt)
-          rtmCTL%dvolrdtlnd(nr,nt)= rtmCTL%dvolrdt(nr,nt)
-       elseif (rtmCTL%mask(nr) >= 2) then
-          rtmCTL%runoffocn(nr,nt) = rtmCTL%runoff(nr,nt)
-          rtmCTL%runofftot(nr,nt) = rtmCTL%runofftot(nr,nt) + rtmCTL%runoff(nr,nt)
-          rtmCTL%dvolrdtocn(nr,nt)= rtmCTL%dvolrdt(nr,nt)
+       rtmCTL%runofftot(nr,nt) = rtmCTL%direct(nr,nt)      ! coupler return direct flow [m3/s]
+       if (rtmCTL%mask(nr) == 1) then                      ! 1=Land (rtmCTL%mask are consistent with Tunit%mask ? --Inund.)
+
+          rtmCTL%runofflnd(nr,nt) = rtmCTL%runoff(nr,nt)   ! (rtmCTL%runoff is main channel outflow (m^3/s). --Inund.)
+          rtmCTL%dvolrdtlnd(nr,nt)= rtmCTL%dvolrdt(nr,nt)  ! RTM change in storage (m^3/s, --Inund.)
+
+       elseif (rtmCTL%mask(nr) >= 2) then                  ! 2=ocean, 3=outlet
+
+          rtmCTL%runoffocn(nr,nt) = rtmCTL%runoff(nr,nt)   ! (For ocean, rtmCTL%runoff should be zero ? --Inund.)
+          rtmCTL%runofftot(nr,nt) = rtmCTL%runofftot(nr,nt) + rtmCTL%runoff(nr,nt)   ! total runoff masked for ocn (direct flow + channel outflow, --Inund.)
+          rtmCTL%dvolrdtocn(nr,nt)= rtmCTL%dvolrdt(nr,nt)  ! RTM change in storage (For ocean, storage [rtmCTL%volr] and storage change [rtmCTL%dvolrdt] should be zeros. --Inund.)
        endif
     enddo
     enddo
@@ -1811,58 +2454,199 @@ contains
     ! BUDGET
     !-----------------------------------
 
-    ! BUDGET 
-    ! BUDGET terms 1-10 are for volumes (m3)
-    ! BUDGET terms 11-30 are for flows (m3/s)
-    ! BUDGET only ocean runoff and direct gets out of the system
-!    if (budget_check) then
+    budget_write = .false.
+    if (day == 1 .and. mon == 1) budget_write = .true.
+    if (tod == 0) budget_write = .true.
+
+    if (budget_check) then
        call t_startf('mosartr_budget')
        do nt = 1,nt_rtm
        do nr = rtmCTL%begr,rtmCTL%endr
-          budget_terms( 2,nt) = budget_terms( 2,nt) + rtmCTL%volr(nr,nt)
-          budget_terms( 4,nt) = budget_terms( 4,nt) + TRunoff%wt(nr,nt)
-          budget_terms( 6,nt) = budget_terms( 6,nt) + TRunoff%wr(nr,nt)
-          budget_terms( 8,nt) = budget_terms( 8,nt) + TRunoff%wh(nr,nt)*rtmCTL%area(nr)
-          budget_terms(21,nt) = budget_terms(21,nt) + rtmCTL%direct(nr,nt)
-          if (rtmCTL%mask(nr) >= 2) then
-             budget_terms(18,nt) = budget_terms(18,nt) + rtmCTL%runoff(nr,nt)
-             budget_terms(26,nt) = budget_terms(26,nt) - erout_prev(nr,nt)
-             budget_terms(27,nt) = budget_terms(27,nt) + flow(nr,nt)
-          else
-             budget_terms(23,nt) = budget_terms(23,nt) - erout_prev(nr,nt)
-             budget_terms(24,nt) = budget_terms(24,nt) + flow(nr,nt)
+          budget_terms(bv_volt_f,nt) = budget_terms(bv_volt_f,nt) + rtmCTL%volr(nr,nt)                     ! (Final total volume at end of coupling period. --Inund.)
+          budget_terms(bv_wt_f,nt) = budget_terms(bv_wt_f,nt) + TRunoff%wt(nr,nt)
+          budget_terms(bv_wr_f,nt) = budget_terms(bv_wr_f,nt) + TRunoff%wr(nr,nt)
+          budget_terms(bv_wh_f,nt) = budget_terms(bv_wh_f,nt) + TRunoff%wh(nr,nt)*rtmCTL%area(nr)
+          budget_terms(br_direct,nt) = budget_terms(br_direct,nt) + rtmCTL%direct(nr,nt)*delt_coupling     ! (Volume of direct 'flow' to ocean. --Inund.)
+
+          if (rtmCTL%mask(nr) >= 2) then    ! (2 -- Ocean; 3 -- Outlet. --Inund.)
+
+             budget_terms(br_ocnout,nt) = budget_terms(br_ocnout,nt) + rtmCTL%runoff(nr,nt)*delt_coupling  ! (Volume of outflows to oceans. Note that rtmCTL%runoff is averge value of sub-steps used by MOSART. --Inund.)
+             budget_terms(br_erolpo,nt) = budget_terms(br_erolpo,nt) + eroup_lagi(nr,nt)*delt_coupling     ! (Volume of outflows to oceans in the previous MOSART sub-step. 
+                                                                                                           ! Also eroup_lagi is averge value of several previous MOSART sub-steps. --Inund.)
+             budget_terms(br_erolco,nt) = budget_terms(br_erolco,nt) + eroup_lagf(nr,nt)*delt_coupling     ! (Volume of outflows to oceans. Actually eroup_lagf is same as the above rtmCTL%runoff. --Inund.)
+             budget_terms(br_erorpo,nt) = budget_terms(br_erorpo,nt) + erowm_regi(nr,nt)*delt_coupling
+             budget_terms(br_erorco,nt) = budget_terms(br_erorco,nt) + erowm_regf(nr,nt)*delt_coupling
+          else       ! (1--Land. --Inund.)
+             budget_terms(br_lndout,nt) = budget_terms(br_lndout,nt) + rtmCTL%runoff(nr,nt)*delt_coupling  ! (Sum up channel outflow volumes of all land cells. --Inund.)
+             budget_terms(br_erolpn,nt) = budget_terms(br_erolpn,nt) + eroup_lagi(nr,nt)*delt_coupling     ! (Sum up channel outflow volumes of all land cells in the previous MOSART sub-step. --Inund.)
+             budget_terms(br_erolcn,nt) = budget_terms(br_erolcn,nt) + eroup_lagf(nr,nt)*delt_coupling     ! (Sum up channel outflow volumes of all land cells. Actually eroup_lagf is same as the above rtmCTL%runoff. --Inund.)
+             budget_terms(br_erorpn,nt) = budget_terms(br_erorpn,nt) + erowm_regi(nr,nt)*delt_coupling
+             budget_terms(br_erorcn,nt) = budget_terms(br_erorcn,nt) + erowm_regf(nr,nt)*delt_coupling
           endif
-          budget_terms(25,nt) = budget_terms(25,nt) - eroutup_avg(nr,nt)
-          budget_terms(28,nt) = budget_terms(28,nt) - erlat_avg(nr,nt)
-          budget_terms(22,nt) = budget_terms(22,nt) + rtmCTL%runoff(nr,nt) + rtmCTL%direct(nr,nt) + eroutup_avg(nr,nt) 
+          budget_terms(br_eroutup,nt) = budget_terms(br_eroutup,nt) - eroutup_avg(nr,nt)*delt_coupling     ! (Sum up upstream inflow volumes of all land cells. --Inund.)
+          budget_terms(br_erlat,nt) = budget_terms(br_erlat,nt) - erlat_avg(nr,nt)*delt_coupling           ! (Sum up lateral inflow volumes of all land cells. --Inund.)
        enddo
        enddo
        nt = 1
        do nr = rtmCTL%begr,rtmCTL%endr
-          budget_terms(19,nt) = budget_terms(19,nt) + rtmCTL%flood(nr)
-          budget_terms(22,nt) = budget_terms(22,nt) + rtmCTL%flood(nr)
+          budget_terms(br_flood,nt) = budget_terms(br_flood,nt) + rtmCTL%flood(nr)*delt_coupling           ! (This flood volume is from former method. It equals zero when the inundation scheme is turned on. --Inund.)
        enddo
+       if (wrmflag) then
+          nt = 1
+          do nr = rtmCTL%begr,rtmCTL%endr
+             budget_terms(bv_dsupp_f,nt) = budget_terms(bv_dsupp_f,nt) + StorWater%supply(nr)
+             ! convert supply from m3 per coupling delta (3hrs)  to mm/s (N. Sun)
+             if (StorWater%supply(nr) > 0) then            
+               StorWater%supply(nr) = StorWater%supply(nr)/delt_coupling               
+             endif
+          end do
+          do idam = 1,ctlSubwWRM%LocalNumDam
+             budget_terms(bv_dstor_f,nt) = budget_terms(bv_dstor_f,nt) + StorWater%storage(idam)
+          enddo
+       endif
+
+       if (inundflag) then
+          do nt = 1, nt_rtm
+             do nr = rtmCTL%begr, rtmCTL%endr
+                if (rtmCTL%mask(nr) .eq. 3) then        ! 3 -- Basin outlet (downstream is ocean).
+                   !if ( Tunit%mask(nr) .eq. 2 ) then      ! 2 -- Basin outlet (downstream is ocean).
+                   ! Total streamflow (flow rate) from land to oceans (m^3/s):
+                   budget_terms(br_landOutflow, nt) = budget_terms(br_landOutflow, nt) + rtmCTL%runoff(nr, nt)
+                end if
+             end do
+          end do
+
+          ! If inundation scheme is turned on :
+          if (inundflag .and. Tctl%OPT_inund .eq. 1 ) then
+
+             ! Total volume of flows from main channels to floodplains (for all local grid cells and all sub-steps of coupling period) (m^3):
+             budget_terms(bv_chnl2fp, 1) = vol_chnl2fp
+
+             ! Total volume of flows from floodplains to main channels (for all local grid cells and all sub-steps of coupling period) (m^3):
+             budget_terms(bv_fp2chnl, 1) = vol_fp2chnl
+
+             do nr = rtmCTL%begr, rtmCTL%endr
+                if (rtmCTL%mask(nr) .eq. 1 .or. rtmCTL%mask(nr) .eq. 3) then      ! 1 -- Land; 3 -- Basin outlet.
+                   !if ( Tunit%mask(nr) .eq. 1 .or. Tunit%mask(nr) .eq. 2 ) then     ! 1--Land; 2--Basin outlet (downstream is ocean).
+
+                   ! Water volume over floodplains at coupling-period end:
+                   if ( Tctl%OPT_inund .eq. 1 ) then
+                      budget_terms(bv_fp_f, 1) = budget_terms(bv_fp_f, 1) + TRunoff%wf_ini(nr)
+                   endif
+
+                   ! Sum up channel surface area:
+                   budget_terms(bi_mainChnlArea, 1) = budget_terms(bi_mainChnlArea, 1) + TUnit%area(nr) * TUnit%frac(nr) * TUnit%a_chnl(nr)
+
+                   ! Sum up flooded area (including channel area):
+                   budget_terms(bi_floodedArea, 1) = budget_terms(bi_floodedArea, 1) + fa_fp_cplPeriod(nr) + TUnit%area(nr) * TUnit%frac(nr) * TUnit%a_chnl(nr)
+
+                   ! Sum up land area:
+                   budget_terms(bi_landArea, 1) = budget_terms(bi_landArea, 1) + TUnit%area(nr) * TUnit%frac(nr)
+                end if
+             end do
+          end if
+
+          do nt = 1, nt_rtm
+             ! Total downward flow velocity (for all local grid cells and all sub-steps of coupling period) (m/s):
+             budget_terms(bVelo_downward, nt) = totalVelo_down(nt)
+
+             ! Total upward flow velocity (for all local grid cells and all sub-steps of coupling period) (m/s):
+             budget_terms(bVelo_upward, nt) = totalVelo_up(nt)
+
+             ! Total number of channels with downward flow velocities (for all local grid cells and all sub-steps of coupling period):
+             budget_terms(bVelo_downChnlNo, nt) = chnlNum_down(nt)
+
+             ! Total number of channels with upward flow velocities (for all local grid cells and all sub-steps of coupling period):
+             budget_terms(bVelo_upChnlNo, nt) = chnlNum_up(nt)
+          end do
+
+          !--- Debug: compare rtmCTL%mask() and Tunit%mask() ---
+          do nr = rtmCTL%begr, rtmCTL%endr
+             ! Tunit%mask() is land, but rtmCTL%mask() is not land :
+             if ( Tunit%mask(nr) .eq. 1 .and. rtmCTL%mask(nr) .ne. 1 ) then
+                budget_terms(bmask_lndErr, 1) = budget_terms(bmask_lndErr, 1) + 1
+             end if
+
+             ! Tunit%mask() is basin outlet, but rtmCTL%mask() is not basin outlet :
+             if ( Tunit%mask(nr) .eq. 2 .and. rtmCTL%mask(nr) .ne. 3 ) then
+                budget_terms(bmask_outErr, 1) = budget_terms(bmask_outErr, 1) + 1
+             end if
+
+             ! Tunit%mask() is ocean, but rtmCTL%mask() is not ocean :
+             if ( Tunit%mask(nr) .eq. 0 .and. rtmCTL%mask(nr) .ne. 2 ) then
+                budget_terms(bmask_ocnErr, 1) = budget_terms(bmask_ocnErr, 1) + 1
+             end if
+
+             ! Tunit%mask() is land, rtmCTL%mask() is land :
+             if ( Tunit%mask(nr) .eq. 1 .and. rtmCTL%mask(nr) .eq. 1 ) then
+                budget_terms(bmask_uLndrLnd, 1) = budget_terms(bmask_uLndrLnd, 1) + 1
+             end if
+
+             ! Tunit%mask() is land, rtmCTL%mask() is outlet :
+             if ( Tunit%mask(nr) .eq. 1 .and. rtmCTL%mask(nr) .eq. 3 ) then
+                budget_terms(bmask_uLndrOut, 1) = budget_terms(bmask_uLndrOut, 1) + 1
+             end if
+
+             ! Tunit%mask() is land, rtmCTL%mask() is ocean :
+             if ( Tunit%mask(nr) .eq. 1 .and. rtmCTL%mask(nr) .eq. 2 ) then
+                budget_terms(bmask_uLndrOcn, 1) = budget_terms(bmask_uLndrOcn, 1) + 1
+             end if
+
+             ! Tunit%mask() is outlet, rtmCTL%mask() is land :
+             if ( Tunit%mask(nr) .eq. 2 .and. rtmCTL%mask(nr) .eq. 1 ) then
+                budget_terms(bmask_uOutrLnd, 1) = budget_terms(bmask_uOutrLnd, 1) + 1
+             end if
+
+             ! Tunit%mask() is outlet, rtmCTL%mask() is outlet :
+             if ( Tunit%mask(nr) .eq. 2 .and. rtmCTL%mask(nr) .eq. 3 ) then
+                budget_terms(bmask_uOutrOut, 1) = budget_terms(bmask_uOutrOut, 1) + 1
+             end if
+
+             ! Tunit%mask() is outlet, rtmCTL%mask() is ocean :
+             if ( Tunit%mask(nr) .eq. 2 .and. rtmCTL%mask(nr) .eq. 2 ) then
+                budget_terms(bmask_uOutrOcn, 1) = budget_terms(bmask_uOutrOcn, 1) + 1
+             end if
+
+             ! Tunit%mask() is ocean, rtmCTL%mask() is land :
+             if ( Tunit%mask(nr) .eq. 0 .and. rtmCTL%mask(nr) .eq. 1 ) then
+                budget_terms(bmask_uOcnrLnd, 1) = budget_terms(bmask_uOcnrLnd, 1) + 1
+             end if
+
+             ! Tunit%mask() is ocean, rtmCTL%mask() is outlet :
+             if ( Tunit%mask(nr) .eq. 0 .and. rtmCTL%mask(nr) .eq. 3 ) then
+                budget_terms(bmask_uOcnrOut, 1) = budget_terms(bmask_uOcnrOut, 1) + 1
+             end if
+
+             ! Tunit%mask() is ocean, rtmCTL%mask() is ocean :
+             if ( Tunit%mask(nr) .eq. 0 .and. rtmCTL%mask(nr) .eq. 2 ) then
+                budget_terms(bmask_uOcnrOcn, 1) = budget_terms(bmask_uOcnrOcn, 1) + 1
+             end if
+
+          end do
+          !--- Debug ---
+       endif
 
        ! accumulate the budget total over the run to make sure it's decreasing on avg
        budget_accum_cnt = budget_accum_cnt + 1
        do nt = 1,nt_rtm
-          budget_volume = (budget_terms( 2,nt) - budget_terms( 1,nt)) / delt_coupling
-          budget_input  = (budget_terms(13,nt) + budget_terms(14,nt) + &
-                           budget_terms(15,nt) + budget_terms(16,nt))
-          budget_output = (budget_terms(18,nt) + budget_terms(19,nt) + &
-                           budget_terms(21,nt))
-          budget_total  = budget_volume - budget_input + budget_output
-          budget_accum(nt) = budget_accum(nt) + budget_total
-          budget_terms(30,nt) = budget_accum(nt)/budget_accum_cnt
+          budget_volume =  budget_terms(bv_volt_f,nt) - budget_terms(bv_volt_i,nt) + &
+                           budget_terms(bv_dstor_f,nt) - budget_terms(bv_dstor_i,nt)             ! (Volume change during a coupling period. --Inund.)
+          budget_input  =  budget_terms(br_qsur,nt) + budget_terms(br_qsub,nt) + &
+                           budget_terms(br_qgwl,nt) + budget_terms(br_qdto,nt)
+          budget_output =  budget_terms(br_ocnout,nt) + budget_terms(br_flood,nt) + &
+                           budget_terms(br_direct,nt) + &
+                           budget_terms(bv_dsupp_f,nt) - budget_terms(bv_dsupp_i,nt)
+          budget_accum(nt) = budget_accum(nt) + budget_volume - budget_input + budget_output     ! (Accumulate the water balance errors. 
+                                                                                                 ! 'budget_volume - budget_input + budget_output' should not be zero. 
+                                                                                                 ! Because water is not balanced for grid cells of one computation node. --Inund.)
+          budget_terms(bv_naccum,nt) = budget_accum(nt)/budget_accum_cnt                         ! (Average water balance error of all coupling periods up to now. --Inund.)
        enddo
        call t_stopf('mosartr_budget')
+    endif  ! budget_check
 
-    if (budget_check) then
+    if (budget_check .and. budget_write) then
        call t_startf('mosartr_budget')
        !--- check budget
-
-       ! convert fluxes from m3/s to m3 by mult by coupling_period
-       budget_terms(11:30,:) = budget_terms(11:30,:) * delt_coupling
 
        ! convert terms from m3 to million m3
        budget_terms(:,:) = budget_terms(:,:) * 1.0e-6_r8
@@ -1874,71 +2658,340 @@ contains
        if (masterproc) then
           write(iulog,'(2a,i10,i6)') trim(subname),' MOSART BUDGET diagnostics (million m3) for ',ymd,tod
           do nt = 1,nt_rtm
-            budget_volume = (budget_global( 2,nt) - budget_global( 1,nt))
-            budget_input  = (budget_global(13,nt) + budget_global(14,nt) + &
-                             budget_global(15,nt) + budget_global(16,nt))
-            budget_output = (budget_global(18,nt) + budget_global(19,nt) + &
-                             budget_global(21,nt))
-            budget_total  = budget_volume - budget_input + budget_output
-            budget_euler  = budget_volume - budget_global(20,nt) + budget_global(18,nt)
-            budget_eroutlag = budget_global(23,nt) - budget_global(24,nt)
-            write(iulog,'(2a,i4)')        trim(subname),'  tracer = ',nt
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   volume   init = ',nt,budget_global(1,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   volume  final = ',nt,budget_global(2,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   volumeh  init = ',nt,budget_global(7,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   volumeh final = ',nt,budget_global(8,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   volumet  init = ',nt,budget_global(3,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   volumet final = ',nt,budget_global(4,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   volumer  init = ',nt,budget_global(5,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   volumer final = ',nt,budget_global(6,nt)
-           !write(iulog,'(2a)') trim(subname),'----------------'
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   input surface = ',nt,budget_global(13,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   input subsurf = ',nt,budget_global(14,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   input gwl     = ',nt,budget_global(15,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   input dto     = ',nt,budget_global(16,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   input total   = ',nt,budget_global(17,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   input check   = ',nt,budget_input - budget_global(17,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   input euler   = ',nt,budget_global(20,nt)
-           !write(iulog,'(2a)') trim(subname),'----------------'
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   output flow   = ',nt,budget_global(18,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   output direct = ',nt,budget_global(21,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   output flood  = ',nt,budget_global(19,nt)
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   output total  = ',nt,budget_global(22,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   output check  = ',nt,budget_output - budget_global(22,nt)
-           !write(iulog,'(2a)') trim(subname),'----------------'
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   sum input     = ',nt,budget_input
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   sum dvolume   = ',nt,budget_volume
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   sum output    = ',nt,budget_output
-           !write(iulog,'(2a)') trim(subname),'----------------'
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   net (dv-i+o)  = ',nt,budget_total
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   net euler     = ',nt,budget_euler
-            write(iulog,'(2a,i4,f22.6)') trim(subname),'   eul erout lag = ',nt,budget_eroutlag
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   accum (dv-i+o)= ',nt,budget_global(30,nt)
-           !write(iulog,'(2a)') trim(subname),'----------------'
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   erout_prev  no= ',nt,budget_global(23,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   erout       no= ',nt,budget_global(24,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   eroutup_avg   = ',nt,budget_global(25,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   erout_prev out= ',nt,budget_global(26,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   erout      out= ',nt,budget_global(27,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   erlateral     = ',nt,budget_global(28,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   euler gwl     = ',nt,budget_global(29,nt)
-           !write(iulog,'(2a,i4,f22.6)') trim(subname),'   net main chan = ',nt,budget_global(6,nt)-budget_global(5,nt)+budget_global(24,nt)-budget_global(23,nt)+budget_global(27,nt)+budget_global(28,nt)+budget_global(29,nt)
-           !write(iulog,'(2a)') trim(subname),'----------------'
+            budget_volume = (budget_global(bv_volt_f,nt) - budget_global(bv_volt_i,nt) + &
+                             budget_global(bv_dstor_f,nt) - budget_global(bv_dstor_i,nt))   !(Global volume change during a coupling period. --Inund.)
+            budget_input  = (budget_global(br_qsur,nt) + budget_global(br_qsub,nt) + &
+                             budget_global(br_qgwl,nt) + budget_global(br_qdto,nt))
+            budget_output = (budget_global(br_ocnout,nt) + budget_global(br_flood,nt) + &
+                             budget_global(br_direct,nt) + &
+                             budget_global(bv_dsupp_f,nt) - budget_global(bv_dsupp_i,nt))
+            ! erout lag, need to remove current term and add in previous term, current term used in next timestep
+            budget_other  = budget_global(br_erolpn,nt) - budget_global(br_erolcn,nt) + &   !('previous MOSART sub-step channel outflow volume'-'current MOSART sub-step channel outflow volume'. --Inund.)
+                            budget_global(br_erorpn,nt) - budget_global(br_erorcn,nt)       !(When WRM module is on: 'previous MOSART sub-step channel outflow volume'-'current MOSART sub-step channel outflow volume'. --Inund.)
+            budget_total  = budget_volume - budget_input + budget_output - budget_other     !('budget_total' is supposed to be zero if water balance is perfect. --Inund.)
 
-            if ((budget_total-budget_eroutlag) > 1.0e-6) then
+            write(iulog,'(2a)') trim(subname),'-----------------------------------------------------------------'
+            write(iulog,'(2a,i4)')        trim(subname),'  tracer = ',nt
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume wh    = ',nt,budget_global(bv_wh_f,nt)-budget_global(bv_wh_i,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume wt    = ',nt,budget_global(bv_wt_f,nt)-budget_global(bv_wt_i,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume wr    = ',nt,budget_global(bv_wr_f,nt)-budget_global(bv_wr_i,nt)
+
+            ! If inundation scheme is turned on :
+            if (inundflag .and. Tctl%OPT_inund .eq. 1 ) then
+              if ( nt .eq. 1 ) then
+                write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume wf    = ',nt,budget_global(bv_fp_f,nt)-budget_global(bv_fp_i,nt)
+              end if
+            end if
+
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   dvolume dstor = ',nt,budget_global(bv_dstor_f,nt)-budget_global(bv_dstor_i,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' * dvolume total = ',nt,budget_volume   !(Global volume change during a coupling period. --Inund.)
+          if (output_all_budget_terms) then
+            write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x dvolume check = ',nt,budget_volume - &
+                                                                             (budget_global(bv_wh_f,nt)-budget_global(bv_wh_i,nt) + &
+                                                                              budget_global(bv_wt_f,nt)-budget_global(bv_wt_i,nt) + &
+                                                                              budget_global(bv_wr_f,nt)-budget_global(bv_wr_i,nt) + &
+                                                                              budget_global(bv_dstor_f,nt)-budget_global(bv_dstor_i,nt)),&
+                                                                              ' (should be zero)'
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volume   init = ',nt,budget_global(bv_volt_i,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volume  final = ',nt,budget_global(bv_volt_f,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumeh  init = ',nt,budget_global(bv_wh_i,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumeh final = ',nt,budget_global(bv_wh_f,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumet  init = ',nt,budget_global(bv_wt_i,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumet final = ',nt,budget_global(bv_wt_f,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumer  init = ',nt,budget_global(bv_wr_i,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x volumer final = ',nt,budget_global(bv_wr_f,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x storage  init = ',nt,budget_global(bv_dstor_i,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x storage final = ',nt,budget_global(bv_dstor_f,nt)
+          endif
+            write(iulog,'(2a)') trim(subname),'----------------'
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input surface = ',nt,budget_global(br_qsur,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input subsurf = ',nt,budget_global(br_qsub,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input gwl     = ',nt,budget_global(br_qgwl,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input dto     = ',nt,budget_global(br_qdto,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   input demand -not included-  = ',nt,budget_global(br_qdem,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' * input total   = ',nt,budget_input
+          if (output_all_budget_terms) then
+            write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x input check   = ',nt,budget_input - &
+                                                                             (budget_global(br_qsur,nt)+budget_global(br_qsub,nt)+ &
+                                                                              budget_global(br_qgwl,nt)+budget_global(br_qdto,nt)), &
+                     ' (should be zero)'
+                                                                             
+          endif
+            write(iulog,'(2a)') trim(subname),'----------------'
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   output runoff = ',nt,budget_global(br_ocnout,nt)   !(Outflows to oceans. --Inund.)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   output direct = ',nt,budget_global(br_direct,nt)   !(Direct flows to oceans. --Inund.)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   output flood  = ',nt,budget_global(br_flood,nt)    !(Former flood to land. --Inund.)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   output supply = ',nt,budget_global(bv_dsupp_f,nt)-budget_global(bv_dsupp_i,nt)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' * output total  = ',nt,budget_output
+          if (output_all_budget_terms) then
+            write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x output check  = ',nt,budget_output - &
+                                                                             (budget_global(br_ocnout,nt) + budget_global(br_direct,nt) + &
+                                                                              budget_global(br_flood,nt) + &
+                                                                              budget_global(bv_dsupp_f,nt)-budget_global(bv_dsupp_i,nt)), &
+                                                                             ' (should be zero)'
+          endif
+            write(iulog,'(2a)') trim(subname),'----------------'
+            !(--Inund. 'previous MOSART sub-step channel outflow volume'-'current MOSART sub-step channel outflow volume': )
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   other dwn lag = ',nt,budget_global(br_erolpn,nt) - budget_global(br_erolcn,nt)
+
+            !(--Inund. When WRM module is on: 'previous MOSART sub-step channel outflow volume'-'current MOSART sub-step channel outflow volume': )
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   other reg lnd = ',nt,budget_global(br_erorpn,nt) - budget_global(br_erorcn,nt)
+
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' * other total   = ',nt,budget_other
+          if (output_all_budget_terms) then
+            write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x other check   = ',nt,budget_other - &
+                                                                            (budget_global(br_erolpn,nt) - budget_global(br_erolcn,nt) + &
+                                                                             budget_global(br_erorpn,nt) - budget_global(br_erorcn,nt)), &
+                                                                            ' (should be zero)'
+          endif
+            write(iulog,'(2a)') trim(subname),'----------------'
+          if (output_all_budget_terms) then
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   sum dvolume   = ',nt,budget_volume     !(Global volume change during a coupling period. --Inund.)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   sum input     = ',nt,budget_input
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   sum output    = ',nt,budget_output
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),'   sum other     = ',nt,budget_other      !(Channel outflow volume difference between previous and current MOSART sub-step. --Inund.) 
+          endif
+            write(iulog,'(2a,i4,f22.6,a)') trim(subname),' * sum budget ** = ',nt,budget_total,' (should be zero, dv-in+out-oth)'
+          if (output_all_budget_terms) then
+            ! accum budget is just dv-i+o and should show that over time, the other terms go to zero (lag yes, reg land no)
+            write(iulog,'(2a)') trim(subname),'----------------'
+            write(iulog,'(2a,i4,f22.6,a)') trim(subname),' x accum budget  = ',nt,budget_global(bv_naccum,nt),' (should tend to zero over run, dv-in+out)'          ! (Average water balance error of all coupling periods up to now. --Inund.)
+            write(iulog,'(2a)') trim(subname),'----------------'
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x runoff     ocn= ',nt,budget_global(br_ocnout,nt)      !(Outflows to oceans. --Inund.)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x eroup_lagi ocn= ',nt,budget_global(br_erolpo,nt)      !(Outflows to oceans in the previous MOSART sub-step. --Inund.)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x eroup_lagf ocn= ',nt,budget_global(br_erolco,nt)      !(Outflows to oceans in the current MOSART sub-step. 
+                                                                                                                   !Actually 'eroup_lagf' is same as the above 'runoff'. --Inund.)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x erowm_regi ocn= ',nt,budget_global(br_erorpo,nt)      !(When WRM module is on: Outflows to oceans in the previous MOSART sub-step. --Inund.)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x erowm_regf ocn= ',nt,budget_global(br_erorco,nt)      !(When WRM module is on: Outflows to oceans in the current MOSART sub-step. --Inund.)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x other reg ocn = ',nt,budget_global(br_erorpo,nt) - budget_global(br_erorco,nt) !(Difference between the above two amounts. --Inund.)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x runoff     lnd= ',nt,budget_global(br_lndout,nt)      !(Total volume of channel outflows of all land cells. --Inund.)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x eroup_lagi lnd= ',nt,budget_global(br_erolpn,nt)      !(Total volume of all channel outflows in the previous MOSART sub-step. --Inund.)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x eroup_lagf lnd= ',nt,budget_global(br_erolcn,nt)      !(Total volume of all channel outflows in the current MOSART sub-step. --Inund.)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x erowm_regi lnd= ',nt,budget_global(br_erorpn,nt)      !(When WRM module is on: Total volume of all channel outflows in the previous MOSART sub-step. --Inund.)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x erowm_regf lnd= ',nt,budget_global(br_erorcn,nt)      !(When WRM module is on: Total volume of all channel outflows in the current MOSART sub-step. --Inund.)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x eroutup_avg   = ',nt,budget_global(br_eroutup,nt)     !(Total volume of upstream inflow amounts of all land cells. --Inund.)
+            write(iulog,'(2a,i4,f22.6  )') trim(subname),' x erlateral     = ',nt,budget_global(br_erlat,nt)       !(Total volume of lateral inflow amounts of all main channels. --Inund.)
+            write(iulog,'(2a)') trim(subname),'----------------'
+          endif
+
+            if ((budget_total) > 1.0e-6) then
                write(iulog,'(2a,i4)') trim(subname),' ***** BUDGET WARNING error gt 1. m3 for nt = ',nt
             endif
-            if ((budget_total+budget_eroutlag) >= 1.0e-6) then
-               if ((budget_total-budget_eroutlag)/(budget_total+budget_eroutlag) > 0.001_r8) then
-                  write(iulog,'(2a,i4)') trim(subname),' ***** BUDGET WARNING out of balance for nt = ',nt
-               endif
-            endif
-          enddo
+          enddo   ! (do nt = 1,nt_rtm   --Inund.)
           write(iulog,'(a)') '----------------------------------- '
-       endif
+
+          if (inundflag) then
+             write(iulog,'(a)') ' '
+             write(iulog,'(a)') '=================================================== '
+             write(iulog,'(a)') ' '
+
+             write(iulog,'(a)') 'MOSART-Inundation simulation information (global total or average values):'
+
+             ! Unit conversion (from million m^3 to km^3 (cubic kilometer) ):
+             !budget_glb_km3 = budget_global / 1000._r8
+
+             ! Unit conversion:
+
+             ! From million m^3 to km^3 :
+             budget_glb_inund(bv_volt_i, 1) = budget_global(bv_volt_i, 1) / 1000._r8   ! Initial total surface-water volume.
+             budget_glb_inund(bv_volt_f, 1) = budget_global(bv_volt_f, 1) / 1000._r8   ! Final total surface-water volume.
+             budget_glb_inund(bv_wt_i, 1) = budget_global(bv_wt_i, 1) / 1000._r8       ! Initial water volume in subnetworks.
+             budget_glb_inund(bv_wt_f, 1) = budget_global(bv_wt_f, 1) / 1000._r8       ! Final water volume in subnetworks.
+             budget_glb_inund(bv_wr_i, 1) = budget_global(bv_wr_i, 1) / 1000._r8       ! Initial water volume in main channels.
+             budget_glb_inund(bv_wr_f, 1) = budget_global(bv_wr_f, 1) / 1000._r8       ! Final water volume in main channels.
+             budget_glb_inund(bv_wh_i, 1) = budget_global(bv_wh_i, 1) / 1000._r8       ! Inital water volume over hillslopes.
+             budget_glb_inund(bv_wh_f, 1) = budget_global(bv_wh_f, 1) / 1000._r8       ! Final water volume over hillslopes.
+             budget_glb_inund(br_qsur, 1) = budget_global(br_qsur, 1) / 1000._r8       ! Input surface runoff.
+             budget_glb_inund(br_qsub, 1) = budget_global(br_qsub, 1) / 1000._r8       ! Input sub-surface runoff.
+             budget_glb_inund(br_qgwl, 1) = budget_global(br_qgwl, 1) / 1000._r8       ! Input from glacier, wetland or lake.
+             budget_glb_inund(br_qdto, 1) = budget_global(br_qdto, 1) / 1000._r8       ! Input direct-to-ocean runoff.
+             budget_glb_inund(br_ocnout, 1) = budget_global(br_ocnout, 1) / 1000._r8   ! Output flows to oceans.
+             budget_glb_inund(br_direct, 1) = budget_global(br_direct, 1) / 1000._r8   ! Output direct to oceans.
+
+             if (inundflag .and. Tctl%OPT_inund .eq. 1 ) then
+                budget_glb_inund(bv_fp_i, 1) = budget_global(bv_fp_i, 1) / 1000._r8         ! From million m^3 to km^3 (initial water volume over floodplains).
+                budget_glb_inund(bv_fp_f, 1) = budget_global(bv_fp_f, 1) / 1000._r8         ! From million m^3 to km^3 (final water volume over floodplains).
+                budget_glb_inund(bv_chnl2fp, 1) = budget_global(bv_chnl2fp, 1) / 1000._r8   ! From million m^3 to km^3 (volume of flows from main channels to floodplains).
+                budget_glb_inund(bv_fp2chnl, 1) = budget_global(bv_fp2chnl, 1) / 1000._r8   ! From million m^3 to km^3 (volume of flows from floodplains to main channels).
+                budget_glb_inund(bi_landArea, 1) = budget_global(bi_landArea, 1) * 1.0e6_r8 / 1.0e9_r8         ! First recovered to m^2, then converted to thousand km^2 (total land area).
+                budget_glb_inund(bi_floodedArea, 1) = budget_global(bi_floodedArea, 1) * 1.0e6_r8 / 1.0e9_r8   ! First recovered to m^2, then converted to thousand km^2 (total flooded area [including channel area] ).
+                budget_glb_inund(bi_mainChnlArea, 1) = budget_global(bi_mainChnlArea, 1) * 1.0e6_r8 / 1.0e9_r8 ! First recovered to m^2, then converted to thousand km^2 (total channel surface area).
+             end if
+
+             budget_glb_inund(br_landOutflow, :) = budget_global(br_landOutflow, :) * 1.0e6_r8 / 1000._r8 ! First recovered to m^3/s, then converted to thousand m^3/s (total streamflow [flow rate] from land to oceans).
+
+             budget_glb_inund(bVelo_downward, :) = budget_global(bVelo_downward, :) * 1.0e6_r8 ! Recovered to m/s (sum of all downward flow velocities).
+             budget_glb_inund(bVelo_downChnlNo, :) = budget_global(bVelo_downChnlNo, :) * 1.0e6_r8 ! Recovered to number (total number of main channels with downward flow velocities).
+             budget_glb_inund(bVelo_upward, :) = budget_global(bVelo_upward, :) * 1.0e6_r8     ! Recovered to m/s (sum of all upward flow velocities).
+             budget_glb_inund(bVelo_upChnlNo, :) = budget_global(bVelo_upChnlNo, :) * 1.0e6_r8 ! Recovered to number (total number of main channels with upward flow velocities).
+
+             budget_glb_inund(bmask_lndErr, :) = budget_global(bmask_lndErr, :) * 1.0e6_r8     ! Recovered to number (number of land cells not matched).
+             budget_glb_inund(bmask_outErr, :) = budget_global(bmask_outErr, :) * 1.0e6_r8     ! Recovered to number (number of outlet cells not matched).
+             budget_glb_inund(bmask_ocnErr, :) = budget_global(bmask_ocnErr, :) * 1.0e6_r8     ! Recovered to number (number of ocean cells not matched).
+
+             budget_glb_inund(bmask_uLndrLnd, :) = budget_global(bmask_uLndrLnd, :) * 1.0e6_r8 ! Recovered to number (Tunit is land, rtmCTL is land).
+             budget_glb_inund(bmask_uLndrOut, :) = budget_global(bmask_uLndrOut, :) * 1.0e6_r8 ! Recovered to number (Tunit is land, rtmCTL is outlet).
+             budget_glb_inund(bmask_uLndrOcn, :) = budget_global(bmask_uLndrOcn, :) * 1.0e6_r8 ! Recovered to number (Tunit is land, rtmCTL is ocean).
+
+             budget_glb_inund(bmask_uOutrLnd, :) = budget_global(bmask_uOutrLnd, :) * 1.0e6_r8 ! Recovered to number (Tunit is outlet, rtmCTL is land).
+             budget_glb_inund(bmask_uOutrOut, :) = budget_global(bmask_uOutrOut, :) * 1.0e6_r8 ! Recovered to number (Tunit is outlet, rtmCTL is outlet).
+             budget_glb_inund(bmask_uOutrOcn, :) = budget_global(bmask_uOutrOcn, :) * 1.0e6_r8 ! Recovered to number (Tunit is outlet, rtmCTL is ocean).
+
+             budget_glb_inund(bmask_uOcnrLnd, :) = budget_global(bmask_uOcnrLnd, :) * 1.0e6_r8 ! Recovered to number (Tunit is ocean, rtmCTL is land).
+             budget_glb_inund(bmask_uOcnrOut, :) = budget_global(bmask_uOcnrOut, :) * 1.0e6_r8 ! Recovered to number (Tunit is ocean, rtmCTL is outlet).
+             budget_glb_inund(bmask_uOcnrOcn, :) = budget_global(bmask_uOcnrOcn, :) * 1.0e6_r8 ! Recovered to number (Tunit is ocean, rtmCTL is ocean).
+
+             !--- Debug ---
+             write(iulog,'(a)') ' '
+             write(iulog,'(a)') '---------------------------------'
+             write(iulog,'(a)') '   Compare Tunit%mask() and rtmCTL%mask() :'
+             write(iulog,'(a)') '---------------------------------'
+
+             write(iulog,'(a, f22.6)') '   Tunit%mask() is land, but rtmCTL%mask() is not land, number     =', budget_glb_inund(bmask_lndErr, 1)
+             write(iulog,'(a, f22.6)') '   Tunit%mask() is outlet, but rtmCTL%mask() is not outlet, number =', budget_glb_inund(bmask_outErr, 1)
+             write(iulog,'(a, f22.6)') '   Tunit%mask() is ocean, but rtmCTL%mask() is not ocean, number   =', budget_glb_inund(bmask_ocnErr, 1)
+
+             write(iulog,'(a, f22.6)') '   Tunit%mask() is land, rtmCTL%mask() is land, number     =', budget_glb_inund(bmask_uLndrLnd, 1)
+             write(iulog,'(a, f22.6)') '   Tunit%mask() is land, rtmCTL%mask() is outlet, number   =', budget_glb_inund(bmask_uLndrOut, 1)
+             write(iulog,'(a, f22.6)') '   Tunit%mask() is land, rtmCTL%mask() is ocean, number    =', budget_glb_inund(bmask_uLndrOcn, 1)
+
+             write(iulog,'(a, f22.6)') '   Tunit%mask() is outlet, rtmCTL%mask() is land, number   =', budget_glb_inund(bmask_uOutrLnd, 1)
+             write(iulog,'(a, f22.6)') '   Tunit%mask() is outlet, rtmCTL%mask() is outlet, number =', budget_glb_inund(bmask_uOutrOut, 1)
+             write(iulog,'(a, f22.6)') '   Tunit%mask() is outlet, rtmCTL%mask() is ocean, number  =', budget_glb_inund(bmask_uOutrOcn, 1)
+
+             write(iulog,'(a, f22.6)') '   Tunit%mask() is ocean, rtmCTL%mask() is land, number    =', budget_glb_inund(bmask_uOcnrLnd, 1)
+             write(iulog,'(a, f22.6)') '   Tunit%mask() is ocean, rtmCTL%mask() is outlet, number  =', budget_glb_inund(bmask_uOcnrOut, 1)
+             write(iulog,'(a, f22.6)') '   Tunit%mask() is ocean, rtmCTL%mask() is ocean, number   =', budget_glb_inund(bmask_uOcnrOcn, 1)
+             !--- Debug ---
+
+             do nt = 1, nt_rtm
+
+                write(iulog,'(a)') ' '
+                write(iulog,'(a, i2)') 'tracer =', nt
+
+                write (tracerID, '(a7, i1, a1)') '(tracer', nt, ')'
+
+                write(iulog,'(a)') ' '
+                write(iulog,'(a)') trim(tracerID)//'---------------------------------'
+                write(iulog,'(a)') trim(tracerID)//'   Surface-water balance check:'
+                write(iulog,'(a)') trim(tracerID)//'---------------------------------'
+
+                budget_input = budget_glb_inund(br_qsur, nt) + budget_glb_inund(br_qsub, nt) + budget_glb_inund(br_qgwl, nt) + budget_glb_inund(br_qdto, nt)
+                budget_output = budget_glb_inund(br_ocnout, nt) + budget_glb_inund(br_direct, nt)
+
+                if ( abs( budget_input - budget_output ) .lt. 1e-9_r8 ) then      ! 1e-9 km^3 = 1 m^3
+                   write(iulog,'(a)') trim(tracerID)//'   Total input equals total output to oceans.'
+                else
+                   budget_diff = (budget_glb_inund(bv_volt_f, nt) - budget_glb_inund(bv_volt_i, nt) - budget_input + budget_output)/abs(budget_input - budget_output) * 100._r8
+                   write(iulog,'(a, f22.6)') trim(tracerID)//' * Surface-water balance error(%)             =', budget_diff
+                end if
+
+                write(iulog,'(a, f22.6)') trim(tracerID)//' * Total volume change (km^3)                 =', budget_glb_inund(bv_volt_f, nt) - budget_glb_inund(bv_volt_i, nt)
+                write(iulog,'(a, f22.6)') trim(tracerID)//' * Total input minus output to oceans (km^3)  =', budget_input - budget_output
+                write(iulog,'(a, f22.6)') trim(tracerID)//'   Input surface runoff (km^3)                =', budget_glb_inund(br_qsur, nt)
+                write(iulog,'(a, f22.6)') trim(tracerID)//'   Input sub-surface runoff (km^3)            =', budget_glb_inund(br_qsub, nt)
+                write(iulog,'(a, f22.6)') trim(tracerID)//'   Input from glacier, wetland or lake (km^3) =', budget_glb_inund(br_qgwl, nt)
+                write(iulog,'(a, f22.6)') trim(tracerID)//'   Input direct-to-ocean runoff (km^3)        =', budget_glb_inund(br_qdto, nt)
+                write(iulog,'(a, f22.6)') trim(tracerID)//'   Output flows to oceans (km^3)              =', budget_glb_inund(br_ocnout, nt)
+                write(iulog,'(a, f22.6)') trim(tracerID)//'   Output direct to oceans (km^3)             =', budget_glb_inund(br_direct, nt)
+
+                write(iulog,'(a)') ' '
+                write(iulog,'(a)') trim(tracerID)//'---------------------------------'
+                write(iulog,'(a)') trim(tracerID)//'   Initial surface water volumes (before coupling period):'
+                write(iulog,'(a)') trim(tracerID)//'---------------------------------'
+
+                write(iulog,'(a, f22.6)') trim(tracerID)//' * Total surface water volume (km^3)          =', budget_glb_inund(bv_volt_i, nt)
+                write(iulog,'(a, f22.6)') trim(tracerID)//'   Volume over hillslopes (km^3)              =', budget_glb_inund(bv_wh_i, nt)
+                write(iulog,'(a, f22.6)') trim(tracerID)//'   Volume in subnetworks (km^3)               =', budget_glb_inund(bv_wt_i, nt)
+                write(iulog,'(a, f22.6)') trim(tracerID)//'   Volume in main channels (km^3)             =', budget_glb_inund(bv_wr_i, nt)
+
+                ! If inundation scheme is on & the 1st tracer (liquid water) :
+                if ( inundflag .and. Tctl%OPT_inund .eq. 1 .and. nt .eq. 1 ) then
+                   write(iulog,'(a, f22.6)') trim(tracerID)//'   Volume over fps before cpl period (km^3)   =', budget_glb_inund(bv_fp_i, nt)
+                end if
+
+                write(iulog,'(a)') ' '
+                write(iulog,'(a)') trim(tracerID)//'---------------------------------'
+                write(iulog,'(a)') trim(tracerID)//'   Final surface water volumes (after coupling period):'
+                write(iulog,'(a)') trim(tracerID)//'---------------------------------'
+
+                write(iulog,'(a, f22.6)') trim(tracerID)//' * Total surface water volume (km^3)          =', budget_glb_inund(bv_volt_f, nt)
+                write(iulog,'(a, f22.6)') trim(tracerID)//'   Volume over hillslopes (km^3)              =', budget_glb_inund(bv_wh_f, nt)
+                write(iulog,'(a, f22.6)') trim(tracerID)//'   Volume in subnetworks (km^3)               =', budget_glb_inund(bv_wt_f, nt)
+                write(iulog,'(a, f22.6)') trim(tracerID)//'   Volume in main channels (km^3)             =', budget_glb_inund(bv_wr_f, nt)
+
+                ! If inundation scheme is on & the 1st tracer (liquid water) :
+                if ( inundflag .and. Tctl%OPT_inund .eq. 1 .and. nt .eq. 1 ) then
+                   write(iulog,'(a, f22.6)') trim(tracerID)//'   Volume over floodplains (km^3)             =', budget_glb_inund(bv_fp_f, nt)
+                end if
+
+                ! If inundation scheme is on & the 1st tracer (liquid water) :
+                if ( inundflag .and. Tctl%OPT_inund .eq. 1 .and. nt .eq. 1 ) then
+
+                   write(iulog,'(a)') ' '
+                   write(iulog,'(a)') trim(tracerID)//'---------------------------------'
+                   write(iulog,'(a)') trim(tracerID)//'   Floodplain water balance check:'
+                   write(iulog,'(a)') trim(tracerID)//'---------------------------------'
+
+                   if ( abs( budget_glb_inund(bv_chnl2fp, nt) - budget_glb_inund(bv_fp2chnl, nt) ) .lt. 1e-9_r8 ) then      ! 1e-9 km^3 = 1 m^3
+                      write(iulog,'(a)') trim(tracerID)//'   Total channel-to-floodplain flow equals total floodplain-to-channel flow.'
+                   else
+                      budget_diff = (budget_glb_inund(bv_fp_f, nt) - budget_glb_inund(bv_fp_i, nt) - budget_glb_inund(bv_chnl2fp, nt) + budget_glb_inund(bv_fp2chnl, nt))&
+                           /abs(budget_glb_inund(bv_chnl2fp, nt) - budget_glb_inund(bv_fp2chnl, nt)) * 100._r8
+                      write(iulog,'(a, f22.6)') trim(tracerID)//' * Floodplain water balance error(%)          =', budget_diff
+                   end if
+
+                   write(iulog,'(a, f22.6)') trim(tracerID)//' * Total change of floodplain volume (km^3)   =', budget_glb_inund(bv_fp_f, nt) - budget_glb_inund(bv_fp_i, nt)
+                   write(iulog,'(a, f22.6)') trim(tracerID)//' * Total input minus output (km^3)            =', budget_glb_inund(bv_chnl2fp, nt) - budget_glb_inund(bv_fp2chnl, nt)
+                   write(iulog,'(a, f22.6)') trim(tracerID)//'   Channel-to-floodplain flow (km^3)          =', budget_glb_inund(bv_chnl2fp, nt)
+                   write(iulog,'(a, f22.6)') trim(tracerID)//'   Floodplain-to-channel flow (km^3)          =', budget_glb_inund(bv_fp2chnl, nt)
+
+                   write(iulog,'(a)') ' '
+                   write(iulog,'(a)') trim(tracerID)//'---------------------------------'
+                   write(iulog,'(a)') trim(tracerID)//'   Inundation statistics:'
+                   write(iulog,'(a)') trim(tracerID)//'---------------------------------'
+
+                   write(iulog,'(a, f22.6)') trim(tracerID)//'   Percentage of area flooded (incl. channel) =', budget_glb_inund(bi_floodedArea, nt)/budget_glb_inund(bi_landArea, nt)*100._r8
+                   write(iulog,'(a, f22.6)') trim(tracerID)//'   Percentage of main channel surface area    =', budget_glb_inund(bi_mainChnlArea, nt)/budget_glb_inund(bi_landArea, nt)*100._r8
+                   write(iulog,'(a, f22.6)') trim(tracerID)//'   Total land area (k*km^2)                   =', budget_glb_inund(bi_landArea, nt)
+                   write(iulog,'(a, f22.6)') trim(tracerID)//'   Total flooded area (incl. channel; k*km^2) =', budget_glb_inund(bi_floodedArea, nt)
+                   write(iulog,'(a, f22.6)') trim(tracerID)//'   Total main channel surface area (k*km^2)   =', budget_glb_inund(bi_mainChnlArea, nt)
+
+                end if
+
+                write(iulog,'(a)') ' '
+                write(iulog,'(a)') trim(tracerID)//'---------------------------------'
+                write(iulog,'(a)') trim(tracerID)//'   Main channel flow statistics:'
+                write(iulog,'(a)') trim(tracerID)//'---------------------------------'
+
+                ! Number of channels with downward velocities (this is mean value for sub-steps in a coupling period):
+                write(iulog,'(a, f22.6)') trim(tracerID)//'   Number of channels with downward velocities=', budget_glb_inund(bVelo_downChnlNo, nt)/float(nsub)
+                if ( budget_glb_inund(bVelo_downChnlNo, nt) .gt. 0 ) then
+                   write(iulog,'(a, f22.6)') trim(tracerID)//'   Average downward flow velocity (m/s)       =', budget_glb_inund(bVelo_downward, nt)/budget_glb_inund(bVelo_downChnlNo, nt)
+                else
+                   write(iulog,'(a, f22.6)') trim(tracerID)//'   Average downward flow velocity (m/s)       =', 0._r8
+                end if
+
+                ! Number of channels with upward velocities (this is mean value for sub-steps in a coupling period):
+                write(iulog,'(a, f22.6)') trim(tracerID)//'   Number of channels with upward velocities  =', budget_glb_inund(bVelo_upChnlNo, nt)/float(nsub)
+                if ( budget_glb_inund(bVelo_upChnlNo, nt) .gt. 0 ) then
+                   write(iulog,'(a, f22.6)') trim(tracerID)//'   Average upward flow velocity (m/s)         =', budget_glb_inund(bVelo_upward, nt)/budget_glb_inund(bVelo_upChnlNo, nt)
+                else
+                   write(iulog,'(a, f22.6)') trim(tracerID)//'   Average upward flow velocity (m/s)         =', 0._r8
+                end if
+
+                write(iulog,'(a, f22.6)') trim(tracerID)//' * Total land-to-ocean streamflow (k*m^3/s)   =', budget_glb_inund(br_landOutflow, nt)
+
+             end do   ! end of 'do nt = 1, nt_rtm'
+
+             write(iulog,'(a)') ' '
+             write(iulog,'(a)') '=================================================== '
+             write(iulog,'(a)') ' '
+          endif
+       endif   ! (End of if (masterproc). --Inund.)
 
        call t_stopf('mosartr_budget')
-    endif  ! budget_check
+    endif  ! budget_write   (end of if (budget_check .and. budget_write). --Inund.)
 
     !-----------------------------------
     ! Write out MOSART history file
@@ -2093,7 +3146,8 @@ contains
   integer :: numDT_r, numDT_t
   integer :: lsize, gsize
   integer :: igrow, igcol, iwgt
-  type(mct_avect) :: avtmp, avtmpG ! temporary avects
+  type(mct_aVect) :: avtmp, avtmpG ! temporary avects
+  type(mct_aVect) :: avsrc, avdst  ! temporary
   type(mct_sMat)  :: sMat          ! temporary sparse matrix, needed for sMatP
   real(r8):: areatot_prev, areatot_tmp, areatot_new
   real(r8):: hlen_max, rlen_min
@@ -2202,7 +3256,7 @@ contains
      call shr_sys_flush(iulog)
 
      do n=rtmCtl%begr, rtmCTL%endr
-        if (TUnit%area(n) < 0._r8) TUnit%area(n) = rtmCTL%area(n)
+        if (TUnit%area(n) <= 0._r8) TUnit%area(n) = rtmCTL%area(n)
         if (TUnit%area(n) /= rtmCTL%area(n)) then
            write(iulog,*) subname,' ERROR area mismatch',TUnit%area(n),rtmCTL%area(n)
            call shr_sys_abort(subname//' ERROR area mismatch')
@@ -2287,6 +3341,19 @@ contains
      if (masterproc) write(iulog,FORMR) trim(subname),' read rwidth ',minval(Tunit%rwidth),maxval(Tunit%rwidth)
      call shr_sys_flush(iulog)
 
+     if (inundflag) then
+        do n = rtmCtl%begr, rtmCTL%endr
+           if ( rtmCTL%mask(n) .eq. 1 .or. rtmCTL%mask(n) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
+
+              ! If Channel area >= unit area * 0.7 (note: 0.7 may be changed) :
+              if ( TUnit%rwidth(n) * TUnit%rlen(n) .ge. TUnit%area(n) * 0.7_r8 ) then
+                 TUnit%rwidth(n) = TUnit%area(n) * 0.7_r8 / TUnit%rlen(n)
+              endif
+
+           end if
+        end do
+     end if
+
      allocate(TUnit%rwidth0(begr:endr))  
      ier = pio_inq_varid(ncid, name='rwid0', vardesc=vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%rwidth0, ier)
@@ -2299,11 +3366,102 @@ contains
      if (masterproc) write(iulog,FORMR) trim(subname),' read rdepth ',minval(Tunit%rdepth),maxval(Tunit%rdepth)
      call shr_sys_flush(iulog)
 
-     allocate(TUnit%nr(begr:endr))  
-     ier = pio_inq_varid(ncid, name='nr', vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%nr, ier)
-     if (masterproc) write(iulog,FORMR) trim(subname),' read nr ',minval(Tunit%nr),maxval(Tunit%nr)
-     call shr_sys_flush(iulog)
+     allocate(TUnit%nr(begr:endr))
+  
+     if (inundflag) then
+        ! Calculate channel Manning roughness coefficients :
+        call calc_chnlMannCoe ( )
+     else
+        !!allocate(TUnit%nr(begr:endr))   !(Repetitive, removed on 6-1-17. --Inund.)
+        ier = pio_inq_varid(ncid, name='nr', vardesc=vardesc)
+        call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%nr, ier)
+        if (masterproc) write(iulog,FORMR) trim(subname),' read nr ',minval(Tunit%nr),maxval(Tunit%nr)
+        call shr_sys_flush(iulog)
+     endif
+
+     if (inundflag) then
+
+        !----------------------------------   
+        ! Check input parameters :
+        !----------------------------------   
+
+       do n = rtmCtl%begr, rtmCTL%endr
+          !if ( Tunit%mask(n) .eq. 1 .or. Tunit%mask(n) .eq. 2 ) then    ! 1-- Land; 2-- Basin outlet.
+          if ( rtmCTL%mask(n) .eq. 1 .or. rtmCTL%mask(n) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
+
+            if ( TUnit%area(n) .le. 0._r8 ) then
+              write( iulog, * ) trim( subname ) // ' ERROR: TUnit%area(n) <= 0 for n=', n
+              call shr_sys_abort( trim( subname ) // ' ERROR: TUnit%area(n) <= 0 ')
+            end if
+
+            if ( TUnit%areaTotal(n) .le. 0._r8 ) then
+              write( iulog, * ) trim( subname ) // ' ERROR: TUnit%areaTotal(n) <= 0 for n=', n
+
+              call shr_sys_abort( trim( subname ) // ' ERROR: TUnit%areaTotal(n) <= 0 ')
+            end if
+
+            if ( TUnit%nh(n) .le. 0._r8 ) then
+              write( iulog, * ) trim( subname ) // ' ERROR: TUnit%nh(n) <= 0 for n=', n
+              call shr_sys_abort( trim( subname ) // ' ERROR: TUnit%nh(n) <= 0 ')
+            end if
+
+            if ( TUnit%hslp(n) .LT. 0._r8 ) then
+              write( iulog, * ) trim( subname ) // ' ERROR: TUnit%hslp(n) < 0 for n=', n
+
+              call shr_sys_abort( trim( subname ) // ' ERROR: TUnit%hslp(n) < 0 ')
+            end if
+
+            if ( TUnit%gxr(n) .LT. 0._r8 ) then
+              write( iulog, * ) trim( subname ) // ' ERROR: TUnit%gxr(n) < 0 for n=', n
+              call shr_sys_abort( trim( subname ) // ' ERROR: TUnit%gxr(n) < 0 ')
+            end if
+
+            if ( TUnit%tslp(n) .LT. 0._r8 ) then
+              write( iulog, * ) trim( subname ) // ' ERROR: TUnit%tslp(n) < 0 for n=', n
+
+              call shr_sys_abort( trim( subname ) // ' ERROR: TUnit%tslp(n) < 0 ')
+            end if
+
+            if ( TUnit%twidth(n) .le. 0._r8 ) then
+              write( iulog, * ) trim( subname ) // ' ERROR: TUnit%twidth(n) <= 0 for n=', n
+              call shr_sys_abort( trim( subname ) // ' ERROR: TUnit%twidth(n) <= 0 ')
+            end if
+
+            if ( TUnit%nt(n) .le. 0._r8 ) then
+              write( iulog, * ) trim( subname ) // ' ERROR: TUnit%nt(n) <= 0 for n=', n
+              call shr_sys_abort( trim( subname ) // ' ERROR: TUnit%nt(n) <= 0 ')
+            end if
+
+            if ( TUnit%rlen(n) .le. 0._r8 ) then
+              write( iulog, * ) trim( subname ) // ' ERROR: TUnit%rlen(n) <= 0 for n=', n
+              call shr_sys_abort( trim( subname ) // ' ERROR: TUnit%rlen(n) <= 0 ')
+            end if
+
+            if ( TUnit%rslp(n) .LT. 0._r8 ) then
+              write( iulog, * ) trim( subname ) // ' ERROR: TUnit%rslp(n) < 0 for n=', n
+
+              call shr_sys_abort( trim( subname ) // ' ERROR: TUnit%rslp(n) < 0 ')
+            end if
+
+            if ( TUnit%rwidth(n) .le. 0._r8 ) then
+              write( iulog, * ) trim( subname ) // ' ERROR: TUnit%rwidth(n) <= 0 for n=', n
+              call shr_sys_abort( trim( subname ) // ' ERROR: TUnit%rwidth(n) <= 0 ')
+            end if
+
+            if ( TUnit%rdepth(n) .le. 0._r8 ) then
+              write( iulog, * ) trim( subname ) // ' ERROR: TUnit%rdepth(n) <= 0 for n=', n
+              call shr_sys_abort( trim( subname ) // ' ERROR: TUnit%rdepth(n) <= 0 ')
+            end if
+
+            if ( TUnit%nr(n) .le. 0._r8 ) then
+              write( iulog, * ) trim( subname ) // ' ERROR: TUnit%nr(n) <= 0 for n=', n
+              call shr_sys_abort( trim( subname ) // ' ERROR: TUnit%nr(n) <= 0 ')
+            end if
+
+          end if
+        end do
+
+     end if
 
      allocate(TUnit%nUp(begr:endr))
      TUnit%nUp = 0
@@ -2313,7 +3471,152 @@ contains
 
      allocate(TUnit%indexDown(begr:endr))
      TUnit%indexDown = 0
+   
+     if (inundflag) then
+       if ( Tctl%RoutingMethod == 4 ) then       ! Use diffusion wave method in channel routing computation.
+          allocate (TUnit%rlen_dstrm(begr:endr))
+          allocate (TUnit%rslp_dstrm(begr:endr))
 
+          ! --------------------------------- 
+          ! retrieve downstream values (TUnit%rlen_dstrm(:) and TUnit%rslp_dstrm(:)) for DW routing.
+          ! --------------------------------- 
+
+          call mct_aVect_init(avsrc,rList='rlen:rslp',lsize=rtmCTL%lnumr)
+          call mct_aVect_init(avdst,rList='rlen:rslp',lsize=rtmCTL%lnumr)
+          call mct_aVect_zero(avsrc)
+          call mct_aVect_zero(avdst)
+          cnt = 0
+          do nr = rtmCTL%begr,rtmCTL%endr
+             cnt = cnt + 1
+             avsrc%rAttr(1,cnt) = TUnit%rlen(nr)
+             avsrc%rAttr(2,cnt) = TUnit%rslp(nr)
+          enddo
+
+          call mct_sMat_avMult(avsrc, sMatP_dnstrm, avdst)
+
+          cnt = 0
+          do nr = rtmCTL%begr,rtmCTL%endr
+             cnt = cnt + 1
+             TUnit%rlen_dstrm(nr) = avdst%rAttr(1,cnt)
+             TUnit%rslp_dstrm(nr) = avdst%rAttr(2,cnt)
+          enddo
+
+          call mct_aVect_clean(avsrc)
+          call mct_aVect_clean(avdst)
+
+          if (masterproc) write(iulog,FORMR) trim(subname),' set rlen_dstrm ',minval(Tunit%rlen_dstrm),maxval(Tunit%rlen_dstrm)
+          call shr_sys_flush(iulog)
+          if (masterproc) write(iulog,FORMR) trim(subname),' set rslp_dstrm ',minval(Tunit%rslp_dstrm),maxval(Tunit%rslp_dstrm)
+          call shr_sys_flush(iulog)
+       end if
+
+       if (Tctl%OPT_inund == 1) then
+          allocate (TUnit%wr_bf(begr:endr))
+          TUnit%wr_bf = 0.0_r8   
+
+          allocate( TUnit%e_eprof_in2( 11, begr:endr ) )    
+          ! --------------------------------- 
+          ! (assign elevation values to TUnit%e_eprof_in2( :, : ) ).
+           
+          ier = pio_inq_varid(ncid, name='ele0', vardesc=vardesc)
+          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(1,:), ier)
+          if (masterproc) write(iulog,FORMR) trim(subname),' read ele0 ',minval(TUnit%e_eprof_in2(1,:)),maxval(TUnit%e_eprof_in2(1,:))
+          call shr_sys_flush(iulog)
+          
+          ier = pio_inq_varid(ncid, name='ele1', vardesc=vardesc)
+          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(2,:), ier)
+          if (masterproc) write(iulog,FORMR) trim(subname),' read ele1 ',minval(TUnit%e_eprof_in2(2,:)),maxval(TUnit%e_eprof_in2(2,:))
+          call shr_sys_flush(iulog)
+          
+          ier = pio_inq_varid(ncid, name='ele2', vardesc=vardesc)
+          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(3,:), ier)
+          if (masterproc) write(iulog,FORMR) trim(subname),' read ele2 ',minval(TUnit%e_eprof_in2(3,:)),maxval(TUnit%e_eprof_in2(3,:))
+          call shr_sys_flush(iulog)
+          
+          ier = pio_inq_varid(ncid, name='ele3', vardesc=vardesc)
+          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(4,:), ier)
+          if (masterproc) write(iulog,FORMR) trim(subname),' read ele3 ',minval(TUnit%e_eprof_in2(4,:)),maxval(TUnit%e_eprof_in2(4,:))
+          call shr_sys_flush(iulog)
+          
+          ier = pio_inq_varid(ncid, name='ele4', vardesc=vardesc)
+          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(5,:), ier)
+          if (masterproc) write(iulog,FORMR) trim(subname),' read ele4 ',minval(TUnit%e_eprof_in2(5,:)),maxval(TUnit%e_eprof_in2(5,:))
+          call shr_sys_flush(iulog)
+          
+          ier = pio_inq_varid(ncid, name='ele5', vardesc=vardesc)
+          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(6,:), ier)
+          if (masterproc) write(iulog,FORMR) trim(subname),' read ele5 ',minval(TUnit%e_eprof_in2(6,:)),maxval(TUnit%e_eprof_in2(6,:))
+          call shr_sys_flush(iulog)
+          
+          ier = pio_inq_varid(ncid, name='ele6', vardesc=vardesc)
+          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(7,:), ier)
+          if (masterproc) write(iulog,FORMR) trim(subname),' read ele6 ',minval(TUnit%e_eprof_in2(7,:)),maxval(TUnit%e_eprof_in2(7,:))
+          call shr_sys_flush(iulog)
+          
+          ier = pio_inq_varid(ncid, name='ele7', vardesc=vardesc)
+          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(8,:), ier)
+          if (masterproc) write(iulog,FORMR) trim(subname),' read ele7 ',minval(TUnit%e_eprof_in2(8,:)),maxval(TUnit%e_eprof_in2(8,:))
+          call shr_sys_flush(iulog)
+          
+          ier = pio_inq_varid(ncid, name='ele8', vardesc=vardesc)
+          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(9,:), ier)
+          if (masterproc) write(iulog,FORMR) trim(subname),' read ele8 ',minval(TUnit%e_eprof_in2(9,:)),maxval(TUnit%e_eprof_in2(9,:))
+          call shr_sys_flush(iulog)
+          
+          ier = pio_inq_varid(ncid, name='ele9', vardesc=vardesc)
+          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(10,:), ier)
+          if (masterproc) write(iulog,FORMR) trim(subname),' read ele9 ',minval(TUnit%e_eprof_in2(10,:)),maxval(TUnit%e_eprof_in2(10,:))
+          call shr_sys_flush(iulog)
+          
+          ier = pio_inq_varid(ncid, name='ele10', vardesc=vardesc)
+          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(11,:), ier)
+          if (masterproc) write(iulog,FORMR) trim(subname),' read ele10 ',minval(TUnit%e_eprof_in2(11,:)),maxval(TUnit%e_eprof_in2(11,:))
+          call shr_sys_flush(iulog)
+     
+          ! --------------------------------- 
+
+          allocate (TUnit%a_eprof(begr:endr,12))
+          TUnit%a_eprof = 0.0_r8
+
+          allocate (TUnit%e_eprof(begr:endr,12))
+          TUnit%e_eprof = 0.0_r8
+
+          allocate (TUnit%a_chnl(begr:endr))
+          TUnit%a_chnl = 0.0_r8
+
+          allocate (TUnit%e_chnl(begr:endr))
+          TUnit%e_chnl = 0.0_r8
+ 
+          allocate (TUnit%ipt_bl_bktp(begr:endr))
+          TUnit%ipt_bl_bktp = 0
+
+          allocate (TUnit%a_eprof3(begr:endr, 13))
+          TUnit%a_eprof3 = 0.0_r8
+
+          allocate (TUnit%e_eprof3(begr:endr, 13))
+          TUnit%e_eprof3 = 0.0_r8
+
+          allocate (TUnit%npt_eprof3(begr:endr))
+          TUnit%npt_eprof3 = 0
+
+          allocate (TUnit%s_eprof3(begr:endr, 13))
+          TUnit%s_eprof3 = 0.0_r8
+
+          allocate (TUnit%alfa3(begr:endr, 13))
+          TUnit%alfa3 = 0.0_r8
+
+          allocate (TUnit%p3(begr:endr, 13))
+          TUnit%p3 = 0.0_r8
+
+          allocate (TUnit%q3(begr:endr, 13))
+          TUnit%q3 = 0.0_r8      
+
+          ! Pre-process elevation-profile parameters :
+          call preprocess_elevProf ( )
+       endif
+
+     end if  ! inundflag
+  
      ! initialize water states and fluxes
      allocate (TRunoff%wh(begr:endr,nt_rtm))
      TRunoff%wh = 0._r8
@@ -2332,7 +3635,10 @@ contains
 
      allocate (TRunoff%qgwl(begr:endr,nt_rtm))
      TRunoff%qgwl = 0._r8
-
+      
+     allocate (TRunoff%qdem(begr:endr,nt_rtm)) 
+     TRunoff%qdem = 0._r8
+  
      allocate (TRunoff%ehout(begr:endr,nt_rtm))
      TRunoff%ehout = 0._r8
 
@@ -2408,8 +3714,17 @@ contains
      allocate (TRunoff%erout(begr:endr,nt_rtm))
      TRunoff%erout = 0._r8
 
-     allocate (TRunoff%erout_prev(begr:endr,nt_rtm))
-     TRunoff%erout_prev = 0._r8
+     allocate (TRunoff%eroup_lagi(begr:endr,nt_rtm))
+     TRunoff%eroup_lagi = 0._r8
+
+     allocate (TRunoff%eroup_lagf(begr:endr,nt_rtm))
+     TRunoff%eroup_lagf = 0._r8
+
+     allocate (TRunoff%erowm_regi(begr:endr,nt_rtm))
+     TRunoff%erowm_regi = 0._r8
+
+     allocate (TRunoff%erowm_regf(begr:endr,nt_rtm))
+     TRunoff%erowm_regf = 0._r8
 
      allocate (TRunoff%eroutUp(begr:endr,nt_rtm))
      TRunoff%eroutUp = 0._r8
@@ -2428,13 +3743,177 @@ contains
     
      allocate (TPara%c_twid(begr:endr))
      TPara%c_twid = 1.0_r8
+   
+     if (inundflag) then
+        !allocate (TRunoff%wr_ini(begr:endr))
+        !TRunoff%wr_ini = 0.0
 
+        !allocate (TRunoff%yr_ini(begr:endr))
+        !TRunoff%yr_ini = 0.0
+
+        allocate (TRunoff%wr_exchg(begr:endr))
+        TRunoff%wr_exchg = 0.0_r8
+
+        allocate (TRunoff%yr_exchg(begr:endr))
+        TRunoff%yr_exchg = 0.0_r8
+
+        if ( Tctl%RoutingMethod == 4 ) then       ! Use diffusion wave method in channel routing computation.
+           allocate (TRunoff%wr_exchg_dstrm(begr:endr))
+           TRunoff%wr_exchg_dstrm = 0.0_r8
+
+           allocate (TRunoff%yr_exchg_dstrm(begr:endr))
+           TRunoff%yr_exchg_dstrm = 0.0_r8    
+        end if
+
+        !allocate (TRunoff%delta_wr(begr:endr))
+        !TRunoff%delta_wr = 0.0
+
+        allocate (TRunoff%wr_rtg(begr:endr))
+        TRunoff%wr_rtg = 0.0_r8    
+
+        allocate (TRunoff%yr_rtg(begr:endr))
+        TRunoff%yr_rtg = 0.0_r8
+
+        if ( Tctl%OPT_inund == 1 ) then
+
+           allocate (TRunoff%wf_ini(begr:endr))
+           TRunoff%wf_ini = 0.0_r8
+
+           allocate (TRunoff%hf_ini(begr:endr))
+           TRunoff%hf_ini = 0.0_r8
+           
+           allocate (TRunoff%ff_ini(begr:endr))
+           TRunoff%ff_ini = 0.0_r8
+
+           allocate (TRunoff%ffunit_ini(begr:endr))
+           TRunoff%ffunit_ini = 0.0_r8
+           allocate (TRunoff%netchange(begr:endr))
+           TRunoff%netchange = 0.0_r8
+           allocate (TRunoff%se_rf(begr:endr))
+           TRunoff%se_rf = 0.0_r8
+
+           allocate (TRunoff%ff_fp(begr:endr))
+           TRunoff%ff_fp = 0.0_r8
+
+           allocate (TRunoff%fa_fp(begr:endr))
+           TRunoff%fa_fp = 0.0_r8
+
+           allocate (TRunoff%wf_exchg(begr:endr))
+           TRunoff%wf_exchg = 0.0_r8    
+
+           allocate (TRunoff%hf_exchg(begr:endr))
+           TRunoff%hf_exchg = 0.0_r8
+
+           allocate (TRunoff%ff_unit(begr:endr))
+           TRunoff%ff_unit = 0.0_r8
+        endif
+     end if
+     
+     if(heatflag) then
+        ! initialize heat states and fluxes
+        allocate (THeat%forc_t(begr:endr))
+        THeat%forc_t = 273.15_r8
+        allocate (THeat%forc_pbot(begr:endr))
+        THeat%forc_pbot = 0._r8
+        allocate (THeat%forc_vp(begr:endr))
+        THeat%forc_vp = 0._r8
+        allocate (THeat%forc_wind(begr:endr))
+        THeat%forc_wind = 0._r8
+        allocate (THeat%forc_lwrad(begr:endr))
+        THeat%forc_lwrad = 0._r8
+        allocate (THeat%forc_solar(begr:endr))
+        THeat%forc_solar = 0._r8
+
+        allocate (THeat%Tqsur(begr:endr))
+        THeat%Tqsur = 273.15_r8
+        allocate (THeat%Tqsub(begr:endr))
+        THeat%Tqsub = 273.15_r8
+
+        allocate (THeat%Tt(begr:endr))
+        THeat%Tt = 273.15_r8
+        allocate (THeat%Ha_h2t(begr:endr))
+        THeat%Ha_h2t = 0._r8
+        allocate (THeat%Ha_t2r(begr:endr))
+        THeat%Ha_t2r = 0._r8
+        allocate (THeat%Ha_lateral(begr:endr))
+        THeat%Ha_lateral = 0._r8
+        allocate (THeat%Hs_t(begr:endr))
+        THeat%Hs_t = 0._r8
+        allocate (THeat%Hl_t(begr:endr))
+        THeat%Hl_t = 0._r8
+        allocate (THeat%He_t(begr:endr))
+        THeat%He_t = 0._r8
+        allocate (THeat%Hh_t(begr:endr))
+        THeat%Hh_t = 0._r8
+        allocate (THeat%Hc_t(begr:endr))
+        THeat%Hc_t = 0._r8
+        allocate (THeat%deltaH_t(begr:endr))
+        THeat%deltaH_t = 0._r8
+        allocate (THeat%deltaM_t(begr:endr))
+        THeat%deltaM_t = 0._r8
+
+        allocate (THeat%Tr(begr:endr))
+        THeat%Tr = 273.15_r8
+        allocate (THeat%Ha_rin(begr:endr))
+        THeat%Ha_rin = 0._r8
+        allocate (THeat%Ha_rout(begr:endr))
+        THeat%Ha_rout = 0._r8
+        allocate (THeat%Ha_eroutUp(begr:endr))
+        THeat%Ha_eroutUp = 0._r8
+        allocate (THeat%Ha_eroutUp_avg(begr:endr))
+        THeat%Ha_eroutUp_avg = 0._r8
+        allocate (THeat%Ha_erlat_avg(begr:endr))
+        THeat%Ha_erlat_avg = 0._r8
+        allocate (THeat%Hs_r(begr:endr))
+        THeat%Hs_r = 0._r8
+        allocate (THeat%Hl_r(begr:endr))
+        THeat%Hl_r = 0._r8
+        allocate (THeat%He_r(begr:endr))
+        THeat%He_r = 0._r8
+        allocate (THeat%Hh_r(begr:endr))
+        THeat%Hh_r = 0._r8
+        allocate (THeat%Hc_r(begr:endr))
+        THeat%Hc_r = 0._r8
+        allocate (THeat%deltaH_r(begr:endr))
+        THeat%deltaH_r = 0._r8
+        allocate (THeat%deltaM_r(begr:endr))
+        THeat%deltaM_r = 0._r8
+
+        allocate (THeat%Tt_avg(begr:endr))
+        THeat%Tt_avg = 273.15_r8
+        allocate (THeat%Tr_avg(begr:endr))
+        THeat%Tr_avg = 273.15_r8
+        
+       ! read the parameters for mosart-heat
+        if(endr >= begr) then
+            allocate(TPara%t_alpha(begr:endr))    
+           TPara%t_alpha = 27.19_r8
+            allocate(TPara%t_beta(begr:endr))
+           TPara%t_beta = 13.63_r8
+            allocate(TPara%t_gamma(begr:endr))
+           TPara%t_gamma = 0.1576_r8
+             allocate(TPara%t_mu(begr:endr))
+           TPara%t_mu = 0.5278_r8
+        end if
+     end if
+    
      call pio_freedecomp(ncid, iodesc_dbl)
      call pio_freedecomp(ncid, iodesc_int)
      call pio_closefile(ncid)
 
    ! control parameters and some other derived parameters
    ! estimate derived input variables
+
+     if (inundflag .and. Tctl%OPT_inund == 1) then
+        do iunit = rtmCTL%begr, rtmCTL%endr
+          if ( rtmCTL%mask(iunit) .eq. 1 .or. rtmCTL%mask(iunit) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
+
+            ! Main channel storage capacity :
+            TUnit%wr_bf( iunit ) = TUnit%rwidth( iunit ) * TUnit%rlen( iunit ) * TUnit%rdepth( iunit )
+
+          end if 
+        end do
+     end if
 
      do iunit=rtmCTL%begr,rtmCTL%endr
         if(TUnit%Gxr(iunit) > 0._r8) then
@@ -2480,7 +3959,15 @@ contains
         end if
         
         if(TUnit%rslp(iunit) <= 0._r8) then
+
+        if (inundflag) then
+           if (inundflag) then
+              TUnit%rslp(iunit) = Tctl%rslp_assume
+           endif
+        else
            TUnit%rslp(iunit) = 0.0001_r8
+        endif
+
         end if
         if(TUnit%tslp(iunit) <= 0._r8) then
            TUnit%tslp(iunit) = 0.0001_r8
@@ -2492,100 +3979,6 @@ contains
         TUnit%tslpsqrt(iunit) = sqrt(Tunit%tslp(iunit))
         TUnit%hslpsqrt(iunit) = sqrt(Tunit%hslp(iunit))
      end do
-
-     lsize = rtmCTL%lnumr
-     gsize = rtmlon*rtmlat
-
-     if (smat_option == 'opt') then
-        ! distributed smat initialization
-        ! mct_sMat_init must be given the number of rows and columns that
-        ! would be in the full matrix.  Nrows= size of output vector=nb.
-        ! Ncols = size of input vector = na.
-
-        cnt = 0
-        do iunit=rtmCTL%begr,rtmCTL%endr
-           if(TUnit%dnID(iunit) > 0) cnt = cnt + 1
-        enddo
-
-        call mct_sMat_init(sMat, gsize, gsize, cnt)
-        igrow = mct_sMat_indexIA(sMat,'grow')
-        igcol = mct_sMat_indexIA(sMat,'gcol')
-        iwgt  = mct_sMat_indexRA(sMat,'weight')
-        cnt = 0
-        do iunit = rtmCTL%begr,rtmCTL%endr
-           if (TUnit%dnID(iunit) > 0) then
-              cnt = cnt + 1
-              sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
-              sMat%data%iAttr(igrow,cnt) = TUnit%dnID(iunit)
-              sMat%data%iAttr(igcol,cnt) = TUnit%ID0(iunit)
-           endif
-        enddo
-
-        call mct_sMatP_Init(sMatP_eroutUp, sMat, gsMap_r, gsMap_r, 0, mpicom_rof, ROFID)
-
-     elseif (smat_option == 'Xonly' .or. smat_option == 'Yonly') then
-        ! root initialization
-        call mct_aVect_init(avtmp,rList='f1:f2',lsize=lsize)
-        call mct_aVect_zero(avtmp)
-        cnt = 0
-        do iunit = rtmCTL%begr,rtmCTL%endr
-           cnt = cnt + 1
-           avtmp%rAttr(1,cnt) = TUnit%ID0(iunit)
-           avtmp%rAttr(2,cnt) = TUnit%dnID(iunit)
-        enddo
-        call mct_avect_gather(avtmp,avtmpG,gsmap_r,mastertask,mpicom_rof)
-        if (masterproc) then
-           cnt = 0
-           do n = 1,rtmlon*rtmlat
-              if (avtmpG%rAttr(2,n) > 0) then
-                 cnt = cnt + 1
-              endif
-           enddo
-
-           call mct_sMat_init(sMat, gsize, gsize, cnt)
-           igrow = mct_sMat_indexIA(sMat,'grow')
-           igcol = mct_sMat_indexIA(sMat,'gcol')
-           iwgt  = mct_sMat_indexRA(sMat,'weight')
-
-           cnt = 0
-           do n = 1,rtmlon*rtmlat
-              if (avtmpG%rAttr(2,n) > 0) then
-                 cnt = cnt + 1
-                 sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
-                 sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(2,n)
-                 sMat%data%iAttr(igcol,cnt) = avtmpG%rAttr(1,n)
-              endif
-           enddo
-           call mct_avect_clean(avtmpG)
-        else
-           call mct_sMat_init(sMat,1,1,1)
-        endif
-        call mct_avect_clean(avtmp)
-
-        call mct_sMatP_Init(sMatP_eroutUp, sMat, gsMap_r, gsMap_r, smat_option, 0, mpicom_rof, ROFID)
-
-     else
-
-        write(iulog,*) trim(subname),' MOSART ERROR: invalid smat_option '//trim(smat_option)
-        call shr_sys_abort(trim(subname)//' ERROR invald smat option')
-
-     endif
-
-     ! initialize the AVs to go with sMatP
-     write(rList,'(a,i3.3)') 'tr',1
-     do nt = 2,nt_rtm
-        write(rList,'(a,i3.3)') trim(rList)//':tr',nt
-     enddo
-     if (masterproc) write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
-     call mct_aVect_init(avsrc_eroutUp,rList=rList,lsize=rtmCTL%lnumr)
-     call mct_aVect_init(avdst_eroutUp,rList=rList,lsize=rtmCTL%lnumr)
-
-     lsize = mct_smat_gNumEl(sMatP_eroutUp%Matrix,mpicom_rof)
-     if (masterproc) write(iulog,*) subname," Done initializing SmatP_eroutUp, nElements = ",lsize
-
-     ! keep only sMatP
-     call mct_sMat_clean(sMat)
-
   end if  ! endr >= begr
 
   !--- compute areatot from area using dnID ---
@@ -2597,11 +3990,11 @@ contains
 
   ! initialize avdst to local area and add that to areatotal2
   cnt = 0
-  call mct_avect_zero(avdst_eroutUp)
+  call mct_avect_zero(avdst_upstrm)
   do nr = rtmCTL%begr,rtmCTL%endr
      cnt = cnt + 1
-     avdst_eroutUp%rAttr(1,cnt) = rtmCTL%area(nr)
-     Tunit%areatotal2(nr) = avdst_eroutUp%rAttr(1,cnt)
+     avdst_upstrm%rAttr(1,cnt) = rtmCTL%area(nr)
+     Tunit%areatotal2(nr) = avdst_upstrm%rAttr(1,cnt)
   enddo
 
   tcnt = 0
@@ -2613,15 +4006,15 @@ contains
 
      ! copy avdst to avsrc for next downstream step
      cnt = 0
-     call mct_avect_zero(avsrc_eroutUp)
+     call mct_avect_zero(avsrc_upstrm)
      do nr = rtmCTL%begr,rtmCTL%endr
         cnt = cnt + 1
-        avsrc_eroutUp%rAttr(1,cnt) = avdst_eroutUp%rAttr(1,cnt)
+        avsrc_upstrm%rAttr(1,cnt) = avdst_upstrm%rAttr(1,cnt)
      enddo
 
-     call mct_avect_zero(avdst_eroutUp)
+     call mct_avect_zero(avdst_upstrm)
 
-     call mct_sMat_avMult(avsrc_eroutUp, sMatP_eroutUp, avdst_eroutUp)
+     call mct_sMat_avMult(avsrc_upstrm, sMatP_upstrm, avdst_upstrm)
 
      ! add avdst to areatot and compute new global sum
      cnt = 0
@@ -2629,14 +4022,10 @@ contains
      areatot_tmp = 0._r8
      do nr = rtmCTL%begr,rtmCTL%endr
         cnt = cnt + 1
-        Tunit%areatotal2(nr) = Tunit%areatotal2(nr) + avdst_eroutUp%rAttr(1,cnt)
+        Tunit%areatotal2(nr) = Tunit%areatotal2(nr) + avdst_upstrm%rAttr(1,cnt)
         areatot_tmp = areatot_tmp + Tunit%areatotal2(nr)
      enddo
      call shr_mpi_sum(areatot_tmp, areatot_new, mpicom_rof, 'areatot_new', all=.true.)
-
-     if (masterproc) then
-        write(iulog,*) trim(subname),' areatot calc ',tcnt,areatot_new
-     endif
 
   enddo
 
@@ -2645,23 +4034,6 @@ contains
      call shr_sys_abort(trim(subname)//' ERROR areatot incorrect')
   endif
 
-!  do nr = rtmCTL%begr,rtmCTL%endr
-!     if (TUnit%areatotal(nr) > 0._r8 .and. Tunit%areatotal2(nr) /= TUnit%areatotal(nr)) then
-!        write(iulog,'(2a,i12,2e16.4,f16.4)') trim(subname),' areatot diff ',nr,TUnit%areatotal(nr),Tunit%areatota!l2(nr),&
-!           abs(TUnit%areatotal(nr)-Tunit%areatotal2(nr))/(TUnit%areatotal(nr))
-!     endif
-!  enddo
-
-
-  ! control parameters
-  Tctl%RoutingMethod = 1
-  !Tctl%DATAH = rtm_nsteps*get_step_size()
-  !Tctl%DeltaT = 60._r8  !
-  !   if(Tctl%DATAH > 0 .and. Tctl%DATAH < Tctl%DeltaT) then
-  !       Tctl%DeltaT = Tctl%DATAH
-  !   end if      
-  Tctl%DLevelH2R = 5
-  Tctl%DLevelR = 3
   call SubTimestep ! prepare for numerical computation
 
   call shr_mpi_max(maxval(Tunit%numDT_r),numDT_r,mpicom_rof,'numDT_r',all=.false.)
@@ -2672,12 +4044,7 @@ contains
      write(iulog,*) subname,' numDT_r max  = ',numDT_r
      write(iulog,*) subname,' numDT_t   = ',minval(Tunit%numDT_t),maxval(Tunit%numDT_t)
      write(iulog,*) subname,' numDT_t max  = ',numDT_t
-  endif
-    
-  !if(masterproc) then
-  !    fname = '/lustre/liho745/DCLM_model/ccsm_hy/run/clm_MOSART_subw2/run/test.dat'
-  !    call createFile(1111,fname)
-  !end if
+  endif 
 
   end subroutine MOSART_init
 

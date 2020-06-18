@@ -90,7 +90,7 @@ class _TimingParser:
     def _gettime2_nuopc(self):
         self.nprocs = 0
         self.ncount = 0
-        expression = re.compile(r'\s*\[MED\]\s+med_fraction_set\s+(\d+)\s+(\d+)')
+        expression = re.compile(r'\s*\MED:\(med_fraction_set\)\s+(\d+)\s+(\d+)')
 
         for line in self.finlines:
             match = expression.match(line)
@@ -219,14 +219,28 @@ class _TimingParser:
         components=self.case.get_values("COMP_CLASSES")
         for s in components:
             self.models[s] = _GetTimingInfo(s)
+        atm = None
+        lnd = None
+        rof = None
+        ice = None
+        ocn = None
+        glc = None
+        cpl = None
+        if 'ATM' in self.models:
+            atm = self.models['ATM']
+        if 'LND' in self.models:
+            lnd = self.models['LND']
+        if 'ROF' in self.models:
+            rof = self.models['ROF']
+        if 'ICE' in self.models:
+            ice = self.models['ICE']
+        if 'OCN' in self.models:
+            ocn = self.models['OCN']
+        if 'GLC' in self.models:
+            glc = self.models['GLC']
+        if 'CPL' in self.models:
+            cpl = self.models['CPL']
 
-        atm = self.models['ATM']
-        lnd = self.models['LND']
-        rof = self.models['ROF']
-        ice = self.models['ICE']
-        ocn = self.models['OCN']
-        glc = self.models['GLC']
-        cpl = self.models['CPL']
         cime_model = self.case.get_value("MODEL")
         caseid = self.case.get_value("CASE")
         mach = self.case.get_value("MACH")
@@ -236,6 +250,7 @@ class _TimingParser:
         run_type = self.case.get_value("RUN_TYPE")
         ncpl_base_period = self.case.get_value("NCPL_BASE_PERIOD")
         ncpl = 0
+        ocn_ncpl = None
         for compclass in self.case.get_values("COMP_CLASSES"):
             comp_ncpl = self.case.get_value("{}_NCPL".format(compclass))
             if compclass == "OCN":
@@ -336,10 +351,9 @@ class _TimingParser:
             nsteps = ncount / nprocs
         elif self._driver == 'nuopc':
             nprocs, nsteps = self.gettime2('')
-
         adays = nsteps*tlen/ncpl
         odays = nsteps*tlen/ncpl
-        if inittype == "TRUE":
+        if ocn_ncpl and inittype == "TRUE":
             odays = odays - (tlen/ocn_ncpl)
 
         peminmax = max([m.rootpe for m in self.models.values()])+1
@@ -352,7 +366,8 @@ class _TimingParser:
         extraoff = 20
         for m in self.models.values():
             m.offset = int((maxoffset*m.rootpe)/peminmax) + extraoff
-        cpl.offset = 0
+        if cpl:
+            cpl.offset = 0
         try:
             self.fout = open(foutfilename, "w")
         except Exception as e:
@@ -451,15 +466,16 @@ class _TimingParser:
         self.write("\n")
 
         self.write("  Overall Metrics: \n")
-        self.write("    Model Cost:         {:10.2f}   pe-hrs/simulated_year ".format((tmax*365.0*pecost)/(3600.0*adays)))
-        if inst_label:
-            self.write("      (Model Cost is for entire ensemble)")
-        self.write("\n")
-        self.write("    Model Throughput:   {:10.2f}   simulated_years/day \n".format((86400.0*adays)/(tmax*365.0)) )
+        if adays > 0:
+            self.write("    Model Cost:         {:10.2f}   pe-hrs/simulated_year \n".format((tmax*365.0*pecost)/(3600.0*adays)))
+        if tmax > 0:
+            self.write("    Model Throughput:   {:10.2f}   simulated_years/day \n".format((86400.0*adays)/(tmax*365.0)) )
+
         self.write("\n")
 
         self.write("    Init Time   :  {:10.3f} seconds \n".format(nmax))
-        self.write("    Run Time    :  {:10.3f} seconds   {:10.3f} seconds/day \n".format(tmax, tmax/adays))
+        if adays > 0:
+            self.write("    Run Time    :  {:10.3f} seconds   {:10.3f} seconds/day \n".format(tmax, tmax/adays))
         self.write("    Final Time  :  {:10.3f} seconds \n".format(fmax))
 
         self.write("\n")
@@ -478,14 +494,13 @@ class _TimingParser:
                    "with other components \n")
         self.write("\n")
 
-        self.write("    TOT Run Time:  {:10.3f} seconds   {:10.3f} seconds/mday   {:10.2f} myears/wday \n".format(tmax, tmax/adays, tmaxr))
-        for k in self.case.get_values("COMP_CLASSES"):
-            m = self.models[k]
-            self.write("    {} Run Time:  {:10.3f} seconds   {:10.3f} seconds/mday   {:10.2f} myears/wday \n".format(k, m.tmax, m.tmax/adays, m.tmaxr))
-        self.write("    CPL COMM Time: {:10.3f} seconds   {:10.3f} seconds/mday   {:10.2f} myears/wday \n".format(xmax, xmax/adays, xmaxr))
-        if self._driver == "mct":
-            self.write("\n\n---------------- DRIVER TIMING FLOWCHART "
-                       "--------------------- \n\n")
+
+        if adays > 0:
+            self.write("    TOT Run Time:  {:10.3f} seconds   {:10.3f} seconds/mday   {:10.2f} myears/wday \n".format(tmax, tmax/adays, tmaxr))
+            for k in self.case.get_values("COMP_CLASSES"):
+                m = self.models[k]
+                self.write("    {} Run Time:  {:10.3f} seconds   {:10.3f} seconds/mday   {:10.2f} myears/wday \n".format(k, m.tmax, m.tmax/adays, m.tmaxr))
+            self.write("    CPL COMM Time: {:10.3f} seconds   {:10.3f} seconds/mday   {:10.2f} myears/wday \n".format(xmax, xmax/adays, xmaxr))
 
             pstrlen = 25
             hoffset = 1

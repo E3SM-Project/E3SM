@@ -355,8 +355,8 @@ contains
            (index(varname,"sabs_perroad_dir"   ) == 1 ) .or. &
            (index(varname,"sabs_perroad_dif"   ) == 1 ) .or. &
            (index(varname,"fpcgridold"         ) == 1 ) .or. &
-           (index(varname,"htop"               ) == 1 ) .or. &
-           (index(varname,"hbot"               ) == 1 ) .or. &
+           !(index(varname,"htop"               ) == 1 ) .or. &
+           !(index(varname,"hbot"               ) == 1 ) .or. &
            (index(varname,"locfnh"             ) == 1 ) .or. &
            (index(varname,"locfnhr"            ) == 1 ) ) )then
           write (6,*) 'Skipping variable: ', trim(varname)

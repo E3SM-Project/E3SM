@@ -1,0 +1,4 @@
+#!/bin/bash
+./xmlchange CAM_TARGET=preqx
+./xmlchange ATM_NCPL=24
+

@@ -199,7 +199,11 @@ endif
 
      amode = IOR(MPI_MODE_WRONLY,MPI_MODE_CREATE)
      info  = MPI_INFO_NULL
+     !call mpi_info_create(info,ierr)
+     !call mpi_info_set(info,'romio_ds_read','disable',ierr)
+     !call mpi_info_set(info,'romio_ds_write','disable',ierr)
      call MPI_file_open(File%par%comm,File%fname,amode,info,File%fh,ierr)
+     !call mpi_info_free(info,ierr)
 
      if(ierr .ne. MPI_SUCCESS) then
         errorcode=ierr
@@ -610,21 +614,18 @@ endif
 !$OMP BARRIER
 !$OMP MASTER
     write(charnum,'(i9.9)') tl%nstep
-    if(iam .eq. 1) then 
-       if(Debug) print *,'WriteRestart: restnum is: ',charnum
-    endif
 
+    if(iam .eq. 1) print *,'writing restart header, restnum=',charnum
     fname = TRIM(ADJUSTL(restartdir))//"/R"//TRIM(ADJUSTL(charnum))
-
     RestFile%fname=fname
-
     call CreateRestartHeader(RestartHeader,tl)
     call WriteRestartHeader(RestFile,RestartHeader)
 
+    if(iam .eq. 1) print *,'writing restart data, collectives=',COLLECTIVE_IO_WRITE
     call WriteState(RestFile,RestartBuffer,RestartHeader%ElemRecLength)
+    if(iam .eq. 1) print *,'restart complete.'
 !$OMP END MASTER
 
-!DBG    print *,'WriteRestart: point #10'
     end subroutine WriteRestart
 
  

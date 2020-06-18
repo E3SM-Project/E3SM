@@ -3396,7 +3396,7 @@ module advance_xp2_xpyp_module
     !thlp2_mc will both be zero.  This also avoids a divide by zero error
     where ( precip_frac_double_delta > cloud_frac_min )
       pf_const = ( 1.0_core_rknd - precip_frac_double_delta ) / precip_frac_double_delta
-    else where
+    elsewhere
       pf_const = 0.0_core_rknd
     end where
 

@@ -8,7 +8,7 @@ information will be listed for each.
 
 from Tools.standard_script_setup import *
 import re
-from CIME.utils         import expect
+from CIME.utils         import expect, get_model
 from CIME.XML.files     import Files
 from CIME.XML.component import Component
 from CIME.XML.compsets  import Compsets
@@ -20,7 +20,7 @@ from argparse           import RawTextHelpFormatter
 logger = logging.getLogger(__name__)
 supported_comp_interfaces = ["mct", "nuopc", "moab"]
 
-def query_grids(files, long_output):
+def query_grids(files, long_output, xml=False):
     """
     query all grids.
     """
@@ -29,12 +29,14 @@ def query_grids(files, long_output):
            "Cannot find config_file {} on disk".format(config_file))
 
     grids = Grids(config_file)
-    if long_output:
+    if xml:
+        print("{}".format(grids.get_raw_record()))
+    elif long_output:
         grids.print_values(long_output=long_output)
     else:
         grids.print_values()
 
-def query_machines(files, machine_name='all'):
+def query_machines(files, machine_name='all', xml=False):
     """
     query machines. Defaule: all
     """
@@ -43,9 +45,16 @@ def query_machines(files, machine_name='all'):
            "Cannot find config_file {} on disk".format(config_file))
     # Provide a special machine name indicating no need for a machine name
     machines = Machines(config_file, machine="Query")
-    machines.print_values(machine_name=machine_name)
+    if xml:
+        if machine_name == 'all':
+            print("{}".format(machines.get_raw_record()))
+        else:
+            machines.set_machine(machine_name)
+            print("{}".format(machines.get_raw_record(root=machines.machine_node)))
+    else:
+        machines.print_values(machine_name=machine_name)
 
-def query_compsets(files, name):
+def query_compsets(files, name, xml=False):
     """
     query compset definition give a compset name
     """
@@ -69,11 +78,11 @@ def query_compsets(files, name):
     if all_components:  # print all compsets
         for component in components:
             # the all_components flag will only print available components
-            print_compset(component, files, all_components=all_components)
+            print_compset(component, files, all_components=all_components, xml=xml)
     else:
-        print_compset(name, files)
+        print_compset(name, files, xml=xml)
 
-def print_compset(name, files, all_components=False):
+def print_compset(name, files, all_components=False, xml=False):
     """
     print compsets associated with the component name, but if all_components is true only
     print the details if the associated component is available
@@ -92,14 +101,20 @@ def print_compset(name, files, all_components=False):
     elif config_file is None or not os.path.isfile(config_file):
         return
 
+    if get_model() == 'ufs' and name == 'drv':
+        return
+
     print("\nActive component: {}".format(name))
     # Now parse the compsets file and write out the compset alias and longname as well as the help text
     # determine component xml content
     compsets = Compsets(config_file)
     # print compsets associated with component without help text
-    compsets.print_values(arg_help=False)
+    if xml:
+        print("{}".format(compsets.get_raw_record()))
+    else:
+        compsets.print_values(arg_help=False)
 
-def query_all_components(files):
+def query_all_components(files, xml=False):
     """
     query all components
     """
@@ -111,9 +126,9 @@ def query_all_components(files):
         # determine all components in string
         components = files.get_components(string)
         for item in components:
-            query_component(item, files, all_components=True)
+            query_component(item, files, all_components=True, xml=xml)
 
-def query_component(name, files, all_components=False):
+def query_component(name, files, all_components=False, xml=False):
     """
     query a component by name
     """
@@ -164,7 +179,10 @@ def query_component(name, files, all_components=False):
 
     # determine component xml content
     component = Component(config_file, "CPL")
-    component.print_values()
+    if xml:
+        print("{}".format(component.get_raw_record()))
+    else:
+        component.print_values()
 
 def parse_command_line(args, description):
     """
@@ -178,6 +196,10 @@ def parse_command_line(args, description):
     CIME.utils.setup_standard_logging_options(parser)
 
     valid_components = ['all']
+
+    parser.add_argument("--xml", action="store_true",
+                        help="Output in xml format.")
+
     files = {}
     for comp_interface in supported_comp_interfaces:
         files[comp_interface] = Files(comp_interface=comp_interface)
@@ -243,7 +265,7 @@ def parse_command_line(args, description):
         parser.print_help(sys.stderr)
 
     return args.grids, args.compsets, args.components, args.machines, \
-        args.long, files[args.comp_interface]
+        args.long, args.xml, files[args.comp_interface]
 
 def get_compsets(files):
     """
@@ -347,23 +369,23 @@ def _main_func(description):
     """
     main function
     """
-    grids, compsets, components, machines, long_output, files = parse_command_line(sys.argv, description)
+    grids, compsets, components, machines, long_output, xml, files = parse_command_line(sys.argv, description)
 
 
     if grids:
-        query_grids(files, long_output)
+        query_grids(files, long_output, xml=xml)
 
     if compsets is not None:
-        query_compsets(files, name=compsets)
+        query_compsets(files, name=compsets, xml=xml)
 
     if components is not None:
         if re.search("^all$", components):  # print all compsets
-            query_all_components(files)
+            query_all_components(files, xml=xml)
         else:
-            query_component(components, files)
+            query_component(components, files, xml=xml)
 
     if machines is not None:
-        query_machines(files, machine_name=machines)
+        query_machines(files, machine_name=machines, xml=xml)
 
 # main entry point
 if __name__ == "__main__":

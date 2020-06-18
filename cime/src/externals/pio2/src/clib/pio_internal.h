@@ -4,7 +4,7 @@
  * @author Jim Edwards, Ed Hartnett
  * @date  2014
  *
- * @see http://code.google.com/p/parallelio/
+ * @see https://github.com/NCAR/ParallelIO
  */
 
 #ifndef __PIO_INTERNAL__
@@ -12,14 +12,43 @@
 
 #include <config.h>
 #include <pio.h>
+#include <pio_error.h>
+#include <bget.h>
+#include <limits.h>
+#include <math.h>
+#include <netcdf.h>
+#ifdef _NETCDF4
+#include <netcdf_par.h>
+#endif
+#ifdef _PNETCDF
+#include <pnetcdf.h>
+#endif
+#ifdef TIMING
+#include <gptl.h>
+#endif
+#include <assert.h>
+#ifdef USE_MPE
+#include <mpe.h>
+#endif /* USE_MPE */
+
+#ifndef MPI_OFFSET
+/** MPI_OFFSET is an integer type of size sufficient to represent the
+ * size (in bytes) of the largest file supported by MPI. In some MPI
+ * implementations MPI_OFFSET is not properly defined.  */
+#define MPI_OFFSET  MPI_LONG_LONG
+#endif
 
 /* These are the sizes of types in netCDF files. Do not replace these
  * constants with sizeof() calls for C types. They are not the
  * same. Even on a system where sizeof(short) is 4, the size of a
  * short in a netCDF file is 2 bytes. */
+/** Size (in bytes) of a char in a netCDF file. */
 #define NETCDF_CHAR_SIZE 1
+/** Size (in bytes) of a short in a netCDF file. */
 #define NETCDF_SHORT_SIZE 2
+/** Size (in bytes) of a int or float in a netCDF file. */
 #define NETCDF_INT_FLOAT_SIZE 4
+/** Size (in bytes) of a long long int or double in a netCDF file. */
 #define NETCDF_DOUBLE_INT64_SIZE 8
 
 /* It seems that some versions of openmpi fail to define
@@ -30,49 +59,74 @@
 #endif
 #endif
 #ifndef MPI_Offset
+/** This is the type used for PIO_Offset. */
 #define MPI_Offset long long
 #endif
 
+/** Some MPI implementations do not allow passing MPI_DATATYPE_NULL to
+ * comm functions even though the send or recv length is 0, in these
+ * cases we use MPI_CHAR */
 #if defined(MPT_VERSION) || defined(OPEN_MPI)
-/* Some MPI implementations do not allow passing MPI_DATATYPE_NULL to comm functions
- * even though the send or recv length is 0, in these cases we use MPI_CHAR */
 #define PIO_DATATYPE_NULL MPI_CHAR
 #else
 #define PIO_DATATYPE_NULL MPI_DATATYPE_NULL
 #endif
 
-#include <bget.h>
-#include <limits.h>
-#include <math.h>
-#ifdef TIMING
-#include <gptl.h>
-#endif
-#include <assert.h>
-
 #if PIO_ENABLE_LOGGING
 void pio_log(int severity, const char *fmt, ...);
-#define LOG(e) pio_log e
+#define PLOG(e) pio_log e
 #else
-#define LOG(e)
+/** Logging macro for debugging. */
+#define PLOG(e)
 #endif /* PIO_ENABLE_LOGGING */
 
+/** Find maximum. */
 #define max(a,b)                                \
     ({ __typeof__ (a) _a = (a);                 \
         __typeof__ (b) _b = (b);                \
         _a > _b ? _a : _b; })
 
+/** Find minimum. */
 #define min(a,b)                                \
     ({ __typeof__ (a) _a = (a);                 \
         __typeof__ (b) _b = (b);                \
         _a < _b ? _a : _b; })
 
+/** Block size of gathers. */
 #define MAX_GATHER_BLOCK_SIZE 0
+
+/** Request allocation size. */
 #define PIO_REQUEST_ALLOC_CHUNK 16
 
 /** This is needed to handle _long() functions. It may not be used as
  * a data type when creating attributes or varaibles, it is only used
  * internally. */
 #define PIO_LONG_INTERNAL 13
+
+#ifdef USE_MPE
+/* These are for the event numbers array used to log various events in
+ * the program with the MPE library, which produces output for the
+ * Jumpshot program. */
+
+/* Each event has start and end. */
+#define START 0
+#define END 1
+
+/* These are the MPE states (events) we keep track of. */
+#define NUM_EVENTS 7
+#define INIT 0
+#define DECOMP 1
+#define CREATE 2
+#define OPEN 3
+#define DARRAY_WRITE 4
+#define DARRAY_READ 6
+#define CLOSE 5
+
+/* The max length of msg added to log with mpe_log_pack(). (NULL
+ * terminator is not required by mpe_log_pack(), so need not be
+ * counted in this total).*/
+#define MPE_MAX_MSG_LEN 32
+#endif /* USE_MPE */
 
 #if defined(__cplusplus)
 extern "C" {
@@ -83,38 +137,32 @@ extern "C" {
     /** Used to sort map points in the subset rearranger. */
     typedef struct mapsort
     {
-        int rfrom;
-        PIO_Offset soffset;
-        PIO_Offset iomap;
+        int rfrom; /**< from */
+        PIO_Offset soffset; /**< ??? */
+        PIO_Offset iomap; /**< ??? */
     } mapsort;
 
     /** swapm defaults. */
     typedef struct pio_swapm_defaults
     {
-        int nreqs;
-        bool handshake;
-        bool isend;
+        int nreqs; /**< number of requests */
+        bool handshake; /**< handshake */
+        bool isend; /**< is end? */
     } pio_swapm_defaults;
 
     /* Handle an error in the PIO library. */
     int pio_err(iosystem_desc_t *ios, file_desc_t *file, int err_num, const char *fname,
                 int line);
 
-    /* Check return from MPI function and print error message. */
-    void CheckMPIReturn(int ierr, const char *file, int line);
-
     /* Print error message and abort. */
     void piodie(const char *msg, const char *fname, int line);
 
     /* Assert that an expression is true. */
-    void pioassert(bool exp, const char *msg, const char *fname, int line);
+    void pioassert(_Bool expression, const char *msg, const char *fname, int line);
 
     /* Check the return code from an MPI function call. */
-    int check_mpi(file_desc_t *file, int mpierr, const char *filename, int line);
-
-    /* Check the return code from an MPI function call. */
-    int check_mpi2(iosystem_desc_t *ios, file_desc_t *file, int mpierr, const char *filename,
-                   int line);
+    int check_mpi(iosystem_desc_t *ios, file_desc_t *file, int mpierr, const char *filename,
+                  int line);
 
     /* Check the return code from a netCDF call. */
     int check_netcdf(file_desc_t *file, int status, const char *fname, int line);
@@ -148,17 +196,25 @@ extern "C" {
 
     /* List operations for var_desc_t list. */
     int add_to_varlist(int varid, int rec_var, int pio_type, int pio_type_size,
-                       MPI_Datatype mpi_type, int mpi_type_size, var_desc_t **varlist);
+                       MPI_Datatype mpi_type, int mpi_type_size, int ndim,
+                       var_desc_t **varlist);
     int get_var_desc(int varid, var_desc_t **varlist, var_desc_t **var_desc);
     int delete_var_desc(int varid, var_desc_t **varlist);
 
-    /* Create a file (internal function). */
-    int PIOc_createfile_int(int iosysid, int *ncidp, int *iotype, const char *filename, int mode);
+    /* Create a file. */
+    int PIOc_createfile_int(int iosysid, int *ncidp, int *iotype, const char *filename,
+                            int mode, int use_ext_ncid);
 
     /* Open a file with optional retry as netCDF-classic if first
      * iotype does not work. */
     int PIOc_openfile_retry(int iosysid, int *ncidp, int *iotype, const char *filename, int mode,
-                            int retry);
+                            int retry, int use_ext_ncid);
+
+    /* Give the mode flag from an open, determine the IOTYPE. */
+    int find_iotype_from_omode(int mode, int *iotype);
+
+    /* Give the mode flag from an nc_create call, determine the IOTYPE. */
+    int find_iotype_from_cmode(int cmode, int *iotype);
 
     /* Given PIO type, find MPI type and type size. */
     int find_mpi_type(int pio_type, MPI_Datatype *mpi_type, int *type_size);
@@ -203,8 +259,8 @@ extern "C" {
     int alloc_region2(iosystem_desc_t *ios, int ndims, io_region **region);
 
     /* Set start and count so that they describe the first region in map.*/
-    PIO_Offset find_region(int ndims, const int *gdims, int maplen, const PIO_Offset *map,
-                           PIO_Offset *start, PIO_Offset *count);
+    int find_region(int ndims, const int *gdims, int maplen, const PIO_Offset *map,
+                    PIO_Offset *start, PIO_Offset *count, PIO_Offset *regionlen);
 
     /* Calculate start and count regions for the subset rearranger. */
     int get_regions(int ndims, const int *gdimlen, int maplen, const PIO_Offset *map,
@@ -218,16 +274,6 @@ extern "C" {
 
     /* Free a region list. */
     void free_region_list(io_region *top);
-
-    /* Compare sets of rearranger options. */
-    bool cmp_rearr_opts(const rearr_opt_t *rearr_opts, const rearr_opt_t *exp_rearr_opts);
-
-    /* Check and reset, if needed, rearranger opts to default values. */
-    int check_and_reset_rearr_opts(rearr_opt_t *rearr_opt);
-
-    /* Compare rearranger flow control options. */
-    bool cmp_rearr_comm_fc_opts(const rearr_comm_fc_opt_t *opt,
-                                const rearr_comm_fc_opt_t *exp_opt);
 
     /* Create a subset rearranger. */
     int subset_rearrange_create(iosystem_desc_t *ios, int maplen, PIO_Offset *compmap, const int *gsize,
@@ -249,6 +295,8 @@ extern "C" {
     /* Flush contents of multi-buffer to disk. */
     int flush_output_buffer(file_desc_t *file, bool force, PIO_Offset addsize);
 
+    int compute_maxaggregate_bytes(iosystem_desc_t *ios, io_desc_t *iodesc);
+
     /* Compute the size that the IO tasks will need to hold the data. */
     int compute_maxIObuffersize(MPI_Comm io_comm, io_desc_t *iodesc);
 
@@ -257,9 +305,6 @@ extern "C" {
 
     /* Find greatest commond divisor for long long. */
     long long lgcd (long long a, long long b );
-
-    /* Find greatest commond divisor in an array. */
-    int gcd_array(int nain, int *ain);
 
     /* Convert a global coordinate value into a local array index. */
     PIO_Offset coord_to_lindex(int ndims, const PIO_Offset *lcoord, const PIO_Offset *count);
@@ -327,6 +372,8 @@ extern "C" {
     int PIOc_get_var1_tc(int ncid, int varid, const PIO_Offset *index, nc_type xtype,
                          void *buf);
     int PIOc_get_var_tc(int ncid, int varid, nc_type xtype, void *buf);
+    int PIOc_get_vard_tc(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                         nc_type xtype, void *buf);
 
     /* Generalized put functions. */
     int PIOc_put_vars_tc(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
@@ -334,6 +381,8 @@ extern "C" {
     int PIOc_put_var1_tc(int ncid, int varid, const PIO_Offset *index, nc_type xtype,
                          const void *op);
     int PIOc_put_var_tc(int ncid, int varid, nc_type xtype, const void *op);
+    int PIOc_put_vard_tc(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                         nc_type xtype, const void *buf);
 
     /* An internal replacement for a function pnetcdf does not
      * have. */
@@ -343,9 +392,15 @@ extern "C" {
     /* Handle end and re-defs. */
     int pioc_change_def(int ncid, int is_enddef);
 
-    /* Initialize and finalize logging. */
-    void pio_init_logging(void);
+    /* Initialize and finalize logging, use --enable-logging at configure. */
+    int pio_init_logging(void);
     void pio_finalize_logging(void );
+
+#ifdef USE_MPE
+    /* Logging with the MPE library, use --enable-mpe at configure. */
+    void pio_start_mpe_log(int state);
+    void pio_stop_mpe_log(int state, const char *msg);
+#endif /* USE_MPE */
 
     /* Write a netCDF decomp file. */
     int pioc_write_nc_decomp_int(iosystem_desc_t *ios, const char *filename, int cmode, int ndims,
@@ -362,6 +417,16 @@ extern "C" {
                         int **proc_list, int **my_proc_list);
 
     int pio_sorted_copy(const void *array, void *tmparray, io_desc_t *iodesc, int nvars, int direction);
+
+    int PIOc_inq_att_eh(int ncid, int varid, const char *name, int eh,
+                        nc_type *xtypep, PIO_Offset *lenp);
+
+    /* Start a timer. */
+    int pio_start_timer(const char *name);
+
+    /* Stop a timer. */
+    int pio_stop_timer(const char *name);
+
 #if defined(__cplusplus)
 }
 #endif
@@ -370,6 +435,7 @@ extern "C" {
  * async is being used. */
 enum PIO_MSG
 {
+    PIO_MSG_NULL,
     PIO_MSG_OPEN_FILE,
     PIO_MSG_CREATE_FILE,
     PIO_MSG_INQ_ATT,

@@ -26,8 +26,6 @@ module CNStateType
   save
   private
   !
-  ! !PRIVATE MEMBER FUNCTIONS: 
-  private :: checkDates
   ! !PUBLIC TYPES:
   integer    , pointer, public :: fert_type         (:)
   integer    , pointer, public :: fert_continue     (:)
@@ -148,8 +146,6 @@ module CNStateType
      real(r8), pointer :: frootc_nfix_scalar_col       (:)     ! col scalar for nitrogen fixation
      real(r8), pointer :: decomp_litpool_rcn_col       (:,:,:) ! cn ratios of the decomposition pools
 
-     integer           :: CropRestYear                         ! restart year from initial conditions file - increment as time elapses
-
      real(r8), pointer :: fpg_nh4_vr_col               (:,:)   ! fraction of plant nh4 demand that is satisfied (no units) BGC mode
      real(r8), pointer :: fpg_no3_vr_col               (:,:)   ! fraction of plant no3 demand that is satisfied (no units) BGC mode
      real(r8), pointer :: fpg_vr_col                   (:,:)   ! fraction of plant N demand that is satisfied (no units) CN mode
@@ -177,7 +173,6 @@ module CNStateType
 
      procedure, public  :: Init         
      procedure, public  :: Restart      
-     procedure, public  :: CropRestIncYear
      procedure, private :: InitAllocate
      procedure, private :: InitHistory  
      procedure, private :: InitCold     
@@ -272,7 +267,6 @@ contains
 
     allocate(this%nfixation_prof_col  (begc:endc,1:nlevdecomp_full)) ; this%nfixation_prof_col  (:,:) = spval
     allocate(this%ndep_prof_col       (begc:endc,1:nlevdecomp_full)) ; this%ndep_prof_col       (:,:) = spval
-    allocate(this%pdep_prof_col       (begc:endc,1:nlevdecomp_full)) ; this%pdep_prof_col       (:,:) = spval
     allocate(this%som_adv_coef_col    (begc:endc,1:nlevdecomp_full)) ; this%som_adv_coef_col    (:,:) = spval
     allocate(this%som_diffus_coef_col (begc:endc,1:nlevdecomp_full)) ; this%som_diffus_coef_col (:,:) = spval
 
@@ -300,7 +294,6 @@ contains
     allocate(this%farea_burned_col    (begc:endc))                   ; this%farea_burned_col    (:)   = nan
     allocate(this%decomp_litpool_rcn_col (begc:endc, 1:nlevdecomp_full, 4)); this%decomp_litpool_rcn_col (:,:,:) = nan
     allocate(this%frootc_nfix_scalar_col (begc:endc))                ; this%frootc_nfix_scalar_col(:) = nan
-    this%CropRestYear = 0
 
     allocate(this%dormant_flag_patch          (begp:endp)) ;    this%dormant_flag_patch          (:) = nan
     allocate(this%days_active_patch           (begp:endp)) ;    this%days_active_patch           (:) = nan
@@ -1368,12 +1361,6 @@ contains
 
     if (crop_prog) then
 
-       call restartvar(ncid=ncid, flag=flag,  varname='restyear', xtype=ncd_int,  &
-            long_name='Number of years prognostic crop ran', units="years", &
-            interpinic_flag='copy', readvar=readvar, data=this%CropRestYear)
-       if (flag=='read' .and. readvar)  then
-          call checkDates( )
-       end if
 
        call restartvar(ncid=ncid, flag=flag,  varname='htmx', xtype=ncd_double,  &
             dim1name='pft', long_name='max height attained by a crop during year', units='m', &
@@ -1577,95 +1564,5 @@ contains
 
   end subroutine UpdateAccVars
 
-  !-----------------------------------------------------------------------
-  subroutine CropRestIncYear (this)
-    !
-    ! !DESCRIPTION: 
-    ! Increment the crop restart year, if appropriate
-    !
-    ! This routine should be called every time step, but only once per clump (to avoid
-    ! inadvertently updating nyrs multiple times)
-    !
-    ! !USES:
-    use clm_varpar       , only : crop_prog
-    use clm_time_manager , only : get_curr_date, is_first_step
-    !
-    ! !ARGUMENTS:
-    class(cnstate_type) :: this
-    !
-    ! !LOCAL VARIABLES:
-    integer kyr   ! current year
-    integer kmo   ! month of year  (1, ..., 12)
-    integer kda   ! day of month   (1, ..., 31)
-    integer mcsec ! seconds of day (0, ..., seconds/day)
-    !-----------------------------------------------------------------------
-
-    ! Update restyear only when running with prognostic crop
-    if ( crop_prog )then
-
-       ! Update restyear when it's the start of a new year - but don't do that at the
-       ! very start of the run
-       call get_curr_date (   kyr, kmo, kda, mcsec)
-       if ((kmo == 1 .and. kda == 1 .and. mcsec == 0) .and. .not. is_first_step()) then
-          this%CropRestYear = this%CropRestYear + 1
-       end if
-
-    end if
-
-  end subroutine CropRestIncYear
-
-  !-----------------------------------------------------------------------
-  subroutine checkDates( )
-    !
-    ! !DESCRIPTION: 
-    ! Make sure the dates are compatible. The date given to startup the model
-    ! and the date on the restart file must be the same although years can be
-    ! different. The dates need to be checked when the restart file is being
-    ! read in for a startup or branch case (they are NOT allowed to be different
-    ! for a restart case).
-    !
-    ! For the prognostic crop model the date of planting is tracked and growing
-    ! degree days is tracked (with a 20 year mean) -- so shifting the start dates
-    ! messes up these bits of saved information.
-    !
-    ! !ARGUMENTS:
-    use clm_time_manager, only : get_driver_start_ymd, get_start_date
-    use clm_varctl      , only : iulog
-    use clm_varctl      , only : nsrest, nsrBranch, nsrStartup
-    !
-    ! !LOCAL VARIABLES:
-    integer :: stymd       ! Start date YYYYMMDD from driver
-    integer :: styr        ! Start year from driver
-    integer :: stmon_day   ! Start date MMDD from driver
-    integer :: rsmon_day   ! Restart date MMDD from restart file
-    integer :: rsyr        ! Restart year from restart file
-    integer :: rsmon       ! Restart month from restart file
-    integer :: rsday       ! Restart day from restart file
-    integer :: tod         ! Restart time of day from restart file
-    character(len=*), parameter :: formDate = '(A,i4.4,"/",i2.2,"/",i2.2)' ! log output format
-    character(len=32) :: subname = 'CropRest::checkDates'
-    !-----------------------------------------------------------------------
-    !
-    ! If branch or startup make sure the startdate is compatible with the date
-    ! on the restart file.
-    !
-    if ( nsrest == nsrBranch .or. nsrest == nsrStartup )then
-       stymd       = get_driver_start_ymd()
-       styr        = stymd / 10000
-       stmon_day   = stymd - styr*10000
-       call get_start_date( rsyr, rsmon, rsday, tod )
-       rsmon_day = rsmon*100 + rsday
-       if ( masterproc ) &
-            write(iulog,formDate) 'Date on the restart file is: ', rsyr, rsmon, rsday
-       if ( stmon_day /= rsmon_day )then
-          write(iulog,formDate) 'Start date is: ', styr, stmon_day/100, &
-               (stmon_day - stmon_day/100)
-          call endrun(msg=' ERROR: For prognostic crop to work correctly, the start date (month and day)'// &
-               ' and the date on the restart file needs to match (years can be different)'//&
-               errMsg(__FILE__, __LINE__))
-       end if
-    end if
-
-  end subroutine checkDates
 
 end module CNStateType

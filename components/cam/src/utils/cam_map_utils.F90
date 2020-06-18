@@ -683,7 +683,7 @@ contains
     end if
 
     !
-    fileSize = product(filelens)
+    fileSize = product(int(filelens,iMap))
     srccnt = size(fieldlens)
     srclens(1:srccnt) = fieldlens(1:srccnt)
     if (srccnt < 7) then
@@ -691,7 +691,7 @@ contains
     end if
 
     ! Allocate output filemap (dof)
-    allocate(filemap(product(fieldlens)))
+    allocate(filemap(product(int(fieldlens,iMap))))
     filemap = 0
 
     ! Find map source dimensions in input array

@@ -1,0 +1,44 @@
+#!/bin/csh
+
+### This version Cori 2017-07-206. 
+
+set exenam=cam_chempp
+set objdir=OBJ
+
+rm -f ../bin/$exenam
+rm -f $objdir/*
+
+mkdir -p $objdir
+mkdir -p ../bin
+
+# When running the eventual binary it wants to write into a various
+# directories, but it dies if those directories don't exist. The easy
+# solution is to create the default directories here.  This will fail
+# if a non-standard directory is used, but this seems pretty safe.
+mkdir -p ../tmp
+mkdir -p ../output
+
+#gmake COMPILER=lf95 DEBUG=TRUE EXENAME=cam_chempp
+
+###For Cori:
+module unload PrgEnv-pgi
+module unload PrgEnv-cray
+module unload PrgEnv-gnu
+module unload PrgEnv-intel
+
+#module load PrgEnv-pgi
+#gmake COMPILER=pgf95 DEBUG=TRUE EXENAME=cam_chempp
+
+#module load PrgEnv-pgi
+#gmake COMPILER=gfortran DEBUG=TRUE EXENAME=cam_chempp
+
+#module load PrgEnv-intel
+#gmake COMPILER=ifort DEBUG=TRUE EXENAME=cam_chempp
+
+#module load PrgEnv-cray
+#gmake COMPILER=ftn DEBUG=TRUE EXENAME=cam_chempp
+
+module load PrgEnv-gnu
+gmake COMPILER=gfortran DEBUG=TRUE EXENAME=cam_chempp
+
+# --- end of file ---

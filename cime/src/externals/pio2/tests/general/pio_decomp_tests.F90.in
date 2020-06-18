@@ -41,7 +41,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_write_1d_darray
   PIO_TF_FC_DATA_TYPE, dimension(VEC_LOCAL_SZ) :: buf
   integer, dimension(1) :: dims
   integer :: pio_dim
-  integer :: i, ierr, lsz
+  integer :: i, ierr
   ! iotypes = valid io types
   integer, dimension(:), allocatable :: iotypes
   character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
@@ -117,7 +117,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_wr_1d_const_buf_sz
   PIO_TF_FC_DATA_TYPE, dimension(MAX_VEC_SZ) :: wbuf, rbuf
   integer, dimension(1) :: dims
   integer :: pio_dim
-  integer :: i, ierr, lsz
+  integer :: i, ierr
   ! iotypes = valid io types
   integer, dimension(:), allocatable :: iotypes
   character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
@@ -207,7 +207,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_write_1d_reuse_decomp
   PIO_TF_FC_DATA_TYPE, dimension(VEC_LOCAL_SZ) :: buf, rbuf
   integer, dimension(1) :: dims
   integer :: pio_dim_file1, pio_dim_file2
-  integer :: i, ierr, lsz
+  integer :: i, ierr
   ! iotypes = valid io types
   integer, dimension(:), allocatable :: iotypes
   character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs

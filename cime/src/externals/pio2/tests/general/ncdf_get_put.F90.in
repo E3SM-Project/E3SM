@@ -251,7 +251,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN test_put_get_1dvar_slice
   Implicit none
   type(file_desc_t) :: pio_file
   character(len=PIO_TF_MAX_STR_LEN) :: filename
-  type(var_desc_t)  :: pio_var, pio_cvar
+  type(var_desc_t)  :: pio_var
   integer :: pio_dim
   integer, parameter :: MAX_ROW_DIM_LEN = 100
   PIO_TF_FC_DATA_TYPE, dimension(MAX_ROW_DIM_LEN) :: gval, exp_val
@@ -315,7 +315,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN test_put_get_1dvar_4parts
   Implicit none
   type(file_desc_t) :: pio_file
   character(len=PIO_TF_MAX_STR_LEN) :: filename
-  type(var_desc_t)  :: pio_var, pio_cvar
+  type(var_desc_t)  :: pio_var
   integer :: pio_dim
   integer, parameter :: DIM_LEN = 16
   integer, parameter :: PART_LEN = DIM_LEN / 4
@@ -420,7 +420,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN test_put_get_md2mdplus1_var
   integer, dimension(:), allocatable :: iotypes
   character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
   integer :: num_iotypes
-  integer :: i, k, l, m, n, tstep, ret
+  integer :: i, k, l, m, tstep, ret
   
   num_iotypes = 0
   call PIO_TF_Get_nc_iotypes(iotypes, iotype_descs, num_iotypes)

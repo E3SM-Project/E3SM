@@ -136,8 +136,12 @@ SUMMARY of cprnc:
  A total number of    119 fields were compared
           of which     83 had non-zero differences
                and     17 had differences in fill patterns
+               and      2 had differences in dimension sizes
  A total number of     10 fields could not be analyzed
- A total number of      0 fields on file 1 were not found on file2
+ A total number of      0 time-varying fields on file 1 were not found on file 2.
+ A total number of      0 time-constant fields on file 1 were not found on file 2.
+ A total number of      0 time-varying fields on file 2 were not found on file 1.
+ A total number of      0 time-constant fields on file 2 were not found on file 1.
   diff_test: the two files seem to be DIFFERENT
 
 
@@ -146,12 +150,26 @@ This summarizes:
 - the number of fields that differed (not counting fields that differed
   only in the fill pattern)
 - the number of fields with differences in fill patterns
+- the number of fields with differences in dimension sizes
 - the number of fields that could not be analyzed
-- the number of fields that could not be found on the second file
-- whether the files are IDENTICAL or DIFFERENT
-  Files are considered DIFFERENT if there are differences either in the
-  values or in the fill patterns of any variable.
-
+- the number of fields on one file but not the other
+  - for files with an unlimited (time) dimension, these counts are
+    broken down into time-varying fields (i.e., fields with an unlimited
+    dimension) and time-constant fields (i.e., fields without an
+    unlimited dimension)
+- whether the files are IDENTICAL, DIFFERENT, or DIFFER only in their field lists
+  - Files are considered DIFFERENT if there are differences in the values, fill
+    patterns or dimension sizes of any variable
+  - Files are considered to "DIFFER only in their field lists" if matching
+    variables are all identical, but there are either fields on file1 that are
+    not on file2, or fields on file2 that are not on file1
+    - However, if the only difference in field lists is in the presence
+      or absence of time-constant fields on a file that has an unlimited
+      (time) dimension, the files are considered to be IDENTICAL, with
+      an extra message appended that notes this fact. (While not ideal,
+      this exception is needed so that exact restart tests pass despite
+      some time-constant fields being on the output files from one case
+      but not the other.)
 
 Developers Guide:
 -----------------

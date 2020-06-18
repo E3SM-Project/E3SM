@@ -25,20 +25,33 @@ def _build_prereq_str(case, prev_job_ids):
 
 def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resubmit=False,
             resubmit_immediate=False, skip_pnl=False, mail_user=None, mail_type=None,
-            batch_args=None):
+            batch_args=None, workflow=True):
     if job is None:
-        job = case.get_primary_job()
+        job = case.get_first_job()
+
+    # Check mediator
+    hasMediator = True
+    comp_classes = case.get_values("COMP_CLASSES")
+    if 'CPL' not in comp_classes:
+        hasMediator = False
 
     # Check if CONTINUE_RUN value makes sense
-    if job != "case.test" and case.get_value("CONTINUE_RUN"):
+    if job != "case.test" and case.get_value("CONTINUE_RUN") and hasMediator:
         rundir = case.get_value("RUNDIR")
         expect(os.path.isdir(rundir),
                "CONTINUE_RUN is true but RUNDIR {} does not exist".format(rundir))
-        expect(os.path.exists(os.path.join(rundir,"rpointer.drv")),
-               "CONTINUE_RUN is true but this case does not appear to have restart files staged in {}".format(rundir))
-        # Finally we open the rpointer.drv file and check that it's correct
+        # only checks for the first instance in a multidriver case
+        if case.get_value("COMP_INTERFACE") == "nuopc":
+            rpointer = "rpointer.med"
+        elif case.get_value("MULTI_DRIVER"):
+            rpointer = "rpointer.drv_0001"
+        else:
+            rpointer = "rpointer.drv"
+        expect(os.path.exists(os.path.join(rundir,rpointer)),
+               "CONTINUE_RUN is true but this case does not appear to have restart files staged in {} {}".format(rundir,rpointer))
+        # Finally we open the rpointer file and check that it's correct
         casename = case.get_value("CASE")
-        with open(os.path.join(rundir,"rpointer.drv"), "r") as fd:
+        with open(os.path.join(rundir,rpointer), "r") as fd:
             ncfile = fd.readline().strip()
             expect(ncfile.startswith(casename) and
                    os.path.exists(os.path.join(rundir,ncfile)),
@@ -48,10 +61,36 @@ def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resub
     # if case.submit is called with the no_batch flag then we assume that this
     # flag will stay in effect for the duration of the RESUBMITs
     env_batch = case.get_env("batch")
-    if resubmit:
-        if env_batch.get_batch_system_type() == "none":
-            no_batch = True
+    external_workflow = case.get_value("EXTERNAL_WORKFLOW")
+    if env_batch.get_batch_system_type() == "none" or resubmit and external_workflow:
+        no_batch = True
 
+    if no_batch:
+        batch_system = "none"
+    else:
+        batch_system = env_batch.get_batch_system_type()
+    unlock_file(os.path.basename(env_batch.filename))
+    case.set_value("BATCH_SYSTEM", batch_system)
+
+    env_batch_has_changed = False
+    if not external_workflow:
+        try:
+            case.check_lockedfile(os.path.basename(env_batch.filename))
+        except:
+            env_batch_has_changed = True
+
+    if batch_system != "none" and env_batch_has_changed and not external_workflow:
+        # May need to regen batch files if user made batch setting changes (e.g. walltime, queue, etc)
+        logger.warning(\
+"""
+env_batch.xml appears to have changed, regenerating batch scripts
+manual edits to these file will be lost!
+""")
+        env_batch.make_all_batch_files(case)
+    case.flush()
+    lock_file(os.path.basename(env_batch.filename))
+
+    if resubmit:
         # This is a resubmission, do not reinitialize test values
         if job == "case.test":
             case.set_value("IS_FIRST_RUN", False)
@@ -91,8 +130,8 @@ manual edits to these file will be lost!
         unlock_file(os.path.basename(env_batch.filename))
         lock_file(os.path.basename(env_batch.filename))
 
+        case.check_case()
         if job == case.get_primary_job():
-            case.check_case()
             case.check_DA_settings()
             if case.get_value("MACH") == "mira":
                 with open(".original_host", "w") as fd:
@@ -107,7 +146,7 @@ manual edits to these file will be lost!
     job_ids = case.submit_jobs(no_batch=no_batch, job=job, prereq=prereq,
                                skip_pnl=skip_pnl, resubmit_immediate=resubmit_immediate,
                                allow_fail=allow_fail, mail_user=mail_user,
-                               mail_type=mail_type, batch_args=batch_args)
+                               mail_type=mail_type, batch_args=batch_args, workflow=workflow)
 
     xml_jobids = []
     for jobname, jobid in job_ids.items():
@@ -123,7 +162,7 @@ manual edits to these file will be lost!
 
 def submit(self, job=None, no_batch=False, prereq=None, allow_fail=False, resubmit=False,
            resubmit_immediate=False, skip_pnl=False, mail_user=None, mail_type=None,
-           batch_args=None):
+           batch_args=None, workflow=True):
     if resubmit_immediate and self.get_value("MACH") in ['mira', 'cetus']:
         logger.warning("resubmit_immediate does not work on Mira/Cetus, submitting normally")
         resubmit_immediate = False
@@ -145,7 +184,7 @@ def submit(self, job=None, no_batch=False, prereq=None, allow_fail=False, resubm
     # any submit options used on the original submit and use them again
     submit_options = os.path.join(caseroot, ".submit_options")
     if resubmit and os.path.exists(submit_options):
-        config = configparser.SafeConfigParser()
+        config = configparser.RawConfigParser()
         config.read(submit_options)
         if not skip_pnl and config.has_option('SubmitOptions','skip_pnl'):
             skip_pnl = config.getboolean('SubmitOptions', 'skip_pnl')
@@ -161,7 +200,7 @@ def submit(self, job=None, no_batch=False, prereq=None, allow_fail=False, resubm
                                   allow_fail=allow_fail, resubmit=resubmit,
                                   resubmit_immediate=resubmit_immediate, skip_pnl=skip_pnl,
                                   mail_user=mail_user, mail_type=mail_type,
-                                  batch_args=batch_args)
+                                  batch_args=batch_args, workflow=workflow)
         run_and_log_case_status(functor, "case.submit", caseroot=caseroot,
                                 custom_success_msg_functor=verbatim_success_msg)
     except BaseException: # Want to catch KeyboardInterrupt too
@@ -180,9 +219,8 @@ def check_case(self):
     self.check_all_input_data()
 
     if self.get_value('COMP_WAV') == 'ww':
-        # the ww3 buildnml has dependancies on inputdata so we must run it again
+        # the ww3 buildnml has dependencies on inputdata so we must run it again
         self.create_namelists(component='WAV')
-
 
     expect(self.get_value("BUILD_COMPLETE"), "Build complete is "
            "not True please rebuild the model by calling case.build")

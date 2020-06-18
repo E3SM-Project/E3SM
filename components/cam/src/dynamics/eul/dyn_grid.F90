@@ -20,7 +20,8 @@ module dyn_grid
 !      get_gcol_block_cnt_d     get number of blocks containing data
 !                               from a given global column index
 !      get_block_owner_d        get process "owning" given block
-!      get_horiz_grid_d         get horizontal grid coordinates
+!      get_horiz_grid_d         get horizontal grid coordinates and associated
+!                               information
 !      get_horiz_grid_dim_d     get horizontal dimensions of dynamics grid
 !      dyn_grid_get_pref        get reference pressures for the dynamics grid
 !      dyn_grid_get_elem_coords get coordinates of a specified element (latitude) 
@@ -423,7 +424,7 @@ contains
 !
 !========================================================================
 !
-   subroutine get_block_gcol_d(blockid,size,cdex)
+   subroutine get_block_gcol_d(blockid,cnt,cdex)
 
 !----------------------------------------------------------------------- 
 ! 
@@ -440,18 +441,18 @@ contains
    implicit none
 !------------------------------Arguments--------------------------------
    integer, intent(in) :: blockid      ! global block id
-   integer, intent(in) :: size         ! array size
+   integer, intent(in) :: cnt          ! array size
 
-   integer, intent(out):: cdex(size)   ! global column indices
+   integer, intent(out):: cdex(cnt)    ! global column indices
 !---------------------------Local workspace-----------------------------
 !
     integer i,j                            ! loop indices
     integer n                              ! column index
 !-----------------------------------------------------------------------
 ! block == latitude slice
-   if (size < plon) then
+   if (cnt < plon) then
       write(iulog,*)'GET_BLOCK_GCOL_D: array not large enough (', &
-                          size,' < ',plon,' ) '
+                          cnt,' < ',plon,' ) '
       call endrun
    else
       n = (blockid-1)*plon
@@ -706,15 +707,18 @@ contains
 !
 !========================================================================
 !
-   subroutine get_horiz_grid_d(size,clat_d_out,clon_d_out,area_d_out, &
-                               wght_d_out,lat_d_out,lon_d_out)
+   subroutine get_horiz_grid_d(nxy,clat_d_out,clon_d_out,area_d_out, &
+                               wght_d_out,lat_d_out,lon_d_out,cost_d_out)
 
 !----------------------------------------------------------------------- 
 ! 
 !                          
 ! Purpose: Return latitude and longitude (in radians), column surface
 !          area (in radians squared) and surface integration weights
-!          for global column indices that will be passed to/from physics
+!          for global column indices that will be passed to/from 
+!          physics. Optionally also return estimated physics 
+!          computational cost per global column for use in load 
+!          balancing.
 ! 
 ! Method: 
 ! 
@@ -727,16 +731,17 @@ contains
    use physconst,     only: pi, spval
    implicit none
 !------------------------------Arguments--------------------------------
-   integer, intent(in)   :: size             ! array sizes
+   integer, intent(in)   :: nxy                       ! array sizes
 
-   real(r8), intent(out), optional :: clat_d_out(size) ! column latitudes
-   real(r8), intent(out), optional :: clon_d_out(size) ! column longitudes
-   real(r8), intent(out), optional :: area_d_out(size) ! column surface 
-                                                       !  area
-   real(r8), intent(out), optional :: wght_d_out(size) ! column integration
-                                                       !  weight
-   real(r8), intent(out), optional :: lat_d_out(:)  ! column degree latitudes
-   real(r8), intent(out), optional :: lon_d_out(:)  ! column degree longitudes
+   real(r8), intent(out), optional :: clat_d_out(nxy) ! column latitudes
+   real(r8), intent(out), optional :: clon_d_out(nxy) ! column longitudes
+   real(r8), intent(out), optional :: area_d_out(nxy) ! column surface 
+                                                      !  area
+   real(r8), intent(out), optional :: wght_d_out(nxy) ! column integration
+                                                      !  weight
+   real(r8), intent(out), optional :: lat_d_out(nxy)  ! column degree latitudes
+   real(r8), intent(out), optional :: lon_d_out(nxy)  ! column degree longitudes
+   real(r8), intent(out), optional :: cost_d_out(:) ! column cost
 !---------------------------Local workspace-----------------------------
 !
     integer i,j                      ! loop indices
@@ -748,7 +753,7 @@ contains
     real(r8), parameter :: degtorad=pi/180_r8
 !-----------------------------------------------------------------------
     if(present(clon_d_out)) then
-       if(size == ngcols_d) then
+       if(nxy == ngcols_d) then
           n = 0
           do j = 1,plat
              do i = 1,nlon(j)
@@ -756,16 +761,16 @@ contains
                 clon_d_out(n) = clon(i,j)
              enddo
           enddo
-       else if(size == plon) then
+       else if(nxy == plon) then
           clon_d_out(:) = clon(:,1)
        else
           write(iulog,*)'GET_HORIZ_GRID_D: arrays not large enough (', &
-               size,' < ',ngcols_d,' ) '
+               nxy,' < ',ngcols_d,' ) '
           call endrun
        end if
     end if
     if(present(clat_d_out)) then
-       if(size == ngcols_d) then
+       if(nxy == ngcols_d) then
           n = 0
           do j = 1,plat
              do i = 1,nlon(j)
@@ -773,19 +778,19 @@ contains
                 clat_d_out(n) = clat(j)
              enddo
           enddo
-       else if(size == plat) then
+       else if(nxy == plat) then
           clat_d_out(:) = clat(:)
        else
           write(iulog,*)'GET_HORIZ_GRID_D: arrays not large enough (', &
-               size,' < ',ngcols_d,' ) '
+               nxy,' < ',ngcols_d,' ) '
           call endrun
        end if
     end if
     if ( ( present(wght_d_out) ) ) then
 
-       if(size==plat) then
+       if(nxy==plat) then
           wght_d_out(:) = (0.5_r8*w(:)/nlon(:))* (4.0_r8*pi)
-       else if(size == ngcols_d) then
+       else if(nxy == ngcols_d) then
           n = 0
           do j = 1,plat
              do i = 1,nlon(j)
@@ -796,9 +801,9 @@ contains
        end if
     end if
     if ( present(area_d_out) ) then
-       if(size < ngcols_d) then
+       if(nxy < ngcols_d) then
           write(iulog,*)'GET_HORIZ_GRID_D: arrays not large enough (', &
-               size,' < ',ngcols_d,' ) '
+               nxy,' < ',ngcols_d,' ) '
           call endrun
        end if
        n = 0
@@ -840,7 +845,7 @@ contains
        enddo
     endif
     if(present(lon_d_out)) then
-       if(size == ngcols_d) then
+       if(nxy == ngcols_d) then
           n = 0
           do j = 1,plat
              do i = 1,nlon(j)
@@ -848,16 +853,16 @@ contains
                 lon_d_out(n) = londeg(i,j)
              end do
           end do
-       else if(size == plon) then
+       else if(nxy == plon) then
           lon_d_out(:) = londeg(:,1)
        else
           write(iulog,*)'GET_HORIZ_GRID_D: arrays not large enough (', &
-               size,' < ',ngcols_d,' ) '
+               nxy,' < ',ngcols_d,' ) '
           call endrun
        end if
     end if
     if(present(lat_d_out)) then
-       if(size == ngcols_d) then
+       if(nxy == ngcols_d) then
           n = 0
           do j = 1,plat
              do i = 1,nlon(j)
@@ -865,12 +870,23 @@ contains
                 lat_d_out(n) = latdeg(j)
              end do
           end do
-       else if(size == plat) then
+       else if(nxy == plat) then
           lat_d_out(:) = latdeg(:)
        else
           write(iulog,*)'GET_HORIZ_GRID_D: arrays not large enough (', &
-               size,' < ',ngcols_d,' ) '
+               nxy,' < ',ngcols_d,' ) '
           call endrun
+       end if
+    end if
+    ! just a placeholder for now, until a mechanism for setting cost_d_out
+    ! is designed and implemented
+    if (present(cost_d_out)) then
+       if (size(cost_d_out) < ngcols_d) then
+          write(iulog,*)'GET_HORIZ_GRID_D: cost_d_out array not large enough (', &
+               size(cost_d_out),' < ',ngcols_d,' ) '
+          call endrun
+       else
+          cost_d_out(:) = 1.0_r8
        end if
     end if
 !

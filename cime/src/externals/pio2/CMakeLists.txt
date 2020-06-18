@@ -4,7 +4,7 @@ project (PIO C Fortran)
 
 # The project version number.
 set(VERSION_MAJOR   2   CACHE STRING "Project major version number.")
-set(VERSION_MINOR   3   CACHE STRING "Project minor version number.")
+set(VERSION_MINOR   5   CACHE STRING "Project minor version number.")
 set(VERSION_PATCH   0   CACHE STRING "Project patch version number.")
 mark_as_advanced(VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
 
@@ -26,8 +26,8 @@ option (PIO_INTERNAL_DOC     "Enable PIO developer documentation"           OFF)
 option (PIO_TEST_BIG_ENDIAN  "Enable test to see if machine is big endian"  ON)
 option (PIO_USE_MPIIO        "Enable support for MPI-IO auto detect"        ON)
 option (PIO_USE_MPISERIAL    "Enable mpi-serial support (instead of MPI)"   OFF)
-option (PIO_USE_MALLOC       "Use native malloc (instead of bget package)"  OFF)
-option (PIO_USE_PNETCDF_VARD       "Use pnetcdf put_vard "  OFF)
+option (PIO_USE_MALLOC       "Use native malloc (instead of bget package)"  ON)
+option (PIO_USE_PNETCDF_VARD       "Use pnetcdf put_vard "                  OFF)
 option (WITH_PNETCDF         "Require the use of PnetCDF"                   ON)
 
 # Set a variable that appears in the config.h.in file.

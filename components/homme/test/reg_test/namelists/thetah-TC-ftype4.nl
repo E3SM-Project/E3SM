@@ -24,7 +24,7 @@
   limiter_option    = 9
   hypervis_order    = 2                         ! 2 = hyperviscosity
   hypervis_subcycle = 1                         ! 1 = no hyperviz subcycling
-  moisture          = 'moist'
+  moisture          = 'wet'
   theta_hydrostatic_mode = .true.
   dcmip16_prec_type = 0                         ! 0=kessler,     1= reed-jablonowski
   dcmip16_pbl_type  = 0                         ! 0=basic pbl,   1= bryan pbl

@@ -100,11 +100,15 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
                             lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k,q
   logical :: abort=.false.
 
+  q = vert_remap_q_alg
+  if ( (q.ne.-1) .and. (q.ne.0) .and. (q.ne.1) .and. (q.ne.2) .and. (q.ne.3) .and. (q.ne.10) )&
+     call abortmp('Bad vert_remap_q_alg value. Use -1, 0, 1, 2, 3, or 10.')
+
   if (vert_remap_q_alg == -1) then
      call remap1_nofilter(qdp,nx,qsize,dp1,dp2)
      return
   endif
-  if (vert_remap_q_alg == 1 .or. vert_remap_q_alg == 2 .or. vert_remap_q_alg == 3) then
+  if (vert_remap_q_alg == 1 .or. vert_remap_q_alg == 2 .or. vert_remap_q_alg == 3 .or. vert_remap_q_alg == 10) then
      call remap_Q_ppm(qdp,nx,qsize,dp1,dp2)
      return
   endif
@@ -534,7 +538,7 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
   real(kind=real_kind), dimension(3,     nlev   ) :: coefs  !PPM coefficients within each cell
   real(kind=real_kind), dimension(       nlev   ) :: z1, z2
   real(kind=real_kind) :: ppmdx(10,0:nlev+1)  !grid spacings
-  real(kind=real_kind) :: mymass, massn1, massn2
+  real(kind=real_kind) :: mymass, massn1, massn2, ext(2)
   integer :: i, j, k, q, kk, kid(nlev)
 
   call t_startf('remap_Q_ppm')
@@ -607,15 +611,23 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
           ao(k) = ao(k) / dpo(k)        !Divide out the old grid spacing because we want the tracer mixing ratio, not mass.
         enddo
         !Fill in ghost values. Ignored if vert_remap_q_alg == 2
-        do k = 1 , gs
-          if (vert_remap_q_alg == 3) then
-             ao(1   -k) = ao(1)
-             ao(nlev+k) = ao(nlev)
-          elseif (vert_remap_q_alg == 2 .or. vert_remap_q_alg == 1) then   !Ignored if vert_remap_q_alg == 2
-             ao(1   -k) = ao(       k)
-             ao(nlev+k) = ao(nlev+1-k)
-          endif
-        enddo
+        if (vert_remap_q_alg >= 1 .and. vert_remap_q_alg <= 3) then
+           do k = 1 , gs
+              if (vert_remap_q_alg == 3) then
+                 ao(1   -k) = ao(1)
+                 ao(nlev+k) = ao(nlev)
+              elseif (vert_remap_q_alg == 2 .or. vert_remap_q_alg == 1)then   !Ignored if vert_remap_q_alg == 2
+                 ao(1   -k) = ao(       k)
+                 ao(nlev+k) = ao(nlev+1-k)
+              endif
+            enddo
+         elseif (vert_remap_q_alg == 10) then
+            ext(1) = minval(ao(1:nlev))
+            ext(2) = maxval(ao(1:nlev))
+            call linextrap(dpo(2), dpo(1), dpo(0), dpo(-1), ao(2), ao(1), ao(0), ao(-1), ext(1), ext(2))
+            call linextrap(dpo(nlev-1), dpo(nlev), dpo(nlev+1), dpo(nlev+2),&
+                 ao(nlev-1), ao(nlev), ao(nlev+1), ao(nlev+2), ext(1), ext(2))
+         endif
         !Compute monotonic and conservative PPM reconstruction over every cell
         coefs(:,:) = compute_ppm( ao , ppmdx )
         !Compute tracer values on the new grid by integrating from the old cell bottom to the new
@@ -765,8 +777,38 @@ end function integrate_parabola
     k = lo
   end subroutine binary_search
 
+
+  subroutine linextrap(dx1,dx2,dx3,dx4,y1,y2,y3,y4,lo,hi)
+    real(kind=real_kind), intent(in) :: dx1,dx2,dx3,dx4,y1,y2,lo,hi
+    real(kind=real_kind), intent(out) :: y3,y4
+
+    real(kind=real_kind) :: den,num,a
+    real(kind=real_kind) :: z3,z4
+
+    ! In exact arithmetic, the following is equivalent to
+    !   x1 = half*dx1
+    !   x2 = x1 + half*(dx1 + dx2)
+    !   x3 = x2 + half*(dx2 + dx3)
+    !   x4 = x3 + half*(dx3 + dx4)
+    !   a  = (x3-x1)/(x2-x1)
+    !   y3 = (1-a)*y1 + a*y2
+    !   a  = (x4-x1)/(x2-x1)
+    !   y4 = (1-a)*y1 + a*y2
+    ! In FP, -fp-model-fast -O3 produces different results depending
+    ! on whether -qopenmp is present.
+
+    den = (dx1 + dx2)/2
+    num = den + (dx2 + dx3)/2
+    a = num/den
+    y3 = (1-a)*y1 + a*y2
+
+    num = num + (dx3 + dx4)/2
+    a  = num/den
+    y4 = (1-a)*y1 + a*y2
+
+    y3 = max(lo, min(hi, y3))
+    y4 = max(lo, min(hi, y4))
+  end subroutine linextrap
+
+
 end module vertremap_base
-
-
-
-

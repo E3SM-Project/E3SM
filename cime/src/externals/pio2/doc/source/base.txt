@@ -1,52 +1,33 @@
-/******************************************************************************
- *
- * 
- *
- * Copyright (C) 2009 
- *
- * Permission to use, copy, modify, and distribute this software and its
- * documentation under the terms of the GNU General Public License is hereby 
- * granted. No representations are made about the suitability of this software 
- * for any purpose. It is provided "as is" without express or implied warranty.
- * See the GNU General Public License for more details.
- *
- * Documents produced by Doxygen are derivative works derived from the
- * input used in their production; they are not affected by this license.
- *
- */ 
 /*! 
 
-\mainpage Parallel I/O library (PIO)
+@mainpage Parallel I/O Libraries (PIO)
 
-\author Jim Edwards
-\author John M. Dennis
-\author Mariana Vertenstein
-\author Edward Hartnett
+@author Jim Edwards
+@author John M. Dennis
+@author Mariana Vertenstein
+@author Edward Hartnett
 
-The Parallel I/O (PIO) library has been developed over several years
-to improve the ability of component models of the Community Earth
-System Model (CESM) to perform I/O.  We believe that the interface is
-sufficiently general to be useful to a broader spectrum of
-applications.  The focus of development has been on backend tools that
-use the NetCDF file format.  PIO currently supports NetCDF and PnetCDF
-as backend libraries, both can be linked and used with runtime options
-controlling which is used for a given file.
+The Parallel IO libraries (PIO) are high-level parallel I/O C and
+Fortran libraries for structured grid applications. PIO provides a
+netCDF-like API, and allows users to designate some subset of
+processors to perform IO. Computational code calls netCDF-like
+functions to read and write data, and PIO uses the IO processors to
+perform all necessary IO.
 
-PIO2 represents a significant rewrite of the PIO library and includes
-a C API as well as the original F90 API.  A new decomposition strategy
-has been introduced which gives the user more ability to tune io communications.
+PIO also supports the creation of multiple computation components,
+each containing many processors, and one shared set of IO
+processors. The computational components can perform write operation
+asynchronously, and the IO processors will take care of all storage
+interaction.
 
-This user's guide provides information about the PIO library and examples on how it can be used. 
-Please review the ChangeLog that is included with the distribution for up-to-date release information.
+This user's guide provides information about the PIO library and
+examples on how it can be used. Please watch the PIO GitHub site
+[https://github.com/NCAR/ParallelIO] for announcements and new
+releases.
 
- - \ref intro
- - \ref install
- - \ref mach_walkthrough
- - \ref decomp
- - \ref error
- - \ref test
- - \ref examp
- - \ref faq
- - \ref api
- - \ref contributing_code
+ - @ref install
+ - @ref users_guide
+ - @ref api
+ - @ref c_api
+ - @ref netcdf_integration
 */

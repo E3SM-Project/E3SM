@@ -53,6 +53,8 @@ OPTIONS
      -inst_string          inst_string variable
      -ntasks_glc           NTASKS_GLC for this case
      -ninst_glc            NINST_GLC for this case
+     -mali_dynamic         turns on dynamic ice sheet mode
+                           Options are: FALSE, TRUE
 
 NOTE: The precedence for setting the values of namelist variables is (highest to lowest):
       1. namelist values set by specific command-line options, i.e. (none right now)
@@ -97,6 +99,7 @@ my %opts = ( help          => 0,
              cfg_dir       => $cfgdir,
              ntasks_glc    => 0,
              ninst_glc     => 0,
+             mali_dynamic  => undef,
            );
 
 GetOptions(
@@ -115,6 +118,7 @@ GetOptions(
     "preview"         => \$opts{'preview'},
     "ntasks_glc=i"    => \$opts{'ntasks_glc'},
     "ninst_glc=i"     => \$opts{'ninst_glc'},
+    "mali_dynamic=s"  => \$opts{'mali_dynamic'},
 
 )  or usage();
 
@@ -149,6 +153,7 @@ my $date_stamp    = $opts{'date_stamp'};
 $cfgdir           = $opts{'cfg_dir'};
 my $NINST_GLC     = $opts{'ninst_glc'};
 my $NTASKS_GLC    = $opts{'ntasks_glc'};
+my $MALI_DYNAMIC  = $opts{'mali_dynamic'};
 
 my $CIMEROOT;
 if ( defined $opts{'cimeroot'} ) {
@@ -422,20 +427,33 @@ if ($MALI_USE_ALBANY eq 'TRUE') {
 # Namelist group: velocity_solver #
 ###################################
 
-add_default($nl, 'config_velocity_solver', 'masi_use_albany'=>"$MALI_USE_ALBANY");
+if ($MALI_DYNAMIC eq 'TRUE') {
+    add_default($nl, 'config_velocity_solver', 'masi_use_albany'=>"$MALI_USE_ALBANY");
+} else {
+    add_default($nl, 'config_velocity_solver', 'val'=>"none");
+}
 add_default($nl, 'config_sia_tangent_slope_calculation');
 add_default($nl, 'config_flowParamA_calculation');
 add_default($nl, 'config_do_velocity_reconstruction_for_external_dycore');
 add_default($nl, 'config_simple_velocity_type');
 add_default($nl, 'config_use_glp');
 add_default($nl, 'config_beta_use_effective_pressure');
+add_default($nl, 'config_unrealistic_velocity');
 
 #############################
 # Namelist group: advection #
 #############################
 
-add_default($nl, 'config_thickness_advection');
-add_default($nl, 'config_tracer_advection');
+if ($MALI_DYNAMIC eq 'TRUE') {
+    add_default($nl, 'config_thickness_advection');
+} else {
+    add_default($nl, 'config_thickness_advection', 'val'=>"none");
+}
+if ($MALI_DYNAMIC eq 'TRUE') {
+    add_default($nl, 'config_tracer_advection');
+} else {
+    add_default($nl, 'config_tracer_advection', 'val'=>"none");
+}
 
 ###########################
 # Namelist group: calving #
@@ -449,6 +467,8 @@ add_default($nl, 'config_calving_eigencalving_parameter_scalar_value');
 add_default($nl, 'config_data_calving');
 add_default($nl, 'config_calving_timescale');
 add_default($nl, 'config_restore_calving_front');
+add_default($nl, 'config_remove_icebergs');
+add_default($nl, 'config_remove_small_islands');
 
 ##################################
 # Namelist group: thermal_solver #
@@ -463,12 +483,31 @@ add_default($nl, 'config_surface_air_temperature_value');
 add_default($nl, 'config_surface_air_temperature_lapse_rate');
 add_default($nl, 'config_basal_heat_flux_source');
 add_default($nl, 'config_basal_heat_flux_value');
+add_default($nl, 'config_temp_diffusive_factor');
+add_default($nl, 'config_max_water_fraction');
+
+#################################
+# Namelist group: iceshelf_melt #
+#################################
+
 add_default($nl, 'config_basal_mass_bal_float');
+add_default($nl, 'config_bmlt_float_flux');
+add_default($nl, 'config_bmlt_float_xlimit');
 add_default($nl, 'config_basal_mass_bal_seroussi_amplitude');
 add_default($nl, 'config_basal_mass_bal_seroussi_period');
 add_default($nl, 'config_basal_mass_bal_seroussi_phase');
-add_default($nl, 'config_bmlt_float_flux');
-add_default($nl, 'config_bmlt_float_xlimit');
+add_default($nl, 'config_temperature_profile_melt_scale_factor');
+add_default($nl, 'config_temperature_profile_sill_elevation');
+add_default($nl, 'config_temperature_profile_plume_thickness');
+add_default($nl, 'config_temperature_profile_draft_slope');
+add_default($nl, 'config_temperature_profile_thermocline_upper_depth');
+add_default($nl, 'config_temperature_profile_thermocline_upper_temp');
+add_default($nl, 'config_temperature_profile_thermocline_lower_depth');
+add_default($nl, 'config_temperature_profile_thermocline_lower_temp');
+add_default($nl, 'config_temperature_profile_variability_amplitude');
+add_default($nl, 'config_temperature_profile_variability_period');
+add_default($nl, 'config_temperature_profile_variability_phase');
+add_default($nl, 'config_temperature_profile_GL_depth_fraction');
 
 #######################################
 # Namelist group: physical_parameters #
@@ -478,7 +517,6 @@ add_default($nl, 'config_ice_density');
 add_default($nl, 'config_ocean_density');
 add_default($nl, 'config_sea_level');
 add_default($nl, 'config_default_flowParamA');
-add_default($nl, 'config_enhancementFactor');
 add_default($nl, 'config_flowLawExponent');
 add_default($nl, 'config_dynamic_thickness');
 
@@ -605,6 +643,7 @@ my @groups = qw(velocity_solver
                 advection
                 calving
                 thermal_solver
+                iceshelf_melt
                 physical_parameters
                 time_integration
                 time_management

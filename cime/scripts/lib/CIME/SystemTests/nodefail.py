@@ -22,11 +22,16 @@ class NODEFAIL(ERS):
         # Swap out model.exe for one that emits node failures
         rundir = self._case.get_value("RUNDIR")
         exeroot = self._case.get_value("EXEROOT")
+        driver = self._case.get_value("COMP_INTERFACE")
+        if driver == "nuopc":
+            logname = "med"
+        else:
+            logname = "cpl"
         fake_exe = \
 """#!/bin/bash
 
 fail_sentinel={0}
-cpl_log={1}/cpl.log.$LID
+cpl_log={1}/{4}.log.$LID
 model_log={1}/{2}.log.$LID
 touch $cpl_log
 touch $fail_sentinel
@@ -43,7 +48,7 @@ else
   echo Insta pass
   echo SUCCESSFUL TERMINATION > $cpl_log
 fi
-""".format(self._fail_sentinel, rundir, get_model(), self._fail_str)
+""".format(self._fail_sentinel, rundir, get_model(), self._fail_str, logname)
 
         fake_exe_file = os.path.join(exeroot, "fake.sh")
         with open(fake_exe_file, "w") as fd:

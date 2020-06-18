@@ -21,7 +21,7 @@ except ImportError:
 #     "inherit" : (suite1, suite2, ...), # Optional. Suites to inherit tests from. Default is None. Tuple, list, or str.
 #     "time"    : "HH:MM:SS",            # Optional. Recommended upper-limit on test time.
 #     "share"   : True|False,            # Optional. If True, all tests in this suite share a build. Default is False.
-#     "tests"   : (test1, test2, ...)    # Optional. The list of tests for this suite. See above for format. Tuple, list, or str.
+#     "tests"   : (test1, test2, ...)    # Optional. The list of tests for this suite. See above for format. Tuple, list, or str. This is the ONLY inheritable attribute.
 # }
 
 _CIME_TESTS = {
@@ -84,11 +84,29 @@ _CIME_TESTS = {
             )
         },
 
+    "cime_test_share2" : {
+        "time"  : "0:10:00",
+        "share" : True,
+        "tests" : (
+            "SMS_P2.f19_g16_rx1.X",
+            "SMS_P4.f19_g16_rx1.X",
+            "SMS_P8.f19_g16_rx1.X",
+            "SMS_P16.f19_g16_rx1.X",
+            )
+        },
+
     "cime_test_repeat" : {
         "tests" : (
             "TESTRUNPASS_P1.f19_g16_rx1.A",
             "TESTRUNPASS_P2.ne30_g16_rx1.A",
             "TESTRUNPASS_P4.f45_g37_rx1.A",
+            )
+        },
+
+    "cime_test_time" : {
+        "time"    : "0:13:00",
+        "tests" : (
+            "TESTRUNPASS_P69.f19_g16_rx1.A.testmod",
             )
         },
 
@@ -100,18 +118,18 @@ _CIME_TESTS = {
         "time"  : "0:15:00",
         "tests" : (
             "NCK_Ld3.f45_g37_rx1.A",
-            "ERI.f09_g16.X",
-            "ERIO.f09_g16.X",
+            "ERI_Ln9.f09_g16.X",
+            "ERIO_Ln11.f09_g16.X",
             "SEQ_Ln9.f19_g16_rx1.A",
             "ERS.ne30_g16_rx1.A.drv-y100k",
-            "IRT_N2.f19_g16_rx1.A",
-            "ERR.f45_g37_rx1.A",
-            "ERP.f45_g37_rx1.A",
+            "IRT_N2_Ln9.f19_g16_rx1.A",
+            "ERR_Ln9.f45_g37_rx1.A",
+            "ERP_Ln9.f45_g37_rx1.A",
             "SMS_D_Ln9_Mmpi-serial.f19_g16_rx1.A",
             "DAE.ww3a.ADWAV",
-            "PET_P4.f19_f19.A",
-            "PEM_P4.f19_f19.A",
-            "SMS.T42_T42.S",
+            "PET_Ln9_P4.f19_f19.A",
+            "PEM_Ln9_P4.f19_f19.A",
+            "SMS_Ln3.T42_T42.S",
             "PRE.f19_f19.ADESP",
             "PRE.f19_f19.ADESP_TEST",
             "MCC_P1.f19_g16_rx1.A",
@@ -202,6 +220,61 @@ def get_test_suite(suite, machine=None, compiler=None, skip_inherit=False):
                     tests.append(inherited_test)
 
     return tests
+
+###############################################################################
+def suite_has_test(suite, test_full_name, skip_inherit=False):
+###############################################################################
+    _, _, _, _, machine, compiler, _ = CIME.utils.parse_test_name(test_full_name)
+    expect(machine is not None, "{} is not a full test name".format(test_full_name))
+
+    tests = get_test_suite(suite, machine=machine, compiler=compiler, skip_inherit=skip_inherit)
+    return test_full_name in tests
+
+###############################################################################
+def get_build_groups(tests):
+###############################################################################
+    """
+    Given a list of tests, return a list of lists, with each list representing
+    a group of tests that can share executables.
+
+    >>> tests = ["SMS_P2.f19_g16_rx1.A.melvin_gnu", "SMS_P4.f19_g16_rx1.A.melvin_gnu", "SMS_P2.f19_g16_rx1.X.melvin_gnu", "SMS_P4.f19_g16_rx1.X.melvin_gnu", "TESTRUNSLOWPASS_P1.f19_g16_rx1.A.melvin_gnu", "TESTRUNSLOWPASS_P1.ne30_g16_rx1.A.melvin_gnu"]
+    >>> get_build_groups(tests)
+    [('SMS_P2.f19_g16_rx1.A.melvin_gnu', 'SMS_P4.f19_g16_rx1.A.melvin_gnu'), ('SMS_P2.f19_g16_rx1.X.melvin_gnu', 'SMS_P4.f19_g16_rx1.X.melvin_gnu'), ('TESTRUNSLOWPASS_P1.f19_g16_rx1.A.melvin_gnu',), ('TESTRUNSLOWPASS_P1.ne30_g16_rx1.A.melvin_gnu',)]
+    """
+    build_groups = [] # list of tuples ([tests], set(suites))
+
+    # Get a list of suites that share exes
+    suites = get_test_suites()
+    share_suites = []
+    for suite in suites:
+        share = get_test_data(suite)[2]
+        if share:
+            share_suites.append(suite)
+
+    # Divide tests up into build groups. Assumes that build-compatibility is transitive
+    for test in tests:
+        matched = False
+
+        my_share_suites = set()
+        for suite in share_suites:
+            if suite_has_test(suite, test, skip_inherit=True):
+                my_share_suites.add(suite)
+
+        # Try to match this test with an existing build group
+        if my_share_suites:
+            for build_group_tests, build_group_suites in build_groups:
+                overlap = build_group_suites & my_share_suites
+                if overlap:
+                    matched = True
+                    build_group_tests.append(test)
+                    build_group_suites.update(my_share_suites)
+                    break
+
+        # Nothing matched, this test is in a build group of its own
+        if not matched:
+            build_groups.append(([test], my_share_suites))
+
+    return [tuple(item[0]) for item in build_groups]
 
 ###############################################################################
 def infer_machine_name_from_tests(testargs):
@@ -298,24 +371,17 @@ def get_recommended_test_time(test_full_name):
     >>> get_recommended_test_time("ERS.f19_g16_rx1.A.melvin_gnu")
     '0:10:00'
 
-    >>> get_recommended_test_time("ERS.f19_f19.ICLM45.melvin_gnu")
-    '0:45:00'
-
-    >>> get_recommended_test_time("SMS_D_Ld1.ne30_oECv3_ICG.A_WCYCL1850S_CMIP6.sandiatoss3_intel.allactive-v1cmip6")
-    '03:00:00'
+    >>> get_recommended_test_time("TESTRUNPASS_P69.f19_g16_rx1.A.melvin_gnu.testmod")
+    '0:13:00'
 
     >>> get_recommended_test_time("PET_Ln20.ne30_ne30.FC5.sandiatoss3_intel.cam-outfrq9s")
     >>>
     """
-    _, _, _, _, machine, compiler, _ = CIME.utils.parse_test_name(test_full_name)
-    expect(machine is not None, "{} is not a full test name".format(test_full_name))
-
     best_time = None
     suites = get_test_suites()
     for suite in suites:
-        tests    = get_test_suite(suite, machine=machine, compiler=compiler, skip_inherit=True)
         rec_time = get_test_data(suite)[1]
-        if test_full_name in tests and rec_time is not None and \
+        if suite_has_test(suite, test_full_name, skip_inherit=True) and rec_time is not None and \
            (best_time is None or convert_to_seconds(rec_time) < convert_to_seconds(best_time)):
             best_time = rec_time
 

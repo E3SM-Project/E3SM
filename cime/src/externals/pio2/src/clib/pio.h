@@ -1,10 +1,10 @@
 /**
  * @file
  * Public headers for the PIO C interface.
- * @author Jim Edwards
+ * @author Jim Edwards, Ed Hartnett
  * @date  2014
  *
- * @see http://code.google.com/p/parallelio/
+ * @see https://github.com/NCAR/ParallelIO
  */
 
 #ifndef _PIO_H_
@@ -14,27 +14,19 @@
 #include <stdbool.h>
 #include <string.h> /* memcpy */
 #include <mpi.h>
+#include <uthash.h>
 
-#ifdef _NETCDF
 #include <netcdf.h>
-#ifdef _NETCDF4
-#include <netcdf_par.h>
-#endif
-#endif
-#ifdef _PNETCDF
-#include <pnetcdf.h>
-#endif
-
-#ifndef MPI_OFFSET
-/** MPI_OFFSET is an integer type of size sufficient to represent the
- * size (in bytes) of the largest file supported by MPI. In some MPI
- * implementations MPI_OFFSET is not properly defined.  */
-#define MPI_OFFSET  MPI_LONG_LONG
-#endif
 
 /** PIO_OFFSET is an integer type of size sufficient to represent the
- * size (in bytes) of the largest file supported by MPI. */
+ * size (in bytes) of the largest file supported by MPI. This is not
+ * actually used by the code. */
 #define PIO_OFFSET MPI_OFFSET
+
+/** PIO_OFFSET is defined as MPI_Offset, which is defined in
+ * pio_internal.h as long long. This is what is used throughout the C
+ * code. */
+
 #define PIO_Offset MPI_Offset
 
 /** The maximum number of variables allowed in a netCDF file. */
@@ -49,66 +41,71 @@
 
 /** Used in the decomposition netCDF file. */
 
-/* Holds the version of the decomposition file. */
+/** Holds the version of the decomposition file. */
 #define DECOMP_VERSION_ATT_NAME "PIO_library_version"
 
-/* Holds the maximum length of any task map. */
+/** Holds the maximum length of any task map. */
 #define DECOMP_MAX_MAPLEN_ATT_NAME "max_maplen"
 
-/* Name of title attribute. */
+/** Name of title attribute in decomposition file. */
 #define DECOMP_TITLE_ATT_NAME "title"
 
-/* Name of history attribute. */
+/** Name of history attribute in decomposition file. */
 #define DECOMP_HISTORY_ATT_NAME "history"
 
-/* Name of source attribute. */
+/** Name of source attribute in decomposition file. */
 #define DECOMP_SOURCE_ATT_NAME "source"
 
-/* Name of array order (C or Fortran) attribute. */
+/** Name of array order (C or Fortran) attribute in decomposition
+ * file. */
 #define DECOMP_ORDER_ATT_NAME "array_order"
 
-/* Name of backtrace attribute. */
+/** Name of backtrace attribute in decomposition file. */
+
 #define DECOMP_BACKTRACE_ATT_NAME "backtrace"
 
-/* Name for the dim dim in decomp file. */
+/** Name for the dim dim in decomp file. */
 #define DECOMP_DIM_DIM "dims"
 
-/* Name for the npes dim in decomp file. */
+/** Name for the npes dim in decomp file. */
 #define DECOMP_TASK_DIM_NAME "task"
 
-/* Name for the npes dim in decomp file. */
+/** Name for the npes dim in decomp file. */
 #define DECOMP_MAPELEM_DIM_NAME "map_element"
 
+/** Name for the number of dimensions dim in decomp file. */
 #define DECOMP_NDIMS "ndims"
 
-/* Name of var in decomp file that holds global array sizes. */
+/** Name of var in decomp file that holds global array sizes. */
 #define DECOMP_GLOBAL_SIZE_VAR_NAME "global_size"
 
-/* Name of var in decomp file that holds the length of the map for
+/** Name of var in decomp file that holds the length of the map for
  * each task. */
 #define DECOMP_MAPLEN_VAR_NAME "maplen"
 
-/* Name of var in decomp file that holds map. */
+/** Name of var in decomp file that holds map. */
 #define DECOMP_MAP_VAR_NAME "map"
 
-/* String used to indicate a decomposition file is in C
+/** String used to indicate a decomposition file is in C
  * array-order. */
 #define DECOMP_C_ORDER_STR "C"
 
-/* String used to indicate a decomposition file is in Fortran
+/** String used to indicate a decomposition file is in Fortran
  * array-order. */
 #define DECOMP_FORTRAN_ORDER_STR "Fortran"
 
+/** A convience macro for netCDF integration code. */
+#define NC_PIO NC_UDF0
 
 /**
  * Variable description structure.
  */
 typedef struct var_desc_t
 {
-    /* Variable ID. */
+    /** Variable ID. */
     int varid;
 
-    /* Non-zero if this is a record var (i.e. uses unlimited
+    /** Non-zero if this is a record var (i.e. uses unlimited
      * dimension). */
     int rec_var;
 
@@ -122,8 +119,11 @@ typedef struct var_desc_t
     /** Number of requests pending with pnetcdf. */
     int nreqs;
 
-    /* Holds the fill value of this var. */
+    /** Holds the fill value of this var. */
     void *fillvalue;
+
+    /** Number of dimensions for this var. */
+    int ndims;
 
     /** Non-zero if fill mode is turned on for this var. */
     int use_fill;
@@ -144,8 +144,9 @@ typedef struct var_desc_t
     /** The size in bytes of a datum of MPI type mpitype. */
     int mpi_type_size;
 
-    /** Pointer to next var in list. */
-    struct var_desc_t *next;
+    /** Hash table entry. */
+    UT_hash_handle hh;
+
 } var_desc_t;
 
 /**
@@ -208,7 +209,7 @@ enum PIO_REARR_COMM_FC_DIR
     PIO_REARR_COMM_FC_2D_DISABLE
 };
 
-/* Constant to indicate unlimited requests. */
+/** Constant to indicate unlimited requests for the rearranger. */
 #define PIO_REARR_COMM_UNLIMITED_PEND_REQ -1
 
 /**
@@ -268,9 +269,10 @@ typedef struct io_desc_t
     PIO_Offset *map;
 
     /** If the map passed in is not monotonically increasing
-     *	then map is sorted and remap is an array of original
+     *  then map is sorted and remap is an array of original
      * indices of map. */
 
+    /** Remap. */
     int *remap;
 
     /** Number of tasks involved in the communication between comp and
@@ -285,7 +287,6 @@ typedef struct io_desc_t
     int ndims;
 
     /** An array of size ndims with the global length of each dimension. */
-
     int *dimlen;
 
     /** The actual number of IO tasks participating. */
@@ -301,7 +302,8 @@ typedef struct io_desc_t
      * everywhere (false) */
     bool needsfill;
 
-    /** If the map is not monotonically increasing we will need to sort it. */
+    /** If the map is not monotonically increasing we will need to
+     * sort it. */
     bool needssort;
 
     /** The maximum number of bytes of this iodesc before flushing. */
@@ -381,8 +383,9 @@ typedef struct io_desc_t
      * group. */
     MPI_Comm subset_comm;
 
-    /** Pointer to the next io_desc_t in the list. */
-    struct io_desc_t *next;
+    /** Hash table entry. */
+    UT_hash_handle hh;
+
 } io_desc_t;
 
 /**
@@ -410,7 +413,7 @@ typedef struct iosystem_desc_t
     MPI_Comm comp_comm;
 
     /** This is an MPI inter communicator between IO communicator and
-     * computation communicator. */
+     * computation communicator, only used for async mode. */
     MPI_Comm intercomm;
 
     /** This is a copy (but not an MPI copy) of either the comp (for
@@ -529,8 +532,11 @@ typedef struct wmulti_buffer
     /** Pointer to the data. */
     void *data;
 
-    /** Pointer to the next multi-buffer in the list. */
-    struct wmulti_buffer *next;
+    /** uthash handle for hash of buffers */
+    int htid;
+
+    /** Hash table entry. */
+    UT_hash_handle hh;
 } wmulti_buffer;
 
 /**
@@ -564,7 +570,7 @@ typedef struct file_desc_t
 
     /** The wmulti_buffer is used to aggregate multiple variables with
      * the same communication pattern prior to a write. */
-    struct wmulti_buffer buffer;
+    struct wmulti_buffer *buffer;
 
     /** Data buffer for this file. */
     void *iobuf;
@@ -572,12 +578,17 @@ typedef struct file_desc_t
     /** PIO data type. */
     int pio_type;
 
-    /** Pointer to the next file_desc_t in the list of open files. */
-    struct file_desc_t *next;
+    /** Hash table entry. */
+    UT_hash_handle hh;
 
     /** True if this task should participate in IO (only true for one
      * task with netcdf serial files. */
     int do_io;
+
+    /** True if this file was opened with the netCDF integration
+     * feature. One consequence is that PIO_IOTYPE_NETCDF4C files will
+     * not have deflate automatically turned on for each var. */
+    int ncint_file;
 } file_desc_t;
 
 /**
@@ -626,144 +637,137 @@ enum PIO_ERROR_HANDLERS
     PIO_RETURN_ERROR = (-53)
 };
 
-#if defined( _PNETCDF) || defined(_NETCDF)
-
+/** Attribute id to put/get a global attribute. */
 #define PIO_GLOBAL NC_GLOBAL
+
+/** Size argument to nc_def_dim() for an unlimited dimension. */
 #define PIO_UNLIMITED NC_UNLIMITED
 
 /* NetCDF types. */
-#define PIO_BYTE   NC_BYTE
-#define PIO_CHAR   NC_CHAR
-#define PIO_SHORT  NC_SHORT
-#define PIO_INT    NC_INT
-#define PIO_FLOAT  NC_FLOAT
-#define PIO_REAL   NC_FLOAT
-#define PIO_DOUBLE NC_DOUBLE
-#define PIO_UBYTE  NC_UBYTE
-#define PIO_USHORT NC_USHORT
-#define PIO_UINT   NC_UINT
-#define PIO_INT64  NC_INT64
-#define PIO_UINT64 NC_UINT64
-#define PIO_STRING NC_STRING
+#define PIO_BYTE   NC_BYTE       /**< signed 1 byte integer */
+#define PIO_CHAR   NC_CHAR       /**< ISO/ASCII character */
+#define PIO_SHORT  NC_SHORT      /**< signed 2 byte integer */
+#define PIO_INT    NC_INT        /**< signed 4 byte integer */
+#define PIO_FLOAT  NC_FLOAT      /**< single precision floating point number */
+#define PIO_REAL   NC_FLOAT      /**< single precision floating point number */
+#define PIO_DOUBLE NC_DOUBLE     /**< double precision floating point number */
+#define PIO_UBYTE  NC_UBYTE      /**< unsigned 1 byte int */
+#define PIO_USHORT NC_USHORT     /**< unsigned 2-byte int */
+#define PIO_UINT   NC_UINT       /**< unsigned 4-byte int */
+#define PIO_INT64  NC_INT64      /**< signed 8-byte int */
+#define PIO_UINT64 NC_UINT64     /**< unsigned 8-byte int */
+#define PIO_STRING NC_STRING     /**< string */
 
 /* NetCDF flags. */
-#define PIO_WRITE  NC_WRITE
-#define PIO_NOWRITE  NC_NOWRITE
-#define PIO_CLOBBER NC_CLOBBER
-#define PIO_NOCLOBBER NC_NOCLOBBER
-#define PIO_FILL NC_FILL
-#define PIO_NOFILL NC_NOFILL
-#define PIO_MAX_NAME NC_MAX_NAME
-#define PIO_MAX_VAR_DIMS NC_MAX_VAR_DIMS
-#define PIO_64BIT_OFFSET NC_64BIT_OFFSET
+#define PIO_WRITE  NC_WRITE      /**< Set read-write access for nc_open(). */
+#define PIO_NOWRITE  NC_NOWRITE  /**< Set read-only access for nc_open(). */
+#define PIO_CLOBBER NC_CLOBBER   /**< Destroy existing file. Mode flag for nc_create(). */
+#define PIO_NOCLOBBER NC_NOCLOBBER  /**< Don't destroy existing file. Mode flag for nc_create(). */
+#define PIO_FILL NC_FILL         /**< Argument to nc_set_fill() to clear NC_NOFILL */
+#define PIO_NOFILL NC_NOFILL     /**< Argument to nc_set_fill() to turn off filling of data. */
+#define PIO_MAX_NAME NC_MAX_NAME /**< Max name length. */
+#define PIO_MAX_VAR_DIMS NC_MAX_VAR_DIMS /**< max per variable dimensions */
+#define PIO_64BIT_OFFSET NC_64BIT_OFFSET /**< Use large (64-bit) file offsets. Mode flag for nc_create(). */
 
 /** NC_64BIT_DATA This is a problem - need to define directly instead
  * of using include file. */
-#define PIO_64BIT_DATA 0x0010
+#define PIO_64BIT_DATA 0x0010 /**< CDF5 foemat. */
 
 /** Define the netCDF-based error codes. */
-#define PIO_NOERR  NC_NOERR
-#define PIO_EBADID NC_EBADID
-#define PIO_ENFILE NC_ENFILE
-#define PIO_EEXIST NC_EEXIST
-#define PIO_EINVAL NC_EINVAL
-#define PIO_EPERM NC_EPERM
-#define PIO_ENOTINDEFINE NC_ENOTINDEFINE
-#define PIO_EINDEFINE NC_EINDEFINE
-#define PIO_EINVALCOORDS NC_EINVALCOORDS
-#define PIO_EMAXDIMS NC_EMAXDIMS
-#define PIO_ENAMEINUSE NC_ENAMEINUSE
-#define PIO_ENOTATT NC_ENOTATT
-#define PIO_EMAXATTS NC_EMAXATTS
-#define PIO_EBADTYPE NC_EBADTYPE
-#define PIO_EBADDIM NC_EBADDIM
-#define PIO_EUNLIMPOS NC_EUNLIMPOS
-#define PIO_EMAXVARS NC_EMAXVARS
-#define PIO_ENOTVAR NC_ENOTVAR
-#define PIO_EGLOBAL NC_EGLOBAL
-#define PIO_ENOTNC NC_ENOTNC
-#define PIO_ESTS NC_ESTS
-#define PIO_EMAXNAME NC_EMAXNAME
-#define PIO_EUNLIMIT NC_EUNLIMIT
-#define PIO_ENORECVARS NC_ENORECVARS
-#define PIO_ECHAR NC_ECHAR
-#define PIO_EEDGE NC_EEDGE
-#define PIO_ESTRIDE NC_ESTRIDE
-#define PIO_EBADNAME NC_EBADNAME
-#define PIO_ERANGE NC_ERANGE
-#define PIO_ENOMEM NC_ENOMEM
-#define PIO_EVARSIZE NC_EVARSIZE
-#define PIO_EDIMSIZE NC_EDIMSIZE
-#define PIO_ETRUNC NC_ETRUNC
-#define PIO_EAXISTYPE NC_EAXISTYPE
-#define PIO_EDAP NC_EDAP
-#define PIO_ECURL NC_ECURL
-#define PIO_EIO NC_EIO
-#define PIO_ENODATA NC_ENODATA
-#define PIO_EDAPSVC NC_EDAPSVC
-#define PIO_EDAS NC_EDAS
-#define PIO_EDDS NC_EDDS
-#define PIO_EDATADDS NC_EDATADDS
-#define PIO_EDAPURL NC_EDAPURL
-#define PIO_EDAPCONSTRAINT NC_EDAPCONSTRAINT
-#define PIO_ETRANSLATION NC_ETRANSLATION
-#define PIO_EHDFERR NC_EHDFERR
-#define PIO_ECANTREAD NC_ECANTREAD
-#define PIO_ECANTWRITE NC_ECANTWRITE
-#define PIO_ECANTCREATE NC_ECANTCREATE
-#define PIO_EFILEMETA NC_EFILEMETA
-#define PIO_EDIMMETA NC_EDIMMETA
-#define PIO_EATTMETA NC_EATTMETA
-#define PIO_EVARMETA NC_EVARMETA
-#define PIO_ENOCOMPOUND NC_ENOCOMPOUND
-#define PIO_EATTEXISTS NC_EATTEXISTS
-#define PIO_ENOTNC4 NC_ENOTNC4
-#define PIO_ESTRICTNC3 NC_ESTRICTNC3
-#define PIO_ENOTNC3 NC_ENOTNC3
-#define PIO_ENOPAR NC_ENOPAR
-#define PIO_EPARINIT NC_EPARINIT
-#define PIO_EBADGRPID NC_EBADGRPID
-#define PIO_EBADTYPID NC_EBADTYPID
-#define PIO_ETYPDEFINED NC_ETYPDEFINED
-#define PIO_EBADFIELD NC_EBADFIELD
-#define PIO_EBADCLASS NC_EBADCLASS
-#define PIO_EMAPTYPE NC_EMAPTYPE
-#define PIO_ELATEFILL NC_ELATEFILL
-#define PIO_ELATEDEF NC_ELATEDEF
-#define PIO_EDIMSCALE NC_EDIMSCALE
-#define PIO_ENOGRP NC_ENOGRP
-#define PIO_ESTORAGE NC_ESTORAGE
-#define PIO_EBADCHUNK NC_EBADCHUNK
-#define PIO_ENOTBUILT NC_ENOTBUILT
-#define PIO_EDISKLESS NC_EDISKLESS
+#define PIO_NOERR  NC_NOERR           /**< No Error */
+#define PIO_EBADID NC_EBADID          /**< Bad ncid */
+#define PIO_ENFILE NC_ENFILE          /**< Too many netcdfs open */
+#define PIO_EEXIST NC_EEXIST          /**< netcdf file exists && NC_NOCLOBBER */
+#define PIO_EINVAL NC_EINVAL          /**< Invalid Argument */
+#define PIO_EPERM NC_EPERM            /**< Write to read only */
+#define PIO_ENOTINDEFINE NC_ENOTINDEFINE /**< Not in define mode */
+#define PIO_EINDEFINE NC_EINDEFINE    /**< Not allowed in define mode */
+#define PIO_EINVALCOORDS NC_EINVALCOORDS /**< Invalid coordinates */
+#define PIO_EMAXDIMS NC_EMAXDIMS      /**< not enforced after netcdf-c 4.5.0 */
+#define PIO_ENAMEINUSE NC_ENAMEINUSE  /**< String match to name in use */
+#define PIO_ENOTATT NC_ENOTATT        /**< Attribute not found */
+#define PIO_EMAXATTS NC_EMAXATTS      /**< NC_MAX_ATTRS exceeded - not enforced after 4.5.0 */
+#define PIO_EBADTYPE NC_EBADTYPE      /**< Not a netcdf data type */
+#define PIO_EBADDIM NC_EBADDIM        /**< Invalid dimension id or name */
+#define PIO_EUNLIMPOS NC_EUNLIMPOS    /**< NC_UNLIMITED in the wrong index */
+#define PIO_EMAXVARS NC_EMAXVARS      /**< not enforced after 4.5.0 */
+#define PIO_ENOTVAR NC_ENOTVAR        /**< variable not found */
+#define PIO_EGLOBAL NC_EGLOBAL        /**< Action prohibited on NC_GLOBAL varid */
+#define PIO_ENOTNC NC_ENOTNC          /**< Not a netcdf file */
+#define PIO_ESTS NC_ESTS              /**< In Fortran, string too short */
+#define PIO_EMAXNAME NC_EMAXNAME      /**< NC_MAX_NAME exceeded */
+#define PIO_EUNLIMIT NC_EUNLIMIT      /**< NC_UNLIMITED size already in use */
+#define PIO_ENORECVARS NC_ENORECVARS  /**< nc_rec op when there are no record vars */
+#define PIO_ECHAR NC_ECHAR            /**< Attempt to convert between text & numbers */
+#define PIO_EEDGE NC_EEDGE            /**< Start+count exceeds dimension bound. */
+#define PIO_ESTRIDE NC_ESTRIDE        /**< Illegal stride */
+#define PIO_EBADNAME NC_EBADNAME      /**< Attribute or variable name contains illegal characters */
+#define PIO_ERANGE NC_ERANGE          /**< Range error */
+#define PIO_ENOMEM NC_ENOMEM          /**< Memory allocation (malloc) failure */
+#define PIO_EVARSIZE NC_EVARSIZE      /**< One or more variable sizes violate format constraints */
+#define PIO_EDIMSIZE NC_EDIMSIZE      /**< Invalid dimension size */
+#define PIO_ETRUNC NC_ETRUNC          /**< File likely truncated or possibly corrupted */
+#define PIO_EAXISTYPE NC_EAXISTYPE    /**< Unknown axis type. */
+#define PIO_EDAP NC_EDAP              /**< Generic DAP error */
+#define PIO_ECURL NC_ECURL            /**< Generic libcurl error */
+#define PIO_EIO NC_EIO                /**< Generic IO error */
+#define PIO_ENODATA NC_ENODATA        /**< Attempt to access variable with no data */
+#define PIO_EDAPSVC NC_EDAPSVC        /**< DAP server error */
+#define PIO_EDAS NC_EDAS              /**< Malformed or inaccessible DAS */
+#define PIO_EDDS NC_EDDS              /**< Malformed or inaccessible DDS */
+#define PIO_EDATADDS NC_EDATADDSDS    /**< Dap4 alias */
+#define PIO_EDAPURL NC_EDAPURL        /**< Malformed DAP URL */
+#define PIO_EDAPCONSTRAINT NC_EDAPCONSTRAINT /**< Malformed DAP Constraint*/
+#define PIO_ETRANSLATION NC_ETRANSLATION     /**< Untranslatable construct */
+#define PIO_EHDFERR NC_EHDFERR        /**< Error at HDF5 layer. */
+#define PIO_ECANTREAD NC_ECANTREAD    /**< Can't read. */
+#define PIO_ECANTWRITE NC_ECANTWRITE  /**< Can't write. */
+#define PIO_ECANTCREATE NC_ECANTCREATE /**< Can't create. */
+#define PIO_EFILEMETA NC_EFILEMETA    /**< Problem with file metadata. */
+#define PIO_EDIMMETA NC_EDIMMETA      /**< Problem with dimension metadata. */
+#define PIO_EATTMETA NC_EATTMETA      /**< Problem with attribute metadata. */
+#define PIO_EVARMETA NC_EVARMETA      /**< Problem with variable metadata. */
+#define PIO_ENOCOMPOUND NC_ENOCOMPOUND  /**< Not a compound type. */
+#define PIO_EATTEXISTS NC_EATTEXISTS  /**< Attribute already exists. */
+#define PIO_ENOTNC4 NC_ENOTNC4        /**< Attempting netcdf-4 operation on netcdf-3 file. */
+#define PIO_ESTRICTNC3 NC_ESTRICTNC3  /**< Attempting netcdf-4 operation on strict nc3 netcdf-4 file. */
+#define PIO_ENOTNC3 NC_ENOTNC3        /**< Attempting netcdf-3 operation on netcdf-4 file. */
+#define PIO_ENOPAR NC_ENOPAR          /**< Parallel operation on file opened for non-parallel access. */
+#define PIO_EPARINIT NC_EPARINIT      /**< Error initializing for parallel access. */
+#define PIO_EBADGRPID NC_EBADGRPID    /**< Bad group ID. */
+#define PIO_EBADTYPID NC_EBADTYPID    /**< Bad type ID. */
+#define PIO_ETYPDEFINED NC_ETYPDEFINED    /**< Type has already been defined and may not be edited. */
+#define PIO_EBADFIELD NC_EBADFIELD    /**< Bad field ID. */
+#define PIO_EBADCLASS NC_EBADCLASS    /**< Bad class. */
+#define PIO_EMAPTYPE NC_EMAPTYPE      /**< Mapped access for atomic types only. */
+#define PIO_ELATEFILL NC_ELATEFILL    /**< Attempt to define fill value when data already exists. */
+#define PIO_ELATEDEF NC_ELATEDEF      /**< Attempt to define var properties, like deflate, after enddef. */
+#define PIO_EDIMSCALE NC_EDIMSCALE    /**< Problem with HDF5 dimscales. */
+#define PIO_ENOGRP NC_ENOGRP          /**< No group found. */
+#define PIO_ESTORAGE NC_ESTORAGE      /**< Can't specify both contiguous and chunking. */
+#define PIO_EBADCHUNK NC_EBADCHUNK    /**< Bad chunksize. */
+#define PIO_ENOTBUILT NC_ENOTBUILT    /**< Attempt to use feature that was not turned on when netCDF was built. */
+#define PIO_EDISKLESS NC_EDISKLESS    /**< Error in using diskless  access. */
 
 /* These are the netCDF default fill values. */
-#define PIO_FILL_BYTE NC_FILL_BYTE
-#define PIO_FILL_CHAR NC_FILL_CHAR
-#define PIO_FILL_SHORT NC_FILL_SHORT
-#define PIO_FILL_INT NC_FILL_INT
-#define PIO_FILL_FLOAT NC_FILL_FLOAT
-#define PIO_FILL_DOUBLE NC_FILL_DOUBLE
-#define PIO_FILL_UBYTE NC_FILL_UBYTE
-#define PIO_FILL_USHORT NC_FILL_USHORT
-#define PIO_FILL_UINT NC_FILL_UINT
-#define PIO_FILL_INT64 NC_FILL_INT64
-#define PIO_FILL_UINT64 NC_FILL_UINT64
-#endif /*  defined( _PNETCDF) || defined(_NETCDF) */
+#define PIO_FILL_BYTE NC_FILL_BYTE     /**< Default fill value for this type. */
+#define PIO_FILL_CHAR NC_FILL_CHAR     /**< Default fill value for this type. */
+#define PIO_FILL_SHORT NC_FILL_SHORT   /**< Default fill value for this type. */
+#define PIO_FILL_INT NC_FILL_INT       /**< Default fill value for this type. */
+#define PIO_FILL_FLOAT NC_FILL_FLOAT   /**< Default fill value for this type. */
+#define PIO_FILL_DOUBLE NC_FILL_DOUBLE /**< Default fill value for this type. */
+#define PIO_FILL_UBYTE NC_FILL_UBYTE   /**< Default fill value for this type. */
+#define PIO_FILL_USHORT NC_FILL_USHORT /**< Default fill value for this type. */
+#define PIO_FILL_UINT NC_FILL_UINT     /**< Default fill value for this type. */
+#define PIO_FILL_INT64 NC_FILL_INT64   /**< Default fill value for this type. */
+#define PIO_FILL_UINT64 NC_FILL_UINT64 /**< Default fill value for this type. */
 
-/** Define the extra error codes for the parallel-netcdf library. */
-#ifdef _PNETCDF
-#define PIO_EINDEP  NC_EINDEP
-#else  /* _PNETCDF */
-#define PIO_EINDEP  (-203)
-#endif /* _PNETCDF */
+#define PIO_EINDEP  (-203)  /**< independent access error. */
 
-/** Define error codes for PIO. */
-#define PIO_FIRST_ERROR_CODE (-500)
-#define PIO_EBADIOTYPE  (-500)
-
-/** ??? */
-#define PIO_REQ_NULL (NC_REQ_NULL-1)
+#define PIO_FIRST_ERROR_CODE (-500)  /**< The first error code for PIO. */
+#define PIO_EBADIOTYPE  (-500)       /**< Bad IOTYPE error. */
+#define PIO_EVARDIMMISMATCH (-501)   /**< Variable dimensions do not match in a multivar call. */
+#define PIO_REQ_NULL (NC_REQ_NULL-1) /**< Request null. */
 
 #if defined(__cplusplus)
 extern "C" {
@@ -814,12 +818,19 @@ extern "C" {
                         int *num_procs_per_comp, int **proc_list, MPI_Comm *io_comm, MPI_Comm *comp_comm,
                         int rearranger, int *iosysidp);
 
-    int PIOc_Init_Intercomm(int component_count, MPI_Comm peer_comm, MPI_Comm *comp_comms,
-                            MPI_Comm io_comm, int *iosysidp);
+    /* How many IO tasks in this iosysid? */
     int PIOc_get_numiotasks(int iosysid, int *numiotasks);
+
+    /* Initialize PIO for intracomm mode. */
     int PIOc_Init_Intracomm(MPI_Comm comp_comm, int num_iotasks, int stride, int base, int rearr,
                             int *iosysidp);
+
+    /** Shut down an iosystem and free all associated resources. Use
+     * PIOc_free_iosystem() instead. */
     int PIOc_finalize(int iosysid);
+
+    /* Shut down an iosystem and free all associated resources. */
+    int PIOc_free_iosystem(int iosysid);
 
     /* Set error handling for entire io system. */
     int PIOc_Set_IOSystem_Error_Handling(int iosysid, int method);
@@ -827,23 +838,43 @@ extern "C" {
     /* Set error handling for entire io system. */
     int PIOc_set_iosystem_error_handling(int iosysid, int method, int *old_method);
 
+    /* Determine whether this is IO task. */
     int PIOc_iam_iotask(int iosysid, bool *ioproc);
+
+    /* What is the iorank? */
     int PIOc_iotask_rank(int iosysid, int *iorank);
+
+    /* Is this iosystem active? */
     int PIOc_iosystem_is_active(int iosysid, bool *active);
+
+    /* Is this IOTYPE available? */
     int PIOc_iotype_available(int iotype);
+
+    /* Set the options for the rearranger. */
     int PIOc_set_rearr_opts(int iosysid, int comm_type, int fcd,
                             bool enable_hs_c2i, bool enable_isend_c2i,
                             int max_pend_req_c2i,
                             bool enable_hs_i2c, bool enable_isend_i2c,
                             int max_pend_req_i2c);
-    /* Distributed data. */
+
+    /* Increment record number. */
     int PIOc_advanceframe(int ncid, int varid);
+
+    /* Set the record number. */
     int PIOc_setframe(int ncid, int varid, int frame);
+
+    /* Write a distributed array. */
     int PIOc_write_darray(int ncid, int varid, int ioid, PIO_Offset arraylen, void *array,
                           void *fillvalue);
+
+    /* Write multiple darrays. */
     int PIOc_write_darray_multi(int ncid, const int *varids, int ioid, int nvars, PIO_Offset arraylen,
                                 void *array, const int *frame, void **fillvalue, bool flushtodisk);
+
+    /* Read distributed array. */
     int PIOc_read_darray(int ncid, int varid, int ioid, PIO_Offset arraylen, void *array);
+
+    /* Get size of local distributed array. */
     int PIOc_get_local_array_size(int ioid);
 
     /* Handling files. */
@@ -909,7 +940,6 @@ extern "C" {
                              int deflate_level);
     int PIOc_inq_var_deflate(int ncid, int varid, int *shufflep, int *deflatep,
                              int *deflate_levelp);
-    int PIOc_inq_var_szip(int ncid, int varid, int *options_maskp, int *pixels_per_blockp);
     int PIOc_def_var_chunking(int ncid, int varid, int storage, const PIO_Offset *chunksizesp);
     int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, PIO_Offset *chunksizesp);
     int PIOc_def_var_endian(int ncid, int varid, int endian);
@@ -1149,6 +1179,135 @@ extern "C" {
     int PIOc_put_vars_ulonglong(int ncid, int varid, const PIO_Offset *start,
                                 const PIO_Offset *count, const PIO_Offset *stride,
                                 const unsigned long long *op);
+
+    /* Data reads - vard. */
+    int PIOc_get_vard(int ncid, int varid, int decompid, const PIO_Offset recnum, void *buf);
+    int PIOc_get_vard_text(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                           char *buf);
+    int PIOc_get_vard_schar(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                            signed char *buf);
+    int PIOc_get_vard_short(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                            short *buf);
+    int PIOc_get_vard_int(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                          int *buf);
+    int PIOc_get_vard_float(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                            float *buf);
+    int PIOc_get_vard_double(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                             double *buf);
+    int PIOc_get_vard_uchar(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                            unsigned char *buf);
+    int PIOc_get_vard_ushort(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                             unsigned short *buf);
+    int PIOc_get_vard_uint(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                           unsigned int *buf);
+    int PIOc_get_vard_longlong(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                               long long *buf);
+    int PIOc_get_vard_ulonglong(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                                unsigned long long *buf);
+
+    /* Data writes - vard. */
+    int PIOc_put_vard(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                      const void *buf);
+    int PIOc_put_vard_text(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                           const char *op);
+    int PIOc_put_vard_schar(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                            const signed char *op);
+    int PIOc_put_vard_short(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                            const short *op);
+    int PIOc_put_vard_int(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                          const int *op);
+    int PIOc_put_vard_float(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                            const float *op);
+    int PIOc_put_vard_double(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                             const double *op);
+    int PIOc_put_vard_uchar(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                            const unsigned char *op);
+    int PIOc_put_vard_ushort(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                             const unsigned short *op);
+    int PIOc_put_vard_uint(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                           const unsigned int *op);
+    int PIOc_put_vard_longlong(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                               const long long *op);
+    int PIOc_put_vard_ulonglong(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                                const unsigned long long *op);
+
+    /* These functions are for the netCDF integration layer. */
+    int nc_def_iosystem(MPI_Comm comp_comm, int num_iotasks, int stride, int base, int rearr,
+                         int *iosysidp);
+
+    int nc_def_async(MPI_Comm world, int num_io_procs, int *io_proc_list,
+                     int component_count, int *num_procs_per_comp, int **proc_list,
+                     MPI_Comm *io_comm, MPI_Comm *comp_comm, int rearranger,
+                     int *iosysidp);
+
+    /* Set the default IOsystem ID. */
+    int nc_set_iosystem(int iosysid);
+
+    /* Get the default IOsystem ID. */
+    int nc_get_iosystem(int *iosysid);
+
+    /* Release the resources associated with an iosystem. */
+    int nc_free_iosystem(int iosysid);
+
+    /* Define a decomposition for distributed arrays. */
+    int nc_def_decomp(int iosysid, int pio_type, int ndims, const int *gdimlen,
+                      int maplen, const size_t *compmap, int *ioidp,
+                      int rearranger, const size_t *iostart,
+                      const size_t *iocount);
+
+    /* Release resources associated with a decomposition. */
+    int nc_free_decomp(int ioid);
+
+    /* Data reads - read a distributed array. */
+    int nc_get_vard(int ncid, int varid, int decompid, const size_t recnum, void *buf);
+    int nc_get_vard_text(int ncid, int varid, int decompid, const size_t recnum,
+                         char *buf);
+    int nc_get_vard_schar(int ncid, int varid, int decompid, const size_t recnum,
+                          signed char *buf);
+    int nc_get_vard_short(int ncid, int varid, int decompid, const size_t recnum,
+                          short *buf);
+    int nc_get_vard_int(int ncid, int varid, int decompid, const size_t recnum,
+                        int *buf);
+    int nc_get_vard_float(int ncid, int varid, int decompid, const size_t recnum,
+                          float *buf);
+    int nc_get_vard_double(int ncid, int varid, int decompid, const size_t recnum,
+                           double *buf);
+    int nc_get_vard_uchar(int ncid, int varid, int decompid, const size_t recnum,
+                          unsigned char *buf);
+    int nc_get_vard_ushort(int ncid, int varid, int decompid, const size_t recnum,
+                           unsigned short *buf);
+    int nc_get_vard_uint(int ncid, int varid, int decompid, const size_t recnum,
+                         unsigned int *buf);
+    int nc_get_vard_longlong(int ncid, int varid, int decompid, const size_t recnum,
+                             long long *buf);
+    int nc_get_vard_ulonglong(int ncid, int varid, int decompid, const size_t recnum,
+                              unsigned long long *buf);
+
+    /* Data writes - Write a distributed array. */
+    int nc_put_vard(int ncid, int varid, int decompid, const size_t recnum,
+                    const void *buf);
+    int nc_put_vard_text(int ncid, int varid, int decompid, const size_t recnum,
+                         const char *op);
+    int nc_put_vard_schar(int ncid, int varid, int decompid, const size_t recnum,
+                          const signed char *op);
+    int nc_put_vard_short(int ncid, int varid, int decompid, const size_t recnum,
+                          const short *op);
+    int nc_put_vard_int(int ncid, int varid, int decompid, const size_t recnum,
+                        const int *op);
+    int nc_put_vard_float(int ncid, int varid, int decompid, const size_t recnum,
+                          const float *op);
+    int nc_put_vard_double(int ncid, int varid, int decompid, const size_t recnum,
+                           const double *op);
+    int nc_put_vard_uchar(int ncid, int varid, int decompid, const size_t recnum,
+                          const unsigned char *op);
+    int nc_put_vard_ushort(int ncid, int varid, int decompid, const size_t recnum,
+                           const unsigned short *op);
+    int nc_put_vard_uint(int ncid, int varid, int decompid, const size_t recnum,
+                         const unsigned int *op);
+    int nc_put_vard_longlong(int ncid, int varid, int decompid, const size_t recnum,
+                             const long long *op);
+    int nc_put_vard_ulonglong(int ncid, int varid, int decompid, const size_t recnum,
+                              const unsigned long long *op);
 
 #if defined(__cplusplus)
 }

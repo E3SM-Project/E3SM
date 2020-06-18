@@ -13,8 +13,8 @@ SET(SRC_SHARE_DIR         ${HOMME_SOURCE_DIR}/src/share)
 SET(TRILINOS_ZOLTAN_DIR   ${HOMME_SOURCE_DIR}/src/zoltan)
 SET(TEST_SRC_DIR          ${HOMME_SOURCE_DIR}/src/test_src)
 
-SET(UTILS_TIMING_SRC_DIR  ${CMAKE_SOURCE_DIR}/utils/cime/src/share/timing)
-SET(UTILS_TIMING_DIR      ${CMAKE_BINARY_DIR}/utils/cime/src/share/timing)
+SET(UTILS_TIMING_SRC_DIR  ${HOMME_SOURCE_DIR}/utils/cime/src/share/timing)
+SET(UTILS_TIMING_DIR      ${HOMME_BINARY_DIR}/utils/cime/src/share/timing)
 
 # Make INCLUDE_DIRS global so the tests can access it
 SET (EXEC_INCLUDE_DIRS
@@ -23,8 +23,7 @@ SET (EXEC_INCLUDE_DIRS
   ${UTILS_TIMING_SRC_DIR}
   ${PREQX_SHARE_DIR}
   ${SRC_SHARE_DIR}/cxx
-  ${CMAKE_BINARY_DIR}/src/share/cxx)
-
+  ${HOMME_BINARY_DIR}/src/share/cxx)
 
 SET (TARGET_F90
   ${TARGET_DIR}/bndry_mod.F90
@@ -34,7 +33,6 @@ SET (TARGET_F90
   ${TARGET_DIR}/model_init_mod.F90
   ${TARGET_DIR}/prim_advection_mod.F90
   ${TARGET_DIR}/prim_driver_mod.F90
-  ${TARGET_DIR}/sl_advection.F90
   ${TARGET_DIR}/viscosity_mod.F90
   ${PREQX_SHARE_DIR}/element_ops.F90
   ${PREQX_SHARE_DIR}/prim_advance_mod.F90
@@ -56,6 +54,8 @@ SET (SRC_SHARE_F90
   ${SRC_SHARE_DIR}/edge_mod_base.F90
   ${SRC_SHARE_DIR}/edgetype_mod.F90
   ${SRC_SHARE_DIR}/element_mod.F90
+  ${SRC_SHARE_DIR}/gllfvremap_mod.F90
+  ${SRC_SHARE_DIR}/gllfvremap_util_mod.F90
   ${SRC_SHARE_DIR}/global_norms_mod.F90
   ${SRC_SHARE_DIR}/gridgraph_mod.F90
   ${SRC_SHARE_DIR}/hybrid_mod.F90
@@ -90,6 +90,9 @@ SET (SRC_SHARE_F90
   ${SRC_SHARE_DIR}/vertremap_base.F90
   ${SRC_SHARE_DIR}/viscosity_base.F90
   ${SRC_SHARE_DIR}/zoltan_mod.F90
+  ${SRC_SHARE_DIR}/sl_advection.F90
+  ${SRC_SHARE_DIR}/compose_mod.F90
+  ${SRC_SHARE_DIR}/compose_test_mod.F90
   ${SRC_SHARE_DIR}/scalable_grid_init_mod.F90
 )
 
@@ -99,6 +102,7 @@ SET(TEST_SRC_F90
   ${TEST_SRC_DIR}/dcmip12_wrapper.F90
   ${TEST_SRC_DIR}/dcmip16_wrapper.F90
   ${TEST_SRC_DIR}/dcmip2012_test1_2_3.F90
+  ${TEST_SRC_DIR}/dcmip2012_test1_conv.F90
   ${TEST_SRC_DIR}/dcmip2012_test4.F90
   ${TEST_SRC_DIR}/dcmip2012_test5.F90
   ${TEST_SRC_DIR}/dcmip2016-baroclinic.F90
@@ -218,12 +222,15 @@ SET(USE_OPENACC FALSE)
 
 ENDMACRO(PREQX_KOKKOS_SETUP)
 
-PREQX_KOKKOS_SETUP()
+# Build exec only if HOMME_BUILD_EXECS is true
+IF (${HOMME_BUILD_EXECS})
+  PREQX_KOKKOS_SETUP()
 
-############################################################################
-# createTestExec(exec_name exec_type NP NC PLEV USE_PIO USE_ENERGY QSIZE_D)
-############################################################################
-# Need to set this, so createTestExec will call link_to_kokkos
-SET (USE_KOKKOS_KERNELS ON)
-createTestExec(preqx_kokkos preqx_kokkos ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY} ${QSIZE_D})
-UNSET (USE_KOKKOS_KERNELS)
+  ############################################################################
+  # createTestExec(exec_name exec_type NP NC PLEV USE_PIO USE_ENERGY QSIZE_D)
+  ############################################################################
+  # Need to set this, so createTestExec will call link_to_kokkos
+  SET (USE_KOKKOS_KERNELS ON)
+  createTestExec(preqx_kokkos preqx_kokkos ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY} ${QSIZE_D})
+ENDIF ()
+

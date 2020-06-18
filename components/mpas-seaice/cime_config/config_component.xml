@@ -6,8 +6,8 @@
 
   <entry id="COMP_ICE">
     <type>char</type>
-    <valid_values>mpascice</valid_values>
-    <default_value>mpascice</default_value>
+    <valid_values>mpassi</valid_values>
+    <default_value>mpassi</default_value>
     <group>case_comp</group>
     <file>env_case.xml</file>
     <desc>MPAS sea-ice component</desc>
@@ -18,9 +18,9 @@
         <valid_values>cold_start,spunup</valid_values>
         <default_value>cold_start</default_value>
         <values>
-           <value compset="MPASCICE_">cold_start</value>
-           <value compset="_MPASCICE%SPUNUP">spunup</value>
-           <value compset="_MPASCICE%BGC">spunup</value>
+           <value compset="MPASSI_">cold_start</value>
+           <value compset="_MPASSI%SPUNUP">spunup</value>
+           <value compset="_MPASSI%BGC">spunup</value>
         </values>
         <group>case_comp</group>
         <file>env_case.xml</file>
@@ -45,9 +45,9 @@
         <valid_values>none,data,prognostic</valid_values>
         <default_value>none</default_value>
         <values>
-           <value compset="MPASCICE_">none</value>
-           <value compset="_MPASCICE%.*DIB">data</value>
-           <value compset="_MPASCICE%.*PIB">prognostic</value>
+           <value compset="MPASSI_">none</value>
+           <value compset="_MPASSI%.*DIB">data</value>
+           <value compset="_MPASSI%.*PIB">prognostic</value>
         </values>
         <group>case_comp</group>
         <file>env_case.xml</file>
@@ -59,8 +59,8 @@
         <valid_values></valid_values>
         <default_value>no_ice_bgc</default_value>
         <values>
-           <value compset="MPASCICE_">no_ice_bgc</value>
-           <value compset="_MPASCICE%BGC">ice_bgc</value>
+           <value compset="MPASSI_">no_ice_bgc</value>
+           <value compset="_MPASSI%BGC">ice_bgc</value>
         </values>
         <group>case_comp</group>
         <file>env_case.xml</file>
@@ -68,7 +68,7 @@
  </entry>
 
   <description>
-    <desc compset="_MPASCICE">MPAS seaice:</desc>
+    <desc compset="_MPASSI">MPAS seaice:</desc>
   </description>
 
   <help>

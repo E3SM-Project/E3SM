@@ -1,39 +1,91 @@
-/******************************************************************************
- *
- * 
- *
- * Copyright (C) 2013
- *
- * Permission to use, copy, modify, and distribute this software and its
- * documentation under the terms of the GNU General Public License is hereby 
- * granted. No representations are made about the suitability of this software 
- * for any purpose. It is provided "as is" without express or implied warranty.
- * See the GNU General Public License for more details.
- *
- * Documents produced by Doxygen are derivative works derived from the
- * input used in their production; they are not affected by this license.
- *
- */ /*! \page install Installing PIO
+/*! \page install Installing PIO
 
 
-The PIO code is currently stored on github at <https://github.com/PARALLELIO/ParallelIO>. For questions about downloading or developing this code, consult the [CIME Git Wiki](https://github.com/CESM-Development/cime/wiki/CIME-Git-Workflow) or email <mailto:jedwards@ucar.edu>.
+## Getting the Release ##
 
-### Dependencies ###
+The PIO code is currently stored on github at
+<https://github.com/PARALLELIO/ParallelIO>. For questions about
+downloading or developing this code, consult the [CIME Git
+Wiki](https://github.com/CESM-Development/cime/wiki/CIME-Git-Workflow)
+or email <mailto:jedwards@ucar.edu>.
 
-PIO can use NetCDF (version 4.3.3+) and/or PnetCDF (version 1.6.1+) for I/O.
+Download the latest release from the GitHub releases page. Download
+the release tarball, which will be named something like
+pio-2.4.3.tar.gz.
+
+## Dependencies ##
+
+PIO can use NetCDF (version 4.6.1+) and/or PnetCDF (version 1.9.0+) for I/O.
 Ideally, the NetCDF version should be built with MPI, which requires that it
 be linked with an MPI-enabled version of HDF5.  Optionally, NetCDF can be 
 built with DAP support, which introduces a dependency on CURL.  Additionally,
 HDF5, itself, introduces dependencies on LIBZ and (optionally) SZIP.
 
-### Configuring with CMake ###
+@image html PIO_Library_Architecture1.jpg "PIO Library Architecture"
+
+## Building PIO C and Fortran Libraries ##
+
+Unpack the tarball and build with:
+
+<pre>
+./configure --enable-fortran
+make
+make check
+make install
+</pre>
+
+Environment flags CC and FC should be set to MPI C and Fortran
+compilers. CPPFLAGS may be set to a list of directories which have the
+include files for netCDF and pnetcdf. LDFLAGS may be set to a list of
+directories where libraries may be found.
+
+A complete example:
+
+<pre>
+export CPPFLAGS='-I/usr/local/pnetcdf-1.11.0_shared/include -I/usr/local/netcdf-c-4.7.0_hdf5-1.10.5_mpich-3.2/include -I/usr/local/netcdf-fortran-4.4.5_c_4.6.3_mpich-3.2/include'
+export LDFLAGS='-L/usr/local/pnetcdf-1.11.0_shared/lib  -L/usr/local/netcdf-c-4.7.0_hdf5-1.10.5_mpich-3.2/lib'
+export CC=mpicc
+export FC=mpifort
+export CFLAGS='-g -Wall'
+./configure --enable-fortran
+make check
+make install
+</pre>
+
+### Testing with MPI ###
+
+The tests are run as a bash script with called mpiexec to launch
+programs. If this will not work for the install system, use the
+--disable-test-runs option to configure. This will cause the tests to
+be built, but not run. The tests may be run them manually.
+
+### Optional GPTL Use ###
+
+PIO may optionally be built with the General Purpose Timing Library
+(GPTL). This is necessary for the performance testing program pioperf,
+but optional for the rest of the library and tests. To build with
+GPTL, include a path to its include and lib directories in the
+CPPFLAGS/LDFLAGS flags before running configure.
+
+### PIO Library Logging ###
+
+If built with --enable-logging, the PIO libraries will output logging
+statements to files (one per task) and stdout. Use the
+PIOc_set_log_level() function to turn on logging. This will have a
+negative impact on performance, when used, but helps with debugging.
+
+## Building with CMake ##
+
+A CMake build system is also avaible for the PIO C and Fortran
+libraries. User may prefer to use a CMake build instead of the
+autotools build.
+
+ - @ref mach_walkthrough
 
 To configure the build, PIO requires CMake version 2.8.12+.  The typical
 configuration with CMake can be done as follows:
 
-
     > CC=mpicc FC=mpif90 cmake [-DOPTION1=value1 -DOPTION2=value2 ...] /path/to/pio/source
-
 
 where `mpicc` and `mpif90` are the appropriate MPI-enabled compiler wrappers
 for your system.
@@ -87,7 +139,7 @@ If you wish to install PIO in a safe location for use later with other
 software, you may set the `CMAKE_INSTALL_PREFIX` variable to point to the
 desired install location.
 
-### Building ###
+### Building with CMake ###
 
 Once you have successfully configured PIO with CMake in a build directory.
 From within the build directory, build PIO with:
@@ -98,7 +150,7 @@ From within the build directory, build PIO with:
 
 This will build the `pioc` and `piof` libraries.
 
-### Testing ###
+### Testing with CMake ###
 
 If you desire to do testing, and `PIO_ENABLE_TESTS=ON` (which is the default
 setting), you may build the test executables with:
@@ -125,11 +177,21 @@ immediately with:
 
 (similar to the typical `make check` Autotools target).
 
-*ANOTHER NOTE:* These tests are designed to run in parallel.
-If you are on one of the supported supercomputing platforms (i.e., NERSC, NWSC, ALCF, 
-etc.), then the `ctest` command will assume that the tests will be run in an appropriately configured and scheduled parallel job.  This can be done by requesting an interactive session from the login nodes and then running `ctest` from within the interactive terminal.  Alternatively, this can be done by running the `ctest` command from a job submission script.  It is important to understand, however, that `ctest` itself will preface all of the test executable commands with the appropriate `mpirun`/`mpiexec`/`runjob`/etc. Hence, you should not further preface the `ctest` command with these MPI launchers.
+*ANOTHER NOTE:* These tests are designed to run in parallel.  If you
+are on one of the supported supercomputing platforms (i.e., NERSC,
+NWSC, ALCF, etc.), then the `ctest` command will assume that the tests
+will be run in an appropriately configured and scheduled parallel job.
+This can be done by requesting an interactive session from the login
+nodes and then running `ctest` from within the interactive terminal.
+Alternatively, this can be done by running the `ctest` command from a
+job submission script.  It is important to understand, however, that
+`ctest` itself will preface all of the test executable commands with
+the appropriate `mpirun`/`mpiexec`/`runjob`/etc. Hence, you should not
+further preface the `ctest` command with these MPI launchers.
 
-### Installing ###
+ - @ref test
+
+### Installing with CMake ###
 
 Once you have built the PIO libraries, you may install them in the location
 specified by the `CMAKE_INSTALL_PREFIX`.  To do this, simply type:
@@ -142,7 +204,7 @@ If the internal GPTL libraries were built (because GPTL could not be found
 and the `PIO_ENABLE_TIMING` variable is set to `ON`), then these libraries
 will be installed with PIO.
 
-### Examples ###
+### CMake Build Examples ###
 
 From within the build directory, build the PIO examples with:
 

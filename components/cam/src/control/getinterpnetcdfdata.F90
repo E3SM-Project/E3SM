@@ -189,7 +189,7 @@ subroutine getinterpncdata( NCID, camlat, camlon, TimeIdx, &
       outdata(1) = tmp(1)
       return                 ! no need to do interpolation 
    endif
-!   if ( use_camiop .and. nlev.eq.plev) then
+!   if ( use_replay .and. nlev.eq.plev) then
    if ( nlev.eq.plev .or. nlev.eq.plev+1) then
       outData(:nlev)= tmp(:nlev)! no need to do interpolation 
    else

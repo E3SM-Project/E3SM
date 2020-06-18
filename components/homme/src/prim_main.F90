@@ -15,8 +15,8 @@ program prim_main
                               omp_get_num_threads, omp_get_max_threads
   use time_mod,         only: tstep, nendstep, timelevel_t, TimeLevel_init, nstep=>nextOutputStep
   use dimensions_mod,   only: nelemd, qsize
-  use control_mod,      only: restartfreq, vfile_mid, vfile_int, runtype, integration, statefreq, tstep_type
-  use domain_mod,       only: domain1d_t, decompose
+  use control_mod,      only: restartfreq, vfile_mid, vfile_int, runtype
+  use domain_mod,       only: domain1d_t
   use element_mod,      only: element_t
   use common_io_mod,    only: output_dir, infilenames
   use common_movie_mod, only: nextoutputstep
@@ -26,10 +26,8 @@ program prim_main
 #if (defined MODEL_THETA_L && defined ARKODE)
   use arkode_mod,       only: calc_nonlinear_stats, finalize_nonlinear_stats
 #endif
-
-#ifdef VERTICAL_INTERPOLATION
-  use netcdf_interp_mod, only: netcdf_interp_init, netcdf_interp_write, netcdf_interp_finish
-#endif
+  use compose_test_mod, only: compose_test
+  use test_mod,         only: print_test_results
 
 #ifdef PIO_INTERP
   use interp_movie_mod, only : interp_movie_output, interp_movie_finish, interp_movie_init
@@ -191,26 +189,25 @@ program prim_main
   if(par%masterproc) print *,"I/O init..."
 ! initialize history files.  filename constructed with restart time
 ! so we have to do this after ReadRestart in prim_init2 above
-#ifdef VERTICAL_INTERPOLATION
-  call netcdf_interp_init(elem, hybrid, hvcoord)
-#elif defined PIO_INTERP
+  call t_startf('prim_io_init')
+#if defined PIO_INTERP
   call interp_movie_init( elem, par,  hvcoord, tl )
 #else
   call prim_movie_init( elem, par, hvcoord, tl )
 #endif
+  call t_stopf('prim_io_init')
 
   ! output initial state for NEW runs (not restarts or branch runs)
   if (runtype == 0 ) then
      if(par%masterproc) print *,"Output of initial state..."
-#ifdef VERTICAL_INTERPOLATION
-    call netcdf_interp_write(elem, tl, hybrid, hvcoord)
-#elif defined PIO_INTERP
+#if defined PIO_INTERP
      call interp_movie_output(elem, tl, par, 0d0, hvcoord=hvcoord)
 #else
      call prim_movie_output(elem, tl, hvcoord, par)
 #endif
   endif
 
+  call compose_test(par, hvcoord, dom_mt, elem)
 
   if(par%masterproc) print *,"Entering main timestepping loop"
   call t_startf('prim_main_loop')
@@ -234,9 +231,7 @@ program prim_main
      !$OMP END PARALLEL
 #endif
 
-#ifdef VERTICAL_INTERPOLATION
-     call netcdf_interp_write(elem, tl, hybrid, hvcoord)
-#elif defined PIO_INTERP
+#if defined PIO_INTERP
      call interp_movie_output(elem, tl, par, 0d0,hvcoord=hvcoord)
 #else
      call prim_movie_output(elem, tl, hvcoord, par)
@@ -245,8 +240,8 @@ program prim_main
      ! ============================================================
      ! Write restart files if required 
      ! ============================================================
-     if((restartfreq > 0) .and. (MODULO(tl%nstep,restartfreq) ==0)) then 
-        call WriteRestart(elem, ithr,1,nelemd,tl)
+     if(restartfreq > 0) then
+         if (MODULO(tl%nstep,restartfreq) ==0) call WriteRestart(elem,ithr,1,nelemd,tl)
      endif
   end do !end of while tl%nstep < nEndStep
   call t_stopf('prim_main_loop')
@@ -255,9 +250,9 @@ program prim_main
   call prim_finalize()
   if(par%masterproc) print *,"closing history files"
 
-#ifdef VERTICAL_INTERPOLATION
-  call netcdf_interp_finish
-#elif defined PIO_INTERP
+  call print_test_results(elem, tl, hvcoord, par)
+
+#if defined PIO_INTERP
   call interp_movie_finish
 #else
   call prim_movie_finish

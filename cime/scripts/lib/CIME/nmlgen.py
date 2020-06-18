@@ -15,7 +15,8 @@ from CIME.namelist import Namelist, parse, \
     character_literal_to_string, string_to_character_literal, \
     expand_literal_list, compress_literal_list, merge_literal_lists
 from CIME.XML.namelist_definition import NamelistDefinition
-from CIME.utils import expect
+from CIME.utils import expect, safe_copy
+from CIME.XML.stream import Stream
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,8 @@ _var_ref_re = re.compile(r"\$(\{)?(?P<name>\w+)(?(1)\})")
 
 _ymd_re = re.compile(r"%(?P<digits>[1-9][0-9]*)?y(?P<month>m(?P<day>d)?)?")
 
-_stream_file_template = """
+_stream_file_template = """<?xml version="1.0"?>
+<file id="stream" version="1.0">
 <dataSource>
    GENERIC
 </dataSource>
@@ -52,6 +54,7 @@ _stream_file_template = """
       {offset}
    </offset>
 </fieldInfo>
+</file>
 """
 
 class NamelistGenerator(object):
@@ -413,7 +416,7 @@ class NamelistGenerator(object):
                     new_lines.append(new_line)
         return "\n".join(new_lines)
 
-    def create_stream_file_and_update_shr_strdata_nml(self, config, #pylint:disable=too-many-locals
+    def create_stream_file_and_update_shr_strdata_nml(self, config, caseroot, #pylint:disable=too-many-locals
                            stream, stream_path, data_list_path):
         """Write the pseudo-XML file corresponding to a given stream.
 
@@ -427,55 +430,71 @@ class NamelistGenerator(object):
         `data_list_path` - Path of file to append input data information to.
         """
 
-        # Stream-specific configuration.
+        if os.path.exists(stream_path):
+            os.unlink(stream_path)
+        user_stream_path = os.path.join(caseroot, "user_"+os.path.basename(stream_path))
+
+        # Use the user's stream file, or create one if necessary.
         config = config.copy()
         config["stream"] = stream
 
-        # Figure out the details of this stream.
-        if stream in ("prescribed", "copyall"):
-            # Assume only one file for prescribed mode!
-            grid_file = self.get_default("strm_grid_file", config)
-            domain_filepath, domain_filenames = os.path.split(grid_file)
-            data_file = self.get_default("strm_data_file", config)
-            data_filepath, data_filenames = os.path.split(data_file)
+
+        # Stream-specific configuration.
+        if os.path.exists(user_stream_path):
+            safe_copy(user_stream_path, stream_path)
+            strmobj = Stream(infile=stream_path)
+            domain_filepath = strmobj.get_value("domainInfo/filePath")
+            data_filepath = strmobj.get_value("fieldInfo/filePath")
+            domain_filenames = strmobj.get_value("domainInfo/fileNames")
+            data_filenames = strmobj.get_value("fieldInfo/fileNames")
         else:
-            domain_filepath = self.get_default("strm_domdir", config)
-            domain_filenames = self.get_default("strm_domfil", config)
-            data_filepath = self.get_default("strm_datdir", config)
-            data_filenames = self.get_default("strm_datfil", config)
+            # Figure out the details of this stream.
+            if stream in ("prescribed", "copyall"):
+                # Assume only one file for prescribed mode!
+                grid_file = self.get_default("strm_grid_file", config)
+                domain_filepath, domain_filenames = os.path.split(grid_file)
+                data_file = self.get_default("strm_data_file", config)
+                data_filepath, data_filenames = os.path.split(data_file)
+            else:
+                domain_filepath = self.get_default("strm_domdir", config)
+                domain_filenames = self.get_default("strm_domfil", config)
+                data_filepath = self.get_default("strm_datdir", config)
+                data_filenames = self.get_default("strm_datfil", config)
 
-        domain_varnames = self._sub_fields(self.get_default("strm_domvar", config))
-        data_varnames = self._sub_fields(self.get_default("strm_datvar", config))
-        offset = self.get_default("strm_offset", config)
-        year_start = int(self.get_default("strm_year_start", config))
-        year_end = int(self.get_default("strm_year_end", config))
-        data_filenames = self._sub_paths(data_filenames, year_start, year_end)
-        domain_filenames = self._sub_paths(domain_filenames, year_start, year_end)
+            domain_varnames = self._sub_fields(self.get_default("strm_domvar", config))
+            data_varnames = self._sub_fields(self.get_default("strm_datvar", config))
+            offset = self.get_default("strm_offset", config)
+            year_start = int(self.get_default("strm_year_start", config))
+            year_end = int(self.get_default("strm_year_end", config))
+            data_filenames = self._sub_paths(data_filenames, year_start, year_end)
+            domain_filenames = self._sub_paths(domain_filenames, year_start, year_end)
 
-        # Overwrite domain_file if should be set from stream data
-        if domain_filenames == 'null':
-            domain_filepath = data_filepath
-            domain_filenames = data_filenames.splitlines()[0]
+            # Overwrite domain_file if should be set from stream data
+            if domain_filenames == 'null':
+                domain_filepath = data_filepath
+                domain_filenames = data_filenames.splitlines()[0]
 
-        stream_file_text = _stream_file_template.format(
-            domain_varnames=domain_varnames,
-            domain_filepath=domain_filepath,
-            domain_filenames=domain_filenames,
-            data_varnames=data_varnames,
-            data_filepath=data_filepath,
-            data_filenames=data_filenames,
-            offset=offset,
-        )
+            stream_file_text = _stream_file_template.format(
+                domain_varnames=domain_varnames,
+                domain_filepath=domain_filepath,
+                domain_filenames=domain_filenames,
+                data_varnames=data_varnames,
+                data_filepath=data_filepath,
+                data_filenames=data_filenames,
+                offset=offset,
+            )
 
-        with open(stream_path, 'w') as stream_file:
-            stream_file.write(stream_file_text)
+            with open(stream_path, 'w') as stream_file:
+                stream_file.write(stream_file_text)
 
         lines_hash = self._get_input_file_hash(data_list_path)
         with open(data_list_path, 'a') as input_data_list:
             for i, filename in enumerate(domain_filenames.split("\n")):
                 if filename.strip() == '':
                     continue
-                filepath = os.path.join(domain_filepath, filename.strip())
+                filepath, filename = os.path.split(filename)
+                if not filepath:
+                    filepath = os.path.join(domain_filepath, filename.strip())
                 string = "domain{:d} = {}\n".format(i+1, filepath)
                 hashValue = hashlib.md5(string.rstrip().encode('utf-8')).hexdigest()
                 if hashValue not in lines_hash:
@@ -675,40 +694,32 @@ class NamelistGenerator(object):
         if data_list_path is not None:
             self._write_input_files(data_list_path)
 
+
     # For MCT
     def add_nmlcontents(self, filename, group, append=True, format_="nmlcontents", sorted_groups=True):
         """ Write only contents of nml group """
         self._namelist.write(filename, groups=[group], append=append, format_=format_, sorted_groups=sorted_groups)
 
-    # For MCT
     def write_seq_maps(self, filename):
-        """ Write out seq_maps.rc"""
+        """ Write mct out seq_maps.rc"""
         self._namelist.write(filename, groups=["seq_maps"], format_="rc")
 
-    # For MCT
     def write_modelio_file(self, filename):
-        """ Write  component modelio files"""
+        """ Write mct component modelio files"""
         self._namelist.write(filename, groups=["modelio", "pio_inparm"], format_="nml")
 
     # For NUOPC
     def write_nuopc_modelio_file(self, filename):
-        """ Write  nuopc component modelio files"""
+        """ Write nuopc component modelio files"""
         self._namelist.write(filename, groups=["pio_inparm"], format_="nml")
 
-    # For NUOPC
-    def write_nuopc_config_file(self, filename, data_list_path=None,
-                                skip_comps=None, atm_cpl_dt=None, ocn_cpl_dt=None):
+    def write_nuopc_config_file(self, filename, data_list_path=None ):
         """ Write the nuopc config file"""
         self._definition.validate(self._namelist)
         groups = self._namelist.get_group_names()
-        if "nuopc_runseq" in groups:
-            self._namelist.write(os.path.dirname(filename)+os.sep+"nuopc.runseq", groups=["nuopc_runseq"],
-                                 format_='nuopc',sorted_groups=False,
-                             skip_comps=skip_comps, atm_cpl_dt=atm_cpl_dt, ocn_cpl_dt=ocn_cpl_dt)
-            groups.remove("nuopc_runseq")
+        # write the config file 
+        self._namelist.write_nuopc(filename, groups=groups, sorted_groups=False)
 
-        self._namelist.write(filename, skip_comps=skip_comps, groups=groups, format_='nuopc', sorted_groups=False)
-
+        # append to input_data_list file
         if data_list_path is not None:
-            # append to input_data_list file
             self._write_input_files(data_list_path)

@@ -26,7 +26,7 @@ module prim_advance_mod
   private
   save
   public :: prim_advance_exp, prim_advance_init1, &
-            applyCAMforcing_dynamics, applyCAMforcing_dynamics_dp, convert_thermo_forcing
+            applyCAMforcing_dynamics
 
   real (kind=real_kind), allocatable :: ur_weights(:)
 
@@ -548,78 +548,10 @@ contains
   end subroutine prim_advance_exp
 
 
-!applies tracer tendencies and adjusts ps depending on moisture
-  subroutine applyCAMforcing_tracers(elem,hvcoord,np1,np1_qdp,dt,nets,nete)
-
-  use physical_constants, only: Cp
-
-  implicit none
-  type (element_t),       intent(inout) :: elem(:)
-  real (kind=real_kind),  intent(in)    :: dt
-  type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: np1,nets,nete,np1_qdp
-
-  ! local
-  integer :: i,j,k,ie,q
-  real (kind=real_kind) :: v1,dp
-
-  do ie=nets,nete
-     ! apply forcing to Qdp
-     elem(ie)%derived%FQps(:,:)=0
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(q,k,i,j,v1)
-#endif
-     do q=1,qsize
-        do k=1,nlev
-           do j=1,np
-              do i=1,np
-                 v1 = dt*elem(ie)%derived%FQ(i,j,k,q)
-                 if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
-                    if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
-                       v1=0  ! Q already negative, dont make it more so
-                    else
-                       v1 = -elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
-                    endif
-                 endif
-                 elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)+v1
-                 if (q==1) then
-                    elem(ie)%derived%FQps(i,j)=elem(ie)%derived%FQps(i,j)+v1/dt
-                 endif
-              enddo
-           enddo
-        enddo
-     enddo
-
-     if (use_moisture) then
-        ! to conserve dry mass in the precese of Q1 forcing:
-        elem(ie)%state%ps_v(:,:,np1) = elem(ie)%state%ps_v(:,:,np1) + &
-             dt*elem(ie)%derived%FQps(:,:)
-     endif
-
-
-     ! Qdp(np1) and ps_v(np1) were updated by forcing - update Q(np1)
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(q,k,i,j,dp)
-#endif
-     do q=1,qsize
-        do k=1,nlev
-           do j=1,np
-              do i=1,np
-                 dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                      ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,np1)
-                 elem(ie)%state%Q(i,j,k,q) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)/dp
-              enddo
-           enddo
-        enddo
-     enddo
-
-  enddo
-  end subroutine applyCAMforcing_tracers
-
-
-!applies dynamic tendencies without dp adjustment
   subroutine applyCAMforcing_dynamics(elem,hvcoord,np1,dt,nets,nete)
-
+  !
+  ! applies dynamic tendencies without dp adjustment
+  !
   use hybvcoord_mod,  only: hvcoord_t
 
   implicit none
@@ -631,52 +563,11 @@ contains
   integer :: i,j,k,ie,q
   real (kind=real_kind) :: v1,dp
 
-!any reason to use omp parallel here for i,j, or k?
   do ie=nets,nete
      elem(ie)%state%T(:,:,:,np1)  = elem(ie)%state%T(:,:,:,np1)    + dt*elem(ie)%derived%FT(:,:,:)
      elem(ie)%state%v(:,:,:,:,np1) = elem(ie)%state%v(:,:,:,:,np1) + dt*elem(ie)%derived%FM(:,:,:,:)
   enddo
   end subroutine applyCAMforcing_dynamics
-
-
-!applies dynamic tendencies for ftype3. in CAM, tendencies were scaled by dp_forcing 
-!( at the end of physics/beginning of homme timestep) 
-!and now need to be scaled back to the current dp3d.
-  subroutine applyCAMforcing_dynamics_dp(elem,hvcoord,np1,dt,nets,nete)
-
-  use hybvcoord_mod,  only: hvcoord_t
-
-  implicit none
-  type (element_t)     ,  intent(inout) :: elem(:)
-  real (kind=real_kind),  intent(in)    :: dt
-  type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: np1,nets,nete
-
-  integer :: i,j,k,ie,q
-  real (kind=real_kind) :: v1,dp
-
-  do ie=nets,nete
-     elem(ie)%state%T(:,:,:,np1)  = elem(ie)%state%T(:,:,:,np1) + & 
-                                    dt*elem(ie)%derived%FT(:,:,:)/elem(ie)%state%dp3d(:,:,:,np1)
-     do k=1,nlev
-       elem(ie)%state%v(:,:,1,k,np1) = elem(ie)%state%v(:,:,1,k,np1) + &
-                                       dt*elem(ie)%derived%FM(:,:,1,k)/elem(ie)%state%dp3d(:,:,k,np1)
-       elem(ie)%state%v(:,:,2,k,np1) = elem(ie)%state%v(:,:,2,k,np1) + &
-                                       dt*elem(ie)%derived%FM(:,:,2,k)/elem(ie)%state%dp3d(:,:,k,np1)
-     enddo
-  enddo
-  end subroutine applyCAMforcing_dynamics_dp
-
-
-!for preqx model this routine does nothing
-  subroutine convert_thermo_forcing(elem,hvcoord,n0,n0qdp,dt,nets,nete)
-  implicit none
-  type (element_t),       intent(inout) :: elem(:)
-  type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: nets,nete
-  integer,                intent(in)    :: n0,n0qdp
-  real (kind=real_kind),  intent(in)    :: dt
-  end subroutine convert_thermo_forcing
 
 
 
@@ -711,7 +602,7 @@ contains
   real (kind=real_kind) :: eta_ave_w  ! weighting for mean flux terms
   real (kind=real_kind) :: nu_scale_top
   integer :: k,kptr,i,j,ie,ic,nt
-  real (kind=real_kind), dimension(np,np)      :: dpdn
+  !real (kind=real_kind), dimension(np,np)      :: dpdn
   real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)      :: vtens
   real (kind=real_kind), dimension(np,np,nlev,nets:nete)        :: ttens
   real (kind=real_kind), dimension(np,np,nlev,nets:nete)        :: dptens
@@ -865,9 +756,7 @@ contains
                  ! normalize so as to conserve IE
                  ! scale by 1/rho (normalized to be O(1))
                  ! dp/dn = O(ps0)*O(delta_eta) = O(ps0)/O(nlev)
-                 dpdn(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                      ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,nt)
-                 ttens(:,:,k,ie) = ttens(:,:,k,ie) * hvcoord%dp0(k)/dpdn(:,:)
+                 ttens(:,:,k,ie) = ttens(:,:,k,ie) * hvcoord%dp0(k)/elem(ie)%state%dp3d(:,:,k,nt)
                  dptens(:,:,k,ie) = 0
               endif
               
@@ -1057,13 +946,8 @@ contains
   real (kind=real_kind) ::  glnps1,glnps2,gpterm
   integer :: i,j,k,kptr,ie
 
-!JMD  call t_barrierf('sync_compute_and_apply_rhs', hybrid%par%comm)
-
-!pw call t_adj_detailf(+1)
   call t_startf('compute_and_apply_rhs')
   do ie=nets,nete
-     !ps => elem(ie)%state%ps_v(:,:,n0)
-     !phi => elem(ie)%derived%phi(:,:,:)
      dp  => elem(ie)%state%dp3d(:,:,:,n0)
 
 ! dont thread this because of k-1 dependence:

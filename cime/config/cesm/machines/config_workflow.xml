@@ -1,0 +1,138 @@
+<?xml version="1.0"?>
+<config_workflow version="2.1">
+  <!--
+  File: config_workflow.xml
+  Purpose: Define the jobs to be run, the order to run them, the job size and
+  any dependancies they may have.
+
+  job name: The name of the script as it appears in the case.
+  template: The template from which the job script will be derived.
+            If a template does not include a full path it is assumed to be
+	    in the config/$CIME_MODEL/machines directory.
+	    In the template {{ }} denotes a keyword that will be expanded to create the job script.
+            This is done in the case.setup stage.
+	    recognized keywords are:
+	      total_tasks, num_nodes, max_tasks_per_node, job_id, batchdirectives, mpirun
+	      most xml variables in the case and any case attribute.
+            If the template is not found the corresponding step will not be included in the
+	    workflow.
+
+  prereq: A logical value derived from case xml variables used to determine if this step should
+          be included in the workflow
+  dependency: one or more job names in the workflow that must complete successfully before this step
+              is started.
+  runtime_parameters:
+          case.run or case.test determine their pelayout from the config_pes.xml file but other jobs
+          in the workflow may have other requirements variables in this block determine those requirements.
+	  The runtime_parameters block may have an optional MACH attribute.
+
+  -->
+  <workflow_jobs id="default">
+    <!-- order matters, with no-batch jobs will be run in the order listed here -->
+    <job name="case.run">
+      <template>template.case.run</template>
+      <prereq>$BUILD_COMPLETE and not $TEST</prereq>
+    </job>
+    <job name="case.test">
+      <template>template.case.test</template>
+      <prereq>$BUILD_COMPLETE and $TEST</prereq>
+    </job>
+    <job name="case.st_archive">
+      <template>template.st_archive</template>
+      <!-- If DOUT_S is true and case.run (or case.test) exits successfully then run st_archive-->
+      <dependency>case.run or case.test</dependency>
+      <prereq>$DOUT_S</prereq>
+      <runtime_parameters>
+	<task_count>1</task_count>
+	<tasks_per_node>1</tasks_per_node>
+	<walltime>0:20:00</walltime>
+      </runtime_parameters>
+    </job>
+  </workflow_jobs>
+
+  <workflow_jobs id="timeseries" prepend="default">
+    <job name="timeseries">
+      <template>$ENV{POSTPROCESS_PATH}/timeseries/template.timeseries</template>
+      <dependency>case.st_archive</dependency>
+      <prereq>1</prereq>
+      <runtime_parameters MACH="aleph">
+	<task_count>200</task_count>
+	<tasks_per_node>10</tasks_per_node>
+	<walltime>12:00:00</walltime>
+      </runtime_parameters>
+      <runtime_parameters MACH="cheyenne">
+	<task_count>72</task_count>
+	<tasks_per_node>9</tasks_per_node>
+	<walltime>0:20:00</walltime>
+      </runtime_parameters>
+    </job>
+  </workflow_jobs>
+  <workflow_jobs id="timeseries_transfer" prepend="timeseries">
+    <job name="timeseries_transfer">
+      <template>$ENV{POSTPROCESS_PATH}/timeseries/template.timeseries_transfer</template>
+      <dependency>timeseries</dependency>
+      <prereq>1</prereq>
+      <runtime_parameters>
+	<task_count>1</task_count>
+	<tasks_per_node>1</tasks_per_node>
+	<walltime>1:00:00</walltime>
+      </runtime_parameters>
+    </job>
+  </workflow_jobs>
+  <workflow_jobs id="diagnostics" prepend="timeseries">
+    <job name="xconform">
+      <template>$CASEROOT/postprocess/xconform</template>
+      <dependency>timeseriesL</dependency>
+      <prereq>$CASEROOT/postprocess/pp_config -value --get STANDARDIZE_TIMESERIES</prereq>
+    </job>
+
+    <job name="atm_averages">
+      <template>$CASEROOT/postprocess/atm_averages</template>
+      <dependency>timeseries or case.st_archive</dependency>
+      <prereq>$CASEROOT/postprocess/pp_config -value --get GENERATE_AVGS_ATM</prereq>
+    </job>
+
+    <job name="lnd_averages">
+      <template>$CASEROOT/postprocess/lnd_averages</template>
+      <dependency>:lnd_avg(args)
+timeseries or case.st_archive</dependency>
+      <prereq>$CASEROOT/postprocess/pp_config -value --get GENERATE_AVGS_ATM</prereq>
+    </job>
+
+    <job name="ice_averages">
+      <template>$CASEROOT/postprocess/ice_averages</template>
+      <dependency>timeseries or case.st_archive</dependency>
+      <prereq>$CASEROOT/postprocess/pp_config -value --get GENERATE_AVGS_ATM</prereq>
+    </job>
+
+
+    <job name="ocn_averages">
+      <template>$CASEROOT/postprocess/ocn_averages</template>
+      <dependency>timeseries or case.st_archive</dependency>
+      <prereq>$CASEROOT/postprocess/pp_config -value --get GENERATE_AVGS_ATM</prereq>
+    </job>
+
+    <job name="atm_diagnostics">
+      <template>$CASEROOT/postprocess/atm_diagnostics</template>
+      <dependency>atm_averages</dependency>
+      <prereq>$CASEROOT/postprocess/pp_config -value --get GENERATE_AVGS_ATM</prereq>
+    </job>
+
+    <job name="lnd_diagnostics">
+      <template>$CASEROOT/postprocess/lnd_diagnostics</template>
+      <dependency>lnd_averages</dependency>
+      <prereq>$CASEROOT/postprocess/pp_config -value --get GENERATE_AVGS_ATM</prereq>
+    </job>
+    <job name="ice_diagnostics">
+      <template>$CASEROOT/postprocess/ice_diagnostics</template>
+      <dependency>ice_averages</dependency>
+      <prereq>$CASEROOT/postprocess/pp_config -value --get GENERATE_AVGS_ATM</prereq>
+    </job>
+    <job name="ocn_diagnostics">
+      <template>$CASEROOT/postprocess/ocn_diagnostics</template>
+      <dependency>ocn_averages</dependency>
+      <prereq>$CASEROOT/postprocess/pp_config -value --get GENERATE_AVGS_ATM</prereq>
+    </job>
+
+  </workflow_jobs>
+</config_workflow>

@@ -16,7 +16,7 @@ module RtmVar
   real(r8), public, parameter :: spval    = 1.e36_r8        ! special value for real data
   integer , public, parameter :: ispval   = -9999           ! special value for int data
   real(r8) :: re = SHR_CONST_REARTH*0.001_r8                ! radius of earth (km)
-  logical , public :: barrier_timers = .false.              ! barrier timers
+  logical , public :: barrier_timers                        ! barrier timers
 
   ! Run control variables
   character(len=256), public :: caseid  = ' '          ! case id
@@ -28,6 +28,9 @@ module RtmVar
   logical, public :: brnch_retain_casename = .false.   ! true => allow case name to remain the same for branch run
                                                        ! by default this is not allowed
   logical, public :: wrmflag = .false.                 ! water management model flag
+  logical, public :: inundflag = .false.               ! inundation model flag
+  logical, public :: sediflag = .false.                ! sediment model flag
+  logical, public :: heatflag = .false.                ! heat model flag
   logical, public :: noland = .false.                  ! true => no valid land points -- do NOT run
   character(len=32) , public :: decomp_option          ! decomp option
   character(len=32) , public :: smat_option            ! smatrix multiply option (opt, Xonly, Yonly)

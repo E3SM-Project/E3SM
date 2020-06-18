@@ -189,7 +189,6 @@ PIO_TF_AUTO_TEST_SUB_BEGIN test_rearrs_combs
   character(len=PIO_TF_MAX_STR_LEN), parameter :: attname = "filename"
   character(len=PIO_TF_MAX_STR_LEN), parameter :: dimname = "filename_dim"
   integer, parameter :: NUM_REARRANGERS = 2
-  integer :: rearrs(NUM_REARRANGERS) = (/pio_rearr_subset,pio_rearr_box/)
   integer, parameter :: MAX_PERMS = 4
   integer :: rearrs_perms(NUM_REARRANGERS,MAX_PERMS) = reshape(&
                 (/pio_rearr_subset, pio_rearr_box,&
@@ -206,7 +205,6 @@ PIO_TF_AUTO_TEST_SUB_BEGIN test_rearrs_combs
               "PIO_REARR_BOX   ", "PIO_REARR_BOX   "/),&
               (/NUM_REARRANGERS,MAX_PERMS/)&
             )
-  character(len=PIO_TF_MAX_STR_LEN) :: rearrs_info(NUM_REARRANGERS) = (/"PIO_REARR_SUBSET","PIO_REARR_BOX   "/)
   integer, dimension(:), allocatable :: iotypes
   character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
   integer :: i, j, k, num_iotypes = 0

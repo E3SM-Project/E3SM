@@ -13,17 +13,17 @@ cd {{ caseroot }}
 LIBDIR={{ cimeroot }}/scripts/lib
 export PYTHONPATH=$LIBDIR:$PYTHONPATH
 
+# setup environment
+source .env_mach_specific.sh
+
 # get new lid
 lid=$(python -c 'import CIME.utils; print CIME.utils.new_lid()')
 export LID=$lid
 
-# setup environment
-source .env_mach_specific.sh
-
 # Clean/make timing dirs
 RUNDIR=$(./xmlquery RUNDIR --value)
 if [ -e $RUNDIR/timing ]; then
-    /bin/rm $RUNDIR/timing
+    /bin/rm -rf $RUNDIR/timing
 fi
 mkdir -p $RUNDIR/timing/checkpoints
 

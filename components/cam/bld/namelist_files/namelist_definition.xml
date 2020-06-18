@@ -53,6 +53,8 @@
           This is an optional attribute that is mainly useful for variables
           that have only a small number of allowed values.
                                                                         -->
+<!-- There is a duplicated nml definitions for nudging parameters 
+     in the current master branch, and it is removed in the PR          -->
 <!-- Nudging Parameters -->
 
 <entry id="Nudge_Model" type="logical" category="nudging"
@@ -265,217 +267,52 @@
        Default: none
        </entry>
 
-
-<!-- Nudging Parameters -->
-
-<entry id="Nudge_Model" type="logical" category="nudging"
+<entry id="Nudge_Method" type="char*80" category="nudging"
        group="nudging_nl" valid_values="" >
-       Toggle Model Nudging ON/OFF.
+       Method to perform Nudging analyses.
+       1. Step: the model meteorology is nudged toward the same (future) time 
+          slice of the constraining data within each nudging window (e.g., 6-hr).
+       2. Linear: the model meteorology is nudged toward the state at the next 
+          model time step, which is linearly interpolated between two neighboring 
+          time slices of the constraining data. 
+       3. IMT: the model meteorology is nudged toward the constraining data at 
+          the same model time step and nudging is only applied when the constrainging 
+          data is available.
+       Default: Linear
+       </entry>
+
+<entry id="Nudge_Tau" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Use user-defined relaxation time scale (unit: hour).
+       If Nudge_Tau > 0, the relaxation time scale is determined by Nudge_Tau;
+       If not, the relaxation time scale is determined by Nudge_Times_Per_Day and nudging strength specified in the namelist (e.g. Nudge_Ucoef).
+       Default: -999
+       </entry>
+
+<entry id="Nudge_Loc_PhysOut" type="logical" category="nudging"
+       group="nudging_nl" valid_values="" >
+       If TRUE, change the location of calculation of nudging tendency to 
+       the same location where the model state variables are written out.
+       If FALSE, calculate the nudging tendency at the beginning of 
+       tphysbc (the same as the default model).
+       Default: TRUE
+       </entry>
+
+<entry id="Nudge_CurrentStep" type="logical" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Linearly interpolate nudging data to current (set to TRUE) or future 
+       (set to FALSE, used by the default model) model time step.
        Default: FALSE
        </entry>
 
-<entry id="Nudge_Path" type="char*256" input_pathname="abs" category="nudging"
+<entry id="Nudge_File_Ntime" type="integer" category="nudging"
        group="nudging_nl" valid_values="" >
-       Full pathname of analyses data to use for nudging.
-       Default: none
-       </entry>
-
-<entry id="Nudge_File_Template" type="char*80" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Template for Nudging analyses file names.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Times_Per_Day" type="integer" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Number of analyses files per day.
-       Default: none
-       </entry>
-
-<entry id="Model_Times_Per_Day" type="integer" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Number of time to update model data per day.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Uprof" type="integer" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Profile index for U nudging.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Ucoef" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Coeffcient for U nudging.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Vprof" type="integer" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Profile index for V nudging.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Vcoef" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Coeffcient for V nudging.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Tprof" type="integer" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Profile index for T nudging.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Tcoef" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Coeffcient for T nudging.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Qprof" type="integer" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Profile index for Q nudging.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Qcoef" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Coeffcient for Q nudging.
-       Default: none
-       </entry>
-
-<entry id="Nudge_PSprof" type="integer" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Profile index for PS nudging.
-       Default: none
-       </entry>
-
-<entry id="Nudge_PScoef" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Coeffcient for PS nudging.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Beg_Year" type="integer" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Year at which Nudging Begins.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Beg_Month" type="integer" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Month at which Nudging Begins.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Beg_Day" type="integer" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Day at which Nudging Begins.
-       Default: none
-       </entry>
-
-<entry id="Nudge_End_Year" type="integer" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Year at which Nudging Ends.
-       Default: none
-       </entry>
-
-<entry id="Nudge_End_Month" type="integer" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Month at which Nudging Ends.
-       Default: none
-       </entry>
-
-<entry id="Nudge_End_Day" type="integer" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Day at which Nudging Ends.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Hwin_lo" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       LOW Coeffcient for Horizontal Window.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Hwin_hi" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       HIGH Coeffcient for Horizontal Window.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Hwin_lat0" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       LAT0 of Horizonalt Window.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Hwin_latWidth" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Width of LAT Window.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Hwin_latDelta" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Steepness of LAT Window.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Hwin_lon0" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       LON0 of Horizontal Window.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Hwin_lonWidth" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Width of LON Window.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Hwin_lonDelta" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Steepness of LON Window.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Vwin_lo" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       LOW Coeffcient for Vertical Window.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Vwin_hi" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       HIGH Coeffcient for Vertical Window.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Vwin_Hindex" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       HIGH Level Index for Verical Window.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Vwin_Hdelta" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Steepness of HIGH end of Vertical Window.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Vwin_Lindex" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       LOW Level Index for Verical Window.
-       Default: none
-       </entry>
-
-<entry id="Nudge_Vwin_Ldelta" type="real" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Steepness of LOW end of Vertical Window.
-       Default: none
+       Number of time slices per nudging data file
+       The current nudging code only works for the nudging data file with one-day data. 
+       It does not work correctly when the nudging data file contains multiple-day data.
+       Thus, Nudge_File_Ntime has to equal to 1 or Nudge_Times_Per_Day.
+       Set default Nudge_File_Ntime to 0 to force the user to set its value correctly.
+       Default: 0
        </entry>
 
 <!-- Aerosols: Data (CAM version) -->
@@ -494,6 +331,28 @@ Default: FALSE
 
 <!-- Coupler between Physics and Dynamics -->
 
+<entry id="phys_chnk_fdim" type="integer"  category="perf_dp_coup"
+       group="cam_inparm" valid_values="">
+The basic data structure for fields in the physics is the chunk. The
+horizontal (column) dimension is factored between the first chunk dimension
+and the number of chunks, with the size of the first dimension influencing
+serial performance (e.g. vectorization or fit into cache) and the
+number of chunks limiting the available MPI and OpenMP parallelism. 
+The number of chunks is always chosen to provide an equal number of chunks
+per computational thread (subject to the constraint that each chunk is
+assigned at least one column). However, the declared size of the first
+dimension is a free parameter, indicating the maximum number of columns
+that can be assigned to a chunk (thus also impacting the total number of
+chunks). This was originally specified at compile-time, based on 
+experiments in the early 2000s indicating that the compilers at the time
+generated more efficient code when the first dimension was known
+at compile time, perhaps for improved alignment in memory layout or improved
+vectorization. This is now exposed as a runtime parameter, and the
+previous compile-time maximum (PCOLS) is simply used to define the default
+value of the runtime variable. Must be greater than or equal to 1.
+Default: PCOLS
+</entry>
+
 <entry id="phys_alltoall" type="integer"  category="perf_dp_coup"
        group="cam_inparm" valid_values="0,1,2,11,12,13">
 Dynamics/physics transpose method for nonlocal load-balance.  0: use
@@ -507,6 +366,12 @@ phys_alltoall - modmin_alltoall, where modmin_alltoall is 11. -1: use
 option 1 when each process communicates with less than half of the other 
 processes, otherwise use option 0 (approx.).
 Default: -1
+</entry>
+
+<entry id="phys_chnk_cost_write" type="logical"  category="perf_dp_coup"
+       group="cam_inparm" valid_values="">
+Enable/disable output of measured physics cost per chunk.
+Default: .false.
 </entry>
 
 <entry id="phys_chnk_per_thd" type="integer"  category="perf_dp_coup"
@@ -1122,13 +987,6 @@ IEFLX fixer options
 Default: 0
 </entry>
 
-<entry id="l_ieflx_fix" type="logical"  category="fixers"
-       group="phys_ctl_nl" valid_values="">
-Whether or not to turn on IEFLX fixer
-Default: false
-</entry>
-
-
 <!-- Gravity Wave Drag -->
 
 <entry id="use_gw_oro" type="logical" category="gw_drag"
@@ -1167,6 +1025,12 @@ Default: set by build-namelist.
 Force the stress due to gravity waves to be zero at the top of the model.
 In the low-top model, this helps to conserve momentum and produce a QBO.
 Default: set by build-namelist.
+</entry>
+
+<entry id="gw_convect_hcf" type="real" category="gw_drag"
+       group="gw_drag_nl" valid_values="" >
+Heating rate conversion factor associated with convective gravity waves
+Default: 20.0
 </entry>
 
 <entry id="effgw_beres" type="real" category="gw_drag"
@@ -1694,11 +1558,17 @@ Default: 1
 </entry>
 
 <entry id="inithist" type="char*8"  category="history"
-       group="cam_history_nl" valid_values="NONE,6-HOURLY,DAILY,MONTHLY,YEARLY,CAMIOP,ENDOFRUN" >
+       group="cam_history_nl" valid_values="NONE,NSTEPS,HOURLY,6-HOURLY,DAILY,MONTHLY,YEARLY,CAMIOP,ENDOFRUN" >
 Frequency that initial files will be output: 6-hourly, daily, monthly,
-yearly, or never.  Valid values: 'NONE', '6-HOURLY', 'DAILY', 'MONTHLY',
+yearly, or never.  Valid values: 'NONE', 'NSTEPS','HOURLY', '6-HOURLY', 'DAILY', 'MONTHLY',
 'YEARLY', 'CAMIOP', 'ENDOFRUN'.
 Default: 'YEARLY'
+</entry>
+
+<entry id="inithist_nsteps" type="integer"  category="history"
+       group="cam_history_nl" valid_values="" >
+Number of physics steps that initial files will be output. Used only when inithist == 'NSTEPS'
+Default: 1
 </entry>
 
 <entry id="inithist_all" type="logical"  category="history"
@@ -2526,6 +2396,12 @@ Trigger and memory option in ZM deep convection scheme.
 Default: FALSE
 </entry>
 
+<entry id="zmconv_trigdcape_ull" type="logical" category="conv"
+       group="zmconv_nl" valid_values="" >
+DCAPE trigger along with unrestricted launching level for ZM deep convection scheme.
+Default: FALSE
+</entry>
+
 <entry id="zmconv_tiedke_add" type="real" category="conv"
        group="zmconv_nl" valid_values="" >
 A ZM deep convection parameter
@@ -3055,6 +2931,18 @@ Constant associated with the dissipation of the variance of vertical velocity
 Default: 1.0. See clubb/parameters_tunable.F90
 </entry>
 
+<entry id="clubb_C1b" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Constant associated with the dissipation of the variance of vertical velocity
+Default: 1.0. See clubb/parameters_tunable.F90
+</entry>
+
+<entry id="clubb_C1c" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Constant associated with the dissipation of the variance of vertical velocity
+Default: 1.0. See clubb/parameters_tunable.F90
+</entry>
+
 <entry id="clubb_C2rt" type="real" category="pblrad"
        group="clubb_param_nl" valid_values="" >
 Constant associated with the dissipation of the variance of total water
@@ -3084,6 +2972,25 @@ Default: 4.0
 High skewness of Newtonian damping of water flux
 Default: 6.0
 </entry>
+
+<entry id="clubb_C6rtc" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+High skewness of Newtonian damping of water flux
+Default: 1.0
+</entry>
+
+<entry id="clubb_C6thlb" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Low skewness of Newtonian damping of water flux
+Default: 1.0
+</entry>
+
+<entry id="clubb_C6thlc" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Low skewness of Newtonian damping of water flux
+Default: 6.0
+</entry>
+
 
 <entry id="clubb_C7" type="real" category="pblrad"
        group="clubb_param_nl" valid_values="" >
@@ -3115,6 +3022,12 @@ High skewnes of buoyancy damping of the third moment of vertical velocity
 Default: 0.35
 </entry>
 
+<entry id="clubb_C11c" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+High skewnes of buoyancy damping of the third moment of vertical velocity
+Default: 0.5
+</entry>
+
 <entry id="clubb_C14" type="real" category="pblrad"
        group="clubb_param_nl" valid_values="" >
 Constant of Newtonian damping of the variances of u-wind and v-wind
@@ -3137,6 +3050,12 @@ Default: 0.32
        group="clubb_param_nl" valid_values="" >
 High Skw. gamma coef. Skw. Fnct.
 Default: 0.32 or clubb_gamma_coef if it is specified
+</entry>
+
+<entry id="clubb_gamma_coefc" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+High Skw. gamma coef. Skw. Fnct.
+Default: 5.0or clubb_gamma_coef if it is specified
 </entry>
 
 <entry id="clubb_mu" type="real" category="pblrad"
@@ -3747,7 +3666,8 @@ Default: set by build-namelist
                                          linoz_mam3,linoz_mam4_resus,
 					 linoz_mam4_resus_soag,linoz_mam4_resus_mom,
 					 linoz_mam4_resus_mom_soag,
-                                         super_fast_llnl,super_fast_llnl_mam3,none " >
+                                         super_fast_llnl,super_fast_llnl_mam3,
+					 superfast_mam4_resus_mom_soag,none " >
 Name of the CAM chemistry package.  N.B. this variable may not be set by
 the user.  It is set by build-namelist via information in the configure
 cache file to be consistent with how CAM was built.
@@ -3971,6 +3891,14 @@ Type of radiation scheme employed.
 Default: set by build-namelist
 </entry>
 
+<entry id="constant_zenith_deg" type="real"  category="radiation"
+       group="phys_ctl_nl" valid_values="" >
+Constant solar zenith angle value in degrees for idealized configurations
+such as radiative-convective equilibrium experiments. This is disabled when 
+the value is less than 0
+Default: -1
+</entry>
+
 <entry id="conv_water_in_rad" type="integer" category="radiation"
        group="phys_ctl_nl" valid_values="0,1,2" >
 Convective water used in radiation?
@@ -4016,6 +3944,20 @@ Default: -1
 Specifies length of time in timesteps (positive) or hours (negative) SW/LW
 radiation will be run for every timestep from the start of an initial run.
 Default: 0
+</entry>
+
+<entry id="do_aerosol_rad" type="logical"  category="radiation"
+       group="radiation_nl" valid_values="" >
+Indicates whether to consider aerosols in radiative calculations
+Default: TRUE
+</entry>
+
+<entry id="fixed_total_solar_irradiance" type="real"  category="radiation"
+       group="radiation_nl" valid_values="" >
+Fixed value of solar constant for idealized configurations such as 
+radiative-convective equilibrium experiments. This is disabled when 
+the value is less than 0
+Default: -1
 </entry>
 
 <entry id="spectralflux" type="logical"  category="radiation"
@@ -4344,6 +4286,53 @@ Default: current model time of day
 Use spectral scaling in the radiation heating 
 Default: false
 </entry>
+
+<!-- MMF -->
+<entry id="use_MMF" type="logical"  category="conv"
+       group="phys_ctl_nl" valid_values="" >
+Turn on super parameterized CAM
+Default: false
+</entry>
+
+<entry id="use_ECPP" type="logical"  category="conv"
+       group="phys_ctl_nl" valid_values="" >
+Turn on explicit cloud parameterized pollutants
+Default: false
+</entry>
+
+<entry id="use_MAML" type="logical"  category="conv"
+       group="phys_ctl_nl" valid_values="" >
+Turn on Multiple Atmosphere and Multiple Land option 
+Default: false
+</entry>
+
+<entry id="MMF_microphysics_scheme" type="char*16" category="conv"
+       group="phys_ctl_nl" valid_values="m2005, sam1mom" >
+Type of SPCAM microphysics scheme employed.
+Default: sam1mom
+</entry>
+
+<!-- MMF Mean State Acceleration(MSA) definitions -->
+<entry id="use_crm_accel" type="logical" category="conv"
+       group="phys_ctl_nl" valid_values="">
+Enables CRM mean-state acceleration when using SPCAM.
+Default: true
+</entry>
+
+<entry id="crm_accel_factor" type="real" category="conv"
+       group="phys_ctl_nl" valid_values="">
+CRM acceleration factor to apply if use_crm_accel is true
+Default: 2.0
+</entry>
+
+<entry id="crm_accel_uv" type="logical" category="conv"
+       group="phys_ctl_nl" valid_values="">
+Turn on CRM mean-state acceleration for u,v when use_crm_accel is true.
+If crm_accel_uv is false and use_crm_accel is true, then mean-state
+acceleration will only be applied to scalar fields (liquid/ice static 
+energy and non-precipitating total water mixing ratio). This has
+no effect when use_crm_accel is false.
+Default: true
 
 <!-- Test Tracers -->
 
@@ -5412,6 +5401,30 @@ if <varname>linoz_data_type</varname> is 'FIXED'.
 Default: 0 seconds
 </entry>
 
+<entry id="linoz_lbl" type="integer" category="linoz"
+       group="linoz_nl" valid_values="" >
+Tunable number of layers with ozone decay from the surface in Linoz
+Default: 4
+</entry>
+
+<entry id="linoz_sfc" type="real" category="linoz"
+       group="linoz_nl" valid_values="" >
+Tunable boundary layer concentration (ppb) to which Linoz ozone e-fold
+Default: 30.0e-9
+</entry>
+
+<entry id="linoz_tau" type="real" category="linoz"
+       group="linoz_nl" valid_values="" >
+Tunable Linoz e-fold time scale (in seconds) in the boundary layer
+Default: 172800.0
+</entry>
+
+<entry id="linoz_psc_T" type="real" category="linoz"
+       group="linoz_nl" valid_values="" >
+Tunable Linoz PSC ozone loss temperature (K) threshold
+Default: 193.0
+</entry>
+
 <entry id="tracer_cnst_datapath" type="char*256" input_pathname="abs" category="cam_chem"
        group="chem_inparm" valid_values="" >
 Full pathname of the directory that contains the files specified in
@@ -5745,30 +5758,18 @@ Default: TRUE
 
 <!-- SE dycore -->
 
-<entry id="se_nsplit" type="integer" category="se"
-       group="ctl_nl" valid_values="" >
-Number of dynamics steps per physics timestep.
-Default: Set by build-namelist.
-</entry>
-
-<entry id="se_phys_tscale" type="integer" category="se"
-       group="ctl_nl" valid_values="" >
-Physics timescale (in seconds) used to compute physics tendencies
-If 0, feature is disabled (use dtime).
-Default: Set by build-namelist. 
-</entry>
-
 <entry id="se_limiter_option" type="integer" category="se"
-       group="ctl_nl" valid_values="0,4,8" >
+       group="ctl_nl" valid_values="0,4,8,9" >
 Limiter used for horizontal tracer advection:
 0: None
 4: Sign-preserving limiter.
 8: Monotone limiter.
-Default: Set by build-namelist (probably 8).
+9: CAAS monotone limiter.
+Default: 9
 </entry>
 
 <entry id="vert_remap_q_alg" type="integer" category="se"
-    group="ctl_nl" valid_values="0,1,2">
+    group="ctl_nl" valid_values="0,1,2,10">
 CAM-SE vertical remap algorithm
 0: default value, Zerroukat monotonic splines
 1: PPM vertical remap with mirroring at the boundaries
@@ -5776,7 +5777,8 @@ CAM-SE vertical remap algorithm
 2: PPM vertical remap without mirroring at the boundaries
    (no bc's enforced, first-order at two cells bordering top and bottom
    boundaries)
-Default: Set by build-namelist.
+10: PPM with 2nd order boundary treatment
+Default: 10
 </entry>
 
 <entry id="se_ftype" type="integer" category="se"
@@ -5789,103 +5791,28 @@ Default: Set by build-namelist.
 </entry>
 
 <entry id="integration" type="char*80" category="se"
-       group="ctl_nl" valid_values="explicit,semi_implicit" >
+       group="ctl_nl" valid_values="explicit" >
 Time integration method.
-Default: Set by build-namelist ("explicit").
+Default: explicit.
 </entry>
 
 <entry id="se_ne" type="integer" category="se"
        group="ctl_nl" valid_values="" >
-Element width of resolution.
-Must match value of grid. Do NOT set this yourself.
+Use internally generated cubed sphere mesh of size 6 x se_ne x se_ne.                         
+If se_ne=0 (RRM grids), read mesh from Exodus file.          
 Default: Set by build-namelist.
 </entry>
 
-<entry id="qsplit" type="integer" category="se"
+<entry id="mesh_file" type="char*256" input_pathname="abs" category="se"
        group="ctl_nl" valid_values="" >
-Tracer advection is done every qsplit dynamics timesteps.
-Default: Set by build-namelist.
-</entry>
-
-<entry id="rsplit" type="integer" category="se"
-       group="ctl_nl" valid_values="" >
-Vertically lagrangian code updates every rsplit tracer timesteps.
-If rsplit=0, vertically lagrangian code is off.
-Default: Set by build-namelist.
-</entry>
-
-<entry id="tstep_type" type="integer" category="se"
-       group="ctl_nl" valid_values="" >
-Time stepping method for SE dycore
-tstep_type=0  pure Leapfrog except for very first timestep
-tstep_type=1  RK2 followed by qsplit-1 Leapfrog steps; second-order accurate in time (CESM1.2.0 setting)
-tstep_type=2  RK2-SSP 3 stage (as used by tracers)
-tstep_type=3  classic Runga-Kutta (RK) 3 stage
-tstep_type=4  Kinnmark&Gray Runga-Kutta (RK) 4 stage
-tstep_type=5  Kinnmark&Gray Runga-Kutta (RK) 5 stage (3rd order accurate in time)
-Default: Set by build-namelist.
-</entry>
-
-
-<entry id="hypervis_order" type="integer" category="se"
-       group="ctl_nl" valid_values="2" >
-Hyperviscosity operator is the Laplacian^hypervis_order.
-The only supported value in CAM is "2".
-Default: Set by build-namelist.
-</entry>
-
-<entry id="hypervis_subcycle" type="integer" category="se"
-       group="ctl_nl" valid_values="" >
-Number of hyperviscosity subcycles per dynamics timestep.
-Default: Set by build-namelist (probably 2).
-</entry>
-
-<entry id="hypervis_subcycle_q" type="integer" category="se"
-       group="ctl_nl" valid_values="1" >
-Number of hyperviscosity subcycles done in tracer advection code.
-The only supported value in CAM is 1.
-Default: Set by build-namelist.
-</entry>
-
-
-<entry id="nu" type="real" category="se"
-       group="ctl_nl" valid_values="" >
-Dynamics hyperviscosity [m^4/s].
-Default: Set by build-namelist.
-</entry>
-
-<entry id="nu_div" type="real" category="se"
-       group="ctl_nl" valid_values="" >
-Weighting of divergence component when applying hyperviscosity.
-If < 0, uses nu.
-Default: Set by build-namelist.
-</entry>
-
-<entry id="nu_p" type="real" category="se"
-       group="ctl_nl" valid_values="" >
-Hyperviscosity applied to dp3d (layer thickness when running
-vertically lagrangian dynamics) [m^4/s].
-Default: Set by build-namelist.
-</entry>
-
-<entry id="nu_q" type="real" category="se"
-       group="ctl_nl" valid_values="" >
-Hyperviscosity applied during tracer advection [m^4/s].
-If < 0, uses nu.
-Default: Set by build-namelist.
-</entry>
-
-<entry id="nu_top" type="real" category="se"
-       group="ctl_nl" valid_values="" >
-Second-order viscosity applied only near the model top [m^2/s].
+Exodus format grid file used when se_ne=0
 Default: Set by build-namelist.
 </entry>
 
 <entry id="se_partmethod" type="integer" category="se"
        group="ctl_nl" valid_values="4" >
-Mesh partitioning method (METIS).
-The only supported value in CAM is 4 (space-filling).
-Default: Set by build-namelist.
+Mesh partitioning method.  The only supported value in CAM is 4 (space-filling).
+Default: 4
 </entry>
 
 <entry id="statefreq" type="integer" category="se"
@@ -5902,16 +5829,163 @@ Only "cube" is supported in CAM.
 Default: Set by build-namelist.
 </entry>
 
+<entry id="vthreads" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Number of vertical threads.
+Default: 1.
+</entry>
+
+<entry id="theta_hydrostatic_mode" type="logical" category="se"
+       group="ctl_nl" valid_values="" >
+Run theta model in hydrostatic mode.
+Default: true. 
+</entry>
+
+<entry id="theta_advect_form" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Indicates form of eqn. for vtheta in theta model.
+0 is conservation form, 1 is expanded div form.
+Default: 1.
+</entry>
+	
+<entry id="cubed_sphere_map" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Defines which map is used for referene element in homme.
+Must be 2 for compsets using TempestRemap mapping files.          
+Default: 0
+</entry>
+
+
+<!-- timestep parameters -->
+
+<entry id="se_nsplit" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Number of dynamics steps per physics timestep.
+dt_remap = dtime/se_nsplit                                                                    
+dt_tracer = dt_remap / rsplit                                                                 
+dt_dyn = dt_tracer / qsplit                                                                   
+dt_dyn_vis = dt_dyn / hypervis_subcycle                                                       
+dt_tracer_vis = dt_tracer / hypervis_subcycle_q     
+Default: Set by build-namelist.
+</entry>
+
+<entry id="rsplit" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Number of tracer steps per remap step.   
+If rsplit=0, vertically lagrangian code is off.
+Default: Set by build-namelist.
+</entry>
+
+<entry id="qsplit" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Number of dynamics steps per tracer step. 
+Default: Set by build-namelist.
+</entry>
+
+<entry id="se_tstep" type="real" category="se"
+       group="ctl_nl" valid_values="" >
+Dynamics timestep.  Replaces se_nsplit.  
+</entry>
+
+<entry id="dt_tracer_factor" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Tracer advection is done every dt_tracer_factor dynamics timesteps.
+Replaces qsplit, rsplit.
+Default: Set by build-namelist.
+</entry>
+
+<entry id="dt_remap_factor" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Vertically lagrangian code updates every dt_remap_factor dynamics timesteps.
+Replaces qsplit, rsplit.
+If dt_remap_factor=0, vertically lagrangian code is off.
+</entry>
+
+<entry id="tstep_type" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Time stepping method for SE dycore
+tstep_type=1  RK2 followed by qsplit-1 Leapfrog steps; second-order accurate in time (CESM1.2.0 setting)
+tstep_type=2  RK2-SSP 3 stage (as used by tracers)
+tstep_type=3  classic Runga-Kutta (RK) 3 stage
+tstep_type=5  Kinnmark&Gray Runga-Kutta (RK) 5 stage (3rd order accurate in time)
+tstep_type=9  Kinnmark&Gray Runga-Kutta IMEX
+Default: Set by build-namelist.
+</entry>
+
+
+<!-- viscosity parameters -->
+
+<entry id="hypervis_order" type="integer" category="se"
+       group="ctl_nl" valid_values="2" >
+Hyperviscosity operator is the Laplacian^hypervis_order.
+The only supported value in CAM is "2".
+Default: Set by build-namelist.
+</entry>
+
+<entry id="hypervis_subcycle" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Number of hyperviscosity subcycles per dynamics timestep.
+Default: Set by build-namelist (probably 2).
+</entry>
+
+<entry id="hypervis_subcycle_tom" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+If non-zero, subcycle TOM diffusion operator separately from hyperviscsoity                   
+with dt_vis_tom=dt_dyn/hypervis_subcycle_tom.               
+Default: 1
+</entry>
+
+<entry id="hypervis_subcycle_q" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Number of hyperviscosity subcycles done in tracer advection code.
+Default: Set by build-namelist.
+</entry>
+
+
+<entry id="nu" type="real" category="se"
+       group="ctl_nl" valid_values="" >
+Dynamics hyperviscosity [m^4/s].
+Default: Set by build-namelist.
+</entry>
+
+<entry id="nu_div" type="real" category="se"
+       group="ctl_nl" valid_values="" >
+Weighting of divergence component when applying hyperviscosity.
+If < 0, uses nu.
+Default: -1.
+</entry>
+
+<entry id="nu_s" type="real" category="se"
+       group="ctl_nl" valid_values="" >
+Hyperviscosity applied to dynamics scalars [m^4/s].
+If < 0, uses nu.
+Default: -1.
+</entry>
+
+<entry id="nu_p" type="real" category="se"
+       group="ctl_nl" valid_values="" >
+Hyperviscosity applied to dp3d (layer thickness when running
+vertically lagrangian dynamics) [m^4/s].
+If < 0, uses nu.
+Default: -1.
+</entry>
+
+<entry id="nu_q" type="real" category="se"
+       group="ctl_nl" valid_values="" >
+Hyperviscosity applied during tracer advection [m^4/s].
+If < 0, uses nu.
+Default: -1.
+</entry>
+
+<entry id="nu_top" type="real" category="se"
+       group="ctl_nl" valid_values="" >
+Second-order viscosity applied only near the model top [m^2/s].
+Default: Set by build-namelist.
+</entry>
 
 <entry id="fine_ne" type="integer" category="se"
        group="ctl_nl" valid_values="" >
 baseline ne for scalar hypervis tuning
-Default: Set by build-namelist.
-</entry>
-
-<entry id="mesh_file" type="char*256" input_pathname="abs" category="se"
-       group="ctl_nl" valid_values="" >
-Exodus format grid file
 Default: Set by build-namelist.
 </entry>
 
@@ -5930,13 +6004,66 @@ Default: Set by build-namelist.
 Default: Set by build-namelist.
 </entry>
 
-<entry id="vthreads" type="integer" category="se"
-       group="ctl_nl" valid_values="" >
-Number of vertical threads.
-Default: 1.
+<!-- tracer transport options -->
+
+<entry id="transport_alg" type="integer" category="se"
+       group="ctl_nl" valid_values="0,12" >
+Tracer transport algorithm:
+0: Eulerian flux-form.
+12: COMPOSE semi-Lagrangian.
+Default: 0 (preqx), 12 (theta)
 </entry>
 
+<entry id="semi_lagrange_cdr_alg" type="integer" category="se"
+       group="ctl_nl" valid_values="2,3,20,21,30" >
+Constrained density reconstuctor (CDR) for property preservation:
+2: QLT
+3: CAAS
+20: QLT with superlevels of 8 levels.
+21: QLT with superlevels of 8 levels; use local CAAS over sublevels.
+30: CAAS with superlevels of 8 levels.
+Default: (set by dycore)
+</entry>
 
+<entry id="semi_lagrange_cdr_check" type="logical" category="se"
+       group="ctl_nl" valid_values="">
+Correctness check the CDR.
+Default: (set by dycore)
+</entry>
+
+<entry id="semi_lagrange_nearest_point_lev" type="integer" category="se"
+       group="ctl_nl" valid_values="">
+Number of levels, counting from the top, that are allowed to use the
+nearest point in the halo to the departure point, when necessary.
+Default: (set by dycore)
+</entry>
+
+<entry id="semi_lagrange_hv_q" type="integer" category="se"
+       group="ctl_nl" valid_values="">
+Number of tracers, starting from 1, to which to apply hyperviscosity. For
+example, to apply hyperviscosity to moisture, the first tracer, set the value to
+1. Hyperviscosity is applied using nu_q as the coefficient.
+Default: (set by dycore)
+</entry>
+
+<!-- Physics grid -->
+
+<entry id="se_fv_phys_remap_alg" type="integer" category="se"
+       group="ctl_nl" valid_values="0,1">
+Remap algorithm to use to map between FV physics grid and GLL dynamics
+grid. 0, default, provides the original algorithms; 1 provides
+high-order algorithms implemented in gllfvremap_mod.
+Default: (set by dycore).  
+</entry>
+
+<entry id="se_fv_nphys" type="integer" category="se"
+       group="dyn_se_inparm" valid_values="" >
+Number of equally-spaced horizontal physics points per spectral
+element. A number greater than zero will define [se_fv_nphys] equally
+spaced physics points in each direction (e.g., se_fv_nphys = 2 will
+result in 4 equally-spaced physics points per element).
+Default: set based on atmosphere grid
+</entry>
 
 <!-- CAM I/O  -->
 
@@ -7139,6 +7266,12 @@ Default: 1.0 for CAM, set by build-namelist for WACCM, T31
 Factor determining z_0 from orographic standard deviation [ no unit ] 
 Used when turbulent mountain stress calc is turned on. See <varname>do_tms</varname>.
 set by build-namelist for WACCM, T31
+</entry>
+
+<entry id="omega" type="real" category="physconst"
+       group="physconst_nl" valid_values="" >
+Planetary rotation rate (radians/second). Value set here is ONLY used in the atmosphere.
+Default: set to shr_const value
 </entry>
 
 </namelist_definition>

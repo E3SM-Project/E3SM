@@ -20,8 +20,11 @@ module radiation_utils
    end interface expand_day_columns
 
    interface clip_values
-      module procedure clip_values_1d, clip_values_2d
+      module procedure clip_values_1d, clip_values_2d, clip_values_3d
    end interface clip_values
+
+   ! Max length for character strings
+   integer, parameter :: max_char_len = 512
 
    ! Name of this module for error messages
    character(len=*), parameter :: module_name = 'radiation_utils'
@@ -118,14 +121,12 @@ contains
 
    !-------------------------------------------------------------------------------
 
-   subroutine calculate_heating_rate(fluxes, pint, heating_rate)
+   subroutine calculate_heating_rate(flux_up, flux_dn, pint, heating_rate)
 
       use physconst, only: gravit
-      use mo_fluxes_byband, only: ty_fluxes_byband
 
       ! Inputs
-      type(ty_fluxes_byband), intent(in) :: fluxes
-      real(r8), intent(in) :: pint(:,:)
+      real(r8), intent(in), dimension(:,:) :: flux_up, flux_dn, pint
 
       ! Output heating rate; same size as pint with one fewer vertical level
       real(r8), intent(out) :: heating_rate(:,:)
@@ -137,10 +138,10 @@ contains
       character(len=32) :: subname = 'calculate_heating_rate'
 
       ! Get dimension sizes and make sure arrays conform
-      call assert(size(pint,1) == size(fluxes%flux_up,1), subname // ': sizes do not conform.')
-      call assert(size(pint,2) == size(fluxes%flux_up,2), subname // ': sizes do not conform.')
-      call assert(size(heating_rate,1) == size(fluxes%flux_up,1), subname // ': sizes do not conform.')
-      call assert(size(heating_rate,2) == size(fluxes%flux_up,2)-1, subname // ': sizes do not conform.')
+      call assert(size(pint,1) == size(flux_up,1), subname // ': sizes do not conform.')
+      call assert(size(pint,2) == size(flux_up,2), subname // ': sizes do not conform.')
+      call assert(size(heating_rate,1) == size(flux_up,1), subname // ': sizes do not conform.')
+      call assert(size(heating_rate,2) == size(flux_up,2)-1, subname // ': sizes do not conform.')
 
       ! Loop over levels and calculate heating rates; note that the fluxes *should*
       ! be defined at interfaces, so the loop ktop,kbot and grabbing the current
@@ -160,8 +161,8 @@ contains
       do ilev = 1,size(pint,2)-1
          do icol = 1,size(pint,1)
             heating_rate(icol,ilev) = ( &
-               fluxes%flux_up(icol,ilev+1) - fluxes%flux_up(icol,ilev) - &
-               fluxes%flux_dn(icol,ilev+1) + fluxes%flux_dn(icol,ilev) &
+               flux_up(icol,ilev+1) - flux_up(icol,ilev) - &
+               flux_dn(icol,ilev+1) + flux_dn(icol,ilev) &
             ) * gravit / (pint(icol,ilev+1) - pint(icol,ilev))
          end do
       end do
@@ -170,89 +171,38 @@ contains
 
    !----------------------------------------------------------------------------
 
-   subroutine clip_values_1d(x, min_x, max_x, varname, warn)
+   ! Routines to clip array values if they are outside of an expected range,
+   ! defined by min_x and max_x. Allow passing a varname argument, which will be
+   ! appended to warning message and tolerance argument that sets a maximum
+   ! tolerance above which a warning or error will be thrown. That is, these 
+   ! routines will *always* clip values outside expected range and allow the 
+   ! simulation to continue, but a warning will be issued if the values fall 
+   ! outside the expected range plus the tolerance. In other words, no warning 
+   ! is issued when clipping values outside the valid range plus/minus the 
+   ! tolerance.
+   function clip_values_1d(x, min_x, max_x, varname, tolerance) result(error_message)
       real(r8), intent(inout) :: x(:)
       real(r8), intent(in) :: min_x
       real(r8), intent(in) :: max_x
-      character(len=*), intent(in), optional :: varname
-      logical, intent(in), optional :: warn
+      character(len=*), intent(in) :: varname
+      real(r8), intent(in), optional :: tolerance
+      real(r8) :: tolerance_local
+      character(max_char_len) :: error_message
 
-      logical :: warn_local
-
-      warn_local = .false.
-      if (present(warn)) then
-         warn_local = warn
-      end if
-
-      ! Look for values less than threshold
-      if (any(x < min_x)) then
-         ! Raise warning?
-         if (warn_local) then
-            if (present(varname)) then
-               print *, module_name // ' warning: ', &
-                        count(x < min_x), ' values are below threshold for variable ', &
-                        trim(varname), '; min = ', minval(x)
-            else
-               print *, module_name // ' warning: ', &
-                        count(x < min_x), ' values are below threshold; min = ', minval(x)
-            end if
-         end if
-
-         ! Clip values
-         where (x < min_x)
-            x = min_x
-         endwhere
-      end if
-
-      ! Look for values greater than threshold 
-      if (any(x > max_x)) then 
-         ! Raise warning?
-         if (warn_local) then
-            if (present(varname)) then
-               print *, module_name // ' warning: ', &
-                        count(x > max_x), ' values are above threshold for variable ', &
-                        trim(varname), '; max = ', maxval(x)
-            else
-               print *, module_name // ' warning: ', &
-                        count(x > max_x), ' values are above threshold; max = ', maxval(x)
-            end if
-         end if
-
-         ! Clip values
-         where (x > max_x)
-            x = max_x
-         end where
-      end if
-   end subroutine clip_values_1d
-
-   subroutine clip_values_2d(x, min_x, max_x, varname, warn)
-      real(r8), intent(inout) :: x(:,:)
-      real(r8), intent(in) :: min_x
-      real(r8), intent(in) :: max_x
-      character(len=*), intent(in), optional :: varname
-      logical, intent(in), optional :: warn
-
-      logical :: warn_local
-
-      warn_local = .false.
-      if (present(warn)) then
-         warn_local = warn
+      error_message = ''
+      tolerance_local = 0._r8
+      if (present(tolerance)) then
+         tolerance_local = tolerance
       end if
 
       ! look for values less than threshold
       if (any(x < min_x)) then
-         ! Raise warning?
-         if (warn_local) then
-            if (present(varname)) then
-               print *, module_name // ' warning: ', &
-                        count(x < min_x), ' values are below threshold for variable ', &
-                        trim(varname), '; min = ', minval(x)
-            else
-               print *, module_name // ' warning: ', &
-                        count(x < min_x), ' values are below threshold; min = ', minval(x)
-            end if
+         ! Raise warning? Only if outside tolerance
+         if (any(x < (min_x - tolerance_local))) then
+            write(error_message,*) 'WARNING: ' // trim(varname) // ': ', &
+                     count(x < (min_x - tolerance_local)), ' values below threshold ', &
+                     '; min = ', minval(x)
          end if
-
          ! Clip values
          where (x < min_x)
             x = min_x
@@ -260,53 +210,132 @@ contains
       end if
 
       ! Look for values greater than threshold
-      if (any(x > max_x)) then 
-         ! Raise warning?
-         if (warn_local) then
-            if (present(varname)) then
-               print *, module_name // ' warning: ', &
-                        count(x > max_x), ' values are above threshold for variable ', &
-                        trim(varname), '; max = ', maxval(x)
-            else
-               print *, module_name // ' warning: ', &
-                        count(x > max_x), ' values are above threshold; max = ', maxval(x)
-            end if
+      if (any(x > max_x)) then
+         ! Raise warning? Only if outside tolerance
+         if (any(x > (max_x + tolerance_local))) then
+            write(error_message,*) 'WARNING: ' // trim(varname) // ': ', &
+                     count(x > (max_x + tolerance_local)), ' values above threshold ', &
+                     '; max = ', maxval(x)
          end if
-
          ! Clip values
          where (x > max_x)
             x = max_x
          end where
       end if
+   end function clip_values_1d
+   !-------------------------------------------------------------------------------
+   function clip_values_2d(x, min_x, max_x, varname, tolerance) result(error_message)
+      real(r8), intent(inout) :: x(:,:)
+      real(r8), intent(in) :: min_x
+      real(r8), intent(in) :: max_x
+      character(len=*), intent(in) :: varname
+      real(r8), intent(in), optional :: tolerance
+      real(r8) :: tolerance_local
+      character(max_char_len) :: error_message
 
-   end subroutine clip_values_2d
+      error_message = ''
+      tolerance_local = 0._r8
+      if (present(tolerance)) then
+         tolerance_local = tolerance
+      end if
 
-   !----------------------------------------------------------------------------
+      ! look for values less than threshold
+      if (any(x < min_x)) then
+         ! Raise warning? Only if outside tolerance
+         if (any(x < (min_x - tolerance_local))) then
+            write(error_message,*) 'WARNING: ' // trim(varname) // ': ', &
+                     count(x < (min_x - tolerance_local)), ' values below threshold ', &
+                     '; min = ', minval(x)
+         end if
+         ! Clip values
+         where (x < min_x)
+            x = min_x
+         endwhere
+      end if
 
-   subroutine handle_error(error_message, stop_on_error)
+      ! Look for values greater than threshold
+      if (any(x > max_x)) then
+         ! Raise warning? Only if outside tolerance
+         if (any(x > (max_x + tolerance_local))) then
+            write(error_message,*) 'WARNING: ' // trim(varname) // ': ', &
+                     count(x > (max_x + tolerance_local)), ' values above threshold ', &
+                     '; max = ', maxval(x)
+         end if
+         ! Clip values
+         where (x > max_x)
+            x = max_x
+         end where
+      end if
+   end function clip_values_2d
+   !-------------------------------------------------------------------------------
+   function clip_values_3d(x, min_x, max_x, varname, tolerance) result(error_message)
+      real(r8), intent(inout) :: x(:,:,:)
+      real(r8), intent(in) :: min_x
+      real(r8), intent(in) :: max_x
+      character(len=*), intent(in) :: varname
+      real(r8), intent(in), optional :: tolerance
+      real(r8) :: tolerance_local
+      character(max_char_len) :: error_message
+
+      error_message = ''
+      tolerance_local = 0._r8
+      if (present(tolerance)) then
+         tolerance_local = tolerance
+      end if
+
+      ! look for values less than threshold
+      if (any(x < min_x)) then
+         ! Raise warning? Only if outside tolerance
+         if (any(x < (min_x - tolerance_local))) then
+            write(error_message,*) 'WARNING: ' // trim(varname) // ': ', &
+                     count(x < (min_x - tolerance_local)), ' values below threshold ', &
+                     '; min = ', minval(x)
+         end if
+         ! Clip values
+         where (x < min_x)
+            x = min_x
+         endwhere
+      end if
+
+      ! Look for values greater than threshold
+      if (any(x > max_x)) then
+         ! Raise warning? Only if outside tolerance
+         if (any(x > (max_x + tolerance_local))) then
+            write(error_message,*) 'WARNING: ' // trim(varname) // ': ', &
+                     count(x > (max_x + tolerance_local)), ' values above threshold ', &
+                     '; max = ', maxval(x)
+         end if
+         ! Clip values
+         where (x > max_x)
+            x = max_x
+         end where
+      end if
+   end function clip_values_3d
+   !-------------------------------------------------------------------------------
+   subroutine handle_error(error_message, fatal)
       use cam_abortutils, only: endrun
       character(len=*), intent(in) :: error_message
-      logical, intent(in), optional :: stop_on_error
-      logical :: stop_on_error_local = .true.
+      logical, intent(in), optional :: fatal
+      logical :: fatal_local = .true.
 
       ! Allow passing of an optional flag to not stop the run if an error is
       ! encountered. This allows this subroutine to be used when inquiring if a
       ! variable exists without failing.
-      if (present(stop_on_error)) then
-         stop_on_error_local = stop_on_error
+      if (present(fatal)) then
+         fatal_local = fatal
       else
-         stop_on_error_local = .true.
+         fatal_local = .true.
       end if
 
       ! If we encounter an error, fail if we require success. Otherwise do
       ! nothing and return silently.
       if (len(trim(error_message)) > 0) then
-         if (stop_on_error_local) then
-            call endrun(module_name // ': ' // error_message)
+         if (fatal_local) then
+            call endrun(trim(error_message))
+         else
+            print *, trim(error_message)
          end if
       end if
    end subroutine handle_error
-
    !----------------------------------------------------------------------------
-
 end module radiation_utils

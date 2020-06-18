@@ -28,3 +28,4 @@ build/
 m4/
 *.nc
 *.log
+*.gz

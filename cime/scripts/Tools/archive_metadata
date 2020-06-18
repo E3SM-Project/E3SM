@@ -30,7 +30,7 @@ from six.moves      import configparser, urllib
 # define global constants
 logger = logging.getLogger(__name__)
 _svn_expdb_url = 'https://svn-cesm2-expdb.cgd.ucar.edu'
-_exp_types = ['CMIP6', 'production', 'tuning']
+_exp_types = ['CMIP6', 'production', 'tuning','lens','C1','C2','C3','C4','C5']
 _xml_vars = ['CASE', 'COMPILER', 'COMPSET', 'CONTINUE_RUN', 'DOUT_S', 'DOUT_S_ROOT',
              'GRID', 'MACH', 'MPILIB', 'MODEL', 'MODEL_VERSION', 'REST_N', 'REST_OPTION',
              'RUNDIR', 'RUN_REFCASE', 'RUN_REFDATE', 'RUN_STARTDATE', 'RUN_TYPE',
@@ -454,8 +454,6 @@ def get_pp_status(case_dict):
     # get xconform status
     case_dict['xconform_path'] = ''
     case_dict['xconform_path'] = get_pp_path(pp_dir, 'xconform')
-    if (len(case_dict['xconform_path']) > 2):
-        case_dict['xconform_path'] = os.path.join(case_dict['xconform_path'], str(case_dict['case_id']))
     case_dict['xconform_status'] = 'Unknown'
     case_dict['xconform_size'] = get_disk_usage(case_dict['xconform_path'])
     case_dict['xconform_dates'] = case_dict['timeseries_dates']
@@ -474,7 +472,8 @@ def get_pp_status(case_dict):
             with open(log_file, 'r') as fname:
                 log_content = fname.readlines()
             total_time = [line for line in log_content if 'Total Time:' in line]
-            case_dict['xconform_total_time'] = ' '.join(total_time[0].split())
+            if total_time:
+                case_dict['xconform_total_time'] = ' '.join(total_time[0].split())
         else:
             case_dict['xconform_status'] = 'Started'
 
@@ -547,8 +546,9 @@ def get_case_status(case_dict):
     cstatus = case_dict['CASEROOT']+'/CaseStatus'
     if os.path.exists(cstatus):
         # get the run status
-        run_status = is_last_process_complete(cstatus, "case.run success", "case.run starting")
-        if run_status is True:
+        run_status_1 = is_last_process_complete(cstatus, "case.run success", "case.run starting")
+        run_status_2 = is_last_process_complete(cstatus, "model execution success", "model execution starting")
+        if run_status_1 is True or run_status_2 is True:
             case_dict['run_status'] = 'Succeeded'
         case_dict['run_size'] = get_disk_usage(case_dict['run_path'])
         case_dict['run_last_date'] = get_run_last_date(case_dict['CASE'], case_dict['run_path'])
@@ -564,7 +564,7 @@ def get_case_status(case_dict):
             # exclude the proc directories in the sta size estimates
             for subdir in ['atm/hist', 'cpl/hist', 'esp/hist', 'ice/hist', 'glc/hist',
                            'lnd/hist', 'logs', 'ocn/hist', 'rest', 'rof/hist',
-                           'wav/hist']:
+                           'wav/hist', 'iac/hist']:
                 path = os.path.join(case_dict['sta_path'], subdir)
                 if os.path.isdir(path):
                     case_dict['sta_size'] += get_disk_usage(path)
@@ -792,7 +792,7 @@ def get_trunk_tag(case_dict, username, password):
     if result:
         last_tag = [i for i in result.split('\n') if i][-1]
         last_tag = last_tag[:-1].split('_')[-1]
-        tag = int(last_tag.strip('0'))
+        tag = int(last_tag.lstrip('0'))
 
     return tag
 
@@ -846,7 +846,7 @@ def update_repo_add_file(filename, dir1, dir2):
     logger.debug('left_only: '+src+' -> '+dest)
     if not os.path.exists(dest):
         shutil.copy2(src, dest)
-        cmd = ['svn', 'add', dest]
+        cmd = ['svn', 'add', '--parents', dest]
         try:
             subprocess.check_call(cmd)
         except subprocess.CalledProcessError as error:
@@ -1428,13 +1428,6 @@ def main_func(options):
 
     (case_dict, username, password) = initialize_main(options)
 
-    # loop through the _xml_vars gathering values
-    with Case(case_dict['CASEROOT'], read_only=True) as case:
-        if case_dict['dryrun']:
-            logger.info('Dryrun - calling get_case_vars')
-        else:
-            case_dict = get_case_vars(case_dict, case)
-
     # check if query_cmip6 argument is specified
     if options.query_cmip6:
         if case_dict['dryrun']:
@@ -1442,10 +1435,10 @@ def main_func(options):
         else:
             if query_expdb_cmip6(case_dict, username, password):
                 logger.info('Casename "%s" CMIP6 global attribute '\
-                            'metadata written to "./archive_files/%s" ' \
+                            'metadata written to "%s/archive_files/%s" ' \
                             'from "%s"',
-                            case_dict['q_casename'], case_dict['q_outfile'],
-                            case_dict['query_expdb_url'])
+                            case_dict['workdir'], case_dict['q_casename'],
+                            case_dict['q_outfile'], case_dict['query_expdb_url'])
                 logger.info('Successful completion of archive_metadata')
                 sys.exit(0)
             else:
@@ -1453,6 +1446,13 @@ def main_func(options):
                             'in experiments database at "%s".',
                             case_dict['q_casename'], case_dict['query_expdb_url'])
                 sys.exit(1)
+
+    # loop through the _xml_vars gathering values
+    with Case(case_dict['CASEROOT'], read_only=True) as case:
+        if case_dict['dryrun']:
+            logger.info('Dryrun - calling get_case_vars')
+        else:
+            case_dict = get_case_vars(case_dict, case)
 
     # check reserved casename expdb for CMIP6 experiments
     if case_dict['expType'].lower() == 'cmip6':

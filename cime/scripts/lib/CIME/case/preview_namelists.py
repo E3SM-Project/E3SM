@@ -33,7 +33,10 @@ def create_dirs(self):
                 logger.debug("Making dir '{}'".format(dir_to_make))
                 os.makedirs(dir_to_make)
             except OSError as e:
-                expect(False, "Could not make directory '{}', error: {}".format(dir_to_make, e))
+                # In a multithreaded situation, we may have lost a race to create this dir.
+                # We do not want to crash if that's the case.
+                if not os.path.isdir(dir_to_make):
+                    expect(False, "Could not make directory '{}', error: {}".format(dir_to_make, e))
 
     # As a convenience write the location of the case directory in the bld and run directories
     for dir_ in (exeroot, rundir):
@@ -68,14 +71,14 @@ def create_namelists(self, component=None):
     models += [models.pop(0)]
     for model in models:
         model_str = model.lower()
-        logger.info("  {} {}".format(time.strftime("%Y-%m-%d %H:%M:%S"),model_str))
+        logger.info("  {} {} ".format(time.strftime("%Y-%m-%d %H:%M:%S"),model_str))
         config_file = self.get_value("CONFIG_{}_FILE".format(model_str.upper()))
         config_dir = os.path.dirname(config_file)
         if model_str == "cpl":
             compname = "drv"
         else:
             compname = self.get_value("COMP_{}".format(model_str.upper()))
-        if component is None or component == model_str:
+        if component is None or component == model_str or compname=="ufsatm":
             # first look in the case SourceMods directory
             cmd = os.path.join(caseroot, "SourceMods", "src."+compname, "buildnml")
             if os.path.isfile(cmd):
@@ -84,9 +87,10 @@ def create_namelists(self, component=None):
                 # otherwise look in the component config_dir
                 cmd = os.path.join(config_dir, "buildnml")
             expect(os.path.isfile(cmd), "Could not find buildnml file for component {}".format(compname))
-            run_sub_or_cmd(cmd, (caseroot), "buildnml", (self, caseroot, compname), case=self)
+            run_sub_or_cmd(cmd, (caseroot), "buildnml",
+                           (self, caseroot, compname), case=self)
 
-    logger.info("Finished creating component namelists")
+        logger.debug("Finished creating component namelists, component {} models = {}".format(component, models))
 
     # Save namelists to docdir
     if (not os.path.isdir(docdir)):

@@ -27,7 +27,7 @@ module controlMod
   use LakeCon                 , only: deepmixing_depthcrit, deepmixing_mixfact 
   use AllocationMod         , only: suplnitro
   use AllocationMod         , only: suplphos
-  use CNCarbonFluxType        , only: nfix_timeconst
+  use ColumnDataType          , only: nfix_timeconst
   use CNNitrifDenitrifMod     , only: no_frozen_nitrif_denitrif
   use C14DecayMod           , only: use_c14_bombspike, atm_c14_filename
   use SoilLittVertTranspMod , only: som_adv_flux, max_depth_cryoturb
@@ -46,7 +46,11 @@ module controlMod
   use clm_varctl              , only: forest_fert_exp
   use clm_varctl              , only: ECA_Pconst_RGspin
   use clm_varctl              , only: NFIX_PTASE_plant
-  !
+  use clm_varctl              , only : use_pheno_flux_limiter
+  use clm_varctl              , only: startdate_add_temperature, startdate_add_co2
+  use clm_varctl              , only: add_temperature, add_co2
+  use clm_varctl              , only: const_climate_hist
+ !
   ! !PUBLIC TYPES:
   implicit none
   save
@@ -172,6 +176,19 @@ contains
          ECA_Pconst_RGspin
     namelist /clm_inparm/ &
          NFIX_PTASE_plant
+
+    ! For experimental manipulations
+    namelist /clm_inparm/ &
+         startdate_add_temperature
+    namelist /clm_inparm/ &
+         startdate_add_co2
+    namelist /clm_inparm/ &
+         add_temperature
+    namelist /clm_inparm/ &
+         add_co2
+
+    namelist /clm_inparm/ &
+         use_pheno_flux_limiter
          
     namelist /clm_inparm/  &
          suplnitro,suplphos
@@ -205,7 +222,7 @@ contains
     namelist /clm_inparm/  &
          clump_pproc, wrtdia, &
          create_crop_landunit, nsegspc, co2_ppmv, override_nsrest, &
-         albice, more_vertlayers, subgridflag, irrigate, all_active
+         albice, more_vertlayers, subgridflag, irrigate, tw_irr, extra_gw_irr, firrig_data, all_active
     ! Urban options
 
     namelist /clm_inparm/  &
@@ -226,6 +243,7 @@ contains
     namelist /clm_inparm/ fates_paramfile, use_fates,      &
           use_fates_spitfire, use_fates_logging,        &
           use_fates_planthydro, use_fates_ed_st3,       &
+          use_fates_cohort_age_tracking,                &
           use_fates_ed_prescribed_phys,                 &
           use_fates_inventory_init,                     &
           fates_inventory_ctrl_filename,                &
@@ -245,12 +263,12 @@ contains
 
     namelist /clm_inparm/ &
          use_nofire, use_lch4, use_nitrif_denitrif, use_vertsoilc, use_extralakelayers, &
-         use_vichydro, use_century_decomp, use_cn, use_cndv, use_crop, use_snicar_frc, &
-         use_vancouver, use_mexicocity, use_noio
+         use_vichydro, use_century_decomp, use_cn, use_crop, use_snicar_frc, &
+         use_snicar_ad, use_vancouver, use_mexicocity, use_noio
 
     ! cpl_bypass variables
     namelist /clm_inparm/ metdata_type, metdata_bypass, metdata_biases, &
-         co2_file, aero_file
+         co2_file, aero_file,const_climate_hist
 
     ! bgc & pflotran interface
     namelist /clm_inparm/ use_clm_interface, use_clm_bgc, use_pflotran
@@ -263,6 +281,8 @@ contains
          use_vsfm, vsfm_satfunc_type, vsfm_use_dynamic_linesearch, &
          vsfm_lateral_model_type, vsfm_include_seepage_bc
 
+    namelist /clm_inparm/ use_hydrstress
+
     namelist /clm_inparm/ &
        lateral_connectivity, domain_decomp_type
 
@@ -272,6 +292,9 @@ contains
     namelist /clm_inparm/ &
          do_budgets, budget_inst, budget_daily, budget_month, &
          budget_ann, budget_ltann, budget_ltend
+
+    namelist /clm_inparm/ &
+         use_erosion, ero_ccycle
 
     ! ----------------------------------------------------------------------
     ! Default values
@@ -334,9 +357,7 @@ contains
        ! History and restart files
 
        do i = 1, max_tapes
-          if (hist_nhtfrq(i) == 0) then
-             hist_mfilt(i) = 1
-          else if (hist_nhtfrq(i) < 0) then
+          if (hist_nhtfrq(i) < 0) then
              hist_nhtfrq(i) = nint(-hist_nhtfrq(i)*SHR_CONST_CDAY/(24._r8*dtime))
           endif
        end do
@@ -398,6 +419,11 @@ contains
        
        if (.not. use_crop .and. irrigate) then
           call endrun(msg=' ERROR: irrigate = .true. requires CROP model active.'//&
+            errMsg(__FILE__, __LINE__))
+       end if
+
+       if (.not. use_erosion .and. ero_ccycle) then
+          call endrun(msg=' ERROR: ero_ccycle = .true. requires erosion model active.'//&
             errMsg(__FILE__, __LINE__))
        end if
        
@@ -585,10 +611,10 @@ contains
     call mpi_bcast (use_vichydro, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_century_decomp, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_cn, 1, MPI_LOGICAL, 0, mpicom, ier)
-    call mpi_bcast (use_cndv, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_crop, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_voc, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_snicar_frc, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_snicar_ad, 1, MPI_LOGICAL, 0, mpicom, ier)   
     call mpi_bcast (use_vancouver, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_mexicocity, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_noio, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -609,6 +635,9 @@ contains
 
     ! Irrigation
     call mpi_bcast(irrigate, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast(tw_irr, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast(extra_gw_irr, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast(firrig_data, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! Landunit generation
     call mpi_bcast(create_crop_landunit, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -636,6 +665,11 @@ contains
     call mpi_bcast (forest_fert_exp, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (ECA_Pconst_RGspin, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (NFIX_PTASE_plant, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_pheno_flux_limiter, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (startdate_add_temperature, 1, MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (startdate_add_co2, 1, MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (add_co2, 1, MPI_REAL8, 0, mpicom, ier)
+    call mpi_bcast (add_temperature, 1, MPI_REAL8, 0, mpicom, ier)
 
     ! isotopes
     call mpi_bcast (use_c13, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -646,6 +680,7 @@ contains
     call mpi_bcast (fates_paramfile, len(fates_paramfile) , MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (use_fates_logging, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_planthydro, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_fates_cohort_age_tracking, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_ed_st3, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_ed_prescribed_phys,  1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_inventory_init, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -705,6 +740,7 @@ contains
     call mpi_bcast (co2_ppmv, 1, MPI_REAL8,0, mpicom, ier)
     call mpi_bcast (albice, 2, MPI_REAL8,0, mpicom, ier)
     call mpi_bcast (more_vertlayers,1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (const_climate_hist, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! glacier_mec variables
     call mpi_bcast (create_glacier_mec_landunit, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -765,6 +801,8 @@ contains
      call mpi_bcast (co2_file,       len(co2_file),       MPI_CHARACTER, 0, mpicom, ier)
      call mpi_bcast (aero_file,      len(aero_file),      MPI_CHARACTER, 0, mpicom, ier)
 
+    ! plant hydraulics
+    call mpi_bcast (use_hydrstress, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! VSFM variable
 
@@ -777,6 +815,10 @@ contains
 
     ! PETSc-based thermal model
     call mpi_bcast (use_petsc_thermal_model, 1, MPI_LOGICAL, 0, mpicom, ier)
+
+    ! soil erosion
+    call mpi_bcast (use_erosion, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (ero_ccycle , 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! Budget
     call mpi_bcast (do_budgets   , 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -825,9 +867,9 @@ contains
     write(iulog,*) '    use_vichydro = ', use_vichydro
     write(iulog,*) '    use_century_decomp = ', use_century_decomp
     write(iulog,*) '    use_cn = ', use_cn
-    write(iulog,*) '    use_cndv = ', use_cndv
     write(iulog,*) '    use_crop = ', use_crop
     write(iulog,*) '    use_snicar_frc = ', use_snicar_frc
+    write(iulog,*) '    use_snicar_ad = ', use_snicar_ad
     write(iulog,*) '    use_vancouver = ', use_vancouver
     write(iulog,*) '    use_mexicocity = ', use_mexicocity
     write(iulog,*) '    use_noio = ', use_noio
@@ -963,6 +1005,8 @@ contains
        write(iulog,*) '   CO2 volume mixing ratio                = ', co2_type
     end if
 
+    write(iulog,*) '   constant historical climate during transient simulation = ', const_climate_hist
+
     write(iulog,*) '   land-ice albedos      (unitless 0-1)   = ', albice
     write(iulog,*) '   urban air conditioning/heating and wasteheat   = ', urban_hac
     write(iulog,*) '   urban traffic flux   = ', urban_traffic
@@ -1002,6 +1046,7 @@ contains
        write(iulog, *) '    use_fates_logging = ', use_fates_logging
        write(iulog, *) '    fates_paramfile = ', fates_paramfile
        write(iulog, *) '    use_fates_planthydro = ', use_fates_planthydro
+       write(iulog, *) '    use_fates_cohort_age_tracking = ',use_fates_cohort_age_tracking
        write(iulog, *) '    fates_parteh_mode = ', fates_parteh_mode
        write(iulog, *) '    use_fates_ed_st3 = ',use_fates_ed_st3
        write(iulog, *) '    use_fates_ed_prescribed_phys = ',use_fates_ed_prescribed_phys

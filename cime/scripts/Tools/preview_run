@@ -59,24 +59,30 @@ def _main_func(description):
         print("")
 
         print("BATCH INFO:")
-        if job is None:
-            job = case.get_primary_job()
-
+        if not job:
+            job = case.get_first_job()
         set_logger_indent("      ")
         job_id_to_cmd = case.submit_jobs(dry_run=True, job=job)
+        env_batch = case.get_env('batch')
         for job_id, cmd in job_id_to_cmd:
             print("  FOR JOB: {}".format(job_id))
             print("    ENV:")
             case.load_env(job=job_id, reset=True, verbose=True)
+
             if "OMP_NUM_THREADS" in os.environ:
                 print("      Setting Environment OMP_NUM_THREADS={}".format(os.environ["OMP_NUM_THREADS"]))
+            print("")
             print("    SUBMIT CMD:")
             print("      {}".format(case.get_resolved_value(cmd)))
             print("")
+            if job_id in ("case.run", "case.test"):
+                # get_job_overrides must come after the case.load_env since the cmd may use
+                # env vars.
+                overrides = env_batch.get_job_overrides(job_id, case)
+                print("    MPIRUN (job={}):".format(job_id))
+                print ("      {}".format(case.get_resolved_value(overrides["mpirun"])))
+                print("")
 
-        if job == case.get_primary_job():
-            print("MPIRUN:")
-            print ("  {}".format(case.get_mpirun_cmd()))
 
 if __name__ == "__main__":
     _main_func(__doc__)

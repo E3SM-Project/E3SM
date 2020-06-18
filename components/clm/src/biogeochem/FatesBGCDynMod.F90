@@ -7,10 +7,14 @@ module FatesBGCDynMod
    ! functionality.
    ! ==============================================================================================
    
-   use shr_kind_mod, only : r8 => shr_kind_r8
-   use perf_mod    , only : t_startf, t_stopf
-   use shr_log_mod , only : errMsg => shr_log_errMsg
-   use abortutils  , only : endrun
+   use shr_kind_mod       , only : r8 => shr_kind_r8
+   use perf_mod           , only : t_startf, t_stopf
+   use shr_log_mod        , only : errMsg => shr_log_errMsg
+   use abortutils         , only : endrun
+   use ColumnDataType     , only : col_cs
+   use ColumnDataType     , only : col_cf, c13_col_cf, c14_col_cf
+   use VegetationDataType , only : veg_cs
+   use VegetationDataType , only : veg_cf, c13_veg_cf, c14_veg_cf
    
    implicit none
 
@@ -94,24 +98,24 @@ contains
 
     associate( &
       ! Output: [real(r8) (:,:)   ]  potential HR (gC/m3/s)       
-      phr_vr                      => carbonflux_vars%phr_vr_col, &       
+      phr_vr                      => col_cf%phr_vr, &       
       ! Input:  [real(r8) (:,:,:) ]  respired fraction in decomposition step (frac)
       rf_decomp_cascade           => cnstate_vars%rf_decomp_cascade_col, & 
       ! Input:  [real(r8) (:,:,:) ]
       ! vertically-resolved decomposing (litter, cwd, soil) c pools (gC/m3)
-      decomp_cpools_vr            => carbonstate_vars%decomp_cpools_vr_col, & 
+      decomp_cpools_vr            => col_cs%decomp_cpools_vr, & 
       ! Output: [real(r8) (:,:,:) ]  rate constant for decomposition (1./sec) 
-      decomp_k                    => carbonflux_vars%decomp_k_col, &
+      decomp_k                    => col_cf%decomp_k, &
       ! Input:  [real(r8) (:,:,:) ]  what fraction of 
       ! C leaving a given pool passes through a 
       ! given transition (frac)  
       pathfrac_decomp_cascade     => cnstate_vars%pathfrac_decomp_cascade_col, &  
       ! Output:  [real(r8) (:,:)   ]  fraction by which decomposition is limited by moisture availability
-      w_scalar                    => carbonflux_vars%w_scalar_col, &   
+      w_scalar                    => col_cf%w_scalar, &   
       ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
-      decomp_cascade_hr_vr        => carbonflux_vars%decomp_cascade_hr_vr_col, & 
+      decomp_cascade_hr_vr        => col_cf%decomp_cascade_hr_vr, & 
       ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
-      decomp_cascade_ctransfer_vr => carbonflux_vars%decomp_cascade_ctransfer_vr_col, & 
+      decomp_cascade_ctransfer_vr => col_cf%decomp_cascade_ctransfer_vr, & 
       ! Input:  [integer  (:)     ]  which pool is C taken from for a given 
       ! decomposition  step
       cascade_donor_pool    => decomp_cascade_con%cascade_donor_pool, & 
@@ -126,15 +130,15 @@ contains
     
     call t_startf('BGCZero')
 
-    call carbonflux_vars%SetValues(&
-          num_soilp, filter_soilp, 0._r8, num_soilc, filter_soilc, 0._r8)
+    call col_cf%SetValues(num_soilc, filter_soilc, 0._r8)
+    call veg_cf%SetValues(num_soilp, filter_soilp, 0._r8)
     if ( use_c13 ) then
-       call c13_carbonflux_vars%SetValues(&
-             num_soilp, filter_soilp, 0._r8, num_soilc, filter_soilc, 0._r8)
+       call c13_col_cf%SetValues(num_soilc, filter_soilc, 0._r8)
+       call c13_veg_cf%SetValues(num_soilp, filter_soilp, 0._r8)
     end if
     if ( use_c14 ) then
-       call c14_carbonflux_vars%SetValues(&
-             num_soilp, filter_soilp, 0._r8, num_soilc, filter_soilc, 0._r8)
+       call c14_col_cf%SetValues(num_soilc, filter_soilc, 0._r8)
+       call c14_veg_cf%SetValues(num_soilp, filter_soilp, 0._r8)
     end if
 
     call t_stopf('BGCZero')
@@ -243,7 +247,7 @@ contains
     ! Update all prognostic carbon state variables (except for gap-phase mortality and fire fluxes)
 
     call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            crop_vars, carbonflux_vars, carbonstate_vars)
+            crop_vars, col_cs, veg_cs, col_cf, veg_cf)
 
     call t_stopf('BNGCUpdate1')
 
@@ -318,7 +322,7 @@ contains
 
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       carbonflux_vars%som_c_leached_col(c) = 0._r8
+       col_cf%som_c_leached(c) = 0._r8
     end do
     
     ! vertically integrate HR and decomposition cascade fluxes
@@ -326,13 +330,13 @@ contains
        do j = 1,nlevdecomp
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             carbonflux_vars%decomp_cascade_hr_col(c,k) = &
-                  carbonflux_vars%decomp_cascade_hr_col(c,k) + &
-                  carbonflux_vars%decomp_cascade_hr_vr_col(c,j,k) * dzsoi_decomp(j) 
+             col_cf%decomp_cascade_hr(c,k) = &
+                  col_cf%decomp_cascade_hr(c,k) + &
+                  col_cf%decomp_cascade_hr_vr(c,j,k) * dzsoi_decomp(j) 
              
-             carbonflux_vars%decomp_cascade_ctransfer_col(c,k) = &
-                  carbonflux_vars%decomp_cascade_ctransfer_col(c,k) + &
-                  carbonflux_vars%decomp_cascade_ctransfer_vr_col(c,j,k) * dzsoi_decomp(j) 
+             col_cf%decomp_cascade_ctransfer(c,k) = &
+                  col_cf%decomp_cascade_ctransfer(c,k) + &
+                  col_cf%decomp_cascade_ctransfer_vr(c,j,k) * dzsoi_decomp(j) 
           end do
        end do
     end do
@@ -341,16 +345,16 @@ contains
     do j = 1,nlevdecomp
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-          carbonflux_vars%hr_vr_col(c,j) = 0._r8
+          col_cf%hr_vr(c,j) = 0._r8
        end do
     end do
     do k = 1, ndecomp_cascade_transitions
        do j = 1,nlevdecomp
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             carbonflux_vars%hr_vr_col(c,j) = &
-                  carbonflux_vars%hr_vr_col(c,j) + &
-                  carbonflux_vars%decomp_cascade_hr_vr_col(c,j,k)
+             col_cf%hr_vr(c,j) = &
+                  col_cf%hr_vr(c,j) + &
+                  col_cf%decomp_cascade_hr_vr(c,j,k)
           end do
        end do
     end do
@@ -359,19 +363,19 @@ contains
     do l = 1, ndecomp_pools
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-          carbonflux_vars%decomp_cpools_leached_col(c,l) = 0._r8
+          col_cf%decomp_cpools_leached(c,l) = 0._r8
        end do
        do j = 1, nlevdecomp
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             carbonflux_vars%decomp_cpools_leached_col(c,l) = carbonflux_vars%decomp_cpools_leached_col(c,l) + &
-                  carbonflux_vars%decomp_cpools_transport_tendency_col(c,j,l) * dzsoi_decomp(j)
+             col_cf%decomp_cpools_leached(c,l) = col_cf%decomp_cpools_leached(c,l) + &
+                  col_cf%decomp_cpools_transport_tendency(c,j,l) * dzsoi_decomp(j)
           end do
        end do
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-          carbonflux_vars%som_c_leached_col(c) = carbonflux_vars%som_c_leached_col(c) + &
-               carbonflux_vars%decomp_cpools_leached_col(c,l)
+          col_cf%som_c_leached(c) = col_cf%som_c_leached(c) + &
+               col_cf%decomp_cpools_leached(c,l)
        end do
     end do
 
@@ -381,8 +385,8 @@ contains
          if ( is_soil(decomp_cascade_con%cascade_donor_pool(k)) ) then
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               carbonflux_vars%somhr_col(c) = carbonflux_vars%somhr_col(c) + &
-                    carbonflux_vars%decomp_cascade_hr_col(c,k)
+               col_cf%somhr(c) = col_cf%somhr(c) + &
+                    col_cf%decomp_cascade_hr(c,k)
             end do
          end if
       end do
@@ -394,8 +398,8 @@ contains
          if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) ) then
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               carbonflux_vars%lithr_col(c) = carbonflux_vars%lithr_col(c) + &
-                    carbonflux_vars%decomp_cascade_hr_col(c,k)
+               col_cf%lithr(c) = col_cf%lithr(c) + &
+                    col_cf%decomp_cascade_hr(c,k)
             end do
          end if
       end do
@@ -405,9 +409,9 @@ contains
     do fc = 1,num_soilc
        c = filter_soilc(fc)
        
-          carbonflux_vars%hr_col(c) = &
-               carbonflux_vars%lithr_col(c) + &
-               carbonflux_vars%somhr_col(c)
+          col_cf%hr(c) = &
+               col_cf%lithr(c) + &
+               col_cf%somhr(c)
        
     end do
 
@@ -422,16 +426,16 @@ contains
     do l = 1, ndecomp_pools
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-          carbonstate_vars%decomp_cpools_col(c,l) = 0._r8
+          col_cs%decomp_cpools(c,l) = 0._r8
        end do
     end do
     do l = 1, ndecomp_pools
        do j = 1, nlevdecomp
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             carbonstate_vars%decomp_cpools_col(c,l) = &
-                  carbonstate_vars%decomp_cpools_col(c,l) + &
-                  carbonstate_vars%decomp_cpools_vr_col(c,j,l) * dzsoi_decomp(j)
+             col_cs%decomp_cpools(c,l) = &
+                  col_cs%decomp_cpools(c,l) + &
+                  col_cs%decomp_cpools_vr(c,j,l) * dzsoi_decomp(j)
           end do
        end do
     end do
@@ -443,7 +447,7 @@ contains
        do l = 1, ndecomp_pools
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             carbonstate_vars%decomp_cpools_1m_col(c,l) = 0._r8
+             col_cs%decomp_cpools_1m(c,l) = 0._r8
           end do
        end do
        do l = 1, ndecomp_pools
@@ -451,16 +455,16 @@ contains
              if ( zisoi(j) <= maxdepth ) then
                 do fc = 1,num_soilc
                    c = filter_soilc(fc)
-                   carbonstate_vars%decomp_cpools_1m_col(c,l) = &
-                        carbonstate_vars%decomp_cpools_1m_col(c,l) + &
-                        carbonstate_vars%decomp_cpools_vr_col(c,j,l) * dzsoi_decomp(j)
+                   col_cs%decomp_cpools_1m(c,l) = &
+                        col_cs%decomp_cpools_1m(c,l) + &
+                        col_cs%decomp_cpools_vr(c,j,l) * dzsoi_decomp(j)
                 end do
              elseif ( zisoi(j-1) < maxdepth ) then
                 do fc = 1,num_soilc
                    c = filter_soilc(fc)
-                   carbonstate_vars%decomp_cpools_1m_col(c,l) = &
-                        carbonstate_vars%decomp_cpools_1m_col(c,l) + &
-                        carbonstate_vars%decomp_cpools_vr_col(c,j,l) * (maxdepth - zisoi(j-1))
+                   col_cs%decomp_cpools_1m(c,l) = &
+                        col_cs%decomp_cpools_1m(c,l) + &
+                        col_cs%decomp_cpools_vr(c,j,l) * (maxdepth - zisoi(j-1))
                 end do
              endif
           end do
@@ -471,14 +475,14 @@ contains
     ! truncation carbon
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       carbonstate_vars%ctrunc_col(c) = 0._r8
+       col_cs%ctrunc(c) = 0._r8
     end do
     do j = 1, nlevdecomp
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-          carbonstate_vars%ctrunc_col(c) = &
-               carbonstate_vars%ctrunc_col(c) + &
-               carbonstate_vars%ctrunc_vr_col(c,j) * dzsoi_decomp(j)
+          col_cs%ctrunc(c) = &
+               col_cs%ctrunc(c) + &
+               col_cs%ctrunc_vr(c,j) * dzsoi_decomp(j)
        end do
     end do
 
@@ -486,14 +490,14 @@ contains
     if ( nlevdecomp > 1) then
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-          carbonstate_vars%totlitc_1m_col(c) = 0._r8
+          col_cs%totlitc_1m(c) = 0._r8
        end do
        do l = 1, ndecomp_pools
           if ( decomp_cascade_con%is_litter(l) ) then
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
-                carbonstate_vars%totlitc_1m_col(c) = carbonstate_vars%totlitc_1m_col(c) + &
-                     carbonstate_vars%decomp_cpools_1m_col(c,l)
+                col_cs%totlitc_1m(c) = col_cs%totlitc_1m(c) + &
+                     col_cs%decomp_cpools_1m(c,l)
              end do
           endif
        end do
@@ -503,14 +507,14 @@ contains
     if ( nlevdecomp > 1) then
        do fc = 1,num_soilc
           c = filter_soilc(fc)
-          carbonstate_vars%totsomc_1m_col(c) = 0._r8
+          col_cs%totsomc_1m(c) = 0._r8
        end do
        do l = 1, ndecomp_pools
           if ( decomp_cascade_con%is_soil(l) ) then
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
-                carbonstate_vars%totsomc_1m_col(c) = carbonstate_vars%totsomc_1m_col(c) + &
-                     carbonstate_vars%decomp_cpools_1m_col(c,l)
+                col_cs%totsomc_1m(c) = col_cs%totsomc_1m(c) + &
+                     col_cs%decomp_cpools_1m(c,l)
              end do
           end if
        end do
@@ -519,14 +523,14 @@ contains
     ! total litter carbon (TOTLITC)
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       carbonstate_vars%totlitc_col(c) = 0._r8
+       col_cs%totlitc(c) = 0._r8
     end do
     do l = 1, ndecomp_pools
        if ( decomp_cascade_con%is_litter(l) ) then
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             carbonstate_vars%totlitc_col(c) = carbonstate_vars%totlitc_col(c) + &
-                  carbonstate_vars%decomp_cpools_col(c,l)
+             col_cs%totlitc(c) = col_cs%totlitc(c) + &
+                  col_cs%decomp_cpools(c,l)
           end do
        endif
     end do
@@ -534,14 +538,14 @@ contains
     ! total soil organic matter carbon (TOTSOMC)
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       carbonstate_vars%totsomc_col(c) = 0._r8
+       col_cs%totsomc(c) = 0._r8
     end do
     do l = 1, ndecomp_pools
        if ( decomp_cascade_con%is_soil(l) ) then
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             carbonstate_vars%totsomc_col(c) = carbonstate_vars%totsomc_col(c) + &
-                  carbonstate_vars%decomp_cpools_col(c,l)
+             col_cs%totsomc(c) = col_cs%totsomc(c) + &
+                  col_cs%decomp_cpools(c,l)
           end do
        end if
     end do

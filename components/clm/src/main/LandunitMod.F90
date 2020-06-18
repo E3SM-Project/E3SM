@@ -3,7 +3,7 @@ module LandunitMod
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use clm_varcon     , only : ispval
-  use LandunitType   , only : landunit_physical_properties_type, lun_pp
+  use LandunitType   , only : lun_pp
   !
   ! !PUBLIC TYPES:
   implicit none

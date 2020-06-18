@@ -123,7 +123,15 @@ contains
        comp(eci)%suffix             =  seq_comm_suffix(comp(eci)%compid)
        comp(eci)%name               =  seq_comm_name  (comp(eci)%compid)
        comp(eci)%ntype              =  ntype(1:3)
-       comp(eci)%oneletterid        =  ntype(1:1)
+
+       select case(ntype)
+       case ('atm','cpl','ocn','wav','glc','ice','rof','lnd','esp')
+          comp(eci)%oneletterid =  ntype(1:1)
+       case ('iac')
+          comp(eci)%oneletterid = 'z'
+       case default
+          call shr_sys_abort(subname//': ntype, "'//ntype//'" not recognized"')
+       end select
 
        if (eci == 1) then
           allocate(comp(1)%dom_cx)
@@ -166,6 +174,9 @@ contains
        end if
        if (comp(1)%oneletterid == 'e') then
           call seq_infodata_getData(infodata, esp_present=comp(eci)%present)
+       end if
+       if (comp(1)%oneletterid == 'z') then
+          call seq_infodata_getData(infodata, iac_present=comp(eci)%present)
        end if
 #else
        call seq_infodata_getData(comp(1)%oneletterid, infodata, comp_present=comp(eci)%present)
@@ -277,6 +288,7 @@ contains
        if (comp(1)%oneletterid == 'g') call seq_infodata_getData(infodata, glc_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'w') call seq_infodata_getData(infodata, wav_present=comp(eci)%present)
        if (comp(1)%oneletterid == 'e') call seq_infodata_getData(infodata, esp_present=comp(eci)%present)
+       if (comp(1)%oneletterid == 'z') call seq_infodata_getData(infodata, iac_present=comp(eci)%present)
 #else
        call seq_infodata_getData(comp(1)%oneletterid, infodata, comp_present=comp(eci)%present)
 #endif
@@ -693,6 +705,7 @@ contains
        if (comp(1)%oneletterid == 'g') call seq_infodata_putData(infodata, glc_phase=phase)
        if (comp(1)%oneletterid == 'w') call seq_infodata_putData(infodata, wav_phase=phase)
        if (comp(1)%oneletterid == 'e') call seq_infodata_putData(infodata, esp_phase=phase)
+       if (comp(1)%oneletterid == 'z') call seq_infodata_putData(infodata, iac_phase=phase)
 #else
        call seq_infodata_putData(comp(1)%oneletterid, infodata, comp_phase=phase)
 #endif

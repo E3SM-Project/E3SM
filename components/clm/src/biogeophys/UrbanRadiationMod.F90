@@ -23,10 +23,12 @@ module UrbanRadiationMod
   use SurfaceAlbedoType , only : surfalb_type
   use UrbanParamsType   , only : urbanparams_type
   use EnergyFluxType    , only : energyflux_type
-  use TopounitType      , only : top_af
+  use TopounitDataType  , only : top_af
   use LandunitType      , only : lun_pp                
-  use ColumnType        , only : col_pp                
+  use ColumnType        , only : col_pp 
+  use ColumnDataType    , only : col_es, col_ws  
   use VegetationType    , only : veg_pp                
+  use VegetationDataType, only : veg_es, veg_ef
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -124,10 +126,10 @@ contains
          forc_solar         =>    top_af%solar                               , & ! Input:  [real(r8) (:)   ]  incident solar radiation (W/m**2)                 
          forc_lwrad         =>    top_af%lwrad                               , & ! Input:  [real(r8) (:)   ]  downward infrared (longwave) radiation (W/m**2)   
 
-         frac_sno           =>    waterstate_vars%frac_sno_col               , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)       
+         frac_sno           =>    col_ws%frac_sno               , & ! Input:  [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)       
 
-         t_ref2m            =>    temperature_vars%t_ref2m_patch             , & ! Input:  [real(r8) (:)   ]  2 m height surface air temperature (K)            
-         t_grnd             =>    temperature_vars%t_grnd_col                , & ! Input:  [real(r8) (:)   ]  ground temperature (K)                            
+         t_ref2m            =>    veg_es%t_ref2m             , & ! Input:  [real(r8) (:)   ]  2 m height surface air temperature (K)            
+         t_grnd             =>    col_es%t_grnd                , & ! Input:  [real(r8) (:)   ]  ground temperature (K)                            
 
          em_roof            =>    urbanparams_vars%em_roof                   , & ! Input:  [real(r8) (:)   ]  roof emissivity                                   
          em_improad         =>    urbanparams_vars%em_improad                , & ! Input:  [real(r8) (:)   ]  impervious road emissivity                        
@@ -152,9 +154,9 @@ contains
          fsa                =>    solarabs_vars%fsa_patch                    , & ! Output: [real(r8) (:)   ]  solar radiation absorbed (total) (W/m**2)         
          fsa_u              =>    solarabs_vars%fsa_u_patch                  , & ! Output: [real(r8) (:)   ]  urban solar radiation absorbed (total) (W/m**2)   
 
-         eflx_lwrad_out     =>    energyflux_vars%eflx_lwrad_out_patch       , & ! Output: [real(r8) (:)   ]  emitted infrared (longwave) radiation (W/m**2)    
-         eflx_lwrad_net     =>    energyflux_vars%eflx_lwrad_net_patch       , & ! Output: [real(r8) (:)   ]  net infrared (longwave) rad (W/m**2) [+ = to atm] 
-         eflx_lwrad_net_u   =>    energyflux_vars%eflx_lwrad_net_u_patch     , & ! Output: [real(r8) (:)   ]  urban net infrared (longwave) rad (W/m**2) [+ = to atm]
+         eflx_lwrad_out     =>    veg_ef%eflx_lwrad_out       , & ! Output: [real(r8) (:)   ]  emitted infrared (longwave) radiation (W/m**2)    
+         eflx_lwrad_net     =>    veg_ef%eflx_lwrad_net       , & ! Output: [real(r8) (:)   ]  net infrared (longwave) rad (W/m**2) [+ = to atm] 
+         eflx_lwrad_net_u   =>    veg_ef%eflx_lwrad_net_u     , & ! Output: [real(r8) (:)   ]  urban net infrared (longwave) rad (W/m**2) [+ = to atm]
 
          begl               =>    bounds%begl                                , &
          endl               =>    bounds%endl                                  &

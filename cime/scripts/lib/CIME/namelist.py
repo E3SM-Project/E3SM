@@ -1131,8 +1131,8 @@ class Namelist(object):
             group_variables[name] = value
         return group_variables
 
-    def write(self, out_file, groups=None, append=False, format_='nml', sorted_groups=True,
-              skip_comps=None, atm_cpl_dt=None, ocn_cpl_dt=None):
+    def write(self, out_file, groups=None, append=False, format_='nml', sorted_groups=True):
+
         """Write a the output data (normally fortran namelist) to the  out_file
 
         As with `parse`, the `out_file` argument can be either a file name, or a
@@ -1147,24 +1147,16 @@ class Namelist(object):
         specifies the file format. Formats other than 'nml' may not support all
         possible output values.
         """
-        expect(format_ in ('nml', 'rc', 'nmlcontents', 'nuopc'),
+        expect(format_ in ('nml', 'rc', 'nmlcontents'),
                "Namelist.write: unexpected output format {!r}".format(str(format_)))
         if isinstance(out_file, six.string_types):
             logger.debug("Writing namelist to: {}".format(out_file))
             flag = 'a' if append else 'w'
             with open(out_file, flag) as file_obj:
-                if format_ == 'nuopc':
-                    self._write_nuopc(file_obj, groups, sorted_groups=sorted_groups,
-                                      skip_comps=skip_comps, atm_cpl_dt=atm_cpl_dt, ocn_cpl_dt=ocn_cpl_dt)
-                else:
-                    self._write(file_obj, groups, format_, sorted_groups=sorted_groups)
+                self._write(file_obj, groups, format_, sorted_groups=sorted_groups)
         else:
             logger.debug("Writing namelist to file object")
-            if format_ == 'nuopc':
-                self._write_nuopc(out_file, groups, sorted_groups=sorted_groups,
-                                  skip_comps=skip_comps, atm_cpl_dt=atm_cpl_dt, ocn_cpl_dt=ocn_cpl_dt)
-            else:
-                self._write(out_file, groups, format_, sorted_groups=sorted_groups)
+            self._write(out_file, groups, format_, sorted_groups=sorted_groups)
 
     def _write(self, out_file, groups, format_, sorted_groups):
         """Unwrapped version of `write` assuming that a file object is input."""
@@ -1181,39 +1173,57 @@ class Namelist(object):
         for group_name in group_names:
             if format_ == 'nml':
                 out_file.write("&{}\n".format(group_name))
-            group = self._groups[group_name]
-            for name in sorted(group.keys()):
-                values = group[name]
+            # allow empty group
+            if group_name in self._groups:
+                group = self._groups[group_name]
+                for name in sorted(group.keys()):
+                    values = group[name]
 
-                # @ is used in a namelist to put the same namelist variable in multiple groups
-                # in the write phase, all characters in the namelist variable name after
-                # the @ and including the @ should be removed
-                if "@" in name:
-                    name = re.sub('@.+$', "", name)
+                    # @ is used in a namelist to put the same namelist variable in multiple groups
+                    # in the write phase, all characters in the namelist variable name after
+                    # the @ and including the @ should be removed
+                    if "@" in name:
+                        name = re.sub('@.+$', "", name)
 
-                # To prettify things for long lists of values, build strings
-                # line-by-line.
-                if values[0] == "True" or values[0] == "False":
-                    values[0] = values[0].replace("True",".true.").replace("False",".false.")
-                lines = ["  {}{} {}".format(name, equals, values[0])]
-                for value in values[1:]:
-                    if value == "True" or value == "False":
-                        value = value.replace("True",".true.").replace("False",".false.")
-                    if len(lines[-1]) + len(value) <= 77:
-                        lines[-1] += ", " + value
-                    else:
-                        lines[-1] += ",\n"
-                        lines.append("      " + value)
-                lines[-1] += "\n"
-                for line in lines:
-                    out_file.write(line)
+                    # To prettify things for long lists of values, build strings
+                    # line-by-line.
+                    if values[0] == "True" or values[0] == "False":
+                        values[0] = values[0].replace("True",".true.").replace("False",".false.")
+                    lines = ["  {}{} {}".format(name, equals, values[0])]
+                    for value in values[1:]:
+                        if value == "True" or value == "False":
+                            value = value.replace("True",".true.").replace("False",".false.")
+                        if len(lines[-1]) + len(value) <= 77:
+                            lines[-1] += ", " + value
+                        else:
+                            lines[-1] += ",\n"
+                            lines.append("      " + value)
+                    lines[-1] += "\n"
+                    for line in lines:
+                        out_file.write(line)
             if format_ == 'nml':
                 out_file.write("/\n")
             if format_ == 'nmlcontents':
                 out_file.write("\n")
 
+    def write_nuopc(self, out_file, groups=None, sorted_groups=True):
+        """Write a nuopc config file out_file
 
-    def _write_nuopc(self, out_file, groups, sorted_groups, skip_comps, atm_cpl_dt, ocn_cpl_dt):
+        As with `parse`, the `out_file` argument can be either a file name, or a
+        file object with a `write` method that accepts unicode. If specified,
+        the `groups` argument specifies a subset of all groups to write out.
+        """
+        if isinstance(out_file, six.string_types):
+            logger.debug("Writing nuopc config file to: {}".format(out_file))
+            flag = 'w'
+            with open(out_file, flag) as file_obj:
+                self._write_nuopc(file_obj, groups, sorted_groups=sorted_groups)
+        else:
+            logger.debug("Writing nuopc config data to file object")
+            self._write_nuopc(out_file, groups, sorted_groups=sorted_groups)
+
+
+    def _write_nuopc(self, out_file,  groups, sorted_groups):
         """Unwrapped version of `write` assuming that a file object is input."""
         if groups is None:
             groups = self._groups.keys()
@@ -1224,19 +1234,14 @@ class Namelist(object):
             group_names = groups
 
         for group_name in group_names:
-            if "_attributes" not in group_name and "nuopc_" not in group_name:
+            if "_attributes" not in group_name and "nuopc_" not in group_name and "_no_group" not in group_name:
                 continue
-
             if "_attributes" in group_name:
                 out_file.write("{}::\n".format(group_name))
 
             group = self._groups[group_name]
             for name in sorted(group.keys()):
                 values = group[name]
-                if "component_list" in name:
-                    for skip_comp in skip_comps:
-                        if skip_comp in values[0]:
-                            values[0] = values[0].replace(skip_comp,"")
 
                 # @ is used in a namelist to put the same namelist variable in multiple groups
                 # in the write phase, all characters in the namelist variable name after
@@ -1245,9 +1250,7 @@ class Namelist(object):
                     name = re.sub('@.+$', "", name)
 
                 equals = " ="
-                if group_name == 'nuopc_runseq':
-                    equals = '::\n       '
-                elif "_var" in group_name:
+                if "_var" in group_name:
                     equals = ':'
 
                 # To prettify things for long lists of values, build strings
@@ -1271,35 +1274,9 @@ class Namelist(object):
                 lines[-1] += "\n"
                 for line in lines:
                     line = line.replace('"','')
-                    # remove un-needed entries from the nuopc_runseq based
-                    # on the prognostic_comps and skip_comps lists
-                    if group_name == 'nuopc_runseq':
-                        run_entries = line.splitlines()
-                        newline = ""
-                        for run_entry in run_entries:
-                            print_entry = True
-                            for skip_comp in skip_comps:
-                                if "@" not in run_entry:
-                                    if skip_comp in run_entry:
-                                        print_entry = False
-                                        logger.info("Writing nuopc_runseq, skipping {}".format(run_entry))
-                                    elif "_"+skip_comp.lower().strip() in run_entry:
-                                        print_entry = False
-                                        logger.info("Writing nuopc_runseq, skipping {}".format(run_entry))
-                                    elif "2"+skip_comp.lower().strip() in run_entry:
-                                        print_entry = False
-                                        logger.info("Writing nuopc_runseq, skipping {}".format(run_entry))
-                            if print_entry:
-                                if "@atm_cpl_dt" in run_entry:
-                                    run_entry = run_entry.replace("atm_cpl_dt",atm_cpl_dt)
-                                if "@ocn_cpl_dt" in run_entry:
-                                    run_entry = run_entry.replace("ocn_cpl_dt",ocn_cpl_dt)
-                                newline += run_entry + "\n"
-                        out_file.write(newline)
-                    else:
-                        out_file.write(line)
+                    out_file.write(line)
 
-            if "_attribute" in group_name or "runseq" in group_name:
+            if "_attribute" in group_name:
                 out_file.write("::\n\n")
 
 class _NamelistEOF(Exception):
@@ -1605,7 +1582,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         >>> _NamelistParser('abc ')._parse_variable_name()
         'abc'
         >>> _NamelistParser('ABC ')._parse_variable_name()
-        'abc'
+        'ABC'
         >>> _NamelistParser('abc\n')._parse_variable_name()
         'abc'
         >>> _NamelistParser('abc%fred\n')._parse_variable_name()
@@ -1614,8 +1591,8 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
         'abc(2)@fred'
         >>> _NamelistParser('abc(1:2:3)\n')._parse_variable_name()
         'abc(1:2:3)'
-        >>> _NamelistParser('abc=')._parse_variable_name()
-        'abc'
+        >>> _NamelistParser('aBc=')._parse_variable_name()
+        'aBc'
         >>> try:
         ...     _NamelistParser('abc(1,2) ')._parse_variable_name()
         ...     raise AssertionError("_NamelistParseError not raised")
@@ -1660,9 +1637,7 @@ class _NamelistParser(object): # pylint:disable=too-few-public-methods
             else:
                 err_str = "{!r} is not a valid variable name".format(str(text))
             raise _NamelistParseError(err_str)
-        name = text.lower()
-
-        return name
+        return text
 
     def _parse_character_literal(self):
         """Parse and return a character literal (a string).

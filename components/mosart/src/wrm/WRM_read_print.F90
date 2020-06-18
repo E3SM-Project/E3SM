@@ -1,5 +1,5 @@
 !
-MODULE WRM_read_print
+MODULE xx_WRM_read_print
 ! Description: module to read and write, update from previous version in WRM_subw_IO.F90
 ! Developed by Nathalie Voisin 12/17/2013
 ! REVISION HISTORY:
@@ -8,7 +8,7 @@ MODULE WRM_read_print
 ! !USES:
   use shr_kind_mod  , only : r8 => shr_kind_r8, SHR_KIND_CL
   use shr_const_mod , only : SHR_CONST_REARTH, SHR_CONST_PI
-  use RunoffMod, only : Trunoff, Tctl, Tunit
+  use RunoffMod, only : Trunoff, Tctl, Tunit, rtmCTL
   use rof_cpl_indices, only : nt_rtm
   use WRM_type_mod, only : ctlSubwWRM, WRMUnit, StorWater
   use WRM_start_op_year
@@ -20,7 +20,7 @@ MODULE WRM_read_print
   contains
 !-----------------------------------------------------------------------
 !______________________________________________________________________________________________________  
-  subroutine read_file_grid(FileName, value)
+  subroutine xx_read_file_grid(FileName, value)
      implicit none
      character(len=250), intent(in) :: FileName
      integer :: iunit 
@@ -33,7 +33,7 @@ MODULE WRM_read_print
         stop
      end if
      iunit=0
-     do iunit=1, Tctl%NUnit
+     do iunit=rtmCTL%begr,rtmCTL%endr
 !tcx        read(unit=1, *) value(iunit)
         if ( value(iunit) < 0._r8 ) then
            print*, "negative value, iunit ", iunit, FileName
@@ -41,9 +41,9 @@ MODULE WRM_read_print
         end if
      end do
      close(unit=1)
-  end subroutine read_file_grid 
+  end subroutine xx_read_file_grid 
 !_______________________________________________________________________________________________________
-  subroutine readPotentialEvap(theTime)
+  subroutine xx_readPotentialEvap(theTime)
   !! DESCRIPTION: read the simulated potential evaporation to adjust the storage of reservoir
      implicit none
      character(len=*), intent(in) :: theTime
@@ -56,10 +56,10 @@ MODULE WRM_read_print
      StorWater%pot_evap = 0.75_r8 * StorWater%pot_evap * 0.001_r8/Tctl%DATAH  !mm/day-->m/s, or mm/hr-->m/s, TO DO
      ! the 0.75 is due to the fact that raw potential evap overestimate the evaporation from large bodies of water
      ! USGS assume between 0.65 to 0.85 woith 0.7 when air temp = water temp
-  end subroutine readPotentialEvap
+  end subroutine xx_readPotentialEvap
 !______________________________________________________________________________________________________
   
-  subroutine readDemand(theTime)
+  subroutine xx_readDemand(theTime)
   ! !DESCRIPTION: read in the irrigation demand data for each time step
      implicit none
      character(len=*), intent(in) :: theTime
@@ -100,9 +100,9 @@ MODULE WRM_read_print
         endif
      endif
 
-  end subroutine readDemand
+  end subroutine xx_readDemand
 !________________________________________________________________________________________________________________
-  subroutine print_grid_file(theTime, strLen, nio, value)
+  subroutine xx_print_grid_file(theTime, strLen, nio, value)
      ! !DESCRIPTION: output the simulation results into external files
      implicit none
      character(len=*), intent(in) :: theTime  ! the time step to output
@@ -115,7 +115,7 @@ MODULE WRM_read_print
      character(len=20) :: stemp
 
      strLine = ''
-     do iunit=1, Tctl%NUnit
+     do iunit=rtmCTL%begr,rtmCTL%endr
         stemp = ''
         call num2str(value(iunit), stemp, 'e20.10')
         strLine = trim(strLine)//adjustr(stemp)
@@ -123,10 +123,10 @@ MODULE WRM_read_print
      !print*, "StorWater%demand(137)", StorWater%demand(137)
      write(unit=nio,fmt="((a10), (a))") theTime, strLine
 
-  end subroutine print_grid_file
+  end subroutine xx_print_grid_file
 !________________________________________________________________________________________________________________
 
-  subroutine print_dam_file(theTime, strLen, nio, value)
+  subroutine xx_print_dam_file(theTime, strLen, nio, value)
      ! !DESCRIPTION: output the simulation results into external files
      implicit none
      character(len=*), intent(in) :: theTime  ! the time step to output
@@ -147,10 +147,10 @@ MODULE WRM_read_print
      write(unit=nio,fmt="((a10), (a))") theTime, strLine
      !write(unit=nio,fmt="((a10)") "supply"
 
-  end subroutine print_dam_file
+  end subroutine xx_print_dam_file
 !________________________________________________________________________________________________________________
 
-  subroutine printTest2(theTime, theUnit, nio)
+  subroutine xx_printTest2(theTime, theUnit, nio)
      ! !DESCRIPTION: output the simulation results into external files
      implicit none
      character(len=*), intent(in) :: theTime  ! the time step to output
@@ -166,7 +166,7 @@ MODULE WRM_read_print
         write(unit=nio,fmt="((a10),6(e20.11))") theTime, nt, Trunoff%qsur(ii,nt), Trunoff%qsub(ii,nt), Trunoff%etin(ii,nt)/(TUnit%area(ii)*TUnit%frac(ii)), Trunoff%erlateral(ii,nt), Trunoff%erin(ii,nt), Trunoff%flow(ii,nt)
      enddo
 
-  end subroutine printTest2   
+  end subroutine xx_printTest2   
 !________________________________________________________________________________________________________________
 
-end MODULE WRM_read_print
+end MODULE xx_WRM_read_print

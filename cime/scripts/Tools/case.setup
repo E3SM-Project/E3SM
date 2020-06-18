@@ -47,16 +47,21 @@ def parse_command_line(args, description):
                         "This flag should be used when rerunning case.setup after it\n"
                         "has already been run for this case.")
 
+    parser.add_argument("-k", "--keep", action="append", default=[],
+                        help="When cleaning/resetting a case, do not remove/refresh files in this list. "
+                        "Choices are batch script, env_mach_specific.xml, Macros.make, Macros.cmake. "
+                        "Use should use this if you have local modifications to these files that you want to keep.")
+
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
-    return args.caseroot, args.clean, args.test_mode, args.reset
+    return args.caseroot, args.clean, args.test_mode, args.reset, args.keep
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    caseroot, clean, test_mode, reset = parse_command_line(sys.argv, description)
+    caseroot, clean, test_mode, reset, keep = parse_command_line(sys.argv, description)
     with Case(caseroot, read_only=False) as case:
-        case.case_setup(clean=clean, test_mode=test_mode, reset=reset)
+        case.case_setup(clean=clean, test_mode=test_mode, reset=reset, keep=keep)
 
 if __name__ == "__main__":
     _main_func(__doc__)

@@ -18,6 +18,8 @@ SET (HOMME_TEST_NDAYS 1)
 SET (HOMME_TEST_QSIZE 4)
 SET (HOMME_TEST_RSPLIT 3)
 SET (HOMME_TEST_MOISTURE notdry)
+SET (HOMME_TEST_TIME_STEP 600)
+
 # Copy the needed input files to the binary dir
 CONFIGURE_FILE (${CMAKE_SOURCE_DIR}/test/reg_test/namelists/preqx.nl
                 ${CMAKE_CURRENT_BINARY_DIR}/namelist.nl)

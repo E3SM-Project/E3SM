@@ -88,7 +88,11 @@
     <default_value>12</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>
-    <desc>timer detail FIXME - add documentation</desc>
+    <desc>Sets maximum number of run loop timing data checkpoints.
+    This sets values for tprof_option and tprof_n that determine
+    the timing output file frequency. If less than one, uses
+    defaults for tprof_option and tprof_n and also allows them
+    to be set in user_nl_cpl.</desc>
   </entry>
 
   <entry id="DOUT_S_SAVE_INTERIM_RESTART_FILES">
@@ -168,7 +172,7 @@
       <value compset="_XATM.*_XLND.*_XICE.*_XOCN">CESM1_MOD</value>
       <value compset="_SOCN"                     >CESM1_MOD</value>
       <value compset="_MPASO"                    >CESM1_MOD</value>
-      <value compset="_MPASCICE.*_MPASO"           >RASM_OPTION1</value>
+      <value compset="_MPASSI.*_MPASO"           >RASM_OPTION1</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -202,16 +206,16 @@
       <value compset="20TR.*_DATM%(QIA|CRU|GSW)">CO2A</value>
       <value compset="RCP.*_DATM%(QIA|CRU|GSW)" >CO2A</value>
       <value compset="_DATM%IAF.*_MPASO%OECO" >CO2A</value>
-      <value compset="_MPASCICE%BGC.*_MPASO%OIECO" >CO2A_OI</value>
-      <value compset="_MPASCICE%BGC.*_MPASO%TOIECO_" >CO2A_OI</value>
-      <value compset="_MPASCICE_MPASO_.*_BGC%BCRC" >CO2C</value>
-      <value compset="_MPASCICE_MPASO_.*_BGC%BCRD" >CO2C</value>
-      <value compset="_MPASCICE_MPASO_.*_BGC%BDRC" >CO2C</value>
-      <value compset="_MPASCICE_MPASO_.*_BGC%BDRD" >CO2C</value>
-      <value compset="_MPASCICE%BGC.*_MPASO%OIECO.*_BGC%BCRC" >CO2C_OI</value>
-      <value compset="_MPASCICE%BGC.*_MPASO%OIECO.*_BGC%BCRD" >CO2C_OI</value>
-      <value compset="_MPASCICE%BGC.*_MPASO%OIECO.*_BGC%BDRC" >CO2C_OI</value>
-      <value compset="_MPASCICE%BGC.*_MPASO%OIECO.*_BGC%BDRD" >CO2C_OI</value>
+      <value compset="_MPASSI%BGC.*_MPASO%OIECO" >CO2A_OI</value>
+      <value compset="_MPASSI%BGC.*_MPASO%TOIECO_" >CO2A_OI</value>
+      <value compset="_MPASSI_MPASO_.*_BGC%BCRC" >CO2C</value>
+      <value compset="_MPASSI_MPASO_.*_BGC%BCRD" >CO2C</value>
+      <value compset="_MPASSI_MPASO_.*_BGC%BDRC" >CO2C</value>
+      <value compset="_MPASSI_MPASO_.*_BGC%BDRD" >CO2C</value>
+      <value compset="_MPASSI%BGC.*_MPASO%OIECO.*_BGC%BCRC" >CO2C_OI</value>
+      <value compset="_MPASSI%BGC.*_MPASO%OIECO.*_BGC%BCRD" >CO2C_OI</value>
+      <value compset="_MPASSI%BGC.*_MPASO%OIECO.*_BGC%BDRC" >CO2C_OI</value>
+      <value compset="_MPASSI%BGC.*_MPASO%OIECO.*_BGC%BDRD" >CO2C_OI</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -317,12 +321,14 @@
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">96</value>
       <value compset=".+" grid="a%0.23x0.31">96</value>
       <value compset=".+" grid="a%ne4np4">12</value>
+      <value compset=".+" grid="a%ne4np4.pg2">24</value>
       <value compset=".+" grid="a%ne11np4">12</value>
       <value compset=".+" grid="a%ne60np4">96</value>
       <value compset=".+" grid="a%ne120np4">96</value>
       <value compset=".+" grid="a%ne240np4">144</value>
       <value compset=".+" grid="a%ne0np4_arm_x8v3" >144</value>
       <value compset=".+" grid="a%ne0np4_conus_x4v1" >96</value>
+      <value compset=".+" grid="a%ne0np4_northamericax4v1" >96</value>
       <value compset=".+" grid="a%ne0np4_svalbard_x8v1" >144</value>
       <value compset=".+" grid="a%ne0np4_sooberingoa_x4x8v1" >144</value>
       <value compset=".+" grid="a%ne0np4_enax4v1" >96</value>
@@ -337,6 +343,12 @@
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_DATM.*_DICE.*_POP2.*_WW3">4</value>
       <value compset="_DATM.*_DICE.*_POP2.*_DWAV">4</value>
+      <!-- a shorter timestep is needed for stability in MMF compsets -->
+      <!-- (i.e. super-parameterization, MMF, CRM) -->
+      <value compset="_CAM5%SP"       grid="a%ne4np4">96</value>
+      <value compset="_CAM5%SP.*ECPP" grid="a%ne4np4">72</value>
+      <value compset="_CAM5%MMF"      grid="a%ne4np4">96</value>
+      <value compset="_CAM5%MMF"      grid="a%ne4np4.pg2">72</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -352,7 +364,7 @@
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
-      <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
+      <value compset="_DATM.*_SLND.*MPASO.*_MALI">$ATM_NCPL</value>
       <value compset="_CAM.*_CLM.*MPASO">48</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne4np4">$ATM_NCPL</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</value>
@@ -372,7 +384,7 @@
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
-      <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
+      <value compset="_DATM.*_SLND.*MPASO.*_MALI">$ATM_NCPL</value>
       <value compset="_CAM.*_CLM.*MPASO">$ATM_NCPL</value>
     </values>
     <group>run_coupling</group>
@@ -496,6 +508,15 @@
     where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
   </entry>
 
+  <entry id="IAC_NCPL">
+    <type>integer</type>
+    <default_value>$ATM_NCPL</default_value>
+    <group>run_coupling</group>
+    <file>env_run.xml</file>
+    <desc>Number of iac coupling intervals per NCPL_BASE_PERIOD.
+      This is used to set the driver namelist iac_cpl_dt, equal to basedt/IAC_NCPL
+      where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
+  </entry>
 
   <!-- Logic for CPL_ALBAV should be reworked to depend on datm forcing rather
        than compset: see https://github.com/ESMCI/cime/issues/120 -->
@@ -585,6 +606,7 @@
     <values match="last">
       <value compset="DATM.*_POP\d"    >TRUE</value>
       <value compset="CAM.*_POP\d"     >TRUE</value>
+      <value compset="CAM.*_MPASO"     >TRUE</value>
       <value compset="CAM.*_DOCN%SOM">TRUE</value>
     </values>
     <group>run_budgets</group>
@@ -640,6 +662,13 @@
       <value compset="^2000.+AV1C-H01C"				>368.865</value>
       <value compset="^1850.+CMIP6"                             >284.317</value>
       <value compset="^1950.+CMIP6"                             >312.821</value>
+      <value compset="^2010.+CMIP6"                             >388.717</value>
+      <value compset="^SSP585.+CMIP6"				>0.000001</value>
+      <value compset="^20TR.*BGC%BCRC"                          >284.317</value>
+      <value compset="^20TR.*BGC%BCRD"                          >284.317</value>
+      <value compset="^20TR.*BGC%BDRC"                          >284.317</value>
+      <value compset="^20TR.*BGC%BDRD"                          >284.317</value>
+      <value compset="^SSP585.*BGC%B"                           >284.317</value>  
       <!-- Override values based on CAM (WACCM) chemistry -->
       <value compset="CAM[45]%W"				>0.000001</value>
       <value compset="CAM[45]%SSOA"				>0.000001</value>
@@ -652,6 +681,7 @@
       <value compset="^2000.+CAM[45]%SMA3"			>0.000001</value>
       <value compset="^2000.+CAM[45]%SMA7"			>0.000001</value>
       <value compset="^2000.+CAM[45]%SSOA"			>0.000001</value>
+      <value compset="^2000.+%RCE"              >348.0</value>
     </values>
     <group>run_co2</group>
     <file>env_run.xml</file>
@@ -674,7 +704,7 @@
     <default_value>500</default_value>
     <group>case_def</group>
     <file>env_case.xml</file>
-    <desc>How much old test to allow</desc>
+    <desc>How much old test data to allow in archive. Setting this to 0 will disable archiving and old test data will be deleted instead</desc>
   </entry>
 
   <entry id="GLC_NEC">
@@ -713,74 +743,6 @@
       compsets.</desc>
   </entry>
 
-  <entry id="OCN2GLC_FMAPNAME">
-    <type>char</type>
-    <default_value>idmap</default_value>
-    <group>run_domain</group>
-    <file>env_run.xml</file>
-    <desc>ocn2glc flux mapping file</desc>
-  </entry>
-
-  <entry id="OCN2GLC_FMAPTYPE">
-    <type>char</type>
-    <valid_values>X,Y</valid_values>
-    <default_value>Y</default_value>
-    <group>run_domain</group>
-    <file>env_run.xml</file>
-    <desc>ocn2glc flux mapping file decomp type</desc>
-  </entry>
-
-  <entry id="OCN2GLC_SMAPNAME">
-    <type>char</type>
-    <default_value>idmap</default_value>
-    <group>run_domain</group>
-    <file>env_run.xml</file>
-    <desc>ocn2glc state mapping file</desc>
-  </entry>
-
-  <entry id="OCN2GLC_SMAPTYPE">
-    <type>char</type>
-    <valid_values>X,Y</valid_values>
-    <default_value>Y</default_value>
-    <group>run_domain</group>
-    <file>env_run.xml</file>
-    <desc>ocn2glc state mapping file decomp type</desc>
-  </entry>
-
-  <entry id="GLC2OCN_FMAPNAME">
-    <type>char</type>
-    <default_value>idmap</default_value>
-    <group>run_domain</group>
-    <file>env_run.xml</file>
-    <desc>glc2ocn flux mapping file</desc>
-  </entry>
-
-  <entry id="GLC2OCN_FMAPTYPE">
-    <type>char</type>
-    <valid_values>X,Y</valid_values>
-    <default_value>Y</default_value>
-    <group>run_domain</group>
-    <file>env_run.xml</file>
-    <desc>glc2ocn flux mapping file decomp type</desc>
-  </entry>
-
-  <entry id="GLC2OCN_SMAPNAME">
-    <type>char</type>
-    <default_value>idmap</default_value>
-    <group>run_domain</group>
-    <file>env_run.xml</file>
-    <desc>glc2ocn state mapping file</desc>
-  </entry>
-
-  <entry id="GLC2OCN_SMAPTYPE">
-    <type>char</type>
-    <valid_values>X,Y</valid_values>
-    <default_value>Y</default_value>
-    <group>run_domain</group>
-    <file>env_run.xml</file>
-    <desc>glc2ocn state mapping file decomp type</desc>
-  </entry>
-
   <entry id="CCSM_GCOST">
     <type>integer</type>
     <valid_values></valid_values>
@@ -812,6 +774,7 @@
     <desc compset="HIST_">Historical 1850 to 2000 transient:</desc>
     <desc compset="20TR_">Historical 1850 to 2000 transient:</desc>
     <desc compset="AMIP_">AMIP for stand-alone cam:</desc>
+    <desc compset="SSP585_">Future transient using CMIP6 SSP5_8.5 scenario:</desc>
     <desc compset="C2R[68]_">CCMI REFC2 1950 to 2100 transient:</desc>
     <desc compset="C2R4_">CCMI REFC2 2004 to 2100 transient:</desc>
     <desc compset="4804_">1948 to 2004 transient:</desc>

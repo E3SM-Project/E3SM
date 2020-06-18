@@ -18,6 +18,8 @@ my $MACH         = `./xmlquery MACH         -value`;
 my $CICE_BLCKX   = `./xmlquery CICE_BLCKX   -value`;
 my $CICE_BLCKY   = `./xmlquery CICE_BLCKY   -value`;
 my $CICE_MXBLCKS = `./xmlquery CICE_MXBLCKS -value`;
+my $MAKE_ARGS    = `./Tools/get_standard_makefile_args`;
+chomp($MAKE_ARGS);
 
 chdir "${OBJROOT}/ice/obj";
 
@@ -40,8 +42,8 @@ if (-f "Filepath") {
 #  force gmake to recompile if any of the cppdefs are different 
 #-------------------------------------------------------------- 
 my $recompile = 'FALSE';
-if (-e "$OBJROOT/ice/obj/CICE_cppdefs") {
-    if (compare("$OBJROOT/ice/obj/CICE_cppdefs.new", "$OBJROOT/ice/obj/CICE_cppdefs") != 0) {
+if (-e "$OBJROOT/ice/obj/CCSM_cppdefs") {
+    if (compare("$OBJROOT/ice/obj/CCSM_cppdefs.new", "$OBJROOT/ice/obj/CCSM_cppdefs") != 0) {
         $recompile = 'TRUE'; 
     }   
     # NOTE - the following remove statements are what force cice to recompile if
@@ -52,7 +54,7 @@ if (-e "$OBJROOT/ice/obj/CICE_cppdefs") {
         system($sysmod) == 0 or die "ERROR cice buildlib: $sysmod failed: $?\n";
     }   
 }
-my $sysmod = "cp -f $OBJROOT/ice/obj/CICE_cppdefs.new $OBJROOT/ice/obj/CICE_cppdefs";
+my $sysmod = "cp -f $OBJROOT/ice/obj/CCSM_cppdefs.new $OBJROOT/ice/obj/CCSM_cppdefs";
 system($sysmod) == 0 or die "ERROR: cice buidlib $sysmod failed: $?\n";}
 
 chdir $CASEROOT;
@@ -65,7 +67,7 @@ $cppdefs = "$cppdefs -DBLCKX=$CICE_BLCKX -DBLCKY=$CICE_BLCKY -DMXBLCKS=$CICE_MXB
 #-------------------------------------------------------
 
 chdir "${OBJROOT}/ice/obj";
-my $sysmod = "$GMAKE complib -j ${GMAKE_J} MODEL=cice COMPLIB=${LIBROOT}/libice.a MACFILE=${CASEROOT}/Macros.${MACH} USER_CPPDEFS=\"$cppdefs\" -f ${CASETOOLS}/Makefile";
+my $sysmod = "$GMAKE complib -j ${GMAKE_J} MODEL=cice COMPLIB=${LIBROOT}/libice.a MACFILE=${CASEROOT}/Macros.${MACH} USER_CPPDEFS=\"$cppdefs\" -f ${CASETOOLS}/Makefile ${MAKE_ARGS}";
 system($sysmod) == 0 or die "ERROR cice buildlib: $sysmod failed: $?\n";
 
 exit(0);

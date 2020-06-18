@@ -7,28 +7,25 @@ This class inherits from SystemTestsCommon.
 """
 
 import os
-import re
-import stat
 import json
-import shutil
 import logging
 
-from CIME.SystemTests.system_tests_common import SystemTestsCommon
-from CIME.case.case_setup import case_setup
-from CIME.hist_utils import _get_all_hist_files, BLESS_LOG_NAME
-from CIME.utils import append_testlog, get_current_commit, get_timestamp, get_model
-from CIME.utils import expect
+from distutils import dir_util
 
 import CIME.test_status
+import CIME.utils
+from CIME.SystemTests.system_tests_common import SystemTestsCommon
+from CIME.case.case_setup import case_setup
+from CIME.XML.machines import Machines
+
 
 import evv4esm  # pylint: disable=import-error
-from evv4esm.__main__ import main as evv # pylint: disable=import-error
+from evv4esm.__main__ import main as evv  # pylint: disable=import-error
 
 evv_lib_dir = os.path.abspath(os.path.dirname(evv4esm.__file__))
 logger = logging.getLogger(__name__)
 
-# Build executable with multiple instances
-ninst = 20
+NINST = 20
 
 
 class MVK(SystemTestsCommon):
@@ -45,7 +42,6 @@ class MVK(SystemTestsCommon):
         else:
             self._case.set_value("COMPARE_BASELINE", False)
 
-
     def build_phase(self, sharedlib_only=False, model_only=False):
         # Only want this to happen once. It will impact the sharedlib build
         # so it has to happen there.
@@ -56,9 +52,9 @@ class MVK(SystemTestsCommon):
 
                 ntasks = self._case.get_value("NTASKS_{}".format(comp))
 
-                self._case.set_value('NTASKS_{}'.format(comp), ntasks*ninst)
+                self._case.set_value('NTASKS_{}'.format(comp), ntasks * NINST)
                 if comp != 'CPL':
-                    self._case.set_value('NINST_{}'.format(comp), ninst)
+                    self._case.set_value('NINST_{}'.format(comp), NINST)
 
             self._case.set_value('ATM_NCPL', 18)
 
@@ -68,99 +64,37 @@ class MVK(SystemTestsCommon):
 
         self.build_indv(sharedlib_only=sharedlib_only, model_only=model_only)
 
-        # =================================================================
-        # Run-time settings.
-        # Do this already in build_phase so that we can check the xml and
-        # namelist files before job starts running.
-        # =================================================================
-
-        # namelist specifications for each instance
-        for iinst in range(1, ninst+1):
+        for iinst in range(1, NINST + 1):
             with open('user_nl_cam_{:04d}'.format(iinst), 'w') as nl_atm_file:
                 nl_atm_file.write('new_random = .true.\n')
                 nl_atm_file.write('pertlim = 1.0e-10\n')
                 nl_atm_file.write('seed_custom = {}\n'.format(iinst))
 
-
     def _generate_baseline(self):
         """
         generate a new baseline case based on the current test
         """
-        with self._test_status:
-            # generate baseline
+        super(MVK, self)._generate_baseline()
 
-            # BEGIN: modified CIME.hist_utils.generate_baseline
-            rundir = self._case.get_value("RUNDIR")
+        with CIME.utils.SharedArea():
             basegen_dir = os.path.join(self._case.get_value("BASELINE_ROOT"),
                                        self._case.get_value("BASEGEN_CASE"))
-            testcase = self._case.get_value("CASE")
 
-            if not os.path.isdir(basegen_dir):
-                os.makedirs(basegen_dir)
-
-            if os.path.isdir(os.path.join(basegen_dir, testcase)):
-                expect(False, " Cowardly refusing to overwrite existing baseline directory")
-
-            comments = "Generating baselines into '{}'\n".format(basegen_dir)
-            num_gen = 0
+            rundir = self._case.get_value("RUNDIR")
+            ref_case = self._case.get_value("RUN_REFCASE")
 
             model = 'cam'
-            comments += "  generating for model '{}'\n".format(model)
-            hists = _get_all_hist_files(testcase, model, rundir)
-            logger.debug("mvk_hist_files: {}".format(hists))
-
-            num_gen += len(hists)
+            env_archive = self._case.get_env("archive")
+            hists = env_archive.get_all_hist_files(self._case.get_value("CASE"), model, rundir, [r'h\d*.*\.nc'], ref_case=ref_case)
+            logger.debug("MVK additional baseline files: {}".format(hists))
+            hists = [os.path.join(rundir,hist) for hist in hists]
             for hist in hists:
                 basename = hist[hist.rfind(model):]
                 baseline = os.path.join(basegen_dir, basename)
                 if os.path.exists(baseline):
                     os.remove(baseline)
 
-                shutil.copy(hist, baseline)
-                comments += "    generating baseline '{}' from file {}\n".format(baseline, hist)
-
-            newestcpllogfile = self._case.get_latest_cpl_log(coupler_log_path=self._case.get_value("LOGDIR"))
-            if newestcpllogfile is None:
-                logger.warning("No cpl.log file found in log directory {}".format(self._case.get_value("LOGDIR")))
-            else:
-                shutil.copyfile(newestcpllogfile,
-                                os.path.join(basegen_dir, "cpl.log.gz"))
-
-            expect(num_gen > 0, "Could not generate any hist files for case '{}', something is seriously wrong".format(
-                os.path.join(rundir, testcase)))
-            # make sure permissions are open in baseline directory
-            for root, _, files in os.walk(basegen_dir):
-                for name in files:
-                    try:
-                        os.chmod(os.path.join(root, name),
-                                 stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH)
-                    except OSError:
-                        # We tried. Not worth hard failure here.
-                        pass
-
-            if get_model() == "e3sm":
-                bless_log = os.path.join(basegen_dir, BLESS_LOG_NAME)
-                with open(bless_log, "a") as fd:
-                    fd.write("sha:{} date:{}\n".format(get_current_commit(repo=self._case.get_value("CIMEROOT")),
-                                                       get_timestamp(timestamp_format="%Y-%m-%d_%H:%M:%S")))
-            # END: modified CIME.hist_utils.generate_baseline
-
-            append_testlog(comments)
-            status = CIME.test_status.TEST_PASS_STATUS
-            baseline_name = self._case.get_value("BASEGEN_CASE")
-            self._test_status.set_status("{}".format(CIME.test_status.GENERATE_PHASE), status,
-                                         comments=os.path.dirname(baseline_name))
-            basegen_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), self._case.get_value("BASEGEN_CASE"))
-            # copy latest cpl log to baseline
-            # drop the date so that the name is generic
-            newestcpllogfiles = self._get_latest_cpl_logs()
-            for cpllog in newestcpllogfiles:
-                m = re.search(r"/(cpl.*.log).*.gz", cpllog)
-                if m is not None:
-                    baselog = os.path.join(basegen_dir, m.group(1)) + ".gz"
-                    shutil.copyfile(cpllog,
-                                    os.path.join(basegen_dir, baselog))
-
+                CIME.utils.safe_copy(hist, baseline, preserve_meta=False)
 
     def _compare_baseline(self):
         with self._test_status:
@@ -168,25 +102,28 @@ class MVK(SystemTestsCommon):
                 # This is here because the comparison is run for each submission
                 # and we only want to compare once the whole run is finished. We
                 # need to return a pass here to continue the submission process.
-                self._test_status.set_status(CIME.test_status.BASELINE_PHASE, CIME.test_status.TEST_PASS_STATUS)
+                self._test_status.set_status(CIME.test_status.BASELINE_PHASE,
+                                             CIME.test_status.TEST_PASS_STATUS)
                 return
 
-            self._test_status.set_status(CIME.test_status.BASELINE_PHASE, CIME.test_status.TEST_FAIL_STATUS)
+            self._test_status.set_status(CIME.test_status.BASELINE_PHASE,
+                                         CIME.test_status.TEST_FAIL_STATUS)
 
             run_dir = self._case.get_value("RUNDIR")
             case_name = self._case.get_value("CASE")
-            basecmp_case = self._case.get_value("BASECMP_CASE")
-            base_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), basecmp_case)
+            base_dir = os.path.join(self._case.get_value("BASELINE_ROOT"),
+                                    self._case.get_value("BASECMP_CASE"))
 
             test_name = "{}".format(case_name.split('.')[-1])
             evv_config = {
                 test_name: {
                     "module": os.path.join(evv_lib_dir, "extensions", "ks.py"),
-                    "case1": "Test",
-                    "dir1": run_dir,
-                    "case2": "Baseline",
-                    "dir2": base_dir,
-                    "ninst": ninst,
+                    "test-case": "Test",
+                    "test-dir": run_dir,
+                    "ref-case": "Baseline",
+                    "ref-dir": base_dir,
+                    "var-set": "default",
+                    "ninst": NINST,
                     "critical": 13
                 }
             }
@@ -195,16 +132,44 @@ class MVK(SystemTestsCommon):
             with open(json_file, 'w') as config_file:
                 json.dump(evv_config, config_file, indent=4)
 
-            evv_out_dir = os.path.join(run_dir, '.'.join([case_name, 'eve']))
+            evv_out_dir = os.path.join(run_dir, '.'.join([case_name, 'evv']))
             evv(['-e', json_file, '-o', evv_out_dir])
 
-            with open(os.path.join(evv_out_dir, 'index.json'), 'r') as evv_f:
+            with open(os.path.join(evv_out_dir, 'index.json')) as evv_f:
                 evv_status = json.load(evv_f)
 
+            comments = ""
             for evv_elem in evv_status['Data']['Elements']:
-                if evv_elem['Type'] == 'ValSummary':
-                    if evv_elem['TableTitle'] == 'Kolmogorov-Smirnov':
-                        if evv_elem['Data'][test_name]['']['Ensembles'] == 'identical':
-                            self._test_status.set_status(CIME.test_status.BASELINE_PHASE,
-                                                         CIME.test_status.TEST_PASS_STATUS)
-                            break
+                if evv_elem['Type'] == 'ValSummary' \
+                        and evv_elem['TableTitle'] == 'Kolmogorov-Smirnov test':
+                    comments = "; ".join("{}: {}".format(key, val) for key, val
+                                         in evv_elem['Data'][test_name][''].items())
+                    if evv_elem['Data'][test_name]['']['Test status'].lower() == 'pass':
+                        self._test_status.set_status(CIME.test_status.BASELINE_PHASE,
+                                                     CIME.test_status.TEST_PASS_STATUS)
+                    break
+
+                status = self._test_status.get_status(CIME.test_status.BASELINE_PHASE)
+                mach_name = self._case.get_value("MACH")
+                mach_obj = Machines(machine=mach_name)
+                htmlroot = CIME.utils.get_htmlroot(mach_obj)
+                urlroot = CIME.utils.get_urlroot(mach_obj)
+                if htmlroot is not None:
+                    with CIME.utils.SharedArea():
+                        dir_util.copy_tree(evv_out_dir, os.path.join(htmlroot, 'evv', case_name), preserve_mode=False)
+                    if urlroot is None:
+                        urlroot = "[{}_URL]".format(mach_name.capitalize())
+                    viewing = "{}/evv/{}/index.html".format(urlroot, case_name)
+                else:
+                    viewing = "{}\n" \
+                              "    EVV viewing instructions can be found at: " \
+                              "        https://github.com/E3SM-Project/E3SM/blob/master/cime/scripts/" \
+                              "climate_reproducibility/README.md#test-passfail-and-extended-output" \
+                              "".format(evv_out_dir)
+
+                comments = "{} {} for test '{}'.\n" \
+                           "    {}\n" \
+                           "    EVV results can be viewed at:\n" \
+                           "        {}".format(CIME.test_status.BASELINE_PHASE, status, test_name, comments, viewing)
+
+                CIME.utils.append_testlog(comments, self._orig_caseroot)

@@ -74,7 +74,7 @@
     </test_file_names>
   </comp_archive_spec>
 
-  <comp_archive_spec compname="mpascice" compclass="ice">
+  <comp_archive_spec compname="mpassi" compclass="ice">
     <rest_file_extension>rst</rest_file_extension>
     <rest_file_extension>rst.am.timeSeriesStatsMonthly</rest_file_extension>
     <hist_file_extension>hist</hist_file_extension>
@@ -85,10 +85,10 @@
     </rpointer>
     <test_file_names>
       <tfile disposition="copy">rpointer.ice</tfile>
-      <tfile disposition="copy">mpascice.rst.1976-01-01_00000.nc</tfile>
-      <tfile disposition="copy">mpascice.rst.am.timeSeriesStatsMonthly.1976-01-01_00000.nc</tfile>
-      <tfile disposition="move">mpascice.hist.1976-01-01_00000.nc</tfile>
-      <tfile disposition="move">mpascice.hist.am.regionalStatistics.0001.01.nc</tfile>
+      <tfile disposition="copy">mpassi.rst.1976-01-01_00000.nc</tfile>
+      <tfile disposition="copy">mpassi.rst.am.timeSeriesStatsMonthly.1976-01-01_00000.nc</tfile>
+      <tfile disposition="move">mpassi.hist.1976-01-01_00000.nc</tfile>
+      <tfile disposition="move">mpassi.hist.am.regionalStatistics.0001.01.nc</tfile>
     </test_file_names>
   </comp_archive_spec>
 

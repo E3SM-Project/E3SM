@@ -82,6 +82,21 @@
   </compset>
 
   <compset>
+    <alias>F1850SC5-CMIP6</alias>
+    <lname>1850S_CAM5%CMIP6_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>F1850S-AR5-superfast</alias>
+    <lname>1850S_CAM5%AR5sf_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  
+  <compset>
+    <alias>F20TRS-AR5-superfast</alias>
+    <lname>20TRS_CAM5%AR5sf_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  
+  <compset>
     <alias>F1950C5-CMIP6-LR</alias>
     <lname>1950_CAM5%CMIP6-LR_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
@@ -203,7 +218,22 @@
 
   <compset>
     <alias>F20TRC5-CMIP6</alias>
-    <lname>20TR_CAM5%CMIP6_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <lname>20TR_CAM5%CMIP6_CLM45%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>F2010SC5-CMIP6</alias>
+    <lname>2010S_CAM5%CMIP6_CLM45%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>F2010C5-CMIP6-LR</alias>
+    <lname>2010_CAM5%CMIP6-LR_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>F2010C5-CMIP6-HR</alias>
+    <lname>2010_CAM5%CMIP6-HR_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
@@ -261,26 +291,79 @@
     <lname>AR97_CAM5%SCAM_CLM45%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
+  <!-- *********************************** -->
+  <!-- aqua-planet -->
+  <!-- *********************************** -->
+  <!-- The analytic SST patterns coincide with the       -->
+  <!-- from the aqua-planet experiment (APE) protocol.   -->
+  <!-- AQP1    = control symmetric SST pattern           -->
+  <!-- AQP2    = Flat                                    -->
+  <!-- AQP3    = Qobs = average of AQP1 and AQP2         -->
+  <!-- AQP4    = Peaked                                  -->
+  <!-- AQP5    = Control+5N                              -->
+  <!-- AQP6    = 1KEQ - small warm pool                  -->
+  <!-- AQP7    = 3KEQ - small warm pool                  -->
+  <!-- AQP8    = 3KW1 - large warm pool                  -->
+  <!-- AQP9    = Control+10N                             -->
+  <!-- AQP10   = Control+15N                             -->
+  <!-- AQPFILE = SST file set by 'aquapfile' in namelist -->
 
   <compset>
-    <alias>FC4AQUAP</alias>
-    <lname>2000_CAM4_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
+    <alias>F-EAMv1-AQP1</alias>
+    <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-EAMv1-AQP2</alias>
+    <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQP2_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-EAMv1-AQP3</alias>
+    <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQP3_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-EAMv1-AQP4</alias>
+    <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQP4_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-EAMv1-AQP5</alias>
+    <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQP5_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-EAMv1-AQP6</alias>
+    <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQP6_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-EAMv1-AQP7</alias>
+    <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQP7_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-EAMv1-AQP8</alias>
+    <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQP8_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-EAMv1-AQP9</alias>
+    <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQP9_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-EAMv1-AQP10</alias>
+    <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQP10_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-EAMv1-AQPFILE</alias>
+    <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQPFILE_SROF_SGLC_SWAV</lname>
   </compset>
 
+  <!-- *********************************** -->
+  <!-- Radiative-Convective Equilibrium (RCE) -->
+  <!-- *********************************** -->
   <compset>
-    <alias>FC5AQUAP</alias>
-    <lname>2000_CAM5_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
+    <alias>F-EAMv1-RCEMIP</alias>
+    <lname>2000_CAM5%RCE_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
   </compset>
 
-  <compset>
-    <alias>FC5AV1C-04P2-AQUAP</alias>
-    <lname>2000_CAM5%AV1C-04P2_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>FC5AV1C-L-AQUAP</alias>
-    <lname>2000_CAM5%AV1C-L_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
-  </compset>
+  <!-- *********************************** -->
+  <!-- idealized / adiabatic -->
+  <!-- *********************************** -->
 
   <compset>
     <alias>FIDEAL</alias>
@@ -303,6 +386,85 @@
     <alias>F_SCAM5</alias>
     <lname>SCAM_CAM5%SCAM_CLM45%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>   
+
+  <!-- ****************************************** -->
+  <!-- MMF compsets (i.e. super-parameterization) -->
+  <!-- ****************************************** -->
+
+  <!-- ********** F compsets ********** -->
+
+  <!-- Old MMF compsets for comparing with original ECP fork -->
+  <compset>
+    <alias>FSP1V1</alias>
+    <lname>2000_CAM5%SP1V1_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>FSP1V1-MAML</alias>
+    <lname>2000_CAM5%SP1V1-MAML_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>FSP2V1</alias>
+    <lname>2000_CAM5%SP2V1_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <!-- New MMF compsets for new implementation in E3SM repo -->
+  <compset>
+    <alias>F-MMF1</alias>
+    <lname>2000_CAM5%MMF1_CLM45%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-MMF1-MAML</alias>
+    <lname>2000_CAM5%MMF1-MAML_CLM45%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-MMF2</alias>
+    <lname>2000_CAM5%MMF2_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-MMF2-MAML</alias>
+    <lname>2000_CAM5%MMF2-MAML_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  
+  <!-- ********** testing compsets w/ reduced CRM dimensions ********** -->
+
+  <!-- Old MMF compsets for comparing with original ECP fork -->
+  <compset>
+    <alias>FSP1V1-TEST</alias>
+    <lname>2000_CAM5%SP1V1-TEST_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>FSP1V1-MAML-TEST</alias>
+    <lname>2000_CAM5%SP1V1-MAML-TEST_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>FSP2V1-TEST</alias>
+    <lname>2000_CAM5%SP2V1-TEST_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>FSP2V1-ECPP-TEST</alias>
+    <lname>2000_CAM5%SP2V1-ECPP-TEST_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <!-- New MMF compsets for new implementation in E3SM repo -->
+  <compset>
+    <alias>F-MMF1-TEST</alias>
+    <lname>2000_CAM5%MMF1-TEST_CLM45%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-MMF1-MAML-TEST</alias>
+    <lname>2000_CAM5%MMF1-MAML-TEST_CLM45%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-MMF2-TEST</alias>
+    <lname>2000_CAM5%MMF2-TEST_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-MMF2-ECPP-TEST</alias>
+    <lname>2000_CAM5%MMF2-ECPP-TEST_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <!-- ******************************* -->
+  <!-- ******************************* -->
 
   <entries>
 

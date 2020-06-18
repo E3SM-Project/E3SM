@@ -18,10 +18,14 @@
     <desc forcing="HIST">Historic transient </desc>
     <desc forcing="20TR">Twentieth century transient</desc>
     <desc forcing="4804"></desc>
-    <desc forcing="RCP2">CMIP5 rcp 2.6 forcing</desc>
-    <desc forcing="RCP4">CMIP5 rcp 4.5 forcing</desc>
-    <desc forcing="RCP6">CMIP5 rcp 6.0 forcing</desc>
-    <desc forcing="RCP8">CMIP5 rcp 8.5 forcing</desc>
+    <desc forcing="SSP119">CMIP6 SSP1-1.9 forcing</desc>
+    <desc forcing="SSP126">CMIP6 SSP1-2.6 forcing</desc>
+    <desc forcing="SSP245">CMIP6 SSP2-4.5 forcing</desc>
+    <desc forcing="SSP370">CMIP6 SSP3-7.0 forcing</desc>
+    <desc forcing="SSP434">CMIP6 SSP4-3.4 forcing</desc>
+    <desc forcing="SSP460">CMIP6 SSP4-6.0 forcing</desc>
+    <desc forcing="SSP534">CMIP6 SSP5-3.4 forcing</desc>
+    <desc forcing="SSP585">CMIP6 SSP5-8.5 forcing</desc>
     <desc cpl="BGC[%BDRD][%BPRP]">Biogeochemistry intercomponent </desc>
     <desc option="BDRD"> with diagnostic CO2</desc>
     <desc option="BPRP"> with prognostic CO2 </desc>
@@ -51,7 +55,7 @@
     <default_value>0</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>
-    <desc>Sets level of task-to-node mapping output for the whole model 
+    <desc>Sets level of task-to-node mapping output for the whole model
     (0: no output; 1: compact; 2: verbose).</desc>
   </entry>
 
@@ -157,8 +161,10 @@
       <value compset="_CAM">CO2A</value>
       <value compset="_DATM">none</value>
       <value compset="_DATM%CPLHIST.+POP\d">CO2A</value>
+      <value compset="^OMIP_DATM%IAF.*_POP2%[^_]*ECO">CO2A</value>
+      <value compset="^OMIP_DATM%JRA.*_POP2%[^_]*ECO">CO2A</value>
       <value compset="HIST.*_DATM.*_CLM">CO2A</value>
-      <value compset="RCP.*_DATM.*_CLM">CO2A</value>
+      <value compset="SSP.*_DATM.*_CLM">CO2A</value>
       <value compset="_BGC%BPRP">CO2C</value>
       <value compset="_BGC%BDRD">CO2C</value>
     </values>
@@ -222,10 +228,14 @@
       <value compset="_DATM%COPYALL_NPS">72</value>
       <value compset="_DATM.*_CLM">48</value>
       <value compset="_DATM.*_DICE.*_POP2">4</value>
+      <value compset="_DATM.*_DICE.*_MOM6">24</value>
       <value compset="_DATM.*_SLND.*_CICE.*_POP2">24</value>
+      <value compset="_DATM.*_SLND.*_CICE.*_POP2" grid="oi%tx0.1v3">144</value>
+      <value compset="_DATM.*_SLND.*_CICE.*_MOM6">24</value>
       <value compset="_DATM.*_CICE.*_DOCN">24</value>
       <value compset="_DATM.*_DOCN%US20">24</value>
       <value compset="_DATM%CPLHIST.+POP\d">48</value>
+      <value compset="_DATM%CPLHIST.+MOM\d">48</value>
       <value compset="_MPAS">1</value>
       <value compset=".+" grid="a%0.23x0.31">96</value>
       <value compset=".+" grid="a%ne60np4">96</value>
@@ -238,7 +248,14 @@
       <value compset=".+" grid="a%ne240np4">384</value>
       <value compset=".+" grid="a%ne240np4.pg2">384</value>
       <value compset=".+" grid="a%ne240np4.pg3">384</value>
-      <value compset=".+" grid="a%ne0np4CONUS.ne30x8">144</value>
+      <value compset=".+" grid="a%ne0np4CONUS.ne30x8">384</value>
+      <value compset=".+" grid="a%ne0np4.ARCTIC.ne30x4">192</value>
+      <value compset=".+" grid="a%ne0np4.ARCTICGRIS.ne30x8">384</value>
+      <value compset=".+" grid="a%C24">48</value>
+      <value compset=".+" grid="a%C48">48</value>
+      <value compset=".+" grid="a%C96">48</value>
+      <value compset=".+" grid="a%C192">96</value>
+      <value compset=".+" grid="a%C384">192</value>
       <value compset=".+" grid="a%T42">72</value>
       <value compset=".+" grid="a%T85">144</value>
       <value compset=".+" grid="a%T341">288</value>
@@ -248,7 +265,9 @@
       <value compset=".+" grid="1x1_vancou">24</value>
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_DATM.*_DICE.*_POP2.*_WW3">4</value>
+      <value compset="_DATM.*_DICE.*_MOM6.*_WW3">4</value>
       <value compset="_DATM.*_DICE.*_POP2.*_DWAV">4</value>
+      <value compset="_DATM.*_DICE.*_MOM6.*_DWAV">4</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -288,14 +307,17 @@
     <default_value>$ATM_NCPL</default_value>
     <values match="last">
       <value compset="_POP2">1</value>
+      <value compset="_MOM6">24</value>
       <value compset="_POP2" grid="oi%tx0.1v2">4</value>
       <value compset="_POP2" grid="oi%gx1v6">24</value>
       <value compset="_POP2" grid="oi%gx1v7">24</value>
+      <value compset="_POP2" grid="oi%tx0.1v3">48</value>
       <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN.*_SWAV">1</value>
       <value compset="_DATM%NYF.*_DLND.*_DICE.*_DOCN.*_DWAV">1</value>
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_XOCN">$ATM_NCPL</value>
       <value compset="_SOCN">$ATM_NCPL</value>
+      <value compset="_NEMO">24</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -311,6 +333,7 @@
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_SGLC">$ATM_NCPL</value>
       <value compset="_XGLC">$ATM_NCPL</value>
+      <value compset="_MOM6">1</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -343,9 +366,11 @@
     <default_value>8</default_value>
     <values match="last">
       <value compset="_DATM.*_POP2.*_DROF">$ATM_NCPL</value>
+      <value compset="_DATM.*_MOM6.*_DROF">$ATM_NCPL</value>
       <value compset="_DATM.*_DOCN%SOM">$ATM_NCPL</value>
       <value compset="_DATM.*_SLND.*_DICE.*_DOCN">$ATM_NCPL</value>
       <value compset="_DATM%CPLHIST.+POP\d">8</value>
+      <value compset="_DATM%CPLHIST.+MOM\d">8</value>
       <value compset="_XATM.*_XLND.*_XICE.*_XOCN">$ATM_NCPL</value>
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_SROF">$ATM_NCPL</value>
@@ -377,8 +402,11 @@
     <default_value>FALSE</default_value>
     <values match="last">
       <value compset="DATM.+POP\d">TRUE</value>
+      <value compset="DATM.+MOM\d">TRUE</value>
       <value compset="DATM.+DOCN%IAF">TRUE</value>
       <value compset="DATM%CPLHIST.+POP\d">FALSE</value>
+      <value compset="DOCN%AQP11">TRUE</value>
+      <value compset="DATM%CPLHIST.+MOM\d">FALSE</value>
     </values>
     <group>run_component_cpl</group>
     <file>env_run.xml</file>
@@ -426,6 +454,7 @@
     <values match="last">
       <value compset="_DATM.*_DOCN%SOM"			>CESM1_MOD</value>
       <value compset="_POP2"				>CESM1_MOD</value>
+      <value compset="_MOM6"				>RASM_OPTION1</value>
       <value compset="_POP2" grid="oi%gx1v6"		>RASM_OPTION1</value>
       <value compset="_POP2" grid="oi%gx1v7"		>RASM_OPTION1</value>
       <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN"	>CESM1_MOD</value>
@@ -502,7 +531,8 @@
     <default_value>284.7</default_value>
     <values match="last">
       <value compset="^2000">367.0</value>
-      <value compset="DATM.*POP2%ECO">284.7</value>
+      <value compset="DATM.*_POP2%[^_]*ECO">284.317</value>
+      <value compset="DATM.*_POP2%[^_]*ECOCESM20">284.7</value>
     </values>
     <group>run_co2</group>
     <file>env_run.xml</file>

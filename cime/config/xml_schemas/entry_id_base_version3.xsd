@@ -40,7 +40,7 @@
       <xs:attribute name="ice" type="xs:string"/>
       <xs:attribute name="rof" type="xs:string"/>
       <xs:attribute name="lnd" type="xs:string"/>
-
+      <xs:attribute name="iac" type="xs:string"/>
       <xs:attribute name="esp" type="xs:string"/>
       <xs:attribute name="forcing" type="xs:string"/>
       <xs:attribute name="option" type="xs:string"/>

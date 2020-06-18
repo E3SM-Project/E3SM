@@ -2,6 +2,7 @@
 #include "config.h"
 #endif
 module netcdf_io_mod
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   use kinds, only : int_kind, real_kind
   !HOMME Specific: abortmp, mpireal_t,mpiinteger_t
   use parallel_mod, only : abortmp, mpireal_t, mpiinteger_t
@@ -21,7 +22,8 @@ module netcdf_io_mod
   implicit none  
   private
   ! end of analysis_nl namelist variables
-  type(io_desc_t), save, public :: iodesc3d, iodesc2d, iodesct, iodesc2d_nc, iodesc3d_nc, iodesc3d_subelem
+  type(io_desc_t), save, public :: iodesc3d, iodesc2d, iodesct, iodesc2d_nc, iodesc3d_nc, iodesc3d_subelem, &
+                                   iodesc3dp1
   type(iosystem_desc_t), save ,public :: pio_subsystem
 
 
@@ -675,6 +677,7 @@ contains
 
       if(masterproc) print *, 'netcdf_io_mod opening file ',trim(filename), fileid%fh, output_type
     end subroutine nf_open_file
+#endif
   end module netcdf_io_mod
 
 

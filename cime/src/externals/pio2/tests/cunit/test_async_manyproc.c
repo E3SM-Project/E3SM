@@ -34,16 +34,9 @@ int main(int argc, char **argv)
 {
     int my_rank; /* Zero-based rank of processor. */
     int ntasks; /* Number of processors involved in current execution. */
-    int iosysid[COMPONENT_COUNT]; /* The ID for the parallel I/O system. */
     int num_iotypes; /* Number of PIO netCDF iotypes in this build. */
-    int iotype[NUM_IOTYPES]; /* iotypes for the supported netCDF IO iotypes. */
-    int num_procs[COMPONENT_COUNT] = {NUM_COMP_PROCS, NUM_COMP_PROCS}; /* Num procs for IO and computation. */
     int io_proc_list[NUM_IO_PROCS];
-    int comp_proc_list1[NUM_COMP_PROCS] = {NUM_IO_PROCS, NUM_IO_PROCS + 1};
-    int comp_proc_list2[NUM_COMP_PROCS] = {NUM_IO_PROCS + 2, NUM_IO_PROCS + 3};
-    int *proc_list[COMPONENT_COUNT] = {comp_proc_list1, comp_proc_list2};
     MPI_Comm test_comm;
-    int verbose = 0;
     int ret; /* Return code. */
 
     /* Initialize our list of IO tasks. */
@@ -61,6 +54,13 @@ int main(int argc, char **argv)
     /* Only do something on TARGET_NTASKS tasks. */
     if (my_rank < TARGET_NTASKS)
     {
+        int iosysid[COMPONENT_COUNT]; /* The ID for the parallel I/O system. */
+        int iotype[NUM_IOTYPES]; /* iotypes for the supported netCDF IO iotypes. */
+        int num_procs[COMPONENT_COUNT] = {NUM_COMP_PROCS, NUM_COMP_PROCS}; /* Num procs for IO and computation. */
+        int comp_proc_list1[NUM_COMP_PROCS] = {NUM_IO_PROCS, NUM_IO_PROCS + 1};
+        int comp_proc_list2[NUM_COMP_PROCS] = {NUM_IO_PROCS + 2, NUM_IO_PROCS + 3};
+        int *proc_list[COMPONENT_COUNT] = {comp_proc_list1, comp_proc_list2};
+
         /* Figure out iotypes. */
         if ((ret = get_iotypes(&num_iotypes, iotype)))
             ERR(ret);
@@ -71,9 +71,6 @@ int main(int argc, char **argv)
         if ((ret = PIOc_init_async(test_comm, NUM_IO_PROCS, io_proc_list, COMPONENT_COUNT,
                                    num_procs, (int **)proc_list, NULL, NULL, PIO_REARR_BOX, iosysid)))
             ERR(ERR_INIT);
-        if (verbose)
-            for (int c = 0; c < COMPONENT_COUNT; c++)
-                printf("my_rank %d cmp %d iosysid[%d] %d\n", my_rank, c, c, iosysid[c]);
 
         /* All the netCDF calls are only executed on the computation
          * tasks. */
@@ -81,25 +78,25 @@ int main(int argc, char **argv)
         {
             for (int i = 0; i < num_iotypes; i++)
             {
-                /* char filename[NC_MAX_NAME + 1]; /\* Test filename. *\/ */
-                /* /\* Ranks 0, 1, 2 are IO. 3, 4 are the first */
-                /*  * computation component. 5, 6 are the second. *\/ */
-                /* int my_comp_idx = my_rank < NUM_IO_PROCS + NUM_COMP_PROCS ? 0 : 1;  /\* Index in iosysid array. *\/ */
+                char filename[NC_MAX_NAME + 1]; /* Test filename. */
+                /* Ranks 0, 1, 2 are IO. 3, 4 are the first
+                 * computation component. 5, 6 are the second. */
+                int my_comp_idx = my_rank < NUM_IO_PROCS + NUM_COMP_PROCS ? 0 : 1;  /* Index in iosysid array. */
 
-                /* /\* Create sample file. *\/ */
-                /* if ((ret = create_nc_sample_3(iosysid[my_comp_idx], iotype[i], my_rank, my_comp_idx, */
-                /*                               filename, TEST_NAME, verbose, 0, 0))) */
-                /*     ERR(ret); */
+                /* Create sample file. */
+                if ((ret = create_nc_sample_3(iosysid[my_comp_idx], iotype[i], my_rank, my_comp_idx,
+                                              filename, TEST_NAME, 0, 0, 0)))
+                    ERR(ret);
 
-                /* /\* Check the file for correctness. *\/ */
-                /* if ((ret = check_nc_sample_3(iosysid[my_comp_idx], iotype[i], my_rank, my_comp_idx, */
-                /*                              filename, verbose, 0, 0))) */
-                /*     ERR(ret); */
+                /* Check the file for correctness. */
+                if ((ret = check_nc_sample_3(iosysid[my_comp_idx], iotype[i], my_rank, my_comp_idx,
+                                             filename, 0, 0, 0)))
+                    ERR(ret);
             } /* next netcdf iotype */
 
             /* Finalize the IO system. Only call this from the computation tasks. */
             for (int c = 0; c < COMPONENT_COUNT; c++)
-                if ((ret = PIOc_finalize(iosysid[c])))
+                if ((ret = PIOc_free_iosystem(iosysid[c])))
                     ERR(ret);
         } /* endif comp_task */
     } /* endif my_rank < TARGET_NTASKS */

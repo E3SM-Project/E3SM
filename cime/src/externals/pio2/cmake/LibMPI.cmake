@@ -25,6 +25,7 @@ function (platform_name RETURN_VARIABLE)
     # Determine platform name from site name...
     site_name (SITENAME)
 
+
     if (SITENAME MATCHES "^laramie" OR
             SITENAME MATCHES "^cheyenne" OR
 	    SITENAME MATCHES "^chadmin")

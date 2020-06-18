@@ -25,7 +25,7 @@ subroutine scm_setinitial
   integer i, j, k, thelev
   integer inumliq, inumice, icldliq, icldice
 
-  if (.not. use_camiop) then
+  if (.not. use_replay) then
     call cnst_get_ind('NUMLIQ', inumliq, abort=.false.)
     call cnst_get_ind('NUMICE', inumice, abort=.false.)
     call cnst_get_ind('CLDLIQ', icldliq)

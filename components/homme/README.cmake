@@ -1,9 +1,10 @@
 03/2013 BFJ
 02/2016 MT
 10/2016 DMH
+12/2019 MT  document some common cmake options
 
 The CMAKE build system supports a number of user-configurable targets:
-sweqx, preqx, preqx_acc, pese, swim, prim
+sweqx, preqx, preqx_acc, theta-l, swim, prim
 
 Scripts which will CMake configure, build, construct namelists and run a simulation using these
 targets, see:
@@ -12,9 +13,21 @@ targets, see:
 
 A typical CMAKE command might look like:
 cd $WDIR
-cmake -C ~/acme/components/cmake/machineFiles/edison.cmake \
+cmake -C ~/e3sm/components/homme/cmake/machineFiles/edison.cmake \
     -DPREQX_PLEV=30 -DPREQX_NP=4 ~/acme/components/homme
 
+The -C argument is machine specific settings. See the machineFile directory                   
+for examples.  Most DOE machines are suported, as well as Darwin and RHEL.                    
+                                                                                              
+Some commonly used cmake options: (for both preqx and theta targets):                         
+-DPREQX_USE_ENERGY=TRUE   add extra diagnostics to the log file                               
+-DPREQX_USE_PIO=TRUE      turn on native grid output                                          
+                          (default is interpolated lat/lon output)                            
+                                                                                              
+For performance testing, the model can be built without file output.  This                    
+removes the need to link with PIO and netcdf.  See the astra.cmake machine                    
+file and variable BUILD_HOMME_WITHOUT_PIOLIBRARY.                                             
+                                                          
 After running cmake with suitable command line options from a working directory WDIR,
 it will create 
 
@@ -37,9 +50,15 @@ To compile cprnc outside of CIME, edit the cprnc Makefile to comment out the Mac
 and set NETCDF_PATH, FC, and LDFLAGS=-L$(LIB_NETCDF) -lnetcdff -lnetcdf
 
 
-DCMIP tests provide a standard means for testing and comparing the ACME HOMME dycore with other dycores
-both hydrostatic and nonhydrostatic. They have been placed in their own dcmip_test directory for now.
-To run a DCMIP tests, navigate to the appropriate directory and type make install to install test scripts and namelists.
+DCMIP tests provide a standard means for testing and comparing the HOMME dycore with other dycores
+both hydrostatic and nonhydrostatic. They have been placed in their own dcmip_test directory.
+To run a DCMIP tests after configuring with cmake:
+   1. navigate to the appropriate DCMIP working directory associated with the
+   test case and model version, e.g. $WDIR/dcmip_tests/dcmip2016_test1_baroclinic_wave/theta-l
+   2. "make install" to install test scripts and namelists.
+   3. "./build.sh" to compile the executable
+   4. edit one of the example jobscripts for your platform and then run it
+
 
 The CMAKE code could use some cleanup. 
 - user configured variables should not need to be prefixed by the exectuable name
@@ -49,35 +68,4 @@ The CMAKE code could use some cleanup.
   with cmake's tree-like directory approach, the tests should be associated with their
   test executable
 
-
-************************************************************************************************
-
-***OBSOLETE***
-
-Please see the HOMME wiki for information on how to build HOMME using the CMake build system.
-https://wiki.ucar.edu/display/homme/The+HOMME+CMake+build+and+testing+system
-
-
-03/2013 CGB and KJE and JER
-
-HOMME now has a CMake build option for sweqx, swim, and preqx.
-It is in the BETA test mode, alert Chris Baker or Kate Evans or Jennifer Ribbeckof problems/unclear instructions
-(swim is the SW version of HOMME that uses trilinos in the implicit solve option)
-
-1. mkdir BUILD_DIR somewhere, usually the main trunk directory
-2. cp /bld/cmake-script/$APPROPRIATE_BUILD_SCRIPT into $BUILD_DIR 
-3. export HOMME_ROOT="location_of trunk"
-3. JAGUAR ONLY: export XTPE_LINK_TYPE='dynamic' needed right now TODO: put into script build process
-3. Linux box ONLY: export Z_DIR='/usr/lib64' needed right now TODO: put into script build process
-4. Modify script as appropriate (DEBUG or not etc)
- a. PLEV=# vertical levels
- b. NUM_POINTS=np
- c. -D CMAKE_INSTALL_PREFIX=where /bin/$EXE will sit 
-5. ./$APPROPRIATE_BUILD_SCRIPT
-5. make -j4
-6. make install (where you told it to go)
-
-most build failures are due to residual build info. In the build directory:
-rm -rf CMakeCache.txt CMakeFiles src utils cmake_install.cmake Makefile bin install_manifest.txt *.h
-to get a fresh build starting point.
 

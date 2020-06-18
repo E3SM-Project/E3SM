@@ -5,8 +5,6 @@ module med_infodata_mod
   ! !USES:
 
   use med_constants_mod , only: CL, R8
-  use seq_comm_mct      , only: num_inst_atm, num_inst_lnd, num_inst_rof
-  use seq_comm_mct      , only: num_inst_ocn, num_inst_ice, num_inst_glc, num_inst_wav
   use esmFlds           , only: ncomps
 
   implicit none
@@ -18,8 +16,6 @@ module med_infodata_mod
 
   ! !PUBLIC MEMBER FUNCTIONS
 
-  public :: med_infodata_init1           ! Initialize before clocks are initialized
-  public :: med_infodata_init2           ! Init after clocks are initialized
   public :: med_infodata_GetData         ! Get values from infodata object
   public :: med_infodata_CopyStateToInfodata
   public :: med_infodata_CopyInfodataToState
@@ -27,23 +23,11 @@ module med_infodata_mod
   ! !PUBLIC DATA MEMBERS:
   public :: med_infodata                  ! instance of infodata datatype
 
-  ! Type to hold pause/resume signaling information
-  type seq_pause_resume_type
-     private
-     character(CL) :: atm_resume(num_inst_atm) = ' ' ! atm resume file
-     character(CL) :: lnd_resume(num_inst_lnd) = ' ' ! lnd resume file
-     character(CL) :: ice_resume(num_inst_ice) = ' ' ! ice resume file
-     character(CL) :: ocn_resume(num_inst_ocn) = ' ' ! ocn resume file
-     character(CL) :: glc_resume(num_inst_glc) = ' ' ! glc resume file
-     character(CL) :: rof_resume(num_inst_rof) = ' ' ! rof resume file
-     character(CL) :: wav_resume(num_inst_wav) = ' ' ! wav resume file
-     character(CL) :: cpl_resume = ' '               ! cpl resume file
-  end type seq_pause_resume_type
-
   ! InputInfo derived type
   type med_infodata_type
      private
-     !--- set via components and held fixed after initialization ---
+
+     ! Set via components and held fixed after initialization
      integer :: nx(ncomps) = -1              ! global nx
      integer :: ny(ncomps) = -1              ! global ny
      logical :: rofice_present = .false.     ! does rof have iceberg coupling on
@@ -56,13 +40,13 @@ module med_infodata_mod
      logical :: glc_coupled_fluxes = .false. ! does glc send fluxes to other components
                                              ! (only relevant if glc_present is .true.)
 
-     !--- set via components and may be time varying ---
-     real(R8)       :: nextsw_cday = -1.0_R8 ! calendar of next atm shortwave
-     real(R8)       :: precip_fact =  1.0_R8 ! precip factor
-     type(seq_pause_resume_type), pointer :: pause_resume => NULL()
+     ! Set via components and may be time varying
+     real(R8) :: nextsw_cday = -1.0_R8 ! calendar of next atm shortwave
+     real(R8) :: precip_fact =  1.0_R8 ! precip factor
 
-     !--- set by driver and may be time varying
-     logical                 :: glc_valid_input = .true. ! is valid accumulated data being sent to prognostic glc
+     ! Set by mediator and may be time varying
+     logical  :: glc_valid_input = .true. ! is valid accumulated data being sent to prognostic glc
+
   end type med_infodata_type
 
   type (med_infodata_type), target :: med_infodata ! single instance for cpl and all comps
@@ -76,42 +60,8 @@ module med_infodata_mod
 CONTAINS
 !===============================================================================
 
-  subroutine med_infodata_init1(infodata)
-
-    ! !DESCRIPTION:
-    ! Initialize pause_resume
-
-    ! !INPUT/OUTPUT PARAMETERS:
-    type(med_infodata_type), intent(INOUT) :: infodata  ! infodata object
-
-    !----- local -----
-    character(len=*),    parameter :: subname = '(med_infodata_Init1) '
-    !-------------------------------------------------------------------------------
-
-    if (associated(infodata%pause_resume)) then
-       deallocate(infodata%pause_resume)
-    end if
-    nullify(infodata%pause_resume)
-
-  end subroutine med_infodata_init1
-
-  !===============================================================================
-  subroutine med_infodata_init2(infodata)
-
-    ! !DESCRIPTION: re-initialize pause-resume depending on the time manager setup
-
-    ! !INPUT/OUTPUT PARAMETERS:
-    type(med_infodata_type), intent(INOUT) :: infodata  ! infodata object
-    !----------------------------------------------------------
-
-    ! TODO: this must be re-implemented for nuopc
-    !| If pause/resume is active, initialize the resume data
-    allocate(infodata%pause_resume)
-
-  end subroutine med_infodata_init2
-
-  !================================================================================
   subroutine med_infodata_CopyStateToInfodata(State, infodata, type, vm, rc)
+
     use ESMF                  , only : ESMF_State, ESMF_Field, ESMF_StateItem_Flag
     use ESMF                  , only : ESMF_StateGet, ESMF_FieldGet, ESMF_LogWrite
     use ESMF                  , only : ESMF_SUCCESS, ESMF_FAILURE, ESMF_LOGMSG_INFO
@@ -121,8 +71,6 @@ CONTAINS
     use shr_nuopc_scalars_mod , only : flds_scalar_num, flds_scalar_name
     use shr_nuopc_scalars_mod , only : flds_scalar_index_nx, flds_scalar_index_ny
     use shr_nuopc_scalars_mod , only : flds_scalar_index_nextsw_cday
-    use shr_nuopc_scalars_mod , only : flds_scalar_index_flood_present
-    use shr_nuopc_scalars_mod , only : flds_scalar_index_rofice_present
     use shr_nuopc_scalars_mod , only : flds_scalar_index_precip_fact
     use shr_nuopc_methods_mod , only : shr_nuopc_methods_chkErr
 
@@ -134,7 +82,7 @@ CONTAINS
     type(ESMF_State),        intent(in)     :: State
     type(med_infodata_type), intent(inout)  :: infodata
     character(len=*),        intent(in)     :: type
-    type(ESMF_VM)                           :: vm
+    type(ESMF_VM),           intent(inout)  :: vm
     integer,                 intent(inout)  :: rc
 
     ! local variables
@@ -172,7 +120,7 @@ CONTAINS
           rc = ESMF_FAILURE
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
         endif
-        data(1:flds_scalar_num) = farrayptr(1,1:flds_scalar_num)
+        data(1:flds_scalar_num) = farrayptr(1:flds_scalar_num,1)
       endif
 
       call ESMF_VMBroadCast(vm, data, flds_scalar_num, 0, rc=rc)
@@ -190,52 +138,12 @@ CONTAINS
 
       if (type == 'atm2cpli') then
         infodata%nextsw_cday = data(flds_scalar_index_nextsw_cday)
-
       elseif (type == 'ocn2cpli') then
         infodata%precip_fact=data(flds_scalar_index_precip_fact)
-
-      elseif (type == 'ice2cpli') then
-        ! nothing
-
-      elseif (type == 'lnd2cpli') then
-        ! nothing
-
-      elseif (type == 'rof2cpli') then
-        infodata%flood_present=(nint(data(flds_scalar_index_flood_present)) /= 0)
-        infodata%rofice_present=(nint(data(flds_scalar_index_rofice_present)) /= 0)
-
-      elseif (type == 'wav2cpli') then
-        ! nothing
-
-      elseif (type == 'glc2cpli') then
-        ! nothing
-
       elseif (type == 'atm2cpl') then
          infodata%nextsw_cday=data(flds_scalar_index_nextsw_cday)
-
       elseif (type == 'ocn2cpl') then
          infodata%precip_fact=data(flds_scalar_index_precip_fact)
-
-      elseif (type == 'ice2cpl') then
-        ! nothing
-
-      elseif (type == 'lnd2cpl') then
-        ! nothing
-
-      elseif (type == 'rof2cpl') then
-        ! nothing
-
-      elseif (type == 'wav2cpl') then
-        ! nothing
-
-      elseif (type == 'glc2cpl') then
-        ! nothing
-
-      else
-         call ESMF_LogWrite(trim(subname)//": ERROR in type = "//trim(type), &
-              ESMF_LOGMSG_INFO, line=__LINE__, file=u_FILE_u, rc=dbrc)
-        rc = ESMF_FAILURE
-        if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
       endif
 
     endif
@@ -243,7 +151,9 @@ CONTAINS
   end subroutine med_infodata_CopyStateToInfodata
 
   !================================================================================
+
   subroutine med_infodata_CopyInfodataToState(infodata, State, type, mytask, rc)
+
     use ESMF                  , only : ESMF_State, ESMF_StateGet, ESMF_Field, ESMF_StateItem_Flag, ESMF_FieldGet
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS, ESMF_STATEITEM_NOTFOUND
     use ESMF                  , only : operator(==), ESMF_FAILURE
@@ -265,11 +175,11 @@ CONTAINS
     integer,           intent(inout)  :: rc
 
     ! local variables
-    type(ESMF_Field)            :: field
-    type(ESMF_StateItem_Flag)   :: ItemType
-    real(R8), pointer :: farrayptr(:,:)
-    real(R8)          :: nextsw_cday, precip_fact
-    integer :: dbrc
+    type(ESMF_Field)          :: field
+    type(ESMF_StateItem_Flag) :: ItemType
+    real(R8), pointer         :: farrayptr(:,:)
+    real(R8)                  :: nextsw_cday, precip_fact
+    integer                   :: dbrc
     character(len=*), parameter :: subname='(med_infodata_CopyInfodataToState)'
     !----------------------------------------------------------
 
@@ -298,8 +208,8 @@ CONTAINS
           rc = ESMF_FAILURE
           if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
         endif
-        farrayptr(1,flds_scalar_index_nextsw_cday) = infodata%nextsw_cday
-        farrayptr(1,flds_scalar_index_precip_fact) = infodata%precip_fact
+        farrayptr(flds_scalar_index_nextsw_cday,1) = infodata%nextsw_cday
+        farrayptr(flds_scalar_index_precip_fact,1) = infodata%precip_fact
       endif
 
     endif
@@ -307,9 +217,11 @@ CONTAINS
   end subroutine med_infodata_CopyInfodataToState
 
   !===============================================================================
+
   subroutine med_infodata_GetData( infodata, ncomp, flux_epbal, flux_epbalfact, nx, ny)
 
     ! Get values out of the infodata object.
+
     use med_constants_mod     , only : CL, IN
     use med_internalstate_mod , only : logunit, loglevel
     use shr_sys_mod           , only : shr_sys_abort

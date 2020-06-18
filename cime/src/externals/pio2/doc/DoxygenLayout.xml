@@ -1,7 +1,7 @@
 <doxygenlayout version="1.0">
   <!-- Navigation index tabs for HTML output -->
   <navindex>
-    <tab type="mainpage" visible="yes" title="PIO User's Guide"/>
+    <tab type="mainpage" visible="yes" title="ParallelIO Libraries"/>
     <tab type="classes" visible="yes" title="Appendix">
       <tab type="namespacemembers" visible="yes" title="Symbol Index"/>
       <tab type="modules" visible="yes" title="Modules"/>

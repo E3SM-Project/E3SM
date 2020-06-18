@@ -32,7 +32,7 @@ class SEQ(SystemTestsCompareTwo):
                 self._case.set_value("ROOTPE_{}".format(comp), 0)
         else:
             totalpes = self._case.get_value("TOTALPES")
-            newntasks = max(1, totalpes/len(comp_classes))
+            newntasks = max(1, totalpes//len(comp_classes))
             rootpe = newntasks
 
             for comp in comp_classes:

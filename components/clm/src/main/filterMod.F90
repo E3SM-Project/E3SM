@@ -25,7 +25,7 @@ module filterMod
   private
   !
   type clumpfilter
-     integer, pointer :: natvegp(:)      ! CNDV nat-vegetated (present) filter (pfts)
+     integer, pointer :: natvegp(:)      ! nat-vegetated (present) filter (pfts)
      integer :: num_natvegp              ! number of pfts in nat-vegetated filter
 
      integer, pointer :: pcropp(:)       ! prognostic crop filter (pfts)
@@ -100,7 +100,7 @@ module filterMod
   ! rarely appropriate to use these, but they are needed in a few places, e.g., where
   ! quantities are computed before weights, active flags and filters are updated due to
   ! landuse change. Note that, for the handful of filters that are computed elsewhere
-  ! (including the CNDV natvegp filter and the snow filters), these filters are NOT
+  ! (including the natvegp filter and the snow filters), these filters are NOT
   ! included in this variable - so they can only be used from the main 'filter' variable.
   !
   ! Ideally, we would like to restructure the initialization code and driver ordering so
@@ -494,7 +494,6 @@ contains
 
     ! Note: snow filters are reconstructed each time step in
     ! LakeHydrology and SnowHydrology
-    ! Note: CNDV "pft present" filter is reconstructed each time CNDV is run
 
   end subroutine setFiltersOneGroup
 

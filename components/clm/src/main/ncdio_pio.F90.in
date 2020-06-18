@@ -500,6 +500,12 @@ contains
        ier = pio_inq_dimlen(ncid, dimid, ni)
        if (ier == PIO_NOERR) nj = 1
     end if
+    
+    ier = pio_inq_dimid (ncid, 'topounit', dimid)
+    if (ier == PIO_NOERR) then
+       ier = pio_inq_dimlen(ncid, dimid, ni)
+       if (ier == PIO_NOERR) nj = 1
+    end if       
 
     call pio_seterrorhandling(ncid, PIO_INTERNAL_ERROR)
 
@@ -1317,37 +1323,34 @@ contains
 
        call ncd_inqvid  (ncid, varname, varid, vardesc)
 
-#if ({DIMS}==0) 
-       start(1) = 1  ; count(1) = 1
-       if (present(nt)) start(1) = nt ; count(1) = 1
-       temp(1) = data
-       status = pio_put_var(ncid, varid, start, count, temp)
-#elif ({DIMS}==1) 
-       start(1) = 1 ; count(1) = size(data) 
-       start(2) = 1 ; count(2) = 1
-       if (present(nt)) start(2) = nt
-       status = pio_put_var(ncid, varid, start, count, data)
-#elif ({DIMS}==2) 
-       start(1) = 1  ; count(1) = size(data, dim=1)
-       start(2) = 1  ; count(2) = size(data, dim=2)
-       start(3) = 1  ; count(3) = 1
-       if (present(nt)) start(3) = nt 
-       status = pio_put_var(ncid, varid, start, count, data)
-#elif ({DIMS}==3) 
        if (present(nt)) then
+#if ({DIMS}==0) 
+          start(1) = nt  ; count(1) = 1
+          temp(1) = data
+          status = pio_put_var(ncid, varid, start, count, temp)
+#elif ({DIMS}==1) 
+          start(1) = 1 ; count(1) = size(data) 
+          start(2) = nt ; count(2) = 1
+          status = pio_put_var(ncid, varid, start, count, data)
+#elif ({DIMS}==2) 
+          start(1) = 1  ; count(1) = size(data, dim=1)
+          start(2) = 1  ; count(2) = size(data, dim=2)
+          start(3) = nt  ; count(3) = 1
+          status = pio_put_var(ncid, varid, start, count, data)
+#elif ({DIMS}==3) 
           start(1) = 1  ; count(1) = size(data,dim=1)
           start(2) = 1  ; count(2) = size(data,dim=2)
           start(3) = 1  ; count(3) = size(data,dim=3)
           start(4) = nt ; count(4) = 1
           status = pio_put_var(ncid, varid, start, count, data)
+#endif
        else
           status = pio_put_var(ncid, varid, data)
        end if
-#endif
 
     endif
 
-  end subroutine ncd_io_{DIMS}d_{TYPE}_glob
+end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
   !------------------------------------------------------------------------
   !DIMS 0,1,2
@@ -2029,7 +2032,7 @@ contains
        if ( trim(dimname)=='nj'.or. trim(dimname)=='lat'.or. trim(dimname)=='lsmlat') then
           start(i)=latidx
           count(i)=1
-       else if ( trim(dimname)=='ni'.or. trim(dimname)=='lon'.or. trim(dimname)=='lsmlon' .or. trim(dimname)=='gridcell') then
+       else if ( trim(dimname)=='ni'.or. trim(dimname)=='lon'.or. trim(dimname)=='lsmlon' .or. trim(dimname)=='gridcell' .or. trim(dimname)=='topounit') then
           start(i)=lonidx
           count(i)=1
        else if ( trim(dimname)=='column') then

@@ -12,7 +12,13 @@
 ! !USES:
 !
       use ice_kinds_mod
-      use ice_domain_size	
+      use ice_domain_size
+      use ice_calendar, only: time, sec, idate, nyr, month, daymo,  &
+                              mday, write_ic, histfreq, histfreq_n, &
+                              year_init, new_year, new_month, new_day, &
+                              dayyr, dt
+      use ice_restart, only: lenstr
+
 !
 !EOP
 !
@@ -239,12 +245,6 @@
 !=======================================================================
 
       subroutine construct_filename(ncfile,suffix,ns)
-
-      use ice_calendar, only: time, sec, idate, nyr, month, daymo,  &
-                              mday, write_ic, histfreq, histfreq_n, &
-                              year_init, new_year, new_month, new_day, &
-                              dayyr, dt
-      use ice_restart, only: lenstr
 
       integer (kind=int_kind), intent(in) :: ns
       character (char_len_long), intent(inout) :: ncfile

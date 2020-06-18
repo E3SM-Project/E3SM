@@ -111,6 +111,8 @@ OPTIONS
   effect whether running CAM as part of CCSM or running in a CAM standalone mode:
 
      -[no]age_of_air_trcs Switch on [off] age of air tracers. Default: on for waccm_phys, otherwise off
+     -aquaplanet        Switch on aqua-planet mode w/ SST controlled by data ocean component in CIME
+     -rce               Use homogenous conditions for radiative-convective equilibrium (RCE), normally used with aquaplanet 
      -carma <name>      Build CAM with specified CARMA microphysics model
                         [ none | bc_strat | cirrus | cirrus_dust | dust | meteor_impact | 
                           meteor_smoke | mixed_sulfate | pmc | pmc_sulfate | sea_salt | sulfate | tholin |
@@ -125,7 +127,8 @@ OPTIONS
 			  trop_mam7 | trop_mam9 | super_fast_llnl | super_fast_llnl_mam3 |
                           linoz_mam3 | linoz_mam4_resus | linoz_mam4_resus_soag |
 			  linoz_mam4_resus_mom | linoz_mam4_resus_mom_soag |
-                          trop_strat_soa | trop_strat_mam3 | trop_strat_mam7 | none ].  Default: trop_mam3.
+                          trop_strat_soa | trop_strat_mam3 | trop_strat_mam7 | superfast_mam4_resus_mom_soag | 
+			  none ].  Default: trop_mam3.
      -clubb_sgs         Turns on CLUBB_SGS
      -clubb_opts <list> Comma separated list of CLUBB options to turn on/off.  By default they are all off.  Current
                         options are: clubb_do_adv(Advect CLUBB moments), clubb_do_deep(CLUBB does the deep convection) 
@@ -166,9 +169,9 @@ OPTIONS
 
   Options relevent to SCAM mode:
 
-     -camiop            Configure CAM to generate an IOP file that can be used to drive SCAM.
-                        This switch only works with the Eulerian dycore.
-     -scam              Compiles model in single column mode.  Only works with Eulerian dycore.
+     -e3smreplay        Configure E3SM to generate an IOP file that can be used to drive the SCM.
+                        This switch only works with the Spectral Element dycore.		
+     -scam              Compiles model in single column mode.  Only works with SE dycore.
 
   CAM parallelization:
 
@@ -264,6 +267,21 @@ OPTIONS
                         perl \$OSNAME variable.
      -usr_src <dir1>[,<dir2>[,<dir3>[...]]]
                         Directories containing user source code.
+
+  Options for MMF:
+
+     -use_MMF           Build the MMF configuration (super-parameterized EAM)
+     -crm_nx <n>        CRM's x-grid.
+     -crm_ny <n>        CRM's y-grid.
+     -crm_nz <n>        CRM's z-grid.
+     -crm_dx <n>        CRM's horizontal grid spacing.
+     -crm_dt <n>        CRM's timestep.
+     -crm_nx_rad <n>    number of averaged columns for CRM radiation calculation in x direction
+     -crm_ny_rad <n>    number of averaged columns for CRM radiation calculation in y direction
+     -MMF_microphysics_scheme <string>   CRM microphysics package name [sam1mom | m2005 ].
+     -use_ECPP          use CRM clouds for vertical transport, aqueous chemistry and wet removable of aerosols 
+     -crm_adv           CRM advection scheme [MPDATA | UM5]
+     -use_MAML          use multiple atmosphere and multiple land version of MMF
 EOF
 }
 
@@ -301,13 +319,15 @@ my %opts = (
 	    );
 GetOptions(
     "age_of_air_trcs!"          => \$opts{'age_of_air_trcs'},
+    "aquaplanet"                => \$opts{'aquaplanet'},
     "cache=s"                   => \$opts{'cache'},
     "cachedir=s"                => \$opts{'cachedir'},
     "carma=s"                   => \$opts{'carma'},
     "cam_bld=s"                 => \$opts{'cam_bld'},
     "cam_exe=s"                 => \$opts{'cam_exe'},
     "cam_exedir=s"              => \$opts{'cam_exedir'},
-    "camiop"                    => \$opts{'camiop'},
+    "caseroot=s"                => \$opts{'caseroot'},
+    "e3smreplay"                => \$opts{'e3smreplay'},
     "cc=s"                      => \$opts{'cc'},
     "ccsm_seq"                  => \$opts{'ccsm_seq'},
     "cflags=s"                  => \$opts{'cflags'},
@@ -322,6 +342,18 @@ GetOptions(
     "comp_intf=s"               => \$opts{'comp_intf'},
     "cosp"                      => \$opts{'cosp'},
     "cppdefs=s"                 => \$opts{'cppdefs'},
+    "use_MMF"                   => \$opts{'use_MMF'},
+    "use_ECPP"                  => \$opts{'use_ECPP'},
+    "use_MAML"                  => \$opts{'use_MAML'},
+    "crm_nx=s"                  => \$opts{'crm_nx'},
+    "crm_ny=s"                  => \$opts{'crm_ny'},
+    "crm_nz=s"                  => \$opts{'crm_nz'},
+    "crm_dx=s"                  => \$opts{'crm_dx'},
+    "crm_dt=s"                  => \$opts{'crm_dt'},
+    "crm_nx_rad=s"              => \$opts{'crm_nx_rad'},
+    "crm_ny_rad=s"              => \$opts{'crm_ny_rad'},
+    "MMF_microphysics_scheme=s"     => \$opts{'MMF_microphysics_scheme'},
+    "crm_adv=s"                 => \$opts{'crm_adv'},
     "debug"                     => \$opts{'debug'},
     "rain_evap_to_coarse_aero"  => \$opts{'rain_evap_to_coarse_aero'},
     "bc_dep_to_snow_updates"    => \$opts{'bc_dep_to_snow_updates'},
@@ -369,6 +401,7 @@ GetOptions(
     "prog_species=s"            => \$opts{'prog_species'},
     "psubcols=s"                => \$opts{'psubcols'},
     "rad=s"                     => \$opts{'rad'},
+    "rce"                       => \$opts{'rce'},
     "res=s"                     => \$opts{'res'},
     "rof=s"                     => \$opts{'rof'},
     "scam"                      => \$opts{'scam'},
@@ -523,7 +556,7 @@ if ($print>=2) { print "Configuration defaults file: $config_defaults_file$eol";
 unshift @INC, "$cfgdir/perl5lib";
 unshift @INC, "$cfgdir";
 require XML::Lite;
-require Build::Config;
+require Build::Config;    #use module file in cam/bld/perl5lib/Build/Config.pm
 
 # Initialize the configuration.  The $config_def_file provides the definition of a CAM
 # configuration, and the $config_defaults_file provides default values for a specific CAM
@@ -607,6 +640,10 @@ EOF
     }
 
     if ($print>=2) { print "CAM executable will be created in: $cam_exedir$eol"; }
+}
+
+if (defined $opts{'caseroot'}) {
+    $cfg_ref->set('caseroot', $opts{'caseroot'})
 }
 
 #-----------------------------------------------------------------------------------------------
@@ -753,6 +790,21 @@ if (defined $opts{'dyn'}) {
       print "+------------------------------------------------+\n";
     } else {
       $cfg_ref->set('dyn', lc($opts{'dyn'}) );
+    }
+    if (defined $opts{'dyn_target'}) {                                                        
+        #$cfg_ref->set('dyn_target', $opts{'dyn_target'});
+        if (substr($opts{'dyn_target'},0,5) eq 'preqx') {
+            # preqx, preqx_acc, preqx_kokkos use 'preqx' namelist defaults
+            $cfg_ref->set('dyn_target', 'preqx');
+        }
+        if (substr($opts{'dyn_target'},0,5) eq 'theta') {
+            # theta_* uses 'theta-l' namelist defaults
+            $cfg_ref->set('dyn_target', 'theta-l');
+        }
+        print  "SE dycore target options:\n";
+        print  "  build target:    $opts{'dyn_target'}\n";
+        my $temp = $cfg_ref->get('dyn_target');
+        print  "  namelist target: $temp\n";
     }
 }
 
@@ -1087,6 +1139,37 @@ my $cosp = $cfg_ref->get('cosp');
 if ($cosp and $print>=2) { print "COSP simulator enabled$eol"; }
 
 #-----------------------------------------------------------------------------------------------
+# Aquaplanet mode
+# This provides a flag to the atmosphere to let it know that it's running in aquaplanet mode.
+# This flag is mainly used by the dycore to set the fixed dry mass of the atmosphere.
+# It is independent of which model is used to specify the aquaplanet surface properties.
+my $aquaplanet = 0;
+# user override
+if (defined $opts{'aquaplanet'}) {
+    $aquaplanet = 1;
+}
+$cfg_ref->set('aquaplanet', $aquaplanet);
+my $aqua_mode = $aquaplanet ? "ON" : "OFF";
+if ($print>=2) { print "Aqua-planet mode: $aqua_mode$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# RCE mode (radiative-convective equilibrium)
+# This provides a flag to indicate that we are running an RCE case. This is normally used 
+# along with the aquaplanet flag, but could be used with an idealized land surface. 
+# This flag is mainly used to set the initial condition files that matches the grid.
+# this flag is not sufficient to run an RCE case, as many namelist variables need to be set
+# by the use case file to use idleaized ozone, disable rotation, and homogenize 
+# radiation, albedo, SST, and solar zenith angle.
+my $rce = 0;
+# user override
+if (defined $opts{'rce'}) {
+    $rce = 1;
+}
+$cfg_ref->set('rce', $rce);
+my $rce_mode = $rce ? "ON" : "OFF";
+if ($print>=2) { print "Radiative-Convctive Equilibrium mode: $rce_mode$eol"; }
+
+#-----------------------------------------------------------------------------------------------
 # Ocean model
 my $ocn_pkg = 'docn';
 # If the physics package is adiabatic, or ideal, change the default
@@ -1195,21 +1278,11 @@ if (defined $opts{'scam'}) {
 }
 my $scam = $cfg_ref->get('scam') ? "ON" : "OFF";
 
-# Currently only Eulerian and Spectral Element dycores support SCM
-if ($scam eq 'ON' and $dyn_pkg ne 'eul' and $dyn_pkg ne 'se') {
+# Currently only Spectral Element dycore supports SCM
+if ($scam eq 'ON' and $dyn_pkg ne 'se') {
     die <<"EOF";
-**  ERROR: SCAM mode only works with Eulerian dycore or Spectral Element dycore.
+**  ERROR: The Single Column Model only works with Spectral Element dycore.
 **         Requested dycore is: $dyn_pkg
-EOF
-}
-
-# Check that model is configured for serial execution.  Note that configuring with spmd
-# and running with 1 task doesn't work because the EUL dycore expects at least 2 tasks.
-# The model should run if built for threading.
-if ($scam eq 'ON' and $dyn_pkg eq 'eul' and $spmd ne 'OFF') {
-    die <<"EOF";
-**  ERROR: SCAM mode assumes a serial build.
-**         Requested parallel modes are: spmd=$spmd  smp=$smp
 EOF
 }
 
@@ -1217,20 +1290,46 @@ if ($print>=2) { print "CAM single column mode (SCAM): $scam$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Generate IOP
-if (defined $opts{'camiop'}) {
-    $cfg_ref->set('camiop', 1);
+if (defined $opts{'e3smreplay'}) {
+    $cfg_ref->set('e3smreplay', 1);
 }
-my $camiop = $cfg_ref->get('camiop') ? "ON" : "OFF";
 
-# The only dycore supported in CAMIOP mode is Spectral Element
-if ($camiop eq 'ON' and $dyn_pkg ne 'se') {
+my $e3smreplay = $cfg_ref->get('e3smreplay') ? "ON" : "OFF";
+
+# The only dycore supported in REPLAY mode is Spectral Element
+if ($e3smreplay eq 'ON'  and $dyn_pkg ne 'se') {
     die <<"EOF";
-**  ERROR: CAMIOP mode only works with Spectral Element dycore.
+**  ERROR: REPLAY mode only works with Spectral Element dycore.
 **         Requested dycore is: $dyn_pkg
 EOF
 }
 
-if ($print>=2) { print "Produce IOP file for SCAM: $camiop$eol"; }
+if ($print>=2) { print "Produce IOP file for SCAM: $e3smreplay$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# Superparameterization mode (MMF)
+if (defined $opts{'use_MMF'}) {
+    if (defined $opts{'use_ECPP'})            { $cfg_ref->set('use_ECPP', 1); }
+    if (defined $opts{'use_MAML'})            { $cfg_ref->set('use_MAML', 1); }
+    $cfg_ref->set('use_MMF', 1);
+    $cfg_ref->set('crm_nx', $opts{'crm_nx'});
+    $cfg_ref->set('crm_ny', $opts{'crm_ny'});
+    $cfg_ref->set('crm_nz', $opts{'crm_nz'});
+    $cfg_ref->set('crm_dx', $opts{'crm_dx'});
+    $cfg_ref->set('crm_dt', $opts{'crm_dt'});
+    if (defined $opts{'crm_nx_rad'}) { $cfg_ref->set('crm_nx_rad', $opts{'crm_nx_rad'}); }
+    if (defined $opts{'crm_ny_rad'}) { $cfg_ref->set('crm_ny_rad', $opts{'crm_ny_rad'}); }
+    $cfg_ref->set('MMF_microphysics_scheme', $opts{'MMF_microphysics_scheme'});
+    $cfg_ref->set('crm_adv', $opts{'crm_adv'});
+    # Check that model is not using threading for the MMF 
+    if ($nthreads > 1) {
+     die <<"EOF";
+**  ERROR: MMF mode may only use single thread
+**         nthreads set to $nthreads
+**         
+EOF
+    }
+}
 
 #-----------------------------------------------------------------------------------------------
 # Horizontal grid parameters
@@ -1248,16 +1347,21 @@ set_horiz_grid("$cfgdir/$horiz_grid_file", $cfg_ref);
 if ($print>=2) { print "Horizontal grid specifier: $hgrid$eol"; }
 
 #-----------------------------------------------------------------------------------------------
-# Maximum number of columns in a chunk.
+# Maximum number of columns in a chunk. If set as an option, then it is a compile-time parameter
+# (ppcols == 'TRUE'). Otherwise, pcols is just the default value for a runtime parameter.
 if (defined $opts{'pcols'}) {
     $cfg_ref->set('pcols', $opts{'pcols'});
+    $cfg_ref->set('ppcols', 'TRUE');
+} else {
+    $cfg_ref->set('ppcols', 'FALSE');
 }
 my $pcols = $cfg_ref->get('pcols');
 
-# Override PCOLS setting if configuring for SCAM
+# Override PCOLS setting if configuring for SCAM. Also make it a compile-time parameter.
 if ($scam eq 'ON') {
     $pcols = 1;
     $cfg_ref->set('pcols', $pcols);
+    $cfg_ref->set('ppcols', 'TRUE');
 }
 
 # Check valid value of pcols
@@ -1537,167 +1641,7 @@ if ($print>=2) { print "Total advected constituents: $nadv$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Setup the CICE build
-
-my $cice_cppdefs = '';
-my $cice_decomp = '';
-
-if ($ice_pkg eq 'cice') {
-
-    # Get the CAM grid
-    my $hgrid     = $cfg_ref->get('hgrid');
-    my $nx        = $cfg_ref->get('nlon');
-    my $ny        = $cfg_ref->get('nlat');
-    my $scam_mode = $cfg_ref->get('scam');
-
-    # Set the CICE decomposition
-    my $bsizex;
-    my $bsizey;
-    my $maxblocks;
-    my $decomptype;
-
-    # First, check to see if user has specified it.
-    my $cice_decomp_params = 0;
-
-    if (defined $opts{'cice_bsizex'}) {
-	$bsizex = $opts{'cice_bsizex'};
-	++$cice_decomp_params;
-    }
-    if (defined $opts{'cice_bsizey'}) {
-	$bsizey = $opts{'cice_bsizey'};
-	++$cice_decomp_params;
-    }
-    if (defined $opts{'cice_maxblocks'}) {
-	$maxblocks = $opts{'cice_maxblocks'};
-	++$cice_decomp_params;
-    }
-
-    if (defined $opts{'cice_decomptype'}) {
-       $decomptype = $opts{'cice_decomptype'};
-       ++$cice_decomp_params;
-    }
-
-    # Check that if the user has specified any of the decomp parameters,
-    # they must all be specified.
-    if ($cice_decomp_params) {
-	unless ($cice_decomp_params == 4) {
-	    die <<"EOF";
-**    ERROR: If any of the CICE decomposition parameters are specified, then they
-**    must all be specified.  The settings were:
-**    cice_bsizex=$bsizex cice_bsizey=$bsizey cice_maxblocks=$maxblocks cice_decomptype=$decomptype
-EOF
-        }
-       $cice_decomp = "-nx $nx -ny $ny -bsizex $bsizex -bsizey $bsizey ".
-           "-maxblocks $maxblocks -decomptype $decomptype";
-    }
-    # Special case: SCAM
-    elsif ($scam_mode) {
-       $cice_decomp = "-nx 1 -ny 1 -bsizex 1 -bsizey 1 ".
-           "-maxblocks 1 -decomptype 'cartesian'";
-    }
-    else {
-
-	# User hasn't specified CICE decomp so get default values.
-
-	# The defaults depend on the total number of execution threads available.  These must
-	# be specified by the user.
-	my $cice_ntasks;
-	my $cice_nthreads;
-
-	if ($spmd eq 'OFF'  and  $smp eq 'OFF') {
-
-	    # serial case:
-	    $cice_ntasks   = 1;
-	    $cice_nthreads = 1;
-	}
-	elsif ($spmd eq 'OFF' and $smp eq 'ON') {
-
-	    # OMP only -- user must define nthreads
-	    if (defined $nthreads) {
-		$cice_ntasks   = 1;
-		$cice_nthreads = $nthreads;
-	    }
-	    else {
-		die <<"EOF";
-**    ERROR: If CICE decomposition parameters are not specified, then
-**    -nthreads must be specified to determine a default decomposition
-**    for a pure OMP run.  The setting was:  nthreads=$nthreads
-EOF
-	    }
-	}
-	elsif ($spmd eq 'ON' and $smp eq 'OFF') {
-
-	    # MPI only -- user must define ntasks
-	    if (defined $ntasks) {
-		$cice_ntasks   = $ntasks;
-		$cice_nthreads = 1;
-	    }
-	    else {
-		die <<"EOF";
-**    ERROR: If CICE decomposition parameters are not specified, then
-**    -ntasks must be specified to determine a default decomposition
-**    for a pure MPI run.  The setting was:  ntasks=$ntasks
-EOF
-	    }
-	}
-	elsif ($spmd eq 'ON' and $smp eq 'ON') {
-
-	    # Hybrid -- user must define both ntasks and nthreads
-	    if (defined $ntasks and defined $nthreads) {
-		$cice_ntasks   = $ntasks;
-		$cice_nthreads = $nthreads;
-	    }
-	    else {
-		die <<"EOF";
-**    ERROR: If CICE decomposition parameters are not specified, then
-**    -ntasks and -nthreads must be specified to determine a default decomposition
-**    for a hybrid run.  The settings were:  ntasks=$ntasks  nthreads=$nthreads
-EOF
-	    }
-	}
-
-	# Workaround for bug in cice configure.  In tag cice4_0_20130320 calling the
-        # configure script with -ntasks and -nthreads arguments is not giving the same 
-        # decomp as when generate_cice_decomp.pl is called with those same args.  So
-	# for now we need to call generate_cice_decomp.pl directly.
-        #$cice_decomp = "-nx $nx -ny $ny -ntasks $cice_ntasks -nthreads $cice_nthreads";
-
-	my $cice_gen_decomp = 
-	    "$cam_root/components/cice/bld/generate_cice_decomp.pl ".
-	    "-ccsmroot $cam_root -res $hgrid -nproc $cice_ntasks -thrds $cice_nthreads -nx $nx -ny $ny";
-
-	my $cice_decomp_str = `$cice_gen_decomp`;
-	my @decomp = split " ", $cice_decomp_str;
-
-	$cice_decomp = "-nx $nx -ny $ny -bsizex $decomp[2] -bsizey $decomp[3] ".
-           "-maxblocks $decomp[4] -decomptype $decomp[5]";
-
-    }
-
-    my $cice_config  = "$cam_root/components/cice/bld/configure";
-
-    # Run the CICE configure.  In CAM standalone mode the CICE code is being built
-    # by using the CAM Makefile.  The CICE configure is only supplying the CPP defines
-    # that need to be included in the Makefile.
-
-    # For now write the CICE config_cache file to the same location as CAM's
-    my $cice_config_cache_file = "config_cache_cice.xml";
-    $cfg_ref->set('cice_config_cache_dir', $config_cache_dir);
-    $cfg_ref->set('cice_config_cache_file', $cice_config_cache_file);
-
-    my $cice_config_commandline = "$cice_config -hgrid $hgrid -cice_mode prescribed -ntr_aero 0 ".
-	"$cice_decomp -cache $cice_config_cache_file -cachedir $config_cache_dir";
-
-    print "Issuing command to the CICE configure utility:\n  $cice_config_commandline\n";
-
-    system($cice_config_commandline) == 0  or die "configure: CICE configure returned: $?\n";
-
-    # The CICE configure writes CPP defines to the file CICE_cppdefs
-    $cice_cppdefs = `cat CICE_cppdefs`;
-    $cice_cppdefs =~ s/^\s+//;
-    $cice_cppdefs =~ s/\s+$//;
-    $cice_cppdefs = " $cice_cppdefs ";
-
-}
+# cice setup is controlled by cime. The block in cam's configure is remove
 
 #-----------------------------------------------------------------------------------------------
 # Makefile configuration #######################################################################
@@ -1942,8 +1886,38 @@ $cfg_cppdefs .= " -DMAXPATCH_PFT=numpft+1 -DLSMLAT=1 -DLSMLON=1";
 # Building for perturbation growth tests
 if ($pergro eq "ON") { $cfg_cppdefs .= " -DPERGRO"; }
 
+# Building for MMF/super-parameterization
+if (defined $opts{'use_MMF'}) {
+    my $crm_nx = $cfg_ref->get('crm_nx');
+    my $crm_ny = $cfg_ref->get('crm_ny');
+    my $crm_nz = $cfg_ref->get('crm_nz');
+    my $crm_dx = $cfg_ref->get('crm_dx');
+    my $crm_dt = $cfg_ref->get('crm_dt');
+    my $crm_nx_rad = $cfg_ref->get('crm_nx_rad');
+    my $crm_ny_rad = $cfg_ref->get('crm_ny_rad');
+    my $MMF_microphysics_scheme = $cfg_ref->get('MMF_microphysics_scheme');
+    my $crm_adv = $cfg_ref->get('crm_adv');
+    my $yes3Dval = 1;
+    if ($crm_ny eq 1) {$yes3Dval = 0;}
+    $cfg_cppdefs .= " -D_$crm_adv -D$MMF_microphysics_scheme -DYES3DVAL=$yes3Dval";
+    $cfg_cppdefs .= " -DCRM_NX=$crm_nx -DCRM_NY=$crm_ny -DCRM_NZ=$crm_nz ";
+    $cfg_cppdefs .= " -DCRM_DX=$crm_dx -DCRM_DT=$crm_dt ";
+    if (defined $opts{'use_ECPP'}) { $cfg_cppdefs .= " -DECPP " }
+    if (defined $opts{'use_MAML'}) { $cfg_cppdefs .= " -DMAML " }
+    if (defined $opts{'crm_nx_rad'}) { 
+        $cfg_cppdefs .= " -DCRM_NX_RAD=$crm_nx_rad " 
+    } else {
+        $cfg_cppdefs .= " -DCRM_NX_RAD=$crm_nx " 
+    }
+    if (defined $opts{'crm_ny_rad'}) { 
+        $cfg_cppdefs .= " -DCRM_NY_RAD=$crm_ny_rad " 
+    } else {
+        $cfg_cppdefs .= " -DCRM_NY_RAD=$crm_ny " 
+    }
+}
+
 # Configure CAM to produce IOP files for SCAM
-if ($camiop eq 'ON') { $cfg_cppdefs .= " -DBFB_CAM_SCAM_IOP"; }
+if ($e3smreplay eq 'ON') { $cfg_cppdefs .= " -DE3SM_SCM_REPLAY"; }
 
 # Resolution parameters for rectangular lat/lon grids
 my $nlon = $cfg_ref->get('nlon');
@@ -1966,6 +1940,9 @@ if ($dyn_pkg eq 'se') {
     if ($smp eq 'ON') {
       $cfg_cppdefs .= " -DHORIZ_OPENMP"
     }
+    # use FV physics grid if npg>0
+    my $npg = $cfg_ref->get('npg');
+    $cfg_cppdefs .= " -DNPG=$npg "
 }
 
 # Resolution parameters for vertical grid, number of constituents, chunk size
@@ -1974,6 +1951,11 @@ my $nadv = $cfg_ref->get('nadv');
 my $pcols = $cfg_ref->get('pcols');
 my $psubcols = $cfg_ref->get('psubcols');
 $cfg_cppdefs .= " -DPLEV=$nlev -DPCNST=$nadv -DPCOLS=$pcols -DPSUBCOLS=$psubcols";
+
+# PCOLS is a compile-time parameter if set in CAM_CONFIG_OPTS. Otherwise it is a runtime parameter
+# and PCOLS just specifies the default for the runtime parameter.
+my $ppcols = $cfg_ref->get('ppcols');
+if ($ppcols eq 'TRUE') { $cfg_cppdefs .= " -DPPCOLS"; }
 
 # Radiatively active constituent number
 $cfg_cppdefs .= " -DN_RAD_CNST=$max_n_rad_cnst";
@@ -1993,11 +1975,8 @@ if ($offline_dyn) { $cfg_cppdefs .= ' -DOFFLINE_DYN'; }
 # Spectral Element dycore
 if($dyn_pkg eq 'se'){
     if ($spmd eq 'ON'){	$cfg_cppdefs .=" -D_MPI"; }
-    $cfg_cppdefs .= " -DCAM  -D_WK_GRAD -D_PRIM ";
+    $cfg_cppdefs .= " -DCAM -D_PRIM ";
 }
-
-# CICE ice model
-$cfg_cppdefs .= $cice_cppdefs;
 
 # -DSPMD only added for CESM build.  The CAM Makefile has a separate SPMD macro.
 if ( ($ccsm_seq) and ($spmd eq 'ON') ) { $cfg_cppdefs .= " -DSPMD"; }
@@ -2369,6 +2348,7 @@ if ($print>=2) { print "CPP definitions set by configure: \'$cfg_cppdefs\'$eol";
 
 #-----------------------------------------------------------------------------------------------
 # COSP library.
+# JGF: We can get rid of this stuff once the legacy build system is removed
 if ($cosp) {
 
     # Set the directory used to build cosp.  Add location and library name
@@ -2394,7 +2374,7 @@ if ($cosp) {
     }
 
     # Create the COSP Makefile from a template and copy it into the cosp bld directory
-    write_cosp_makefile("$cfgdir/../src/physics/cosp/Makefile.cospinline.in", "$cosp_libdir/Makefile");
+    write_cosp_makefile("$cfgdir/../src/physics/cosp2/Makefile.cospinline.in", "$cosp_libdir/Makefile");
     if ($print) { print "creating $cosp_libdir/Makefile\n"; }
 }
 
@@ -2583,10 +2563,6 @@ if (($ccsm_seq)) {
 
 } else {
 
-    # Write the Makefile.
-    write_makefile("$cfgdir/Makefile.in", "$cam_bld/Makefile", $cfg_ref, $make_cppdefs);
-    if ($print) { print "creating $cam_bld/Makefile\n"; }
-
     # Write the config.h file for PIO and MCT
     write_config_h("$cam_bld/config.h");
     if ($print) { print "creating $cam_bld/config.h\n"; }
@@ -2605,64 +2581,8 @@ unless ($cam_build and $opts{'test'}) {
     exit;
 }
 
-# create a subdirectory of the current directory for testing
-my $test_dir = "$cam_bld/configure-tests";
-unless (-d $test_dir or mkdirp($test_dir)) {
-    die <<"EOF";
-** Could not create the testing directory: $test_dir
-EOF
-}
-chdir( $test_dir ) || die <<"EOF";
-** Trouble changing directory to $test_dir
-**
-EOF
+# remove the codes and subroutines for checking of required libs (fc, netcdf, mpi, esmf)
 
-# check for GNU make in the user's path
-if ($print) { print "Looking for a valid GNU make... "; }
-my @makenames = qw(gmake gnumake make);
-if ($opts{'gmake'}) { unshift @makenames, $opts{'gmake'}; }
-my $gmake = get_gmake(@makenames);
-if ($gmake) {
-    if ($print) { print "using $gmake$eol"; }
-} else {
-    print "\n".
-          "** Cannot find a valid GNU make.  Tried:\n".
-          "@makenames\n";
-    die "The name of GNU make on your system can be specified to configure via\n".
-	"the -gmake option.  Make sure this\n".
-	"name is in your path (add the appropriate directory to your PATH\n".
-	"environment variable) or specify an absolute pathname.\n";
-}
-
-# The CAM Makefile requires a Filepath file.  To run the tests construct a Filepath file
-# that contains only the test directory.
-write_tests_filepath($test_dir);
-
-# Test for Fortran 90 compatible compiler
-if ($print) { print "Testing for Fortran 90 compatible compiler... "; }
-my $fc = check_fc($gmake, "$cam_bld/Makefile");
-if ($fc) {
-    if ($print) { print "using $fc$eol"; }
-}
-
-# Test NetCDF library
-if ($print) { print "Test linking to NetCDF library... "; }
-if (check_netcdf($gmake, "$cam_bld/Makefile")==0) { if ($print) { print "ok$eol"; } }
-
-# Test MPI library
-if ($spmd eq 'ON') {
-    if ($print) { print "Test linking to MPI library... "; }
-    if (check_mpi($gmake, "$cam_bld/Makefile")==0) { if ($print) { print "ok$eol"; } }
-}
-
-# Test ESMF library
-if ($esmf_libdir) {
-    if ($print) { print "Test linking to ESMF library... "; }
-    if (check_esmf($gmake, "$cam_bld/Makefile")==0) { if ($print) { print "ok$eol"; } }
-}
-
-#-----------------------------------------------------------------------------------------------
-# Done testing.
 chdir( $cwd ) || die <<"EOF";
 ** Trouble changing directory back to $cwd
 **
@@ -2700,6 +2620,7 @@ sub write_filepath
     my $lnd           = $cfg_ref->get('lnd');
     my $ice           = $cfg_ref->get('ice');
     my $rof           = $cfg_ref->get('rof');
+    my $caseroot      = $cfg_ref->get('caseroot');
 
     # Root directory
     my $camsrcdir = "$cam_root/components";
@@ -2721,8 +2642,7 @@ sub write_filepath
 
     # CESM has a standard source mods location.
     if ($ccsm_seq) {
-	my $CASEROOT = "$ENV{'CASEROOT'}";
-	print $fh "$CASEROOT/SourceMods/src.cam\n";
+	print $fh "$caseroot/SourceMods/src.cam\n";
     }
 
     # offline unit driver (defaults to stub)
@@ -2735,6 +2655,48 @@ sub write_filepath
 	print $fh "$camsrcdir/cam/src/physics/carma/models/$carma\n";
 	print $fh "$camsrcdir/cam/src/physics/carma/cam\n";
 	print $fh "$camsrcdir/cam/src/physics/carma/base\n";
+    }
+
+    # MMF/super-parameterization; this code section needs to appear before those
+    # adding the physics and chemistry packages to override versions of files
+    # that appear in both places
+    if (defined $opts{'use_MMF'}) {
+
+        # interface and base model code
+        print $fh "$camsrcdir/cam/src/physics/crm\n";
+        print $fh "$camsrcdir/cam/src/physics/crm/sam\n";
+
+        # microphysics
+        my $MMF_microphysics_scheme = $cfg_ref->get('MMF_microphysics_scheme');
+        if ($MMF_microphysics_scheme eq 'sam1mom') {
+            print $fh "$camsrcdir/cam/src/physics/crm/sam/MICRO_SAM1MOM\n";
+        } elsif ($MMF_microphysics_scheme eq 'm2005') {
+            print $fh "$camsrcdir/cam/src/physics/crm/sam/MICRO_M2005\n";
+        }
+
+        # turbulence closure
+        print $fh "$camsrcdir/cam/src/physics/crm/sam/SGS_TKE\n";
+
+        if (defined $opts{'use_ECPP'}) {
+            print $fh "$camsrcdir/cam/src/physics/crm/ecpp\n";
+        }
+
+        # advection scheme
+        my $crm_adv = $cfg_ref->get('crm_adv');
+        if ($crm_adv eq 'UM5') {
+            print $fh "$camsrcdir/cam/src/physics/crm/sam/ADV_UM5\n"; 
+        } else {
+            print $fh "$camsrcdir/cam/src/physics/crm/sam/ADV_MPDATA\n";
+        }
+
+        # MMF-specific radiation drivers (overrides default drivers that exist
+        # in each individual radiation package; done this way to avoid
+        # dependency on MMF-specific variables)
+        if ($rad eq 'rrtmg') {
+            print $fh "$camsrcdir/cam/src/physics/crm/rrtmg\n";
+        } elsif ($rad eq 'rrtmgp') {
+            print $fh "$camsrcdir/cam/src/physics/crm/rrtmgp\n";
+        }
     }
 
     # CAM chemistry, dynamics, physics, control and shared utilities.
@@ -2796,6 +2758,10 @@ sub write_filepath
       elsif($opts{'dyn_target'} eq 'preqx_acc') {
         print $fh "$camsrcdir/homme/src/preqx_acc\n";
         print $fh "$camsrcdir/homme/src/preqx/share\n";
+      }
+      elsif($opts{'dyn_target'} eq 'theta-l') {
+        print $fh "$camsrcdir/homme/src/theta-l\n";
+        print $fh "$camsrcdir/homme/src/share/compose\n";
       }
       elsif ($opts{'dyn_target'} eq 'preqx_kokkos') {
         print $fh "$camsrcdir/homme/src/share/cxx\n";
@@ -2910,6 +2876,10 @@ sub write_cppdefs
     $fh->open(">$file") or die "** can't open cpp defs file: $file\n";
 
     print $fh "$make_cppdefs";
+
+    if ($dyn eq "se" and $opts{"dyn_target"} eq "theta-l") {
+        print $fh " -DMODEL_THETA_L -DHOMME_ENABLE_COMPOSE "
+    }
 
     if ($dyn eq "se" and $opts{"dyn_target"} eq "preqx_kokkos") {
 	print $fh " -DUSE_KOKKOS_KERNELS "
@@ -3036,13 +3006,14 @@ sub write_cosp_makefile
 
 
 CAM_BLD    := $cam_bld
-COSP_PATH  := $cam_root/components/cam/src/physics/cosp
-ISCCP_PATH := $cam_root/components/cam/src/physics/icarus-scops
-RS_PATH    := $cam_root/components/cam/src/physics/cosp/quickbeam
-CS_PATH    := $cam_root/components/cam/src/physics/cosp/actsim
-LLNL_PATH  := $cam_root/components/cam/src/physics/cosp/llnl
-MISR_PATH  := $cam_root/components/cam/src/physics/cosp/MISR_simulator
-MODIS_PATH := $cam_root/components/cam/src/physics/cosp/MODIS_simulator
+COSP_PATH  := $cam_root/components/cam/src/physics/cosp2
+ISCCP_PATH := $cam_root/components/cam/src/physics/cosp2/src/simulator/icarus
+RS_PATH    := $cam_root/components/cam/src/physics/cosp2/src/simulator/quickbeam
+CS_PATH    := $cam_root/components/cam/src/physics/cosp2/src/simulator/actsim
+RT_PATH    := $cam_root/components/cam/src/physics/cosp2/src/simulator/rttov
+MISR_PATH  := $cam_root/components/cam/src/physics/cosp2/src/simulator/MISR_simulator
+MODIS_PATH := $cam_root/components/cam/src/physics/cosp2/src/simulator/MODIS_simulator
+PARASOL_PATH  := $cam_root/components/cam/src/physics/cosp2/src/simulator/parasol
 
 EOF
 
@@ -3144,10 +3115,19 @@ sub set_horiz_grid
     elsif ( $dyn_pkg eq 'se' ) {
 	$cfg_ref->set('csne', $a{'csne'});
 	$cfg_ref->set('csnp', $a{'csnp'});
+        $cfg_ref->set('npg',  $a{'npg'});
 	# needed for cice configure script.  sets nlat=1 and nlon=ncol
 	$cfg_ref->set('nlat', 1);
 	$cfg_ref->set('nlon', $a{'ncol'});
+        # To allow more flexibility when matching grid attributes in the namelist
+        # defaults file, split the dynamics (GLL) and physics grid specifiers in 
+        # the hgrid argument to configure, and just store the dynamics (GLL) part 
+        # in the hgrid parameter of the config_cache file.  The physics grid 
+        # specifier is stored separately in the npg parameter.
+        $hgrid =~ s/\.pg\d//;   # strip the '.pgN' extension
+        $cfg_ref->set('hgrid', $hgrid);
     }
+
 
     # Override resolution settings to configure for SCAM mode.  The override is needed
     # because in SCAM mode the -hgrid option is used to specify the resolution of default
@@ -3302,319 +3282,6 @@ sub mkdirp {
     return 1;
 }
 
-#-------------------------------------------------------------------------------
-
-sub get_gmake {
-
-# check for a valid version of GNU make in the user's path
-
-    my @makenames = @_;
-    my ($make, $retval);
-
-    foreach $make (@makenames) {
-	$retval = `$make -v 2>&1`;
-	return $make if ($retval =~ /GNU Make/);
-    }
-    return;
-}
-
-#-------------------------------------------------------------------------------
-
-sub write_tests_filepath
-{
-    my ($test_dir) = @_;
-    my  $fh = new IO::File;
-
-    $fh->open(">Filepath") or die "** can't open file: $test_dir/Filepath\n";
-
-    print $fh "$test_dir\n";
-
-    $fh->close;
-}
-
-#-------------------------------------------------------------------------------
-
-sub run_test
-{
-    # Return true if the test should be run after a successful build.
-    # Note that this function is depending on the main package variables
-    # main::$spmd and main:: $target_os.
-
-    # Default is to try running a test that's been successfully built.
-    my $result = 1;
-
-    # But don't attempt to run a test if...
-    if ( $spmd eq 'ON'                     # SPMD is enabled
-	 or $target_os ne $OSNAME          # cross compilation
-	 ) {$result = 0;}
-
-    return $result;
-}
-
-#-------------------------------------------------------------------------------
-
-sub check_fc {
-
-# Create a "hello world" test code in Fortran 90 syntax to check the compiler.
-# If successful then the name of the compiler used is returned.
-
-    my ($gmake, $makefile) = @_;
-    my $fh = new IO::File;
-    my $file = 'test_fc.F90';
-
-    # create test program
-    $fh->open(">$file") or die "** can't open file: $file\n";
-    print $fh  <<"EOF";
-module m1
-   private
-   public :: hello
-contains
-subroutine hello()
-   implicit none
-   print *, 'hello world'
-end subroutine hello
-end module m1
-program main
-   use m1, only: hello
-   implicit none
-   call hello
-end program main
-EOF
-    $fh->close;
-
-    # Build the test_fc target in the CAM Makefile
-    my $cmd = "$gmake -f $makefile test_fc 2>&1";
-    my $out = `$cmd`;
-    my $cmd_error = $CHILD_ERROR;
-    my $test_output = "Issued the command:\n$cmd\n\nThe output was:\n$out\n";
-
-    if ($cmd_error) { 
-	die "**** FAILED ****\n$test_output";
-    } elsif ($print>=2) {
-	print "**** PASS ****\n$test_output";
-    }
-
-    # search make output for name of Fortran compiler -- Assume that the Makefile
-    # rule has the syntax "$(FC) -c ..."
-    $out =~ m{ ^\s*      # leading whitespace
-	       (\w+)     # 1st word (name of compiler)
-	       \s+       # followed by one or more spaces
-	       -c        # and the -c option
-	       \s   
-	     }xm;
-
-    my $fc_compiler_name = $1;
-
-    if (run_test()) {
-	# Run test_fc.
-	my $cmd = "./test_fc";
-	my $out = `$cmd`;
-	my $cmd_error = $CHILD_ERROR;
-	my $test_output = "Issued the command:\n$cmd\n\nThe output was:\n$out\n";
-
-	if ($cmd_error) { 
-	    die "**** FAILED ****\n$test_output";
-	} elsif ($print>=2) {
-	    print "**** PASS ****\n$test_output";
-	}
-    }
-
-    # clean-up (Srcfiles and Depends are created by the makefile)
-    unlink 'test_fc.F90', 'test_fc.o', 'test_fc', 'Depends', 'Srcfiles', glob("[Mm]1.[Mm][Oo][Dd]");
-
-    return $fc_compiler_name;
-}
-
-#-------------------------------------------------------------------------------
-
-sub check_netcdf {
-
-# Create a test code that has an external reference to the netCDF library
-# and check that the Makefile can build it.  Returns 0 on success.
-
-    my ($gmake, $makefile) = @_;
-    my $fh = new IO::File;
-    my $file = 'test_nc.F90';
-
-    # create test program
-    $fh->open(">$file") or die "** can't open file: $file\n";
-    print $fh  <<"EOF";
-program main
-   use netcdf
-   implicit none
-   integer :: ncid, ret
-   ret = nf90_create('foo.nc', NF90_CLOBBER, ncid)
-   if ( ret == NF90_NOERR ) then
-      print *, 'created foo.nc'
-   else
-      print *, nf90_strerror( ret )
-   end if
-end program main
-EOF
-    $fh->close;
-
-    # Build the test_nc target in the CAM Makefile
-    my $cmd = "$gmake -f $makefile test_nc 2>&1";
-    my $out = `$cmd`;
-    my $cmd_error = $CHILD_ERROR;
-    my $test_output = "Issued the command:\n$cmd\n\nThe output was:\n$out\n";
-
-    if ($cmd_error) { 
-	die "**** FAILED ****\n$test_output";
-    } elsif ($print>=2) {
-	print "**** PASS ****\n$test_output";
-    }
-
-    if (run_test()) {
-	# Run test_nc.
-	my $cmd = "./test_nc";
-	my $out = `$cmd`;
-	my $cmd_error = $CHILD_ERROR;
-	my $test_output = "Issued the command:\n$cmd\n\nThe output was:\n$out\n";
-
-	if ($cmd_error) { 
-	    die "**** FAILED ****\n$test_output";
-	} elsif ($print>=2) {
-	    print "**** PASS ****\n$test_output";
-	}
-    }
-
-    # clean-up
-    unlink 'test_nc.F90', 'test_nc.o', 'test_nc', 'foo.nc', 'Depends', 'Srcfiles';
-
-    return 0;
-}
-
-#-------------------------------------------------------------------------------
-
-sub check_mpi {
-
-# Create a test code that has an external reference to the MPI library
-# and check that the Makefile can build it.  Returns 0 on success.
-
-    my ($gmake, $makefile) = @_;
-    my $fh = new IO::File;
-    my $file = 'test_mpi.F90';
-
-    # create the test program
-    $fh->open(">$file") or die "** can't open file: $file\n";
-    print $fh  <<"EOF";
-      program test_mpi
-      implicit none
-#include <mpif.h>
-      integer :: ierr
-      call mpi_init(ierr)
-      if ( ierr == MPI_SUCCESS ) then
-         print *, 'successfully called mpi_init'
-      else
-         print *, 'ERROR returned from mpi_init'
-      end if
-      end program test_mpi
-EOF
-    $fh->close;
-
-    # Build the test_mpi target in the CAM Makefile
-    my $cmd = "$gmake -f $makefile test_mpi 2>&1";
-    my $out = `$cmd`;
-    my $cmd_error = $CHILD_ERROR;
-    my $test_output = "Issued the command:\n$cmd\n\nThe output was:\n$out\n";
-
-    if ($cmd_error) { 
-	die "**** FAILED ****\n$test_output";
-    } elsif ($print>=2) {
-	print "**** PASS ****\n$test_output";
-    }
-
-    if (run_test()) {
-	# Run test_mpi.
-	my $cmd = "./test_mpi";
-	my $out = `$cmd`;
-	my $cmd_error = $CHILD_ERROR;
-	my $test_output = "Issued the command:\n$cmd\n\nThe output was:\n$out\n";
-
-	if ($cmd_error) { 
-	    die "**** FAILED ****\n$test_output";
-	} elsif ($print>=2) {
-	    print "**** PASS ****\n$test_output";
-	}
-    }
-
-    # clean-up
-    unlink 'test_mpi.F90', 'test_mpi.o', 'test_mpi', 'Depends', 'Srcfiles';
-
-    return 0;
-}
-
-#-------------------------------------------------------------------------------
-
-sub check_esmf {
-
-# Create a test code that has an external reference to the ESMF library
-# and check that the Makefile can build it.  Returns 0 on success.
-
-    my ($gmake, $makefile) = @_;
-    my $fh = new IO::File;
-    my $file = 'test_esmf.F90';
-
-    # create the test program
-    $fh->open(">$file") or die "** can't open file: $file\n";
-    print $fh  <<"EOF";
-      program test_esmf
-      use ESMF
-      implicit none
-      integer :: ierr
-
-      ! Writes a log called ESMF_LogFile to bld/configure-tests
-      call ESMF_Initialize(rc=ierr,logkindflag=ESMF_LOGKIND_SINGLE)
-
-      if ( ierr == ESMF_SUCCESS ) then
-         print *, 'successfully called ESMF_Initialize'
-      else
-         print *, 'ERROR returned from ESMF_Initialize'
-      end if
-
-      ! Close the log file in order to flush it
-      call ESMF_Finalize(rc=ierr)
-
-      end program test_esmf
-EOF
-    $fh->close;
-
-    # Build the test_esmf target in the CAM Makefile
-    my $cmd = "$gmake -f $makefile test_esmf 2>&1";
-    my $out = `$cmd`;
-    my $cmd_error = $CHILD_ERROR;
-    my $test_output = "Issued the command:\n$cmd\n\nThe output was:\n$out\n";
-
-    if ($cmd_error) { 
-	die "**** FAILED ****\n$test_output";
-    } elsif ($print>=2) {
-	print "**** PASS ****\n$test_output";
-    }
-
-    if (run_test()) {
-	# Run test_esmf.
-	$cmd = "./test_esmf";
-	my $out = `$cmd`;
-	my $cmd_error = $CHILD_ERROR;
-	my $test_output = "Issued the command:\n$cmd\n\nThe output was:\n$out\n";
-
-
-	if ($cmd_error) { 
-	    die "**** FAILED ****\n$test_output";
-	} elsif ($print>=2) {
-	    print "**** PASS ****\n$test_output";
-	}
-    }
-
-    # clean-up
-    unlink 'test_esmf.F90', 'test_esmf.o', 'test_esmf', 'Depends', 'Srcfiles';
-
-    return 0;
-}
-#-------------------------------------------------------------------------------
-
-#-------------------------------------------------------------------------------
 
 sub version {
 # The version is found in CAM's ChangeLog file.
@@ -3634,14 +3301,5 @@ sub version {
 	}
     }
 
-}
-
-
-#-------------------------------------------------------------------------------
-
-sub print_hash {
-    my %h = @_;
-    my ($k, $v);
-    while ( ($k,$v) = each %h ) { print "$k => $v\n"; }
 }
 

@@ -987,7 +987,9 @@
 
    integer (int_kind) :: &
      i,j,n,bid,          &! dummy loop indices
+     nprocs,             &! number of processes in communicator
      nrecvs,             &! actual number of messages received
+     nsends,             &! current send count for a particular process
      isrc, jsrc,         &! source addresses
      dst_block,          &! location of block in dst array
      xoffset, yoffset,   &! offsets for tripole boundary conditions
@@ -1003,6 +1005,9 @@
 
    integer (int_kind), dimension(:,:), allocatable :: &
      rcv_status      ! status array for receives
+
+   integer (int_kind), dimension(:), allocatable :: &
+     nsends_p        ! number of sends to each process
 
    real (dbl_kind), dimension(:,:), allocatable :: &
      msg_buffer      ! buffer for sending blocks
@@ -1080,9 +1085,16 @@
 
      allocate (msg_buffer(nx_block,ny_block))
 
+     nprocs = get_num_procs()
+     allocate (nsends_p(0:nprocs-1))
+     nsends_p = 0
+
      do n=1,nblocks_tot
        if (dst_dist%blockLocation(n) > 0 .and. &
            dst_dist%blockLocation(n)-1 /= my_task) then
+
+         nsends = 1 + nsends_p(dst_dist%blockLocation(n)-1)
+         nsends_p(dst_dist%blockLocation(n)-1) = nsends
 
          msg_buffer = c0
          this_block = get_block(n,n)
@@ -1157,12 +1169,13 @@
          endif
 
          call MPI_SEND(msg_buffer, nx_block*ny_block, &
-                       mpiR8, dst_dist%blockLocation(n)-1, 3*mpitag_gs+n, &
+                       mpiR8, dst_dist%blockLocation(n)-1, 3*mpitag_gs+nsends, &
                        MPI_COMM_ICE, ierr)
 
        endif
      end do
 
+     deallocate(nsends_p)
      deallocate(msg_buffer)
 
      !*** copy any local blocks
@@ -1252,11 +1265,16 @@
 
    else
 
-     allocate (rcv_request(nblocks_tot), &
-               rcv_status(MPI_STATUS_SIZE, nblocks_tot))
-
-     rcv_request = 0
-     rcv_status  = 0
+     nrecvs = 0
+     do n=1,nblocks_tot
+       if (dst_dist%blockLocation(n) == my_task+1) nrecvs = nrecvs + 1
+     end do
+     if (nrecvs > 0) then
+       allocate (rcv_request(nrecvs), &
+                 rcv_status(MPI_STATUS_SIZE, nrecvs))
+       rcv_request = 0
+       rcv_status  = 0
+     endif
 
      nrecvs = 0
      do n=1,nblocks_tot
@@ -1264,15 +1282,16 @@
          nrecvs = nrecvs + 1
          dst_block = dst_dist%blockLocalID(n)
          call MPI_IRECV(ARRAY(1,1,dst_block), nx_block*ny_block, &
-                       mpiR8, src_task, 3*mpitag_gs+n, &
-                       MPI_COMM_ICE, rcv_request(nrecvs), ierr)
+                        mpiR8, src_task, 3*mpitag_gs+nrecvs, &
+                        MPI_COMM_ICE, rcv_request(nrecvs), ierr)
        endif
      end do
 
-     if (nrecvs > 0) &
+     if (nrecvs > 0) then
        call MPI_WAITALL(nrecvs, rcv_request, rcv_status, ierr)
+       deallocate(rcv_request, rcv_status)
+     endif
 
-     deallocate(rcv_request, rcv_status)
    endif
 
    !-----------------------------------------------------------------

@@ -72,7 +72,7 @@ module glc_comp_mct
 
   integer  :: nsend, nrecv
 
-  character(len=StrKIND) :: runtype  !< ACME run type: initial, continue, branch
+  character(len=StrKIND) :: runtype  !< E3SM run type: initial, continue, branch
   character(len=StrKIND) :: coupleTimeStamp
 
   type(seq_infodata_type), pointer :: infodata  ! coupler infodata
@@ -153,7 +153,6 @@ contains
                                       averagePool
 
     logical :: exists
-    logical :: no_taskmap_output                     ! true then do not write out task-to-node mapping
     logical :: verbose_taskmap_output                ! true then use verbose task-to-node mapping format
 
     character(kind=c_char), dimension(StrKIND+1) :: c_filename       ! StrKIND+1 for C null-termination character
@@ -296,8 +295,6 @@ contains
 
     if (info_taskmap_comp > 0) then
 
-       no_taskmap_output = .false.
-
        if (info_taskmap_comp == 1) then
           verbose_taskmap_output = .false.
        else
@@ -315,19 +312,13 @@ contains
           call shr_sys_flush(glcLogUnit)
        endif
 
-    else
-
-       no_taskmap_output = .true.
-       verbose_taskmap_output = .false.
+       call t_startf("shr_taskmap_write")
+       call shr_taskmap_write(glcLogUnit, mpicom_g,                 &
+                              'GLC #'//trim(adjustl(c_inst_index)), &
+                              verbose=verbose_taskmap_output        )
+       call t_stopf("shr_taskmap_write")
 
     endif
-
-    call t_startf("shr_taskmap_write")
-    call shr_taskmap_write(glcLogUnit, mpicom_g,                 &
-                           'GLC #'//trim(adjustl(c_inst_index)), &
-                           verbose=verbose_taskmap_output,       &
-                           no_output=no_taskmap_output           )
-    call t_stopf("shr_taskmap_write")
 
     ! Setup function pointers for MALI core and domain types
     call li_setup_core(corelist)
@@ -342,7 +333,7 @@ contains
     end if
 
     ! Set core specific options here
-    ! Disable output from all but the master task for ACME!
+    ! Disable output from all but the master task for E3SM!
     ! (This overrides the default set by mpas_log_init based on MPAS_DEBUG setting.)
     if (iam /= 0) then
        domain % logInfo % outputLog % isActive = .false.
@@ -798,7 +789,7 @@ contains
 !!  local variables
 !!
 !!-----------------------------------------------------------------------
-! Variables related to ACME coupler
+! Variables related to E3SM coupler
       integer :: shrloglev, shrlogunit
 
 ! Variable related to MALI
@@ -1378,7 +1369,7 @@ contains
    integer, pointer :: nCellsSolve
 
    real (kind=RKIND), dimension(:), pointer :: sfcMassBal,&
-                                               basalOceanMassBal,&
+                                               floatingBasalMassBal,&
                                                surfaceTemperature,&
                                                basalOceanHeatflx,&
                                                OceanDensity
@@ -1394,31 +1385,26 @@ contains
 
          ! Get variables from pools
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-         !call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
+         call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
 
          call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
-         !call mpas_pool_get_array(geometryPool, 'basalOceanMassBal',basalOceanMassBal)
-         !call mpas_pool_get_array(thermalPool, 'surfaceTemperature',surfaceTemperature)
-         !call mpas_pool_get_array(thermalPool, 'basalOceanHeatflx',basalOceanHeatflx)
+         call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal',floatingBasalMassBal)
+         call mpas_pool_get_array(thermalPool, 'surfaceTemperature',surfaceTemperature)
+         call mpas_pool_get_array(thermalPool, 'basalOceanHeatflx',basalOceanHeatflx)
          !call mpas_pool_get_array(geometryPool, 'OceanDensity',OceanDensity)
 
          do i = 1, nCellsSolve
             n = n + 1
             sfcMassBal(i) = x2g_g % rAttr(index_x2g_Flgl_qice, n)
-            !basalOceanMassBal(i) = x2g_g % rAttr(index_x2g_Fogo_qicel, n)
-            !surfaceTemperature(i) = x2g_g % rAttr(index_x2g_Sl_tsrf, n)
-            !basalOceanHeatflx(i) = x2g_g % rAttr(index_x2g_Fogo_qiceh, n)
+            floatingBasalMassBal(i) = x2g_g % rAttr(index_x2g_Fogx_qiceli, n)
+!            surfaceTemperature(i) = x2g_g % rAttr(index_x2g_Sl_tsrf, n)
+!JW            basalOceanHeatflx(i) = x2g_g % rAttr(index_x2g_Fogo_qiceh, n)
+!            basalOceanHeatflx(i) = x2g_g % rAttr(index_x2g_Fogx_qicehi, n)
             !OceanDensity (i) = x2g_g % rAttr(, n)
          end do
 
          block => block % next
     end do
-
-
-!Need to loop over blocks
-!Jer: Need to define local pointers to MPAS-LI arrays, get these arrays, and point to them with local pointers
-!Jer: Need to assign local pointers to x2g arrays (as in CESM)
-!Jer: then, need to re-get forcingPool fields and call maps_dmpar_exch_halo_field on them
 
   end subroutine glc_import_mct
 
@@ -1445,10 +1431,14 @@ contains
 
    type (mpas_pool_type), pointer :: meshPool
    type (mpas_pool_type), pointer :: geometryPool
+   type (mpas_pool_type), pointer :: thermalPool
 
-   integer, pointer :: nCellsSolve
+   integer, pointer :: nCellsSolve, nVertLevels
 
    real (kind=RKIND), dimension(:), pointer :: upperSurface
+   real (kind=RKIND), dimension(:), pointer :: layerThicknessFractions
+   real (kind=RKIND), dimension(:), pointer :: thickness
+   real (kind=RKIND), dimension(:,:), pointer :: temperature
    integer, dimension(:), pointer :: cellMask
    !-------------------------------------------------------------------
 
@@ -1462,16 +1452,36 @@ contains
     do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
          ! Get variables from pools
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'thermal',  thermalPool)
 
          call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
+         call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
+         call mpas_pool_get_array(geometryPool, 'thickness', Thickness, timeLevel = 1)
+         call mpas_pool_get_array(thermalPool, 'temperature', temperature)
+
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
          do i = 1, nCellsSolve
             n = n + 1
+
+            !call route_ice_runoff(0.0_RKIND, & !Recuperate runoff routing switch code (originally in glc_route_ice_runoff module in earlier code), and attach to ice calving flux once present...
+            !                      rofi_to_ocn=Fogg_rofi, &
+            !                      rofi_to_ice=Figg_rofi)
+            g2x_g % rAttr(index_g2x_Fogg_rofi,n)=0.0 !...and remove these placeholders
+            g2x_g % rAttr(index_g2x_Figg_rofi,n)=0.0 !...and remove these placeholders
+            g2x_g % rAttr(index_g2x_Fogg_rofl,n) = 0.0 !Attach to subglacial liquid flux once present
+
             g2x_g % rAttr(index_g2x_Sg_topo, n) = upperSurface(i)
+            g2x_g % rAttr(index_g2x_Sg_tbot, n) = temperature(nVertlevels,i) - SHR_CONST_TKTRIP
+            ! layerThickness is not populated on init, so calculating like this instead:
+            g2x_g % rAttr(index_g2x_Sg_dztbot, n) = layerThicknessFractions(nVertLevels) * thickness(i) / 2.0
+            g2x_g % rAttr(index_g2x_Sg_lithop, n) = Thickness(i)*SHR_CONST_RHOICE*SHR_CONST_G
+
+            !!!Mask configurations
             g2x_g % rAttr(index_g2x_Sg_ice_covered, n) = li_mask_is_ice_int(cellMask(i))
             ! Sg_icemask should be 1 in locations where GLC will use a SMB value
             ! This is cells with ice or bare land (no ocean cells)
@@ -1487,6 +1497,10 @@ contains
             ! If we add in the ability to prevent the ice sheet from evolving
             ! (i.e., to ignore these fluxes) then this should be set to 0 everywhere.
             g2x_g % rAttr(index_g2x_Sg_icemask_coupled_fluxes, n) = g2x_g % rAttr(index_g2x_Sg_icemask, n)
+
+            ! Add masks used for ice shelf basal melt calculation
+            g2x_g % rAttr(index_g2x_Sg_icemask_floating, n) = li_mask_is_floating_ice_int(cellMask(i))
+            g2x_g % rAttr(index_g2x_Sg_icemask_grounded, n) = li_mask_is_grounded_ice_int(cellMask(i))
 
          end do
 
@@ -1526,7 +1540,7 @@ contains
        call mpas_log_write('MPAS ymd=$i  MPAS tod=$i', MPAS_LOG_ERR, intArgs=(/ymd, tod/))
        call mpas_log_write('sync ymd=$i  sync tod=$i', MPAS_LOG_ERR, intArgs=(/curr_ymd, curr_tod/))
        call mpas_log_write('Internal mpas clock not in sync with sync clock', MPAS_LOG_ERR)
-       call mpas_log_write("Internal MPAS clock not in sync with ACME sync clock. Aborting...", MPAS_LOG_CRIT)
+       call mpas_log_write("Internal MPAS clock not in sync with E3SM sync clock. Aborting...", MPAS_LOG_CRIT)
     end if
 
    end subroutine check_clocks_sync

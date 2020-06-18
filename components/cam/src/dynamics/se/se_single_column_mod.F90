@@ -26,10 +26,12 @@ subroutine scm_setinitial(elem)
 
   type(element_t), intent(inout) :: elem(:)
 
+#ifndef MODEL_THETA_L
+
   integer i, j, k, ie, thelev
   integer inumliq, inumice, icldliq, icldice
 
-  if (.not. use_camiop .and. get_nstep() .eq. 0) then
+  if (.not. use_replay .and. get_nstep() .eq. 0) then
     call cnst_get_ind('NUMLIQ', inumliq, abort=.false.)
     call cnst_get_ind('NUMICE', inumice, abort=.false.)
     call cnst_get_ind('CLDLIQ', icldliq)
@@ -84,22 +86,29 @@ subroutine scm_setinitial(elem)
     enddo
   endif
 
+#endif
+
 end subroutine scm_setinitial
 
-subroutine scm_setfield(elem)
+subroutine scm_setfield(elem,iop_update_phase1)
 
   implicit none
 
+  logical, intent(in) :: iop_update_phase1
   type(element_t), intent(inout) :: elem(:)
+
+#ifndef MODEL_THETA_L
 
   integer i, j, k, ie
 
   do ie=1,nelemd
-    if (have_ps) elem(ie)%state%ps_v(:,:,:) = psobs 
+    if (have_ps .and. .not. iop_update_phase1) elem(ie)%state%ps_v(:,:,:) = psobs 
     do i=1, PLEV
-      if (have_omega) elem(ie)%derived%omega_p(:,:,i)=wfld(i)  !     set t to tobs at first
+      if (have_omega .and. iop_update_phase1) elem(ie)%derived%omega_p(:,:,i)=wfld(i)  !     set t to tobs at first
     end do
   end do
+
+#endif
 
 end subroutine scm_setfield
 
@@ -123,6 +132,9 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     type (TimeLevel_t), intent(in)       :: tl
     logical :: t_before_advance, do_column_scm
     real(kind=real_kind), parameter :: rad2deg = 180.0_real_kind / SHR_CONST_PI
+
+
+#ifndef MODEL_THETA_L
 
     integer :: ie,k,i,j,t,nm_f
     real (kind=real_kind), dimension(np,np,nlev)  :: dpt1,dpt2   ! delta pressure
@@ -193,6 +205,8 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     elem(ie)%state%v(i,j,1,:,t1) = forecast_u(:)
     elem(ie)%state%v(i,j,2,:,t1) = forecast_v(:)
     elem(ie)%state%Q(i,j,:,:) = forecast_q(:,:)
+
+#endif
 
     end subroutine apply_SC_forcing
 

@@ -122,8 +122,8 @@ void determineiotasks(const MPI_Comm comm, int *numiotasks,int *base, int *strid
 
         Kernel_GetPersonality(&pers, sizeof(pers));
 
-        int numIONodes,numPsets,numNodesInPset,rankInPset;
-        int numiotasks_per_node,remainder,numIONodes_per_pset;
+        int numIONodes, numPsets, numNodesInPset, rankInPset;
+        int numiotasks_per_node, remainder = 0, numIONodes_per_pset;
         int lstride;
 
         /* Number of computational nodes in processor set */

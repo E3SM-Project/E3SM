@@ -199,6 +199,19 @@
     </values>
   </entry>
 
+  <entry id="rof_heat">
+    <type>logical</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>
+      If set to .true., adds fields needed to calculate heat in the river model
+    </desc>
+    <values>
+      <value>.false.</value>
+      <value cime_model='e3sm'>.true.</value>
+    </values>
+  </entry>
+
   <!-- =========================== -->
   <!-- -group seq_cplflds_custom   -->
   <!-- =========================== -->
@@ -513,6 +526,21 @@
     </values>
   </entry>
 
+  <entry id="constant_zenith_deg">
+    <type>real</type>
+    <category>orbital</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      Constant solar zenith angle value in degrees for idealized configurations
+      such as radiative-convective equilibrium experiments. This is disabled when 
+      the value is less than 0
+      Default: -1
+    </desc>
+    <values>
+      <value>-1</value>
+    </values>
+  </entry>
+
   <entry id="wv_sat_scheme">
     <type>char</type>
     <category>wv_sat</category>
@@ -680,6 +708,8 @@
     <values>
       <value cime_model='e3sm'>.false.</value>
       <value cime_model='cesm'>.true.</value>
+      <value cime_model='cesm' atm_grid="T62">.false.</value>
+      <value cime_model='cesm' atm_grid="TL319">.false.</value>
     </values>
   </entry>
 
@@ -694,7 +724,22 @@
      <values>
       <value>.false.</value>
      </values>
-   </entry>
+  </entry>
+
+  <entry id="ocn_surface_flux_scheme">
+     <type>integer</type>
+     <category>control</category>
+     <group>seq_infodata_inparm</group>
+     <desc>
+      0: standard surface flux calculation as in E3SMv1 
+      1: COAREv3.0 flux computation (Fairall et al., 2003)
+      2: University of Arizona algorithm (Zeng et al., 1998)
+      default: 0
+     </desc>
+     <values>
+      <value>0</value>
+     </values>
+  </entry>
 
   <entry id="flux_convergence">
     <type>real</type>
@@ -723,18 +768,6 @@
     <values>
       <value cime_model='cesm'>5</value>
       <value cime_model='e3sm'>2</value>
-    </values>
-  </entry>
-
-  <entry id="gust_fac">
-    <type>real</type>
-    <category>control</category>
-    <group>seq_infodata_inparm</group>
-    <desc>
-      wind gustiness factor
-    </desc>
-    <values>
-      <value>0.0D0</value>
     </values>
   </entry>
 
@@ -819,6 +852,18 @@
     </desc>
     <values>
       <value>$WAV_GRID</value>
+    </values>
+  </entry>
+
+  <entry id="iac_gnam" modify_via_xml="IAC_GRID">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      IAC_GRID values passed into driver.
+    </desc>
+    <values>
+      <value>$IAC_GRID</value>
     </values>
   </entry>
 
@@ -1296,6 +1341,19 @@
     </values>
   </entry>
 
+  <entry id="histavg_iac">
+    <type>logical</type>
+    <category>history</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      writes iac fields in coupler average history files.
+      default: true
+    </desc>
+    <values>
+      <value>.true.</value>
+    </values>
+  </entry>
+
   <entry id="histavg_xao">
     <type>logical</type>
     <category>history</category>
@@ -1370,6 +1428,7 @@
     </desc>
     <values>
       <value>$EPS_AGRID</value>
+      <value atm_grid="ne0np4_northamericax4v1">3.e-10</value>
     </values>
   </entry>
 
@@ -1632,6 +1691,19 @@
     </desc>
   </entry>
 
+  <entry id="iac_cpl_dt" modify_via_xml="IAC_NCPL" skip_default_entry="true">
+    <type>integer</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      iac coupling interval in seconds
+      set via IAC_NCPL in env_run.xml.
+      IAC_NCPL is the number of times the iac is coupled per NCPL_BASE_PERIOD
+      NCPL_BASE_PERIOD is also set in env_run.xml and is the base period
+      associated with NCPL coupling frequency, nad has valid values: hour,day,year,decade
+    </desc>
+  </entry>
+
   <entry id="esp_cpl_dt" skip_default_entry="true">
     <type>integer</type>
     <category>time</category>
@@ -1715,6 +1787,18 @@
     <group>seq_timemgr_inparm</group>
     <desc>
       wav coupling interval offset in seconds default: 0
+    </desc>
+    <values>
+      <value>0</value>
+    </values>
+  </entry>
+
+  <entry id="iac_cpl_offset">
+    <type>integer</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      iac coupling interval offset in seconds default: 0
     </desc>
     <values>
       <value>0</value>
@@ -2199,6 +2283,18 @@
     </desc>
     <values>
       <value>$PAUSE_ACTIVE_WAV</value>
+    </values>
+  </entry>
+
+  <entry id="pause_active_iac" modify_via_xml="PAUSE_ACTIVE_IAC">
+    <type>logical</type>
+    <category>time</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Pause signals are active for component iac
+    </desc>
+    <values>
+      <value>$PAUSE_ACTIVE_IAC</value>
     </values>
   </entry>
 
@@ -2698,6 +2794,71 @@
     </desc>
     <values>
       <value>$NINST_WAV_LAYOUT</value>
+    </values>
+  </entry>
+
+  <entry id="iac_ntasks" modify_via_xml="NTASKS_IAC">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>
+      the number of mpi tasks assigned to the iac components.
+      set by NTASKS_IAC in env_configure.xml.
+    </desc>
+    <values>
+      <value>$NTASKS_IAC</value>
+    </values>
+  </entry>
+
+  <entry id="iac_nthreads" modify_via_xml="NTHRDS_IAC">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>
+      the number of threads per mpi task for the iac component.
+      set by NTHRDS_IAC in env_configure.xml.
+    </desc>
+    <values>
+      <value>$NTHRDS_IAC</value>
+    </values>
+  </entry>
+
+  <entry id="iac_rootpe" modify_via_xml="ROOTPE_IAC">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>
+      the global mpi task rank of the root processor assigned to the iac component.
+      set by ROOTPE_IAC in env_configure.xml.
+    </desc>
+    <values>
+      <value>$ROOTPE_IAC</value>
+    </values>
+  </entry>
+
+  <entry id="iac_pestride" modify_via_xml="PSTRID_IAC">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>
+      the mpi global processors stride associated with the mpi tasks for the iac component.
+      set by PSTRID_IAC in env_configure.xml.
+    </desc>
+    <values>
+      <value>$PSTRID_IAC</value>
+    </values>
+  </entry>
+
+  <entry id="iac_layout" modify_via_xml="NINST_IAC_LAYOUT">
+    <type>char</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <valid_values>concurrent,sequential</valid_values>
+    <desc>
+      Layout of multi-instance iacs (if there are more than 1)
+    </desc>
+    <values>
+      <value>$NINST_IAC_LAYOUT</value>
     </values>
   </entry>
 
@@ -3748,6 +3909,66 @@
     </values>
   </entry>
 
+  <entry id="atm2rof_fmapname"    modify_via_xml="ATM2ROF_FMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      atm to runoff flux mapping file
+    </desc>
+    <values>
+      <value>$ATM2ROF_FMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="atm2rof_fmaptype"    modify_via_xml="ATM2ROF_FMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$ATM2ROF_FMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="atm2rof_smapname"    modify_via_xml="ATM2ROF_SMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      atm to runoff state mapping file
+    </desc>
+    <values>
+      <value>$ATM2ROF_SMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="atm2rof_smaptype"    modify_via_xml="ATM2ROF_SMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$ATM2ROF_SMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
   <entry id="rof2ocn_fmapname"    modify_via_xml="ROF2OCN_FMAPNAME">
     <type>char</type>
     <category>mapping</category>
@@ -3774,6 +3995,66 @@
     </desc>
     <values>
       <value>$ROF2OCN_FMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="glc2ocn_fmapname"    modify_via_xml="GLC2OCN_FMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      glc to ocn flux mapping file for fluxes
+    </desc>
+    <values>
+      <value>$GLC2OCN_FMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="glc2ocn_fmaptype"    modify_via_xml="GLC2OCN_FMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$GLC2OCN_FMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="glc2ocn_smapname"    modify_via_xml="GLC2OCN_SMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      glc to ocn state mapping file for states
+    </desc>
+    <values>
+      <value>$GLC2OCN_SMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="glc2ocn_smaptype"    modify_via_xml="GLC2OCN_SMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$GLC2OCN_SMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
@@ -3834,6 +4115,66 @@
     </desc>
     <values>
       <value>$GLC2OCN_ICE_RMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="ocn2glc_fmapname"    modify_via_xml="OCN2GLC_FMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      ocn to glc flux mapping file for fluxes
+    </desc>
+    <values>
+      <value>$OCN2GLC_FMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="ocn2glc_fmaptype"    modify_via_xml="OCN2GLC_FMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$OCN2GLC_FMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="ocn2glc_smapname"    modify_via_xml="OCN2GLC_SMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      ocn to glc state mapping file for states
+    </desc>
+    <values>
+      <value>$OCN2GLC_SMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="ocn2glc_smaptype"    modify_via_xml="OCN2GLC_SMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$OCN2GLC_SMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
@@ -4049,6 +4390,66 @@
     </values>
   </entry>
 
+  <entry id="glc2ice_fmapname"    modify_via_xml="GLC2ICE_FMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      glc to ice flux mapping file for fluxes
+    </desc>
+    <values>
+      <value>$GLC2ICE_FMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="glc2ice_fmaptype"    modify_via_xml="GLC2ICE_FMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$GLC2ICE_FMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="glc2ice_smapname"    modify_via_xml="GLC2ICE_SMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      glc to ice state mapping file for states
+    </desc>
+    <values>
+      <value>$GLC2ICE_SMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="glc2ice_smaptype"    modify_via_xml="GLC2ICE_SMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$GLC2ICE_SMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
   <entry id="atm2wav_smapname"    modify_via_xml="ATM2WAV_SMAPNAME">
     <type>char</type>
     <category>mapping</category>
@@ -4184,6 +4585,126 @@
     </values>
   </entry>
 
+  <entry id="iac2atm_fmapname"    modify_via_xml="IAC2ATM_FMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      iac to atm mapping file for fluxes
+    </desc>
+    <values>
+      <value>$IAC2ATM_FMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="iac2atm_fmaptype"    modify_via_xml="IAC2ATM_FMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$IAC2ATM_FMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="iac2atm_smapname"    modify_via_xml="IAC2ATM_SMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      iac to atm mapping file for states
+    </desc>
+    <values>
+      <value>$IAC2ATM_SMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="iac2atm_smaptype"    modify_via_xml="IAC2ATM_SMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$IAC2ATM_SMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="iac2lnd_fmapname"    modify_via_xml="IAC2LND_FMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      iac to lnd mapping file for fluxes
+    </desc>
+    <values>
+      <value>$IAC2LND_FMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="iac2lnd_fmaptype"    modify_via_xml="IAC2LND_FMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$IAC2LND_FMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="iac2lnd_smapname"    modify_via_xml="IAC2LND_SMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      iac to lnd mapping file for states
+    </desc>
+    <values>
+      <value>$IAC2LND_SMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="iac2lnd_smaptype"    modify_via_xml="IAC2LND_SMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$IAC2LND_SMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
   <entry id="data_assimilation_atm" modify_via_xml="DATA_ASSIMILATION_ATM">
     <type>logical</type>
     <category>data_assimilation</category>
@@ -4232,6 +4753,18 @@
     </values>
   </entry>
 
+  <entry id="data_assimilation_iac" modify_via_xml="DATA_ASSIMILATION_IAC">
+    <type>logical</type>
+    <category>data_assimilation</category>
+    <group>seq_timemgr_inparm</group>
+    <desc>
+      Whether Data Assimilation is on for component iac
+    </desc>
+    <values>
+      <value>$DATA_ASSIMILATION_IAC</value>
+    </values>
+  </entry>
+
   <entry id="data_assimilation_glc" modify_via_xml="DATA_ASSIMILATION_GLC">
     <type>logical</type>
     <category>data_assimilation</category>
@@ -4277,6 +4810,44 @@
     </desc>
     <values>
       <value>$DATA_ASSIMILATION_LND</value>
+    </values>
+  </entry>
+
+  <entry id="seq_flux_mct_albdif">
+    <type>real</type>
+    <category>seq_flux_mct</category>
+    <group>seq_flux_mct_inparm</group>
+    <desc>
+       Surface albedo for direct radiation
+    </desc>
+    <values>
+      <value>0.06D0</value>
+      <value aqua_planet_sst_type="sst_aquap_constant">0.07D0</value>
+    </values>
+  </entry>
+
+  <entry id="seq_flux_mct_albdir">
+    <type>real</type>
+    <category>seq_flux_mct</category>
+    <group>seq_flux_mct_inparm</group>
+    <desc>
+       Surface albedo for diffuse radiation
+    </desc>
+    <values>
+      <value>0.07D0</value>
+    </values>
+  </entry>
+
+  <entry id="seq_flux_atmocn_minwind">
+    <type>real</type>
+    <category>seq_flux_mct</category>
+    <group>seq_flux_mct_inparm</group>
+    <desc>
+       minimum wind speed for atmOcn flux calculations
+    </desc>
+    <values>
+      <value>0.5D0</value>
+      <value aqua_planet_sst_type="sst_aquap_constant">1.0D0</value>
     </values>
   </entry>
 

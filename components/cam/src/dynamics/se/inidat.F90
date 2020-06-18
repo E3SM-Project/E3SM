@@ -27,39 +27,39 @@ module inidat
 
 contains
 
-
-
   subroutine read_inidat( ncid_ini, ncid_topo, dyn_in)
-    use dyn_comp,      only: dyn_import_t
-    use parallel_mod,     only: par
-    use bndry_mod,     only: bndry_exchangev
-    use constituents, only: cnst_name, cnst_read_iv, qmin
-    use dimensions_mod,     only: nelemd, nlev, np, npsq
-    use dof_mod, only           : putUniquePoints
-    use edge_mod, only : edgevpack, edgevunpack, InitEdgeBuffer, FreeEdgeBuffer
-    use edgetype_mod, only : EdgeBuffer_t
-    use ncdio_atm, only : infld
-    use shr_vmath_mod, only: shr_vmath_log
-    use hycoef,           only: ps0, hyam, hybm
-    use cam_abortutils,     only: endrun
-    use pio, only : file_desc_t, io_desc_t, pio_double, pio_get_local_array_size, pio_freedecomp
-    use dyn_grid, only : get_horiz_grid_dim_d, dyn_decomp
-    use chemistry   , only: chem_implements_cnst, chem_init_cnst
-    use carma_intr,   only: carma_implements_cnst, carma_init_cnst
-    use tracers     , only: tracers_implements_cnst, tracers_init_cnst
-    use aoa_tracers , only: aoa_tracers_implements_cnst, aoa_tracers_init_cnst
-    use clubb_intr,         only: clubb_implements_cnst, clubb_init_cnst
-    use stratiform,   only: stratiform_implements_cnst, stratiform_init_cnst
-    use microp_driver, only: microp_driver_implements_cnst, microp_driver_init_cnst
-    use phys_control,  only: phys_getopts
-    use co2_cycle   , only: co2_implements_cnst, co2_init_cnst
-    use unicon_cam,          only: unicon_implements_cnst, unicon_init_cnst
-    use cam_history_support, only: max_fieldname_len
-    use cam_grid_support,    only: cam_grid_get_local_size, cam_grid_get_gcid
-    use cam_map_utils,       only: iMap
-    use shr_const_mod,       only: SHR_CONST_PI
-    use scamMod,             only: setiopupdate, readiopdata
-    use se_single_column_mod, only: scm_setinitial
+    use dyn_comp,                only: dyn_import_t, hvcoord, dom_mt
+    use parallel_mod,            only: par
+    use bndry_mod,               only: bndry_exchangev
+    use constituents,            only: cnst_name, cnst_read_iv, qmin
+    use dimensions_mod,          only: nelemd, nlev, np, npsq
+    use dof_mod,                 only: putUniquePoints
+    use edge_mod,                only : edgevpack_nlyr, edgevunpack_nlyr, edge_g
+    use ncdio_atm,               only: infld
+    use shr_vmath_mod,           only: shr_vmath_log
+    use hycoef,                  only: ps0, hyam, hybm
+    use cam_abortutils,          only: endrun
+    use pio,                     only: file_desc_t, io_desc_t, pio_double, &
+                                       pio_get_local_array_size, pio_freedecomp
+    use dyn_grid,                only: get_horiz_grid_dim_d, dyn_decomp, fv_nphys
+    use chemistry,               only: chem_implements_cnst, chem_init_cnst
+    use carma_intr,              only: carma_implements_cnst, carma_init_cnst
+    use tracers,                 only: tracers_implements_cnst, tracers_init_cnst
+    use aoa_tracers,             only: aoa_tracers_implements_cnst, aoa_tracers_init_cnst
+    use clubb_intr,              only: clubb_implements_cnst, clubb_init_cnst
+    use stratiform,              only: stratiform_implements_cnst, stratiform_init_cnst
+    use microp_driver,           only: microp_driver_implements_cnst, microp_driver_init_cnst
+    use phys_control,            only: phys_getopts
+    use co2_cycle,               only: co2_implements_cnst, co2_init_cnst
+    use unicon_cam,              only: unicon_implements_cnst, unicon_init_cnst
+    use cam_history_support,     only: max_fieldname_len
+    use cam_grid_support,        only: cam_grid_get_local_size, cam_grid_get_gcid
+    use cam_map_utils,           only: iMap
+    use shr_const_mod,           only: SHR_CONST_PI
+    use scamMod,                 only: setiopupdate, readiopdata
+    use se_single_column_mod,    only: scm_setinitial
+    use element_ops,             only: set_thermostate
+    use gllfvremap_mod,          only: gfr_fv_phys_to_dyn_topo
     implicit none
     type(file_desc_t),intent(inout) :: ncid_ini, ncid_topo
     type (dyn_import_t), target, intent(inout) :: dyn_in   ! dynamics import
@@ -68,32 +68,48 @@ contains
     type(element_t), pointer :: elem(:)
     real(r8), allocatable :: tmp(:,:,:)    ! (npsp,nlev,nelemd)
     real(r8), allocatable :: qtmp(:,:)     ! (npsp*nelemd,nlev)
+    real(r8) :: ps(np,np)     
     logical,  allocatable :: tmpmask(:,:)  ! (npsp,nlev,nelemd) unique grid val
+    real(r8), allocatable :: phis_tmp(:,:) ! (nphys_sq,nelemd)
+    integer :: nphys_sq                    ! # of fv physics columns per element
     integer :: ie, k, t
     integer :: indx_scm, ie_scm, i_scm, j_scm
     character(len=max_fieldname_len) :: fieldname
     logical :: found
     integer :: kptr, m_cnst
-    type(EdgeBuffer_t) :: edge
     integer :: lsize
 
     integer,parameter :: pcnst = PCNST
     integer(iMap), pointer :: ldof(:) => NULL() ! Basic (2D) grid dof
     integer,       pointer :: gcid(:) => NULL() ! ID based on ldof with no holes
 
+    character(len=max_fieldname_len) :: ncol_name
+    character(len=max_fieldname_len) :: grid_name
+    logical :: read_pg_grid
     integer :: rndm_seed_sz
     integer, allocatable :: rndm_seed(:)
     real(r8) :: pertval
     integer :: sysclk
-    integer :: i, j, indx
+    integer :: i, j, indx, tl
     real(r8), parameter :: D0_0 = 0.0_r8
     real(r8), parameter :: D0_5 = 0.5_r8
     real(r8), parameter :: D1_0 = 1.0_r8
     real(r8), parameter :: D2_0 = 2.0_r8
     real(r8) :: scmposlon, minpoint, testlat, testlon, testval 
     character*16 :: subname='READ_INIDAT'
+    integer :: nlev_tot
 
     logical :: iop_update_surface
+
+    tl = 1
+
+#ifdef MODEL_THETA_L
+    ! not going to wrap each scm call in ifdef for now,
+    ! but some calls have to be wrapped
+    if (single_column) then
+       call endrun("read_inidat: SCM does not work with cam target theta-l.")
+    endif
+#endif
 
     if(par%dynproc) then
        elem=> dyn_in%elem
@@ -109,6 +125,11 @@ contains
     allocate(tmp(npsq,nlev,nelemd))
     tmp = 0.0_r8
     allocate(qtmp(npsq*nelemd,nlev))
+
+    if (fv_nphys>0) then
+      nphys_sq = fv_nphys*fv_nphys
+      allocate(phis_tmp(nphys_sq,nelemd))
+    end if
 
     if (par%dynproc) then
       if(elem(1)%idxP%NumUniquePts <=0 .or. elem(1)%idxP%NumUniquePts > np*np) then
@@ -153,12 +174,19 @@ contains
         call endrun('Could not find closest SCM point on input datafile')
       endif
 
+    endif ! single_column
+
+    grid_name = 'GLL'
+    if (fv_nphys > 0) then
+      ncol_name = 'ncol_d'
+    else
+      ncol_name = 'ncol'
     endif
 
     fieldname = 'U'
     tmp = 0.0_r8
-    call infld(fieldname, ncid_ini, 'ncol', 'lev', 1, npsq,          &
-         1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+    call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
+         1, nlev, 1, nelemd, tmp, found, gridname=grid_name)
     if(.not. found) then
        call endrun('Could not find U field on input datafile')
     end if
@@ -168,8 +196,8 @@ contains
        indx = 1
        do j = 1, np
           do i = 1, np
-             elem(ie)%state%v(i,j,1,:,1) = tmp(indx,:,ie)
-             if (single_column) elem(ie)%state%v(i,j,1,:,1)=tmp(indx_scm,:,ie_scm)
+             elem(ie)%state%v(i,j,1,:,tl) = tmp(indx,:,ie)
+             if (single_column) elem(ie)%state%v(i,j,1,:,tl)=tmp(indx_scm,:,ie_scm)
              indx = indx + 1
           end do
        end do
@@ -177,8 +205,8 @@ contains
 
     fieldname = 'V'
     tmp = 0.0_r8
-    call infld(fieldname, ncid_ini, 'ncol', 'lev', 1, npsq,          &
-         1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+    call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
+         1, nlev, 1, nelemd, tmp, found, gridname=grid_name)
     if(.not. found) then
        call endrun('Could not find V field on input datafile')
     end if
@@ -187,8 +215,8 @@ contains
        indx = 1
        do j = 1, np
           do i = 1, np
-             elem(ie)%state%v(i,j,2,:,1) = tmp(indx,:,ie)
-             if (single_column) elem(ie)%state%v(i,j,2,:,1) = tmp(indx_scm,:,ie_scm)
+             elem(ie)%state%v(i,j,2,:,tl) = tmp(indx,:,ie)
+             if (single_column) elem(ie)%state%v(i,j,2,:,tl) = tmp(indx_scm,:,ie_scm)
              indx = indx + 1
           end do
        end do
@@ -196,19 +224,28 @@ contains
 
     fieldname = 'T'
     tmp = 0.0_r8
-    call infld(fieldname, ncid_ini, 'ncol', 'lev', 1, npsq,          &
-         1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+    call infld(fieldname, ncid_ini, ncol_name, 'lev', 1, npsq,          &
+         1, nlev, 1, nelemd, tmp, found, gridname=grid_name)
     if(.not. found) then
        call endrun('Could not find T field on input datafile')
     end if
 
     do ie=1,nelemd
+#ifdef MODEL_THETA_L
+       elem(ie)%derived%FT=0.0_r8
+#else
        elem(ie)%state%T=0.0_r8
+#endif
        indx = 1
        do j = 1, np
           do i = 1, np
-             elem(ie)%state%T(i,j,:,1) = tmp(indx,:,ie)
-             if (single_column) elem(ie)%state%T(i,j,:,1) = tmp(indx_scm,:,ie_scm)
+#ifdef MODEL_THETA_L
+             elem(ie)%derived%FT(i,j,:) = tmp(indx,:,ie)
+             !no scm in theta-l yet
+#else
+             elem(ie)%state%T(i,j,:,tl) = tmp(indx,:,ie)
+             if (single_column) elem(ie)%state%T(i,j,:,tl) = tmp(indx_scm,:,ie_scm)
+#endif
              indx = indx + 1
           end do
        end do
@@ -250,7 +287,11 @@ contains
                 call random_number(pertval)
               endif
               pertval = D2_0*pertlim*(D0_5 - pertval)
-              elem(ie)%state%T(i,j,k,1) = elem(ie)%state%T(i,j,k,1)*(D1_0 + pertval)
+#ifdef MODEL_THETA_L
+              elem(ie)%derived%FT(i,j,k) = elem(ie)%derived%FT(i,j,k)*(D1_0 + pertval)
+#else
+              elem(ie)%state%T(i,j,k,tl) = elem(ie)%state%T(i,j,k,tl)*(D1_0 + pertval)
+#endif
             end do
           end do
         end do
@@ -287,8 +328,8 @@ contains
 	  else
 	    
 	    tmp = 0.0_r8
-            call infld(cnst_name(m_cnst), ncid_ini, 'ncol', 'lev',      &
-                 1, npsq, 1, nlev, 1, nelemd, tmp, found, gridname='GLL')
+            call infld(cnst_name(m_cnst), ncid_ini, ncol_name, 'lev',      &
+                 1, npsq, 1, nlev, 1, nelemd, tmp, found, gridname=grid_name)
 	    
 	  endif
        end if
@@ -382,8 +423,8 @@ contains
 
     fieldname = 'PS'
     tmp(:,1,:) = 0.0_r8
-    call infld(fieldname, ncid_ini, 'ncol',      &
-         1, npsq, 1, nelemd, tmp(:,1,:), found, gridname='GLL')
+    call infld(fieldname, ncid_ini, ncol_name,      &
+         1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
     if(.not. found) then
        call endrun('Could not find PS field on input datafile')
     end if
@@ -402,36 +443,63 @@ contains
           indx = 1
           do j = 1, np
              do i = 1, np
-                elem(ie)%state%ps_v(i,j,1) = tmp(indx,1,ie)
-                if (single_column) elem(ie)%state%ps_v(i,j,1) = tmp(indx_scm,1,ie_scm)
+                elem(ie)%state%ps_v(i,j,tl) = tmp(indx,1,ie)
+                if (single_column) elem(ie)%state%ps_v(i,j,tl) = tmp(indx_scm,1,ie_scm)
                 indx = indx + 1
              end do
           end do
     end do
 
+    read_pg_grid = .false.
     if ( (ideal_phys .or. aqua_planet)) then
        tmp(:,1,:) = 0._r8
+       if (fv_nphys > 0) phis_tmp(:,:) = 0._r8
     else    
-       fieldname = 'PHIS'
-       tmp(:,1,:) = 0.0_r8
-       call infld(fieldname, ncid_topo, 'ncol',      &
-            1, npsq, 1, nelemd, tmp(:,1,:), found, gridname='GLL')
-       if(.not. found) then
-          call endrun('Could not find PHIS field on input datafile')
-       end if
+      fieldname = 'PHIS'
+      tmp(:,1,:) = 0.0_r8
+      if (fv_nphys == 0) then
+         call infld(fieldname, ncid_topo, ncol_name,      &
+              1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
+      else
+         ! Attempt to read a mixed GLL-FV topo file, which contains PHIS_d in
+         ! addition to PHIS.
+         call infld(trim(fieldname) // '_d', ncid_topo, ncol_name, &
+              1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
+         if (found) then
+            if (masterproc) then
+               write(iulog,*) 'reading GLL ', trim(fieldname) // '_d', &
+                    ' on gridname ', trim(grid_name)
+            end if
+         else
+            ! Pure-FV topo file, so read FV PHIS and map it to GLL.
+            if (masterproc) then
+               write(iulog,*) 'reading FV ', trim(fieldname), &
+                    ' on gridname physgrid_d'
+            end if
+            read_pg_grid = .true.
+            call infld(fieldname, ncid_topo, 'ncol', 1, nphys_sq, &
+                 1, nelemd, phis_tmp, found, gridname='physgrid_d')
+            call gfr_fv_phys_to_dyn_topo(par, dom_mt, elem, phis_tmp)
+         end if
+      end if
+      if(.not. found) then
+         call endrun('Could not find PHIS field on input datafile')
+      end if
     end if
 
-    do ie=1,nelemd
-       elem(ie)%state%phis=0.0_r8
-       indx = 1
-       do j = 1, np
-          do i = 1, np
-             elem(ie)%state%phis(i,j) = tmp(indx,1,ie)
-             if (single_column) elem(ie)%state%phis(i,j) = tmp(indx_scm,1,ie_scm)
-             indx = indx + 1
-          end do
-       end do
-    end do
+    if (.not. read_pg_grid) then
+      do ie=1,nelemd
+         elem(ie)%state%phis=0.0_r8
+         indx = 1
+         do j = 1, np
+            do i = 1, np
+               elem(ie)%state%phis(i,j) = tmp(indx,1,ie)
+               if (single_column) elem(ie)%state%phis(i,j) = tmp(indx_scm,1,ie_scm)
+               indx = indx + 1
+            end do
+         end do
+      end do
+    end if ! not read_pg_grid
     
     if (single_column) then
       iop_update_surface = .false.
@@ -444,53 +512,79 @@ contains
 
       ! once we've read all the fields we do a boundary exchange to 
       ! update the redundent columns in the dynamics
-      if(par%dynproc) then
-        call initEdgeBuffer(par, edge, elem, (3+pcnst)*nlev+2)
-      end if
+      nlev_tot=(3+pcnst)*nlev+2
+
+#ifdef MODEL_THETA_L
       do ie=1,nelemd
         kptr=0
-        call edgeVpack(edge, elem(ie)%state%ps_v(:,:,1),1,kptr,ie)
+        call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%ps_v(:,:,tl),1,kptr,nlev_tot)
         kptr=kptr+1
-        call edgeVpack(edge, elem(ie)%state%phis,1,kptr,ie)
+        call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%phis,1,kptr,nlev_tot)
         kptr=kptr+1
-        call edgeVpack(edge, elem(ie)%state%v(:,:,:,:,1),2*nlev,kptr,ie)
+        call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%v(:,:,:,:,tl),2*nlev,kptr,nlev_tot)
         kptr=kptr+2*nlev
-        call edgeVpack(edge, elem(ie)%state%T(:,:,:,1),nlev,kptr,ie)
+        call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%FT(:,:,:),nlev,kptr,nlev_tot)
         kptr=kptr+nlev
-        call edgeVpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
+        call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,nlev_tot)
       end do
-      if(par%dynproc) then
-        call bndry_exchangeV(par,edge)
-      end if
+#else
       do ie=1,nelemd
         kptr=0
-        call edgeVunpack(edge, elem(ie)%state%ps_v(:,:,1),1,kptr,ie)
+        call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%ps_v(:,:,tl),1,kptr,nlev_tot)
         kptr=kptr+1
-        call edgeVunpack(edge, elem(ie)%state%phis,1,kptr,ie)
+        call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%phis,1,kptr,nlev_tot)
         kptr=kptr+1
-        call edgeVunpack(edge, elem(ie)%state%v(:,:,:,:,1),2*nlev,kptr,ie)
+        call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%v(:,:,:,:,tl),2*nlev,kptr,nlev_tot)
         kptr=kptr+2*nlev
-        call edgeVunpack(edge, elem(ie)%state%T(:,:,:,1),nlev,kptr,ie)
+        call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%T(:,:,:,tl),nlev,kptr,nlev_tot)
         kptr=kptr+nlev
-        call edgeVunpack(edge, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,ie)
+        call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,nlev_tot)
       end do
-    
+#endif
+      if(par%dynproc) then
+        call bndry_exchangeV(par,edge_g)
+      end if
+#ifdef MODEL_THETA_L
+      do ie=1,nelemd
+        kptr=0
+        call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%ps_v(:,:,tl),1,kptr,nlev_tot)
+        kptr=kptr+1
+        call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%phis,1,kptr,nlev_tot)
+        kptr=kptr+1
+        call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%v(:,:,:,:,tl),2*nlev,kptr,nlev_tot)
+        kptr=kptr+2*nlev
+        call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%FT(:,:,:),nlev,kptr,nlev_tot)
+        kptr=kptr+nlev
+        call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,nlev_tot)
+      end do
+#else
+      do ie=1,nelemd
+        kptr=0
+        call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%ps_v(:,:,tl),1,kptr,nlev_tot)
+        kptr=kptr+1
+        call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%phis,1,kptr,nlev_tot)
+        kptr=kptr+1
+        call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%v(:,:,:,:,tl),2*nlev,kptr,nlev_tot)
+        kptr=kptr+2*nlev
+        call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%T(:,:,:,tl),nlev,kptr,nlev_tot)
+        kptr=kptr+nlev
+        call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%Q(:,:,:,:),nlev*pcnst,kptr,nlev_tot)
+      end do
+#endif    
     endif
 
-!$omp parallel do private(ie, t, m_cnst)
+!$omp parallel do private(ie, ps, t, m_cnst)
     do ie=1,nelemd
-       do t=2,3
-          elem(ie)%state%ps_v(:,:,t)=elem(ie)%state%ps_v(:,:,1)
-          elem(ie)%state%v(:,:,:,:,t)=elem(ie)%state%v(:,:,:,:,1)
-          elem(ie)%state%T(:,:,:,t)=elem(ie)%state%T(:,:,:,1)
-       end do
+       ps=elem(ie)%state%ps_v(:,:,tl)
+#ifdef MODEL_THETA_L
+       elem(ie)%state%w_i = 0.0
+       call set_thermostate(elem(ie),ps,elem(ie)%derived%FT,hvcoord,elem(ie)%state%Q(:,:,:,1))
+       !FT used as tmp array - reset
+       elem(ie)%derived%FT = 0.0
+#else
+       call set_thermostate(elem(ie),ps,elem(ie)%state%T(:,:,:,tl),hvcoord)
+#endif
     end do
-
-    if (.not. single_column) then
-      if(par%dynproc) then
-        call FreeEdgeBuffer(edge)
-      end if
-    endif
 
     deallocate(tmp)
 

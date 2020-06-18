@@ -74,31 +74,25 @@ endif
    var_coef1 = .true.
    if(hypervis_scaling > 0)    var_coef1 = .false.
 
-   ! note: there is a scaling bug in the treatment of nu_div
-   ! nu_ratio is applied twice, once in each laplace operator
-   ! so in reality:   nu_div_actual = (nu_div/nu)**2 nu
-   ! We should fix this, but it requires adjusting all CAM defaults
+   ! correct nu_div scaling. do not match buggy scaling used by PREQX model
    nu_ratio1=1
    nu_ratio2=1
    if (nu_div/=nu) then
       if(hypervis_scaling /= 0) then
-         ! we have a problem with the tensor in that we cant seperate
-         ! div and curl components.  So we do, with tensor V:
+         ! with the tensor, we cant seperate div and curl components.  instead:
          ! nu * (del V del ) * ( nu_ratio * grad(div) - curl(curl))
-         nu_ratio1=(nu_div/nu)    ! do not match buggy scaling used by PREQX model
+         nu_ratio1=(nu_div/nu)    
          nu_ratio2=1
       else
-         nu_ratio1=nu_div/nu
-         nu_ratio2=nu_div/nu
+         ! since operator is applied twice, take the sqrt
+         nu_ratio1=(nu_div/nu)
+         nu_ratio2=1
       endif
    endif
 
 
    do ie=nets,nete
 
-#if (defined COLUMN_OPENMP)
-!$omp parallel do default(shared), private(k,tmp)
-#endif
       do k=1,nlev
          stens(:,:,k,1,ie)=laplace_sphere_wk(elem(ie)%state%dp3d(:,:,k,nt),&
               deriv,elem(ie),var_coef=var_coef1)
@@ -132,9 +126,6 @@ endif
 
       
       ! apply inverse mass matrix, then apply laplace again
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,v,tmp)
-#endif
       do k=1,nlev
          tmp(:,:)=rspheremv(:,:)*stens(:,:,k,1,ie)
          stens(:,:,k,1,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.true.)
@@ -156,9 +147,7 @@ endif
       enddo
    enddo
 #ifdef DEBUGOMP
-#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
-#endif
 #endif
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 end subroutine

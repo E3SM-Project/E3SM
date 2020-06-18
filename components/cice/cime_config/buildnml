@@ -70,9 +70,10 @@ def buildnml(case, caseroot, compname):
                                  from_dir=os.path.join(srcroot, "components/cice/bld")).split()
 
         if int(config[0]) >= 0:
-            case.set_value("CICE_BLCKX",         config[2])
-            case.set_value("CICE_BLCKY",         config[3])
-            case.set_value("CICE_MXBLCKS",       config[4])
+            cice_blckx, cice_blcky, cice_mxblcks = config[2:5]
+            case.set_value("CICE_BLCKX",         cice_blckx)
+            case.set_value("CICE_BLCKY",         cice_blcky)
+            case.set_value("CICE_MXBLCKS",       cice_mxblcks)
             case.set_value("CICE_DECOMPTYPE",    config[5])
             case.set_value("CICE_DECOMPSETTING", config[6])
         else:
@@ -84,7 +85,7 @@ def buildnml(case, caseroot, compname):
 
     # determine the actual CPP definitions (these have been determined by the call to configure)
 
-    cppdefs = open(os.path.join(ciceconf_dir, "CICE_cppdefs"), "r").read().strip()
+    cppdefs = open(os.path.join(ciceconf_dir, "CCSM_cppdefs"), "r").read().strip()
     cppdefs += " -DBLCKX={} -DBLCKY={} -DMXBLCKS={}".format(cice_blckx, cice_blcky, cice_mxblcks)
 
     # write out cppdefs to env_build.xml
@@ -98,7 +99,7 @@ def buildnml(case, caseroot, compname):
     # this will force gmake to rebuild when $CASE.buildexe is called
 
     if testcase != "SBN":
-        with open(os.path.join(objroot, "ice/obj/CICE_cppdefs.new"), "w") as fd:
+        with open(os.path.join(objroot, "ice/obj/CCSM_cppdefs.new"), "w") as fd:
             fd.write(cppdefs + "\n")
 
     #--------------------------------------------------------------------

@@ -27,8 +27,9 @@ MODULE seq_infodata_mod
   use seq_comm_mct, only: seq_comm_setptrs, seq_comm_iamroot, seq_comm_iamin
   use seq_comm_mct, only: num_inst_atm, num_inst_lnd, num_inst_rof
   use seq_comm_mct, only: num_inst_ocn, num_inst_ice, num_inst_glc
-  use seq_comm_mct, only: num_inst_wav
+  use seq_comm_mct, only: num_inst_wav, num_inst_iac
   use shr_orb_mod,  only: SHR_ORB_UNDEF_INT, SHR_ORB_UNDEF_REAL, shr_orb_params
+  use shr_orb_mod,  only: set_constant_zenith_angle_deg
 
   implicit none
 
@@ -97,6 +98,7 @@ MODULE seq_infodata_mod
      real(SHR_KIND_R8)       :: orb_obliqr      ! See shr_orb_mod
      real(SHR_KIND_R8)       :: orb_lambm0      ! See shr_orb_mod
      real(SHR_KIND_R8)       :: orb_mvelpp      ! See shr_orb_mod
+     real(SHR_KIND_R8)       :: constant_zenith_deg ! See shr_orb_mod
      character(SHR_KIND_CS)  :: wv_sat_scheme   ! Water vapor saturation pressure scheme
      real(SHR_KIND_R8)       :: wv_sat_transition_start ! Saturation transition range
      logical                 :: wv_sat_use_tables   ! Saturation pressure lookup tables
@@ -105,10 +107,10 @@ MODULE seq_infodata_mod
      character(SHR_KIND_CL)  :: flux_epbal      ! selects E,P,R adjustment technique
      logical                 :: flux_albav      ! T => no diurnal cycle in ocn albedos
      logical                 :: flux_diurnal    ! T => diurnal cycle in atm/ocn fluxes
+     integer                 :: ocn_surface_flux_scheme  ! 0: E3SMv1 1: COARE 2: UA
      logical                 :: coldair_outbreak_mod ! (Mahrt & Sun 1995,MWR)
      real(SHR_KIND_R8)       :: flux_convergence   ! atmocn flux calc convergence value
      integer                 :: flux_max_iteration ! max number of iterations of atmocn flux loop
-     real(SHR_KIND_R8)       :: gust_fac        ! wind gustiness factor
      character(SHR_KIND_CL)  :: glc_renormalize_smb ! Whether to renormalize smb sent from lnd -> glc
      real(SHR_KIND_R8)       :: wall_time_limit ! force stop time limit (hours)
      character(SHR_KIND_CS)  :: force_stop_at   ! when to force a stop (month, day, etc)
@@ -119,6 +121,7 @@ MODULE seq_infodata_mod
      character(SHR_KIND_CL)  :: rof_gnam        ! rof grid
      character(SHR_KIND_CL)  :: glc_gnam        ! glc grid
      character(SHR_KIND_CL)  :: wav_gnam        ! wav grid
+     character(SHR_KIND_CL)  :: iac_gnam        ! iac grid
      logical                 :: shr_map_dopole  ! pole corrections in shr_map_mod
      character(SHR_KIND_CL)  :: vect_map        ! vector mapping option, none, cart3d, cart3d_diag, cart3d_uvw, cart3d_uvw_diag
      character(SHR_KIND_CS)  :: aoflux_grid     ! grid for atm ocn flux calc
@@ -142,7 +145,7 @@ MODULE seq_infodata_mod
      logical                 :: histaux_a2x24hr ! cpl writes aux hist files: a2x daily all
      logical                 :: histaux_l2x1yrg ! cpl writes aux hist files: l2x annual glc forcings
      logical                 :: histaux_l2x     ! cpl writes aux hist files: l2x every c2l comm
-     logical                 :: histaux_r2x     ! cpl writes aux hist files: r2x daily
+     logical                 :: histaux_r2x     ! cpl writes aux hist files: r2x every c2o comm
      logical                 :: histaux_double_precision ! if true, use double-precision for cpl aux hist files
      logical                 :: histavg_atm     ! cpl writes atm fields in average history file
      logical                 :: histavg_lnd     ! cpl writes lnd fields in average history file
@@ -151,6 +154,7 @@ MODULE seq_infodata_mod
      logical                 :: histavg_rof     ! cpl writes rof fields in average history file
      logical                 :: histavg_glc     ! cpl writes glc fields in average history file
      logical                 :: histavg_wav     ! cpl writes wav fields in average history file
+     logical                 :: histavg_iac     ! cpl writes iac fields in average history file
      logical                 :: histavg_xao     ! cpl writes flux xao fields in average history file
      real(SHR_KIND_R8)       :: eps_frac        ! fraction error tolerance
      real(SHR_KIND_R8)       :: eps_amask       ! atm mask error tolerance
@@ -185,6 +189,7 @@ MODULE seq_infodata_mod
      logical                 :: ocn_present     ! does component model exist
      logical                 :: ocn_prognostic  ! does component model need input data from driver
      logical                 :: ocnrof_prognostic ! does component need rof data
+     logical                 :: ocn_c2_glcshelf   ! will ocn component send data for ice shelf fluxes in driver
      logical                 :: ice_present     ! does component model exist
      logical                 :: ice_prognostic  ! does component model need input data from driver
      logical                 :: iceberg_prognostic ! does the ice model support icebergs
@@ -198,6 +203,8 @@ MODULE seq_infodata_mod
      logical                 :: wav_prognostic  ! does component model need input data from driver
      logical                 :: esp_present     ! does component model exist
      logical                 :: esp_prognostic  ! does component model need input data from driver
+     logical                 :: iac_present     ! does component model exist
+     logical                 :: iac_prognostic  ! does component model need input data from driver
      logical                 :: dead_comps      ! do we have dead models
      integer(SHR_KIND_IN)    :: atm_nx          ! nx, ny of "2d" grid
      integer(SHR_KIND_IN)    :: atm_ny          ! nx, ny of "2d" grid
@@ -213,6 +220,8 @@ MODULE seq_infodata_mod
      integer(SHR_KIND_IN)    :: glc_ny          ! nx, ny of "2d" grid
      integer(SHR_KIND_IN)    :: wav_nx          ! nx, ny of "2d" grid
      integer(SHR_KIND_IN)    :: wav_ny          ! nx, ny of "2d" grid
+     integer(SHR_KIND_IN)    :: iac_nx          ! nx, ny of "2d" grid
+     integer(SHR_KIND_IN)    :: iac_ny          ! nx, ny of "2d" grid
 
      !--- set via components and may be time varying ---
      real(SHR_KIND_R8)       :: nextsw_cday     ! calendar of next atm shortwave
@@ -225,6 +234,7 @@ MODULE seq_infodata_mod
      integer(SHR_KIND_IN)    :: rof_phase       ! rof phase
      integer(SHR_KIND_IN)    :: wav_phase       ! wav phase
      integer(SHR_KIND_IN)    :: esp_phase       ! esp phase
+     integer(SHR_KIND_IN)    :: iac_phase       ! iac phase
      logical                 :: atm_aero        ! atmosphere aerosols
      logical                 :: glc_g2lupdate   ! update glc2lnd fields in lnd model
      real(shr_kind_r8) :: max_cplstep_time  ! abort if cplstep time exceeds this value
@@ -336,6 +346,7 @@ CONTAINS
     real(SHR_KIND_R8)      :: orb_obliqr         ! Obliquity in radians
     real(SHR_KIND_R8)      :: orb_lambm0         ! lon of per at vernal equ
     real(SHR_KIND_R8)      :: orb_mvelpp         ! mvelp plus pi
+    real(SHR_KIND_R8)      :: constant_zenith_deg! constant, uniform solar zenith angle [degrees]
     character(SHR_KIND_CS) :: wv_sat_scheme      ! Water vapor saturation pressure scheme
     real(SHR_KIND_R8)      :: wv_sat_transition_start! Saturation transition range
     logical                :: wv_sat_use_tables  ! Saturation pressure lookup tables
@@ -344,10 +355,10 @@ CONTAINS
     character(SHR_KIND_CL) :: flux_epbal         ! selects E,P,R adjustment technique
     logical                :: flux_albav         ! T => no diurnal cycle in ocn albedos
     logical                :: flux_diurnal       ! T => diurnal cycle in atm/ocn fluxes
+    integer                :: ocn_surface_flux_scheme  ! 0: E3SMv1 1: COARE  2: UA
     logical                 :: coldair_outbreak_mod ! (Mahrt & Sun 1995,MWR)
     real(SHR_KIND_R8)       :: flux_convergence   ! atmocn flux calc convergence value
     integer                 :: flux_max_iteration ! max number of iterations of atmocn flux loop
-    real(SHR_KIND_R8)      :: gust_fac           ! wind gustiness factor
     character(SHR_KIND_CL) :: glc_renormalize_smb ! Whether to renormalize smb sent from lnd -> glc
     real(SHR_KIND_R8)      :: wall_time_limit    ! force stop time limit (hours)
     character(SHR_KIND_CS) :: force_stop_at      ! when to force a stop (month, day, etc)
@@ -358,6 +369,7 @@ CONTAINS
     character(SHR_KIND_CL) :: rof_gnam           ! rof grid
     character(SHR_KIND_CL) :: glc_gnam           ! glc grid
     character(SHR_KIND_CL) :: wav_gnam           ! wav grid
+    character(SHR_KIND_CL) :: iac_gnam           ! iac grid
     logical                :: shr_map_dopole     ! pole corrections in shr_map_mod
     character(SHR_KIND_CL) :: vect_map           ! vector mapping option
     character(SHR_KIND_CS) :: aoflux_grid        ! grid for atm ocn flux calc
@@ -380,7 +392,7 @@ CONTAINS
     logical                :: histaux_a2x24hr    ! cpl writes aux hist files: a2x daily all
     logical                :: histaux_l2x1yrg    ! cpl writes aux hist files: l2x annual glc forcings
     logical                :: histaux_l2x        ! cpl writes aux hist files: l2x every c2l comm
-    logical                :: histaux_r2x        ! cpl writes aux hist files: r2x daily
+    logical                :: histaux_r2x        ! cpl writes aux hist files: r2x every c2o comm
     logical                :: histaux_double_precision ! if true, use double-precision for cpl aux hist files
     logical                :: histavg_atm        ! cpl writes atm fields in average history file
     logical                :: histavg_lnd        ! cpl writes lnd fields in average history file
@@ -389,6 +401,7 @@ CONTAINS
     logical                :: histavg_rof        ! cpl writes rof fields in average history file
     logical                :: histavg_glc        ! cpl writes glc fields in average history file
     logical                :: histavg_wav        ! cpl writes wav fields in average history file
+    logical                :: histavg_iac        ! cpl writes wav fields in average history file
     logical                :: histavg_xao        ! cpl writes flux xao fields in average history file
     logical                :: drv_threading      ! is threading control in driver turned on
     real(SHR_KIND_R8)      :: eps_frac           ! fraction error tolerance
@@ -416,16 +429,18 @@ CONTAINS
          restart_pfile, restart_file, run_barriers,        &
          single_column, scmlat, force_stop_at,             &
          scmlon, logFilePostFix, outPathRoot, flux_diurnal,&
+         ocn_surface_flux_scheme, &
          coldair_outbreak_mod, &
-         flux_convergence, flux_max_iteration, gust_fac   ,&
+         flux_convergence, flux_max_iteration,             &
          perpetual, perpetual_ymd, flux_epbal, flux_albav, &
          orb_iyear_align, orb_mode, wall_time_limit,       &
          orb_iyear, orb_obliq, orb_eccen, orb_mvelp,       &
+         constant_zenith_deg,                              &
          wv_sat_scheme, wv_sat_transition_start,           &
          wv_sat_use_tables, wv_sat_table_spacing,          &
          tfreeze_option, glc_renormalize_smb,              &
          ice_gnam, rof_gnam, glc_gnam, wav_gnam,           &
-         atm_gnam, lnd_gnam, ocn_gnam, cpl_decomp,         &
+         atm_gnam, lnd_gnam, ocn_gnam, iac_gnam, cpl_decomp,         &
          shr_map_dopole, vect_map, aoflux_grid, do_histinit,  &
          do_budgets, drv_threading,                        &
          budget_inst, budget_daily, budget_month,          &
@@ -436,6 +451,7 @@ CONTAINS
          histaux_double_precision,                         &
          histavg_atm, histavg_lnd, histavg_ocn, histavg_ice, &
          histavg_rof, histavg_glc, histavg_wav, histavg_xao, &
+         histavg_iac, &
          histaux_l2x1yrg, cpl_seq_option,                   &
          eps_frac, eps_amask,                   &
          eps_agrid, eps_aarea, eps_omask, eps_ogrid,       &
@@ -487,6 +503,7 @@ CONTAINS
        orb_obliq             = SHR_ORB_UNDEF_REAL
        orb_eccen             = SHR_ORB_UNDEF_REAL
        orb_mvelp             = SHR_ORB_UNDEF_REAL
+       constant_zenith_deg   = -1
        wv_sat_scheme         = "GoffGratch"
        wv_sat_transition_start = 20.0
        wv_sat_use_tables     = .false.
@@ -495,10 +512,10 @@ CONTAINS
        flux_epbal            = 'off'
        flux_albav            = .false.
        flux_diurnal          = .false.
+       ocn_surface_flux_scheme = 0
        coldair_outbreak_mod = .false.
        flux_convergence      = 0.0_SHR_KIND_R8
        flux_max_iteration    = 2
-       gust_fac              = huge(1.0_SHR_KIND_R8)
        glc_renormalize_smb   = 'on_if_glc_coupled_fluxes'
        wall_time_limit       = -1.0
        force_stop_at         = 'month'
@@ -509,6 +526,7 @@ CONTAINS
        rof_gnam              = 'undefined'
        glc_gnam              = 'undefined'
        wav_gnam              = 'undefined'
+       iac_gnam              = 'undefined'
        shr_map_dopole        = .true.
        vect_map              = 'cart3d'
        aoflux_grid           = 'ocn'
@@ -539,6 +557,7 @@ CONTAINS
        histavg_rof           = .true.
        histavg_glc           = .true.
        histavg_wav           = .true.
+       histavg_iac           = .true.
        histavg_xao           = .true.
        drv_threading         = .false.
        eps_frac              = 1.0e-02_SHR_KIND_R8
@@ -621,10 +640,10 @@ CONTAINS
        infodata%flux_epbal            = flux_epbal
        infodata%flux_albav            = flux_albav
        infodata%flux_diurnal          = flux_diurnal
+       infodata%ocn_surface_flux_scheme = ocn_surface_flux_scheme
        infodata%flux_convergence      = flux_convergence
        infodata%coldair_outbreak_mod      = coldair_outbreak_mod
        infodata%flux_max_iteration    = flux_max_iteration
-       infodata%gust_fac              = gust_fac
        infodata%glc_renormalize_smb   = glc_renormalize_smb
        infodata%wall_time_limit       = wall_time_limit
        infodata%force_stop_at         = force_stop_at
@@ -635,6 +654,7 @@ CONTAINS
        infodata%rof_gnam              = rof_gnam
        infodata%glc_gnam              = glc_gnam
        infodata%wav_gnam              = wav_gnam
+       infodata%iac_gnam              = iac_gnam
        infodata%shr_map_dopole        = shr_map_dopole
 #ifdef COMPARE_TO_NUOPC
        infodata%vect_map              = 'none'
@@ -669,6 +689,7 @@ CONTAINS
        infodata%histavg_rof           = histavg_rof
        infodata%histavg_glc           = histavg_glc
        infodata%histavg_wav           = histavg_wav
+       infodata%histavg_iac           = histavg_iac
        infodata%histavg_xao           = histavg_xao
        infodata%drv_threading         = drv_threading
        infodata%eps_frac              = eps_frac
@@ -702,12 +723,14 @@ CONTAINS
        infodata%glcocn_present = .true.
        infodata%glcice_present = .true.
        infodata%esp_present = .true.
+       infodata%iac_present = .true.
 
        infodata%atm_prognostic = .false.
        infodata%lnd_prognostic = .false.
        infodata%rof_prognostic = .false.
        infodata%ocn_prognostic = .false.
        infodata%ocnrof_prognostic = .false.
+       infodata%ocn_c2_glcshelf = .false.
        infodata%ice_prognostic = .false.
        infodata%glc_prognostic = .false.
        ! It's safest to assume glc_coupled_fluxes = .true. if it's not set elsewhere,
@@ -716,6 +739,7 @@ CONTAINS
        ! in all cases.
        infodata%glc_coupled_fluxes = .true.
        infodata%wav_prognostic = .false.
+       infodata%iac_prognostic = .false.
        infodata%iceberg_prognostic = .false.
        infodata%esp_prognostic = .false.
        infodata%dead_comps = .false.
@@ -734,6 +758,8 @@ CONTAINS
        infodata%glc_ny = 0
        infodata%wav_nx = 0
        infodata%wav_ny = 0
+       infodata%iac_nx = 0
+       infodata%iac_ny = 0
 
        infodata%nextsw_cday   = -1.0_SHR_KIND_R8
        infodata%precip_fact   =  1.0_SHR_KIND_R8
@@ -744,6 +770,7 @@ CONTAINS
        infodata%glc_phase     = 1
        infodata%rof_phase     = 1
        infodata%wav_phase     = 1
+       infodata%iac_phase     = 1
        infodata%atm_aero      = .false.
        infodata%glc_g2lupdate = .false.
        infodata%glc_valid_input = .true.
@@ -801,6 +828,7 @@ CONTAINS
        infodata%orb_obliqr = orb_obliqr
        infodata%orb_lambm0 = orb_lambm0
        infodata%orb_mvelpp = orb_mvelpp
+       infodata%constant_zenith_deg = constant_zenith_deg
 
        !--- Derive a few things ---
        infodata%rest_case_name = ' '
@@ -863,6 +891,7 @@ CONTAINS
           infodata%ocn_present = .true.
           infodata%glc_present = .false.
           infodata%wav_present = .false.
+          infodata%iac_present = .false.
           infodata%glclnd_present = .false.
           infodata%glcocn_present = .false.
           infodata%glcice_present = .false.
@@ -881,6 +910,12 @@ CONTAINS
     end if
 
     call seq_infodata_bcast(infodata,mpicom)
+
+    ! If constant_zenith_deg is positive then set the corresponding module
+    ! variable in shr_orb_mod to override behavior of shr_orb_cosz()
+    if ( infodata%constant_zenith_deg >= 0 ) then
+       call set_constant_zenith_angle_deg(infodata%constant_zenith_deg)
+    end if
 
   END SUBROUTINE seq_infodata_Init
 
@@ -930,37 +965,42 @@ CONTAINS
        start_type, restart_pfile, restart_file, perpetual, perpetual_ymd, &
        aqua_planet,aqua_planet_sst, brnch_retain_casename, &
        single_column, scmlat,scmlon,logFilePostFix, outPathRoot,          &
-       atm_present, atm_prognostic, lnd_present, lnd_prognostic, rof_prognostic, &
-       rof_present, ocn_present, ocn_prognostic, ocnrof_prognostic,       &
-       ice_present, ice_prognostic, glc_present, glc_prognostic,          &
+       atm_present, atm_prognostic,                                       &
+       lnd_present, lnd_prognostic,                                       &
+       rof_present, rof_prognostic,                                       &
+       ocn_present, ocn_prognostic, ocnrof_prognostic, ocn_c2_glcshelf,   &
+       ice_present, ice_prognostic,                                       &
+       glc_present, glc_prognostic,                                       &
+       iac_present, iac_prognostic,                                       &
        glc_coupled_fluxes,                                                &
        flood_present, wav_present, wav_prognostic, rofice_present,        &
        glclnd_present, glcocn_present, glcice_present, iceberg_prognostic,&
        esp_present, esp_prognostic,                                       &
        bfbflag, lnd_gnam, cpl_decomp, cpl_seq_option,                     &
-       ice_gnam, rof_gnam, glc_gnam, wav_gnam,                            &
+       ice_gnam, rof_gnam, glc_gnam, wav_gnam, iac_gnam,                  &
        atm_gnam, ocn_gnam, info_debug, dead_comps, read_restart,          &
        shr_map_dopole, vect_map, aoflux_grid, flux_epbalfact,             &
        nextsw_cday, precip_fact, flux_epbal, flux_albav,                  &
        glc_g2lupdate, atm_aero, run_barriers, esmf_map_flag,              &
        do_budgets, do_histinit, drv_threading, flux_diurnal,              &
+       ocn_surface_flux_scheme, &
        coldair_outbreak_mod, &
-       flux_convergence, flux_max_iteration, gust_fac,                    &
+       flux_convergence, flux_max_iteration,                              &
        budget_inst, budget_daily, budget_month, wall_time_limit,          &
        budget_ann, budget_ltann, budget_ltend , force_stop_at,            &
        histaux_a2x    , histaux_a2x1hri, histaux_a2x1hr,                  &
        histaux_a2x3hr, histaux_a2x3hrp , histaux_l2x1yrg,                 &
        histaux_a2x24hr, histaux_l2x   , histaux_r2x     , histaux_double_precision, &
        orb_obliq, histavg_atm, histavg_lnd, histavg_ocn, histavg_ice,     &
-       histavg_rof, histavg_glc, histavg_wav, histavg_xao,                &
+       histavg_rof, histavg_glc, histavg_wav, histavg_xao, histavg_iac,   &
        orb_iyear, orb_iyear_align, orb_mode, orb_mvelp,        &
        orb_eccen, orb_obliqr, orb_lambm0, orb_mvelpp, wv_sat_scheme,      &
        wv_sat_transition_start, wv_sat_use_tables, wv_sat_table_spacing,  &
        tfreeze_option, glc_renormalize_smb,                               &
        glc_phase, rof_phase, atm_phase, lnd_phase, ocn_phase, ice_phase,  &
-       wav_phase, esp_phase, wav_nx, wav_ny, atm_nx, atm_ny,              &
+       wav_phase, iac_phase, esp_phase, wav_nx, wav_ny, atm_nx, atm_ny,   &
        lnd_nx, lnd_ny, rof_nx, rof_ny, ice_nx, ice_ny, ocn_nx, ocn_ny,    &
-       glc_nx, glc_ny, eps_frac, eps_amask,                               &
+       iac_nx, iac_ny, glc_nx, glc_ny, eps_frac, eps_amask,               &
        eps_agrid, eps_aarea, eps_omask, eps_ogrid, eps_oarea,             &
        reprosum_use_ddpdd, reprosum_allow_infnan,                         &
        reprosum_diffmax, reprosum_recompute,                              &
@@ -1014,11 +1054,11 @@ CONTAINS
     character(len=*),       optional, intent(OUT) :: flux_epbal              ! selects E,P,R adjustment technique
     logical,                optional, intent(OUT) :: flux_albav              ! T => no diurnal cycle in ocn albedos
     logical,                optional, intent(OUT) :: flux_diurnal            ! T => diurnal cycle in atm/ocn flux
+    integer,                optional, intent(OUT) :: ocn_surface_flux_scheme ! 0: E3SMv1  1: COARE  2: UA
     real(SHR_KIND_R8), optional, intent(out)      :: flux_convergence   ! atmocn flux calc convergence value
     logical, optional, intent(out) :: coldair_outbreak_mod        ! (Mahrt & Sun 1995, MWR)
     integer, optional, intent(OUT)                :: flux_max_iteration ! max number of iterations of atmocn flux loop
 
-    real(SHR_KIND_R8),      optional, intent(OUT) :: gust_fac                ! wind gustiness factor
     character(len=*),       optional, intent(OUT) :: glc_renormalize_smb     ! Whether to renormalize smb sent from lnd -> glc
     real(SHR_KIND_R8),      optional, intent(OUT) :: wall_time_limit         ! force stop wall time (hours)
     character(len=*),       optional, intent(OUT) :: force_stop_at           ! force stop at next (month, day, etc)
@@ -1029,6 +1069,7 @@ CONTAINS
     character(len=*),       optional, intent(OUT) :: rof_gnam                ! rof grid
     character(len=*),       optional, intent(OUT) :: glc_gnam                ! glc grid
     character(len=*),       optional, intent(OUT) :: wav_gnam                ! wav grid
+    character(len=*),       optional, intent(OUT) :: iac_gnam                ! iac grid
     logical,                optional, intent(OUT) :: shr_map_dopole          ! pole corrections in shr_map_mod
     character(len=*),       optional, intent(OUT) :: vect_map                ! vector mapping option
     character(len=*),       optional, intent(OUT) :: aoflux_grid             ! grid for atm ocn flux calc
@@ -1059,6 +1100,7 @@ CONTAINS
     logical,                optional, intent(OUT) :: histavg_rof
     logical,                optional, intent(OUT) :: histavg_glc
     logical,                optional, intent(OUT) :: histavg_wav
+    logical,                optional, intent(OUT) :: histavg_iac
     logical,                optional, intent(OUT) :: histavg_xao
     logical,                optional, intent(OUT) :: drv_threading           ! driver threading control flag
     real(SHR_KIND_R8),      optional, intent(OUT) :: eps_frac                ! fraction error tolerance
@@ -1091,6 +1133,7 @@ CONTAINS
     logical,                optional, intent(OUT) :: ocn_present
     logical,                optional, intent(OUT) :: ocn_prognostic
     logical,                optional, intent(OUT) :: ocnrof_prognostic
+    logical,                optional, intent(OUT) :: ocn_c2_glcshelf
     logical,                optional, intent(OUT) :: ice_present
     logical,                optional, intent(OUT) :: ice_prognostic
     logical,                optional, intent(OUT) :: iceberg_prognostic
@@ -1102,6 +1145,8 @@ CONTAINS
     logical,                optional, intent(OUT) :: glc_coupled_fluxes
     logical,                optional, intent(OUT) :: wav_present
     logical,                optional, intent(OUT) :: wav_prognostic
+    logical,                optional, intent(OUT) :: iac_present
+    logical,                optional, intent(OUT) :: iac_prognostic
     logical,                optional, intent(OUT) :: esp_present
     logical,                optional, intent(OUT) :: esp_prognostic
     integer(SHR_KIND_IN),   optional, intent(OUT) :: atm_nx                  ! nx,ny 2d grid size global
@@ -1118,6 +1163,8 @@ CONTAINS
     integer(SHR_KIND_IN),   optional, intent(OUT) :: glc_ny
     integer(SHR_KIND_IN),   optional, intent(OUT) :: wav_nx
     integer(SHR_KIND_IN),   optional, intent(OUT) :: wav_ny
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: iac_nx
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: iac_ny
 
     real(SHR_KIND_R8),      optional, intent(OUT) :: nextsw_cday             ! calendar of next atm shortwave
     real(SHR_KIND_R8),      optional, intent(OUT) :: precip_fact             ! precip factor
@@ -1129,6 +1176,7 @@ CONTAINS
     integer(SHR_KIND_IN),   optional, intent(OUT) :: glc_phase               ! glc phase
     integer(SHR_KIND_IN),   optional, intent(OUT) :: rof_phase               ! rof phase
     integer(SHR_KIND_IN),   optional, intent(OUT) :: wav_phase               ! wav phase
+    integer(SHR_KIND_IN),   optional, intent(OUT) :: iac_phase               ! wav phase
     integer(SHR_KIND_IN),   optional, intent(OUT) :: esp_phase               ! wav phase
     logical,                optional, intent(OUT) :: atm_aero                ! atmosphere aerosols
     logical,                optional, intent(OUT) :: glc_g2lupdate           ! update glc2lnd fields in lnd model
@@ -1184,10 +1232,11 @@ CONTAINS
     if ( present(flux_epbal)     ) flux_epbal     = infodata%flux_epbal
     if ( present(flux_albav)     ) flux_albav     = infodata%flux_albav
     if ( present(flux_diurnal)   ) flux_diurnal   = infodata%flux_diurnal
+    if ( present(ocn_surface_flux_scheme) ) ocn_surface_flux_scheme = &
+         infodata%ocn_surface_flux_scheme
     if ( present(coldair_outbreak_mod)) coldair_outbreak_mod = infodata%coldair_outbreak_mod
     if ( present(flux_convergence)) flux_convergence = infodata%flux_convergence
     if ( present(flux_max_iteration)) flux_max_iteration = infodata%flux_max_iteration
-    if ( present(gust_fac)       ) gust_fac       = infodata%gust_fac
     if ( present(glc_renormalize_smb)) glc_renormalize_smb = infodata%glc_renormalize_smb
     if ( present(wall_time_limit)) wall_time_limit= infodata%wall_time_limit
     if ( present(force_stop_at)  ) force_stop_at  = infodata%force_stop_at
@@ -1198,6 +1247,7 @@ CONTAINS
     if ( present(rof_gnam)       ) rof_gnam       = infodata%rof_gnam
     if ( present(glc_gnam)       ) glc_gnam       = infodata%glc_gnam
     if ( present(wav_gnam)       ) wav_gnam       = infodata%wav_gnam
+    if ( present(iac_gnam)       ) iac_gnam       = infodata%iac_gnam
     if ( present(shr_map_dopole) ) shr_map_dopole = infodata%shr_map_dopole
     if ( present(vect_map)       ) vect_map       = infodata%vect_map
     if ( present(aoflux_grid)    ) aoflux_grid    = infodata%aoflux_grid
@@ -1228,6 +1278,7 @@ CONTAINS
     if ( present(histavg_rof)    ) histavg_rof    = infodata%histavg_rof
     if ( present(histavg_glc)    ) histavg_glc    = infodata%histavg_glc
     if ( present(histavg_wav)    ) histavg_wav    = infodata%histavg_wav
+    if ( present(histavg_iac)    ) histavg_iac    = infodata%histavg_iac
     if ( present(histavg_xao)    ) histavg_xao    = infodata%histavg_xao
     if ( present(drv_threading)  ) drv_threading  = infodata%drv_threading
     if ( present(eps_frac)       ) eps_frac       = infodata%eps_frac
@@ -1260,6 +1311,7 @@ CONTAINS
     if ( present(ocn_present)    ) ocn_present    = infodata%ocn_present
     if ( present(ocn_prognostic) ) ocn_prognostic = infodata%ocn_prognostic
     if ( present(ocnrof_prognostic) ) ocnrof_prognostic = infodata%ocnrof_prognostic
+    if ( present(ocn_c2_glcshelf) ) ocn_c2_glcshelf = infodata%ocn_c2_glcshelf
     if ( present(ice_present)    ) ice_present    = infodata%ice_present
     if ( present(ice_prognostic) ) ice_prognostic = infodata%ice_prognostic
     if ( present(iceberg_prognostic)) iceberg_prognostic = infodata%iceberg_prognostic
@@ -1273,6 +1325,8 @@ CONTAINS
     if ( present(wav_prognostic) ) wav_prognostic = infodata%wav_prognostic
     if ( present(esp_present)    ) esp_present    = infodata%esp_present
     if ( present(esp_prognostic) ) esp_prognostic = infodata%esp_prognostic
+    if ( present(iac_present)    ) iac_present    = infodata%iac_present
+    if ( present(iac_prognostic) ) iac_prognostic = infodata%iac_prognostic
     if ( present(atm_nx)         ) atm_nx         = infodata%atm_nx
     if ( present(atm_ny)         ) atm_ny         = infodata%atm_ny
     if ( present(lnd_nx)         ) lnd_nx         = infodata%lnd_nx
@@ -1287,6 +1341,8 @@ CONTAINS
     if ( present(glc_ny)         ) glc_ny         = infodata%glc_ny
     if ( present(wav_nx)         ) wav_nx         = infodata%wav_nx
     if ( present(wav_ny)         ) wav_ny         = infodata%wav_ny
+    if ( present(iac_nx)         ) iac_nx         = infodata%iac_nx
+    if ( present(iac_ny)         ) iac_ny         = infodata%iac_ny
 
     if ( present(nextsw_cday)    ) nextsw_cday    = infodata%nextsw_cday
     if ( present(precip_fact)    ) precip_fact    = infodata%precip_fact
@@ -1311,6 +1367,7 @@ CONTAINS
     if ( present(rof_phase)      ) rof_phase      = infodata%rof_phase
     if ( present(wav_phase)      ) wav_phase      = infodata%wav_phase
     if ( present(esp_phase)      ) esp_phase      = infodata%esp_phase
+    if ( present(iac_phase)      ) iac_phase      = infodata%iac_phase
     if ( present(atm_aero)       ) atm_aero       = infodata%atm_aero
     if ( present(glc_g2lupdate)  ) glc_g2lupdate  = infodata%glc_g2lupdate
     if ( present(max_cplstep_time) ) max_cplstep_time = infodata%max_cplstep_time
@@ -1389,6 +1446,11 @@ CONTAINS
             wav_prognostic=comp_prognostic, wav_gnam=comp_gnam,                &
             wav_phase=comp_phase, wav_nx=comp_nx, wav_ny=comp_ny,              &
             histavg_wav=histavg_comp)
+    else if (component_firstletter == 'z') then
+       call seq_infodata_GetData(infodata, iac_present=comp_present,           &
+            iac_prognostic=comp_prognostic, iac_gnam=comp_gnam,                &
+            iac_phase=comp_phase, iac_nx=comp_nx, iac_ny=comp_ny,              &
+            histavg_iac=histavg_comp)
     else if (component_firstletter == 'e') then
        if (present(comp_gnam)) then
           comp_gnam = ''
@@ -1438,37 +1500,42 @@ CONTAINS
        start_type, restart_pfile, restart_file, perpetual, perpetual_ymd, &
        aqua_planet,aqua_planet_sst, brnch_retain_casename, &
        single_column, scmlat,scmlon,logFilePostFix, outPathRoot,          &
-       atm_present, atm_prognostic, lnd_present, lnd_prognostic, rof_prognostic, &
-       rof_present, ocn_present, ocn_prognostic, ocnrof_prognostic,       &
-       ice_present, ice_prognostic, glc_present, glc_prognostic,          &
+       atm_present, atm_prognostic,                                       &
+       lnd_present, lnd_prognostic,                                       &
+       rof_present, rof_prognostic,                                       &
+       ocn_present, ocn_prognostic, ocnrof_prognostic, ocn_c2_glcshelf,   &
+       ice_present, ice_prognostic,                                       &
+       glc_present, glc_prognostic,                                       &
        glc_coupled_fluxes,                                                &
        flood_present, wav_present, wav_prognostic, rofice_present,        &
        glclnd_present, glcocn_present, glcice_present, iceberg_prognostic,&
        esp_present, esp_prognostic,                                       &
+       iac_present, iac_prognostic,                                       &
        bfbflag, lnd_gnam, cpl_decomp, cpl_seq_option,                     &
-       ice_gnam, rof_gnam, glc_gnam, wav_gnam,                            &
+       ice_gnam, rof_gnam, glc_gnam, wav_gnam, iac_gnam,                  &
        atm_gnam, ocn_gnam, info_debug, dead_comps, read_restart,          &
        shr_map_dopole, vect_map, aoflux_grid, run_barriers,               &
        nextsw_cday, precip_fact, flux_epbal, flux_albav,                  &
        glc_g2lupdate, atm_aero, esmf_map_flag, wall_time_limit,           &
        do_budgets, do_histinit, drv_threading, flux_diurnal,              &
+       ocn_surface_flux_scheme, &
        coldair_outbreak_mod,                                                           &
-       flux_convergence, flux_max_iteration, gust_fac,                    &
+       flux_convergence, flux_max_iteration,                              &
        budget_inst, budget_daily, budget_month, force_stop_at,            &
        budget_ann, budget_ltann, budget_ltend ,                           &
        histaux_a2x    , histaux_a2x1hri, histaux_a2x1hr,                  &
        histaux_a2x3hr, histaux_a2x3hrp , histaux_l2x1yrg,                 &
        histaux_a2x24hr, histaux_l2x   , histaux_r2x     , histaux_double_precision,  &
        orb_obliq, histavg_atm, histavg_lnd, histavg_ocn, histavg_ice,     &
-       histavg_rof, histavg_glc, histavg_wav, histavg_xao,                &
+       histavg_rof, histavg_glc, histavg_wav, histavg_xao, histavg_iac,   &
        orb_iyear, orb_iyear_align, orb_mode, orb_mvelp,        &
        orb_eccen, orb_obliqr, orb_lambm0, orb_mvelpp, wv_sat_scheme,      &
        wv_sat_transition_start, wv_sat_use_tables, wv_sat_table_spacing,  &
        tfreeze_option, glc_renormalize_smb, &
        glc_phase, rof_phase, atm_phase, lnd_phase, ocn_phase, ice_phase,  &
-       wav_phase, esp_phase, wav_nx, wav_ny, atm_nx, atm_ny,              &
+       wav_phase, iac_phase, esp_phase, wav_nx, wav_ny, atm_nx, atm_ny,   &
        lnd_nx, lnd_ny, rof_nx, rof_ny, ice_nx, ice_ny, ocn_nx, ocn_ny,    &
-       glc_nx, glc_ny, eps_frac, eps_amask,                               &
+       iac_nx, iac_ny, glc_nx, glc_ny, eps_frac, eps_amask,               &
        eps_agrid, eps_aarea, eps_omask, eps_ogrid, eps_oarea,             &
        reprosum_use_ddpdd, reprosum_allow_infnan,                         &
        reprosum_diffmax, reprosum_recompute,                              &
@@ -1521,10 +1588,10 @@ CONTAINS
     character(len=*),       optional, intent(IN)    :: flux_epbal              ! selects E,P,R adjustment technique
     logical,                optional, intent(IN)    :: flux_albav              ! T => no diurnal cycle in ocn albedos
     logical,                optional, intent(IN)    :: flux_diurnal            ! T => diurnal cycle in atm/ocn flux
+    integer,                optional, intent(IN)    :: ocn_surface_flux_scheme ! 0: E3SMv1 1: COARE 2:UA
     logical, optional, intent(in) :: coldair_outbreak_mod
     real(SHR_KIND_R8),      optional, intent(IN)    :: flux_convergence   ! atmocn flux calc convergence value
     integer,                optional, intent(IN)    :: flux_max_iteration ! max number of iterations of atmocn flux loop
-    real(SHR_KIND_R8),      optional, intent(IN)    :: gust_fac                ! wind gustiness factor
     character(len=*),       optional, intent(IN)    :: glc_renormalize_smb     ! Whether to renormalize smb sent from lnd -> glc
     real(SHR_KIND_R8),      optional, intent(IN)    :: wall_time_limit         ! force stop wall time (hours)
     character(len=*),       optional, intent(IN)    :: force_stop_at           ! force a stop at next (month, day, etc)
@@ -1535,6 +1602,7 @@ CONTAINS
     character(len=*),       optional, intent(IN)    :: rof_gnam                ! rof grid
     character(len=*),       optional, intent(IN)    :: glc_gnam                ! glc grid
     character(len=*),       optional, intent(IN)    :: wav_gnam                ! wav grid
+    character(len=*),       optional, intent(IN)    :: iac_gnam                ! iac grid
     logical,                optional, intent(IN)    :: shr_map_dopole          ! pole corrections in shr_map_mod
     character(len=*),       optional, intent(IN)    :: vect_map                ! vector mapping option
     character(len=*),       optional, intent(IN)    :: aoflux_grid             ! grid for atm ocn flux calc
@@ -1566,6 +1634,7 @@ CONTAINS
     logical,                optional, intent(IN)    :: histavg_glc
     logical,                optional, intent(IN)    :: histavg_wav
     logical,                optional, intent(IN)    :: histavg_xao
+    logical,                optional, intent(IN)    :: histavg_iac
     logical,                optional, intent(IN)    :: drv_threading      ! driver threading control flag
     real(SHR_KIND_R8),      optional, intent(IN)    :: eps_frac           ! fraction error tolerance
     real(SHR_KIND_R8),      optional, intent(IN)    :: eps_amask          ! atm mask error tolerance
@@ -1597,6 +1666,7 @@ CONTAINS
     logical,                optional, intent(IN)    :: ocn_present
     logical,                optional, intent(IN)    :: ocn_prognostic
     logical,                optional, intent(IN)    :: ocnrof_prognostic
+    logical,                optional, intent(IN)    :: ocn_c2_glcshelf
     logical,                optional, intent(IN)    :: ice_present
     logical,                optional, intent(IN)    :: ice_prognostic
     logical,                optional, intent(IN)    :: iceberg_prognostic
@@ -1610,6 +1680,8 @@ CONTAINS
     logical,                optional, intent(IN)    :: wav_prognostic
     logical,                optional, intent(IN)    :: esp_present
     logical,                optional, intent(IN)    :: esp_prognostic
+    logical,                optional, intent(IN)    :: iac_present
+    logical,                optional, intent(IN)    :: iac_prognostic
     integer(SHR_KIND_IN),   optional, intent(IN)    :: atm_nx             ! nx,ny 2d grid size global
     integer(SHR_KIND_IN),   optional, intent(IN)    :: atm_ny             ! nx,ny 2d grid size global
     integer(SHR_KIND_IN),   optional, intent(IN)    :: lnd_nx
@@ -1624,6 +1696,8 @@ CONTAINS
     integer(SHR_KIND_IN),   optional, intent(IN)    :: glc_ny
     integer(SHR_KIND_IN),   optional, intent(IN)    :: wav_nx
     integer(SHR_KIND_IN),   optional, intent(IN)    :: wav_ny
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: iac_nx
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: iac_ny
 
     real(SHR_KIND_R8),      optional, intent(IN)    :: nextsw_cday        ! calendar of next atm shortwave
     real(SHR_KIND_R8),      optional, intent(IN)    :: precip_fact        ! precip factor
@@ -1634,6 +1708,7 @@ CONTAINS
     integer(SHR_KIND_IN),   optional, intent(IN)    :: glc_phase          ! glc phase
     integer(SHR_KIND_IN),   optional, intent(IN)    :: rof_phase          ! rof phase
     integer(SHR_KIND_IN),   optional, intent(IN)    :: wav_phase          ! wav phase
+    integer(SHR_KIND_IN),   optional, intent(IN)    :: iac_phase          ! iac phase
     integer(SHR_KIND_IN),   optional, intent(IN) :: esp_phase             ! esp phase
     logical,                optional, intent(IN) :: atm_aero              ! atm aerosols
     logical,                optional, intent(IN) :: glc_g2lupdate         ! update glc2lnd fields in lnd model
@@ -1688,10 +1763,11 @@ CONTAINS
     if ( present(flux_epbal)     ) infodata%flux_epbal     = flux_epbal
     if ( present(flux_albav)     ) infodata%flux_albav     = flux_albav
     if ( present(flux_diurnal)   ) infodata%flux_diurnal   = flux_diurnal
+    if ( present(ocn_surface_flux_scheme) ) infodata%ocn_surface_flux_scheme = &
+         ocn_surface_flux_scheme
     if ( present(coldair_outbreak_mod)   ) infodata%coldair_outbreak_mod  = coldair_outbreak_mod
     if ( present(flux_convergence)) infodata%flux_convergence  = flux_convergence
     if ( present(flux_max_iteration)) infodata%flux_max_iteration   = flux_max_iteration
-    if ( present(gust_fac)       ) infodata%gust_fac       = gust_fac
     if ( present(glc_renormalize_smb)) infodata%glc_renormalize_smb = glc_renormalize_smb
     if ( present(wall_time_limit)) infodata%wall_time_limit= wall_time_limit
     if ( present(force_stop_at)  ) infodata%force_stop_at  = force_stop_at
@@ -1702,6 +1778,7 @@ CONTAINS
     if ( present(rof_gnam)       ) infodata%rof_gnam       = rof_gnam
     if ( present(glc_gnam)       ) infodata%glc_gnam       = glc_gnam
     if ( present(wav_gnam)       ) infodata%wav_gnam       = wav_gnam
+    if ( present(iac_gnam)       ) infodata%iac_gnam       = iac_gnam
     if ( present(shr_map_dopole) ) infodata%shr_map_dopole = shr_map_dopole
     if ( present(vect_map)       ) infodata%vect_map       = vect_map
     if ( present(aoflux_grid)    ) infodata%aoflux_grid    = aoflux_grid
@@ -1732,6 +1809,7 @@ CONTAINS
     if ( present(histavg_rof)    ) infodata%histavg_rof    = histavg_rof
     if ( present(histavg_glc)    ) infodata%histavg_glc    = histavg_glc
     if ( present(histavg_wav)    ) infodata%histavg_wav    = histavg_wav
+    if ( present(histavg_iac)    ) infodata%histavg_iac    = histavg_iac
     if ( present(histavg_xao)    ) infodata%histavg_xao    = histavg_xao
     if ( present(drv_threading)  ) infodata%drv_threading  = drv_threading
     if ( present(eps_frac)       ) infodata%eps_frac       = eps_frac
@@ -1764,6 +1842,7 @@ CONTAINS
     if ( present(ocn_present)    ) infodata%ocn_present    = ocn_present
     if ( present(ocn_prognostic) ) infodata%ocn_prognostic = ocn_prognostic
     if ( present(ocnrof_prognostic)) infodata%ocnrof_prognostic = ocnrof_prognostic
+    if ( present(ocn_c2_glcshelf)) infodata%ocn_c2_glcshelf = ocn_c2_glcshelf
     if ( present(ice_present)    ) infodata%ice_present    = ice_present
     if ( present(ice_prognostic) ) infodata%ice_prognostic = ice_prognostic
     if ( present(iceberg_prognostic)) infodata%iceberg_prognostic = iceberg_prognostic
@@ -1775,6 +1854,8 @@ CONTAINS
     if ( present(glc_coupled_fluxes)) infodata%glc_coupled_fluxes = glc_coupled_fluxes
     if ( present(wav_present)    ) infodata%wav_present    = wav_present
     if ( present(wav_prognostic) ) infodata%wav_prognostic = wav_prognostic
+    if ( present(iac_present)    ) infodata%iac_present    = iac_present
+    if ( present(iac_prognostic) ) infodata%iac_prognostic = iac_prognostic
     if ( present(esp_present)    ) infodata%esp_present    = esp_present
     if ( present(esp_prognostic) ) infodata%esp_prognostic = esp_prognostic
     if ( present(atm_nx)         ) infodata%atm_nx         = atm_nx
@@ -1791,6 +1872,8 @@ CONTAINS
     if ( present(glc_ny)         ) infodata%glc_ny         = glc_ny
     if ( present(wav_nx)         ) infodata%wav_nx         = wav_nx
     if ( present(wav_ny)         ) infodata%wav_ny         = wav_ny
+    if ( present(iac_nx)         ) infodata%iac_nx         = iac_nx
+    if ( present(iac_ny)         ) infodata%iac_ny         = iac_ny
 
     if ( present(nextsw_cday)    ) infodata%nextsw_cday    = nextsw_cday
     if ( present(precip_fact)    ) infodata%precip_fact    = precip_fact
@@ -1801,6 +1884,7 @@ CONTAINS
     if ( present(glc_phase)      ) infodata%glc_phase      = glc_phase
     if ( present(rof_phase)      ) infodata%rof_phase      = rof_phase
     if ( present(wav_phase)      ) infodata%wav_phase      = wav_phase
+    if ( present(iac_phase)      ) infodata%iac_phase      = iac_phase
     if ( present(esp_phase)      ) infodata%esp_phase      = esp_phase
     if ( present(atm_aero)       ) infodata%atm_aero       = atm_aero
     if ( present(glc_g2lupdate)  ) infodata%glc_g2lupdate  = glc_g2lupdate
@@ -1878,6 +1962,11 @@ CONTAINS
             wav_prognostic=comp_prognostic, wav_gnam=comp_gnam,                &
             wav_phase=comp_phase, wav_nx=comp_nx, wav_ny=comp_ny,              &
             histavg_wav=histavg_comp)
+    else if (component_firstletter == 'z') then
+       call seq_infodata_PutData(infodata, iac_present=comp_present,           &
+            iac_prognostic=comp_prognostic, iac_gnam=comp_gnam,                &
+            iac_phase=comp_phase, iac_nx=comp_nx, iac_ny=comp_ny,              &
+            histavg_iac=histavg_comp)
     else if (component_firstletter == 'e') then
        if ((loglevel > 1) .and. seq_comm_iamroot(1)) then
           if (present(comp_gnam)) then
@@ -1975,10 +2064,10 @@ CONTAINS
     call shr_mpi_bcast(infodata%flux_epbal,              mpicom)
     call shr_mpi_bcast(infodata%flux_albav,              mpicom)
     call shr_mpi_bcast(infodata%flux_diurnal,            mpicom)
-    call shr_mpi_bcast(infodata%coldair_outbreak_mod,            mpicom)
+    call shr_mpi_bcast(infodata%ocn_surface_flux_scheme, mpicom)
+    call shr_mpi_bcast(infodata%coldair_outbreak_mod,    mpicom)
     call shr_mpi_bcast(infodata%flux_convergence,        mpicom)
     call shr_mpi_bcast(infodata%flux_max_iteration,      mpicom)
-    call shr_mpi_bcast(infodata%gust_fac,                mpicom)
     call shr_mpi_bcast(infodata%glc_renormalize_smb,     mpicom)
     call shr_mpi_bcast(infodata%wall_time_limit,         mpicom)
     call shr_mpi_bcast(infodata%force_stop_at,           mpicom)
@@ -1989,6 +2078,7 @@ CONTAINS
     call shr_mpi_bcast(infodata%rof_gnam,                mpicom)
     call shr_mpi_bcast(infodata%glc_gnam,                mpicom)
     call shr_mpi_bcast(infodata%wav_gnam,                mpicom)
+    call shr_mpi_bcast(infodata%iac_gnam,                mpicom)
     call shr_mpi_bcast(infodata%shr_map_dopole,          mpicom)
     call shr_mpi_bcast(infodata%vect_map,                mpicom)
     call shr_mpi_bcast(infodata%aoflux_grid,             mpicom)
@@ -2019,6 +2109,7 @@ CONTAINS
     call shr_mpi_bcast(infodata%histavg_rof           ,  mpicom)
     call shr_mpi_bcast(infodata%histavg_glc           ,  mpicom)
     call shr_mpi_bcast(infodata%histavg_wav           ,  mpicom)
+    call shr_mpi_bcast(infodata%histavg_iac           ,  mpicom)
     call shr_mpi_bcast(infodata%histavg_xao           ,  mpicom)
     call shr_mpi_bcast(infodata%drv_threading,           mpicom)
     call shr_mpi_bcast(infodata%eps_frac,                mpicom)
@@ -2051,6 +2142,7 @@ CONTAINS
     call shr_mpi_bcast(infodata%ocn_present,             mpicom)
     call shr_mpi_bcast(infodata%ocn_prognostic,          mpicom)
     call shr_mpi_bcast(infodata%ocnrof_prognostic,       mpicom)
+    call shr_mpi_bcast(infodata%ocn_c2_glcshelf,         mpicom)
     call shr_mpi_bcast(infodata%ice_present,             mpicom)
     call shr_mpi_bcast(infodata%ice_prognostic,          mpicom)
     call shr_mpi_bcast(infodata%iceberg_prognostic,      mpicom)
@@ -2064,6 +2156,8 @@ CONTAINS
     call shr_mpi_bcast(infodata%wav_prognostic,          mpicom)
     call shr_mpi_bcast(infodata%esp_present,             mpicom)
     call shr_mpi_bcast(infodata%esp_prognostic,          mpicom)
+    call shr_mpi_bcast(infodata%iac_present,             mpicom)
+    call shr_mpi_bcast(infodata%iac_prognostic,          mpicom)
 
     call shr_mpi_bcast(infodata%atm_nx,                  mpicom)
     call shr_mpi_bcast(infodata%atm_ny,                  mpicom)
@@ -2079,6 +2173,8 @@ CONTAINS
     call shr_mpi_bcast(infodata%glc_ny,                  mpicom)
     call shr_mpi_bcast(infodata%wav_nx,                  mpicom)
     call shr_mpi_bcast(infodata%wav_ny,                  mpicom)
+    call shr_mpi_bcast(infodata%iac_nx,                  mpicom)
+    call shr_mpi_bcast(infodata%iac_ny,                  mpicom)
 
     call shr_mpi_bcast(infodata%nextsw_cday,             mpicom)
     call shr_mpi_bcast(infodata%precip_fact,             mpicom)
@@ -2089,10 +2185,12 @@ CONTAINS
     call shr_mpi_bcast(infodata%glc_phase,               mpicom)
     call shr_mpi_bcast(infodata%rof_phase,               mpicom)
     call shr_mpi_bcast(infodata%wav_phase,               mpicom)
+    call shr_mpi_bcast(infodata%iac_phase,               mpicom)
     call shr_mpi_bcast(infodata%atm_aero,                mpicom)
     call shr_mpi_bcast(infodata%glc_g2lupdate,           mpicom)
     call shr_mpi_bcast(infodata%glc_valid_input,         mpicom)
     call shr_mpi_bcast(infodata%model_doi_url,           mpicom)
+    call shr_mpi_bcast(infodata%constant_zenith_deg,     mpicom)
 
   end subroutine seq_infodata_bcast
 
@@ -2132,6 +2230,7 @@ CONTAINS
     logical :: ice2cpli,ice2cplr
     logical :: glc2cpli,glc2cplr
     logical :: wav2cpli,wav2cplr
+    logical :: iac2cpli,iac2cplr
     logical :: esp2cpli
     logical :: cpl2i,cpl2r
     logical :: logset
@@ -2160,6 +2259,8 @@ CONTAINS
     glc2cplr = .false.
     wav2cpli = .false.
     wav2cplr = .false.
+    iac2cpli = .false.
+    iac2cplr = .false.
     esp2cpli = .false.
     cpl2i = .false.
     cpl2r = .false.
@@ -2236,6 +2337,16 @@ CONTAINS
        logset = .true.
     endif
 
+    if (trim(type) == 'iac2cpl_init') then
+       iac2cpli = .true.
+       iac2cplr = .true.
+       logset = .true.
+    endif
+    if (trim(type) == 'iac2cpl_run') then
+       iac2cplr = .true.
+       logset = .true.
+    endif
+
     if (trim(type) == 'esp2cpl_init') then
        esp2cpli = .true.
        logset = .true.
@@ -2247,6 +2358,7 @@ CONTAINS
          trim(type) == 'cpl2ocn_init' .or. &
          trim(type) == 'cpl2glc_init' .or. &
          trim(type) == 'cpl2wav_init' .or. &
+         trim(type) == 'cpl2iac_init' .or. &
          trim(type) == 'cpl2esp_init' .or. &
          trim(type) == 'cpl2ice_init') then
        cpl2i = .true.
@@ -2260,6 +2372,7 @@ CONTAINS
          trim(type) == 'cpl2ocn_run' .or. &
          trim(type) == 'cpl2glc_run' .or. &
          trim(type) == 'cpl2wav_run' .or. &
+         trim(type) == 'cpl2iac_run' .or. &
          trim(type) == 'cpl2ice_run') then
        cpl2r = .true.
        logset = .true.
@@ -2314,6 +2427,7 @@ CONTAINS
        call shr_mpi_bcast(infodata%ocn_present,        mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%ocn_prognostic,     mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%ocnrof_prognostic,  mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%ocn_c2_glcshelf,    mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%ocn_nx,             mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%ocn_ny,             mpicom, pebcast=cmppe)
        ! dead_comps is true if it's ever set to true
@@ -2360,6 +2474,17 @@ CONTAINS
        if (deads .or. infodata%dead_comps) infodata%dead_comps = .true.
     endif
 
+    if (iac2cpli) then
+       call shr_mpi_bcast(infodata%iac_present,        mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%iac_prognostic,     mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%iac_nx,             mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%iac_ny,             mpicom, pebcast=cmppe)
+       ! dead_comps is true if it's ever set to true
+       deads = infodata%dead_comps
+       call shr_mpi_bcast(deads,                       mpicom, pebcast=cmppe)
+       if (deads .or. infodata%dead_comps) infodata%dead_comps = .true.
+    endif
+
     if (esp2cpli) then
        call shr_mpi_bcast(infodata%esp_present,        mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%esp_prognostic,     mpicom, pebcast=cmppe)
@@ -2377,6 +2502,7 @@ CONTAINS
        call shr_mpi_bcast(infodata%ocn_present,        mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%ocn_prognostic,     mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%ocnrof_prognostic,  mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%ocn_c2_glcshelf,    mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%ice_present,        mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%ice_prognostic,     mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%iceberg_prognostic, mpicom, pebcast=cplpe)
@@ -2388,6 +2514,8 @@ CONTAINS
        call shr_mpi_bcast(infodata%glc_coupled_fluxes, mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%wav_present,        mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%wav_prognostic,     mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%iac_present,        mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%iac_prognostic,     mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%esp_present,        mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%esp_prognostic,     mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%dead_comps,         mpicom, pebcast=cplpe)
@@ -2634,10 +2762,10 @@ CONTAINS
     write(logunit,F0A) subname,'flux_epbal               = ', trim(infodata%flux_epbal)
     write(logunit,F0L) subname,'flux_albav               = ', infodata%flux_albav
     write(logunit,F0L) subname,'flux_diurnal             = ', infodata%flux_diurnal
+    write(logunit,F0L) subname,'ocn_surface_flux_scheme  = ', infodata%ocn_surface_flux_scheme
     write(logunit,F0L) subname,'coldair_outbreak_mod            = ', infodata%coldair_outbreak_mod
     write(logunit,F0R) subname,'flux_convergence         = ', infodata%flux_convergence
     write(logunit,F0I) subname,'flux_max_iteration       = ', infodata%flux_max_iteration
-    write(logunit,F0R) subname,'gust_fac                 = ', infodata%gust_fac
     write(logunit,F0A) subname,'glc_renormalize_smb      = ', trim(infodata%glc_renormalize_smb)
     write(logunit,F0R) subname,'wall_time_limit          = ', infodata%wall_time_limit
     write(logunit,F0A) subname,'force_stop_at            = ', trim(infodata%force_stop_at)
@@ -2648,6 +2776,7 @@ CONTAINS
     write(logunit,F0A) subname,'rof_gridname             = ', trim(infodata%rof_gnam)
     write(logunit,F0A) subname,'glc_gridname             = ', trim(infodata%glc_gnam)
     write(logunit,F0A) subname,'wav_gridname             = ', trim(infodata%wav_gnam)
+    write(logunit,F0A) subname,'iac_gridname             = ', trim(infodata%iac_gnam)
     write(logunit,F0L) subname,'shr_map_dopole           = ', infodata%shr_map_dopole
     write(logunit,F0A) subname,'vect_map                 = ', trim(infodata%vect_map)
     write(logunit,F0A) subname,'aoflux_grid              = ', trim(infodata%aoflux_grid)
@@ -2678,6 +2807,7 @@ CONTAINS
     write(logunit,F0L) subname,'histavg_rof              = ', infodata%histavg_rof
     write(logunit,F0L) subname,'histavg_glc              = ', infodata%histavg_glc
     write(logunit,F0L) subname,'histavg_wav              = ', infodata%histavg_wav
+    write(logunit,F0L) subname,'histavg_iac              = ', infodata%histavg_iac
     write(logunit,F0L) subname,'histavg_xao              = ', infodata%histavg_xao
     write(logunit,F0L) subname,'drv_threading            = ', infodata%drv_threading
 
@@ -2714,6 +2844,7 @@ CONTAINS
     write(logunit,F0L) subname,'ocn_present              = ', infodata%ocn_present
     write(logunit,F0L) subname,'ocn_prognostic           = ', infodata%ocn_prognostic
     write(logunit,F0L) subname,'ocnrof_prognostic        = ', infodata%ocnrof_prognostic
+    write(logunit,F0L) subname,'ocn_c2_glcshelf          = ', infodata%ocn_c2_glcshelf
     write(logunit,F0L) subname,'ice_present              = ', infodata%ice_present
     write(logunit,F0L) subname,'ice_prognostic           = ', infodata%ice_prognostic
     write(logunit,F0L) subname,'iceberg_prognostic       = ', infodata%iceberg_prognostic
@@ -2725,6 +2856,8 @@ CONTAINS
     write(logunit,F0L) subname,'glc_coupled_fluxes       = ', infodata%glc_coupled_fluxes
     write(logunit,F0L) subname,'wav_present              = ', infodata%wav_present
     write(logunit,F0L) subname,'wav_prognostic           = ', infodata%wav_prognostic
+    write(logunit,F0L) subname,'iac_present              = ', infodata%iac_present
+    write(logunit,F0L) subname,'iac_prognostic           = ', infodata%iac_prognostic
     write(logunit,F0L) subname,'esp_present              = ', infodata%esp_present
     write(logunit,F0L) subname,'esp_prognostic           = ', infodata%esp_prognostic
 
@@ -2742,6 +2875,8 @@ CONTAINS
     write(logunit,F0I) subname,'glc_ny                   = ', infodata%glc_ny
     write(logunit,F0I) subname,'wav_nx                   = ', infodata%wav_nx
     write(logunit,F0I) subname,'wav_ny                   = ', infodata%wav_ny
+    write(logunit,F0I) subname,'iac_nx                   = ', infodata%iac_nx
+    write(logunit,F0I) subname,'iac_ny                   = ', infodata%iac_ny
 
     write(logunit,F0R) subname,'nextsw_cday              = ', infodata%nextsw_cday
     write(logunit,F0R) subname,'precip_fact              = ', infodata%precip_fact
@@ -2754,6 +2889,7 @@ CONTAINS
     write(logunit,F0S) subname,'glc_phase                = ', infodata%glc_phase
     write(logunit,F0S) subname,'rof_phase                = ', infodata%rof_phase
     write(logunit,F0S) subname,'wav_phase                = ', infodata%wav_phase
+    write(logunit,F0S) subname,'iac_phase                = ', infodata%iac_phase
 
     write(logunit,F0L) subname,'glc_g2lupdate            = ', infodata%glc_g2lupdate
     !     endif

@@ -3,13 +3,15 @@
 !  DESCRIPTION:  Remap topo data from cubed-sphere grid to target grid using rigorous remapping
 !                (Lauritzen, Nair and Ullrich, 2010, J. Comput. Phys.)
 !
-!  Author: Peter Hjort Lauritzen (pel@ucar.edu), AMP/CGD/NESL/NCAR 
+!  Author:       Peter Hjort Lauritzen (pel@ucar.edu), AMP/CGD/NESL/NCAR 
+!
+!  Changelog:    Ben Hillman (bhillma@sandia.gov) January 2019 - provide command line interface
 !
 program convterr
   use shr_kind_mod, only: r8 => shr_kind_r8
   use reconstruct
   implicit none
-#     include         <netcdf.inc>
+#include <netcdf.inc>
 
   !**************************************
   !
@@ -18,14 +20,20 @@ program convterr
   !**************************************
   !
   !
-  ! if smoothed PHIS is available SGH needs to be recomputed  to account for the sub-grid-scale
-  ! variability introduced by the smoothing
+  ! If smoothed PHIS is available SGH needs to be recomputed to account for the 
+  ! sub-grid-scale variability introduced by the smoothing; This will be set
+  ! based on the presence of a smoothed topography file in the command line
+  ! argument list, but set the default to false here. Note that SGH30 is also
+  ! downscaled to the target grid, but does not depend on the smoothing.
   !
   logical :: lsmooth_terr = .FALSE. 
   !
   ! PHIS is smoothed by other software/dynamical core
+  ! NOTE: Setting lexternal_smooth_terr = .FALSE. (i.e., using the code provided
+  ! to perform the smoothing operation) is not currently supported. Use at your
+  ! own risk!
   !
-  logical :: lexternal_smooth_terr = .FALSE. ! lexternal_smooth_terr = .FALSE. is NOT supported currently
+  logical :: lexternal_smooth_terr = .TRUE.
   !
   ! set PHIS=0.0 if LANDFRAC<0.01
   !
@@ -147,13 +155,31 @@ program convterr
   
   integer :: jmax_segments_coarse,jall_coarse,ncube_coarse
   real(r8) :: all_weights
-
+  !
+  ! Input and output filenames
+  !
+  character(len=512) :: target_grid_file
+  character(len=512) :: input_topography_file
+  character(len=512) :: output_topography_file
+  character(len=512) :: smoothed_topography_file
+  
   !
   ! turn extra debugging on/off
   !
   ldbg = .FALSE.
   
   nreconstruction = 1
+
+  call parse_arguments(target_grid_file      , input_topography_file   , &
+                       output_topography_file, smoothed_topography_file, &
+                       lsmooth_terr                                      )
+
+  if (lsmooth_terr) then
+     status = nf_open(trim(smoothed_topography_file), 0, ncid)
+     IF (STATUS .NE. NF_NOERR) CALL HANDLE_ERR(STATUS)
+     status = nf_close(ncid)
+  end if
+                       
   !
   !*********************************************************
   !
@@ -161,7 +187,7 @@ program convterr
   !
   !*********************************************************
   !
-  status = nf_open('target.nc', 0, ncid)
+  status = nf_open(trim(target_grid_file), 0, ncid)
   IF (STATUS .NE. NF_NOERR) CALL HANDLE_ERR(STATUS)
   
   status = NF_INQ_DIMID(ncid, 'grid_size', ntarget_id)
@@ -232,7 +258,7 @@ program convterr
   !****************************************************
   !
   WRITE(*,*) "get dimension of cubed-sphere data from file"
-  status = nf_open('USGS-topo-cube.nc', 0, ncid)
+  status = nf_open(trim(input_topography_file), 0, ncid)
   IF (STATUS .NE. NF_NOERR) CALL HANDLE_ERR(STATUS)
   
   status = NF_INQ_DIMID(ncid, 'grid_size', dimid)
@@ -270,7 +296,7 @@ program convterr
   !****************************************************
   !
   WRITE(*,*) "read cubed-sphere 3km data from file"
-  status = nf_open('USGS-topo-cube.nc', 0, ncid)
+  status = nf_open(trim(input_topography_file), 0, ncid)
   IF (STATUS .NE. NF_NOERR) CALL HANDLE_ERR(STATUS)
   
   status = NF_INQ_DIMID(ncid, 'grid_size', dimid)
@@ -493,7 +519,7 @@ program convterr
     IF (lexternal_smooth_terr) THEN
       WRITE(*,*) "using externally generated smoothed topography"
       
-      status = nf_open('phis-smooth.nc', 0, ncid)
+      status = nf_open(trim(smoothed_topography_file), 0, ncid)
       IF (STATUS .NE. NF_NOERR) CALL HANDLE_ERR(STATUS)           
       !
       IF (.NOT.ltarget_latlon) THEN
@@ -546,6 +572,7 @@ program convterr
         END DO
         DEALLOCATE(terr_smooth)
       END IF
+      status = nf_close(ncid)
     ELSE
       WRITE(*,*) "unstested software - uncomment this line of you know what you are doing!"
       STOP
@@ -879,19 +906,141 @@ program convterr
   
   IF (ltarget_latlon) THEN
     CALL wrtncdf_rll(nlon,nlat,lpole,ntarget,terr_target,landfrac_target,sgh_target,sgh30_target,&
-         landm_coslat_target,target_center_lon,target_center_lat,.true.)
+         landm_coslat_target,target_center_lon,target_center_lat,.true.,output_topography_file)
   ELSE
     CALL wrtncdf_unstructured(ntarget,terr_target,landfrac_target,sgh_target,sgh30_target,&
-         landm_coslat_target,target_center_lon,target_center_lat)
+         landm_coslat_target,target_center_lon,target_center_lat,output_topography_file)
   END IF
   DEALLOCATE(terr_target,landfrac_target,sgh30_target,sgh_target,landm_coslat_target)
   
 end program convterr
-  
+
+
+!
+! Read command line arguments and set variables
+!
+subroutine parse_arguments(target_grid_file      , input_topography_file   , &
+                           output_topography_file, smoothed_topography_file, &
+                           lsmooth_terr                                      )
+   implicit none
+   character(len=*), intent(inout) :: target_grid_file
+   character(len=*), intent(inout) :: input_topography_file
+   character(len=*), intent(inout) :: output_topography_file
+   character(len=*), intent(inout) :: smoothed_topography_file
+   logical, intent(inout) :: lsmooth_terr
+
+   integer :: n, nargs
+   character(len=512) :: arg
+
+   ! Initialize filenames to empty strings and logicals to false
+   target_grid_file = ''
+   input_topography_file = ''
+   output_topography_file = ''
+   smoothed_topography_file = ''
+   lsmooth_terr = .false.
+
+   ! Get number of arguments and make sure at least some arguments were passed
+   nargs = iargc()
+   if (nargs == 0) then
+      print *, 'ERROR: no arguments were passed.'
+      call usage()
+      stop
+   end if
+
+   ! Parse command line arguments
+   n = 1
+   do while (n <= nargs)
+     call getarg(n, arg)
+     n = n + 1
+
+     select case (arg)
+     case ('--target-grid')
+        ! Set target grid template file name
+        call getarg(n, arg)
+        target_grid_file = trim(arg)
+        n = n + 1
+     case ('--input-topography')
+        ! Set input topography file name
+        call getarg(n, arg)
+        input_topography_file = trim(arg)
+        n = n + 1
+     case ('--output-topography')
+        ! Set output file name
+        call getarg(n, arg)
+        output_topography_file = trim(arg)
+        n = n + 1
+     case ('--smoothed-topography')
+        ! Set smoothed topography file name; if a smoothed topography file is
+        ! passed then we will do the surface roughness calculation
+        call getarg(n, arg)
+        smoothed_topography_file = trim(arg)
+        lsmooth_terr = .true.
+        n = n + 1
+     case ('--help')
+        call usage()
+        stop
+     case default
+        call usage()
+        stop
+     end select
+   end do
+
+   ! Check arguments
+   if (trim(target_grid_file) == '') then
+      print *, 'ERROR: target_grid_file argument is required.'
+      call usage()
+      stop
+   else if (trim(input_topography_file) == '') then
+      print *, 'ERROR: input_topography_file argument is required.'
+      call usage()
+      stop
+   else if (trim(output_topography_file) == '') then
+      print *, 'ERROR: output_topography_file argument is required.'
+      call usage()
+      stop
+   end if
+
+end subroutine parse_arguments 
+
+
+!
+! Print out useful information about what this program does and how to invoke it
+!
+subroutine usage()
+   implicit none
+   print *, '                                                                             '
+   print *, 'usage: cube_to_target <arguments>                                            '
+   print *, '                                                                             '
+   print *, 'REQUIRED ARGUMENTS:                                                          '
+   print *, '  --target-grid <filename>            Target grid descriptor in SCRIP format '
+   print *, '  --input-topography <filename>       Input USGS topography on cube sphere   '
+   print *, '  --output-topography <filename>      Output topography on target grid       '
+   print *, '                                                                             '                     
+   print *, 'OPTIONAL ARGUMENTS:                                                          '
+   print *, '  --smoothed-topography <filename>    Input smoothed topography (for surface '
+   print *, '                                      roughness calculation). If present,    '
+   print *, '                                      output will contain estimate of subgrid'
+   print *, '                                      surface roughness (SGH). Note that the '
+   print *, '                                      variance in elevation from the 30s to  '
+   print *, '                                      3km grid (SGH30) is also downscaled,   '
+   print *, '                                      but does not depend on the smoothing.  '
+   print *, '                                                                             '
+   print *, 'DESCRIPTION:                                                                 '
+   print *, 'This code performs rigorous remapping of topography variables on a cubed-    '
+   print *, 'sphere grid to any target grid. The code is documented in:                   '
+   print *, '                                                                             '
+   print *, '  Lauritzen, Nair and Ullrich, 2010, J. Comput. Phys.                        '
+   print *, '                                                                             '
+   print *, 'AUTHOR:                                                                      '
+   print *, '  Peter Hjort Lauritzen (pel@ucar.edu), AMP/CGD/NESL/NCAR                    '
+   print *, '                                                                             '
+end subroutine usage
+
+
 !
 !
 !
-subroutine wrtncdf_unstructured(n,terr,landfrac,sgh,sgh30,landm_coslat,lon,lat)
+subroutine wrtncdf_unstructured(n,terr,landfrac,sgh,sgh30,landm_coslat,lon,lat,fout)
   use shr_kind_mod, only: r8 => shr_kind_r8
   implicit none
   
@@ -905,7 +1054,7 @@ subroutine wrtncdf_unstructured(n,terr,landfrac,sgh,sgh30,landm_coslat,lon,lat)
   !
   ! Local variables
   !
-  character (len=64) :: fout       ! NetCDF output file
+  character(len=*),intent(in) :: fout       ! NetCDF output file
   integer            :: foutid     ! Output file id
   integer            :: lonid, lonvid
   integer            :: latid, latvid
@@ -919,12 +1068,11 @@ subroutine wrtncdf_unstructured(n,terr,landfrac,sgh,sgh30,landm_coslat,lon,lat)
   
   real(r8), parameter :: fillvalue = 1.d36
   
-  fout='new-topo-file.nc'
   !
   !  Create NetCDF file for output
   !
   print *,"Create NetCDF file for output"
-  status = nf_create (fout, NF_64BIT_OFFSET , foutid)
+  status = nf_create (trim(fout), NF_64BIT_OFFSET , foutid)
   if (status .ne. NF_NOERR) call handle_err(status)
   !
   ! Create dimensions for output
@@ -1068,7 +1216,7 @@ end subroutine wrtncdf_unstructured
 !
 !**************************************************************     
 !
-subroutine wrtncdf_rll(nlon,nlat,lpole,n,terr_in,landfrac_in,sgh_in,sgh30_in,landm_coslat_in,lon,lat,lprepare_fv_smoothing_routine)
+subroutine wrtncdf_rll(nlon,nlat,lpole,n,terr_in,landfrac_in,sgh_in,sgh30_in,landm_coslat_in,lon,lat,lprepare_fv_smoothing_routine,fout)
   use shr_kind_mod, only: r8 => shr_kind_r8
   implicit none
   
@@ -1086,7 +1234,7 @@ subroutine wrtncdf_rll(nlon,nlat,lpole,n,terr_in,landfrac_in,sgh_in,sgh30_in,lan
   !
   ! Local variables
   !
-  character (len=32) :: fout       ! NetCDF output file
+  character(len=*), intent(in) :: fout       ! NetCDF output file
   integer            :: foutid     ! Output file id
   integer            :: lonid, lonvid
   integer            :: latid, latvid
@@ -1220,12 +1368,11 @@ subroutine wrtncdf_rll(nlon,nlat,lpole,n,terr_in,landfrac_in,sgh_in,sgh30_in,lan
   end if
   
   
-  fout='final.nc'
   !
   !  Create NetCDF file for output
   !
   print *,"Create NetCDF file for output"
-  status = nf_create (fout, NF_64BIT_OFFSET , foutid)
+  status = nf_create (trim(fout), NF_64BIT_OFFSET , foutid)
   if (status .ne. NF_NOERR) call handle_err(status)
   !
   ! Create dimensions for output
@@ -1546,7 +1693,7 @@ SUBROUTINE overlap_weights(weights_lgr_index_all,weights_eul_index_all,weights_a
   tmp = 0.0
   jall = 1
   DO i=1,ntarget
-    WRITE(*,*) "cell",i,"  ",100.0*DBLE(i)/DBLE(ntarget),"% done"
+    if (mod(i,1000) == 0) WRITE(*,*) "cell",i,"  ",100.0*DBLE(i)/DBLE(ntarget),"% done"
     !
     !---------------------------------------------------          
     !

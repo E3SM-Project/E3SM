@@ -10,9 +10,9 @@ from CIME.XML.standard_module_setup import *
 #pylint: disable=import-error,redefined-builtin
 from six.moves import input
 from CIME.utils                     import expect, get_cime_root, append_status
-from CIME.utils                     import convert_to_type, get_model
+from CIME.utils                     import convert_to_type, get_model, set_model
 from CIME.utils                     import get_project, get_charge_account, check_name
-from CIME.utils                     import get_current_commit, safe_copy
+from CIME.utils                     import get_current_commit, safe_copy, get_cime_default_driver
 from CIME.locked_files              import LOCKED_DIR, lock_file
 from CIME.XML.machines              import Machines
 from CIME.XML.pes                   import Pes
@@ -22,6 +22,7 @@ from CIME.XML.component             import Component
 from CIME.XML.compsets              import Compsets
 from CIME.XML.grids                 import Grids
 from CIME.XML.batch                 import Batch
+from CIME.XML.workflow              import Workflow
 from CIME.XML.pio                   import PIO
 from CIME.XML.archive               import Archive
 from CIME.XML.env_test              import EnvTest
@@ -32,6 +33,7 @@ from CIME.XML.env_build             import EnvBuild
 from CIME.XML.env_run               import EnvRun
 from CIME.XML.env_archive           import EnvArchive
 from CIME.XML.env_batch             import EnvBatch
+from CIME.XML.env_workflow          import EnvWorkflow
 from CIME.XML.generic_xml           import GenericXML
 from CIME.user_mod_support          import apply_user_mods
 from CIME.aprun import get_aprun_cmd_for_case
@@ -142,6 +144,7 @@ class Case(object):
         These are derived variables which can be used in the config_* files
         for variable substitution using the {{ var }} syntax
         """
+        set_model(self.get_value("MODEL"))
         env_mach_pes  = self.get_env("mach_pes")
         env_mach_spec = self.get_env('mach_specific')
         comp_classes  = self.get_values("COMP_CLASSES")
@@ -204,6 +207,8 @@ class Case(object):
         self._env_entryid_files.append(EnvBuild(self._caseroot, components=components, read_only=self._force_read_only))
         self._env_entryid_files.append(EnvMachPes(self._caseroot, components=components, read_only=self._force_read_only))
         self._env_entryid_files.append(EnvBatch(self._caseroot, read_only=self._force_read_only))
+        self._env_entryid_files.append(EnvWorkflow(self._caseroot, read_only=self._force_read_only))
+
         if os.path.isfile(os.path.join(self._caseroot,"env_test.xml")):
             self._env_entryid_files.append(EnvTest(self._caseroot, components=components, read_only=self._force_read_only))
         self._env_generic_files = []
@@ -223,6 +228,14 @@ class Case(object):
         if allow_missing:
             return None
         expect(False,"Could not find object for {} in case".format(full_name))
+
+    def check_timestamps(self, short_name=None):
+        if short_name is not None:
+            env_file = self.get_env(short_name)
+            env_file.check_timestamp()
+        else:
+            for env_file in self._files:
+                env_file.check_timestamp()
 
     def copy(self, newcasename, newcaseroot, newcimeroot=None, newsrcroot=None):
         newcase = deepcopy(self)
@@ -464,16 +477,19 @@ class Case(object):
                     self._compsetname = match
                     logger.info("Compset longname is {}".format(match))
                     logger.info("Compset specification file is {}".format(compsets_filename))
-                    return compset_alias, science_support
+                    break
 
         if compset_alias is None:
             logger.info("Did not find an alias or longname compset match for {} ".format(compset_name))
             self._compsetname = compset_name
-            # if this is a valiid compset longname there will be at least 7 components.
-            components = self.get_compset_components()
-            expect(len(components) > 6, "No compset alias {} found and this does not appear to be a compset longname.".format(compset_name))
 
-        return None, science_support
+        # Fill in compset name
+        self._compsetname, self._components = self.valid_compset(self._compsetname, compset_alias, files)
+        # if this is a valiid compset longname there will be at least 7 components.
+        components = self.get_compset_components()
+        expect(len(components) > 6, "No compset alias {} found and this does not appear to be a compset longname.".format(compset_name))
+
+        return compset_alias, science_support
 
     def get_primary_component(self):
         if self._primary_component is None:
@@ -528,6 +544,109 @@ class Case(object):
             primary_component = "drv"
 
         return primary_component
+
+    def _valid_compset_impl(self, compset_name, compset_alias, comp_classes, comp_hash):
+        """Add stub models missing in <compset_name>, return full compset name.
+        <comp_classes> is a list of all supported component classes.
+        <comp_hash> is a dictionary where each key is a supported component
+        (e.g., datm) and the associated value is the index in <comp_classes> of
+        that component's class (e.g., 1 for atm).
+        >>> Case(read_only=False)._valid_compset_impl('2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV', None, ['CPL', 'ATM', 'LND', 'ICE', 'OCN', 'ROF', 'GLC', 'WAV', 'ESP'], {'datm':1,'satm':1,'dlnd':2,'slnd':2,'dice':3,'sice':3,'docn':4,'socn':4,'drof':5,'srof':5,'sglc':6,'swav':7,'ww3':7,'sesp':8})
+        ('2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV_SESP', ['2000', 'DATM%NYF', 'SLND', 'DICE%SSMI', 'DOCN%DOM', 'DROF%NYF', 'SGLC', 'SWAV', 'SESP'])
+        >>> Case(read_only=False)._valid_compset_impl('2000_DATM%NYF_DICE%SSMI_DOCN%DOM_DROF%NYF', None, ['CPL', 'ATM', 'LND', 'ICE', 'OCN', 'ROF', 'GLC', 'WAV', 'ESP'], {'datm':1,'satm':1,'dlnd':2,'slnd':2,'dice':3,'sice':3,'docn':4,'socn':4,'drof':5,'srof':5,'sglc':6,'swav':7,'ww3':7,'sesp':8})
+        ('2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV_SESP', ['2000', 'DATM%NYF', 'SLND', 'DICE%SSMI', 'DOCN%DOM', 'DROF%NYF', 'SGLC', 'SWAV', 'SESP'])
+        >>> Case(read_only=False)._valid_compset_impl('2000_DICE%SSMI_DOCN%DOM_DATM%NYF_DROF%NYF', None, ['CPL', 'ATM', 'LND', 'ICE', 'OCN', 'ROF', 'GLC', 'WAV', 'ESP'], {'datm':1,'satm':1,'dlnd':2,'slnd':2,'dice':3,'sice':3,'docn':4,'socn':4,'drof':5,'srof':5,'sglc':6,'swav':7,'ww3':7,'sesp':8})
+        ('2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV_SESP', ['2000', 'DATM%NYF', 'SLND', 'DICE%SSMI', 'DOCN%DOM', 'DROF%NYF', 'SGLC', 'SWAV', 'SESP'])
+        >>> Case(read_only=False)._valid_compset_impl('2000_DICE%SSMI_DOCN%DOM_DATM%NYF_DROF%NYF_TEST', None, ['CPL', 'ATM', 'LND', 'ICE', 'OCN', 'ROF', 'GLC', 'WAV', 'ESP'], {'datm':1,'satm':1,'dlnd':2,'slnd':2,'dice':3,'sice':3,'docn':4,'socn':4,'drof':5,'srof':5,'sglc':6,'swav':7,'ww3':7,'sesp':8})
+        ('2000_DATM%NYF_SLND_DICE%SSMI_DOCN%DOM_DROF%NYF_SGLC_SWAV_SESP_TEST', ['2000', 'DATM%NYF', 'SLND', 'DICE%SSMI', 'DOCN%DOM', 'DROF%NYF', 'SGLC', 'SWAV', 'SESP'])
+        >>> Case(read_only=False)._valid_compset_impl('1850_CAM60_CLM50%BGC-CROP_CICE_POP2%ECO%ABIO-DIC_MOSART_CISM2%NOEVOLVE_WW3_BGC%BDRD', None, ['CPL', 'ATM', 'LND', 'ICE', 'OCN', 'ROF', 'GLC', 'WAV', 'ESP'], {'datm':1,'satm':1, 'cam':1,'dlnd':2,'clm':2,'slnd':2,'cice':3,'dice':3,'sice':3,'pop':4,'docn':4,'socn':4,'mosart':5,'drof':5,'srof':5,'cism':6,'sglc':6,'ww':7,'swav':7,'ww3':7,'sesp':8})
+        ('1850_CAM60_CLM50%BGC-CROP_CICE_POP2%ECO%ABIO-DIC_MOSART_CISM2%NOEVOLVE_WW3_SESP_BGC%BDRD', ['1850', 'CAM60', 'CLM50%BGC-CROP', 'CICE', 'POP2%ECO%ABIO-DIC', 'MOSART', 'CISM2%NOEVOLVE', 'WW3', 'SESP'])
+        >>> Case(read_only=False)._valid_compset_impl('1850_CAM60_CLM50%BGC-CROP_CICE_POP2%ECO%ABIO-DIC_MOSART_CISM2%NOEVOLVE_WW3_BGC%BDRD_TEST', None, ['CPL', 'ATM', 'LND', 'ICE', 'OCN', 'ROF', 'GLC', 'WAV', 'IAC', 'ESP'], {'datm':1,'satm':1, 'cam':1,'dlnd':2,'clm':2,'slnd':2,'cice':3,'dice':3,'sice':3,'pop':4,'docn':4,'socn':4,'mosart':5,'drof':5,'srof':5,'cism':6,'sglc':6,'ww':7,'swav':7,'ww3':7,'sesp':8})
+        ('1850_CAM60_CLM50%BGC-CROP_CICE_POP2%ECO%ABIO-DIC_MOSART_CISM2%NOEVOLVE_WW3_SIAC_SESP_BGC%BDRD_TEST', ['1850', 'CAM60', 'CLM50%BGC-CROP', 'CICE', 'POP2%ECO%ABIO-DIC', 'MOSART', 'CISM2%NOEVOLVE', 'WW3', 'SIAC', 'SESP'])
+        >>> Case(read_only=False)._valid_compset_impl('1850_SATM_SLND_SICE_SOCN_SGLC_SWAV', 'S', ['CPL', 'ATM', 'LND', 'ICE', 'OCN', 'ROF', 'GLC', 'WAV', 'IAC', 'ESP'], {'datm':1,'satm':1, 'cam':1,'dlnd':2,'clm':2,'slnd':2,'cice':3,'dice':3,'sice':3,'pop':4,'docn':4,'socn':4,'mosart':5,'drof':5,'srof':5,'cism':6,'sglc':6,'ww':7,'swav':7,'ww3':7,'sesp':8})
+        ('1850_SATM_SLND_SICE_SOCN_SROF_SGLC_SWAV_SIAC_SESP', ['1850', 'SATM', 'SLND', 'SICE', 'SOCN', 'SROF', 'SGLC', 'SWAV', 'SIAC', 'SESP'])
+
+        >>> Case(read_only=False)._valid_compset_impl('1850_SATM_SLND_SICE_SOCN_SGLC_SWAV', None, ['CPL', 'ATM', 'LND', 'ICE', 'OCN', 'ROF', 'GLC', 'WAV', 'IAC', 'ESP'], {'datm':1,'satm':1, 'cam':1,'dlnd':2,'clm':2,'slnd':2,'cice':3,'dice':3,'sice':3,'pop':4,'docn':4,'socn':4,'mosart':5,'drof':5,'srof':5,'cism':6,'sglc':6,'ww':7,'swav':7,'ww3':7,'sesp':8}) #doctest: +IGNORE_EXCEPTION_DETAIL
+        Traceback (most recent call last):
+        CIMEError: ERROR: Invalid compset name, 1850_SATM_SLND_SICE_SOCN_SGLC_SWAV, all stub components generated
+        """
+        # Find the models declared in the compset
+        model_set = [None]*len(comp_classes)
+        components = compset_name.split('_')
+        model_set[0] = components[0]
+        noncomps = []
+        allstubs = True
+        for model in components[1:]:
+            match = Case.__mod_match_re__.match(model.lower())
+            expect(match is not None, "No model match for {}".format(model))
+            mod_match = match.group(1)
+            # Check for noncomponent appends (BGC & TEST)
+            if mod_match in ('bgc', 'test'):
+                noncomps.append(model)
+            else:
+                expect(mod_match in comp_hash,
+                       "Unknown model type, {}".format(model))
+                comp_ind = comp_hash[mod_match]
+                model_set[comp_ind] = model
+
+        # Fill in missing components with stubs
+        for comp_ind in range(1, len(model_set)):
+            if model_set[comp_ind] is None:
+                comp_class = comp_classes[comp_ind]
+                stub = 'S' + comp_class
+                logger.info("Automatically adding {} to compset".format(stub))
+                model_set[comp_ind] = stub
+            elif model_set[comp_ind][0] != 'S':
+                allstubs = False
+
+        expect((compset_alias is not None) or (not allstubs),
+               'Invalid compset name, {}, all stub components generated'.format(compset_name))
+        # Return the completed compset
+        compsetname = '_'.join(model_set)
+        for noncomp in noncomps:
+            compsetname = compsetname + '_' + noncomp
+
+        return compsetname, model_set
+
+    # RE to match component type name without optional piece (stuff after %).
+    # Drop any trailing digits (e.g., the 60 in CAM60) to ensure match
+    # Note, this will also drop trailing digits such as in ww3 but since it
+    # is handled consistenly, this should not affect functionality.
+    # Note: interstitial digits are included (e.g., in FV3GFS).
+    __mod_match_re__ = re.compile(r"([^%]*[^0-9%]+)")
+    def valid_compset(self, compset_name, compset_alias, files):
+        """Add stub models missing in <compset_name>, return full compset name.
+        <files> is used to collect set of all supported components.
+        """
+        # First, create hash of model names
+        # A note about indexing. Relevant component classes start at 1
+        # because we ignore CPL for finding model components.
+        # Model components would normally start at zero but since we are
+        # dealing with a compset, 0 is reserved for the time field
+        drv_config_file = files.get_value("CONFIG_CPL_FILE")
+        drv_comp = Component(drv_config_file, "CPL")
+        comp_classes = drv_comp.get_valid_model_components()
+        comp_hash = {} # Hash model name to component class index
+        for comp_ind in range(1, len(comp_classes)):
+            comp = comp_classes[comp_ind]
+            # Find list of models for component class
+            # List can be in different locations, check CONFIG_XXX_FILE
+            node_name = 'CONFIG_{}_FILE'.format(comp)
+            models = files.get_components(node_name)
+            if (models is None) or (None in models):
+                # Backup, check COMP_ROOT_DIR_XXX
+                node_name = 'COMP_ROOT_DIR_' + comp
+                models = files.get_components(node_name)
+
+            expect((models is not None) and (None not in models),
+                   "Unable to find list of supported components")
+
+            for model in models:
+                mod_match = Case.__mod_match_re__.match(model.lower()).group(1)
+                comp_hash[mod_match] = comp_ind
+
+        return self._valid_compset_impl(compset_name, compset_alias,
+                                        comp_classes, comp_hash)
 
 
     def _set_info_from_primary_component(self, files, pesfile=None):
@@ -615,6 +734,8 @@ class Case(object):
             env_file.add_elements_by_group(drv_comp, attributes=attlist)
 
         drv_config_file_model_specific = files.get_value("CONFIG_CPL_FILE_MODEL_SPECIFIC")
+        expect(os.path.isfile(drv_config_file_model_specific),
+               "No {} specific file found for driver {}".format(get_model(),driver))
         drv_comp_model_specific = Component(drv_config_file_model_specific, 'CPL')
 
         self._component_description["forcing"] = drv_comp_model_specific.get_forcing_description(self._compsetname)
@@ -630,9 +751,6 @@ class Case(object):
         # loop over all elements of both component_classes and components - and get config_component_file for
         # for each component
         self.set_comp_classes(drv_comp.get_valid_model_components())
-
-        if len(self._component_classes) > len(self._components):
-            self._components.append('sesp')
 
         # will need a change here for new cpl components
         root_dir_node_name = 'COMP_ROOT_DIR_CPL'
@@ -667,8 +785,7 @@ class Case(object):
             logger.info("{} component is {}".format(comp_class, self._component_description[comp_class]))
             for env_file in self._env_entryid_files:
                 env_file.add_elements_by_group(compobj, attributes=attlist)
-
-        self.clean_up_lookups()
+        self.clean_up_lookups(allow_undefined=driver=='nuopc')
 
     def _setup_mach_pes(self, pecount, multi_driver, ninst, machine_name, mpilib):
         #--------------------------------------------
@@ -777,7 +894,8 @@ class Case(object):
                   multi_driver=False, ninst=1, test=False,
                   walltime=None, queue=None, output_root=None,
                   run_unsupported=False, answer=None,
-                  input_dir=None, driver=None, non_local=False):
+                  input_dir=None, driver=None, workflowid="default",
+                  non_local=False, extra_machines_dir=None):
 
         expect(check_name(compset_name, additional_chars='.'), "Invalid compset name {}".format(compset_name))
 
@@ -786,6 +904,9 @@ class Case(object):
         #--------------------------------------------
         files = Files(comp_interface=driver)
 
+        #--------------------------------------------
+        # find and/or fill out compset name
+        #--------------------------------------------
         compset_alias, science_support = self._set_compset(compset_name, files, driver)
 
         self._components = self.get_compset_components()
@@ -823,7 +944,9 @@ class Case(object):
         # machine
         #--------------------------------------------
         # set machine values in env_xxx files
-        machobj = Machines(machine=machine_name)
+        if extra_machines_dir:
+            self.set_value("EXTRA_MACHDIR", extra_machines_dir)
+        machobj = Machines(machine=machine_name, extra_machines_dir=extra_machines_dir)
         probed_machine = machobj.probe_machine_name()
         machine_name = machobj.get_machine_name()
         self.set_value("MACH", machine_name)
@@ -835,7 +958,8 @@ class Case(object):
         nodenames = machobj.get_node_names()
         nodenames = [x for x in nodenames if
                      '_system' not in x and '_variables' not in x and 'mpirun' not in x and\
-                     'COMPILER' not in x and 'MPILIB' not in x]
+                     'COMPILER' not in x and 'MPILIB' not in x and 'MAX_MPITASKS_PER_NODE' not in x and\
+                     'MAX_TASKS_PER_NODE' not in x]
 
         for nodename in nodenames:
             value = machobj.get_value(nodename, resolved=False)
@@ -858,6 +982,11 @@ class Case(object):
             expect(machobj.is_valid_MPIlib(mpilib, {"compiler":compiler}),
                    "MPIlib {} is not supported on machine {}".format(mpilib, machine_name))
         self.set_value("MPILIB",mpilib)
+        for name in ("MAX_TASKS_PER_NODE","MAX_MPITASKS_PER_NODE"):
+            dmax = machobj.get_value(name,{'compiler':compiler})
+            if not dmax:
+                dmax = machobj.get_value(name)
+            self.set_value(name, dmax)
 
         machdir = machobj.get_machines_dir()
         self.set_value("MACHDIR", machdir)
@@ -913,6 +1042,7 @@ class Case(object):
         # we don't want to resolve variables until we need them
         if output_root is None:
             output_root = self.get_value("CIME_OUTPUT_ROOT")
+        output_root = os.path.abspath(output_root)
         self.set_value("CIME_OUTPUT_ROOT", output_root)
         if non_local:
             self.set_value("EXEROOT", os.path.join(output_root, self.get_value("CASE"), "bld"))
@@ -959,11 +1089,14 @@ class Case(object):
 
         batch_system_type = machobj.get_value("BATCH_SYSTEM")
         logger.info("Batch_system_type is {}".format(batch_system_type))
-        batch = Batch(batch_system=batch_system_type, machine=machine_name)
-        bjobs = batch.get_batch_jobs()
+        batch = Batch(batch_system=batch_system_type, machine=machine_name, files=files,
+                      extra_machines_dir=extra_machines_dir)
+        workflow = Workflow(files=files)
+        bjobs = workflow.get_workflow_jobs(machine=machine_name, workflowid=workflowid)
+        env_workflow = self.get_env("workflow")
 
         env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
-        env_batch.create_job_groups(bjobs, test)
+        env_workflow.create_job_groups(bjobs, test)
 
         if walltime:
             self.set_value("USER_REQUESTED_WALLTIME", walltime, subgroup=self.get_primary_job())
@@ -1002,13 +1135,14 @@ class Case(object):
         return batchobj.get_jobs()
 
     def _set_pio_xml(self):
-        pioobj = PIO()
+        pioobj = PIO(self._component_classes)
         grid = self.get_value("GRID")
         compiler = self.get_value("COMPILER")
         mach = self.get_value("MACH")
         compset = self.get_value("COMPSET")
         mpilib = self.get_value("MPILIB")
-        defaults = pioobj.get_defaults(grid=grid,compset=compset,mach=mach,compiler=compiler, mpilib=mpilib)
+
+        defaults = pioobj.get_defaults(grid=grid, compset=compset, mach=mach, compiler=compiler, mpilib=mpilib)
 
         for vid, value in defaults.items():
             self.set_value(vid,value)
@@ -1038,8 +1172,8 @@ class Case(object):
         except Exception as e:
             logger.warning("FAILED to set up exefiles: {}".format(str(e)))
 
-        # set up utility files in caseroot/Tools/
         toolfiles = [os.path.join(toolsdir, "check_lockedfiles"),
+                     os.path.join(toolsdir, "get_standard_makefile_args"),
                      os.path.join(toolsdir, "getTiming"),
                      os.path.join(toolsdir, "save_provenance"),
                      os.path.join(toolsdir,"Makefile"),
@@ -1090,7 +1224,8 @@ leveraging version control (git or svn).
 
         for component in components:
             directory = os.path.join(self._caseroot,"SourceMods","src.{}".format(component))
-            if not os.path.exists(directory):
+            # don't make SourceMods for stub components
+            if not os.path.exists(directory) and component not in ('satm','slnd','sice','socn','sesp','sglc','swav'):
                 os.makedirs(directory)
                 # Besides giving some information on SourceMods, this
                 # README file serves one other important purpose: By
@@ -1216,13 +1351,13 @@ directory, NOT in this subdirectory."""
 
     def submit_jobs(self, no_batch=False, job=None, skip_pnl=None, prereq=None, allow_fail=False,
                     resubmit_immediate=False, mail_user=None, mail_type=None, batch_args=None,
-                    dry_run=False):
+                    dry_run=False, workflow=True):
         env_batch = self.get_env('batch')
         result =  env_batch.submit_jobs(self, no_batch=no_batch, skip_pnl=skip_pnl,
                                         job=job, user_prereq=prereq, allow_fail=allow_fail,
                                         resubmit_immediate=resubmit_immediate,
                                         mail_user=mail_user, mail_type=mail_type,
-                                        batch_args=batch_args, dry_run=dry_run)
+                                        batch_args=batch_args, dry_run=dry_run, workflow=workflow)
         return result
 
     def get_job_info(self):
@@ -1260,7 +1395,7 @@ directory, NOT in this subdirectory."""
             if not success:
                 logger.warning("Failed to kill {}".format(jobid))
 
-    def get_mpirun_cmd(self, job=None, allow_unresolved_envvars=True):
+    def get_mpirun_cmd(self, job=None, allow_unresolved_envvars=True, overrides=None):
         if job is None:
             job = self.get_primary_job()
 
@@ -1268,7 +1403,6 @@ directory, NOT in this subdirectory."""
         run_exe = env_mach_specific.get_value("run_exe")
         run_misc_suffix = env_mach_specific.get_value("run_misc_suffix")
         run_misc_suffix = "" if run_misc_suffix is None else run_misc_suffix
-        run_suffix = run_exe + run_misc_suffix
 
         mpirun_cmd_override = self.get_value("MPI_RUN_COMMAND")
         if mpirun_cmd_override not in ["", None, "UNSET"]:
@@ -1283,12 +1417,19 @@ directory, NOT in this subdirectory."""
             "unit_testing" : False
             }
 
-        executable, mpi_arg_list = env_mach_specific.get_mpirun(self, mpi_attribs, job)
+        executable, mpi_arg_list, custom_run_exe, custom_run_misc_suffix = env_mach_specific.get_mpirun(self, mpi_attribs, job)
+        if custom_run_exe:
+            logger.info('Using a custom run_exe {}'.format(custom_run_exe))
+            run_exe = custom_run_exe
+        if custom_run_misc_suffix:
+            logger.info('Using a custom run_misc_suffix {}'.format(custom_run_misc_suffix))
+            run_misc_suffix = custom_run_misc_suffix
 
         # special case for aprun
         if executable is not None and "aprun" in executable and not "theta" in self.get_value("MACH"):
-            aprun_args, num_nodes = get_aprun_cmd_for_case(self, run_exe)[0:2]
-            expect( (num_nodes + self.spare_nodes) == self.num_nodes, "Not using optimized num nodes")
+            aprun_args, num_nodes = get_aprun_cmd_for_case(self, run_exe, overrides=overrides)[0:2]
+            if job in ("case.run","case.test"):
+                expect( (num_nodes + self.spare_nodes) == self.num_nodes, "Not using optimized num nodes")
             return self.get_resolved_value(executable + aprun_args + " " + run_misc_suffix, allow_unresolved_envvars=allow_unresolved_envvars)
 
         else:
@@ -1297,7 +1438,7 @@ directory, NOT in this subdirectory."""
         if self.get_value("BATCH_SYSTEM") == "cobalt":
             mpi_arg_string += " : "
 
-        return self.get_resolved_value("{} {} {}".format(executable if executable is not None else "", mpi_arg_string, run_suffix), allow_unresolved_envvars=allow_unresolved_envvars)
+        return self.get_resolved_value("{} {} {} {}".format(executable if executable is not None else "", mpi_arg_string, run_exe, run_misc_suffix), allow_unresolved_envvars=allow_unresolved_envvars)
 
     def set_model_version(self, model):
         version = "unknown"
@@ -1325,7 +1466,7 @@ directory, NOT in this subdirectory."""
         Returns True if current settings require a threaded build/run.
         """
         force_threaded = self.get_value("FORCE_BUILD_SMP")
-        smp_present = bool(force_threaded) or self.thread_count > 1
+        smp_present = force_threaded or self.thread_count > 1
         return smp_present
 
     def _check_testlists(self, compset_alias, grid_name, files):
@@ -1349,8 +1490,10 @@ directory, NOT in this subdirectory."""
             #   called if run_unsupported is False.
             tests = Testlist(tests_spec_file, files)
             testlist = tests.get_tests(compset=compset_alias, grid=grid_name, supported_only=True)
+            test_categories = ["prealpha", "prebeta", "test_release", "aux_"]
             for test in testlist:
-                if test["category"] == "prealpha" or test["category"] == "prebeta" or "aux_" in test["category"]:
+                if test["category"] in test_categories \
+                   or get_cime_default_driver() in test["category"]:
                     testcnt += 1
         if testcnt > 0:
             logger.warning("\n*********************************************************************************************************************************")
@@ -1388,6 +1531,8 @@ directory, NOT in this subdirectory."""
                     new_env_file = EnvMachPes(infile=xmlfile, components=components)
                 elif ftype == "env_batch.xml":
                     new_env_file = EnvBatch(infile=xmlfile)
+                elif ftype == "env_workflow.xml":
+                    new_env_file = EnvWorkflow(infile=xmlfile)
                 elif ftype == "env_test.xml":
                     new_env_file = EnvTest(infile=xmlfile)
                 elif ftype == "env_archive.xml":
@@ -1450,7 +1595,8 @@ directory, NOT in this subdirectory."""
                multi_driver=False, ninst=1, test=False,
                walltime=None, queue=None, output_root=None,
                run_unsupported=False, answer=None,
-               input_dir=None, driver=None, non_local=False):
+               input_dir=None, driver=None, workflowid="default", non_local=False,
+               extra_machines_dir=None):
         try:
             # Set values for env_case.xml
             self.set_lookup_value("CASE", os.path.basename(casename))
@@ -1466,7 +1612,9 @@ directory, NOT in this subdirectory."""
                            walltime=walltime, queue=queue,
                            output_root=output_root,
                            run_unsupported=run_unsupported, answer=answer,
-                           input_dir=input_dir, driver=driver, non_local=non_local)
+                           input_dir=input_dir, driver=driver,
+                           workflowid=workflowid, non_local=non_local,
+                           extra_machines_dir=extra_machines_dir)
 
             self.create_caseroot()
 
@@ -1505,3 +1653,8 @@ directory, NOT in this subdirectory."""
 
     def get_primary_job(self):
         return "case.test" if self.get_value("TEST") else "case.run"
+
+    def get_first_job(self):
+        env_workflow = self.get_env("workflow")
+        jobs = env_workflow.get_jobs()
+        return jobs[0]

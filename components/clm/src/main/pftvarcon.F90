@@ -10,7 +10,7 @@ module pftvarcon
   use shr_log_mod , only : errMsg => shr_log_errMsg
   use abortutils  , only : endrun
   use clm_varpar  , only : mxpft, numrad, ivis, inir, cft_lb, cft_ub
-  use clm_varctl  , only : iulog, use_cndv, use_vertsoilc
+  use clm_varctl  , only : iulog, use_vertsoilc
   use clm_varpar  , only : nlevdecomp_full, nsoilorder
   use clm_varctl  , only : nu_com
   !
@@ -135,7 +135,6 @@ module pftvarcon
   real(r8), allocatable :: croot_stem(:)   !allocation parameter: new coarse root C per new stem C (gC/gC)
   real(r8), allocatable :: flivewd(:)      !allocation parameter: fraction of new wood that is live (phloem and ray parenchyma) (no units)
   real(r8), allocatable :: fcur(:)         !allocation parameter: fraction of allocation that goes to currently displayed growth, remainder to storage
-  real(r8), allocatable :: fcurdv(:)       !alternate fcur for use with cndv
   real(r8), allocatable :: lf_flab(:)      !leaf litter labile fraction
   real(r8), allocatable :: lf_fcel(:)      !leaf litter cellulose fraction
   real(r8), allocatable :: lf_flig(:)      !leaf litter lignin fraction
@@ -174,14 +173,6 @@ module pftvarcon
   real(r8), allocatable :: convfact(:)     !conversion factor to bu/acre
   real(r8), allocatable :: fyield(:)       !fraction of grain that is actually harvested
   real(r8), allocatable :: root_dmx(:)     !maximum root depth
-
-  ! pft parameters for CNDV code
-  ! from LPJ subroutine pftparameters
-  real(r8), allocatable :: pftpar20(:)       !tree maximum crown area (m2)
-  real(r8), allocatable :: pftpar28(:)       !min coldest monthly mean temperature
-  real(r8), allocatable :: pftpar29(:)       !max coldest monthly mean temperature
-  real(r8), allocatable :: pftpar30(:)       !min growing degree days (>= 5 deg C)
-  real(r8), allocatable :: pftpar31(:)       !upper limit of temperature of the warmest month (twmax)
 
   integer, parameter :: pftname_len = 40    ! max length of pftname       
   character(len=pftname_len) :: pftname(0:mxpft) !PFT description
@@ -271,6 +262,9 @@ module pftvarcon
   real(r8)              :: laimax
   ! Hydrology
   real(r8)              :: rsub_top_globalmax
+  ! Soil erosion ground cover
+  real(r8), allocatable :: gcpsi(:)            !bare ground LAI-decay parameter
+  real(r8), allocatable :: pftcc(:)            !plant cover reduction factor for transport capacity
 
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -424,7 +418,6 @@ contains
     allocate( croot_stem    (0:mxpft) )   
     allocate( flivewd       (0:mxpft) )      
     allocate( fcur          (0:mxpft) )         
-    allocate( fcurdv        (0:mxpft) )       
     allocate( lf_flab       (0:mxpft) )      
     allocate( lf_fcel       (0:mxpft) )      
     allocate( lf_flig       (0:mxpft) )      
@@ -461,11 +454,6 @@ contains
     allocate( convfact      (0:mxpft) )
     allocate( fyield        (0:mxpft) )  
     allocate( root_dmx      (0:mxpft) )
-    allocate( pftpar20      (0:mxpft) )   
-    allocate( pftpar28      (0:mxpft) )   
-    allocate( pftpar29      (0:mxpft) )   
-    allocate( pftpar30      (0:mxpft) )   
-    allocate( pftpar31      (0:mxpft) )   
 
     allocate( VMAX_PLANT_NH4(0:mxpft) )
     allocate( VMAX_PLANT_NO3(0:mxpft) )
@@ -529,6 +517,9 @@ contains
     allocate( mbbopt             (0:mxpft) )
     allocate( nstor              (0:mxpft) )
     allocate( br_xr              (0:mxpft) )
+    ! Ground cover for soil erosion
+    allocate( gcpsi              (0:mxpft) )
+    allocate( pftcc              (0:mxpft) )
 
     ! Set specific vegetation type values
 
@@ -624,8 +615,6 @@ contains
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('fcur',fcur, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
-    call ncd_io('fcurdv',fcurdv, 'read', ncid, readvar=readv, posNOTonfile=.true.)
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('lf_flab',lf_flab, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('lf_fcel',lf_fcel, 'read', ncid, readvar=readv, posNOTonfile=.true.)
@@ -648,16 +637,6 @@ contains
     call ncd_io('stress_decid',stress_decid, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('season_decid',season_decid, 'read', ncid, readvar=readv, posNOTonfile=.true.)
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
-    call ncd_io('pftpar20',pftpar20, 'read', ncid, readvar=readv, posNOTonfile=.true.)
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
-    call ncd_io('pftpar28',pftpar28, 'read', ncid, readvar=readv, posNOTonfile=.true.)
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
-    call ncd_io('pftpar29',pftpar29, 'read', ncid, readvar=readv, posNOTonfile=.true.)
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
-    call ncd_io('pftpar30',pftpar30, 'read', ncid, readvar=readv, posNOTonfile=.true.)  
-    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
-    call ncd_io('pftpar31',pftpar31, 'read', ncid, readvar=readv, posNOTonfile=.true.)  
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('fertnitro',fertnitro, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
@@ -927,6 +906,10 @@ contains
     if (.not. readv) br_xr(:) = 0._r8
     call ncd_io('tc_stress', tc_stress, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
+    call ncd_io('gcpsi',gcpsi, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv ) gcpsi(:) = 0._r8
+    call ncd_io('pftcc',pftcc, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv ) pftcc(:) = 1._r8
        
     call ncd_io('mergetoclmpft', mergetoclmpft, 'read', ncid, readvar=readv)  
     if ( .not. readv ) then
@@ -984,10 +967,6 @@ contains
 
     call set_is_pft_known_to_model()
     call set_num_cfts_known_to_model()
-
-    if (use_cndv) then
-       fcur(:) = fcurdv(:)
-    end if
 
     if( .not. use_fates ) then
        if ( npcropmax /= mxpft )then

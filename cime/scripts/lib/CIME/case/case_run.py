@@ -3,7 +3,8 @@ case_run is a member of Class Case
 '"""
 from CIME.XML.standard_module_setup import *
 from CIME.utils                     import gzip_existing_file, new_lid, run_and_log_case_status
-from CIME.utils                     import run_sub_or_cmd, append_status, safe_copy, model_log
+from CIME.utils                     import run_sub_or_cmd, append_status, safe_copy, model_log, CIMEError
+from CIME.utils                     import get_model
 from CIME.get_timing                import get_timing
 from CIME.provenance                import save_prerun_provenance, save_postrun_provenance
 
@@ -23,15 +24,18 @@ def _pre_run_check(case, lid, skip_pnl=False, da_cycle=0):
     caseroot = case.get_value("CASEROOT")
     din_loc_root = case.get_value("DIN_LOC_ROOT")
     rundir = case.get_value("RUNDIR")
-    build_complete = case.get_value("BUILD_COMPLETE")
 
     if case.get_value("TESTCASE") == "PFS":
         env_mach_pes = os.path.join(caseroot,"env_mach_pes.xml")
         safe_copy(env_mach_pes,"{}.{}".format(env_mach_pes, lid))
 
-    # check for locked files.
-    case.check_lockedfiles()
+    # check for locked files, may impact BUILD_COMPLETE
+    skip = None
+    if case.get_value("EXTERNAL_WORKFLOW"):
+        skip = "env_batch"
+    case.check_lockedfiles(skip=skip)
     logger.debug("check_lockedfiles OK")
+    build_complete = case.get_value("BUILD_COMPLETE")
 
     # check that build is done
     expect(build_complete,
@@ -106,8 +110,13 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
         model_log("e3sm", logger, "{} SAVE_PRERUN_PROVENANCE HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
         model_log("e3sm", logger, "{} MODEL EXECUTION BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
-        run_func = lambda: run_cmd(cmd, from_dir=rundir)[0]
-        stat = run_and_log_case_status(run_func, "model execution", caseroot=case.get_value("CASEROOT"))
+        run_func = lambda: run_cmd_no_fail(cmd, from_dir=rundir)
+        try:
+            run_and_log_case_status(run_func, "model execution", caseroot=case.get_value("CASEROOT"))
+            cmd_success = True
+        except CIMEError:
+            cmd_success = False
+
         model_log("e3sm", logger, "{} MODEL EXECUTION HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
         model_logfile = os.path.join(rundir, model + ".log." + lid)
@@ -143,7 +152,7 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
                     lid = new_lid()
                     case.create_namelists()
 
-        if stat != 0 and not loop:
+        if not cmd_success and not loop:
             # We failed and we're not restarting
             expect(False, "RUN FAIL: Command '{}' failed\nSee log file for details: {}".format(cmd, model_logfile))
 
@@ -166,9 +175,17 @@ def _post_run_check(case, lid):
     rundir = case.get_value("RUNDIR")
     model = case.get_value("MODEL")
     driver = case.get_value("COMP_INTERFACE")
+    model = get_model()
 
+    fv3_standalone = False
+
+    if "CPL" not in case.get_values("COMP_CLASSES"):
+        fv3_standalone = True
     if driver == 'nuopc':
-        file_prefix = 'med'
+        if fv3_standalone:
+            file_prefix = model
+        else:
+            file_prefix = 'med'
     else:
         file_prefix = 'cpl'
 
@@ -198,7 +215,9 @@ def _post_run_check(case, lid):
             if not os.path.isfile(cpl_logfile):
                 break
             with open(cpl_logfile, 'r') as fd:
-                if 'SUCCESSFUL TERMINATION' in fd.read():
+                if fv3_standalone and 'HAS ENDED' in fd.read():
+                    count_ok += 1
+                elif not fv3_standalone and 'SUCCESSFUL TERMINATION' in fd.read():
                     count_ok += 1
         if count_ok != cpl_ninst:
             expect(False, "Model did not complete - see {} \n " .format(cpl_logfile))
@@ -240,6 +259,8 @@ def _resubmit_check(case):
         job = case.get_primary_job()
 
         case.submit(job=job, resubmit=True)
+
+    logger.debug("resubmit after check is {}".format(resubmit))
 
 ###############################################################################
 def _do_external(script_name, caseroot, rundir, lid, prefix):
@@ -328,10 +349,14 @@ def case_run(self, skip_pnl=False, set_continue_run=False, submit_resubmits=Fals
         self.set_value("CONTINUE_RUN",
                        self.get_value("RESUBMIT_SETS_CONTINUE_RUN"))
 
-    logger.warning("check for resubmit")
-    if submit_resubmits:
-        _resubmit_check(self)
+    external_workflow = self.get_value("EXTERNAL_WORKFLOW")
+    if not external_workflow:
+        logger.warning("check for resubmit")
+
+        logger.debug("submit_resubmits is {}".format(submit_resubmits))
+        if submit_resubmits:
+            _resubmit_check(self)
+
 
     model_log("e3sm", logger, "{} CASE.RUN HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
-
     return True

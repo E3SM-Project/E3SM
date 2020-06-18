@@ -4,50 +4,51 @@
 
 module common_io_mod
   use control_mod, only : MAX_STRING_LEN         !HOMME Specific: MAX_STRING_LEN
+#ifndef HOMME_WITHOUT_PIOLIBRARY
 #if defined( PIO ) || defined ( PIO_INTERP )
   use pio, only : var_desc_t, file_desc_t, io_desc_t, nfsizekind=>PIO_OFFSET_KIND, iosystem_desc_t, & ! _EXTERNAL
        nf_double=>pio_double, nf_int=>pio_int, unlim_dim=>pio_unlimited, nf_noerr=>pio_noerr
 #endif
-
+#endif
 
   implicit none
   private
 
-  public :: nfsizekind, nf_noerr
+  integer, parameter, public :: MAX_INFILES=120
+!  integer, parameter, public :: MAX_VECVARS=10
 
   integer, parameter, public :: max_output_streams=5
   integer, parameter, public :: max_output_variables=50
   integer, parameter, public :: varname_len=16
   ! output analysis namelists, 
 
-
-  integer, parameter, public :: MAX_INFILES=120
-!  integer, parameter, public :: MAX_VECVARS=10
-  
-  character(len=160), public, target :: infilenames(MAX_INFILES)
-!  character(len=10), public :: vector_uvars(MAX_VECVARS), vector_vvars(MAX_VECVARS)
-
-
-
-  integer, public :: output_timeunits(max_output_streams) 
+  integer, public :: output_timeunits(max_output_streams)
   !  0=steps, 1=pday, 2=phour
   integer, public :: output_start_time(max_output_streams)
   integer, public :: output_end_time(max_output_streams)
   integer, public :: output_frequency(max_output_streams)
   character(len=MAX_STRING_LEN), public :: output_prefix
   character(len=MAX_STRING_LEN), public :: output_dir
-  character(len=9), public :: output_type 
+  character(len=9), public :: output_type
 
-  character(len=varname_len), public, target,  dimension(max_output_variables) :: output_varnames1   
+  character(len=160), public, target :: infilenames(MAX_INFILES)
+!  character(len=10), public :: vector_uvars(MAX_VECVARS), vector_vvars(MAX_VECVARS)
+
+  character(len=varname_len), public, target,  dimension(max_output_variables) :: output_varnames1
   character(len=varname_len), public, target,  dimension(max_output_variables) :: output_varnames2
   character(len=varname_len), public, target,  dimension(max_output_variables) :: output_varnames3
   character(len=varname_len), public, target,  dimension(max_output_variables) :: output_varnames4
   character(len=varname_len), public, target,  dimension(max_output_variables) :: output_varnames5
 
+  character(len=MAX_STRING_LEN), public :: tool
+
   ! these are used for PIO output method
   integer, public :: num_io_procs
   integer, public :: num_agg
   integer, public :: io_stride
+
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+  public :: nfsizekind, nf_noerr
 
   ! end of analysis_nl namelist variables
   public :: nf_selectedvar
@@ -56,9 +57,6 @@ module common_io_mod
   public :: nf_addrequiredvar
   public :: nf_dim, nf_variable, nf_handle, nf_int, nf_double
   public :: unlim_dim
-
-
-
 
   integer, parameter, public :: beginstate=1, dimsstate=2,varsstate=3,readystate=4 
 
@@ -69,6 +67,7 @@ module common_io_mod
      logical :: required
      logical :: timedependent
      integer :: dimsid
+     integer :: vtype
      type(Var_desc_t) :: Vardesc   
   end type nf_variable
 
@@ -195,5 +194,6 @@ contains
     
   end subroutine nf_addrequiredvar
 
+#endif 
 
 end module common_io_mod

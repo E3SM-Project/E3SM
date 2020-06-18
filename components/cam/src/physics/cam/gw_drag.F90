@@ -80,6 +80,9 @@ module gw_drag
   ! Background stress source strength.
   real(r8) :: taubgnd = unset_r8
 
+  ! Convective heating rate conversion factor, default is 20.0_r8
+  real(r8) :: gw_convect_hcf = 20.0_r8
+
   ! Whether or not to enforce an upper boundary condition of tau = 0.
   ! (Like many variables, this is only here to hold the value between
   ! the readnl phase and the init phase of the CAM physics; only gw_common
@@ -129,7 +132,7 @@ subroutine gw_drag_readnl(nlfile)
   real(r8) :: gw_dc = unset_r8
 
   namelist /gw_drag_nl/ pgwv, gw_dc, tau_0_ubc, effgw_beres, effgw_cm, &
-       effgw_oro, fcrit2, frontgfc, gw_drag_file, taubgnd
+      effgw_oro, fcrit2, frontgfc, gw_drag_file, taubgnd, gw_convect_hcf
   !----------------------------------------------------------------------
 
   if (masterproc) then
@@ -158,6 +161,7 @@ subroutine gw_drag_readnl(nlfile)
   call mpibcast(frontgfc,    1, mpir8,  0, mpicom)
   call mpibcast(taubgnd,     1, mpir8,  0, mpicom)
   call mpibcast(gw_drag_file, len(gw_drag_file), mpichar, 0, mpicom)
+  call mpibcast(gw_convect_hcf, 1, mpir8,  0, mpicom)
 #endif
 
   dc = gw_dc
@@ -558,6 +562,9 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   !-----------------------------------------------------------------------
   ! Interface for multiple gravity wave drag parameterization.
   !-----------------------------------------------------------------------
+  use physics_types,  only: physics_state_copy, set_dry_to_wet
+  use constituents,   only: cnst_type
+  use co2_cycle,      only: co2_cycle_set_cnst_type
   use physics_buffer, only: physics_buffer_desc, pbuf_get_field
   use camsrfexch, only: cam_in_t
   ! Location-dependent cpair
@@ -567,6 +574,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   use gw_oro,     only: gw_oro_src
   use gw_front,   only: gw_cm_src
   use gw_convect, only: gw_beres_src
+  use dycore,     only: dycore_is
   !------------------------------Arguments--------------------------------
   type(physics_state), intent(in) :: state      ! physics state structure
   ! Standard deviation of orography.
@@ -578,10 +586,13 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   type(cam_in_t), intent(in) :: cam_in
 
   !---------------------------Local storage-------------------------------
+
+  type(physics_state) :: state1     ! Local copy of state variable
+
   integer :: lchnk                  ! chunk identifier
   integer :: ncol                   ! number of atmospheric columns
 
-  integer :: k                      ! loop index
+  integer :: i, k                   ! loop indices
 
   real(r8) :: ttgw(state%ncol,pver) ! temperature tendency
   real(r8) :: utgw(state%ncol,pver) ! zonal wind tendency
@@ -656,25 +667,39 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   real(r8) :: rdpm(state%ncol,pver)
   real(r8) :: zm(state%ncol,pver)
 
+  ! local override option for constituents cnst_type
+  character(len=3), dimension(pcnst) :: cnst_type_loc
+
+  logical :: do_latitude_taper
+
   !------------------------------------------------------------------------
 
-  lchnk = state%lchnk
-  ncol  = state%ncol
+  ! Make local copy of input state.
+  call physics_state_copy(state, state1)
 
-  dse = state%s(:ncol,:)
-  t = state%t(:ncol,:)
-  u = state%u(:ncol,:)
-  v = state%v(:ncol,:)
-  q = state%q(:ncol,:,:)
-  pmid = state%pmid(:ncol,:)
-  pint = state%pint(:ncol,:)
-  piln = state%lnpint(:ncol,:)
-  dpm = state%pdel(:ncol,:)
-  rdpm = state%rpdel(:ncol,:)
-  zm = state%zm(:ncol,:)
+  ! constituents are all treated as wet mmr
+  ! don't convert co2 tracers to wet mixing ratios
+  cnst_type_loc(:) = cnst_type(:)
+  call co2_cycle_set_cnst_type(cnst_type_loc, 'wet')
+  call set_dry_to_wet(state1, cnst_type_loc)
+
+  lchnk = state1%lchnk
+  ncol  = state1%ncol
+
+  dse = state1%s(:ncol,:)
+  t = state1%t(:ncol,:)
+  u = state1%u(:ncol,:)
+  v = state1%v(:ncol,:)
+  q = state1%q(:ncol,:,:)
+  pmid = state1%pmid(:ncol,:)
+  pint = state1%pint(:ncol,:)
+  piln = state1%lnpint(:ncol,:)
+  dpm = state1%pdel(:ncol,:)
+  rdpm = state1%rpdel(:ncol,:)
+  zm = state1%zm(:ncol,:)
 
   lq = .true.
-  call physics_ptend_init(ptend, state%psetcols, "Grav_wave_drag", &
+  call physics_ptend_init(ptend, state1%psetcols, "Grav_wave_drag", &
        ls=.true., lu=.true., lv=.true., lq=lq)
 
   ! Profiles of background state variables
@@ -722,13 +747,15 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         call pbuf_get_field(pbuf, ttend_dp_idx, ttend_dp)
 
         ! Determine wave sources for Beres04 scheme
-        call gw_beres_src(ncol, pgwv, state%lat(:ncol), u, v, ttend_dp, &
+        call gw_beres_src(ncol, pgwv, state1%lat(:ncol), u, v, ttend_dp, &
              zm, src_level, tend_level, tau, ubm, ubi, xv, yv, c, &
-             hdepth, maxq0)
+             hdepth, maxq0, gw_convect_hcf)
+
+        do_latitude_taper = .false.
 
         ! Solve for the drag profile with Beres source spectrum.
-        call gw_drag_prof(ncol, pgwv, src_level, tend_level, .false., dt, &
-             state%lat(:ncol), t,    ti, pmid, pint, dpm,   rdpm, &
+        call gw_drag_prof(ncol, pgwv, src_level, tend_level, do_latitude_taper, dt, &
+             state1%lat(:ncol), t,    ti, pmid, pint, dpm,   rdpm, &
              piln, rhoi,       nm,   ni, ubm,  ubi,  xv,    yv,   &
              effgw_beres, c,   kvtt, q,  dse,  tau,  utgw,  vtgw, &
              ttgw, qtgw,  taucd,     egwdffi,  gwut, dttdf, dttke)
@@ -783,9 +810,15 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         call gw_cm_src(ncol, pgwv, kbotbg, u, v, frontgf, &
              src_level, tend_level, tau, ubm, ubi, xv, yv, c)
 
+        if (dycore_is('UNSTRUCTURED')) then
+          do_latitude_taper = .false.
+        else
+          do_latitude_taper = .true.
+        end if
+
         ! Solve for the drag profile with C&M source spectrum.
-        call gw_drag_prof(ncol, pgwv, src_level, tend_level, .true., dt, &
-             state%lat(:ncol), t,    ti, pmid, pint, dpm,   rdpm, &
+        call gw_drag_prof(ncol, pgwv, src_level, tend_level, do_latitude_taper, dt, &
+             state1%lat(:ncol), t,    ti, pmid, pint, dpm,   rdpm, &
              piln, rhoi,       nm,   ni, ubm,  ubi,  xv,    yv,   &
              effgw_cm,    c,   kvtt, q,  dse,  tau,  utgw,  vtgw, &
              ttgw, qtgw,  taucd,     egwdffi,  gwut, dttdf, dttke)
@@ -836,9 +869,11 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
           u, v, t, sgh(:ncol), pmid, pint, dpm, zm, nm, &
           src_level, tend_level, tau, ubm, ubi, xv, yv, c)
 
+     do_latitude_taper = .false.
+
      ! Solve for the drag profile with orographic sources.
-     call gw_drag_prof(ncol, 0, src_level, tend_level, .false., dt, &
-          state%lat(:ncol), t,    ti, pmid, pint, dpm,   rdpm, &
+     call gw_drag_prof(ncol, 0, src_level, tend_level, do_latitude_taper, dt, &
+          state1%lat(:ncol), t,    ti, pmid, pint, dpm,   rdpm, &
           piln, rhoi,       nm,   ni, ubm,  ubi,  xv,    yv,   &
           effgw_oro,   c,   kvtt, q,  dse,  tau,  utgw,  vtgw, &
           ttgw, qtgw,  taucd,     egwdffi,  gwut(:,:,0:0), dttdf, dttke)
@@ -877,6 +912,17 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      call outfld('SGH   ',   sgh,pcols, lchnk)
 
   end if
+
+  ! Convert the tendencies for the dry constituents to dry air basis.
+  do m = 1, pcnst
+     if (cnst_type(m).eq.'dry') then
+        do k = 1, pver
+           do i = 1, ncol
+              ptend%q(i,k,m) = ptend%q(i,k,m)*state1%pdel(i,k)/state1%pdeldry(i,k)
+           end do
+        end do
+     end if
+  end do
 
   ! Write total temperature tendency to history file
   call outfld ('TTGW', ptend%s/cpairv(:,:,lchnk),  pcols, lchnk)

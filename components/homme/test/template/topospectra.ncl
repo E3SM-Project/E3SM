@@ -55,10 +55,15 @@ end setvalues
 ;
 
   fnames =  systemfunc(\
+;+"ls ~/scratch1/topodata/fv0.9x1.25-default-PHIS-new-SGH-SGH30.nc; "\
 ; "ls ~/scratch1/topodata/USGS-gtopo30_ne120np4_latlon.nc; "\
- "ls ~/scratch1/topodata/USGS-gtopo30_ne30np4_latlon.nc; "\
-+"ls ~/scratch1/topodata/fv0.9x1.25-default-PHIS-new-SGH-SGH30.nc; "\
-+"ls ~/scratch1/topodata/USGS-gtopo30_ne30np4_*_latlon.nc; "\
+ "ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4_latlon.nc; "\
++"ls ~/scratch1/topodata/fv_0.9x1.25_nc3000_Nsw042_Nrs008_Co060_Fi001_ZR_sgh30_24km_GRNL_c170103.nc;"\
++"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4_7xdel2_latlon.nc; "\
++"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4_8xdel2_latlon.nc; "\
++"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4_16xdel2_latlon.nc; "\
+;+"ls ~/scratch1/topodata/ne120/USGS-gtopo30_ne120np4_224xdel2_latlon.nc; "\
+;+"ls ~/scratch1/topodata/ne120/USGS-gtopo30_ne120np4_384xdel2_latlon.nc; "\
 );
 
 

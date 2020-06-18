@@ -14,8 +14,12 @@ module prim_driver_mod
 
   public :: prim_init1
   public :: prim_init2
+  public :: prim_create_c_data_structures
+  public :: prim_init_kokkos_states
+  public :: prim_init_kokkos_functors
   public :: prim_run_subcycle
   public :: prim_finalize
+  public :: deriv1
 
   private :: generate_global_to_local
   private :: init_cxx_connectivity_internal
@@ -27,14 +31,15 @@ module prim_driver_mod
   subroutine prim_init1(elem, par, dom_mt, tl)
     use iso_c_binding,    only : c_int, c_loc
     use derivative_mod,   only : derivinit
-    use dimensions_mod,   only : nelemd, np
+    use dimensions_mod,   only : nelemd, nlev, np
     use domain_mod,       only : domain1d_t
     use element_mod,      only : element_t
+    use edge_mod,         only : initEdgeBuffer, edge_g
     use kinds,            only : iulog, real_kind
     use parallel_mod,     only : parallel_t
     use time_mod,         only : TimeLevel_t, TimeLevel_init
-    use prim_driver_base, only : prim_init1_geometry, prim_init1_elem_arrays, prim_init1_cleanup, &
-                                 MetaVertex, GridEdge, deriv1
+    use prim_driver_base, only : prim_init1_geometry, prim_init1_elem_arrays, &
+                                 prim_init1_cleanup, MetaVertex, GridEdge
 #ifndef CAM
     use prim_driver_base, only : prim_init1_no_cam
 #endif
@@ -97,6 +102,14 @@ module prim_driver_mod
     ! ==================================
     call prim_init1_elem_arrays(elem,par)
 
+    ! ==================================
+    ! Initialize the buffers for exchanges
+    ! ==================================
+    ! Note: we don't really need edge buffers in the kokkos target,
+    !       since we handle MPI in C++. However, we do need an edge
+    !       buffer for tests initialization
+    call initEdgeBuffer(par,edge_g,elem,nlev)
+
     ! Initialize the time levels
     call TimeLevel_init(tl)
 
@@ -104,25 +117,47 @@ module prim_driver_mod
   end subroutine prim_init1
 
   subroutine prim_init2(elem, hybrid, nets, nete, tl, hvcoord)
+    use element_mod,      only : element_t
+    use hybrid_mod,       only : hybrid_t
+    use hybvcoord_mod,    only : hvcoord_t
+    use time_mod,         only : timelevel_t
+    use prim_driver_base, only : prim_init2_base => prim_init2
+
+    !
+    ! Inputs
+    !
+    type (element_t),   intent(inout)         :: elem(:)
+    type (hybrid_t),    intent(in)            :: hybrid
+    type (TimeLevel_t), intent(inout)         :: tl       ! time level struct
+    type (hvcoord_t),   intent(inout), target :: hvcoord  ! hybrid vertical coordinate struct
+    integer,            intent(in)            :: nets     ! starting thread element number (private)
+    integer,            intent(in)            :: nete     ! ending thread element number   (private)
+
+    ! Call the base version of prim_init2
+    call prim_init2_base(elem,hybrid,nets,nete,tl,hvcoord)
+
+    ! Init the c data structures
+    call prim_create_c_data_structures (tl, hvcoord)
+
+    ! Init the kokkos states
+    call prim_init_kokkos_states (elem)
+
+    ! Init the kokkos functors and their boundary exchanges
+    call prim_init_kokkos_functors ()
+
+  end subroutine prim_init2
+
+  subroutine prim_create_c_data_structures(tl, hvcoord)
     use iso_c_binding,    only : c_loc, c_ptr, c_bool
     use control_mod,      only : limiter_option, rsplit, qsplit, tstep_type, statefreq,  &
                                  nu, nu_p, nu_q, nu_s, nu_div, nu_top, vert_remap_q_alg, &
                                  hypervis_order, hypervis_subcycle, hypervis_scaling,    &
                                  ftype, prescribed_wind, moisture, disable_diagnostics,  &
-                                 use_cpstar, use_semi_lagrange_transport
+                                 use_cpstar, transport_alg
     use dimensions_mod,   only : qsize, nelemd, np, qsize
-    use element_mod,      only : element_t
-    use element_state,    only : elem_state_v, elem_state_temp, elem_state_dp3d,       &
-                                 elem_state_Q, elem_state_Qdp, elem_state_ps_v,        &
-                                 elem_accum_qvar, elem_accum_qmass, elem_accum_q1mass, &
-                                 elem_accum_kener, elem_accum_pener, elem_accum_iener, &
-                                 elem_accum_iener_wet
-    use hybrid_mod,       only : hybrid_t
     use hybvcoord_mod,    only : hvcoord_t
     use time_mod,         only : timelevel_t
     use kinds,            only : real_kind
-    use prim_driver_base, only : deriv1, prim_init2_base => prim_init2
-    use prim_state_mod,   only : prim_printstate
 
     interface
       subroutine init_derivative_c (dvv_ptr) bind(c)
@@ -148,6 +183,15 @@ module prim_driver_mod
         integer(kind=c_int),  intent(in) :: ftype
         logical(kind=c_bool), intent(in) :: prescribed_wind, moisture, disable_diagnostics, use_cpstar, use_semi_lagrange_transport
       end subroutine init_simulation_params_c
+      subroutine init_hvcoord_c (ps0,hybrid_am_ptr,hybrid_ai_ptr,hybrid_bm_ptr,hybrid_bi_ptr) bind(c)
+        use iso_c_binding , only : c_ptr, c_double
+        !
+        ! Inputs
+        !
+        real (kind=c_double),  intent(in) :: ps0
+        type (c_ptr),          intent(in) :: hybrid_am_ptr, hybrid_ai_ptr
+        type (c_ptr),          intent(in) :: hybrid_bm_ptr, hybrid_bi_ptr
+      end subroutine init_hvcoord_c
       subroutine init_elements_c (nelemd) bind(c)
         use iso_c_binding, only : c_int
         !
@@ -155,6 +199,69 @@ module prim_driver_mod
         !
         integer (kind=c_int), intent(in) :: nelemd
       end subroutine init_elements_c
+      subroutine init_time_level_c(nm1,n0,np1,nstep,nstep0) bind(c)
+        use iso_c_binding, only: c_int
+        !
+        ! Inputs
+        !
+        integer(kind=c_int), intent(in) :: nm1, n0, np1, nstep, nstep0
+      end subroutine init_time_level_c
+    end interface
+
+    !
+    ! Inputs
+    !
+    type (TimeLevel_t), intent(inout)         :: tl       ! time level struct
+    type (hvcoord_t),   intent(inout), target :: hvcoord  ! hybrid vertical coordinate struct
+    !
+    ! Locals
+    !
+    real (kind=real_kind), target :: dvv (np,np)
+    logical :: use_semi_lagrange_transport
+
+    type (c_ptr) :: hybrid_am_ptr, hybrid_ai_ptr, hybrid_bm_ptr, hybrid_bi_ptr
+
+    ! Initialize the C++ derivative structure
+    dvv = deriv1%dvv
+    call init_derivative_c(c_loc(dvv))
+
+    ! Fill the simulation params structures in C++
+    use_semi_lagrange_transport = transport_alg > 0
+    call init_simulation_params_c (vert_remap_q_alg, limiter_option, rsplit, qsplit, tstep_type,  &
+                                   qsize, statefreq, nu, nu_p, nu_q, nu_s, nu_div, nu_top,        &
+                                   hypervis_order, hypervis_subcycle, hypervis_scaling,           &
+                                   ftype, LOGICAL(prescribed_wind==1,c_bool),                     &
+                                   LOGICAL(moisture/="dry",c_bool),                               &
+                                   LOGICAL(disable_diagnostics,c_bool),                           &
+                                   LOGICAL(use_cpstar==1,c_bool),                           &
+                                   LOGICAL(use_semi_lagrange_transport,c_bool))
+
+    ! Initialize the hybrid vertical coordinate in C++
+    hybrid_am_ptr = c_loc(hvcoord%hyam)
+    hybrid_ai_ptr = c_loc(hvcoord%hyai)
+    hybrid_bm_ptr = c_loc(hvcoord%hybm)
+    hybrid_bi_ptr = c_loc(hvcoord%hybi)
+    call init_hvcoord_c (hvcoord%ps0,hybrid_am_ptr,hybrid_ai_ptr,hybrid_bm_ptr,hybrid_bi_ptr)
+
+    ! Initialize the C++ elements structure
+    call init_elements_c (nelemd)
+
+    ! Initialize time level structure in C++
+    call init_time_level_c(tl%nm1, tl%n0, tl%np1, tl%nstep, tl%nstep0)
+
+  end subroutine prim_create_c_data_structures
+
+  subroutine prim_init_kokkos_states (elem)
+    use iso_c_binding,    only : c_loc, c_ptr, c_bool
+    use kinds,            only : real_kind
+    use dimensions_mod,   only : nelemd, np
+    use element_mod,      only : element_t
+    use element_state,    only : elem_state_v, elem_state_temp, elem_state_dp3d,       &
+                                 elem_state_Q, elem_state_Qdp, elem_state_ps_v,        &
+                                 elem_accum_qvar, elem_accum_qmass, elem_accum_q1mass, &
+                                 elem_accum_kener, elem_accum_pener, elem_accum_iener, &
+                                 elem_accum_iener_wet
+    interface
       subroutine init_elements_2d_c (ie, D_ptr, Dinv_ptr, elem_fcor_ptr,                  &
                                      elem_mp_ptr, elem_spheremp_ptr, elem_rspheremp_ptr,      &
                                      elem_metdet_ptr, elem_metinv_ptr, phis_ptr,              &
@@ -189,76 +296,32 @@ module prim_driver_mod
         type (c_ptr) :: elem_state_v_ptr, elem_state_temp_ptr, elem_state_dp3d_ptr
         type (c_ptr) :: elem_state_Qdp_ptr, elem_state_ps_v_ptr
       end subroutine init_elements_states_c
-      subroutine init_boundary_exchanges_c () bind(c)
-      end subroutine init_boundary_exchanges_c
-      subroutine init_hvcoord_c (ps0,hybrid_am_ptr,hybrid_ai_ptr,hybrid_bm_ptr,hybrid_bi_ptr) bind(c)
-        use iso_c_binding , only : c_ptr, c_double
-        !
-        ! Inputs
-        !
-        real (kind=c_double),  intent(in) :: ps0
-        type (c_ptr),          intent(in) :: hybrid_am_ptr, hybrid_ai_ptr
-        type (c_ptr),          intent(in) :: hybrid_bm_ptr, hybrid_bi_ptr
-      end subroutine init_hvcoord_c
-      subroutine init_time_level_c(nm1,n0,np1,nstep,nstep0) bind(c)
-        use iso_c_binding, only: c_int
-        !
-        ! Inputs
-        !
-        integer(kind=c_int), intent(in) :: nm1, n0, np1, nstep, nstep0
-      end subroutine init_time_level_c
     end interface
 
     !
     ! Inputs
     !
     type (element_t),   intent(inout)         :: elem(:)
-    type (hybrid_t),    intent(in)            :: hybrid
-    type (TimeLevel_t), intent(inout)         :: tl       ! time level struct
-    type (hvcoord_t),   intent(inout), target :: hvcoord  ! hybrid vertical coordinate struct
-    integer,            intent(in)            :: nets     ! starting thread element number (private)
-    integer,            intent(in)            :: nete     ! ending thread element number   (private)
+
     !
     ! Locals
     !
     integer :: ie
-    real (kind=real_kind), target :: dvv (np,np)
 
     real (kind=real_kind), target, dimension(np,np,2,2)     :: elem_D, elem_Dinv, elem_metinv, elem_tensorvisc
-    real (kind=real_kind), target, dimension(np,np)         :: elem_mp, elem_fcor, elem_spheremp
-    real (kind=real_kind), target, dimension(np,np)         :: elem_rspheremp, elem_metdet, elem_state_phis
+    real (kind=real_kind), target, dimension(np,np)         :: elem_mp, elem_spheremp, elem_rspheremp
+    real (kind=real_kind), target, dimension(np,np)         :: elem_metdet, elem_state_phis, elem_fcor
     real (kind=real_kind), target, dimension(np,np,3,2)     :: elem_vec_sph2cart
 
-    type (c_ptr) :: hybrid_am_ptr, hybrid_ai_ptr, hybrid_bm_ptr, hybrid_bi_ptr
     type (c_ptr) :: elem_D_ptr, elem_Dinv_ptr, elem_fcor_ptr
     type (c_ptr) :: elem_mp_ptr, elem_spheremp_ptr, elem_rspheremp_ptr
     type (c_ptr) :: elem_metdet_ptr, elem_metinv_ptr, elem_state_phis_ptr
+    type (c_ptr) :: elem_tensorvisc_ptr, elem_vec_sph2cart_ptr
     type (c_ptr) :: elem_state_v_ptr, elem_state_temp_ptr, elem_state_dp3d_ptr
     type (c_ptr) :: elem_state_q_ptr, elem_state_Qdp_ptr, elem_state_ps_v_ptr
-    type (c_ptr) :: elem_tensorvisc_ptr, elem_vec_sph2cart_ptr
     type (c_ptr) :: elem_accum_qvar_ptr, elem_accum_qmass_ptr, elem_accum_q1mass_ptr
     type (c_ptr) :: elem_accum_iener_ptr, elem_accum_iener_wet_ptr
     type (c_ptr) :: elem_accum_kener_ptr, elem_accum_pener_ptr
-
-    ! Call the base version of prim_init2
-    call prim_init2_base(elem,hybrid,nets,nete,tl,hvcoord)
-
-    ! Initialize the C++ derivative structure
-    dvv = deriv1%dvv
-    call init_derivative_c(c_loc(dvv))
-
-    ! Fill the simulation params structures in C++
-    call init_simulation_params_c (vert_remap_q_alg, limiter_option, rsplit, qsplit, tstep_type,  &
-                                   qsize, statefreq, nu, nu_p, nu_q, nu_s, nu_div, nu_top,        &
-                                   hypervis_order, hypervis_subcycle, hypervis_scaling,           &
-                                   ftype, LOGICAL(prescribed_wind==1,c_bool),                     &
-                                   LOGICAL(moisture/="dry",c_bool),                               &
-                                   LOGICAL(disable_diagnostics,c_bool),                           &
-                                   LOGICAL(use_cpstar==1,c_bool),                           &
-                                   LOGICAL(use_semi_lagrange_transport,c_bool))
-
-    ! Initialize the C++ elements structure
-    call init_elements_c (nelemd)
 
     ! Initialize the 2d element arrays in C++
     elem_D_ptr            = c_loc(elem_D)
@@ -313,20 +376,17 @@ module prim_driver_mod
                              elem_accum_q1mass_ptr, elem_accum_iener_ptr, elem_accum_iener_wet_ptr, &
                              elem_accum_kener_ptr, elem_accum_pener_ptr)
 
-    ! Initialize the hybrid vertical coordinate in C++
-    hybrid_am_ptr = c_loc(hvcoord%hyam)
-    hybrid_ai_ptr = c_loc(hvcoord%hyai)
-    hybrid_bm_ptr = c_loc(hvcoord%hybm)
-    hybrid_bi_ptr = c_loc(hvcoord%hybi)
-    call init_hvcoord_c (hvcoord%ps0,hybrid_am_ptr,hybrid_ai_ptr,hybrid_bm_ptr,hybrid_bi_ptr)
+  end subroutine prim_init_kokkos_states
 
-    ! Initialize boundary exchange structure in C++
+  subroutine prim_init_kokkos_functors ()
+    interface
+      subroutine init_boundary_exchanges_c () bind(c)
+      end subroutine init_boundary_exchanges_c
+    end interface
+
+    ! Init the kokkos functors and their boundary exchanges
     call init_boundary_exchanges_c ()
-
-    ! Initialize time level structure in C++
-    call init_time_level_c(tl%nm1, tl%n0, tl%np1, tl%nstep, tl%nstep0)
-
-  end subroutine prim_init2
+  end subroutine prim_init_kokkos_functors
 
   subroutine prim_run_subcycle(elem, hybrid, nets, nete, dt, single_column, tl, hvcoord,nsubstep)
     use iso_c_binding,  only : c_int, c_ptr, c_loc

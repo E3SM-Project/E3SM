@@ -3,15 +3,15 @@
 
 <namelist_defaults>
 
-<ncdata             hgrid="64x128"                scam="1"  >atm/cam/inic/gaus/cami_0000-09-01_64x128_L72_c031210.nc</ncdata>
-<iopfile dyn="eul"                                scam="1"  >atm/cam/scam/iop/ARM97_iopfile_4scam.nc</iopfile>
+<ncdata                                           scam="1"  >atm/cam/inic/homme/cami_mam3_Linoz_ne4np4_L72_c160909.nc</ncdata>
+<iopfile                                          scam="1"  >atm/cam/scam/iop/ARM97_iopfile_4scam.nc</iopfile>
 <soag_ext_file >atm/cam/chem/trop_mozart_aero/emis/aces4bgc_nvsoa_soag_elev_2000_c160427.nc</soag_ext_file>
 <scmlat                                           scam="1"  >   36.6     </scmlat>
 <scmlon                                           scam="1"  >   262.5    </scmlon>
 <start_ymd                                        scam="1"  >   19970619 </start_ymd>
 <start_tod                                        scam="1"  >   84585    </start_tod>
 <mfilt                                            scam="1"  >   1500     </mfilt>
-<cld_macmic_num_steps                             scam="1"  >   8        </cld_macmic_num_steps>
+<dtime                                            scam="1"  >   1800     </dtime>
 <scm_iop_srf_prop                                 scam="1"  >   .true.   </scm_iop_srf_prop>
 <nhtfrq                                           scam="1"  >   1        </nhtfrq>
 <single_column                                    scam="1"  >  .true.    </single_column>

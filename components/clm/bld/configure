@@ -574,7 +574,7 @@ if ($print>=2) { print "CPP definitions set by configure: \'$cfg_cppdefs\'$eol";
 #-----------------------------------------------------------------------------------------------
 
 my $fp_filename      = 'Filepath';             # name of output filepath file
-my $cpp_filename     = 'CESM_cppdefs';         # name of output file for clm's cppdefs in cesm
+my $cpp_filename     = 'CCSM_cppdefs';         # name of output file for clm's cppdefs in cesm
 
 # Write the filepath file for cesm.
 write_filepath_cesmbld("$clm_bld/$fp_filename", $cfg_ref, $phys, allowEnv=>0 );
@@ -659,12 +659,17 @@ sub write_filepath_cesmbld
 		     "external_models/mpp/src/mpp/util",
 		     "external_models/mpp/src/mpp/vsfm",
 		     "external_models/emi/src/",
-		     "external_models/emi/src/elm_types",
+		     "external_models/emi/src/constants",
+		     "external_models/emi/src/em/base",
 		     "external_models/emi/src/em/betr",
 		     "external_models/emi/src/em/fates",
 		     "external_models/emi/src/em/ptm",
+		     "external_models/emi/src/em/stub",
 		     "external_models/emi/src/em/vsfm",
-		     "external_models/emi/src/data_types",
+		     "external_models/emi/src/emi",
+		     "external_models/emi/src/emi_data_definition",
+		     "external_models/emi/src/emi_data_exchange",
+		     "external_models/emi/src/emi_data_types",
                      "external_models/sbetr/src/betr/betr_core",
                      "external_models/sbetr/src/betr/betr_dtype",
                      "external_models/sbetr/src/betr/betr_bgc",

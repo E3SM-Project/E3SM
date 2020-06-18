@@ -92,7 +92,7 @@ char err_buffer[MPI_MAX_ERROR_STRING];
 int resultlen;
 
 /** The dimension names. */
-char dim_name[NDIM][NC_MAX_NAME + 1] = {"timestep", "x", "y"};
+char dim_name[NDIM][PIO_MAX_NAME + 1] = {"timestep", "x", "y"};
 
 /** Length of the dimensions in the sample data. */
 int dim_len[NDIM] = {NC_UNLIMITED, X_DIM_LEN, Y_DIM_LEN};
@@ -228,8 +228,8 @@ int check_file(int ntasks, char *filename) {
     nc_type xtype;    /**< NetCDF data type of this variable. */
     int ret;          /**< Return code for function calls. */
     int dimids[NDIM]; /**< Dimension ids for this variable. */
-    char my_dim_name[NC_MAX_NAME + 1]; /**< Name of the dimension. */
-    char var_name[NC_MAX_NAME + 1];    /**< Name of the variable. */
+    char my_dim_name[PIO_MAX_NAME + 1]; /**< Name of the dimension. */
+    char var_name[PIO_MAX_NAME + 1];    /**< Name of the variable. */
     size_t start[NDIM];                /**< Zero-based index to start read. */
     size_t count[NDIM];                /**< Number of elements to read. */
     int buffer[X_DIM_LEN];             /**< Buffer to read in data. */
@@ -359,7 +359,7 @@ int main(int argc, char* argv[])
      * (serial4 and parallel4) will be in netCDF-4/HDF5
      * format. All four can be read by the netCDF library, and all
      * will contain the same contents. */
-    char filename[NUM_NETCDF_FLAVORS][NC_MAX_NAME + 1] = {"example2_pnetcdf.nc",
+    char filename[NUM_NETCDF_FLAVORS][PIO_MAX_NAME + 1] = {"example2_pnetcdf.nc",
 							  "example2_classic.nc",
 							  "example2_serial4.nc",
 							  "example2_parallel4.nc"};

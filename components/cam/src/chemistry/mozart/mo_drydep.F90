@@ -1997,6 +1997,7 @@ contains
   subroutine get_landuse_and_soilw_from_file(do_soilw)
     use cam_pio_utils, only : cam_pio_openfile
     use ncdio_atm, only : infld
+    use cam_control_mod, only: aqua_planet
     logical, intent(in) :: do_soilw
     logical :: readvar
     
@@ -2004,24 +2005,29 @@ contains
     character(len=shr_kind_cl) :: locfn
     logical :: lexist
     
-    call getfil (drydep_srf_file, locfn, 1, lexist)
-    if(lexist) then
-       call cam_pio_openfile(piofile, locfn, PIO_NOWRITE)
-
-       call infld('fraction_landuse', piofile, 'ncol','class',' ',1,pcols,1,n_land_type, begchunk,endchunk, &
-            fraction_landuse, readvar, gridname='physgrid')
-
-       if(do_soilw) then
-          call infld('soilw', piofile, 'ncol','month',' ',1,pcols,1,12, begchunk,endchunk, &
-               soilw_3d, readvar, gridname='physgrid')
-       end if
-
-       call pio_closefile(piofile)
+    if (aqua_planet) then
+      fraction_landuse = 0.
+      soilw_3d = 0.
     else
-       call endrun('Unstructured grids require drydep_srf_file ')
-    end if
 
+      call getfil (drydep_srf_file, locfn, 1, lexist)
+      if(lexist) then
+         call cam_pio_openfile(piofile, locfn, PIO_NOWRITE)
 
+         call infld('fraction_landuse', piofile, 'ncol','class',' ',1,pcols,1,n_land_type, begchunk,endchunk, &
+              fraction_landuse, readvar, gridname='physgrid')
+
+         if(do_soilw) then
+            call infld('soilw', piofile, 'ncol','month',' ',1,pcols,1,12, begchunk,endchunk, &
+                 soilw_3d, readvar, gridname='physgrid')
+         end if
+
+         call pio_closefile(piofile)
+      else
+         call endrun('Unstructured grids require drydep_srf_file ')
+      end if
+    
+    end if ! aqua_planet
   end subroutine get_landuse_and_soilw_from_file
 
   !-------------------------------------------------------------------------------------
@@ -2030,7 +2036,7 @@ contains
                          wetland, vegetation_map, soilw_map, do_soilw )
 
     use mo_constants, only : r2d
-    use scamMod, only : latiop,loniop,scmlat,scmlon,use_camiop
+    use scamMod, only : latiop,loniop,scmlat,scmlon,use_replay
     use shr_scam_mod  , only: shr_scam_getCloseLatLon  ! Standardized system subroutines
     use filenames, only: ncdata
     use dycore, only : dycore_is
@@ -2095,10 +2101,10 @@ contains
     ju = plon
 
     if (single_column) then
-       if (use_camiop) then
+       if (use_replay) then
           call getfil (ncdata, ncdata_loc)
           call cam_pio_openfile (piofile, trim(ncdata_loc), PIO_NOWRITE)
-          call shr_scam_getCloseLatLon(piofile%fh,scmlat,scmlon,closelat,closelon,latidx,lonidx)
+          call shr_scam_getCloseLatLon(piofile,scmlat,scmlon,closelat,closelon,latidx,lonidx)
           call pio_closefile ( piofile)
           ploniop=size(loniop)
           platiop=size(latiop)
@@ -2712,6 +2718,7 @@ contains
     !
     ! compute rsmx = 1/(rs+rm) : multiply by 3 if surface is wet
     !-------------------------------------------------------------------------------------
+    rlux = 0._r8
     species_loop1 :  do ispec = 1,gas_pcnst
        if( has_dvel(ispec) ) then
           m = map_dvel(ispec)

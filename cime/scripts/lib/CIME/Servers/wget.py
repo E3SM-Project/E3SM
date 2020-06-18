@@ -4,28 +4,44 @@ WGET Server class.  Interact with a server using WGET protocol
 # pylint: disable=super-init-not-called
 from CIME.XML.standard_module_setup import *
 from CIME.Servers.generic_server import GenericServer
-
 logger = logging.getLogger(__name__)
+
 
 class WGET(GenericServer):
     def __init__(self, address, user='', passwd=''):
-        self._args = ''
+        self._args = '--no-check-certificate '
         if user:
-            self._args += "--user {}".format(user)
+            self._args += "--user {} ".format(user)
         if passwd:
-            self._args += "--password {}".format(passwd)
-
+            self._args += "--password {} ".format(passwd)
         self._server_loc = address
 
-        err = run_cmd("wget {} --spider {}".format(self._args, address))[0]
-        expect(err == 0,"Could not connect to repo '{0}'\nThis is most likely either a proxy, or network issue .")
+    @classmethod
+    def wget_login(cls, address, user='', passwd=''):
+        args = '--no-check-certificate '
+        if user:
+            args += "--user {} ".format(user)
+        if passwd:
+            args += "--password {} ".format(passwd)
 
+        try:
+            err = run_cmd("wget {} --spider {}".format(args, address), timeout=60)[0]
+        except:
+            logger.warning("Could not connect to repo '{0}'\nThis is most likely either a proxy, or network issue .".format(address))
+            return None
+        if err:
+            logger.warning("Could not connect to repo '{0}'\nThis is most likely either a proxy, or network issue .".format(address))
+            return None
+
+
+        return cls(address, user=user, passwd=passwd)
 
     def fileexists(self, rel_path):
         full_url = os.path.join(self._server_loc, rel_path)
         stat, out, err = run_cmd("wget {} --spider {}".format(self._args, full_url))
+
         if (stat != 0):
-            logging.warning("FAIL: Repo '{}' does not have file '{}'\nReason:{}\n{}\n".format(self._server_loc, full_url, out.encode('utf-8'), err.encode('utf-8')))
+            logging.warning("FAIL: Repo '{}' does not have file '{}'\nReason:{}\n{}\n".format(self._server_loc, full_url, out, err))
             return False
         return True
 

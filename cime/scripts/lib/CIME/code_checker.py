@@ -4,7 +4,7 @@ Libraries for checking python code with pylint
 
 from CIME.XML.standard_module_setup import *
 
-from CIME.utils import run_cmd, run_cmd_no_fail, expect, get_cime_root, is_python_executable
+from CIME.utils import run_cmd, run_cmd_no_fail, expect, get_cime_root, is_python_executable, get_cime_default_driver
 
 from multiprocessing.dummy import Pool as ThreadPool
 #pylint: disable=import-error
@@ -26,10 +26,11 @@ def _run_pylint(on_file, interactive):
         cmd_options +=",relative-import"
 
     # add init-hook option
-    cmd_options += " --init-hook='sys.path.extend((\"%s\",\"%s\",\"%s\"))'"%\
+    cmd_options += " --init-hook='sys.path.extend((\"%s\",\"%s\",\"%s\",\"%s\"))'"%\
         (os.path.join(cimeroot,"scripts","lib"),
          os.path.join(cimeroot,"scripts","Tools"),
-         os.path.join(cimeroot,"scripts","fortran_unit_testing","python"))
+         os.path.join(cimeroot,"scripts","fortran_unit_testing","python"),
+         os.path.join(cimeroot,"src","drivers","nuopc","cime_config","runseq"))
 
     cmd = "%s %s %s" % (pylint, cmd_options, on_file)
     logger.debug("pylint command is %s"%cmd)
@@ -74,9 +75,16 @@ def get_all_checkable_files():
 ###############################################################################
     cimeroot = get_cime_root()
     all_git_files = run_cmd_no_fail("git ls-files", from_dir=cimeroot, verbose=False).splitlines()
-
+    if get_cime_default_driver() == "nuopc":
+        nuopc_git_files = []
+        try:
+            nuopc_git_files = run_cmd_no_fail("git ls-files", from_dir=os.path.join(cimeroot,"src","drivers","nuopc"), verbose=False).splitlines()
+        except:
+            logger.warning("No nuopc driver found in source")
+        all_git_files.extend([os.path.join("src","drivers","nuopc",_file) for _file in nuopc_git_files])
     files_to_test = [item for item in all_git_files
                      if ((item.endswith(".py") or is_python_executable(os.path.join(cimeroot, item))) and not _should_pylint_skip(item))]
+
     return files_to_test
 
 ###############################################################################
@@ -91,7 +99,7 @@ def check_code(files, num_procs=10, interactive=False):
     # is a valid file, if not, we search the repo for a file with similar name.
     files_to_check = []
     if files:
-        repo_files = run_cmd_no_fail('git ls-files', from_dir=get_cime_root(), verbose=False).splitlines()
+        repo_files = get_all_checkable_files()
         for filearg in files:
             if os.path.exists(filearg):
                 files_to_check.append(os.path.abspath(filearg))

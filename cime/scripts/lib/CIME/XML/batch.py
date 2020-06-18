@@ -13,9 +13,14 @@ logger = logging.getLogger(__name__)
 
 class Batch(GenericXML):
 
-    def __init__(self, batch_system=None, machine=None, infile=None, files=None):
+    def __init__(self, batch_system=None, machine=None, infile=None, files=None, extra_machines_dir=None):
         """
         initialize an object
+
+        If extra_machines_dir is provided, it should be a string giving a path to an
+        additional directory that will be searched for a config_batch.xml file; if
+        found, the contents of this file will be appended to the standard
+        config_batch.xml. An empty string is treated the same as None.
         """
         if files is None:
             files = Files()
@@ -31,11 +36,19 @@ class Batch(GenericXML):
         self.batch_system      = batch_system
         self.machine           = machine
 
-        #Append the contents of $HOME/.cime/config_batch.xml if it exists
-        #This could cause problems if node matchs are repeated when only one is expected
+        # Append the contents of $HOME/.cime/config_batch.xml if it exists.
+        #
+        # Also append the contents of a config_batch.xml file in the directory given by
+        # extra_machines_dir, if present.
+        #
+        # This could cause problems if node matches are repeated when only one is expected.
         infile = os.path.join(os.environ.get("HOME"),".cime","config_batch.xml")
         if os.path.exists(infile):
             GenericXML.read(self, infile)
+        if extra_machines_dir:
+            infile = os.path.join(extra_machines_dir, "config_batch.xml")
+            if os.path.exists(infile):
+                GenericXML.read(self, infile)
 
         if self.batch_system is not None:
             self.set_batch_system(self.batch_system, machine=machine)
@@ -107,14 +120,15 @@ class Batch(GenericXML):
         and the second a dict of qualifiers for the job
         """
         jobs = []
-        bnode = self.get_child("batch_jobs")
-        for jnode in self.get_children(root=bnode):
-            if self.name(jnode) == "job":
-                name = self.get(jnode, "name")
-                jdict = {}
-                for child in self.get_children(root=jnode):
-                    jdict[self.name(child)] = self.text(child)
+        bnode = self.get_optional_child("batch_jobs")
+        if bnode:
+            for jnode in self.get_children(root=bnode):
+                if self.name(jnode) == "job":
+                    name = self.get(jnode, "name")
+                    jdict = {}
+                    for child in self.get_children(root=jnode):
+                        jdict[self.name(child)] = self.text(child)
 
-            jobs.append((name, jdict))
+                    jobs.append((name, jdict))
 
         return jobs

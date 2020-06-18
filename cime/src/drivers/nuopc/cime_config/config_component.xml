@@ -465,6 +465,17 @@
     </desc>
   </entry>
 
+  <entry id="MEDIATOR_READ_RESTART">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      A setting of TRUE implies a continuation run for mediator only
+    </desc>
+  </entry>
+
   <entry id="RESUBMIT">
     <type>integer</type>
     <default_value>0</default_value>
@@ -1121,7 +1132,7 @@
 
   <entry id="GLC_GRID">
     <type>char</type>
-    <valid_values>gland20,gland10,gland5,gland5UM,gland4,mpas.gis20km,mpas.ais20km,null</valid_values>
+    <valid_values>gland20,gland10,gland5,gland5UM,gland4,mpas.aisgis20km,mpas.gis20km,mpas.ais20km,null</valid_values>
     <default_value>gland5UM</default_value>
     <group>build_grid</group>
     <file>env_build.xml</file>
@@ -1563,15 +1574,6 @@
     <desc>wav2ocn state mapping file</desc>
   </entry>
 
-  <entry id="VECT_MAP">
-    <type>char</type>
-    <valid_values>none,npfix,cart3d,cart3d_diag,cart3d_uvw,cart3d_uvw_diag</valid_values>
-    <default_value>cart3d</default_value>
-    <group>run_domain</group>
-    <file>env_run.xml</file>
-    <desc>vector mapping option</desc>
-  </entry>
-
   <entry id="EPS_FRAC">
     <type>char</type>
     <default_value>1.0e-02</default_value>
@@ -1912,7 +1914,7 @@
 
   <entry id="PIO_VERSION">
     <type>integer</type>
-    <default_value>1</default_value>
+    <default_value>2</default_value>
     <valid_values>1,2</valid_values>
     <group>build_macros</group>
     <file>env_build.xml</file>

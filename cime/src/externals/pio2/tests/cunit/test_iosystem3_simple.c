@@ -85,10 +85,10 @@ int main(int argc, char **argv)
 
         /* Finalize PIO system. */
         if (overlap_comm != MPI_COMM_NULL)
-            if ((ret = PIOc_finalize(overlap_iosysid)))
+            if ((ret = PIOc_free_iosystem(overlap_iosysid)))
                 ERR(ret);
 
-        if ((ret = PIOc_finalize(iosysid_world)))
+        if ((ret = PIOc_free_iosystem(iosysid_world)))
             ERR(ret);
 
         /* Free MPI resources used by test. */

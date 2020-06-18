@@ -1,12 +1,12 @@
 module interp_mod
   use cam_logfile,         only: iulog
   use shr_kind_mod,        only: r8 => shr_kind_r8
-  use dimensions_mod,      only: nelemd, np, ne
+  use dimensions_mod,      only: nelem,nelemd, np, ne
   use interpolate_mod,     only: interpdata_t
   use interpolate_mod,     only: interp_lat => lat, interp_lon => lon
   use interpolate_mod,     only: interp_gweight => gweight
-  use dyn_grid,            only: elem
-  use spmd_utils,          only: masterproc, iam
+  use dyn_grid,            only: elem,fv_nphys
+  use spmd_utils,          only: masterproc, iam, npes
   use cam_history_support, only: fillvalue
   use hybrid_mod,          only: hybrid_t, hybrid_create
   use cam_abortutils,      only: endrun
@@ -68,6 +68,19 @@ CONTAINS
     type(horiz_coord_t), pointer       :: lat_coord
     type(horiz_coord_t), pointer       :: lon_coord
     character(len=max_hcoordname_len)  :: gridname
+
+    if(any(interp_output)) then
+       if (par%nprocs /= npes ) then
+          write(iulog,*) 'Atmopshere MPI tasks:  atm_ntasks=',npes
+          write(iulog,*) 'SE dycore MPI tasks, number of elements:',par%nprocs,nelem
+          call endrun('setup_history_interpolation: interpolated output not supported if atm_ntasks>dyn_npes')
+       endif
+       if (fv_nphys /= 0  ) then
+          write(iulog,*) 'Atmopshere MPI tasks:  atm_ntasks=',npes
+          write(iulog,*) 'SE dycore MPI tasks, number of elements:',par%nprocs,nelem
+          call endrun('setup_history_interpolation: interpolated output not supported with physgrid')
+       endif
+    endif
 
     if (associated(cam_interpolate)) then
       do i = 1, size(cam_interpolate)
@@ -214,8 +227,7 @@ CONTAINS
     use dof_mod,          only: PutUniquePoints
     use interpolate_mod,  only: get_interp_parameter
     use shr_pio_mod,      only: shr_pio_getiosys
-    use edgetype_mod,     only : edgebuffer_t
-    use edge_mod,         only: edgevpack, edgevunpack, initedgebuffer, freeedgebuffer
+    use edge_mod,         only: edgevpack_nlyr, edgevunpack_nlyr, edge_g
     use bndry_mod,        only: bndry_exchangeV
     use parallel_mod,     only: par
     use cam_grid_support, only: cam_grid_id
@@ -242,7 +254,6 @@ CONTAINS
     integer :: nlon, nlat, ncol
     logical :: usefillvalues
     type(iosystem_desc_t), pointer :: pio_subsystem
-    type (EdgeBuffer_t) :: edgebuf              ! edge buffer
 
     usefillvalues=.false.
     phys_decomp = cam_grid_id('physgrid')
@@ -254,7 +265,7 @@ CONTAINS
     if(decomp_type==phys_decomp) then
        fld_dyn = -999_R8
        if(local_dp_map) then
-          !$omp parallel do private (lchnk, ncols, pgcols, icol, idmb1, idmb2, idmb3, ie, ioff)
+          !$omp parallel do private (lchnk, ncols, pgcols, icol, k, idmb1, idmb2, idmb3, ie, ioff)
           do lchnk=begchunk,endchunk
              ncols=get_ncols_p(lchnk)
              call get_gcol_all_p(lchnk,pcols,pgcols)
@@ -273,7 +284,7 @@ CONTAINS
           allocate( bbuffer(block_buf_nrecs*numlev) )
           allocate( cbuffer(chunk_buf_nrecs*numlev) )
 
-          !$omp parallel do private (lchnk, ncols, cpter, i, icol)
+          !$omp parallel do private (lchnk, ncols, cpter, i,k, icol)
           do lchnk = begchunk,endchunk
              ncols = get_ncols_p(lchnk)
 
@@ -293,7 +304,7 @@ CONTAINS
 
           call transpose_chunk_to_block(1, cbuffer, bbuffer)
           if(par%dynproc) then
-             !$omp parallel do private (ie, bpter, icol)
+             !$omp parallel do private (ie, bpter, icol, ncols, k)
              do ie=1,nelemd
 
                 call chunk_to_block_recv_pters(elem(ie)%GlobalID,npsq,pverp,1,bpter)
@@ -311,20 +322,18 @@ CONTAINS
 
        end if
        allocate(dest(np,np,numlev,nelemd))
-       call initEdgeBuffer(hybrid%par,edgebuf, elem,numlev)
 
        do ie=1,nelemd
           ncols = elem(ie)%idxp%NumUniquePts
           call putUniquePoints(elem(ie)%idxP, numlev, fld_dyn(1:ncols,:,ie), dest(:,:,:,ie))
-          call edgeVpack(edgebuf, dest(:,:,:,ie), numlev, 0, ie)
+          call edgeVpack_nlyr(edge_g, elem(ie)%desc, dest(:,:,:,ie), numlev, 0, numlev)
        enddo
        if(par%dynproc) then
-          call bndry_exchangeV(par, edgebuf)
+          call bndry_exchangeV(par, edge_g)
        end if
        do ie=1,nelemd
-          call edgeVunpack(edgebuf, dest(:,:,:,ie), numlev, 0, ie)
+          call edgeVunpack_nlyr(edge_g, elem(ie)%desc, dest(:,:,:,ie), numlev, 0, numlev)
        end do
-       call freeEdgeBuffer(edgebuf)
        usefillvalues = any(dest == fillvalue)
     else
       usefillvalues=any(fld==fillvalue)
@@ -407,8 +416,7 @@ CONTAINS
     use dof_mod,          only : PutUniquePoints
     use interpolate_mod,  only : get_interp_parameter
     use shr_pio_mod,      only : shr_pio_getiosys
-    use edgetype_mod,     only : edgebuffer_t
-    use edge_mod,         only : edgevpack, edgevunpack, initedgebuffer, freeedgebuffer
+    use edge_mod,         only : edge_g,edgevpack_nlyr, edgevunpack_nlyr
     use bndry_mod,        only : bndry_exchangeV
     use parallel_mod,     only: par
     use cam_grid_support, only: cam_grid_id
@@ -435,7 +443,6 @@ CONTAINS
     logical :: usefillvalues
 
     type(iosystem_desc_t), pointer :: pio_subsystem
-    type (EdgeBuffer_t) :: edgebuf              ! edge buffer
 
     usefillvalues=.false.
     phys_decomp = cam_grid_id('physgrid')
@@ -447,7 +454,7 @@ CONTAINS
     if(decomp_type==phys_decomp) then
        allocate(dest(np,np,2,numlev,nelemd))
        if(local_dp_map) then
-          !$omp parallel do private (lchnk, ncols, pgcols, icol, idmb1, idmb2, idmb3, ie, ioff)
+          !$omp parallel do private (lchnk, ncols, pgcols, icol, k, idmb1, idmb2, idmb3, ie, ioff)
           do lchnk=begchunk,endchunk
              ncols=get_ncols_p(lchnk)
              call get_gcol_all_p(lchnk,pcols,pgcols)
@@ -489,7 +496,7 @@ CONTAINS
 
           call transpose_chunk_to_block(2, cbuffer, bbuffer)
           if(par%dynproc) then
-             !$omp parallel do private (ie, bpter, icol)
+             !$omp parallel do private (ie, bpter, icol, ncols, k)
              do ie=1,nelemd
                 
                 call chunk_to_block_recv_pters(elem(ie)%GlobalID,npsq,pverp,2,bpter)
@@ -507,23 +514,20 @@ CONTAINS
           deallocate( cbuffer )
 
        end if
-       call initEdgeBuffer(hybrid%par,edgebuf,elem, 2*numlev)
 
        do ie=1,nelemd
           ncols = elem(ie)%idxp%NumUniquePts
           call putUniquePoints(elem(ie)%idxP, 2, numlev, fld_dyn(1:ncols,:,1:numlev,ie), dest(:,:,:,1:numlev,ie))
           
-          call edgeVpack(edgebuf, dest(:,:,:,:,ie), 2*numlev, 0, ie)
+          call edgeVpack_nlyr(edge_g, elem(ie)%desc, dest(:,:,:,:,ie), 2*numlev, 0, 2*numlev)
        enddo
        if(par%dynproc) then
-          call bndry_exchangeV(par, edgebuf)
+          call bndry_exchangeV(par, edge_g)
        end if
 
        do ie=1,nelemd
-          call edgeVunpack(edgebuf, dest(:,:,:,:,ie), 2*numlev, 0, ie)
+          call edgeVunpack_nlyr(edge_g, elem(ie)%desc, dest(:,:,:,:,ie), 2*numlev, 0, 2*numlev)
        enddo
-       call freeEdgeBuffer(edgebuf)
-       usefillvalues = any(dest==fillvalue)
     else
        usefillvalues = (any(fldu==fillvalue) .or. any(fldv==fillvalue))
        allocate(dest(np,np,2,numlev,1))

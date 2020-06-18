@@ -31,6 +31,9 @@ module domainMod
      real(r8),pointer :: topo(:)    ! topography
      real(r8),pointer :: latc(:)    ! latitude of grid cell (deg)
      real(r8),pointer :: lonc(:)    ! longitude of grid cell (deg)
+     real(r8),pointer :: firrig(:)
+     real(r8),pointer :: f_surf(:)  ! fraction of water withdraws from surfacewater
+     real(r8),pointer :: f_grd(:)   ! fraction of water withdraws from groundwater
      real(r8),pointer :: xCell(:)   ! x-position of grid cell (m)
      real(r8),pointer :: yCell(:)   ! y-position of grid cell (m)
      real(r8),pointer :: area(:)    ! grid cell area (km**2)
@@ -38,7 +41,7 @@ module domainMod
      integer ,pointer :: glcmask(:) ! glc mask: 1=sfc mass balance required by GLC component
                                     ! 0=SMB not required (default)
                                     ! (glcmask is just a guess at the appropriate mask, known at initialization - in contrast to icemask, which is the true mask obtained from glc)
-     character*16     :: set        ! flag to check if domain is set
+     logical          :: set        ! flag to check if domain is set
      logical          :: decomped   ! decomposed locally or global copy
 
      ! pflotran:beg-----------------------------------------------------
@@ -63,8 +66,6 @@ module domainMod
 ! Originally clm_varsur by Mariana Vertenstein
 ! Migrated from clm_varsur to domainMod by T Craig
 !
-  character*16,parameter :: set   = 'domain_set      '
-  character*16,parameter :: unset = 'NOdomain_unsetNO'
 !
 !EOP
 !------------------------------------------------------------------------------
@@ -113,12 +114,15 @@ contains
        endif
     endif
 
-    if (domain%set == set) then
+    if (domain%set) then
        call domain_clean(domain)
     endif
+    if (masterproc) then
+       write(iulog,*) 'domain_init: ',ni,nj
+    endif
     allocate(domain%mask(nb:ne),domain%frac(nb:ne),domain%latc(nb:ne), &
-             domain%pftm(nb:ne),domain%area(nb:ne),domain%lonc(nb:ne), &
-             domain%topo(nb:ne),domain%glcmask(nb:ne), &
+             domain%pftm(nb:ne),domain%area(nb:ne),domain%firrig(nb:ne),domain%lonc(nb:ne), &
+             domain%topo(nb:ne),domain%f_surf(nb:ne),domain%f_grd(nb:ne),domain%glcmask(nb:ne), &
              domain%xCell(nb:ne),domain%yCell(nb:ne),stat=ier)
     if (ier /= 0) then
        call shr_sys_abort('domain_init ERROR: allocate mask, frac, lat, lon, area ')
@@ -160,8 +164,11 @@ contains
     domain%xCell    = nan
     domain%yCell    = nan
     domain%area     = nan
+    domain%firrig   = 0.7_r8    
+    domain%f_surf   = 1.0_r8
+    domain%f_grd    = 0.0_r8
 
-    domain%set      = set
+    domain%set      = .true.
     if (domain%nbeg == 1 .and. domain%nend == domain%ns) then
        domain%decomped = .false.
     else
@@ -196,13 +203,14 @@ end subroutine domain_init
     integer ier
 !
 !------------------------------------------------------------------------------
-    if (domain%set == set) then
+    if (domain%set) then
        if (masterproc) then
           write(iulog,*) 'domain_clean: cleaning ',domain%ni,domain%nj
        endif
        deallocate(domain%mask,domain%frac,domain%latc, &
-                  domain%lonc,domain%area,domain%pftm, &
-                  domain%topo,domain%glcmask,stat=ier)
+                  domain%lonc,domain%area,domain%firrig,domain%pftm, &
+                  domain%topo,domain%f_surf,domain%f_grd,domain%glcmask, &
+                  domain%xCell,domain%yCell,stat=ier)
        if (ier /= 0) then
           call shr_sys_abort('domain_clean ERROR: deallocate mask, frac, lat, lon, area ')
        endif
@@ -232,13 +240,13 @@ end subroutine domain_init
        endif
     endif
 
-    domain%clmlevel   = unset
+    domain%clmlevel   = 'NOdomain_unsetNO'
     domain%ns         = huge(1)
     domain%ni         = huge(1)
     domain%nj         = huge(1)
     domain%nbeg       = huge(1)
     domain%nend       = huge(1)
-    domain%set        = unset
+    domain%set        = .false.
     domain%decomped   = .true.
 
 end subroutine domain_clean
@@ -269,7 +277,7 @@ end subroutine domain_clean
 !------------------------------------------------------------------------------
 
   if (masterproc) then
-    write(iulog,*) '  domain_check set       = ',trim(domain%set)
+    write(iulog,*) '  domain_check set       = ',domain%set
     write(iulog,*) '  domain_check decomped  = ',domain%decomped
     write(iulog,*) '  domain_check ns        = ',domain%ns
     write(iulog,*) '  domain_check ni,nj     = ',domain%ni,domain%nj
@@ -280,6 +288,9 @@ end subroutine domain_clean
     write(iulog,*) '  domain_check mask      = ',minval(domain%mask),maxval(domain%mask)
     write(iulog,*) '  domain_check frac      = ',minval(domain%frac),maxval(domain%frac)
     write(iulog,*) '  domain_check topo      = ',minval(domain%topo),maxval(domain%topo)
+    write(iulog,*) '  domain_check firrig    = ',minval(domain%firrig),maxval(domain%firrig)
+    write(iulog,*) '  domain_check f_surf    = ',minval(domain%f_surf),maxval(domain%f_surf)
+    write(iulog,*) '  domain_check f_grd     = ',minval(domain%f_grd),maxval(domain%f_grd)
     write(iulog,*) '  domain_check area      = ',minval(domain%area),maxval(domain%area)
     write(iulog,*) '  domain_check pftm      = ',minval(domain%pftm),maxval(domain%pftm)
     write(iulog,*) '  domain_check glcmask   = ',minval(domain%glcmask),maxval(domain%glcmask)

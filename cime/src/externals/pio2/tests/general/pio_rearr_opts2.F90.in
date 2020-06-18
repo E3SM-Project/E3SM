@@ -141,7 +141,6 @@ SUBROUTINE create_decomp_and_init_buf(iodesc, wbuf, dims, ret)
   integer, dimension(1), intent(out) :: dims
   integer, intent(out) :: ret
 
-  integer :: pio_dim
   integer, dimension(:), allocatable :: compdof
   integer, dimension(1) :: start, count
   integer :: i
@@ -153,7 +152,7 @@ SUBROUTINE create_decomp_and_init_buf(iodesc, wbuf, dims, ret)
   allocate(compdof(count(1)))
   do i=1,count(1)
     wbuf(i) = start(1) + i - 1
-    compdof(i) = wbuf(i)
+    compdof(i) = int(wbuf(i))
   end do
 
   call PIO_initdecomp(pio_tf_iosystem_, PIO_real, dims, compdof, iodesc)
@@ -207,8 +206,6 @@ SUBROUTINE open_file_and_get_var(pio_file, iotype, pio_var, ret)
   integer, intent(in) :: iotype
   type(var_desc_t), intent(out) :: pio_var
   integer, intent(out) :: ret
-
-  integer :: pio_dim
 
   ret = PIO_openfile(pio_tf_iosystem_, pio_file, iotype, tgv_fname, pio_write)
   PIO_TF_CHECK_ERR(ret, "Could not create file " // trim(tgv_fname))
@@ -273,7 +270,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN set_rearr_opts_and_write
   integer, dimension(:), allocatable :: iotypes
   character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
   integer :: num_iotypes
-  integer :: ret, ierr, i
+  integer :: ret, i
 
   num_iotypes = 0
   call PIO_TF_Get_nc_iotypes(iotypes, iotype_descs, num_iotypes)

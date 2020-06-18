@@ -35,9 +35,11 @@ To check connection and store your credential run 'svn ls {0}' and permanently s
         return True
 
     def getfile(self, rel_path, full_path):
+        if not rel_path:
+            return False
         full_url = os.path.join(self._svn_loc, rel_path)
         stat, output, errput = \
-            run_cmd("svn --non-interactive --trust-server-cert {} export {} {}".format(self._args, full_url, full_path))
+                               run_cmd("svn --non-interactive --trust-server-cert {} export {} {}".format(self._args, full_url, full_path))
         if (stat != 0):
             logging.warning("svn export failed with output: {} and errput {}\n".format(output, errput))
             return False

@@ -48,7 +48,7 @@ int test_async2(int my_rank, int num_flavors, int *flavor, MPI_Comm test_comm,
                 return ret;
 
             /* Finalize the IO system. Only call this from the computation tasks. */
-            if ((ret = PIOc_finalize(iosysid[c])))
+            if ((ret = PIOc_free_iosystem(iosysid[c])))
                 ERR(ret);
             if ((mpierr = MPI_Comm_free(&comp_comm[c])))
                 MPIERR(mpierr);
@@ -118,7 +118,7 @@ int test_no_async2(int my_rank, int num_flavors, int *flavor, MPI_Comm test_comm
         return ret;
 
     /* Finalize PIO system. */
-    if ((ret = PIOc_finalize(iosysid)))
+    if ((ret = PIOc_free_iosystem(iosysid)))
         return ret;
 
     return PIO_NOERR;

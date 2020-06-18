@@ -13,9 +13,10 @@ _LIBDIR = os.path.join(_CIMEROOT, "scripts", "Tools")
 sys.path.append(_LIBDIR)
 
 from standard_script_setup import *
-from CIME.buildlib         import parse_input, run_gmake
+from CIME.buildlib         import parse_input
 from CIME.case             import Case
 from CIME.utils            import run_cmd, expect
+from CIME.build            import get_standard_makefile_args
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,7 @@ def _main_func():
 ###############################################################################
 
     caseroot, libroot, bldroot = parse_input(sys.argv)
-    
+
     case = Case(caseroot)
 
     casebuild = case.get_value("CASEBUILD")
@@ -53,11 +54,11 @@ def _main_func():
     # create the library in libroot
     #-------------------------------------------------------
 
-    # Note that casebuild/clmconf/CESM_cppdefs is created
+    # Note that casebuild/clmconf/CCSM_cppdefs is created
     # by the call to clm's bld/configure in clm's cime_config/buildnml
 
-    cppdefs_file = os.path.join(casebuild, "clmconf", "CESM_cppdefs")
-    user_cppdefs = "" 
+    cppdefs_file = os.path.join(casebuild, "clmconf", "CCSM_cppdefs")
+    user_cppdefs = ""
     with open(cppdefs_file, 'r') as f:
         cppdefs = f.readline()
         if cppdefs:
@@ -69,18 +70,17 @@ def _main_func():
         complib = os.path.join(libroot,"liblnd.a")
     makefile = os.path.join(casetools, "Makefile")
     macfile  = os.path.join(caseroot, "Macros.%s" % mach)
+    make_args = get_standard_makefile_args(case)
 
     if user_cppdefs:
-        cmd = "%s complib -j %d MODEL=clm COMPLIB=%s -f %s MACFILE=%s USER_CPPDEFS='%s'" \
-            % (gmake, gmake_j, complib, makefile, macfile, user_cppdefs )
+        cmd = "%s complib -j %d MODEL=clm COMPLIB=%s -f %s %s MACFILE=%s USER_CPPDEFS='%s'" \
+            % (gmake, gmake_j, complib, makefile, make_args, macfile, user_cppdefs )
     else:
-        cmd = "%s complib -j %d MODEL=clm COMPLIB=%s -f %s MACFILE=%s " \
-            % (gmake, gmake_j, complib, makefile, macfile )
+        cmd = "%s complib -j %d MODEL=clm COMPLIB=%s -f %s %s MACFILE=%s " \
+            % (gmake, gmake_j, complib, makefile, make_args, macfile )
     rc, out, err = run_cmd(cmd)
     logger.info("%s: \n\n output:\n %s \n\n err:\n\n%s\n"%(cmd,out,err))
     expect(rc == 0, "Command %s failed with rc=%s" % (cmd, rc))
-    
-
 
 ###############################################################################
 

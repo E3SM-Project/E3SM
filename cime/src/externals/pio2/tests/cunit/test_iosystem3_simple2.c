@@ -29,7 +29,7 @@ int main(int argc, char **argv)
     int my_rank; /* Zero-based rank of processor. */
     int ntasks; /* Number of processors involved in current execution. */
     int iosysid_world; /* The ID for the parallel I/O system. */
-    char fname0[NC_MAX_NAME + 1];
+    char fname0[PIO_MAX_NAME + 1];
     int ncid;
     int num_flavors; /* Number of PIO netCDF flavors in this build. */
     int flavor[NUM_FLAVORS]; /* iotypes for the supported netCDF IO flavors. */
@@ -86,7 +86,7 @@ int main(int argc, char **argv)
         } /* next iotype */
 
         /* Finalize PIO systems. */
-        if ((ret = PIOc_finalize(iosysid_world)))
+        if ((ret = PIOc_free_iosystem(iosysid_world)))
             ERR(ret);
     } /* my_rank < TARGET_NTASKS */
 

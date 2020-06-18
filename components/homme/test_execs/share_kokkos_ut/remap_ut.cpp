@@ -73,7 +73,7 @@ public:
   void test_grid() {
     std::random_device rd;
     rngAlg engine(rd());
-    genRandArray(remap.dpo, engine,
+    genRandArray(remap.m_dpo, engine,
                  std::uniform_real_distribution<Real>(0.125, 1000),
                  nan_boundaries);
     Kokkos::parallel_for(
@@ -85,12 +85,12 @@ public:
         "fortran dpo");
     HostViewManaged<Real[_ppm_consts::PPMDX_PHYSICAL_LEV][10]> f90_result(
         "fortra ppmdx");
-    auto kokkos_result = Kokkos::create_mirror_view(remap.ppmdx);
-    Kokkos::deep_copy(kokkos_result, remap.ppmdx);
+    auto kokkos_result = Kokkos::create_mirror_view(remap.m_ppmdx);
+    Kokkos::deep_copy(kokkos_result, remap.m_ppmdx);
     for (int ie = 0; ie < ne; ++ie) {
       for (int igp = 0; igp < NP; ++igp) {
         for (int jgp = 0; jgp < NP; ++jgp) {
-          Kokkos::deep_copy(f90_input, Homme::subview(remap.dpo, ie, igp, jgp));
+          Kokkos::deep_copy(f90_input, Homme::subview(remap.m_dpo, ie, igp, jgp));
           // These arrays must be 0 offset.
           for (int k = 0; k < NUM_PHYSICAL_LEV + 2 * _ppm_consts::gs; ++k) {
             f90_input(k) =
@@ -124,28 +124,28 @@ public:
                          [&](const int &loop_idx) {
       const int igp = loop_idx / NP;
       const int jgp = loop_idx % NP;
-      remap.compute_grids(kv, Homme::subview(remap.dpo, kv.ie, igp, jgp),
-                          Homme::subview(remap.ppmdx, kv.ie, igp, jgp));
+      remap.compute_grids(kv, Homme::subview(remap.m_dpo, kv.ie, igp, jgp),
+                          Homme::subview(remap.m_ppmdx, kv.ie, igp, jgp));
     });
   }
 
   void test_ppm() {
     // Hack to get the right number of outputs
-    remap.ao = ExecViewManaged<Real * [NP][NP][_ppm_consts::AO_PHYSICAL_LEV]>(
+    remap.m_ao = ExecViewManaged<Real * [NP][NP][_ppm_consts::AO_PHYSICAL_LEV]>(
         "ao", num_remap * ne);
-    remap.dma = ExecViewManaged<Real * [NP][NP][_ppm_consts::DMA_PHYSICAL_LEV]>(
+    remap.m_dma = ExecViewManaged<Real * [NP][NP][_ppm_consts::DMA_PHYSICAL_LEV]>(
         "dma", num_remap * ne);
-    remap.ai = ExecViewManaged<Real * [NP][NP][_ppm_consts::AI_PHYSICAL_LEV]>(
+    remap.m_ai = ExecViewManaged<Real * [NP][NP][_ppm_consts::AI_PHYSICAL_LEV]>(
         "ai", num_remap * ne);
-    remap.parabola_coeffs = ExecViewManaged<Real * [NP][NP][3][NUM_PHYSICAL_LEV]>(
+    remap.m_parabola_coeffs = ExecViewManaged<Real * [NP][NP][3][NUM_PHYSICAL_LEV]>(
         "parabola coeffs", num_remap * ne);
 
     std::random_device rd;
     rngAlg engine(rd());
-    genRandArray(remap.ppmdx, engine,
+    genRandArray(remap.m_ppmdx, engine,
                  std::uniform_real_distribution<Real>(0.125, 1000));
     for (int i = 0; i < num_remap; ++i) {
-      genRandArray(remap.ao, engine,
+      genRandArray(remap.m_ao, engine,
                    std::uniform_real_distribution<Real>(0.125, 1000),
                    nan_boundaries);
     }
@@ -160,16 +160,16 @@ public:
     HostViewManaged<Real[_ppm_consts::PPMDX_PHYSICAL_LEV][10]> f90_dx_input(
         "fortran ppmdx");
     HostViewManaged<Real[NUM_PHYSICAL_LEV][3]> f90_result("fortran result");
-    auto kokkos_result = Kokkos::create_mirror_view(remap.parabola_coeffs);
-    Kokkos::deep_copy(kokkos_result, remap.parabola_coeffs);
+    auto kokkos_result = Kokkos::create_mirror_view(remap.m_parabola_coeffs);
+    Kokkos::deep_copy(kokkos_result, remap.m_parabola_coeffs);
     for (int var = 0; var < num_remap; ++var) {
       for (int ie = 0; ie < ne; ++ie) {
         for (int igp = 0; igp < NP; ++igp) {
           for (int jgp = 0; jgp < NP; ++jgp) {
             Kokkos::deep_copy(
                 f90_cellmeans_input,
-                Homme::subview(remap.ao, ie * num_remap + var, igp, jgp));
-            sync_to_host(Homme::subview(remap.ppmdx, ie, igp, jgp),
+                Homme::subview(remap.m_ao, ie * num_remap + var, igp, jgp));
+            sync_to_host(Homme::subview(remap.m_ppmdx, ie, igp, jgp),
                          f90_dx_input);
             // Fix the Fortran input to be 0 offset
             for (int i = 0; i < NUM_PHYSICAL_LEV + 2 * _ppm_consts::gs; ++i) {
@@ -181,8 +181,8 @@ public:
               f90_cellmeans_input(i) = std::numeric_limits<Real>::quiet_NaN();
             }
 
-            auto tmp = Kokkos::create_mirror_view(remap.ppmdx);
-            Kokkos::deep_copy(tmp, remap.ppmdx);
+            auto tmp = Kokkos::create_mirror_view(remap.m_ppmdx);
+            Kokkos::deep_copy(tmp, remap.m_ppmdx);
 
             compute_ppm_c_callable(f90_cellmeans_input.data(),
                                    f90_dx_input.data(), f90_result.data(),
@@ -214,12 +214,12 @@ public:
       const int igp = (loop_idx / NP) % NP;
       const int jgp = loop_idx % NP;
       remap.compute_ppm(
-          kv, Homme::subview(remap.ao, kv.ie * num_remap + var, igp, jgp),
-          Homme::subview(remap.ppmdx, kv.ie, igp, jgp),
-          Homme::subview(remap.dma, kv.ie * num_remap + var, igp, jgp),
-          Homme::subview(remap.ai, kv.ie * num_remap + var, igp, jgp),
-          Homme::subview(remap.parabola_coeffs, kv.ie * num_remap + var, igp,
-                         jgp));
+          kv,
+          Homme::subview(remap.m_ao, kv.ie * num_remap + var, igp, jgp),
+          Homme::subview(remap.m_ppmdx, kv.ie, igp, jgp),
+          Homme::subview(remap.m_dma, kv.ie * num_remap + var, igp, jgp),
+          Homme::subview(remap.m_ai, kv.ie * num_remap + var, igp, jgp),
+          Homme::subview(remap.m_parabola_coeffs, kv.ie * num_remap + var, igp, jgp));
     });
   }
 
@@ -319,8 +319,7 @@ public:
     HostViewManaged<Real[NUM_PHYSICAL_LEV][NP][NP]>
     f90_tgt_layer_thickness_input("fortran target layer thickness");
 
-    HostViewManaged<Scalar * * [NP][NP][NUM_LEV]> kokkos_remapped(
-        "kokkos_remapped", ne, num_remap);
+    auto kokkos_remapped = Kokkos::create_mirror_view(remap_vals);
     Kokkos::deep_copy(kokkos_remapped, remap_vals);
 
     for (int ie = 0; ie < ne; ++ie) {
@@ -444,5 +443,53 @@ TEST_CASE("remap_interface", "vertical remap") {
     using _Remap = RemapFunctor<rsplit_non_zero, PpmVertRemap, PpmMirrored>;
     _Remap remap(qsize, elements, tracers, hvcoord);
     remap.run_remap(np1, n0_qdp, dt);
+  }
+}
+
+TEST_CASE("binary_search","binary_search")
+{
+  constexpr int length = 100;
+  constexpr int num_tests = 5;
+
+  std::random_device rd;
+  std::mt19937_64 engine(rd());
+  std::uniform_real_distribution<Real> pdf(0.01, 10);
+
+  // Testing the binary search utility
+  HostViewManaged<Real[length+1]> pin("");
+  HostViewManaged<Real[length+2]> pio("");
+
+  for (int itest=0; itest<num_tests; ++itest) {
+    // Generate random pin, but sorted
+    genRandArray(pin,engine,pdf);
+    std::sort(pin.data(),pin.data()+pin.size());
+    pin(0) = 0;
+
+    // Generate random pio, but sorted
+    genRandArray(pio,engine,pdf);
+    std::sort(pio.data(),pio.data()+pio.size());
+    pio(0) = 0;
+
+    // Make pio(length+1)>pio(length), and
+    // make pio(length)=pin(length)
+    if (pio(length)>=pin(length)) {
+      pin(length) = pio(length);
+    } else {
+      pio(length) = pin(length);
+    }
+    pio(length+1) = pio(length)+1.0;
+
+    // For each k, run binary search and check that the result maches the
+    // post-condition.
+    for (int k=0; k<length; ++k) {
+      int kk = k;
+      binary_search(pio,pin(k+1),kk);
+      if (kk==(length+1)) {
+        kk = length;
+      }
+      REQUIRE ( (pio(kk) <= pin(k+1) &&
+                pio(kk+1) >= pin(k+1) &&
+                !(pio(kk+1) == pin(k+1) && k!=length)) );
+    }
   }
 }

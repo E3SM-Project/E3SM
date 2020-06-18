@@ -186,7 +186,7 @@ contains
     ! Check consistency of namelist settingsn
     !
     ! !USES:
-    use clm_varctl     , only : iulog, use_cndv, use_fates, use_cn, use_crop
+    use clm_varctl     , only : iulog, use_fates, use_cn, use_crop
     !
     ! !ARGUMENTS:
     !
@@ -214,10 +214,6 @@ contains
     end if
 
     if (dyn_subgrid_control_inst%do_transient_pfts) then
-       if (use_cndv) then
-          write(iulog,*) 'ERROR: do_transient_pfts is incompatible with use_cndv'
-          call endrun(msg=errMsg(sourcefile, __LINE__))
-       end if
        if (use_fates) then
           write(iulog,*) 'ERROR: do_transient_pfts is incompatible with use_fates'
           call endrun(msg=errMsg(sourcefile, __LINE__))

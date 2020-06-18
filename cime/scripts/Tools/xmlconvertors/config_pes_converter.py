@@ -74,7 +74,7 @@ class PesNode(grid_xml_converter.DataNode):
         commentnode.text = "none"
         for d in ['ntasks', 'nthrds', 'rootpe']:
             newnode = ET.SubElement(pesnode, d)
-            for comp in ['atm', 'lnd', 'rof', 'ice', 'ocn', 'glc', 'wav', 'cpl']:
+            for comp in ['atm', 'lnd', 'rof', 'ice', 'ocn', 'glc', 'wav', 'cpl', 'iac']:
                 tag = d + '_' + comp
                 if tag in self.data[d]:
                     ET.SubElement(newnode, tag).text = str(self.data[d][tag])
@@ -127,7 +127,7 @@ class Cime2PesNode(PesNode):
         # Set Defaults
         for d in ['ntasks', 'nthrds', 'rootpe']:
             self.data[d] = {}
-        for comp in ['atm', 'lnd', 'ice', 'ocn', 'glc', 'rof', 'wav', 'cpl']:
+        for comp in ['atm', 'lnd', 'ice', 'ocn', 'glc', 'rof', 'wav', 'cpl', 'iac']:
             self.data['ntasks']['ntasks_' + comp] = self.ISDEFAULT
             self.data['nthrds']['nthrds_' + comp] = self.ISDEFAULT
             self.data['rootpe']['rootpe_' + comp] = self.ISDEFAULT
@@ -144,7 +144,7 @@ class Cime2PesNode(PesNode):
         self.data['pesize'] = xmlnode.get('PECOUNT', default='any')
         self.data['compset'] = xmlnode.get('CCSM_LCOMPSET', default='any')
         for d in ['ntasks', 'nthrds', 'rootpe']:
-            for comp in ['atm', 'lnd', 'ice', 'ocn', 'glc', 'rof', 'wav', 'cpl']:
+            for comp in ['atm', 'lnd', 'ice', 'ocn', 'glc', 'rof', 'wav', 'cpl', 'iac']:
                 tag = d + '_' + comp
                 node = xmlnode.find(tag.upper())
                 if node is not None:
@@ -169,7 +169,7 @@ class Cime2PesNode(PesNode):
             atmtag = d + '_atm'
             if self.data[d][atmtag] == self.ISDEFAULT:
                 self.data[d][atmtag] = self.DEFAULTS[d]
-            for comp in ['lnd', 'rof', 'ice', 'ocn', 'glc', 'wav', 'cpl']:
+            for comp in ['lnd', 'rof', 'ice', 'ocn', 'glc', 'wav', 'cpl', 'iac']:
                 tag = d + '_' + comp
                 if self.data[d][tag] == self.ISDEFAULT:
                     self.data[d][tag] = self.data[d][atmtag]

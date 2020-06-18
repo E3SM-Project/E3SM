@@ -75,7 +75,6 @@ SUBROUTINE test_inq_var(pio_file, ret)
   type(file_desc_t), intent(in) :: pio_file
   integer, intent(inout) :: ret
 
-  type(var_desc_t)  :: pio_var
   integer :: var_id, var_type, var_ndims, var_natts
   integer, dimension(:), allocatable :: var_dims
   character(len=pio_max_name) :: var_name

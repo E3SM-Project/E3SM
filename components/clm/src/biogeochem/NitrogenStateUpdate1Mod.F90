@@ -16,7 +16,10 @@ module NitrogenStateUpdate1Mod
   use CNStateType            , only : cnstate_type
   use CNNitrogenFluxType     , only : nitrogenflux_type
   use CNNitrogenStateType    , only : nitrogenstate_type
-  use VegetationType              , only : veg_pp
+  use GridcellDataType       , only : grc_ns, grc_nf
+  use ColumnDataType         , only : col_ns, col_nf
+  use VegetationType         , only : veg_pp
+  use VegetationDataType     , only : veg_ns, veg_nf
   use tracer_varcon          , only : is_active_betr_bgc
   ! bgc interface & pflotran:
   use clm_varctl             , only : use_pflotran, pf_cmode
@@ -42,8 +45,8 @@ module NitrogenStateUpdate1Mod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine NitrogenStateUpdateDynPatch(bounds, num_soilc_with_inactive, filter_soilc_with_inactive, &
-       nitrogenflux_vars, nitrogenstate_vars)
+  subroutine NitrogenStateUpdateDynPatch(bounds, num_soilc_with_inactive, &
+       filter_soilc_with_inactive)
     !
     ! !DESCRIPTION:
     ! Update nitrogen states based on fluxes from dyn_cnbal_patch
@@ -52,8 +55,6 @@ contains
     type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_soilc_with_inactive       ! number of columns in soil filter
     integer                  , intent(in)    :: filter_soilc_with_inactive(:) ! soil column filter that includes inactive points
-    type(nitrogenflux_type)  , intent(in)    :: nitrogenflux_vars
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
     !
     ! !LOCAL VARIABLES:
     integer                                  :: c                             ! column index
@@ -65,40 +66,38 @@ contains
     character(len=*)         , parameter     :: subname = 'NitrogenStateUpdateDynPatch'
     !-----------------------------------------------------------------------
 
-    associate( &
-         nf => nitrogenflux_vars  , &
-         ns => nitrogenstate_vars   &
-         )
-
       dt = real( get_step_size(), r8 )
 
       if (.not.use_fates) then
 
          do g = bounds%begg, bounds%endg
-            ns%seedn_grc(g) = ns%seedn_grc(g) &
-                 - nf%dwt_seedn_to_leaf_grc(g)     * dt &
-                 - nf%dwt_seedn_to_deadstem_grc(g) * dt &
-                 - nf%dwt_seedn_to_npool_grc(g)    * dt
+            grc_ns%seedn(g) = grc_ns%seedn(g) &
+                 - grc_nf%dwt_seedn_to_leaf(g)     * dt &
+                 - grc_nf%dwt_seedn_to_deadstem(g) * dt &
+                 - grc_nf%dwt_seedn_to_npool(g)    * dt
          end do
 
-         do j = 1,nlevdecomp
-            do fc = 1, num_soilc_with_inactive
-               c = filter_soilc_with_inactive(fc)
+         do fc = 1, num_soilc_with_inactive
+            
+            c = filter_soilc_with_inactive(fc)
+            col_ns%prod10n(c) = col_ns%prod10n(c) + col_nf%dwt_prod10n_gain(c)*dt
+            col_ns%prod100n(c) = col_ns%prod100n(c) + col_nf%dwt_prod100n_gain(c)*dt
+            col_ns%prod1n(c) = col_ns%prod1n(c) + col_nf%dwt_crop_productn_gain(c)*dt
 
-               ns%decomp_npools_vr_col(c,j,i_met_lit) = ns%decomp_npools_vr_col(c,j,i_met_lit) + &
-                    nf%dwt_frootn_to_litr_met_n_col(c,j) * dt
-               ns%decomp_npools_vr_col(c,j,i_cel_lit) = ns%decomp_npools_vr_col(c,j,i_cel_lit) + &
-                    nf%dwt_frootn_to_litr_cel_n_col(c,j) * dt
-               ns%decomp_npools_vr_col(c,j,i_lig_lit) = ns%decomp_npools_vr_col(c,j,i_lig_lit) + &
-                    nf%dwt_frootn_to_litr_lig_n_col(c,j) * dt
-               ns%decomp_npools_vr_col(c,j,i_cwd) = ns%decomp_npools_vr_col(c,j,i_cwd) + &
-                    ( nf%dwt_livecrootn_to_cwdn_col(c,j) + nf%dwt_deadcrootn_to_cwdn_col(c,j) ) * dt
+            do j = 1,nlevdecomp
+
+               col_ns%decomp_npools_vr(c,j,i_met_lit) = col_ns%decomp_npools_vr(c,j,i_met_lit) + &
+                    col_nf%dwt_frootn_to_litr_met_n(c,j) * dt
+               col_ns%decomp_npools_vr(c,j,i_cel_lit) = col_ns%decomp_npools_vr(c,j,i_cel_lit) + &
+                    col_nf%dwt_frootn_to_litr_cel_n(c,j) * dt
+               col_ns%decomp_npools_vr(c,j,i_lig_lit) = col_ns%decomp_npools_vr(c,j,i_lig_lit) + &
+                    col_nf%dwt_frootn_to_litr_lig_n(c,j) * dt
+               col_ns%decomp_npools_vr(c,j,i_cwd) = col_ns%decomp_npools_vr(c,j,i_cwd) + &
+                    ( col_nf%dwt_livecrootn_to_cwdn(c,j) + col_nf%dwt_deadcrootn_to_cwdn(c,j) ) * dt
 
             end do
          end do
       end if
-
-    end associate
 
   end subroutine NitrogenStateUpdateDynPatch
 
@@ -161,27 +160,27 @@ contains
                if (.not. use_nitrif_denitrif) then
                   
                   ! N deposition and fixation
-                  ns%sminn_vr_col(c,j) = ns%sminn_vr_col(c,j) + nf%ndep_to_sminn_col(c)*dt * ndep_prof(c,j)
-                  ns%sminn_vr_col(c,j) = ns%sminn_vr_col(c,j) + nf%nfix_to_sminn_col(c)*dt * nfixation_prof(c,j)
+                  col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) + col_nf%ndep_to_sminn(c)*dt * ndep_prof(c,j)
+                  col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) + col_nf%nfix_to_sminn(c)*dt * nfixation_prof(c,j)
                   
                else
 
                   ! N deposition and fixation (put all into NH4 pool)
-                  ns%smin_nh4_vr_col(c,j) = ns%smin_nh4_vr_col(c,j) + nf%ndep_to_sminn_col(c)*dt * ndep_prof(c,j)
-                  ns%smin_nh4_vr_col(c,j) = ns%smin_nh4_vr_col(c,j) + nf%nfix_to_sminn_col(c)*dt * nfixation_prof(c,j)
+                  col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%ndep_to_sminn(c)*dt * ndep_prof(c,j)
+                  col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%nfix_to_sminn(c)*dt * nfixation_prof(c,j)
                   
                end if
 
                ! plant to litter fluxes
                ! phenology and dynamic landcover fluxes
-               nf%decomp_npools_sourcesink_col(c,j,i_met_lit) = &
-                    nf%phenology_n_to_litr_met_n_col(c,j) * dt
+               col_nf%decomp_npools_sourcesink(c,j,i_met_lit) = &
+                    col_nf%phenology_n_to_litr_met_n(c,j) * dt
                
-               nf%decomp_npools_sourcesink_col(c,j,i_cel_lit) = &
-                    nf%phenology_n_to_litr_cel_n_col(c,j) * dt
+               col_nf%decomp_npools_sourcesink(c,j,i_cel_lit) = &
+                    col_nf%phenology_n_to_litr_cel_n(c,j) * dt
                
-               nf%decomp_npools_sourcesink_col(c,j,i_lig_lit) = &
-                    nf%phenology_n_to_litr_lig_n_col(c,j) * dt
+               col_nf%decomp_npools_sourcesink(c,j,i_lig_lit) = &
+                    col_nf%phenology_n_to_litr_lig_n(c,j) * dt
             end do
          end do
          
@@ -195,13 +194,13 @@ contains
                   if (.not. use_nitrif_denitrif) then
                      
                      ! N deposition and fixation
-                     ns%sminn_vr_col(c,j) = ns%sminn_vr_col(c,j) + nf%fert_to_sminn_col(c)*dt * ndep_prof(c,j)
-                     ns%sminn_vr_col(c,j) = ns%sminn_vr_col(c,j) + nf%soyfixn_to_sminn_col(c)*dt * nfixation_prof(c,j)
+                     col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) + col_nf%fert_to_sminn(c)*dt * ndep_prof(c,j)
+                     col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) + col_nf%soyfixn_to_sminn(c)*dt * nfixation_prof(c,j)
                   else
                      
                      ! N deposition and fixation (put all into NH4 pool)
-                     ns%smin_nh4_vr_col(c,j) = ns%smin_nh4_vr_col(c,j) + nf%fert_to_sminn_col(c)*dt * ndep_prof(c,j)
-                     ns%smin_nh4_vr_col(c,j) = ns%smin_nh4_vr_col(c,j) + nf%soyfixn_to_sminn_col(c)*dt * nfixation_prof(c,j)
+                     col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%fert_to_sminn(c)*dt * ndep_prof(c,j)
+                     col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%soyfixn_to_sminn(c)*dt * nfixation_prof(c,j)
                      
                   end if
                end do
@@ -215,9 +214,9 @@ contains
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
 
-                  nf%decomp_npools_sourcesink_col(c,j,cascade_donor_pool(k)) = &
-                       nf%decomp_npools_sourcesink_col(c,j,cascade_donor_pool(k)) - &
-                       nf%decomp_cascade_ntransfer_vr_col(c,j,k) * dt
+                  col_nf%decomp_npools_sourcesink(c,j,cascade_donor_pool(k)) = &
+                       col_nf%decomp_npools_sourcesink(c,j,cascade_donor_pool(k)) - &
+                       col_nf%decomp_cascade_ntransfer_vr(c,j,k) * dt
                end do
             end do
          end do
@@ -229,9 +228,9 @@ contains
                   do fc = 1,num_soilc
                      c = filter_soilc(fc)
                      
-                     nf%decomp_npools_sourcesink_col(c,j,cascade_receiver_pool(k)) = &
-                          nf%decomp_npools_sourcesink_col(c,j,cascade_receiver_pool(k)) + &
-                          (nf%decomp_cascade_ntransfer_vr_col(c,j,k) + nf%decomp_cascade_sminn_flux_vr_col(c,j,k)) * dt
+                     col_nf%decomp_npools_sourcesink(c,j,cascade_receiver_pool(k)) = &
+                          col_nf%decomp_npools_sourcesink(c,j,cascade_receiver_pool(k)) + &
+                          (col_nf%decomp_cascade_ntransfer_vr(c,j,k) + col_nf%decomp_cascade_sminn_flux_vr(c,j,k)) * dt
                   end do
                end do
             else  ! terminal transitions
@@ -239,9 +238,9 @@ contains
                   ! column loop
                   do fc = 1,num_soilc
                      c = filter_soilc(fc)
-                     nf%decomp_npools_sourcesink_col(c,j,cascade_donor_pool(k)) = &
-                          nf%decomp_npools_sourcesink_col(c,j,cascade_donor_pool(k)) - &
-                          nf%decomp_cascade_sminn_flux_vr_col(c,j,k) * dt
+                     col_nf%decomp_npools_sourcesink(c,j,cascade_donor_pool(k)) = &
+                          col_nf%decomp_npools_sourcesink(c,j,cascade_donor_pool(k)) - &
+                          col_nf%decomp_cascade_sminn_flux_vr(c,j,k) * dt
                   end do
                end do
             end if
@@ -260,8 +259,8 @@ contains
                      ! column loop
                      do fc = 1,num_soilc
                         c = filter_soilc(fc)
-                        ns%sminn_vr_col(c,j)  = ns%sminn_vr_col(c,j) - &
-                             (nf%sminn_to_denit_decomp_cascade_vr_col(c,j,k) + nf%decomp_cascade_sminn_flux_vr_col(c,j,k))* dt
+                        col_ns%sminn_vr(c,j)  = col_ns%sminn_vr(c,j) - &
+                             (col_nf%sminn_to_denit_decomp_cascade_vr(c,j,k) + col_nf%decomp_cascade_sminn_flux_vr(c,j,k))* dt
                      end do
                   end do
                else
@@ -269,9 +268,9 @@ contains
                      ! column loop
                      do fc = 1,num_soilc
                         c = filter_soilc(fc)
-                        ns%sminn_vr_col(c,j)  = ns%sminn_vr_col(c,j) - nf%sminn_to_denit_decomp_cascade_vr_col(c,j,k)* dt
+                        col_ns%sminn_vr(c,j)  = col_ns%sminn_vr(c,j) - col_nf%sminn_to_denit_decomp_cascade_vr(c,j,k)* dt
                         
-                        ns%sminn_vr_col(c,j)  = ns%sminn_vr_col(c,j) + nf%decomp_cascade_sminn_flux_vr_col(c,j,k)* dt
+                        col_ns%sminn_vr(c,j)  = col_ns%sminn_vr(c,j) + col_nf%decomp_cascade_sminn_flux_vr(c,j,k)* dt
                         
                      end do
                   end do
@@ -283,13 +282,13 @@ contains
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
                   ! "bulk denitrification"
-                  ns%sminn_vr_col(c,j) = ns%sminn_vr_col(c,j) - nf%sminn_to_denit_excess_vr_col(c,j) * dt
+                  col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) - col_nf%sminn_to_denit_excess_vr(c,j) * dt
                   
                   ! total plant uptake from mineral N
-                  ns%sminn_vr_col(c,j) = ns%sminn_vr_col(c,j) - nf%sminn_to_plant_vr_col(c,j)*dt
+                  col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) - col_nf%sminn_to_plant_vr(c,j)*dt
                   
                   ! flux that prevents N limitation (when Carbon_only is set)
-                  ns%sminn_vr_col(c,j) = ns%sminn_vr_col(c,j) + nf%supplement_to_sminn_vr_col(c,j)*dt
+                  col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) + col_nf%supplement_to_sminn_vr(c,j)*dt
                end do
             end do
             
@@ -305,31 +304,31 @@ contains
                   c = filter_soilc(fc)
                   
                   ! mineralization fluxes (divert a fraction of this stream to nitrification flux, add the rest to NH4 pool)
-                  ns%smin_nh4_vr_col(c,j) = ns%smin_nh4_vr_col(c,j) + nf%gross_nmin_vr_col(c,j)*dt
+                  col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%gross_nmin_vr(c,j)*dt
                   
                   ! immobilization fluxes
-                  ns%smin_nh4_vr_col(c,j) = ns%smin_nh4_vr_col(c,j) - nf%actual_immob_nh4_vr_col(c,j)*dt
+                  col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) - col_nf%actual_immob_nh4_vr(c,j)*dt
                   
-                  ns%smin_no3_vr_col(c,j) = ns%smin_no3_vr_col(c,j) - nf%actual_immob_no3_vr_col(c,j)*dt
+                  col_ns%smin_no3_vr(c,j) = col_ns%smin_no3_vr(c,j) - col_nf%actual_immob_no3_vr(c,j)*dt
                   
                   ! plant uptake fluxes
-                  ns%smin_nh4_vr_col(c,j) = ns%smin_nh4_vr_col(c,j) - nf%smin_nh4_to_plant_vr_col(c,j)*dt
+                  col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) - col_nf%smin_nh4_to_plant_vr(c,j)*dt
                   
-                  ns%smin_no3_vr_col(c,j) = ns%smin_no3_vr_col(c,j) - nf%smin_no3_to_plant_vr_col(c,j)*dt
+                  col_ns%smin_no3_vr(c,j) = col_ns%smin_no3_vr(c,j) - col_nf%smin_no3_to_plant_vr(c,j)*dt
                   
                   ! Account for nitrification fluxes
-                  ns%smin_nh4_vr_col(c,j) = ns%smin_nh4_vr_col(c,j) - nf%f_nit_vr_col(c,j) * dt
+                  col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) - col_nf%f_nit_vr(c,j) * dt
                   
-                  ns%smin_no3_vr_col(c,j) = ns%smin_no3_vr_col(c,j) + nf%f_nit_vr_col(c,j) * dt * (1._r8 - nitrif_n2o_loss_frac)
+                  col_ns%smin_no3_vr(c,j) = col_ns%smin_no3_vr(c,j) + col_nf%f_nit_vr(c,j) * dt * (1._r8 - nitrif_n2o_loss_frac)
                   
                   ! Account for denitrification fluxes
-                  ns%smin_no3_vr_col(c,j) = ns%smin_no3_vr_col(c,j) - nf%f_denit_vr_col(c,j) * dt
+                  col_ns%smin_no3_vr(c,j) = col_ns%smin_no3_vr(c,j) - col_nf%f_denit_vr(c,j) * dt
                   
                   ! flux that prevents N limitation (when Carbon_only is set; put all into NH4)
-                  ns%smin_nh4_vr_col(c,j) = ns%smin_nh4_vr_col(c,j) + nf%supplement_to_sminn_vr_col(c,j)*dt
+                  col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%supplement_to_sminn_vr(c,j)*dt
                   
                   ! update diagnostic total
-                  ns%sminn_vr_col(c,j) = ns%smin_nh4_vr_col(c,j) + ns%smin_no3_vr_col(c,j)
+                  col_ns%sminn_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_ns%smin_no3_vr(c,j)
                   
                end do ! end of column loop
             end do
@@ -347,13 +346,13 @@ contains
                .and. kda == 1  .and. mcsec == 1800) then ! fertilization assumed to occur at the begnining of each month
                if (.not. use_nitrif_denitrif) then
                   do j = 1, nlevdecomp
-                     ns%sminn_vr_col(c,j) = ns%sminn_vr_col(c,j) + fert_dose(c,kmo)*ndep_prof(c,j)
+                     col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) + fert_dose(c,kmo)*ndep_prof(c,j)
                   end do
                else
                   do j = 1, nlevdecomp
-                     ns%smin_nh4_vr_col(c,j) = ns%smin_nh4_vr_col(c,j) + fert_dose(c,kmo)/2._r8*ndep_prof(c,j)
-                     ns%smin_no3_vr_col(c,j) = ns%smin_no3_vr_col(c,j) + fert_dose(c,kmo)/2._r8*ndep_prof(c,j)
-                     ns%sminn_vr_col(c,j) = ns%smin_nh4_vr_col(c,j) + ns%smin_no3_vr_col(c,j)
+                     col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + fert_dose(c,kmo)/2._r8*ndep_prof(c,j)
+                     col_ns%smin_no3_vr(c,j) = col_ns%smin_no3_vr(c,j) + fert_dose(c,kmo)/2._r8*ndep_prof(c,j)
+                     col_ns%sminn_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_ns%smin_no3_vr(c,j)
                   end do
                end if
             end if
@@ -366,132 +365,132 @@ contains
          p = filter_soilp(fp)
 
          ! phenology: transfer growth fluxes
-         ns%leafn_patch(p)       = ns%leafn_patch(p)       + nf%leafn_xfer_to_leafn_patch(p)*dt
-         ns%leafn_xfer_patch(p)  = ns%leafn_xfer_patch(p)  - nf%leafn_xfer_to_leafn_patch(p)*dt
-         ns%frootn_patch(p)      = ns%frootn_patch(p)      + nf%frootn_xfer_to_frootn_patch(p)*dt
-         ns%frootn_xfer_patch(p) = ns%frootn_xfer_patch(p) - nf%frootn_xfer_to_frootn_patch(p)*dt
+         veg_ns%leafn(p)       = veg_ns%leafn(p)       + veg_nf%leafn_xfer_to_leafn(p)*dt
+         veg_ns%leafn_xfer(p)  = veg_ns%leafn_xfer(p)  - veg_nf%leafn_xfer_to_leafn(p)*dt
+         veg_ns%frootn(p)      = veg_ns%frootn(p)      + veg_nf%frootn_xfer_to_frootn(p)*dt
+         veg_ns%frootn_xfer(p) = veg_ns%frootn_xfer(p) - veg_nf%frootn_xfer_to_frootn(p)*dt
 
          if (woody(ivt(p)) == 1.0_r8) then
-            ns%livestemn_patch(p)       = ns%livestemn_patch(p)       + nf%livestemn_xfer_to_livestemn_patch(p)*dt
-            ns%livestemn_xfer_patch(p)  = ns%livestemn_xfer_patch(p)  - nf%livestemn_xfer_to_livestemn_patch(p)*dt
-            ns%deadstemn_patch(p)       = ns%deadstemn_patch(p)       + nf%deadstemn_xfer_to_deadstemn_patch(p)*dt
-            ns%deadstemn_xfer_patch(p)  = ns%deadstemn_xfer_patch(p)  - nf%deadstemn_xfer_to_deadstemn_patch(p)*dt
-            ns%livecrootn_patch(p)      = ns%livecrootn_patch(p)      + nf%livecrootn_xfer_to_livecrootn_patch(p)*dt
-            ns%livecrootn_xfer_patch(p) = ns%livecrootn_xfer_patch(p) - nf%livecrootn_xfer_to_livecrootn_patch(p)*dt
-            ns%deadcrootn_patch(p)      = ns%deadcrootn_patch(p)      + nf%deadcrootn_xfer_to_deadcrootn_patch(p)*dt
-            ns%deadcrootn_xfer_patch(p) = ns%deadcrootn_xfer_patch(p) - nf%deadcrootn_xfer_to_deadcrootn_patch(p)*dt
+            veg_ns%livestemn(p)       = veg_ns%livestemn(p)       + veg_nf%livestemn_xfer_to_livestemn(p)*dt
+            veg_ns%livestemn_xfer(p)  = veg_ns%livestemn_xfer(p)  - veg_nf%livestemn_xfer_to_livestemn(p)*dt
+            veg_ns%deadstemn(p)       = veg_ns%deadstemn(p)       + veg_nf%deadstemn_xfer_to_deadstemn(p)*dt
+            veg_ns%deadstemn_xfer(p)  = veg_ns%deadstemn_xfer(p)  - veg_nf%deadstemn_xfer_to_deadstemn(p)*dt
+            veg_ns%livecrootn(p)      = veg_ns%livecrootn(p)      + veg_nf%livecrootn_xfer_to_livecrootn(p)*dt
+            veg_ns%livecrootn_xfer(p) = veg_ns%livecrootn_xfer(p) - veg_nf%livecrootn_xfer_to_livecrootn(p)*dt
+            veg_ns%deadcrootn(p)      = veg_ns%deadcrootn(p)      + veg_nf%deadcrootn_xfer_to_deadcrootn(p)*dt
+            veg_ns%deadcrootn_xfer(p) = veg_ns%deadcrootn_xfer(p) - veg_nf%deadcrootn_xfer_to_deadcrootn(p)*dt
          end if
 
          if (ivt(p) >= npcropmin) then ! skip 2 generic crops
             ! lines here for consistency; the transfer terms are zero
-            ns%livestemn_patch(p)       = ns%livestemn_patch(p)      + nf%livestemn_xfer_to_livestemn_patch(p)*dt
-            ns%livestemn_xfer_patch(p)  = ns%livestemn_xfer_patch(p) - nf%livestemn_xfer_to_livestemn_patch(p)*dt
-            ns%grainn_patch(p)          = ns%grainn_patch(p)         + nf%grainn_xfer_to_grainn_patch(p)*dt
-            ns%grainn_xfer_patch(p)     = ns%grainn_xfer_patch(p)    - nf%grainn_xfer_to_grainn_patch(p)*dt
+            veg_ns%livestemn(p)       = veg_ns%livestemn(p)      + veg_nf%livestemn_xfer_to_livestemn(p)*dt
+            veg_ns%livestemn_xfer(p)  = veg_ns%livestemn_xfer(p) - veg_nf%livestemn_xfer_to_livestemn(p)*dt
+            veg_ns%grainn(p)          = veg_ns%grainn(p)         + veg_nf%grainn_xfer_to_grainn(p)*dt
+            veg_ns%grainn_xfer(p)     = veg_ns%grainn_xfer(p)    - veg_nf%grainn_xfer_to_grainn(p)*dt
          end if
 
          ! phenology: litterfall and retranslocation fluxes
-         ns%leafn_patch(p)    = ns%leafn_patch(p)    - nf%leafn_to_litter_patch(p)*dt
-         ns%frootn_patch(p)   = ns%frootn_patch(p)   - nf%frootn_to_litter_patch(p)*dt
-         ns%leafn_patch(p)    = ns%leafn_patch(p)    - nf%leafn_to_retransn_patch(p)*dt
-         ns%retransn_patch(p) = ns%retransn_patch(p) + nf%leafn_to_retransn_patch(p)*dt
+         veg_ns%leafn(p)    = veg_ns%leafn(p)    - veg_nf%leafn_to_litter(p)*dt
+         veg_ns%frootn(p)   = veg_ns%frootn(p)   - veg_nf%frootn_to_litter(p)*dt
+         veg_ns%leafn(p)    = veg_ns%leafn(p)    - veg_nf%leafn_to_retransn(p)*dt
+         veg_ns%retransn(p) = veg_ns%retransn(p) + veg_nf%leafn_to_retransn(p)*dt
 
          ! live wood turnover and retranslocation fluxes
          if (woody(ivt(p)) == 1._r8) then
-            ns%livestemn_patch(p)  = ns%livestemn_patch(p)  - nf%livestemn_to_deadstemn_patch(p)*dt
-            ns%deadstemn_patch(p)  = ns%deadstemn_patch(p)  + nf%livestemn_to_deadstemn_patch(p)*dt
-            ns%livestemn_patch(p)  = ns%livestemn_patch(p)  - nf%livestemn_to_retransn_patch(p)*dt
-            ns%retransn_patch(p)   = ns%retransn_patch(p)   + nf%livestemn_to_retransn_patch(p)*dt
-            ns%livecrootn_patch(p) = ns%livecrootn_patch(p) - nf%livecrootn_to_deadcrootn_patch(p)*dt
-            ns%deadcrootn_patch(p) = ns%deadcrootn_patch(p) + nf%livecrootn_to_deadcrootn_patch(p)*dt
-            ns%livecrootn_patch(p) = ns%livecrootn_patch(p) - nf%livecrootn_to_retransn_patch(p)*dt
-            ns%retransn_patch(p)   = ns%retransn_patch(p)   + nf%livecrootn_to_retransn_patch(p)*dt
+            veg_ns%livestemn(p)  = veg_ns%livestemn(p)  - veg_nf%livestemn_to_deadstemn(p)*dt
+            veg_ns%deadstemn(p)  = veg_ns%deadstemn(p)  + veg_nf%livestemn_to_deadstemn(p)*dt
+            veg_ns%livestemn(p)  = veg_ns%livestemn(p)  - veg_nf%livestemn_to_retransn(p)*dt
+            veg_ns%retransn(p)   = veg_ns%retransn(p)   + veg_nf%livestemn_to_retransn(p)*dt
+            veg_ns%livecrootn(p) = veg_ns%livecrootn(p) - veg_nf%livecrootn_to_deadcrootn(p)*dt
+            veg_ns%deadcrootn(p) = veg_ns%deadcrootn(p) + veg_nf%livecrootn_to_deadcrootn(p)*dt
+            veg_ns%livecrootn(p) = veg_ns%livecrootn(p) - veg_nf%livecrootn_to_retransn(p)*dt
+            veg_ns%retransn(p)   = veg_ns%retransn(p)   + veg_nf%livecrootn_to_retransn(p)*dt
          end if
          if (ivt(p) >= npcropmin) then ! Beth adds retrans from froot
-            ns%frootn_patch(p)     = ns%frootn_patch(p)     - nf%frootn_to_retransn_patch(p)*dt
-            ns%retransn_patch(p)   = ns%retransn_patch(p)   + nf%frootn_to_retransn_patch(p)*dt
-            ns%livestemn_patch(p)  = ns%livestemn_patch(p)  - nf%livestemn_to_litter_patch(p)*dt
-            ns%livestemn_patch(p)  = ns%livestemn_patch(p)  - nf%livestemn_to_retransn_patch(p)*dt
-            ns%retransn_patch(p)   = ns%retransn_patch(p)   + nf%livestemn_to_retransn_patch(p)*dt
-            ns%grainn_patch(p)     = ns%grainn_patch(p)     - nf%grainn_to_food_patch(p)*dt
+            veg_ns%frootn(p)     = veg_ns%frootn(p)     - veg_nf%frootn_to_retransn(p)*dt
+            veg_ns%retransn(p)   = veg_ns%retransn(p)   + veg_nf%frootn_to_retransn(p)*dt
+            veg_ns%livestemn(p)  = veg_ns%livestemn(p)  - veg_nf%livestemn_to_litter(p)*dt
+            veg_ns%livestemn(p)  = veg_ns%livestemn(p)  - veg_nf%livestemn_to_retransn(p)*dt
+            veg_ns%retransn(p)   = veg_ns%retransn(p)   + veg_nf%livestemn_to_retransn(p)*dt
+            veg_ns%grainn(p)     = veg_ns%grainn(p)     - veg_nf%grainn_to_food(p)*dt
 
-            ns%cropseedn_deficit_patch(p) = ns%cropseedn_deficit_patch(p) &
-                 - nf%crop_seedn_to_leaf_patch(p) * dt
+            veg_ns%cropseedn_deficit(p) = veg_ns%cropseedn_deficit(p) &
+                 - veg_nf%crop_seedn_to_leaf(p) * dt
          end if
 
          ! uptake from soil mineral N pool
-         ns%npool_patch(p) = &
-              ns%npool_patch(p) + nf%sminn_to_npool_patch(p)*dt
-         if (nu_com .ne. 'RD') ns%npool_patch(p) = ns%npool_patch(p) + nf%supplement_to_plantn(p)*dt
-         if (NFIX_PTASE_plant) ns%npool_patch(p) = ns%npool_patch(p) + nf%nfix_to_plantn_patch(p)*dt
+         veg_ns%npool(p) = &
+              veg_ns%npool(p) + veg_nf%sminn_to_npool(p)*dt
+         if (nu_com .ne. 'RD') veg_ns%npool(p) = veg_ns%npool(p) + veg_nf%supplement_to_plantn(p)*dt
+         if (NFIX_PTASE_plant) veg_ns%npool(p) = veg_ns%npool(p) + veg_nf%nfix_to_plantn(p)*dt
 
          ! deployment from retranslocation pool
-         ns%npool_patch(p)    = ns%npool_patch(p)    + nf%retransn_to_npool_patch(p)*dt
-         ns%retransn_patch(p) = ns%retransn_patch(p) - nf%retransn_to_npool_patch(p)*dt
+         veg_ns%npool(p)    = veg_ns%npool(p)    + veg_nf%retransn_to_npool(p)*dt
+         veg_ns%retransn(p) = veg_ns%retransn(p) - veg_nf%retransn_to_npool(p)*dt
 
          ! allocation fluxes
-         ns%npool_patch(p)           = ns%npool_patch(p)          - nf%npool_to_leafn_patch(p)*dt
-         ns%leafn_patch(p)           = ns%leafn_patch(p)          + nf%npool_to_leafn_patch(p)*dt
-         ns%npool_patch(p)           = ns%npool_patch(p)          - nf%npool_to_leafn_storage_patch(p)*dt
-         ns%leafn_storage_patch(p)   = ns%leafn_storage_patch(p)  + nf%npool_to_leafn_storage_patch(p)*dt
-         ns%npool_patch(p)           = ns%npool_patch(p)          - nf%npool_to_frootn_patch(p)*dt
-         ns%frootn_patch(p)          = ns%frootn_patch(p)         + nf%npool_to_frootn_patch(p)*dt
-         ns%npool_patch(p)           = ns%npool_patch(p)          - nf%npool_to_frootn_storage_patch(p)*dt
-         ns%frootn_storage_patch(p)  = ns%frootn_storage_patch(p) + nf%npool_to_frootn_storage_patch(p)*dt
+         veg_ns%npool(p)           = veg_ns%npool(p)          - veg_nf%npool_to_leafn(p)*dt
+         veg_ns%leafn(p)           = veg_ns%leafn(p)          + veg_nf%npool_to_leafn(p)*dt
+         veg_ns%npool(p)           = veg_ns%npool(p)          - veg_nf%npool_to_leafn_storage(p)*dt
+         veg_ns%leafn_storage(p)   = veg_ns%leafn_storage(p)  + veg_nf%npool_to_leafn_storage(p)*dt
+         veg_ns%npool(p)           = veg_ns%npool(p)          - veg_nf%npool_to_frootn(p)*dt
+         veg_ns%frootn(p)          = veg_ns%frootn(p)         + veg_nf%npool_to_frootn(p)*dt
+         veg_ns%npool(p)           = veg_ns%npool(p)          - veg_nf%npool_to_frootn_storage(p)*dt
+         veg_ns%frootn_storage(p)  = veg_ns%frootn_storage(p) + veg_nf%npool_to_frootn_storage(p)*dt
 
          if (woody(ivt(p)) == 1._r8) then
-            ns%npool_patch(p)              = ns%npool_patch(p)              - nf%npool_to_livestemn_patch(p)*dt
-            ns%livestemn_patch(p)          = ns%livestemn_patch(p)          + nf%npool_to_livestemn_patch(p)*dt
-            ns%npool_patch(p)              = ns%npool_patch(p)              - nf%npool_to_livestemn_storage_patch(p)*dt
-            ns%livestemn_storage_patch(p)  = ns%livestemn_storage_patch(p)  + nf%npool_to_livestemn_storage_patch(p)*dt
-            ns%npool_patch(p)              = ns%npool_patch(p)              - nf%npool_to_deadstemn_patch(p)*dt
-            ns%deadstemn_patch(p)          = ns%deadstemn_patch(p)          + nf%npool_to_deadstemn_patch(p)*dt
-            ns%npool_patch(p)              = ns%npool_patch(p)              - nf%npool_to_deadstemn_storage_patch(p)*dt
-            ns%deadstemn_storage_patch(p)  = ns%deadstemn_storage_patch(p)  + nf%npool_to_deadstemn_storage_patch(p)*dt
-            ns%npool_patch(p)              = ns%npool_patch(p)              - nf%npool_to_livecrootn_patch(p)*dt
-            ns%livecrootn_patch(p)         = ns%livecrootn_patch(p)         + nf%npool_to_livecrootn_patch(p)*dt
-            ns%npool_patch(p)              = ns%npool_patch(p)              - nf%npool_to_livecrootn_storage_patch(p)*dt
-            ns%livecrootn_storage_patch(p) = ns%livecrootn_storage_patch(p) + nf%npool_to_livecrootn_storage_patch(p)*dt
-            ns%npool_patch(p)              = ns%npool_patch(p)              - nf%npool_to_deadcrootn_patch(p)*dt
-            ns%deadcrootn_patch(p)         = ns%deadcrootn_patch(p)         + nf%npool_to_deadcrootn_patch(p)*dt
-            ns%npool_patch(p)              = ns%npool_patch(p)              - nf%npool_to_deadcrootn_storage_patch(p)*dt
-            ns%deadcrootn_storage_patch(p) = ns%deadcrootn_storage_patch(p) + nf%npool_to_deadcrootn_storage_patch(p)*dt
+            veg_ns%npool(p)              = veg_ns%npool(p)              - veg_nf%npool_to_livestemn(p)*dt
+            veg_ns%livestemn(p)          = veg_ns%livestemn(p)          + veg_nf%npool_to_livestemn(p)*dt
+            veg_ns%npool(p)              = veg_ns%npool(p)              - veg_nf%npool_to_livestemn_storage(p)*dt
+            veg_ns%livestemn_storage(p)  = veg_ns%livestemn_storage(p)  + veg_nf%npool_to_livestemn_storage(p)*dt
+            veg_ns%npool(p)              = veg_ns%npool(p)              - veg_nf%npool_to_deadstemn(p)*dt
+            veg_ns%deadstemn(p)          = veg_ns%deadstemn(p)          + veg_nf%npool_to_deadstemn(p)*dt
+            veg_ns%npool(p)              = veg_ns%npool(p)              - veg_nf%npool_to_deadstemn_storage(p)*dt
+            veg_ns%deadstemn_storage(p)  = veg_ns%deadstemn_storage(p)  + veg_nf%npool_to_deadstemn_storage(p)*dt
+            veg_ns%npool(p)              = veg_ns%npool(p)              - veg_nf%npool_to_livecrootn(p)*dt
+            veg_ns%livecrootn(p)         = veg_ns%livecrootn(p)         + veg_nf%npool_to_livecrootn(p)*dt
+            veg_ns%npool(p)              = veg_ns%npool(p)              - veg_nf%npool_to_livecrootn_storage(p)*dt
+            veg_ns%livecrootn_storage(p) = veg_ns%livecrootn_storage(p) + veg_nf%npool_to_livecrootn_storage(p)*dt
+            veg_ns%npool(p)              = veg_ns%npool(p)              - veg_nf%npool_to_deadcrootn(p)*dt
+            veg_ns%deadcrootn(p)         = veg_ns%deadcrootn(p)         + veg_nf%npool_to_deadcrootn(p)*dt
+            veg_ns%npool(p)              = veg_ns%npool(p)              - veg_nf%npool_to_deadcrootn_storage(p)*dt
+            veg_ns%deadcrootn_storage(p) = veg_ns%deadcrootn_storage(p) + veg_nf%npool_to_deadcrootn_storage(p)*dt
          end if
 
          if (ivt(p) >= npcropmin) then ! skip 2 generic crops
-            ns%npool_patch(p)              = ns%npool_patch(p)              - nf%npool_to_livestemn_patch(p)*dt
-            ns%livestemn_patch(p)          = ns%livestemn_patch(p)          + nf%npool_to_livestemn_patch(p)*dt
-            ns%npool_patch(p)              = ns%npool_patch(p)              - nf%npool_to_livestemn_storage_patch(p)*dt
-            ns%livestemn_storage_patch(p)  = ns%livestemn_storage_patch(p)  + nf%npool_to_livestemn_storage_patch(p)*dt
-            ns%npool_patch(p)              = ns%npool_patch(p)              - nf%npool_to_grainn_patch(p)*dt
-            ns%grainn_patch(p)             = ns%grainn_patch(p)             + nf%npool_to_grainn_patch(p)*dt
-            ns%npool_patch(p)              = ns%npool_patch(p)              - nf%npool_to_grainn_storage_patch(p)*dt
-            ns%grainn_storage_patch(p)     = ns%grainn_storage_patch(p)     + nf%npool_to_grainn_storage_patch(p)*dt
+            veg_ns%npool(p)              = veg_ns%npool(p)              - veg_nf%npool_to_livestemn(p)*dt
+            veg_ns%livestemn(p)          = veg_ns%livestemn(p)          + veg_nf%npool_to_livestemn(p)*dt
+            veg_ns%npool(p)              = veg_ns%npool(p)              - veg_nf%npool_to_livestemn_storage(p)*dt
+            veg_ns%livestemn_storage(p)  = veg_ns%livestemn_storage(p)  + veg_nf%npool_to_livestemn_storage(p)*dt
+            veg_ns%npool(p)              = veg_ns%npool(p)              - veg_nf%npool_to_grainn(p)*dt
+            veg_ns%grainn(p)             = veg_ns%grainn(p)             + veg_nf%npool_to_grainn(p)*dt
+            veg_ns%npool(p)              = veg_ns%npool(p)              - veg_nf%npool_to_grainn_storage(p)*dt
+            veg_ns%grainn_storage(p)     = veg_ns%grainn_storage(p)     + veg_nf%npool_to_grainn_storage(p)*dt
          end if
 
          ! move storage pools into transfer pools
-         ns%leafn_storage_patch(p)  = ns%leafn_storage_patch(p)  - nf%leafn_storage_to_xfer_patch(p)*dt
-         ns%leafn_xfer_patch(p)     = ns%leafn_xfer_patch(p)     + nf%leafn_storage_to_xfer_patch(p)*dt
-         ns%frootn_storage_patch(p) = ns%frootn_storage_patch(p) - nf%frootn_storage_to_xfer_patch(p)*dt
-         ns%frootn_xfer_patch(p)    = ns%frootn_xfer_patch(p)    + nf%frootn_storage_to_xfer_patch(p)*dt
+         veg_ns%leafn_storage(p)  = veg_ns%leafn_storage(p)  - veg_nf%leafn_storage_to_xfer(p)*dt
+         veg_ns%leafn_xfer(p)     = veg_ns%leafn_xfer(p)     + veg_nf%leafn_storage_to_xfer(p)*dt
+         veg_ns%frootn_storage(p) = veg_ns%frootn_storage(p) - veg_nf%frootn_storage_to_xfer(p)*dt
+         veg_ns%frootn_xfer(p)    = veg_ns%frootn_xfer(p)    + veg_nf%frootn_storage_to_xfer(p)*dt
 
          if (woody(ivt(p)) == 1._r8) then
-            ns%livestemn_storage_patch(p)  = ns%livestemn_storage_patch(p)  - nf%livestemn_storage_to_xfer_patch(p)*dt
-            ns%livestemn_xfer_patch(p)     = ns%livestemn_xfer_patch(p)     + nf%livestemn_storage_to_xfer_patch(p)*dt
-            ns%deadstemn_storage_patch(p)  = ns%deadstemn_storage_patch(p)  - nf%deadstemn_storage_to_xfer_patch(p)*dt
-            ns%deadstemn_xfer_patch(p)     = ns%deadstemn_xfer_patch(p)     + nf%deadstemn_storage_to_xfer_patch(p)*dt
-            ns%livecrootn_storage_patch(p) = ns%livecrootn_storage_patch(p) - nf%livecrootn_storage_to_xfer_patch(p)*dt
-            ns%livecrootn_xfer_patch(p)    = ns%livecrootn_xfer_patch(p)    + nf%livecrootn_storage_to_xfer_patch(p)*dt
-            ns%deadcrootn_storage_patch(p) = ns%deadcrootn_storage_patch(p) - nf%deadcrootn_storage_to_xfer_patch(p)*dt
-            ns%deadcrootn_xfer_patch(p)    = ns%deadcrootn_xfer_patch(p)    + nf%deadcrootn_storage_to_xfer_patch(p)*dt
+            veg_ns%livestemn_storage(p)  = veg_ns%livestemn_storage(p)  - veg_nf%livestemn_storage_to_xfer(p)*dt
+            veg_ns%livestemn_xfer(p)     = veg_ns%livestemn_xfer(p)     + veg_nf%livestemn_storage_to_xfer(p)*dt
+            veg_ns%deadstemn_storage(p)  = veg_ns%deadstemn_storage(p)  - veg_nf%deadstemn_storage_to_xfer(p)*dt
+            veg_ns%deadstemn_xfer(p)     = veg_ns%deadstemn_xfer(p)     + veg_nf%deadstemn_storage_to_xfer(p)*dt
+            veg_ns%livecrootn_storage(p) = veg_ns%livecrootn_storage(p) - veg_nf%livecrootn_storage_to_xfer(p)*dt
+            veg_ns%livecrootn_xfer(p)    = veg_ns%livecrootn_xfer(p)    + veg_nf%livecrootn_storage_to_xfer(p)*dt
+            veg_ns%deadcrootn_storage(p) = veg_ns%deadcrootn_storage(p) - veg_nf%deadcrootn_storage_to_xfer(p)*dt
+            veg_ns%deadcrootn_xfer(p)    = veg_ns%deadcrootn_xfer(p)    + veg_nf%deadcrootn_storage_to_xfer(p)*dt
          end if
 
          if (ivt(p) >= npcropmin) then ! skip 2 generic crops
             ! lines here for consistency; the transfer terms are zero
-            ns%livestemn_storage_patch(p)  = ns%livestemn_storage_patch(p) - nf%livestemn_storage_to_xfer_patch(p)*dt
-            ns%livestemn_xfer_patch(p)     = ns%livestemn_xfer_patch(p)    + nf%livestemn_storage_to_xfer_patch(p)*dt
-            ns%grainn_storage_patch(p)     = ns%grainn_storage_patch(p)    - nf%grainn_storage_to_xfer_patch(p)*dt
-            ns%grainn_xfer_patch(p)        = ns%grainn_xfer_patch(p)       + nf%grainn_storage_to_xfer_patch(p)*dt
+            veg_ns%livestemn_storage(p)  = veg_ns%livestemn_storage(p) - veg_nf%livestemn_storage_to_xfer(p)*dt
+            veg_ns%livestemn_xfer(p)     = veg_ns%livestemn_xfer(p)    + veg_nf%livestemn_storage_to_xfer(p)*dt
+            veg_ns%grainn_storage(p)     = veg_ns%grainn_storage(p)    - veg_nf%grainn_storage_to_xfer(p)*dt
+            veg_ns%grainn_xfer(p)        = veg_ns%grainn_xfer(p)       + veg_nf%grainn_storage_to_xfer(p)*dt
          end if
 
       end do

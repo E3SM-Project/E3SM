@@ -60,6 +60,7 @@
     <value component="rof">$ROF_PIO_STRIDE</value>
     <value component="glc">$GLC_PIO_STRIDE</value>
     <value component="wav">$WAV_PIO_STRIDE</value>
+    <value component="iac">$IAC_PIO_STRIDE</value>
     <value component="esp">-99</value>
     </values>
   </entry>
@@ -80,6 +81,7 @@
     <value component="rof">$ROF_PIO_ROOT</value>
     <value component="glc">$GLC_PIO_ROOT</value>
     <value component="wav">$WAV_PIO_ROOT</value>
+    <value component="iac">$IAC_PIO_ROOT</value>
     <value component="esp">-99</value>
     </values>
   </entry>
@@ -101,6 +103,7 @@
     <value component="rof">$ROF_PIO_REARRANGER</value>
     <value component="glc">$GLC_PIO_REARRANGER</value>
     <value component="wav">$WAV_PIO_REARRANGER</value>
+    <value component="iac">$IAC_PIO_REARRANGER</value>
     <value component="esp">-99</value>
     </values>
   </entry>
@@ -121,6 +124,7 @@
     <value component="rof">$ROF_PIO_NUMTASKS</value>
     <value component="glc">$GLC_PIO_NUMTASKS</value>
     <value component="wav">$WAV_PIO_NUMTASKS</value>
+    <value component="iac">$IAC_PIO_NUMTASKS</value>
     <value component="esp">-99</value>
     </values>
   </entry>
@@ -143,6 +147,7 @@
     <value component="rof">$ROF_PIO_TYPENAME</value>
     <value component="glc">$GLC_PIO_TYPENAME</value>
     <value component="wav">$WAV_PIO_TYPENAME</value>
+    <value component="iac">$IAC_PIO_TYPENAME</value>
     <value component="esp">nothing</value>
     </values>
   </entry>
@@ -166,6 +171,7 @@
     <value component="rof">$ROF_PIO_NETCDF_FORMAT</value>
     <value component="glc">$GLC_PIO_NETCDF_FORMAT</value>
     <value component="wav">$WAV_PIO_NETCDF_FORMAT</value>
+    <value component="iac">$IAC_PIO_NETCDF_FORMAT</value>
     </values>
   </entry>
 

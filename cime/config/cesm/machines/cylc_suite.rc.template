@@ -1,0 +1,28 @@
+[meta]
+  title = CESM CYLC workflow for {{ workflow_description }}
+[cylc]
+  [[parameters]]
+    member = {{ members }}
+
+[scheduling]
+  cycling mode = integer
+  initial cycle point = 1
+  final cycle point = {{ cycles }}
+
+  [[dependencies]]
+    [[[R1]]]
+      graph = "set_external_workflow<member> => run<member> => st_archive<member> "
+    [[[R/P1]]] # Integer Cycling
+      graph = """
+	     st_archive<member>[-P1] => run<member>
+             run<member> => st_archive<member>
+	     """
+[runtime]
+  [[set_external_workflow<member>]]
+    script = cd {{ case_path_string }}\
+             ./xmlchange EXTERNAL_WORKFLOW=TRUE;\
+	     cp env_batch.xml LockedFiles;
+  [[st_archive<member>]]
+    script = cd {{ case_path_string }} \
+             ./case.submit --job case.st_archive;\
+	     ./xmlchange CONTINUE_RUN=TRUE

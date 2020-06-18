@@ -1164,12 +1164,12 @@ contains
     ! Description: sets Butcher tables in IMEX-KG format:
     !   Ae:   0 |    0             Ai:     0 |       0
     !        c1 |   a1    0            chat1 |   ahat1 dhat1
-    !        c2 |   b1   a2  0         chat2 |   bhat1 ahat2 dhat2
-    !        c3 |   b2    0 a3 0       chat3 |   bhat2     0 ahat3 dhat3
+    !        c2 |   b1   a2  0         chat2 |    b1 ahat2 dhat2
+    !        c3 |   b2    0 a3 0       chat3 |    b2     0 ahat3 dhat3
     !           |                            |
-    !        cq | bq-1 0 ... 0 aq 0    chatq | bhatq-1     0    ...    0 ahatq 0
+    !        cq | bq-1 0 ... 0 aq 0    chatq |  bq-1     0    ...    0 ahatq 0
     !        ----------------------    -----------------------------------------
-    !           | bq-1 0 ... 0 aq 0          | bhatq-1     0    ...    0 ahatq 0
+    !           | bq-1 0 ... 0 aq 0          |  bq-1     0    ...    0 ahatq 0
     !
     !        ci = sum_j Ae(i,j)        chati = sum_j Ai(i,j)
     !

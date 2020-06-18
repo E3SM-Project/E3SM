@@ -28,8 +28,7 @@ The 3D models:
 src/preqx        original hydrostatic primitive equation model
 src/preqx_acc    preqx with openACC acceleration
 src/prim         Fully implicit version of preqx
-src/theta        nonhydrostatic model with SB81 vertical discretization
-src/pese         primitive equation model with veritcal SE discretization
+src/theta-l      nonhydrostatic model with SB81 vertical discretization
 
 For instructions on building and configuring, see README.cmake
 
@@ -89,7 +88,6 @@ These are base classes only so src/preqx_acc can provide openACC versions
   src/share/viscosity_base.F90          biharmonic and other global derivatives
 
 src/share/prim_driver_base.F90        All SB81 models use this unchanged
-                                      src/pese model replaces this to support vertical SE
 
 src/share/prim_advection_base.F90     Eulerian 3D advection code
                                       src/preqx_acc has openACC version

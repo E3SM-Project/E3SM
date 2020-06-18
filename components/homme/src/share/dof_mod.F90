@@ -275,27 +275,25 @@ contains
 
   subroutine SetElemOffset(par,elem,GlobalUniqueColsP)
 #ifdef _MPI
-     use parallel_mod, only : mpi_sum
+     use parallel_mod, only : mpi_sum, MPI_IN_PLACE
 #endif
      type (parallel_t) :: par
      type (element_t) :: elem(:)
      integer, intent(out) :: GlobalUniqueColsP
 
-     integer(kind=int_kind), allocatable :: numElem2P(:)
-     integer(kind=int_kind), allocatable :: gOffset(:)
+     integer(kind=int_kind) :: numElem2P(nelem)
+     integer(kind=int_kind) :: gOffset(nelem)
     
      integer(kind=int_kind) :: ie,ig,nprocs,ierr
 
      logical,parameter :: Debug = .FALSE.
 
      nprocs = par%nprocs
-     allocate(numElem2P(nelem))
-     allocate(gOffset(nelem))
      gOffset=0
 
      do ie=1,nelemd
-	ig = elem(ie)%GlobalId
-	gOffset(ig) = elem(ie)%idxP%NumUniquePts
+       ig = elem(ie)%GlobalId
+       gOffset(ig) = elem(ie)%idxP%NumUniquePts
      enddo
 #ifdef _MPI
      call MPI_Allreduce(gOffset,numElem2P,nelem,MPIinteger_t,MPI_SUM,par%comm,ierr) 
@@ -305,7 +303,7 @@ contains
 
      gOffset(1)=1
      do ig=2,nelem
-	gOffset(ig) = gOffset(ig-1)+numElem2P(ig-1)
+        gOffset(ig) = gOffset(ig-1)+numElem2P(ig-1)
      enddo
      do ie=1,nelemd
         ig = elem(ie)%GlobalId
@@ -314,9 +312,6 @@ contains
      GlobalUniqueColsP = gOffset(nelem)+numElem2P(nelem)-1
      if (GlobalUniqueColsP<0) stop 'ERROR: GlobalUniqueColsP integer overflow'
 
-
-     deallocate(numElem2P)
-     deallocate(gOffset)
   end subroutine SetElemOffset
 
   subroutine CreateUniqueIndex(ig,gdof,idx)

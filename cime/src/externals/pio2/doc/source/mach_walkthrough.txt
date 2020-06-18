@@ -1,21 +1,8 @@
-/******************************************************************************
- *
- * 
- *
- * Copyright (C) 2013
- *
- * Permission to use, copy, modify, and distribute this software and its
- * documentation under the terms of the GNU General Public License is hereby 
- * granted. No representations are made about the suitability of this software 
- * for any purpose. It is provided "as is" without express or implied warranty.
- * See the GNU General Public License for more details.
- *
- * Documents produced by Doxygen are derivative works derived from the
- * input used in their production; they are not affected by this license.
- *
- */ /*! \page mach_walkthrough Install Walk-through
+/*! \page mach_walkthrough CMake Install Walk-through
 
-This document provides specific instructions for installing PIO using a variety of compilers on a few commonly used super computers. Click on the link below to go directly to the machine of interest.
+This document provides specific instructions for installing PIO using
+a variety of compilers on a few commonly used super computers. Click
+on the link below to go directly to the machine of interest.
 
 -    <a href="#Yellowstone">Yellowstone</a> (NCAR's 1.5-petaflop IBM Supercomputer)
 -    <a href="#Edison">Edison</a> (A NERSC Cray XC30 Supercomputer)
@@ -30,11 +17,16 @@ This document provides specific instructions for installing PIO using a variety 
 <ol>
 <li>Directory setup
 
-Download a copy of the PIO source into a sub-directory of your working directory (refered to here as the PIO_source directory). Create another sub-directory for the build (refered to here as the PIO_build directory) and 'cd' into it. 
+Download a copy of the PIO source into a sub-directory of your working
+directory (refered to here as the PIO_source directory). Create
+another sub-directory for the build (refered to here as the PIO_build
+directory) and 'cd' into it.
 
 <li>Modules
 
-Modules required for installation depend on your prefered compiler. Issue the commands below to set the module environment for building PIO on Yellowstone. 
+Modules required for installation depend on your prefered
+compiler. Issue the commands below to set the module environment for
+building PIO on Yellowstone.
 
 + Intel
 
@@ -170,7 +162,7 @@ Download a copy of the PIO source into a sub-directory of your working directory
 
 It is not necessary to edit your .soft file on Mira inorder to build PIO. Execute the following commands to temporarily load packages into your softenv. These packages use the IBM/XL compiler.<br>
   %> soft add +mpiwrapper-xl (or switch from the default in your softenv)<br>
-  %> soft add @ibm-compilers-2015-02<br>
+  %> soft add \@ibm-compilers-2015-02<br>
   %> soft add +cmake<br>
   %> soft add +git<br>
 
@@ -374,7 +366,7 @@ found.
 <pre>cd hdf5-1.10.1
 CC=mpicc ./configure --with-zlib=/usr/local/zlib-1.2.11_mpich-3.2 --with-szlib=/usr/local/szip-2.1_mpich-3.2 --prefix=/usr/local/hdf5-1.10.1_mpich-3.2 --enable-parallel
 make all check
-sudo PATH=$PATH:/usr/local/bin make install
+sudo PATH=$PATH:/usr/local/bin make install</pre>
 
 <li>Installing NetCDF-4 C Library
 

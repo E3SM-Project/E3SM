@@ -2,16 +2,17 @@
 Utility functions used in test_scheduler.py, and by other utilities that need to
 get test lists.
 """
-
+import glob
 from CIME.XML.standard_module_setup import *
 from CIME.XML.testlist import Testlist
 from CIME.XML.files import Files
+from CIME.test_status import TEST_STATUS_FILENAME
 import CIME.utils
 
 logger = logging.getLogger(__name__)
 
 def get_tests_from_xml(xml_machine=None,xml_category=None,xml_compiler=None, xml_testlist=None,
-                       machine=None, compiler=None):
+                       machine=None, compiler=None, driver=None):
     """
     Parse testlists for a list of tests
     """
@@ -46,6 +47,19 @@ def get_tests_from_xml(xml_machine=None,xml_category=None,xml_compiler=None, xml
             test["name"] = CIME.utils.get_full_test_name(test["testname"], grid=test["grid"], compset=test["compset"],
                                                          machine=thismach, compiler=thiscompiler,
                                                          testmod=None if "testmods" not in test else test["testmods"])
+            if driver:
+                # override default or specified driver
+                founddriver = False
+                for specdriver in ("Vnuopc","Vmct","Vmoab"):
+                    if specdriver in test["name"]:
+                        test["name"] = test["name"].replace(specdriver,"V{}".format(driver))
+                        founddriver = True
+                if not founddriver:
+                    name = test["name"]
+                    index = name.find('.')
+                    test["name"] = name[:index] + "_V{}".format(driver) + name[index:]
+
+
             logger.debug("Adding test {} with compiler {}".format(test["name"], test["compiler"]))
         listoftests += newtests
         logger.debug("Found {:d} tests".format(len(listoftests)))
@@ -90,3 +104,11 @@ def test_to_string(test, category_field_width=0, test_field_width=0, show_option
                 mystr += "  # {}: {}".format(one_opt, myopts[one_opt])
 
     return mystr
+
+def get_test_status_files(test_root, compiler, test_id=None):
+    test_id_glob = "*{}*".format(compiler) if test_id is None else "*{}*".format(test_id)
+    test_status_files = glob.glob("{}/{}/{}".format(test_root, test_id_glob, TEST_STATUS_FILENAME))
+    test_status_files = [item for item in test_status_files if not os.path.dirname(item).endswith('ref1') and not os.path.dirname(item).endswith('ref2')]
+
+    expect(test_status_files, "No matching test cases found in for {}/{}/{}".format(test_root, test_id_glob, TEST_STATUS_FILENAME))
+    return test_status_files

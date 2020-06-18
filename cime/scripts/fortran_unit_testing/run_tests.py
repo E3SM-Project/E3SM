@@ -237,7 +237,7 @@ def find_pfunit(compilerobj, mpilib, use_openmp):
     - use_openmp: Boolean
     """
     attrs = {"MPILIB": mpilib,
-             "compile_threaded": "true" if use_openmp else "false"
+             "compile_threaded": "TRUE" if use_openmp else "FALSE"
              }
 
     pfunit_path = compilerobj.get_optional_compiler_node("PFUNIT_PATH", attributes=attrs)
@@ -332,14 +332,8 @@ def _main():
 
     fake_case = FakeCase(compiler, mpilib, debug, comp_interface)
     machspecific.load_env(fake_case)
-    os.environ["OS"] = os_
-    os.environ["COMPILER"] = compiler
-    os.environ["DEBUG"] = stringify_bool(debug)
-    os.environ["MPILIB"] = mpilib
-    if use_openmp:
-        os.environ["compile_threaded"] = "true"
-    else:
-        os.environ["compile_threaded"] = "false"
+    cmake_args = "{}-DOS={} -DCOMPILER={} -DDEBUG={} -DMPILIB={} -Dcompile_threaded={}".format(
+        "" if not cmake_args else " ", os_, compiler, stringify_bool(debug), mpilib, stringify_bool(use_openmp))
 
     os.environ["UNIT_TEST_HOST"] = socket.gethostname()
     if "NETCDF_PATH" in os.environ and not "NETCDF" in os.environ:
@@ -347,6 +341,12 @@ def _main():
         # of the environment variable NETCDF, but not NETCDF_PATH
         logger.info("Setting NETCDF environment variable: {}".format(os.environ["NETCDF_PATH"]))
         os.environ["NETCDF"] = os.environ["NETCDF_PATH"]
+
+    if "NETCDFROOT" in os.environ and not "NETCDF" in os.environ:
+        # The CMake Netcdf find utility that we use (from pio2) seems to key off
+        # of the environment variable NETCDF, but not NETCDFROOT
+        logger.info("Setting NETCDF environment variable: {}".format(os.environ["NETCDFROOT"]))
+        os.environ["NETCDF"] = os.environ["NETCDFROOT"]
 
     if not use_mpi:
         mpirun_command = ""
@@ -360,7 +360,7 @@ def _main():
         }
 
         # We can get away with specifying case=None since we're using exe_only=True
-        mpirun_command, _ = machspecific.get_mpirun(None, mpi_attribs, None, exe_only=True)
+        mpirun_command, _, _, _ = machspecific.get_mpirun(None, mpi_attribs, None, exe_only=True)
         mpirun_command = machspecific.get_resolved_value(mpirun_command)
         logger.info("mpirun command is '{}'".format(mpirun_command))
 

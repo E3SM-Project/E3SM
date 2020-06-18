@@ -14,7 +14,8 @@
 	  <ntasks_cpl>-1</ntasks_cpl>
 	  <ntasks_lnd>-1</ntasks_lnd>
 	  <ntasks_glc>-1</ntasks_glc>
-	  <ntasks_wav>-1</ntasks_wav>
+    <ntasks_wav>-1</ntasks_wav>
+    <ntasks_iac>-1</ntasks_iac>
 	  <ntasks_esp>-1</ntasks_esp>
 	</ntasks>
 	<nthrds>
@@ -24,7 +25,8 @@
 	  <nthrds_ice>1</nthrds_ice>
 	  <nthrds_ocn>1</nthrds_ocn>
 	  <nthrds_glc>1</nthrds_glc>
-	  <nthrds_wav>1</nthrds_wav>
+    <nthrds_wav>1</nthrds_wav>
+    <nthrds_iac>1</nthrds_iac>
 	  <nthrds_esp>1</nthrds_esp>
 	  <nthrds_cpl>1</nthrds_cpl>
 	</nthrds>
@@ -36,7 +38,8 @@
 	  <rootpe_cpl>0</rootpe_cpl>
 	  <rootpe_lnd>0</rootpe_lnd>
 	  <rootpe_glc>0</rootpe_glc>
-	  <rootpe_wav>0</rootpe_wav>
+    <rootpe_wav>0</rootpe_wav>
+    <rootpe_iac>0</rootpe_iac>
 	  <rootpe_esp>0</rootpe_esp>
 	</rootpe>
       </pes>

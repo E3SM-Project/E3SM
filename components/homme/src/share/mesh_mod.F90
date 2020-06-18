@@ -8,15 +8,18 @@ module mesh_mod
   use physical_constants, only : DD_PI
   use control_mod, only : MAX_FILE_LEN
 
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   use netcdf ! _EXTERNAL
+#endif
 
   implicit none
   logical, public           :: MeshUseMeshFile = .false.
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   public  :: MeshOpen           ! Must be called first
 
   
   integer, parameter :: MXSTLN = 32
-
+#endif
   ! ===============================
   ! Public methods for mesh_mod
   ! ===============================
@@ -26,6 +29,7 @@ module mesh_mod
   public  :: MeshCubeTopology   ! called afer MeshOpen
   public  :: MeshCubeTopologyCoords   ! called afer MeshOpen
 
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   public  :: MeshSetCoordinates ! called after MeshCubeTopology    
   public  :: MeshPrint          ! show the contents of the Mesh after it has been loaded into the module
   public  :: MeshClose  
@@ -85,8 +89,11 @@ module mesh_mod
   private :: mesh_init_sfc_from_centroids_orig, mesh_init_sfc_from_centroids, mesh_theta2idx, gen_mesh_data
   public :: test_mesh_init_sfc_from_centroids
 
+#endif
+
 contains
 
+#ifndef HOMME_WITHOUT_PIOLIBRARY
 !======================================================================
 !  subroutine handle_error
 !======================================================================
@@ -113,7 +120,7 @@ contains
 
     status = nf90_open(p_mesh_file_name, NF90_NOWRITE, p_ncid)
     if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
- 
+
     MeshUseMeshFile = .true. 
 
   end subroutine open_mesh_file
@@ -817,7 +824,6 @@ contains
     ! find_next_factorable for a smaller ne2.
     ne2 = 2**ceiling(log(real(ne))/log(2d0))
     ne2sq = ne2*ne2
-    print *,'ne,ne2',ne,ne2
 
     o = sfcmap_init(ne2, sfcmap)
     allocate(inds(2,nelem))
@@ -1041,7 +1047,7 @@ contains
                             !there can be at most max_corner element of these
              
              a_corner_elems = 0
-             a_corner_elems = elem_neighbor(elem_nbr_start : elem_nbr_start + cnt -1)
+             a_corner_elems(1:cnt) = elem_neighbor(elem_nbr_start : elem_nbr_start + cnt -1)
              !corner-sides(2) is clockwise of corner_side(1)
              corner_array= 0
              orig_pos = 0
@@ -1306,6 +1312,8 @@ contains
 !======================================================================
 ! subroutine MeshCubeTopologyCoords
 !======================================================================
+#endif
+
    subroutine MeshCubeTopologyCoords(GridEdge, GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
     use parallel_mod,           only : abortmp
     use dimensions_mod,         only : np,  max_elements_attached_to_node
@@ -1330,6 +1338,7 @@ contains
     real(kind=real_kind),allocatable, intent(inout) :: coord_dim3(:)
     integer, intent(inout) :: coord_dimension
 
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     real (kind=real_kind)            :: x,y,z, rangex
     real(kind=real_kind)             :: coordinates(4,3)
     real(kind=real_kind)             :: centroid(3)
@@ -1578,6 +1587,7 @@ contains
     if(partmethod .eq. SFCURVE) then
         call initialize_space_filling_curve(GridVertex, element_nodes)
     endif
+#endif
   end subroutine MeshCubeTopologyCoords
 
 !======================================================================
@@ -1597,6 +1607,7 @@ contains
     type (GridEdge_t),   intent(inout) :: GridEdge(:)
     type (GridVertex_t), intent(inout) :: GridVertex(:)
 
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     real(kind=real_kind)             :: coordinates(4,3) 
     real(kind=real_kind)             :: centroid(3)
     type (cartesian3D_t)             :: face_center
@@ -1693,6 +1704,7 @@ contains
     enddo
 
     call initialize_space_filling_curve(GridVertex, element_nodes)
+#endif
   end subroutine MeshCubeTopology
 
 !======================================================================
@@ -1707,6 +1719,7 @@ contains
     implicit none
 
     type (element_t), intent(inout)  :: elem(:)
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     integer                          :: connectivity(p_number_elements,4)
     integer                          :: node_multiplicity(p_number_nodes)
     integer                          :: face_no, i, k, l
@@ -1745,6 +1758,7 @@ contains
       elem(k)%corners(:)%x         = cube_coor(:,1)
       elem(k)%corners(:)%y         = cube_coor(:,2)
     end do
+#endif
   end subroutine MeshSetCoordinates
 
 !======================================================================
@@ -1754,6 +1768,7 @@ contains
     use parallel_mod, only : abortmp
     implicit none
     integer                     :: nedge
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     if (0 == p_number_blocks)  call abortmp('MeshCubeEdgeCount called before MeshOpenMesh')
     if (MeshUseMeshFile) then
       ! should be the same as SUM(SIZE(GridVertex(i)%nbrs(j)%n),i=1:p_number_elements,j=1:nInnerElemEdge)
@@ -1762,27 +1777,30 @@ contains
     else
       call abortmp('Error in MeshCubeEdgeCount: Should not call for non-exodus mesh file.')
     endif
-
+#endif
   end function MeshCubeEdgeCount
 
   function MeshCubeElemCount()  result(nelem)
     use parallel_mod, only : abortmp
     implicit none
     integer                     :: nelem
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     if (0 == p_number_blocks)  call abortmp('MeshCubeElemCount called before MeshOpenMesh')
     if (MeshUseMeshFile) then
       nelem = p_number_elements
     else
       call abortmp('Error in MeshCubeElemCount: Should not call for non-exodus mesh file.')
     end if
+#endif
   end function MeshCubeElemCount
 
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   subroutine test_private_methods
     implicit none
     integer                          :: element_nodes(p_number_elements, 4)
     call mesh_connectivity (element_nodes)
   end subroutine test_private_methods
-
+#endif
 
 end module mesh_mod
 

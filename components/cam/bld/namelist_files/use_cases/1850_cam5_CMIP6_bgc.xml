@@ -70,8 +70,9 @@
 <zmconv_ke               > 5E-6      </zmconv_ke>
 <effgw_oro               > 0.25      </effgw_oro>
 <seasalt_emis_scale      > 0.85      </seasalt_emis_scale>
-<dust_emis_fact          > 2.05D0    </dust_emis_fact>
+<dust_emis_fact          > 1.38D0    </dust_emis_fact>
 <clubb_gamma_coef        > 0.32      </clubb_gamma_coef>
+<clubb_gamma_coefb> 0.32      </clubb_gamma_coefb>
 <clubb_C8                > 4.3       </clubb_C8>
 <cldfrc2m_rhmaxi         > 1.05D0    </cldfrc2m_rhmaxi>
 <clubb_c_K10             > 0.3       </clubb_c_K10>
@@ -85,18 +86,17 @@
 <zmconv_mx_bot_lyr_adj   > 2         </zmconv_mx_bot_lyr_adj>
 <taubgnd                 > 2.5D-3    </taubgnd>
 <clubb_C1                > 1.335     </clubb_C1>
+<clubb_C1b                > 1.335     </clubb_C1b>
 <raytau0                 > 5.0D0     </raytau0>
 <prc_coef1               > 30500.0D0 </prc_coef1>
 <prc_exp                 > 3.19D0    </prc_exp>
 <prc_exp1                > -1.2D0    </prc_exp1>
-<se_ftype                > 2         </se_ftype>
 <clubb_C14               > 1.17D0     </clubb_C14>
 <relvar_fix              > .true.    </relvar_fix>
 <mg_prc_coeff_fix        > .true.    </mg_prc_coeff_fix>
 <rrtmg_temp_fix          > .true.    </rrtmg_temp_fix>
 
 <!-- Energy fixer options -->
-<l_ieflx_fix> .true.</l_ieflx_fix>
 <ieflx_opt  > 2     </ieflx_opt>
 
 
@@ -111,33 +111,33 @@
 <!-- External forcing for BAM or MAM.  CMIP6 input4mips data -->
 <ext_frc_type         >CYCLICAL</ext_frc_type>
 <ext_frc_cycle_yr     >1850</ext_frc_cycle_yr>
-<so2_ext_file         >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so2_elev_1850-2014_c170525.nc </so2_ext_file>
-<soag_ext_file	      >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_soag_elev_1850-2014_c170525.nc </soag_ext_file>
-<bc_a4_ext_file       >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_bc_a4_elev_1850-2014_c170525.nc </bc_a4_ext_file>
-<mam7_num_a1_ext_file >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a1_elev_1850-2014_c170525.nc </mam7_num_a1_ext_file>
-<num_a2_ext_file      >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a2_elev_1850-2014_c170525.nc </num_a2_ext_file>
-<mam7_num_a3_ext_file >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a4_elev_1850-2014_c170525.nc </mam7_num_a3_ext_file> <!-- This is to set num_a4 emissions -->
-<pom_a4_ext_file      >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_pom_a4_elev_1850-2014_c170525.nc </pom_a4_ext_file>
-<so4_a1_ext_file      >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a1_elev_1850-2014_c170525.nc </so4_a1_ext_file>
-<so4_a2_ext_file      >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a2_elev_1850-2014_c170525.nc </so4_a2_ext_file>
+<so2_ext_file         >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so2_elev_1850-2014_c180205.nc </so2_ext_file>
+<soag_ext_file	      >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_soag_elev_1850-2014_c180205.nc </soag_ext_file>
+<bc_a4_ext_file       >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_bc_a4_elev_1850-2014_c180205.nc </bc_a4_ext_file>
+<mam7_num_a1_ext_file >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a1_elev_1850-2014_c180205.nc </mam7_num_a1_ext_file>
+<num_a2_ext_file      >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a2_elev_1850-2014_c180205.nc </num_a2_ext_file>
+<mam7_num_a3_ext_file >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a4_elev_1850-2014_c180205.nc </mam7_num_a3_ext_file> <!-- This is to set num_a4 emissions -->
+<pom_a4_ext_file      >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_pom_a4_elev_1850-2014_c180205.nc </pom_a4_ext_file>
+<so4_a1_ext_file      >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a1_elev_1850-2014_c180205.nc </so4_a1_ext_file>
+<so4_a2_ext_file      >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a2_elev_1850-2014_c180205.nc </so4_a2_ext_file>
 
 <!-- Surface emissions for MAM4.  CMIP6 input4mips data -->
 <srf_emis_type        >CYCLICAL</srf_emis_type>
 <srf_emis_cycle_yr    >1850</srf_emis_cycle_yr>
 <dms_emis_file	      >atm/cam/chem/trop_mozart_aero/emis/DMSflux.1850.1deg_latlon_conserv.POPmonthlyClimFromACES4BGC_c20160416.nc</dms_emis_file>
-<so2_emis_file	      >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so2_surf_1850-2014_c170525.nc </so2_emis_file>
-<bc_a4_emis_file      >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_bc_a4_surf_1850-2014_c170525.nc </bc_a4_emis_file>
-<mam7_num_a1_emis_file>atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a1_surf_1850-2014_c170525.nc </mam7_num_a1_emis_file> 
-<num_a2_emis_file     >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a2_surf_1850-2014_c170525.nc </num_a2_emis_file>
-<mam7_num_a3_emis_file>atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a4_surf_1850-2014_c170525.nc </mam7_num_a3_emis_file> <!-- This is to set num_a4 emissions -->
-<pom_a4_emis_file     >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_pom_a4_surf_1850-2014_c170525.nc </pom_a4_emis_file>
-<so4_a1_emis_file     >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a1_surf_1850-2014_c170525.nc </so4_a1_emis_file>
-<so4_a2_emis_file     >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a2_surf_1850-2014_c170525.nc </so4_a2_emis_file>
+<so2_emis_file	      >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so2_surf_1850-2014_c180205.nc </so2_emis_file>
+<bc_a4_emis_file      >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_bc_a4_surf_1850-2014_c180205.nc </bc_a4_emis_file>
+<mam7_num_a1_emis_file>atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a1_surf_1850-2014_c180205.nc </mam7_num_a1_emis_file>
+<num_a2_emis_file     >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a2_surf_1850-2014_c180205.nc </num_a2_emis_file>
+<mam7_num_a3_emis_file>atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a4_surf_1850-2014_c180205.nc </mam7_num_a3_emis_file> <!-- This is to set num_a4 emissions -->
+<pom_a4_emis_file     >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_pom_a4_surf_1850-2014_c180205.nc </pom_a4_emis_file>
+<so4_a1_emis_file     >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a1_surf_1850-2014_c180205.nc </so4_a1_emis_file>
+<so4_a2_emis_file     >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a2_surf_1850-2014_c180205.nc </so4_a2_emis_file>
 
 <!-- Prescribed oxidants for aerosol chemistry.   Ozone is from CMIP6 input4MIPS file -->
 <tracer_cnst_type    >CYCLICAL</tracer_cnst_type>
 <tracer_cnst_cycle_yr>1849</tracer_cnst_cycle_yr>
-<tracer_cnst_file    >oxid_1.9x2.5_L26_1850-2015_c20171110.nc</tracer_cnst_file>
+<tracer_cnst_file    >oxid_1.9x2.5_L26_1850-2015_c180203.nc</tracer_cnst_file>
 <tracer_cnst_filelist>''</tracer_cnst_filelist>
 
 <!-- <tracer_cnst_filelist>this_field_is_not_used</tracer_cnst_filelist> -->
@@ -160,6 +160,9 @@
 <linoz_data_file            >linoz1850-2015_2010JPL_CMIP6_10deg_58km_c20171109.nc</linoz_data_file>
 <linoz_data_path            >atm/cam/chem/trop_mozart/ub</linoz_data_path>
 <linoz_data_type            >CYCLICAL</linoz_data_type>
+
+<!-- Turn off ozone dry deposition, as Linoz O3v2 and ozone are not separated for now. Need to turn on ozone dry deposition when interactive tropospheric chemistry is implemented -->
+<drydep_list            >'H2O2', 'H2SO4', 'SO2'</drydep_list>
 
 <!-- sim_year used for CLM datasets and SSTs forcings -->
 <sim_year>1850</sim_year>

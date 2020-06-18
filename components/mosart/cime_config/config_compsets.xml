@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+
+<compsets>
+
+  <help>
+  Compset format is explained in cime/config/e3sm/allactive/config_compsets.xml
+  or in the CIME documenation
+  </help>
+
+  <!---MOSART RM compsets -->
+
+  <compset>
+    <alias>RMOSARTNLDAS</alias>
+    <lname>2000_SATM_DLND%LCLMR_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+</compsets>

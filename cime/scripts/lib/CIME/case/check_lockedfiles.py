@@ -9,8 +9,9 @@ from CIME.XML.env_build import EnvBuild
 from CIME.XML.env_case import EnvCase
 from CIME.XML.env_mach_pes import EnvMachPes
 from CIME.XML.env_batch import EnvBatch
-from CIME.utils import run_cmd_no_fail
 from CIME.locked_files import unlock_file, LOCKED_DIR
+from CIME.build import clean
+
 logger = logging.getLogger(__name__)
 
 import glob, six
@@ -39,7 +40,7 @@ def check_pelayouts_require_rebuild(self, models):
                 if old_tasks != new_tasks or old_threads != new_threads or old_inst != new_inst:
                     logging.warning("{} pe change requires clean build {} {}".format(comp, old_tasks, new_tasks))
                     cleanflag = comp.lower()
-                    run_cmd_no_fail("./case.build --clean {}".format(cleanflag))
+                    clean(self, cleanlist=[cleanflag])
 
         unlock_file("env_mach_pes.xml", self.get_value("CASEROOT"))
 
@@ -74,8 +75,8 @@ def check_lockedfile(self, filebase):
             toggle_build_status = False
             for key in diffs.keys():
                 if key != "BUILD_COMPLETE":
-                    print("  found difference in {} : case {} locked {}"
-                          .format(key, repr(diffs[key][0]), repr(diffs[key][1])))
+                    logging.warning("  found difference in {} : case {} locked {}"
+                                    .format(key, repr(diffs[key][0]), repr(diffs[key][1])))
                     toggle_build_status = True
             if objname == "env_mach_pes":
                 expect(False, "Invoke case.setup --reset ")

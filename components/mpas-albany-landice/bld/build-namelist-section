@@ -12,6 +12,7 @@ add_default($nl, 'config_do_velocity_reconstruction_for_external_dycore');
 add_default($nl, 'config_simple_velocity_type');
 add_default($nl, 'config_use_glp');
 add_default($nl, 'config_beta_use_effective_pressure');
+add_default($nl, 'config_unrealistic_velocity');
 
 #############################
 # Namelist group: advection #
@@ -27,24 +28,52 @@ add_default($nl, 'config_tracer_advection');
 add_default($nl, 'config_calving');
 add_default($nl, 'config_calving_topography');
 add_default($nl, 'config_calving_thickness');
+add_default($nl, 'config_calving_eigencalving_parameter_source');
+add_default($nl, 'config_calving_eigencalving_parameter_scalar_value');
 add_default($nl, 'config_data_calving');
 add_default($nl, 'config_calving_timescale');
 add_default($nl, 'config_restore_calving_front');
+add_default($nl, 'config_remove_icebergs');
+add_default($nl, 'config_remove_small_islands');
 
 ##################################
 # Namelist group: thermal_solver #
 ##################################
 
 add_default($nl, 'config_thermal_solver');
+add_default($nl, 'config_thermal_calculate_bmb');
 add_default($nl, 'config_temperature_init');
 add_default($nl, 'config_thermal_thickness');
 add_default($nl, 'config_surface_air_temperature_source');
 add_default($nl, 'config_surface_air_temperature_value');
+add_default($nl, 'config_surface_air_temperature_lapse_rate');
 add_default($nl, 'config_basal_heat_flux_source');
 add_default($nl, 'config_basal_heat_flux_value');
+add_default($nl, 'config_temp_diffusive_factor');
+add_default($nl, 'config_max_water_fraction');
+
+#################################
+# Namelist group: iceshelf_melt #
+#################################
+
 add_default($nl, 'config_basal_mass_bal_float');
 add_default($nl, 'config_bmlt_float_flux');
 add_default($nl, 'config_bmlt_float_xlimit');
+add_default($nl, 'config_basal_mass_bal_seroussi_amplitude');
+add_default($nl, 'config_basal_mass_bal_seroussi_period');
+add_default($nl, 'config_basal_mass_bal_seroussi_phase');
+add_default($nl, 'config_temperature_profile_melt_scale_factor');
+add_default($nl, 'config_temperature_profile_sill_elevation');
+add_default($nl, 'config_temperature_profile_plume_thickness');
+add_default($nl, 'config_temperature_profile_draft_slope');
+add_default($nl, 'config_temperature_profile_thermocline_upper_depth');
+add_default($nl, 'config_temperature_profile_thermocline_upper_temp');
+add_default($nl, 'config_temperature_profile_thermocline_lower_depth');
+add_default($nl, 'config_temperature_profile_thermocline_lower_temp');
+add_default($nl, 'config_temperature_profile_variability_amplitude');
+add_default($nl, 'config_temperature_profile_variability_period');
+add_default($nl, 'config_temperature_profile_variability_phase');
+add_default($nl, 'config_temperature_profile_GL_depth_fraction');
 
 #######################################
 # Namelist group: physical_parameters #
@@ -54,7 +83,6 @@ add_default($nl, 'config_ice_density');
 add_default($nl, 'config_ocean_density');
 add_default($nl, 'config_sea_level');
 add_default($nl, 'config_default_flowParamA');
-add_default($nl, 'config_enhancementFactor');
 add_default($nl, 'config_flowLawExponent');
 add_default($nl, 'config_dynamic_thickness');
 

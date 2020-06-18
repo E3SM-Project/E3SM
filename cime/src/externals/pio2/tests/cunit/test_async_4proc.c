@@ -69,12 +69,12 @@ int main(int argc, char **argv)
             {
                 for (int flv = 0; flv < num_flavors; flv++)
                 {
-                    char filename[NC_MAX_NAME + 1]; /* Test filename. */
+                    char filename[PIO_MAX_NAME + 1]; /* Test filename. */
                     int my_comp_idx = 0; /* Index in iosysid array. */
 
                     for (int sample = 0; sample < NUM_SAMPLES; sample++)
                     {
-                        char iotype_name[NC_MAX_NAME + 1];
+                        char iotype_name[PIO_MAX_NAME + 1];
 
                         /* Create a filename. */
                         if ((ret = get_iotype_name(flavor[flv], iotype_name)))
@@ -93,7 +93,7 @@ int main(int argc, char **argv)
 
                 /* Finalize the IO system. Only call this from the computation tasks. */
                 for (int c = 0; c < COMPONENT_COUNT; c++)
-                    if ((ret = PIOc_finalize(iosysid[c])))
+                    if ((ret = PIOc_free_iosystem(iosysid[c])))
                         ERR(ret);
             } /* endif comp_task */
 

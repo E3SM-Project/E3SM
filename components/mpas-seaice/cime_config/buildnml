@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 ###############################################################################
 def buildnml(case, caseroot, compname):
 ###############################################################################
-    expect(compname == "mpascice", compname)
+    expect(compname == "mpassi", compname)
 
     os.chdir(caseroot)
 
@@ -77,7 +77,7 @@ def buildnml(case, caseroot, compname):
         decomp_prefix += 'mpas-cice.graph.info.'
         if ice_bgc == 'ice_bgc':
             grid_date = '180418'
-            grid_prefix = 'mpascice.rst.BCRC_CNPECACNT_1850_anvil02.0066-01-01.no-xtime'
+            grid_prefix = 'mpassi.rst.BCRC_CNPECACNT_1850_anvil02.0066-01-01.no-xtime'
             points_file = 'seaice_points_EC.60to30v3_netcdf3_05152018.nc'
 
     elif ice_grid == 'oEC60to30v3_ICG':
@@ -191,7 +191,7 @@ def buildnml(case, caseroot, compname):
 
     input_file = "{}/ice/mpas-cice/{}/{}.{}.nc".format(din_loc_root, ice_mask, grid_prefix, grid_date)
     if run_type == 'hybrid' or run_type == 'branch':
-        input_file = "{}/mpascice.rst.{}_{}.nc".format(rundir, run_refdate, run_reftod)
+        input_file = "{}/mpassi.rst.{}_{}.nc".format(rundir, run_refdate, run_reftod)
         expect(os.path.exists(input_file), " ERROR mpassi buildnml: missing specified restart file for branch or hybrid run: {}".format(input_file))
 
     #--------------------------------------------------------------------
@@ -200,6 +200,8 @@ def buildnml(case, caseroot, compname):
 
     with open(os.path.join(casebuild, "mpassi.input_data_list"), "w") as input_list:
         input_list.write("mesh = {}\n".format(input_file))
+        input_list.write("snow_data = {}/ice/mpas-cice/general/snicar_drdt_bst_fit_60_c04262019.nc\n".format(din_loc_root))
+        input_list.write("snicar_data = {}/ice/mpas-cice/general/snicar_optics_5bnd_snow_and_aerosols.nc\n".format(din_loc_root))
         if points_file != '':
             input_list.write("points = {}/ice/mpas-cice/{}/{}\n".format(din_loc_root, ice_mask, points_file))
         if iceberg_mode == 'data':
@@ -232,7 +234,7 @@ def buildnml(case, caseroot, compname):
         # -----------------------------------------------------
 
         create_namelist_infile(case,
-                               "{}/user_nl_mpascice{}".format(caseroot, inst_string),
+                               "{}/user_nl_mpassi{}".format(caseroot, inst_string),
                                "{}/cesm_namelist".format(mpassiconf_dir))
 
         # -----------------------------------------------------
@@ -272,8 +274,8 @@ def buildnml(case, caseroot, compname):
 
     # Write streams file if there isn't one in SourceMods
 
-    if os.path.exists("{}/SourceMods/src.mpascice/{}".format(caseroot, stream_name)):
-        safe_copy("{}/SourceMods/src.mpascice/{}".format(caseroot, stream_name), rundir)
+    if os.path.exists("{}/SourceMods/src.mpassi/{}".format(caseroot, stream_name)):
+        safe_copy("{}/SourceMods/src.mpassi/{}".format(caseroot, stream_name), rundir)
 
     else:
         lines = []
@@ -316,7 +318,7 @@ def buildnml(case, caseroot, compname):
         else:
             lines.append('                  io_type="{}"'.format(ice_pio_typename))
 
-        lines.append('                  filename_template="mpascice.rst.$Y-$M-$D_$S.nc"')
+        lines.append('                  filename_template="mpassi.rst.$Y-$M-$D_$S.nc"')
         lines.append('                  filename_interval="output_interval"')
         lines.append('                  input_interval="initial_only"')
         lines.append('                  clobber_mode="truncate"')
@@ -340,7 +342,7 @@ def buildnml(case, caseroot, compname):
         lines.append('<stream name="output"')
         lines.append('        type="output"')
         lines.append('        io_type="{}"'.format(ice_pio_typename))
-        lines.append('        filename_template="mpascice.hist.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_template="mpassi.hist.$Y-$M-$D_$S.nc"')
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        clobber_mode="truncate"')
         lines.append('        reference_time="01-01-01_00:00:00"')
@@ -400,6 +402,20 @@ def buildnml(case, caseroot, compname):
         lines.append('                  filename_interval="none"')
         lines.append('                  input_interval="none" />')
         lines.append('')
+        lines.append('<immutable_stream name="SnowAgingPropertiesInput"')
+        lines.append('                  type="input"')
+        lines.append('                  io_type="{}"'.format(ice_pio_typename))
+        lines.append('                  filename_template="{}/ice/mpas-cice/general/snicar_drdt_bst_fit_60_c04262019.nc"'.format(din_loc_root))
+        lines.append('                  filename_interval="none"')
+        lines.append('                  input_interval="initial_only" />')
+        lines.append('')
+        lines.append('<immutable_stream name="SnicarInput"')
+        lines.append('                  type="input"')
+        lines.append('                  io_type="{}"'.format(ice_pio_typename))
+        lines.append('                  filename_template="{}/ice/mpas-cice/general/snicar_optics_5bnd_snow_and_aerosols.nc"'.format(din_loc_root))
+        lines.append('                  filename_interval="none"')
+        lines.append('                  input_interval="initial_only" />')
+        lines.append('')
         lines.append('<immutable_stream name="abort_contents"')
         lines.append('                  type="none"')
         lines.append('                  filename_template="abort_variables.nc" />')
@@ -445,7 +461,7 @@ def buildnml(case, caseroot, compname):
         lines.append('<stream name="highFrequencyOutput"')
         lines.append('        type="output"')
         lines.append('        io_type="{}"'.format(ice_pio_typename))
-        lines.append('        filename_template="mpascice.hist.am.highFrequencyOutput.$Y-$M-$D.nc"')
+        lines.append('        filename_template="mpassi.hist.am.highFrequencyOutput.$Y-$M-$D.nc"')
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="none"')
@@ -460,7 +476,7 @@ def buildnml(case, caseroot, compname):
         lines.append('<stream name="regionalStatisticsOutput"')
         lines.append('        type="output"')
         lines.append('        io_type="{}"'.format(ice_pio_typename))
-        lines.append('        filename_template="mpascice.hist.am.regionalStatistics.$Y.$M.nc"')
+        lines.append('        filename_template="mpassi.hist.am.regionalStatistics.$Y.$M.nc"')
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="00-00-01_00:00:00"')
@@ -483,7 +499,7 @@ def buildnml(case, caseroot, compname):
         lines.append('<stream name="conservationCheckOutput"')
         lines.append('        type="output"')
         lines.append('        io_type="{}"'.format(ice_pio_typename))
-        lines.append('        filename_template="mpascice.hist.am.conservationCheck.$Y.nc"')
+        lines.append('        filename_template="mpassi.hist.am.conservationCheck.$Y.nc"')
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="00-01-00_00:00:00"')
@@ -515,7 +531,7 @@ def buildnml(case, caseroot, compname):
         lines.append('<stream name="conservationCheckRestart"')
         lines.append('        type="input;output"')
         lines.append('        io_type="{}"'.format(ice_pio_typename))
-        lines.append('        filename_template="mpascice.rst.am.conservationCheck.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_template="mpassi.rst.am.conservationCheck.$Y-$M-$D_$S.nc"')
         lines.append('        filename_interval="output_interval"')
         lines.append('        clobber_mode="truncate"')
         lines.append('        packages="conservationCheckAMPKG"')
@@ -527,7 +543,7 @@ def buildnml(case, caseroot, compname):
         lines.append('<stream name="loadBalanceOutput"')
         lines.append('        type="output"')
         lines.append('        io_type="{}"'.format(ice_pio_typename))
-        lines.append('        filename_template="mpascice.hist.am.cice_loadBalance.$Y.nc"')
+        lines.append('        filename_template="mpassi.hist.am.cice_loadBalance.$Y.nc"')
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="00-00-00_01:00:00"')
@@ -542,7 +558,7 @@ def buildnml(case, caseroot, compname):
         lines.append('<stream name="maximumIcePresenceOutput"')
         lines.append('        type="output"')
         lines.append('        io_type="{}"'.format(ice_pio_typename))
-        lines.append('        filename_template="mpascice.hist.am.cice_maximumIcePresence.$Y.nc"')
+        lines.append('        filename_template="mpassi.hist.am.cice_maximumIcePresence.$Y.nc"')
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="01-00-00_00:00:00"')
@@ -557,7 +573,7 @@ def buildnml(case, caseroot, compname):
         lines.append('<stream name="timeSeriesStatsDailyOutput"')
         lines.append('        type="output"')
         lines.append('        io_type="{}"'.format(ice_pio_typename))
-        lines.append('        filename_template="mpascice.hist.am.timeSeriesStatsDaily.$Y-$M-$D.nc"')
+        lines.append('        filename_template="mpassi.hist.am.timeSeriesStatsDaily.$Y-$M-$D.nc"')
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="00-00-01_00:00:00"')
@@ -568,7 +584,7 @@ def buildnml(case, caseroot, compname):
         lines.append('<stream name="timeSeriesStatsDailyRestart"')
         lines.append('        type="input;output"')
         lines.append('        io_type="{}"'.format(ice_pio_typename))
-        lines.append('        filename_template="mpascice.rst.am.timeSeriesStatsDaily.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_template="mpassi.rst.am.timeSeriesStatsDaily.$Y-$M-$D_$S.nc"')
         lines.append('        filename_interval="output_interval"')
         lines.append('        clobber_mode="truncate"')
         lines.append('        packages="timeSeriesStatsDailyAMPKG"')
@@ -580,7 +596,7 @@ def buildnml(case, caseroot, compname):
         lines.append('<stream name="timeSeriesStatsMonthlyOutput"')
         lines.append('        type="output"')
         lines.append('        io_type="{}"'.format(ice_pio_typename))
-        lines.append('        filename_template="mpascice.hist.am.timeSeriesStatsMonthly.$Y-$M-$D.nc"')
+        lines.append('        filename_template="mpassi.hist.am.timeSeriesStatsMonthly.$Y-$M-$D.nc"')
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="00-01-00_00:00:00"')
@@ -765,7 +781,7 @@ def buildnml(case, caseroot, compname):
         lines.append('<stream name="timeSeriesStatsMonthlyRestart"')
         lines.append('        type="input;output"')
         lines.append('        io_type="{}"'.format(ice_pio_typename))
-        lines.append('        filename_template="mpascice.rst.am.timeSeriesStatsMonthly.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_template="mpassi.rst.am.timeSeriesStatsMonthly.$Y-$M-$D_$S.nc"')
         lines.append('        filename_interval="output_interval"')
         lines.append('        clobber_mode="truncate"')
         lines.append('        packages="timeSeriesStatsMonthlyAMPKG"')
@@ -777,7 +793,7 @@ def buildnml(case, caseroot, compname):
         lines.append('<stream name="timeSeriesStatsClimatologyOutput"')
         lines.append('        type="output"')
         lines.append('        io_type="{}"'.format(ice_pio_typename))
-        lines.append('        filename_template="mpascice.hist.am.timeSeriesStatsClimatology.$Y.nc"')
+        lines.append('        filename_template="mpassi.hist.am.timeSeriesStatsClimatology.$Y.nc"')
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        clobber_mode="truncate"')
         lines.append('        packages="timeSeriesStatsClimatologyAMPKG"')
@@ -793,7 +809,7 @@ def buildnml(case, caseroot, compname):
         lines.append('<stream name="timeSeriesStatsClimatologyRestart"')
         lines.append('        type="input;output"')
         lines.append('        io_type="{}"'.format(ice_pio_typename))
-        lines.append('        filename_template="mpascice.rst.am.timeSeriesStatsClimatology.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_template="mpassi.rst.am.timeSeriesStatsClimatology.$Y-$M-$D_$S.nc"')
         lines.append('        filename_interval="output_interval"')
         lines.append('        clobber_mode="truncate"')
         lines.append('        packages="timeSeriesStatsClimatologyAMPKG"')
@@ -822,7 +838,7 @@ def _main_func():
 ###############################################################################
     caseroot = parse_input(sys.argv)
     with Case(caseroot) as case:
-        buildnml(case, caseroot, "mpascice")
+        buildnml(case, caseroot, "mpassi")
 
 if __name__ == "__main__":
     _main_func()

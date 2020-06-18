@@ -2,19 +2,22 @@
 
 <config_horiz_grid>
 
+<!-- Eulerian grid (spherical harmonic) -->
 <horiz_grid dyn="eul"   hgrid="512x1024"  nlat="512" nlon="1024" m="341" n="341" k="341" />
-<horiz_grid dyn="eul"   hgrid="256x512"   nlat="256" nlon="512" m="170" n="170" k="170" />
-<horiz_grid dyn="eul"   hgrid="128x256"   nlat="128" nlon="256" m="85"  n="85"  k="85"  />
-<horiz_grid dyn="eul"   hgrid="64x128"    nlat="64"  nlon="128" m="42"  n="42"  k="42"  />
-<horiz_grid dyn="eul"   hgrid="48x96"     nlat="48"  nlon="96"  m="31"  n="31"  k="31"  />
-<horiz_grid dyn="eul"   hgrid="32x64"     nlat="32"  nlon="64"  m="21"  n="21"  k="21"  />
-<horiz_grid dyn="eul"   hgrid="8x16"      nlat="8"   nlon="16"  m="5"   n="5"   k="5"   />
-<horiz_grid dyn="eul"   hgrid="1x1"       nlat="1"   nlon="1"   m="1"   n="1"   k="1"   />
+<horiz_grid dyn="eul"   hgrid="256x512"   nlat="256" nlon="512"  m="170" n="170" k="170" />
+<horiz_grid dyn="eul"   hgrid="128x256"   nlat="128" nlon="256"  m="85"  n="85"  k="85"  />
+<horiz_grid dyn="eul"   hgrid="64x128"    nlat="64"  nlon="128"  m="42"  n="42"  k="42"  />
+<horiz_grid dyn="eul"   hgrid="48x96"     nlat="48"  nlon="96"   m="31"  n="31"  k="31"  />
+<horiz_grid dyn="eul"   hgrid="32x64"     nlat="32"  nlon="64"   m="21"  n="21"  k="21"  />
+<horiz_grid dyn="eul"   hgrid="8x16"      nlat="8"   nlon="16"   m="5"   n="5"   k="5"   />
+<horiz_grid dyn="eul"   hgrid="1x1"       nlat="1"   nlon="1"    m="1"   n="1"   k="1"   />
 
+<!-- Semi-Lagrangian Dynamics -->
 <horiz_grid dyn="sld"   hgrid="64x128"    nlat="64"  nlon="128" m="63"  n="63"  k="63"  />
 <horiz_grid dyn="sld"   hgrid="32x64"     nlat="32"  nlon="64"  m="31"  n="31"  k="31"  />
 <horiz_grid dyn="sld"   hgrid="8x16"      nlat="8"   nlon="16"  m="7"   n="7"   k="7"   />
 
+<!-- Finite Volume -->
 <horiz_grid dyn="fv"    hgrid="0.23x0.31"  nlat="768"  nlon="1152" />
 <horiz_grid dyn="fv"    hgrid="0.47x0.63"  nlat="384"  nlon="576"  />
 <horiz_grid dyn="fv"    hgrid="0.5x0.625"  nlat="361"  nlon="576"  />
@@ -26,25 +29,52 @@
 <horiz_grid dyn="fv"    hgrid="4x5"        nlat="46"   nlon="72"   />
 <horiz_grid dyn="fv"    hgrid="10x15"      nlat="19"   nlon="24"   />
 
-<horiz_grid dyn="se"    hgrid="ne2np4"     ncol=""         csne="2"    csnp="4"  />
-<horiz_grid dyn="se"    hgrid="ne4np4"     ncol="866"      csne="4"    csnp="4"  />
-<horiz_grid dyn="se"    hgrid="ne5np8"     ncol=""         csne="5"    csnp="8"  />
-<horiz_grid dyn="se"    hgrid="ne7np8"     ncol=""         csne="7"    csnp="8"  />
-<horiz_grid dyn="se"    hgrid="ne10np4"    ncol=""         csne="10"   csnp="4"  />
-<horiz_grid dyn="se"    hgrid="ne11np4"    ncol="6536"     csne="11"   csnp="4"  />
-<horiz_grid dyn="se"    hgrid="ne16np4"    ncol="13826"    csne="16"   csnp="4"  />
-<horiz_grid dyn="se"    hgrid="ne16np8"    ncol=""         csne="16"   csnp="8"  />
-<horiz_grid dyn="se"    hgrid="ne21np4"    ncol=""         csne="21"   csnp="4"  />
-<horiz_grid dyn="se"    hgrid="ne30np4"    ncol="48602"    csne="30"   csnp="4"  />
-<horiz_grid dyn="se"    hgrid="ne30np8"    ncol=""         csne="30"   csnp="8"  />
-<horiz_grid dyn="se"    hgrid="ne60np4"    ncol="194402"   csne="60"   csnp="4"  />
-<horiz_grid dyn="se"    hgrid="ne120np4"   ncol="777602"   csne="120"  csnp="4"  />
-<horiz_grid dyn="se"    hgrid="ne240np4"   ncol="3110402"  csne="240"  csnp="4"  />
-<horiz_grid dyn="se"    hgrid="ne0np4_arm_x8v3_lowcon"   ncol="92558"   csne="0"    csnp="4"  />
-<horiz_grid dyn="se"    hgrid="ne0np4_conus_x4v1_lowcon"   ncol="89147"   csne="0"    csnp="4"  />
-<horiz_grid dyn="se"    hgrid="ne0np4_svalbard_x8v1_lowcon"   ncol="71912"   csne="0"    csnp="4"  />
-<horiz_grid dyn="se"    hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"   ncol="105707"   csne="0"    csnp="4"  />
-<horiz_grid dyn="se"    hgrid="ne0np4_enax4v1"          ncol="78788"    csne="0"    csnp="4"  />
-<horiz_grid dyn="se"    hgrid="ne0np4_twpx4v1" ncol="81434" csne="0" csnp="4"  />
+<!-- Spectral Element Dynamics -->
+<!-- ncol = # of columns in the physics grid -->
+<!-- if npg=0 then physics is done on GLL nodes -->
+<!-- if npg=N>0 then physics is done FV grid with NxN cells per element -->
+<!-- Formualas for ncol:           -->
+<!--   np4: ncol = (np-1)*6*ne^2+2 -->
+<!--   pg1: ncol = 6*ne^2          -->
+<!--   pg2: ncol = 6*ne^2*4        -->
+<horiz_grid dyn="se"    hgrid="ne2np4"       ncol="218"     csne="2"   csnp="4" npg="0" />
+<horiz_grid dyn="se"    hgrid="ne4np4"       ncol="866"     csne="4"   csnp="4" npg="0" />
+<horiz_grid dyn="se"    hgrid="ne4np4.pg1"   ncol="96"      csne="4"   csnp="4" npg="1" />
+<horiz_grid dyn="se"    hgrid="ne4np4.pg2"   ncol="384"     csne="4"   csnp="4" npg="2" />
+<horiz_grid dyn="se"    hgrid="ne5np8"       ncol="7352"    csne="5"   csnp="8" npg="0" />
+<horiz_grid dyn="se"    hgrid="ne7np8"       ncol="14408"   csne="7"   csnp="8" npg="0" />
+<horiz_grid dyn="se"    hgrid="ne8np4"       ncol="3458"    csne="8"   csnp="4" npg="0" />
+<horiz_grid dyn="se"    hgrid="ne8np4.pg2"   ncol="1536"    csne="8"   csnp="4" npg="2" />
+<horiz_grid dyn="se"    hgrid="ne10np4"      ncol="5402"    csne="10"  csnp="4" npg="0" />
+<horiz_grid dyn="se"    hgrid="ne11np4"      ncol="6536"    csne="11"  csnp="4" npg="0" />
+<horiz_grid dyn="se"    hgrid="ne16np4"      ncol="13826"   csne="16"  csnp="4" npg="0" />
+<horiz_grid dyn="se"    hgrid="ne16np4.pg2"  ncol="6144"    csne="16"  csnp="4" npg="2" />
+<horiz_grid dyn="se"    hgrid="ne16np8"      ncol="75266"   csne="16"  csnp="8" npg="0" />
+<horiz_grid dyn="se"    hgrid="ne21np4"      ncol="23816"   csne="21"  csnp="4" npg="0" />
+<horiz_grid dyn="se"    hgrid="ne30np4"      ncol="48602"   csne="30"  csnp="4" npg="0" />
+<horiz_grid dyn="se"    hgrid="ne30np4.pg1"  ncol="5400"    csne="30"  csnp="4" npg="1" />
+<horiz_grid dyn="se"    hgrid="ne30np4.pg2"  ncol="21600"   csne="30"  csnp="4" npg="2" />
+<horiz_grid dyn="se"    hgrid="ne60np4"      ncol="194402"  csne="60"  csnp="4" npg="0" />
+<horiz_grid dyn="se"    hgrid="ne60np4.pg2"  ncol="86400"   csne="60"  csnp="4" npg="2" />
+<horiz_grid dyn="se"    hgrid="ne120np4"     ncol="777602"  csne="120" csnp="4" npg="0" />
+<horiz_grid dyn="se"    hgrid="ne120np4.pg2" ncol="345600"  csne="120" csnp="4" npg="2" />
+<horiz_grid dyn="se"    hgrid="ne240np4"     ncol="3110402" csne="240" csnp="4" npg="0" />
+<horiz_grid dyn="se"    hgrid="ne512np4"     ncol="14155778" csne="512"  csnp="4" npg="0" />
+<horiz_grid dyn="se"    hgrid="ne1024np4"    ncol="56623106" csne="1024" csnp="4" npg="0" />
+<horiz_grid dyn="se"    hgrid="ne256np4.pg2" ncol="1572864"  csne="256"  csnp="4" npg="2" />
+<horiz_grid dyn="se"    hgrid="ne512np4.pg2" ncol="6291456"  csne="512"  csnp="4" npg="2" />
+<horiz_grid dyn="se"   hgrid="ne1024np4.pg2" ncol="25165824" csne="1024" csnp="4" npg="2" />
+
+
+
+<!-- Spectral Element w/ Regional Refinement -->
+<horiz_grid dyn="se" hgrid="ne0np4_arm_x8v3_lowcon"           ncol="92558"  csne="0" csnp="4" npg="0" />
+<horiz_grid dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"         ncol="89147"  csne="0" csnp="4" npg="0" />
+<horiz_grid dyn="se" hgrid="ne0np4_northamericax4v1"          ncol="130088" csne="0" csnp="4" npg="0" />
+<horiz_grid dyn="se" hgrid="ne0np4_northamericax4v1.pg2"      ncol="57816"  csne="0" csnp="4" npg="2" />
+<horiz_grid dyn="se" hgrid="ne0np4_svalbard_x8v1_lowcon"      ncol="71912"  csne="0" csnp="4" npg="0" />
+<horiz_grid dyn="se" hgrid="ne0np4_enax4v1"                   ncol="78788"  csne="0" csnp="4" npg="0" />
+<horiz_grid dyn="se" hgrid="ne0np4_twpx4v1"                   ncol="81434"  csne="0" csnp="4" npg="0" />
+<horiz_grid dyn="se" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon" ncol="105707" csne="0" csnp="4" npg="0" />
 
 </config_horiz_grid>

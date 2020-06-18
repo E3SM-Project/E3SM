@@ -442,7 +442,7 @@ end subroutine convect_shallow_init_cnst
    use constituents,    only : pcnst, cnst_get_ind, cnst_get_type_byind
    use hk_conv,         only : cmfmca
    use uwshcu,          only : compute_uwshcu_inv
-   use unicon_cam,      only : unicon_out_t, unicon_cam_tend
+   use unicon_cam,      only : unicon_out_t, unicon_cam_tend, unicon_cam_tend_free
 
    use time_manager,    only : get_nstep, is_first_step
    use wv_saturation,   only : qsat
@@ -631,6 +631,12 @@ end subroutine convect_shallow_init_cnst
       evapcsh     = 0._r8
       snow        = 0._r8
 
+      call pbuf_get_field(pbuf, sh_flxprc_idx, flxprec)
+      call pbuf_get_field(pbuf, sh_flxsnw_idx, flxsnow)
+
+      flxprec(:ncol,:) = 0._r8
+      flxsnow(:ncol,:) = 0._r8
+
    case('Hack') ! Hack scheme
                                    
       lq(:) = .TRUE.
@@ -757,6 +763,8 @@ end subroutine convect_shallow_init_cnst
       cmflq(:ncol,:) = unicon_out%qtflx(:ncol,:) * latvap
 
       call outfld( 'PRECSH' , precc  , pcols, lchnk )
+
+      call unicon_cam_tend_free(unicon_out)
 
    end select
 

@@ -20,6 +20,12 @@
 #ifdef TIMING
 #include <gptl.h>
 #endif
+#ifdef USE_MPE
+#include <mpe.h>
+#endif /* USE_MPE */
+
+/** The name of this program. */
+#define TEST_NAME "example1"
 
 /** The number of possible output netCDF output flavors available to
  * the ParallelIO library. */
@@ -303,7 +309,13 @@ int check_file(int ntasks, char *filename) {
 	    printf("%d: ParallelIO Library example1 running on %d processors.\n",
 		   my_rank, ntasks);
 
-	/* keep things simple - 1 iotask per MPI process */    
+#ifdef USE_MPE
+        /* If MPE logging is being used, then initialize it. */
+        if ((ret = MPE_Init_log()))
+            return ret;
+#endif /* USE_MPE */
+
+        /* keep things simple - 1 iotask per MPI process */
 	niotasks = ntasks;
 
         /* Turn on logging if available. */
@@ -424,7 +436,7 @@ int check_file(int ntasks, char *filename) {
 	    return ret;
 #endif    
 
-	if (verbose)
+        if (verbose)
 	    printf("rank: %d SUCCESS!\n", my_rank);
 	return 0;
     }

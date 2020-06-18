@@ -19,8 +19,9 @@ module CNNitrifDenitrifMod
   use CNCarbonfluxType    , only : carbonflux_type
   use CNNitrogenFluxType  , only : nitrogenflux_type
   use CNNitrogenStateType , only : nitrogenstate_type
-  use CH4Mod              , only : ch4_type
-  use ColumnType          , only : col_pp                
+  use ch4Mod              , only : ch4_type
+  use ColumnType          , only : col_pp 
+  use ColumnDataType      , only : col_es, col_ws, col_cf, col_ns, col_nf  
   !
   implicit none
   save
@@ -164,10 +165,10 @@ contains
          sucsat                        =>    soilstate_vars%sucsat_col                           , & ! Input:  [real(r8) (:,:)  ]  minimum soil suction (mm)                       
          soilpsi                       =>    soilstate_vars%soilpsi_col                          , & ! Input:  [real(r8) (:,:)  ]  soil water potential in each soil layer (MPa)   
          
-         h2osoi_vol                    =>    waterstate_vars%h2osoi_vol_col                      , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]  (nlevgrnd)
-         h2osoi_liq                    =>    waterstate_vars%h2osoi_liq_col                      , & ! Input:  [real(r8) (:,:)  ]  liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
+         h2osoi_vol                    =>    col_ws%h2osoi_vol                      , & ! Input:  [real(r8) (:,:)  ]  volumetric soil water (0<=h2osoi_vol<=watsat) [m3/m3]  (nlevgrnd)
+         h2osoi_liq                    =>    col_ws%h2osoi_liq                      , & ! Input:  [real(r8) (:,:)  ]  liquid water (kg/m2) (new) (-nlevsno+1:nlevgrnd)
          
-         t_soisno                      =>    temperature_vars%t_soisno_col                       , & ! Input:  [real(r8) (:,:)  ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
+         t_soisno                      =>    col_es%t_soisno                       , & ! Input:  [real(r8) (:,:)  ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
          
          o2_decomp_depth_unsat         =>    ch4_vars%o2_decomp_depth_unsat_col                  , & ! Input:  [real(r8) (:,:)  ]  O2 consumption during decomposition in each soil layer (nlevsoi) (mol/m3/s)
          conc_o2_unsat                 =>    ch4_vars%conc_o2_unsat_col                          , & ! Input:  [real(r8) (:,:)  ]  O2 conc in each soil layer (mol/m3) (nlevsoi)   
@@ -175,34 +176,34 @@ contains
          conc_o2_sat                   =>    ch4_vars%conc_o2_sat_col                            , & ! Input:  [real(r8) (:,:)  ]  O2 conc in each soil layer (mol/m3) (nlevsoi)   
          finundated                    =>    ch4_vars%finundated_col                             , & ! Input:  [real(r8) (:)    ]  fractional inundated area in soil column (excluding dedicated wetland columns)
          
-         phr_vr                        =>    carbonflux_vars%phr_vr_col                          , & ! Input:  [real(r8) (:,:)  ]  potential hr (not N-limited)                    
-         w_scalar                      =>    carbonflux_vars%w_scalar_col                        , & ! Input:  [real(r8) (:,:)  ]  soil water scalar for decomp                    
-         t_scalar                      =>    carbonflux_vars%t_scalar_col                        , & ! Input:  [real(r8) (:,:)  ]  temperature scalar for decomp                   
+         phr_vr                        =>    col_cf%phr_vr                          , & ! Input:  [real(r8) (:,:)  ]  potential hr (not N-limited)                    
+         w_scalar                      =>    col_cf%w_scalar                        , & ! Input:  [real(r8) (:,:)  ]  soil water scalar for decomp                    
+         t_scalar                      =>    col_cf%t_scalar                        , & ! Input:  [real(r8) (:,:)  ]  temperature scalar for decomp                   
 
-         smin_nh4_vr                   =>    nitrogenstate_vars%smin_nh4_vr_col                  , & ! Input:  [real(r8) (:,:)  ]  (gN/m3) soil mineral NH4 pool                   
-         smin_no3_vr                   =>    nitrogenstate_vars%smin_no3_vr_col                  , & ! Input:  [real(r8) (:,:)  ]  (gN/m3) soil mineral NO3 pool                   
+         smin_nh4_vr                   =>    col_ns%smin_nh4_vr                  , & ! Input:  [real(r8) (:,:)  ]  (gN/m3) soil mineral NH4 pool                   
+         smin_no3_vr                   =>    col_ns%smin_no3_vr                  , & ! Input:  [real(r8) (:,:)  ]  (gN/m3) soil mineral NO3 pool                   
 
-         r_psi                         =>    nitrogenflux_vars%r_psi_col                         , & ! Output:  [real(r8) (:,:)  ]                                                  
-         anaerobic_frac                =>    nitrogenflux_vars%anaerobic_frac_col                , & ! Output:  [real(r8) (:,:)  ]                                                  
+         r_psi                         =>    col_nf%r_psi                         , & ! Output:  [real(r8) (:,:)  ]                                                  
+         anaerobic_frac                =>    col_nf%anaerobic_frac                , & ! Output:  [real(r8) (:,:)  ]                                                  
          ! ! subsets of the n flux calcs (for diagnostic/debugging purposes)
-         smin_no3_massdens_vr          =>    nitrogenflux_vars%smin_no3_massdens_vr_col          , & ! Output:  [real(r8) (:,:) ]  (ugN / g soil) soil nitrate concentration       
-         k_nitr_t_vr                   =>    nitrogenflux_vars%k_nitr_t_vr_col                   , & ! Output:  [real(r8) (:,:) ]                                                  
-         k_nitr_ph_vr                  =>    nitrogenflux_vars%k_nitr_ph_vr_col                  , & ! Output:  [real(r8) (:,:) ]                                                  
-         k_nitr_h2o_vr                 =>    nitrogenflux_vars%k_nitr_h2o_vr_col                 , & ! Output:  [real(r8) (:,:) ]                                                  
-         k_nitr_vr                     =>    nitrogenflux_vars%k_nitr_vr_col                     , & ! Output:  [real(r8) (:,:) ]                                                  
-         wfps_vr                       =>    nitrogenflux_vars%wfps_vr_col                       , & ! Output:  [real(r8) (:,:) ]                                                  
-         fmax_denit_carbonsubstrate_vr =>    nitrogenflux_vars%fmax_denit_carbonsubstrate_vr_col , & ! Output:  [real(r8) (:,:) ]                                                  
-         fmax_denit_nitrate_vr         =>    nitrogenflux_vars%fmax_denit_nitrate_vr_col         , & ! Output:  [real(r8) (:,:) ]                                                  
-         f_denit_base_vr               =>    nitrogenflux_vars%f_denit_base_vr_col               , & ! Output:  [real(r8) (:,:) ]                                                  
-         diffus                        =>    nitrogenflux_vars%diffus_col                        , & ! Output:  [real(r8) (:,:) ] diffusivity (unitless fraction of total diffusivity)
-         ratio_k1                      =>    nitrogenflux_vars%ratio_k1_col                      , & ! Output:  [real(r8) (:,:) ]                                                  
-         ratio_no3_co2                 =>    nitrogenflux_vars%ratio_no3_co2_col                 , & ! Output:  [real(r8) (:,:) ]                                                  
-         soil_co2_prod                 =>    nitrogenflux_vars%soil_co2_prod_col                 , & ! Output:  [real(r8) (:,:) ]  (ug C / g soil / day)                           
-         fr_WFPS                       =>    nitrogenflux_vars%fr_WFPS_col                       , & ! Output:  [real(r8) (:,:) ]                                                  
-         soil_bulkdensity              =>    nitrogenflux_vars%soil_bulkdensity_col              , & ! Output:  [real(r8) (:,:) ]  (kg soil / m3) bulk density of soil (including water)
-         pot_f_nit_vr                  =>    nitrogenflux_vars%pot_f_nit_vr_col                  , & ! Output:  [real(r8) (:,:) ]  (gN/m3/s) potential soil nitrification flux     
-         pot_f_denit_vr                =>    nitrogenflux_vars%pot_f_denit_vr_col                , & ! Output:  [real(r8) (:,:) ]  (gN/m3/s) potential soil denitrification flux   
-         n2_n2o_ratio_denit_vr         =>    nitrogenflux_vars%n2_n2o_ratio_denit_vr_col           & ! Output:  [real(r8) (:,:) ]  ratio of N2 to N2O production by denitrification [gN/gN]
+         smin_no3_massdens_vr          =>    col_nf%smin_no3_massdens_vr          , & ! Output:  [real(r8) (:,:) ]  (ugN / g soil) soil nitrate concentration       
+         k_nitr_t_vr                   =>    col_nf%k_nitr_t_vr                   , & ! Output:  [real(r8) (:,:) ]                                                  
+         k_nitr_ph_vr                  =>    col_nf%k_nitr_ph_vr                  , & ! Output:  [real(r8) (:,:) ]                                                  
+         k_nitr_h2o_vr                 =>    col_nf%k_nitr_h2o_vr                 , & ! Output:  [real(r8) (:,:) ]                                                  
+         k_nitr_vr                     =>    col_nf%k_nitr_vr                     , & ! Output:  [real(r8) (:,:) ]                                                  
+         wfps_vr                       =>    col_nf%wfps_vr                       , & ! Output:  [real(r8) (:,:) ]                                                  
+         fmax_denit_carbonsubstrate_vr =>    col_nf%fmax_denit_carbonsubstrate_vr , & ! Output:  [real(r8) (:,:) ]                                                  
+         fmax_denit_nitrate_vr         =>    col_nf%fmax_denit_nitrate_vr         , & ! Output:  [real(r8) (:,:) ]                                                  
+         f_denit_base_vr               =>    col_nf%f_denit_base_vr               , & ! Output:  [real(r8) (:,:) ]                                                  
+         diffus                        =>    col_nf%diffus                        , & ! Output:  [real(r8) (:,:) ] diffusivity (unitless fraction of total diffusivity)
+         ratio_k1                      =>    col_nf%ratio_k1                      , & ! Output:  [real(r8) (:,:) ]                                                  
+         ratio_no3_co2                 =>    col_nf%ratio_no3_co2                 , & ! Output:  [real(r8) (:,:) ]                                                  
+         soil_co2_prod                 =>    col_nf%soil_co2_prod                 , & ! Output:  [real(r8) (:,:) ]  (ug C / g soil / day)                           
+         fr_WFPS                       =>    col_nf%fr_WFPS                       , & ! Output:  [real(r8) (:,:) ]                                                  
+         soil_bulkdensity              =>    col_nf%soil_bulkdensity              , & ! Output:  [real(r8) (:,:) ]  (kg soil / m3) bulk density of soil (including water)
+         pot_f_nit_vr                  =>    col_nf%pot_f_nit_vr                  , & ! Output:  [real(r8) (:,:) ]  (gN/m3/s) potential soil nitrification flux     
+         pot_f_denit_vr                =>    col_nf%pot_f_denit_vr                , & ! Output:  [real(r8) (:,:) ]  (gN/m3/s) potential soil denitrification flux   
+         n2_n2o_ratio_denit_vr         =>    col_nf%n2_n2o_ratio_denit_vr           & ! Output:  [real(r8) (:,:) ]  ratio of N2 to N2O production by denitrification [gN/gN]
          )
 
       ! Set maximum nitrification rate constant 

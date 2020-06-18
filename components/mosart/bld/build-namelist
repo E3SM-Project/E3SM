@@ -290,7 +290,7 @@ if ($print>=2) {
 }
 
 ####################################
-# namelist group: mosart_inparm       #
+# namelist group: mosart_inparm, wrm_inparm, inund_inparm  #
 ####################################
 
 if ($ROF_GRID eq "null") {
@@ -307,13 +307,21 @@ else {
     # Set Initial conditions if there is a file for this grid and sim-yr
     add_default($nl, 'do_rtm', 'val'=>".true.");
     add_default($nl, 'decomp_option');
+    add_default($nl, 'barrier_timers');
     add_default($nl, 'smat_option');
+    add_default($nl, 'wrmflag');
+    add_default($nl, 'inundflag');
+	add_default($nl, 'sediflag');
+    add_default($nl, 'heatflag');
     add_default($nl, 'frivinp_rtm' , 'rof_grid'=>$ROF_GRID );
     add_default($nl, 'ice_runoff'  , 'lnd_grid'=>$LND_GRID );
     add_default($nl, 'rtmhist_mfilt');
     add_default($nl, 'rtmhist_nhtfrq');
     add_default($nl, 'rtmhist_ndens');
     add_default($nl, 'delt_mosart');
+    add_default($nl, 'RoutingMethod');
+    add_default($nl, 'DLevelH2R');
+    add_default($nl, 'DLevelR');
 #    add_default($nl, 'finidat_rtm' , 'rof_grid'=>$ROF_GRID, 'simyr'=>$opts{'simyr'}, 'nofail'=>1 );
     my $val = ( 3600 * 24 ) / $ROF_NCPL;
     add_default($nl, 'coupling_period', 'val'=>$val);
@@ -322,6 +330,34 @@ else {
         print "  MOSART lnd grid is $LND_GRID \n";
         print "  MOSART rof grid is $ROF_GRID \n";
     }
+
+    add_default($nl, 'paraFile');
+    add_default($nl, 'demandPath');
+    add_default($nl, 'ExtractionFlag'); 
+    add_default($nl, 'ExtractionMainChannelFlag');
+    add_default($nl, 'RegulationFlag');
+    add_default($nl, 'ReturnFlowFlag');
+    add_default($nl, 'TotalDemandFlag');
+    add_default($nl, 'GroundWaterFlag');
+    add_default($nl, 'ExternalDemandFlag');   # added by Tian Apr. 2018
+    add_default($nl, 'DemandVariableName');   # added by Tian Apr. 2018
+
+    add_default($nl, 'OPT_inund');
+    add_default($nl, 'OPT_trueDW');
+    add_default($nl, 'OPT_calcNr');
+    add_default($nl, 'nr_max');
+    add_default($nl, 'nr_min');
+    add_default($nl, 'nr_uniform');
+    add_default($nl, 'rdepth_max');
+    add_default($nl, 'rdepth_min');
+    add_default($nl, 'rwidth_max');
+    add_default($nl, 'rwidth_min');
+    add_default($nl, 'rslp_assume');
+    add_default($nl, 'minL_tribRouting');
+    add_default($nl, 'OPT_elevProf');
+    add_default($nl, 'npt_elevProf');
+    add_default($nl, 'threshold_slpRatio');
+
 }
 
 #-----------------------------------------------------------------------------------------------
@@ -335,7 +371,7 @@ $definition->validate($nl);
 my $note = "";
 
 # mosart_in
-my @groups = qw(mosart_inparm);
+my @groups = qw(mosart_inparm wrm_inparm inund_inparm);
 my $outfile = "./mosart_in";
 $nl->write($outfile, 'groups'=>\@groups, 'note'=>"$note" );
 if ($print>=2) { print "Writing mosart namelist to $outfile $eol"; }

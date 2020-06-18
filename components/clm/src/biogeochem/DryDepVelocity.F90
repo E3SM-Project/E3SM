@@ -62,8 +62,9 @@ Module DryDepVelocity
   use PhotosynthesisType   , only : photosyns_type
   use WaterstateType       , only : waterstate_type
   use GridcellType         , only : grc_pp
-  use TopounitType         , only : top_as, top_af ! atmospheric state and flux variables  
-  use LandunitType         , only : lun_pp                
+  use TopounitDataType     , only : top_as, top_af ! atmospheric state and flux variables  
+  use LandunitType         , only : lun_pp
+  use ColumnDataType       , only : col_ws  
   use VegetationType       , only : veg_pp                
   !
   implicit none 
@@ -222,8 +223,8 @@ CONTAINS
          forc_psrf  =>    top_as%pbot                           , & ! Input:  [real(r8) (:)   ] surface pressure (Pa)                              
          forc_rain  =>    top_af%rain                           , & ! Input:  [real(r8) (:)   ] rain rate (kg H2O/m**2/s, or mm liquid H2O/s)                                   
 
-         h2osoi_vol =>    waterstate_vars%h2osoi_vol_col        , & ! Input:  [real(r8) (:,:) ] volumetric soil water (0<=h2osoi_vol<=watsat)   
-         snow_depth =>    waterstate_vars%snow_depth_col        , & ! Input:  [real(r8) (:)   ] snow height (m)                                   
+         h2osoi_vol =>    col_ws%h2osoi_vol        , & ! Input:  [real(r8) (:,:) ] volumetric soil water (0<=h2osoi_vol<=watsat)   
+         snow_depth =>    col_ws%snow_depth        , & ! Input:  [real(r8) (:)   ] snow height (m)                                   
 
          ram1       =>    frictionvel_vars%ram1_patch           , & ! Input:  [real(r8) (:)   ] aerodynamical resistance                           
          rb1        =>    frictionvel_vars%rb1_patch            , & ! Input:  [real(r8) (:)   ] leaf boundary layer resistance [s/m]               
@@ -463,18 +464,18 @@ CONTAINS
                   rclx(ispec) = cts + 1._r8/((heff(ispec)/(1.e5_r8*rcls(index_season,wesveg))) + & 
                        (foxd(ispec)/rclo(index_season,wesveg))) 
                   rlux(ispec) = cts + rlu(index_season,wesveg)/(1.e-5_r8*heff(ispec)+foxd(ispec)) 
+                  
+                  !-------------------------------------------------------------------------------------
+                  ! jfl : special case for PAN
+                  !-------------------------------------------------------------------------------------
+                  if( ispec == index_pan .or. ispec == index_xpan ) then
+                     dv_pan =  c0_pan(wesveg) * (1._r8 - exp( -k_pan(wesveg)*(dewm*rs*drat(ispec))*1.e-2_r8 ))
+                     if( dv_pan > 0._r8 .and. index_season /= 4 ) then
+                        rsmx(ispec) = ( 1._r8/dv_pan )
+                     end if
+                  end if
 
                endif
-
-               !-------------------------------------------------------------------------------------
-               ! jfl : special case for PAN
-               !-------------------------------------------------------------------------------------
-               if( ispec == index_pan .or. ispec == index_xpan ) then
-                  dv_pan =  c0_pan(wesveg) * (1._r8 - exp( -k_pan(wesveg)*(dewm*rs*drat(ispec))*1.e-2_r8 ))
-                  if( dv_pan > 0._r8 .and. index_season /= 4 ) then
-                     rsmx(ispec) = ( 1._r8/dv_pan )
-                  end if
-               end if
 
             end do species_loop1
 

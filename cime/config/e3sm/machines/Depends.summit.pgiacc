@@ -1,8 +1,8 @@
 dyn_comp.o: dyn_comp.F90
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS_NOOPT) $(FREEFLAGS) $<
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FFLAGS_NOOPT) $(FREEFLAGS) $<
 
 microp_aero.o: microp_aero.F90
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS_NOOPT) $(FREEFLAGS) $<
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FFLAGS_NOOPT) $(FREEFLAGS) $<
 
 
 

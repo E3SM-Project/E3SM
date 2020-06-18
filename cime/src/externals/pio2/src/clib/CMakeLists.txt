@@ -9,7 +9,7 @@ project (PIOC C)
 add_library (pioc topology.c pio_file.c pioc_support.c pio_lists.c
   pioc.c pioc_sc.c pio_spmd.c pio_rearrange.c pio_nc4.c bget.c
   pio_nc.c pio_put_nc.c pio_get_nc.c pio_getput_int.c pio_msg.c
-  pio_darray.c pio_darray_int.c)
+  pio_darray.c pio_darray_int.c pio_get_vard.c pio_put_vard.c)
 
 # set up include-directories
 include_directories(
@@ -49,8 +49,8 @@ endif()
 # Library
 install (TARGETS pioc DESTINATION lib)
 
-# Include/Header File
-install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/pio.h DESTINATION include)
+# Include/Header Files
+install (FILES pio.h uthash.h DESTINATION include)
 
 #==============================================================================
 #  DEFINE THE DEPENDENCIES

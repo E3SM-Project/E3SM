@@ -187,3 +187,26 @@ CIME locks your ``$CASEROOT`` files according to the following rules:
 - Variables in **env_run.xml**, **env_batch.xml** and **env_archive.xml** are never locked, and most can be changed at any time.
 
 - There are some exceptions in the **env_batch.xml** file.
+
+===================================
+Adding a --user-mods-dir argument to **create_newcase**
+===================================
+
+A user may want to customize a target case with a combination of
+``user_nl_xxx`` file modifications and/or ``SourceMods`` for some
+components and/or **xmlchange** commands. As an example, the user
+might want to carry out a series of experiments based on a common set
+of changes to the namelists, source code and/or case xml settings.
+Rather than make these changes each time a new experimental
+``CASEROOT`` is generated, the user can create a directory on local
+disk with a set of changes that will be applied to each case.
+
+As an example, the directory could contain the following files: ::
+
+  > user_nl_cpl
+  > shell_commands  (this would contain ./xmlchange commands)
+  > SourceMods/src.cam/dyncomp.F90
+
+When the user calls **create_newcase** with the ``--user-mods-dir`` pointing to the
+full pathname of the directory containing these changes, then the ``CASEROOT`` will be
+created with these changes applied.

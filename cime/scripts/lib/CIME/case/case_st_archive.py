@@ -200,8 +200,7 @@ def _archive_log_files(dout_s_root, rundir, archive_incomplete, archive_file_fn)
         logger.info("moving {} to {}".format(srcfile, destfile))
 
 ###############################################################################
-def _archive_history_files(archive, archive_entry,
-                           compclass, compname, histfiles_savein_rundir,
+def _archive_history_files(archive, compclass, compname, histfiles_savein_rundir,
                            last_date, archive_file_fn, dout_s_root, casename, rundir):
 ###############################################################################
     """
@@ -220,43 +219,56 @@ def _archive_history_files(archive, archive_entry,
     if compname == 'drv':
         compname = 'cpl'
 
-    if compname == 'clm':
-        compname = r'clm2?'
+    if compname == 'nemo':
+        archive_rblddir = os.path.join(dout_s_root, compclass, 'rebuild')
+        if not os.path.exists(archive_rblddir):
+            os.makedirs(archive_rblddir)
+            logger.debug("created directory {}".format(archive_rblddir))
+
+        sfxrbld = r'mesh_mask_' + r'[0-9]*'
+        pfile = re.compile(sfxrbld)
+        rbldfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
+        logger.debug("rbldfiles = {} ".format(rbldfiles))
+
+        if rbldfiles:
+            for rbldfile in rbldfiles:
+                srcfile = join(rundir, rbldfile)
+                destfile = join(archive_rblddir, rbldfile)
+                logger.info("moving {} to {} ".format(srcfile, destfile))
+                archive_file_fn(srcfile, destfile)
+
+        sfxhst = casename + r'_[0-9][mdy]_' + r'[0-9]*'
+        pfile = re.compile(sfxhst)
+        hstfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
+        logger.debug("hstfiles = {} ".format(hstfiles))
+
+        if hstfiles:
+            for hstfile in hstfiles:
+                srcfile = join(rundir, hstfile)
+                destfile = join(archive_histdir, hstfile)
+                logger.info("moving {} to {} ".format(srcfile, destfile))
+                archive_file_fn(srcfile, destfile)
 
     # determine ninst and ninst_string
 
     # archive history files - the only history files that kept in the
     # run directory are those that are needed for restarts
+    histfiles = archive.get_all_hist_files(casename, compname, rundir)
 
-    for suffix in archive.get_hist_file_extensions(archive_entry):
-        if compname.find('mpas') == 0 or compname == 'mali':
-            newsuffix =                    compname + r'\d*'
-        else:
-            newsuffix = casename + r'\.' + compname + r'_?' + r'\d*'
-        newsuffix += r'\.' + suffix
-        if not suffix.endswith('$'):
-            newsuffix += r'\.'
-
-        logger.debug("short term archiving suffix is {} ".format(newsuffix))
-
-        pfile = re.compile(newsuffix)
-        histfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
-        logger.debug("histfiles = {} ".format(histfiles))
-
-        if histfiles:
-            for histfile in histfiles:
-                file_date = get_file_date(os.path.basename(histfile))
-                if last_date is None or file_date is None or file_date <= last_date:
-                    srcfile = join(rundir, histfile)
-                    expect(os.path.isfile(srcfile),
-                           "history file {} does not exist ".format(srcfile))
-                    destfile = join(archive_histdir, histfile)
-                    if histfile in histfiles_savein_rundir:
-                        logger.info("copying {} to {} ".format(srcfile, destfile))
-                        safe_copy(srcfile, destfile)
-                    else:
-                        logger.info("moving {} to {} ".format(srcfile, destfile))
-                        archive_file_fn(srcfile, destfile)
+    if histfiles:
+        for histfile in histfiles:
+            file_date = get_file_date(os.path.basename(histfile))
+            if last_date is None or file_date is None or file_date <= last_date:
+                srcfile = join(rundir, histfile)
+                expect(os.path.isfile(srcfile),
+                       "history file {} does not exist ".format(srcfile))
+                destfile = join(archive_histdir, histfile)
+                if histfile in histfiles_savein_rundir:
+                    logger.info("copying {} to {} ".format(srcfile, destfile))
+                    safe_copy(srcfile, destfile)
+                else:
+                    logger.info("moving {} to {} ".format(srcfile, destfile))
+                    archive_file_fn(srcfile, destfile)
 
 ###############################################################################
 def get_histfiles_for_restarts(rundir, archive, archive_entry, restfile, testonly=False):
@@ -314,6 +326,9 @@ def _archive_restarts_date(case, casename, rundir, archive,
     """
     logger.info('-------------------------------------------')
     logger.info('Archiving restarts for date {}'.format(datename))
+    logger.debug('last date {}'.format(last_date))
+    logger.debug('date is last? {}'.format(datename_is_last))
+    logger.debug('components are {}'.format(components))
     logger.info('-------------------------------------------')
     logger.debug("last date: {}".format(last_date))
 
@@ -391,6 +406,10 @@ def _archive_restarts_date_comp(case, casename, rundir, archive, archive_entry,
             pattern = compname + r'\.' + suffix + r'\.' + '_'.join(datename_str.rsplit('-', 1))
             pfile = re.compile(pattern)
             restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
+        elif compname == 'nemo':
+            pattern = r'_*_' + suffix + r'[0-9]*'
+            pfile = re.compile(pattern)
+            restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
         else:
             pattern = r"^{}\.{}[\d_]*\.".format(casename, compname)
             pfile = re.compile(pattern)
@@ -399,10 +418,10 @@ def _archive_restarts_date_comp(case, casename, rundir, archive, archive_entry,
             pfile = re.compile(pattern)
             restfiles = [f for f in files if pfile.search(f)]
             logger.debug("pattern is {} restfiles {}".format(pattern, restfiles))
-        for restfile in restfiles:
-            restfile = os.path.basename(restfile)
+        for rfile in restfiles:
+            rfile = os.path.basename(rfile)
 
-            file_date = get_file_date(restfile)
+            file_date = get_file_date(rfile)
             if last_date is not None and file_date > last_date:
                 # Skip this file
                 continue
@@ -413,7 +432,7 @@ def _archive_restarts_date_comp(case, casename, rundir, archive, archive_entry,
             # obtain array of history files for restarts
             # need to do this before archiving restart files
             histfiles_for_restart = get_histfiles_for_restarts(rundir, archive,
-                                                               archive_entry, restfile,
+                                                               archive_entry, rfile,
                                                                testonly=testonly)
 
             if datename_is_last and histfiles_for_restart:
@@ -424,8 +443,8 @@ def _archive_restarts_date_comp(case, casename, rundir, archive, archive_entry,
             # archive restart files and all history files that are needed for restart
             # Note that the latest file should be copied and not moved
             if datename_is_last:
-                srcfile = os.path.join(rundir, restfile)
-                destfile = os.path.join(archive_restdir, restfile)
+                srcfile = os.path.join(rundir, rfile)
+                destfile = os.path.join(archive_restdir, rfile)
                 last_restart_file_fn(srcfile, destfile)
                 logger.info("{} file {} to {}".format(last_restart_file_fn_msg, srcfile, destfile))
                 for histfile in histfiles_for_restart:
@@ -439,8 +458,8 @@ def _archive_restarts_date_comp(case, casename, rundir, archive, archive_entry,
             else:
                 # Only archive intermediate restarts if requested - otherwise remove them
                 if case.get_value('DOUT_S_SAVE_INTERIM_RESTART_FILES'):
-                    srcfile = os.path.join(rundir, restfile)
-                    destfile = os.path.join(archive_restdir, restfile)
+                    srcfile = os.path.join(rundir, rfile)
+                    destfile = os.path.join(archive_restdir, rfile)
                     expect(os.path.isfile(srcfile),
                            "restart file {} does not exist ".format(srcfile))
                     archive_file_fn(srcfile, destfile)
@@ -456,15 +475,93 @@ def _archive_restarts_date_comp(case, casename, rundir, archive, archive_entry,
                         logger.info("copying {} to {}".format(srcfile, destfile))
                         safe_copy(srcfile, destfile)
                 else:
-                    srcfile = os.path.join(rundir, restfile)
-                    logger.info("removing interim restart file {}".format(srcfile))
-                    if (os.path.isfile(srcfile)):
-                        try:
-                            os.remove(srcfile)
-                        except OSError:
-                            logger.warning("unable to remove interim restart file {}".format(srcfile))
+                    if compname == 'nemo':
+                        flist = glob.glob(rundir + "/" + casename + "_*_restart*.nc")
+                        logger.debug("nemo restart file {}".format(flist))
+                        if len(flist) > 2:
+                            flist0 = glob.glob(rundir + "/" + casename + "_*_restart_0000.nc")
+                            if len(flist0) > 1:
+                                rstfl01 = flist0[0]
+                                rstfl01spl = rstfl01.split("/")
+                                logger.debug("splitted name {}".format(rstfl01spl))
+                                rstfl01nm = rstfl01spl[-1]
+                                rstfl01nmspl = rstfl01nm.split("_")
+                                logger.debug("splitted name step2 {}".format(rstfl01nmspl))
+                                rsttm01 = rstfl01nmspl[-3]
+
+                                rstfl02 = flist0[1]
+                                rstfl02spl = rstfl02.split("/")
+                                logger.debug("splitted name {}".format(rstfl02spl))
+                                rstfl02nm = rstfl02spl[-1]
+                                rstfl02nmspl = rstfl02nm.split("_")
+                                logger.debug("splitted name step2 {}".format(rstfl02nmspl))
+                                rsttm02 = rstfl02nmspl[-3]
+
+                                if int(rsttm01) > int(rsttm02):
+                                    restlist = glob.glob(rundir + "/" + casename + "_" + rsttm02  + "_restart_*.nc")
+                                else:
+                                    restlist = glob.glob(rundir + "/" + casename + "_" + rsttm01  + "_restart_*.nc")
+                                logger.debug("nemo restart list {}".format(restlist))
+                                if restlist:
+                                    for _restfile in restlist:
+                                        srcfile = os.path.join(rundir, _restfile)
+                                        logger.info("removing interim restart file {}".format(srcfile))
+                                        if (os.path.isfile(srcfile)):
+                                            try:
+                                                os.remove(srcfile)
+                                            except OSError:
+                                                logger.warning("unable to remove interim restart file {}".format(srcfile))
+                                        else:
+                                            logger.warning("interim restart file {} does not exist".format(srcfile))
+                        elif len(flist) == 2:
+                            flist0 = glob.glob(rundir + "/" + casename + "_*_restart.nc")
+                            if len(flist0) > 1:
+                                rstfl01 = flist0[0]
+                                rstfl01spl = rstfl01.split("/")
+                                logger.debug("splitted name {}".format(rstfl01spl))
+                                rstfl01nm = rstfl01spl[-1]
+                                rstfl01nmspl = rstfl01nm.split("_")
+                                logger.debug("splitted name step2 {}".format(rstfl01nmspl))
+                                rsttm01 = rstfl01nmspl[-2]
+
+                                rstfl02 = flist0[1]
+                                rstfl02spl = rstfl02.split("/")
+                                logger.debug("splitted name {}".format(rstfl02spl))
+                                rstfl02nm = rstfl02spl[-1]
+                                rstfl02nmspl = rstfl02nm.split("_")
+                                logger.debug("splitted name step2 {}".format(rstfl02nmspl))
+                                rsttm02 = rstfl02nmspl[-2]
+
+                                if int(rsttm01) > int(rsttm02):
+                                    restlist = glob.glob(rundir + "/" + casename + "_" + rsttm02  + "_restart_*.nc")
+                                else:
+                                    restlist = glob.glob(rundir + "/" + casename + "_" + rsttm01  + "_restart_*.nc")
+                                logger.debug("nemo restart list {}".format(restlist))
+                                if restlist:
+                                    for _rfile in restlist:
+                                        srcfile = os.path.join(rundir, _rfile)
+                                        logger.info("removing interim restart file {}".format(srcfile))
+                                        if (os.path.isfile(srcfile)):
+                                            try:
+                                                os.remove(srcfile)
+                                            except OSError:
+                                                logger.warning("unable to remove interim restart file {}".format(srcfile))
+                                        else:
+                                            logger.warning("interim restart file {} does not exist".format(srcfile))
+                        else:
+                            logger.warning("unable to find NEMO restart file in {}".format(rundir))
+
+
                     else:
-                        logger.warning("interim restart file {} does not exist".format(srcfile))
+                        srcfile = os.path.join(rundir, rfile)
+                        logger.info("removing interim restart file {}".format(srcfile))
+                        if (os.path.isfile(srcfile)):
+                            try:
+                                os.remove(srcfile)
+                            except OSError:
+                                logger.warning("unable to remove interim restart file {}".format(srcfile))
+                        else:
+                            logger.warning("interim restart file {} does not exist".format(srcfile))
 
     return histfiles_savein_rundir
 
@@ -516,18 +613,18 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
 
     # archive history files
 
-    for (archive_entry, compname, compclass) in _get_component_archive_entries(components, archive):
+    for (_, compname, compclass) in _get_component_archive_entries(components, archive):
         if compclass:
             logger.info('Archiving history files for {} ({})'.format(compname, compclass))
             histfiles_savein_rundir = histfiles_savein_rundir_by_compname.get(compname, [])
             logger.debug("_archive_process: histfiles_savein_rundir {} ".format(histfiles_savein_rundir))
-            _archive_history_files(archive, archive_entry,
+            _archive_history_files(archive,
                                    compclass, compname, histfiles_savein_rundir,
                                    last_date, archive_file_fn,
                                    dout_s_root, casename, rundir)
 
 ###############################################################################
-def restore_from_archive(self, rest_dir=None, dout_s_root=None, rundir=None):
+def restore_from_archive(self, rest_dir=None, dout_s_root=None, rundir=None, test=False):
 ###############################################################################
     """
     Take archived restart files and load them into current case.  Use rest_dir if provided otherwise use most recent
@@ -537,12 +634,19 @@ def restore_from_archive(self, rest_dir=None, dout_s_root=None, rundir=None):
         dout_s_root = self.get_value("DOUT_S_ROOT")
     if rundir is None:
         rundir = self.get_value("RUNDIR")
-    if rest_dir is not None:
+    if rest_dir:
         if not os.path.isabs(rest_dir):
             rest_dir = os.path.join(dout_s_root, "rest", rest_dir)
     else:
-        rest_dir = os.path.join(dout_s_root, "rest", ls_sorted_by_mtime(os.path.join(dout_s_root, "rest"))[-1])
+        rest_root = os.path.join(dout_s_root, "rest")
 
+        if os.path.exists(rest_root):
+            rest_dir = os.path.join(rest_root, ls_sorted_by_mtime(os.path.join(dout_s_root, "rest"))[-1])
+
+    if rest_dir is None and  test:
+        logger.warning("No rest_dir found for test - is this expected? DOUT_S_ROOT={}".format(dout_s_root))
+        return
+    expect(os.path.exists(rest_dir),"ERROR: No directory {} found".format(rest_dir))
     logger.info("Restoring restart from {}".format(rest_dir))
 
     for item in glob.glob("{}/*".format(rest_dir)):
@@ -597,6 +701,7 @@ def case_st_archive(self, last_date_str=None, archive_incomplete_logs=True, copy
     """
     Create archive object and perform short term archiving
     """
+    logger.debug("resubmit {}".format(resubmit))
     caseroot = self.get_value("CASEROOT")
     self.load_env(job="case.st_archive")
     if last_date_str is not None:
@@ -631,24 +736,25 @@ def case_st_archive(self, last_date_str=None, archive_incomplete_logs=True, copy
     logger.info("st_archive completed")
 
     # resubmit case if appropriate
-    resubmit_cnt = self.get_value("RESUBMIT")
-    logger.debug("resubmit_cnt {} resubmit {}".format(resubmit_cnt, resubmit))
-    if resubmit_cnt > 0 and resubmit:
-        logger.info("resubmitting from st_archive, resubmit={:d}".format(resubmit_cnt))
-        if self.get_value("MACH") == "mira":
-            expect(os.path.isfile(".original_host"), "ERROR alcf host file not found")
-            with open(".original_host", "r") as fd:
-                sshhost = fd.read()
-            run_cmd("ssh cooleylogin1 ssh {} '{case}/case.submit {case} --resubmit' "\
+    if not self.get_value("EXTERNAL_WORKFLOW"):
+        resubmit_cnt = self.get_value("RESUBMIT")
+        logger.debug("resubmit_cnt {} resubmit {}".format(resubmit_cnt, resubmit))
+        if resubmit_cnt > 0 and resubmit:
+            logger.info("resubmitting from st_archive, resubmit={:d}".format(resubmit_cnt))
+            if self.get_value("MACH") == "mira":
+                expect(os.path.isfile(".original_host"), "ERROR alcf host file not found")
+                with open(".original_host", "r") as fd:
+                    sshhost = fd.read()
+                run_cmd("ssh cooleylogin1 ssh {} '{case}/case.submit {case} --resubmit' "\
                         .format(sshhost, case=caseroot), verbose=True)
-        else:
-            self.submit(resubmit=True)
+            else:
+                self.submit(resubmit=True)
 
     return True
 
 def test_st_archive(self, testdir="st_archive_test"):
-    archive = Archive()
     files = Files()
+    archive = Archive(files=files)
     components = []
 #    expect(not self.get_value("MULTI_DRIVER"),"Test not configured for multi-driver cases")
 
@@ -690,7 +796,7 @@ def test_st_archive(self, testdir="st_archive_test"):
     testdir2 = os.path.join(testdir,"run2")
     os.makedirs(testdir2)
 
-    restore_from_archive(self, rundir=testdir2, dout_s_root=dout_s_root)
+    restore_from_archive(self, rundir=testdir2, dout_s_root=dout_s_root, test=True)
 
     restfiles = [f for f in os.listdir(os.path.join(testdir,"archive","rest","1976-01-01-00000"))]
     for _file in restfiles:
@@ -763,10 +869,10 @@ def test_env_archive(self, testdir="env_archive_test"):
     # Now test the restore capability
     testdir2 = os.path.join(testdir,"run2")
     os.makedirs(testdir2)
-
-    restore_from_archive(self, rundir=testdir2, dout_s_root=dout_s_root)
-
-    restfiles = [f for f in os.listdir(os.path.join(testdir,"archive","rest","1976-01-01-00000"))]
+    restfiles = []
+    restore_from_archive(self, rundir=testdir2, dout_s_root=dout_s_root, test=True)
+    if os.path.exists(os.path.join(testdir,"archive","rest")):
+        restfiles = [f for f in os.listdir(os.path.join(testdir,"archive","rest","1976-01-01-00000"))]
     for _file in restfiles:
         expect(os.path.isfile(os.path.join(testdir2,_file)), "Expected file {} to be restored from rest dir".format(_file))
 

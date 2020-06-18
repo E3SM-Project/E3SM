@@ -1,4 +1,3 @@
-
 ! Flag representing compiler support of Fortran 2003's
 ! ieee_arithmetic intrinsic module.
 #if defined CPRIBM || defined CPRPGI || defined CPRINTEL ||  defined CPRCRAY || defined CPRNAG

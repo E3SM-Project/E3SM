@@ -2,6 +2,12 @@
 
 <config_pio version="1.0">
 
+  <entry id="PIO_VERSION">
+    <values>
+      <value>2</value>
+    </values>
+  </entry>
+
   <!--- uncomment and fill in relevant sections
   <entry id="PIO_CONFIG_OPTS">
     <values>
@@ -53,7 +59,6 @@
       <value mach="pleiades.*">netcdf</value>
       <value mach="hobart" compiler="pgi">netcdf</value>
       <value mach="oic5">netcdf</value>
-      <value mach="lawrencium-lr2">netcdf</value>
       <value mach="lawrencium-lr3">netcdf</value>
       <value mach="lawrencium-lr6">netcdf</value>
       <value mach="cades">netcdf</value>
@@ -64,9 +69,10 @@
     </values>
   </entry>
 
+  <!-- Using the BOX rearranger as the default -->
   <entry id="PIO_REARRANGER">
     <values>
-      <value>$PIO_VERSION</value>
+      <value>1</value>
     </values>
   </entry>
 
@@ -123,13 +129,13 @@
     </values>
   </entry>
   -->
-  <entry id="LND_PIO_REARRANGER">
+<!--  <entry id="LND_PIO_REARRANGER">
     <values>
       <value compset="_CLM40" >2</value>
       <value compset="_CLM45" >1</value>
       <value compset="_CLM50" >1</value>
     </values>
-  </entry>
+  </entry> -->
 
   <!--- uncomment and fill in relevant sections
   <entry id="LND_PIO_STRIDE">

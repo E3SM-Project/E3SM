@@ -110,22 +110,33 @@ class GenericXML(object):
 
     def read_fd(self, fd):
         expect(self.read_only or not self.filename or not self.needsrewrite, "Reading into object marked for rewrite, file {}"               .format(self.filename))
+        read_only = self.read_only
         if self.tree:
             addroot = _Element(ET.parse(fd).getroot())
-            read_only = self.read_only
             # we need to override the read_only mechanism here to append the xml object
-            if read_only:
-                self.read_only = False
+            self.read_only = False
             if addroot.xml_element.tag == self.name(self.root):
                 for child in self.get_children(root=addroot):
                     self.add_child(child)
             else:
                 self.add_child(addroot)
-            if read_only:
-                self.read_only = True
+            self.read_only = read_only
         else:
             self.tree = ET.parse(fd)
             self.root = _Element(self.tree.getroot())
+        include_elems = self.scan_children("xi:include")
+        # First remove all includes found from the list
+        for elem in include_elems:
+            self.read_only = False
+            self.remove_child(elem)
+            self.read_only = read_only
+        # Then recursively add the included files.
+        for elem in include_elems:
+            path = os.path.abspath(
+                os.path.join(os.getcwd(), os.path.dirname(self.filename),
+                             self.get(elem, "href")))
+            logger.debug("Include file {}".format(path))
+            self.read(path)
 
     def lock(self):
         """
@@ -230,11 +241,20 @@ class GenericXML(object):
 
         return node
 
+    def make_child_comment(self, root=None, text=None):
+        expect(not self.locked and not self.read_only, "{}: cannot make child {} in file {}".format("read_only" if self.read_only else "locked", text, self.filename))
+        root = root if root is not None else self.root
+        self.needsrewrite = True
+        et_comment = ET.Comment(text)
+        node = _Element(et_comment)
+        root.xml_element.append(node.xml_element)
+        return node
+
     def get_children(self, name=None, attributes=None, root=None):
         """
         This is the critical function, its interface and performance are crucial.
 
-        You can specify attributes={key:None} if you want to select chilren
+        You can specify attributes={key:None} if you want to select children
         with the key attribute but you don't care what its value is.
         """
         root = root if root is not None else self.root
@@ -266,12 +286,20 @@ class GenericXML(object):
         return children
 
     def get_child(self, name=None, attributes=None, root=None, err_msg=None):
-        children = self.get_children(root=root, name=name, attributes=attributes)
-        expect(len(children) == 1, err_msg if err_msg else "Expected one child with name '{}' and attribs '{}' in file {}".format(name, attributes, self.filename))
-        return children[0]
+        child = self.get_optional_child(root=root, name=name, attributes=attributes, err_msg=err_msg)
+        expect(child, err_msg if err_msg else "Expected one child, found None with name '{}' and attribs '{}' in file {}".format(name, attributes, self.filename))
+        return child
 
     def get_optional_child(self, name=None, attributes=None, root=None, err_msg=None):
         children = self.get_children(root=root, name=name, attributes=attributes)
+        if len(children) > 1:
+            # see if we can reduce to 1 based on attribute counts
+            if not attributes:
+                children = [c for c in children if not c.xml_element.attrib]
+            else:
+                attlen = len(attributes)
+                children = [c for c in children if len(c.xml_element.attrib) == attlen]
+
         expect(len(children) <= 1, err_msg if err_msg else "Multiple matches for name '{}' and attribs '{}' in file {}".format(name, attributes, self.filename))
         return children[0] if children else None
 
@@ -289,7 +317,7 @@ class GenericXML(object):
         return None
 
     def to_string(self, node, method="xml", encoding="us-ascii"):
-        return ET.tostring(node, method=method, encoding=encoding)
+        return ET.tostring(node.xml_element, method=method, encoding=encoding)
 
     #
     # API for operations over the entire file
@@ -300,15 +328,18 @@ class GenericXML(object):
         version = 1.0 if version is None else float(version)
         return version
 
-    def write(self, outfile=None, force_write=False):
-        """
-        Write an xml file from data in self
-        """
+    def check_timestamp(self):
         timestamp_cache = self._FILEMAP[self.filename].modtime
         if timestamp_cache != 0.0:
             timestamp_file  = os.path.getmtime(self.filename)
             expect(timestamp_file == timestamp_cache,
                    "File {} appears to have changed without a corresponding invalidation, modtimes {:0.2f} != {:0.2f}".format(self.filename, timestamp_cache, timestamp_file))
+
+    def write(self, outfile=None, force_write=False):
+        """
+        Write an xml file from data in self
+        """
+        #self.check_timestamp()
 
         if not (self.needsrewrite or force_write):
             return
@@ -356,7 +387,7 @@ class GenericXML(object):
         """
         nodes = self.scan_children(nodename, attributes=attributes, root=root)
 
-        expect(len(nodes) <= 1, "Multiple matches for nodename '{}' and attrs '{}' in file '{}'".format(nodename, attributes, self.filename))
+        expect(len(nodes) <= 1, "Multiple matches for nodename '{}' and attrs '{}' in file '{}', found {} matches".format(nodename, attributes, self.filename, len(nodes)))
         return nodes[0] if nodes else None
 
     def scan_children(self, nodename, attributes=None, root=None):
@@ -366,6 +397,8 @@ class GenericXML(object):
         if root is None:
             root = self.root
         nodes = []
+
+        namespace = {"xi" : "http://www.w3.org/2001/XInclude"}
 
         xpath = ".//" + (nodename if nodename else "")
 
@@ -383,7 +416,7 @@ class GenericXML(object):
                 logger.debug("xpath is {}".format(xpath))
 
                 try:
-                    newnodes = root.xml_element.findall(xpath)
+                    newnodes = root.xml_element.findall(xpath, namespace)
                 except Exception as e:
                     expect(False, "Bad xpath search term '{}', error: {}".format(xpath, e))
 
@@ -398,7 +431,7 @@ class GenericXML(object):
 
         else:
             logger.debug("xpath: {}".format(xpath))
-            nodes = root.xml_element.findall(xpath)
+            nodes = root.xml_element.findall(xpath, namespace)
 
         logger.debug("Returning {} nodes ({})".format(len(nodes), nodes))
 
@@ -508,7 +541,7 @@ class GenericXML(object):
         xmllint = find_executable("xmllint")
         if xmllint is not None:
             logger.debug("Checking file {} against schema {}".format(filename, schema))
-            run_cmd_no_fail("{} --noout --schema {} {}".format(xmllint, schema, filename))
+            run_cmd_no_fail("{} --xinclude --noout --schema {} {}".format(xmllint, schema, filename))
         else:
             logger.warning("xmllint not found, could not validate file {}".format(filename))
 

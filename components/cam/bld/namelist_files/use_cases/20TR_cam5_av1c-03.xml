@@ -67,6 +67,7 @@
 <seasalt_emis_scale> 1.05   </seasalt_emis_scale>
 <dust_emis_fact>     2.05D0 </dust_emis_fact>
 <clubb_gamma_coef>   0.29   </clubb_gamma_coef>
+<clubb_gamma_coefb>   0.29   </clubb_gamma_coefb>
 <clubb_C8>           5.2    </clubb_C8>
 <cldfrc2m_rhmaxi>    1.05D0 </cldfrc2m_rhmaxi>
 <clubb_c_K10>        0.3    </clubb_c_K10>

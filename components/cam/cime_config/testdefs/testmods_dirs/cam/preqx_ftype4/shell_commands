@@ -1,0 +1,6 @@
+#!/bin/bash
+./xmlchange CAM_TARGET=preqx
+
+#just add --single-exe to your create_test command
+
+

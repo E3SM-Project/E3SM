@@ -14,6 +14,8 @@ my $OBJROOT   = `./xmlquery OBJROOT   -value`;
 my $LIBROOT   = `./xmlquery LIBROOT   -value`;
 my $GMAKE_J   = `./xmlquery GMAKE_J   -value`;
 my $GMAKE     = `./xmlquery GMAKE     -value`;
+my $MAKE_ARGS = `./Tools/get_standard_makefile_args`;
+chomp($MAKE_ARGS);
 
 chdir "${OBJROOT}/rof/obj";
 
@@ -21,6 +23,8 @@ open(file,">tmp_filepath") or die "ERROT: mosart.buildexe could not open file Fi
 print file "$CASEROOT/SourceMods/src.mosart \n";
 print file "$SRCROOT/components/mosart/src/riverroute \n";
 print file "$SRCROOT/components/mosart/src/cpl \n";
+print file "$SRCROOT/components/mosart/src/wrm \n";
+print file "$SRCROOT/components/mosart/src/inundation \n";
 print file "$SRCROOT/components/mosart/src/cpl_share \n";
 close(file);
 
@@ -32,10 +36,9 @@ if (-f "Filepath") {
     system($sysmod) == 0 or die "ERROR: mosart.buidexe $sysmod failed: $?\n";
 }
 
-my $sysmod = "$GMAKE complib -j $GMAKE_J MODEL=mosart COMPLIB=$LIBROOT/librof.a -f $CASETOOLS/Makefile";
+my $sysmod = "$GMAKE complib -j $GMAKE_J MODEL=mosart COMPLIB=$LIBROOT/librof.a -f $CASETOOLS/Makefile ${MAKE_ARGS}";
 system($sysmod) == 0 or die "ERROR: mosart.buildexe $sysmod failed: $?\n";
 
 exit(0);
-
 
 

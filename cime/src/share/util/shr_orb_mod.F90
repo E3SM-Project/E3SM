@@ -15,6 +15,7 @@ MODULE shr_orb_mod
   public :: shr_orb_params
   public :: shr_orb_decl
   public :: shr_orb_print
+  public :: set_constant_zenith_angle_deg
 
   real   (SHR_KIND_R8),public,parameter :: SHR_ORB_UNDEF_REAL = 1.e36_SHR_KIND_R8 ! undefined real
   integer(SHR_KIND_IN),public,parameter :: SHR_ORB_UNDEF_INT  = 2000000000        ! undefined int
@@ -32,12 +33,23 @@ MODULE shr_orb_mod
   real   (SHR_KIND_R8),parameter :: SHR_ORB_MVELP_MIN  =   0.0_SHR_KIND_R8 ! min value for mvelp
   real   (SHR_KIND_R8),parameter :: SHR_ORB_MVELP_MAX  = 360.0_SHR_KIND_R8 ! max value for mvelp
 
+  ! This variable overrides the behavior of shr_orb_cosz() when >=0
+  ! this is be set by calling set_constant_zenith_angle_deg()
+  real   (SHR_KIND_R8) :: constant_zenith_angle_deg = -1  ! constant, uniform zneith angle [degrees]
 
   !===============================================================================
 CONTAINS
   !===============================================================================
 
-  real(SHR_KIND_R8) pure FUNCTION shr_orb_cosz(jday,lat,lon,declin,dt_avg)
+  SUBROUTINE set_constant_zenith_angle_deg(angle_deg)
+    real(SHR_KIND_R8),intent(in) :: angle_deg
+    constant_zenith_angle_deg = angle_deg
+  END SUBROUTINE set_constant_zenith_angle_deg
+
+  !=======================================================================
+  !=======================================================================
+
+  real(SHR_KIND_R8) pure FUNCTION shr_orb_cosz(jday,lat,lon,declin,dt_avg,uniform_angle)
 
     !----------------------------------------------------------------------------
     !
@@ -57,24 +69,33 @@ CONTAINS
     real   (SHR_KIND_R8),intent(in) :: lon    ! Centered longitude (radians)
     real   (SHR_KIND_R8),intent(in) :: declin ! Solar declination (radians)
     real   (SHR_KIND_R8),intent(in), optional   :: dt_avg ! if present and set non-zero, then use in the
+    real   (SHR_KIND_R8),intent(in), optional   :: uniform_angle ! if present and true, apply uniform insolation 
     ! average cosz calculation
     logical :: use_dt_avg
 
     !----------------------------------------------------------------------------
 
-    use_dt_avg = .false.
-    if (present(dt_avg)) then
-       if (dt_avg /= 0.0_shr_kind_r8) use_dt_avg = .true.
+    if ( constant_zenith_angle_deg >= 0 ) then
+      shr_orb_cosz = cos( constant_zenith_angle_deg * SHR_CONST_PI/180. )
+      return
     end if
 
+    if (present(uniform_angle)) then
+      shr_orb_cosz = cos(uniform_angle)
+      return
+    end if
 
+    ! perform the calculation of shr_orb_cosz
+    use_dt_avg = .false.
+    if (present(dt_avg)) then
+      if (dt_avg /= 0.0_shr_kind_r8) use_dt_avg = .true.
+    end if
     ! If dt for the average cosz is specified, then call the shr_orb_avg_cosz
     if (use_dt_avg) then
-       shr_orb_cosz =  shr_orb_avg_cosz(jday, lat, lon, declin, dt_avg)
+      shr_orb_cosz = shr_orb_avg_cosz(jday, lat, lon, declin, dt_avg)
     else
-       shr_orb_cosz = sin(lat)*sin(declin) - &
-            cos(lat)*cos(declin) * &
-            cos((jday-floor(jday))*2.0_SHR_KIND_R8*pi + lon)
+      shr_orb_cosz = sin(lat)*sin(declin) - cos(lat)*cos(declin) * &
+                     cos((jday-floor(jday))*2.0_SHR_KIND_R8*pi + lon)
     end if
 
   END FUNCTION shr_orb_cosz

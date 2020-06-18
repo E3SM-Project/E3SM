@@ -35,11 +35,15 @@ class EnvMachSpecific(EnvBase):
 
         for item in items:
             nodes = machobj.get_first_child_nodes(item)
+            if item == "environment_variables":
+                if len(nodes) == 0:
+                    example_text = """This section is for the user to specify any additional machine-specific env var, or to overwite existing ones.\n  <environment_variables>\n    <env name="NAME">ARGUMENT</env>\n  </environment_variables>\n  """
+                    self.make_child_comment(text = example_text)
             if item == "run_exe" or item == "run_misc_suffix":
                 if len(nodes) == 0:
                     value = self.text(default_run_exe_node) if item == "run_exe" else self.text(default_run_misc_suffix_node)
                 else:
-                    value = nodes[0].text
+                    value = self.text(nodes[0])
 
                 entity_node = self.make_child("entry", {"id":item, "value":value}, root=group_node)
 
@@ -406,7 +410,7 @@ class EnvMachSpecific(EnvBase):
         cmd_nodes = self.get_optional_child("cmd_path", attributes={"lang":lang}, root=self.get_child("module_system"))
         return self.text(cmd_nodes) if cmd_nodes is not None else None
 
-    def get_mpirun(self, case, attribs, job, exe_only=False):
+    def get_mpirun(self, case, attribs, job, exe_only=False, overrides=None):
         """
         Find best match, return (executable, {arg_name : text})
         """
@@ -452,7 +456,7 @@ class EnvMachSpecific(EnvBase):
 
         # if there are no special arguments required for mpi-serial it need not have an entry in config_machines.xml
         if "mpilib" in attribs and attribs["mpilib"] == "mpi-serial" and best_match is None:
-            return "",[]
+            return "",[],None,None
 
         expect(best_match is not None or default_match is not None,
                "Could not find a matching MPI for attributes: {}".format(attribs))
@@ -462,20 +466,30 @@ class EnvMachSpecific(EnvBase):
         # Now that we know the best match, compute the arguments
         if not exe_only:
             arg_node = self.get_optional_child("arguments", root=the_match)
-            if arg_node is not None:
+            if arg_node:
                 arg_nodes = self.get_children("arg", root=arg_node)
                 for arg_node in arg_nodes:
                     arg_value = transform_vars(self.text(arg_node),
                                                case=case,
-                                               subgroup=job,
+                                               subgroup=job,overrides=overrides,
                                                default=self.get(arg_node, "default"))
                     args.append(arg_value)
 
         exec_node = self.get_child("executable", root=the_match)
         expect(exec_node is not None,"No executable found")
         executable = self.text(exec_node)
+        run_exe = None
+        run_misc_suffix = None
 
-        return executable, args
+        run_exe_node = self.get_optional_child('run_exe', root=the_match)
+        if run_exe_node:
+            run_exe = self.text(run_exe_node)
+
+        run_misc_suffix_node = self.get_optional_child('run_misc_suffix', root=the_match)
+        if run_misc_suffix_node:
+            run_misc_suffix = self.text(run_misc_suffix_node)
+
+        return executable, args, run_exe, run_misc_suffix
 
     def get_type_info(self, vid):
         return "char"

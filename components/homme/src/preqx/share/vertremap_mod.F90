@@ -138,13 +138,21 @@ contains
      endif
 
      ! remap the gll tracers from lagrangian levels (dp_star)  to REF levels dp
-     if (qsize>0) then
+     if (qsize>0 .and. np1_qdp > 0) then
 
        call t_startf('vertical_remap1_3')
        call remap1(elem(ie)%state%Qdp(:,:,:,:,np1_qdp),np,qsize,dp_star,dp)
        call t_stopf('vertical_remap1_3')
 
+       !dir$ simd
+       do q=1,qsize
+          elem(ie)%state%Q(:,:,:,q)=elem(ie)%state%Qdp(:,:,:,q,np1_qdp)/dp(:,:,:)
+       enddo
      endif
+
+     ! reinitialize dp3d after remap
+     elem(ie)%state%dp3d(:,:,:,np1)=dp(:,:,:)
+
   enddo
   call t_stopf('vertical_remap')
   end subroutine vertical_remap

@@ -22,7 +22,9 @@ module MaintenanceRespMod
   use CNCarbonFluxType    , only : carbonflux_type
   use CNCarbonStateType   , only : carbonstate_type
   use CNNitrogenStateType , only : nitrogenstate_type
-  use VegetationType           , only : veg_pp                
+  use ColumnDataType      , only : col_es
+  use VegetationType      , only : veg_pp                
+  use VegetationDataType  , only : veg_es, veg_cs, veg_cf, veg_ns
   !
   implicit none
   save
@@ -115,25 +117,25 @@ contains
 
          rootfr         =>    soilstate_vars%rootfr_patch           , & ! Input:  [real(r8) (:,:) ]  fraction of roots in each soil layer  (nlevgrnd)
 
-         t_soisno       =>    temperature_vars%t_soisno_col         , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
-         t_ref2m        =>    temperature_vars%t_ref2m_patch        , & ! Input:  [real(r8) (:)   ]  2 m height surface air temperature (Kelvin)       
+         t_soisno       =>    col_es%t_soisno         , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
+         t_ref2m        =>    veg_es%t_ref2m          , & ! Input:  [real(r8) (:)   ]  2 m height surface air temperature (Kelvin)       
 
          lmrsun         =>    photosyns_vars%lmrsun_patch           , & ! Input:  [real(r8) (:)   ]  sunlit leaf maintenance respiration rate (umol CO2/m**2/s)
          lmrsha         =>    photosyns_vars%lmrsha_patch           , & ! Input:  [real(r8) (:)   ]  shaded leaf maintenance respiration rate (umol CO2/m**2/s)
 
-         cpool          =>    carbonstate_vars%cpool_patch          , & ! Input: [real(r8) (:)   ]   plant carbon pool (gC m-2)
+         cpool          =>    veg_cs%cpool          , & ! Input: [real(r8) (:)   ]   plant carbon pool (gC m-2)
 
-         leaf_mr        =>    carbonflux_vars%leaf_mr_patch         , & ! Output: [real(r8) (:)   ]                                                    
-         froot_mr       =>    carbonflux_vars%froot_mr_patch        , & ! Output: [real(r8) (:)   ]                                                    
-         livestem_mr    =>    carbonflux_vars%livestem_mr_patch     , & ! Output: [real(r8) (:)   ]                                                    
-         livecroot_mr   =>    carbonflux_vars%livecroot_mr_patch    , & ! Output: [real(r8) (:)   ]                                                    
-         grain_mr       =>    carbonflux_vars%grain_mr_patch        , & ! Output: [real(r8) (:)   ]                                                    
-         xr             =>    carbonflux_vars%xr_patch              , & ! Output: [real(r8) (:)   ]  (gC/m2) respiration of excess C
+         leaf_mr        =>    veg_cf%leaf_mr         , & ! Output: [real(r8) (:)   ]                                                    
+         froot_mr       =>    veg_cf%froot_mr        , & ! Output: [real(r8) (:)   ]                                                    
+         livestem_mr    =>    veg_cf%livestem_mr     , & ! Output: [real(r8) (:)   ]                                                    
+         livecroot_mr   =>    veg_cf%livecroot_mr    , & ! Output: [real(r8) (:)   ]                                                    
+         grain_mr       =>    veg_cf%grain_mr        , & ! Output: [real(r8) (:)   ]                                                    
+         xr             =>    veg_cf%xr              , & ! Output: [real(r8) (:)   ]  (gC/m2) respiration of excess C
 
-         frootn         =>    nitrogenstate_vars%frootn_patch       , & ! Input:  [real(r8) (:)   ]  (gN/m2) fine root N                               
-         livestemn      =>    nitrogenstate_vars%livestemn_patch    , & ! Input:  [real(r8) (:)   ]  (gN/m2) live stem N                               
-         livecrootn     =>    nitrogenstate_vars%livecrootn_patch   , & ! Input:  [real(r8) (:)   ]  (gN/m2) live coarse root N                        
-         grainn         =>    nitrogenstate_vars%grainn_patch         & ! Output: [real(r8) (:)   ]  (kgN/m2) grain N
+         frootn         =>    veg_ns%frootn       , & ! Input:  [real(r8) (:)   ]  (gN/m2) fine root N                               
+         livestemn      =>    veg_ns%livestemn    , & ! Input:  [real(r8) (:)   ]  (gN/m2) live stem N                               
+         livecrootn     =>    veg_ns%livecrootn   , & ! Input:  [real(r8) (:)   ]  (gN/m2) live coarse root N                        
+         grainn         =>    veg_ns%grainn         & ! Output: [real(r8) (:)   ]  (kgN/m2) grain N
          )
 
       ! base rate for maintenance respiration is from:

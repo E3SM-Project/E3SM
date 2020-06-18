@@ -12,6 +12,7 @@
 <config_simple_velocity_type>'uniform'</config_simple_velocity_type>
 <config_use_glp>.false.</config_use_glp>
 <config_beta_use_effective_pressure>.false.</config_beta_use_effective_pressure>
+<config_unrealistic_velocity>0.01592356685</config_unrealistic_velocity>
 
 <!-- advection -->
 <config_thickness_advection>'fo'</config_thickness_advection>
@@ -26,6 +27,8 @@
 <config_data_calving>.false.</config_data_calving>
 <config_calving_timescale>0.0</config_calving_timescale>
 <config_restore_calving_front>.true.</config_restore_calving_front>
+<config_remove_icebergs>.false.</config_remove_icebergs>
+<config_remove_small_islands>.false.</config_remove_small_islands>
 
 <!-- thermal_solver -->
 <config_thermal_solver>'none'</config_thermal_solver>
@@ -37,19 +40,34 @@
 <config_surface_air_temperature_lapse_rate>0.01</config_surface_air_temperature_lapse_rate>
 <config_basal_heat_flux_source>'file'</config_basal_heat_flux_source>
 <config_basal_heat_flux_value>0.0</config_basal_heat_flux_value>
+<config_temp_diffusive_factor>1.0e-5</config_temp_diffusive_factor>
+<config_max_water_fraction>1.0e-2</config_max_water_fraction>
+
+<!-- iceshelf_melt -->
 <config_basal_mass_bal_float>'file'</config_basal_mass_bal_float>
+<config_bmlt_float_flux>0.0</config_bmlt_float_flux>
+<config_bmlt_float_xlimit>0.0</config_bmlt_float_xlimit>
 <config_basal_mass_bal_seroussi_amplitude>0.0</config_basal_mass_bal_seroussi_amplitude>
 <config_basal_mass_bal_seroussi_period>1.0</config_basal_mass_bal_seroussi_period>
 <config_basal_mass_bal_seroussi_phase>0.0</config_basal_mass_bal_seroussi_phase>
-<config_bmlt_float_flux>0.0</config_bmlt_float_flux>
-<config_bmlt_float_xlimit>0.0</config_bmlt_float_xlimit>
+<config_temperature_profile_melt_scale_factor>6.0</config_temperature_profile_melt_scale_factor>
+<config_temperature_profile_sill_elevation>-700.0</config_temperature_profile_sill_elevation>
+<config_temperature_profile_plume_thickness>30.0</config_temperature_profile_plume_thickness>
+<config_temperature_profile_draft_slope>1.0e-2</config_temperature_profile_draft_slope>
+<config_temperature_profile_thermocline_upper_depth>-200.0</config_temperature_profile_thermocline_upper_depth>
+<config_temperature_profile_thermocline_upper_temp>-1.0</config_temperature_profile_thermocline_upper_temp>
+<config_temperature_profile_thermocline_lower_depth>-600.0</config_temperature_profile_thermocline_lower_depth>
+<config_temperature_profile_thermocline_lower_temp>1.2</config_temperature_profile_thermocline_lower_temp>
+<config_temperature_profile_variability_amplitude>0.0</config_temperature_profile_variability_amplitude>
+<config_temperature_profile_variability_period>1.0</config_temperature_profile_variability_period>
+<config_temperature_profile_variability_phase>0.0</config_temperature_profile_variability_phase>
+<config_temperature_profile_GL_depth_fraction>0.25</config_temperature_profile_GL_depth_fraction>
 
 <!-- physical_parameters -->
 <config_ice_density>910.0</config_ice_density>
 <config_ocean_density>1028.0</config_ocean_density>
 <config_sea_level>0.0</config_sea_level>
 <config_default_flowParamA>3.1709792e-24</config_default_flowParamA>
-<config_enhancementFactor>1.0</config_enhancementFactor>
 <config_flowLawExponent>3.0</config_flowLawExponent>
 <config_dynamic_thickness>10.0</config_dynamic_thickness>
 
