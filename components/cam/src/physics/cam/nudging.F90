@@ -1177,8 +1177,7 @@ contains
               call alloc_err(istat,'nudging_init','INTP_PS',2*pcols*((endchunk-begchunk)+1))
            end if
       case default
-           call endrun('nudging_init error: nudge method should &
-                        be either Step, Linear or IMT...')
+           call endrun('nudging_init error: nudge method should be either Step, Linear or IMT...')
    end select        
 
    ! End Routine
