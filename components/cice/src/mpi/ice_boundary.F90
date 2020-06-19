@@ -2925,7 +2925,7 @@ end subroutine ice_HaloDestroy
       ioffset, joffset,          &! address shifts for tripole
       isign                       ! sign factor for tripole grids
 
-   integer (int_kind), dimension(:), allocatable, save :: &
+   integer (int_kind), dimension(:), allocatable :: &
       sndRequest,      &! MPI request ids
       rcvRequest        ! MPI request ids
 
@@ -2954,10 +2954,10 @@ end subroutine ice_HaloDestroy
    logical (log_kind) ::   &
       do_allocate       ! flag used to control alloc of 3D buffers
 #else
-   real (dbl_kind), dimension(:,:), allocatable, save :: &
+   real (dbl_kind), dimension(:,:), allocatable :: &
       bufSend, bufRecv            ! 3d send,recv buffers
 
-   real (dbl_kind), dimension(:,:,:), allocatable, save :: &
+   real (dbl_kind), dimension(:,:,:), allocatable :: &
       bufTripole                  ! 3d tripole buffer
 #endif
 

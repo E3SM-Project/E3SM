@@ -105,8 +105,6 @@ module WaterBudgetMod
   real(r8) :: budg_stateL(s_size, p_size)
   real(r8), public :: budg_stateG(s_size, p_size)
 
-  logical,save :: first_time = .true.
-
   !----- formats -----
   character(*),parameter :: FA0= "('    ',12x,(3x,a10,2x),' | ',(3x,a10,2x))"
   character(*),parameter :: FF = "('    ',a12,f15.8,' | ',f18.2)"

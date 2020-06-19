@@ -3248,12 +3248,12 @@
 ! 
 ! 1  sst------temperature---------------------------(C)   \\
 ! 2  sss------salinity------------------------------(ppt) \\
-! 3  hbl------depth---------------------------------(m)   \\ 
+! 3  hbl------depth---------------------------------(m)   \\
 ! 4  u--------surface u current---------------------(m/s) \\
 ! 5  v--------surface v current---------------------(m/s) \\
 ! 6  dhdx-----surface tilt x direction--------------(m/m) \\
 ! 7  dhdy-----surface tilt y direction--------------(m/m) \\
-! 8  qdp------ocean sub-mixed layer heat flux-------(W/m2)\\ 
+! 8  qdp------ocean sub-mixed layer heat flux-------(W/m2)\\
 !
 ! Fields 4, 5, 6, 7 are on the U-grid; 1, 2, 3, and 8 are
 ! on the T-grid.
