@@ -57,18 +57,18 @@ contains
 
   end subroutine p3_init_f90
   !====================================================================!
-  subroutine p3_standalone_init_f90 (q,T,zi,pmid,pdel,ast,naai,npccn) bind(c)
+  subroutine p3_standalone_init_f90 (q,T,zi,pmid,pdel,ast,naai,ncnuc) bind(c)
     use micro_p3,       only: p3_init
     use micro_p3_utils, only: micro_p3_utils_init
 
     real(kind=c_real), intent(inout) :: q(pcols,pver,qsize)  ! State array  kg/kg Pa
     real(kind=c_real), intent(inout) :: T(pcols,pver)        !
-    real(kind=c_real), intent(inout) :: zi(pcols,pver+1)     ! 
-    real(kind=c_real), intent(inout) :: pmid(pcols,pver)     ! 
-    real(kind=c_real), intent(inout) :: pdel(pcols,pver)     ! 
-    real(kind=c_real), intent(inout) :: ast(pcols,pver)      ! 
+    real(kind=c_real), intent(inout) :: zi(pcols,pver+1)     !
+    real(kind=c_real), intent(inout) :: pmid(pcols,pver)     !
+    real(kind=c_real), intent(inout) :: pdel(pcols,pver)     !
+    real(kind=c_real), intent(inout) :: ast(pcols,pver)      !
     real(kind=c_real), intent(inout) :: naai(pcols,pver)     ! ice nucleation number
-    real(kind=c_real), intent(inout) :: npccn(pcols,pver)    ! liquid activation number tendency
+    real(kind=c_real), intent(inout) :: ncnuc(pcols,pver)    ! liquid activation number tendency
 
     character(len=100) :: case_title
 
@@ -87,7 +87,7 @@ contains
     read(981,'(12E16.8)') cpair,rair,rh2o,rhoh2o,mwh2o,mwdry,gravit,latvap,latice,cpliq,tmelt,pi
     do i = 1,ncol
       do k = 1,nlev
-        read(981,'(16E16.8)') ast(i,k), naai(i,k), npccn(i,k), pmid(i,k), zi(i,k), T(i,k), &
+        read(981,'(16E16.8)') ast(i,k), naai(i,k), ncnuc(i,k), pmid(i,k), zi(i,k), T(i,k), &
                          q(i,k,1), q(i,k,2), q(i,k,3), q(i,k,4), q(i,k,5), q(i,k,6), &
                          q(i,k,7), q(i,k,8), q(i,k,9), pdel(i,k)
       end do
@@ -101,20 +101,20 @@ contains
     print *, 'P3-Standalone-Init Finished'
   end subroutine p3_standalone_init_f90
   !====================================================================!
-  subroutine p3_main_f90 (dtime,zi,pmid,pdel,ast,naai,npccn,q,FQ,T) bind(c)
+  subroutine p3_main_f90 (dtime,zi,pmid,pdel,ast,naai,ncnuc,q,FQ,T) bind(c)
     use micro_p3,       only: p3_main
 
 !    real, intent(in) :: q(pcols,pver,9) ! Tracer mass concentrations from SCREAM      kg/kg
-    real(kind=c_real), intent(in)    :: dtime ! Timestep 
+    real(kind=c_real), intent(in)    :: dtime ! Timestep
     real(kind=c_real), intent(inout) :: q(pcols,pver,qsize) ! Tracer mass concentrations from SCREAM kg/kg
     real(kind=c_real), intent(inout) :: FQ(pcols,4,pver)    ! Tracer mass tendency for physics
     real(kind=c_real), intent(inout) :: T(pcols,pver)       ! temperature
     real(kind=c_real), intent(in)    :: zi(pcols,pver+1)    ! vertical level interfaces
     real(kind=c_real), intent(in)    :: pmid(pcols,pver)    ! pressure mid-levels
     real(kind=c_real), intent(in)    :: pdel(pcols,pver)    ! pressure thickness
-    real(kind=c_real), intent(in)    :: ast(pcols,pver)     ! cloud fraction 
+    real(kind=c_real), intent(in)    :: ast(pcols,pver)     ! cloud fraction
     real(kind=c_real), intent(in)    :: naai(pcols,pver)    ! ice nucleation number
-    real(kind=c_real), intent(in)    :: npccn(pcols,pver)   ! liquid activation number tendency
+    real(kind=c_real), intent(in)    :: ncnuc(pcols,pver)   ! liquid activation number tendency
     !INTERNAL VARIABLES
     real(kind=c_real) :: th(pcols,pver)         !potential temperature  K
     real(kind=c_real) :: dzq(pcols,pver)        !geometric layer thickness              m
@@ -158,11 +158,10 @@ contains
     real(kind=c_real) :: liq_ice_exchange(pcols,pver) ! sum of liq-ice phase change tendenices
     real(kind=c_real) :: vap_liq_exchange(pcols,pver) ! sum of vap-liq phase change tendenices
     real(kind=c_real) :: vap_ice_exchange(pcols,pver) ! sum of vap-ice phase change tendenices
-    real(kind=c_real) :: vap_cld_exchange(pcols,pver) ! sum of vap-cld phase change tendenices
     real(kind=c_real) :: qc_relvar(pcols,pver)        ! 1/(var(qc)/mean(qc)**2) for P3 subgrid qc.
     real(kind=c_real) :: inv_cp
 
-    real(kind=c_real) :: col_location(pcols,3) 
+    real(kind=c_real) :: col_location(pcols,3)
 
     ! For rrtmg optics. specified distribution.
     real(kind=c_real), parameter :: dcon   = 25.e-6_rtype      ! Convective size distribution effective radius (um)
@@ -187,20 +186,20 @@ contains
     ! pres                   vertical pressure profile
     ! T                      temperature profile
     ! zi                     vertical height of layer interfaces.  Note this could be backed out from pres and rho using the hydrostatic approximation
-    ! pdel                   pressure layer thickness, again can be gotten from pres 
+    ! pdel                   pressure layer thickness, again can be gotten from pres
     ! lcdlm, icldm, rcldm    cloud fractions
     ! exner                  exner expression.  Can be backed out from pressure.
-    ! npccn and naai         activation arrays.
-    
+    ! ncnuc and naai         activation arrays.
+
 
     ! MAKE LOCAL COPIES OF VARS MODIFIED BY P3
     !==============
     !local copies are needed because state is passed into this routine as intent=in
-    !while P3 seeks to modify state variables in-place. Also, we need a copy of 
-    !old values in order to back out ptend values later. Traditionally, a local copy 
-    !is created by copying the whole state. It is much cheaper to just copy the 
-    !variables we need. 
-    
+    !while P3 seeks to modify state variables in-place. Also, we need a copy of
+    !old values in order to back out ptend values later. Traditionally, a local copy
+    !is created by copying the whole state. It is much cheaper to just copy the
+    !variables we need.
+
     its     = 1
     ite     = ncol
     kts     = 1
@@ -219,9 +218,9 @@ contains
         rimvol(:,k)  = q(i,k,9) !1.0e4_rtype!state%q(:,:,ixrimvol)
       end do
       col_location(i,:) = real(i)
-    end do 
+    end do
 
-!    do k = kte,kts,-1 
+!    do k = kte,kts,-1
 !      pres(:,k)    = 1e3_rtype - (1e3_rtype-0.1)/real(pver)!state%pmid(:,:)
 !    end do
     ! COMPUTE GEOMETRIC THICKNESS OF GRID
@@ -232,7 +231,7 @@ contains
 ! Note: dzq is calculated in the opposite direction that pdel is calculated,
 ! thus when considering any dp/dz calculation we must also change the sign.
           dzq(icol,k) = zi(icol,k) - zi(icol,k+1) !100.0_rtype   !state%zi(icol,k) - state%zi(icol,k+1)
-          th(icol,k)  = t(icol,k)*exner(icol,k) !/(state%pmid(icol,k)*1.e-5)**(rd*inv_cp) 
+          th(icol,k)  = t(icol,k)*exner(icol,k) !/(state%pmid(icol,k)*1.e-5)**(rd*inv_cp)
 !          pdel(icol,k)  = (1e3_rtype-0.1)/real(pver) ! should be changed to come from model state.
        end do
     end do
@@ -250,7 +249,7 @@ contains
 
     ! Hack qc_relvar (should get more thoughtful value later):
     qc_relvar(:,:) = 1.0_rtype
-    
+
     ! CALL P3
     !==============
     call p3_main( &
@@ -267,7 +266,7 @@ contains
          rimvol(its:ite,kts:kte),     & ! INOUT  ice, rime volume mixing ratio    m3 kg-1
          pmid(its:ite,kts:kte),       & ! IN     pressure at cell midpoints       Pa
          dzq(its:ite,kts:kte),        & ! IN     vertical grid spacing            m
-         npccn(its:ite,kts:kte),      & ! IN ccn activation number tendency kg-1 s-1
+         ncnuc(its:ite,kts:kte),      & ! IN ccn activation number tendency kg-1 s-1
          naai(its:ite,kts:kte),       & ! IN activated ice nuclei concentration kg-1
          qc_relvar(its:ite,kts:kte),  & ! IN 1/(var(qc)/mean(qc)**2) used in P3.
          it,                          & ! IN     time step counter NOTE: starts at 1 for first time step
@@ -287,11 +286,11 @@ contains
          ! AaronDonahue new stuff
          pdel(its:ite,kts:kte), & ! IN pressure level thickness for computing total mass
          exner(its:ite,kts:kte),      & ! IN exner values
-         cmeiout(its:ite,kts:kte),    & ! OUT Deposition/sublimation rate of cloud ice 
+         cmeiout(its:ite,kts:kte),    & ! OUT Deposition/sublimation rate of cloud ice
          prain(its:ite,kts:kte),      & ! OUT Total precipitation (rain + snow)
          nevapr(its:ite,kts:kte),     & ! OUT evaporation of total precipitation (rain + snow)
          prer_evap(its:ite,kts:kte),  & ! OUT rain evaporation
-         rflx(its:ite,kts:kte+1),     & ! OUT grid-box average rain flux (kg m^-2s^-1) pverp 
+         rflx(its:ite,kts:kte+1),     & ! OUT grid-box average rain flux (kg m^-2s^-1) pverp
          sflx(its:ite,kts:kte+1),     & ! OUT grid-box average ice/snow flux (kgm^-2 s^-1) pverp
          rcldm(its:ite,kts:kte),      & ! IN rain cloud fraction
          lcldm(its:ite,kts:kte),      & ! IN liquid cloud fraction
@@ -301,10 +300,9 @@ contains
          tend_out(its:ite,kts:kte,:), & ! OUT p3 microphysics tendencies
          mu(its:ite,kts:kte),         & ! OUT Size distribution shape parameter for radiation
          lambdac(its:ite,kts:kte),    & ! OUT Size distribution slope parameter for radiation
-         liq_ice_exchange(its:ite,kts:kte),& ! OUT sum of liq-ice phase change tendenices   
+         liq_ice_exchange(its:ite,kts:kte),& ! OUT sum of liq-ice phase change tendenices
          vap_liq_exchange(its:ite,kts:kte),& ! OUT sun of vap-liq phase change tendencies
          vap_ice_exchange(its:ite,kts:kte),& ! OUT sum of vap-ice phase change tendencies
-         vap_cld_exchange(its:ite,kts:kte),& ! OUT sum of vap-cld phase change tendencies
          col_location(its:ite,3)           & ! IN location of columns
          )
     do i = its,ite
@@ -313,17 +311,17 @@ contains
         FQ(i,k,2) = FQ(i,k,2) + (cldliq(i,k) - q(i,k,2))/dtime
         FQ(i,k,3) = FQ(i,k,3) + (ice(i,k)    - q(i,k,3))/dtime
         FQ(i,k,4) = FQ(i,k,4) + (rain(i,k)   - q(i,k,6))/dtime
-        q(i,k,1) = qv(i,k)     
-        q(i,k,2) = cldliq(i,k)  
-        q(i,k,3) = ice(i,k)     
-        q(i,k,4) = numliq(i,k)  
-        q(i,k,5) = numice(i,k)  
-        q(i,k,6) = rain(i,k)    
-        q(i,k,7) = numrain(i,k) 
-        q(i,k,8) = qirim(i,k)   
+        q(i,k,1) = qv(i,k)
+        q(i,k,2) = cldliq(i,k)
+        q(i,k,3) = ice(i,k)
+        q(i,k,4) = numliq(i,k)
+        q(i,k,5) = numice(i,k)
+        q(i,k,6) = rain(i,k)
+        q(i,k,7) = numrain(i,k)
+        q(i,k,8) = qirim(i,k)
         q(i,k,9) = rimvol(i,k)
       end do
-    end do  
+    end do
 
     print '(a15,f16.8,4e16.8)', 'P3 run = ', test, qtest, sum(q), sum(qv), sum(FQ(:,:,:))
   end subroutine p3_main_f90
@@ -336,7 +334,7 @@ contains
   !================================================================================================
     subroutine get_cloud_fraction(its,ite,kts,kte,ast,qc,qr,qitot,method, &
                   icldm,lcldm,rcldm)
-      
+
        use micro_p3_utils, only: mincld, qsmall
 
        integer,intent(in)                                 :: its,ite,kts,kte
@@ -365,9 +363,9 @@ contains
 
        DO k = ktop,kbot,-kdir  !AaronDonahue TODO: Check to make sure this is correct.  Are we going the correct direction?
           DO i=its,ite
-       !! 
-       !! precipitation fraction 
-       !! 
+       !!
+       !! precipitation fraction
+       !!
           rcldm(i,k) = cldm(i,k)
           IF (trim(method) == 'in_cloud') THEN
              IF (k /= ktop) THEN

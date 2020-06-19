@@ -13,6 +13,30 @@
     <desc>Name of atmospheric component</desc>
   </entry>
 
+  <entry id="ATM_DYN_TARGET">
+    <type>char</type>
+    <valid_values>preqx_kokkos</valid_values>
+    <default_value>preqx_kokkos</default_value>
+    <group>build_component_scream</group>
+    <file>env_build.xml</file>
+    <desc>Homme dycore to use in scream</desc>
+  </entry>
+
+  <entry id="SCREAM_CMAKE_OPTIONS">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <values modifier='additive'>
+      <!-- Radiative-Convective Equilibrium (RCE) -->
+      <value compset="_SCREAM"> SCREAM_NP 4 SCREAM_NUM_LEV 128 SCREAM_NUM_TRACERS 10</value>
+    </values>
+    <group>build_component_scream</group>
+    <file>env_build.xml</file>
+    <desc>
+      SCREAM configure options.
+    </desc>
+  </entry>
+
   <description>
     <desc compset="_SCREAM">scream default</desc>
   </description>

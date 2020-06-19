@@ -14,31 +14,33 @@ namespace p3 {
 template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::calc_liq_relaxation_timescale(const view_2d_table& revap_table,
-                                const Spack& rho, const Scalar& f1r, const Scalar& f2r,
-                                const Spack& dv, const Spack& mu, const Spack& sc,
-                                const Spack& mu_r, const Spack& lamr, const Spack& cdistr,
-                                const Spack& cdist, const Spack& qr_incld, const Spack& qc_incld,
-                                Spack& epsr, Spack& epsc)
+::calc_liq_relaxation_timescale(
+  const view_2d_table& revap_table,
+  const Spack& rho, const Scalar& f1r, const Scalar& f2r,
+  const Spack& dv, const Spack& mu, const Spack& sc,
+  const Spack& mu_r, const Spack& lamr, const Spack& cdistr,
+  const Spack& cdist, const Spack& qr_incld, const Spack& qc_incld,
+  Spack& epsr, Spack& epsc,
+  const Smask& context)
 {
   constexpr Scalar qsmall = C::QSMALL;
   constexpr Scalar pi = C::Pi;
 
-  const auto qr_not_small = (qr_incld >= qsmall);
+  const auto qr_not_small = (qr_incld >= qsmall) && context;
   epsr = 0;
   if (qr_not_small.any()) {
     Table3 table;
-    lookup(qr_not_small, mu_r, lamr, table);
+    lookup(mu_r, lamr, table, qr_not_small);
     epsr.set(qr_not_small, 2 * pi * cdistr * rho * dv *
              (f1r * tgamma(mu_r + 2)/lamr +
               f2r * sqrt(rho/mu) * cbrt(sc) *
-              apply_table(qr_not_small, revap_table, table)));
+              apply_table(revap_table, table)));
   }
 
-  const auto qc_not_small = (qc_incld >= qsmall);
+  const auto qc_not_small = (qc_incld >= qsmall) && context;
   epsc.set(qc_not_small, 2 * pi * rho * dv * cdist);
-  const auto qc_small = not qc_not_small;
-  epsc.set(qc_small, 0);
+  const auto qc_small = !qc_not_small;
+  epsc.set(qc_small && context, 0);
 }
 
 } // namespace p3

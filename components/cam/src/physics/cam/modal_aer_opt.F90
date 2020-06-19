@@ -180,6 +180,7 @@ subroutine modal_aer_opt_init()
    call addfld ('tropopause_m',horiz_only,    'A',' m  ','tropopause level in meters', flag_xyfill=.true.)
    call addfld ('ABSORB',(/ 'lev' /),    'A','/m','Aerosol absorption', flag_xyfill=.true.)
    call addfld ('AODVIS',horiz_only,    'A','  ','Aerosol optical depth 550 nm', flag_xyfill=.true.)
+   call addfld ('AODALL',horiz_only,    'A','  ','AOD 550 nm for all time and species', flag_xyfill=.true.)
    call addfld ('AODUV',horiz_only,    'A','  ','Aerosol optical depth 350 nm', flag_xyfill=.true.)  
    call addfld ('AODNIR',horiz_only,    'A','  ','Aerosol optical depth 850 nm', flag_xyfill=.true.) 
    call addfld ('AODABS',horiz_only,    'A','  ','Aerosol absorption optical depth 550 nm', flag_xyfill=.true.)
@@ -226,10 +227,11 @@ subroutine modal_aer_opt_init()
       call add_default ('AODDUST1'     , 1, ' ')
       call add_default ('AODDUST3'     , 1, ' ')
       call add_default ('AODVIS'       , 1, ' ')
-      if ( history_verbose ) then
+      call add_default ('AODALL'       , 1, ' ')
       call add_default ('BURDEN1'      , 1, ' ')
       call add_default ('BURDEN2'      , 1, ' ')
       call add_default ('BURDEN3'      , 1, ' ')
+      if ( history_verbose ) then
       call add_default ('BURDENDUST'   , 1, ' ')
       call add_default ('BURDENSO4'    , 1, ' ')
       call add_default ('BURDENPOM'    , 1, ' ')
@@ -253,6 +255,7 @@ subroutine modal_aer_opt_init()
       call add_default ('AODMODE2'     , 1, ' ')
       call add_default ('AODMODE3'     , 1, ' ')
       call add_default ('AODVIS'       , 1, ' ')
+      call add_default ('AODALL'       , 1, ' ')
       call add_default ('AODUV'        , 1, ' ')
       call add_default ('AODNIR'       , 1, ' ')
       call add_default ('AODABS'       , 1, ' ')
@@ -263,11 +266,11 @@ subroutine modal_aer_opt_init()
       call add_default ('AODSOA'       , 1, ' ')
       call add_default ('AODBC'        , 1, ' ')
       call add_default ('AODSS'        , 1, ' ')
-      if (history_verbose) then
-      call add_default ('ABSORB'       , 1, ' ')
       call add_default ('BURDEN1'      , 1, ' ')
       call add_default ('BURDEN2'      , 1, ' ')
       call add_default ('BURDEN3'      , 1, ' ')
+      if (history_verbose) then
+      call add_default ('ABSORB'       , 1, ' ')
       call add_default ('BURDENDUST'   , 1, ' ')
       call add_default ('BURDENSO4'    , 1, ' ')
       call add_default ('BURDENPOM'    , 1, ' ')
@@ -291,7 +294,7 @@ subroutine modal_aer_opt_init()
        cam_chempkg_is('trop_mam9').or.cam_chempkg_is('trop_strat_mam7').or. &
        cam_chempkg_is('linoz_mam4_resus').or.cam_chempkg_is('linoz_mam4_resus_soag').or.&
        cam_chempkg_is('linoz_mam4_resus_mom').or. &
-       cam_chempkg_is('linoz_mam4_resus_mom_soag')) then
+       cam_chempkg_is('linoz_mam4_resus_mom_soag').or.cam_chempkg_is('superfast_mam4_resus_mom_soag')) then
      call addfld ('AODDUST4',horiz_only,    'A','  ','Aerosol optical depth 550 nm model 4 from dust', flag_xyfill=.true.)     
      call addfld ('AODMODE4',horiz_only,    'A','  ','Aerosol optical depth 550 nm mode 4', flag_xyfill=.true.)
      call addfld ('BURDEN4',horiz_only,    'A','kg/m2','Aerosol burden mode 4', flag_xyfill=.true.)
@@ -300,7 +303,7 @@ subroutine modal_aer_opt_init()
      if (history_aero_optics) then
         call add_default ('AODDUST4', 1, ' ')
         call add_default ('AODMODE4', 1, ' ')
-        if (history_verbose) call add_default ('BURDEN4' , 1, ' ')
+        call add_default ('BURDEN4' , 1, ' ')
      end if
   end if
    if (cam_chempkg_is('trop_mam7').or.cam_chempkg_is('trop_mam9').or.cam_chempkg_is('trop_strat_mam7')) then      
@@ -350,12 +353,15 @@ subroutine modal_aer_opt_init()
               'Aerosol absorption', flag_xyfill=.true.)
          call addfld ('AODVIS'//diag(ilist),       horiz_only, 'A','  ', &
               'Aerosol optical depth 550 nm', flag_xyfill=.true.)
+         call addfld ('AODALL'//diag(ilist),       horiz_only, 'A','  ', &
+              'AOD 550 nm all time', flag_xyfill=.true.)
          call addfld ('AODABS'//diag(ilist),       horiz_only, 'A','  ', &
               'Aerosol absorption optical depth 550 nm', flag_xyfill=.true.)
          
          call add_default ('EXTINCT'//diag(ilist), 1, ' ')
          call add_default ('ABSORB'//diag(ilist),  1, ' ')
          call add_default ('AODVIS'//diag(ilist),  1, ' ')
+         call add_default ('AODALL'//diag(ilist),  1, ' ')
          call add_default ('AODABS'//diag(ilist),  1, ' ')
          
       end if
@@ -443,6 +449,7 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
    real(r8) :: extinct(pcols,pver), tropopause_m(pcols)
    real(r8) :: absorb(pcols,pver)
    real(r8) :: aodvis(pcols)               ! extinction optical depth
+   real(r8) :: aodall(pcols)               ! extinction optical depth
    real(r8) :: aodabs(pcols)               ! absorption optical depth
 
    real(r8) :: aodabsbc(pcols)             ! absorption optical depth of BC
@@ -538,6 +545,7 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
    extinct(1:ncol,:)     = 0.0_r8
    absorb(1:ncol,:)      = 0.0_r8
    aodvis(1:ncol)        = 0.0_r8
+   aodall(1:ncol)        = 0.0_r8
    aodabs(1:ncol)        = 0.0_r8
    burdendust(:ncol)     = 0.0_r8
    burdenso4(:ncol)      = 0.0_r8
@@ -858,6 +866,7 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
                   extinct(i,k) = extinct(i,k) + dopaer(i)*air_density(i,k)/mass(i,k)
                   absorb(i,k)  = absorb(i,k) + pabs(i)*air_density(i,k)
                   aodvis(i)    = aodvis(i) + dopaer(i)
+                  aodall(i)    = aodall(i) + dopaer(i)
                   aodabs(i)    = aodabs(i) + pabs(i)*mass(i,k)
                   aodmode(i)   = aodmode(i) + dopaer(i)
                   ssavis(i)    = ssavis(i) + dopaer(i)*palb(i)
@@ -1029,7 +1038,7 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
       ! be necessary to provide output for the rad_diag lists.
       if (list_idx == 0) then
          do i = 1, nnite
-            burden(idxnite(i))  = fillvalue
+!            burden(idxnite(i))  = fillvalue
             aodmode(idxnite(i)) = fillvalue
             dustaodmode(idxnite(i)) = fillvalue
          end do
@@ -1089,6 +1098,7 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
    call outfld('tropopause_m', tropopause_m, pcols, lchnk)
    call outfld('ABSORB'//diag(list_idx),   absorb,  pcols, lchnk)
    call outfld('AODVIS'//diag(list_idx),   aodvis,  pcols, lchnk)
+   call outfld('AODALL'//diag(list_idx),   aodall,  pcols, lchnk)
    call outfld('AODABS'//diag(list_idx),   aodabs,  pcols, lchnk)
 
    ! These diagnostics are output only for climate list
@@ -1106,20 +1116,21 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
 
          aoduv(idxnite(i))      = fillvalue
          aodnir(idxnite(i))     = fillvalue
-
-         burdendust(idxnite(i)) = fillvalue
-         burdenso4(idxnite(i))  = fillvalue
-         burdenpom(idxnite(i))  = fillvalue
-         burdensoa(idxnite(i))  = fillvalue
-         burdenbc(idxnite(i))   = fillvalue
-         burdenseasalt(idxnite(i)) = fillvalue
-#if ( defined MODAL_AERO_4MODE_MOM )
-         burdenmom(idxnite(i)) = fillvalue
-#elif ( defined MODAL_AERO_9MODE )
-         burdenpoly(idxnite(i)) = fillvalue
-         burdenprot(idxnite(i)) = fillvalue
-         burdenlip(idxnite(i)) = fillvalue
-#endif
+!Following burden* variables are commented out so that "nite" indices
+!retain their original value instead of being overwritten by "fillvalue"
+!         burdendust(idxnite(i)) = fillvalue
+!         burdenso4(idxnite(i))  = fillvalue
+!         burdenpom(idxnite(i))  = fillvalue
+!         burdensoa(idxnite(i))  = fillvalue
+!         burdenbc(idxnite(i))   = fillvalue
+!         burdenseasalt(idxnite(i)) = fillvalue
+!#if ( defined MODAL_AERO_4MODE_MOM )
+!         burdenmom(idxnite(i)) = fillvalue
+!#elif ( defined MODAL_AERO_9MODE )
+!         burdenpoly(idxnite(i)) = fillvalue
+!         burdenprot(idxnite(i)) = fillvalue
+!         burdenlip(idxnite(i)) = fillvalue
+!#endif
 
          aodabsbc(idxnite(i))   = fillvalue
 

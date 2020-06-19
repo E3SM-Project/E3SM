@@ -1,10 +1,11 @@
 INCLUDE (ScreamUtils)
 
 # Required libraries
-SET (NEED_LIBS rrtmgp scream_control scream_share)
+SET (rrtmgpLib rrtmgp)
+SET (NEED_LIBS ${rrtmgpLib} scream_control scream_share)
 
 # Test atmosphere processes
-CreateUnitTest(rrtmgp_stand_alone "rrtmgp_stand_alone.cpp" "${NEED_LIBS}")
+CreateUnitTest(rrtmgp_stand_alone "rrtmgp_stand_alone.cpp" "${NEED_LIBS}" LABELS "rrtmgp;physics")
 
 # Copy RRTMGP absorption coefficient lookup tables to local data directory
 FILE (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)

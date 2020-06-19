@@ -46,8 +46,6 @@ static void run_bfb_rain_vel()
   view_1d_table mu_r_table; view_dnu_table dnu;
   Functions::init_kokkos_tables(vn_table, vm_table, revap_table, mu_r_table, dnu);
 
-  constexpr Scalar qsmall = C::QSMALL;
-
   // Load some lookup inputs, need at least one per pack value
   ComputeRainFallVelocityData crfv_fortran[max_pack_size] = {
     // qr_incld,       rcldm,    rhofacr,         nr, nr_incld
@@ -81,9 +79,7 @@ static void run_bfb_rain_vel()
 
   // Get data from fortran
   for (Int i = 0; i < max_pack_size; ++i) {
-    if (crfv_fortran[i].qr_incld > qsmall) {
-      compute_rain_fall_velocity(crfv_fortran[i]);
-    }
+    compute_rain_fall_velocity(crfv_fortran[i]);
   }
 
   // Calc bulk rime from a kernel and copy results back to host
@@ -100,10 +96,9 @@ static void run_bfb_rain_vel()
       nr_incld[s] = crfv_device(vs).nr_incld;
     }
 
-    Smask gt_small(qr_incld > qsmall);
     Spack mu_r(0), lamr(0), V_qr(0), V_nr(0);
     Functions::compute_rain_fall_velocity(
-      gt_small, vn_table, vm_table, qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr);
+      vn_table, vm_table, qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr);
 
     // Copy results back into views
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {

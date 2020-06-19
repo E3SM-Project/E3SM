@@ -2,40 +2,7 @@ from utils import run_cmd_no_fail
 
 import os, pathlib
 import concurrent.futures as threading3
-
-# MACHINE -> (env_setup, compiler, batch submit prefix)
-MACHINE_METADATA = {
-    "melvin"   : (["module purge", "module load sems-env", "module load sems-gcc/7.3.0 sems-openmpi/1.10.1 sems-gcc/7.3.0 sems-git/2.10.1 sems-cmake/3.12.2 sems-python/3.5.2", "export CTEST_PARALLEL_LEVEL=24"],
-                  "$(which mpicxx)",
-                  ""),
-    "bowman"   : (["module purge", "module load openmpi/1.10.6/intel/17.2.174 git/2.8.2 cmake/3.12.3", "export PATH=/ascldap/users/jgfouca/packages/Python-3.6.8-bowman/bin:$PATH", "export CTEST_PARALLEL_LEVEL=68"],
-                  "$(which mpicxx)",
-                  "srun"),
-    "blake"    : (["module purge", "module load openmpi/2.1.5/intel/19.1.144 git/2.9.4 cmake/3.12.3", "export PATH=/ascldap/users/jgfouca/packages/Python-3.6.8-blake/bin:$PATH", "export CTEST_PARALLEL_LEVEL=48"],
-                  "$(which mpicxx)",
-                  "srun"),
-    "waterman" : (["module purge", "module load devpack/latest/openmpi/2.1.2/gcc/7.2.0/cuda/9.2.88 git/2.10.1", "module switch cmake/3.12.3", "export PATH=/ascldap/users/jgfouca/packages/Python-3.6.8-waterman/bin:$PATH"],
-                  "$(which mpicxx)",
-                  "bsub -I -q rhel7W"),
-    "white"    : (["module purge", "module load devpack/20181011/openmpi/2.1.2/gcc/7.2.0/cuda/9.2.88 git/2.10.1 cmake/3.12.3", "export PATH=/ascldap/users/jgfouca/packages/Python-3.6.8-white/bin:$PATH"],
-                  "$(which mpicxx)",
-                  "bsub -I -q rhel7G"),
-    "lassen" : (["module purge", "module load git gcc/7.3.1 cuda/10.1.243 cmake/3.14.5 spectrum-mpi netcdf/4.7.0 python/3.7.2", "export LLNL_USE_OMPI_VARS='y'"],
-                  "$(which mpicxx)",
-                  "bsub -Ip"),
-    "quartz" : (["module purge", "module load StdEnv cmake/3.14.5 mkl/2019.0 intel/19.0.4 netcdf-fortran/4.4.4 netcdf/4.4.1.1"],
-                  "$(which mpicxx)",
-                  "salloc --partition=pdebug"),
-    "syrah"  : (["module purge", "module load StdEnv cmake/3.14.5 mkl/2019.0 intel/19.0.4 netcdf-fortran/4.4.4 netcdf/4.4.1.1"],
-                  "$(which mpicxx)",
-                  "salloc --partition=pdebug"),
-    "summit" : (["module purge", "module load cmake/3.15.2 gcc/6.4.0 spectrum-mpi/10.3.0.1-20190611 cuda/10.1.168 python/3.6.6-anaconda3-5.3.0"],
-                "$(which mpicxx)",
-                "bsub -I -q batch -W 0:30 -P cli115 -nnodes 1"),
-    "cori"   : (["eval $(../../cime/scripts/Tools/get_case_env)", "export CTEST_PARALLEL_LEVEL=68", "export OMP_NUM_THREADS=68"],
-                "$(which CC)",
-                "srun --time 02:00:00 --nodes=1 --constraint=knl,quad,cache --exclusive -q regular --account e3sm"),
-}
+from machines_specs import get_mach_env_setup_command, get_mach_cxx_compiler, get_mach_batch_command, get_mach_testing_resources
 
 ###############################################################################
 class GatherAllData(object):
@@ -56,8 +23,11 @@ class GatherAllData(object):
     ###########################################################################
     def formulate_command(self, machine):
     ###########################################################################
-        env_setup, compiler, batch = MACHINE_METADATA[machine]
-        env_setup_str = " && ".join(env_setup)
+        env_setup = get_mach_env_setup_command(machine)
+        compiler  = get_mach_cxx_compiler(machine)
+        batch     = get_mach_batch_command(machine)
+
+        env_setup_str = " && ".join(env_setup) + " CTEST_PARALLEL_LEVEL={}".format(get_mach_testing_resources(machine))
 
         root_dir = pathlib.Path(str(self._root_dir).replace("$machine", machine))
 

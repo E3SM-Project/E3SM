@@ -11,6 +11,7 @@ use ppgrid,       only: pcols, pver
 use physconst,    only: gravit, rair, tmelt
 use phys_control, only: cam_physpkg_is
 use cam_logfile,  only: iulog
+use cam_abortutils, only: endrun
 
 implicit none
 save
@@ -25,6 +26,7 @@ public :: faer_resusp_vs_fprec_evap_mpln
 public :: wetdep_inputs_t
 public :: wetdep_init
 public :: wetdep_inputs_set
+public :: wetdep_inputs_unset
 
 real(r8), parameter :: cmftau = 3600._r8
 real(r8), parameter :: rhoh2o = 1000._r8            ! density of water
@@ -35,14 +37,14 @@ type wetdep_inputs_t
    real(r8), pointer :: qme(:,:) => null()
    real(r8), pointer :: prain(:,:) => null()
    real(r8), pointer :: evapr(:,:) => null()
-   real(r8) :: cldcu(pcols,pver)     ! convective cloud fraction, currently empty
-   real(r8) :: evapc(pcols,pver)     ! Evaporation rate of convective precipitation
-   real(r8) :: cmfdqr(pcols,pver)    ! convective production of rain
-   real(r8) :: conicw(pcols,pver)    ! convective in-cloud water
-   real(r8) :: totcond(pcols, pver)  ! total condensate
-   real(r8) :: cldv(pcols,pver)      ! cloudy volume undergoing wet chem and scavenging
-   real(r8) :: cldvcu(pcols,pver)    ! Convective precipitation area at the top interface of current layer
-   real(r8) :: cldvst(pcols,pver)    ! Stratiform precipitation area at the top interface of current layer 
+   real(r8), allocatable :: cldcu(:,:)  ! convective cloud fraction, currently empty
+   real(r8), allocatable :: evapc(:,:)  ! Evaporation rate of convective precipitation
+   real(r8), allocatable :: cmfdqr(:,:) ! convective production of rain
+   real(r8), allocatable :: conicw(:,:) ! convective in-cloud water
+   real(r8), allocatable :: totcond(:,:)! total condensate
+   real(r8), allocatable :: cldv(:,:)   ! cloudy volume undergoing wet chem and scavenging
+   real(r8), allocatable :: cldvcu(:,:) ! Convective precipitation area at the top interface of current layer
+   real(r8), allocatable :: cldvst(:,:) ! Stratiform precipitation area at the top interface of current layer 
 end type wetdep_inputs_t
 
 integer :: cld_idx             = 0
@@ -122,9 +124,34 @@ subroutine wetdep_inputs_set( state, pbuf, inputs )
   real(r8) :: cldst(pcols,pver)        ! Stratiform cloud fraction
 
   integer :: itim, ncol
+  integer :: ierror
 
   ncol = state%ncol
   itim = pbuf_old_tim_idx()
+
+  allocate (inputs%cldcu(pcols,pver), stat=ierror)
+  if ( ierror /= 0 ) call endrun('WETDEP_INPUTS_SET error: allocation error cldcu')
+
+  allocate (inputs%evapc(pcols,pver), stat=ierror)
+  if ( ierror /= 0 ) call endrun('WETDEP_INPUTS_SET error: allocation error evapc')
+
+  allocate (inputs%cmfdqr(pcols,pver), stat=ierror)
+  if ( ierror /= 0 ) call endrun('WETDEP_INPUTS_SET error: allocation error cmfdqr')
+
+  allocate (inputs%conicw(pcols,pver), stat=ierror)
+  if ( ierror /= 0 ) call endrun('WETDEP_INPUTS_SET error: allocation error conicw')
+
+  allocate (inputs%totcond(pcols,pver), stat=ierror)
+  if ( ierror /= 0 ) call endrun('WETDEP_INPUTS_SET error: allocation error totcond')
+
+  allocate (inputs%cldv(pcols,pver), stat=ierror)
+  if ( ierror /= 0 ) call endrun('WETDEP_INPUTS_SET error: allocation error cldv')
+
+  allocate (inputs%cldvcu(pcols,pver), stat=ierror)
+  if ( ierror /= 0 ) call endrun('WETDEP_INPUTS_SET error: allocation error cldvcu')
+
+  allocate (inputs%cldvst(pcols,pver), stat=ierror)
+  if ( ierror /= 0 ) call endrun('WETDEP_INPUTS_SET error: allocation error cldvst')
 
   call pbuf_get_field(pbuf, cld_idx,         inputs%cldt, start=(/1,1,itim/), kount=(/pcols,pver,1/) )
   call pbuf_get_field(pbuf, qme_idx,         inputs%qme     )
@@ -161,6 +188,25 @@ subroutine wetdep_inputs_set( state, pbuf, inputs )
                 state%ncol )
 
 end subroutine wetdep_inputs_set
+
+!==============================================================================
+! deallocate storage assoicated with wetdep_inputs_t type variable
+!==============================================================================
+subroutine wetdep_inputs_unset(inputs)
+
+  ! args
+  type(wetdep_inputs_t), intent(inout) :: inputs          !! collection of wetdepa inputs
+
+  deallocate(inputs%cldcu)
+  deallocate(inputs%evapc)
+  deallocate(inputs%cmfdqr)
+  deallocate(inputs%conicw)
+  deallocate(inputs%totcond)
+  deallocate(inputs%cldv)
+  deallocate(inputs%cldvcu)
+  deallocate(inputs%cldvst)
+
+end subroutine wetdep_inputs_unset
 
 subroutine clddiag(t, pmid, pdel, cmfdqr, evapc, &
                    cldt, cldcu, cldst, cme, evapr, &
@@ -317,7 +363,7 @@ subroutine wetdepa_v2( ncol, deltat, &
       ! Sungsu Park. Mar.2010 : Impose consistencies with a few changes in physics.
       !-----------------------------------------------------------------------
 
-
+      use phys_control, only: phys_getopts
 
       implicit none
 
@@ -482,6 +528,16 @@ subroutine wetdepa_v2( ncol, deltat, &
       real(r8) u_old, u_tmp
       real(r8) x_old, x_tmp, x_ratio
 
+      
+#ifdef CRM_NZ
+      ! crm_nz is used to disable warnings above the CRM with MMF
+      integer, parameter :: crm_nz = CRM_NZ   
+#else
+      ! if not MMF, CRM_NZ is not defined, so set to pver to avoid build error
+      integer, parameter :: crm_nz = pver
+#endif
+      logical use_MMF
+      call phys_getopts( use_MMF_out = use_MMF)
 
 ! ------------------------------------------------------------------------
 !      omsm = 1.-1.e-10          ! used to prevent roundoff errors below zero
@@ -1064,6 +1120,15 @@ jstrcnv_loop_aa: &
                exit
             end if
          end do
+
+         ! the log files from MMF runs were getting really large with these warnings due 
+         ! to tiny negative values (~ -1e-300) at the top of the model, well above the CRM,
+         ! so this block avoids this problem when running the MMF
+         if ( use_MMF ) then
+            if ( found ) then
+               if ( k < (pver-crm_nz) ) found = .false.
+            end if
+         end if
 
          if ( found ) then
             do i = 1,ncol

@@ -13,4 +13,4 @@ export JENKINS_START_TIME=$(date "+%s")
 
 umask 002
 
-$SCRIPT_DIR/jenkins_generic_job --submit-to-cdash "$@" >& JENKINS_$DATE_STAMP
+$SCRIPT_DIR/jenkins_generic_job --submit-to-cdash --update-success "$@" >& JENKINS_$DATE_STAMP

@@ -40,10 +40,12 @@ module lin_strat_chem
   integer  :: linoz_lbl = unset_int ! number of layers with ozone decay from the surface
   real(r8) :: linoz_sfc = unset_r8  ! boundary layer concentration (ppb) to which Linoz ozone e-fold
   real(r8) :: linoz_tau = unset_r8  ! Linoz e-fold time scale (in seconds) in the boundary layer
+  real(r8) :: linoz_psc_T = unset_r8  ! PSC ozone loss T (K) threshold
 
   integer  :: o3_lbl ! set from namelist input linoz_lbl
   real(r8) :: o3_sfc ! set from namelist input linoz_sfc
   real(r8) :: o3_tau ! set from namelist input linoz_tau
+  real(r8) :: psc_T  ! set from namelist input linoz_psc_T
 
 contains
 
@@ -59,13 +61,14 @@ subroutine linoz_readnl(nlfile)
    integer :: unitn, ierr
    character(len=*), parameter :: subname = 'linoz_readnl'
 
-   namelist /linoz_nl/ linoz_lbl, linoz_sfc, linoz_tau
+   namelist /linoz_nl/ linoz_lbl, linoz_sfc, linoz_tau, linoz_psc_T
    !-----------------------------------------------------------------------------
 
    ! Set default values
    linoz_lbl = 4
    linoz_sfc = 30.0e-9_r8
    linoz_tau = 172800.0_r8
+   linoz_psc_T = 193.0_r8
 
    if (masterproc) then
       unitn = getunit()
@@ -84,11 +87,13 @@ subroutine linoz_readnl(nlfile)
       o3_lbl = linoz_lbl
       o3_sfc = linoz_sfc
       o3_tau = linoz_tau
+      psc_T  = linoz_psc_T
 
       ! check
       write(iulog,*) subname // ', linoz_lbl:', o3_lbl
       write(iulog,*) subname // ', linoz_sfc:', o3_sfc
       write(iulog,*) subname // ', linoz_tau:', o3_tau
+      write(iulog,*) subname // ', linoz_psc_T:', psc_T
 
    end if
 
@@ -97,6 +102,7 @@ subroutine linoz_readnl(nlfile)
    call mpibcast(o3_lbl,            1, mpiint, 0, mpicom)
    call mpibcast(o3_sfc,            1, mpir8,  0, mpicom)
    call mpibcast(o3_tau,            1, mpir8,  0, mpicom)
+   call mpibcast(psc_T,             1, mpir8,  0, mpicom)
 #endif
 
 end subroutine linoz_readnl
@@ -222,7 +228,6 @@ end subroutine linoz_readnl
     real(r8), parameter :: convert_to_du = 1._r8/(2.687e16_r8)      ! convert ozone column from mol/cm^2 to DU
     real(r8), parameter :: degrees_to_radians = pi/180._r8          ! conversion factors
     real(r8), parameter :: radians_to_degrees = 180._r8/pi
-    real(r8), parameter :: temp_activation_cariolle = 193._r8       ! O3 loss freq when T below temp_activation_cariolle (K)
     real(r8), parameter :: chlorine_loading_1987    = 2.5977_r8     ! EESC value (ppbv)
     real(r8), parameter :: chlorine_loading_bgnd    = 0.0000_r8     ! EESC value (ppbv) for background conditions
     real(r8), parameter :: pressure_threshold       = 210.e+2_r8    ! {PJC} for diagnostics only
@@ -320,7 +325,7 @@ end subroutine linoz_readnl
           !
           if ( abs(lats(i)) > 40._r8 ) then   
              if ( (chlorine_loading-chlorine_loading_bgnd) > 0._r8 ) then
-                if ( temp(i,k) <= temp_activation_cariolle ) then
+                if ( temp(i,k) <= psc_T ) then
                    !
                    ! define maximum SZA for PSC loss (= tangent height at sunset)
                    !

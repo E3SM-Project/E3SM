@@ -80,8 +80,9 @@ void Functions<S,D>
 template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::lookup_ice (const Smask& qiti_gt_small, const Spack& qitot, const Spack& nitot,
-              const Spack& qirim, const Spack& rhop, TableIce& t)
+::lookup_ice (const Spack& qitot, const Spack& nitot,
+              const Spack& qirim, const Spack& rhop, TableIce& t,
+              const Smask& context)
 {
   // find index for qi (normalized ice mass mixing ratio = qitot/nitot)
   //   dum1 = (log10(qitot)+16.)/0.70757  !orig
@@ -90,7 +91,7 @@ void Functions<S,D>
   // qitot/nitot=261.7**((i+10)*0.1)*1.e-18
   // dum1 = (log10(qitot/nitot)+18.)/(0.1*log10(261.7))-10.
 
-  if (!qiti_gt_small.any()) return;
+  if (!context.any()) return;
 
   const auto lookup_table_1a_dum1_c = P3C::lookup_table_1a_dum1_c;
   t.dum1 = (pack::log10(qitot/nitot)+18) * lookup_table_1a_dum1_c - 10;
@@ -114,8 +115,8 @@ void Functions<S,D>
 
   // find index for bulk rime density
   // (account for uneven spacing in lookup table for density)
-  const auto rhop_le_650 = qiti_gt_small && (rhop <= 650);
-  const auto rhop_gt_650 = qiti_gt_small && (rhop > 650);
+  const auto rhop_le_650 = context && (rhop <= 650);
+  const auto rhop_gt_650 = !rhop_le_650 && context;
   t.dum5.set(rhop_le_650, (rhop-50)*sp(0.005) + 1);
   t.dum5.set(rhop_gt_650, (rhop-650)*sp(0.004) + 4);
 
@@ -139,14 +140,16 @@ void Functions<S,D>
 template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::lookup_rain(const Smask& qiti_gt_small, const Spack& qr, const Spack& nr, TableRain& t)
+::lookup_rain(const Spack& qr, const Spack& nr, TableRain& t,
+              const Smask& context)
 {
-  if (! qiti_gt_small.any()) return;
+  if (!context.any()) return;
 
   // find index for scaled mean rain size
   // if no rain, then just choose dumj = 1 and do not calculate rain-ice collection processes
   const auto qsmall = C::QSMALL;
-  const auto gt_small = qr > qsmall && nr > 0.0;
+  const auto gt_small = qr > qsmall && nr > 0.0 && context;
+  const auto lt_small = !gt_small && context;
 
   // calculate scaled mean size for consistency with ice lookup table
   Spack dumlr(1);
@@ -162,8 +165,8 @@ void Functions<S,D>
   t.dumj = pack::max(1, t.dumj);
   t.dumj = pack::min(P3C::rcollsize-1, t.dumj);
 
-  t.dumj.set(qiti_gt_small && !gt_small, 1);
-  t.dum3.set(qiti_gt_small && !gt_small, 1);
+  t.dumj.set(lt_small, 1);
+  t.dum3.set(lt_small, 1);
 
   // adjust for 0-based indexing
   t.dumj -= 1;
@@ -172,13 +175,13 @@ void Functions<S,D>
 template <typename S, typename D>
 KOKKOS_FUNCTION
 typename Functions<S,D>::Spack Functions<S,D>
-::apply_table_ice(const Smask& qiti_gt_small, const int& index, const view_itab_table& itab,
-                  const TableIce& t)
+::apply_table_ice(const int& index, const view_itab_table& itab, const TableIce& t,
+                  const Smask& context)
 {
   Spack proc;
   IntSmallPack idxpk(index);
 
-  if (!qiti_gt_small.any()) return proc;
+  if (!context.any()) return proc;
 
   // get value at current density index
 
@@ -214,13 +217,14 @@ typename Functions<S,D>::Spack Functions<S,D>
 template <typename S, typename D>
 KOKKOS_FUNCTION
 typename Functions<S,D>::Spack Functions<S,D>
-::apply_table_coll(const Smask& qiti_gt_small, const int& index, const view_itabcol_table& itabcoll,
-                   const TableIce& ti, const TableRain& tr)
+::apply_table_coll(const int& index, const view_itabcol_table& itabcoll,
+                   const TableIce& ti, const TableRain& tr,
+                   const Smask& context)
 {
   Spack proc;
   IntSmallPack idxpk(index);
 
-  if (!qiti_gt_small.any()) return proc;
+  if (!context.any()) return proc;
 
   // current density index
 

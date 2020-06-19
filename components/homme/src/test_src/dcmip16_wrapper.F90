@@ -101,7 +101,7 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2016 test 1: moist baroclinic wave'
 
-  if (qsize<5) call abortmp('ERROR: test requires qsize>=5')
+  if (qsize<6) call abortmp('ERROR: test requires qsize>=6')
 
   ! set initial conditions
   do ie = nets,nete
@@ -620,7 +620,7 @@ subroutine dcmip2016_test1_pg_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl
   real(rl), dimension(nlev)       :: u_c,v_c,p_c,qv_c,qc_c,qr_c,rho_c,z_c, th_c
   real(rl) :: max_w, max_precl, min_ps
   real(rl) :: lat, lon, dz_top(np,np),zi(np,np,nlevp),zi_c(nlevp), ps(np,np), &
-       wrk(np,np), rd, wrk3(np,np,nlev), wrk4(np,np,nlev,2)
+       wrk(np,np), rd, wrk3(np,np,nlev), wrk4(np,np,nlev,2), wf(np*np,1)
 
   integer :: nf, ncol
   real(rl), dimension(np,np,nlev) :: dp_fv, p_fv, u_fv, v_fv, T_fv, exner_kess_fv, &
@@ -650,7 +650,6 @@ subroutine dcmip2016_test1_pg_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl
   call t_stopf('gfr_dyn_to_fv_phys')
 
   do ie = nets,nete
-     precl(:,:,ie) = -one
      ! for max_w
      call get_field(elem(ie), 'w', w, hvcoord, nt, ntQ)
 
@@ -690,8 +689,8 @@ subroutine dcmip2016_test1_pg_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl
      rho_dry_fv(:nf,:nf,:) = (1 - Q_fv(:nf,:nf,:,iqv))*rho_fv(:nf,:nf,:)
 
      ! Compute form of exner pressure expected by Kessler physics.
-     exner_kess_fv = (p_fv/p0)**(Rgas/Cp)
-     theta_kess_fv = T_fv/exner_kess_fv
+     exner_kess_fv(:nf,:nf,:) = (p_fv(:nf,:nf,:)/p0)**(Rgas/Cp)
+     theta_kess_fv(:nf,:nf,:) = T_fv(:nf,:nf,:)/exner_kess_fv(:nf,:nf,:)
 
      u0(:nf,:nf,:) = u_fv(:nf,:nf,:); v0(:nf,:nf,:) = v_fv(:nf,:nf,:); T0(:nf,:nf,:) = T_fv(:nf,:nf,:)
      Q0_fv(:nf,:nf,:,:) = Q_fv(:nf,:nf,:,:);
@@ -714,6 +713,8 @@ subroutine dcmip2016_test1_pg_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl
            zi_c = zi_fv(i,j,nlevp:1:-1)
            th_c = theta_kess_fv(i,j,nlev:1:-1)
 
+           call gfr_f_get_latlon(ie, i, j, lat, lon)
+
            ! Get forced versions of u,v,p,qv,qc,qr. rho is constant.
            call DCMIP2016_PHYSICS(test, u_c, v_c, p_c, th_c, qv_c, qc_c, qr_c, rho_c, dt, &
                 z_c, zi_c, lat, nlev, precl_fv(i,j,1), pbl_type, prec_type)
@@ -725,7 +726,6 @@ subroutine dcmip2016_test1_pg_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl
            Q_fv(i,j,:,3) = qr_c(nlev:1:-1)
            theta_kess_fv(i,j,:) = th_c(nlev:1:-1)
 
-           call gfr_f_get_latlon(ie, i, j, lat, lon)
            do k=1,nlev
               call tendency_terminator(lat*rad2dg, lon*rad2dg, Q_fv(i,j,k,4), Q_fv(i,j,k,5), &
                    dt, ddt_cl(i,j,k), ddt_cl2(i,j,k))
@@ -751,7 +751,8 @@ subroutine dcmip2016_test1_pg_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl
 
      ! These gfr calls are special to this routine, to handle
      ! DCMIP-specific precl.
-     call gfr_f2g_scalar(ie, elem(ie)%metdet, precl_fv, wrk3(:,:,:1))
+     wf(:ncol,1) = reshape(precl_fv(:nf,:nf,1), (/ncol/))
+     call gfr_f2g_scalar(ie, elem(ie)%metdet, wf(:,:1), wrk3(:,:,:1))
      call gfr_g_make_nonnegative(elem(ie)%metdet, wrk3(:,:,:1))
      precl(:,:,ie) = wrk3(:,:,1)
 

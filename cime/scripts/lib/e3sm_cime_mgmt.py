@@ -13,7 +13,7 @@ MERGE_TAG_PREFIX = "to-acme-"
 def setup():
 ###############################################################################
     run_cmd_no_fail("git config merge.renameLimit 999999")
-    run_cmd_no_fail("git checkout master && git pull", verbose=True)
+    run_cmd_no_fail("git checkout master && git pull && git submodule sync && git submodule update --init", verbose=True)
 
     remotes = run_cmd_no_fail("git remote")
     if ESMCI_REMOTE_NAME not in remotes:
@@ -99,7 +99,8 @@ def touches_file(start_range, end_range, filepath, title, skip=None):
 def reset_file(version, srcpath, dstpath):
 ###############################################################################
     is_exe = os.access(dstpath, os.X_OK)
-    os.remove(dstpath)
+    if os.path.exists(dstpath):
+        os.remove(dstpath)
     try:
         run_cmd_no_fail("git show {}:{} > {}".format(version, srcpath, dstpath))
     except CIMEError:

@@ -31,6 +31,7 @@ module ice_prescribed_mod
    use shr_ncread_mod
    use shr_sys_mod
    use shr_mct_mod
+   use shr_kind_mod,only : SHR_KIND_IN
    use mct_mod
    use pio
 

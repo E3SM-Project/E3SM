@@ -25,7 +25,7 @@ TEST_CASE ("dag_check","[!throws]")
   // Create the driver
   control::AtmosphereDriver ad;
 
-  util::TimeStamp init_time(0,0,0);
+  util::TimeStamp init_time(0,0,0,0.0);
 
   // Since Physics_fwd has an unmet dependency, this should throw
   REQUIRE_THROWS(ad.initialize(atm_comm,ad_params,init_time));

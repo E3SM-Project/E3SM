@@ -14,6 +14,7 @@ module atm_comp_mct
   use seq_timemgr_mod
 
   use shr_kind_mod     , only: r8 => shr_kind_r8, cl=>shr_kind_cl
+  use shr_kind_mod     , only: cs => shr_kind_cs
   use shr_file_mod     , only: shr_file_getunit, shr_file_freeunit, &
                                shr_file_setLogUnit, shr_file_setLogLevel, &
                                shr_file_getLogUnit, shr_file_getLogLevel, &
@@ -148,8 +149,8 @@ CONTAINS
     integer :: perpetual_ymd    ! Perpetual date (YYYYMMDD)
     integer :: shrlogunit,shrloglev ! old values
     logical :: first_time = .true.
-    character(len=SHR_KIND_CS) :: calendar      ! Calendar type
-    character(len=SHR_KIND_CS) :: starttype     ! infodata start type
+    character(len=cs) :: calendar      ! Calendar type
+    character(len=cs) :: starttype     ! infodata start type
     character(len=8)           :: c_inst_index  ! instance number
     character(len=8)           :: c_npes        ! number of pes
     integer :: lbnum

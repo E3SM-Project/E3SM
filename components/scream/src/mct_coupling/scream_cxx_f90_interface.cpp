@@ -1,0 +1,139 @@
+#include "ekat/scream_session.hpp"
+
+#include "ekat/scream_parse_yaml_file.hpp"
+#include "share/atm_process/atmosphere_process.hpp"
+#include "ekat/scream_pack.hpp"
+#include "share/grid/user_provided_grids_manager.hpp"
+#include "share/grid/se_grid.hpp"
+#include "control/atmosphere_driver.hpp"
+
+#include "dynamics/register_dynamics.hpp"
+#include "physics/register_physics.hpp"
+
+#include "physics/p3/scream_p3_interface.hpp"
+#include "physics/p3/p3_functions_f90.hpp"
+#include "physics/shoc/scream_shoc_interface.hpp"
+
+#include "control/tests/dummy_grid.hpp"
+
+#include "mct_coupling/ScreamContext.hpp"
+#include "ekat/mpi/scream_comm.hpp"
+
+extern "C"
+{
+
+/*===============================================================================================*/
+
+// WARNING: make sure input_yaml_file is a null-terminated string!
+void scream_init (const MPI_Fint& f_comm,
+                  const int& start_ymd,
+                  const int& start_tod,
+                  const char* input_yaml_file) {
+  using namespace scream;
+  using namespace scream::control;
+
+  // First of all, disable all fpes we may have enabled.
+  // Store the mask, so we can restore before returning.
+  int fpe_mask = get_enabled_fpes();
+  disable_all_fpes();
+
+  // First of all, initialize the scream session
+  scream::initialize_scream_session();
+
+  // Create the context
+  auto& c = ScreamContext::singleton();
+
+  // Create the C MPI_Comm from the Fortran one
+  MPI_Comm mpi_comm_c = MPI_Comm_f2c(f_comm);
+  auto& atm_comm = c.create<scream::Comm>(mpi_comm_c);
+
+
+  // Create a parameter list for inputs
+  printf("[scream] reading parameterr from yaml file: %s\n",input_yaml_file);
+  ParameterList scream_params("Scream Parameters");
+  parse_yaml_file (input_yaml_file, scream_params);
+  scream_params.print();
+
+  error::runtime_check(scream_params.isSublist("Atmosphere Driver"),
+       "Error! Sublist 'Atmosphere Driver' not found inside '" +
+       std::string(input_yaml_file) + "'.\n");
+
+  auto& ad_params = scream_params.sublist("Atmosphere Driver");
+
+  // Need to register products in the factories *before* we attempt to create any.
+  // In particular, register all atm processes, and all grids managers.
+  register_dynamics();
+  register_physics();
+
+  // Create the bare ad, then init it
+  auto& ad = c.create<AtmosphereDriver>();
+
+  // Recall that e3sm uses the int YYYYMMDD to store a date
+  std::cout << "start_ymd: " << start_ymd << "\n";
+  const int dd = start_ymd % 100;
+  const int mm = (start_ymd / 100) % 100;
+  const int yy = start_ymd / 10000;
+  util::TimeStamp time (yy,mm,dd,start_tod);
+
+  // Init and run (to finalize, wait till checks are completed,
+  // or you'll clear the field repo!)
+  ad.initialize(atm_comm,ad_params,time);
+
+  // Restore the FPE flag as it was when control was handed to us.
+  disable_all_fpes();
+  enable_fpes(fpe_mask);
+}
+/*===============================================================================================*/
+void scream_run (const double& dt) {
+  // TODO: uncomment once you have valid inputs. I fear AD may crash with no inputs.
+  using namespace scream;
+  using namespace scream::control;
+
+  // First of all, enable only scream fpes.
+  // Store the mask, so we can restore before returning.
+  int fpe_mask = get_enabled_fpes();
+  disable_all_fpes();
+  enable_default_fpes();
+
+  // Get the context
+  auto& c = ScreamContext::singleton();
+
+  // Get the AD, and run it
+  auto& ad = c.getNonConst<AtmosphereDriver>();
+  ad.run(dt);
+
+  (void) dt;
+
+  // Restore the FPE flag as it was when control was handed to us.
+  disable_all_fpes();
+  enable_fpes(fpe_mask);
+}
+
+/*===============================================================================================*/
+void scream_finalize (/* args ? */) {
+  using namespace scream;
+  using namespace scream::control;
+
+  // First of all, enable only scream fpes.
+  // Store the mask, so we can restore before returning.
+  int fpe_mask = get_enabled_fpes();
+  disable_all_fpes();
+  enable_default_fpes();
+
+  // TODO: uncomment once you have valid inputs. I fear AD may crash with no inputs.
+  // Get the context
+  auto& c = ScreamContext::singleton();
+
+  // Get the AD, and finalize it
+  auto& ad = c.getNonConst<AtmosphereDriver>();
+  ad.finalize();
+
+  // Clean up also P3 stuff
+  p3::P3GlobalForFortran::deinit();
+
+  // Restore the FPE flag as it was when control was handed to us.
+  disable_all_fpes();
+  enable_fpes(fpe_mask);
+}
+
+} // extern "C"

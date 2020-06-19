@@ -43,7 +43,7 @@ void DynamicsDrivenGridsManager::build_grid (const std::string& grid_name)
     build_dynamics_grid();
   }
 
-  if (grid_name==m_params.get<std::string>("Reference Grid","Physics")) {
+  if (grid_name==m_params.get<std::string>("Reference Grid")) {
     m_grids["Reference"] = get_grid(grid_name);
   }
 }

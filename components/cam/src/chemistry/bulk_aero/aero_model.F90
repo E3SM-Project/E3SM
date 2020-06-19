@@ -535,7 +535,8 @@ contains
        pbuf,                                                                    & !Pointer
        ptend                                                                    ) !Intent-out
 
-    use wetdep,        only : wetdepa_v1, wetdep_inputs_set, wetdep_inputs_t
+    use wetdep,        only : wetdepa_v1, wetdep_inputs_set, &
+                              wetdep_inputs_unset, wetdep_inputs_t
     use dust_model,    only : dust_names
     use seasalt_model, only : sslt_names=>seasalt_names
 
@@ -686,6 +687,8 @@ contains
     if (dust_active) then
        call outfld( 'DSTSFWET', sflx_tot_dst, pcols, lchnk)
     endif
+
+    call wetdep_inputs_unset(dep_inputs)
 
   endsubroutine aero_model_wetdep
 
