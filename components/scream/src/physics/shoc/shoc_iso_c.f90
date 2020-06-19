@@ -100,9 +100,9 @@ contains
   subroutine shoc_grid_c(shcol,nlev,nlevi,zt_grid,zi_grid,pdel,dz_zt,dz_zi,rho_zt) bind (C)
     use shoc, only: shoc_grid
     
-    integer(kind=c_int), intent(in) :: shcol
-    integer(kind=c_int), intent(in) :: nlev
-    integer(kind=c_int), intent(in) :: nlevi
+    integer(kind=c_int), intent(in), value :: shcol
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: nlevi
     real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
     real(kind=c_real), intent(in) :: zi_grid(shcol,nlevi) 
     real(kind=c_real), intent(in) :: pdel(shcol,nlev)    
@@ -111,9 +111,10 @@ contains
     real(kind=c_real), intent(out) :: dz_zi(shcol,nlevi)
     real(kind=c_real), intent(out) :: rho_zt(shcol,nlev)
 
-    print *, 'zt_grid'
-    print *,  zt_grid(1,1)
-    !call shoc_grid(shcol,nlev,nlevi,zt_grid,zi_grid,pdel,dz_zt,dz_zi,rho_zt)
+    !print *, shcol; 
+    !print *, 'zt_grid'
+    !print *,  zt_grid(1,1)
+    call shoc_grid(shcol,nlev,nlevi,zt_grid,zi_grid,pdel,dz_zt,dz_zi,rho_zt)
   end subroutine shoc_grid_c
 
 end module shoc_iso_c

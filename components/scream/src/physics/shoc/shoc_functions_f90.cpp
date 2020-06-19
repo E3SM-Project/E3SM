@@ -53,11 +53,63 @@ void shoc_subroutine(SHOCSubroutineData& d) // example wrapper function
   // shoc_subroutine_c(d.in1, d.in2, d.in3, &d.out1, &d.out2, &d.out3);
 }
 
+SHOCGridData::SHOCGridData(Int shcol_, Int nlev_, Int nlevi_):
+shcol(shcol_), nlev(nlev_), nlevi(nlevi_),
+m_total(shcol_ * nlev_), m_totali(shcol_ * nlevi_), 
+m_data(NUM_ARRAYS * m_total, 0.0), m_datai(NUM_ARRAYS_i * m_totali, 0.0)
+{
+ init_ptrs();
+}
+
+SHOCGridData::SHOCGridData(const SHOCGridData& rhs):
+shcol(rhs.shcol), nlev(rhs.nlev), nlevi(rhs.nlevi),
+m_total(rhs.m_total), m_totali(rhs.m_totali), 
+m_data(rhs.m_data), m_datai(rhs.m_datai)
+{
+ init_ptrs();
+}
+
+void SHOCGridData::init_ptrs(){
+  Int offset = 0; 
+  Real* data_begin = m_data.data(); 
+  Real* data_begin_i = m_datai.data();
+
+  std::array<Real**, NUM_ARRAYS> ptrs = {&zt_grid, &dz_zt, &pdel, &rho_zt};
+  std::array<Real**, NUM_ARRAYS_i> ptrs_i = {&zi_grid, &dz_zi};
+
+  for (size_t i = 0; i < NUM_ARRAYS; ++i){
+    *ptrs[i] = data_begin + offset; 
+    offset += m_total; 
+  }
+
+  for (size_t i = 0; i < NUM_ARRAYS_i; ++i){
+    *ptrs_i[i] = data_begin_i + offset; 
+    offset += m_totali;
+  }
+}
+
+void SHOCGridData::transpose(){
+  SHOCGridData d_trans(*this);
+  // Transpose zt arrays
+  util::transpose<util::TransposeDirection::f2c>(zt_grid, d_trans.zt_grid, shcol, nlev);
+  util::transpose<util::TransposeDirection::f2c>(dz_zt, d_trans.dz_zt, shcol, nlev);
+  util::transpose<util::TransposeDirection::f2c>(pdel, d_trans.pdel, shcol, nlev);
+  util::transpose<util::TransposeDirection::f2c>(rho_zt, d_trans.rho_zt, shcol, nlev);
+
+  // Transpose zi arrays
+  util::transpose<util::TransposeDirection::f2c>(zi_grid, d_trans.zi_grid, shcol, nlevi);
+  util::transpose<util::TransposeDirection::f2c>(dz_zi, d_trans.dz_zi, shcol, nlevi);
+
+  *this = d_trans;
+}
+
 
 void shoc_grid(Int nlev, SHOCGridData& d)
 {
+  //std::cout << "Hola   " << d.shcol << "\n\n\n";
   shoc_init(nlev, true);
   shoc_grid_c(d.shcol, d.nlev, d.nlevi, d.zt_grid, d.zi_grid, d.pdel, d.dz_zt, d.dz_zi, d.rho_zt);
+  d.transpose();
 }
 
 } // namespace shoc
