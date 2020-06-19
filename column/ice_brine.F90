@@ -61,11 +61,11 @@
          meltb       , & ! bottom ice melt                      (m)
          meltt       , & ! top ice melt                         (m)
          congel      , & ! bottom ice growth                    (m)
-         snoice          ! top ice growth from flooding         (m)
+         snoice      , & ! top ice growth from flooding         (m)
+         hice_old        ! old ice thickness (m)
 
       real (kind=dbl_kind), intent(out) :: &
-         hbr_old     , & ! old brine height (m)
-         hice_old        ! old ice thickness (m)
+         hbr_old         ! old brine height (m)
 
       real (kind=dbl_kind), intent(inout) :: &
          hin          , & ! ice thickness (m) 
@@ -98,7 +98,7 @@
       !-----------------------------------------------------------------
 
       l_stop = .false.
-      if (fbri <= c0) then
+      if (fbri < c0) then
          write(warning, *) 'fbri, hice_old', fbri, hice_old
          call add_warning(warning)
          write(warning, *) 'vicen, aicen', vicen, aicen

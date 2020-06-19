@@ -63,9 +63,6 @@
                          snow_bio_net, grow_net,    &
                          totalChla,                 &
                          flux_bion,                 &
-                         carbonInitial,             &
-                         carbonFinal,               &
-                         carbonFlux,                &
                          l_stop,       stop_label)
 
       use ice_aerosol, only: update_snow_bgc
@@ -84,7 +81,7 @@
          ntrcr                 ! number of tracers
 
       integer (kind=int_kind), dimension (nbtrcr), intent(in) :: &
-         bio_index
+         bio_index    ! references index of bio tracer (nbtrcr) to tracer array (ntrcr) 
 
       real (kind=dbl_kind), intent(in) :: &
          dt,       &  ! time step
@@ -113,18 +110,13 @@
          dh_top_chl, & ! change in brine top (m) felt by algae
          dh_direct     ! surface flooding or surface runoff (m)
 
-      real (kind=dbl_kind), dimension (nbtrcr), intent(inout) :: &
+      real (kind=dbl_kind), dimension (:), intent(inout) :: &
          snow_bio_net,& ! net bio tracer in snow (mmol/m^2)
          ice_bio_net, & ! net bio tracer in ice (mmol/m^2)
          fbio_atmice, & ! bio flux from atm to ice (mmol/m^2/s)
          fbio_snoice, & ! bio flux from snow to ice  (mmol/m^2/s)
          flux_bio,    & ! total ocean tracer flux (mmol/m^2/s)
          flux_bion      ! category ocean tracer flux (mmol/m^2/s)
-
-      real (kind=dbl_kind), intent(inout) :: &
-         carbonInitial, & ! initial carbon content (mmol/m2)
-         carbonFinal,   & ! final carbon content (mmol/m2)
-         carbonFlux       ! carbon flux (mmol/m2/s)
 
       real (kind=dbl_kind), intent(in) :: &
          hbri_old       ! brine height  (m)
@@ -143,7 +135,7 @@
          icgrid     , & ! CICE interface coordinate   
          fswthrul       ! visible short wave radiation on icgrid (W/m^2)  
 
-      real (kind=dbl_kind), dimension(nbtrcr), &
+      real (kind=dbl_kind), dimension(:), &
          intent(in) :: &
          flux_bio_atm   ! aerosol/bgc deposition rate (mmol/m^2 s)
 
@@ -206,6 +198,11 @@
          hsnow_f, & ! final snow thickness (m)
          carbonError ! carbon conservation error (mmol/m2)
 
+      real (kind=dbl_kind) :: &
+         carbonInitial, & ! initial carbon content (mmol/m2)
+         carbonFinal,   & ! final carbon content (mmol/m2)
+         carbonFlux       ! carbon flux (mmol/m2/s)
+
       logical (kind=log_kind) :: &
          write_flux_diag
 
@@ -213,7 +210,7 @@
          a_ice
 
       real (kind=dbl_kind), parameter :: &
-         accuracy = 1.0e-14_dbl_kind
+         accuracy = 1.0e-13_dbl_kind
 
       character(len=char_len_long) :: &
          warning  
@@ -339,8 +336,8 @@
                call add_warning(warning)
                write(warning,*)  Tot_BGC_i(mm) + flux_bio_atm(mm)*dt - flux_bion(mm)*dt
                call add_warning(warning)
-               l_stop = .true.
-               stop_label = "carbon conservation in ice_algae.F90"
+               !l_stop = .true.
+               !stop_label = "carbon conservation in ice_algae.F90"
             enddo
          endif
       endif
@@ -574,7 +571,7 @@
          grow_val     , & ! (m/x)
          rphi_sk      , & ! 1 / skeletal layer porosity
          cinit_tmp    , & ! temporary variable for concentration (mmol/m^2)
-         Nerror       , & ! change in total nitrogen from reactions
+         Cerror       , & ! change in total carbon from reactions (mmol/m^3)
          nitrification    ! nitrate from nitrification (mmol/m^3)
 
       real (kind=dbl_kind), parameter :: &
@@ -588,7 +585,7 @@
          MJ3 = 1.04e7_dbl_kind          , & ! 1/(m/s) from: 1.39e-3_dbl_kind*secday^2  
          PV_frac_max = 0.9_dbl_kind         ! Maximum Piston velocity is 90% of skeletal layer/dt
 
-      logical (kind=log_kind) :: conserve_N
+      logical (kind=log_kind) :: conserve_C
 
       character(len=char_len_long) :: &
          warning ! warning message
@@ -598,7 +595,7 @@
       !-----------------------------------------------------------------
 
       l_stop = .false.
-      conserve_N = .true.
+      conserve_C = .true.
       Zoo_skl    = c0
       rphi_sk    = c1/phi_sk
       PVt        = c0
@@ -707,7 +704,7 @@
                       iTin,                       &
                       upNOn,           upNHn,     &
                       Zoo_skl,                    &
-                      Nerror,          conserve_N,&
+                      Cerror,          conserve_C,&
                       nitrification)
 
       !-----------------------------------------------------------------
@@ -738,8 +735,8 @@
          ! Currently not coupled with ocean biogeochemistry
 !         ocean_bio(nn) = ocean_bio(nn) + flux_bio(nn)/hmix*aicen
 
-         if (.not. conserve_N) then
-              write(warning,*) 'N not conserved in skl_bgc, Nerror:',Nerror
+         if (.not. conserve_C) then
+              write(warning,*) 'C not conserved in skl_bgc, Cerror:',Cerror
               call add_warning(warning)
               write(warning,*) 'sk_bgc < 0 after algal fluxes, nn,cinit,flux_bio',&
                                nn,cinit(nn),flux_bio(nn)
@@ -932,7 +929,7 @@
          D_spdiag     , & ! artificial diffusion matrix
          D_sbdiag     , & ! artificial diffusion matrix
          biomat_low   , & ! Low order solution
-         Nerror           ! Change in N after reactions
+         Cerror           ! Change in N after reactions
 
       real (kind=dbl_kind), dimension(nblyr+1,nbtrcr):: &
          react            ! biological sources and sinks for equation matrix
@@ -963,7 +960,7 @@
          trtmp            ! temporary, remapped tracers
 
       logical (kind=log_kind), dimension(nblyr+1) :: &
-         conserve_N
+         conserve_C
 
       real (kind=dbl_kind), dimension(nblyr+1):: &  ! temporary variables for
          Diff         , & ! diffusivity
@@ -1034,7 +1031,7 @@
       darcyV = c0
       C_top(:) = c0
       mobile(:) = c0
-      conserve_N(:) = .true.
+      conserve_C(:) = .true.
       nitrification(:) = c0
 
       do m = 1, nbtrcr
@@ -1378,7 +1375,7 @@
                          iTin(k),                          &
                          upNOn(k,:),       upNHn(k,:),     &
                          Zoo(k),                           &
-                         Nerror(k),        conserve_N(k),  &
+                         Cerror(k),        conserve_C(k),  &
                          nitrification(k))
          enddo ! k
       endif    ! solve_zbgc
@@ -1413,10 +1410,10 @@
                sum_tot = sum_tot + (initcons_mobile(k) + initcons_stationary(k))*dz(k)
 
             end if  ! m .eq. nlt_bgc_Nit
-            if (.not. conserve_N(k)) then
-                write(warning, *) 'N in algal_dyn not conserved'
+            if (.not. conserve_C(k)) then
+                write(warning, *) 'C in algal_dyn not conserved'
                 call add_warning(warning)
-                write(warning, *) 'Nerror(k):', Nerror(k)
+                write(warning, *) 'Cerror(k):', Cerror(k)
                 call add_warning(warning)
                 write(warning, *) 'k,m,hbri,hbri_old,bio_tmp,biomat_cons(k,m),ocean_bio(m)'
                 call add_warning(warning)
@@ -1427,11 +1424,11 @@
                 write(warning, *)  react(k,m),iphin_N(k),biomat_brine(k,m)
                 call add_warning(warning)
                 l_stop = .true.
-                stop_label = 'N in algal_dyn not conserved'
+                stop_label = 'C in algal_dyn not conserved'
             elseif (abs(bio_tmp) < puny) then
                flux_bio(m) = flux_bio(m) + bio_tmp*dz(k)*hbri_old/dt
                bio_tmp = c0
-            elseif (bio_tmp > 1.0e6_dbl_kind) then
+            elseif (bio_tmp > 1.0e8_dbl_kind) then
                 write(warning, *) 'very large bgc value'
                 call add_warning(warning)
                 write(warning, *) 'k,m,hbri,hbri_old,bio_tmp,biomat_cons(k,m),ocean_bio(m)'
@@ -1464,6 +1461,7 @@
                 l_stop = .true.
                 stop_label = 'negative bgc'
             endif
+            trcrn(bio_index(m)+k-1) = max(c0, bio_tmp)
             if (l_stop) then
                 write(warning, *) 'trcrn(nt_zbgc_frac+m-1):',trcrn(nt_zbgc_frac+m-1)
                 call add_warning(warning)
@@ -1477,7 +1475,6 @@
                 call add_warning(warning)
                 return
             endif
-            trcrn(bio_index(m)+k-1) = max(c0, bio_tmp)
          enddo        ! k
          if (m .eq. nlt_bgc_Nit .and. MAXVAL(nitrification) > c0) then
             trcrn(nt_zbgc_frac+m-1) = zbgc_frac_init(m)
@@ -1511,7 +1508,7 @@
                             T_bot,                      &
                             upNOn,        upNHn,        &
                             Zoo,                        &
-                            Nerror,       conserve_N,   &
+                            Cerror,       conserve_C,   &
                             nitrification)
 
       use ice_constants_colpkg, only: p1, p5, c0, c1, secday, puny
@@ -1555,7 +1552,7 @@
 
       real (kind=dbl_kind), intent(inout) :: &
          Zoo,     & ! N losses from zooplankton/bacteria... (mmol/m^3)
-         Nerror,  & ! Change in N after reactions (mmol/m^3)
+         Cerror,  & ! Change in C after reactions (mmol/m^3)
          nitrification ! nitrate produced through nitrification (mmol/m3)
 
       real (kind=dbl_kind), dimension (:), intent(out) :: &
@@ -1570,7 +1567,7 @@
          ltrcrn     ! brine concentrations  in layer (mmol/m^3) 
 
       logical (kind=log_kind), intent(inout) :: & 
-         conserve_N
+         conserve_C
 
       logical (kind=log_kind), intent(in) :: & 
          dEdd_algae  ! .true.  chla impact on shortwave computed in dEdd
@@ -1752,7 +1749,7 @@
       ! Initialize
       !-----------------------------------------------------------------------
 
-       conserve_N = .true.
+       conserve_C = .true.
        Nin(:)     = c0
        Cin(:)     = c0
        chlin(:)   = c0
@@ -2217,7 +2214,8 @@
               dN = dN + reactb(nlt_bgc_DON(k))
               dC = dC + reactb(nlt_bgc_DON(k)) * R_C2N_DON(k)
          enddo
-       endif 
+       endif
+       Cerror = dC
        if (tr_bgc_Fe ) then
         do k = 1,n_fed
               reactb(nlt_bgc_Fed(k))= Fed_s (k) - Fed_r (k) 
@@ -2231,9 +2229,9 @@
               reactb(nlt_bgc_DMS)   = DMS_s   - DMS_r
        endif
        if (tr_bgc_C) then
-       if (abs(dC) > maxval(abs(reactb(:)))*1.0e-14_dbl_kind .or. &
-          abs(dN) > maxval(abs(reactb(:)))*1.0e-14_dbl_kind) then
-            conserve_N = .false.
+       if (abs(dC) > maxval(abs(reactb(:)))*1.0e-13_dbl_kind .or. &
+          abs(dN) > maxval(abs(reactb(:)))*1.0e-13_dbl_kind) then
+            conserve_C = .false.
             write(warning, *) 'Conservation error!'
             call add_warning(warning)
             if (tr_bgc_DON) then

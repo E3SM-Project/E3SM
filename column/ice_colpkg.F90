@@ -2361,7 +2361,7 @@
 ! authors: William H. Lipscomb, LANL
 !          Elizabeth C. Hunke, LANL
 
-      subroutine colpkg_step_therm2 (dt, ncat, n_aero, nltrcr,           &
+      subroutine colpkg_step_therm2 (dt, ncat, n_aero, nbtrcr,    &
                                      nilyr,        nslyr,         &
                                      hin_max,      nblyr,         &
                                      aicen,                       &
@@ -2387,14 +2387,14 @@
                                      frazil_diag,                 &
                                      frz_onset,    yday)
 
-      use ice_constants_colpkg, only: puny
+      use ice_constants_colpkg, only: puny, c0
       use ice_itd, only: aggregate_area, reduce_area, cleanup_itd
       use ice_therm_itd, only: linear_itd, add_new_ice, lateral_melt
-      use ice_colpkg_tracers, only: ntrcr, nbtrcr, tr_aero, tr_pond_topo
+      use ice_colpkg_tracers, only: ntrcr, tr_aero, tr_pond_topo, tr_brine, nt_fbri, bio_index
 
       integer (kind=int_kind), intent(in) :: &
          ncat     , & ! number of thickness categories
-         nltrcr   , & ! number of zbgc tracers
+         nbtrcr   , & ! number of zbgc tracers
          nblyr    , & ! number of bio layers
          nilyr    , & ! number of ice layers
          nslyr    , & ! number of snow layers
@@ -2495,6 +2495,8 @@
       ! Compute fractional ice area in each grid cell.
       !-----------------------------------------------------------------
 
+      flux_bio(:) = c0
+
       call aggregate_area (ncat, aicen, aice, aice0)
 
       if (kitd == 1) then
@@ -2539,7 +2541,7 @@
          call add_new_ice (ncat,          nilyr,        &
                            nblyr,                       &
                            n_aero,        dt,           &
-                           ntrcr,         nltrcr,       &
+                           ntrcr,         nbtrcr,       &
                            hin_max,       ktherm,       &
                            aicen,         trcrn,        &
                            vicen,         vsnon(1),     &
@@ -2552,7 +2554,7 @@
                            salinz,        phi_init,     &
                            dSin0_frazil,  bgrid,        &
                            cgrid,         igrid,        &
-                           nbtrcr,        flux_bio,     &
+                           flux_bio,                    &
                            ocean_bio,     fzsal,        &
                            frazil_diag,                 &
                            l_stop,        stop_label)
@@ -5326,8 +5328,6 @@
                            aice0, trcrn, vsnon_init, skl_bgc, &
                            max_algae, max_nbtrcr, &
                            flux_bion, &
-                           carbonInitial, carbonFinal, carbonFlux, &
-                           hbrnInitial, hbrnFinal, &
                            l_stop, stop_label)
 
       use ice_algae, only: zbio, sklbio
@@ -5376,12 +5376,6 @@
                         ! and reappears (e.g. transport) in a grid cell
                         ! during a single time step from ice that was
                         ! there the entire time step (true until ice forms)
-
-      real (kind=dbl_kind), dimension (:), intent(out) :: &
-         carbonInitial, & ! Initial carbon content per category (mmol/m2)
-         carbonFinal,   & ! Final carbon content per category (mmol/m2)
-         carbonFlux, &       ! ice to ocean carbon flux per category (mmol/m2/s)
-         hbrnInitial, hbrnFinal  ! category initial and final brine heights 
 
       real (kind=dbl_kind), dimension (:,:), intent(out) :: &
          flux_bion      ! per categeory ice to ocean biogeochemistry flux (mmol/m2/s)
@@ -5476,6 +5470,10 @@
       real (kind=dbl_kind) :: & 
          sloss            ! brine flux contribution from surface runoff (g/m^2)
 
+      real (kind=dbl_kind), dimension (nbtrcr) :: &
+         hbrnInitial, & ! inital brine height
+         hbrnFinal      ! category initial and final brine heights 
+
       ! for bgc sk
       real (kind=dbl_kind) :: & 
          dh_bot_chl  , & ! Chlorophyll may or may not flush
@@ -5496,9 +5494,6 @@
       !-----------------------------------------------------------------
       ! initialize
       !-----------------------------------------------------------------
-         carbonInitial(n) = c0
-         carbonFinal(n) = c0
-         carbonFlux(n) = c0
          flux_bion(:,n) = c0
          hin_old(n) = c0
          hbrnFinal(n) = c0
@@ -5518,7 +5513,7 @@
             if (solve_zsal) trcrn(nt_bgc_S:nt_bgc_S+nblyr-1,n) = c0
          endif
 
-         if (aicen(n) > c0) then
+         if (aicen(n) > puny) then
 
             dh_top_chl = c0
             dh_bot_chl = c0
@@ -5539,7 +5534,6 @@
             dhbr_bot(n) = c0
 
             if (tr_brine) then
-               if (trcrn(nt_fbri,n) .le. c0) trcrn(nt_fbri,n) = c1
 
                dhice = c0
                call preflushing_changes  (n,  aicen  (n),   &
@@ -5658,13 +5652,13 @@
                           bio_index(1:nbtrcr),   aicen_init(n),          &
                           vicen_init(n),         vsnon_init(n),          &
                           vicen(n),              vsnon(n),               &
-                          aicen(n),              flux_bio_atm(1:nbtrcr), &
+                          aicen(n),              flux_bio_atm(:), &
                           n,                     n_algae,                &
                           n_doc,                 n_dic,                  &
                           n_don,                                         &
                           n_fed,                 n_fep,                  &
                           n_zaero,               first_ice(n),           &
-                          hin_old(n),            ocean_bio(1:nbtrcr),    &
+                          hin_old(n),            ocean_bio(:),    &
                           bphi(:,n),             iphin,                  &
                           iDi(:,n),              sss,                    &
                           fswpenln(:,n),                                 &
@@ -5678,16 +5672,13 @@
                           bphi_o,                                        &
                           dhice,                 iTin,                   &
                           Zoo(:,n),                                      &
-                          flux_bio(1:nbtrcr),    dh_direct,              &
+                          flux_bio(:),           dh_direct,              &
                           upNO,                  upNH,                   &
                           fbio_snoice,           fbio_atmice,            &
-                          PP_net,                ice_bio_net (1:nbtrcr), &
-                          snow_bio_net(1:nbtrcr),grow_net,               &
+                          PP_net,                ice_bio_net (:),        &
+                          snow_bio_net(:),       grow_net,               &
                           totalChla,                                     &
-                          flux_bion(1:nbtrcr,n),                         &
-                          carbonInitial(n),                              &
-                          carbonFinal(n),                                &
-                          carbonFlux(n),                                 &
+                          flux_bion(:,n),                                &
                           l_stop,                stop_label)
 
                if (l_stop) return
@@ -5700,7 +5691,7 @@
                             n_zaero,                 n_doc,               &
                             n_dic,                   n_don,               &
                             n_fed,                   n_fep,               &
-                            flux_bio (1:nbtrcr),     ocean_bio(1:nbtrcr), &
+                            flux_bio (1:nbtrcr),     ocean_bio(:), &
                             hmix,                    aicen    (n),        &
                             meltbn   (n),            congeln  (n),        &
                             fswthrun (n),            first_ice(n),        &
