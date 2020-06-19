@@ -488,39 +488,10 @@
      </queues>
    </batch_system>
 
-   <batch_system MACH="titan" type="pbs" >
-     <directives>
-       <directive>-A {{ project }}</directive>
-       <directive>-l nodes={{ num_nodes }}</directive>
-       <directive>-env "all"</directive>
-     </directives>
-     <queues>
-       <queue walltimemax="02:00:00" default="true">batch</queue>
-       <queue walltimemax="01:00:00" nodemax="18688" strict="true">debug</queue>
-     </queues>
-   </batch_system>
-
-   <batch_system MACH="summit-cpu" type="lsf" >
-     <directives>
-       <directive>-P {{ project }}</directive>
-     </directives>
-     <directives>
-       <directive>-alloc_flags smt2</directive>
-     </directives>
-     <queues>
-       <queue walltimemax="02:00" default="true">batch</queue>
-     </queues>
-   </batch_system>
 
    <batch_system MACH="summit" type="lsf" >
      <directives>
        <directive>-P {{ project }}</directive>
-     </directives>
-     <directives compiler="!pgiacc">
-       <directive>-alloc_flags smt2</directive>
-     </directives>
-     <directives compiler="pgiacc">
-       <directive>-alloc_flags "gpumps smt2"</directive>
      </directives>
      <directives compiler="!pgigpu">
        <directive>-alloc_flags smt2</directive>
@@ -533,23 +504,6 @@
      </queues>
    </batch_system>
 
-
-   <batch_system MACH="summitdev" type="lsf" >
-     <directives>
-       <directive>-P {{ project }}</directive>
-       <directive>-alloc_flags gpumps</directive>
-     </directives>
-
-     <queues>
-       <queue walltimemax="01:00" default="true">batch</queue>
-	   <!--
-	   Nodes	Max Walltime
-	   <=4		4 hours
-	   >4		1 hour
-	   jobmax = 54nodes*20cores*16th = 8640
-	   -->
-     </queues>
-   </batch_system>
 
    <batch_system MACH="snl-white" type="lsf" >
      <queues>
