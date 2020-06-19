@@ -370,6 +370,13 @@
       </queues>
     </batch_system>
 
+    <batch_system MACH="jlse-iris" type="cobalt_theta">
+      <batch_submit>qsub</batch_submit>
+      <queues>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="20" default="true">iris</queue>
+      </queues>
+    </batch_system>
+
     <batch_system MACH="cascade" type="slurm">
       <directives>
 	<directive>--output=slurm.out</directive>
