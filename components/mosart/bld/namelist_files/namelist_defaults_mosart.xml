@@ -22,6 +22,10 @@ for the CLM data in the CESM distribution
 <inundflag>.false.</inundflag>
 <sediflag>.false.</sediflag>
 <heatflag>.false.</heatflag>
+<rstraflag>.false.</rstraflag>
+<rinittemp>283.15</rinittemp>
+<ngeom>50</ngeom>
+<nlayers>30</nlayers>
 <barrier_timers>.false.</barrier_timers>
 <RoutingMethod>1</RoutingMethod>
 <DLevelH2R>5</DLevelH2R>

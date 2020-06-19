@@ -31,6 +31,10 @@ module RtmVar
   logical, public :: inundflag = .false.               ! inundation model flag
   logical, public :: sediflag = .false.                ! sediment model flag
   logical, public :: heatflag = .false.                ! heat model flag
+  logical, public :: rstraflag = .false.               ! reservoir stratification module flag
+  real,    public :: rinittemp = 283.15_r8             ! initial reservoir temperature
+  integer, public :: ngeom   = 50        			   ! Reservoir depth layers to calculate depth-area-storage relationship
+  integer, public :: nlayers = 30        			   ! Maximum number of reservoir layers for stratification
   logical, public :: noland = .false.                  ! true => no valid land points -- do NOT run
   character(len=32) , public :: decomp_option          ! decomp option
   character(len=32) , public :: smat_option            ! smatrix multiply option (opt, Xonly, Yonly)

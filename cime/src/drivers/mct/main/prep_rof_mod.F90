@@ -447,6 +447,9 @@ contains
     integer, save :: index_x2r_Faxa_swvdr
     integer, save :: index_x2r_Faxa_swvdf
     integer, save :: index_x2r_Faxa_lwdn
+	
+	integer, save :: index_l2x_coszen_str
+    integer, save :: index_x2r_coszen_str
 
     integer, save :: index_lfrac
     logical, save :: first_time = .true.
