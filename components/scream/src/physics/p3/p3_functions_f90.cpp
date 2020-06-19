@@ -1159,7 +1159,8 @@ P3MainData::P3MainData(
   Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool log_predictNc_,
   const std::array< std::pair<Real, Real>, NUM_INPUT_ARRAYS >& ranges) :
   its(its_), ite(ite_), kts(kts_), kte(kte_), it(it_), dt(dt_), log_predictNc(log_predictNc_),
-  m_nt( ((ite_ - its_) + 1) * ((kte_ - kts_) + 1) + 1),
+  m_ni((ite_ - its_) + 1), m_nk((kte_ - kts_) + 1),
+  m_nt(m_ni * m_nk + 1), // overprovision since a couple data blocks are bigger than (ni, nk)
   m_data( NUM_ARRAYS * m_nt, 0.0)
 {
   std::array<Real**, NUM_ARRAYS> ptrs = {
@@ -1173,7 +1174,7 @@ P3MainData::P3MainData(
 
 P3MainData::P3MainData(const P3MainData& rhs) :
   its(rhs.its), ite(rhs.ite), kts(rhs.kts), kte(rhs.kte), it(rhs.it), dt(rhs.dt), log_predictNc(rhs.log_predictNc),
-  m_nt(rhs.m_nt),
+  m_ni(rhs.m_ni), m_nk(rhs.m_nk), m_nt(rhs.m_nt),
   m_data(rhs.m_data)
 {
   Int offset = 0;
@@ -3504,7 +3505,7 @@ void p3_main_f(
     }
   }
 
-  pack::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d);
+  pack::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d, true);
 
   view_2d
     pres_d             (temp_d[0]),
@@ -3564,15 +3565,11 @@ void p3_main_f(
     }
   });
 
-  // TODO: need transpose
-
   P3F::p3_main(pres_d, dzq_d, ncnuc_d, naai_d, qc_relvar_d, dt, ni, nk, it, log_predictNc, pdel_d, exner_d,
                icldm_d, lcldm_d, rcldm_d, col_location_d, qc_d, nc_d, qr_d, nr_d, qitot_d, qirim_d, nitot_d,
                birim_d, qv_d, th_d, prt_liq_d, prt_sol_d, diag_ze_d, diag_effc_d, diag_effi_d, diag_vmi_d, diag_di_d,
                diag_rhoi_d, mu_c_d, lamc_d, cmeiout_d, prain_d, nevapr_d, prer_evap_d, rflx_d, sflx_d, pratot_d,
                prctot_d, liq_ice_exchange_d, vap_liq_exchange_d, vap_ice_exchange_d);
-
-  // TODO: need transpose
 
   Kokkos::parallel_for(ni, KOKKOS_LAMBDA(const Int& i) {
     prt_liq_temp_d(0, i / Spack::n)[i % Spack::n] = prt_liq_d(i);
@@ -3596,7 +3593,7 @@ void p3_main_f(
       qc, nc, qr, nr, qitot, qirim, nitot, birim, qv, th,
       diag_ze, diag_effc, diag_effi, diag_vmi, diag_di, diag_rhoi, mu_c, lamc, cmeiout, prain, nevapr, prer_evap, pratot, prctot, liq_ice_exchange, vap_liq_exchange, vap_ice_exchange, rflx, sflx, prt_liq, prt_sol
     },
-    dim1_sizes_out, dim2_sizes_out, inout_views);
+    dim1_sizes_out, dim2_sizes_out, inout_views, true);
 }
 
 } // namespace p3

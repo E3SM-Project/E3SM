@@ -1242,22 +1242,62 @@ struct P3MainData
   template <util::TransposeDirection::Enum D>
   void transpose()
   {
-    // P3MainData d_trans(*this);
-    // util::transpose<D>(v, d_trans.v, m_ni, m_nk);
-    // util::transpose<D>(s, d_trans.s, m_ni, m_nk);
-    // util::transpose<D>(f, d_trans.f, m_ni, m_nk);
+    P3MainData d_trans(*this);
 
-    // *this = d_trans;
+    util::transpose<D>(pres, d_trans.pres, m_ni, m_nk);
+    util::transpose<D>(dzq, d_trans.dzq, m_ni, m_nk);
+    util::transpose<D>(ncnuc, d_trans.ncnuc, m_ni, m_nk);
+    util::transpose<D>(naai, d_trans.naai, m_ni, m_nk);
+    util::transpose<D>(pdel, d_trans.pdel, m_ni, m_nk);
+    util::transpose<D>(exner, d_trans.exner, m_ni, m_nk);
+    util::transpose<D>(icldm, d_trans.icldm, m_ni, m_nk);
+    util::transpose<D>(lcldm, d_trans.lcldm, m_ni, m_nk);
+    util::transpose<D>(rcldm, d_trans.rcldm, m_ni, m_nk);
+    util::transpose<D>(qc_relvar, d_trans.qc_relvar, m_ni, m_nk);
+    util::transpose<D>(col_location, d_trans.col_location, m_ni, 3);
+    util::transpose<D>(qc, d_trans.qc, m_ni, m_nk);
+    util::transpose<D>(nc, d_trans.nc, m_ni, m_nk);
+    util::transpose<D>(qr, d_trans.qr, m_ni, m_nk);
+    util::transpose<D>(nr, d_trans.nr, m_ni, m_nk);
+    util::transpose<D>(qitot, d_trans.qitot, m_ni, m_nk);
+    util::transpose<D>(qirim, d_trans.qirim, m_ni, m_nk);
+    util::transpose<D>(nitot, d_trans.nitot, m_ni, m_nk);
+    util::transpose<D>(birim, d_trans.birim, m_ni, m_nk);
+    util::transpose<D>(qv, d_trans.qv, m_ni, m_nk);
+    util::transpose<D>(th, d_trans.th, m_ni, m_nk);
+    util::transpose<D>(diag_ze, d_trans.diag_ze, m_ni, m_nk);
+    util::transpose<D>(diag_effc, d_trans.diag_effc, m_ni, m_nk);
+    util::transpose<D>(diag_effi, d_trans.diag_effi, m_ni, m_nk);
+    util::transpose<D>(diag_vmi, d_trans.diag_vmi, m_ni, m_nk);
+    util::transpose<D>(diag_di, d_trans.diag_di, m_ni, m_nk);
+    util::transpose<D>(diag_rhoi, d_trans.diag_rhoi, m_ni, m_nk);
+    util::transpose<D>(mu_c, d_trans.mu_c, m_ni, m_nk);
+    util::transpose<D>(lamc, d_trans.lamc, m_ni, m_nk);
+    util::transpose<D>(cmeiout, d_trans.cmeiout, m_ni, m_nk);
+    util::transpose<D>(prain, d_trans.prain, m_ni, m_nk);
+    util::transpose<D>(nevapr, d_trans.nevapr, m_ni, m_nk);
+    util::transpose<D>(prer_evap, d_trans.prer_evap, m_ni, m_nk);
+    util::transpose<D>(pratot, d_trans.pratot, m_ni, m_nk);
+    util::transpose<D>(prctot, d_trans.prctot, m_ni, m_nk);
+    util::transpose<D>(liq_ice_exchange, d_trans.liq_ice_exchange, m_ni, m_nk);
+    util::transpose<D>(vap_liq_exchange, d_trans.vap_liq_exchange, m_ni, m_nk);
+    util::transpose<D>(vap_ice_exchange, d_trans.vap_ice_exchange, m_ni, m_nk);
+    util::transpose<D>(rflx, d_trans.rflx, m_ni, m_nk+1);
+    util::transpose<D>(sflx, d_trans.sflx, m_ni, m_nk+1);
+
+    *this = std::move(d_trans);
   }
 
   // deep copy
   P3MainData(const P3MainData& rhs);
 
+  P3MainData& operator=(P3MainData&&) = default;
+
   Int nt() const { return m_nt; }
 
  private:
   // Internals
-  Int m_nt;
+  Int m_ni, m_nk, m_nt;
   std::vector<Real> m_data;
 };
 

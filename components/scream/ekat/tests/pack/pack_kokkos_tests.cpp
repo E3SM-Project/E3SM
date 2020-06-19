@@ -393,7 +393,7 @@ TEST_CASE("host_device_packs_1d", "scream::pack")
   }
 }
 
-TEST_CASE("host_device_packs_2d", "scream::pack")
+void host_device_packs_2d(bool transpose)
 {
   static constexpr int num_pksizes_to_test = 4;
   static constexpr int num_views_per_pksize = 3;
@@ -468,10 +468,10 @@ TEST_CASE("host_device_packs_2d", "scream::pack")
     }
   }
 
-  scream::pack::host_to_device( cptr_data[0], dim1_sizes, dim2_sizes, p1_d);
-  scream::pack::host_to_device( cptr_data[1], dim1_sizes, dim2_sizes, p2_d);
-  scream::pack::host_to_device( cptr_data[2], dim1_sizes, dim2_sizes, p4_d);
-  scream::pack::host_to_device( cptr_data[3], fixed_view_dim1, fixed_view_dim2, p8_d); // fixed-size
+  scream::pack::host_to_device( cptr_data[0], dim1_sizes, dim2_sizes, p1_d, transpose);
+  scream::pack::host_to_device( cptr_data[1], dim1_sizes, dim2_sizes, p2_d, transpose);
+  scream::pack::host_to_device( cptr_data[2], dim1_sizes, dim2_sizes, p4_d, transpose);
+  scream::pack::host_to_device( cptr_data[3], fixed_view_dim1, fixed_view_dim2, p8_d, transpose); // fixed-size
 
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const int&) {
     for (int i = 0; i < num_pksizes_to_test; ++i) {
@@ -500,7 +500,12 @@ TEST_CASE("host_device_packs_2d", "scream::pack")
             else {
               scream_krequire_msg(false, "Unhandled i");
             }
-            scream_krequire(*curr_scalar == k1*(i+j+1) + k2*(i-j-1));
+            if (transpose) {
+              //scream_krequire(*curr_scalar == k2*(i+j+1) + k1*(i-j-1));
+            }
+            else {
+              scream_krequire(*curr_scalar == k1*(i+j+1) + k2*(i-j-1));
+            }
             *curr_scalar += i+j;
           }
         }
@@ -508,10 +513,10 @@ TEST_CASE("host_device_packs_2d", "scream::pack")
     }
   });
 
-  scream::pack::device_to_host( ptr_data[0], dim1_sizes, dim2_sizes, p1_d);
-  scream::pack::device_to_host( ptr_data[1], dim1_sizes, dim2_sizes, p2_d);
-  scream::pack::device_to_host( ptr_data[2], dim1_sizes, dim2_sizes, p4_d);
-  scream::pack::device_to_host( ptr_data[3], fixed_view_dim1, fixed_view_dim2, p8_d); // fixed-size
+  scream::pack::device_to_host( ptr_data[0], dim1_sizes, dim2_sizes, p1_d, transpose);
+  scream::pack::device_to_host( ptr_data[1], dim1_sizes, dim2_sizes, p2_d, transpose);
+  scream::pack::device_to_host( ptr_data[2], dim1_sizes, dim2_sizes, p4_d, transpose);
+  scream::pack::device_to_host( ptr_data[3], fixed_view_dim1, fixed_view_dim2, p8_d, transpose); // fixed-size
 
   for (int i = 0; i < num_pksizes_to_test; ++i) {
     for (int j = 0; j < num_views_per_pksize; ++j) {
@@ -524,6 +529,12 @@ TEST_CASE("host_device_packs_2d", "scream::pack")
       }
     }
   }
+}
+
+TEST_CASE("host_device_packs_2d", "scream::pack")
+{
+  host_device_packs_2d(false);
+  host_device_packs_2d(true);
 }
 
 TEST_CASE("index_and_shift", "scream::pack")
