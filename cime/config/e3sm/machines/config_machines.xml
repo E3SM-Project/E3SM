@@ -1613,7 +1613,7 @@
     <DESC>ANL experimental/evaluation cluster, batch system is cobalt</DESC>
     <NODENAME_REGEX>jlse.*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>intelGPU</COMPILERS>
+    <COMPILERS>intelgpu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{HOME}/acme/scratch</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/home/azamat/acme/inputdata</DIN_LOC_ROOT>
@@ -1643,7 +1643,7 @@
       <cmd_path lang="csh">module</cmd_path>
       <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
       <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
-      <modules compiler="intelGPU">
+      <modules compiler="intelgpu">
         <command name="load">omp</command>
         <command name="load">mkl</command>
 	<command name="load">mpi</command>
@@ -1662,7 +1662,7 @@
       <env name="PERL_MB_OPT">"--install_base \"/home/azamat/perl5\""</env>
       <env name="PERL_MM_OPT">"INSTALL_BASE=/home/azamat/perl5"</env>
     </environment_variables>
-    <environment_variables compiler="intelGPU">
+    <environment_variables compiler="intelgpu">
       <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.3.3.1c-4.2cxx-4.4.2f/intel18</env>
       <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.6.1/intel18</env>
       <env name="I_MPI_DEBUG">10</env>
