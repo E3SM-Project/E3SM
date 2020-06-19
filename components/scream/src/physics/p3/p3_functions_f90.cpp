@@ -2814,26 +2814,8 @@ void get_latent_heat_f(Int its, Int ite, Int kts, Int kte, Real* v, Real* s, Rea
 
   P3F::get_latent_heat(ni, nk, v_d, s_d, f_d);
 
-  // Transform to 1d
-  uview_1d v_h(v_d.data(), total),
-    s_h(s_d.data(), total),
-    f_h(f_d.data(), total);
-
-  // Sync to host
-  Kokkos::Array<uview_1d, 3> out_views = {v_h, s_h, f_h};
-  pack::device_to_host({v, s, f}, total, out_views);
-
-  // Transpose
-  LatentHeatData temp(its, ite, kts, kte);
-  std::copy(v, v+total, temp.v);
-  std::copy(s, s+total, temp.s);
-  std::copy(f, f+total, temp.f);
-
-  temp.transpose();
-
-  std::copy(temp.v, temp.v+total, v);
-  std::copy(temp.s, temp.s+total, s);
-  std::copy(temp.f, temp.f+total, f);
+  Kokkos::Array<view_2d, 3> out_views = {v_d, s_d, f_d};
+  pack::device_to_host({v, s, f}, ni, nk, out_views, true);
 }
 
 Real subgrid_variance_scaling_f(Real relvar_, Real expon_)
