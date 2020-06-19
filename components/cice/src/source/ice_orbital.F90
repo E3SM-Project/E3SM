@@ -159,7 +159,9 @@
 
       coszen(:,:) = c0  ! sun at horizon
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, icells

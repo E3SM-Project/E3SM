@@ -623,7 +623,9 @@
       !-----------------------------------------------------------------
 
       do n = 1, ncat
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, icells
@@ -873,7 +875,9 @@
       ! Ignore categories with very small areas.
       !-----------------------------------------------------------------
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, icells
@@ -887,7 +891,9 @@
       enddo
 
       do n = 1, ncat
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, icells
@@ -907,7 +913,9 @@
          work(ij) = c1 / Gsum(ij,ncat)
       enddo
       do n = 0, ncat
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, icells
@@ -959,7 +967,9 @@
          xtmp = c1 / (c1 - exp(-astari))
 
          do n = -1, ncat
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
             do ij = 1, icells
@@ -1073,7 +1083,9 @@
       enddo
 
       do n = 1, ncat
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, icells
@@ -1292,7 +1304,9 @@
       ! NOTE: 0 < aksum <= 1
       !-----------------------------------------------------------------
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, icells
@@ -1322,7 +1336,9 @@
       ! would be removed.  Reduce the opening rate proportionately.
       !-----------------------------------------------------------------
       do n = 1, ncat
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, icells
@@ -1345,7 +1361,9 @@
       ! Compute change in open water area due to closing and opening.
       !-----------------------------------------------------------------
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, icells
@@ -1426,7 +1444,9 @@
             endif
          enddo                  ! ij
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, iridge
@@ -1534,7 +1554,9 @@
       !-----------------------------------------------------------------
 
          do k = 1, nilyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
             do ij = 1, iridge
@@ -1555,7 +1577,9 @@
       !-----------------------------------------------------------------
 
          do k = 1, nslyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
             do ij = 1, iridge
@@ -1577,7 +1601,9 @@
 
          do it = 1, ntrcr
             if (trcr_depend(it) == 0) then ! ice area tracer
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
                do ij = 1, iridge
@@ -1589,7 +1615,9 @@
                enddo
 
             elseif (trcr_depend(it) == 1) then ! ice volume tracer
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
                do ij = 1, iridge
@@ -1601,7 +1629,9 @@
                enddo
 
             elseif (trcr_depend(it) == 2) then ! snow volume tracer
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
                do ij = 1, iridge
@@ -1697,7 +1727,9 @@
       ! Transfer ice area, ice volume, and snow volume to category nr.
       !-----------------------------------------------------------------
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
             do ij = 1, iridge
@@ -1713,7 +1745,9 @@
       ! Transfer ice energy to category nr
       !-----------------------------------------------------------------
             do k = 1, nilyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
                do ij = 1, iridge
@@ -1728,7 +1762,9 @@
       ! Transfer snow energy to category nr
       !-----------------------------------------------------------------
             do k = 1, nslyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
                do ij = 1, iridge
@@ -1749,7 +1785,9 @@
 
             do it = 1, ntrcr
                if (trcr_depend(it) == 0) then  ! ice area tracer
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
                   do ij = 1, iridge
@@ -1761,7 +1799,9 @@
 
                   enddo
                elseif (trcr_depend(it) == 1) then ! ice volume tracer
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
                   do ij = 1, iridge
@@ -1773,7 +1813,9 @@
 
                   enddo
                elseif (trcr_depend(it) == 2) then ! snow volume tracer
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
                   do ij = 1, iridge
@@ -1999,7 +2041,9 @@
          if (krdg_redist==0) then ! Hibler 1980 formulation
 
             do n = 1, ncat
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
                do ij = 1, icells
@@ -2019,7 +2063,9 @@
          elseif (krdg_redist==1) then ! exponential formulation
 
             do n = 1, ncat
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
                do ij = 1, icells
@@ -2039,7 +2085,9 @@
 
          endif                  ! krdg_redist
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, icells

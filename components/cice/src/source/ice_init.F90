@@ -1205,7 +1205,9 @@
          do n = 1, ncat
 
             ! ice volume, snow volume
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
             do ij = 1, icells

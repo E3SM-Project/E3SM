@@ -74,10 +74,14 @@ subroutine qneg3 (subnam  ,idx     ,ncol    ,ncold   ,lver    ,lconst_beg  , &
 ! Test all field values for being less than minimum value. Set q = qmin
 ! for all such points. Trace offenders and identify worst one.
 !
+#ifdef CPRCRAY
 !DIR$ preferstream
+#endif
       do k=1,lver
          nval(k) = 0
+#ifdef CPRCRAY
 !DIR$ prefervector
+#endif
          nn = 0
          do i=1,ncol
             if (q(i,k,m) < qmin(m)) then
