@@ -488,13 +488,15 @@
      </queues>
    </batch_system>
 
-
    <batch_system MACH="summit" type="lsf" >
      <directives>
        <directive>-P {{ project }}</directive>
      </directives>
-     <directives compiler="!pgigpu">
+     <directives compiler="!.*gpu">
        <directive>-alloc_flags smt2</directive>
+     </directives>
+     <directives compiler="ibmgpu">
+       <directive>-alloc_flags "gpumps smt2"</directive>
      </directives>
      <directives compiler="pgigpu">
        <directive>-alloc_flags gpumps</directive>
@@ -503,7 +505,6 @@
        <queue walltimemax="02:00" default="true">batch</queue>
      </queues>
    </batch_system>
-
 
    <batch_system MACH="snl-white" type="lsf" >
      <queues>
