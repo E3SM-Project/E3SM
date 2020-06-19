@@ -31,9 +31,9 @@
 
 <!-- CMIP6 DECK compsets -->
       
-<fsurdat>lnd/clm2/surfdata_map/surfdata_ne30np4_simyr1850_2015_c171018.nc </fsurdat>
-<flanduse_timeseries>lnd/clm2/surfdata_map/landuse.timeseries_ne30np4_hist_simyr1850_c20171102.nc </flanduse_timeseries>
-<finidat>lnd/clm2/initdata_map/ne30_ne30.F1850SC5-CMIP6.27d91fb47.clm2.r.0001-01-02-00000_c20190824.nc</finidat>
+<fsurdat hgrid="ne30np4">lnd/clm2/surfdata_map/surfdata_ne30np4_simyr1850_2015_c171018.nc </fsurdat>
+<flanduse_timeseries hgrid="ne30np4">lnd/clm2/surfdata_map/landuse.timeseries_ne30np4_hist_simyr1850_c20171102.nc </flanduse_timeseries>
+<finidat hgrid="ne30np4">lnd/clm2/initdata_map/ne30_ne30.F1850SC5-CMIP6.27d91fb47.clm2.r.0001-01-02-00000_c20190824.nc</finidat>
 <check_finidat_year_consistency>.false.</check_finidat_year_consistency>
 
 </namelist_defaults>
