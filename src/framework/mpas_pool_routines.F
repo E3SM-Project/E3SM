@@ -249,107 +249,107 @@ module mpas_pool_routines
    
                   ! Do this through brute force...
                   if (associated(dptr % r0)) then
-                     call mpas_deallocate_field_target(dptr % r0, keep_head_ptr=.true.)
+                     call mpas_deallocate_field_target(dptr % r0)
                      deallocate(dptr % r0)
                   else if (associated(dptr % r1)) then
-                     call mpas_deallocate_field_target(dptr % r1, keep_head_ptr=.true.)
+                     call mpas_deallocate_field_target(dptr % r1)
                      deallocate(dptr % r1)
                   else if (associated(dptr % r2)) then
-                     call mpas_deallocate_field_target(dptr % r2, keep_head_ptr=.true.)
+                     call mpas_deallocate_field_target(dptr % r2)
                      deallocate(dptr % r2)
                   else if (associated(dptr % r3)) then
-                     call mpas_deallocate_field_target(dptr % r3, keep_head_ptr=.true.)
+                     call mpas_deallocate_field_target(dptr % r3)
                      deallocate(dptr % r3)
                   else if (associated(dptr % r4)) then
-                     call mpas_deallocate_field_target(dptr % r4, keep_head_ptr=.true.)
+                     call mpas_deallocate_field_target(dptr % r4)
                      deallocate(dptr % r4)
                   else if (associated(dptr % r5)) then
-                     call mpas_deallocate_field_target(dptr % r5, keep_head_ptr=.true.)
+                     call mpas_deallocate_field_target(dptr % r5)
                      deallocate(dptr % r5)
                   else if (associated(dptr % i0)) then
-                     call mpas_deallocate_field_target(dptr % i0, keep_head_ptr=.true.)
+                     call mpas_deallocate_field_target(dptr % i0)
                      deallocate(dptr % i0)
                   else if (associated(dptr % i1)) then
-                     call mpas_deallocate_field_target(dptr % i1, keep_head_ptr=.true.)
+                     call mpas_deallocate_field_target(dptr % i1)
                      deallocate(dptr % i1)
                   else if (associated(dptr % i2)) then
-                     call mpas_deallocate_field_target(dptr % i2, keep_head_ptr=.true.)
+                     call mpas_deallocate_field_target(dptr % i2)
                      deallocate(dptr % i2)
                   else if (associated(dptr % i3)) then
-                     call mpas_deallocate_field_target(dptr % i3, keep_head_ptr=.true.)
+                     call mpas_deallocate_field_target(dptr % i3)
                      deallocate(dptr % i3)
                   else if (associated(dptr % c0)) then
-                     call mpas_deallocate_field_target(dptr % c0, keep_head_ptr=.true.)
+                     call mpas_deallocate_field_target(dptr % c0)
                      deallocate(dptr % c0)
                   else if (associated(dptr % c1)) then
-                     call mpas_deallocate_field_target(dptr % c1, keep_head_ptr=.true.)
+                     call mpas_deallocate_field_target(dptr % c1)
                      deallocate(dptr % c1)
                   else if (associated(dptr % l0)) then
-                     call mpas_deallocate_field_target(dptr % l0, keep_head_ptr=.true.)
+                     call mpas_deallocate_field_target(dptr % l0)
                      deallocate(dptr % l0)
                   else if (associated(dptr % r0a)) then
                      do j=1,dptr % contentsTimeLevs
-                        call mpas_deallocate_field_target(dptr % r0a(j), keep_head_ptr=.true.)
+                        call mpas_deallocate_field_target(dptr % r0a(j))
                      end do
                      deallocate(dptr % r0a, stat=local_err)
                   else if (associated(dptr % r1a)) then
                      do j=1,dptr % contentsTimeLevs
-                        call mpas_deallocate_field_target(dptr % r1a(j), keep_head_ptr=.true.)
+                        call mpas_deallocate_field_target(dptr % r1a(j))
                      end do
                      deallocate(dptr % r1a, stat=local_err)
                   else if (associated(dptr % r2a)) then
                      do j=1,dptr % contentsTimeLevs
-                        call mpas_deallocate_field_target(dptr % r2a(j), keep_head_ptr=.true.)
+                        call mpas_deallocate_field_target(dptr % r2a(j))
                      end do
                      deallocate(dptr % r2a, stat=local_err)
                   else if (associated(dptr % r3a)) then
                      do j=1,dptr % contentsTimeLevs
-                        call mpas_deallocate_field_target(dptr % r3a(j), keep_head_ptr=.true.)
+                        call mpas_deallocate_field_target(dptr % r3a(j))
                      end do
                      deallocate(dptr % r3a, stat=local_err)
                   else if (associated(dptr % r4a)) then
                      do j=1,dptr % contentsTimeLevs
-                        call mpas_deallocate_field_target(dptr % r4a(j), keep_head_ptr=.true.)
+                        call mpas_deallocate_field_target(dptr % r4a(j))
                      end do
                      deallocate(dptr % r4a, stat=local_err)
                   else if (associated(dptr % r5a)) then
                      do j=1,dptr % contentsTimeLevs
-                        call mpas_deallocate_field_target(dptr % r5a(j), keep_head_ptr=.true.)
+                        call mpas_deallocate_field_target(dptr % r5a(j))
                      end do
                      deallocate(dptr % r5a, stat=local_err)
                   else if (associated(dptr % i0a)) then
                      do j=1,dptr % contentsTimeLevs
-                        call mpas_deallocate_field_target(dptr % i0a(j), keep_head_ptr=.true.)
+                        call mpas_deallocate_field_target(dptr % i0a(j))
                      end do
                      deallocate(dptr % i0a, stat=local_err)
                   else if (associated(dptr % i1a)) then
                      do j=1,dptr % contentsTimeLevs
-                        call mpas_deallocate_field_target(dptr % i1a(j), keep_head_ptr=.true.)
+                        call mpas_deallocate_field_target(dptr % i1a(j))
                      end do
                      deallocate(dptr % i1a, stat=local_err)
                   else if (associated(dptr % i2a)) then
                      do j=1,dptr % contentsTimeLevs
-                        call mpas_deallocate_field_target(dptr % i2a(j), keep_head_ptr=.true.)
+                        call mpas_deallocate_field_target(dptr % i2a(j))
                      end do
                      deallocate(dptr % i2a, stat=local_err)
                   else if (associated(dptr % i3a)) then
                      do j=1,dptr % contentsTimeLevs
-                        call mpas_deallocate_field_target(dptr % i3a(j), keep_head_ptr=.true.)
+                        call mpas_deallocate_field_target(dptr % i3a(j))
                      end do
                      deallocate(dptr % i3a, stat=local_err)
                   else if (associated(dptr % c0a)) then
                      do j=1,dptr % contentsTimeLevs
-                        call mpas_deallocate_field_target(dptr % c0a(j), keep_head_ptr=.true.)
+                        call mpas_deallocate_field_target(dptr % c0a(j))
                      end do
                      deallocate(dptr % c0a, stat=local_err)
                   else if (associated(dptr % c1a)) then
                      do j=1,dptr % contentsTimeLevs
-                        call mpas_deallocate_field_target(dptr % c1a(j), keep_head_ptr=.true.)
+                        call mpas_deallocate_field_target(dptr % c1a(j))
                      end do
                      deallocate(dptr % c1a, stat=local_err)
                   else if (associated(dptr % l0a)) then
                      do j=1,dptr % contentsTimeLevs
-                        call mpas_deallocate_field_target(dptr % l0a(j), keep_head_ptr=.true.)
+                        call mpas_deallocate_field_target(dptr % l0a(j))
                      end do
                      deallocate(dptr % l0a, stat=local_err)
                   else
