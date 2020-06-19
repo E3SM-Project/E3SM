@@ -332,6 +332,21 @@
       <grid name="rof">JRA025</grid>
     </model_grid>
 
+    <model_grid alias="TL639_g17" not_compset="_CAM">
+      <grid name="atm">TL639</grid>
+      <grid name="lnd">TL639</grid>
+      <grid name="ocnice">gx1v7</grid>
+      <!--<grid name="rof">JRA025</grid>-->
+      <mask>gx1v7</mask>
+    </model_grid>
+
+    <model_grid alias="TL639_t061" not_compset="_CAM">
+      <grid name="atm">TL639</grid>
+      <grid name="lnd">TL639</grid>
+      <grid name="ocnice">tx0.66v1</grid>
+      <!--<grid name="rof">JRA025</grid>-->
+    </model_grid>
+
     <model_grid alias="T62_t061" not_compset="_CAM">
       <grid name="atm">T62</grid>
       <grid name="lnd">T62</grid>
@@ -1671,6 +1686,16 @@
       <file grid="ocnice"  mask="tx0.1v3">$DIN_LOC_ROOT/share/domains/domain.ocn.tx0.1v3.170730.nc</file>
       <mesh driver="nuopc">$DIN_LOC_ROOT/share/meshes/TL319_151007_ESMFmesh.nc</mesh>
       <desc>TL319 grid for JRA55</desc>
+    </domain>
+
+    <domain name="TL639">
+      <nx>1440</nx> <ny>721</ny>
+      <file grid="atm|lnd" mask="gx1v7">$DIN_LOC_ROOT/share/domains/domain.lnd.TL639_gx1v7.200619.nc</file>
+      <file grid="ocnice"  mask="gx1v7">$DIN_LOC_ROOT/share/domains/domain.ocn.TL639_gx1v7.200619.nc</file>
+      <file grid="atm|lnd" mask="tx0.66v1">$DIN_LOC_ROOT/share/domains/domain.lnd.TL639_tx0.66v1.200619.nc</file>
+      <file grid="ocnice"  mask="tx0.66v1">$DIN_LOC_ROOT/share/domains/domain.ocn.TL639_tx0.66v1.200619.nc</file>
+      <mesh driver="nuopc">$DIN_LOC_ROOT/share/meshes/TL639_200618_ESMFmesh.nc</mesh>
+      <desc>TL639 grid for ERA5</desc>
     </domain>
 
     <domain name="ne240np4.pg2">
