@@ -10,7 +10,6 @@
 #include "ezxml.h"
 
 void write_model_variables(ezxml_t registry);
-int write_field_pointers(FILE* fd);
 int write_field_pointer_arrays(FILE* fd);
 int set_pointer_name(int type, int ndims, char *pointer_name);
 int add_package_to_list(const char * package, const char * package_list);

@@ -50,26 +50,6 @@ void write_model_variables(ezxml_t registry){/*{{{*/
 }/*}}}*/
 
 
-int write_field_pointers(FILE* fd){/*{{{*/
-	fortprintf(fd, "\n");
-	fortprintf(fd, "      type (field0DReal), pointer :: r0Ptr\n");
-	fortprintf(fd, "      type (field1DReal), pointer :: r1Ptr\n");
-	fortprintf(fd, "      type (field2DReal), pointer :: r2Ptr\n");
-	fortprintf(fd, "      type (field3DReal), pointer :: r3Ptr\n");
-	fortprintf(fd, "      type (field4DReal), pointer :: r4Ptr\n");
-	fortprintf(fd, "      type (field5DReal), pointer :: r5Ptr\n");
-	fortprintf(fd, "      type (field0DInteger), pointer :: i0Ptr\n");
-	fortprintf(fd, "      type (field1DInteger), pointer :: i1Ptr\n");
-	fortprintf(fd, "      type (field2DInteger), pointer :: i2Ptr\n");
-	fortprintf(fd, "      type (field3DInteger), pointer :: i3Ptr\n");
-	fortprintf(fd, "      type (field0DChar), pointer :: c0Ptr\n");
-	fortprintf(fd, "      type (field1DChar), pointer :: c1Ptr\n");
-	fortprintf(fd, "\n");
-
-	return 0;
-}/*}}}*/
-
-
 int write_field_pointer_arrays(FILE* fd){/*{{{*/
 	fortprintf(fd, "\n");
 	fortprintf(fd, "      type (field0DReal), dimension(:), pointer :: r0Ptr\n");
