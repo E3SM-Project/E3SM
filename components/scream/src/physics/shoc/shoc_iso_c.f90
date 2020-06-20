@@ -111,10 +111,8 @@ contains
     real(kind=c_real), intent(out) :: dz_zi(shcol,nlevi)
     real(kind=c_real), intent(out) :: rho_zt(shcol,nlev)
 
-    !print *, shcol; 
-    !print *, 'zt_grid'
-    !print *,  zt_grid(1,1)
     call shoc_grid(shcol,nlev,nlevi,zt_grid,zi_grid,pdel,dz_zt,dz_zi,rho_zt)
+
   end subroutine shoc_grid_c
 
 end module shoc_iso_c

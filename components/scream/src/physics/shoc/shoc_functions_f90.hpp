@@ -35,6 +35,7 @@ static constexpr size_t NUM_ARRAYS_i = 2;
 
  SHOCGridData(Int shcol_, Int nevl_, Int nlevi_);
  SHOCGridData(const SHOCGridData& rhs);
+ SHOCGridData& operator=(const SHOCGridData& rhs);
  
  void init_ptrs();
  void transpose();

@@ -30,55 +30,106 @@ TEST_CASE("shoc_grid", "shoc"){
   const Int shcol = 1; 
   const Int nlev = 128; 
   const auto nlevi = nlev + 1;
+  const Real density = 1.0; 
+
+
+
+
+
 
   std::array<Real, nlev * shcol> pdel, zt_grid, dz_zt, rho_zt;
   std::array<Real, nlevi * shcol> zi_grid, dz_zi; 
 
   SHOCGridData SDS(shcol, nlev, nlevi);
 
-  //std::cout << "PRINT in test \t" << SDS.shcol << "\n";
+  // Test that the inputs are resonable.
+  REQUIRE(SDS.nlevi - SDS.nlev == 1); 
+  REQUIRE(SDS.shcol>0);
 
-  //SDS.shcol = shcol; 
-  //SDS.nlev = nlev; 
-  //SDS.nlevi = nlevi;
-
-  //Copy pointers from arrays into SDS
-  //SDS.pdel = pdel.data();
-  //SDS.zt_grid = zt_grid.data();
-  //SDS.dz_zt = dz_zt.data();
-  //SDS.rho_zt = rho_zt.data();
-  //SDS.zi_grid = zi_grid.data(); 
-  //SDS.dz_zi = dz_zi.data();
-
-
-  //const Real dz = 50.0;
+  const Real dz = 50.0;
   // Fill in test data on zt_grid
-  //for(Int n=nlev-1; n >= 0; --n){
-  //  for(Int s=0; s < shcol; ++s){
-
-  //    const auto p = s + n*shcol;
- 
-  //    SDS.zt_grid[p] = dz*n + dz/2;   
-  //    SDS.pdel[p] = -gravit*dz; 
-  //  }
- // }
+  for(Int n=0; n < SDS.nlev; ++n){
+    for(Int s=0; s < SDS.shcol; ++s){
+      const auto nft = SDS.nlev - 1 - n;
+      
+      SDS.zt_grid[s, n] = nft * dz + dz/2; 
+      SDS.pdel[s,n] = density*gravit*dz; 
+    }
+  }
 
   // Fill in test data on zi_grid
-  //for(Int n=nlevi-1; n >= 0; --n){
-  //  for(Int s=0; s < shcol; ++s){
-  //     const auto p = s + n*shcol;
-  //     SDS.zi_grid[p] = 0.0;
-  //    }
-  //}
+  for(Int n=0; n < SDS.nlevi; ++n){
+    for(Int s=0; s < SDS.shcol; ++s){
+       const auto nft = SDS.nlevi - 1 - n;
+       
+       SDS.zi_grid[s,n] =  dz * nft;
+      }
+  }
 
-  // Test that the inputs are resonable.
-  //REQUIRE(SDS.nlevi - SDS.nlev == 1); 
-  //REQUIRE(SDS.shcol>0);
+  // Here we sould check that the inputs make sense whe
+
+ // Check that zt decreases upward
+ int nerror = 0; 
+  for(Int n=0; n < SDS.nlev; ++n){
+    {
+      for(Int s=0; s < SDS.shcol; ++s){
+        if (SDS.zt_grid[s,n+1] - SDS.zt_grid[s,n] > 0.0){
+          nerror++;
+        }
+      }
+    }
+  }  
+  REQUIRE(nerror == 0);
+ 
+ //Check that zi decreases upward
+  for(Int n=0; n < SDS.nlevi-1; ++n){
+    {
+      for(Int s=0; s < SDS.shcol; ++s){
+        if (SDS.zi_grid[s,n+1] - SDS.zi_grid[s,n] > 0.0){
+          nerror++;
+        }
+      }
+    }
+  }  
+ REQUIRE(nerror == 0);
 
   //Call the fortran implementation
   shoc_grid(nlev, SDS);
 
+  //First check that dz is correctå
+  for(Int n=0; n < SDS.nlev; ++n){
+    for(Int s=0; s < shcol; ++s){
+      if (SDS.dz_zt[s,n] != dz){
+        nerror++;
+      }
+    }
+  } 
+  REQUIRE(nerror == 0);
+  
+  for(Int s=0; s < shcol; ++s){
+    REQUIRE(SDS.dz_zi[s,0] == 0);
+    REQUIRE(SDS.dz_zi[s,SDS.nlevi-1] == dz/2.0);
+  }
 
+
+  for(Int n=1; n < SDS.nlevi-1; ++n){
+    for(Int s=0; s < shcol; ++s){
+      if (SDS.dz_zi[s,n] != dz){
+        nerror++;
+      }
+    }
+  }
+  REQUIRE(nerror == 0);
+  
+  //Now check density 
+  for(Int n=0; n < SDS.nlev; ++n){
+    for(Int s=0; s < shcol; ++s){
+      if(SDS.rho_zt[s,n] != density){
+        nerror++;
+      }
+    }
+  }
+  REQUIRE(nerror == 0);
 
 }
 

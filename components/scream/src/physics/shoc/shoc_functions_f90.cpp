@@ -21,8 +21,8 @@ void shoc_init_c(int nlev, Real gravit, Real rair, Real rh2o, Real cpair,
                  Real zvir, Real latvap, Real latice, Real karman,
                  Real* pref_mid, int nbot_shoc, int ntop_shoc);
 
-void shoc_grid_c(int shcol, int nlev, int nlevi, Real* zt_grid, Real* zi_gri,
-                 Real* pdel, Real* dz_dt, Real*, Real* rho_zt);
+void shoc_grid_c(int shcol, int nlev, int nlevi, Real* zt_grid, Real* zi_grid,
+                 Real* pdel, Real* dz_zt, Real* dzi_zi, Real* rho_zt);
 }
 
 namespace scream {
@@ -69,6 +69,21 @@ m_data(rhs.m_data), m_datai(rhs.m_datai)
  init_ptrs();
 }
 
+SHOCGridData& SHOCGridData::operator=(const SHOCGridData& rhs)
+{
+  init_ptrs();
+
+  shcol = rhs.shcol; 
+  nlev  = rhs.nlev; 
+  nlevi = rhs.nlevi; 
+  m_total = rhs.m_total; 
+  m_totali = rhs.m_totali;
+  m_data = rhs.m_data;
+  m_datai = rhs.m_datai; // Copy
+
+  return *this;
+}
+
 void SHOCGridData::init_ptrs(){
   Int offset = 0; 
   Real* data_begin = m_data.data(); 
@@ -81,7 +96,8 @@ void SHOCGridData::init_ptrs(){
     *ptrs[i] = data_begin + offset; 
     offset += m_total; 
   }
-
+  
+  offset = 0; 
   for (size_t i = 0; i < NUM_ARRAYS_i; ++i){
     *ptrs_i[i] = data_begin_i + offset; 
     offset += m_totali;
@@ -90,6 +106,7 @@ void SHOCGridData::init_ptrs(){
 
 void SHOCGridData::transpose(){
   SHOCGridData d_trans(*this);
+
   // Transpose zt arrays
   util::transpose<util::TransposeDirection::f2c>(zt_grid, d_trans.zt_grid, shcol, nlev);
   util::transpose<util::TransposeDirection::f2c>(dz_zt, d_trans.dz_zt, shcol, nlev);
@@ -99,14 +116,13 @@ void SHOCGridData::transpose(){
   // Transpose zi arrays
   util::transpose<util::TransposeDirection::f2c>(zi_grid, d_trans.zi_grid, shcol, nlevi);
   util::transpose<util::TransposeDirection::f2c>(dz_zi, d_trans.dz_zi, shcol, nlevi);
-
   *this = d_trans;
+
 }
 
 
 void shoc_grid(Int nlev, SHOCGridData& d)
 {
-  //std::cout << "Hola   " << d.shcol << "\n\n\n";
   shoc_init(nlev, true);
   shoc_grid_c(d.shcol, d.nlev, d.nlevi, d.zt_grid, d.zi_grid, d.pdel, d.dz_zt, d.dz_zi, d.rho_zt);
   d.transpose();
