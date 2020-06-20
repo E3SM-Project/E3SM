@@ -1426,8 +1426,18 @@ module mpas_field_routines
 
        type (field0dLogical), pointer :: f !< Input: Field to deallocate
 
+       type (field0dLogical), pointer :: f_cursor, f_next
+
        call mpas_deallocate_field_target(f)
-       nullify(f)
+
+       if ( mpas_threading_get_thread_num() == 0 ) then
+           f_cursor => f
+           do while(associated(f_cursor))
+               f_next => f_cursor % next
+               deallocate(f_cursor)
+               f_cursor => f_next
+           end do
+       end if
 
    end subroutine mpas_deallocate_field0d_logical!}}}
 
@@ -1456,8 +1466,18 @@ module mpas_field_routines
 
        type (field0dInteger), pointer :: f !< Input: Field to deallocate
 
+       type (field0dInteger), pointer :: f_cursor, f_next
+
        call mpas_deallocate_field_target(f)
-       nullify(f)
+
+       if ( mpas_threading_get_thread_num() == 0 ) then
+           f_cursor => f
+           do while(associated(f_cursor))
+               f_next => f_cursor % next
+               deallocate(f_cursor)
+               f_cursor => f_next
+           end do
+       end if
 
    end subroutine mpas_deallocate_field0d_integer!}}}
 
@@ -1486,8 +1506,18 @@ module mpas_field_routines
 
        type (field1dInteger), pointer :: f !< Input: Field to deallocate
 
+       type (field1dInteger), pointer :: f_cursor, f_next
+
        call mpas_deallocate_field_target(f)
-       nullify(f)
+
+       if ( mpas_threading_get_thread_num() == 0 ) then
+           f_cursor => f
+           do while(associated(f_cursor))
+               f_next => f_cursor % next
+               deallocate(f_cursor)
+               f_cursor => f_next
+           end do
+       end if
 
    end subroutine mpas_deallocate_field1d_integer!}}}
 
@@ -1516,8 +1546,18 @@ module mpas_field_routines
 
        type (field2dInteger), pointer :: f !< Input: Field to deallocate
 
+       type (field2dInteger), pointer :: f_cursor, f_next
+
        call mpas_deallocate_field_target(f)
-       nullify(f)
+
+       if ( mpas_threading_get_thread_num() == 0 ) then
+           f_cursor => f
+           do while(associated(f_cursor))
+               f_next => f_cursor % next
+               deallocate(f_cursor)
+               f_cursor => f_next
+           end do
+       end if
 
    end subroutine mpas_deallocate_field2d_integer!}}}
 
@@ -1546,8 +1586,18 @@ module mpas_field_routines
 
        type (field3dInteger), pointer :: f !< Input: Field to deallocate
 
+       type (field3dInteger), pointer :: f_cursor, f_next
+
        call mpas_deallocate_field_target(f)
-       nullify(f)
+
+       if ( mpas_threading_get_thread_num() == 0 ) then
+           f_cursor => f
+           do while(associated(f_cursor))
+               f_next => f_cursor % next
+               deallocate(f_cursor)
+               f_cursor => f_next
+           end do
+       end if
 
    end subroutine mpas_deallocate_field3d_integer!}}}
 
@@ -1576,8 +1626,18 @@ module mpas_field_routines
 
        type (field0dReal), pointer :: f !< Input: Field to deallocate
 
+       type (field0dReal), pointer :: f_cursor, f_next
+
        call mpas_deallocate_field_target(f)
-       nullify(f)
+
+       if ( mpas_threading_get_thread_num() == 0 ) then
+           f_cursor => f
+           do while(associated(f_cursor))
+               f_next => f_cursor % next
+               deallocate(f_cursor)
+               f_cursor => f_next
+           end do
+       end if
 
    end subroutine mpas_deallocate_field0d_real!}}}
 
@@ -1606,8 +1666,18 @@ module mpas_field_routines
 
        type (field1dReal), pointer :: f !< Input: Field to deallocate
 
+       type (field1dReal), pointer :: f_cursor, f_next
+
        call mpas_deallocate_field_target(f)
-       nullify(f)
+
+       if ( mpas_threading_get_thread_num() == 0 ) then
+           f_cursor => f
+           do while(associated(f_cursor))
+               f_next => f_cursor % next
+               deallocate(f_cursor)
+               f_cursor => f_next
+           end do
+       end if
 
    end subroutine mpas_deallocate_field1d_real!}}}
 
@@ -1636,8 +1706,18 @@ module mpas_field_routines
 
        type (field2dReal), pointer :: f !< Input: Field to deallocate
 
+       type (field2dReal), pointer :: f_cursor, f_next
+
        call mpas_deallocate_field_target(f)
-       nullify(f)
+
+       if ( mpas_threading_get_thread_num() == 0 ) then
+           f_cursor => f
+           do while(associated(f_cursor))
+               f_next => f_cursor % next
+               deallocate(f_cursor)
+               f_cursor => f_next
+           end do
+       end if
 
    end subroutine mpas_deallocate_field2d_real!}}}
 
@@ -1666,8 +1746,18 @@ module mpas_field_routines
 
        type (field3dReal), pointer :: f !< Input: Field to deallocate
 
+       type (field3dReal), pointer :: f_cursor, f_next
+
        call mpas_deallocate_field_target(f)
-       nullify(f)
+
+       if ( mpas_threading_get_thread_num() == 0 ) then
+           f_cursor => f
+           do while(associated(f_cursor))
+               f_next => f_cursor % next
+               deallocate(f_cursor)
+               f_cursor => f_next
+           end do
+       end if
 
    end subroutine mpas_deallocate_field3d_real!}}}
 
@@ -1696,8 +1786,18 @@ module mpas_field_routines
 
        type (field4dReal), pointer :: f !< Input: Field to deallocate
 
+       type (field4dReal), pointer :: f_cursor, f_next
+
        call mpas_deallocate_field_target(f)
-       nullify(f)
+
+       if ( mpas_threading_get_thread_num() == 0 ) then
+           f_cursor => f
+           do while(associated(f_cursor))
+               f_next => f_cursor % next
+               deallocate(f_cursor)
+               f_cursor => f_next
+           end do
+       end if
 
    end subroutine mpas_deallocate_field4d_real!}}}
 
@@ -1726,8 +1826,18 @@ module mpas_field_routines
 
        type (field5dReal), pointer :: f !< Input: Field to deallocate
 
+       type (field5dReal), pointer :: f_cursor, f_next
+
        call mpas_deallocate_field_target(f)
-       nullify(f)
+
+       if ( mpas_threading_get_thread_num() == 0 ) then
+           f_cursor => f
+           do while(associated(f_cursor))
+               f_next => f_cursor % next
+               deallocate(f_cursor)
+               f_cursor => f_next
+           end do
+       end if
 
    end subroutine mpas_deallocate_field5d_real!}}}
 
@@ -1756,8 +1866,18 @@ module mpas_field_routines
 
        type (field0dChar), pointer :: f !< Input: Field to deallocate
 
+       type (field0dChar), pointer :: f_cursor, f_next
+
        call mpas_deallocate_field_target(f)
-       nullify(f)
+
+       if ( mpas_threading_get_thread_num() == 0 ) then
+           f_cursor => f
+           do while(associated(f_cursor))
+               f_next => f_cursor % next
+               deallocate(f_cursor)
+               f_cursor => f_next
+           end do
+       end if
 
    end subroutine mpas_deallocate_field0d_char!}}}
 
@@ -1786,8 +1906,18 @@ module mpas_field_routines
 
        type (field1dChar), pointer :: f !< Input: Field to deallocate
 
+       type (field1dChar), pointer :: f_cursor, f_next
+
        call mpas_deallocate_field_target(f)
-       nullify(f)
+
+       if ( mpas_threading_get_thread_num() == 0 ) then
+           f_cursor => f
+           do while(associated(f_cursor))
+               f_next => f_cursor % next
+               deallocate(f_cursor)
+               f_cursor => f_next
+           end do
+       end if
 
    end subroutine mpas_deallocate_field1d_char!}}}
 
