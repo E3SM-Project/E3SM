@@ -186,21 +186,24 @@ contains
                'seq_maps.rc','ocn2atm_smapname:','ocn2atm_smaptype:',samegrid_ao, &
                'mapper_So2a initialization',esmf_map_flag)
 
-          appname = "ATM_OCN_COU"//CHAR(0)
-          ! idintx is a unique number of MOAB app that takes care of intx between ocn and atm mesh
-          idintx = 100*atm(1)%cplcompid + ocn(1)%cplcompid ! something different, to differentiate it
-          ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_CPLID, idintx, mbintxoa)
-          ierr =  iMOAB_ComputeMeshIntersectionOnSphere (mbaxid, mboxid, mbintxoa)
+          ! Call moab intx only if atm and ocn are init in moab
+          if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
+            appname = "ATM_OCN_COU"//CHAR(0)
+            ! idintx is a unique number of MOAB app that takes care of intx between ocn and atm mesh
+            idintx = 100*atm(1)%cplcompid + ocn(1)%cplcompid ! something different, to differentiate it
+            ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_CPLID, idintx, mbintxoa)
+            ierr =  iMOAB_ComputeMeshIntersectionOnSphere (mbaxid, mboxid, mbintxoa)
 #ifdef MOABDEBUG
-          wopts = CHAR(0)
-          call shr_mpi_commrank( mpicom_CPLID, rank )
-          if (rank .lt. 5) then
-            write(lnum,"(I0.2)")rank !
-            outfile = 'intx'//trim(lnum)// '.h5m' // CHAR(0)
-            ierr = iMOAB_WriteMesh(mbintxoa, outfile, wopts) ! write local intx file
-          endif
-          num_proj = 0 ! to index projection files on coupler pes
+            wopts = CHAR(0)
+            call shr_mpi_commrank( mpicom_CPLID, rank )
+            if (rank .lt. 5) then
+              write(lnum,"(I0.2)")rank !
+              outfile = 'intx'//trim(lnum)// '.h5m' // CHAR(0)
+              ierr = iMOAB_WriteMesh(mbintxoa, outfile, wopts) ! write local intx file
+            endif
+            num_proj = 0 ! to index projection files on coupler pes
 #endif
+         end if
        end if
 
        ! needed for domain checking
@@ -258,11 +261,13 @@ contains
                'seq_maps.rc','lnd2atm_smapname:','lnd2atm_smaptype:',samegrid_al, &
                'mapper_Sl2a initialization',esmf_map_flag)
 
-          appname = "ATM_LND_COU"//CHAR(0)
-          ! idintx is a unique number of MOAB app that takes care of intx between lnd and atm mesh
-          idintx = 100*atm(1)%cplcompid + lnd(1)%cplcompid ! something different, to differentiate it
-          ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_CPLID, idintx, mbintxla)
-          ierr =  iMOAB_ComputePointDoFIntersection (mbaxid, mblxid, mbintxla)
+          if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0)) then
+            appname = "ATM_LND_COU"//CHAR(0)
+            ! idintx is a unique number of MOAB app that takes care of intx between lnd and atm mesh
+            idintx = 100*atm(1)%cplcompid + lnd(1)%cplcompid ! something different, to differentiate it
+            ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_CPLID, idintx, mbintxla)
+            ierr =  iMOAB_ComputePointDoFIntersection (mbaxid, mblxid, mbintxla)
+          endif
        end if
 
 
@@ -300,6 +305,7 @@ contains
 
     integer, external :: iMOAB_CoverageGraph, iMOAB_ComputeScalarProjectionWeights, iMOAB_ComputeCommGraph
 
+    if (mbintxoa .lt. 0) return ! do nothing, as intx is not defined
     call seq_infodata_getData(infodata, &
          atm_present=atm_present,       &
          ocn_present=ocn_present)
@@ -380,6 +386,7 @@ contains
 
     integer, external :: iMOAB_CoverageGraph, iMOAB_ComputeScalarProjectionWeights
 
+    if (mbintxla .lt. 0 )  return ! do nothing
     call seq_infodata_getData(infodata, &
          atm_present=atm_present,       &
          lnd_present=lnd_present)
@@ -611,10 +618,11 @@ contains
        tagname = 'T_ph;u_ph;v_ph'//CHAR(0)
        ! context_id is the other comp id, in this case it has to be 6, id_join
        context_id = 100*atm(1)%cplcompid + ocn(1)%cplcompid
-       ierr = iMOAB_SendElementTag(mphaid, tagname, mpicom_join, context_id)
+       ierr = iMOAB_SendElementTag(mphaid, tagname, mpicom_join, context_id) ! it will fail if intx is not done
+         ! if intx is not done, context does not exist !
     endif
 
-    if (mbaxid .ge. 0 ) then !  we are on coupler pes, for sure
+    if (mbintxoa .ge. 0 ) then !  we are on coupler pes, for sure
         ! receive on atm tag on coupler pes, in original migrate
         ! receive from ATM PHYS, which in this case is 200 + 5
       tagname = 'T_ph16;u_ph16;v_ph16'//CHAR(0)
