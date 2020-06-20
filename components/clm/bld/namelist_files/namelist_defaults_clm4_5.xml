@@ -215,7 +215,7 @@ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".true." irrigate=".true." nu_co
 
 <!-- for present day simulations - year 2010 -->
 <fsurdat hgrid="r05"   sim_year="2010" use_crop=".false." >
-	lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr2000_c190418.nc</fsurdat>
+	lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr2010_c191025.nc</fsurdat>
 
 <!-- for present day simulations - year 2000 -->
 <fsurdat hgrid="360x720cru"   sim_year="2000" use_crop=".false." >
