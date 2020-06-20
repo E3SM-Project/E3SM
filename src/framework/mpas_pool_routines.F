@@ -209,7 +209,7 @@ module mpas_pool_routines
       integer :: i, j
       type (mpas_pool_member_type), pointer :: ptr
       type (mpas_pool_data_type), pointer :: dptr
-      integer :: local_err, threadNum
+      integer :: threadNum
 
       threadNum = mpas_threading_get_thread_num()
 
@@ -224,9 +224,9 @@ module mpas_pool_routines
                if (ptr % contentsType == MPAS_POOL_DIMENSION) then
    
                   if (ptr % data % contentsDims > 0) then
-                     deallocate(ptr % data % simple_int_arr, stat=local_err)
+                     deallocate(ptr % data % simple_int_arr)
                   else
-                     deallocate(ptr % data % simple_int, stat=local_err)
+                     deallocate(ptr % data % simple_int)
                   end if
    
                else if (ptr % contentsType == MPAS_POOL_CONFIG) then
@@ -234,13 +234,13 @@ module mpas_pool_routines
                   dptr => ptr % data
    
                   if (dptr % contentsType == MPAS_POOL_REAL) then
-                     deallocate(dptr % simple_real, stat=local_err)
+                     deallocate(dptr % simple_real)
                   else if (dptr % contentsType == MPAS_POOL_INTEGER) then
-                     deallocate(dptr % simple_int, stat=local_err)
+                     deallocate(dptr % simple_int)
                   else if (dptr % contentsType == MPAS_POOL_CHARACTER) then
-                     deallocate(dptr % simple_char, stat=local_err)
+                     deallocate(dptr % simple_char)
                   else if (dptr % contentsType == MPAS_POOL_LOGICAL) then
-                     deallocate(dptr % simple_logical, stat=local_err)
+                     deallocate(dptr % simple_logical)
                   end if
    
                else if (ptr % contentsType == MPAS_POOL_FIELD) then
@@ -278,67 +278,67 @@ module mpas_pool_routines
                      do j=1,dptr % contentsTimeLevs
                         call mpas_deallocate_field_target(dptr % r0a(j))
                      end do
-                     deallocate(dptr % r0a, stat=local_err)
+                     deallocate(dptr % r0a)
                   else if (associated(dptr % r1a)) then
                      do j=1,dptr % contentsTimeLevs
                         call mpas_deallocate_field_target(dptr % r1a(j))
                      end do
-                     deallocate(dptr % r1a, stat=local_err)
+                     deallocate(dptr % r1a)
                   else if (associated(dptr % r2a)) then
                      do j=1,dptr % contentsTimeLevs
                         call mpas_deallocate_field_target(dptr % r2a(j))
                      end do
-                     deallocate(dptr % r2a, stat=local_err)
+                     deallocate(dptr % r2a)
                   else if (associated(dptr % r3a)) then
                      do j=1,dptr % contentsTimeLevs
                         call mpas_deallocate_field_target(dptr % r3a(j))
                      end do
-                     deallocate(dptr % r3a, stat=local_err)
+                     deallocate(dptr % r3a)
                   else if (associated(dptr % r4a)) then
                      do j=1,dptr % contentsTimeLevs
                         call mpas_deallocate_field_target(dptr % r4a(j))
                      end do
-                     deallocate(dptr % r4a, stat=local_err)
+                     deallocate(dptr % r4a)
                   else if (associated(dptr % r5a)) then
                      do j=1,dptr % contentsTimeLevs
                         call mpas_deallocate_field_target(dptr % r5a(j))
                      end do
-                     deallocate(dptr % r5a, stat=local_err)
+                     deallocate(dptr % r5a)
                   else if (associated(dptr % i0a)) then
                      do j=1,dptr % contentsTimeLevs
                         call mpas_deallocate_field_target(dptr % i0a(j))
                      end do
-                     deallocate(dptr % i0a, stat=local_err)
+                     deallocate(dptr % i0a)
                   else if (associated(dptr % i1a)) then
                      do j=1,dptr % contentsTimeLevs
                         call mpas_deallocate_field_target(dptr % i1a(j))
                      end do
-                     deallocate(dptr % i1a, stat=local_err)
+                     deallocate(dptr % i1a)
                   else if (associated(dptr % i2a)) then
                      do j=1,dptr % contentsTimeLevs
                         call mpas_deallocate_field_target(dptr % i2a(j))
                      end do
-                     deallocate(dptr % i2a, stat=local_err)
+                     deallocate(dptr % i2a)
                   else if (associated(dptr % i3a)) then
                      do j=1,dptr % contentsTimeLevs
                         call mpas_deallocate_field_target(dptr % i3a(j))
                      end do
-                     deallocate(dptr % i3a, stat=local_err)
+                     deallocate(dptr % i3a)
                   else if (associated(dptr % c0a)) then
                      do j=1,dptr % contentsTimeLevs
                         call mpas_deallocate_field_target(dptr % c0a(j))
                      end do
-                     deallocate(dptr % c0a, stat=local_err)
+                     deallocate(dptr % c0a)
                   else if (associated(dptr % c1a)) then
                      do j=1,dptr % contentsTimeLevs
                         call mpas_deallocate_field_target(dptr % c1a(j))
                      end do
-                     deallocate(dptr % c1a, stat=local_err)
+                     deallocate(dptr % c1a)
                   else if (associated(dptr % l0a)) then
                      do j=1,dptr % contentsTimeLevs
                         call mpas_deallocate_field_target(dptr % l0a(j))
                      end do
-                     deallocate(dptr % l0a, stat=local_err)
+                     deallocate(dptr % l0a)
                   else
                      call pool_mesg('While destroying pool, member '//trim(ptr % key)//' has no valid field pointers.')
                   end if
@@ -348,14 +348,14 @@ module mpas_pool_routines
                   call mpas_pool_destroy_pool(ptr % data % p)
    
                end if
-               deallocate(ptr % data, stat=local_err)
-               deallocate(ptr, stat=local_err)
+               deallocate(ptr % data)
+               deallocate(ptr)
             end do
    
          end do
    
-         deallocate(inPool % table, stat=local_err)
-         deallocate(inPool, stat=local_err)
+         deallocate(inPool % table)
+         deallocate(inPool)
       end if
 
    end subroutine mpas_pool_destroy_pool!}}}
@@ -5100,7 +5100,7 @@ module mpas_pool_routines
 
       type (mpas_pool_type), intent(inout) :: inPool
       character (len=*), intent(in) :: key
-      type (mpas_pool_type), intent(in), target :: subPool
+      type (mpas_pool_type), pointer :: subPool
 
 
       type (mpas_pool_member_type), pointer :: newmem
