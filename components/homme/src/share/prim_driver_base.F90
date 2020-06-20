@@ -999,7 +999,7 @@ contains
     !       tl%n0    time t + dt_q
 
     use control_mod,        only: statefreq, qsplit, rsplit, disable_diagnostics, &
-         dt_remap_factor, dt_tracer_factor, transport_alg
+         dt_remap_factor, dt_tracer_factor, transport_alg, ftype
     use hybvcoord_mod,      only: hvcoord_t
     use parallel_mod,       only: abortmp
     use prim_state_mod,     only: prim_printstate
@@ -1052,7 +1052,8 @@ contains
     if(disable_diagnostics) compute_diagnostics= .false.
 
     ! compute scalar diagnostics if currently active
-    if (compute_diagnostics) call run_diagnostics(elem,hvcoord,tl,3,.true.,nets,nete)
+    if (ftype .ne. 1) &
+       if (compute_diagnostics) call run_diagnostics(elem,hvcoord,tl,3,.true.,nets,nete)
 
     if (.not. independent_time_steps) then
        call TimeLevel_Qdp(tl, dt_tracer_factor, n0_qdp, np1_qdp)
