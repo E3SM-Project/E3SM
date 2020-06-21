@@ -1,5 +1,5 @@
 !---------------------------------------------------------------------------
-! $Id: index_mapping.F90 7118 2014-07-25 00:12:15Z raut@uwm.edu $
+! $Id$
 !===============================================================================
 module index_mapping
 
@@ -7,23 +7,62 @@ module index_mapping
   ! Functions to map back and forth between the PDF arrays and the hydrometeor
   ! arrays.
 
+  ! The “iiPDF” indices are used to index all PDF variates, including all
+  ! hydrometeor variates.  
+  ! The “ii” indices are used to index hydrometeor arrays.  
+  ! The “ii” variates are a subset of the “iiPDF” variates.  
+  ! Conversions between the two sets of indices are done by the 
+  ! functions pdf2hydromet_idx and hydromet2pdf_idx below.
+  ! 
+  ! ------------------------------------------------------------------------
+  ! 
+  ! iiPDF indices:
+  ! 
+  ! Included indices:  
+  ! iiPDF_chi, iiPDF_eta, iiPDF_w, iiPDF_Ncn, iiPDF_rr, & all other hydrometeors
+  ! 
+  ! Number of indices:  pdf_dim
+  ! 
+  ! Examples of arrays dimensioned by pdf_dim:
+  ! mu_x_1_n, corr_array_n_cloud, . . .
+  ! 
+  ! Declared as module variables in module array_index
+  ! 
+  ! Initialized in subroutine setup_pdf_indices
+  ! 
+  ! ----------------------------------------------------------------------
+  ! 
+  ! ii indices:
+  ! 
+  ! Included indices:  
+  ! iirr, iiNr, iiri, iiNi, iirs, iiNs, iirg, iiNg
+  ! 
+  ! Number of indices:  hydromet_dim
+  ! 
+  ! Examples of arrays dimensioned by hydromet_dim: 
+  ! hydromet, wphydrometp, . . .
+  ! 
+  ! Declared as module variables in module array_index.
+  ! 
+  ! Initialized in subroutine init_microphys
+  ! 
+  ! -----------------------------------------------------------------------
+  !
   ! References:
   !   None
   !-------------------------------------------------------------------------
 
   ! Hydrometeor array indices
   use array_index, only: &
-      iirrm, & ! Hydrometeor array index for rain water mixing ratio, rr
-      iirsm, & ! Hydrometeor array index for snow mixing ratio, rs
-      iirim, & ! Hydrometeor array index for ice mixing ratio, ri
-      iirgm, & ! Hydrometeor array index for graupel mixing ratio, rg
-      iiNrm, & ! Hydrometeor array index for rain drop concentration, Nr
-      iiNsm, & ! Hydrometeor array index for snow concentration, Ns
-      iiNim, & ! Hydrometeor array index for ice concentration, Ni
-      iiNgm    ! Hydrometeor array index for graupel concentration, Ng
-
+      iirr, & ! Hydrometeor array index for rain water mixing ratio, rr
+      iirs, & ! Hydrometeor array index for snow mixing ratio, rs
+      iiri, & ! Hydrometeor array index for ice mixing ratio, ri
+      iirg, & ! Hydrometeor array index for graupel mixing ratio, rg
+      iiNr, & ! Hydrometeor array index for rain drop concentration, Nr
+      iiNs, & ! Hydrometeor array index for snow concentration, Ns
+      iiNi, & ! Hydrometeor array index for ice concentration, Ni
+      iiNg, &    ! Hydrometeor array index for graupel concentration, Ng
   ! PDF array indices
-  use corr_varnce_module, only: &
       iiPDF_rr, & ! PDF array index for rain water mixing ratio, rr
       iiPDF_rs, & ! PDF array index for snow mixing ratio, rs
       iiPDF_ri, & ! PDF array index for ice mixing ratio, ri
@@ -73,42 +112,42 @@ contains
     if ( pdf_idx == iiPDF_rr ) then
 
        ! Index for rain water mixing ratio, rr.
-       hydromet_idx = iirrm
+       hydromet_idx = iirr
 
     elseif ( pdf_idx == iiPDF_Nr ) then
 
        ! Index for rain drop concentration, Nr.
-       hydromet_idx = iiNrm
+       hydromet_idx = iiNr
 
     elseif ( pdf_idx == iiPDF_rs ) then
 
        ! Index for snow mixing ratio, rs.
-       hydromet_idx = iirsm
+       hydromet_idx = iirs
 
     elseif ( pdf_idx == iiPDF_Ns ) then
 
        ! Index for snow flake concentration, Ns.
-       hydromet_idx = iiNsm
+       hydromet_idx = iiNs
 
     elseif ( pdf_idx == iiPDF_rg ) then
 
        ! Index for graupel mixing ratio, rg.
-       hydromet_idx = iirgm
+       hydromet_idx = iirg
 
     elseif ( pdf_idx == iiPDF_Ng ) then
 
        ! Index for graupel concentration, Ng.
-       hydromet_idx = iiNgm
+       hydromet_idx = iiNg
 
     elseif ( pdf_idx == iiPDF_ri ) then
 
        ! Index for ice mixing ratio, ri.
-       hydromet_idx = iirim
+       hydromet_idx = iiri
 
     elseif ( pdf_idx == iiPDF_Ni ) then
 
        ! Index for ice concentration, Ni.
-       hydromet_idx = iiNim
+       hydromet_idx = iiNi
 
     endif
 
@@ -142,42 +181,42 @@ contains
     ! Initialize pdf_idx.
     pdf_idx = 0
 
-    if ( hydromet_idx == iirrm ) then
+    if ( hydromet_idx == iirr ) then
 
        ! Index for rain water mixing ratio, rr.
        pdf_idx = iiPDF_rr
 
-    elseif ( hydromet_idx == iiNrm ) then
+    elseif ( hydromet_idx == iiNr ) then
 
        ! Index for rain drop concentration, Nr.
        pdf_idx = iiPDF_Nr
 
-    elseif ( hydromet_idx == iirim ) then
+    elseif ( hydromet_idx == iiri ) then
 
        ! Index for ice mixing ratio, ri.
        pdf_idx = iiPDF_ri
 
-    elseif ( hydromet_idx == iiNim ) then
+    elseif ( hydromet_idx == iiNi ) then
 
        ! Index for ice concentration, Ni.
        pdf_idx = iiPDF_Ni
 
-    elseif ( hydromet_idx == iirsm ) then
+    elseif ( hydromet_idx == iirs ) then
 
        ! Index for snow mixing ratio, rs.
        pdf_idx = iiPDF_rs
 
-    elseif ( hydromet_idx == iiNsm ) then
+    elseif ( hydromet_idx == iiNs ) then
 
        ! Index for snow flake concentration, Ns.
        pdf_idx = iiPDF_Ns
 
-    elseif ( hydromet_idx == iirgm ) then
+    elseif ( hydromet_idx == iirg ) then
 
        ! Index for graupel mixing ratio, rg.
        pdf_idx = iiPDF_rg
 
-    elseif ( hydromet_idx == iiNgm ) then
+    elseif ( hydromet_idx == iiNg ) then
 
        ! Index for graupel concentration, Ng.
        pdf_idx = iiPDF_Ng
@@ -215,25 +254,25 @@ contains
     ! Initialize Nx_idx.
     Nx_idx = 0
 
-    if ( rx_idx == iirrm ) then
+    if ( rx_idx == iirr ) then
 
        ! Index for rain drop concentration, Nr.
-       Nx_idx = iiNrm
+       Nx_idx = iiNr
 
-    elseif ( rx_idx == iirim ) then
+    elseif ( rx_idx == iiri ) then
 
        ! Index for ice crystal concentration, Ni.
-       Nx_idx = iiNim
+       Nx_idx = iiNi
 
-    elseif ( rx_idx == iirsm ) then
+    elseif ( rx_idx == iirs ) then
 
        ! Index for snow flake concentration, Ns.
-       Nx_idx = iiNsm
+       Nx_idx = iiNs
 
-    elseif ( rx_idx == iirgm ) then
+    elseif ( rx_idx == iirg ) then
 
        ! Index for graupel concentration, Ng.
-       Nx_idx = iiNgm
+       Nx_idx = iiNg
 
     endif
 
@@ -268,25 +307,25 @@ contains
     ! Initialize rx_idx.
     rx_idx = 0
 
-    if ( Nx_idx == iiNrm ) then
+    if ( Nx_idx == iiNr ) then
 
        ! Index for rain water mixing ratio, rr.
-       rx_idx = iirrm
+       rx_idx = iirr
 
-    elseif ( Nx_idx == iiNim ) then
+    elseif ( Nx_idx == iiNi ) then
 
        ! Index for ice mixing ratio, ri.
-       rx_idx = iirim
+       rx_idx = iiri
 
-    elseif ( Nx_idx == iiNsm ) then
+    elseif ( Nx_idx == iiNs ) then
 
        ! Index for snow mixing ratio, rs.
-       rx_idx = iirsm
+       rx_idx = iirs
 
-    elseif ( Nx_idx == iiNgm ) then
+    elseif ( Nx_idx == iiNg ) then
 
        ! Index for graupel mixing ratio, rg.
-       rx_idx = iirgm
+       rx_idx = iirg
 
     endif
 
@@ -331,22 +370,22 @@ contains
     ! Initialize mvr_hydromet_max.
     mvr_hydromet_max = zero
 
-    if ( hydromet_idx == iirrm .or. hydromet_idx == iiNrm ) then
+    if ( hydromet_idx == iirr .or. hydromet_idx == iiNr ) then
 
        ! Maximum allowable mean volume radius for rain drops.
        mvr_hydromet_max = mvr_rain_max
 
-    elseif ( hydromet_idx == iirim .or. hydromet_idx == iiNim ) then
+    elseif ( hydromet_idx == iiri .or. hydromet_idx == iiNi ) then
 
        ! Maximum allowable mean volume radius for ice crystals.
        mvr_hydromet_max = mvr_ice_max
 
-    elseif ( hydromet_idx == iirsm .or. hydromet_idx == iiNsm ) then
+    elseif ( hydromet_idx == iirs .or. hydromet_idx == iiNs ) then
 
        ! Maximum allowable mean volume radius for snow flakes.
        mvr_hydromet_max = mvr_snow_max
 
-    elseif ( hydromet_idx == iirgm .or. hydromet_idx == iiNgm ) then
+    elseif ( hydromet_idx == iirg .or. hydromet_idx == iiNg ) then
 
        ! Maximum allowable mean volume radius for graupel.
        mvr_hydromet_max = mvr_graupel_max
