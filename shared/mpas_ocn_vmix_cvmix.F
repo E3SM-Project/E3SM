@@ -141,7 +141,7 @@ contains
 
       real (kind=RKIND), dimension(:,:,:), pointer :: vertNonLocalFlux
       integer, pointer :: index_vertNonLocalFluxTemp, config_cvmix_num_ri_smooth_loops
-      integer, dimension(:,:), pointer :: edgesOnCell, cellsOnCell, cellMask
+      integer, dimension(:,:), pointer :: edgesOnCell, cellsOnEdge, cellsOnCell, cellMask
 
       logical, pointer :: config_use_cvmix_shear, config_use_cvmix_convection, config_use_cvmix_kpp
       logical, pointer :: config_use_cvmix_fixed_boundary_layer, config_cvmix_use_BLD_smoothing
@@ -151,7 +151,7 @@ contains
       character (len=StrKIND), pointer :: config_cvmix_shear_mixing_scheme, config_cvmix_kpp_matching
 
       integer :: k, i, iCell, jCell, iNeighbor, iter, timeLevel, kIndexOBL, kav, iEdge, nCells
-      integer :: edgeCount, nEdges, topIndex, nsmooth, kpp_stage
+      integer :: edgeCount, nEdges, topIndex, nsmooth, kpp_stage, cell1, cell2
       integer, pointer :: nVertLevels, nVertLevelsP1
       integer, dimension(:), pointer :: nCellsArray
       integer, dimension(:), allocatable :: surfaceAverageIndex
@@ -161,12 +161,13 @@ contains
       real (kind=RKIND) :: sigma, turbulentScalarVelocityScalePoint
       real (kind=RKIND), dimension(:), allocatable :: Nsqr_iface, turbulentScalarVelocityScale, &
                                                       deltaVelocitySquared, normalVelocitySum, &
-                                                      potentialDensitySum, RiTemp
+                                                      potentialDensitySum, RiTemp,              &
+                                                      layerThicknessSum, layerThicknessEdgeSum
       real (kind=RKIND), dimension(:), allocatable, target :: RiSmoothed, BVFSmoothed, OBLDepths, interfaceForcings
       logical :: bulkRichardsonFlag
 
       real (kind=RKIND), pointer :: config_cvmix_background_viscosity, config_cvmix_background_diffusion
-      real (kind=RKIND) :: langmuirEnhancementFactor, langmuirNumber
+      real (kind=RKIND) :: langmuirEnhancementFactor, langmuirNumber, layerThicknessEdge
       logical, pointer :: config_cvmix_kpp_use_theory_wave
 
       !-----------------------------------------------------------------
@@ -224,6 +225,7 @@ contains
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
       call mpas_pool_get_array(meshPool, 'cellMask', cellMask)
 
       !
@@ -345,6 +347,8 @@ contains
       allocate(potentialDensitySum(nVertLevels))
       allocate(surfaceAverageIndex(nVertLevels))
       allocate(deltaVelocitySquared(nVertLevels))
+      allocate(layerThicknessSum(nVertLevels))
+      allocate(layerThicknessEdgeSum(nVertLevels))
 
       do k = 1, nVertLevels
          Nsqr_iface(k) = 0.0_RKIND
@@ -530,25 +534,37 @@ contains
               ! Build deltaVelocitySquared
               do i = 1, nEdgesOnCell(iCell)
                  iEdge = edgesOnCell(i, iCell)
+                 cell1 = cellsOnEdge(1, iEdge)
+                 cell2 = cellsOnEdge(2, iEdge)
+
                  deltaVelocitySquared(1) = 0.0_RKIND
 
-                 normalVelocitySum(1) = normalVelocity(1, iEdge)
+                 layerThicknessEdge = 0.5_RKIND*(layerThickness(1, cell1) + layerThickness(1, cell2))
+                 normalVelocitySum(1) = normalVelocity(1, iEdge)*layerThicknessEdge
+                 layerThicknessEdgeSum(1) = layerThicknessEdge
 
                  do kIndexOBL = 2, maxLevelCell(iCell)
-                    normalVelocitySum(kIndexOBL) = normalVelocitySum(kIndexOBL-1) + normalVelocity(kIndexOBL, iEdge)
+                    layerThicknessEdge = 0.5_RKIND*(layerThickness(kIndexOBL, cell1) + &
+                                      layerThickness(kIndexOBL, cell2))
+                    normalVelocitySum(kIndexOBL) = normalVelocitySum(kIndexOBL-1) + &
+                                      layerThicknessEdge*normalVelocity(kIndexOBL, iEdge)
+                    layerThicknessEdgeSum(kIndexOBL) = layerThicknessEdgeSum(kIndexOBL-1) + layerThicknessEdge
                  end do
 
                  do kIndexOBL = 1, maxLevelCell(iCell)
                     normalVelocityAv = normalVelocitySum(surfaceAverageIndex(kIndexOBL )) / &
-                        real( surfaceAverageIndex(kIndexOBL), kind=RKIND)
+                        layerThicknessEdgeSum(surfaceAverageIndex(kIndexOBL))
                     delU2 = ( normalVelocityAv - normalVelocity(kIndexOBL, iEdge) )**2
                     deltaVelocitySquared(kIndexOBL) = deltaVelocitySquared(kIndexOBL) + edgeAreaFractionOfCell(i,iCell) * delU2
                  end do
               end do
 
-              potentialDensitySum(1) = potentialDensity(1, iCell)
+              potentialDensitySum(1) = potentialDensity(1, iCell)*layerThickness(1, iCell)
+              layerThicknessSum(1) = layerThickness(1, iCell)
               do kIndexOBL = 2, maxLevelCell(iCell)
-                potentialDensitySum(kIndexOBL) = potentialDensitySum(kIndexOBL-1) + potentialDensity(kIndexOBL, iCell)
+                layerThicknessSum(kIndexOBL) = layerThicknessSum(kIndexOBL-1) + layerThickness(kIndexOBL, iCell)
+                potentialDensitySum(kIndexOBL) = potentialDensitySum(kIndexOBL-1) + &
+                    layerThickness(kIndexOBL, iCell)*potentialDensity(kIndexOBL, iCell)
               end do
 
               do kIndexOBL = 1, maxLevelCell(iCell)
@@ -558,7 +574,7 @@ contains
 
                 bulkRichardsonNumberBuoy(kIndexOBL,iCell) = gravity * (potentialDensity(kIndexOBL, iCell) &
                                   - potentialDensitySum(surfaceAverageIndex(kIndexOBL)) &
-                                  / real(surfaceAverageIndex(kIndexOBL), kind=RKIND)) / rho_sw
+                                  / layerThicknessSum(surfaceAverageIndex(kIndexOBL))) / rho_sw
               end do ! do kIndexOBL
 !             call mpas_timer_stop('Bulk Richardson kIndexOBL loops')
 
@@ -801,6 +817,8 @@ contains
       deallocate(potentialDensitySum)
       deallocate(surfaceAverageIndex)
       deallocate(deltaVelocitySquared)
+      deallocate(layerThicknessEdgeSum)
+      deallocate(layerThicknessSum)
 
       deallocate(OBLDepths)
       deallocate(interfaceForcings)
