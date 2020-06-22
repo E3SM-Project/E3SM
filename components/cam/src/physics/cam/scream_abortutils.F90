@@ -1,7 +1,7 @@
 module scream_abortutils
 
 !-------------------------------------------------
-!Utilities to stop the model in case of
+!Utility to stop the model in case of
 !catastrophic errors
 !-------------------------------------------------
 implicit none
@@ -22,25 +22,29 @@ contains
 #ifdef SPMD
     !Modules to use when SCREAM run with MPI under E3SM
     use micro_p3_utils, only:iulog_e3sm
-    use cam_abortutils, only: endrun
 #endif
 
     implicit none
 
     !intent-ins
     character(len=*), intent(in), optional :: msg
+#ifdef SPMD
+#include "mpif.h"
+    integer:: ierr
+#endif
+
 
 #ifdef SPMD
-    !Call E3SM's utility to stop the model
     !for model runs with MPI
     if(present(msg)) then
-       call endrun(msg)
+       write(iulog_e3sm,*)msg
     else
-       call endrun()
+       write(iulog_e3sm,*)'ERROR: Aborting...'
     endif
+    call MPI_ABORT(MPI_COMM_WORLD, -1, ierr)
 #else
     !Stop the model when run in non-MPI mode
-    write(*,*)'ERROR:'
+    write(*,*)'ERROR: Aborting...'
     if(present(msg)) write(*,*)trim(adjustl(msg))
 
     stop
