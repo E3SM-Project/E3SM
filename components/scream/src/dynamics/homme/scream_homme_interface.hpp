@@ -1,8 +1,8 @@
 #ifndef SCREAM_HOMME_INTERFACE_HPP
 #define SCREAM_HOMME_INTERFACE_HPP
 
-#include "share/mpi/scream_comm.hpp"
-#include "share/scream_assert.hpp"
+#include "ekat/mpi/scream_comm.hpp"
+#include "ekat/scream_assert.hpp"
 #include <mpi.h>
 #include <string>
 

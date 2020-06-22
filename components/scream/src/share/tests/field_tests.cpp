@@ -48,8 +48,8 @@ TEST_CASE("field_tracking", "") {
   using namespace scream;
 
   FieldTracking track("track");
-  util::TimeStamp time1(0,0,10);
-  util::TimeStamp time2(0,0,20);
+  util::TimeStamp time1(0,0,0,10.0);
+  util::TimeStamp time2(0,0,0,20.0);
   REQUIRE_NOTHROW (track.update_time_stamp(time2));
 
   REQUIRE_THROWS  (track.update_time_stamp(time1));

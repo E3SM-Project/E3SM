@@ -1,0 +1,19 @@
+%YAML 1.1
+---
+Atmosphere Driver:
+  Atmosphere Processes:
+    Number of Entries: 2
+    Schedule Type: Sequential
+    Process 0:
+      Process Name: P3
+      Grid:         SE Physics
+      Can Initialize All Inputs: true
+    Process 1:
+      Process Name: SHOC
+      Grid:         SE Physics
+  Grids Manager:
+    Type: Physics Only
+    Reference Grid: SE Physics
+    Physics Only:
+      Number of global columns: 1024
+...

@@ -440,7 +440,7 @@ Real subgrid_variance_scaling(SubgridVarianceScalingData& d);
 extern "C"{
   Real subgrid_variance_scaling_f(Real relvar,Real expon);
 }
-  
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct GetCloudDsd2Data
@@ -1121,6 +1121,100 @@ void p3_main_pre_main_loop_f(
   Real* qirim_incld, Real* nc_incld, Real* nr_incld, Real* nitot_incld, Real* birim_incld,
   bool* log_nucleationPossible, bool* log_hydrometeorsPresent);
 
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct P3MainLoopData
+{
+  static constexpr size_t NUM_ARRAYS = 62;
+
+  // Inputs
+  Int kts, kte, kbot, ktop, kdir;
+  bool log_predictNc;
+  Real dt, odt;
+  Real* pres, *pdel, *dzq, *ncnuc, *exner, *inv_exner, *inv_lcldm, *inv_icldm, *inv_rcldm, *naai, *qc_relvar, *icldm, *lcldm, *rcldm;
+
+  // In/out
+  Real* t, *rho, *inv_rho, *qvs, *qvi, *supi, *rhofacr, *rhofaci, *acn,
+    *qv, *th, *qc, *nc, *qr, *nr, *qitot, *nitot, *qirim, *birim, *xxlv, *xxls, *xlf, *qc_incld, *qr_incld,
+    *qitot_incld, *qirim_incld, *nc_incld, *nr_incld, *nitot_incld, *birim_incld, *mu_c, *nu, *lamc, *cdist, *cdist1,
+    *cdistr, *mu_r, *lamr, *logn0r, *cmeiout, *prain, *nevapr, *prer_evap, *vap_liq_exchange,
+    *vap_ice_exchange, *liq_ice_exchange, *pratot, *prctot;
+
+  bool log_hydrometeorsPresent;
+
+  P3MainLoopData(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
+                     bool log_predictNc_, Real dt_,
+                     const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+
+  // deep copy
+  P3MainLoopData(const P3MainLoopData& rhs);
+
+  Int nk() const { return m_nk; }
+
+ private:
+  // Internals
+  Int m_nk;
+  std::vector<Real> m_data;
+};
+
+void p3_main_main_loop(P3MainLoopData& d);
+
+extern "C" {
+
+void p3_main_main_loop_f(
+  Int kts, Int kte, Int kbot, Int ktop, Int kdir, bool log_predictNc, Real dt, Real odt,
+  Real* pres, Real* pdel, Real* dzq, Real* ncnuc, Real* exner, Real* inv_exner, Real* inv_lcldm, Real* inv_icldm, Real* inv_rcldm, Real* naai, Real* qc_relvar, Real* icldm, Real* lcldm, Real* rcldm,
+  Real* t, Real* rho, Real* inv_rho, Real* qvs, Real* qvi, Real* supi, Real* rhofacr, Real* rhofaci, Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot,
+  Real* qirim, Real* birim, Real* xxlv, Real* xxls, Real* xlf, Real* qc_incld, Real* qr_incld, Real* qitot_incld, Real* qirim_incld, Real* nc_incld, Real* nr_incld,
+  Real* nitot_incld, Real* birim_incld, Real* mu_c, Real* nu, Real* lamc, Real* cdist, Real* cdist1, Real* cdistr, Real* mu_r, Real* lamr, Real* logn0r, Real* cmeiout, Real* prain,
+  Real* nevapr, Real* prer_evap, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* liq_ice_exchange, Real* pratot,
+  Real* prctot, bool* log_hydrometeorsPresent);
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct P3MainPostLoopData
+{
+  static constexpr size_t NUM_ARRAYS = 32;
+
+  // Inputs
+  Int kts, kte, kbot, ktop, kdir;
+  Real* exner, *lcldm, *rcldm;
+
+  // In/out
+  Real* rho, *inv_rho, *rhofaci,
+    *qv, *th, *qc, *nc, *qr, *nr, *qitot, *nitot, *qirim, *birim, *xxlv, *xxls,
+    *mu_c, *nu, *lamc, *mu_r,
+    *lamr, *vap_liq_exchange,
+    *ze_rain, *ze_ice, *diag_vmi, *diag_effi, *diag_di, *diag_rhoi, *diag_ze, *diag_effc;
+
+  P3MainPostLoopData(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
+                     const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+
+  // deep copy
+  P3MainPostLoopData(const P3MainPostLoopData& rhs);
+
+  Int nk() const { return m_nk; }
+
+ private:
+  // Internals
+  Int m_nk;
+  std::vector<Real> m_data;
+};
+
+void p3_main_post_main_loop(P3MainPostLoopData& d);
+
+extern "C" {
+
+void p3_main_post_main_loop_f(
+  Int kts, Int kte, Int kbot, Int ktop, Int kdir,
+  Real* exner, Real* lcldm, Real* rcldm,
+  Real* rho, Real* inv_rho, Real* rhofaci, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* xxlv, Real* xxls,
+  Real* mu_c, Real* nu, Real* lamc, Real* mu_r, Real* lamr, Real* vap_liq_exchange,
+  Real*  ze_rain, Real* ze_ice, Real* diag_vmi, Real* diag_effi, Real* diag_di, Real* diag_rhoi, Real* diag_ze, Real* diag_effc);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

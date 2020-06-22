@@ -1,7 +1,7 @@
 #ifndef SCREAM_CONTEXT_HPP
 #define SCREAM_CONTEXT_HPP
 
-#include "share/util/scream_std_any.hpp"
+#include "ekat/util/scream_std_any.hpp"
 #include <map>
 #include <typeindex>
 

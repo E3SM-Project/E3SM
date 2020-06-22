@@ -183,12 +183,12 @@ interface
 
   subroutine impose_max_total_ni_f(nitot_local, max_total_Ni, inv_rho_local) bind(C)
     use iso_c_binding
-    
+
     !arguments:
     real(kind=c_real), intent(inout) :: nitot_local
     real(kind=c_real), value, intent(in) :: max_total_Ni, inv_rho_local
   end subroutine impose_max_total_ni_f
-  
+
   subroutine calc_first_order_upwind_step_f(kts, kte, kdir, kbot, k_qxtop, dt_sub, rho, inv_rho, inv_dzq, num_arrays, fluxes, vs, qnx) bind(C)
     use iso_c_binding
 
@@ -492,7 +492,7 @@ subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
    real(kind=c_real), value, intent(in) :: relvar,expon
    ! return
    !real(kind=c_real) :: res
-   
+
  end function subgrid_variance_scaling_f
 
  subroutine check_values_f(qv, temp, kts, kte, timestepcount, force_abort, source_ind, col_loc) bind(C)
@@ -540,6 +540,54 @@ subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
 
    logical(kind=c_bool), intent(out) :: log_nucleationPossible, log_hydrometeorsPresent
  end subroutine p3_main_pre_main_loop_f
+
+ subroutine p3_main_main_loop_f(kts, kte, kbot, ktop, kdir, log_predictNc, dt, odt, &
+       pres, pdel, dzq, ncnuc, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, naai, qc_relvar, icldm, lcldm, rcldm,&
+       t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, qitot, nitot, &
+       qirim, birim, xxlv, xxls, xlf, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, &
+       nitot_incld, birim_incld, mu_c, nu, lamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, cmeiout, prain, &
+       nevapr, prer_evap, vap_liq_exchange, vap_ice_exchange, liq_ice_exchange, pratot, &
+       prctot, log_hydrometeorsPresent) bind(C)
+
+   use iso_c_binding
+
+   !arguments
+   integer(kind=c_int), value, intent(in) :: kts, kte, kbot, ktop, kdir
+   logical(kind=c_bool), value, intent(in) :: log_predictNc
+   real(kind=c_real), value, intent(in) :: dt, odt
+
+   real(kind=c_real), intent(in), dimension(kts:kte) :: pres, pdel, dzq, ncnuc, exner, inv_exner, inv_lcldm, inv_icldm, &
+        inv_rcldm, naai, qc_relvar, icldm, lcldm, rcldm
+
+   real(kind=c_real), intent(inout), dimension(kts:kte) :: t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, acn, &
+        qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, xlf, qc_incld, qr_incld, &
+        qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld, mu_c, nu, lamc, cdist, cdist1, &
+        cdistr, mu_r, lamr, logn0r, cmeiout, prain, nevapr, prer_evap, vap_liq_exchange, &
+        vap_ice_exchange, liq_ice_exchange, pratot, prctot
+
+   logical(kind=c_bool), intent(out) :: log_hydrometeorsPresent
+
+ end subroutine p3_main_main_loop_f
+
+ subroutine p3_main_post_main_loop_f(kts, kte, kbot, ktop, kdir, &
+      exner, lcldm, rcldm, &
+      rho, inv_rho, rhofaci, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, &
+      mu_c, nu, lamc, mu_r, lamr, vap_liq_exchange, &
+      ze_rain, ze_ice, diag_vmi, diag_effi, diag_di, diag_rhoi, diag_ze, diag_effc) bind(C)
+
+   use iso_c_binding
+
+   ! args
+
+   integer(kind=c_int), value, intent(in) :: kts, kte, kbot, ktop, kdir
+   real(kind=c_real), intent(in), dimension(kts:kte) :: exner, lcldm, rcldm
+   real(kind=c_real), intent(inout), dimension(kts:kte) :: rho, inv_rho, rhofaci, &
+        qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, &
+        mu_c, nu, lamc, mu_r, &
+        lamr, vap_liq_exchange, &
+        ze_rain, ze_ice, diag_vmi, diag_effi, diag_di, diag_rhoi, diag_ze, diag_effc
+
+ end subroutine p3_main_post_main_loop_f
 
   !
   ! These are some routine math operations that are not BFB between

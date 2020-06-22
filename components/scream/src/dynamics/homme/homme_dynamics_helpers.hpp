@@ -3,7 +3,7 @@
 
 // Scream includes
 #include "ekat/scream_types.hpp"
-#include "share/util/scream_utils.hpp"
+#include "ekat/util/scream_utils.hpp"
 
 // Homme includes
 #include "Types.hpp"

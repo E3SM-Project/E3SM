@@ -14,13 +14,15 @@ namespace p3 {
 template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::droplet_self_collection(const Spack&, const Spack&,
-                          const Spack& qc_incld, const Spack&,
-                          const Spack&, const Spack&, Spack& ncslf)
+::droplet_self_collection(
+  const Spack&, const Spack&,
+  const Spack& qc_incld, const Spack&,
+  const Spack&, const Spack&, Spack& ncslf,
+  const Smask& context)
 {
   constexpr Scalar qsmall = C::QSMALL;
 
-  const auto qc_not_small = (qc_incld >= qsmall);
+  const auto qc_not_small = (qc_incld >= qsmall) && context;
   if (qc_not_small.any()) {
     // Khroutdinov and Kogan (2000)
     ncslf.set(qc_not_small, 0);
