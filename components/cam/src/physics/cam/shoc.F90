@@ -3051,7 +3051,7 @@ subroutine pblintd(&
     call pblintd_height(&
        shcol,nlev,&                   ! Input
        z,u,v,ustar,&                  ! Input
-       thv,    &                      ! Input
+       thv,thv(:,nlev),&              ! Input
        pblh,rino,check)               ! Output
     !
     ! Estimate an effective surface temperature to account for surface
@@ -3062,16 +3062,15 @@ subroutine pblintd(&
        z,ustar,obklen,kbfs,thv,&   ! Input
        tlv,&                       ! Output
        pblh,check,rino)            ! InOutput
-
     !
     ! Improve pblh estimate for unstable conditions using the convective
-    ! temperature excess:
+    ! temperature excess as reference temperature:
     !
-    call pblintd_vvk(&
+    call pblintd_height(&
        shcol,nlev,&             ! Input
        z,u,v,ustar,&            ! Input
        thv,tlv,&                ! Input
-       check,rino,pblh)         ! Output
+       pblh,rino,check)         ! Output
     !
     ! Check PBL height
     !
@@ -3154,7 +3153,7 @@ end subroutine pblintd_init
 subroutine pblintd_height(&
        shcol,nlev,&              ! Input
        z,u,v,ustar,&             ! Input
-       thv,   &                  ! Input
+       thv,thv_ref,   &               ! Input
        pblh,rino,check)               ! Output
     !------------------------------Arguments--------------------------------
     !
@@ -3168,6 +3167,7 @@ subroutine pblintd_height(&
     real(rtype), intent(in)  :: v(shcol,nlev)           ! windspeed y-direction [m/s]
     real(rtype), intent(in)  :: ustar(shcol)            ! surface friction velocity [m/s]
     real(rtype), intent(in)  :: thv(shcol,nlev)         ! virtual potential temperature
+    real(rtype), intent(in)  :: thv_ref(shcol)          ! ref. level pot tmp   
 
     !
     ! Output arguments
@@ -3192,7 +3192,7 @@ subroutine pblintd_height(&
           if (check(i)) then
              vvk = (u(i,k) - u(i,nlev))**2 + (v(i,k) - v(i,nlev))**2 +fac*ustar(i)**2
              vvk = max(vvk,tiny)
-             rino(i,k) = ggr*(thv(i,k) -thv(i,nlev))*(z(i,k)-z(i,nlev))/(thv(i,nlev)*vvk)
+             rino(i,k) = ggr*(thv(i,k) -thv_ref(i))*(z(i,k)-z(i,nlev))/(thv(i,nlev)*vvk)
              if (rino(i,k) >= ricr) then
                 pblh(i) = z(i,k+1) + (ricr - rino(i,k+1))/(rino(i,k) -rino(i,k+1)) * &
                      (z(i,k) - z(i,k+1))
@@ -3255,56 +3255,6 @@ subroutine pblintd_surf_temp(&
     end do
     return
 end subroutine pblintd_surf_temp
-
-subroutine pblintd_vvk(&
-       shcol,nlev,&             ! Input
-       z,u,v,ustar,&            ! Input
-       thv,tlv,&                ! Input
-       check,rino,pblh)         ! InOutput
-    !------------------------------Arguments--------------------------------
-    ! Input arguments
-    !
-    integer, intent(in) :: shcol                     ! number of atmospheric columns
-    integer, intent(in) :: nlev                      ! number of mid-point layers
-
-    real(rtype), intent(in)  :: z(shcol,nlev)           ! height above surface [m]
-    real(rtype), intent(in)  :: u(shcol,nlev)           ! windspeed x-direction [m/s]
-    real(rtype), intent(in)  :: v(shcol,nlev)           ! windspeed y-direction [m/s]
-    real(rtype), intent(in)  :: ustar(shcol)            ! surface friction velocity [m/s]
-    real(rtype), intent(in)  :: thv(shcol,nlev)         ! virtual potential temperature
-    real(rtype), intent(in)  :: tlv(shcol)              ! ref. level pot tmp + tmp excess
-    !
-    ! In/Output arguments
-    !
-    logical, intent(inout)     :: check(shcol)            ! True=>chk if Richardson no.>critcal
-    real(rtype), intent(inout)   :: pblh(shcol)             ! boundary-layer height [m]
-    real(rtype), intent(inout) :: rino(shcol,nlev)        ! bulk Richardson no. from level to ref lev
-    !
-    !---------------------------Local workspace-----------------------------
-    !
-    integer  :: i                       ! longitude index
-    integer  :: k                       ! level index
-    real(rtype) :: vvk                     ! velocity magnitude squared
-    !
-    ! Improve pblh estimate for unstable conditions using the convective
-    ! temperature excess:
-    !
-    do k=nlev-1,nlev-npbl+1,-1
-       do i=1,shcol
-          if (check(i)) then
-             vvk = (u(i,k) - u(i,nlev))**2 + (v(i,k) - v(i,nlev))**2 + fac*ustar(i)**2
-             vvk = max(vvk,tiny)
-             rino(i,k) = ggr*(thv(i,k) - tlv(i))*(z(i,k)-z(i,nlev))/(thv(i,nlev)*vvk)
-             if (rino(i,k) >= ricr) then
-                pblh(i) = z(i,k+1) + (ricr - rino(i,k+1))/(rino(i,k) - rino(i,k+1))* &
-                     (z(i,k) - z(i,k+1))
-                check(i) = .false.
-             end if
-          end if
-       end do
-    end do
-    return
-end subroutine pblintd_vvk
 
 subroutine pblintd_check_pblh(&
        shcol,nlev,nlevi,&             ! Input
