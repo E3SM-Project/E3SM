@@ -1309,8 +1309,8 @@ Description of the use case selected.
 Command line arguement for turning on CN spinup mode.
 </entry>
 
-<entry id="bgc_mode" type="char*4" category="default_settings"
-       group="default_settings" valid_values="sp,cn,bgc,ed" >
+<entry id="bgc_mode" type="char*5" category="default_settings"
+       group="default_settings" valid_values="sp,cn,bgc,fates" >
 Command line arguement for biogeochemistry mode for CLM4.5
    sp  = Satellitte Phenology
    cn  = Carbon Nitrogen model

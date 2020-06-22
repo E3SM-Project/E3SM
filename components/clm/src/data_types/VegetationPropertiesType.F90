@@ -96,13 +96,13 @@ module VegetationPropertiesType
      real(r8), allocatable :: graincp       (:)   ! grain C:P (gC/gP) for prognostic crop model
      
      ! pft dependent parameters for phosphorus for nutrient competition
-     real(r8), allocatable :: vmax_plant_nh4(:)        ! vmax for plant nh4 uptake
-     real(r8), allocatable :: vmax_plant_no3(:)        ! vmax for plant no3 uptake
-     real(r8), allocatable :: vmax_plant_p(:)          ! vmax for plant p uptake
+     real(r8), pointer :: vmax_plant_nh4(:)        ! vmax for plant nh4 uptake
+     real(r8), pointer :: vmax_plant_no3(:)        ! vmax for plant no3 uptake
+     real(r8), pointer :: vmax_plant_p(:)          ! vmax for plant p uptake
      real(r8), allocatable :: vmax_minsurf_p_vr(:,:)   ! vmax for p adsorption
-     real(r8), allocatable :: km_plant_nh4(:)          ! km for plant nh4 uptake
-     real(r8), allocatable :: km_plant_no3(:)          ! km for plant no3 uptake
-     real(r8), allocatable :: km_plant_p(:)            ! km for plant p uptake
+     real(r8), pointer :: km_plant_nh4(:)          ! km for plant nh4 uptake
+     real(r8), pointer :: km_plant_no3(:)          ! km for plant no3 uptake
+     real(r8), pointer :: km_plant_p(:)            ! km for plant p uptake
      real(r8), allocatable :: km_minsurf_p_vr(:,:)     ! km for p adsorption
      real(r8)              :: km_decomp_nh4            ! km for microbial decomposer nh4 uptake
      real(r8)              :: km_decomp_no3            ! km for microbial decomposer no3 uptake

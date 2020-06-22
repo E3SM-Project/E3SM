@@ -13,7 +13,7 @@ module CarbonStateUpdate1Mod
   use clm_varpar              , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use clm_varcon              , only : dzsoi_decomp
   use clm_varctl              , only : nu_com
-  use clm_varctl              , only : use_pflotran, pf_cmode, use_fates
+  use clm_varctl              , only : use_pflotran, pf_cmode, use_cn
   use clm_varctl              , only : use_c13, use_c14
   use pftvarcon               , only : npcropmin, nc3crop
   use CNDecompCascadeConType  , only : decomp_cascade_type
@@ -66,7 +66,7 @@ contains
 
     dt = real( get_step_size(), r8 )
 
-    if (.not.use_fates) then
+    if (use_cn) then
 
        do g = bounds%begg, bounds%endg
           grc_cs%seedc(g) = grc_cs%seedc(g) &
@@ -220,30 +220,29 @@ contains
 
       ! column level fluxes
 
-      if(.not.use_fates) then
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            col_cs%decomp_som2c_vr(c,1:nlevdecomp) = col_cs%decomp_cpools_vr(c,1:nlevdecomp,6)
-         end do
-      end if
+      do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          col_cs%decomp_som2c_vr(c,1:nlevdecomp) = col_cs%decomp_cpools_vr(c,1:nlevdecomp,6)
+      end do
       
-      if (.not. is_active_betr_bgc .and. .not.(use_pflotran .and. pf_cmode) .and. .not.use_fates ) then
+      if (.not. is_active_betr_bgc .and. .not.(use_pflotran .and. pf_cmode) ) then
 
          ! plant to litter fluxes
-
-         do j = 1,nlevdecomp
-            ! column loop
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-               ! phenology and dynamic land cover fluxes
-               col_cf%decomp_cpools_sourcesink(c,j,i_met_lit) = &
-                    col_cf%phenology_c_to_litr_met_c(c,j) * dt
-               col_cf%decomp_cpools_sourcesink(c,j,i_cel_lit) = &
-                    col_cf%phenology_c_to_litr_cel_c(c,j) * dt
-               col_cf%decomp_cpools_sourcesink(c,j,i_lig_lit) = &
-                    col_cf%phenology_c_to_litr_lig_c(c,j) * dt
+         if(use_cn)then
+            do j = 1,nlevdecomp
+               ! column loop
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  ! phenology and dynamic land cover fluxes
+                  col_cf%decomp_cpools_sourcesink(c,j,i_met_lit) = &
+                       col_cf%phenology_c_to_litr_met_c(c,j) * dt
+                  col_cf%decomp_cpools_sourcesink(c,j,i_cel_lit) = &
+                       col_cf%phenology_c_to_litr_cel_c(c,j) * dt
+                  col_cf%decomp_cpools_sourcesink(c,j,i_lig_lit) = &
+                       col_cf%phenology_c_to_litr_lig_c(c,j) * dt
+               end do
             end do
-         end do
+         end if
 
          ! litter and SOM HR fluxes
          do k = 1, ndecomp_cascade_transitions
@@ -271,40 +270,9 @@ contains
             end if
          end do
 
-      elseif( use_fates ) then
+      endif   !end if is_active_betr_bgc()
 
-         ! The following pools were updated via the FATES interface
-         ! col_cf%decomp_cpools_sourcesink(c,j,i_met_lit)
-         ! col_cf%decomp_cpools_sourcesink(c,j,i_cel_lit)
-         ! col_cf%decomp_cpools_sourcesink(c,j,i_lig_lit)
-
-         ! litter and SOM HR fluxes
-         do k = 1, ndecomp_cascade_transitions
-            do j = 1,nlevdecomp
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  col_cf%decomp_cpools_sourcesink(c,j,cascade_donor_pool(k)) = &
-                        col_cf%decomp_cpools_sourcesink(c,j,cascade_donor_pool(k)) &
-                        - ( col_cf%decomp_cascade_hr_vr(c,j,k) + col_cf%decomp_cascade_ctransfer_vr(c,j,k)) *dt
-               end do
-            end do
-         end do
-         do k = 1, ndecomp_cascade_transitions
-            if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
-               do j = 1,nlevdecomp
-                  do fc = 1,num_soilc
-                     c = filter_soilc(fc)
-                     col_cf%decomp_cpools_sourcesink(c,j,cascade_receiver_pool(k)) = &
-                           col_cf%decomp_cpools_sourcesink(c,j,cascade_receiver_pool(k)) &
-                           + col_cf%decomp_cascade_ctransfer_vr(c,j,k)*dt
-                  end do
-               end do
-            end if
-         end do
-
-   endif   !end if is_active_betr_bgc()
-
-   if (.not.use_fates) then
+      if (use_cn) then
     
       ! patch loop
       do fp = 1,num_soilp

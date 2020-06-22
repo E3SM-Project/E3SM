@@ -30,7 +30,8 @@ module histFileMod
   use EDTypesMod        , only : nfsc_fates       => nfsc
   use FatesLitterMod    , only : ncwd_fates       => ncwd
   use FatesInterfaceTypesMod , only : numpft_fates     => numpft
-  use EDTypesMod        , only : nelements_fates  => num_elements
+  use PRTGenericMod     , only : nelements_fates  => num_elements
+
 
   !
   implicit none

@@ -172,7 +172,7 @@ contains
       ! calculate beginning column-level phosphorus balance, for mass conservation check
       do fc = 1,num_soilc
          c = filter_soilc(fc)
-         col_begpb(c) = totcolp(c)
+         col_begpb(c) = totcolp(c)         
       end do
 
     end associate
@@ -217,8 +217,10 @@ contains
          col_coutputs              =>    col_cf%coutputs                  , & ! Output: [real(r8) (:)]  column-level C outputs (gC/m2/s)
          col_begcb                 =>    col_cs%begcb                    , & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          col_endcb                 =>    col_cs%endcb                    , & ! Output: [real(r8) (:) ]  carbon mass, end of time step (gC/m**2)
-         col_errcb                 =>    col_cs%errcb                      & ! Output: [real(r8) (:) ]  carbon balance error for the timestep (gC/m**2)
-         )
+         col_errcb                 =>    col_cs%errcb                    ,  & ! Output: [real(r8) (:) ]  carbon balance error for the timestep (gC/m**2)
+         hr                        =>    col_cf%hr                       , &  ! Input: heterotrophic respiration flux (gC/m2/s)
+         litfall                   =>    col_cf%litfall )                     ! Input: carbon flux from litterfall (particularly fates) ( gc/m2/s)
+
 
       ! set time steps
       dt = real( get_step_size(), r8 )
@@ -231,24 +233,41 @@ contains
          ! calculate the total column-level carbon storage, for mass conservation check
          col_endcb(c) = totcolc(c)
 
-         ! calculate total column-level inputs
-         col_cinputs(c) = gpp(c)
+         ! FATES also checks to see if input fluxes match
+         ! a change in the total stock. So hwere we assume that
+         ! the fates stocks are 0 for simplicity, and are only
+         ! concerned that the changes in the soil stocks (including
+         ! fragmented litter, match the fluxes in and out of fates
+         if(use_fates) then
 
-         ! calculate total column-level outputs
-         ! er = ar + hr, col_fire_closs includes pft-level fire losses
-         col_coutputs(c) = er(c) + col_fire_closs(c) + col_hrv_xsmrpool_to_atm(c)
+            col_cinputs  = litfall(c)
 
+            col_coutputs = er(c)
+            
+         else
+
+            ! calculate total column-level inputs
+            col_cinputs(c) = gpp(c)
+            
+            ! calculate total column-level outputs
+            ! er = ar + hr, col_fire_closs includes pft-level fire losses
+            col_coutputs(c) = er(c) + col_fire_closs(c) + col_hrv_xsmrpool_to_atm(c)
+         end if
+
+         ! Wood product losses and crop export losses
          col_coutputs(c) = col_coutputs(c) + &
-             col_prod1c_loss(c) + col_prod10c_loss(c) + col_prod100c_loss(c)
+                 col_prod1c_loss(c) + col_prod10c_loss(c) + col_prod100c_loss(c)
 
          ! subtract leaching flux
          col_coutputs(c) = col_coutputs(c) - som_c_leached(c)
 
+         
          ! add erosion flux
          if (ero_ccycle) then
             col_coutputs(c) = col_coutputs(c) + som_c_yield(c)
          end if
-
+         
+         
          ! calculate the total column-level carbon balance error for this time step
          col_errcb(c) = (col_cinputs(c) - col_coutputs(c))*dt - (col_endcb(c) - col_begcb(c))
 
@@ -267,33 +286,32 @@ contains
          end if
       end do ! end of columns loop
       
-      ! Consider adapting this check to be fates compliant (rgk 04-2017)
-      if (.not. use_fates) then
-         if (err_found) then
-            c = err_index
-            write(iulog,*)'column cbalance error = ', col_errcb(c), c
-            write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
-            write(iulog,*)'input                 = ',col_cinputs(c)*dt
-            write(iulog,*)'output                = ',col_coutputs(c)*dt
-            write(iulog,*)'er                    = ',er(c)*dt,col_cf%hr(c)*dt
-            write(iulog,*)'fire                  = ',col_fire_closs(c)*dt
-            write(iulog,*)'hrv_to_atm            = ',col_hrv_xsmrpool_to_atm(c)*dt
-            write(iulog,*)'leach                 = ',som_c_leached(c)*dt
-            write(iulog,*)'begcb                 = ',col_begcb(c)
-            write(iulog,*)'endcb                 = ',col_endcb(c),col_cs%totsomc(c)
-            write(iulog,*)'delta store           = ',col_endcb(c)-col_begcb(c)
+      if (err_found) then
+         c = err_index
+         write(iulog,*)'column cbalance error = ', col_errcb(c), c
+         write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
+         write(iulog,*)'input                 = ',col_cinputs(c)*dt
+         write(iulog,*)'output                = ',col_coutputs(c)*dt
+         write(iulog,*)'er                    = ',er(c)*dt,col_cf%hr(c)*dt
+         write(iulog,*)'fire                  = ',col_fire_closs(c)*dt
+         write(iulog,*)'hrv_to_atm            = ',col_hrv_xsmrpool_to_atm(c)*dt
+         write(iulog,*)'leach                 = ',som_c_leached(c)*dt
+         write(iulog,*)'begcb                 = ',col_begcb(c)
+         write(iulog,*)'endcb                 = ',col_endcb(c)
+         write(iulog,*)'totsomc               = ',col_cs%totsomc(c)
+         write(iulog,*)'delta store           = ',col_endcb(c)-col_begcb(c)
 
-            if (ero_ccycle) then
-               write(iulog,*)'erosion               = ',som_c_yield(c)*dt
-            end if
-
-            if (use_pflotran .and. pf_cmode) then
-               write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
-            end if
-
-            call endrun(msg=errMsg(__FILE__, __LINE__))
+         if (ero_ccycle) then
+            write(iulog,*)'erosion               = ',som_c_yield(c)*dt
          end if
-      end if !use_fates
+         
+         if (use_pflotran .and. pf_cmode) then
+            write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
+         end if
+
+         call endrun(msg=errMsg(__FILE__, __LINE__))
+      end if
+      
 
     end associate
 
@@ -341,6 +359,8 @@ contains
          smin_no3_leached          =>    col_nf%smin_no3_leached          , & ! Input:  [real(r8) (:)]  soil mineral NO3 pool loss to leaching (gN/m2/s)
          smin_no3_runoff           =>    col_nf%smin_no3_runoff           , & ! Input:  [real(r8) (:)]  soil mineral NO3 pool loss to runoff (gN/m2/s)
          f_n2o_nit                 =>    col_nf%f_n2o_nit                 , & ! Input:  [real(r8) (:)]  flux of N2o from nitrification [gN/m^2/s]
+         plant_to_litter_nflux     =>    col_nf%plant_to_litter_nflux     , & ! Input                   flux of N from FATES litter into ELM
+                                                                              !                         litter (gP/m2/s)
          col_prod1n_loss           =>    col_nf%prod1n_loss               , & ! Input:  [real(r8) (:)]  crop leafc harvested [gN/m2/s]
          col_prod10n_loss          =>    col_nf%prod10n_loss              , & ! Input:  [real(r8) (:)]  10-year wood product harvested [gN/m2/s]
          col_prod100n_loss         =>    col_nf%prod100n_loss             , & ! Input:  [real(r8) (:)]  100-year wood product harvestd [gN/m2/s]
@@ -354,8 +374,9 @@ contains
          col_noutputs              =>    col_nf%noutputs                  , & ! Output: [real(r8) (:)]  column-level N outputs (gN/m2/s)
          col_begnb                 =>    col_ns%begnb                    , & ! Output: [real(r8) (:)]  nitrogen mass, beginning of time step (gN/m**2)
          col_endnb                 =>    col_ns%endnb                    , & ! Output: [real(r8) (:)]  nitrogen mass, end of time step (gN/m**2)
-         col_errnb                 =>    col_ns%errnb                      & ! Output: [real(r8) (:)]  nitrogen balance error for the timestep (gN/m**2)
-         )
+         col_errnb                 =>    col_ns%errnb                    ,  & ! Output: [real(r8) (:)]  nitrogen balance error for the timestep (gN/m**2)
+         sminn_to_plant            =>    col_nf%sminn_to_plant           )  ! nitrogen flux to plants [gN/m2/s]
+
 
       ! set time steps
       dt = real( get_step_size(), r8 )
@@ -369,54 +390,78 @@ contains
          ! calculate the total column-level nitrogen storage, for mass conservation check
          col_endnb(c) = totcoln(c)
 
-         ! calculate total column-level inputs
-         if (NFIX_PTASE_plant) then
-            col_ninputs(c) = ndep_to_sminn(c) + nfix_to_ecosysn(c) + supplement_to_sminn(c)
-         else
-            col_ninputs(c) = ndep_to_sminn(c) + nfix_to_sminn(c) + supplement_to_sminn(c)
-         end if
+         if(use_fates) then
 
-         if (crop_prog) col_ninputs(c) = col_ninputs(c) + &
-              fert_to_sminn(c) + soyfixn_to_sminn(c)
-
-         do p = col_pp%pfti(c), col_pp%pftf(c)
-            if (veg_pp%active(p) .and. (veg_pp%itype(p) .ne. noveg)) then
-                col_ninputs(c) = col_ninputs(c) + supplement_to_plantn(p) * veg_pp%wtcol(p)
+            ! calculate total column-level inputs
+            ! In FATES the nfix sent to the plant, if any, is not contained in
+            ! sminn_to_plant(c), therefore, in neither case do we account for nfix_to_ecosysn
+            if (NFIX_PTASE_plant) then
+               col_ninputs(c) = ndep_to_sminn(c) + supplement_to_sminn(c) + nfix_to_sminn(c)
+            else
+               col_ninputs(c) = ndep_to_sminn(c) + supplement_to_sminn(c) + nfix_to_sminn(c)
             end if
-         end do
 
+            ! plant_to_litter_nflux is used by FATES to store
+            ! column level fragmentation fluxes of nitrogen FATES litter to 
+            ! ELM litter
+
+            col_ninputs(c) = col_ninputs(c) + plant_to_litter_nflux(c)
+
+            ! calculate total column-level outputs
+            col_noutputs(c) = denit(c) +  sminn_to_plant(c)
+
+         else
+
+            ! calculate total column-level inputs
+            if (NFIX_PTASE_plant) then
+               col_ninputs(c) = ndep_to_sminn(c) + nfix_to_ecosysn(c) + supplement_to_sminn(c)
+            else
+               col_ninputs(c) = ndep_to_sminn(c) + nfix_to_sminn(c) + supplement_to_sminn(c)
+            end if
+            
+            if (crop_prog) col_ninputs(c) = col_ninputs(c) + &
+                 fert_to_sminn(c) + soyfixn_to_sminn(c)
+            
+            do p = col_pp%pfti(c), col_pp%pftf(c)
+               if (veg_pp%active(p) .and. (veg_pp%itype(p) .ne. noveg)) then
+                  col_ninputs(c) = col_ninputs(c) + supplement_to_plantn(p) * veg_pp%wtcol(p)
+               end if
+            end do
+
+            ! calculate total column-level outputs
+            col_noutputs(c) = denit(c) + col_fire_nloss(c)
+
+         end if
+         
          ! forest fertilization
          if (forest_fert_exp) then
             if ( ((fert_continue(c) == 1 .and. kyr > fert_start(c) .and. kyr <= fert_end(c)) .or.  kyr == fert_start(c)) &
-               .and. fert_type(c) == 1 &
-               .and. kda == 1  .and. mcsec == 1800) then ! fertilization assumed to occur at the begnining of each month
+                 .and. fert_type(c) == 1 &
+                 .and. kda == 1  .and. mcsec == 1800) then ! fertilization assumed to occur at the begnining of each month
                col_ninputs(c) = col_ninputs(c) + fert_dose(c,kmo)/dt
-             end if
+            end if
          end if
-
-         ! calculate total column-level outputs
-         col_noutputs(c) = denit(c) + col_fire_nloss(c)
 
          if (is_active_betr_bgc)then
             col_noutputs(c) = col_noutputs(c) + f_n2o_nit(c)
-
+            
             col_noutputs(c) = col_noutputs(c) + smin_no3_leached(c) + smin_no3_runoff(c)
          else
-           if (.not. use_nitrif_denitrif) then
-            col_noutputs(c) = col_noutputs(c) + sminn_leached(c)
-           else
-            col_noutputs(c) = col_noutputs(c) + f_n2o_nit(c)
-
-            if(use_pflotran .and. pf_cmode) then
-               ! inclusion of aq. NH4 transport by PFLOTRAN-bgc
+            if (.not. use_nitrif_denitrif) then
                col_noutputs(c) = col_noutputs(c) + sminn_leached(c)
             else
-
-               col_noutputs(c) = col_noutputs(c) + smin_no3_leached(c) + smin_no3_runoff(c)
-
-            endif
-
-           end if
+               col_noutputs(c) = col_noutputs(c) + f_n2o_nit(c)
+               
+               if(use_pflotran .and. pf_cmode) then
+                  ! inclusion of aq. NH4 transport by PFLOTRAN-bgc
+                  col_noutputs(c) = col_noutputs(c) + sminn_leached(c)
+               else
+                  
+                  col_noutputs(c) = col_noutputs(c) + smin_no3_leached(c) + smin_no3_runoff(c)
+                  
+               endif
+               
+            end if
          endif
 
          col_noutputs(c) = col_noutputs(c) + &
@@ -464,6 +509,8 @@ contains
          write(iulog,*)'ndep                  = ',ndep_to_sminn(c)*dt
          write(iulog,*)'nfix                  = ',nfix_to_sminn(c)*dt
          write(iulog,*)'nsup                  = ',supplement_to_sminn(c)*dt
+         write(iulog,*)'n_to_plant            = ',sminn_to_plant(c)*dt
+         write(iulog,*)'plant_to_litter       = ',plant_to_litter_nflux(c)*dt
          if(crop_prog) then
             write(iulog,*)'fertm                 = ',fert_to_sminn(c)*dt
             write(iulog,*)'soyfx                 = ',soyfixn_to_sminn(c)*dt
@@ -533,11 +580,14 @@ contains
          occlp_yield               => col_pf%occlp_yield               , & ! Input:  [real(r8) (:)]  soil occluded mineral P loss by erosion (gP/m^s/s)
          primp_yield               => col_pf%primp_yield               , & ! Input:  [real(r8) (:)]  soil primary mineral P loss by erosion (gP/m^s/s)
          supplement_to_plantp      => veg_pf%supplement_to_plantp          , &
+         plant_to_litter_pflux     => col_pf%plant_to_litter_pflux     , & ! Input                   flux of P from FATES litter into ELM
+                                                                           !                         litter (gP/m2/s)
          col_prod1p_loss           => col_pf%prod1p_loss               , & ! Input:  [real(r8) (:) ]  crop leafc harvested (gP/m2/s)
          col_prod10p_loss          => col_pf%prod10p_loss              , & ! Input:  [real(r8) (:) ]  10-yr wood product harvested (gP/m2/s)
          col_prod100p_loss         => col_pf%prod100p_loss             , & ! Input:  [real(r8) (:) ]  100-yr wood product harvested (gP/m2/s)
          col_pinputs               => col_pf%pinputs                   , & ! Output: [real(r8) (:)]  column-level P inputs (gP/m2/s)
          col_poutputs              => col_pf%poutputs                  , & ! Output: [real(r8) (:)]  column-level P outputs (gP/m2/s)
+         
          col_begpb                 => col_ps%begpb                    , & ! Output: [real(r8) (:)]  phosphorus mass, beginning of time step (gP/m**2)
          col_endpb                 => col_ps%endpb                    , & ! Output: [real(r8) (:)]  phosphorus mass, end of time step (gP/m**2)
          col_errpb                 => col_ps%errpb                    , & ! Output: [real(r8) (:)]  phosphorus balance error for the timestep (gP/m**2)
@@ -561,13 +611,15 @@ contains
 
       err_found = .false.
 
-      call p2c(bounds,num_soilc,filter_soilc, &
-           leafp_to_litter(bounds%begp:bounds%endp), &
-           leafp_to_litter_col(bounds%begc:bounds%endc))
-      call p2c(bounds,num_soilc,filter_soilc, &
-           frootp_to_litter(bounds%begp:bounds%endp), &
-           frootp_to_litter_col(bounds%begc:bounds%endc))
-
+      if(.not.use_fates)then
+         call p2c(bounds,num_soilc,filter_soilc, &
+              leafp_to_litter(bounds%begp:bounds%endp), &
+              leafp_to_litter_col(bounds%begc:bounds%endc))
+         call p2c(bounds,num_soilc,filter_soilc, &
+              frootp_to_litter(bounds%begp:bounds%endp), &
+              frootp_to_litter_col(bounds%begc:bounds%endc))
+      end if
+         
       !! immobilization/mineralization in litter-to-SOM and SOM-to-SOM fluxes
       ! column loop
       do fc = 1,num_soilc
@@ -613,11 +665,25 @@ contains
          ! calculate total column-level inputs
          col_pinputs(c) = primp_to_labilep(c) + supplement_to_sminp(c)
 
-         do p = col_pp%pfti(c), col_pp%pftf(c)
-            if (veg_pp%active(p) .and. (veg_pp%itype(p) .ne. noveg)) then
-                col_pinputs(c) = col_pinputs(c) + supplement_to_plantp(p) * veg_pp%wtcol(p)
-            end if
-         end do
+         if(use_fates) then
+
+            col_poutputs(c) = secondp_to_occlp(c) + sminp_leached(c) + sminp_to_plant(c)
+            ! plant_to_litter_nflux is used by FATES to store
+            ! column level fragmentation fluxes of nitrogen FATES litter to 
+            ! ELM litter
+
+            col_pinputs(c) = col_pinputs(c) + plant_to_litter_pflux(c)
+
+         else
+            do p = col_pp%pfti(c), col_pp%pftf(c)
+               if (veg_pp%active(p) .and. (veg_pp%itype(p) .ne. noveg)) then
+                  col_pinputs(c) = col_pinputs(c) + supplement_to_plantp(p) * veg_pp%wtcol(p)
+               end if
+            end do
+            
+            col_poutputs(c) = secondp_to_occlp(c) + sminp_leached(c) + col_fire_ploss(c)
+    
+         end if
 
          ! forest fertilization
          if (forest_fert_exp) then
@@ -627,8 +693,6 @@ contains
                col_pinputs(c) = col_pinputs(c) + fert_dose(c,kmo)/dt
              end if
          end if
-
-         col_poutputs(c) = secondp_to_occlp(c) + sminp_leached(c) + col_fire_ploss(c)
 
          if ((nu_com .ne. 'RD') .and. ECA_Pconst_RGspin) then
             do j = 1, nlevdecomp               
@@ -669,6 +733,13 @@ contains
          write(iulog,*)'input mass  = ',col_pinputs(c)*dt
          write(iulog,*)'output mass = ',col_poutputs(c)*dt
          write(iulog,*)'net flux    = ',(col_pinputs(c)-col_poutputs(c))*dt
+         write(iulog,*)'ptol_pflux: = ',plant_to_litter_pflux(c)*dt
+         write(iulog,*)'sminp_to_plant: = ',sminp_to_plant(c)*dt
+         write(iulog,*)'primp_to_labilep = ',primp_to_labilep(c)*dt
+         write(iulog,*)'supplement_to_sminp = ',supplement_to_sminp(c)*dt
+         write(iulog,*)'secondp_to_occlp = ',secondp_to_occlp(c)*dt
+         write(iulog,*)'sminp_leached = ',sminp_leached(c)*dt
+
          if (ero_ccycle) then
             write(iulog,*)'SOP erosion = ',som_p_yield(c)*dt
             write(iulog,*)'SIP erosion = ',(labilep_yield(c)+secondp_yield(c)+occlp_yield(c)+primp_yield(c))*dt

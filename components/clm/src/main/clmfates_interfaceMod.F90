@@ -54,11 +54,15 @@ module CLMFatesInterfaceMod
    use clm_varctl        , only : use_fates_logging
    use clm_varctl        , only : use_fates_inventory_init
    use clm_varctl        , only : fates_inventory_ctrl_filename
+   use clm_varctl        , only : use_nitrif_denitrif
    use clm_varcon        , only : tfrz
    use clm_varcon        , only : spval 
    use clm_varcon        , only : denice
    use clm_varcon        , only : ispval
-
+   use clm_varctl        , only : nu_com
+   use clm_varctl        , only : cnallocate_carbon_only
+   use clm_varctl        , only : cnallocate_carbonnitrogen_only
+   use clm_varctl        , only : cnallocate_carbonphosphorus_only
    use clm_varpar        , only : natpft_size
    use clm_varpar        , only : numrad
    use clm_varpar        , only : ivis
@@ -72,8 +76,6 @@ module CLMFatesInterfaceMod
    use atm2lndType       , only : atm2lnd_type
    use SurfaceAlbedoType , only : surfalb_type
    use SolarAbsorbedType , only : solarabs_type
-   use CNCarbonFluxType  , only : carbonflux_type
-   use CNCarbonStateType , only : carbonstate_type
    use FrictionVelocityType , only : frictionvel_type
    use clm_time_manager  , only : is_restart
    use ncdio_pio         , only : file_desc_t, ncd_int, ncd_double
@@ -94,6 +96,7 @@ module CLMFatesInterfaceMod
    use TopounitDataType  , only : top_as
    use ColumnType        , only : col_pp
    use ColumnDataType    , only : col_es, col_ws, col_wf, col_cs, col_cf
+   use ColumnDataType    , only : col_nf, col_pf
    use VegetationDataType, only : veg_es, veg_wf   
    use LandunitType      , only : lun_pp
    
@@ -105,9 +108,12 @@ module CLMFatesInterfaceMod
    
 
    ! Used FATES Modules
+
    use FatesInterfaceTypesMod, only : fates_interface_type
    use FatesInterfaceMod     , only : allocate_bcin
+   use FatesInterfaceMod     , only : allocate_bcpconst
    use FatesInterfaceMod     , only : allocate_bcout
+   use FatesInterfaceMod     , only : set_bcpconst
    use FatesInterfaceMod     , only : SetFatesTime
    use FatesInterfaceMod     , only : SetFatesGlobalElements
    use FatesInterfaceMod     , only : set_fates_ctrlparms
@@ -117,7 +123,7 @@ module CLMFatesInterfaceMod
    use FatesHistoryInterfaceMod, only : fates_history_interface_type
    use FatesRestartInterfaceMod, only : fates_restart_interface_type
 
-   use EDTypesMod            , only : num_elements
+   use PRTGenericMod         , only : num_elements
    use EDTypesMod            , only : ed_patch_type
    use FatesInterfaceTypesMod, only : hlm_numlevgrnd
    use EDMainMod             , only : ed_ecosystem_dynamics
@@ -133,7 +139,9 @@ module CLMFatesInterfaceMod
    use EDCanopyStructureMod  , only : canopy_summarization, update_hlm_dynamics
    use FatesPlantRespPhotosynthMod, only : FatesPlantRespPhotosynthDrive
    use EDAccumulateFluxesMod , only : AccumulateFluxes_ED
+   use EDPhysiologyMod       , only : UnPackNutrientAquisitionBCs
    use EDPhysiologyMod       , only : FluxIntoLitterPools
+   use PRTGenericMod, only : prt_cnp_flex_allom_hyp
    use FatesPlantHydraulicsMod, only : hydraulics_drive
    use FatesPlantHydraulicsMod, only : HydrSiteColdStart
    use FatesPlantHydraulicsMod, only : InitHydrSites
@@ -142,6 +150,15 @@ module CLMFatesInterfaceMod
    use CLMFatesParamInterfaceMod         , only : FatesReadParameters
 
    implicit none
+
+
+
+   ! Vegetation Structures Needed to be allocated and functional when FATES is ON
+   ! veg_pp
+   ! veg_es
+   ! veg_wf
+
+
    
    type, public :: f2hmap_type
 
@@ -214,6 +231,7 @@ module CLMFatesInterfaceMod
    public  :: ELMFatesGlobals
    
 contains
+
   
   subroutine ELMFatesGlobals()
 
@@ -258,8 +276,37 @@ contains
         call set_fates_ctrlparms('soilwater_ipedof',ival=get_ipedof(0))
         call set_fates_ctrlparms('max_patch_per_site',ival=(natpft_size-1))
 
+
         call set_fates_ctrlparms('parteh_mode',ival=fates_parteh_mode)
 
+        if((trim(nu_com).eq.'ECA') .or. (trim(nu_com).eq.'MIC')) then
+           call set_fates_ctrlparms('nu_com',cval='ECA')
+        else
+           call set_fates_ctrlparms('nu_com',cval='RD')
+        end if
+           
+        ! ELM ALWAYS has nitrogen and phosphorus "on"
+        ! These may be in a non-limiting status (ie when supplements)
+        ! are added, but they are always allocated and cycled non-the less
+        ! FATES may want to interact differently with other models
+        ! that don't even have these arrays allocated.
+        ! FATES also checks that if NO3 is cycled in ELM, then
+        ! any plant affinity parameters are checked.
+        
+        if(use_nitrif_denitrif) then
+           call set_fates_ctrlparms('nitrogen_spec',ival=1)
+        else
+           call set_fates_ctrlparms('nitrogen_spec',ival=2)
+        end if
+        call set_fates_ctrlparms('phosphorus_spec',ival=1)
+           
+        
+        if(is_restart()) then
+           pass_is_restart = 1
+        else
+           pass_is_restart = 0
+        end if
+        call set_fates_ctrlparms('is_restart',ival=pass_is_restart)
         if(is_restart()) then
            pass_is_restart = 1
         else
@@ -408,6 +455,7 @@ contains
       allocate(this%fates(nclumps))
       allocate(this%f2hmap(nclumps))
 
+      
       if(debug)then
          write(iulog,*) 'alm_fates%init():  allocating for ',nclumps,' threads'
       end if
@@ -483,7 +531,14 @@ contains
          ! Allocate and Initialize the Boundary Condition Arrays
          ! These are staticaly allocated at maximums, so
          ! No information about the patch or cohort structure is needed at this step
-         
+
+         ! Parameter Constants defined by FATES, but used in ELM
+         ! Note that FATES has its parameters defined, so we can also set the values
+         call allocate_bcpconst(this%fates(nc)%bc_pconst,nlevdecomp)
+
+         ! This also needs 
+         call set_bcpconst(this%fates(nc)%bc_pconst,nlevdecomp)
+
          do s = 1, this%fates(nc)%nsites
 
             c = this%f2hmap(nc)%fcolumn(s)
@@ -496,7 +551,6 @@ contains
 
             call allocate_bcin(this%fates(nc)%bc_in(s),col_pp%nlevbed(c),ndecomp)
             call allocate_bcout(this%fates(nc)%bc_out(s),col_pp%nlevbed(c),ndecomp)
-            
             call zero_bcs(this%fates(nc),s)
 
             ! Pass any grid-cell derived attributes to the site
@@ -586,8 +640,8 @@ contains
 
    subroutine dynamics_driv(this, bounds_clump, top_as_inst,          &
          top_af_inst, atm2lnd_inst, soilstate_inst, temperature_inst, &
-         canopystate_inst, carbonflux_inst,          &
-         frictionvel_inst )
+         waterstate_inst, canopystate_inst, frictionvel_inst )
+
     
       ! This wrapper is called daily from clm_driver
       ! This wrapper calls ed_driver, which is the daily dynamics component of FATES
@@ -603,7 +657,6 @@ contains
       type(soilstate_type)    , intent(in)           :: soilstate_inst
       type(temperature_type)  , intent(in)           :: temperature_inst
       type(canopystate_type)  , intent(inout)        :: canopystate_inst
-      type(carbonflux_type)   , intent(inout)        :: carbonflux_inst
       type(frictionvel_type)  , intent(inout)        :: frictionvel_inst
 
       ! !LOCAL VARIABLES:
@@ -702,6 +755,12 @@ contains
 
       end do
 
+      ! Nutrient uptake fluxes have been accumulating with each short
+      ! timestep, here, we unload them from the boundary condition
+      ! structures into the cohort structures.
+      call UnPackNutrientAquisitionBCs(this%fates(nc)%sites, this%fates(nc)%bc_in)
+
+
       ! ---------------------------------------------------------------------------------
       ! Part II: Call the FATES model now that input boundary conditions have been
       ! provided.
@@ -710,25 +769,21 @@ contains
       do s = 1,this%fates(nc)%nsites
 
             call ed_ecosystem_dynamics(this%fates(nc)%sites(s),    &
-                  this%fates(nc)%bc_in(s))
+                  this%fates(nc)%bc_in(s), & 
+                  this%fates(nc)%bc_out(s))
             
             call ed_update_site(this%fates(nc)%sites(s), &
-                  this%fates(nc)%bc_in(s))
+                  this%fates(nc)%bc_in(s), & 
+                  this%fates(nc)%bc_out(s))
             
       enddo
-      
-      ! call subroutine to aggregate ED litter output fluxes and 
-      ! package them for handing across interface
-      call FluxIntoLitterPools(this%fates(nc)%nsites, &
-            this%fates(nc)%sites,  &
-            this%fates(nc)%bc_in,  &
-            this%fates(nc)%bc_out)
 
       ! ---------------------------------------------------------------------------------
       ! Part III: Process FATES output into the dimensions and structures that are part
       ! of the HLMs API.  (column, depth, and litter fractions)
+      
       ! ---------------------------------------------------------------------------------
-      call this%UpdateLitterFluxes(bounds_clump,carbonflux_inst)
+!      call this%UpdateLitterFluxes(bounds_clump)
 
       ! ---------------------------------------------------------------------------------
       ! Part III.2 (continued).
@@ -756,13 +811,28 @@ contains
       return
    end subroutine dynamics_driv
 
-   ! ------------------------------------------------------------------------------------
-   subroutine UpdateLitterFluxes(this,bounds_clump,carbonflux_inst)
+
+   ! ====================================================================================
+
+   !subroutine WrapFatesNutrientSources(this,bounds_clump)
+
+     
+     ! Add in any N source from FATES
+     !sminn_vr(c,:)    = sminn_vr(c,:) + alm_fates(ci)%bc_out(s)%source_nh4(:)
+     !smin_nh4_vr(c,:) = smin_nh4_vr(c,:) + alm_fates(ci)%bc_out(s)%source_nh4(:)
+     
+
+    ! return
+   !end subroutine WrapFatesNutrientSources
+
+   
+   ! ====================================================================================
+
+   subroutine UpdateLitterFluxes(this,bounds_clump)
 
       implicit none
       class(hlm_fates_interface_type), intent(inout) :: this
       type(bounds_type)              , intent(in)    :: bounds_clump
-      type(carbonflux_type)          , intent(inout) :: carbonflux_inst
 
       ! !LOCAL VARIABLES:
       integer  :: s                        ! site index
@@ -777,18 +847,68 @@ contains
       do s = 1, this%fates(nc)%nsites
          c = this%f2hmap(nc)%fcolumn(s)
 
-         col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp_full,i_met_lit) = 0._r8
-         col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp_full,i_cel_lit) = 0._r8
-         col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp_full,i_lig_lit) = 0._r8
+         col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_met_lit) = &
+              col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_met_lit) + & 
+              this%fates(nc)%bc_out(s)%litt_flux_lab_c_si(1:nlevdecomp) * dtime
+         col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_cel_lit) = &
+              col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_cel_lit) + & 
+              this%fates(nc)%bc_out(s)%litt_flux_cel_c_si(1:nlevdecomp)* dtime
+         col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_lig_lit) = &
+              col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_lig_lit) + & 
+              this%fates(nc)%bc_out(s)%litt_flux_lig_c_si(1:nlevdecomp) * dtime
 
-         nld_si = this%fates(nc)%bc_in(s)%nlevdecomp
+         col_cf%litfall(c) = & 
+               sum(this%fates(nc)%bc_out(s)%litt_flux_lab_c_si(1:nlevdecomp) * this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + & 
+               sum(this%fates(nc)%bc_out(s)%litt_flux_cel_c_si(1:nlevdecomp) * this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + &  
+               sum(this%fates(nc)%bc_out(s)%litt_flux_lig_c_si(1:nlevdecomp) * this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp))
 
-         col_cf%decomp_cpools_sourcesink(c,1:nld_si,i_met_lit) = &
-               this%fates(nc)%bc_out(s)%litt_flux_lab_c_si(1:nld_si) * dtime
-         col_cf%decomp_cpools_sourcesink(c,1:nld_si,i_cel_lit) = &
-               this%fates(nc)%bc_out(s)%litt_flux_cel_c_si(1:nld_si)* dtime
-         col_cf%decomp_cpools_sourcesink(c,1:nld_si,i_lig_lit) = &
-               this%fates(nc)%bc_out(s)%litt_flux_lig_c_si(1:nld_si) * dtime
+
+         ! Since N and P are always allocated in ELM, AND, since on the FATES
+         ! side we have prepped these arrays, which may be zero fluxes in the case of
+         ! prescribed FATES nutrient mode, we can send the fluxes into the source pools
+         
+         select case(fates_parteh_mode)
+         case (prt_cnp_flex_allom_hyp )
+            
+            col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_met_lit) = &
+                 col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_met_lit) + &
+                 this%fates(nc)%bc_out(s)%litt_flux_lab_p_si(1:nlevdecomp) * dtime
+
+            col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_cel_lit) = &
+                 col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_cel_lit) + & 
+                 this%fates(nc)%bc_out(s)%litt_flux_cel_p_si(1:nlevdecomp)* dtime
+
+            col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_lig_lit) = &
+                 col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_lig_lit) + &
+                 this%fates(nc)%bc_out(s)%litt_flux_lig_p_si(1:nlevdecomp) * dtime
+
+            ! Diagnostic for mass balancing (gP/m2/s)
+            col_pf%plant_to_litter_pflux(c) = & 
+                 sum(this%fates(nc)%bc_out(s)%litt_flux_lab_p_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + &
+                 sum(this%fates(nc)%bc_out(s)%litt_flux_cel_p_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + & 
+                 sum(this%fates(nc)%bc_out(s)%litt_flux_lig_p_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp))
+
+            ! Transfer Nitrogen 
+            col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_met_lit) = &
+                 col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_met_lit) + & 
+                 this%fates(nc)%bc_out(s)%litt_flux_lab_n_si(1:nlevdecomp) * dtime
+            
+            col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_cel_lit) = &
+                 col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_cel_lit) + &
+                 this%fates(nc)%bc_out(s)%litt_flux_cel_n_si(1:nlevdecomp)* dtime
+            
+            col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_lig_lit) = &
+                 col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_lig_lit) + &
+                 this%fates(nc)%bc_out(s)%litt_flux_lig_n_si(1:nlevdecomp) * dtime
+
+            ! Diagnostic for mass balancing  (gN/m2/s)
+            col_nf%plant_to_litter_nflux(c) = & 
+                 sum(this%fates(nc)%bc_out(s)%litt_flux_lab_n_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + & 
+                 sum(this%fates(nc)%bc_out(s)%litt_flux_cel_n_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + & 
+                 sum(this%fates(nc)%bc_out(s)%litt_flux_lig_n_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp))
+            
+         end select
+       
       end do
 
    end subroutine UpdateLitterFluxes
@@ -1173,12 +1293,25 @@ contains
                call this%fates_restart%get_restart_vectors(nc, this%fates(nc)%nsites, &
                     this%fates(nc)%sites )
 
+               
+
                ! I think ed_update_site and update_hlmfates_dyn are doing some similar
                ! update type stuff, should consolidate (rgk 11-2016)
                do s = 1,this%fates(nc)%nsites
                   call ed_update_site( this%fates(nc)%sites(s), &
-                        this%fates(nc)%bc_in(s) )
+                        this%fates(nc)%bc_in(s), & 
+                        this%fates(nc)%bc_out(s))
+
+                  ! This call sends internal fates variables into the
+                  ! output boundary condition structures. Note: this is called
+                  ! internally in fates dynamics as well.
+                  call FluxIntoLitterPools(this%fates(nc)%sites(s), &
+                       this%fates(nc)%bc_in(s), & 
+                       this%fates(nc)%bc_out(s))
                end do
+
+               ! this call transfers fates output bcs to the HLM
+!               call this%UpdateLitterFluxes(bounds_clump)
 
                ! ------------------------------------------------------------------------
                ! Re-populate all the hydraulics variables that are dependent
@@ -1325,7 +1458,6 @@ contains
                  end do
 
               end do
-
               
               call HydrSiteColdStart(this%fates(nc)%sites,this%fates(nc)%bc_in)
            end if
@@ -1335,8 +1467,17 @@ contains
 
            do s = 1,this%fates(nc)%nsites
               call ed_update_site(this%fates(nc)%sites(s), &
-                    this%fates(nc)%bc_in(s))
+                   this%fates(nc)%bc_in(s), & 
+                   this%fates(nc)%bc_out(s))
+              ! This call sends internal fates variables into the
+              ! output boundary condition structures. Note: this is called
+              ! internally in fates dynamics as well.
+              call FluxIntoLitterPools(this%fates(nc)%sites(s), &
+                   this%fates(nc)%bc_in(s), & 
+                   this%fates(nc)%bc_out(s))
            end do
+
+!           call this%UpdateLitterFluxes(bounds_clump)
 
            ! ------------------------------------------------------------------------
            ! Update diagnostics of FATES ecosystem structure used in HLM.
@@ -1932,15 +2073,13 @@ contains
 
  ! ======================================================================================
 
- subroutine wrap_bgc_summary(this, bounds_clump, carbonflux_inst, carbonstate_inst)
+ subroutine wrap_bgc_summary(this, bounds_clump )
 
    
 
     ! Arguments
     class(hlm_fates_interface_type), intent(inout) :: this
     type(bounds_type),  intent(in)                 :: bounds_clump
-    type(carbonflux_type), intent(in)              :: carbonflux_inst
-    type(carbonstate_type), intent(in)             :: carbonstate_inst
 
     ! locals
     real(r8) :: dtime
@@ -2191,13 +2330,13 @@ contains
     integer :: c  ! column index
     integer :: j  ! Depth index
     integer :: nlevsoil
-    integer :: nlevdecomp
+!    integer :: nlevdecomp
 
     do s = 1, this%fates(nc)%nsites
 
        c = this%f2hmap(nc)%fcolumn(s)
        nlevsoil = this%fates(nc)%bc_in(s)%nlevsoil
-       nlevdecomp = this%fates(nc)%bc_in(s)%nlevdecomp
+!       nlevdecomp = this%fates(nc)%bc_in(s)%nlevdecomp
        
        this%fates(nc)%bc_in(s)%zi_sisl(0:nlevsoil)    = col_pp%zi(c,0:nlevsoil)
        this%fates(nc)%bc_in(s)%dz_sisl(1:nlevsoil)    = col_pp%dz(c,1:nlevsoil)

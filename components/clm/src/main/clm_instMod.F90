@@ -4,6 +4,7 @@ module clm_instMod
   !
   use shr_kind_mod               , only : r8 => shr_kind_r8
   use shr_log_mod                , only : errMsg => shr_log_errMsg
+  use abortutils                 , only : endrun
   use decompMod                  , only : bounds_type, get_proc_bounds
   use clm_varctl                 , only : use_cn, use_voc, use_c13, use_c14, use_fates, use_betr
   !-----------------------------------------
@@ -162,6 +163,7 @@ contains
     if (use_voc ) then
        call vocemis_vars%Init(bounds_proc)
     end if
+
     if (use_cn .or. use_fates) then
 
        ! Note - always initialize the memory for the c13_cs and
@@ -170,18 +172,16 @@ contains
 
        call grc_cs%Init(begg, endg, carbon_type='c12')
        call col_cs%Init(begc, endc, carbon_type='c12', ratio=1._r8)
-       call veg_cs%Init(begp, endp, carbon_type='c12', ratio=1._r8)
+       
        if (use_c13) then
           call c13_grc_cs%Init(begg, endg,carbon_type='c13')
           call c13_col_cs%Init(begc, endc, carbon_type='c13', ratio=c13ratio, &
                c12_carbonstate_vars=col_cs)
-          call c13_veg_cs%Init(begp, endp, carbon_type='c13', ratio=c13ratio)
        end if
        if (use_c14) then
           call c14_grc_cs%Init(begg, endg,carbon_type='c14')
           call c14_col_cs%Init(begc, endc, carbon_type='c14', ratio=c14ratio, &
                c12_carbonstate_vars=col_cs)
-          call c14_veg_cs%Init(begp, endp, carbon_type='c14', ratio=c14ratio)
        end if
 
        ! Note - always initialize the memory for the c13_carbonflux_vars and
@@ -190,41 +190,57 @@ contains
 
        call grc_cf%Init(begg, endg, carbon_type='c12')
        call col_cf%Init(begc, endc, carbon_type='c12')
-       call veg_cf%Init(begp, endp, carbon_type='c12')
+       
        if (use_c13) then
           call c13_grc_cf%Init(begg, endg, carbon_type='c13')
           call c13_col_cf%Init(begc, endc, carbon_type='c13')
-          call c13_veg_cf%Init(begp, endp, carbon_type='c13')
        end if
        if (use_c14) then
           call c14_grc_cf%Init(begg, endg, carbon_type='c14')
           call c14_col_cf%Init(begc, endc, carbon_type='c14')
-          call c14_veg_cf%Init(begp, endp, carbon_type='c14')
        end if
-    endif
 
-    if (use_cn) then
        call grc_ns%Init(begg, endg)
        call col_ns%Init(begc, endc, col_cs)
-       call veg_ns%Init(begp, endp, veg_cs)
-       
+
        call grc_nf%Init(begg, endg)
        call col_nf%Init(begc, endc)
-       call veg_nf%Init(begp, endp)
-
+       
        call grc_ps%Init(begg, endg)
        call col_ps%Init(begc, endc, col_cs)
-       call veg_ps%Init(begp, endp, veg_cs)
 
        call grc_pf%Init(begg, endg)
        call col_pf%Init(begc, endc)
+
+       if(use_betr)then
+          call PlantMicKinetics_vars%Init(bounds_proc)
+       endif
+
+    endif
+
+    if (use_cn) then
+
+       call veg_cf%Init(begp, endp, carbon_type='c12')
+       call veg_cs%Init(begp, endp, carbon_type='c12', ratio=1._r8)
+
+       if (use_c13) then
+          call c13_veg_cs%Init(begc, endc, carbon_type='c13', ratio=c13ratio)
+          call c13_veg_cf%Init(begp, endp, carbon_type='c13')
+       end if
+
+       if (use_c14) then
+          call c14_veg_cs%Init(begc, endc, carbon_type='c14', ratio=c14ratio)
+          call c14_veg_cf%Init(begp, endp, carbon_type='c14')
+       end if
+
+       call veg_ns%Init(begp, endp, veg_cs)
+       call veg_nf%Init(begp, endp)
+       
+       call veg_ps%Init(begp, endp, veg_cs)
        call veg_pf%Init(begp, endp)
 
        call crop_vars%Init(bounds_proc)
-
-       if(use_betr)then
-         call PlantMicKinetics_vars%Init(bounds_proc)
-       endif
+      
     end if
     
     ! Initialize the Functionaly Assembled Terrestrial Ecosystem Simulator (FATES)

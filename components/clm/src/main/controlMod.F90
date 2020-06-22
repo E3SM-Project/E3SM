@@ -331,7 +331,6 @@ contains
        unitn = getavu()
        write(iulog,*) 'Read in clm_inparm namelist from: ', trim(NLFilename)
        open( unitn, file=trim(NLFilename), status='old' )
-       print*,trim(NLFilename),"X.YANG debug"
        call shr_nl_find_group_name(unitn, 'clm_inparm', status=ierr)
        if (ierr == 0) then
           read(unitn, clm_inparm, iostat=ierr)
@@ -340,7 +339,7 @@ contains
           end if
        end if
        
-       print*,"X.YANG debug SUPL NITROGEN and PHOSPHORUS ",suplnitro,suplphos
+       !write(iulog,*) "SUPL NITROGEN and PHOSPHORUS ",suplnitro,suplphos
        call relavu( unitn )
 
        ! ----------------------------------------------------------------------
@@ -402,6 +401,35 @@ contains
           if ( n_drydep > 0 .and. drydep_method /= DD_XLND ) then
              call endrun(msg=' ERROR: dry deposition via ML Welsey is not compatible with FATES.'//&
                    errMsg(__FILE__, __LINE__))
+          end if
+
+          if (use_c13 .or. use_c14) then
+              call endrun(msg=' ERROR:: use_c13 and use_c14 are not compatible with FATES.'//&
+                    errMsg(__FILE__, __LINE__))
+          end if
+
+          if(nu_com_nfix) then
+              call endrun(msg=' ERROR:: n_com_nfix and use_fates cannot both be true'//&
+                    errMsg(__FILE__, __LINE__))
+          end if
+
+          ! If parteh mode > 1, then NP are turned on, potentially
+          if(fates_parteh_mode > 1 ) then
+             if(use_fates_ed_prescribed_phys) then
+                call endrun(msg=' ERROR:: n_com_nfix and use_fates cannot both be true'//&
+                     errMsg(__FILE__, __LINE__))
+             end if
+             if(use_fates_ed_st3) then
+                call endrun(msg=' ERROR:: n_com_nfix and use_fates cannot both be true'//&
+                     errMsg(__FILE__, __LINE__))
+             end if
+          end if
+
+          ! Deposition may work with FATES
+          ! but not when lai streams are turned on
+          if(use_lai_streams) then
+             call endrun(msg=' ERROR:: use_lai_streams and use_fates cannot both be true'//&
+                  errMsg(__FILE__, __LINE__))
           end if
 
        end if
@@ -650,8 +678,13 @@ contains
 
     ! BGC
     call mpi_bcast (co2_type, len(co2_type), MPI_CHARACTER, 0, mpicom, ier)
-    if (use_cn) then
+
+    
+    if (use_cn .or. use_fates) then
        call mpi_bcast (suplnitro, len(suplnitro), MPI_CHARACTER, 0, mpicom, ier)
+    end if
+    
+    if (use_cn) then
        call mpi_bcast (nfix_timeconst, 1, MPI_REAL8, 0, mpicom, ier)
        call mpi_bcast (spinup_state, 1, MPI_INTEGER, 0, mpicom, ier)
        call mpi_bcast (nyears_ad_carbon_only, 1, MPI_INTEGER, 0, mpicom, ier)

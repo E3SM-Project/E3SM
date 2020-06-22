@@ -53,7 +53,7 @@ contains
     ! !USES:
     use clm_varcon  , only : zsoi, dzsoi, zisoi, dzsoi_decomp
     use clm_varpar  , only : nlevdecomp, nlevgrnd, nlevdecomp_full, maxpatch_pft
-    use clm_varctl  , only : use_vertsoilc, iulog, use_dynroot
+    use clm_varctl  , only : use_vertsoilc, iulog, use_dynroot, use_fates, use_cn
     use pftvarcon   , only : rootprof_beta, noveg
     !
     ! !ARGUMENTS:
@@ -106,141 +106,178 @@ contains
          endc                 => bounds%endc                                 &
          )
 
+
+      ! ------------------------------------------------------------------------------------------------
+      ! Note on FATES: don't calculate any profiles for plant relevant quantities, FATES
+      ! will handle that itself. So bypass and only calculate deposition depths.
+      ! ------------------------------------------------------------------------------------------------
+
+
       if (use_vertsoilc) then
+          
+          ! define a single shallow surface profile for surface 
+          ! additions (leaves, stems, and N deposition)
+          surface_prof(:) = 0._r8
+          do j = 1, nlevdecomp
+              surface_prof(j) = exp(-surfprof_exp * zsoi(j)) / dzsoi_decomp(j)
+          end do
 
-         ! define a single shallow surface profile for surface additions (leaves, stems, and N deposition)
-         surface_prof(:) = 0._r8
-         do j = 1, nlevdecomp
-            surface_prof(j) = exp(-surfprof_exp * zsoi(j)) / dzsoi_decomp(j)
-         end do
-
-         ! initialize profiles to zero
-         leaf_prof(begp:endp, :)      = 0._r8
-         froot_prof(begp:endp, :)     = 0._r8
-         croot_prof(begp:endp, :)     = 0._r8
-         stem_prof(begp:endp, :)      = 0._r8
-         nfixation_prof(begc:endc, :) = 0._r8
-         ndep_prof(begc:endc, :)      = 0._r8
-         pdep_prof(begc:endc, :)      = 0._r8
-
-         cinput_rootfr(begp:endp, :)     = 0._r8
-         col_cinput_rootfr(begc:endc, :) = 0._r8
-
-         if ( exponential_rooting_profile ) then
-            if ( .not. pftspecific_rootingprofile ) then
-               ! define rooting profile from exponential parameters
-               do j = 1, nlevdecomp
-                  do fp = 1,num_soilp
-                     p = filter_soilp(fp)
-                     cinput_rootfr(p,j) = exp(-rootprof_exp * zsoi(j)) / dzsoi_decomp(j)
-                  end do
-               end do
-            else
-               ! use beta distribution parameter from Jackson et al., 1996
-               do fp = 1,num_soilp
-                  p = filter_soilp(fp)
-                  if (veg_pp%itype(p) /= noveg) then
+          nfixation_prof(begc:endc, :) = 0._r8
+          ndep_prof(begc:endc, :)      = 0._r8
+          pdep_prof(begc:endc, :)      = 0._r8
+          
+         if (use_cn) then
+             
+             ! initialize profiles to zero
+             leaf_prof(begp:endp, :)      = 0._r8
+             froot_prof(begp:endp, :)     = 0._r8
+             croot_prof(begp:endp, :)     = 0._r8
+             stem_prof(begp:endp, :)      = 0._r8
+             cinput_rootfr(begp:endp, :)     = 0._r8
+             col_cinput_rootfr(begc:endc, :) = 0._r8
+             
+             if ( exponential_rooting_profile ) then
+                 if ( .not. pftspecific_rootingprofile ) then
+                     ! define rooting profile from exponential parameters
                      do j = 1, nlevdecomp
-                        cinput_rootfr(p,j) = ( rootprof_beta(veg_pp%itype(p)) ** (zisoi(j-1)*100._r8) - &
-                             rootprof_beta(veg_pp%itype(p)) ** (zisoi(j)*100._r8) ) &
-                             / dzsoi_decomp(j)
+                         do fp = 1,num_soilp
+                             p = filter_soilp(fp)
+                             cinput_rootfr(p,j) = exp(-rootprof_exp * zsoi(j)) / dzsoi_decomp(j)
+                         end do
                      end do
-                  else
-                     cinput_rootfr(p,1) = 1._r8 / dzsoi_decomp(1)
-                  endif
-               end do
-            endif
-         else
-            do j = 1, nlevdecomp
-               ! use standard CLM root fraction profiles
-               do fp = 1,num_soilp
-                  p = filter_soilp(fp)
-                  cinput_rootfr(p,j) = rootfr(p,j) / dzsoi_decomp(j)
-               end do
-            end do
-         endif
+                 else
+                     ! use beta distribution parameter from Jackson et al., 1996
+                     do fp = 1,num_soilp
+                         p = filter_soilp(fp)
+                         if (veg_pp%itype(p) /= noveg) then
+                             do j = 1, nlevdecomp
+                                 cinput_rootfr(p,j) = ( rootprof_beta(veg_pp%itype(p)) ** (zisoi(j-1)*100._r8) - &
+                                       rootprof_beta(veg_pp%itype(p)) ** (zisoi(j)*100._r8) ) &
+                                       / dzsoi_decomp(j)
+                             end do
+                         else
+                             cinput_rootfr(p,1) = 1._r8 / dzsoi_decomp(1)
+                         endif
+                     end do
+                 endif
+             else
+                 do j = 1, nlevdecomp
+                     ! use standard CLM root fraction profiles
+                     do fp = 1,num_soilp
+                         p = filter_soilp(fp)
+                         cinput_rootfr(p,j) = rootfr(p,j) / dzsoi_decomp(j)
+                     end do
+                 end do
+              endif
+             
+             do fp = 1,num_soilp
+                 p = filter_soilp(fp)
+                 c = veg_pp%column(p)
+                 ! integrate rootfr over active layer of soil column
+                 rootfr_tot = 0._r8
+                 surface_prof_tot = 0._r8
+                 do j = 1, min(max(altmax_lastyear_indx(c), 1), nlevdecomp)
+                     rootfr_tot = rootfr_tot + cinput_rootfr(p,j) * dzsoi_decomp(j)
+                     surface_prof_tot = surface_prof_tot + surface_prof(j)  * dzsoi_decomp(j)
+                 end do
+                 if ( (altmax_lastyear_indx(c) > 0) .and. (rootfr_tot > 0._r8) .and. (surface_prof_tot > 0._r8) ) then
+                     ! where there is not permafrost extending to the surface, integrate the profiles over the active layer
+                     ! this is equivalnet to integrating over all soil layers outside of permafrost regions
+                     do j = 1, min(max(altmax_lastyear_indx(c), 1), nlevdecomp)
+                         froot_prof(p,j) = cinput_rootfr(p,j) / rootfr_tot
+                         croot_prof(p,j) = cinput_rootfr(p,j) / rootfr_tot
+                         ! set all surface processes to shallower profile
+                         leaf_prof(p,j) = surface_prof(j)/ surface_prof_tot
+                         stem_prof(p,j) = surface_prof(j)/ surface_prof_tot
+                     end do
+                 else
+                     ! if fully frozen, or no roots, put everything in the top layer
+                     froot_prof(p,1) = 1./dzsoi_decomp(1)
+                     croot_prof(p,1) = 1./dzsoi_decomp(1)
+                     leaf_prof(p,1)  = 1./dzsoi_decomp(1)
+                     stem_prof(p,1)  = 1./dzsoi_decomp(1)
+                 endif
+                 
+             end do
+             
+             !! aggregate root profile to column
+             ! call p2c (decomp, nlevdecomp_full, &
+             !      cinput_rootfr(bounds%begp:bounds%endp, :), &
+             !      col_cinput_rootfr(bounds%begc:bounds%endc, :), &
+             !      'unity')
+             do pi = 1,maxpatch_pft
+                 do fc = 1,num_soilc
+                     c = filter_soilc(fc)
+                     if (pi <=  col_pp%npfts(c)) then
+                         p = col_pp%pfti(c) + pi - 1
+                         do j = 1,nlevdecomp
+                             col_cinput_rootfr(c,j) = col_cinput_rootfr(c,j) + cinput_rootfr(p,j) * veg_pp%wtcol(p)
+                         end do
+                     end if
+                 end do
+             end do
+             
+             ! repeat for column-native profiles: Nfix
+             do fc = 1,num_soilc
+                 c = filter_soilc(fc)
+                 rootfr_tot = 0._r8
+                 surface_prof_tot = 0._r8
+                 ! redo column ntegration over active layer for column-native profiles
+                 do j = 1, min(max(altmax_lastyear_indx(c), 1), nlevdecomp)
+                     rootfr_tot = rootfr_tot + col_cinput_rootfr(c,j) * dzsoi_decomp(j)
+                     surface_prof_tot = surface_prof_tot + surface_prof(j) * dzsoi_decomp(j)
+                 end do
+                 if ( (altmax_lastyear_indx(c) > 0) .and. (rootfr_tot > 0._r8) .and. (surface_prof_tot > 0._r8) ) then
+                     do j = 1,  min(max(altmax_lastyear_indx(c), 1), nlevdecomp)
+                         nfixation_prof(c,j) = col_cinput_rootfr(c,j) / rootfr_tot
+                     end do
+                 else
+                     nfixation_prof(c,1) = 1./dzsoi_decomp(1)
+                 endif
+             end do
 
-         do fp = 1,num_soilp
-            p = filter_soilp(fp)
-            c = veg_pp%column(p)
-            ! integrate rootfr over active layer of soil column
-            rootfr_tot = 0._r8
-            surface_prof_tot = 0._r8
-            do j = 1, min(max(altmax_lastyear_indx(c), 1), nlevdecomp)
-               rootfr_tot = rootfr_tot + cinput_rootfr(p,j) * dzsoi_decomp(j)
-               surface_prof_tot = surface_prof_tot + surface_prof(j)  * dzsoi_decomp(j)
-            end do
-            if ( (altmax_lastyear_indx(c) > 0) .and. (rootfr_tot > 0._r8) .and. (surface_prof_tot > 0._r8) ) then
-               ! where there is not permafrost extending to the surface, integrate the profiles over the active layer
-               ! this is equivalnet to integrating over all soil layers outside of permafrost regions
-               do j = 1, min(max(altmax_lastyear_indx(c), 1), nlevdecomp)
-                  froot_prof(p,j) = cinput_rootfr(p,j) / rootfr_tot
-                  croot_prof(p,j) = cinput_rootfr(p,j) / rootfr_tot
-                  ! set all surface processes to shallower profile
-                  leaf_prof(p,j) = surface_prof(j)/ surface_prof_tot
-                  stem_prof(p,j) = surface_prof(j)/ surface_prof_tot
-               end do
-            else
-               ! if fully frozen, or no roots, put everything in the top layer
-               froot_prof(p,1) = 1./dzsoi_decomp(1)
-               croot_prof(p,1) = 1./dzsoi_decomp(1)
-               leaf_prof(p,1) = 1./dzsoi_decomp(1)
-               stem_prof(p,1) = 1./dzsoi_decomp(1)
-            endif
+          elseif(use_fates) then
 
-         end do
+             ! If FATES is on, set a nominal fixation 
+             ! profile to the top layer (unused, just needs to pass check)
+             nfixation_prof(begc:endc,:) = 0._r8
+             nfixation_prof(begc:endc,1) = 1./dzsoi_decomp(1)
 
-         !! aggregate root profile to column
-         ! call p2c (decomp, nlevdecomp_full, &
-         !      cinput_rootfr(bounds%begp:bounds%endp, :), &
-         !      col_cinput_rootfr(bounds%begc:bounds%endc, :), &
-         !      'unity')
-         do pi = 1,maxpatch_pft
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-               if (pi <=  col_pp%npfts(c)) then
-                  p = col_pp%pfti(c) + pi - 1
-                  do j = 1,nlevdecomp
-                     col_cinput_rootfr(c,j) = col_cinput_rootfr(c,j) + cinput_rootfr(p,j) * veg_pp%wtcol(p)
-                  end do
-               end if
-            end do
-         end do
+          end if  ! if use_cn
 
          ! repeat for column-native profiles: Ndep and Nfix
          do fc = 1,num_soilc
             c = filter_soilc(fc)
-            rootfr_tot = 0._r8
             surface_prof_tot = 0._r8
             ! redo column ntegration over active layer for column-native profiles
             do j = 1, min(max(altmax_lastyear_indx(c), 1), nlevdecomp)
-               rootfr_tot = rootfr_tot + col_cinput_rootfr(c,j) * dzsoi_decomp(j)
-               surface_prof_tot = surface_prof_tot + surface_prof(j) * dzsoi_decomp(j)
+                surface_prof_tot = surface_prof_tot + surface_prof(j) * dzsoi_decomp(j)
             end do
-            if ( (altmax_lastyear_indx(c) > 0) .and. (rootfr_tot > 0._r8) .and. (surface_prof_tot > 0._r8) ) then
-               do j = 1,  min(max(altmax_lastyear_indx(c), 1), nlevdecomp)
-                  nfixation_prof(c,j) = col_cinput_rootfr(c,j) / rootfr_tot
-                  ndep_prof(c,j) = surface_prof(j)/ surface_prof_tot
-                  pdep_prof(c,j) = surface_prof(j)/ surface_prof_tot
-               end do
+            if ( (altmax_lastyear_indx(c) > 0) .and. (surface_prof_tot > 0._r8) ) then
+                do j = 1,  min(max(altmax_lastyear_indx(c), 1), nlevdecomp)
+                    ndep_prof(c,j) = surface_prof(j)/ surface_prof_tot
+                    pdep_prof(c,j) = surface_prof(j)/ surface_prof_tot
+                end do
             else
-               nfixation_prof(c,1) = 1./dzsoi_decomp(1)
-               ndep_prof(c,1) = 1./dzsoi_decomp(1)
-               pdep_prof(c,1) = 1./dzsoi_decomp(1) 
+                ndep_prof(c,1) = 1./dzsoi_decomp(1)
+                pdep_prof(c,1) = 1./dzsoi_decomp(1) 
             endif
-         end do
+        end do
 
-      else
+     else
 
          ! for one layer decomposition model, set profiles to unity
-         leaf_prof(begp:endp, :) = 1._r8
-         froot_prof(begp:endp, :) = 1._r8
-         croot_prof(begp:endp, :) = 1._r8
-         stem_prof(begp:endp, :) = 1._r8
+         if(use_cn)then
+             leaf_prof(begp:endp, :) = 1._r8
+             froot_prof(begp:endp, :) = 1._r8
+             croot_prof(begp:endp, :) = 1._r8
+             stem_prof(begp:endp, :) = 1._r8
+         end if
+          
          nfixation_prof(begc:endc, :) = 1._r8
          ndep_prof(begc:endc, :) = 1._r8
          pdep_prof(begc:endc, :) = 1._r8
-
+         
       end if
 
 
@@ -275,24 +312,26 @@ contains
          endif
       end do
 
-      do fp = 1,num_soilp
-         p = filter_soilp(fp)
-         froot_prof_sum = 0.
-         croot_prof_sum = 0.
-         leaf_prof_sum = 0.
-         stem_prof_sum = 0.
-         do j = 1, nlevdecomp
-            froot_prof_sum = froot_prof_sum + froot_prof(p,j) *  dzsoi_decomp(j)
-            croot_prof_sum = croot_prof_sum + croot_prof(p,j) *  dzsoi_decomp(j)
-            leaf_prof_sum = leaf_prof_sum + leaf_prof(p,j) *  dzsoi_decomp(j)
-            stem_prof_sum = stem_prof_sum + stem_prof(p,j) *  dzsoi_decomp(j)
+      if(use_cn)then
+         do fp = 1,num_soilp
+            p = filter_soilp(fp)
+            froot_prof_sum = 0.
+            croot_prof_sum = 0.
+            leaf_prof_sum = 0.
+            stem_prof_sum = 0.
+            do j = 1, nlevdecomp
+               froot_prof_sum = froot_prof_sum + froot_prof(p,j) *  dzsoi_decomp(j)
+               croot_prof_sum = croot_prof_sum + croot_prof(p,j) *  dzsoi_decomp(j)
+               leaf_prof_sum = leaf_prof_sum + leaf_prof(p,j) *  dzsoi_decomp(j)
+               stem_prof_sum = stem_prof_sum + stem_prof(p,j) *  dzsoi_decomp(j)
+            end do
+            if ( ( abs(froot_prof_sum - 1._r8) > delta ) .or.  ( abs(croot_prof_sum - 1._r8) > delta ) .or. &
+                 ( abs(stem_prof_sum - 1._r8) > delta ) .or.  ( abs(leaf_prof_sum - 1._r8) > delta ) ) then
+               write(iulog, *) 'profile sums: ', froot_prof_sum, croot_prof_sum, leaf_prof_sum, stem_prof_sum
+               call endrun(msg=' ERROR: sum-1 > delta'//errMsg(__FILE__, __LINE__))
+            endif
          end do
-         if ( ( abs(froot_prof_sum - 1._r8) > delta ) .or.  ( abs(croot_prof_sum - 1._r8) > delta ) .or. &
-              ( abs(stem_prof_sum - 1._r8) > delta ) .or.  ( abs(leaf_prof_sum - 1._r8) > delta ) ) then
-            write(iulog, *) 'profile sums: ', froot_prof_sum, croot_prof_sum, leaf_prof_sum, stem_prof_sum
-            call endrun(msg=' ERROR: sum-1 > delta'//errMsg(__FILE__, __LINE__))
-         endif
-      end do
+      end if
 
     end associate 
 

@@ -58,7 +58,7 @@ contains
     use clm_varcon                , only: clm_varcon_init
     use landunit_varcon           , only: landunit_varcon_init, max_lunit, istice_mec
     use column_varcon             , only: col_itype_to_icemec_class
-    use clm_varctl                , only: fsurdat, fatmlndfrc, flndtopo, fglcmask, noland, version  
+    use clm_varctl                , only: fsurdat, fatmlndfrc, flndtopo, fglcmask, noland, version, fates_parteh_mode
     use pftvarcon                 , only: pftconrd
     use soilorder_varcon          , only: soilorder_conrd
     use decompInitMod             , only: decompInit_lnd, decompInit_clumps, decompInit_gtlcp
@@ -265,9 +265,10 @@ contains
     ! (Note: fates_maxELementsPerSite is the critical variable used by CLM
     ! to allocate space, determined in this routine)
     ! ------------------------------------------------------------------------
-    call ELMFATESGlobals()
-    
 
+    call ELMFatesGlobals()
+
+    
     ! ------------------------------------------------------------------------
     ! Determine decomposition of subgrid scale landunits, topounits, columns, patches
     ! ------------------------------------------------------------------------
@@ -653,8 +654,8 @@ contains
     ! Initialize modules (after time-manager initialization in most cases)
     ! ------------------------------------------------------------------------
 
-    if (use_cn) then
-       call EcosystemDynInit(bounds_proc)
+    if (use_cn .or. use_fates) then
+       call EcosystemDynInit(bounds_proc,alm_fates)
     else
        call SatellitePhenologyInit(bounds_proc)
     end if
@@ -798,7 +799,7 @@ contains
     ! Initialize nitrogen deposition
     ! ------------------------------------------------------------------------
 
-    if (use_cn) then
+    if (use_cn .or. use_fates) then
        call t_startf('init_ndep')
        call ndep_init(bounds_proc)
        call ndep_interp(bounds_proc, atm2lnd_vars)
@@ -809,7 +810,7 @@ contains
     ! Initialize phosphorus deposition
     ! ------------------------------------------------------------------------
 
-    if (use_cn) then
+    if (use_cn .or. use_fates) then
        call t_startf('init_pdep')
        call pdep_init(bounds_proc)
        call pdep_interp(bounds_proc, atm2lnd_vars)

@@ -11,7 +11,7 @@ module DecompCascadeBGCMod
   use shr_log_mod            , only : errMsg => shr_log_errMsg
   use clm_varpar             , only : nlevsoi, nlevgrnd, nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools
   use clm_varpar             , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
-  use clm_varctl             , only : iulog, spinup_state, anoxia, use_lch4, use_vertsoilc, use_fates
+  use clm_varctl             , only : iulog, spinup_state, anoxia, use_lch4, use_vertsoilc
   use clm_varcon             , only : zsoi
   use decompMod              , only : bounds_type
   use abortutils             , only : endrun
@@ -429,29 +429,31 @@ contains
       is_lignin                      (i_litr3) = .true.
 
       ! CWD
-      if (.not.use_fates) then
-         floating_cn_ratio_decomp_pools (i_cwd)   = .true.
-         floating_cp_ratio_decomp_pools (i_cwd)   = .true.
-         decomp_pool_name_restart       (i_cwd)   = 'cwd'
-         decomp_pool_name_history       (i_cwd)   = 'CWD'
-         decomp_pool_name_long          (i_cwd)   = 'coarse woody debris'
-         decomp_pool_name_short         (i_cwd)   = 'CWD'
-         is_litter                      (i_cwd)   = .false.
-         is_soil                        (i_cwd)   = .false.
-         is_cwd                         (i_cwd)   = .true.
-         initial_cn_ratio               (i_cwd)   = 90._r8
-         initial_cp_ratio               (i_cwd)   = 900._r8
-         initial_stock                  (i_cwd)   = 0._r8
-         is_metabolic                   (i_cwd)   = .false.
-         is_cellulose                   (i_cwd)   = .false.
-         is_lignin                      (i_cwd)   = .false.
-      end if
+      ! NOTE: When fates is active, it maintains a CWD
+      ! pool, and only passes already fragmented litter
+      ! to ELM. Thus, the i_cwd cascade pool should always
+      ! be zero when FATES is on. We used to turn this pool
+      ! off, but it is fine to leave it on for code simplicity
+      ! as it is not a destination transition.
+      
+      floating_cn_ratio_decomp_pools (i_cwd)   = .true.
+      floating_cp_ratio_decomp_pools (i_cwd)   = .true.
+      decomp_pool_name_restart       (i_cwd)   = 'cwd'
+      decomp_pool_name_history       (i_cwd)   = 'CWD'
+      decomp_pool_name_long          (i_cwd)   = 'coarse woody debris'
+      decomp_pool_name_short         (i_cwd)   = 'CWD'
+      is_litter                      (i_cwd)   = .false.
+      is_soil                        (i_cwd)   = .false.
+      is_cwd                         (i_cwd)   = .true.
+      initial_cn_ratio               (i_cwd)   = 90._r8
+      initial_cp_ratio               (i_cwd)   = 900._r8
+      initial_stock                  (i_cwd)   = 0._r8
+      is_metabolic                   (i_cwd)   = .false.
+      is_cellulose                   (i_cwd)   = .false.
+      is_lignin                      (i_cwd)   = .false.
+      
 
-      if (.not. use_fates) then
-         i_soil1 = 5
-      else
-         i_soil1 = 4
-      endif
+      i_soil1 = 5
       floating_cn_ratio_decomp_pools (i_soil1) = .false.
       floating_cp_ratio_decomp_pools (i_soil1) = .true.
       decomp_pool_name_restart       (i_soil1) = 'soil1'
@@ -468,11 +470,7 @@ contains
       is_cellulose                   (i_soil1) = .false.
       is_lignin                      (i_soil1) = .false.
 
-      if (.not. use_fates) then
-         i_soil2 = 6
-      else
-         i_soil2 = 5
-      endif
+      i_soil2 = 6
       floating_cn_ratio_decomp_pools (i_soil2) = .false.
       floating_cp_ratio_decomp_pools (i_soil2) = .true.
       decomp_pool_name_restart       (i_soil2) = 'soil2'
@@ -489,11 +487,7 @@ contains
       is_cellulose                   (i_soil2) = .false.
       is_lignin                      (i_soil2) = .false.
 
-      if (.not. use_fates) then
-         i_soil3 = 7
-      else
-         i_soil3 = 6
-      endif
+      i_soil3 = 7
       floating_cn_ratio_decomp_pools (i_soil3) = .false.
       floating_cp_ratio_decomp_pools (i_soil3) = .true.
       decomp_pool_name_restart       (i_soil3) = 'soil3'
@@ -514,9 +508,7 @@ contains
       spinup_factor(i_litr2) = 1._r8
       spinup_factor(i_litr3) = 1._r8
       !CWD
-      if (.not. use_fates) then
-         spinup_factor(i_cwd) = 1._r8
-      end if
+      spinup_factor(i_cwd) = 1._r8
       spinup_factor(i_soil1) = DecompBGCParamsInst%spinup_vector(1)
       spinup_factor(i_soil2) = DecompBGCParamsInst%spinup_vector(2)
       spinup_factor(i_soil3) = DecompBGCParamsInst%spinup_vector(3)
@@ -579,22 +571,20 @@ contains
       cascade_receiver_pool(i_s3s1) = i_soil1
       pathfrac_decomp_cascade(bounds%begc:bounds%endc,1:nlevdecomp,i_s3s1) = 1.0_r8
 
-      if (.not. use_fates) then
-         i_cwdl2 = 9
-         cascade_step_name(i_cwdl2) = 'CWDL2'
-         rf_decomp_cascade(bounds%begc:bounds%endc,1:nlevdecomp,i_cwdl2) = rf_cwdl2
-         cascade_donor_pool(i_cwdl2) = i_cwd
-         cascade_receiver_pool(i_cwdl2) = i_litr2
-         pathfrac_decomp_cascade(bounds%begc:bounds%endc,1:nlevdecomp,i_cwdl2) = cwd_fcel
-         
-         i_cwdl3 = 10
-         cascade_step_name(i_cwdl3) = 'CWDL3'
-         rf_decomp_cascade(bounds%begc:bounds%endc,1:nlevdecomp,i_cwdl3) = rf_cwdl3
-         cascade_donor_pool(i_cwdl3) = i_cwd
-         cascade_receiver_pool(i_cwdl3) = i_litr3
-         pathfrac_decomp_cascade(bounds%begc:bounds%endc,1:nlevdecomp,i_cwdl3) = cwd_flig
-      end if
+      i_cwdl2 = 9
+      cascade_step_name(i_cwdl2) = 'CWDL2'
+      rf_decomp_cascade(bounds%begc:bounds%endc,1:nlevdecomp,i_cwdl2) = rf_cwdl2
+      cascade_donor_pool(i_cwdl2) = i_cwd
+      cascade_receiver_pool(i_cwdl2) = i_litr2
+      pathfrac_decomp_cascade(bounds%begc:bounds%endc,1:nlevdecomp,i_cwdl2) = cwd_fcel
       
+      i_cwdl3 = 10
+      cascade_step_name(i_cwdl3) = 'CWDL3'
+      rf_decomp_cascade(bounds%begc:bounds%endc,1:nlevdecomp,i_cwdl3) = rf_cwdl3
+      cascade_donor_pool(i_cwdl3) = i_cwd
+      cascade_receiver_pool(i_cwdl3) = i_litr3
+      pathfrac_decomp_cascade(bounds%begc:bounds%endc,1:nlevdecomp,i_cwdl3) = cwd_flig
+            
       deallocate(rf_s1s2)
       deallocate(rf_s1s3)
       deallocate(f_s1s2)
@@ -749,15 +739,11 @@ contains
        i_litr1 = 1
        i_litr2 = 2
        i_litr3 = 3
-       if (.not.use_fates) then
-          i_soil1 = 5
-          i_soil2 = 6
-          i_soil3 = 7
-       else
-          i_soil1 = 4
-          i_soil2 = 5
-          i_soil3 = 6
-       end if
+
+       i_soil1 = 5
+       i_soil2 = 6
+       i_soil3 = 7
+
 
        ! pflotran:beg---saving orignal k (not scaled) for passing to pflotran bgc decomposition sandboxes
        decomp_k_pools(i_litr1) = k_l1 
@@ -1039,15 +1025,13 @@ contains
                decomp_k(c,j,i_soil3) = k_s3    * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(c,j) * o_scalar(c,j)
             end do
          end do
-         if (.not. use_fates) then
-            do j = 1,nlevdecomp
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  decomp_k(c,j,i_cwd)   = k_frag  * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(c,j) * o_scalar(c,j)
-               end do
-            end do
-         end if
-      else
+         do j = 1,nlevdecomp
+             do fc = 1,num_soilc
+                 c = filter_soilc(fc)
+                 decomp_k(c,j,i_cwd)   = k_frag  * t_scalar(c,j) * w_scalar(c,j) * depth_scalar(c,j) * o_scalar(c,j)
+             end do
+         end do
+     else
          do j = 1,nlevdecomp
             do fc = 1,num_soilc
                c = filter_soilc(fc)
@@ -1059,14 +1043,12 @@ contains
                decomp_k(c,j,i_soil3) = k_s3    * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j)
             end do
          end do
-         if (.not. use_fates) then
-            do j = 1,nlevdecomp
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  decomp_k(c,j,i_cwd)   = k_frag  * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j)
-               end do
-            end do
-         end if
+         do j = 1,nlevdecomp
+             do fc = 1,num_soilc
+                 c = filter_soilc(fc)
+                 decomp_k(c,j,i_cwd)   = k_frag  * t_scalar(c,j) * w_scalar(c,j) * o_scalar(c,j)
+             end do
+         end do
       end if
 
       if (spinup_state == 1 .and. year >= 40) then
@@ -1079,11 +1061,9 @@ contains
              if ( decomp_cascade_con%spinup_factor(i_litr2) > 1._r8) decomp_k(c,j,i_litr2) = decomp_k(c,j,i_litr2)  &
                / cnstate_vars%scalaravg_col(c,j)
              if ( decomp_cascade_con%spinup_factor(i_litr3) > 1._r8) decomp_k(c,j,i_litr3) = decomp_k(c,j,i_litr3)  &
-                  / cnstate_vars%scalaravg_col(c,j)
-             if ( .not. use_fates ) then
-                if ( decomp_cascade_con%spinup_factor(i_cwd)   > 1._r8) decomp_k(c,j,i_cwd)   = decomp_k(c,j,i_cwd)    &
-                     / cnstate_vars%scalaravg_col(c,j)
-             endif
+                   / cnstate_vars%scalaravg_col(c,j)
+             if ( decomp_cascade_con%spinup_factor(i_cwd)   > 1._r8) decomp_k(c,j,i_cwd)   = decomp_k(c,j,i_cwd)    &
+                   / cnstate_vars%scalaravg_col(c,j)
              if ( decomp_cascade_con%spinup_factor(i_soil1) > 1._r8) decomp_k(c,j,i_soil1) = decomp_k(c,j,i_soil1)  &
                / cnstate_vars%scalaravg_col(c,j)
              if ( decomp_cascade_con%spinup_factor(i_soil2) > 1._r8) decomp_k(c,j,i_soil2) = decomp_k(c,j,i_soil2)  &

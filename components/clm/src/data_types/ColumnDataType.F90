@@ -220,6 +220,7 @@ module ColumnDataType
     procedure, public :: Restart => col_cs_restart
     procedure, public :: Summary => col_cs_summary
     procedure, public :: Clean   => col_cs_clean
+    procedure, public :: ZeroUpscaled => col_cs_zero_upscaled_veg
   end type column_carbon_state
   
   !-----------------------------------------------------------------------
@@ -288,6 +289,7 @@ module ColumnDataType
     procedure, public :: SetValues  => col_ns_setvalues
     procedure, public :: Summary    => col_ns_summary
     procedure, public :: Clean      => col_ns_clean
+    procedure, public :: ZeroUpscaled => col_ns_zero_upscaled_veg
   end type column_nitrogen_state
   
   !-----------------------------------------------------------------------
@@ -360,6 +362,7 @@ module ColumnDataType
     procedure, public :: SetValues => col_ps_setvalues
     procedure, public :: Summary   => col_ps_summary
     procedure, public :: Clean     => col_ps_clean
+    procedure, public :: ZeroUpscaled => col_ps_zero_upscaled_veg
   end type column_phosphorus_state
 
   !-----------------------------------------------------------------------
@@ -624,6 +627,8 @@ module ColumnDataType
     procedure, public :: SetValues  => col_cf_setvalues
     procedure, public :: ZeroDWT    => col_cf_zerodwt
     procedure, public :: Clean      => col_cf_clean
+    procedure, public :: ZeroUpscaled => col_cf_zero_upscaled_veg
+    procedure, public :: ZeroUpscaledRR => col_cf_zero_upscaled_veg_rr
     procedure, private ::              col_cf_summary_pf ! summary calculations for PFLOTRAN interface
   end type column_carbon_flux
   
@@ -813,6 +818,7 @@ module ColumnDataType
     procedure, public :: Init       => col_nf_init
     procedure, public :: Restart    => col_nf_restart
     procedure, public :: SetValues  => col_nf_setvalues
+    procedure, public :: ZeroUpscaled => col_nf_zero_upscaled_veg
     procedure, public :: ZeroDWT    => col_nf_zerodwt
     procedure, public :: Summary    => col_nf_summary
     procedure, public :: SummaryInt => col_nf_summaryint
@@ -946,6 +952,7 @@ module ColumnDataType
     procedure, public :: Init       => col_pf_init
     procedure, public :: Restart    => col_pf_restart
     procedure, public :: SetValues  => col_pf_setvalues
+    procedure, public :: ZeroUpscaled => col_pf_zero_upscaled_veg
     procedure, public :: ZeroDWT    => col_pf_zerodwt
     procedure, public :: Summary    => col_pf_summary
     procedure, public :: SummaryInt => col_pf_summaryint
@@ -1871,6 +1878,7 @@ contains
     !-----------------------------------------------------------------------
     ! allocate for each member of col_cs
     !-----------------------------------------------------------------------
+
     allocate(this%rootc                (begc:endc))     ; this%rootc                (:)     = nan
     allocate(this%totvegc              (begc:endc))     ; this%totvegc              (:)     = nan
     allocate(this%leafc                (begc:endc))     ; this%leafc                (:)     = nan
@@ -1887,13 +1895,9 @@ contains
     allocate(this%totpftc              (begc:endc))     ; this%totpftc              (:)     = nan
     allocate(this%cwdc                 (begc:endc))     ; this%cwdc                 (:)     = nan
     allocate(this%ctrunc               (begc:endc))     ; this%ctrunc               (:)     = nan
-    allocate(this%totlitc              (begc:endc))     ; this%totlitc              (:)     = nan
-    allocate(this%totsomc              (begc:endc))     ; this%totsomc              (:)     = nan
-    allocate(this%totlitc_1m           (begc:endc))     ; this%totlitc_1m           (:)     = nan
-    allocate(this%totsomc_1m           (begc:endc))     ; this%totsomc_1m           (:)     = nan
+    allocate(this%totabgc              (begc:endc))     ; this%totabgc              (:)     = nan
     allocate(this%totecosysc           (begc:endc))     ; this%totecosysc           (:)     = nan
     allocate(this%totcolc              (begc:endc))     ; this%totcolc              (:)     = nan
-    allocate(this%totabgc              (begc:endc))     ; this%totabgc              (:)     = nan
     allocate(this%totblgc              (begc:endc))     ; this%totblgc              (:)     = nan
     allocate(this%totvegc_abg          (begc:endc))     ; this%totvegc_abg          (:)     = nan
     allocate(this%begcb                (begc:endc))     ; this%begcb                (:)     = nan
@@ -1913,11 +1917,16 @@ contains
     allocate(this%decomp_som2c_vr  (begc:endc,1:nlevdecomp_full))                 ; this%decomp_som2c_vr  (:,:)   = nan
     allocate(this%decomp_cpools_1m (begc:endc,1:ndecomp_pools))                   ; this%decomp_cpools_1m (:,:)   = nan
     allocate(this%decomp_cpools    (begc:endc,1:ndecomp_pools))                   ; this%decomp_cpools    (:,:)   = nan
+    allocate(this%totlitc_1m           (begc:endc))     ; this%totlitc_1m           (:)     = nan
+    allocate(this%totsomc_1m           (begc:endc))     ; this%totsomc_1m           (:)     = nan
+    allocate(this%totlitc              (begc:endc))     ; this%totlitc              (:)     = nan
+    allocate(this%totsomc              (begc:endc))     ; this%totsomc              (:)     = nan
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_cs
     !-----------------------------------------------------------------------
     if ( use_fates ) then
+
        if (carbon_type == 'c12') then
           if ( nlevdecomp_full > 1 ) then
              this%totlitc_1m(begc:endc) = spval
@@ -1942,6 +1951,10 @@ contains
                ptr_col=this%totsomc)
 
        end if ! c12
+
+       
+
+
     
     else if (carbon_type == 'c12') then
        this%decomp_cpools(begc:endc,:) = spval
@@ -2292,7 +2305,7 @@ contains
        end if !  landunit istsoil or istcrop
 
     end do ! columns loop
-
+    
     ! now loop through special filters and explicitly set the variables that
     ! have to be in place for biogeophysics
     num_special_col = 0
@@ -2814,8 +2827,6 @@ contains
     integer  :: nlev
     !-----------------------------------------------------------------------
 
-    if (use_fates) return
-
     nlev = nlevdecomp
     if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full
 
@@ -2866,7 +2877,7 @@ contains
              endif
           end do
        end do
-       
+
        ! total litter carbon in the top meter (TOTLITC_1m)
        do fc = 1,num_soilc
           c = filter_soilc(fc)
@@ -2898,6 +2909,8 @@ contains
              end do
           end if
        end do
+
+
     end if ! nlevdecomp>1
        
     ! total litter carbon (TOTLITC)
@@ -2966,23 +2979,23 @@ contains
        c = filter_soilc(fc)
 
        ! total product carbon
-       this%totprodc(c) = &
+       this%totprodc(c) =      &
             this%prod10c(c)  + &
             this%prod100c(c) + &
             this%prod1c(c) 
 
        ! total ecosystem carbon, including veg but excluding cpool (TOTECOSYSC)
-       this%totecosysc(c) = &
+       this%totecosysc(c) =    &
             this%cwdc(c)     + &
             this%totlitc(c)  + &
             this%totsomc(c)  + &
-            this%totprodc(c) + &
+            this%totprodc(c) + & 
             this%totvegc(c)
 
        ! total column carbon, including veg and cpool (TOTCOLC)
        ! adding col_ctrunc, seedc
-       this%totcolc(c) = &
-            this%totpftc(c)  + &
+
+       this%totcolc(c) =       &
             this%cwdc(c)     + &
             this%totlitc(c)  + &
             this%totsomc(c)  + &
@@ -2990,13 +3003,44 @@ contains
             this%ctrunc(c)   + &
             this%cropseedc_deficit(c)
             
-       this%totabgc(c) = &
-            this%totpftc(c)  + &
+       this%totabgc(c) =       &
             this%totprodc(c) + &
             this%seedc(c)    + &
-            this%ctrunc(c)    
+            this%ctrunc(c)   + & 
+            this%totpftc(c)
+
+
     end do
   end subroutine col_cs_summary 
+
+  ! -----------------------------------------------------------------------
+
+  subroutine col_cs_zero_upscaled_veg(this, bounds, num_soilc, filter_soilc)
+    !
+    ! !DESCRIPTION:
+    ! As an alternative to summarizing vegetation states in CTC and then
+    ! upscaling to the column level, we just zero them when FATES is turned on
+    ! (or other potential models).
+    !
+    ! !ARGUMENTS:
+    class(column_carbon_state) :: this
+    type(bounds_type)      , intent(in)    :: bounds          
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    ! locals
+    integer :: fc
+    integer :: c
+
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%totpftc(c) = 0._r8
+       this%totvegc(c) = 0._r8
+       this%totvegc_abg(c) = 0._r8
+       this%cropseedc_deficit(c) = 0._r8
+    end do
+
+    return
+  end subroutine col_cs_zero_upscaled_veg
 
   !------------------------------------------------------------------------
   subroutine col_cs_clean(this)
@@ -3920,6 +3964,8 @@ contains
             this%sminn(c) + &
             this%totprodn(c) + &
             this%totvegn(c)
+       
+
     
        ! total column nitrogen, including pft (TOTCOLN)
        this%totcoln(c) = &
@@ -3948,6 +3994,35 @@ contains
     end do
     
   end subroutine col_ns_summary
+
+  ! -------------------------------------------------------------------------------------
+
+  subroutine col_ns_zero_upscaled_veg(this, bounds, num_soilc, filter_soilc)
+    !
+    ! !DESCRIPTION:
+    ! As an alternative to summarizing vegetation states in CTC and then
+    ! upscaling to the column level, we just zero them when FATES is turned on
+    ! (or other potential models).
+    !
+    ! !ARGUMENTS:
+    class(column_nitrogen_state) :: this
+    type(bounds_type)      , intent(in)    :: bounds          
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    ! locals
+    integer :: fc
+    integer :: c
+
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%plant_n_buffer(c) = 0._r8
+       this%totvegn(c) = 0._r8
+       this%totpftn(c) = 0._r8
+       this%cropseedn_deficit(c) = 0._r8
+    end do
+    
+    return
+  end subroutine col_ns_zero_upscaled_veg
 
   !------------------------------------------------------------------------
   subroutine col_ns_clean(this)
@@ -4813,7 +4888,7 @@ contains
       
    endif
    
-   ! total litter phosphorus (TOTLITN)
+   ! total litter phosphorus (TOTLITP)
    do fc = 1,num_soilc
       c = filter_soilc(fc)
       this%totlitp(c)    = 0._r8
@@ -4829,7 +4904,7 @@ contains
       end if
    end do
    
-   ! total soil organic matter phosphorus (TOTSOMN)
+   ! total soil organic matter phosphorus (TOTSOMP)
    do fc = 1,num_soilc
       c = filter_soilc(fc)
       this%totsomp(c)    = 0._r8
@@ -4869,8 +4944,8 @@ contains
    do j = 1, nlevdecomp
       do fc = 1,num_soilc
          c = filter_soilc(fc)
-         this%sminp_vr(c,j) = this%solutionp_vr(c,j)+ &
-                                  this%labilep_vr(c,j)+ &
+         this%sminp_vr(c,j) = this%solutionp_vr(c,j) + &
+                                  this%labilep_vr(c,j) + &
                                   this%secondp_vr(c,j)
       end do
    end do
@@ -4934,6 +5009,33 @@ contains
 
   end subroutine col_ps_summary
   
+  subroutine col_ps_zero_upscaled_veg(this, bounds, num_soilc, filter_soilc)
+    !
+    ! !DESCRIPTION:
+    ! As an alternative to summarizing vegetation states in CTC and then
+    ! upscaling to the column level, we just zero them when FATES is turned on
+    ! (or other potential models).
+    !
+    ! !ARGUMENTS:
+    class(column_phosphorus_state) :: this
+    type(bounds_type)      , intent(in)    :: bounds          
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    ! locals
+    integer :: fc
+    integer :: c
+
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%totpftp(c) = 0._r8
+       this%totvegp(c) = 0._r8
+       this%cropseedp_deficit(c) = 0._r8
+    end do
+
+    return
+  end subroutine col_ps_zero_upscaled_veg
+
+
   !------------------------------------------------------------------------
   subroutine col_ps_clean(this)
     !
@@ -6521,10 +6623,16 @@ contains
     real(r8), pointer :: ptr1d(:)   ! temp. pointers for slicing larger arrays
     character(len=128) :: varname   ! temporary
     !------------------------------------------------------------------------
-    ! -------------------------------------------
-    ! None of these restarts are needed for FATES
-    ! -------------------------------------------
-    if (use_fates) return
+
+    if (use_vertsoilc) then
+       ptr2d => this%t_scalar
+       call restartvar(ncid=ncid, flag=flag, varname='T_SCALAR', xtype=ncd_double,  &
+            dim1name='column',dim2name='levgrnd', switchdim=.true., &
+            long_name='T scaling factor', units='-', fill_value=spval, &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
+    end if
+
+!    if(use_fates) return
 
     !-------------------------------
     ! Prognostic crop variables
@@ -6539,15 +6647,7 @@ contains
          dim1name='column', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%annsum_npp) 
-
-
-    if (use_vertsoilc) then
-       ptr2d => this%t_scalar
-       call restartvar(ncid=ncid, flag=flag, varname='T_SCALAR', xtype=ncd_double,  &
-            dim1name='column',dim2name='levgrnd', switchdim=.true., &
-            long_name='T scaling factor', units='-', fill_value=spval, &
-            interpinic_flag='interp', readvar=readvar, data=ptr2d)
-    end if
+    
 
     ! clm_interface & pflotran
     !------------------------------------------------------------------------
@@ -6604,7 +6704,6 @@ contains
          is_cwd    =>    decomp_cascade_con%is_cwd      & ! Input:  [logical (:) ]  TRUE => pool is a cwd pool   
          )
     
-    if (use_fates) return
 
     ! PET: retaining the following here during migration, but this is science code that should
     ! really be in the NDynamics module. Flag for relocation during ELM v2 code cleanup.
@@ -7250,6 +7349,67 @@ contains
     end do
     
   end subroutine col_cf_setvalues
+  
+  subroutine col_cf_zero_upscaled_veg(this, bounds, num_soilc, filter_soilc)
+    
+    !
+    ! !DESCRIPTION:
+    ! As an alternative to summarizing vegetation fluxes in CTC and then
+    ! upscaling to the column level, we just zero them when FATES is turned on
+    ! (or other potential models).
+    !
+    ! !ARGUMENTS:
+    class(column_carbon_flux) :: this
+    type(bounds_type)      , intent(in)    :: bounds          
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    ! locals
+    integer :: fc
+    integer :: c
+
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%gpp(c) = 0._r8
+       this%ar(c) = 0._r8
+       this%npp(c) = 0._r8
+       this%vegfire(c) = 0._r8
+       this%wood_harvestc(c) = 0._r8
+       this%fire_closs_p2c(c) = 0._r8
+       !this%litfall(c) = 0._r8 (overwritten)
+       this%hrv_xsmrpool_to_atm(c) = 0._r8
+
+    end do
+
+
+  end subroutine col_cf_zero_upscaled_veg
+
+  subroutine col_cf_zero_upscaled_veg_rr(this, bounds, num_soilc, filter_soilc)
+    
+    !
+    ! !DESCRIPTION:
+    ! As an alternative to summarizing vegetation fluxes in CTC and then
+    ! upscaling to the column level, we just zero them when FATES is turned on
+    ! (or other potential models).
+    !
+    ! !ARGUMENTS:
+    class(column_carbon_flux) :: this
+    type(bounds_type)      , intent(in)    :: bounds          
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    ! locals
+    integer :: fc
+    integer :: c
+
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%rr(c) = 0._r8   ! This counterpart is
+                            ! actually in SummaryRR
+    end do
+
+
+  end subroutine col_cf_zero_upscaled_veg_rr
+
+
   
   !-----------------------------------------------------------------------
   subroutine col_cf_zerodwt( this, bounds )
@@ -8891,6 +9051,33 @@ contains
 
   end subroutine col_nf_zerodwt
   
+
+  subroutine col_nf_zero_upscaled_veg(this, bounds, num_soilc, filter_soilc)
+
+    !
+    ! !DESCRIPTION:
+    ! As an alternative to summarizing vegetation fluxes in CTC and then
+    ! upscaling to the column level, we just zero them when FATES is turned on
+    ! (or other potential models).
+    !
+    ! !ARGUMENTS:
+    class(column_nitrogen_flux) :: this
+    type(bounds_type)      , intent(in)    :: bounds          
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    ! locals
+    integer :: fc
+    integer :: c
+
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%fire_nloss_p2c(c) = 0._r8
+       this%wood_harvestn(c)  = 0._r8
+    end do
+
+
+  end subroutine col_nf_zero_upscaled_veg
+    
   !-----------------------------------------------------------------------
   subroutine col_nf_summary(this, bounds, num_soilc, filter_soilc)
     !
@@ -9144,34 +9331,38 @@ contains
        end do
     end do
 
-    do fc = 1,num_soilc
-       c = filter_soilc(fc)
-       this%smin_no3_to_plant(c) = 0._r8
-       this%smin_nh4_to_plant(c) = 0._r8
-       this%plant_to_litter_nflux(c) = 0._r8
-       this%plant_to_cwd_nflux(c) = 0._r8
-       do j = 1, nlev
-          this%plant_to_litter_nflux(c) = &
-               this%plant_to_litter_nflux(c)  + &
-               this%phenology_n_to_litr_met_n(c,j)* dzsoi_decomp(j) + &
-               this%phenology_n_to_litr_cel_n(c,j)* dzsoi_decomp(j) + &
-               this%phenology_n_to_litr_lig_n(c,j)* dzsoi_decomp(j) + &
-               this%gap_mortality_n_to_litr_met_n(c,j)* dzsoi_decomp(j) + &
-               this%gap_mortality_n_to_litr_cel_n(c,j)* dzsoi_decomp(j) + &
-               this%gap_mortality_n_to_litr_lig_n(c,j)* dzsoi_decomp(j) + &
-               this%m_n_to_litr_met_fire(c,j)* dzsoi_decomp(j) + &
-               this%m_n_to_litr_cel_fire(c,j)* dzsoi_decomp(j) + &
-               this%m_n_to_litr_lig_fire(c,j)* dzsoi_decomp(j)
-          this%plant_to_cwd_nflux(c) = &
-               this%plant_to_cwd_nflux(c) + &
-               this%gap_mortality_n_to_cwdn(c,j)* dzsoi_decomp(j) + &
-               this%fire_mortality_n_to_cwdn(c,j)* dzsoi_decomp(j)
+    ! FATES uses the plant_to_litter_nflux variable for mass accounting, so bypass here
+    if(.not.use_fates)then
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+         
+          this%plant_to_litter_nflux(c) = 0._r8
+          this%plant_to_cwd_nflux(c) = 0._r8
+          do j = 1, nlev
+             this%plant_to_litter_nflux(c) = &
+                  this%plant_to_litter_nflux(c)  + &
+                  this%phenology_n_to_litr_met_n(c,j)* dzsoi_decomp(j) + &
+                  this%phenology_n_to_litr_cel_n(c,j)* dzsoi_decomp(j) + &
+                  this%phenology_n_to_litr_lig_n(c,j)* dzsoi_decomp(j) + &
+                  this%gap_mortality_n_to_litr_met_n(c,j)* dzsoi_decomp(j) + &
+                  this%gap_mortality_n_to_litr_cel_n(c,j)* dzsoi_decomp(j) + &
+                  this%gap_mortality_n_to_litr_lig_n(c,j)* dzsoi_decomp(j) + &
+                  this%m_n_to_litr_met_fire(c,j)* dzsoi_decomp(j) + &
+                  this%m_n_to_litr_cel_fire(c,j)* dzsoi_decomp(j) + &
+                  this%m_n_to_litr_lig_fire(c,j)* dzsoi_decomp(j)
+             this%plant_to_cwd_nflux(c) = &
+                  this%plant_to_cwd_nflux(c) + &
+                  this%gap_mortality_n_to_cwdn(c,j)* dzsoi_decomp(j) + &
+                  this%fire_mortality_n_to_cwdn(c,j)* dzsoi_decomp(j)
+          end do
        end do
-    end do
-
+    end if
+       
     if (use_nitrif_denitrif) then
        do fc = 1,num_soilc
           c = filter_soilc(fc)
+          this%smin_no3_to_plant(c) = 0._r8
+          this%smin_nh4_to_plant(c) = 0._r8
           do j = 1, nlev
              this%smin_no3_to_plant(c)= this%smin_no3_to_plant(c) + & 
                   this%smin_no3_to_plant_vr(c,j) * dzsoi_decomp(j)
@@ -10428,6 +10619,32 @@ contains
     end do
   
   end subroutine col_pf_zerodwt
+
+  subroutine col_pf_zero_upscaled_veg(this, bounds, num_soilc, filter_soilc)
+
+    !
+    ! !DESCRIPTION:
+    ! As an alternative to summarizing vegetation fluxes in CTC and then
+    ! upscaling to the column level, we just zero them when FATES is turned on
+    ! (or other potential models).
+    !
+    ! !ARGUMENTS:
+    class(column_phosphorus_flux) :: this
+    type(bounds_type)      , intent(in)    :: bounds          
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    ! locals
+    integer :: fc
+    integer :: c
+
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%fire_ploss_p2c(c) = 0._r8
+       this%wood_harvestp(c)  = 0._r8
+    end do
+
+
+  end subroutine col_pf_zero_upscaled_veg
   
   !-----------------------------------------------------------------------
   subroutine col_pf_summary(this, bounds, num_soilc, filter_soilc)
@@ -10676,37 +10893,46 @@ contains
           this%desorb_to_solutionp(c) = this%desorb_to_solutionp(c) + &
                this%desorb_to_solutionp_vr(c,j)* dzsoi_decomp(j)
        end do
-    end do    
+    end do
 
     do fc = 1,num_soilc
        c = filter_soilc(fc)
        this%actual_immob_p(c) = 0._r8
        this%smin_p_to_plant(c) = 0._r8
-       this%plant_to_litter_pflux(c) = 0._r8
-       this%plant_to_cwd_pflux(c) = 0._r8
+       
        do j = 1, nlevdecomp
           this%actual_immob_p(c)= this%actual_immob_p(c) + & 
                this%actual_immob_p_vr(c,j) * dzsoi_decomp(j)
           this%smin_p_to_plant(c)= this%smin_p_to_plant(c) + & 
                this%sminp_to_plant_vr(c,j) * dzsoi_decomp(j)
-          this%plant_to_litter_pflux(c) = &
-               this%plant_to_litter_pflux(c)  + &
-               this%phenology_p_to_litr_met_p(c,j)* dzsoi_decomp(j) + &
-               this%phenology_p_to_litr_cel_p(c,j)* dzsoi_decomp(j) + &
-               this%phenology_p_to_litr_lig_p(c,j)* dzsoi_decomp(j) + &
-               this%gap_mortality_p_to_litr_met_p(c,j)* dzsoi_decomp(j) + &
-               this%gap_mortality_p_to_litr_cel_p(c,j)* dzsoi_decomp(j) + &
-               this%gap_mortality_p_to_litr_lig_p(c,j)* dzsoi_decomp(j) + &
-               this%m_p_to_litr_met_fire(c,j)* dzsoi_decomp(j) + &
-               this%m_p_to_litr_cel_fire(c,j)* dzsoi_decomp(j) + &
-               this%m_p_to_litr_lig_fire(c,j)* dzsoi_decomp(j)
-          this%plant_to_cwd_pflux(c) = &
-               this%plant_to_cwd_pflux(c) + &
-               this%gap_mortality_p_to_cwdp(c,j)* dzsoi_decomp(j) + &
-               this%fire_mortality_p_to_cwdp(c,j)* dzsoi_decomp(j)
        end do
     end do
 
+    if(.not.use_fates)then
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%plant_to_litter_pflux(c) = 0._r8
+          this%plant_to_cwd_pflux(c) = 0._r8
+          do j = 1, nlevdecomp
+             this%plant_to_litter_pflux(c) = &
+                  this%plant_to_litter_pflux(c)  + &
+                  this%phenology_p_to_litr_met_p(c,j)* dzsoi_decomp(j) + &
+                  this%phenology_p_to_litr_cel_p(c,j)* dzsoi_decomp(j) + &
+                  this%phenology_p_to_litr_lig_p(c,j)* dzsoi_decomp(j) + &
+                  this%gap_mortality_p_to_litr_met_p(c,j)* dzsoi_decomp(j) + &
+                  this%gap_mortality_p_to_litr_cel_p(c,j)* dzsoi_decomp(j) + &
+                  this%gap_mortality_p_to_litr_lig_p(c,j)* dzsoi_decomp(j) + &
+                  this%m_p_to_litr_met_fire(c,j)* dzsoi_decomp(j) + &
+                  this%m_p_to_litr_cel_fire(c,j)* dzsoi_decomp(j) + &
+                  this%m_p_to_litr_lig_fire(c,j)* dzsoi_decomp(j)
+             this%plant_to_cwd_pflux(c) = &
+                  this%plant_to_cwd_pflux(c) + &
+                  this%gap_mortality_p_to_cwdp(c,j)* dzsoi_decomp(j) + &
+                  this%fire_mortality_p_to_cwdp(c,j)* dzsoi_decomp(j)
+          end do
+       end do
+    end if
+       
     ! bgc interface & pflotran:
     if (use_clm_interface) then
         call this%SummaryInt(bounds, num_soilc, filter_soilc)

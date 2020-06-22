@@ -488,25 +488,26 @@ this mask will have smb calculated over the entire global land surface
 <!-- Nitrogen deposition streams namelist defaults -->
 <stream_year_first_ndep use_cn=".true."   sim_year="2000" >2000</stream_year_first_ndep>
 <stream_year_last_ndep  use_cn=".true."   sim_year="2000" >2000</stream_year_last_ndep>
-
 <stream_year_first_ndep use_cn=".true."   sim_year="1850" >1850</stream_year_first_ndep>
 <stream_year_last_ndep  use_cn=".true."   sim_year="1850" >1850</stream_year_last_ndep>
-
 <stream_year_first_ndep use_cn=".true."   sim_year="1000" >2000</stream_year_first_ndep>
 <stream_year_last_ndep  use_cn=".true."   sim_year="1000" >2000</stream_year_last_ndep>
 
+<stream_year_first_ndep use_fates=".true."   sim_year="2000" >2000</stream_year_first_ndep>
+<stream_year_last_ndep  use_fates=".true."   sim_year="2000" >2000</stream_year_last_ndep>
+<stream_year_first_ndep use_fates=".true."   sim_year="1850" >1850</stream_year_first_ndep>
+<stream_year_last_ndep  use_fates=".true."   sim_year="1850" >1850</stream_year_last_ndep>
+<stream_year_first_ndep use_fates=".true."   sim_year="1000" >2000</stream_year_first_ndep>
+<stream_year_last_ndep  use_fates=".true."   sim_year="1000" >2000</stream_year_last_ndep>
+
 <stream_year_first_ndep use_cn=".true."   sim_year="constant" sim_year_range="1000-1002" >2000</stream_year_first_ndep>
 <stream_year_last_ndep  use_cn=".true."   sim_year="constant" sim_year_range="1000-1002" >2000</stream_year_last_ndep>
-
 <stream_year_first_ndep use_cn=".true."   sim_year="constant" sim_year_range="1000-1004" >2000</stream_year_first_ndep>
 <stream_year_last_ndep  use_cn=".true."   sim_year="constant" sim_year_range="1000-1004" >2000</stream_year_last_ndep>
-
 <stream_year_first_ndep use_cn=".true."   sim_year="constant" sim_year_range="1850-2000" >1850</stream_year_first_ndep>
 <stream_year_last_ndep  use_cn=".true."   sim_year="constant" sim_year_range="1850-2000" >2000</stream_year_last_ndep>
-
 <stream_year_first_ndep use_cn=".true."   sim_year="constant" sim_year_range="1850-2100" >1850</stream_year_first_ndep>
 <stream_year_last_ndep  use_cn=".true."   sim_year="constant" sim_year_range="1850-2100" >2100</stream_year_last_ndep>
-
 <stream_year_first_ndep use_cn=".true."   sim_year="constant" sim_year_range="2000-2100" >2000</stream_year_first_ndep>
 <stream_year_last_ndep  use_cn=".true."   sim_year="constant" sim_year_range="2000-2100" >2100</stream_year_last_ndep>
 
@@ -516,7 +517,14 @@ this mask will have smb calculated over the entire global land surface
 <stream_fldfilename_ndep hgrid="1.9x2.5"   use_cn=".true."   rcp="4.5" >lnd/clm2/ndepdata/fndep_clm_rcp4.5_simyr1849-2106_1.9x2.5_c100428.nc</stream_fldfilename_ndep>
 <stream_fldfilename_ndep hgrid="1.9x2.5"   use_cn=".true."   rcp="2.6" >lnd/clm2/ndepdata/fndep_clm_rcp2.6_simyr1849-2106_1.9x2.5_c100428.nc</stream_fldfilename_ndep>
 
+<stream_fldfilename_ndep hgrid="1.9x2.5"   use_fates=".true."   >lnd/clm2/ndepdata/fndep_clm_hist_simyr1849-2006_1.9x2.5_c100428.nc</stream_fldfilename_ndep>
+<stream_fldfilename_ndep hgrid="1.9x2.5"   use_fates=".true."   rcp="8.5" >lnd/clm2/ndepdata/fndep_clm_rcp8.5_simyr1849-2106_1.9x2.5_c100428.nc</stream_fldfilename_ndep>
+<stream_fldfilename_ndep hgrid="1.9x2.5"   use_fates=".true."   rcp="6"   >lnd/clm2/ndepdata/fndep_clm_rcp6.0_simyr1849-2106_1.9x2.5_c100810.nc</stream_fldfilename_ndep>
+<stream_fldfilename_ndep hgrid="1.9x2.5"   use_fates=".true."   rcp="4.5" >lnd/clm2/ndepdata/fndep_clm_rcp4.5_simyr1849-2106_1.9x2.5_c100428.nc</stream_fldfilename_ndep>
+<stream_fldfilename_ndep hgrid="1.9x2.5"   use_fates=".true."   rcp="2.6" >lnd/clm2/ndepdata/fndep_clm_rcp2.6_simyr1849-2106_1.9x2.5_c100428.nc</stream_fldfilename_ndep>
+
 <ndepmapalgo use_cn=".true."                               >bilinear</ndepmapalgo>
+<ndepmapalgo use_fates=".true."                            >bilinear</ndepmapalgo>
 
 <ndepmapalgo use_cn=".true."   hgrid="1x1_brazil"          >nn</ndepmapalgo>
 <ndepmapalgo use_cn=".true."   hgrid="1x1_mexicocityMEX"   >nn</ndepmapalgo>
@@ -531,12 +539,18 @@ this mask will have smb calculated over the entire global land surface
 <!-- Phosphorus deposition streams namelist defaults -->
 <stream_year_first_pdep use_cn=".true."   sim_year="2000" >2000</stream_year_first_pdep>
 <stream_year_last_pdep  use_cn=".true."   sim_year="2000" >2000</stream_year_last_pdep>
-
 <stream_year_first_pdep use_cn=".true."   sim_year="1850" >2000</stream_year_first_pdep>
 <stream_year_last_pdep  use_cn=".true."   sim_year="1850" >2000</stream_year_last_pdep>
-
 <stream_year_first_pdep use_cn=".true."   sim_year="1000" >2000</stream_year_first_pdep>
 <stream_year_last_pdep  use_cn=".true."   sim_year="1000" >2000</stream_year_last_pdep>
+
+<stream_year_first_pdep use_fates=".true."   sim_year="2000" >2000</stream_year_first_pdep>
+<stream_year_last_pdep  use_fates=".true."   sim_year="2000" >2000</stream_year_last_pdep>
+<stream_year_first_pdep use_fates=".true."   sim_year="1850" >2000</stream_year_first_pdep>
+<stream_year_last_pdep  use_fates=".true."   sim_year="1850" >2000</stream_year_last_pdep>
+<stream_year_first_pdep use_fates=".true."   sim_year="1000" >2000</stream_year_first_pdep>
+<stream_year_last_pdep  use_fates=".true."   sim_year="1000" >2000</stream_year_last_pdep>
+
 
 <stream_year_first_pdep use_cn=".true."   sim_year="constant" sim_year_range="1000-1002" >2000</stream_year_first_pdep>
 <stream_year_last_pdep  use_cn=".true."   sim_year="constant" sim_year_range="1000-1002" >2000</stream_year_last_pdep>
@@ -559,7 +573,16 @@ this mask will have smb calculated over the entire global land surface
 <stream_fldfilename_pdep hgrid="1.9x2.5"   use_cn=".true."   rcp="4.5" >lnd/clm2/pdepdata/fpdep_clm_hist_simyr2000_1.9x2.5_c150929.nc</stream_fldfilename_pdep>
 <stream_fldfilename_pdep hgrid="1.9x2.5"   use_cn=".true."   rcp="2.6" >lnd/clm2/pdepdata/fpdep_clm_hist_simyr2000_1.9x2.5_c150929.nc</stream_fldfilename_pdep>
 
+<stream_fldfilename_pdep hgrid="1.9x2.5"   use_fates=".true."   >lnd/clm2/pdepdata/fpdep_clm_hist_simyr2000_1.9x2.5_c150929.nc</stream_fldfilename_pdep>
+<stream_fldfilename_pdep hgrid="1.9x2.5"   use_fates=".true."   rcp="8.5" >lnd/clm2/pdepdata/fpdep_clm_hist_simyr2000_1.9x2.5_c150929.nc</stream_fldfilename_pdep>
+<stream_fldfilename_pdep hgrid="1.9x2.5"   use_fates=".true."   rcp="6"   >lnd/clm2/pdepdata/fpdep_clm_hist_simyr2000_1.9x2.5_c150929.nc</stream_fldfilename_pdep>
+<stream_fldfilename_pdep hgrid="1.9x2.5"   use_fates=".true."   rcp="4.5" >lnd/clm2/pdepdata/fpdep_clm_hist_simyr2000_1.9x2.5_c150929.nc</stream_fldfilename_pdep>
+<stream_fldfilename_pdep hgrid="1.9x2.5"   use_fates=".true."   rcp="2.6" >lnd/clm2/pdepdata/fpdep_clm_hist_simyr2000_1.9x2.5_c150929.nc</stream_fldfilename_pdep>
+
+
 <pdepmapalgo use_cn=".true."                               >bilinear</pdepmapalgo>
+<pdepmapalgo use_fates=".true."                            >bilinear</pdepmapalgo>
+
 
 <pdepmapalgo use_cn=".true."   hgrid="1x1_brazil"          >nn</pdepmapalgo>
 <pdepmapalgo use_cn=".true."   hgrid="1x1_mexicocityMEX"   >nn</pdepmapalgo>
