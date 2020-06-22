@@ -218,7 +218,7 @@ void p3_main_c(
   Real* diag_effi, Real* diag_vmi, Real* diag_di, Real* diag_rhoi, bool log_predictNc,
   Real* pdel, Real* exner, Real* cmeiout, Real* prain, Real* nevapr, Real* prer_evap, Real* rflx, Real* sflx, Real* rcldm, Real* lcldm, Real* icldm,
   Real* pratot, Real* prctot, Real* mu_c, Real* lamc, Real* liq_ice_exchange, Real* vap_liq_exchange,
-  Real* vap_ice_exchange, Real* col_location);
+  Real* vap_ice_exchange);
 
 }
 
@@ -1202,7 +1202,7 @@ void p3_main(P3MainData& d)
     d.diag_effi, d.diag_vmi, d.diag_di, d.diag_rhoi, d.log_predictNc,
     d.pdel, d.exner, d.cmeiout, d.prain, d.nevapr, d.prer_evap, d.rflx, d.sflx, d.rcldm, d.lcldm, d.icldm,
     d.pratot, d.prctot, d.mu_c, d.lamc, d.liq_ice_exchange, d.vap_liq_exchange,
-    d.vap_ice_exchange, d.col_location);
+    d.vap_ice_exchange);
   d.transpose<util::TransposeDirection::f2c>();
 }
 
@@ -1555,7 +1555,7 @@ void update_prognostic_liquid_f(Real qcacc_, Real ncacc_, Real qcaut_, Real ncau
   Real local_nr = *nr_;
 
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
-      typename P3F::Spack qcacc(qcacc_), ncacc(ncacc_), qcaut(qcaut_), ncautc(ncautc_), 
+      typename P3F::Spack qcacc(qcacc_), ncacc(ncacc_), qcaut(qcaut_), ncautc(ncautc_),
 	ncautr(ncautr_), ncslf(ncslf_),  qrevp( qrevp_), nrevp(nrevp_), nrslf(nrslf_), inv_rho(inv_rho_),
 	exner(exner_), xxlv(xxlv_);
 
@@ -3565,6 +3565,9 @@ void p3_main_f(
   };
   Kokkos::Array<size_t,  P3MainData::NUM_ARRAYS - 11> dim1_sizes_out;
   Kokkos::Array<size_t,  P3MainData::NUM_ARRAYS - 11> dim2_sizes_out;
+  for (size_t i = 0; i < P3MainData::NUM_ARRAYS - 11; ++i) dim1_sizes_out[i] = ni;
+  for (size_t i = 0; i < P3MainData::NUM_ARRAYS - 11; ++i) dim2_sizes_out[i] = nk;
+
 
   dim2_sizes_out[27] = nk+1; // rflx
   dim2_sizes_out[28] = nk+1; // sflx

@@ -478,10 +478,10 @@ static void run_bfb_p3_main()
 
   P3MainData isds_fortran[] = {
     //      its,  ite, kts, kte,   it,        dt, log_predictNc, ranges
-    P3MainData(1, 100,   1,  72,    1, 1.800E+03, false, ranges),
-    P3MainData(1, 100,   1,  72,    1, 1.800E+03, true,  ranges),
-    P3MainData(1, 100,   1,  72,    1, 1.800E+03, false, ranges),
-    P3MainData(1, 100,   1,  72,    1, 1.800E+03, true,  ranges),
+    P3MainData(1, 10,   1,  72,    1, 1.800E+03, false, ranges),
+    P3MainData(1, 10,   1,  72,    1, 1.800E+03, true,  ranges),
+    P3MainData(1, 10,   1,  72,    1, 1.800E+03, false, ranges),
+    P3MainData(1, 10,   1,  72,    1, 1.800E+03, true,  ranges),
   };
 
   static constexpr Int num_runs = sizeof(isds_fortran) / sizeof(P3MainData);

@@ -656,6 +656,8 @@ struct Functions
     const uview_1d<Spack>& inv_exner,
     const uview_1d<Spack>& t,
     const uview_1d<Spack>& qv,
+    const uview_1d<Spack>& qtend_ignore,
+    const uview_1d<Spack>& ntend_ignore,
     Scalar& prt_liq,
     Scalar& prt_sol);
 
