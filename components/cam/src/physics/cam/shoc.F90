@@ -3023,14 +3023,12 @@ subroutine pblintd(&
     !
     !---------------------------Local workspace-----------------------------
     !
-    real(rtype) :: phiminv(shcol)          ! inverse phi function for momentum
-    real(rtype) :: phihinv(shcol)          ! inverse phi function for heat
+    
     real(rtype) :: rino(shcol,nlev)        ! bulk Richardson no. from level to ref lev
     real(rtype) :: thv(shcol,nlev)         ! virtual potential temperature
     real(rtype) :: tlv(shcol)              ! ref. level pot tmp + tmp excess
 
     logical  :: check(shcol)            ! True=>chk if Richardson no.>critcal
-    logical  :: ocncldcheck(shcol)      ! True=>if ocean surface and cloud in lowest layer
 
     !
     ! Compute Obukhov length virtual temperature flux and various arrays for use later:
@@ -3062,7 +3060,7 @@ subroutine pblintd(&
     call pblintd_surf_temp(&
        shcol,nlev,nlevi,&          ! Input
        z,ustar,obklen,kbfs,thv,&   ! Input
-       phiminv,tlv,&               ! Output
+       tlv,&                       ! Output
        pblh,check,rino)            ! InOutput
 
     !
@@ -3077,14 +3075,14 @@ subroutine pblintd(&
     !
     ! Check PBL height
     !
-    call pblintd_pblh(&
+    call pblintd_check_pblh(&
        shcol,nlev,nlevi,&             ! Input
        z,ustar,check,&                ! Input
        pblh)                          ! Output
     !
     ! PBL check over ocean
     !
-    call pblintd_ocncldcheck(      &
+    call pblintd_cldcheck(      &
                    shcol,nlev,nlevi, &                  ! Input
                    zi,cldn,          &                  ! Input
                    pblh)                                ! InOutput
@@ -3209,7 +3207,7 @@ end subroutine pblintd_height
 subroutine pblintd_surf_temp(&
        shcol,nlev,nlevi,&          ! Input
        z,ustar,obklen,kbfs,thv,&   ! Input
-       phiminv,tlv,&               ! Output
+       tlv,&                       ! Output
        pblh,check,rino)            ! InOutput
     !------------------------------Arguments--------------------------------
     ! Input arguments
@@ -3224,7 +3222,6 @@ subroutine pblintd_surf_temp(&
     real(rtype), intent(in)  :: kbfs(shcol)             ! sfc kinematic buoyancy flux [m^2/s^3]
     real(rtype), intent(in) :: thv(shcol,nlev)          ! virtual potential temperature
 
-    real(rtype), intent(out) :: phiminv(shcol)          ! inverse phi function for momentum
     real(rtype), intent(out) :: tlv(shcol)              ! ref. level pot tmp + tmp excess
     logical, intent(inout)  :: check(shcol)             ! True=>chk if Richardson no.>critcal
     real(rtype), intent(inout) :: rino(shcol,nlev)      ! bulk Richardson no. from level to ref lev
@@ -3232,8 +3229,8 @@ subroutine pblintd_surf_temp(&
     !
     !---------------------------Local workspace-----------------------------
     !
+    real(rtype) :: phiminv
     integer  :: i                       ! longitude index
-    logical  :: unstbl(shcol)           ! pts w/unstbl pbl (positive virtual ht flx)
 
     !===================
     ! const parameter for Diagnosis of PBL depth
@@ -3249,12 +3246,11 @@ subroutine pblintd_surf_temp(&
     !
     do i=1,shcol
        if (check(i)) pblh(i) = z(i,nlevi-npbl)
-       unstbl(i) = (kbfs(i) > 0._rtype)
        check(i)  = (kbfs(i) > 0._rtype)
        if (check(i)) then
-          phiminv(i)   = (1._rtype - binm*pblh(i)/obklen(i))**onet
+          phiminv      = (1._rtype - binm*pblh(i)/obklen(i))**onet
           rino(i,nlev) = 0.0_rtype
-          tlv(i)       = thv(i,nlev) + kbfs(i)*fak/( ustar(i)*phiminv(i) )
+          tlv(i)       = thv(i,nlev) + kbfs(i)*fak/( ustar(i)*phiminv )
        end if
     end do
     return
@@ -3264,7 +3260,7 @@ subroutine pblintd_vvk(&
        shcol,nlev,&             ! Input
        z,u,v,ustar,&            ! Input
        thv,tlv,&                ! Input
-       check,rino,pblh)         ! Output
+       check,rino,pblh)         ! InOutput
     !------------------------------Arguments--------------------------------
     ! Input arguments
     !
@@ -3281,7 +3277,7 @@ subroutine pblintd_vvk(&
     ! In/Output arguments
     !
     logical, intent(inout)     :: check(shcol)            ! True=>chk if Richardson no.>critcal
-    real(rtype), intent(out)   :: pblh(shcol)             ! boundary-layer height [m]
+    real(rtype), intent(inout)   :: pblh(shcol)             ! boundary-layer height [m]
     real(rtype), intent(inout) :: rino(shcol,nlev)        ! bulk Richardson no. from level to ref lev
     !
     !---------------------------Local workspace-----------------------------
@@ -3310,7 +3306,7 @@ subroutine pblintd_vvk(&
     return
 end subroutine pblintd_vvk
 
-subroutine pblintd_pblh(&
+subroutine pblintd_check_pblh(&
        shcol,nlev,nlevi,&             ! Input
        z,ustar,check,&                ! Input
        pblh)                          ! Output
@@ -3340,7 +3336,7 @@ subroutine pblintd_pblh(&
     ! The scaling arguments that give rise to this relationship most often
     ! represent the coefficient c as some constant over the local coriolis
     ! parameter.  Here we make use of the experimental results of Koracin
-    ! and Berkowicz (1988) [BLM, Vol 43] for wich they recommend 0.07/f
+    ! and Berkowicz (1988) [BLM, Vol 43] for which they recommend 0.07/f
     ! where f was evaluated at 39.5 N and 52 N.  Thus we use a typical mid
     ! latitude value for f so that c = 0.07/f = 700.  Also, do not allow
     ! PBL to exceed some maximum (npbl) number of allowable points
@@ -3350,10 +3346,10 @@ subroutine pblintd_pblh(&
        pblh(i) = max(pblh(i),700.0_rtype*ustar(i))
     end do
     return
-end subroutine pblintd_pblh
+end subroutine pblintd_check_pblh
 
 
-subroutine pblintd_ocncldcheck(      &
+subroutine pblintd_cldcheck(      &
                    shcol,nlev,nlevi, &                  ! Input
                    zi,cldn,          &                  ! Input
                    pblh)                                ! InOutput
@@ -3374,27 +3370,25 @@ subroutine pblintd_ocncldcheck(      &
     !---------------------------Local workspace-----------------------------
     !
     integer  :: i                       ! longitude index
-    logical  :: ocncldcheck(shcol)      ! True=>if ocean surface and cloud in lowest layer
+    logical  :: cldcheck(shcol)      ! True=>if cloud in lowest layer
     !
     ! Final requirement on PBL heightis that it must be greater than the depth
-    ! of the lowest model level over ocean if there is any cloud diagnosed in
+    ! of the lowest model level if there is any cloud diagnosed in
     ! the lowest model level.  This is to deal with the inadequacies of the
     ! current "dry" formulation of the boundary layer, where this test is
     ! used to identify circumstances where there is marine stratus in the
     ! lowest level, and to provide a weak ventilation of the layer to avoid
     ! a pathology in the cloud scheme (locking in low-level stratiform cloud)
-    ! If over an ocean surface, and any cloud is diagnosed in the
-    ! lowest level, set pblh to 50 meters higher than top interface of lowest
-    ! level
+    ! If  any cloud is diagnosed in the lowest level, set pblh to 50 meters 
+    ! higher than top interface of lowest level
     !
-    !  jrm This is being applied everywhere (not just ocean)!
     do i=1,shcol
-       ocncldcheck(i) = .false.
-       if (cldn(i,nlev).ge.0.0_rtype) ocncldcheck(i) = .true.
-       if (ocncldcheck(i)) pblh(i) = max(pblh(i),zi(i,nlev) + 50._rtype)
+       cldcheck(i) = .false.
+       if (cldn(i,nlev).ge.0.0_rtype) cldcheck(i) = .true.
+       if (cldcheck(i)) pblh(i) = max(pblh(i),zi(i,nlev) + 50._rtype)
     end do
     return
-end subroutine pblintd_ocncldcheck
+end subroutine pblintd_cldcheck
 
   !==============================================================
   ! Linear interpolation to get values on various grids
