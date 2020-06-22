@@ -89,7 +89,8 @@ module namelist_mod
     theta_advect_form,   &
     vert_remap_q_alg, &
     se_fv_phys_remap_alg, &
-    timestep_make_subcycle_parameters_consistent
+    timestep_make_subcycle_parameters_consistent, &
+    control_params_init
 
 #ifndef CAM
   use control_mod, only:              &
@@ -1104,6 +1105,8 @@ module namelist_mod
       write(iulog,*)"HOMME SHA = ", HOMME_SHA1
 #endif
 #endif
+
+      call control_params_init()
 
       call print_clear_message()
 

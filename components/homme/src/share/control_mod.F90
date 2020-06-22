@@ -127,7 +127,7 @@ module control_mod
 
   integer, public  :: use_cpstar=0          ! use cp or cp* in thermodynamics
   logical, public  :: use_moisture=.false.  ! use Q(:,:,:,1) to compute T_v
-
+  logical, public  :: adjust_ps             ! controls how to sum FQ into pressure
   
   integer              , public :: maxits         ! max iterations of solver
   real (kind=real_kind), public :: tol            ! solver tolerance (convergence criteria)
@@ -607,5 +607,19 @@ contains
     if (par%masterproc .and. nerr > 0) &
          write(iulog,'(a,i2)') 'test_timestep_make_parameters_consistent nerr', nerr
   end subroutine test_timestep_make_parameters_consistent
+
+
+  subroutine control_params_init
+#ifdef MODEL_THETA_L
+    if (dt_remap_factor==0) then
+       adjust_ps=.true.   ! stay on reference levels for Eulerian case
+    else
+       adjust_ps=.true.   ! Lagrangian case can support adjusting dp3d or ps
+    endif
+#else
+    adjust_ps=.true.      ! preqx requires forcing to stay on reference levels
+#endif
+  end subroutine control_params_init
+
 
 end module control_mod

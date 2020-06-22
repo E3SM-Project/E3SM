@@ -15,7 +15,8 @@ module prim_state_mod
   use time_mod,         only: tstep, secpday, timelevel_t, TimeLevel_Qdp, time_at
   use control_mod,      only: integration, test_case,  use_moisture, &
                               qsplit, ftype, rsplit,&
-                              theta_hydrostatic_mode
+                              theta_hydrostatic_mode, &
+                              dt_remap_factor, dt_tracer_factor, transport_alg
   use hybvcoord_mod,    only: hvcoord_t
   use global_norms_mod, only: global_integral, linf_snorm, l1_snorm, l2_snorm
   use element_mod,      only: element_t
@@ -142,7 +143,7 @@ contains
     real(kind=real_kind) :: relvort
     real(kind=real_kind) :: v1, v2, vco(np,np,2,nlev)
 
-    real (kind=real_kind) :: time, time2,time1, scale, dt_forcing, dt_remap, dt_hv, dt_run_sub
+    real (kind=real_kind) :: time, time2,time1, scale, dt_forcing, dt_remap, dt_hv, dt_run_sub, dt
     real (kind=real_kind) :: IEvert1,IEvert2,PEvert1,PEvert2
     real (kind=real_kind) :: T1,T2,S1,S2,P1,P2
     real (kind=real_kind) :: PEhorz1,PEhorz2
@@ -196,6 +197,11 @@ contains
     dt_f=dt
     if (ftype==4) dt_f=tstep
 #endif
+
+!dt is used below
+    dt=dt_run_sub
+
+
     !
     !   dynamics variables in n0 are at time =  'time' 
     !
@@ -779,7 +785,8 @@ contains
        enddo
 
 
-       write(iulog,'(a,5e15.7)') 'dt_f, dt_hv, dt_remap, tstep, dt_run_sub',dt_f, dt_hv, dt_remap, tstep, dt_run_sub
+       write(iulog,'(a,5e15.7)') 'dt_f, dt_hv, dt_remap, tstep, dt_run_sub', &
+         dt_forcing, dt_hv, dt_remap, tstep, dt_run_sub
        write(iulog,'(a)') 'Change from dribbled phys tendencies, viscosity, run_sub, remap (if dt_remap_factor>0):'
        if (dt_remap_factor > 0 )then
          write(iulog,'(a,4e15.7)') 'dKE/dt(W/m^2): ',(KEner(1)-KEner(3))/dt_forcing,&
