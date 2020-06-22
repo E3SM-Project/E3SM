@@ -238,14 +238,14 @@
       <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/ne30np4.pg2/map_ne30np4.pg2_TO_ww3a_blin.191023.nc</map>
     </gridmap>
 
-    <gridmap atm_grid="ne30pg3" ocn_grid="gx1v7">
+    <gridmap atm_grid="ne30np4.pg3" ocn_grid="gx1v7">
       <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne30pg3/map_ne30pg3_TO_gx1v7_aave.190215.nc</map>
       <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne30pg3/map_ne30pg3_TO_gx1v7_blin.190215.nc</map>
       <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne30pg3/map_ne30pg3_TO_gx1v7_blin.190215.nc</map>
       <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/gx1v7/map_gx1v7_TO_ne30pg3_aave.190215.nc</map>
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/gx1v7/map_gx1v7_TO_ne30pg3_aave.190215.nc</map>
     </gridmap>
-    <gridmap atm_grid="ne30pg3" wav_grid="ww3a">
+    <gridmap atm_grid="ne30np4.pg3" wav_grid="ww3a">
       <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/ne30pg3/map_ne30pg3_TO_ww3a_blin.190215.nc</map>
     </gridmap>
 
