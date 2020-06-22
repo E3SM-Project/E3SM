@@ -32,7 +32,7 @@ module radiation
 
    use radiation_state, only: ktop, kbot, nlev_rad
    use radiation_utils, only: compress_day_columns, expand_day_columns, &
-                              handle_error
+                              handle_error, clip_values
 
    ! For MMF
    use crmdims, only: crm_nx_rad, crm_ny_rad, crm_nz
@@ -1181,7 +1181,7 @@ contains
       integer :: icall, ic, ix, iy, iz, ilev, j, igas, iband, igpt
 
       ! Everyone needs a name
-      character(*), parameter :: subroutine_name = 'radiation_tend'
+      character(*), parameter :: subname = 'radiation_tend'
 
       ! Radiative fluxes
       type(ty_fluxes_byband) :: fluxes_allsky    , fluxes_clrsky, &
@@ -1233,10 +1233,10 @@ contains
                crm_qrs, crm_qrsc, crm_qrl, crm_qrlc
 
       ! Albedo for shortwave calculations
-      real(r8), dimension(nswbands,pcols) :: albedo_direct_col, albedo_diffuse_col, &
-                                             albedo_direct_day, albedo_diffuse_day
+      real(r8), dimension(nswbands,pcols) :: albedo_dir_col, albedo_dif_col, &
+                                             albedo_dir_day, albedo_dif_day
       real(r8), dimension(nswbands,pcols * crm_nx_rad * crm_ny_rad) :: &
-                                             albedo_direct_all, albedo_diffuse_all
+                                             albedo_dir_all, albedo_dif_all
 
       ! Cosine solar zenith angle for all columns in chunk
       real(r8) :: coszrs(pcols), coszrs_all(pcols * crm_nx_rad * crm_ny_rad)
@@ -1391,11 +1391,11 @@ contains
 
                ! Get albedo. This uses CAM routines internally and just provides a
                ! wrapper to improve readability of the code here.
-               call set_albedo(cam_in, albedo_direct_col(1:nswbands,1:ncol), albedo_diffuse_col(1:nswbands,1:ncol))
+               call set_albedo(cam_in, albedo_dir_col(1:nswbands,1:ncol), albedo_dif_col(1:nswbands,1:ncol))
 
                ! Send albedos to history buffer (useful for debugging)
-               call outfld('SW_ALBEDO_DIR', transpose(albedo_direct_col(1:nswbands,1:ncol)), ncol, state%lchnk)
-               call outfld('SW_ALBEDO_DIF', transpose(albedo_diffuse_col(1:nswbands,1:ncol)), ncol, state%lchnk)
+               call outfld('SW_ALBEDO_DIR', transpose(albedo_dir_col(1:nswbands,1:ncol)), ncol, state%lchnk)
+               call outfld('SW_ALBEDO_DIF', transpose(albedo_dif_col(1:nswbands,1:ncol)), ncol, state%lchnk)
 
                ! Get cosine solar zenith angle for current time step, and send to
                ! history buffer
@@ -1512,6 +1512,20 @@ contains
                      )
                      call t_stopf('rad_set_state')
 
+                     ! Check temperatures to make sure they are within the bounds of the
+                     ! absorption coefficient look-up tables. If out of bounds, optionally clip
+                     ! values to min/max specified
+                     call t_startf('rad_check_temperatures')
+                     call handle_error(clip_values( &
+                        tmid_col(1:ncol,1:nlev_rad), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
+                        trim(subname) // ' tmid' &
+                     ), fatal=.false.)
+                     call handle_error(clip_values( &
+                        tint_col(1:ncol,1:nlev_rad+1), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
+                        trim(subname) // ' tint' &
+                     ), fatal=.false.)
+                     call t_stopf('rad_check_temperatures')
+
                      ! Set gas concentrations
                      call t_startf('rad_gas_concentrations')
                      do igas = 1,size(active_gases)
@@ -1548,6 +1562,13 @@ contains
                            aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw &
                         )
                         call t_stopf('rad_aerosol_optics_sw')
+                        ! Check (and possibly clip) values before passing to RRTMGP driver
+                        call handle_error(clip_values(cld_tau_gpt_sw,  0._r8, huge(cld_tau_gpt_sw), trim(subname) // ' cld_tau_gpt_sw', tolerance=1e-10_r8))
+                        call handle_error(clip_values(cld_ssa_gpt_sw,  0._r8,                1._r8, trim(subname) // ' cld_ssa_gpt_sw', tolerance=1e-10_r8))
+                        call handle_error(clip_values(cld_asm_gpt_sw, -1._r8,                1._r8, trim(subname) // ' cld_asm_gpt_sw', tolerance=1e-10_r8))
+                        call handle_error(clip_values(aer_tau_bnd_sw,  0._r8, huge(aer_tau_bnd_sw), trim(subname) // ' aer_tau_bnd_sw', tolerance=1e-10_r8))
+                        call handle_error(clip_values(aer_ssa_bnd_sw,  0._r8,                1._r8, trim(subname) // ' aer_ssa_bnd_sw', tolerance=1e-10_r8))
+                        call handle_error(clip_values(aer_asm_bnd_sw, -1._r8,                1._r8, trim(subname) // ' aer_asm_bnd_sw', tolerance=1e-10_r8))
                      end if
 
                      ! Longwave cloud and aerosol optics
@@ -1570,14 +1591,17 @@ contains
                         call t_startf('rad_aerosol_optics_lw')
                         call set_aerosol_optics_lw(icall, state, pbuf, is_cmip6_volc, aer_tau_bnd_lw)
                         call t_stopf('rad_aerosol_optics_lw')
+                        ! Check (and possibly clip) values before passing to RRTMGP driver
+                        call handle_error(clip_values(cld_tau_gpt_lw,  0._r8, huge(cld_tau_gpt_lw), trim(subname) // ': cld_tau_gpt_lw', tolerance=1e-10_r8))
+                        call handle_error(clip_values(aer_tau_bnd_lw,  0._r8, huge(aer_tau_bnd_lw), trim(subname) // ': aer_tau_bnd_lw', tolerance=1e-10_r8))
                      end if
 
                      ! Pack data
                      call t_startf('rad_pack_columns')
                      do ic = 1,ncol
                         coszrs_all(j) = coszrs(ic)
-                        albedo_direct_all(:,j) = albedo_direct_col(:,ic)
-                        albedo_diffuse_all(:,j) = albedo_diffuse_col(:,ic)
+                        albedo_dir_all(:,j) = albedo_dir_col(:,ic)
+                        albedo_dif_all(:,j) = albedo_dif_col(:,ic)
                         pmid(j,:) = pmid_col(ic,:)
                         tmid(j,:) = tmid_col(ic,:)
                         pint(j,:) = pint_col(ic,:)
@@ -1621,8 +1645,8 @@ contains
                   pmid(1:ncol_tot,1:nlev_rad), tmid(1:ncol_tot,1:nlev_rad), &
                   pint(1:ncol_tot,1:nlev_rad+1), &
                   coszrs_all(1:ncol_tot), &
-                  albedo_direct_all(1:nswbands,1:ncol_tot), &
-                  albedo_diffuse_all(1:nswbands,1:ncol_tot), &
+                  albedo_dir_all(1:nswbands,1:ncol_tot), &
+                  albedo_dif_all(1:nswbands,1:ncol_tot), &
                   cld_optics_sw, aer_optics_sw, &
                   fluxes_allsky_all, fluxes_clrsky_all, tsi_scaling &
                )
@@ -2386,34 +2410,35 @@ contains
    ! Set surface albedos from cam surface exchange object for direct and diffuse
    ! beam radiation. This code was copied from the RRTMG implementation, but moved
    ! to a subroutine with some better variable names.
-   subroutine set_albedo(cam_in, albedo_direct, albedo_diffuse)
+   subroutine set_albedo(cam_in, albedo_dir, albedo_dif)
       use camsrfexch, only: cam_in_t
       use radiation_utils, only: clip_values
 
       type(cam_in_t), intent(in) :: cam_in
-      real(r8), intent(inout) :: albedo_direct(:,:)   ! surface albedo, direct radiation
-      real(r8), intent(inout) :: albedo_diffuse(:,:)  ! surface albedo, diffuse radiation
+      real(r8), intent(inout) :: albedo_dir(:,:)   ! surface albedo, direct radiation
+      real(r8), intent(inout) :: albedo_dif(:,:)  ! surface albedo, diffuse radiation
 
       ! Local namespace
       real(r8) :: wavenumber_limits(2,nswbands)
       integer :: ncol, iband
+      character(len=10) :: subname = 'set_albedo'
 
       ! Check dimension sizes of output arrays.
-      ! albedo_direct and albedo_diffuse should have sizes nswbands,ncol, but ncol
+      ! albedo_dir and albedo_dif should have sizes nswbands,ncol, but ncol
       ! can change so we just check that it is less than or equal to pcols (the
       ! maximum size ncol is ever allowed to be).
-      call assert(size(albedo_direct, 1) == nswbands, &
-                  'set_albedo: size(albedo_direct, 1) /= nswbands')
-      call assert(size(albedo_direct, 2) <= pcols, &
-                  'set_albedo: size(albedo_direct, 2) > pcols')
-      call assert(all(shape(albedo_direct) == shape(albedo_diffuse)), &
-                  'set_albedo: albedo_direct and albedo_diffuse have inconsistent shapes')
+      call assert(size(albedo_dir, 1) == nswbands, &
+                  'set_albedo: size(albedo_dir, 1) /= nswbands')
+      call assert(size(albedo_dir, 2) <= pcols, &
+                  'set_albedo: size(albedo_dir, 2) > pcols')
+      call assert(all(shape(albedo_dir) == shape(albedo_dif)), &
+                  'set_albedo: albedo_dir and albedo_dif have inconsistent shapes')
       
-      ncol = size(albedo_direct, 2)
+      ncol = size(albedo_dir, 2)
 
       ! Initialize albedo
-      albedo_direct(:,:) = 0._r8
-      albedo_diffuse(:,:) = 0._r8
+      albedo_dir(:,:) = 0._r8
+      albedo_dif(:,:) = 0._r8
 
       ! Albedos are input as broadband (visible, and near-IR), and we need to map
       ! these to appropriate bands. Bands are categorized broadly as "visible" or
@@ -2427,23 +2452,23 @@ contains
              is_visible(wavenumber_limits(2,iband))) then
 
             ! Entire band is in the visible
-            albedo_direct(iband,1:ncol) = cam_in%asdir(1:ncol)
-            albedo_diffuse(iband,1:ncol) = cam_in%asdif(1:ncol)
+            albedo_dir(iband,1:ncol) = cam_in%asdir(1:ncol)
+            albedo_dif(iband,1:ncol) = cam_in%asdif(1:ncol)
 
          else if (.not.is_visible(wavenumber_limits(1,iband)) .and. &
                   .not.is_visible(wavenumber_limits(2,iband))) then
 
             ! Entire band is in the longwave (near-infrared)
-            albedo_direct(iband,1:ncol) = cam_in%aldir(1:ncol)
-            albedo_diffuse(iband,1:ncol) = cam_in%aldif(1:ncol)
+            albedo_dir(iband,1:ncol) = cam_in%aldir(1:ncol)
+            albedo_dif(iband,1:ncol) = cam_in%aldif(1:ncol)
 
          else
 
             ! Band straddles the visible to near-infrared transition, so we take
             ! the albedo to be the average of the visible and near-infrared
             ! broadband albedos
-            albedo_direct(iband,1:ncol) = 0.5 * (cam_in%aldir(1:ncol) + cam_in%asdir(1:ncol))
-            albedo_diffuse(iband,1:ncol) = 0.5 * (cam_in%aldif(1:ncol) + cam_in%asdif(1:ncol))
+            albedo_dir(iband,1:ncol) = 0.5 * (cam_in%aldir(1:ncol) + cam_in%asdir(1:ncol))
+            albedo_dif(iband,1:ncol) = 0.5 * (cam_in%aldif(1:ncol) + cam_in%asdif(1:ncol))
 
          end if
       end do
@@ -2452,8 +2477,13 @@ contains
       ! NOTE: this does actually issue warnings for albedos larger than 1, but this
       ! was never checked for RRTMG, so albedos will probably be slight different
       ! than the implementation in RRTMG!
-      call clip_values(albedo_direct, 0._r8, 1._r8, varname='albedo_direct')
-      call clip_values(albedo_diffuse, 0._r8, 1._r8, varname='albedo_diffuse')
+      call handle_error(clip_values( &
+         albedo_dir, 0._r8, 1._r8, trim(subname) // ': albedo_dir', tolerance=0.01_r8) &
+      )
+      call handle_error(clip_values( &
+         albedo_dif, 0._r8, 1._r8, trim(subname) // ': albedo_dif', tolerance=0.01_r8) &
+      )
+
 
    end subroutine set_albedo
 
