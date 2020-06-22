@@ -17,20 +17,22 @@
 #include "control/tests/dummy_grid.hpp"
 
 #include "mct_coupling/ScreamContext.hpp"
+#include "mct_coupling/scream_scorpio_interface.hpp"
 #include "ekat/mpi/scream_comm.hpp"
 
 extern "C"
 {
 
 /*===============================================================================================*/
-
 // WARNING: make sure input_yaml_file is a null-terminated string!
 void scream_init (const MPI_Fint& f_comm,
                   const int& start_ymd,
                   const int& start_tod,
-                  const char* input_yaml_file) {
+                  const char* input_yaml_file,
+                  const int& compid) {
   using namespace scream;
   using namespace scream::control;
+  using namespace scream::scorpio;
 
   // First of all, disable all fpes we may have enabled.
   // Store the mask, so we can restore before returning.
@@ -82,12 +84,19 @@ void scream_init (const MPI_Fint& f_comm,
   // Restore the FPE flag as it was when control was handed to us.
   disable_all_fpes();
   enable_fpes(fpe_mask);
+
+  (void) eam_init_pio_subsystem(f_comm,compid);
+//  (void) register_outfile("example_pio_structured.nc");
+//  (void) register_outfile("example_pio_structured_v2.nc");
+//  (void) eam_init_pio_1(f_comm,compid);
+  (void) eam_init_pio_2();
 }
 /*===============================================================================================*/
 void scream_run (const double& dt) {
   // TODO: uncomment once you have valid inputs. I fear AD may crash with no inputs.
   using namespace scream;
   using namespace scream::control;
+  using namespace scream::scorpio;
 
   // First of all, enable only scream fpes.
   // Store the mask, so we can restore before returning.
@@ -101,6 +110,7 @@ void scream_run (const double& dt) {
   // Get the AD, and run it
   auto& ad = c.getNonConst<AtmosphereDriver>();
   ad.run(dt);
+  (void) eam_history_write();
 
   (void) dt;
 
@@ -108,7 +118,6 @@ void scream_run (const double& dt) {
   disable_all_fpes();
   enable_fpes(fpe_mask);
 }
-
 /*===============================================================================================*/
 void scream_finalize (/* args ? */) {
   using namespace scream;

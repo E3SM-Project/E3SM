@@ -60,10 +60,12 @@ module scream_scorpio_interface
   implicit none
   save
                      
-  public :: eam_init_pio_1,       & ! Get pio subsystem info from main code, create PIO files
+  public :: & !eam_init_pio_1,       & ! Get pio subsystem info from main code, create PIO files
             eam_init_pio_2,       & ! Register variables and dimensions with PIO files
+            eam_init_pio_subsystem, & ! Gather pio specific data from the component coupler
             eam_history_finalize, & ! Run any final PIO commands (currently unused)
             eam_history_write,    & ! Write updated data for each variable to file
+            register_outfile,     & ! Create a pio output file
             register_variable,    & ! Register a variable with a particular pio output file  
             register_dimension      ! Register a dimension with a particular pio output file
  
@@ -185,40 +187,19 @@ module scream_scorpio_interface
 !----------------------------------------------------------------------
 contains
 !=====================================================================!
-  ! Subroutine to initialize the pio interface.  May be deprecated in the future
-  ! with the C++ code directly a) calling init_pio_subsystem and b) creating all
-  ! new files.
-  subroutine eam_init_pio_1(mpicom,atm_id)
-    integer, intent(in) :: mpicom  ! MPI communication group for ATM
-    integer, intent(in) :: atm_id  ! Unique identifier assigned by component coupler
+  subroutine register_outfile(filename)
+
+    character(len=*), intent(in) :: filename
 
     type(pio_atm_output), pointer :: current_atm_file => null()
-    integer :: ierr
     logical :: found
 
-    ! Gather the pio_subsystem information for the atmosphere component.
-    call eam_init_pio_subsystem(mpicom,atm_id)
-
-    ! BEGIN PLACEHOLDER FOR DEVELOPMENT TESTING ONLY
-    ! TODO: Delete the following code after the Field Manager assumes control
-    ! over pio file creation.
-    
-    ! FIRST TESTING PIO OUTPUT FILE
-    ! The following two lines will be typical, assign a filename and check that
-    ! the file is in fact new.
-    call get_pio_atm_file("example_pio_structured.nc",current_atm_file,found)
-    if (found) call errorHandle("PIO Error: Creating file: "//trim("example_pio_structured.nc")//" already exists",999)
-    ! Create a temporary header for this file.  TODO: Have the field manager or
-    ! scream-ad take care of adding header metadata when the C++ interface is
-    ! developed.
+    write(*,*) "ASD Registering output file: ", trim(filename)
+    call get_pio_atm_file(filename,current_atm_file,found)
+    if (found) call errorHandle("PIO Error: Creating file: "//trim(filename)//" already exists",999)
     call eam_pio_createHeader(current_atm_file%pioFileDesc)
-
-    ! SECOND TESTING PIO OUTPUT FILE 
-    ! Allocate the dimension and variable arrays for the output file.
-    call get_pio_atm_file("example_pio_structured_v2.nc",current_atm_file,found)
-    if (found) call errorHandle("PIO Error: Creating file: "//trim("example_pio_structured_v2.nc")//" already exists",999)
-
-  end subroutine eam_init_pio_1
+    
+  end subroutine register_outfile
 !=====================================================================!
   subroutine eam_init_pio_2()
     ! WARNING: This code will be eventually deprecated when the C++ interface is
@@ -229,9 +210,10 @@ contains
     type(pio_atm_output), pointer :: current_atm_file => null()
     integer :: ierr
     logical :: found
-
     character(len=10) :: var_dim_list(3) ! Needed for cases with time and space dimensions, need to create the array of strings ahead of time for GCC.
 
+    call register_outfile("example_pio_structured.nc")
+    call register_outfile("example_pio_structured_v2.nc")
     ! Register all dimensions with the output file
     call register_dimension("example_pio_structured.nc","x","horizontal distance",10)
     call register_dimension("example_pio_structured.nc","y","vertical distance",3)

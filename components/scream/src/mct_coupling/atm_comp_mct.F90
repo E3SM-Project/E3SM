@@ -1,7 +1,7 @@
 module atm_comp_mct
 
   ! !USES:
-  use scream_scorpio_interface, only: eam_init_pio_1, eam_init_pio_2, eam_history_finalize, eam_history_write
+  use scream_scorpio_interface, only: eam_history_finalize, eam_history_write
   use esmf
   use mct_mod
   use perf_mod
@@ -54,12 +54,12 @@ CONTAINS
     ! F90<->CXX interfaces
     !
     interface
-      subroutine scream_init(f_comm,start_ymd,start_tod,yaml_fname) bind(c)
+      subroutine scream_init(f_comm,start_ymd,start_tod,yaml_fname,compid) bind(c)
         use iso_c_binding, only: c_int, C_CHAR
         !
         ! Arguments
         !
-        integer (kind=c_int),   intent(in) :: start_tod, start_ymd, f_comm
+        integer (kind=c_int),   intent(in) :: start_tod, start_ymd, f_comm, compid
         character(kind=C_CHAR), target, intent(in) :: yaml_fname(*)
       end subroutine scream_init
     end interface
@@ -136,7 +136,11 @@ CONTAINS
          inst_index, inst_suffix, inst_name, logunit, nxg, nyg)
 
     call seq_timemgr_EClockGetData(EClock, start_ymd=start_ymd, start_tod=start_tod)
-    call scream_init (mpicom_atm, INT(start_ymd, KIND=c_int), INT(start_tod, KIND=c_int),TRIM(yaml_fname)//C_NULL_CHAR)
+    !----------------------------------------------------------------------------
+    ! Initialize pio and scream
+    !----------------------------------------------------------------------------
+    call scream_init (mpicom_atm, INT(start_ymd, KIND=c_int), INT(start_tod, KIND=c_int),TRIM(yaml_fname)//C_NULL_CHAR, INT(compid, KIND=c_int))
+    !----------------------------------------------------------------------------
     if (nxg == 0 .and. nyg == 0) then
        atm_present = .false.
        atm_prognostic = .false.
@@ -157,12 +161,6 @@ CONTAINS
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
     call shr_file_setLogUnit (logunit)
-
-    !----------------------------------------------------------------------------
-    ! Initialize pio
-    !----------------------------------------------------------------------------
-    call eam_init_pio_1(mpicom_atm,compid)
-    call eam_init_pio_2()
 
   end subroutine atm_init_mct
 
@@ -226,7 +224,7 @@ CONTAINS
     !----------------------------------------------------------------------------
     ! Run pio
     !----------------------------------------------------------------------------
-    call eam_history_write()
+    !call eam_history_write()
 
   end subroutine atm_run_mct
 
