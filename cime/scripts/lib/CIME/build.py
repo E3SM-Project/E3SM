@@ -45,6 +45,9 @@ def get_standard_cmake_args(case, sharedpath, shared_lib=False):
     for var in _CMD_ARGS_FOR_BUILD:
         cmake_args += xml_to_make_variable(case, var, cmake=True)
 
+    if atm_model == "scream":
+        cmake_args += xml_to_make_variable(case, "HOMME_TARGET", cmake=True)
+
     # Disable compiler checks
     cmake_args += " -DCMAKE_C_COMPILER_WORKS=1 -DCMAKE_CXX_COMPILER_WORKS=1 -DCMAKE_Fortran_COMPILER_WORKS=1"
 
@@ -64,7 +67,7 @@ def uses_kokkos(case):
     cam_target = case.get_value("CAM_TARGET")
     atm_comp   = case.get_value("COMP_ATM")
 
-    return get_model() == "e3sm" and (cam_target in ("preqx_kokkos", "theta-l") and atm_comp != "scream")
+    return get_model() == "e3sm" and cam_target in ("preqx_kokkos", "theta-l")
 
 ###############################################################################
 def _build_model(build_threaded, exeroot, incroot, complist,

@@ -1,7 +1,10 @@
 # Add RRTMGP source files. Right now, this builds the Fortran source for RRTMGP.
 # Once the C++ port of RRTMGP is complete we should switch over to that.
 set(RRTMGP_SRCS
+  atmosphere_radiation.cpp
   rrtmgp.cpp
+  scream_rrtmgp_interface.cpp
+  scream_rrtmgp_interface.F90
   ${SCREAM_BASE_DIR}/../cam/src/physics/rrtmgp/external/rrtmgp/kernels/mo_gas_optics_kernels.F90
   ${SCREAM_BASE_DIR}/../cam/src/physics/rrtmgp/external/rrtmgp/kernels/mo_rrtmgp_util_reorder_kernels.F90
   ${SCREAM_BASE_DIR}/../cam/src/physics/rrtmgp/external/rrtmgp/mo_gas_concentrations.F90
@@ -29,10 +32,19 @@ set(RRTMGP_SRCS
 
 set(RRTMGP_HEADERS
   rrtmgp.hpp
+  scream_rrtmgp_interface.hpp
+  atmosphere_radiation.hpp
 )
 
 add_library(rrtmgp ${RRTMGP_SRCS})
+target_include_directories(rrtmgp PUBLIC ${SCREAM_INCLUDE_DIRS})
+target_include_directories(rrtmgp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../common)
+target_include_directories(rrtmgp SYSTEM PUBLIC ${SCREAM_TPL_INCLUDE_DIRS} ${CIMEROOT}/src/share/include)
+set_target_properties(rrtmgp PROPERTIES
+      Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
+target_link_libraries(rrtmgp physics_common scream_share ${SCREAM_TPL_LIBRARIES})
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)
 endif()
+

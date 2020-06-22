@@ -51,7 +51,7 @@ template<typename T>
 inline T& ParameterList::get (const std::string& name) {
   // Check entry exists
   error::runtime_check ( isParameter(name),
-                        "Error! name " + name + " not found in parameter list '" + m_name + "'.\n");
+                        "Error! Key '" + name + "' not found in parameter list '" + m_name + "'.\n");
 
   return util::any_cast<T>(m_params[name]);
 }
@@ -59,7 +59,7 @@ inline T& ParameterList::get (const std::string& name) {
 template<typename T>
 inline const T& ParameterList::get (const std::string& name) const {
   error::runtime_check ( isParameter(name),
-                        "Error! name " + name + " not found in parameter list '" + m_name + "'.\n");
+                        "Error! Key '" + name + "' not found in parameter list '" + m_name + "'.\n");
 
   return util::any_cast<T>(m_params.at(name));
 }

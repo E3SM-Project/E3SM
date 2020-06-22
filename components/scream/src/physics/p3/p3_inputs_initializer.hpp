@@ -1,18 +1,18 @@
-#ifndef SCREAM_P3_STANDALONE_FIELD_INITIALIZER_HPP
-#define SCREAM_P3_STANDALONE_FIELD_INITIALIZER_HPP
+#ifndef SCREAM_P3_INPUTS_INITIALIZER_HPP
+#define SCREAM_P3_INPUTS_INITIALIZER_HPP
 
 #include "share/field/field_initializer.hpp"
 
 namespace scream {
 
-class P3StandAloneInit : public FieldInitializer
+class P3InputsInitializer : public FieldInitializer
 {
 public:
 
-  virtual ~P3StandAloneInit () = default;
+  virtual ~P3InputsInitializer () = default;
 
   // The name of the initializer
-  std::string name () const { return "P3StandAloneInit"; }
+  std::string name () const { return "P3InputsInitializer"; }
   
   // Initialize fields
   void initialize_fields ();
@@ -32,4 +32,4 @@ protected:
 
 } // namespace scream
 
-#endif // SCREAM_P3_STANDALONE_FIELD_INITIALIZER_HPP
+#endif // SCREAM_P3_INPUTS_INITIALIZER_HPP

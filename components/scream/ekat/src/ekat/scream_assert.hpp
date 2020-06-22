@@ -63,7 +63,7 @@
 // As soon as we can use C++14, this macro can be removed, and you can simply use
 // `assert(check);` in the body of the constexpr function.
 #if defined(NDEBUG) || !defined(EKAT_CONSTEXPR_ASSERT)
-#define CONSTEXPR_ASSERT(CHECK) void(0)
+#define CONSTEXPR_ASSERT(CHECK) void(CHECK)
 #else
 namespace impl {
 struct assert_failure {

@@ -12,18 +12,23 @@ project (EKAT CXX Fortran)
 ###      EKAT TPLS      ###
 ###########################
 
-set (EKAT_TPL_INCLUDE_DIRS)
-set (EKAT_TPL_LIBRARIES)
+# WARNING: you CANNOT do list(APPEND var item1 ... item2) if var is a CACHE variable!
+# Therefore, use an internal var during tpl parsing, then set a cache var ONCE at the end
+set (EKAT_TPL_INCLUDE_DIRS_INTERNAL)
+set (EKAT_TPL_LIBRARIES_INTERNAL)
 
 # A good chunk of EKAT is a utility layer over kokkos
 include(Kokkos)
-list (APPEND EKAT_TPL_INCLUDE_DIRS ${Kokkos_INCLUDE_DIRS})
-list (APPEND EKAT_TPL_LIBRARIES ${Kokkos_LIBRARIES})
+list (APPEND EKAT_TPL_INCLUDE_DIRS_INTERNAL ${Kokkos_INCLUDE_DIRS})
+list (APPEND EKAT_TPL_LIBRARIES_INTERNAL ${Kokkos_LIBRARIES})
 
 # EKAT also has some yaml parsing utility
 include(YamlCpp)
-list (APPEND EKAT_TPL_INCLUDE_DIRS ${YAMLCPP_INCLUDE_DIRS})
-list (APPEND EKAT_TPL_LIBRARIES ${YAMLCPP_LIBRARIES})
+list (APPEND EKAT_TPL_INCLUDE_DIRS_INTERNAL ${YAMLCPP_INCLUDE_DIRS})
+list (APPEND EKAT_TPL_LIBRARIES_INTERNAL ${YAMLCPP_LIBRARIES})
+
+set (EKAT_TPL_LIBRARIES ${EKAT_TPL_LIBRARIES_INTERNAL} CACHE INTERNAL "List of EKAT's TPLs")
+set (EKAT_TPL_INCLUDE_DIRS ${EKAT_TPL_INCLUDE_DIRS_INTERNAL} CACHE INTERNAL "List of EKAT's TPLs include directories")
 
 ############################
 ###  EKAT CONFIG OPTIONS ###

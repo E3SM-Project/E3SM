@@ -9,6 +9,7 @@ include(Sourcelist_utils)
 set(PHYSICS_COMMON_SRCS
   physics_common_iso_f.F90
   physics_common.cpp
+  physics_only_grids_manager.cpp
   ${SCREAM_BASE_DIR}/../cam/src/physics/cam/physics_utils.F90
 )
 

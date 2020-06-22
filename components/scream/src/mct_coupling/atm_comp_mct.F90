@@ -1,7 +1,7 @@
 module atm_comp_mct
 
   ! !USES:
-
+  use scream_scorpio_interface, only: eam_init_pio_1, eam_init_pio_2, eam_history_finalize, eam_history_write
   use esmf
   use mct_mod
   use perf_mod
@@ -34,7 +34,7 @@ module atm_comp_mct
   !--------------------------------------------------------------------------
   ! Private module data
   !--------------------------------------------------------------------------
-  integer(IN)            :: mpicom              ! mpi communicator
+  integer                :: mpicom_atm          ! mpi communicator
   integer(IN)            :: my_task             ! my task in mpi communicator mpicom
   integer                :: inst_index          ! number of current instance (ie. 1)
   character(len=16)      :: inst_name           ! fullname of current instance (ie. "lnd_0001")
@@ -43,26 +43,27 @@ module atm_comp_mct
   integer(IN)            :: compid              ! mct comp id
   real(r8) ,  pointer    :: gbuf(:,:)           ! model grid
   integer(IN),parameter  :: master_task=0       ! task number of master task
-
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   !===============================================================================
   subroutine atm_init_mct( EClock, cdata, x2d, d2x, NLFilename )
-
+    use iso_c_binding, only: C_CHAR, C_NULL_CHAR
     !
     ! F90<->CXX interfaces
     !
     interface
-      subroutine scream_init(f_comm,start_ymd,start_tod) bind(c)
-        use iso_c_binding, only: c_int
+      subroutine scream_init(f_comm,start_ymd,start_tod,yaml_fname) bind(c)
+        use iso_c_binding, only: c_int, C_CHAR
         !
         ! Arguments
         !
-        integer (kind=c_int), intent(in) :: start_tod, start_ymd, f_comm
+        integer (kind=c_int),   intent(in) :: start_tod, start_ymd, f_comm
+        character(kind=C_CHAR), target, intent(in) :: yaml_fname(*)
       end subroutine scream_init
     end interface
+
     ! !DESCRIPTION: initialize dead atm model
 
     ! !INPUT/OUTPUT PARAMETERS:
@@ -83,13 +84,14 @@ CONTAINS
     integer(IN)                      :: ierr           ! error code
     logical                          :: atm_present    ! if true, component is present
     logical                          :: atm_prognostic ! if true, component is prognostic
-    integer (kind=SHR_KIND_IN)       :: start_tod, start_ymd
+    integer (IN)                     :: start_tod, start_ymd
+    character(kind=C_CHAR,len=80)    :: yaml_fname = "data/scream_input.yaml"
     !-------------------------------------------------------------------------------
 
     ! Set cdata pointers to derived types (in coupler)
     call seq_cdata_setptrs(cdata, &
          id=compid, &
-         mpicom=mpicom, &
+         mpicom=mpicom_atm, &
          gsMap=gsmap, &
          dom=ggrid, &
          infodata=infodata)
@@ -105,7 +107,7 @@ CONTAINS
 
     if (phase == 1) then
        ! Determine communicator group
-       call mpi_comm_rank(mpicom, my_task, ierr)
+       call mpi_comm_rank(mpicom_atm, my_task, ierr)
 
        !--- open log file ---
        if (my_task == master_task) then
@@ -130,11 +132,11 @@ CONTAINS
 
     call dead_init_mct('atm', Eclock, x2d, d2x, &
          seq_flds_x2a_fields, seq_flds_a2x_fields, &
-         gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, &
+         gsmap, ggrid, gbuf, mpicom_atm, compid, my_task, master_task, &
          inst_index, inst_suffix, inst_name, logunit, nxg, nyg)
 
     call seq_timemgr_EClockGetData(EClock, start_ymd=start_ymd, start_tod=start_tod)
-    call scream_init (mpicom, INT(start_ymd, KIND=c_int), INT(start_tod, KIND=c_int))
+    call scream_init (mpicom_atm, INT(start_ymd, KIND=c_int), INT(start_tod, KIND=c_int),TRIM(yaml_fname)//C_NULL_CHAR)
     if (nxg == 0 .and. nyg == 0) then
        atm_present = .false.
        atm_prognostic = .false.
@@ -155,6 +157,12 @@ CONTAINS
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
     call shr_file_setLogUnit (logunit)
+
+    !----------------------------------------------------------------------------
+    ! Initialize pio
+    !----------------------------------------------------------------------------
+    call eam_init_pio_1(mpicom_atm,compid)
+    call eam_init_pio_2()
 
   end subroutine atm_init_mct
 
@@ -204,7 +212,7 @@ CONTAINS
          infodata=infodata)
 
     call dead_run_mct('atm', EClock, x2d, d2x, &
-       gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, logunit)
+       gsmap, ggrid, gbuf, mpicom_atm, compid, my_task, master_task, logunit)
     dt_scream = 300.0
     call scream_run( dt_scream )
 
@@ -215,6 +223,10 @@ CONTAINS
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
     call shr_sys_flush(logunit)
+    !----------------------------------------------------------------------------
+    ! Run pio
+    !----------------------------------------------------------------------------
+    call eam_history_write()
 
   end subroutine atm_run_mct
 
@@ -242,6 +254,13 @@ CONTAINS
     character(*), parameter :: subName = "(atm_final_mct) "
     !-------------------------------------------------------------------------------
 
+    !----------------------------------------------------------------------------
+    ! Finalize pio
+    !----------------------------------------------------------------------------
+    call eam_history_finalize()
+    !----------------------------------------------------------------------------
+    ! Finish the rest of ATM model
+    !----------------------------------------------------------------------------
     call dead_final_mct('atm', my_task, master_task, logunit)
     call scream_finalize()
 

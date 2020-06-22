@@ -134,14 +134,20 @@ SET(PREQX_DEPS_F90
   ${SRC_DIR}/restart_io_mod.F90
   ${SRC_DIR}/surfaces_mod.F90
   ${SRC_DIR}/test_mod.F90
-  ${UTILS_SHARE_DIR}/shr_const_mod.F90
-  ${UTILS_SHARE_DIR}/shr_file_mod.F90
-  ${UTILS_SHARE_DIR}/shr_kind_mod.F90
-  ${UTILS_SHARE_DIR}/shr_mpi_mod.F90
-  ${UTILS_SHARE_DIR}/shr_spfn_mod.F90
-  ${UTILS_SHARE_DIR}/shr_sys_mod.F90
-  ${UTILS_SHARE_DIR}/shr_vmath_mod.F90
 )
+
+IF ("${PROJECT_NAME}" STREQUAL "HOMME")
+  SET(PREQX_DEPS_F90
+      ${PREQX_DEPS_F90}
+      ${UTILS_SHARE_DIR}/shr_const_mod.F90
+      ${UTILS_SHARE_DIR}/shr_file_mod.F90
+      ${UTILS_SHARE_DIR}/shr_kind_mod.F90
+      ${UTILS_SHARE_DIR}/shr_mpi_mod.F90
+      ${UTILS_SHARE_DIR}/shr_spfn_mod.F90
+      ${UTILS_SHARE_DIR}/shr_sys_mod.F90
+      ${UTILS_SHARE_DIR}/shr_vmath_mod.F90
+  )
+endif()
 
 SET(PREQX_DEPS_CXX
   ${SRC_SHARE_DIR}/cxx/CaarFunctor.cpp
