@@ -47,7 +47,7 @@ contains
     write(*,*)'ERROR: Aborting...'
     if(present(msg)) write(*,*)trim(adjustl(msg))
 
-    stop
+    call abort()
 #endif
 
   end subroutine endscreamrun
