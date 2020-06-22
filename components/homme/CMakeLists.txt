@@ -264,8 +264,9 @@ ENDIF ()
 
 # this section is for linking to SUNDIALS/ARKODE as an external library
 IF (DEFINED SUNDIALS_DIR)
-  LINK_DIRECTORIES(${SUNDIALS_DIR}/lib)
+  LINK_DIRECTORIES(${SUNDIALS_DIR}/lib64)
   INCLUDE_DIRECTORIES(${SUNDIALS_DIR}/include)
+  INCLUDE_DIRECTORIES(${SUNDIALS_DIR}/fortran)
 ENDIF ()
 
 ###########################################

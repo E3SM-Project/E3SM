@@ -40,60 +40,52 @@
 !
 ! Copyright 2017; all rights reserved
 !
-! Modified by Christopher J. Vogl (LLNL) 2018
+! Modified by Christopher J. Vogl (LLNL) 2020
 !=================================================================
 
-subroutine farkifun(t, y_C, fy_C, ipar, rpar, ierr)
+function farkifun(t, y, ydot, hvcoord, hybrid, deriv, qn0, imex, dt, eta_ave_w) &
+  result(ierr)
   !-----------------------------------------------------------------
   ! Description: farkifun provides the implicit portion of the right
   !     hand side function for the ODE:   dy/dt = fi(t,y) + fe(t,y)
   !
   ! Arguments:
   !       t - (dbl, input) current time
-  !     y_C - (ptr) C pointer to NVec_t containing current solution
-  !    fy_C - (ptr) C pointer to NVec_t to hold right-hand side function
-  !    ipar - (long int(*), input) integer user parameter data (unused here)
-  !    rpar - (dbl(*), input) real user parameter data (unused here)
-  !    ierr - (int, output) return flag: 0=>success,
-  !            1=>recoverable error, -1=>non-recoverable error
+  !       y - (NVec_t) NVec_t containing current solution
+  !    ydot - (NVec_t) NVec_t to hold right-hand side function
   !-----------------------------------------------------------------
 
   !======= Inclusions ===========
-  use arkode_mod,       only: max_stage_num, get_RHS_vars, get_hvcoord_ptr, &
-                              get_qn0
-  use kinds,            only: real_kind
-  use HommeNVector,     only: NVec_t
-  use hybrid_mod,       only: hybrid_t
-  use derivative_mod,   only: derivative_t
-  use dimensions_mod,   only: nlevp
-  use hybvcoord_mod,    only: hvcoord_t
-  use prim_advance_mod, only: compute_andor_apply_rhs
-  use iso_c_binding
+  use fsundials_nvector_mod, only: N_Vector
+  use kinds,                 only: real_kind
+  use HommeNVector,          only: NVec_t
+  use hybrid_mod,            only: hybrid_t
+  use derivative_mod,        only: derivative_t
+  use dimensions_mod,        only: nlevp
+  use hybvcoord_mod,         only: hvcoord_t
+  use prim_advance_mod,      only: compute_andor_apply_rhs
 
   !======= Declarations =========
   implicit none
 
   ! calling variables
-  real*8,            intent(in)         :: t
-  type(c_ptr),       intent(in), target :: y_C
-  type(c_ptr),       intent(in), target :: fy_C
-  integer(C_LONG),   intent(in)         :: ipar(1)
-  real*8,            intent(in)         :: rpar(1)
-  integer(C_INT),    intent(out)        :: ierr
+  real*8,             intent(in)    :: t
+  type(NVec_t),       intent(in)    :: y
+  type(NVec_t),       intent(inout) :: ydot
+  type(hvcoord_t),    intent(in)    :: hvcoord
+  type(hybrid_t),     intent(in)    :: hybrid
+  type(derivative_t), intent(in)    :: deriv
+  integer,            intent(in)    :: qn0
+  integer,            intent(in)    :: imex
+  real(real_kind),    intent(in)    :: dt
+  real(real_kind),    intent(in)    :: eta_ave_w
+  integer                           :: ierr
 
   ! local variables
-  type(derivative_t)    :: deriv
-  type(hybrid_t)        :: hybrid
-  type(hvcoord_t)       :: hvcoord
-  type(NVec_t), pointer :: y => NULL()
-  type(NVec_t), pointer :: fy => NULL()
-  real (real_kind)      :: dt, eta_ave_w, bval, cval, scale1, scale2
-  integer               :: imex, qn0, ie
+  real(real_kind) :: bval, cval, scale1, scale2
+  integer         :: ie
 
   !======= Internals ============
-  call get_hvcoord_ptr(hvcoord)
-  call get_qn0(qn0)
-  call get_RHS_vars(imex,dt,eta_ave_w,hybrid,deriv)
 
   ! set scale factors depending on whether using implicit, explicit, or IMEX
   if (imex == 0) then
@@ -110,12 +102,8 @@ subroutine farkifun(t, y_C, fy_C, ipar, rpar, ierr)
   ! set return value to success
   ierr = 0
 
-  ! dereference pointer for NVec_t objects
-  call c_f_pointer(y_C, y)
-  call c_f_pointer(fy_C, fy)
-
   ! TODO: obtain b value for current 'stage number' (only affect tracers)
-  bval = 1.d0/max_stage_num
+  bval = 1.d0
 
   ! The function call to compute_andor_apply_rhs is as follows:
   !  compute_andor_apply_rhs(np1, nm1, n0, qn0, dt2, elem, hvcoord, hybrid, &
@@ -133,71 +121,63 @@ subroutine farkifun(t, y_C, fy_C, ipar, rpar, ierr)
   !  DSS is the averaging procedure for the active and inactive nodes
   !
 
-  call compute_andor_apply_rhs(fy%tl_idx, fy%tl_idx, y%tl_idx, qn0, &
+  call compute_andor_apply_rhs(ydot%tl_idx, ydot%tl_idx, y%tl_idx, qn0, &
         1.d0, y%elem, hvcoord, hybrid, deriv, y%nets, y%nete, &
         .false., bval*eta_ave_w, scale1, scale2, 0.d0)
 
   ! Zero out RHS vector elements to maintain (d/dt)phinh_i(nlevp) = 0
-  do ie=fy%nets,fy%nete
-    fy%elem(ie)%state%phinh_i(:,:,nlevp,fy%tl_idx) = 0.d0
+  do ie=ydot%nets,ydot%nete
+    ydot%elem(ie)%state%phinh_i(:,:,nlevp,ydot%tl_idx) = 0.d0
   end do
 
   return
-end subroutine farkifun
+end function farkifun
 
 !=================================================================
 
-subroutine farkefun(t, y_C, fy_C, ipar, rpar, ierr)
+function farkefun(t, y, ydot, hvcoord, hybrid, deriv, qn0, imex, dt, eta_ave_w) &
+  result(ierr)
   !-----------------------------------------------------------------
   ! Description: farkefun provides the explicit portion of the right
   !     hand side function for the ODE:   dy/dt = fi(t,y) + fe(t,y)
   !
   ! Arguments:
   !       t - (dbl, input) current time
-  !     y_C - (ptr) C pointer to NVec_t containing current solution
-  !    fy_C - (ptr) C pointer to NVec_t to hold right-hand side function
-  !    ipar - (long int(*), input) integer user parameter data (unused here)
-  !    rpar - (dbl(*), input) real user parameter data (unused here)
-  !    ierr - (int, output) return flag: 0=>success,
-  !            1=>recoverable error, -1=>non-recoverable error
+  !       y - (NVec_t) NVec_t containing current solution
+  !    ydot - (NVec_t) NVec_t to hold right-hand side function
   !-----------------------------------------------------------------
 
   !======= Inclusions ===========
-  use arkode_mod,       only: max_stage_num, get_RHS_vars, get_hvcoord_ptr, &
-                              get_qn0
-  use kinds,            only: real_kind
-  use HommeNVector,     only: NVec_t
-  use hybrid_mod,       only: hybrid_t
-  use derivative_mod,   only: derivative_t
-  use dimensions_mod,   only: nlevp
-  use hybvcoord_mod,    only: hvcoord_t
-  use prim_advance_mod, only: compute_andor_apply_rhs
-  use iso_c_binding
+  use fsundials_nvector_mod, only: N_Vector
+  use kinds,                 only: real_kind
+  use HommeNVector,          only: NVec_t
+  use hybrid_mod,            only: hybrid_t
+  use derivative_mod,        only: derivative_t
+  use dimensions_mod,        only: nlevp
+  use hybvcoord_mod,         only: hvcoord_t
+  use prim_advance_mod,      only: compute_andor_apply_rhs
 
   !======= Declarations =========
   implicit none
 
   ! calling variables
-  real*8,            intent(in)         :: t
-  type(c_ptr),       intent(in), target :: y_C
-  type(c_ptr),       intent(in), target :: fy_C
-  integer(C_LONG),   intent(in)         :: ipar(1)
-  real*8,            intent(in)         :: rpar(1)
-  integer(C_INT),    intent(out)        :: ierr
+  real*8,             intent(in)    :: t
+  type(NVec_t),       intent(in)    :: y
+  type(NVec_t),       intent(inout) :: ydot
+  type(hvcoord_t),    intent(in)    :: hvcoord
+  type(hybrid_t),     intent(in)    :: hybrid
+  type(derivative_t), intent(in)    :: deriv
+  integer,            intent(in)    :: qn0
+  integer,            intent(in)    :: imex
+  real(real_kind),    intent(in)    :: dt
+  real(real_kind),    intent(in)    :: eta_ave_w
+  integer                           :: ierr
 
   ! local variables
-  type(derivative_t)    :: deriv
-  type(hybrid_t)        :: hybrid
-  type(hvcoord_t)       :: hvcoord
-  type(NVec_t), pointer :: y => NULL()
-  type(NVec_t), pointer :: fy => NULL()
-  real(real_kind)       :: dt, eta_ave_w, bval, cval, scale1, scale2
-  integer               :: imex, qn0, ie
+  real(real_kind) :: bval, cval, scale1, scale2
+  integer         :: ie
 
   !======= Internals ============
-  call get_hvcoord_ptr(hvcoord)
-  call get_qn0(qn0)
-  call get_RHS_vars(imex,dt,eta_ave_w,hybrid,deriv)
 
   ! set scale factors depending on whether using implicit, explicit, or IMEX
   if (imex == 0) then
@@ -214,12 +194,8 @@ subroutine farkefun(t, y_C, fy_C, ipar, rpar, ierr)
   ! set return value to success
   ierr = 0
 
-  ! dereference pointer for NVec_t objects
-  call c_f_pointer(y_C, y)
-  call c_f_pointer(fy_C, fy)
-
   ! TODO: obtain b value for current 'stage number' (only affects tracers)
-  bval = 1.d0/max_stage_num
+  bval = 1.d0
 
   ! The function call to compute_andor_apply_rhs is as follows:
   !  compute_andor_apply_rhs(np1, nm1, n0, qn0, dt2, elem, hvcoord, hybrid, &
@@ -237,107 +213,40 @@ subroutine farkefun(t, y_C, fy_C, ipar, rpar, ierr)
   !  DSS is the averaging procedure for the active and inactive nodes
   !
 
-  call compute_andor_apply_rhs(fy%tl_idx, fy%tl_idx, y%tl_idx, qn0, &
+  call compute_andor_apply_rhs(ydot%tl_idx, ydot%tl_idx, y%tl_idx, qn0, &
         1.d0, y%elem, hvcoord, hybrid, deriv, y%nets, y%nete, &
         .false., bval*eta_ave_w, scale1, scale2, 0.d0)
 
   ! Zero out RHS vector elements to maintain (d/dt)phinh_i(nlevp) = 0
-  do ie=fy%nets,fy%nete
-    fy%elem(ie)%state%phinh_i(:,:,nlevp,fy%tl_idx) = 0.d0
+  do ie=ydot%nets,ydot%nete
+    ydot%elem(ie)%state%phinh_i(:,:,nlevp,ydot%tl_idx) = 0.d0
   end do
 
   return
-end subroutine farkefun
-
-!=================================================================
-
-subroutine farkdiags(iout, rout, ap)
-  !-----------------------------------------------------------------
-  ! Description: subroutine to output arkode diagnostics
-  !
-  ! Arguments:
-  !        iout - (long int*, input) integer optional outputs
-  !        rout - (dbl*, input) real optional outputs
-  !        ap   - (parameter_list, input) arkode parameters
-  !-----------------------------------------------------------------
-  !======= Inclusions ===========
-  use iso_c_binding
-  use arkode_mod
-
-  !======= Declarations =========
-  implicit none
-
-  integer(C_LONG), intent(in) :: iout(40)
-  real*8,          intent(in) :: rout(40)
-  type(parameter_list), intent(in) :: ap
-
-  !======= Internals ============
-
-  ! general solver statistics
-  print *, '   '
-  print *,  ' ARKode output values:'
-  print '(4x,A,i9)','Total internal steps taken =',iout(3)
-  print '(4x,A,i9)','   stability-limited steps =',iout(4)
-  print '(4x,A,i9)','    accuracy-limited steps =',iout(5)
-  print '(4x,A,i9)','  internal steps attempted =',iout(6)
-  print '(4x,A,i9)','Total explicit rhs calls   =',iout(7)
-  print '(4x,A,i9)','Total implicit rhs calls   =',iout(8)
-
-  print '(4x,A,i9)','Total nonlinear iterations =',iout(11)
-  if (iout(13) > 0)  print '(4x,A,i9)','Total root function calls  =',iout(13)
-
-  ! linear solver statistics
-  print '(4x,A,i9)','Total linear iterations    =',iout(21)
-  if (iout(9) > 0)  print '(4x,A,i9)','Num lin solver setup calls =',iout(9)
-  if (.not.use_column_solver) then
-     if (iout(17) > 0) print '(4x,A,i9)','Num lin solver rhs calls   =',iout(17)
-     if (iout(18) > 0) print '(4x,A,i9)','Num lin solver Jac calls   =',iout(18)
-     if (iout(19) > 0) print '(4x,A,i9)','Num PSet routine calls     =',iout(19)
-     if (iout(20) > 0) print '(4x,A,i9)','Num PSolve routine calls   =',iout(20)
-  endif
-
-  ! error statistics
-  if (iout(10) > 0) print '(4x,A,i9)','Num error test failures    =',iout(10)
-  if (iout(12) > 0) print '(4x,A,i9)','Num nonlin conv failures   =',iout(12)
-  if (.not.use_column_solver) then
-     if (iout(22) > 0) print '(4x,A,i9)','Num linear conv failures   =',iout(22)
-  endif
-
-  ! general time-stepping information
-  print '(4x,A,es12.5)','First internal step size   =',rout(1)
-  print '(4x,A,es12.5)','Last internal step size    =',rout(2)
-  print '(4x,A,es12.5)','Next internal step size    =',rout(3)
-  print '(4x,A,es12.5)','Current internal time      =',rout(4)
-  print '(4x,A,es12.5)','Suggested tol scale factor =',rout(5)
-  print *, '   '
-
-  return
-end subroutine farkdiags
-!=================================================================
+end function farkefun
 
 
-subroutine FColumnSolSolve(b_C, t, y_C, gamma, ierr)
+function FColumnSolSolve(b, t, y, gamma, x) result(ierr)
   !-----------------------------------------------------------------
   ! Description: FColumnSolSolve is the routine called by ARKode to
-  !     perform the linear solve at the state defined by (t,y_C),
-  !     where b_C stores the right-hand side vector on input, and
+  !     perform the linear solve at the state defined by (t,y),
+  !     where b stores the right-hand side vector on input, and
   !     the solution vector on output.
   !
   ! Arguments:
-  !     b_C - (ptr, in/out) C pointer to NVec_t containing linear
-  !            system RHS on input, and solution on output
+  !       b - (NVec_t, input) NVec_t containing linear system RHS
   !       t - (dbl, input) current time
-  !     y_C - (ptr) C pointer to NVec_t containing current state
+  !       y - (NVec_t) NVec_t containing current state
   !   gamma - (dbl, input) scaling factor for Jacobian in system
   !            matrix, A = I-gamma*J
-  !    ierr - (int, output) return flag: 0=>success,
-  !            1=>recoverable error, -1=>non-recoverable error
+  !       x - (NVec_t, output) NVec_t containing solution
   !-----------------------------------------------------------------
 
   !======= Inclusions ===========
   use arkode_mod,         only: get_hvcoord_ptr, get_qn0
   use control_mod,        only: theta_hydrostatic_mode
-  use eos,                only: get_pnh_and_exner, get_dirk_jacobian
+  use eos,                only: pnh_and_exner_from_eos
+  use imex_mod,           only: get_dirk_jacobian
   use kinds,              only: real_kind
   use HommeNVector,       only: NVec_t
   use hybvcoord_mod,      only: hvcoord_t
@@ -350,16 +259,15 @@ subroutine FColumnSolSolve(b_C, t, y_C, gamma, ierr)
   implicit none
 
   ! calling variables
-  type(c_ptr),       intent(in), target :: b_C
-  real*8,            intent(in)         :: t
-  type(c_ptr),       intent(in), target :: y_C
-  real*8,            intent(in)         :: gamma
-  integer(C_INT),    intent(out)        :: ierr
+  type(NVec_t),      intent(in) :: b
+  real*8,            intent(in)    :: t
+  type(NVec_t),      intent(in)    :: y
+  real*8,            intent(in)    :: gamma
+  type(NVec_t),      intent(out)   :: x
+  integer                          :: ierr
 
   ! local variables
   type(hvcoord_t)       :: hvcoord
-  type(NVec_t), pointer :: b  => NULL()
-  type(NVec_t), pointer :: y  => NULL()
   real (kind=real_kind), pointer, dimension(:,:,:) :: phi_np1
   real (kind=real_kind), pointer, dimension(:,:,:) :: dp3d
   real (kind=real_kind), pointer, dimension(:,:,:) :: vtheta_dp
@@ -382,10 +290,6 @@ subroutine FColumnSolSolve(b_C, t, y_C, gamma, ierr)
 
   ! set return value to success
   ierr = 0
-
-  ! dereference pointers for NVec_t objects
-  call c_f_pointer(b_C, b)
-  call c_f_pointer(y_C, y)
 
   !--------------------------------
   ! perform solve
@@ -446,7 +350,7 @@ subroutine FColumnSolSolve(b_C, t, y_C, gamma, ierr)
   !    (b) construct right-hand side vector:  b1 = (b_phi + gamma*g*b_w)
   !    (c) solve M*x_phi = b1 for x_phi via calls to DGTTRF and DGTTRS
   !    (d) compute x_w = [x_phi - b_phi]/(gamma*g)
-  !    (e) copy x_v1 = b_v1, x_v2 = b_v2, x_theta = b_theta, x_dp3d = b_dp3d
+  !    (e) set x_v1 = b_v1, x_v2 = b_v2, x_theta = b_theta, x_dp3d = b_dp3d
 
   ! outer loop
   do ie=y%nets,y%nete
@@ -461,7 +365,7 @@ subroutine FColumnSolSolve(b_C, t, y_C, gamma, ierr)
      phis => y%elem(ie)%state%phis(:,:)
 
      ! compute intermediate variables for Jacobian calculation
-     call get_pnh_and_exner(hvcoord, vtheta_dp, dp3d, phi_np1, &
+     call pnh_and_exner_from_eos(hvcoord, vtheta_dp, dp3d, phi_np1, &
              pnh, exner, dpnh_dp_i, pnh_i_out=pnh_i)
 
      ! compute dp3d_i -- note that compute_stage_value_dirk
@@ -490,316 +394,39 @@ subroutine FColumnSolSolve(b_C, t, y_C, gamma, ierr)
 
            !-------------
            ! step (c) solve M*x_phi = b1 for x_phi via calls to DGTTRF and DGTTRS
-           !          note solution will be in b1 on output
+           !          note solution will be in b1 on output of DGTTRS
            !-------------
            call DGTTRF( nlev, JacL(:,i,j), JacD(:,i,j), JacU(:,i,j), JacU2(:,i,j), &
                         Ipiv(:,i,j), info(i,j) )
            call DGTTRS( 'N', nlev, 1, JacL(:,i,j), JacD(:,i,j), JacU(:,i,j), &
                         JacU2(:,i,j), Ipiv(:,i,j), b1(:,i,j), nlev, info(i,j) )
+           x%elem(ie)%state%phinh_i(i,j,1:nlev,x%tl_idx) = b1(:,i,j)
 
            !-------------
            ! step (d) compute x_w = [x_phi - b_phi]/(gamma*g), then copy x_phi
            !          into b_phi (for output purposes)
            !-------------
-           b%elem(ie)%state%w_i(i,j,1:nlev,b%tl_idx) = (b1(:,i,j)  - &
+           x%elem(ie)%state%w_i(i,j,1:nlev,x%tl_idx) = &
+             (x%elem(ie)%state%phinh_i(i,j,1:nlev,x%tl_idx) - &
               b%elem(ie)%state%phinh_i(i,j,1:nlev,b%tl_idx)) / (gamma*g)
-           b%elem(ie)%state%phinh_i(i,j,1:nlev,b%tl_idx) = b1(:,i,j)
 
            !-------------
-           ! step (e) copy x_v1 = b_v1, x_v2 = b_v2, x_theta = b_theta, x_dp3d = b_dp3d
+           ! step (e) set x_v1 = b_v1, x_v2 = b_v2, x_theta = b_theta, x_dp3d = b_dp3d
            !-------------
-           ! Note: since the vector b stores b_* on input and x_* on output, this is already done
+           x%elem(ie)%state%v(i,j,1,1:nlev,x%tl_idx) = &
+             b%elem(ie)%state%v(i,j,1,1:nlev,b%tl_idx)
+           x%elem(ie)%state%v(i,j,2,1:nlev,x%tl_idx) = &
+             b%elem(ie)%state%v(i,j,2,1:nlev,b%tl_idx)
+           x%elem(ie)%state%vtheta_dp(i,j,1:nlev,x%tl_idx) = &
+             b%elem(ie)%state%vtheta_dp(i,j,1:nlev,b%tl_idx)
+           x%elem(ie)%state%dp3d(i,j,1:nlev,x%tl_idx) = &
+             b%elem(ie)%state%dp3d(i,j,1:nlev,b%tl_idx)
 
         end do  ! end j loop
      end do  ! end i loop
   end do   ! end ie loop
 
   return
-end subroutine FColumnSolSolve
+end function FColumnSolSolve
 
-!=================================================================
-
-
-!-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-!
-! NOTE: All of the remaining subroutines are not required when
-! interfacing with ARKode, and so they are not currently
-! implemented.  These may be provided to improve ARKode
-! performance on this application; if so they should be 'enabled'
-! by calling the relevant ARKode interface routine.
-!
-!-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-
-subroutine farkjtimes(v_C, Jv_C, t, y_C, fy_C, h, ipar, rpar, v1_C, ierr)
-  !-----------------------------------------------------------------
-  ! Description: farkjtimes provides the Jacobian-vector product
-  !    routine for the linearized Newton system.
-  !
-  !  Arguments:
-  !       v_C - (ptr) C pointer to NVec_t vector to multiply
-  !      Jv_C - (ptr) C pointer to NVec_t for result of Jacobian-vector product
-  !         t - (dbl, input) current time
-  !       y_C - (ptr) C pointer to NVec_t containing current solution
-  !      fy_C - (ptr) C pointer to NVec_t containing current implicit ODE rhs
-  !         h - (dbl, input) time step size for last internal step
-  !      ipar - (long int(*), input) integer user parameter data
-  !             (passed back here, unused)
-  !      rpar - (dbl(*), input) real user parameter data (passed here,
-  !             unused)
-  !      v1_C - (ptr) C pointer to NVec_t scratch vector
-  !      ierr - (int, output) return flag: 0=>success,
-  !             1=>recoverable error, -1=>non-recoverable error
-  !-----------------------------------------------------------------
-  !======= Inclusions ===========
-  use iso_c_binding
-  use HommeNVector,   only: NVec_t
-  use dimensions_mod, only: np, nlev
-
-  !======= Declarations =========
-  implicit none
-
-  ! calling variables
-  type(c_ptr),     intent(in), target :: v_C
-  type(c_ptr),     intent(in), target :: Jv_C
-  real*8,          intent(in)         :: t
-  type(c_ptr),     intent(in), target :: y_C
-  type(c_ptr),     intent(in), target :: fy_C
-  real*8,          intent(in)         :: h
-  integer(C_LONG), intent(in)         :: ipar(1)
-  real*8,          intent(in)         :: rpar(1)
-  type(c_ptr),     intent(in), target :: v1_C
-  integer(C_INT),  intent(out)        :: ierr
-
-  ! local variables
-  type(NVec_t), pointer :: v  => NULL()
-  type(NVec_t), pointer :: Jv => NULL()
-  type(NVec_t), pointer :: y  => NULL()
-  type(NVec_t), pointer :: fy => NULL()
-  type(NVec_t), pointer :: v1 => NULL()
-
-
-  !======= Internals ============
-
-  ! set return value to success
-  ierr = 0
-
-  ! dereference pointer for NVec_t objects
-  call c_f_pointer(v_C, v)
-  call c_f_pointer(Jv_C, Jv)
-  call c_f_pointer(y_C, y)
-  call c_f_pointer(fy_C, fy)
-  call c_f_pointer(v1_C, v1)
-
-  ! perform matrix-vector product, inserting result into Jv
-
-  return
-end subroutine farkjtimes
-!=================================================================
-
-
-
-
-
-
-subroutine farkjtsetup(t, y_C, fy_C, h, ipar, rpar, ierr)
-  !-----------------------------------------------------------------
-  ! Description: farkjtsetup performs any preparations for
-  !    subsequent calls to farkjtimes.
-  !
-  !  Arguments:
-  !         t - (dbl, input) current time
-  !       y_C - (ptr) C pointer to NVec_t containing current solution
-  !      fy_C - (ptr) C pointer to NVec_t containing current implicit ODE rhs
-  !         h - (dbl, input) time step size for last internal step
-  !      ipar - (long int(*), input) integer user parameter data
-  !             (passed back here, unused)
-  !      rpar - (dbl(*), input) real user parameter data (passed here,
-  !             unused)
-  !      ierr - (int, output) return flag: 0=>success,
-  !             1=>recoverable error, -1=>non-recoverable error
-  !-----------------------------------------------------------------
-  !======= Inclusions ===========
-  use iso_c_binding
-  use HommeNVector,   only: NVec_t
-  use dimensions_mod, only: np, nlev
-
-  !======= Declarations =========
-  implicit none
-
-  ! calling variables
-  real*8,          intent(in)         :: t
-  type(c_ptr),     intent(in), target :: y_C
-  type(c_ptr),     intent(in), target :: fy_C
-  real*8,          intent(in)         :: h
-  integer(C_LONG), intent(in)         :: ipar(1)
-  real*8,          intent(in)         :: rpar(1)
-  integer(C_INT),  intent(out)        :: ierr
-
-  ! local variables
-  type(NVec_t), pointer :: y  => NULL()
-  type(NVec_t), pointer :: fy => NULL()
-
-
-  !======= Internals ============
-
-  ! set return value to success
-  ierr = 0
-
-  ! dereference pointer for NVec_t objects
-  call c_f_pointer(y_C, y)
-  call c_f_pointer(fy_C, fy)
-
-  ! perform setup for matrix-vector products
-
-  return
-end subroutine farkjtsetup
-!=================================================================
-
-
-
-
-subroutine farkpset(t, y_C, fy_C, jok, jcur, gamma, h, ipar, rpar, ierr)
-  !-----------------------------------------------------------------
-  ! Description: farkpset provides the preconditioner setup
-  !    routine for the linearized Newton system.
-  !
-  !  Arguments:
-  !         t - (dbl, input) current time
-  !       y_C - (ptr) C pointer to NVec_t containing current solution
-  !      fy_C - (ptr) C pointer to NVec_t containing current implicit ODE rhs
-  !       jok - (int, input) flag denoting whether to recompute
-  !              Jacobian-related data: 0=>recompute, 1=>unnecessary
-  !      jcur - (int, output) output flag to say if Jacobian data
-  !              was recomputed: 1=>was recomputed, 0=>was not
-  !     gamma - (dbl, input) the scalar appearing in the Newton matrix
-  !              A = M-gamma*J
-  !         h - (dbl, input) time step size for last internal step
-  !      ipar - (long int(*), input) integer user parameter data
-  !             (passed back here, unused)
-  !      rpar - (dbl(*), input) real user parameter data (passed here,
-  !             unused)
-  !      ierr - (int, output) return flag: 0=>success,
-  !             1=>recoverable error, -1=>non-recoverable error
-  !-----------------------------------------------------------------
-  !======= Inclusions ===========
-  use iso_c_binding
-  use HommeNVector,   only: NVec_t
-  use dimensions_mod, only: np, nlev
-
-  !======= Declarations =========
-  implicit none
-
-  ! calling variables
-  real*8,          intent(in)         :: t
-  type(c_ptr),     intent(in), target :: y_C
-  type(c_ptr),     intent(in), target :: fy_C
-  integer(C_INT),  intent(in)         :: jok
-  integer(C_INT),  intent(out)        :: jcur
-  real*8,          intent(in)         :: gamma
-  real*8,          intent(in)         :: h
-  integer(C_LONG), intent(in)         :: ipar(1)
-  real*8,          intent(in)         :: rpar(1)
-  integer(C_INT),  intent(out)        :: ierr
-
-  ! local variables
-  type(NVec_t), pointer :: y  => NULL()
-  type(NVec_t), pointer :: fy => NULL()
-
-  !======= Internals ============
-
-  ! initialize return value to success, jcur to not-recomputed
-  ierr = 0
-  jcur = 0
-
-  ! dereference pointer for NVec_t objects
-  call c_f_pointer(y_C, y)
-  call c_f_pointer(fy_C, fy)
-
-  ! return if no preconditioner update is required
-  if (jok == 1)  return
-
-  ! update the preconditioner
-
-  ! set Jacobian recomputation flag
-  jcur = 1
-
-  return
-end subroutine farkpset
-!=================================================================
-
-
-
-
-subroutine farkpsol(t, y_C, fy_C, r_C, z_C, gamma, delta, lr, ipar, &
-                    rpar, ierr)
-  !-----------------------------------------------------------------
-  ! Description: farkpsol provides the preconditioner solve routine
-  !    for the preconditioning of the linearized Newton system.
-  !         i.e. solves P*z = r
-  !
-  ! Arguments:
-  !         t - (dbl, input) current time
-  !       y_C - (ptr) C pointer to NVec_t containing current solution
-  !      fy_C - (ptr) C pointer to NVec_t containing current implicit ODE rhs
-  !       r_C - (ptr) C pointer to NVec_t rhs vector of prec. system
-  !       z_C - (ptr) C pointer to NVec_t solution vector of prec. system
-  !     gamma - (dbl, input) scalar appearing in the Newton Matrix
-  !             A = M-gamma*J
-  !     delta - (dbl, input) desired tolerance if using an iterative
-  !             method.  In that case, solve until
-  !                  Sqrt[Sum((r-Pz).*ewt)^2] < delta
-  !             where the ewt vector is obtainable by calling
-  !             FARKGETERRWEIGHTS()
-  !        lr - (int, input) flag indicating preconditioning type to
-  !             apply: 1 => left,  2 => right
-  !      ipar - (long int(*), input) integer user parameter data
-  !             (passed back here, unused)
-  !      rpar - (dbl(*), input) real user parameter data (passed here,
-  !             unused)
-  !      ierr - (int, output) return flag: 0=>success,
-  !             1=>recoverable error, -1=>non-recoverable error
-  !-----------------------------------------------------------------
-  !======= Inclusions ===========
-  use iso_c_binding
-  use HommeNVector,   only: NVec_t
-  use dimensions_mod, only: np, nlev
-
-  !======= Declarations =========
-  implicit none
-
-  ! calling variables
-  real*8,          intent(in)         :: t
-  type(c_ptr),     intent(in), target :: y_C
-  type(c_ptr),     intent(in), target :: fy_C
-  type(c_ptr),     intent(in), target :: r_C
-  type(c_ptr),     intent(in), target :: z_C
-  real*8,          intent(in)         :: gamma
-  real*8,          intent(in)         :: delta
-  integer(C_INT),  intent(in)         :: lr
-  integer(C_LONG), intent(in)         :: ipar(1)
-  real*8,          intent(in)         :: rpar(1)
-  integer(C_INT),  intent(out)        :: ierr
-
-  ! local variables
-  type(NVec_t), pointer :: y  => NULL()
-  type(NVec_t), pointer :: fy => NULL()
-  type(NVec_t), pointer :: r  => NULL()
-  type(NVec_t), pointer :: z  => NULL()
-
-  !======= Internals ============
-
-  ! set return value to success
-  ierr = 0
-
-  ! dereference pointer for NVec_t objects
-  call c_f_pointer(y_C, y)
-  call c_f_pointer(fy_C, fy)
-  call c_f_pointer(r_C, r)
-  call c_f_pointer(z_C, z)
-
-  ! perform preconditioner solve to fill z
-
-  return
-end subroutine farkpsol
 !=================================================================

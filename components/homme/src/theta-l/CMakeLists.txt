@@ -19,6 +19,8 @@ FILE(GLOB TARGET_F90  ${TARGET_DIR}/*.F90 ${SRC_SHARE_DIR}/*.F90 ${TEST_SRC_DIR}
 IF (HOMME_USE_ARKODE)
   SET(TARGET_F90
     ${TARGET_F90}
+    ${ARKODE_DIR}/arkode_tables.F90
+    ${ARKODE_DIR}/homme_sunlinsol.F90
     ${ARKODE_DIR}/theta-l/arkode_interface.F90
     ${ARKODE_DIR}/theta-l/arkode_mod.F90
     ${ARKODE_DIR}/theta-l/homme_nvector.F90
@@ -50,22 +52,13 @@ SET(THETAL_SRCS_F90
   ${UTILS_SHARE_DIR}/shr_spfn_mod.F90
 )
 
-IF (HOMME_USE_ARKODE)
-  SET(THETAL_SRCS_C
-    ${ARKODE_DIR}/nvector_external.h
-    ${ARKODE_DIR}/nvector_external.c
-    ${ARKODE_DIR}/column_linsol.h
-    ${ARKODE_DIR}/column_linsol.c
-  )
-ENDIF ()
-
 # If the user specified a file for custom compiler options use those
 IF (DEFINED THETA_CUSTOM_FLAGS_FILE)
   setCustomCompilerFlags(THETA_CUSTOM_FLAGS_FILE THETAL_SRCS_F90)
 ENDIF ()
 
 # Make SRCS global so the tests can access it
-SET(EXEC_SOURCES ${THETAL_SRCS} ${THETAL_SRCS_C} ${THETAL_SRCS_F90} )
+SET(EXEC_SOURCES ${THETAL_SRCS} ${THETAL_SRCS_F90} )
 
 # Set up defaults
 IF (NOT PREQX_NP)
