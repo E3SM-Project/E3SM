@@ -2003,6 +2003,29 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   </SLIBS>
 </compiler>
 
+<compiler MACH="jlse-iris" COMPILER="intelgpu">
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CPPDEFS>
+    <append> -DHAVE_SLASHPROC </append>
+  </CPPDEFS>
+  <FFLAGS>
+    <base>-convert big_endian -assume byterecl -assume realloc_lhs -fp-model consistent</base>
+    <append DEBUG="FALSE"> -O2 </append>
+  </FFLAGS>
+  <MPIFC>mpiifx</MPIFC>
+  <MPICC>mpiicx</MPICC>
+  <MPICXX>mpiicpx</MPICXX>
+  <SCC>icx</SCC>
+  <SCXX>icpx</SCXX>
+  <SFC>ifx</SFC>
+  <SLIBS>
+    <append>$SHELL{$(NETCDF_PATH)/bin/nf-config --flibs} -Wl,-rpath -Wl,$ENV{NETCDF_PATH}/lib -mkl</append>
+  </SLIBS>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+</compiler>
+
 <compiler MACH="jlse" COMPILER="gnu">
   <CONFIG_ARGS>
     <base> --host=Linux </base>
