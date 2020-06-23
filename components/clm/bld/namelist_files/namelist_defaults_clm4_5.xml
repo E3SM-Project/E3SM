@@ -129,6 +129,10 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
  ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.ICRUCLM45.ne4_oQU240.67a0f98.0001-01-04-00000.nc
 </finidat>
 
+<finidat hgrid="r0125"   maxpft="17" mask="oRRS15to5" use_cn=".false." ic_ymd="20000101" more_vertlayers=".false."
+ ic_tod="0" sim_year="2010" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/20180716.DECKv1b_A3.ne30_oEC.edison.clm2.r.2010-01-01-00000_to_r0125.20200213.nc
+</finidat>
+
 <!-- HOMME grid ne11 resolution -->
 
 <finidat hgrid="ne11np4"   maxpft="17"  mask="oQU240" use_cn=".false." ic_ymd="18500101" more_vertlayers=".false."
@@ -213,8 +217,15 @@ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".true." irrigate=".true." nu_co
 <finidat hgrid="ne0np4_enax4v1" sim_year="2000">lnd/clm2/initdata_map/clmi.ICRUCLM45SP.2000-01-01.enax4v1_oRRS18to6_simyr2000_c180430.nc</finidat>
 <finidat hgrid="ne0np4_twpx4v1" ic_ymd="101" sim_year="2000">lnd/clm2/initdata_map/clmi.ICRUCLM45SP.2000-01-01.twpx4v1_oRRS18to6v3_simyr2000_c180430.nc</finidat>
 
-<!-- for present day simulations - year 2000 -->
+<!-- for present day simulations - year 2010 -->
+<fsurdat hgrid="ne30np4"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne30np4_simyr2010_c20181025.nc</fsurdat>
+
+<fsurdat hgrid="r0125"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr2010_c191025.nc</fsurdat>
+
 <fsurdat hgrid="360x720cru"   sim_year="2000" use_crop=".false." >
+<!-- for present day simulations - year 2000 -->
 lnd/clm2/surfdata_map/surfdata_360x720cru_simyr2000_c180216.nc</fsurdat>
 <fsurdat hgrid="48x96"     sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_48x96_simyr2000_c130927.nc</fsurdat>
@@ -252,8 +263,6 @@ lnd/clm2/surfdata_map/surfdata_ne4pg2_simyr2000_c190620.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_ne240np4_simyr2000_c170821.nc</fsurdat>
 <fsurdat hgrid="r05"         sim_year="2000" >
 lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr2000_c190418.nc</fsurdat>
-<fsurdat hgrid="r0125"       sim_year="2000" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr2000_c190730.nc</fsurdat>
 
 <!-- Crop surface datasets -->
 <fsurdat hgrid="1.9x2.5"   sim_year="2000" use_crop=".true." >
