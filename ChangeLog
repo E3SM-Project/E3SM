@@ -1,6 +1,145 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 6-23-2020
+Tag: cime5.8.27
+Answer Changes: [None, Round Off, Climate Changing]
+Tests:  SMS.ne30pg3_ne30pg3_mg17.A.cheyenne_intel
+        scripts_resgression_tests 
+        SMS_D_Ld3.f45_g37_rx1.A.izumi_nag
+Dependencies:
+
+Brief Summary:
+    - Rename ne30pg3 grid name to ne30np4.pg3
+    - ERA5 data stream related changes.
+    - Fix link order for cdeps.
+    - Give the file name that results in the "empty read-only file" error.
+    - Uncomment error check.
+    - Use pio1 even for mpi-serial cases in CESM.
+    - Fix print format issue and turn off debug flags.
+    - Update paths for cdeps.
+    - Merge branch 'master' of https://github.com/ESMCI/cime.
+    - Minor adjust to cdeps link step.
+    - Add cmake to cheyenne modules, point to CDEPS buildlib.
+    - Updates for cdeps streams
+    - Remove nuopc data models to new repo CDEPS.
+    - Fixed and cleaned-up scripts_regression_tests.py test Q_TestBlessTestResults with CIME_MODEL = cesm.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+b3fb69d87 Merge pull request #3587 from ESMCI/fischer/rename_ne30pg3_grid
+d1058c937 Merge pull request #3586 from ESMCI/add_era5_cime_only
+231c70059 fix link order for cdeps
+bdef181e4 Merge pull request #3585 from billsacks/improve_error_message
+4427dd051 uncomment error check
+86509cc45 Merge pull request #3583 from billsacks/use_pio1
+4412c39b2 Merge pull request #3582 from jedwards4b/nag_fixes
+8a4859e5a update paths for cdeps
+40b2eb7b3 Merge branch 'master' of https://github.com/ESMCI/cime
+87951ae07 minor adjust to CDEPS link step
+a740bedfd add cmake to cheyenne modules, point to CDEPS buildlib
+d10f946d6 updates for cdeps streams
+74e537532 Merge pull request #3578 from jedwards4b/remove_nuopc_data_models
+9052cc17f Merge pull request #3579 from ESMCI/wpcoomb/fix_scripts_regression_tests.py_test_Q_TestBlessTestResults
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/config_files.xml
+M	config/cesm/config_grids.xml
+M	config/cesm/config_grids_common.xml
+M	config/cesm/config_grids_mct.xml
+M	config/cesm/machines/config_machines.xml
+M	config/cesm/machines/config_pio.xml
+M	config/ufs/config_files.xml
+M	config/ufs/config_grids.xml
+M	config/ufs/machines/config_machines.xml
+M	config/xml_schemas/entry_id_base.xsd
+M	config/xml_schemas/entry_id_base_version3.xsd
+M	scripts/Tools/Makefile
+M	scripts/lib/CIME/SystemTests/system_tests_common.py
+M	scripts/lib/CIME/XML/archive.py
+M	scripts/lib/CIME/XML/env_workflow.py
+M	scripts/lib/CIME/XML/files.py
+M	scripts/lib/CIME/XML/generic_xml.py
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/case/case.py
+M	scripts/lib/CIME/case/preview_namelists.py
+M	scripts/lib/CIME/nmlgen.py
+M	scripts/tests/scripts_regression_tests.py
+M	src/build_scripts/buildlib.internal_components
+D	src/components/data_comps_nuopc/datm/cime_config/buildlib
+D	src/components/data_comps_nuopc/datm/cime_config/buildlib_cmake
+D	src/components/data_comps_nuopc/datm/cime_config/buildnml
+D	src/components/data_comps_nuopc/datm/cime_config/config_archive.xml
+D	src/components/data_comps_nuopc/datm/cime_config/config_component.xml
+D	src/components/data_comps_nuopc/datm/cime_config/namelist_definition_datm.xml
+D	src/components/data_comps_nuopc/datm/cime_config/user_nl_datm
+D	src/components/data_comps_nuopc/datm/src/atm_comp_nuopc.F90
+D	src/components/data_comps_nuopc/datm/src/datm_datamode_clmncep_mod.F90
+D	src/components/data_comps_nuopc/datm/src/datm_datamode_core2_mod.F90
+D	src/components/data_comps_nuopc/datm/src/datm_datamode_jra_mod.F90
+D	src/components/data_comps_nuopc/dice/cime_config/buildlib
+D	src/components/data_comps_nuopc/dice/cime_config/buildlib_cmake
+D	src/components/data_comps_nuopc/dice/cime_config/buildnml
+D	src/components/data_comps_nuopc/dice/cime_config/config_archive.xml
+D	src/components/data_comps_nuopc/dice/cime_config/config_component.xml
+D	src/components/data_comps_nuopc/dice/cime_config/namelist_definition_dice.xml
+D	src/components/data_comps_nuopc/dice/cime_config/user_nl_dice
+D	src/components/data_comps_nuopc/dice/src/dice_datamode_ssmi_mod.F90
+D	src/components/data_comps_nuopc/dice/src/dice_flux_atmice_mod.F90
+D	src/components/data_comps_nuopc/dice/src/ice_comp_nuopc.F90
+D	src/components/data_comps_nuopc/dlnd/cime_config/buildlib
+D	src/components/data_comps_nuopc/dlnd/cime_config/buildlib_cmake
+D	src/components/data_comps_nuopc/dlnd/cime_config/buildnml
+D	src/components/data_comps_nuopc/dlnd/cime_config/config_archive.xml
+D	src/components/data_comps_nuopc/dlnd/cime_config/config_component.xml
+D	src/components/data_comps_nuopc/dlnd/cime_config/namelist_definition_dlnd.xml
+D	src/components/data_comps_nuopc/dlnd/cime_config/user_nl_dlnd
+D	src/components/data_comps_nuopc/dlnd/src/lnd_comp_nuopc.F90
+D	src/components/data_comps_nuopc/docn/cime_config/buildlib
+D	src/components/data_comps_nuopc/docn/cime_config/buildlib_cmake
+D	src/components/data_comps_nuopc/docn/cime_config/buildnml
+D	src/components/data_comps_nuopc/docn/cime_config/config_archive.xml
+D	src/components/data_comps_nuopc/docn/cime_config/config_component.xml
+D	src/components/data_comps_nuopc/docn/cime_config/namelist_definition_docn.xml
+D	src/components/data_comps_nuopc/docn/cime_config/user_nl_docn
+D	src/components/data_comps_nuopc/docn/src/docn_datamode_aquaplanet_mod.F90
+D	src/components/data_comps_nuopc/docn/src/docn_datamode_copyall_mod.F90
+D	src/components/data_comps_nuopc/docn/src/docn_datamode_iaf_mod.F90
+D	src/components/data_comps_nuopc/docn/src/docn_datamode_som_mod.F90
+D	src/components/data_comps_nuopc/docn/src/docn_set_ofrac_mod.F90
+D	src/components/data_comps_nuopc/docn/src/ocn_comp_nuopc.F90
+D	src/components/data_comps_nuopc/drof/cime_config/buildlib
+D	src/components/data_comps_nuopc/drof/cime_config/buildlib_cmake
+D	src/components/data_comps_nuopc/drof/cime_config/buildnml
+D	src/components/data_comps_nuopc/drof/cime_config/config_archive.xml
+D	src/components/data_comps_nuopc/drof/cime_config/config_component.xml
+D	src/components/data_comps_nuopc/drof/cime_config/namelist_definition_drof.xml
+D	src/components/data_comps_nuopc/drof/cime_config/user_nl_drof
+D	src/components/data_comps_nuopc/drof/src/rof_comp_nuopc.F90
+D	src/components/data_comps_nuopc/dshr_nuopc/dshr_dfield_mod.F90
+D	src/components/data_comps_nuopc/dshr_nuopc/dshr_fldlist_mod.F90
+D	src/components/data_comps_nuopc/dshr_nuopc/dshr_mod.F90
+D	src/components/data_comps_nuopc/dwav/cime_config/buildlib
+D	src/components/data_comps_nuopc/dwav/cime_config/buildlib_cmake
+D	src/components/data_comps_nuopc/dwav/cime_config/buildnml
+D	src/components/data_comps_nuopc/dwav/cime_config/config_archive.xml
+D	src/components/data_comps_nuopc/dwav/cime_config/config_component.xml
+D	src/components/data_comps_nuopc/dwav/cime_config/namelist_definition_dwav.xml
+D	src/components/data_comps_nuopc/dwav/cime_config/user_nl_dwav
+D	src/components/data_comps_nuopc/dwav/src/wav_comp_nuopc.F90
+M	src/share/streams/shr_strdata_mod.F90
+M	src/share/streams/shr_stream_mod.F90
+D	src/share/streams_nuopc/dshr_methods_mod.F90
+D	src/share/streams_nuopc/dshr_strdata_mod.F90
+D	src/share/streams_nuopc/dshr_stream_mod.F90
+D	src/share/streams_nuopc/dshr_tInterp_mod.F90
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 6-16-2020
 Tag: cime5.8.26
 Answer Changes: Climate Changin] 
