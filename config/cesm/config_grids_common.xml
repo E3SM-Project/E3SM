@@ -86,7 +86,7 @@
       <map name="ROF2LND_FMAPNAME">cpl/gridmaps/ne30np4.pg2/map_r05_TO_ne30np4.pg2_aave.191023.nc</map>
     </gridmap>
 
-    <gridmap lnd_grid="ne30pg3" rof_grid="r05">
+    <gridmap lnd_grid="ne30np4.pg3" rof_grid="r05">
       <map name="LND2ROF_FMAPNAME">lnd/clm2/mappingdata/maps/ne30pg3/map_ne30pg3_to_0.5x0.5_nomask_aave_da_c180515.nc</map>
       <map name="ROF2LND_FMAPNAME">lnd/clm2/mappingdata/maps/ne30pg3/map_0.5x0.5_nomask_to_ne30pg3_aave_da_c180515.nc</map>
     </gridmap>
@@ -392,7 +392,7 @@
       <map name="GLC2LND_SMAPNAME">cpl/gridmaps/ne30np4.pg2/map_gland4km_TO_ne30np4.pg2_aave.191023.nc</map>
     </gridmap>
 
-    <gridmap lnd_grid="ne30pg3" glc_grid="gland4" >
+    <gridmap lnd_grid="ne30np4.pg3" glc_grid="gland4" >
       <map name="LND2GLC_FMAPNAME">cpl/gridmaps/ne30pg3/map_ne30pg3_TO_gland4km_aave.180515.nc</map>
       <map name="LND2GLC_SMAPNAME">cpl/gridmaps/ne30pg3/map_ne30pg3_TO_gland4km_blin.180515.nc</map>
       <map name="GLC2LND_FMAPNAME">cpl/gridmaps/gland4km/map_gland4km_TO_ne30pg3_aave.180510.nc</map>
