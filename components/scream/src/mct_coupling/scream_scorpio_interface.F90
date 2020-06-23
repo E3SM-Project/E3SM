@@ -567,8 +567,14 @@ contains
 !=====================================================================!
   ! Handle any errors that crop up
   subroutine errorHandle(errMsg, retVal)
-
+    use iso_c_binding
     implicit none
+
+    interface
+      subroutine finalize_scream_session() bind(C)
+        ! No inputs or anything, just interface to C code.
+      end subroutine finalize_scream_session
+    end interface
 
     character(len=*),  intent(in)    :: errMsg
     integer,           intent(in)    :: retVal
@@ -584,6 +590,7 @@ contains
         curr => curr%next
       end do
       ! Kill run
+      call finalize_scream_session()
       call mpi_abort(pio_mpicom,0,retVal)
     end if
 
