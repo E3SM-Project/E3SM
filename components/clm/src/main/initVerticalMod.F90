@@ -55,7 +55,7 @@ contains
     character(len=256)    :: locfn             ! local filename
     real(r8) ,pointer     :: std (:)           ! read in - topo_std 
     real(r8) ,pointer     :: tslope (:)        ! read in - topo_slope 
-    real(r8) ,pointer     :: dtb (:)           ! read in - DTB
+    real(r8) ,pointer     :: dtb (:,:)           ! read in - DTB
     real(r8)              :: beddep            ! temporary
     integer               :: nlevbed           ! temporary
     real(r8)              :: zimid             ! temporary
@@ -584,18 +584,22 @@ contains
       !-----------------------------------------------
 
       if (use_var_soil_thick) then
-         allocate(dtb(bounds%begg:bounds%endg))
+         allocate(dtb(bounds%begg:bounds%endg,1:max_topounits))
          call ncd_io(ncid=ncid, varname='aveDTB', flag='read', data=dtb, dim1name=grlnd, readvar=readvar)
          if (.not. readvar) then
             write(iulog,*) 'aveDTB not in surfdata: reverting to default 10 layers.'
             do c = begc,endc
                col_pp%nlevbed(c) = nlevsoi
-	       col_pp%zibed(c) = zisoi(nlevsoi)
-	    end do
+	           col_pp%zibed(c) = zisoi(nlevsoi)
+	        end do
          else
-	    do c = begc,endc
+	        do c = begc,endc               
                g = col_pp%gridcell(c)
-               l = col_pp%landunit(c)
+               l = col_pp%landunit(c)               
+               t = col_pp%topounit(c)
+               topi = grc_pp%topi(g)
+               ti = t - topi + 1
+               
                if (lun_pp%urbpoi(l) .and. col_pp%itype(c) /= icol_road_imperv .and. col_pp%itype(c) /= icol_road_perv) then
                	  col_pp%nlevbed(c) = nlevurb
                else if (lun_pp%itype(l) == istdlak) then
@@ -604,31 +608,31 @@ contains
                	  col_pp%nlevbed(c) = 5
                else
                   ! check for near zero DTBs, set minimum value
-	          beddep = max(dtb(g), 0.2_r8)
-	          j = 0
-	          zimid = 0._r8
-                  do while (zimid < beddep .and. j < nlevgrnd)
-	             zimid = 0.5_r8*(zisoi(j)+zisoi(j+1))
-	             if (beddep > zimid) then
-	                nlevbed = j + 1
-	             else
-	                nlevbed = j
-                     end if
-	             j = j + 1
-                  enddo
-	          nlevbed = max(nlevbed, 5)
-	          nlevbed = min(nlevbed, nlevgrnd)
-                  col_pp%nlevbed(c) = nlevbed
-	          col_pp%zibed(c) = zisoi(nlevbed)
+	             beddep = max(dtb(g,ti), 0.2_r8)
+	             j = 0
+	             zimid = 0._r8
+                    do while (zimid < beddep .and. j < nlevgrnd)
+	                   zimid = 0.5_r8*(zisoi(j)+zisoi(j+1))
+	                   if (beddep > zimid) then
+	                      nlevbed = j + 1
+	                   else
+	                      nlevbed = j
+                       end if
+	                   j = j + 1
+                     enddo
+	             nlevbed = max(nlevbed, 5)
+	             nlevbed = min(nlevbed, nlevgrnd)
+                 col_pp%nlevbed(c) = nlevbed
+	             col_pp%zibed(c) = zisoi(nlevbed)
                end if
             end do
-	 end if
+	     end if
          deallocate(dtb)
       else
          do c = begc,endc
             col_pp%nlevbed(c) = nlevsoi
-	    col_pp%zibed(c) = zisoi(nlevsoi)
-	 end do
+	      col_pp%zibed(c) = zisoi(nlevsoi)
+	    end do
       end if
 
       !-----------------------------------------------

@@ -25,7 +25,8 @@ module lnd_disagg_forc
   use TopounitType   , only : top_pp
   use TopounitDataType, only: top_as, top_es, top_af        
   use LandunitType   , only : lun_pp                
-  use ColumnType     , only : col_pp                
+  use ColumnType     , only : col_pp  
+  use spmdmod          , only: masterproc
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -72,7 +73,7 @@ contains
 
     !
     ! !LOCAL VARIABLES:
-    integer :: t, l, c, fc         ! indices
+    integer :: t, l, c, fc, t2         ! indices
     integer :: clo, cc
     integer :: numt_pg                ! Number of topounits per grid	
 	
@@ -106,7 +107,7 @@ contains
     real(r8) :: sum_of_hrise        ! Sum of height rise of air parcel of all subgrids of a grid
     real(r8) :: hrise               ! Temporary height rise
 
-    integer :: uaflag = 0
+    integer :: uaflag = 1
 
     character(len=*), parameter :: subname = 'downscale_grd_to_topounit'
     !----------------------------------------------------------------------------------------
@@ -154,8 +155,9 @@ contains
           hrise = 0.
        end if
     
-      !do t = grc_pp%topi(g), grc_pp%topf(g)
-       do t = 1, numt_pg                                 !loop through the valid topounits only                       
+      do t = grc_pp%topi(g), grc_pp%topf(g)
+       !do t = 1, numt_pg                                 !loop through the valid topounits only  
+          t2 = t - grc_pp%topi(g) + 1
           topoElv  = top_pp%elevation(t)             ! Topounit sfc elevation  
           
           ! Downscale precipitation
@@ -165,8 +167,8 @@ contains
           else
              if (precip_downscaling_method == 'FNM') then
                 call downscale_precip_to_topounit_FNM(mxElv,uovern_t,grdElv,topoElv,rain_g,snow_g,deltaR,deltaS,hrise) !Use FNM method
-                deltaRain(t) = deltaR 
-                deltaSnow(t) = deltaS             
+                deltaRain(t2) = deltaR 
+                deltaSnow(t2) = deltaS             
                 sum_of_hrise = sum_of_hrise + hrise              
              else
                 call downscale_precip_to_topounit_ERMM(t,mxElv,grdElv,topoElv,rain_g, snow_g) ! Use ERMM method
@@ -187,7 +189,7 @@ contains
                 
           ! assign the state forcing fields derived from other inputs
           ! Horizontal windspeed (m/s)
-          top_as%windbot(t) = sqrt(top_as%ubot(t)**2 + top_as%vbot(t)**2)
+         top_as%windbot(t) = sqrt(top_as%ubot(t)**2 + top_as%vbot(t)**2)
          ! partial pressure of oxygen (Pa)
          top_as%po2bot(t) = o2_molar_const * top_as%pbot(t)
          ! air density (kg/m**3) - uses a temporary calculation
@@ -201,7 +203,7 @@ contains
          top_af%solai(t,1) = x2l(index_x2l_Faxa_swvdf,i)
          ! derived flux forcings
          top_af%solar(t) = top_af%solad(t,2) + top_af%solad(t,1) + &
-           top_af%solai(t,2) + top_af%solai(t,1)
+         top_af%solai(t,2) + top_af%solai(t,1)
 
          ! Keep track of the gridcell-level weighted sum for later normalization.
          !
@@ -228,6 +230,7 @@ contains
        
     else !grid has a single topounit
        ! update top_af using grid level values
+       t = grc_pp%topi(g)
        top_af%rain(t) = rain_g 
        top_af%snow(t) = snow_g 
        top_af%lwrad(t) = x2l(index_x2l_faxa_lwdn,i)
@@ -377,7 +380,16 @@ contains
     if (method == 0 .or. (method == 1 .and. nstep == 0)) then
        tbot_t  = tbot_g-lapse_glcmec*(hsurf_t-hsurf_g) ! sfc temp for column
     else
-       tbot_t = tsfc_t + tbot_g - tsfc_g ! tsfc is from previous time step
+       if (masterproc) then  ! TKT debugging
+            write(iulog,*) ' Dowinscaling on for g =  ', g 
+            write(iulog,*) ' tsfc_t of topounit ',t, ' ', tsfc_t 
+            write(iulog,*) ' tbot_g of topounit ',t, ' ', tbot_g
+            write(iulog,*) ' tsfc_g of topounit ',t, ' ', tsfc_g
+            
+            tbot_t = tsfc_t + tbot_g - tsfc_g ! tsfc is from previous time step
+            
+       end if
+       
     end if
  
     Hbot    = rair*0.5_r8*(tbot_g+tbot_t)/grav      ! scale ht at avg temp

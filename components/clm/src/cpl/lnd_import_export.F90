@@ -976,6 +976,9 @@ contains
  !      call downscale_atmo_state_to_topounit(g, i, x2l)
 	   if (use_downscaling_to_topounit) then	   
 			call downscale_grd_to_topounit(g, i, x2l, lnd2atm_vars)
+            !if (masterproc) then  ! TKT debugging
+            !    write(iulog,*) ' Dowinscaling on for g =  ', g              
+            !end if
 	   else
 		   do topo = grc_pp%topi(g), grc_pp%topf(g)
 			 ! first, all the state forcings

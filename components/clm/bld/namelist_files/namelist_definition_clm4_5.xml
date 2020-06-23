@@ -337,7 +337,7 @@ Per file averaging flag.
 </entry>
 
 <entry id="hist_type1d_pertape" type="char*4(6)" category="history"
-       group="clm_inparm" valid_values="GRID,LAND,COLS,PFTS, " >
+       group="clm_inparm" valid_values="GRID,TOPO,LAND,COLS,PFTS, " >
 Averaging type of output for 1D vector output (when hist_dov2xy is false).
     GRID means average all land-units up to the grid-point level
     LAND means average all columns up to the land-unit level

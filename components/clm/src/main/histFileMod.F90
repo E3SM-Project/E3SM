@@ -30,7 +30,7 @@ module histFileMod
   use EDTypesMod        , only : ncwd_fates       => ncwd
   use FatesInterfaceMod , only : numpft_fates     => numpft
   use TopounitType      , only : top_pp
-  use topounit_varcon   , only : max_topounits
+  use topounit_varcon   , only: max_topounits, has_topounit
 
   !
   implicit none
@@ -176,7 +176,7 @@ module histFileMod
      character(len=8) :: p2c_scale_type        ! scale factor when averaging pft to column
      character(len=8) :: c2l_scale_type        ! scale factor when averaging column to landunit
      character(len=8) :: l2g_scale_type        ! scale factor when averaging landunit to gridcell
-     character(len=8) :: t2g_scale_type        ! scale factor when averaging topounit to gridcell  TKT do we also need l2t_scale_type?
+     character(len=8) :: t2g_scale_type        ! scale factor when averaging topounit to gridcell 
      integer :: no_snow_behavior               ! for multi-layer snow fields, flag saying how to treat times when a given snow layer is absent
   end type field_info
 
@@ -993,7 +993,13 @@ contains
 !$OMP PARALLEL DO PRIVATE (f, num2d)
        do f = 1,tape(t)%nflds
           num2d = tape(t)%hlist(f)%field%num2d
-          if ( num2d == 1) then
+          if ( num2d == 1) then                             
+               ! !if (masterproc) then  ! TKT debugging
+               !    write(iulog,*) 'TKT  Field ', tape(t)%hlist(f)%field%name
+               !    write(iulog,*) 'TKT  Field type1d ', tape(t)%hlist(f)%field%type1d
+               !    write(iulog,*) 'TKT  Field type1d_out ', tape(t)%hlist(f)%field%type1d_out
+               !! end if
+                
              call hist_update_hbuf_field_1d (t, f, bounds)
           else
              call hist_update_hbuf_field_2d (t, f, bounds, num2d)
@@ -1199,10 +1205,11 @@ contains
                 if (.not. active(k)) valid = .false.
              end if
              if (valid) then
-               ! if (masterproc) then  ! TKT debugging
-               !    write(iulog,*) ' Field ', field
-                   !write(iulog,*) ' Field type1d ', field%type1d
-               ! end if
+                
+                !if (masterproc) then  ! TKT debugging
+                !   write(iulog,*) ' Field ', field
+                !   write(iulog,*) ' Field type1d ', field(k)%type1d
+                !end if
                 
                 if (field(k+k_offset) /= spval) then   ! add k_offset
                    if (nacs(k,1) == 0) hbuf(k,1) = 0._r8
@@ -1450,6 +1457,9 @@ contains
        else if (type1d == namel) then
           check_active = .true.
           active =>lun_pp%active
+       else if (type1d == namet) then
+          check_active = .true.
+          active =>top_pp%active
        else             
           check_active = .false.
        end if
@@ -2318,8 +2328,6 @@ contains
     use FatesInterfaceMod, only : fates_hdim_pftmap_levscagpft
     use FatesInterfaceMod, only : fates_hdim_agmap_levagepft
     use FatesInterfaceMod, only : fates_hdim_pftmap_levagepft
-
-
     !
     ! !ARGUMENTS:
     integer, intent(in) :: t              ! tape index
@@ -2619,6 +2627,19 @@ contains
               long_name='pft real/fake mask (0.=fake and 1.=real)', ncid=nfid(t), &
               imissing_value=ispval, ifill_value=ispval)
        end if
+       if(has_topounit .and. max_topounits > 1) then
+          if (ldomain%isgrid2d) then
+             call ncd_defvar(varname='topoPerGrid' , xtype=ncd_int, &
+                 dim1name='lon', dim2name='lat', &
+                 long_name='Number of topounits per grid', ncid=nfid(t), &
+                 imissing_value=ispval, ifill_value=ispval)
+          else
+             call ncd_defvar(varname='topoPerGrid' , xtype=ncd_int, &
+                 dim1name=grlnd, &
+                 long_name='Number of topounits per grid', ncid=nfid(t), &
+                 imissing_value=ispval, ifill_value=ispval)
+          end if
+       end if
 
     else if (mode == 'write') then
 
@@ -2636,7 +2657,10 @@ contains
        call ncd_io(varname='landfrac', data=ldomain%frac, dim1name=grlnd, ncid=nfid(t), flag='write')
        call ncd_io(varname='landmask', data=ldomain%mask, dim1name=grlnd, ncid=nfid(t), flag='write')
        call ncd_io(varname='pftmask' , data=ldomain%pftm, dim1name=grlnd, ncid=nfid(t), flag='write')
-
+       call ncd_io(varname='pftmask' , data=ldomain%pftm, dim1name=grlnd, ncid=nfid(t), flag='write')
+       if(has_topounit .and. max_topounits > 1) then
+          call ncd_io(varname='topoPerGrid' , data=ldomain%num_tunits_per_grd, dim1name=grlnd, ncid=nfid(t), flag='write')
+       end if
     end if  ! (define/write mode
 
   end subroutine htape_timeconst
@@ -2778,6 +2802,11 @@ contains
           ! Write history output.  Always output land and ocean runoff on xy grid.
 
           if (num2d == 1) then
+             !write(iulog,*) 'TKT  varname ', varname
+             !write(iulog,*) 'TKT  type1d_out ', type1d_out
+             !write(iulog,*) 'TKT  shape(hist1do) ', shape(hist1do) 
+             !write(iulog,*) 'TKT  hist1do values ', hist1do
+             
              call ncd_io(flag='write', varname=varname, &
                   dim1name=type1d_out, data=hist1do, ncid=nfid(t), nt=nt)
           else

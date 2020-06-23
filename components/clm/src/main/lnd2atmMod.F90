@@ -11,11 +11,11 @@ module lnd2atmMod
   use shr_megan_mod        , only : shr_megan_mechcomps_n
   use clm_varpar           , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
   use clm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
-  use clm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc
+  use clm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc, use_downscaling_to_topounit
   use tracer_varcon        , only : is_active_betr_bgc
   use seq_drydep_mod       , only : n_drydep, drydep_method, DD_XLND
   use decompMod            , only : bounds_type
-  use subgridAveMod        , only : p2g, c2g 
+  use subgridAveMod        , only : p2g, c2g, p2t 
   use lnd2atmType          , only : lnd2atm_type
   use atm2lndType          , only : atm2lnd_type
   use CH4Mod               , only : ch4_type
@@ -31,6 +31,7 @@ module lnd2atmMod
   use WaterFluxType        , only : waterflux_type
   use WaterstateType       , only : waterstate_type
   use GridcellType         , only : grc_pp
+  use TopounitDataType     , only : top_es                 ! To calculate t_rad at topounit level needed in downscaling
   use GridcellDataType     , only : grc_ef, grc_ws, grc_wf
   use ColumnDataType       , only : col_ws, col_wf, col_cf  
   use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
@@ -70,7 +71,7 @@ contains
     type(lnd2atm_type)    , intent(inout) :: lnd2atm_vars 
     !
     ! !LOCAL VARIABLES:
-    integer :: g                                    ! index
+    integer :: g, t                                    ! index
     
     !------------------------------------------------------------------------
 
@@ -106,6 +107,18 @@ contains
     do g = bounds%begg,bounds%endg
        lnd2atm_vars%t_rad_grc(g) = sqrt(sqrt(lnd2atm_vars%eflx_lwrad_out_grc(g)/sb))
     end do
+    
+    ! Calculate topounit level eflx_lwrad_out_topo for downscaling purpose
+    if (use_downscaling_to_topounit) then
+       call p2t(bounds, &
+            veg_ef%eflx_lwrad_out (bounds%begp:bounds%endp), &
+            top_es%eflx_lwrad_out_topo      (bounds%begt:bounds%endt), &
+            p2c_scale_type='unity', c2l_scale_type= 'urbanf', l2t_scale_type='unity')
+    
+       do t = bounds%begt,bounds%endt
+          top_es%t_rad(t) = sqrt(sqrt(top_es%eflx_lwrad_out_topo(t)/sb))
+       end do
+    end if
 
   end subroutine lnd2atm_minimal
 
