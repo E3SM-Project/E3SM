@@ -1513,7 +1513,7 @@ contains
                      call t_stopf('rad_set_state')
 
                      ! Check temperatures to make sure they are within the bounds of the
-                     ! absorption coefficient look-up tables. If out of bounds, optionally clip
+                     ! absorption coefficient look-up tables. If out of bounds, clip
                      ! values to min/max specified
                      call t_startf('rad_check_temperatures')
                      call handle_error(clip_values( &
