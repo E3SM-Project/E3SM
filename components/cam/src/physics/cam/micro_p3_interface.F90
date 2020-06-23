@@ -1001,6 +1001,12 @@ end subroutine micro_p3_readnl
     !==============
     ! TODO: get proper value for 'it' from time module
     dummy_out(:,:) = 0.0_rtype
+    prt_liq = 0.0_rtype
+    prt_sol = 0.0_rtype
+    prec_pcw = 0.0_rtype
+    snow_pcw = 0.0_rtype
+    vap_liq_exchange = 0.0_rtype
+
     call t_startf('micro_p3_tend_loop')
     call p3_main( &
          cldliq(its:ite,kts:kte),     & ! INOUT  cloud, mass mixing ratio         kg kg-1
