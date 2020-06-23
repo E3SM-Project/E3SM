@@ -2109,7 +2109,7 @@
     <domain name="ne30np4.pg4">
       <nx>86400</nx>
       <ny>1</ny>
-      <file grid="atm|lnd" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30pg4_oEC60to30v3.200330.n</file>
+      <file grid="atm|lnd" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.lnd.ne30pg4_oEC60to30v3.200330.nc</file>
       <file grid="ice|ocn" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.ocn.ne30pg4_oEC60to30v3.200330.nc</file>
       <desc>ne30np4.pg4 is Spectral Elem 1-deg grid w/ 4x4 FV physics grid per element:</desc>
     </domain>
