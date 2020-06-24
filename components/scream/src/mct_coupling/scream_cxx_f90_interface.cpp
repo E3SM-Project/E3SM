@@ -85,11 +85,24 @@ void scream_init (const MPI_Fint& f_comm,
   disable_all_fpes();
   enable_fpes(fpe_mask);
 
-  (void) eam_init_pio_subsystem(f_comm,compid);
-//  (void) register_outfile("example_pio_structured.nc");
-//  (void) register_outfile("example_pio_structured_v2.nc");
-//  (void) eam_init_pio_1(f_comm,compid);
+  // Create the set of SCORPIO output files and their respective
+  // dimensions and variables.
+  (void) eam_init_pio_subsystem(f_comm,compid);   // Gather the initial PIO subsystem data creater by component coupler
+  // Register the set of output files:
+  (void) register_outfile("example_pio_structured.nc");
+  (void) register_outfile("example_pio_structured_v2.nc");
+  // Register the set of dimensions per output file
+  std::string filename;
+  std::string shortname;
+  std::string longname;
+  int dimlen;
+  filename = "example_pio_structured_v2.nc";
+  shortname = "x";
+  longname  = "horizontal distance";
+  dimlen = 10;
+  (void) register_dimension(filename,shortname,longname,dimlen);
   (void) eam_init_pio_2();
+  // Register the set of variables per output file
 }
 /*===============================================================================================*/
 void scream_run (const double& dt) {

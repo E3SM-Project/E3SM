@@ -212,8 +212,8 @@ contains
     logical :: found
     character(len=10) :: var_dim_list(3) ! Needed for cases with time and space dimensions, need to create the array of strings ahead of time for GCC.
 
-    call register_outfile("example_pio_structured.nc")
-    call register_outfile("example_pio_structured_v2.nc")
+    !call register_outfile("example_pio_structured.nc")
+    !call register_outfile("example_pio_structured_v2.nc")
     ! Register all dimensions with the output file
     call register_dimension("example_pio_structured.nc","x","horizontal distance",10)
     call register_dimension("example_pio_structured.nc","y","vertical distance",3)
@@ -244,7 +244,7 @@ contains
    
 
     ! Register all dimensions with the output file
-    call register_dimension("example_pio_structured_v2.nc","x","horizontal distance",10)
+!    call register_dimension("example_pio_structured_v2.nc","x","horizontal distance",10)
     call register_dimension("example_pio_structured_v2.nc","y","vertical distance",3)
     call register_dimension("example_pio_structured_v2.nc","time","time",0)
     ! Register all variables with the output file
