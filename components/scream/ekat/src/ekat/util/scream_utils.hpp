@@ -135,7 +135,7 @@ void transpose(const Scalar* sv, Scalar* dv, Int ni, Int nk) {
         dv[ni*k + i] = sv[nk*i + k];
       else
         dv[nk*i + k] = sv[ni*k + i];
-};
+}
 
 namespace check_overloads
 {
