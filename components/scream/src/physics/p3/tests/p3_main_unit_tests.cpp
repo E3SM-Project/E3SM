@@ -453,33 +453,31 @@ static void run_bfb_p3_main()
   constexpr Scalar qsmall     = C::QSMALL;
 
   const std::array< std::pair<Real, Real>, P3MainData::NUM_INPUT_ARRAYS > ranges = {
-    std::make_pair(0, 1), // pres
-    std::make_pair(0, 1), // dzq
-    std::make_pair(0, 1), // ncnuc
-    std::make_pair(0, 1), // naai
-    std::make_pair(0, 1), // pdel
-    std::make_pair(0, 1), // exner
-    std::make_pair(0, 1), // icldm
-    std::make_pair(0, 1), // lcldm
-    std::make_pair(0, 1), // rcldm
-    std::make_pair(0, 1), // qc_relvar
-    std::make_pair(0, 1), // col_location
-    std::make_pair(0, qsmall * 2), // qc
-    std::make_pair(0, 1), // nc
-    std::make_pair(0, qsmall * 2), // qr
-    std::make_pair(0, 1), // nr
-    std::make_pair(0, qsmall * 2), // qitot
-    std::make_pair(0, 1), // qirim
-    std::make_pair(0, 1), // nitot
-    std::make_pair(0, 1), // birim
-    std::make_pair(0, 1), // qv
-    std::make_pair(0, 1), // th
+    std::make_pair(1.00000000E+02 , 9.87111111E+04), // pres
+    std::make_pair(1.22776609E+02 , 3.49039167E+04), // dzq
+    std::make_pair(0              , 0), // ncnuc
+    std::make_pair(0              , 0), // naai
+    std::make_pair(1.37888889E+03 , 1.39888889E+03), // pdel
+    std::make_pair(1.00371345E+00 , 7.19721007E+00), // exner
+    std::make_pair(1              , 1), // icldm
+    std::make_pair(1              , 1), // lcldm
+    std::make_pair(1              , 1), // rcldm
+    std::make_pair(1              , 1), // qc_relvar
+    std::make_pair(0              , 1), // col_location
+    std::make_pair(0              , 1.00000000E-04), // qc
+    std::make_pair(1.00000000E+06 , 1.00000000E+06), // nc
+    std::make_pair(0              , 1.00000000E-05), // qr
+    std::make_pair(1.00000000E+06 , 1.00000000E+06), // nr
+    std::make_pair(0              , 1.00000000E-04), // qitot
+    std::make_pair(0              , 1.00000000E-04), // qirim
+    std::make_pair(1.00000000E+06 , 1.00000000E+06), // nitot
+    std::make_pair(0              , 1.00000000E-02), // birim
+    std::make_pair(0              , 5.00000000E-02), // qv
+    std::make_pair(2.72653866E+02 , 1.07954335E+03), // th
   };
 
   P3MainData isds_fortran[] = {
     //      its,  ite, kts, kte,   it,        dt, log_predictNc, ranges
-    P3MainData(1, 10,   1,  72,    1, 1.800E+03, false, ranges),
-    P3MainData(1, 10,   1,  72,    1, 1.800E+03, true,  ranges),
     P3MainData(1, 10,   1,  72,    1, 1.800E+03, false, ranges),
     P3MainData(1, 10,   1,  72,    1, 1.800E+03, true,  ranges),
   };
@@ -491,8 +489,6 @@ static void run_bfb_p3_main()
   P3MainData isds_cxx[num_runs] = {
     P3MainData(isds_fortran[0]),
     P3MainData(isds_fortran[1]),
-    P3MainData(isds_fortran[2]),
-    P3MainData(isds_fortran[3]),
   };
 
     // Get data from fortran
@@ -503,6 +499,7 @@ static void run_bfb_p3_main()
   // Get data from cxx
   for (Int i = 0; i < num_runs; ++i) {
     P3MainData& d = isds_cxx[i];
+    d.transpose<util::TransposeDirection::c2f>();
     p3_main_f(
       d.qc, d.nc, d.qr, d.nr, d.th, d.qv, d.dt, d.qitot, d.qirim, d.nitot, d.birim,
       d.pres, d.dzq, d.ncnuc, d.naai, d.qc_relvar, d.it, d.prt_liq, d.prt_sol, d.its, d.ite, d.kts, d.kte, d.diag_ze, d.diag_effc,
@@ -510,6 +507,7 @@ static void run_bfb_p3_main()
       d.pdel, d.exner, d.cmeiout, d.prain, d.nevapr, d.prer_evap, d.rflx, d.sflx, d.rcldm, d.lcldm, d.icldm,
       d.pratot, d.prctot, d.mu_c, d.lamc, d.liq_ice_exchange, d.vap_liq_exchange,
       d.vap_ice_exchange, d.col_location);
+    d.transpose<util::TransposeDirection::f2c>();
   }
 
   for (Int i = 0; i < num_runs; ++i) {

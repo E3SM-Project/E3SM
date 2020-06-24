@@ -1160,7 +1160,7 @@ P3MainData::P3MainData(
   const std::array< std::pair<Real, Real>, NUM_INPUT_ARRAYS >& ranges) :
   its(its_), ite(ite_), kts(kts_), kte(kte_), it(it_), dt(dt_), log_predictNc(log_predictNc_),
   m_ni((ite_ - its_) + 1), m_nk((kte_ - kts_) + 1),
-  m_nt(m_ni * m_nk + 1), // overprovision since a couple data blocks are bigger than (ni, nk)
+  m_nt(m_ni * (m_nk + 1)), // overprovision since a couple data blocks are bigger than (ni, nk)
   m_data( NUM_ARRAYS * m_nt, 0.0)
 {
   std::array<Real**, NUM_ARRAYS> ptrs = {

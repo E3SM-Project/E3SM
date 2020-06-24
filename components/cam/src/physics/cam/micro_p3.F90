@@ -1414,7 +1414,6 @@ contains
             qirim(i,:), birim(i,:), xxlv(i,:), xxls(i,:), &
             mu_c(i,:), nu(i,:), lamc(i,:), mu_r(i,:), lamr(i,:), vap_liq_exchange(i,:), &
             ze_rain(i,:), ze_ice(i,:), diag_vmi(i,:), diag_effi(i,:), diag_di(i,:), diag_rhoi(i,:), diag_ze(i,:), diag_effc(i,:))
-
        !   if (debug_ON) call check_values(qv,Ti,it,debug_ABORT,800,col_location)
 
        !..............................................
@@ -1426,7 +1425,6 @@ contains
        !PMC nCat deleted nCat>1 stuff
 
        !.....................................................
-
 333    continue
 
        if (debug_ON) then

@@ -24,6 +24,7 @@ void Functions<S,D>
   const uview_1d<const Spack>& rcldm,
   const uview_1d<const Spack>& exner,
   const uview_1d<const Spack>& th,
+  const uview_1d<const Spack>& dzq,
   const uview_1d<Spack>& pratot,
   const uview_1d<Spack>& prctot,
   const uview_1d<Spack>& prec,
@@ -51,6 +52,7 @@ void Functions<S,D>
   const uview_1d<Spack>& qv,
   const uview_1d<Spack>& qtend_ignore,
   const uview_1d<Spack>& ntend_ignore,
+  const uview_1d<Spack>& inv_dzq,
   Scalar& prt_liq,
   Scalar& prt_sol)
 {
@@ -87,6 +89,7 @@ void Functions<S,D>
     qv(k)           = pack::max(qv(k), 0);
     qtend_ignore(k) = 0;
     ntend_ignore(k) = 0;
+    inv_dzq(k)      = 1 / dzq(k);
   });
   team.team_barrier();
 }
@@ -1063,9 +1066,9 @@ void Functions<S,D>
     // initialize
     p3_main_init(
       team, nk_pack,
-      oicldm, olcldm, orcldm, oexner, oth,
+      oicldm, olcldm, orcldm, oexner, oth, odzq,
       opratot, oprctot, prec, mu_r, odiag_ze, ze_ice, ze_rain, odiag_effc, odiag_effi, odiag_vmi, odiag_di, odiag_rhoi, ocmeiout, oprain, onevapr, orflx, osflx, inv_icldm, inv_lcldm, inv_rcldm, omu_c, olamc, inv_exner, t, oqv,
-      qtend_ignore, ntend_ignore, prt_liq(i), prt_sol(i));
+      qtend_ignore, ntend_ignore, inv_dzq, prt_liq(i), prt_sol(i));
 
     p3_main_pre_main_loop(
       team, nk, log_predictNc, dt,
@@ -1101,6 +1104,7 @@ void Functions<S,D>
     // Sedimentation:
 
     // Cloud sedimentation:  (adaptive substepping)
+
     cloud_sedimentation(
       qc_incld, rho, inv_rho, olcldm, acn, inv_dzq, dnu, team, workspace,
       nk, ktop, kbot, kdir, dt, odt, log_predictNc,
@@ -1148,6 +1152,7 @@ void Functions<S,D>
 
     check_values(oqv, tmparr1, ktop, kbot, it, debug_ABORT, 900, team, ocol_location);
 #endif
+
   });
 }
 
