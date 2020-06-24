@@ -1417,9 +1417,11 @@ contains
                   if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                      f = f + 1
                      filter_pcomp(f)   = p
-                     decompmicc(:)  = decompmicc(:) + decompmicc_patch_vr(ivt(p),:)*veg_pp%wtcol(p)
-                     veg_rootc(p,:) = frootc(p)*froot_prof(p,:)*veg_pp%wtcol(p)
                      ft_index(p)    = ivt(p)
+                     do j = 1,nlevdecomp
+                        decompmicc(j)  = decompmicc(j) + decompmicc_patch_vr(ivt(p),j)*veg_pp%wtcol(p)
+                        veg_rootc(p,j) = frootc(p)*froot_prof(p,j)*veg_pp%wtcol(p)
+                     end do
                   end if
                end do
                n_pcomp = f
@@ -1428,39 +1430,35 @@ contains
                veg_rootc_ptr  => veg_rootc
                
                cn_scalar(col_pp%pfti(c):col_pp%pftf(c)) = 0._r8
-               if (.not.(cnallocate_carbonphosphorus_only() .or. cnallocate_carbon_only())) then
-                  do f = 1,n_pcomp
-                     p = filter_pcomp(f)
-                     cn_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p))/ &
-                          max(leafn(p) + leafn_storage(p) + leafn_xfer(p), 1e-20_r8) - &
-                          leafcn(ivt(p))*(1- cn_stoich_var)) / &
-                          (leafcn(ivt(p)) - leafcn(ivt(p))*(1- cn_stoich_var)),0.0_r8),1.0_r8)
-                  end do
-                  km_nh4_ptr   => km_plant_nh4
-                  vmax_nh4_ptr => vmax_plant_nh4
-                  cn_scalar_ptr => cn_scalar
-                  plant_nh4demand_vr_ptr => plant_nh4demand_vr_patch
-                  if (use_nitrif_denitrif) then
-                     km_no3_ptr   => km_plant_no3
-                     vmax_no3_ptr => vmax_plant_no3
-                     plant_no3demand_vr_ptr => plant_no3demand_vr_patch
-                  end if
+               do f = 1,n_pcomp
+                  p = filter_pcomp(f)
+                  cn_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p))/ &
+                       max(leafn(p) + leafn_storage(p) + leafn_xfer(p), 1e-20_r8) - &
+                       leafcn(ivt(p))*(1- cn_stoich_var)) / &
+                       (leafcn(ivt(p)) - leafcn(ivt(p))*(1- cn_stoich_var)),0.0_r8),1.0_r8)
+               end do
+               km_nh4_ptr   => km_plant_nh4
+               vmax_nh4_ptr => vmax_plant_nh4
+               cn_scalar_ptr => cn_scalar
+               plant_nh4demand_vr_ptr => plant_nh4demand_vr_patch
+               if (use_nitrif_denitrif) then
+                  km_no3_ptr   => km_plant_no3
+                  vmax_no3_ptr => vmax_plant_no3
+                  plant_no3demand_vr_ptr => plant_no3demand_vr_patch
                end if
                
                cp_scalar(col_pp%pfti(c):col_pp%pftf(c)) = 0._r8
-               if (.not.(cnallocate_carbonnitrogen_only() .or. cnallocate_carbon_only())) then
-                  do f = 1,n_pcomp
-                     p = filter_pcomp(f)
-                     cp_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p)) / &
-                          max(leafp(p) + leafp_storage(p) + leafp_xfer(p), 1e-20_r8) - &
-                          leafcp(ivt(p))*(1- cp_stoich_var)) / &
-                          (leafcp(ivt(p)) - leafcp(ivt(p))*(1- cp_stoich_var)),0.0_r8),1.0_r8)
-                  end do
-                  plant_pdemand_vr_ptr => plant_pdemand_vr_patch
-                  cp_scalar_ptr => cp_scalar
-                  km_p_ptr      => km_plant_p
-                  vmax_p_ptr    => vmax_plant_p
-               end if
+               do f = 1,n_pcomp
+                  p = filter_pcomp(f)
+                  cp_scalar(p) = min(max(((leafc(p) + leafc_storage(p) + leafc_xfer(p)) / &
+                       max(leafp(p) + leafp_storage(p) + leafp_xfer(p), 1e-20_r8) - &
+                       leafcp(ivt(p))*(1- cp_stoich_var)) / &
+                       (leafcp(ivt(p)) - leafcp(ivt(p))*(1- cp_stoich_var)),0.0_r8),1.0_r8)
+               end do
+               plant_pdemand_vr_ptr => plant_pdemand_vr_patch
+               cp_scalar_ptr => cp_scalar
+               km_p_ptr      => km_plant_p
+               vmax_p_ptr    => vmax_plant_p
             end if
 
          end if

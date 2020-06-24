@@ -640,7 +640,7 @@ contains
 
    subroutine dynamics_driv(this, bounds_clump, top_as_inst,          &
          top_af_inst, atm2lnd_inst, soilstate_inst, temperature_inst, &
-         waterstate_inst, canopystate_inst, frictionvel_inst )
+         canopystate_inst, frictionvel_inst )
 
     
       ! This wrapper is called daily from clm_driver
@@ -1418,7 +1418,7 @@ contains
               call zero_site(this%fates(nc)%sites(s))
            end do
            
-           call set_site_properties(this%fates(nc)%nsites, this%fates(nc)%sites)
+           call set_site_properties(this%fates(nc)%nsites, this%fates(nc)%sites, this%fates(nc)%bc_in)
 
            ! ----------------------------------------------------------------------------
            ! Initialize Hydraulics Code if turned on
