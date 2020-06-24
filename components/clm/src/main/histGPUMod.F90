@@ -2,12 +2,12 @@ module histGPUMod
   use shr_kind_mod  , only : r8 => shr_kind_r8
   use decompMod     , only : bounds_type
   use histFileMod   , only : clmptr_rs, clmptr_ra
-  use clm_varcon     , only : spval, ispval, dzsoi_decomp
-  use clm_varcon     , only : grlnd, nameg, namet, namel, namec, namep
-  use GridcellType   , only : grc_pp
-  use LandunitType   , only : lun_pp
-  use ColumnType     , only : col_pp
-  use VegetationType , only : veg_pp
+  use clm_varcon    , only : spval, ispval, dzsoi_decomp
+  use clm_varcon    , only : grlnd, nameg, namet, namel, namec, namep
+  use GridcellType  , only : grc_pp
+  use LandunitType  , only : lun_pp
+  use ColumnType    , only : col_pp
+  use VegetationType, only : veg_pp
 
   implicit None
 
@@ -155,7 +155,7 @@ contains
         else
            print *, "scale_l2g_lookup_array error: scale type  not supported"
         end if
-
+        
         tape_gpu(t)%hlist(f)%t2g_scale_type   = tape(t)%hlist(f)%field%t2g_scale_type
         tape_gpu(t)%hlist(f)%no_snow_behavior = tape(t)%hlist(f)%field%no_snow_behavior
       end do
@@ -164,43 +164,52 @@ contains
   end subroutine htape_gpu_init
 
   !-----------------------------------------------------------------------
-  subroutine hist_update_hbuf_gpu(inc, bounds)
+  subroutine hist_update_hbuf_gpu(step,inc, nclumps)
     !
     ! !DESCRIPTION:
     ! Accumulate (or take min, max, etc. as appropriate) input field
     ! into its history buffer for appropriate tapes.
     !
     use histFileMod, only : ntapes
+    use decompMod, only : get_proc_bounds,get_clump_bounds_gpu, bounds_type
     ! !ARGUMENTS:
+    integer , intent(in) :: step
     integer , intent(in) :: inc
-    type(bounds_type), intent(in) :: bounds !<---- Currently bounds_proc
+    integer, value, intent(in) :: nclumps 
     !
     ! !LOCAL VARIABLES:
-    integer :: t , hp              ! tape index
+    type(bounds_type) :: bounds
+    integer :: t , hp, nc          ! tape index
     integer :: f                   ! field index
     integer :: numdims             ! number of dimensions
     integer :: num2d               ! size of second dimension (e.g. number of vertical levels)
     !----------------------------------------------------------------------
-    !$acc serial  present(tape_gpu,clmptr_ra, clmptr_rs) 
-    !$acc loop independent private(t,f,hp, numdims,num2d)
-    do t = 1,ntapes
-       do f = 1,tape_gpu(t)%nflds
-          numdims = tape_gpu(t)%hlist(f)%numdims
-
-          if ( numdims == 1) then
-             hp = tape_gpu(t)%hlist(f)%hpindex            
-             call hist_update_hbuf_field_1d_gpu(t, f, hp ,bounds)
-          else
-             hp = tape_gpu(t)%hlist(f)%hpindex
-             num2d = tape_gpu(t)%hlist(f)%num2d
-             call hist_update_hbuf_field_2d_gpu (t, f, hp , bounds, num2d)
-          end if
-       end do
-    end do
-
-    !$acc end serial
-     
-    if(inc == 0) then
+    !$acc parallel vector_length(32) default(present)
+    !$acc loop independent gang  private(nc,t,f,hp,numdims,num2d,bounds)
+    do nc = 1, nclumps
+            !call get_proc_bounds(bounds) 
+            call get_clump_bounds_gpu(nc,bounds)
+              !$acc loop seq
+             do t = 1,ntapes
+                !$acc loop seq
+                do f = 1,tape_gpu(t)%nflds
+                         numdims = tape_gpu(t)%hlist(f)%numdims
+                        
+                        if ( numdims == 1) then
+                                hp = tape_gpu(t)%hlist(f)%hpindex            
+                                call hist_update_hbuf_field_1d_gpu(t, f, hp ,bounds)
+                        else
+                                hp = tape_gpu(t)%hlist(f)%hpindex
+                                num2d = tape_gpu(t)%hlist(f)%num2d
+                                call hist_update_hbuf_field_2d_gpu (t, f, hp , bounds, num2d)
+                        end if
+                end do
+          end do
+     end do 
+    !$acc end parallel
+   
+    !TODO: change inc to be end of hist interval?   
+    if(mod(step,inc) == 0 .and. step .ne. 0) then
         print *, "transfering tape to cpu:"
         call transfer_tape_to_cpu()
     endif
@@ -230,7 +239,6 @@ contains
     type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
-    !integer  :: hpindex                 ! history pointer index
     integer  :: k                       ! gridcell, landunit, column or pft index
     logical  :: check_active            ! true => check 'active' flag of each point (this refers to a point being active, NOT a history field being active)
     logical  :: valid                   ! true => history operation is valid
@@ -252,7 +260,7 @@ contains
       p2c_scale_type =>  tape_gpu(t)%hlist(f)%p2c_scale_type,&
       c2l_scale_type =>  tape_gpu(t)%hlist(f)%c2l_scale_type,&
       l2g_scale_type =>  tape_gpu(t)%hlist(f)%l2g_scale_type,&
-      field          => clmptr_rs(hpindex)%ptr &
+      field          =>  clmptr_rs(hpindex)%ptr &
       )
     ! set variables to check weights when allocate all pfts
 
@@ -260,32 +268,41 @@ contains
     if (type1d_out == nameg .or. type1d_out == grlnd) then
        if (type1d == namep) then
           ! In this and the following calls, we do NOT explicitly subset field using
-	        ! bounds (e.g., we do NOT do field(bounds%begp:bounds%endp). This is because,
+          ! bounds (e.g., we do NOT do field(bounds%begp:bounds%endp). This is because,
           ! for some fields, the lower bound has been reset to 1 due to taking a pointer
           ! to an array slice. Thus, this code will NOT work properly if done within a
           ! threaded region! (See also bug 1786)
+          !!if(tape_gpu(t)%hlist(f)%name == 'TREFMNAV') then
+          !!        print *,"field:",bounds%begp
+          !!        print *, field(bounds%begp:bounds%endp)
+          !!end if 
           call p2g(bounds, &
-               field, &
+               field(bounds%begp:bounds%endp), &
                field_gcell(bounds%begg:bounds%endg), &
                p2c_scale_type, c2l_scale_type, l2g_scale_type)
-
+          
+          !!if(tape_gpu(t)%hlist(f)%name == 'TREFMNAV') then
+          !!        print *,"field_gcell:",bounds%begg
+          !!        print *, field_gcell(bounds%begg:bounds%endg)
+          !!end if 
+         
           map2gcell = .true.
        else if (type1d == namec) then
           call c2g(bounds, &
-               field, &
+               field(bounds%begc:bounds%endc), &
                field_gcell(bounds%begg:bounds%endg), &
                c2l_scale_type, l2g_scale_type)
           
           map2gcell = .true.
        else if (type1d == namel) then
           call l2g(bounds, &
-               field, &
+               field(bounds%begl:bounds%endl), &
                field_gcell(bounds%begg:bounds%endg), &
                l2g_scale_type)
           map2gcell = .true.
        else if (type1d == namet) then
           call t2g(bounds, &
-               field, &
+               field(bounds%begt:bounds%endt), &
                field_gcell(bounds%begg:bounds%endg))
           map2gcell = .true.
        end if
@@ -377,6 +394,7 @@ contains
           if ( end1d .eq. ubound(field,1) ) then
              k_offset = 0
           else
+             print *, "koffset != 0"
              k_offset = 1 - beg1d
           endif
           do k = beg1d,end1d
@@ -505,9 +523,10 @@ end subroutine hist_update_hbuf_field_1d_gpu
 
        !allocate(field(lbound(clmptr_ra(hpindex)%ptr, 1) : ubound(clmptr_ra(hpindex)%ptr, 1), num2d))
        field_allocated = .true.
-
-       call hist_set_snow_field_2d(field, clmptr_ra(hpindex)%ptr, no_snow_behavior, type1d, &
-            beg1d, end1d)
+       print *, "calling hist set snow field 2d:"
+       stop
+       !call hist_set_snow_field_2d(field, clmptr_ra(hpindex)%ptr, no_snow_behavior, type1d, &
+       !     beg1d, end1d)
     else
 
        field_allocated = .false.
@@ -519,30 +538,30 @@ end subroutine hist_update_hbuf_field_1d_gpu
     if (type1d_out == nameg .or. type1d_out == grlnd) then
        if (type1d == namep) then
           ! In this and the following calls, we do NOT explicitly subset field using
-	        ! (e.g., we do NOT do field(bounds%begp:bounds%endp). This is because,
+                ! (e.g., we do NOT do field(bounds%begp:bounds%endp). This is because,
           ! for some fields, the lower bound has been reset to 1 due to taking a pointer
           ! to an array slice. Thus, this code will NOT work properly if done within a
           ! threaded region! (See also bug 1786)
           call p2g(bounds, num2d, &
-               field, &
+               field(bounds%begp:bounds%endp,:), &
                field_gcell(bounds%begg:bounds%endg, :), &
                p2c_scale_type, c2l_scale_type, l2g_scale_type)
           map2gcell = .true.
        else if (type1d == namec) then
           call c2g(bounds, num2d, &
-               field, &
+               field(bounds%begc:bounds%endc,:), &
                field_gcell(bounds%begg:bounds%endg, :), &
                c2l_scale_type, l2g_scale_type)
           map2gcell = .true.
        else if (type1d == namel) then
           call l2g(bounds, num2d, &
-               field, &
+               field(bounds%begl:bounds%endl,:), &
                field_gcell(bounds%begg:bounds%endg, :), &
                l2g_scale_type)
           map2gcell = .true.
        else if (type1d == namet) then
           call t2g(bounds, num2d, &
-               field, &
+               field(bounds%begt:bounds%endt,:), &
                field_gcell(bounds%begg:bounds%endg, :))
           map2gcell = .true.
        end if
@@ -826,10 +845,9 @@ end subroutine hist_update_hbuf_field_1d_gpu
           integer  :: t 
           integer :: f
 
-          print *,  "adjusting gpu tape after normalization/zeroing"
           do t = 1 , ntapes
               if(tape(t)%is_endhist) then 
-                print *, "true for tape:",t
+                print *,  "adjusting gpu tape after normalization/zeroing",t
                 do f = 1, tape_gpu(t)%nflds 
                         tape_gpu(t)%hlist(f)%hbuf(:,:) = 0d0 
                         tape_gpu(t)%hlist(f)%nacs(:,:) = 0

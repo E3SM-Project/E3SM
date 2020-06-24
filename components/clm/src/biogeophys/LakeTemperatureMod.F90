@@ -492,7 +492,6 @@ contains
     end do
 
     ! For snow / soil
-    print *, "SoilThermProp_Lake"
     call SoilThermProp_Lake(bounds, num_lakec, filter_lakec, &
          tk(bounds%begc:bounds%endc, :), &
          cv(bounds%begc:bounds%endc, :), &
@@ -670,7 +669,6 @@ contains
 
 
     ! 7!) Solve for tdsolution
-    print *, "Tridiagonal"
     call Tridiagonal(bounds, -nlevsno + 1, nlevlak + nlevgrnd, &
          jtop(bounds%begc:bounds%endc), &
          num_lakec, filter_lakec, &
@@ -701,7 +699,6 @@ contains
     end do
 
     !!!!!!!!!!!!!!!!!!!!!!!
-     print *, "phas chage;"
     ! 8!) Sum energy content and total energy into lake for energy check. Any errors will be from the
     !     Tridiagonal solution.
     ! This section was for debugging only and has been removed.  See original "ch4" branch code.

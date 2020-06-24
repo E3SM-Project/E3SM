@@ -49,6 +49,7 @@ contains
             first = .false.
             return
     end if 
+    end_cd_mod = .false.
     nstep_mod = nstep_mod + 1
     year = year_curr;  mon = mon_curr;
     day  = day_curr ;  secs = secs_curr;

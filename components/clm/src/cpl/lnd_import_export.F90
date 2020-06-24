@@ -210,7 +210,6 @@ contains
         !   Each node must have enough memory to hold these data.
         met_nvars=7
         if (metdata_type(1:3) == 'cpl') met_nvars=14
-
         if (atm2lnd_vars%loaded_bypassdata == 0) then
           !meteorological forcing
           if (index(metdata_type, 'qian') .gt. 0) then
@@ -228,7 +227,7 @@ contains
           else
             call endrun( sub//' ERROR: Invalid met data source for cpl_bypass' )
           end if
-
+         
           use_livneh = .false.
           use_daymet = .false.
           if(index(metdata_type, 'livneh') .gt. 0) then
@@ -401,7 +400,7 @@ contains
             !get timestep information
             ierr = nf90_inq_dimid(met_ncids(v), 'DTIME', dimid)
             ierr = nf90_Inquire_Dimension(met_ncids(v), dimid, len = atm2lnd_vars%timelen(v))
-
+                
             starti(1) = 1
             counti(1) = 2
             ierr = nf90_inq_varid(met_ncids(v), 'DTIME', varid)
@@ -426,7 +425,6 @@ contains
             if (i == 1 .and. v == 1)  then
               allocate(atm2lnd_vars%atm_input       (met_nvars,bounds%begg:bounds%endg,1,1:counti(1)))
             end if
-
             ierr = nf90_get_var(met_ncids(v), varid, atm2lnd_vars%atm_input(v,g:g,1,1:counti(1)), starti(1:2), counti(1:2))
             ierr = nf90_close(met_ncids(v))
 
@@ -471,7 +469,6 @@ contains
               mystart = mystart - nyears_spinup
             end do
             if (atm2lnd_vars%metsource == 5) mystart=1850
-
             if (yr .lt. 1850) then
               atm2lnd_vars%tindex(g,v,1) = (mod(yr-1,nyears_spinup) + (1850-mystart)) * 365 * nint(24./atm2lnd_vars%timeres(v))
             else if (yr .le. atm2lnd_vars%endyear_met_spinup) then
@@ -508,7 +505,7 @@ contains
               atm2lnd_vars%tindex(g,v,1) = atm2lnd_vars%tindex(g,v,1)+nint(1/atm2lnd_vars%npf(v))
               atm2lnd_vars%tindex(g,v,2) = atm2lnd_vars%tindex(g,v,2)+nint(1/atm2lnd_vars%npf(v))
             end if
-
+        
             if (const_climate_hist .or. yr .le. atm2lnd_vars%startyear_met) then
               if (atm2lnd_vars%tindex(g,v,1) .gt. atm2lnd_vars%timelen_spinup(v)) atm2lnd_vars%tindex(g,v,1) = 1
               if (atm2lnd_vars%tindex(g,v,2) .gt. atm2lnd_vars%timelen_spinup(v)) atm2lnd_vars%tindex(g,v,2) = 1
@@ -544,7 +541,6 @@ contains
              wt2(v) = 1._r8
           end if
         end do
-
         !Air temperature
         atm2lnd_vars%forc_t_not_downscaled_grc(g)  = min(((atm2lnd_vars%atm_input(1,g,1,tindex(1,1))*atm2lnd_vars%scale_factors(1)+ &
                                                       atm2lnd_vars%add_offsets(1))*wt1(1) + (atm2lnd_vars%atm_input(1,g,1,tindex(1,2))* &
@@ -562,6 +558,8 @@ contains
                                                         atm2lnd_vars%add_offsets(2))*wt1(2) + (atm2lnd_vars%atm_input(2,g,1,tindex(2,2)) &
                                                         *atm2lnd_vars%scale_factors(2)+atm2lnd_vars%add_offsets(2))*wt2(2)) * &
                                                         atm2lnd_vars%var_mult(2,g,mon) + atm2lnd_vars%var_offset(2,g,mon), 4e4_r8)
+        
+
         !Specific humidity
         atm2lnd_vars%forc_q_not_downscaled_grc(g) = max(((atm2lnd_vars%atm_input(3,g,1,tindex(3,1))*atm2lnd_vars%scale_factors(3)+ &
                                                      atm2lnd_vars%add_offsets(3))*wt1(3) + (atm2lnd_vars%atm_input(3,g,1,tindex(3,2)) &
@@ -719,7 +717,6 @@ contains
               end if
               close(nu_nml)
               call relavu( nu_nml )
-
               ierr = nf90_open(trim(stream_fldFileName_popdens), NF90_NOWRITE, ncid)
               ierr = nf90_inq_varid(ncid, 'lat', varid)
               ierr = nf90_get_var(ncid, varid, smap05_lat)
@@ -842,7 +839,7 @@ contains
             end if
           end if
 
-          !Lightning data is 3-hourly.  Does not currently interpolate.
+          !Lightning data is 3-hourly.  Does not currently interpolate.i
           atm2lnd_vars%forc_lnfm(g) = atm2lnd_vars%lnfm(g, ((int(thiscalday)-1)*8+tod/(3600*3))+1)
 
    !------------------------------------Nitrogen deposition----------------------------------------------
@@ -918,7 +915,6 @@ contains
           !get weights for interpolation
           wt1(1) = 1._r8 - (thiscalday -1._r8)/365._r8
           wt2(1) = 1._r8 - wt1(1)
-
           atm2lnd_vars%forc_ndep_grc(g)    = (atm2lnd_vars%ndep1(atm2lnd_vars%ndepind(g,1),atm2lnd_vars%ndepind(g,2),1)*wt1(1) + &
                                               atm2lnd_vars%ndep2(atm2lnd_vars%ndepind(g,1),atm2lnd_vars%ndepind(g,2),1)*wt2(1)) / (365._r8 * 86400._r8)
         end if
@@ -1000,7 +996,6 @@ contains
             atm2lnd_vars%ndepind(g,2),aindex(1))*wt1(1)+atm2lnd_vars%aerodata(av,atm2lnd_vars%ndepind(g,1), &
             atm2lnd_vars%ndepind(g,2),aindex(2))*wt2(1)
         end do
-
        !Parse startdate for adding temperature
        if (startdate_add_temperature .ne. '') then
          call get_curr_date( yr, mon, day, tod )
@@ -1146,7 +1141,7 @@ contains
        if (co2_type_idx == 0) then                    ! CO2 constant, value from namelist
          co2_ppmv_val = co2_ppmv
        else if (co2_type_idx == 1) then               ! CO2 prognostic, value from coupler field
-         co2_ppmv_val = x2l(index_x2l_Sa_co2prog,i)
+         co2_ppmv_val = 0.0_r8 !x2l(index_x2l_Sa_co2prog,i)
        else if (co2_type_idx == 2) then               ! CO2 diagnostic, value from coupler field
          co2_ppmv_val = x2l(index_x2l_Sa_co2diag,i)
        else
@@ -1154,7 +1149,6 @@ contains
        end if
        ! Assign to topounits, with conversion from ppmv to partial pressure (Pa)
        ! If using C13, then get the c13ratio from clm_varcon (constant value for pre-industrial atmosphere)
-
        do topo = grc_pp%topi(g), grc_pp%topf(g)
          top_as%pco2bot(topo) = co2_ppmv_val * 1.e-6_r8 * top_as%pbot(topo)
          if (use_c13) then
@@ -1185,7 +1179,6 @@ contains
        endif
 
        ! Determine derived quantities for required fields
-
        forc_t = atm2lnd_vars%forc_t_not_downscaled_grc(g)
        forc_q = atm2lnd_vars%forc_q_not_downscaled_grc(g)
        forc_pbot = atm2lnd_vars%forc_pbot_not_downscaled_grc(g)

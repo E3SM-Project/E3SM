@@ -561,54 +561,16 @@ contains
     call build_scale_l2g_gpu(bounds, l2g_scale_type, &
             scale_l2g(bounds%begl:bounds%endl))
 
-    if (c2l_scale_type == unity) then
-       do c = bounds%begc,bounds%endc
-          scale_c2l(c) = 1.0_r8
-       end do
-    else if (c2l_scale_type == urbanf) then
-       do c = bounds%begc,bounds%endc
-          l = col_pp%landunit(c)
-          if (lun_pp%urbpoi(l)) then
-             if (col_pp%itype(c) == icol_sunwall) then
-                scale_c2l(c) = 3.0 * lun_pp%canyon_hwr(l)
-             else if (col_pp%itype(c) == icol_shadewall) then
-                scale_c2l(c) = 3.0 * lun_pp%canyon_hwr(l)
-             else if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then
-                scale_c2l(c) = 3.0_r8
-             else if (col_pp%itype(c) == icol_roof) then
-                scale_c2l(c) = 1.0_r8
-             end if
-          else
-             scale_c2l(c) = 1.0_r8
-          end if
-       end do
-    else if (c2l_scale_type == urbans) then
-       do c = bounds%begc,bounds%endc
-          l = col_pp%landunit(c)
-          if (lun_pp%urbpoi(l)) then
-             if (col_pp%itype(c) == icol_sunwall) then
-                scale_c2l(c) = (3.0 * lun_pp%canyon_hwr(l)) / (2.*lun_pp%canyon_hwr(l) + 1.)
-             else if (col_pp%itype(c) == icol_shadewall) then
-                scale_c2l(c) = (3.0 * lun_pp%canyon_hwr(l)) / (2.*lun_pp%canyon_hwr(l) + 1.)
-             else if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then
-                scale_c2l(c) = 3.0 / (2.*lun_pp%canyon_hwr(l) + 1.)
-             else if (col_pp%itype(c) == icol_roof) then
-                scale_c2l(c) = 1.0_r8
-             end if
-          else
-             scale_c2l(c) = 1.0_r8
-          end if
-       end do
-    else
-       print *, 'p2g_1d error: scale type ',c2l_scale_type,' not supported'
-    end if
+    call create_scale_c2l_gpu(bounds,c2l_scale_type,&
+                scale_c2l(bounds%begc:bounds%endc))
+    
 
     if (p2c_scale_type == unity) then
        do p = bounds%begp,bounds%endp
           scale_p2c(p) = 1.0_r8
        end do
     else
-       print *, 'p2g_1d error: scale type ',c2l_scale_type,' not supported'
+       print *, 'p2g_1d error: scale type ',p2c_scale_type,' not supported'
     end if
 
     garr(bounds%begg : bounds%endg) = spval

@@ -537,7 +537,7 @@ contains
        !call t_startf ('lc_clm2_adv_timestep')
        call advance_timestep()
        !call t_stopf ('lc_clm2_adv_timestep')
-       if (step_count == 24+1) dosend = .true.
+       if (step_count == 24*1+1) dosend = .true.
     end do
     stoptime = mpi_wtime()
     print *, "TIME FOR CLM DRIVER(seconds):", stoptime-starttime 
