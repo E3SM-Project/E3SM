@@ -1040,6 +1040,9 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     real(r8) :: wv(state%ncol)                     ! vertical integral of water (vapor)
     real(r8) :: wl(state%ncol)                     ! vertical integral of water (liquid)
     real(r8) :: wi(state%ncol)                     ! vertical integral of water (ice)
+    real(r8) :: ke(state%ncol)                     ! vertical integral of total water
+    real(r8) :: se(state%ncol)                     ! vertical integral of total water
+    real(r8) :: te(state%ncol)                     ! vertical integral of total water
     real(r8) :: tw(state%ncol)                     ! vertical integral of total water
 
     integer lchnk                                  ! chunk identifier
@@ -1052,44 +1055,9 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     lchnk = state%lchnk
     ncol  = state%ncol
 
-!! Compute vertical integrals of all water species (vapor, liquid, ice, rain, snow)
-!!...................................................................
-    wv = 0._r8
-    wl = 0._r8
-    wi = 0._r8
-    wr = 0._r8
-    ws = 0._r8
-
-    do k = 1, pver
-       do i = 1, ncol
-          wv(i) = wv(i) + state%q(i,k,1       )*state%pdel(i,k)/gravit
-       end do
-    end do
-
-    ! Don't require cloud liq/ice to be present.  Allows for adiabatic/ideal phys.
-    if (icldliq > 1  .and.  icldice > 1) then
-       do k = 1, pver
-          do i = 1, ncol
-             wl(i) = wl(i) + state%q(i,k,icldliq)*state%pdel(i,k)/gravit
-             wi(i) = wi(i) + state%q(i,k,icldice)*state%pdel(i,k)/gravit
-          end do
-       end do
-    end if
-
-    if (irain   > 1  .and.  isnow   > 1 ) then
-       do k = 1, pver
-          do i = 1, ncol
-             wr(i) = wr(i) + state%q(i,k,irain)*state%pdel(i,k)/gravit
-             ws(i) = ws(i) + state%q(i,k,isnow)*state%pdel(i,k)/gravit
-          end do
-       end do
-    end if
-
-!! Total water path
-!!...................................................................
-    do i = 1, ncol
-       tw(i) = wv(i) + wl(i) + wi(i) + wr(i) + ws(i)
-    end do
+    call energy_helper_eam_def(state%u,state%v,state%T,state%q,state%ps,state%pdel,state%phis,&
+                                   ke,se,wv,wl,wi,wr,ws,te,tw, &
+                                   ncol)
 
     if(name.eq.'PHYBC01') then 
        call outfld('BC01Q',           wv,pcols   ,lchnk   )
