@@ -10,9 +10,8 @@
 #include "ezxml.h"
 
 void write_model_variables(ezxml_t registry);
-int write_field_pointers(FILE* fd);
 int write_field_pointer_arrays(FILE* fd);
-int set_pointer_name(int type, int ndims, char *pointer_name);
+int set_pointer_name(int type, int ndims, char *pointer_name, int time_levs);
 int add_package_to_list(const char * package, const char * package_list);
 int build_struct_package_lists(ezxml_t currentPosition, char * out_packages);
 int get_dimension_information(ezxml_t registry, const char *test_dimname, int *has_time, int *decomp);
@@ -27,7 +26,6 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVar, const char * corename);
 int parse_struct(FILE *fd, ezxml_t registry, ezxml_t superStruct, int subpool, const char *parentname, const char * corename);
 int determine_struct_depth(int curLevel, ezxml_t superStruct);
-int generate_struct_links(FILE *fd, int curLevel, ezxml_t superStruct, ezxml_t registry);
 int generate_field_exchanges(FILE *fd, int curLevel, ezxml_t superStruct);
 int generate_field_halo_exchanges_and_copies(ezxml_t registry);
 int generate_field_inputs(FILE *fd, int curLevel, ezxml_t superStruct);

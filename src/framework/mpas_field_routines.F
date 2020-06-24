@@ -1426,8 +1426,18 @@ module mpas_field_routines
 
        type (field0dLogical), pointer :: f !< Input: Field to deallocate
 
-       call mpas_deallocate_field_target(f, keep_head_ptr=.false.)
-       nullify(f)
+       type (field0dLogical), pointer :: f_cursor, f_next
+
+       call mpas_deallocate_field_target(f)
+
+       if ( mpas_threading_get_thread_num() == 0 ) then
+           f_cursor => f
+           do while(associated(f_cursor))
+               f_next => f_cursor % next
+               deallocate(f_cursor)
+               f_cursor => f_next
+           end do
+       end if
 
    end subroutine mpas_deallocate_field0d_logical!}}}
 
@@ -1456,8 +1466,18 @@ module mpas_field_routines
 
        type (field0dInteger), pointer :: f !< Input: Field to deallocate
 
-       call mpas_deallocate_field_target(f, keep_head_ptr=.false.)
-       nullify(f)
+       type (field0dInteger), pointer :: f_cursor, f_next
+
+       call mpas_deallocate_field_target(f)
+
+       if ( mpas_threading_get_thread_num() == 0 ) then
+           f_cursor => f
+           do while(associated(f_cursor))
+               f_next => f_cursor % next
+               deallocate(f_cursor)
+               f_cursor => f_next
+           end do
+       end if
 
    end subroutine mpas_deallocate_field0d_integer!}}}
 
@@ -1486,8 +1506,18 @@ module mpas_field_routines
 
        type (field1dInteger), pointer :: f !< Input: Field to deallocate
 
-       call mpas_deallocate_field_target(f, keep_head_ptr=.false.)
-       nullify(f)
+       type (field1dInteger), pointer :: f_cursor, f_next
+
+       call mpas_deallocate_field_target(f)
+
+       if ( mpas_threading_get_thread_num() == 0 ) then
+           f_cursor => f
+           do while(associated(f_cursor))
+               f_next => f_cursor % next
+               deallocate(f_cursor)
+               f_cursor => f_next
+           end do
+       end if
 
    end subroutine mpas_deallocate_field1d_integer!}}}
 
@@ -1516,8 +1546,18 @@ module mpas_field_routines
 
        type (field2dInteger), pointer :: f !< Input: Field to deallocate
 
-       call mpas_deallocate_field_target(f, keep_head_ptr=.false.)
-       nullify(f)
+       type (field2dInteger), pointer :: f_cursor, f_next
+
+       call mpas_deallocate_field_target(f)
+
+       if ( mpas_threading_get_thread_num() == 0 ) then
+           f_cursor => f
+           do while(associated(f_cursor))
+               f_next => f_cursor % next
+               deallocate(f_cursor)
+               f_cursor => f_next
+           end do
+       end if
 
    end subroutine mpas_deallocate_field2d_integer!}}}
 
@@ -1546,8 +1586,18 @@ module mpas_field_routines
 
        type (field3dInteger), pointer :: f !< Input: Field to deallocate
 
-       call mpas_deallocate_field_target(f, keep_head_ptr=.false.)
-       nullify(f)
+       type (field3dInteger), pointer :: f_cursor, f_next
+
+       call mpas_deallocate_field_target(f)
+
+       if ( mpas_threading_get_thread_num() == 0 ) then
+           f_cursor => f
+           do while(associated(f_cursor))
+               f_next => f_cursor % next
+               deallocate(f_cursor)
+               f_cursor => f_next
+           end do
+       end if
 
    end subroutine mpas_deallocate_field3d_integer!}}}
 
@@ -1576,8 +1626,18 @@ module mpas_field_routines
 
        type (field0dReal), pointer :: f !< Input: Field to deallocate
 
-       call mpas_deallocate_field_target(f, keep_head_ptr=.false.)
-       nullify(f)
+       type (field0dReal), pointer :: f_cursor, f_next
+
+       call mpas_deallocate_field_target(f)
+
+       if ( mpas_threading_get_thread_num() == 0 ) then
+           f_cursor => f
+           do while(associated(f_cursor))
+               f_next => f_cursor % next
+               deallocate(f_cursor)
+               f_cursor => f_next
+           end do
+       end if
 
    end subroutine mpas_deallocate_field0d_real!}}}
 
@@ -1606,8 +1666,18 @@ module mpas_field_routines
 
        type (field1dReal), pointer :: f !< Input: Field to deallocate
 
-       call mpas_deallocate_field_target(f, keep_head_ptr=.false.)
-       nullify(f)
+       type (field1dReal), pointer :: f_cursor, f_next
+
+       call mpas_deallocate_field_target(f)
+
+       if ( mpas_threading_get_thread_num() == 0 ) then
+           f_cursor => f
+           do while(associated(f_cursor))
+               f_next => f_cursor % next
+               deallocate(f_cursor)
+               f_cursor => f_next
+           end do
+       end if
 
    end subroutine mpas_deallocate_field1d_real!}}}
 
@@ -1636,8 +1706,18 @@ module mpas_field_routines
 
        type (field2dReal), pointer :: f !< Input: Field to deallocate
 
-       call mpas_deallocate_field_target(f, keep_head_ptr=.false.)
-       nullify(f)
+       type (field2dReal), pointer :: f_cursor, f_next
+
+       call mpas_deallocate_field_target(f)
+
+       if ( mpas_threading_get_thread_num() == 0 ) then
+           f_cursor => f
+           do while(associated(f_cursor))
+               f_next => f_cursor % next
+               deallocate(f_cursor)
+               f_cursor => f_next
+           end do
+       end if
 
    end subroutine mpas_deallocate_field2d_real!}}}
 
@@ -1666,8 +1746,18 @@ module mpas_field_routines
 
        type (field3dReal), pointer :: f !< Input: Field to deallocate
 
-       call mpas_deallocate_field_target(f, keep_head_ptr=.false.)
-       nullify(f)
+       type (field3dReal), pointer :: f_cursor, f_next
+
+       call mpas_deallocate_field_target(f)
+
+       if ( mpas_threading_get_thread_num() == 0 ) then
+           f_cursor => f
+           do while(associated(f_cursor))
+               f_next => f_cursor % next
+               deallocate(f_cursor)
+               f_cursor => f_next
+           end do
+       end if
 
    end subroutine mpas_deallocate_field3d_real!}}}
 
@@ -1696,8 +1786,18 @@ module mpas_field_routines
 
        type (field4dReal), pointer :: f !< Input: Field to deallocate
 
-       call mpas_deallocate_field_target(f, keep_head_ptr=.false.)
-       nullify(f)
+       type (field4dReal), pointer :: f_cursor, f_next
+
+       call mpas_deallocate_field_target(f)
+
+       if ( mpas_threading_get_thread_num() == 0 ) then
+           f_cursor => f
+           do while(associated(f_cursor))
+               f_next => f_cursor % next
+               deallocate(f_cursor)
+               f_cursor => f_next
+           end do
+       end if
 
    end subroutine mpas_deallocate_field4d_real!}}}
 
@@ -1726,8 +1826,18 @@ module mpas_field_routines
 
        type (field5dReal), pointer :: f !< Input: Field to deallocate
 
-       call mpas_deallocate_field_target(f, keep_head_ptr=.false.)
-       nullify(f)
+       type (field5dReal), pointer :: f_cursor, f_next
+
+       call mpas_deallocate_field_target(f)
+
+       if ( mpas_threading_get_thread_num() == 0 ) then
+           f_cursor => f
+           do while(associated(f_cursor))
+               f_next => f_cursor % next
+               deallocate(f_cursor)
+               f_cursor => f_next
+           end do
+       end if
 
    end subroutine mpas_deallocate_field5d_real!}}}
 
@@ -1756,8 +1866,18 @@ module mpas_field_routines
 
        type (field0dChar), pointer :: f !< Input: Field to deallocate
 
-       call mpas_deallocate_field_target(f, keep_head_ptr=.false.)
-       nullify(f)
+       type (field0dChar), pointer :: f_cursor, f_next
+
+       call mpas_deallocate_field_target(f)
+
+       if ( mpas_threading_get_thread_num() == 0 ) then
+           f_cursor => f
+           do while(associated(f_cursor))
+               f_next => f_cursor % next
+               deallocate(f_cursor)
+               f_cursor => f_next
+           end do
+       end if
 
    end subroutine mpas_deallocate_field0d_char!}}}
 
@@ -1786,8 +1906,18 @@ module mpas_field_routines
 
        type (field1dChar), pointer :: f !< Input: Field to deallocate
 
-       call mpas_deallocate_field_target(f, keep_head_ptr=.false.)
-       nullify(f)
+       type (field1dChar), pointer :: f_cursor, f_next
+
+       call mpas_deallocate_field_target(f)
+
+       if ( mpas_threading_get_thread_num() == 0 ) then
+           f_cursor => f
+           do while(associated(f_cursor))
+               f_next => f_cursor % next
+               deallocate(f_cursor)
+               f_cursor => f_next
+           end do
+       end if
 
    end subroutine mpas_deallocate_field1d_char!}}}
 
@@ -1800,34 +1930,20 @@ module mpas_field_routines
 !> \author  Doug Jacobsen, Michael G. Duda
 !> \date    04/02/13
 !> \details 
-!>  This routine deallocates a 0D logical field. If the optional argument
-!>  keep_head_ptr is .true., the field type pointed to by f will not be
-!>  deallocated -- only the contents (array, attLists, constituentNames)
-!>  will be deallocated.
-!>
-!>  The principal use for the keep_head_ptr argument is for situations in
-!>  which elemements of an array of fields need to be deallocated.
+!>  This routine deallocates a 0D logical field.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_deallocate_field0d_logical_target(f, keep_head_ptr)!{{{
+   subroutine mpas_deallocate_field0d_logical_target(f)!{{{
 
        implicit none
 
        type (field0dLogical), target :: f !< Input: Field to deallocate
-       logical, intent(in), optional :: keep_head_ptr
 
        type (field0dLogical), pointer :: f_cursor, f_next
-       logical :: local_keep_head_ptr
        integer :: threadNum
        integer :: i, iErr
 
        threadNum = mpas_threading_get_thread_num()
-
-       if (present(keep_head_ptr)) then
-           local_keep_head_ptr = keep_head_ptr
-       else
-           local_keep_head_ptr = .false.
-       end if
 
        if ( threadNum == 0 ) then
            f_cursor => f
@@ -1843,10 +1959,6 @@ module mpas_field_routines
 
                if (associated(f_cursor % constituentNames)) then
                    deallocate(f_cursor % constituentNames)
-               end if
-
-               if (.not. local_keep_head_ptr) then
-                   deallocate(f_cursor)
                end if
 
                f_cursor => f_next
@@ -1864,34 +1976,20 @@ module mpas_field_routines
 !> \author  Doug Jacobsen, Michael G. Duda
 !> \date    04/02/13
 !> \details 
-!>  This routine deallocates a 0D int field. If the optional argument
-!>  keep_head_ptr is .true., the field type pointed to by f will not be
-!>  deallocated -- only the contents (array, attLists, constituentNames)
-!>  will be deallocated.
-!>
-!>  The principal use for the keep_head_ptr argument is for situations in
-!>  which elemements of an array of fields need to be deallocated.
+!>  This routine deallocates a 0D int field.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_deallocate_field0d_integer_target(f, keep_head_ptr)!{{{
+   subroutine mpas_deallocate_field0d_integer_target(f)!{{{
 
        implicit none
 
        type (field0dInteger), target :: f !< Input: Field to deallocate
-       logical, intent(in), optional :: keep_head_ptr
 
        type (field0dInteger), pointer :: f_cursor, f_next
-       logical :: local_keep_head_ptr
        integer :: threadNum
        integer :: i, iErr
 
        threadNum = mpas_threading_get_thread_num()
-
-       if (present(keep_head_ptr)) then
-           local_keep_head_ptr = keep_head_ptr
-       else
-           local_keep_head_ptr = .false.
-       end if
 
        if ( threadNum == 0 ) then
            f_cursor => f
@@ -1907,10 +2005,6 @@ module mpas_field_routines
 
                if (associated(f_cursor % constituentNames)) then
                    deallocate(f_cursor % constituentNames)
-               end if
-
-               if (.not. local_keep_head_ptr) then
-                   deallocate(f_cursor)
                end if
 
                f_cursor => f_next
@@ -1928,34 +2022,20 @@ module mpas_field_routines
 !> \author  Doug Jacobsen, Michael G. Duda
 !> \date    04/02/13
 !> \details 
-!>  This routine deallocates a 1D int field. If the optional argument
-!>  keep_head_ptr is .true., the field type pointed to by f will not be
-!>  deallocated -- only the contents (array, attLists, constituentNames)
-!>  will be deallocated.
-!>
-!>  The principal use for the keep_head_ptr argument is for situations in
-!>  which elemements of an array of fields need to be deallocated.
+!>  This routine deallocates a 1D int field.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_deallocate_field1d_integer_target(f, keep_head_ptr)!{{{
+   subroutine mpas_deallocate_field1d_integer_target(f)!{{{
 
        implicit none
 
        type (field1dInteger), target :: f !< Input: Field to deallocate
-       logical, intent(in), optional :: keep_head_ptr
 
        type (field1dInteger), pointer :: f_cursor, f_next
-       logical :: local_keep_head_ptr
        integer :: threadNum
        integer :: i, iErr
 
        threadNum = mpas_threading_get_thread_num()
-
-       if (present(keep_head_ptr)) then
-           local_keep_head_ptr = keep_head_ptr
-       else
-           local_keep_head_ptr = .false.
-       end if
 
        if ( threadNum == 0 ) then
            f_cursor => f
@@ -1975,10 +2055,6 @@ module mpas_field_routines
 
                if (associated(f_cursor % constituentNames)) then
                    deallocate(f_cursor % constituentNames)
-               end if
-
-               if (.not. local_keep_head_ptr) then
-                   deallocate(f_cursor)
                end if
 
                f_cursor => f_next
@@ -1996,36 +2072,20 @@ module mpas_field_routines
 !> \author  Doug Jacobsen, Michael G. Duda
 !> \date    04/02/13
 !> \details 
-!>  This routine deallocates a 2D int field. If the optional argument
-!>  keep_head_ptr is .true., the field type pointed to by f will not be
-!>  deallocated -- only the contents (array, attLists, constituentNames)
-!>  will be deallocated.
-!>  for all blocks other than the first (including the field types themselves)
-!>  will be deallocated.
-!>
-!>  The principal use for the keep_head_ptr argument is for situations in
-!>  which elemements of an array of fields need to be deallocated.
+!>  This routine deallocates a 2D int field.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_deallocate_field2d_integer_target(f, keep_head_ptr)!{{{
+   subroutine mpas_deallocate_field2d_integer_target(f)!{{{
 
        implicit none
 
        type (field2dInteger), target :: f !< Input: Field to deallocate
-       logical, intent(in), optional :: keep_head_ptr
 
        type (field2dInteger), pointer :: f_cursor, f_next
-       logical :: local_keep_head_ptr
        integer :: threadNum
        integer :: i, iErr
 
        threadNum = mpas_threading_get_thread_num()
-
-       if (present(keep_head_ptr)) then
-           local_keep_head_ptr = keep_head_ptr
-       else
-           local_keep_head_ptr = .false.
-       end if
 
        if ( threadNum == 0 ) then
            f_cursor => f
@@ -2045,10 +2105,6 @@ module mpas_field_routines
 
                if (associated(f_cursor % constituentNames)) then
                    deallocate(f_cursor % constituentNames)
-               end if
-
-               if (.not. local_keep_head_ptr) then
-                   deallocate(f_cursor)
                end if
 
                f_cursor => f_next
@@ -2066,34 +2122,20 @@ module mpas_field_routines
 !> \author  Doug Jacobsen, Michael G. Duda
 !> \date    04/02/13
 !> \details 
-!>  This routine deallocates a 3D int field. If the optional argument
-!>  keep_head_ptr is .true., the field type pointed to by f will not be
-!>  deallocated -- only the contents (array, attLists, constituentNames)
-!>  will be deallocated.
-!>
-!>  The principal use for the keep_head_ptr argument is for situations in
-!>  which elemements of an array of fields need to be deallocated.
+!>  This routine deallocates a 3D int field.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_deallocate_field3d_integer_target(f, keep_head_ptr)!{{{
+   subroutine mpas_deallocate_field3d_integer_target(f)!{{{
 
        implicit none
 
        type (field3dInteger), target :: f !< Input: Field to deallocate
-       logical, intent(in), optional :: keep_head_ptr
 
        type (field3dInteger), pointer :: f_cursor, f_next
-       logical :: local_keep_head_ptr
        integer :: threadNum
        integer :: i, iErr
 
        threadNum = mpas_threading_get_thread_num()
-
-       if (present(keep_head_ptr)) then
-           local_keep_head_ptr = keep_head_ptr
-       else
-           local_keep_head_ptr = .false.
-       end if
 
        if ( threadNum == 0 ) then
            f_cursor => f
@@ -2113,10 +2155,6 @@ module mpas_field_routines
 
                if (associated(f_cursor % constituentNames)) then
                    deallocate(f_cursor % constituentNames)
-               end if
-
-               if (.not. local_keep_head_ptr) then
-                   deallocate(f_cursor)
                end if
 
                f_cursor => f_next
@@ -2134,34 +2172,20 @@ module mpas_field_routines
 !> \author  Doug Jacobsen, Michael G. Duda
 !> \date    04/02/13
 !> \details 
-!>  This routine deallocates a 0D real field. If the optional argument
-!>  keep_head_ptr is .true., the field type pointed to by f will not be
-!>  deallocated -- only the contents (array, attLists, constituentNames)
-!>  will be deallocated.
-!>
-!>  The principal use for the keep_head_ptr argument is for situations in
-!>  which elemements of an array of fields need to be deallocated.
+!>  This routine deallocates a 0D real field.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_deallocate_field0d_real_target(f, keep_head_ptr)!{{{
+   subroutine mpas_deallocate_field0d_real_target(f)!{{{
 
        implicit none
 
        type (field0dReal), target :: f !< Input: Field to deallocate
-       logical, intent(in), optional :: keep_head_ptr
 
        type (field0dReal), pointer :: f_cursor, f_next
-       logical :: local_keep_head_ptr
        integer :: threadNum
        integer :: i, iErr
 
        threadNum = mpas_threading_get_thread_num()
-
-       if (present(keep_head_ptr)) then
-           local_keep_head_ptr = keep_head_ptr
-       else
-           local_keep_head_ptr = .false.
-       end if
 
        if ( threadNum == 0 ) then
            f_cursor => f
@@ -2177,10 +2201,6 @@ module mpas_field_routines
 
                if (associated(f_cursor % constituentNames)) then
                    deallocate(f_cursor % constituentNames)
-               end if
-
-               if (.not. local_keep_head_ptr) then
-                   deallocate(f_cursor)
                end if
 
                f_cursor => f_next
@@ -2198,34 +2218,20 @@ module mpas_field_routines
 !> \author  Doug Jacobsen, Michael G. Duda
 !> \date    04/02/13
 !> \details 
-!>  This routine deallocates a 1D real field. If the optional argument
-!>  keep_head_ptr is .true., the field type pointed to by f will not be
-!>  deallocated -- only the contents (array, attLists, constituentNames)
-!>  will be deallocated.
-!>
-!>  The principal use for the keep_head_ptr argument is for situations in
-!>  which elemements of an array of fields need to be deallocated.
+!>  This routine deallocates a 1D real field.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_deallocate_field1d_real_target(f, keep_head_ptr)!{{{
+   subroutine mpas_deallocate_field1d_real_target(f)!{{{
 
        implicit none
 
        type (field1dReal), target :: f !< Input: Field to deallocate
-       logical, intent(in), optional :: keep_head_ptr
 
        type (field1dReal), pointer :: f_cursor, f_next
-       logical :: local_keep_head_ptr
        integer :: threadNum
        integer :: i, iErr
 
        threadNum = mpas_threading_get_thread_num()
-
-       if (present(keep_head_ptr)) then
-           local_keep_head_ptr = keep_head_ptr
-       else
-           local_keep_head_ptr = .false.
-       end if
 
        if ( threadNum == 0 ) then
            f_cursor => f
@@ -2245,10 +2251,6 @@ module mpas_field_routines
 
                if (associated(f_cursor % constituentNames)) then
                    deallocate(f_cursor % constituentNames)
-               end if
-
-               if (.not. local_keep_head_ptr) then
-                   deallocate(f_cursor)
                end if
 
                f_cursor => f_next
@@ -2266,34 +2268,20 @@ module mpas_field_routines
 !> \author  Doug Jacobsen, Michael G. Duda
 !> \date    04/02/13
 !> \details 
-!>  This routine deallocates a 2D real field. If the optional argument
-!>  keep_head_ptr is .true., the field type pointed to by f will not be
-!>  deallocated -- only the contents (array, attLists, constituentNames)
-!>  will be deallocated.
-!>
-!>  The principal use for the keep_head_ptr argument is for situations in
-!>  which elemements of an array of fields need to be deallocated.
+!>  This routine deallocates a 2D real field.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_deallocate_field2d_real_target(f, keep_head_ptr)!{{{
+   subroutine mpas_deallocate_field2d_real_target(f)!{{{
 
        implicit none
 
        type (field2dReal), target :: f !< Input: Field to deallocate
-       logical, intent(in), optional :: keep_head_ptr
 
        type (field2dReal), pointer :: f_cursor, f_next
-       logical :: local_keep_head_ptr
        integer :: threadNum
        integer :: i, iErr
 
        threadNum = mpas_threading_get_thread_num()
-
-       if (present(keep_head_ptr)) then
-           local_keep_head_ptr = keep_head_ptr
-       else
-           local_keep_head_ptr = .false.
-       end if
 
        if ( threadNum == 0 ) then
            f_cursor => f
@@ -2313,10 +2301,6 @@ module mpas_field_routines
 
                if (associated(f_cursor % constituentNames)) then
                    deallocate(f_cursor % constituentNames)
-               end if
-
-               if (.not. local_keep_head_ptr) then
-                   deallocate(f_cursor)
                end if
 
                f_cursor => f_next
@@ -2334,36 +2318,20 @@ module mpas_field_routines
 !> \author  Doug Jacobsen, Michael G. Duda
 !> \date    04/02/13
 !> \details 
-!>  This routine deallocates a 3D real field. If the optional argument
-!>  keep_head_ptr is .true., the field type pointed to by f will not be
-!>  deallocated -- only the contents (array, attLists, constituentNames)
-!>  will be deallocated.
-!>  for all blocks other than the first (including the field types themselves)
-!>  will be deallocated.
-!>
-!>  The principal use for the keep_head_ptr argument is for situations in
-!>  which elemements of an array of fields need to be deallocated.
+!>  This routine deallocates a 3D real field.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_deallocate_field3d_real_target(f, keep_head_ptr)!{{{
+   subroutine mpas_deallocate_field3d_real_target(f)!{{{
 
        implicit none
 
        type (field3dReal), target :: f !< Input: Field to deallocate
-       logical, intent(in), optional :: keep_head_ptr
 
        type (field3dReal), pointer :: f_cursor, f_next
-       logical :: local_keep_head_ptr
        integer :: threadNum
        integer :: i, iErr
 
        threadNum = mpas_threading_get_thread_num()
-
-       if (present(keep_head_ptr)) then
-           local_keep_head_ptr = keep_head_ptr
-       else
-           local_keep_head_ptr = .false.
-       end if
 
        if ( threadNum == 0 ) then
            f_cursor => f
@@ -2383,10 +2351,6 @@ module mpas_field_routines
 
                if (associated(f_cursor % constituentNames)) then
                    deallocate(f_cursor % constituentNames)
-               end if
-
-               if (.not. local_keep_head_ptr) then
-                   deallocate(f_cursor)
                end if
 
                f_cursor => f_next
@@ -2404,34 +2368,20 @@ module mpas_field_routines
 !> \author  Doug Jacobsen, Michael G. Duda
 !> \date    04/02/13
 !> \details 
-!>  This routine deallocates a 4D real field. If the optional argument
-!>  keep_head_ptr is .true., the field type pointed to by f will not be
-!>  deallocated -- only the contents (array, attLists, constituentNames)
-!>  will be deallocated.
-!>
-!>  The principal use for the keep_head_ptr argument is for situations in
-!>  which elemements of an array of fields need to be deallocated.
+!>  This routine deallocates a 4D real field.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_deallocate_field4d_real_target(f, keep_head_ptr)!{{{
+   subroutine mpas_deallocate_field4d_real_target(f)!{{{
 
        implicit none
 
        type (field4dReal), target :: f !< Input: Field to deallocate
-       logical, intent(in), optional :: keep_head_ptr
 
        type (field4dReal), pointer :: f_cursor, f_next
-       logical :: local_keep_head_ptr
        integer :: threadNum
        integer :: i, iErr
 
        threadNum = mpas_threading_get_thread_num()
-
-       if (present(keep_head_ptr)) then
-           local_keep_head_ptr = keep_head_ptr
-       else
-           local_keep_head_ptr = .false.
-       end if
 
        if ( threadNum == 0 ) then
            f_cursor => f
@@ -2451,10 +2401,6 @@ module mpas_field_routines
 
                if (associated(f_cursor % constituentNames)) then
                    deallocate(f_cursor % constituentNames)
-               end if
-
-               if (.not. local_keep_head_ptr) then
-                   deallocate(f_cursor)
                end if
 
                f_cursor => f_next
@@ -2472,34 +2418,20 @@ module mpas_field_routines
 !> \author  Doug Jacobsen, Michael G. Duda
 !> \date    04/02/13
 !> \details 
-!>  This routine deallocates a 5D real field. If the optional argument
-!>  keep_head_ptr is .true., the field type pointed to by f will not be
-!>  deallocated -- only the contents (array, attLists, constituentNames)
-!>  will be deallocated.
-!>
-!>  The principal use for the keep_head_ptr argument is for situations in
-!>  which elemements of an array of fields need to be deallocated.
+!>  This routine deallocates a 5D real field.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_deallocate_field5d_real_target(f, keep_head_ptr)!{{{
+   subroutine mpas_deallocate_field5d_real_target(f)!{{{
 
        implicit none
 
        type (field5dReal), target :: f !< Input: Field to deallocate
-       logical, intent(in), optional :: keep_head_ptr
 
        type (field5dReal), pointer :: f_cursor, f_next
-       logical :: local_keep_head_ptr
        integer :: threadNum
        integer :: i, iErr
 
        threadNum = mpas_threading_get_thread_num()
-
-       if (present(keep_head_ptr)) then
-           local_keep_head_ptr = keep_head_ptr
-       else
-           local_keep_head_ptr = .false.
-       end if
 
        if ( threadNum == 0 ) then
            f_cursor => f
@@ -2519,10 +2451,6 @@ module mpas_field_routines
 
                if (associated(f_cursor % constituentNames)) then
                    deallocate(f_cursor % constituentNames)
-               end if
-
-               if (.not. local_keep_head_ptr) then
-                   deallocate(f_cursor)
                end if
 
                f_cursor => f_next
@@ -2540,34 +2468,20 @@ module mpas_field_routines
 !> \author  Doug Jacobsen, Michael G. Duda
 !> \date    04/02/13
 !> \details 
-!>  This routine deallocates a 0D real field. If the optional argument
-!>  keep_head_ptr is .true., the field type pointed to by f will not be
-!>  deallocated -- only the contents (array, attLists, constituentNames)
-!>  will be deallocated.
-!>
-!>  The principal use for the keep_head_ptr argument is for situations in
-!>  which elemements of an array of fields need to be deallocated.
+!>  This routine deallocates a 0D real field.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_deallocate_field0d_char_target(f, keep_head_ptr)!{{{
+   subroutine mpas_deallocate_field0d_char_target(f)!{{{
 
        implicit none
 
        type (field0dChar), target :: f !< Input: Field to deallocate
-       logical, intent(in), optional :: keep_head_ptr
 
        type (field0dChar), pointer :: f_cursor, f_next
-       logical :: local_keep_head_ptr
        integer :: threadNum
        integer :: i, iErr
 
        threadNum = mpas_threading_get_thread_num()
-
-       if (present(keep_head_ptr)) then
-           local_keep_head_ptr = keep_head_ptr
-       else
-           local_keep_head_ptr = .false.
-       end if
 
        if ( threadNum == 0 ) then
            f_cursor => f
@@ -2585,10 +2499,6 @@ module mpas_field_routines
                    deallocate(f_cursor % constituentNames)
                end if
 
-               if (.not. local_keep_head_ptr) then
-                   deallocate(f_cursor)
-               end if
-
                f_cursor => f_next
            end do
        end if
@@ -2604,34 +2514,20 @@ module mpas_field_routines
 !> \author  Doug Jacobsen, Michael G. Duda
 !> \date    04/02/13
 !> \details 
-!>  This routine deallocates a 1D char field. If the optional argument
-!>  keep_head_ptr is .true., the field type pointed to by f will not be
-!>  deallocated -- only the contents (array, attLists, constituentNames)
-!>  will be deallocated.
-!>
-!>  The principal use for the keep_head_ptr argument is for situations in
-!>  which elemements of an array of fields need to be deallocated.
+!>  This routine deallocates a 1D char field.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_deallocate_field1d_char_target(f, keep_head_ptr)!{{{
+   subroutine mpas_deallocate_field1d_char_target(f)!{{{
 
        implicit none
 
        type (field1dChar), target :: f !< Input: Field to deallocate
-       logical, intent(in), optional :: keep_head_ptr
 
        type (field1dChar), pointer :: f_cursor, f_next
-       logical :: local_keep_head_ptr
        integer :: threadNum
        integer :: i, iErr
 
        threadNum = mpas_threading_get_thread_num()
-
-       if (present(keep_head_ptr)) then
-           local_keep_head_ptr = keep_head_ptr
-       else
-           local_keep_head_ptr = .false.
-       end if
 
        if ( threadNum == 0 ) then
            f_cursor => f
@@ -2651,10 +2547,6 @@ module mpas_field_routines
 
                if (associated(f_cursor % constituentNames)) then
                    deallocate(f_cursor % constituentNames)
-               end if
-
-               if (.not. local_keep_head_ptr) then
-                   deallocate(f_cursor)
                end if
 
                f_cursor => f_next
