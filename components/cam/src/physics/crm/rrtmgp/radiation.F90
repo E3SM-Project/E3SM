@@ -1581,6 +1581,7 @@ contains
                      if (radiation_do('lw')) then
                         ! Do cloud optics
                         call t_startf('rad_cloud_optics_lw')
+                        cld_tau_gpt_lw = 0._r8
                         call get_cloud_optics_lw( &
                            ncol, pver, nlwbands, do_snow_optics(), cld, cldfsnow, iclwp, iciwp, icswp, &
                            lambdac, mu, dei, des, rei, &
@@ -1595,6 +1596,7 @@ contains
                         call t_stopf('rad_cloud_optics_lw')
                         ! Do aerosol optics
                         call t_startf('rad_aerosol_optics_lw')
+                        aer_tau_bnd_lw = 0._r8
                         call set_aerosol_optics_lw(icall, state, pbuf, is_cmip6_volc, aer_tau_bnd_lw)
                         call t_stopf('rad_aerosol_optics_lw')
                         ! Check (and possibly clip) values before passing to RRTMGP driver
