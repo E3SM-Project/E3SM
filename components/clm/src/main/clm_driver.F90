@@ -253,11 +253,7 @@ contains
     ! !ARGUMENTS:
     implicit none
     integer, intent(inout)  :: step_count
-    !logical ,        intent(in) :: doalb       ! true if time for surface albedo calc
-    !real(r8),        intent(in) :: nextsw_cday ! calendar day for nstep+1
-    !real(r8),        intent(in) :: declinp1    ! declination angle for next time step
-    !real(r8),        intent(in) :: declin      ! declination angle for current time step
-    logical,         intent(in) :: rstwr       ! true => write restart file this step
+    logical           :: rstwr       ! true => write restart file this step
     logical,         intent(in) :: nlend       ! true => end of run on this step
     character(len=*),intent(in) :: rdate       ! restart file time stamp for name
     !
@@ -273,22 +269,20 @@ contains
     logical :: found_thawlayer
     integer :: k_frz
     real*8    :: sto
-    integer , parameter :: gpu = 1
+    integer , parameter :: gpu = 1, numdays = 1
     #if _CUDA
     integer(kind=cuda_count_kind) :: heapsize,free1,free2,total
     integer  :: istat, val
     #endif
     !-----------------------------------------------------------------------
-
     call get_curr_time_string(dateTimeString)
     if (masterproc) then
        write(iulog,*)'Beginning timestep   : ',trim(dateTimeString)
        call shr_sys_flush(iulog)
     endif
-    !!!===================constants that may need updates ============== !!!
 
     idle = -1
-    if(nstep_mod == -1 ) idle = 0
+    if(step_count == -24 ) idle = 0
     do while (idle == 0)
         idle = idle + 0
         call sleep(1)
@@ -798,6 +792,7 @@ contains
     do nc = 1,nclumps
 
        call get_clump_bounds_gpu(nc, bounds_clump)
+       
        call UpdateDaylength(bounds_clump, declin)
        ! Initialze variables needed for new driver time step
        call clm_drv_init(bounds_clump, &
@@ -917,7 +912,6 @@ contains
        ! ============================================================================
 
        ! Set lake temperature
-       print *, "Lake Temperature:"
        call LakeTemperature(bounds_clump,                  &
                   filter(nc)%num_lakec, filter(nc)%lakec,  &
                   filter(nc)%num_lakep, filter(nc)%lakep,  &
@@ -925,7 +919,6 @@ contains
                   energyflux_vars, lakestate_vars, dtime_mod)
        !call t_stopf('bgplake')
        ! Set soil/snow temperatures including ground temperature
-       print *, "SoilTemperture"
        call SoilTemperature(bounds_clump,                            &
                    filter(nc)%num_urbanl  , filter(nc)%urbanl,       &
                    filter(nc)%num_nolakec , filter(nc)%nolakec,      &
@@ -935,7 +928,6 @@ contains
        ! ============================================================================
        ! update surface fluxes for new ground temperature.
        ! ============================================================================
-       print *, "SoilFluxes"
        call SoilFluxes(bounds_clump,                                &
                    filter(nc)%num_urbanl,  filter(nc)%urbanl,       &
                    filter(nc)%num_nolakec, filter(nc)%nolakec,      &
@@ -954,7 +946,6 @@ contains
 
        ! Note that filter_snowc and filter_nosnowc are returned by
        ! LakeHydrology after the new snow filter is built
-        print *, "NoDraingae"
 
        call HydrologyNoDrainage(bounds_clump,                     &
             filter(nc)%num_nolakec, filter(nc)%nolakec,           &
@@ -980,7 +971,6 @@ contains
        ! ============================================================================
        ! Lake hydrology
        ! ============================================================================
-        print *, "Lkae Hydrology"
        ! Note that filter_lakesnowc and filter_lakenosnowc are returned by
        ! LakeHydrology after the new snow filter is built
       call LakeHydrology(bounds_clump,                                  &
@@ -1238,7 +1228,7 @@ contains
         ! FIX(SPM,032414) double check why this isn't called for ED
 
         if (nstep_mod > 0) then
-              call get_clump_bounds_gpu(nc, bounds_clump)
+
               call atm2lnd_UpdateAccVars(atm2lnd_vars, bounds_clump, nstep_mod)
               !call top_as%UpdateAccVars(bounds_proc)  !!only needed if use_fates
               call update_acc_vars_top_afGPU (top_af, bounds_clump, nstep_mod)
@@ -1261,6 +1251,7 @@ contains
     ! ============================================================================
     ! Write global average diagnostics to standard output
     ! ============================================================================
+    
 
     !!if (wrtdia) call mpi_barrier( mpicom,ier)
     !!call t_startf('wrtdiag')
@@ -1271,8 +1262,10 @@ contains
     ! Update history buffer
     ! ============================================================================
     
-    call hist_update_hbuf_gpu(mod(step_count,24), bounds_proc)
-
+    !if(step_count == 24) then
+        call hist_update_hbuf_gpu(step_count,24*numdays, nclumps)
+    !    stop
+    !end if
     ! ============================================================================
     ! Compute water budget
     ! ============================================================================
@@ -1289,27 +1282,37 @@ contains
     ! ============================================================================
     !! MOVE outside of clm_driver ?
     if (.not. use_noio) then
-
+        
        call t_startf('clm_drv_io')
-
        ! Create history and write history tapes if appropriate
        call t_startf('clm_drv_io_htapes')
 
-       call hist_htapes_wrapup(step_count,24, rstwr, nlend, bounds_proc,                    &
+       if(step_count == 2400)  rstwr = .true. 
+         
+       call hist_htapes_wrapup(step_count,24*numdays, rstwr, nlend, bounds_proc,                    &
             soilstate_vars%watsat_col(bounds_proc%begc:bounds_proc%endc, 1:), &
             soilstate_vars%sucsat_col(bounds_proc%begc:bounds_proc%endc, 1:), &
             soilstate_vars%bsw_col(bounds_proc%begc:bounds_proc%endc, 1:),    &
             soilstate_vars%hksat_col(bounds_proc%begc:bounds_proc%endc, 1:))
         call set_gpu_tape()
         call t_stopf('clm_drv_io_htapes')
-
+        
        ! Write restart/initial files if appropriate
        if (rstwr) then
           call t_startf('clm_drv_io_wrest')
-          print *, "RDATE:",rdate
           filer = restFile_filename(rdate=rdate)
-
-          call restFile_write( bounds_proc, filer,                                            &
+          print *, "Copying out data for restart"
+         !$acc exit data copyout(atm2lnd_vars, canopystate_vars, energyflux_vars,&
+         !$acc col_ef, veg_ef, frictionvel_vars, lakestate_vars, photosyns_vars, &
+         !$acc  soilhydrology_vars, soilstate_vars, solarabs_vars, grc_wf,col_wf,&
+         !$acc  veg_wf, lun_es, col_es,ch4_vars, veg_es,clmptr_rs,clmptr_ra)
+         !$acc exit data copyout(lun_ws, col_ws, veg_ws, aerosol_vars,surfalb_vars,&
+         !$acc cnstate_vars, col_cs, veg_cs, c13_col_cs, c13_veg_cs,c14_col_cs,&
+         !$acc c14_veg_cs, c14_veg_cs, col_cf, veg_cf, col_ns, veg_ns, &
+         !$acc col_nf,veg_nf,col_ps,veg_ps, col_pf,veg_pf, crop_vars ) 
+         
+          print *, "calling restFile_write:" 
+         call restFile_write( bounds_proc, filer,                                            &
                atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
                carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
                ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
@@ -1336,7 +1339,6 @@ contains
     if (use_pflotran .and. nstep_mod>=nestep) then
        call clm_pf_finalize()
     end if
-    if (step_count == 24) stop
     step_count = step_count + 1
      
   end subroutine clm_drv

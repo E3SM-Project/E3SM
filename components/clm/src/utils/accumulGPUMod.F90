@@ -14,6 +14,7 @@ module accumulGPUMod
   use LandunitType      , only : lun_pp
   use GridcellType      , only : grc_pp
   use clm_varpar        , only : crop_prog
+  use clm_varcon        , only : spval
 
   type accum_field_gpu_type
      character(len=  8), pointer :: name    => null()  !field name
@@ -175,8 +176,6 @@ module accumulGPUMod
       !------------------------------------------------------------------------
 
       numlev = accum_field_gpu(nf)%numlev
-      ! beg = accum_field_gpu(nf)%beg1d
-      ! end = accum_field_gpu(nf)%end1d
 
       ! reset accumulated field value if necessary and  update
       ! accumulation field
@@ -290,8 +289,6 @@ module accumulGPUMod
       !------------------------------------------------------------------------
 
       numlev = accum_field_gpu(nf)%numlev
-      ! beg = accum_field_gpu(nf)%beg1d
-      ! end = accum_field_gpu(nf)%end1d
 
       !extract field
 
@@ -489,14 +486,15 @@ module accumulGPUMod
        rbufslp(p) = veg_es%t_veg(p)
     end do
     name = 'T10'
-    call update_accum_field_gpu  (9,name,begp,endp, t_ref2m(begp:endp), nstep)
-    call extract_accum_field_gpu (9,name,begp,endp, t_a10(begp:endp)  , nstep)
+    call update_accum_field_gpu  (9,name, begp, endp, t_ref2m(begp:endp), nstep)
+    call extract_accum_field_gpu (9,name, begp, endp, t_a10(begp:endp)  , nstep)
     name = 'T_VEG24'
-    call update_accum_field_gpu  (13,NAME,begp,endp, rbufslp(begp:endp)       , nstep)
-    call extract_accum_field_gpu (13,NAME,begp,endp, t_veg24(begp:endp)  , nstep)
+    call update_accum_field_gpu  (13,NAME, begp, endp, rbufslp(begp:endp) , nstep)
+    call extract_accum_field_gpu (13,NAME, begp, endp, t_veg24(begp:endp) , nstep)
     name = 'T_VEG240'
-    call update_accum_field_gpu  (14,name,begp,endp, rbufslp       , nstep)
-    call extract_accum_field_gpu (14,name,begp,endp, t_veg240(begp:endp) , nstep)
+    call update_accum_field_gpu  (14,name, begp, endp, rbufslp             , nstep)
+    call extract_accum_field_gpu (14,name, begp, endp, t_veg240(begp:endp) , nstep)
+    
     ! Accumulate and extract TREFAV - hourly average 2m air temperature
     ! Used to compute maximum and minimum of hourly averaged 2m reference
     ! temperature over a day. Note that "spval" is returned by the call to
@@ -506,6 +504,7 @@ module accumulGPUMod
     name = 'TREFAV'
     call update_accum_field_gpu  (10,name,begp,endp, t_ref2m(begp:endp), nstep)
     call extract_accum_field_gpu (10,name,begp,endp, rbufslp(begp:endp), nstep)
+    
     do p = begp,endp
        if (rbufslp(p) /= spval) then
           veg_es%t_ref2m_max_inst(p) = max(rbufslp(p), veg_es%t_ref2m_max_inst(p))
@@ -519,6 +518,7 @@ module accumulGPUMod
        else if (secs == int(dtime)) then
           veg_es%t_ref2m_max(p) = spval
           veg_es%t_ref2m_min(p) = spval
+         ! print *, "SETTING VEG_ES TO SPVAL",p,spval,veg_es%t_ref2m_min(p)
        endif
     end do
     ! Accumulate and extract TREFAV_U - hourly average urban 2m air temperature
@@ -641,7 +641,6 @@ module accumulGPUMod
        call update_accum_field_gpu  (42,name,begp,endp, rbufslp(begp:endp), nstep)
        call extract_accum_field_gpu (42,name,begp,endp, gdd10(begp:endp), nstep)
     end if
-
     end associate
   end subroutine update_acc_vars_veg_es_GPU
 
