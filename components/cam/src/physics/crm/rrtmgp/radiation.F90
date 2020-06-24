@@ -1540,6 +1540,9 @@ contains
                      if (radiation_do('sw')) then
                         ! Do cloud optics
                         call t_startf('rad_cloud_optics_sw')
+                        cld_tau_gpt_sw = 0._r8
+                        cld_ssa_gpt_sw = 0._r8
+                        cld_asm_gpt_sw = 0._r8
                         call get_cloud_optics_sw( &
                            ncol, pver, nswbands, do_snow_optics(), &
                            cld, cldfsnow, iclwp, iciwp, icswp, &
@@ -1557,6 +1560,9 @@ contains
                         call t_stopf('rad_cloud_optics_sw')
                         ! Do aerosol optics
                         call t_startf('rad_aerosol_optics_sw')
+                        aer_tau_bnd_sw = 0._r8
+                        aer_ssa_bnd_sw = 0._r8
+                        aer_asm_bnd_sw = 0._r8
                         call set_aerosol_optics_sw( &
                            icall, state, pbuf, night_indices(1:nnight), is_cmip6_volc, &
                            aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw &
