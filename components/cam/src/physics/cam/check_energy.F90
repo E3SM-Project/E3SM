@@ -87,6 +87,8 @@ module check_energy
      integer :: count(pcnst)               ! count of values with significant imbalances
   end type check_tracers_data
 
+  integer :: icldice = -1, icldliq = -1, irain = -1, isnow = -1
+
 
 !===============================================================================
 contains
@@ -232,6 +234,11 @@ end subroutine check_energy_get_integrals
        call add_default ('IEFLX', 1, ' ') 
     end if 
 
+    call cnst_get_ind('CLDICE', icldice, abort=.false.)
+    call cnst_get_ind('CLDLIQ', icldliq, abort=.false.)
+    call cnst_get_ind('RAINQM', irain, abort=.false.)
+    call cnst_get_ind('SNOWQM', isnow, abort=.false.)
+
   end subroutine check_energy_init
 
 !===============================================================================
@@ -252,33 +259,37 @@ end subroutine check_energy_get_integrals
 
     real(r8) :: ke(state%ncol)                     ! vertical integral of kinetic energy
     real(r8) :: se(state%ncol)                     ! vertical integral of static energy
+    real(r8) :: te(state%ncol)          
+    real(r8) :: tw(state%ncol)
     real(r8) :: wv(state%ncol)                     ! vertical integral of water (vapor)
     real(r8) :: wl(state%ncol)                     ! vertical integral of water (liquid)
     real(r8) :: wi(state%ncol)                     ! vertical integral of water (ice)
 
-    real(r8),allocatable :: cpairv_loc(:,:,:)
+!    real(r8),allocatable :: cpairv_loc(:,:,:)
 
     integer lchnk                                  ! chunk identifier
     integer ncol                                   ! number of atmospheric columns
     integer  i,k                                   ! column, level indices
-    integer :: ixcldice, ixcldliq                  ! CLDICE and CLDLIQ indices
+!    integer :: ixcldice, ixcldliq                  ! CLDICE and CLDLIQ indices
     real(r8) :: wr(state%ncol)                     ! vertical integral of rain
     real(r8) :: ws(state%ncol)                     ! vertical integral of snow
-    integer :: ixrain
-    integer :: ixsnow
+!    integer :: ixrain
+!    integer :: ixsnow
 !-----------------------------------------------------------------------
 
     lchnk = state%lchnk
     ncol  = state%ncol
-    call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
-    call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
-    call cnst_get_ind('RAINQM', ixrain, abort=.false.)
-    call cnst_get_ind('SNOWQM', ixsnow, abort=.false.)
+
+!    call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
+!    call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
+!    call cnst_get_ind('RAINQM', ixrain, abort=.false.)
+!    call cnst_get_ind('SNOWQM', ixsnow, abort=.false.)
 
     ! cpairv_loc needs to be allocated to a size which matches state and ptend
     ! If psetcols == pcols, cpairv is the correct size and just copy into cpairv_loc
     ! If psetcols > pcols and all cpairv match cpair, then assign the constant cpair
 
+#if 0
     if (state%psetcols == pcols) then
        allocate (cpairv_loc(state%psetcols,pver,begchunk:endchunk))
        cpairv_loc(:,:,:) = cpairv(:,:,:)
@@ -288,8 +299,9 @@ end subroutine check_energy_get_integrals
     else
        call endrun('check_energy_timestep_init: cpairv is not allowed to vary when subcolumns are turned on')
     end if
-
+#endif
 ! Compute vertical integrals of dry static energy and water (vapor, liquid, ice)
+#if 0
     ke = 0._r8
     se = 0._r8
     wv = 0._r8
@@ -301,7 +313,8 @@ end subroutine check_energy_get_integrals
     do k = 1, pver
        do i = 1, ncol
           ke(i) = ke(i) + 0.5_r8*(state%u(i,k)**2 + state%v(i,k)**2)*state%pdel(i,k)/gravit
-          se(i) = se(i) +         state%t(i,k)*cpairv_loc(i,k,lchnk)*state%pdel(i,k)/gravit
+          !se(i) = se(i) +         state%t(i,k)*cpairv_loc(i,k,lchnk)*state%pdel(i,k)/gravit
+          se(i) = se(i) +         state%t(i,k)*cpair*state%pdel(i,k)/gravit
           wv(i) = wv(i) + state%q(i,k,1       )*state%pdel(i,k)/gravit
        end do
     end do
@@ -310,24 +323,23 @@ end subroutine check_energy_get_integrals
     end do
 
     ! Don't require cloud liq/ice to be present.  Allows for adiabatic/ideal phys.
-    if (ixcldliq > 1  .and.  ixcldice > 1) then
+    if (icldliq > 1  .and.  icldice > 1) then
        do k = 1, pver
           do i = 1, ncol
-             wl(i) = wl(i) + state%q(i,k,ixcldliq)*state%pdel(i,k)/gravit
-             wi(i) = wi(i) + state%q(i,k,ixcldice)*state%pdel(i,k)/gravit
+             wl(i) = wl(i) + state%q(i,k,icldliq)*state%pdel(i,k)/gravit
+             wi(i) = wi(i) + state%q(i,k,icldice)*state%pdel(i,k)/gravit
           end do
        end do
     end if
 
-    if (ixrain   > 1  .and.  ixsnow   > 1 ) then
+    if (irain   > 1  .and.  isnow   > 1 ) then
        do k = 1, pver
           do i = 1, ncol
-             wr(i) = wr(i) + state%q(i,k,ixrain)*state%pdel(i,k)/gravit
-             ws(i) = ws(i) + state%q(i,k,ixsnow)*state%pdel(i,k)/gravit
+             wr(i) = wr(i) + state%q(i,k,irain)*state%pdel(i,k)/gravit
+             ws(i) = ws(i) + state%q(i,k,isnow)*state%pdel(i,k)/gravit
           end do
        end do
     end if
-
 
 ! Compute vertical integrals of frozen static energy and total water.
     do i = 1, ncol
@@ -338,6 +350,20 @@ end subroutine check_energy_get_integrals
        state%te_cur(i) = state%te_ini(i)
        state%tw_cur(i) = state%tw_ini(i)
     end do
+#endif
+
+#if 1
+    call energy_helper_eam_def(state%u,state%v,state%T,state%q,state%ps,state%pdel,state%phis,&
+                                   ke,se,wv,wl,wi,wr,ws,te,tw, &
+                                   ncol)
+
+    state%te_ini(:ncol) = te(:ncol)
+    state%tw_ini(:ncol) = tw(:ncol)
+
+    state%te_cur(:ncol) = state%te_ini(:ncol)
+    state%tw_cur(:ncol) = state%tw_ini(:ncol)
+
+#endif
 
 ! zero cummulative boundary fluxes 
     tend%te_tnd(:ncol) = 0._r8
@@ -350,12 +376,87 @@ end subroutine check_energy_get_integrals
        call pbuf_set_field(pbuf, teout_idx, state%te_ini, col_type=col_type)
     end if
 
-    deallocate(cpairv_loc)
+!    deallocate(cpairv_loc)
 
   end subroutine check_energy_timestep_init
 
 !===============================================================================
+#if 1
+  subroutine energy_helper_eam_def(u,v,T,q,ps,pdel,phis, &
+                                   ke,se,wv,wl,wi,wr,ws,te,tw, &     
+                                   ncol)
 
+!state vars are of size psetcols,pver, so, not exactly correct
+    real(r8), intent(in) :: u(pcols,pver) 
+    real(r8), intent(in) :: v(pcols,pver) 
+    real(r8), intent(in) :: T(pcols,pver) 
+    real(r8), intent(in) :: q(pcols,pver,pcnst) 
+    real(r8), intent(in) :: ps(pcols) 
+    real(r8), intent(in) :: pdel(pcols,pver) 
+    real(r8), intent(in) :: phis(pcols) 
+
+
+    real(r8), intent(inout) :: ke(ncol)     ! vertical integral of kinetic energy
+    real(r8), intent(inout) :: se(ncol)     ! vertical integral of static energy
+    real(r8), intent(inout) :: wv(ncol)     ! vertical integral of water (vapor)
+    real(r8), intent(inout) :: wl(ncol)     ! vertical integral of water (liquid)
+    real(r8), intent(inout) :: wi(ncol)     ! vertical integral of water (ice)
+    real(r8), intent(inout) :: te(ncol)     ! vertical integral of total energy
+    real(r8), intent(inout) :: tw(ncol)     ! vertical integral of total water
+    real(r8), intent(inout) :: wr(ncol)     ! vertical integral of rain
+    real(r8), intent(inout) :: ws(ncol)     ! vertical integral of snow
+
+    integer, intent(in) :: ncol                   
+    integer :: i,k                               
+
+    ke = 0._r8
+    se = 0._r8
+    wv = 0._r8
+    wl = 0._r8
+    wi = 0._r8
+    wr = 0._r8
+    ws = 0._r8
+
+    do k = 1, pver
+       do i = 1, ncol
+          ke(i) = ke(i) + 0.5_r8*(u(i,k)**2 + v(i,k)**2)*pdel(i,k)/gravit
+          se(i) = se(i) + t(i,k)*cpair*pdel(i,k)/gravit
+          wv(i) = wv(i) + q(i,k,1       )*pdel(i,k)/gravit
+       end do
+    end do
+    do i = 1, ncol
+       se(i) = se(i) + phis(i)*ps(i)/gravit
+    end do
+
+    ! Don't require cloud liq/ice to be present.  Allows for adiabatic/ideal
+    ! phys.
+    if (icldliq > 1  .and.  icldice > 1) then
+       do k = 1, pver
+          do i = 1, ncol
+             wl(i) = wl(i) + q(i,k,icldliq)*pdel(i,k)/gravit
+             wi(i) = wi(i) + q(i,k,icldice)*pdel(i,k)/gravit
+          end do
+       end do
+    end if
+
+    if (irain   > 1  .and.  isnow   > 1 ) then
+       do k = 1, pver
+          do i = 1, ncol
+             wr(i) = wr(i) + q(i,k,irain)*pdel(i,k)/gravit
+             ws(i) = ws(i) + q(i,k,isnow)*pdel(i,k)/gravit
+          end do
+       end do
+    end if
+
+    do i = 1, ncol
+!!     te(i) = se(i) + ke(i) + (latvap+latice)*wv(i) + latice*wl(i)
+       te(i) = se(i) + ke(i) + (latvap+latice)*wv(i) + latice*( wl(i) + wr(i) )
+       tw(i) = wv(i) + wl(i) + wi(i) + wr(i) + ws(i)
+    end do
+  end subroutine energy_helper_eam_def
+#endif
+!===============================================================================
+#define CODEOLD 1
   subroutine check_energy_chng(state, tend, name, nstep, ztodt,        &
        flx_vap, flx_cnd, flx_ice, flx_sen)
 
@@ -401,29 +502,38 @@ end subroutine check_energy_get_integrals
     real(r8) :: wv(state%ncol)                     ! vertical integral of water (vapor)
     real(r8) :: wl(state%ncol)                     ! vertical integral of water (liquid)
     real(r8) :: wi(state%ncol)                     ! vertical integral of water (ice)
-
     real(r8) :: te(state%ncol)                     ! vertical integral of total energy
     real(r8) :: tw(state%ncol)                     ! vertical integral of total water
-
+#if CODEOLD
     real(r8),allocatable :: cpairv_loc(:,:,:)
+#endif
 
     integer lchnk                                  ! chunk identifier
     integer ncol                                   ! number of atmospheric columns
     integer  i,k                                   ! column, level indices
-    integer :: ixcldice, ixcldliq                  ! CLDICE and CLDLIQ indices
+#if CODEOLD
+!    integer :: ixcldice, ixcldliq                  ! CLDICE and CLDLIQ indices
+#endif
     real(r8) :: wr(state%ncol)                     ! vertical integral of rain
     real(r8) :: ws(state%ncol)                     ! vertical integral of snow
-    integer :: ixrain
-    integer :: ixsnow
+#if CODEOLD
+!    integer :: ixrain
+!    integer :: ixsnow
+#endif
 !-----------------------------------------------------------------------
 
     lchnk = state%lchnk
     ncol  = state%ncol
+#if 0
+! CODEOLD
     call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
     call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
     call cnst_get_ind('RAINQM', ixrain, abort=.false.)
     call cnst_get_ind('SNOWQM', ixsnow, abort=.false.)
+#endif
 
+
+#if 0
     ! cpairv_loc needs to be allocated to a size which matches state and ptend
     ! If psetcols == pcols, cpairv is the correct size and just copy into cpairv_loc
     ! If psetcols > pcols and all cpairv match cpair, then assign the constant cpair
@@ -437,7 +547,10 @@ end subroutine check_energy_get_integrals
     else
        call endrun('check_energy_chng: cpairv is not allowed to vary when subcolumns are turned on')
     end if
+#endif
 
+#if 0
+!CODEOLD
     ! Compute vertical integrals of dry static energy and water (vapor, liquid, ice)
     ke = 0._r8
     se = 0._r8
@@ -450,7 +563,8 @@ end subroutine check_energy_get_integrals
     do k = 1, pver
        do i = 1, ncol
           ke(i) = ke(i) + 0.5_r8*(state%u(i,k)**2 + state%v(i,k)**2)*state%pdel(i,k)/gravit
-          se(i) = se(i) +         state%t(i,k)*cpairv_loc(i,k,lchnk)*state%pdel(i,k)/gravit
+!          se(i) = se(i) +         state%t(i,k)*cpairv_loc(i,k,lchnk)*state%pdel(i,k)/gravit
+          se(i) = se(i) +         state%t(i,k)*cpair*state%pdel(i,k)/gravit
           wv(i) = wv(i) + state%q(i,k,1       )*state%pdel(i,k)/gravit
        end do
     end do
@@ -459,20 +573,20 @@ end subroutine check_energy_get_integrals
     end do
 
     ! Don't require cloud liq/ice to be present.  Allows for adiabatic/ideal phys.
-    if (ixcldliq > 1  .and.  ixcldice > 1) then
+    if (icldliq > 1  .and.  icldice > 1) then
        do k = 1, pver
           do i = 1, ncol
-             wl(i) = wl(i) + state%q(i,k,ixcldliq)*state%pdel(i,k)/gravit
-             wi(i) = wi(i) + state%q(i,k,ixcldice)*state%pdel(i,k)/gravit
+             wl(i) = wl(i) + state%q(i,k,icldliq)*state%pdel(i,k)/gravit
+             wi(i) = wi(i) + state%q(i,k,icldice)*state%pdel(i,k)/gravit
           end do
        end do
     end if
 
-    if (ixrain   > 1  .and.  ixsnow   > 1 ) then
+    if (irain   > 1  .and.  isnow   > 1 ) then
        do k = 1, pver
           do i = 1, ncol
-             wr(i) = wr(i) + state%q(i,k,ixrain)*state%pdel(i,k)/gravit
-             ws(i) = ws(i) + state%q(i,k,ixsnow)*state%pdel(i,k)/gravit
+             wr(i) = wr(i) + state%q(i,k,irain)*state%pdel(i,k)/gravit
+             ws(i) = ws(i) + state%q(i,k,isnow)*state%pdel(i,k)/gravit
           end do
        end do
     end if
@@ -483,7 +597,15 @@ end subroutine check_energy_get_integrals
        te(i) = se(i) + ke(i) + (latvap+latice)*wv(i) + latice*( wl(i) + wr(i) )
        tw(i) = wv(i) + wl(i) + wi(i) + wr(i) + ws(i)
     end do
+#endif 
 
+!#ifndef CODEOLD
+#if 1
+!print *, ixcldice, ixcldliq, ixrain, ixsnow
+    call energy_helper_eam_def(state%u,state%v,state%T,state%q,state%ps,state%pdel,state%phis, &
+                                   ke,se,wv,wl,wi,wr,ws,te,tw, &
+                                   ncol)
+#endif
     ! compute expected values and tendencies
     do i = 1, ncol
        ! change in static energy and total water
@@ -557,7 +679,9 @@ end subroutine check_energy_get_integrals
        state%tw_cur(i) = tw(i)
     end do
 
-    deallocate(cpairv_loc)
+#if CODEOLD
+!    deallocate(cpairv_loc)
+#endif
 
   end subroutine check_energy_chng
 
@@ -888,21 +1012,21 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
 
     integer ncol                                   ! number of atmospheric columns
     integer  i,k,m                                 ! column, level,constituent indices
-    integer :: ixcldice, ixcldliq                  ! CLDICE and CLDLIQ and tracer indices
+!    integer :: ixcldice, ixcldliq                  ! CLDICE and CLDLIQ and tracer indices
     integer :: ixrain, ixsnow                      ! RAINQM and SNOWQM indices
 
 !-----------------------------------------------------------------------
 
     ncol  = state%ncol
-    call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
-    call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
-    call cnst_get_ind('RAINQM', ixrain,   abort=.false.)
-    call cnst_get_ind('SNOWQM', ixsnow,   abort=.false.)
+!    call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
+!    call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
+!    call cnst_get_ind('RAINQM', ixrain,   abort=.false.)
+!    call cnst_get_ind('SNOWQM', ixsnow,   abort=.false.)
 
     do m = 1,pcnst
 
-       if ( any(m == (/ 1, ixcldliq, ixcldice, &
-                           ixrain,   ixsnow    /)) ) exit   ! dont process water substances
+       if ( any(m == (/ 1, icldliq, icldice, &
+                           irain,   isnow    /)) ) exit   ! dont process water substances
                                                             ! they are checked in check_energy
        if (cnst_get_type_byind(m).eq.'dry') then
           trpdel(:ncol,:) = state%pdeldry(:ncol,:)
@@ -968,8 +1092,8 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     integer lchnk                                  ! chunk identifier
     integer ncol                                   ! number of atmospheric columns
     integer  i,k                                   ! column, level indices
-    integer :: ixcldice, ixcldliq                  ! CLDICE and CLDLIQ indices
-    integer :: ixrain, ixsnow                      ! RAINQM and SNOWQM indices
+!    integer :: ixcldice, ixcldliq                  ! CLDICE and CLDLIQ indices
+!    integer :: ixrain, ixsnow                      ! RAINQM and SNOWQM indices
     integer :: m                            ! tracer index
     character(len=8) :: tracname   ! tracername
 !-----------------------------------------------------------------------
@@ -977,15 +1101,15 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
 
     lchnk = state%lchnk
     ncol  = state%ncol
-    call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
-    call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
-    call cnst_get_ind('RAINQM', ixrain,   abort=.false.)
-    call cnst_get_ind('SNOWQM', ixsnow,   abort=.false.)
+!    call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
+!    call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
+!    call cnst_get_ind('RAINQM', ixrain,   abort=.false.)
+!    call cnst_get_ind('SNOWQM', ixsnow,   abort=.false.)
 
     do m = 1,pcnst
 
-       if ( any(m == (/ 1, ixcldliq, ixcldice, &
-                           ixrain,   ixsnow    /)) ) exit   ! dont process water substances
+       if ( any(m == (/ 1, icldliq, icldice, &
+                           irain,   isnow    /)) ) exit   ! dont process water substances
                                                             ! they are checked in check_energy
 
        tracname = cnst_name(m)
@@ -1101,19 +1225,19 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     integer lchnk                                  ! chunk identifier
     integer ncol                                   ! number of atmospheric columns
     integer  i,k                                   ! column, level indices
-    integer :: ixcldice, ixcldliq                  ! CLDICE and CLDLIQ indices
+!    integer :: ixcldice, ixcldliq                  ! CLDICE and CLDLIQ indices
     real(r8) :: wr(state%ncol)                     ! vertical integral of rain
     real(r8) :: ws(state%ncol)                     ! vertical integral of snow
-    integer :: ixrain
-    integer :: ixsnow
+!    integer :: ixrain
+!    integer :: ixsnow
 !!...................................................................
 
     lchnk = state%lchnk
     ncol  = state%ncol
-    call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
-    call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
-    call cnst_get_ind('RAINQM', ixrain, abort=.false.)
-    call cnst_get_ind('SNOWQM', ixsnow, abort=.false.)
+!    call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
+!    call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
+!    call cnst_get_ind('RAINQM', ixrain, abort=.false.)
+!    call cnst_get_ind('SNOWQM', ixsnow, abort=.false.)
 
 
 !! Compute vertical integrals of all water species (vapor, liquid, ice, rain, snow)
@@ -1131,20 +1255,20 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     end do
 
     ! Don't require cloud liq/ice to be present.  Allows for adiabatic/ideal phys.
-    if (ixcldliq > 1  .and.  ixcldice > 1) then
+    if (icldliq > 1  .and.  icldice > 1) then
        do k = 1, pver
           do i = 1, ncol
-             wl(i) = wl(i) + state%q(i,k,ixcldliq)*state%pdel(i,k)/gravit
-             wi(i) = wi(i) + state%q(i,k,ixcldice)*state%pdel(i,k)/gravit
+             wl(i) = wl(i) + state%q(i,k,icldliq)*state%pdel(i,k)/gravit
+             wi(i) = wi(i) + state%q(i,k,icldice)*state%pdel(i,k)/gravit
           end do
        end do
     end if
 
-    if (ixrain   > 1  .and.  ixsnow   > 1 ) then
+    if (irain   > 1  .and.  isnow   > 1 ) then
        do k = 1, pver
           do i = 1, ncol
-             wr(i) = wr(i) + state%q(i,k,ixrain)*state%pdel(i,k)/gravit
-             ws(i) = ws(i) + state%q(i,k,ixsnow)*state%pdel(i,k)/gravit
+             wr(i) = wr(i) + state%q(i,k,irain)*state%pdel(i,k)/gravit
+             ws(i) = ws(i) + state%q(i,k,isnow)*state%pdel(i,k)/gravit
           end do
        end do
     end if
