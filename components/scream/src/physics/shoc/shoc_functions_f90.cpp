@@ -104,28 +104,12 @@ void SHOCGridData::init_ptrs(){
   }
 }
 
-void SHOCGridData::transpose(){
-  SHOCGridData d_trans(*this);
-
-  // Transpose zt arrays
-  util::transpose<util::TransposeDirection::f2c>(zt_grid, d_trans.zt_grid, shcol, nlev);
-  util::transpose<util::TransposeDirection::f2c>(dz_zt, d_trans.dz_zt, shcol, nlev);
-  util::transpose<util::TransposeDirection::f2c>(pdel, d_trans.pdel, shcol, nlev);
-  util::transpose<util::TransposeDirection::f2c>(rho_zt, d_trans.rho_zt, shcol, nlev);
-
-  // Transpose zi arrays
-  util::transpose<util::TransposeDirection::f2c>(zi_grid, d_trans.zi_grid, shcol, nlevi);
-  util::transpose<util::TransposeDirection::f2c>(dz_zi, d_trans.dz_zi, shcol, nlevi);
-  *this = d_trans;
-
-}
-
-
 void shoc_grid(Int nlev, SHOCGridData& d)
 {
   shoc_init(nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
   shoc_grid_c(d.shcol, d.nlev, d.nlevi, d.zt_grid, d.zi_grid, d.pdel, d.dz_zt, d.dz_zi, d.rho_zt);
-  d.transpose();
+  d.transpose<util::TransposeDirection::f2c>();
 }
 
 } // namespace shoc

@@ -38,12 +38,31 @@ static constexpr size_t NUM_ARRAYS_i = 2;
  SHOCGridData& operator=(const SHOCGridData& rhs);
  
  void init_ptrs();
- void transpose();
+ //void transpose();
 
  // Internals
  Int m_shcol, m_nlev, m_nlevi, m_total, m_totali; 
  std::vector<Real> m_data;
  std::vector<Real> m_datai;
+
+ template <util::TransposeDirection::Enum D>
+ void transpose()
+ {
+   SHOCGridData d_trans(*this);
+   
+   // Transpose on the zt grid
+   util::transpose<D>(zt_grid, d_trans.zt_grid, shcol, nlev);
+   util::transpose<D>(dz_zt, d_trans.dz_zt, shcol, nlev);
+   util::transpose<D>(pdel, d_trans.pdel, shcol, nlev);
+   util::transpose<D>(rho_zt, d_trans.rho_zt, shcol, nlev);
+
+   // Transpose on the zi grid
+   util::transpose<D>(zi_grid, d_trans.zi_grid, shcol, nlevi);
+   util::transpose<D>(dz_zi, d_trans.dz_zi, shcol, nlevi);
+
+   *this = std::move(d_trans);
+ }
+
 };
 void shoc_grid(Int nlev, SHOCGridData& d);
 
