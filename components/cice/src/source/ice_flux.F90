@@ -941,7 +941,9 @@
       ! Merge fluxes
       !-----------------------------------------------------------------
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, icells
@@ -1093,7 +1095,9 @@
           i, j    ! horizontal indices
 
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do j = 1, ny_block

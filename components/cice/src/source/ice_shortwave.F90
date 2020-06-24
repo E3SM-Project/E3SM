@@ -714,7 +714,9 @@
       ! Compute albedo for each thickness category.
       !-----------------------------------------------------------------
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, icells
@@ -882,7 +884,9 @@
       ! Compute albedo for each thickness category.
       !-----------------------------------------------------------------
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, icells
@@ -1103,7 +1107,9 @@
       !-----------------------------------------------------------------
 
       do k = 1, nilyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, icells
@@ -1122,7 +1128,9 @@
          enddo                  ! ij
       enddo                     ! nilyr
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, icells
@@ -1144,7 +1152,9 @@
 
       if (.not. heat_capacity) then
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
         do ij = 1, icells
@@ -1672,7 +1682,9 @@
 
       aero_mp(:,:,:) = c0
       if( tr_aero ) then
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          ! assume 4 layers for each aerosol, a snow SSL, snow below SSL,
@@ -1695,7 +1707,9 @@
       ! compute shortwave radiation accounting for snow/ice (both snow over 
       ! ice and bare ice) and ponded ice (if any):
  
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       ! find bare ice points 
@@ -1734,7 +1748,9 @@
                                   Iswabs)
       if (tflag) call t_stopf('cice_swdedd_computedEdd1')
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, icells_DE
@@ -1750,7 +1766,9 @@
                      + awtvdf*avdfl(i,j) + awtidf*aidfl(i,j) 
       enddo
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       ! find snow-covered ice points
@@ -1788,7 +1806,9 @@
                                   Iswabs)
       if (tflag) call t_stopf('cice_swdedd_computedEdd2')
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, icells_DE
@@ -1804,7 +1824,9 @@
                      + awtvdf*avdfl(i,j) + awtidf*aidfl(i,j) 
       enddo
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       ! find ponded points
@@ -1842,7 +1864,9 @@
                                   Iswabs)
       if (tflag) call t_stopf('cice_swdedd_computedEdd3')
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, icells_DE
@@ -3357,7 +3381,9 @@
       enddo         ! end spectral loop  ns
 
       ! accumulate fluxes over bare sea ice
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, icells_DE
@@ -3373,7 +3399,9 @@
       enddo                     ! ij
 
       do k = 1, nslyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, icells_DE
@@ -3384,7 +3412,9 @@
       enddo                     ! k
 
       do k = 1, nilyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, icells_DE
@@ -3402,7 +3432,9 @@
 
       if (.not. heat_capacity) then
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
         do ij = 1, icells_DE
@@ -3618,8 +3650,8 @@
  
       real (kind=dbl_kind) :: &
          alpha    , & ! term in direct reflectivity and transmissivity
-         gamma    , & ! term in direct reflectivity and transmissivity
-         el       , & ! term in alpha,gamma,n,u
+         gamma_fun, & ! term in direct reflectivity and transmissivity
+         el       , & ! term in alpha,gamma_fun,n,u
          taus     , & ! scaled extinction optical depth
          omgs     , & ! scaled single particle scattering albedo
          asys     , & ! scaled asymmetry parameter
@@ -3640,7 +3672,7 @@
  
       real (kind=dbl_kind) :: &
          alp      , & ! temporary for alpha
-         gam      , & ! temporary for gamma
+         gam      , & ! temporary for gamma_fun
          ue       , & ! temporary for u
          arg      , & ! exponential argument
          extins   , & ! extinction
@@ -3679,7 +3711,7 @@
  
       ! Delta-Eddington solution expressions
       alpha(w,uu,gg,e) = p75*w*uu*((c1 + gg*(c1-w))/(c1 - e*e*uu*uu))
-      gamma(w,uu,gg,e) = p5*w*((c1 + c3*gg*(c1-w)*uu*uu) &
+      gamma_fun(w,uu,gg,e) = p5*w*((c1 + c3*gg*(c1-w)*uu*uu) &
                         / (c1-e*e*uu*uu))
       n(uu,et)         = ((uu+c1)*(uu+c1)/et ) - ((uu-c1)*(uu-c1)*et)
       u(w,gg,e)        = c1p5*(c1 - w*gg)/e
@@ -3826,7 +3858,7 @@
               ! evaluate rdir,tdir for direct beam
               trnlay(k,ij) = max(exp_min, exp(-ts/mu0n))
               alp = alpha(ws,mu0n,gs,lm)
-              gam = gamma(ws,mu0n,gs,lm)
+              gam = gamma_fun(ws,mu0n,gs,lm)
               apg = alp + gam
               amg = alp - gam
               rdir(k,ij) = amg*(tdif_a(k,ij)*trnlay(k,ij) - c1) + &
@@ -3849,7 +3881,7 @@
                 swt = swt + mu*gwt
                 trn = max(exp_min, exp(-ts/mu))
                 alp = alpha(ws,mu,gs,lm)
-                gam = gamma(ws,mu,gs,lm)
+                gam = gamma_fun(ws,mu,gs,lm)
                 apg = alp + gam
                 amg = alp - gam
                 rdr = amg*(tdif_a(k,ij)*trn-c1) + &
@@ -4100,7 +4132,9 @@
       enddo
       enddo
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, icells
@@ -4214,7 +4248,9 @@
       enddo
 
       ! find pond fraction and depth for ice points
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, icells

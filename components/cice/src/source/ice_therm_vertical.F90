@@ -766,7 +766,9 @@
          ! melting energy/unit area in each column, etot < 0
 
          do k = 1, nslyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
             do ij = 1, imelt
@@ -777,7 +779,9 @@
          enddo
 
          do k = 1, nilyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
             do ij = 1, imelt
@@ -787,7 +791,9 @@
             enddo               ! ij
          enddo                  ! nilyr
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, imelt
@@ -803,7 +809,9 @@
       ! Limit bottom and lateral heat fluxes if necessary.
       !-----------------------------------------------------------------
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
 
@@ -949,7 +957,9 @@
       !-----------------------------------------------------------------
       ! Load arrays for vertical thermo calculation.
       !-----------------------------------------------------------------
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, icells
@@ -975,7 +985,9 @@
       !-----------------------------------------------------------------
 
       do k = 1, nslyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, icells
@@ -1078,7 +1090,9 @@
       endif                     ! tsno_low
 
       do k = 1, nslyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, icells
@@ -1097,7 +1111,9 @@
       enddo                     ! nslyr
 
       do k = 1, nilyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, icells
@@ -1195,7 +1211,9 @@
       ! initial energy per unit area of ice/snow, relative to 0 C
       !-----------------------------------------------------------------
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, icells
@@ -1646,7 +1664,9 @@
                               dflwout_dT,  dfsens_dT,         &
                               dflat_dT,    dfsurf_dT)
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
           do ij = 1, isolve
@@ -1755,7 +1775,9 @@
 
          if (calc_Tsfc) then
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
           do ij = 1, isolve
@@ -1832,7 +1854,9 @@
          endif   ! calc_Tsfc
 
          do k = 1, nslyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
             do ij = 1, isolve
@@ -1868,7 +1892,9 @@
          enddo                  ! nslyr
 
          do k = 1, nilyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
             do ij = 1, isolve
@@ -1923,7 +1949,9 @@
 
          if (calc_Tsfc) then
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
           do ij = 1, isolve
@@ -2045,7 +2073,9 @@
       endif                     ! all_converged
 
       if (calc_Tsfc) then
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, icells
@@ -2141,7 +2171,9 @@
 
       ! interior ice layers
       do k = 1, nilyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, icells
@@ -2282,7 +2314,9 @@
          flwdabs     , & ! downward longwave absorbed heat flx (W/m^2)
          tmpvar          ! 1/TsfK
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, isolve
@@ -3012,7 +3046,9 @@
       real (kind=dbl_kind), dimension(isolve,nilyr+nslyr+1):: &
          wgamma          ! temporary matrix variable
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, isolve
@@ -3021,7 +3057,9 @@
       enddo                     ! ij
 
       do k = 2, nmat
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, isolve
@@ -3033,7 +3071,9 @@
       enddo                     ! k
 
       do k = nmat-1, 1, -1
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, isolve
@@ -3267,7 +3307,9 @@
          enddo                     ! ij
 
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, isolve
@@ -3328,7 +3370,9 @@
          ! initialize global convergence flag
          all_converged = .true.
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, isolve
@@ -3381,7 +3425,9 @@
 
          enddo  ! ij
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, isolve
@@ -3482,7 +3528,9 @@
       endif                     ! l_zerolayerchecks
 
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, icells
@@ -3672,7 +3720,9 @@
       if (.not. l_brine) then 
 
          do k = 1, nslyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
             do ij = 1, icells
@@ -3687,7 +3737,9 @@
          enddo
 
          do k = 1, nilyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
             do ij = 1, icells
@@ -3774,7 +3826,9 @@
       enddo                     ! ij
 
       do k = 1, nslyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, icells
@@ -3810,7 +3864,9 @@
       enddo                     ! nslyr
 
       do k = 1, nilyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, icells
@@ -3846,7 +3902,9 @@
       enddo                     ! nilyr
 
       do k = nilyr, 1, -1
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, icells
@@ -3869,7 +3927,9 @@
       enddo                     ! nilyr
 
       do k = nslyr, 1, -1
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, icells
@@ -3902,7 +3962,9 @@
 !---! Add new snowfall at top surface.
 !---!-----------------------------------------------------------------
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, icells
@@ -3940,7 +4002,9 @@
       enddo
 
       do k = 1, nilyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, icells
@@ -3949,7 +4013,9 @@
       enddo                     ! k
 
       do k = 1, nslyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, icells
@@ -4011,7 +4077,9 @@
       if (heat_capacity) then
 
          do k = 1, nilyr-1
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
             do ij = 1, icells
@@ -4056,7 +4124,9 @@
          enddo
 
          do k = 1, nslyr-1
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
             do ij = 1, icells
@@ -4091,7 +4161,9 @@
       enddo
 
       do k = 1, nslyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, icells
@@ -4100,7 +4172,9 @@
       enddo
 
       do k = 1, nilyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, icells
@@ -4219,7 +4293,9 @@
       !-----------------------------------------------------------------
 
       do k = nslyr, 1, -1
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, icells
@@ -4238,7 +4314,9 @@
       ! Transfer volume and energy from snow to top ice layer.
       !-----------------------------------------------------------------
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, icells
@@ -4351,7 +4429,9 @@
          enddo
 
          do k1 = 1, nlyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
             do ij = 1, icells
@@ -4454,7 +4534,9 @@
       !----------------------------------------------------------------
       ! If energy is not conserved, print diagnostics and exit.
       !----------------------------------------------------------------
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, icells
@@ -4577,7 +4659,9 @@
          ij          , & ! horizontal index, combines i and j loops
          k               ! ice layer index
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, icells

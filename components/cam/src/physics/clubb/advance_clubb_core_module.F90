@@ -1612,7 +1612,7 @@ module advance_clubb_core_module
             rtm_pert_neg_rt = pdf_params_frz%rt_2 & 
                        - Lscale_pert_coef * sqrt( max( pdf_params_frz%varnce_rt_2, rt_tol**2 ) )
             !Lscale_weight = pdf_params%mixt_frac
-          else where
+          elsewhere
             rtm_pert_pos_rt = pdf_params_frz%rt_2 &
                        + Lscale_pert_coef * sqrt( max( pdf_params_frz%varnce_rt_2, rt_tol**2 ) )
             thlm_pert_pos_rt = pdf_params_frz%thl_2 + ( sign_rtpthlp * Lscale_pert_coef &
@@ -1634,7 +1634,7 @@ module advance_clubb_core_module
             rtm_pert_neg_rt = pdf_params%rt_2 & 
                        - Lscale_pert_coef * sqrt( max( pdf_params%varnce_rt_2, rt_tol**2 ) )
             !Lscale_weight = pdf_params%mixt_frac
-          else where
+          elsewhere
             rtm_pert_pos_rt = pdf_params%rt_2 &
                        + Lscale_pert_coef * sqrt( max( pdf_params%varnce_rt_2, rt_tol**2 ) )
             thlm_pert_pos_rt = pdf_params%thl_2 + ( sign_rtpthlp * Lscale_pert_coef &

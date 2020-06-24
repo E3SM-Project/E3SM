@@ -607,7 +607,9 @@ subroutine cmfmca(lchnk   ,ncol    , &
 ! cldwtr is temporarily equal to hlat*l (l=> liquid water)
 !
 !cdir nodep
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
             do ii=1,len1
                i = indx1(ii)
                temp1     = vtemp4(i)/(1.0_r8 + gam(i,k))
@@ -637,7 +639,9 @@ subroutine cmfmca(lchnk   ,ncol    , &
 ! small amount of supersaturation acceptable (by ssfac factor)
 !
 !cdir nodep
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
             do ii=1,len1
                i = indx1(ii)
                if (hb(i,k-1) < hbs(i,k-1)) then
@@ -661,7 +665,9 @@ subroutine cmfmca(lchnk   ,ncol    , &
 ! so that the adjustment doesn't contribute to "kinks" in h
 !
 !cdir nodep
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
             do ii=1,len1
                i = indx1(ii)
                g = min(0.0_r8,hb(i,k) - hb(i,k-1))
@@ -690,7 +696,9 @@ subroutine cmfmca(lchnk   ,ncol    , &
 ! physical states and adjust eta accordingly.
 !
 !cdir nodep
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
          do ii=1,len1
             i = indx1(ii)
             beta(i) = max(0.0_r8,beta(i))
@@ -740,7 +748,9 @@ subroutine cmfmca(lchnk   ,ncol    , &
 ! Calculate cloud water, rain water, and thermodynamic changes
 !
 !cdir nodep
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
          do 30 ii=1,len1
             i = indx1(ii)
             icwmr(i,k) = cldwtr(i)*rhlat
@@ -828,7 +838,9 @@ subroutine cmfmca(lchnk   ,ncol    , &
                   pm(:ncol,:) = pmid(:ncol,:)
                endif
 !cdir nodep
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
                do 40 ii=1,len1
                   i = indx1(ii)
 !
@@ -924,7 +936,9 @@ subroutine cmfmca(lchnk   ,ncol    , &
                   call qsat(vtemp1(:2*len1), vtemp2(:2*len1), &
                        vtemp5(:2*len1), vtemp3(:2*len1), gam=vtemp4(:2*len1))
 !cdir nodep
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
                   do ii=1,len1
                      i = indx1(ii)
                      shbs(i,k  ) = vtemp3(ii     )
@@ -941,7 +955,9 @@ subroutine cmfmca(lchnk   ,ncol    , &
 !
 ! Update thermodynamic information at half (i.e., interface) levels
 !
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
                   do ii=1,len1
                      i = indx1(ii)
                      sbh (i,k) = 0.5_r8*(sb(i,k) + sb(i,k-1))

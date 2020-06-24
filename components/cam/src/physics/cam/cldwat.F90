@@ -1017,13 +1017,16 @@ subroutine findmcnew (lchnk   ,ncol    , &
    real(8) ftot
 
 !     inline statement functions
-   real(r8) heavy, heavym, a1, a2, heavyp, heavymp
-   heavy(a1,a2) = max(0._r8,sign(1._r8,a1-a2))  ! heavyside function
-   heavym(a1,a2) = max(0.01_r8,sign(1._r8,a1-a2))  ! modified heavyside function
+   real(r8) a1, a2, heavyp, heavymp
+   !real(r8) heavy, heavym
+   !heavy(a1,a2) = max(0._r8,sign(1._r8,a1-a2))  ! heavyside function
+   !heavym(a1,a2) = max(0.01_r8,sign(1._r8,a1-a2))  ! modified heavyside function
 !
 ! New heavyside functions to perhaps address error growth problems
 !
+#ifdef PERGRO
    heavyp(a1,a2) = a1/(a2+a1+1.e-36_r8)
+#endif
    heavymp(a1,a2) = (a1+0.01_r8*a2)/(a2+a1+1.e-36_r8)
 
 !
@@ -1047,7 +1050,9 @@ subroutine findmcnew (lchnk   ,ncol    , &
    end do
 
 !cdir nodep
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
    do ii = 1,ncols
       i = ind(ii)
 !
@@ -1101,7 +1106,9 @@ subroutine findmcnew (lchnk   ,ncol    , &
    call get_rlat_all_p(lchnk, ncol, rlat)
 
 !cdir nodep
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
    do ii = 1,ncols
       i = ind(ii)
       rhocgs = rho(i)*1.e-3_r8     ! density in cgs units
