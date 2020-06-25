@@ -840,16 +840,11 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
 
     integer ncol                                   ! number of atmospheric columns
     integer  i,k,m                                 ! column, level,constituent indices
-!    integer :: ixcldice, ixcldliq                  ! CLDICE and CLDLIQ and tracer indices
     integer :: ixrain, ixsnow                      ! RAINQM and SNOWQM indices
 
 !-----------------------------------------------------------------------
 
     ncol  = state%ncol
-!    call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
-!    call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
-!    call cnst_get_ind('RAINQM', ixrain,   abort=.false.)
-!    call cnst_get_ind('SNOWQM', ixsnow,   abort=.false.)
 
     do m = 1,pcnst
 
