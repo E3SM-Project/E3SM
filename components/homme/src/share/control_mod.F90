@@ -619,6 +619,8 @@ contains
 #else
     adjust_ps=.true.      ! preqx requires forcing to stay on reference levels
 #endif
+
+  print *, 'OG in control_params_init', adjust_ps
   end subroutine control_params_init
 
 

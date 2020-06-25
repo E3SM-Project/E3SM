@@ -296,6 +296,14 @@ CONTAINS
     end do ! lchnk
 #endif
 
+#ifdef ENERGY_DIAGNOSTICS
+    !$omp parallel do private (lchnk, ncols)
+    do lchnk = begchunk,endchunk
+      ncols = get_ncols_p(lchnk)
+      phys_state(lchnk)%q1(:ncols,:) = phys_state(lchnk)%q(:ncols,:,1)
+    end do ! lchnk
+#endif
+
     if ( write_inithist() ) then
       if (fv_nphys > 0) then
 
@@ -688,6 +696,7 @@ CONTAINS
       
       !adjust ps, keep the code close to applyCAMforcing_tracers
 
+      dp_adj(:ncol,:) = pdel(:ncol,:)
       do ic=1,ncol
          do k=1,pver
             fq = pdel(ic,k)*( state(lchnk)%q(ic,k,1) - state(lchnk)%q1(ic,k ) )
@@ -695,6 +704,8 @@ CONTAINS
             dp_adj(ic,k)=dp_adj(ic,k) + fq   !  ps =  ps0+sum(dp(k))
          enddo
       enddo
+
+!print *, 'adjust ps', adjust_ps
 
       ! compute water vapor adjusted dp3d:
       if (adjust_ps) then
