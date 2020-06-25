@@ -1441,7 +1441,9 @@
                enddo
                enddo
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
                do ij = 1, icells  ! Note: no tx or ty in ghost cells
@@ -3384,7 +3386,9 @@
 
       elseif (integral_order == 2) then ! quadratic (3-point formula)
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
 
@@ -3415,7 +3419,9 @@
 
       else                      ! cubic (4-point formula)
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ng = 1, ngroups
@@ -3570,7 +3576,9 @@
 
          if (integral_order == 1) then  ! linear (1-point formula)
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
             do ij = 1, icells(ng)
@@ -3598,7 +3606,9 @@
 
          elseif (integral_order == 2) then  ! quadratic (3-point formula)
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
             do ij = 1, icells(ng)
@@ -3645,7 +3655,9 @@
 
          else                   ! cubic (4-point formula)
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
             do ij = 1, icells(ng)
@@ -3705,7 +3717,9 @@
             do nt = 1, ntrace
                if (tracer_type(nt)==1) then ! does not depend on another tracer
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
                   do ij = 1, icells(ng)
@@ -3736,7 +3750,9 @@
                elseif (tracer_type(nt)==2) then ! depends on another tracer
                   nt1 = depend(nt)
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
                   do ij = 1, icells(ng)
@@ -3758,7 +3774,9 @@
                elseif (tracer_type(nt)==3) then ! depends on two tracers
                   nt1 = depend(nt)
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
                   do ij = 1, icells(ng)
@@ -3976,7 +3994,9 @@
             elseif (tracer_type(nt)==2) then ! depends on another tracer
                nt1 = depend(nt)
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
                do ij = 1, icells
@@ -3995,7 +4015,9 @@
                nt1 = depend(nt)
                nt2 = depend(nt1)
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
                do ij = 1, icells
