@@ -44,8 +44,6 @@ module prim_driver_base
   public :: smooth_topo_datasets, deriv1
 
   public :: applyCAMforcing_tracers
-  public :: applyCAMforcing_adjust_tracers
-  public :: applyCAMforcing_adjust_pressure
 
   ! Service variables used to partition the mesh.
   ! Note: GridEdge and MeshVertex are public, cause kokkos targets need to access them
@@ -1689,98 +1687,6 @@ contains
   end subroutine applyCAMforcing_tracers
 
 
-  subroutine applyCAMforcing_adjust_tracers(elem,hvcoord,np1,np1_qdp)
-  use control_mod,        only : use_moisture, adjust_ps
-  use hybvcoord_mod,      only : hvcoord_t
-  implicit none
-  type (element_t),       intent(inout) :: elem
-  type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: np1,np1_qdp
-
-  ! local
-  integer :: i,j,k,ie,q
-  real (kind=real_kind)  :: fq
-  real (kind=real_kind)  :: dp(np,np,nlev), ps(np,np), dp_adj(np,np,nlev)
-
-!!! after this routine state%Q is not valid, use Qdp and dp instead
-
-  dp=elem%state%dp3d(:,:,:,np1)
-
-  ! hard adjust Q from physics.  negativity check done in physics
-  do k=1,nlev
-     do j=1,np
-        do i=1,np
-           do q=1,qsize
-              ! apply forcing to Qdp
-              ! dyn_in%elem(ie)%state%Qdp(i,j,k,q,tl_fQdp) = &
-              !        dyn_in%elem(ie)%state%Qdp(i,j,k,q,tl_fQdp) + fq 
-              elem%state%Qdp(i,j,k,q,np1_qdp) = &
-                   dp(i,j,k)*elem%derived%FQ(i,j,k,q)
-           enddo
-        end do
-     end do
-  end do
-
-  end subroutine applyCAMforcing_adjust_tracers
-
-
-  subroutine applyCAMforcing_adjust_pressure(elem,hvcoord,np1,np1_qdp)
-  use control_mod,        only : use_moisture, adjust_ps
-  use hybvcoord_mod,      only : hvcoord_t
-  implicit none
-  type (element_t),       intent(inout) :: elem
-  type (hvcoord_t),       intent(in)    :: hvcoord
-  integer,                intent(in)    :: np1,np1_qdp
-
-  ! local
-  integer :: i,j,k,ie,q
-  real (kind=real_kind)  :: fq
-  real (kind=real_kind)  :: dp(np,np,nlev), ps(np,np), dp_adj(np,np,nlev)
-
-  dp=elem%state%dp3d(:,:,:,np1)
-  dp_adj=dp
-  ps=elem%state%ps_v(:,:,np1)
-
-  ! after calling this routine, ps_v may not be valid and should not be used
-  elem%state%ps_v(:,:,np1)=0
-
-  ! hard adjust Q from physics.  negativity check done in physics
-   do k=1,nlev
-      do j=1,np
-         do i=1,np
-            q=1
-            fq = dp(i,j,k)*( elem%derived%FQ(i,j,k,q) -&
-                 elem%state%Q(i,j,k,q))
-            ps(i,j)=ps(i,j) + fq
-            dp_adj(i,j,k)=dp_adj(i,j,k) + fq   !  ps =  ps0+sum(dp(k))
-          end do
-       end do
-   end do
-
-   if (use_moisture) then
-      ! compute water vapor adjusted dp3d:
-      if (adjust_ps) then
-         ! compute new dp3d from adjusted ps()
-         do k=1,nlev
-            dp_adj(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps(:,:)
-         enddo
-      endif
-      elem%state%dp3d(:,:,:,np1)=dp_adj(:,:,:)
-   endif
-
-   ! Qdp(np1) was updated by forcing - update Q(np1)
-   do q=1,qsize
-      elem%state%Q(:,:,:,q) = elem%state%Qdp(:,:,:,q,np1_qdp)/elem%state%dp3d(:,:,:,np1)
-   enddo
-
-  end subroutine applyCAMforcing_adjust_pressure
-
-
-  
-
-
-  
   subroutine prim_step_scm(elem, nets,nete, dt, tl, hvcoord)
   !
   !   prim_step version for single column model (SCM)
