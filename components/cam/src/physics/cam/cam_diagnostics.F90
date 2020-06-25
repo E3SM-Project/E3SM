@@ -355,6 +355,8 @@ subroutine diag_init()
 
    call addfld ('TEbeforeadj',horiz_only, 'A','J/m2','TE before')
    call addfld ('TEafteradj',horiz_only, 'A','J/m2','TE after ')
+   call addfld ('KEbeforeadj',horiz_only, 'A','J/m2','TE after ')
+   call addfld ('KEafteradj',horiz_only, 'A','J/m2','TE after ')
 
    call addfld ('T1000',horiz_only,   'A','K','Temperature at 1000 mbar pressure surface')
    call addfld ('T975',horiz_only,   'A','K','Temperature at 975 mbar pressure surface')   
