@@ -1107,12 +1107,12 @@ module namelist_mod
 #endif
 #endif
 
-      call control_params_init()
-
       call print_clear_message()
 
 !=======================================================================================================!
-    endif
+    endif  !if masterproc
+
+    call control_params_init()
 
   end subroutine readnl
 
