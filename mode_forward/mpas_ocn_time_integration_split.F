@@ -1367,9 +1367,7 @@ module ocn_time_integration_split
             call mpas_dmpar_exch_group_add_field(domain, finalBtrGroupName, 'barotropicThicknessFlux')
             call mpas_dmpar_exch_group_add_field(domain, finalBtrGroupName, 'normalBarotropicVelocity', timeLevel=2)
 
-            call mpas_threading_barrier()
             call mpas_dmpar_exch_group_full_halo_exch(domain, finalBtrGroupName)
-            call mpas_threading_barrier()
 
             call mpas_dmpar_exch_group_destroy(domain, finalBtrGroupName)
             call mpas_timer_stop("se halo F and btr vel")
@@ -1940,7 +1938,6 @@ module ocn_time_integration_split
 
         block => block % next
       end do
-      call mpas_threading_barrier()
 
       call mpas_dmpar_field_halo_exch(domain, 'surfaceFrictionVelocity')
 

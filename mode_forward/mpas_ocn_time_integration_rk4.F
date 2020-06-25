@@ -234,7 +234,6 @@ module ocn_time_integration_rk4
 
          call mpas_pool_clone_pool(statePool, provisStatePool, 1)
          call mpas_pool_add_subpool(block % structs, 'provis_state', provisStatePool)
-         call mpas_threading_barrier()
 
          call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
          call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
@@ -346,8 +345,6 @@ module ocn_time_integration_rk4
          block => block % next
       end do
 
-      call mpas_threading_barrier()
-
       ! Fourth-order Runge-Kutta, solving dy/dt = f(t,y) is typically written as follows
       ! where h = delta t is the large time step.  Here f(t,y) is the right hand side,
       ! called the tendencies in the code below.
@@ -411,8 +408,6 @@ module ocn_time_integration_rk4
            call mpas_dmpar_field_halo_exch(domain, 'relativeVorticity')
         end if
         call mpas_timer_stop("RK4-diagnostic halo update")
-        call mpas_threading_barrier()
-
 
         ! Compute tendencies for high frequency thickness
         ! In RK4 notation, we are computing the right hand side f(t,y),
@@ -431,7 +426,6 @@ module ocn_time_integration_rk4
               call mpas_pool_get_subpool(block % structs, 'provis_state', provisStatePool)
 
               call ocn_tend_freq_filtered_thickness(tendPool, provisStatePool, diagnosticsPool, meshPool, 1)
-              call mpas_threading_barrier()
               block => block % next
            end do
 
@@ -443,7 +437,6 @@ module ocn_time_integration_rk4
            call mpas_dmpar_field_halo_exch(domain, 'tendLowFreqDivergence')
 
            call mpas_timer_stop("RK4-prognostic halo update")
-           call mpas_threading_barrier()
 
 
            ! Compute next substep state for high frequency thickness.
@@ -493,7 +486,6 @@ module ocn_time_integration_rk4
              end if
 
              call mpas_timer_stop("RK4-prevent drying")
-             call mpas_threading_barrier()
         end if
 
         ! Compute tendencies for velocity, thickness, and tracers.
@@ -543,7 +535,6 @@ module ocn_time_integration_rk4
         end do
 
         call mpas_timer_stop("RK4 tracer prognostic halo update")
-        call mpas_threading_barrier()
 
         ! Compute next substep state for velocity, thickness, and tracers.
         ! In RK4 notation, we are computing y_n + a_j k_j.
@@ -559,7 +550,6 @@ module ocn_time_integration_rk4
         end if
 
         call mpas_timer_stop("RK4-update diagnostic variables")
-        call mpas_threading_barrier()
 
         ! Accumulate update.
         ! In RK4 notation, we are computing b_j k_j and adding it to an accumulating sum so that we have
@@ -576,7 +566,6 @@ module ocn_time_integration_rk4
         end do
 
         call mpas_timer_stop("RK4-accumulate update")
-        call mpas_threading_barrier()
 
       end do
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -597,11 +586,9 @@ module ocn_time_integration_rk4
         end if
 
         call mpas_timer_stop("RK4- check wet cells")
-        call mpas_threading_barrier()
       end if
 
       call mpas_timer_stop("RK4-main loop")
-      call mpas_threading_barrier()
 
       !
       !  A little clean up at the end: rescale tracer fields and compute diagnostics for new state
@@ -638,7 +625,6 @@ module ocn_time_integration_rk4
       call mpas_timer_stop("RK4-implicit vert mix halos")
 
       call mpas_timer_stop("RK4-implicit vert mix")
-      call mpas_threading_barrier()
 
       block => domain % blocklist
       do while (associated(block))
@@ -725,7 +711,6 @@ module ocn_time_integration_rk4
          end if
 
          call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 2)
-         call mpas_threading_barrier()
 
          ! Update the effective desnity in land ice if we're coupling to land ice
          call ocn_effective_density_in_land_ice_update(meshPool, forcingPool, statePool, err)
@@ -746,7 +731,6 @@ module ocn_time_integration_rk4
              call ocn_gm_compute_Bolus_velocity(statePool, diagnosticsPool, &
                 meshPool, scratchPool, timeLevelIn=2)
          end if
-         call mpas_threading_barrier()
 
          if (config_use_GM) then
             !$omp parallel
@@ -770,7 +754,6 @@ module ocn_time_integration_rk4
                           gradSSHX, gradSSHY, gradSSHZ,    &
                           gradSSHZonal, gradSSHMeridional, &
                           includeHalos = .true.)
-         call mpas_threading_barrier()
 
          !$omp parallel
          !$omp do schedule(runtime) 
@@ -789,7 +772,6 @@ module ocn_time_integration_rk4
          if (config_use_GM) then
             call ocn_reconstruct_gm_vectors(diagnosticsPool, meshPool)
          end if
-         call mpas_threading_barrier()
 
          block => block % next
       end do
@@ -804,8 +786,6 @@ module ocn_time_integration_rk4
 
       call mpas_timer_stop("RK4-cleanup phase")
 
-      call mpas_threading_barrier()
-
       block => domain % blocklist
       do while(associated(block))
          call mpas_pool_get_subpool(block % structs, 'provis_state', provisStatePool)
@@ -815,7 +795,6 @@ module ocn_time_integration_rk4
          call mpas_pool_remove_subpool(block % structs, 'provis_state')
          block => block % next
       end do
-      call mpas_threading_barrier()
 
    end subroutine ocn_time_integrator_rk4!}}}
 
@@ -878,10 +857,8 @@ module ocn_time_integration_rk4
             sshCur, rkSubstepWeight, &
             vertAleTransportTop, err)
       endif
-      call mpas_threading_barrier()
 
       call ocn_tend_vel(tendPool, provisStatePool, forcingPool, diagnosticsPool, meshPool, scratchPool, 1, dt)
-      call mpas_threading_barrier()
 
    end subroutine ocn_time_integrator_rk4_compute_vel_tends!}}}
 
@@ -942,11 +919,9 @@ module ocn_time_integration_rk4
             sshCur, rkSubstepWeight, &
             vertAleTransportTop, err)
       endif
-      call mpas_threading_barrier()
 
       call ocn_tend_thick(tendPool, forcingPool, diagnosticsPool, meshPool)
 
-      call mpas_threading_barrier()
 
    end subroutine ocn_time_integrator_rk4_compute_thick_tends!}}}
 
@@ -1008,16 +983,13 @@ module ocn_time_integration_rk4
             sshCur, rkSubstepWeight, &
             vertAleTransportTop, err)
       endif
-      call mpas_threading_barrier()
 
       if (config_filter_btr_mode) then
           call ocn_filter_btr_mode_tend_vel(tendPool, provisStatePool, diagnosticsPool, meshPool, 1)
       endif
-      call mpas_threading_barrier()
 
       call ocn_tend_tracer(tendPool, provisStatePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, &
                            scratchPool, dt, activeTracersOnlyIn=.false., timeLevelIn=1)
-      call mpas_threading_barrier()
 
    end subroutine ocn_time_integrator_rk4_compute_tracer_tends!}}}
 
@@ -1079,10 +1051,8 @@ module ocn_time_integration_rk4
             sshCur, rkWeight, &
             vertAleTransportTop, err)
       endif
-      call mpas_threading_barrier()
 
       call ocn_tend_vel(tendPool, provisStatePool, forcingPool, diagnosticsPool, meshPool, scratchPool, 1, dt)
-      call mpas_threading_barrier()
 
       if (associated(highFreqThicknessProvis)) then
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, scratchPool, &
@@ -1095,18 +1065,15 @@ module ocn_time_integration_rk4
             sshCur, rkWeight, &
             vertAleTransportTop, err)
       endif
-      call mpas_threading_barrier()
 
       call ocn_tend_thick(tendPool, forcingPool, diagnosticsPool, meshPool)
 
       if (config_filter_btr_mode) then
           call ocn_filter_btr_mode_tend_vel(tendPool, provisStatePool, diagnosticsPool, meshPool, 1)
       endif
-      call mpas_threading_barrier()
 
       call ocn_tend_tracer(tendPool, provisStatePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, &
                            scratchPool, dt, activeTracersOnlyIn=.false., timeLevelIn=1)
-      call mpas_threading_barrier()
 
    end subroutine ocn_time_integrator_rk4_compute_tends!}}}
 
@@ -1181,7 +1148,6 @@ module ocn_time_integration_rk4
       call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
 
       call mpas_pool_get_array(diagnosticsPool, 'wettingVelocity', wettingVelocity)
-      call mpas_threading_barrier()
 
       !$omp parallel
       !$omp do schedule(runtime) private(k)
@@ -1264,10 +1230,8 @@ module ocn_time_integration_rk4
          !$omp end do
          !$omp end parallel
       end if
-      call mpas_threading_barrier()
 
       call ocn_diagnostic_solve(dt, provisStatePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 1)
-      call mpas_threading_barrier()
 
       ! ------------------------------------------------------------------
       ! Accumulating various parametrizations of the transport velocity
@@ -1285,7 +1249,6 @@ module ocn_time_integration_rk4
          call ocn_gm_compute_Bolus_velocity(provisStatePool, diagnosticsPool, &
             meshPool, scratchPool, timeLevelIn=1)
       end if
-      call mpas_threading_barrier()
 
       if (config_use_GM) then
          !$omp parallel
@@ -1496,10 +1459,8 @@ module ocn_time_integration_rk4
       end do
 
       call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 2)
-      call mpas_threading_barrier()
 
       call ocn_vmix_implicit(dt, meshPool, diagnosticsPool, statePool, forcingPool, scratchPool, err, 2)
-      call mpas_threading_barrier()
 
    end subroutine ocn_time_integrator_rk4_cleanup!}}}
 
