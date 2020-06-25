@@ -97,7 +97,11 @@
 		/>
 		<dim name="maxTidalConstituents"
 			description="Max number of tidal potential constituents"
-			definition="37"
+			definition="8"
+		/>
+		<dim name="maxTidalConstituentsX2"
+			description="Max number of tidal potential constituents"
+			definition="maxTidalConstituents+maxTidalConstituents"
 		/>
 	</dims>
 
