@@ -693,6 +693,7 @@ CONTAINS
                                  ncol)
       !before ps adjustment
       call outfld('TEbeforeadj', te, pcols, lchnk)
+      call outfld('KEbeforeadj', te, pcols, lchnk)
       
       !adjust ps, keep the code close to applyCAMforcing_tracers
 
@@ -708,13 +709,15 @@ CONTAINS
 !print *, 'adjust ps', adjust_ps
 
       ! compute water vapor adjusted dp3d:
-      if (adjust_ps) then
+
+!with ps adjustment comment if below
+!      if (adjust_ps) then
          ! compute new dp3d from adjusted ps()
          do k=1,pver
             dp_adj(:ncol,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                  ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps(:ncol)
          enddo
-      endif
+!      endif
       pdel(:ncol,:pver)=dp_adj(:ncol,:pver)
 
       call energy_helper_eam_def(ustate,vstate,tstate,qstate,ps,pdel,phisstate,&
@@ -722,6 +725,7 @@ CONTAINS
                                  ncol)
 
       call outfld('TEafteradj', te, pcols, lchnk)
+      call outfld('KEafteradj', te, pcols, lchnk)
 
     end do ! lchnk
 
