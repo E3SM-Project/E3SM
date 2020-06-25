@@ -61,6 +61,7 @@ _TESTS = {
             "ERS_Ld5.ne4_ne4.FC5AV1C-L.cam-rrtmgp",
             "ERS_Ld5.ne4_ne4.FC5AV1C-L.cam-gust_param",
             "REP_Ln5.ne4_ne4.FC5AV1C-L",
+            "SMS_Ld9.ne4pg2_ne4pg2.FC5AV1C-04P2.cam-thetahy_sl_pg2_mass",
             )
         },
 
