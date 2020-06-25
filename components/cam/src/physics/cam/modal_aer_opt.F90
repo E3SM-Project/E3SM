@@ -33,7 +33,8 @@ use perf_mod,          only: t_startf, t_stopf
 use cam_abortutils,        only: endrun
 
 use modal_aero_wateruptake, only: modal_aero_wateruptake_dr
-use modal_aero_calcsize,    only: modal_aero_calcsize_diag, modal_aero_calcsize_sub
+!use modal_aero_calcsize,    only: modal_aero_calcsize_diag
+use modal_aero_calcsize,    only: modal_aero_calcsize_sub
 
 implicit none
 private
@@ -588,7 +589,7 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
       if (istat > 0) then
          call endrun('modal_aero_sw: allocation FAILURE: arrays for diagnostic calcs')
       end if
-      call modal_aero_calcsize_diag(state, pbuf, list_idx, dgnumdry_m)
+      !call modal_aero_calcsize_diag(state, pbuf, list_idx, dgnumdry_m)
       call modal_aero_calcsize_sub(state, pbuf, do_adjust_in=.false., do_aitacc_transfer_in=.false., &
            list_idx=list_idx, dgnumdry_m=dgnumdry_m)
 
@@ -1268,7 +1269,9 @@ subroutine modal_aero_lw(list_idx, state, pbuf, tauxar)
       if (istat > 0) then
          call endrun('modal_aero_lw: allocation FAILURE: arrays for diagnostic calcs')
       end if
-      call modal_aero_calcsize_diag(state, pbuf, list_idx, dgnumdry_m)  
+      !call modal_aero_calcsize_diag(state, pbuf, list_idx, dgnumdry_m)  
+      call modal_aero_calcsize_sub(state, pbuf, do_adjust_in=.false., do_aitacc_transfer_in=.false., &
+           list_idx=list_idx, dgnumdry_m=dgnumdry_m)
       call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
                                      qaerwat_m, wetdens_m)
    endif
