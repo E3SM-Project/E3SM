@@ -850,7 +850,6 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     integer ncol                                   ! number of atmospheric columns
     integer ierror                                 ! allocate status return
     integer  i,k,m                                 ! column, level,constituent indices
-!    integer :: ixcldice, ixcldliq                  ! CLDICE and CLDLIQ and tracer indices
     integer :: ixrain, ixsnow                      ! RAINQM and SNOWQM indices
 
 !-----------------------------------------------------------------------
