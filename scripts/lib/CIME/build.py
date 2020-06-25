@@ -19,7 +19,7 @@ _CMD_ARGS_FOR_BUILD = \
 
 def get_standard_makefile_args(case, shared_lib=False):
     make_args = "CIME_MODEL={} ".format(case.get_value("MODEL"))
-    make_args += " compile_threaded={} ".format(stringify_bool(case.get_build_threaded()))
+    make_args += " SMP={} ".format(stringify_bool(case.get_build_threaded()))
     if not shared_lib:
         make_args += " USE_KOKKOS={} ".format(stringify_bool(uses_kokkos(case)))
     for var in _CMD_ARGS_FOR_BUILD:
