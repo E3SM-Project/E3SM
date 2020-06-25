@@ -225,8 +225,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    use control_mod,     only: ftype, qsplit
    use hycoef,          only: hyai, hybi
    use cam_history,     only: outfld, hist_fld_active
-   use prim_driver_base,only: applyCAMforcing_tracers, &
-       applyCAMforcing_adjust_tracers, applyCAMforcing_adjust_pressure
+   use prim_driver_base,only: applyCAMforcing_tracers
    use prim_advance_mod,only: applyCAMforcing_dynamics
    use element_ops,     only: get_temperature
 
