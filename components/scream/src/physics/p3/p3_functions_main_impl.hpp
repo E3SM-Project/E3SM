@@ -1152,7 +1152,6 @@ void Functions<S,D>
 
     check_values(oqv, tmparr1, ktop, kbot, it, debug_ABORT, 900, team, ocol_location);
 #endif
-
   });
 }
 

@@ -44,8 +44,8 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
 
     //Make C++ output available on host and device
     view_1d<Scalar> scaling_device("c scaling",1);
-    auto scaling_host = Kokkos::create_mirror_view(scaling_device);    
-    
+    auto scaling_host = Kokkos::create_mirror_view(scaling_device);
+
     for (Int i = 0; i < 3; ++i) {  // loop over exponents
       for (Int j = 0; j < 16; ++j) { // loop over relvars
 
@@ -61,7 +61,7 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
 	//Make scalar copies so available on device
 	Scalar expon = expons[i];
 	Scalar relvar = relvars[j];
-	
+
 	RangePolicy my_policy(0,1);
 	Kokkos::parallel_for(my_policy,KOKKOS_LAMBDA(int /* i */){
 	    Spack scalings = Functions::subgrid_variance_scaling(Spack(relvar),expon );
@@ -75,7 +75,7 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
 
 	// Validate results
 	REQUIRE(f_scaling == scaling_host(0) );
-	
+
       } //end loop over relvar[j]
     } //end loop over expons[i]
   } //end function run_bfb_tests
@@ -83,33 +83,33 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
   //-----------------------------------------------------------------
   KOKKOS_FUNCTION static void subgrid_variance_scaling_linearity_test(const Scalar& relvar,
     int& errors){
-    //If expon=1, subgrid_variance_scaling should be 1 
+    //If expon=1, subgrid_variance_scaling should be 1
 
     Scalar tol = C::Tol * 1e3; //1e3 is scale factor to make pass, essentially an estimate of numerical error
-    
+
     //Get value from C++ code
     const Spack relvars(relvar);
     Spack c_scaling = Functions::subgrid_variance_scaling(relvars,1.0);
-    
+
     if ( std::abs(c_scaling[0] -  1) > tol ){
       printf("subgrid_variance_scaling should be 1 for expon=1, but is %e. "
 	     "Diff = %e, Tol = %e\n",c_scaling[0],c_scaling[0]-1, tol);
 	errors++;}
   }
-  
+
   //-----------------------------------------------------------------
   KOKKOS_FUNCTION static void subgrid_variance_scaling_relvar1_test(int& errors){
-    //If relvar=1, subgrid_variance_scaling should be factorial(expon)  
-    
+    //If relvar=1, subgrid_variance_scaling should be factorial(expon)
+
     Scalar tol = C::Tol * 1e3; //1e3 is scale factor to make pass, essentially an estimate of numerical error
-    
+
     //Get value from C++ code
     const Spack ones(1);
     Spack c_scaling = Functions::subgrid_variance_scaling(ones,4.0);
-    
-    Real fact = std::tgamma(5.0); //factorial(n) = gamma(n+1) 
-    
-    if ( std::abs(c_scaling[0] -  fact) > tol ){ 
+
+    Real fact = std::tgamma(5.0); //factorial(n) = gamma(n+1)
+
+    if ( std::abs(c_scaling[0] -  fact) > tol ){
       printf("subgrid_variance_scaling should be factorial(expon) when relvar=1. "
 	     "For expon=4, should be %f but is=%f\n Diff = %e, Tol = %e\n",
 	     fact,c_scaling[0], c_scaling[0] -  fact, tol);
@@ -121,7 +121,7 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
   //If expon=3, subgrid variance scaling should be relvar^3+3*relvar^2+2*relvar/relvar^3
 
   Scalar tol = C::Tol * 100; //100 is a fudge factor to make sure tests pass. 10 was too small for gnu on CPU.
-  
+
   Real relvar_info[max_pack_size] = {0.1,0.5,1.0,2.0,
                                      3.0,4.0,5.0,6.0,
                                      6.5,7.0,8.0,9.0,
@@ -129,7 +129,7 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
 
   for (Int s = 0; s < 16; ++s) {
     Spack relvars=Spack(relvar_info[s]);
-  
+
     //Get value from C++ code
     Spack c_scaling = Functions::subgrid_variance_scaling(relvars,3.0);
 
@@ -141,7 +141,7 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
     //Condition number is x*f'(x)/f(x) = (3*relvar + 4)/(relvar**2. + 3*relvar+2)
     const Real cond_num = (3.*relvar_info[s] + 4.)/(std::pow(relvar_info[s],2.0) +3*relvar_info[s]+2.0);
     const Real max_tol = tol*cond_num;
-    
+
     if ( std::abs(targ - c_scaling[0]) > max_tol * targ ){
       printf("When expon=3, subgrid_variance_scaling doesn't match analytic expectation. "
 	     "Val = %e, expected = %e, rel diff = %e, tol = %e\n",
@@ -165,31 +165,31 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
     Kokkos::parallel_reduce("SGSvarScaling::run", policy,
       KOKKOS_LAMBDA(const MemberType& /* team */, int& errors) {
         errors = 0;
-          
+
         //If expon=1, subgrid_variance_scaling should be 1
         //                            args = relvar,return error count
-        subgrid_variance_scaling_linearity_test(10.,errors); 
-        subgrid_variance_scaling_linearity_test(0.1,errors); 
-        
+        subgrid_variance_scaling_linearity_test(10.,errors);
+        subgrid_variance_scaling_linearity_test(0.1,errors);
+
         //If relvar=1, subgrid_variance_scaling should be factorial(expon)
         //                            args = return error count
         subgrid_variance_scaling_relvar1_test(errors);
-        
+
         //If expon=3, subgrid variance scaling should be relvar^3+3*relvar^2+2*relvar/relvar^3
         //                          args = return error count
         subgrid_variance_scaling_relvar3_test(errors);
       }, nerr);
-      
+
     Kokkos::fence();
     REQUIRE(nerr == 0);
   } //end of TestP3SubgridVarianceScaling struct
-  
+
 }; // UnitWrap
-  
+
 } // namespace unit_test
 } // namespace p3
 } // namespace scream
- 
+
 namespace{
 
 TEST_CASE("p3_subgrid_variance_scaling_test", "[p3_subgrid_variance_scaling_test]"){

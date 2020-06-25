@@ -458,7 +458,7 @@ static void run_bfb_p3_main()
     std::make_pair(0              , 0), // ncnuc
     std::make_pair(0              , 0), // naai
     std::make_pair(1.37888889E+03 , 1.39888889E+03), // pdel
-    std::make_pair(1.00371345E+00 , 7.19721007E+00), // exner
+    std::make_pair(1.00371345E+00 , 3.19721007E+00), // exner
     std::make_pair(1              , 1), // icldm
     std::make_pair(1              , 1), // lcldm
     std::make_pair(1              , 1), // rcldm
@@ -473,7 +473,7 @@ static void run_bfb_p3_main()
     std::make_pair(1.00000000E+06 , 1.00000000E+06), // nitot
     std::make_pair(0              , 1.00000000E-02), // birim
     std::make_pair(0              , 5.00000000E-02), // qv
-    std::make_pair(2.72653866E+02 , 1.07954335E+03), // th
+    std::make_pair(6.72653866E+02 , 1.07954335E+03), // th
   };
 
   P3MainData isds_fortran[] = {
