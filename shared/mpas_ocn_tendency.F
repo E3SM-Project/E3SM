@@ -476,7 +476,7 @@ contains
       !
       real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL
       real (kind=RKIND), dimension(:), pointer :: tracerGroupExponentialDecayRate, latCell
-      real (kind=RKIND), dimension(:), pointer :: RediKappa
+      real (kind=RKIND), dimension(:), pointer :: RediKappa 
       integer, dimension(:), pointer :: maxLevelCell
 
       !
@@ -489,7 +489,7 @@ contains
         normalTransportVelocity, layerThickness,vertAleTransportTop, layerThicknessEdge, vertDiffTopOfCell, &
         normalThicknessFlux, tracerGroupSurfaceFlux, fractionAbsorbed, zMid, &
         fractionAbsorbedRunoff, tracerGroupSurfaceFluxRunoff, &
-        tracerGroupSurfaceFluxRemoved, nonLocalSurfaceTracerFlux, kappaGMCell, kappaRediSfcTaper
+        tracerGroupSurfaceFluxRemoved, nonLocalSurfaceTracerFlux, kappaRediCell, kappaRediSfcTaper
 
       !
       ! three dimensional pointers
@@ -578,7 +578,7 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'RediKappa', RediKappa)
       call mpas_pool_get_array(diagnosticsPool, 'vertNonLocalFlux', vertNonLocalFlux)
       call mpas_pool_get_array(diagnosticsPool, 'kappaRediSfcTaper', kappaRediSfcTaper)
-      call mpas_pool_get_array(diagnosticsPool, 'kappaGMCell', kappaGMCell)
+      call mpas_pool_get_array(diagnosticsPool, 'kappaRediCell', kappaRediCell)
       call mpas_pool_get_array(diagnosticsPool, 'rediLimiterCount', rediLimiterCount)
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
       call mpas_pool_get_array(diagnosticsPool, 'penetrativeTemperatureFluxOBL', penetrativeTemperatureFluxOBL)
@@ -887,7 +887,7 @@ contains
                endif
                call ocn_tracer_hmix_tend(meshPool, scratchPool, layerThicknessEdge, layerThickness, zMid, tracerGroup, &
                                          RediKappa, slopeTriadUp, slopeTriadDown, dt, isActiveTracer, &
-                                         kappaRediSfcTaper, kappaGMCell, rediLimiterCount, tracerGroupTend, err)
+                                         kappaRediSfcTaper, kappaRediCell, rediLimiterCount, tracerGroupTend, err)
 
                if(trim(groupItr % memberName)=='activeTracers') then
                  isActiveTracer = .true.
