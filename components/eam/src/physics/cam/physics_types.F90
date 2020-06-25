@@ -91,6 +91,9 @@ module physics_types
           q         ! constituent mixing ratio (kg/kg moist or dry air depending on type)
 
      real(r8), dimension(:,:),allocatable        :: &
+          q1         ! vapor to save at beginning of physics timestep
+
+     real(r8), dimension(:,:),allocatable        :: &
           pint,    &! interface pressure (Pa)
           pintdry, &! interface pressure dry (Pa) 
           lnpint,  &! ln(pint)
@@ -1621,7 +1624,12 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   
   allocate(state%q(psetcols,pver,pcnst), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%q')
-  
+
+#ifdef ENERGY_DIAGNOSTICS  
+  allocate(state%q1(psetcols,pver), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%q1')
+#endif
+
   allocate(state%pint(psetcols,pver+1), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%pint')
   
@@ -1772,7 +1780,12 @@ subroutine physics_state_dealloc(state)
   
   deallocate(state%q, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%q')
-  
+
+#ifdef ENERGY_DIAGNOSTICS  
+  deallocate(state%q1, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%q1')
+#endif
+
   deallocate(state%pint, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%pint')
   

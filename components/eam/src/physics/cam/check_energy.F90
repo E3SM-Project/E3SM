@@ -56,6 +56,8 @@ module check_energy
   public :: check_tracers_chng      ! check changes in integrals against cumulative boundary fluxes
   public :: check_tracers_fini      ! free memory associated with check_tracers_data type variable
 
+  public :: energy_helper_eam_def
+
   public :: qflx_gmean              ! calculate global mean of qflx for water conservation check 
   public :: check_qflx              ! output qflx at certain locations for water conservation check  
   public :: check_prect             ! output prect at certain locations for water conservation check  

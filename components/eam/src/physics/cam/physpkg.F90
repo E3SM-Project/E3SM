@@ -2849,6 +2849,11 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   !----------------------------------
   if(Nudge_Model) call nudging_timestep_init(phys_state)
 
+#ifdef ENERGY_DIAGNOSTICS
+!  call set_q1_begin_physics(phys_state) 
+  phys_state%q1(:,:) = phys_state%q(:,:,1)
+#endif  
+
 end subroutine phys_timestep_init
 
 
