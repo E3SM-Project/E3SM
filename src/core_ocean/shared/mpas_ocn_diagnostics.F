@@ -679,7 +679,6 @@ contains
                                          nCells, 0, 'relative', density, err, &
                                          inSituThermalExpansionCoeff, inSituSalineContractionCoeff, &
                                          timeLevelIn=timeLevel)
-      call mpas_threading_barrier()
 
       ! compute potentialDensity, the density displaced adiabatically to the mid-depth of top layer.
       call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
@@ -691,7 +690,6 @@ contains
       call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
                                          nCells, 1, 'relative', displacedDensity, &
                                          err, timeLevelIn=timeLevel)
-      call mpas_threading_barrier()
 
       !
       ! Pressure
@@ -1106,8 +1104,6 @@ contains
       else
         call ocn_ALE_thickness(meshPool, verticalMeshPool, projectedSSH, ALE_thickness, err)
       endif
-
-      call mpas_threading_barrier()
 
       !
       ! Vertical transport through layer interfaces
