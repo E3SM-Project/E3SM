@@ -4185,6 +4185,7 @@ if ($cfg->get('dyn') =~ /se/) {
     }
 
     my @vars = qw(se_nsplit hypervis_order phys_loadbalance
+                  phys_chnk_fdim_max phys_chnk_fdim_mult
                   hypervis_subcycle hypervis_subcycle_q hypervis_subcycle_tom
                   statefreq se_partmethod se_topology se_ftype
                   integration nu nu_div nu_p nu_q nu_s nu_top

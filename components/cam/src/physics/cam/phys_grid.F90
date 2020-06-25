@@ -277,12 +277,26 @@ module phys_grid
                                        ! number of OpenMP threads available to each process
                                        !  (deallocated at end of phys_grid_init)
 
-! Physics fields data structure (chunk) first dimension:
-   integer, private, parameter :: min_pcols = 1
-!pw   integer, private, parameter :: def_pcols = ppcols             ! default 
-!pw++
-   integer, private, parameter :: def_pcols = -1                 ! default 
-!pw--
+! Physics fields data structure (chunk) first dimension (pcols) option:
+!  1 <= pcols_opt: pcols is set to pcols_opt
+!  0 >= pcols_opt: calculate pcols based on lbal_opt, chunks_per_thread, number of
+!       columns and threads in virtual SMP and relative costs per column (if provided), 
+!       attempting to minimize wasted space and number of chunks, subject to:
+!   0 <  pcols_max, then this is an upper bound on the calculated pcols.
+!        Otherwise, pcols_max is ignored.
+!   1 <  pcols_mult, then pcols is required to be a multiple of pcols_mult
+!        (if pcols_max > 0 and pcols_mult <= pcols_max)
+!        Otherwise, pcols_mult is ignored.
+   integer, private, parameter :: def_pcols_opt  = 0              ! default 
+   integer, private :: pcols_opt = def_pcols_opt
+
+   integer, private, parameter :: min_pcols_max  = 1
+   integer, private, parameter :: def_pcols_max  = -1             ! default 
+   integer, private :: pcols_max = def_pcols_max
+
+   integer, private, parameter :: min_pcols_mult = 1
+   integer, private, parameter :: def_pcols_mult = 1              ! default 
+   integer, private :: pcols_mult = def_pcols_mult
 
 ! Physics grid decomposition options:  
 ! -1: each chunk is a dynamics block
@@ -1465,6 +1479,8 @@ logical function phys_grid_initialized ()
 !========================================================================
 !
    subroutine phys_grid_defaultopts(phys_chnk_fdim_out, &
+                                    phys_chnk_fdim_max_out, &
+                                    phys_chnk_fdim_mult_out, &
                                     phys_loadbalance_out, &
                                     phys_twin_algorithm_out, &
                                     phys_alltoall_out, &
@@ -1478,6 +1494,10 @@ logical function phys_grid_initialized ()
 !------------------------------Arguments--------------------------------
      ! physic data structures declared first dimension
      integer, intent(out), optional :: phys_chnk_fdim_out
+     ! physic data structures declared first dimension upper bound
+     integer, intent(out), optional :: phys_chnk_fdim_max_out
+     ! physic data structures declared first dimension required factor
+     integer, intent(out), optional :: phys_chnk_fdim_mult_out
      ! physics load balancing option
      integer, intent(out), optional :: phys_loadbalance_out
      ! algorithm to use when determining column pairs to assign to chunks
@@ -1490,7 +1510,13 @@ logical function phys_grid_initialized ()
      logical, intent(out), optional :: phys_chnk_cost_write_out
 !-----------------------------------------------------------------------
      if ( present(phys_chnk_fdim_out) ) then
-       phys_chnk_fdim_out = def_pcols
+       phys_chnk_fdim_out = def_pcols_opt
+     endif
+     if ( present(phys_chnk_fdim_max_out) ) then
+       phys_chnk_fdim_max_out = def_pcols_max
+     endif
+     if ( present(phys_chnk_fdim_mult_out) ) then
+       phys_chnk_fdim_mult_out = def_pcols_mult
      endif
      if ( present(phys_loadbalance_out) ) then
        phys_loadbalance_out = def_lbal_opt
@@ -1516,6 +1542,8 @@ logical function phys_grid_initialized ()
 !========================================================================
 !
    subroutine phys_grid_setopts(phys_chnk_fdim_in, &
+                                phys_chnk_fdim_max_in, &
+                                phys_chnk_fdim_mult_in, &
                                 phys_loadbalance_in, &
                                 phys_twin_algorithm_in, &
                                 phys_alltoall_in,    &
@@ -1532,6 +1560,10 @@ logical function phys_grid_initialized ()
 !------------------------------Arguments--------------------------------
      ! physic data structures declared first dimension
      integer, intent(in), optional :: phys_chnk_fdim_in
+     ! physic data structures declared first dimension upper bound
+     integer, intent(in), optional :: phys_chnk_fdim_max_in
+     ! physic data structures declared first dimension required factor
+     integer, intent(in), optional :: phys_chnk_fdim_mult_in
      ! physics load balancing option
      integer, intent(in), optional :: phys_loadbalance_in
      ! option to use load balanced column pairs
@@ -1543,8 +1575,8 @@ logical function phys_grid_initialized ()
      ! flag whether to write out estimated and actual cost per chunk
      logical, intent(in), optional :: phys_chnk_cost_write_in
 !-----------------------------------------------------------------------
-     if ( present(phys_chnk_fdim_in) ) then
 #ifdef PPCOLS
+     if ( present(phys_chnk_fdim_in) ) then
         if (phys_chnk_fdim_in /= pcols) then
            if (masterproc) then
               write(iulog,*)                                     &
@@ -1554,27 +1586,52 @@ logical function phys_grid_initialized ()
                  pcols,                                          &
                  '  .'
               write(iulog,*)                                     &
-                 '  Must compile without -pcols option in'
+                 '  Must compile without -DPPCOLS to enable runtime'
               write(iulog,*)                                     &
-                 '  CAM_CONFIG_OPTS in env_build.xml to enable'
-              write(iulog,*)                                     &
-                 '  runtime option. Ignoring and using PCOLS parameter.'
+                 '  option. Ignoring and using PCOLS parameter.'
            endif
         endif
-#else
-        pcols = phys_chnk_fdim_in
-!pw        if (pcols < min_pcols) then
-!pw           if (masterproc) then
-!pw              write(iulog,*)                                          &
-!pw                 'PHYS_GRID_SETOPTS:  ERROR:  phys_chnk_fdim=', &
-!pw                 phys_chnk_fdim_in,                             &
-!pw                 '  is out of range.  It must be at least as large as ',      &
-!pw                 min_pcols
-!pw           endif
-!pw           call endrun
-!pw        endif
-#endif
      endif
+#else
+     if ( present(phys_chnk_fdim_in) ) then
+!pw        pcols_opt = phys_chnk_fdim_in
+!pw++
+        pcols = phys_chnk_fdim_in
+!pw--
+     endif
+!
+     if ( present(phys_chnk_fdim_max_in) ) then
+        pcols_max = phys_chnk_fdim_max_in
+        if (pcols_opt <= 0) then
+           if (pcols_max < min_pcols_max) then
+              if (masterproc) then
+                 write(iulog,*)                                            &
+                    'PHYS_GRID_SETOPTS:  ERROR:  phys_chnk_fdim_max=',     &
+                    phys_chnk_fdim_max_in,                                 &
+                    '  is out of range.  It must be at least as large as ',&
+                    min_pcols_max,                                         &
+                    '  . Ignoring.'
+              endif
+           endif
+        endif
+     endif
+!
+     if ( present(phys_chnk_fdim_in) ) then
+        pcols_mult = phys_chnk_fdim_mult_in 
+        if (pcols_opt <= 0) then
+           if (pcols_mult < min_pcols_mult) then
+              if (masterproc) then
+                 write(iulog,*)                                            &
+                    'PHYS_GRID_SETOPTS:  ERROR:  phys_chnk_fdim_mult=',    &
+                    phys_chnk_fdim_mult_in,                                &
+                    '  is out of range.  It must be at least as large as ',&
+                    min_pcols_mult,                                        &
+                    '  . Ignoring.'
+              endif
+           endif
+        endif
+     endif
+#endif
 !
      if ( present(phys_loadbalance_in) ) then
         lbal_opt = phys_loadbalance_in

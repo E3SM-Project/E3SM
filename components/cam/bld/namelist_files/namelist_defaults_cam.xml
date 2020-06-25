@@ -1418,6 +1418,17 @@
 <phys_loadbalance dyn="se"> 2 </phys_loadbalance>
 <phys_loadbalance dyn="eul"> 3 </phys_loadbalance>
 
+<!-- physics chunk first dimension upper bound,
+     encoding empirically-determined defaults -->
+<phys_chnk_fdim_max > -1 </phys_chnk_fdim_max>
+<phys_chnk_fdim_max dyn="se" npg="2"> 16 </phys_chnk_fdim_max>
+<phys_chnk_fdim_max mach="compy" dyn="se" npg="0"> 24 </phys_chnk_fdim_max>
+
+<!-- physics chunk first dimension factor,
+     encoding empirically-determined defaults -->
+<phys_chnk_fdim_mult > 1 </phys_chnk_fdim_mult>
+<phys_chnk_fdim_mult mach="cori-knl" dyn="se"> 2 </phys_chnk_fdim_mult>
+
 <!-- Control output to history file(s) -->
 <history_amwg>                 .true.   </history_amwg>
 <history_verbose>              .false.  </history_verbose>

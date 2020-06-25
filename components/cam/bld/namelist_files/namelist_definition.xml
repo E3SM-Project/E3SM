@@ -347,10 +347,38 @@ chunks). This was originally specified at compile-time, based on
 experiments in the early 2000s indicating that the compilers at the time
 generated more efficient code when the first dimension was known
 at compile time, perhaps for improved alignment in memory layout or improved
-vectorization. This is now exposed as a runtime parameter, and the
-previous compile-time maximum (PCOLS) is simply used to define the default
-value of the runtime variable. Must be greater than or equal to 1.
-Default: PCOLS
+vectorization. This is now exposed as a runtime parameter. If phys_chnk_fdim
+is greater then 0, then the runtime pcols parameter is set to phys_chnk_fdim.
+If phys_chnk_fdim is less than or equal to 0, then pcols is calculated based
+on the values of the namelist variables phys_loadbalance, phys_chnk_fdim_max,
+and phys_chnk_fdim_mult, and on the problem specifics, attempting to
+minimize load imbalance between chunks, wasted space within chunks, and the
+number of chunks. The original compile-time behavior can be restored by
+defining the CPP token PPCOLS when building the model, in which case the
+original compile-time maximum (PCOLS) is still used. Note that PPCOLS is
+defined when the '-pcols' option is specifed in the call to CAM configure,
+in which case PCOLS is set to value of the '-pcols' argument.
+Default: 0
+</entry>
+
+<entry id="phys_chnk_fdim_max" type="integer"  category="perf_dp_coup"
+       group="cam_inparm" valid_values="">
+If phys_chnk_fdim is less than 1 (so runtime pcols is calculated)
+and phys_chnk_fdim_max is greater than 0, then phys_chnk_fdim_max
+is an upper bound on the size of the runtime pcols parameter.
+Otherwise it is ignored.
+Default: -1
+</entry>
+
+<entry id="phys_chnk_fdim_mult" type="integer"  category="perf_dp_coup"
+       group="cam_inparm" valid_values="">
+If phys_chnk_fdim is less than 1 (so runtime pcols is calculated) and 
+phys_chnk_fdim_mult is greater than 1 and either phys_chnk_fdim_max is
+less than 1 (so ignored) or phys_chnk_fdim_mult is less than or equal to 
+phys_chnk_fdim_max, then the runtime pcols is required to be an integer
+multiple of phys_chnk_fdim_mult. This can be useful for memory alignment
+of local variables. 
+Default: 1
 </entry>
 
 <entry id="phys_alltoall" type="integer"  category="perf_dp_coup"
