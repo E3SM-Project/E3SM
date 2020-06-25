@@ -47,7 +47,8 @@ module ocn_vel_tidal_potential
 
    public :: ocn_vel_tidal_potential_tend, &
              ocn_compute_tidal_potential_forcing, &
-             ocn_vel_tidal_potential_init
+             ocn_vel_tidal_potential_init, &
+             tidal_constituent_factors
 
    !--------------------------------------------------------------------
    !
@@ -60,7 +61,7 @@ module ocn_vel_tidal_potential
      character(:), allocatable :: constituent
    end type
    type(char_array), dimension(37) :: constituentList
-
+   public :: char_array
 
 !***********************************************************************
 
