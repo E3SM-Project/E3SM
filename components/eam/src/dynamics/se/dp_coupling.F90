@@ -710,7 +710,7 @@ CONTAINS
                                  ke,se,wv,wl,wi,wr,ws,te,tw, &
                                  ncol)
 
-      call outflg('TEafteradj', te, pcols, lchnk)
+      call outfld('TEafteradj', te, pcols, lchnk)
 
     end do ! lchnk
 
