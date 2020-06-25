@@ -706,18 +706,18 @@ CONTAINS
          enddo
       enddo
 
-!print *, 'adjust ps', adjust_ps
+!print *, 'OG in dp_coupling adjust ps', adjust_ps
 
       ! compute water vapor adjusted dp3d:
 
 !with ps adjustment comment if below
-!      if (adjust_ps) then
+      if (adjust_ps) then
          ! compute new dp3d from adjusted ps()
          do k=1,pver
             dp_adj(:ncol,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                  ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps(:ncol)
          enddo
-!      endif
+      endif
       pdel(:ncol,:pver)=dp_adj(:ncol,:pver)
 
       call energy_helper_eam_def(ustate,vstate,tstate,qstate,ps,pdel,phisstate,&

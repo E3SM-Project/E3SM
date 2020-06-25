@@ -1552,6 +1552,8 @@ contains
   ! after calling this routine, ps_v may not be valid and should not be used
   elem%state%ps_v(:,:,np1)=0
 
+!print *, 'OG in applyTracers adjust_ps', adjust_ps 
+
 
 #ifdef MODEL_THETA_L
    !compute temperatue and NH perturbation pressure before Q tendency
