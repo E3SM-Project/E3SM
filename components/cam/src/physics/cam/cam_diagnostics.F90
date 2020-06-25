@@ -353,6 +353,9 @@ subroutine diag_init()
 
    call addfld ('ATMEINT',horiz_only, 'A','J/m2','Vertically integrated total atmospheric energy ')
 
+   call addfld ('TEbeforeadj',horiz_only, 'A','J/m2','TE before')
+   call addfld ('TEafteradj',horiz_only, 'A','J/m2','TE after ')
+
    call addfld ('T1000',horiz_only,   'A','K','Temperature at 1000 mbar pressure surface')
    call addfld ('T975',horiz_only,   'A','K','Temperature at 975 mbar pressure surface')   
    call addfld ('T950',horiz_only,   'A','K','Temperature at 950 mbar pressure surface')   

@@ -358,25 +358,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
          ! requires forward-in-time timestepping, checked in namelist_mod.F90i
 
          !ftype1 also requires a call to applycamforcing_dynamics, below
-#if 0
-#ifdef ENERGY_DIAGNOSTICS
-!this is only done to separate adjustment of Qdp and ps adjustment
-         call applyCAMforcing_adjust_tracers(dyn_in%elem(ie),hvcoord,tl_f,tl_fQdp)
-!
-         call applyCAMforcing_adjust_pressure(dyn_in%elem(ie),hvcoord,tl_f,tl_fQdp)
-#else
          call applyCAMforcing_tracers(dyn_in%elem(ie),hvcoord,tl_f,tl_fQdp,dtime,.true.)
-#endif
-#endif
-
-
-#ifdef ENERGY_DIAGNOSTICS
-         call applyCAMforcing_adjust_tracers(dyn_in%elem(ie),hvcoord,tl_f,tl_fQdp)
-         call applyCAMforcing_tracers(dyn_in%elem(ie),hvcoord,tl_f,tl_fQdp,dtime,.true.)
-#else
-         call applyCAMforcing_tracers(dyn_in%elem(ie),hvcoord,tl_f,tl_fQdp,dtime,.true.)
-#endif
-
 
       endif !ftype=1 
 

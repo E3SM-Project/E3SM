@@ -493,6 +493,10 @@ CONTAINS
       end if ! fv_nphys > 0
     end if ! par%dynproc
 
+#ifdef ENERGY_DIAGNOSTICS
+    call measure_pressure_work(phys_state)
+#endif
+
   end subroutine p_d_coupling
   !=================================================================================================
   !=================================================================================================
@@ -636,6 +640,84 @@ CONTAINS
 #endif
 
   end subroutine derived_phys
+
+
+#ifdef ENERGY_DIAGNOSTICS
+  subroutine measure_pressure_work(state)
+    use control_mod,             only: ftype, adjust_ps
+    use dyn_comp,                only: hvcoord
+    use check_energy,            only: energy_helper_eam_def
+    use cam_history,             only: outfld
+
+    implicit none
+    ! INPUT PARAMETERS:
+    type(physics_state), intent(in), dimension(begchunk:endchunk) :: state
+    ! LOCAL VARIABLES
+    integer                                      :: ncol, k, ic                                
+    integer(kind=int_kind)                       :: lchnk
+
+    real (kind=real_kind), dimension(pcols)      :: te, tw, ke, se, wv, wl, wi, wr, ws
+    real (kind=real_kind), dimension(pcols,pver) :: ustate,vstate,tstate,pdel,dp_adj
+    real (kind=real_kind), dimension(pcols,pver,pcnst) :: qstate
+    real (kind=real_kind), dimension(pcols)      :: ps,phisstate
+    real (kind=real_kind)                        :: fq
+
+!!!!!! fix all
+!!    !$omp parallel do private (lchnk, ncols, pgcols, icol, idmb1, idmb2,
+!!    !idmb3, ie, ioff, ilyr, m)
+    do lchnk = begchunk,endchunk
+      ncol = get_ncols_p(lchnk)
+
+      te=0.0; tw=0.0; ke=0.0; se=0.0; wv=0.0; wl=0.0; wi=0.0; wr=0.0; ws=0.0;
+      ustate=0.0; vstate=0.0; tstate=0.0; pdel=0.0; ps=0.0; phisstate=0.0;
+
+      ustate(:ncol,:pver)=state(lchnk)%u(:ncol,:pver)
+      vstate(:ncol,:pver)=state(lchnk)%v(:ncol,:pver)
+      tstate(:ncol,:pver)=state(lchnk)%t(:ncol,:pver)
+      phisstate(:ncol)=state(lchnk)%phis(:ncol)
+      qstate(:ncol,:pver,:pcnst)=state(lchnk)%q(:ncol,:pver,:pcnst)
+
+      pdel(:ncol,:pver)=state(lchnk)%pdel(:ncol,:pver)
+      ps(:ncol)=state(lchnk)%ps(:ncol)
+
+      call energy_helper_eam_def(ustate,vstate,tstate,qstate,ps,pdel,phisstate,&
+                                 ke,se,wv,wl,wi,wr,ws,te,tw, &
+                                 ncol)
+      !before ps adjustment
+      call outfld('TEbeforeadj', te, pcols, lchnk)
+      
+      !adjust ps, keep the code close to applyCAMforcing_tracers
+
+      do ic=1,ncol
+         do k=1,pver
+            fq = pdel(ic,k)*( state(lchnk)%q(ic,k,1) - state(lchnk)%q1(ic,k ) )
+            ps(ic)=ps(ic) + fq
+            dp_adj(ic,k)=dp_adj(ic,k) + fq   !  ps =  ps0+sum(dp(k))
+         enddo
+      enddo
+
+      ! compute water vapor adjusted dp3d:
+      if (adjust_ps) then
+         ! compute new dp3d from adjusted ps()
+         do k=1,pver
+            dp_adj(:ncol,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps(:ncol)
+         enddo
+      endif
+      pdel(:ncol,:pver)=dp_adj(:ncol,:pver)
+
+      call energy_helper_eam_def(ustate,vstate,tstate,qstate,ps,pdel,phisstate,&
+                                 ke,se,wv,wl,wi,wr,ws,te,tw, &
+                                 ncol)
+
+      call outflg('TEafteradj', te, pcols, lchnk)
+
+    end do ! lchnk
+
+  end subroutine measure_pressure_work
+#endif
+
+
   !=================================================================================================
   !=================================================================================================
 end module dp_coupling
