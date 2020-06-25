@@ -2912,8 +2912,7 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   if(Nudge_Model) call nudging_timestep_init(phys_state)
 
 #ifdef ENERGY_DIAGNOSTICS
-!  call set_q1_begin_physics(phys_state) 
-  phys_state%q1(:,:) = phys_state%q(:,:,1)
+  call set_q1_begin_physics(phys_state) 
 #endif  
 
 end subroutine phys_timestep_init
@@ -2955,5 +2954,23 @@ subroutine add_fld_default_calls()
   enddo
 
 end subroutine add_fld_default_calls
+
+
+subroutine set_q1_begin_physics(phys_state)
+  use physics_types,       only: physics_state
+
+  implicit none
+
+  type(physics_state), intent(inout), dimension(begchunk:endchunk) :: phys_state
+
+  integer                                      :: ncol, lchnk
+
+  !$omp parallel do private (lchnk, ncol)
+  do lchnk = begchunk,endchunk
+     ncol = get_ncols_p(lchnk)
+     phys_state(lchnk)%q1(:ncol,:) = phys_state(lchnk)%q(:ncol,:,1)
+  enddo
+
+end subroutine set_q1_begin_physics
 
 end module physpkg
