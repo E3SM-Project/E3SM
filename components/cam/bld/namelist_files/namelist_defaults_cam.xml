@@ -1420,9 +1420,10 @@
 
 <!-- physics chunk first dimension upper bound,
      encoding empirically-determined defaults -->
-<phys_chnk_fdim_max > -1 </phys_chnk_fdim_max>
+<phys_chnk_fdim_max > 16 </phys_chnk_fdim_max>
 <phys_chnk_fdim_max dyn="se" npg="2"> 16 </phys_chnk_fdim_max>
 <phys_chnk_fdim_max mach="compy" dyn="se" npg="0"> 24 </phys_chnk_fdim_max>
+<phys_chnk_fdim_max mach="cori-knl" dyn="se" npg="0"> 128 </phys_chnk_fdim_max>
 
 <!-- physics chunk first dimension factor,
      encoding empirically-determined defaults -->

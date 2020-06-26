@@ -323,7 +323,7 @@ module phys_grid
 ! Physics grid load balancing output options:  
 !  T: write out both estimated (normalized) and actual (seconds) cost per chunk
 !  F: do not write out costs
-   logical, private, parameter :: def_output_chunk_costs = .false.
+   logical, private, parameter :: def_output_chunk_costs = .true.
    logical, private :: output_chunk_costs = def_output_chunk_costs
 
 ! target number of chunks per thread
