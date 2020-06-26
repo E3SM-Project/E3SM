@@ -33,7 +33,6 @@ use perf_mod,          only: t_startf, t_stopf
 use cam_abortutils,        only: endrun
 
 use modal_aero_wateruptake, only: modal_aero_wateruptake_dr
-!use modal_aero_calcsize,    only: modal_aero_calcsize_diag
 use modal_aero_calcsize,    only: modal_aero_calcsize_sub
 
 implicit none
@@ -62,7 +61,6 @@ complex(r8) :: crefwlw(nlwbands) ! complex refractive index for water infrared
 ! physics buffer indices
 integer :: dgnumwet_idx = -1
 integer :: qaerwat_idx  = -1
-integer :: dgnum_idxb   = -1
 
 character(len=4) :: diag(0:n_diag) = (/'    ','_d1 ','_d2 ','_d3 ','_d4 ','_d5 ', &
                                        '_d6 ','_d7 ','_d8 ','_d9 ','_d10'/)
@@ -160,8 +158,6 @@ subroutine modal_aer_opt_init()
    ! that the loops over modes in the optics calculations will use the values for dgnumwet and qaerwat
    ! that are set in the aerosol_wet_intr code.
    dgnumwet_idx = pbuf_get_index('DGNUMWET',errcode)
-   dgnum_idxb = pbuf_get_index('DGNUM',errcode)
-
    if (errcode < 0) then
       call endrun(routine//' ERROR: cannot find physics buffer field DGNUMWET')
    end if
@@ -413,12 +409,6 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
    real(r8), pointer :: dgnumwet_m(:,:,:) ! number mode wet diameter for all modes
    real(r8), pointer :: qaerwat_m(:,:,:)  ! aerosol water (g/g) for all modes
    real(r8), pointer :: wetdens_m(:,:,:)  ! 
-   real(r8), pointer :: dgnumpbuf_mb(:,:,:)
-
-   real(r8), pointer :: dgnumdry_mb(:,:,:) ! number mode dry diameter for all modes
-   real(r8), pointer :: dgnumwet_mb(:,:,:) ! number mode wet diameter for all modes
-   real(r8), pointer :: qaerwat_mb(:,:,:)  ! aerosol water (g/g) for all modes
-   real(r8), pointer :: wetdens_mb(:,:,:)  ! 
 
    real(r8) :: sigma_logr_aer         ! geometric standard deviation of number distribution
    real(r8) :: radsurf(pcols,pver)    ! aerosol surface mode radius
@@ -524,8 +514,6 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
    integer  :: nerr_dopaer = 0
    real(r8) :: volf            ! volume fraction of insoluble aerosol
    character(len=*), parameter :: subname = 'modal_aero_sw'
-   integer  :: ic,pb,nb
-
    !----------------------------------------------------------------------------
 
    lchnk = state%lchnk
@@ -588,56 +576,15 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
    ! loop over all aerosol modes
    call rad_cnst_get_info(list_idx, nmodes=nmodes)
 
-   if (list_idx == 0) then
-      ! water uptake and wet radius for the climate list has already been calculated
-      call pbuf_get_field(pbuf, dgnumwet_idx, dgnumwet_m)
-      call pbuf_get_field(pbuf, qaerwat_idx,  qaerwat_m)
-      call pbuf_get_field(pbuf, dgnum_idxb,dgnumpbuf_mb)
-
-      allocate(dgnumdry_mb(pcols,pver,nmodes), dgnumwet_mb(pcols,pver,nmodes), &
-               qaerwat_mb(pcols,pver,nmodes),  wetdens_mb(pcols,pver,nmodes), stat=istat)
-      if (istat > 0) then
-         call endrun('modal_aero_swbbbb: allocation FAILURE: arrays for diagnostic calcs')
-      end if
-      !call modal_aero_calcsize_diag(state, pbuf, list_idx, dgnumdry_m)
-      call modal_aero_calcsize_sub(state, pbuf, do_adjust_in=.false., do_aitacc_transfer_in=.false., &
-           list_idx=list_idx, dgnumdry_m=dgnumdry_mb)
-
-      call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_mb, dgnumwet_mb, &
-                                     qaerwat_mb, wetdens_mb)
-
-      do nb = 1,nmodes
-         do pb = 1, pver
-            do ic = 1, pcols
-               if(dgnumpbuf_mb(ic,pb,nb) .ne. dgnumdry_mb(ic,pb,nb)) then
-                  write(102,*)ic,pb,nb,dgnumpbuf_mb(ic,pb,nb),dgnumdry_mb(ic,pb,nb)
-               endif
-               if(dgnumwet_m(ic,pb,nb) .ne. dgnumwet_mb(ic,pb,nb))then
-                  write(102,*)ic,pb,nb,dgnumwet_m(ic,pb,nb),dgnumwet_mb(ic,pb,nb)
-               endif
-            enddo
-         enddo
-      enddo
-
-
-
-
-
-   else
-      ! If doing a diagnostic calculation then need to calculate the wet radius
-      ! and water uptake for the diagnostic modes
       allocate(dgnumdry_m(pcols,pver,nmodes), dgnumwet_m(pcols,pver,nmodes), &
                qaerwat_m(pcols,pver,nmodes),  wetdens_m(pcols,pver,nmodes), stat=istat)
       if (istat > 0) then
          call endrun('modal_aero_sw: allocation FAILURE: arrays for diagnostic calcs')
       end if
-      !call modal_aero_calcsize_diag(state, pbuf, list_idx, dgnumdry_m)
       call modal_aero_calcsize_sub(state, pbuf, do_adjust_in=.false., do_aitacc_transfer_in=.false., &
            list_idx=list_idx, dgnumdry_m=dgnumdry_m)
-
       call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
                                      qaerwat_m, wetdens_m)
-   endif
 
    do m = 1, nmodes
 
@@ -1299,24 +1246,15 @@ subroutine modal_aero_lw(list_idx, state, pbuf, tauxar)
    ! loop over all aerosol modes
    call rad_cnst_get_info(list_idx, nmodes=nmodes)
 
-   if (list_idx == 0) then
-      ! water uptake and wet radius for the climate list has already been calculated
-      call pbuf_get_field(pbuf, dgnumwet_idx, dgnumwet_m)
-      call pbuf_get_field(pbuf, qaerwat_idx,  qaerwat_m)
-   else
-      ! If doing a diagnostic calculation then need to calculate the wet radius
-      ! and water uptake for the diagnostic modes
       allocate(dgnumdry_m(pcols,pver,nmodes), dgnumwet_m(pcols,pver,nmodes), &
                qaerwat_m(pcols,pver,nmodes),  wetdens_m(pcols,pver,nmodes), stat=istat)
       if (istat > 0) then
          call endrun('modal_aero_lw: allocation FAILURE: arrays for diagnostic calcs')
       end if
-      !call modal_aero_calcsize_diag(state, pbuf, list_idx, dgnumdry_m)  
       call modal_aero_calcsize_sub(state, pbuf, do_adjust_in=.false., do_aitacc_transfer_in=.false., &
            list_idx=list_idx, dgnumdry_m=dgnumdry_m)
       call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
                                      qaerwat_m, wetdens_m)
-   endif
 
    do m = 1, nmodes
 
