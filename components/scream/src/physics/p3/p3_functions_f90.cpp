@@ -233,7 +233,8 @@ void gen_random_data(const std::array<std::pair<Real, Real>, N>& ranges,
                      const std::array<Real**, M>& ptrs,
                      Real* data, Int nk)
 {
-  static_assert(N <= M);
+  // You can provide more ptrs than ranges to initialize non-input data
+  static_assert(N <= M, "Require at least as many ptrs as ranges");
 
   Int offset = 0;
   std::default_random_engine generator;
