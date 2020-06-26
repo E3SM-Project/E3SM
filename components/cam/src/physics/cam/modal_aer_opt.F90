@@ -413,6 +413,12 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
    real(r8), pointer :: dgnumwet_m(:,:,:) ! number mode wet diameter for all modes
    real(r8), pointer :: qaerwat_m(:,:,:)  ! aerosol water (g/g) for all modes
    real(r8), pointer :: wetdens_m(:,:,:)  ! 
+   real(r8), pointer :: dgnumpbuf_mb(:,:,:)
+
+   real(r8), pointer :: dgnumdry_mb(:,:,:) ! number mode dry diameter for all modes
+   real(r8), pointer :: dgnumwet_mb(:,:,:) ! number mode wet diameter for all modes
+   real(r8), pointer :: qaerwat_mb(:,:,:)  ! aerosol water (g/g) for all modes
+   real(r8), pointer :: wetdens_mb(:,:,:)  ! 
 
    real(r8) :: sigma_logr_aer         ! geometric standard deviation of number distribution
    real(r8) :: radsurf(pcols,pver)    ! aerosol surface mode radius
