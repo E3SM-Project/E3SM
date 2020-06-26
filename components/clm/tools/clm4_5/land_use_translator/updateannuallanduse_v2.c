@@ -216,7 +216,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
-#include <netcdf.h>
+#include "netcdf.h"
 
 ////////////////////////////////////////////////
 // use this to compile for standalone operation
@@ -303,58 +303,58 @@
 
 #ifdef STANDALONE
 // this is for writing the dynamic crop/pasture array
-float glmo[MAXOUTPIX * MAXOUTLIN][GLMONFLDS];
+double glmo[MAXOUTPIX * MAXOUTLIN][GLMONFLDS];
 #endif
 
-float inmask[MAXOUTPIX * MAXOUTLIN];
-float inland[MAXOUTPIX * MAXOUTLIN];
-float inlake[MAXOUTPIX * MAXOUTLIN];
-float inwetland[MAXOUTPIX * MAXOUTLIN];
-float inice[MAXOUTPIX * MAXOUTLIN];
-float invegbare[MAXOUTPIX * MAXOUTLIN];
+double inmask[MAXOUTPIX * MAXOUTLIN];
+double inland[MAXOUTPIX * MAXOUTLIN];
+double inlake[MAXOUTPIX * MAXOUTLIN];
+double inwetland[MAXOUTPIX * MAXOUTLIN];
+double inice[MAXOUTPIX * MAXOUTLIN];
+double invegbare[MAXOUTPIX * MAXOUTLIN];
 
-float insand[MAXSOILLAYERS][MAXOUTPIX * MAXOUTLIN];
-float inclay[MAXSOILLAYERS][MAXOUTPIX * MAXOUTLIN];
-float insoilslope[MAXOUTPIX * MAXOUTLIN];
+double insand[MAXSOILLAYERS][MAXOUTPIX * MAXOUTLIN];
+double inclay[MAXSOILLAYERS][MAXOUTPIX * MAXOUTLIN];
+double insoilslope[MAXOUTPIX * MAXOUTLIN];
 
-float incurrentpftid[MAXPFT][MAXOUTPIX * MAXOUTLIN];
-float incurrentpftval[MAXPFT][MAXOUTPIX * MAXOUTLIN];		// this now contains the reference year data, which can be the previous year or ref year instead of the base year
-float incurrentlaival[MAXMONTH][MAXPFT][MAXOUTPIX * MAXOUTLIN];
-float incurrentsaival[MAXMONTH][MAXPFT][MAXOUTPIX * MAXOUTLIN];
-float incurrentsoilcolor[MAXOUTPIX * MAXOUTLIN];
+double incurrentpftid[MAXPFT][MAXOUTPIX * MAXOUTLIN];
+double incurrentpftval[MAXPFT][MAXOUTPIX * MAXOUTLIN];		// this now contains the reference year data, which can be the previous year or ref year instead of the base year
+double incurrentlaival[MAXMONTH][MAXPFT][MAXOUTPIX * MAXOUTLIN];
+double incurrentsaival[MAXMONTH][MAXPFT][MAXOUTPIX * MAXOUTLIN];
+double incurrentsoilcolor[MAXOUTPIX * MAXOUTLIN];
 
-float inpotvegpftid[MAXPFT][MAXOUTPIX * MAXOUTLIN];
-float inpotvegpftval[MAXPFT][MAXOUTPIX * MAXOUTLIN];
+double inpotvegpftid[MAXPFT][MAXOUTPIX * MAXOUTLIN];
+double inpotvegpftval[MAXPFT][MAXOUTPIX * MAXOUTLIN];
 
-float inhurttbasecrop[MAXOUTPIX * MAXOUTLIN];		// this now contains the reference year data, which can be the previous year or ref year instead of the base year
-float inhurttbasepasture[MAXOUTPIX * MAXOUTLIN];	// this now contains the reference year data, which can be the previous year or ref instead of the base year
-float inhurttcrop[MAXOUTPIX * MAXOUTLIN];
-float inhurttpasture[MAXOUTPIX * MAXOUTLIN];
+double inhurttbasecrop[MAXOUTPIX * MAXOUTLIN];		// this now contains the reference year data, which can be the previous year or ref year instead of the base year
+double inhurttbasepasture[MAXOUTPIX * MAXOUTLIN];	// this now contains the reference year data, which can be the previous year or ref instead of the base year
+double inhurttcrop[MAXOUTPIX * MAXOUTLIN];
+double inhurttpasture[MAXOUTPIX * MAXOUTLIN];
 
-float inhurttprimary[MAXOUTPIX * MAXOUTLIN];
-float inhurttsecondary[MAXOUTPIX * MAXOUTLIN];
+double inhurttprimary[MAXOUTPIX * MAXOUTLIN];
+double inhurttsecondary[MAXOUTPIX * MAXOUTLIN];
 
-float prevprimary[MAXOUTPIX * MAXOUTLIN];
-float prevsecondary[MAXOUTPIX * MAXOUTLIN];
+double prevprimary[MAXOUTPIX * MAXOUTLIN];
+double prevsecondary[MAXOUTPIX * MAXOUTLIN];
 
-float inhurttvh1[MAXOUTPIX * MAXOUTLIN];
-float inhurttvh2[MAXOUTPIX * MAXOUTLIN];
-float inhurttsh1[MAXOUTPIX * MAXOUTLIN];
-float inhurttsh2[MAXOUTPIX * MAXOUTLIN];
-float inhurttsh3[MAXOUTPIX * MAXOUTLIN];
+double inhurttvh1[MAXOUTPIX * MAXOUTLIN];
+double inhurttvh2[MAXOUTPIX * MAXOUTLIN];
+double inhurttsh1[MAXOUTPIX * MAXOUTLIN];
+double inhurttsh2[MAXOUTPIX * MAXOUTLIN];
+double inhurttsh3[MAXOUTPIX * MAXOUTLIN];
 
-float outhurttpftid[MAXPFT][MAXOUTPIX * MAXOUTLIN];
-float outhurttpftval[MAXPFT][MAXOUTPIX * MAXOUTLIN];
-float outhurttlaival[MAXMONTH][MAXPFT][MAXOUTPIX * MAXOUTLIN];
-float outhurttsaival[MAXMONTH][MAXPFT][MAXOUTPIX * MAXOUTLIN];
-float outhurttsoilcolor[MAXOUTPIX * MAXOUTLIN];
+double outhurttpftid[MAXPFT][MAXOUTPIX * MAXOUTLIN];
+double outhurttpftval[MAXPFT][MAXOUTPIX * MAXOUTLIN];
+double outhurttlaival[MAXMONTH][MAXPFT][MAXOUTPIX * MAXOUTLIN];
+double outhurttsaival[MAXMONTH][MAXPFT][MAXOUTPIX * MAXOUTLIN];
+double outhurttsoilcolor[MAXOUTPIX * MAXOUTLIN];
 
-float outhurttvh1[MAXOUTPIX * MAXOUTLIN];
-float outhurttvh2[MAXOUTPIX * MAXOUTLIN];
-float outhurttsh1[MAXOUTPIX * MAXOUTLIN];
-float outhurttsh2[MAXOUTPIX * MAXOUTLIN];
-float outhurttsh3[MAXOUTPIX * MAXOUTLIN];
-float outhurttgrazing[MAXOUTPIX * MAXOUTLIN];
+double outhurttvh1[MAXOUTPIX * MAXOUTLIN];
+double outhurttvh2[MAXOUTPIX * MAXOUTLIN];
+double outhurttsh1[MAXOUTPIX * MAXOUTLIN];
+double outhurttsh2[MAXOUTPIX * MAXOUTLIN];
+double outhurttsh3[MAXOUTPIX * MAXOUTLIN];
+double outhurttgrazing[MAXOUTPIX * MAXOUTLIN];
 
 /* !!! these arrays keep track of whether there is enough tree potential veg to match the removal of all crop or pasture -adv */
 int cropavailpotvegtreepftval[MAXOUTPIX * MAXOUTLIN];
@@ -367,15 +367,15 @@ char dyn_luh_file[500];
 char dyn_pft_file[500];
 
 char *monthname[MAXMONTH] = {"jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"};
-float monthday[12] = {15,46,74,105,135,166,196,227,258,288,319,349};
+double monthday[12] = {15,46,74,105,135,166,196,227,258,288,319,349};
 
 char *pftnameinfilestr[MAXPFT];
 char *pftname[MAXPFT];
-float pftLAIMax[MAXPFT];
-float pftHeightTop[MAXPFT];
-float pftHeightBot[MAXPFT];
-float pftGroup1[MAXPFT];
-float pftGroup2[MAXPFT];
+double pftLAIMax[MAXPFT];
+double pftHeightTop[MAXPFT];
+double pftHeightBot[MAXPFT];
+double pftGroup1[MAXPFT];
+double pftGroup2[MAXPFT];
 
 /* NetCDF Variables */
 
@@ -429,11 +429,11 @@ char *nc_typename[7] = {"no type","signed 1 byte integer",
     "float precision floating point number"};
 
 /* NOTE: roundit not currently being used by the code at all
-float
-roundit(float innumber, int inplaces) {
+double
+roundit(double innumber, int inplaces) {
     
-    float newnumber;
-    float multiply;
+    double newnumber;
+    double multiply;
     long roundval;
     long nextroundval;
     
@@ -448,7 +448,7 @@ roundit(float innumber, int inplaces) {
     if (nextroundval <= -5) {
         roundval = roundval - 1;
     }
-    newnumber = (float) roundval;
+    newnumber = (double) roundval;
     newnumber = newnumber / multiply;
     
     return newnumber;
@@ -463,7 +463,7 @@ readpftparamfile(char *filenamestr) {
     FILE *pftparamfile;
     int inpft;
     char infilename[50], inpftname[50];
-    float inlaimax, inheightbot, inheighttop, ingroup1, ingroup2;
+    double inlaimax, inheightbot, inheighttop, ingroup1, ingroup2;
     
     printf("Reading %s\n",filenamestr);
     pftparamfile = fopen(filenamestr,"r");
@@ -507,12 +507,12 @@ opennetcdf(char *filenamestr) {
                 
                 if (strcmp(dimname,"lsmlon") == 0 || strcmp(dimname,"longitude") == 0 || strcmp(dimname,"lon") == 0 || strcmp(dimname,"LON") == 0) {
                     londim = ndimspcnt;
-                    lonlen = dimlen;
+                    lonlen = (int) dimlen;
                 }
                 
                 if (strcmp(dimname,"lsmlat") == 0 || strcmp(dimname,"latitude") == 0 || strcmp(dimname,"lat") == 0 || strcmp(dimname,"LAT") == 0) {
                     latdim = ndimspcnt;
-                    latlen = dimlen;
+                    latlen = (int) dimlen;
                 }
                 
             }
@@ -568,8 +568,8 @@ closenetcdf(char *filenamestr) {
 void
 updatehurttlandfrac() {
     
-    float *landfracvalues;
-    float *landmaskvalues;
+    double *landfracvalues;
+    double *landmaskvalues;
     int outgrid;
     
     selectedvarcnt = 0;
@@ -596,22 +596,22 @@ updatehurttlandfrac() {
     //  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp);
     varlayers = 1;
     varlayers2 = 1;
-    landfracvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],landfracvalues);
+    landfracvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],landfracvalues);
     
     //  nc_inq_var(innetcdfid, selectedvarids[1], varname, &vartype, &vardimsp, &vardimidsp, &varattsp);
     varlayers = 1;
     varlayers2 = 1;
-    landmaskvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[1],landmaskvalues);
+    landmaskvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[1],landmaskvalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         landmaskvalues[outgrid] = inmask[outgrid] / 100.0;
         landfracvalues[outgrid] = inland[outgrid];
     }
     
-    //nc_put_var_float(innetcdfid,selectedvarids[0],landfracvalues);
-   //nc_put_var_float(innetcdfid,selectedvarids[1],landmaskvalues);
+    //nc_put_var_double(innetcdfid,selectedvarids[0],landfracvalues);
+   //nc_put_var_double(innetcdfid,selectedvarids[1],landmaskvalues);
     free(landfracvalues);
     free(landmaskvalues);
     
@@ -622,7 +622,7 @@ updatehurttlandfrac() {
 void
 updatehurttlakefrac() {
     
-    float *lakefracvalues;
+    double *lakefracvalues;
     int outgrid;
     
     selectedvarcnt = 0;
@@ -643,14 +643,14 @@ updatehurttlakefrac() {
     //  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp);
     varlayers = 1;
     varlayers2 = 1;
-    lakefracvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],lakefracvalues);
+    lakefracvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],lakefracvalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         lakefracvalues[outgrid] = inlake[outgrid];
     }
     
-    //  nc_put_var_float(innetcdfid,selectedvarids[0],lakefracvalues);
+    //  nc_put_var_double(innetcdfid,selectedvarids[0],lakefracvalues);
     free(lakefracvalues);
     
 }
@@ -660,7 +660,7 @@ updatehurttlakefrac() {
 void
 updatehurttwetlandfrac() {
     
-    float *wetlandfracvalues;
+    double *wetlandfracvalues;
     int outgrid;
     
     selectedvarcnt = 0;
@@ -681,14 +681,14 @@ updatehurttwetlandfrac() {
     //  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp);
     varlayers = 1;
     varlayers2 = 1;
-    wetlandfracvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],wetlandfracvalues);
+    wetlandfracvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],wetlandfracvalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         wetlandfracvalues[outgrid] = inwetland[outgrid];
     }
     
-    //  nc_put_var_float(innetcdfid,selectedvarids[0],wetlandfracvalues);
+    //  nc_put_var_double(innetcdfid,selectedvarids[0],wetlandfracvalues);
     free(wetlandfracvalues);
     
 }
@@ -698,7 +698,7 @@ updatehurttwetlandfrac() {
 void
 updatehurtticefrac() {
     
-    float *icefracvalues;
+    double *icefracvalues;
     int outgrid;
     
     selectedvarcnt = 0;
@@ -719,14 +719,14 @@ updatehurtticefrac() {
     //  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp);
     varlayers = 1;
     varlayers2 = 1;
-    icefracvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],icefracvalues);
+    icefracvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],icefracvalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         icefracvalues[outgrid] = inice[outgrid];
     }
     
-    //  nc_put_var_float(innetcdfid,selectedvarids[0],icefracvalues);
+    //  nc_put_var_double(innetcdfid,selectedvarids[0],icefracvalues);
     free(icefracvalues);
     
 }
@@ -736,8 +736,8 @@ updatehurtticefrac() {
 void
 updatehurttsand() {
     
-    float *sandvalues;
-    float vegetatedcount, soilcount;
+    double *sandvalues;
+    double vegetatedcount, soilcount;
     int outgrid, offsetgrid, layer;
     
     selectedvarcnt = 0;
@@ -758,8 +758,8 @@ updatehurttsand() {
     //  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp);
     varlayers = MAXSOILLAYERS;
     varlayers2 = 1;
-    sandvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],sandvalues);
+    sandvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],sandvalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         for (layer = 0; layer < MAXSOILLAYERS; layer++) {
@@ -768,7 +768,7 @@ updatehurttsand() {
         }
     }
     
-    //  nc_put_var_float(innetcdfid,selectedvarids[0],sandvalues);
+    //  nc_put_var_double(innetcdfid,selectedvarids[0],sandvalues);
     free(sandvalues);
     
 }
@@ -778,8 +778,8 @@ updatehurttsand() {
 void
 updatehurttclay() {
     
-    float *clayvalues;
-    float vegetatedcount, soilcount;
+    double *clayvalues;
+    double vegetatedcount, soilcount;
     int outgrid, offsetgrid, layer;
     
     selectedvarcnt = 0;
@@ -800,8 +800,8 @@ updatehurttclay() {
     //  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp);
     varlayers = MAXSOILLAYERS;
     varlayers2 = 1;
-    clayvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],clayvalues);
+    clayvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],clayvalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         for (layer = 0; layer < MAXSOILLAYERS; layer++) {
@@ -810,7 +810,7 @@ updatehurttclay() {
         }
     }
     
-    //  nc_put_var_float(innetcdfid,selectedvarids[0],clayvalues);
+    //  nc_put_var_double(innetcdfid,selectedvarids[0],clayvalues);
     free(clayvalues);
     
 }
@@ -820,8 +820,8 @@ updatehurttclay() {
 void
 updatehurttsoilslope() {
     
-    float *soilslopevalues;
-    float slopecount, soilslopetopvalue, soilslopebotvalue;
+    double *soilslopevalues;
+    double slopecount, soilslopetopvalue, soilslopebotvalue;
     int outgrid, offsetgrid, layer;
     
     selectedvarcnt = 0;
@@ -842,14 +842,14 @@ updatehurttsoilslope() {
     //  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp);
     varlayers = 1;
     varlayers2 = 1;
-    soilslopevalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],soilslopevalues);
+    soilslopevalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],soilslopevalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         soilslopevalues[outgrid] = insoilslope[outgrid];
     }
     
-    //  nc_put_var_float(innetcdfid,selectedvarids[0],soilslopevalues);
+    //  nc_put_var_double(innetcdfid,selectedvarids[0],soilslopevalues);
     free(soilslopevalues);
     
 }
@@ -859,8 +859,8 @@ updatehurttsoilslope() {
 void
 updatehurttsoilcolor() {
     
-    float *soilcolorvalues;
-    float colorcount, soilcolortopvalue, soilcolorbotvalue;
+    double *soilcolorvalues;
+    double colorcount, soilcolortopvalue, soilcolorbotvalue;
     int outgrid, offsetgrid, layer;
     
     selectedvarcnt = 0;
@@ -881,14 +881,14 @@ updatehurttsoilcolor() {
     //  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp);
     varlayers = 1;
     varlayers2 = 1;
-    soilcolorvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],soilcolorvalues);
+    soilcolorvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],soilcolorvalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         soilcolorvalues[outgrid] = outhurttsoilcolor[outgrid];
     }
     
-    //  nc_put_var_float(innetcdfid,selectedvarids[0],soilcolorvalues);
+    //  nc_put_var_double(innetcdfid,selectedvarids[0],soilcolorvalues);
     free(soilcolorvalues);
     
 }
@@ -898,8 +898,8 @@ updatehurttsoilcolor() {
 void
 updatehurttpftpct() {
     
-    float *pftpctvalues;
-    int outgrid, offsetgrid, inpft, inmonth;
+    double *pftpctvalues;
+    int outgrid, offsetgrid, inpft;
     
     selectedvarcnt = 0;
     
@@ -917,8 +917,8 @@ updatehurttpftpct() {
     
     varlayers = MAXPFT+1;
     varlayers2 = 1;
-    pftpctvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],pftpctvalues);
+    pftpctvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],pftpctvalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         for (inpft = 0; inpft < MAXPFT; inpft++) {
@@ -930,7 +930,7 @@ updatehurttpftpct() {
         pftpctvalues[offsetgrid] = 0.0;
     }
     
-      nc_put_var_float(innetcdfid,selectedvarids[0],pftpctvalues); 
+      nc_put_var_double(innetcdfid,selectedvarids[0],pftpctvalues);
     
     free(pftpctvalues);
     
@@ -940,7 +940,7 @@ updatehurttpftpct() {
 void
 updatehurttpftlai() {
     
-    float *pftlaivalues;
+    double *pftlaivalues;
     int outgrid, offsetgrid, inpft, inmonth;
     
     selectedvarcnt = 0;
@@ -960,8 +960,8 @@ updatehurttpftlai() {
     
     varlayers = 12;
     varlayers2 = MAXPFT+1;
-    pftlaivalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],pftlaivalues);
+    pftlaivalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],pftlaivalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         for (inpft = 0; inpft < MAXPFT; inpft++) {
@@ -982,7 +982,7 @@ updatehurttpftlai() {
         }
     }
     
-    nc_put_var_float(innetcdfid,selectedvarids[0],pftlaivalues);
+    nc_put_var_double(innetcdfid,selectedvarids[0],pftlaivalues);
     
     free(pftlaivalues);
     
@@ -992,7 +992,7 @@ updatehurttpftlai() {
 void
 updatehurttpftsai() {
     
-    float *pftsaivalues;
+    double *pftsaivalues;
     int outgrid, offsetgrid, inpft, inmonth;
     
     selectedvarcnt = 0;
@@ -1012,8 +1012,8 @@ updatehurttpftsai() {
     
     varlayers = 12;
     varlayers2 = MAXPFT+1;
-    pftsaivalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],pftsaivalues);
+    pftsaivalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],pftsaivalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         for (inpft = 0; inpft < MAXPFT; inpft++) {
@@ -1034,7 +1034,7 @@ updatehurttpftsai() {
         }
     }
     
-    nc_put_var_float(innetcdfid,selectedvarids[0],pftsaivalues);
+    nc_put_var_double(innetcdfid,selectedvarids[0],pftsaivalues);
     
     free(pftsaivalues);
     
@@ -1045,7 +1045,7 @@ updatehurttpftsai() {
 void
 updatehurttpfttop() {
     
-    float *pfttopvalues;
+    double *pfttopvalues;
     int outgrid, offsetgrid, inpft, inmonth;
     
     selectedvarcnt = 0;
@@ -1065,8 +1065,8 @@ updatehurttpfttop() {
     
     varlayers = 12;
     varlayers2 = MAXPFT+1;
-    pfttopvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],pfttopvalues);
+    pfttopvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],pfttopvalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         for (inpft = 1; inpft <= MAXPFT; inpft++) {
@@ -1082,7 +1082,7 @@ updatehurttpfttop() {
         }
     }
     
-    nc_put_var_float(innetcdfid,selectedvarids[0],pfttopvalues);
+    nc_put_var_double(innetcdfid,selectedvarids[0],pfttopvalues);
     
     free(pfttopvalues);
     
@@ -1094,7 +1094,7 @@ updatehurttpfttop() {
 void
 updatehurttpftbot() {
     
-    float *pftbotvalues;
+    double *pftbotvalues;
     int outgrid, offsetgrid, inpft, inmonth;
     
     selectedvarcnt = 0;
@@ -1114,8 +1114,8 @@ updatehurttpftbot() {
     
     varlayers = 12;
     varlayers2 = MAXPFT+1;
-    pftbotvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],pftbotvalues);
+    pftbotvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],pftbotvalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         for (inpft = 1; inpft <= MAXPFT; inpft++) {
@@ -1131,7 +1131,7 @@ updatehurttpftbot() {
         }
     }
     
-    nc_put_var_float(innetcdfid,selectedvarids[0],pftbotvalues);
+    nc_put_var_double(innetcdfid,selectedvarids[0],pftbotvalues);
     
     free(pftbotvalues);
     
@@ -1142,7 +1142,7 @@ updatehurttpftbot() {
 void
 updatehurttvh1() {
     
-    float *vh1values;
+    double *vh1values;
     int outgrid;
     
     selectedvarcnt = 0;
@@ -1163,14 +1163,14 @@ updatehurttvh1() {
      nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); 
     varlayers = 1;
     varlayers2 = 1;
-    vh1values = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],vh1values);
+    vh1values = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],vh1values);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         vh1values[outgrid] = outhurttvh1[outgrid];
     }
     
-    nc_put_var_float(innetcdfid,selectedvarids[0],vh1values); 
+    nc_put_var_double(innetcdfid,selectedvarids[0],vh1values);
     free(vh1values);
     
 }
@@ -1179,7 +1179,7 @@ updatehurttvh1() {
 void
 updatehurttvh2() {
     
-    float *vh2values;
+    double *vh2values;
     int outgrid;
     
     selectedvarcnt = 0;
@@ -1200,14 +1200,14 @@ updatehurttvh2() {
     nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp);
     varlayers = 1;
     varlayers2 = 1;
-    vh2values = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],vh2values);
+    vh2values = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],vh2values);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         vh2values[outgrid] = outhurttvh2[outgrid];
     }
     
-    nc_put_var_float(innetcdfid,selectedvarids[0],vh2values); 
+    nc_put_var_double(innetcdfid,selectedvarids[0],vh2values);
     free(vh2values);
     
 }
@@ -1216,7 +1216,7 @@ updatehurttvh2() {
 void
 updatehurttsh1() {
     
-    float *sh1values;
+    double *sh1values;
     int outgrid;
     
     selectedvarcnt = 0;
@@ -1237,14 +1237,14 @@ updatehurttsh1() {
     nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp);
     varlayers = 1;
     varlayers2 = 1;
-    sh1values = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],sh1values);
+    sh1values = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],sh1values);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         sh1values[outgrid] = outhurttsh1[outgrid];
     }
     
-    nc_put_var_float(innetcdfid,selectedvarids[0],sh1values); 
+    nc_put_var_double(innetcdfid,selectedvarids[0],sh1values);
     free(sh1values);
     
 }
@@ -1253,7 +1253,7 @@ updatehurttsh1() {
 void
 updatehurttsh2() {
     
-    float *sh2values;
+    double *sh2values;
     int outgrid;
     
     selectedvarcnt = 0;
@@ -1274,14 +1274,14 @@ updatehurttsh2() {
     nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp);
     varlayers = 1;
     varlayers2 = 1;
-    sh2values = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],sh2values);
+    sh2values = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],sh2values);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         sh2values[outgrid] = outhurttsh2[outgrid];
     }
     
-    nc_put_var_float(innetcdfid,selectedvarids[0],sh2values); 
+    nc_put_var_double(innetcdfid,selectedvarids[0],sh2values);
     free(sh2values);
     
 }
@@ -1290,7 +1290,7 @@ updatehurttsh2() {
 void
 updatehurttsh3() {
     
-    float *sh3values;
+    double *sh3values;
     int outgrid;
     
     selectedvarcnt = 0;
@@ -1311,14 +1311,14 @@ updatehurttsh3() {
     nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp);
     varlayers = 1;
     varlayers2 = 1;
-    sh3values = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],sh3values);
+    sh3values = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],sh3values);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         sh3values[outgrid] = outhurttsh3[outgrid];
     }
     
-     nc_put_var_float(innetcdfid,selectedvarids[0],sh3values);
+     nc_put_var_double(innetcdfid,selectedvarids[0],sh3values);
     free(sh3values);
     
 }
@@ -1327,7 +1327,7 @@ updatehurttsh3() {
 void
 updatehurttgrazing() {
     
-    float *grazingvalues;
+    double *grazingvalues;
     int outgrid;
     
     selectedvarcnt = 0;
@@ -1348,14 +1348,14 @@ updatehurttgrazing() {
     nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp);
     varlayers = 1;
     varlayers2 = 1;
-    grazingvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],grazingvalues);
+    grazingvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],grazingvalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         grazingvalues[outgrid] = outhurttgrazing[outgrid];
     }
     
-    nc_put_var_float(innetcdfid,selectedvarids[0],grazingvalues); 
+    nc_put_var_double(innetcdfid,selectedvarids[0],grazingvalues);
     free(grazingvalues);
     
 }
@@ -1366,8 +1366,8 @@ void
 readhurttprimary(long hurttbaseyear, long hurttyear, int ISFUTURE) {
     // hurttbaseyear is not used
     
-    float *primaryvalues;
-    float inprimaryvalue;
+    double *primaryvalues;
+    double inprimaryvalue;
     long outgrid;
     long offsetgrid;
     
@@ -1400,9 +1400,9 @@ readhurttprimary(long hurttbaseyear, long hurttyear, int ISFUTURE) {
 		varlayers = INHISTLUTIME;
 	}
     varlayers2 = 1;
-    primaryvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2); // lonlen=720, latlen=360
+    primaryvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2); // lonlen=720, latlen=360
 
-    nc_get_var_float(innetcdfid, selectedvarids[0], primaryvalues);
+    nc_get_var_double(innetcdfid, selectedvarids[0], primaryvalues);
     
     if (hurttyear >= 0) {
         for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {  // MAXOUTPIX 720; MAXOUTLIN 360
@@ -1412,7 +1412,8 @@ readhurttprimary(long hurttbaseyear, long hurttyear, int ISFUTURE) {
             // this is needed only when running standalone
 			glmo[outgrid][2] = inprimaryvalue;
             if (inprimaryvalue >= 0.0 && inprimaryvalue <= 1.1) {
-                inhurttprimary[outgrid] = round(inprimaryvalue * 100.0);
+                //inhurttprimary[outgrid] = round(inprimaryvalue * 100.0);
+                inhurttprimary[outgrid] = inprimaryvalue * 100.0;
                 if (inhurttprimary[outgrid] > 100.0) {
                     inhurttprimary[outgrid] = 100.0;
                 }
@@ -1432,8 +1433,8 @@ void
 readhurttsecondary(long hurttbaseyear, long hurttyear, int ISFUTURE) {
 	// hurttbaseyear is not used
     
-    float *secondaryvalues;
-    float insecondaryvalue;
+    double *secondaryvalues;
+    double insecondaryvalue;
     long outgrid;
     long offsetgrid;
     
@@ -1460,8 +1461,8 @@ readhurttsecondary(long hurttbaseyear, long hurttyear, int ISFUTURE) {
 		varlayers = INHISTLUTIME;
 	}
     varlayers2 = 1;
-    secondaryvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],secondaryvalues);
+    secondaryvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],secondaryvalues);
     
     if (hurttyear >= 0) {
         for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
@@ -1471,7 +1472,8 @@ readhurttsecondary(long hurttbaseyear, long hurttyear, int ISFUTURE) {
             // this is only used for standalone
 			glmo[outgrid][3] = insecondaryvalue;
             if (insecondaryvalue >= 0.0 && insecondaryvalue <= 1.1) {
-                inhurttsecondary[outgrid] = round(insecondaryvalue * 100.0);
+                //inhurttsecondary[outgrid] = round(insecondaryvalue * 100.0);
+                inhurttsecondary[outgrid] = insecondaryvalue * 100.0;
                 if (inhurttsecondary[outgrid] > 100.0) {
                     inhurttsecondary[outgrid] = 100.0;
                 }
@@ -1491,8 +1493,8 @@ readhurttsecondary(long hurttbaseyear, long hurttyear, int ISFUTURE) {
 void
 readhurttcrop(long hurttbaseyear, long hurttyear, int ISFUTURE) {
     
-    float *cropvalues;
-    float incropvalue;
+    double *cropvalues;
+    double incropvalue;
     long outgrid;
     long offsetgrid;
     
@@ -1519,8 +1521,8 @@ readhurttcrop(long hurttbaseyear, long hurttyear, int ISFUTURE) {
 		varlayers = INHISTLUTIME;
 	}
     varlayers2 = 1;
-    cropvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],cropvalues);
+    cropvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],cropvalues);
     
     //printf("hurttbaseyear: %li \n",hurttbaseyear);
     //printf("hurttyear: %li \n",hurttyear);
@@ -1531,7 +1533,8 @@ readhurttcrop(long hurttbaseyear, long hurttyear, int ISFUTURE) {
         offsetgrid = hurttbaseyear * MAXOUTPIX * MAXOUTLIN + outgrid;
         incropvalue = cropvalues[offsetgrid];
         if (incropvalue >= 0.0 && incropvalue <= 1.1) {
-            inhurttbasecrop[outgrid] = round(incropvalue * 100.0);
+            //inhurttbasecrop[outgrid] = round(incropvalue * 100.0);
+            inhurttbasecrop[outgrid] = incropvalue * 100.0;
             if (inhurttbasecrop[outgrid] > 100.0) {
                 inhurttbasecrop[outgrid] = 100.0;
             }
@@ -1549,7 +1552,8 @@ readhurttcrop(long hurttbaseyear, long hurttyear, int ISFUTURE) {
             // this is for standalone runds only
 			glmo[outgrid][0] = incropvalue;
             if (incropvalue >= 0.0 && incropvalue <= 1.1) {
-                inhurttcrop[outgrid] = round(incropvalue * 100.0);
+                //inhurttcrop[outgrid] = round(incropvalue * 100.0);
+                inhurttcrop[outgrid] = incropvalue * 100.0;
                 if (inhurttcrop[outgrid] > 100.0) {
                     inhurttcrop[outgrid] = 100.0;
                 }
@@ -1569,8 +1573,8 @@ readhurttcrop(long hurttbaseyear, long hurttyear, int ISFUTURE) {
 void
 readhurttpasture(long hurttbaseyear, long hurttyear, int ISFUTURE) {
     
-    float *pasturevalues;
-    float inpasturevalue;
+    double *pasturevalues;
+    double inpasturevalue;
     long outgrid;
     long offsetgrid;
     
@@ -1596,14 +1600,15 @@ readhurttpasture(long hurttbaseyear, long hurttyear, int ISFUTURE) {
 		varlayers = INHISTLUTIME;
 	}
     varlayers2 = 1;
-    pasturevalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],pasturevalues);
+    pasturevalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],pasturevalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         offsetgrid = hurttbaseyear * MAXOUTPIX * MAXOUTLIN + outgrid;
         inpasturevalue = pasturevalues[offsetgrid];
         if (inpasturevalue >= 0.0 && inpasturevalue <= 1.1) {
-            inhurttbasepasture[outgrid] = round(inpasturevalue * 100.0);
+            //inhurttbasepasture[outgrid] = round(inpasturevalue * 100.0);
+            inhurttbasepasture[outgrid] = inpasturevalue * 100.0;
             if (inhurttbasepasture[outgrid] > 100.0) {
                 inhurttbasepasture[outgrid] = 100.0;
             }
@@ -1622,7 +1627,8 @@ readhurttpasture(long hurttbaseyear, long hurttyear, int ISFUTURE) {
 			glmo[outgrid][1] = inpasturevalue;
             /* Bugfix. Changed from 1.0 to 1.1 to be consistent with rest of code. -adv */
             if (inpasturevalue >= 0.0 && inpasturevalue <= 1.1) {
-                inhurttpasture[outgrid] = round(inpasturevalue * 100.0);
+                //inhurttpasture[outgrid] = round(inpasturevalue * 100.0);
+                inhurttpasture[outgrid] = inpasturevalue * 100.0;
                 if (inhurttpasture[outgrid] > 100.0) {
                     inhurttpasture[outgrid] = 100.0;
                 }
@@ -1643,11 +1649,11 @@ void
 readhurttvh1(long hurttbaseyear, long hurttyear, int ISFUTURE) {
 	// hurttbaseyear is not used
     
-    float *vh1values;
-    float invh1value;
+    double *vh1values;
+    double invh1value;
     long outgrid;
     long offsetgrid;
-	const size_t start[] = {1,1,1};
+	//const size_t start[] = {1,1,1};
 	int udimid;
 	size_t udimlen;
 	
@@ -1657,7 +1663,7 @@ readhurttvh1(long hurttbaseyear, long hurttyear, int ISFUTURE) {
 		varlayers = INHISTHARVTIME;
 	}
 	
-	const size_t count[] ={varlayers,MAXOUTLIN,MAXOUTPIX};
+	//const size_t count[] ={varlayers,MAXOUTLIN,MAXOUTPIX};
     
     selectedvarcnt = 0;
     
@@ -1679,10 +1685,10 @@ readhurttvh1(long hurttbaseyear, long hurttyear, int ISFUTURE) {
     }
     nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp);
     varlayers2 = 1;
-    vh1values = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+    vh1values = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
 	// vara doesn't work on the new file either, but var does
-    //nc_get_vara_float(innetcdfid,selectedvarids[0],start,count,vh1values);
-	nc_get_var_float(innetcdfid,selectedvarids[0],vh1values);
+    //nc_get_vara_double(innetcdfid,selectedvarids[0],start,count,vh1values);
+	nc_get_var_double(innetcdfid,selectedvarids[0],vh1values);
 	//printf("varlayers=%i\tcount0=%zu\tcount1=%zu\tcount2=%zu\tvarid=%i\n", varlayers, count[0], count[1], count[2], selectedvarids[0]);
 
     if (hurttyear >= 0) {
@@ -1712,11 +1718,11 @@ void
 readhurttvh2(long hurttbaseyear, long hurttyear, int ISFUTURE) {
 	// hurttbaseyear is not used
     
-    float *vh2values;
-    float invh2value;
+    double *vh2values;
+    double invh2value;
     long outgrid;
     long offsetgrid;
-	const size_t start[] = {1,1,1};
+	//const size_t start[] = {1,1,1};
 	
 	if(ISFUTURE){
 		varlayers = INFUTUREHARVTIME;
@@ -1724,7 +1730,7 @@ readhurttvh2(long hurttbaseyear, long hurttyear, int ISFUTURE) {
 		varlayers = INHISTHARVTIME;
 	}
 	
-	const size_t count[] ={varlayers,MAXOUTLIN,MAXOUTPIX};
+	//const size_t count[] ={varlayers,MAXOUTLIN,MAXOUTPIX};
     
     selectedvarcnt = 0;
     
@@ -1744,10 +1750,10 @@ readhurttvh2(long hurttbaseyear, long hurttyear, int ISFUTURE) {
 	
     /*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
     varlayers2 = 1;
-    vh2values = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+    vh2values = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
 	// vara doesn't work on the new file either, but var does
-	nc_get_var_float(innetcdfid,selectedvarids[0],vh2values);
-	//nc_get_vara_float(innetcdfid,selectedvarids[0],start,count,vh2values);
+	nc_get_var_double(innetcdfid,selectedvarids[0],vh2values);
+	//nc_get_vara_double(innetcdfid,selectedvarids[0],start,count,vh2values);
     
     if (hurttyear >= 0) {
         for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
@@ -1775,11 +1781,11 @@ void
 readhurttsh1(long hurttbaseyear, long hurttyear, int ISFUTURE) {
 	// hurttbaseyear is not used
     
-    float *sh1values;
-    float insh1value;
+    double *sh1values;
+    double insh1value;
     long outgrid;
     long offsetgrid;
-	const size_t start[] = {1,1,1};
+	//const size_t start[] = {1,1,1};
 	
 	if(ISFUTURE){
 		varlayers = INFUTUREHARVTIME;
@@ -1787,7 +1793,7 @@ readhurttsh1(long hurttbaseyear, long hurttyear, int ISFUTURE) {
 		varlayers = INHISTHARVTIME;
 	}
 	
-	const size_t count[] ={varlayers,MAXOUTLIN,MAXOUTPIX};
+	//const size_t count[] ={varlayers,MAXOUTLIN,MAXOUTPIX};
     
     selectedvarcnt = 0;
     
@@ -1807,10 +1813,10 @@ readhurttsh1(long hurttbaseyear, long hurttyear, int ISFUTURE) {
     
     /*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
     varlayers2 = 1;
-    sh1values = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+    sh1values = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
 	// vara doesn't work on the new file either, but var does
-	nc_get_var_float(innetcdfid,selectedvarids[0],sh1values);
-    //nc_get_vara_float(innetcdfid,selectedvarids[0],start,count,sh1values);
+	nc_get_var_double(innetcdfid,selectedvarids[0],sh1values);
+    //nc_get_vara_double(innetcdfid,selectedvarids[0],start,count,sh1values);
     
     if (hurttyear >= 0) {
         for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
@@ -1838,11 +1844,11 @@ void
 readhurttsh2(long hurttbaseyear, long hurttyear, int ISFUTURE) {
 	// hurttbaseyear is not used
     
-    float *sh2values;
-    float insh2value;
+    double *sh2values;
+    double insh2value;
     long outgrid;
     long offsetgrid;
-	const size_t start[] = {1,1,1};
+	//const size_t start[] = {1,1,1};
 	
 	if(ISFUTURE){
 		varlayers = INFUTUREHARVTIME;
@@ -1850,7 +1856,7 @@ readhurttsh2(long hurttbaseyear, long hurttyear, int ISFUTURE) {
 		varlayers = INHISTHARVTIME;
 	}
 	
-	const size_t count[] ={varlayers,MAXOUTLIN,MAXOUTPIX};
+	//const size_t count[] ={varlayers,MAXOUTLIN,MAXOUTPIX};
     
     selectedvarcnt = 0;
     
@@ -1870,10 +1876,10 @@ readhurttsh2(long hurttbaseyear, long hurttyear, int ISFUTURE) {
     
     /*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
     varlayers2 = 1;
-    sh2values = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+    sh2values = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
 	// vara doesn't work on the new file either, but var does
-	nc_get_var_float(innetcdfid,selectedvarids[0],sh2values);
-    //nc_get_vara_float(innetcdfid,selectedvarids[0],start,count,sh2values);
+	nc_get_var_double(innetcdfid,selectedvarids[0],sh2values);
+    //nc_get_vara_double(innetcdfid,selectedvarids[0],start,count,sh2values);
     
     if (hurttyear >= 0) {
         for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
@@ -1901,11 +1907,11 @@ void
 readhurttsh3(long hurttbaseyear, long hurttyear, int ISFUTURE) {
 	// hurttbaseyear is not used
     
-    float *sh3values;
-    float insh3value;
+    double *sh3values;
+    double insh3value;
     long outgrid;
     long offsetgrid;
-	const size_t start[] = {1,1,1};
+	//const size_t start[] = {1,1,1};
 	
 	if(ISFUTURE){
 		varlayers = INFUTUREHARVTIME;
@@ -1913,7 +1919,7 @@ readhurttsh3(long hurttbaseyear, long hurttyear, int ISFUTURE) {
 		varlayers = INHISTHARVTIME;
 	}
 	
-	const size_t count[] ={varlayers,MAXOUTLIN,MAXOUTPIX};
+	//const size_t count[] ={varlayers,MAXOUTLIN,MAXOUTPIX};
     
     selectedvarcnt = 0;
     
@@ -1933,10 +1939,10 @@ readhurttsh3(long hurttbaseyear, long hurttyear, int ISFUTURE) {
     
     /*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
     varlayers2 = 1;
-    sh3values = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
+    sh3values = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
 	// vara doesn't work on the new file either, but var does
-	nc_get_var_float(innetcdfid,selectedvarids[0],sh3values);
-    //nc_get_vara_float(innetcdfid,selectedvarids[0],start,count,sh3values);
+	nc_get_var_double(innetcdfid,selectedvarids[0],sh3values);
+    //nc_get_vara_double(innetcdfid,selectedvarids[0],start,count,sh3values);
     
     if (hurttyear >= 0) {
         for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
@@ -1968,8 +1974,8 @@ readhurttsh3(long hurttbaseyear, long hurttyear, int ISFUTURE) {
 void
 readhurttbasecrop() {
     
-    float *cropvalues;
-    float incropvalue;
+    double *cropvalues;
+    double incropvalue;
     long outgrid;
     long offsetgrid;
     
@@ -1993,15 +1999,16 @@ readhurttbasecrop() {
     //varlayers = 506;
     varlayers = 1;
     varlayers2 = 1;
-    cropvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],cropvalues);
+    cropvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],cropvalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         //offsetgrid = hurttbaseyear * MAXOUTPIX * MAXOUTLIN + outgrid;
 		offsetgrid = outgrid;	// hurttbaseyear used to be an argument that was an index set == 0 for this application
         incropvalue = cropvalues[offsetgrid];
         if (incropvalue >= 0.0 && incropvalue <= 1.1) {
-            inhurttbasecrop[outgrid] = round(incropvalue * 100.0);
+            //inhurttbasecrop[outgrid] = round(incropvalue * 100.0);
+            inhurttbasecrop[outgrid] = incropvalue * 100.0;
             if (inhurttbasecrop[outgrid] > 100.0) {
                 inhurttbasecrop[outgrid] = 100.0;
             }
@@ -2024,8 +2031,8 @@ readhurttbasecrop() {
 void
 readhurttbasepasture() {
     
-    float *pasturevalues;
-    float inpasturevalue;
+    double *pasturevalues;
+    double inpasturevalue;
     long outgrid;
     long offsetgrid;
     
@@ -2049,15 +2056,16 @@ readhurttbasepasture() {
     //varlayers = 506;
     varlayers = 1;
     varlayers2 = 1;
-    pasturevalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],pasturevalues);
+    pasturevalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],pasturevalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         //offsetgrid = hurttbaseyear * MAXOUTPIX * MAXOUTLIN + outgrid;
 		offsetgrid = outgrid;	// hurttbaseyear used to be an argument that was an index set == 0 for this application
         inpasturevalue = pasturevalues[offsetgrid];
         if (inpasturevalue >= 0.0 && inpasturevalue <= 1.1) {
-            inhurttbasepasture[outgrid] = round(inpasturevalue * 100.0);
+            //inhurttbasepasture[outgrid] = round(inpasturevalue * 100.0);
+            inhurttbasepasture[outgrid] = inpasturevalue * 100.0;
             if (inhurttbasepasture[outgrid] > 100.0) {
                 inhurttbasepasture[outgrid] = 100.0;
             }
@@ -2082,19 +2090,18 @@ readhurttbasepasture() {
 
 void
 getinithurttyear(long *year) {
-	long year_ind;
 	int time_dimid;
 	int year_varid;
-	float *temp_float;
+	double *temp_double;
 	size_t numrecs;
 	
 	nc_inq_dimid(innetcdfid, "TIME", &time_dimid);
 	nc_inq_dimlen(innetcdfid, time_dimid, &numrecs);
-	temp_float = malloc(sizeof(float) * numrecs);
+	temp_double = malloc(sizeof(double) * numrecs);
 	nc_inq_varid(innetcdfid, "TIME", &year_varid);
-	nc_get_var_float(innetcdfid, year_varid, temp_float);
-	*year = (long) temp_float[0];
-	free(temp_float);
+	nc_get_var_double(innetcdfid, year_varid, temp_double);
+	*year = (long) temp_double[0];
+	free(temp_double);
 }
 
 /* new function for reading crop from dynamic hurtt pl file */
@@ -2106,14 +2113,14 @@ getinithurttyear(long *year) {
 void
 readhurttdyncrop(long modyear) {
     
-    float *cropvalues;
-    float incropvalue;
+    double *cropvalues;
+    double incropvalue;
     long outgrid;
 	
     long year_ind;
 	int year_varid;
 	size_t numrecs, *start, *count;
-	float *years;
+	double *years;
 	
     selectedvarcnt = 0;
     
@@ -2133,9 +2140,9 @@ readhurttdyncrop(long modyear) {
 	
 	/* get the index of modyear */
 	nc_inq_dimlen(innetcdfid, unlimdimidp, &numrecs);
-	years = malloc(sizeof(float) * numrecs);
+	years = malloc(sizeof(double) * numrecs);
 	nc_inq_varid(innetcdfid, "TIME", &year_varid);
-	nc_get_var_float(innetcdfid, year_varid, years);
+	nc_get_var_double(innetcdfid, year_varid, years);
 	for(year_ind = 0; year_ind < ((long) numrecs); year_ind++) {
 		if (((long) years[year_ind]) == modyear) {
 			break;
@@ -2156,13 +2163,14 @@ readhurttdyncrop(long modyear) {
     
     varlayers = 1;
     varlayers2 = 1;
-    cropvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_vara_float(innetcdfid,selectedvarids[0], start, count, cropvalues);
+    cropvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_vara_double(innetcdfid,selectedvarids[0], start, count, cropvalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         incropvalue = cropvalues[outgrid];
         if (incropvalue >= 0.0 && incropvalue <= 1.1) {
-            inhurttbasecrop[outgrid] = round(incropvalue * 100.0);
+            //inhurttbasecrop[outgrid] = round(incropvalue * 100.0);
+            inhurttbasecrop[outgrid] = incropvalue * 100.0;
             if (inhurttbasecrop[outgrid] > 100.0) {
                 inhurttbasecrop[outgrid] = 100.0;
             }
@@ -2185,14 +2193,14 @@ readhurttdyncrop(long modyear) {
 void
 readhurttdynpasture(long modyear) {
     
-    float *pasturevalues;
-    float inpasturevalue;
+    double *pasturevalues;
+    double inpasturevalue;
     long outgrid;
     
     long year_ind;
 	int year_varid;
 	size_t numrecs, *start, *count;
-	float *years;
+	double *years;
 	
     selectedvarcnt = 0;
     
@@ -2212,9 +2220,9 @@ readhurttdynpasture(long modyear) {
 	
 	/* get the index of modyear */
 	nc_inq_dimlen(innetcdfid, unlimdimidp, &numrecs);
-	years = malloc(sizeof(float) * numrecs);
+	years = malloc(sizeof(double) * numrecs);
 	nc_inq_varid(innetcdfid, "TIME", &year_varid);
-	nc_get_var_float(innetcdfid, year_varid, years);
+	nc_get_var_double(innetcdfid, year_varid, years);
 	for(year_ind = 0; year_ind < ((long) numrecs); year_ind++) {
 		if (((long) years[year_ind]) == modyear) {
 			break;
@@ -2235,13 +2243,14 @@ readhurttdynpasture(long modyear) {
     
     varlayers = 1;
     varlayers2 = 1;
-    pasturevalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_vara_float(innetcdfid,selectedvarids[0], start, count, pasturevalues);
+    pasturevalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_vara_double(innetcdfid,selectedvarids[0], start, count, pasturevalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         inpasturevalue = pasturevalues[outgrid];
         if (inpasturevalue >= 0.0 && inpasturevalue <= 1.1) {
-            inhurttbasepasture[outgrid] = round(inpasturevalue * 100.0);
+            //inhurttbasepasture[outgrid] = round(inpasturevalue * 100.0);
+            inhurttbasepasture[outgrid] = inpasturevalue * 100.0;
             if (inhurttbasepasture[outgrid] > 100.0) {
                 inhurttbasepasture[outgrid] = 100.0;
             }
@@ -2264,14 +2273,14 @@ readhurttdynpasture(long modyear) {
 void
 readhurttdynprimary(long modyear) {
     
-    float *primvalues;
-    float inprimvalue;
+    double *primvalues;
+    double inprimvalue;
     long outgrid;
     
     long year_ind;
 	int year_varid;
 	size_t numrecs, *start, *count;
-	float *years;
+	double *years;
 	
     selectedvarcnt = 0;
     
@@ -2291,9 +2300,9 @@ readhurttdynprimary(long modyear) {
 	
 	/* get the index of modyear */
 	nc_inq_dimlen(innetcdfid, unlimdimidp, &numrecs);
-	years = malloc(sizeof(float) * numrecs);
+	years = malloc(sizeof(double) * numrecs);
 	nc_inq_varid(innetcdfid, "TIME", &year_varid);
-	nc_get_var_float(innetcdfid, year_varid, years);
+	nc_get_var_double(innetcdfid, year_varid, years);
 	for(year_ind = 0; year_ind < ((long) numrecs); year_ind++) {
             // printf("%d years: %f %d\n", year_ind, years[year_ind], modyear);
 		if (((long) years[year_ind]) == modyear) {
@@ -2315,13 +2324,14 @@ readhurttdynprimary(long modyear) {
     
     varlayers = 1;
     varlayers2 = 1;
-    primvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_vara_float(innetcdfid,selectedvarids[0], start, count, primvalues);
+    primvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_vara_double(innetcdfid,selectedvarids[0], start, count, primvalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         inprimvalue = primvalues[outgrid];
         if (inprimvalue >= 0.0 && inprimvalue <= 1.1) {
-            prevprimary[outgrid] = round(inprimvalue * 100.0);
+            //prevprimary[outgrid] = round(inprimvalue * 100.0);
+            prevprimary[outgrid] = inprimvalue * 100.0;
             if (prevprimary[outgrid] > 100.0) {
                 prevprimary[outgrid] = 100.0;
             }
@@ -2344,14 +2354,14 @@ readhurttdynprimary(long modyear) {
 void
 readhurttdynsecondary(long modyear) {
     
-    float *secvalues;
-    float insecvalue;
+    double *secvalues;
+    double insecvalue;
     long outgrid;
     
     long year_ind;
 	int year_varid;
 	size_t numrecs, *start, *count;
-	float *years;
+	double *years;
 	
     selectedvarcnt = 0;
     
@@ -2371,9 +2381,9 @@ readhurttdynsecondary(long modyear) {
 	
 	/* get the index of modyear */
 	nc_inq_dimlen(innetcdfid, unlimdimidp, &numrecs);
-	years = malloc(sizeof(float) * numrecs);
+	years = malloc(sizeof(double) * numrecs);
 	nc_inq_varid(innetcdfid, "TIME", &year_varid);
-	nc_get_var_float(innetcdfid, year_varid, years);
+	nc_get_var_double(innetcdfid, year_varid, years);
 	for(year_ind = 0; year_ind < ((long) numrecs); year_ind++) {
 		if (((long) years[year_ind]) == modyear) {
 			break;
@@ -2394,13 +2404,14 @@ readhurttdynsecondary(long modyear) {
     
     varlayers = 1;
     varlayers2 = 1;
-    secvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_vara_float(innetcdfid,selectedvarids[0], start, count, secvalues);
+    secvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_vara_double(innetcdfid,selectedvarids[0], start, count, secvalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         insecvalue = secvalues[outgrid];
         if (insecvalue >= 0.0 && insecvalue <= 1.1) {
-            prevsecondary[outgrid] = round(insecvalue * 100.0);
+            //prevsecondary[outgrid] = round(insecvalue * 100.0);
+            prevsecondary[outgrid] = insecvalue * 100.0;
             if (prevsecondary[outgrid] > 100.0) {
                 prevsecondary[outgrid] = 100.0;
             }
@@ -2429,10 +2440,10 @@ void
 writehurttdynfile(long outyear) {
 #else
 void
-writehurttdynfile(long outyear, float glmo[][GLMONFLDS]) {
+writehurttdynfile(long outyear, double glmo[][GLMONFLDS]) {
 #endif
 	
-	float *values;
+	double *values;
     long outgrid;
 	int crop_index = 0;
 	int past_index = 1;
@@ -2440,10 +2451,10 @@ writehurttdynfile(long outyear, float glmo[][GLMONFLDS]) {
 	int secd_index = 3;
 	int year_varid;
 	size_t numrecs, *start, *count;
-	float writeyear;
+	double writeyear;
 	size_t countone = 1;
 	
-	writeyear = (float) outyear;
+	writeyear = (double) outyear;
     
     nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
 	
@@ -2453,7 +2464,7 @@ writehurttdynfile(long outyear, float glmo[][GLMONFLDS]) {
 	//printf("\n\n\n %%%%%%%\n\n\n\n%%%% writehurttdynfile %d\n", numrecs);
 	/* write the year info */
 	nc_inq_varid(innetcdfid, "TIME", &year_varid);
-	nc_put_vara_float(innetcdfid, year_varid, &numrecs, &countone, &writeyear);
+	nc_put_vara_double(innetcdfid, year_varid, &numrecs, &countone, &writeyear);
 	
 	start = calloc(ndimsp, sizeof(size_t));
 	count = calloc(ndimsp, sizeof(size_t));
@@ -2490,31 +2501,31 @@ writehurttdynfile(long outyear, float glmo[][GLMONFLDS]) {
         }
     }
 	
-	values = calloc(lonlen * latlen, sizeof(float));
+	values = calloc(lonlen * latlen, sizeof(double));
 	
 	/* write crop */
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         values[outgrid] = glmo[outgrid][crop_index];
     }
-    nc_put_vara_float(innetcdfid,selectedvarids[crop_index], start, count, values);
+    nc_put_vara_double(innetcdfid,selectedvarids[crop_index], start, count, values);
     
 	/* write pasture */
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         values[outgrid] = glmo[outgrid][past_index];
     }
-    nc_put_vara_float(innetcdfid,selectedvarids[past_index], start, count, values);
+    nc_put_vara_double(innetcdfid,selectedvarids[past_index], start, count, values);
 	
 	/* write primary */
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         values[outgrid] = glmo[outgrid][prim_index];
     }
-    nc_put_vara_float(innetcdfid,selectedvarids[prim_index], start, count, values);
+    nc_put_vara_double(innetcdfid,selectedvarids[prim_index], start, count, values);
 	
 	/* write secondary */
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         values[outgrid] = glmo[outgrid][secd_index];
     }
-    nc_put_vara_float(innetcdfid,selectedvarids[secd_index], start, count, values);
+    nc_put_vara_double(innetcdfid,selectedvarids[secd_index], start, count, values);
     // nc_inq_dimlen(innetcdfid, unlimdimidp, &numrecs);
     // printf("\n\n\n ^^^^^^^^^^\n\n\n\n%%%% writehurttdynfile %d\n", numrecs);
 	free(start);
@@ -2523,9 +2534,8 @@ writehurttdynfile(long outyear, float glmo[][GLMONFLDS]) {
 }
 
 void
-copyarray(float array[MAXOUTPIX * MAXOUTLIN], int index, float arraypft[][MAXOUTPIX * MAXOUTLIN]) {
+copyarray(double array[MAXOUTPIX * MAXOUTLIN], int index, double arraypft[][MAXOUTPIX * MAXOUTLIN]) {
     
-    float value;
     int outgrid;
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
@@ -2534,9 +2544,8 @@ copyarray(float array[MAXOUTPIX * MAXOUTLIN], int index, float arraypft[][MAXOUT
 }
 
 void
-copyplo(float array[MAXOUTPIX * MAXOUTLIN], int index, float plodata[][PLONFLDS]) {
+copyplo(double array[MAXOUTPIX * MAXOUTLIN], int index, double plodata[][PLONFLDS]) {
     
-    float value;
     int outgrid;
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
@@ -2544,20 +2553,20 @@ copyplo(float array[MAXOUTPIX * MAXOUTLIN], int index, float plodata[][PLONFLDS]
     }
 }
 
-// the standalone version needs 'float** glmo' to compile, but I don't know if this will work for iESM
+// the standalone version needs 'double** glmo' to compile, but I don't know if this will work for iESM
 // so only compile this function for the iESM function because it is not used in standalone
 #ifndef STANDALONE
 void
-copyglmo(float array[MAXOUTPIX * MAXOUTLIN], int index, float glmo[][GLMONFLDS]) {
+copyglmo(double array[MAXOUTPIX * MAXOUTLIN], int index, double glmo[][GLMONFLDS]) {
 	
-    float value;
+    double value;
     int outgrid;
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         value = glmo[outgrid][index];
         if (value >= 0.0 && value <= 1.1) {
             array[outgrid] = (value * 100.0);
-            if (index <= 3) {array[outgrid] = round(array[outgrid]);}
+            //if (index <= 3) {array[outgrid] = round(array[outgrid]);}
             if (array[outgrid] > 100.0) {
                 array[outgrid] = 100.0;
             }
@@ -2573,16 +2582,17 @@ copyglmo(float array[MAXOUTPIX * MAXOUTLIN], int index, float glmo[][GLMONFLDS])
 /* it is called after copyglmo() and after the base year pft data are read in -adv */
 /* it also applies to the base year hurtt data -adv */
 void
-normglmo(float array[MAXOUTPIX * MAXOUTLIN]) {
+normglmo(double array[MAXOUTPIX * MAXOUTLIN]) {
     
-    float value;
+    double value;
     int outgrid;
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         if (invegbare[outgrid] > 0.0 && invegbare[outgrid] <= 100.0) {
 			// mystery line that keeps my version from crashing
 			//printf("");
             value = array[outgrid] * 100.0 / inland[outgrid] / invegbare[outgrid];
-			array[outgrid] = round(value * 100.0);
+			   //array[outgrid] = round(value * 100.0);
+            array[outgrid] = value * 100.0;
             if (array[outgrid] > 100.0) {
                 array[outgrid] = 100.0;
             }
@@ -2594,9 +2604,8 @@ normglmo(float array[MAXOUTPIX * MAXOUTLIN]) {
 }
 
 void
-copy2plodata(float plodata[][PLONFLDS]) {
+copy2plodata(double plodata[][PLONFLDS]) {
     
-    float value;
     int outgrid;
     int inpft;
     
@@ -2622,12 +2631,12 @@ copy2plodata(float plodata[][PLONFLDS]) {
 }
 
 void
-writearray(float array[MAXOUTPIX * MAXOUTLIN], const char *tstring) {
+writearray(double array[MAXOUTPIX * MAXOUTLIN], const char *tstring) {
     
-    float value;
-    float minval;
-    float maxval;
-    float sum;
+    double value;
+    double minval;
+    double maxval;
+    double sum;
     long outgrid;
     
     minval = array[1];
@@ -2684,10 +2693,10 @@ writeinhurtt() {
 }
 
 void
-writeplodata(float plodata[][PLONFLDS]) {
+writeplodata(double plodata[][PLONFLDS]) {
     
     char tstring[32];
-    float array[MAXOUTPIX * MAXOUTLIN];
+    double array[MAXOUTPIX * MAXOUTLIN];
     
     copyarray(array,0,outhurttpftval);
     strcpy(tstring,"outhurttpftval0\0");
@@ -2870,7 +2879,7 @@ writeplodata(float plodata[][PLONFLDS]) {
 void
 readlandmask() {
     
-    float *landmaskvalues;
+    double *landmaskvalues;
     int outgrid;
     
     selectedvarcnt = 0;
@@ -2892,8 +2901,8 @@ readlandmask() {
     /*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
     varlayers = 1;
     varlayers2 = 1;
-    landmaskvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],landmaskvalues);
+    landmaskvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],landmaskvalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         inmask[outgrid] = landmaskvalues[outgrid] * 100.0;
@@ -2906,7 +2915,7 @@ readlandmask() {
 void
 readlandfrac() {
     
-    float *landfracvalues;
+    double *landfracvalues;
     int outgrid;
     
     selectedvarcnt = 0;
@@ -2928,8 +2937,8 @@ readlandfrac() {
     /*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
     varlayers = 1;
     varlayers2 = 1;
-    landfracvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],landfracvalues);
+    landfracvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],landfracvalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         inland[outgrid] = landfracvalues[outgrid] * 100.0;
@@ -2942,7 +2951,7 @@ readlandfrac() {
 void
 readlakefrac() {
     
-    float *lakefracvalues;
+    double *lakefracvalues;
     int outgrid;
     
     selectedvarcnt = 0;
@@ -2964,8 +2973,8 @@ readlakefrac() {
     /*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
     varlayers = 1;
     varlayers2 = 1;
-    lakefracvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],lakefracvalues);
+    lakefracvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],lakefracvalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         inlake[outgrid] = lakefracvalues[outgrid];
@@ -2979,7 +2988,7 @@ readlakefrac() {
 void
 readwetlandfrac() {
     
-    float *wetlandfracvalues;
+    double *wetlandfracvalues;
     int outgrid;
     
     selectedvarcnt = 0;
@@ -3001,8 +3010,8 @@ readwetlandfrac() {
     /*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
     varlayers = 1;
     varlayers2 = 1;
-    wetlandfracvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],wetlandfracvalues);
+    wetlandfracvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],wetlandfracvalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         inwetland[outgrid] = wetlandfracvalues[outgrid];
@@ -3016,7 +3025,7 @@ readwetlandfrac() {
 void
 readicefrac() {
     
-    float *icefracvalues;
+    double *icefracvalues;
     int outgrid;
     
     selectedvarcnt = 0;
@@ -3038,8 +3047,8 @@ readicefrac() {
     /*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
     varlayers = 1;
     varlayers2 = 1;
-    icefracvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],icefracvalues);
+    icefracvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],icefracvalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         inice[outgrid] = icefracvalues[outgrid];
@@ -3054,7 +3063,7 @@ readicefrac() {
 void
 readsand() {
     
-    float *sandvalues;
+    double *sandvalues;
     int outgrid, layer;
     long offsetgrid;
     
@@ -3077,8 +3086,8 @@ readsand() {
     //  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp);
     varlayers = MAXSOILLAYERS;
     varlayers2 = 1;
-    sandvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],sandvalues);
+    sandvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],sandvalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         for (layer = 0; layer < MAXSOILLAYERS; layer++) {
@@ -3098,7 +3107,7 @@ readsand() {
 void
 readclay() {
     
-    float *clayvalues;
+    double *clayvalues;
     int outgrid, layer;
     long offsetgrid;
     
@@ -3121,8 +3130,8 @@ readclay() {
     //  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp);
     varlayers = MAXSOILLAYERS;
     varlayers2 = 1;
-    clayvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],clayvalues);
+    clayvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],clayvalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         for (layer = 0; layer < MAXSOILLAYERS; layer++) {
@@ -3142,7 +3151,7 @@ readclay() {
 void
 readsoilslope() {
     
-    float *soilslopevalues;
+    double *soilslopevalues;
     int outgrid;
     
     selectedvarcnt = 0;
@@ -3164,8 +3173,8 @@ readsoilslope() {
     //  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp);
     varlayers = 1;
     varlayers2 = 1;
-    soilslopevalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],soilslopevalues);
+    soilslopevalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],soilslopevalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         insoilslope[outgrid] = soilslopevalues[outgrid];
@@ -3184,19 +3193,18 @@ void
 getpftyear(long *year) {
 	long year_ind;
 	int year_varid;
-	float temp_float;
+	double temp_double;
 	
 	nc_inq_varid(innetcdfid, "TIME", &year_varid);
-	nc_get_var_float(innetcdfid, year_varid, &temp_float);
-	*year = temp_float;
+	nc_get_var_double(innetcdfid, year_varid, &temp_double);
+	*year = temp_double;
 }
  --- */
 
 void
 readcurrentpft() {
     
-    float outpftid;
-    int outgrid, offsetgrid, inpft, inmonth, barefound;
+    int outgrid, inpft;
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         for (inpft = 0; inpft < MAXPFT; inpft++) {
@@ -3212,15 +3220,15 @@ readcurrentpft() {
 void
 readcurrentpftpct(long modyear) {
     
-     float *pftpctvalues;
-    float pfttotal;
+     double *pftpctvalues;
+    double pfttotal;
     int outgrid, offsetgrid, inpft, outpftid;
     
 	long numdims = 4;
 	long year_ind;
 	int year_varid;
 	size_t numrecs, *start, *count;
-	float *years;
+	double *years;
     
     selectedvarcnt = 0;
     
@@ -3239,9 +3247,9 @@ readcurrentpftpct(long modyear) {
     
 	/* get the index of modyear */
 	nc_inq_dimlen(innetcdfid, unlimdimidp, &numrecs);
-	years = malloc(sizeof(float) * numrecs);
+	years = malloc(sizeof(double) * numrecs);
 	nc_inq_varid(innetcdfid, "TIME", &year_varid);
-	nc_get_var_float(innetcdfid, year_varid, years);
+	nc_get_var_double(innetcdfid, year_varid, years);
 	for(year_ind = 0; year_ind < ((long) numrecs); year_ind++) {
 		if (((long) years[year_ind]) == modyear) {
 			//printf("Selected year: %f %li\n", years[year_ind], modyear);
@@ -3265,8 +3273,8 @@ readcurrentpftpct(long modyear) {
 	
     varlayers = MAXPFT+1;
     varlayers2 = 1;
-    pftpctvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_vara_float(innetcdfid,selectedvarids[0], start, count, pftpctvalues);
+    pftpctvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_vara_double(innetcdfid,selectedvarids[0], start, count, pftpctvalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         pfttotal = 0.0;
@@ -3292,16 +3300,16 @@ readcurrentpftpct(long modyear) {
 void
 writepftdynfile(long outyear) {
     
-	float *values;
-    long outgrid;
-	float writeyear;
+	double *values;
+    int outgrid;
+	double writeyear;
     int offsetgrid, inpft;
 	
 	int year_varid;
 	size_t numrecs, *start, *count;
 	size_t countone = 1;
     
-	writeyear = (float) outyear;
+	writeyear = (double) outyear;
 	
     selectedvarcnt = 0;
     
@@ -3324,7 +3332,7 @@ writepftdynfile(long outyear) {
 	
 	/* write the year info */
 	nc_inq_varid(innetcdfid, "TIME", &year_varid);
-	nc_put_vara_float(innetcdfid, year_varid, &numrecs, &countone, &writeyear);
+	nc_put_vara_double(innetcdfid, year_varid, &numrecs, &countone, &writeyear);
 	
 	start = calloc(ndimsp, sizeof(size_t));
 	count = calloc(ndimsp, sizeof(size_t));
@@ -3339,7 +3347,7 @@ writepftdynfile(long outyear) {
 	
     varlayers = MAXPFT+1;
     varlayers2 = 1;
-    values = calloc(lonlen * latlen * varlayers * varlayers2, sizeof(float));
+    values = calloc(lonlen * latlen * varlayers * varlayers2, sizeof(double));
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         for (inpft = 0; inpft < MAXPFT; inpft++) {
@@ -3351,7 +3359,7 @@ writepftdynfile(long outyear) {
 		 values[offsetgrid] = 0;
     }
     
-	nc_put_vara_float(innetcdfid,selectedvarids[0], start, count, values);
+	nc_put_vara_double(innetcdfid,selectedvarids[0], start, count, values);
 	
     free(values);
 	free(start);
@@ -3363,7 +3371,7 @@ writepftdynfile(long outyear) {
 void
 readcurrentpftlai() {
     
-    float *pftlaivalues;
+    double *pftlaivalues;
     int outgrid, offsetgrid, inpft, inmonth, outpftid;
     
     selectedvarcnt = 0;
@@ -3384,8 +3392,8 @@ readcurrentpftlai() {
     
     varlayers = 12;
     varlayers2 = MAXPFT+1;
-    pftlaivalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],pftlaivalues);
+    pftlaivalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],pftlaivalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         for (inpft = 0; inpft < MAXPFT; inpft++) {
@@ -3405,7 +3413,7 @@ readcurrentpftlai() {
 void
 readcurrentpftsai() {
     
-    float *pftsaivalues;
+    double *pftsaivalues;
     int outgrid, offsetgrid, inpft, inmonth, outpftid;
     
     selectedvarcnt = 0;
@@ -3426,8 +3434,8 @@ readcurrentpftsai() {
     
     varlayers = 12;
     varlayers2 = MAXPFT+1;
-    pftsaivalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],pftsaivalues);
+    pftsaivalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],pftsaivalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         for (inpft = 0; inpft < MAXPFT; inpft++) {
@@ -3447,7 +3455,7 @@ readcurrentpftsai() {
 void
 readcurrentsoilcolor() {
     
-    float *soilcolorvalues;
+    double *soilcolorvalues;
     int outgrid;
     
     selectedvarcnt = 0;
@@ -3469,8 +3477,8 @@ readcurrentsoilcolor() {
     /*  nc_inq_var(innetcdfid, selectedvarids[0], varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
     varlayers = 1;
     varlayers2 = 1;
-    soilcolorvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],soilcolorvalues);
+    soilcolorvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],soilcolorvalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         incurrentsoilcolor[outgrid] = soilcolorvalues[outgrid];
@@ -3484,8 +3492,7 @@ readcurrentsoilcolor() {
 void
 readpotvegpft() {
     
-    float outpftid;
-    int outgrid, offsetgrid, inpft, inmonth, barefound;
+    int outgrid, inpft;
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         for (inpft = 0; inpft < MAXPFT; inpft++) {
@@ -3498,9 +3505,9 @@ readpotvegpft() {
 void
 readpotvegpftpct() {
     
-    float *pftpctvalues;
-    float pfttotal;
-    int outgrid, offsetgrid, inpft, inmonth, outpftid;
+    double *pftpctvalues;
+    double pfttotal;
+    int outgrid, offsetgrid, inpft, outpftid;
     
     selectedvarcnt = 0;
     
@@ -3519,8 +3526,8 @@ readpotvegpftpct() {
     
     varlayers = MAXPFT+1;
     varlayers2 = 1;
-    pftpctvalues = malloc(sizeof(float) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_float(innetcdfid,selectedvarids[0],pftpctvalues);
+    pftpctvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+    nc_get_var_double(innetcdfid,selectedvarids[0],pftpctvalues);
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
         pfttotal = 0.0;
@@ -3609,10 +3616,10 @@ findcurrentpftidgrid(long outgrid, int pftid) {
  --- */
  
 int
-iscurrentpasturegrid(long outgrid) {
+iscurrentpasturegrid(int outgrid) {
     
     int outpft;
-    float pftsum;
+    double pftsum;
     
     pftsum = 0;
     for (outpft = GA3PFT;outpft <= GC4PFT; outpft++) {
@@ -3628,10 +3635,11 @@ iscurrentpasturegrid(long outgrid) {
     
 }
 
-long
-findcurrentpasturegrid(long outgrid) {
+int
+findcurrentpasturegrid(int outgrid) {
     
-    long searchlength, searchgrid, foundgrid;
+   int searchlength, searchgrid;
+   int foundgrid = -1;     // initialize in case no grass is found; check for this when used
     int pftnotfound;
     
     if (iscurrentpasturegrid(outgrid)) {
@@ -3673,6 +3681,10 @@ findcurrentpasturegrid(long outgrid) {
             }
         }
         searchlength = searchlength + 1;
+        // exit the loop if no grass is found
+        if(searchlength >= MAXOUTLIN * MAXOUTPIX){
+           pftnotfound = 0;
+        }
     }
     
     return foundgrid;
@@ -3721,24 +3733,24 @@ sethurttcurrent(int outgrid) {
 ------*/
 void sethurttcrop(int outgrid, int modyear, int calcyear) {
     
-    int maxpftid, outpft, outmonth, pftgrid, temppftid;
-    float newcropval, vegpftsum, treepftsum;
-    float potvegpftsum, potvegtreepftsum, potvegherbaceouspftsum;
-    float maxpftval;
-    /* float addpftsum, addtreepftsum, addherbaceouspftsum, removepftsum, updatedpftsum; commented out by -adv */
-	float addpftsum, removepftsum, updatedpftsum;
+    int maxpftid, outpft, temppftid;
+    double newcropval, vegpftsum, treepftsum;
+    double potvegpftsum, potvegtreepftsum, potvegherbaceouspftsum;
+    double maxpftval;
+    /* double addpftsum, addtreepftsum, addherbaceouspftsum, removepftsum, updatedpftsum; commented out by -adv */
+	double addpftsum, removepftsum, updatedpftsum;
 	/* these are new variables for preferential pft manipulation -adv */
-	float herbaceouspftsum, availpotvegtreepftsum, availpotvegherbpftsum, availpotvegtreeherbpftsum;
-	float availpotveggrasspftsum, availpotvegshrubpftsum, grasspftsum, shrubpftsum;
-	float maxherbaceousfracremain, propherbaceousfracremain, minherbaceousfracremain, herbaceousfracremain, treefracremain;
-	float maxavailtreefracremain, propavailtreefracremain, minavailtreefracremain, availtreefracremain, availherbfracremain;
-	float outtreepftsum, outherbaceouspftsum, outavailpotvegtreepftsum, outavailpotvegherbpftsum;
-	float potveggrasspftsum, potvegshrubpftsum;
-	float removeavailpotvegherb, removeavailpotveggrass, removeavailpotvegshrub;
+	double herbaceouspftsum, availpotvegtreepftsum, availpotvegherbpftsum, availpotvegtreeherbpftsum;
+	double availpotveggrasspftsum, availpotvegshrubpftsum, grasspftsum, shrubpftsum;
+	double maxherbaceousfracremain, propherbaceousfracremain, minherbaceousfracremain, herbaceousfracremain, treefracremain;
+	double maxavailtreefracremain, propavailtreefracremain, minavailtreefracremain, availtreefracremain, availherbfracremain;
+	double outtreepftsum, outherbaceouspftsum, outavailpotvegtreepftsum, outavailpotvegherbpftsum;
+	double potveggrasspftsum, potvegshrubpftsum;
+	double removeavailpotvegherb, removeavailpotveggrass, removeavailpotvegshrub;
     /* these new variables are for keeping track of pasture */
-    float pasturepftsum, availablecropsum, cropgap, reducecrop;
-    float availableherbaceouspftsum, availabletreepftsum;
-    float pastureherbaceouspftsum, pasturetreepftsum;
+    double pasturepftsum, availablecropsum, cropgap, reducecrop;
+    double availableherbaceouspftsum, availabletreepftsum;
+    double pastureherbaceouspftsum, pasturetreepftsum;
 	
 	// land conversion assumption variables
 	/* !!! these are the new variables that control the preferential pft removal/addition -adv
@@ -3749,8 +3761,8 @@ void sethurttcrop(int outgrid, int modyear, int calcyear) {
 	 */
 	
 	int ADDTREEONLY;			// For crop removal: 1=addtreeonly; 0=add pfts proportionally based on setavailtreefracrem
-	float setherbfracrem;		// crop addition
-	float setavailtreefracrem;	// crop removal
+	double setherbfracrem;		// crop addition
+	double setavailtreefracrem;	// crop removal
 	
 
 	// the proportional conversions appply before 2015
@@ -3780,7 +3792,8 @@ void sethurttcrop(int outgrid, int modyear, int calcyear) {
 	/* this commented out block sets the relative change in crop area from the base year glm data to the glmo data, rather than the the glmo crop are directly -adv
 	// don't do this because we want to preserve the spatial crop distribution passed from GCAM through GLM -adv
 	if(inhurttbasecrop[outgrid] > 0.0 && incurrentpftval[CPFT][outgrid] > 0.0) {
-		newcropval = round(incurrentpftval[CPFT][outgrid] * inhurttcrop[outgrid] / inhurttbasecrop[outgrid]);
+		//newcropval = round(incurrentpftval[CPFT][outgrid] * inhurttcrop[outgrid] / inhurttbasecrop[outgrid]);
+      newcropval = incurrentpftval[CPFT][outgrid] * inhurttcrop[outgrid] / inhurttbasecrop[outgrid];
 	}
 	else {
 		newcropval = inhurttcrop[outgrid];
@@ -3982,9 +3995,9 @@ void sethurttcrop(int outgrid, int modyear, int calcyear) {
        if (removepftsum > 0.0) {
            if (availablecropsum == 0.0 ) {	/* no pfts to remeove -adv */
               printf("Error: availablecropsum = %f while removepftsum = %f\n", availablecropsum, removepftsum);
-              for (outpft = NEMPFT;outpft <= GC4PFT;outpft++) {
-                 outhurttpftval[outpft][outgrid] = round( (outhurttpftval[outpft][outgrid]));
-              }
+              //for (outpft = NEMPFT;outpft <= GC4PFT;outpft++) {
+                 //outhurttpftval[outpft][outgrid] = round( (outhurttpftval[outpft][outgrid]));
+              //}
            }
            else { /* remove equal amounts of each non-bare-soil pft -adv */
               
@@ -4054,7 +4067,9 @@ void sethurttcrop(int outgrid, int modyear, int calcyear) {
                  setherbfracrem = setherbfracrem - 1.0;
                  herbaceousfracremain = propherbaceousfracremain + setherbfracrem * (maxherbaceousfracremain - propherbaceousfracremain);
               } else {
-                 printf("Error: setherbfracrem %f not within input range of 0 to 2 in sethurttcrop()\n", setherbfracrem);
+                 printf("Error: setherbfracrem %f not within input range of 0 to 2 in sethurttcrop(); setting to proportional value of 1\n", setherbfracrem);
+                 setherbfracrem = 1;
+                 herbaceousfracremain = minherbaceousfracremain + setherbfracrem * (propherbaceousfracremain - minherbaceousfracremain);
               }
               
               if (availabletreepftsum > 0.0) {
@@ -4084,7 +4099,8 @@ void sethurttcrop(int outgrid, int modyear, int calcyear) {
                  printf("herbaceousfracremain: %f of herbaceouspftsum\n", herbaceousfracremain);
 #endif
                  for (outpft = SEMPFT;outpft <= GC4PFT;outpft++) {
-                    outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] * herbaceousfracremain);
+                    //outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] * herbaceousfracremain);
+                    outhurttpftval[outpft][outgrid] = outhurttpftval[outpft][outgrid] * herbaceousfracremain;
                     outherbaceouspftsum = outherbaceouspftsum + outhurttpftval[outpft][outgrid];
                  }
               } else { outherbaceouspftsum = herbaceouspftsum; }
@@ -4097,8 +4113,17 @@ void sethurttcrop(int outgrid, int modyear, int calcyear) {
                  printf("treefracremain: %f of treepftsum\n", treefracremain);
 #endif
                  for (outpft = NEMPFT;outpft <= BDBPFT;outpft++) {
-                    outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] * treefracremain);
+#ifdef DEBUG
+                    printf("pft %i: outhurttpftval before calc: %f\n", outpft, outhurttpftval[outpft][outgrid]);
+                    printf("pft %i: outhurttpftval before rounding: %f\n", outpft, outhurttpftval[outpft][outgrid] * treefracremain);
+#endif
+                    //outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] * treefracremain);
+                    outhurttpftval[outpft][outgrid] = outhurttpftval[outpft][outgrid] * treefracremain;
                     outtreepftsum = outtreepftsum + outhurttpftval[outpft][outgrid];
+                    
+#ifdef DEBUG
+                    printf("pft %i: outhurttpftval after calc: %f\n", outpft, outhurttpftval[outpft][outgrid]);
+#endif
                  }
               } else { outtreepftsum = treepftsum; }
 #ifdef DEBUG
@@ -4173,20 +4198,26 @@ void sethurttcrop(int outgrid, int modyear, int calcyear) {
 				if (addpftsum > 0.0) {
 					if (potvegtreepftsum > 0.0) {
 						for (outpft = NEMPFT;outpft <= BDBPFT;outpft++) {
-							outhurttpftval[outpft][outgrid] =
-								round(outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addpftsum / potvegtreepftsum);
+							//outhurttpftval[outpft][outgrid] =
+								//round(outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addpftsum / potvegtreepftsum);
+                     outhurttpftval[outpft][outgrid] =
+                        outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addpftsum / potvegtreepftsum;
 						}
 					}
 					else if (treepftsum > 0.0) {
 						for (outpft = NEMPFT;outpft <= BDBPFT;outpft++) {
-							outhurttpftval[outpft][outgrid] =
-								round(outhurttpftval[outpft][outgrid] + outhurttpftval[outpft][outgrid] * addpftsum / treepftsum);
+							//outhurttpftval[outpft][outgrid] =
+								//round(outhurttpftval[outpft][outgrid] + outhurttpftval[outpft][outgrid] * addpftsum / treepftsum);
+                     outhurttpftval[outpft][outgrid] =
+                        outhurttpftval[outpft][outgrid] + outhurttpftval[outpft][outgrid] * addpftsum / treepftsum;
 						}
 					}
 					else {
 						for (outpft = NEMPFT;outpft <= BDBPFT;outpft++) {
-							outhurttpftval[outpft][outgrid] =
-								round(outhurttpftval[outpft][outgrid] + 1.0 * addpftsum / 8.0);
+							//outhurttpftval[outpft][outgrid] =
+								//round(outhurttpftval[outpft][outgrid] + 1.0 * addpftsum / 8.0);
+                     outhurttpftval[outpft][outgrid] =
+                        outhurttpftval[outpft][outgrid] + 1.0 * addpftsum / 8.0;
 						}
 					}
 				}
@@ -4223,10 +4254,12 @@ void sethurttcrop(int outgrid, int modyear, int calcyear) {
 					/* original code commented out by -adv
 					for (outpft = NEMPFT;outpft <= GC4PFT;outpft++) {
 					if (outpft <= BDBPFT && potvegtreepftsum > 0.0) {
-					 outhurttpftval[outpft][outgrid] = round( (outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addtreepftsum / potvegtreepftsum));
+					 //outhurttpftval[outpft][outgrid] = round( (outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addtreepftsum / potvegtreepftsum));
+                outhurttpftval[outpft][outgrid] = (outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addtreepftsum / potvegtreepftsum);
 					}
 					if (outpft >= SEMPFT && potvegherbaceouspftsum > 0.0) {
-					 outhurttpftval[outpft][outgrid] = round( (outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *	addherbaceouspftsum / potvegherbaceouspftsum));
+					 //outhurttpftval[outpft][outgrid] = round( (outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *	addherbaceouspftsum / potvegherbaceouspftsum));
+                outhurttpftval[outpft][outgrid] = (outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *   addherbaceouspftsum / potvegherbaceouspftsum);
 					}
 					}
 					original code commented out by -adv */
@@ -4299,7 +4332,9 @@ void sethurttcrop(int outgrid, int modyear, int calcyear) {
 						setavailtreefracrem = setavailtreefracrem - 1.0;
 						availtreefracremain = propavailtreefracremain + setavailtreefracrem * (maxavailtreefracremain - propavailtreefracremain);
 					} else {
-						printf("Error: setavailtreefracrem %f not within input range of 0 to 2 in sethurttcrop()\n", setavailtreefracrem);
+                  printf("Error: setavailtreefracrem %f not within input range of 0 to 2 in sethurttcrop(); setting to proportional value of 1\n", setavailtreefracrem);
+                  setavailtreefracrem = 1;
+                  availtreefracremain = minavailtreefracremain + setavailtreefracrem * (propavailtreefracremain - minavailtreefracremain);
 					}
 
 					if(availpotvegherbpftsum > 0.0) {
@@ -4319,19 +4354,34 @@ void sethurttcrop(int outgrid, int modyear, int calcyear) {
 #ifdef DEBUG					
 					printf("availtreefracremain: %f\n", availtreefracremain);
 					printf("availherbfracremain: %f\n", availherbfracremain);
+               printf("availpotvegtreepftsum before calcs: %f\n", availpotvegtreepftsum);
+               printf("potvegtreepftsum before calcs: %f\n", potvegtreepftsum);
+               printf("availpotvegherbpftsum before calcs: %f\n", availpotvegherbpftsum);
+               printf("availpotveggrasspftsum before calcs: %f\n", availpotveggrasspftsum);
+               printf("potvegshrubpftsum before calcs: %f\n", potvegshrubpftsum);
+               printf("potveggrasspftsum before calcs: %f\n", potveggrasspftsum);
 #endif                                        
 				
 					// add tree pfts by available potential proportions
 					// if there is no potential tree veg then these outhurttpftvals do not change
 					outavailpotvegtreepftsum = availpotvegtreepftsum;
+#ifdef DEBUG
+               printf("outavailpotvegtreepftsum before calcs: %f\n", outavailpotvegtreepftsum);
+#endif
 					if(potvegtreepftsum > 0.0) {
 						for (outpft = NEMPFT;outpft <= BDBPFT;outpft++) {
-							outhurttpftval[outpft][outgrid] =
-								round(outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
-									  (availpotvegtreepftsum * (1.0 - availtreefracremain)) / potvegtreepftsum);
-							outavailpotvegtreepftsum = outavailpotvegtreepftsum - 
-							round(inpotvegpftval[outpft][outgrid] *
-								  (availpotvegtreepftsum * (1.0 - availtreefracremain)) / potvegtreepftsum);
+							//outhurttpftval[outpft][outgrid] =
+								//round(outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
+									  //(availpotvegtreepftsum * (1.0 - availtreefracremain)) / potvegtreepftsum);
+                     outhurttpftval[outpft][outgrid] =
+                        outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
+                           (availpotvegtreepftsum * (1.0 - availtreefracremain)) / potvegtreepftsum;
+							//outavailpotvegtreepftsum = outavailpotvegtreepftsum -
+                        //round(inpotvegpftval[outpft][outgrid] *
+								  //(availpotvegtreepftsum * (1.0 - availtreefracremain)) / potvegtreepftsum);
+                     outavailpotvegtreepftsum = outavailpotvegtreepftsum -
+                        inpotvegpftval[outpft][outgrid] *
+                           (availpotvegtreepftsum * (1.0 - availtreefracremain)) / potvegtreepftsum;
 						}
 					}
 					
@@ -4342,20 +4392,46 @@ void sethurttcrop(int outgrid, int modyear, int calcyear) {
 					removeavailpotvegherb = availpotvegherbpftsum * (1.0 - availherbfracremain);
 					removeavailpotveggrass = availpotveggrasspftsum * (1.0 - availherbfracremain);
 					removeavailpotvegshrub = removeavailpotvegherb - removeavailpotveggrass;
+               
+#ifdef DEBUG
+               printf("outavailpotvegherbpftsum before calcs: %f\n", outavailpotvegherbpftsum);
+               printf("removeavailpotvegherb: %f\n", removeavailpotvegherb);
+               printf("removeavailpotveggrass: %f\n", removeavailpotveggrass);
+               printf("removeavailpotvegshrub: %f\n", removeavailpotvegshrub);
+#endif
+               
 					if(potveggrasspftsum > 0.0) {
 						for (outpft = GA3PFT;outpft <= GC4PFT;outpft++) {
-							outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
-																	removeavailpotveggrass / potveggrasspftsum);
-							outavailpotvegherbpftsum = outavailpotvegherbpftsum -
-							round(inpotvegpftval[outpft][outgrid] * removeavailpotveggrass / potveggrasspftsum);
+							//outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
+																	//removeavailpotveggrass / potveggrasspftsum);
+                     outhurttpftval[outpft][outgrid] = outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
+                                                             removeavailpotveggrass / potveggrasspftsum;
+							//outavailpotvegherbpftsum = outavailpotvegherbpftsum -
+                        //round(inpotvegpftval[outpft][outgrid] * removeavailpotveggrass / potveggrasspftsum);
+                     outavailpotvegherbpftsum = outavailpotvegherbpftsum -
+                        inpotvegpftval[outpft][outgrid] * removeavailpotveggrass / potveggrasspftsum;
+#ifdef DEBUG
+                     printf("grass pft %i:\n", outpft);
+                     printf("inpotvegpftval: %f\n", inpotvegpftval[outpft][outgrid]);
+                     printf("outavailpotvegherbpftsum: %f\n", outavailpotvegherbpftsum);
+#endif
 						}
 					}
 					if(potvegshrubpftsum > 0.0) {
 						for (outpft = SEMPFT;outpft <= SDBPFT;outpft++) {
-							outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
-																	removeavailpotvegshrub / potvegshrubpftsum);
-							outavailpotvegherbpftsum = outavailpotvegherbpftsum -
-								round(inpotvegpftval[outpft][outgrid] * removeavailpotvegshrub / potvegshrubpftsum);
+							//outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
+																	//removeavailpotvegshrub / potvegshrubpftsum);
+                     outhurttpftval[outpft][outgrid] = outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
+                                                   removeavailpotvegshrub / potvegshrubpftsum;
+							//outavailpotvegherbpftsum = outavailpotvegherbpftsum -
+								//round(inpotvegpftval[outpft][outgrid] * removeavailpotvegshrub / potvegshrubpftsum);
+                     outavailpotvegherbpftsum = outavailpotvegherbpftsum -
+                        inpotvegpftval[outpft][outgrid] * removeavailpotvegshrub / potvegshrubpftsum;
+#ifdef DEBUG
+                     printf("shrub pft %i:\n", outpft);
+                     printf("inpotvegpftval: %f\n", inpotvegpftval[outpft][outgrid]);
+                     printf("outavailpotvegherbpftsum: %f\n", outavailpotvegherbpftsum);
+#endif
 						}
 					}
 #ifdef DEBUG				 
@@ -4408,7 +4484,7 @@ void sethurttcrop(int outgrid, int modyear, int calcyear) {
     
     if ((updatedpftsum + newcropval) < 100.0) {
         addpftsum = 100.0 - (updatedpftsum + newcropval);
-        if (addpftsum > 1.0) {
+        if (addpftsum >= 1.0) {
 #ifdef DEBUG            
             printf("Crop Addsum = %f ",addpftsum);
             for (temppftid = 0; temppftid < MAXPFT-1; temppftid++) {
@@ -4425,7 +4501,7 @@ void sethurttcrop(int outgrid, int modyear, int calcyear) {
     
     if ((updatedpftsum + newcropval) > 100.0) {
         removepftsum = (updatedpftsum + newcropval - 100.0);
-        if (removepftsum > 1.0) {
+        if (removepftsum >= 1.0) {
 #ifdef DEBUG            
             printf("Crop Removesum = %f ",removepftsum);
             for (temppftid = 0; temppftid < MAXPFT-1; temppftid++) {
@@ -4486,24 +4562,24 @@ void sethurttcrop(int outgrid, int modyear, int calcyear) {
 ------*/
 void sethurttpasture(int outgrid, int modyear, int calcyear) {
     
-    int maxpftid, outpft, outmonth, pasturegrid, temppftid;
-    float maxpftval, treepftsum, potvegpftsum, potvegtreepftsum;
-	float addpftsum, removepftsum, updatedpftsum;
-    float herbaceouspftsum, potvegherbaceouspftsum, newpasturepftsum, grasspftsum;
+    int maxpftid, outpft, pasturegrid;
+    double maxpftval, treepftsum, potvegpftsum, potvegtreepftsum;
+	double addpftsum, removepftsum, updatedpftsum;
+    double herbaceouspftsum, potvegherbaceouspftsum, newpasturepftsum, grasspftsum;
 	/* new variables for preferential pft removal/addition -adv */
-	float shrubpftsum, barepftsum, availablepasturesum, potveggrasspftsum, potvegshrubpftsum;
-	float availpotvegtreepftsum, availpotvegherbpftsum, availpotvegtreeherbpftsum, availpotveggrasspftsum, availpotvegshrubpftsum;
-	float basegrasspftsum, outpasturesum;
-	float maxherbaceousfracremain, propherbaceousfracremain, minherbaceousfracremain, herbaceousfracremain, treefracremain;
-	float maxavailtreefracremain, propavailtreefracremain, minavailtreefracremain, availtreefracremain, availherbfracremain;
-	float outtreepftsum, outherbaceouspftsum, outavailpotvegtreepftsum, outavailpotvegherbpftsum;
-	float removeavailpotvegherb, removeavailpotveggrass, removeavailpotvegshrub;
+	double shrubpftsum, barepftsum, availablepasturesum, potveggrasspftsum, potvegshrubpftsum;
+	double availpotvegtreepftsum, availpotvegherbpftsum, availpotvegtreeherbpftsum, availpotveggrasspftsum, availpotvegshrubpftsum;
+	double basegrasspftsum, outpasturesum;
+	double maxherbaceousfracremain, propherbaceousfracremain, minherbaceousfracremain, herbaceousfracremain, treefracremain;
+	double maxavailtreefracremain, propavailtreefracremain, minavailtreefracremain, availtreefracremain, availherbfracremain;
+	double outtreepftsum, outherbaceouspftsum, outavailpotvegtreepftsum, outavailpotvegherbpftsum;
+	double removeavailpotvegherb, removeavailpotveggrass, removeavailpotvegshrub;
     /* new variables for tracking pasture */
-    float basepasturepftsum, vegpftsum;
-    float availableherbaceouspftsum, availablegrasspftsum, availableshrubpftsum, availabletreepftsum;
-    float pastureherbaceouspftsum, pasturegrasspftsum, pastureshrubpftsum, pasturetreepftsum;
+    double basepasturepftsum, vegpftsum;
+    double availableherbaceouspftsum, availablegrasspftsum, availableshrubpftsum, availabletreepftsum;
+    double pastureherbaceouspftsum, pasturegrasspftsum, pastureshrubpftsum, pasturetreepftsum;
     // new variables for ensuring sufficient herbaceous for glmo pasture
-    float addherbaceouspftsum, baseshrubpftsum, baseherbpftsum;
+    double addherbaceouspftsum, baseshrubpftsum, baseherbpftsum;
     
 	// land conversion assumption variables
 	/* !!! these are the new variables that control the preferential pft removal/addition -adv
@@ -4515,8 +4591,8 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
 	
 	int ADDTREEONLY;			// For pasture removal: 1=addtreeonly; 0=add pfts proportionally based on setavailtreefracrem
 	int HERBPASTURE;			// 1=ensure enough herbaceous pfts to cover glmo pasture; 0=let there be some tree pft pasture if necessary
-	float setherbfracrem;		// pasture addition; this includes bare soil when INCLUDEBARE=1=ADDTREEONLY
-	float setavailtreefracrem;	// pasture removal
+	double setherbfracrem;		// pasture addition; this includes bare soil when INCLUDEBARE=1=ADDTREEONLY
+	double setavailtreefracrem;	// pasture removal
 	
 
 	// proprtional assumptions appply before 2015
@@ -4602,20 +4678,23 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
         potvegshrubpftsum = potvegshrubpftsum + inpotvegpftval[outpft][outgrid];
     }
     
-    // find the percent of grass in the nearest reference year cell with grass in it
+    // find the percent of grass in the nearest reference year cell with grass in it (which could be the current cell)
     //   this reference year could be the model year or a given year
     //   this could be changed to use year 2000 distribution, but that would require an additional file to be read
 	// this is used only to calculate the proportions of each grass pft within total grass
     //  so it does not interfere with the added grass due to herbaceous matching because that grass is added proportionally
+   // if no grass is found at all then pasturegrid is -1 and so these values should be zero
 	pasturegrid = findcurrentpasturegrid(outgrid);
 	basegrasspftsum = 0.0;
-	for (outpft = GA3PFT;outpft <= GC4PFT;outpft++) {
-		basegrasspftsum = basegrasspftsum + incurrentpftval[outpft][pasturegrid];
-	}
-    baseshrubpftsum = 0.0;
-    for (outpft = SEMPFT;outpft <= SDBPFT;outpft++) {
-        baseshrubpftsum = baseshrubpftsum + incurrentpftval[outpft][pasturegrid];
-    }
+   baseshrubpftsum = 0.0;
+   if(pasturegrid >= 0){
+      for (outpft = GA3PFT;outpft <= GC4PFT;outpft++) {
+         basegrasspftsum = basegrasspftsum + incurrentpftval[outpft][pasturegrid];
+      }
+      for (outpft = SEMPFT;outpft <= SDBPFT;outpft++) {
+         baseshrubpftsum = baseshrubpftsum + incurrentpftval[outpft][pasturegrid];
+      }
+   }
     baseherbpftsum = basegrasspftsum + baseshrubpftsum;
     
     // make sure that base pasture is within existing vegetation pft limits
@@ -4640,8 +4719,10 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
             // remove trees first
             if (treepftsum > 0.0) {
                 for (outpft = NEMPFT;outpft <= BDBPFT;outpft++) {
-                    outhurttpftval[outpft][outgrid] = outhurttpftval[outpft][outgrid] -
-                    round(outhurttpftval[outpft][outgrid] * addherbaceouspftsum / treepftsum);
+                    //outhurttpftval[outpft][outgrid] = outhurttpftval[outpft][outgrid] -
+                     //round(outhurttpftval[outpft][outgrid] * addherbaceouspftsum / treepftsum);
+                   outhurttpftval[outpft][outgrid] = outhurttpftval[outpft][outgrid] -
+                     outhurttpftval[outpft][outgrid] * addherbaceouspftsum / treepftsum;
                 }
                 // adjust/recalculate pft states
                 treepftsum = treepftsum - addherbaceouspftsum;
@@ -4657,16 +4738,20 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
             if (herbaceouspftsum > 0.0) {
                 //printf("\nEnsure herb pasture, herb>0: outgrid = %i \n", outgrid);
                 for (outpft = SEMPFT;outpft <= GC4PFT;outpft++) {
-                    outhurttpftval[outpft][outgrid] = outhurttpftval[outpft][outgrid] +
-                    round(outhurttpftval[outpft][outgrid] * addherbaceouspftsum / herbaceouspftsum);
+                    //outhurttpftval[outpft][outgrid] = outhurttpftval[outpft][outgrid] +
+                     //round(outhurttpftval[outpft][outgrid] * addherbaceouspftsum / herbaceouspftsum);
+                   outhurttpftval[outpft][outgrid] = outhurttpftval[outpft][outgrid] +
+                     outhurttpftval[outpft][outgrid] * addherbaceouspftsum / herbaceouspftsum;
                 }
             }
             else if (baseherbpftsum > 0.0) {
                 //printf("\nEnsure herb pasture, baseherb>0: outgrid = %i \n", outgrid);
                 // add the grass and shrub using the proportions of the nearest reference year grid cell with grass in it (which is the model year prior to crop adjustment)
                 for (outpft = SEMPFT;outpft <= GC4PFT;outpft++) {
-                    outhurttpftval[outpft][outgrid] =
-                    round(outhurttpftval[outpft][outgrid] +  addherbaceouspftsum * incurrentpftval[outpft][pasturegrid] / baseherbpftsum);
+                    //outhurttpftval[outpft][outgrid] =
+                     //round(outhurttpftval[outpft][outgrid] +  addherbaceouspftsum * incurrentpftval[outpft][pasturegrid] / baseherbpftsum);
+                   outhurttpftval[outpft][outgrid] =
+                     outhurttpftval[outpft][outgrid] +  addherbaceouspftsum * incurrentpftval[outpft][pasturegrid] / baseherbpftsum;
                 }
             }
             else {
@@ -4686,24 +4771,30 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
                 //   use arctic grass for > 55 or < -55
                 
                 for (outpft = SEMPFT;outpft <= SDBPFT;outpft++) {
-                    outhurttpftval[outpft][outgrid] =
-                    round(outhurttpftval[outpft][outgrid] +  addherbaceouspftsum * 1.0 / 6.0);
+                    //outhurttpftval[outpft][outgrid] =
+                     //round(outhurttpftval[outpft][outgrid] +  addherbaceouspftsum * 1.0 / 6.0);
+                   outhurttpftval[outpft][outgrid] =
+                   outhurttpftval[outpft][outgrid] +  addherbaceouspftsum * 1.0 / 6.0;
                 }
                 
                 if (outgrid > 234000 || outgrid <= 25200) {		// arctic c3 only
-                    outhurttpftval[GA3PFT][outgrid] = round(outhurttpftval[outpft][outgrid] +  addherbaceouspftsum * 1.0 / 2.0);
+                    //outhurttpftval[GA3PFT][outgrid] = round(outhurttpftval[GA3PFT][outgrid] +  addherbaceouspftsum * 1.0 / 2.0);
+                    outhurttpftval[GA3PFT][outgrid] = outhurttpftval[GA3PFT][outgrid] +  addherbaceouspftsum * 1.0 / 2.0;
                     outhurttpftval[GC3PFT][outgrid] = 0.0;
                     outhurttpftval[GC4PFT][outgrid] = 0.0;
                 }
                 else if(outgrid > 198720 || outgrid <= 34560) {	// c3 only
                     outhurttpftval[GA3PFT][outgrid] = 0.0;
-                    outhurttpftval[GC3PFT][outgrid] = round(outhurttpftval[outpft][outgrid] +  addherbaceouspftsum * 1.0 / 2.0);
+                    //outhurttpftval[GC3PFT][outgrid] = round(outhurttpftval[GC3PFT][outgrid] +  addherbaceouspftsum * 1.0 / 2.0);
+                    outhurttpftval[GC3PFT][outgrid] = outhurttpftval[GC3PFT][outgrid] +  addherbaceouspftsum * 1.0 / 2.0;
                     outhurttpftval[GC4PFT][outgrid] = 0.0;
                 }
                 else {												// else split evenly between c3 and c4
                     for (outpft = GC3PFT;outpft <= GC4PFT;outpft++) {
-                        outhurttpftval[outpft][outgrid] =
-                        round(outhurttpftval[outpft][outgrid] +  addherbaceouspftsum * 1.0 / 4.0);
+                        //outhurttpftval[outpft][outgrid] =
+                           //round(outhurttpftval[outpft][outgrid] +  addherbaceouspftsum * 1.0 / 4.0);
+                       outhurttpftval[outpft][outgrid] =
+                        outhurttpftval[outpft][outgrid] +  addherbaceouspftsum * 1.0 / 4.0;
                     }
                 }
             }   // end add herbaceous if-else
@@ -4803,30 +4894,47 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
        if (outpasturesum > vegpftsum) {
           outpasturesum = vegpftsum;
        }
-       
-       // these are needed only for pasture removal
-       // get the available percents of tree and grass and shrub and total potential veg
-       // the available herbaceous amount depends on how much pasture is removed
-       // the available grass and shrub amounts depend on existing propoertions and the amount of pasture removed
-       // the math works out such that the available values max out at the potential values
-       // currently there is no provision for these to be used with bare soil
-       //  but bare soil could be included as an available potential veg catagory during pasture removal if degradation is added
-       availpotvegtreepftsum = potvegtreepftsum - treepftsum;
-       if( availpotvegtreepftsum < 0.0 ) { availpotvegtreepftsum = 0.0; }
-       availpotvegherbpftsum = potvegherbaceouspftsum - herbaceouspftsum + addpftsum;
-       if( availpotvegherbpftsum < 0.0 ) { availpotvegherbpftsum = 0.0; }
-       availpotvegtreeherbpftsum = availpotvegtreepftsum + availpotvegherbpftsum;
-       if (herbaceouspftsum <= 0) {
-          // if this is the case then no pfts are removed or added below, so this calculation isn't used
-          availpotveggrasspftsum = potveggrasspftsum + 0.5 * addpftsum;
-          availpotvegshrubpftsum = potvegshrubpftsum + 0.5 * addpftsum;
-       } else {
-          availpotveggrasspftsum = potveggrasspftsum - grasspftsum + grasspftsum / herbaceouspftsum * addpftsum;
-          availpotvegshrubpftsum = potvegshrubpftsum - shrubpftsum + shrubpftsum / herbaceouspftsum * addpftsum;
-       }
-       if( availpotveggrasspftsum < 0.0 ) { availpotveggrasspftsum = 0.0; }
-       if( availpotvegshrubpftsum < 0.0 ) { availpotvegshrubpftsum = 0.0; }
-    }	// end else remove pasture
+    }   // end else remove pasture
+   
+   // these are needed only for pasture removal, but calc them here so there are not undefined
+   // get the available percents of tree and grass and shrub and total potential veg
+   // the available herbaceous amount depends on how much pasture is removed
+   // the available grass and shrub amounts depend on existing propoertions and the amount of pasture removed
+   // the math works out such that the available values max out at the potential values
+   // currently there is no provision for these to be used with bare soil
+   //  but bare soil could be included as an available potential veg catagory during pasture removal if degradation is added
+   availpotvegtreepftsum = potvegtreepftsum - treepftsum;
+   if( availpotvegtreepftsum < 0.0 ) { availpotvegtreepftsum = 0.0; }
+   availpotvegherbpftsum = potvegherbaceouspftsum - herbaceouspftsum + addpftsum;
+   if( availpotvegherbpftsum < 0.0 ) { availpotvegherbpftsum = 0.0; }
+   availpotvegtreeherbpftsum = availpotvegtreepftsum + availpotvegherbpftsum;
+#ifdef DEBUG
+   printf("\nCheck availpotveg pasture: outgrid = %i\n", outgrid);
+   printf("Check availpotveg: treepftsum = %f\n", treepftsum);
+   printf("Check availpotveg: herbaceouspftsum = %f\n", herbaceouspftsum);
+   printf("Check availpotveg: potvegtreepftsum = %f\n", potvegtreepftsum);
+   printf("Check availpotveg: addpftsum = %f\n", addpftsum);
+   printf("Check availpotveg: potvegherbaceouspftsum = %f\n", potvegherbaceouspftsum);
+   printf("Check availpotveg: availpotvegtreepftsum = %f\n", availpotvegtreepftsum);
+   printf("Check availpotveg: availpotvegherbpftsum = %f\n", availpotvegherbpftsum);
+   printf("Check availpotveg: availpotvegtreeherbpftsum = %f\n\n", availpotvegtreeherbpftsum);
+#endif
+   if (herbaceouspftsum <= 0) {
+      // if this is the case then no pfts are removed or added below, so this calculation isn't used
+      availpotveggrasspftsum = potveggrasspftsum + 0.5 * addpftsum;
+      availpotvegshrubpftsum = potvegshrubpftsum + 0.5 * addpftsum;
+   } else {
+      availpotveggrasspftsum = potveggrasspftsum - grasspftsum + grasspftsum / herbaceouspftsum * addpftsum;
+      availpotvegshrubpftsum = potvegshrubpftsum - shrubpftsum + shrubpftsum / herbaceouspftsum * addpftsum;
+   }
+   if( availpotveggrasspftsum < 0.0 ) { availpotveggrasspftsum = 0.0; }
+   if( availpotvegshrubpftsum < 0.0 ) { availpotvegshrubpftsum = 0.0; }
+#ifdef DEBUG
+   printf("Check availpotveg: potveggrasspftsum = %f\n", potveggrasspftsum);
+   printf("Check availpotveg: grasspftsum = %f\n", grasspftsum);
+   printf("Check availpotveg: potvegshrubpftsum = %f\n", potvegshrubpftsum);
+   printf("Check availpotveg: shrubpftsum = %f\n", shrubpftsum);
+#endif
 	 
 	if (removepftsum > 0.0) {		// pasture (grass) being added
 #ifdef DEBUG
@@ -4906,7 +5014,9 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
 			setherbfracrem = setherbfracrem - 1.0;
 			herbaceousfracremain = propherbaceousfracremain + setherbfracrem * (maxherbaceousfracremain - propherbaceousfracremain);
 		} else {
-			printf("Error: setherbfracrem %f not within input range of 0 to 2 in sethurttpasture()\n", setherbfracrem);
+         printf("Error: setherbfracrem %f not within input range of 0 to 2 in sethurttpasture(); setting to proportional value of 1\n", setherbfracrem);
+         setherbfracrem = 1;
+         herbaceousfracremain = minherbaceousfracremain + setherbfracrem * (propherbaceousfracremain - minherbaceousfracremain);
 		}
 		
 		if (availabletreepftsum > 0.0) {
@@ -4940,7 +5050,8 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
             printf("herbaceousfracremain: %f of herbaceouspftsum\n", herbaceousfracremain);
 #endif
             for (outpft = SEMPFT;outpft <= GC4PFT;outpft++) {
-                outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] * herbaceousfracremain);
+                //outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] * herbaceousfracremain);
+                outhurttpftval[outpft][outgrid] = outhurttpftval[outpft][outgrid] * herbaceousfracremain;
                 outherbaceouspftsum = outherbaceouspftsum + outhurttpftval[outpft][outgrid];
                 if (outpft >= GA3PFT && outpft <= GC4PFT) {
                    grasspftsum = grasspftsum + outhurttpftval[outpft][outgrid];
@@ -4956,25 +5067,41 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
             printf("treefracremain: %f of treepftsum\n", treefracremain);
 #endif
             for (outpft = NEMPFT;outpft <= BDBPFT;outpft++) {
-                outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] * treefracremain);
+                //outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] * treefracremain);
+                outhurttpftval[outpft][outgrid] = outhurttpftval[outpft][outgrid] * treefracremain;
                 outtreepftsum = outtreepftsum + outhurttpftval[outpft][outgrid];
             }
         } else { outtreepftsum = treepftsum; }
         
-	 
-		// add the pasture grass
+#ifdef DEBUG
+      printf("outherbaceouspftsum before grass addition: %f\n", outherbaceouspftsum);
+#endif
+
+		// add the pasture grass and add to the herbaceous diagnostic
 		if (basegrasspftsum > 0.0) {
 			// add the grass using the proportions of the nearest reference year grid cell with grass in it
 			for (outpft = GA3PFT;outpft <= GC4PFT;outpft++) {
-				outhurttpftval[outpft][outgrid] =
-					round(outhurttpftval[outpft][outgrid] +  newpasturepftsum * incurrentpftval[outpft][pasturegrid] / basegrasspftsum);
+				//outhurttpftval[outpft][outgrid] =
+					//round(outhurttpftval[outpft][outgrid] +  newpasturepftsum * incurrentpftval[outpft][pasturegrid] / basegrasspftsum);
+            //outherbaceouspftsum = outherbaceouspftsum + round(newpasturepftsum * incurrentpftval[outpft][pasturegrid] / basegrasspftsum);
+            //grasspftsum = grasspftsum + round(newpasturepftsum * incurrentpftval[outpft][pasturegrid] / basegrasspftsum);
+            outhurttpftval[outpft][outgrid] =
+               outhurttpftval[outpft][outgrid] +  newpasturepftsum * incurrentpftval[outpft][pasturegrid] / basegrasspftsum;
+            outherbaceouspftsum = outherbaceouspftsum + newpasturepftsum * incurrentpftval[outpft][pasturegrid] / basegrasspftsum;
+            grasspftsum = grasspftsum + newpasturepftsum * incurrentpftval[outpft][pasturegrid] / basegrasspftsum;
 			}
 		}
 		else if(grasspftsum > 0.0) {
 			// add the grass using the proportions of this output year grid cell (which to this point is the model year plus the crop and above adjustments)
 			for (outpft = GA3PFT;outpft <= GC4PFT;outpft++) {
-				outhurttpftval[outpft][outgrid] =
-					round(outhurttpftval[outpft][outgrid] +  newpasturepftsum * outhurttpftval[outpft][outgrid] / grasspftsum);
+				//outhurttpftval[outpft][outgrid] =
+					//round(outhurttpftval[outpft][outgrid] +  newpasturepftsum * outhurttpftval[outpft][outgrid] / grasspftsum);
+            //outherbaceouspftsum = outherbaceouspftsum + round(newpasturepftsum * outhurttpftval[outpft][outgrid] / grasspftsum);
+            //grasspftsum = grasspftsum + round(newpasturepftsum * outhurttpftval[outpft][outgrid] / grasspftsum);
+            outhurttpftval[outpft][outgrid] =
+               outhurttpftval[outpft][outgrid] +  newpasturepftsum * outhurttpftval[outpft][outgrid] / grasspftsum;
+            outherbaceouspftsum = outherbaceouspftsum + newpasturepftsum * outhurttpftval[outpft][outgrid] / grasspftsum;
+            grasspftsum = grasspftsum + newpasturepftsum * outhurttpftval[outpft][outgrid] / grasspftsum;
 			}
 		}
 		else {
@@ -4991,19 +5118,31 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
 			// no c4 if lat > 48 or < -42
 			// use arctic grass for > 55 or < -55
 			if (outgrid > 234000 || outgrid <= 25200) {		// arctic c3 only
-				outhurttpftval[GA3PFT][outgrid] = round(outhurttpftval[outpft][outgrid] +  newpasturepftsum);
+				//outhurttpftval[GA3PFT][outgrid] = round(outhurttpftval[GA3PFT][outgrid] +  newpasturepftsum);
+            outhurttpftval[GA3PFT][outgrid] = outhurttpftval[GA3PFT][outgrid] +  newpasturepftsum;
 				outhurttpftval[GC3PFT][outgrid] = 0.0;
 				outhurttpftval[GC4PFT][outgrid] = 0.0;
+            outherbaceouspftsum = outherbaceouspftsum + newpasturepftsum;
+            grasspftsum = grasspftsum + newpasturepftsum;
 			}
 			else if(outgrid > 198720 || outgrid <= 34560) {	// c3 only
 				outhurttpftval[GA3PFT][outgrid] = 0.0;
-				outhurttpftval[GC3PFT][outgrid] = round(outhurttpftval[outpft][outgrid] +  newpasturepftsum);
+				//outhurttpftval[GC3PFT][outgrid] = round(outhurttpftval[GC3PFT][outgrid] +  newpasturepftsum);
+            outhurttpftval[GC3PFT][outgrid] = outhurttpftval[GC3PFT][outgrid] +  newpasturepftsum;
 				outhurttpftval[GC4PFT][outgrid] = 0.0;
+            outherbaceouspftsum = outherbaceouspftsum + newpasturepftsum;
+            grasspftsum = grasspftsum + newpasturepftsum;
 			}
 			else {												// else split evenly between c3 and c4
 				for (outpft = GC3PFT;outpft <= GC4PFT;outpft++) {
-					outhurttpftval[outpft][outgrid] =
-						round(outhurttpftval[outpft][outgrid] +  newpasturepftsum * 1.0 / 2.0);
+					//outhurttpftval[outpft][outgrid] =
+						//round(outhurttpftval[outpft][outgrid] +  newpasturepftsum * 1.0 / 2.0);
+               //outherbaceouspftsum = outherbaceouspftsum + round(newpasturepftsum * 1.0 / 2.0);
+               //grasspftsum = grasspftsum + round(newpasturepftsum * 1.0 / 2.0);
+               outhurttpftval[outpft][outgrid] =
+                  outhurttpftval[outpft][outgrid] +  newpasturepftsum * 1.0 / 2.0;
+               outherbaceouspftsum = outherbaceouspftsum + newpasturepftsum * 1.0 / 2.0;
+               grasspftsum = grasspftsum + newpasturepftsum * 1.0 / 2.0;
 				}
 			}	
 			 
@@ -5062,8 +5201,18 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
           }
           else {
              for (outpft = SEMPFT;outpft <= GC4PFT;outpft++) {
+#ifdef DEBUG
+                printf("pft %i: outhurttpftval before calc: %f\n", outpft, outhurttpftval[outpft][outgrid]);
+                printf("pft %i: outhurttpftval before rounding: %f\n", outpft, outhurttpftval[outpft][outgrid] * (herbaceouspftsum - addpftsum) / herbaceouspftsum);
+                printf("pft %i: multiplier: %f\n", outpft, (herbaceouspftsum - addpftsum) / herbaceouspftsum);
+#endif
+                //outhurttpftval[outpft][outgrid] =
+                  //round(outhurttpftval[outpft][outgrid] * (herbaceouspftsum - addpftsum) / herbaceouspftsum);
                 outhurttpftval[outpft][outgrid] =
-                round(outhurttpftval[outpft][outgrid] * (herbaceouspftsum - addpftsum) / herbaceouspftsum);
+                  outhurttpftval[outpft][outgrid] * (herbaceouspftsum - addpftsum) / herbaceouspftsum;
+#ifdef DEBUG
+                printf("pft %i: outhurttpftval after calc: %f\n", outpft, outhurttpftval[outpft][outgrid]);
+#endif
              }
           }
 
@@ -5082,20 +5231,26 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
 			 if (ADDTREEONLY) {
 				if (potvegtreepftsum > 0.0) {
 					for (outpft = NEMPFT;outpft <= BDBPFT;outpft++) {
-						outhurttpftval[outpft][outgrid] =
-							round(outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addpftsum / potvegtreepftsum);
+						//outhurttpftval[outpft][outgrid] =
+							//round(outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addpftsum / potvegtreepftsum);
+                  outhurttpftval[outpft][outgrid] =
+                     outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addpftsum / potvegtreepftsum;
 					}
 				}
 				else if (treepftsum > 0.0) {
 					for (outpft = NEMPFT;outpft <= BDBPFT;outpft++) {
-						outhurttpftval[outpft][outgrid] =
-							round(outhurttpftval[outpft][outgrid] + outhurttpftval[outpft][outgrid] * addpftsum / treepftsum);
+						//outhurttpftval[outpft][outgrid] =
+							//round(outhurttpftval[outpft][outgrid] + outhurttpftval[outpft][outgrid] * addpftsum / treepftsum);
+                  outhurttpftval[outpft][outgrid] =
+                     outhurttpftval[outpft][outgrid] + outhurttpftval[outpft][outgrid] * addpftsum / treepftsum;
 					}
 				}
 				else {
 					for (outpft = NEMPFT;outpft <= BDBPFT;outpft++) {
-						outhurttpftval[outpft][outgrid] =
-							round(outhurttpftval[outpft][outgrid] + 1.0 * addpftsum / 8.0);
+						//outhurttpftval[outpft][outgrid] =
+							//round(outhurttpftval[outpft][outgrid] + 1.0 * addpftsum / 8.0);
+                  outhurttpftval[outpft][outgrid] =
+                     outhurttpftval[outpft][outgrid] + 1.0 * addpftsum / 8.0;
 					}
 				}
 			 }  // end if ADDTREEONLY == 1
@@ -5151,7 +5306,9 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
 					 setavailtreefracrem = setavailtreefracrem - 1.0;
 					 availtreefracremain = propavailtreefracremain + setavailtreefracrem * (maxavailtreefracremain - propavailtreefracremain);
 				 } else {
-					 printf("Error: setavailtreefracrem %f not within input range of 0 to 2 in sethurttpasture()\n", setavailtreefracrem);
+                printf("Error: setavailtreefracrem %f not within input range of 0 to 2 in sethurttpasture(); setting it to proportional value of 1\n", setavailtreefracrem);
+                setavailtreefracrem = 1;
+                availtreefracremain = minavailtreefracremain + setavailtreefracrem * (propavailtreefracremain - minavailtreefracremain);
 				 }
 
 				 if (availpotvegherbpftsum > 0.0) {
@@ -5171,18 +5328,32 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
 #ifdef DEBUG				 
 				 printf("availtreefracremain: %f\n", availtreefracremain);
 				 printf("availherbfracremain: %f\n", availherbfracremain);
+             printf("availpotvegtreepftsum before calcs: %f\n", availpotvegtreepftsum);
+             printf("potvegtreepftsum before calcs: %f\n", potvegtreepftsum);
+             printf("availpotvegherbpftsum before calcs: %f\n", availpotvegherbpftsum);
+             printf("availpotveggrasspftsum before calcs: %f\n", availpotveggrasspftsum);
+             printf("potvegshrubpftsum before calcs: %f\n", potvegshrubpftsum);
+             printf("potveggrasspftsum before calcs: %f\n", potveggrasspftsum);
 #endif                                 
 			 
 				 // add tree pfts by potential proportion
 				 // if there is no potential tree veg then these outhurttpftvals do not change
 				 outavailpotvegtreepftsum = availpotvegtreepftsum;
+#ifdef DEBUG
+             printf("outavailpotvegtreepftsum before calcs: %f\n", outavailpotvegtreepftsum);
+#endif
 				 if(potvegtreepftsum > 0.0) {
 					 for (outpft = NEMPFT;outpft <= BDBPFT;outpft++) {
-						 outhurttpftval[outpft][outgrid] =
-							round(outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
-							(availpotvegtreepftsum * (1.0 - availtreefracremain)) / potvegtreepftsum);
-						 outavailpotvegtreepftsum = outavailpotvegtreepftsum - round(inpotvegpftval[outpft][outgrid] *
-						 (availpotvegtreepftsum * (1.0 - availtreefracremain)) / potvegtreepftsum);
+						 //outhurttpftval[outpft][outgrid] =
+							//round(outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
+							//(availpotvegtreepftsum * (1.0 - availtreefracremain)) / potvegtreepftsum);
+						 //outavailpotvegtreepftsum = outavailpotvegtreepftsum - round(inpotvegpftval[outpft][outgrid] *
+						 //(availpotvegtreepftsum * (1.0 - availtreefracremain)) / potvegtreepftsum);
+                   outhurttpftval[outpft][outgrid] =
+                     outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
+                         (availpotvegtreepftsum * (1.0 - availtreefracremain)) / potvegtreepftsum;
+                   outavailpotvegtreepftsum = outavailpotvegtreepftsum - inpotvegpftval[outpft][outgrid] *
+                        (availpotvegtreepftsum * (1.0 - availtreefracremain)) / potvegtreepftsum;
 					 }
 				 }
 	 
@@ -5192,20 +5363,49 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
 				 removeavailpotvegherb = availpotvegherbpftsum * (1.0 - availherbfracremain);
 				 removeavailpotveggrass = availpotveggrasspftsum * (1.0 - availherbfracremain);
 				 removeavailpotvegshrub = removeavailpotvegherb - removeavailpotveggrass;
+#ifdef DEBUG
+             printf("outavailpotvegherbpftsum before calcs: %f\n", outavailpotvegherbpftsum);
+             printf("removeavailpotvegherb: %f\n", removeavailpotvegherb);
+             printf("removeavailpotveggrass: %f\n", removeavailpotveggrass);
+             printf("removeavailpotvegshrub: %f\n", removeavailpotvegshrub);
+#endif
 				 if(potveggrasspftsum > 0.0) {
 					 for (outpft = GA3PFT;outpft <= GC4PFT;outpft++) {
-						 outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
-																 removeavailpotveggrass / potveggrasspftsum);
-						 outavailpotvegherbpftsum = outavailpotvegherbpftsum -
-						 round(inpotvegpftval[outpft][outgrid] * removeavailpotveggrass / potveggrasspftsum);
+#ifdef DEBUG
+                   printf("grass pft %i:\n", outpft);
+                   printf("outhurttpftval before rounding: %f:\n", outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * removeavailpotveggrass / potveggrasspftsum);
+                   printf("added term before rounding: %f:\n", inpotvegpftval[outpft][outgrid] * removeavailpotveggrass / potveggrasspftsum);
+#endif
+						 //outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
+																 //removeavailpotveggrass / potveggrasspftsum);
+						 //outavailpotvegherbpftsum = outavailpotvegherbpftsum -
+                     //round(inpotvegpftval[outpft][outgrid] * removeavailpotveggrass / potveggrasspftsum);
+                   outhurttpftval[outpft][outgrid] = outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
+                                                           removeavailpotveggrass / potveggrasspftsum;
+                   outavailpotvegherbpftsum = outavailpotvegherbpftsum -
+                     inpotvegpftval[outpft][outgrid] * removeavailpotveggrass / potveggrasspftsum;
+#ifdef DEBUG
+                   printf("inpotvegpftval: %f\n", inpotvegpftval[outpft][outgrid]);
+                   printf("outavailpotvegherbpftsum: %f\n", outavailpotvegherbpftsum);
+                   printf("outhurttpftval after calc: %f:\n", outhurttpftval[outpft][outgrid]);
+#endif
 					 }
 				 }
 				 if(potvegshrubpftsum > 0.0) {
 					 for (outpft = SEMPFT;outpft <= SDBPFT;outpft++) {
-						 outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
-																 removeavailpotvegshrub / potvegshrubpftsum);
-						 outavailpotvegherbpftsum = outavailpotvegherbpftsum -
-						 round(inpotvegpftval[outpft][outgrid] * removeavailpotvegshrub / potvegshrubpftsum);
+						 //outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
+																 //removeavailpotvegshrub / potvegshrubpftsum);
+						 //outavailpotvegherbpftsum = outavailpotvegherbpftsum -
+                     //round(inpotvegpftval[outpft][outgrid] * removeavailpotvegshrub / potvegshrubpftsum);
+                   outhurttpftval[outpft][outgrid] = outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
+                                                           removeavailpotvegshrub / potvegshrubpftsum;
+                   outavailpotvegherbpftsum = outavailpotvegherbpftsum -
+                     inpotvegpftval[outpft][outgrid] * removeavailpotvegshrub / potvegshrubpftsum;
+#ifdef DEBUG
+                   printf("shrub pft %i:\n", outpft);
+                   printf("inpotvegpftval: %f\n", inpotvegpftval[outpft][outgrid]);
+                   printf("outavailpotvegherbpftsum: %f\n", outavailpotvegherbpftsum);
+#endif
 					 }
 				 }
 #ifdef DEBUG			
@@ -5275,7 +5475,8 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
 		// /!! comment out this if-else statement for the new pasture code -adv
         if (treepftsum - newpasturepftsum > potvegtreepftsum) {
             if (treepftsum < potvegtreepftsum) {
-                newpasturepftsum = round(treepftsum - potvegtreepftsum);
+                //newpasturepftsum = round(treepftsum - potvegtreepftsum);
+                newpasturepftsum = treepftsum - potvegtreepftsum;
             }
             else {
                 newpasturepftsum = 0.0;
@@ -5300,10 +5501,12 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
             }
             for (outpft = NEMPFT;outpft <= GC4PFT;outpft++) {	// distribute the pasture grass pfts based on the nearest 'current' year (base in this case) pasture-containing grid cell -adv 
                 if (outpft >= GA3PFT) {
-                    outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] + incurrentpftval[outpft][pasturegrid] * newpasturepftsum / grasspftsum);
+                    //outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] + incurrentpftval[outpft][pasturegrid] * newpasturepftsum / grasspftsum);
+                  outhurttpftval[outpft][outgrid] = outhurttpftval[outpft][outgrid] + incurrentpftval[outpft][pasturegrid] * newpasturepftsum / grasspftsum;
                 }
                 if (outpft <= BDBPFT) {
-                    outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] * (treepftsum - removepftsum) / treepftsum);
+                    //outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] * (treepftsum - removepftsum) / treepftsum);
+                    outhurttpftval[outpft][outgrid] = outhurttpftval[outpft][outgrid] * (treepftsum - removepftsum) / treepftsum;
                 }
             }
             
@@ -5318,13 +5521,16 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
             if (herbaceouspftsum > 0.0 && potvegtreepftsum > 0.0) {
                 for (outpft = NEMPFT;outpft <= GC4PFT;outpft++) {
                     if (outpft >= SEMPFT) { // remove current day herbaceous
-                        outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] * (herbaceouspftsum + newpasturepftsum) / herbaceouspftsum);
+                        //outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] * (herbaceouspftsum + newpasturepftsum) / herbaceouspftsum);
+                        outhurttpftval[outpft][outgrid] = outhurttpftval[outpft][outgrid] * (herbaceouspftsum + newpasturepftsum) / herbaceouspftsum;
                     }
                     if (outpft <= BDBPFT && potvegtreepftsum > 0.0) { // add potveg tree
-                        outhurttpftval[outpft][outgrid] = round( (outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addtreepftsum / potvegtreepftsum));
+                        //outhurttpftval[outpft][outgrid] = round( (outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addtreepftsum / potvegtreepftsum));
+                        outhurttpftval[outpft][outgrid] = (outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addtreepftsum / potvegtreepftsum);
                     }
                     if (outpft >= SEMPFT && potvegherbaceouspftsum > 0.0) { // add potveg herbaceous
-                        outhurttpftval[outpft][outgrid] = round( (outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addherbaceouspftsum / potvegherbaceouspftsum));
+                        //outhurttpftval[outpft][outgrid] = round( (outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addherbaceouspftsum / potvegherbaceouspftsum));
+                        outhurttpftval[outpft][outgrid] =  (outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addherbaceouspftsum / potvegherbaceouspftsum);
                     }
                 }
             }
@@ -5349,7 +5555,7 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
     
     if (updatedpftsum < 100.0) {
         addpftsum = 100.0 - updatedpftsum;
-        if (addpftsum > 1.0) {
+        if (addpftsum >= 1.0) {
 #ifdef DEBUG            
             printf("Pasture Addsum = %f ",addpftsum);
 #endif            
@@ -5364,7 +5570,7 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
     
     if (updatedpftsum > 100.0) {
         removepftsum = updatedpftsum - 100.0;
-        if (removepftsum > 1.0) {
+        if (removepftsum >= 1.0) {
 #ifdef DEBUG            
             printf("Pasture Removesum = %f ",removepftsum);
 #endif            
@@ -5424,9 +5630,8 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
 -----*/
 void sethurttlanduse(int outgrid) {
     
-    float herbaceouspftsum, harvestsum;
+    double herbaceouspftsum, harvestsum;
     int outpft;
-	int harvestyear;
 	
     /* converts fractions of gridcell being harvested, to fractions of total natural vegetation being harvested */
     /* NOTE: this treats all 5 harvest classes the same, and then applies them all to forested PFTs later on */
@@ -5530,7 +5735,7 @@ void sethurttlanduse(int outgrid) {
 void
 calchurtt(int modyear, int calcyear) {
     
-    int outgrid,outpft;
+    int outgrid;
     
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
 		/* initalize two pft mask arrays for each grid -adv */
@@ -5591,10 +5796,9 @@ void
 updateannuallanduse(int *inyear, int ISFUTURE, char *in_dir, char *out_dir) {
 #else
 void
-updateannuallanduse_main(float glmo[][GLMONFLDS], float plodata[][PLONFLDS], int *inyear) {
+updateannuallanduse_main(double glmo[][GLMONFLDS], double plodata[][PLONFLDS], int *inyear) {
 #endif
 	fprintf(stderr, "\ninyear %i started in updateannuallanduse\n", *inyear);
-	int i;
 	char filenamestr[1000];
 	long hurttyear;		// this is an index for the luh files, starts at 0 for the first data year; assumes that the first luh data year coincides with either 1850 or 2015 model start years
 	long outyear;	/* the output year, which is the year of the glmo land use data (inyear); this used to be myear, but I changed the name for consistency - adv */
