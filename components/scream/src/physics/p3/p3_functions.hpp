@@ -631,6 +631,7 @@ struct Functions
     const uview_1d<const Spack>& rcldm,
     const uview_1d<const Spack>& exner,
     const uview_1d<const Spack>& th,
+    const uview_1d<const Spack>& dzq,
     const uview_1d<Spack>& pratot,
     const uview_1d<Spack>& prctot,
     const uview_1d<Spack>& prec,
@@ -656,6 +657,9 @@ struct Functions
     const uview_1d<Spack>& inv_exner,
     const uview_1d<Spack>& t,
     const uview_1d<Spack>& qv,
+    const uview_1d<Spack>& qtend_ignore,
+    const uview_1d<Spack>& ntend_ignore,
+    const uview_1d<Spack>& inv_dzq,
     Scalar& prt_liq,
     Scalar& prt_sol);
 

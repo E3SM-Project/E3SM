@@ -27,7 +27,7 @@ extern "C" {
                  Real* nevapr, Real* prer_evap,
                  Real* rflx, Real* sflx, // 1 extra column size
                  Real* rcldm, Real* lcldm, Real* icldm, Real* pratot, Real* prctot,
-                 Real* p3_tend_out, Real* mu_c, Real* lamc, Real* liq_ice_exchange,
+                 Real* mu_c, Real* lamc, Real* liq_ice_exchange,
                  Real* vap_liq_exchange, Real* vap_ice_exchange);
 }
 
@@ -78,7 +78,6 @@ FortranData::FortranData (Int ncol_, Int nlev_)
   icldm = Array2("Ice cloud fraction", ncol, nlev);
   pratot = Array2("Cloud drop accretion by rain", ncol, nlev);
   prctot = Array2("Cloud drop autoconversion to rain", ncol, nlev);
-  p3_tend_out = Array3("Microphysics Tendencies", ncol, nlev, 49);
   mu_c = Array2("Size distribution shape paramter", ncol, nlev);
   lamc = Array2("Size distribution slope paramter", ncol, nlev);
   liq_ice_exchange = Array2("sum of liq-ice phase change tendenices", ncol, nlev);
@@ -153,7 +152,7 @@ void p3_main (const FortranData& d) {
             d.nevapr.data(), d.prer_evap.data(),
             d.rflx.data(), d.sflx.data(),
             d.rcldm.data(), d.lcldm.data(), d.icldm.data(),d.pratot.data(),d.prctot.data(),
-            d.p3_tend_out.data(),d.mu_c.data(),d.lamc.data(),d.liq_ice_exchange.data(),
+            d.mu_c.data(),d.lamc.data(),d.liq_ice_exchange.data(),
             d.vap_liq_exchange.data(),d.vap_ice_exchange.data());
 }
 
