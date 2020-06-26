@@ -1346,23 +1346,23 @@ contains
             nevapr(i,:), prer_evap(i,:), vap_liq_exchange(i,:), vap_ice_exchange(i,:), liq_ice_exchange(i,:), pratot(i,:), &
             prctot(i,:), p3_tend_out(i,:,:), log_hydrometeorsPresent)
 
-      ! measure microphysics processes tendency output
-      p3_tend_out(i,:,42) = ( qc(i,:)    - qc_old(i,:) ) * odt    ! Liq. microphysics tendency, measure
-      p3_tend_out(i,:,43) = ( nc(i,:)    - nc_old(i,:) ) * odt    ! Liq. # microphysics tendency, measure
-      p3_tend_out(i,:,44) = ( qr(i,:)    - qr_old(i,:) ) * odt    ! Rain microphysics tendency, measure
-      p3_tend_out(i,:,45) = ( nr(i,:)    - nr_old(i,:) ) * odt    ! Rain # microphysics tendency, measure
-      p3_tend_out(i,:,46) = ( qitot(i,:) - qitot_old(i,:) ) * odt ! Ice  microphysics tendency, measure
-      p3_tend_out(i,:,47) = ( nitot(i,:) - nitot_old(i,:) ) * odt ! Ice  # microphysics tendency, measure
-      p3_tend_out(i,:,48) = ( qv(i,:)    - qv_old(i,:) ) * odt    ! Vapor  microphysics tendency, measure
-      p3_tend_out(i,:,49) = ( th(i,:)    - th_old(i,:) ) * odt    ! Pot. Temp. microphysics tendency, measure
+       ! measure microphysics processes tendency output
+       p3_tend_out(i,:,42) = ( qc(i,:)    - qc_old(i,:) ) * odt    ! Liq. microphysics tendency, measure
+       p3_tend_out(i,:,43) = ( nc(i,:)    - nc_old(i,:) ) * odt    ! Liq. # microphysics tendency, measure
+       p3_tend_out(i,:,44) = ( qr(i,:)    - qr_old(i,:) ) * odt    ! Rain microphysics tendency, measure
+       p3_tend_out(i,:,45) = ( nr(i,:)    - nr_old(i,:) ) * odt    ! Rain # microphysics tendency, measure
+       p3_tend_out(i,:,46) = ( qitot(i,:) - qitot_old(i,:) ) * odt ! Ice  microphysics tendency, measure
+       p3_tend_out(i,:,47) = ( nitot(i,:) - nitot_old(i,:) ) * odt ! Ice  # microphysics tendency, measure
+       p3_tend_out(i,:,48) = ( qv(i,:)    - qv_old(i,:) ) * odt    ! Vapor  microphysics tendency, measure
+       p3_tend_out(i,:,49) = ( th(i,:)    - th_old(i,:) ) * odt    ! Pot. Temp. microphysics tendency, measure
        !NOTE: At this point, it is possible to have negative (but small) nc, nr, nitot.  This is not
        !      a problem; those values get clipped to zero in the sedimentation section (if necessary).
        !      (This is not done above simply for efficiency purposes.)
 
-!      if (debug_ON) then
-!         tmparr1(i,:) = th(i,:)*inv_exner(i,:)!(pres(i,:)*1.e-5)**(rd*inv_cp)
-!         call check_values(qv,tmparr1,i,it,debug_ABORT,300,col_location)
-!      endif
+       !      if (debug_ON) then
+       !         tmparr1(i,:) = th(i,:)*inv_exner(i,:)!(pres(i,:)*1.e-5)**(rd*inv_cp)
+       !         call check_values(qv,tmparr1,i,it,debug_ABORT,300,col_location)
+       !      endif
 
        if (.not. log_hydrometeorsPresent) goto 333
 
