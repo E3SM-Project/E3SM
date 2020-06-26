@@ -172,41 +172,27 @@
   <!--- shr_strmdata_nml -->
   <!-- =========================================  -->
 
-  <entry id="datamode">
-    <type>char</type>
+  <entry id="nx_global" modify_via_xml="WAV_NX">
+    <type>integer</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
-    <valid_values>NULL,COPYALL</valid_values>
     <desc>
-      The wave data is associated with the wave model
-      and is normally on a different grid than the ocean data.
-      datamode = "NULL"
-      Is always a valid option and means no data will be generated.
-      Turns off the data model as a provider of data to the coupler.
-      datamode = "COPYALL"
-      Copies all fields directly from the input data streams Any required
-      fields not found on an input stream will be set to zero.
-      Set by the following xml variables in env_run.xml DWAV_MODE
-      specifies values for wav mode: copyall,null
+      global size of nx
     </desc>
     <values>
-      <value>COPYALL</value>
-      <value dwav_mode="NULL">NULL</value>
+      <value>$WAV_NX</value>
     </values>
   </entry>
 
-  <entry id="domainfile" skip_default_entry="true">
-    <type>char</type>
+  <entry id="ny_global" modify_via_xml="WAV_NY">
+    <type>integer</type>
     <category>streams</category>
-    <input_pathname>abs</input_pathname>
     <group>shr_strdata_nml</group>
     <desc>
-      spatial gridfile associated with the strdata.  grid information will
-      be read from this file and that grid will serve as the target grid
-      for all input data for this strdata input.
+      global size of ny
     </desc>
     <values>
-      <value>null</value>
+      <value>$WAV_NY</value>
     </values>
   </entry>
 
@@ -241,36 +227,6 @@
     </values>
   </entry>
 
-  <entry id="fillread"  per_stream_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      array (up to 30 elements) of filenames associated with the array of
-      streams.  specifies the weights file to read in instead of computing the
-      weights on the fly for the fill operation.  if this is set, fillalgo
-      and fillmask are ignored.
-    </desc>
-    <values>
-      <value>NOT_SET</value>
-    </values>
-  </entry>
-
-  <entry id="fillwrite" per_stream_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      array (up to 30 elements)  of filenames associated with the array of
-      streams.  specifies the weights file to generate after weights are
-      computed on the fly for the fill operation.  this allows a user to
-      save and reuse a set of weights later.
-    </desc>
-    <values>
-      <value>NOT_SET</value>
-    </values>
-  </entry>
-
   <entry id="mapmask" per_stream_entry="true">
     <type>char(30)</type>
     <category>streams</category>
@@ -302,36 +258,6 @@
     </desc>
     <values>
       <value>bilinear</value>
-    </values>
-  </entry>
-
-  <entry id="mapread" per_stream_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      array (up to 30 elements) of filenames associated with the array of
-      streams.  specifies the weights file to read instead of computing
-      weights on the fly for the mapping (interpolation) operation.  if this
-      is set, mapalgo and mapmask are ignored.
-    </desc>
-    <values>
-      <value>NOT_SET</value>
-    </values>
-  </entry>
-
-  <entry id="mapwrite" per_stream_entry="true">
-    <type>char(30)</type>
-    <category>streams</category>
-    <group>shr_strdata_nml</group>
-    <desc>
-      array (up to 30 elements) of filenames associated with the array of
-      streams.  specifies the weights file to generate after weights are
-      computed on the fly for the mapping (interpolation) operation.  this
-      allows a user to save and reuse a set of weights later.
-    </desc>
-    <values>
-      <value>NOT_SET</value>
     </values>
   </entry>
 
@@ -458,18 +384,26 @@
   <!--- dwav_nml -->
   <!-- =========================================  -->
 
-  <entry id="decomp">
+  <entry id="datamode">
     <type>char</type>
     <category>dwav</category>
     <group>dwav_nml</group>
-    <valid_values>1d,root</valid_values>
+    <valid_values>NULL,COPYALL</valid_values>
     <desc>
-      DWAV Decomposition strategy
-      1d   = Vector decomposition
-      root = run only on the master task
+      The wave data is associated with the wave model
+      and is normally on a different grid than the ocean data.
+      datamode = "NULL"
+      Is always a valid option and means no data will be generated.
+      Turns off the data model as a provider of data to the coupler.
+      datamode = "COPYALL"
+      Copies all fields directly from the input data streams Any required
+      fields not found on an input stream will be set to zero.
+      Set by the following xml variables in env_run.xml DWAV_MODE
+      specifies values for wav mode: copyall,null
     </desc>
     <values>
-      <value>1d</value>
+      <value>COPYALL</value>
+      <value dwav_mode="NULL">NULL</value>
     </values>
   </entry>
 

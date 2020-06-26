@@ -325,7 +325,9 @@
       enddo
       enddo
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, icells
@@ -348,7 +350,9 @@
 
       endif                     ! calc_strair
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, icells
@@ -469,7 +473,9 @@
       enddo
       enddo
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, icells
@@ -500,7 +506,9 @@
          Lheat = Lvap           ! liquid to vapor
       endif   ! sfctype
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, icells

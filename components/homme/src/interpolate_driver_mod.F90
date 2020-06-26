@@ -46,7 +46,7 @@ module interpolate_driver_mod
 
   type var_t
      integer, pointer :: ndims(:)
-!     integer, pointer :: type(:)
+     integer, pointer :: vtype(:)
      integer, pointer :: dimids(:,:)
      character*(PIO_MAX_NAME), pointer :: name(:)
      type(var_desc_t), pointer :: vardesc(:)
@@ -145,6 +145,8 @@ contains
 
     deallocate(infile%vars%vardesc)
     nullify(infile%vars%vardesc)
+    deallocate(infile%vars%vtype)
+    nullify(infile%vars%vtype)
     deallocate(infile%vars%name)
     nullify(infile%vars%name)
     deallocate(infile%vars%ndims)
@@ -267,6 +269,7 @@ contains
     deallocate(ldof)
 
     allocate(infile%vars%vardesc(varcnt))   
+    allocate(infile%vars%vtype(varcnt))
     allocate(infile%vars%name(varcnt))   
     allocate(infile%vars%ndims(varcnt))   
     allocate(infile%vars%timedependent(varcnt))   
@@ -290,7 +293,7 @@ contains
        end if
 
        ret = PIO_inq_vartype(infile%FileID, infile%vars%vardesc(i),  &
-            infile%vars%vardesc(i)%type)
+            infile%vars%vtype(i))
        ret = PIO_inq_varndims(infile%FileID, infile%vars%vardesc(i), &
             infile%vars%ndims(i))
        ret = PIO_inq_vardimid(infile%FileID, infile%vars%vardesc(i), &
@@ -409,7 +412,7 @@ contains
     vardims=0
     do i=1,nvars
        k=1
-       otype(i)=infile%vars%vardesc(i)%type
+       otype(i)=infile%vars%vtype(i)
        do j=1,infile%vars%ndims(i)
           if(infile%vars%dimids(j,i).eq.ncoldimid) then
              if(infile%vars%name(i).eq.'lon') then
@@ -779,7 +782,7 @@ contains
              if(par%masterproc) print *,'Copying ',trim(infile%vars%name(i))
              ! copy non-decomposed data
              len =1
-             if( outfile%varlist(i)%vardesc%type .eq. PIO_Char) then
+             if( outfile%varlist(i)%vtype .eq. PIO_Char) then
                 do n=2,infile%vars%ndims(i)
                    len = len*infile%dims(infile%vars%dimids(n,i))%len
                 end do

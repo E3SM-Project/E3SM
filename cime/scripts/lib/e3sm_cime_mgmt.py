@@ -99,7 +99,8 @@ def touches_file(start_range, end_range, filepath, title, skip=None):
 def reset_file(version, srcpath, dstpath):
 ###############################################################################
     is_exe = os.access(dstpath, os.X_OK)
-    os.remove(dstpath)
+    if os.path.exists(dstpath):
+        os.remove(dstpath)
     try:
         run_cmd_no_fail("git show {}:{} > {}".format(version, srcpath, dstpath))
     except CIMEError:

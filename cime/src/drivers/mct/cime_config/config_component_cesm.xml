@@ -230,6 +230,7 @@
       <value compset="_DATM.*_DICE.*_POP2">4</value>
       <value compset="_DATM.*_DICE.*_MOM6">24</value>
       <value compset="_DATM.*_SLND.*_CICE.*_POP2">24</value>
+      <value compset="_DATM.*_SLND.*_CICE.*_POP2" grid="oi%tx0.1v3">144</value>
       <value compset="_DATM.*_SLND.*_CICE.*_MOM6">24</value>
       <value compset="_DATM.*_CICE.*_DOCN">24</value>
       <value compset="_DATM.*_DOCN%US20">24</value>
@@ -310,6 +311,7 @@
       <value compset="_POP2" grid="oi%tx0.1v2">4</value>
       <value compset="_POP2" grid="oi%gx1v6">24</value>
       <value compset="_POP2" grid="oi%gx1v7">24</value>
+      <value compset="_POP2" grid="oi%tx0.1v3">48</value>
       <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN.*_SWAV">1</value>
       <value compset="_DATM%NYF.*_DLND.*_DICE.*_DOCN.*_DWAV">1</value>
       <value compset="_DLND.*_CISM\d">1</value>

@@ -2092,6 +2092,7 @@ contains
        ! Irrigation flux (land/rof only)
        call seq_flds_add(l2x_fluxes,"Flrl_irrig")
        call seq_flds_add(x2r_fluxes,"Flrl_irrig")
+       call seq_flds_add(l2x_fluxes_to_rof,'Flrl_irrig')
        longname = 'Irrigation flux (withdrawal from rivers)'
        stdname  = 'irrigation'
        units    = 'kg m-2 s-1'
@@ -3170,18 +3171,21 @@ contains
        units    = 'kg m-2 s-1'
        call seq_flds_add(l2x_fluxes,'Flrl_rofi_16O')
        call seq_flds_add(x2r_fluxes,'Flrl_rofi_16O')
+       call seq_flds_add(l2x_fluxes_to_rof,'Flrl_rofi_16O')
        longname = 'H2_16O Water flux from land (frozen)'
        stdname  = 'H2_16O_frozen_water_flux_into_runoff'
        attname  = 'Flrl_rofi_16O'
        call metadata_set(attname, longname, stdname, units)
        call seq_flds_add(l2x_fluxes,'Flrl_rofi_18O')
        call seq_flds_add(x2r_fluxes,'Flrl_rofi_18O')
+       call seq_flds_add(l2x_fluxes_to_rof,'Flrl_rofi_18O')
        longname = 'H2_18O Water flux from land (frozen)'
        stdname  = 'H2_18O_frozen_water_flux_into_runoff'
        attname  = 'Flrl_rofi_18O'
        call metadata_set(attname, longname, stdname, units)
        call seq_flds_add(l2x_fluxes,'Flrl_rofi_HDO')
        call seq_flds_add(x2r_fluxes,'Flrl_rofi_HDO')
+       call seq_flds_add(l2x_fluxes_to_rof,'Flrl_rofi_HDO')
        longname = 'HDO Water flux from land (frozen)'
        stdname  = 'HDO_frozen_water_flux_into_runoff'
        attname  = 'Flrl_rofi_HDO'
@@ -3189,18 +3193,21 @@ contains
 
        call seq_flds_add(l2x_fluxes,'Flrl_rofl_16O')
        call seq_flds_add(x2r_fluxes,'Flrl_rofl_16O')
+       call seq_flds_add(l2x_fluxes_to_rof,'Flrl_rofl_16O')
        longname = 'H2_16O Water flux from land (liquid)'
        stdname  = 'H2_16O_liquid_water_flux_into_runoff'
        attname  = 'Flrl_rofl_16O'
        call metadata_set(attname, longname, stdname, units)
        call seq_flds_add(l2x_fluxes,'Flrl_rofl_18O')
        call seq_flds_add(x2r_fluxes,'Flrl_rofl_18O')
+       call seq_flds_add(l2x_fluxes_to_rof,'Flrl_rofl_18O')
        longname = 'H2_18O Water flux from land (liquid)'
        stdname  = 'H2_18O_liquid_water_flux_into_runoff'
        attname  = 'Flrl_rofl_18O'
        call metadata_set(attname, longname, stdname, units)
        call seq_flds_add(l2x_fluxes,'Flrl_rofl_HDO')
        call seq_flds_add(x2r_fluxes,'Flrl_rofl_HDO')
+       call seq_flds_add(l2x_fluxes_to_rof,'Flrl_rofl_HDO')
        longname = 'HDO Water flux from land (liquid)'
        stdname  = 'HDO_liquid_water_flux_into_runoff'
        attname  = 'Flrl_rofl_HDO'

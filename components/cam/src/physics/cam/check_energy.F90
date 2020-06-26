@@ -54,6 +54,7 @@ module check_energy
   public :: check_energy_fix       ! add global mean energy difference as a heating
   public :: check_tracers_init      ! initialize tracer integrals and cumulative boundary fluxes
   public :: check_tracers_chng      ! check changes in integrals against cumulative boundary fluxes
+  public :: check_tracers_fini      ! free memory associated with check_tracers_data type variable
 
   public :: energy_helper_eam_def
 
@@ -84,8 +85,8 @@ module check_energy
   integer  :: dtcore_idx = 0       ! dtcore index in physics buffer 
 
   type check_tracers_data
-     real(r8) :: tracer(pcols,pcnst)       ! initial vertically integrated total (kinetic + static) energy
-     real(r8) :: tracer_tnd(pcols,pcnst)   ! cumulative boundary flux of total energy
+     real(r8), allocatable :: tracer(:,:) ! initial vertically integrated total (kinetic + static) energy
+     real(r8), allocatable :: tracer_tnd(:,:) ! cumulative boundary flux of total energy
      integer :: count(pcnst)               ! count of values with significant imbalances
   end type check_tracers_data
 
@@ -541,7 +542,9 @@ end subroutine check_energy_get_integrals
 !-----------------------------------------------------------------------
 
     ! Copy total energy out of input and output states
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
     do lchnk = begchunk, endchunk
        ncol = state(lchnk)%ncol
        ! input energy
@@ -622,7 +625,9 @@ subroutine ieflx_gmean(state, tend, pbuf2d, cam_in, cam_out, nstep)
     snow = 0._r8 
     ienet = 0._r8 
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
     do lchnk = begchunk, endchunk
 
        ncol = state(lchnk)%ncol
@@ -658,7 +663,9 @@ subroutine ieflx_gmean(state, tend, pbuf2d, cam_in, cam_out, nstep)
 
     call gmean(ienet, ieflx_glob)
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
     do lchnk = begchunk, endchunk
 
        ieflx = ieflx_glob
@@ -738,7 +745,9 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
 
     qflx_glob = 0._r8 
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
     do lchnk = begchunk, endchunk
        ncol = state(lchnk)%ncol
        qflx(:ncol,lchnk) = cam_in(lchnk)%cflx(:ncol,1)
@@ -839,12 +848,18 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     real(r8) :: trpdel(pcols, pver)                ! pdel for tracer
 
     integer ncol                                   ! number of atmospheric columns
+    integer ierror                                 ! allocate status return
     integer  i,k,m                                 ! column, level,constituent indices
     integer :: ixrain, ixsnow                      ! RAINQM and SNOWQM indices
 
 !-----------------------------------------------------------------------
 
     ncol  = state%ncol
+    allocate (tracerint%tracer(pcols,pcnst), stat=ierror)
+    if ( ierror /= 0 ) call endrun('CHECK_TRACERS_INIT error: allocation error tracer')
+
+    allocate (tracerint%tracer_tnd(pcols,pcnst), stat=ierror)
+    if ( ierror /= 0 ) call endrun('CHECK_TRACERS_INIT error: allocation error tracer_tnd')
 
     do m = 1,pcnst
 
@@ -879,6 +894,25 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
 
     return
   end subroutine check_tracers_init
+
+!===============================================================================
+  subroutine check_tracers_fini(tracerint)
+
+!-----------------------------------------------------------------------
+! Deallocate storage assoicated with check_tracers_data type variable
+!-----------------------------------------------------------------------
+
+!------------------------------Arguments--------------------------------
+
+    type(check_tracers_data), intent(inout)   :: tracerint
+
+!-----------------------------------------------------------------------
+
+    deallocate(tracerint%tracer)
+    deallocate(tracerint%tracer_tnd)
+
+    return
+  end subroutine check_tracers_fini
 
 !===============================================================================
   subroutine check_tracers_chng(state, tracerint, name, nstep, ztodt, cflx)

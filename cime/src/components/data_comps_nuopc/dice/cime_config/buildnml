@@ -38,11 +38,16 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     #----------------------------------------------------
     # Get a bunch of information from the case.
     #----------------------------------------------------
+    caseroot = case.get_value("CASEROOT")
     ice_domain_file = case.get_value("ICE_DOMAIN_FILE")
     ice_domain_path = case.get_value("ICE_DOMAIN_PATH")
     dice_mode = case.get_value("DICE_MODE")
     ice_grid = case.get_value("ICE_GRID")
     sstice_stream = case.get_value("SSTICE_STREAM")
+    atm_nx = case.get_value("ATM_NX")
+    ice_nx = case.get_value("ICE_NX")
+    atm_ny = case.get_value("ATM_NY")
+    ice_ny = case.get_value("ICE_NY")
 
     #----------------------------------------------------
     # Check for incompatible options.
@@ -71,6 +76,12 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     #----------------------------------------------------
     nmlgen.init_defaults(infile, config)
 
+    # Determine if need to obtain model mask from a 
+    # separate file
+    #----------------------------------------------------
+    if (ice_nx == atm_nx and ice_ny == atm_ny):
+        nmlgen.set_value("model_maskfile",os.path.join(ice_domain_path,ice_domain_file))
+
     #----------------------------------------------------
     # Construct the list of streams.
     #----------------------------------------------------
@@ -89,20 +100,14 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
         inst_stream = stream + inst_string
         logger.debug("DICE stream is {}".format(inst_stream))
         stream_path = os.path.join(confdir, "dice.streams.txt." + inst_stream)
-        nmlgen.create_stream_file_and_update_shr_strdata_nml(config, case.get_value("CASEROOT"),stream, stream_path, data_list_path)
+        nmlgen.create_stream_file_and_update_shr_strdata_nml(config, caseroot, 
+                                                             stream, stream_path, data_list_path)
 
     #----------------------------------------------------
     # Create `shr_strdata_nml` namelist group.
     #----------------------------------------------------
     # set per-stream variables
     nmlgen.create_shr_strdata_nml()
-
-    # set variables that are not per-stream
-    if ice_domain_file != "UNSET":
-        full_domain_path = os.path.join(ice_domain_path, ice_domain_file)
-        nmlgen.add_default("domainfile", value=full_domain_path)
-    else:
-        nmlgen.add_default("domainfile", value='null')
 
     #----------------------------------------------------
     # Finally, write out all the namelists.
@@ -135,7 +140,7 @@ def buildnml(case, caseroot, compname):
             "user_xml_dir {} does not exist ".format(user_xml_dir))
 
     # NOTE: User definition *replaces* existing definition.
-    files = Files()
+    files = Files(comp_interface="nuopc")
     definition_file = [files.get_value("NAMELIST_DEFINITION_FILE", {"component":"dice"})]
 
     user_definition = os.path.join(user_xml_dir, "namelist_definition_dice.xml")

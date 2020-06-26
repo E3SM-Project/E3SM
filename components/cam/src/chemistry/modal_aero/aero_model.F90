@@ -240,13 +240,14 @@ contains
        if ( convproc_do_aer ) then 
           do m = 1,gas_pcnst
              call cnst_get_ind( solsym(m), l, abort=.false. )
-             if ( ( history_aerosol ) .and. &
-                  (species_class(l) == spec_class_gas) ) then !RCE - only output WD_xxx and DF_xxx for gases
-                wetdep_name = 'WD_'//trim(solsym(m))
-                depflx_name = 'DF_'//trim(solsym(m)) 
-                nspc = get_het_ndx(solsym(m)) 
-                if (nspc > 0) call add_default( wetdep_name, 1, ' ' )
-                call add_default( depflx_name, 1, ' ' )
+             if ( ( history_aerosol ) .and. (l > 0) ) then
+                if  ( species_class(l) == spec_class_gas ) then !RCE - only output WD_xxx and DF_xxx for gases
+                   wetdep_name = 'WD_'//trim(solsym(m))
+                   depflx_name = 'DF_'//trim(solsym(m)) 
+                   nspc = get_het_ndx(solsym(m)) 
+                   if (nspc > 0) call add_default( wetdep_name, 1, ' ' )
+                   call add_default( depflx_name, 1, ' ' )
+                endif
              endif
           end do ! m = 1,gas_pcnst
        endif
@@ -1368,7 +1369,8 @@ contains
        ptend                                                                    ) !Intent-out
 
     use modal_aero_deposition, only: set_srf_wetdep
-    use wetdep,                only: wetdepa_v2, wetdep_inputs_set, wetdep_inputs_t
+    use wetdep,                only: wetdepa_v2, wetdep_inputs_set, &
+                                     wetdep_inputs_unset, wetdep_inputs_t
     use modal_aero_data
     use modal_aero_calcsize,   only: modal_aero_calcsize_sub
     use modal_aero_wateruptake,only: modal_aero_wateruptake_dr
@@ -2260,8 +2262,9 @@ do_lphase2_conditional: &
        call t_stopf('ma_convproc')       
     endif
 
+    call wetdep_inputs_unset(dep_inputs)
 
-  endsubroutine aero_model_wetdep
+  end subroutine aero_model_wetdep
 
 
   !=============================================================================

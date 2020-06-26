@@ -66,7 +66,7 @@ def _main_func(description):
         impl = TestScheduler([full_test_name], no_build=True, machine_name=machine, compiler=compiler,
                              output_root=output_root)
         success = impl.run_tests()
-        test_dir = impl._get_test_dir(full_test_name)
+        test_dir = impl._get_test_dir(full_test_name) # pylint: disable=protected-access
         shell_exe = os.path.split(os.environ["SHELL"])[-1]
         suffix = ".sh" if shell_exe in ["bash", "sh"] else ".csh"
         file_to_read = os.path.join(test_dir, ".env_mach_specific{}".format(suffix))

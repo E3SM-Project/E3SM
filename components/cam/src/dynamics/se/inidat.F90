@@ -578,7 +578,7 @@ contains
        ps=elem(ie)%state%ps_v(:,:,tl)
 #ifdef MODEL_THETA_L
        elem(ie)%state%w_i = 0.0
-       call set_thermostate(elem(ie),ps,elem(ie)%derived%FT,hvcoord)
+       call set_thermostate(elem(ie),ps,elem(ie)%derived%FT,hvcoord,elem(ie)%state%Q(:,:,:,1))
        !FT used as tmp array - reset
        elem(ie)%derived%FT = 0.0
 #else

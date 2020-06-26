@@ -37,7 +37,7 @@
          the batch script (ex. #PBS -A charge_account). Will default
          to PROJECT if not set.
 	 can be overridden in environment or $HOME/.cime/config -->
-    <CHARGE_ACCOUNT></CHARGE_ACCOUNT>
+    <CHARGE_ACCOUNT>couldbethis</CHARGE_ACCOUNT>
 
     <!-- SAVE_TIMING_DIR: (Acme only) directory for archiving timing output -->
     <SAVE_TIMING_DIR> </SAVE_TIMING_DIR>
@@ -72,14 +72,14 @@
     <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cime/tools/cprnc/cprnc.cheyenne</CCSM_CPRNC>
 
     <!-- GMAKE: gnu compatible make tool, default is 'gmake' -->
-    <GMAKE></GMAKE>
+    <GMAKE>gmake</GMAKE>
 
     <!-- GMAKE_J: optional number of threads to pass to the gmake flag -->
     <GMAKE_J>8</GMAKE_J>
 
     <!-- BATCH_SYSTEM: batch system used on this machine,
       supported values are: none, cobalt, lsf, pbs, slurm -->
-    <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
 
     <!-- SUPPORTED_BY: contact information for support for this system
       this field is not used in code -->

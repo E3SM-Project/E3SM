@@ -63,6 +63,7 @@ def buildlib(bldroot, installpath, case):
         filepath.append(os.path.join(cimeroot,"src","drivers","mct","shr"))
     elif comp_interface == "nuopc":
         filepath.append(os.path.join(cimeroot,"src","share","nuopc"))
+        filepath.append(os.path.join(cimeroot,"src","share","streams_nuopc"))
     else:
         expect(False, "driver value of {} not supported".format(comp_interface))
 

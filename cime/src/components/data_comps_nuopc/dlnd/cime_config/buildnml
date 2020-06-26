@@ -94,23 +94,6 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     # set per-stream variables
     nmlgen.create_shr_strdata_nml()
 
-    # Determine model domain filename (in dlnd_in)
-    if "CPLHIST" in dlnd_mode:
-        dlnd_cplhist_domain_file = case.get_value("DLND_CPLHIST_DOMAIN_FILE")
-        if dlnd_cplhist_domain_file == 'null':
-            logger.info("   ....  Obtaining DLND model domain info from first stream file: {}".format(streams[0]))
-        else:
-            logger.info("   ....  Obtaining DLND model domain info from stream {}".format(streams[0]))
-        nmlgen.add_default("domainfile", value=dlnd_cplhist_domain_file)
-    else:
-        lnd_domain_file = case.get_value("LND_DOMAIN_FILE")
-        lnd_domain_path = case.get_value("LND_DOMAIN_PATH")
-        if lnd_domain_file != "UNSET":
-            full_domain_path = os.path.join(lnd_domain_path, lnd_domain_file)
-            nmlgen.add_default("domainfile", value=full_domain_path)
-        else:
-            nmlgen.add_default("domainfile", "null")
-
     #----------------------------------------------------
     # Finally, write out all the namelists.
     #----------------------------------------------------
@@ -143,7 +126,7 @@ def buildnml(case, caseroot, compname):
             "user_xml_dir {} does not exist ".format(user_xml_dir))
 
     # NOTE: User definition *replaces* existing definition.
-    files = Files()
+    files = Files(comp_interface="nuopc")
     definition_file = [files.get_value("NAMELIST_DEFINITION_FILE", {"component":"dlnd"})]
 
     user_definition = os.path.join(user_xml_dir, "namelist_definition_dlnd.xml")

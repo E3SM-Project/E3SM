@@ -5,7 +5,7 @@ module mo_chm_diags
   use mo_tracname,  only : solsym
   use chem_mods,    only : rxntot, nfs, gas_pcnst, indexm, adv_mass
   use ppgrid,       only : pver
-  use mo_constants, only : pi, rgrav, rearth
+  use mo_constants, only : pi, rgrav, rearth, avogadro
   use mo_chem_utls, only : get_rxt_ndx, get_spc_ndx
   use cam_history,  only : fieldname_len
   use mo_jeuv,      only : neuv
@@ -21,6 +21,7 @@ module mo_chm_diags
   integer :: id_ccl4,id_cfc11,id_cfc113,id_ch3ccl3,id_cfc12,id_ch3cl,id_hcfc22,id_cf2clbr
   integer :: id_br,id_bro,id_hbr,id_hobr,id_ch4,id_h2o,id_h2
   integer :: id_o,id_o2,id_h
+  integer :: id_o3
 
   integer, parameter :: NJEUV = neuv
   integer :: rid_jeuv(NJEUV), rid_jno_i, rid_jno
@@ -43,6 +44,10 @@ module mo_chm_diags
 
   real(r8), parameter :: N_molwgt = 14.00674_r8
   real(r8), parameter :: S_molwgt = 32.066_r8
+
+  ! constants for converting O3 mixing ratio to DU
+  real(r8), parameter :: air_molwgt = 28.97_r8 ! molar mass of dry air, g/mol
+  real(r8), parameter :: DUfac = 2.687e20_r8   ! 1 DU in molecules per m^2
 
   character(len=32) :: chempkg
 
@@ -123,6 +128,7 @@ contains
     id_h2      = get_spc_ndx( 'H2' )
     id_o       = get_spc_ndx( 'O' )
     id_o2      = get_spc_ndx( 'O2' )
+    id_o3      = get_spc_ndx( 'O3' )
     id_h       = get_spc_ndx( 'H' )
 
     id_pan     = get_spc_ndx( 'PAN' )
@@ -331,6 +337,8 @@ contains
     call addfld( 'WD_NHX', horiz_only, 'A', 'kg/s', 'NHx wet deposition' )
     call addfld( 'DF_NHX', horiz_only, 'I', 'kg/m2/s', 'NHx dry deposition flux ' )
 
+    call addfld( 'TOZ', horiz_only,    'A', 'DU', 'Total column ozone' )
+
   end subroutine chm_diags_inti
 
   subroutine chm_diags( lchnk, ncol, vmr, mmr, rxt_rates, invariants, depvel, depflx, mmr_tend, pdel, pbuf )
@@ -376,8 +384,6 @@ contains
     integer     :: i,j,k, m, n
     integer :: plat
     real(r8)    :: wrk(ncol,pver)
-    !      real(r8)    :: tmp(ncol,pver)
-    !      real(r8)    :: m(ncol,pver)
     real(r8)    :: un2(ncol)
     
     real(r8), dimension(ncol,pver) :: vmr_nox, vmr_noy, vmr_clox, vmr_cloy, vmr_tcly, vmr_brox, vmr_broy, vmr_toth
@@ -446,6 +452,14 @@ contains
 
     call outfld( 'AREA', area(:ncol),   ncol, lchnk )
     call outfld( 'MASS', mass(:ncol,:), ncol, lchnk )
+
+    ! convert ozone from mol/mol to DU
+    wrk(:ncol,:) = pdel(:ncol,:)*vmr(:ncol,:,id_o3)*avogadro*rgrav/air_molwgt/DUfac*1.e3_r8
+    ! total column ozone, vertical integration
+    do k = 2,pver
+       wrk(:ncol,1) = wrk(:ncol,1) + wrk(:ncol,k)
+    end do
+    call outfld( 'TOZ', wrk,   ncol, lchnk )
 
     do m = 1,gas_pcnst
 

@@ -43,41 +43,41 @@ module camsrfexch
   type cam_out_t 
      integer  :: lchnk               ! chunk index
      integer  :: ncol                ! number of columns in chunk
-     real(r8) :: tbot(pcols)         ! bot level temperature
-     real(r8) :: zbot(pcols)         ! bot level height above surface
-     real(r8) :: ubot(pcols)         ! bot level u wind
-     real(r8) :: vbot(pcols)         ! bot level v wind
-     real(r8) :: qbot(pcols,pcnst)   ! bot level specific humidity
-     real(r8) :: pbot(pcols)         ! bot level pressure
-     real(r8) :: rho(pcols)          ! bot level density	
-     real(r8) :: netsw(pcols)        !	
-     real(r8) :: flwds(pcols)        ! 
-     real(r8) :: precsc(pcols)       !
-     real(r8) :: precsl(pcols)       !
-     real(r8) :: precc(pcols)        ! 
-     real(r8) :: precl(pcols)        ! 
-     real(r8) :: soll(pcols)         ! 
-     real(r8) :: sols(pcols)         ! 
-     real(r8) :: solld(pcols)        !
-     real(r8) :: solsd(pcols)        !
-     real(r8) :: thbot(pcols)        ! 
-     real(r8) :: co2prog(pcols)      ! prognostic co2
-     real(r8) :: co2diag(pcols)      ! diagnostic co2
-     real(r8) :: psl(pcols)
-     real(r8) :: bcphiwet(pcols)     ! wet deposition of hydrophilic black carbon
-     real(r8) :: bcphidry(pcols)     ! dry deposition of hydrophilic black carbon
-     real(r8) :: bcphodry(pcols)     ! dry deposition of hydrophobic black carbon
-     real(r8) :: ocphiwet(pcols)     ! wet deposition of hydrophilic organic carbon
-     real(r8) :: ocphidry(pcols)     ! dry deposition of hydrophilic organic carbon
-     real(r8) :: ocphodry(pcols)     ! dry deposition of hydrophobic organic carbon
-     real(r8) :: dstwet1(pcols)      ! wet deposition of dust (bin1)
-     real(r8) :: dstdry1(pcols)      ! dry deposition of dust (bin1)
-     real(r8) :: dstwet2(pcols)      ! wet deposition of dust (bin2)
-     real(r8) :: dstdry2(pcols)      ! dry deposition of dust (bin2)
-     real(r8) :: dstwet3(pcols)      ! wet deposition of dust (bin3)
-     real(r8) :: dstdry3(pcols)      ! dry deposition of dust (bin3)
-     real(r8) :: dstwet4(pcols)      ! wet deposition of dust (bin4)
-     real(r8) :: dstdry4(pcols)      ! dry deposition of dust (bin4)
+     real(r8), allocatable :: tbot(:)     ! bot level temperature
+     real(r8), allocatable :: zbot(:)     ! bot level height above surface
+     real(r8), allocatable :: ubot(:)     ! bot level u wind
+     real(r8), allocatable :: vbot(:)     ! bot level v wind
+     real(r8), allocatable :: qbot(:,:)   ! bot level specific humidity
+     real(r8), allocatable :: pbot(:)     ! bot level pressure
+     real(r8), allocatable :: rho(:)      ! bot level density	
+     real(r8), allocatable :: netsw(:)    !	
+     real(r8), allocatable :: flwds(:)    ! 
+     real(r8), allocatable :: precsc(:)   !
+     real(r8), allocatable :: precsl(:)   !
+     real(r8), allocatable :: precc(:)    ! 
+     real(r8), allocatable :: precl(:)    ! 
+     real(r8), allocatable :: soll(:)     ! 
+     real(r8), allocatable :: sols(:)     ! 
+     real(r8), allocatable :: solld(:)    !
+     real(r8), allocatable :: solsd(:)    !
+     real(r8), allocatable :: thbot(:)    ! 
+     real(r8), allocatable :: co2prog(:)  ! prognostic co2
+     real(r8), allocatable :: co2diag(:)  ! diagnostic co2
+     real(r8), allocatable :: psl(:)
+     real(r8), allocatable :: bcphiwet(:) ! wet deposition of hydrophilic black carbon
+     real(r8), allocatable :: bcphidry(:) ! dry deposition of hydrophilic black carbon
+     real(r8), allocatable :: bcphodry(:) ! dry deposition of hydrophobic black carbon
+     real(r8), allocatable :: ocphiwet(:) ! wet deposition of hydrophilic organic carbon
+     real(r8), allocatable :: ocphidry(:) ! dry deposition of hydrophilic organic carbon
+     real(r8), allocatable :: ocphodry(:) ! dry deposition of hydrophobic organic carbon
+     real(r8), allocatable :: dstwet1(:)  ! wet deposition of dust (bin1)
+     real(r8), allocatable :: dstdry1(:)  ! dry deposition of dust (bin1)
+     real(r8), allocatable :: dstwet2(:)  ! wet deposition of dust (bin2)
+     real(r8), allocatable :: dstdry2(:)  ! dry deposition of dust (bin2)
+     real(r8), allocatable :: dstwet3(:)  ! wet deposition of dust (bin3)
+     real(r8), allocatable :: dstdry3(:)  ! dry deposition of dust (bin3)
+     real(r8), allocatable :: dstwet4(:)  ! wet deposition of dust (bin4)
+     real(r8), allocatable :: dstdry4(:)  ! dry deposition of dust (bin4)
   end type cam_out_t 
 
 !---------------------------------------------------------------------------
@@ -87,37 +87,37 @@ module camsrfexch
   type cam_in_t    
      integer  :: lchnk                   ! chunk index
      integer  :: ncol                    ! number of active columns
-     real(r8) :: asdir(pcols)            ! albedo: shortwave, direct
-     real(r8) :: asdif(pcols)            ! albedo: shortwave, diffuse
-     real(r8) :: aldir(pcols)            ! albedo: longwave, direct
-     real(r8) :: aldif(pcols)            ! albedo: longwave, diffuse
-     real(r8) :: lwup(pcols)             ! longwave up radiative flux
-     real(r8) :: lhf(pcols)              ! latent heat flux
-     real(r8) :: shf(pcols)              ! sensible heat flux
-     real(r8) :: wsx(pcols)              ! surface u-stress (N)
-     real(r8) :: wsy(pcols)              ! surface v-stress (N)
-     real(r8) :: tref(pcols)             ! ref height surface air temp
-     real(r8) :: qref(pcols)             ! ref height specific humidity 
-     real(r8) :: u10(pcols)              ! 10m wind speed
-     real(r8) :: ts(pcols)               ! merged surface temp 
-     real(r8) :: sst(pcols)              ! sea surface temp
-     real(r8) :: snowhland(pcols)        ! snow depth (liquid water equivalent) over land 
-     real(r8) :: snowhice(pcols)         ! snow depth over ice
-     real(r8) :: fco2_lnd(pcols)         ! co2 flux from lnd
-     real(r8) :: fco2_ocn(pcols)         ! co2 flux from ocn
-     real(r8) :: fdms(pcols)             ! dms flux
-     real(r8) :: landfrac(pcols)         ! land area fraction
-     real(r8) :: icefrac(pcols)          ! sea-ice areal fraction
-     real(r8) :: ocnfrac(pcols)          ! ocean areal fraction
-     real(r8), pointer, dimension(:) :: ram1  !aerodynamical resistance (s/m) (pcols)
-     real(r8), pointer, dimension(:) :: fv    !friction velocity (m/s) (pcols)
-     real(r8), pointer, dimension(:) :: soilw !volumetric soil water (m3/m3)
-     real(r8) :: cflx(pcols,pcnst)       ! constituent flux (emissions)
-     real(r8) :: ustar(pcols)            ! atm/ocn saved version of ustar
-     real(r8) :: re(pcols)               ! atm/ocn saved version of re
-     real(r8) :: ssq(pcols)              ! atm/ocn saved version of ssq
-     real(r8), pointer, dimension(:,:) :: depvel ! deposition velocities
-     real(r8), pointer, dimension(:,:) :: dstflx ! dust fluxes
+     real(r8), allocatable :: asdir(:)      ! albedo: shortwave, direct
+     real(r8), allocatable :: asdif(:)      ! albedo: shortwave, diffuse
+     real(r8), allocatable :: aldir(:)      ! albedo: longwave, direct
+     real(r8), allocatable :: aldif(:)      ! albedo: longwave, diffuse
+     real(r8), allocatable :: lwup(:)       ! longwave up radiative flux
+     real(r8), allocatable :: lhf(:)        ! latent heat flux
+     real(r8), allocatable :: shf(:)        ! sensible heat flux
+     real(r8), allocatable :: wsx(:)        ! surface u-stress (N)
+     real(r8), allocatable :: wsy(:)        ! surface v-stress (N)
+     real(r8), allocatable :: tref(:)       ! ref height surface air temp
+     real(r8), allocatable :: qref(:)       ! ref height specific humidity 
+     real(r8), allocatable :: u10(:)        ! 10m wind speed
+     real(r8), allocatable :: ts(:)         ! merged surface temp 
+     real(r8), allocatable :: sst(:)        ! sea surface temp
+     real(r8), allocatable :: snowhland(:)  ! snow depth (liquid water equivalent) over land
+     real(r8), allocatable :: snowhice(:)   ! snow depth over ice
+     real(r8), allocatable :: fco2_lnd(:)   ! co2 flux from lnd
+     real(r8), allocatable :: fco2_ocn(:)   ! co2 flux from ocn
+     real(r8), allocatable :: fdms(:)       ! dms flux
+     real(r8), allocatable :: landfrac(:)   ! land area fraction
+     real(r8), allocatable :: icefrac(:)    ! sea-ice areal fraction
+     real(r8), allocatable :: ocnfrac(:)    ! ocean areal fraction
+     real(r8), pointer, dimension(:) :: ram1       !aerodynamical resistance (s/m) (pcols)
+     real(r8), pointer, dimension(:) :: fv         !friction velocity (m/s) (pcols)
+     real(r8), pointer, dimension(:) :: soilw      !volumetric soil water (m3/m3)
+     real(r8), allocatable :: cflx(:,:)     ! constituent flux (emissions)
+     real(r8), allocatable :: ustar(:)      ! atm/ocn saved version of ustar
+     real(r8), allocatable :: re(:)         ! atm/ocn saved version of re
+     real(r8), allocatable :: ssq(:)        ! atm/ocn saved version of ssq
+     real(r8), pointer, dimension(:,:) :: depvel   ! deposition velocities
+     real(r8), pointer, dimension(:,:) :: dstflx   ! dust fluxes
      real(r8), pointer, dimension(:,:) :: meganflx ! MEGAN fluxes
   end type cam_in_t    
 
@@ -175,6 +175,72 @@ CONTAINS
        nullify(cam_in(c)%meganflx)
     enddo  
     do c = begchunk,endchunk 
+       allocate (cam_in(c)%asdir(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error asdir')
+
+       allocate (cam_in(c)%asdif(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error asdif')
+
+       allocate (cam_in(c)%aldir(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error aldir')
+
+       allocate (cam_in(c)%aldif(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error aldif')
+
+       allocate (cam_in(c)%lwup(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error lwup')
+
+       allocate (cam_in(c)%lhf(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error lhf')
+
+       allocate (cam_in(c)%shf(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error shf')
+
+       allocate (cam_in(c)%wsx(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error wsx')
+
+       allocate (cam_in(c)%wsy(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error wsy')
+
+       allocate (cam_in(c)%tref(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error tref')
+
+       allocate (cam_in(c)%qref(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error qref')
+
+       allocate (cam_in(c)%u10(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error u10')
+
+       allocate (cam_in(c)%ts(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error ts')
+
+       allocate (cam_in(c)%sst(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error sst')
+
+       allocate (cam_in(c)%snowhland(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error snowhland')
+
+       allocate (cam_in(c)%snowhice(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error snowhice')
+
+       allocate (cam_in(c)%fco2_lnd(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error fco2_lnd')
+
+       allocate (cam_in(c)%fco2_ocn(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error fco2_ocn')
+
+       allocate (cam_in(c)%fdms(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error fdms')
+
+       allocate (cam_in(c)%landfrac(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error landfrac')
+
+       allocate (cam_in(c)%icefrac(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error icefrac')
+
+       allocate (cam_in(c)%ocnfrac(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error ocnfrac')
+
        if (index_x2a_Sl_ram1>0) then
           allocate (cam_in(c)%ram1(pcols), stat=ierror)
           if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error ram1')
@@ -187,6 +253,19 @@ CONTAINS
           allocate (cam_in(c)%soilw(pcols), stat=ierror)
           if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error soilw')
        end if
+
+       allocate (cam_in(c)%cflx(pcols,pcnst), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error cflx')
+
+       allocate (cam_in(c)%ustar(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error ustar')
+
+       allocate (cam_in(c)%re(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error re')
+
+       allocate (cam_in(c)%ssq(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error ssq')
+
        if (index_x2a_Fall_flxdst1>0) then
           ! Assume 4 bins from surface model ....
           allocate (cam_in(c)%dstflx(pcols,4), stat=ierror)
@@ -294,6 +373,113 @@ CONTAINS
       call endrun('ATM2HUB_ALLOC error: allocation error')
     end if
 
+    do c = begchunk,endchunk 
+       allocate (cam_out(c)%tbot(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error tbot')
+
+       allocate (cam_out(c)%zbot(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error zbot')
+
+       allocate (cam_out(c)%ubot(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error ubot')
+
+       allocate (cam_out(c)%vbot(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error vbot')
+
+       allocate (cam_out(c)%qbot(pcols,pcnst), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error qbot')
+
+       allocate (cam_out(c)%pbot(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error pbot')
+
+       allocate (cam_out(c)%rho(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error rho')
+
+       allocate (cam_out(c)%netsw(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error netsw')
+
+       allocate (cam_out(c)%flwds(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error flwds')
+
+       allocate (cam_out(c)%precsc(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error precsc')
+
+       allocate (cam_out(c)%precsl(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error precsl')
+
+       allocate (cam_out(c)%precc(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error precc')
+
+       allocate (cam_out(c)%precl(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error precl')
+
+       allocate (cam_out(c)%soll(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error soll')
+
+       allocate (cam_out(c)%sols(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error sols')
+
+       allocate (cam_out(c)%solld(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error solld')
+
+       allocate (cam_out(c)%solsd(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error solsd')
+
+       allocate (cam_out(c)%thbot(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error thbot')
+
+       allocate (cam_out(c)%co2prog(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error co2prog')
+
+       allocate (cam_out(c)%co2diag(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error co2diag')
+
+       allocate (cam_out(c)%psl(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB ALLOC error: allocation error psl')
+
+       allocate (cam_out(c)%bcphiwet(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error bcphiwet')
+
+       allocate (cam_out(c)%bcphidry(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error bcphidry')
+
+       allocate (cam_out(c)%bcphodry(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error bcphodry')
+
+       allocate (cam_out(c)%ocphiwet(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error ocphiwet')
+
+       allocate (cam_out(c)%ocphidry(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error ocphidry')
+
+       allocate (cam_out(c)%ocphodry(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error ocphodry')
+
+       allocate (cam_out(c)%dstwet1(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error dstwet1')
+
+       allocate (cam_out(c)%dstdry1(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error dstdry1')
+
+       allocate (cam_out(c)%dstwet2(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error dstwet2')
+
+       allocate (cam_out(c)%dstdry2(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error dstdry2')
+
+       allocate (cam_out(c)%dstwet3(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error dstwet3')
+
+       allocate (cam_out(c)%dstdry3(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error dstdry3')
+
+       allocate (cam_out(c)%dstwet4(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error dstwet4')
+
+       allocate (cam_out(c)%dstdry4(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error dstdry4')
+    enddo  
+
     do c = begchunk,endchunk
        cam_out(c)%lchnk       = c
        cam_out(c)%ncol        = get_ncols_p(c)
@@ -338,7 +524,46 @@ CONTAINS
 
   subroutine atm2hub_deallocate(cam_out)
     type(cam_out_t), pointer :: cam_out(:)    ! Atmosphere to surface input
+    integer :: c
+
     if(associated(cam_out)) then
+       do c = begchunk,endchunk
+          deallocate(cam_out(c)%tbot)
+          deallocate(cam_out(c)%zbot)
+          deallocate(cam_out(c)%ubot)
+          deallocate(cam_out(c)%vbot)
+          deallocate(cam_out(c)%qbot)
+          deallocate(cam_out(c)%pbot)
+          deallocate(cam_out(c)%rho)
+          deallocate(cam_out(c)%netsw)
+          deallocate(cam_out(c)%flwds)
+          deallocate(cam_out(c)%precsc)
+          deallocate(cam_out(c)%precsl)
+          deallocate(cam_out(c)%precc)
+          deallocate(cam_out(c)%precl)
+          deallocate(cam_out(c)%soll)
+          deallocate(cam_out(c)%sols)
+          deallocate(cam_out(c)%solld)
+          deallocate(cam_out(c)%solsd)
+          deallocate(cam_out(c)%thbot)
+          deallocate(cam_out(c)%co2prog)
+          deallocate(cam_out(c)%co2diag)
+          deallocate(cam_out(c)%bcphiwet)
+          deallocate(cam_out(c)%bcphidry)
+          deallocate(cam_out(c)%bcphodry)
+          deallocate(cam_out(c)%ocphiwet)
+          deallocate(cam_out(c)%ocphidry)
+          deallocate(cam_out(c)%ocphodry)
+          deallocate(cam_out(c)%dstwet1)
+          deallocate(cam_out(c)%dstdry1)
+          deallocate(cam_out(c)%dstwet2)
+          deallocate(cam_out(c)%dstdry2)
+          deallocate(cam_out(c)%dstwet3)
+          deallocate(cam_out(c)%dstdry3)
+          deallocate(cam_out(c)%dstwet4)
+          deallocate(cam_out(c)%dstdry4)
+       enddo  
+
        deallocate(cam_out)
     end if
     nullify(cam_out)
@@ -350,6 +575,29 @@ CONTAINS
 
     if(associated(cam_in)) then
        do c=begchunk,endchunk
+          deallocate(cam_in(c)%asdir)
+          deallocate(cam_in(c)%asdif)
+          deallocate(cam_in(c)%aldir)
+          deallocate(cam_in(c)%aldif)
+          deallocate(cam_in(c)%lwup)
+          deallocate(cam_in(c)%lhf)
+          deallocate(cam_in(c)%shf)
+          deallocate(cam_in(c)%wsx)
+          deallocate(cam_in(c)%wsy)
+          deallocate(cam_in(c)%tref)
+          deallocate(cam_in(c)%qref)
+          deallocate(cam_in(c)%u10)
+          deallocate(cam_in(c)%ts)
+          deallocate(cam_in(c)%sst)
+          deallocate(cam_in(c)%snowhland)
+          deallocate(cam_in(c)%snowhice)
+          deallocate(cam_in(c)%fco2_lnd)
+          deallocate(cam_in(c)%fco2_ocn)
+          deallocate(cam_in(c)%fdms)
+          deallocate(cam_in(c)%landfrac)
+          deallocate(cam_in(c)%icefrac)
+          deallocate(cam_in(c)%ocnfrac)
+
           if(associated(cam_in(c)%ram1)) then
              deallocate(cam_in(c)%ram1)
              nullify(cam_in(c)%ram1)
@@ -362,6 +610,12 @@ CONTAINS
              deallocate(cam_in(c)%soilw)
              nullify(cam_in(c)%soilw)
           end if
+
+          deallocate(cam_in(c)%cflx)
+          deallocate(cam_in(c)%ustar)
+          deallocate(cam_in(c)%re)
+          deallocate(cam_in(c)%ssq)
+
           if(associated(cam_in(c)%dstflx)) then
              deallocate(cam_in(c)%dstflx)
              nullify(cam_in(c)%dstflx)
@@ -374,7 +628,6 @@ CONTAINS
              deallocate(cam_in(c)%depvel)
              nullify(cam_in(c)%depvel)
           end if
-          
        enddo
 
        deallocate(cam_in)

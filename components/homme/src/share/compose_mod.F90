@@ -341,6 +341,9 @@ contains
     call cedr_query_bufsz(ssz, rsz)
     sendsz = max(sendsz, ssz)
     recvsz = max(recvsz, rsz)
+#else
+    sendsz = 0
+    recvsz = 0
 #endif
   end subroutine compose_query_bufsz
 

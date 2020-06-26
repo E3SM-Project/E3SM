@@ -524,10 +524,8 @@ contains
           ! set the undefined ones to gas, and leave the aerosol ones as is
           if (imozart <= 0) then
              call endrun( '*** modal_aero_initialize_data -- bad imozart' )
-          else if (imozart+gas_pcnst-1 > pcnst) then
-             call endrun( '*** modal_aero_initialize_data -- bad imozart+gas_pcnst-1' )
           end if
-          do i = imozart, imozart+gas_pcnst-1
+          do i = imozart, pcnst
              if (species_class(i) == spec_class_undefined) then
                 species_class(i) = spec_class_gas
              end if
