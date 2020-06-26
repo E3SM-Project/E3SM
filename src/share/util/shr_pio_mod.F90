@@ -506,11 +506,6 @@ contains
     call shr_mpi_bcast(pio_buffer_size_limit, Comm)
     call shr_mpi_bcast(pio_async_interface, Comm)
     call shr_mpi_bcast(pio_rearranger, Comm)
-    if (npes == 1) then
-       pio_rearr_comm_max_pend_req_comp2io = 0
-       pio_rearr_comm_max_pend_req_io2comp = 0
-    endif
-
 
     call shr_pio_rearr_opts_set(Comm, pio_rearr_comm_type, pio_rearr_comm_fcd, &
          pio_rearr_comm_max_pend_req_comp2io, pio_rearr_comm_enable_hs_comp2io, &
@@ -812,7 +807,7 @@ contains
       end select
 
       ! buf(3) = max_pend_req_comp2io
-      if((pio_rearr_comm_max_pend_req_comp2io < 0) .and. &
+      if((pio_rearr_comm_max_pend_req_comp2io <= 0) .and. &
           (pio_rearr_comm_max_pend_req_comp2io /= PIO_REARR_COMM_UNLIMITED_PEND_REQ)) then
 
         ! Small multiple of pio_numiotasks has proven to perform
@@ -844,7 +839,7 @@ contains
       end if
 
       ! buf(6) = max_pend_req_io2comp
-      if((pio_rearr_comm_max_pend_req_io2comp < 0) .and. &
+      if((pio_rearr_comm_max_pend_req_io2comp <= 0) .and. &
           (pio_rearr_comm_max_pend_req_io2comp /= PIO_REARR_COMM_UNLIMITED_PEND_REQ)) then
         write(shr_log_unit, *) "Invalid PIO rearranger comm max pend req (io2comp), ", pio_rearr_comm_max_pend_req_io2comp
         write(shr_log_unit, *) "Resetting PIO rearranger comm max pend req (io2comp) to ", PIO_REARR_COMM_DEF_MAX_PEND_REQ
