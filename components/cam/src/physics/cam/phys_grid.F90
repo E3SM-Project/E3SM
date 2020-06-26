@@ -420,6 +420,7 @@ contains
     real(r8), dimension(:), allocatable :: area_d     ! column surface area (from dynamics)
     real(r8), dimension(:), allocatable :: wght_d     ! column integration weight (from dynamics)
     integer,  dimension(:), allocatable :: pchunkid   ! chunk global ordering
+    integer,  dimension(:), allocatable :: tmp_gcol   ! work array for global physics column indices
 
     ! permutation array used in physics column sorting;
     ! reused later as work space in (lbal_opt == -1) logic
@@ -777,14 +778,12 @@ contains
        max_nproc_vsmp = 1
 
        !
-       ! Allocate and initialize chunks data structure
+       ! Allocate and initialize part of chunks data structure
        !
        allocate( cdex(1:maxblksiz) )
        allocate( chunks(1:nchunks) )
        do cid=1,nchunks
           allocate( chunks(cid)%gcol(max_pcols) )
-          allocate( chunks(cid)%lon(max_pcols)  )
-          allocate( chunks(cid)%lat(max_pcols)  )
        enddo
        chunks(:)%estcost = 0.0_r8
 
@@ -807,8 +806,6 @@ contains
                 ! yes - then save the information
                 ncols = ncols + 1
                 chunks(cid)%gcol(ncols) = curgcol_d
-                chunks(cid)%lat(ncols) = lat_p(curgcol_d)
-                chunks(cid)%lon(ncols) = lon_p(curgcol_d)		
                 chunks(cid)%estcost = chunks(cid)%estcost + cost_d(curgcol_d)
              endif
           enddo
@@ -817,8 +814,6 @@ contains
 
        ! Clean-up
        deallocate( cdex )
-       deallocate( lat_p )
-       deallocate( lon_p )
        deallocate( maxblksiz_proc )
 
        !
@@ -890,8 +885,6 @@ contains
        call t_stopf("create_chunks")
 
        ! Early clean-up, to minimize memory high water mark
-       deallocate( lat_p )
-       deallocate( lon_p )
        !deallocate( latlon_to_dyn_gcol_map ) !do not deallocate as it is being used in RRTMG radiation.F90
        if  (twin_alg .eq. 1) deallocate( lonlat_to_dyn_gcol_map )
        if  (twin_alg .eq. 1) deallocate( clon_p_cnt )
@@ -922,6 +915,40 @@ contains
     ! Deallocate unneeded work space
     !
     deallocate( cost_d )
+
+    !
+    ! Resize gcol to dimension nlon to eliminate unused space, then
+    ! allocate and set lat and lon member arrays
+    !
+    max_pcols = maxval(pcols_proc)
+    allocate(tmp_gcol(max_pcols))
+    do cid=1,nchunks
+
+       ncols = chunks(cid)%ncols
+       do i = 1, ncols
+          tmp_gcol(i) = chunks(cid)%gcol(i)
+       end do
+
+       deallocate(chunks(cid)%gcol)
+       allocate(chunks(cid)%gcol(ncols))
+
+       allocate(chunks(cid)%lat(ncols))
+       allocate(chunks(cid)%lon(ncols))
+
+       do i = 1, ncols
+          chunks(cid)%gcol(i) = tmp_gcol(i)
+          chunks(cid)%lat(i)  = lat_p(tmp_gcol(i))
+          chunks(cid)%lon(i)  = lon_p(tmp_gcol(i))
+       end do
+
+    enddo
+
+    !
+    ! Deallocate unneeded work space
+    !
+    deallocate( tmp_gcol )
+    deallocate( lat_p )
+    deallocate( lon_p )
 
     !
     ! Allocate and initialize data structures for gather/scatter
@@ -975,25 +1002,20 @@ contains
     endchunk = pchunkid(iam+1) + lastblock - 1
     !
     allocate( lchunks(begchunk:endchunk) )
-    do lcid=begchunk,endchunk
-       ! local chunks, so use pcols and not max_pcols (which is not
-       !  defined yet for lbal /= -1)
-       allocate( lchunks(lcid)%gcol(pcols) )
-       allocate( lchunks(lcid)%area(pcols) )
-       allocate( lchunks(lcid)%wght(pcols) )
-    enddo
-    lchunks(:)%cost = 0.0_r8
-
     do cid=1,nchunks
        if (chunks(cid)%owner == iam) then
           lcid = chunks(cid)%lcid
           lchunks(lcid)%ncols = chunks(cid)%ncols
           lchunks(lcid)%cid   = cid
+          allocate( lchunks(lcid)%gcol(chunks(cid)%ncols) )
+          allocate( lchunks(lcid)%area(chunks(cid)%ncols) )
+          allocate( lchunks(lcid)%wght(chunks(cid)%ncols) )
           do i=1,chunks(cid)%ncols
              lchunks(lcid)%gcol(i) = chunks(cid)%gcol(i)
           enddo
        endif
     enddo
+    lchunks(:)%cost = 0.0_r8
 
     deallocate( pchunkid )
     !deallocate( npchunks ) !do not deallocate as it is being used in RRTMG radiation.F90
@@ -1171,8 +1193,7 @@ contains
     ! It's structure will depend on whether or not the physics grid is
     ! unstructured
     unstructured = dycore_is('UNSTRUCTURED')
-    ! local chunks, so use pcols and not max_pcols (which is not defined
-    !  yet for lbal /= -1)
+    ! local chunks, so use pcols
     if (unstructured) then
       allocate(grid_map(3, pcols * (endchunk - begchunk + 1)))
     else
@@ -1299,8 +1320,8 @@ contains
       max_process_nchunks  = maxval(npchunks)
       min_process_ncols    = minval(process_ncols)
       max_process_ncols    = maxval(process_ncols)
-      max_pcols            = maxval(pcols_proc)
       min_pcols            = minval(pcols_proc)
+     !max_pcols            = maxval(pcols_proc)    already calculated
       deallocate(process_ncols)
 
       write(iulog,*) 'PHYS_GRID_INIT:  Using'
@@ -4849,7 +4870,9 @@ logical function phys_grid_initialized ()
             maxcol_chks(:) = nvsmpchunks(:)
 ! Reset max_pcols. Note this could be larger than necessary (after resetting
 ! pcols_vsmp based on the actual number of columns assigned to each chunk), 
-! but it is needed now in order to allocate the chunks data structure
+! but it is needed now in order to allocate the gcol array in the
+! chunks data structure. The gcol array will be reallocated after the return
+! from the create_chunks routine, after which there will be no wasted space.
             max_pcols = maxval(pcols_vsmp)
          endif
       endif
@@ -4860,8 +4883,6 @@ logical function phys_grid_initialized ()
       allocate( chunks(1:nchunks) )
       do cid=1,nchunks
          allocate( chunks(cid)%gcol(max_pcols) )
-         allocate( chunks(cid)%lon(max_pcols)  )
-         allocate( chunks(cid)%lat(max_pcols)  )
       enddo
       allocate( knuhcs(1:ngcols) )
 !
@@ -4994,8 +5015,6 @@ logical function phys_grid_initialized ()
 !
             lcol = chunks(cid)%ncols
             chunks(cid)%gcol(lcol) = curgcol
-            chunks(cid)%lon(lcol)  = lon_p(curgcol)
-            chunks(cid)%lat(lcol)  = lat_p(curgcol)
             chunks(cid)%estcost = chunks(cid)%estcost + cost_d(curgcol)
             knuhcs(curgcol)%chunkid = cid
             knuhcs(curgcol)%col = lcol
@@ -5018,8 +5037,6 @@ logical function phys_grid_initialized ()
 !
                       lcol = chunks(cid)%ncols
                       chunks(cid)%gcol(lcol) = twingcol
-                      chunks(cid)%lon(lcol) = lon_p(twingcol)
-                      chunks(cid)%lat(lcol) = lat_p(twingcol)
                       chunks(cid)%estcost = chunks(cid)%estcost + cost_d(twingcol)
                       knuhcs(twingcol)%chunkid = cid
                       knuhcs(twingcol)%col = lcol
@@ -5090,8 +5107,6 @@ logical function phys_grid_initialized ()
       allocate( chunks(1:nchunks) )
       do cid=1,nchunks
          allocate( chunks(cid)%gcol(max_pcols) )
-         allocate( chunks(cid)%lon(max_pcols)  )
-         allocate( chunks(cid)%lat(max_pcols)  )
       enddo
       allocate( knuhcs(1:ngcols) )
 !
@@ -5124,8 +5139,6 @@ logical function phys_grid_initialized ()
                   ! yes - then save the information
                   ncols = ncols + 1
                   chunks(cid)%gcol(ncols) = curgcol
-                  chunks(cid)%lon(ncols)  = lon_p(curgcol)
-                  chunks(cid)%lat(ncols)  = lat_p(curgcol)
                   chunks(cid)%estcost = chunks(cid)%estcost + cost_d(curgcol)
                   knuhcs(curgcol)%chunkid = cid
                   knuhcs(curgcol)%col = ncols
@@ -5143,48 +5156,48 @@ logical function phys_grid_initialized ()
 !
    call assign_chunks(npthreads, nvsmp, proc_vsmp_map, &
                       nvsmpthreads, nvsmpchunks)		      
-#ifndef PPCOLS
 !
-! If pcols is not specified, the recalculate pcols_vsmp based on the
-! size of the chunks that were actually created.
+! Save pcols-per-process information, to use in setting pcols 
+! (if necessary) and in reporting decomposition information
 !
-   if (cols_per_chnk <= 0) then
-      pcols_vsmp(:) = 0
+#ifdef PPCOLS
+   pcols_proc(:) = pcols
+#else
+   if (cols_per_chnk > 0) then
+      pcols_proc(:) = cols_per_chnk
+   else
+!
+! If pcols is not specified, then calculate pcols_proc based on the
+! actual size of the chunks that were created.
+!
+      pcols_proc(:) = 0
       do cid=1,nchunks
          p = chunks(cid)%owner
-         smp = proc_vsmp_map(p)
-! Set pcols_vsmp(smp) to the maximum number of columns over chunks assigned
-! to the virtual smap
-         if (chunks(cid)%ncols > pcols_vsmp(smp)) then
-            pcols_vsmp(smp) = chunks(cid)%ncols
+! Set pcols_proc(p) to the maximum number of columns over chunks assigned
+! to the process
+         if (chunks(cid)%ncols > pcols_proc(p)) then
+            pcols_proc(p) = chunks(cid)%ncols
          endif
       enddo
-! Modify pcols_vsmp(smp), if possible, to be a multiple of cols_per_chnk_mult.
+! Modify pcols_proc(p), if possible, to be a multiple of cols_per_chnk_mult.
 ! If not already a multiple, increase until it is, subject to not exceeding
-! cols_per_chnk_max. If this does exceed the max, then leave pcols_vsmp(smp)
+! cols_per_chnk_max. If this does exceed the max, then leave pcols_proc(p)
 ! unchanged.
       if (cols_per_chnk_mult > 1) then
-         do smp=0,nvsmp-1
+         do p=0,npes-1
             lmax_pcols = &
-               cols_per_chnk_mult*ceiling(real(pcols_vsmp(smp),r8)/real(cols_per_chnk_mult,r8))
+               cols_per_chnk_mult*ceiling(real(pcols_proc(p),r8)/real(cols_per_chnk_mult,r8))
             if (cols_per_chnk_max > 0) then
                if (lmax_pcols <= cols_per_chnk_max) then
-                  pcols_vsmp(smp) = lmax_pcols
+                  pcols_proc(p) = lmax_pcols
                endif
             else
-               pcols_vsmp(smp) = lmax_pcols
+               pcols_proc(p) = lmax_pcols
             endif
          enddo
       endif
    endif
 #endif
-!
-! Save pcols-per-process information, to use in reporting decomposition information
-!
-   do p=0,npes-1
-      smp = proc_vsmp_map(p)
-      pcols_proc(p) = pcols_vsmp(smp)
-   enddo
 
 !
 ! Clean up
