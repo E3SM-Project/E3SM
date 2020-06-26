@@ -593,8 +593,7 @@ subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
       pres,dzq,ncnuc,naai,qc_relvar,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
       diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc, &
       pdel,exner,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm,  &
-      pratot,prctot,mu_c,lamc,liq_ice_exchange,vap_liq_exchange, &
-      vap_ice_exchange,col_location) bind(C)
+      pratot,prctot,mu_c,lamc,liq_ice_exchange,vap_liq_exchange, vap_ice_exchange) bind(C)
 
    use iso_c_binding
 
@@ -606,7 +605,6 @@ subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
         lamc, cmeiout, prain, nevapr, prer_evap, pratot, prctot, liq_ice_exchange, vap_liq_exchange, vap_ice_exchange
    real(kind=c_real), intent(out), dimension(its:ite,kts:kte+1) :: rflx, sflx
    real(kind=c_real), intent(out), dimension(its:ite) :: prt_liq, prt_sol
-   real(kind=c_real), intent(in),  dimension(its:ite,3) :: col_location
 
    integer(kind=c_int), value, intent(in)  :: its, ite, kts, kte, it
    logical(kind=c_bool), value, intent(in) :: log_predictNc

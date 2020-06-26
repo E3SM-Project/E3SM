@@ -23,18 +23,13 @@ TEST_CASE("FortranDataIterator", "p3") {
   REQUIRE(f.size == 72);
 }
 
-TEST_CASE("p3_init_f", "p3") {
-  int nerr = scream::p3::test_p3_init(true);
+TEST_CASE("p3_init", "p3") {
+  int nerr = scream::p3::test_p3_init();
   REQUIRE(nerr == 0);
 }
 
 TEST_CASE("p3_ic_f", "p3") {
   int nerr = scream::p3::test_p3_ic(true);
-  REQUIRE(nerr == 0);
-}
-
-TEST_CASE("p3_init_c", "p3") {
-  int nerr = scream::p3::test_p3_init(false);
   REQUIRE(nerr == 0);
 }
 
