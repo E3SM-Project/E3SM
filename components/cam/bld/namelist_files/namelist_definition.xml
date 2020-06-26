@@ -3068,11 +3068,18 @@ Default: 0.001
        group="clubb_param_nl" valid_values="" >
 Background coefficient of eddy diffusion
 Default: 20.0
+</entry>
 
 <entry id="clubb_c_K10" type="real" category="pblrad"
        group="clubb_param_nl" valid_values="" >
 Coefficient of Kh_zm
 Default: 0.60
+</entry>
+
+<entry id="clubb_c_K10h" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Coefficient of Kh_zm for eddy mixing of scalars
+Default: 1.00
 </entry>
 
 <entry id="clubb_wpxp_L_thresh"  type="real" category="pblrad"
