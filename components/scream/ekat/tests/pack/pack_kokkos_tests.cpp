@@ -299,13 +299,16 @@ TEST_CASE("host_device_packs_1d", "scream::pack")
   Kokkos::Array<size_t, num_views_per_pksize> sizes = {13, 37, 59}; // num scalars per view
   std::vector<std::vector<int> > raw_data(num_pksizes_to_test, std::vector<int>());
 
-  int total_flex_scalars = 0; // each pksize has total_flex_scalars of data
+  // each pksize test (except for the one used to test fixed-size views (Pack8)) has total_flex_scalars
+  // of data spread across 3 (num_views_per_pksize) views
+  int total_flex_scalars = 0;
   for (int i = 0; i < num_views_per_pksize; ++i) {
     total_flex_scalars += sizes[i];
   }
+  static constexpr int total_fixed_scalars = num_views_per_pksize*fixed_view_size;
 
   for (int i = 0; i < num_pksizes_to_test; ++i) {
-    const int mysize = i == num_pksizes_to_test-1 ? num_views_per_pksize*fixed_view_size : total_flex_scalars;
+    const int mysize = i == num_pksizes_to_test-1 ? total_fixed_scalars : total_flex_scalars;
     raw_data[i].resize(mysize);
   }
 
@@ -423,14 +426,17 @@ void host_device_packs_2d(bool transpose)
   // place to store raw data
   std::vector<std::vector<int> > raw_data(num_pksizes_to_test, std::vector<int>());
 
-  int total_flex_scalars = 0; // each pksize (except for fixed) has total_flex_scalars of data
+  // each pksize test (except for the one used to test fixed-size views (Pack8)) has total_flex_scalars
+  // of data spread across 3 (num_views_per_pksize) views
+  int total_flex_scalars = 0;
   for (int i = 0; i < num_views_per_pksize; ++i) {
     total_flex_scalars += dim1_sizes[i] * dim2_sizes[i];
   }
   static constexpr int fixed_scalars_per_view = fixed_view_dim1*fixed_view_dim2;
+  static constexpr int total_fixed_scalars    = num_views_per_pksize*fixed_scalars_per_view;
 
   for (int i = 0; i < num_pksizes_to_test; ++i) {
-    const int mysize = i == num_pksizes_to_test-1 ? num_views_per_pksize*fixed_scalars_per_view : total_flex_scalars;
+    const int mysize = i == num_pksizes_to_test-1 ? total_fixed_scalars : total_flex_scalars;
     raw_data[i].resize(mysize);
   }
 
