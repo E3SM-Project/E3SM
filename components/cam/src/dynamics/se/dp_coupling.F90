@@ -693,7 +693,7 @@ CONTAINS
                                  ncol)
       !before ps adjustment
       call outfld('TEbeforeadj', te, pcols, lchnk)
-      call outfld('KEbeforeadj', te, pcols, lchnk)
+      call outfld('KEbeforeadj', ke, pcols, lchnk)
       
       !adjust ps, keep the code close to applyCAMforcing_tracers
 
@@ -725,7 +725,7 @@ CONTAINS
                                  ncol)
 
       call outfld('TEafteradj', te, pcols, lchnk)
-      call outfld('KEafteradj', te, pcols, lchnk)
+      call outfld('KEafteradj', ke, pcols, lchnk)
 
     end do ! lchnk
 
