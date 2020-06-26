@@ -1,6 +1,6 @@
 # MACHINE -> (env_setup, compiler, batch submit prefix, num host cores, num devices, pre-existing baselines root dir)
 
-# Note: the numbef of host cores is used to parallelize compilation,
+# Note: the number of host cores is used to parallelize compilation,
 #       while the number of devices is used to parallelize testing.
 #       On CPU machines, the two will usually coincide, while on GPU
 #       machines they are going to be different (compile on CPU, run on GPU).
@@ -75,6 +75,13 @@ MACHINE_METADATA = {
                 68,
                 68,
                 ""),
+    "compy"   : (["module purge", "module load cmake/3.11.4 gcc/8.1.0  mvapich2/2.3.1 python/3.7.3"],
+                  "$(which mpicxx)",
+                  "",
+                  40,
+                  40,
+                  ""),
+
     "generic-desktop" : (["source ~/.bashrc", "load gcc", "load netcdf"],"$(which mpicxx)","", get_cpu_core_count(), get_cpu_core_count(),""),
     "generic-desktop-debug" : ([],"$(which mpicxx)","", get_cpu_core_count(), get_cpu_core_count(),""),
     "generic-desktop-serial" : ([],"$(which mpicxx)","", get_cpu_core_count(), get_cpu_core_count(),""),
