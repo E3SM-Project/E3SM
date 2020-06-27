@@ -48,7 +48,33 @@ module pftvarcon
   integer :: npcropmax              !value for last prognostic crop in list
   integer :: nc3crop                !value for generic crop (rf)
   integer :: nc3irrig               !value for irrigated generic crop (ir)
-
+  integer :: ncassava               !value for cassava, rain fed (rf)
+  integer :: ncassavairrig          !value for cassava, irrigated (ir)
+  integer :: ncotton                !value for cotton, rain fed (rf)
+  integer :: ncottonirrig           !value for cotton, irrigated (ir)
+  integer :: nfoddergrass           !value for foddergrass, rain fed (rf)
+  integer :: nfoddergrassirrig      !value for foddergrass, irrigated (ir)
+  integer :: noilpalm               !value for oilpalm, rain fed (rf)
+  integer :: noilpalmirrig          !value for oilpalm, irrigated (ir)
+  integer :: nograins               !value for other grains, rain fed (rf)
+  integer :: nograinsirrig          !value for other grains, irrigated (ir)
+  integer :: nrapeseed              !value for rapeseed, rain fed (rf)
+  integer :: nrapeseedirrig         !value for rapeseed, irrigated (ir)
+  integer :: nrice                  !value for rice, rain fed (rf)
+  integer :: nriceirrig             !value for rice, irrigated (ir)
+  integer :: nrtubers               !value for root tubers, rain fed (rf)
+  integer :: nrtubersirrig          !value for root tubers, irrigated (ir)
+  integer :: nsugarcane             !value for sugarcane, rain fed (rf)
+  integer :: nsugarcaneirrig        !value for sugarcane, irrigated (ir)  
+  integer :: nmiscanthus            !value for miscanthus, rain fed (rf)
+  integer :: nmiscanthusirrig       !value for miscanthus, irrigated (ir)
+  integer :: nswitchgrass           !value for switchgrass, rain fed (rf)
+  integer :: nswitchgrassirrig      !value for switchgrass, irrigated (ir)
+  integer :: npoplar                !value for poplar, rain fed (rf)
+  integer :: npoplarirrig           !value for poplar, irrigated (ir)
+  integer :: nwillow                !value for willow, rain fed (rf)
+  integer :: nwillowirrig           !value for willow, irrigated (ir)  
+  
   ! Number of crop functional types actually used in the model. This includes each CFT for
   ! which is_pft_known_to_model is true. Note that this includes irrigated crops even if
   ! irrigation is turned off in this run: it just excludes crop types that aren't handled
@@ -346,6 +372,32 @@ contains
     expected_pftnames(22) = 'irrigated_winter_temperate_cereal  '
     expected_pftnames(23) = 'soybean                            '
     expected_pftnames(24) = 'irrigated_soybean                  '
+    expected_pftnames(25) = 'cassava                            '
+    expected_pftnames(26) = 'irrigated_cassava                  '
+    expected_pftnames(27) = 'cotton                             '
+    expected_pftnames(28) = 'irrigated_cotton                   '
+    expected_pftnames(29) = 'foddergrass                        '
+    expected_pftnames(30) = 'irrigated_foddergrass              '
+    expected_pftnames(31) = 'oilpalm                            '
+    expected_pftnames(32) = 'irrigated_oilpalm                  '
+    expected_pftnames(33) = 'other_grains                       '
+    expected_pftnames(34) = 'irrigated_other_grains             '
+    expected_pftnames(35) = 'rapeseed                           '
+    expected_pftnames(36) = 'irrigated_rapeseed                 '
+    expected_pftnames(37) = 'rice                               '
+    expected_pftnames(38) = 'irrigated_rice                     '
+    expected_pftnames(39) = 'root_tubers                        '
+    expected_pftnames(40) = 'irrigated_root_tubers              '
+    expected_pftnames(41) = 'sugarcane                          '
+    expected_pftnames(42) = 'irrigated_sugarcane                '
+    expected_pftnames(43) = 'miscanthus                         '
+    expected_pftnames(44) = 'irrigated_miscanthus               '
+    expected_pftnames(45) = 'switchgrass                        '
+    expected_pftnames(46) = 'irrigated_switchgrass              '
+    expected_pftnames(47) = 'poplar                             '
+    expected_pftnames(48) = 'irrigated_poplar                   '
+    expected_pftnames(49) = 'willow                             '
+    expected_pftnames(50) = 'irrigated_willow                   '
 
     allocate( dleaf         (0:mxpft) )       
     allocate( c3psn         (0:mxpft) )       
@@ -365,7 +417,7 @@ contains
     allocate( fnitr         (0:mxpft) )       
     allocate( slatop        (0:mxpft) )      
     allocate( dsladlai      (0:mxpft) )    
-    allocate( leafcn        (0:mxpft) )      
+    allocate( leafcn        (0:mxpft) )
     allocate( flnr          (0:mxpft) )        
     allocate( woody         (0:mxpft) )       
     allocate( lflitcn       (0:mxpft) )      
@@ -968,11 +1020,37 @@ contains
        if ( trim(pftname(i)) == 'irrigated_winter_temperate_cereal'   ) nwcerealirrig        = i
        if ( trim(pftname(i)) == 'soybean'                             ) nsoybean             = i
        if ( trim(pftname(i)) == 'irrigated_soybean'                   ) nsoybeanirrig        = i
+       if ( trim(pftname(i)) == 'cassava'                             ) ncassava             = i
+       if ( trim(pftname(i)) == 'irrigated_cassava'                   ) ncassavairrig        = i
+       if ( trim(pftname(i)) == 'cotton'                              ) ncotton              = i
+       if ( trim(pftname(i)) == 'irrigated_cotton'                    ) ncottonirrig         = i
+       if ( trim(pftname(i)) == 'foddergrass'                         ) nfoddergrass         = i
+       if ( trim(pftname(i)) == 'irrigated_foddergrass'               ) nfoddergrassirrig    = i
+       if ( trim(pftname(i)) == 'oilpalm'                             ) noilpalm             = i
+       if ( trim(pftname(i)) == 'irrigated_oilpalm'                   ) noilpalmirrig        = i
+       if ( trim(pftname(i)) == 'other_grains'                        ) nograins             = i
+       if ( trim(pftname(i)) == 'irrigated_other_grains'              ) nograinsirrig        = i
+       if ( trim(pftname(i)) == 'rapeseed'                            ) nrapeseed            = i
+       if ( trim(pftname(i)) == 'irrigated_rapeseed'                  ) nrapeseedirrig       = i
+       if ( trim(pftname(i)) == 'rice'                                ) nrice                = i
+       if ( trim(pftname(i)) == 'irrigated_rice'                      ) nriceirrig           = i
+       if ( trim(pftname(i)) == 'root_tubers'                         ) nrtubers             = i
+       if ( trim(pftname(i)) == 'irrigated_root_tubers'               ) nrtubersirrig        = i
+       if ( trim(pftname(i)) == 'sugarcane'                           ) nsugarcane           = i
+       if ( trim(pftname(i)) == 'irrigated_sugarcane'                 ) nsugarcaneirrig      = i
+       if ( trim(pftname(i)) == 'miscanthus'                          ) nmiscanthus          = i
+       if ( trim(pftname(i)) == 'irrigated_miscanthus'                ) nmiscanthusirrig     = i
+       if ( trim(pftname(i)) == 'switchgrass'                         ) nswitchgrass         = i
+       if ( trim(pftname(i)) == 'irrigated_switchgrass'               ) nswitchgrassirrig    = i
+       if ( trim(pftname(i)) == 'poplar'                              ) npoplar              = i
+       if ( trim(pftname(i)) == 'irrigated_poplar'                    ) npoplarirrig         = i
+       if ( trim(pftname(i)) == 'willow'                              ) nwillow              = i
+       if ( trim(pftname(i)) == 'irrigated_willow'                    ) nwillowirrig         = i
     end do
 
     ntree                = nbrdlf_dcd_brl_tree  ! value for last type of tree
     npcropmin            = ncorn                ! first prognostic crop
-    npcropmax            = nsoybeanirrig        ! last prognostic crop in list
+    npcropmax            = nwillowirrig         ! last prognostic crop in list
 
     call set_is_pft_known_to_model()
     call set_num_cfts_known_to_model()
@@ -986,7 +1064,20 @@ contains
                                               i == ncornirrig .or. &
                                               i == nscerealirrig .or. &
                                               i == nwcerealirrig .or. &
-                                              i == nsoybeanirrig) )then
+                                              i == nsoybeanirrig .or. &
+                                              i == ncassavairrig .or. &
+                                              i == ncottonirrig .or. &
+                                              i == nfoddergrassirrig .or. &
+                                              i == noilpalmirrig .or. &
+                                              i == nograinsirrig .or. &
+                                              i == nrapeseedirrig .or. &
+                                              i == nriceirrig .or. &
+                                              i == nrtubersirrig .or. &
+                                              i == nsugarcaneirrig .or. &
+                                              i == nmiscanthusirrig .or. &
+                                              i == nswitchgrassirrig .or. &
+                                              i == npoplarirrig .or. &
+                                              i == nwillowirrig ) )then
              ! correct
           else if ( irrigated(i) == 0.0_r8 )then
              ! correct
