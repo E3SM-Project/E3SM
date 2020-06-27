@@ -557,11 +557,6 @@ ifneq ($(wildcard $(PIO_LIB)/libgptl\.*), )
 	LIBS += -lgptl
 endif
 
-ifneq "$(LAPACK)" ""
-        LIBS += -L$(LAPACK)/lib
-        LIBS += -llapack
-endif
-
 ifneq "$(NETCDF)" ""
 ifneq ($(wildcard $(NETCDF)/lib), )
 	NETCDFLIBLOC = lib
