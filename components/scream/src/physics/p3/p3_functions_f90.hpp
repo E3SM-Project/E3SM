@@ -1221,12 +1221,12 @@ void p3_main_post_main_loop_f(
 
 struct P3MainData
 {
-  static constexpr size_t NUM_ARRAYS = 42;
-  static constexpr size_t NUM_INPUT_ARRAYS = 21;
+  static constexpr size_t NUM_ARRAYS = 41;
+  static constexpr size_t NUM_INPUT_ARRAYS = 20;
 
   // Inputs
   Int its, ite, kts, kte, it;
-  Real* pres, *dzq, *ncnuc, *naai, *pdel, *exner, *icldm, *lcldm, *rcldm, *qc_relvar, *col_location;
+  Real* pres, *dzq, *ncnuc, *naai, *pdel, *exner, *icldm, *lcldm, *rcldm, *qc_relvar;
   Real dt;
   bool log_predictNc;
 
@@ -1254,7 +1254,6 @@ struct P3MainData
     util::transpose<D>(lcldm, d_trans.lcldm, m_ni, m_nk);
     util::transpose<D>(rcldm, d_trans.rcldm, m_ni, m_nk);
     util::transpose<D>(qc_relvar, d_trans.qc_relvar, m_ni, m_nk);
-    util::transpose<D>(col_location, d_trans.col_location, m_ni, 3);
     util::transpose<D>(qc, d_trans.qc, m_ni, m_nk);
     util::transpose<D>(nc, d_trans.nc, m_ni, m_nk);
     util::transpose<D>(qr, d_trans.qr, m_ni, m_nk);
@@ -1310,8 +1309,7 @@ void p3_main_f(
   Real* pres, Real* dzq, Real* ncnuc, Real* naai, Real* qc_relvar, Int it, Real* prt_liq, Real* prt_sol, Int its, Int ite, Int kts, Int kte, Real* diag_ze, Real* diag_effc,
   Real* diag_effi, Real* diag_vmi, Real* diag_di, Real* diag_rhoi, bool log_predictNc,
   Real* pdel, Real* exner, Real* cmeiout, Real* prain, Real* nevapr, Real* prer_evap, Real* rflx, Real* sflx, Real* rcldm, Real* lcldm, Real* icldm,
-  Real* pratot, Real* prctot, Real* mu_c, Real* lamc, Real* liq_ice_exchange, Real* vap_liq_exchange,
-  Real* vap_ice_exchange, Real* col_location);
+  Real* pratot, Real* prctot, Real* mu_c, Real* lamc, Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

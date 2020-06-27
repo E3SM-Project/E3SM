@@ -25,36 +25,21 @@ void Functions<S,D>
   const uview_1d<const Spack>& exner,
   const uview_1d<const Spack>& th,
   const uview_1d<const Spack>& dzq,
-  const uview_1d<Spack>& pratot,
-  const uview_1d<Spack>& prctot,
-  const uview_1d<Spack>& prec,
-  const uview_1d<Spack>& mu_r,
   const uview_1d<Spack>& diag_ze,
   const uview_1d<Spack>& ze_ice,
   const uview_1d<Spack>& ze_rain,
   const uview_1d<Spack>& diag_effc,
   const uview_1d<Spack>& diag_effi,
-  const uview_1d<Spack>& diag_vmi,
-  const uview_1d<Spack>& diag_di,
-  const uview_1d<Spack>& diag_rhoi,
-  const uview_1d<Spack>& cmeiout,
-  const uview_1d<Spack>& prain,
-  const uview_1d<Spack>& nevapr,
-  const uview_1d<Spack>& rflx,
-  const uview_1d<Spack>& sflx,
   const uview_1d<Spack>& inv_icldm,
   const uview_1d<Spack>& inv_lcldm,
   const uview_1d<Spack>& inv_rcldm,
-  const uview_1d<Spack>& mu_c,
-  const uview_1d<Spack>& lamc,
   const uview_1d<Spack>& inv_exner,
   const uview_1d<Spack>& t,
   const uview_1d<Spack>& qv,
-  const uview_1d<Spack>& qtend_ignore,
-  const uview_1d<Spack>& ntend_ignore,
   const uview_1d<Spack>& inv_dzq,
   Scalar& prt_liq,
-  Scalar& prt_sol)
+  Scalar& prt_sol,
+  view_1d_ptr_array<Spack, 40>& zero_init)
 {
   prt_liq = 0;
   prt_sol = 0;
@@ -62,34 +47,22 @@ void Functions<S,D>
   Kokkos::parallel_for(
     Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
 
-    pratot(k)       = 0;
-    prctot(k)       = 0;
-    prec(k)         = 0;
-    mu_r(k)         = 0;
     diag_ze(k)      = -99;
     ze_ice(k)       = 1.e-22;
     ze_rain(k)      = 1.e-22;
     diag_effc(k)    = 10.e-6;
     diag_effi(k)    = 25.e-6;
-    diag_vmi(k)     = 0;
-    diag_di(k)      = 0;
-    diag_rhoi(k)    = 0;
-    cmeiout(k)      = 0;
-    prain(k)        = 0;
-    nevapr(k)       = 0;
-    rflx(k)         = 0;
-    sflx(k)         = 0;
     inv_icldm(k)    = 1 / icldm(k);
     inv_lcldm(k)    = 1 / lcldm(k);
     inv_rcldm(k)    = 1 / rcldm(k);
-    mu_c(k)         = 0;
-    lamc(k)         = 0;
     inv_exner(k)    = 1 / exner(k);
     t(k)            = th(k) * inv_exner(k);
     qv(k)           = pack::max(qv(k), 0);
-    qtend_ignore(k) = 0;
-    ntend_ignore(k) = 0;
     inv_dzq(k)      = 1 / dzq(k);
+
+    for (size_t j = 0; j < zero_init.size(); ++j) {
+      (*zero_init[j])(k) = 0;
+    }
   });
   team.team_barrier();
 }
@@ -1063,12 +1036,22 @@ void Functions<S,D>
     bool &log_nucleationPossible  = bools(i, 0);
     bool &log_hydrometeorsPresent = bools(i, 1);
 
+    view_1d_ptr_array<Spack, 40> zero_init = {
+      &mu_r, &lamr, &logn0r, &nu, &cdist, &cdist1, &cdistr,
+      &qc_incld, &qr_incld, &qitot_incld, &qirim_incld,
+      &nc_incld, &nr_incld, &nitot_incld, &birim_incld,
+      &inv_rho, &prec, &rho,
+      &rhofacr, &rhofaci, &acn, &qvs, &qvi, &sup, &supi,
+      &tmparr1, &qtend_ignore, &ntend_ignore,
+      &opratot, &oprctot, &omu_c, &olamc, &odiag_vmi, &odiag_di, &odiag_rhoi, &ocmeiout, &oprain, &onevapr, &orflx, &osflx
+    };
+
     // initialize
     p3_main_init(
       team, nk_pack,
       oicldm, olcldm, orcldm, oexner, oth, odzq,
-      opratot, oprctot, prec, mu_r, odiag_ze, ze_ice, ze_rain, odiag_effc, odiag_effi, odiag_vmi, odiag_di, odiag_rhoi, ocmeiout, oprain, onevapr, orflx, osflx, inv_icldm, inv_lcldm, inv_rcldm, omu_c, olamc, inv_exner, t, oqv,
-      qtend_ignore, ntend_ignore, inv_dzq, prt_liq(i), prt_sol(i));
+      odiag_ze, ze_ice, ze_rain, odiag_effc, odiag_effi, inv_icldm, inv_lcldm, inv_rcldm, inv_exner, t, oqv, inv_dzq,
+      prt_liq(i), prt_sol(i), zero_init);
 
     p3_main_pre_main_loop(
       team, nk, log_predictNc, dt,

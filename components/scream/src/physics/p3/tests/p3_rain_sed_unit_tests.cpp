@@ -215,7 +215,7 @@ TEST_CASE("p3_rain_sed", "[p3_functions]")
 {
   using TRS = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestRainSed;
 
-  scream::p3::p3_init(true); // need fortran table data
+  scream::p3::p3_init(); // need fortran table data
 
   TRS::run_phys();
   TRS::run_bfb();

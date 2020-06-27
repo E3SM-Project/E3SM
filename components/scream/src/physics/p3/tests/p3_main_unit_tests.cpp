@@ -463,7 +463,6 @@ static void run_bfb_p3_main()
     std::make_pair(1              , 1), // lcldm
     std::make_pair(1              , 1), // rcldm
     std::make_pair(1              , 1), // qc_relvar
-    std::make_pair(0              , 1), // col_location
     std::make_pair(0              , 1.00000000E-04), // qc
     std::make_pair(1.00000000E+06 , 1.00000000E+06), // nc
     std::make_pair(0              , 1.00000000E-05), // qr
@@ -505,8 +504,7 @@ static void run_bfb_p3_main()
       d.pres, d.dzq, d.ncnuc, d.naai, d.qc_relvar, d.it, d.prt_liq, d.prt_sol, d.its, d.ite, d.kts, d.kte, d.diag_ze, d.diag_effc,
       d.diag_effi, d.diag_vmi, d.diag_di, d.diag_rhoi, d.log_predictNc,
       d.pdel, d.exner, d.cmeiout, d.prain, d.nevapr, d.prer_evap, d.rflx, d.sflx, d.rcldm, d.lcldm, d.icldm,
-      d.pratot, d.prctot, d.mu_c, d.lamc, d.liq_ice_exchange, d.vap_liq_exchange,
-      d.vap_ice_exchange, d.col_location);
+      d.pratot, d.prctot, d.mu_c, d.lamc, d.liq_ice_exchange, d.vap_liq_exchange, d.vap_ice_exchange);
     d.transpose<util::TransposeDirection::f2c>();
   }
 

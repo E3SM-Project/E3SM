@@ -56,8 +56,6 @@ module micro_p3_utils
     real(rtype), parameter, public :: rhows = 917._rtype  ! bulk density water solid
     real(rtype), parameter, public :: dropmass = 5.2e-7_rtype
 
-    logical, public :: use_cxx = .true.
-
     ! particle mass-diameter relationship
     ! currently we assume spherical particles for cloud ice/snow
     ! m = cD^d
@@ -213,19 +211,9 @@ module micro_p3_utils
 !                                                                                          !
 !__________________________________________________________________________________________!
     subroutine get_latent_heat(its,ite,kts,kte,v,s,f)
-#ifdef SCREAM_CONFIG_IS_CMAKE
-    use micro_p3_iso_f, only: get_latent_heat_f
-#endif
 
        integer,intent(in) :: its,ite,kts,kte
        real(rtype),dimension(its:ite,kts:kte),intent(out) :: v,s,f
-
-#ifdef SCREAM_CONFIG_IS_CMAKE
-    if (use_cxx) then
-       call get_latent_heat_f(its,ite,kts,kte,v,s,f)
-       return
-    endif
-#endif
 
 !       integer i,k
 
@@ -251,25 +239,11 @@ module micro_p3_utils
           inv_lcldm,inv_icldm,inv_rcldm, &
           qc_incld,qr_incld,qitot_incld,qirim_incld,nc_incld,nr_incld,nitot_incld,birim_incld)
 
-#ifdef SCREAM_CONFIG_IS_CMAKE
-    use micro_p3_iso_f, only: calculate_incloud_mixingratios_f
-#endif
-
        real(rtype),intent(in)   :: qc, qr, qitot, qirim
        real(rtype),intent(in)   :: nc, nr, nitot, birim
        real(rtype),intent(in)   :: inv_lcldm, inv_icldm, inv_rcldm
        real(rtype),intent(out)  :: qc_incld, qr_incld, qitot_incld, qirim_incld
        real(rtype),intent(out)  :: nc_incld, nr_incld, nitot_incld, birim_incld
-
-#ifdef SCREAM_CONFIG_IS_CMAKE
-    if (use_cxx) then
-      call calculate_incloud_mixingratios_f(qc,qr,qitot,qirim,nc,nr,nitot,birim, &
-                inv_lcldm,inv_icldm,inv_rcldm, &
-                qc_incld,qr_incld,qitot_incld,qirim_incld,nc_incld,nr_incld,nitot_incld,birim_incld)
-       return
-    endif
-#endif
-
 
        if (qc.ge.qsmall) then
           qc_incld = qc*inv_lcldm
