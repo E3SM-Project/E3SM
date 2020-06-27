@@ -148,7 +148,7 @@ module ocn_time_integration_si
       integer, pointer :: config_n_bcl_iter_mid, config_n_bcl_iter_beg, config_n_bcl_iter_end
       integer, pointer :: config_n_ts_iter, config_btr_subcycle_loop_factor
       integer, pointer :: config_n_btr_cor_iter, config_num_halos
-      logical, pointer :: config_use_standardGM
+      logical, pointer :: config_use_GM
 
       logical, pointer :: config_use_freq_filtered_thickness, config_btr_solve_SSH2, config_filter_btr_mode
       logical, pointer :: config_vel_correction, config_prescribe_velocity, config_prescribe_thickness
@@ -307,7 +307,7 @@ module ocn_time_integration_si
       call mpas_pool_get_config(domain % configs, 'config_prescribe_velocity', config_prescribe_velocity)
       call mpas_pool_get_config(domain % configs, 'config_prescribe_thickness', config_prescribe_thickness)
 
-      call mpas_pool_get_config(domain % configs, 'config_use_standardGM', config_use_standardGM)
+      call mpas_pool_get_config(domain % configs, 'config_use_GM', config_use_GM)
       call mpas_pool_get_config(domain % configs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
       call mpas_pool_get_config(domain % configs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
 
@@ -2913,7 +2913,7 @@ module ocn_time_integration_si
                   !                         + normalVelocityCorrection
                   ! This is u used in advective terms for layerThickness and tracers
                   ! in tendency calls in stage 3.
-!mrp note: in QC version, there is an if (config_use_standardGM) on adding normalGMBolusVelocity
+!mrp note: in QC version, there is an if (config_use_GM) on adding normalGMBolusVelocity
 ! I think it is not needed because normalGMBolusVelocity=0 when GM not on.
                   normalTransportVelocity(k,iEdge) &
                         = edgeMask(k,iEdge) &
@@ -3341,9 +3341,10 @@ module ocn_time_integration_si
         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
 
         ! Compute normalGMBolusVelocity; it will be added to the baroclinic modes in Stage 2 above.
-        if (config_use_standardGM) then
-           call ocn_gm_compute_Bolus_velocity(diagnosticsPool, meshPool, scratchPool)
-        end if
+        ! mrp delete these lines, it is called from driver now.
+        !if (config_use_GM) then
+        !   call ocn_gm_compute_Bolus_velocity(diagnosticsPool, meshPool, scratchPool)
+        !end if
         call ocn_vmix_implicit(dt, meshPool, diagnosticsPool, statePool, forcingPool, scratchPool, err, 2)
 
         block => block % next
@@ -3439,9 +3440,10 @@ module ocn_time_integration_si
          call ocn_effective_density_in_land_ice_update(meshPool, forcingPool, statePool, scratchPool, err)
 
          ! Compute normalGMBolusVelocity; it will be added to normalVelocity in Stage 2 of the next cycle.
-         if (config_use_standardGM) then
-            call ocn_gm_compute_Bolus_velocity(diagnosticsPool, meshPool, scratchPool)
-         end if
+         ! mrp delete these lines, it is called from driver now.
+         !if (config_use_GM) then
+         !   call ocn_gm_compute_Bolus_velocity(diagnosticsPool, meshPool, scratchPool)
+         !end if
 
          call mpas_timer_start('si final mpas reconstruct', .false.)
 
@@ -3469,7 +3471,7 @@ module ocn_time_integration_si
 
          call ocn_time_average_coupled_accumulate(diagnosticsPool, statePool, forcingPool, 2)
 
-         if (config_use_standardGM) then
+         if (config_use_GM) then
             call ocn_reconstruct_gm_vectors(diagnosticsPool, meshPool)
          end if
 
