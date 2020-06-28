@@ -41,7 +41,7 @@ private
 			      vmin_local(nets:nete),vmax_local(nets:nete),vsum_local(nets:nete), &
 			      pmin_local(nets:nete),pmax_local(nets:nete),psum_local(nets:nete), &
 			      vel_norm_max_local(nets:nete)
-    integer :: ie,k, i, j, k1,k2, k6
+    integer :: ie,k, i, j, k1,k2, k6,k5
 
     real (kind=real_kind) :: umin, vmin, pmin, chem_min
     real (kind=real_kind) :: umax, vmax, pmax, chem_max
@@ -137,12 +137,14 @@ private
 
     if (k==6 .and. kmass>0) then
        ! compute min/max for tracer5+tracer6
+       k5=5  ! avoid compiler warnings for test cases with < 6 levels
+       k6=6
        do ie=nets,nete
           pmax_local(ie) = MAXVAL( &
-               (elem(ie)%state%p(:,:,5,n0)+ 2*elem(ie)%state%p(:,:,6,n0))/&
+               (elem(ie)%state%p(:,:,k5,n0)+ 2*elem(ie)%state%p(:,:,k6,n0))/&
                elem(ie)%state%p(:,:,kmass,n0))
           pmin_local(ie) = MINVAL( &
-               (elem(ie)%state%p(:,:,5,n0)+ 2*elem(ie)%state%p(:,:,6,n0))/&
+               (elem(ie)%state%p(:,:,k5,n0)+ 2*elem(ie)%state%p(:,:,k6,n0))/&
                elem(ie)%state%p(:,:,kmass,n0))
        enddo
        chem_min = ParallelMin(pmin_local,hybrid)
