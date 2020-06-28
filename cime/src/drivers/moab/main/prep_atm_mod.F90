@@ -305,7 +305,6 @@ contains
 
     integer, external :: iMOAB_CoverageGraph, iMOAB_ComputeScalarProjectionWeights, iMOAB_ComputeCommGraph
 
-    if (mbintxoa .lt. 0) return ! do nothing, as intx is not defined
     call seq_infodata_getData(infodata, &
          atm_present=atm_present,       &
          ocn_present=ocn_present)
@@ -386,7 +385,6 @@ contains
 
     integer, external :: iMOAB_CoverageGraph, iMOAB_ComputeScalarProjectionWeights
 
-    if (mbintxla .lt. 0 )  return ! do nothing
     call seq_infodata_getData(infodata, &
          atm_present=atm_present,       &
          lnd_present=lnd_present)
