@@ -779,6 +779,7 @@ contains
 
     if (debug) then
        print *,'point: ',x,y,elem%FaceNum
+       print *,'centroid distance', distance(center,sphere_xyz),elem_diam 
        print *,'element:'
        write(*,'(a,4e16.8,a)') 'x=[',xp(1:4),']'
        write(*,'(a,4e16.8,a)') 'y=[',yp(1:4),']'
@@ -795,26 +796,28 @@ contains
           j = i  ! within this loopk j = i-1
        end do
 
-       print *,'cross product with search point'
+       print *,'cross product with search point',tol_inside
        j = 4
        do i=1,4
-          print *,i,(x-xp(j))*(yp(i)-yp(j))  - (y-yp(j))*(xp(i)-xp(j))
+          print *,i,(x-xp(j))*(yp(i)-yp(j))  - (y-yp(j))*(xp(i)-xp(j)),&
+          (( (x-xp(j))*(yp(i)-yp(j))  - (y-yp(j))*(xp(i)-xp(j))) < tol_inside )
           j = i  ! within this loopk j = i-1
        end do
     endif
 
-    
+
     j = 4
     do i=1,4
       ! a = x-xp(j), y-yp(j)
       ! b = xp(i)-xp(j), yp(i)-yp(j)
       ! compute a cross b:
-      if ( -( (x-xp(j))*(yp(i)-yp(j))  - (y-yp(j))*(xp(i)-xp(j))) > tol_inside ) then
+      if ( ( (x-xp(j))*(yp(i)-yp(j))  - (y-yp(j))*(xp(i)-xp(j))) > tol_inside ) then
          return
       endif
       j = i  ! within this loopk j = i-1
     end do
     ! all cross products were negative, must be inside:
+    if (debug) print *,'FOUND!'
     inside=.true.
   end function point_inside_equiangular
 
@@ -1028,6 +1031,7 @@ contains
                 exit
              endif
           enddo
+          if (ie==-1) gid=-1  ! we dont own this element
        endif
     endif
   end subroutine
@@ -1318,6 +1322,7 @@ contains
           if (ii /= -1) then
              ! compute error: map 'cart' back to sphere and compare with original
              ! interpolation point:
+             cart=cart_vec(j,i)
              sphere2_xyz = spherical_to_cart( ref2sphere(cart%x,cart%y,     &
                   elem(ii)%corners3D,cubed_sphere_map,elem(ii)%corners,elem(ii)%facenum ))
              sphere_xyz = spherical_to_cart(sphere)
@@ -1353,7 +1358,11 @@ contains
                   print *,'Error: point not claimed by any element j,i,lat(j),lon(i)=',j,i,lat(j),lon(i)
           else if (local_elem_gid(j,i) == global_elem_gid(j,i)  ) then
              ii = local_elem_num(j,i)
-             interpdata(ii)%n_interp = interpdata(ii)%n_interp + 1
+             if (ii==-1) then
+                print *,'Error: interpolation inconsistency, ignoring point',i,j
+             else
+                interpdata(ii)%n_interp = interpdata(ii)%n_interp + 1
+             endif
           endif
        end do
     end do
