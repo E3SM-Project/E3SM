@@ -74,10 +74,16 @@ contains
 
 
 
-#ifndef ARKODE
   !_____________________________________________________________________
   subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics)
     use imex_mod, only: compute_stage_value_dirk
+#ifdef ARKODE
+    use arkode_mod,     only: parameter_list, evolve_solution, &
+                              calc_nonlinear_stats, update_nonlinear_stats, &
+                              rel_tol, abs_tol
+    use arkode_tables,  only: table_list, butcher_table_set, set_Butcher_tables
+    use iso_c_binding
+#endif
 
     type (element_t),      intent(inout), target :: elem(:)
     type (derivative_t),   intent(in)            :: deriv
@@ -96,7 +102,13 @@ contains
 
     integer :: ie,nm1,n0,np1,nstep,qsplit_stage,k, qn0
     integer :: n,i,j,maxiter
- 
+
+#ifdef ARKODE 
+    type(parameter_list)    :: arkode_parameters
+    type(table_list)        :: arkode_table_list
+    type(butcher_table_set) :: arkode_table_set
+    integer(C_INT)          :: ierr
+#endif
 
     call t_startf('prim_advance_exp')
     nm1   = tl%nm1
@@ -371,229 +383,7 @@ contains
       !  u2 saved in elem(nm1)
       !  u4 saved in elem(np1)
       !  u5 = u0 + dt*N(u4) + dt*6/22*S(u0) + dt*6/22 S(u1) + dt*10/22* S(u5)
-    else
-       call abortmp('ERROR: bad choice of tstep_type')
-    endif
-
-
-    ! ==============================================
-    ! Time-split Horizontal diffusion: nu.del^2 or nu.del^4
-    ! U(*) = U(t+1)  + dt2 * HYPER_DIFF_TERM(t+1)
-    ! ==============================================
-    ! note:time step computes u(t+1)= u(t*) + RHS.
-    ! for consistency, dt_vis = t-1 - t*, so this is timestep method dependent
-    ! forward-in-time, hypervis applied to dp3d
-    if (compute_diagnostics) then
-       call t_startf("prim_diag")
-       call prim_energy_halftimes(elem,hvcoord,tl,5,.false.,nets,nete)
-       call prim_diag_scalars(elem,hvcoord,tl,5,.false.,nets,nete)
-       call t_stopf("prim_diag")
-    endif
-
-    if (hypervis_order == 2 .and. nu>0) &
-         call advance_hypervis(elem,hvcoord,hybrid,deriv,np1,nets,nete,dt_vis,eta_ave_w)
-
-
-    ! warning: advance_physical_vis currently requires levels that are equally spaced in z
-    if (dcmip16_mu>0) call advance_physical_vis(elem,hvcoord,hybrid,deriv,np1,nets,nete,dt,dcmip16_mu_s,dcmip16_mu)
-
-    if (compute_diagnostics) then
-       call t_startf("prim_diag")
-       call prim_energy_halftimes(elem,hvcoord,tl,6,.false.,nets,nete)
-       call prim_diag_scalars(elem,hvcoord,tl,6,.false.,nets,nete)
-       call t_stopf("prim_diag")
-    endif
-    call t_stopf('prim_advance_exp')
-  end subroutine prim_advance_exp
-
-
-#else
-
-  !_____________________________________________________________________
-  subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,dt, tl,  nets, nete, compute_diagnostics)
-  !
-  ! version of prim_advance_exp which uses ARKODE for timestepping
-  !
-    use arkode_mod,     only: parameter_list, evolve_solution, &
-                              calc_nonlinear_stats, update_nonlinear_stats, &
-                              rel_tol, abs_tol
-    use arkode_tables,  only: table_list, butcher_table_set, set_Butcher_tables
-    use imex_mod,       only: compute_stage_value_dirk
-    use iso_c_binding
-
-    type (element_t),      intent(inout), target :: elem(:)
-    type (derivative_t),   intent(in)            :: deriv
-    type (hvcoord_t)                             :: hvcoord
-    type (hybrid_t),       intent(in)            :: hybrid
-    real (kind=real_kind), intent(in)            :: dt
-    type (TimeLevel_t)   , intent(in)            :: tl
-    integer              , intent(in)            :: nets
-    integer              , intent(in)            :: nete
-    logical,               intent(in)            :: compute_diagnostics
-
-    real (kind=real_kind) :: dt2, time, dt_vis, x, eta_ave_w
-    real (kind=real_kind) :: itertol,a1,a2,a3,a4,a5,a6,ahat1,ahat2
-    real (kind=real_kind) :: ahat3,ahat4,ahat5,ahat6,dhat1,dhat2,dhat3,dhat4
-    real (kind=real_kind) ::  gamma,delta
-
-    integer :: ie,nm1,n0,np1,nstep,qsplit_stage,k, qn0
-    integer :: n,i,j,maxiter,sumiter
- 
-    type(parameter_list)    :: arkode_parameters
-    type(table_list)        :: arkode_table_list
-    type(butcher_table_set) :: arkode_table_set
-    integer(C_INT)          :: ierr
-
-    call t_startf('prim_advance_exp')
-    nm1   = tl%nm1
-    n0    = tl%n0
-    np1   = tl%np1
-    nstep = tl%nstep
-
-    ! get timelevel for accessing tracer mass Qdp() to compute virtual temperature
-    call TimeLevel_Qdp(tl, qsplit, qn0)  ! compute current Qdp() timelevel
-
-! integration = "explicit"
-!
-!   tstep_type=1  RK2 followed by qsplit-1 leapfrog steps        CFL=close to qsplit
-!                    typically requires qsplit=4 or 5
-!
-!   tstep_type=5  Kinnmark&Gray RK3 5 stage 3rd order            CFL=3.87  (sqrt(15))
-!                 From Paul Ullrich.  3rd order for nonlinear terms also
-!                 K&G method is only 3rd order for linear
-!                 optimal: for windspeeds ~120m/s,gravity: 340m/2
-!                 run with qsplit=1
-!                 (K&G 2nd order method has CFL=4. tiny CFL improvement not worth 2nd order)
-!   tstep_type=7  IMEX-KG254
-!   
-
-! default weights for computing mean dynamics fluxes
-    eta_ave_w = 1d0/qsplit
-
-!   this should not be needed, but in case physics update u without updating w b.c.:
-    do ie=nets,nete
-       elem(ie)%state%w_i(:,:,nlevp,n0) = (elem(ie)%state%v(:,:,1,nlev,n0)*elem(ie)%derived%gradphis(:,:,1) + &
-            elem(ie)%state%v(:,:,2,nlev,n0)*elem(ie)%derived%gradphis(:,:,2))/g
-    enddo
- 
-#ifndef CAM
-    ! if "prescribed wind" set dynamics explicitly and skip time-integration
-    if (prescribed_wind ==1 ) then
-       call set_prescribed_wind(elem,deriv,hybrid,hvcoord,dt,tl,nets,nete,eta_ave_w)
-       call t_stopf('prim_advance_exp')
-       return
-    endif
-#endif
-
-    ! ==================================
-    ! Take timestep
-    ! ==================================
-    dt_vis = dt
-    if (tstep_type==1) then 
-       ! RK2                                                                                                              
-       ! forward euler to u(dt/2) = u(0) + (dt/2) RHS(0)  (store in u(np1))                                               
-       call compute_andor_apply_rhs(np1,n0,n0,qn0,dt/2,elem,hvcoord,hybrid,&                                              
-            deriv,nets,nete,compute_diagnostics,0d0,1.d0,1.d0,1.d0)                                                      
-       ! leapfrog:  u(dt) = u(0) + dt RHS(dt/2)     (store in u(np1))                                                     
-       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&                                               
-            deriv,nets,nete,.false.,eta_ave_w,1.d0,1.d0,1.d0)                                                             
-
-
-    else if (tstep_type==4) then ! explicit table from IMEX-KG254  method                                                              
-      call compute_andor_apply_rhs(np1,n0,n0,qn0,dt/4,elem,hvcoord,hybrid,&
-            deriv,nets,nete,compute_diagnostics,0d0,1.d0,1.d0,1.d0)
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt/6,elem,hvcoord,hybrid,&
-            deriv,nets,nete,.false.,0d0,1.d0,1.d0,1.d0)
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,3*dt/8,elem,hvcoord,hybrid,&
-            deriv,nets,nete,.false.,0d0,1.d0,1.d0,1.d0)
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt/2,elem,hvcoord,hybrid,&
-            deriv,nets,nete,.false.,0d0,1.d0,1.d0,1.d0)
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
-            deriv,nets,nete,.false.,eta_ave_w*1d0,1.d0,1.d0,1.d0)
-
-
-
-    else if (tstep_type==5) then
-       ! Ullrich 3nd order 5 stage:   CFL=sqrt( 4^2 -1) = 3.87
-       ! u1 = u0 + dt/5 RHS(u0)  (save u1 in timelevel nm1)
-       call compute_andor_apply_rhs(nm1,n0,n0,qn0,dt/5,elem,hvcoord,hybrid,&
-            deriv,nets,nete,compute_diagnostics,eta_ave_w/4,1.d0,1.d0,1.d0)
-       ! u2 = u0 + dt/5 RHS(u1)
-       call compute_andor_apply_rhs(np1,n0,nm1,qn0,dt/5,elem,hvcoord,hybrid,&
-            deriv,nets,nete,.false.,0d0,1.d0,1.d0,1.d0)
-       ! u3 = u0 + dt/3 RHS(u2)
-       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt/3,elem,hvcoord,hybrid,&
-            deriv,nets,nete,.false.,0d0,1.d0,1.d0,1.d0)
-       ! u4 = u0 + 2dt/3 RHS(u3)
-       call compute_andor_apply_rhs(np1,n0,np1,qn0,2*dt/3,elem,hvcoord,hybrid,&
-            deriv,nets,nete,.false.,0d0,1.d0,1.d0,1.d0)
-       ! compute (5*u1/4 - u0/4) in timelevel nm1:
-       do ie=nets,nete
-          elem(ie)%state%v(:,:,:,:,nm1)= (5*elem(ie)%state%v(:,:,:,:,nm1) &
-               - elem(ie)%state%v(:,:,:,:,n0) ) /4
-          elem(ie)%state%vtheta_dp(:,:,:,nm1)= (5*elem(ie)%state%vtheta_dp(:,:,:,nm1) &
-               - elem(ie)%state%vtheta_dp(:,:,:,n0) )/4
-          elem(ie)%state%dp3d(:,:,:,nm1)= (5*elem(ie)%state%dp3d(:,:,:,nm1) &
-                  - elem(ie)%state%dp3d(:,:,:,n0) )/4
-          elem(ie)%state%w_i(:,:,1:nlevp,nm1)= (5*elem(ie)%state%w_i(:,:,1:nlevp,nm1) &
-                  - elem(ie)%state%w_i(:,:,1:nlevp,n0) )/4
-          elem(ie)%state%phinh_i(:,:,1:nlev,nm1)= (5*elem(ie)%state%phinh_i(:,:,1:nlev,nm1) &
-                  - elem(ie)%state%phinh_i(:,:,1:nlev,n0) )/4
-       enddo
-       ! u5 = (5*u1/4 - u0/4) + 3dt/4 RHS(u4)
-       call compute_andor_apply_rhs(np1,nm1,np1,qn0,3*dt/4,elem,hvcoord,hybrid,&
-            deriv,nets,nete,.false.,3*eta_ave_w/4,1.d0,1.d0,1.d0)
-       ! final method is the same as:
-       ! u5 = u0 +  dt/4 RHS(u0)) + 3dt/4 RHS(u4)
-!=========================================================================================
-    elseif (tstep_type == 7) then  ! imkg254, most robust of the methods
- 
-      a1 = 1/4d0
-      a2 = 1/6d0
-      a3 = 3/8d0
-      a4 = 1/2d0
-      a5 = 1d0
-      ahat5 = 1d0
-
-      ! IMEX-KGO254 most stable coefficients
-      dhat2 = 1d0
-      dhat3 = 1d0
-      dhat4 = 2d0
-      ahat4 = 1d0/2d0-dhat4
-      dhat1= (ahat4*ahat5 - ahat5*dhat3 - ahat5*dhat2 + dhat3*dhat2+ dhat3*dhat4 + dhat2*dhat4)/&
-        (ahat5-dhat3-dhat2-dhat4)
-      ahat3 = (- ahat4*ahat5*dhat1 - ahat4*ahat5*dhat2+ ahat5*dhat1*dhat2 + ahat5*dhat1*dhat3 +&
-        ahat5*dhat2*dhat3- dhat1*dhat2*dhat3 - dhat1*dhat2*dhat4 - dhat1*dhat3*dhat4- &
-        dhat2*dhat3*dhat4)/(-ahat4*ahat5)
-      ahat2 = ( - ahat3*ahat4*ahat5*dhat1 + ahat4*ahat5*dhat1*dhat2 -&
-        ahat5*dhat1*dhat2*dhat3 + dhat1*dhat2*dhat3*dhat4)/(-ahat3*ahat4*ahat5)
-
-
-      call compute_andor_apply_rhs(np1,n0,n0,qn0,a1*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
-      call compute_stage_value_dirk(nm1,0d0,n0,0d0,np1,dhat1*dt,qn0,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
-
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,a2*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,0d0,1d0,ahat2/a2,1d0)
-      call compute_stage_value_dirk(nm1,0d0,n0,0d0,np1,dhat2*dt,qn0,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
-
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,a3*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,0d0,1d0,ahat3/a3,1d0)
-      call compute_stage_value_dirk(nm1,0d0,n0,0d0,np1,dhat3*dt,qn0,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
-
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,a4*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,0d0,1d0,ahat4/a4,1d0)
-      call compute_stage_value_dirk(nm1,0d0,n0,0d0,np1,dhat4*dt,qn0,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
-
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w,1d0,ahat5/a5,1d0)
-
-
-!=========================================================================================
+#ifdef ARKODE
     else if (tstep_type==20) then ! ARKode RK2
       call set_Butcher_tables(arkode_table_set, arkode_table_list%RK2)
 
@@ -694,6 +484,12 @@ contains
         call update_nonlinear_stats()
       end if
     end if
+#else
+    else 
+       call abortmp('ERROR: bad choice of tstep_type')
+    endif
+#endif
+
 
     ! ==============================================
     ! Time-split Horizontal diffusion: nu.del^2 or nu.del^4
@@ -702,18 +498,28 @@ contains
     ! note:time step computes u(t+1)= u(t*) + RHS.
     ! for consistency, dt_vis = t-1 - t*, so this is timestep method dependent
     ! forward-in-time, hypervis applied to dp3d
+    if (compute_diagnostics) then
+       call t_startf("prim_diag")
+       call prim_energy_halftimes(elem,hvcoord,tl,5,.false.,nets,nete)
+       call prim_diag_scalars(elem,hvcoord,tl,5,.false.,nets,nete)
+       call t_stopf("prim_diag")
+    endif
+
     if (hypervis_order == 2 .and. nu>0) &
          call advance_hypervis(elem,hvcoord,hybrid,deriv,np1,nets,nete,dt_vis,eta_ave_w)
-
-
 
 
     ! warning: advance_physical_vis currently requires levels that are equally spaced in z
     if (dcmip16_mu>0) call advance_physical_vis(elem,hvcoord,hybrid,deriv,np1,nets,nete,dt,dcmip16_mu_s,dcmip16_mu)
 
+    if (compute_diagnostics) then
+       call t_startf("prim_diag")
+       call prim_energy_halftimes(elem,hvcoord,tl,6,.false.,nets,nete)
+       call prim_diag_scalars(elem,hvcoord,tl,6,.false.,nets,nete)
+       call t_stopf("prim_diag")
+    endif
     call t_stopf('prim_advance_exp')
   end subroutine prim_advance_exp
-#endif
 
 !----------------------------- APPLYCAMFORCING-DYNAMICS ----------------------------
 
