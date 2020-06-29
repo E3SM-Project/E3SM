@@ -40,7 +40,7 @@ void Functions<S,D>
     sgs_var_coef = subgrid_variance_scaling(qc_relvar, 2);
 
     qcheti.set(qc_not_small_and_t_freezing,
-               sgs_var_coef * CONS6 * cdist1 * tgamma(sp(7.0)+mu_c) * expAimmDt *
+               sgs_var_coef * CONS6 * cdist1 * tgamma(7+mu_c) * expAimmDt *
                square(inv_lamc3));
     ncheti.set(qc_not_small_and_t_freezing,
                CONS5 * cdist1 * tgamma(sp(4.0)+mu_c) * expAimmDt * inv_lamc3);

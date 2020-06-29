@@ -103,7 +103,7 @@ contains
        pres,dzq,ncnuc,naai,qc_relvar,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
        diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc, &
        pdel,exner,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm, &
-       pratot,prctot,p3_tend_out,mu_c,lamc,liq_ice_exchange,vap_liq_exchange, &
+       pratot,prctot,mu_c,lamc,liq_ice_exchange,vap_liq_exchange, &
        vap_ice_exchange) bind(C)
     use micro_p3, only : p3_main
 
@@ -129,11 +129,12 @@ contains
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte+1)    :: sflx
     real(kind=c_real), intent(in),    dimension(its:ite,kts:kte)      :: icldm, lcldm, rcldm
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: pratot,prctot
-    real(kind=c_real), intent(out),   dimension(its:ite,kts:kte,49)   :: p3_tend_out
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: mu_c,lamc
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: liq_ice_exchange
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: vap_liq_exchange
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: vap_ice_exchange
+
+    real(kind=c_real), dimension(its:ite,kts:kte,49)   :: p3_tend_out
 
     real(kind=c_real), dimension(its:ite,3) :: col_location
     integer :: i
@@ -148,14 +149,6 @@ contains
          pratot,prctot,p3_tend_out,mu_c,lamc,liq_ice_exchange,vap_liq_exchange, &
          vap_ice_exchange, col_location)
   end subroutine p3_main_c
-
-  subroutine p3_use_cxx_c(arg_use_cxx) bind(C)
-    use micro_p3, only: use_cxx
-
-    logical(kind=c_bool), value, intent(in) :: arg_use_cxx
-
-    use_cxx = arg_use_cxx
-  end subroutine p3_use_cxx_c
 
   subroutine micro_p3_utils_init_c(Cpair, Rair, RH2O, RhoH2O, &
                  MWH2O, MWdry, gravit, LatVap, LatIce,        &

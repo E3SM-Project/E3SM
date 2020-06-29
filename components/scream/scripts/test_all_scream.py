@@ -362,7 +362,7 @@ class TestAllScream(object):
             print ("WARNING: Failed to configure baselines:\n{}".format(err))
             return False
 
-        cmd = "make -j{} && make -j{} baseline".format(self._compile_res_count[test],self._compile_res_count[test])
+        cmd = "make -j{} && make -j{} baseline".format(self._compile_res_count[test],self._testing_res_count[test])
         if self._parallel:
             start, end = self.get_taskset_id(test)
             cmd = "taskset -c {}-{} sh -c '{}'".format(start,end,cmd)

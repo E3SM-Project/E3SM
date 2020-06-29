@@ -62,8 +62,8 @@ private:
   void init(const FortranData::Ptr& d);
 };
 
-void p3_init(bool use_fortran=false);
-void p3_main(const FortranData& d);
+void p3_init();
+void p3_main(const FortranData& d, bool use_fortran=false);
 
 // We will likely want to remove these checks in the future, as we're not tied
 // to the exact implementation or arithmetic in P3. For now, these checks are
@@ -72,7 +72,7 @@ void p3_main(const FortranData& d);
 Int check_against_python(const FortranData& d);
 
 int test_FortranData();
-int test_p3_init(bool use_fortran);
+int test_p3_init();
 int test_p3_ic(bool use_fortran);
 
 }  // namespace p3

@@ -589,6 +589,29 @@ subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
 
  end subroutine p3_main_post_main_loop_f
 
+ subroutine p3_main_f(qc,nc,qr,nr,th,qv,dt,qitot,qirim,nitot,birim,   &
+      pres,dzq,ncnuc,naai,qc_relvar,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
+      diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc, &
+      pdel,exner,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm,  &
+      pratot,prctot,mu_c,lamc,liq_ice_exchange,vap_liq_exchange, vap_ice_exchange) bind(C)
+
+   use iso_c_binding
+
+   ! args
+
+   real(kind=c_real), intent(inout), dimension(its:ite,kts:kte) :: qc, nc, qr, nr, qitot, qirim, nitot, birim, qv, th
+   real(kind=c_real), intent(in),  dimension(its:ite,kts:kte) :: pres, dzq, ncnuc, naai, pdel, exner, icldm, lcldm, rcldm, qc_relvar
+   real(kind=c_real), intent(out), dimension(its:ite,kts:kte) :: diag_ze, diag_effc, diag_effi, diag_vmi, diag_di, diag_rhoi, mu_c, &
+        lamc, cmeiout, prain, nevapr, prer_evap, pratot, prctot, liq_ice_exchange, vap_liq_exchange, vap_ice_exchange
+   real(kind=c_real), intent(out), dimension(its:ite,kts:kte+1) :: rflx, sflx
+   real(kind=c_real), intent(out), dimension(its:ite) :: prt_liq, prt_sol
+
+   integer(kind=c_int), value, intent(in)  :: its, ite, kts, kte, it
+   logical(kind=c_bool), value, intent(in) :: log_predictNc
+   real(kind=c_real), value, intent(in)    :: dt
+
+ end subroutine p3_main_f
+
   !
   ! These are some routine math operations that are not BFB between
   ! fortran and C++ on all platforms, so fortran will need to use

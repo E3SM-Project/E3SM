@@ -78,7 +78,7 @@ TEST_CASE("p3_check_values", "[p3_functions]")
 {
   using TRS = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCheckValues;
 
-  scream::p3::p3_init(true); // need fortran table data
+  scream::p3::p3_init(); // need fortran table data
 
   TRS::run_check_values_phys();
   TRS::run_check_values_bfb();
