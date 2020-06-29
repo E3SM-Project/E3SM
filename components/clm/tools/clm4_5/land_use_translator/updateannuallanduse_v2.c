@@ -1,4 +1,15 @@
 /*-------------------
+ README (June 2020):
+  The outputs are now consistent across machines, compilers and optimizations.
+ Inputs and outputs are no longer rounded to integer percient because it causes considerable
+ divergence of outputs when different compiler optimizations are used.
+ All floats have been converted to doubles to ensure precision across machines and compilers.
+ The files are still all written with float variables, so there will be be high precision conversion/
+ rounding when values are written to file. This does not appear to be an issue for reproducing outputs.
+ This has been tested on NERSC Cori and PNNL compy with both gnu and intel compilers and 4 different
+ levels of compiler optimization, and Mac OS terminal (gcc and full optimization only).
+ See the Makefile for compilation detials.
+ 
  README (may 2020):
  This has been modified from the august 2019 LUT code to simplify use and make consistent with
  the iESM version. The detials follow, but basically there is a pre-processor flag that determines
@@ -13,7 +24,7 @@
       crop still has precedence over pasture if there isn't enough land
  
  To run this code standalone to compute land cover changes associated with Land-Use Harmonization (LUH) data
- you will need to load the netcdf and hdf5 modules and run the Makefile and then pass the period of interest and the
+ you will need to load the netcdf module and run the Makefile and then pass the period of interest and the
  directory of input files (and optionally the output path as arg 3) to the land_use_translator as a command-line arguments.
  For example:
  >> make
@@ -31,9 +42,9 @@
  If additional future files become available, the user needs to update three variables in the code
  before compiling (near the beginning of updateannuallanduse()), in order to account for a different future scenario:
  
- 5649: const char out_future_land_filebase[] = "LUT_LUH2_SSP5_RCP85";
- 5655: const char luh_future_file[] = "LUH2_SSP5_RCP85_LUH1_format.nc";
- 5656: const char luh_harvest_future_file[] = "LUH2_SSP5_RCP85_LUH1_format_harvest_updated.nc";
+ 5864: const char out_future_land_filebase[] = "LUT_LUH2_SSP5_RCP85";
+ 5875: const char luh_future_file[] = "LUH2_SSP5_RCP85_LUH1_format.nc";
+ 5877: const char luh_harvest_future_file[] = "LUH2_SSP5_RCP85_LUH1_format_harvest_updated.nc";
  
  September 2019 update (adv):
  
@@ -53,7 +64,7 @@
  	Note that for the standalone version all input files are in a single directory, given as an argument
  
  this is the compile command I use on my local desktop machine:
- gcc -g -lnetcdf -L/usr/local/lib -I/usr/local/include -lm updateannuallanduse_v2.c -o ualu_v2
+ gcc -std=c11 -O0 -lnetcdf -L/usr/local/lib -I/usr/local/include -lm updateannuallanduse_v2.c -o ualu_v2
  
  -L and -I need to be changed to reflect the locations of the NetCDF library and header files, respectively.
  
