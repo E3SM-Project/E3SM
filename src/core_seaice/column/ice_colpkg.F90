@@ -5470,7 +5470,7 @@
       real (kind=dbl_kind) :: & 
          sloss            ! brine flux contribution from surface runoff (g/m^2)
 
-      real (kind=dbl_kind), dimension (nbtrcr) :: &
+      real (kind=dbl_kind), dimension (ncat) :: &
          hbrnInitial, & ! inital brine height
          hbrnFinal      ! category initial and final brine heights 
 
