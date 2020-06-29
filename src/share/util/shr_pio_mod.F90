@@ -812,7 +812,7 @@ contains
       end select
 
       ! buf(3) = max_pend_req_comp2io
-      if((pio_rearr_comm_max_pend_req_comp2io < 0) .and. &
+      if((pio_rearr_comm_max_pend_req_comp2io <= 0) .and. &
           (pio_rearr_comm_max_pend_req_comp2io /= PIO_REARR_COMM_UNLIMITED_PEND_REQ)) then
 
         ! Small multiple of pio_numiotasks has proven to perform
@@ -844,7 +844,7 @@ contains
       end if
 
       ! buf(6) = max_pend_req_io2comp
-      if((pio_rearr_comm_max_pend_req_io2comp < 0) .and. &
+      if((pio_rearr_comm_max_pend_req_io2comp <= 0) .and. &
           (pio_rearr_comm_max_pend_req_io2comp /= PIO_REARR_COMM_UNLIMITED_PEND_REQ)) then
         write(shr_log_unit, *) "Invalid PIO rearranger comm max pend req (io2comp), ", pio_rearr_comm_max_pend_req_io2comp
         write(shr_log_unit, *) "Resetting PIO rearranger comm max pend req (io2comp) to ", PIO_REARR_COMM_DEF_MAX_PEND_REQ
