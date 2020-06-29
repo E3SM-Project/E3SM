@@ -962,7 +962,7 @@
       <mask>gx1v7</mask>
     </model_grid>
 
-    <model_grid alias="ne120pg2_ne120pg2_mg17" not_compset="_POP|_CLM">
+    <model_grid alias="ne120pg2_ne120pg2_mg17" not_compset="_POP">
       <grid name="atm">ne120np4.pg2</grid>
       <grid name="lnd">ne120np4.pg2</grid>
       <grid name="ocnice">ne120np4.pg2</grid>
