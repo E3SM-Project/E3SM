@@ -633,7 +633,6 @@ def _main_func(description):
 
     success = False
     run_count = 0
-    os.environ["FROM_CREATE_TEST"] = "True"
     while not success and run_count <= retry:
         use_existing = use_existing if run_count == 0 else True
         success = create_test(test_names, test_data, compiler, machine_name, no_run, no_build, no_setup, no_batch, test_root,
