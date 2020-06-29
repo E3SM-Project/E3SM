@@ -365,7 +365,7 @@
     config_AM_ridgingDiagnostics_write_on_startup = false
 /
 &AM_conservationCheck
-    config_AM_conservationCheck_enable = false
+    config_AM_conservationCheck_enable = true
     config_AM_conservationCheck_compute_interval = 'dt'
     config_AM_conservationCheck_output_stream = 'conservationCheckOutput'
     config_AM_conservationCheck_compute_on_startup = false

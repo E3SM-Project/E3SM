@@ -33,7 +33,8 @@ module seaice_constants
        rhofresh, &
        vonkar, &
        iceruf, &
-       zref
+       zref, &
+       sk_l
 
   private
   save
@@ -92,6 +93,10 @@ module seaice_constants
        iceAreaMinimum       = seaicePuny, &
        iceThicknessMinimum  = seaicePuny, &
        snowThicknessMinimum = seaicePuny
+
+   ! biogeochemistry constants
+   real(kind=RKIND), parameter, public :: &
+        skeletalLayerThickness = sk_l
 
 
 end module seaice_constants
