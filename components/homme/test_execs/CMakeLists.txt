@@ -134,7 +134,9 @@ ADD_CUSTOM_TARGET(check
                   COMMAND ${CMAKE_CTEST_COMMAND} "--output-on-failure")
 
 # Force cprnc to be built when make check is run
-ADD_DEPENDENCIES(check cprnc)
+IF (TARGET cprnc)
+  ADD_DEPENDENCIES(check cprnc)
+ENDIF ()
 
 # Create a target for making the reference data
 ADD_CUSTOM_TARGET(baseline
