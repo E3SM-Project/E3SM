@@ -764,10 +764,16 @@ contains
     if(runtype==0) then
        if(output_type.eq.'netcdf') then
           if(masterproc) print *, 'Opening file ',trim(filename), ' using netcdf'
-          ierr = PIO_CreateFile(PIOFS, FileID, iotype_netcdf  ,trim(filename), PIO_64BIT_OFFSET)
+          ierr = PIO_CreateFile(PIOFS, FileID, PIO_iotype_netcdf  ,trim(filename), PIO_64BIT_OFFSET)
+       else if(output_type.eq.'netcdf4p') then
+          if(masterproc) print *, 'Opening file ',trim(filename), ' using netcdf4p'
+          ierr = PIO_CreateFile(PIOFS, FileID, PIO_iotype_netcdf4p  ,trim(filename), PIO_64BIT_DATA)
+       else if(output_type.eq.'pnetcdf64') then
+          if(masterproc) print *, 'Opening file ',trim(filename), ' using pnetcdf64'
+          ierr = PIO_CreateFile(PIOFS, FileID, PIO_iotype_pnetcdf ,trim(filename), PIO_64BIT_DATA)
        else
           if(masterproc) print *, 'Opening file ',trim(filename), ' using pnetcdf'
-          ierr = PIO_CreateFile(PIOFS, FileID, iotype_pnetcdf  ,trim(filename), PIO_64BIT_OFFSET)
+          ierr = PIO_CreateFile(PIOFS, FileID, PIO_iotype_pnetcdf ,trim(filename), PIO_64BIT_OFFSET)
        end if
     else
        ! this code is broken, as our NETCDF code cannot append to existing files:

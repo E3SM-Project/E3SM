@@ -75,7 +75,7 @@ module interpolate_driver_mod
   character*(pio_max_name) nsnames (maxdims)
   character*(pio_max_name) znames (maxdims)
   character*(pio_max_name) ncolnames (maxdims)
-
+  character(len=6) :: ncoldimname='ncol'   ! change to ncol_d if detected
   integer :: newnames, nnsnames, nznames, nncolnames
 
 
@@ -179,7 +179,7 @@ contains
     integer :: ret, i, ncid, n
     integer :: varid, ncols, lev
     integer :: ne_file, np_file, nlev_file
-
+    
     integer, pointer :: ldof(:)
     integer(kind=PIO_OFFSET_KIND) :: start(3), count(3)
     integer :: iorank, dimcnt
@@ -205,10 +205,20 @@ contains
     allocate(infile%dims(ndims))
 
     nlev_file=-1
+
+    ! is this an output file with "ncol", or "ncol_d"?
+    ! set ncoldimname before calling "is_ncolfile"
+    do i=1,ndims
+       ret = PIO_inq_dimname(Infile%fileid, i, infile%dims(i)%name)
+       if(infile%dims(i)%name.eq.'ncol_d') ncoldimname='ncol_d'
+    end do
+    if (par%masterproc) print *,'interpolating dimension = ',ncoldimname
+
+    ncols=0
     do i=1,ndims
        ret = PIO_inq_dimname(Infile%fileid, i, infile%dims(i)%name)
        ret = PIO_inq_dimlen(Infile%fileid, i, infile%dims(i)%len)
-       if(infile%dims(i)%name.eq.'ncol') ncols=infile%dims(i)%len
+       if(is_ncoldim(infile%dims(i)%name)) ncols=infile%dims(i)%len
        if(infile%dims(i)%name.eq.'lev') nlev_file = infile%dims(i)%len
     end do
     if(trim(varnames(1)) == 'all') then
@@ -317,8 +327,7 @@ contains
              lev=nlev+1
           endif
           if(infile%dims(infile%vars%dimids(n,i))%name.eq.'time') infile%vars%timedependent(i)=.true.
-          if(infile%dims(infile%vars%dimids(n,i))%name.eq.'ncol') infile%vars%decomposed(i)=.true.
-
+          if(is_ncoldim(infile%dims(infile%vars%dimids(n,i))%name)) infile%vars%decomposed(i)=.true.
        end do
     end do
     if (par%masterproc) print *,'input file: nlev,ne=',nlev,ne
@@ -353,7 +362,6 @@ contains
     integer :: ofdims, nvars, ierr
     character*(pio_max_name), allocatable :: dimnames(:)
     integer , allocatable :: vardims(:,:), dimsize(:), otype(:)
-    logical lonregistered, latregistered
     logical, allocatable :: varrequired(:)
 
     real(kind=real_kind), allocatable :: lon(:), lat(:), gw(:), lev(:), ilev(:)
@@ -407,31 +415,30 @@ contains
        end if
     end do
 
-    lonregistered=.false.
-    latregistered=.false.
+    if (hybrid%masterthread) print *,'Registering output variables:'
     vardims=0
     do i=1,nvars
        k=1
        otype(i)=infile%vars%vtype(i)
        do j=1,infile%vars%ndims(i)
-          if(infile%vars%dimids(j,i).eq.ncoldimid) then
-             if(infile%vars%name(i).eq.'lon') then
-                vardims(k,i) = londimid
-                lonregistered=.true.
-             else if(infile%vars%name(i).eq.'lat') then
-                vardims(k,i) = latdimid
-                latregistered=.true.
-             else
-                vardims(k,i) = londimid
-                vardims(k+1,i) = latdimid
-                k=k+1
-             end if
-             k=k+1
+         if(infile%vars%dimids(j,i).eq.ncoldimid) then
+            vardims(k,i) = londimid
+            vardims(k+1,i) = latdimid
+            k=k+2
           else
              vardims(k,i)=infile%vars%dimids(j,i)
              k=k+1
           end if
        end do
+       if (hybrid%masterthread) then
+          print *,'var=',trim(infile%vars%name(i)),' remap=',infile%vars%decomposed(i)
+       endif
+
+       ! if the file happens to have a variable 'lat','lon' or 'gw', rename so it doesnt conflict
+       ! with the interpolated output
+       if (trim(infile%vars%name(i))=='lat')  infile%vars%name(i)='lat_orig'
+       if (trim(infile%vars%name(i))=='lon')  infile%vars%name(i)='lon_orig'
+       if (trim(infile%vars%name(i))=='gw')  infile%vars%name(i)='gw_orig'
     end do
 
     ndnt = index(infilename,".nc")
@@ -452,15 +459,11 @@ contains
     call nf_output_register_variables(ncdf, 1, (/'gw'/), vardims(1:1,:), &
          (/pio_double/), (/.true./))
     ! if the user did not specify lat,lon, be sure to add them:
-    if (.not. latregistered) then
-       call nf_output_register_variables(ncdf, 1, (/'lat'/), vardims(1:1,:), &
-            (/pio_double/), (/.true./))
-    endif
-    if (.not. lonregistered) then
-       vardims(1,1)=londimid
-       call nf_output_register_variables(ncdf, 1, (/'lon'/), vardims(1:1,:), &
-            (/pio_double/), (/.true./))
-    endif
+    call nf_output_register_variables(ncdf, 1, (/'lat'/), vardims(1:1,:), &
+         (/pio_double/), (/.true./))
+    vardims(1,1)=londimid
+    call nf_output_register_variables(ncdf, 1, (/'lon'/), vardims(1:1,:), &
+         (/pio_double/), (/.true./))
 
 
     deallocate(dimnames, dimsize, varrequired, vardims, otype)
@@ -545,6 +548,9 @@ contains
     character*(PIO_MAX_NAME) :: tmpname
     integer(kind=nfsizekind) :: start2d(3), count2d(3), start3d(4), count3d(4)
 
+                   
+
+
     if(outfile%state .ne. readystate) then
        print *,__FILE__,__LINE__,outfile%state
        call abortmp('outfile not in readystate')
@@ -555,12 +561,12 @@ contains
     ncnt_in = sum(elem(1:nelemd)%idxp%numUniquePts)
     ncnt_out = sum(interpdata(1:nelemd)%n_interp)
 
-!    call initedgebuffer(par,edge,2*nlev)
-    call initedgebuffer(par,edge,elem,4*nlev)
+    call initedgebuffer(par,edge,elem,2*nlev)
 
 
     VARLOOP: do i=nvars,1,-1
-       if(trim(infile%vars%name(i)).eq.'lat' .or. trim(infile%vars%name(i)).eq.'lon') then
+       if(trim(infile%vars%name(i)).eq.'lat' .or. trim(infile%vars%name(i)).eq.'lon' .or. &
+            trim(infile%vars%name(i)).eq.'lat_d' .or. trim(infile%vars%name(i)).eq.'lon_d'    ) then
           ! do nothing
        else 
           lev=1
@@ -697,11 +703,7 @@ contains
                    
                    deallocate(varray)
                 end do
-! Ignore these
-!             else if(scan(infile%vars%name(i),'V').eq.1) then  ! ignores everything that starts with V
-!             else if(infile%vars%name(i).eq.'lon') then    ! already ignored above
-!             else if(infile%vars%name(i).eq.'lat') then    ! already ignored above
-! 
+
              else 
                 if(par%masterproc) print *,'Interpolating ',trim(infile%vars%name(i)),' nlev=',lev
                 if(par%masterproc) then
@@ -799,8 +801,13 @@ contains
                    do n=1,infile%vars%ndims(i)
                       counti(n) = infile%dims(infile%vars%dimids(n,i))%len
                    end do
-                   call copy_pio_var(infile%FileID, Outfile%fileid, infile%vars%vardesc(i), &
-                        outfile%varlist(i)%vardesc, counti(1:infile%vars%ndims(i)))
+                   if (infile%vars%ndims(i) <= 2 ) then
+                      call copy_pio_var(infile%FileID, Outfile%fileid, infile%vars%vardesc(i), &
+                           outfile%varlist(i)%vardesc, counti(1:infile%vars%ndims(i)))
+                   else
+                      ! PIO1's copy_pio_var only copies variables with up to 2 dimensions
+                      if(par%masterproc) print *,"SKIPPING copy. ndims>2.  ndims=",ndims
+                   endif
                 end if
              end if
           end if
@@ -1014,7 +1021,7 @@ contains
     nsnames(2) = 'slat'
     znames(1)  = 'lev'
     znames(2)  = 'ilev'
-    ncolnames(1) = 'ncol'
+    ncolnames(1) = ncoldimname
 
     do n=1,size (ewnames)
        if (ewnames(n) == ' ') exit
