@@ -180,7 +180,7 @@ contains
     integer :: varid, ncols, lev
     integer :: ne_file, np_file, nlev_file
     
-    integer, pointer :: ldof(:)
+    integer*8, pointer :: ldof(:)
     integer(kind=PIO_OFFSET_KIND) :: start(3), count(3)
     integer :: iorank, dimcnt
     character(len=80) :: name
@@ -415,7 +415,7 @@ contains
        end if
     end do
 
-    if (hybrid%masterthread) print *,'Registering output variables:'
+    if (hybrid%masterthread) print *,'Examining input variables:'
     vardims=0
     do i=1,nvars
        k=1
@@ -447,6 +447,7 @@ contains
          hybrid%par%comm, infilename(1:ndnt)//'interp'   ,0)
     
     call nf_output_register_dims(ncdf, ofdims, dimnames, dimsize)
+    if (hybrid%par%masterproc) print *,'creating PIO decompositions'
     call create_output_decomps(ncdf, interpdata, nlon, nlat)
     if (hybrid%par%masterproc) then
       print *,'registering output variables -- '//&
@@ -906,14 +907,14 @@ contains
     type(nf_handle) :: ncdf(:)
     type(interpdata_t):: interpdata(:)
     integer, intent(in) :: nlon, nlat
-    integer, pointer :: ldof2d(:),ldof3d(:), iodof2d(:), iodof3d(:)
-    integer, pointer :: latdof(:), londof(:)
+    integer*8, pointer :: ldof2d(:),ldof3d(:), iodof2d(:), iodof3d(:)
 
     integer :: icnt, ie, i, lcount, tdof(1), tiodof(1)
     integer :: k, iorank
     integer(kind=nfsizekind) :: start1d(1), count1d(1)
     integer :: londim, latdim, timedim, levdim, ilevdim
     integer(kind=nfsizekind) :: start2d(3), count2d(3), start3d(4), count3d(4)
+    integer*8 :: nlon8,nlat8
 
     ! files might only have 2D data, or only lev data
     levdim=0
@@ -929,13 +930,16 @@ contains
     lcount = sum(interpdata(1:nelemd)%n_interp)
     iorank = pio_iotask_rank(piofs)
 
+    nlon8=nlon ! force all calculations involving these dims to i*8
+    nlat8=nlat 
+
     ! Create the DOF arrays
     allocate(ldof2d(lcount))
     icnt=0
     do ie=1,nelemd
        do i=1,interpdata(ie)%n_interp
           icnt=icnt+1
-          ldof2d(icnt)=interpdata(ie)%ilon(i)+(interpdata(ie)%ilat(i)-1)*nlon
+          ldof2d(icnt)=interpdata(ie)%ilon(i)+(interpdata(ie)%ilat(i)-1)*nlon8
        end do
     end do
     call getiodof(2, (/nlon,nlat/), iorank, iodof2d, start2d(1:2), count2d(1:2))
@@ -949,7 +953,7 @@ contains
        do ie=1,nelemd
           do i=1,interpdata(ie)%n_interp
              icnt=icnt+1
-             ldof3d(icnt)=interpdata(ie)%ilon(i)+(interpdata(ie)%ilat(i)-1)*nlon+(k-1)*nlat*nlon
+             ldof3d(icnt)=interpdata(ie)%ilon(i)+(interpdata(ie)%ilat(i)-1)*nlon8+(k-1)*nlat8*nlon8
           end do
        end do
     end do
@@ -965,7 +969,7 @@ contains
        do ie=1,nelemd
           do i=1,interpdata(ie)%n_interp
              icnt=icnt+1
-             ldof3d(icnt)=interpdata(ie)%ilon(i)+(interpdata(ie)%ilat(i)-1)*nlon+(k-1)*nlat*nlon
+             ldof3d(icnt)=interpdata(ie)%ilon(i)+(interpdata(ie)%ilat(i)-1)*nlon8+(k-1)*nlat8*nlon8
           end do
        end do
     end do
@@ -1168,7 +1172,7 @@ contains
     use element_mod, only : element_t
 
     type(element_t), intent(in) :: elem(:)
-    integer, pointer :: Compdof(:)
+    integer*8, pointer :: Compdof(:)
     integer, intent(in) :: lev
 
     integer :: nxyp, icnt, i, ie, k
@@ -1298,7 +1302,7 @@ contains
     type(var_desc_t) :: vardesc
     integer :: ndims, ncol, nvars, natts, nfield, fldi, iotype, nf2, ie
     character(len=pio_max_name) :: dimname
-    integer, pointer :: dof(:)
+    integer*8, pointer :: dof(:)
     real(real_kind), allocatable :: raw(:)
 
     call pio_init(par%rank, par%comm, num_io_procs, num_agg, io_stride, pio_rearr_box, piofs)
@@ -1546,7 +1550,7 @@ contains
 
     type(element_t), intent(in) :: elem(:)
     integer, intent(in) :: nphys
-    integer, intent(out), pointer :: dof(:)
+    integer*8, intent(out), pointer :: dof(:)
     
     integer :: nf2, ie, j
 
@@ -1606,9 +1610,10 @@ contains
     integer, intent(in) :: nphys
 
     character(len=varname_len) :: dimnames(ndim)
-    integer :: dimsizes(ndim), nf2, itmp(1)
+    integer :: dimsizes(ndim), nf2
+    integer*8 :: itmp(1)
     integer(kind=nfsizekind) :: unused(1)
-    integer, pointer :: dof(:)
+    integer*8, pointer :: dof(:)
 
     call nf_output_init_begin(ncdf, par%masterproc, par%nprocs, par%rank, par%comm, &
          outfilenameprefix, 0)

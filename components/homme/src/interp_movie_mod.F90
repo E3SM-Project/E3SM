@@ -246,8 +246,7 @@ contains
 #endif
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     integer :: dimsize(maxdims)   
-    integer, pointer :: ldof2d(:),ldof3d(:),ldof3dp1(:), iodof2d(:), iodof3d(:), iodof3dp1(:)
-    integer, pointer :: latdof(:), londof(:), iodoflon(:), iodoflat(:)
+    integer*8, pointer :: ldof2d(:),ldof3d(:),ldof3dp1(:), iodof2d(:), iodof3d(:), iodof3dp1(:)
 
     integer :: icnt, i, j, k, lcount, iorank, nlat, nlon, tdof(1), tiodof(1), ios, ie
 
@@ -1122,11 +1121,9 @@ contains
     integer, intent(in) :: gdims(ndims)
     integer, intent(in) :: iorank
     integer(kind=nfsizekind), intent(out) :: start(ndims), count(ndims)
-    integer, pointer :: iodof(:) ! gcc4.2 didn't like intent(out)
+    integer*8, pointer :: iodof(:) ! gcc4.2 didn't like intent(out)
 
     integer :: nzrank, nxrank, nx, k, i, j, icnt
-
-
 
 
     if(iorank>=0) then
@@ -1188,7 +1185,9 @@ contains
           do j=1,count(2)
              do i=1,count(1)
                 icnt=icnt+1
+                if (icnt<1) stop 'FATAL ERROR: getIODOF() 2d icnt integer overflow'
                 iodof(icnt)=start(1)+gdims(1)*(start(2)-1)+icnt-1
+                if (iodof(icnt)<0) stop 'FATAL ERROR: getIODOF() 2d iodof integer overflow'
              end do
           end do
 
@@ -1199,8 +1198,10 @@ contains
              do j=1,count(2)
                 do i=1,count(1)
                    icnt=icnt+1
+                   if (icnt<1) stop 'FATAL ERROR: getIODOF() 3d icnt integer overflow'
                    iodof(icnt)=start(1)+gdims(1)*(start(2)-1)+ &
                         gdims(1)*gdims(2)*(start(3)-1)+icnt-1
+                   if (iodof(icnt)<0) stop 'FATAL ERROR: getIODOF() 3d iodof integer overflow'
                 end do
              end do
           end do
