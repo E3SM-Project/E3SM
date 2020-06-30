@@ -755,6 +755,21 @@
   </compset>
 
   <!---IG compsets with MALI -->
+  
+  <compset>
+    <alias>IG1850CRUCLM45_MLI</alias>
+    <lname>1850_DATM%CRU_CLM45%SP_SICE_SOCN_MOSART_MALI%SIA_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>IG20TRCRUCLM45_MLI</alias>
+    <lname>20TR_DATM%CRU_CLM45%SP_SICE_SOCN_MOSART_MALI%SIA_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>IGCRUCLM45_MLI</alias>
+    <lname>2000_DATM%CRU_CLM45%SP_SICE_SOCN_MOSART_MALI%SIA_SWAV</lname>
+  </compset>
 
   <compset>
     <alias>IGCLM45_MLI</alias>

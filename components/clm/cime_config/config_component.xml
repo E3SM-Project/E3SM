@@ -54,7 +54,9 @@
       <value compset="RCP2.*_CLM"       >1850-2100_rcp2.6_transient</value> 
       <value compset="RCP8.*_CLM"       >1850-2100_rcp8.5_transient</value> 
       <value compset="1850.*_CLM.*_CISM">1850_glacierMEC_control</value> 
-      <value compset="2000.*_CLM.*_CISM">2000_glacierMEC_control</value> 
+      <value compset="2000.*_CLM.*_CISM">2000_glacierMEC_control</value>
+      <value compset="1850.*_CLM.*_MALI">1850_glacierMEC_control</value>
+      <value compset="20TR.*_CLM.*_MALI">20thC_glacierMEC_transient</value> 
       <value compset="2000.*_CLM.*_MALI">2000_glacierMEC_control</value>
       <value compset="PDAY.*_CLM.*_CISM">2000_glacierMEC_control</value> 
       <value compset="4804.*_CLM.*_CISM">2000_glacierMEC_control</value> 
