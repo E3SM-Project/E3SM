@@ -485,6 +485,17 @@ scream_mask_gen_bin_op_all(<=)
 scream_mask_gen_bin_op_all(>)
 scream_mask_gen_bin_op_all(<)
 
+template <typename PackType> KOKKOS_INLINE_FUNCTION
+OnlyPackReturn<PackType, Mask<PackType::n>>
+isnan (const PackType& p) {
+  Mask<PackType::n> m;
+  vector_simd for (int i = 0; i < PackType::n; ++i) {
+    m.set(i, util::isnan(p[i]));
+  }
+  return m;
+}
+
+
 template <typename PackType>
 KOKKOS_INLINE_FUNCTION
 OnlyPackReturn<PackType,Int> npack(const Int& nscalar) {
