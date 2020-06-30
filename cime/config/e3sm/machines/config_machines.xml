@@ -1597,8 +1597,10 @@
       <env name="PERL_MM_OPT">"INSTALL_BASE=/home/azamat/perl5"</env>
     </environment_variables>
     <environment_variables compiler="intel">
-      <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.3.3.1c-4.2cxx-4.4.2f/intel18</env>
-      <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.6.1/intel18</env>
+      <env name="LD_LIBRARY_PATH">/home/wuda/soft/hdf5/1.8.16-parallel/intel18/lib:/home/wuda/soft/szip/2.1.1/intel18/lib:/home/wuda/soft/zlib/1.2.11/intel18/lib:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="HDF5_PATH">/home/wuda/soft/hdf5/1.8.16-parallel/intel18</env>
+      <env name="NETCDF_PATH">/home/wuda/soft/netcdf/4.4.1c-4.2cxx-4.4.4f-parallel/intel18</env>
+      <env name="PNETCDF_PATH">/home/wuda/soft/pnetcdf/1.12.0/intel18</env>
       <env name="I_MPI_DEBUG">10</env>
       <env name="I_MPI_PIN_CELL">core</env>
     </environment_variables>
@@ -1678,8 +1680,10 @@
       <env name="PERL_MM_OPT">"INSTALL_BASE=/home/azamat/perl5"</env>
     </environment_variables>
     <environment_variables compiler="intelgpu">
-      <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.3.3.1c-4.2cxx-4.4.2f/intel18</env>
-      <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.6.1/intel18</env>
+      <env name="LD_LIBRARY_PATH">/home/wuda/soft/hdf5/1.8.16-parallel/intel18/lib:/home/wuda/soft/szip/2.1.1/intel18/lib:/home/wuda/soft/zlib/1.2.11/intel18/lib:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="HDF5_PATH">/home/wuda/soft/hdf5/1.8.16-parallel/intel18</env>
+      <env name="NETCDF_PATH">/home/wuda/soft/netcdf/4.4.1c-4.2cxx-4.4.4f-parallel/intel18</env>
+      <env name="PNETCDF_PATH">/home/wuda/soft/pnetcdf/1.12.0/intel18</env>
       <env name="I_MPI_DEBUG">10</env>
       <env name="I_MPI_PIN_CELL">core</env>
     </environment_variables>
