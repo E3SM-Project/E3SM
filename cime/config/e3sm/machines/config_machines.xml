@@ -1559,11 +1559,28 @@
         <arg name="num_tasks"> -n $TOTALPES</arg>
       </arguments>
     </mpirun>
-    <module_system type="soft">
-      <init_path lang="sh">/etc/bashrc</init_path>
-      <cmd_path lang="sh">source</cmd_path>
+    <module_system type="module" allow_error="true">
+      <init_path lang="sh">$MODULESHOME/init/sh</init_path>
+      <init_path lang="csh">$MODULESHOME/init/csh</init_path>
+      <init_path lang="perl">$MODULESHOME/init/perl.pm</init_path>
+      <init_path lang="python">$MODULESHOME/init/python.py</init_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
       <modules>
-        <command name="ignore">/soft/compilers/intel/compilers_and_libraries/linux/bin/compilervars.sh intel64</command>
+	<command name="purge"/>
+        <command name="use">/soft/modulefiles</command>
+        <command name="use">/soft/packaging/spack-builds/modules/linux-rhel7-x86_64</command>
+        <command name="load">cmake/3.17.0-gcc-9.3.0-5dgh2gv</command>
+      </modules>
+      <modules compiler="intel">
+	<command name="load">intel/2018</command>
+	<command name="load">intelmpi/2018-intel</command>
+      </modules>
+      <modules compiler="gnu">
+	<command name="load">gcc-vanilla/latest</command>
+	<command name="load">intelmpi/2018-gcc</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -1626,14 +1643,21 @@
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="sh">$MODULESHOME/init/sh; export MODULEPATH=/soft/restricted/intel_dga/modulefiles</init_path>
-      <init_path lang="csh">$MODULESHOME/init/csh; setenv MODULEPATH /soft/restricted/intel_dga/modulefiles</init_path>
+      <init_path lang="sh">$MODULESHOME/init/sh</init_path>
+      <init_path lang="csh">$MODULESHOME/init/csh</init_path>
       <init_path lang="perl">$MODULESHOME/init/perl.pm</init_path>
       <init_path lang="python">$MODULESHOME/init/python.py</init_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
       <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
+      <modules>
+	<command name="purge"/>
+	<command name="use">/soft/modulefiles</command>
+	<command name="use">/soft/packaging/spack-builds/modules/linux-rhel7-x86_64</command>
+	<command name="use">/soft/restricted/intel_dga/modulefiles</command>
+	<command name="load">cmake/3.17.0-gcc-9.3.0-5dgh2gv</command>
+      </modules>
       <modules compiler="intelgpu">
         <command name="load">omp</command>
         <command name="load">mkl</command>
