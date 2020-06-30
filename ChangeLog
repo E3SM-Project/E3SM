@@ -1,6 +1,39 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 6-30-2020
+Tag: cime5.8.28
+Answer Changes: None
+Tests: scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+    - Update some domain and mapping files.
+    - Improve error message for create newcase test option.
+    - Clean up screen output & logging in check_input_data.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+a2de0598c Merge pull request #3602 from ESMCI/fischer/mapping_file_update
+01c50ea71 Merge pull request #3599 from ESMCI/wpcoomb/improve_error_message_for_create_newcase_test_option
+87ab750cd Merge pull request #3589 from billsacks/check_input_data_logging
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/config_grids.xml
+M       config/cesm/config_grids_common.xml
+M       config/cesm/config_grids_mct.xml
+M       scripts/create_newcase
+M       scripts/lib/CIME/case/check_input_data.py
+M       scripts/lib/CIME/test_scheduler.py
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 6-23-2020
 Tag: cime5.8.27
 Answer Changes: [None, Round Off, Climate Changing]
