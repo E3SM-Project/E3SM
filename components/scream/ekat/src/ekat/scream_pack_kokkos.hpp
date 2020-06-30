@@ -5,6 +5,8 @@
 #include "scream_kokkos_meta.hpp"
 #include "ekat_config.h"
 
+#include <vector>
+
 namespace scream {
 namespace pack {
 
