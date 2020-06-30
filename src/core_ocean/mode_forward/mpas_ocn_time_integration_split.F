@@ -1101,7 +1101,7 @@ module ocn_time_integration_split
 
                    !$omp parallel
                    !$omp do schedule(runtime) &
-                   !$omp private(temp_mask, cell1, cell2, coriolisTerm, eoe, sshCell1, sshCell2)
+                   !$omp private(temp_mask, cell1, cell2, coriolisTerm, i, eoe, sshCell1, sshCell2)
                    do iEdge = 1, nEdges
 
                      ! asarje: added to avoid redundant computations based on mask
