@@ -194,12 +194,6 @@ contains
        countx=maxval(interpdata(1:nelemd)%n_interp)
        count_max = ParallelMax(countx,hybrid)
 
-       if (hybrid%masterthread) then
-          write(iulog,'(a,f8.2)') 'Average number of interpolation points per element: ',count_total/real(6*ne*ne)
-          write(iulog,'(a,f8.0)') 'Maximum number of interpolation points on any element: ',count_max
-       endif
-
-
        ! allocate storage, including duplicates
        do ii=1,nelemd
           ngrid = interpdata(ii)%n_interp
@@ -234,6 +228,10 @@ contains
        call wrap_repro_sum(nvars=1, comm=hybrid%par%comm, nsize=1)
        count_total = global_shared_sum(1)
        tpts = sum(grid_imask)
+       if (hybrid%masterthread) then
+          write(iulog,'(a,f8.2)') 'Average number of interpolation points per element: ',count_total/real(nelem)
+          write(iulog,'(a,f8.0)') 'Maximum number of interpolation points on any element: ',count_max
+       endif
        if (count_total /= tpts ) then
           write(iulog,*)__FILE__,__LINE__,iam, count_total, tpts, npts
           call haltmp('Error setting up interpolation grid count_total<>npts') 
