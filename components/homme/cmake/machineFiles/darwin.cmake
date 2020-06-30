@@ -1,6 +1,15 @@
 # CMake initial cache file for Mac OSX 10.8
 # tested with gcc/gfortran & openmpi from HOMEBREW
-# 
+#
+# openmpi by default will use Mac's clang based compiler. to use GCC:
+#
+# setenv OMPI_CXX g++-9
+# setenv OMPI_CC gcc-9
+# setenv OMPI_FC gfortran-9
+#
+# also of interest:
+# setenv  OMPI_MCA_btl self,tcp    # workaround https://github.com/open-mpi/ompi/issues/6518
+#
 
 # openmp is supported by GNU gcc, but not supported by Apple LLVM gcc
 SET (ENABLE_OPENMP FALSE CACHE FILEPATH "")
