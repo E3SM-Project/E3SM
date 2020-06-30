@@ -258,6 +258,8 @@ module ocn_init_mode
 
       type (MPAS_timeInterval_type) :: timeStep
 
+      character (len=StrKIND), pointer :: config_init_configuration
+
       ierr = 0
 
       ! Eventually, dt should be domain specific
@@ -267,6 +269,7 @@ module ocn_init_mode
       currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
       call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
 
+      call mpas_pool_get_config(domain % configs, 'config_init_configuration', config_init_configuration)
       call mpas_log_write( ' Generating configuration: ' // trim(config_init_configuration))
 
       call ocn_init_setup_baroclinic_channel(domain, ierr)

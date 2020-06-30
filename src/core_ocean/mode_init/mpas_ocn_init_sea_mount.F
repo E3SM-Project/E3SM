@@ -28,7 +28,6 @@ module ocn_init_sea_mount
    use mpas_dmpar
 
    use ocn_constants
-   use ocn_config
    use ocn_init_vertical_grids
    use ocn_init_cell_markers
 
@@ -93,6 +92,17 @@ contains
 
       integer :: iCell, k, idx
 
+      ! Define config variable pointers
+      character (len=StrKIND), pointer :: config_init_configuration, config_vertical_grid, config_sea_mount_layer_type, &
+                                          config_sea_mount_stratification_type
+      real (kind=RKIND), pointer :: config_sea_mount_width, &
+                                    config_sea_mount_bottom_depth, config_sea_mount_height,config_sea_mount_radius, &
+                                    config_sea_mount_density_coef_linear, config_sea_mount_density_coef_exp, &
+                                    config_sea_mount_density_gradient_linear, config_sea_mount_density_gradient_exp, &
+                                    config_sea_mount_density_depth_linear, config_sea_mount_density_depth_exp, &
+                                    config_sea_mount_density_ref, config_sea_mount_density_alpha, config_sea_mount_density_Tref, &
+                                    config_sea_mount_salinity, config_sea_mount_coriolis_parameter
+
       ! Define dimension pointers
       integer, pointer :: nCellsSolve, nEdgesSolve, nVertLevels, nVertLevelsP1
       integer, pointer :: index_temperature, index_salinity
@@ -112,7 +122,29 @@ contains
 
       iErr = 0
 
+      call mpas_pool_get_config(ocnConfigs, 'config_init_configuration', config_init_configuration)
+
       if(config_init_configuration .ne. trim('sea_mount')) return
+
+      call mpas_pool_get_config(ocnConfigs, 'config_vertical_grid', config_vertical_grid)
+
+      call mpas_pool_get_config(ocnConfigs, 'config_sea_mount_layer_type', config_sea_mount_layer_type)
+      call mpas_pool_get_config(ocnConfigs, 'config_sea_mount_stratification_type', config_sea_mount_stratification_type)
+      call mpas_pool_get_config(ocnConfigs, 'config_sea_mount_width', config_sea_mount_width)
+      call mpas_pool_get_config(ocnConfigs, 'config_sea_mount_bottom_depth', config_sea_mount_bottom_depth)
+      call mpas_pool_get_config(ocnConfigs, 'config_sea_mount_height', config_sea_mount_height)
+      call mpas_pool_get_config(ocnConfigs, 'config_sea_mount_radius', config_sea_mount_radius)
+      call mpas_pool_get_config(ocnConfigs, 'config_sea_mount_density_coef_linear', config_sea_mount_density_coef_linear)
+      call mpas_pool_get_config(ocnConfigs, 'config_sea_mount_density_gradient_linear', config_sea_mount_density_gradient_linear)
+      call mpas_pool_get_config(ocnConfigs, 'config_sea_mount_density_depth_linear', config_sea_mount_density_depth_linear)
+      call mpas_pool_get_config(ocnConfigs, 'config_sea_mount_density_coef_exp', config_sea_mount_density_coef_exp)
+      call mpas_pool_get_config(ocnConfigs, 'config_sea_mount_density_gradient_exp', config_sea_mount_density_gradient_exp)
+      call mpas_pool_get_config(ocnConfigs, 'config_sea_mount_density_depth_exp', config_sea_mount_density_depth_exp)
+      call mpas_pool_get_config(ocnConfigs, 'config_sea_mount_density_ref', config_sea_mount_density_ref)
+      call mpas_pool_get_config(ocnConfigs, 'config_sea_mount_density_alpha', config_sea_mount_density_alpha)
+      call mpas_pool_get_config(ocnConfigs, 'config_sea_mount_density_Tref', config_sea_mount_density_Tref)
+      call mpas_pool_get_config(ocnConfigs, 'config_sea_mount_salinity', config_sea_mount_salinity)
+      call mpas_pool_get_config(ocnConfigs, 'config_sea_mount_coriolis_parameter', config_sea_mount_coriolis_parameter)
 
       ! Determine vertical grid for configuration
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)

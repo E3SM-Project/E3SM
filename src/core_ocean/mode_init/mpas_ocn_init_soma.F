@@ -27,7 +27,6 @@ module ocn_init_soma
    use mpas_constants
 
    use ocn_constants
-   use ocn_config
    use ocn_init_vertical_grids
    use ocn_init_cell_markers
 
@@ -93,6 +92,29 @@ contains
       real (kind=RKIND) :: temperature, salinity
       real (kind=RKIND), dimension(:), pointer :: interfaceLocations
 
+      ! Define config variable pointers
+      character (len=StrKIND), pointer :: config_init_configuration, config_vertical_grid
+
+      ! SOMA test case run-time configuration parameters
+      integer, pointer :: config_soma_vert_levels
+      real (kind=RKIND), pointer :: config_eos_linear_alpha
+      real (kind=RKIND), pointer :: config_soma_surface_salinity
+      real (kind=RKIND), pointer :: config_soma_surface_temperature
+      real (kind=RKIND), pointer :: config_soma_density_difference_linear
+      real (kind=RKIND), pointer :: config_soma_thermocline_depth
+      real (kind=RKIND), pointer :: config_soma_center_latitude
+      real (kind=RKIND), pointer :: config_soma_center_longitude
+      real (kind=RKIND), pointer :: config_soma_domain_width
+      real (kind=RKIND), pointer :: config_soma_shelf_width
+      real (kind=RKIND), pointer :: config_soma_shelf_depth
+      real (kind=RKIND), pointer :: config_soma_bottom_depth
+      real (kind=RKIND), pointer :: config_soma_phi
+      real (kind=RKIND), pointer :: config_soma_ref_density
+      real (kind=RKIND), pointer :: config_soma_density_difference
+      real (kind=RKIND), pointer :: config_soma_surface_temp_restoring_at_center_latitude
+      real (kind=RKIND), pointer :: config_soma_surface_temp_restoring_latitude_gradient
+      real (kind=RKIND), pointer :: config_soma_restoring_temp_piston_vel
+
       ! Define dimension pointers
       integer, pointer :: nVertLevels, nCells, nVertLevelsP1, nCellsSolve, nEdgesSolve, nVerticesSolve
       integer, pointer :: index_temperature, index_salinity, index_tracer1
@@ -113,7 +135,32 @@ contains
       iErr = 0
 
       ! test if SOMA is the desired configuration
+      call mpas_pool_get_config(domain % configs, 'config_init_configuration', config_init_configuration)
       if(config_init_configuration .ne. trim('soma')) return
+
+      ! get config variables
+      call mpas_pool_get_config(domain % configs, 'config_eos_linear_alpha', config_eos_linear_alpha)
+      call mpas_pool_get_config(domain % configs, 'config_soma_density_difference_linear', config_soma_density_difference_linear)
+      call mpas_pool_get_config(domain % configs, 'config_soma_thermocline_depth', config_soma_thermocline_depth)
+      call mpas_pool_get_config(domain % configs, 'config_soma_surface_temperature', config_soma_surface_temperature)
+      call mpas_pool_get_config(domain % configs, 'config_soma_surface_salinity', config_soma_surface_salinity)
+      call mpas_pool_get_config(domain % configs, 'config_vertical_grid', config_vertical_grid)
+      call mpas_pool_get_config(domain % configs, 'config_soma_vert_levels', config_soma_vert_levels)
+      call mpas_pool_get_config(domain % configs, 'config_soma_center_latitude', config_soma_center_latitude)
+      call mpas_pool_get_config(domain % configs, 'config_soma_center_longitude', config_soma_center_longitude)
+      call mpas_pool_get_config(domain % configs, 'config_soma_domain_width', config_soma_domain_width)
+      call mpas_pool_get_config(domain % configs, 'config_soma_shelf_width', config_soma_shelf_width)
+      call mpas_pool_get_config(domain % configs, 'config_soma_shelf_depth', config_soma_shelf_depth)
+      call mpas_pool_get_config(domain % configs, 'config_soma_bottom_depth', config_soma_bottom_depth)
+      call mpas_pool_get_config(domain % configs, 'config_soma_phi', config_soma_phi)
+      call mpas_pool_get_config(domain % configs, 'config_soma_ref_density', config_soma_ref_density)
+      call mpas_pool_get_config(domain % configs, 'config_soma_density_difference', config_soma_density_difference)
+      call mpas_pool_get_config(domain % configs, 'config_soma_surface_temp_restoring_at_center_latitude', &
+         config_soma_surface_temp_restoring_at_center_latitude)
+      call mpas_pool_get_config(domain % configs, 'config_soma_surface_temp_restoring_latitude_gradient', &
+         config_soma_surface_temp_restoring_latitude_gradient)
+      call mpas_pool_get_config(domain % configs, 'config_soma_restoring_temp_piston_vel', config_soma_restoring_temp_piston_vel)
+      call mpas_pool_get_config(domain % configs, 'config_soma_use_surface_temp_restoring', config_soma_use_surface_temp_restoring)
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)

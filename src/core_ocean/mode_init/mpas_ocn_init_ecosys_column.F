@@ -29,7 +29,6 @@ module ocn_init_ecosys_column
    use mpas_io_streams
 
    use ocn_init_cell_markers
-   use ocn_config
    use ocn_init_vertical_grids
 
    implicit none
@@ -112,17 +111,34 @@ contains
 
       character (len=StrKIND) :: fieldName
 
+      character (len=StrKIND), pointer :: config_init_configuration, &
+                                          config_ecosys_column_TS_filename, &
+                                          config_ecosys_column_ecosys_filename, &
+                                          config_ecosys_column_vertical_grid
+
+      integer, pointer ::                 config_ecosys_column_vert_levels
+
+      real (kind=RKIND), pointer ::       config_ecosys_column_bottom_depth
+
       ! assume no error
       iErr = 0
 
       ! get and test if this is the configuration specified
+      call mpas_pool_get_config(domain % configs, 'config_init_configuration', config_init_configuration)
       if(config_init_configuration .ne. trim('ecosys_column')) return
 
       ! build the vertical grid
       ! intent(out) is interfaceLocations. An array ranging from 0 to 1
+      call mpas_pool_get_config(domain % configs, 'config_ecosys_column_vertical_grid', config_ecosys_column_vertical_grid)
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nVertLevelsP1', nVertLevelsP1)
       allocate(interfaceLocations(nVertLevelsP1))
       call ocn_generate_vertical_grid(config_ecosys_column_vertical_grid, interfaceLocations)
+
+      ! load the remaining configuration parameters
+      call mpas_pool_get_config(domain % configs, 'config_ecosys_column_bottom_depth', config_ecosys_column_bottom_depth)
+      call mpas_pool_get_config(domain % configs, 'config_ecosys_column_TS_filename', config_ecosys_column_TS_filename)
+      call mpas_pool_get_config(domain % configs, 'config_ecosys_column_ecosys_filename', config_ecosys_column_ecosys_filename)
+      call mpas_pool_get_config(domain % configs, 'config_ecosys_column_vert_levels', config_ecosys_column_vert_levels)
 
       nVertLevelsInputColumn = config_ecosys_column_vert_levels
 
@@ -493,9 +509,17 @@ contains
 
        type (MPAS_Stream_type) :: columnStream
 
+       character (len=StrKIND), pointer :: config_global_ocean_temperature_file, config_global_ocean_temperature_varname, &
+                                           config_global_ocean_tracer_nlon_dimname, config_global_ocean_tracer_nlat_dimname, &
+                                           config_global_ocean_depth_dimname
+
        integer :: k
 
        iErr = 0
+
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_tracer_nlon_dimname', &
+                                 config_global_ocean_tracer_nlon_dimname)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_depth_dimname', config_global_ocean_depth_dimname)
 
        ! Define stream for reading a column
 !      call MPAS_createStream(columnStream, domain % iocontext, fileName, MPAS_IO_NETCDF, MPAS_IO_READ, ierr=iErr)

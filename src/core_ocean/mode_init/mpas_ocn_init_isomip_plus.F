@@ -30,7 +30,6 @@ module ocn_init_isomip_plus
    use mpas_dmpar
 
    use ocn_constants
-   use ocn_config
 
    use ocn_init_cell_markers
 
@@ -96,6 +95,26 @@ contains
 
       integer, intent(out) :: iErr
 
+      character (len=StrKIND), pointer :: config_init_configuration, &
+                                          config_isomip_plus_vertical_level_distribution, &
+                                          config_land_ice_flux_mode
+
+      real(kind=RKIND), pointer :: config_isomip_plus_max_bottom_depth, &
+                                   config_isomip_plus_init_top_temp, &
+                                   config_isomip_plus_init_bot_temp, &
+                                   config_isomip_plus_init_top_sal, &
+                                   config_isomip_plus_init_bot_sal, &
+                                   config_isomip_plus_restore_top_temp, &
+                                   config_isomip_plus_restore_bot_temp, &
+                                   config_isomip_plus_restore_top_sal, &
+                                   config_isomip_plus_restore_bot_sal, &
+                                   config_isomip_plus_restore_rate, &
+                                   config_isomip_plus_restore_evap_rate, &
+                                   config_isomip_plus_restore_xMin, &
+                                   config_isomip_plus_restore_xMax, &
+                                   config_isomip_plus_coriolis_parameter, &
+                                   config_isomip_plus_effective_density
+
       type (block_type), pointer :: block_ptr
 
       logical, pointer :: on_a_sphere
@@ -125,13 +144,36 @@ contains
 
       iErr = 0
 
+      call mpas_pool_get_config(domain % configs, 'config_init_configuration', config_init_configuration)
+
       if (trim(config_init_configuration) /= "isomip_plus") return
+
+      call mpas_pool_get_config(domain % configs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
       if ( on_a_sphere ) call mpas_log_write('ISOMIP+ can only be applied to a planar mesh.  Exiting...', MPAS_LOG_CRIT)
+
+      call mpas_pool_get_config(domain % configs, 'config_isomip_plus_vertical_level_distribution', &
+         config_isomip_plus_vertical_level_distribution)
+      call mpas_pool_get_config(domain % configs, 'config_isomip_plus_max_bottom_depth', config_isomip_plus_max_bottom_depth)
+      call mpas_pool_get_config(domain % configs, 'config_isomip_plus_init_top_temp', config_isomip_plus_init_top_temp)
+      call mpas_pool_get_config(domain % configs, 'config_isomip_plus_init_bot_temp', config_isomip_plus_init_bot_temp)
+      call mpas_pool_get_config(domain % configs, 'config_isomip_plus_init_top_sal', config_isomip_plus_init_top_sal)
+      call mpas_pool_get_config(domain % configs, 'config_isomip_plus_init_bot_sal', config_isomip_plus_init_bot_sal)
+      call mpas_pool_get_config(domain % configs, 'config_isomip_plus_restore_top_temp', config_isomip_plus_restore_top_temp)
+      call mpas_pool_get_config(domain % configs, 'config_isomip_plus_restore_bot_temp', config_isomip_plus_restore_bot_temp)
+      call mpas_pool_get_config(domain % configs, 'config_isomip_plus_restore_top_sal', config_isomip_plus_restore_top_sal)
+      call mpas_pool_get_config(domain % configs, 'config_isomip_plus_restore_bot_sal', config_isomip_plus_restore_bot_sal)
+      call mpas_pool_get_config(domain % configs, 'config_isomip_plus_restore_rate', config_isomip_plus_restore_rate)
+      call mpas_pool_get_config(domain % configs, 'config_isomip_plus_restore_evap_rate', config_isomip_plus_restore_evap_rate)
+      call mpas_pool_get_config(domain % configs, 'config_isomip_plus_restore_xMin', config_isomip_plus_restore_xMin)
+      call mpas_pool_get_config(domain % configs, 'config_isomip_plus_restore_xMax', config_isomip_plus_restore_xMax)
+      call mpas_pool_get_config(domain % configs, 'config_isomip_plus_coriolis_parameter', config_isomip_plus_coriolis_parameter)
+      call mpas_pool_get_config(domain % configs, 'config_isomip_plus_effective_density', config_isomip_plus_effective_density)
+
 
       allocate(columnThicknessFraction(nVertLevels))
       if(trim(config_isomip_plus_vertical_level_distribution) == "constant") then
@@ -341,9 +383,13 @@ contains
 
        type (MPAS_Stream_type) :: topographyStream
 
+       character (len=StrKIND), pointer :: config_isomip_plus_topography_file
+
        integer :: iY, iX
 
        iErr = 0
+
+       call mpas_pool_get_config(domain % configs, 'config_isomip_plus_topography_file', config_isomip_plus_topography_file)
 
        ! Define stream for depth levels
        call MPAS_createStream(topographyStream, domain % iocontext, config_isomip_plus_topography_file, &
@@ -492,9 +538,18 @@ contains
 
        integer :: iCell, k, maxLevel
 
+       integer, pointer :: config_isomip_plus_minimum_levels
+       real(kind=RKIND), pointer :: config_isomip_plus_min_column_thickness, config_isomip_plus_min_ocean_fraction
+
        real (kind=RKIND) :: depth
 
        iErr = 0
+
+       call mpas_pool_get_config(domain % configs, 'config_isomip_plus_minimum_levels', &
+          config_isomip_plus_minimum_levels)
+       call mpas_pool_get_config(domain % configs, 'config_isomip_plus_min_column_thickness', &
+          config_isomip_plus_min_column_thickness)
+       call mpas_pool_get_config(domain % configs, 'config_isomip_plus_min_ocean_fraction', config_isomip_plus_min_ocean_fraction)
 
        ! weight bed topo and ice draft by the fraction of ocean before interpolating
        bedTopoIC % array(:,:) = bedTopoIC % array(:,:) * oceanFracTopoIC % array(:,:)

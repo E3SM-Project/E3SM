@@ -27,7 +27,6 @@ module ocn_layer_volume_weighted_averages
    use mpas_log
 
    use ocn_constants
-   use ocn_config
    use ocn_diagnostics_routines
 
    implicit none
@@ -106,7 +105,11 @@ contains
       !
       !-----------------------------------------------------------------
 
+      logical, pointer :: config_compute_active_tracer_budgets
+
       err = 0
+
+      call mpas_pool_get_config(domain % configs,'config_compute_active_tracer_budgets', config_compute_active_tracer_budgets)
 
       computeActiveTracerBudgetsOn = config_compute_active_tracer_budgets
 
@@ -200,8 +203,10 @@ contains
       real (kind=RKIND), dimension(:), pointer ::  areaCell, lonCell, latCell
 
       ! scratch space
-      real (kind=RKIND), dimension(:,:), allocatable :: workArray
-      real (kind=RKIND), dimension(:), allocatable :: workMask, workMin, workMax, workSum
+      type(field2DReal), pointer :: workArrayField
+      real (kind=RKIND), dimension(:,:), pointer :: workArray
+      type(field1DReal), pointer :: workMaskField, workMinField, workMaxField, workSumField
+      real (kind=RKIND), dimension(:), pointer :: workMask, workMin, workMax, workSum
 
       ! local variables
       integer :: iDataField, nDefinedDataFields
@@ -259,6 +264,21 @@ contains
 
          ! get pointers to scratch variables
          call mpas_pool_get_subpool(block % structs, 'layerVolumeWeightedAverageAMScratch', scratchPool)
+         call mpas_pool_get_field(scratchPool, 'workArrayLayerVolume', workArrayField)
+         call mpas_pool_get_field(scratchPool, 'workMaskLayerVolume', workMaskField)
+         call mpas_pool_get_field(scratchPool, 'workMinLayerVolume', workMinField)
+         call mpas_pool_get_field(scratchPool, 'workMaxLayerVolume', workMaxField)
+         call mpas_pool_get_field(scratchPool, 'workSumLayerVolume', workSumField)
+         call mpas_allocate_scratch_field(workArrayField, .true.)
+         call mpas_allocate_scratch_field(workMaskField, .true.)
+         call mpas_allocate_scratch_field(workMinField, .true.)
+         call mpas_allocate_scratch_field(workMaxField, .true.)
+         call mpas_allocate_scratch_field(workSumField, .true.)
+         workArray => workArrayField % array
+         workMask => workMaskField % array
+         workMin => workMinField % array
+         workMax => workMaxField % array
+         workSum => workSumField % array
 
          ! get pointers to pools
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
@@ -286,15 +306,6 @@ contains
              call mpas_log_write("Abort: nDefinedDataFields > nLayerVolWeightedAvgFields" // &
                 "    increase size of ocn_layer_volume_weighted_averages scratch space", MPAS_LOG_CRIT )
          endif
-
-         !$omp master
-         allocate(workArray(nDefinedDataFields, size(areaCell)), &
-                  workMask(size(areaCell)), &
-                  workMin(nDefinedDataFields), &
-                  workMax(nDefinedDataFields), &
-                  workSum(nDefinedDataFields))
-         !$omp end master
-         !$omp barrier
 
          ! get pointers to data that will be analyzed
          ! listed in the order in which the fields appear in {avg,min,max}ValueWithinOceanLayerRegion
@@ -393,14 +404,11 @@ contains
          kBuffer = 0
 
          ! deallocate scratch fields
-         !$omp barrier
-         !$omp master
-         deallocate(workArray, &
-                    workMask, &
-                    workMin, &
-                    workMax, &
-                    workSum)
-         !$omp end master
+         call mpas_deallocate_scratch_field(workArrayField, .true.)
+         call mpas_deallocate_scratch_field(workMaskField, .true.)
+         call mpas_deallocate_scratch_field(workMinField, .true.)
+         call mpas_deallocate_scratch_field(workMaxField, .true.)
+         call mpas_deallocate_scratch_field(workSumField, .true.)
 
          block => block % next
       end do

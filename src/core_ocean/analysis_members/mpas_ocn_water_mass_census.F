@@ -28,7 +28,6 @@ module ocn_water_mass_census
    use mpas_stream_manager
 
    use ocn_constants
-   use ocn_config
    use ocn_diagnostics_routines
 
    implicit none
@@ -190,9 +189,12 @@ contains
       integer, pointer :: nTemperatureBinsP1, nSalinityBinsP1
       integer, dimension(:), pointer :: maxLevelCell
       real (kind=RKIND), dimension(:), pointer ::  areaCell, lonCell, latCell
+      logical, pointer :: predefRegions
 
       ! local variables
       integer :: iCell, iRegion, iLevel, iTracer, iTemperatureBin, iSalinityBin, err_tmp
+      real (kind=RKIND), pointer :: minTemperature, maxTemperature
+      real (kind=RKIND), pointer :: minSalinity, maxSalinity
       real (kind=RKIND) :: deltaTemperature, deltaSalinity, temperature, salinity, density, zPosition, volume
 
       ! buffers data for message passaging
@@ -209,6 +211,7 @@ contains
       integer, dimension(:, :), pointer :: regionCellMasks, regionVertexMasks, regionsInGroup
       integer, dimension(:), pointer ::  nRegionsInGroup
       integer, pointer :: nRegions, nRegionGroups, maxRegionsInGroup
+      character (len=STRKIND), pointer :: additionalRegion
 
       ! buffers data for message passaging
       integer :: kBufferRegion, kBufferLengthRegion
@@ -222,6 +225,12 @@ contains
       ! set highest level pointer
       dminfo = domain % dminfo
 
+      ! region config info for WMC
+      call mpas_pool_get_config(domain % configs, 'config_AM_waterMassCensus_compute_predefined_regions', &
+                                predefRegions)
+      call mpas_pool_get_config(domain % configs, 'config_AM_waterMassCensus_region_group', &
+                                additionalRegion)
+
       call mpas_pool_get_subpool(domain % blocklist % structs, 'waterMassCensusAM', waterMassCensusAMPool)
 
       ! find the number of regions, number of data fields and number of vertical levels
@@ -230,7 +239,13 @@ contains
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nTemperatureBinsP1', nTemperatureBinsP1)
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nSalinityBinsP1', nSalinityBinsP1)
 
-      if (config_AM_waterMassCensus_compute_predefined_regions .eqv. .true.) then
+      ! get run-time configure variables
+      call mpas_pool_get_config(domain % configs, 'config_AM_waterMassCensus_minTemperature', minTemperature)
+      call mpas_pool_get_config(domain % configs, 'config_AM_waterMassCensus_maxTemperature', maxTemperature)
+      call mpas_pool_get_config(domain % configs, 'config_AM_waterMassCensus_minSalinity', minSalinity)
+      call mpas_pool_get_config(domain % configs, 'config_AM_waterMassCensus_maxSalinity', maxSalinity)
+
+      if (predefRegions .eqv. .true.) then
          !!! hard-wired regions init
          call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nOceanRegionsTmpCensus', nOceanRegionsTmpCensus)
          ! allocate buffer for message passing
@@ -275,13 +290,13 @@ contains
          do iRegion=1,nOceanRegionsTmpCensus
            ! compute temperature and salinity domains
            ! (note: the ability to have different t/s domains for different regions is not yet built out)
-           deltaTemperature = (config_AM_waterMassCensus_maxTemperature-config_AM_waterMassCensus_minTemperature)/nTemperatureBins
+           deltaTemperature = (maxTemperature-minTemperature)/nTemperatureBins
            do iTemperatureBin=1,nTemperatureBinsP1
-             waterMassCensusTemperatureValues(iTemperatureBin,iRegion) = config_AM_waterMassCensus_minTemperature + deltaTemperature*(iTemperatureBin-1)
+             waterMassCensusTemperatureValues(iTemperatureBin,iRegion) = minTemperature + deltaTemperature*(iTemperatureBin-1)
            enddo
-           deltaSalinity = (config_AM_waterMassCensus_maxSalinity-config_AM_waterMassCensus_minSalinity)/nSalinityBins
+           deltaSalinity = (maxSalinity-minSalinity)/nSalinityBins
            do iSalinityBin=1,nSalinityBinsP1
-             waterMassCensusSalinityValues(iSalinityBin,iRegion) = config_AM_waterMassCensus_minSalinity + deltaSalinity*(iSalinityBin-1)
+             waterMassCensusSalinityValues(iSalinityBin,iRegion) = minSalinity + deltaSalinity*(iSalinityBin-1)
            enddo
          enddo ! iRegion
 
@@ -291,7 +306,7 @@ contains
          zPositionOfTSDiagram(:,:,:)=0.0_RKIND
       endif
 
-      if (config_AM_waterMassCensus_region_group /= '') then
+      if (additionalRegion /= '') then
          !!! region file init
          ! if a region file is given and a region is selected, set up region file version
          ! region file dimensions
@@ -324,7 +339,7 @@ contains
          ! region preliminaries
          ! figure out the region group number that matches the configured additional region's name
          do i = 1, nRegionGroups
-            if (regionGroupNames(i) .eq. config_AM_waterMassCensus_region_group) then
+            if (regionGroupNames(i) .eq. additionalRegion) then
                regionGroupNumber = i
                ! determine offset to compensate for several region groups in the
                ! regions file
@@ -347,14 +362,14 @@ contains
 
          !!! region file compute temperature and salinity
          do curRegion = 1, regionsInAddGroup
-            deltaTemperature = (config_AM_waterMassCensus_maxTemperature-config_AM_waterMassCensus_minTemperature)/nTemperatureBins
+            deltaTemperature = (maxTemperature-minTemperature)/nTemperatureBins
             do iTemperatureBin=1,nTemperatureBinsP1
-               waterMassCensusTemperatureValuesRegion(iTemperatureBin,curRegion) = config_AM_waterMassCensus_minTemperature + &
+               waterMassCensusTemperatureValuesRegion(iTemperatureBin,curRegion) = minTemperature + &
                         deltaTemperature*(iTemperatureBin-1)
             enddo
-            deltaSalinity = (config_AM_waterMassCensus_maxSalinity-config_AM_waterMassCensus_minSalinity)/nSalinityBins
+            deltaSalinity = (maxSalinity-minSalinity)/nSalinityBins
             do iSalinityBin=1,nSalinityBinsP1
-               waterMassCensusSalinityValuesRegion(iSalinityBin,curRegion) = config_AM_waterMassCensus_minSalinity + deltaSalinity*(iSalinityBin-1)
+               waterMassCensusSalinityValuesRegion(iSalinityBin,curRegion) = minSalinity + deltaSalinity*(iSalinityBin-1)
             enddo
          enddo
 
@@ -390,7 +405,7 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
          call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
 
-         if (config_AM_waterMassCensus_region_group == '') then
+         if (additionalRegion == '') then
             call mpas_pool_get_dimension(block % dimensions, 'nOceanRegionsTmpCensus', nOceanRegionsTmpCensus)
          else
             call mpas_pool_get_array(regionPool, 'regionCellMasks', regionCellMasks)
@@ -408,16 +423,16 @@ contains
                volume = layerThickness(iLevel,iCell) * areaCell(iCell)
 
                ! find temperature bin, cycle if bin is out of range
-               iTemperatureBin = int((temperature-config_AM_waterMassCensus_minTemperature)/deltaTemperature) + 1
+               iTemperatureBin = int((temperature-minTemperature)/deltaTemperature) + 1
                if (iTemperatureBin < 1) cycle
                if (iTemperatureBin > nTemperatureBins) cycle
 
                ! find salinity bin, cycle if bin is out of range
-               iSalinityBin = int((salinity-config_AM_waterMassCensus_minSalinity)/deltaSalinity) + 1
+               iSalinityBin = int((salinity-minSalinity)/deltaSalinity) + 1
                if (iSalinityBin < 1) cycle
                if (iSalinityBin > nSalinityBins) cycle
 
-               if (config_AM_waterMassCensus_compute_predefined_regions .eqv. .true.) then
+               if (predefRegions .eqv. .true.) then
                   !!! hard-wired regions compute
                   do iRegion=1,nOceanRegionsTmpCensus
                     ! add volume into water mass census array for each region
@@ -434,7 +449,7 @@ contains
                endif
 
                !!! region file compute
-               if (config_AM_waterMassCensus_region_group /= '') then
+               if (additionalRegion /= '') then
                   do i=1,regionsInAddGroup
                      curRegion = regionsInGroup(i, regionGroupNumber)
                      ! add volume into water mass census array for each region
@@ -455,7 +470,7 @@ contains
          block => block % next
       enddo   ! block loop
 
-      if (config_AM_waterMassCensus_compute_predefined_regions .eqv. .true.) then
+      if (predefRegions .eqv. .true.) then
          !!! hard-wired regions efficient computed
          ! store data in buffer in order to allow only one dmpar calls
          kBuffer=0
@@ -531,7 +546,7 @@ contains
 
       !!!region file version efficient computed
       ! store data in buffer in order to allow only one dmpar calls
-      if (config_AM_waterMassCensus_region_group /= '') then
+      if (additionalRegion /= '') then
          kBufferRegion=0
          do iTemperatureBin=1,nTemperatureBins
             do iSalinityBin=1,nSalinityBins

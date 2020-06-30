@@ -29,7 +29,6 @@ module ocn_init_ziso
    use mpas_dmpar
 
    use ocn_constants
-   use ocn_config
    use ocn_init_vertical_grids
    use ocn_init_cell_markers
 
@@ -89,6 +88,43 @@ contains
     integer :: iCell, iEdge, iVertex, k, idx
     real (kind=RKIND), dimension(:), pointer :: interfaceLocations
 
+    ! Define config variable pointers
+    character (len=StrKIND), pointer :: config_init_configuration, config_vertical_grid
+    logical, pointer :: config_write_cull_cell_mask, config_use_debugTracers
+
+    ! ZISO test case run-time configuration parameters
+    logical, pointer :: config_ziso_use_slopping_bathymetry
+    real (kind=RKIND), pointer :: config_ziso_meridional_extent
+    real (kind=RKIND), pointer :: config_ziso_bottom_depth
+    real (kind=RKIND), pointer :: config_ziso_wind_stress_max
+    real (kind=RKIND), pointer :: config_ziso_reference_coriolis
+    real (kind=RKIND), pointer :: config_ziso_coriolis_gradient
+    real (kind=RKIND), pointer :: config_ziso_shelf_depth
+    real (kind=RKIND), pointer :: config_ziso_slope_center_position
+    real (kind=RKIND), pointer :: config_ziso_slope_half_width
+    real (kind=RKIND), pointer :: config_ziso_initial_temp_t1
+    real (kind=RKIND), pointer :: config_ziso_initial_temp_t2
+    real (kind=RKIND), pointer :: config_ziso_initial_temp_h1
+    real (kind=RKIND), pointer :: config_ziso_initial_temp_mt
+    real (kind=RKIND), pointer :: config_ziso_mean_restoring_temp
+    real (kind=RKIND), pointer :: config_ziso_restoring_temp_dev_ta
+    real (kind=RKIND), pointer :: config_ziso_restoring_temp_dev_tb
+    real (kind=RKIND), pointer :: config_ziso_restoring_temp_piston_vel
+    real (kind=RKIND), pointer :: config_ziso_restoring_sponge_l
+    real (kind=RKIND), pointer :: config_ziso_restoring_temp_tau
+    real (kind=RKIND), pointer :: config_ziso_restoring_temp_ts
+    real (kind=RKIND), pointer :: config_ziso_restoring_temp_ze
+    real (kind=RKIND), pointer :: config_ziso_wind_transition_position
+    real (kind=RKIND), pointer :: config_ziso_antarctic_shelf_front_width
+    real (kind=RKIND), pointer :: config_ziso_wind_stress_shelf_front_max
+    logical, pointer :: config_ziso_add_easterly_wind_stress_ASF
+
+    ! configure settings related to frazil
+    logical, pointer :: config_ziso_frazil_enable
+    real (kind=RKIND), pointer :: config_ziso_frazil_temperature_anomaly
+
+    integer, pointer :: config_ziso_vert_levels
+
     ! Define dimension pointers
     integer, pointer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, nVertLevelsP1
     integer, pointer :: index_temperature, index_salinity, index_tracer1
@@ -118,9 +154,47 @@ contains
     iErr = 0
 
     ! test if ZISO is the desired configuration
+    call mpas_pool_get_config(ocnConfigs, 'config_init_configuration', config_init_configuration)
     if(config_init_configuration .ne. trim('ziso')) return
 
     call mpas_log_write( 'Starting initialization of Zonally periodic Idealized Southern Ocean (ZISO)')
+
+    ! get config variables !{{{
+    call mpas_pool_get_config(domain % configs, 'config_use_debugTracers', config_use_debugTracers)
+    call mpas_pool_get_config(domain % configs, 'config_write_cull_cell_mask', config_write_cull_cell_mask)
+    call mpas_pool_get_config(domain % configs, 'config_ziso_use_slopping_bathymetry', config_ziso_use_slopping_bathymetry)
+    call mpas_pool_get_config(domain % configs, 'config_ziso_bottom_depth', config_ziso_bottom_depth)
+    call mpas_pool_get_config(domain % configs, 'config_ziso_meridional_extent', config_ziso_meridional_extent)
+    call mpas_pool_get_config(domain % configs, 'config_ziso_reference_coriolis', config_ziso_reference_coriolis)
+    call mpas_pool_get_config(domain % configs, 'config_ziso_coriolis_gradient', config_ziso_coriolis_gradient)
+    call mpas_pool_get_config(domain % configs, 'config_ziso_vert_levels', config_ziso_vert_levels)
+    call mpas_pool_get_config(domain % configs, 'config_ziso_wind_stress_max', config_ziso_wind_stress_max)
+    call mpas_pool_get_config(domain % configs, 'config_ziso_slope_half_width', config_ziso_slope_half_width)
+    call mpas_pool_get_config(domain % configs, 'config_ziso_shelf_depth', config_ziso_shelf_depth)
+    call mpas_pool_get_config(domain % configs, 'config_ziso_slope_center_position', config_ziso_slope_center_position)
+    call mpas_pool_get_config(domain % configs, 'config_ziso_initial_temp_t1', config_ziso_initial_temp_t1)
+    call mpas_pool_get_config(domain % configs, 'config_ziso_initial_temp_t2', config_ziso_initial_temp_t2)
+    call mpas_pool_get_config(domain % configs, 'config_ziso_initial_temp_h1', config_ziso_initial_temp_h1)
+    call mpas_pool_get_config(domain % configs, 'config_ziso_initial_temp_mt', config_ziso_initial_temp_mt)
+    call mpas_pool_get_config(domain % configs, 'config_ziso_mean_restoring_temp', config_ziso_mean_restoring_temp)
+    call mpas_pool_get_config(domain % configs, 'config_ziso_restoring_temp_dev_ta', config_ziso_restoring_temp_dev_ta)
+    call mpas_pool_get_config(domain % configs, 'config_ziso_restoring_temp_dev_tb', config_ziso_restoring_temp_dev_tb)
+    call mpas_pool_get_config(domain % configs, 'config_ziso_restoring_temp_piston_vel', config_ziso_restoring_temp_piston_vel)
+    call mpas_pool_get_config(domain % configs, 'config_ziso_restoring_sponge_l', config_ziso_restoring_sponge_l)
+    call mpas_pool_get_config(domain % configs, 'config_ziso_restoring_temp_tau', config_ziso_restoring_temp_tau)
+    call mpas_pool_get_config(domain % configs, 'config_ziso_restoring_temp_ts', config_ziso_restoring_temp_ts)
+    call mpas_pool_get_config(domain % configs, 'config_ziso_restoring_temp_ze', config_ziso_restoring_temp_ze)
+    call mpas_pool_get_config(domain % configs, 'config_vertical_grid', config_vertical_grid)
+    call mpas_pool_get_config(domain % configs, 'config_ziso_add_easterly_wind_stress_ASF', &
+                              config_ziso_add_easterly_wind_stress_ASF)
+    call mpas_pool_get_config(domain % configs, 'config_ziso_wind_transition_position', config_ziso_wind_transition_position)
+    call mpas_pool_get_config(domain % configs, 'config_ziso_antarctic_shelf_front_width', config_ziso_antarctic_shelf_front_width)
+    call mpas_pool_get_config(domain % configs, 'config_ziso_wind_stress_shelf_front_max', config_ziso_wind_stress_shelf_front_max)
+
+    ! frazil configures
+    call mpas_pool_get_config(domain % configs, 'config_ziso_frazil_enable', config_ziso_frazil_enable)
+    call mpas_pool_get_config(domain % configs, 'config_ziso_frazil_temperature_anomaly', config_ziso_frazil_temperature_anomaly)
+    !}}}
 
     ! Determine vertical grid for configuration
     call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)

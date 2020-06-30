@@ -37,7 +37,6 @@ module ocn_lagrangian_particle_tracking
    use mpas_stream_manager
 
    use ocn_constants
-   use ocn_config
 
    use ocn_particle_list
    use ocn_lagrangian_particle_tracking_interpolations
@@ -286,7 +285,10 @@ contains
       integer, dimension(:), pointer :: nCellVerticesArray
       integer, dimension(:,:), pointer :: cellsOnCell
       integer, dimension(:,:), pointer :: cellsOnVertex
+      logical, pointer :: onSphere
       logical :: config_AM_lagrPartTrack_reset_particles
+      character (len=StrKIND), pointer :: config_AM_lagrPartTrack_reset_criteria, &
+        config_AM_lagrPartTrack_compute_interval, config_AM_lagrPartTrack_output_stream
 
       real (kind=RKIND), dimension(4) :: kWeightK, kWeightKVert
       real (kind=RKIND), dimension(3,4) :: kWeightX
@@ -300,7 +302,9 @@ contains
       real (kind=RKIND) :: zSubStep
       real (kind=RKIND) :: diffSubStepVert, diffParticlePositionVert, particleVelocityVert, verticalVelocityInterp
       real (kind=RKIND) :: buoyancyInterp
+      real (kind=RKIND), pointer :: sphereRadius
       integer, pointer :: verticalTreatment, indexLevel, filterNum, timeIntegration
+      character(len=StrKIND), pointer :: config_dt
       type (MPAS_timeInterval_type) :: timeStepESMF
       logical :: resetParticle, resetParticleAny
       integer :: err_tmp
@@ -311,11 +315,15 @@ contains
                           index_salinity
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
+      logical, pointer :: config_AM_lagrPartTrack_sample_temperature
+      logical, pointer :: config_AM_lagrPartTrack_sample_horizontal_interp
       real (kind=RKIND), pointer :: particleTemperature
 
+      logical, pointer :: config_AM_lagrPartTrack_sample_salinity
       real (kind=RKIND), pointer :: particleSalinity
 
       ! BGC tracers
+      logical, pointer :: config_use_ecosysTracers
       integer, pointer :: index_DIC, &
                           index_ALK, &
                           index_PO4, &
@@ -327,27 +335,35 @@ contains
       real (kind=RKIND), dimension(:,:,:), pointer :: ecosysTracers
 
       ! DIC
+      logical, pointer :: config_AM_lagrPartTrack_sample_DIC
       real (kind=RKIND), pointer :: particleDIC
 
       ! ALK
+      logical, pointer :: config_AM_lagrPartTrack_sample_ALK
       real (kind=RKIND), pointer :: particleALK
 
       ! PO4
+      logical, pointer :: config_AM_lagrPartTrack_sample_PO4
       real (kind=RKIND), pointer :: particlePO4
 
       ! NO3
+      logical, pointer :: config_AM_lagrPartTrack_sample_NO3
       real (kind=RKIND), pointer :: particleNO3
 
       ! SiO3
+      logical, pointer :: config_AM_lagrPartTrack_sample_SiO3
       real (kind=RKIND), pointer :: particleSiO3
 
       ! NH4
+      logical, pointer :: config_AM_lagrPartTrack_sample_NH4
       real (kind=RKIND), pointer :: particleNH4
 
       ! Fe
+      logical, pointer :: config_AM_lagrPartTrack_sample_Fe
       real (kind=RKIND), pointer :: particleFe
 
       ! O2
+      logical, pointer :: config_AM_lagrPartTrack_sample_O2
       real (kind=RKIND), pointer :: particleO2
 
       REAL (kind=RKIND), parameter :: eps=1e-12
@@ -364,6 +380,25 @@ contains
       LIGHT_DEBUG_WRITE('Computing Lagrangian Particle Tracking...')
       !call mpas_timer_start("totalLPT")
       call mpas_timer_start("computeLPT")
+
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_filter_number', filterNum)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_reset_criteria', config_AM_lagrPartTrack_reset_criteria)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_compute_interval', config_AM_lagrPartTrack_compute_interval)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_output_stream', config_AM_lagrPartTrack_output_stream)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_timeIntegration', timeIntegration)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_sample_horizontal_interp', &
+                                             config_AM_lagrPartTrack_sample_horizontal_interp)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_sample_temperature', config_AM_lagrPartTrack_sample_temperature)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_sample_salinity', config_AM_lagrPartTrack_sample_salinity)
+      call mpas_pool_get_config(ocnConfigs, 'config_use_ecosysTracers', config_use_ecosysTracers)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_sample_DIC', config_AM_lagrPartTrack_sample_DIC)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_sample_ALK', config_AM_lagrPartTrack_sample_ALK)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_sample_PO4', config_AM_lagrPartTrack_sample_PO4)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_sample_NO3', config_AM_lagrPartTrack_sample_NO3)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_sample_SiO3', config_AM_lagrPartTrack_sample_SiO3)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_sample_NH4', config_AM_lagrPartTrack_sample_NH4)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_sample_Fe', config_AM_lagrPartTrack_sample_Fe)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_sample_O2', config_AM_lagrPartTrack_sample_O2)
 
       if (trim(config_AM_lagrPartTrack_reset_criteria) == 'none') then
         config_AM_lagrPartTrack_reset_particles = .False.
@@ -448,6 +483,9 @@ contains
         call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
         call mpas_pool_get_array(meshPool, 'cellsOnVertex', cellsOnVertex)
         call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
+
+        call mpas_pool_get_config(meshPool, 'on_a_sphere', onSphere)
+        call mpas_pool_get_config(meshPool, 'sphere_radius', sphereRadius)
         !}}}
 
         ! super-cycling:
@@ -456,6 +494,7 @@ contains
           ! from time step value
           ! would eventually need to correspond to domain dt, but for now this is a
           ! global constant
+          call mpas_pool_get_config(block % configs, 'config_dt', config_dt)
           call mpas_set_timeInterval(timeStepESMF, timeString=config_dt, ierr=err)
           ! using the output interval
         else if (trim(config_AM_lagrPartTrack_compute_interval) == 'output') then
@@ -1571,10 +1610,13 @@ contains
       type (mpas_pool_type), pointer :: lagrPartTrackFieldsPool, lagrPartTrackScratchPool, lagrPartTrackCellsPool
       real(kind=RKIND), dimension(:,:), pointer :: normalVelocity, layerThickness
       integer :: timeLev
+      integer, pointer :: filterNum
       type (field2DReal), pointer :: uVV, vVV, wVV
       real (kind=RKIND), dimension(:,:), pointer :: potentialDensity
 
       !call mpas_log_write( 'inialize_vertex_velocity start')
+
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_filter_number', filterNum)
 
       err = 0
 
@@ -1621,8 +1663,7 @@ contains
 #ifdef MPAS_DEBUG
           call mpas_timer_start("init_reconst_filter_LPT")
 #endif
-          call ocn_vertex_reconstruction(config_AM_lagrPartTrack_filter_number, meshPool, &
-            lagrPartTrackScratchPool, lagrPartTrackCellsPool, &
+          call ocn_vertex_reconstruction(filterNum, meshPool, lagrPartTrackScratchPool, lagrPartTrackCellsPool, &
             layerThickness, normalVelocity, uVV, vVV, wVV)
 #ifdef MPAS_DEBUG
           call mpas_timer_stop("init_reconst_filter_LPT")
@@ -1982,10 +2023,14 @@ contains
       type (mpas_pool_type), pointer :: tracersPool
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
       integer, pointer :: index_temperature, index_salinity
+      logical, pointer :: config_AM_lagrPartTrack_sample_horizontal_interp
+      logical, pointer :: config_AM_lagrPartTrack_sample_temperature
       real (kind=RKIND), pointer :: particleTemperature
+      logical, pointer :: config_AM_lagrPartTrack_sample_salinity
       real (kind=RKIND), pointer :: particleSalinity
 
       real (kind=RKIND), dimension(:,:,:), pointer :: ecosysTracers
+      logical, pointer :: config_use_ecosysTracers
       integer, pointer :: index_DIC, &
                           index_ALK, &
                           index_PO4, &
@@ -1994,16 +2039,38 @@ contains
                           index_NH4, &
                           index_Fe, &
                           index_O2
+      logical, pointer :: config_AM_lagrPartTrack_sample_DIC
       real (kind=RKIND), pointer :: particleDIC
+      logical, pointer :: config_AM_lagrPartTrack_sample_ALK
       real (kind=RKIND), pointer :: particleALK
+      logical, pointer :: config_AM_lagrPartTrack_sample_PO4
       real (kind=RKIND), pointer :: particlePO4
+      logical, pointer :: config_AM_lagrPartTrack_sample_NO3
       real (kind=RKIND), pointer :: particleNO3
+      logical, pointer :: config_AM_lagrPartTrack_sample_SiO3
       real (kind=RKIND), pointer :: particleSiO3
+      logical, pointer :: config_AM_lagrPartTrack_sample_NH4
       real (kind=RKIND), pointer :: particleNH4
+      logical, pointer :: config_AM_lagrPartTrack_sample_Fe
       real (kind=RKIND), pointer :: particleFe
+      logical, pointer :: config_AM_lagrPartTrack_sample_O2
       real (kind=RKIND), pointer :: particleO2
 
       err = 0
+
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_sample_horizontal_interp', &
+                                             config_AM_lagrPartTrack_sample_horizontal_interp)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_sample_temperature', config_AM_lagrPartTrack_sample_temperature)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_sample_salinity', config_AM_lagrPartTrack_sample_salinity)
+      call mpas_pool_get_config(ocnConfigs, 'config_use_ecosysTracers', config_use_ecosysTracers)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_sample_DIC', config_AM_lagrPartTrack_sample_DIC)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_sample_ALK', config_AM_lagrPartTrack_sample_ALK)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_sample_PO4', config_AM_lagrPartTrack_sample_PO4)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_sample_NO3', config_AM_lagrPartTrack_sample_NO3)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_sample_SiO3', config_AM_lagrPartTrack_sample_SiO3)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_sample_NH4', config_AM_lagrPartTrack_sample_NH4)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_sample_Fe', config_AM_lagrPartTrack_sample_Fe)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_lagrPartTrack_sample_O2', config_AM_lagrPartTrack_sample_O2)
 
       dminfo = domain % dminfo
 
