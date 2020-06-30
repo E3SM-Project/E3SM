@@ -59,7 +59,7 @@ module params
   logical:: doprecip      = .true.    ! allow precipitation
   logical:: dodamping     = .true.    ! Newtonian damping for upper levels
   logical:: dosgs         = .true.    ! sub-grid turbulence scheme
-  logical:: dosurface     = .false.   ! surface scheme to calculate friction within CRM
+  logical:: dosurface     = .true.    ! surface scheme to calculate friction within CRM
 
   logical:: docoriolis    = .false.   ! not normally used for MMF
   logical:: dowallx       = .false.   ! not normally used for MMF
