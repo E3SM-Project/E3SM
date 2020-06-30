@@ -563,6 +563,12 @@ endif
 	LIBS += -L$(PNETCDF)/$(PNETCDFLIBLOC) -lpnetcdf
 endif
 
+ifneq "$(LAPACK)" ""
+        LIBS += -L$(LAPACK)
+        LIBS += -llapack
+        LIBS += -lblas
+endif
+
 RM = rm -f
 CPP = cpp -P -traditional
 RANLIB = ranlib
