@@ -11,7 +11,7 @@
 #
 # 
 set TOOLDIR = `pwd`
-set WDIR = ~/scratch1/hommetool
+set WDIR = ~/scratch1/regtest/homme
 set MACH = $TOOLDIR/../../cmake/machineFiles/darwin.cmake
 set exe = $WDIR/src/tool/homme_tool
 
@@ -55,7 +55,7 @@ $mpirun $exe < $TOOLDIR/namelists/interpolate.nl
 
 
 #
-echo "** create NE30 maapping files **"
+echo "** create NE30 mapping files **"
 #
 ncremap -G ttl="lat-lon-cap-grid"\#latlon=49,96\#lat_typ=fv\#lon_typ=grn_ctr -g 49x96_scrip.nc
 $mpirun $exe < $TOOLDIR/namelists/mappingfiles.nl
@@ -90,6 +90,12 @@ ncl $TOOLDIR/ncl/plotscrip.ncl
 ncl $TOOLDIR/ncl/plotlatlon.ncl
 
 
+
+
+#
+echo "** GLL subcell grid (alt-template) tool **"
+#
+$mpirun $exe < $TOOLDIR/namelists/template-alt.nl
 
 
 

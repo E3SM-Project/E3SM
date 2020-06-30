@@ -25,6 +25,7 @@ program tool_main
   use kinds,            only: iulog
   use interpolate_driver_mod, only : pio_read_phis, interpolate_driver
   use native_mapping, only: create_native_mapping_files
+  use gll_subcell_grid, only: write_gll_subcell_grid
   use prim_movie_mod,   only : prim_movie_output, prim_movie_finish,prim_movie_init
 
 
@@ -73,6 +74,8 @@ program tool_main
         call gll_mapping_file(elem, hybrid, tl)
      case ('grid_template_tool')
         call grid_template_tool(elem, hybrid, tl)
+     case ('gll_subcell_grid')
+        call write_gll_subcell_grid(par, elem)
      case('none')
         if (par%masterproc) then
            write(iulog,*) 'homme_tool was given tool="none"; exiting without doing anything'
