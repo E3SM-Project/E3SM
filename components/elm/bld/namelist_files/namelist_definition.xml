@@ -635,6 +635,13 @@ The same snow shortwave algorithm can be turned on for sea-ice simulation
 with config_use_snicar_ad in mpas-seaice namelist
 </entry>
 
+<entry id="use_extrasnowlayers" type="logical" category="physics"
+       group="clm_inparm" valid_values="" value=".false.">
+Toggle to use 16 snow layers instead of 5.  This option enables more realistic
+snowpack conditions on glaciers and ice sheets, including a semi-empirical
+firn densification model.
+</entry>
+
 <entry id="use_noio" type="logical" category="default_settings"
        group="elm_inparm" valid_values="" value=".false." >
 Toggle to turn all history output completely OFF (possibly used for testing)
