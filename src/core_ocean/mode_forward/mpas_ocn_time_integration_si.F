@@ -2815,6 +2815,7 @@ module ocn_time_integration_si
 !           call mpas_log_write( 'Iteration $i', intArgs=(/ iter /) )
 !           endif
 
+
             block => block % next
          end do  ! block
 
@@ -3656,23 +3657,38 @@ module ocn_time_integration_si
 
             endif
 
-              !--- RMS of mean area
-              local_num_cells = nCellsArray(1)
-              call mpas_dmpar_sum_real(dminfo,local_num_cells,total_num_cells)
-
-              local_area_sum = 0.0_RKIND
-              do iCell = 1,nCellsArray(1)
-                local_area_sum = local_area_sum + areaCell(iCell)**2.0
-              end do
-              call mpas_dmpar_sum_real(dminfo,local_area_sum,total_area_sum)
-
-              area_mean = dsqrt(total_area_sum / total_num_cells)
-              mean_num_cells = total_num_cells/ncpus
-
          block => block % next
          end do
       end if
 
+
+      if (trim(config_time_integrator) == 'semi_implicit') then
+
+         ! Compute the root mean square of areaCell
+         block => domain % blocklist
+         do while (associated(block))
+            call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+   
+            call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+   
+              !--- RMS of mean area
+              local_num_cells = nCellsArray(1)
+              call mpas_dmpar_sum_real(dminfo,local_num_cells,total_num_cells)
+   
+              local_area_sum = 0.0_RKIND
+              do iCell = 1,nCellsArray(1)
+                local_area_sum = local_area_sum + areaCell(iCell)**2.0
+              end do
+   
+         block => block % next
+         end do
+   
+         call mpas_dmpar_sum_real(dminfo,local_area_sum,total_area_sum)
+   
+         area_mean = dsqrt(total_area_sum / total_num_cells)
+         mean_num_cells = total_num_cells/ncpus
+
+      end if ! config_time_integrator
    end subroutine ocn_time_integration_si_init!}}}
 
 !***********************************************************************
