@@ -194,11 +194,11 @@ _TESTS = {
         "time" : "02:00:00",
         "tests" : (
             # MMF tests
-            "ERP_Ln9_P96x1.ne4_ne4.F-MMF1-TEST.cam-crmout",
-            "ERP_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF2-TEST",
-            "ERP_Ln9_P96x1.ne4_ne4.F-MMF2-ECPP-TEST",
-            "SMS_D_Ln3_P96x1.ne4_ne4.F-MMF1-TEST",
-            "SMS_D_Ln3_P96x1.ne4pg2_ne4pg2.F-MMF2-TEST",
+            "SMS_D_Ln3_P96x1.ne4_ne4.F-MMF1",
+            "SMS_D_Ln3_P96x1.ne4pg2_ne4pg2.F-MMF2",
+            "ERS_Ln9_P96x1.ne4_ne4.F-MMF1.cam-crmout",
+            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF2",
+            "ERS_Ln9_P96x1.ne4_ne4.F-MMF2-ECPP",
             # non-MMF tests with RRTMGP
             "ERP_Ln9.ne4pg2_ne4pg2.FC5AV1C-L.cam-rrtmgp",
             )
