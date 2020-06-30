@@ -42,9 +42,9 @@
  If additional future files become available, the user needs to update three variables in the code
  before compiling (near the beginning of updateannuallanduse()), in order to account for a different future scenario:
  
- 5864: const char out_future_land_filebase[] = "LUT_LUH2_SSP5_RCP85";
- 5875: const char luh_future_file[] = "LUH2_SSP5_RCP85_LUH1_format.nc";
- 5877: const char luh_harvest_future_file[] = "LUH2_SSP5_RCP85_LUH1_format_harvest_updated.nc";
+ 5810: const char out_future_land_filebase[] = "LUT_LUH2_SSP5_RCP85";
+ 5821: const char luh_future_file[] = "LUH2_SSP5_RCP85_LUH1_format.nc";
+ 5823: const char luh_harvest_future_file[] = "LUH2_SSP5_RCP85_LUH1_format_harvest_updated.nc";
  
  September 2019 update (adv):
  
@@ -307,6 +307,8 @@
 #define TAU0 0.7
 #define PI 4.0*atan(1.0)
 #define SLIMIT 10
+
+#define TOLERANCE 1E-5
 
 /* these 1-d arrays of the grid have a cell boundary origin at the lower left corner of: lon= -180, lat = -90)-adv */
 /* the index increases with increasing longitude then with increaseing latitude -adv */
@@ -2598,7 +2600,7 @@ normglmo(double array[MAXOUTPIX * MAXOUTLIN]) {
     double value;
     int outgrid;
     for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
-        if (invegbare[outgrid] > 0.0 && invegbare[outgrid] <= 100.0) {
+        if (invegbare[outgrid] > 0.0 && invegbare[outgrid] <= 100.1) {
 			// mystery line that keeps my version from crashing
 			//printf("");
             value = array[outgrid] * 100.0 / inland[outgrid] / invegbare[outgrid];
@@ -3228,81 +3230,89 @@ readcurrentpft() {
 /* modified to read the dynamic pft pf file -adv
  */
 
-void
-readcurrentpftpct(long modyear) {
-    
-     double *pftpctvalues;
-    double pfttotal;
-    int outgrid, offsetgrid, inpft, outpftid;
-    
-	long numdims = 4;
-	long year_ind;
-	int year_varid;
-	size_t numrecs, *start, *count;
-	double *years;
-    
-    selectedvarcnt = 0;
-    
-    nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
-    
-    for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
-        nc_inq_varname(innetcdfid, nvarspcnt, varname);
-        /*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
-        if (strcmp(varname,"PCT_PFT") == 0) {
+   void
+   readcurrentpftpct(long modyear) {
+      
+      double *pftpctvalues;
+      double pfttotal;
+      int outgrid, offsetgrid, inpft, outpftid;
+      
+      long numdims = 4;
+      long year_ind;
+      int year_varid;
+      size_t numrecs, *start, *count;
+      double *years;
+      
+      selectedvarcnt = 0;
+      
+      nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+      
+      for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+         nc_inq_varname(innetcdfid, nvarspcnt, varname);
+         /*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+         if (strcmp(varname,"PCT_PFT") == 0) {
             selectedvarids[0] = nvarspcnt;
             selectedvarcnt++;
             printf("Reading variable: %d %s \n",nvarspcnt,varname);
-			break;
-        }
-    }
-    
-	/* get the index of modyear */
-	nc_inq_dimlen(innetcdfid, unlimdimidp, &numrecs);
-	years = malloc(sizeof(double) * numrecs);
-	nc_inq_varid(innetcdfid, "TIME", &year_varid);
-	nc_get_var_double(innetcdfid, year_varid, years);
-	for(year_ind = 0; year_ind < ((long) numrecs); year_ind++) {
-		if (((long) years[year_ind]) == modyear) {
-			//printf("Selected year: %f %li\n", years[year_ind], modyear);
-			break;
-		}
-	}
-	if(year_ind == ((long) numrecs)) {
-		printf("Error reading reference year data %li from invalid index %li\n",modyear,year_ind);
-	}
-	
-	start = calloc(numdims, sizeof(size_t));
-	count = calloc(numdims, sizeof(size_t));
-	start[0] = year_ind;
-	start[1] = 0;
-	start[2] = 0;
-	start[3] = 0;
-	count[0] = 1;
-	count[1] = MAXPFT+1;
-	count[2] = latlen;
-	count[3] = lonlen;
-	
-    varlayers = MAXPFT+1;
-    varlayers2 = 1;
-    pftpctvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_vara_double(innetcdfid,selectedvarids[0], start, count, pftpctvalues);
-    
-    for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
-        pfttotal = 0.0;
-        for (inpft = 0; inpft < MAXPFT; inpft++) {
+            break;
+         }
+      }
+      
+      /* get the index of modyear */
+      nc_inq_dimlen(innetcdfid, unlimdimidp, &numrecs);
+      years = malloc(sizeof(double) * numrecs);
+      nc_inq_varid(innetcdfid, "TIME", &year_varid);
+      nc_get_var_double(innetcdfid, year_varid, years);
+      for(year_ind = 0; year_ind < ((long) numrecs); year_ind++) {
+         if (((long) years[year_ind]) == modyear) {
+            //printf("Selected year: %f %li\n", years[year_ind], modyear);
+            break;
+         }
+      }
+      if(year_ind == ((long) numrecs)) {
+         printf("Error reading reference year data %li from invalid index %li\n",modyear,year_ind);
+      }
+      
+      start = calloc(numdims, sizeof(size_t));
+      count = calloc(numdims, sizeof(size_t));
+      start[0] = year_ind;
+      start[1] = 0;
+      start[2] = 0;
+      start[3] = 0;
+      count[0] = 1;
+      count[1] = MAXPFT+1;
+      count[2] = latlen;
+      count[3] = lonlen;
+      
+      varlayers = MAXPFT+1;
+      varlayers2 = 1;
+      pftpctvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+      nc_get_vara_double(innetcdfid,selectedvarids[0], start, count, pftpctvalues);
+      
+      for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+         pfttotal = 0.0;
+         for (inpft = 0; inpft < MAXPFT; inpft++) {
             offsetgrid = inpft * MAXOUTPIX * MAXOUTLIN + outgrid;
             outpftid = incurrentpftid[inpft][outgrid];
-            incurrentpftval[outpftid][outgrid] = pftpctvalues[offsetgrid];
-            pfttotal = pfttotal + pftpctvalues[offsetgrid];
-        }
-    }
-    
-    free(pftpctvalues);
-	free(years);
-	free(start);
-	free(count);
-    
-}
+            if (pftpctvalues[offsetgrid] > 0.0 && pftpctvalues[offsetgrid] < 100.1){
+               if (pftpctvalues[offsetgrid] >= 100.0) {
+                  incurrentpftval[outpftid][outgrid] = 100.0;
+               } else {
+                  incurrentpftval[outpftid][outgrid] = pftpctvalues[offsetgrid];
+               }
+            } else {
+               incurrentpftval[outpftid][outgrid] = 0.0;
+            }
+            pfttotal = pfttotal + incurrentpftval[outpftid][outgrid];
+         }
+      }
+      
+      free(pftpctvalues);
+      free(years);
+      free(start);
+      free(count);
+      
+   }
 
 /* new function to store the outyear values in the pft reference surface file - adv
  outyear is the year being operated on, so it is the one appended to the file
@@ -3513,46 +3523,54 @@ readpotvegpft() {
     
 }
 
-void
-readpotvegpftpct() {
-    
-    double *pftpctvalues;
-    double pfttotal;
-    int outgrid, offsetgrid, inpft, outpftid;
-    
-    selectedvarcnt = 0;
-    
-    nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
-    
-    for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
-        nc_inq_varname(innetcdfid, nvarspcnt, varname);
-        /*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
-        if (strcmp(varname,"PCT_PFT") == 0) {
+   void
+   readpotvegpftpct() {
+      
+      double *pftpctvalues;
+      double pfttotal;
+      int outgrid, offsetgrid, inpft, outpftid;
+      
+      selectedvarcnt = 0;
+      
+      nc_inq(innetcdfid, &ndimsp, &nvarsp, &nattsp, &unlimdimidp);
+      
+      for (nvarspcnt = 0; nvarspcnt < nvarsp; nvarspcnt ++) {
+         nc_inq_varname(innetcdfid, nvarspcnt, varname);
+         /*      nc_inq_var(innetcdfid, nvarspcnt, varname, &vartype, &vardimsp, &vardimidsp, &varattsp); */
+         if (strcmp(varname,"PCT_PFT") == 0) {
             selectedvarids[0] = nvarspcnt;
             selectedvarcnt++;
             printf("Reading potential veg variable: %d %s \n",nvarspcnt,varname);
-			break;
-        }
-    }
-    
-    varlayers = MAXPFT+1;
-    varlayers2 = 1;
-    pftpctvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
-    nc_get_var_double(innetcdfid,selectedvarids[0],pftpctvalues);
-    
-    for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
-        pfttotal = 0.0;
-        for (inpft = 0; inpft < MAXPFT; inpft++) {
+            break;
+         }
+      }
+      
+      varlayers = MAXPFT+1;
+      varlayers2 = 1;
+      pftpctvalues = malloc(sizeof(double) * lonlen * latlen * varlayers * varlayers2);
+      nc_get_var_double(innetcdfid,selectedvarids[0],pftpctvalues);
+      
+      for (outgrid = 0; outgrid < MAXOUTPIX * MAXOUTLIN; outgrid++) {
+         pfttotal = 0.0;
+         for (inpft = 0; inpft < MAXPFT; inpft++) {
             offsetgrid = inpft * MAXOUTPIX * MAXOUTLIN + outgrid;
             outpftid = inpotvegpftid[inpft][outgrid];
-            inpotvegpftval[outpftid][outgrid] = pftpctvalues[offsetgrid];
-            pfttotal = pfttotal + pftpctvalues[offsetgrid];
-        }
-    }
-    
-    free(pftpctvalues);
-    
-}
+            if (pftpctvalues[offsetgrid] > 0.0 && pftpctvalues[offsetgrid] < 100.1){
+               if (pftpctvalues[offsetgrid] >= 100.0) {
+                  inpotvegpftval[outpftid][outgrid] = 100.0;
+               } else {
+                  inpotvegpftval[outpftid][outgrid] = pftpctvalues[offsetgrid];
+               }
+            } else {
+               inpotvegpftval[outpftid][outgrid] = 0.0;
+            }
+            pfttotal = pfttotal + inpotvegpftval[outpftid][outgrid];
+         }
+      }
+      
+      free(pftpctvalues);
+      
+   }
 
 
 void
@@ -3946,7 +3964,7 @@ void sethurttcrop(int outgrid, int modyear, int calcyear) {
 #endif
           }
           else {	// not enough vegetated land unit for both crop and pasture (if any)
-             // so replace some pasture (fi any) with crops, and cap crop to veg land unit if necessary
+             // so replace some pasture (if any) with crops, and cap crop to veg land unit if necessary
              
              // check for replacing pasture with crop
              cropgap = removepftsum - availablecropsum - outhurttpftval[BPFT][outgrid];
@@ -3958,9 +3976,10 @@ void sethurttcrop(int outgrid, int modyear, int calcyear) {
                 printf("pasturepftsum: %f\n", pasturepftsum);
 #endif
                 // no crop reduction, use some pasture
+                pasturepftsum = -reducecrop;
                 reducecrop = 0.0;
                 availablecropsum = availablecropsum + cropgap;
-                pasturepftsum = -reducecrop;
+                
              }
              else {
 #ifdef DEBUG
@@ -3999,12 +4018,18 @@ void sethurttcrop(int outgrid, int modyear, int calcyear) {
           } // end else remove some pasture
        } // end if availablecropsum < removepftsum
        
-       if (removepftsum < 0.0 || removepftsum > 100.0) {
-          printf("Error in removepftsum %f\n",removepftsum);
+       // check for errors, but if they are over 100 they can be corrected here
+       if (removepftsum < 0.0 - TOLERANCE || removepftsum > 100.0 + TOLERANCE) {
+          printf("Error in add crop removepftsum %f\n",removepftsum);
        }
+       if (availablecropsum < 0.0 - TOLERANCE || availablecropsum > 100.0 + TOLERANCE) {
+          printf("Error in add crop availablecropsum %f\n",removepftsum);
+       }
+       if (removepftsum > 100.0) { removepftsum = 100.0; }
+       if (availablecropsum > 100.0) { availablecropsum = 100.0; }
        
        if (removepftsum > 0.0) {
-           if (availablecropsum == 0.0 ) {	/* no pfts to remeove -adv */
+           if (availablecropsum <= 0.0) {	/* no pfts to remove -adv */
               printf("Error: availablecropsum = %f while removepftsum = %f\n", availablecropsum, removepftsum);
               //for (outpft = NEMPFT;outpft <= GC4PFT;outpft++) {
                  //outhurttpftval[outpft][outgrid] = round( (outhurttpftval[outpft][outgrid]));
@@ -4169,313 +4194,313 @@ void sethurttcrop(int outgrid, int modyear, int calcyear) {
         }	// end if second check removepftsum > 0.0
     }	// end if first check removepftsum > 0.0
     else {
-        if (addpftsum > 0.0) {		/* crops being removed, other PFTs added */
+       if (addpftsum > 0.0) {		/* crops being removed, other PFTs added */
 #ifdef DEBUG            
-         printf("\nremovecrop\n");
-         printf("newcropval: %f\n", newcropval);
-         printf("vegpftsum: %f\n", vegpftsum);
-         printf("addpftsum: %f\n", addpftsum);
-         printf("availpotvegtreepftsum: %f\n", availpotvegtreepftsum);
-         printf("availpotvegherbpftsum: %f\n", availpotvegherbpftsum);
+          printf("\nremovecrop\n");
+          printf("newcropval: %f\n", newcropval);
+          printf("vegpftsum: %f\n", vegpftsum);
+          printf("addpftsum: %f\n", addpftsum);
+          printf("availpotvegtreepftsum: %f\n", availpotvegtreepftsum);
+          printf("availpotvegherbpftsum: %f\n", availpotvegherbpftsum);
 #endif                        
-         if (vegpftsum + addpftsum + newcropval + outhurttpftval[BPFT][outgrid] > 100.0) {	/* cap the addition of pfts to the veg land unit -adv */
+          if (vegpftsum + addpftsum + newcropval + outhurttpftval[BPFT][outgrid] > 100.0) {	/* cap the addition of pfts to the veg land unit -adv */
 #ifdef DEBUG
-              printf("removing crops, capping pft addition\n");
-              printf("bare: %f\n", outhurttpftval[BPFT][outgrid]);
+             printf("removing crops, capping pft addition\n");
+             printf("bare: %f\n", outhurttpftval[BPFT][outgrid]);
 #endif                                
-              addpftsum = 100.0 - (vegpftsum + newcropval + outhurttpftval[BPFT][outgrid]);
+             addpftsum = 100.0 - (vegpftsum + newcropval + outhurttpftval[BPFT][outgrid]);
 #ifdef DEBUG                                
-              printf("adjusted addpftsum: %f\n", addpftsum);
+             printf("adjusted addpftsum: %f\n", addpftsum);
 #endif                                
-         }
-           
-			// !!! this code is used to check where potential trees can replace all removed crops -adv
-			if (availpotvegtreepftsum >= addpftsum) {
-				cropavailpotvegtreepftval[outgrid] = 1;
+          }
+          
+          // check for errors, and limit to 100 after calculation above
+          if (addpftsum < 0.0 - TOLERANCE || addpftsum > 100.0 + TOLERANCE) {
+             printf("Error in remove crop addpftsum %f\n",addpftsum);
+          }
+          if (addpftsum > 100.0) { addpftsum = 100.0; }
+          
+          // !!! this code is used to check where potential trees can replace all removed crops -adv
+          if (availpotvegtreepftsum >= addpftsum) {
+             cropavailpotvegtreepftval[outgrid] = 1;
 #ifdef DEBUG                                
-				printf("trees can replace all removed crops\n");
+             printf("trees can replace all removed crops\n");
 #endif                                
-			}
-			else {
-				cropavailpotvegtreepftval[outgrid] = 0;
-			}
-
-			/* !!! just add trees -adv */
-			if (ADDTREEONLY) {
-				if (addpftsum < 0.0 || addpftsum > 100.0) {
-					printf("Error in addpftsum %f\n",addpftsum);
-				}
-				
-				if (addpftsum > 0.0) {
-					if (potvegtreepftsum > 0.0) {
-						for (outpft = NEMPFT;outpft <= BDBPFT;outpft++) {
-							//outhurttpftval[outpft][outgrid] =
-								//round(outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addpftsum / potvegtreepftsum);
-                     outhurttpftval[outpft][outgrid] =
-                        outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addpftsum / potvegtreepftsum;
-						}
-					}
-					else if (treepftsum > 0.0) {
-						for (outpft = NEMPFT;outpft <= BDBPFT;outpft++) {
-							//outhurttpftval[outpft][outgrid] =
-								//round(outhurttpftval[outpft][outgrid] + outhurttpftval[outpft][outgrid] * addpftsum / treepftsum);
-                     outhurttpftval[outpft][outgrid] =
-                        outhurttpftval[outpft][outgrid] + outhurttpftval[outpft][outgrid] * addpftsum / treepftsum;
-						}
-					}
-					else {
-						for (outpft = NEMPFT;outpft <= BDBPFT;outpft++) {
-							//outhurttpftval[outpft][outgrid] =
-								//round(outhurttpftval[outpft][outgrid] + 1.0 * addpftsum / 8.0);
-                     outhurttpftval[outpft][outgrid] =
-                        outhurttpftval[outpft][outgrid] + 1.0 * addpftsum / 8.0;
-						}
-					}
-				}
-			} // end if ADDTREEONLY
-			else {
-				/* add pfts based on potential vegetation -adv */
-				/* this zero potveg catch isn't necessary, but it avoids going through the calculations below -adv */
-				if (potvegpftsum == 0.0) {	/* add bare soil if no potential pfts reside in this cell -adv */
+          }
+          else {
+             cropavailpotvegtreepftval[outgrid] = 0;
+          }
+          
+          /* !!! just add trees -adv */
+          if (ADDTREEONLY) {
+             if (addpftsum > 0.0) {
+                if (potvegtreepftsum > 0.0) {
+                   for (outpft = NEMPFT;outpft <= BDBPFT;outpft++) {
+                      //outhurttpftval[outpft][outgrid] =
+                      //round(outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addpftsum / potvegtreepftsum);
+                      outhurttpftval[outpft][outgrid] =
+                      outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addpftsum / potvegtreepftsum;
+                   }
+                }
+                else if (treepftsum > 0.0) {
+                   for (outpft = NEMPFT;outpft <= BDBPFT;outpft++) {
+                      //outhurttpftval[outpft][outgrid] =
+                      //round(outhurttpftval[outpft][outgrid] + outhurttpftval[outpft][outgrid] * addpftsum / treepftsum);
+                      outhurttpftval[outpft][outgrid] =
+                      outhurttpftval[outpft][outgrid] + outhurttpftval[outpft][outgrid] * addpftsum / treepftsum;
+                   }
+                }
+                else {
+                   for (outpft = NEMPFT;outpft <= BDBPFT;outpft++) {
+                      //outhurttpftval[outpft][outgrid] =
+                      //round(outhurttpftval[outpft][outgrid] + 1.0 * addpftsum / 8.0);
+                      outhurttpftval[outpft][outgrid] =
+                      outhurttpftval[outpft][outgrid] + 1.0 * addpftsum / 8.0;
+                   }
+                }
+             }
+          } // end if ADDTREEONLY
+          else {
+             /* add pfts based on potential vegetation -adv */
+             /* this zero potveg catch isn't necessary, but it avoids going through the calculations below -adv */
+             if (potvegpftsum <= 0.0) {	/* add bare soil if no potential pfts reside in this cell -adv */
 #ifdef DEBUG                                    
-					printf("removing crops, adding only bare\n");
-					printf("bare: %f\n", outhurttpftval[BPFT][outgrid]);
-					printf("addpftsum: %f\n", addpftsum);
+                printf("removing crops, adding only bare\n");
+                printf("bare: %f\n", outhurttpftval[BPFT][outgrid]);
+                printf("addpftsum: %f\n", addpftsum);
 #endif                                        
-					outhurttpftval[BPFT][outgrid] = outhurttpftval[BPFT][outgrid] + addpftsum;
-					addpftsum = 0.0;
+                potvegpftsum = 0.0;
+                outhurttpftval[BPFT][outgrid] = outhurttpftval[BPFT][outgrid] + addpftsum;
+                addpftsum = 0.0;
 #ifdef DEBUG                                        
-					printf("adjusted addpftsum: %f\n", addpftsum);
+                printf("adjusted addpftsum: %f\n", addpftsum);
 #endif                                        
-				}
-            
-				if (addpftsum < 0.0 || addpftsum > 100.0) {
-					printf("Error in addpftsum %f\n",addpftsum);
-				}
-            
-				/* original code commented out by -adv
-				 if (potvegpftsum != 0.) {addtreepftsum = addpftsum * potvegtreepftsum / potvegpftsum;}
-				 // addtreepftsum = addpftsum * potvegtreepftsum / potvegpftsum;
-				 addherbaceouspftsum = addpftsum - addtreepftsum;
-				 original code commented out by -adv */
-            
-				/* NOTE: this is where secondary land is created start new code block -adv */
-				/* add potential veg pfts in proportion to their available potential distribution -adv */
-				if (addpftsum > 0.0) {
-					/* original code commented out by -adv
-					for (outpft = NEMPFT;outpft <= GC4PFT;outpft++) {
-					if (outpft <= BDBPFT && potvegtreepftsum > 0.0) {
-					 //outhurttpftval[outpft][outgrid] = round( (outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addtreepftsum / potvegtreepftsum));
-                outhurttpftval[outpft][outgrid] = (outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addtreepftsum / potvegtreepftsum);
-					}
-					if (outpft >= SEMPFT && potvegherbaceouspftsum > 0.0) {
-					 //outhurttpftval[outpft][outgrid] = round( (outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *	addherbaceouspftsum / potvegherbaceouspftsum));
-                outhurttpftval[outpft][outgrid] = (outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *   addherbaceouspftsum / potvegherbaceouspftsum);
-					}
-					}
-					original code commented out by -adv */
-				
-					// /* !!! preferentially add tree or non-tree pfts -adv
-				 
-					// add potential vegetation tree and herbaceous pfts
-					// REVIEW: if not enough available potential veg make up the difference with bare soil
-					//	only crop addition removes bare soil if other pfts not available, so bare soil should be added first upon crop removal
-                    //  not necessarily because we don't know if bare soil had been removed, and it is less likeyly that crops would be put on bare soil in the world
-                    //  but the land could have been degraded...
-					if(addpftsum > availpotvegtreeherbpftsum) {
+             }
+             
+             /* original code commented out by -adv
+              if (potvegpftsum != 0.) {addtreepftsum = addpftsum * potvegtreepftsum / potvegpftsum;}
+              // addtreepftsum = addpftsum * potvegtreepftsum / potvegpftsum;
+              addherbaceouspftsum = addpftsum - addtreepftsum;
+              original code commented out by -adv */
+             
+             /* NOTE: this is where secondary land is created start new code block -adv */
+             /* add potential veg pfts in proportion to their available potential distribution -adv */
+             if (addpftsum > 0.0) {
+                /* original code commented out by -adv
+                 for (outpft = NEMPFT;outpft <= GC4PFT;outpft++) {
+                 if (outpft <= BDBPFT && potvegtreepftsum > 0.0) {
+                 //outhurttpftval[outpft][outgrid] = round( (outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addtreepftsum / potvegtreepftsum));
+                 outhurttpftval[outpft][outgrid] = (outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addtreepftsum / potvegtreepftsum);
+                 }
+                 if (outpft >= SEMPFT && potvegherbaceouspftsum > 0.0) {
+                 //outhurttpftval[outpft][outgrid] = round( (outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *	addherbaceouspftsum / potvegherbaceouspftsum));
+                 outhurttpftval[outpft][outgrid] = (outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *   addherbaceouspftsum / potvegherbaceouspftsum);
+                 }
+                 }
+                 original code commented out by -adv */
+                
+                // /* !!! preferentially add tree or non-tree pfts -adv
+                
+                // add potential vegetation tree and herbaceous pfts
+                // REVIEW: if not enough available potential veg make up the difference with bare soil
+                //	only crop addition removes bare soil if other pfts not available, so bare soil should be added first upon crop removal
+                //  not necessarily because we don't know if bare soil had been removed, and it is less likeyly that crops would be put on bare soil in the world
+                //  but the land could have been degraded...
+                if(addpftsum > availpotvegtreeherbpftsum) {
 #ifdef DEBUG                                            
-						printf("removing crops, adding bare because not enough available potential veg\n");
-						printf("bare: %f\n", outhurttpftval[BPFT][outgrid]);
-						printf("availpotvegtreeherbpftsum: %f\n", availpotvegtreeherbpftsum);
+                   printf("removing crops, adding bare because not enough available potential veg\n");
+                   printf("bare: %f\n", outhurttpftval[BPFT][outgrid]);
+                   printf("availpotvegtreeherbpftsum: %f\n", availpotvegtreeherbpftsum);
 #endif                                                
-						outhurttpftval[BPFT][outgrid] = outhurttpftval[BPFT][outgrid] + addpftsum - availpotvegtreeherbpftsum;
-						addpftsum = availpotvegtreeherbpftsum;
+                   outhurttpftval[BPFT][outgrid] = outhurttpftval[BPFT][outgrid] + addpftsum - availpotvegtreeherbpftsum;
+                   addpftsum = availpotvegtreeherbpftsum;
 #ifdef DEBUG                                                
-						printf("adjusted addpftsum: %f\n", addpftsum);
+                   printf("adjusted addpftsum: %f\n", addpftsum);
 #endif                                                
-					}
-				 
-					// preferentially add forest pfts over herbaceous pfts, or vice versa
-					// use the same logic as above, but reduce the available potential veg
-					// the available potential veg is how much can be added until the potential veg is reached
-					// range of availtreefracremain goes from add all trees first to proportional addition of available potential pft percents
-					// to add non-tree first to minimize forest addition
-				
-					// using this else value will add herbaceous and tree pfts proportionally to their available potential percents
-					if(availpotvegtreeherbpftsum > 0.0) {
-						propavailtreefracremain = (availpotvegtreeherbpftsum - addpftsum) / availpotvegtreeherbpftsum;
-					}
-					else {
-						propavailtreefracremain = 1.0;
-					}
-
-					// calculate the remaining available tree fraction to preferentially add trees
-					// this is the minimum, and if this is negative it needs to be set to zero
-					// also calculate the maximum remaining available tree fraction, which has a max of 1
-					if(availpotvegtreepftsum > 0.0) {
-						minavailtreefracremain = 1.0 - addpftsum / availpotvegtreepftsum;
-						maxavailtreefracremain = (availpotvegtreeherbpftsum - addpftsum) / availpotvegtreepftsum;
-					}
-					else {
-						minavailtreefracremain = 1.0;
-						maxavailtreefracremain = 1.0;
-                  propavailtreefracremain = 1.0;
-					}
-
-					if(minavailtreefracremain <= 0.0) {
-						minavailtreefracremain = 0.0;
-					}
-				
-					if(maxavailtreefracremain > 1.0) {
-						maxavailtreefracremain = 1.0;
-					}
-				 
-					// NOTE: setavailtreefracrem is the variable to adjust!
-					//		Ranges from 0 to 1 for maximizing forest (minimzing herbaceous)
-					//			setavailtreefracrem = 1 is proportional removal to available potential
-					//			setavailtreefracrem = 0 is add trees first (maximizes forest)
-					//		Ranges from 1 to 2 for minimizing forest (maximizing herbaceous)
-					//			setavailtreefracrem = 1 is proportional removal to available potential
-					//			setavailtreefracrem = 2 is add herb first (minimizes forest)
-					if (setavailtreefracrem >= 0.0 && setavailtreefracrem <= 1.0) {
-						availtreefracremain = minavailtreefracremain + setavailtreefracrem * (propavailtreefracremain - minavailtreefracremain);
-					} else if (setavailtreefracrem > 1.0 && setavailtreefracrem <= 2.0) {
-						setavailtreefracrem = setavailtreefracrem - 1.0;
-						availtreefracremain = propavailtreefracremain + setavailtreefracrem * (maxavailtreefracremain - propavailtreefracremain);
-					} else {
-                  printf("Error: setavailtreefracrem %f not within input range of 0 to 2 in sethurttcrop(); setting to proportional value of 1\n", setavailtreefracrem);
-                  setavailtreefracrem = 1;
-                  availtreefracremain = minavailtreefracremain + setavailtreefracrem * (propavailtreefracremain - minavailtreefracremain);
-					}
-
-					if(availpotvegherbpftsum > 0.0) {
-						availherbfracremain =
-							(1.0 - availtreefracremain) * availpotvegtreepftsum / availpotvegherbpftsum -
-							(addpftsum / availpotvegherbpftsum) + 1.0;
-					}
-					else {
-						availherbfracremain = 1.0;
-					}
-					
-					// ensure that the fractions are between 0.0 and 1.0
-					if (availherbfracremain < 0.0) { availherbfracremain = 0.0; }
-					if (availherbfracremain > 1.0) { availherbfracremain = 1.0; }
-					if (availtreefracremain < 0.0) { availtreefracremain = 0.0; }
-					if (availtreefracremain > 1.0) { availtreefracremain = 1.0; }
+                }
+                
+                // preferentially add forest pfts over herbaceous pfts, or vice versa
+                // use the same logic as above, but reduce the available potential veg
+                // the available potential veg is how much can be added until the potential veg is reached
+                // range of availtreefracremain goes from add all trees first to proportional addition of available potential pft percents
+                // to add non-tree first to minimize forest addition
+                
+                // using this else value will add herbaceous and tree pfts proportionally to their available potential percents
+                if(availpotvegtreeherbpftsum > 0.0 + TOLERANCE) {
+                   propavailtreefracremain = (availpotvegtreeherbpftsum - addpftsum) / availpotvegtreeherbpftsum;
+                }
+                else {
+                   propavailtreefracremain = 1.0;
+                }
+                
+                // calculate the remaining available tree fraction to preferentially add trees
+                // this is the minimum, and if this is negative it needs to be set to zero
+                // also calculate the maximum remaining available tree fraction, which has a max of 1
+                if(availpotvegtreepftsum > 0.0 + TOLERANCE) {
+                   minavailtreefracremain = 1.0 - addpftsum / availpotvegtreepftsum;
+                   maxavailtreefracremain = (availpotvegtreeherbpftsum - addpftsum) / availpotvegtreepftsum;
+                }
+                else {
+                   minavailtreefracremain = 1.0;
+                   maxavailtreefracremain = 1.0;
+                   propavailtreefracremain = 1.0;
+                }
+                
+                if(minavailtreefracremain <= 0.0 + TOLERANCE) {
+                   minavailtreefracremain = 0.0;
+                }
+                
+                if(maxavailtreefracremain > 1.0) {
+                   maxavailtreefracremain = 1.0;
+                }
+                
+                // NOTE: setavailtreefracrem is the variable to adjust!
+                //		Ranges from 0 to 1 for maximizing forest (minimzing herbaceous)
+                //			setavailtreefracrem = 1 is proportional removal to available potential
+                //			setavailtreefracrem = 0 is add trees first (maximizes forest)
+                //		Ranges from 1 to 2 for minimizing forest (maximizing herbaceous)
+                //			setavailtreefracrem = 1 is proportional removal to available potential
+                //			setavailtreefracrem = 2 is add herb first (minimizes forest)
+                if (setavailtreefracrem >= 0.0 && setavailtreefracrem <= 1.0) {
+                   availtreefracremain = minavailtreefracremain + setavailtreefracrem * (propavailtreefracremain - minavailtreefracremain);
+                } else if (setavailtreefracrem > 1.0 && setavailtreefracrem <= 2.0) {
+                   setavailtreefracrem = setavailtreefracrem - 1.0;
+                   availtreefracremain = propavailtreefracremain + setavailtreefracrem * (maxavailtreefracremain - propavailtreefracremain);
+                } else {
+                   printf("Error: setavailtreefracrem %f not within input range of 0 to 2 in sethurttcrop(); setting to proportional value of 1\n", setavailtreefracrem);
+                   setavailtreefracrem = 1;
+                   availtreefracremain = minavailtreefracremain + setavailtreefracrem * (propavailtreefracremain - minavailtreefracremain);
+                }
+                
+                if(availpotvegherbpftsum > 0.0 + TOLERANCE) {
+                   availherbfracremain =
+                   (1.0 - availtreefracremain) * availpotvegtreepftsum / availpotvegherbpftsum -
+                   (addpftsum / availpotvegherbpftsum) + 1.0;
+                }
+                else {
+                   availherbfracremain = 1.0;
+                }
+                
+                // ensure that the fractions are between 0.0 and 1.0
+                if (availherbfracremain < 0.0 + TOLERANCE) { availherbfracremain = 0.0; }
+                if (availherbfracremain > 1.0) { availherbfracremain = 1.0; }
+                if (availtreefracremain < 0.0 + TOLERANCE) { availtreefracremain = 0.0; }
+                if (availtreefracremain > 1.0) { availtreefracremain = 1.0; }
 #ifdef DEBUG					
-					printf("availtreefracremain: %f\n", availtreefracremain);
-					printf("availherbfracremain: %f\n", availherbfracremain);
-               printf("availpotvegtreepftsum before calcs: %f\n", availpotvegtreepftsum);
-               printf("potvegtreepftsum before calcs: %f\n", potvegtreepftsum);
-               printf("availpotvegherbpftsum before calcs: %f\n", availpotvegherbpftsum);
-               printf("availpotveggrasspftsum before calcs: %f\n", availpotveggrasspftsum);
-               printf("potvegshrubpftsum before calcs: %f\n", potvegshrubpftsum);
-               printf("potveggrasspftsum before calcs: %f\n", potveggrasspftsum);
+                printf("availtreefracremain: %f\n", availtreefracremain);
+                printf("availherbfracremain: %f\n", availherbfracremain);
+                printf("availpotvegtreepftsum before calcs: %f\n", availpotvegtreepftsum);
+                printf("potvegtreepftsum before calcs: %f\n", potvegtreepftsum);
+                printf("availpotvegherbpftsum before calcs: %f\n", availpotvegherbpftsum);
+                printf("availpotveggrasspftsum before calcs: %f\n", availpotveggrasspftsum);
+                printf("potvegshrubpftsum before calcs: %f\n", potvegshrubpftsum);
+                printf("potveggrasspftsum before calcs: %f\n", potveggrasspftsum);
 #endif                                        
-				
-					// add tree pfts by available potential proportions
-					// if there is no potential tree veg then these outhurttpftvals do not change
-					outavailpotvegtreepftsum = availpotvegtreepftsum;
+                
+                // add tree pfts by available potential proportions
+                // if there is no potential tree veg then these outhurttpftvals do not change
+                outavailpotvegtreepftsum = availpotvegtreepftsum;
 #ifdef DEBUG
-               printf("outavailpotvegtreepftsum before calcs: %f\n", outavailpotvegtreepftsum);
+                printf("outavailpotvegtreepftsum before calcs: %f\n", outavailpotvegtreepftsum);
 #endif
-					if(potvegtreepftsum > 0.0) {
-						for (outpft = NEMPFT;outpft <= BDBPFT;outpft++) {
-							//outhurttpftval[outpft][outgrid] =
-								//round(outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
-									  //(availpotvegtreepftsum * (1.0 - availtreefracremain)) / potvegtreepftsum);
-                     outhurttpftval[outpft][outgrid] =
-                        outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
-                           (availpotvegtreepftsum * (1.0 - availtreefracremain)) / potvegtreepftsum;
-							//outavailpotvegtreepftsum = outavailpotvegtreepftsum -
-                        //round(inpotvegpftval[outpft][outgrid] *
-								  //(availpotvegtreepftsum * (1.0 - availtreefracremain)) / potvegtreepftsum);
-                     outavailpotvegtreepftsum = outavailpotvegtreepftsum -
-                        inpotvegpftval[outpft][outgrid] *
-                           (availpotvegtreepftsum * (1.0 - availtreefracremain)) / potvegtreepftsum;
-						}
-					}
-					
-					// add each grass and shrub by potential proportions, constrained by available potential grass and shrub
-					// if there is no potential herb veg then these outhurttpftvals do not change change here
-					// the bare soil is changed separately above if necessary
-					outavailpotvegherbpftsum = availpotvegherbpftsum;
-					removeavailpotvegherb = availpotvegherbpftsum * (1.0 - availherbfracremain);
-					removeavailpotveggrass = availpotveggrasspftsum * (1.0 - availherbfracremain);
-					removeavailpotvegshrub = removeavailpotvegherb - removeavailpotveggrass;
-               
+                if(potvegtreepftsum > 0.0) {
+                   for (outpft = NEMPFT;outpft <= BDBPFT;outpft++) {
+                      //outhurttpftval[outpft][outgrid] =
+                      //round(outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
+                      //(availpotvegtreepftsum * (1.0 - availtreefracremain)) / potvegtreepftsum);
+                      outhurttpftval[outpft][outgrid] =
+                      outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
+                      (availpotvegtreepftsum * (1.0 - availtreefracremain)) / potvegtreepftsum;
+                      //outavailpotvegtreepftsum = outavailpotvegtreepftsum -
+                      //round(inpotvegpftval[outpft][outgrid] *
+                      //(availpotvegtreepftsum * (1.0 - availtreefracremain)) / potvegtreepftsum);
+                      outavailpotvegtreepftsum = outavailpotvegtreepftsum -
+                      inpotvegpftval[outpft][outgrid] *
+                      (availpotvegtreepftsum * (1.0 - availtreefracremain)) / potvegtreepftsum;
+                   }
+                } else {potvegtreepftsum = 0.0;}
+                
+                // add each grass and shrub by potential proportions, constrained by available potential grass and shrub
+                // if there is no potential herb veg then these outhurttpftvals do not change change here
+                // the bare soil is changed separately above if necessary
+                outavailpotvegherbpftsum = availpotvegherbpftsum;
+                removeavailpotvegherb = availpotvegherbpftsum * (1.0 - availherbfracremain);
+                removeavailpotveggrass = availpotveggrasspftsum * (1.0 - availherbfracremain);
+                removeavailpotvegshrub = removeavailpotvegherb - removeavailpotveggrass;
+                
 #ifdef DEBUG
-               printf("outavailpotvegherbpftsum before calcs: %f\n", outavailpotvegherbpftsum);
-               printf("removeavailpotvegherb: %f\n", removeavailpotvegherb);
-               printf("removeavailpotveggrass: %f\n", removeavailpotveggrass);
-               printf("removeavailpotvegshrub: %f\n", removeavailpotvegshrub);
+                printf("outavailpotvegherbpftsum before calcs: %f\n", outavailpotvegherbpftsum);
+                printf("removeavailpotvegherb: %f\n", removeavailpotvegherb);
+                printf("removeavailpotveggrass: %f\n", removeavailpotveggrass);
+                printf("removeavailpotvegshrub: %f\n", removeavailpotvegshrub);
 #endif
-               
-					if(potveggrasspftsum > 0.0) {
-						for (outpft = GA3PFT;outpft <= GC4PFT;outpft++) {
-							//outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
-																	//removeavailpotveggrass / potveggrasspftsum);
-                     outhurttpftval[outpft][outgrid] = outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
-                                                             removeavailpotveggrass / potveggrasspftsum;
-							//outavailpotvegherbpftsum = outavailpotvegherbpftsum -
-                        //round(inpotvegpftval[outpft][outgrid] * removeavailpotveggrass / potveggrasspftsum);
-                     outavailpotvegherbpftsum = outavailpotvegherbpftsum -
-                        inpotvegpftval[outpft][outgrid] * removeavailpotveggrass / potveggrasspftsum;
+                
+                if(potveggrasspftsum > 0.0) {
+                   for (outpft = GA3PFT;outpft <= GC4PFT;outpft++) {
+                      //outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
+                      //removeavailpotveggrass / potveggrasspftsum);
+                      outhurttpftval[outpft][outgrid] = outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
+                      removeavailpotveggrass / potveggrasspftsum;
+                      //outavailpotvegherbpftsum = outavailpotvegherbpftsum -
+                      //round(inpotvegpftval[outpft][outgrid] * removeavailpotveggrass / potveggrasspftsum);
+                      outavailpotvegherbpftsum = outavailpotvegherbpftsum -
+                      inpotvegpftval[outpft][outgrid] * removeavailpotveggrass / potveggrasspftsum;
 #ifdef DEBUG
-                     printf("grass pft %i:\n", outpft);
-                     printf("inpotvegpftval: %f\n", inpotvegpftval[outpft][outgrid]);
-                     printf("outavailpotvegherbpftsum: %f\n", outavailpotvegherbpftsum);
+                      printf("grass pft %i:\n", outpft);
+                      printf("inpotvegpftval: %f\n", inpotvegpftval[outpft][outgrid]);
+                      printf("outavailpotvegherbpftsum: %f\n", outavailpotvegherbpftsum);
 #endif
-						}
-					}
-					if(potvegshrubpftsum > 0.0) {
-						for (outpft = SEMPFT;outpft <= SDBPFT;outpft++) {
-							//outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
-																	//removeavailpotvegshrub / potvegshrubpftsum);
-                     outhurttpftval[outpft][outgrid] = outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
-                                                   removeavailpotvegshrub / potvegshrubpftsum;
-							//outavailpotvegherbpftsum = outavailpotvegherbpftsum -
-								//round(inpotvegpftval[outpft][outgrid] * removeavailpotvegshrub / potvegshrubpftsum);
-                     outavailpotvegherbpftsum = outavailpotvegherbpftsum -
-                        inpotvegpftval[outpft][outgrid] * removeavailpotvegshrub / potvegshrubpftsum;
+                   }
+                } else {potveggrasspftsum = 0.0;}
+                
+                if(potvegshrubpftsum > 0.0) {
+                   for (outpft = SEMPFT;outpft <= SDBPFT;outpft++) {
+                      //outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
+                      //removeavailpotvegshrub / potvegshrubpftsum);
+                      outhurttpftval[outpft][outgrid] = outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
+                      removeavailpotvegshrub / potvegshrubpftsum;
+                      //outavailpotvegherbpftsum = outavailpotvegherbpftsum -
+                      //round(inpotvegpftval[outpft][outgrid] * removeavailpotvegshrub / potvegshrubpftsum);
+                      outavailpotvegherbpftsum = outavailpotvegherbpftsum -
+                      inpotvegpftval[outpft][outgrid] * removeavailpotvegshrub / potvegshrubpftsum;
 #ifdef DEBUG
-                     printf("shrub pft %i:\n", outpft);
-                     printf("inpotvegpftval: %f\n", inpotvegpftval[outpft][outgrid]);
-                     printf("outavailpotvegherbpftsum: %f\n", outavailpotvegherbpftsum);
+                      printf("shrub pft %i:\n", outpft);
+                      printf("inpotvegpftval: %f\n", inpotvegpftval[outpft][outgrid]);
+                      printf("outavailpotvegherbpftsum: %f\n", outavailpotvegherbpftsum);
 #endif
-						}
-					}
+                   }
+                }else {potvegshrubpftsum = 0.0;}
 #ifdef DEBUG				 
-					printf("outavailpotvegtreepftsum: %f\n", outavailpotvegtreepftsum);
-					printf("outavailpotvegherbpftsum: %f\n", outavailpotvegherbpftsum);
+                printf("outavailpotvegtreepftsum: %f\n", outavailpotvegtreepftsum);
+                printf("outavailpotvegherbpftsum: %f\n", outavailpotvegherbpftsum);
 #endif                                        
-					// check forest maximization
-					// this check takes into account rounding error up to 1 unit (percent) of veg land unit
-					if (setavailtreefracrem == 0.0 && addpftsum >= availpotvegtreepftsum &&
-						(outavailpotvegtreepftsum < -1.0 || outavailpotvegtreepftsum > 1.0)) {
-							printf("notreemax when removing crops and when all avail trees and some herb need to be added\n");
-					}
-					if (setavailtreefracrem == 0.0 && addpftsum < availpotvegtreepftsum &&
-						outavailpotvegherbpftsum != availpotvegherbpftsum) {
-							printf("notreemax when removing crops and when only avail trees need to be added\n");
-					}
-					
-					// check forest minimization
-					// this check takes into account rounding error up to 1 unit (percent) of veg land unit
-					if (setavailtreefracrem == 2.0 && addpftsum >= availpotvegherbpftsum &&
-						(outavailpotvegherbpftsum < -1.0 || outavailpotvegherbpftsum > 1.0)) {
-						printf("notreemin when removing crops and when all avail herb and some trees need to be added\n");
-					}
-					if (setavailtreefracrem == 2.0 && addpftsum < availpotvegherbpftsum &&
-						outavailpotvegtreepftsum != availpotvegtreepftsum) {
-						printf("notreemin when removing crops and when only avail herb need to be added\n");
-					}
-					
-					// end new code block -adv */
-				
-				}	// end if second check for addpftsum > 0.0
-			}	// end if just add trees else base pft addition on potential vegetation
-        }	// end if first check for addpftsum > 0.0
+                // check forest maximization
+                // this check takes into account rounding error up to 1/10 unit (percent) of veg land unit
+                if (setavailtreefracrem == 0.0 && addpftsum >= availpotvegtreepftsum &&
+                    (outavailpotvegtreepftsum < -0.1 || outavailpotvegtreepftsum > 0.1)) {
+                   printf("Error: notreemax when removing crops and when all avail trees and some herb need to be added\n");
+                }
+                if (setavailtreefracrem == 0.0 && addpftsum < availpotvegtreepftsum &&
+                    outavailpotvegherbpftsum != availpotvegherbpftsum) {
+                   printf("Error: notreemax when removing crops and when only avail trees need to be added\n");
+                }
+                
+                // check forest minimization
+                // this check takes into account rounding error up to 1/10 unit (percent) of veg land unit
+                if (setavailtreefracrem == 2.0 && addpftsum >= availpotvegherbpftsum &&
+                    (outavailpotvegherbpftsum < -0.1 || outavailpotvegherbpftsum > 0.1)) {
+                   printf("Error: notreemin when removing crops and when all avail herb and some trees need to be added\n");
+                }
+                if (setavailtreefracrem == 2.0 && addpftsum < availpotvegherbpftsum &&
+                    outavailpotvegtreepftsum != availpotvegtreepftsum) {
+                   printf("Error: notreemin when removing crops and when only avail herb need to be added\n");
+                }
+                
+                // end new code block -adv */
+                
+             }	// end if second check for addpftsum > 0.0
+          }	// end if just add trees else base pft addition on potential vegetation
+       }	// end if first check for addpftsum > 0.0
     }	// end else remove crop
     
     maxpftid = 0;
@@ -4495,53 +4520,55 @@ void sethurttcrop(int outgrid, int modyear, int calcyear) {
     
     if ((updatedpftsum + newcropval) < 100.0) {
         addpftsum = 100.0 - (updatedpftsum + newcropval);
-        if (addpftsum >= 1.0) {
+       if (addpftsum >= 0.0) {
 #ifdef DEBUG            
-            printf("Crop Addsum = %f ",addpftsum);
-            for (temppftid = 0; temppftid < MAXPFT-1; temppftid++) {
-                printf("%f ",outhurttpftval[temppftid][outgrid]);
-            }
-			/* Bugfix: newcropval is the new crop pft sum, so don't add it to the outhurttpftval[CPFT] -adv */
-            printf("%f ",newcropval);
-            printf("\n");
+          printf("Crop Addsum = %f\npftvals before adding to non-crop maxpftval: ",addpftsum);
+          for (temppftid = 0; temppftid < MAXPFT-1; temppftid++) {
+             printf("%f ",outhurttpftval[temppftid][outgrid]);
+          }
+          /* Bugfix: newcropval is the new crop pft sum, so don't add it to the outhurttpftval[CPFT] -adv */
+          printf("crop: %f ",newcropval);
+          printf("\n");
 #endif            
-        }
+       }
         outhurttpftval[maxpftid][outgrid] = outhurttpftval[maxpftid][outgrid] + addpftsum;
         updatedpftsum = updatedpftsum + addpftsum;
     }
     
     if ((updatedpftsum + newcropval) > 100.0) {
         removepftsum = (updatedpftsum + newcropval - 100.0);
-        if (removepftsum >= 1.0) {
+       if (removepftsum >= 0.0) {
 #ifdef DEBUG            
-            printf("Crop Removesum = %f ",removepftsum);
-            for (temppftid = 0; temppftid < MAXPFT-1; temppftid++) {
-                printf("%f ",outhurttpftval[temppftid][outgrid]);
-            }
-			/* Bugfix: newcropval is the new crop pft sum, so don't add it to the outhurttpftval[CPFT] -adv */
-            printf("%f ",newcropval);
-            printf("\n");
+          printf("Crop Removesum = %f\npftvals before removing from non-crop maxpftval: ",removepftsum);
+          for (temppftid = 0; temppftid < MAXPFT-1; temppftid++) {
+             printf("%f ",outhurttpftval[temppftid][outgrid]);
+          }
+          /* Bugfix: newcropval is the new crop pft sum, so don't add it to the outhurttpftval[CPFT] -adv */
+          printf("crop: %f ",newcropval);
+          printf("\n");
 #endif            
-        }
+       }
         outhurttpftval[maxpftid][outgrid] = outhurttpftval[maxpftid][outgrid] - removepftsum;
-        if (outhurttpftval[maxpftid][outgrid] < 0.0) {
+       if (outhurttpftval[maxpftid][outgrid] < 0.0) {
 #ifdef DEBUG            
-			printf("balance pft sum in sethurttcrop, subtracting bare\n");
-			printf("bare: %f\n", outhurttpftval[BPFT][outgrid]);
-			printf("outhurttpftval[maxpftid][outgrid]: %f\n", outhurttpftval[maxpftid][outgrid]);
-
+          printf("balance pft sum in sethurttcrop, subtracting bare\n");
+          printf("bare: %f\n", outhurttpftval[BPFT][outgrid]);
+          printf("outhurttpftval[maxpftid][outgrid]: %f\n", outhurttpftval[maxpftid][outgrid]);
+          
 #endif                        
-            outhurttpftval[BPFT][outgrid] = outhurttpftval[BPFT][outgrid] + outhurttpftval[maxpftid][outgrid];
-            outhurttpftval[maxpftid][outgrid] = 0.0;
+          outhurttpftval[BPFT][outgrid] = outhurttpftval[BPFT][outgrid] + outhurttpftval[maxpftid][outgrid];
+          outhurttpftval[maxpftid][outgrid] = 0.0;
 #ifdef DEBUG            
-			printf("adjusted bare: %f\n",outhurttpftval[BPFT][outgrid]);
-			printf("adjusted outhurttpftval[maxpftid][outgrid]: %f\n", outhurttpftval[maxpftid][outgrid]);
+          printf("adjusted bare: %f\n",outhurttpftval[BPFT][outgrid]);
+          printf("adjusted outhurttpftval[maxpftid][outgrid]: %f\n", outhurttpftval[maxpftid][outgrid]);
 #endif                        
-            if (outhurttpftval[BPFT][outgrid] < 0) {
+          if (outhurttpftval[BPFT][outgrid] < 0) {
+             if (outhurttpftval[BPFT][outgrid] != 0) {
                 printf("Error: balance pft sum in sethurttcrop sends adjusted bare negative: %f\n",outhurttpftval[BPFT][outgrid]);
-                outhurttpftval[BPFT][outgrid] = 0;
-            }
-        }
+             }
+             outhurttpftval[BPFT][outgrid] = 0;
+          }
+       }
     }
     
     /* NOTE: the crop fraction is finally set to be the same value like that of GLM. All the above algorithms in sethurttcrop() are actually not be used. -jfm */
@@ -4947,6 +4974,16 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
    printf("Check availpotveg: shrubpftsum = %f\n", shrubpftsum);
 #endif
 	 
+   // check for errors, but if they are over 100 they can be corrected here
+   if (removepftsum < 0.0 - TOLERANCE || removepftsum > 100.0 + TOLERANCE) {
+      printf("Error in add pasture removepftsum %f\n",removepftsum);
+   }
+   if (availablepasturesum < 0.0 - TOLERANCE || availablepasturesum > 100.0 + TOLERANCE) {
+      printf("Error in add pasture availablecropsum %f\n",removepftsum);
+   }
+   if (removepftsum > 100.0) { removepftsum = 100.0; }
+   if (availablepasturesum > 100.0) { availablepasturesum = 100.0; }
+   
 	if (removepftsum > 0.0) {		// pasture (grass) being added
 #ifdef DEBUG
 		printf("\naddpasture, outgrid = %i\n", outgrid);
@@ -5203,6 +5240,13 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
           printf("treepftsum: %f\n", treepftsum);
           printf("pasturetreepftsum: %f\n", pasturetreepftsum);
 #endif
+         
+          // check for errors, but if over 100 they can be corrected here
+          if (addpftsum < 0.0 - TOLERANCE || addpftsum > 100.0 + TOLERANCE) {
+             printf("Error in add pasture removepftsum %f\n",removepftsum);
+          }
+          if (addpftsum > 100.0) { addpftsum = 100.0; }
+          
           // remove herbaceous pfts
           if (herbaceouspftsum <= 0.0) {
              printf("Error: herbaceouspftsum <= 0 when addpftsum > 0\n");
@@ -5366,7 +5410,7 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
                    outavailpotvegtreepftsum = outavailpotvegtreepftsum - inpotvegpftval[outpft][outgrid] *
                         (availpotvegtreepftsum * (1.0 - availtreefracremain)) / potvegtreepftsum;
 					 }
-				 }
+             } else { potvegtreepftsum = 0.0; }
 	 
 				 // add each grass and shrub by potential proportions, constrained by available potential grass and shrub
 				 // if there is no potential herbaceous veg then these outhurttpftvals do not change change here
@@ -5401,7 +5445,8 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
                    printf("outhurttpftval after calc: %f:\n", outhurttpftval[outpft][outgrid]);
 #endif
 					 }
-				 }
+				 } else { potveggrasspftsum = 0.0; }
+             
 				 if(potvegshrubpftsum > 0.0) {
 					 for (outpft = SEMPFT;outpft <= SDBPFT;outpft++) {
 						 //outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] *
@@ -5418,31 +5463,31 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
                    printf("outavailpotvegherbpftsum: %f\n", outavailpotvegherbpftsum);
 #endif
 					 }
-				 }
+				 } else { potvegshrubpftsum = 0.0; }
 #ifdef DEBUG			
 				 printf("outavailpotvegtreepftsum: %f\n", outavailpotvegtreepftsum);
 				 printf("outavailpotvegherbpftsum: %f\n", outavailpotvegherbpftsum);
 #endif                                 
 				 // check forest maximization
-				 // this check takes into account rounding error up to 1 unit (percent) of veg land unit
+				 // this check takes into account rounding error up to 1/10 unit (percent) of veg land unit
 				 if (setavailtreefracrem == 0.0 && addpftsum >= availpotvegtreepftsum &&
-					 (outavailpotvegtreepftsum < -1.0 || outavailpotvegtreepftsum > 1.0)) {
-					 printf("notreemax when removing pasture and all avail trees and some herbaceous are added\n");
+					 (outavailpotvegtreepftsum < -0.1 || outavailpotvegtreepftsum > 0.1)) {
+                printf("Error: notreemax when removing pasture and all avail trees and some herbaceous are added\n");
 				 }
 				 if (setavailtreefracrem == 0.0 && addpftsum < availpotvegtreepftsum &&
 					 outavailpotvegherbpftsum != availpotvegherbpftsum) {
-					 printf("notreemax when removing pasture and only avail trees should be added\n");
+					 printf("Error: notreemax when removing pasture and only avail trees should be added\n");
 				 }
 				 
 				 // check forest minimization
-				 // this check takes into account rounding error up to 1 unit (percent) of veg land unit
+				 // this check takes into account rounding error up to 1/10 unit (percent) of veg land unit
 				 if (setavailtreefracrem == 2.0 && addpftsum >= availpotvegherbpftsum &&
-					 (outavailpotvegherbpftsum < -1.0 || outavailpotvegherbpftsum > 1.0)) {
-					 printf("notreemin when removing pasture and all avail herbaceous and some trees are added\n");
+					 (outavailpotvegherbpftsum < -0.1 || outavailpotvegherbpftsum > 0.1)) {
+					 printf("Error: notreemin when removing pasture and all avail herbaceous and some trees are added\n");
 				 }
 				 if (setavailtreefracrem == 2.0 && addpftsum < availpotvegherbpftsum &&
 					 outavailpotvegtreepftsum != availpotvegtreepftsum) {
-					 printf("notreemin when removing pasture and only avail herbaceous should be added\n");
+					 printf("Error: notreemin when removing pasture and only avail herbaceous should be added\n");
 				 }
 				 
 			} // end else potential veg based additoin of pfts
@@ -5450,104 +5495,7 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
 	 
 	 }		// end else remove pasture
 	 
-	 //  the code below needs to be commented out down to the end of the seond else statement for removing pasture -adv
-	 //  ( just prior to maxpftid = 0; )
-	 
 	 // end of new code block -adv */
-	
-	/* !!! original code commented out by -adv
-	
-    // the code calculates adjusted changes from a base year glm map to the glmo data, then applies these changes to the base year pft map -adv
-    newpasturepftsum = inhurttpasture[outgrid] - inhurttbasepasture[outgrid];
-    
-    if (newpasturepftsum > 0.0) {		// pasture being added, other non-bare PFTs removed
-        addpftsum = 0.0;
-        // why is check below performed? -bbl
-        // NOTE: pasture can be added only to former tree pfts;
-        //	this is because no information is available to determine which shrub and grass pfts are pasture -adv 
-		// !!! comment out this if statement for the new pasture code -adv
-        if (newpasturepftsum > treepftsum) {
-            newpasturepftsum = treepftsum;
-        }
-		
-        removepftsum = newpasturepftsum;
-    }
-    else {								// pasture being removed, other non-barePFTs added
-        removepftsum = 0.0;
-        // NOTE: this seems like a reasonable cap, given that clm doesn't track pasture;
-        //	but this could be inconsistent with the addition of grass-only pasture if the same asymmetry is in the historical calculations also -adv 
-        if (-newpasturepftsum > herbaceouspftsum) {
-            newpasturepftsum = -herbaceouspftsum;
-        }
-        // REVIEW: trees are never allowed to increase more than their potential value?
-        //		This seems like a place where we could change logic to enable afforestation. -bbl 
-        // REVIEW: the trees cannot reach the potential tree value because this limits total pasture removal;
-        //	and when pasture is removed below all potential pfts are added proportionally -adv 
-		// /!! comment out this if-else statement for the new pasture code -adv
-        if (treepftsum - newpasturepftsum > potvegtreepftsum) {
-            if (treepftsum < potvegtreepftsum) {
-                //newpasturepftsum = round(treepftsum - potvegtreepftsum);
-                newpasturepftsum = treepftsum - potvegtreepftsum;
-            }
-            else {
-                newpasturepftsum = 0.0;
-            }
-        }
-		
-        addpftsum = -newpasturepftsum;
-        
-        //jt      addtreepftsum = addpftsum * potvegtreepftsum / potvegpftsum;
-        if (potvegpftsum != 0.) { addtreepftsum = addpftsum * potvegtreepftsum / potvegpftsum;}
-        addherbaceouspftsum = addpftsum - addtreepftsum;
-        
-    }
-    
-    if (removepftsum > 0.0) {		// pasture being added, other PFTs removed
-		
-        if (treepftsum > 0.0) {	// add pasture only if it can replace trees; and add only grasses -adv
-            pasturegrid = findcurrentpasturegrid(outgrid);
-            grasspftsum = 0.0;
-            for (outpft = GA3PFT;outpft <= GC4PFT;outpft++) {
-                grasspftsum = grasspftsum + incurrentpftval[outpft][pasturegrid];
-            }
-            for (outpft = NEMPFT;outpft <= GC4PFT;outpft++) {	// distribute the pasture grass pfts based on the nearest 'current' year (base in this case) pasture-containing grid cell -adv 
-                if (outpft >= GA3PFT) {
-                    //outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] + incurrentpftval[outpft][pasturegrid] * newpasturepftsum / grasspftsum);
-                  outhurttpftval[outpft][outgrid] = outhurttpftval[outpft][outgrid] + incurrentpftval[outpft][pasturegrid] * newpasturepftsum / grasspftsum;
-                }
-                if (outpft <= BDBPFT) {
-                    //outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] * (treepftsum - removepftsum) / treepftsum);
-                    outhurttpftval[outpft][outgrid] = outhurttpftval[outpft][outgrid] * (treepftsum - removepftsum) / treepftsum;
-                }
-            }
-            
-        }
-		
-    }
-    else {
-        if (addpftsum > 0.0) {		// pasture being removed, other PFTs added
-        // REVIEW: this code currently increases all other PFTs as pasture is removed,
-        //		proportionate to their potential amounts. Seems like a place where
-        //		we could change logic to prioritize forests. -bbl 
-            if (herbaceouspftsum > 0.0 && potvegtreepftsum > 0.0) {
-                for (outpft = NEMPFT;outpft <= GC4PFT;outpft++) {
-                    if (outpft >= SEMPFT) { // remove current day herbaceous
-                        //outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] * (herbaceouspftsum + newpasturepftsum) / herbaceouspftsum);
-                        outhurttpftval[outpft][outgrid] = outhurttpftval[outpft][outgrid] * (herbaceouspftsum + newpasturepftsum) / herbaceouspftsum;
-                    }
-                    if (outpft <= BDBPFT && potvegtreepftsum > 0.0) { // add potveg tree
-                        //outhurttpftval[outpft][outgrid] = round( (outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addtreepftsum / potvegtreepftsum));
-                        outhurttpftval[outpft][outgrid] = (outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addtreepftsum / potvegtreepftsum);
-                    }
-                    if (outpft >= SEMPFT && potvegherbaceouspftsum > 0.0) { // add potveg herbaceous
-                        //outhurttpftval[outpft][outgrid] = round( (outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addherbaceouspftsum / potvegherbaceouspftsum));
-                        outhurttpftval[outpft][outgrid] =  (outhurttpftval[outpft][outgrid] + inpotvegpftval[outpft][outgrid] * addherbaceouspftsum / potvegherbaceouspftsum);
-                    }
-                }
-            }
-        }
-    }
-    original code commented out by -adv */
 	
     maxpftid = 0;
     maxpftval = 0.0;
@@ -5566,9 +5514,9 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
     
     if (updatedpftsum < 100.0) {
         addpftsum = 100.0 - updatedpftsum;
-        if (addpftsum >= 1.0) {
+        if (addpftsum >= 0.0) {
 #ifdef DEBUG            
-            printf("Pasture Addsum = %f ",addpftsum);
+            printf("Pasture Addsum = %f /n",addpftsum);
 #endif            
             //for (temppftid = 0; temppftid < MAXPFT; temppftid++) {
             //    printf("%f ",outhurttpftval[temppftid][outgrid]);
@@ -5581,9 +5529,9 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
     
     if (updatedpftsum > 100.0) {
         removepftsum = updatedpftsum - 100.0;
-        if (removepftsum >= 1.0) {
+        if (removepftsum >= 0.0) {
 #ifdef DEBUG            
-            printf("Pasture Removesum = %f ",removepftsum);
+            printf("Pasture Removesum = %f /n",removepftsum);
 #endif            
             //for (temppftid = 0; temppftid < MAXPFT; temppftid++) {
             //    printf("%f ",outhurttpftval[temppftid][outgrid]);
@@ -5604,7 +5552,9 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
 			printf("adjusted outhurttpftval[maxpftid][outgrid]: %f\n", outhurttpftval[maxpftid][outgrid]);
 #endif
             if (outhurttpftval[BPFT][outgrid] < 0) {
+               if (outhurttpftval[BPFT][outgrid] != 0) {
                 printf("Error: balance pft sum in sethurttpasture sends adjusted bare negative: %f\n",outhurttpftval[BPFT][outgrid]);
+               }
                 outhurttpftval[BPFT][outgrid] = 0;
             }
         }
