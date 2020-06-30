@@ -235,9 +235,9 @@ runTestsStd() {
     # Run the command
     # For some reason bsub must not be part of a string
     echo -n "Running test ${subJobName} ... "
-    #echo "${subFile} > $THIS_STDOUT 2> $THIS_STDERR"
     chmod u+x ${subFile}
-    cmd="${subFile} > $THIS_STDOUT 2> $THIS_STDERR"
+    #cmd="${subFile} > $THIS_STDOUT 2> $THIS_STDERR"
+    cmd="${subFile}"
     echo "$cmd"
     $cmd
     # Get the status of the run
@@ -248,9 +248,9 @@ runTestsStd() {
       echo "test ${subJobName} was run successfully"
       SUBMIT_TEST+=( "${subJobName}" )
       SUBMIT_JOB_ID+=( "${RUN_PID}" )
-    else 
-      echo "failed with message:"
-      cat $THIS_STDERR
+    else
+      echo "ERROR: run failed. check out/err files in:"
+      echo `dirname ${subFile}`
       exit -7
     fi
   done

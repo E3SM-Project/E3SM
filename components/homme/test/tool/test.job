@@ -1,4 +1,4 @@
-#!/bin/tcsh -f
+#!/bin/tcsh 
 #
 #  script to show how to run various HOMME tools
 #  
@@ -11,32 +11,33 @@
 #
 # 
 set TOOLDIR = `pwd`
-set WDIR = ~/scratch1/dev
-
-#$TOOLDIR/../../../../cime/scripts/Tools/get_case_env
-
-
-# compile the tool
-cd $WDIR
-make -j4 homme_tool
-if ( $status ) then
-   echo Error compiling homme_tool. Ensure cmake configured properly.  
-   exit
-endif
+set WDIR = ~/scratch1/hommetool
+set MACH = $TOOLDIR/../../cmake/machineFiles/darwin.cmake
 set exe = $WDIR/src/tool/homme_tool
+
+
+cd $WDIR
+if (!  -x $exe ) then
+  # configure                                                                                                                                         
+  #$TOOLDIR/../../../../cime/scripts/Tools/get_case_env
+  cmake -C $MACH -DPREQX_PLEV=26 $TOOLDIR/../..
+  # compile the tool                                                                                                                                  
+  make -j4 homme_tool
+  if ( $status ) then
+     echo Error compiling homme_tool. Ensure cmake configured properly.
+     exit
+  endif
+endif
 if ( ${?SLURM_NNODES} ) then
    set mpirun = "srun -K -c 1 -N $SLURM_NNODES"
 else
-   set mpirun = ""
+   set mpirun = "mpirun -np 4"
 endif
 
 
 #
-# ** GLL topo smoothing **
+echo "** GLL topo smoothing **"
 #
-# apply smoothing to an existing E3SM topo file:
-set project = /lcrc/group/acme/ccsm-data/inputdata
-set file = $project/atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc
 # generate dummy PHIS field
 $mpirun $exe < $TOOLDIR/namelists/topooutput.nl
 # smooth goes field:
@@ -46,7 +47,7 @@ ncks -O -v PHIS,lat,lon phis-smoothed1.nc phis-smoothed2.nc
 
 
 #
-# ** interpolation to lat/lon grid **
+echo "** interpolation to lat/lon grid **"
 #
 # interpolate file created above to a lat/lon grid
 $mpirun $exe < $TOOLDIR/namelists/interpolate.nl
@@ -54,7 +55,7 @@ $mpirun $exe < $TOOLDIR/namelists/interpolate.nl
 
 
 #
-# ** create NE30 maapping files **
+echo "** create NE30 maapping files **"
 #
 ncremap -G ttl="lat-lon-cap-grid"\#latlon=49,96\#lat_typ=fv\#lon_typ=grn_ctr -g 49x96_scrip.nc
 $mpirun $exe < $TOOLDIR/namelists/mappingfiles.nl
@@ -68,7 +69,7 @@ ncl 'wgtfile="map_ne4np4_to_49x96_scrip_bilin.nc"' 'srcfile="phis-smoothed1.nc"'
 
 
 #
-# SCRIP file tool
+echo "** SCRIP file tool **"
 #
 $mpirun $exe < $TOOLDIR/namelists/template.nl
 

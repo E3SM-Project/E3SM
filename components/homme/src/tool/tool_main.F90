@@ -6,7 +6,9 @@
 ! subroutines, implemented below; each is a tool:
 !   * topo_convert
 !   * topo_pgn_to_smoothed
-
+!
+! See also homme/test/tool/README
+!
 program tool_main
   use prim_driver_mod,  only: prim_init1, prim_init2, prim_finalize, deriv1, smooth_topo_datasets
   use hybvcoord_mod,    only: hvcoord_t, hvcoord_init
