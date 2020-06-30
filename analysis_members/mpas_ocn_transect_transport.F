@@ -26,7 +26,6 @@ module ocn_transect_transport
    use mpas_stream_manager
 
    use ocn_constants
-   use ocn_config
    use ocn_diagnostics_routines
 
    implicit none
@@ -205,6 +204,7 @@ contains
       character (len=STRKIND), dimension(:), pointer :: transectNames, transectGroupNames
       integer, dimension(:), pointer ::  nTransectsInGroup
       integer, pointer :: nTransectGroups, maxTransectsInGroup
+      character (len=STRKIND), pointer :: additionalTransect
 
       ! Here are some example variables which may be needed for your analysis member
       integer, pointer :: nVertLevels, nEdgesSolve, num_tracers, nTransects
@@ -232,13 +232,15 @@ contains
 
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nTransectGroups', nTransectGroups)
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'maxTransectsInGroup', maxTransectsInGroup)
+      call mpas_pool_get_config(domain % configs, 'config_AM_transectTransport_transect_group', &
+                                additionalTransect)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'transects', transectPool)
       call mpas_pool_get_array(transectPool, 'transectsInGroup', transectsInGroup)
       call mpas_pool_get_array(transectPool, 'nTransectsInGroup', nTransectsInGroup)
       call mpas_pool_get_array(transectPool, 'transectNames', transectNames)
       call mpas_pool_get_array(transectPool, 'transectGroupNames', transectGroupNames)
       do i = 1, nTransectGroups
-         if (transectGroupNames(i) .eq. config_AM_transectTransport_transect_group) then
+         if (transectGroupNames(i) .eq. additionalTransect) then
             transectGroupNumber = i
          end if
       end do

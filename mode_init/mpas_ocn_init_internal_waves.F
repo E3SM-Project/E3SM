@@ -28,7 +28,6 @@ module ocn_init_internal_waves
 
    use ocn_init_vertical_grids
    use ocn_init_cell_markers
-   use ocn_config
 
    implicit none
    private
@@ -97,6 +96,14 @@ contains
       real (kind=RKIND) :: yMinGlobal, yMaxGlobal, yMidGlobal, xMinGlobal, xMaxGlobal, dcEdgeMinGlobal
       real (kind=RKIND) :: temperature, yOffset, perturbationWidth
 
+      ! Define config pointers
+      character (len=StrKIND), pointer :: config_init_configuration, config_vertical_grid, config_internal_waves_layer_type
+      logical, pointer :: config_internal_waves_use_distances
+      real (kind=RKIND), pointer :: config_internal_waves_amplitude_width_frac, config_internal_waves_amplitude_width_dist
+      real (kind=RKIND), pointer :: config_internal_waves_bottom_depth, config_internal_waves_bottom_temperature
+      real (kind=RKIND), pointer :: config_internal_waves_surface_temperature, config_internal_waves_temperature_difference
+      real (kind=RKIND), pointer :: config_internal_waves_salinity, config_internal_waves_isopycnal_displacement
+
       type (block_type), pointer :: block_ptr
 
       integer :: iCell, k
@@ -106,6 +113,8 @@ contains
       real (kind=RKIND), dimension(:), pointer :: interfaceLocations
 
       iErr = 0
+
+      call mpas_pool_get_config(domain % configs, 'config_init_configuration', config_init_configuration)
 
       if(config_init_configuration .ne. trim('internal_waves')) return
 
@@ -119,9 +128,27 @@ contains
       ! Define locations of layer interfaces
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
       call mpas_pool_get_dimension(meshPool, 'nVertLevelsP1', nVertLevelsP1)
+      call mpas_pool_get_config(domain % configs, 'config_vertical_grid', config_vertical_grid)
       allocate( interfaceLocations( nVertLevelsP1 ) )
 
       call ocn_generate_vertical_grid( config_vertical_grid, interfaceLocations )
+
+      call mpas_pool_get_config(domain % configs, 'config_internal_waves_use_distances', config_internal_waves_use_distances)
+      call mpas_pool_get_config(domain % configs, 'config_internal_waves_amplitude_width_frac', &
+                                config_internal_waves_amplitude_width_frac)
+      call mpas_pool_get_config(domain % configs, 'config_internal_waves_amplitude_width_dist', &
+                                config_internal_waves_amplitude_width_dist)
+      call mpas_pool_get_config(domain % configs, 'config_internal_waves_bottom_depth', config_internal_waves_bottom_depth)
+      call mpas_pool_get_config(domain % configs, 'config_internal_waves_bottom_temperature', &
+                                config_internal_waves_bottom_temperature)
+      call mpas_pool_get_config(domain % configs, 'config_internal_waves_surface_temperature', &
+                                config_internal_waves_surface_temperature)
+      call mpas_pool_get_config(domain % configs, 'config_internal_waves_temperature_difference', &
+                                config_internal_waves_temperature_difference)
+      call mpas_pool_get_config(domain % configs, 'config_internal_waves_salinity', config_internal_waves_salinity)
+      call mpas_pool_get_config(domain % configs, 'config_internal_waves_isopycnal_displacement', &
+                                config_internal_waves_isopycnal_displacement)
+      call mpas_pool_get_config(domain % configs, 'config_internal_waves_layer_type', config_internal_waves_layer_type)
 
       ! Determine local min and max values.
       block_ptr => domain % blocklist

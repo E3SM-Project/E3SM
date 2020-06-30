@@ -30,7 +30,6 @@ module ocn_init_periodic_planar
    use mpas_dmpar
 
    use ocn_constants
-   use ocn_config
    use ocn_init_vertical_grids
    use ocn_init_cell_markers
 
@@ -89,6 +88,16 @@ contains
     integer :: iCell, iEdge, iVertex, k, idx
     real (kind=RKIND), dimension(:), pointer :: interfaceLocations
 
+    ! Define config variable pointers
+    character (len=StrKIND), pointer :: config_init_configuration, config_vertical_grid
+    logical, pointer :: config_write_cull_cell_mask
+
+    ! periodic_planar test case run-time configuration parameters
+    real (kind=RKIND), pointer :: config_periodic_planar_bottom_depth, config_periodic_planar_velocity_strength
+
+    integer, pointer :: config_periodic_planar_vert_levels
+
+
     ! Define dimension pointers
     integer, pointer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, nVertLevelsP1
     integer, pointer :: index_temperature, index_salinity
@@ -102,6 +111,7 @@ contains
          fCell, fEdge, fVertex, dcEdge, dvEdge
     real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness, normalVelocity
     real (kind=RKIND), dimension(:), pointer :: psiVertex
+    type (field1DReal), pointer :: psiVertexField
     real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
     real (kind=RKIND) :: yMin, yMax, xMin, xMax, dcEdgeMin, dcEdgeMinGlobal
@@ -115,9 +125,19 @@ contains
 
 
     ! test if periodic_planar is the desired configuration
+    call mpas_pool_get_config(ocnConfigs, 'config_init_configuration', config_init_configuration)
     if(config_init_configuration .ne. trim('periodic_planar')) return
 
     call mpas_log_write( 'Starting initialization of planar periodic grid')
+
+    ! get config variables !{{{
+    call mpas_pool_get_config(domain % configs, 'config_write_cull_cell_mask', config_write_cull_cell_mask)
+    call mpas_pool_get_config(domain % configs, 'config_periodic_planar_bottom_depth', config_periodic_planar_bottom_depth)
+    call mpas_pool_get_config(domain % configs, 'config_periodic_planar_vert_levels', config_periodic_planar_vert_levels)
+    call mpas_pool_get_config(domain % configs, 'config_periodic_planar_velocity_strength', &
+                              config_periodic_planar_velocity_strength)
+    call mpas_pool_get_config(domain % configs, 'config_vertical_grid', config_vertical_grid)
+    !}}}
 
     ! Determine vertical grid for configuration
     call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
@@ -174,6 +194,8 @@ contains
     ! Use this section to set initial values
     !--------------------------------------------------------------------
     call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
+    call mpas_pool_get_field(scratchPool, 'psiVertex', psiVertexField)
+    call mpas_allocate_scratch_field(psiVertexField, .false.)
 
     block_ptr => domain % blocklist
     do while(associated(block_ptr))
@@ -337,6 +359,7 @@ contains
 
        block_ptr => block_ptr % next
     end do  ! do while(associated(block_ptr))
+    call mpas_deallocate_scratch_field(psiVertexField, .false.)
 
     call mpas_log_write( 'Finishing initialization of periodic_planar')
     !--------------------------------------------------------------------

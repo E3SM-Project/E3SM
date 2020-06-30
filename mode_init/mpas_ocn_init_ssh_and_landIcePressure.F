@@ -28,7 +28,6 @@ module ocn_init_ssh_and_landIcePressure
    use mpas_constants
 
    use ocn_constants
-   use ocn_config
    use ocn_init_interpolation
    use ocn_init_vertical_grids
 
@@ -59,21 +58,6 @@ module ocn_init_ssh_and_landIcePressure
    ! Private module variables
    !
    !--------------------------------------------------------------------
-
-   !--------------------------------------------------------------------
-   !
-   ! Replace calls to mpas_allocate_scratch_Field with straight allocates.
-   ! These variables were moved from the subroutines, but will be moved back once the
-   ! threading implementation is changed to more localized threading
-   !
-   !--------------------------------------------------------------------
-
-   ! origZMid: reference z-midpiont of cells for vertical interpolation of tracers
-   !    units: m
-   real(kind=RKIND), dimension(:,:), pointer :: origZMid
-   ! origMaxLevelCell: reference maxLevelCell for vertical interpolation of tracers
-   !            units: none
-   integer, dimension(:), pointer :: origMaxLevelCell
 
 !***********************************************************************
 
@@ -167,12 +151,20 @@ contains
      real (kind=RKIND), dimension(:), pointer :: landIcePressure, landIceDraft, &
                                                  effectiveDensityInLandIce
 
-     integer, dimension(:), pointer :: modifySSHMask
+
+     real(kind=RKIND), dimension(:,:), pointer :: origZMid
+     integer, dimension(:), pointer :: origMaxLevelCell, modifySSHMask
+     type (field2DReal), pointer :: origZMidField
+     type (field1DInteger), pointer :: origMaxLevelCellField
      integer, pointer :: nCells, nVertLevels
+
+     character (len=StrKIND), pointer :: config_iterative_init_variable
 
      integer :: iCell
 
      iErr = 0
+
+     call mpas_pool_get_config(ocnConfigs, 'config_iterative_init_variable', config_iterative_init_variable)
 
      ! compute density (needed regardless of config_iterative_init_variable)
 
@@ -188,7 +180,7 @@ contains
        call mpas_pool_get_array(diagnosticsPool, 'density', density)
 
        call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
-           nCells, 0, 'relative', density, iErr, &
+           scratchPool, nCells, 0, 'relative', density, iErr, &
            timeLevelIn=1)
 
        if(iErr .ne. 0) then
@@ -228,7 +220,7 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'modifySSHMask', modifySSHMask)
 
          call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
-             nCells, 0, 'relative', density, iErr, &
+             scratchPool, nCells, 0, 'relative', density, iErr, &
              timeLevelIn=1)
 
          if(iErr .ne. 0) then
@@ -267,6 +259,11 @@ contains
 
      call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
 
+     call mpas_pool_get_field(scratchPool, 'scratchZMid', origZMidField)
+     call mpas_allocate_scratch_field(origZMidField, .false.)
+     call mpas_pool_get_field(scratchPool, 'scratchMaxLevelCell', origMaxLevelCellField)
+     call mpas_allocate_scratch_field(origMaxLevelCellField, .false.)
+
      block_ptr => domain % blocklist
      do while(associated(block_ptr))
        call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
@@ -293,15 +290,12 @@ contains
        call mpas_pool_get_array(diagnosticsPool, 'modifySSHMask', modifySSHMask)
 
        call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
+       call mpas_pool_get_array(scratchPool, 'scratchZMid', origZMid)
+       call mpas_pool_get_array(scratchPool, 'scratchMaxLevelCell', origMaxLevelCell)
 
-       !$omp master
-       allocate(origZMid(nVertLevels, nCells), &
-                origMaxLevelCell(nCells))
-       !$omp end master
-       !$omp barrier
 
        call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
-           nCells, 0, 'relative', density, iErr, &
+           scratchPool, nCells, 0, 'relative', density, iErr, &
            timeLevelIn=1)
 
        if(iErr .ne. 0) then
@@ -346,12 +340,6 @@ contains
        ! computing sea-surface tilt
        landIceDraft(:) = ssh(:)
 
-       !$omp barrier
-       !$omp master
-       deallocate(origZMid, &
-                  origMaxLevelCell)
-       !$omp end master
-
        block_ptr => block_ptr % next
      end do !block_ptr
 
@@ -380,11 +368,8 @@ contains
 
        call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
 
-       !$omp master
-       allocate(origZMid(nVertLevels, nCells), &
-                origMaxLevelCell(nCells))
-       !$omp end master
-       !$omp barrier
+       call mpas_pool_get_array(scratchPool, 'scratchZMid', origZMid)
+       call mpas_pool_get_array(scratchPool, 'scratchMaxLevelCell', origMaxLevelCell)
 
        ! interpolate active tracers to the new zMid
        call interpolate_activeTracers(meshPool, origZMid, zMid, &
@@ -395,14 +380,11 @@ contains
          return
        end if
 
-       !$omp barrier
-       !$omp master
-       deallocate(origZMid, &
-                  origMaxLevelCell)
-       !$omp end master
-
        block_ptr => block_ptr % next
      end do !block_ptr
+
+     call mpas_deallocate_scratch_field(origZMidField, .false.)
+     call mpas_deallocate_scratch_field(origMaxLevelCellField, .false.)
 
    !--------------------------------------------------------------------
 
@@ -446,6 +428,10 @@ contains
 
      type (mpas_pool_type), pointer :: meshPool, statePool, diagnosticsPool, verticalMeshPool
 
+     logical, pointer :: config_use_rx1_constraint
+
+     character (len=StrKIND), pointer :: config_iterative_init_variable
+
      ! Define dimension pointers
      integer, pointer :: nCells, nVertLevels
 
@@ -462,6 +448,8 @@ contains
 
      iErr = 0
 
+     call mpas_pool_get_config(ocnConfigs, 'config_iterative_init_variable', config_iterative_init_variable)
+
      if(config_iterative_init_variable .ne. 'ssh' &
         .and. config_iterative_init_variable .ne. 'landIcePressure_from_top_density' &
         .and. config_iterative_init_variable .ne. 'landIcePressure') then
@@ -469,6 +457,7 @@ contains
        call mpas_log_write( 'invalid value for config_iterative_init_variable'// trim(config_iterative_init_variable), MPAS_LOG_CRIT)
        return
      end if
+     call mpas_pool_get_config(ocnConfigs, 'config_use_rx1_constraint', config_use_rx1_constraint)
 
      ! one reason for using config_iterative_init_variable == 'landIcePressure_from_top_density' is that we can immediately compute
      ! the vertical grid displaced by the ssh

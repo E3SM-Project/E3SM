@@ -28,7 +28,6 @@ module ocn_init_baroclinic_channel
    use mpas_dmpar
 
    use ocn_constants
-   use ocn_config
    use ocn_init_vertical_grids
    use ocn_init_cell_markers
 
@@ -94,6 +93,18 @@ contains
 
       integer :: iCell, k, idx
 
+      ! Define config variable pointers
+      character (len=StrKIND), pointer :: config_init_configuration, config_vertical_grid
+      logical, pointer :: config_baroclinic_channel_use_distances
+      real (kind=RKIND), pointer :: config_baroclinic_channel_gradient_width_dist, &
+                                    config_baroclinic_channel_gradient_width_frac, &
+                                    config_baroclinic_channel_bottom_depth, &
+                                    config_baroclinic_channel_surface_temperature, &
+                                    config_baroclinic_channel_bottom_temperature, &
+                                    config_baroclinic_channel_temperature_difference, &
+                                    config_baroclinic_channel_salinity, &
+                                    config_baroclinic_channel_coriolis_parameter
+
       ! Define dimension pointers
       integer, pointer :: nCellsSolve, nEdgesSolve, nVertLevels, nVertLevelsP1
       integer, pointer :: index_temperature, index_salinity, index_tracer1
@@ -113,7 +124,27 @@ contains
 
       iErr = 0
 
+      call mpas_pool_get_config(ocnConfigs, 'config_init_configuration', config_init_configuration)
+
       if(config_init_configuration .ne. trim('baroclinic_channel')) return
+
+      call mpas_pool_get_config(ocnConfigs, 'config_vertical_grid', config_vertical_grid)
+
+      call mpas_pool_get_config(ocnConfigs, 'config_baroclinic_channel_use_distances', config_baroclinic_channel_use_distances)
+      call mpas_pool_get_config(ocnConfigs, 'config_baroclinic_channel_gradient_width_dist', &
+                                config_baroclinic_channel_gradient_width_dist)
+      call mpas_pool_get_config(ocnConfigs, 'config_baroclinic_channel_gradient_width_frac', &
+                                config_baroclinic_channel_gradient_width_frac)
+      call mpas_pool_get_config(ocnConfigs, 'config_baroclinic_channel_bottom_depth', config_baroclinic_channel_bottom_depth)
+      call mpas_pool_get_config(ocnConfigs, 'config_baroclinic_channel_surface_temperature', &
+                                config_baroclinic_channel_surface_temperature)
+      call mpas_pool_get_config(ocnConfigs, 'config_baroclinic_channel_bottom_temperature', &
+                                config_baroclinic_channel_bottom_temperature)
+      call mpas_pool_get_config(ocnConfigs, 'config_baroclinic_channel_temperature_difference', &
+                                config_baroclinic_channel_temperature_difference)
+      call mpas_pool_get_config(ocnConfigs, 'config_baroclinic_channel_salinity', config_baroclinic_channel_salinity)
+      call mpas_pool_get_config(ocnConfigs, 'config_baroclinic_channel_coriolis_parameter', &
+                                config_baroclinic_channel_coriolis_parameter)
 
       ! Determine vertical grid for configuration
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
