@@ -927,8 +927,8 @@ contains
     err = 0
     cpRatio = cp_land_ice/cp_sw
     !$omp parallel
-    !$omp do schedule(runtime) reduction(+:err) &
-    !$omp private(T0, dTf_dS, transferVelocityRatio, Tlatent, eta, TlatentStar, a, b, c)
+    !$omp do schedule(runtime) &
+    !$omp private(T0, dTf_dS, transferVelocityRatio, Tlatent, eta, TlatentStar, a, b, c, err)
     do iCell = 1, nCells
       if (mask(iCell) == 0) cycle
 
