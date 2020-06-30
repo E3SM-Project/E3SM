@@ -4539,7 +4539,7 @@ logical function phys_grid_initialized ()
 !
    if ((opt <= 0) .or. (opt == 4)) then
 
-!     Assign active dynamics processes to virtual SMP nodes
+      ! Assign active dynamics processes to virtual SMP nodes
       nvsmp = 0
       do p=0,npes-1
          if (proc_busy_d(p)) then
@@ -4547,8 +4547,8 @@ logical function phys_grid_initialized ()
             nvsmp = nvsmp + 1
          endif
       enddo
-! 
-!     Assign idle dynamics processes to virtual SMP nodes (wrap map)
+
+      ! Assign idle dynamics processes to virtual SMP nodes (wrap map)
       nvsmp2 = 0
       do p=0,npes-1
          if (.not. proc_busy_d(p)) then
@@ -4562,8 +4562,7 @@ logical function phys_grid_initialized ()
       allocate( smp_busy_d(0:nsmps-1) )
       allocate( smp_vsmp_map(0:nsmps-1) )
 
-!
-!     Determine SMP nodes assigned dynamics blocks
+      ! Determine SMP nodes assigned dynamics blocks
       smp_busy_d = .false.
       do p=0,npes-1
          if ( proc_busy_d(p) ) then
@@ -4572,8 +4571,7 @@ logical function phys_grid_initialized ()
          endif
       enddo
 
-!
-!     Determine number of SMP nodes assigned dynamics blocks
+      ! Determine number of SMP nodes assigned dynamics blocks
       nvsmp = 0
       do smp=0,nsmps-1
          if (smp_busy_d(smp)) then
@@ -4581,16 +4579,16 @@ logical function phys_grid_initialized ()
             nvsmp = nvsmp + 1
          endif
       enddo
-!
-!     Assign processes in active dynamics SMP nodes to virtual SMP nodes
+
+      ! Assign processes in active dynamics SMP nodes to virtual SMP nodes
       do p=0,npes-1
          smp = proc_smp_map(p)
          if (smp_busy_d(smp)) then
             proc_vsmp_map(p) = smp_vsmp_map(smp)
          endif
       enddo
-! 
-!     Assign processes in idle dynamics SMP nodes to virtual SMP nodes (wrap map)
+
+      ! Assign processes in idle dynamics SMP nodes to virtual SMP nodes (wrap map)
       nvsmp2 = 0
       do p=0,npes-1
          smp = proc_smp_map(p)
@@ -4599,7 +4597,7 @@ logical function phys_grid_initialized ()
             nvsmp2 = mod(nvsmp2+1,nvsmp)
          endif
       enddo
-!
+
       deallocate( smp_busy_d )
       deallocate( smp_vsmp_map )
 
@@ -4612,12 +4610,12 @@ logical function phys_grid_initialized ()
 
    elseif (opt == 3) then
 
-!     Find active process partners
+      ! Find active process partners
       proc_vsmp_map = -1
       call find_partners(opt,proc_busy_d,nvsmp,proc_vsmp_map)
-! 
-!     Assign unassigned (idle dynamics) processes to virtual SMP nodes 
-!     (wrap map)
+
+      ! Assign unassigned (idle dynamics) processes to virtual SMP nodes 
+      ! (wrap map)
       nvsmp2 = 0
       do p=0,npes-1
          if (proc_vsmp_map(p) .eq. -1) then
@@ -4634,7 +4632,7 @@ logical function phys_grid_initialized ()
       enddo
 
    endif
-!
+
    deallocate( proc_busy_d )
 
 !
@@ -4642,22 +4640,22 @@ logical function phys_grid_initialized ()
 ! virtual SMP node
 !
    allocate( nsmpprocs(0:nvsmp-1) )
-!
+
    nsmpprocs(:) = 0
    do p=0,npes-1
       smp = proc_vsmp_map(p)
       nsmpprocs(smp) = nsmpprocs(smp) + 1
    enddo
    max_nproc_vsmp = maxval(nsmpprocs)
-!
+
    deallocate( nsmpprocs )   
 
 !
 ! Determine number of columns assigned to each
 ! virtual SMP in block decomposition
-
-   allocate( col_vsmp_map(ngcols) )
 !
+   allocate( col_vsmp_map(ngcols) )
+
    col_vsmp_map(:) = -1
    error = .false.
    do i=1,ngcols
@@ -4679,9 +4677,9 @@ logical function phys_grid_initialized ()
                "but vertical decomposition not limited to virtual SMP"
       call endrun()
    endif  
-!
+
    allocate( nvsmpcolumns(0:nvsmp-1) )
-!
+
    nvsmpcolumns(:) = 0
    error = .false.
    do i=1,ngcols_p
@@ -4737,35 +4735,35 @@ logical function phys_grid_initialized ()
 ! Calculate pcols for chunks in each virtual SMP
 !
 #ifdef PPCOLS
-!  Use compile-time value
+   ! Use compile-time value
    pcols_vsmp(:) = pcols
 #else
    if (cols_per_chnk > 0) then
-!     Use runtime value
+      ! Use runtime value
       pcols_vsmp(:) = cols_per_chnk
    else
       do smp=0,nvsmp-1
-!        Pick pcols to minimize wasted space and the number of chunks per thread
+         ! Pick pcols to minimize wasted space and the number of chunks per thread
          pcols_vsmp(smp) = &
             ceiling(real(nvsmpcolumns(smp),r8)/real(nvsmpthreads(smp)*chnks_per_thrd,r8))
          if (opt == 5) then
-!           pcols should not be (much) larger than the maximum block size
+            ! pcols should not be (much) larger than the maximum block size
             if (maxblksiz_vsmp(smp) < pcols_vsmp(smp)) pcols_vsmp(smp) = maxblksiz_vsmp(smp)
          endif
          if (cols_per_chnk_mult > 1) then
-!           Then increase (if necessary) to be a multiple of cols_per_chnk_mult
+            ! Then increase (if necessary) to be a multiple of cols_per_chnk_mult
             pcols_vsmp(smp) = &
                cols_per_chnk_mult*ceiling(real(pcols_vsmp(smp),r8)/real(cols_per_chnk_mult,r8))
          endif
          if (cols_per_chnk_max > 0) then
-!           If calculated pcols is too large, recalculate with more chunks per thread
+            ! If calculated pcols is too large, recalculate with more chunks per thread
             tmp_chnks_per_thrd = chnks_per_thrd
             do while (pcols_vsmp(smp) > cols_per_chnk_max)
                tmp_chnks_per_thrd = tmp_chnks_per_thrd + 1
                pcols_vsmp(smp) = &
                   ceiling(real(nvsmpcolumns(smp),r8)/real(nvsmpthreads(smp)*tmp_chnks_per_thrd,r8))
                if (opt == 5) then
-!                 pcols should not be (much) larger than the maximum block size
+                  ! pcols should not be (much) larger than the maximum block size
                   if (maxblksiz_vsmp(smp) < pcols_vsmp(smp)) pcols_vsmp(smp) = maxblksiz_vsmp(smp)
                endif
                if ((cols_per_chnk_mult > 1) .and. (cols_per_chnk_mult <= cols_per_chnk_max)) then
@@ -4907,24 +4905,25 @@ logical function phys_grid_initialized ()
       allocate( cdex(1:ngcols) )
 
       if ((use_cost_d) .and. (opt < 4)) then
-!        If load balancing using column cost, then sort columns by cost first,
-!        maximum to minimum.
+         ! If load balancing using column cost, then sort columns by cost
+         ! first, maximum to minimum.
          call IndexSet(ngcols,cdex)
          call IndexSort(ngcols,cdex,cost_d,descend=.true.)
       else
-!        If not using column cost, then sort columns by block ordering,
-!        as done in the original algorithm.
+         ! If not using column cost, then sort columns by block ordering,
+         ! as done in the original algorithm.
          allocate( udex(1:ngcols) )
          udex(:) = .false.
          i = 0
          do jb=firstblock,lastblock
             blksiz = get_block_gcol_cnt_d(jb)
             call get_block_gcol_d(jb,blksiz,cols_d)
-!
+
             do ib = 1,blksiz
                curgcol = cols_d(ib)
-!
-!              Record column in cdex in block order if not already recorded
+
+               ! Record column in cdex in block order if not already
+               ! recorded
                if (.not. udex(curgcol)) then
                   i=i+1
                   if (i > ngcols) then
@@ -4939,9 +4938,9 @@ logical function phys_grid_initialized ()
                   cdex(i) = curgcol
                   udex(curgcol) = .true.
                endif
-!
+
             enddo
-!
+
          enddo
          deallocate( udex )
       endif
@@ -4967,17 +4966,17 @@ logical function phys_grid_initialized ()
       do i=1,ngcols
          curgcol = cdex(i)
          smp = col_vsmp_map(i)
-!
-!        Assign column to a chunk if not already assigned
+
+         ! Assign column to a chunk if not already assigned
          if ((dyn_to_latlon_gcol_map(curgcol) .ne. -1) .and. &
              (knuhcs(curgcol)%chunkid == -1)) then
-!
+
             if ((use_cost_d) .and. (opt < 4)) then
-!
-!              For opt==0,1,2,3 and when using column cost estimates,
-!              add column to chunk with lowest estimated cost chunk
-!              (and with space), i.e. to chunk at root of heap for
-!              current SMP
+
+               ! For opt==0,1,2,3 and when using column cost estimates,
+               ! add column to chunk with lowest estimated cost chunk
+               ! (and with space), i.e. to chunk at root of heap for
+               ! current SMP
                if (heap_len(smp) > 0) then
                   cid = heap(cid_offset(smp))
                else
@@ -4990,8 +4989,8 @@ logical function phys_grid_initialized ()
                endif
 
             else
-!              For opt==4, find next chunk with space
-!              (maxcol_chks > 0 test necessary for opt==4 block map)
+               ! For opt==4, find next chunk with space
+               ! (maxcol_chks > 0 test necessary for opt==4 block map)
                cid = cid_offset(smp) + local_cid(smp)
                if (maxcol_chks(smp) > 0) then
                   do while (chunks(cid)%ncols >=  maxcol_chk(smp))
@@ -5007,22 +5006,21 @@ logical function phys_grid_initialized ()
 
             endif
 
-!
-!           Update chunk with new column
+            ! Update chunk with new column
             chunks(cid)%ncols = chunks(cid)%ncols + 1
             if (chunks(cid)%ncols .eq. maxcol_chk(smp)) &
                maxcol_chks(smp) = maxcol_chks(smp) - 1
-!
+
             lcol = chunks(cid)%ncols
             chunks(cid)%gcol(lcol) = curgcol
             chunks(cid)%estcost = chunks(cid)%estcost + cost_d(curgcol)
             knuhcs(curgcol)%chunkid = cid
             knuhcs(curgcol)%col = lcol
-!
+
             if (opt < 4) then
-!
-!              If space available, look to assign a load-balancing "twin"
-!              to same chunk
+
+               ! If space available, look to assign a load-balancing
+               ! "twin" to same chunk
                if ( (chunks(cid)%ncols <  maxcol_chk(smp)) .and. &
                     (maxcol_chks(smp) > 0) .and. (twin_alg > 0)) then
 
@@ -5030,36 +5028,36 @@ logical function phys_grid_initialized ()
                                  proc_vsmp_map, twingcol)
 
                   if (twingcol > 0) then
-!
-!                    Update chunk with twin column
+
+                     ! Update chunk with twin column
                      chunks(cid)%ncols = chunks(cid)%ncols + 1
                      if (chunks(cid)%ncols .eq. maxcol_chk(smp)) &
                         maxcol_chks(smp) = maxcol_chks(smp) - 1
-!
+
                       lcol = chunks(cid)%ncols
                       chunks(cid)%gcol(lcol) = twingcol
                       chunks(cid)%estcost = chunks(cid)%estcost + cost_d(twingcol)
                       knuhcs(twingcol)%chunkid = cid
                       knuhcs(twingcol)%col = lcol
                   endif
-!
+
                endif
-!
+
                if (use_cost_d) then
-!
-!                 Re-heapify the min heap
+
+                  ! Re-heapify the min heap
                   call adjust_heap(nchunks, maxcol_chk(smp), &
                                    cid_offset(smp), heap_len(smp), heap)
-!
+
                else
-!
-!                 Move on to next chunk (wrap map)
+
+                  ! Move on to next chunk (wrap map)
                   local_cid(smp) = mod(local_cid(smp)+1,nvsmpchunks(smp))
-!
+
                endif
-!
+
             endif
-!
+
          endif
 
       enddo
@@ -5077,9 +5075,11 @@ logical function phys_grid_initialized ()
 !            assigning consecutive columns to the same chunk
 !
 
+!
 ! Determine total number of chunks and
 ! number of chunks in each "SMP node"
-!  (assuming no vertical decomposition)
+! (assuming no vertical decomposition)
+!
       nchunks = 0
       nvsmpchunks(:) = 0
       do j=firstblock,lastblock
@@ -5133,11 +5133,11 @@ logical function phys_grid_initialized ()
             ncols = 0
             do i=1,max_ncols
                ib = ib + 1
-!              Check whether global index is for a column that dynamics
-!              intends to pass to the physics
+               ! Check whether global index is for a column that dynamics
+               ! intends to pass to the physics
                curgcol = cols_d(ib)
                if (dyn_to_latlon_gcol_map(curgcol) .ne. -1) then
-!                 Yes - then save the information
+                  ! Yes - then save the information
                   ncols = ncols + 1
                   chunks(cid)%gcol(ncols) = curgcol
                   chunks(cid)%estcost = chunks(cid)%estcost + cost_d(curgcol)
@@ -5167,23 +5167,21 @@ logical function phys_grid_initialized ()
    if (cols_per_chnk > 0) then
       pcols_proc(:) = cols_per_chnk
    else
-!
-! If pcols is not specified, then calculate pcols_proc based on the
-! actual size of the chunks that were created.
-!
+      ! If pcols is not specified, then calculate pcols_proc based
+      ! on the actual size of the chunks that were created.
       pcols_proc(:) = 0
       do cid=1,nchunks
          p = chunks(cid)%owner
-!        Set pcols_proc(p) to the maximum number of columns over chunks
-!        assigned to the process
+         ! Set pcols_proc(p) to the maximum number of columns over chunks
+         ! assigned to the process
          if (chunks(cid)%ncols > pcols_proc(p)) then
             pcols_proc(p) = chunks(cid)%ncols
          endif
       enddo
-!     Modify pcols_proc(p), if possible, to be a multiple of cols_per_chnk_mult.
-!     If not already a multiple, increase until it is, subject to not exceeding
-!     cols_per_chnk_max. If this does exceed the max, then leave pcols_proc(p)
-!     unchanged.
+      ! Modify pcols_proc(p), if possible, to be a multiple of
+      ! cols_per_chnk_mult. If not already a multiple, increase until it is,
+      ! subject to not exceeding cols_per_chnk_max. If this does exceed the
+      ! max, then leave pcols_proc(p) unchanged.
       if (cols_per_chnk_mult > 1) then
          do p=0,npes-1
             lmax_pcols = &
