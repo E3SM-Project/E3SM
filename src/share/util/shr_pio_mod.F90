@@ -765,6 +765,8 @@ contains
     character(*), parameter :: subname = '(shr_pio_rearr_opts_set) '
     integer, parameter :: NUM_REARR_COMM_OPTS = 8
     integer, parameter :: PIO_REARR_COMM_DEF_MAX_PEND_REQ = 64
+    ! Automatically reset if the number of maximum pending requests is set to 0
+    integer, parameter :: REARR_COMM_DEF_MAX_PEND_REQ_RESET = 0
     integer(SHR_KIND_IN), dimension(NUM_REARR_COMM_OPTS) :: buf
     integer :: rank, ierr
 
@@ -815,13 +817,19 @@ contains
       if((pio_rearr_comm_max_pend_req_comp2io <= 0) .and. &
           (pio_rearr_comm_max_pend_req_comp2io /= PIO_REARR_COMM_UNLIMITED_PEND_REQ)) then
 
+        if(pio_rearr_comm_max_pend_req_comp2io /= REARR_COMM_DEF_MAX_PEND_REQ_RESET) then
+          write(shr_log_unit, *) "Invalid PIO rearranger comm max pend req (comp2io), ",&
+               pio_rearr_comm_max_pend_req_comp2io
+        else
+          write(shr_log_unit, *) "User-specified PIO rearranger comm max pend req (comp2io), ",&
+               pio_rearr_comm_max_pend_req_comp2io, " (value will be reset as requested) "
+        end if
+
         ! Small multiple of pio_numiotasks has proven to perform
         ! well empirically, and we do not want to allow maximum for
         ! very large process count runs. Can improve this by
         ! communicating between iotasks first, and then non-iotasks
         ! to iotasks (TO DO)
-        write(shr_log_unit, *) "Invalid PIO rearranger comm max pend req (comp2io), ",&
-             pio_rearr_comm_max_pend_req_comp2io
         write(shr_log_unit, *) "Resetting PIO rearranger comm max pend req (comp2io) to ", &
              max(PIO_REARR_COMM_DEF_MAX_PEND_REQ, 2 * pio_numiotasks)
         buf(3) = max(PIO_REARR_COMM_DEF_MAX_PEND_REQ, 2 * pio_numiotasks)
@@ -846,7 +854,15 @@ contains
       ! buf(6) = max_pend_req_io2comp
       if((pio_rearr_comm_max_pend_req_io2comp <= 0) .and. &
           (pio_rearr_comm_max_pend_req_io2comp /= PIO_REARR_COMM_UNLIMITED_PEND_REQ)) then
-        write(shr_log_unit, *) "Invalid PIO rearranger comm max pend req (io2comp), ", pio_rearr_comm_max_pend_req_io2comp
+
+        if(pio_rearr_comm_max_pend_req_io2comp /= REARR_COMM_DEF_MAX_PEND_REQ_RESET) then
+          write(shr_log_unit, *) "Invalid PIO rearranger comm max pend req (io2comp), ",&
+               pio_rearr_comm_max_pend_req_io2comp
+        else
+          write(shr_log_unit, *) "User-specified PIO rearranger comm max pend req (io2comp), ",&
+               pio_rearr_comm_max_pend_req_io2comp, " (value will be reset as requested) "
+        end if
+
         write(shr_log_unit, *) "Resetting PIO rearranger comm max pend req (io2comp) to ", PIO_REARR_COMM_DEF_MAX_PEND_REQ
         buf(6) = PIO_REARR_COMM_DEF_MAX_PEND_REQ
       else
