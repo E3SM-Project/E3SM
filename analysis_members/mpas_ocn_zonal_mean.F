@@ -27,7 +27,6 @@ module ocn_zonal_mean
    use mpas_stream_manager
 
    use ocn_constants
-   use ocn_config
    use ocn_diagnostics_routines
 
    implicit none
@@ -117,6 +116,8 @@ contains
       real (kind=RKIND), dimension(1) :: minBin, maxBin, minBinDomain, maxBinDomain
       real (kind=RKIND), dimension(:), pointer ::  binCenterZonalMean, binBoundaryZonalMean, binVariable
 
+      real (kind=RKIND), pointer :: config_AM_zonalMean_min_bin, config_AM_zonalMean_max_bin
+
       logical, pointer :: on_a_sphere
 
       dminfo = domain % dminfo
@@ -128,6 +129,9 @@ contains
 
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nZonalMeanBins', nZonalMeanBins)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'zonalMeanAM', zonalMeanAMPool)
+
+      call mpas_pool_get_config(domain % configs, 'config_AM_zonalMean_min_bin', config_AM_zonalMean_min_bin)
+      call mpas_pool_get_config(domain % configs, 'config_AM_zonalMean_max_bin', config_AM_zonalMean_max_bin)
 
       call mpas_pool_get_array(zonalMeanAMPool, 'binCenterZonalMean', binCenterZonalMean)
       call mpas_pool_get_array(zonalMeanAMPool, 'binBoundaryZonalMean', binBoundaryZonalMean)

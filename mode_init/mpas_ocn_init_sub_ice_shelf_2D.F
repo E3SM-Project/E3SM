@@ -25,7 +25,6 @@ module ocn_init_sub_ice_shelf_2D
    use mpas_dmpar
 
    use ocn_constants
-   use ocn_config
    use ocn_init_vertical_grids
    use ocn_init_cell_markers
 
@@ -91,6 +90,13 @@ module ocn_init_sub_ice_shelf_2D
 
      integer :: iCell, k, idx
 
+     ! Define config variable pointers
+     character (len=StrKIND), pointer :: config_init_configuration, config_vertical_grid
+     real (kind=RKIND), pointer :: config_sub_ice_shelf_2D_bottom_depth, &
+          config_sub_ice_shelf_2D_cavity_thickness, config_sub_ice_shelf_2D_edge_width, config_sub_ice_shelf_2D_temperature, &
+          config_sub_ice_shelf_2D_surface_salinity, config_sub_ice_shelf_2D_bottom_salinity, &
+          config_sub_ice_shelf_2D_y1, config_sub_ice_shelf_2D_y2,config_sub_ice_shelf_2D_slope_height
+
      ! Define dimension pointers
      integer, pointer :: nCellsSolve, nEdgesSolve, nVertLevels, nVertLevelsP1, nCells
      integer, pointer :: index_temperature, index_salinity
@@ -113,7 +119,19 @@ module ocn_init_sub_ice_shelf_2D
 
      iErr = 0
 
+     call mpas_pool_get_config(ocnConfigs, 'config_init_configuration', config_init_configuration)
      if(config_init_configuration .ne. trim('sub_ice_shelf_2D')) return
+
+     call mpas_pool_get_config(ocnConfigs, 'config_vertical_grid', config_vertical_grid)
+     call mpas_pool_get_config(ocnConfigs, 'config_sub_ice_shelf_2D_bottom_depth',config_sub_ice_shelf_2D_bottom_depth)
+     call mpas_pool_get_config(ocnConfigs, 'config_sub_ice_shelf_2D_cavity_thickness', config_sub_ice_shelf_2D_cavity_thickness)
+     call mpas_pool_get_config(ocnConfigs, 'config_sub_ice_shelf_2D_edge_width', config_sub_ice_shelf_2D_edge_width)
+     call mpas_pool_get_config(ocnConfigs, 'config_sub_ice_shelf_2D_temperature', config_sub_ice_shelf_2D_temperature)
+     call mpas_pool_get_config(ocnConfigs, 'config_sub_ice_shelf_2D_surface_salinity', config_sub_ice_shelf_2D_surface_salinity)
+     call mpas_pool_get_config(ocnConfigs, 'config_sub_ice_shelf_2D_bottom_salinity', config_sub_ice_shelf_2D_bottom_salinity)
+     call mpas_pool_get_config(ocnConfigs, 'config_sub_ice_shelf_2D_y1', config_sub_ice_shelf_2D_y1)
+     call mpas_pool_get_config(ocnConfigs, 'config_sub_ice_shelf_2D_y2', config_sub_ice_shelf_2D_y2)
+     call mpas_pool_get_config(ocnConfigs, 'config_sub_ice_shelf_2D_slope_height', config_sub_ice_shelf_2D_slope_height)
 
      ! points 1 and 2 are where angles on ice shelf are located.
      ! point 3 is at the surface.

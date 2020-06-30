@@ -27,7 +27,6 @@ module ocn_okubo_weiss
    use mpas_constants
 
    use ocn_constants
-   use ocn_config
    use ocn_diagnostics_routines
    use mpas_matrix_operations
    use iso_c_binding
@@ -98,6 +97,7 @@ module ocn_okubo_weiss
 
    integer :: nCellsGlobal
    integer :: nTotalCellsGlobal
+   character (len=StrKIND), pointer :: config_AM_okuboWeiss_directory
 
 !***********************************************************************
 
@@ -163,6 +163,8 @@ contains
       !-----------------------------------------------------------------
 
       cells = 0
+
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_okuboWeiss_directory',config_AM_okuboWeiss_directory)
 
       dminfo = domain % dminfo
       block => domain % blocklist
@@ -808,7 +810,8 @@ contains
       real (kind=RKIND), dimension(:,:), pointer ::  layerThickness, zMid
       real (kind=RKIND), dimension(:), pointer :: posX, posY
       real (kind=RKIND), dimension(:,:), pointer :: velX, velY, velZ
-      logical, pointer :: on_a_sphere
+      logical, pointer :: on_a_sphere, use_lat_lon_coords
+      integer, pointer :: min_cells
 
       integer, dimension(nVertLevels*nCells) :: nextCellIdxK, nextCellIdxI
       real (kind=RKIND), dimension(nLocalCCs) :: sumVol, numCells, origCCId, wsVelX, wsVelY, wsVelZ, &
@@ -824,15 +827,17 @@ contains
       call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
 
       call mpas_pool_get_config(meshPool, 'on_a_sphere', on_a_sphere)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_okuboWeiss_use_lat_lon_coords', use_lat_lon_coords)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_okuboWeiss_eddy_min_cells', min_cells)
 
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
       if (.not. on_a_sphere) then
-         config_AM_okuboWeiss_use_lat_lon_coords = .false.
+         use_lat_lon_coords = .false.
       end if
 
-      if (config_AM_okuboWeiss_use_lat_lon_coords) then
+      if (use_lat_lon_coords) then
          call mpas_pool_get_array(meshPool, 'lonCell', posX)
          call mpas_pool_get_array(meshPool, 'latCell',  posY)
          call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velX)
@@ -950,7 +955,7 @@ contains
       end do
 
       ! for lat/lon coordinates, convert from radians to degrees for output
-      if (config_AM_okuboWeiss_use_lat_lon_coords) then
+      if (use_lat_lon_coords) then
          wsPosX = wsPosX *180.0_RKIND/pii
          wsPosY = wsPosY *180.0_RKIND/pii
       end if
@@ -961,8 +966,7 @@ contains
 
       ! this merges eddy stats AND outputs the results
       call mpas_timer_start("aggregate stats")
-      call ocn_aggregate_eddy_stats(dmInfo, config_AM_okuboWeiss_use_lat_lon_coords, &
-                                    config_AM_okuboWeiss_eddy_min_cells, &
+      call ocn_aggregate_eddy_stats(dmInfo, use_lat_lon_coords, min_cells, &
                                     curCC, maxNumCCs, &
                                     origCCId, sumVol, numCells, &
                                     wsPosX, wsPosY, wsPosZ, &
@@ -1462,12 +1466,24 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: om, OW
       integer, dimension(:,:), pointer :: OW_cc_id
 
-      real (kind=RKIND), dimension(:,:), allocatable :: S, Lam1, Lam2, Lam2_R3
-      real (kind=RKIND), dimension(:,:,:,:), allocatable :: velocityGradient
-      integer, dimension(:,:), allocatable :: OW_thresh
+      type(field2DReal), pointer :: SField, Lam1Field, Lam2Field, Lam2_R3Field
+      type(field4DReal), pointer :: velocityGradientField
+      type(field2DInteger), pointer :: OW_threshField
+
+      real (kind=RKIND), dimension(:,:), pointer :: S, Lam1, Lam2, Lam2_R3
+      real (kind=RKIND), dimension(:,:,:,:), pointer :: velocityGradient
+      integer, dimension(:,:), pointer :: OW_thresh
+
+      logical, pointer :: config_AM_okuboWeiss_compute_eddy_census
+      real (kind=RKIND), pointer :: OW_normalization, Lam2_normalization, threshold
 
       err = 0
       dminfo = domain % dminfo
+
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_okuboWeiss_normalization', OW_normalization)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_okuboWeiss_lambda2_normalization', Lam2_normalization)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_okuboWeiss_compute_eddy_census', config_AM_okuboWeiss_compute_eddy_census)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_okuboWeiss_threshold_value', threshold)
 
       block => domain % blocklist
       do while (associated(block))
@@ -1492,15 +1508,26 @@ contains
          call mpas_pool_get_array(okuboWeissAMPool, 'eddyID', OW_cc_id)
          call mpas_pool_get_array(okuboWeissAMPool, 'vorticity', om)
 
-         !$omp master
-         allocate(velocityGradient(3, 3, nVertLevels, nCells), &
-                  OW_thresh(nVertLevels, nCells), &
-                  S(nVertLevels, nCells + 1), &
-                  Lam1(nVertLevels, nCells + 1), &
-                  Lam2(nVertLevels, nCells + 1), &
-                  Lam2_R3(nVertLevels, nCells + 1))
-         !$omp end master
-         !$omp barrier
+         call mpas_pool_get_field(scratchPool, 'velocityGradient', velocityGradientField)
+         call mpas_pool_get_field(scratchPool, 'thresholdedOkuboWeiss', OW_threshField)
+         call mpas_pool_get_field(scratchPool, 'shearAndStrain', SField)
+         call mpas_pool_get_field(scratchPool, 'lambda1', Lam1Field)
+         call mpas_pool_get_field(scratchPool, 'lambda2', Lam2Field)
+         call mpas_pool_get_field(scratchPool, 'lambda2R3', Lam2_R3Field)
+
+         call mpas_allocate_scratch_field(velocityGradientField, .true.)
+         call mpas_allocate_scratch_field(OW_threshField, .true.)
+         call mpas_allocate_scratch_field(SField, .true.)
+         call mpas_allocate_scratch_field(Lam1Field, .true.)
+         call mpas_allocate_scratch_field(Lam2Field, .true.)
+         call mpas_allocate_scratch_field(Lam2_R3Field, .true.)
+
+         velocityGradient => velocityGradientField % array
+         OW_thresh => OW_threshField % array
+         S => SField % array
+         Lam1 => Lam1Field % array
+         Lam2 => Lam2Field % array
+         Lam2_R3 => Lam2_R3Field % array
 
          ! Compute velocity gradient
          call mpas_velocity_gradient_R3Cell(normalVelocity, tangentialVelocity, &
@@ -1508,11 +1535,11 @@ contains
                nVertLevels, nEdges, velocityGradient)
 
          ! Compute Okubo-Weiss and Lambda 2 values
-         call ocn_compute_OW_values(velocityGradient, nVertLevels, nCells, maxLevelCell, OW, config_AM_okuboWeiss_normalization, &
-               Lam2, Lam2_R3, config_AM_okuboWeiss_lambda2_normalization, S, om, Lam1)
+         call ocn_compute_OW_values(velocityGradient, nVertLevels, nCells, maxLevelCell, OW, OW_normalization, &
+               Lam2, Lam2_R3, Lam2_normalization, S, om, Lam1)
 
          ! Threshold field OW
-         call ocn_threshold_OW(nVertLevels, nCells, config_AM_okuboWeiss_threshold_value, OW, OW_thresh)
+         call ocn_threshold_OW(nVertLevels, nCells, threshold, OW, OW_thresh)
 
          ! Compute connected components of thresholded field
          if (config_AM_okuboWeiss_compute_eddy_census) then
@@ -1522,15 +1549,12 @@ contains
             call mpas_timer_stop("OW connected components")
          end if
 
-         !$omp barrier
-         !$omp master
-         deallocate(velocityGradient, &
-                    OW_thresh, &
-                    S, &
-                    Lam1, &
-                    Lam2, &
-                    Lam2_R3)
-         !$omp end master
+         call mpas_deallocate_scratch_field(velocityGradientField, .true.)
+         call mpas_deallocate_scratch_field(OW_threshField, .true.)
+         call mpas_deallocate_scratch_field(SField, .true.)
+         call mpas_deallocate_scratch_field(Lam1Field, .true.)
+         call mpas_deallocate_scratch_field(Lam2Field, .true.)
+         call mpas_deallocate_scratch_field(Lam2_R3Field, .true.)
 
          block => block % next
       end do

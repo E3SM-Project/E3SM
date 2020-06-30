@@ -28,7 +28,6 @@ module ocn_init_isomip
    use mpas_dmpar
 
    use ocn_constants
-   use ocn_config
    use ocn_init_vertical_grids
    use ocn_init_cell_markers
 
@@ -82,6 +81,34 @@ contains
       type (domain_type), intent(inout) :: domain
       integer, intent(out) :: iErr
 
+      ! Define config variable pointers
+      character (len=StrKIND), pointer :: config_init_configuration, &
+        config_isomip_vertical_level_distribution
+
+      real (kind=RKIND), pointer :: config_isomip_bottom_depth, &
+        config_isomip_temperature, &
+        config_isomip_salinity, &
+        config_isomip_restoring_temperature, &
+        config_isomip_restoring_salinity, &
+        config_isomip_temperature_piston_velocity, &
+        config_isomip_salinity_piston_velocity, &
+        config_isomip_coriolis_parameter, &
+        config_isomip_southern_boundary, &
+        config_isomip_northern_boundary, &
+        config_isomip_western_boundary, &
+        config_isomip_eastern_boundary, &
+        config_isomip_angle, &
+        config_isomip_y1, &
+        config_isomip_z1, &
+        config_isomip_ice_fraction1, &
+        config_isomip_y2, &
+        config_isomip_z2, &
+        config_isomip_ice_fraction2, &
+        config_isomip_y3, &
+        config_isomip_z3, &
+        config_isomip_ice_fraction3, &
+        config_isomip_effective_density
+
       logical, pointer :: on_a_sphere
 
       type (mpas_pool_type), pointer :: meshPool
@@ -125,7 +152,33 @@ contains
 
       iErr = 0
 
+      call mpas_pool_get_config(ocnConfigs, 'config_init_configuration', config_init_configuration)
+
       if(trim(config_init_configuration) .ne. trim('isomip')) return
+
+      ! Setup configuration
+      call mpas_pool_get_config(ocnConfigs, 'config_isomip_vertical_level_distribution', config_isomip_vertical_level_distribution)
+      call mpas_pool_get_config(ocnConfigs, 'config_isomip_bottom_depth', config_isomip_bottom_depth)
+      call mpas_pool_get_config(ocnConfigs, 'config_isomip_temperature', config_isomip_temperature)
+      call mpas_pool_get_config(ocnConfigs, 'config_isomip_salinity', config_isomip_salinity)
+      call mpas_pool_get_config(ocnConfigs, 'config_isomip_restoring_temperature', config_isomip_restoring_temperature)
+      call mpas_pool_get_config(ocnConfigs, 'config_isomip_restoring_salinity', config_isomip_restoring_salinity)
+      call mpas_pool_get_config(ocnConfigs, 'config_isomip_temperature_piston_velocity', config_isomip_temperature_piston_velocity)
+      call mpas_pool_get_config(ocnConfigs, 'config_isomip_salinity_piston_velocity', config_isomip_salinity_piston_velocity)
+      call mpas_pool_get_config(ocnConfigs, 'config_isomip_coriolis_parameter', config_isomip_coriolis_parameter)
+      call mpas_pool_get_config(ocnConfigs, 'config_isomip_southern_boundary', config_isomip_southern_boundary)
+      call mpas_pool_get_config(ocnConfigs, 'config_isomip_northern_boundary', config_isomip_northern_boundary)
+      call mpas_pool_get_config(ocnConfigs, 'config_isomip_western_boundary', config_isomip_western_boundary)
+      call mpas_pool_get_config(ocnConfigs, 'config_isomip_eastern_boundary', config_isomip_eastern_boundary)
+      call mpas_pool_get_config(ocnConfigs, 'config_isomip_y1', config_isomip_y1)
+      call mpas_pool_get_config(ocnConfigs, 'config_isomip_z1', config_isomip_z1)
+      call mpas_pool_get_config(ocnConfigs, 'config_isomip_ice_fraction1', config_isomip_ice_fraction1)
+      call mpas_pool_get_config(ocnConfigs, 'config_isomip_y2', config_isomip_y2)
+      call mpas_pool_get_config(ocnConfigs, 'config_isomip_z2', config_isomip_z2)
+      call mpas_pool_get_config(ocnConfigs, 'config_isomip_ice_fraction2', config_isomip_ice_fraction2)
+      call mpas_pool_get_config(ocnConfigs, 'config_isomip_y3', config_isomip_y3)
+      call mpas_pool_get_config(ocnConfigs, 'config_isomip_z3', config_isomip_z3)
+      call mpas_pool_get_config(ocnConfigs, 'config_isomip_ice_fraction3', config_isomip_ice_fraction3)
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
 

@@ -29,7 +29,6 @@ module ocn_eliassen_palm
    use mpas_pool_routines
    use mpas_constants
    use ocn_constants
-   use ocn_config
    use ocn_diagnostics_routines
    use ocn_equation_of_state
 
@@ -120,6 +119,10 @@ contains
       real (kind=RKIND), dimension(:), pointer :: buoyancyInterfaceRef
 
       logical, pointer :: amEPFTActive
+      logical, pointer :: config_AM_eliassenPalm_compute_on_startup
+      integer, pointer :: config_AM_eliassenPalm_nBuoyancyLayers
+      real (kind=RKIND), pointer :: config_AM_eliassenPalm_rhomax_buoycoor
+      real (kind=RKIND), pointer :: config_AM_eliassenPalm_rhomin_buoycoor
 
       integer, pointer :: nSamplesEA
 
@@ -142,6 +145,15 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: vvarpisigmaEA
 
       err = 0
+
+      call mpas_pool_get_config(domain % configs, 'config_AM_eliassenPalm_compute_on_startup', &
+        config_AM_eliassenPalm_compute_on_startup)
+      call mpas_pool_get_config(domain % configs, 'config_AM_eliassenPalm_nBuoyancyLayers', &
+        config_AM_eliassenPalm_nBuoyancyLayers)
+      call mpas_pool_get_config(domain % configs, 'config_AM_eliassenPalm_rhomax_buoycoor', &
+        config_AM_eliassenPalm_rhomax_buoycoor)
+      call mpas_pool_get_config(domain % configs, 'config_AM_eliassenPalm_rhomin_buoycoor', &
+        config_AM_eliassenPalm_rhomin_buoycoor)
 
       block => domain % blocklist
       do while (associated(block))
@@ -258,6 +270,13 @@ contains
       type (mpas_pool_type), pointer :: diagnosticsPool
 
       !-----------------------------------------------------------------
+      ! define pointers to namelist config variables local to the EPFT module
+      !-----------------------------------------------------------------
+      logical, pointer :: config_AM_eliassenPalm_debug
+      real (kind=RKIND), pointer :: config_AM_eliassenPalm_rhomin_buoycoor
+      real (kind=RKIND), pointer :: config_AM_eliassenPalm_rhomax_buoycoor
+
+      !-----------------------------------------------------------------
       ! define local scalars holding length of dimensions
       !-----------------------------------------------------------------
       integer, pointer :: nVertLevels, nBuoyancyLayers, nBuoyancyLayersP1
@@ -340,48 +359,92 @@ contains
       real(KIND=RKIND), dimension(:,:), pointer :: eddyFormDragMerid
 
       !-----------------------------------------------------------------
+      ! define scratch fields used as work variables and for testing
+      !-----------------------------------------------------------------
+      type(field1DInteger), pointer :: firstLayerBuoyCoorField
+      type(field1DInteger), pointer :: lastLayerBuoyCoorField
+      type(field2DReal), pointer :: heightMidBuoyCoorField
+      type(field2DReal), pointer :: heightTopBuoyCoorField
+      type(field2DReal), pointer :: heightInterfaceBuoyCoorField
+      type(field2DReal), pointer :: sigmaField
+      type(field2DReal), pointer :: montgPotBuoyCoorField
+      type(field2DReal), pointer :: montgPotNormalGradOnEdgeField
+      type(field2DReal), pointer :: uMidBuoyCoorField
+      type(field2DReal), pointer :: vMidBuoyCoorField
+      type(field2DReal), pointer :: densityMidBuoyCoorField
+      type(field2DReal), pointer :: densityTopBuoyCoorField
+      type(field2DReal), pointer :: buoyancyMaskField
+      type(field2DReal), pointer :: montgPotGradXField
+      type(field2DReal), pointer :: montgPotGradYField
+      type(field2DReal), pointer :: montgPotGradZField
+      type(field2DReal), pointer :: montgPotGradZonalField
+      type(field2DReal), pointer :: montgPotGradMeridField
+      type(field2DReal), pointer :: wrk3DnVertLevelsP1Field
+      type(field2DReal), pointer :: wrk3DnVertLevelsField
+      type(field2DReal), pointer :: wrk3DBuoyCoorField
+      type(field2DReal), pointer :: ErtelPVNormalGradOnEdgeField
+      type(field2DReal), pointer :: ErtelPVGradXField
+      type(field2DReal), pointer :: ErtelPVGradYField
+      type(field2DReal), pointer :: ErtelPVGradZField
+      type(field3DReal), pointer :: wrkVectorField
+      type(field4DReal), pointer :: wrkTensorField
+
+      type(field2DReal), pointer :: array1_3DField
+      type(field2DReal), pointer :: array2_3DField
+      type(field2DReal), pointer :: array3_3DField
+      type(field2DReal), pointer :: array1_3DbuoyField
+      type(field2DReal), pointer :: array2_3DbuoyField
+      type(field2DReal), pointer :: PVMidBuoyCoorField
+      type(field2DReal), pointer :: PVMidBuoyCoorEAField
+      type(field2DReal), pointer :: uMidBuoyCoorEAField
+      type(field2DReal), pointer :: vMidBuoyCoorEAField
+      type(field2DReal), pointer :: uPVMidBuoyCoorEAField
+      type(field2DReal), pointer :: vPVMidBuoyCoorEAField
+      type(field3DReal), pointer :: PVFluxTestField
+
+      !-----------------------------------------------------------------
       ! define pointers to scratch fields
       !-----------------------------------------------------------------
-      integer, dimension(:), allocatable :: firstLayerBuoyCoor
-      integer, dimension(:), allocatable :: lastLayerBuoyCoor
-      real(KIND=RKIND), dimension(:,:), allocatable :: heightMidBuoyCoor
-      real(KIND=RKIND), dimension(:,:), allocatable :: heightTopBuoyCoor
-      real(KIND=RKIND), dimension(:,:), allocatable :: heightInterfaceBuoyCoor
-      real(KIND=RKIND), dimension(:,:), allocatable :: sigma
-      real(KIND=RKIND), dimension(:,:), allocatable :: montgPotBuoyCoor
-      real(KIND=RKIND), dimension(:,:), allocatable :: montgPotNormalGradOnEdge
-      real(KIND=RKIND), dimension(:,:), allocatable :: uMidBuoyCoor
-      real(KIND=RKIND), dimension(:,:), allocatable :: vMidBuoyCoor
-      real(KIND=RKIND), dimension(:,:), allocatable :: densityMidBuoyCoor
-      real(KIND=RKIND), dimension(:,:), allocatable :: densityTopBuoyCoor
-      real(KIND=RKIND), dimension(:,:), allocatable :: buoyancyMask
-      real(KIND=RKIND), dimension(:,:), allocatable :: montgPotGradX
-      real(KIND=RKIND), dimension(:,:), allocatable :: montgPotGradY
-      real(KIND=RKIND), dimension(:,:), allocatable :: montgPotGradZ
-      real(KIND=RKIND), dimension(:,:), allocatable :: montgPotGradZonal
-      real(KIND=RKIND), dimension(:,:), allocatable :: montgPotGradMerid
-      real(KIND=RKIND), dimension(:,:), allocatable :: wrk3DnVertLevelsP1
-      real(KIND=RKIND), dimension(:,:), allocatable :: wrk3DnVertLevels
-      real(KIND=RKIND), dimension(:,:), allocatable :: wrk3DBuoyCoor
-      real(KIND=RKIND), dimension(:,:), allocatable :: ErtelPVNormalGradOnEdge
-      real(KIND=RKIND), dimension(:,:), allocatable :: ErtelPVGradX
-      real(KIND=RKIND), dimension(:,:), allocatable :: ErtelPVGradY
-      real(KIND=RKIND), dimension(:,:), allocatable :: ErtelPVGradZ
-      real(KIND=RKIND), dimension(:,:,:), allocatable :: wrkVector
-      real(KIND=RKIND), dimension(:,:,:,:), allocatable :: wrkTensor
+      integer, dimension(:), pointer :: firstLayerBuoyCoor
+      integer, dimension(:), pointer :: lastLayerBuoyCoor
+      real(KIND=RKIND), dimension(:,:), pointer :: heightMidBuoyCoor
+      real(KIND=RKIND), dimension(:,:), pointer :: heightTopBuoyCoor
+      real(KIND=RKIND), dimension(:,:), pointer :: heightInterfaceBuoyCoor
+      real(KIND=RKIND), dimension(:,:), pointer :: sigma
+      real(KIND=RKIND), dimension(:,:), pointer :: montgPotBuoyCoor
+      real(KIND=RKIND), dimension(:,:), pointer :: montgPotNormalGradOnEdge
+      real(KIND=RKIND), dimension(:,:), pointer :: uMidBuoyCoor
+      real(KIND=RKIND), dimension(:,:), pointer :: vMidBuoyCoor
+      real(KIND=RKIND), dimension(:,:), pointer :: densityMidBuoyCoor
+      real(KIND=RKIND), dimension(:,:), pointer :: densityTopBuoyCoor
+      real(KIND=RKIND), dimension(:,:), pointer :: buoyancyMask
+      real(KIND=RKIND), dimension(:,:), pointer :: montgPotGradX
+      real(KIND=RKIND), dimension(:,:), pointer :: montgPotGradY
+      real(KIND=RKIND), dimension(:,:), pointer :: montgPotGradZ
+      real(KIND=RKIND), dimension(:,:), pointer :: montgPotGradZonal
+      real(KIND=RKIND), dimension(:,:), pointer :: montgPotGradMerid
+      real(KIND=RKIND), dimension(:,:), pointer :: wrk3DnVertLevelsP1
+      real(KIND=RKIND), dimension(:,:), pointer :: wrk3DnVertLevels
+      real(KIND=RKIND), dimension(:,:), pointer :: wrk3DBuoyCoor
+      real(KIND=RKIND), dimension(:,:), pointer :: ErtelPVNormalGradOnEdge
+      real(KIND=RKIND), dimension(:,:), pointer :: ErtelPVGradX
+      real(KIND=RKIND), dimension(:,:), pointer :: ErtelPVGradY
+      real(KIND=RKIND), dimension(:,:), pointer :: ErtelPVGradZ
+      real(KIND=RKIND), dimension(:,:,:), pointer :: wrkVector
+      real(KIND=RKIND), dimension(:,:,:,:), pointer :: wrkTensor
 
-      real(KIND=RKIND), dimension(:,:), allocatable :: array1_3D
-      real(KIND=RKIND), dimension(:,:), allocatable :: array2_3D
-      real(KIND=RKIND), dimension(:,:), allocatable :: array3_3D
-      real(KIND=RKIND), dimension(:,:), allocatable :: array1_3Dbuoy
-      real(KIND=RKIND), dimension(:,:), allocatable :: array2_3Dbuoy
-      real(KIND=RKIND), dimension(:,:), allocatable :: PVMidBuoyCoor
-      real(KIND=RKIND), dimension(:,:), allocatable :: PVMidBuoyCoorEA
-      real(KIND=RKIND), dimension(:,:), allocatable :: uMidBuoyCoorEA
-      real(KIND=RKIND), dimension(:,:), allocatable :: vMidBuoyCoorEA
-      real(KIND=RKIND), dimension(:,:), allocatable :: uPVMidBuoyCoorEA
-      real(KIND=RKIND), dimension(:,:), allocatable :: vPVMidBuoyCoorEA
-      real(KIND=RKIND), dimension(:,:,:), allocatable :: PVFluxTest
+      real(KIND=RKIND), dimension(:,:), pointer :: array1_3D
+      real(KIND=RKIND), dimension(:,:), pointer :: array2_3D
+      real(KIND=RKIND), dimension(:,:), pointer :: array3_3D
+      real(KIND=RKIND), dimension(:,:), pointer :: array1_3Dbuoy
+      real(KIND=RKIND), dimension(:,:), pointer :: array2_3Dbuoy
+      real(KIND=RKIND), dimension(:,:), pointer :: PVMidBuoyCoor
+      real(KIND=RKIND), dimension(:,:), pointer :: PVMidBuoyCoorEA
+      real(KIND=RKIND), dimension(:,:), pointer :: uMidBuoyCoorEA
+      real(KIND=RKIND), dimension(:,:), pointer :: vMidBuoyCoorEA
+      real(KIND=RKIND), dimension(:,:), pointer :: uPVMidBuoyCoorEA
+      real(KIND=RKIND), dimension(:,:), pointer :: vPVMidBuoyCoorEA
+      real(KIND=RKIND), dimension(:,:,:), pointer :: PVFluxTest
 
       !-----------------------------------------------------------------
       ! define some arrays in z-coordinates, obtained from diagnostics and forcing
@@ -426,6 +489,16 @@ contains
 
       dminfo = domain % dminfo
 
+      !--------------------------------------------------
+      ! get config variables
+      !--------------------------------------------------
+      call mpas_pool_get_config(domain % configs, 'config_AM_eliassenPalm_debug', &
+        config_AM_eliassenPalm_debug)
+      call mpas_pool_get_config(domain % configs, 'config_AM_eliassenPalm_rhomin_buoycoor', &
+        config_AM_eliassenPalm_rhomin_buoycoor)
+      call mpas_pool_get_config(domain % configs, 'config_AM_eliassenPalm_rhomax_buoycoor', &
+        config_AM_eliassenPalm_rhomax_buoycoor)
+
       if(config_AM_eliassenPalm_debug) then
          call mpas_log_write( 'starting ocn_compute_epft')
       end if
@@ -455,6 +528,139 @@ contains
          call mpas_pool_get_array(meshPool, 'fCell', fCell)
          call mpas_pool_get_array(meshPool, 'cellMask', cellMask) ! used for tests
 
+
+         !--------------------------------------------------
+         ! get scratch field pointers
+         !--------------------------------------------------
+         call mpas_pool_get_field(scratchPool, 'firstLayerBuoyCoor', firstLayerBuoyCoorField)
+         call mpas_pool_get_field(scratchPool, 'lastLayerBuoyCoor', lastLayerBuoyCoorField)
+         call mpas_pool_get_field(scratchPool, 'heightMidBuoyCoor', heightMidBuoyCoorField)
+         call mpas_pool_get_field(scratchPool, 'heightTopBuoyCoor', heightTopBuoyCoorField)
+         call mpas_pool_get_field(scratchPool, 'heightInterfaceBuoyCoor', heightInterfaceBuoyCoorField)
+         call mpas_pool_get_field(scratchPool, 'sigma', sigmaField)
+         call mpas_pool_get_field(scratchPool, 'montgPotBuoyCoor', montgPotBuoyCoorField)
+         call mpas_pool_get_field(scratchPool, 'montgPotNormalGradOnEdge', montgPotNormalGradOnEdgeField)
+         call mpas_pool_get_field(scratchPool, 'uMidBuoyCoor', uMidBuoyCoorField)
+         call mpas_pool_get_field(scratchPool, 'vMidBuoyCoor', vMidBuoyCoorField)
+         call mpas_pool_get_field(scratchPool, 'densityMidBuoyCoor', densityMidBuoyCoorField)
+         call mpas_pool_get_field(scratchPool, 'densityTopBuoyCoor', densityTopBuoyCoorField)
+         call mpas_pool_get_field(scratchPool, 'buoyancyMask', buoyancyMaskField)
+         call mpas_pool_get_field(scratchPool, 'montgPotGradX', montgPotGradXField)
+         call mpas_pool_get_field(scratchPool, 'montgPotGradY', montgPotGradYField)
+         call mpas_pool_get_field(scratchPool, 'montgPotGradZ', montgPotGradZField)
+         call mpas_pool_get_field(scratchPool, 'montgPotGradZonal', montgPotGradZonalField)
+         call mpas_pool_get_field(scratchPool, 'montgPotGradMerid', montgPotGradMeridField)
+         call mpas_pool_get_field(scratchPool, 'wrk3DnVertLevelsP1', wrk3DnVertLevelsP1Field)
+         call mpas_pool_get_field(scratchPool, 'wrk3DnVertLevels', wrk3DnVertLevelsField)
+         call mpas_pool_get_field(scratchPool, 'wrk3DBuoyCoor', wrk3DBuoyCoorField)
+         call mpas_pool_get_field(scratchPool, 'ErtelPVNormalGradOnEdge', ErtelPVNormalGradOnEdgeField)
+         call mpas_pool_get_field(scratchPool, 'ErtelPVGradX', ErtelPVGradXField)
+         call mpas_pool_get_field(scratchPool, 'ErtelPVGradY', ErtelPVGradYField)
+         call mpas_pool_get_field(scratchPool, 'ErtelPVGradZ', ErtelPVGradZField)
+         call mpas_pool_get_field(scratchPool, 'wrkVector', wrkVectorField)
+         call mpas_pool_get_field(scratchPool, 'wrkTensor', wrkTensorField)
+
+         call mpas_pool_get_field(scratchPool, 'array1_3D', array1_3DField)
+         call mpas_pool_get_field(scratchPool, 'array2_3D', array2_3DField)
+         call mpas_pool_get_field(scratchPool, 'array3_3D', array3_3DField)
+         call mpas_pool_get_field(scratchPool, 'array1_3Dbuoy', array1_3DbuoyField)
+         call mpas_pool_get_field(scratchPool, 'array2_3Dbuoy', array2_3DbuoyField)
+         call mpas_pool_get_field(scratchPool, 'PVMidBuoyCoor', PVMidBuoyCoorField)
+         call mpas_pool_get_field(scratchPool, 'PVMidBuoyCoorEA', PVMidBuoyCoorEAField)
+         call mpas_pool_get_field(scratchPool, 'uMidBuoyCoorEA', uMidBuoyCoorEAField)
+         call mpas_pool_get_field(scratchPool, 'vMidBuoyCoorEA', vMidBuoyCoorEAField)
+         call mpas_pool_get_field(scratchPool, 'uPVMidBuoyCoorEA', uPVMidBuoyCoorEAField)
+         call mpas_pool_get_field(scratchPool, 'vPVMidBuoyCoorEA', vPVMidBuoyCoorEAField)
+         call mpas_pool_get_field(scratchPool, 'PVFluxTest', PVFluxTestField)
+
+         !--------------------------------------------------
+         ! allocate scratch field variables
+         !--------------------------------------------------
+         call mpas_allocate_scratch_field(firstLayerBuoyCoorField, .true.)
+         call mpas_allocate_scratch_field(lastLayerBuoyCoorField, .true.)
+         call mpas_allocate_scratch_field(heightMidBuoyCoorField, .true.)
+         call mpas_allocate_scratch_field(heightTopBuoyCoorField, .true.)
+         call mpas_allocate_scratch_field(heightInterfaceBuoyCoorField, .true.)
+         call mpas_allocate_scratch_field(sigmaField, .true.)
+         call mpas_allocate_scratch_field(montgPotBuoyCoorField, .true.)
+         call mpas_allocate_scratch_field(montgPotNormalGradOnEdgeField, .true.)
+         call mpas_allocate_scratch_field(uMidBuoyCoorField, .true.)
+         call mpas_allocate_scratch_field(vMidBuoyCoorField, .true.)
+         call mpas_allocate_scratch_field(densityMidBuoyCoorField, .true.)
+         call mpas_allocate_scratch_field(densityTopBuoyCoorField, .true.)
+         call mpas_allocate_scratch_field(buoyancyMaskField, .true.)
+         call mpas_allocate_scratch_field(montgPotGradXField, .true.)
+         call mpas_allocate_scratch_field(montgPotGradYField, .true.)
+         call mpas_allocate_scratch_field(montgPotGradZField, .true.)
+         call mpas_allocate_scratch_field(montgPotGradZonalField, .true.)
+         call mpas_allocate_scratch_field(montgPotGradMeridField, .true.)
+         call mpas_allocate_scratch_field(wrk3DnVertLevelsP1Field, .true.)
+         call mpas_allocate_scratch_field(wrk3DnVertLevelsField, .true.)
+         call mpas_allocate_scratch_field(wrk3DBuoyCoorField, .true.)
+         call mpas_allocate_scratch_field(ErtelPVNormalGradOnEdgeField, .true.)
+         call mpas_allocate_scratch_field(ErtelPVGradXField, .true.)
+         call mpas_allocate_scratch_field(ErtelPVGradYField, .true.)
+         call mpas_allocate_scratch_field(ErtelPVGradZField, .true.)
+         call mpas_allocate_scratch_field(wrkVectorField, .true.)
+         call mpas_allocate_scratch_field(wrkTensorField, .true.)
+
+         call mpas_allocate_scratch_field(array1_3DField, .true.)
+         call mpas_allocate_scratch_field(array2_3DField, .true.)
+         call mpas_allocate_scratch_field(array3_3DField, .true.)
+         call mpas_allocate_scratch_field(array1_3DbuoyField, .true.)
+         call mpas_allocate_scratch_field(array2_3DbuoyField, .true.)
+         call mpas_allocate_scratch_field(PVMidBuoyCoorField, .true.)
+         call mpas_allocate_scratch_field(PVMidBuoyCoorEAField, .true.)
+         call mpas_allocate_scratch_field(uMidBuoyCoorEAField, .true.)
+         call mpas_allocate_scratch_field(vMidBuoyCoorEAField, .true.)
+         call mpas_allocate_scratch_field(uPVMidBuoyCoorEAField, .true.)
+         call mpas_allocate_scratch_field(vPVMidBuoyCoorEAField, .true.)
+         call mpas_allocate_scratch_field(PVFluxTestField, .true.)
+
+         !--------------------------------------------------
+         ! assign pointers for scratch and test variables
+         !--------------------------------------------------
+         firstLayerBuoyCoor      => firstLayerBuoyCoorField % array
+         lastLayerBuoyCoor       => lastLayerBuoyCoorField % array
+         heightMidBuoyCoor       => heightMidBuoyCoorField % array
+         heightTopBuoyCoor       => heightTopBuoyCoorField % array
+         heightInterfaceBuoyCoor => heightInterfaceBuoyCoorField % array
+         sigma                   => sigmaField % array
+         montgPotBuoyCoor        => montgPotBuoyCoorField % array
+         montgPotNormalGradOnEdge=> montgPotNormalGradOnEdgeField % array
+         uMidBuoyCoor            => uMidBuoyCoorField % array
+         vMidBuoyCoor            => vMidBuoyCoorField % array
+         densityMidBuoyCoor      => densityMidBuoyCoorField % array
+         densityTopBuoyCoor      => densityTopBuoyCoorField % array
+         buoyancyMask            => buoyancyMaskField % array
+         montgPotGradX           => montgPotGradXField % array
+         montgPotGradY           => montgPotGradYField % array
+         montgPotGradZ           => montgPotGradZField % array
+         montgPotGradZonal       => montgPotGradZonalField % array
+         montgPotGradMerid       => montgPotGradMeridField % array
+         wrk3DnVertLevelsP1      => wrk3DnVertLevelsP1Field % array
+         wrk3DnVertLevels        => wrk3DnVertLevelsField % array
+         wrk3DBuoyCoor           => wrk3DBuoyCoorField % array
+         ErtelPVNormalGradOnEdge => ErtelPVNormalGradOnEdgeField % array
+         ErtelPVGradX            => ErtelPVGradXField % array
+         ErtelPVGradY            => ErtelPVGradYField % array
+         ErtelPVGradZ            => ErtelPVGradZField % array
+         wrkVector               => wrkVectorField % array
+         wrkTensor               => wrkTensorField % array
+
+         array1_3D =>  array1_3DField % array
+         array2_3D =>  array2_3DField % array
+         array3_3D =>  array3_3DField % array
+         array1_3Dbuoy =>  array1_3DbuoyField % array
+         array2_3Dbuoy =>  array2_3DbuoyField % array
+         PVMidBuoyCoor    =>  PVMidBuoyCoorField % array
+         PVMidBuoyCoorEA  =>  PVMidBuoyCoorEAField % array
+         uMidBuoyCoorEA   =>  uMidBuoyCoorEAField % array
+         vMidBuoyCoorEA   =>  vMidBuoyCoorEAField % array
+         uPVMidBuoyCoorEA =>  uPVMidBuoyCoorEAField % array
+         vPVMidBuoyCoorEA =>  vPVMidBuoyCoorEAField % array
+         PVFluxTest       =>  PVFluxTestField % array
+
          !--------------------------------------------------
          ! assign pointers used from forcing pool
          !--------------------------------------------------
@@ -480,50 +686,6 @@ contains
          call mpas_pool_get_array(am_epftPool, 'potentialDensityTopRef', potentialDensityTopRef)
          call mpas_pool_get_array(am_epftPool, 'buoyancyMidRef', buoyancyMidRef)
          call mpas_pool_get_array(am_epftPool, 'buoyancyInterfaceRef', buoyancyInterfaceRef)
-
-         !--------------------------------------------------
-         ! allocate scratch field variables
-         !--------------------------------------------------
-         !$omp master
-         allocate(firstLayerBuoyCoor(ncells), &
-                  lastLayerBuoyCoor(ncells), &
-                  heightMidBuoyCoor(nBuoyancyLayers, nCells), &
-                  heightTopBuoyCoor(nBuoyancyLayers, nCells), &
-                  heightInterfaceBuoyCoor(nBuoyancyLayers + 1, nCells), &
-                  sigma(nBuoyancyLayers, nCells), &
-                  montgPotBuoyCoor(nBuoyancyLayers, nCells), &
-                  montgPotNormalGradOnEdge(nBuoyancyLayers, nEdges), &
-                  uMidBuoyCoor(nBuoyancyLayers, nCells), &
-                  vMidBuoyCoor(nBuoyancyLayers, nCells), &
-                  densityMidBuoyCoor(nBuoyancyLayers, nCells), &
-                  densityTopBuoyCoor(nBuoyancyLayers, nCells), &
-                  buoyancyMask(nBuoyancyLayers, nCells), &
-                  montgPotGradX(nBuoyancyLayers, nCells), &
-                  montgPotGradY(nBuoyancyLayers, nCells), &
-                  montgPotGradZ(nBuoyancyLayers, nCells), &
-                  montgPotGradZonal(nBuoyancyLayers, nCells), &
-                  montgPotGradMerid(nBuoyancyLayers, nCells), &
-                  wrk3DBuoyCoor(nBuoyancyLayers, nCells), &
-                  ErtelPVNormalGradOnEdge(nBuoyancyLayers, nEdges), &
-                  ErtelPVGradX(nBuoyancyLayers, nCells), &
-                  ErtelPVGradY(nBuoyancyLayers, nCells), &
-                  ErtelPVGradZ(nBuoyancyLayers, nCells), &
-                  wrkVector(3, nBuoyancyLayers, nCells + 1), &
-                  wrkTensor(3, 3, nBuoyancyLayers, nCells + 1), &
-                  array1_3D(nVertLevels, nCells), &
-                  array2_3D(nVertLevels, nCells), &
-                  array3_3D(nVertLevels, nCells), &
-                  array1_3Dbuoy(nBuoyancyLayers, nCells), &
-                  array2_3Dbuoy(nBuoyancyLayers, nCells), &
-                  PVMidBuoyCoor(nBuoyancyLayers, nCells), &
-                  PVMidBuoyCoorEA(nBuoyancyLayers, nCells), &
-                  uMidBuoyCoorEA(nBuoyancyLayers, nCells), &
-                  vMidBuoyCoorEA(nBuoyancyLayers, nCells), &
-                  uPVMidBuoyCoorEA(nBuoyancyLayers, nCells), &
-                  vPVMidBuoyCoorEA(nBuoyancyLayers, nCells), &
-                  PVFluxTest(2,nBuoyancyLayers, nCells))
-         !$omp end master
-         !$omp barrier
 
          !--------------------------------------------------
          ! assign pointers for ensemble average (EA) and thickness-weighted averaged state
@@ -583,7 +745,7 @@ contains
          call mpas_pool_get_array(am_epftPool, 'ErtelPVGradMerid', ErtelPVGradMerid)
 
          ! Compute potentialDensity over the entire block to ensure it's valid for EPFT computation
-         call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
+         call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, scratchPool, &
                                             nCells, 1, 'absolute', potentialDensity, &
                                             err) !, timeLevelIn=1)
 
@@ -1064,46 +1226,46 @@ contains
          !-------------------------------------------------------------
          ! deallocate scratch space and test space variables
          !-------------------------------------------------------------
-         !$omp master
-         deallocate(firstLayerBuoyCoor, &
-                    lastLayerBuoyCoor, &
-                    heightMidBuoyCoor, &
-                    heightTopBuoyCoor, &
-                    heightInterfaceBuoyCoor, &
-                    sigma, &
-                    montgPotBuoyCoor, &
-                    montgPotNormalGradOnEdge, &
-                    uMidBuoyCoor, &
-                    vMidBuoyCoor, &
-                    densityMidBuoyCoor, &
-                    densityTopBuoyCoor, &
-                    buoyancyMask, &
-                    montgPotGradX, &
-                    montgPotGradY, &
-                    montgPotGradZ, &
-                    montgPotGradZonal, &
-                    montgPotGradMerid, &
-                    wrk3DBuoyCoor, &
-                    ErtelPVNormalGradOnEdge, &
-                    ErtelPVGradX, &
-                    ErtelPVGradY, &
-                    ErtelPVGradZ, &
-                    wrkVector, &
-                    wrkTensor, &
-                    array1_3D, &
-                    array2_3D, &
-                    array3_3D, &
-                    array1_3Dbuoy, &
-                    array2_3Dbuoy, &
-                    PVMidBuoyCoor, &
-                    PVMidBuoyCoorEA, &
-                    uMidBuoyCoorEA, &
-                    vMidBuoyCoorEA, &
-                    uPVMidBuoyCoorEA, &
-                    vPVMidBuoyCoorEA, &
-                    PVFluxTest)
-         !$omp end master
-         !$omp barrier
+         call mpas_deallocate_scratch_field(firstLayerBuoyCoorField, .true.)
+         call mpas_deallocate_scratch_field(lastLayerBuoyCoorField, .true.)
+         call mpas_deallocate_scratch_field(heightMidBuoyCoorField, .true.)
+         call mpas_deallocate_scratch_field(heightTopBuoyCoorField, .true.)
+         call mpas_deallocate_scratch_field(heightInterfaceBuoyCoorField, .true.)
+         call mpas_deallocate_scratch_field(sigmaField, .true.)
+         call mpas_deallocate_scratch_field(montgPotBuoyCoorField, .true.)
+         call mpas_deallocate_scratch_field(montgPotNormalGradOnEdgeField, .true.)
+         call mpas_deallocate_scratch_field(uMidBuoyCoorField, .true.)
+         call mpas_deallocate_scratch_field(vMidBuoyCoorField, .true.)
+         call mpas_deallocate_scratch_field(densityMidBuoyCoorField, .true.)
+         call mpas_deallocate_scratch_field(densityTopBuoyCoorField, .true.)
+         call mpas_deallocate_scratch_field(buoyancyMaskField, .true.)
+         call mpas_deallocate_scratch_field(montgPotGradXField, .true.)
+         call mpas_deallocate_scratch_field(montgPotGradYField, .true.)
+         call mpas_deallocate_scratch_field(montgPotGradZField, .true.)
+         call mpas_deallocate_scratch_field(montgPotGradZonalField, .true.)
+         call mpas_deallocate_scratch_field(montgPotGradMeridField, .true.)
+         call mpas_deallocate_scratch_field(wrk3DnVertLevelsP1Field, .true.)
+         call mpas_deallocate_scratch_field(wrk3DnVertLevelsField, .true.)
+         call mpas_deallocate_scratch_field(wrk3DBuoyCoorField, .true.)
+         call mpas_deallocate_scratch_field(ErtelPVNormalGradOnEdgeField, .true.)
+         call mpas_deallocate_scratch_field(ErtelPVGradXField, .true.)
+         call mpas_deallocate_scratch_field(ErtelPVGradYField, .true.)
+         call mpas_deallocate_scratch_field(ErtelPVGradZField, .true.)
+         call mpas_deallocate_scratch_field(wrkVectorField, .true.)
+         call mpas_deallocate_scratch_field(wrkTensorField, .true.)
+
+         call mpas_deallocate_scratch_field(array1_3DField, .true.)
+         call mpas_deallocate_scratch_field(array2_3DField, .true.)
+         call mpas_deallocate_scratch_field(array3_3DField, .true.)
+         call mpas_deallocate_scratch_field(array1_3DbuoyField, .true.)
+         call mpas_deallocate_scratch_field(array2_3DbuoyField, .true.)
+         call mpas_deallocate_scratch_field(PVMidBuoyCoorField, .true.)
+         call mpas_deallocate_scratch_field(PVMidBuoyCoorEAField, .true.)
+         call mpas_deallocate_scratch_field(uMidBuoyCoorEAField, .true.)
+         call mpas_deallocate_scratch_field(vMidBuoyCoorEAField, .true.)
+         call mpas_deallocate_scratch_field(uPVMidBuoyCoorEAField, .true.)
+         call mpas_deallocate_scratch_field(vPVMidBuoyCoorEAField, .true.)
+         call mpas_deallocate_scratch_field(PVFluxTestField, .true.)
 
          !-------------------------------------------------------------
          ! update test variables
@@ -1389,6 +1551,14 @@ contains
       !-----------------------------------------------------------------
       integer :: k, iCell, iCellMinBound, iCellMaxBound
       logical :: printWarning
+
+      real (kind=RKIND), pointer :: config_AM_eliassenPalm_rhomin_buoycoor, &
+        config_AM_eliassenPalm_rhomax_buoycoor
+
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_eliassenPalm_rhomin_buoycoor', &
+        config_AM_eliassenPalm_rhomin_buoycoor)
+      call mpas_pool_get_config(ocnConfigs, 'config_AM_eliassenPalm_rhomax_buoycoor', &
+        config_AM_eliassenPalm_rhomax_buoycoor)
 
       printWarning = .false.
       iCellMinBound = -1

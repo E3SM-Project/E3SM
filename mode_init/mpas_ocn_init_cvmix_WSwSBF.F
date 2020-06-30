@@ -28,7 +28,6 @@ module ocn_init_cvmix_WSwSBF
    use mpas_pool_routines
    use mpas_constants
 
-   use ocn_config
    use ocn_init_cell_markers
    use ocn_init_vertical_grids
 
@@ -111,18 +110,89 @@ contains
 
       real (kind=RKIND) :: BLdepth
 
+      character (len=StrKIND), pointer :: config_init_configuration, &
+                                          config_cvmix_WSwSBF_vertical_grid
+
+      integer, pointer ::                 config_cvmix_WSwSBF_vert_levels
+
+      real (kind=RKIND), pointer ::       config_cvmix_WSwSBF_surface_temperature, &
+                                          config_cvmix_WSwSBF_surface_salinity, &
+                                          config_cvmix_WSwSBF_surface_restoring_temperature, &
+                                          config_cvmix_WSwSBF_surface_restoring_salinity, &
+                                          config_cvmix_WSwSBF_temperature_piston_velocity, &
+                                          config_cvmix_WSwSBF_salinity_piston_velocity, &
+                                          config_cvmix_WSwSBF_sensible_heat_flux, &
+                                          config_cvmix_WSwSBF_latent_heat_flux, &
+                                          config_cvmix_WSwSBF_shortwave_heat_flux, &
+                                          config_cvmix_WSwSBF_rain_flux, &
+                                          config_cvmix_WSwSBF_evaporation_flux, &
+                                          config_cvmix_WSwSBF_interior_temperature_restoring_rate, &
+                                          config_cvmix_WSwSBF_interior_salinity_restoring_rate, &
+                                          config_cvmix_WSwSBF_temperature_gradient, &
+                                          config_cvmix_WSwSBF_salinity_gradient, &
+                                          config_cvmix_WSwSBF_bottom_depth, &
+                                          config_cvmix_WSwSBF_max_windstress, &
+                                          config_cvmix_WSwSBF_coriolis_parameter, &
+                                          config_cvmix_WSwSBF_temperature_gradient_mixed_layer, &
+                                          config_cvmix_WSwSBF_salinity_gradient_mixed_layer, &
+                                          config_cvmix_WSwSBF_mixed_layer_depth_temperature, &
+                                          config_cvmix_WSwSBF_mixed_layer_depth_salinity,    &
+                                          config_cvmix_WSwSBF_mixed_layer_temperature_change,       &
+                                          config_cvmix_WSwSBF_mixed_layer_salinity_change
       ! assume no error
       iErr = 0
 
       ! get and test if this is the configuration specified
+      call mpas_pool_get_config(domain % configs, 'config_init_configuration', config_init_configuration)
       if(config_init_configuration .ne. trim('cvmix_WSwSBF')) return
 
       ! build the vertical grid
       ! intent(out) is interfaceLocations. An array ranging from 0 to 1
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_vertical_grid', config_cvmix_WSwSBF_vertical_grid)
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nVertLevelsP1', nVertLevelsP1)
       allocate(interfaceLocations(nVertLevelsP1))
       call ocn_generate_vertical_grid(config_cvmix_WSwSBF_vertical_grid, interfaceLocations)
 
+      ! load the remaining configuration parameters
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_surface_temperature', &
+                                config_cvmix_WSwSBF_surface_temperature)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_surface_salinity', config_cvmix_WSwSBF_surface_salinity)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_surface_restoring_temperature', &
+                                config_cvmix_WSwSBF_surface_restoring_temperature)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_surface_restoring_salinity', &
+                                config_cvmix_WSwSBF_surface_restoring_salinity)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_temperature_piston_velocity', &
+                                config_cvmix_WSwSBF_temperature_piston_velocity)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_salinity_piston_velocity', &
+                                config_cvmix_WSwSBF_salinity_piston_velocity)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_sensible_heat_flux', config_cvmix_WSwSBF_sensible_heat_flux)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_latent_heat_flux', config_cvmix_WSwSBF_latent_heat_flux)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_shortwave_heat_flux', &
+                                config_cvmix_WSwSBF_shortwave_heat_flux)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_rain_flux', config_cvmix_WSwSBF_rain_flux)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_evaporation_flux', config_cvmix_WSwSBF_evaporation_flux)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_interior_temperature_restoring_rate', &
+                                config_cvmix_WSwSBF_interior_temperature_restoring_rate)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_interior_salinity_restoring_rate', &
+                                config_cvmix_WSwSBF_interior_salinity_restoring_rate)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_temperature_gradient', &
+                                config_cvmix_WSwSBF_temperature_gradient)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_salinity_gradient', config_cvmix_WSwSBF_salinity_gradient)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_bottom_depth', config_cvmix_WSwSBF_bottom_depth)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_max_windstress', config_cvmix_WSwSBF_max_windstress)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_coriolis_parameter', config_cvmix_WSwSBF_coriolis_parameter)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_temperature_gradient_mixed_layer', &
+                config_cvmix_WSwSBF_temperature_gradient_mixed_layer)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_salinity_gradient_mixed_layer', &
+                config_cvmix_WSwSBF_salinity_gradient_mixed_layer)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_mixed_layer_depth_temperature', &
+                config_cvmix_WSwSBF_mixed_layer_depth_temperature)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_mixed_layer_depth_salinity', &
+                config_cvmix_WSwSBF_mixed_layer_depth_salinity)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_mixed_layer_temperature_change', &
+                config_cvmix_WSwSBF_mixed_layer_temperature_change)
+      call mpas_pool_get_config(domain % configs, 'config_cvmix_WSwSBF_mixed_layer_salinity_change', &
+                config_cvmix_WSwSBF_mixed_layer_salinity_change)
 
       ! load data that required to initialize the ocean simulation
       block_ptr => domain % blocklist
