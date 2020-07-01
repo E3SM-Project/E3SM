@@ -1044,23 +1044,25 @@
 					possible_values="any positive real"
 		/>
 	</nml_record>
-	<nml_record name="split_explicit_ts" mode="forward">
+	<nml_record name="split_timestep_share" mode="forward">
 		<nml_option name="config_n_ts_iter" type="integer" default_value="2" units="unitless"
 					description="number of large iterations over stages 1-3"
 					possible_values="any positive integer, but typically 1, 2, or 3"
 		/>
 		<nml_option name="config_n_bcl_iter_beg" type="integer" default_value="1" units="unitless"
-					description="number of iterations of stage 1 (baroclinic solve) on the first split-explicit iteration"
+					description="number of iterations of stage 1 (baroclinic solve) on the first split timestepping iteration"
 					possible_values="any positive integer, but typically 1, 2, or 3"
 		/>
 		<nml_option name="config_n_bcl_iter_mid" type="integer" default_value="2" units="unitless"
-					description="number of iterations of stage 1 (baroclinic solve) on any split-explicit iterations between first and last"
+					description="number of iterations of stage 1 (baroclinic solve) on any split timestepping iterations between first and last"
 					possible_values="any positive integer, but typically 1, 2, or 3"
 		/>
 		<nml_option name="config_n_bcl_iter_end" type="integer" default_value="2" units="unitless"
-					description="number of iterations of stage 1 (baroclinic solve) on the last split-explicit iteration"
+					description="number of iterations of stage 1 (baroclinic solve) on the last split timestepping iteration"
 					possible_values="any positive integer, but typically 1, 2, or 3"
 		/>
+	</nml_record>
+	<nml_record name="split_explicit_ts" mode="forward">
 		<nml_option name="config_btr_dt" type="character" default_value="0000_00:00:15" units="unitless"
 					description="Timestep to use for the barotropic mode in the split explicit time integrator"
 					possible_values="Any time stamp in 'YYYY-MM-DD_hh:mm:ss' format. Items can be removed from the left if they are unused."
@@ -1094,6 +1096,20 @@
 					possible_values=".true. or .false."
 		/>
 	</nml_record>
+        <nml_record name="semi_implicit_ts" mode="forward">
+                <nml_option name="config_btr_si_preconditioner" type="character" default_value="ras" units="unitless"
+                                        description="Type of preconditioner for the barotropic mode solver"
+                                        possible_values="ras, block_jacobi, jacobi, none"
+                />
+                <nml_option name="config_btr_si_tolerance" type="real" default_value="1.0e-9" units="unitless"
+                                        description="Tolerance for the barotropic mode solver"
+                                        possible_values="any positive real, but typically less than 1.0e-9"
+                />
+                <nml_option name="config_n_btr_si_outer_iter" type="integer" default_value="2" units="unitless"
+                                        description="number of outer iterations"
+                                        possible_values="any positive integer, but typically 2"
+                />
+        </nml_record>
 	<nml_record name="ALE_vertical_grid" mode="forward">
 		<nml_option name="config_vert_coord_movement" type="character" default_value="uniform_stretching" units="unitless"
 					description="Determines the vertical coordinate movement type. 'uniform_stretching' distributes SSH perturbations through all vertical levels (z-star vertical coordinate); 'fixed' places them all in the top level (z-level vertical coordinate); 'user_specified' allows the input file to determine the distribution using the variable vertCoordMovementWeights (weighted z-star vertical coordinate); and 'impermeable_interfaces' makes the vertical transport between layers zero, i.e. $w^t=0$ (idealized isopycnal)."
@@ -1268,20 +1284,6 @@
 					possible_values=".true. or .false."
 		/>
 	</nml_record>
-        <nml_record name="semi_implicit_ts" mode="forward">
-                <nml_option name="config_btr_si_preconditioner" type="character" default_value="ras" units="unitless"
-                                        description="Type of preconditioner for the barotropic mode solver"
-                                        possible_values="ras, block_jacobi, jacobi, none"
-                />
-                <nml_option name="config_btr_si_tolerance" type="real" default_value="1.0e-9" units="unitless"
-                                        description="Tolerance for the barotropic mode solver"
-                                        possible_values="any positive real, but typically less than 1.0e-9"
-                />
-                <nml_option name="config_n_btr_si_outer_iter" type="integer" default_value="2" units="unitless"
-                                        description="number of outer iterations"
-                                        possible_values="any positive integer, but typically 2"
-                />
-        </nml_record>
 	<nml_record name="testing" mode="forward">
 		<nml_option name="config_conduct_tests" type="logical" default_value=".false." units="unitless"
 					description="If true, run testing suite. This is the overarching control on the test suite. Individual flags must be set to true below to conduct each test."
