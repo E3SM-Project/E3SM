@@ -3633,7 +3633,7 @@ module ocn_time_integration_si
             call mpas_pool_get_dimension(block % dimensions, 'nCellsArray', nCellsArray)
 
             call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-   
+            call mpas_pool_get_dimension(block % dimensions, 'nCellsArray', nCellsArray)
             call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
    
               local_num_cells = nCellsArray(1)
