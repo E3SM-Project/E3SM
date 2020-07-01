@@ -98,8 +98,6 @@ real(rtype), parameter :: pblmaxp = 4.e4_rtype
 ! Note that these upper limits are quite high
 ! and they are rarely reached in a stable simulation
 
-! Return to isotropic timescale [s]
-real(rtype), parameter :: maxiso = 20000.0_rtype
 ! Mixing length [m]
 real(rtype), parameter :: maxlen = 20000.0_rtype
 ! Minimum Mixing length [m]
@@ -2425,6 +2423,8 @@ subroutine shoc_tke(&
 
 ! LOCAL VARIABLES
   real(rtype) :: sterm(shcol,nlevi), sterm_zt(shcol,nlev)
+  ! Dissipation term
+  real(rtype) :: a_diss(shcol,nlev)
   !column integrated stability
   real(rtype) :: brunt_int(shcol)
 
@@ -2439,9 +2439,16 @@ subroutine shoc_tke(&
   ! Interpolate shear term from interface to thermo grid
   call linear_interp(zi_grid,zt_grid,sterm,sterm_zt,nlevi,nlev,shcol,0._rtype)
 
-  call adv_sgs_tke(nlev, shcol, dtime, brunt_int, pblh, &
-     obklen, shoc_mix, wthv_sec, sterm_zt, brunt, zt_grid,  &
-     tkh, tk, tke, isotropy)
+  !advance sgs TKE
+  call adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
+       sterm_zt, tk, tke, a_diss)
+
+  !Compute isotropic time scale [s]
+  call isotropic_ts(nlev, shcol, brunt_int, tke, a_diss, brunt, isotropy)
+
+  !Compute eddy diffusivity for heat and momentum
+  call eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
+       shoc_mix, sterm_zt, isotropy, tkh, tk, tke)
 
   return
 
@@ -2532,9 +2539,8 @@ end subroutine compute_shr_prod
 !==============================================================
 ! Advance SGS TKE
 
-subroutine adv_sgs_tke(nlev, shcol, dtime, brunt_int, pblh, &
-     obklen, shoc_mix, wthv_sec, sterm_zt, brunt, zt_grid,  &
-     tkh, tk, tke, isotropy)
+subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
+     sterm_zt, tk, tke, a_diss)
 
   implicit none
 
@@ -2543,60 +2549,28 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, brunt_int, pblh, &
 
   ! timestep [s]
   real(rtype), intent(in) :: dtime
-  !column integrated stability
-  real(rtype), intent(in) :: brunt_int(shcol)
-  ! PBL height [m]
-  real(rtype), intent(in) :: pblh(shcol)
-  ! Monin-Okbukov length [m]
-  real(rtype), intent(in) :: obklen(shcol)
   ! Mixing length [m]
   real(rtype), intent(in) :: shoc_mix(shcol,nlev)
   ! SGS buoyancy flux [K m/s]
   real(rtype), intent(in) :: wthv_sec(shcol,nlev)
   ! Interpolate shear production to thermo grid
   real(rtype), intent(in) :: sterm_zt(shcol,nlev)
-  ! Brunt Vaisalla frequncy [/s]
-  real(rtype), intent(in) :: brunt(shcol,nlev)
-  ! Heights on the mid-point grid [m]
-  real(rtype), intent(in) :: zt_grid(shcol,nlev)
-
-
-  ! intent-inout
-  ! eddy coefficient for heat [m2/s]
-  real(rtype), intent(inout) :: tkh(shcol,nlev)
   ! eddy coefficient for momentum [m2/s]
   real(rtype), intent(inout) :: tk(shcol,nlev)
+
+  ! intent-inout
   ! turbulent kinetic energy [m2/s2]
   real(rtype), intent(inout) :: tke(shcol,nlev)
 
-  ! intent-out
-  ! Return to isotropic timescale [s]
-  real(rtype), intent(out) :: isotropy(shcol,nlev)
+  !intent-out
+  ! Dissipation term
+  real(rtype), intent(out) :: a_diss(shcol,nlev)
 
   !local variables
   integer :: i, k
-  real(rtype) :: z_over_L, a_prod_bu, a_prod_sh, a_diss, &
-       buoy_sgs_save, tscale, lambda
+  real(rtype) :: a_prod_bu, a_prod_sh
 
   real(rtype) :: Ck, Cs, Ce, Ce1, Ce2, Cee
-
-  !Parameters
-  real(rtype), parameter :: lambda_low   = 0.001_rtype
-  real(rtype), parameter :: lambda_high  = 0.04_rtype
-  real(rtype), parameter :: lambda_slope = 0.65_rtype
-  real(rtype), parameter :: brunt_low    = 0.02_rtype
-
-  ! Critical value of dimensionless Monin-Obukhov length
-  real(rtype), parameter :: zL_crit_val = 100.0_rtype
-  ! Transition depth [m] above PBL top to allow
-  !   stability diffusivities
-  real(rtype), parameter :: pbl_trans = 200.0_rtype
-
-  ! Turbulent coefficients
-  real(rtype), parameter :: Ckh = 0.1_rtype
-  real(rtype), parameter :: Ckm = 0.1_rtype
-  real(rtype), parameter :: Ckh_s = 1.0_rtype
-  real(rtype), parameter :: Ckm_s = 1.0_rtype
 
   Cs=0.15_rtype
   Ck=0.1_rtype
@@ -2619,20 +2593,61 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, brunt_int, pblh, &
         a_prod_sh=tk(i,k)*sterm_zt(i,k)
 
         ! Dissipation term
-        a_diss=Cee/shoc_mix(i,k)*tke(i,k)**1.5
+        a_diss(i,k)=Cee/shoc_mix(i,k)*tke(i,k)**1.5
 
         ! March equation forward one timestep
-        tke(i,k)=max(0._rtype,tke(i,k)+dtime*(max(0._rtype,a_prod_sh+a_prod_bu)-a_diss))
+        tke(i,k)=max(0._rtype,tke(i,k)+dtime*(max(0._rtype,a_prod_sh+a_prod_bu)-a_diss(i,k)))
 
         tke(i,k)=min(tke(i,k),maxtke)
+     enddo
+  enddo
 
-        ! Compute the return to isotropic timescale as per
-        ! Canuto et al. 2004.  This is used to define the
-        ! eddy coefficients as well as to diagnose higher
-        ! moments in SHOC
+  return
+
+end subroutine adv_sgs_tke
+
+subroutine isotropic_ts(nlev, shcol, brunt_int, tke, a_diss, brunt, isotropy)
+  !------------------------------------------------------------
+  ! Compute the return to isotropic timescale as per
+  ! Canuto et al. 2004.  This is used to define the
+  ! eddy coefficients as well as to diagnose higher
+  ! moments in SHOC
+  !------------------------------------------------------------
+
+  implicit none
+
+  !intent-ins
+  integer, intent(in) :: nlev, shcol
+
+  !column integrated stability
+  real(rtype), intent(in) :: brunt_int(shcol)
+  ! turbulent kinetic energy [m2/s2]
+  real(rtype), intent(in) :: tke(shcol,nlev)
+  ! Dissipation term
+  real(rtype), intent(in) :: a_diss(shcol,nlev)
+  ! Brunt Vaisalla frequncy [/s]
+  real(rtype), intent(in) :: brunt(shcol,nlev)
+
+  ! intent-out
+  ! Return to isotropic timescale [s]
+  real(rtype), intent(out) :: isotropy(shcol,nlev)
+
+  !local vars
+  integer     :: i, k
+  real(rtype) :: tscale, lambda, buoy_sgs_save
+
+  !Parameters
+  real(rtype), parameter :: lambda_low   = 0.001_rtype
+  real(rtype), parameter :: lambda_high  = 0.04_rtype
+  real(rtype), parameter :: lambda_slope = 0.65_rtype
+  real(rtype), parameter :: brunt_low    = 0.02_rtype
+  real(rtype), parameter :: maxiso       = 20000.0_rtype ! Return to isotropic timescale [s]
+
+  do k = 1, nlev
+     do i = 1, shcol
 
         ! define the time scale
-        tscale=(2.0_rtype*tke(i,k))/a_diss
+        tscale=(2.0_rtype*tke(i,k))/a_diss(i,k)
 
         ! define a damping term "lambda" based on column stability
         lambda=lambda_low+((brunt_int(i)/ggr)-brunt_low)*lambda_slope
@@ -2643,6 +2658,66 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, brunt_int, pblh, &
 
         ! Compute the return to isotropic timescale
         isotropy(i,k)=min(maxiso,tscale/(1._rtype+lambda*buoy_sgs_save*tscale**2))
+     enddo
+  enddo
+
+  return
+
+end subroutine isotropic_ts
+
+
+subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
+     shoc_mix, sterm_zt, isotropy, tkh, tk, tke)
+
+  !------------------------------------------------------------
+  ! Compute eddy diffusivity for heat and momentum
+  !------------------------------------------------------------
+
+  implicit none
+
+  !intent-ins
+  integer, intent(in) :: nlev, shcol
+
+  ! Monin-Okbukov length [m]
+  real(rtype), intent(in) :: obklen(shcol)
+  ! PBL height [m]
+  real(rtype), intent(in) :: pblh(shcol)
+  ! Heights on the mid-point grid [m]
+  real(rtype), intent(in) :: zt_grid(shcol,nlev)
+  ! Mixing length [m]
+  real(rtype), intent(in) :: shoc_mix(shcol,nlev)
+  ! Interpolate shear production to thermo grid
+  real(rtype), intent(in) :: sterm_zt(shcol,nlev)
+  ! Return to isotropic timescale [s]
+  real(rtype), intent(in) :: isotropy(shcol,nlev)
+
+  !intent-inouts
+  ! eddy coefficient for heat [m2/s]
+  real(rtype), intent(inout) :: tkh(shcol,nlev)
+  ! eddy coefficient for momentum [m2/s]
+  real(rtype), intent(inout) :: tk(shcol,nlev)
+  ! turbulent kinetic energy [m2/s2]
+  real(rtype), intent(inout) :: tke(shcol,nlev)
+
+  !local vars
+  integer     :: i, k
+  real(rtype) :: z_over_L
+
+  !parameters
+  ! Critical value of dimensionless Monin-Obukhov length
+  real(rtype), parameter :: zL_crit_val = 100.0_rtype
+  ! Transition depth [m] above PBL top to allow
+  ! stability diffusivities
+  real(rtype), parameter :: pbl_trans = 200.0_rtype
+  real(rtype), parameter :: Ckh_s = 1.0_rtype
+  real(rtype), parameter :: Ckm_s = 1.0_rtype
+  ! Turbulent coefficients
+  real(rtype), parameter :: Ckh = 0.1_rtype
+  real(rtype), parameter :: Ckm = 0.1_rtype
+
+  !BSINGH -future work (1d ztgrid)
+  do k = 1, nlev
+     do i = 1, shcol
 
         ! Dimensionless Okukhov length considering only
         !  the lowest model grid layer height to scale
@@ -2654,23 +2729,21 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, brunt_int, pblh, &
            !  tkh and tk that are primarily based on shear production
            !  and SHOC length scale, to promote mixing within the PBL
            !  and to a height slighty above to ensure smooth transition.
-           tkh(i,k)=Ckh_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
-           tk(i,k)=Ckm_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
+           tkh(i,k) = Ckh_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
+           tk(i,k)  = Ckm_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
         else
            ! Default definition of eddy diffusivity for heat and momentum
-
-           tkh(i,k)=Ckh*isotropy(i,k)*tke(i,k)
-           tk(i,k)=Ckm*isotropy(i,k)*tke(i,k)
+           tkh(i,k) = Ckh*isotropy(i,k)*tke(i,k)
+           tk(i,k)  = Ckm*isotropy(i,k)*tke(i,k)
         endif
 
         tke(i,k) = max(mintke,tke(i,k))
-
-     enddo ! end i loop
-  enddo ! end k loop
+     enddo
+  enddo
 
   return
 
-end subroutine adv_sgs_tke
+end subroutine eddy_diffusivities
 
 !==============================================================
 ! Check the TKE
