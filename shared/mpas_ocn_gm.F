@@ -421,7 +421,7 @@ contains
 
       if (config_use_GM) then
          nEdges = nEdgesArray(3)
-         !$omp do schedule(runtime) private(cell1, cell2, dcEdgeInv, &
+         !$omp do schedule(runtime) private(k, cell1, cell2, dcEdgeInv, &
          !$omp& drhoDT, drhoDS, dTdx, dSdx, drhoDx)
          do iEdge = 1, nEdges
             cell1 = cellsOnEdge(1, iEdge)
@@ -449,7 +449,7 @@ contains
          nEdges = nEdgesArray(3)
 
          if (local_config_GM_lat_variable_c2) then
-            !$omp do schedule(runtime) private(cell1, cell2, sumN2, ltSum, countN2, BruntVaisalaFreqTopEdge)
+            !$omp do schedule(runtime) private(k, cell1, cell2, sumN2, ltSum, countN2, BruntVaisalaFreqTopEdge)
             do iEdge = 1, nEdges
                cell1 = cellsOnEdge(1, iEdge)
                cell2 = cellsOnEdge(2, iEdge)
@@ -490,7 +490,8 @@ contains
            call mpas_pool_get_array(diagnosticsPool, 'RiTopOfCell', RiTopOfCell)
            call mpas_pool_get_array(diagnosticsPool, 'zTop', zTop)
            call mpas_pool_get_array(diagnosticsPool, 'c_visbeck', c_visbeck)
-           !$omp do schedule(runtime) private(cell1, cell2, sumN2, ltSum, sumRi, countN2, zEdge, RiTopOfEdge, BruntVaisalaFreqTopEdge) 
+           !$omp do schedule(runtime) private(k, cell1, cell2, sumN2, ltSum, sumRi, countN2, &
+           !$omp& zEdge, RiTopOfEdge, BruntVaisalaFreqTopEdge)
            do iEdge = 1, nEdges
               k=1
               sumN2 = 0.0_RKIND
