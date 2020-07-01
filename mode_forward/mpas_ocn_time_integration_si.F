@@ -72,7 +72,6 @@ module ocn_time_integration_si
    ! Global variables for the semi-implicit time stepper ---------------
    real (kind=RKIND), allocatable,dimension(:,:) :: prec_ivmat
    real (kind=RKIND) :: total_num_cells,mean_num_cells,area_mean
-   real (kind=RKIND) :: alpha1,alpha2
    integer :: nPrecVec
    logical :: first_step
 
@@ -244,6 +243,7 @@ module ocn_time_integration_si
 
       real (kind=RKIND) :: CGcst_alpha0,CGcst_alpha1,CGcst_beta0,CGcst_beta1,CGcst_omega0,CGcst_omega1
       real (kind=RKIND) :: sshCurArea,sshLagArea,sshTendA,sshTendB,sshTendC,temp1,temp2,crit_main,resid,wgt
+      real (kind=RKIND) :: alpha1,alpha2
 
       ! Diagnostics Field Pointers
       type (field2DReal), pointer :: normalizedRelativeVorticityEdgeField, divergenceField, relativeVorticityField
@@ -270,10 +270,8 @@ module ocn_time_integration_si
       character (len=StrKIND) :: modifiedGroupName
       character (len=StrKIND) :: configName
       integer :: threadNum
-
       integer :: temp_mask
 
-      real(kind=RKIND) :: alpha1,alpha2
 
       dminfo = domain % dminfo
 
