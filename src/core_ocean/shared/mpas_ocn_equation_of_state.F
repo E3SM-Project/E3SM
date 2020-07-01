@@ -317,17 +317,17 @@ contains
       real (kind=RKIND) :: pressureOffset
 
       if(inLandIceCavity) then
-         coeff_0 = config_land_ice_cavity_freezing_temperature_coeff_0
-         coeff_S = config_land_ice_cavity_freezing_temperature_coeff_S
-         coeff_p = config_land_ice_cavity_freezing_temperature_coeff_p
-         coeff_pS = config_land_ice_cavity_freezing_temperature_coeff_pS
-         reference_pressure = config_land_ice_cavity_freezing_temperature_reference_pressure
+         coeff_0 => config_land_ice_cavity_freezing_temperature_coeff_0
+         coeff_S => config_land_ice_cavity_freezing_temperature_coeff_S
+         coeff_p => config_land_ice_cavity_freezing_temperature_coeff_p
+         coeff_pS => config_land_ice_cavity_freezing_temperature_coeff_pS
+         reference_pressure => config_land_ice_cavity_freezing_temperature_reference_pressure
       else
-         coeff_0 = config_open_ocean_freezing_temperature_coeff_0
-         coeff_S = config_open_ocean_freezing_temperature_coeff_S
-         coeff_p = config_open_ocean_freezing_temperature_coeff_p
-         coeff_pS = config_open_ocean_freezing_temperature_coeff_pS
-         reference_pressure = config_open_ocean_freezing_temperature_reference_pressure
+         coeff_0 => config_open_ocean_freezing_temperature_coeff_0
+         coeff_S => config_open_ocean_freezing_temperature_coeff_S
+         coeff_p => config_open_ocean_freezing_temperature_coeff_p
+         coeff_pS => config_open_ocean_freezing_temperature_coeff_pS
+         reference_pressure => config_open_ocean_freezing_temperature_reference_pressure
       end if
 
 
