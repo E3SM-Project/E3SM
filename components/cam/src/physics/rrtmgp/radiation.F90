@@ -1629,6 +1629,7 @@ contains
          name='shortwave aerosol optics' &
       ))
 
+      ! Populate aerosol optics (and compress to daytime only)
       if (do_aerosol_rad) then
          aer_optics_sw%tau = 0
          aer_optics_sw%ssa = 1
@@ -1642,6 +1643,8 @@ contains
             aer_optics_sw%ssa(1:nday,2:nlev_rad,:), &
             aer_optics_sw%g  (1:nday,2:nlev_rad,:)  &
          )
+         ! Apply delta scaling to account for forward-scattering
+         call handle_error(aer_optics_sw%delta_scale())
       else
          aer_optics_sw%tau(:,:,:) = 0
          aer_optics_sw%ssa(:,:,:) = 0
@@ -1843,6 +1846,8 @@ contains
          call t_startf('rad_aer_optics_lw')
          aer_optics_lw%tau(:,:,:) = 0
          aer_optics_lw%tau(1:ncol,ktop:kbot,1:nlwbands) = aer_tau_bnd(1:ncol,1:pver,1:nlwbands)
+         ! Apply delta scaling to account for forward-scattering
+         call handle_error(aer_optics_lw%delta_scale())
          call t_stopf('rad_aer_optics_lw')
       else
          aer_optics_lw%tau(:,:,:) = 0

@@ -1991,6 +1991,7 @@ contains
 
       ! Apply delta scaling to account for forward-scattering
       call handle_error(cld_optics_day%delta_scale())
+      call handle_error(aer_optics_day%delta_scale())
 
       ! Check incoming optical properties
       call handle_error(cld_optics_day%validate())
@@ -2011,9 +2012,6 @@ contains
       end do
       deallocate(gas_names_lower)
 
-      call handle_error(cld_optics_day%validate())
-      call handle_error(aer_optics_day%validate())
-        
       ! Compute fluxes
       call t_startf('rad_rte_sw')
       call handle_error(rte_sw(k_dist_sw, gas_concs, &
@@ -2103,6 +2101,9 @@ contains
       end do
       deallocate(gas_names_lower)
 
+      ! Apply delta-scaling to account for forward scattering
+      call handle_error(cld_optics%delta_scale())
+      call handle_error(aer_optics%delta_scale())
 
       ! Do longwave radiative transfer calculations
       call t_startf('rad_rte_lw')
