@@ -29,6 +29,7 @@ module li_constants
           triple_point => SHR_CONST_TKTRIP,&
           rho_water => SHR_CONST_RHOFW, &
           cp_freshwater => SHR_CONST_CPFW, &
+          cp_seawater => SHR_CONST_CPSW, &
           pii => SHR_CONST_PI, &
           gravity => SHR_CONST_G
    implicit none
