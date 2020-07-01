@@ -114,7 +114,7 @@
 <config_Leith_visc2_max>2.5e3</config_Leith_visc2_max>
 
 <!-- Redi_isopycnal_mixing -->
-<config_use_Redi>.true.</config_use_Redi>
+<config_use_Redi>.false.</config_use_Redi>
 <config_use_Redi ocn_grid="oRRS30to10">.false.</config_use_Redi>
 <config_use_Redi ocn_grid="oRRS30to10v3">.false.</config_use_Redi>
 <config_use_Redi ocn_grid="oRRS30to10wLI">.false.</config_use_Redi>
