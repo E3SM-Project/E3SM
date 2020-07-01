@@ -2769,10 +2769,9 @@ module ocn_time_integration_si
             end do ! iEdge
 
             ! #Iteration  check
-            if ( split_implicit_step == 2 ) then
-            call mpas_log_write( 'Iteration $i', intArgs=(/ iter /) )
-            print*, iter
-            endif
+!           if ( split_implicit_step == 2 ) then
+!           call mpas_log_write( 'Iteration $i', intArgs=(/ iter /) )
+!           endif
 
 
             block => block % next
@@ -3633,7 +3632,6 @@ module ocn_time_integration_si
             call mpas_pool_get_dimension(block % dimensions, 'nCellsArray', nCellsArray)
 
             call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-            call mpas_pool_get_dimension(block % dimensions, 'nCellsArray', nCellsArray)
             call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
    
               local_num_cells = nCellsArray(1)
