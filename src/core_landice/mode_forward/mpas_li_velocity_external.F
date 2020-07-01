@@ -874,7 +874,7 @@ subroutine li_velocity_external_write_albany_mesh(domain)
       where (.not. (li_mask_is_floating_ice(cellMask)))
          floatingBasalMassBalUncertainty = 0.0_RKIND
       end where
-      
+
       ! Create FEM mesh
       call mpas_log_write("Generating new external velocity solver FEM grid.", flushNow=.true.)
       call generate_fem_grid(config_velocity_solver, vertexMask, cellMask, dirichletVelocityMask, &
