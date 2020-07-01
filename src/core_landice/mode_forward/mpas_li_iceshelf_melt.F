@@ -1030,7 +1030,8 @@ module li_iceshelf_melt
 ! NOTE: Would need to do a global max for this check to work
 !         if (maxval(basinNumber)+1 > maxNumBasins) then
 !            call mpas_log_write("Field ismip6shelfMelt_basin contains a value greater than the hard-coded value" // &
-!               "for maxNumBasins in iceshelf_melt_ismip6.  Please adjust maxNumBasins and recompile or correct input data.", MPAS_LOG_ERR)
+!               "for maxNumBasins in iceshelf_melt_ismip6.  Please adjust maxNumBasins and recompile or correct input data.", &
+!               MPAS_LOG_ERR)
 !         end if
 
          ! Get shelf draft and mask
@@ -1060,8 +1061,10 @@ module li_iceshelf_melt
                        realArgs=(/zOcean(ksup), zOcean(kinf), lowerSurface(iCell) /) )
                   err = ior(err, 1)
                endif
-               !call mpas_log_write("kinf=$i, zOcean(kinf)=$r, TFocean=$r",realArgs=(/zOcean(kinf),TFocean(kinf,iCell)/),intArgs=(/kinf/))
-               !call mpas_log_write("ksup=$i, zOcean(ksup)=$r, TFocean=$r",realArgs=(/zOcean(ksup),TFocean(ksup,iCell)/),intArgs=(/ksup/))
+               !call mpas_log_write("kinf=$i, zOcean(kinf)=$r, TFocean=$r",realArgs=(/zOcean(kinf),TFocean(kinf,iCell)/), &
+               !        intArgs=(/kinf/))
+               !call mpas_log_write("ksup=$i, zOcean(ksup)=$r, TFocean=$r",realArgs=(/zOcean(ksup),TFocean(ksup,iCell)/), &
+               !        intArgs=(/ksup/))
                TFdraft(iCell) = ( (zOcean(ksup)-lowerSurface(iCell)) * TFocean(kinf, iCell) &
                   + (lowerSurface(iCell)-zOcean(kinf)) * TFocean(ksup, iCell) ) / (zOcean(ksup)-zOcean(kinf))
 

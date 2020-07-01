@@ -1727,7 +1727,7 @@ module li_calving
                ! initialize
                newMaskCountLocal = 0
                contiguousDynamicIceOld(:) = contiguousDynamicIce(:)
-   
+
                do iCell = 1, nCellsArray(1) ! this gives owned cells only
                   if (contiguousDynamicIceOld(iCell) == 0 .and. &   ! this cell not yet marked
                      li_mask_is_dynamic_ice(cellMask(iCell))) then  ! and is dynamic
