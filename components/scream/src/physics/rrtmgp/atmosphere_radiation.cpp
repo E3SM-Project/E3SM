@@ -13,13 +13,15 @@ namespace scream {
     void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
 
     }  // RRTMGPRadiation::set_grids
-
     void RRTMGPRadiation::initialize_impl(const util::TimeStamp& t0) {
-        // Call RRTMGP initialize routine
-        //rrtmgp_initialize()
+        rrtmgp::rrtmgp_initialize();
     }
-    void RRTMGPRadiation::run_impl      (const Real dt) {}
-    void RRTMGPRadiation::finalize_impl  () {}
+    void RRTMGPRadiation::run_impl      (const Real dt) {
+        rrtmgp::rrtmgp_main(); 
+    }
+    void RRTMGPRadiation::finalize_impl  () {
+        rrtmgp::rrtmgp_finalize();
+    }
 
     // Register all required and computed field in the field repository
     void RRTMGPRadiation::register_fields(FieldRepository<Real>& field_repo) const {
