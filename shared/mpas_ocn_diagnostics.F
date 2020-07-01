@@ -192,7 +192,7 @@ contains
         normalizedRelativeVorticityCell, density, displacedDensity, potentialDensity, &
         temperature, salinity, vertVelocityTop, vertTransportVelocityTop, &
         vertGMBolusVelocityTop, BruntVaisalaFreqTop, &
-        RiTopOfCell, inSituThermalExpansionCoeff, inSituSalineContractionCoeff
+        RiTopOfCell, inSituThermalExpansionCoeff, inSituSalineContractionCoeff, edgeAreaFractionOfCell
 
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers, derivTwo
       character :: c1*6
@@ -1403,7 +1403,7 @@ contains
       real (kind=RKIND), dimension(:,:), pointer ::  &
            layerThickness, zMid, zTop, density, &
            normalVelocity, activeTracersSurfaceFlux, &
-           activeTracersSurfaceFluxRunoff, nonLocalSurfaceTracerFlux
+           activeTracersSurfaceFluxRunoff, nonLocalSurfaceTracerFlux, edgeAreaFractionOfCell
 
       real (kind=RKIND), dimension(:), pointer :: &
            indexSurfaceLayerDepth

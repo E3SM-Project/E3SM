@@ -455,6 +455,9 @@ contains
                           config_use_tracerGroup_exponential_decay, config_use_tracerGroup_idealAge_forcing, &
                           config_use_tracerGroup_ttd_forcing
 
+      real (kind=RKIND), pointer :: salinity_restoring_constant_piston_velocity
+      integer, dimension(:,:), pointer :: rediLimiterCount
+
       ! iterator for tracer categories
       type (mpas_pool_iterator_type) :: groupItr
       character (len=StrKIND) :: modifiedGroupName
