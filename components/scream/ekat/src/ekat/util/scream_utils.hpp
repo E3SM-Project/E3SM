@@ -104,7 +104,7 @@ using std::strcmp;
 #endif
 
 KOKKOS_INLINE_FUNCTION
-bool isnan (const Real& a) {
+bool is_nan (const Real& a) {
 #ifdef __CUDA_ARCH__
   return isnan(a);
 #else

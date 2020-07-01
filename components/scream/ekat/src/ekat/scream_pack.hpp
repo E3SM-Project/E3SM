@@ -490,7 +490,7 @@ OnlyPackReturn<PackType, Mask<PackType::n>>
 isnan (const PackType& p) {
   Mask<PackType::n> m;
   vector_simd for (int i = 0; i < PackType::n; ++i) {
-    m.set(i, util::isnan(p[i]));
+    m.set(i, util::is_nan(p[i]));
   }
   return m;
 }
