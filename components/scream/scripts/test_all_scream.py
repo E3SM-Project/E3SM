@@ -154,11 +154,11 @@ class TestAllScream(object):
         #   Deduce how many testing resources per test   #
         ##################################################
 
-        if ctest_parallel_level > 0:
-            ctest_max_jobs = ctest_parallel_level
+        if int(ctest_parallel_level) > 0:
+            ctest_max_jobs = int(ctest_parallel_level)
             print("Note: honoring requested value for ctest parallel level: {}".format(ctest_max_jobs))
         else:
-            ctest_max_jobs = get_mach_testing_resources(self._machine)
+            ctest_max_jobs = int(get_mach_testing_resources(self._machine))
             print("Note: no value passed for --ctest-parallel-level. Using the default for this machine: {}".format(ctest_max_jobs))
 
         self._testing_res_count = {"dbg" : ctest_max_jobs,
@@ -166,11 +166,11 @@ class TestAllScream(object):
                                    "fpe" : ctest_max_jobs}
 
         # Deduce how many compilation resources per test
-        if make_parallel_level > 0:
-            make_max_jobs = make_parallel_level
+        if int(make_parallel_level) > 0:
+            make_max_jobs = int(make_parallel_level)
             print("Note: honoring requested value for make parallel level: {}".format(make_max_jobs))
         else:
-            make_max_jobs = get_mach_compilation_resources(self._machine)
+            make_max_jobs = int(get_mach_compilation_resources(self._machine))
             print("Note: no value passed for --make-parallel-level. Using the default for this machine: {}".format(make_max_jobs))
 
         self._compile_res_count = {"dbg" : make_max_jobs,
