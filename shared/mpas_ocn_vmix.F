@@ -28,9 +28,6 @@ module ocn_vmix
 
    use ocn_constants
    use ocn_config
-   use ocn_vmix_coefs_const
-   use ocn_vmix_coefs_tanh
-   use ocn_vmix_coefs_rich
    use ocn_vmix_cvmix
    use ocn_vmix_coefs_redi
 
