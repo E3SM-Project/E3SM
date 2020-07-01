@@ -329,10 +329,10 @@ contains
   end function decompdimsid
 
 
-  subroutine nf_init_decomp(ncdf_list, dims, ldof,iodof,start,count)
+  subroutine nf_init_decomp(ncdf_list, dims, ldof,start,count)
     type(nf_handle), intent(inout), target :: ncdf_list(:)
     integer, intent(in) :: dims(:)
-    integer*8, intent(in) :: ldof(:), iodof(:)
+    integer*8, intent(in) :: ldof(:)
     integer(kind=nfsizekind) :: start(:), count(:)
     
     type(nf_handle), pointer :: ncdf
@@ -345,8 +345,6 @@ contains
     allocate(dimsize(ndims))
 
     if (minval(ldof)<1) stop 'FATAL ERROR: nf_init_dcomp integer overflow in ldof'
-    ! iodof will be -1 for non I/O procs, and >=0 for I/O procs. other values are bad:
-    if (minval(iodof)<-1) stop 'FATAL ERROR: nf_init_dcomp integer overflow in iodof'
 
     do ios=1,max_output_streams
        ncdf =>ncdf_list(ios)

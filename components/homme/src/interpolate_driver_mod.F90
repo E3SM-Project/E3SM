@@ -907,9 +907,9 @@ contains
     type(nf_handle) :: ncdf(:)
     type(interpdata_t):: interpdata(:)
     integer, intent(in) :: nlon, nlat
-    integer*8, pointer :: ldof2d(:),ldof3d(:), iodof2d(:), iodof3d(:)
+    integer*8, pointer :: ldof2d(:),ldof3d(:)
 
-    integer :: icnt, ie, i, lcount, tdof(1), tiodof(1)
+    integer :: icnt, ie, i, lcount
     integer :: k, iorank
     integer(kind=nfsizekind) :: start1d(1), count1d(1)
     integer :: londim, latdim, timedim, levdim, ilevdim
@@ -942,9 +942,9 @@ contains
           ldof2d(icnt)=interpdata(ie)%ilon(i)+(interpdata(ie)%ilat(i)-1)*nlon8
        end do
     end do
-    call getiodof(2, (/nlon,nlat/), iorank, iodof2d, start2d(1:2), count2d(1:2))
-    call nf_init_decomp(ncdf, (/londim,latdim/), ldof2d, iodof2d,start2d(1:2),count2d(1:2))
-    deallocate(iodof2d, ldof2d)
+    call getiodof(2, (/nlon,nlat/), iorank, start2d(1:2), count2d(1:2))
+    call nf_init_decomp(ncdf, (/londim,latdim/), ldof2d, start2d(1:2),count2d(1:2))
+    deallocate(ldof2d)
 
     if (levdim>0) then
     allocate(ldof3d(lcount*nlev))
@@ -957,9 +957,9 @@ contains
           end do
        end do
     end do
-    call getiodof(3, (/nlon,nlat,nlev/), iorank, iodof3d, start3d(1:3), count3d(1:3))
-    call nf_init_decomp(ncdf, (/londim,latdim,levdim/), ldof3d, iodof3d,start3d(1:3),count3d(1:3))
-    deallocate(iodof3d, ldof3d)
+    call getiodof(3, (/nlon,nlat,nlev/), iorank, start3d(1:3), count3d(1:3))
+    call nf_init_decomp(ncdf, (/londim,latdim,levdim/), ldof3d, start3d(1:3),count3d(1:3))
+    deallocate(ldof3d)
     endif
 
     if (ilevdim>0) then
@@ -973,9 +973,9 @@ contains
           end do
        end do
     end do
-    call getiodof(3, (/nlon,nlat,nlev+1/), iorank, iodof3d, start3d(1:3), count3d(1:3))
-    call nf_init_decomp(ncdf, (/londim,latdim,ilevdim/), ldof3d(1:icnt), iodof3d,start3d(1:3),count3d(1:3))
-    deallocate(iodof3d, ldof3d)
+    call getiodof(3, (/nlon,nlat,nlev+1/), iorank, start3d(1:3), count3d(1:3))
+    call nf_init_decomp(ncdf, (/londim,latdim,ilevdim/), ldof3d(1:icnt), start3d(1:3),count3d(1:3))
+    deallocate(ldof3d)
     endif
 
   end subroutine create_output_decomps
@@ -1631,11 +1631,11 @@ contains
     ! physgrid decomp
     call make_physgrid_dof(elem, nphys, dof)
     call nf_init_decomp(ncdf, (/1/), dof, &
-         itmp, unused, unused) ! these args are unused
+         unused, unused) ! these args are unused
     deallocate(dof)
     ! GLL decomp
     call getcompdof(dof, elem, 1)
-    call nf_init_decomp(ncdf, (/2/), dof, itmp, unused, unused)
+    call nf_init_decomp(ncdf, (/2/), dof, unused, unused)
     deallocate(dof)
   end subroutine physgrid_topo_begin_write
   
