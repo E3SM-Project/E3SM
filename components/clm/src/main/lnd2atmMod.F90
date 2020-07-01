@@ -31,10 +31,12 @@ module lnd2atmMod
   use WaterFluxType        , only : waterflux_type
   use WaterstateType       , only : waterstate_type
   use GridcellType         , only : grc_pp
-  use TopounitDataType     , only : top_es                 ! To calculate t_rad at topounit level needed in downscaling
+  use TopounitDataType     , only : top_es, top_af                 ! To calculate t_rad at topounit level needed in downscaling
   use GridcellDataType     , only : grc_ef, grc_ws, grc_wf
   use ColumnDataType       , only : col_ws, col_wf, col_cf  
   use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
+  use spmdmod          , only: masterproc
+  use clm_varctl     , only : iulog
 
   
   !
@@ -116,7 +118,14 @@ contains
             p2c_scale_type='unity', c2l_scale_type= 'urbanf', l2t_scale_type='unity')
     
        do t = bounds%begt,bounds%endt
-          top_es%t_rad(t) = sqrt(sqrt(top_es%eflx_lwrad_out_topo(t)/sb))
+          if (masterproc) then  ! TKT debugging
+            write(iulog,*) ' top_es%eflx_lwrad_out_topo(t) =  ', top_es%eflx_lwrad_out_topo(t) 
+            write(iulog,*) ' sb ', sb
+            write(iulog,*) ' t ', t
+            write(iulog,*) ' top_af%lwrad(t) ', top_af%lwrad(t)
+            write(iulog,*) ' top_af%solar(t) ', top_af%solar(t)
+          end if
+          top_es%t_rad(t) = sqrt(sqrt(top_es%eflx_lwrad_out_topo(t)/sb))   
        end do
     end if
 

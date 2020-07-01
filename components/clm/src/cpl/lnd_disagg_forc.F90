@@ -173,19 +173,19 @@ contains
              else
                 call downscale_precip_to_topounit_ERMM(t,mxElv,grdElv,topoElv,rain_g, snow_g) ! Use ERMM method
              end if
-          end if
-	   
-          if (uaflag == 1) then
-             sum_qbot_g = sum_qbot_g + top_pp%wtgcell(t)*top_as%qbot(t)
-             sum_wtsq_g = sum_wtsq_g + top_pp%wtgcell(t)
-	      end if
-          
+          end if   
+                    
           ! Downscale other fluxes
           call downscale_atmo_state_to_topounit(g, i, t, x2l, lnd2atm_vars, uaflag)
           call downscale_longwave_to_topounit(g, i, t, x2l, lnd2atm_vars, uaflag)
           top_as%ubot(t)    = x2l(index_x2l_Sa_u,i)         ! forc_uxy  Atm state m/s
           top_as%vbot(t)    = x2l(index_x2l_Sa_v,i)         ! forc_vxy  Atm state m/s
           top_as%zbot(t)    = x2l(index_x2l_Sa_z,i)         ! zgcmxy    Atm state m
+          
+          if (uaflag == 1) then
+             sum_qbot_g = sum_qbot_g + top_pp%wtgcell(t)*top_as%qbot(t)
+             sum_wtsq_g = sum_wtsq_g + top_pp%wtgcell(t)
+	      end if
                 
           ! assign the state forcing fields derived from other inputs
           ! Horizontal windspeed (m/s)
@@ -196,6 +196,13 @@ contains
          ! of water vapor pressure (Pa)
          vp = top_as%qbot(t) * top_as%pbot(t)  / (0.622_r8 + 0.378_r8 * top_as%qbot(t))
          top_as%rhobot(t) = (top_as%pbot(t) - 0.378_r8 * vp) / (rair * top_as%tbot(t))
+         !if (masterproc) then  ! TKT debugging
+         !   write (iulog,*) 'top_as%rhobot(t):    ', top_as%rhobot(t)
+         !   write (iulog,*) 'top_as%pbot(t):    ', top_as%pbot(t)
+         !   write (iulog,*) 'rair:     ', rair
+         !   write (iulog,*) 'top_as%tbot(t):    ', top_as%tbot(t)
+         !   write (iulog,*) 'vp:    ', vp
+         !end if
   
          top_af%solad(t,2) = x2l(index_x2l_Faxa_swndr,i)
          top_af%solad(t,1) = x2l(index_x2l_Faxa_swvdr,i)
@@ -380,16 +387,16 @@ contains
     if (method == 0 .or. (method == 1 .and. nstep == 0)) then
        tbot_t  = tbot_g-lapse_glcmec*(hsurf_t-hsurf_g) ! sfc temp for column
     else
-       if (masterproc) then  ! TKT debugging
-            write(iulog,*) ' Dowinscaling on for g =  ', g 
-            write(iulog,*) ' tsfc_t of topounit ',t, ' ', tsfc_t 
-            write(iulog,*) ' tbot_g of topounit ',t, ' ', tbot_g
-            write(iulog,*) ' tsfc_g of topounit ',t, ' ', tsfc_g
+       !if (masterproc) then  ! TKT debugging
+       !     write(iulog,*) ' Dowinscaling on for g =  ', g 
+       !     write(iulog,*) ' tsfc_t of topounit ',t, ' ', tsfc_t 
+       !     write(iulog,*) ' tbot_g of topounit ',t, ' ', tbot_g
+       !     write(iulog,*) ' tsfc_g of topounit ',t, ' ', tsfc_g
+       !end if
             
-            tbot_t = tsfc_t + tbot_g - tsfc_g ! tsfc is from previous time step
+       tbot_t = tsfc_t + tbot_g - tsfc_g ! tsfc is from previous time step
             
-       end if
-       
+              
     end if
  
     Hbot    = rair*0.5_r8*(tbot_g+tbot_t)/grav      ! scale ht at avg temp
@@ -491,8 +498,18 @@ contains
           4.0_r8 * lwrad_g/(0.5_r8*(tair_t+tair_g)) * &
           lapse_glcmec * (hsurf_t - hsurf_g)
     else
+       
        lwrad_t = lwrad_g + lnd2atm_vars%eflx_lwrad_out_grc(g) * &
           4._r8 * (tair_t - tair_g) / tsfc_g
+       if (masterproc) then  ! TKT debugging
+            write(iulog,*) ' lwrad_g =  ', lwrad_g 
+            write(iulog,*) ' lnd2atm_vars%eflx_lwrad_out_grc(g) ', lnd2atm_vars%eflx_lwrad_out_grc(g) 
+            write(iulog,*) ' tair_t ',tair_t
+            write(iulog,*) ' tair_g ',tair_g
+            write(iulog,*) ' tsfc_g ',tsfc_g
+            write(iulog,*) ' lwrad_t ',lwrad_t
+       end if
+       
     end if
        top_af%lwrad(t) = lwrad_t
 
