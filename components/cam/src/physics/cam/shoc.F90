@@ -2665,7 +2665,6 @@ subroutine isotropic_ts(nlev, shcol, brunt_int, tke, a_diss, brunt, isotropy)
 
 end subroutine isotropic_ts
 
-
 subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
      shoc_mix, sterm_zt, isotropy, tkh, tk, tke)
 
@@ -2701,7 +2700,7 @@ subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
 
   !local vars
   integer     :: i, k
-  real(rtype) :: z_over_L
+  real(rtype) :: z_over_L, zt_grid_1d(shcol)
 
   !parameters
   ! Critical value of dimensionless Monin-Obukhov length
@@ -2715,13 +2714,16 @@ subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
   real(rtype), parameter :: Ckh = 0.1_rtype
   real(rtype), parameter :: Ckm = 0.1_rtype
 
-  !BSINGH -future work (1d ztgrid)
+
+  !store zt_grid at nlev in 1d array
+  zt_grid_1d(1:shcol) = zt_grid(1:shcol,nlev)
+
   do k = 1, nlev
      do i = 1, shcol
 
         ! Dimensionless Okukhov length considering only
         !  the lowest model grid layer height to scale
-        z_over_L = zt_grid(i,nlev)/obklen(i)
+        z_over_L = zt_grid_1d(i)/obklen(i)
 
         if (z_over_L .gt. zL_crit_val .and. (zt_grid(i,k) .lt. pblh(i)+pbl_trans)) then
            ! If surface layer is moderately to very stable, based on near surface
