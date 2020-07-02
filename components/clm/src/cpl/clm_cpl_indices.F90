@@ -175,7 +175,7 @@ contains
     index_l2x_Flrl_demand   = mct_avect_indexra(l2x,'Flrl_demand')
     index_l2x_Flrl_Tqsur    = mct_avect_indexra(l2x,'Flrl_Tqsur')
     index_l2x_Flrl_Tqsub    = mct_avect_indexra(l2x,'Flrl_Tqsub')
-	index_l2x_coszen_str	= mct_avect_indexra(l2x,'coszen_str')	
+    index_l2x_coszen_str	= mct_avect_indexra(l2x,'coszen_str')	
     index_l2x_Sl_t          = mct_avect_indexra(l2x,'Sl_t')
     index_l2x_Sl_snowh      = mct_avect_indexra(l2x,'Sl_snowh')
     index_l2x_Sl_avsdr      = mct_avect_indexra(l2x,'Sl_avsdr')
