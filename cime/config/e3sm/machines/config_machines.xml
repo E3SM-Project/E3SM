@@ -582,6 +582,79 @@
     </environment_variables>
   </machine>
 
+  <machine MACH="mappy">
+    <DESC>Huge Linux workstation for Sandia climate scientists</DESC>
+    <NODENAME_REGEX>mappy</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <PROXY>wwwproxy.sandia.gov:80</PROXY>
+    <COMPILERS>gnu,intel</COMPILERS>
+    <MPILIBS>openmpi</MPILIBS>
+    <SAVE_TIMING_DIR>/sems-data-store/ACME/mappy/timings</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/acme/scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/sems-data-store/ACME/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/sems-data-store/ACME/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/sems-data-store/ACME/baselines/mappy/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/sems-data-store/ACME/mappy/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>64</GMAKE_J>
+    <TESTS>e3sm_developer</TESTS>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
+    <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+    <mpirun mpilib="default">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="num_tasks"> -np {{ total_tasks }}</arg>
+        <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to hwthread:overload-allowed</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module" allow_error="false">
+      <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
+      <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
+      <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
+      <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
+      <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
+      <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <modules>
+        <command name="purge"/>
+        <command name="load">sems-env</command>
+        <command name="load">acme-env</command>
+        <command name="load">sems-git</command>
+        <command name="load">sems-python/2.7.9</command>
+        <command name="load">sems-cmake/3.12.2</command>
+      </modules>
+      <modules compiler="gnu">
+        <command name="load">sems-gcc/7.3.0</command>
+      </modules>
+      <modules compiler="intel">
+        <command name="load">sems-intel/19.0.5</command>
+      </modules>
+      <modules mpilib="mpi-serial">
+        <command name="load">sems-netcdf/4.4.1/exo</command>
+        <command name="load">acme-pfunit/3.2.8/base</command>
+      </modules>
+      <modules mpilib="!mpi-serial">
+        <command name="load">acme-openmpi/2.1.5</command>
+        <command name="load">acme-netcdf/4.7.4/acme</command>
+      </modules>
+    </module_system>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+    <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
+    <!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
+    <environment_variables>
+      <env name="NETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
+      <env name="OMP_STACKSIZE">64M</env>
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
+    </environment_variables>
+  </machine>
+
   <machine MACH="snl-white">
     <DESC>IBM Power 8 Testbed machine</DESC>
     <NODENAME_REGEX>white</NODENAME_REGEX>

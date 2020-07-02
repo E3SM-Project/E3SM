@@ -1404,6 +1404,55 @@ flags should be captured within MPAS CMake files.
   </SLIBS>
 </compiler>
 
+<compiler MACH="mappy" COMPILER="gnu">
+  <ALBANY_PATH>/projects/install/rhel7-x86_64/ACME/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
+  <CPPDEFS>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
+  </CPPDEFS>
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2  </append>
+  </CFLAGS>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2  </append>
+    <append > -I$ENV{NETCDFROOT}/include  </append>
+  </FFLAGS>
+  <NETCDF_PATH>$ENV{NETCDFROOT}</NETCDF_PATH>
+  <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="FALSE">$ENV{SEMS_PFUNIT_ROOT}</PFUNIT_PATH>
+  <SLIBS>
+    <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -lblas -llapack</append>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="mappy" COMPILER="intel">
+  <ALBANY_PATH>/projects/install/rhel7-x86_64/ACME/AlbanyTrilinos/Albany/build/install</ALBANY_PATH>
+  <CPPDEFS>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
+  </CPPDEFS>
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2  </append>
+  </CFLAGS>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CXX_LIBS>
+    <base>-lstdc++ -lmpi_cxx</base>
+  </CXX_LIBS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2  </append>
+  </FFLAGS>
+  <NETCDF_PATH>$ENV{NETCDFROOT}</NETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
+  <SLIBS>
+    <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -lblas -llapack</append>
+  </SLIBS>
+</compiler>
+
 <compiler COMPILER="gnu" MACH="snl-white">
   <SCXX>$ENV{E3SM_SRCROOT}/externals/kokkos/bin/nvcc_wrapper</SCXX>
   <MPICXX>$ENV{E3SM_SRCROOT}/externals/kokkos/bin/nvcc_wrapper</MPICXX>
