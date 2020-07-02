@@ -178,8 +178,13 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          k33
 
-      integer :: iCell, nCells
-      integer, pointer :: nCellsSolve
+      real (kind=RKIND) :: rediKappaCell
+      real (kind=RKIND),dimension(:),pointer :: dvEdge, dcEdge, areaCell
+
+      integer :: i, iCell, nCells, iEdge
+
+      integer, dimension(:), pointer :: nEdgesOnCell, nCellsArray
+      integer, dimension(:,:), pointer :: edgesOnCell
 
       integer, intent(out) :: err !< Output: error flag
 
@@ -195,13 +200,24 @@ contains
 
       call mpas_timer_start('tracer redi coef')
 
-      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
 
-      nCells = nCellsSolve
+      nCells = nCellsArray(1)
 
-      !$omp do schedule(runtime)
+      !$omp do schedule(runtime) private(rediKappaCell, iEdge)
       do iCell = 1, nCells
-         vertDiffTopOfCell(:, iCell) = vertDiffTopOfCell(:, iCell) + RediKappa(iCell) * k33(:, iCell)
+         rediKappaCell = 0.0_RKIND
+         do i = 1, nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(i, iCell)
+            rediKappaCell = rediKappaCell + 0.25_RKIND*RediKappa(iEdge) * dvEdge(iEdge) * dcEdge(iEdge)
+         enddo
+
+         vertDiffTopOfCell(:, iCell) = vertDiffTopOfCell(:, iCell) + RediKappaCell * k33(:, iCell)
       end do
       !$omp end do
 
