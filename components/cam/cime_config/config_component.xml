@@ -52,7 +52,7 @@
       <value compset="_CAM5%AV1C-04"  >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_CAM5%AV1C-04P" >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_CAM5%AV1C-04P2">-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
-      <value compset="_CAM5%AV1C-L"   >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
+      <value compset="_CAM5%AV1C-L"   >-clubb_sgs -microphys p3 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_CAM5%AV1C-H01A">-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_CAM5%AV1C-H01B">-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_CAM5%AV1C-H01C">-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
@@ -62,7 +62,7 @@
       <value compset="_CAM5%CMIP6-LRtunedHR"    >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="1950_CAM5%CMIP6-[LH]R"    >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -cppdefs -DAPPLY_POST_DECK_BUGFIXES -nlev 72</value>
       <value compset="_CAM5%AR5sf"    >-clubb_sgs -microphys mg2 -chem superfast_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
-      <value compset="2010_CAM5%CMIP6-[LH]R"    >-clubb_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -cppdefs -DAPPLY_POST_DECK_BUGFIXES -nlev 72</value>
+      <value compset="2010_CAM5%CMIP6-[LH]R"    >-clubb_sgs -microphys p3 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -cppdefs -DAPPLY_POST_DECK_BUGFIXES -nlev 72</value>
       <value compset="_CAM5%AV1F"     >-clubb_sgs -microphys mg2 -chem trop_mam4_resus      -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_CAM5%AV1F-00"  >-clubb_sgs -microphys mg2 -chem trop_mam4_resus      -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_CAM5%AV1F-01"  >-clubb_sgs -microphys mg2 -chem trop_mam4_resus_soag -rain_evap_to_coarse_aero -nlev 72</value>
