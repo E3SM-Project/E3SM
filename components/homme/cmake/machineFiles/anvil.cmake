@@ -46,7 +46,7 @@ ELSEIF ("${CPR_OUTPUT}" MATCHES "GNU Fortran.*")
 endif()
 
 SET (USE_MPIEXEC "srun" CACHE STRING "")
-SET (USE_MPI_OPTIONS "--cpu_bind=cores" CACHE STRING "")
+SET (USE_MPI_OPTIONS "-K --cpu_bind=cores" CACHE STRING "")
 SET (USE_QUEUING FALSE CACHE BOOL "")
 # for standalone HOMME builds:
 SET (CPRNC_DIR /lcrc/group/acme/tools/cprnc CACHE FILEPATH "")
