@@ -26,6 +26,11 @@ if (NOT IS_YAMLCPP_ALREADY_BUILT)
   set (YAMLCPP_INCLUDE_DIRS ${YAMLCPP_SOURCE_DIR}/include)
   set (YAMLCPP_LIBRARIES yaml-cpp)
 
+  if (EKAT_DISABLE_TPL_WARNINGS)
+    include (EkatUtils)
+    EkatDisableAllWarning(yaml-cpp)
+  endif ()
+
   # Make sure it is processed only once
   set_property(GLOBAL PROPERTY EKAT_YAMLCPP_BUILT TRUE)
 endif()
