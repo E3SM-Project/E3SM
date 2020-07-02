@@ -33,7 +33,37 @@ xlf:
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
- 
+
+xlf-summit:
+	( $(MAKE) all \
+	"FC_PARALLEL = mpif90" \
+	"CC_PARALLEL = mpicc" \
+	"CXX_PARALLEL = mpiCC" \
+	"FC_SERIAL = xlf90_r" \
+	"CC_SERIAL = xlc_r" \
+	"CXX_SERIAL = xlc++_r" \
+	"FFLAGS_PROMOTION = -qrealsize=8" \
+	"FFLAGS_OPT = -g -qfullpath -qmaxmem=-1 -qphsinfo -qzerosize -qfree=f90 -qxlf2003=polymorphic -qspillsize=2500 -qextname=flush -O2 -qstrict -Q" \
+	"CFLAGS_OPT = -g -qfullpath -qmaxmem=-1 -qphsinfo -O3" \
+	"CXXFLAGS_OPT = -g -qfullpath -qmaxmem=-1 -qphsinfo -O3" \
+	"LDFLAGS_OPT = -Wl,--relax -Wl,--allow-multiple-definition -qsmp -qoffload -lcudart -L$(CUDA_DIR)/lib64" \
+	"FFLAGS_GPU = -qsmp -qoffload" \
+	"LDFLAGS_GPU = -qsmp -qoffload -lcudart -L$(CUDA_DIR)/lib64" \
+	"FFLAGS_DEBUG = -O0 -g -qinitauto=7FF7FFFF -qflttrap=ov:zero:inv:en" \
+	"CFLAGS_DEBUG = -O0 -g" \
+	"CXXFLAGS_DEBUG = -O0 -g" \
+	"LDFLAGS_DEBUG = -O0 -g" \
+	"FFLAGS_OMP = -qsmp=omp" \
+	"CFLAGS_OMP = -qsmp=omp" \
+	"PICFLAG = -qpic" \
+	"BUILD_TARGET = $(@)" \
+	"CORE = $(CORE)" \
+	"DEBUG = $(DEBUG)" \
+	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
+	"OPENMP_OFFLOAD = $(OPENMP_OFFLOAD)" \
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DFORTRAN_SAME -DCPRIBM -DLINUX" )
+
 ftn:
 	( $(MAKE) all \
 	"FC_PARALLEL = ftn" \
@@ -641,6 +671,14 @@ ifeq "$(OPENACC)" "true"
         LDFLAGS += $(FFLAGS_ACC)
 endif #OPENACC IF
 
+ifeq "$(OPENMP_OFFLOAD)" "true"
+	FFLAGS += $(FFLAGS_GPU)
+	CFLAGS += $(FFLAGS_GPU)
+	CXXFLAGS += $(FFLAGS_GPU)
+	override CPPFLAGS += "-DMPAS_OPENMP_OFFLOAD"
+	LDFLAGS += $(LDFLAGS_GPU)
+endif #OPENMP_OFFLOAD IF
+
 ifeq "$(PRECISION)" "single"
 	CFLAGS += "-DSINGLE_PRECISION"
 	CXXFLAGS += "-DSINGLE_PRECISION"
@@ -729,6 +767,12 @@ ifeq "$(OPENMP)" "true"
 	OPENMP_MESSAGE="MPAS was built with OpenMP enabled."
 else
 	OPENMP_MESSAGE="MPAS was built without OpenMP support."
+endif
+
+ifeq "$(OPENMP_OFFLOAD)" "true"
+	OPENMP_OFFLOAD_MESSAGE="MPAS was built with OpenMP-offload GPU support enabled."
+else
+	OPENMP_OFFLOAD_MESSAGE="MPAS was built without OpenMP-offload GPU support."
 endif
 
 ifeq "$(OPENACC)" "true"
@@ -914,6 +958,7 @@ endif
 	@echo $(PAPI_MESSAGE)
 	@echo $(TAU_MESSAGE)
 	@echo $(OPENMP_MESSAGE)
+	@echo $(OPENMP_OFFLOAD_MESSAGE)
 	@echo $(OPENACC_MESSAGE)
 	@echo $(SHAREDLIB_MESSAGE)
 ifeq "$(AUTOCLEAN)" "true"

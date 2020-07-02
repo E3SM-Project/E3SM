@@ -182,6 +182,23 @@ list(APPEND RAW_SOURCES
   core_ocean/analysis_members/mpas_ocn_analysis_driver.F
 )
 
+# add accelerator/gpu flags
+list(APPEND ADD_ACC_FLAGS
+  core_ocean/shared/mpas_ocn_equation_of_state_jm.f90
+  core_ocean/shared/mpas_ocn_mesh.f90
+  core_ocean/shared/mpas_ocn_surface_bulk_forcing.f90
+  core_ocean/shared/mpas_ocn_surface_land_ice_fluxes.f90
+  core_ocean/shared/mpas_ocn_tendency.f90
+  core_ocean/shared/mpas_ocn_vel_forcing_explicit_bottom_drag.f90
+  core_ocean/shared/mpas_ocn_vel_forcing_surface_stress.f90
+  core_ocean/shared/mpas_ocn_vel_hadv_coriolis.f90
+  core_ocean/shared/mpas_ocn_vel_hmix_del2.f90
+  core_ocean/shared/mpas_ocn_vel_hmix_del4.f90
+  core_ocean/shared/mpas_ocn_vel_hmix_leith.f90
+  core_ocean/shared/mpas_ocn_vel_pressure_grad.f90
+  core_ocean/shared/mpas_ocn_vel_vadv.f90
+)
+
 # Generate core input
 handle_st_nl_gen(
   "namelist.ocean;namelist.ocean.forward mode=forward;namelist.ocean.analysis mode=analysis;namelist.ocean.init mode=init"
