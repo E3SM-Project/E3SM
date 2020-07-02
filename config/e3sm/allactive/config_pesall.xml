@@ -626,7 +626,7 @@
     </mach>
   </grid>
   <grid name="a%ne30np4_">
-    <mach name="melvin">
+    <mach name="melvin|mappy">
       <pes compset="any" pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -663,7 +663,7 @@
     </mach>
   </grid>
   <grid name="a%ne4np4.pg2">
-    <mach name="melvin">
+    <mach name="melvin|mappy">
       <pes compset="any" pesize="any">
         <comment>ne4np4pg2 compset on melvin</comment>
         <ntasks>
@@ -1713,7 +1713,7 @@
     </mach>
   </grid>
   <grid name="a%T62">
-    <mach name="edison|melvin">
+    <mach name="edison|melvin|mappy">
       <pes compset="any" pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -2048,7 +2048,7 @@
     </mach>
   </grid>
   <grid name="a%1.9x2.5">
-    <mach name="melvin">
+    <mach name="melvin|mappy">
       <pes compset="any" pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -2310,7 +2310,7 @@
   </grid>
 
   <grid name="a%0.9x1.25">
-    <mach name="melvin">
+    <mach name="melvin|mappy">
       <pes compset="any" pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -2608,7 +2608,7 @@
     </mach>
   </grid>
   <grid name="a%360x720cru">
-    <mach name="edison|melvin">
+    <mach name="edison|melvin|mappy">
       <pes compset="any" pesize="any">
         <comment>none</comment>
         <ntasks>
@@ -8412,7 +8412,7 @@
     </mach>
   </grid>
   <grid name="a%ne4np4_l%ne4np4_oi%oQU240_r%r05_m%oQU240_g%null_w%null">
-    <mach name="melvin">
+    <mach name="melvin|mappy">
       <pes compset="any"  pesize="any">
         <comment>none</comment>
         <ntasks>
