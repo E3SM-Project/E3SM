@@ -377,7 +377,7 @@ def merge_git_ref(git_ref, repo=None, verbose=False):
     update_submodules(repo=repo)
     expect(is_repo_clean(repo=repo), "Something went wrong while performing the merge of '{}'".format(git_ref))
     if verbose:
-        print ("merged {} successfully merged.".format(git_ref))
+        print ("git ref {} successfully merged.".format(git_ref))
         print_last_commit()
 
 ###############################################################################
