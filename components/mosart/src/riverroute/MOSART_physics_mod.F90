@@ -390,7 +390,7 @@ MODULE MOSART_physics_mod
                    if ( ctlSubwWRM%RegulationFlag>0 ) then
                       call Regulation(iunit, localDeltaT)
                       if (heatflag .and. rstraflag) then
-						  call stratification(iunit, localDeltaT,nt)
+                          call stratification(iunit, localDeltaT,nt)
                           call reservoirHeat(iunit, localDeltaT)
                       elseif (heatflag .and. (rstraflag == .false.)) then
                           call reservoirHeat(iunit, localDeltaT)
