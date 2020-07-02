@@ -99,7 +99,6 @@ contains
     use parallel_mod, only : abortmp
     use pio, only : PIO_InitDecomp, pio_setdebuglevel, pio_int, pio_double, pio_closefile !_EXTERNAL
     use netcdf_io_mod, only : iodesc2d, iodesc3d, iodesc3d_subelem, iodesct, pio_subsystem, iodesc3dp1 
-    use common_io_mod, only : num_io_procs, num_agg, io_stride
     use reduction_mod, only : parallelmax
     type (element_t), intent(in) :: elem(:)
     type (parallel_t), intent(in)     :: par
@@ -129,7 +128,6 @@ contains
     integer :: ierr
 #endif
 
-    num_agg = 1
     call PIO_setDebugLevel(0)
 
 

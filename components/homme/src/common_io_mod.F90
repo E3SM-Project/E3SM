@@ -44,7 +44,7 @@ module common_io_mod
 
   ! these are used for PIO output method
   integer, public :: num_io_procs
-  integer, public :: num_agg
+  integer, public :: num_agg = 0             ! obselete
   integer, public :: io_stride
 
 #ifndef HOMME_WITHOUT_PIOLIBRARY
