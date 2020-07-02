@@ -159,6 +159,8 @@ contains
     deallocate(infile%vars%dimids)
     nullify(infile%vars%dimids)
 
+    deallocate(infile%dims)
+    nullify(infile%dims)
   end subroutine free_infile
 
   subroutine infile_initialize(elem, par, infilename, varnames, infile)
