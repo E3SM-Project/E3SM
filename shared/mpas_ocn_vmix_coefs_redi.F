@@ -209,7 +209,7 @@ contains
 
       nCells = nCellsArray(1)
 
-      !$omp do schedule(runtime) private(rediKappaCell, iEdge)
+      !$omp do schedule(runtime) private(i, rediKappaCell, iEdge)
       do iCell = 1, nCells
          rediKappaCell = 0.0_RKIND
          do i = 1, nEdgesOnCell(iCell)
