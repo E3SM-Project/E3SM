@@ -90,10 +90,12 @@ add_default($nl, 'config_Leith_visc2_max');
 
 add_default($nl, 'config_use_Redi');
 add_default($nl, 'config_Redi_kappa');
+add_default($nl, 'config_Redi_set_RediKappa_to_GMKappa');
 add_default($nl, 'config_Redi_maximum_slope');
 add_default($nl, 'config_Redi_closure');
 add_default($nl, 'config_Redi_use_slope_taper');
 add_default($nl, 'config_Redi_use_surface_taper');
+add_default($nl, 'config_Redi_use_N2_based_taper');
 add_default($nl, 'config_Redi_N2_limit_term1');
 
 ############################################
@@ -103,6 +105,12 @@ add_default($nl, 'config_Redi_N2_limit_term1');
 add_default($nl, 'config_use_GM');
 add_default($nl, 'config_GM_kappa');
 add_default($nl, 'config_GM_closure');
+add_default($nl, 'config_GM_baroclinic_mode');
+add_default($nl, 'config_GM_visbeck_alpha');
+add_default($nl, 'config_GM_visbeck_min_depth');
+add_default($nl, 'config_GM_visbeck_max_depth');
+add_default($nl, 'config_GM_visbeck_min_kappa');
+add_default($nl, 'config_GM_visbeck_max_kappa');
 add_default($nl, 'config_GM_min_stratification_ratio');
 add_default($nl, 'config_GM_constant_gravWaveSpeed');
 
