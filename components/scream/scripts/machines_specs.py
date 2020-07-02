@@ -82,9 +82,9 @@ MACHINE_METADATA = {
                   40,
                   ""),
 
-    "generic-desktop" : (["source ~/.bashrc", "load gcc", "load netcdf"],"$(which mpicxx)","", get_cpu_core_count(), get_cpu_core_count(),""),
-    "generic-desktop-debug" : ([],"$(which mpicxx)","", get_cpu_core_count(), get_cpu_core_count(),""),
-    "generic-desktop-serial" : ([],"$(which mpicxx)","", get_cpu_core_count(), get_cpu_core_count(),""),
+    "linux-generic" : ([],"$(which mpicxx)","", get_cpu_core_count(), get_cpu_core_count(),""),
+    "linux-generic-debug" : ([],"$(which mpicxx)","", get_cpu_core_count(), get_cpu_core_count(),""),
+    "linux-generic-serial" : ([],"$(which mpicxx)","", get_cpu_core_count(), get_cpu_core_count(),""),
 }
 
 ###############################################################################

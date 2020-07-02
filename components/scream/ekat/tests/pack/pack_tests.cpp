@@ -316,4 +316,40 @@ TEST_CASE("Pack", "scream::pack") {
   }
 }
 
+TEST_CASE("isnan", "scream::pack") {
+  using namespace scream;
+  using pt = pack::Pack<Real, EKAT_PACK_SIZE>;
+  using mt = pack::Mask<EKAT_PACK_SIZE>;
+
+  using pvt = typename KokkosTypes<DefaultDevice>::view_1d<pt>;
+  using mvt = typename KokkosTypes<DefaultDevice>::view_1d<mt>;
+
+  pvt zero("",1), nan("",1);
+  mvt mzero("",1), mnan("",1);
+  Kokkos::parallel_for(Kokkos::RangePolicy<>(0,1),
+                       KOKKOS_LAMBDA(int) {
+    zero(0) = pt(0);  // Ctor inits pack to 0
+    nan(0)  = pt();   // Ctor inits pack to nan
+
+    const pt& z = zero(0);
+    const pt& n = nan(0);
+
+    mzero(0) = pack::isnan(z);
+    mnan(0)  = pack::isnan(n);
+  });
+
+  auto mzero_h = Kokkos::create_mirror_view(mzero);
+  auto mnan_h  = Kokkos::create_mirror_view(mnan);
+
+  Kokkos::deep_copy(mzero_h,mzero);
+  Kokkos::deep_copy(mnan_h,mnan);
+
+  const mt& mz = mzero_h(0);
+  const mt& mn = mnan_h(0);
+  for (int i=0; i<EKAT_PACK_SIZE; ++i) {
+    REQUIRE (!mz[i]); // the view 'zero' should not contain nans
+    REQUIRE (mn[i]);  // the view 'nan'  should contain nans
+  }
+}
+
 } // namespace
