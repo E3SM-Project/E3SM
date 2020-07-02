@@ -215,19 +215,10 @@ contains
     end if     
 
     if (wrmflag .and. heatflag .and. rstraflag) then
-		call RtmHistAddfld (fname='RSRV_SURF', units='Kelvin',  &
-			avgflag='A', long_name='Reservoir surface temperature', &
-			ptr_rof=WRMUnit%resrv_surf)	
-        ! call RtmHistAddfld (fname='RSRV_OUT', units='Kelvin',  &
-			! avgflag='A', long_name='Reservoir outflow temperature', &
-			! ptr_rof=WRMUnit%resrv_out)
-		! call RtmHistAddfld (fname='RSRV_DPH', units='m',  &
-			! avgflag='A', long_name='Reservoir depth at each time step', &
-			! ptr_rof=WRMUnit%d_resrv)		
-		! call RtmHistAddfld (fname='RSRV_HGT', units='m',  &
-			! avgflag='A', long_name='Reservoir height 95% of dam height', &
-			! ptr_rof=WRMUnit%h_resrv)
-	endif
+      call RtmHistAddfld (fname='RSRV_SURF', units='Kelvin',  &
+           avgflag='A', long_name='Reservoir surface temperature', &
+           ptr_rof=WRMUnit%resrv_surf)
+    endif
     ! Print masterlist of history fields
 
     call RtmHistPrintflds()
