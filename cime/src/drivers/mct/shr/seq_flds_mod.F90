@@ -2014,15 +2014,6 @@ contains
     units    = 'kg m-2 s-1'
     attname  = 'Flrl_rofsur'
     call metadata_set(attname, longname, stdname, units)
-	
-	! Cosine of Zenith angle (-)
-    call seq_flds_add(l2x_fluxes,'coszen_str')
-    call seq_flds_add(x2r_fluxes,'coszen_str')
-    longname = 'Cosine of Zenith angle'
-    stdname  = 'coszen'
-    units    = ' '
-    attname  = 'coszen_str'
-    call metadata_set(attname, longname, stdname, units)	
 
     call seq_flds_add(l2x_fluxes,'Flrl_rofgwl')
     call seq_flds_add(l2x_fluxes_to_rof,'Flrl_rofgwl')
@@ -2086,6 +2077,15 @@ contains
     units    = 'Kelvin'
     attname  = 'Flrl_Tqsub'
     call metadata_set(attname, longname, stdname, units)
+    
+    ! Cosine of Zenith angle (-)
+    	call seq_flds_add(l2x_fluxes,'coszen_str')
+    	call seq_flds_add(x2r_fluxes,'coszen_str')
+    	longname = 'Cosine of Zenith angle'
+    	stdname  = 'coszen'
+    	units    = ' '
+    	attname  = 'coszen_str'
+    	call metadata_set(attname, longname, stdname, units)
     endif
 
     ! Currently only the CESM land and runoff models treat irrigation as a separate
