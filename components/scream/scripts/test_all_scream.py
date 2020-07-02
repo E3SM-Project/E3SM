@@ -132,14 +132,16 @@ class TestAllScream(object):
                     test_baseline_dir = self.get_preexisting_baseline(test)
                     expect(test_baseline_dir.is_dir(), "Missing baseline {}".format(test_baseline_dir))
 
-        # Name of the file used to store/check the git sha of the repo used to generate baselines.
+        # Name of the file used to store/check the git sha of the repo used to generate baselines,
+        # and name of the file used to store/check the builds for which baselines are available
         # Store it once to avoid typos-like bugs
         self._baseline_sha_file = pathlib.Path(self._baseline_dir,"baseline_git_sha").resolve()
+        self._baseline_names_file = pathlib.Path(self._baseline_dir,"baseline_names").resolve()
 
         if self._integration_test:
             master_sha = get_current_commit(commit=self._baseline_ref)
             if not self.baselines_are_present():
-                print ("Baselines not found. Rebuilding them.")
+                print ("Some baselines were not found. Rebuilding them.")
                 self._must_generate_baselines = True
             elif self.baselines_are_expired(expected_baseline_sha=master_sha):
                 print ("Baselines expired. Rebuilding them.")
@@ -261,6 +263,20 @@ class TestAllScream(object):
 
         # Sanity check
         expect(self._baseline_dir is not None, "Error! This routine should only be called when testing against pre-existing baselines.")
+
+        # The file specifying what baselines were built during last baselines generation msut be there
+        if not self._baseline_names_file.exists():
+            return True
+
+        # It might happen that we generate baselines for all build types, then later on
+        # for some reason we manually generate baselines for only one build type. The other
+        # baselines will still be there, but may be expired. Therefore, we check the
+        # baselines_names file, to see what baselines were built last time. If all the
+        # baselines we need are there, then we're good
+        valid_baselines = run_cmd_no_fail("cat {}".format(self._baseline_names_file.resolve()))
+        for test in self._tests:
+           if not test in valid_baselines:
+                return True
 
         # No sha file => baselines expired
         if not self._baseline_sha_file.exists():
@@ -415,6 +431,11 @@ class TestAllScream(object):
         if success:
             # Store the sha used for baselines generation
             run_cmd_no_fail("echo '{}' > {}".format(get_current_commit(commit=self._baseline_ref),self._baseline_sha_file))
+            # Store the name of the builds for which we created a baseline
+            tmp_string = ""
+            for test in self._tests:
+               tmp_string += " {}".format(test) 
+            run_cmd_no_fail("echo '{}' > {}".format(tmp_string,self._baseline_names_file)
 
         checkout_git_ref(git_head_ref, verbose=True)
 
