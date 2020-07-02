@@ -117,7 +117,7 @@ contains
       index_x2r_Faxa_swndf  = mct_avect_indexra(avtmp,'Faxa_swndf')
     endif
 
-	index_x2r_coszen_str  = mct_avect_indexra(avtmp,'coszen_str')
+    index_x2r_coszen_str  = mct_avect_indexra(avtmp,'coszen_str')
 
     nflds_x2r = mct_avect_nRattr(avtmp)
 
