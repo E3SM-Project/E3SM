@@ -187,9 +187,6 @@ contains
 
     if (par%masterproc) print *,'initializing input file: ',trim(infilename)
 
-    call PIO_Init(par%rank, par%comm, num_io_procs, num_agg, &
-         io_stride, pio_rearr_box, PIOFS)
-
 !    call pio_setdebuglevel(1)
     if(output_type.eq.'netcdf') then
        ret = PIO_OpenFile(PIOFS, InFile%FileID, iotype_netcdf, infilename)
@@ -1305,7 +1302,6 @@ contains
     integer*8, pointer :: dof(:)
     real(real_kind), allocatable :: raw(:)
 
-    call pio_init(par%rank, par%comm, num_io_procs, num_agg, io_stride, pio_rearr_box, piofs)
     iotype = get_iotype()
     stat = pio_openfile(piofs, fileid, iotype, infilename)
     stat = pio_inquire(fileid, ndimensions=ndims, nvariables=nvars)
