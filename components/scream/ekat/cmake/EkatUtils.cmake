@@ -65,12 +65,12 @@ macro (EkatDisableAllWarning targetName)
   #       add the flag separately for each langauge, since the user MAY be using different compilers
   #       for different langauges (e.g., icpc and gfortran).
   target_compile_options (${targetName} PRIVATE
-    $< $<COMPILE_LANGUAGE:C> : $<$<C_COMPILER_ID:GNU>:"-w"> $<$<C_COMPILER_ID:Intel>: "-warn">>)
+    $<$<COMPILE_LANGUAGE:C>:$<$<C_COMPILER_ID:GNU>:-w> $<$<C_COMPILER_ID:Intel>: -warn>>)
 
   target_compile_options (${targetName} PRIVATE
-    $< $<COMPILE_LANGUAGE:Fortran> : $<$<Fortran_COMPILER_ID:GNU>:"-w"> $<$<Fortran_COMPILER_ID:Intel>: "-warn">>)
+    $<$<COMPILE_LANGUAGE:Fortran>:$<$<Fortran_COMPILER_ID:GNU>:-w> $<$<Fortran_COMPILER_ID:Intel>: -warn>>)
   target_compile_options (${targetName} PRIVATE
-    $< $<COMPILE_LANGUAGE:CXX> : $<$<CXX_COMPILER_ID:GNU>:"-w"> $<$<CXX_COMPILER_ID:Intel>: "-warn">>)
+    $<$<COMPILE_LANGUAGE:CXX>:$<$<CXX_COMPILER_ID:GNU>:-w> $<$<CXX_COMPILER_ID:Intel>: -warn>>)
 
 endmacro (EkatDisableAllWarning)
 
