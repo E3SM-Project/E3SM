@@ -412,8 +412,9 @@ class TestAllScream(object):
                     print('Generation of baselines for build {} failed'.format(self._test_full_names[test]))
                     return False
 
-        # Store the sha used for baselines generation
-        run_cmd_no_fail("echo '{}' > {}".format(get_current_commit(commit=self._baseline_ref),self._baseline_sha_file))
+        if success:
+            # Store the sha used for baselines generation
+            run_cmd_no_fail("echo '{}' > {}".format(get_current_commit(commit=self._baseline_ref),self._baseline_sha_file))
 
         checkout_git_ref(git_head_ref, verbose=True)
 
