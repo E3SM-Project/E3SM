@@ -593,12 +593,16 @@ contains
 
 
     integer :: ios
+    logical :: piofs_is_active = .false.
 
     !
     ! Loop through output_streams, identify which will be used and open files for them
     !
     !$OMP SINGLE
-    call PIO_Init(rank,comm,num_io_procs,num_agg,io_stride,PIO_rearr_box,PIOFS)
+    call PIO_iosystem_is_active(PIOFS, piofs_is_active)
+    if(.not. piofs_is_active) then
+       call PIO_Init(rank,comm,num_io_procs,num_agg,io_stride,PIO_rearr_box,PIOFS)
+    end if
     do ios=1,max_output_streams
        if((output_frequency(ios) .gt. 0) .and. (output_start_time(ios) .le. output_end_time(ios))) then 
           ncdf(ios)%iframe=1

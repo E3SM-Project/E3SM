@@ -20,7 +20,7 @@ module interpolate_driver_mod
    pio_read_darray, pio_setframe, pio_get_var, &
    PIO_OFFSET_KIND, pio_char, &
    pio_inq_varid, pio_inq_attname, pio_copy_att, pio_inq_varnatts,&
-   pio_inq_att,&
+   pio_inq_att, pio_iosystem_is_active, &
    PIO_MAX_NAME, pio_double
 
   use pio_nf_utils, only : copy_pio_var ! _EXTERNAL
@@ -184,11 +184,15 @@ contains
     integer(kind=PIO_OFFSET_KIND) :: start(3), count(3)
     integer :: iorank, dimcnt
     character(len=80) :: name
+    logical :: piofs_is_active = .false.
 
     if (par%masterproc) print *,'initializing input file: ',trim(infilename)
 
-    call PIO_Init(par%rank, par%comm, num_io_procs, num_agg, &
-         io_stride, pio_rearr_box, PIOFS)
+    call PIO_iosystem_is_active(PIOFS, piofs_is_active)
+    if(.not. piofs_is_active) then
+       call PIO_Init(par%rank, par%comm, num_io_procs, num_agg, &
+            io_stride, pio_rearr_box, PIOFS)
+    end if
 
 !    call pio_setdebuglevel(1)
     if(output_type.eq.'netcdf') then
@@ -1293,8 +1297,12 @@ contains
     character(len=pio_max_name) :: dimname
     integer, pointer :: dof(:)
     real(real_kind), allocatable :: raw(:)
+    logical :: piofs_is_active = .false.
 
-    call pio_init(par%rank, par%comm, num_io_procs, num_agg, io_stride, pio_rearr_box, piofs)
+    call PIO_iosystem_is_active(piofs, piofs_is_active)
+    if (.not. piofs_is_active) then
+       call pio_init(par%rank, par%comm, num_io_procs, num_agg, io_stride, pio_rearr_box, piofs)
+    end if
     iotype = get_iotype()
     stat = pio_openfile(piofs, fileid, iotype, infilename)
     stat = pio_inquire(fileid, ndimensions=ndims, nvariables=nvars)
