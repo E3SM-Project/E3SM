@@ -367,7 +367,7 @@ createAllRunScripts() {
 
         echo "# Running cprnc to difference ${baseFilename} against baseline " >> $thisRunScript
         #echo "$cmd > $diffStdout 2> $diffStderr" >> $thisRunScript
-        cmd="${CPRNC_BINARY} ${repoFile} ${newFile} > $diffStdout 2> $diffStderr"
+        cmd="${CPRNC_BINARY} -m ${repoFile} ${newFile} > $diffStdout 2> $diffStderr"
         #echo "  $cmd"
         serExecLine $thisRunScript "$cmd"
         echo "" >> $thisRunScript # blank line
@@ -404,7 +404,7 @@ createAllRunScripts() {
         diffStderr=${TEST_NAME}.ref.${baseFilename}.err
 
         echo "# Running cprnc to difference ${baseFilename} against reference " >> $thisRunScript
-        cmd="${CPRNC_BINARY} ${refFile} ${newFile} > $diffStdout 2> $diffStderr"
+        cmd="${CPRNC_BINARY} -m ${refFile} ${newFile} > $diffStdout 2> $diffStderr"
         serExecLine $thisRunScript "$cmd"
         echo "" >> $thisRunScript # blank line
         let COUNT+=1
@@ -538,76 +538,6 @@ serExecLine() {
 
 
 
-diffCprnc() {
-
-  if [ ! -f "${CPRNC_BINARY}" ] ; then
-    echo "Netcdf differencing tool cprnc not found"
-    exit -8
-  fi
-
-  # source the test.sh file to get the names of the NC_OUTPUT_FILES
-  source ${HOMME_TESTING_DIR}/${TEST_NAME}/${TEST_NAME}.sh
-
-  # NC_OUTPUT_FILES is defined in the .sh file
-  FILES="${NC_OUTPUT_FILES}"
-
-  if [ -z "${FILES}" ] ; then
-      echo "Test ${TEST_NAME}: no netcdf output files. Skipping baseline compare"
-  fi
-
-  # for files in movies
-  for file in $FILES 
-  do
-    echo "file = ${file}"
-    baseFilename=`basename $file`
-
-    # new result
-    newFile=${HOMME_TESTING_DIR}/${TEST_NAME}/movies/$file
-    if [ ! -f "${newFile}" ] ; then
-      echo "ERROR: The result file ${newFile} does not exist exiting" 
-      exit -9
-    fi
-
-    # result in the repo
-    #repoFile=${HOMME_NC_RESULTS_DIR}/${TEST_NAME}/${baseFilename}
-    repoFile=${HOMME_BASELINE_DIR}/${TEST_NAME}/movies/${baseFilename}
-
-    if [ ! -f "${repoFile}" ] ; then
-      echo "ERROR: The repo file ${repoFile} does not exist exiting" 
-      exit -10
-    fi
-
-    cmd="${CPRNC_BINARY} ${repoFile} ${newFile}"
-
-    diffStdout=${TEST_NAME}.${baseFilename}.out
-    diffStderr=${TEST_NAME}.${baseFilename}.err
-
-    echo "Running cprnc:"
-    echo "  $cmd"
-    $cmd > $diffStdout 2> $diffStderr
-
-    # Parse the output file to determine if they were identical
-    DIFF_RESULT=`grep -e 'diff_test' $diffStdout | awk '{ print $8 }'`
-
-    if [ "${DIFF_RESULT}" == IDENTICAL ] ; then
-      echo "The files are identical: DIFF_RESULT=${DIFF_RESULT}"
-      # Delete the output file to remove clutter
-      rm $diffStdout
-      rm $diffStderr
-    else
-      echo "The files are different: DIFF_RESULT=${DIFF_RESULT}"
-      #echo "  The diff output is available in $diffStdout"
-      echo "############################################################################"
-      echo "CPRNC returned the following RMS differences"
-      grep RMS ${diffStdout}
-      echo "############################################################################"
-      exit -11
-    fi
-
-    
-  done
-}
-
 diffCprncOutput() {
 
   # source the test.sh file to get the names of the NC_OUTPUT_FILES
@@ -635,13 +565,20 @@ diffCprncOutput() {
     fi
 
     # Parse the output file to determine if they were identical
-    DIFF_RESULT=`grep -e 'diff_test' ${cprncOutputFile} | awk '{ print $8 }'`
+    DIFF_RESULT=`grep -ae 'diff_test' ${cprncOutputFile} | awk '{ print $8 }'`
 
     if [ "${DIFF_RESULT}" == IDENTICAL ] ; then
-      echo "The files are identical: DIFF_RESULT=${DIFF_RESULT}"
-      # Delete the output file to remove clutter
+      # check for missing variables
+      NUMVARS_RESULT=`grep -ae 'were not found on' ${cprncOutputFile} | awk '{ print $5 }'`
+      if [ "${NUMVARS_RESULT}" == "0" ] ; then
+         echo "The files are identical: DIFF_RESULT=${DIFF_RESULT} missing vars=${NUMVARS_RESULT}"
+      else
+         echo "The files are identical: DIFF_RESULT=${DIFF_RESULT}"
+         echo "But there were missing variables: =${NUMVARS_RESULT}"
+         ((exitcode=exitcode-10))
+      fi
     else
-      echo "The files are different: DIFF_RESULT=${DIFF_RESULT}"
+      echo "The files are different or missing: DIFF_RESULT=${DIFF_RESULT}"
       echo "############################################################################"
       echo "CPRNC returned the following RMS differences"
       grep RMS ${cprncOutputFile}
@@ -711,6 +648,9 @@ diffCprncRef() {
          exit -13
       fi
     fi
+echo "############################################################################"
+echo "  The diff using CPRNC has passed"
+echo "############################################################################"
   done
 }
 
