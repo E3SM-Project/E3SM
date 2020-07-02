@@ -179,6 +179,7 @@ contains
       !$omp end master
       !$omp barrier
 
+      !$omp do schedule(runtime) private(rediKappaCell, iEdge)
       nCells = nCellsArray(2)
       do iCell = 1,nCells
         rediKappaCell(iCell) = 0.0_RKIND
@@ -188,6 +189,7 @@ contains
         enddo
         rediKappaCell(iCell) = rediKappaCell(iCell) / areaCell(iCell)
       enddo
+      !$omp end do
 
       nCells = nCellsArray(1)
       nCellsP1 = nCellsArray(size(nCellsArray)) + 1
