@@ -26,7 +26,7 @@ def write_netcdf(filename: str, curr_hurricane: Hurricane, grid: Geogrid, winds:
     # Format time
     ref_date = curr_hurricane[0].ref_time 
     xtime = []
-    for it in range(0,len(curr_hurricane)):
+    for it in range(0,len(curr_hurricane)-1):
       t = curr_hurricane[it].time
       date = ref_date + datetime.timedelta(hours=np.float64(t))
       xtime.append(date.strftime('%Y-%m-%d_%H:%M:%S'+45*' '))
