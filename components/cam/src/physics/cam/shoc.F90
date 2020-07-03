@@ -2102,52 +2102,67 @@ subroutine shoc_assumed_pdf(&
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !  FIND PARAMETERS FOR VERTICAL VELOCITY
 
-      call shoc_assumed_pdf_vv_parameters(w_first, w_sec(i,k), w3var, &
-        Skew_w, w1_1, w1_2, w2_1, w2_2, a)
+      call shoc_assumed_pdf_vv_parameters(&
+         w_first,w_sec(i,k),w3var,&    ! Input
+         Skew_w,w1_1,w1_2,w2_1,w2_2,a) ! Output
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !  FIND PARAMETERS FOR THETAL
 
       call shoc_assumed_pdf_thl_parameters(&
-        wthlsec, sqrtw2, sqrtthl, thlsec, thl_first, w1_1, w1_2, Skew_w, a,&
-        dothetal_skew,&
-        thl1_1, thl1_2, thl2_1, thl2_2, sqrtthl2_1, sqrtthl2_2, Skew_thl)
+         wthlsec,sqrtw2,sqrtthl,thlsec,thl_first,& ! Input
+         w1_1,w1_2,Skew_w,a,dothetal_skew,&        ! Input
+         thl1_1,thl1_2,thl2_1,thl2_2,sqrtthl2_1,&  ! Output
+         sqrtthl2_2,Skew_thl)                      ! Output
       
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !  FIND PARAMETERS FOR TOTAL WATER MIXING RATIO
 
       call shoc_assumed_pdf_qw_parameters(&
-        wqwsec, sqrtw2, Skew_w, sqrtqt, qwsec, w1_2, w1_1, qw_first, a, &
-        qw1_1, qw1_2, Skew_qw, qw2_1, qw2_2, sqrtqw2_1, sqrtqw2_2)
+         wqwsec,sqrtw2,Skew_w,sqrtqt,& ! Input
+         qwsec,w1_2,w1_1,qw_first,a,&  ! Input
+         qw1_1,qw1_2,Skew_qw,qw2_1,&   ! Input
+         qw2_2,sqrtqw2_1,sqrtqw2_2)    ! Output
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !  CONVERT FROM TILDA VARIABLES TO "REAL" VARIABLES
 
-      call shoc_assumed_pdf_tilda_to_real(w_first, sqrtw2, w1_1)
-      call shoc_assumed_pdf_tilda_to_real(w_first, sqrtw2, w1_2)
+      call shoc_assumed_pdf_tilda_to_real(&
+         w_first,sqrtw2,& ! Input
+         w1_1)            ! Output
+      call shoc_assumed_pdf_tilda_to_real(&
+         w_first,sqrtw2,& ! Input
+         w1_2)            ! Output
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !  FIND WITHIN-PLUME CORRELATIONS
       
       call shoc_assumed_pdf_inplume_correlations(&
-        sqrtqw2_1, sqrtthl2_1, a, sqrtqw2_2, sqrtthl2_2,& 
-        qwthlsec, qw1_1, qw_first, thl1_1, thl_first, qw1_2, thl1_2,&
-        r_qwthl_1)
+        sqrtqw2_1,sqrtthl2_1,a,sqrtqw2_2,sqrtthl2_2,&           ! Input
+        qwthlsec,qw1_1,qw_first,thl1_1,thl_first,qw1_2,thl1_2,& ! Input
+        r_qwthl_1)                                              ! Output
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !  BEGIN TO COMPUTE CLOUD PROPERTY STATISTICS
 
-      call shoc_assumed_pdf_compute_temperature(thl1_1, basepres, pval, Tl1_1)
-      call shoc_assumed_pdf_compute_temperature(thl1_2, basepres, pval, Tl1_2)
+      call shoc_assumed_pdf_compute_temperature(&
+        thl1_1,basepres,pval,& ! Input
+        Tl1_1)                 ! Output
+      call shoc_assumed_pdf_compute_temperature(&
+        thl1_2,basepres,pval,& ! Input
+        Tl1_2)                 ! Output
 
       ! Now compute qs
-      call shoc_assumed_pdf_compute_qs(Tl1_1, Tl1_2, pval, qs1, beta1, qs2, beta2)
+      call shoc_assumed_pdf_compute_qs(&
+        Tl1_1,Tl1_2,pval,&   ! Input
+        qs1,beta1,qs2,beta2) ! Output
 
       !!!!!  Now compute cloud stuff
       !!!!!!  compute s term
-      call shoc_assumed_pdf_compute_s(&
-        qw1_1, qs1, beta1, pval, thl2_1, qw2_1, sqrtthl2_1, sqrtqw2_1, r_qwthl_1,&
-        s1, cthl1, cqt1, std_s1, qn1, C1)
+      call shoc_assumed_pdf_compute_s(&        
+        qw1_1,qs1,beta1,pval,thl2_1,&          ! Input
+        qw2_1,sqrtthl2_1,sqrtqw2_1,r_qwthl_1,& ! Input
+        s1,cthl1,cqt1,std_s1,qn1,C1)           ! Output
 
       !!!!! now compute non-precipitating cloud condensate
 
@@ -2162,8 +2177,9 @@ subroutine shoc_assumed_pdf(&
         qn2=qn1
       else
         call shoc_assumed_pdf_compute_s(&
-        qw1_2, qs2, beta2, pval, thl2_2, qw2_2, sqrtthl2_2, sqrtqw2_2, r_qwthl_1,&
-        s2, cthl2, cqt2, std_s2, qn2, C2)
+        qw1_2,qs2,beta2,pval,thl2_2,&          ! Input
+        qw2_2,sqrtthl2_2,sqrtqw2_2,r_qwthl_1,& ! Input
+        s2,cthl2,cqt2,std_s2,qn2,C2)           ! Output
       endif
 
       ql1=min(qn1,qw1_1)
@@ -2173,23 +2189,24 @@ subroutine shoc_assumed_pdf(&
       shoc_cldfrac(i,k) = min(1._rtype,a*C1+(1._rtype-a)*C2)
 
       ! Compute SGS liquid water mixing ratio
-      call shoc_assumed_pdf_compute_sgs_liquid(a, ql1, ql2,&
-        shoc_ql(i,k))
+      call shoc_assumed_pdf_compute_sgs_liquid(&
+        a,ql1,ql2,&   ! Input
+        shoc_ql(i,k)) ! Output
 
       ! Compute cloud liquid variance (CLUBB formulation, adjusted to SHOC parameters based)
       call shoc_assumed_pdf_compute_cloud_liquid_varaince(&
-        a, s1, ql1, C1, std_s1, s2, ql2, C2, std_s2, shoc_ql(i,k),&
-        shoc_ql2(i,k))
+        a,s1,ql1,C1,std_s1,s2,ql2,C2,std_s2,shoc_ql(i,k),& ! Input
+        shoc_ql2(i,k))                                     ! Output
     
       ! Compute liquid water flux
       call shoc_assumed_pdf_compute_liquid_water_flux(&
-        a, w1_1, w_first, ql1, w1_2, ql2,&
-        wqls(i,k))
+        a,w1_1,w_first,ql1,w1_2,ql2,& ! Input
+        wqls(i,k))                    ! Output
       
       ! Compute the SGS buoyancy flux
       call shoc_assumed_pdf_compute_buoyancy_flux(&
-        wthlsec, epsterm, wqwsec, pval, wqls(i,k),&
-        wthv_sec(i,k))
+        wthlsec, epsterm, wqwsec, pval, wqls(i,k),& ! Input
+        wthv_sec(i,k))                              ! Output
 
     enddo  ! end i loop here
   enddo ! end k loop here
@@ -2199,19 +2216,31 @@ subroutine shoc_assumed_pdf(&
 end subroutine shoc_assumed_pdf
 
 subroutine shoc_assumed_pdf_vv_parameters(&
-  w_first, w_sec, w3var, &
-  Skew_w, w1_1, w1_2, w2_1, w2_2, a)
+   w_first,w_sec,w3var,&          ! Input
+   Skew_w,w1_1,w1_2,w2_1,w2_2,a)  ! Output
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !  FIND PARAMETERS FOR VERTICAL VELOCITY
 
   implicit none
+  
+  ! intent-ins
+  real(rtype), intent(in) :: w_first 
+  real(rtype), intent(in) :: w_sec
+  real(rtype), intent(in) :: w3var
 
-  real(rtype), parameter :: w_tol_sqd=(2.e-2_rtype)**2
+  ! intent-out
+  real(rtype), intent(out) :: Skew_w
+  real(rtype), intent(out) :: w1_1
+  real(rtype), intent(out) :: w1_2
+  real(rtype), intent(out) :: w2_1
+  real(rtype), intent(out) :: w2_2
+  real(rtype), intent(out) :: a
 
-  real(rtype), intent(in) :: w_first, w_sec, w3var
-  real(rtype), intent(out) :: Skew_w, w1_1, w1_2, w2_1, w2_2, a
-
+  ! local vars
   real(rtype) :: sqrtw2t 
+
+  ! parameters
+  real(rtype), parameter :: w_tol_sqd=(2.e-2_rtype)**2
 
   Skew_w=w3var/w_sec**(3./2.)
 
@@ -2243,25 +2272,42 @@ subroutine shoc_assumed_pdf_vv_parameters(&
 end subroutine shoc_assumed_pdf_vv_parameters
 
 subroutine shoc_assumed_pdf_thl_parameters(&
-  wthlsec, sqrtw2, sqrtthl, thlsec, thl_first, w1_1, w1_2, Skew_w, a,&
-  dothetal_skew,&
-  thl1_1, thl1_2, thl2_1, thl2_2, sqrtthl2_1, sqrtthl2_2, Skew_thl)
+  wthlsec,sqrtw2,sqrtthl,thlsec,thl_first,& ! Input
+  w1_1,w1_2,Skew_w,a,dothetal_skew,&        ! Input
+  thl1_1,thl1_2,thl2_1,thl2_2,sqrtthl2_1,&  ! Output
+  sqrtthl2_2,Skew_thl)                      ! Output
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !  FIND PARAMETERS FOR TOTAL WATER MIXING RATIO
-
   implicit none 
 
+  ! intent-ins
+  real(rtype), intent(in) :: wthlsec
+  real(rtype), intent(in) :: sqrtw2
+  real(rtype), intent(in) :: sqrtthl
+  real(rtype), intent(in) :: thlsec 
+  real(rtype), intent(in) :: thl_first
+  real(rtype), intent(in) :: w1_1
+  real(rtype), intent(in) :: w1_2
+  real(rtype), intent(in) :: Skew_w
+  real(rtype), intent(in) ::  a
+  logical, intent(in)     :: dothetal_skew
+ 
+  ! intent-outs
+  real(rtype), intent(out) :: thl1_1 
+  real(rtype), intent(out) :: thl1_2
+  real(rtype), intent(out) :: thl2_1
+  real(rtype), intent(out) :: thl2_2 
+  real(rtype), intent(out) :: sqrtthl2_1
+  real(rtype), intent(out) :: sqrtthl2_2
+  real(rtype), intent(out) :: Skew_thl
+  
+  ! local vars
+  real(rtype) :: corrtest1, tsign
+
+  ! parameters
   real(rtype), parameter :: thl_tol = 1.e-2_rtype
   real(rtype), parameter :: w_thresh = 0.0_rtype
-
-  real(rtype), intent(in)  :: wthlsec, sqrtw2, sqrtthl, thlsec , thl_first
-  real(rtype), intent(in) :: w1_1, w1_2, Skew_w, a
-  logical, intent(in) :: dothetal_skew
-  real(rtype), intent(out) :: thl1_1, thl1_2, thl2_1, thl2_2, sqrtthl2_1, sqrtthl2_2, Skew_thl
-  
-  
-  real(rtype) :: corrtest1, tsign
 
   corrtest1=max(-1._rtype,min(1._rtype,wthlsec/(sqrtw2*sqrtthl)))
 
@@ -2318,12 +2364,32 @@ subroutine shoc_assumed_pdf_qw_parameters(&
   
   implicit none
 
+  !intent-in
+  real(rtype), intent(in) :: wqwsec
+  real(rtype), intent(in) :: sqrtw2
+  real(rtype), intent(in) :: Skew_w
+  real(rtype), intent(in) :: sqrtqt
+  real(rtype), intent(in) :: qwsec
+  real(rtype), intent(in) :: w1_2
+  real(rtype), intent(in) :: w1_1
+  real(rtype), intent(in) :: qw_first
+  real(rtype), intent(in) :: a
+
+  ! intent-out
+  real(rtype), intent(out) :: qw1_1
+  real(rtype), intent(out) :: qw1_2
+  real(rtype), intent(out) :: Skew_qw
+  real(rtype), intent(out) :: qw2_1
+  real(rtype), intent(out) :: qw2_2
+  real(rtype), intent(out) :: sqrtqw2_1
+  real(rtype), intent(out) :: sqrtqw2_2
+  
+  ! local vars
+  real(rtype) :: corrtest2, tsign
+
+  ! Parameters
   real(rtype), parameter :: rt_tol=1.e-4_rtype
   real(rtype), parameter :: w_thresh=0.0_rtype
-
-  real(rtype), intent(in) :: wqwsec, sqrtw2, Skew_w, sqrtqt, qwsec, w1_2, w1_1, qw_first, a
-  real(rtype), intent(out) :: qw1_1, qw1_2, Skew_qw, qw2_1, qw2_2, sqrtqw2_1, sqrtqw2_2
-  real(rtype) :: corrtest2, tsign
 
   corrtest2=max(-1.0_rtype,min(1.0_rtype,wqwsec/(sqrtw2*sqrtqt)))
 
@@ -2367,14 +2433,19 @@ subroutine shoc_assumed_pdf_qw_parameters(&
 
 end subroutine shoc_assumed_pdf_qw_parameters
 
-subroutine shoc_assumed_pdf_tilda_to_real(w_first, sqrtw2, w1)
+subroutine shoc_assumed_pdf_tilda_to_real(&
+  w_first,sqrtw2,& ! intent-in
+  w1)              ! intent-out
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !  CONVERT FROM TILDA VARIABLES TO "REAL" VARIABLES
-  
   implicit none
   
-  real(rtype), intent(in) :: w_first, sqrtw2
+  ! intent-ins
+  real(rtype), intent(in) :: w_first
+  real(rtype), intent(in) :: sqrtw2
+  
+  !intent-inouts 
   real(rtype), intent(inout) :: w1
 
   w1 = w1 * sqrtw2 + w_first 
@@ -2382,17 +2453,29 @@ subroutine shoc_assumed_pdf_tilda_to_real(w_first, sqrtw2, w1)
 end subroutine shoc_assumed_pdf_tilda_to_real
 
 subroutine shoc_assumed_pdf_inplume_correlations(&
-  sqrtqw2_1, sqrtthl2_1, a, sqrtqw2_2, sqrtthl2_2,& 
-  qwthlsec, qw1_1, qw_first, thl1_1, thl_first, qw1_2, thl1_2,&
-  r_qwthl_1)
+  sqrtqw2_1, sqrtthl2_1, a, sqrtqw2_2, sqrtthl2_2,&              ! Input 
+  qwthlsec, qw1_1, qw_first, thl1_1, thl_first, qw1_2, thl1_2,&  ! Input
+  r_qwthl_1)                                                     ! Output
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !  FIND WITHIN-PLUME CORRELATIONS
-  
   implicit none
-  real(rtype), intent(in)  :: sqrtqw2_1, sqrtthl2_1, a, sqrtqw2_2, sqrtthl2_2,& 
-                              qwthlsec, qw1_1, qw_first, thl1_1, thl_first, qw1_2,&
-                              thl1_2
+
+  ! intent out
+  real(rtype), intent(in)  :: sqrtqw2_1
+  real(rtype), intent(in)  :: sqrtthl2_1
+  real(rtype), intent(in)  :: a
+  real(rtype), intent(in)  :: sqrtqw2_2
+  real(rtype), intent(in)  :: sqrtthl2_2 
+  real(rtype), intent(in)  :: qwthlsec
+  real(rtype), intent(in)  :: qw1_1
+  real(rtype), intent(in)  :: qw_first
+  real(rtype), intent(in)  :: thl1_1
+  real(rtype), intent(in)  :: thl_first
+  real(rtype), intent(in)  :: qw1_2
+  real(rtype), intent(in)  :: thl1_2
+
+  ! intent out
   real(rtype), intent(out) :: r_qwthl_1
 
   real(rtype) :: testvar
@@ -2409,24 +2492,45 @@ subroutine shoc_assumed_pdf_inplume_correlations(&
 end subroutine shoc_assumed_pdf_inplume_correlations
 
 
-subroutine shoc_assumed_pdf_compute_temperature(thl1, basepres, pval, Tl1)
+subroutine shoc_assumed_pdf_compute_temperature(&
+  thl1,basepres,pval,& ! Input
+  Tl1)                 ! Output
 
   implicit none
+  ! intent-in
+  real(rtype), intent(in)  :: thl1
+  real(rtype), intent(in)  ::basepres
+  real(rtype), intent(in)  ::pval
 
-  real(rtype), intent(in)  :: thl1, basepres, pval
+  ! intent-out
   real(rtype), intent(out) :: Tl1
 
   TL1 = thl1/((basepres/pval)**(rgas/cp))
 
 end subroutine shoc_assumed_pdf_compute_temperature
 
-subroutine shoc_assumed_pdf_compute_qs(Tl1_1, Tl1_2, pval, qs1, beta1, qs2, beta2)
+subroutine shoc_assumed_pdf_compute_qs(&
+  Tl1_1,Tl1_2,pval,&   ! Input
+  qs1,beta1,qs2,beta2) ! Ouput
 
   implicit none
 
-  real(rtype), intent(in) :: Tl1_1, Tl1_2, pval
-  real(rtype), intent(out) :: qs1, beta1, qs2, beta2
-  real(rtype) :: esval1_1, esval1_2, lstarn1, lstarn2
+  ! intent-in
+  real(rtype), intent(in) :: Tl1_1
+  real(rtype), intent(in) :: Tl1_2
+  real(rtype), intent(in) :: pval
+
+  ! intent-out
+  real(rtype), intent(out) :: qs1
+  real(rtype), intent(out) ::   beta1
+  real(rtype), intent(out) ::   qs2
+  real(rtype), intent(out) ::   beta2
+  
+  ! local vars
+  real(rtype) :: esval1_1
+  real(rtype) :: esval1_2
+  real(rtype) :: lstarn1
+  real(rtype) :: lstarn2
 
   esval1_1=0._rtype
   esval1_2=0._rtype
@@ -2452,19 +2556,35 @@ subroutine shoc_assumed_pdf_compute_qs(Tl1_1, Tl1_2, pval, qs1, beta1, qs2, beta
 end subroutine shoc_assumed_pdf_compute_qs
 
 subroutine shoc_assumed_pdf_compute_s(&
-  qw1, qs1, beta, pval, thl2, qw2, sqrtthl2, sqrtqw2, r_qwthl,&
-  s, cthl, cqt, std_s, qn, C)
+  qw1,qs1,beta,pval,thl2,&        ! Input
+  qw2,sqrtthl2,sqrtqw2,r_qwthl,&  ! Input
+  s,cthl,cqt,std_s,qn,C)          ! Ouput
 
   !!!!!!  compute s term
-
   implicit none
 
-  ! define these so they don't have to be computed more than once
+  ! intent-in
+  real(rtype), intent(in)  :: qw1
+  real(rtype), intent(in)  :: qs1
+  real(rtype), intent(in)  :: beta
+  real(rtype), intent(in)  :: pval
+  real(rtype), intent(in)  :: thl2
+  real(rtype), intent(in)  :: qw2
+  real(rtype), intent(in)  :: sqrtthl2
+  real(rtype), intent(in)  :: sqrtqw2
+  real(rtype), intent(in)  :: r_qwthl
+
+  ! intent-out
+  real(rtype), intent(out) :: s
+  real(rtype), intent(out) :: cthl
+  real(rtype), intent(out) :: cqt
+  real(rtype), intent(out) :: std_s
+  real(rtype), intent(out) :: qn
+  real(rtype), intent(out) :: C
+
+  ! Parameters
   real(rtype), parameter :: sqrt2 = sqrt(2._rtype)
   real(rtype), parameter :: sqrtpi = sqrt(2._rtype*3.14_rtype)
-
-  real(rtype), intent(in)  :: qw1, qs1, beta, pval, thl2 , qw2, sqrtthl2, sqrtqw2, r_qwthl
-  real(rtype), intent(out) :: s, cthl, cqt, std_s, qn, C
 
   s=qw1-qs1*((1._rtype+beta*qw1)/(1._rtype+beta*qs1))
   cthl=((1._rtype+beta*qw1)/(1._rtype+beta*qs1)**2)*(cp/lcond) &
@@ -2493,13 +2613,18 @@ end subroutine
 
 
 subroutine shoc_assumed_pdf_compute_sgs_liquid(&
-  a, ql1, ql2,&
-  shoc_ql)
+  a, ql1, ql2,& ! Input
+  shoc_ql)      ! Input
  
   ! Compute SGS liquid water mixing ratio
- 
   implicit none
-  real(rtype), intent(in)  :: a, ql1, ql2
+
+  ! intent-in
+  real(rtype), intent(in)  :: a
+  real(rtype), intent(in)  :: ql1
+  real(rtype), intent(in)  :: ql2
+
+  ! intent-out
   real(rtype), intent(out) :: shoc_ql
 
   shoc_ql = max(0._rtype,a*ql1+(1._rtype-a)*ql2)
@@ -2507,14 +2632,25 @@ subroutine shoc_assumed_pdf_compute_sgs_liquid(&
 end subroutine shoc_assumed_pdf_compute_sgs_liquid
 
 subroutine shoc_assumed_pdf_compute_cloud_liquid_varaince(&
-  a, s1, ql1, C1, std_s1, s2, ql2, C2, std_s2, shoc_ql,&
-  shoc_ql2)
+  a,s1,ql1,C1,std_s1,s2,ql2,C2,std_s2,shoc_ql,& ! Input
+  shoc_ql2)                                     ! Output
 
   ! Compute cloud liquid variance (CLUBB formulation, adjusted to SHOC parameters based)
-  
   implicit none
 
-  real(rtype), intent(in) :: a, s1, ql1, C1, std_s1, s2, ql2, C2, std_s2, shoc_ql
+  ! intent-in
+  real(rtype), intent(in)  :: a
+  real(rtype), intent(in)  :: s1
+  real(rtype), intent(in)  :: ql1
+  real(rtype), intent(in)  :: C1
+  real(rtype), intent(in)  :: std_s1
+  real(rtype), intent(in)  :: s2
+  real(rtype), intent(in)  :: ql2
+  real(rtype), intent(in)  :: C2
+  real(rtype), intent(in)  :: std_s2
+  real(rtype), intent(in)  :: shoc_ql
+
+  ! intent-out
   real(rtype), intent(out) :: shoc_ql2
 
   shoc_ql2 = a * ( s1*ql1 + C1*std_s1**2.0 )                  &
@@ -2524,30 +2660,41 @@ subroutine shoc_assumed_pdf_compute_cloud_liquid_varaince(&
 end subroutine shoc_assumed_pdf_compute_cloud_liquid_varaince
 
 subroutine shoc_assumed_pdf_compute_liquid_water_flux(&
-  a, w1_1, w_first, ql1, w1_2, ql2, wqls)
+  a,w1_1,w_first,ql1,w1_2,ql2,& ! Input
+  wqls)                         ! Output
   ! Compute liquid water flux
   implicit none
 
-  real(rtype), intent(in) :: a, w1_1, w_first, ql1, w1_2, ql2
+  ! intent-in
+  real(rtype), intent(in)  :: a
+  real(rtype), intent(in)  :: w1_1
+  real(rtype), intent(in)  :: w_first
+  real(rtype), intent(in)  :: ql1
+  real(rtype), intent(in)  :: w1_2
+  real(rtype), intent(in)  :: ql2
+  
+  ! intent-out
   real(rtype), intent(out) :: wqls
 
   wqls =a*((w1_1-w_first)*ql1)+(1._rtype-a)*((w1_2-w_first)*ql2)
 
-
 end subroutine shoc_assumed_pdf_compute_liquid_water_flux
 
-
-
 subroutine shoc_assumed_pdf_compute_buoyancy_flux(&
-  wthlsec, epsterm, wqwsec, pval, wqls, wthv_sec)
+  wthlsec,epsterm,wqwsec,pval,wqls,& ! Input
+  wthv_sec)                          ! Output
   ! Compute the SGS buoyancy flux
   implicit none
 
+  ! intent-in
+  real(rtype), intent(in) :: wthlsec
+  real(rtype), intent(in) :: epsterm
+  real(rtype), intent(in) :: wqwsec
+  real(rtype), intent(in) :: pval
+  real(rtype), intent(in) :: wqls
   
-
-  real(rtype), intent(in) :: wthlsec, epsterm, wqwsec, pval, wqls
+  ! intent-out
   real(rtype), intent(out) :: wthv_sec
-
 
   wthv_sec=wthlsec+((1._rtype-epsterm)/epsterm)*basetemp*wqwsec &
   +((lcond/cp)*(basepres/pval)**(rgas/cp)-(1._rtype/epsterm)*basetemp)*wqls
