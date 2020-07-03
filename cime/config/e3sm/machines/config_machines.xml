@@ -70,7 +70,7 @@
   <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
   <BASELINE_ROOT>/project/projectdirs/acme/baselines/$COMPILER</BASELINE_ROOT>
   <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.cori/cprnc</CCSM_CPRNC>
-  <SAVE_TIMING_DIR>/project/projectdirs/acme</SAVE_TIMING_DIR>
+  <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
   <SAVE_TIMING_DIR_PROJECTS>e3sm,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
   <OS>CNL</OS>
   <BATCH_SYSTEM>nersc_slurm</BATCH_SYSTEM>
@@ -217,7 +217,7 @@
   <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
   <BASELINE_ROOT>/project/projectdirs/acme/baselines/$COMPILER</BASELINE_ROOT>
   <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.cori/cprnc</CCSM_CPRNC>
-  <SAVE_TIMING_DIR>/project/projectdirs/acme</SAVE_TIMING_DIR>
+  <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
   <SAVE_TIMING_DIR_PROJECTS>e3sm,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
   <OS>CNL</OS>
   <BATCH_SYSTEM>nersc_slurm</BATCH_SYSTEM>
