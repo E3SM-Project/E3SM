@@ -1827,9 +1827,9 @@ subroutine compute_diag_third_shoc_moment(&
   real(rtype) :: omega0, omega1, omega2
   real(rtype) :: X0, Y0, X1, Y1, AA0, AA1
   real(rtype) :: zvar, x5var, iso, thedz, thedz2
-  real(rtype) :: theterm, cond, tsign
-  real(rtype) :: isosqrt, dthl2, dwthl, dtke, dw2, aw2
-  real(rtype) :: buoy_sgs2,  grd, bet2, bet
+  real(rtype) :: theterm, tsign
+  real(rtype) :: isosqrt
+  real(rtype) :: buoy_sgs2, bet2
   real(rtype) :: f0, f1, f2, f3, f4, f5
 
   !LOCAL PARAMETERS
@@ -2018,31 +2018,25 @@ subroutine shoc_assumed_pdf(&
   real(rtype), intent(out) :: shoc_ql2(shcol,nlev)
 
 ! LOCAL VARIABLES
-  integer i,j,k,dothis,nmicro_fields
+  integer i,k
   real(rtype) skew_w,skew_thl,skew_qw,a
   real(rtype) w1_1,w1_2,w2_1,w2_2,w3var
   real(rtype) thl1_1,thl1_2,thl2_1,thl2_2
   real(rtype) qw1_1,qw1_2,qw2_1,qw2_2
-  real(rtype) r_qwthl_1,r_wqw_1,r_wthl_1
-  real(rtype) testvar,s1,s2,std_s1,std_s2,C1,C2
-  real(rtype) ql1,ql2,flux_ws1,flux_ws2
-  real(rtype) w_ql1,w_ql2,thl_first,qw_first,w_first
-  real(rtype) Tl1_1,Tl1_2,betatest,pval
-  real(rtype) w2thl,w2qw,w2ql,w2ql_1,w2ql_2
-  real(rtype) s,thec,thlsec,qwsec,qwthlsec,wqwsec,wthlsec
-  real(rtype) thestd,erf,exp,dum
+  real(rtype) r_qwthl_1
+  real(rtype) s1,s2,std_s1,std_s2,C1,C2
+  real(rtype) ql1,ql2
+  real(rtype) thl_first,qw_first,w_first
+  real(rtype) Tl1_1,Tl1_2,pval
+  real(rtype) thlsec,qwsec,qwthlsec,wqwsec,wthlsec
   real(rtype) cqt1,cthl1,cqt2,cthl2
-  real(rtype) qn1,qn2,qi1,qi2,omn1,omn2, omn
-  real(rtype) lstarn, test
-  real(rtype) m, bigm, basetemp2
+  real(rtype) qn1,qn2
   real(rtype) beta1, beta2, qs1, qs2
-  real(rtype) esval1_1, esval2_1, esval1_2, esval2_2, om1, om2
-  real(rtype) lstarn1, lstarn2, sqrtw2, sqrtthl, sqrtqt
-  real(rtype) sqrtstd1, sqrtstd2, tsign, tvar, sqrtw2t
-  real(rtype) wqis, skip, epsterm
+  real(rtype) sqrtw2, sqrtthl, sqrtqt
+  real(rtype) epsterm
   real(rtype) sqrtqw2_1, sqrtqw2_2, sqrtthl2_1, sqrtthl2_2
-  real(rtype) corrtest1, corrtest2, thl_tol, rt_tol, w_tol_sqd, w_thresh
-
+  real(rtype) thl_tol, rt_tol, w_tol_sqd, w_thresh
+ 
   ! variables on thermo grid
   real(rtype) :: wthl_sec_zt(shcol,nlev)
   real(rtype) :: wqw_sec_zt(shcol,nlev)
@@ -2609,8 +2603,6 @@ IF (C .ne. C) C = 0._rtype
   endif
 
 end subroutine
-
-
 
 subroutine shoc_assumed_pdf_compute_sgs_liquid(&
   a, ql1, ql2,& ! Input
