@@ -2870,7 +2870,7 @@
 	 <DOUT_L_MSROOT>csm/$CASE</DOUT_L_MSROOT>
 	 <BASELINE_ROOT>/gpfs/alpinetds/world-shared/csc190/e3sm/cesm/baselines/$COMPILER</BASELINE_ROOT>
 	 <CCSM_CPRNC>/gpfs/alpinetds/world-shared/csc190/e3sm/cesm/tools/cprnc/cprnc</CCSM_CPRNC>
-	 <SAVE_TIMING_DIR>/gpfs/alpinetds/proj-shared/$PROJECT/e3sm</SAVE_TIMING_DIR>
+         <SAVE_TIMING_DIR>/gpfs/alpine/proj-shared/$PROJECT</SAVE_TIMING_DIR>
          <SAVE_TIMING_DIR_PROJECTS>cli115,cli127</SAVE_TIMING_DIR_PROJECTS>
 	 <OS>LINUX</OS>
 	 <BATCH_SYSTEM>lsf</BATCH_SYSTEM>
