@@ -2606,7 +2606,7 @@ end subroutine
 
 subroutine shoc_assumed_pdf_compute_sgs_liquid(&
   a, ql1, ql2,& ! Input
-  shoc_ql)      ! Input
+  shoc_ql)      ! Output
  
   ! Compute SGS liquid water mixing ratio
   implicit none
