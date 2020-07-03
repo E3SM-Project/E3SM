@@ -58,6 +58,11 @@ struct SHOCGridData {
     *this = std::move(d_trans);
   }
 };
+
+// This function initialzes the grid used by shoc. Given the 
+// locations of the cell center (location of thermodynaics quantities), cell 
+// interfaces, and pressure gradient the functon returns dz_zi, dz_zt,
+// and density. 
 void shoc_grid(Int nlev, SHOCGridData &d);
 
 }  // namespace shoc
