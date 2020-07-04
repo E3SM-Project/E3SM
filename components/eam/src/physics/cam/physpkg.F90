@@ -24,7 +24,8 @@ module physpkg
   use phys_grid,        only: get_ncols_p, print_cost_p, update_cost_p, phys_proc_cost
   use phys_gmean,       only: gmean_mass
   use ppgrid,           only: begchunk, endchunk, pcols, pver, pverp, psubcols
-  use constituents,     only: pcnst, cnst_name, cnst_get_ind
+  use constituents,     only: pcnst, cnst_name, cnst_get_ind,&
+                              setup_moist_indices, icldice, icldliq, irain, isnow
   use camsrfexch,       only: cam_out_t, cam_in_t
 
   use cam_control_mod,  only: ideal_phys, adiabatic
@@ -44,8 +45,6 @@ module physpkg
                                     modal_aero_calcsize_reg
   use modal_aero_wateruptake, only: modal_aero_wateruptake_init, &
                                     modal_aero_wateruptake_reg
-
-  use check_energy, only   : icldice, icldliq, irain, isnow 
 
   implicit none
   private
@@ -671,7 +670,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use ref_pres,           only: pref_edge, pref_mid
     use cloud_rad_props,    only: cloud_rad_props_init
     use cam_control_mod,    only: nsrest  ! restart flag
-    use check_energy,       only: check_energy_init, setup_moist_indices
+    use check_energy,       only: check_energy_init
     use chemistry,          only: chem_init
     use prescribed_ozone,   only: prescribed_ozone_init
     use prescribed_ghg,     only: prescribed_ghg_init

@@ -36,12 +36,16 @@ module constituents
   public cnst_chk_dim         ! check that number of constituents added equals dimensions (pcnst)
   public cnst_cam_outfld      ! Returns true if default CAM output was specified in the cnst_add calls.
 
+  public setup_moist_indices
+
 ! Public data
 
   integer, parameter, public :: pcnst  = PCNST      ! number of advected constituents (including water vapor)
 
   character(len=16), public :: cnst_name(pcnst)     ! constituent names
   character(len=128),public :: cnst_longname(pcnst) ! long name of constituents
+
+  integer, public :: icldice = -1, icldliq = -1, irain = -1, isnow = -1
 
 ! Namelist variables
   logical, public :: readtrace = .true.             ! true => obtain initial tracer data from IC file
@@ -434,5 +438,17 @@ function cnst_cam_outfld(m)
 end function cnst_cam_outfld
 
 !==============================================================================
+
+subroutine setup_moist_indices()
+
+  implicit none
+
+  call cnst_get_ind('CLDICE', icldice, abort=.false.)
+  call cnst_get_ind('CLDLIQ', icldliq, abort=.false.)
+  call cnst_get_ind('RAINQM', irain, abort=.false.)
+  call cnst_get_ind('SNOWQM', isnow, abort=.false.)
+
+end subroutine setup_moist_indices
+
 
 end module constituents
