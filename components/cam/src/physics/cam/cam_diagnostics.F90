@@ -358,6 +358,14 @@ subroutine diag_init()
    call addfld ('KEbeforeadj',horiz_only, 'A','J/m2','TE after ')
    call addfld ('KEafteradj',horiz_only, 'A','J/m2','TE after ')
 
+
+   call addfld ('TEdiff',horiz_only, 'A','J/m2','TE diff ')
+   call addfld ('KEdiff',horiz_only, 'A','J/m2','TE diff ')
+   call addfld ('TEq1',(/ 'lev' /), 'A','J/m2','TE q1 ')
+   call addfld ('TEq1p',(/ 'lev' /), 'A','J/m2','TE q1p ')
+   call addfld ('TEps',horiz_only, 'A','J/m2','TE ps ')
+
+
    call addfld ('T1000',horiz_only,   'A','K','Temperature at 1000 mbar pressure surface')
    call addfld ('T975',horiz_only,   'A','K','Temperature at 975 mbar pressure surface')   
    call addfld ('T950',horiz_only,   'A','K','Temperature at 950 mbar pressure surface')   

@@ -30,7 +30,8 @@ module check_energy
   use phys_gmean,      only: gmean
   use physconst,       only: gravit, latvap, latice, cpair, cpairv
   use physics_types,   only: physics_state, physics_tend, physics_ptend, physics_ptend_init
-  use constituents,    only: cnst_get_ind, pcnst, cnst_name, cnst_get_type_byind
+  use constituents,    only: cnst_get_ind, pcnst, cnst_name, cnst_get_type_byind, &
+                             icldice, icldliq, irain, isnow
   use time_manager,    only: is_first_step
   use cam_logfile,     only: iulog
   use cam_abortutils,  only: endrun 
@@ -58,7 +59,7 @@ module check_energy
 
   public :: energy_helper_eam_def
 
-  public :: setup_moist_indices
+!  public :: setup_moist_indices
 
   public :: qflx_gmean              ! calculate global mean of qflx for water conservation check 
   public :: check_qflx              ! output qflx at certain locations for water conservation check  
@@ -68,7 +69,7 @@ module check_energy
   public :: ieflx_gmean             ! calculate global mean of ieflx 
   public :: check_ieflx_fix         ! add ieflx to sensible heat flux 
 
-  integer, public :: icldice = -1, icldliq = -1, irain = -1, isnow = -1
+!  integer, public :: icldice = -1, icldliq = -1, irain = -1, isnow = -1
 
 ! Private module data
 
@@ -247,18 +248,18 @@ end subroutine check_energy_get_integrals
 
 !===============================================================================
 
-  subroutine setup_moist_indices()
+!  subroutine setup_moist_indices()
 
-    use constituents,    only: cnst_get_ind
+!    use constituents,    only: cnst_get_ind
 
-    implicit none
+!    implicit none
 
-    call cnst_get_ind('CLDICE', icldice, abort=.false.)
-    call cnst_get_ind('CLDLIQ', icldliq, abort=.false.)
-    call cnst_get_ind('RAINQM', irain, abort=.false.)
-    call cnst_get_ind('SNOWQM', isnow, abort=.false.)
+!    call cnst_get_ind('CLDICE', icldice, abort=.false.)
+!    call cnst_get_ind('CLDLIQ', icldliq, abort=.false.)
+!    call cnst_get_ind('RAINQM', irain, abort=.false.)
+!    call cnst_get_ind('SNOWQM', isnow, abort=.false.)
 
-  end subroutine setup_moist_indices
+!  end subroutine setup_moist_indices
 
 !===============================================================================
 
