@@ -664,7 +664,7 @@ CONTAINS
     integer                                      :: ncol, k, ic                                
     integer(kind=int_kind)                       :: lchnk
 
-    real (kind=real_kind), dimension(pcols)      :: te, tw, ke, se, wv, wl, wi, wr, ws
+    real (kind=real_kind), dimension(pcols)      :: te, tw, ke, se, wv, wl, wi, wr, ws, tebefore, kebefore
     real (kind=real_kind), dimension(pcols,pver) :: ustate,vstate,tstate,pdel,dp_adj
     real (kind=real_kind), dimension(pcols,pver,pcnst) :: qstate
     real (kind=real_kind), dimension(pcols)      :: ps,phisstate
@@ -689,11 +689,11 @@ CONTAINS
       ps(:ncol)=state(lchnk)%ps(:ncol)
 
       call energy_helper_eam_def(ustate,vstate,tstate,qstate,ps,pdel,phisstate,&
-                                 ke,se,wv,wl,wi,wr,ws,te,tw, &
+                                 kebefore,se,wv,wl,wi,wr,ws,tebefore,tw, &
                                  ncol)
       !before ps adjustment
-      call outfld('TEbeforeadj', te, pcols, lchnk)
-      call outfld('KEbeforeadj', ke, pcols, lchnk)
+      call outfld('TEbeforeadj', tebefore, pcols, lchnk)
+      call outfld('KEbeforeadj', kebefore, pcols, lchnk)
       
       !adjust ps, keep the code close to applyCAMforcing_tracers
 
@@ -727,6 +727,11 @@ CONTAINS
       call outfld('TEafteradj', te, pcols, lchnk)
       call outfld('KEafteradj', ke, pcols, lchnk)
 
+      call outfld('TEdiff', te-tebefore, pcols, lchnk)
+      call outfld('KEdiff', ke-kebefore, pcols, lchnk)
+      call outfld('TEq1', state(lchnk)%q(:,:,1), pcols, lchnk)
+      call outfld('TEq1p', state(lchnk)%q1(:,:), pcols, lchnk)
+      call outfld('TEps', state(lchnk)%ps(:), pcols, lchnk)
     end do ! lchnk
 
   end subroutine measure_pressure_work
