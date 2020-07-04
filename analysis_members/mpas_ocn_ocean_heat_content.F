@@ -203,7 +203,7 @@ contains
 
          call mpas_pool_get_array(tracersPool, 'activeTracers', tracers, timeLevel)
          call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
-         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness)
+         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
 
          call mpas_pool_get_array(oceanHeatContentAMPool, 'oceanHeatContentSfcToBot', oceanHeatContentSfcToBot)
          call mpas_pool_get_array(oceanHeatContentAMPool, 'oceanHeatContentSfcTo700m', oceanHeatContentSfcTo700m)
