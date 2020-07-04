@@ -20,7 +20,7 @@
 		<option name="config_do_restart">.true.</option>
 		<option name="config_restart_timestamp_name">'Restart_timestamp'</option>
 		<option name="config_start_time">'file'</option>
-		<option name="config_stop_time">'2012-01-13_00:00:00'</option>
+		<option name="config_stop_time">'2012-01-12_23:00:00'</option>
 		<option name="config_time_varying_atmospheric_forcing_start_time">'2012-01-10_00:00:00'</option>
 		<option name="config_time_varying_atmospheric_forcing_reference_time">'2012-01-10_00:00:00'</option>
 		<option name="config_time_varying_atmospheric_forcing_ramp">0.5</option>
