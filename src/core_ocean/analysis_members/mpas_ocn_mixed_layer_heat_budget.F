@@ -225,7 +225,7 @@ contains
                                   temperatureShortWaveTendency)
          call mpas_pool_get_array(diagnosticsPool, 'BruntVaisalaFreqTop', BruntVaisalaFreqTop)
 
-         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness)
+         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
 
          call mpas_pool_get_array(mixedLayerHeatBudgetAMPool, 'activeTracerForcingMLTend', &
                                   activeTracerForcingMLTend)
