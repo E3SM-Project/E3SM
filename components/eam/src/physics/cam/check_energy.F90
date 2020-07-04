@@ -58,6 +58,8 @@ module check_energy
 
   public :: energy_helper_eam_def
 
+  public :: setup_moist_indices
+
   public :: qflx_gmean              ! calculate global mean of qflx for water conservation check 
   public :: check_qflx              ! output qflx at certain locations for water conservation check  
   public :: check_prect             ! output prect at certain locations for water conservation check  
@@ -66,6 +68,7 @@ module check_energy
   public :: ieflx_gmean             ! calculate global mean of ieflx 
   public :: check_ieflx_fix         ! add ieflx to sensible heat flux 
 
+  integer, public :: icldice = -1, icldliq = -1, irain = -1, isnow = -1
 
 ! Private module data
 
@@ -89,8 +92,6 @@ module check_energy
      real(r8), allocatable :: tracer_tnd(:,:) ! cumulative boundary flux of total energy
      integer :: count(pcnst)               ! count of values with significant imbalances
   end type check_tracers_data
-
-  integer :: icldice = -1, icldliq = -1, irain = -1, isnow = -1
 
 
 !===============================================================================
@@ -237,12 +238,27 @@ end subroutine check_energy_get_integrals
        call add_default ('IEFLX', 1, ' ') 
     end if 
 
+!    call cnst_get_ind('CLDICE', icldice, abort=.false.)
+!    call cnst_get_ind('CLDLIQ', icldliq, abort=.false.)
+!    call cnst_get_ind('RAINQM', irain, abort=.false.)
+!    call cnst_get_ind('SNOWQM', isnow, abort=.false.)
+
+  end subroutine check_energy_init
+
+!===============================================================================
+
+  subroutine setup_moist_indices()
+
+    use constituents,    only: cnst_get_ind
+
+    implicit none
+
     call cnst_get_ind('CLDICE', icldice, abort=.false.)
     call cnst_get_ind('CLDLIQ', icldliq, abort=.false.)
     call cnst_get_ind('RAINQM', irain, abort=.false.)
     call cnst_get_ind('SNOWQM', isnow, abort=.false.)
 
-  end subroutine check_energy_init
+  end subroutine setup_moist_indices
 
 !===============================================================================
 
