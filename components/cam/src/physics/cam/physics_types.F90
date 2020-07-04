@@ -5,7 +5,7 @@ module physics_types
 
   use shr_kind_mod, only: r8 => shr_kind_r8
   use ppgrid,       only: pcols, pver, psubcols
-  use constituents, only: pcnst, qmin, cnst_name
+  use constituents, only: pcnst, qmin, cnst_name, icldliq, icldice
   use geopotential, only: geopotential_t
   use physconst,    only: zvir, gravit, cpair, rair, cpairv, rairv
   use dycore,       only: dycore_is
@@ -227,7 +227,6 @@ contains
 !
 !---------------------------Local storage-------------------------------
     integer :: i,k,m                               ! column,level,constituent indices
-    integer :: ixcldice, ixcldliq                  ! indices for CLDICE and CLDLIQ
     integer :: ixnumice, ixnumliq
     integer :: ixnumsnow, ixnumrain
     integer :: ncol                                ! number of columns
@@ -326,8 +325,6 @@ contains
     end if
 
    ! Update constituents, all schemes use time split q: no tendency kept
-    call cnst_get_ind('CLDICE', ixcldice, abort=.false.)
-    call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
     ! Check for number concentration of cloud liquid and cloud ice (if not present
     ! the indices will be set to -1)
     call cnst_get_ind('NUMICE', ixnumice, abort=.false.)
@@ -385,25 +382,25 @@ contains
 
     ! Special tests for cloud liquid and ice:
     ! Enforce a minimum non-zero value.
-    if (ixcldliq > 1) then
-       if(ptend%lq(ixcldliq)) then
+    if (icldliq > 1) then
+       if(ptend%lq(icldliq)) then
 #ifdef PERGRO
           if ( any(ptend%name == pergro_cldlim_names) ) &
-               call state_cnst_min_nz(1.e-12_r8, ixcldliq, ixnumliq)
+               call state_cnst_min_nz(1.e-12_r8, icldliq, ixnumliq)
 #endif
           if ( any(ptend%name == cldlim_names) ) &
-               call state_cnst_min_nz(1.e-36_r8, ixcldliq, ixnumliq)
+               call state_cnst_min_nz(1.e-36_r8, icldliq, ixnumliq)
        end if
     end if
 
-    if (ixcldice > 1) then
-       if(ptend%lq(ixcldice)) then
+    if (icldice > 1) then
+       if(ptend%lq(icldice)) then
 #ifdef PERGRO
           if ( any(ptend%name == pergro_cldlim_names) ) &
-               call state_cnst_min_nz(1.e-12_r8, ixcldice, ixnumice)
+               call state_cnst_min_nz(1.e-12_r8, icldice, ixnumice)
 #endif
           if ( any(ptend%name == cldlim_names) ) &
-               call state_cnst_min_nz(1.e-36_r8, ixcldice, ixnumice)
+               call state_cnst_min_nz(1.e-36_r8, icldice, ixnumice)
        end if
     end if
 
