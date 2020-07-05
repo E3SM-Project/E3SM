@@ -364,6 +364,7 @@ subroutine diag_init()
    call addfld ('TEq1p',(/ 'lev' /), 'A','J/m2','TE q1p ')
    call addfld ('TEps',horiz_only, 'A','J/m2','TE ps ')
 
+   call addfld ('dTadj',(/ 'lev' /), 'A','K','delta T from adjustment')
 
    call addfld ('T1000',horiz_only,   'A','K','Temperature at 1000 mbar pressure surface')
    call addfld ('T975',horiz_only,   'A','K','Temperature at 975 mbar pressure surface')   

@@ -304,7 +304,7 @@ end subroutine check_energy_get_integrals
 !===============================================================================
   subroutine energy_helper_eam_def(u,v,T,q,ps,pdel,phis, &
                                    ke,se,wv,wl,wi,wr,ws,te,tw, &     
-                                   ncol)
+                                   ncol,teloc,psterm)
 
 !state vars are of size psetcols,pver, so, not exactly correct
     real(r8), intent(in) :: u(pcols,pver) 
@@ -326,6 +326,9 @@ end subroutine check_energy_get_integrals
     real(r8), intent(inout) :: wr(ncol)     ! vertical integral of rain
     real(r8), intent(inout) :: ws(ncol)     ! vertical integral of snow
 
+    real(r8), intent(inout), optional :: teloc(pcols,pver) 
+    real(r8), intent(inout), optional :: psterm(pcols) 
+
     integer, intent(in) :: ncol                   
     integer :: i,k                               
 
@@ -336,7 +339,25 @@ end subroutine check_energy_get_integrals
     wi = 0._r8
     wr = 0._r8
     ws = 0._r8
-
+#ifdef ENERGY_DIAGNOSTICS
+    if (present(teloc) .and. present(psterm))then
+    teloc = 0.0; psterm = 0.0
+    do k = 1, pver
+       do i = 1, ncol
+          teloc(i,k) = 0.5_r8*(u(i,k)**2 + v(i,k)**2)*pdel(i,k)/gravit &
+                   + t(i,k)*cpair*pdel(i,k)/gravit &
+                   + (latvap+latice)*q(i,k,1       )*pdel(i,k)/gravit
+          if (icldliq > 1  .and.  irain > 1) then
+             teloc(i,k) = teloc(i,k) &
+                      + latice*(q(i,k,icldliq) + q(i,k,irain))*pdel(i,k)/gravit
+          endif
+       end do
+    end do
+    do i = 1, ncol
+       psterm(i) = phis(i)*ps(i)/gravit
+    end do
+    endif
+#endif
     do k = 1, pver
        do i = 1, ncol
           ke(i) = ke(i) + 0.5_r8*(u(i,k)**2 + v(i,k)**2)*pdel(i,k)/gravit
