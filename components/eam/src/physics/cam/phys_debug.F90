@@ -60,7 +60,7 @@ end subroutine phys_debug_vdiff1
 
 subroutine phys_debug_shallow1(state, ptend, nstep, prec_cmf, rliq2, ztodt, kmx)
 
-   use constituents, only: cnst_get_ind
+   use constituents, only:  icldliq
 
    type(physics_state), intent(in) :: state             ! Physics state variables
    type(physics_ptend), intent(in) :: ptend             ! Physics process tendencies
@@ -70,7 +70,7 @@ subroutine phys_debug_shallow1(state, ptend, nstep, prec_cmf, rliq2, ztodt, kmx)
    real(r8),            intent(in) :: ztodt             ! physics time step
    integer,            intent(out) :: kmx
 
-   integer  :: icol, k, kmn, ixcldliq
+   integer  :: icol, k, kmn
    real(r8) :: qtmx, qtmn
    !-----------------------------------------------------------------------------
 
@@ -93,13 +93,12 @@ subroutine phys_debug_shallow1(state, ptend, nstep, prec_cmf, rliq2, ztodt, kmx)
       end do
       k = kmx
 66    format ('tphysbc, aft shallow:', 4i5, 6f9.4) 
-      call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
       write (iulog,66)  nstep, icol, &
            kmx, kmn, &
            prec_cmf(icol)*8.64e7_r8, rliq2(icol)*8.64e7_r8,  &
            qtmx*8.64e7_r8, qtmn*8.64e7_r8, &
            (state%q(icol,k,1)+ptend%q(icol,k,1)*ztodt)*1.e3_r8, &
-           (state%q(icol,k,ixcldliq)+ptend%q(icol,k,ixcldliq)*ztodt)*1.e3_r8
+           (state%q(icol,k,icldliq)+ptend%q(icol,k,icldliq)*ztodt)*1.e3_r8
 
    endif
 
@@ -109,17 +108,17 @@ end subroutine phys_debug_shallow1
 
 subroutine phys_debug_strat1(state, ptend, nstep, prec_str, rliq, ztodt, kmx)
 
-   use constituents, only: cnst_get_ind
+   use constituents, only: icldliq
 
    type(physics_state), intent(in) :: state             ! Physics state variables
    type(physics_ptend), intent(in) :: ptend             ! Physics process tendencies
    integer,             intent(in) :: nstep
    real(r8),            intent(in) :: prec_str(pcols)   ! sfc flux of precip from stratiform (m/s)
-   real(r8),            intent(in) :: rliq(pcols)       ! vertical integral of liquid not yet in q(ixcldliq)
+   real(r8),            intent(in) :: rliq(pcols)       ! vertical integral of liquid not yet in q(icldliq)
    real(r8),            intent(in) :: ztodt             ! physics time step
    integer,             intent(in) :: kmx
 
-   integer  :: icol, k, ixcldliq
+   integer  :: icol, k
    !-----------------------------------------------------------------------------
 
    icol = phys_debug_col(state%lchnk) 
@@ -127,12 +126,11 @@ subroutine phys_debug_strat1(state, ptend, nstep, prec_str, rliq, ztodt, kmx)
 
       k = kmx
 67    format ('tphysbc, aft strat:', i5, 6f9.4) 
-      call cnst_get_ind('CLDLIQ', ixcldliq, abort=.false.)
       write (iulog,67)  nstep, prec_str(icol)*8.64e7_r8, rliq(icol)*8.64e7_r8,  &
            (ptend%q(icol,k,1)*ztodt)*1.e3_r8, &
-           (ptend%q(icol,k,ixcldliq)*ztodt)*1.e3_r8, &
+           (ptend%q(icol,k,icldliq)*ztodt)*1.e3_r8, &
            (state%q(icol,k,1)+ptend%q(icol,k,1)*ztodt)*1.e3_r8, &
-           (state%q(icol,k,ixcldliq)+ptend%q(icol,k,ixcldliq)*ztodt)*1.e3_r8
+           (state%q(icol,k,icldliq)+ptend%q(icol,k,icldliq)*ztodt)*1.e3_r8
 
    endif
 
