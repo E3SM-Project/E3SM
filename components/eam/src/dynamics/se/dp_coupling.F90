@@ -665,7 +665,7 @@ CONTAINS
     integer                                      :: ncol, k, ic                                
     integer(kind=int_kind)                       :: lchnk
 
-    real (kind=real_kind), dimension(pcols)      :: te, tw, ke, se, wv, wl, wi, wr, ws, tebefore, kebefore
+    real (kind=real_kind), dimension(pcols)      :: te, tw, ke, se, wv, wl, wi, wr, ws, tebefore, kebefore, teadjusted
     real (kind=real_kind), dimension(pcols,pver) :: ustate,vstate,tstate,pdel,dp_adj,&
                                                     teloc1,teloc2,ttend
     real (kind=real_kind), dimension(pcols,pver,pcnst) :: qstate
@@ -738,11 +738,11 @@ CONTAINS
       do ic=1,ncol
       !first, ttend from local terms
          do k=1,pver
-            ttend(ic,k)=(teloc2(ic,k)-teloc1(ic,k))*gravit/cpair/pdel(ic,k)
+            ttend(ic,k)=(teloc1(ic,k)-teloc2(ic,k))*gravit/cpair/pdel(ic,k)
          enddo
          
       !second, ttend from ps term
-         ttend(ic,1:pver) = ttend(ic,1:pver) + (psterm2(ic)-psterm1(ic))*gravit/cpair/ps(ic)
+         ttend(ic,1:pver) = ttend(ic,1:pver) + (psterm1(ic)-psterm2(ic))*gravit/cpair/ps(ic)
       enddo
 
       call outfld('dTadj', ttend(:,:), pcols, lchnk)
@@ -750,10 +750,10 @@ CONTAINS
       !sanity check
       call energy_helper_eam_def(ustate,vstate,tstate+ttend,&
                                  qstate,ps,pdel,phisstate,&
-                                 ke,se,wv,wl,wi,wr,ws,te,tw, &
+                                 ke,se,wv,wl,wi,wr,ws,teadjusted,tw, &
                                  ncol)
 
-      print *, 'OF check', maxval(abs(te(:ncol) - tebefore(:ncol)))
+      print *, 'OG check', tebefore(1),te(1),(te(1)-tebefore(1)),teadjusted(1),(te(1)-teadjusted(1))
 
     end do ! lchnk
 
