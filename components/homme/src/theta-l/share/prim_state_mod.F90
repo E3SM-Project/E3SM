@@ -177,18 +177,20 @@ contains
     dt_hv = tstep !dt_hv = dyn. dt
     dt_remap = tstep*dt_remap_factor ! if dt_remap_factpr = 0, we won't use remap diagn below
     if (dt_remap_factor > 0) then
-       if(ftype == 2) dt_forcing = tstep*dt_remap_factor
-       if(ftype == 4) dt_forcing = tstep
-    else 
-       !Eulerian dynamics applies forcing each dyn timestep
-       dt_forcing = tstep
-    endif
-    if (dt_remap_factor > 0) then
        if ((transport_alg > 0) .and. (dt_remap_factor <  dt_tracer_factor)) dt_run_sub = tstep*dt_tracer_factor
        if ((transport_alg > 0) .and. (dt_remap_factor >= dt_tracer_factor)) dt_run_sub = tstep*dt_remap_factor
        if (transport_alg == 0) dt_run_sub = tstep*dt_remap_factor*dt_tracer_factor
     else
        dt_run_sub = tstep*dt_tracer_factor
+    endif
+    if (dt_remap_factor > 0) then
+       if(ftype == 2) dt_forcing = tstep*dt_remap_factor
+       if(ftype == 4) dt_forcing = tstep
+       if(ftype == 1) dt_forcing = dt_run_sub
+    else
+       !Eulerian dynamics applies forcing each dyn timestep, except for ftype1? 
+!CHECK THIS
+       dt_forcing = tstep
     endif
 
 !old
@@ -793,11 +795,14 @@ contains
          dt_forcing, dt_hv, dt_remap, tstep, dt_run_sub
        write(iulog,'(a)') 'Change from dribbled phys tendencies, viscosity, run_sub, remap (if dt_remap_factor>0):'
        if (dt_remap_factor > 0 )then
+
+print *, 'KEner(1), (3)',KEner(1), KEner(3)
+
          write(iulog,'(a,4e15.7)') 'dKE/dt(W/m^2): ',(KEner(1)-KEner(3))/dt_forcing,&
               (KEner(6)-KEner(5))/dt_hv, (KEner(2)-KEner(3))/dt_run_sub, (KEner(2)-KEner(4))/dt_remap
-         write(iulog,'(a,3e15.7)') 'dIE/dt(W/m^2): ',(IEner(1)-IEner(3))/dt_forcing,&
+         write(iulog,'(a,4e15.7)') 'dIE/dt(W/m^2): ',(IEner(1)-IEner(3))/dt_forcing,&
               (IEner(6)-IEner(5))/dt_hv, (IEner(2)-IEner(3))/dt_run_sub, (IEner(2)-IEner(4))/dt_remap
-         write(iulog,'(a,3e15.7)') 'dPE/dt(W/m^2): ',(PEner(1)-PEner(3))/dt_forcing,&
+         write(iulog,'(a,4e15.7)') 'dPE/dt(W/m^2): ',(PEner(1)-PEner(3))/dt_forcing,&
               (PEner(6)-PEner(5))/dt_hv, (PEner(2)-PEner(3))/dt_run_sub, (PEner(2)-PEner(4))/dt_remap
        else
          write(iulog,'(a,3e15.7)') 'dKE/dt(W/m^2): ',(KEner(1)-KEner(3))/dt_forcing,&
