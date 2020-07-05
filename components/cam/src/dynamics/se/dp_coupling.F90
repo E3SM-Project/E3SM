@@ -656,6 +656,7 @@ CONTAINS
     use dyn_comp,                only: hvcoord
     use check_energy,            only: energy_helper_eam_def
     use cam_history,             only: outfld
+    use physconst,               only: gravit, cpair
 
     implicit none
     ! INPUT PARAMETERS:
@@ -665,9 +666,10 @@ CONTAINS
     integer(kind=int_kind)                       :: lchnk
 
     real (kind=real_kind), dimension(pcols)      :: te, tw, ke, se, wv, wl, wi, wr, ws, tebefore, kebefore
-    real (kind=real_kind), dimension(pcols,pver) :: ustate,vstate,tstate,pdel,dp_adj
+    real (kind=real_kind), dimension(pcols,pver) :: ustate,vstate,tstate,pdel,dp_adj,&
+                                                    teloc1,teloc2,ttend
     real (kind=real_kind), dimension(pcols,pver,pcnst) :: qstate
-    real (kind=real_kind), dimension(pcols)      :: ps,phisstate
+    real (kind=real_kind), dimension(pcols)      :: ps,phisstate,psterm1,psterm2
     real (kind=real_kind)                        :: fq
 
 !!!!!! fix all
@@ -690,7 +692,7 @@ CONTAINS
 
       call energy_helper_eam_def(ustate,vstate,tstate,qstate,ps,pdel,phisstate,&
                                  kebefore,se,wv,wl,wi,wr,ws,tebefore,tw, &
-                                 ncol)
+                                 ncol,teloc1,psterm1)
       !before ps adjustment
       call outfld('TEbeforeadj', tebefore, pcols, lchnk)
       call outfld('KEbeforeadj', kebefore, pcols, lchnk)
@@ -706,8 +708,6 @@ CONTAINS
          enddo
       enddo
 
-!print *, 'OG in dp_coupling adjust ps', adjust_ps
-
       ! compute water vapor adjusted dp3d:
 
 !with ps adjustment comment if below
@@ -722,7 +722,7 @@ CONTAINS
 
       call energy_helper_eam_def(ustate,vstate,tstate,qstate,ps,pdel,phisstate,&
                                  ke,se,wv,wl,wi,wr,ws,te,tw, &
-                                 ncol)
+                                 ncol,teloc2,psterm2)
 
       call outfld('TEafteradj', te, pcols, lchnk)
       call outfld('KEafteradj', ke, pcols, lchnk)
@@ -732,6 +732,29 @@ CONTAINS
       call outfld('TEq1', state(lchnk)%q(:,:,1), pcols, lchnk)
       call outfld('TEq1p', state(lchnk)%q1(:,:), pcols, lchnk)
       call outfld('TEps', state(lchnk)%ps(:), pcols, lchnk)
+
+      !compute ttend from adjustment
+      ttend(:ncol,:)=0.0
+      do ic=1,ncol
+      !first, ttend from local terms
+         do k=1,pver
+            ttend(ic,k)=(teloc2(ic,k)-teloc1(ic,k))*gravit/cpair/pdel(ic,k)
+         enddo
+         
+      !second, ttend from ps term
+         ttend(ic,1:pver) = ttend(ic,1:pver) + (psterm2(ic)-psterm1(ic))*gravit/cpair/ps(ic)
+      enddo
+
+      call outfld('dTadj', ttend(:,:), pcols, lchnk)
+
+      !sanity check
+      call energy_helper_eam_def(ustate,vstate,tstate+ttend,&
+                                 qstate,ps,pdel,phisstate,&
+                                 ke,se,wv,wl,wi,wr,ws,te,tw, &
+                                 ncol)
+
+      print *, 'OF check', maxval(abs(te(:ncol) - tebefore(:ncol)))
+
     end do ! lchnk
 
   end subroutine measure_pressure_work
