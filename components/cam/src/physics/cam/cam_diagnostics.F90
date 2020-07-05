@@ -15,7 +15,7 @@ use physics_buffer, only: physics_buffer_desc, pbuf_add_field, dtype_r8, dyn_tim
 
 use cam_history,   only: outfld, write_inithist, hist_fld_active
 use constituents,  only: pcnst, cnst_name, cnst_longname, cnst_cam_outfld, ptendnam, dmetendnam, apcnst, bpcnst, &
-                         cnst_get_ind
+                         cnst_get_ind, icldliq, icldice
 use chemistry,     only: chem_is
 use dycore,        only: dycore_is
 use phys_control,  only: phys_getopts
@@ -162,7 +162,6 @@ subroutine diag_init()
    ! Cannot put in a use statement if want to swap ice models to cice4
    integer, parameter :: plevmx = 4       ! number of subsurface levels
    character(len=8), parameter :: tsnam(plevmx) = (/ 'TS1', 'TS2', 'TS3', 'TS4' /)
-   integer :: ixcldice, ixcldliq ! constituent indices for cloud liquid and ice water.
    integer :: ierr
 
    call phys_getopts(prog_modal_aero_out = prog_modal_aero )
@@ -542,8 +541,6 @@ subroutine diag_init()
 
    ! outfld calls in diag_conv
 
-   call cnst_get_ind('CLDLIQ', ixcldliq)
-   call cnst_get_ind('CLDICE', ixcldice)
    call addfld ('DTCOND',(/ 'lev' /), 'A','K/s','T tendency - moist processes')
    call addfld ('DTCOND_24_COS',(/ 'lev' /), 'A','K/s','T tendency - moist processes 24hr. cos coeff.')
    call addfld ('DTCOND_24_SIN',(/ 'lev' /), 'A','K/s','T tendency - moist processes 24hr. sin coeff.')
@@ -577,7 +574,7 @@ subroutine diag_init()
             if( diag_cnst_conv_tend == 'all' ) then
                call add_default (dcconnam(m),                           1, ' ')
             end if
-            if( history_budget .and. (m == ixcldliq .or. m == ixcldice) ) then
+            if( history_budget .and. (m == icldliq .or. m == icldice) ) then
                call add_default (dcconnam(m), history_budget_histfile_num, ' ')
             end if
          end do
@@ -668,26 +665,26 @@ subroutine diag_init()
 
    call addfld ('PTTEND'   ,(/ 'lev' /), 'A','K/s','T total physics tendency'                             )
    call addfld (ptendnam(       1),(/ 'lev' /), 'A',  'kg/kg/s',trim(cnst_name(       1))//' total physics tendency '      )
-   call addfld (ptendnam(ixcldliq),(/ 'lev' /), 'A',  'kg/kg/s',trim(cnst_name(ixcldliq))//' total physics tendency '      )
-   call addfld (ptendnam(ixcldice),(/ 'lev' /), 'A',  'kg/kg/s',trim(cnst_name(ixcldice))//' total physics tendency '      )
+   call addfld (ptendnam(icldliq),(/ 'lev' /), 'A',  'kg/kg/s',trim(cnst_name(icldliq))//' total physics tendency '      )
+   call addfld (ptendnam(icldice),(/ 'lev' /), 'A',  'kg/kg/s',trim(cnst_name(icldice))//' total physics tendency '      )
    if ( dycore_is('LR') )then
       call addfld (dmetendnam(       1),(/ 'lev' /), 'A','kg/kg/s', &
            trim(cnst_name(       1))//' dme adjustment tendency (FV) ')
-      call addfld (dmetendnam(ixcldliq),(/ 'lev' /), 'A','kg/kg/s', &
-           trim(cnst_name(ixcldliq))//' dme adjustment tendency (FV) ')
-      call addfld (dmetendnam(ixcldice),(/ 'lev' /), 'A','kg/kg/s', &
-           trim(cnst_name(ixcldice))//' dme adjustment tendency (FV) ')
+      call addfld (dmetendnam(icldliq),(/ 'lev' /), 'A','kg/kg/s', &
+           trim(cnst_name(icldliq))//' dme adjustment tendency (FV) ')
+      call addfld (dmetendnam(icldice),(/ 'lev' /), 'A','kg/kg/s', &
+           trim(cnst_name(icldice))//' dme adjustment tendency (FV) ')
    end if
 
    if ( history_budget ) then
       call add_default ('PTTEND'          , history_budget_histfile_num, ' ')
       call add_default (ptendnam(       1), history_budget_histfile_num, ' ')
-      call add_default (ptendnam(ixcldliq), history_budget_histfile_num, ' ')
-      call add_default (ptendnam(ixcldice), history_budget_histfile_num, ' ')
+      call add_default (ptendnam(icldliq), history_budget_histfile_num, ' ')
+      call add_default (ptendnam(icldice), history_budget_histfile_num, ' ')
       if ( dycore_is('LR') )then
          call add_default(dmetendnam(1)       , history_budget_histfile_num, ' ')
-         call add_default(dmetendnam(ixcldliq), history_budget_histfile_num, ' ')
-         call add_default(dmetendnam(ixcldice), history_budget_histfile_num, ' ')
+         call add_default(dmetendnam(icldliq), history_budget_histfile_num, ' ')
+         call add_default(dmetendnam(icldice), history_budget_histfile_num, ' ')
       end if
       if( history_budget_histfile_num > 1 ) then
          call add_default ('DTCOND  '         , history_budget_histfile_num, ' ')
@@ -2218,7 +2215,6 @@ subroutine diag_phys_tend_writeout(state, pbuf,  tend, ztodt, tmp_q, tmp_cldliq,
    real(r8) :: ftem3(pcols,pver) ! Temporary workspace for outfld variables
    real(r8) :: rtdt
    real(r8) :: heat_glob         ! global energy integral (FV only)
-   integer  :: ixcldice, ixcldliq! constituent indices for cloud liquid and ice water.
    ! CAM pointers to get variables from the physics buffer
    real(r8), pointer, dimension(:,:) :: t_ttend  
    integer  :: itim_old
@@ -2228,8 +2224,6 @@ subroutine diag_phys_tend_writeout(state, pbuf,  tend, ztodt, tmp_q, tmp_cldliq,
    lchnk = state%lchnk
    ncol  = state%ncol
    rtdt  = 1._r8/ztodt
-   call cnst_get_ind('CLDLIQ', ixcldliq)
-   call cnst_get_ind('CLDICE', ixcldice)
 
    ! Dump out post-physics state (FV only)
 
@@ -2242,8 +2236,8 @@ subroutine diag_phys_tend_writeout(state, pbuf,  tend, ztodt, tmp_q, tmp_cldliq,
    call outfld('VAP', state%v, pcols, lchnk   )
 
    if ( cnst_cam_outfld(       1) ) call outfld (apcnst(       1), state%q(1,1,       1), pcols, lchnk)
-   if ( cnst_cam_outfld(ixcldliq) ) call outfld (apcnst(ixcldliq), state%q(1,1,ixcldliq), pcols, lchnk)
-   if ( cnst_cam_outfld(ixcldice) ) call outfld (apcnst(ixcldice), state%q(1,1,ixcldice), pcols, lchnk)
+   if ( cnst_cam_outfld(icldliq) ) call outfld (apcnst(icldliq), state%q(1,1,icldliq), pcols, lchnk)
+   if ( cnst_cam_outfld(icldice) ) call outfld (apcnst(icldice), state%q(1,1,icldice), pcols, lchnk)
 
    ! T-tendency due to FV Energy fixer (remove from total physics tendency diagnostic)
 
@@ -2264,11 +2258,11 @@ subroutine diag_phys_tend_writeout(state, pbuf,  tend, ztodt, tmp_q, tmp_cldliq,
 
    if (dycore_is('LR')) then
       tmp_q     (:ncol,:pver) = (state%q(:ncol,:pver,       1) - tmp_q     (:ncol,:pver))*rtdt
-      tmp_cldliq(:ncol,:pver) = (state%q(:ncol,:pver,ixcldliq) - tmp_cldliq(:ncol,:pver))*rtdt
-      tmp_cldice(:ncol,:pver) = (state%q(:ncol,:pver,ixcldice) - tmp_cldice(:ncol,:pver))*rtdt
+      tmp_cldliq(:ncol,:pver) = (state%q(:ncol,:pver,icldliq) - tmp_cldliq(:ncol,:pver))*rtdt
+      tmp_cldice(:ncol,:pver) = (state%q(:ncol,:pver,icldice) - tmp_cldice(:ncol,:pver))*rtdt
       if ( cnst_cam_outfld(       1) ) call outfld (dmetendnam(       1), tmp_q     , pcols, lchnk)
-      if ( cnst_cam_outfld(ixcldliq) ) call outfld (dmetendnam(ixcldliq), tmp_cldliq, pcols, lchnk)
-      if ( cnst_cam_outfld(ixcldice) ) call outfld (dmetendnam(ixcldice), tmp_cldice, pcols, lchnk)
+      if ( cnst_cam_outfld(icldliq) ) call outfld (dmetendnam(icldliq), tmp_cldliq, pcols, lchnk)
+      if ( cnst_cam_outfld(icldice) ) call outfld (dmetendnam(icldice), tmp_cldice, pcols, lchnk)
    end if
 
    ! Total physics tendency for moisture and other tracers
@@ -2277,13 +2271,13 @@ subroutine diag_phys_tend_writeout(state, pbuf,  tend, ztodt, tmp_q, tmp_cldliq,
       ftem3(:ncol,:pver) = (state%q(:ncol,:pver,       1) - qini     (:ncol,:pver) )*rtdt
       call outfld (ptendnam(       1), ftem3, pcols, lchnk)
    end if
-   if ( cnst_cam_outfld(ixcldliq) ) then
-      ftem3(:ncol,:pver) = (state%q(:ncol,:pver,ixcldliq) - cldliqini(:ncol,:pver) )*rtdt
-      call outfld (ptendnam(ixcldliq), ftem3, pcols, lchnk)
+   if ( cnst_cam_outfld(icldliq) ) then
+      ftem3(:ncol,:pver) = (state%q(:ncol,:pver,icldliq) - cldliqini(:ncol,:pver) )*rtdt
+      call outfld (ptendnam(icldliq), ftem3, pcols, lchnk)
    end if
-   if ( cnst_cam_outfld(ixcldice) ) then
-      ftem3(:ncol,:pver) = (state%q(:ncol,:pver,ixcldice) - cldiceini(:ncol,:pver) )*rtdt
-      call outfld (ptendnam(ixcldice), ftem3, pcols, lchnk)
+   if ( cnst_cam_outfld(icldice) ) then
+      ftem3(:ncol,:pver) = (state%q(:ncol,:pver,icldice) - cldiceini(:ncol,:pver) )*rtdt
+      call outfld (ptendnam(icldice), ftem3, pcols, lchnk)
    end if
 
    ! Total (physics+dynamics, everything!) tendency for Temperature
@@ -2317,19 +2311,16 @@ end subroutine diag_phys_tend_writeout
 !
 !---------------------------Local workspace-----------------------------
 !
-   integer :: ixcldice, ixcldliq ! constituent indices for cloud liquid and ice water.
    integer :: lchnk              ! chunk index
 !
 !-----------------------------------------------------------------------
 !
    lchnk = state%lchnk
 
-   call cnst_get_ind('CLDLIQ', ixcldliq)
-   call cnst_get_ind('CLDICE', ixcldice)
    call outfld('TBP', state%t, pcols, lchnk   )
    if ( cnst_cam_outfld(       1) ) call outfld (bpcnst(       1), state%q(1,1,       1), pcols, lchnk)
-   if ( cnst_cam_outfld(ixcldliq) ) call outfld (bpcnst(ixcldliq), state%q(1,1,ixcldliq), pcols, lchnk)
-   if ( cnst_cam_outfld(ixcldice) ) call outfld (bpcnst(ixcldice), state%q(1,1,ixcldice), pcols, lchnk)
+   if ( cnst_cam_outfld(icldliq) ) call outfld (bpcnst(icldliq), state%q(1,1,icldliq), pcols, lchnk)
+   if ( cnst_cam_outfld(icldice) ) call outfld (bpcnst(icldice), state%q(1,1,icldice), pcols, lchnk)
 
    end subroutine diag_state_b4_phys_write
 
