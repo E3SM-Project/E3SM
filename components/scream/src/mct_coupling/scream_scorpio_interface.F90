@@ -34,22 +34,31 @@ module scream_scorpio_interface
 ! 7) Close the PIO file definition step.  In other words, tell PIO that all of
 ! the dimensions, variables and decompositions associated with this output have
 ! been defined and no new ones will be added.
-!    This is accomplished during eam_init_pio_2 by calling 'PIO_enddef'
+!    This is accomplished during eam_pio_enddef by calling 'PIO_enddef' on all
+!    defined files.
 !
 ! Writing Output:
 ! 
 ! Finalization: 
 !==============================================================================!
 
- 
-  use shr_pio_mod,  only: shr_pio_getrearranger
-  use shr_kind_mod,   only: rtype=>shr_kind_r8, rtype_short=>shr_kind_r4  ! Need to change this to use scream real types
+  ! TODO: have the code rely on shr_pio_mod only when the build is of the full
+  ! model. Note, these three variables from shr_pio_mod are only needed in the
+  ! case when we want to use the pio_subsystem that has already been defined by
+  ! the component coupler. 
+  use shr_pio_mod,  only: shr_pio_getrearranger, shr_pio_getiosys, shr_pio_getiotype
+!#ifdef SCREAM_CONFIG_IS_CMAKE
+  use physics_utils, only: rtype, rtype8, itype, btype
+!#else
+!  use shr_kind_mod,   only: rtype=>shr_kind_r8  ! Need to change this to use scream real types, TODO: Same here.
+!#endif 
   use piolib_mod, only : PIO_init, PIO_finalize, PIO_createfile, PIO_closefile, &
-      PIO_initdecomp, PIO_freedecomp, PIO_syncfile, PIO_openfile, PIO_setframe
+      PIO_initdecomp, PIO_freedecomp, PIO_syncfile, PIO_openfile, PIO_setframe, &
+      pio_init
   use pio_types,  only : iosystem_desc_t, file_desc_t, &
       pio_noerr, PIO_iotype_netcdf, var_desc_t, io_desc_t, PIO_int, &
       pio_clobber, PIO_nowrite, PIO_unlimited, pio_global, PIO_real, &
-      PIO_double
+      PIO_double, pio_rearr_subset
   use pio_kinds,  only : PIO_OFFSET_KIND, i4 
   use pio_nf,     only : PIO_redef, PIO_def_dim, PIO_def_var, PIO_enddef, PIO_inq_dimid, &
                          PIO_inq_dimlen
@@ -59,22 +68,25 @@ module scream_scorpio_interface
 
   implicit none
   save
+
+#include "scream_config.f"
                      
-  public :: & !eam_init_pio_1,       & ! Get pio subsystem info from main code, create PIO files
-            eam_init_pio_2,       & ! Register variables and dimensions with PIO files
+  public :: & 
+            eam_pio_enddef,       & ! Register variables and dimensions with PIO files
             eam_init_pio_subsystem, & ! Gather pio specific data from the component coupler
             eam_history_finalize, & ! Run any final PIO commands (currently unused)
-            eam_history_write,    & ! Write updated data for each variable to file
             register_outfile,     & ! Create a pio output file
             register_variable,    & ! Register a variable with a particular pio output file  
-            register_dimension      ! Register a dimension with a particular pio output file
+            register_dimension,   & ! Register a dimension with a particular pio output file
+            grid_write_data_array, &
+            eam_sync_piofile,     &
+            eam_update_time
  
   private :: errorHandle
-
   ! Universal PIO variables for the module
   integer               :: pio_mpicom  
   integer               :: pio_iotype
-  type(iosystem_desc_t), pointer, public :: pio_subsystem => null()
+  type(iosystem_desc_t), pointer, public :: pio_subsystem
   integer               :: pio_rearranger
   integer               :: pio_ntasks
   integer               :: pio_myrank
@@ -177,12 +189,11 @@ module scream_scorpio_interface
     module procedure grid_write_darray_1d_int
     module procedure grid_write_darray_2d_int
     module procedure grid_write_darray_3d_int
-    module procedure grid_write_darray_1d_double
-    module procedure grid_write_darray_2d_double
-    module procedure grid_write_darray_3d_double
+    module procedure grid_write_darray_4d_int
     module procedure grid_write_darray_1d_real
     module procedure grid_write_darray_2d_real
     module procedure grid_write_darray_3d_real
+    module procedure grid_write_darray_4d_real
   end interface
 !----------------------------------------------------------------------
 contains
@@ -194,81 +205,27 @@ contains
     type(pio_atm_output), pointer :: current_atm_file => null()
     logical :: found
 
-    write(*,*) "ASD Registering output file: ", trim(filename)
     call get_pio_atm_file(filename,current_atm_file,found)
     if (found) call errorHandle("PIO Error: Creating file: "//trim(filename)//" already exists",999)
     call eam_pio_createHeader(current_atm_file%pioFileDesc)
     
   end subroutine register_outfile
 !=====================================================================!
-  subroutine eam_init_pio_2()
-    ! WARNING: This code will be eventually deprecated when the C++ interface is
-    ! developed and all new variables and dimensions for a file is handled by
-    ! the scream-AD and not locally.
-    ! THIS ROUTINE IS ONLY PRESENT FOR TESTING PURPOSES.  MUST BE DELETED IN THE
-    ! FINAL PHASE OF CODE INTEGRATION.
-    type(pio_atm_output), pointer :: current_atm_file => null()
-    integer :: ierr
-    logical :: found
-    character(len=10) :: var_dim_list(3) ! Needed for cases with time and space dimensions, need to create the array of strings ahead of time for GCC.
+  subroutine eam_pio_enddef()
 
-    !call register_outfile("example_pio_structured.nc")
-    !call register_outfile("example_pio_structured_v2.nc")
-    ! Register all dimensions with the output file
-    call register_dimension("example_pio_structured.nc","x","horizontal distance",10)
-    call register_dimension("example_pio_structured.nc","y","vertical distance",3)
-    call register_dimension("example_pio_structured.nc","time","time",0)
+    type(pio_file_list), pointer  :: curr => NULL()
+    integer                       :: ierr
 
-    ! Register all variables with the output file
-    call register_variable("example_pio_structured.nc","time","time",1,(/ "time" /), PIO_double,"t")
-    call register_variable("example_pio_structured.nc","x","answer to space and time",1,(/ "x" /), PIO_double,"x-real")
-    call register_variable("example_pio_structured.nc","y","answer to space and time",1,(/ "y" /), PIO_double,"y-real")
+    curr => pio_file_list_top
+    do while (associated(curr))
+      if (associated(curr%pio_file)) then
+        ierr = PIO_enddef(curr%pio_file%pioFileDesc)
+        call errorHandle("PIO ERROR: issue arose with PIO_enddef for file"//trim(curr%pio_file%filename),ierr)
+      end if
+      curr => curr%next
+    end do
 
-    call register_variable("example_pio_structured.nc","bar2","answer to space and time",1,(/ "x" /), PIO_double,"x-real")
-    var_dim_list(1) = trim("x")
-    var_dim_list(2) = trim("time")
-    call register_variable("example_pio_structured.nc","real_foo","answer to space and time",2,var_dim_list(:2), PIO_double,"xt-real")
-    call register_variable("example_pio_structured.nc","foo","answer to space and time",2,var_dim_list(:2),PIO_int,"xt-int")
-    var_dim_list(1) = trim("x")
-    var_dim_list(2) = trim("y")
-    var_dim_list(3) = trim("time")
-    call register_variable("example_pio_structured.nc","bar","answer to space and time",3,var_dim_list, PIO_double,"xyt-real")
-
-    ! Finish the "definition" phase of the PIO file.  This is an essential step
-    ! for the netCDF file to be ready for variables to be written to it.
-    call get_pio_atm_File(trim("example_pio_structured.nc"),current_atm_file,found)
-    ! It is essential that PIO_enddef is called when all dimensions and
-    ! variables have been registered with a specific file.
-    ierr = PIO_enddef(current_atm_file%pioFileDesc)
-    call errorHandle("PIO ERROR: issue arose with PIO_enddef for file"//trim(current_atm_file%filename),ierr)
-   
-
-    ! Register all dimensions with the output file
-!    call register_dimension("example_pio_structured_v2.nc","x","horizontal distance",10)
-    call register_dimension("example_pio_structured_v2.nc","y","vertical distance",3)
-    call register_dimension("example_pio_structured_v2.nc","time","time",0)
-    ! Register all variables with the output file
-    call register_variable("example_pio_structured_v2.nc","time","time",1,(/ "time" /), PIO_double,"t")
-    call register_variable("example_pio_structured_v2.nc","x","answer to space and time",1,(/ "x" /), PIO_double,"x-real")
-    call register_variable("example_pio_structured_v2.nc","y","answer to space and time",1,(/ "y" /), PIO_double,"y-real")
-    var_dim_list(1) = trim("x")
-    var_dim_list(2) = trim("y")
-    var_dim_list(3) = trim("time")
-    call register_variable("example_pio_structured_v2.nc","bar","answer to space and time",3,var_dim_list, PIO_double,"xyt-real")
-    call register_variable("example_pio_structured_v2.nc","foo","answer to space and time",3,var_dim_list, PIO_double,"xyt-real")
-    var_dim_list(1) = trim("y")
-    var_dim_list(2) = trim("x")
-    var_dim_list(3) = trim("time")
-    call register_variable("example_pio_structured_v2.nc","bar_flip","answer to space and time",3,var_dim_list, PIO_double,"yxt-real")
-    call register_variable("example_pio_structured_v2.nc","foo_flip","answer to space and time",3,var_dim_list, PIO_double,"yxt-real")
-
-    call get_pio_atm_File(trim("example_pio_structured_v2.nc"),current_atm_file,found)
-    ! It is essential that PIO_enddef is called when all dimensions and
-    ! variables have been registered with a specific file.
-    ierr = PIO_enddef(current_atm_file%pioFileDesc)
-    call errorHandle("PIO ERROR: issue arose with PIO_enddef for file"//trim(current_atm_file%filename),ierr)
-
-  end subroutine eam_init_pio_2
+  end subroutine eam_pio_enddef
 !=====================================================================!
   ! Register a dimension with a specific pio output file 
   subroutine register_dimension(pio_atm_filename,shortname,longname,length)
@@ -403,77 +360,28 @@ contains
     return
   end subroutine register_variable
 !=====================================================================!
-  subroutine eam_history_write()
-    ! WARNING: THIS SUBROUTINE IS A PLACEHOLDER TO ROUTINE TO TEST OUTPUT
-    ! All of the following data itself is for testing purposes only.  This
-    ! routine will either be changed, or more likely removed when the C++
-    ! interface has been developed.  It does serve as a guide to how data is
-    ! written to the output file.
+  subroutine eam_update_time(filename,time)
+    character(len=*), intent(in) :: filename       ! PIO filename
+    real(rtype), intent(in)      :: time 
+
+    type(hist_var_t), pointer    :: var 
     type(pio_atm_output),pointer :: pio_atm_file
-    type(hist_var_t), pointer :: var 
-    integer :: ivar, ierr, jj
-    integer :: my_dummy_value, mylen
-    integer, allocatable :: fdata_int(:)
-    real(rtype) :: my_dummy_r
-    real(rtype), allocatable :: fdata_real(:)
-    real(rtype) :: time
-    character(len=100) :: varname
-    integer :: fdata_int_1d(10), fdata_int_2d(10,3)
-    real(rtype) :: fdata_real_1d(10), fdata_real_2d(10,3), fdata_real_2d_inv(3,10)
-
-
-    call get_pio_atm_file("example_pio_structured.nc",pio_atm_file)
-    pio_atm_file%numRecs = pio_atm_file%numRecs + 1
-    time = pio_atm_file%numRecs * 300.0_rtype
-
-    ! DUMMY Array output for testing
-    my_dummy_value = 100*pio_myrank + pio_atm_file%numRecs
-    my_dummy_r     = 100.01_rtype * pio_myrank + real(pio_atm_file%numRecs)
-    fdata_int_1d(:)   = my_dummy_value
-    fdata_int_2d(:,1) = my_dummy_value
-    fdata_int_2d(:,2) = my_dummy_value! + 1000
-    fdata_real_1d(:)   = my_dummy_r
-    fdata_real_2d(:,1) = my_dummy_r
-    fdata_real_2d(:,2) = my_dummy_r! + 1000
-    ! Record TIME
-    call get_var(pio_atm_file,'time',var)
-    ierr = pio_put_var(pio_atm_file%pioFileDesc,var%piovar,(/ pio_atm_file%numRecs /), (/ 1 /), (/ time /))
-    ! Record the outputs
-    call grid_write_data_array("example_pio_structured.nc", fdata_int_1d,  "foo")
-    call grid_write_data_array("example_pio_structured.nc", fdata_real_1d, "real_foo")
-    call grid_write_data_array("example_pio_structured.nc", fdata_real_1d, "x")
-    call grid_write_data_array("example_pio_structured.nc", fdata_real_1d, "y")
-    call grid_write_data_array("example_pio_structured.nc", fdata_real_1d, "bar2")
-    call grid_write_data_array("example_pio_structured.nc", fdata_real_2d, "bar")
-
-    call PIO_syncfile(pio_atm_file%pioFileDesc)
+    integer                      :: ierr
 
     call get_pio_atm_file("example_pio_structured_v2.nc",pio_atm_file)
     pio_atm_file%numRecs = pio_atm_file%numRecs + 1
-    time = pio_atm_file%numRecs * 300.0_rtype
-    my_dummy_r = 100.0_rtype*(pio_myrank+1) + pio_atm_file%numRecs
-    do ivar = 1,3
-      do jj = 1,10
-      fdata_real_1d(jj) = jj
-      fdata_real_2d(jj,ivar) = 10*ivar + jj!my_dummy_r + 1000*ivar
-      fdata_real_2d_inv(ivar,jj) = 10*ivar + jj!my_dummy_r + 1000*ivar
-      end do
-    end do
-    ! Record TIME
     call get_var(pio_atm_file,'time',var)
     ierr = pio_put_var(pio_atm_file%pioFileDesc,var%piovar,(/ pio_atm_file%numRecs /), (/ 1 /), (/ time /))
-    ! Record outputs
-    if (pio_atm_file%numRecs == 1) then
-      call grid_write_data_array("example_pio_structured_v2.nc", fdata_real_1d, "x")
-      call grid_write_data_array("example_pio_structured_v2.nc", fdata_real_1d, "y")
-    end if
-    call grid_write_data_array("example_pio_structured_v2.nc", fdata_real_2d_inv, "bar")
-    call grid_write_data_array("example_pio_structured_v2.nc", fdata_real_2d, "foo")
-    call grid_write_data_array("example_pio_structured_v2.nc", fdata_real_2d_inv, "bar_flip")
-    call grid_write_data_array("example_pio_structured_v2.nc", fdata_real_2d, "foo_flip")
-    call PIO_syncfile(pio_atm_file%pioFileDesc)
+  end subroutine eam_update_time
+!=====================================================================!
+  subroutine eam_sync_piofile(filename)
+    character(len=*),          intent(in)    :: filename       ! PIO filename
     
-  end subroutine eam_history_write
+    type(pio_atm_output),pointer             :: pio_atm_file
+
+    call get_pio_atm_file(trim(filename),pio_atm_file)
+    call PIO_syncfile(pio_atm_file%pioFileDesc)
+  end subroutine eam_sync_piofile
 !=====================================================================!
   subroutine eam_history_finalize()
 
@@ -505,22 +413,38 @@ contains
 !=====================================================================!
   ! Query the pio subsystem, pio rank and number of pio ranks from the component
   ! coupler.
-  subroutine eam_init_pio_subsystem(mpicom,atm_id)
-    use shr_pio_mod,   only: shr_pio_getiosys, shr_pio_getiotype
+  subroutine eam_init_pio_subsystem(mpicom,atm_id,local)
     
     integer, intent(in) :: mpicom
     integer, intent(in) :: atm_id
+    logical, intent(in) :: local
 
     integer :: ierr
+    integer :: my_task
+    integer :: nprocs
+    integer :: stride
+    integer :: num_aggregator
+    integer :: base
 
     pio_mpicom = mpicom
-
     call MPI_Comm_rank(pio_mpicom, pio_myrank, ierr)
     call MPI_Comm_size(pio_mpicom, pio_ntasks , ierr)
-    
-    pio_subsystem  => shr_pio_getiosys(atm_id)
-    pio_iotype     = shr_pio_getiotype(atm_id)
-    pio_rearranger = shr_pio_getrearranger(atm_id)
+   
+    if (.not.local) then 
+      pio_subsystem  => shr_pio_getiosys(atm_id)
+      pio_iotype     = shr_pio_getiotype(atm_id)
+      pio_rearranger = shr_pio_getrearranger(atm_id)
+    else
+      allocate(pio_subsystem)
+      stride         = 1
+      num_aggregator = 0
+      pio_rearranger = pio_rearr_subset
+      pio_iotype     = PIO_iotype_netcdf
+      base           = 0
+      call PIO_init(pio_myrank, pio_mpicom, pio_ntasks, num_aggregator, stride, &
+           pio_rearr_subset, pio_subsystem, base=base)
+    end if
+
 
   end subroutine eam_init_pio_subsystem
 !=====================================================================!
@@ -795,80 +719,29 @@ contains
 
   !---------------------------------------------------------------------------
   !
-  !  grid_write_darray_1d_double: Write a variable defined on this grid
+  !  grid_write_darray_4d_int: Write a variable defined on this grid
   !
   !---------------------------------------------------------------------------
-  subroutine grid_write_darray_1d_double(filename, hbuf, varname)
+  subroutine grid_write_darray_4d_int(filename, hbuf, varname)
 
     ! Dummy arguments
     character(len=*),          intent(in)    :: filename       ! PIO filename
-    real(rtype),               intent(in)    :: hbuf(:)
+    integer,                   intent(in)    :: hbuf(:,:,:,:)
     character(len=*),          intent(in)    :: varname
 
     ! Local variables
     type(pio_atm_output),pointer             :: pio_atm_file
     type(hist_var_t), pointer                :: var
     integer                                  :: ierr
-
-    call get_pio_atm_file(trim(filename),pio_atm_file)
-    call get_var(pio_atm_file,varname,var)
-    call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
-    call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, hbuf(var%compdof), ierr)
-    call errorHandle( 'cam_grid_write_darray_1d_double: Error writing variable',ierr)
-  end subroutine grid_write_darray_1d_double
-
-  !---------------------------------------------------------------------------
-  !
-  !  grid_write_darray_2d_double: Write a variable defined on this grid
-  !
-  !---------------------------------------------------------------------------
-  subroutine grid_write_darray_2d_double(filename, hbuf, varname)
-
-    ! Dummy arguments
-    character(len=*),          intent(in)    :: filename       ! PIO filename
-    real(rtype),               intent(in)    :: hbuf(:,:)
-    character(len=*),          intent(in)    :: varname
-
-    ! Local variables
-    type(pio_atm_output),pointer             :: pio_atm_file
-    type(hist_var_t), pointer                :: var
-    integer                                  :: ierr
-    real(rtype), allocatable, dimension(:)   :: vbuf                 
+    integer, allocatable, dimension(:)   :: vbuf                 
 
     call get_pio_atm_file(trim(filename),pio_atm_file)
     call get_var(pio_atm_file,varname,var)
     call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
     vbuf = pack(hbuf,.true.)
     call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, vbuf(var%compdof), ierr)
-    call errorHandle( 'cam_grid_write_darray_2d_double: Error writing variable',ierr)
-  end subroutine grid_write_darray_2d_double
-
-  !---------------------------------------------------------------------------
-  !
-  !  grid_write_darray_3d_double: Write a variable defined on this grid
-  !
-  !---------------------------------------------------------------------------
-  subroutine grid_write_darray_3d_double(filename, hbuf, varname)
-
-    ! Dummy arguments
-    character(len=*),          intent(in)    :: filename       ! PIO filename
-    real(rtype),               intent(in)    :: hbuf(:,:,:)
-    character(len=*),          intent(in)    :: varname
-
-    ! Local variables
-    type(pio_atm_output),pointer             :: pio_atm_file
-    type(hist_var_t), pointer                :: var
-    integer                                  :: ierr
-    real(rtype), allocatable, dimension(:)   :: vbuf                 
-
-    call get_pio_atm_file(trim(filename),pio_atm_file)
-    call get_var(pio_atm_file,varname,var)
-    call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
-    vbuf = pack(hbuf,.true.)
-    call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, vbuf(var%compdof), ierr)
-    call errorHandle( 'cam_grid_write_darray_3d_double: Error writing variable',ierr)
-
-  end subroutine grid_write_darray_3d_double
+    call errorHandle( 'cam_grid_write_darray_4d_int: Error writing variable',ierr)
+  end subroutine grid_write_darray_4d_int
 
   !---------------------------------------------------------------------------
   !
@@ -879,7 +752,7 @@ contains
 
     ! Dummy arguments
     character(len=*),          intent(in)    :: filename       ! PIO filename
-    real(rtype_short),         intent(in)    :: hbuf(:)
+    real(rtype),         intent(in)    :: hbuf(:)
     character(len=*),          intent(in)    :: varname
 
     ! Local variables
@@ -903,14 +776,14 @@ contains
 
     ! Dummy arguments
     character(len=*),          intent(in)    :: filename       ! PIO filename
-    real(rtype_short),         intent(in)    :: hbuf(:,:)
+    real(rtype),         intent(in)    :: hbuf(:,:)
     character(len=*),          intent(in)    :: varname
 
     ! Local variables
     type(pio_atm_output),pointer             :: pio_atm_file
     type(hist_var_t), pointer                :: var
     integer                                  :: ierr
-    real(rtype_short), allocatable, dimension(:)   :: vbuf                 
+    real(rtype), allocatable, dimension(:)   :: vbuf                 
 
     call get_pio_atm_file(trim(filename),pio_atm_file)
     call get_var(pio_atm_file,varname,var)
@@ -929,14 +802,14 @@ contains
 
     ! Dummy arguments
     character(len=*),          intent(in)    :: filename       ! PIO filename
-    real(rtype_short),         intent(in)    :: hbuf(:,:,:)
+    real(rtype),         intent(in)    :: hbuf(:,:,:)
     character(len=*),          intent(in)    :: varname
 
     ! Local variables
     type(pio_atm_output),pointer             :: pio_atm_file
     type(hist_var_t), pointer                :: var
     integer                                  :: ierr
-    real(rtype_short), allocatable, dimension(:)   :: vbuf                 
+    real(rtype), allocatable, dimension(:)   :: vbuf                 
 
     call get_pio_atm_file(trim(filename),pio_atm_file)
     call get_var(pio_atm_file,varname,var)
@@ -945,5 +818,31 @@ contains
     call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, vbuf(var%compdof), ierr)
     call errorHandle( 'cam_grid_write_darray_3d_real: Error writing variable',ierr)
   end subroutine grid_write_darray_3d_real
+
+  !---------------------------------------------------------------------------
+  !
+  !  grid_write_darray_4d_real: Write a variable defined on this grid
+  !
+  !---------------------------------------------------------------------------
+  subroutine grid_write_darray_4d_real(filename, hbuf, varname)
+
+    ! Dummy arguments
+    character(len=*),          intent(in)    :: filename       ! PIO filename
+    real(rtype),         intent(in)    :: hbuf(:,:,:,:)
+    character(len=*),          intent(in)    :: varname
+
+    ! Local variables
+    type(pio_atm_output),pointer             :: pio_atm_file
+    type(hist_var_t), pointer                :: var
+    integer                                  :: ierr
+    real(rtype), allocatable, dimension(:)   :: vbuf                 
+
+    call get_pio_atm_file(trim(filename),pio_atm_file)
+    call get_var(pio_atm_file,varname,var)
+    call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
+    vbuf = pack(hbuf,.true.)
+    call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, vbuf(var%compdof), ierr)
+    call errorHandle( 'cam_grid_write_darray_4d_real: Error writing variable',ierr)
+  end subroutine grid_write_darray_4d_real
 
 end module scream_scorpio_interface

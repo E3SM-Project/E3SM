@@ -1,4 +1,5 @@
 #include "ekat/scream_session.hpp"
+#include "scream_config.h"
 
 #include "ekat/scream_parse_yaml_file.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
@@ -19,6 +20,9 @@
 #include "mct_coupling/ScreamContext.hpp"
 #include "mct_coupling/scream_scorpio_interface.hpp"
 #include "ekat/mpi/scream_comm.hpp"
+#include "ekat/scream_types.hpp"
+
+using scream::Real;
 
 extern "C"
 {
@@ -85,27 +89,57 @@ void scream_init (const MPI_Fint& f_comm,
   disable_all_fpes();
   enable_fpes(fpe_mask);
 
+  //                 SCORPIO                        //
   // Create the set of SCORPIO output files and their respective
   // dimensions and variables.
-  (void) eam_init_pio_subsystem(f_comm,compid);   // Gather the initial PIO subsystem data creater by component coupler
+  eam_init_pio_subsystem(f_comm,compid,true);   // Gather the initial PIO subsystem data creater by component coupler
   // Register the set of output files:
-  (void) register_outfile("example_pio_structured.nc");
-  (void) register_outfile("example_pio_structured_v2.nc");
+  register_outfile("example_pio_structured_v2.nc");
   // Register the set of dimensions per output file
-  std::string filename;
-  std::string shortname;
-  std::string longname;
-  int dimlen;
-  filename = "example_pio_structured_v2.nc";
-  shortname = "x";
-  longname  = "horizontal distance";
-  dimlen = 10;
-  (void) register_dimension(filename,shortname,longname,dimlen);
-  (void) eam_init_pio_2();
+  register_dimension("example_pio_structured_v2.nc","x","horizontal distance",10);
+  register_dimension("example_pio_structured_v2.nc","y","vertical distance",3);
+  register_dimension("example_pio_structured_v2.nc","z","height",2);
+  register_dimension("example_pio_structured_v2.nc","time","time",0);
   // Register the set of variables per output file
+  std::string vec_time[] = {"time"};
+  std::string vec_x[]    = {"x"};
+  std::string vec_y[]    = {"y"};
+  std::string vec_z[]    = {"z"};
+  std::string vec_xt[]   = {"x","time"}; 
+  std::string vec_yt[]   = {"y","time"}; 
+  std::string vec_xyt[]  = {"x","y","time"}; 
+  std::string vec_xyzt[]  = {"x","y","z","time"}; 
+  register_variable("example_pio_structured_v2.nc","time","time",1,vec_time, PIO_REAL,"t");
+  register_variable("example_pio_structured_v2.nc","x","answer to space and time",1,vec_x, PIO_REAL,"x-real");
+  register_variable("example_pio_structured_v2.nc","y","answer to space and time",1,vec_y, PIO_REAL,"y-real");
+  register_variable("example_pio_structured_v2.nc","z","answer to space and time",1,vec_z, PIO_REAL,"z-real");
+  register_variable("example_pio_structured_v2.nc","bar","answer to space and time",3,vec_xyt, PIO_REAL,"xyt-real");
+  register_variable("example_pio_structured_v2.nc","foo","answer to space and time",3,vec_xyt, PIO_REAL,"xyt-real");
+  register_variable("example_pio_structured_v2.nc","bar_flip","answer to space and time",3,vec_xyt, PIO_REAL,"yxt-real");
+  register_variable("example_pio_structured_v2.nc","foo_flip","answer to space and time",3,vec_xyt, PIO_REAL,"yxt-real");
+  register_variable("example_pio_structured_v2.nc","foo_big","answer to space and time",4,vec_xyzt, PIO_REAL,"xyzt-real");
+
+  eam_pio_enddef();
+
+  Real x_data[10];
+  Real y_data[3];
+  Real z_data[2] = {100,200};
+  Int m_rank; 
+  MPI_Comm_rank(mpi_comm_c,&m_rank);
+  for (int ii=0;ii<10;ii++) {
+    x_data[ii] = ii + 1.0;
+  }
+  for (int jj=0;jj<3;jj++) {
+    y_data[jj] = jj + 1.0;
+  }
+  grid_write_data_array("example_pio_structured_v2.nc","x",10,x_data);
+  grid_write_data_array("example_pio_structured_v2.nc","y",3,y_data);
+  grid_write_data_array("example_pio_structured_v2.nc","z",2,z_data);
+  
+  //                 SCORPIO DONE                    //
 }
 /*===============================================================================================*/
-void scream_run (const double& dt) {
+void scream_run (const Real& dt) {
   // TODO: uncomment once you have valid inputs. I fear AD may crash with no inputs.
   using namespace scream;
   using namespace scream::control;
@@ -123,7 +157,31 @@ void scream_run (const double& dt) {
   // Get the AD, and run it
   auto& ad = c.getNonConst<AtmosphereDriver>();
   ad.run(dt);
-  (void) eam_history_write();
+  // TEST
+  Real foo_data_1d[10];
+  Real foo_data_2d[3][10];
+  Real foo_data_3d[2][3][10];
+  Real foo_data_2d_inv[10][3];
+  for (int ii=0;ii<10;ii++) {
+      foo_data_1d[ii] = ii + 1.0;
+    for (int jj=0;jj<3;jj++) {
+      foo_data_2d[jj][ii] = 10.0*(jj+1.0) + ii + 1.0;
+      foo_data_2d_inv[ii][jj] = 10.0*(jj+1.0) + ii + 1.0;
+      for (int kk=0;kk<2;kk++) {
+        foo_data_3d[kk][jj][ii] = 100.0*(kk+1.0) + 10.0*(jj+1.0) + (ii+1.0);
+      }
+    }
+  }
+  Int dimlen[2] = {3,10};
+  Int dimlen_3d[3] = {3,10,2};
+  pio_update_time("example_pio_structured_v2.nc",dt);
+  grid_write_data_array("example_pio_structured_v2.nc","foo",dimlen,foo_data_2d);
+  grid_write_data_array("example_pio_structured_v2.nc","bar",dimlen,foo_data_2d_inv);
+  grid_write_data_array("example_pio_structured_v2.nc","bar_flip",dimlen,foo_data_2d_inv);
+  grid_write_data_array("example_pio_structured_v2.nc","foo_flip",dimlen,foo_data_2d);
+  grid_write_data_array("example_pio_structured_v2.nc","foo_big",dimlen_3d,foo_data_3d);
+  sync_outfile("example_pio_structured_v2.nc"); 
+  // TEST END
 
   (void) dt;
 
