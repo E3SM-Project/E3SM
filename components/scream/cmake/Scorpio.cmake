@@ -14,29 +14,29 @@ macro (CreateScorpioTarget CLIB FLIB)
     # Look for pioc lib in the lib subdirectory of the one stored in INSTALL_SHAREDPATH (set by CIME)
     find_library(SCORPIO_C_LIB pioc REQUIRED PATHS ${INSTALL_SHAREDPATH}/lib)
 
-    # # Create the interface library that scream targets can link to
-    # add_library(scorpio_c INTERFACE)
-    # target_link_libraries(scorpio_c INTERFACE ${SCORPIO_C_LIB})
-    # target_include_directories(scorpio_c INTERFACE ${INSTALL_SHAREDPATH}/include)
+    # Create the interface library that scream targets can link to
+    add_library(scorpio_c INTERFACE)
+    target_link_libraries(scorpio_c INTERFACE ${SCORPIO_C_LIB})
+    target_include_directories(scorpio_c INTERFACE ${INSTALL_SHAREDPATH}/include)
 
-    # # Update the list of scream tpls
-    # list(APPEND SCREAM_TPL_LIBRARIES scorpio_c)
-    # list(APPEND SCREAM_TPL_INCLUDE_DIRS ${INSTALL_SHAREDPATH}/include)
-  endif ()
+    # Update the list of scream tpls
+    list(APPEND SCREAM_TPL_LIBRARIES scorpio_c)
+    list(APPEND SCREAM_TPL_INCLUDE_DIRS ${INSTALL_SHAREDPATH}/include)
 
-  # If f lib is requested (and we didn't already parsed this script), create interface lib
-  if (${FLIB} AND NOT TARGET scorpio_f)
-    # Look for piof lib in the lib subdirectory of the one stored in INSTALL_SHAREDPATH (set by CIME)
-    find_library(SCORPIO_F_LIB piof REQUIRED PATHS ${INSTALL_SHAREDPATH}/lib)
+    # If f lib is requested (and we didn't already parsed this script), create interface lib
+    if (${FLIB} AND NOT TARGET scorpio_f)
+      # Look for piof lib in the lib subdirectory of the one stored in INSTALL_SHAREDPATH (set by CIME)
+      find_library(SCORPIO_F_LIB piof REQUIRED PATHS ${INSTALL_SHAREDPATH}/lib)
 
-    # # Create the interface library that scream targets can link to
-    # add_library(scorpio_f INTERFACE)
-    # target_link_libraries(scorpio_c INTERFACE ${SCORPIO_C_LIB})
-    # target_include_directories(scorpio_c INTERFACE ${INSTALL_SHAREDPATH}/include)
+      # Create the interface library that scream targets can link to
+      add_library(scorpio_f INTERFACE)
+      target_link_libraries(scorpio_f INTERFACE ${SCORPIO_F_LIB} ${SCORPIO_C_LIB})
+      target_include_directories(scorpio_f INTERFACE ${INSTALL_SHAREDPATH}/include)
 
-    # # Update the list of scream tpls
-    # list(APPEND SCREAM_TPL_LIBRARIES scorpio_f)
-    # list(APPEND SCREAM_TPL_INCLUDE_DIRS ${INSTALL_SHAREDPATH}/include)
+      # Update the list of scream tpls
+      list(APPEND SCREAM_TPL_LIBRARIES scorpio_f)
+      list(APPEND SCREAM_TPL_INCLUDE_DIRS ${INSTALL_SHAREDPATH}/include)
+    endif ()
   endif ()
 
 endmacro()
