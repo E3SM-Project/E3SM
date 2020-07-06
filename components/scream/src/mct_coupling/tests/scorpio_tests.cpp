@@ -16,7 +16,8 @@ TEST_CASE("scorpio_interface", "") {
   // Create the set of SCORPIO output files and their respective
   // dimensions and variables.
   int compid=0;
-  eam_init_pio_subsystem(MPI_COMM_WORLD,compid,true);   // Gather the initial PIO subsystem data creater by component coupler
+  MPI_Fint fcomm = MPI_Comm_c2f(MPI_COMM_WORLD);
+  eam_init_pio_subsystem(fcomm,compid,true);   // Gather the initial PIO subsystem data creater by component coupler
   // Register the set of output files:
   std::string outfilename = "scorpio_output_test.nc";
   register_outfile(outfilename);
