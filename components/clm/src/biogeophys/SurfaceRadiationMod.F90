@@ -629,10 +629,10 @@ contains
              ! change condition to match sabg_snow isntead of sabg
              if (abs(sabg_snl_sum-sabg_snow(p)) > 0.00001_r8) then
                 if (snl(c) == 0) then
-                   sabg_lyr(p,-4:0) = 0._r8
+                   sabg_lyr(p,-nlevsno+1:0) = 0._r8
                    sabg_lyr(p,1) = sabg(p)
                 elseif (snl(c) == -1) then
-                   sabg_lyr(p,-4:-1) = 0._r8
+                   sabg_lyr(p,-nlevsno+1:-1) = 0._r8
                    sabg_lyr(p,0) = sabg_snow(p)*0.6_r8
                    sabg_lyr(p,1) = sabg_snow(p)*0.4_r8
                 else
@@ -647,10 +647,10 @@ contains
              if (subgridflag == 0 .or. lun_pp%itype(l) == istdlak) then 
                 if (snow_depth(c) < 0.10_r8) then
                    if (snl(c) == 0) then
-                      sabg_lyr(p,-4:0) = 0._r8
+                      sabg_lyr(p,-nlevsno+1:0) = 0._r8
                       sabg_lyr(p,1) = sabg(p)
                    elseif (snl(c) == -1) then
-                      sabg_lyr(p,-4:-1) = 0._r8
+                      sabg_lyr(p,-nlevsno+1:-1) = 0._r8
                       sabg_lyr(p,0) = sabg(p)
                       sabg_lyr(p,1) = 0._r8
                    else
