@@ -93,6 +93,7 @@ module li_subglacial_hydro
       !-----------------------------------------------------------------
       ! Pools pointers
       logical, pointer :: config_SGH
+      logical, pointer :: config_ocean_connection_N
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: hydroPool
@@ -117,9 +118,14 @@ module li_subglacial_hydro
 
       call mpas_pool_get_config(liConfigs, 'config_SGH', config_SGH)
       if (.not. config_SGH) then
+         call mpas_pool_get_config(liConfigs, 'config_ocean_connection_N', config_ocean_connection_N)
+         if (config_ocean_connection_N) then
+            call ocean_connection_N(domain)
+         endif
          ! If SGH is not active, skip everything
          return
       endif
+
 
       call mpas_timer_start("hydro init")
 
