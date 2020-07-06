@@ -936,6 +936,7 @@ contains
       do iCell = 1, nCells
          pressureAdjustedSSH(iCell) = ssh(iCell) + ( seaIcePressure(iCell) / ( gravity * rho_sw ) )
       end do
+      !$omp end do
       !$omp end parallel
 
       if(associated(landIceDraft)) then

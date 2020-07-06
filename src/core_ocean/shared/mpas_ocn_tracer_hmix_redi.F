@@ -387,10 +387,8 @@ contains
          end do
       end do ! iCell
       !$omp end do
-      !$omp end parallel
 
       !now go back and reapply all tendencies
-      !$omp parallel
       !$omp do schedule(runtime) &
       !$omp private(invAreaCell, k, iTr, i, iEdge)
       do iCell = 1, nCells

@@ -402,7 +402,7 @@ contains
 
       ! need predicted transport velocity to limit drying flux
       !$omp parallel
-      !$omp do schedule(runtime) private(invAreaCell, i, iEdge, k)
+      !$omp do schedule(runtime) private(invAreaCell, i, iEdge, k, divOutFlux, layerThickness)
       do iCell = 1, nCells
         invAreaCell = 1.0_RKIND / areaCell(iCell)
         ! can switch with maxLevelEdgeBot(iEdge)
