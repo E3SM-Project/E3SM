@@ -217,7 +217,8 @@ contains
             rediKappaCell = rediKappaCell + 0.25_RKIND*RediKappa(iEdge) * dvEdge(iEdge) * dcEdge(iEdge)
          enddo
 
-         vertDiffTopOfCell(:, iCell) = vertDiffTopOfCell(:, iCell) + RediKappaCell * k33(:, iCell)
+         vertDiffTopOfCell(:, iCell) = vertDiffTopOfCell(:, iCell) + rediKappaCell * k33(:, iCell) &
+                        / areaCell(iCell)
       end do
       !$omp end do
 
