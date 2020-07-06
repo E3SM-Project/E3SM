@@ -86,3 +86,7 @@ set_target_properties(atm PROPERTIES
 
 # Link libraries
 target_link_libraries(atm ${SCREAM_LIBS} ${SCREAM_TPL_LIBRARIES})
+
+#if (NOT SCREAM_LIB_ONLY)
+add_subdirectory(tests)
+#endif()
