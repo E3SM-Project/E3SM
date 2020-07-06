@@ -19,12 +19,17 @@ if (NOT IS_YAMLCPP_ALREADY_BUILT)
   set (YAMLCPP_BINARY_DIR ${CMAKE_BINARY_DIR}/externals/yaml-cpp)
 
   # We don't want testing or any yaml-cpp executable at all
-  set (YAML_CPP_BUILD_TESTS FALSE)
-  set (YAML_CPP_BUILD_TOOLS FALSE)
+  option (YAML_CPP_BUILD_TOOLS "Enable parse tools" OFF)
+  option (YAML_CPP_BUILD_TESTS "Enable yaml-cpp tests" OFF)
   add_subdirectory (${YAMLCPP_SOURCE_DIR} ${YAMLCPP_BINARY_DIR})
 
   set (YAMLCPP_INCLUDE_DIRS ${YAMLCPP_SOURCE_DIR}/include)
   set (YAMLCPP_LIBRARIES yaml-cpp)
+
+  if (EKAT_DISABLE_TPL_WARNINGS)
+    include (EkatUtils)
+    EkatDisableAllWarning(yaml-cpp)
+  endif ()
 
   # Make sure it is processed only once
   set_property(GLOBAL PROPERTY EKAT_YAMLCPP_BUILT TRUE)

@@ -34,6 +34,11 @@ if (NOT IS_EKAT_KOKKOS_BUILT)
   )
   set(Kokkos_LIBRARIES kokkos)
 
+  if (EKAT_DISABLE_TPL_WARNINGS)
+    include (EkatUtils)
+    EkatDisableAllWarning(kokkos)
+  endif ()
+
   # Make sure it is processed only once
   set_property(GLOBAL PROPERTY EKAT_KOKKOS_BUILT TRUE)
 endif ()

@@ -51,3 +51,26 @@ macro (EkatConfigFile CONFIG_FILE_IN CONFIG_FILE_C CONFIG_FILE_F90)
   endif()
 
 endmacro (EkatConfigFile)
+
+macro (EkatDisableAllWarning targetName)
+
+  if (NOT TARGET ${targetName})
+    message (FATAL_ERROR "Error! Cannot disable warnings for target ${targetName}; it is not built by this project.")
+  endif ()
+
+  # Add flags to ignore warnings to the target, for all Ekat-supported languages (C, CXX, Fortran)
+  # Make the flag compiler-dependent. Notice that only one of the $<$<C_COMPILER_ID:blah>: "blahblah">
+  # will expand to anything at all, so this is ok.
+  # Note: even if a compiler collection (usually) has the same flag for all languages, we still
+  #       add the flag separately for each langauge, since the user MAY be using different compilers
+  #       for different langauges (e.g., icpc and gfortran).
+  target_compile_options (${targetName} PRIVATE
+    $<$<COMPILE_LANGUAGE:C>:$<$<C_COMPILER_ID:GNU>:-w> $<$<C_COMPILER_ID:Intel>: -warn>>)
+
+  target_compile_options (${targetName} PRIVATE
+    $<$<COMPILE_LANGUAGE:Fortran>:$<$<Fortran_COMPILER_ID:GNU>:-w> $<$<Fortran_COMPILER_ID:Intel>: -warn>>)
+  target_compile_options (${targetName} PRIVATE
+    $<$<COMPILE_LANGUAGE:CXX>:$<$<CXX_COMPILER_ID:GNU>:-w> $<$<CXX_COMPILER_ID:Intel>: -warn>>)
+
+endmacro (EkatDisableAllWarning)
+
