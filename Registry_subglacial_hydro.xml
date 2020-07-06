@@ -102,7 +102,7 @@
                             description="width of sheet beneath/around channel that contributes to melt within the channel"
 		            possible_values="positive real number"
 		/>
-		<nml_option name="config_SGH_include_pressure_melt" type="logical" default_value=".true." units="none"
+		<nml_option name="config_SGH_include_pressure_melt" type="logical" default_value=".false." units="none"
                             description="whether to include the pressure melt term in the rate of channel opening"
 		            possible_values=".true. or .false."
 		/>
