@@ -702,6 +702,7 @@ module li_subglacial_hydro
       type (mpas_pool_type), pointer :: geometryPool
       type (mpas_pool_type), pointer :: hydroPool
       real (kind=RKIND), dimension(:), pointer :: bedTopography
+      real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:), pointer :: hydropotentialBase
       real (kind=RKIND), dimension(:), pointer :: hydropotentialBaseVertex
       real (kind=RKIND), dimension(:), pointer :: waterPressure
@@ -761,6 +762,7 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'waterPressure', waterPressure)
       call mpas_pool_get_array(hydroPool, 'hydropotentialBase', hydropotentialBase)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(hydroPool, 'waterThicknessEdge', waterThicknessEdge)
       call mpas_pool_get_array(hydroPool, 'waterThicknessEdgeUpwind', waterThicknessEdgeUpwind)
       call mpas_pool_get_array(hydroPool, 'hydropotentialBaseSlopeNormal', hydropotentialBaseSlopeNormal)
@@ -824,6 +826,23 @@ module li_subglacial_hydro
             endif
          endif ! GL edge or grounded margin
       end do
+
+      ! At terrestrial margin, ignore the downslope bed topography gradient.  Including it can lead to unrealistically large
+      ! hydropotential gradients and unstable channel growth.
+      do iEdge = 1, nEdges
+         if (li_mask_is_margin(edgeMask(iEdge)) .and. li_mask_is_grounded_ice(edgeMask(iEdge))) then
+            cell1 = cellsOnEdge(1, iEdge)
+            cell2 = cellsOnEdge(2, iEdge)
+            if (thickness(cell1) == 0.0_RKIND) then
+               hydropotentialBaseSlopeNormal(iEdge) = (hydropotentialBase(cell2) - rho_water * gravity * bedTopography(cell2)) &
+                  / dcEdge(iEdge)
+            else
+               hydropotentialBaseSlopeNormal(iEdge) = (rho_water * gravity * bedTopography(cell1) - hydropotentialBase(cell1)) &
+                  / dcEdge(iEdge)
+            endif
+         endif
+      end do
+
 
       ! Calculate tangent slope of hydropotentialBase - three possible methods to consider
 
