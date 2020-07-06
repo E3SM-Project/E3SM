@@ -435,7 +435,7 @@ class TestAllScream(object):
             tmp_string = ""
             for test in self._tests:
                tmp_string += " {}".format(test) 
-            run_cmd_no_fail("echo '{}' > {}".format(tmp_string,self._baseline_names_file)
+            run_cmd_no_fail("echo '{}' > {}".format(tmp_string,self._baseline_names_file))
 
         checkout_git_ref(git_head_ref, verbose=True)
 
