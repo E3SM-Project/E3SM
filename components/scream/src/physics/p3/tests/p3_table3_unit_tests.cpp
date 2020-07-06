@@ -169,7 +169,7 @@ namespace {
 
 TEST_CASE("p3_tables", "[p3_functions]")
 {
-  scream::p3::p3_init(true); // need fortran table data
+  scream::p3::p3_init(); // need fortran table data
 
   scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestTable3::run();
 }

@@ -5,6 +5,8 @@
 #include "scream_kokkos_meta.hpp"
 #include "ekat_config.h"
 
+#include <vector>
+
 namespace scream {
 namespace pack {
 
@@ -261,6 +263,8 @@ smallize (const Kokkos::View<BigPack<T>*, Parms...>& vp) {
 //
 // Take an array of Host scalar pointers and turn them into device pack views
 //
+
+// 1d
 template <size_t N, typename ViewT>
 void host_to_device(const Kokkos::Array<typename ViewT::value_type::scalar const*, N>& data,
                     const Kokkos::Array<size_t, N>& sizes,
@@ -283,7 +287,48 @@ void host_to_device(const Kokkos::Array<typename ViewT::value_type::scalar const
   }
 }
 
-// Sugar for when size is uniform
+// 2d - set transpose to true if host data is coming from fortran
+template <size_t N, typename ViewT>
+void host_to_device(const Kokkos::Array<typename ViewT::value_type::scalar const*, N>& data,
+                    const Kokkos::Array<size_t, N>& dim1_sizes, const Kokkos::Array<size_t, N>& dim2_sizes,
+                    Kokkos::Array<ViewT, N>& views,
+                    bool transpose=false)
+{
+  using PackT = typename ViewT::value_type;
+  using ScalarT = typename PackT::scalar;
+
+  std::vector<ScalarT> tdata;
+  for (size_t n = 0; n < N; ++n) {
+    const size_t dim1_size = dim1_sizes[n];
+    const size_t dim2_size = dim2_sizes[n];
+    const size_t npack = (dim2_size + PackT::n - 1) / PackT::n;
+    views[n] = ViewT("", dim1_size, npack);
+    auto host_view = Kokkos::create_mirror_view(views[n]);
+
+    ScalarT* the_data = nullptr;
+    if (transpose) {
+      tdata.reserve(dim1_size * dim2_size);
+      the_data = tdata.data();
+      util::transpose<util::TransposeDirection::f2c>(data[n], the_data, dim1_size, dim2_size);
+    }
+    else {
+      the_data = const_cast<ScalarT*>(data[n]);
+    }
+
+    for (size_t i = 0; i < dim1_size; ++i) {
+      for (size_t k = 0; k < npack; ++k) {
+        const size_t num_scalars_this_col = k*PackT::n;
+        const size_t scalar_offset = i*dim2_size + num_scalars_this_col;
+        for (size_t s = 0; s < PackT::n && num_scalars_this_col+s < dim2_size; ++s) {
+          host_view(i, k)[s] = the_data[scalar_offset + s];
+        }
+      }
+    }
+    Kokkos::deep_copy(views[n], host_view);
+  }
+}
+
+// Sugar for when size is uniform (1d)
 template <size_t N, typename ViewT>
 void host_to_device(const Kokkos::Array<typename ViewT::value_type::scalar const*, N>& data,
                     const size_t size,
@@ -296,9 +341,26 @@ void host_to_device(const Kokkos::Array<typename ViewT::value_type::scalar const
   host_to_device(data, sizes, views);
 }
 
+// Sugar for when size is uniform (2d)
+template <size_t N, typename ViewT>
+void host_to_device(const Kokkos::Array<typename ViewT::value_type::scalar const*, N>& data,
+                    const size_t dim1_size, const size_t dim2_size,
+                    Kokkos::Array<ViewT, N>& views,
+                    bool transpose=false)
+{
+  Kokkos::Array<size_t, N> dim1_sizes, dim2_sizes;
+  for (size_t i = 0; i < N; ++i) {
+    dim1_sizes[i] = dim1_size;
+    dim2_sizes[i] = dim2_size;
+  }
+  host_to_device(data, dim1_sizes, dim2_sizes, views, transpose);
+}
+
 //
 // Take an array of device pack views and sync them to host scalar pointers
 //
+
+// 1d
 template <size_t N, typename ViewT>
 void device_to_host(const Kokkos::Array<typename ViewT::value_type::scalar*, N>& data,
                     const Kokkos::Array<size_t, N>& sizes,
@@ -319,7 +381,50 @@ void device_to_host(const Kokkos::Array<typename ViewT::value_type::scalar*, N>&
   }
 }
 
-// Sugar for when size is uniform
+// 2d - set transpose to true if host data is going to fortran
+template <size_t N, typename ViewT>
+void device_to_host(const Kokkos::Array<typename ViewT::value_type::scalar*, N>& data,
+                    const Kokkos::Array<size_t, N>& dim1_sizes, const Kokkos::Array<size_t, N>& dim2_sizes,
+                    Kokkos::Array<ViewT, N>& views,
+                    bool transpose=false)
+{
+  using PackT = typename ViewT::value_type;
+  using ScalarT = typename PackT::scalar;
+
+  std::vector<ScalarT> tdata;
+  for (size_t n = 0; n < N; ++n) {
+    const size_t dim1_size = dim1_sizes[n];
+    const size_t dim2_size = dim2_sizes[n];
+    const size_t npack = views[n].extent(1);
+    const auto host_view = Kokkos::create_mirror_view(views[n]);
+    Kokkos::deep_copy(host_view, views[n]);
+
+    ScalarT* the_data = nullptr;
+    if (transpose) {
+      tdata.reserve(dim1_size * dim2_size);
+      the_data = tdata.data();
+    }
+    else {
+      the_data = data[n];
+    }
+
+    for (size_t i = 0; i < dim1_size; ++i) {
+      for (size_t k = 0; k < npack; ++k) {
+        const size_t num_scalars_this_col = k*PackT::n;
+        const size_t scalar_offset = i*dim2_size + num_scalars_this_col;
+        for (size_t s = 0; s < PackT::n && num_scalars_this_col+s < dim2_size; ++s) {
+          the_data[scalar_offset + s] = host_view(i, k)[s];
+        }
+      }
+    }
+
+    if (transpose) {
+      util::transpose<util::TransposeDirection::c2f>(the_data, data[n], dim1_size, dim2_size);
+    }
+  }
+}
+
+// Sugar for when size is uniform (1d)
 template <size_t N, typename ViewT>
 void device_to_host(const Kokkos::Array<typename ViewT::value_type::scalar*, N>& data,
                     const size_t size,
@@ -330,6 +435,21 @@ void device_to_host(const Kokkos::Array<typename ViewT::value_type::scalar*, N>&
     sizes[i] = size;
   }
   device_to_host(data, sizes, views);
+}
+
+// Sugar for when size is uniform (2d)
+template <size_t N, typename ViewT>
+void device_to_host(const Kokkos::Array<typename ViewT::value_type::scalar*, N>& data,
+                    const size_t dim1_size, const size_t dim2_size,
+                    Kokkos::Array<ViewT, N>& views,
+                    bool transpose=false)
+{
+  Kokkos::Array<size_t, N> dim1_sizes, dim2_sizes;
+  for (size_t i = 0; i < N; ++i) {
+    dim1_sizes[i] = dim1_size;
+    dim2_sizes[i] = dim2_size;
+  }
+  device_to_host(data, dim1_sizes, dim2_sizes, views, transpose);
 }
 
 } // namespace pack

@@ -13,7 +13,6 @@ extern "C" {
                  Real MWH2O, Real MWdry, Real gravit, Real LatVap, Real LatIce,
                  Real CpLiq, Real Tmelt, Real Pi, Int iulog, bool masterproc);
   void p3_init_c(const char** lookup_file_dir, int* info);
-  void p3_use_cxx_c(bool use_cxx);
   void p3_main_c(Real* qc, Real* nc, Real* qr, Real* nr, Real* th,
                  Real* qv, Real dt, Real* qitot, Real* qirim,
                  Real* nitot, Real* birim, Real* pres,
@@ -27,7 +26,7 @@ extern "C" {
                  Real* nevapr, Real* prer_evap,
                  Real* rflx, Real* sflx, // 1 extra column size
                  Real* rcldm, Real* lcldm, Real* icldm, Real* pratot, Real* prctot,
-                 Real* p3_tend_out, Real* mu_c, Real* lamc, Real* liq_ice_exchange,
+                 Real* mu_c, Real* lamc, Real* liq_ice_exchange,
                  Real* vap_liq_exchange, Real* vap_ice_exchange);
 }
 
@@ -78,7 +77,6 @@ FortranData::FortranData (Int ncol_, Int nlev_)
   icldm = Array2("Ice cloud fraction", ncol, nlev);
   pratot = Array2("Cloud drop accretion by rain", ncol, nlev);
   prctot = Array2("Cloud drop autoconversion to rain", ncol, nlev);
-  p3_tend_out = Array3("Microphysics Tendencies", ncol, nlev, 49);
   mu_c = Array2("Size distribution shape paramter", ncol, nlev);
   lamc = Array2("Size distribution slope paramter", ncol, nlev);
   liq_ice_exchange = Array2("sum of liq-ice phase change tendenices", ncol, nlev);
@@ -126,7 +124,7 @@ void micro_p3_utils_init () {
                  c::CpLiq, c::Tmelt, c::Pi, c::iulog, c::masterproc);
 }
 
-void p3_init (bool use_fortran) {
+void p3_init () {
   static bool is_init = false;
   if (!is_init) {
     micro_p3_utils_init();
@@ -136,25 +134,43 @@ void p3_init (bool use_fortran) {
     scream_require_msg(info == 0, "p3_init_c returned info " << info);
     is_init = true;
   }
-  p3_use_cxx_c(!use_fortran);
 }
 
-void p3_main (const FortranData& d) {
-  p3_main_c(d.qc.data(), d.nc.data(), d.qr.data(), d.nr.data(),
-            d.th.data(), d.qv.data(), d.dt, d.qitot.data(),
-            d.qirim.data(), d.nitot.data(), d.birim.data(),
-            d.pres.data(), d.dzq.data(), d.ncnuc.data(), d.naai.data(), d.qc_relvar.data(),
-	    d.it, d.prt_liq.data(),
-            d.prt_sol.data(), 1, d.ncol, 1, d.nlev, d.diag_ze.data(),
-            d.diag_effc.data(), d.diag_effi.data(), d.diag_vmi.data(),
-            d.diag_di.data(), d.diag_rhoi.data(),
-            d.log_predictNc,
-            d.pdel.data(), d.exner.data(), d.cmeiout.data(), d.prain.data(),
-            d.nevapr.data(), d.prer_evap.data(),
-            d.rflx.data(), d.sflx.data(),
-            d.rcldm.data(), d.lcldm.data(), d.icldm.data(),d.pratot.data(),d.prctot.data(),
-            d.p3_tend_out.data(),d.mu_c.data(),d.lamc.data(),d.liq_ice_exchange.data(),
-            d.vap_liq_exchange.data(),d.vap_ice_exchange.data());
+void p3_main (const FortranData& d, bool use_fortran) {
+  if (use_fortran) {
+    p3_main_c(d.qc.data(), d.nc.data(), d.qr.data(), d.nr.data(),
+              d.th.data(), d.qv.data(), d.dt, d.qitot.data(),
+              d.qirim.data(), d.nitot.data(), d.birim.data(),
+              d.pres.data(), d.dzq.data(), d.ncnuc.data(), d.naai.data(), d.qc_relvar.data(),
+              d.it, d.prt_liq.data(),
+              d.prt_sol.data(), 1, d.ncol, 1, d.nlev, d.diag_ze.data(),
+              d.diag_effc.data(), d.diag_effi.data(), d.diag_vmi.data(),
+              d.diag_di.data(), d.diag_rhoi.data(),
+              d.log_predictNc,
+              d.pdel.data(), d.exner.data(), d.cmeiout.data(), d.prain.data(),
+              d.nevapr.data(), d.prer_evap.data(),
+              d.rflx.data(), d.sflx.data(),
+              d.rcldm.data(), d.lcldm.data(), d.icldm.data(),d.pratot.data(),d.prctot.data(),
+              d.mu_c.data(),d.lamc.data(),d.liq_ice_exchange.data(),
+              d.vap_liq_exchange.data(),d.vap_ice_exchange.data());
+  }
+  else {
+    p3_main_f(d.qc.data(), d.nc.data(), d.qr.data(), d.nr.data(),
+              d.th.data(), d.qv.data(), d.dt, d.qitot.data(),
+              d.qirim.data(), d.nitot.data(), d.birim.data(),
+              d.pres.data(), d.dzq.data(), d.ncnuc.data(), d.naai.data(), d.qc_relvar.data(),
+              d.it, d.prt_liq.data(),
+              d.prt_sol.data(), 1, d.ncol, 1, d.nlev, d.diag_ze.data(),
+              d.diag_effc.data(), d.diag_effi.data(), d.diag_vmi.data(),
+              d.diag_di.data(), d.diag_rhoi.data(),
+              d.log_predictNc,
+              d.pdel.data(), d.exner.data(), d.cmeiout.data(), d.prain.data(),
+              d.nevapr.data(), d.prer_evap.data(),
+              d.rflx.data(), d.sflx.data(),
+              d.rcldm.data(), d.lcldm.data(), d.icldm.data(),d.pratot.data(),d.prctot.data(),
+              d.mu_c.data(),d.lamc.data(),d.liq_ice_exchange.data(),
+              d.vap_liq_exchange.data(),d.vap_ice_exchange.data());
+  }
 }
 
 int test_FortranData () {
@@ -162,16 +178,16 @@ int test_FortranData () {
   return 0;
 }
 
-int test_p3_init (bool use_fortran) {
-  p3_init(use_fortran);
+int test_p3_init () {
+  p3_init();
   P3GlobalForFortran::deinit();
   return 0;
 }
 
 int test_p3_ic (bool use_fortran) {
   const auto d = ic::Factory::create(ic::Factory::mixed);
-  p3_init(use_fortran);
-  p3_main(*d);
+  p3_init();
+  p3_main(*d, use_fortran);
   P3GlobalForFortran::deinit();
   return 0;
 }

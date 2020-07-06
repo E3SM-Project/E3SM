@@ -59,6 +59,7 @@ const T& max (const T& a, const T& b) { return a > b ? a : b; }
 KOKKOS_INLINE_FUNCTION bool isfinite (const Real& a) {
   return a == a && a != INFINITY && a != -INFINITY;
 }
+
 template <typename T> KOKKOS_INLINE_FUNCTION
 const T* max_element (const T* const begin, const T* const end) {
   const T* me = begin;
@@ -102,6 +103,15 @@ using std::strcpy;
 using std::strcmp;
 #endif
 
+KOKKOS_INLINE_FUNCTION
+bool is_nan (const Real& a) {
+#ifdef __CUDA_ARCH__
+  return isnan(a);
+#else
+  return std::isnan(a);
+#endif
+}
+
 template <typename Integer> KOKKOS_INLINE_FUNCTION
 void set_min_max (const Integer& lim0, const Integer& lim1,
                   Integer& min, Integer& max) {
@@ -135,7 +145,7 @@ void transpose(const Scalar* sv, Scalar* dv, Int ni, Int nk) {
         dv[ni*k + i] = sv[nk*i + k];
       else
         dv[nk*i + k] = sv[ni*k + i];
-};
+}
 
 namespace check_overloads
 {

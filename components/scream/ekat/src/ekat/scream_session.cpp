@@ -68,9 +68,10 @@ void initialize_scream_session (int argc, char **argv) {
   Kokkos::initialize(argc, argv);
   std::cout << util::config_string() << "\n";
 }
-
+extern "C" {
 void finalize_scream_session () {
   Kokkos::finalize();
 }
+} // extern "C"
 
 } // namespace scream

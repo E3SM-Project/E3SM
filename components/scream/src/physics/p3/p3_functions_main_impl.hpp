@@ -24,33 +24,22 @@ void Functions<S,D>
   const uview_1d<const Spack>& rcldm,
   const uview_1d<const Spack>& exner,
   const uview_1d<const Spack>& th,
-  const uview_1d<Spack>& pratot,
-  const uview_1d<Spack>& prctot,
-  const uview_1d<Spack>& prec,
-  const uview_1d<Spack>& mu_r,
+  const uview_1d<const Spack>& dzq,
   const uview_1d<Spack>& diag_ze,
   const uview_1d<Spack>& ze_ice,
   const uview_1d<Spack>& ze_rain,
   const uview_1d<Spack>& diag_effc,
   const uview_1d<Spack>& diag_effi,
-  const uview_1d<Spack>& diag_vmi,
-  const uview_1d<Spack>& diag_di,
-  const uview_1d<Spack>& diag_rhoi,
-  const uview_1d<Spack>& cmeiout,
-  const uview_1d<Spack>& prain,
-  const uview_1d<Spack>& nevapr,
-  const uview_1d<Spack>& rflx,
-  const uview_1d<Spack>& sflx,
   const uview_1d<Spack>& inv_icldm,
   const uview_1d<Spack>& inv_lcldm,
   const uview_1d<Spack>& inv_rcldm,
-  const uview_1d<Spack>& mu_c,
-  const uview_1d<Spack>& lamc,
   const uview_1d<Spack>& inv_exner,
   const uview_1d<Spack>& t,
   const uview_1d<Spack>& qv,
+  const uview_1d<Spack>& inv_dzq,
   Scalar& prt_liq,
-  Scalar& prt_sol)
+  Scalar& prt_sol,
+  view_1d_ptr_array<Spack, 40>& zero_init)
 {
   prt_liq = 0;
   prt_sol = 0;
@@ -58,31 +47,22 @@ void Functions<S,D>
   Kokkos::parallel_for(
     Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
 
-    pratot(k)    = 0;
-    prctot(k)    = 0;
-    prec(k)      = 0;
-    mu_r(k)      = 0;
-    diag_ze(k)   = -99;
-    ze_ice(k)    = 1.e-22;
-    ze_rain(k)   = 1.e-22;
-    diag_effc(k) = 10.e-6;
-    diag_effi(k) = 25.e-6;
-    diag_vmi(k)  = 0;
-    diag_di(k)   = 0;
-    diag_rhoi(k) = 0;
-    cmeiout(k)   = 0;
-    prain(k)     = 0;
-    nevapr(k)    = 0;
-    rflx(k)      = 0;
-    sflx(k)      = 0;
-    inv_icldm(k) = 1 / icldm(k);
-    inv_lcldm(k) = 1 / lcldm(k);
-    inv_rcldm(k) = 1 / rcldm(k);
-    mu_c(k)      = 0;
-    lamc(k)      = 0;
-    inv_exner(k) = 1 / exner(k);
-    t(k)         = th(k) * inv_exner(k);
-    qv(k)        = pack::max(qv(k), 0);
+    diag_ze(k)      = -99;
+    ze_ice(k)       = 1.e-22;
+    ze_rain(k)      = 1.e-22;
+    diag_effc(k)    = 10.e-6;
+    diag_effi(k)    = 25.e-6;
+    inv_icldm(k)    = 1 / icldm(k);
+    inv_lcldm(k)    = 1 / lcldm(k);
+    inv_rcldm(k)    = 1 / rcldm(k);
+    inv_exner(k)    = 1 / exner(k);
+    t(k)            = th(k) * inv_exner(k);
+    qv(k)           = pack::max(qv(k), 0);
+    inv_dzq(k)      = 1 / dzq(k);
+
+    for (size_t j = 0; j < zero_init.size(); ++j) {
+      (*zero_init[j])(k) = 0;
+    }
   });
   team.team_barrier();
 }
@@ -426,6 +406,7 @@ void Functions<S,D>
     // skip micro process calculations except nucleation/acvtivation if there no hydrometeors are present
     const auto skip_micro = skip_all || !(qc_incld(k) >= qsmall || qr_incld(k) >= qsmall || qitot_incld(k) >= qsmall);
     const auto not_skip_micro = !skip_micro;
+
     if (not_skip_micro.any()) {
       // time/space varying physical variables
       get_time_space_phys_variables(
@@ -705,7 +686,6 @@ void Functions<S,D>
     calculate_incloud_mixingratios(
       qc(k), qr(k), qitot(k), qirim(k), nc(k), nr(k), nitot(k), birim(k), inv_lcldm(k), inv_icldm(k), inv_rcldm(k),
       qc_incld(k), qr_incld(k), qitot_incld(k), qirim_incld(k), nc_incld(k), nr_incld(k), nitot_incld(k), birim_incld(k), not_skip_all);
-
   });
   team.team_barrier();
 }
@@ -866,7 +846,6 @@ void Functions<S,D>
 }
 
 template <typename S, typename D>
-KOKKOS_FUNCTION
 void Functions<S,D>
 ::p3_main(
   // inputs
@@ -987,16 +966,16 @@ void Functions<S,D>
       tmparr1, inv_exner,
 
       // p3_tend_out, may not need these
-      qc_tend, nc_tend, qr_tend, nr_tend, qi_tend, ni_tend;
+      qtend_ignore, ntend_ignore;
 
-    workspace.template take_many_and_reset<40>(
+    workspace.template take_many_and_reset<36>(
       {
         "mu_r", "t", "lamr", "logn0r", "nu", "cdist", "cdist1", "cdistr",
         "inv_icldm", "inv_lcldm", "inv_rcldm", "qc_incld", "qr_incld", "qitot_incld", "qirim_incld",
         "nc_incld", "nr_incld", "nitot_incld", "birim_incld",
         "inv_dzq", "inv_rho", "ze_ice", "ze_rain", "prec", "rho",
         "rhofacr", "rhofaci", "acn", "qvs", "qvi", "sup", "supi",
-        "tmparr1", "inv_exner", "qc_tend", "nc_tend", "qr_tend", "nr_tend", "qi_tend", "ni_tend"
+        "tmparr1", "inv_exner", "qtend_ignore", "ntend_ignore"
       },
       {
         &mu_r, &t, &lamr, &logn0r, &nu, &cdist, &cdist1, &cdistr,
@@ -1004,7 +983,7 @@ void Functions<S,D>
         &nc_incld, &nr_incld, &nitot_incld, &birim_incld,
         &inv_dzq, &inv_rho, &ze_ice, &ze_rain, &prec, &rho,
         &rhofacr, &rhofaci, &acn, &qvs, &qvi, &sup, &supi,
-        &tmparr1, &inv_exner, &qc_tend, &nc_tend, &qr_tend, &nr_tend, &qi_tend, &ni_tend
+        &tmparr1, &inv_exner, &qtend_ignore, &ntend_ignore,
       });
 
     // Get single-column subviews of all inputs, shouldn't need any i-indexing
@@ -1057,12 +1036,22 @@ void Functions<S,D>
     bool &log_nucleationPossible  = bools(i, 0);
     bool &log_hydrometeorsPresent = bools(i, 1);
 
+    view_1d_ptr_array<Spack, 40> zero_init = {
+      &mu_r, &lamr, &logn0r, &nu, &cdist, &cdist1, &cdistr,
+      &qc_incld, &qr_incld, &qitot_incld, &qirim_incld,
+      &nc_incld, &nr_incld, &nitot_incld, &birim_incld,
+      &inv_rho, &prec, &rho,
+      &rhofacr, &rhofaci, &acn, &qvs, &qvi, &sup, &supi,
+      &tmparr1, &qtend_ignore, &ntend_ignore,
+      &opratot, &oprctot, &omu_c, &olamc, &odiag_vmi, &odiag_di, &odiag_rhoi, &ocmeiout, &oprain, &onevapr, &orflx, &osflx
+    };
+
     // initialize
     p3_main_init(
       team, nk_pack,
-      oicldm, olcldm, orcldm, oexner, oth,
-      opratot, oprctot, prec, mu_r, odiag_ze, ze_ice, ze_rain, odiag_effc, odiag_effi, odiag_vmi, odiag_di, odiag_rhoi, ocmeiout, oprain, onevapr, orflx, osflx, inv_icldm, inv_lcldm, inv_rcldm, omu_c, olamc, inv_exner, t, oqv,
-      prt_liq(i), prt_sol(i));
+      oicldm, olcldm, orcldm, oexner, oth, odzq,
+      odiag_ze, ze_ice, ze_rain, odiag_effc, odiag_effi, inv_icldm, inv_lcldm, inv_rcldm, inv_exner, t, oqv, inv_dzq,
+      prt_liq(i), prt_sol(i), zero_init);
 
     p3_main_pre_main_loop(
       team, nk, log_predictNc, dt,
@@ -1098,28 +1087,23 @@ void Functions<S,D>
     // Sedimentation:
 
     // Cloud sedimentation:  (adaptive substepping)
-    Kokkos::deep_copy(qc_tend, oqc);
-    Kokkos::deep_copy(nc_tend, onc);
+
     cloud_sedimentation(
       qc_incld, rho, inv_rho, olcldm, acn, inv_dzq, dnu, team, workspace,
       nk, ktop, kbot, kdir, dt, odt, log_predictNc,
-      oqc, onc, nc_incld, omu_c, olamc, qc_tend, nc_tend, prt_liq(i));
+      oqc, onc, nc_incld, omu_c, olamc, qtend_ignore, ntend_ignore, prt_liq(i));
 
     // Rain sedimentation:  (adaptive substepping)
-    Kokkos::deep_copy(qr_tend, oqr);
-    Kokkos::deep_copy(nr_tend, onr);
     rain_sedimentation(
       rho, inv_rho, rhofacr, orcldm, inv_dzq, qr_incld, team, workspace, vn_table, vm_table,
       nk, ktop, kbot, kdir, dt, odt,
-      oqr, onr, nr_incld, mu_r, lamr, orflx, qr_tend, nc_tend, prt_liq(i));
+      oqr, onr, nr_incld, mu_r, lamr, orflx, qtend_ignore, ntend_ignore, prt_liq(i));
 
     // Ice sedimentation:  (adaptive substepping)
-    Kokkos::deep_copy(qi_tend, oqitot);
-    Kokkos::deep_copy(ni_tend, onitot);
     ice_sedimentation(
       rho, inv_rho, rhofaci, oicldm, inv_dzq, team, workspace,
       nk, ktop, kbot, kdir, dt, odt,
-      oqitot, qitot_incld, onitot, nitot_incld, oqirim, qirim_incld, obirim, birim_incld, qi_tend, ni_tend, itab, prt_sol(i));
+      oqitot, qitot_incld, onitot, nitot_incld, oqirim, qirim_incld, obirim, birim_incld, qtend_ignore, ntend_ignore, itab, prt_sol(i));
 
     // homogeneous freezing of cloud and rain
     homogeneous_freezing(
@@ -1151,7 +1135,6 @@ void Functions<S,D>
 
     check_values(oqv, tmparr1, ktop, kbot, it, debug_ABORT, 900, team, ocol_location);
 #endif
-
   });
 }
 

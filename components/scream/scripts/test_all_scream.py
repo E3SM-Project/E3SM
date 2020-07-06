@@ -362,7 +362,7 @@ class TestAllScream(object):
             print ("WARNING: Failed to configure baselines:\n{}".format(err))
             return False
 
-        cmd = "make -j{} && make -j{} baseline".format(self._compile_res_count[test],self._compile_res_count[test])
+        cmd = "make -j{} && make -j{} baseline".format(self._compile_res_count[test],self._testing_res_count[test])
         if self._parallel:
             start, end = self.get_taskset_id(test)
             cmd = "taskset -c {}-{} sh -c '{}'".format(start,end,cmd)
@@ -412,8 +412,9 @@ class TestAllScream(object):
                     print('Generation of baselines for build {} failed'.format(self._test_full_names[test]))
                     return False
 
-        # Store the sha used for baselines generation
-        run_cmd_no_fail("echo '{}' > {}".format(get_current_commit(commit=self._baseline_ref),self._baseline_sha_file))
+        if success:
+            # Store the sha used for baselines generation
+            run_cmd_no_fail("echo '{}' > {}".format(get_current_commit(commit=self._baseline_ref),self._baseline_sha_file))
 
         checkout_git_ref(git_head_ref, verbose=True)
 

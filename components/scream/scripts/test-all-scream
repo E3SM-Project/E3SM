@@ -80,10 +80,10 @@ OR
     parser.add_argument("-d", "--dry-run", action="store_true",
                         help="Do a dry run, commands will be printed but not executed")
 
-    parser.add_argument("--make-parallel-level", action="store", default=0,
+    parser.add_argument("--make-parallel-level", action="store", type=int, default=0,
         help="Max number of jobs to be created during compilation. If not provided, use default for given machine.")
 
-    parser.add_argument("--ctest-parallel-level", action="store", default=0,
+    parser.add_argument("--ctest-parallel-level", action="store", type=int, default=0,
         help="Force to use this value for CTEST_PARALLEL_LEVEL. If not provided, use default for given machine.")
 
     return parser.parse_args(args[1:])
