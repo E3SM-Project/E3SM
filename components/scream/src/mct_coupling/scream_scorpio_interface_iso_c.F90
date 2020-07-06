@@ -20,7 +20,7 @@ contains
     integer(kind=c_int), value, intent(in) :: compid
     logical(kind=c_bool),value, intent(in) :: local
 
-    call eam_init_pio_subsystem(mpicom,compid,local)
+    call eam_init_pio_subsystem(mpicom,compid,LOGICAL(local))
   end subroutine eam_init_pio_subsystem_c
 !=====================================================================!
   subroutine eam_pio_finalize_c() bind(c)

@@ -2,6 +2,7 @@
 #include "scream_config.h"
 
 #include "ekat/scream_parse_yaml_file.hpp"
+#include "ekat/util/ekat_md_array.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "ekat/scream_pack.hpp"
 #include "share/grid/user_provided_grids_manager.hpp"
@@ -121,9 +122,9 @@ void scream_init (const MPI_Fint& f_comm,
 
   eam_pio_enddef();
 
-  Real x_data[10];
-  Real y_data[3];
-  Real z_data[2] = {100,200};
+  std::array<Real,10> x_data;
+  std::array<Real, 3> y_data;
+  std::array<Real, 2> z_data = {100,200};
   Int m_rank; 
   MPI_Comm_rank(mpi_comm_c,&m_rank);
   for (int ii=0;ii<10;ii++) {
@@ -132,9 +133,9 @@ void scream_init (const MPI_Fint& f_comm,
   for (int jj=0;jj<3;jj++) {
     y_data[jj] = jj + 1.0;
   }
-  grid_write_data_array("example_pio_structured_v2.nc","x",10,x_data);
-  grid_write_data_array("example_pio_structured_v2.nc","y",3,y_data);
-  grid_write_data_array("example_pio_structured_v2.nc","z",2,z_data);
+  grid_write_data_array("example_pio_structured_v2.nc","x",10,x_data.data());
+  grid_write_data_array("example_pio_structured_v2.nc","y",3,y_data.data());
+  grid_write_data_array("example_pio_structured_v2.nc","z",2,z_data.data());
   
   //                 SCORPIO DONE                    //
 }
@@ -144,6 +145,7 @@ void scream_run (const Real& dt) {
   using namespace scream;
   using namespace scream::control;
   using namespace scream::scorpio;
+  using ekat::util::data;
 
   // First of all, enable only scream fpes.
   // Store the mask, so we can restore before returning.
@@ -157,11 +159,12 @@ void scream_run (const Real& dt) {
   // Get the AD, and run it
   auto& ad = c.getNonConst<AtmosphereDriver>();
   ad.run(dt);
+
   // TEST
-  Real foo_data_1d[10];
-  Real foo_data_2d[3][10];
-  Real foo_data_3d[2][3][10];
-  Real foo_data_2d_inv[10][3];
+  ekat::util::md_array<Real,10>     foo_data_1d;
+  ekat::util::md_array<Real,10,3>   foo_data_2d;
+  ekat::util::md_array<Real,2,3,10> foo_data_3d;
+  ekat::util::md_array<Real,10,3>   foo_data_2d_inv;
   for (int ii=0;ii<10;ii++) {
       foo_data_1d[ii] = ii + 1.0;
     for (int jj=0;jj<3;jj++) {
@@ -172,14 +175,14 @@ void scream_run (const Real& dt) {
       }
     }
   }
-  Int dimlen[2] = {3,10};
-  Int dimlen_3d[3] = {3,10,2};
+  std::array<Int,2> dimlen = {3,10};
+  std::array<Int,3> dimlen_3d = {3,10,2};
   pio_update_time("example_pio_structured_v2.nc",dt);
-  grid_write_data_array("example_pio_structured_v2.nc","foo",dimlen,foo_data_2d);
-  grid_write_data_array("example_pio_structured_v2.nc","bar",dimlen,foo_data_2d_inv);
-  grid_write_data_array("example_pio_structured_v2.nc","bar_flip",dimlen,foo_data_2d_inv);
-  grid_write_data_array("example_pio_structured_v2.nc","foo_flip",dimlen,foo_data_2d);
-  grid_write_data_array("example_pio_structured_v2.nc","foo_big",dimlen_3d,foo_data_3d);
+  grid_write_data_array("example_pio_structured_v2.nc","foo",dimlen,ekat::util::data(foo_data_2d));
+  grid_write_data_array("example_pio_structured_v2.nc","bar",dimlen,ekat::util::data(foo_data_2d_inv));
+  grid_write_data_array("example_pio_structured_v2.nc","bar_flip",dimlen,ekat::util::data(foo_data_2d_inv));
+  grid_write_data_array("example_pio_structured_v2.nc","foo_flip",dimlen,ekat::util::data(foo_data_2d));
+  grid_write_data_array("example_pio_structured_v2.nc","foo_big",dimlen_3d,ekat::util::data(foo_data_3d));
   sync_outfile("example_pio_structured_v2.nc"); 
   // TEST END
 

@@ -26,17 +26,17 @@ namespace scorpio {
   void register_outfile(const std::string& filename);
   void sync_outfile(const std::string& filename);
   void register_dimension(const std::string& filename,const std::string& shortname, const std::string& longname, const int length);
-  void register_variable(const std::string& filename,const std::string& shortname, const std::string& longname, const int numdims, const std::string (&var_dimensions)[numdims], const int dtype, const std::string& pio_decomp_tag);
+  void register_variable(const std::string& filename,const std::string& shortname, const std::string& longname, const int numdims, const std::string* var_dimensions, const int dtype, const std::string& pio_decomp_tag);
   void eam_pio_enddef();
   void pio_update_time(const std::string &filename, const Real time);
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const Int dim1_length, const Real *hbuf);
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const Int dim_length[2], const Real hbuf[dim_length[0]][dim_length[1]]);
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const Int dim_length[3], const Real hbuf[dim_length[0]][dim_length[1]][dim_length[2]]);
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const Int dim_length[4], const Real hbuf[dim_length[0]][dim_length[1]][dim_length[2]][dim_length[3]]);
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const Int dim1_length, const Int *hbuf);
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const Int dim_length[2], const Int hbuf[dim_length[0]][dim_length[1]]);
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const Int dim_length[3], const Int hbuf[dim_length[0]][dim_length[1]][dim_length[2]]);
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const Int dim_length[4], const Int hbuf[dim_length[0]][dim_length[1]][dim_length[2]][dim_length[3]]);
+  void grid_write_data_array(const std::string &filename, const std::string &varname, const Int dim1_length, const Real* hbuf);
+  void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,2>& dim_length, const Real* hbuf);
+  void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,3>& dim_length, const Real* hbuf);
+  void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,4>& dim_length, const Real* hbuf);
+  void grid_write_data_array(const std::string &filename, const std::string &varname, const Int dim1_length, const Int*& hbuf);
+  void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,2>& dim_length, const Int* hbuf);
+  void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,3>& dim_length, const Int* hbuf);
+  void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,4>& dim_length, const Int* hbuf);
   //void grid_write_data_array(const std::string &filename, const std::string &varname, const Int buf_length, const Int  &hbuf);
 
 } // namespace scorpio
