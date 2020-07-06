@@ -3225,11 +3225,32 @@
 			 description="Accumulated cell area for normalization"
 		/>
 
+		<!-- FIELDS FOR LAND-ICE PRESSURE AND SSH INITIALIZATION -->
+		<var name="scratchZMid"
+			persistence="scratch"
+			type="real" dimensions="nVertLevels nCells" units="m"
+			description="reference z-midpoint of cells for vertical interpolation of tracers"
+		/>
+		<var name="scratchMaxLevelCell"
+			persistence="scratch"
+			type="integer" dimensions="nCells" units="unitless"
+			description="reference maxLevelCell for vertical interpolation of tracers"
+		/>
 		<!-- FIELDS FOR RX1 INITIALIZATION -->
 		<var name="zInterfaceScratch"
 			persistence="scratch"
 			type="real" dimensions="nVertLevelsP1 nCells" units="m"
 			description="location of layer interfaces at cell centers, used for thickening layers constrained by the Haney number (rx1)"
+		/>
+		<var name="goalStretchScratch"
+			persistence="scratch"
+			type="real" dimensions="nVertLevels nCells" units="unitless"
+			description="the goal stretch field for the vertical coordinate"
+		/>
+		<var name="goalWeightScratch"
+			persistence="scratch"
+			type="real" dimensions="nVertLevels nCells" units="unitless"
+			description="the sum of weights used to determine the goal stretch field"
 		/>
 		<var name="zTopScratch"
 			persistence="scratch"
@@ -3245,6 +3266,11 @@
 			persistence="scratch"
 			type="real" dimensions="nCells" units="m"
 			description="updated location of the lower layer used to compute the Haney number (rx1), needed so update is agnostic to the order in which cells are accessed"
+		/>
+		<var name="smoothingMaskNewScratch"
+			persistence="scratch"
+			type="integer" dimensions="nCells" units="unitless"
+			description="a copy of the smoothing mask used to iteratively expand the field into a buffer region of open ocean around land ice."
 		/>
 	</var_struct>
 	<var_struct name="pointLocations" time_levs="1">
