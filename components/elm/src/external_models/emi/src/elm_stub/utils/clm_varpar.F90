@@ -33,7 +33,7 @@ module clm_varpar
   integer            :: nlevtrc_soil
   integer            :: nlevtrc_full
   
-  integer, parameter :: nlevsno     =   5     ! maximum number of snow layers
+  integer, parameter :: nlevsno     =   5   ! maximum number of snow layers
   integer, parameter :: ngases      =   3     ! CH4, O2, & CO2
   integer, parameter :: nlevcan     =   1     ! number of leaf layers in canopy layer
   integer, parameter :: numwat      =   5     ! number of water types (soil, ice, 2 lakes, wetland)
@@ -171,6 +171,12 @@ contains
     else
        nlevlak     =  25     ! number of lake layers (Yields better results for site simulations)
     end if
+
+    !if (.not. use_extrasnowlayers) then
+    !   nlevsno     =  5     ! maximum number of snow layers
+    !else
+    !   nlevsno     =  16    ! maximum number of snow layers (for firn model)
+    !end if
 
     if ( use_fates ) then
        i_cwd = 0

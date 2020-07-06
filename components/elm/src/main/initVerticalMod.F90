@@ -16,7 +16,7 @@ module initVerticalMod
   use elm_varpar     , only : toplev_equalspace, nlev_equalspace
   use elm_varpar     , only : nlevsoi, nlevsoifl, nlevurb, nlevslp 
   use elm_varctl     , only : fsurdat, iulog, use_var_soil_thick
-  use elm_varctl     , only : use_vancouver, use_mexicocity, use_vertsoilc, use_extralakelayers
+  use elm_varctl     , only : use_vancouver, use_mexicocity, use_vertsoilc, use_extralakelayers, use_extrasnowlayers
   use elm_varctl     , only : use_erosion
   use elm_varcon     , only : zlak, dzlak, zsoi, dzsoi, zisoi, dzsoi_decomp, spval, grlnd 
   use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
@@ -24,6 +24,7 @@ module initVerticalMod
   use fileutils      , only : getfil
   use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
+  use SnowHydrologyMod, only : InitSnowLayers
   use ncdio_pio
   !
   ! !PUBLIC TYPES:
@@ -468,82 +469,91 @@ contains
     ! Set cold-start values for snow levels, snow layers and snow interfaces 
     !-----------------------------------------------
 
-    associate(snl => col_pp%snl) ! Output: [integer (:)    ]  number of snow layers   
+    if (.not. use_extrasnowlayers) then
+    
+        associate(snl => col_pp%snl) ! Output: [integer (:)    ]  number of snow layers   
 
-      do c = bounds%begc,bounds%endc
-         l = col_pp%landunit(c)
+          do c = bounds%begc,bounds%endc
+             l = col_pp%landunit(c)
 
-         col_pp%dz(c,-nlevsno+1: 0) = spval
-         col_pp%z (c,-nlevsno+1: 0) = spval
-         col_pp%zi(c,-nlevsno  :-1) = spval
+             col_pp%dz(c,-nlevsno+1: 0) = spval
+             col_pp%z (c,-nlevsno+1: 0) = spval
+             col_pp%zi(c,-nlevsno  :-1) = spval
 
-         if (.not. lun_pp%lakpoi(l)) then
-            if (snow_depth(c) < 0.01_r8) then
-               snl(c)             = 0
-               col_pp%dz(c,-nlevsno+1:0) = 0._r8
-               col_pp%z (c,-nlevsno+1:0) = 0._r8
-               col_pp%zi(c,-nlevsno+0:0) = 0._r8
-            else
-               if ((snow_depth(c) >= 0.01_r8) .and. (snow_depth(c) <= 0.03_r8)) then
-                  snl(c)  = -1
-                  col_pp%dz(c,0) = snow_depth(c)
-               else if ((snow_depth(c) > 0.03_r8) .and. (snow_depth(c) <= 0.04_r8)) then
-                  snl(c)   = -2
-                  col_pp%dz(c,-1) = snow_depth(c)/2._r8
-                  col_pp%dz(c, 0) = col_pp%dz(c,-1)
-               else if ((snow_depth(c) > 0.04_r8) .and. (snow_depth(c) <= 0.07_r8)) then
-                  snl(c)   = -2
-                  col_pp%dz(c,-1) = 0.02_r8
-                  col_pp%dz(c, 0) = snow_depth(c) - col_pp%dz(c,-1)
-               else if ((snow_depth(c) > 0.07_r8) .and. (snow_depth(c) <= 0.12_r8)) then
-                  snl(c)   = -3
-                  col_pp%dz(c,-2) = 0.02_r8
-                  col_pp%dz(c,-1) = (snow_depth(c) - 0.02_r8)/2._r8
-                  col_pp%dz(c, 0) = col_pp%dz(c,-1)
-               else if ((snow_depth(c) > 0.12_r8) .and. (snow_depth(c) <= 0.18_r8)) then
-                  snl(c)   = -3
-                  col_pp%dz(c,-2) = 0.02_r8
-                  col_pp%dz(c,-1) = 0.05_r8
-                  col_pp%dz(c, 0) = snow_depth(c) - col_pp%dz(c,-2) - col_pp%dz(c,-1)
-               else if ((snow_depth(c) > 0.18_r8) .and. (snow_depth(c) <= 0.29_r8)) then
-                  snl(c)   = -4
-                  col_pp%dz(c,-3) = 0.02_r8
-                  col_pp%dz(c,-2) = 0.05_r8
-                  col_pp%dz(c,-1) = (snow_depth(c) - col_pp%dz(c,-3) - col_pp%dz(c,-2))/2._r8
-                  col_pp%dz(c, 0) = col_pp%dz(c,-1)
-               else if ((snow_depth(c) > 0.29_r8) .and. (snow_depth(c) <= 0.41_r8)) then
-                  snl(c)   = -4
-                  col_pp%dz(c,-3) = 0.02_r8
-                  col_pp%dz(c,-2) = 0.05_r8
-                  col_pp%dz(c,-1) = 0.11_r8
-                  col_pp%dz(c, 0) = snow_depth(c) - col_pp%dz(c,-3) - col_pp%dz(c,-2) - col_pp%dz(c,-1)
-               else if ((snow_depth(c) > 0.41_r8) .and. (snow_depth(c) <= 0.64_r8)) then
-                  snl(c)   = -5
-                  col_pp%dz(c,-4) = 0.02_r8
-                  col_pp%dz(c,-3) = 0.05_r8
-                  col_pp%dz(c,-2) = 0.11_r8
-                  col_pp%dz(c,-1) = (snow_depth(c) - col_pp%dz(c,-4) - col_pp%dz(c,-3) - col_pp%dz(c,-2))/2._r8
-                  col_pp%dz(c, 0) = col_pp%dz(c,-1)
-               else if (snow_depth(c) > 0.64_r8) then
-                  snl(c)   = -5
-                  col_pp%dz(c,-4) = 0.02_r8
-                  col_pp%dz(c,-3) = 0.05_r8
-                  col_pp%dz(c,-2) = 0.11_r8
-                  col_pp%dz(c,-1) = 0.23_r8
-                  col_pp%dz(c, 0) = snow_depth(c)-col_pp%dz(c,-4)-col_pp%dz(c,-3)-col_pp%dz(c,-2)-col_pp%dz(c,-1)
-               endif
-            end if
-            do j = 0, snl(c)+1, -1
-               col_pp%z(c,j)    = col_pp%zi(c,j) - 0.5_r8*col_pp%dz(c,j)
-               col_pp%zi(c,j-1) = col_pp%zi(c,j) - col_pp%dz(c,j)
-            end do
-         else !lake
-            snl(c)             = 0
-            col_pp%dz(c,-nlevsno+1:0) = 0._r8
-            col_pp%z (c,-nlevsno+1:0) = 0._r8
-            col_pp%zi(c,-nlevsno+0:0) = 0._r8
-         end if
-      end do
+             if (.not. lun_pp%lakpoi(l)) then
+                if (snow_depth(c) < 0.01_r8) then
+                   snl(c)             = 0
+                   col_pp%dz(c,-nlevsno+1:0) = 0._r8
+                   col_pp%z (c,-nlevsno+1:0) = 0._r8
+                   col_pp%zi(c,-nlevsno+0:0) = 0._r8
+                else
+                   if ((snow_depth(c) >= 0.01_r8) .and. (snow_depth(c) <= 0.03_r8)) then
+                      snl(c)  = -1
+                      col_pp%dz(c,0) = snow_depth(c)
+                   else if ((snow_depth(c) > 0.03_r8) .and. (snow_depth(c) <= 0.04_r8)) then
+                      snl(c)   = -2
+                      col_pp%dz(c,-1) = snow_depth(c)/2._r8
+                      col_pp%dz(c, 0) = col_pp%dz(c,-1)
+                   else if ((snow_depth(c) > 0.04_r8) .and. (snow_depth(c) <= 0.07_r8)) then
+                      snl(c)   = -2
+                      col_pp%dz(c,-1) = 0.02_r8
+                      col_pp%dz(c, 0) = snow_depth(c) - col_pp%dz(c,-1)
+                   else if ((snow_depth(c) > 0.07_r8) .and. (snow_depth(c) <= 0.12_r8)) then
+                      snl(c)   = -3
+                      col_pp%dz(c,-2) = 0.02_r8
+                      col_pp%dz(c,-1) = (snow_depth(c) - 0.02_r8)/2._r8
+                      col_pp%dz(c, 0) = col_pp%dz(c,-1)
+                   else if ((snow_depth(c) > 0.12_r8) .and. (snow_depth(c) <= 0.18_r8)) then
+                      snl(c)   = -3
+                      col_pp%dz(c,-2) = 0.02_r8
+                      col_pp%dz(c,-1) = 0.05_r8
+                      col_pp%dz(c, 0) = snow_depth(c) - col_pp%dz(c,-2) - col_pp%dz(c,-1)
+                   else if ((snow_depth(c) > 0.18_r8) .and. (snow_depth(c) <= 0.29_r8)) then
+                      snl(c)   = -4
+                      col_pp%dz(c,-3) = 0.02_r8
+                      col_pp%dz(c,-2) = 0.05_r8
+                      col_pp%dz(c,-1) = (snow_depth(c) - col_pp%dz(c,-3) - col_pp%dz(c,-2))/2._r8
+                      col_pp%dz(c, 0) = col_pp%dz(c,-1)
+                   else if ((snow_depth(c) > 0.29_r8) .and. (snow_depth(c) <= 0.41_r8)) then
+                      snl(c)   = -4
+                      col_pp%dz(c,-3) = 0.02_r8
+                      col_pp%dz(c,-2) = 0.05_r8
+                      col_pp%dz(c,-1) = 0.11_r8
+                      col_pp%dz(c, 0) = snow_depth(c) - col_pp%dz(c,-3) - col_pp%dz(c,-2) - col_pp%dz(c,-1)
+                   else if ((snow_depth(c) > 0.41_r8) .and. (snow_depth(c) <= 0.64_r8)) then
+                      snl(c)   = -5
+                      col_pp%dz(c,-4) = 0.02_r8
+                      col_pp%dz(c,-3) = 0.05_r8
+                      col_pp%dz(c,-2) = 0.11_r8
+                      col_pp%dz(c,-1) = (snow_depth(c) - col_pp%dz(c,-4) - col_pp%dz(c,-3) - col_pp%dz(c,-2))/2._r8
+                      col_pp%dz(c, 0) = col_pp%dz(c,-1)
+                   else if (snow_depth(c) > 0.64_r8) then
+                      snl(c)   = -5
+                      col_pp%dz(c,-4) = 0.02_r8
+                      col_pp%dz(c,-3) = 0.05_r8
+                      col_pp%dz(c,-2) = 0.11_r8
+                      col_pp%dz(c,-1) = 0.23_r8
+                      col_pp%dz(c, 0) = snow_depth(c)-col_pp%dz(c,-4)-col_pp%dz(c,-3)-col_pp%dz(c,-2)-col_pp%dz(c,-1)
+                   endif
+                end if
+                do j = 0, snl(c)+1, -1
+                   col_pp%z(c,j)    = col_pp%zi(c,j) - 0.5_r8*col_pp%dz(c,j)
+                   col_pp%zi(c,j-1) = col_pp%zi(c,j) - col_pp%dz(c,j)
+                end do
+             else !lake
+                snl(c)             = 0
+                col_pp%dz(c,-nlevsno+1:0) = 0._r8
+                col_pp%z (c,-nlevsno+1:0) = 0._r8
+                col_pp%zi(c,-nlevsno+0:0) = 0._r8
+             end if
+          end do
+      
+        end associate
+          
+      else ! use extra (16) snow layers, for firn model
+          call InitSnowLayers(bounds, snow_depth(bounds%begc:bounds%endc))
+      
+      end if
 
       !-----------------------------------------------
       ! Read in topographic index and slope
@@ -670,8 +680,6 @@ contains
          slope0 = slopemax**(-1._r8/slopebeta)
          col_pp%micro_sigma(c) = (col_pp%topo_slope(c) + slope0)**(-slopebeta)
       end do
-
-    end associate
 
     call ncd_pio_closefile(ncid)
 
