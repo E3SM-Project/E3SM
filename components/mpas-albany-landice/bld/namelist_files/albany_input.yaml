@@ -1,0 +1,219 @@
+%YAML 1.1
+---
+ANONYMOUS:
+  Build Type: Tpetra
+
+# Problem Description
+  Problem: 
+    Name: LandIce Enthalpy 3D
+    Solution Method: Steady
+    Required Fields: [basal_friction, surface_air_temperature]
+    Required Basal Fields: [ice_thickness]
+    Basal Side Name: basalside
+    Needs Dissipation: true
+    Needs Basal Friction: true
+
+#   LandIce parameters
+    LandIce Physical Parameters:
+      Conductivity of ice: 2.10000000000000009e+00
+      Diffusivity temperate ice: 1.09999999999999992e-08
+      Heat capacity of ice: 2.00900000000000000e+03
+      Water Density: 1.028e+03
+      Ice Density: 9.10e+02
+      Gravity Acceleration: 9.81e+00
+      Reference Temperature: 2.65000000000000000e+02
+      Clausius-Clapeyron Coefficient: 7.90000000000000060e-08
+      Latent heat of fusion: 3.34000000000000000e+05
+      Permeability factor: 1.0e-12 #1e-12
+      Viscosity of water: 1.79999999999999995e-03
+      Omega exponent alpha: 2.00000000000000000e+00
+      Diffusivity homotopy exponent: -1.10000000000000009e+00
+    LandIce Enthalpy:
+      Regularization:
+        Flux Regularization:
+          alpha: 4.0
+          beta: 0.0000000000000000e+00
+        Basal Melting Regularization:
+          alpha: 4.0
+          beta: 0.0000000000000000e+00
+      Stabilization:
+        Type: Upwind
+        Parameter Delta: 0.5
+      Bed Lubrication: Dry
+    LandIce Viscosity:
+      Extract Strain Rate Sq: true
+      Type: 'Glen''s Law'
+      'Glen''s Law Homotopy Parameter': 0.50000000000000000e+00
+      Continuous Homotopy With Constant Initial Viscosity: true
+      Coefficient For Continuous Homotopy: 8.00000000000000000e+00
+      'Glen''s Law A': 7.56960000000000017e-05
+      'Glen''s Law n': 3.00000000000000000e+00
+      Flow Rate Type: Temperature Based
+
+#   Boundary Conditions
+    Dirichlet BCs:
+      DBC on NS top for DOF Enth prescribe Field: surface_enthalpy
+
+#   Output
+    Phalanx Graph Visualization Detail: 0
+    Response Functions: 
+      Number: 0
+      Response 0: Solution Average
+
+#   Performance parameters
+    Use MDField Memoization: false
+    Number RBMs for ML: 1
+
+# Discretization Description
+  Discretization: 
+    Workset Size: -1
+    Number Of Time Derivatives: 0
+    Method: Extruded
+    NumLayers: 10
+    Element Shape: Tetrahedron
+    Cubature Degree: 1
+    Columnwise Ordering: true
+    Use Glimmer Spacing: true
+
+#   Field Information
+    Thickness Field Name: ice_thickness
+    Surface Height Field Name: surface_height
+    Basal Node Fields Ranks: [1, 1, 1, 1]
+    Extrude Basal Node Fields: [ice_thickness, surface_height, basal_friction, surface_air_temperature]
+    Basal Node Layered Fields Ranks: [2, 1]
+    Interpolate Basal Node Layered Fields: [velocity, vertical_velocity]
+    Required Fields Info:
+      Number Of Fields: 6
+      Field 0:
+        Field Name: ice_thickness
+        Field Type: Node Scalar
+        Field Origin: Mesh
+      Field 1:
+        Field Name: surface_height
+        Field Type: Node Scalar
+        Field Origin: Mesh
+      Field 2:
+        Field Name: basal_friction
+        Field Type: Node Scalar
+        Field Origin: Mesh
+      Field 3:
+        Field Name: surface_air_temperature
+        Field Type: Node Scalar
+        Field Origin: Mesh
+      Field 4:
+        Field Name: surface_enthalpy
+        Field Type: Node Scalar
+        Field Usage: Output
+      Field 5:
+        Field Name: temperature
+        Field Type: Node Scalar
+        Field Usage: Output
+
+#   Sideset Discretizations descriptions
+    Side Set Discretizations: 
+      Side Sets: [basalside]
+      basalside: 
+        Number Of Time Derivatives: 0
+        Method: Ioss
+        Cubature Degree: 4
+        Restart Index: 1
+        Exodus Input File Name: mesh-ent-tet/gis_basal_populated.exo
+        Required Fields Info:
+          Number Of Fields: 7
+          Field 0:
+            Field Name: ice_thickness
+            Field Type: Node Scalar
+            Field Origin: Mesh
+          Field 1:
+            Field Name: surface_height
+            Field Type: Node Scalar
+            Field Origin: Mesh
+          Field 2:
+            Field Name: basal_friction
+            Field Type: Node Scalar
+            Field Origin: Mesh
+          Field 3:
+            Field Name: surface_air_temperature
+            Field Type: Node Scalar
+            Field Origin: Mesh
+          Field 4:
+            Field Name: heat_flux
+            Field Type: Node Scalar
+            Field Origin: Mesh
+          Field 5:
+            Number Of Layers: 11
+            Vector Dim: 2
+            Field Name: velocity
+            Field Type: Node Layered Vector
+            Field Origin: Mesh
+          Field 6:
+            Number Of Layers: 11
+            Field Name: vertical_velocity
+            Field Type: Node Layered Scalar
+            Field Origin: Mesh
+
+  Piro: 
+#   Nonlinear Solver Information
+    NOX: 
+      Nonlinear Solver: Line Search Based
+      Line Search: 
+        Full Step: 
+          Full Step: 1.00000000000000000e+00
+        Method: Backtrack
+      Solver Options: 
+        Status Test Check Type: Minimal
+      Status Tests: 
+        Test Type: MaxIters
+        Maximum Iterations: 20
+      Printing: 
+        Output Precision: 3
+        Output Processor: 0
+        Output Information: 
+          Error: false
+          Warning: false
+          Outer Iteration: false
+          Parameters: false
+          Details: false
+          Linear Solver Details: false
+          Stepper Iteration: false
+          Stepper Details: false
+          Stepper Parameters: false
+
+      Direction: 
+        Method: Newton
+        Newton: 
+          Forcing Term Method: Constant
+          Rescue Bad Newton Solve: true
+          Linear Solver:
+            Write Linear System: false
+            Tolerance: 1.0e-8
+          Stratimikos Linear Solver: 
+            Stratimikos: 
+
+#             Linear Solver Information
+              Linear Solver Type: Belos
+              Linear Solver Types: 
+                Belos:
+                  Solver Type: Block GMRES
+                  Solver Types:
+                    Block GMRES:
+                      Output Frequency: 0
+                      Output Style: 1
+                      Verbosity: 33
+                      Maximum Iterations: 1
+                      Block Size: 1
+                      Num Blocks: 200
+                      Flexible Gmres: false
+                  VerboseObject:
+                    Output File: none
+                    Verbosity Level: none
+
+#             Preconditioner Information
+              Preconditioner Type: None
+              Preconditioner Types:
+                Ifpack2:
+                  Overlap: 0
+                  Prec Type: RILUK
+                  Ifpack2 Settings:
+                    'fact: iluk level-of-fill': 0
+...

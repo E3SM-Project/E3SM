@@ -271,7 +271,7 @@ def buildnml(case, caseroot, compname):
 
     if mali_use_albany:
         logger.info("Setting up albany_input.yaml file for use with MALI.")
-        # Write albany_input.xml file if there isn't one in SourceMods
+        # Write albany_input.yaml file if there isn't one in SourceMods
         if os.path.exists("{}/SourceMods/src.mali/{}".format(caseroot, albany_input_name)):
             safe_copy("{}/SourceMods/src.mali/{}".format(caseroot, albany_input_name), os.path.join(rundir, albany_input_name))
         else:
