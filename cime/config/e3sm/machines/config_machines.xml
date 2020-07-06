@@ -1545,7 +1545,7 @@
     <DIN_LOC_ROOT_CLMFORC>/home/azamat/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>$ENV{HOME}/acme/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/home/azamat/acme/tools/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/home/azamat/acme/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <TESTS>acme_developer</TESTS>
     <BATCH_SYSTEM>cobalt_theta</BATCH_SYSTEM>
@@ -1556,14 +1556,14 @@
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks"> -n $TOTALPES</arg>
+        <arg name="num_tasks">-l -n $TOTALPES</arg>
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="sh">$MODULESHOME/init/sh</init_path>
-      <init_path lang="csh">$MODULESHOME/init/csh</init_path>
-      <init_path lang="perl">$MODULESHOME/init/perl.pm</init_path>
-      <init_path lang="python">$MODULESHOME/init/python.py</init_path>
+      <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
+      <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
+      <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
+      <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
@@ -1630,7 +1630,7 @@
     <DIN_LOC_ROOT_CLMFORC>/home/azamat/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>$ENV{HOME}/acme/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/home/azamat/acme/tools/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/home/azamat/acme/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <TESTS>acme_developer</TESTS>
     <BATCH_SYSTEM>cobalt_theta</BATCH_SYSTEM>
@@ -1641,14 +1641,14 @@
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks"> -n $TOTALPES</arg>
+        <arg name="num_tasks">-l -n $TOTALPES</arg>
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="sh">$MODULESHOME/init/sh</init_path>
-      <init_path lang="csh">$MODULESHOME/init/csh</init_path>
-      <init_path lang="perl">$MODULESHOME/init/perl.pm</init_path>
-      <init_path lang="python">$MODULESHOME/init/python.py</init_path>
+      <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
+      <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
+      <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
+      <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
