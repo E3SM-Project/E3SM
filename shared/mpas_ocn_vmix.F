@@ -430,7 +430,7 @@ contains
       A(1)=0.0_RKIND
 
       !$omp parallel
-      !$omp do schedule(runtime) private(N, cell1, cell2, A, B, C, velTemp)
+      !$omp do schedule(runtime) private(N, cell1, cell2, A, B, C, velTemp, k)
       do iEdge = 1, nEdges
         N = maxLevelEdgeTop(iEdge)
         if (N .gt. 0) then
@@ -574,7 +574,7 @@ contains
 
       call mpas_timer_start('vmix tracers tend imp loop', .false.)
       !$omp parallel
-      !$omp do schedule(runtime) private(N, A, B, C, rhs, tracersTemp)
+      !$omp do schedule(runtime) private(N, A, B, C, rhs, tracersTemp, k)
       do iCell = 1, nCells
          ! Compute A(k), B(k), C(k) for tracers
          N = maxLevelCell(iCell)
@@ -1001,7 +1001,7 @@ subroutine ocn_compute_kpp_rhs(tracers, rhs, dt, maxLevelCell, nTracers, &
   real (kind=RKIND), intent(in) :: dt
   real (kind=RKIND), dimension(:,:), intent(in) :: vertNonLocalFlux, tracers
   real (kind=RKIND), dimension(:), intent(in) :: layerThickness, tracerGroupSurfaceFlux
-  real (kind=RKIND), dimension(:,:), intent(inout) :: rhs
+  real (kind=RKIND), dimension(:,:), intent(out) :: rhs
   integer, intent(in) :: maxLevelCell, nTracers
   integer :: iTracer, k
 

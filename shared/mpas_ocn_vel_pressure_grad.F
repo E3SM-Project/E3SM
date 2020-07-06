@@ -248,7 +248,7 @@ contains
          allocate(JacobianDxDs(nVertLevels))
 
          !$omp parallel
-         !$omp do schedule(runtime) private(cell1, cell2, invdcEdge, k, pGrad)
+         !$omp do schedule(runtime) private(cell1, cell2, invdcEdge, k, pGrad, JacobianDxDs)
          do iEdge=1,nEdges
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)

@@ -285,7 +285,7 @@ contains
       !
       if (cvmixBackgroundOn) then
          !$omp parallel
-         !$omp do schedule(runtime)
+         !$omp do schedule(runtime) private(k)
          do iCell = 1, nCells
             do k = 1, nVertLevelsP1
                vertViscTopOfCell(k, iCell) = vertViscTopOfCell(k, iCell) + config_cvmix_background_viscosity
