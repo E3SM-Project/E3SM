@@ -42,9 +42,9 @@
  If additional future files become available, the user needs to update three variables in the code
  before compiling (near the beginning of updateannuallanduse()), in order to account for a different future scenario:
  
- 5810: const char out_future_land_filebase[] = "LUT_LUH2_SSP5_RCP85";
- 5821: const char luh_future_file[] = "LUH2_SSP5_RCP85_LUH1_format.nc";
- 5823: const char luh_harvest_future_file[] = "LUH2_SSP5_RCP85_LUH1_format_harvest_updated.nc";
+ 5865: const char out_future_land_filebase[] = "LUT_LUH2_SSP5_RCP85";
+ 5876: const char luh_future_file[] = "LUH2_SSP5_RCP85_LUH1_format.nc";
+ 5878: const char luh_harvest_future_file[] = "LUH2_SSP5_RCP85_LUH1_format_harvest_updated.nc";
  
  September 2019 update (adv):
  
@@ -63,7 +63,7 @@
  
  	Note that for the standalone version all input files are in a single directory, given as an argument
  
- this is the compile command I use on my local desktop machine:
+ this is the compile command I use on my local desktop machine (note no optimization):
  gcc -std=c11 -O0 -lnetcdf -L/usr/local/lib -I/usr/local/include -lm updateannuallanduse_v2.c -o ualu_v2
  
  -L and -I need to be changed to reflect the locations of the NetCDF library and header files, respectively.
@@ -237,7 +237,7 @@
 // use this to output extra stuff to the terminal or to the log file (via printf statements)
 // in iESM, these statements are captured in a log file
 // for standalone, these statements print to the terminal, so can be captured to a file via a pipe
-//#define DEBUG 1
+#define DEBUG 1
 
 #define MAXPFT 16
 #define MAXMONTH 12
@@ -309,6 +309,7 @@
 #define SLIMIT 10
 
 #define TOLERANCE 1E-5
+#define ROUND_PREC 1E5
 
 /* these 1-d arrays of the grid have a cell boundary origin at the lower left corner of: lon= -180, lat = -90)-adv */
 /* the index increases with increasing longitude then with increaseing latitude -adv */
@@ -3988,9 +3989,15 @@ void sethurttcrop(int outgrid, int modyear, int calcyear) {
                 printf("pasturepftsum: %f\n", pasturepftsum);
 #endif
                 // some crop reduction, use all pasture
+                // make sure newcropval is not negative - this shouldn't happen, but check anyway
                 newcropval = newcropval - reducecrop;
-                availablecropsum = availablecropsum + pasturepftsum;
-                pasturepftsum = 0.0;
+                if (newcropval < 0) {
+                   newcropval = 0.0;
+                   availablecropsum = 0.0;
+                } else {
+                   availablecropsum = availablecropsum + pasturepftsum;
+                   pasturepftsum = 0.0;
+                }
              }
              removepftsum = availablecropsum;
 #ifdef DEBUG
@@ -4502,32 +4509,40 @@ void sethurttcrop(int outgrid, int modyear, int calcyear) {
           }	// end if just add trees else base pft addition on potential vegetation
        }	// end if first check for addpftsum > 0.0
     }	// end else remove crop
-    
-    maxpftid = 0;
-    maxpftval = 0.0;
-    updatedpftsum = 0.0;
-    
-    for (outpft = BPFT;outpft <= GC4PFT;outpft++) {
-        if (outhurttpftval[outpft][outgrid] < 0.0) {
-            outhurttpftval[outpft][outgrid] = 0.0;
-        }
-        if (outpft > BPFT && maxpftval < outhurttpftval[outpft][outgrid]) {
-            maxpftid = outpft;
-            maxpftval = outhurttpftval[outpft][outgrid];
-        }
-        updatedpftsum = updatedpftsum + outhurttpftval[outpft][outgrid];
-    }
-    
-    if ((updatedpftsum + newcropval) < 100.0) {
-        addpftsum = 100.0 - (updatedpftsum + newcropval);
+   
+   // ensure values sum to 100 percent of veg land unit
+   // round to ROUND_PREC (1E-5) to help stabilize values across machines
+   // the sum checks are done in the multiplied rounded units, and then values are converted back at the end
+   // this will help with the maxpft selection and reduce drift before sethurttpasture()
+   
+   maxpftid = 0;
+   maxpftval = 0.0;
+   updatedpftsum = 0.0;
+   
+   for (outpft = BPFT;outpft <= GC4PFT;outpft++) {
+      outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] * ROUND_PREC);
+      if (outhurttpftval[outpft][outgrid] < 0.0) {
+         outhurttpftval[outpft][outgrid] = 0.0;
+      }
+      if (outpft >= BPFT && maxpftval < outhurttpftval[outpft][outgrid]) {
+         maxpftid = outpft;
+         maxpftval = outhurttpftval[outpft][outgrid];
+      }
+      updatedpftsum = updatedpftsum + outhurttpftval[outpft][outgrid];
+   }
+   // multiply and round newcropval
+   newcropval = round(newcropval * ROUND_PREC);
+   
+    if ((updatedpftsum + newcropval) < (100.0 * ROUND_PREC)) {
+        addpftsum = (100.0 * ROUND_PREC) - (updatedpftsum + newcropval);
        if (addpftsum >= 0.0) {
 #ifdef DEBUG            
-          printf("Crop Addsum = %f\npftvals before adding to non-crop maxpftval: ",addpftsum);
+          printf("Crop Addsum = %f\npftvals before adding to non-crop maxpftid %i: ",addpftsum / ROUND_PREC, maxpftid);
           for (temppftid = 0; temppftid < MAXPFT-1; temppftid++) {
-             printf("%f ",outhurttpftval[temppftid][outgrid]);
+             printf("pft %i val=%f, ", temppftid, outhurttpftval[temppftid][outgrid] / ROUND_PREC);
           }
           /* Bugfix: newcropval is the new crop pft sum, so don't add it to the outhurttpftval[CPFT] -adv */
-          printf("crop: %f ",newcropval);
+          printf("crop: %f ",newcropval / ROUND_PREC);
           printf("\n");
 #endif            
        }
@@ -4535,46 +4550,58 @@ void sethurttcrop(int outgrid, int modyear, int calcyear) {
         updatedpftsum = updatedpftsum + addpftsum;
     }
     
-    if ((updatedpftsum + newcropval) > 100.0) {
-        removepftsum = (updatedpftsum + newcropval - 100.0);
+    if ((updatedpftsum + newcropval) > (100.0 * ROUND_PREC)) {
+        removepftsum = (updatedpftsum + newcropval - (100.0 * ROUND_PREC));
        if (removepftsum >= 0.0) {
 #ifdef DEBUG            
-          printf("Crop Removesum = %f\npftvals before removing from non-crop maxpftval: ",removepftsum);
+          printf("Crop Removesum = %f\npftvals before removing from non-crop maxpftid %i: ",removepftsum / ROUND_PREC, maxpftid);
           for (temppftid = 0; temppftid < MAXPFT-1; temppftid++) {
-             printf("%f ",outhurttpftval[temppftid][outgrid]);
+             printf("pft %i val=%f ", temppftid, outhurttpftval[temppftid][outgrid] / ROUND_PREC);
           }
           /* Bugfix: newcropval is the new crop pft sum, so don't add it to the outhurttpftval[CPFT] -adv */
-          printf("crop: %f ",newcropval);
+          printf("crop: %f ",newcropval / ROUND_PREC);
           printf("\n");
 #endif            
        }
         outhurttpftval[maxpftid][outgrid] = outhurttpftval[maxpftid][outgrid] - removepftsum;
        if (outhurttpftval[maxpftid][outgrid] < 0.0) {
+          // in some cases maxpftid may be bare ground in order to not have id-val mismatches above
 #ifdef DEBUG            
           printf("balance pft sum in sethurttcrop, subtracting bare\n");
-          printf("bare: %f\n", outhurttpftval[BPFT][outgrid]);
-          printf("outhurttpftval[maxpftid][outgrid]: %f\n", outhurttpftval[maxpftid][outgrid]);
+          printf("bare: %f\n", outhurttpftval[BPFT][outgrid] / ROUND_PREC);
+          printf("outhurttpftval[maxpftid][outgrid]: %f\n", outhurttpftval[maxpftid][outgrid] / ROUND_PREC);
           
 #endif                        
-          outhurttpftval[BPFT][outgrid] = outhurttpftval[BPFT][outgrid] + outhurttpftval[maxpftid][outgrid];
-          outhurttpftval[maxpftid][outgrid] = 0.0;
+          if (maxpftid != BPFT) {
+            // adjust bare ground only if maxpftid is not bare ground
+             if (outhurttpftval[maxpftid][outgrid] != 0) {
+                // add only if not -0
+                outhurttpftval[BPFT][outgrid] = outhurttpftval[BPFT][outgrid] + outhurttpftval[maxpftid][outgrid];
+             }
+             outhurttpftval[maxpftid][outgrid] = 0.0;
+          }
 #ifdef DEBUG            
-          printf("adjusted bare: %f\n",outhurttpftval[BPFT][outgrid]);
-          printf("adjusted outhurttpftval[maxpftid][outgrid]: %f\n", outhurttpftval[maxpftid][outgrid]);
+          printf("adjusted bare: %f\n",outhurttpftval[BPFT][outgrid] / ROUND_PREC);
+          printf("adjusted outhurttpftval[maxpftid][outgrid]: %f\n", outhurttpftval[maxpftid][outgrid] / ROUND_PREC);
 #endif                        
           if (outhurttpftval[BPFT][outgrid] < 0) {
              if (outhurttpftval[BPFT][outgrid] != 0) {
-                printf("Error: balance pft sum in sethurttcrop sends adjusted bare negative: %f\n",outhurttpftval[BPFT][outgrid]);
+                printf("Error: balance pft sum in sethurttcrop sends adjusted bare negative: %f\n",outhurttpftval[BPFT][outgrid] / ROUND_PREC);
              }
              outhurttpftval[BPFT][outgrid] = 0;
           }
        }
     }
-    
+   
+   // return to percent units
+   for (outpft = BPFT;outpft <= GC4PFT;outpft++) {
+      outhurttpftval[outpft][outgrid] = outhurttpftval[outpft][outgrid] / ROUND_PREC;
+   }
+   
     /* NOTE: the crop fraction is finally set to be the same value like that of GLM. All the above algorithms in sethurttcrop() are actually not be used. -jfm */
 	/* this is still set to match glmo (capped by the vegetated land unit), so actually the above algorithms are still needed to adjust the pfts;
 	 the beginning lines can be changed to set newcropval as input crop fraction + the relative change in crop fraction, which would change this last line -adv */
-    outhurttpftval[CPFT][outgrid] = newcropval;
+    outhurttpftval[CPFT][outgrid] = newcropval / ROUND_PREC;
     
 }
 
@@ -4600,7 +4627,7 @@ void sethurttcrop(int outgrid, int modyear, int calcyear) {
 ------*/
 void sethurttpasture(int outgrid, int modyear, int calcyear) {
     
-    int maxpftid, outpft, pasturegrid;
+   int maxpftid, outpft, pasturegrid, temppftid;
     double maxpftval, treepftsum, potvegpftsum, potvegtreepftsum;
 	double addpftsum, removepftsum, updatedpftsum;
     double herbaceouspftsum, potvegherbaceouspftsum, newpasturepftsum, grasspftsum;
@@ -5496,70 +5523,90 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
 	 }		// end else remove pasture
 	 
 	 // end of new code block -adv */
-	
-    maxpftid = 0;
-    maxpftval = 0.0;
-    updatedpftsum = 0.0;
-    
-    for (outpft = BPFT;outpft <= CPFT;outpft++) {
-        if (outhurttpftval[outpft][outgrid] < 0.0) {
-            outhurttpftval[outpft][outgrid] = 0.0;
-        }
-        if (outpft > BPFT && maxpftval < outhurttpftval[outpft][outgrid]) {
-            maxpftid = outpft;
-            maxpftval = outhurttpftval[outpft][outgrid];
-        }
-        updatedpftsum = updatedpftsum + outhurttpftval[outpft][outgrid];
-    }
-    
-    if (updatedpftsum < 100.0) {
-        addpftsum = 100.0 - updatedpftsum;
-        if (addpftsum >= 0.0) {
+   
+   // ensure values sum to 100 percent of veg land unit
+   // round to ROUND_PREC (1E-5) to help stabilize values across machines
+   // the sum checks are done in the multiplied rounded units, and then values are converted back at the end
+   // this will help with the maxpft selection and hopefully stabilize the outputs
+   
+   maxpftid = 0;
+   maxpftval = 0.0;
+   updatedpftsum = 0.0;
+   
+   for (outpft = BPFT; outpft <= CPFT;outpft++) {
+      outhurttpftval[outpft][outgrid] = round(outhurttpftval[outpft][outgrid] * ROUND_PREC);
+      if (outhurttpftval[outpft][outgrid] < 0.0) {
+         outhurttpftval[outpft][outgrid] = 0.0;
+      }
+      // do not include crops for adjustment because they are previously set to input value
+      if (outpft >= BPFT && outpft < CPFT && maxpftval < outhurttpftval[outpft][outgrid]) {
+         maxpftid = outpft;
+         maxpftval = outhurttpftval[outpft][outgrid];
+      }
+      updatedpftsum = updatedpftsum + outhurttpftval[outpft][outgrid];
+   }
+   
+   if (updatedpftsum < (100.0 * ROUND_PREC)) {
+      addpftsum = (100.0 * ROUND_PREC) - updatedpftsum;
+      if (addpftsum >= 0.0) {
 #ifdef DEBUG            
-            printf("Pasture Addsum = %f /n",addpftsum);
-#endif            
-            //for (temppftid = 0; temppftid < MAXPFT; temppftid++) {
-            //    printf("%f ",outhurttpftval[temppftid][outgrid]);
-            //}
-            //printf("\n");
-        }
-        outhurttpftval[maxpftid][outgrid] = outhurttpftval[maxpftid][outgrid] + addpftsum;
-        updatedpftsum = updatedpftsum + addpftsum;
-    }
-    
-    if (updatedpftsum > 100.0) {
-        removepftsum = updatedpftsum - 100.0;
-        if (removepftsum >= 0.0) {
-#ifdef DEBUG            
-            printf("Pasture Removesum = %f /n",removepftsum);
-#endif            
-            //for (temppftid = 0; temppftid < MAXPFT; temppftid++) {
-            //    printf("%f ",outhurttpftval[temppftid][outgrid]);
-            //}
-            //printf("\n");
-        }
-        outhurttpftval[maxpftid][outgrid] = outhurttpftval[maxpftid][outgrid] - removepftsum;
-        if (outhurttpftval[maxpftid][outgrid] < 0.0) {
-#ifdef DEBUG            
-			printf("balance pft sum in sethurttpasture, subtracting bare\n");
-			printf("bare: %f\n\n", outhurttpftval[BPFT][outgrid]);
-			printf("outhurttpftval[maxpftid][outgrid]: %f\n", outhurttpftval[maxpftid][outgrid]);
-#endif                        
-         outhurttpftval[BPFT][outgrid] = outhurttpftval[BPFT][outgrid] + outhurttpftval[maxpftid][outgrid];
-         outhurttpftval[maxpftid][outgrid] = 0.0;
-#ifdef DEBUG
-			printf("adjusted bare: %f\n\n", outhurttpftval[BPFT][outgrid]);
-			printf("adjusted outhurttpftval[maxpftid][outgrid]: %f\n", outhurttpftval[maxpftid][outgrid]);
+         printf("Pasture Addsum = %f; before adjustment to maxpftid=%i\n",addpftsum / ROUND_PREC, maxpftid);
+         
+         for (temppftid = 0; temppftid < MAXPFT; temppftid++) {
+            printf("pft %i val=%f, ",temppftid, outhurttpftval[temppftid][outgrid] / ROUND_PREC);
+         }
+         printf("\n");
 #endif
-            if (outhurttpftval[BPFT][outgrid] < 0) {
-               if (outhurttpftval[BPFT][outgrid] != 0) {
-                printf("Error: balance pft sum in sethurttpasture sends adjusted bare negative: %f\n",outhurttpftval[BPFT][outgrid]);
-               }
-                outhurttpftval[BPFT][outgrid] = 0;
+      }
+      outhurttpftval[maxpftid][outgrid] = outhurttpftval[maxpftid][outgrid] + addpftsum;
+      updatedpftsum = updatedpftsum + addpftsum;
+   }
+   
+   if (updatedpftsum > (100.0 * ROUND_PREC)) {
+      removepftsum = updatedpftsum - (100.0 * ROUND_PREC);
+      if (removepftsum >= 0.0) {
+#ifdef DEBUG            
+         printf("Pasture Removesum = %f; before adjustment to maxpftid=%i\n",removepftsum / ROUND_PREC, maxpftid);
+         
+         for (temppftid = 0; temppftid < MAXPFT; temppftid++) {
+            printf("pft %i val=%f, ", temppftid, outhurttpftval[temppftid][outgrid] / ROUND_PREC);
+         }
+         printf("\n");
+#endif
+      }
+      outhurttpftval[maxpftid][outgrid] = outhurttpftval[maxpftid][outgrid] - removepftsum;
+      if (outhurttpftval[maxpftid][outgrid] < 0.0) {
+#ifdef DEBUG            
+         printf("balance pft sum in sethurttpasture, subtracting bare\n");
+         printf("bare: %f\n\n", outhurttpftval[BPFT][outgrid] / ROUND_PREC);
+         printf("outhurttpftval[maxpftid][outgrid]: %f\n", outhurttpftval[maxpftid][outgrid] / ROUND_PREC);
+#endif                        
+         if (maxpftid != BPFT) {
+            // adjust bare ground only if it is not maxpftid
+            if (outhurttpftval[maxpftid][outgrid] != 0) {
+               // add only if not -0
+               outhurttpftval[BPFT][outgrid] = outhurttpftval[BPFT][outgrid] + outhurttpftval[maxpftid][outgrid];
             }
-        }
-    }
-    
+            outhurttpftval[maxpftid][outgrid] = 0.0;
+         }
+#ifdef DEBUG
+         printf("adjusted bare: %f\n\n", outhurttpftval[BPFT][outgrid] / ROUND_PREC);
+         printf("adjusted outhurttpftval[maxpftid][outgrid]: %f\n", outhurttpftval[maxpftid][outgrid] / ROUND_PREC);
+#endif
+         if (outhurttpftval[BPFT][outgrid] < 0) {
+            if (outhurttpftval[BPFT][outgrid] != 0) {
+               printf("Error: balance pft sum in sethurttpasture sends adjusted bare negative: %f\n",outhurttpftval[BPFT][outgrid] / ROUND_PREC);
+            }
+            outhurttpftval[BPFT][outgrid] = 0;
+         }
+      }
+   }
+   
+   // return to percent units
+   for (outpft = BPFT; outpft <= CPFT;outpft++) {
+      outhurttpftval[outpft][outgrid] = outhurttpftval[outpft][outgrid] / ROUND_PREC;
+   }
+   
 }
 
 
@@ -5703,6 +5750,10 @@ calchurtt(int modyear, int calcyear) {
 		cropavailpotvegtreepftval[outgrid] = 0;
 		pastureavailpotvegtreepftval[outgrid] = 0;
 		
+#ifdef DEBUG
+       printf("\noutgrid: %i\n", outgrid);
+#endif
+       
     	/* put the base year pfts into the output pft array -adv */
         sethurttcurrent(outgrid);
         if (invegbare[outgrid] > 0.0) {	/* calc new pfts only if the grid cell has a non-zero vegetated land unit -adv */
