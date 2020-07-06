@@ -555,7 +555,6 @@ subroutine shoc_grid( &
 
   ! local variables
   integer :: i, k
-
   do k=1,nlev
     do i=1,shcol
       ! define thickness of the thermodynamic gridpoints
