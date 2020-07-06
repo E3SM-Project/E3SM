@@ -145,7 +145,8 @@ contains
       nCells = nCellsArray( 3 )
 
       !$omp parallel
-      !$omp do schedule(runtime) private(depth, k, weights, depLev)
+      !$omp do schedule(runtime) private(depth, k, depLev) &
+      !$omp firstprivate(weights)
       do iCell = 1, nCells
          depth = 0.0_RKIND
          do k = 1, maxLevelCell(iCell)

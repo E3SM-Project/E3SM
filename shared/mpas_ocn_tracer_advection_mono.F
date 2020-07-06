@@ -479,7 +479,7 @@ module ocn_tracer_advection_mono
         nEdges = nEdgesArray( 2 )
         !  rescale the high order horizontal fluxes
         !$omp parallel
-        !$omp do schedule(runtime) private(cell1, cell2, k, flux)
+        !$omp do schedule(runtime) private(cell1, cell2, k)
         do iEdge = 1, nEdges
           cell1 = cellsOnEdge(1,iEdge)
           cell2 = cellsOnEdge(2,iEdge)
@@ -500,7 +500,7 @@ module ocn_tracer_advection_mono
         nCells = nCellsArray( 1 )
         ! Accumulate the scaled high order vertical tendencies, and the upwind tendencies
         !$omp parallel
-        !$omp do schedule(runtime) private(invAreaCell1, signedFactor, i, iEdge, flux, k)
+        !$omp do schedule(runtime) private(invAreaCell1, signedFactor, i, iEdge, k)
         do iCell = 1, nCells
           invAreaCell1 = 1.0_RKIND / areaCell(iCell)
 
