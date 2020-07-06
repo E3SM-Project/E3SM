@@ -805,8 +805,9 @@ module li_subglacial_hydro
       ! For land this would only happen if there is a supply of water, which is not currently handled.
       ! Do this by simply zeroing the hydropotential gradient in those cases.
       do iEdge = 1, nEdges
-         ! Find edges along GL to check for 'backwarrds' flow
-         if (li_mask_is_grounding_line(edgeMask(iEdge))) then
+         ! Find edges along GL or grounded margin to check for 'backwards' flow
+         if ((li_mask_is_grounding_line(edgeMask(iEdge))) .or. &
+             (li_mask_is_margin(edgeMask(iEdge)) .and. li_mask_is_grounded_ice(edgeMask(iEdge)))) then
             ! Now check if flow is backwards
             cell1 = cellsOnEdge(1, iEdge)
             cell2 = cellsOnEdge(2, iEdge)
@@ -821,7 +822,7 @@ module li_subglacial_hydro
                   hydropotentialBaseSlopeNormal(iEdge) = 0.0_RKIND
                endif
             endif
-         endif ! GL edge
+         endif ! GL edge or grounded margin
       end do
 
       ! Calculate tangent slope of hydropotentialBase - three possible methods to consider
