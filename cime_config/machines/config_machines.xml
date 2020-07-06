@@ -1161,20 +1161,19 @@
       <cmd_path lang="csh">module</cmd_path>
       <modules>
         <command name="purge"/>
-        <command name="load">subversion/1.14.0-e4smcy3</command>
-        <command name="load">perl/5.32.0-bsnc6lt</command>
+        <command name="load">cmake/3.14.2-gvwazz3</command>
       </modules>
       <modules compiler="intel">
-        <command name="load">intel/20.0.4-kodw73g</command>
-        <command name="load">intel-mkl/2020.4.304-g2qaxzf</command>
+        <command name="load">intel/17.0.4-74uvhji</command>
+        <command name="load">intel-mkl/2017.3.196-v7uuj6z</command>
+        <command name="load">intel-mpi/2017.3-dfphq6k</command>
+        <command name="load">hdf5/1.10.1-3zhckvj</command>
+        <command name="load">netcdf/4.6.1-c2mecde</command>
+        <command name="load">netcdf-fortran/4.4.4-ojwazvy</command>
       </modules>
-      <modules compiler="intel" mpilib="openmpi">
-        <command name="load">openmpi/4.0.4-hpcx-cy5n3ft</command>
-        <command name="load">hdf5/1.8.16-m3bsibs</command>
-        <command name="load">netcdf-c/4.4.1-7ejgpdm</command>
-        <command name="load">netcdf-cxx/4.2-sag6n3x</command>
-        <command name="load">netcdf-fortran/4.4.4-sjzkwoc</command>
-        <command name="load">parallel-netcdf/1.11.0-l362p2g</command>
+      <modules compiler="intel" mpilib="impi">
+        <command name="load">intel-mpi/2017.3-dfphq6k</command>
+        <command name="load">parallel-netcdf/1.8.0-2vcchdi</command>
       </modules>
       <modules compiler="intel" mpilib="impi">
         <command name="load">intel-mpi/2019.9.304-tkzvizk</command>

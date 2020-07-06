@@ -879,6 +879,7 @@ flags should be captured within MPAS CMake files.
 
 <compiler MACH="bebop" COMPILER="intel">
   <ALBANY_PATH>/soft/climate/AlbanyTrilinos_06262017/Albany/buildintel/install</ALBANY_PATH>
+  <MOAB_PATH>/home/iulian/moab-blds/bebop/moab-j3</MOAB_PATH>
   <CPPDEFS>
     <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
