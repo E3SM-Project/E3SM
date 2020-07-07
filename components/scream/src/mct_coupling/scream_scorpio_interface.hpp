@@ -33,11 +33,10 @@ namespace scorpio {
   void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,2>& dim_length, const Real* hbuf);
   void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,3>& dim_length, const Real* hbuf);
   void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,4>& dim_length, const Real* hbuf);
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const Int dim1_length, const Int*& hbuf);
+  void grid_write_data_array(const std::string &filename, const std::string &varname, const Int dim1_length, const Int* hbuf);
   void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,2>& dim_length, const Int* hbuf);
   void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,3>& dim_length, const Int* hbuf);
   void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,4>& dim_length, const Int* hbuf);
-  //void grid_write_data_array(const std::string &filename, const std::string &varname, const Int buf_length, const Int  &hbuf);
 
 } // namespace scorpio
 } // namespace scream

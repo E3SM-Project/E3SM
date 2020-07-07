@@ -87,7 +87,7 @@ contains
     do ii = 1,numdims
       call convert_c_string(var_dimensions_in(ii), var_dimensions(ii))
     end do
-    
+   
     call register_variable(filename,shortname,longname,numdims,var_dimensions,dtype,pio_decomp_tag)
 
   end subroutine register_variable_c

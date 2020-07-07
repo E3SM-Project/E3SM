@@ -109,15 +109,16 @@ void scream_init (const MPI_Fint& f_comm,
   std::string vec_xt[]   = {"x","time"}; 
   std::string vec_yt[]   = {"y","time"}; 
   std::string vec_xyt[]  = {"x","y","time"}; 
-  std::string vec_xyzt[]  = {"x","y","z","time"}; 
+  std::string vec_yxt[]  = {"y","x","time"}; 
+  std::string vec_xyzt[] = {"x","y","z","time"}; 
   register_variable("example_pio_structured_v2.nc","time","time",1,vec_time, PIO_REAL,"t");
   register_variable("example_pio_structured_v2.nc","x","answer to space and time",1,vec_x, PIO_REAL,"x-real");
   register_variable("example_pio_structured_v2.nc","y","answer to space and time",1,vec_y, PIO_REAL,"y-real");
   register_variable("example_pio_structured_v2.nc","z","answer to space and time",1,vec_z, PIO_REAL,"z-real");
   register_variable("example_pio_structured_v2.nc","bar","answer to space and time",3,vec_xyt, PIO_REAL,"xyt-real");
-  register_variable("example_pio_structured_v2.nc","foo","answer to space and time",3,vec_xyt, PIO_REAL,"xyt-real");
-  register_variable("example_pio_structured_v2.nc","bar_flip","answer to space and time",3,vec_xyt, PIO_REAL,"yxt-real");
-  register_variable("example_pio_structured_v2.nc","foo_flip","answer to space and time",3,vec_xyt, PIO_REAL,"yxt-real");
+  register_variable("example_pio_structured_v2.nc","foo","answer to space and time",3,vec_yxt, PIO_REAL,"yxt-real");
+  register_variable("example_pio_structured_v2.nc","bar_flip","answer to space and time",3,vec_xyt, PIO_REAL,"xyt-real");
+  register_variable("example_pio_structured_v2.nc","foo_flip","answer to space and time",3,vec_yxt, PIO_REAL,"yxt-real");
   register_variable("example_pio_structured_v2.nc","foo_big","answer to space and time",4,vec_xyzt, PIO_REAL,"xyzt-real");
 
   eam_pio_enddef();
@@ -162,7 +163,7 @@ void scream_run (const Real& dt) {
 
   // TEST
   ekat::util::md_array<Real,10>     foo_data_1d;
-  ekat::util::md_array<Real,10,3>   foo_data_2d;
+  ekat::util::md_array<Real,3,10>   foo_data_2d;
   ekat::util::md_array<Real,2,3,10> foo_data_3d;
   ekat::util::md_array<Real,10,3>   foo_data_2d_inv;
   for (int ii=0;ii<10;ii++) {

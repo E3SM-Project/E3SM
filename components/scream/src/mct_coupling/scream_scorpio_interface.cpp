@@ -12,21 +12,21 @@ using scream::Int;
 extern "C" {
 
 // Fortran routines to be called from C++
-  void grid_write_data_array_c_real_1d(const std::string &filename, const std::string &varname, const Int dim1_length, const Real*& hbuf);
-  void grid_write_data_array_c_real_2d(const std::string &filename, const std::string &varname, const Int dim1_length, const Int dim2_length, const Real*& hbuf);
-  void grid_write_data_array_c_real_3d(const std::string &filename, const std::string &varname, const Int dim1_length, const Int dim2_length, const Int dim3_length, const Real*& hbuf);
-  void grid_write_data_array_c_real_4d(const std::string &filename, const std::string &varname, const Int dim1_length, const Int dim2_length, const Int dim3_length, const Int dim4_length, const Real*& hbuf);
-  void grid_write_data_array_c_int_1d(const std::string &filename, const std::string &varname, const Int dim1_length, const Int*& hbuf);
-  void grid_write_data_array_c_int_2d(const std::string &filename, const std::string &varname, const Int dim1_length, const Int dim2_length, const Int*& hbuf);
-  void grid_write_data_array_c_int_3d(const std::string &filename, const std::string &varname, const Int dim1_length, const Int dim2_length, const Int dim3_length, const Int*& hbuf);
-  void grid_write_data_array_c_int_4d(const std::string &filename, const std::string &varname, const Int dim1_length, const Int dim2_length, const Int dim3_length, const Int dim4_length, const Int*& hbuf);
+  void grid_write_data_array_c_real_1d(const std::string &filename, const std::string &varname, const Int dim1_length, const Real* hbuf);
+  void grid_write_data_array_c_real_2d(const std::string &filename, const std::string &varname, const Int dim1_length, const Int dim2_length, const Real* hbuf);
+  void grid_write_data_array_c_real_3d(const std::string &filename, const std::string &varname, const Int dim1_length, const Int dim2_length, const Int dim3_length, const Real* hbuf);
+  void grid_write_data_array_c_real_4d(const std::string &filename, const std::string &varname, const Int dim1_length, const Int dim2_length, const Int dim3_length, const Int dim4_length, const Real* hbuf);
+  void grid_write_data_array_c_int_1d(const std::string &filename, const std::string &varname, const Int dim1_length, const Int* hbuf);
+  void grid_write_data_array_c_int_2d(const std::string &filename, const std::string &varname, const Int dim1_length, const Int dim2_length, const Int* hbuf);
+  void grid_write_data_array_c_int_3d(const std::string &filename, const std::string &varname, const Int dim1_length, const Int dim2_length, const Int dim3_length, const Int* hbuf);
+  void grid_write_data_array_c_int_4d(const std::string &filename, const std::string &varname, const Int dim1_length, const Int dim2_length, const Int dim3_length, const Int dim4_length, const Int* hbuf);
   void eam_init_pio_subsystem_c(const int mpicom, const int compid, const bool local);
   void eam_pio_finalize_c();
   void register_outfile_c(const std::string (&filename));
   void sync_outfile_c(const std::string (&filename));
   void pio_update_time_c(const std::string (&filename),const Real time);
   void register_dimension_c(const std::string &filename, const std::string &shortname, const std::string &longname, const int length);
-  void register_variable_c(const std::string& filename,const std::string& shortname, const std::string& longname, const int numdims, const std::string*& var_dimensions, const int dtype, const std::string& pio_decomp_tag);
+  void register_variable_c(const std::string& filename,const std::string& shortname, const std::string& longname, const int numdims, const std::string* var_dimensions, const int dtype, const std::string& pio_decomp_tag);
   void eam_pio_enddef_c();
 
 } // extern C
