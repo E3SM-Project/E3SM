@@ -591,6 +591,9 @@
     <type>char</type>
     <valid_values>minus1p8,linear_salt,mushy</valid_values>
     <default_value>mushy</default_value>
+    <values match="last">
+      <value compset="_MOM6">linear_salt</value>
+    </values>
     <group>run_physics</group>
     <file>env_run.xml</file>
     <desc>Freezing point calculation for salt water.</desc>
