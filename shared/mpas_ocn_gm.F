@@ -970,6 +970,7 @@ contains
             call mpas_pool_get_array(diagnosticsPool, 'betaEdge', betaEdge)
             call mpas_pool_get_array(meshPool, 'latEdge', latEdge)
             call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
+            !$omp parallel
             !$omp do schedule(runtime)
             do iEdge=1,nEdges
               betaEdge(iEdge) = 2.0_RKIND*omega*cos(latEdge(iEdge)) / sphere_radius
@@ -993,7 +994,7 @@ contains
             ! Nothing to do, as we just keep the same assignment as above.
          else if (config_eddying_resolution_taper == 'ramp') then
             !$omp parallel
-            !$omp do schedule(runtime) private( avgCellDiameter)
+            !$omp do schedule(runtime) 
             do iEdge = 1, nEdges
                if (dcEdge(iEdge) <= config_eddying_resolution_ramp_min) then
                   gmResolutionTaper(iEdge) = 0.0_RKIND
