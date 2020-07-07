@@ -357,8 +357,11 @@ subroutine diag_init()
    call addfld ('KEbeforeadj',horiz_only, 'A','J/m2','TE after ')
    call addfld ('KEafteradj',horiz_only, 'A','J/m2','TE after ')
 
-
+!difference between TE after and before moist pressure adjustment
    call addfld ('TEdiff',horiz_only, 'A','J/m2','TE diff ')
+!difference between TE before adjustment and after 'fixer' in T was applied,
+!expected to be ~zero
+   call addfld ('TEdiffadj',horiz_only, 'A','J/m2','TE diff ')
    call addfld ('KEdiff',horiz_only, 'A','J/m2','TE diff ')
    call addfld ('TEq1',(/ 'lev' /), 'A','J/m2','TE q1 ')
    call addfld ('TEq1p',(/ 'lev' /), 'A','J/m2','TE q1p ')

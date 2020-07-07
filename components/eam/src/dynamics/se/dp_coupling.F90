@@ -728,10 +728,10 @@ CONTAINS
       call outfld('KEafteradj', ke, pcols, lchnk)
 
       call outfld('TEdiff', te-tebefore, pcols, lchnk)
-      call outfld('KEdiff', ke-kebefore, pcols, lchnk)
-      call outfld('TEq1', state(lchnk)%q(:,:,1), pcols, lchnk)
-      call outfld('TEq1p', state(lchnk)%q1(:,:), pcols, lchnk)
-      call outfld('TEps', state(lchnk)%ps(:), pcols, lchnk)
+!      call outfld('KEdiff', ke-kebefore, pcols, lchnk)
+!      call outfld('TEq1', state(lchnk)%q(:,:,1), pcols, lchnk)
+!      call outfld('TEq1p', state(lchnk)%q1(:,:), pcols, lchnk)
+!      call outfld('TEps', state(lchnk)%ps(:), pcols, lchnk)
 
       !compute ttend from adjustment
       ttend(:ncol,:)=0.0
@@ -753,7 +753,9 @@ CONTAINS
                                  ke,se,wv,wl,wi,wr,ws,teadjusted,tw, &
                                  ncol)
 
-      print *, 'OG check', tebefore(1),te(1),(te(1)-tebefore(1)),teadjusted(1),(te(1)-teadjusted(1))
+      call outfld('TEdiffadj', teadjusted-tebefore, pcols, lchnk)
+
+!      print *, 'OG check', tebefore(1),te(1),teadjusted(1),(te(1)-tebefore(1)),(teadjusted(1)-tebefore(1))
 
     end do ! lchnk
 
