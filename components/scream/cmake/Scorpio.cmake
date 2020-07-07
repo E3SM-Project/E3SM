@@ -11,13 +11,16 @@ macro (CreateScorpioTarget CLIB FLIB)
 
   # If c lib is requested (and we didn't already parsed this script), create interface lib
   if (${CLIB} AND NOT TARGET scorpio_c)
+    include (GPTL)
+    CreateGPTLTarget()
+
     # Look for pioc lib in the lib subdirectory of the one stored in INSTALL_SHAREDPATH (set by CIME)
     find_library(SCORPIO_C_LIB pioc REQUIRED PATHS ${INSTALL_SHAREDPATH}/lib)
 
     # Create the interface library that scream targets can link to
-    add_library(scorpio_c INTERFACE)
-    target_link_libraries(scorpio_c INTERFACE ${SCORPIO_C_LIB})
-    target_include_directories(scorpio_c INTERFACE ${INSTALL_SHAREDPATH}/include)
+    add_library(scorpio_c UNKNOWN IMPORTED GLOBAL)
+    set_target_properties (scorpio_c PROPERTIES IMPORTED_LOCATION ${SCORPIO_C_LIB})
+    target_link_libraries(scorpio_c INTERFACE "${SCORPIO_C_LIB};scream_gptl")
 
     # Update the list of scream tpls
     list(APPEND SCREAM_TPL_LIBRARIES scorpio_c)
@@ -29,9 +32,9 @@ macro (CreateScorpioTarget CLIB FLIB)
       find_library(SCORPIO_F_LIB piof REQUIRED PATHS ${INSTALL_SHAREDPATH}/lib)
 
       # Create the interface library that scream targets can link to
-      add_library(scorpio_f INTERFACE)
+      add_library(scorpio_f UNKNOWN IMPORTED GLOBAL)
+      set_target_properties (scorpio_f PROPERTIES IMPORTED_LOCATION ${SCORPIO_F_LIB})
       target_link_libraries(scorpio_f INTERFACE ${SCORPIO_F_LIB} ${SCORPIO_C_LIB})
-      target_include_directories(scorpio_f INTERFACE ${INSTALL_SHAREDPATH}/include)
 
       # Update the list of scream tpls
       list(APPEND SCREAM_TPL_LIBRARIES scorpio_f)
