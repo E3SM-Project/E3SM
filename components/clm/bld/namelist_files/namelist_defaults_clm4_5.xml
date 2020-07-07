@@ -251,7 +251,7 @@ lnd/clm2/surfdata_map/surfdata_ne4pg2_simyr2000_c190620.nc</fsurdat>
 <fsurdat hgrid="ne240np4"      sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne240np4_simyr2000_c170821.nc</fsurdat>
 <fsurdat hgrid="r05"         sim_year="2000" >
-lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr2000_c190418.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr2000_c200624.nc</fsurdat>
 <fsurdat hgrid="r0125"       sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr2000_c190730.nc</fsurdat>
 
@@ -480,7 +480,7 @@ this mask will have smb calculated over the entire global land surface
 <flndtopo hgrid="0.9x1.25"  >lnd/clm2/griddata/topodata_0.9x1.25_USGS_070110.nc</flndtopo>
 <flndtopo hgrid="1.9x2.5"   >lnd/clm2/griddata/topodata_1.9x2.5_USGS_061130.nc</flndtopo>
 <flndtopo hgrid="48x96"     >lnd/clm2/griddata/topodata_48x96_USGS_070110.nc</flndtopo>
-<flndtopo hgrid="r05"       >lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c190418.nc</flndtopo>
+<flndtopo hgrid="r05"       >lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c200609.nc</flndtopo>
 
 <!-- SNICAR (SNow, ICe, and Aerosol Radiative model) datasets -->
 <!--  ***********  Resolution independent:   ***********  -->
