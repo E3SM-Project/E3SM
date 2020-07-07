@@ -85,24 +85,6 @@ contains
     ! value in a column before update
     real(r8) :: val_old
 
-    !character(len=:), allocatable :: message
-
-    !character(len=*), parameter :: subname = 'update_column_state'
-    !-----------------------------------------------------------------------
-
-    ! ------------------------------------------------------------------------
-    ! Error-checking on inputs
-    ! ------------------------------------------------------------------------
-    !!SHR_ASSERT_ALL((ubound(var) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
-    !!SHR_ASSERT_ALL((ubound(vals_input) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
-    !!SHR_ASSERT_ALL((ubound(has_prognostic_state) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
-    !!SHR_ASSERT_ALL((ubound(fractional_area_old) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
-    !!SHR_ASSERT_ALL((ubound(fractional_area_new) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
-    !!SHR_ASSERT_ALL((ubound(non_conserved_mass) == (/bounds%endg/)), errMsg(sourcefile, __LINE__))
-    !!if (present(adjustment)) then
-    !!   SHR_ASSERT_ALL((ubound(adjustment) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
-    !!end if
-
     ! For the sake of conservation - including the calculation of non_conserved_mass - we
     ! assume that vals_input == var wherever has_prognostic_state is .true. We ensure that
     ! is the case here.
@@ -409,8 +391,7 @@ contains
   end function patch_grewAcc
 
   !-----------------------------------------------------------------------
-  subroutine update_patch_stateAcc(patch_state_updater, bounds, &
-       num_filterp_with_inactive, filterp_with_inactive, &
+  subroutine update_patch_stateAcc(patch_state_updater, bounds,p,c, &
        var, flux_out_col_area, flux_out_grc_area, &
        seed, seed_addition)
     !
@@ -430,9 +411,8 @@ contains
     ! !ARGUMENTS:
     type(patch_state_updater_type), intent(in) :: patch_state_updater
     type(bounds_type), intent(in) :: bounds
-    integer, intent(in) :: num_filterp_with_inactive ! number of points in filterp_with_inactive
-    integer, intent(in) :: filterp_with_inactive(:) ! patch filter that includes inactive points
-    real(r8), intent(inout) :: var( bounds%begp: ) ! patch-level state variable
+    integer , value  , intent(in) :: p,c
+    real(r8), intent(inout) :: var   ! patch-level state variable
 
     ! Accumulated flux from shrinking areas, expressed as mass per unit area COLUMN, using
     ! the OLD column weight. (The use of the old column weight is appropriate if the
@@ -441,27 +421,26 @@ contains
     ! areas, this is given as a NEGATIVE quantity. Often you will provide one of
     ! flux_out_col_area or flux_out_grc_area, but it is okay to provide both, or to
     ! provide neither if you don't need to track the flux out from this state variable.
-    real(r8), intent(inout), optional :: flux_out_col_area( bounds%begp: )
+    real(r8), intent(inout), optional :: flux_out_col_area
 
     ! Accumulated flux from shrinking areas, expressed as mass per unit area GRIDCELL. For
     ! shrinking areas, this is given as a NEGATIVE quantity. Often you will provide one of
     ! flux_out_col_area or flux_out_grc_area, but it is okay to provide both, or to
     ! provide neither if you don't need to track the flux out from this state variable.
-    real(r8), intent(inout), optional :: flux_out_grc_area( bounds%begp: )
+    real(r8), intent(inout), optional :: flux_out_grc_area
 
     ! If provided, this gives some 'seed' amount added to the state in the area into
     ! which each growing patch grows. The value is ignored for patches that are either
     ! constant or shrinking in area.
-    real(r8), intent(in), optional :: seed( bounds%begp: )
+    real(r8), intent(in), optional :: seed
 
     ! If provided, this accumulates the amount of seed added to each patch. This gives
     ! seed(p) * dwt(p). This can only be provided if seed is provided. Even though this is
     ! a patch-level array, it is expressed as mass per unit area GRIDCELL.
-    real(r8), intent(inout), optional :: seed_addition( bounds%begp: )
+    real(r8), intent(inout), optional :: seed_addition
     !
     !
     ! !LOCAL VARIABLES:
-    integer :: fp, p, c
 
     !-----------------------------------------------------------------------
 
@@ -471,38 +450,36 @@ contains
        end if
     end if
 
-    do fp = 1, num_filterp_with_inactive
-       p = filterp_with_inactive(fp)
-       c = veg_pp%column(p)
-
-       if (patch_state_updater%dwt(p) > 0._r8) then
-          var(p) = var(p) * patch_state_updater%growing_old_fraction(p)
-          if (present(seed)) then
-             var(p) = var(p) + seed(p) * patch_state_updater%growing_new_fraction(p)
-             if (present(seed_addition)) then
-                seed_addition(p) = seed_addition(p) + seed(p) * patch_state_updater%dwt(p)
-             end if
-          end if
-
-       else if (patch_state_updater%dwt(p) < 0._r8) then
-          if (present(flux_out_grc_area)) then
-             flux_out_grc_area(p) = flux_out_grc_area(p) + var(p) * patch_state_updater%dwt(p)
-          end if
-          if (present(flux_out_col_area)) then
-             ! No need to check for divide by 0 here: If dwt < 0 then we must have had
-             ! cwtgcell_old > 0.
-             flux_out_col_area(p) = flux_out_col_area(p) + &
-                  var(p) * (patch_state_updater%dwt(p) / patch_state_updater%cwtgcell_old(c))
-          end if
+    !do fp = 1, num_filterp_with_inactive
+    !   p = filterp_with_inactive(fp)
+    !   c = veg_pp%column(p)
+      if (patch_state_updater%dwt(p) > 0._r8) then
+          var  = var  * patch_state_updater%growing_old_fraction(p)
+      if (present(seed)) then
+         var  = var  + seed  * patch_state_updater%growing_new_fraction(p)
+         if (present(seed_addition)) then
+            seed_addition  = seed_addition  + seed  * patch_state_updater%dwt(p)
+         end if
        end if
-    end do
+       !
+    else if (patch_state_updater%dwt(p) < 0._r8) then
+      if (present(flux_out_grc_area)) then
+         flux_out_grc_area  = flux_out_grc_area  + var  * patch_state_updater%dwt(p)
+      end if
+      if (present(flux_out_col_area)) then
+         ! No need to check for divide by 0 here: If dwt < 0 then we must have had
+         ! cwtgcell_old > 0.
+         flux_out_col_area  = flux_out_col_area  + &
+              var  * (patch_state_updater%dwt(p) / patch_state_updater%cwtgcell_old(c))
+      end if
+    end if
+    !end do
 
   end subroutine update_patch_stateAcc
 
   !-----------------------------------------------------------------------
   subroutine update_patch_state_partition_flux_by_typeAcc(patch_state_updater, bounds, &
-       num_filterp_with_inactive, filterp_with_inactive, &
-       flux1_fraction_by_pft_type, &
+       p,c,flux1_fraction_by_pft_type, &
        var, flux1_out, flux2_out, &
        seed, seed_addition)
     !
@@ -516,47 +493,44 @@ contains
     ! !ARGUMENTS:
     type(patch_state_updater_type), intent(in) :: patch_state_updater
     type(bounds_type), intent(in) :: bounds
-    integer, intent(in) :: num_filterp_with_inactive ! number of points in filterp_with_inactive
-    integer, intent(in) :: filterp_with_inactive(:) ! patch filter that includes inactive points
+    integer   , value, intent(in) :: p,c
     real(r8), intent(in) :: flux1_fraction_by_pft_type( 0: ) ! fraction of flux that goes into flux1_out, indexed by pft type
-    real(r8), intent(inout) :: var( bounds%begp: ) ! patch-level state variable
+    real(r8), intent(inout) :: var!( bounds%begp: ) ! patch-level state variable
 
     ! Accumulated fluxes from shrinking areas. For shrinking areas, these are given as
     ! NEGATIVE quantities. Even though these are patch-level arrays, they are expressed
     ! as mass per unit area GRIDCELL (so these are equivalent to the flux_out_grc_area
     ! argument in the main update_patch_state routine).
-    real(r8), intent(inout) :: flux1_out( bounds%begp: )
-    real(r8), intent(inout) :: flux2_out( bounds%begp: )
+    real(r8), intent(inout) :: flux1_out!( bounds%begp: )
+    real(r8), intent(inout) :: flux2_out!( bounds%begp: )
 
     ! If provided, this gives some 'seed' amount added to the state in the area into
     ! which each growing patch grows. The value is ignored for patches that are either
     ! constant or shrinking in area.
-    real(r8), intent(in), optional :: seed( bounds%begp: )
+    real(r8), intent(in), optional :: seed!( bounds%begp: )
 
     ! If provided, this accumulates the amount of seed added to each patch. This gives
     ! seed(p) * dwt(p). This can only be provided if seed is provided. Even though this is
     ! a patch-level array, it is expressed as mass per unit area GRIDCELL.
-    real(r8), intent(inout), optional :: seed_addition( bounds%begp: )
+    real(r8), intent(inout), optional :: seed_addition!( bounds%begp: )
     !
     ! !LOCAL VARIABLES:
-    integer :: fp, p
-    real(r8) :: total_flux_out(bounds%begp:bounds%endp)
+    real(r8) :: total_flux_out!(bounds%begp:bounds%endp)
     real(r8) :: my_flux1_fraction
     !-----------------------------------------------------------------------
 
 
-    total_flux_out(bounds%begp:bounds%endp) = 0._r8
-    call update_patch_stateAcc(patch_state_updater, bounds, &
-       num_filterp_with_inactive, filterp_with_inactive, &
+    total_flux_out = 0._r8
+    call update_patch_stateAcc(patch_state_updater, bounds,p,c, &
        var, flux_out_grc_area = total_flux_out, &
        seed = seed, seed_addition = seed_addition)
 
-    do fp = 1, num_filterp_with_inactive
-       p = filterp_with_inactive(fp)
-       my_flux1_fraction = flux1_fraction_by_pft_type(veg_pp%itype(p))
-       flux1_out(p) = flux1_out(p) + total_flux_out(p) * my_flux1_fraction
-       flux2_out(p) = flux2_out(p) + total_flux_out(p) * (1._r8 - my_flux1_fraction)
-    end do
+    !do fp = 1, num_filterp_with_inactive
+    !p = filterp_with_inactive(fp)
+    my_flux1_fraction = flux1_fraction_by_pft_type(veg_pp%itype(p))
+    flux1_out = flux1_out + total_flux_out * my_flux1_fraction
+    flux2_out = flux2_out + total_flux_out * (1._r8 - my_flux1_fraction)
+    !end do
 
   end subroutine update_patch_state_partition_flux_by_typeAcc
   !-----------------------------------------------------------------------

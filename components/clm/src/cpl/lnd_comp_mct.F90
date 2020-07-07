@@ -132,21 +132,17 @@ contains
     ! Initialize clm MPI communicator
 
     call spmd_init( mpicom_lnd, LNDID )
-    #ifdef _OPENACC
+#ifdef _OPENACC
     print *, " initializing acc"
     call acc_initialization()
-    #endif
+#endif
+
 #if (defined _MEMTRACE)
     if(masterproc) then
        lbnum=1
        call memmon_dump_fort('memmon.out','lnd_init_mct:start::',lbnum)
     endif
 #endif
-  !   spin = 1
-  !  do while (0 < spin)
-  !    spin = spin + 0
-  !  end do
-
     inst_name   = seq_comm_name(LNDID)
     inst_index  = seq_comm_inst(LNDID)
     inst_suffix = seq_comm_suffix(LNDID)
@@ -253,10 +249,6 @@ contains
 
     ! Read namelist, grid and surface data
 
-    spin = 1
-    do while (spin == 0) 
-       call  sleep(1)
-    end do 
     call initialize1( )
 
     ! If no land then exit out of initialization
@@ -365,7 +357,7 @@ contains
     use clm_instMod     ,  only : lnd2atm_vars, atm2lnd_vars, lnd2glc_vars, glc2lnd_vars
     use clm_driver      ,  only : clm_drv
     use clm_time_manager,  only : get_curr_date, get_nstep, get_curr_calday, get_step_size
-    use clm_time_manager,  only : advance_timestep, set_nextsw_cday,update_rad_dtime
+    use clm_time_manager,  only : advance_timestep, set_nextsw_cday,update_rad_dtime, getStopDate
     use decompMod       ,  only : get_proc_bounds
     use abortutils      ,  only : endrun
     use clm_varctl      ,  only : iulog
@@ -419,15 +411,17 @@ contains
     real(r8)     :: recip                ! reciprical
     logical,save :: first_call = .true.  ! first call work
     logical      :: atm_present
-    integer      :: step_count
+    integer      :: step_count, stop_step, stop_year, stop_mon,stop_day, stop_tod, rc 
     real*8       :: starttime, stoptime 
     type(seq_infodata_type),pointer :: infodata             ! CESM information from the driver
     type(mct_gGrid),        pointer :: dom_l                ! Land model domain data
     type(bounds_type)               :: bounds               ! bounds
     character(len=32)               :: rdate                ! date char string for restart file names
     character(len=32), parameter    :: sub = "lnd_run_mct"
-    !---------------------------------------------------------------------------
+    type(ESMF_TimeInterval) :: step ! Time-step
 
+    !---------------------------------------------------------------------------
+     
     ! Determine processor bounds
 
     call get_proc_bounds(bounds)
@@ -489,55 +483,38 @@ contains
     ! Loop over time steps in coupling interval
     dosend = .false.
     step_count = 0
+    call getStopDate(stop_step, stop_year, stop_mon, stop_day, stop_tod)
+    print *, "stop info::"
+    print *, stop_step, stop_year, stop_mon, stop_day, stop_tod
+
     do while(.not. dosend)
        ! Determine if dosend
        ! When time is not updated at the beginning of the loop - then return only if
        ! are in sync with clock before time is updated
-
-       !call get_curr_date( yr, mon, day, tod )
-       !ymd = yr*10000 + mon*100 + day
-       !tod = tod
-       !dosend = (seq_timemgr_EClockDateInSync( EClock, ymd, tod))
-
-       ! Determine doalb based on nextsw_cday sent from atm model
-
-       !nstep = get_nstep()
-       !caldayp1 = get_curr_calday(offset=dtime)
-       !call update_rad_dtime(doalb)
-
        ! Determine if time to write cam restart and stop
 
-       !rstwr = .false.
+       rstwr = .false.
        if (rstwr_sync .and. dosend) rstwr = .true.
        nlend = .false.
        if (nlend_sync .and. dosend) nlend = .true.
-
+       !
        ! Run clm
-       !call t_barrierf('sync_clm_run1', mpicom)
-       !call t_startf ('clm_run')
-       !call t_startf ('shr_orb_decl')
-       !calday = get_curr_calday()
-       !call shr_orb_decl( calday     , eccen, mvelpp, lambm0, obliqr, declin  , eccf )
-       !call shr_orb_decl( nextsw_cday, eccen, mvelpp, lambm0, obliqr, declinp1, eccf )
-       
-       !call t_stopf ('shr_orb_decl')
        call clm_drv(step_count, rstwr, nlend, rdate)
-       !call t_stopf ('clm_run')
-
+       !
        ! Create l2x_l export state - add river runoff input to l2x_l if appropriate
-
+       !
        #ifndef CPL_BYPASS
         call t_startf ('lc_lnd_export')
         call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, l2x_l%rattr)
         call t_stopf ('lc_lnd_export')
        #endif
-
+        
+       if(step_count > stop_step) then
+               dosend = .true.
+       end if 
        ! Advance clm time step
 
-       !call t_startf ('lc_clm2_adv_timestep')
        call advance_timestep()
-       !call t_stopf ('lc_clm2_adv_timestep')
-       if (step_count == 24*1+1) dosend = .true.
     end do
     stoptime = mpi_wtime()
     print *, "TIME FOR CLM DRIVER(seconds):", stoptime-starttime 

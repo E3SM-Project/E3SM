@@ -1,4 +1,5 @@
 module histGPUMod
+
   use shr_kind_mod  , only : r8 => shr_kind_r8
   use decompMod     , only : bounds_type
   use histFileMod   , only : clmptr_rs, clmptr_ra
@@ -16,8 +17,14 @@ module histGPUMod
   integer , public , parameter :: no_snow_zero = 2                ! average in a 0 value for times when the snow layer isn't present
   integer , private, parameter :: no_snow_MAX = 2                 ! maximum valid value for this flag
   integer , private, parameter :: no_snow_unset = no_snow_MIN - 1 ! flag specifying that field is NOT a multi-layer snow field
-  integer, parameter :: unity = 0, urbanf = 1, urbans = 2
-  integer, parameter :: natveg = 3, veg =4, ice=5, nonurb=6, lake=7
+  integer , parameter :: unity = 0, urbanf = 1, urbans = 2
+  integer , parameter :: natveg = 3, veg =4, ice=5, nonurb=6, lake=7
+
+  !!mappings that hold the tape and field position in the CPU tapes
+  !!for a given field on the gpu tape
+  integer, allocatable  :: map_tapes(:)
+  integer, allocatable  :: map_fields(:)
+
   PUBLIC
 
   type, public :: history_entry_gpu
@@ -57,114 +64,126 @@ module histGPUMod
      type (history_entry_gpu), allocatable :: hlist(:)   ! array of active history tape entries
   end type history_tape_gpu
 
-  type (history_tape_gpu), public, allocatable :: tape_gpu(:)    ! array history tapes
+  type (history_tape_gpu), public :: tape_gpu    ! array concat htapes
   !$acc declare create(tape_gpu)
 
 contains
 
   subroutine htape_gpu_init()
+    ! ---- subroutine to store tape data into type for gpu
+    ! ----
     use histFileMod, only : tape, ntapes
 
     implicit none
-    integer :: size1,size2,t,f
-    ! ---- subroutine to store tape data into type for gpu
-    print *, "allocating gpu ",ntapes,"tapes"
-    allocate(tape_gpu(ntapes))
-    do t = 1, ntapes
-      print *, "allocating hlist with ",tape(t)%nflds,"fields"
-      allocate(tape_gpu(t)%hlist(tape(t)%nflds))
-      allocate(tape_gpu(t)%nflds )
-      allocate(tape_gpu(t)%ntimes)
-      allocate(tape_gpu(t)%mfilt )
-      allocate(tape_gpu(t)%nhtfrq)
-      tape_gpu(t)%nflds  = tape(t)%nflds
-      tape_gpu(t)%ntimes = tape(t)%ntimes
-      tape_gpu(t)%mfilt  = tape(t)%mfilt
-      tape_gpu(t)%nhtfrq = tape(t)%nhtfrq
+    integer :: size1,size2,t,f,field
+    integer :: total_flds
+    total_flds = 0
 
-      do f = 1, tape_gpu(t)%nflds
+    !!First sum to get total fields:
+    do t = 1, ntapes
+      total_flds = total_flds + tape(t)%nflds
+    end do
+    allocate(tape_gpu%nflds) ;tape_gpu%nflds = total_flds
+    print *, "allocating tapu_gpu%hlist with ",total_flds,"fields"
+    allocate(tape_gpu%hlist(total_flds))
+
+    allocate(tape_gpu%ntimes)
+    allocate(tape_gpu%mfilt )
+    allocate(tape_gpu%nhtfrq)
+    tape_gpu%nflds  = tape(1)%nflds
+    tape_gpu%ntimes = tape(1)%ntimes
+    tape_gpu%mfilt  = tape(1)%mfilt
+    tape_gpu%nhtfrq = tape(1)%nhtfrq
+    !!! Fill out tape_gpu and create mappings
+    field = 1
+    allocate(map_tapes(total_flds),map_fields(total_flds))
+    do t = 1, ntapes
+      do f = 1, tape(t)%nflds
+        map_tapes(field) = t ; map_fields(field) = f
         size1 = size(tape(t)%hlist(f)%hbuf,1);
         size2 = size(tape(t)%hlist(f)%hbuf,2)
-        allocate(tape_gpu(t)%hlist(f)%hbuf(size1,size2))
+        allocate(tape_gpu%hlist(field)%hbuf(size1,size2))
         size1 = size(tape(t)%hlist(f)%nacs,1);
         size2 = size(tape(t)%hlist(f)%nacs,2)
-        allocate(tape_gpu(t)%hlist(f)%nacs(size1,size2))
-        tape_gpu(t)%hlist(f)%hbuf(:,:) = tape(t)%hlist(f)%hbuf(:,:)
-        tape_gpu(t)%hlist(f)%nacs(:,:) = tape(t)%hlist(f)%nacs(:,:)
+        allocate(tape_gpu%hlist(f)%nacs(size1,size2))
+        tape_gpu%hlist(field)%hbuf(:,:) = tape(t)%hlist(f)%hbuf(:,:)
+        tape_gpu%hlist(field)%nacs(:,:) = tape(t)%hlist(f)%nacs(:,:)
         !!
-        allocate(tape_gpu(t)%hlist(f)%avgflag)
-        tape_gpu(t)%hlist(f)%avgflag = tape(t)%hlist(f)%avgflag
-        allocate(tape_gpu(t)%hlist(f)%name            )
-        allocate(tape_gpu(t)%hlist(f)%type1d          )
-        allocate(tape_gpu(t)%hlist(f)%type1d_out      )
-        allocate(tape_gpu(t)%hlist(f)%type2d          )
-        allocate(tape_gpu(t)%hlist(f)%beg1d           )
-        allocate(tape_gpu(t)%hlist(f)%end1d           )
-        allocate(tape_gpu(t)%hlist(f)%num1d           )
-        allocate(tape_gpu(t)%hlist(f)%numdims         )
-        allocate(tape_gpu(t)%hlist(f)%beg1d_out       )
-        allocate(tape_gpu(t)%hlist(f)%end1d_out       )
-        allocate(tape_gpu(t)%hlist(f)%num1d_out       )
-        allocate(tape_gpu(t)%hlist(f)%num2d           )
-        allocate(tape_gpu(t)%hlist(f)%hpindex         )
-        allocate(tape_gpu(t)%hlist(f)%p2c_scale_type  )
-        allocate(tape_gpu(t)%hlist(f)%c2l_scale_type  )
-        allocate(tape_gpu(t)%hlist(f)%l2g_scale_type  )
-        allocate(tape_gpu(t)%hlist(f)%t2g_scale_type  )
-        allocate(tape_gpu(t)%hlist(f)%no_snow_behavior)
-        tape_gpu(t)%hlist(f)%name             = tape(t)%hlist(f)%field%name
-        tape_gpu(t)%hlist(f)%type1d           = tape(t)%hlist(f)%field%type1d
-        tape_gpu(t)%hlist(f)%type1d_out       = tape(t)%hlist(f)%field%type1d_out
-        tape_gpu(t)%hlist(f)%type2d           = tape(t)%hlist(f)%field%type2d
-        tape_gpu(t)%hlist(f)%beg1d            = tape(t)%hlist(f)%field%beg1d
-        tape_gpu(t)%hlist(f)%end1d            = tape(t)%hlist(f)%field%end1d
-        tape_gpu(t)%hlist(f)%num1d            = tape(t)%hlist(f)%field%num1d
-        tape_gpu(t)%hlist(f)%numdims          = tape(t)%hlist(f)%field%numdims
-        tape_gpu(t)%hlist(f)%beg1d_out        = tape(t)%hlist(f)%field%beg1d_out
-        tape_gpu(t)%hlist(f)%end1d_out        = tape(t)%hlist(f)%field%end1d_out
-        tape_gpu(t)%hlist(f)%num1d_out        = tape(t)%hlist(f)%field%num1d_out
-        tape_gpu(t)%hlist(f)%num2d            = tape(t)%hlist(f)%field%num2d
-        tape_gpu(t)%hlist(f)%hpindex          = tape(t)%hlist(f)%field%hpindex
+        allocate(tape_gpu%hlist(field)%avgflag)
+        tape_gpu%hlist(field)%avgflag = tape(t)%hlist(f)%avgflag
+        allocate(tape_gpu%hlist(field)%name            )
+        allocate(tape_gpu%hlist(field)%type1d          )
+        allocate(tape_gpu%hlist(field)%type1d_out      )
+        allocate(tape_gpu%hlist(field)%type2d          )
+        allocate(tape_gpu%hlist(field)%beg1d           )
+        allocate(tape_gpu%hlist(field)%end1d           )
+        allocate(tape_gpu%hlist(field)%num1d           )
+        allocate(tape_gpu%hlist(field)%numdims         )
+        allocate(tape_gpu%hlist(field)%beg1d_out       )
+        allocate(tape_gpu%hlist(field)%end1d_out       )
+        allocate(tape_gpu%hlist(field)%num1d_out       )
+        allocate(tape_gpu%hlist(field)%num2d           )
+        allocate(tape_gpu%hlist(field)%hpindex         )
+        allocate(tape_gpu%hlist(field)%p2c_scale_type  )
+        allocate(tape_gpu%hlist(field)%c2l_scale_type  )
+        allocate(tape_gpu%hlist(field)%l2g_scale_type  )
+        allocate(tape_gpu%hlist(field)%t2g_scale_type  )
+        allocate(tape_gpu%hlist(field)%no_snow_behavior)
+        tape_gpu%hlist(field)%name       = tape(t)%hlist(f)%field%name
+        tape_gpu%hlist(field)%type1d     = tape(t)%hlist(f)%field%type1d
+        tape_gpu%hlist(field)%type1d_out = tape(t)%hlist(f)%field%type1d_out
+        tape_gpu%hlist(field)%type2d     = tape(t)%hlist(f)%field%type2d
+        tape_gpu%hlist(field)%beg1d      = tape(t)%hlist(f)%field%beg1d
+        tape_gpu%hlist(field)%end1d      = tape(t)%hlist(f)%field%end1d
+        tape_gpu%hlist(field)%num1d      = tape(t)%hlist(f)%field%num1d
+        tape_gpu%hlist(field)%numdims    = tape(t)%hlist(f)%field%numdims
+        tape_gpu%hlist(field)%beg1d_out  = tape(t)%hlist(f)%field%beg1d_out
+        tape_gpu%hlist(field)%end1d_out  = tape(t)%hlist(f)%field%end1d_out
+        tape_gpu%hlist(field)%num1d_out  = tape(t)%hlist(f)%field%num1d_out
+        tape_gpu%hlist(field)%num2d      = tape(t)%hlist(f)%field%num2d
+        tape_gpu%hlist(field)%hpindex    = tape(t)%hlist(f)%field%hpindex
         if(trim(tape(t)%hlist(f)%field%p2c_scale_type) =='unity') then
-            tape_gpu(t)%hlist(f)%p2c_scale_type = unity
+            tape_gpu%hlist(field)%p2c_scale_type = unity
         elseif(trim(tape(t)%hlist(f)%field%p2c_scale_type) =='urbanf')Then
-            tape_gpu(t)%hlist(f)%p2c_scale_type = urbanf
+            tape_gpu%hlist(field)%p2c_scale_type = urbanf
         elseif(trim(tape(t)%hlist(f)%field%p2c_scale_type) =='urbans')Then
-            tape_gpu(t)%hlist(f)%p2c_scale_type = urbans
+            tape_gpu%hlist(field)%p2c_scale_type = urbans
         end if
         if(trim(tape(t)%hlist(f)%field%c2l_scale_type) =='unity') then
-            tape_gpu(t)%hlist(f)%c2l_scale_type = unity
+            tape_gpu%hlist(field)%c2l_scale_type = unity
         elseif(trim(tape(t)%hlist(f)%field%c2l_scale_type) =='urbanf')Then
-            tape_gpu(t)%hlist(f)%c2l_scale_type = urbanf
+            tape_gpu%hlist(field)%c2l_scale_type = urbanf
         elseif(trim(tape(t)%hlist(f)%field%c2l_scale_type) =='urbans')Then
-            tape_gpu(t)%hlist(f)%c2l_scale_type = urbans
+            tape_gpu%hlist(field)%c2l_scale_type = urbans
         end if
 
         if (trim(tape(t)%hlist(f)%field%l2g_scale_type) == 'unity') then
-           tape_gpu(t)%hlist(f)%l2g_scale_type = unity
+           tape_gpu%hlist(field)%l2g_scale_type = unity
         else if (trim(tape(t)%hlist(f)%field%l2g_scale_type) == 'natveg') then
-           tape_gpu(t)%hlist(f)%l2g_scale_type = natveg
+           tape_gpu%hlist(field)%l2g_scale_type = natveg
         else if (trim(tape(t)%hlist(f)%field%l2g_scale_type) == 'veg') then
-           tape_gpu(t)%hlist(f)%l2g_scale_type = veg
+           tape_gpu%hlist(field)%l2g_scale_type = veg
         else if (trim(tape(t)%hlist(f)%field%l2g_scale_type) == 'ice') then
-           tape_gpu(t)%hlist(f)%l2g_scale_type = ice
+           tape_gpu%hlist(field)%l2g_scale_type = ice
         else if (trim(tape(t)%hlist(f)%field%l2g_scale_type) == 'nonurb') then
-           tape_gpu(t)%hlist(f)%l2g_scale_type = nonurb
+           tape_gpu%hlist(field)%l2g_scale_type = nonurb
         else if (trim(tape(t)%hlist(f)%field%l2g_scale_type) == 'lake') then
-           tape_gpu(t)%hlist(f)%l2g_scale_type = lake
+           tape_gpu%hlist(field)%l2g_scale_type = lake
         else
-           print *, "scale_l2g_lookup_array error: scale type  not supported"
+           print *, "scale_l2g_lookup_array : scale type  not supported   ",tape(t)%hlist(f)%field%l2g_scale_type
+           stop
         end if
-        
-        tape_gpu(t)%hlist(f)%t2g_scale_type   = tape(t)%hlist(f)%field%t2g_scale_type
-        tape_gpu(t)%hlist(f)%no_snow_behavior = tape(t)%hlist(f)%field%no_snow_behavior
+
+        tape_gpu%hlist(field)%t2g_scale_type   = tape(t)%hlist(f)%field%t2g_scale_type
+        tape_gpu%hlist(field)%no_snow_behavior = tape(t)%hlist(f)%field%no_snow_behavior
+        field = field + 1
       end do
     enddo
 
   end subroutine htape_gpu_init
 
   !-----------------------------------------------------------------------
-  subroutine hist_update_hbuf_gpu(step,inc, nclumps)
+  subroutine hist_update_hbuf_gpu(step, transfer_hist, nclumps)
     !
     ! !DESCRIPTION:
     ! Accumulate (or take min, max, etc. as appropriate) input field
@@ -174,8 +193,8 @@ contains
     use decompMod, only : get_proc_bounds,get_clump_bounds_gpu, bounds_type
     ! !ARGUMENTS:
     integer , intent(in) :: step
-    integer , intent(in) :: inc
-    integer, value, intent(in) :: nclumps 
+    logical , intent(in) :: transfer_hist
+    integer, value, intent(in) :: nclumps
     !
     ! !LOCAL VARIABLES:
     type(bounds_type) :: bounds
@@ -183,40 +202,42 @@ contains
     integer :: f                   ! field index
     integer :: numdims             ! number of dimensions
     integer :: num2d               ! size of second dimension (e.g. number of vertical levels)
+    integer :: field, total_flds
     !----------------------------------------------------------------------
-    !$acc parallel vector_length(32) default(present)
-    !$acc loop independent gang  private(nc,t,f,hp,numdims,num2d,bounds)
+
+    total_flds = tape_gpu%nflds
+
+
+    !$acc parallel vector_length(128) default(present)
+    !$acc loop gang worker collapse(2) independent private(nc,f,hp,numdims,num2d,bounds)
     do nc = 1, nclumps
-            !call get_proc_bounds(bounds) 
-            call get_clump_bounds_gpu(nc,bounds)
-              !$acc loop seq
-             do t = 1,ntapes
-                !$acc loop seq
-                do f = 1,tape_gpu(t)%nflds
-                         numdims = tape_gpu(t)%hlist(f)%numdims
-                        
-                        if ( numdims == 1) then
-                                hp = tape_gpu(t)%hlist(f)%hpindex            
-                                call hist_update_hbuf_field_1d_gpu(t, f, hp ,bounds)
-                        else
-                                hp = tape_gpu(t)%hlist(f)%hpindex
-                                num2d = tape_gpu(t)%hlist(f)%num2d
-                                call hist_update_hbuf_field_2d_gpu (t, f, hp , bounds, num2d)
-                        end if
-                end do
-          end do
-     end do 
+      do f = 1, total_flds
+        !call get_proc_bounds(bounds)
+        call get_clump_bounds_gpu(nc, bounds)
+
+        numdims = tape_gpu%hlist(f)%numdims
+        if ( numdims == 1) then
+              hp = tape_gpu%hlist(f)%hpindex
+              call hist_update_hbuf_field_1d_gpu( f, hp ,bounds)
+        else
+              hp = tape_gpu%hlist(f)%hpindex
+              num2d = tape_gpu%hlist(f)%num2d
+              call hist_update_hbuf_field_2d_gpu( f, hp , bounds, num2d)
+        end if
+
+      enddo
+    end do
     !$acc end parallel
-   
-    !TODO: change inc to be end of hist interval?   
-    if(mod(step,inc) == 0 .and. step .ne. 0) then
+
+    !TODO: change inc to be end of hist interval?
+    if(transfer_hist ) then
         print *, "transfering tape to cpu:"
         call transfer_tape_to_cpu()
     endif
   end subroutine hist_update_hbuf_gpu
 
   !-----------------------------------------------------------------------
-  subroutine hist_update_hbuf_field_1d_gpu(t, f, hpindex, bounds)
+  subroutine hist_update_hbuf_field_1d_gpu( f, hpindex, bounds)
     !$acc routine seq
     ! !DESCRIPTION:
     ! Accumulate (or take min, max, etc. as appropriate) input field
@@ -230,10 +251,8 @@ contains
     use subgridAveMod   , only : unity, urbanf, urbans, natveg
     use subgridAveMod   , only : natveg, veg,ice,nonurb,lake
     use landunit_varcon , only : istice_mec
-    !use decompMod       , only : BOUNDS_LEVEL_PROCdd
 
     ! !ARGUMENTS:
-    integer,value, intent(in) :: t            ! tape index
     integer,value, intent(in) :: f            ! field index
     integer,value, intent(in) :: hpindex
     type(bounds_type), intent(in) :: bounds
@@ -250,16 +269,16 @@ contains
     !-----------------------------------------------------------------------
 
     associate(&
-      avgflag        =>  tape_gpu(t)%hlist(f)%avgflag  ,&
-      nacs           =>  tape_gpu(t)%hlist(f)%nacs       ,&
-      hbuf           =>  tape_gpu(t)%hlist(f)%hbuf       ,&
-      beg1d          =>  tape_gpu(t)%hlist(f)%beg1d     ,&
-      end1d          =>  tape_gpu(t)%hlist(f)%end1d      ,&
-      type1d         =>  tape_gpu(t)%hlist(f)%type1d     ,&
-      type1d_out     =>  tape_gpu(t)%hlist(f)%type1d_out    ,&
-      p2c_scale_type =>  tape_gpu(t)%hlist(f)%p2c_scale_type,&
-      c2l_scale_type =>  tape_gpu(t)%hlist(f)%c2l_scale_type,&
-      l2g_scale_type =>  tape_gpu(t)%hlist(f)%l2g_scale_type,&
+      avgflag        =>  tape_gpu%hlist(f)%avgflag  ,&
+      nacs           =>  tape_gpu%hlist(f)%nacs       ,&
+      hbuf           =>  tape_gpu%hlist(f)%hbuf       ,&
+      beg1d          =>  tape_gpu%hlist(f)%beg1d     ,&
+      end1d          =>  tape_gpu%hlist(f)%end1d      ,&
+      type1d         =>  tape_gpu%hlist(f)%type1d     ,&
+      type1d_out     =>  tape_gpu%hlist(f)%type1d_out    ,&
+      p2c_scale_type =>  tape_gpu%hlist(f)%p2c_scale_type,&
+      c2l_scale_type =>  tape_gpu%hlist(f)%c2l_scale_type,&
+      l2g_scale_type =>  tape_gpu%hlist(f)%l2g_scale_type,&
       field          =>  clmptr_rs(hpindex)%ptr &
       )
     ! set variables to check weights when allocate all pfts
@@ -272,27 +291,18 @@ contains
           ! for some fields, the lower bound has been reset to 1 due to taking a pointer
           ! to an array slice. Thus, this code will NOT work properly if done within a
           ! threaded region! (See also bug 1786)
-          !!if(tape_gpu(t)%hlist(f)%name == 'TREFMNAV') then
-          !!        print *,"field:",bounds%begp
-          !!        print *, field(bounds%begp:bounds%endp)
-          !!end if 
           call p2g(bounds, &
                field(bounds%begp:bounds%endp), &
                field_gcell(bounds%begg:bounds%endg), &
                p2c_scale_type, c2l_scale_type, l2g_scale_type)
-          
-          !!if(tape_gpu(t)%hlist(f)%name == 'TREFMNAV') then
-          !!        print *,"field_gcell:",bounds%begg
-          !!        print *, field_gcell(bounds%begg:bounds%endg)
-          !!end if 
-         
+
           map2gcell = .true.
        else if (type1d == namec) then
           call c2g(bounds, &
                field(bounds%begc:bounds%endc), &
                field_gcell(bounds%begg:bounds%endg), &
                c2l_scale_type, l2g_scale_type)
-          
+
           map2gcell = .true.
        else if (type1d == namel) then
           call l2g(bounds, &
@@ -459,7 +469,7 @@ contains
 end subroutine hist_update_hbuf_field_1d_gpu
 
   !-----------------------------------------------------------------------
-  subroutine hist_update_hbuf_field_2d_gpu (t, f,hpindex, bounds, num2d)
+  subroutine hist_update_hbuf_field_2d_gpu ( f,hpindex, bounds, num2d)
     !$acc routine seq
     ! !DESCRIPTION:
     ! Accumulate (or take min, max, etc. as appropriate) input field
@@ -471,10 +481,8 @@ end subroutine hist_update_hbuf_field_1d_gpu
     ! !USES:
     use subgridAveMod   , only : p2g, c2g, l2g, t2g
     use landunit_varcon , only : istice_mec
-    !use decompMod       , only : BOUNDS_LEVEL_PROC
     !
     ! !ARGUMENTS:
-    integer,value, intent(in) :: t            ! tape index
     integer,value, intent(in) :: f            ! field index
     integer,value, intent(in) :: hpindex
     type(bounds_type), intent(in) :: bounds
@@ -494,17 +502,17 @@ end subroutine hist_update_hbuf_field_1d_gpu
     !-----------------------------------------------------------------------
 
     associate(&
-    avgflag             =>  tape_gpu(t)%hlist(f)%avgflag         ,&
-    nacs                =>  tape_gpu(t)%hlist(f)%nacs             ,&
-    hbuf                =>  tape_gpu(t)%hlist(f)%hbuf             ,&
-    beg1d               =>  tape_gpu(t)%hlist(f)%beg1d           ,&
-    end1d               =>  tape_gpu(t)%hlist(f)%end1d           ,&
-    type1d              =>  tape_gpu(t)%hlist(f)%type1d          ,&
-    type1d_out          =>  tape_gpu(t)%hlist(f)%type1d_out      ,&
-    p2c_scale_type      =>  tape_gpu(t)%hlist(f)%p2c_scale_type  ,&
-    c2l_scale_type      =>  tape_gpu(t)%hlist(f)%c2l_scale_type  ,&
-    l2g_scale_type      =>  tape_gpu(t)%hlist(f)%l2g_scale_type  ,&
-    no_snow_behavior    =>  tape_gpu(t)%hlist(f)%no_snow_behavior,&
+    avgflag             =>  tape_gpu%hlist(f)%avgflag         ,&
+    nacs                =>  tape_gpu%hlist(f)%nacs             ,&
+    hbuf                =>  tape_gpu%hlist(f)%hbuf             ,&
+    beg1d               =>  tape_gpu%hlist(f)%beg1d           ,&
+    end1d               =>  tape_gpu%hlist(f)%end1d           ,&
+    type1d              =>  tape_gpu%hlist(f)%type1d          ,&
+    type1d_out          =>  tape_gpu%hlist(f)%type1d_out      ,&
+    p2c_scale_type      =>  tape_gpu%hlist(f)%p2c_scale_type  ,&
+    c2l_scale_type      =>  tape_gpu%hlist(f)%c2l_scale_type  ,&
+    l2g_scale_type      =>  tape_gpu%hlist(f)%l2g_scale_type  ,&
+    no_snow_behavior    =>  tape_gpu%hlist(f)%no_snow_behavior,&
     field               =>  clmptr_ra(hpindex)%ptr &
     )
 
@@ -822,39 +830,36 @@ end subroutine hist_update_hbuf_field_1d_gpu
     use histFileMod, only : tape, ntapes
 
     implicit none
-    integer :: size1,size2,t,f
-
+    integer :: size1,size2,t,f, field
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     print *, "updating tape_gpu on cpu:"
     !$acc update self(tape_gpu)
 
     !loop is done on cpu --- could accelerate using openACC cpu threading?
     print *, "update tape on cpu"
-    do t = 1, ntapes
-      do f = 1, tape_gpu(t)%nflds
-        tape(t)%hlist(f)%hbuf(:,:) = tape_gpu(t)%hlist(f)%hbuf(:,:)
-        tape(t)%hlist(f)%nacs(:,:) = tape_gpu(t)%hlist(f)%nacs(:,:)
-      end do
+    do field = 1, tape_gpu%nflds
+      t = map_tapes(field) ; f = map_fields(field);
+      tape(t)%hlist(f)%hbuf(:,:) = tape_gpu%hlist(f)%hbuf(:,:)
+      tape(t)%hlist(f)%nacs(:,:) = tape_gpu%hlist(f)%nacs(:,:)
     end do
 
 
   end subroutine
-  
+
   subroutine set_gpu_tape()
          use histFileMod, only : tape, ntapes
           implicit none
-          integer  :: t 
+          integer  :: t
           integer :: f
 
-          do t = 1 , ntapes
-              if(tape(t)%is_endhist) then 
-                print *,  "adjusting gpu tape after normalization/zeroing",t
-                do f = 1, tape_gpu(t)%nflds 
-                        tape_gpu(t)%hlist(f)%hbuf(:,:) = 0d0 
-                        tape_gpu(t)%hlist(f)%nacs(:,:) = 0
-                 end do
-                !$acc update device(tape_gpu(t))
-                end if  
-          end do 
+          do f = 1, tape_gpu%nflds
+            t = map_tapes(f)
+            if(tape(t)%is_endhist) then
+                tape_gpu%hlist(f)%hbuf(:,:) = 0d0
+                tape_gpu%hlist(f)%nacs(:,:) = 0
+            end if
+          end do
+         !$acc update device(tape_gpu%hlist(:))
 
   end subroutine set_gpu_tape
 
