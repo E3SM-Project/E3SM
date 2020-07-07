@@ -1538,8 +1538,7 @@ contains
 
       !$omp parallel
       !$omp do schedule(runtime) &
-      !$omp private(invAreaCell, fracAbsorbed, fracAbsorbedRunoff, deltaVelocitySquared, i, &
-      !$omp         iEdge, factor, delU2)
+      !$omp private(fracAbsorbed, fracAbsorbedRunoff, sumSurfaceStressSquared, i, iEdge)
       do iCell = 1, nCells
          ! compute surface buoyancy forcing based on surface fluxes of mass, temperature, salinity and frazil
          !                                (frazil to be added later)
