@@ -97,7 +97,7 @@ def _generate_env_mach_specific(output_dir, machobj, compiler, mpilib, debug,
         logger.warning("{} already exists, delete to replace".format(ems_path))
         return
 
-    ems_file = EnvMachSpecific(output_dir, unit_testing=unit_testing)
+    ems_file = EnvMachSpecific(output_dir, unit_testing=unit_testing, standalone_configure=True)
     ems_file.populate(machobj)
     ems_file.write()
 
@@ -107,7 +107,7 @@ def _generate_env_mach_specific(output_dir, machobj, compiler, mpilib, debug,
     fake_case = FakeCase(compiler, mpilib, debug, comp_interface)
     ems_file.load_env(fake_case)
     for shell in ('sh', 'csh'):
-        ems_file.make_env_mach_specific_file(shell, fake_case)
+        ems_file.make_env_mach_specific_file(shell, fake_case, output_dir=output_dir)
         shell_path = os.path.join(output_dir, ".env_mach_specific." + shell)
         with open(shell_path, 'a') as shell_file:
             if shell == 'sh':

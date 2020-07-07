@@ -145,8 +145,6 @@ extern "C" {
     PIO_NCINT_inq_type_equal(int ncid1, nc_type typeid1, int ncid2,
                              nc_type typeid2, int *equalp);
 
-
-
 #if defined(__cplusplus)
 }
 #endif

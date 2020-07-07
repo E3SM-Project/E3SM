@@ -449,6 +449,7 @@ class TestScheduler(object):
         _, case_opts, grid, compset,\
             machine, compiler, test_mods = parse_test_name(test)
 
+        os.environ["FROM_CREATE_TEST"] = "True"
         create_newcase_cmd = "{} --case {} --res {} --compset {}"\
                              " --test".format(os.path.join(self._cime_root, "scripts", "create_newcase"),
                                               test_dir, grid, compset)

@@ -97,7 +97,6 @@ class NamelistDefinition(EntryID):
         default_nodes = []
         for node in self.get_children("entry"):
             name = self.get(node, "id")
-            expect(name == name.lower(),"ERROR id field in this file must be lowercase, id={}".format(name))
             skip_default_entry = self.get(node, "skip_default_entry") == "true"
             per_stream_entry = self.get(node, "per_stream_entry") == "true"
             set_node_values = False

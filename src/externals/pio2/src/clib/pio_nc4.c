@@ -49,6 +49,9 @@ PIOc_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
     if (file->iotype != PIO_IOTYPE_NETCDF4P && file->iotype != PIO_IOTYPE_NETCDF4C)
         return pio_err(ios, file, PIO_ENOTNC4, __FILE__, __LINE__);
 
+    PLOG((1, "PIOc_def_var_deflate ncid = %d varid = %d shuffle = %d deflate = %d deflate_level = %d",
+	  ncid, varid, shuffle, deflate, deflate_level));
+
     /* If async is in use, and this is not an IO task, bcast the parameters. */
     if (ios->async)
     {
@@ -116,7 +119,7 @@ PIOc_def_var_deflate(int ncid, int varid, int shuffle, int deflate,
  * @param deflatep pointer to an int that will be set to non-zero if
  * deflation is in use for this variable. Ignored if NULL.
  * @param deflate_levelp pointer to an int that will get the deflation
- * level (from 1-9) if deflation is in use for this variable.  Ignored
+ * level (from 1-9) if deflation is in use for this variable. Ignored
  * if NULL.
  * @return PIO_NOERR for success, otherwise an error code.
  * @ingroup PIO_inq_var_c
@@ -139,6 +142,8 @@ PIOc_inq_var_deflate(int ncid, int varid, int *shufflep, int *deflatep,
     /* Only netCDF-4 files can use this feature. */
     if (file->iotype != PIO_IOTYPE_NETCDF4P && file->iotype != PIO_IOTYPE_NETCDF4C)
         return pio_err(ios, file, PIO_ENOTNC4, __FILE__, __LINE__);
+
+    PLOG((1, "PIOc_inq_var_deflate ncid = %d varid = %d", ncid, varid));
 
     /* If async is in use, and this is not an IO task, bcast the parameters. */
     if (ios->async)

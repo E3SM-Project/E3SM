@@ -22,12 +22,13 @@
       char_len  = 360                    ,& !< char len
       log_kind  = kind(.true.)           ,& !< logical kind
       int_kind  = kind(1)                ,& !< int kind
+      i2        = selected_int_kind(4)   ,& !< i2 (short) kind
       i4        = selected_int_kind(6)   ,& !< i4 kind
       i8        = selected_int_kind(13)  ,& !< i8 kind
       r4        = selected_real_kind(6)  ,& !< r4 kind
       r8        = selected_real_kind(13)    !< r8 kind
 !
-!  MPI defines MPI_OFFSET_KIND as the byte size of the 
+!  MPI defines MPI_OFFSET_KIND as the byte size of the
 !  type, which is not nessasarily the type kind
 !
 !> Byte size of the MPI_OFFSET type.

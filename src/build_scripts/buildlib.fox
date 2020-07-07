@@ -1,0 +1,111 @@
+#!/usr/bin/env python
+from standard_script_setup import *
+from CIME.utils import run_bld_cmd_ensure_logging
+from CIME.case import Case
+from CIME.build import get_standard_makefile_args
+
+logger = logging.getLogger(__name__)
+
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} [--debug]
+OR
+{0} --verbose
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Run \033[0m
+    > {0}
+""" .format (os.path.basename(args[0])),
+
+description=description,
+
+formatter_class=argparse.ArgumentDefaultsHelpFormatter
+)
+
+    CIME.utils.setup_standard_logging_options(parser)
+
+    parser.add_argument("buildroot",
+                        help="build path root")
+
+    parser.add_argument("installpath",
+                        help="install path ")
+
+    parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
+                        help="Case directory to build")
+
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
+
+    return args.buildroot, args.installpath, args.caseroot
+
+def buildlib(bldroot, installpath, case):
+###############################################################################
+    caseroot = case.get_value("CASEROOT")
+    fox_dir = os.path.join(case.get_value("CIMEROOT"), "src", "externals", "fox")
+    # fox does not support out of source build, so we create links to source tree
+    _create_dir_structure(fox_dir, bldroot)
+
+    gmake_opts = "-f {} ".format(os.path.join(caseroot,"Tools","Makefile"))
+    gmake_opts += " -C {} ".format(bldroot)
+    gmake_opts += get_standard_makefile_args(case, shared_lib=True)
+    gmake_opts += "MODEL=fox COMP_NAME=fox {}".format(os.path.join(bldroot,"arch.make"))
+
+    gmake_cmd = case.get_value("GMAKE")
+
+    # This runs the fox configure command
+    cmd = "{} {}".format(gmake_cmd, gmake_opts)
+    run_bld_cmd_ensure_logging(cmd, logger, from_dir=bldroot)
+
+    # Now run make
+    gmake_opts = " -j "+str(case.get_value("GMAKE_J"))
+    cmd = "{} {} install install_prefix={}".format(gmake_cmd, gmake_opts, installpath)
+    run_bld_cmd_ensure_logging(cmd, logger, from_dir=bldroot)
+
+
+
+def _create_dir_structure(srcdir,targetdir, sourcemods=None):
+    """
+    Reproduce the directory structure of srcdir in targetdir with
+    links to the files of srcdir.  If a sourcemods dir is provided and
+    a file in the source tree matchs a file in the sourcemods directory
+    link the sourcemods file instead
+    """
+    structure_updated = False
+    for dirpath, _, filenames in os.walk(srcdir):
+        structure = targetdir + dirpath[len(srcdir):]
+        if not os.path.isdir(structure):
+            os.mkdir(structure)
+        for fname in filenames:
+            # ignore some files
+            if fname.startswith('.') or fname.startswith('#') or fname.startswith('~'):
+                continue
+            # this line added for fox
+            if fname == "arch.make":
+                continue
+            newfullpath = os.path.join(structure,fname)
+            if sourcemods and os.path.isfile(os.path.join(sourcemods,fname)):
+                # If file exists in case sourcemods use it
+                linkto = os.path.join(sourcemods,fname)
+            else:
+                # otherwise link original file
+                linkto = os.path.join(dirpath,fname)
+
+            # Broken link or link to wrong path - remove it
+            if (os.path.lexists(newfullpath) and not os.path.exists(newfullpath)) or \
+               (os.path.exists(newfullpath) and not os.path.samefile(linkto,newfullpath)):
+                os.unlink(newfullpath)
+            # Create new link
+            if not os.path.exists(newfullpath):
+                os.symlink(linkto, newfullpath)
+                structure_updated = True
+    return structure_updated
+
+def _main(argv, documentation):
+    bldroot, installpath, caseroot = parse_command_line(argv, documentation)
+    with Case(caseroot) as case:
+        buildlib(bldroot, installpath, case)
+
+if (__name__ == "__main__"):
+    _main(sys.argv, __doc__)

@@ -32,7 +32,7 @@ module shr_stream_mod
   use shr_file_mod   ! file methods
   use shr_cal_mod    ! calendar methods
 
-  use shr_log_mod, only : s_loglev   => shr_log_Level
+!  use shr_log_mod, only : s_loglev   => shr_log_Level
   use shr_log_mod, only : s_logunit  => shr_log_Unit
   use shr_log_mod, only : OOBMsg => shr_log_OOBMsg
   use shr_log_mod, only: errMsg => shr_log_errMsg
@@ -163,6 +163,9 @@ module shr_stream_mod
   logical             ,save :: doabort = .true. ! flag if abort on error
   character(len=*), parameter :: sourcefile = &
        __FILE__
+
+  integer :: s_loglev = 10
+
 !===============================================================================
 contains
 !===============================================================================
@@ -237,7 +240,7 @@ contains
     else
        call shr_sys_abort('dataSource too long for variable ' // errMsg(sourcefile, __LINE__))
     endif
-    if (debug>0 .and. s_loglev>0) write(s_logunit,F00) '  * format = ', trim(strm%dataSource)
+    if (debug>0 .and. s_loglev>0) write(s_logunit,*) '  * format = ', trim(strm%dataSource)
 
     close(nUnit)
     call shr_file_freeUnit(nUnit)
@@ -331,7 +334,7 @@ contains
     else
        strm%offset = 0
     end if
-    if (debug>0 .and. s_loglev>0) write(s_logunit,F00) '  * offset ',strm%offset
+    if (debug>0 .and. s_loglev>0) write(s_logunit,*) '  * offset ',strm%offset
 
     close(nUnit)
 

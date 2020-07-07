@@ -49,7 +49,7 @@
   </xs:element>
 
   <xs:element name="values">
-    <xs:complexType>
+    <xs:complexType  mixed="true">
       <xs:sequence>
         <xs:element ref="value" maxOccurs="unbounded"/>
       </xs:sequence>

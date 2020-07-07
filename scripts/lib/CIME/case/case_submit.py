@@ -42,7 +42,7 @@ def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resub
                "CONTINUE_RUN is true but RUNDIR {} does not exist".format(rundir))
         # only checks for the first instance in a multidriver case
         if case.get_value("COMP_INTERFACE") == "nuopc":
-            rpointer = "rpointer.med"
+            rpointer = "rpointer.cpl"
         elif case.get_value("MULTI_DRIVER"):
             rpointer = "rpointer.drv_0001"
         else:
