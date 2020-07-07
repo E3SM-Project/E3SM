@@ -55,6 +55,7 @@ module ocn_tracer_hmix_Redi
    !--------------------------------------------------------------------
 
    real(kind=RKIND) :: term1TaperFactor
+   real(kind=RKIND), dimension(:), allocatable :: rediKappaCell
    real(kind=RKIND), dimension(:, :, :), allocatable :: redi_term2_edge, redi_term3_topOfCell
    real(kind=RKIND), dimension(:, :, :), allocatable :: redi_term1, redi_term2, redi_term3
 
@@ -141,7 +142,7 @@ contains
       real(kind=RKIND) :: flux, flux_term1, flux_term2, flux_term3, dTracerDx, coef
       real(kind=RKIND) :: r_tmp, tracer_turb_flux, kappaRediEdgeVal
       real(kind=RKIND), dimension(:), pointer :: areaCell, dvEdge, dcEdge
-      real(kind=RKIND), dimension(:), allocatable :: minimumVal, rediKappaCell
+      real(kind=RKIND), dimension(:), allocatable :: minimumVal
       real(kind=RKIND), dimension(:, :), allocatable :: fluxRediZTop
       err = 0
 
@@ -168,9 +169,9 @@ contains
       nEdges = nEdgesArray(size(nEdgesArray))
 
       allocate (minimumVal(nTracers))
-      allocate (rediKappaCell(nCells))
       allocate (fluxRediZTop(nTracers, nVertLevels + 1))
       !$omp master
+      allocate (rediKappaCell(nCells))
       allocate (redi_term1(nTracers, nVertLevels, nCells))
       allocate (redi_term2(nTracers, nVertLevels, nCells))
       allocate (redi_term3(nTracers, nVertLevels, nCells))
@@ -334,7 +335,7 @@ contains
                ! Add tendency for Term 3: d/dz ( h S grad phi) = ( S grad phi) fluxes
                ! 2.0 in next line is because a dot product on a C-grid
                ! requires a factor of 1/2 to average to the cell center.
-               flux_term3 = RediKappa(iCell)*2.0_RKIND* &
+               flux_term3 = rediKappaCell(iCell)*2.0_RKIND* &
                             (kappaRediSfcTaper(k, iCell)*kappaRediCell(k, iCell)*fluxRediZTop(iTr, k)  &
                             * invAreaCell - kappaRediSfcTaper(k + 1, iCell)*kappaRediCell(k + 1, iCell) &
                             *fluxRediZTop(iTr, k + 1) * invAreaCell)
@@ -413,8 +414,8 @@ contains
 
       deallocate (fluxRediZTop)
       deallocate (minimumVal)
-      deallocate (rediKappaCell)
       !$omp master
+      deallocate (rediKappaCell)
       deallocate (redi_term1)
       deallocate (redi_term2)
       deallocate (redi_term3)
@@ -486,7 +487,7 @@ contains
                RediKappa(iEdge) = config_Redi_kappa
             end do
             !$omp end do
-         else if (config_Redi_closure == 'data') then
+          else if (config_Redi_closure == 'data') then
             ! read RediKappa in from input
             call mpas_log_write("config_Redi_closure = 'data'. "// &
                                 "Make sure that the variable RediKappa is read in from an input file.")
