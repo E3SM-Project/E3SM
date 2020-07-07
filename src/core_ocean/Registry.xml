@@ -2488,16 +2488,16 @@
 		<var name="eddyTime" type="real" dimensions="nEdges Time" units="s^{-1}"
 			description="inverse eddy time scale in visbeck 1997 closure"
 		/>
-		<var name="kappaGMCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="NA"
+		<var name="gmKappaScaling" type="real" dimensions="nVertLevelsP1 nCells Time" units="NA"
 			description="spatially and depth varying GM kappa"
 			packages="gm"
 		/>
-		<var name="kappaRediCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="NA"
-			description="spatially and depth varying GM kappa"
+		<var name="RediKappaScaling" type="real" dimensions="nVertLevelsP1 nCells Time" units="NA"
+			description="Scaling coefficient for GM kappa. Varies from 0 to 1."
 			packages="gm"
 		/>
-		<var name="kappaRediSfcTaper" type="real" dimensions="nVertLevelsP1 nCells Time" units="NA"
-			description="spatially and depth varying Redi kappa"
+		<var name="RediKappaSfcTaper" type="real" dimensions="nVertLevelsP1 nCells Time" units="NA"
+			description="Scaling coefficient for Redi kappa. Varies from 0 to 1."
 			packages="gm"
 		/>
 		<var name="rediLimiterCount" type="integer" dimensions="nVertLevels nCells Time" units="NA"
