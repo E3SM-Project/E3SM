@@ -1,0 +1,174 @@
+#! /bin/sh
+
+# Setup a run directory for the MPAS init_atmosphere, and atmosphere cores.
+
+######################################################################
+# usage() - Display the usage message
+######################################################################
+usage()
+{
+    printf "Usage: setup_atm_run_dir setup-dir\n"
+}
+
+######################################################################
+# init_atmosphere_setup()
+#
+# $1 - Run directory
+# $2 - MPAS-Model Source Code Directory
+# Setup the init_atmosphere in the run directory ($1) by linking the
+# init_atmosphere exetuable and copying the init_atmosphere namelist and
+# streams from the default_inputs/ directory.
+#
+# On error, the program will exit and will return 1, otherwise, 0 will be
+# returned.
+#
+######################################################################
+init_atmosphere_setup()
+{
+    printf "Setting up the init_atmosphere core ...\n"
+    rundir=$1
+    mpasdir=$2
+
+    # See if the init_amtosphere_model is compiled
+    if ! [ -f "${mpasdir}/init_atmosphere_model" ]; then
+        printf "The MPAS directory does not appear to have the init_atmosphere core compiled!\n"
+        return 1
+    fi
+
+    ln -s "${mpasdir}/init_atmosphere_model" $rundir
+    if [ $? -ne 0 ]; then
+        printf "Failed to link 'init_atmosphere_model' from %s\n" $mpasdir
+        return 1
+    fi
+
+    cp "${mpasdir}/default_inputs/namelist.init_atmosphere" $rundir
+    if [ $? -ne 0 ]; then
+        printf "Failed to copy 'namelist.init_atmosphere' from %s\n" "${mpasdir}/default_inputs"
+        return 1
+    fi
+
+    cp "${mpasdir}/default_inputs/streams.init_atmosphere" $rundir
+    if [ $? -ne 0 ]; then
+        printf "Failed to copy 'streams.init_atmosphere' from %s\n" "${mpasdir}/default_inputs"
+        return 1
+    fi
+
+    printf "Succesfully setup the run directory for the init_atmosphere model\n"
+    return 0
+}
+
+######################################################################
+# atmosphere_setup()
+#
+# $1 - Run directory
+# $2 - MPAS-Model Source Code Directory
+# Setup the atmosphere core in the run directory ($1) by linking the
+# atmosphere_model exeutable, physics lookup tables, and by copying
+# the needed namelist, streams, and stream_lists from the default_inputs/
+# directory.
+#
+# On error, this function 1 will be returned, otherwise, 0 will be
+# returned.
+#
+######################################################################
+atmosphere_setup()
+{
+    printf "Setting up the atmosphere core ...\n"
+    rundir=$1
+    mpasdir=$2
+
+    # See if the amtosphere core is compiled
+    if ! [ -f "${mpasdir}/atmosphere_model" ]; then
+        printf "The MPAS directory does not appear to have the atmosphere core compiled!\n"
+        return 1
+    fi
+
+    ln -s "${mpasdir}/atmosphere_model" $rundir
+    if [ $? -ne 0 ]; then
+        printf "Failed to link 'atmosphere_model' from %s\n" $mpasdir
+        return 1
+    fi
+
+    cp "${mpasdir}/default_inputs/namelist.atmosphere" $rundir
+    if [ $? -ne 0 ]; then
+        printf "Failed to copy 'namelist.atmosphere' from %s\n" "${mpasdir}/default_inputs"
+        return 1
+    fi
+
+    cp "${mpasdir}/default_inputs/streams.atmosphere" $rundir
+    if [ $? -ne 0 ]; then
+        printf "Failed to copy 'streams.atmosphere' from %s\n" "${mpasdir}/default_inputs"
+        return 1
+    fi
+
+    cp ${mpasdir}/default_inputs/stream_list.atmosphere.* $rundir
+    if [ $? -ne 0 ]; then
+        printf "Failed to copy 'stream_list.atmosphere.*' from %s\n" "${mpasdir}/default_inputs"
+        return 1
+    fi
+
+    ln -s ${mpasdir}/src/core_atmosphere/physics/physics_wrf/files/* $rundir
+    if [ $? -ne 0 ]; then
+        printf "Failed to link physics files from %s\n" "${mpasdir}/src_core_atmosphere_physics/physics_wrf/files"
+        return 1
+    fi
+
+    printf "Succesfully setup the run directory for the atmosphere model\n"
+    return 0
+}
+
+
+########################################################
+#
+# setup_run_atm_run_dir.sh
+#
+# \brief Copy and link the needed files for running the init_atmosphere, and
+# atmosphere core.
+# \details
+# Given a directory, copy or link all the needed executables, namelist,
+# streams, stream_lists and physics lookup tables needed for both the
+# init_atmosphere and atmosphere core.
+#
+# Currently, this script will need to be in the
+# testing_and_setup/atmosphere directory of the MPAS-Model repository that is
+# desired to be setup. If either the init_atmosphere or atmosphere core is
+# compiled in the MPAS-Model directory, then it will be copied into the run
+# directory. If a core is not compiled, it will not be copied.
+#
+########################################################
+
+if [ $# -ne 1 ]; then
+    printf "Please provide a directory to setup a MPAS run\n"
+    usage
+    exit 1
+fi
+
+rundir=$1
+
+if ! [ -d $rundir ]; then
+    printf "The given directory does not appear to be a directory\n"
+    exit 1
+fi
+
+# Find the location of this script, which will be used to find the the needed
+# MPAS files. Note: $0 may fail here with some shells and some uncommon
+# executions, see: http://mywiki.wooledge.org/BashFAQ/028
+cwd=`pwd`
+cd `dirname $0`
+this_script=`pwd`
+cd $cwd
+mpasdir=`dirname "$this_script"`
+mpasdir=`dirname "$mpasdir"`
+
+# See if this is an MPAS directory (Check for src/core_atmosphere,
+# and src/core_init_atmosphere)
+if ! [ -d "${mpasdir}/src/core_atmosphere" ] || ! [ -d "${mpasdir}/src/core_init_atmosphere" ]; then
+    printf "ERROR: Can't seem to locate MPAS-Model directory!\n"
+    printf "ERROR: Please ensure that this script is in the testing_and_setup/atmosphere directory of\n"
+    printf "ERROR: the MPAS-Model you want to setup\n"
+    exit 1
+fi
+
+init_atmosphere_setup $rundir $mpasdir
+
+atmosphere_setup $rundir $mpasdir
