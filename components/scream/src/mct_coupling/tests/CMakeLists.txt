@@ -25,7 +25,7 @@ message("${SCREAM_LIBS}")
 message("${SCREAM_INCLUDE}")
 # Test atmosphere processes
 EkatCreateUnitTest(scorpio_interface "${ARRAY_SCORPIO_SRCS}" 
-  LIBS ${SCREAM_LIBS} 
-  LIBS_DIRS ${SCREAM_INCLUDE}
+  LIBS ${SCREAM_LIBS} csm_share
+  LIBS_DIRS ${SCREAM_INCLUDE} ${CSM_SHARE}
   INCLUDE_DIRS ${SCREAM_INCLUDE}
 )
