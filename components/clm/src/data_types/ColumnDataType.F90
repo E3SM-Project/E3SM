@@ -2996,6 +2996,7 @@ contains
        ! adding col_ctrunc, seedc
 
        this%totcolc(c) =       &
+            this%totpftc(c)  + &
             this%cwdc(c)     + &
             this%totlitc(c)  + &
             this%totsomc(c)  + &
@@ -9359,17 +9360,23 @@ contains
     end if
        
     if (use_nitrif_denitrif) then
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%smin_no3_to_plant(c) = 0._r8
-          this%smin_nh4_to_plant(c) = 0._r8
-          do j = 1, nlev
-             this%smin_no3_to_plant(c)= this%smin_no3_to_plant(c) + & 
-                  this%smin_no3_to_plant_vr(c,j) * dzsoi_decomp(j)
-             this%smin_nh4_to_plant(c)= this%smin_nh4_to_plant(c) + & 
-                  this%smin_nh4_to_plant_vr(c,j) * dzsoi_decomp(j) 
-          enddo
-       enddo
+        do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            this%smin_no3_to_plant(c) = 0._r8
+            this%smin_nh4_to_plant(c) = 0._r8
+            do j = 1, nlev
+                this%smin_no3_to_plant(c)= this%smin_no3_to_plant(c) + & 
+                      this%smin_no3_to_plant_vr(c,j) * dzsoi_decomp(j)
+                this%smin_nh4_to_plant(c)= this%smin_nh4_to_plant(c) + & 
+                      this%smin_nh4_to_plant_vr(c,j) * dzsoi_decomp(j) 
+            enddo
+        enddo
+    else
+        do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            this%smin_no3_to_plant(c) = 0._r8
+            this%smin_nh4_to_plant(c) = 0._r8
+        enddo
     endif
 
     ! bgc interface & pflotran

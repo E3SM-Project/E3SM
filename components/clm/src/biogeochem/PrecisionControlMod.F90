@@ -102,7 +102,7 @@ contains
       pcrit = 1.e-8_r8
 
       ! patch loop
-      if (use_cn) then
+      if (.not.use_fates) then
          do fp = 1,num_soilp
             p = filter_soilp(fp)
 
@@ -577,7 +577,7 @@ contains
             endif
 
          end do ! end of pft loop
-      end if ! end of if(use_cn)
+      end if ! end of if(.not.use_fates)
       
       if (.not. is_active_betr_bgc) then
 
@@ -603,10 +603,8 @@ contains
                   if (abs(csv2%decomp_cpools_vr(c,j,k)) < ccrit) then
                      cc = cc + csv2%decomp_cpools_vr(c,j,k)
                      csv2%decomp_cpools_vr(c,j,k) = 0._r8
-                     !if (.not.use_fates) then
-                        cn = cn + col_ns%decomp_npools_vr(c,j,k)
-                        col_ns%decomp_npools_vr(c,j,k) = 0._r8
-                     !endif
+                     cn = cn + col_ns%decomp_npools_vr(c,j,k)
+                     col_ns%decomp_npools_vr(c,j,k) = 0._r8
                      if ( use_c13 ) then
                         cc13 = cc13 + c13csv2%decomp_cpools_vr(c,j,k)
                         c13csv2%decomp_cpools_vr(c,j,k) = 0._r8
@@ -623,9 +621,7 @@ contains
                ! be getting the N truncation flux anyway.
 
                csv2%ctrunc_vr(c,j) = csv2%ctrunc_vr(c,j) + cc
-!               if (.not.use_fates) then
-                  col_ns%ntrunc_vr(c,j) = col_ns%ntrunc_vr(c,j) + cn
-!               endif
+               col_ns%ntrunc_vr(c,j) = col_ns%ntrunc_vr(c,j) + cn
                if ( use_c13 ) then
                   c13csv2%ctrunc_vr(c,j) = c13csv2%ctrunc_vr(c,j) + cc13
                endif
@@ -732,7 +728,7 @@ contains
                end do
             end do
 
-            if(use_cn) then
+            if(.not.use_fates) then
                do fp = 1,num_soilp
                   p = filter_soilp(fp)
                   if (veg_ns%retransn(p) < 0._r8) then

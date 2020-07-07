@@ -220,8 +220,9 @@ contains
 
     if (use_cn) then
 
-       call veg_cf%Init(begp, endp, carbon_type='c12')
        call veg_cs%Init(begp, endp, carbon_type='c12', ratio=1._r8)
+       call veg_cf%Init(begp, endp, carbon_type='c12')
+       
 
        if (use_c13) then
           call c13_veg_cs%Init(begc, endc, carbon_type='c13', ratio=c13ratio)

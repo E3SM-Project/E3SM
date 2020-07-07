@@ -416,11 +416,11 @@ contains
           ! If parteh mode > 1, then NP are turned on, potentially
           if(fates_parteh_mode > 1 ) then
              if(use_fates_ed_prescribed_phys) then
-                call endrun(msg=' ERROR:: n_com_nfix and use_fates cannot both be true'//&
+                call endrun(msg=' ERROR:: fates_parteh_mode > 1 not compatible with prescribed physiology'//&
                      errMsg(__FILE__, __LINE__))
              end if
              if(use_fates_ed_st3) then
-                call endrun(msg=' ERROR:: n_com_nfix and use_fates cannot both be true'//&
+                call endrun(msg=' ERROR:: fates_parteh_mode > 1 not compatible with FATES ST3 model'//&
                      errMsg(__FILE__, __LINE__))
              end if
           end if
@@ -682,15 +682,17 @@ contains
     
     if (use_cn .or. use_fates) then
        call mpi_bcast (suplnitro, len(suplnitro), MPI_CHARACTER, 0, mpicom, ier)
-    end if
-    
-    if (use_cn) then
        call mpi_bcast (nfix_timeconst, 1, MPI_REAL8, 0, mpicom, ier)
        call mpi_bcast (spinup_state, 1, MPI_INTEGER, 0, mpicom, ier)
        call mpi_bcast (nyears_ad_carbon_only, 1, MPI_INTEGER, 0, mpicom, ier)
        call mpi_bcast (spinup_mortality_factor, 1, MPI_REAL8, 0, mpicom, ier)
        call mpi_bcast (override_bgc_restart_mismatch_dump, 1, MPI_LOGICAL, 0, mpicom, ier)
     end if
+
+    ! This group of flags has always been sent for both use_cn or otherwise
+    ! So I did not change this. It does not seem a liability to broadcast
+    ! in all run types (RGK 07-2020)
+    
     call mpi_bcast (suplphos, len(suplphos), MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (nu_com, len(nu_com), MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (nu_com_phosphatase, 1, MPI_LOGICAL, 0, mpicom, ier)

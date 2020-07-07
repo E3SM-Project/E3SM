@@ -307,12 +307,6 @@ contains
            pass_is_restart = 0
         end if
         call set_fates_ctrlparms('is_restart',ival=pass_is_restart)
-        if(is_restart()) then
-           pass_is_restart = 1
-        else
-           pass_is_restart = 0
-        end if
-        call set_fates_ctrlparms('is_restart',ival=pass_is_restart)
 
         if(use_vertsoilc) then
            pass_vertsoilc = 1
@@ -2330,13 +2324,11 @@ contains
     integer :: c  ! column index
     integer :: j  ! Depth index
     integer :: nlevsoil
-!    integer :: nlevdecomp
 
     do s = 1, this%fates(nc)%nsites
 
        c = this%f2hmap(nc)%fcolumn(s)
        nlevsoil = this%fates(nc)%bc_in(s)%nlevsoil
-!       nlevdecomp = this%fates(nc)%bc_in(s)%nlevdecomp
        
        this%fates(nc)%bc_in(s)%zi_sisl(0:nlevsoil)    = col_pp%zi(c,0:nlevsoil)
        this%fates(nc)%bc_in(s)%dz_sisl(1:nlevsoil)    = col_pp%dz(c,1:nlevsoil)

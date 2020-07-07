@@ -126,7 +126,7 @@ contains
           ndep_prof(begc:endc, :)      = 0._r8
           pdep_prof(begc:endc, :)      = 0._r8
           
-         if (use_cn) then
+          if (.not.use_fates) then
              
              ! initialize profiles to zero
              leaf_prof(begp:endp, :)      = 0._r8
@@ -267,7 +267,7 @@ contains
      else
 
          ! for one layer decomposition model, set profiles to unity
-         if(use_cn)then
+         if(.not.use_fates)then
              leaf_prof(begp:endp, :) = 1._r8
              froot_prof(begp:endp, :) = 1._r8
              croot_prof(begp:endp, :) = 1._r8
@@ -312,7 +312,7 @@ contains
          endif
       end do
 
-      if(use_cn)then
+      if(.not.use_fates)then
          do fp = 1,num_soilp
             p = filter_soilp(fp)
             froot_prof_sum = 0.
