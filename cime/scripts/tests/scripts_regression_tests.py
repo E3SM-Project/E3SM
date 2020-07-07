@@ -2350,7 +2350,7 @@ class K_TestCimeCase(TestCreateTestCommon):
     def test_cime_case_test_custom_project(self):
     ###########################################################################
         test_name = "ERS_P1.f19_g16_rx1.A"
-        machine, compiler = "melvin", "gnu" # have to use a machine both models know and one that doesn't put PROJECT in any key paths
+        machine, compiler = "mappy", "gnu" # have to use a machine both models know and one that doesn't put PROJECT in any key paths
         self._create_test(["--no-setup", "--machine={}".format(machine), "--compiler={}".format(compiler), "--project=testproj", test_name, "--mpilib=mpi-serial"],
                           test_id=self._baseline_name,
                           env_changes="unset CIME_GLOBAL_WALLTIME &&")
@@ -2370,8 +2370,8 @@ class K_TestCimeCase(TestCreateTestCommon):
     ###########################################################################
     def test_env_loading(self):
     ###########################################################################
-        if self._machine != "melvin":
-            self.skipTest("Skipping env load test - Only works on melvin")
+        if self._machine != "mappy":
+            self.skipTest("Skipping env load test - Only works on mappy")
 
         self._create_test(["--no-build", "TESTRUNPASS.f19_g16_rx1.A"], test_id=self._baseline_name)
 
