@@ -110,7 +110,7 @@ module clm_time_manager
    ! Next short-wave radiation calendar day
    ! 
    real(r8) :: nextsw_cday = uninit_r8 ! calday from clock of next radiation computation
-
+   public   :: getStopDate
    ! Private module methods
 
    private :: timemgr_spmdbcast
@@ -655,6 +655,28 @@ contains
   end subroutine timemgr_restart
 
   !=========================================================================================
+          
+  subroutine getStopDate(stop_step, stop_year, stop_mon, stop_day, stop_tod)
+    
+    !---------------------------------------------------------------------------------
+    integer , intent(out)  :: stop_step, stop_year, stop_mon, stop_day, stop_tod
+    type(ESMF_TimeInterval) :: diff  !
+    type(ESMF_Time) :: start_date    ! start date for run
+    type(ESMF_Time) :: stop_date     ! stop date for run
+    integer :: ndays, nsecs,ntspday          ! Number of days, seconds to ending time
+    integer :: rc                    ! return code
+    !---------------------------------------------------------------------------------
+
+    call ESMF_ClockGet( tm_clock, stopTime=stop_date, startTime=start_date, rc=rc )
+    call chkrc(rc, ': error return from ESMF_ClockGet')
+    ntspday = 24
+    diff = stop_date - start_date
+    call ESMF_TimeIntervalGet( diff, d=ndays, s=nsecs, rc=rc )
+    call chkrc(rc, ': error return from ESMF_TimeIntervalGet calculating nestep')
+    call ESMF_TimeGet( stop_date, yy=stop_year, mm=stop_mon, dd=stop_day, s=stop_tod )
+    stop_step = ntspday*ndays + nsecs/dtime
+    if ( mod(nsecs,dtime) /= 0 ) stop_step = stop_step + 1
+  end subroutine getStopDate
 
   subroutine calc_nestep()
     !---------------------------------------------------------------------------------
