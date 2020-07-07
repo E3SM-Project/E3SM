@@ -170,7 +170,7 @@ contains
     IEner    = 0
     ! dynamics timelevels
     n0=tl%n0
-    call TimeLevel_Qdp( tl, qsplit, n0q) !get n0 level into t2_qdp 
+    call TimeLevel_Qdp(tl, qsplit, n0q) ! get n0 level into n0q
 
 
     dt=tstep*qsplit

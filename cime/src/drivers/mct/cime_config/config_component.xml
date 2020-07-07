@@ -2430,7 +2430,7 @@
     <default_value>64</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
-    <desc>pio rearranger communication max pending requests (io2comp) : -1 implies no bound on max pending requests </desc>
+    <desc>pio rearranger communication max pending requests (io2comp) : 0 implies that CIME internally calculates the value (= 64), -1 implies no bound on max pending requests </desc>
   </entry>
 
   <!-- Handshaking is a very bad idea for large process counts and for -->

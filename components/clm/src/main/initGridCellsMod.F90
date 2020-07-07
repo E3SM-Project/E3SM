@@ -1178,6 +1178,7 @@ contains
     enddo
 
   end subroutine CheckGhostSubgridHierarchy
-#endif ! #ifdef USE_PETSC_LIB
+#endif
+!^ifdef USE_PETSC_LIB
 
 end module initGridCellsMod

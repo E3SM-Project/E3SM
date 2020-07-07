@@ -84,7 +84,7 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    use inital,           only: cam_initial
    use cam_restart,      only: cam_read_restart
    use stepon,           only: stepon_init
-   use physpkg,          only: phys_init, phys_register
+   use physpkg,          only: phys_init
    
    use dycore,           only: dycore_is
 #if (defined E3SM_SCM_REPLAY)
@@ -140,10 +140,6 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    !
    call trunc()
    !
-   ! Initialize index values for advected and non-advected tracers
-   !
-   call phys_register ()
-   !
    ! Determine input namelist filename
    !
    filein = "atm_in" // trim(inst_suffix)
@@ -173,7 +169,6 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
       call initialize_iop_history()
 #endif
    end if
-
 
    call phys_init( phys_state, phys_tend, pbuf2d,  cam_out )
 

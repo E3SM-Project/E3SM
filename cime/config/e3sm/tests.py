@@ -61,6 +61,7 @@ _TESTS = {
             "ERS_Ld5.ne4_ne4.FC5AV1C-L.cam-rrtmgp",
             "ERS_Ld5.ne4_ne4.FC5AV1C-L.cam-gust_param",
             "REP_Ln5.ne4_ne4.FC5AV1C-L",
+            "SMS_Ld9.ne4pg2_ne4pg2.FC5AV1C-04P2.cam-thetahy_sl_pg2_mass",
             )
         },
 
@@ -154,6 +155,7 @@ _TESTS = {
             "SMS_D_Ld1.T62_oEC60to30v3.DTESTM",
             "SMS_D_Ld1.ne30_r05_oECv3.A_WCYCL1850",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1-TEST.cam-crmout",
+            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1-RCEMIP",
             "SMS.r05_r05.I1850CLM45CN",
             )
         },

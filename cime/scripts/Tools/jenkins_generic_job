@@ -15,7 +15,7 @@ from CIME.XML.machines import Machines
 from jenkins_generic_job import jenkins_generic_job
 
 # Don't know if this belongs here longterm
-MACHINES_THAT_MAINTAIN_BASELINES = ("melvin", "sandiatoss3")
+MACHINES_THAT_MAINTAIN_BASELINES = ("melvin", "sandiatoss3", "mappy")
 
 ###############################################################################
 def parse_command_line(args, description):

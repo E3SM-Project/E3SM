@@ -1,5 +1,5 @@
 !---------------------------------------------------------------------------
-! $Id: Nc_Ncn_eqns.F90 7130 2014-07-29 23:29:54Z raut@uwm.edu $
+! $Id$
 !===============================================================================
 module Nc_Ncn_eqns
 
@@ -92,7 +92,7 @@ module Nc_Ncn_eqns
   ! |  |                                                       |
   ! |  |                                                       |
   ! |  |                                                       |
-  ! |  |--(intent in)-------microphys_schemes-------------(intent in)
+  ! |  |--(intent in)---calc_microphys_scheme_tendcies----(intent in)
   ! |  |                            |
   ! |  |                            |
   ! |  |                call a microphysics scheme
@@ -147,10 +147,10 @@ module Nc_Ncn_eqns
   private :: bivar_NL_chi_Ncn_mean, &
              bivar_Ncnm_eqn_comp
 
-contains
+  contains
 
   !=============================================================================
-  function Ncnm_to_Nc_in_cloud( mu_chi_1, mu_chi_2, mu_Ncn_1, mu_Ncn_2, &
+  function Ncnm_to_Nc_in_cloud( nz, mu_chi_1, mu_chi_2, mu_Ncn_1, mu_Ncn_2, &
                                 sigma_chi_1, sigma_chi_2, sigma_Ncn_1, &
                                 sigma_Ncn_2, sigma_Ncn_1_n, sigma_Ncn_2_n, &
                                 corr_chi_Ncn_1_n, corr_chi_Ncn_2_n, mixt_frac, &
@@ -187,7 +187,10 @@ contains
     implicit none
 
     ! Input Variables
-    real( kind = core_rknd ), intent(in) :: &
+    integer, intent(in) :: &
+      nz    ! Number of vertical levels
+
+    real( kind = core_rknd ), dimension(nz), intent(in) :: &
       mu_chi_1,         & ! Mean of chi (old s) (1st PDF component)      [kg/kg]
       mu_chi_2,         & ! Mean of chi (old s) (2nd PDF component)      [kg/kg]
       mu_Ncn_1,         & ! Mean of Ncn (1st PDF component)             [num/kg]
@@ -205,11 +208,11 @@ contains
       cloud_frac_2        ! Cloud fraction (2nd PDF component)               [-]
 
     ! Return Variable
-    real( kind = core_rknd ) :: &
+    real( kind = core_rknd ), dimension(nz) :: &
       Nc_in_cloud    ! Mean cloud droplet concentration (in-cloud)      [num/kg]
 
     ! Local Variable
-    real( kind = core_rknd ) :: &
+    real( kind = core_rknd ), dimension(nz) :: &
       Ncm,        & ! Mean cloud droplet concentration (overall)    [num/kg]
       cloud_frac    ! Cloud fraction                                [-]
  
@@ -222,23 +225,23 @@ contains
     ! only be calculated from PDF.
     cloud_frac = mixt_frac * cloud_frac_1 + ( one - mixt_frac ) * cloud_frac_2
 
-    if ( cloud_frac > cloud_frac_min ) then
+    where ( cloud_frac > cloud_frac_min )
 
        ! There is cloud found at this grid level.  Calculate Nc_in_cloud.
-       Ncm = Ncnm_to_Ncm( mu_chi_1, mu_chi_2, mu_Ncn_1, mu_Ncn_2, &
+       Ncm = Ncnm_to_Ncm( nz, mu_chi_1, mu_chi_2, mu_Ncn_1, mu_Ncn_2, &
                           sigma_chi_1, sigma_chi_2, sigma_Ncn_1, &
                           sigma_Ncn_2, sigma_Ncn_1_n, sigma_Ncn_2_n, &
                           corr_chi_Ncn_1_n, corr_chi_Ncn_2_n, mixt_frac )
 
        Nc_in_cloud = Ncm / cloud_frac
 
-    else ! cloud_frac <= cloud_frac_min
+    elsewhere ! cloud_frac <= cloud_frac_min
 
        ! This level is entirely clear.  Set Nc_in_cloud to <Ncn>.
        ! Since <Ncn> = mu_Ncn_1 = mu_Ncn_2, use mu_Ncn_1 here.
        Nc_in_cloud = mu_Ncn_1
 
-    endif
+    endwhere
 
 
     return
@@ -246,7 +249,7 @@ contains
   end function Ncnm_to_Nc_in_cloud
 
   !=============================================================================
-  function Nc_in_cloud_to_Ncnm( mu_chi_1, mu_chi_2, sigma_chi_1, &
+  function Nc_in_cloud_to_Ncnm( nz, mu_chi_1, mu_chi_2, sigma_chi_1, &
                                 sigma_chi_2, mixt_frac, Nc_in_cloud, &
                                 cloud_frac_1, cloud_frac_2, &
                                 const_Ncnp2_on_Ncnm2, const_corr_chi_Ncn ) &
@@ -275,8 +278,8 @@ contains
 
     use constants_clubb, only: &
         one,            & ! Constant(s)
-        zero,           &
-        cloud_frac_min
+        cloud_frac_min, &
+        eps
 
     use clubb_precision, only: &
         core_rknd  ! Variable(s)
@@ -284,26 +287,29 @@ contains
     implicit none
 
     ! Input Variables
-    real( kind = core_rknd ), intent(in) :: &
-      mu_chi_1,    & ! Mean of chi (old s) (1st PDF component)           [kg/kg]
-      mu_chi_2,    & ! Mean of chi (old s) (2nd PDF component)           [kg/kg]
-      sigma_chi_1, & ! Standard deviation of chi (1st PDF component)     [kg/kg]
-      sigma_chi_2, & ! Standard deviation of chi (2nd PDF component)     [kg/kg]
-      mixt_frac      ! Mixture fraction                                      [-]
+    integer, intent(in) :: &
+      nz    ! Number of vertical levels
+
+    real( kind = core_rknd ), dimension(nz), intent(in) :: &
+      mu_chi_1,     & ! Mean of chi (old s) (1st PDF component)         [kg/kg]
+      mu_chi_2,     & ! Mean of chi (old s) (2nd PDF component)         [kg/kg]
+      sigma_chi_1,  & ! Standard deviation of chi (1st PDF component)   [kg/kg]
+      sigma_chi_2,  & ! Standard deviation of chi (2nd PDF component)   [kg/kg]
+      mixt_frac,    & ! Mixture fraction                                [-]
+      Nc_in_cloud,  & ! Mean cloud droplet concentration (in-cloud)     [num/kg]
+      cloud_frac_1, & ! Cloud fraction (1st PDF component)              [-]
+      cloud_frac_2    ! Cloud fraction (2nd PDF component)              [-]
 
     real( kind = core_rknd ), intent(in) :: &
-      Nc_in_cloud,          & ! Mean cloud droplet conc. (in-cloud)     [num/kg]
-      cloud_frac_1,         & ! Cloud fraction (1st PDF component)           [-]
-      cloud_frac_2,         & ! Cloud fraction (2nd PDF component)           [-]
       const_Ncnp2_on_Ncnm2, & ! Prescribed ratio of <Ncn'^2> to <Ncn>^2      [-]
       const_corr_chi_Ncn      ! Prescribed correlation of chi and Ncn        [-]
 
     ! Return Variable
-    real( kind = core_rknd ) :: &
+    real( kind = core_rknd ), dimension(nz) :: &
       Ncnm    ! Mean simplified cloud nuclei concentration (overall)    [num/kg]
 
     ! Local Variable
-    real( kind = core_rknd ) :: &
+    real( kind = core_rknd ), dimension(nz) :: &
       Ncm,        & ! Mean cloud droplet concentration (overall)      [num/kg]
       cloud_frac    ! Cloud fraction                                  [-]
 
@@ -316,25 +322,25 @@ contains
     ! only be calculated from the PDF.
     cloud_frac = mixt_frac * cloud_frac_1 + ( one - mixt_frac ) * cloud_frac_2
 
-    if ( cloud_frac > cloud_frac_min &
-         .and. const_corr_chi_Ncn * const_Ncnp2_on_Ncnm2 /= zero ) then
+    Ncm = Nc_in_cloud * cloud_frac
+
+    where ( cloud_frac > cloud_frac_min &
+            .and. abs( const_corr_chi_Ncn * const_Ncnp2_on_Ncnm2 ) > eps )
 
        ! There is cloud found at this grid level.  Additionally, Ncn varies.
-       ! Calculate Nc_in_cloud.
-       Ncm = Nc_in_cloud * cloud_frac
-
-       Ncnm = Ncm_to_Ncnm( mu_chi_1, mu_chi_2, sigma_chi_1, sigma_chi_2, &
+       ! Calculate <Ncn>.
+       Ncnm = Ncm_to_Ncnm( nz, mu_chi_1, mu_chi_2, sigma_chi_1, sigma_chi_2, &
                            mixt_frac, Ncm, const_Ncnp2_on_Ncnm2, &
                            const_corr_chi_Ncn, Nc_in_cloud )
 
-    else ! cloud_frac <= cloud_frac_min .or. const_Ncnp2_on_Ncnm2 = 0
+    elsewhere ! cloud_frac <= cloud_frac_min .or. const_Ncnp2_on_Ncnm2 = 0
 
        ! When Ncn is constant a a grid level, it is equal to Nc_in_cloud.
        ! Additionally, when a level is entirely clear, <Ncn>, which is based on
        ! Nc_in_cloud, here, must be set to something.  Set <Ncn> to Nc_in_cloud.
        Ncnm = Nc_in_cloud
 
-    endif
+    endwhere
 
 
     return
@@ -342,7 +348,7 @@ contains
   end function Nc_in_cloud_to_Ncnm
 
   !=============================================================================
-  function Ncnm_to_Ncm( mu_chi_1, mu_chi_2, mu_Ncn_1, mu_Ncn_2, &
+  function Ncnm_to_Ncm( nz, mu_chi_1, mu_chi_2, mu_Ncn_1, mu_Ncn_2, &
                         sigma_chi_1, sigma_chi_2, sigma_Ncn_1, &
                         sigma_Ncn_2, sigma_Ncn_1_n, sigma_Ncn_2_n, &
                         corr_chi_Ncn_1_n, corr_chi_Ncn_2_n, mixt_frac ) &
@@ -434,7 +440,10 @@ contains
     implicit none
 
     ! Input Variables
-    real( kind = core_rknd ), intent(in) :: &
+    integer, intent(in) :: &
+      nz    ! Number of vertical levels
+
+    real( kind = core_rknd ), dimension(nz), intent(in) :: &
       mu_chi_1,         & ! Mean of chi (old s) (1st PDF component)      [kg/kg]
       mu_chi_2,         & ! Mean of chi (old s) (2nd PDF component)      [kg/kg]
       mu_Ncn_1,         & ! Mean of Ncn (1st PDF component)             [num/kg]
@@ -450,17 +459,17 @@ contains
       mixt_frac           ! Mixture fraction                                 [-]
 
     ! Return Variable
-    real( kind = core_rknd ) :: &
+    real( kind = core_rknd ), dimension(nz) :: &
       Ncm    ! Mean cloud droplet concentration (overall)    [num/kg] 
 
 
     ! Calculate mean cloud droplet concentration (overall), <Nc>.
     Ncm &
     = mixt_frac &
-      * bivar_NL_chi_Ncn_mean( mu_chi_1, mu_Ncn_1, sigma_chi_1, &
+      * bivar_NL_chi_Ncn_mean( nz, mu_chi_1, mu_Ncn_1, sigma_chi_1, &
                                sigma_Ncn_1, sigma_Ncn_1_n, corr_chi_Ncn_1_n ) &
       + ( one - mixt_frac ) &
-        * bivar_NL_chi_Ncn_mean( mu_chi_2, mu_Ncn_2, sigma_chi_2, &
+        * bivar_NL_chi_Ncn_mean( nz, mu_chi_2, mu_Ncn_2, sigma_chi_2, &
                                  sigma_Ncn_2, sigma_Ncn_2_n, corr_chi_Ncn_2_n )
 
 
@@ -469,7 +478,7 @@ contains
   end function Ncnm_to_Ncm
 
   !=============================================================================
-  function Ncm_to_Ncnm( mu_chi_1, mu_chi_2, sigma_chi_1, sigma_chi_2, &
+  function Ncm_to_Ncnm( nz, mu_chi_1, mu_chi_2, sigma_chi_1, sigma_chi_2, &
                         mixt_frac, Ncm, const_Ncnp2_on_Ncnm2, &
                         const_corr_chi_Ncn, Ncnm_val_denom_0 ) &
   result( Ncnm )
@@ -649,49 +658,52 @@ contains
     implicit none
 
     ! Input Variables
-    real( kind = core_rknd ), intent(in) :: &
-      mu_chi_1,    & ! Mean of chi (old s) (1st PDF component)           [kg/kg]
-      mu_chi_2,    & ! Mean of chi (old s) (2nd PDF component)           [kg/kg]
-      sigma_chi_1, & ! Standard deviation of chi (1st PDF component)     [kg/kg]
-      sigma_chi_2, & ! Standard deviation of chi (2nd PDF component)     [kg/kg]
-      mixt_frac      ! Mixture fraction                                      [-]
+    integer, intent(in) :: &
+      nz    ! Number of vertical levels
+
+    real( kind = core_rknd ), dimension(nz), intent(in) :: &
+      mu_chi_1,         & ! Mean of chi (old s) (1st PDF component)     [kg/kg]
+      mu_chi_2,         & ! Mean of chi (old s) (2nd PDF component)     [kg/kg]
+      sigma_chi_1,      & ! Standard deviation of chi (1st PDF comp.)   [kg/kg]
+      sigma_chi_2,      & ! Standard deviation of chi (2nd PDF comp.)   [kg/kg]
+      mixt_frac,        & ! Mixture fraction                            [-]
+      Ncm,              & ! Mean cloud droplet conc. (overall)          [num/kg]
+      Ncnm_val_denom_0    ! Ncnm value -- denominator in eqn. is 0      [num/kg]
 
     real( kind = core_rknd ), intent(in) :: &
-      Ncm,                  & ! Mean cloud droplet conc. (overall)      [num/kg]
       const_Ncnp2_on_Ncnm2, & ! Prescribed ratio of <Ncn'^2> to <Ncn>^2      [-]
-      const_corr_chi_Ncn,   & ! Prescribed correlation of chi and Ncn        [-]
-      Ncnm_val_denom_0        ! Ncnm value -- denominator in eqn. is 0  [num/kg]
+      const_corr_chi_Ncn      ! Prescribed correlation of chi and Ncn        [-]
 
     ! Return Variable
-    real( kind = core_rknd ) :: &
+    real( kind = core_rknd ), dimension(nz) :: &
       Ncnm    ! Mean simplified cloud nuclei concentration (overall)    [num/kg]
 
     ! Local Variable
-    real( kind = core_rknd ) :: &
+    real( kind = core_rknd ), dimension(nz) :: &
       denominator_term    ! Denominator in the equation for <Ncn>            [-]
 
 
     denominator_term &
     = mixt_frac &
-      * bivar_Ncnm_eqn_comp( mu_chi_1, sigma_chi_1, &
+      * bivar_Ncnm_eqn_comp( nz, mu_chi_1, sigma_chi_1, &
                              const_Ncnp2_on_Ncnm2, const_corr_chi_Ncn ) &
       + ( one - mixt_frac ) &
-        * bivar_Ncnm_eqn_comp( mu_chi_2, sigma_chi_2, &
+        * bivar_Ncnm_eqn_comp( nz, mu_chi_2, sigma_chi_2, &
                                const_Ncnp2_on_Ncnm2, const_corr_chi_Ncn )
 
 
-    if ( denominator_term > zero ) then
+    where ( denominator_term > zero )
 
        Ncnm = Ncm / denominator_term
 
-    else ! denominator_term = 0
+    elsewhere ! denominator_term = 0
 
        ! When the denominator is 0, it is usually because there is only clear
        ! air.  In that scenario, Ncm should also be 0.  Set Ncnm to a value that
        ! is usual or typical
        Ncnm = Ncnm_val_denom_0
 
-    endif ! denominator_term > 0
+    endwhere ! denominator_term > 0
 
 
     return
@@ -699,7 +711,7 @@ contains
   end function Ncm_to_Ncnm
 
   !=============================================================================
-  function bivar_NL_chi_Ncn_mean( mu_chi_i, mu_Ncn_i, sigma_chi_i, &
+  function bivar_NL_chi_Ncn_mean( nz, mu_chi_i, mu_Ncn_i, sigma_chi_i, &
                                   sigma_Ncn_i, sigma_Ncn_i_n, corr_chi_Ncn_i_n )
 
     ! Description:
@@ -771,16 +783,16 @@ contains
         chi_tol,  &
         Ncn_tol
 
-    use anl_erf, only: &
-        erfc  ! Procedure(s)
-
     use clubb_precision, only: &
         core_rknd  ! Variable(s)
 
     implicit none
 
     ! Input Variables
-    real( kind = core_rknd ), intent(in) :: &
+    integer, intent(in) :: &
+      nz    ! Number of vertical levels
+
+    real( kind = core_rknd ), dimension(nz), intent(in) :: &
       mu_chi_i,         & ! Mean of chi (old s) (ith PDF component)      [kg/kg]
       mu_Ncn_i,         & ! Mean of Ncn (ith PDF component)             [num/kg]
       sigma_chi_i,      & ! Standard deviation of chi (ith PDF comp.)    [kg/kg]
@@ -789,41 +801,41 @@ contains
       corr_chi_Ncn_i_n    ! Correlation of chi and ln Ncn (ith PDF comp.)    [-]
 
     ! Return Variable
-    real( kind = core_rknd ) :: &
+    real( kind = core_rknd ), dimension(nz) :: &
       bivar_NL_chi_Ncn_mean
 
 
-    if ( sigma_chi_i <=chi_tol .and. sigma_Ncn_i <= Ncn_tol ) then
+    where ( sigma_chi_i <= chi_tol .and. sigma_Ncn_i <= Ncn_tol )
 
        ! The ith PDF component variances of both chi and Ncn are 0.
 
-       if ( mu_chi_i > zero ) then
+       where ( mu_chi_i > zero )
 
           bivar_NL_chi_Ncn_mean = mu_Ncn_i
 
-       else ! mu_chi_i <= 0
+       elsewhere ! mu_chi_i <= 0
 
           bivar_NL_chi_Ncn_mean = zero
 
-       endif
+       endwhere
 
 
-    elseif ( sigma_chi_i <= chi_tol ) then
+    elsewhere ( sigma_chi_i <= chi_tol )
 
        ! The ith PDF component variance of chi is 0.
 
-       if ( mu_chi_i > zero ) then
+       where ( mu_chi_i > zero )
 
           bivar_NL_chi_Ncn_mean = mu_Ncn_i
 
-       else ! mu_chi_i <= 0
+       elsewhere ! mu_chi_i <= 0
 
           bivar_NL_chi_Ncn_mean = zero
 
-       endif
+       endwhere
 
 
-    elseif ( sigma_Ncn_i <= Ncn_tol ) then
+    elsewhere ( sigma_Ncn_i <= Ncn_tol )
 
        ! The ith PDF component variance of Ncn is 0.
 
@@ -831,7 +843,7 @@ contains
        = mu_Ncn_i * one_half * erfc( - ( mu_chi_i / ( sqrt_2 * sigma_chi_i ) ) )
 
 
-    else
+    elsewhere
 
        ! Both chi and Ncn vary in the ith PDF component. 
 
@@ -842,7 +854,7 @@ contains
                        + corr_chi_Ncn_i_n * sigma_Ncn_i_n ) )
 
 
-    endif
+    endwhere
 
 
     return
@@ -850,7 +862,7 @@ contains
   end function bivar_NL_chi_Ncn_mean
 
   !=============================================================================
-  function bivar_Ncnm_eqn_comp( mu_chi_i, sigma_chi_i, &
+  function bivar_Ncnm_eqn_comp( nz, mu_chi_i, sigma_chi_i, &
                                 const_Ncnp2_on_Ncnm2, const_corr_chi_Ncn )
 
     ! Description:
@@ -894,16 +906,16 @@ contains
         zero,     &
         chi_tol
 
-    use anl_erf, only: &
-        erfc  ! Procedure(s)
-
     use clubb_precision, only: &
         core_rknd  ! Variable(s)
 
     implicit none
 
     ! Input Variables
-    real( kind = core_rknd ), intent(in) :: &
+    integer, intent(in) :: &
+      nz    ! Number of vertical levels
+
+    real( kind = core_rknd ), dimension(nz), intent(in) :: &
       mu_chi_i,    & ! Mean of chi (old s) (ith PDF component)           [kg/kg]
       sigma_chi_i    ! Standard deviation of chi (ith PDF component)     [kg/kg]
 
@@ -912,46 +924,35 @@ contains
       const_corr_chi_Ncn      ! Prescribed correlation of chi and Ncn        [-]
 
     ! Return Variable
-    real( kind = core_rknd ) :: &
+    real( kind = core_rknd ), dimension(nz) :: &
       bivar_Ncnm_eqn_comp
 
 
-    if ( sigma_chi_i <= chi_tol ) then
+    where ( sigma_chi_i <= chi_tol )
 
        ! The ith PDF component variances of chi is 0.  The value of the ith PDF
        ! component variance of Ncn does not matter in this scenario.
 
-       if ( mu_chi_i > zero ) then
+       where ( mu_chi_i > zero )
 
           bivar_Ncnm_eqn_comp = one
 
-       else ! mu_chi_i <= 0
+       elsewhere ! mu_chi_i <= 0
 
           bivar_Ncnm_eqn_comp = zero
 
-       endif
+       endwhere
 
-
-    elseif ( const_Ncnp2_on_Ncnm2 == zero ) then
-
-       ! The ith PDF component variance of Ncn is 0.
-
-       bivar_Ncnm_eqn_comp &
-       = one_half * erfc( - ( mu_chi_i / ( sqrt_2 * sigma_chi_i ) ) )
-
-
-    else
+    elsewhere
 
        ! Both chi and Ncn vary in the ith PDF component. 
 
        bivar_Ncnm_eqn_comp &
-       = one_half &
-         * erfc( - ( one / sqrt_2 ) &
-                   * ( ( mu_chi_i / sigma_chi_i ) &
+       = one_half * erfc( - ( one / sqrt_2 ) * ( ( mu_chi_i / sigma_chi_i ) &
                        + const_corr_chi_Ncn * sqrt( const_Ncnp2_on_Ncnm2 ) ) )
 
 
-    endif
+    endwhere
 
 
     return

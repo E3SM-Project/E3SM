@@ -99,9 +99,6 @@ CONTAINS
          timestep_make_eam_parameters_consistent, moisture, use_moisture
     use time_mod,         only: tstep
     use cam_control_mod,  only: moist_physics
-    use phys_control,     only: use_gw_front
-    use physics_buffer,   only: pbuf_add_field, dtype_r8
-    use ppgrid,           only: pcols, pver
     use cam_abortutils,   only : endrun
 
     ! PARAMETERS:
@@ -115,13 +112,6 @@ CONTAINS
     integer :: npes_se_stride
 
     !----------------------------------------------------------------------
-
-    if (use_gw_front) then
-       call pbuf_add_field("FRONTGF", "global", dtype_r8, (/pcols,pver/), &
-            frontgf_idx)
-       call pbuf_add_field("FRONTGA", "global", dtype_r8, (/pcols,pver/), &
-            frontga_idx)
-    end if
 
     ! Initialize dynamics grid variables
     call dyn_grid_init()

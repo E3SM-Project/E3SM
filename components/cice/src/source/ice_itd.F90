@@ -390,7 +390,9 @@
 
       do n = 1, ncat
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, icells
@@ -403,7 +405,9 @@
 
          do it = 1, ntrcr
             if (trcr_depend(it) == 0) then  ! ice area tracer
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
                do ij = 1, icells
@@ -414,7 +418,9 @@
                enddo            ! ij
 
             elseif (trcr_depend(it) == 1) then  ! ice volume tracer
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
                do ij = 1, icells
@@ -426,7 +432,9 @@
 
             elseif (trcr_depend(it) ==2) then ! snow volume tracer
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
                do ij = 1, icells
@@ -440,7 +448,9 @@
          enddo                  ! ntrcr
 
          do k = 1, nilyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
             do ij = 1, icells
@@ -451,7 +461,9 @@
          enddo                  ! nilyr
 
          do k = 1, nslyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
             do ij = 1, icells
@@ -1209,7 +1221,9 @@
            endif   ! tmask
          enddo
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, ishift
@@ -1239,7 +1253,9 @@
          enddo                  ! ij
 
          do it = 1, ntrcr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
             do ij = 1, ishift
@@ -1268,7 +1284,9 @@
          enddo                  ! ntrcr
 
          do k = 1, nilyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
             do ij = 1, ishift
@@ -1292,7 +1310,9 @@
          enddo                  ! nilyr
 
          do k = 1, nslyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
             do ij = 1, ishift
@@ -1994,7 +2014,9 @@
       !-----------------------------------------------------------------
 
          do k = 1, nilyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
             do ij = 1, icells
@@ -2013,7 +2035,9 @@
       !-----------------------------------------------------------------
 
          do k = 1, nslyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
             do ij = 1, icells
@@ -2031,7 +2055,9 @@
       ! Zap ice and snow volume, add water and salt to ocean
       !-----------------------------------------------------------------
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, icells
@@ -2053,7 +2079,9 @@
          enddo                  ! ij
 
          if (tr_aero) then
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
           do ij = 1, icells
@@ -2118,7 +2146,9 @@
       !----------------------------------------------------------------- 
        
          do k = 1, nilyr 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray 
+#endif
 !cdir nodep      !NEC 
 !ocl novrec      !Fujitsu 
             do ij = 1, icells 
@@ -2139,7 +2169,9 @@
       !----------------------------------------------------------------- 
 
          do k = 1, nslyr 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray 
+#endif
 !cdir nodep      !NEC 
 !ocl novrec      !Fujitsu
             do ij = 1, icells
@@ -2159,7 +2191,9 @@
       ! Zap ice and snow volume, add water and salt to ocean
       !-----------------------------------------------------------------
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray 
+#endif
 !cdir nodep      !NEC 
 !ocl novrec      !Fujitsu 
          do ij = 1, icells 
@@ -2182,7 +2216,9 @@
 
       ! Note: Tracers are unchanged.
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          if (tr_aero) then
@@ -2207,7 +2243,9 @@
       ! Correct aice
       !-----------------------------------------------------------------
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray 
+#endif
 !cdir nodep      !NEC 
 !ocl novrec      !Fujitsu 
       do ij = 1, icells 
