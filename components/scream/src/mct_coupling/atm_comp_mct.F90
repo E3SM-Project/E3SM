@@ -1,7 +1,6 @@
 module atm_comp_mct
 
   ! !USES:
-  use scream_scorpio_interface, only: eam_history_finalize
   use esmf
   use mct_mod
   use perf_mod
@@ -221,10 +220,6 @@ CONTAINS
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
     call shr_sys_flush(logunit)
-    !----------------------------------------------------------------------------
-    ! Run pio
-    !----------------------------------------------------------------------------
-    !call eam_history_write()
 
   end subroutine atm_run_mct
 
@@ -252,10 +247,6 @@ CONTAINS
     character(*), parameter :: subName = "(atm_final_mct) "
     !-------------------------------------------------------------------------------
 
-    !----------------------------------------------------------------------------
-    ! Finalize pio
-    !----------------------------------------------------------------------------
-    call eam_history_finalize()
     !----------------------------------------------------------------------------
     ! Finish the rest of ATM model
     !----------------------------------------------------------------------------

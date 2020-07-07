@@ -72,15 +72,15 @@ module scream_scorpio_interface
 #include "scream_config.f"
                      
   public :: & 
-            eam_pio_enddef,       & ! Register variables and dimensions with PIO files
+            eam_pio_enddef,         & ! Register variables and dimensions with PIO files
             eam_init_pio_subsystem, & ! Gather pio specific data from the component coupler
-            eam_history_finalize, & ! Run any final PIO commands (currently unused)
-            register_outfile,     & ! Create a pio output file
-            register_variable,    & ! Register a variable with a particular pio output file  
-            register_dimension,   & ! Register a dimension with a particular pio output file
-            grid_write_data_array, &
-            eam_sync_piofile,     &
-            eam_update_time
+            eam_pio_finalize,       & ! Run any final PIO commands
+            register_outfile,       & ! Create a pio output file
+            register_variable,      & ! Register a variable with a particular pio output file  
+            register_dimension,     & ! Register a dimension with a particular pio output file
+            grid_write_data_array,  & ! Write gridded data to a pio managed netCDF file
+            eam_sync_piofile,       & ! Syncronize the piofile, to be done after all output is written during a single timestep
+            eam_update_time           ! Update the timestamp (i.e. time variable) for a given pio netCDF file
  
   private :: errorHandle
   ! Universal PIO variables for the module
@@ -368,7 +368,7 @@ contains
     type(pio_atm_output),pointer :: pio_atm_file
     integer                      :: ierr
 
-    call get_pio_atm_file("example_pio_structured_v2.nc",pio_atm_file)
+    call get_pio_atm_file(filename,pio_atm_file)
     pio_atm_file%numRecs = pio_atm_file%numRecs + 1
     call get_var(pio_atm_file,'time',var)
     ierr = pio_put_var(pio_atm_file%pioFileDesc,var%piovar,(/ pio_atm_file%numRecs /), (/ 1 /), (/ time /))
@@ -382,13 +382,6 @@ contains
     call get_pio_atm_file(trim(filename),pio_atm_file)
     call PIO_syncfile(pio_atm_file%pioFileDesc)
   end subroutine eam_sync_piofile
-!=====================================================================!
-  subroutine eam_history_finalize()
-
-  ! For now nothing to do, could be used in the future.  If not, should be
-  ! deleted.
-
-  end subroutine eam_history_finalize
 !=====================================================================!
   ! Assign header metadata to a specific pio output file.
   subroutine eam_pio_createHeader(File)

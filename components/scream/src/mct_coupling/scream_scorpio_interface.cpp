@@ -78,9 +78,9 @@ void eam_pio_enddef() {
 //
 //};
 /* ----------------------------------------------------------------- */
-void grid_write_data_array(const std::string &filename, const std::string &varname, const Int dim1_length, const Real* hbuf) {
+void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,1>& dim_length, const Real* hbuf) {
 
-  grid_write_data_array_c_real_1d(filename,varname,dim1_length,hbuf);
+  grid_write_data_array_c_real_1d(filename,varname,dim_length[1],hbuf);
 
 };
 /* ----------------------------------------------------------------- */
@@ -102,9 +102,9 @@ void grid_write_data_array(const std::string &filename, const std::string &varna
 
 };
 /* ----------------------------------------------------------------- */
-void grid_write_data_array(const std::string &filename, const std::string &varname, const Int dim1_length, const Int* hbuf) {
+void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,1>& dim_length, const Int* hbuf) {
 
-  grid_write_data_array_c_int_1d(filename,varname,dim1_length,hbuf);
+  grid_write_data_array_c_int_1d(filename,varname,dim_length[1],hbuf);
 
 };
 /* ----------------------------------------------------------------- */

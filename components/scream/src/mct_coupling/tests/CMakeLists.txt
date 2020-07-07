@@ -29,3 +29,6 @@ EkatCreateUnitTest(scorpio_interface "${ARRAY_SCORPIO_SRCS}"
   LIBS_DIRS ${SCREAM_INCLUDE} ${CSM_SHARE}
   INCLUDE_DIRS ${SCREAM_INCLUDE}
 )
+
+configure_file(${SCREAM_DATA_DIR}/scorpio_output_baseline.nc scorpio_output_baseline.nc COPYONLY)
+

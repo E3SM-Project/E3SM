@@ -93,7 +93,7 @@ void scream_init (const MPI_Fint& f_comm,
   //                 SCORPIO                        //
   // Create the set of SCORPIO output files and their respective
   // dimensions and variables.
-  eam_init_pio_subsystem(f_comm,compid,true);   // Gather the initial PIO subsystem data creater by component coupler
+  eam_init_pio_subsystem(f_comm,compid,false);   // Gather the initial PIO subsystem data creater by component coupler
   // Register the set of output files:
   register_outfile("example_pio_structured_v2.nc");
   // Register the set of dimensions per output file
@@ -134,9 +134,12 @@ void scream_init (const MPI_Fint& f_comm,
   for (int jj=0;jj<3;jj++) {
     y_data[jj] = jj + 1.0;
   }
-  grid_write_data_array("example_pio_structured_v2.nc","x",10,x_data.data());
-  grid_write_data_array("example_pio_structured_v2.nc","y",3,y_data.data());
-  grid_write_data_array("example_pio_structured_v2.nc","z",2,z_data.data());
+  std::array<Int,1> xdim = {10};
+  std::array<Int,1> ydim = {3};
+  std::array<Int,1> zdim = {2};
+  grid_write_data_array("example_pio_structured_v2.nc","x",xdim,ekat::util::data(x_data));
+  grid_write_data_array("example_pio_structured_v2.nc","y",ydim,ekat::util::data(y_data));
+  grid_write_data_array("example_pio_structured_v2.nc","z",zdim,ekat::util::data(z_data));
   
   //                 SCORPIO DONE                    //
 }
