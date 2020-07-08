@@ -192,7 +192,6 @@ module clm_driver
   use clm_varctl                  , only : carbon_only , carbonphosphorus_only, carbonnitrogen_only
   use decompMod                   , only : clumps, procinfo
   use domainMod                   , only : ldomain
-  use verificationMod
   use update_accMod
   use cudafor
   use Method_procs_acc
@@ -244,7 +243,7 @@ contains
     use shr_const_mod   , only : SHR_CONST_TKFRZ
     use clm_time_manager
     use timeinfoMod
-    use histfileMod   , only : clmptr_rs, tape, clmptr_ra
+    use histfileMod   , only : clmptr_rs, tape, clmptr_ra, ntapes
     use accumulGPUMod
     use decompMod     , only : init_proc_clump_info, gpu_clumps, gpu_procinfo
     use clm_varorb
@@ -258,7 +257,7 @@ contains
     character(len=*),intent(in) :: rdate       ! restart file time stamp for name
     !
     ! !LOCAL VARIABLES:
-    integer              :: nc, c, p, l, g, fc, j   ! indices
+    integer              :: nc, c, p, l, g, fc, j,t   ! indices
     integer              :: nclumps                 ! number of clumps on this processor
     character(len=256)   :: filer                   ! restart file name
     integer              :: ier                     ! error code
@@ -266,10 +265,10 @@ contains
     type(bounds_type)    :: bounds_clump
     type(bounds_type)    :: bounds_proc
     integer   ::  mygpu, ngpus, cid, fp, idle
-    logical :: found_thawlayer
+    logical :: found_thawlayer, transfer_hist
     integer :: k_frz
     real*8    :: sto
-    integer , parameter :: gpu = 1, numdays = 1
+    integer , parameter :: gpu = 1, numdays = 30
     #if _CUDA
     integer(kind=cuda_count_kind) :: heapsize,free1,free2,total
     integer  :: istat, val
@@ -1261,11 +1260,16 @@ contains
     ! ============================================================================
     ! Update history buffer
     ! ============================================================================
+    !! Currently circular dependency prevents testing to transfer tape_gpu back
+    !! to cpu
+    transfer_hist = .false.
     
-    !if(step_count == 24) then
-        call hist_update_hbuf_gpu(step_count,24*numdays, nclumps)
-    !    stop
-    !end if
+    do t = 1,ntapes
+        if(step_count == 0 ) cycle
+        if (mod(step_count,tape(t)%nhtfrq) == 0) transfer_hist = .true.
+    end do 
+
+    call hist_update_hbuf_gpu(step_count, transfer_hist, nclumps)
     ! ============================================================================
     ! Compute water budget
     ! ============================================================================
@@ -1289,7 +1293,7 @@ contains
 
        if(step_count == 2400)  rstwr = .true. 
          
-       call hist_htapes_wrapup(step_count,24*numdays, rstwr, nlend, bounds_proc,                    &
+       call hist_htapes_wrapup( rstwr, nlend, bounds_proc,                    &
             soilstate_vars%watsat_col(bounds_proc%begc:bounds_proc%endc, 1:), &
             soilstate_vars%sucsat_col(bounds_proc%begc:bounds_proc%endc, 1:), &
             soilstate_vars%bsw_col(bounds_proc%begc:bounds_proc%endc, 1:),    &
@@ -1340,7 +1344,6 @@ contains
        call clm_pf_finalize()
     end if
     step_count = step_count + 1
-     
   end subroutine clm_drv
 
   !-----------------------------------------------------------------------
