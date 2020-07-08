@@ -851,15 +851,21 @@ end subroutine hist_update_hbuf_field_1d_gpu
           implicit none
           integer  :: t
           integer :: f
-
+          logical :: update_device
+          
+          update_device = .false.
           do f = 1, tape_gpu%nflds
             t = map_tapes(f)
             if(tape(t)%is_endhist) then
                 tape_gpu%hlist(f)%hbuf(:,:) = 0d0
                 tape_gpu%hlist(f)%nacs(:,:) = 0
+                update_device = .true.
             end if
           end do
-         !$acc update device(tape_gpu%hlist(:))
+          if(update_device) then
+                !$acc update device(tape_gpu)
+          end if 
+
 
   end subroutine set_gpu_tape
 
