@@ -59,7 +59,8 @@
 				<member name="vertGMBolusVelocityTop" type="var"/>
 				<member name="GMBolusVelocityZonal" type="var"/>
 				<member name="GMBolusVelocityMeridional" type="var"/>
-				<member name="kappaGMCell" type="var"/>
+				<member name="gmKappaScaling" type="var"/>
+				<member name="RediKappaScaling" type="var"/>
 				<member name="cGMphaseSpeed" type="var"/>
 				<member name="velocityZonalTimesTemperature_GM" type="var"/>
 				<member name="velocityMeridionalTimesTemperature_GM" type="var"/>

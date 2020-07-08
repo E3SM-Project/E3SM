@@ -489,7 +489,7 @@ contains
         normalTransportVelocity, layerThickness,vertAleTransportTop, layerThicknessEdge, vertDiffTopOfCell, &
         normalThicknessFlux, tracerGroupSurfaceFlux, fractionAbsorbed, zMid, &
         fractionAbsorbedRunoff, tracerGroupSurfaceFluxRunoff, &
-        tracerGroupSurfaceFluxRemoved, nonLocalSurfaceTracerFlux, kappaRediCell, kappaRediSfcTaper
+        tracerGroupSurfaceFluxRemoved, nonLocalSurfaceTracerFlux, RediKappaScaling, RediKappaSfcTaper
 
       !
       ! three dimensional pointers
@@ -577,8 +577,8 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'slopeTriadDown', slopeTriadDown)
       call mpas_pool_get_array(diagnosticsPool, 'RediKappa', RediKappa)
       call mpas_pool_get_array(diagnosticsPool, 'vertNonLocalFlux', vertNonLocalFlux)
-      call mpas_pool_get_array(diagnosticsPool, 'kappaRediSfcTaper', kappaRediSfcTaper)
-      call mpas_pool_get_array(diagnosticsPool, 'kappaRediCell', kappaRediCell)
+      call mpas_pool_get_array(diagnosticsPool, 'RediKappaSfcTaper', RediKappaSfcTaper)
+      call mpas_pool_get_array(diagnosticsPool, 'RediKappaScaling', RediKappaScaling)
       call mpas_pool_get_array(diagnosticsPool, 'rediLimiterCount', rediLimiterCount)
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
       call mpas_pool_get_array(diagnosticsPool, 'penetrativeTemperatureFluxOBL', penetrativeTemperatureFluxOBL)
@@ -887,7 +887,7 @@ contains
                endif
                call ocn_tracer_hmix_tend(meshPool, scratchPool, layerThicknessEdge, layerThickness, zMid, tracerGroup, &
                                          RediKappa, slopeTriadUp, slopeTriadDown, dt, isActiveTracer, &
-                                         kappaRediSfcTaper, kappaRediCell, rediLimiterCount, tracerGroupTend, err)
+                                         RediKappaSfcTaper, RediKappaScaling, rediLimiterCount, tracerGroupTend, err)
 
                if(trim(groupItr % memberName)=='activeTracers') then
                  isActiveTracer = .true.
