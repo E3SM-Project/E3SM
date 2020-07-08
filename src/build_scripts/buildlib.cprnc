@@ -5,6 +5,8 @@ from CIME.utils import run_bld_cmd_ensure_logging
 from CIME.case import Case
 from CIME.build import get_standard_cmake_args
 
+import stat as statlib
+
 logger = logging.getLogger(__name__)
 
 def parse_command_line(args, description):
@@ -52,14 +54,26 @@ def buildlib(bldroot, installpath, case):
 
     cmake_args = get_standard_cmake_args(case, "ignore_sharedpath", shared_lib=True)
     os.environ["CIMEROOT"] = cimeroot
-    cmake_cmd = ". ./.env_mach_specific.sh && NETCDF=$(dirname $(dirname $(which nf-config))) cmake {cmake_args} -DMPILIB=mpi-serial -DDEBUG=FALSE -C Macros.cmake {cimeroot}/tools/cprnc -DCMAKE_PREFIX_PATH={dest_path} -DBLDROOT={bldroot}".\
+    cmake_cmd = ". .env_mach_specific.sh && NETCDF=$(dirname $(dirname $(which nf-config))) cmake {cmake_args} -DMPILIB=mpi-serial -DDEBUG=FALSE -C Macros.cmake {cimeroot}/tools/cprnc -DCMAKE_PREFIX_PATH={dest_path} -DBLDROOT={bldroot}".\
         format(cimeroot=cimeroot, dest_path=installpath, cmake_args=cmake_args, bldroot=bldroot)
     run_bld_cmd_ensure_logging(cmake_cmd, logger, from_dir=bldroot)
 
     gmake_cmd = case.get_value("GMAKE")
     gmake_j = case.get_value("GMAKE_J")
 
-    run_bld_cmd_ensure_logging(". ./.env_mach_specific.sh && {} VERBOSE=1 -j {}".format(gmake_cmd, gmake_j), logger, from_dir=bldroot)
+    run_bld_cmd_ensure_logging(". .env_mach_specific.sh && {} VERBOSE=1 -j {}".format(gmake_cmd, gmake_j), logger, from_dir=bldroot)
+
+    sh_wrap = os.path.join(bldroot, "cprnc.sh")
+    with open(sh_wrap, "w") as fd:
+        fd.write(
+r"""#!/bin/bash
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+. $DIR/.env_mach_specific.sh && $DIR/cprnc "$@"
+
+""")
+
+    os.chmod(sh_wrap, os.stat(sh_wrap).st_mode | statlib.S_IXUSR | statlib.S_IXGRP | statlib.S_IXOTH)
 
 def _main(argv, documentation):
     bldroot, installpath, caseroot = parse_command_line(argv, documentation)

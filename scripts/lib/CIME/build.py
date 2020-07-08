@@ -355,7 +355,7 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
         cprnc_loc = case.get_value("CCSM_CPRNC")
         full_lib_path = os.path.join(sharedlibroot, compiler, "cprnc")
         if not cprnc_loc or not os.path.exists(cprnc_loc):
-            case.set_value("CCSM_CPRNC", os.path.join(full_lib_path, "cprnc"))
+            case.set_value("CCSM_CPRNC", os.path.join(full_lib_path, "cprnc.sh"))
             if not os.path.isdir(full_lib_path):
                 os.makedirs(full_lib_path)
                 libs.insert(0,"cprnc")
