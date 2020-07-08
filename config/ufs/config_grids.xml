@@ -54,6 +54,12 @@
       <grid name="lnd">TL319</grid>
       <grid name="ocnice">Atlantic8</grid>
     </model_grid>
+
+    <model_grid alias="TL639_Atlantic8">
+      <grid name="atm">TL639</grid>
+      <grid name="lnd">TL639</grid>
+      <grid name="ocnice">Atlantic8</grid>
+    </model_grid>
   </grids>
 
   <!-- ======================================================== -->
@@ -112,6 +118,14 @@
       <file grid="ocnice"  mask="Atlantic8">$DIN_LOC_ROOT/hafs/share/domains/domain.ocn.TL319_Atlantic8.200527.nc</file>
       <mesh driver="nuopc">$DIN_LOC_ROOT/share/meshes/TL319_151007_ESMFmesh.nc</mesh>
       <desc>TL319 grid for JRA55</desc>
+    </domain>
+
+    <domain name="TL639">
+      <nx>1440</nx> <ny>721</ny>
+      <file grid="atm|lnd" mask="Atlantic8">$DIN_LOC_ROOT/hafs/share/domains/domain.lnd.TL639_Atlantic8.200618.nc</file>
+      <file grid="ocnice"  mask="Atlantic8">$DIN_LOC_ROOT/hafs/share/domains/domain.ocn.TL639_Atlantic8.200618.nc</file>
+      <mesh driver="nuopc">$DIN_LOC_ROOT/share/meshes/TL639_200618_ESMFmesh.nc</mesh>
+      <desc>TL639 grid for ERA5</desc>
     </domain>
 
     <!-- domains for regional ocean (HYCOM) -->
