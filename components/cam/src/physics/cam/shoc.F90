@@ -13,6 +13,7 @@
 module shoc
 
   use physics_utils, only: rtype, rtype8, itype, btype
+  use acm_abortutils, only: endrun
 
 ! Bit-for-bit math functions.
 #ifdef SCREAM_CONFIG_IS_CMAKE
@@ -2243,6 +2244,15 @@ subroutine shoc_assumed_pdf(&
       Tl1_1=thl1_1/((basepres/pval)**(rgas/cp))
       Tl1_2=thl1_2/((basepres/pval)**(rgas/cp))
 
+
+      if (Tl1_1 .le. 0._rtype) then
+         call endrun('Tl1_1 is .le. 0 before calling esatw() in shoc')
+      endif
+
+      if (Tl1_2 .le. 0._rtype) then
+         call endrun('Tl1_2 is .le. 0 before calling esatw() in shoc')
+      endif
+      
       ! Now compute qs
 
       esval1_1=0._rtype
@@ -2284,7 +2294,6 @@ subroutine shoc_assumed_pdf(&
 
       if (std_s1 .ne. 0.0_rtype) then
         C1=0.5_rtype*(1._rtype+erf(s1/(sqrt2*std_s1)))
-    IF (C1 .ne. C1) C1 = 0._rtype
         IF (C1 .ne. 0._rtype) qn1=s1*C1+(std_s1/sqrtpi)*exp(-0.5_rtype*(s1/std_s1)**2)
       else
         if (s1 .gt. 0._rtype) then
@@ -2318,7 +2327,6 @@ subroutine shoc_assumed_pdf(&
 
         if (std_s2 .ne. 0._rtype) then
           C2=0.5_rtype*(1.+erf(s2/(sqrt2*std_s2)))
-      if (C2 .ne. C2) C2 = 0._rtype
           if (C2 .ne. 0._rtype) qn2=s2*C2+(std_s2/sqrtpi)*exp(-0.5_rtype*(s2/std_s2)**2)
         else
           if (s2 .gt. 0._rtype) then
