@@ -217,22 +217,12 @@ contains
 
     logical :: found
     type(pio_atm_output), pointer :: current_atm_file => null()
-!    type(pio_file_list), pointer  :: curr => NULL()
     integer                       :: ierr
 
     call get_pio_atm_file(filename,current_atm_file,found=found)
     if (.not.found) call errorHandle("PIO ERROR: issue arose with PIO_enddef for file"//trim(filename)//", not found",-999)
     ierr = PIO_enddef(current_atm_file%pioFileDesc)
     call errorHandle("PIO ERROR: issue arose with PIO_enddef for file"//trim(current_atm_file%filename),ierr)
-
-!    curr => pio_file_list_top
-!    do while (associated(curr))
-!      if (associated(curr%pio_file)) then
-!        ierr = PIO_enddef(curr%pio_file%pioFileDesc)
-!        call errorHandle("PIO ERROR: issue arose with PIO_enddef for file"//trim(curr%pio_file%filename),ierr)
-!      end if
-!      curr => curr%next
-!    end do
 
   end subroutine eam_pio_enddef
 !=====================================================================!
