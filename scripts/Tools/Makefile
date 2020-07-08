@@ -133,7 +133,7 @@ else
 endif
 
 ifeq ($(PIO_VERSION),2)
-  ifeq ($(CIME_MODEL),e3sm)
+  ifneq ($(COMPILER),nag)
     # Needed by SCORPIO not default PIO, does not work with NAG compiler
     USE_CXX := TRUE
   endif
@@ -762,6 +762,14 @@ else ifeq ($(NETCDF_SEPARATE), TRUE)
   # installation of Fortran NetCDF for PIO
   CMAKE_OPTS += -D NetCDF_C_PATH:PATH=$(NETCDF_C_PATH) \
                 -D NetCDF_Fortran_PATH:PATH=$(NETCDF_FORTRAN_PATH)
+endif
+
+ifdef ZLIB_PATH
+        CMAKE_OPTS += -D LIBZ_PATH:STRING="$(ZLIB_PATH)"
+endif
+
+ifdef SZIP_PATH
+        CMAKE_OPTS += -D SZIP_PATH:STRING="$(SZIP_PATH)"
 endif
 
 ifdef HDF5_PATH

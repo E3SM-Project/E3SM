@@ -4311,6 +4311,10 @@ case $ac_fc_v_output in
   *mGLOB_options_string*)
     ac_fc_v_output=`echo $ac_fc_v_output | sed 's/"-mGLOB[^"]*"/ /g'` ;;
 
+  # With Intel ifx, remove -loopopt=0
+  *-loopopt=0*)
+    ac_fc_v_output=`echo $ac_fc_v_output | sed 's/-loopopt=0//g'` ;;
+
   # Portland Group compiler has singly- or doubly-quoted -cmdline argument
   # Singly-quoted arguments were reported for versions 5.2-4 and 6.0-4.
   # Doubly-quoted arguments were reported for "PGF90/x86 Linux/x86 5.0-2".
@@ -4418,6 +4422,10 @@ case $ac_fc_v_output in
   # $LIBS confuse us, and the libraries appear later in the output anyway).
   *mGLOB_options_string*)
     ac_fc_v_output=`echo $ac_fc_v_output | sed 's/"-mGLOB[^"]*"/ /g'` ;;
+
+  # With Intel ifx, remove -loopopt=0
+  *-loopopt=0*)
+    ac_fc_v_output=`echo $ac_fc_v_output | sed 's/-loopopt=0//g'` ;;
 
   # Portland Group compiler has singly- or doubly-quoted -cmdline argument
   # Singly-quoted arguments were reported for versions 5.2-4 and 6.0-4.

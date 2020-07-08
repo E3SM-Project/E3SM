@@ -2,6 +2,12 @@
 
 <config_pio version="1.0">
 
+  <entry id="PIO_VERSION">
+    <values>
+      <value>2</value>
+    </values>
+  </entry>
+
   <!--- uncomment and fill in relevant sections
   <entry id="PIO_CONFIG_OPTS">
     <values>
@@ -46,6 +52,7 @@
       <value>pnetcdf</value>
       <value mach="userdefined">netcdf</value>
       <value mach="melvin">netcdf</value>
+      <value mach="mappy">netcdf</value>
       <value mach="eastwind">netcdf</value>
       <value mach="constance">netcdf</value>
       <value mach="cascade">netcdf</value>

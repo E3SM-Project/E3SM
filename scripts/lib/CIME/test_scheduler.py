@@ -147,7 +147,8 @@ class TestScheduler(object):
         self._machobj = Machines(machine=machine_name)
 
         if get_model() == "e3sm":
-            self._model_build_cost = int((self._machobj.get_value("GMAKE_J") * 2) / 3) + 1
+            # Current build system is unlikely to be able to productively use more than 16 cores
+            self._model_build_cost = min(16, int((self._machobj.get_value("GMAKE_J") * 2) / 3) + 1)
         else:
             self._model_build_cost = 4
 
