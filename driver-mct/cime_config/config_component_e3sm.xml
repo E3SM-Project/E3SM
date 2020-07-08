@@ -319,6 +319,7 @@
       <value compset="_CAM.*_CLM.*MPASO">48</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">96</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="oi%oARRM60to10">96</value>
       <value compset=".+" grid="a%0.23x0.31">96</value>
       <value compset=".+" grid="a%ne4np4">12</value>
       <value compset=".+" grid="a%ne4np4.pg2">24</value>
@@ -329,6 +330,7 @@
       <value compset=".+" grid="a%ne0np4_arm_x8v3" >144</value>
       <value compset=".+" grid="a%ne0np4_conus_x4v1" >96</value>
       <value compset=".+" grid="a%ne0np4_northamericax4v1" >96</value>
+      <value compset=".+" grid="a%ne0np4_antarcticax4v1" >96</value>
       <value compset=".+" grid="a%ne0np4_svalbard_x8v1" >144</value>
       <value compset=".+" grid="a%ne0np4_sooberingoa_x4x8v1" >144</value>
       <value compset=".+" grid="a%ne0np4_enax4v1" >96</value>
@@ -369,6 +371,7 @@
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne4np4">$ATM_NCPL</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">96</value>
+      <value compset="_CAM.*_CLM.*MPASO" grid="oi%oARRM60to10">96</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
