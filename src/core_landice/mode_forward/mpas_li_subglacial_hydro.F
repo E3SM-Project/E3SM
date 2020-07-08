@@ -833,14 +833,18 @@ module li_subglacial_hydro
          if (li_mask_is_margin(edgeMask(iEdge)) .and. li_mask_is_grounded_ice(edgeMask(iEdge))) then
             cell1 = cellsOnEdge(1, iEdge)
             cell2 = cellsOnEdge(2, iEdge)
-            if (thickness(cell1) == 0.0_RKIND) then
-               hydropotentialBaseSlopeNormal(iEdge) = (hydropotentialBase(cell2) - rho_water * gravity * bedTopography(cell2)) &
-                  / dcEdge(iEdge)
-            else
-               hydropotentialBaseSlopeNormal(iEdge) = (rho_water * gravity * bedTopography(cell1) - hydropotentialBase(cell1)) &
-                  / dcEdge(iEdge)
-            endif
-         endif
+            if (thickness(cell1) == 0.0_RKIND) then ! cell1 is the icefree cell
+               if (bedTopography(cell1) < bedTopography(cell2)) then
+                  hydropotentialBaseSlopeNormal(iEdge) = (hydropotentialBase(cell2) - rho_water * gravity * bedTopography(cell2))&
+                     / dcEdge(iEdge)
+               endif
+            else ! cell2 is the icefree cell
+               if (bedTopography(cell2) < bedTopography(cell1)) then
+                  hydropotentialBaseSlopeNormal(iEdge) = (rho_water * gravity * bedTopography(cell1) - hydropotentialBase(cell1))&
+                     / dcEdge(iEdge)
+               endif
+            endif ! which cell is icefree
+         endif ! if terrestrial margin
       end do
 
 
