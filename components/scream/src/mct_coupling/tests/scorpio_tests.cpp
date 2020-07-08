@@ -50,7 +50,7 @@ TEST_CASE("scorpio_interface_output", "") {
   register_variable(outfilename,"index_2d","test value for 2d field",3,vec_xyt, PIO_INT,"xyt-int");
   register_variable(outfilename,"index_3d","test value for 3d field",4,vec_xyzt, PIO_INT,"xyzt-int");
   // Finished with the initialization of variables in output file
-  eam_pio_enddef();
+  eam_pio_enddef(outfilename);
   // Create data to be written
   std::array<Real,10> x_data;
   std::array<Real, 5> y_data;

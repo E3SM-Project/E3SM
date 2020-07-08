@@ -110,9 +110,14 @@ contains
     
   end subroutine register_dimension_c
 !=====================================================================!
-  subroutine eam_pio_enddef_c() bind(c)
+  subroutine eam_pio_enddef_c(filename_in) bind(c)
     use scream_scorpio_interface, only : eam_pio_enddef
-    call eam_pio_enddef()
+    type(c_ptr), intent(in) :: filename_in
+
+    character(len=256)      :: filename
+
+    call convert_c_string(filename_in,filename)
+    call eam_pio_enddef(filename)
   end subroutine eam_pio_enddef_c
 !=====================================================================!
   subroutine convert_c_string(c_string_ptr,f_string)

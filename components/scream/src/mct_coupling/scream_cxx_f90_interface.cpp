@@ -121,7 +121,7 @@ void scream_init (const MPI_Fint& f_comm,
   register_variable("example_pio_structured_v2.nc","foo_flip","answer to space and time",3,vec_yxt, PIO_REAL,"yxt-real");
   register_variable("example_pio_structured_v2.nc","foo_big","answer to space and time",4,vec_xyzt, PIO_REAL,"xyzt-real");
 
-  eam_pio_enddef();
+  eam_pio_enddef("example_pio_structured_v2.nc");
 
   std::array<Real,10> x_data;
   std::array<Real, 3> y_data;

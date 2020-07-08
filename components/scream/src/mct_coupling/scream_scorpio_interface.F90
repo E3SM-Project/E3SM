@@ -211,19 +211,28 @@ contains
     
   end subroutine register_outfile
 !=====================================================================!
-  subroutine eam_pio_enddef()
+  subroutine eam_pio_enddef(filename)
 
-    type(pio_file_list), pointer  :: curr => NULL()
+    character(len=*), intent(in) :: filename
+
+    logical :: found
+    type(pio_atm_output), pointer :: current_atm_file => null()
+!    type(pio_file_list), pointer  :: curr => NULL()
     integer                       :: ierr
 
-    curr => pio_file_list_top
-    do while (associated(curr))
-      if (associated(curr%pio_file)) then
-        ierr = PIO_enddef(curr%pio_file%pioFileDesc)
-        call errorHandle("PIO ERROR: issue arose with PIO_enddef for file"//trim(curr%pio_file%filename),ierr)
-      end if
-      curr => curr%next
-    end do
+    call get_pio_atm_file(filename,current_atm_file,found=found)
+    if (.not.found) call errorHandle("PIO ERROR: issue arose with PIO_enddef for file"//trim(filename)//", not found",-999)
+    ierr = PIO_enddef(current_atm_file%pioFileDesc)
+    call errorHandle("PIO ERROR: issue arose with PIO_enddef for file"//trim(current_atm_file%filename),ierr)
+
+!    curr => pio_file_list_top
+!    do while (associated(curr))
+!      if (associated(curr%pio_file)) then
+!        ierr = PIO_enddef(curr%pio_file%pioFileDesc)
+!        call errorHandle("PIO ERROR: issue arose with PIO_enddef for file"//trim(curr%pio_file%filename),ierr)
+!      end if
+!      curr => curr%next
+!    end do
 
   end subroutine eam_pio_enddef
 !=====================================================================!
@@ -237,7 +246,6 @@ contains
     type(hist_coord_t), pointer         :: hist_coord
     type(hist_coord_list), pointer      :: curr=>null(), prev=>null()
     integer                             :: ierr
-    character(len=150)                  :: errstr
     logical                             :: found
 
     ! Make sure the dimension length is reasonable
@@ -286,13 +294,11 @@ contains
     ! Local variables
     type(pio_atm_output),pointer :: pio_atm_file
     integer                      :: loc_len
-    logical                      :: found
-    type(io_desc_t), pointer     :: iodesc_loc
     type(hist_var_t), pointer    :: hist_var
     integer                      :: dim_ii
     integer                      :: ierr
     integer, allocatable         :: dimlen(:)
-    integer                      :: total_dimlen, my_dof_len, extra_procs
+    integer                      :: my_dof_len
     integer                      :: ii, istart, istop
     logical                      :: has_t_dim  ! Logical to flag whether this variable has a time-dimension.  This is important for the decomposition step.
 
@@ -536,7 +542,6 @@ contains
 
     logical                   :: found            ! Keep track if a decomp has been found among the previously defined decompositions 
     type(iodesc_list),pointer :: curr, prev       ! Used to toggle through the recursive list of decompositions
-    type(io_desc_t), pointer  :: iodesc_loc       ! Local iodesc structure
     integer                   :: loc_len          ! Used to keep track of how many dimensions there are in decomp 
     
     ! Assign a PIO decomposition to variable, if none exists, create a new one:
