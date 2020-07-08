@@ -42,9 +42,9 @@
  If additional future files become available, the user needs to update three variables in the code
  before compiling (near the beginning of updateannuallanduse()), in order to account for a different future scenario:
  
- 5865: const char out_future_land_filebase[] = "LUT_LUH2_SSP5_RCP85";
- 5876: const char luh_future_file[] = "LUH2_SSP5_RCP85_LUH1_format.nc";
- 5878: const char luh_harvest_future_file[] = "LUH2_SSP5_RCP85_LUH1_format_harvest_updated.nc";
+ 5880: const char out_future_land_filebase[] = "LUT_LUH2_SSP5_RCP85";
+ 5891: const char luh_future_file[] = "LUH2_SSP5_RCP85_LUH1_format.nc";
+ 5893: const char luh_harvest_future_file[] = "LUH2_SSP5_RCP85_LUH1_format_harvest_updated.nc";
  
  September 2019 update (adv):
  
@@ -237,7 +237,7 @@
 // use this to output extra stuff to the terminal or to the log file (via printf statements)
 // in iESM, these statements are captured in a log file
 // for standalone, these statements print to the terminal, so can be captured to a file via a pipe
-#define DEBUG 1
+//#define DEBUG 1
 
 #define MAXPFT 16
 #define MAXMONTH 12
