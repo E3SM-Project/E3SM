@@ -394,6 +394,10 @@ CONTAINS
 
     if(adiabatic) return
 
+#ifdef ENERGY_DIAGNOSTICS
+    call measure_pressure_work(phys_state,phys_tend)
+#endif
+
     call t_startf('pd_copy')
     if(local_dp_map) then
 
@@ -500,10 +504,6 @@ CONTAINS
 
       end if ! fv_nphys > 0
     end if ! par%dynproc
-
-#ifdef ENERGY_DIAGNOSTICS
-    call measure_pressure_work(phys_state)
-#endif
 
   end subroutine p_d_coupling
   !=================================================================================================
@@ -651,16 +651,18 @@ CONTAINS
 
 
 #ifdef ENERGY_DIAGNOSTICS
-  subroutine measure_pressure_work(state)
+  subroutine measure_pressure_work(state,tend)
     use control_mod,             only: ftype, adjust_ps
     use dyn_comp,                only: hvcoord
     use check_energy,            only: energy_helper_eam_def
     use cam_history,             only: outfld
     use physconst,               only: gravit, cpair
+    use time_manager,   only: get_step_size
 
     implicit none
     ! INPUT PARAMETERS:
     type(physics_state), intent(in), dimension(begchunk:endchunk) :: state
+    type(physics_tend),  intent(inout), dimension(begchunk:endchunk) :: tend
     ! LOCAL VARIABLES
     integer                                      :: ncol, k, ic                                
     integer(kind=int_kind)                       :: lchnk
@@ -670,7 +672,9 @@ CONTAINS
                                                     teloc1,teloc2,ttend
     real (kind=real_kind), dimension(pcols,pver,pcnst) :: qstate
     real (kind=real_kind), dimension(pcols)      :: ps,phisstate,psterm1,psterm2
-    real (kind=real_kind)                        :: fq
+    real (kind=real_kind)                        :: fq, dtime
+
+    dtime=get_step_size()
 
 !!!!!! fix all
 !!    !$omp parallel do private (lchnk, ncols, pgcols, icol, idmb1, idmb2,
@@ -737,12 +741,15 @@ CONTAINS
       ttend(:ncol,:)=0.0
       do ic=1,ncol
       !first, ttend from local terms
+         !sum pdel into fq
+         fq=0.0
          do k=1,pver
             ttend(ic,k)=(teloc1(ic,k)-teloc2(ic,k))*gravit/cpair/pdel(ic,k)
+            fq=fq+pdel(ic,k)
          enddo
          
       !second, ttend from ps term
-         ttend(ic,1:pver) = ttend(ic,1:pver) + (psterm1(ic)-psterm2(ic))*gravit/cpair/ps(ic)
+         ttend(ic,1:pver) = ttend(ic,1:pver) + (psterm1(ic)-psterm2(ic))*gravit/cpair/fq
       enddo
 
       call outfld('dTadj', ttend(:,:), pcols, lchnk)
@@ -757,6 +764,9 @@ CONTAINS
 
 !      print *, 'OG check', tebefore(1),te(1),teadjusted(1),(te(1)-tebefore(1)),(teadjusted(1)-tebefore(1))
 
+      !add new tendency from pressure adjustment to ttend
+!      tend(lchnk)%dtdt(:ncol,:) = tend(lchnk)%dtdt(:ncol,:) + ttend(:ncol,:)/dtime
+print *, 'OG dtime ... ', dtime
     end do ! lchnk
 
   end subroutine measure_pressure_work
