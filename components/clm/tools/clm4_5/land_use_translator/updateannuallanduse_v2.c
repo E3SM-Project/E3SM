@@ -5649,12 +5649,20 @@ void sethurttlanduse(int outgrid) {
 
 	//printf("outgrid=%i\tpp=%f\tps=%f\tihvh1=%f\n", outgrid, prevprimary[outgrid], prevsecondary[outgrid], inhurttvh1[outgrid]);
 	
+   // round these to the same precision as the pft outputs
+   // this means 100*ROUND_PREC because these are fractions, while pfts are percents
+   
     if ((prevprimary[outgrid] + prevsecondary[outgrid]) > 0.0) {
-        outhurttvh1[outgrid] = inhurttvh1[outgrid] / (prevprimary[outgrid] + prevsecondary[outgrid]);
-        outhurttvh2[outgrid] = inhurttvh2[outgrid] / (prevprimary[outgrid] + prevsecondary[outgrid]);
-        outhurttsh1[outgrid] = inhurttsh1[outgrid] / (prevprimary[outgrid] + prevsecondary[outgrid]);
-        outhurttsh2[outgrid] = inhurttsh2[outgrid] / (prevprimary[outgrid] + prevsecondary[outgrid]);
-        outhurttsh3[outgrid] = inhurttsh3[outgrid] / (prevprimary[outgrid] + prevsecondary[outgrid]);
+        outhurttvh1[outgrid] = round( 100.0 * ROUND_PREC * (inhurttvh1[outgrid] / (prevprimary[outgrid] + prevsecondary[outgrid])) )
+            / (100.0 * ROUND_PREC);
+        outhurttvh2[outgrid] = round( 100.0 * ROUND_PREC * (inhurttvh2[outgrid] / (prevprimary[outgrid] + prevsecondary[outgrid])) )
+            / (100.0 * ROUND_PREC);
+        outhurttsh1[outgrid] = round( 100.0 * ROUND_PREC * (inhurttsh1[outgrid] / (prevprimary[outgrid] + prevsecondary[outgrid])) )
+            / (100.0 * ROUND_PREC);
+        outhurttsh2[outgrid] = round( 100.0 * ROUND_PREC * (inhurttsh2[outgrid] / (prevprimary[outgrid] + prevsecondary[outgrid])) )
+            / (100.0 * ROUND_PREC);
+        outhurttsh3[outgrid] = round( 100.0 * ROUND_PREC * (inhurttsh3[outgrid] / (prevprimary[outgrid] + prevsecondary[outgrid])) )
+            / (100.0 * ROUND_PREC);
     }
     else {
         outhurttvh1[outgrid] = 0.0;
@@ -5663,7 +5671,14 @@ void sethurttlanduse(int outgrid) {
         outhurttsh2[outgrid] = 0.0;
         outhurttsh3[outgrid] = 0.0;
     }
-    
+   
+#ifdef DEBUG
+   if (outhurttvh2[outgrid] - (inhurttvh2[outgrid] / 100) < -0.00001) {
+      printf("Warning at outgrid %i: scaled outhurttvh2 %f < orig inhurttvh2 %f\n", outgrid, outhurttvh2[outgrid], inhurttvh2[outgrid] / 100.0);
+      printf("prevprimary=%f, prevsec=%f, inhurttvh2=%f\n", prevprimary[outgrid], prevsecondary[outgrid], inhurttvh2[outgrid]);
+   }
+#endif
+   
     /* checks for overflow and underflow - lpc */
     if (outhurttvh1[outgrid] < 0.0) {
         outhurttvh1[outgrid] = 0.0;
