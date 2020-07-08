@@ -5881,10 +5881,10 @@ updateannuallanduse_main(double glmo[][GLMONFLDS], double plodata[][PLONFLDS], i
 	
 	// initial historic dynamic lut file names - so that changing them is done here
 	const char initial_hist_dyn_luh_file[] = "iESM_Ref_CropPast1850_c10142019.nc";
-	const char initial_hist_dyn_pft_file[] = "surfdata_360x720_mcrop1850_c05292020.nc";
+	const char initial_hist_dyn_pft_file[] = "surfdata_360x720_mcrop1850_c07082020.nc";
 	// initial future dynamic lut file names
 	const char initial_future_dyn_luh_file[] = "iESM_Ref_CropPast2015_c10142019.nc";
-	const char initial_future_dyn_pft_file[] = "surfdata_360x720_mcrop2015_c06022020.nc";
+	const char initial_future_dyn_pft_file[] = "surfdata_360x720_mcrop2015_c07082020.nc";
 	
 	// input luh data file names
 	const char luh_hist_file[] = "iESM_Expt_rs_Ref_gfrac.nc";		// this is luh2 1850-2015 in luh format
