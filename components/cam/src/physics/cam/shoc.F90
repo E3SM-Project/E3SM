@@ -13,7 +13,7 @@
 module shoc
 
   use physics_utils, only: rtype, rtype8, itype, btype
-  use acm_abortutils, only: endrun
+  use cam_abortutils, only: endrun
 
 ! Bit-for-bit math functions.
 #ifdef SCREAM_CONFIG_IS_CMAKE
