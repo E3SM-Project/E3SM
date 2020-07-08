@@ -6,7 +6,7 @@ import six, sys, os
 # Expect that, if a model wants to use python-based test lists, they will have a file
 # config/$model/tests.py , containing a test dictionary called _TESTS
 
-sys.path.insert(0, os.path.join(get_cime_root(), "config", get_model()))
+sys.path.insert(0, os.path.join(get_cime_root(), "../cime_config"))
 _ALL_TESTS = {}
 try:
     from tests import _TESTS # pylint: disable=import-error
