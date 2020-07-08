@@ -160,7 +160,7 @@ contains
 
     !------------------------------------------------------------------
     ! **** Add the aircraft aerosol data to the physics buffer ****
-    ! called by:
+    ! called by: phys_register (in physpkg.F90)
     !------------------------------------------------------------------
     use physics_buffer, only: pbuf_add_field, dtype_r8
     use tracer_data,    only: incr_filename
@@ -220,7 +220,7 @@ contains
   subroutine aircraft_emit_init(state, pbuf2d)
     !-------------------------------------------------------------------
     ! **** Initialize the aircraft aerosol data handling ****
-    ! called by:
+    ! called by: phys_init (in physpkg.F90)
     !-------------------------------------------------------------------
     use cam_history,      only: addfld, add_default
     use tracer_data,      only: trcdata_init
@@ -320,7 +320,7 @@ contains
           native_grid_frc_air(m)%input_file     = trim(air_datapath)//'/'//trim(spc_fname(m))
 
           native_grid_frc_air(m)%initialized    = .false.
-          dtime = 1.0_r8 - 200.0_r8 / 86400.0_r8
+          dtime = -1.0_r8 ! This is the offset that gives the correct time alignment -BEH 
           call native_grid_frc_air(m)%time_coord%initialize(trim(adjustl(native_grid_frc_air(m)%input_file)), &
                force_time_interp=.true., delta_days=dtime)
 
@@ -558,7 +558,7 @@ contains
   subroutine aircraft_emit_adv( state, pbuf2d)
     !-------------------------------------------------------------------
     ! **** Advance to the next aircraft data ****
-    ! called by:
+    ! called by: phys_timestep_init (in physpkg.F90)
     !-------------------------------------------------------------------
 
     use perf_mod,     only: t_startf, t_stopf
@@ -682,7 +682,8 @@ contains
     !-------------------------------------------------------------------
     !    This subroutine reads the data from the native grid and
     !    interpolates in time
-    ! called by:
+    ! called by: aircraft_emit_init (local)
+    !            aircraft_emit_adv  (local)
     !-------------------------------------------------------------------
 
     use ppgrid,         only: begchunk, endchunk, pcols
@@ -702,8 +703,6 @@ contains
     logical  :: read_data
     integer  :: indx2_pre_adv
     logical  :: found
-
-    integer :: nstep, i, j, k
 
     !obtain name of the specie
     spc_name = native_grid_strct%spc_name_ngrd
@@ -775,13 +774,16 @@ contains
     !-------------------------------------------------------------------
     !    This subroutine interpolates in vertical direction. Finally the
     !    interpolated data is stored  in pbuf
-    ! called by:
+    ! called by: aircraft_emit_adv (local)
     !-------------------------------------------------------------------
 
     use physics_types,  only: physics_state
     use ppgrid,         only: begchunk, endchunk
     use physics_buffer, only: physics_buffer_desc, pbuf_get_field, pbuf_get_chunk
     use ppgrid,         only: pver, pcols
+    use cam_history,    only: outfld
+    use constituents,   only: cnst_name
+    use co2_cycle,      only: c_i
 
 
     !args
@@ -801,6 +803,8 @@ contains
     real(r8) :: ovrl, ovrr, ovrf                             ! overlap bounds
     real(r8) :: ovrmat(pver, native_grid_strct%lev_frc) ! overlap fractions matrix
     integer  :: kinp, kmdl                              ! vertical indexes
+    integer  :: lchnk, k
+    real(r8) :: ftem(pcols, begchunk:endchunk)
 
     ! Vertical interpolation follows Joeckel (2006) ACP method for conservation
     do ic = begchunk,endchunk
@@ -821,6 +825,16 @@ contains
           end do
           vrt_interp_field(icol,:,ic)  = MATMUL( ovrmat, native_grid_strct%native_grid_flds(icol,:,ic) )
        end do
+
+       lchnk = state(ic)%lchnk
+       call outfld('AF'//trim(cnst_name(c_i(4))), vrt_interp_field(:ncol,:,ic), ncol, lchnk)
+       ! AF is given in kg/m2/s already, so no pdel*rga scaling necessary to column integrate
+       ftem(:ncol, ic) = vrt_interp_field(:ncol, 1, ic)
+       do k = 2, pver
+          ftem(:ncol, ic) = ftem(:ncol, ic) + vrt_interp_field(:ncol, k, ic)
+       end do
+       call outfld('TAF'//trim(cnst_name(c_i(4))), ftem(:ncol, ic), ncol, lchnk)
+
     enddo
 
     !future work: these two (above abd below) do loops should be combined into one.
@@ -839,7 +853,7 @@ contains
   subroutine aircraft_emit_readnl(nlfile)
     !-------------------------------------------------------------------
     ! **** Read in the aircraft_emit namelist *****
-    ! called by:
+    ! called by: read_namelist (in runtime_opts.F90)
     !-------------------------------------------------------------------
     use namelist_utils,  only: find_group_name
     use units,           only: getunit, freeunit
