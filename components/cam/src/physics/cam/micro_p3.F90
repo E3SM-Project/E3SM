@@ -39,8 +39,7 @@
 #include "bfb_math.inc"
 
 module micro_p3
-  use debug_info
-  use module_perturb
+
    ! get real kind from utils
    use physics_utils, only: rtype,rtype8,btype
 
@@ -1111,7 +1110,7 @@ contains
        diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc, &
        pdel,exner,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm,  &
        pratot,prctot,p3_tend_out,mu_c,lamc,liq_ice_exchange,vap_liq_exchange, &
-       vap_ice_exchange,col_location,lchnk)
+       vap_ice_exchange,col_location)
 
     !----------------------------------------------------------------------------------------!
     !                                                                                        !
@@ -1160,7 +1159,7 @@ contains
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: mu_c       ! Size distribution shape parameter for radiation
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: lamc       ! Size distribution slope parameter for radiation
 
-    integer, intent(in)                                  :: its,ite,lchnk    ! array bounds (horizontal)
+    integer, intent(in)                                  :: its,ite    ! array bounds (horizontal)
     integer, intent(in)                                  :: kts,kte    ! array bounds (vertical)
     integer, intent(in)                                  :: it         ! time step counter NOTE: starts at 1 for first time step
 
@@ -1302,8 +1301,6 @@ contains
     !==
     !-----------------------------------------------------------------------------------!
     i_loop_main: do i = its,ite  ! main i-loop (around the entire scheme)
-
-       if(icolprnt(lchnk) == i)call report_error_info('INFO SHOULD BE lat=-38.616147,lon=353.781153', 'p3_main', i, 72)
 
 !      if (debug_ON) call check_values(qv,T,i,it,debug_ABORT,100,col_location)
 

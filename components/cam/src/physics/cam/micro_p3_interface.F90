@@ -1059,8 +1059,7 @@ end subroutine micro_p3_readnl
          liq_ice_exchange(its:ite,kts:kte),& ! OUT sum of liq-ice phase change tendenices   
          vap_liq_exchange(its:ite,kts:kte),& ! OUT sun of vap-liq phase change tendencies
          vap_ice_exchange(its:ite,kts:kte),& ! OUT sum of vap-ice phase change tendencies
-         col_location(its:ite,:3),          & ! IN column locations
-         lchnk &
+         col_location(its:ite,:3)          & ! IN column locations
          )
 
     p3_main_outputs(:,:,:) = -999._rtype

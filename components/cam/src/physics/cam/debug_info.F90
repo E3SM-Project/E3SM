@@ -51,7 +51,6 @@ contains
   subroutine report_error_info(cause, calling_func, icol, klev)
 
     !Reports simulation parameters
-    use cam_abortutils, only: endrun
     use cam_logfile,    only: iulog
     use phys_grid,      only: get_rlat_p, get_rlon_p
     use time_manager,   only: get_nstep
@@ -75,8 +74,6 @@ contains
     if(present(klev)) then
        write(iulog,'(a,i5)') 'K level is:', klev
     endif
-
-    call endrun('Error occured in debug_info.F90')
 
   end subroutine report_error_info
 
