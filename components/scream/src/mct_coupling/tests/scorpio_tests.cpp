@@ -31,13 +31,13 @@ TEST_CASE("scorpio_interface_output", "") {
   register_dimension(outfilename,"z","height",zlen);
   register_dimension(outfilename,"time","time",0);
   // Register the set of variables per output file
-  std::string vec_time[] = {"time"};
-  std::string vec_x[]    = {"x"};
-  std::string vec_y[]    = {"y"};
-  std::string vec_z[]    = {"z"};
-  std::string vec_xt[]   = {"x","time"}; 
-  std::string vec_xyt[]  = {"x","y","time"}; 
-  std::string vec_xyzt[] = {"x","y","z","time"};
+  const char* vec_time[] = {"time"};
+  const char* vec_x[]    = {"x"};
+  const char* vec_y[]    = {"y"};
+  const char* vec_z[]    = {"z"};
+  const char* vec_xt[]   = {"x","time"};
+  const char* vec_xyt[]  = {"x","y","time"};
+  const char* vec_xyzt[] = {"x","y","z","time"};
  
   register_variable(outfilename,"time","time",1,vec_time, PIO_REAL,"t");
   register_variable(outfilename,"x","x-direction",1,vec_x, PIO_REAL,"x-real");
@@ -69,7 +69,7 @@ TEST_CASE("scorpio_interface_output", "") {
   ekat::util::md_array<Int, 2, 5,10>  test_index_3d;
   Real pi = 2*acos(0.0);
 
-  for (int ii=0;ii<x_data.size();ii++) {
+  for (decltype(x_data)::size_type ii=0;ii<x_data.size();ii++) {
     x_data[ii] = 2.0*pi/x_data.size()*(ii+1);
   }
   for (int jj=0;jj<5;jj++) {
@@ -86,7 +86,7 @@ TEST_CASE("scorpio_interface_output", "") {
   // write multiple timesteps of data for comparison:
   Real dt = 1.0;
   for (int tt=0;tt<3;tt++) {
-    for (int ii=0;ii<x_data.size();ii++) {
+    for (decltype(x_data)::size_type ii=0;ii<x_data.size();ii++) {
       test_data_1d[ii]  = 0.1 * cos(x_data[ii] + tt*dt); // phase shift by dt
       test_index_1d[ii] = 10000*tt + ii;
       for (int jj=0;jj<5;jj++) {
