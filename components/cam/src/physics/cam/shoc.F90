@@ -2359,9 +2359,9 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
   ! Interpolate shear production to thermo grid
   real(rtype), intent(in) :: sterm_zt(shcol,nlev)
   ! eddy coefficient for momentum [m2/s]
-  real(rtype), intent(inout) :: tk(shcol,nlev)
+  real(rtype), intent(in) :: tk(shcol,nlev)  
 
-  ! intent-inout
+  ! intent-inout  
   ! turbulent kinetic energy [m2/s2]
   real(rtype), intent(inout) :: tke(shcol,nlev)
 
