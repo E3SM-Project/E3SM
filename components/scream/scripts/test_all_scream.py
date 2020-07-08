@@ -159,6 +159,9 @@ class TestAllScream(object):
         if ctest_parallel_level > 0:
             ctest_max_jobs = ctest_parallel_level
             print("Note: honoring requested value for ctest parallel level: {}".format(ctest_max_jobs))
+        elif "CTEST_PARALLEL_LEVEL" in os.environ:
+            ctest_max_jobs = int(os.environ["CTEST_PARALLEL_LEVEL"])
+            print("Note: honoring environment value for ctest parallel level: {}".format(ctest_max_jobs))
         else:
             ctest_max_jobs = get_mach_testing_resources(self._machine)
             print("Note: no value passed for --ctest-parallel-level. Using the default for this machine: {}".format(ctest_max_jobs))
