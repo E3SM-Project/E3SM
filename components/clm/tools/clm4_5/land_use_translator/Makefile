@@ -39,6 +39,7 @@ ifeq ($(HN),cori)
       ENVCOMP := $(findstring INTEL,$(NETCDF_DIR))
       ifeq ($(ENVCOMP),$(NULL))
          $(info Use either GNU gcc or INTEL icc compiler)
+         $(info If you get a make error, ensure that you have used: module load cray-netcdf)
          exit
       else
          CC_ENV := icc
@@ -63,6 +64,7 @@ ifeq ($(HN),compy-e.pnl.gov)
       ENVCOMP := $(findstring intel,$(NETCDF_ROOT))
       ifeq ($(ENVCOMP),$(NULL))
          $(info Use either GNU gcc or INTEL icc compiler)
+         $(info If you get a make error, ensure that you have used: module load gcc or module load intel, and then module load netcdf)
          exit
       else
          CC_ENV := icc
