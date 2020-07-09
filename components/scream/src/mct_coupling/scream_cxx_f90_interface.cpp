@@ -1,4 +1,5 @@
 #include "ekat/scream_session.hpp"
+#include "scream_config.h"
 
 #include "ekat/scream_parse_yaml_file.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
@@ -18,17 +19,20 @@
 
 #include "mct_coupling/ScreamContext.hpp"
 #include "ekat/mpi/scream_comm.hpp"
+#include "ekat/scream_types.hpp"
+
+using scream::Real;
 
 extern "C"
 {
 
 /*===============================================================================================*/
-
 // WARNING: make sure input_yaml_file is a null-terminated string!
 void scream_init (const MPI_Fint& f_comm,
                   const int& start_ymd,
                   const int& start_tod,
-                  const char* input_yaml_file) {
+                  const char* input_yaml_file,
+                  const int& compid) {
   using namespace scream;
   using namespace scream::control;
 
@@ -82,9 +86,10 @@ void scream_init (const MPI_Fint& f_comm,
   // Restore the FPE flag as it was when control was handed to us.
   disable_all_fpes();
   enable_fpes(fpe_mask);
+
 }
 /*===============================================================================================*/
-void scream_run (const double& dt) {
+void scream_run (const Real& dt) {
   // TODO: uncomment once you have valid inputs. I fear AD may crash with no inputs.
   using namespace scream;
   using namespace scream::control;
@@ -108,7 +113,6 @@ void scream_run (const double& dt) {
   disable_all_fpes();
   enable_fpes(fpe_mask);
 }
-
 /*===============================================================================================*/
 void scream_finalize (/* args ? */) {
   using namespace scream;
