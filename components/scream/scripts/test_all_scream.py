@@ -112,14 +112,14 @@ class TestAllScream(object):
                         self._baseline_ref = "origin/master"
             self._must_generate_baselines = True
 
-            self._baseline_dir = pathlib.Path(default_baselines_root_dir)
+            self._baseline_dir = pathlib.Path(default_baselines_root_dir).absolute()
 
         else:
             # We treat the "AUTO" string as a request for automatic baseline dir.
             if self._baseline_dir == "AUTO":
                 self._baseline_dir = get_mach_baseline_root_dir(self._machine,default_baselines_root_dir)
 
-            self._baseline_dir = pathlib.Path(self._baseline_dir)
+            self._baseline_dir = pathlib.Path(self._baseline_dir).absolute()
 
             # Make sure the baseline root directory exists
             expect(self._baseline_dir.is_dir(), "Baseline_dir {} is not a dir".format(self._baseline_dir))
