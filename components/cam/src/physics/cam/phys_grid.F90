@@ -4597,8 +4597,8 @@ logical function phys_grid_initialized ()
    ! min heap array used to maintain chunks sorted by assigned computational
    ! cost. A separate heap is created for each virtual smp, but all
    ! heaps are implemented in this one 1-D array
-   integer, dimension(:), allocatable :: heap
-   integer, dimension(:), allocatable :: heap_len
+   integer, dimension(:), allocatable :: cheap
+   integer, dimension(:), allocatable :: cheap_len
 
 !-----------------------------------------------------------------------
 
@@ -5063,14 +5063,14 @@ logical function phys_grid_initialized ()
 ! maintaining list of chunks sorted by the assigned computional
 ! cost (sum of estimated cost for assigned columns)
 !
-      allocate( heap(1:nchunks) )
+      allocate( cheap(1:nchunks) )
       do cid=1,nchunks
-         heap(cid) = cid
+         cheap(cid) = cid
       enddo
 
-      allocate( heap_len(0:nvsmp-1) )
+      allocate( cheap_len(0:nvsmp-1) )
       do smp=0,nvsmp-1
-         heap_len(smp) = nvsmpchunks(smp)
+         cheap_len(smp) = nvsmpchunks(smp)
       enddo
 
 !
@@ -5090,8 +5090,8 @@ logical function phys_grid_initialized ()
                ! add column to chunk with lowest estimated cost chunk
                ! (and with space), i.e. to chunk at root of heap for
                ! current SMP
-               if (heap_len(smp) > 0) then
-                  cid = heap(cid_offset(smp))
+               if (cheap_len(smp) > 0) then
+                  cid = cheap(cid_offset(smp))
                else
                   if (masterproc) then
                      write(iulog,*) &
@@ -5159,8 +5159,8 @@ logical function phys_grid_initialized ()
                if (use_cost_d) then
 
                   ! Re-heapify the min heap
-                  call adjust_heap(nchunks, maxcol_chk(smp), &
-                                   cid_offset(smp), heap_len(smp), heap)
+                  call cheap_adjust(nchunks, maxcol_chk(smp), &
+                                    cid_offset(smp), cheap_len(smp), cheap)
 
                else
 
@@ -5178,9 +5178,9 @@ logical function phys_grid_initialized ()
 !
 ! Opt-specific clean up
 !
-      deallocate( heap_len )
-      deallocate( heap     )
-      deallocate( cdex     )
+      deallocate( cheap_len )
+      deallocate( cheap     )
+      deallocate( cdex      )
 
    else
 !
@@ -5269,7 +5269,7 @@ logical function phys_grid_initialized ()
 ! Assign chunks to processes.
 !
    call assign_chunks(npthreads, nvsmp, proc_vsmp_map, &
-                      nvsmpthreads, nvsmpchunks)		      
+                      nvsmpthreads, nvsmpchunks)
 !
 ! Save pcols-per-process information, to use in setting pcols 
 ! (if necessary) and in reporting decomposition information
@@ -5702,19 +5702,22 @@ logical function phys_grid_initialized ()
 !
 !========================================================================
 
-   subroutine adjust_heap(nchunks, maxcol_chk, &
-                          cid_offset, heap_len, heap)
+   subroutine cheap_adjust(nchunks, maxcol_chk, &
+                           cid_offset, heap_len, heap)
 !----------------------------------------------------------------------- 
 ! 
-! Purpose: Adjust heap after adding columns (and updating the associated
-!          computational cost) to the current root, restoring the min 
-!          heap property
+! Purpose: Adjust chunk heap after adding columns (and updating the
+!          associated computational cost) to the current root, restoring
+!          the min heap property
 ! 
-! Method: Percolate the root down through the heap until find a legal
-!         new location. This is a modified version of an algorithm 
-!         described in Aho, Hopcroft and Ullman ("The Design and 
-!         Analysis of Computer Algorithms") used in sorting. Here it
-!         is customized for this slightly different application.
+! Method:  If the root chunk has been assigned the maximum number of
+!          columns, then swap with the last element of the heap and 
+!          decrease the heap length by one (removing the chunk from the 
+!          heap). Then percolate the current root down through the heap 
+!          until find a legal location. This is a modified version of an 
+!          algorithm described in Aho, Hopcroft and Ullman ("The Design 
+!          and Analysis of Computer Algorithms") used in sorting. Here 
+!          it is customized for this slightly different application.
 ! 
 ! Author: Patrick Worley
 ! 
@@ -5835,7 +5838,7 @@ logical function phys_grid_initialized ()
    enddo
 
    return
-   end subroutine adjust_heap
+   end subroutine cheap_adjust
 !
 !========================================================================
 
