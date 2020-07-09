@@ -176,8 +176,8 @@ else()
 endif()
 
 # Init scream TPLs info to whatever EKAT set.
-set (SCREAM_TPL_LIBRARIES ${EKAT_TPL_LIBRARIES})
-set (SCREAM_TPL_INCLUDE_DIRS ${EKAT_TPL_INCLUDE_DIRS})
+set (SCREAM_TPL_LIBRARIES ${EKAT_TPL_LIBRARIES} CACHE INTERNAL "TPL libs that SCREAM targets can link to")
+set (SCREAM_TPL_INCLUDE_DIRS ${EKAT_TPL_INCLUDE_DIRS} CACHE INTERNAL "TPL include dirs that SCREAM targets can use")
 
 # Set compiler-specific flags
 include(EkatSetCompilerFlags)

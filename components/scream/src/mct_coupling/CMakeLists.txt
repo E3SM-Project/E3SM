@@ -56,6 +56,9 @@ set(ATM_SRC
   dead_data_mod.F90
   dead_mod.F90
   scream_scorpio_interface.F90
+  scream_scorpio_interface.cpp
+  scream_scorpio_interface_iso_c.F90
+  ${SCREAM_BASE_DIR}/../cam/src/physics/cam/physics_utils.F90
 )
 
 if (USE_ESMF_LIB)
@@ -65,10 +68,10 @@ else()
 endif()
 set(CSM_SHARE "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/csm_share")
 
-# Add scream tpls lib dirs to linker search path
-# Note: this should be avoided, as well as not necessary,
-#       but we are having issues with yaml in debug mode
-link_directories(${SCREAM_TPL_LIBRARY_DIRS})
+# In CIME builds, create interface targets for scorpio
+include (Scorpio)
+# Note: the two arguments are CLIB and FLIB. We want/need both, so look for both
+CreateScorpioTarget(TRUE TRUE)
 
 # Create atm lib
 add_library(atm ${ATM_SRC})
@@ -78,8 +81,11 @@ target_include_directories(atm PUBLIC ${SCREAM_INCLUDE_DIRS})
 target_include_directories(atm SYSTEM PUBLIC ${SCREAM_TPL_INCLUDE_DIRS} ${CSM_SHARE} ${INSTALL_SHAREDPATH}/include)
 
 # Set f90 compiled modules dir
-set_target_properties(atm PROPERTIES
-  Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/cmake/atm)
+set_target_properties(atm PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/cmake/atm)
 
 # Link libraries
 target_link_libraries(atm ${SCREAM_LIBS} ${SCREAM_TPL_LIBRARIES})
+
+#if (NOT SCREAM_LIB_ONLY)
+add_subdirectory(tests)
+#endif()
