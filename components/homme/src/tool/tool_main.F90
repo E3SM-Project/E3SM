@@ -86,6 +86,7 @@ program tool_main
         end if
      end select
 
+  call syncmp(hybrid%par)  ! wait for I/O tasks to finish     
   call prim_finalize()
 
   call haltmp("exiting homme_tool")
