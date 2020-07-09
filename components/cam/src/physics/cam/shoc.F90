@@ -13,7 +13,7 @@
 module shoc
 
   use physics_utils, only: rtype, rtype8, itype, btype
-  use cam_abortutils, only: endrun
+  use scream_abortutils, only: endscreamrun
 
 ! Bit-for-bit math functions.
 #ifdef SCREAM_CONFIG_IS_CMAKE
@@ -2042,6 +2042,7 @@ subroutine shoc_assumed_pdf(&
   real(rtype) wqis, skip, epsterm
   real(rtype) sqrtqw2_1, sqrtqw2_2, sqrtthl2_1, sqrtthl2_2
   real(rtype) corrtest1, corrtest2, thl_tol, rt_tol, w_tol_sqd, w_thresh
+  character(len=1000) :: err_msg
 
   ! variables on thermo grid
   real(rtype) :: wthl_sec_zt(shcol,nlev)
@@ -2246,11 +2247,13 @@ subroutine shoc_assumed_pdf(&
 
 
       if (Tl1_1 .le. 0._rtype) then
-         call endrun('Tl1_1 is .le. 0 before calling esatw() in shoc')
+         write(err_msg,*)'Tl1_1 is .le. 0 before calling esatw() in shoc. Tl1_1 is:',Tl1_1
+         call endscreamrun(err_msg)
       endif
 
       if (Tl1_2 .le. 0._rtype) then
-         call endrun('Tl1_2 is .le. 0 before calling esatw() in shoc')
+         write(err_msg,*)'Tl1_2 is .le. 0 before calling esatw() in shoc. Tl1_2 is:',Tl1_2
+         call endscreamrun(err_msg)
       endif
       
       ! Now compute qs
