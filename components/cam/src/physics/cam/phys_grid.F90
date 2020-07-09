@@ -353,6 +353,9 @@ module phys_grid
    integer, private, parameter :: def_alltoall = 1                ! default
    integer, private :: phys_alltoall = def_alltoall
 
+! Physics computational cost
+   real(r8), public :: phys_pcost ! measured physics cost on this process
+
 contains
 !========================================================================
   integer function get_nlcols_p()
@@ -2433,18 +2436,42 @@ logical function phys_grid_initialized ()
    integer  :: unitn                  ! file unit number
    integer  :: signal                 ! handshake variable
    integer  :: lcid                   ! local chunk id
+   integer  :: tid                    ! thread id
    integer  :: cid                    ! global chunk id
    integer  :: owner                  ! chunk owner
    integer  :: ncols                  ! number of columns in chunk
    integer  :: ierr                   ! error return
 
-   real(r8) :: cost_lsum, cost_gsum   ! local and global sums of 
-                                      !  chunk costs
-   real(r8) :: avg_cost               ! average chunk cost
-   real(r8) :: avg_estcost            ! average estimated chunk cost
-   real(r8) :: cost                   ! chunk cost
-   real(r8) :: norm_cost              ! normalized chunk cost
-   real(r8) :: norm_est_cost          ! normalized estimated chunk cost
+   real(r8) :: lsums(4)               ! working arrays for local sums
+   real(r8) :: gsums(4)               ! working arrays for global sums
+   real(r8) :: ccest_lsum, ccest_gsum ! local and global sums of 
+                                      !  estimated normalized chunk costs
+   real(r8) :: ccost_lsum, ccost_gsum ! local and global sums of 
+                                      !  measured chunk costs
+   real(r8) :: tcest(0:nlthreads-1)   ! estimated normalized thread cost
+                                      !  for chunk loops in bc_physics 
+                                      !  and ac_physics
+   real(r8) :: pcest, pcest_sum       ! estimated normalized process cost
+                                      !  for chunk loops in bc_physics 
+                                      !  and ac_physics, and sum over all
+                                      !  processes
+   real(r8) :: pcost_sum              ! sum of over processes of
+                                      !  measured process cost for chunk 
+                                      !  loops in bc_physics and 
+                                      !  ac_physics (phys_pcost)
+   real(r8) :: avg_ccest              ! average estimated chunk cost
+   real(r8) :: avg_ccost              ! average measured chunk cost
+   real(r8) :: avg_pcest              ! average estimated process cost
+   real(r8) :: avg_pcost              ! average measured process cost
+   real(r8) :: ccost                  ! chunk cost
+   real(r8) :: norm_ccest             ! normalized estimated chunk cost
+   real(r8) :: norm_ccost             ! normalized chunk cost
+   real(r8) :: norm_pcest             ! normalized estimated process cost
+   real(r8) :: norm_pcost             ! normalized process cost
+   real(r8) :: pspeedup               ! local speed-up relative to sum of
+                                      !  local chunk cost, so a measure of
+                                      !  load balance, but not traditional
+                                      !  speed-up (relative to serial cost)
 
    character(len=*), parameter :: fname = 'atm_chunk_costs.txt'
 
@@ -2452,33 +2479,64 @@ logical function phys_grid_initialized ()
    if (output_chunk_costs) then
       unitn = getunit()
 
-      ! Calculate normalized measured cost
-      cost_gsum = 0.0_r8
-      cost_lsum = 0.0_r8
+      ! Calculate local measured and estimated chunk costs
+      ! and estimated thread and process costs (for bc_physics and
+      ! ac_physics chunk loops). Estimated thread cost is calculated from
+      ! the chunks assigned to each thread, assuming a static round-robin
+      ! distribution. Estimated process cost is then calculated as the
+      ! maximum over the estimated thread costs.
+      ccest_lsum = 0.0_r8
+      ccost_lsum = 0.0_r8
+      tcest(:)   = 0.0_r8
       do lcid = begchunk, endchunk
-         cost_lsum = cost_lsum + lchunks(lcid)%cost
+         ccest_lsum = ccest_lsum + chunks(lchunks(lcid)%cid)%estcost
+         ccost_lsum = ccost_lsum + lchunks(lcid)%cost
+         tid = mod(lcid-begchunk,nlthreads)
+         tcest(tid) = tcest(tid) + chunks(lchunks(lcid)%cid)%estcost
       enddo
+      pcest = maxval(tcest)
+
 #if ( defined SPMD )
-      call MPI_ALLREDUCE(cost_lsum, cost_gsum, 1, MPI_REAL8, MPI_SUM, &
+      gsums(:) = 0.0_r8
+      lsums(1) = ccest_lsum
+      lsums(2) = ccost_lsum
+      lsums(3) = pcest
+      lsums(4) = phys_pcost
+      call MPI_ALLREDUCE(lsums, gsums, 4, MPI_REAL8, MPI_SUM, &
                          mpicom, ierr)
+      ccest_gsum = gsums(1)
+      ccost_gsum = gsums(2)
+      pcest_sum  = gsums(3)
+      pcost_sum  = gsums(4)
 #else
-      cost_gsum = cost_lsum
+      ccost_gsum = ccost_lsum
+      ccest_gsum = ccest_lsum
+      pcost_sum  = phys_pcost
+      pcest_sum  = pcest
 #endif
-      if (abs(cost_gsum) > 0.000001_r8) then
-         avg_cost = cost_gsum/nchunks
-      else
-         avg_cost = 1.0_r8
+
+      ! Calculate average estimated chunk cost
+      avg_ccest = ccest_gsum/real(nchunks,r8)
+      if (avg_ccest < 0.000001_r8) then
+         avg_ccest = -1.0_r8
       endif
 
-      ! Calculate normalized estimated cost
-      cost_gsum = 0.0_r8
-      do cid = 1,nchunks
-         cost_gsum = cost_gsum + chunks(cid)%estcost
-      enddo
-      if (abs(cost_gsum) > 0.000001_r8) then
-         avg_estcost = cost_gsum/nchunks
-      else
-         avg_estcost = 1.0_r8
+      ! Calculate average measured chunk cost
+      avg_ccost = ccost_gsum/real(nchunks,r8)
+      if (avg_ccost < 0.000001_r8) then
+         avg_ccost = -1.0_r8
+      endif
+
+      ! Calculate average estimated process cost
+      avg_pcest = pcest_sum/real(npes,r8)
+      if (avg_pcest < 0.000001_r8) then
+         avg_pcest = -1.0_r8
+      endif
+
+      ! Calculate average measured process cost
+      avg_pcost = pcost_sum/real(npes,r8)
+      if (avg_pcost < 0.000001_r8) then
+         avg_pcost = -1.0_r8
       endif
 
       ! Take turns writing to fname.
@@ -2487,8 +2545,9 @@ logical function phys_grid_initialized ()
                       form='FORMATTED', access='SEQUENTIAL' )
 
          write(unitn,'(a)') "ATM CHUNK COST"
-         write(unitn,'(a)') &
-            " owner   lcid    cid  pcols  ncols  estcost (norm)  cost (norm)  cost (seconds)"
+         write(unitn,'(a)') "(process 'speed-up' is sum of local chunk costs divided by local process cost."
+         write(unitn,'(a)') " This is a measure of load balance, not traditional speed-up, which is"
+         write(unitn,'(a)') " relative to the serial cost.)"
 
          signal = 1
 #if ( defined SPMD )
@@ -2499,15 +2558,29 @@ logical function phys_grid_initialized ()
 #endif
       endif
 
+      write(unitn,'(/,a)') &
+            "PROC     id nthrds nchnks estcost (norm)  cost (norm)  cost (seconds) 'speed-up'"
+      norm_pcest = pcest/avg_pcest
+      norm_pcost = phys_pcost/avg_pcost
+      if (abs(phys_pcost) > 0.000001_r8) then
+         pspeedup = ccost_lsum/phys_pcost
+      else
+         pspeedup = -1.0_r8
+      endif
+      write(unitn,'(a4,1x,i6,1x,i6,1x,i6,5x,f10.3,3x,f10.3,2x,e14.3,1x,f10.3)') &
+            "PROC", iam, nlthreads, npchunks(iam), norm_pcest, norm_pcost, phys_pcost, pspeedup
+	    
+      write(unitn,'(a)') &
+            "CHNK  owner   lcid    cid  pcols  ncols  estcost (norm)  cost (norm)  cost (seconds)"
       do lcid = begchunk, endchunk
          cid   = lchunks(lcid)%cid
          owner = chunks(cid)%owner
          ncols = lchunks(lcid)%ncols
-         cost  = lchunks(lcid)%cost
-         norm_cost = cost/avg_cost
-         norm_est_cost = chunks(cid)%estcost/avg_estcost
-         write(unitn,'(i6,1x,i6,1x,i6,1x,i6,1x,i6,6x,f10.3,3x,f10.3,2x,e14.3)') &
-               owner, lcid, cid, pcols, ncols, norm_est_cost, norm_cost, cost
+         ccost  = lchunks(lcid)%cost
+         norm_ccest = chunks(cid)%estcost/avg_ccest
+         norm_ccost = ccost/avg_ccost
+         write(unitn,'(a4,1x,i6,1x,i6,1x,i6,1x,i6,1x,i6,6x,f10.3,3x,f10.3,2x,e14.3)') &
+               "CHNK", owner, lcid, cid, pcols, ncols, norm_ccest, norm_ccost, ccost
       enddo
 
       close(unitn)

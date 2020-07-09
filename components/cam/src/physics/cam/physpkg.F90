@@ -21,7 +21,7 @@ module physpkg
        physics_type_alloc, physics_ptend_dealloc,&
        physics_state_alloc, physics_state_dealloc, physics_tend_alloc, physics_tend_dealloc
   use physics_update_mod,  only: physics_update, physics_update_init, hist_vars, nvars_prtrb_hist, get_var
-  use phys_grid,        only: get_ncols_p, print_cost_p, update_cost_p
+  use phys_grid,        only: get_ncols_p, print_cost_p, update_cost_p, phys_pcost
   use phys_gmean,       only: gmean_mass
   use ppgrid,           only: begchunk, endchunk, pcols, pver, pverp, psubcols
   use constituents,     only: pcnst, cnst_name, cnst_get_ind
@@ -969,8 +969,10 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 #if (! defined SPMD)
     integer :: mpicom = 0
 #endif
-    integer(i8) :: beg_count                     ! start time for a chunk
-    integer(i8) :: end_count                     ! stop time for a chunk
+    integer(i8) :: beg_pcount                    ! start time for the process
+    integer(i8) :: end_pcount                    ! stop time for the process
+    integer(i8) :: beg_ccount                    ! start time for a chunk
+    integer(i8) :: end_ccount                    ! stop time for a chunk
     integer(i8) :: sysclock_rate                 ! system clock rate
     integer(i8) :: sysclock_max                  ! system clock max value
     real(r8)    :: chunk_cost                    ! measured cost per chunk
@@ -1030,10 +1032,13 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
        call t_startf ('bc_physics')
        !call t_adj_detailf(+1)
 
-!$OMP PARALLEL DO PRIVATE (C, beg_count, phys_buffer_chunk, end_count, sysclock_rate, sysclock_max, chunk_cost)
+       call system_clock(count=beg_pcount)
+       
+!$OMP PARALLEL DO SCHEDULE(STATIC,1) &
+!$OMP PRIVATE (c, beg_ccount, phys_buffer_chunk, end_ccount, sysclock_rate, sysclock_max, chunk_cost)
        do c=begchunk, endchunk
 
-          call system_clock(count=beg_count)
+          call system_clock(count=beg_ccount)
 
           !
           ! Output physics terms to IC file
@@ -1048,12 +1053,16 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
                        phys_tend(c), phys_buffer_chunk,  fsds(1,c), landm(1,c),          &
                        sgh(1,c), sgh30(1,c), cam_out(c), cam_in(c) )
 
-          call system_clock(count=end_count, count_rate=sysclock_rate, count_max=sysclock_max)
-          if ( end_count < beg_count ) end_count = end_count + sysclock_max
-          chunk_cost = real( (end_count-beg_count), r8)/real(sysclock_rate, r8)
+          call system_clock(count=end_ccount, count_rate=sysclock_rate, count_max=sysclock_max)
+          if ( end_ccount < beg_ccount ) end_ccount = end_ccount + sysclock_max
+          chunk_cost = real( (end_ccount-beg_ccount), r8)/real(sysclock_rate, r8)
           call update_cost_p(c, chunk_cost)
 
        end do
+
+       call system_clock(count=end_pcount, count_rate=sysclock_rate, count_max=sysclock_max)
+       if ( end_pcount < beg_pcount ) end_pcount = end_pcount + sysclock_max
+       phys_pcost = phys_pcost + real( (end_pcount-beg_pcount), r8)/real(sysclock_rate, r8)
 
        !call t_adj_detailf(-1)
        call t_stopf ('bc_physics')
@@ -1105,8 +1114,10 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
     real(r8)            :: flx_heat(pcols) ! effective sensible heat flux
     real(r8)            :: zero(pcols)     ! array of zeros
 
-    integer(i8)         :: beg_count       ! start time for a chunk
-    integer(i8)         :: end_count       ! stop time for a chunk
+    integer(i8)         :: beg_pcount      ! start time for the process
+    integer(i8)         :: end_pcount      ! stop time for the process
+    integer(i8)         :: beg_ccount      ! start time for a chunk
+    integer(i8)         :: end_ccount      ! stop time for a chunk
     integer(i8)         :: sysclock_rate   ! system clock rate
     integer(i8)         :: sysclock_max    ! system clock max value
     real(r8)            :: chunk_cost      ! measured cost per chunk
@@ -1124,10 +1135,13 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
        first_exec_of_phys_run1_adiabatic_or_ideal  = .FALSE.
     endif
 
-!$OMP PARALLEL DO PRIVATE (C, beg_count, FLX_HEAT, end_count, sysclock_rate, sysclock_max, chunk_cost)
+    call system_clock(count=beg_pcount)
+
+!$OMP PARALLEL DO SCHEDULE(STATIC,1) &
+!$OMP PRIVATE (c, beg_ccount, flx_heat, end_ccount, sysclock_rate, sysclock_max, chunk_cost)
     do c=begchunk, endchunk
 
-       call system_clock(count=beg_count)
+       call system_clock(count=beg_ccount)
 
        ! Initialize the physics tendencies to zero.
        call physics_tend_init(phys_tend(c))
@@ -1152,12 +1166,16 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
        ! Save total enery after physics for energy conservation checks
        call pbuf_set_field(pbuf_get_chunk(pbuf2d, c), teout_idx, phys_state(c)%te_cur)
 
-       call system_clock(count=end_count, count_rate=sysclock_rate, count_max=sysclock_max)
-       if ( end_count < beg_count ) end_count = end_count + sysclock_max
-       chunk_cost = real( (end_count-beg_count), r8)/real(sysclock_rate, r8)
+       call system_clock(count=end_ccount, count_rate=sysclock_rate, count_max=sysclock_max)
+       if ( end_ccount < beg_ccount ) end_ccount = end_ccount + sysclock_max
+       chunk_cost = real( (end_ccount-beg_ccount), r8)/real(sysclock_rate, r8)
        call update_cost_p(c, chunk_cost)
 
     end do
+
+    call system_clock(count=end_pcount, count_rate=sysclock_rate, count_max=sysclock_max)
+    if ( end_pcount < beg_pcount ) end_pcount = end_pcount + sysclock_max
+    phys_pcost = phys_pcost + real( (end_pcount-beg_pcount), r8)/real(sysclock_rate, r8)
 
 end subroutine phys_run1_adiabatic_or_ideal
 
@@ -1211,8 +1229,10 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 #if (! defined SPMD)
     integer :: mpicom = 0
 #endif
-    integer(i8) :: beg_count                     ! start time for a chunk
-    integer(i8) :: end_count                     ! stop time for a chunk
+    integer(i8) :: beg_pcount                    ! start time for the process
+    integer(i8) :: end_pcount                    ! stop time for the process
+    integer(i8) :: beg_ccount                    ! start time for a chunk
+    integer(i8) :: end_ccount                    ! stop time for a chunk
     integer(i8) :: sysclock_rate                 ! system clock rate
     integer(i8) :: sysclock_max                  ! system clock max value
     real(r8)    :: chunk_cost                    ! measured cost per chunk
@@ -1253,10 +1273,13 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
        call ieflx_gmean(phys_state, phys_tend, pbuf2d, cam_in, cam_out, nstep)
     end if
 
-!$OMP PARALLEL DO PRIVATE (C, beg_count, NCOL, phys_buffer_chunk, end_count, sysclock_rate, sysclock_max, chunk_cost)
+    call system_clock(count=beg_pcount)
+
+!$OMP PARALLEL DO SCHEDULE(STATIC,1) &
+!$OMP PRIVATE (c, beg_ccount, ncol, phys_buffer_chunk, end_ccount, sysclock_rate, sysclock_max, chunk_cost)
     do c=begchunk,endchunk
 
-       call system_clock(count=beg_count)
+       call system_clock(count=beg_ccount)
 
        ncol = get_ncols_p(c)
        phys_buffer_chunk => pbuf_get_chunk(pbuf2d, c)
@@ -1281,12 +1304,16 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
             phys_state(c), phys_tend(c), phys_buffer_chunk,&
             fsds(1,c))
 
-       call system_clock(count=end_count, count_rate=sysclock_rate, count_max=sysclock_max)
-       if ( end_count < beg_count ) end_count = end_count + sysclock_max
-       chunk_cost = real( (end_count-beg_count), r8)/real(sysclock_rate, r8)
+       call system_clock(count=end_ccount, count_rate=sysclock_rate, count_max=sysclock_max)
+       if ( end_ccount < beg_ccount ) end_ccount = end_ccount + sysclock_max
+       chunk_cost = real( (end_ccount-beg_ccount), r8)/real(sysclock_rate, r8)
        call update_cost_p(c, chunk_cost)
 
     end do                    ! Chunk loop
+
+    call system_clock(count=end_pcount, count_rate=sysclock_rate, count_max=sysclock_max)
+    if ( end_pcount < beg_pcount ) end_pcount = end_pcount + sysclock_max
+    phys_pcost = phys_pcost + real( (end_pcount-beg_pcount), r8)/real(sysclock_rate, r8)
 
     !call t_adj_detailf(-1)
     call t_stopf('ac_physics')
