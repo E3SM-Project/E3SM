@@ -2150,12 +2150,12 @@ subroutine shoc_assumed_pdf(&
 
       ! Check to ensure Tl1_1 and Tl1_2 are not negative. endrun otherwise
       if (Tl1_1 .le. 0._rtype) then
-         write(err_msg,*)'ERROR: Tl1_1 is .le. 0 before calling esatw() in shoc. Tl1_1 is:',Tl1_1
+         write(err_msg,*)'ERROR: Tl1_1 is .le. 0 before shoc_assumed_pdf_compute_qs in shoc. Tl1_1 is:',Tl1_1
          call endscreamrun(err_msg)
       endif
 
       if (Tl1_2 .le. 0._rtype) then
-         write(err_msg,*)'ERROR: Tl1_2 is .le. 0 before calling esatw() in shoc. Tl1_2 is:',Tl1_2
+         write(err_msg,*)'ERROR: Tl1_2 is .le. 0 before shoc_assumed_pdf_compute_qs in shoc. Tl1_2 is:',Tl1_2
          call endscreamrun(err_msg)
       endif
       
