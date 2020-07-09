@@ -3,7 +3,7 @@ module modal_aero_wateruptake
 !   RCE 07.04.13:  Adapted from MIRAGE2 code
 
 use shr_kind_mod,     only: r8 => shr_kind_r8
-use physconst,        only: pi, rhoh2o
+use physconst,        only: pi, rhoh2o, r_universal
 use ppgrid,           only: pcols, pver
 use physics_types,    only: physics_state
 use physics_buffer,   only: physics_buffer_desc, pbuf_get_index, pbuf_old_tim_idx, pbuf_get_field
@@ -29,6 +29,9 @@ public :: modal_aero_wateruptake_reg
 
 real(r8), parameter :: third = 1._r8/3._r8
 real(r8), parameter :: pi43  = pi*4.0_r8/3.0_r8
+real(r8), parameter :: mwh20 = 18.0_r8 ! molecular weight of water (g/mole)
+real(r8), parameter :: surften = 76._r8 ! surface tension of water/air interface at 273K (mN/m)
+integer, parameter :: max_iterations = 200
 
 
 ! Physics buffer indices
@@ -49,13 +52,13 @@ subroutine modal_aero_wateruptake_reg()
   use rad_constituents, only: rad_cnst_get_info
 
    integer :: nmodes
-   
+
    call rad_cnst_get_info(0, nmodes=nmodes)
    call pbuf_add_field('DGNUMWET',   'global',  dtype_r8, (/pcols, pver, nmodes/), dgnumwet_idx)
    call pbuf_add_field('WETDENS_AP', 'physpkg', dtype_r8, (/pcols, pver, nmodes/), wetdens_ap_idx)
 
    ! 1st order rate for direct conversion of strat. cloud water to precip (1/s)
-   call pbuf_add_field('QAERWAT',    'physpkg', dtype_r8, (/pcols, pver, nmodes/), qaerwat_idx)  
+   call pbuf_add_field('QAERWAT',    'physpkg', dtype_r8, (/pcols, pver, nmodes/), qaerwat_idx)
 
 end subroutine modal_aero_wateruptake_reg
 
@@ -75,8 +78,8 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
    character(len=3) :: trnum       ! used to hold mode number (as characters)
    !----------------------------------------------------------------------------
 
-   cld_idx        = pbuf_get_index('CLD')    
-   dgnum_idx      = pbuf_get_index('DGNUM')    
+   cld_idx        = pbuf_get_index('CLD')
+   dgnum_idx      = pbuf_get_index('DGNUM')
 
    ! assume for now that will compute wateruptake for climate list modes only
 
@@ -95,8 +98,8 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
          'wet dgnum, interstitial, mode '//trnum(2:3))
       call addfld('wat_a'//trnum(3:3), (/ 'lev' /), 'A', 'm', &
          'aerosol water, interstitial, mode '//trnum(2:3))
-      
-      if (history_aerosol) then  
+
+      if (history_aerosol) then
          if (history_verbose) then
             call add_default('dgnd_a'//trnum(2:3), 1, ' ')
             call add_default('dgnw_a'//trnum(2:3), 1, ' ')
@@ -112,7 +115,7 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
          'sum of aerosol water of interstitial modes wat_a1+wat_a2+wat_a3+wat_a4' )
       call add_default( 'aero_water',  1, ' ')
    endif
-   
+
    if (is_first_step()) then
       ! initialize fields in physics buffer
       call pbuf_set_field(pbuf2d, dgnumwet_idx, 0.0_r8)
@@ -353,10 +356,10 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
          rh(i,k) = min(rh(i,k), 0.98_r8)
          if(pergro_mods) then
             cldn_thresh = 0.9998_r8
-         else			
+         else
             cldn_thresh = 1.0_r8 !original code
          endif
-         if (cldn(i,k) .lt. cldn_thresh) then !BSINGH 
+         if (cldn(i,k) .lt. cldn_thresh) then !BSINGH
             rh(i,k) = (rh(i,k) - cldn(i,k)) / (1.0_r8 - cldn(i,k))  ! clear portion
          end if
          rh(i,k) = max(rh(i,k), 0.0_r8)
@@ -489,13 +492,106 @@ subroutine modal_aero_wateruptake_sub( &
 
 end subroutine modal_aero_wateruptake_sub
 
+! Computes the value of Kohler polynomial (Pruppacher & Klett 2nd ed. eqn 6-37)
+pure function kohler_polynomial(rwet, rdry, hyg, s, a)
+  real(r8) :: kohler_polynomial
+  real(r8), intent(in) :: rwet ! wet radius (microns)
+  real(r8), intent(in) :: rdry ! dry radius (microns)
+  real(r8), intent(in) :: hyg ! hygroscopicity
+  real(r8), intent(in) :: s ! relative humidity
+  real(r8), intent(in) :: a ! constant kelvin parameter for surface tension effects
+  !
+  real(r8) :: rdcube, rwcube, logrh
+
+  rdcube = rdry**3
+  rwcube = rwet**3
+  logrh = log(s)
+
+  kohler_polynomial = logrh*rwet*rwcube - a*rwcube + rdcube*(hyg-logrh)*rwet + a*rdcube
+end function
+
+! Computes the derivative of Kohler polynomial (Pruppacher & Klett 2nd ed. eqn 6-37) w.r.t. wet radius
+pure function kohler_derivative(rwet, rdry, hyg, s, a)
+  real(r8) :: kohler_derivative
+  real(r8), intent(in) :: rwet ! wet radius (microns)
+  real(r8), intent(in) :: rdry ! dry radius (microns)
+  real(r8), intent(in) :: hyg ! hygroscopicity
+  real(r8), intent(in) :: s ! relative humidity
+  real(r8), intent(in) :: a ! constant kelvin parameter for surface tension effects
+  !
+  real(r8) :: rwsq, rdcube, logrh
+
+  rdcube = rdry**3
+  rwsq = rwet*rwet
+  logrh = log(s)
+
+  kohler_derivative = 4.0_r8*logrh*rwet*rwsq - 3.0_r8*a*rwsq + rdcube*(hyg-logrh)
+end function
+
+subroutine newton_solve_kohler(rwet, rdry, hyg, s, a, tol, niter)
+  real(r8), intent(inout) :: rwet ! wet radius (microns)
+  real(r8), intent(in) :: rdry ! dry radius (microns)
+  real(r8), intent(in) :: hyg ! hygroscopicity
+  real(r8), intent(in) :: s ! relative humidity
+  real(r8), intent(in) :: a ! constant kelvin parameter for surface tension effects
+  real(r8), intent(in) :: tol ! convergence tolerance
+  integer, intent(out) :: niter ! iteration counter
+  !
+  real(r8) :: dr, k, kprime, new_rwet
+
+  dr = huge(1.0_r8)
+  niter = 0
+  rwet = 700
+  do while (dr > tol .and. niter < max_iterations)
+    niter = niter + 1
+    k = kohler_polynomial(rwet, rdry, hyg, s, a)
+    kprime = kohler_derivative(rwet, rdry, hyg, s, a)
+    new_rwet = rwet - k/kprime
+    dr = abs(new_rwet - rwet)
+    rwet = new_rwet
+  enddo
+end subroutine
+
+subroutine bisection_solve_kohler(rwet, rdry, hyg, s, a, tol, niter)
+  real(r8), intent(inout) :: rwet ! wet radius (microns)
+  real(r8), intent(in) :: rdry ! dry radius (microns)
+  real(r8), intent(in) :: hyg ! hygroscopicity
+  real(r8), intent(in) :: s ! relative humidity
+  real(r8), intent(in) :: a ! constant kelvin parameter for surface tension effects
+  real(r8), intent(in) :: tol ! convergence tolerance
+  integer, intent(out) :: niter ! iteration counter
+  !
+  real(r8) :: left, right
+  real(r8) :: kleft, kmid
+
+  left = 0.9_r8*rdry
+  right = 750.0_r8
+  niter = 0
+  kleft = kohler_polynomial(left, rdry, hyg, s, a)
+  rwet = 0.5_r8*(left + right)
+  do while (right-left > tol .and. niter < max_iterations)
+    niter = niter + 1
+    kmid = kohler_polynomial(rwet, rdry, hyg, s, a)
+    if (kmid*kleft < 0) then
+      left = left
+      right = rwet
+      kleft = kleft
+    else
+      left = rwet
+      right = right
+      kleft = kmid
+    endif
+    rwet = 0.5*(left + right)
+  enddo
+end subroutine
+
 !-----------------------------------------------------------------------
       subroutine modal_aero_kohler(   &
           rdry_in, hygro, s, rwet_out, im )
 
 ! calculates equlibrium radius r of haze droplets as function of
 ! dry particle mass and relative humidity s using kohler solution
-! given in pruppacher and klett (eqn 6-35)
+! given in pruppacher and klett (eqn 6-35) or (6-37, 2nd ed.)
 
 ! for multiple aerosol types, assumes an internal mixture of aerosols
 
@@ -510,133 +606,30 @@ end subroutine modal_aero_wateruptake_sub
 
 ! local variables
       integer, parameter :: imax=200
-      integer :: i, n, nsol
-
-      real(r8) :: a, b
-      real(r8) :: p40(imax),p41(imax),p42(imax),p43(imax) ! coefficients of polynomial
-      real(r8) :: p30(imax),p31(imax),p32(imax) ! coefficients of polynomial
-      real(r8) :: p
-      real(r8) :: r3, r4
+      integer :: i
       real(r8) :: r(im)         ! wet radius (microns)
-      real(r8) :: rdry(imax)    ! radius of dry particle (microns)
-      real(r8) :: ss            ! relative humidity (1 = saturated)
-      real(r8) :: slog(imax)    ! log relative humidity
-      real(r8) :: vol(imax)     ! total volume of particle (microns**3)
-      real(r8) :: xi, xr
+      real(r8), parameter :: ugascon = r_universal * 1.0e-3_r8 ! convert gas constant to per mole (not per kmole) units
+      real(r8), parameter :: a = 2.0_r8 * mwh20 * surften /(ugascon * tair * rhoh2o)
 
-      complex(r8) :: cx4(4,imax),cx3(3,imax)
-
-      real(r8), parameter :: eps = 1.e-4_r8
-      real(r8), parameter :: mw = 18._r8
-      real(r8), parameter :: pi = 3.14159_r8
-      real(r8), parameter :: rhow = 1._r8
-      real(r8), parameter :: surften = 76._r8
-      real(r8), parameter :: tair = 273._r8
-      real(r8), parameter :: third = 1._r8/3._r8
-      real(r8), parameter :: ugascon = 8.3e7_r8
-
-
-!     effect of organics on surface tension is neglected
-      a=2.e4_r8*mw*surften/(ugascon*tair*rhow)
+      real(r8), parameter :: convergence_tol = 1.0e-5_r8
+      integer :: ctr
 
       do i=1,im
-           rdry(i) = rdry_in(i)*1.0e6_r8   ! convert (m) to (microns)
-           vol(i) = rdry(i)**3          ! vol is r**3, not volume
-           b = vol(i)*hygro(i)
-
-!          quartic
-           ss=min(s(i),1._r8-eps)
-           ss=max(ss,1.e-10_r8)
-           slog(i)=log(ss)
-           p43(i)=-a/slog(i)
-           p42(i)=0._r8
-           p41(i)=b/slog(i)-vol(i)
-           p40(i)=a*vol(i)/slog(i)
-!          cubic for rh=1
-           p32(i)=0._r8
-           p31(i)=-b/a
-           p30(i)=-vol(i)
+        rdry(i) = rdry_in(i)*1.0e6_r8   ! convert (m) to (microns)
+        call newton_solve_kohler(r(i), rdry(i), hygro(i), s(i), a, convergence_tol, ctr)
+        if (r(i) < 0) then
+          ! Newton's method found the wrong root.  Revert to bisection method (guaranteed to converge)
+          call bisection_solve_kohler(r(i), rdry(i), hygro(i), s(i), a, convergence_tol, ctr)
+          write(iulog,*) "modal_aero_kohler: Newton's method found the wrong root."
+          write(iulog,*) " reverting to bisection method (guaranteed to converge)."
+        endif
+        if (ctr >= max_iterations) then
+          write(iulog,*) "modal_aero_kohler: no solution found (failed to converge)."
+          write(iulog,*) "(hyg, rel_humid) = ", [hygro(i), s(i)]
+          write(iulog,*) " setting radius to dry radius=", rdry(i)
+          r(i) = rdry(i)
+        endif
       end do
-
-
-       do 100 i=1,im
-
-!       if(vol(i).le.1.e-20)then
-        if(vol(i).le.1.e-12_r8)then
-           r(i)=rdry(i)
-           go to 100
-        endif
-
-        p=abs(p31(i))/(rdry(i)*rdry(i))
-        if(p.lt.eps)then
-!          approximate solution for small particles
-           r(i)=rdry(i)*(1._r8+p*third/(1._r8-slog(i)*rdry(i)/a))
-        else
-           call makoh_quartic(cx4(1,i),p43(i),p42(i),p41(i),p40(i),1)
-!          find smallest real(r8) solution
-           r(i)=1000._r8*rdry(i)
-           nsol=0
-           do n=1,4
-              xr=real(cx4(n,i))
-              xi=aimag(cx4(n,i))
-              if(abs(xi).gt.abs(xr)*eps) cycle  
-              if(xr.gt.r(i)) cycle  
-              if(xr.lt.rdry(i)*(1._r8-eps)) cycle  
-              if(xr.ne.xr) cycle  
-              r(i)=xr
-              nsol=n
-           end do  
-           if(nsol.eq.0)then
-              write(iulog,*)   &
-               'ccm kohlerc - no real(r8) solution found (quartic)'
-              write(iulog,*)'roots =', (cx4(n,i),n=1,4)
-              write(iulog,*)'p0-p3 =', p40(i), p41(i), p42(i), p43(i)
-              write(iulog,*)'rh=',s(i)
-              write(iulog,*)'setting radius to dry radius=',rdry(i)
-              r(i)=rdry(i)
-!             stop
-           endif
-        endif
-
-        if(s(i).gt.1._r8-eps)then
-!          save quartic solution at s=1-eps
-           r4=r(i)
-!          cubic for rh=1
-           p=abs(p31(i))/(rdry(i)*rdry(i))
-           if(p.lt.eps)then
-              r(i)=rdry(i)*(1._r8+p*third)
-           else
-              call makoh_cubic(cx3,p32,p31,p30,im)
-!             find smallest real(r8) solution
-              r(i)=1000._r8*rdry(i)
-              nsol=0
-              do n=1,3
-                 xr=real(cx3(n,i))
-                 xi=aimag(cx3(n,i))
-                 if(abs(xi).gt.abs(xr)*eps) cycle  
-                 if(xr.gt.r(i)) cycle  
-                 if(xr.lt.rdry(i)*(1._r8-eps)) cycle  
-                 if(xr.ne.xr) cycle  
-                 r(i)=xr
-                 nsol=n
-              end do  
-              if(nsol.eq.0)then
-                 write(iulog,*)   &
-                  'ccm kohlerc - no real(r8) solution found (cubic)'
-                 write(iulog,*)'roots =', (cx3(n,i),n=1,3)
-                 write(iulog,*)'p0-p2 =', p30(i), p31(i), p32(i)
-                 write(iulog,*)'rh=',s(i)
-                 write(iulog,*)'setting radius to dry radius=',rdry(i)
-                 r(i)=rdry(i)
-!                stop
-              endif
-           endif
-           r3=r(i)
-!          now interpolate between quartic, cubic solutions
-           r(i)=(r4*(1._r8-s(i))+r3*(s(i)-1._r8+eps))/eps
-        endif
-
-  100 continue
 
 ! bound and convert from microns to m
       do i=1,im
@@ -648,119 +641,6 @@ end subroutine modal_aero_wateruptake_sub
       end subroutine modal_aero_kohler
 
 
-!-----------------------------------------------------------------------
-      subroutine makoh_cubic( cx, p2, p1, p0, im )
-!
-!     solves  x**3 + p2 x**2 + p1 x + p0 = 0
-!     where p0, p1, p2 are real
-!
-      integer, parameter :: imx=200
-      integer :: im
-      real(r8) :: p0(imx), p1(imx), p2(imx)
-      complex(r8) :: cx(3,imx)
-
-      integer :: i
-      real(r8) :: eps, q(imx), r(imx), sqrt3, third
-      complex(r8) :: ci, cq, crad(imx), cw, cwsq, cy(imx), cz(imx)
-
-      save eps
-      data eps/1.e-20_r8/
-
-      third=1._r8/3._r8
-      ci=cmplx(0._r8,1._r8,r8)
-      sqrt3=sqrt(3._r8)
-      cw=0.5_r8*(-1+ci*sqrt3)
-      cwsq=0.5_r8*(-1-ci*sqrt3)
-
-      do i=1,im
-      if(p1(i).eq.0._r8)then
-!        completely insoluble particle
-         cx(1,i)=(-p0(i))**third
-         cx(2,i)=cx(1,i)
-         cx(3,i)=cx(1,i)
-      else
-         q(i)=p1(i)/3._r8
-         r(i)=p0(i)/2._r8
-         crad(i)=r(i)*r(i)+q(i)*q(i)*q(i)
-         crad(i)=sqrt(crad(i))
-
-         cy(i)=r(i)-crad(i)
-         if (abs(cy(i)).gt.eps) cy(i)=cy(i)**third
-         cq=q(i)
-         cz(i)=-cq/cy(i)
-
-         cx(1,i)=-cy(i)-cz(i)
-         cx(2,i)=-cw*cy(i)-cwsq*cz(i)
-         cx(3,i)=-cwsq*cy(i)-cw*cz(i)
-      endif
-      enddo
-
-      return
-      end subroutine makoh_cubic
-
-
-!-----------------------------------------------------------------------
-      subroutine makoh_quartic( cx, p3, p2, p1, p0, im )
-
-!     solves x**4 + p3 x**3 + p2 x**2 + p1 x + p0 = 0
-!     where p0, p1, p2, p3 are real
-!
-      integer, parameter :: imx=200
-      integer :: im
-      real(r8) :: p0(imx), p1(imx), p2(imx), p3(imx)
-      complex(r8) :: cx(4,imx)
-
-      integer :: i
-      real(r8) :: third, q(imx), r(imx)
-      complex(r8) :: cb(imx), cb0(imx), cb1(imx),   &
-                     crad(imx), cy(imx), czero
-
-
-      czero=cmplx(0.0_r8,0.0_r8,r8)
-      third=1._r8/3._r8
-
-      do 10 i=1,im
-
-      q(i)=-p2(i)*p2(i)/36._r8+(p3(i)*p1(i)-4*p0(i))/12._r8
-      r(i)=-(p2(i)/6)**3+p2(i)*(p3(i)*p1(i)-4*p0(i))/48._r8   &
-       +(4*p0(i)*p2(i)-p0(i)*p3(i)*p3(i)-p1(i)*p1(i))/16
-
-      crad(i)=r(i)*r(i)+q(i)*q(i)*q(i)
-      crad(i)=sqrt(crad(i))
-
-      cb(i)=r(i)-crad(i)
-      if(cb(i).eq.czero)then
-!        insoluble particle
-         cx(1,i)=(-p1(i))**third
-         cx(2,i)=cx(1,i)
-         cx(3,i)=cx(1,i)
-         cx(4,i)=cx(1,i)
-      else
-         cb(i)=cb(i)**third
-
-         cy(i)=-cb(i)+q(i)/cb(i)+p2(i)/6
-
-         cb0(i)=sqrt(cy(i)*cy(i)-p0(i))
-         cb1(i)=(p3(i)*cy(i)-p1(i))/(2*cb0(i))
-
-         cb(i)=p3(i)/2+cb1(i)
-         crad(i)=cb(i)*cb(i)-4*(cy(i)+cb0(i))
-         crad(i)=sqrt(crad(i))
-         cx(1,i)=(-cb(i)+crad(i))/2._r8
-         cx(2,i)=(-cb(i)-crad(i))/2._r8
-
-         cb(i)=p3(i)/2-cb1(i)
-         crad(i)=cb(i)*cb(i)-4*(cy(i)-cb0(i))
-         crad(i)=sqrt(crad(i))
-         cx(3,i)=(-cb(i)+crad(i))/2._r8
-         cx(4,i)=(-cb(i)-crad(i))/2._r8
-      endif
-   10 continue
-
-      return
-      end subroutine makoh_quartic
-
-!----------------------------------------------------------------------
 
    end module modal_aero_wateruptake
 
