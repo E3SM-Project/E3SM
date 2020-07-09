@@ -5847,9 +5847,10 @@ logical function phys_grid_initialized ()
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: Assign chunks to processes, balancing the number of
-!          chunks per thread and minimizing the communication costs
-!          in dp_coupling subject to the restraint that columns
-!          do not migrate outside of the current SMP node.
+!          chunks per thread and the total estimated cost per process
+!          while minimizing the communication costs in dp_coupling, all
+!          subject to the restraint that columns do not migrate outside
+!          of the current SMP node.
 ! 
 ! Method: 
 ! 
@@ -5872,7 +5873,7 @@ logical function phys_grid_initialized ()
                                          ! number of chunks assigned 
                                          ! to a given virtual SMP
 !---------------------------Local workspace-----------------------------
-   integer :: i, jb, p                   ! loop indices
+   integer :: c, i, jb, p                ! loop indices
    integer :: cid                        ! chunk id
    integer :: smp                        ! SMP index
    integer :: curgcol                    ! global column index
@@ -5880,50 +5881,77 @@ logical function phys_grid_initialized ()
                                          ! for a given vertical column
    integer :: blockids(plev+1)           ! block indices
    integer :: bcids(plev+1)              ! block column indices
-   integer :: ntsks_vsmp(0:nvsmp-1)      ! number of processes per virtual SMP
+   integer :: nvsmptasks(0:nvsmp-1)      ! number of processes per virtual SMP
    integer :: vsmp_proc_map(max_nproc_vsmp,0:nvsmp-1)   
                                          ! virtual smp to process id map
-   integer :: cid_offset(0:nvsmp)        ! chunk id virtual smp offset
-   integer :: ntmp1_vsmp(0:nvsmp-1)      ! minimum number of chunks per thread
+   integer :: cid_offset(0:nvsmp-1)      ! chunk id virtual smp offset
+   integer :: min_nvsmpchunks(0:nvsmp-1) ! minimum number of chunks per thread
                                          !  in a virtual SMP
-   integer :: ntmp2_vsmp(0:nvsmp-1)      ! number of extra chunks to be assigned
-                                         !  in a virtual SMP
+   integer :: add_nvsmpchunks(0:nvsmp-1) ! number of additional chunks to be 
+                                         !  assigned in a virtual SMP
    integer :: tmp_npthreads(0:npes-1)    ! number of threads per process that
                                          !  have not been assigned an extra chunk
    integer :: ntmp1, ntmp2               ! work variables
-!  integer :: npchunks(0:npes-1)         ! number of chunks to be assigned to
-!                                        !  a given process
    integer :: cur_npchunks(0:npes-1)     ! current number of chunks assigned 
                                          !  to a given process
    integer :: column_count(0:npes-1)     ! number of columns from current chunk
                                          !  assigned to each process in dynamics
                                          !  decomposition
-   integer :: first_nonfull              ! first process (in vsmp_proc_map 
-                                         !  ordering) that has room to be assigned
-                                         !  another chunk
    integer :: ndyn_task                  ! number of processes in the dynamics 
                                          !  decomposition that were assigned columns
                                          !  in the current chunk
    integer :: dyn_task(npes)             ! list of process ids that were assigned
                                          !  columns in the current chunk in the
                                          !  dynamics decomposition
+
+   ! data structures used to maintain chunks sorted by assigned computational cost.
+   integer :: max_nvsmpchunks            ! maximum number of chunks assigned to
+                                         !  any virtual SMP
+   integer, dimension(:), allocatable :: cdex
+                                         ! permutation array used in chunk sorting
+   real(r8), dimension(:), allocatable :: ccost
+                                         ! estimated cost for chunks assigned to 
+                                         !  a virtual SMP
+
+   ! min heap data structures used to maintain processes sorted by assigned 
+   ! computational cost.
+   integer :: max_nvsmptasks             ! maximum number of processes associated
+                                         !  with any virtual SMP
+   integer :: pheap_len                  ! current heap length
+   integer, dimension(:), allocatable  :: pheap
+                                         ! heap to process id map
+   integer, dimension(:), allocatable  :: inv_pheap
+                                         ! process id to heap map
+   real(r8), dimension(:), allocatable :: pcost
+                                         ! estimated computational cost for process
+                                         !  at given location in heap, based on
+                                         !  currently assigned chunks
+   logical :: pheap_update               ! flag indicating whether process
+                                         !  estimated cost has been updated 
+   logical :: pheap_remove               ! flag indicating whether process has 
+                                         !  been assigned its allotment of chunks,
+                                         !  and should be "removed" from the heap
 !-----------------------------------------------------------------------
 !
 ! Count number of processes per virtual SMP and determine virtual SMP
 ! to process id map
 !
-   ntsks_vsmp(:) = 0
+   nvsmptasks(:) = 0
    vsmp_proc_map(:,:) = -1
    do p=0,npes-1
       smp = proc_vsmp_map(p)
-      ntsks_vsmp(smp) = ntsks_vsmp(smp) + 1
-      vsmp_proc_map(ntsks_vsmp(smp),smp) = p
+      nvsmptasks(smp) = nvsmptasks(smp) + 1
+      vsmp_proc_map(nvsmptasks(smp),smp) = p
    enddo
 !
 ! Determine chunk id ranges for each virtual SMP
+! (Note: this is redundant with cid_offset in create_chunks, both in
+!  calculation and memory. Routine is less dependent on create_chunks
+!  because of this, but cid_offset could also be passed in to save
+!  on memory and to speed up the computation a little.)
 !
    cid_offset(0) = 1
-   do smp=1,nvsmp
+   do smp=1,nvsmp-1
       cid_offset(smp) = cid_offset(smp-1) + nvsmpchunks(smp-1)
    enddo
 !
@@ -5932,10 +5960,10 @@ logical function phys_grid_initialized ()
    do smp=0,nvsmp-1
 !
 ! Minimum number of chunks per thread
-      ntmp1_vsmp(smp) = nvsmpchunks(smp)/nvsmpthreads(smp)
+      min_nvsmpchunks(smp) = nvsmpchunks(smp)/nvsmpthreads(smp)
 
 ! Number of extra chunks to be assigned
-      ntmp2_vsmp(smp) = mod(nvsmpchunks(smp),nvsmpthreads(smp))
+      add_nvsmpchunks(smp) = mod(nvsmpchunks(smp),nvsmpthreads(smp))
 
    enddo
 
@@ -5943,22 +5971,22 @@ logical function phys_grid_initialized ()
 ! Set preliminary number of chunks
    do p=0,npes-1
       smp = proc_vsmp_map(p)
-      npchunks(p) = ntmp1_vsmp(smp)*npthreads(p)
+      npchunks(p) = min_nvsmpchunks(smp)*npthreads(p)
    enddo
 !
 ! Assign extra chunk counts, to first thread for each process,
 ! then to second, etc., until no more are left
    tmp_npthreads(:) = npthreads(:)
    do smp=0,nvsmp-1
-      do while (ntmp2_vsmp(smp) > 0)
-         iloop: do i=1,ntsks_vsmp(smp)
+      do while (add_nvsmpchunks(smp) > 0)
+         iloop: do i=1,nvsmptasks(smp)
             p = vsmp_proc_map(i,smp)
             if (tmp_npthreads(p) > 0) then
                npchunks(p) = npchunks(p) + 1
-               ntmp2_vsmp(smp) = ntmp2_vsmp(smp) - 1
+               add_nvsmpchunks(smp) = add_nvsmpchunks(smp) - 1
                tmp_npthreads(p) = tmp_npthreads(p) - 1
             endif
-            if (ntmp2_vsmp(smp) == 0) then
+            if (add_nvsmpchunks(smp) == 0) then
                exit iloop
             endif
          enddo iloop
@@ -5968,23 +5996,53 @@ logical function phys_grid_initialized ()
 !
 ! Assign chunks to processes: 
 !
-!  First, initialize number of chunks assigned to each process.
+! Allocate space for sorting chunks (by estimated cost) for each virtual smp
+   max_nvsmpchunks = maxval(nvsmpchunks)
+   allocate( cdex(1:max_nvsmpchunks) )
+   allocate( ccost(1:max_nvsmpchunks) )
+!
+! Allocate space for min heap data structure, for use in maintaining list
+! of processes sorted by the assigned computational cost (sum of estimated
+! cost for chunks assigned to thread 0). Also allocate array for inverse
+! mapping (from process id to heap index).
+   max_nvsmptasks = maxval(nvsmptasks(0:nvsmp-1))
+   allocate( pheap(1:max_nvsmptasks) )
+   allocate( pcost(1:max_nvsmptasks) )
+   allocate( inv_pheap(0:npes-1) )
+   inv_pheap(:) = -1
+!
+!  Initialize number of chunks assigned to each process.
 !  Then initialize number of chunk columns assigned to each process 
 !  in the dynamics decomposition (column_count). column_count is
 !  chunk-specific, and is reset for each chunk in the loop over
 !  chunks below, except that '-1' values are retained, where '-1' indicates
 !  that the process has already been assigned its quota of chunks.
-!
    cur_npchunks(:) = 0
    column_count(:) = 0
 !
    do smp=0,nvsmp-1
 !
-!  Initialize pointer to first process (in vsmp_proc_map ordering) that
-!  has room to be assigned another chunk
-      first_nonfull = 1
+!  Sort chunks to be assigned to current virtual smp by estimated cost
+      do c=1,nvsmpchunks(smp)
+         cid = cid_offset(smp) + (c-1)
+         ccost(c) = chunks(cid)%estcost
+      enddo
+      call IndexSet(nvsmpchunks(smp),cdex)
+      call IndexSort(nvsmpchunks(smp),cdex,ccost,descend=.true.)
 !
-      do cid=cid_offset(smp),cid_offset(smp+1)-1
+!  Initialize min heap of processes in virtual smp ordered by sum of
+!  estimated costs of chunks assigned to thread 0 of each process
+      pheap(:) = -1
+      pcost(:) = 0
+      do i=1,nvsmptasks(smp)
+         pheap(i) = vsmp_proc_map(i,smp)
+         inv_pheap(pheap(i)) = i
+      enddo
+      pheap_len = nvsmptasks(smp)
+!
+!  Assign chunks to processes in decreasing order of estimated cost
+      do c=1,nvsmpchunks(smp)
+         cid = cid_offset(smp) + (cdex(c)-1)
 !
 !  Determine number of chunk columns assigned to each process in
 !  the dynamics decomposition (excepting processes that have already been
@@ -6006,40 +6064,56 @@ logical function phys_grid_initialized ()
             enddo
          enddo
 !                              
-!  Identify process with most chunk columns in dynamics decomposition,
-!  from among those that do not already have their assigned chunk quota 
+!  Identify process with most chunk columns in dynamics decomposition
+!  that also has the minimum cost (from root of the min heap) from 
+!  among those that do not already have their assigned chunk quota 
          ntmp1 = -1
          ntmp2 = -1
          do i=1,ndyn_task
             p = dyn_task(i)
-            if (column_count(p) > ntmp1) then
+            if ((column_count(p) > ntmp1) .and. &
+	        (pcost(inv_pheap(p)) == pcost(1))) then
                ntmp1 = column_count(p)
                ntmp2 = p
             endif
          enddo
 !
-!  If no processes found that qualify, identify some other process that can
-!  accept a new chunk
+!  If no processes found that qualify, use the process at the top of the
+!  pheap (as this has the minimum pcost)
          if (ntmp1 == -1) then
-            do i=first_nonfull,ntsks_vsmp(smp)
-               p = vsmp_proc_map(i,smp)
-               if (column_count(p) /= -1) then
-                  ntmp2 = p
-                  exit
-               endif
-            enddo
+            ntmp2 = pheap(1)
          endif
 !
-!  Assign chunk to indicated process, and check whether process now
-!  has its quota of chunks
+!  Assign chunk to indicated process, updating chunk count and estimated
+!  cost, and check whether process now has its quota of chunks.
+!  Estimated cost per process is based on sum of estimated costs assigned
+!  to thread 0 (also an estimate, since assumes a wrap map of chunks to
+!  threads). Adjust pheap to reflect this update, if there is one, or
+!  if process now has its quota of chunks.
+         pheap_update = .false.
+         pheap_remove = .false.
          chunks(cid)%owner   = ntmp2
          cur_npchunks(ntmp2) = cur_npchunks(ntmp2) + 1
+         if (mod(cur_npchunks(ntmp2)-1,npthreads(ntmp2)) == 0) then
+!  Note: first, npthreads(ntmp2)+1, 2*npthreads(ntmp2)+1, etc. assigned
+!  chunk goes to thread 0, so subtract 1 from cur_npchunks(ntmp2) to get
+!  correct mod() comparison; cannot check that mod() == 1 since may only
+!  have 1 thread, in which case mod() is always 0.
+            pcost(inv_pheap(ntmp2)) = pcost(inv_pheap(ntmp2)) &
+                                  + chunks(cid)%estcost
+            pheap_update = .true.
+         endif
          if (cur_npchunks(ntmp2) == npchunks(ntmp2)) then
             column_count(ntmp2) = -1
+            pheap_remove = .true.
+         endif
+         if ((pheap_update) .or. (pheap_remove)) then
+            call pheap_adjust(inv_pheap(ntmp2), pheap_remove, max_nvsmptasks, &
+                              pheap_len, pheap, pcost, inv_pheap)
          endif
 !
 !  Update total number of columns assigned to this process
-         gs_col_num(ntmp2)   = gs_col_num(ntmp2) + chunks(cid)%ncols
+         gs_col_num(ntmp2) = gs_col_num(ntmp2) + chunks(cid)%ncols
 !
 !  Zero out per process chunk columns counts, but retain -1 value
 !  (indicating that process cannot accept any more chunks)
@@ -6050,21 +6124,264 @@ logical function phys_grid_initialized ()
             endif
          enddo
 !
-!  Update pointer to first nonfull process
-         do i=first_nonfull,ntsks_vsmp(smp)
-            p = vsmp_proc_map(i,smp)
-            if (column_count(p) /= -1) then
-               first_nonfull = i
-               exit
-            endif
-         enddo
-!
       enddo
 !
    enddo
 !
+!  Clean-up
+   deallocate( inv_pheap )
+   deallocate( pcost     )
+   deallocate( pheap     )
+   deallocate( ccost     )
+   deallocate( cdex      )
+!
    return
    end subroutine assign_chunks
+!
+!========================================================================
+
+   subroutine pheap_adjust(updated, remove, heap_dlen, &
+                           heap_len, heap, cost, inv_heap)
+!----------------------------------------------------------------------- 
+! 
+! Purpose: Adjust process heap after adding chunk (and updating the
+!          associated computational cost) to the indicated process,
+!          restoring the min heap property.
+! 
+! Method:  If the indicated process has been assigned the maximum number
+!          of chunks, then swap with the last element of the heap and
+!          decrease the heap length by one (removing the process from
+!          the heap). Then percolate the process at the indicated 
+!          location in the heap, either up or down, as needed, until
+!          find a legal location. (Note, only one direction of
+!          percolation is required.)
+!          This is a modified version of an algorithm described in 
+!          Aho, Hopcroft and Ullman ("The Design and Analysis of 
+!          Computer Algorithms") used in sorting. Here it is customized
+!          for this slightly different application.
+! 
+! Author: Patrick Worley
+! 
+!-----------------------------------------------------------------------
+!------------------------------Arguments--------------------------------
+
+   ! index in heap for process whose cost was updated or which needs
+   ! to be removed from the heap
+   integer, intent(in)     :: updated
+
+   ! flag indicating that updated should be removed from the heap
+   logical, intent(in)     :: remove
+
+   ! declared size of min heap for current virtual SMP
+   integer, intent(in)     :: heap_dlen
+
+   ! size of min heap for current virtual SMP (including only processes
+   ! that have not yet been assigned the maximum number of chunks)
+   integer, intent(inout)  :: heap_len
+
+   ! min heap of processes (heap to process id map)
+   integer, intent(inout)  :: heap(heap_dlen)
+
+   ! estimated computational cost for process at given location in heap
+   real(r8), intent(inout) :: cost(heap_dlen)
+
+   ! process id to heap map
+   integer, intent(inout)  :: inv_heap(0:npes-1)
+
+!---------------------------Local workspace-----------------------------    
+   ! indices used in navigating the heap
+   integer :: heap_i       ! current element
+   integer :: heap_ip      ! parent of current
+   integer :: heap_il      ! left child of current
+   integer :: heap_ir      ! right child of current
+
+   ! costs associated with heap indices
+   real(r8):: cost_last    ! cost of last element
+   real(r8):: cost_updated ! cost of updated element
+   real(r8):: cost_i       ! cost of current element
+   real(r8):: cost_ip      ! cost of parent of current element
+   real(r8):: cost_il      ! cost of left child of current element
+   real(r8):: cost_ir      ! cost of right child of current element
+
+   ! process ids corresponding to heap indices
+   integer :: proc_last    ! process id of last element
+   integer :: proc_updated ! process id of updated element
+   integer :: proc_i       ! process id of current element
+   real(r8):: proc_ip      ! process id of parent of current element
+   real(r8):: proc_il      ! process id of left child of current element
+   real(r8):: proc_ir      ! process id of right child of current
+                           !  element
+
+   integer :: last_nonleaf ! index of last non-leaf in heap
+   
+   real(r8):: min_cost     ! minimum of two process estimated costs
+
+   logical :: done         ! flag indicating whether heap adjustment
+                           !  is done or not
+!-----------------------------------------------------------------------
+!
+   if (remove) then
+! Swap process with the end of the heap and decrement heap length by 1
+      cost_last    = cost(heap_len)
+      proc_last    = heap(heap_len)
+      cost_updated = cost(updated)
+      proc_updated = heap(updated)
+!      
+      heap(updated)          = proc_last
+      cost(updated)          = cost_last
+      inv_heap(proc_last)    = updated
+!      
+      heap(heap_len)         = proc_updated
+      cost(heap_len)         = cost_updated
+      inv_heap(proc_updated) = heap_len
+!      
+      heap_len = heap_len - 1
+   endif
+!
+! Percolate updated process to its proper location in the min heap.
+! When percolating up, swap parent with child if estimated cost is
+! greater. When percolating down, swap parent with child if estimated
+! cost is greater than or equal (to increase number of times cycle
+! through processes during chunk assignment process). 
+!
+   heap_i  = updated
+   if (heap_i == 1) then
+      cost_ip = cost(heap_i) - 1.0
+   else
+      heap_ip = heap_i/2
+      cost_ip = cost(heap_ip)
+   endif
+!
+   if (cost(heap_i) < cost_ip) then
+! percolating up
+      done = .false.
+      do while (.not. done)
+!
+         cost_ip = cost(heap_ip)
+         proc_ip = heap(heap_ip)
+         cost_i  = cost(heap_i)
+         proc_i  = heap(heap_i)
+!      
+         heap(heap_i)      = proc_ip
+         cost(heap_i)      = cost_ip
+         inv_heap(proc_ip) = heap_i
+!      
+         heap(heap_ip)     = proc_i
+         cost(heap_ip)     = cost_i
+         inv_heap(proc_i)  = heap_ip
+!
+         heap_i = heap_ip
+!
+         if (heap_i == 1) then
+            done = .true.
+         else
+            heap_ip = heap_i/2
+            if (cost(heap_i) > cost(heap_ip)) then
+               done = .true.
+	    endif
+         endif
+!
+      enddo
+!
+   endif
+!
+! Next check whether should percolate down. (If just
+! percolated up, then the answer will be no, but code is
+! easier to read if go ahead and test here anyway.)
+   last_nonleaf = heap_len/2
+   done = .false.
+!
+   do while (.not. done)
+      if (heap_i > last_nonleaf) then
+! If no children (a leaf), then done.
+         done = .true.
+!
+      else if (2*heap_i == heap_len) then
+! If only a left child, then only a single test.
+         heap_il = 2*heap_i
+!
+         if (cost(heap_i) >= cost(heap_il)) then
+! If larger or equal, then swap.
+            cost_il = cost(heap_il)
+            proc_il = heap(heap_il)
+            cost_i  = cost(heap_i)
+            proc_i  = heap(heap_i)
+!
+            heap(heap_i)      = proc_il
+            cost(heap_i)      = cost_il
+            inv_heap(proc_il) = heap_i
+!
+            heap(heap_il)     = proc_i
+            cost(heap_il)     = cost_i
+            inv_heap(proc_i)  = heap_il
+!
+            heap_i = heap_il
+!
+         else
+! If smaller, then done.
+            done = .true.
+!
+         endif
+!
+      else
+! If both left and right children, then a number of different possibilities.
+         heap_il = 2*heap_i
+         heap_ir = heap_il+1
+         min_cost = min(cost(heap_il),cost(heap_ir))
+!
+         if (cost(heap_i) < min_cost) then
+! If smaller than both, then done.
+            done = .true.
+!
+         else
+            if (cost(heap_ir) > cost(heap_il)) then
+! If right child has the larger cost, then parent cost must be larger than
+! or equal to left child, so swap with lchild. (For equal left child and
+! right child values, go with right child since more likely to be a leaf,
+! so a little less expensive.)
+               cost_il = cost(heap_il)
+               proc_il = heap(heap_il)
+               cost_i  = cost(heap_i)
+               proc_i  = heap(heap_i)
+!
+               heap(heap_i)      = proc_il
+               cost(heap_i)      = cost_il
+               inv_heap(proc_il) = heap_i
+!
+               heap(heap_il)     = proc_i
+               cost(heap_il)     = cost_i
+               inv_heap(proc_i)  = heap_il
+!
+               heap_i = heap_il
+!
+            else
+! If left child has the larger or equal cost, then parent cost must be 
+! larger than or equal to right child, so swap with right child. 
+               cost_ir = cost(heap_ir)
+               proc_ir = heap(heap_ir)
+               cost_i  = cost(heap_i)
+               proc_i  = heap(heap_i)
+!
+               heap(heap_i)      = proc_ir
+               cost(heap_i)      = cost_ir
+               inv_heap(proc_ir) = heap_i
+!
+               heap(heap_ir)     = proc_i
+               cost(heap_ir)     = cost_i
+               inv_heap(proc_i)  = heap_ir
+!
+               heap_i = heap_ir
+!
+            endif
+!
+         endif
+!
+      endif
+!
+   enddo
+
+   return
+   end subroutine pheap_adjust
 !
 !========================================================================
 
