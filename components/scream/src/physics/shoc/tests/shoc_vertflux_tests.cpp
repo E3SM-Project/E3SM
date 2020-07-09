@@ -27,10 +27,12 @@ TEST_CASE("shoc_vertflux", "shoc") {
   constexpr auto nlevi   = nlev + 1;
    
   //NOTE: This routine does not compute the vertical fluxes
-  // for boundary points.  Grid values that are never used
+  // for boundary points.  Input Grid values that are never used
   // are set to ZERO so as not to confuse the test data
   // that is actually used (and is also an implicit test to be
   // sure that operations are not done at the boundary).
+  // Output values at boundary set to something other than 
+  // zero to check that they are not modified.
     
   // Define delta z on the nlevi grid [m]
   Real dz_zi[nlevi] = {0, 100.0, 50.0, 20.0, 0.0};
@@ -90,8 +92,7 @@ TEST_CASE("shoc_vertflux", "shoc") {
   call calc_shoc_vertflux(nlev, SDS);
   
   // Check the results
-  for(Int s = 0; s < SDS.shcol; ++s) {
-    
+  for(Int s = 0; s < SDS.shcol; ++s) {   
     for(Int n = 0; n < SDS.nlevi; ++n) {
       const auto offset = n + s * SDS.nlevi;
 
