@@ -2247,12 +2247,12 @@ subroutine shoc_assumed_pdf(&
 
 
       if (Tl1_1 .le. 0._rtype) then
-         write(err_msg,*)'Tl1_1 is .le. 0 before calling esatw() in shoc. Tl1_1 is:',Tl1_1
+         write(err_msg,*)'ERROR: Tl1_1 is .le. 0 before calling esatw() in shoc. Tl1_1 is:',Tl1_1
          call endscreamrun(err_msg)
       endif
 
       if (Tl1_2 .le. 0._rtype) then
-         write(err_msg,*)'Tl1_2 is .le. 0 before calling esatw() in shoc. Tl1_2 is:',Tl1_2
+         write(err_msg,*)'ERROR: Tl1_2 is .le. 0 before calling esatw() in shoc. Tl1_2 is:',Tl1_2
          call endscreamrun(err_msg)
       endif
       
