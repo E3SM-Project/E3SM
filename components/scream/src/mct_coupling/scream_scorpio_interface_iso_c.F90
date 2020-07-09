@@ -40,6 +40,17 @@ contains
 
   end subroutine register_outfile_c
 !=====================================================================!
+  subroutine register_infile_c(filename_in) bind(c)
+    use scream_scorpio_interface, only : register_infile
+    type(c_ptr), intent(in) :: filename_in
+
+    character(len=256)       :: filename
+
+    call convert_c_string(filename_in,filename)
+    call register_infile(trim(filename))
+
+  end subroutine register_infile_c
+!=====================================================================!
   subroutine sync_outfile_c(filename_in) bind(c)
     use scream_scorpio_interface, only : eam_sync_piofile
     type(c_ptr), intent(in) :: filename_in
@@ -277,5 +288,23 @@ contains
     call grid_write_data_array(filename,hbuf_in,varname)
 
   end subroutine grid_write_data_array_c_int_4d
+!=====================================================================!
+  subroutine grid_read_data_array_c_real_1d(filename_in,varname_in,dim1_length,hbuf_out) bind(c)
+    use scream_scorpio_interface, only: grid_read_data_array
+    use physics_utils, only: rtype
 
+    type(c_ptr), intent(in)                :: filename_in
+    type(c_ptr), intent(in)                :: varname_in
+    integer(kind=c_int), value, intent(in) :: dim1_length
+    real(kind=c_real), intent(out), dimension(dim1_length) :: hbuf_out
+
+    character(len=256) :: filename
+    character(len=256) :: varname
+
+    call convert_c_string(filename_in,filename)
+    call convert_c_string(varname_in,varname)
+    call grid_read_data_array(filename,hbuf_out,varname)
+
+  end subroutine grid_read_data_array_c_real_1d
+!=====================================================================!
 end module scream_scorpio_interface_iso_c

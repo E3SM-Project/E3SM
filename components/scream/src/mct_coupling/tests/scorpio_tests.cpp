@@ -57,7 +57,7 @@ TEST_CASE("scorpio_interface_output", "") {
   std::array<Real, 2> z_data;
   std::array<Int,1> xdim = {10};
   std::array<Int,1> ydim = {5};
-  std::array<Int,1> zdim = {3};
+  std::array<Int,1> zdim = {2};
   std::array<Int,1> dimlen_1d = {10};
   std::array<Int,2> dimlen_2d = {5,10};
   std::array<Int,3> dimlen_3d = {2,5,10};
@@ -111,4 +111,89 @@ TEST_CASE("scorpio_interface_output", "") {
   eam_pio_finalize();
 } // TEST scorpio_interface_output
 
+TEST_CASE("scorpio_interface_input", "") {
+
+  using namespace scream;
+  using namespace scream::scorpio;
+  using ekat::util::data;
+
+  int compid=0;
+  MPI_Fint fcomm = MPI_Comm_c2f(MPI_COMM_WORLD);
+  eam_init_pio_subsystem(fcomm,compid,true);   // Gather the initial PIO subsystem data creater by component coupler
+  // Register the set of output files:
+  std::string infilename = "scorpio_output_baseline.nc";
+  register_infile(infilename);
+
+  std::string vec_time[] = {"time"};
+  std::string vec_x[]    = {"x"};
+  std::string vec_y[]    = {"y"};
+  std::string vec_z[]    = {"z"};
+  std::string vec_xy[]   = {"x","y"}; 
+  std::string vec_xyz[]  = {"x","y","z"};
+ 
+  register_variable(infilename,"time","time",1,vec_time, PIO_REAL,"t");
+  register_variable(infilename,"x","x-direction",1,vec_x, PIO_REAL,"x-real");
+  register_variable(infilename,"y","y-direction",1,vec_y, PIO_REAL,"y-real");
+  register_variable(infilename,"z","z-direction",1,vec_z, PIO_REAL,"z-real");
+  register_variable(infilename,"data_1d","test value for 1d field",1,vec_x, PIO_REAL,"x-real");
+  register_variable(infilename,"data_2d","test value for 2d field",2,vec_xy, PIO_REAL,"xy-real");
+  register_variable(infilename,"data_3d","test value for 3d field",3,vec_xyz, PIO_REAL,"xyz-real");
+  register_variable(infilename,"index_1d","test value for 1d field",1,vec_x, PIO_INT,"x-int");
+  register_variable(infilename,"index_2d","test value for 2d field",2,vec_xy, PIO_INT,"xy-int");
+  register_variable(infilename,"index_3d","test value for 3d field",3,vec_xyz, PIO_INT,"xyz-int");
+
+  // Create data to be written
+  std::array<Real,10> x_data;
+  std::array<Real, 5> y_data;
+  std::array<Real, 2> z_data;
+  std::array<Int,1> xdim = {10};
+  std::array<Int,1> ydim = {5};
+  std::array<Int,1> zdim = {2};
+  std::array<Int,1> dimlen_1d = {10};
+  std::array<Int,2> dimlen_2d = {5,10};
+  std::array<Int,3> dimlen_3d = {2,5,10};
+  ekat::util::md_array<Real,10>       test_data_1d;
+  ekat::util::md_array<Real, 5,10>    test_data_2d;
+  ekat::util::md_array<Real, 2, 5,10> test_data_3d;
+  ekat::util::md_array<Int,10>        test_index_1d;
+  ekat::util::md_array<Int, 5,10>     test_index_2d;
+  ekat::util::md_array<Int, 2, 5,10>  test_index_3d;
+  Real pi = 2*acos(0.0);
+
+  grid_read_data_array(infilename,"x",xdim,ekat::util::data(x_data));
+  grid_read_data_array(infilename,"y",ydim,ekat::util::data(y_data));
+  grid_read_data_array(infilename,"z",zdim,ekat::util::data(z_data));
+
+  Real error=0;
+  for (int ii=0;ii<x_data.size();ii++) {
+    error = error + std::abs(x_data[ii] - 2.0*pi/x_data.size()*(ii+1));
+  }
+  for (int jj=0;jj<5;jj++) {
+    error = error + std::abs(y_data[jj] - 4.0*pi/y_data.size()*(jj+1));
+  }
+  for (int kk=0;kk<2;kk++) {
+    error = error + std::abs(z_data[kk] - 100*(kk+1));
+  }
+  std::printf("SCORPIO input test error: %f\n",error);
+
+  Real dt = 1.0;
+  for (int tt=0;tt<3;tt++) {
+    pio_update_time(infilename,-999.0);
+    grid_read_data_array(infilename,"data_1d",dimlen_1d,ekat::util::data(test_data_1d));
+    for (int ii=0;ii<x_data.size();ii++) {
+      error = error + std::abs(test_data_1d[ii]  - 0.1 * cos(x_data[ii] + tt*dt)); // phase shift by dt
+//      error = error + std::abs(test_index_1d[ii] - (10000*tt + ii));
+      for (int jj=0;jj<5;jj++) {
+//        error = error + std::abs(test_data_2d[jj][ii]  - (test_data_1d[ii] * sin(y_data[jj] + tt*dt))); //phase shift by dt
+//        error = error + std::abs(test_index_2d[jj][ii] - (test_index_1d[ii] + 100*jj));
+        for (int kk=0;kk<2;kk++) {
+//          error = error + std::abs(test_data_3d[kk][jj][ii]  - (test_data_2d[jj][ii] + z_data[kk]));
+//          error = error + std::abs(test_index_3d[kk][jj][ii] - (test_index_2d[jj][ii] + 1000*kk));
+        } //kk
+      } //jj
+    } //ii
+    std::printf("SCORPIO input test error: %d, %f\n",tt,error);
+  } //tt
+  REQUIRE(error <= 0.0);
+} // TEST scorpio_interface_input
 } //namespace
