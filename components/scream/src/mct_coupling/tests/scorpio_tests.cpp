@@ -173,15 +173,14 @@ TEST_CASE("scorpio_interface_input", "") {
   grid_read_data_array(infilename,"y",ydim,ekat::util::data(y_data));
   grid_read_data_array(infilename,"z",zdim,ekat::util::data(z_data));
 
-  int nerr = 0;
   for (decltype(x_data)::size_type ii=0;ii<x_data.size();ii++) {
-    if ( std::abs(x_data[ii] - 2.0*pi/x_data.size()*(ii+1)) > 0.0 ) {nerr++;}
+    REQUIRE( x_data[ii] == 2.0*pi/x_data.size()*(ii+1) );
   }
   for (decltype(y_data)::size_type jj=0;jj<5;jj++) {
-    if ( std::abs(y_data[jj] - 4.0*pi/y_data.size()*(jj+1)) > 0.0 ) {nerr++;}
+    REQUIRE( y_data[jj] == 4.0*pi/y_data.size()*(jj+1) );
   }
   for (decltype(z_data)::size_type kk=0;kk<2;kk++) {
-    if ( std::abs(z_data[kk] - 100*(kk+1)) > 0.0 ) {nerr++;}
+    REQUIRE( z_data[kk] == 100*(kk+1) );
   }
 
   Real dt = 1.0;
