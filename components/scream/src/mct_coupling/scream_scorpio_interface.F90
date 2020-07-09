@@ -189,6 +189,13 @@ module scream_scorpio_interface
 !----------------------------------------------------------------------
   interface grid_read_data_array
     module procedure grid_read_darray_1d_real
+    module procedure grid_read_darray_2d_real
+    module procedure grid_read_darray_3d_real
+    module procedure grid_read_darray_4d_real
+    module procedure grid_read_darray_1d_int
+    module procedure grid_read_darray_2d_int
+    module procedure grid_read_darray_3d_int
+    module procedure grid_read_darray_4d_int
   end interface grid_read_data_array
 !----------------------------------------------------------------------
   interface grid_write_data_array
@@ -226,7 +233,6 @@ contains
 
     call get_pio_atm_file(filename,current_atm_file,found=found,purpose=1)
     if (.not.found) call errorHandle("PIO Error: Opening file: "//trim(filename)//", doesn't exist",999)
-    write(*,*) "ASD - infile: ", trim(current_atm_file%filename)
     
   end subroutine register_infile
 !=====================================================================!
@@ -322,7 +328,7 @@ contains
     curr => pio_atm_file%var_list_top
     do while (associated(curr))
       if (associated(curr%var)) then
-        if (trim(curr%var%name)==trim(shortname)) call errorHandle("PIO Error: Could not register variable"//trim(shortname)//", already exists in file: "//trim(pio_atm_filename),-999)
+        if (trim(curr%var%name)==trim(shortname)) call errorHandle("PIO Error: Could not register variable "//trim(shortname)//", already exists in file: "//trim(pio_atm_filename),-999)
       end if
       prev => curr
       curr => prev%next
@@ -439,6 +445,8 @@ contains
     integer :: num_aggregator
     integer :: base
 
+    if (associated(pio_subsystem)) call errorHandle("PIO ERROR: pio_subsystem has already been defined.",-999)
+
     pio_mpicom = mpicom
     call MPI_Comm_rank(pio_mpicom, pio_myrank, ierr)
     call MPI_Comm_size(pio_mpicom, pio_ntasks , ierr)
@@ -457,7 +465,6 @@ contains
       call PIO_init(pio_myrank, pio_mpicom, pio_ntasks, num_aggregator, stride, &
            pio_rearr_subset, pio_subsystem, base=base)
     end if
-
 
   end subroutine eam_init_pio_subsystem
 !=====================================================================!
@@ -492,8 +499,17 @@ contains
     ! May not be needed, possibly handled by PIO directly.
 
     integer :: ierr
+    type(pio_file_list), pointer :: curr => NULL()
 
+    ! Close all the PIO Files 
+    curr => pio_file_list_top
+    do while (associated(curr))
+      if (associated(curr%pio_file)) call PIO_closefile(curr%pio_file%pioFileDesc)
+      nullify(curr%pio_file)
+      curr => curr%next
+    end do
     call PIO_finalize(pio_subsystem, ierr)
+    nullify(pio_subsystem)
 
   end subroutine eam_pio_finalize
 !=====================================================================!
@@ -721,16 +737,14 @@ contains
     character(len=*),          intent(in)    :: varname
 
     ! Local variables
-    type(pio_atm_file),pointer             :: pio_atm_file
+    type(pio_atm_file), pointer              :: pio_atm_file
     type(hist_var_t), pointer                :: var
     integer                                  :: ierr
-    integer, allocatable, dimension(:)   :: vbuf                 
 
     call get_pio_atm_file(trim(filename),pio_atm_file)
     call get_var(pio_atm_file,varname,var)
     call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
-    vbuf = pack(hbuf,.true.)
-    call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, vbuf(var%compdof), ierr)
+    call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, hbuf, ierr)
     call errorHandle( 'eam_grid_write_darray_2d_int: Error writing variable',ierr)
   end subroutine grid_write_darray_2d_int
 
@@ -747,16 +761,14 @@ contains
     character(len=*),          intent(in)    :: varname
 
     ! Local variables
-    type(pio_atm_file),pointer             :: pio_atm_file
+    type(pio_atm_file), pointer              :: pio_atm_file
     type(hist_var_t), pointer                :: var
     integer                                  :: ierr
-    integer, allocatable, dimension(:)   :: vbuf                 
 
     call get_pio_atm_file(trim(filename),pio_atm_file)
     call get_var(pio_atm_file,varname,var)
     call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
-    vbuf = pack(hbuf,.true.)
-    call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, vbuf(var%compdof), ierr)
+    call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, hbuf, ierr)
     call errorHandle( 'eam_grid_write_darray_3d_int: Error writing variable',ierr)
   end subroutine grid_write_darray_3d_int
 
@@ -773,16 +785,14 @@ contains
     character(len=*),          intent(in)    :: varname
 
     ! Local variables
-    type(pio_atm_file),pointer             :: pio_atm_file
+    type(pio_atm_file),pointer               :: pio_atm_file
     type(hist_var_t), pointer                :: var
     integer                                  :: ierr
-    integer, allocatable, dimension(:)   :: vbuf                 
 
     call get_pio_atm_file(trim(filename),pio_atm_file)
     call get_var(pio_atm_file,varname,var)
     call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
-    vbuf = pack(hbuf,.true.)
-    call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, vbuf(var%compdof), ierr)
+    call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, hbuf, ierr)
     call errorHandle( 'eam_grid_write_darray_4d_int: Error writing variable',ierr)
   end subroutine grid_write_darray_4d_int
 
@@ -795,11 +805,11 @@ contains
 
     ! Dummy arguments
     character(len=*),          intent(in)    :: filename       ! PIO filename
-    real(rtype),         intent(in)    :: hbuf(:)
+    real(rtype),               intent(in)    :: hbuf(:)
     character(len=*),          intent(in)    :: varname
 
     ! Local variables
-    type(pio_atm_file),pointer             :: pio_atm_file
+    type(pio_atm_file), pointer              :: pio_atm_file
     type(hist_var_t), pointer                :: var
     integer                                  :: ierr
 
@@ -819,20 +829,18 @@ contains
 
     ! Dummy arguments
     character(len=*),          intent(in)    :: filename       ! PIO filename
-    real(rtype),         intent(in)    :: hbuf(:,:)
+    real(rtype),               intent(in)    :: hbuf(:,:)
     character(len=*),          intent(in)    :: varname
 
     ! Local variables
-    type(pio_atm_file),pointer             :: pio_atm_file
+    type(pio_atm_file), pointer              :: pio_atm_file
     type(hist_var_t), pointer                :: var
     integer                                  :: ierr
-    real(rtype), allocatable, dimension(:)   :: vbuf                 
 
     call get_pio_atm_file(trim(filename),pio_atm_file)
     call get_var(pio_atm_file,varname,var)
     call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
-    vbuf = pack(hbuf,.true.)
-    call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, vbuf(var%compdof), ierr)
+    call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, hbuf, ierr)
     call errorHandle( 'eam_grid_write_darray_2d_real: Error writing variable',ierr)
   end subroutine grid_write_darray_2d_real
 
@@ -845,20 +853,18 @@ contains
 
     ! Dummy arguments
     character(len=*),          intent(in)    :: filename       ! PIO filename
-    real(rtype),         intent(in)    :: hbuf(:,:,:)
+    real(rtype),               intent(in)    :: hbuf(:,:,:)
     character(len=*),          intent(in)    :: varname
 
     ! Local variables
-    type(pio_atm_file),pointer             :: pio_atm_file
+    type(pio_atm_file), pointer              :: pio_atm_file
     type(hist_var_t), pointer                :: var
     integer                                  :: ierr
-    real(rtype), allocatable, dimension(:)   :: vbuf                 
 
     call get_pio_atm_file(trim(filename),pio_atm_file)
     call get_var(pio_atm_file,varname,var)
     call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
-    vbuf = pack(hbuf,.true.)
-    call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, vbuf(var%compdof), ierr)
+    call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, hbuf, ierr)
     call errorHandle( 'eam_grid_write_darray_3d_real: Error writing variable',ierr)
   end subroutine grid_write_darray_3d_real
 
@@ -870,21 +876,19 @@ contains
   subroutine grid_write_darray_4d_real(filename, hbuf, varname)
 
     ! Dummy arguments
-    character(len=*), intent(in) :: filename       ! PIO filename
-    real(rtype), intent(in)      :: hbuf(:,:,:,:)
-    character(len=*), intent(in) :: varname
+    character(len=*), intent(in)           :: filename       ! PIO filename
+    real(rtype), intent(in)                :: hbuf(:,:,:,:)
+    character(len=*), intent(in)           :: varname
 
     ! Local variables
     type(pio_atm_file),pointer             :: pio_atm_file
     type(hist_var_t), pointer              :: var
     integer                                :: ierr
-    real(rtype), allocatable, dimension(:) :: vbuf                 
 
     call get_pio_atm_file(trim(filename),pio_atm_file)
     call get_var(pio_atm_file,varname,var)
     call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
-    vbuf = pack(hbuf,.true.)
-    call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, vbuf(var%compdof), ierr)
+    call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, hbuf, ierr)
     call errorHandle( 'eam_grid_write_darray_4d_real: Error writing variable',ierr)
   end subroutine grid_write_darray_4d_real
 !=====================================================================!
@@ -904,19 +908,183 @@ contains
     type(pio_atm_file),pointer               :: pio_atm_file
     type(hist_var_t), pointer                :: var
     integer                                  :: ierr
-    real(rtype), allocatable                 :: hbuf_loc(:)
 
     call get_pio_atm_file(trim(filename),pio_atm_file)
     call get_var(pio_atm_file,varname,var)
-    ! TODO, figure out a way to handle input netCDF files with more than one
-    ! time stamp
     call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
-    allocate(hbuf_loc(size(var%compdof)))
-    call pio_read_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, hbuf_loc, ierr)
+    call pio_read_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, hbuf, ierr)
     call errorHandle( 'eam_grid_read_darray_1d_real: Error reading variable '//trim(varname),ierr)
-    hbuf(var%compdof) = hbuf_loc
 
   end subroutine grid_read_darray_1d_real
+  !---------------------------------------------------------------------------
+  !
+  !  grid_read_darray_2d_real: Read a variable defined on this grid
+  !
+  !---------------------------------------------------------------------------
+  subroutine grid_read_darray_2d_real(filename, hbuf, varname)
+
+    ! Dummy arguments
+    character(len=*),          intent(in)    :: filename       ! PIO filename
+    real(rtype),               intent(out)   :: hbuf(:,:)
+    character(len=*),          intent(in)    :: varname
+
+    ! Local variables
+    type(pio_atm_file),pointer               :: pio_atm_file
+    type(hist_var_t), pointer                :: var
+    integer                                  :: ierr
+
+    call get_pio_atm_file(trim(filename),pio_atm_file)
+    call get_var(pio_atm_file,varname,var)
+    call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
+    call pio_read_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, hbuf, ierr)
+    call errorHandle( 'eam_grid_read_darray_2d_real: Error reading variable '//trim(varname),ierr)
+
+  end subroutine grid_read_darray_2d_real
+  !---------------------------------------------------------------------------
+  !
+  !  grid_read_darray_3d_real: Read a variable defined on this grid
+  !
+  !---------------------------------------------------------------------------
+  subroutine grid_read_darray_3d_real(filename, hbuf, varname)
+
+    ! Dummy arguments
+    character(len=*),          intent(in)    :: filename       ! PIO filename
+    real(rtype),               intent(out)   :: hbuf(:,:,:)
+    character(len=*),          intent(in)    :: varname
+
+    ! Local variables
+    type(pio_atm_file),pointer               :: pio_atm_file
+    type(hist_var_t), pointer                :: var
+    integer                                  :: ierr
+
+    call get_pio_atm_file(trim(filename),pio_atm_file)
+    call get_var(pio_atm_file,varname,var)
+    call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
+    call pio_read_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, hbuf, ierr)
+    call errorHandle( 'eam_grid_read_darray_3d_real: Error reading variable '//trim(varname),ierr)
+
+  end subroutine grid_read_darray_3d_real
+  !---------------------------------------------------------------------------
+  !
+  !  grid_read_darray_4d_real: Read a variable defined on this grid
+  !
+  !---------------------------------------------------------------------------
+  subroutine grid_read_darray_4d_real(filename, hbuf, varname)
+
+    ! Dummy arguments
+    character(len=*),          intent(in)    :: filename       ! PIO filename
+    real(rtype),               intent(out)   :: hbuf(:,:,:,:)
+    character(len=*),          intent(in)    :: varname
+
+    ! Local variables
+    type(pio_atm_file),pointer               :: pio_atm_file
+    type(hist_var_t), pointer                :: var
+    integer                                  :: ierr
+
+    call get_pio_atm_file(trim(filename),pio_atm_file)
+    call get_var(pio_atm_file,varname,var)
+    call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
+    call pio_read_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, hbuf, ierr)
+    call errorHandle( 'eam_grid_read_darray_4d_real: Error reading variable '//trim(varname),ierr)
+
+  end subroutine grid_read_darray_4d_real
+!=====================================================================!
+  !---------------------------------------------------------------------------
+  !
+  !  grid_read_darray_1d_int: Read a variable defined on this grid
+  !
+  !---------------------------------------------------------------------------
+  subroutine grid_read_darray_1d_int(filename, hbuf, varname)
+
+    ! Dummy arguments
+    character(len=*),          intent(in)    :: filename       ! PIO filename
+    integer,                   intent(out)   :: hbuf(:)
+    character(len=*),          intent(in)    :: varname
+
+    ! Local variables
+    type(pio_atm_file),pointer               :: pio_atm_file
+    type(hist_var_t), pointer                :: var
+    integer                                  :: ierr
+
+    call get_pio_atm_file(trim(filename),pio_atm_file)
+    call get_var(pio_atm_file,varname,var)
+    call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
+    call pio_read_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, hbuf, ierr)
+    call errorHandle( 'eam_grid_read_darray_1d_int: Error reading variable '//trim(varname),ierr)
+
+  end subroutine grid_read_darray_1d_int
+  !---------------------------------------------------------------------------
+  !
+  !  grid_read_darray_2d_int: Read a variable defined on this grid
+  !
+  !---------------------------------------------------------------------------
+  subroutine grid_read_darray_2d_int(filename, hbuf, varname)
+
+    ! Dummy arguments
+    character(len=*),          intent(in)    :: filename       ! PIO filename
+    integer,                   intent(out)   :: hbuf(:,:)
+    character(len=*),          intent(in)    :: varname
+
+    ! Local variables
+    type(pio_atm_file),pointer               :: pio_atm_file
+    type(hist_var_t), pointer                :: var
+    integer                                  :: ierr
+
+    call get_pio_atm_file(trim(filename),pio_atm_file)
+    call get_var(pio_atm_file,varname,var)
+    call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
+    call pio_read_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, hbuf, ierr)
+    call errorHandle( 'eam_grid_read_darray_2d_int: Error reading variable '//trim(varname),ierr)
+
+  end subroutine grid_read_darray_2d_int
+  !---------------------------------------------------------------------------
+  !
+  !  grid_read_darray_3d_int: Read a variable defined on this grid
+  !
+  !---------------------------------------------------------------------------
+  subroutine grid_read_darray_3d_int(filename, hbuf, varname)
+
+    ! Dummy arguments
+    character(len=*),          intent(in)    :: filename       ! PIO filename
+    integer,                   intent(out)   :: hbuf(:,:,:)
+    character(len=*),          intent(in)    :: varname
+
+    ! Local variables
+    type(pio_atm_file),pointer               :: pio_atm_file
+    type(hist_var_t), pointer                :: var
+    integer                                  :: ierr
+
+    call get_pio_atm_file(trim(filename),pio_atm_file)
+    call get_var(pio_atm_file,varname,var)
+    call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
+    call pio_read_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, hbuf, ierr)
+    call errorHandle( 'eam_grid_read_darray_3d_int: Error reading variable '//trim(varname),ierr)
+
+  end subroutine grid_read_darray_3d_int
+  !---------------------------------------------------------------------------
+  !
+  !  grid_read_darray_4d_int: Read a variable defined on this grid
+  !
+  !---------------------------------------------------------------------------
+  subroutine grid_read_darray_4d_int(filename, hbuf, varname)
+
+    ! Dummy arguments
+    character(len=*),          intent(in)    :: filename       ! PIO filename
+    integer,                   intent(out)   :: hbuf(:,:,:,:)
+    character(len=*),          intent(in)    :: varname
+
+    ! Local variables
+    type(pio_atm_file),pointer               :: pio_atm_file
+    type(hist_var_t), pointer                :: var
+    integer                                  :: ierr
+
+    call get_pio_atm_file(trim(filename),pio_atm_file)
+    call get_var(pio_atm_file,varname,var)
+    call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
+    call pio_read_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, hbuf, ierr)
+    call errorHandle( 'eam_grid_read_darray_4d_int: Error reading variable '//trim(varname),ierr)
+
+  end subroutine grid_read_darray_4d_int
 !=====================================================================!
 
 end module scream_scorpio_interface

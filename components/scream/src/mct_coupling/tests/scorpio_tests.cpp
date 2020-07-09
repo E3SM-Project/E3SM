@@ -8,7 +8,16 @@
 #include "ekat/util/ekat_md_array.hpp"
 
 
+
 namespace {
+
+Real f_x(const Real x, const Real t); 
+Real f_y(const Real y, const Real t); 
+Real f_z(const Real z, const Real t); 
+Int ind_x(const Int ii);
+Int ind_y(const Int jj);
+Int ind_z(const Int kk);
+Int ind_t(const Int tt);
 
 TEST_CASE("scorpio_interface_output", "") {
 
@@ -87,14 +96,14 @@ TEST_CASE("scorpio_interface_output", "") {
   Real dt = 1.0;
   for (int tt=0;tt<3;tt++) {
     for (decltype(x_data)::size_type ii=0;ii<x_data.size();ii++) {
-      test_data_1d[ii]  = 0.1 * cos(x_data[ii] + tt*dt); // phase shift by dt
-      test_index_1d[ii] = 10000*tt + ii;
+      test_data_1d[ii]  = f_x(x_data[ii],tt*dt);
+      test_index_1d[ii] = ind_x(ii) + ind_t(tt);
       for (int jj=0;jj<5;jj++) {
-        test_data_2d[jj][ii]  = test_data_1d[ii] * sin(y_data[jj] + tt*dt); //phase shift by dt
-        test_index_2d[jj][ii] = test_index_1d[ii] + 100*jj;
+        test_data_2d[jj][ii]  = f_x(x_data[ii],tt*dt)*f_y(y_data[jj],tt*dt);
+        test_index_2d[jj][ii] = ind_y(jj) + ind_x(ii) + ind_t(tt);
         for (int kk=0;kk<2;kk++) {
-          test_data_3d[kk][jj][ii]  = test_data_2d[jj][ii] + z_data[kk];
-          test_index_3d[kk][jj][ii] = test_index_2d[jj][ii] + 1000*kk;
+          test_data_3d[kk][jj][ii]  = f_x(x_data[ii],tt*dt)*f_y(y_data[jj],tt*dt) + f_z(z_data[kk],tt*dt);
+          test_index_3d[kk][jj][ii] = ind_z(kk) + ind_y(jj) + ind_x(ii) + ind_t(tt);
         } //kk
       } //jj
     } //ii
@@ -110,7 +119,7 @@ TEST_CASE("scorpio_interface_output", "") {
 
   eam_pio_finalize();
 } // TEST scorpio_interface_output
-
+/* ================================================================================================================ */
 TEST_CASE("scorpio_interface_input", "") {
 
   using namespace scream;
@@ -121,15 +130,15 @@ TEST_CASE("scorpio_interface_input", "") {
   MPI_Fint fcomm = MPI_Comm_c2f(MPI_COMM_WORLD);
   eam_init_pio_subsystem(fcomm,compid,true);   // Gather the initial PIO subsystem data creater by component coupler
   // Register the set of output files:
-  std::string infilename = "scorpio_output_baseline.nc";
+  std::string infilename = "scorpio_output_test.nc";
   register_infile(infilename);
 
-  std::string vec_time[] = {"time"};
-  std::string vec_x[]    = {"x"};
-  std::string vec_y[]    = {"y"};
-  std::string vec_z[]    = {"z"};
-  std::string vec_xy[]   = {"x","y"}; 
-  std::string vec_xyz[]  = {"x","y","z"};
+  const char* vec_time[] = {"time"};
+  const char* vec_x[]    = {"x"};
+  const char* vec_y[]    = {"y"};
+  const char* vec_z[]    = {"z"};
+  const char* vec_xy[]   = {"x","y"}; 
+  const char* vec_xyz[]  = {"x","y","z"};
  
   register_variable(infilename,"time","time",1,vec_time, PIO_REAL,"t");
   register_variable(infilename,"x","x-direction",1,vec_x, PIO_REAL,"x-real");
@@ -164,36 +173,69 @@ TEST_CASE("scorpio_interface_input", "") {
   grid_read_data_array(infilename,"y",ydim,ekat::util::data(y_data));
   grid_read_data_array(infilename,"z",zdim,ekat::util::data(z_data));
 
-  Real error=0;
-  for (int ii=0;ii<x_data.size();ii++) {
-    error = error + std::abs(x_data[ii] - 2.0*pi/x_data.size()*(ii+1));
+  int nerr = 0;
+  for (decltype(x_data)::size_type ii=0;ii<x_data.size();ii++) {
+    if ( std::abs(x_data[ii] - 2.0*pi/x_data.size()*(ii+1)) > 0.0 ) {nerr++;}
   }
-  for (int jj=0;jj<5;jj++) {
-    error = error + std::abs(y_data[jj] - 4.0*pi/y_data.size()*(jj+1));
+  for (decltype(y_data)::size_type jj=0;jj<5;jj++) {
+    if ( std::abs(y_data[jj] - 4.0*pi/y_data.size()*(jj+1)) > 0.0 ) {nerr++;}
   }
-  for (int kk=0;kk<2;kk++) {
-    error = error + std::abs(z_data[kk] - 100*(kk+1));
+  for (decltype(z_data)::size_type kk=0;kk<2;kk++) {
+    if ( std::abs(z_data[kk] - 100*(kk+1)) > 0.0 ) {nerr++;}
   }
-  std::printf("SCORPIO input test error: %f\n",error);
 
   Real dt = 1.0;
   for (int tt=0;tt<3;tt++) {
     pio_update_time(infilename,-999.0);
     grid_read_data_array(infilename,"data_1d",dimlen_1d,ekat::util::data(test_data_1d));
+    grid_read_data_array(infilename,"data_2d",dimlen_2d,ekat::util::data(test_data_2d));
+    grid_read_data_array(infilename,"data_3d",dimlen_3d,ekat::util::data(test_data_3d));
+    grid_read_data_array(infilename,"index_1d",dimlen_1d,ekat::util::data(test_index_1d));
+    grid_read_data_array(infilename,"index_2d",dimlen_2d,ekat::util::data(test_index_2d));
+    grid_read_data_array(infilename,"index_3d",dimlen_3d,ekat::util::data(test_index_3d));
     for (int ii=0;ii<x_data.size();ii++) {
-      error = error + std::abs(test_data_1d[ii]  - 0.1 * cos(x_data[ii] + tt*dt)); // phase shift by dt
-//      error = error + std::abs(test_index_1d[ii] - (10000*tt + ii));
+      REQUIRE(test_data_1d[ii] == f_x(x_data[ii],tt*dt));
+      REQUIRE(test_index_1d[ii]== ind_x(ii) + ind_t(tt));
       for (int jj=0;jj<5;jj++) {
-//        error = error + std::abs(test_data_2d[jj][ii]  - (test_data_1d[ii] * sin(y_data[jj] + tt*dt))); //phase shift by dt
-//        error = error + std::abs(test_index_2d[jj][ii] - (test_index_1d[ii] + 100*jj));
+        REQUIRE(test_index_2d[jj][ii] == ind_y(jj) + ind_x(ii) + ind_t(tt));
+        REQUIRE(test_data_2d[jj][ii] == (f_x(x_data[ii],tt*dt)*f_y(y_data[jj],tt*dt)));
         for (int kk=0;kk<2;kk++) {
-//          error = error + std::abs(test_data_3d[kk][jj][ii]  - (test_data_2d[jj][ii] + z_data[kk]));
-//          error = error + std::abs(test_index_3d[kk][jj][ii] - (test_index_2d[jj][ii] + 1000*kk));
+          REQUIRE(test_index_3d[kk][jj][ii] == ind_z(kk) + ind_y(jj) + ind_x(ii) + ind_t(tt));
+          REQUIRE(test_data_3d[kk][jj][ii] ==((f_x(x_data[ii],tt*dt)*f_y(y_data[jj],tt*dt))+f_z(z_data[kk],tt*dt)));
         } //kk
       } //jj
     } //ii
-    std::printf("SCORPIO input test error: %d, %f\n",tt,error);
   } //tt
-  REQUIRE(error <= 0.0);
+  eam_pio_finalize();
 } // TEST scorpio_interface_input
+/* ================================================================================================================ */
+/*                                   Local functions to be used for tests:                                          */
+Real f_x(const Real x, const Real t) {
+  Real f;
+  f = 0.1 * cos(x+t);
+  return f;
+}
+Real f_y(const Real y, const Real t) {
+  Real f;
+  f = sin(y+t);
+  return f;
+}
+Real f_z(const Real z, const Real t) {
+  Real f;
+  f = z;
+  return f;
+}
+Int ind_x(const Int ii) {
+  return ii;
+}
+Int ind_y(const Int jj) {
+  return jj*100;
+}
+Int ind_z(const Int kk) {
+  return 1000*kk;
+}
+Int ind_t(const Int tt) {
+  return 10000*tt;
+}
+/* ================================================================================================================ */
 } //namespace
