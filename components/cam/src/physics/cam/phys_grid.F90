@@ -5885,11 +5885,8 @@ logical function phys_grid_initialized ()
                                          !  in a virtual SMP
    integer :: ntmp2_vsmp(0:nvsmp-1)      ! number of extra chunks to be assigned
                                          !  in a virtual SMP
-   integer :: ntmp3_vsmp(0:nvsmp-1)      ! number of processes in a virtual
-                                         !  SMP that get more extra chunks
-                                         !  than the others
-   integer :: ntmp4_vsmp(0:nvsmp-1)      ! number of extra chunks per process
-                                         !  in a virtual SMP
+   integer :: tmp_npthreads(0:npes-1)    ! number of threads per process that
+                                         !  have not been assigned an extra chunk
    integer :: ntmp1, ntmp2               ! work variables
 !  integer :: npchunks(0:npes-1)         ! number of chunks to be assigned to
 !                                        !  a given process
@@ -5937,39 +5934,33 @@ logical function phys_grid_initialized ()
 ! Number of extra chunks to be assigned
       ntmp2_vsmp(smp) = mod(nvsmpchunks(smp),nvsmpthreads(smp))
 
-! Number of processes that get more extra chunks than the others
-      ntmp3_vsmp(smp) = mod(ntmp2_vsmp(smp),ntsks_vsmp(smp))
-
-! Number of extra chunks per process
-      ntmp4_vsmp(smp) = ntmp2_vsmp(smp)/ntsks_vsmp(smp)
-      if (ntmp3_vsmp(smp) > 0) then
-         ntmp4_vsmp(smp) = ntmp4_vsmp(smp) + 1
-      endif
    enddo
 
+!
+! Set preliminary number of chunks
    do p=0,npes-1
       smp = proc_vsmp_map(p)
-
-! Update number of extra chunks
-      if (ntmp2_vsmp(smp) > ntmp4_vsmp(smp)) then
-         ntmp2_vsmp(smp) = ntmp2_vsmp(smp) - ntmp4_vsmp(smp)
-      else
-         ntmp4_vsmp(smp) = ntmp2_vsmp(smp)
-         ntmp2_vsmp(smp) = 0
-         ntmp3_vsmp(smp) = 0
-      endif
-
-! Set number of chunks
-      npchunks(p) = ntmp1_vsmp(smp)*npthreads(p) + ntmp4_vsmp(smp)
-
-! Update extra chunk increment
-      if (ntmp3_vsmp(smp) > 0) then
-         ntmp3_vsmp(smp) = ntmp3_vsmp(smp) - 1
-         if (ntmp3_vsmp(smp) .eq. 0) then
-            ntmp4_vsmp(smp) = ntmp4_vsmp(smp) - 1
-         endif
-      endif
+      npchunks(p) = ntmp1_vsmp(smp)*npthreads(p)
    enddo
+!
+! Assign extra chunk counts, to first thread for each process,
+! then to second, etc., until no more are left
+   tmp_npthreads(:) = npthreads(:)
+   do smp=0,nvsmp-1
+      do while (ntmp2_vsmp(smp) > 0)
+         iloop: do i=1,ntsks_vsmp(smp)
+            p = vsmp_proc_map(i,smp)
+            if (tmp_npthreads(p) > 0) then
+               npchunks(p) = npchunks(p) + 1
+               ntmp2_vsmp(smp) = ntmp2_vsmp(smp) - 1
+               tmp_npthreads(p) = tmp_npthreads(p) - 1
+            endif
+            if (ntmp2_vsmp(smp) == 0) then
+               exit iloop
+            endif
+         enddo iloop
+      enddo
+   enddo   
 
 !
 ! Assign chunks to processes: 
