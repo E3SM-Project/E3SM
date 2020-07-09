@@ -240,6 +240,7 @@ def buildnml(case, caseroot, compname):
         if ncpl_base_period == 'hour': 
             config_dt =  3600  // atm_ncpl
 
+        config_dt = float(config_dt)
         infile_text = ""
         infile_text += " config_dt = {} \n".format(config_dt)
 
