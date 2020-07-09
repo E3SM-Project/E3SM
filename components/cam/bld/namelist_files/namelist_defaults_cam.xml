@@ -229,7 +229,7 @@
 <bnd_topo hgrid="10x15"     >atm/cam/topo/USGS-gtopo30_10x15_remap_c050520.nc</bnd_topo>
 
 <bnd_topo hgrid="ne4np4"   npg="0">atm/cam/topo/USGS-gtopo30_ne4np4_16x.c20160612.nc</bnd_topo>
-<bnd_topo hgrid="ne4np4"   npg="2">atm/cam/topo/USGS-gtopo30_ne4np4pg2_16x.c20160612_converted.nc</bnd_topo>
+<bnd_topo hgrid="ne4np4"   npg="2">atm/cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc</bnd_topo>
 <bnd_topo hgrid="ne11np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne11np4_16xconsistentSGH.c20160612.nc</bnd_topo>
 <bnd_topo hgrid="ne16np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne16np4_16xconsistentSGH.c20160612.nc</bnd_topo>
 <bnd_topo hgrid="ne16np4"  npg="2">atm/cam/topo/USGS-gtopo30_ne16np4pg2_16xdel2_20200527.nc</bnd_topo>
