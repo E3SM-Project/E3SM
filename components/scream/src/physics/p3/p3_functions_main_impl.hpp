@@ -914,7 +914,7 @@ void Functions<S,D>
   const Int nk_pack = scream::pack::npack<Spack>(nk);
   const auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ni, nk_pack);
 
-  WorkspaceManager<Spack, Device> workspace_mgr(nk_pack, 100, policy);
+  WorkspaceManager<Spack, Device> workspace_mgr(nk_pack, 42, policy);
 
   // load constants into local vars
   const     Scalar odt          = 1 / dt;

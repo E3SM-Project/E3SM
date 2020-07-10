@@ -123,15 +123,18 @@ void Functions<S,D>
       generalized_sedimentation<2>(rho, inv_rho, inv_dzq, team, nk, k_qxtop, k_qxbot, kbot, kdir, Co_max, dt_left, prt_accum, fluxes_ptr, vs_ptr, qnr_ptr);
 
       // AaronDonahue, rflx output
-      util::set_min_max(k_qxbot+1, k_qxtop+1, kmin, kmax, Spack::n);
       kmin_scalar = ( kdir == 1 ? k_qxbot+1 : k_qxtop+1);
       kmax_scalar = ( kdir == 1 ? k_qxtop+1 : k_qxbot+1);
+      util::set_min_max(kmin_scalar, kmax_scalar, kmin, kmax, Spack::n);
       Kokkos::parallel_for(
        Kokkos::TeamThreadRange(team, kmax-kmin+1), [&] (int pk_) {
         const int pk = kmin + pk_;
         const auto range_pack = scream::pack::range<IntSmallPack>(pk*Spack::n);
         const auto range_mask = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
-        const auto flux_qx_pk = index(sflux_qx, range_pack-1);
+        auto index_pack = range_pack-1;
+        const auto lt_zero = index_pack < 0;
+        index_pack.set(lt_zero, 0);
+        const auto flux_qx_pk = index(sflux_qx, index_pack);
         rflx(pk).set(range_mask, rflx(pk) + flux_qx_pk);
       });
     }
@@ -149,7 +152,6 @@ void Functions<S,D>
 
   workspace.template release_many_contiguous<4>(
     {&V_qr, &V_nr, &flux_qx, &flux_nx});
-
 }
 
 } // namespace p3

@@ -112,14 +112,14 @@ class TestAllScream(object):
                         self._baseline_ref = "origin/master"
             self._must_generate_baselines = True
 
-            self._baseline_dir = pathlib.Path(default_baselines_root_dir).resolve()
+            self._baseline_dir = pathlib.Path(default_baselines_root_dir).absolute()
 
         else:
             # We treat the "AUTO" string as a request for automatic baseline dir.
             if self._baseline_dir == "AUTO":
                 self._baseline_dir = get_mach_baseline_root_dir(self._machine,default_baselines_root_dir)
 
-            self._baseline_dir = pathlib.Path(self._baseline_dir).resolve();
+            self._baseline_dir = pathlib.Path(self._baseline_dir).absolute()
 
             # Make sure the baseline root directory exists
             expect(self._baseline_dir.is_dir(), "Baseline_dir {} is not a dir".format(self._baseline_dir))
@@ -135,8 +135,8 @@ class TestAllScream(object):
         # Name of the file used to store/check the git sha of the repo used to generate baselines,
         # and name of the file used to store/check the builds for which baselines are available
         # Store it once to avoid typos-like bugs
-        self._baseline_sha_file = pathlib.Path(self._baseline_dir,"baseline_git_sha").resolve()
-        self._baseline_names_file = pathlib.Path(self._baseline_dir,"baseline_names").resolve()
+        self._baseline_sha_file   = pathlib.Path(self._baseline_dir, "baseline_git_sha")
+        self._baseline_names_file = pathlib.Path(self._baseline_dir, "baseline_names")
 
         if self._integration_test:
             master_sha = get_current_commit(commit=self._baseline_ref)
@@ -159,6 +159,9 @@ class TestAllScream(object):
         if ctest_parallel_level > 0:
             ctest_max_jobs = ctest_parallel_level
             print("Note: honoring requested value for ctest parallel level: {}".format(ctest_max_jobs))
+        elif "CTEST_PARALLEL_LEVEL" in os.environ:
+            ctest_max_jobs = int(os.environ["CTEST_PARALLEL_LEVEL"])
+            print("Note: honoring environment value for ctest parallel level: {}".format(ctest_max_jobs))
         else:
             ctest_max_jobs = get_mach_testing_resources(self._machine)
             print("Note: no value passed for --ctest-parallel-level. Using the default for this machine: {}".format(ctest_max_jobs))
@@ -275,7 +278,7 @@ class TestAllScream(object):
         # baselines we need are there, then we're good
         valid_baselines = run_cmd_no_fail("cat {}".format(self._baseline_names_file.resolve()))
         for test in self._tests:
-           if not test in valid_baselines:
+            if not test in valid_baselines:
                 return True
 
         # No sha file => baselines expired
@@ -434,7 +437,7 @@ class TestAllScream(object):
             # Store the name of the builds for which we created a baseline
             tmp_string = ""
             for test in self._tests:
-               tmp_string += " {}".format(test) 
+                tmp_string += " {}".format(test)
             run_cmd_no_fail("echo '{}' > {}".format(tmp_string,self._baseline_names_file))
 
         checkout_git_ref(git_head_ref, verbose=True)
