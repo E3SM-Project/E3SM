@@ -680,7 +680,7 @@ contains
                do j = 1,nlevdecomp_full
                   cn_eca = 0.0_r8
                   do l = 1,ndecomp_pools
-                     if ( csv2%decomp_cpools_vr(c,j,l) > 0.0_r8 .and.  col_ns%decomp_npools_vr(c,j,l) > 1.0e-15) then
+                     if ( csv2%decomp_cpools_vr(c,j,l) > 0.0_r8 ) then ! .and.  col_ns%decomp_npools_vr(c,j,l) > 1.0e-15) then
                         if(abs(csv2%decomp_cpools_vr(c,j,l) / col_ns%decomp_npools_vr(c,j,l) - initial_cn_ratio(l) ) > 1.0e-3_r8 &
                              .and. (.not. floating_cn_ratio_decomp_pools(l)) ) then
                            cn_eca = cn_eca - ( csv2%decomp_cpools_vr(c,j,l) / initial_cn_ratio(l) - col_ns%decomp_npools_vr(c,j,l) )

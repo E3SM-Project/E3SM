@@ -215,10 +215,9 @@ contains
     integer :: f
     !-----------------------------------------------------------------------
 
-
-    ! THESE IS NOT THREAD SAFE.  A GLOBAL IS BEING ALLOCATED BY
-    ! A CLUMP SIZE.
-
+    ! This allocation is called at the "proc" processor level.  These bounds
+    ! "should" be across all threads, assuming the arguments are not changed (RGK)
+    
     if ( crop_prog )then
        allocate(arepr(bounds%begp:bounds%endp)); arepr(bounds%begp : bounds%endp) = nan
        allocate(aroot(bounds%begp:bounds%endp)); aroot(bounds%begp : bounds%endp) = nan
@@ -1093,6 +1092,21 @@ contains
                             soilstate_vars,waterstate_vars, &
                             elm_fates)
 
+     ! ----------------------------------------------------------------------------------
+     ! This routine evaluates the dynamic between competitors for nutrients, and resolves
+     ! the fluxes between the different competitors and pools.  There are two schemes
+     ! presently, ECA and RD.
+     !
+     ! Inputs: 
+     !       "col_nf%plant_ndemand" (for RD) the plant's demand for nitrogen
+     !
+     ! Outputs:
+     !      "fpg" type variables, which is the fraction of potential gpp, or rather
+     !            the fraction of the plants demand for nutrients
+     !       "col_nf%plant_ndemand" is known for RD entering the scheme, but is an
+     !            output for ECA
+
+     
     ! PHASE-2 of Allocation     :  resolving N/P limitation
     ! !USES                     :
     use shr_sys_mod      , only : shr_sys_flush
@@ -1179,7 +1193,7 @@ contains
          ivt                          => veg_pp%itype                                             , & ! Input:  [integer  (:) ]  pft vegetation type                                
          ! new variables due to partition of Allocation to 3 subroutines: BEG
          plant_ndemand_col            => col_nf%plant_ndemand                 , & ! Output:  [real(r8) (:,:) ]
-         plant_pdemand_col            => col_pf%plant_pdemand               , & ! Output:  [real(r8) (:,:) ]
+         plant_pdemand_col            => col_pf%plant_pdemand                 , & ! Output:  [real(r8) (:,:) ]
          ! new variables due to partition of Allocation to 3 subroutines: END
 
          fpg                          => cnstate_vars%fpg_col                                , & ! Output: [real(r8) (:)   ]  fraction of potential gpp (no units)
@@ -1330,6 +1344,22 @@ contains
       ! (3) no second pass nutrient uptake for plants
       ! =================================================================================
 
+      ! Refactors (RGK 2020)
+      ! 1) Consolidated code to use only 1 outer column loop.  There is no cross column
+      ! info passing, so this removes a lot of unecessary loop calls
+      ! 2) Moved RD and ECA, N and P competition modules into subroutines
+      ! 3) Added an interface for FATES
+
+
+      ! ---------------------------------------------------------------------------
+      if(.not.use_fates) then
+          do fp=1,num_soilp
+              p = filter_soilp(fp)
+              sminn_to_plant_patch(p) = 0.0_r8
+              sminp_to_plant_patch(p) = 0.0_r8
+          end do
+      end if
+      
       do fc=1,num_soilc
 
          c = filter_soilc(fc)
@@ -1390,16 +1420,8 @@ contains
                
             end if
    
-         else         
-
-            ! Use ELM Vegetation
-            ! ---------------------------------------------------------------------------
-
-            do fp=1,num_soilp
-                p = filter_soilp(fp)
-                sminn_to_plant_patch(p) = 0.0_r8
-                sminp_to_plant_patch(p) = 0.0_r8
-            end do
+        else   ! USE ELM Native vegetation (i.e. use_cn), not FATES
+           
 
             if (nu_com .eq. 'RD') then
 
@@ -1416,8 +1438,8 @@ contains
                do p = col_pp%pfti(c), col_pp%pftf(c)
                   if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                      f = f + 1
-                     filter_pcomp(f)   = p
-                     ft_index(p)    = ivt(p)
+                     filter_pcomp(f) = p
+                     ft_index(p)     = ivt(p)
                      do j = 1,nlevdecomp
                         decompmicc(j)  = decompmicc(j) + decompmicc_patch_vr(ivt(p),j)*veg_pp%wtcol(p)
                         veg_rootc(p,j) = frootc(p)*froot_prof(p,j)*veg_pp%wtcol(p)
@@ -1437,16 +1459,19 @@ contains
                        leafcn(ivt(p))*(1- cn_stoich_var)) / &
                        (leafcn(ivt(p)) - leafcn(ivt(p))*(1- cn_stoich_var)),0.0_r8),1.0_r8)
                end do
-               km_nh4_ptr   => km_plant_nh4
-               vmax_nh4_ptr => vmax_plant_nh4
+               km_nh4_ptr    => km_plant_nh4
+               vmax_nh4_ptr  => vmax_plant_nh4
                cn_scalar_ptr => cn_scalar
-               plant_nh4demand_vr_ptr => plant_nh4demand_vr_patch
-               if (use_nitrif_denitrif) then
-                  km_no3_ptr   => km_plant_no3
-                  vmax_no3_ptr => vmax_plant_no3
-                  plant_no3demand_vr_ptr => plant_no3demand_vr_patch
-               end if
                
+               if (use_nitrif_denitrif) then
+                   km_no3_ptr   => km_plant_no3
+                   vmax_no3_ptr => vmax_plant_no3
+                   plant_no3demand_vr_ptr => plant_no3demand_vr_patch
+                   plant_nh4demand_vr_ptr => plant_nh4demand_vr_patch
+               else
+                   plant_nh4demand_vr_ptr => plant_ndemand_vr_patch
+               end if
+              
                cp_scalar(col_pp%pfti(c):col_pp%pftf(c)) = 0._r8
                do f = 1,n_pcomp
                   p = filter_pcomp(f)
@@ -1461,10 +1486,16 @@ contains
                vmax_p_ptr    => vmax_plant_p
             end if
 
-         end if
-         
-         ! Start Nutrient Competitions
-         ! ------------------------------------------------------------------------------
+        end if
+
+
+        ! -------------------------------------------------------------------------------
+        ! Part II. Start Nutrient Competitions
+        ! There are 4 different approaches, a 2x2 matrix of combinations for
+        !  w nitrif/denitfif  or  w/o  nitrif/denitrif
+        ! RD                  or  ECA
+        ! -------------------------------------------------------------------------------
+        
 
          if (.not. use_nitrif_denitrif) then
             
@@ -2683,6 +2714,7 @@ end subroutine Allocation2_ResolveNPLimit
       do i = 1,n_pcomp
          ip = filter_pcomp(i)
          ft = ft_index(i)
+         
          plant_pdemand_vr_patch(ip,j) = max(0._r8,vmax_plant_p(ft) * veg_rootc(i,j) * & 
               cp_scalar(i) * t_scalar(j) * compet_plant(i))
          col_plant_pdemand_vr(j) = col_plant_pdemand_vr(j) + plant_pdemand_vr_patch(ip,j)
@@ -2835,7 +2867,7 @@ end subroutine Allocation2_ResolveNPLimit
    do j = 1, nlevdecomp
       
       if(present(smin_no3_vr)) then
-         sum_nh4_demand = col_plant_ndemand * nuptake_prof(j) + potential_immob_vr(j) + pot_f_nit_vr(j)
+         sum_nh4_demand        = col_plant_ndemand * nuptake_prof(j) + potential_immob_vr(j) + pot_f_nit_vr(j)
          sum_nh4_demand_scaled = col_plant_ndemand * nuptake_prof(j) * compet_plants_nh4 + &
                                  potential_immob_vr(j)*compet_decomp_nh4 + pot_f_nit_vr(j)*compet_nit
       else
@@ -4268,10 +4300,10 @@ end subroutine Allocation2_ResolveNPLimit
     type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
     real(r8)                 , intent(inout) :: nuptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
 
-    integer :: c,j,fc                                            !indices
-    real(r8):: sminn_vr_loc(bounds%begc:bounds%endc, 1:nlevdecomp)
-    real(r8):: sminn_tot(bounds%begc:bounds%endc)
-
+    integer  :: c,j,fc                                            !indices
+    real(r8) :: sminn_vr_loc(1:nlevdecomp)     ! Total minn N at layer in current column
+    real(r8) :: sminn_tot                      ! Total minn N in this column
+    
 
     !-----------------------------------------------------------------------
 
@@ -4286,49 +4318,50 @@ end subroutine Allocation2_ResolveNPLimit
          ! column loops to resolve plant/heterotroph competition for mineral N
          ! init sminn_tot
          do fc=1,num_soilc
-            c = filter_soilc(fc)
-            sminn_tot(c) = 0.
+
+             c = filter_soilc(fc)
+             sminn_tot = 0.
+
+             ! Sum up the total minearlized N over the depth of the decomposition layers
+             do j = 1, nlevdecomp
+
+                 if (.not. use_nitrif_denitrif) then
+                     sminn_vr_loc(j) = sminn_vr(c,j)
+                 else
+                     sminn_vr_loc(j) = smin_no3_vr(c,j) + smin_nh4_vr(c,j)
+                 end if
+                 if(use_pflotran .and. pf_cmode) then
+                     sminn_tot = sminn_tot + sminn_vr_loc(j) * dzsoi_decomp(j) &
+                           *(nfixation_prof(c,j)*dzsoi_decomp(j))         ! weighted by froot fractions in annual max. active layers
+                 else
+                     sminn_tot = sminn_tot + sminn_vr_loc(j) * dzsoi_decomp(j) 
+                 end if
+                 
+             end do
+
+             ! Determine the fraction of uptake based on the fraction of mineralized
+             ! N in each layer
+             do j = 1, nlevdecomp
+                 
+                 if (sminn_tot  >  0.) then
+                     if(use_pflotran .and. pf_cmode) then
+                         nuptake_prof(c,j) = sminn_vr_loc(j) / sminn_tot &
+                               *(nfixation_prof(c,j)*dzsoi_decomp(j))         ! weighted by froot fractions in annual max. active layers
+                     else
+                         nuptake_prof(c,j) = sminn_vr_loc(j) / sminn_tot   !original: if (use_nitrif_denitrif): nuptake_prof(c,j) = sminn_vr(c,j) / sminn_tot(c)
+                     end if
+                 else
+                     ! If there is no sminn_tot, there is nothing to uptake so
+                     ! it doesn't matter what this profile is. Removing dependence
+                     ! on a vegetation type array (RGK 11-2019)
+                     ! nuptake_prof(c,j) = nfixation_prof(c,j)
+                     nuptake_prof(c,j) = 1._r8 !/sum(dzsoi_decomp(1:nlevdecomp),dim=1) 
+                 end if
+
+             end do
          end do
 
-         do j = 1, nlevdecomp
-            do fc=1,num_soilc
-               c = filter_soilc(fc)
-               if (.not. use_nitrif_denitrif) then
-                    sminn_vr_loc(c,j) = sminn_vr(c,j)
-               else
-                    sminn_vr_loc(c,j) = smin_no3_vr(c,j) + smin_nh4_vr(c,j)
-               end if
-               if(use_pflotran .and. pf_cmode) then
-                    sminn_tot(c) = sminn_tot(c) + sminn_vr_loc(c,j) * dzsoi_decomp(j) &
-                       *(nfixation_prof(c,j)*dzsoi_decomp(j))         ! weighted by froot fractions in annual max. active layers
-               else
-                    sminn_tot(c) = sminn_tot(c) + sminn_vr_loc(c,j) * dzsoi_decomp(j) 
-               end if
-            end do
-         end do
-
-         do j = 1, nlevdecomp
-            do fc=1,num_soilc
-               c = filter_soilc(fc)
-               if (sminn_tot(c)  >  0.) then
-                  if(use_pflotran .and. pf_cmode) then
-                     nuptake_prof(c,j) = sminn_vr_loc(c,j) / sminn_tot(c) &
-                        *(nfixation_prof(c,j)*dzsoi_decomp(j))         ! weighted by froot fractions in annual max. active layers
-                  else
-                     nuptake_prof(c,j) = sminn_vr_loc(c,j) / sminn_tot(c)   !original: if (use_nitrif_denitrif): nuptake_prof(c,j) = sminn_vr(c,j) / sminn_tot(c)
-                  end if
-               else
-                  ! If there is no sminn_tot, there is nothing to uptake so
-                  ! it doesn't matter what this profile is. Removing dependence
-                  ! on a vegetation type array (RGK 11-2019)
-                  ! nuptake_prof(c,j) = nfixation_prof(c,j)
-                  nuptake_prof(c,j) = 1._r8
-               end if
-
-            end do
-         end do
-
-    end associate
+       end associate
 
  end subroutine calc_nuptake_prof
 
@@ -4347,7 +4380,7 @@ end subroutine Allocation2_ResolveNPLimit
     real(r8)                 , intent(inout) :: puptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
 
     integer :: c,j,fc                                            !indices
-    real(r8):: solutionp_tot(bounds%begc:bounds%endc)
+    real(r8):: solutionp_tot
 
 
     !-----------------------------------------------------------------------
@@ -4362,28 +4395,24 @@ end subroutine Allocation2_ResolveNPLimit
          ! init sminn_tot
          do fc=1,num_soilc
             c = filter_soilc(fc)
-            solutionp_tot(c) = 0.
-         end do
+            solutionp_tot = 0.
 
-         do j = 1, nlevdecomp
-            do fc=1,num_soilc
-               c = filter_soilc(fc)
-               solutionp_tot(c) = solutionp_tot(c) + solutionp_vr(c,j) * dzsoi_decomp(j)
+            do j = 1, nlevdecomp
+                solutionp_tot = solutionp_tot + solutionp_vr(c,j) * dzsoi_decomp(j)
             end do
-         end do
-
-         do j = 1, nlevdecomp
-            do fc=1,num_soilc
-               c = filter_soilc(fc)
-               !!! add P demand calculation
-               if (solutionp_tot(c)  >  0.) then
-                  puptake_prof(c,j) = solutionp_vr(c,j) / solutionp_tot(c)
-               else
-                  puptake_prof(c,j) = 1._r8
-               endif
-
+            
+            do j = 1, nlevdecomp
+                ! add P demand calculation
+                if (solutionp_tot  >  0.) then
+                    puptake_prof(c,j) = solutionp_vr(c,j) / solutionp_tot
+                else
+                    puptake_prof(c,j) = 1._r8
+                endif
+                
             end do
-         end do
+            
+        end do
+        
     end associate
 
  end subroutine calc_puptake_prof
