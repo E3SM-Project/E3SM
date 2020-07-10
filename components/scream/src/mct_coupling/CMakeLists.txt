@@ -75,8 +75,8 @@ include (CsmShare)
 CreateCsmShareTarget()
 
 set (SCREAM_CIME_LIBS
-     scorpio_c
-     scorpio_f
+     scream_pioc
+     scream_piof
      scream_csm_share
 )
 

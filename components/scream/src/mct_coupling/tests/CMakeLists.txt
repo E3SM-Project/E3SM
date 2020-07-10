@@ -12,9 +12,9 @@ set (SCREAM_LIBS
      scream_share
      scream_control
      atm
-     scorpio_f
+     scream_piof
      scream_csm_share
-     scorpio_c
+     scream_pioc
 )
 
 set(CSM_SHARE "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/csm_share")

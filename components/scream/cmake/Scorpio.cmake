@@ -10,7 +10,7 @@ macro (CreateScorpioTarget CREATE_FLIB)
   endif ()
 
   # If c lib is requested (and we didn't already parsed this script), create interface lib
-  if (NOT TARGET scorpio_c)
+  if (NOT TARGET scream_pioc)
     # Get GPTL as a target
     include (GPTL)
     CreateGPTLTarget()
@@ -23,25 +23,25 @@ macro (CreateScorpioTarget CREATE_FLIB)
     find_library(SCORPIO_C_LIB pioc REQUIRED PATHS ${INSTALL_SHAREDPATH}/lib)
 
     # Create the interface library that scream targets can link to
-    add_library(scorpio_c UNKNOWN IMPORTED GLOBAL)
-    set_target_properties(scorpio_c PROPERTIES IMPORTED_LOCATION "${SCORPIO_C_LIB}")
-    target_link_libraries(scorpio_c INTERFACE "scream_gptl;${netcdf_c_lib}")
-    set_target_properties(scorpio_c PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${INSTALL_SHAREDPATH}/include)
+    add_library(scream_pioc UNKNOWN IMPORTED GLOBAL)
+    set_target_properties(scream_pioc PROPERTIES IMPORTED_LOCATION "${SCORPIO_C_LIB}")
+    target_link_libraries(scream_pioc INTERFACE "scream_gptl;${netcdf_c_lib}")
+    set_target_properties(scream_pioc PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${INSTALL_SHAREDPATH}/include)
     if (pnetcdf_lib)
-      target_link_libraries(scorpio_c INTERFACE "${pnetcdf_lib}")
+      target_link_libraries(scream_pioc INTERFACE "${pnetcdf_lib}")
     endif ()
   endif ()
 
   # If f lib is requested (and we didn't already parsed this script), create interface lib
-  if (${CREATE_FLIB} AND NOT TARGET scorpio_f)
+  if (${CREATE_FLIB} AND NOT TARGET scream_piof)
     # Look for piof lib in the lib subdirectory of the one stored in INSTALL_SHAREDPATH (set by CIME)
     find_library(SCORPIO_F_LIB piof REQUIRED PATHS ${INSTALL_SHAREDPATH}/lib)
 
     # Create the imported library that scream targets can link to
-    add_library(scorpio_f UNKNOWN IMPORTED GLOBAL)
-    set_target_properties(scorpio_f PROPERTIES IMPORTED_LOCATION "${SCORPIO_F_LIB}")
-    target_link_libraries(scorpio_f INTERFACE "${netecdf_f_lib};scorpio_c")
-    set_target_properties(scorpio_f PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${INSTALL_SHAREDPATH}/include)
+    add_library(scream_piof UNKNOWN IMPORTED GLOBAL)
+    set_target_properties(scream_piof PROPERTIES IMPORTED_LOCATION "${SCORPIO_F_LIB}")
+    target_link_libraries(scream_piof INTERFACE "${netecdf_f_lib};scream_pioc")
+    set_target_properties(scream_piof PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${INSTALL_SHAREDPATH}/include)
   endif ()
 
 endmacro()
