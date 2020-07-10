@@ -2601,8 +2601,9 @@ class L_TestSaveTimings(TestCreateTestCommon):
         if manual_timing:
             run_cmd_assert_result(self, "cd %s && %s/save_provenance postrun" % (casedir, TOOLS_DIR))
         if CIME.utils.get_model() == "e3sm":
-            provenance_dirs = glob.glob(os.path.join(timing_dir, "performance_archive", getpass.getuser(), casename, lids[0] + "*"))
-            self.assertEqual(len(provenance_dirs), 1, msg="provenance dirs were missing")
+            provenance_glob = os.path.join(timing_dir, "performance_archive", getpass.getuser(), casename, lids[0] + "*")
+            provenance_dirs = glob.glob(provenance_glob)
+            self.assertEqual(len(provenance_dirs), 1, msg="wrong number of provenance dirs, expected 1, got {}, looked for {}".format(provenance_dirs, provenance_glob))
             verify_perms(self, ''.join(provenance_dirs))
 
     ###########################################################################

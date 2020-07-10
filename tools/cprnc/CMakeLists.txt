@@ -50,10 +50,21 @@ else()
   set(NF_LIB_LIST ${NetCDF_Fortran_LIBRARIES})
 endif()
 
+message("lib list is: ${NF_LIB_LIST}")
+
 foreach(NF_LIB IN LISTS NF_LIB_LIST)
-  get_filename_component(NF_LIB_DIR ${NF_LIB} DIRECTORY)
-  list(APPEND NF_LIB_DIRS ${NF_LIB_DIR})
+  if (NF_LIB MATCHES "-l")
+    continue()
+  elseif (NF_LIB MATCHES "-L/")
+    string(REGEX REPLACE "^-L" "" NF_LIB_DIR "${NF_LIB}")
+    list(APPEND NF_LIB_DIRS ${NF_LIB_DIR})
+  else()
+    get_filename_component(NF_LIB_DIR ${NF_LIB} DIRECTORY)
+    list(APPEND NF_LIB_DIRS ${NF_LIB_DIR})
+  endif()
 endforeach()
+
+message("lib dirs are: ${NF_LIB_DIRS}")
 
 set(CMAKE_BUILD_RPATH ${NF_LIB_DIRS})
 
