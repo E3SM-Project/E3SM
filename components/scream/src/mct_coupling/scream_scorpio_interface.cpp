@@ -12,6 +12,16 @@ using scream::Int;
 extern "C" {
 
 // Fortran routines to be called from C++
+  void register_infile_c(const std::string (&filename));
+  void grid_read_data_array_c_real_1d(const char*&& filename, const char*&& varname, const Int dim1_length, Real *hbuf);
+  void grid_read_data_array_c_real_2d(const char*&& filename, const char*&& varname, const Int dim1_length, const Int dim2_length, Real *hbuf);
+  void grid_read_data_array_c_real_3d(const char*&& filename, const char*&& varname, const Int dim1_length, const Int dim2_length, const Int dim3_length, Real *hbuf);
+  void grid_read_data_array_c_real_4d(const char*&& filename, const char*&& varname, const Int dim1_length, const Int dim2_length, const Int dim3_length, const Int dim4_length, Real *hbuf);
+  void grid_read_data_array_c_int_1d(const char*&& filename, const char*&& varname, const Int dim1_length, Int *hbuf);
+  void grid_read_data_array_c_int_2d(const char*&& filename, const char*&& varname, const Int dim1_length, const Int dim2_length, Int *hbuf);
+  void grid_read_data_array_c_int_3d(const char*&& filename, const char*&& varname, const Int dim1_length, const Int dim2_length, const Int dim3_length, Int *hbuf);
+  void grid_read_data_array_c_int_4d(const char*&& filename, const char*&& varname, const Int dim1_length, const Int dim2_length, const Int dim3_length, const Int dim4_length, Int *hbuf);
+
   void grid_write_data_array_c_real_1d(const char*&& filename, const char*&& varname, const Int dim1_length, const Real* hbuf);
   void grid_write_data_array_c_real_2d(const char*&& filename, const char*&& varname, const Int dim1_length, const Int dim2_length, const Real* hbuf);
   void grid_write_data_array_c_real_3d(const char*&& filename, const char*&& varname, const Int dim1_length, const Int dim2_length, const Int dim3_length, const Real* hbuf);
@@ -47,6 +57,11 @@ void register_outfile(const std::string& filename) {
   register_outfile_c(filename.c_str());
 }
 /* ----------------------------------------------------------------- */
+void register_infile(const std::string& filename) {
+
+  register_infile_c(filename);
+}
+/* ----------------------------------------------------------------- */
 void sync_outfile(const std::string& filename) {
 
   sync_outfile_c(filename.c_str());
@@ -71,9 +86,57 @@ void eam_pio_enddef(const std::string &filename) {
   eam_pio_enddef_c(filename.c_str());
 }
 /* ----------------------------------------------------------------- */
+void grid_read_data_array(const std::string &filename, const std::string &varname, const  std::array<Int,1>& dim_length, Int *hbuf) {
+
+  grid_read_data_array_c_int_1d(filename.c_str(),varname.c_str(),dim_length[0],hbuf);
+
+};
+/* ----------------------------------------------------------------- */
+void grid_read_data_array(const std::string &filename, const std::string &varname, const  std::array<Int,2>& dim_length, Int *hbuf) {
+
+  grid_read_data_array_c_int_2d(filename.c_str(),varname.c_str(),dim_length[0],dim_length[1],hbuf);
+
+};
+/* ----------------------------------------------------------------- */
+void grid_read_data_array(const std::string &filename, const std::string &varname, const  std::array<Int,3>& dim_length, Int *hbuf) {
+
+  grid_read_data_array_c_int_3d(filename.c_str(),varname.c_str(),dim_length[0],dim_length[1],dim_length[2],hbuf);
+
+};
+/* ----------------------------------------------------------------- */
+void grid_read_data_array(const std::string &filename, const std::string &varname, const  std::array<Int,4>& dim_length, Int *hbuf) {
+
+  grid_read_data_array_c_int_4d(filename.c_str(),varname.c_str(),dim_length[0],dim_length[1],dim_length[2],dim_length[3],hbuf);
+
+};
+/* ----------------------------------------------------------------- */
+void grid_read_data_array(const std::string &filename, const std::string &varname, const  std::array<Int,1>& dim_length, Real *hbuf) {
+
+  grid_read_data_array_c_real_1d(filename.c_str(),varname.c_str(),dim_length[0],hbuf);
+
+};
+/* ----------------------------------------------------------------- */
+void grid_read_data_array(const std::string &filename, const std::string &varname, const  std::array<Int,2>& dim_length, Real *hbuf) {
+
+  grid_read_data_array_c_real_2d(filename.c_str(),varname.c_str(),dim_length[0],dim_length[1],hbuf);
+
+};
+/* ----------------------------------------------------------------- */
+void grid_read_data_array(const std::string &filename, const std::string &varname, const  std::array<Int,3>& dim_length, Real *hbuf) {
+
+  grid_read_data_array_c_real_3d(filename.c_str(),varname.c_str(),dim_length[0],dim_length[1],dim_length[2],hbuf);
+
+};
+/* ----------------------------------------------------------------- */
+void grid_read_data_array(const std::string &filename, const std::string &varname, const  std::array<Int,4>& dim_length, Real *hbuf) {
+
+  grid_read_data_array_c_real_4d(filename.c_str(),varname.c_str(),dim_length[0],dim_length[1],dim_length[2],dim_length[3],hbuf);
+
+};
+ /* ----------------------------------------------------------------- */
 void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,1>& dim_length, const Real* hbuf) {
 
-  grid_write_data_array_c_real_1d(filename.c_str(),varname.c_str(),dim_length[1],hbuf);
+  grid_write_data_array_c_real_1d(filename.c_str(),varname.c_str(),dim_length[0],hbuf);
 
 };
 /* ----------------------------------------------------------------- */
@@ -97,7 +160,7 @@ void grid_write_data_array(const std::string &filename, const std::string &varna
 /* ----------------------------------------------------------------- */
 void grid_write_data_array(const std::string &filename, const std::string &varname, const std::array<Int,1>& dim_length, const Int* hbuf) {
 
-  grid_write_data_array_c_int_1d(filename.c_str(),varname.c_str(),dim_length[1],hbuf);
+  grid_write_data_array_c_int_1d(filename.c_str(),varname.c_str(),dim_length[0],hbuf);
 
 };
 /* ----------------------------------------------------------------- */

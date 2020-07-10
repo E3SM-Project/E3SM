@@ -19,15 +19,12 @@ set (SCREAM_INCLUDE
      ${SCREAM_TPL_INCLUDE_DIRS}
      ${CSM_SHARE}
 )
-message("ASD")
-message("${ARRAY_SCORPIO_SRCS}")
-message("${SCREAM_LIBS}")
-message("${SCREAM_INCLUDE}")
 # Test atmosphere processes
 EkatCreateUnitTest(scorpio_interface "${ARRAY_SCORPIO_SRCS}" 
   LIBS ${SCREAM_LIBS} csm_share
   LIBS_DIRS ${SCREAM_INCLUDE} ${CSM_SHARE}
   INCLUDE_DIRS ${SCREAM_INCLUDE}
+  THREADS 1 4
 )
 
 configure_file(${SCREAM_DATA_DIR}/scorpio_output_baseline.nc scorpio_output_baseline.nc COPYONLY)
