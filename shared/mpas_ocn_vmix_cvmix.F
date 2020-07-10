@@ -164,10 +164,11 @@ contains
                                                       potentialDensitySum, RiTemp,              &
                                                       layerThicknessSum, layerThicknessEdgeSum
       real (kind=RKIND), dimension(:), allocatable, target :: RiSmoothed, BVFSmoothed, OBLDepths, interfaceForcings
+      real (kind=RKIND), dimension(:, :), pointer :: layerThicknessEdge
       logical :: bulkRichardsonFlag
 
       real (kind=RKIND), pointer :: config_cvmix_background_viscosity, config_cvmix_background_diffusion
-      real (kind=RKIND) :: langmuirEnhancementFactor, langmuirNumber, layerThicknessEdge
+      real (kind=RKIND) :: langmuirEnhancementFactor, langmuirNumber
       logical, pointer :: config_cvmix_kpp_use_theory_wave
 
       !-----------------------------------------------------------------
@@ -250,6 +251,7 @@ contains
       !
       ! set pointers for fields related ocean state
       !
+      call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
       call mpas_pool_get_array(diagnosticsPool, 'density', density)
       call mpas_pool_get_array(diagnosticsPool, 'displacedDensity', displacedDensity)
       call mpas_pool_get_array(diagnosticsPool, 'potentialDensity', potentialDensity)
@@ -534,21 +536,16 @@ contains
               ! Build deltaVelocitySquared
               do i = 1, nEdgesOnCell(iCell)
                  iEdge = edgesOnCell(i, iCell)
-                 cell1 = cellsOnEdge(1, iEdge)
-                 cell2 = cellsOnEdge(2, iEdge)
 
                  deltaVelocitySquared(1) = 0.0_RKIND
 
-                 layerThicknessEdge = 0.5_RKIND*(layerThickness(1, cell1) + layerThickness(1, cell2))
-                 normalVelocitySum(1) = normalVelocity(1, iEdge)*layerThicknessEdge
-                 layerThicknessEdgeSum(1) = layerThicknessEdge
+                 normalVelocitySum(1) = normalVelocity(1, iEdge)*layerThicknessEdge(1,iEdge)
+                 layerThicknessEdgeSum(1) = layerThicknessEdge(1,iEdge)
 
                  do kIndexOBL = 2, maxLevelCell(iCell)
-                    layerThicknessEdge = 0.5_RKIND*(layerThickness(kIndexOBL, cell1) + &
-                                      layerThickness(kIndexOBL, cell2))
                     normalVelocitySum(kIndexOBL) = normalVelocitySum(kIndexOBL-1) + &
-                                      layerThicknessEdge*normalVelocity(kIndexOBL, iEdge)
-                    layerThicknessEdgeSum(kIndexOBL) = layerThicknessEdgeSum(kIndexOBL-1) + layerThicknessEdge
+                                      layerThicknessEdge(kIndexOBL, iEdge)*normalVelocity(kIndexOBL, iEdge)
+                    layerThicknessEdgeSum(kIndexOBL) = layerThicknessEdgeSum(kIndexOBL-1) + layerThicknessEdge(kIndexOBL, iEdge)
                  end do
 
                  do kIndexOBL = 1, maxLevelCell(iCell)
