@@ -897,7 +897,7 @@ subroutine subgrid_mean_updraft(ncol, w0, wsig, ww)
    integer, parameter :: nbin = 50
 
    real(r8) :: wlarge,sigma
-   real(r8) :: xx, yy 
+   real(r8) :: xx, yy, sum_wa
    real(r8) :: zz(nbin) 
    real(r8) :: wa(nbin) 
    integer  :: kp(nbin) 
@@ -905,7 +905,7 @@ subroutine subgrid_mean_updraft(ncol, w0, wsig, ww)
    integer  :: ibin
 
    !! program begins 
-
+!$acc parallel loop collapse(2) copyin(wsig,w0) copyout(ww) private(zz,wa) vector_length(64)
    do k = 1, pver
    do i = 1, ncol
 
@@ -919,27 +919,19 @@ subroutine subgrid_mean_updraft(ncol, w0, wsig, ww)
          yy = yy + (ibin-1)*xx
          !! wbar = integrator < w * f(w) * dw > 
          zz(ibin) = yy * exp(-1.*(yy-wlarge)**2/(2*sigma**2))/(sigma*sqrt(2*pi))*xx
+         if ( zz(ibin) .gt. 0._r8 ) then
+            wa(ibin) = zz(ibin)
+         else
+            wa(ibin) = 0._r8
+         end if
       end do 
 
-      kp(:) = 0 
-      wa(:) = 0._r8 
- 
-      where(zz.gt.0._r8) 
-         kp = 1 
-         wa = zz
-      elsewhere 
-         kp = 0 
-         wa = 0._r8 
-      end where 
-
-      if(sum(kp).gt.0) then 
-         !! wbar = integrator < w * f(w) * dw > 
-         ww(i,k) = sum(wa)
+      sum_wa = sum( wa(:) )
+      if(sum_wa .gt. 0._r8) then 
+         ww(i,k) = sum_wa
       else 
          ww(i,k) = 0.001_r8
       end if 
-
-      !!write(6,*) 'i, k, w0, wsig, ww : ', i, k, w0(i,k), wsig(i,k), ww(i,k) 
 
   end do
   end do

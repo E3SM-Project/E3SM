@@ -365,6 +365,7 @@ subroutine nucleati(  &
               cam_chempkg_is('linoz_mam4_resus_soag') .or. cam_chempkg_is('linoz_mam4_resus_mom') .or. &
               cam_chempkg_is('linoz_mam4_resus_mom_soag') .or. &
               cam_chempkg_is('superfast_mam4_resus_mom_soag')) then !ASK Hailong about trop_mam4 
+
             na500_1 = dst1_num*0.488_r8 + dst3_num
          else
             na500_1 = dst1_num*0.488_r8 + dst2_num + dst3_num + dst4_num   ! scaled for D>0.5-1 um from 0.1-1 um

@@ -547,6 +547,19 @@
     </queues>
    </batch_system>
 
+  <batch_system MACH="cori-gpu" type="nersc_slurm">
+    <directives>
+      <directive> -c 12</directive>
+      <directive> -C gpu</directive>
+      <directive> -G 6</directive>
+      <directive> -A m1759</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
+      <queue walltimemax="04:00:00" default="true">regular</queue>
+    </queues>
+  </batch_system>
+
   <!-- modex is PBS -->
   <batch_system MACH="modex" type="pbs">
     <directives>
