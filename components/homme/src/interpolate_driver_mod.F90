@@ -540,9 +540,9 @@ contains
     real(kind=real_kind), pointer :: zeta(:,:,:,:),div(:,:,:,:)
 
     integer(kind=nfsizekind) :: start(3), count(3)
-    integer :: starti(3), counti(3)
+    integer :: starti(3), counti(3), index(1)
     integer :: len, ii, iu, iv, k, it, nd, offset, iuvar
-    integer :: nvars, i, n, ncnt_out, ncnt_in, st, en, ncols, ierr, ie, lev, ntimes, ndims
+    integer :: nvars, i, j, n, ncnt_out, ncnt_in, st, en, ncols, ierr, ie, lev, ntimes, ndims
     character*(PIO_MAX_NAME) :: tmpname
     integer(kind=nfsizekind) :: start2d(3), count2d(3), start3d(4), count3d(4)
 
@@ -793,8 +793,20 @@ contains
                    do n=1,infile%vars%ndims(i)
                       len = len*infile%dims(infile%vars%dimids(n,i))%len
                    end do
-                   call copy_pio_var(infile%FileID, Outfile%fileid, infile%vars%vardesc(i), &
-                        outfile%varlist(i)%vardesc, len)
+                   if(infile%vars%timedependent(i)) then
+                      ! bug in copy_pio_var - it will not copy the unlim dimension
+                      ! workaround: (assumes variable can be read into a real*8)
+                      allocate(farray(len))
+                      ierr = pio_get_var(infile%FileID, infile%vars%vardesc(i), farray)
+                      do j=1,len
+                         index(1)=j
+                         ierr = pio_put_var(Outfile%fileid, outfile%varlist(i)%vardesc,index, farray(j))
+                      enddo
+                      deallocate(farray)
+                   else
+                      call copy_pio_var(infile%FileID, Outfile%fileid, infile%vars%vardesc(i), &
+                           outfile%varlist(i)%vardesc, len)
+                   endif
                 else
                    do n=1,infile%vars%ndims(i)
                       counti(n) = infile%dims(infile%vars%dimids(n,i))%len
