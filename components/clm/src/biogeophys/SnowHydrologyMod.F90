@@ -28,6 +28,7 @@ module SnowHydrologyMod
   use LandunitType    , only : lun_pp                
   use ColumnType      , only : col_pp 
   use ColumnDataType  , only : col_es, col_ef, col_ws, col_wf  
+  use TopounitDataType, only : topounit_atmospheric_state
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -41,6 +42,7 @@ module SnowHydrologyMod
   public :: DivideSnowLayers           ! Subdivide snow layers if they exceed maximum thickness
   public :: BuildSnowFilter            ! Construct snow/no-snow filters
   public :: InitSnowLayers             ! Initialize cold-start snow layer thickness  
+  public :: NewSnowBulkDensity         ! Compute bulk density of any newly-fallen snow
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: Combo            ! Returns the combined variables: dz, t, wliq, wice.
@@ -1977,7 +1979,80 @@ contains
     end associate
    end subroutine InitSnowLayers
    !ams++   
+   !ams++ (subroutine from CESM2)
+   !-----------------------------------------------------------------------
+   subroutine NewSnowBulkDensity(bounds, num_c, filter_c, top_as_inst, bifall)
+      !
+      ! !DESCRIPTION:
+      ! Compute the bulk density of any newly-fallen snow.
+      !
+      ! The return value is placed in bifall. Only columns within the given filter are set:
+      ! all other columns remain at their original values.
+      !
+      ! !USES:
+      use clm_varcon,  only : tfrz
+      !
+      ! !ARGUMENTS:
+      type(bounds_type)  , intent(in)    :: bounds
+      integer            , intent(in)    :: num_c                ! number of columns in filterc
+      integer            , intent(in)    :: filter_c(:)          ! column-level filter to operate on
+      type(topounit_atmospheric_state) , intent(in)   :: top_as_inst  
+      real(r8)           , intent(inout) :: bifall(bounds%begc:) ! bulk density of newly fallen dry snow [kg/m3]
+      !
+      ! !LOCAL VARIABLES:
+      integer :: fc, c, t!, g
+      real(r8) :: t_for_bifall_degC  ! temperature to use in bifall equation (deg C)
 
+      character(len=*), parameter :: subname = 'NewSnowBulkDensity'
+      !-----------------------------------------------------------------------
+
+      !SHR_ASSERT_ALL((ubound(bifall) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))   
+
+      associate(forc_t    => top_as_inst%tbot   , & ! Input:  [real(r8) (:) ]  atmospheric temperature (Kelvin)
+                forc_wind => top_as_inst%windbot  & ! Input:  [real(r8) (:) ]  atmospheric wind speed (m/s)
+                )
+
+      do fc = 1, num_c
+         c = filter_c(fc)
+         !g = col_pp%gridcell(c)
+         t = col_pp%topounit(c)
+
+         if (forc_t(t) > tfrz + 2._r8) then
+            bifall(c) = 50._r8 + 1.7_r8*(17.0_r8)**1.5_r8
+         else if (forc_t(t) > tfrz - 15._r8) then
+            bifall(c) = 50._r8 + 1.7_r8*(forc_t(t) - tfrz + 15._r8)**1.5_r8
+         !else if ( new_snow_density == LoTmpDnsTruncatedAnderson1976 ) then
+            !bifall(c) = 50._r8
+         !else if (new_snow_density == LoTmpDnsSlater2017) then 
+         else ! below comment from CESM2
+            ! Andrew Slater: A temp of about -15C gives the nicest
+            ! "blower" powder, but as you get colder the flake size decreases so
+            ! density goes up. e.g. the smaller snow crystals from the Arctic and Antarctic
+            ! winters
+            if (forc_t(t) > tfrz - 57.55_r8) then
+               t_for_bifall_degC = (forc_t(t)-tfrz)
+            else ! below comment from CESM2
+               ! Below -57.55 deg C, the following function starts to decrease with
+               ! decreasing temperatures. Limit the function to avoid this turning over.
+               t_for_bifall_degC = -57.55_r8
+            end if
+            bifall(c) = -(50._r8/15._r8 + 0.0333_r8*15_r8)*t_for_bifall_degC - 0.0333_r8*t_for_bifall_degC**2
+         end if
+
+         !if (wind_dependent_snow_density .and. forc_wind(t) > 0.1_r8 ) then
+         if (forc_wind(t) > 0.1_r8) then
+            ! Density offset for wind-driven compaction, initial ideas based on Liston et. al (2007) J. Glaciology,
+            ! 53(181), 241-255. Modified for a continuous wind impact and slightly more sensitive
+            ! to wind - Andrew Slater, 2016
+            bifall(c) = bifall(c) + (266.861_r8 * ((1._r8 + TANH(forc_wind(t)/5.0_r8))/2._r8)**8.8_r8)
+         end if
+
+      end do
+
+      end associate
+
+   end subroutine NewSnowBulkDensity
+   !ams++
    !-----------------------------------------------------------------------
    subroutine Combo(dz,  wliq,  wice, t, dz2, wliq2, wice2, t2)
      !
