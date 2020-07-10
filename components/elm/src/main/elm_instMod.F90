@@ -53,6 +53,7 @@ module elm_instMod
   use GridcellDataType           , only : grc_cf, c13_grc_cf, c14_grc_cf
   use GridcellDataType           , only : grc_ns, grc_nf
   use GridcellDataType           , only : grc_ps, grc_pf
+  use GridcellType               , only : grc_pp
   use LandunitType               , only : lun_pp
   use LandunitDataType           , only : lun_es, lun_ef, lun_ws
   use ColumnType                 , only : col_pp
@@ -249,7 +250,7 @@ contains
     use elm_varcon                        , only : h2osno_max, bdsno
     use domainMod                         , only : ldomain
     use elm_varpar                        , only : nlevsno, numpft
-    use elm_varctl                        , only : single_column, fsurdat, scmlat, scmlon
+    use elm_varctl                        , only : single_column, fsurdat, scmlat, scmlon, use_extrasnowlayers
     use controlMod                        , only : nlfilename
     use SoilWaterRetentionCurveFactoryMod , only : create_soil_water_retention_curve
     use fileutils                         , only : getfil
@@ -290,17 +291,40 @@ contains
        l = col_pp%landunit(c)
        g = col_pp%gridcell(c)
 
-       if (lun_pp%itype(l)==istice) then
-          h2osno_col(c) = h2osno_max
-       elseif (lun_pp%itype(l)==istice_mec .or. &
-              (lun_pp%itype(l)==istsoil .and. ldomain%glcmask(g) > 0._r8)) then
-          ! Initialize a non-zero snow thickness where the ice sheet can/potentially operate.
-          ! Using glcmask to capture all potential vegetated points around GrIS (ideally
-          ! we would use icemask from CISM, but that isn't available until after initialization.)
-          h2osno_col(c) = 1.0_r8 * h2osno_max   ! start with full snow column so +SMB can begin immediately
-       else
-          h2osno_col(c) = 0._r8
+       !++ams
+       if (.not. use_extrasnowlayers) then ! original 5 layer shallow snowpack model
+           if (lun_pp%itype(l)==istice) then
+               h2osno_col(c) = h2osno_max
+           elseif (lun_pp%itype(l)==istice_mec .or. &
+               (lun_pp%itype(l)==istsoil .and. ldomain%glcmask(g) > 0._r8)) then
+               ! Initialize a non-zero snow thickness where the ice sheet can/potentially operate.
+               ! Using glcmask to capture all potential vegetated points around GrIS (ideally
+               ! we would use icemask from CISM, but that isn't available until after initialization.)
+               h2osno_col(c) = 1.0_r8 * h2osno_max   ! start with full snow column so +SMB can begin immediately
+           else
+              h2osno_col(c) = 0._r8
+           endif
+       else ! With a deeper firn model, we can no longer depend on "h2osno_max," because this will
+           !  potentially be large, resulting in a lot of artificial firn at initialization.
+           ! However... (below docstring from CESM2.0)
+           ! In areas that should be snow-covered, it can be problematic to start with 0 snow
+           ! cover, because this can affect the long-term state through soil heating, albedo
+           ! feedback, etc. On the other hand, we would introduce hysteresis by putting too
+           ! much snow in places that are in a net melt regime, because the melt-albedo
+           ! feedback may not activate on time (or at all). So, as a compromise, we start with
+           ! a small amount of snow in places that are likely to be snow-covered for much or
+           ! all of the year.
+           if (lun_pp%itype(l)==istice .or. lun_pp%itype(l)==istice_mec) then
+              ! land ice (including multiple elevation classes, i.e. glacier_mec) 
+              h2osno_col(c) = 50._r8
+           else if (lun_pp%itype(l)==istsoil .and. grc_pp%latdeg(g) >= 44._r8) then
+              ! Northern hemisphere seasonal snow
+              h2osno_col(c) = 50._r8
+           else
+              h2osno_col(c) = 0._r8
+           endif
        endif
+       !ams++
        snow_depth_col(c)  = h2osno_col(c) / bdsno
     end do
 
