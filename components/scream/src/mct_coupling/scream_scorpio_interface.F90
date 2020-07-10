@@ -153,13 +153,13 @@ module scream_scorpio_interface
   end type hist_var_list
 !----------------------------------------------------------------------
   type pio_file_list
-    type(pio_atm_file), pointer :: pio_file => NULL() ! Pointer to an atm. pio file
+    type(pio_atm_file_t), pointer :: pio_file => NULL() ! Pointer to an atm. pio file
     type(pio_file_list),  pointer :: next => NULL()     ! Needed for recursive definition
   end type pio_file_list
   ! Define the first pio_file_list
   type(pio_file_list), target :: pio_file_list_top
 !----------------------------------------------------------------------
-  type, public :: pio_atm_file
+  type, public :: pio_atm_file_t
         !> @brief Output filename.
         character(len=max_chars) :: filename = ""
 
@@ -184,7 +184,7 @@ module scream_scorpio_interface
         !> @brief Coordinate Dimensions Array
         type(hist_coord_t), allocatable :: dimensions(:)
 
-  end type pio_atm_file
+  end type pio_atm_file_t
 
 !----------------------------------------------------------------------
   interface grid_read_data_array
@@ -215,7 +215,7 @@ contains
 
     character(len=*), intent(in) :: filename
 
-    type(pio_atm_file), pointer :: current_atm_file => null()
+    type(pio_atm_file_t), pointer :: current_atm_file => null()
     logical :: found
 
     call get_pio_atm_file(filename,current_atm_file,found)
@@ -228,7 +228,7 @@ contains
 
     character(len=*), intent(in) :: filename
 
-    type(pio_atm_file), pointer :: current_atm_file => null()
+    type(pio_atm_file_t), pointer :: current_atm_file => null()
     logical :: found
 
     call get_pio_atm_file(filename,current_atm_file,found=found,purpose=1)
@@ -241,7 +241,7 @@ contains
     character(len=*), intent(in) :: filename
 
     logical :: found
-    type(pio_atm_file), pointer :: current_atm_file => null()
+    type(pio_atm_file_t), pointer :: current_atm_file => null()
     integer                       :: ierr
 
     call get_pio_atm_file(filename,current_atm_file,found=found)
@@ -257,7 +257,7 @@ contains
     character(len=*), intent(in)        :: shortname,longname ! Short- and long- names for this dimension, short: brief identifier and name for netCDF output, long: longer descriptor sentence to be included as meta-data in file.
     integer, intent(in)                 :: length             ! Length of the dimension, 0: unlimited (like time), >0 actual length of dimension
 
-    type(pio_atm_file), pointer       :: pio_atm_file
+    type(pio_atm_file_t), pointer       :: pio_atm_file
     type(hist_coord_t), pointer         :: hist_coord
     type(hist_coord_list), pointer      :: curr=>null(), prev=>null()
     integer                             :: ierr
@@ -307,7 +307,7 @@ contains
     character(len=*), intent(in) :: pio_decomp_tag           ! Unique tag for this variables decomposition type, to be used to determine if the io-decomp already exists.
 
     ! Local variables
-    type(pio_atm_file),pointer :: pio_atm_file
+    type(pio_atm_file_t),pointer :: pio_atm_file
     integer                      :: loc_len
     type(hist_var_t), pointer    :: hist_var
     integer                      :: dim_ii
@@ -390,7 +390,7 @@ contains
     real(rtype), intent(in)      :: time 
 
     type(hist_var_t), pointer    :: var 
-    type(pio_atm_file),pointer   :: pio_atm_file
+    type(pio_atm_file_t),pointer   :: pio_atm_file
     integer                      :: ierr
 
     call get_pio_atm_file(filename,pio_atm_file)
@@ -403,7 +403,7 @@ contains
   subroutine eam_sync_piofile(filename)
     character(len=*),          intent(in)    :: filename       ! PIO filename
     
-    type(pio_atm_file),pointer             :: pio_atm_file
+    type(pio_atm_file_t),pointer             :: pio_atm_file
 
     call get_pio_atm_file(trim(filename),pio_atm_file)
     call PIO_syncfile(pio_atm_file%pioFileDesc)
@@ -633,7 +633,7 @@ contains
   ! Query the hist_var_t pointer for a specific variable on a specific file.
   subroutine get_var(pio_file,varname,var)
 
-    type(pio_atm_file), pointer :: pio_file ! Pio output file structure
+    type(pio_atm_file_t), pointer :: pio_file ! Pio output file structure
     character(len=*)              :: varname  ! Name of the variable to query
     type(hist_var_t), pointer     :: var      ! Pointer to the variable structure that has been found
     
@@ -657,7 +657,7 @@ contains
   subroutine get_pio_atm_file(filename,pio_file,found,purpose)
 
     character(len=*),intent(in)  :: filename     ! Name of file to be found
-    type(pio_atm_file), pointer  :: pio_file     ! Pointer to pio_atm_output structure associated with this filename
+    type(pio_atm_file_t), pointer  :: pio_file     ! Pointer to pio_atm_output structure associated with this filename
     logical,optional,intent(out) :: found        ! return TRUE if pio file already exists
     integer,optional,intent(in)  :: purpose      ! Purpose for this file lookup, 0 = as output, 1 = as input
 
@@ -713,7 +713,7 @@ contains
     character(len=*),          intent(in)    :: varname
 
     ! Local variables
-    type(pio_atm_file),pointer             :: pio_atm_file
+    type(pio_atm_file_t),pointer             :: pio_atm_file
     type(hist_var_t), pointer                :: var
     integer                                  :: ierr
 
@@ -737,7 +737,7 @@ contains
     character(len=*),          intent(in)    :: varname
 
     ! Local variables
-    type(pio_atm_file), pointer              :: pio_atm_file
+    type(pio_atm_file_t), pointer              :: pio_atm_file
     type(hist_var_t), pointer                :: var
     integer                                  :: ierr
 
@@ -761,7 +761,7 @@ contains
     character(len=*),          intent(in)    :: varname
 
     ! Local variables
-    type(pio_atm_file), pointer              :: pio_atm_file
+    type(pio_atm_file_t), pointer              :: pio_atm_file
     type(hist_var_t), pointer                :: var
     integer                                  :: ierr
 
@@ -785,7 +785,7 @@ contains
     character(len=*),          intent(in)    :: varname
 
     ! Local variables
-    type(pio_atm_file),pointer               :: pio_atm_file
+    type(pio_atm_file_t),pointer               :: pio_atm_file
     type(hist_var_t), pointer                :: var
     integer                                  :: ierr
 
@@ -809,7 +809,7 @@ contains
     character(len=*),          intent(in)    :: varname
 
     ! Local variables
-    type(pio_atm_file), pointer              :: pio_atm_file
+    type(pio_atm_file_t), pointer              :: pio_atm_file
     type(hist_var_t), pointer                :: var
     integer                                  :: ierr
 
@@ -833,7 +833,7 @@ contains
     character(len=*),          intent(in)    :: varname
 
     ! Local variables
-    type(pio_atm_file), pointer              :: pio_atm_file
+    type(pio_atm_file_t), pointer              :: pio_atm_file
     type(hist_var_t), pointer                :: var
     integer                                  :: ierr
 
@@ -857,7 +857,7 @@ contains
     character(len=*),          intent(in)    :: varname
 
     ! Local variables
-    type(pio_atm_file), pointer              :: pio_atm_file
+    type(pio_atm_file_t), pointer              :: pio_atm_file
     type(hist_var_t), pointer                :: var
     integer                                  :: ierr
 
@@ -881,7 +881,7 @@ contains
     character(len=*), intent(in)           :: varname
 
     ! Local variables
-    type(pio_atm_file),pointer             :: pio_atm_file
+    type(pio_atm_file_t),pointer             :: pio_atm_file
     type(hist_var_t), pointer              :: var
     integer                                :: ierr
 
@@ -905,7 +905,7 @@ contains
     character(len=*),          intent(in)    :: varname
 
     ! Local variables
-    type(pio_atm_file),pointer               :: pio_atm_file
+    type(pio_atm_file_t),pointer               :: pio_atm_file
     type(hist_var_t), pointer                :: var
     integer                                  :: ierr
 
@@ -929,7 +929,7 @@ contains
     character(len=*),          intent(in)    :: varname
 
     ! Local variables
-    type(pio_atm_file),pointer               :: pio_atm_file
+    type(pio_atm_file_t),pointer               :: pio_atm_file
     type(hist_var_t), pointer                :: var
     integer                                  :: ierr
 
@@ -953,7 +953,7 @@ contains
     character(len=*),          intent(in)    :: varname
 
     ! Local variables
-    type(pio_atm_file),pointer               :: pio_atm_file
+    type(pio_atm_file_t),pointer               :: pio_atm_file
     type(hist_var_t), pointer                :: var
     integer                                  :: ierr
 
@@ -977,7 +977,7 @@ contains
     character(len=*),          intent(in)    :: varname
 
     ! Local variables
-    type(pio_atm_file),pointer               :: pio_atm_file
+    type(pio_atm_file_t),pointer               :: pio_atm_file
     type(hist_var_t), pointer                :: var
     integer                                  :: ierr
 
@@ -1002,7 +1002,7 @@ contains
     character(len=*),          intent(in)    :: varname
 
     ! Local variables
-    type(pio_atm_file),pointer               :: pio_atm_file
+    type(pio_atm_file_t),pointer               :: pio_atm_file
     type(hist_var_t), pointer                :: var
     integer                                  :: ierr
 
@@ -1026,7 +1026,7 @@ contains
     character(len=*),          intent(in)    :: varname
 
     ! Local variables
-    type(pio_atm_file),pointer               :: pio_atm_file
+    type(pio_atm_file_t),pointer               :: pio_atm_file
     type(hist_var_t), pointer                :: var
     integer                                  :: ierr
 
@@ -1050,7 +1050,7 @@ contains
     character(len=*),          intent(in)    :: varname
 
     ! Local variables
-    type(pio_atm_file),pointer               :: pio_atm_file
+    type(pio_atm_file_t),pointer               :: pio_atm_file
     type(hist_var_t), pointer                :: var
     integer                                  :: ierr
 
@@ -1074,7 +1074,7 @@ contains
     character(len=*),          intent(in)    :: varname
 
     ! Local variables
-    type(pio_atm_file),pointer               :: pio_atm_file
+    type(pio_atm_file_t),pointer               :: pio_atm_file
     type(hist_var_t), pointer                :: var
     integer                                  :: ierr
 
