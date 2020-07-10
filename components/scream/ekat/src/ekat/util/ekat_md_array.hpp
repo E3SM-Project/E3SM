@@ -46,25 +46,29 @@ using md_array = typename md_array_helper<T,N...>::type;
 
 // Meta-utility helper structure
 template<typename T>
-struct get_md_data;
+struct md_array_utils;
 
 // Recursion case, where std::array's value type is itself an std::array
 template<typename T, std::size_t M, std::size_t N>
-struct get_md_data<std::array<std::array<T,N>,M>> {
+struct md_array_utils<std::array<std::array<T,N>,M>> {
   using type = std::array<std::array<T,N>,M>;
-  using value_type = typename get_md_data<std::array<T,N>>::value_type;
+  using value_type = typename md_array_utils<std::array<T,N>>::value_type;
 
   static value_type* data (type& a) {
-    return get_md_data<std::array<T,N>>::data(a[0]);
+    return md_array_utils<std::array<T,N>>::data(a[0]);
   }
   static const value_type* data (const type& a) {
-    return get_md_data<std::array<T,N>>::data(a[0]);
+    return md_array_utils<std::array<T,N>>::data(a[0]);
+  }
+
+  static std::size_t size () {
+    return M*md_array_utils<std::array<T,N>>::size();
   }
 };
 
 // Base case, where std::array's value type is not itself an std::array
 template<typename T, std::size_t N>
-struct get_md_data<std::array<T,N>> {
+struct md_array_utils<std::array<T,N>> {
   using type = std::array<T,N>;
   using value_type = T;
 
@@ -75,19 +79,29 @@ struct get_md_data<std::array<T,N>> {
   static const T* data (const type& a) {
     return a.data();
   }
+
+  static std::size_t size () {
+    return N;
+  }
 };
 
 // Free function utilities to extract a pointer to the flattened md array data
 template<typename T, std::size_t N>
-typename get_md_data<std::array<T,N>>::value_type*
+typename md_array_utils<std::array<T,N>>::value_type*
 data (std::array<T,N>& a) {
-  return get_md_data<std::array<T,N>>::data(a);
+  return md_array_utils<std::array<T,N>>::data(a);
 }
 
 template<typename T, std::size_t N>
-const typename get_md_data<std::array<T,N>>::value_type*
+const typename md_array_utils<std::array<T,N>>::value_type*
 data (const std::array<T,N>& a) {
-  return get_md_data<std::array<T,N>>::data(a);
+  return md_array_utils<std::array<T,N>>::data(a);
+}
+
+template<typename T, std::size_t N>
+std::size_t
+size (const std::array<T,N>&) {
+  return md_array_utils<std::array<T,N>>::size();
 }
 
 } // namespace util
