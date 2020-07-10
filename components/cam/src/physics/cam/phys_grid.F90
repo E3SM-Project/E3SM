@@ -1647,7 +1647,8 @@ logical function phys_grid_initialized ()
 !-----------------------------------------------------------------------
 #ifdef PPCOLS
      if ( present(phys_chnk_fdim_in) ) then
-        if (phys_chnk_fdim_in /= pcols) then
+        if ((phys_chnk_fdim_in /= pcols) .and. &
+            (phys_chnk_fdim_in > 0)) then
            if (masterproc) then
               write(iulog,*)                                     &
                  'PHYS_GRID_SETOPTS:  ERROR:  phys_chnk_fdim=',  &
