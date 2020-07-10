@@ -608,7 +608,9 @@ end subroutine
       integer, parameter :: imax=200
       integer :: i
       real(r8) :: r(im)         ! wet radius (microns)
+      real(r8) :: rdry(im)      ! dry radius (microns)
       real(r8), parameter :: ugascon = r_universal * 1.0e-3_r8 ! convert gas constant to per mole (not per kmole) units
+      real(r8), parameter :: tair = 273.15K ! temperature of air / water interface for surface tension
       real(r8), parameter :: a = 2.0_r8 * mwh20 * surften /(ugascon * tair * rhoh2o)
 
       real(r8), parameter :: convergence_tol = 1.0e-5_r8
