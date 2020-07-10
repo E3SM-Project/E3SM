@@ -86,20 +86,21 @@ flags should be captured within MPAS CMake files.
 
 <compiler COMPILER="cray">
   <CFLAGS>
-    <append compile_threaded="FALSE"> -h noomp </append>
+    <append compile_threaded="TRUE"> -h omp </append>
+    <append DEBUG="TRUE"> -g -O0 </append>
   </CFLAGS>
   <CPPDEFS>
     <!--http://docs.cray.com/cgi-bin/craydoc.cgi?mode=View;id=S-3901-83;idx=books_search;this_sort=;q=;type=books;title=Cray%20Fortran%20Reference%20Manual -->
     <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRCRAY</append>
-    <append COMP_NAME="moby"> -DDIR=NOOP </append>
   </CPPDEFS>
   <FC_AUTO_R8>
     <base> -s real64 </base>
   </FC_AUTO_R8>
   <FFLAGS>
-    <base> -O2  -f free -N 255  -h byteswapio -em </base>
-    <append compile_threaded="FALSE"> -h noomp </append>
-    <append DEBUG="TRUE"> -g -trapuv  -Wuninitialized </append>
+    <base> -f free -N 255 -h byteswapio -em </base>
+    <append compile_threaded="TRUE"> -h omp </append>
+    <append compile_threaded="FALSE"> -M1077 </append>
+    <append DEBUG="TRUE"> -g -O0 </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
     <base> -O0 </base>
@@ -107,8 +108,10 @@ flags should be captured within MPAS CMake files.
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
   <LDFLAGS>
     <base> -Wl,--allow-multiple-definition -h byteswapio </base>
-    <append compile_threaded="FALSE"> -h noomp </append>
+    <append compile_threaded="TRUE"> -h omp </append>
   </LDFLAGS>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
 </compiler>
 
 <compiler COMPILER="gnu">
@@ -1949,6 +1952,18 @@ flags should be captured within MPAS CMake files.
   </SLIBS>
   <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH>
   <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
+</compiler>
+
+<compiler MACH="theta" COMPILER="cray">
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+  </CFLAGS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O1 </append>
+  </FFLAGS>
 </compiler>
 
 <compiler MACH="jlse" COMPILER="intel">

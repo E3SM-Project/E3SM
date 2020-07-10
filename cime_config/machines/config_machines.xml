@@ -1517,7 +1517,7 @@
     <DESC>ALCF Cray XC40 KNL, os is CNL, 64 pes/node, batch system is cobalt</DESC>
     <NODENAME_REGEX>theta.*</NODENAME_REGEX>
     <OS>CNL</OS>
-    <COMPILERS>intel,gnu</COMPILERS>
+    <COMPILERS>intel,gnu,cray</COMPILERS>
     <MPILIBS>mpt</MPILIBS>
     <SAVE_TIMING_DIR>/projects/$PROJECT</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>ClimateEnergy_4</SAVE_TIMING_DIR_PROJECTS>
@@ -1572,6 +1572,11 @@
         <command name="rm">PrgEnv-intel</command>
         <command name="load">PrgEnv-gnu/6.0.7</command>
         <command name="swap">gcc/9.3.0</command>
+      </modules>
+      <modules compiler="cray">
+        <command name="load">PrgEnv-cray/6.0.5</command>
+        <command name="rm">cce</command>
+        <command name="load">cce/9.0.2-classic</command>
       </modules>
       <modules compiler="!intel">
         <command name="swap">cray-libsci/20.06.1</command>
