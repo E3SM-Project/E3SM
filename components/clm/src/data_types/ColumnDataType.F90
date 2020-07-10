@@ -1346,11 +1346,21 @@ contains
     call hist_addfld2d (fname='SOILLIQ',  units='kg/m2', type2d='levgrnd', &
          avgflag='A', long_name='soil liquid water (vegetated landunits only)', &
          ptr_col=this%h2osoi_liq, l2g_scale_type='veg')
+         
+    this%h2osoi_liq(begc:endc,:) = spval
+    call hist_addfld2d (fname='SOILLIQ_ICE',  units='kg/m2', type2d='levgrnd', &
+         avgflag='A', long_name='soil liquid water (ice landunits only)', &
+         ptr_col=this%h2osoi_liq, l2g_scale_type='ice')
 
     this%h2osoi_ice(begc:endc,:) = spval
     call hist_addfld2d (fname='SOILICE',  units='kg/m2', type2d='levgrnd', &
          avgflag='A', long_name='soil ice (vegetated landunits only)', &
          ptr_col=this%h2osoi_ice, l2g_scale_type='veg')
+         
+    this%h2osoi_ice(begc:endc,:) = spval
+        call hist_addfld2d (fname='SOILICE_ICE',  units='kg/m2', type2d='levgrnd', &
+        avgflag='A', long_name='soil ice (ice landunits only)', &
+        ptr_col=this%h2osoi_ice, l2g_scale_type='ice')
 
     this%h2osfc(begc:endc) = spval
     call hist_addfld1d (fname='H2OSFC',  units='mm',  &
