@@ -28,7 +28,7 @@
  directory of input files (and optionally the output path as arg 3) to the land_use_translator as a command-line arguments.
  For example:
  >> make
- >> ./land_use_translator historical /global/cfs/cdirs/e3sm/inputdata/lnd/clm2/rawdata/LUT_input_files_06082020/
+ >> ./land_use_translator historical /global/cfs/cdirs/e3sm/inputdata/lnd/clm2/rawdata/LUT_input_files_07082020/
  
  There is also an optional third arugment that is the path to the output files, which will otherwise
  go into a new directory ./output by default.
