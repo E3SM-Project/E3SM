@@ -33,6 +33,8 @@ _TESTS = {
             "ERS.f19_g16.I20TRGSWCNPRDCTCBC.clm-ctc_f19_g16_I20TRGSWCNPRDCTCBC",
             "ERS.f09_g16.ICLM45BC",
             "SMS_Ly2_P1x1.1x1_smallvilleIA.ICLM45CNCROP.clm-lulcc_sville",
+            "ERS.r05_r05.RMOSGPCC.mosart-gpcc_1972",
+            "ERS.MOS_USRDAT.RMOSGPCC.mosart-mos_usrdat",
             )
         },
 
