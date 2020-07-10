@@ -126,7 +126,7 @@ contains
       type(cvmix_data_type) :: cvmix_variables
 
       integer, dimension(:), pointer :: &
-        maxLevelCell, nEdgesOnCell
+        maxLevelCell, nEdgesOnCell, maxLevelEdgeTop
 
       real (kind=RKIND), dimension(:), pointer :: &
         latCell, lonCell, bottomDepth, surfaceBuoyancyForcing, surfaceFrictionVelocity, fCell, &
@@ -151,7 +151,7 @@ contains
       character (len=StrKIND), pointer :: config_cvmix_shear_mixing_scheme, config_cvmix_kpp_matching
 
       integer :: k, i, iCell, jCell, iNeighbor, iter, timeLevel, kIndexOBL, kav, iEdge, nCells
-      integer :: edgeCount, nEdges, topIndex, nsmooth, kpp_stage, cell1, cell2
+      integer :: edgeCount, nEdges, topIndex, nsmooth, kpp_stage
       integer, pointer :: nVertLevels, nVertLevelsP1
       integer, dimension(:), pointer :: nCellsArray
       integer, dimension(:), allocatable :: surfaceAverageIndex
@@ -240,6 +240,7 @@ contains
       ! set pointers for fields related to vertical mesh
       !
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
 
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
@@ -542,13 +543,13 @@ contains
                  normalVelocitySum(1) = normalVelocity(1, iEdge)*layerThicknessEdge(1,iEdge)
                  layerThicknessEdgeSum(1) = layerThicknessEdge(1,iEdge)
 
-                 do kIndexOBL = 2, maxLevelCell(iCell)
+                 do kIndexOBL = 2, maxLevelEdgeTop(iEdge)
                     normalVelocitySum(kIndexOBL) = normalVelocitySum(kIndexOBL-1) + &
                                       layerThicknessEdge(kIndexOBL, iEdge)*normalVelocity(kIndexOBL, iEdge)
                     layerThicknessEdgeSum(kIndexOBL) = layerThicknessEdgeSum(kIndexOBL-1) + layerThicknessEdge(kIndexOBL, iEdge)
                  end do
 
-                 do kIndexOBL = 1, maxLevelCell(iCell)
+                 do kIndexOBL = 1, maxLevelEdgeTop(iEdge)
                     normalVelocityAv = normalVelocitySum(surfaceAverageIndex(kIndexOBL )) / &
                         layerThicknessEdgeSum(surfaceAverageIndex(kIndexOBL))
                     delU2 = ( normalVelocityAv - normalVelocity(kIndexOBL, iEdge) )**2
