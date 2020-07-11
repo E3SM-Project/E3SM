@@ -16,7 +16,7 @@ module RtmMod
   use RtmSpmd         , only : masterproc, npes, iam, mpicom_rof, ROFID, mastertask, &
                                MPI_REAL8,MPI_INTEGER,MPI_CHARACTER,MPI_LOGICAL,MPI_MAX
   use RtmVar          , only : re, spval, rtmlon, rtmlat, iulog, ice_runoff, &
-                               frivinp_rtm, finidat_rtm, nrevsn_rtm,rstraflag,ngeom,nlayers,rinittemp, &
+                               frivinp_rtm, finidat_rtm, nrevsn_rtm,rstraflag,lakeflag,ngeom,nlayers,rinittemp, &
                                nsrContinue, nsrBranch, nsrStartup, nsrest, &
                                inst_index, inst_suffix, inst_name, wrmflag, inundflag, &
                                smat_option, decomp_option, barrier_timers, heatflag, sediflag
@@ -243,7 +243,7 @@ contains
          rtmhist_ndens, rtmhist_mfilt, rtmhist_nhtfrq, &
          rtmhist_fincl1,  rtmhist_fincl2, rtmhist_fincl3, &
          rtmhist_fexcl1,  rtmhist_fexcl2, rtmhist_fexcl3, &
-         rtmhist_avgflag_pertape, decomp_option, wrmflag,rstraflag,ngeom,nlayers,rinittemp, &
+         rtmhist_avgflag_pertape, decomp_option, wrmflag,rstraflag,lakeflag,ngeom,nlayers,rinittemp, &
          inundflag, smat_option, delt_mosart, barrier_timers, &
          RoutingMethod, DLevelH2R, DLevelR, sediflag, heatflag
 
@@ -258,9 +258,10 @@ contains
     do_rtmflood = .false.
     ice_runoff  = .true.
     wrmflag     = .false.
-	rstraflag   = .false.
-	rinittemp   = 283.15_r8
-	ngeom       = 50  
+    rstraflag   = .false.
+	lakeflag	= .false.
+    rinittemp   = 283.15_r8
+    ngeom       = 50  
     nlayers     = 30				  
     inundflag   = .false.
     sediflag    = .false.
@@ -344,10 +345,11 @@ contains
     call mpi_bcast (wrmflag,        1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (sediflag,       1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (heatflag,       1, MPI_LOGICAL, 0, mpicom_rof, ier)
-	call mpi_bcast (rstraflag,      1, MPI_LOGICAL, 0, mpicom_rof, ier)
-	call mpi_bcast (rinittemp,      1, MPI_REAL8, 0, mpicom_rof, ier)
-	call mpi_bcast (ngeom,          1, MPI_INTEGER, 0, mpicom_rof, ier)
-	call mpi_bcast (nlayers,        1, MPI_INTEGER, 0, mpicom_rof, ier)
+    call mpi_bcast (rstraflag,      1, MPI_LOGICAL, 0, mpicom_rof, ier)
+	call mpi_bcast (lakeflag,		1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (rinittemp,      1, MPI_REAL8, 0, mpicom_rof, ier)
+    call mpi_bcast (ngeom,          1, MPI_INTEGER, 0, mpicom_rof, ier)
+    call mpi_bcast (nlayers,        1, MPI_INTEGER, 0, mpicom_rof, ier)
     call mpi_bcast (inundflag,      1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (barrier_timers, 1, MPI_LOGICAL, 0, mpicom_rof, ier)
 
@@ -1550,10 +1552,13 @@ contains
        endif
        call t_startf('mosarti_wrm_init')
     end if
-	if (wrmflag .and. heatflag .and. rstraflag) then
-		call regeom					
-	end if  
-
+    if (wrmflag .and. heatflag .and. rstraflag) then
+       call regeom					
+    end if  
+	if (heatflag .and. lakeflag) then
+		call lkgeom					
+	end if
+	
     !-------------------------------------------------------
     ! Read restart/initial info
     !-------------------------------------------------------
@@ -3350,8 +3355,153 @@ contains
      ier = pio_inq_varid(ncid, name='rwid', vardesc=vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%rwidth, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read rwidth ',minval(Tunit%rwidth),maxval(Tunit%rwidth)
-     call shr_sys_flush(iulog)
-
+     call shr_sys_flush(iulog)     
+	 !! Used in lake module
+	 if (lakeflag) then
+		 allocate (TRunoff%geometry(begr:endr))
+		 TRunoff%geometry = 0._r8
+		 allocate (TRunoff%Length_r(begr:endr))
+		 TRunoff%Length_r = 0._r8
+		 allocate (TRunoff%Width_r(begr:endr))
+		 TRunoff%Width_r = 0._r8
+		 allocate (TRunoff%V_errs(begr:endr))
+		 TRunoff%V_errs = 0._r8
+		 allocate (TRunoff%A_errs(begr:endr))
+		 TRunoff%A_errs = 0._r8
+		 allocate (TRunoff%V_str(begr:endr))
+		 TRunoff%V_str = 0._r8
+		 allocate (TRunoff%V_max(begr:endr))
+		 TRunoff%V_max = 0._r8
+		 allocate (TRunoff%dV_str(begr:endr))
+		 TRunoff%dV_str = 0._r8
+		 allocate (TRunoff%A_str(begr:endr))
+		 TRunoff%A_str = 0._r8
+		 allocate (TRunoff%C_as(begr:endr))
+		 TRunoff%C_as = 0._r8
+		 allocate (TRunoff%C_vs(begr:endr))
+		 TRunoff%C_vs = 0._r8
+		 allocate (TRunoff%V_dfs(begr:endr))
+		 TRunoff%V_dfs = 0._r8
+		 allocate (TRunoff%A_dfs(begr:endr))
+		 TRunoff%A_dfs = 0._r8
+		 allocate (TRunoff%d_ns(begr:endr))
+		 TRunoff%d_ns = 0
+		 allocate (TRunoff%d_zi(begr:endr,ngeom+1))
+		 TRunoff%d_zi = 0._r8
+		 allocate (TRunoff%a_di(begr:endr,ngeom+1))
+		 TRunoff%a_di = 0._r8
+		 allocate (TRunoff%v_zti(begr:endr,ngeom+1))
+		 TRunoff%v_zti = 0._r8
+		 allocate (TRunoff%d_z(begr:endr,nlayers+1))
+		 TRunoff%d_z = 0._r8
+		 allocate (TRunoff%d_z0(begr:endr,nlayers+1))
+		 TRunoff%d_z0 = 0._r8
+		 allocate (TRunoff%a_d(begr:endr,nlayers+1))
+		 TRunoff%a_d = 0._r8
+		 allocate (TRunoff%a_d0(begr:endr,nlayers+1))
+		 TRunoff%a_d0 = 0._r8
+		 allocate (TRunoff%v_zt(begr:endr,nlayers+1))
+		 TRunoff%v_zt = 0._r8
+		 allocate (TRunoff%v_zt0(begr:endr,nlayers+1))
+		 TRunoff%v_zt0 = 0._r8
+		 allocate (TRunoff%d_v(begr:endr,nlayers))
+		 TRunoff%d_v = 0._r8
+		 allocate (TRunoff%dd_z(begr:endr,nlayers))
+		 TRunoff%dd_z = 0._r8
+		 allocate (TRunoff%m_zo(begr:endr,nlayers))
+		 TRunoff%m_zo = 0._r8
+		 allocate (TRunoff%m_zn(begr:endr,nlayers))
+		 TRunoff%m_zn = 0._r8
+		 allocate (TRunoff%v_zo(begr:endr,nlayers))
+		 TRunoff%v_zo = 0._r8
+		 allocate (TRunoff%v_zn(begr:endr,nlayers))
+		 TRunoff%v_zn = 0._r8
+		 allocate (TRunoff%temp_lake(begr:endr,nlayers))
+		 TRunoff%temp_lake = rinittemp
+		 allocate (TRunoff%d_lake(begr:endr))
+		 TRunoff%d_lake = 0._r8
+		 allocate (TRunoff%h_lake(begr:endr))
+		 TRunoff%h_lake = 0._r8
+		 allocate (TRunoff%ddz_local(begr:endr))
+		 TRunoff%ddz_local = 0._r8
+		 allocate (TRunoff%lake_inflow(begr:endr))
+		 TRunoff%lake_inflow = 0._r8
+		 allocate (TRunoff%lake_outflow(begr:endr))
+		 TRunoff%lake_outflow = 0._r8
+		 allocate (TRunoff%lake_flg(begr:endr))
+		 TRunoff%lake_flg = 0
+		 
+		 ier = pio_inq_varid (ncid, name='regeom'      , vardesc=vardesc)
+		 call pio_read_darray(ncid, vardesc, iodesc_dbl , TRunoff%geometry, ier)
+		 if (masterproc) write(iulog,FORMR) trim(subname),' read regeom',minval(TRunoff%geometry),maxval(TRunoff%geometry)
+		 call shr_sys_flush(iulog)
+		 
+		 ier = pio_inq_varid (ncid, name='Mean_len'      , vardesc=vardesc)
+		 call pio_read_darray(ncid, vardesc, iodesc_dbl , TRunoff%Length_r, ier)
+		 if (masterproc) write(iulog,FORMR) trim(subname),' read Mean_len',minval(TRunoff%Length_r),maxval(TRunoff%Length_r)
+		 call shr_sys_flush(iulog)
+		 
+		 ier = pio_inq_varid (ncid, name='Mean_wid'      , vardesc=vardesc)
+		 call pio_read_darray(ncid, vardesc, iodesc_dbl , TRunoff%Width_r, ier)
+		 if (masterproc) write(iulog,FORMR) trim(subname),' read Mean_wid',minval(TRunoff%Width_r),maxval(TRunoff%Width_r)
+		 call shr_sys_flush(iulog)
+		 
+		 ier = pio_inq_varid (ncid, name='V_err'      , vardesc=vardesc)
+		 call pio_read_darray(ncid, vardesc, iodesc_dbl , TRunoff%V_errs, ier)
+		 if (masterproc) write(iulog,FORMR) trim(subname),' read V_err',minval(TRunoff%V_errs),maxval(TRunoff%V_errs)
+		 call shr_sys_flush(iulog)
+		 
+		 ier = pio_inq_varid (ncid, name='A_err'      , vardesc=vardesc)
+		 call pio_read_darray(ncid, vardesc, iodesc_dbl , TRunoff%A_errs, ier)
+		 if (masterproc) write(iulog,FORMR) trim(subname),' read A_err',minval(TRunoff%A_errs),maxval(TRunoff%A_errs)
+		 call shr_sys_flush(iulog)
+		 
+		 ier = pio_inq_varid (ncid, name='V_str'      , vardesc=vardesc)
+		 call pio_read_darray(ncid, vardesc, iodesc_dbl , TRunoff%V_str, ier)
+		 if (masterproc) write(iulog,FORMR) trim(subname),' read V_str',minval(TRunoff%V_str),maxval(TRunoff%V_str)
+		 call shr_sys_flush(iulog)
+		 
+		 ier = pio_inq_varid (ncid, name='A_str'      , vardesc=vardesc)
+		 call pio_read_darray(ncid, vardesc, iodesc_dbl , TRunoff%A_str, ier)
+		 if (masterproc) write(iulog,FORMR) trim(subname),' read A_str',minval(TRunoff%A_str),maxval(TRunoff%A_str)
+		 call shr_sys_flush(iulog)
+		 
+		 ier = pio_inq_varid (ncid, name='Coeff_v'      , vardesc=vardesc)
+		 call pio_read_darray(ncid, vardesc, iodesc_dbl , TRunoff%C_vs, ier)
+		 if (masterproc) write(iulog,FORMR) trim(subname),' read Coeff_v',minval(TRunoff%C_vs),maxval(TRunoff%C_vs)
+		 call shr_sys_flush(iulog)
+		 
+		 ier = pio_inq_varid (ncid, name='Coeff_a'      , vardesc=vardesc)
+		 call pio_read_darray(ncid, vardesc, iodesc_dbl , TRunoff%C_as, ier)
+		 if (masterproc) write(iulog,FORMR) trim(subname),' read Coeff_a',minval(TRunoff%C_as),maxval(TRunoff%C_as)
+		 call shr_sys_flush(iulog)
+		 
+		 ier = pio_inq_varid (ncid, name='Diff_v'      , vardesc=vardesc)
+		 call pio_read_darray(ncid, vardesc, iodesc_dbl , TRunoff%V_dfs, ier)
+		 if (masterproc) write(iulog,FORMR) trim(subname),' read Diff_v',minval(TRunoff%V_dfs),maxval(TRunoff%V_dfs)
+		 call shr_sys_flush(iulog)
+		 
+		 ier = pio_inq_varid (ncid, name='Diff_a'      , vardesc=vardesc)
+		 call pio_read_darray(ncid, vardesc, iodesc_dbl , TRunoff%A_dfs, ier)
+		 if (masterproc) write(iulog,FORMR) trim(subname),' read Diff_a',minval(TRunoff%A_dfs),maxval(TRunoff%A_dfs)
+		 call shr_sys_flush(iulog)
+		 
+		 ier = pio_inq_varid (ncid, name='depth_m'      , vardesc=vardesc)
+		 call pio_read_darray(ncid, vardesc, iodesc_dbl , TRunoff%h_lake, ier)
+		 if (masterproc) write(iulog,FORMR) trim(subname),' read depth_m',minval(TRunoff%h_lake),maxval(TRunoff%h_lake)
+		 call shr_sys_flush(iulog)
+		 
+		 ier = pio_inq_varid (ncid, name='d_n'      , vardesc=vardesc)
+		 call pio_read_darray(ncid, vardesc, iodesc_int , TRunoff%d_ns, ier)
+		 if (masterproc) write(iulog,FORMR) trim(subname),' read d_n',minval(TRunoff%d_ns),maxval(TRunoff%d_ns)
+		 call shr_sys_flush(iulog)
+		 
+		 ier = pio_inq_varid (ncid, name='lake_flag'      , vardesc=vardesc)
+		 call pio_read_darray(ncid, vardesc, iodesc_int , TRunoff%lake_flg, ier)
+		 if (masterproc) write(iulog,FORMR) trim(subname),' read lake_flag',minval(TRunoff%lake_flg),maxval(TRunoff%lake_flg)
+		 call shr_sys_flush(iulog)
+	 end if
+	 
      if (inundflag) then
         do n = rtmCtl%begr, rtmCTL%endr
            if ( rtmCTL%mask(n) .eq. 1 .or. rtmCTL%mask(n) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
@@ -3907,10 +4057,8 @@ contains
            TPara%t_mu = 0.5278_r8
         end if
 		
-		! if(rstraflag) then
-		allocate (THeat%coszen(begr:endr))
-		THeat%coszen = 0._r8
-		! end if
+        allocate (THeat%coszen(begr:endr))
+        THeat%coszen = 0._r8
 		
      end if
     
@@ -4069,233 +4217,434 @@ contains
   subroutine regeom
 	
 ! Calculate reservoir layer average area (km2) 
-		use shr_sys_mod   , only : shr_sys_flush
-		use WRM_type_mod  , only : WRMUnit
-		use RunoffMod     , only : rtmCTL
-		use RtmVar         , only : iulog, ngeom, nlayers
+ use shr_sys_mod   , only : shr_sys_flush
+ use WRM_type_mod  , only : WRMUnit
+ use RunoffMod     , only : rtmCTL
+ use RtmVar         , only : iulog, ngeom, nlayers
 	
-		implicit none
-		! integer, parameter :: d_nn = ngeom              		! Number of vertical depth descritization to establish depth-area-volume relationship	
-		! integer, parameter :: d_n_max = nlayers					! Maximum number of layers allowed
-		! integer,  intent(in) :: iunit, damID
-		real(r8) :: M_W,M_L,gm_j,d_res,dd_in,C_a,C_v
-        real(r8),dimension(ngeom+1) :: d_zi0,v_zti0,a_di0
-		real(r8) ::dd_zz(ngeom),a_dd(ngeom+1),a_zi(ngeom+1),C_aa(ngeom+1), ar_f = 1.0e6             	! Factor to convert area to m^2
-		real(r8) :: pi      = 3.141593_r8  	! pi
-		real(r8) :: d_s	= 1.0_r8		!0.60_r8		           								! Surface layer depth (m)
-		real(r8) :: dv,da,dz
-		real(r8) :: d_v(nlayers)			   			! Reservoir volume change at layer (m^3)
-		real(r8) :: rho_z(nlayers)			   			! Reservoir layer density (kg/m^3), taken constant for furture revision 
-		real(r8) :: delta_z                        		! depth change to calculate corresponding area/volume(m)
-		integer :: i,j,k,iunit,damID							! indices
-		real(r8) :: s_tin,s_lum,a_sur,fac                 ! Initial total storage (10*6m^3), Lumped storage for grids with multiple reservoirs (m^3)
-		real(r8) :: A_cf,V_cf						!Area and volume correcting factor for error from geometry estimation
-		character(len=*),parameter :: subname = '(regeom)'        
+ implicit none
+ real(r8) :: M_W,M_L,gm_j,d_res,dd_in,C_a,C_v
+ real(r8),dimension(ngeom+1) :: d_zi0,v_zti0,a_di0
+ real(r8) ::dd_zz(ngeom),a_dd(ngeom+1),a_zi(ngeom+1),C_aa(ngeom+1), ar_f = 1.0e6             	! Factor to convert area to m^2
+ real(r8) :: pi      = 3.141593_r8  	! pi
+ real(r8) :: d_s	= 1.0_r8		!0.60_r8		           								! Surface layer depth (m)
+ real(r8) :: dv,da,dz
+ real(r8) :: d_v(nlayers)			   			! Reservoir volume change at layer (m^3)
+ real(r8) :: rho_z(nlayers)			   			! Reservoir layer density (kg/m^3), taken constant for furture revision 
+ real(r8) :: delta_z                        		! depth change to calculate corresponding area/volume(m)
+ integer :: i,j,k,iunit,damID							! indices
+ real(r8) :: s_tin,s_lum,a_sur,fac                 ! Initial total storage (10*6m^3), Lumped storage for grids with multiple reservoirs (m^3)
+ real(r8) :: A_cf,V_cf						!Area and volume correcting factor for error from geometry estimation
+ character(len=*),parameter :: subname = '(regeom)'        
 						    
 !**************************************************************************************************************************************************
 	
-		do iunit = rtmCTL%begr,rtmCTL%endr	
+ do iunit = rtmCTL%begr,rtmCTL%endr	
 		
-			damID = WRMUnit%INVicell(iunit)
-			if (damID>0.0_r8 .and. WRMUnit%d_ns(damID) >= 1) then ! .and. WRMUnit%Depth(damID) > 0.0_r8 .and. WRMUnit%Height(damID) > 0.0_r8
-				if (WRMUnit%Depth(damID) <= 2.0_r8)WRMUnit%Depth(damID) = 2._r8
-				if (WRMUnit%Height(damID) <= 2.0_r8)WRMUnit%Height(damID) = WRMUnit%Depth(damID)
-				WRMUnit%d_resrv(damID) = 0.95_r8*WRMUnit%Height(damID)
-				WRMUnit%h_resrv(damID) = 0.95_r8*WRMUnit%Height(damID)
-				! if(WRMUnit%d_resrv(damID) >= 100._r8 .and. WRMUnit%d_ns(damID)>=10)WRMUnit%d_ns(damID)= WRMUnit%d_ns(damID) + max((nlayers - 30),0) ! affects only large/deep reservoirs
+     damID = WRMUnit%INVicell(iunit)
+     if (damID>0.0_r8 .and. WRMUnit%d_ns(damID) >= 1) then ! .and. WRMUnit%Depth(damID) > 0.0_r8 .and. WRMUnit%Height(damID) > 0.0_r8
+          if (WRMUnit%Depth(damID) <= 2.0_r8)WRMUnit%Depth(damID) = 2._r8
+          if (WRMUnit%Height(damID) <= 2.0_r8)WRMUnit%Height(damID) = WRMUnit%Depth(damID)
+          WRMUnit%d_resrv(damID) = 0.95_r8*WRMUnit%Height(damID)
+          WRMUnit%h_resrv(damID) = 0.95_r8*WRMUnit%Height(damID)
+	  
+          s_lum = WRMUnit%StorCap(damID)
+          s_tin = WRMUnit%V_str(damID)
+          a_sur = WRMUnit%SurfArea(damID)
+				
+          if (s_lum <= 0.0_r8 .or. s_tin <= 0.0_r8 .or. ((s_lum/1.0e6) - s_tin)<0_r8) then
+               fac = 0.0_r8
+          elseif  (((s_lum/1.0e6) - s_tin)>=0_r8) then
+               fac = ((s_lum/1.0e6) - s_tin)/s_tin
+          endif
+				
+          !	Calculate layer depth	
+          if (WRMUnit%Width_r(damID) <= 0.0_r8)WRMUnit%Width_r(damID) = 1._r8
+          if (WRMUnit%Length_r(damID) <= 0.0_r8)WRMUnit%Length_r(damID) = 1._r8
 						
-				s_lum = WRMUnit%StorCap(damID)
-				s_tin = WRMUnit%V_str(damID)
-				a_sur = WRMUnit%SurfArea(damID)
+          ! Area and volume correcting factors for relative error as compared to GRanD
+          if (WRMUnit%A_dfs(damID)>=0_r8) then
+               A_cf = 1._r8 + (abs(WRMUnit%A_errs(damID))/100._r8)
+          elseif(WRMUnit%A_dfs(damID)<0_r8) then
+               A_cf = 1._r8 - (abs(WRMUnit%A_errs(damID))/100._r8)
+          end if
+          if (WRMUnit%V_dfs(damID)>=0_r8) then
+               V_cf = 1._r8 + (abs(WRMUnit%V_errs(damID))/100._r8) + fac
+          elseif(WRMUnit%V_dfs(damID)<0_r8) then
+               V_cf = 1._r8 - (abs(WRMUnit%V_errs(damID))/100._r8) + fac
+          end if
+          if (A_cf<=0._r8)A_cf = 0.1_r8
+          if (V_cf<=0._r8)V_cf = 0.1_r8
 				
-				if (s_lum <= 0.0_r8 .or. s_tin <= 0.0_r8 .or. ((s_lum/1.0e6) - s_tin)<0_r8) then
-					fac = 0.0_r8
-				elseif  (((s_lum/1.0e6) - s_tin)>=0_r8) then
-					fac = ((s_lum/1.0e6) - s_tin)/s_tin
-				endif
+          M_W   = WRMUnit%Width_r(damID)
+          M_L   = WRMUnit%Length_r(damID)
+          if (M_W<1._r8)M_W = 1.0_r8
+          if (M_L<1._r8)M_L = 1.0_r8
+          gm_j  = WRMUnit%geometry(damID)
+          d_res = WRMUnit%d_resrv(damID)		
+          C_a   = WRMUnit%C_as(damID)
+          C_v   = WRMUnit%C_vs(damID)
 				
-			!	Calculate layer depth	
-				if (WRMUnit%Width_r(damID) <= 0.0_r8)WRMUnit%Width_r(damID) = 1._r8
-				if (WRMUnit%Length_r(damID) <= 0.0_r8)WRMUnit%Length_r(damID) = 1._r8
-						
-			! Area and volume correcting factors for relative error as compared to GRanD
-				if (WRMUnit%A_dfs(damID)>=0_r8) then
-					A_cf = 1._r8 + (abs(WRMUnit%A_errs(damID))/100._r8)
-				elseif(WRMUnit%A_dfs(damID)<0_r8) then
-					A_cf = 1._r8 - (abs(WRMUnit%A_errs(damID))/100._r8)
-				end if
-				if (WRMUnit%V_dfs(damID)>=0_r8) then
-					V_cf = 1._r8 + (abs(WRMUnit%V_errs(damID))/100._r8) + fac
-				elseif(WRMUnit%V_dfs(damID)<0_r8) then
-					V_cf = 1._r8 - (abs(WRMUnit%V_errs(damID))/100._r8) + fac
-				end if
-				if (A_cf<=0._r8)A_cf = 0.1_r8
-				if (V_cf<=0._r8)V_cf = 0.1_r8
+          if (WRMUnit%A_str(damID)<= 0._r8) WRMUnit%A_str(damID)= 1._r8
 				
-				M_W   = WRMUnit%Width_r(damID)
-				M_L   = WRMUnit%Length_r(damID)
-				if (M_W<1._r8)M_W = 1.0_r8
-				if (M_L<1._r8)M_L = 1.0_r8
-				gm_j  = WRMUnit%geometry(damID)
-				d_res = WRMUnit%d_resrv(damID)		
-				C_a   = WRMUnit%C_as(damID)
-				C_v   = WRMUnit%C_vs(damID)
-				
-				if (WRMUnit%A_str(damID)<= 0._r8) WRMUnit%A_str(damID)= 1._r8
-				
-				if (WRMUnit%A_str(damID)<= 2._r8) then
-					C_a  = 2.0_r8*WRMUnit%C_as(damID)
-					! gm_j  = 1
-					! WRMUnit%d_ns(damID) = 1
-				end if
-				
-				! if (a_sur/s_tin < 0.01_r8 .and. (WRMUnit%V_errs(damID) > 25._r8 .or. WRMUnit%A_errs(damID) > 25._r8)) gm_j = 1.0_r8
-				
-			! Uniform subsurface layer depth for initialization	and limit maximum layer thickness 
-				dd_in = d_res/ngeom !bottom layers evenly descritized
+          if (WRMUnit%A_str(damID)<= 2._r8) then
+               C_a  = 2.0_r8*WRMUnit%C_as(damID)
+          end if
 							
-			! Calculate reservoir geometry to establish depth-area-volume relationship			
+          ! Uniform subsurface layer depth for initialization	and limit maximum layer thickness 
+          dd_in = d_res/ngeom !bottom layers evenly descritized
+							
+          ! Calculate reservoir geometry to establish depth-area-volume relationship			
 					
-				!	Calculate depth area	
-				!********** Curved Lake Bottom 
+          ! Calculate depth area	
+          !********** Curved Lake Bottom 
 				
-				do j = 1, ngeom!	
-					if (gm_j == 1.0_r8) then	
-						a_dd(j) = C_a*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)
-					else if (gm_j == 2.0_r8) then	
-						a_dd(j) = C_a*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)*(1-((dd_in*(j-1))/d_res))
-					else if (gm_j == 3.0_r8) then	
-						a_dd(j) = C_a*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)*((d_res-(dd_in*(j-1)))/d_res)**0.5_r8
-					else if (gm_j == 4.0_r8) then	
-						a_dd(j) = C_a*(2._r8/3._r8)*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)*(1-((dd_in*(j-1)))/d_res)
-					else if (gm_j == 5.0_r8) then	
-						a_dd(j) = C_a*pi*0.25_r8*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)*((d_res-(dd_in*(j-1)))/d_res)**0.5_r8
-					end if
+          do j = 1, ngeom!	
+               if (gm_j == 1.0_r8) then	
+                     a_dd(j) = C_a*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)
+               else if (gm_j == 2.0_r8) then	
+                     a_dd(j) = C_a*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)*(1-((dd_in*(j-1))/d_res))
+               else if (gm_j == 3.0_r8) then	
+                     a_dd(j) = C_a*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)*((d_res-(dd_in*(j-1)))/d_res)**0.5_r8
+               else if (gm_j == 4.0_r8) then	
+                     a_dd(j) = C_a*(2._r8/3._r8)*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)*(1-((dd_in*(j-1)))/d_res)
+               else if (gm_j == 5.0_r8) then	
+                     a_dd(j) = C_a*pi*0.25_r8*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)*((d_res-(dd_in*(j-1)))/d_res)**0.5_r8
+               end if					
+          end do
 					
-				end do
+          a_dd(ngeom+1) = a_dd(ngeom)*0.001_r8			!Bottom area given non-zero value
 					
-				a_dd(ngeom+1) = a_dd(ngeom)*0.001_r8			!Bottom area given non-zero value
-					
-			! Reverse indexing so that bottom is 1 and top is d_n+1 and convert to m2
-				do j = 1,ngeom+1
-					k =ngeom+2-j  
-					a_di0(k) = ((a_dd(j)))
-					if (a_di0(k)==0._r8) a_di0(k)=1._r8
-					WRMUnit%a_di(damID,k)  = (A_cf*a_di0(k)) 	!Area corrected for error for optimal geometry
-					if (WRMUnit%a_di(damID,k)==0._r8) WRMUnit%a_di(damID,k)=1._r8
-				end do	
+          ! Reverse indexing so that bottom is 1 and top is d_n+1 and convert to m2
+          do j = 1,ngeom+1
+               k =ngeom+2-j  
+               a_di0(k) = ((a_dd(j)))
+               if (a_di0(k)==0._r8) a_di0(k)=1._r8
+               WRMUnit%a_di(damID,k)  = (A_cf*a_di0(k)) 	!Area corrected for error for optimal geometry
+               if (WRMUnit%a_di(damID,k)==0._r8) WRMUnit%a_di(damID,k)=1._r8
+          end do	
 				
-			! 	Calculate layer depth,area,and volume from bottom 
-				d_zi0(1) = 0._r8
-				WRMUnit%d_zi(damID,1)  = d_zi0(1)
-				do j = 2, ngeom+1	
-					d_zi0(j) = d_zi0(j-1) + dd_in
-					WRMUnit%d_zi(damID,j)  = d_zi0(j) 
-				end do
+          ! Calculate layer depth,area,and volume from bottom 
+          d_zi0(1) = 0._r8
+          WRMUnit%d_zi(damID,1)  = d_zi0(1)
+          do j = 2, ngeom+1	
+               d_zi0(j) = d_zi0(j-1) + dd_in
+               WRMUnit%d_zi(damID,j)  = d_zi0(j) 
+          end do
 						
-			! 	Calculate layer average area,and total volume from bottom
-				v_zti0(1) = (0.001_r8*0.5_r8*(WRMUnit%a_di(damID,1)+WRMUnit%a_di(damID,2))*dd_in)!	
-				WRMUnit%v_zti(damID,1) = (V_cf*v_zti0(1)) 	!lower Volume corrected for error
-				if (WRMUnit%v_zti(damID,1)==0._r8) WRMUnit%v_zti(damID,1)=1._r8
-				do j = 2, ngeom+1	 
-					a_zi(j) = 0.5_r8*(WRMUnit%a_di(damID,j)+WRMUnit%a_di(damID,j-1)) !Area converted to m^2
-					v_zti0(j) = v_zti0(j-1) + ((C_v*a_zi(j)*dd_in))
-					WRMUnit%v_zti(damID,j) = (V_cf*v_zti0(j)) 	!Volume corrected for error
-					if (WRMUnit%v_zti(damID,j)==0._r8) WRMUnit%v_zti(damID,j)=1._r8
-					if (WRMUnit%a_di(damID,j)<0._r8 .or. WRMUnit%v_zti(damID,j)<0._r8) write(iulog,*) 'geom negative',iunit,WRMUnit%grandid(damID)
-					! if (iunit==52050)write(iulog,*) j,int(WRMUnit%d_zi(damID,j)),int(WRMUnit%a_di(damID,j)/1e6),int(WRMUnit%v_zti(damID,j)/1e6)
-				end do
+          ! Calculate layer average area,and total volume from bottom
+          v_zti0(1) = (0.001_r8*0.5_r8*(WRMUnit%a_di(damID,1)+WRMUnit%a_di(damID,2))*dd_in)!	
+          WRMUnit%v_zti(damID,1) = (V_cf*v_zti0(1)) 	!lower Volume corrected for error
+          if (WRMUnit%v_zti(damID,1)==0._r8) WRMUnit%v_zti(damID,1)=1._r8
+          do j = 2, ngeom+1	 
+               a_zi(j) = 0.5_r8*(WRMUnit%a_di(damID,j)+WRMUnit%a_di(damID,j-1)) !Area converted to m^2
+               v_zti0(j) = v_zti0(j-1) + ((C_v*a_zi(j)*dd_in))
+               WRMUnit%v_zti(damID,j) = (V_cf*v_zti0(j)) 	!Volume corrected for error
+               if (WRMUnit%v_zti(damID,j)==0._r8) WRMUnit%v_zti(damID,j)=1._r8
+               if (WRMUnit%a_di(damID,j)<0._r8 .or. WRMUnit%v_zti(damID,j)<0._r8) write(iulog,*) 'geom negative',iunit,WRMUnit%grandid(damID)
+          end do
 				
-				!Initial reservoir storage 
-				do j = WRMUnit%d_ns(damID),1,-1
-					if (j == WRMUnit%d_ns(damID) .and. WRMUnit%d_ns(damID) == 1) then
-						WRMUnit%dd_z(damID,j) = WRMUnit%d_resrv(damID)
-					elseif (j == WRMUnit%d_ns(damID) .and. WRMUnit%d_ns(damID) > 1) then !top layer depth kept constant
-						WRMUnit%dd_z(damID,j) = d_s		!0.6_r8
-					elseif ((WRMUnit%d_ns(damID)>1 .and.j < WRMUnit%d_ns(damID)).and.(WRMUnit%d_resrv(damID) - WRMUnit%dd_z(damID,WRMUnit%d_ns(damID)))>0._r8) then
-						WRMUnit%dd_z(damID,j) = (WRMUnit%d_resrv(damID) - WRMUnit%dd_z(damID,WRMUnit%d_ns(damID))) / (WRMUnit%d_ns(damID) - 1) !bottom layers evenly descritized
-					endif
-				end do	
+          !Initial reservoir storage 
+          do j = WRMUnit%d_ns(damID),1,-1
+               if (j == WRMUnit%d_ns(damID) .and. WRMUnit%d_ns(damID) == 1) then
+                     WRMUnit%dd_z(damID,j) = WRMUnit%d_resrv(damID)
+               elseif (j == WRMUnit%d_ns(damID) .and. WRMUnit%d_ns(damID) > 1) then !top layer depth kept constant
+                     WRMUnit%dd_z(damID,j) = d_s		!0.6_r8
+               elseif ((WRMUnit%d_ns(damID)>1 .and.j < WRMUnit%d_ns(damID)).and.(WRMUnit%d_resrv(damID) - WRMUnit%dd_z(damID,WRMUnit%d_ns(damID)))>0._r8) then
+                     WRMUnit%dd_z(damID,j) = (WRMUnit%d_resrv(damID) - WRMUnit%dd_z(damID,WRMUnit%d_ns(damID))) / (WRMUnit%d_ns(damID) - 1) !bottom layers evenly descritized
+               endif
+          end do	
 			
-				if (WRMUnit%d_ns(damID)>1 .and. WRMUnit%dd_z(damID,WRMUnit%d_ns(damID)-1)<d_s)then !layer thickness too small
-					WRMUnit%d_ns(damID)=int((WRMUnit%d_resrv(damID)/d_s)+1) 
-					do j=1,nlayers!WRMUnit%d_ns(damID)
-						WRMUnit%dd_z(damID,j) = 0._r8
-					end do
+          if (WRMUnit%d_ns(damID)>1 .and. WRMUnit%dd_z(damID,WRMUnit%d_ns(damID)-1)<d_s)then !layer thickness too small
+               WRMUnit%d_ns(damID)=int((WRMUnit%d_resrv(damID)/d_s)+1) 
+               do j=1,nlayers!WRMUnit%d_ns(damID)
+                     WRMUnit%dd_z(damID,j) = 0._r8
+               end do
 					
-					! Reinitialize layer thickness
-					do j = WRMUnit%d_ns(damID),1,-1
-						if (j == WRMUnit%d_ns(damID)) then
-							WRMUnit%dd_z(damID,j) = d_s      !top layer depth
-						else
-							WRMUnit%dd_z(damID,j) = (WRMUnit%d_resrv(damID) - WRMUnit%dd_z(damID,WRMUnit%d_ns(damID)))/(WRMUnit%d_ns(damID) - 1) !bottom layers evenly descritized
-						end if
-					end do	
-				end if
+               ! Reinitialize layer thickness
+               do j = WRMUnit%d_ns(damID),1,-1
+                     if (j == WRMUnit%d_ns(damID)) then
+                         WRMUnit%dd_z(damID,j) = d_s      !top layer depth
+                     else
+                         WRMUnit%dd_z(damID,j) = (WRMUnit%d_resrv(damID) - WRMUnit%dd_z(damID,WRMUnit%d_ns(damID)))/(WRMUnit%d_ns(damID) - 1) !bottom layers evenly descritized
+                     end if
+               end do	
+          end if
 		
-				if (WRMUnit%d_ns(damID)>1) then
-					WRMUnit%ddz_local(damID) = WRMUnit%dd_z(damID,WRMUnit%d_ns(damID)-1)
-				else
-					WRMUnit%ddz_local(damID) = WRMUnit%dd_z(damID,WRMUnit%d_ns(damID))
-				end if
+          if (WRMUnit%d_ns(damID)>1) then
+               WRMUnit%ddz_local(damID) = WRMUnit%dd_z(damID,WRMUnit%d_ns(damID)-1)
+          else
+               WRMUnit%ddz_local(damID) = WRMUnit%dd_z(damID,WRMUnit%d_ns(damID))
+          end if
 				
-				! Calculate layer depth (minimum at bottom)	
-				WRMUnit%d_z(damID,1)=0._r8
-				do j = 2, nlayers	
-					if (j<=WRMUnit%d_ns(damID)+1) then
-						WRMUnit%d_z(damID,j) = WRMUnit%d_z(damID,j-1) + WRMUnit%dd_z(damID,j-1)
-					else 
-						WRMUnit%d_z(damID,j) = 0._r8
-					end if
-				end do	
-				! Assign layer area and volume based on depth-area-volume relationship
-				WRMUnit%a_d(damID,1)=(WRMUnit%a_di(damID,1))
-				WRMUnit%v_zt(damID,1)=(WRMUnit%v_zti(damID,1))
-				do i=2,nlayers
-					if (i<=WRMUnit%d_ns(damID)+1) then
-						do j=2,ngeom+1
-							if (WRMUnit%d_z(damID,i)>WRMUnit%d_zi(damID,j-1).and.WRMUnit%d_z(damID,i)<=WRMUnit%d_zi(damID,j))then
-								delta_z = (WRMUnit%d_z(damID,i)-WRMUnit%d_zi(damID,j-1))/(WRMUnit%d_zi(damID,j)-WRMUnit%d_zi(damID,j-1))
-								WRMUnit%a_d(damID,i) = (delta_z*(WRMUnit%a_di(damID,j)-WRMUnit%a_di(damID,j-1))+WRMUnit%a_di(damID,j-1))
-								WRMUnit%v_zt(damID,i) = (delta_z*(WRMUnit%v_zti(damID,j)-WRMUnit%v_zti(damID,j-1))+WRMUnit%v_zti(damID,j-1))
-							else if (WRMUnit%d_z(damID,i) > WRMUnit%d_zi(damID,ngeom+1) .and. i<= WRMUnit%d_ns(damID)+1)then
-								delta_z = (WRMUnit%d_z(damID,i)-WRMUnit%d_zi(damID,ngeom))/(WRMUnit%d_zi(damID,ngeom+1)-WRMUnit%d_zi(damID,ngeom))
-								WRMUnit%a_d(damID,i) = (delta_z*(WRMUnit%a_di(damID,ngeom+1)-WRMUnit%a_di(damID,ngeom))+WRMUnit%a_di(damID,ngeom))
-								WRMUnit%v_zt(damID,i) = (delta_z*(WRMUnit%v_zti(damID,ngeom+1)-WRMUnit%v_zti(damID,ngeom))+WRMUnit%v_zti(damID,ngeom))
-							end if
-						end do
-						if (WRMUnit%v_zt(damID,i)<WRMUnit%v_zt(damID,i-1))write(iulog,*) 'check reservoir geometry for',WRMUnit%grandid(damID)
-					else
-						WRMUnit%a_d(damID,i) = 0._r8
-						WRMUnit%v_zt(damID,i) = 0._r8
-					end if
-				end do
+          ! Calculate layer depth (minimum at bottom)	
+          WRMUnit%d_z(damID,1)=0._r8
+          do j = 2, nlayers	
+               if (j<=WRMUnit%d_ns(damID)+1) then
+                     WRMUnit%d_z(damID,j) = WRMUnit%d_z(damID,j-1) + WRMUnit%dd_z(damID,j-1)
+               else 
+                     WRMUnit%d_z(damID,j) = 0._r8
+               end if
+          end do	
+          ! Assign layer area and volume based on depth-area-volume relationship
+          WRMUnit%a_d(damID,1)=(WRMUnit%a_di(damID,1))
+          WRMUnit%v_zt(damID,1)=(WRMUnit%v_zti(damID,1))
+          do i=2,nlayers
+               if (i<=WRMUnit%d_ns(damID)+1) then
+                     do j=2,ngeom+1
+                          if (WRMUnit%d_z(damID,i)>WRMUnit%d_zi(damID,j-1).and.WRMUnit%d_z(damID,i)<=WRMUnit%d_zi(damID,j))then
+                               delta_z = (WRMUnit%d_z(damID,i)-WRMUnit%d_zi(damID,j-1))/(WRMUnit%d_zi(damID,j)-WRMUnit%d_zi(damID,j-1))
+                               WRMUnit%a_d(damID,i) = (delta_z*(WRMUnit%a_di(damID,j)-WRMUnit%a_di(damID,j-1))+WRMUnit%a_di(damID,j-1))
+                               WRMUnit%v_zt(damID,i) = (delta_z*(WRMUnit%v_zti(damID,j)-WRMUnit%v_zti(damID,j-1))+WRMUnit%v_zti(damID,j-1))
+                          else if (WRMUnit%d_z(damID,i) > WRMUnit%d_zi(damID,ngeom+1) .and. i<= WRMUnit%d_ns(damID)+1)then
+                               delta_z = (WRMUnit%d_z(damID,i)-WRMUnit%d_zi(damID,ngeom))/(WRMUnit%d_zi(damID,ngeom+1)-WRMUnit%d_zi(damID,ngeom))
+                               WRMUnit%a_d(damID,i) = (delta_z*(WRMUnit%a_di(damID,ngeom+1)-WRMUnit%a_di(damID,ngeom))+WRMUnit%a_di(damID,ngeom))
+                               WRMUnit%v_zt(damID,i) = (delta_z*(WRMUnit%v_zti(damID,ngeom+1)-WRMUnit%v_zti(damID,ngeom))+WRMUnit%v_zti(damID,ngeom))
+                          end if
+                     end do
+                     if (WRMUnit%v_zt(damID,i)<WRMUnit%v_zt(damID,i-1))write(iulog,*) 'check reservoir geometry for',WRMUnit%grandid(damID)
+               else
+                     WRMUnit%a_d(damID,i) = 0._r8
+                     WRMUnit%v_zt(damID,i) = 0._r8
+               end if
+          end do
 								
-				! Calculate layer volume(m^3)
-				do j = 1, nlayers	
-					if (j<=WRMUnit%d_ns(damID)) then
-						WRMUnit%d_v(damID,j) = ((WRMUnit%v_zt(damID,j+1) - WRMUnit%v_zt(damID,j)))	
-						if (WRMUnit%d_v(damID,j)==0._r8) WRMUnit%d_v(damID,j)=1._r8	
-						WRMUnit%dd_z(damID,j) = WRMUnit%d_z(damID,j+1) - WRMUnit%d_z(damID,j)
-						if (WRMUnit%d_v(damID,j)<0.0_r8) then 
-							write(iulog,*) subname,'Layer volume negative:Check geometry data for dam',WRMUnit%grandid(damID)
-						end if
-					else
-						WRMUnit%d_v(damID,j) = 0._r8
-						WRMUnit%dd_z(damID,j) = 0._r8
-					end if
-				end do		
+          ! Calculate layer volume(m^3)
+          do j = 1, nlayers	
+               if (j<=WRMUnit%d_ns(damID)) then
+                     WRMUnit%d_v(damID,j) = ((WRMUnit%v_zt(damID,j+1) - WRMUnit%v_zt(damID,j)))	
+                     if (WRMUnit%d_v(damID,j)==0._r8) WRMUnit%d_v(damID,j)=1._r8	
+                     WRMUnit%dd_z(damID,j) = WRMUnit%d_z(damID,j+1) - WRMUnit%d_z(damID,j)
+                     if (WRMUnit%d_v(damID,j)<0.0_r8) then 
+                         write(iulog,*) subname,'Layer volume negative:Check geometry data for dam',WRMUnit%grandid(damID)
+                     end if
+               else
+                     WRMUnit%d_v(damID,j) = 0._r8
+                     WRMUnit%dd_z(damID,j) = 0._r8
+               end if
+          end do		
 				
-			! 	Intitialize layer temperature and total storage					
-				do j=1,WRMUnit%d_ns(damID)					
-					rho_z(j) = 1000._r8*( 1._r8 - 1.9549e-05*(abs(WRMUnit%temp_resrv(damID,j)-277._r8))**1.68_r8) 
-					WRMUnit%v_zn(damID,j) = (WRMUnit%d_v(damID,j))
-					WRMUnit%m_zo(damID,j) = (WRMUnit%d_v(damID,j)*rho_z(j)) 
-					WRMUnit%m_zn(damID,j) = (WRMUnit%d_v(damID,j)*rho_z(j))
-				end do
-			end if
-		end do	
-	end subroutine regeom 				   
+          ! 	Intitialize layer temperature and total storage					
+          do j=1,WRMUnit%d_ns(damID)					
+               rho_z(j) = 1000._r8*( 1._r8 - 1.9549e-05*(abs(WRMUnit%temp_resrv(damID,j)-277._r8))**1.68_r8) 
+               WRMUnit%v_zn(damID,j) = (WRMUnit%d_v(damID,j))
+               WRMUnit%m_zo(damID,j) = (WRMUnit%d_v(damID,j)*rho_z(j)) 
+               WRMUnit%m_zn(damID,j) = (WRMUnit%d_v(damID,j)*rho_z(j))
+          end do
+     end if
+ end do	
+ end subroutine regeom 				   
+!----------------------------------------------------------------------------
+  subroutine lkgeom
+	
+! Calculate reservoir layer average area (km2) 
+ use shr_sys_mod   , only : shr_sys_flush
+ use RunoffMod     , only : rtmCTL
+ use RtmVar         , only : iulog, ngeom, nlayers
+	
+ implicit none
+ real(r8) :: M_W,M_L,gm_j,d_res,dd_in,C_a,C_v
+ real(r8),dimension(ngeom+1) :: d_zi0,v_zti0,a_di0
+ real(r8) ::dd_zz(ngeom),a_dd(ngeom+1),a_zi(ngeom+1),C_aa(ngeom+1), ar_f = 1.0e6             	! Factor to convert area to m^2
+ real(r8) :: pi      = 3.141593_r8  	! pi
+ real(r8) :: d_s	= 1.0_r8		!0.60_r8		           								! Surface layer depth (m)
+ real(r8) :: dv,da,dz
+ real(r8) :: d_v(nlayers)			   			! Reservoir volume change at layer (m^3)
+ real(r8) :: rho_z(nlayers)			   			! Reservoir layer density (kg/m^3), taken constant for furture revision 
+ real(r8) :: delta_z                        		! depth change to calculate corresponding area/volume(m)
+ integer :: i,j,k,iunit							! indices
+ real(r8) :: s_tin,s_lum,a_sur,fac                 ! Initial total storage (10*6m^3), Lumped storage for grids with multiple reservoirs (m^3)
+ real(r8) :: A_cf,V_cf						!Area and volume correcting factor for error from geometry estimation
+ character(len=*),parameter :: subname = '(lkgeom)'        
+						    
+!**************************************************************************************************************************************************
+	
+ do iunit = rtmCTL%begr,rtmCTL%endr	
+		
+     if (TRunoff%d_ns(iunit) >= 1 .and. TRunoff%lake_flg(iunit) ==1) then ! 
+          if (TRunoff%h_lake(iunit) <= 2.0_r8)TRunoff%h_lake(iunit) = 2._r8
+          TRunoff%d_lake(iunit) = TRunoff%h_lake(iunit)
+		  
+		  TRunoff%V_max(iunit) = TRunoff%V_str(iunit)
+          
+          fac = 0.0_r8
+		  
+          !	Calculate layer depth	
+          ! if (TRunoff%Width_r(iunit) <= 0.0_r8)TRunoff%Width_r(iunit) = 1._r8
+          ! if (TRunoff%Length_r(iunit) <= 0.0_r8)TRunoff%Length_r(iunit) = 1._r8
+						
+          ! Area and volume correcting factors for relative error as compared to GRanD
+          if (TRunoff%A_dfs(iunit)>=0_r8) then
+               A_cf = 1._r8 + (abs(TRunoff%A_errs(iunit))/100._r8)
+          elseif(TRunoff%A_dfs(iunit)<0_r8) then
+               A_cf = 1._r8 - (abs(TRunoff%A_errs(iunit))/100._r8)
+          end if
+          if (TRunoff%V_dfs(iunit)>=0_r8) then
+               V_cf = 1._r8 + (abs(TRunoff%V_errs(iunit))/100._r8) + fac
+          elseif(TRunoff%V_dfs(iunit)<0_r8) then
+               V_cf = 1._r8 - (abs(TRunoff%V_errs(iunit))/100._r8) + fac
+          end if
+          if (A_cf<=0._r8)A_cf = 0.1_r8
+          if (V_cf<=0._r8)V_cf = 0.1_r8
+				
+          M_W   = TRunoff%Width_r(iunit)
+          M_L   = TRunoff%Length_r(iunit)
+          if (M_W<1._r8)M_W = 1.0_r8
+          if (M_L<1._r8)M_L = 1.0_r8
+          gm_j  = TRunoff%geometry(iunit)
+          d_res = TRunoff%d_lake(iunit)		
+          C_a   = TRunoff%C_as(iunit)
+          C_v   = TRunoff%C_vs(iunit)
+				
+          if (TRunoff%A_str(iunit)<= 0._r8) TRunoff%A_str(iunit)= 1._r8
+				
+          if (TRunoff%A_str(iunit)<= 2._r8) then
+               C_a  = 2.0_r8*TRunoff%C_as(iunit)
+          end if
+							
+          ! Uniform subsurface layer depth for initialization	and limit maximum layer thickness 
+          dd_in = d_res/ngeom !bottom layers evenly descritized
+							
+          ! Calculate reservoir geometry to establish depth-area-volume relationship			
+					
+          ! Calculate depth area	
+          !********** Curved Lake Bottom 
+				
+          do j = 1, ngeom!	
+               if (gm_j == 1.0_r8) then	
+                     a_dd(j) = C_a*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)
+               else if (gm_j == 2.0_r8) then	
+                     a_dd(j) = C_a*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)*(1-((dd_in*(j-1))/d_res))
+               else if (gm_j == 3.0_r8) then	
+                     a_dd(j) = C_a*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)*((d_res-(dd_in*(j-1)))/d_res)**0.5_r8
+               else if (gm_j == 4.0_r8) then	
+                     a_dd(j) = C_a*(2._r8/3._r8)*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)*(1-((dd_in*(j-1)))/d_res)
+               else if (gm_j == 5.0_r8) then	
+                     a_dd(j) = C_a*pi*0.25_r8*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)*((d_res-(dd_in*(j-1)))/d_res)**0.5_r8
+               end if					
+          end do
+					
+          a_dd(ngeom+1) = a_dd(ngeom)*0.001_r8			!Bottom area given non-zero value
+					
+          ! Reverse indexing so that bottom is 1 and top is d_n+1 and convert to m2
+          do j = 1,ngeom+1
+               k =ngeom+2-j  
+               a_di0(k) = ((a_dd(j)))
+               if (a_di0(k)==0._r8) a_di0(k)=1._r8
+               TRunoff%a_di(iunit,k)  = (A_cf*a_di0(k)) 	!Area corrected for error for optimal geometry
+               if (TRunoff%a_di(iunit,k)==0._r8) TRunoff%a_di(iunit,k)=1._r8
+          end do	
+				
+          ! Calculate layer depth,area,and volume from bottom 
+          d_zi0(1) = 0._r8
+          TRunoff%d_zi(iunit,1)  = d_zi0(1)
+          do j = 2, ngeom+1	
+               d_zi0(j) = d_zi0(j-1) + dd_in
+               TRunoff%d_zi(iunit,j)  = d_zi0(j) 
+          end do
+						
+          ! Calculate layer average area,and total volume from bottom
+          v_zti0(1) = (0.001_r8*0.5_r8*(TRunoff%a_di(iunit,1)+TRunoff%a_di(iunit,2))*dd_in)!	
+          TRunoff%v_zti(iunit,1) = (V_cf*v_zti0(1)) 	!lower Volume corrected for error
+          if (TRunoff%v_zti(iunit,1)==0._r8) TRunoff%v_zti(iunit,1)=1._r8
+          do j = 2, ngeom+1	 
+               a_zi(j) = 0.5_r8*(TRunoff%a_di(iunit,j)+TRunoff%a_di(iunit,j-1)) !Area converted to m^2
+               v_zti0(j) = v_zti0(j-1) + ((C_v*a_zi(j)*dd_in))
+               TRunoff%v_zti(iunit,j) = (V_cf*v_zti0(j)) 	!Volume corrected for error
+               if (TRunoff%v_zti(iunit,j)==0._r8) TRunoff%v_zti(iunit,j)=1._r8
+               if (TRunoff%a_di(iunit,j)<0._r8 .or. TRunoff%v_zti(iunit,j)<0._r8) write(iulog,*)subname,'geom negative',iunit
+          end do
+				
+          !Initial reservoir storage 
+          do j = TRunoff%d_ns(iunit),1,-1
+               if (j == TRunoff%d_ns(iunit) .and. TRunoff%d_ns(iunit) == 1) then
+                     TRunoff%dd_z(iunit,j) = TRunoff%d_lake(iunit)
+               elseif (j == TRunoff%d_ns(iunit) .and. TRunoff%d_ns(iunit) > 1) then !top layer depth kept constant
+                     TRunoff%dd_z(iunit,j) = d_s		!0.6_r8
+               elseif ((TRunoff%d_ns(iunit)>1 .and.j < TRunoff%d_ns(iunit)).and.(TRunoff%d_lake(iunit) - TRunoff%dd_z(iunit,TRunoff%d_ns(iunit)))>0._r8) then
+                     TRunoff%dd_z(iunit,j) = (TRunoff%d_lake(iunit) - TRunoff%dd_z(iunit,TRunoff%d_ns(iunit))) / (TRunoff%d_ns(iunit) - 1) !bottom layers evenly descritized
+               endif
+          end do	
+			
+          if (TRunoff%d_ns(iunit)>1 .and. TRunoff%dd_z(iunit,TRunoff%d_ns(iunit)-1)<d_s)then !layer thickness too small
+               TRunoff%d_ns(iunit)=int((TRunoff%d_lake(iunit)/d_s)+1) 
+               do j=1,nlayers!TRunoff%d_ns(iunit)
+                     TRunoff%dd_z(iunit,j) = 0._r8
+               end do
+					
+               ! Reinitialize layer thickness
+               do j = TRunoff%d_ns(iunit),1,-1
+                     if (j == TRunoff%d_ns(iunit)) then
+                         TRunoff%dd_z(iunit,j) = d_s      !top layer depth
+                     else
+                         TRunoff%dd_z(iunit,j) = (TRunoff%d_lake(iunit) - TRunoff%dd_z(iunit,TRunoff%d_ns(iunit)))/(TRunoff%d_ns(iunit) - 1) !bottom layers evenly descritized
+                     end if
+               end do	
+          end if
+		
+          if (TRunoff%d_ns(iunit)>1) then
+               TRunoff%ddz_local(iunit) = TRunoff%dd_z(iunit,TRunoff%d_ns(iunit)-1)
+          else
+               TRunoff%ddz_local(iunit) = TRunoff%dd_z(iunit,TRunoff%d_ns(iunit))
+          end if
+				
+          ! Calculate layer depth (minimum at bottom)	
+          TRunoff%d_z(iunit,1)=0._r8
+          do j = 2, nlayers	
+               if (j<=TRunoff%d_ns(iunit)+1) then
+                     TRunoff%d_z(iunit,j) = TRunoff%d_z(iunit,j-1) + TRunoff%dd_z(iunit,j-1)
+               else 
+                     TRunoff%d_z(iunit,j) = 0._r8
+               end if
+          end do	
+          ! Assign layer area and volume based on depth-area-volume relationship
+          TRunoff%a_d(iunit,1)=(TRunoff%a_di(iunit,1))
+          TRunoff%v_zt(iunit,1)=(TRunoff%v_zti(iunit,1))
+          do i=2,nlayers
+               if (i<=TRunoff%d_ns(iunit)+1) then
+                     do j=2,ngeom+1
+                          if (TRunoff%d_z(iunit,i)>TRunoff%d_zi(iunit,j-1).and.TRunoff%d_z(iunit,i)<=TRunoff%d_zi(iunit,j))then
+                               delta_z = (TRunoff%d_z(iunit,i)-TRunoff%d_zi(iunit,j-1))/(TRunoff%d_zi(iunit,j)-TRunoff%d_zi(iunit,j-1))
+                               TRunoff%a_d(iunit,i) = (delta_z*(TRunoff%a_di(iunit,j)-TRunoff%a_di(iunit,j-1))+TRunoff%a_di(iunit,j-1))
+                               TRunoff%v_zt(iunit,i) = (delta_z*(TRunoff%v_zti(iunit,j)-TRunoff%v_zti(iunit,j-1))+TRunoff%v_zti(iunit,j-1))
+                          else if (TRunoff%d_z(iunit,i) > TRunoff%d_zi(iunit,ngeom+1) .and. i<= TRunoff%d_ns(iunit)+1)then
+                               delta_z = (TRunoff%d_z(iunit,i)-TRunoff%d_zi(iunit,ngeom))/(TRunoff%d_zi(iunit,ngeom+1)-TRunoff%d_zi(iunit,ngeom))
+                               TRunoff%a_d(iunit,i) = (delta_z*(TRunoff%a_di(iunit,ngeom+1)-TRunoff%a_di(iunit,ngeom))+TRunoff%a_di(iunit,ngeom))
+                               TRunoff%v_zt(iunit,i) = (delta_z*(TRunoff%v_zti(iunit,ngeom+1)-TRunoff%v_zti(iunit,ngeom))+TRunoff%v_zti(iunit,ngeom))
+                          end if
+                     end do
+                     if (TRunoff%v_zt(iunit,i)<TRunoff%v_zt(iunit,i-1))write(iulog,*)subname,'check reservoir geometry for',iunit
+               else
+                     TRunoff%a_d(iunit,i) = 0._r8
+                     TRunoff%v_zt(iunit,i) = 0._r8
+               end if
+          end do
+								
+          ! Calculate layer volume(m^3)
+          do j = 1, nlayers	
+               if (j<=TRunoff%d_ns(iunit)) then
+                     TRunoff%d_v(iunit,j) = ((TRunoff%v_zt(iunit,j+1) - TRunoff%v_zt(iunit,j)))	
+                     if (TRunoff%d_v(iunit,j)==0._r8) TRunoff%d_v(iunit,j)=1._r8	
+                     TRunoff%dd_z(iunit,j) = TRunoff%d_z(iunit,j+1) - TRunoff%d_z(iunit,j)
+                     if (TRunoff%d_v(iunit,j)<0.0_r8) then 
+                         write(iulog,*) subname,'Layer volume negative:Check geometry data for dam',iunit
+                     end if
+               else
+                     TRunoff%d_v(iunit,j) = 0._r8
+                     TRunoff%dd_z(iunit,j) = 0._r8
+               end if
+          end do		
+				
+          ! 	Intitialize layer temperature and total storage					
+          do j=1,TRunoff%d_ns(iunit)					
+               rho_z(j) = 1000._r8*( 1._r8 - 1.9549e-05*(abs(TRunoff%temp_lake(iunit,j)-277._r8))**1.68_r8) 
+               TRunoff%v_zn(iunit,j) = (TRunoff%d_v(iunit,j))
+               TRunoff%m_zo(iunit,j) = (TRunoff%d_v(iunit,j)*rho_z(j)) 
+               TRunoff%m_zn(iunit,j) = (TRunoff%d_v(iunit,j)*rho_z(j))
+          end do
+     end if
+ end do	
+ end subroutine lkgeom
 !---------------------------------------------------------------------------- 
   subroutine SubTimestep
   ! !DESCRIPTION: predescribe the sub-time-steps for channel routing

@@ -11,10 +11,10 @@ MODULE MOSART_stra_mod
     use shr_kind_mod  , only : r8 => shr_kind_r8
     use RunoffMod , only : Tctl, TUnit, TRunoff, THeat, TPara, rtmCTL
     use rof_cpl_indices, only : nt_nliq, nt_nice
-	use RtmVar         , only : iulog, ngeom, nlayers
-	use WRM_type_mod  , only :  ctlSubwWRM, WRMUnit, StorWater
-	use MOSART_heat_mod
-	use RtmTimeManager
+    use RtmVar         , only : iulog, ngeom, nlayers
+    use WRM_type_mod  , only :  ctlSubwWRM, WRMUnit, StorWater
+    use MOSART_heat_mod
+    use RtmTimeManager
     implicit none
 	
     public stratification
@@ -32,7 +32,7 @@ MODULE MOSART_stra_mod
 		real(r8), intent(in) :: localDeltaT
 		integer :: damID              
 		character(len=*),parameter :: subname = '(stratification)'
-        integer :: j,i,w,k,ii,l,ww,m,n,nn,mm,jmax,jmin							! indices
+		integer :: j,i,w,k,ii,l,ww,m,n,nn,mm,jmax,jmin							! indices
 
 		real(r8) :: c_w = 4.188e3												! Water specific heat capacity  (J/kg/k)
 		real(r8) :: F = 0.8_r8      											! dimensionless factor for wind sheltering by riparian vegetation, Wu et al, 2012
@@ -86,7 +86,7 @@ MODULE MOSART_stra_mod
 		real(r8) :: enr_0(nlayers),enr_1(nlayers),enr_2(nlayers)				! Initial inner energy,Inner energy after advection,Inner energy after stratification(J/s,W)
 		real(r8) :: enr_phi(nlayers) 											! Inner energy from solar/atmospheric radiation(J/s,W)
 		real(r8) :: enr_err1,enr_err2 											! Energy error (w) before stratification and after triadiagonal solution
-	    real(r8) :: th_en(nlayers)												! Layer thermal energy (j/s)
+		real(r8) :: th_en(nlayers)												! Layer thermal energy (j/s)
 		real(r8) :: e_a,e_b,e_ab												! used in layer merging/split, factors
 		real(r8) :: k_ew,k_ad(nlayers)											! Effective,wind,convection,advective kinetic energy (kg.m^2/s^2)
 		real(r8) :: c_d															! Drag coefficient
@@ -177,7 +177,7 @@ MODULE MOSART_stra_mod
 					alb_s = 0.06_r8	!0.06_r8
 				end if
 				! alb_s = 0.03_r8	!0.06_r8
-				! if (WRMUnit%grandid(damID)==1908)write(iulog,*)'albedo',WRMUnit%grandid(damID),int(100*alb_s),int(100*THeat%coszen(iunit)) !
+				
 				sh_net 	= max(THeat%forc_solar(iunit)*(1._r8 - alb_s),0._r8)!			
 				t_s    	= WRMUnit%temp_resrv(damID,WRMUnit%d_ns(damID)) 
 				lw_abr 	= (1._r8 - 0.03_r8)*THeat%forc_lwrad(iunit) !
@@ -395,7 +395,7 @@ MODULE MOSART_stra_mod
 					j=WRMUnit%d_ns(damID)-k-1
 					do i=1,j
 					   phi_z(i)=(sar*WRMUnit%a_d(damID,i+1)*phi_x(i+1)-sar*WRMUnit%a_d(damID,i)*phi_x(i))
-					   ! if (WRMUnit%grandid(damID)==572)write(iulog,*) subname,'phi_z2',int(phi_z(i))
+					   
 					end do
 				elseif (sh_net > 0._r8 .and. WRMUnit%d_ns(damID)==1) then
 					phi_z(WRMUnit%d_ns(damID))=sh_net*sar*WRMUnit%a_d(damID,WRMUnit%d_ns(damID)+1)
@@ -436,7 +436,7 @@ MODULE MOSART_stra_mod
 					Fr(j)= (grav*WRMUnit%dd_z(damID,j)*drhodz(j)/rho_w)/l_vel**2._r8					
 				! Calculate diffusion coefficients				
 					df_eff(j)=min(max(dtime**2._r8*((cfw*dis_w/(1+ri))+(0.5_r8*cfa*(dis_ad(j)+dis_ad(j-1))/(1+Fr(j)))),k_m),5.56e-03) !5.56e-03!
-					! if (WRMUnit%d_resrv(damID)>=90._r8)df_eff(j)=5.56e-03
+					
 				end do
 			
 			!*****************************************************************
@@ -581,7 +581,7 @@ MODULE MOSART_stra_mod
 			elseif (WRMUnit%purpose(damID)== 10) then 
 				WRMUnit%out_lc(damID) = WRMUnit%out_lc(damID)
 			end if
-			! if (WRMUnit%d_resrv(damID) >= 95._r8  .and. WRMUnit%d_ns(damID)>=8)WRMUnit%out_lc(damID) = 0.20_r8	! affects only large/deep reservoirs
+			
 			
 			!********* outflow taken from layer at ~60% of the reservoir depth			
 			! WRMUnit%out_lc(damID) = 0.3_r8
@@ -1040,11 +1040,11 @@ MODULE MOSART_stra_mod
 		bp(n)=b(n)		
 ! 	initialize u
         WRMUnit%temp_resrv(damID,n) = max(rp(n)/bp(n),273.15_r8)	! to be modified after including ice/snow effect
-		! WRMUnit%temp_resrv(damID,n) = rp(n)/bp(n)
+		
 ! 	Back substitution
         do i = n-1, 1, -1
 			WRMUnit%temp_resrv(damID,i) = max((rp(i)-c(i)*WRMUnit%temp_resrv(damID,i+1))/bp(i),273.15_r8)
-			! WRMUnit%temp_resrv(damID,i) =(rp(i)-c(i)*WRMUnit%temp_resrv(damID,i+1))/bp(i)
+			
         end do
 		
 	end subroutine solve 

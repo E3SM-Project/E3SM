@@ -118,6 +118,14 @@ Default: .false.
 If .true., reservoir stratification module will be turned on.
 </entry>
 
+<entry id="lakeflag" 
+       type="logical" 
+       category="mosart"
+       group="mosart_inparm">
+Default: .false.
+If .true., lake module in mosart will be turned on.
+</entry>
+
 <entry id="rinittemp" 
        type="real" 
        category="mosart"

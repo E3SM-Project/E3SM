@@ -13,11 +13,13 @@ MODULE MOSART_physics_mod
   use shr_kind_mod  , only : r8 => shr_kind_r8, SHR_KIND_CL
   use shr_const_mod , only : SHR_CONST_REARTH, SHR_CONST_PI
   use shr_sys_mod   , only : shr_sys_abort
-  use RtmVar        , only : iulog, barrier_timers, wrmflag, inundflag, sediflag, heatflag, rstraflag
+  use RtmVar        , only : iulog, barrier_timers, wrmflag, inundflag, sediflag, heatflag, rstraflag, lakeflag
   use RunoffMod     , only : Tctl, TUnit, TRunoff, Theat, TPara, rtmCTL, &
                              SMatP_upstrm, avsrc_upstrm, avdst_upstrm
   use MOSART_heat_mod
   use MOSART_stra_mod
+  use MOSART_lake_mod
+  use MOSART_lake_hydro_mod
   use RtmSpmd       , only : masterproc, mpicom_rof, iam
   use RtmTimeManager, only : get_curr_date, is_new_month
 
@@ -371,6 +373,17 @@ MODULE MOSART_physics_mod
                  THeat%Tr_avg(iunit) = THeat%Tr_avg(iunit) + temp_Tr
              end if
              end if
+			   
+             if (heatflag .and. lakeflag .and. TRunoff%lake_flg(iunit) ==1 .and. TUnit%rlen(iunit) > myTINYVALUE) then !
+			 if (nt == nt_nliq) then
+				 localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R
+				 call mosart_lake_hydro(iunit,nt,localDeltaT) ! here calculate the lake outflow and lake total storage only
+				 TRunoff%V_str(iunit) = TRunoff%V_str(iunit) + TRunoff%dV_str(iunit) * localDeltaT  ! dV_str = inflow - outflow
+				 call mosart_lake(iunit,nt,localDeltaT,temp_Tr) ! here calculate the lake layer change and stratification only
+				 ! if(TRunoff%erout(iunit,nt)==0._r8) TRunoff%erout(iunit,nt) = temp_erout
+             endif
+			 end if
+			
 !#ifdef INCLUDE_WRM
              if (wrmflag) then
                 if (nt == nt_nliq) then
@@ -390,7 +403,7 @@ MODULE MOSART_physics_mod
                    if ( ctlSubwWRM%RegulationFlag>0 ) then
                       call Regulation(iunit, localDeltaT)
                       if (heatflag .and. rstraflag) then
-						  call stratification(iunit, localDeltaT,nt)
+                          call stratification(iunit, localDeltaT,nt)
                           call reservoirHeat(iunit, localDeltaT)
                       elseif (heatflag .and. (rstraflag == .false.)) then
                           call reservoirHeat(iunit, localDeltaT)

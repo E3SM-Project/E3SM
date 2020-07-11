@@ -259,7 +259,8 @@ module RunoffMod
      real(r8), pointer :: rlen_dstrm(:)  ! Length of downstream channel (m).
      real(r8), pointer :: rslp_dstrm(:)  ! Bed slope of downstream channel (dimensionless).
      real(r8), pointer :: wr_bf(:)       ! Water volume in the bankfull channel (i.e., channel storage capacity) (m^3).
-  
+     
+          
      ! --------------------------------- 
      ! Parameters related to elevation profiles : 
      ! --------------------------------- 
@@ -389,7 +390,45 @@ module RunoffMod
     !real(r8), pointer :: delta_wr(:)   ! Change of channel water volume during channel routing (m^3).
     real(r8), pointer :: wr_rtg(:)      ! Channel water volume after channel routing (m^3).
     real(r8), pointer :: yr_rtg(:)      ! Channel water depth after channel routing (m).
-   
+    
+	! Mosart Lake
+     integer , pointer :: d_ns(:)          ! (nl) initial number of layers for stratification model
+     integer , pointer :: lake_flg(:)      ! (nl) lake flag
+	 real(r8), pointer :: geometry(:)      ! (nl) numeric code assigned for lake  geometry 1=Rectangular_prism; 2=Rectangular_wedge; 3=Rectangular_bowl; 4=Parabolic_wedge;5=Elliptical_bowl
+     real(r8), pointer :: Length_r(:)      ! (nl) mean length of lake (can be diffent from Length)
+     real(r8), pointer :: Width_r(:)       ! (nl) mean width of lake
+     real(r8), pointer :: V_errs(:)        ! (nl) storage error of assumed geometry (%)
+     real(r8), pointer :: A_errs(:)        ! (nl) surface area error of assumed geometry (%)
+     real(r8), pointer :: C_as(:)          ! (nl) correction coefficient for surface area
+     real(r8), pointer :: C_vs(:)          ! (nl) correction coefficient for storage
+     real(r8), pointer :: V_dfs(:)         ! (nl) storage difference of assumed geometry (mcm)
+     real(r8), pointer :: A_dfs(:)         ! (nl) surface area difference of assumed geometry (km2)
+     real(r8), pointer :: V_str(:)         ! (nl) storage geometry  was calculated (mcm)
+     real(r8), pointer :: V_max(:)         ! (nl) maximum storage (mcm)
+     real(r8), pointer :: dV_str(:)        ! (nl) storage change per timestep (m3/s)
+     real(r8), pointer :: A_str(:)         ! (nl) surface area geometry was calculated (km2)
+     real(r8), pointer :: d_zi(:,:)        ! (nl,ndesc=500+1) descritized depth for depth-area-storage relationship
+     real(r8), pointer :: a_di(:,:)        ! (nl,ndesc) descritized area for depth-area-storage relationship
+     real(r8), pointer :: v_zti(:,:)       ! (nl,ndesc) descritized storage for depth-area-storage relationship
+     real(r8), pointer :: d_z(:,:)         ! (nl,nlayers=30) Depth at z from bottom (m)
+     real(r8), pointer :: d_z0(:,:)        ! (nl,nlayers=30) Initial depth at z from bottom (m)
+     real(r8), pointer :: d_v(:,:)         ! (nl,nlayers) lake volume change at layer (m^3)
+     real(r8), pointer :: a_d(:,:)         ! (nl,nlayers) Area at depth z (km2)
+     real(r8), pointer :: a_d0(:,:)        ! (nl,nlayers) Initial area at depth z (km2)
+     real(r8), pointer :: v_zt(:,:)        ! (nl,nlayers) lake volume at depth z (m^3)
+     real(r8), pointer :: v_zt0(:,:)       ! (nl,nlayers) Initial lake volume at depth z (m^3)
+     real(r8), pointer :: dd_z(:,:)        ! (nl,nlayers) Layer depth(m)
+     real(r8), pointer :: m_zo(:,:)        ! (nl,nlayers) lake beginning mass at depth z (kg)
+     real(r8), pointer :: m_zn(:,:)        ! (nl,nlayers) lake ending mass at depth z (kg)
+     real(r8), pointer :: v_zo(:,:)        ! (nl,nlayers) lake beginning volume at depth z (m^3)
+     real(r8), pointer :: v_zn(:,:)        ! (nl,nlayers) lake ending volume at depth z (m^3)
+     real(r8), pointer :: temp_lake(:,:)   ! (nl,nlayers) lake temperature with max 30 layers [K]
+     real(r8), pointer :: d_lake(:)        ! (nl) lake depth updated on each timestep [m]
+     real(r8), pointer :: h_lake(:)        ! (nl) lake initial depth[m]
+     real(r8), pointer :: ddz_local(:)     ! (nl) initlal layer thickness to be used to calculate layer thickness limit
+	 real(r8), pointer :: lake_inflow(:)        ! (nl) lake inflow (m3/s)
+     real(r8), pointer :: lake_outflow(:)       ! (nl) lake outflow (m3/s)
+     
   end type TstatusFlux
   !== Hongyi
 
