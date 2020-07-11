@@ -4511,16 +4511,10 @@ contains
           !********** Curved Lake Bottom 
 				
           do j = 1, ngeom!	
-               if (gm_j == 1.0_r8) then	
+               if (gm_j == 6.0_r8) then	! Rectangular bowl
                      a_dd(j) = C_a*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)
-               else if (gm_j == 2.0_r8) then	
-                     a_dd(j) = C_a*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)*(1-((dd_in*(j-1))/d_res))
-               else if (gm_j == 3.0_r8) then	
-                     a_dd(j) = C_a*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)*((d_res-(dd_in*(j-1)))/d_res)**0.5_r8
-               else if (gm_j == 4.0_r8) then	
-                     a_dd(j) = C_a*(2._r8/3._r8)*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)*(1-((dd_in*(j-1)))/d_res)
-               else if (gm_j == 5.0_r8) then	
-                     a_dd(j) = C_a*pi*0.25_r8*M_L*M_W*(ar_f)*(1-((dd_in*(j-1))/d_res)**2._r8)*((d_res-(dd_in*(j-1)))/d_res)**0.5_r8
+               else if (gm_j == 7.0_r8) then	! Spherical bowl
+                     a_dd(j) = C_a*pi*(ar_f)*(0.5_r8*M_L*(1-((dd_in*(j-1))/d_res)**2._r8))**2_r8
                end if					
           end do
 					
