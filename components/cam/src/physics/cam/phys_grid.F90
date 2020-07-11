@@ -354,7 +354,7 @@ module phys_grid
    integer, private :: phys_alltoall = def_alltoall
 
 ! Physics computational cost
-   real(r8), public :: phys_pcost ! measured physics cost on this process
+   real(r8), public :: phys_proc_cost ! measured physics cost on this process
 
 contains
 !========================================================================
@@ -2443,32 +2443,39 @@ logical function phys_grid_initialized ()
    integer  :: ncols                  ! number of columns in chunk
    integer  :: ierr                   ! error return
 
-   real(r8) :: lsums(4)               ! working arrays for local sums
-   real(r8) :: gsums(4)               ! working arrays for global sums
-   real(r8) :: ccest_lsum, ccest_gsum ! local and global sums of 
-                                      !  estimated normalized chunk costs
-   real(r8) :: ccost_lsum, ccost_gsum ! local and global sums of 
-                                      !  measured chunk costs
-   real(r8) :: tcest(0:nlthreads-1)   ! estimated normalized thread cost
-                                      !  for chunk loops in bc_physics 
+   real(r8) :: local_sums(4)          ! working vector for local sums
+   real(r8) :: global_sums(4)         ! working vector for global sums
+   real(r8) :: chnk_estcost_lsum      ! local sum of estimated
+                                      !  chunk costs
+   real(r8) :: chnk_estcost_gsum      ! global sum of estimated
+                                      !  chunk costs
+   real(r8) :: chnk_cost_lsum         ! local sum of measured
+                                      !  chunk costs
+   real(r8) :: chnk_cost_gsum         ! global sum of measured
+                                      !  chunk costs
+   real(r8) :: thrd_estcost(0:nlthreads-1)
+                                      ! estimated thread cost for
+                                      !  chunk loops in bc_physics 
                                       !  and ac_physics
-   real(r8) :: pcest, pcest_sum       ! estimated normalized process cost
-                                      !  for chunk loops in bc_physics 
-                                      !  and ac_physics, and sum over all
+   real(r8) :: proc_estcost           ! estimated process cost for
+                                      !  chunk loops in bc_physics 
+                                      !  and ac_physics
+   real(r8) :: proc_estcost_sum       ! sum of proc_estcost over all
                                       !  processes
-   real(r8) :: pcost_sum              ! sum of over processes of
-                                      !  measured process cost for chunk 
-                                      !  loops in bc_physics and 
-                                      !  ac_physics (phys_pcost)
-   real(r8) :: avg_ccest              ! average estimated chunk cost
-   real(r8) :: avg_ccost              ! average measured chunk cost
-   real(r8) :: avg_pcest              ! average estimated process cost
-   real(r8) :: avg_pcost              ! average measured process cost
-   real(r8) :: ccost                  ! chunk cost
-   real(r8) :: norm_ccest             ! normalized estimated chunk cost
-   real(r8) :: norm_ccost             ! normalized chunk cost
-   real(r8) :: norm_pcest             ! normalized estimated process cost
-   real(r8) :: norm_pcost             ! normalized process cost
+   real(r8) :: proc_cost_sum          ! sum over processes of measured
+                                      !  process cost for chunk loops
+                                      !  in bc_physics and ac_physics
+                                      !  (phys_proc_cost)
+   real(r8) :: avg_chnk_estcost       ! average estimated chunk cost
+   real(r8) :: avg_chnk_cost          ! average measured chunk cost
+   real(r8) :: avg_proc_estcost       ! average estimated process cost
+   real(r8) :: avg_proc_cost          ! average measured process cost
+   real(r8) :: chnk_estcost           ! chunk estimated cost
+   real(r8) :: chnk_cost              ! chunk cost
+   real(r8) :: norm_chnk_estcost      ! normalized estimated chunk cost
+   real(r8) :: norm_chnk_cost         ! normalized chunk cost
+   real(r8) :: norm_proc_estcost      ! normalized estimated process cost
+   real(r8) :: norm_proc_cost         ! normalized process cost
    real(r8) :: pspeedup               ! local speed-up relative to sum of
                                       !  local chunk cost, so a measure of
                                       !  load balance, but not traditional
@@ -2486,59 +2493,47 @@ logical function phys_grid_initialized ()
       ! the chunks assigned to each thread, assuming a static round-robin
       ! distribution. Estimated process cost is then calculated as the
       ! maximum over the estimated thread costs.
-      ccest_lsum = 0.0_r8
-      ccost_lsum = 0.0_r8
-      tcest(:)   = 0.0_r8
+      chnk_estcost_lsum = 0.0_r8
+      chnk_cost_lsum    = 0.0_r8
+      thrd_estcost(:)   = 0.0_r8
       do lcid = begchunk, endchunk
-         ccest_lsum = ccest_lsum + chunks(lchunks(lcid)%cid)%estcost
-         ccost_lsum = ccost_lsum + lchunks(lcid)%cost
-         tid = mod(lcid-begchunk,nlthreads)
-         tcest(tid) = tcest(tid) + chunks(lchunks(lcid)%cid)%estcost
+         chnk_estcost_lsum = chnk_estcost_lsum + chunks(lchunks(lcid)%cid)%estcost
+         chnk_cost_lsum    = chnk_cost_lsum + lchunks(lcid)%cost
+         tid               = mod(lcid-begchunk,nlthreads)
+         thrd_estcost(tid) = thrd_estcost(tid) + chunks(lchunks(lcid)%cid)%estcost
       enddo
-      pcest = maxval(tcest)
+      proc_estcost = maxval(thrd_estcost)
 
 #if ( defined SPMD )
-      gsums(:) = 0.0_r8
-      lsums(1) = ccest_lsum
-      lsums(2) = ccost_lsum
-      lsums(3) = pcest
-      lsums(4) = phys_pcost
-      call MPI_ALLREDUCE(lsums, gsums, 4, MPI_REAL8, MPI_SUM, &
+      global_sums(:) = 0.0_r8
+      local_sums(1)  = chnk_estcost_lsum
+      local_sums(2)  = chnk_cost_lsum
+      local_sums(3)  = proc_estcost
+      local_sums(4)  = phys_proc_cost
+      call MPI_ALLREDUCE(local_sums, global_sums, 4, MPI_REAL8, MPI_SUM, &
                          mpicom, ierr)
-      ccest_gsum = gsums(1)
-      ccost_gsum = gsums(2)
-      pcest_sum  = gsums(3)
-      pcost_sum  = gsums(4)
+      chnk_estcost_gsum = global_sums(1)
+      chnk_cost_gsum    = global_sums(2)
+      proc_estcost_sum  = global_sums(3)
+      proc_cost_sum     = global_sums(4)
 #else
-      ccost_gsum = ccost_lsum
-      ccest_gsum = ccest_lsum
-      pcost_sum  = phys_pcost
-      pcest_sum  = pcest
+      chnk_cost_gsum    = chnk_cost_lsum
+      chnk_estcost_gsum = chnk_estcost_lsum
+      proc_cost_sum     = phys_proc_cost
+      proc_estcost_sum  = proc_estcost
 #endif
 
       ! Calculate average estimated chunk cost
-      avg_ccest = ccest_gsum/real(nchunks,r8)
-      if (avg_ccest < 0.000001_r8) then
-         avg_ccest = -1.0_r8
-      endif
+      avg_chnk_estcost = chnk_estcost_gsum/real(nchunks,r8)
 
       ! Calculate average measured chunk cost
-      avg_ccost = ccost_gsum/real(nchunks,r8)
-      if (avg_ccost < 0.000001_r8) then
-         avg_ccost = -1.0_r8
-      endif
+      avg_chnk_cost = chnk_cost_gsum/real(nchunks,r8)
 
       ! Calculate average estimated process cost
-      avg_pcest = pcest_sum/real(npes,r8)
-      if (avg_pcest < 0.000001_r8) then
-         avg_pcest = -1.0_r8
-      endif
+      avg_proc_estcost = proc_estcost_sum/real(npes,r8)
 
       ! Calculate average measured process cost
-      avg_pcost = pcost_sum/real(npes,r8)
-      if (avg_pcost < 0.000001_r8) then
-         avg_pcost = -1.0_r8
-      endif
+      avg_proc_cost = proc_cost_sum/real(npes,r8)
 
       ! Take turns writing to fname.
       if (iam == 0) then
@@ -2561,27 +2556,54 @@ logical function phys_grid_initialized ()
 
       write(unitn,'(/,a)') &
             "PROC     id nthrds nchnks estcost (norm)  cost (norm)  cost (seconds) 'speed-up'"
-      norm_pcest = pcest/avg_pcest
-      norm_pcost = phys_pcost/avg_pcost
-      if (abs(phys_pcost) > 0.000001_r8) then
-         pspeedup = ccost_lsum/phys_pcost
+      ! Calculate normalized estimated process cost
+      if ((exponent(proc_estcost) - exponent(avg_proc_estcost) >= maxexponent(proc_estcost)) .or. &
+          (avg_proc_estcost == 0)) then
+         norm_proc_estcost = huge(proc_estcost)
       else
-         pspeedup = -1.0_r8
+         norm_proc_estcost = proc_estcost/avg_proc_estcost
+      endif
+      ! Calculate normalized process cost
+      if ((exponent(phys_proc_cost) - exponent(avg_proc_cost) >= maxexponent(phys_proc_cost)) .or. &
+          (avg_proc_cost == 0)) then
+         norm_proc_cost    = huge(phys_proc_cost)
+      else
+         norm_proc_cost    = phys_proc_cost/avg_proc_cost
+      endif
+      ! Calculate load imbalance in threading
+      if ((exponent(chnk_cost_lsum) - exponent(phys_proc_cost) >= maxexponent(chnk_cost_lsum)) .or. &
+          (phys_proc_cost == 0)) then
+         pspeedup = huge(chnk_cost_lsum)
+      else
+         pspeedup = chnk_cost_lsum/phys_proc_cost
       endif
       write(unitn,'(a4,1x,i6,1x,i6,1x,i6,5x,f10.3,3x,f10.3,2x,e14.3,1x,f10.3)') &
-            "PROC", iam, nlthreads, npchunks(iam), norm_pcest, norm_pcost, phys_pcost, pspeedup
+            "PROC", iam, nlthreads, npchunks(iam), norm_proc_estcost, norm_proc_cost, phys_proc_cost, pspeedup
 	    
       write(unitn,'(a)') &
             "CHNK  owner   lcid    cid  pcols  ncols  estcost (norm)  cost (norm)  cost (seconds)"
       do lcid = begchunk, endchunk
-         cid   = lchunks(lcid)%cid
-         owner = chunks(cid)%owner
-         ncols = lchunks(lcid)%ncols
-         ccost  = lchunks(lcid)%cost
-         norm_ccest = chunks(cid)%estcost/avg_ccest
-         norm_ccost = ccost/avg_ccost
+         cid          = lchunks(lcid)%cid
+         owner        = chunks(cid)%owner
+         ncols        = lchunks(lcid)%ncols
+         chnk_estcost = chunks(cid)%estcost
+         chnk_cost    = lchunks(lcid)%cost
+         ! Calculate normalized estimated chunk cost
+         if ((exponent(chnk_estcost) - exponent(avg_chnk_estcost) >= maxexponent(chnk_estcost)) .or. &
+             (avg_chnk_estcost == 0)) then
+            norm_chnk_estcost = huge(chnk_estcost)
+         else
+            norm_chnk_estcost = chnk_estcost/avg_chnk_estcost
+         endif
+         ! Calculate normalized chunk cost
+         if ((exponent(chnk_cost) - exponent(avg_chnk_cost) >= maxexponent(chnk_cost)) .or. &
+             (avg_chnk_cost == 0)) then
+            norm_chnk_cost = huge(chnk_cost)
+         else
+            norm_chnk_cost = chnk_cost/avg_chnk_cost
+         endif
          write(unitn,'(a4,1x,i6,1x,i6,1x,i6,1x,i6,1x,i6,6x,f10.3,3x,f10.3,2x,e14.3)') &
-               "CHNK", owner, lcid, cid, pcols, ncols, norm_ccest, norm_ccost, ccost
+               "CHNK", owner, lcid, cid, pcols, ncols, norm_chnk_estcost, norm_chnk_cost, chnk_cost
       enddo
 
       close(unitn)
@@ -4589,17 +4611,17 @@ logical function phys_grid_initialized ()
    integer, dimension(:), allocatable :: local_cid
 
    ! permutation array used to sort columns by their computation cost
-   integer, dimension(:), allocatable :: cdex
+   integer, dimension(:), allocatable :: col_dex
 
    ! array used to mark whether a column has been assigned when sorting
    ! by dynamics block
-   logical, dimension(:), allocatable :: udex
+   logical, dimension(:), allocatable :: used_col_dex
 
    ! min heap array used to maintain chunks sorted by assigned computational
    ! cost. A separate heap is created for each virtual smp, but all
    ! heaps are implemented in this one 1-D array
-   integer, dimension(:), allocatable :: cheap
-   integer, dimension(:), allocatable :: cheap_len
+   integer, dimension(:), allocatable :: chnk_heap
+   integer, dimension(:), allocatable :: chnk_heap_len
 
 !-----------------------------------------------------------------------
 
@@ -5016,18 +5038,18 @@ logical function phys_grid_initialized ()
 !
 ! Determine order in which to traverse columns for assignment to chunks
 !
-      allocate( cdex(1:ngcols) )
+      allocate( col_dex(1:ngcols) )
 
       if ((use_cost_d) .and. (opt < 4)) then
          ! If load balancing using column cost, then sort columns by cost
          ! first, maximum to minimum.
-         call IndexSet(ngcols,cdex)
-         call IndexSort(ngcols,cdex,cost_d,descend=.true.)
+         call IndexSet(ngcols,col_dex)
+         call IndexSort(ngcols,col_dex,cost_d,descend=.true.)
       else
          ! If not using column cost, then sort columns by block ordering,
          ! as done in the original algorithm.
-         allocate( udex(1:ngcols) )
-         udex(:) = .false.
+         allocate( used_col_dex(1:ngcols) )
+         used_col_dex(:) = .false.
          i = 0
          do jb=firstblock,lastblock
             blksiz = get_block_gcol_cnt_d(jb)
@@ -5036,9 +5058,9 @@ logical function phys_grid_initialized ()
             do ib = 1,blksiz
                curgcol = cols_d(ib)
 
-               ! Record column in cdex in block order if not already
+               ! Record column in col_dex in block order if not already
                ! recorded
-               if (.not. udex(curgcol)) then
+               if (.not. used_col_dex(curgcol)) then
                   i=i+1
                   if (i > ngcols) then
                      if (masterproc) then
@@ -5049,14 +5071,14 @@ logical function phys_grid_initialized ()
                      endif
                      call endrun()
                   endif
-                  cdex(i) = curgcol
-                  udex(curgcol) = .true.
+                  col_dex(i) = curgcol
+                  used_col_dex(curgcol) = .true.
                endif
 
             enddo
 
          enddo
-         deallocate( udex )
+         deallocate( used_col_dex )
       endif
 
 !
@@ -5064,21 +5086,21 @@ logical function phys_grid_initialized ()
 ! maintaining list of chunks sorted by the assigned computional
 ! cost (sum of estimated cost for assigned columns)
 !
-      allocate( cheap(1:nchunks) )
+      allocate( chnk_heap(1:nchunks) )
       do cid=1,nchunks
-         cheap(cid) = cid
+         chnk_heap(cid) = cid
       enddo
 
-      allocate( cheap_len(0:nvsmp-1) )
+      allocate( chnk_heap_len(0:nvsmp-1) )
       do smp=0,nvsmp-1
-         cheap_len(smp) = nvsmpchunks(smp)
+         chnk_heap_len(smp) = nvsmpchunks(smp)
       enddo
 
 !
 ! Assign columns to chunks
 !
       do i=1,ngcols
-         curgcol = cdex(i)
+         curgcol = col_dex(i)
          smp = col_vsmp_map(i)
 
          ! Assign column to a chunk if not already assigned
@@ -5091,8 +5113,8 @@ logical function phys_grid_initialized ()
                ! add column to chunk with lowest estimated cost chunk
                ! (and with space), i.e. to chunk at root of heap for
                ! current SMP
-               if (cheap_len(smp) > 0) then
-                  cid = cheap(cid_offset(smp))
+               if (chnk_heap_len(smp) > 0) then
+                  cid = chnk_heap(cid_offset(smp))
                else
                   if (masterproc) then
                      write(iulog,*) &
@@ -5160,8 +5182,9 @@ logical function phys_grid_initialized ()
                if (use_cost_d) then
 
                   ! Re-heapify the min heap
-                  call cheap_adjust(nchunks, maxcol_chk(smp), &
-                                    cid_offset(smp), cheap_len(smp), cheap)
+                  call chnk_heap_adjust(nchunks, maxcol_chk(smp),            &
+                                        cid_offset(smp), chnk_heap_len(smp), &
+                                        chnk_heap)
 
                else
 
@@ -5179,9 +5202,9 @@ logical function phys_grid_initialized ()
 !
 ! Opt-specific clean up
 !
-      deallocate( cheap_len )
-      deallocate( cheap     )
-      deallocate( cdex      )
+      deallocate( chnk_heap_len )
+      deallocate( chnk_heap     )
+      deallocate( col_dex       )
 
    else
 !
@@ -5703,8 +5726,8 @@ logical function phys_grid_initialized ()
 !
 !========================================================================
 
-   subroutine cheap_adjust(nchunks, maxcol_chk, &
-                           cid_offset, heap_len, heap)
+   subroutine chnk_heap_adjust(nchunks, maxcol_chk, &
+                               cid_offset, heap_len, heap)
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: Adjust chunk heap after adding columns (and updating the
@@ -5843,7 +5866,7 @@ logical function phys_grid_initialized ()
    enddo
 
    return
-   end subroutine cheap_adjust
+   end subroutine chnk_heap_adjust
 !
 !========================================================================
 
@@ -5916,9 +5939,9 @@ logical function phys_grid_initialized ()
    ! data structures used to maintain chunks sorted by assigned computational cost.
    integer :: max_nvsmpchunks            ! maximum number of chunks assigned to
                                          !  any virtual SMP
-   integer, dimension(:), allocatable :: cdex
+   integer, dimension(:), allocatable :: chnk_dex
                                          ! permutation array used in chunk sorting
-   real(r8), dimension(:), allocatable :: ccost
+   real(r8), dimension(:), allocatable :: chnk_cost
                                          ! estimated cost for chunks assigned to 
                                          !  a virtual SMP
 
@@ -5926,18 +5949,18 @@ logical function phys_grid_initialized ()
    ! computational cost.
    integer :: max_nvsmptasks             ! maximum number of processes associated
                                          !  with any virtual SMP
-   integer :: pheap_len                  ! current heap length
-   integer, dimension(:), allocatable  :: pheap
-                                         ! heap to process id map
-   integer, dimension(:), allocatable  :: inv_pheap
-                                         ! process id to heap map
-   real(r8), dimension(:), allocatable :: pcost
+   integer :: proc_heap_len              ! current process heap length
+   integer, dimension(:), allocatable  :: proc_heap
+                                         ! process heap to process id map
+   integer, dimension(:), allocatable  :: inv_proc_heap
+                                         ! process id to process heap map
+   real(r8), dimension(:), allocatable :: proc_cost
                                          ! estimated computational cost for process
                                          !  at given location in heap, based on
                                          !  currently assigned chunks
-   logical :: pheap_update               ! flag indicating whether process
+   logical :: proc_heap_update           ! flag indicating whether process
                                          !  estimated cost has been updated 
-   logical :: pheap_remove               ! flag indicating whether process has 
+   logical :: proc_heap_remove           ! flag indicating whether process has 
                                          !  been assigned its allotment of chunks,
                                          !  and should be "removed" from the heap
 !-----------------------------------------------------------------------
@@ -6010,18 +6033,18 @@ logical function phys_grid_initialized ()
    ! Allocate space for sorting chunks (by estimated cost) for each
    ! virtual smp
    max_nvsmpchunks = maxval(nvsmpchunks)
-   allocate( cdex(1:max_nvsmpchunks) )
-   allocate( ccost(1:max_nvsmpchunks) )
+   allocate( chnk_dex(1:max_nvsmpchunks)  )
+   allocate( chnk_cost(1:max_nvsmpchunks) )
 
    ! Allocate space for min heap data structure, for use in maintaining
    ! list of processes sorted by the assigned computational cost (sum of
    ! estimated cost for chunks assigned to thread 0). Also allocate
    ! array for inverse mapping (from process id to heap index).
    max_nvsmptasks = maxval(nvsmptasks(0:nvsmp-1))
-   allocate( pheap(1:max_nvsmptasks) )
-   allocate( pcost(1:max_nvsmptasks) )
-   allocate( inv_pheap(0:npes-1) )
-   inv_pheap(:) = -1
+   allocate( proc_heap(1:max_nvsmptasks) )
+   allocate( proc_cost(1:max_nvsmptasks) )
+   allocate( inv_proc_heap(0:npes-1)     )
+   inv_proc_heap(:) = -1
 
    ! Initialize number of chunks assigned to each process. Then
    ! initialize number of chunk columns assigned to each process 
@@ -6038,24 +6061,24 @@ logical function phys_grid_initialized ()
       ! Sort chunks to be assigned to current virtual smp by estimated cost
       do c=1,nvsmpchunks(smp)
          cid = cid_offset(smp) + (c-1)
-         ccost(c) = chunks(cid)%estcost
+         chnk_cost(c) = chunks(cid)%estcost
       enddo
-      call IndexSet(nvsmpchunks(smp),cdex)
-      call IndexSort(nvsmpchunks(smp),cdex,ccost,descend=.true.)
+      call IndexSet(nvsmpchunks(smp),chnk_dex)
+      call IndexSort(nvsmpchunks(smp),chnk_dex,chnk_cost,descend=.true.)
 
       ! Initialize min heap of processes in virtual smp ordered by sum of
       ! estimated costs of chunks assigned to thread 0 of each process
-      pheap(:) = -1
-      pcost(:) = 0
+      proc_heap(:) = -1
+      proc_cost(:) = 0
       do i=1,nvsmptasks(smp)
-         pheap(i) = vsmp_proc_map(i,smp)
-         inv_pheap(pheap(i)) = i
+         proc_heap(i) = vsmp_proc_map(i,smp)
+         inv_proc_heap(proc_heap(i)) = i
       enddo
-      pheap_len = nvsmptasks(smp)
+      proc_heap_len = nvsmptasks(smp)
 
       ! Assign chunks to processes in decreasing order of estimated cost
       do c=1,nvsmpchunks(smp)
-         cid = cid_offset(smp) + (cdex(c)-1)
+         cid = cid_offset(smp) + (chnk_dex(c)-1)
 
          ! Determine number of chunk columns assigned to each process
          ! in the dynamics decomposition (excepting processes that
@@ -6086,26 +6109,26 @@ logical function phys_grid_initialized ()
          do i=1,ndyn_task
             p = dyn_task(i)
             if ((column_count(p) > ntmp1) .and. &
-	        (pcost(inv_pheap(p)) == pcost(1))) then
+	        (proc_cost(inv_proc_heap(p)) == proc_cost(1))) then
                ntmp1 = column_count(p)
                ntmp2 = p
             endif
          enddo
 
          ! If no processes found that qualify, use the process at the top of
-         ! the pheap (as this has the minimum pcost)
+         ! the proc_heap (as this has the minimum proc_cost)
          if (ntmp1 == -1) then
-            ntmp2 = pheap(1)
+            ntmp2 = proc_heap(1)
          endif
 
          ! Assign chunk to indicated process, updating chunk count and
          ! estimated cost, and check whether process now has its quota of
          ! chunks. Estimated cost per process is based on sum of estimated
          ! costs assigned to thread 0 (also an estimate, since assumes a
-         ! wrap map of chunks to threads). Adjust pheap to reflect this update,
+         ! wrap map of chunks to threads). Adjust proc_heap to reflect this update,
          ! if there is one, or if process now has its quota of chunks.
-         pheap_update = .false.
-         pheap_remove = .false.
+         proc_heap_update = .false.
+         proc_heap_remove = .false.
          chunks(cid)%owner   = ntmp2
          cur_npchunks(ntmp2) = cur_npchunks(ntmp2) + 1
          if (mod(cur_npchunks(ntmp2)-1,npthreads(ntmp2)) == 0) then
@@ -6114,17 +6137,18 @@ logical function phys_grid_initialized ()
             ! cur_npchunks(ntmp2) to get correct mod() comparison; cannot
             ! check that mod() == 1 since may only have 1 thread, in which
             ! case mod() is always 0.
-            pcost(inv_pheap(ntmp2)) = pcost(inv_pheap(ntmp2)) &
-                                  + chunks(cid)%estcost
-            pheap_update = .true.
+            proc_cost(inv_proc_heap(ntmp2)) = proc_cost(inv_proc_heap(ntmp2)) &
+                                              + chunks(cid)%estcost
+            proc_heap_update = .true.
          endif
          if (cur_npchunks(ntmp2) == npchunks(ntmp2)) then
             column_count(ntmp2) = -1
-            pheap_remove = .true.
+            proc_heap_remove = .true.
          endif
-         if ((pheap_update) .or. (pheap_remove)) then
-            call pheap_adjust(inv_pheap(ntmp2), pheap_remove, max_nvsmptasks, &
-                              pheap_len, pheap, pcost, inv_pheap)
+         if ((proc_heap_update) .or. (proc_heap_remove)) then
+            call proc_heap_adjust(inv_proc_heap(ntmp2), proc_heap_remove,   &
+                                  max_nvsmptasks, proc_heap_len, proc_heap, &
+                                  proc_cost, inv_proc_heap)
          endif
 
          ! Update total number of columns assigned to this process
@@ -6146,19 +6170,19 @@ logical function phys_grid_initialized ()
 !
 ! Clean-up
 !
-   deallocate( inv_pheap )
-   deallocate( pcost     )
-   deallocate( pheap     )
-   deallocate( ccost     )
-   deallocate( cdex      )
+   deallocate( inv_proc_heap )
+   deallocate( proc_cost     )
+   deallocate( proc_heap     )
+   deallocate( chnk_cost     )
+   deallocate( chnk_dex      )
 !
    return
    end subroutine assign_chunks
 !
 !========================================================================
 
-   subroutine pheap_adjust(updated, remove, heap_dlen, &
-                           heap_len, heap, cost, inv_heap)
+   subroutine proc_heap_adjust(updated, remove, heap_dlen, &
+                               heap_len, heap, cost, inv_heap)
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: Adjust process heap after adding chunk (and updating the
@@ -6402,7 +6426,7 @@ logical function phys_grid_initialized ()
    enddo
 
    return
-   end subroutine pheap_adjust
+   end subroutine proc_heap_adjust
 !
 !========================================================================
 
