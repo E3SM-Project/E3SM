@@ -7,7 +7,7 @@ module common_io_mod
 #ifndef HOMME_WITHOUT_PIOLIBRARY
   use pio, only : var_desc_t, file_desc_t, io_desc_t, nfsizekind=>PIO_OFFSET_KIND, iosystem_desc_t, & ! _EXTERNAL
        nf_double=>pio_double, nf_int=>pio_int, unlim_dim=>pio_unlimited, nf_noerr=>pio_noerr, &
-       pio_init,  pio_rearr_box
+       pio_init,  pio_rearr_box, pio_set_buffer_size_limit
 #endif
 
   implicit none
@@ -119,6 +119,8 @@ subroutine homme_pio_init(rank,comm)
      call PIO_Init(rank,comm,num_io_procs,num_agg,io_stride,&
           PIO_REARR_BOX,PIOFS)
      piofs_is_active=.true.
+
+     call pio_set_buffer_size_limit( int(128*1024*1024,kind=nfsizekind))
 
 #if 0
   Flow control options. before testing these, be sure PIO is being
