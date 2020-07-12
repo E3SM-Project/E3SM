@@ -363,11 +363,17 @@ subroutine diag_init()
 !expected to be ~zero
    call addfld ('TEdiffadj',horiz_only, 'A','J/m2','TE diff ')
    call addfld ('KEdiff',horiz_only, 'A','J/m2','TE diff ')
+!q1 output in routine that diagn moisture adjustment
    call addfld ('TEq1',(/ 'lev' /), 'A','J/m2','TE q1 ')
+!q1 at the beginning of the physics timestep, needed to compute moist tendency
+!for pressure
    call addfld ('TEq1p',(/ 'lev' /), 'A','J/m2','TE q1p ')
-   call addfld ('TEps',horiz_only, 'A','J/m2','TE ps ')
-
+!delta T computed to 'fix' moisure adjustment, similarly to what fixer does, via
+!c_pT term
    call addfld ('dTadj',(/ 'lev' /), 'A','K','delta T from adjustment')
+!TTEND and dTadj vertically summed 
+   call addfld ('TTENDhor',horiz_only, 'A','K/s','TTEND summed ')
+   call addfld ('dTadjhor',horiz_only, 'A','K','dTadj summed ')
 
    call addfld ('T1000',horiz_only,   'A','K','Temperature at 1000 mbar pressure surface')
    call addfld ('T975',horiz_only,   'A','K','Temperature at 975 mbar pressure surface')   

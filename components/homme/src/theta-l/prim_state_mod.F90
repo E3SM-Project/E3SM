@@ -797,7 +797,7 @@ contains
        write(iulog,'(a)') 'Change from dribbled phys tendencies, viscosity, run_sub, remap (if dt_remap_factor>0):'
        if (dt_remap_factor > 0 )then
 
-print *, 'KEner(1), (3)',KEner(1), KEner(3)
+!print *, 'KEner(1), (3)',KEner(1), KEner(3)
 
          write(iulog,'(a,4e15.7)') 'dKE/dt(W/m^2): ',(KEner(1)-KEner(3))/dt_forcing,&
               (KEner(6)-KEner(5))/dt_hv, (KEner(2)-KEner(3))/dt_run_sub, (KEner(2)-KEner(4))/dt_remap
