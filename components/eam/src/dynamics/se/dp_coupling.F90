@@ -669,9 +669,9 @@ CONTAINS
 
     real (kind=real_kind), dimension(pcols)      :: te, tw, ke, se, wv, wl, wi, wr, ws, tebefore, kebefore, teadjusted
     real (kind=real_kind), dimension(pcols,pver) :: ustate,vstate,tstate,pdel,dp_adj,&
-                                                    teloc1,teloc2,ttend
+                                                    teloc1,teloc2,ttendadj
     real (kind=real_kind), dimension(pcols,pver,pcnst) :: qstate
-    real (kind=real_kind), dimension(pcols)      :: ps,phisstate,psterm1,psterm2
+    real (kind=real_kind), dimension(pcols)      :: ps,phisstate,psterm1,psterm2, ttendhor, ttendadjhor
     real (kind=real_kind)                        :: fq, dtime
 
     dtime=get_step_size()
@@ -732,30 +732,31 @@ CONTAINS
       call outfld('KEafteradj', ke, pcols, lchnk)
 
       call outfld('TEdiff', te-tebefore, pcols, lchnk)
-!      call outfld('KEdiff', ke-kebefore, pcols, lchnk)
-!      call outfld('TEq1', state(lchnk)%q(:,:,1), pcols, lchnk)
-!      call outfld('TEq1p', state(lchnk)%q1(:,:), pcols, lchnk)
-!      call outfld('TEps', state(lchnk)%ps(:), pcols, lchnk)
 
       !compute ttend from adjustment
-      ttend(:ncol,:)=0.0
+      ttendadj(:ncol,:)=0.0
       do ic=1,ncol
       !first, ttend from local terms
          !sum pdel into fq
          fq=0.0
          do k=1,pver
-            ttend(ic,k)=(teloc1(ic,k)-teloc2(ic,k))*gravit/cpair/pdel(ic,k)
+            ttendadj(ic,k)=(teloc1(ic,k)-teloc2(ic,k))*gravit/cpair/pdel(ic,k)
             fq=fq+pdel(ic,k)
          enddo
          
       !second, ttend from ps term
-         ttend(ic,1:pver) = ttend(ic,1:pver) + (psterm1(ic)-psterm2(ic))*gravit/cpair/fq
+         ttendadj(ic,1:pver) = ttendadj(ic,1:pver) + (psterm1(ic)-psterm2(ic))*gravit/cpair/fq
+
+         ttendadjhor(ic) = sum(ttendadj(ic,1:pver)/dtime)
+         ttendhor(ic) = sum(tend(lchnk)%dtdt(ic,1:pver))
       enddo
 
-      call outfld('dTadj', ttend(:,:), pcols, lchnk)
+      call outfld('dTadj', ttendadj(:,:), pcols, lchnk)
+      call outfld('dTadjhor', ttendadjhor(:), pcols, lchnk)
+      call outfld('TTENDhor', ttendhor(:), pcols, lchnk)
 
       !sanity check
-      call energy_helper_eam_def(ustate,vstate,tstate+ttend,&
+      call energy_helper_eam_def(ustate,vstate,tstate+ttendadj,&
                                  qstate,ps,pdel,phisstate,&
                                  ke,se,wv,wl,wi,wr,ws,teadjusted,tw, &
                                  ncol)
@@ -765,8 +766,8 @@ CONTAINS
 !      print *, 'OG check', tebefore(1),te(1),teadjusted(1),(te(1)-tebefore(1)),(teadjusted(1)-tebefore(1))
 
       !add new tendency from pressure adjustment to ttend
-!      tend(lchnk)%dtdt(:ncol,:) = tend(lchnk)%dtdt(:ncol,:) + ttend(:ncol,:)/dtime
-print *, 'OG dtime ... ', dtime
+!      tend(lchnk)%dtdt(:ncol,:) = tend(lchnk)%dtdt(:ncol,:) + ttendadj(:ncol,:)/dtime
+!print *, 'OG dtime ... ', dtime
     end do ! lchnk
 
   end subroutine measure_pressure_work
