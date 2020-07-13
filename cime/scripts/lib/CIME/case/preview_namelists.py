@@ -28,7 +28,7 @@ def create_dirs(self):
     dirs_to_make.extend([exeroot, libroot, incroot, rundir, docdir])
 
     for dir_to_make in dirs_to_make:
-        if (not os.path.isdir(dir_to_make)):
+        if (not os.path.isdir(dir_to_make) and not os.path.islink(dir_to_make)):
             try:
                 logger.debug("Making dir '{}'".format(dir_to_make))
                 os.makedirs(dir_to_make)
@@ -102,7 +102,7 @@ def create_namelists(self, component=None):
             expect(False, "Failed to write {}/README: {}".format(docdir, e))
 
     for cpglob in ["*_in_[0-9]*", "*modelio*", "*_in", "nuopc.runconfig",
-                   "*streams*txt*", "*stxt", "*maps.rc", "*cism.config*", "nuopc.runseq"]:
+                   "*streams*txt*", "*streams.xml", "*stxt", "*maps.rc", "*cism.config*", "nuopc.runseq"]:
         for file_to_copy in glob.glob(os.path.join(rundir, cpglob)):
             logger.debug("Copy file from '{}' to '{}'".format(file_to_copy, docdir))
             safe_copy(file_to_copy, docdir)

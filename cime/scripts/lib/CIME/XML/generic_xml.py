@@ -65,9 +65,9 @@ class GenericXML(object):
         else:
             # if file does not exist create a root xml element
             # and set it's id to file
-            expect(not self.read_only, "Makes no sense to have empty read-only file")
-            logger.debug("File {} does not exists.".format(infile))
-            expect("$" not in infile,"File path not fully resolved {}".format(infile))
+            expect(not self.read_only, "Makes no sense to have empty read-only file: {}".format(infile))
+            logger.debug("File {} does not exist.".format(infile))
+            expect("$" not in infile,"File path not fully resolved: {}".format(infile))
 
             root = _Element(ET.Element("xml"))
 

@@ -16,7 +16,7 @@
         <xs:element minOccurs="1" maxOccurs="1" ref="machines"/>
         <xs:element minOccurs="0" ref="options"/>
       </xs:sequence>
-      <xs:attribute name="compset" use="required" type="xs:NCName"/>
+      <xs:attribute name="compset" use="required" type="xs:string"/>
       <xs:attribute name="grid" use="required" type="xs:NMTOKEN"/>
       <xs:attribute name="name" use="required" type="xs:NCName"/>
       <xs:attribute name="supported" use="optional" type="xs:boolean"/>

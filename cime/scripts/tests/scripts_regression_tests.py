@@ -81,7 +81,6 @@ def assert_test_status(test_obj, test_name, test_status_obj, test_phase, expecte
 def verify_perms(test_obj, root_dir):
 ###############################################################################
     for root, dirs, files in os.walk(root_dir):
-
         for filename in files:
             full_path = os.path.join(root, filename)
             st = os.stat(full_path)
@@ -1247,7 +1246,9 @@ class TestCreateTestCommon(unittest.TestCase):
         full_run = (set(extra_args) & set(["-n", "--namelist-only", "--no-setup", "--no-build"])) == set()
 
         if self._hasbatch:
-            expected_stat = 0 if not pre_run_errors else CIME.utils.TESTS_FAILED_ERR_CODE
+            expected_stat = 0 if not pre_run_errors and not run_errors else CIME.utils.TESTS_FAILED_ERR_CODE
+            if env_changes=="NODEFAIL_NUM_FAILS=5":
+                expected_stat = 0 if not pre_run_errors else CIME.utils.TESTS_FAILED_ERR_CODE
         else:
             expected_stat = 0 if not pre_run_errors and not run_errors else CIME.utils.TESTS_FAILED_ERR_CODE
 
@@ -1736,48 +1737,58 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
     ###############################################################################
     def test_bless_test_results(self):
     ###############################################################################
-        # Generate some baselines
-        test_name = "TESTRUNDIFF_P1.f19_g16_rx1.A"
-
-        if CIME.utils.get_model() == "e3sm":
-            genargs = ["-g", "-o", "-b", self._baseline_name, test_name]
-            compargs = ["-c", "-b", self._baseline_name, test_name]
+        # Test resubmit scenario if Machine has a batch system
+        if MACHINE.has_batch_system():
+            test_names = ["TESTRUNDIFFRESUBMIT_P1.f19_g16_rx1.A", "TESTRUNDIFF_P1.f19_g16_rx1.A"]
         else:
-            genargs = ["-g", self._baseline_name, "-o", test_name,
-                       "--baseline-root ", self._baseline_area]
-            compargs = ["-c", self._baseline_name, test_name,
-                       "--baseline-root ", self._baseline_area]
-        self._create_test(genargs)
+            test_names = ["TESTRUNDIFF_P1.f19_g16_rx1.A"]
 
-        # Hist compare should pass
-        self._create_test(compargs)
+        # Generate some baselines
+        for test_name in test_names:
+            if CIME.utils.get_model() == "e3sm":
+                genargs = ["-g", "-o", "-b", self._baseline_name, test_name]
+                compargs = ["-c", "-b", self._baseline_name, test_name]
+            else:
+                genargs = ["-g", self._baseline_name, "-o", test_name,
+                           "--baseline-root ", self._baseline_area]
+                compargs = ["-c", self._baseline_name, test_name,
+                            "--baseline-root ", self._baseline_area]
+            if test_name == "TESTRUNDIFFRESUBMIT_P1.f19_g16_rx1.A":
+                genargs.append("--wait")
+                compargs.append("--wait")
 
-        # Change behavior
-        os.environ["TESTRUNDIFF_ALTERNATE"] = "True"
+            self._create_test(genargs)
+            # Hist compare should pass
+            self._create_test(compargs)
+            # Change behavior
+            os.environ["TESTRUNDIFF_ALTERNATE"] = "True"
 
-        # Hist compare should now fail
-        test_id = "%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
-        self._create_test(compargs, test_id=test_id, run_errors=True)
+            # Hist compare should now fail
+            test_id = "%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
+            if test_name == "TESTRUNDIFF_P1.f19_g16_rx1.A":
+                compargs.append("--wait")
+                self._create_test(compargs, test_id=test_id, run_errors=True)
+            else:
+                self._create_test(compargs, test_id=test_id, run_errors=True)
 
-        # compare_test_results should detect the fail
-        cpr_cmd = "{}/compare_test_results --test-root {} -t {} 2>&1" \
-                  .format(TOOLS_DIR, self._testroot, test_id)
-        output = run_cmd_assert_result(self, cpr_cmd, expected_stat=CIME.utils.TESTS_FAILED_ERR_CODE)
+            # compare_test_results should detect the fail
+            cpr_cmd = "{}/compare_test_results --test-root {} -t {} 2>&1" \
+                    .format(TOOLS_DIR, self._testroot, test_id)
+            output = run_cmd_assert_result(self, cpr_cmd, expected_stat=CIME.utils.TESTS_FAILED_ERR_CODE)
 
-        # use regex
-        expected_pattern = re.compile(r'FAIL %s[^\s]* BASELINE' % test_name)
-        the_match = expected_pattern.search(output)
-        self.assertNotEqual(the_match, None,
-                            msg="Cmd '%s' failed to display failed test in output:\n%s" % (cpr_cmd, output))
-
-        # Bless
-        run_cmd_no_fail("{}/bless_test_results --test-root {} --hist-only --force -t {}"
-                        .format(TOOLS_DIR, self._testroot, test_id))
-
-        # Hist compare should now pass again
-        self._create_test(compargs)
-
-        verify_perms(self, self._baseline_area)
+            # use regex
+            expected_pattern = re.compile(r'FAIL %s[^\s]* BASELINE' % test_name)
+            the_match = expected_pattern.search(output)
+            self.assertNotEqual(the_match, None,
+                                msg="Cmd '%s' failed to display failed test %s in output:\n%s" % (cpr_cmd, test_name, output))
+            # Bless
+            run_cmd_no_fail("{}/bless_test_results --test-root {} --hist-only --force -t {}"
+                            .format(TOOLS_DIR, self._testroot, test_id))
+            # Hist compare should now pass again
+            self._create_test(compargs)
+            verify_perms(self, self._baseline_area)
+            if "TESTRUNDIFF_ALTERNATE" in os.environ:
+                del os.environ["TESTRUNDIFF_ALTERNATE"]
 
     ###############################################################################
     def test_rebless_namelist(self):
@@ -2589,11 +2600,11 @@ class L_TestSaveTimings(TestCreateTestCommon):
 
         if manual_timing:
             run_cmd_assert_result(self, "cd %s && %s/save_provenance postrun" % (casedir, TOOLS_DIR))
-
         if CIME.utils.get_model() == "e3sm":
-            provenance_dirs = glob.glob(os.path.join(timing_dir, "performance_archive", getpass.getuser(), casename, lids[0] + "*"))
-            self.assertEqual(len(provenance_dirs), 1, msg="provenance dirs were missing")
-            verify_perms(self, timing_dir)
+            provenance_glob = os.path.join(timing_dir, "performance_archive", getpass.getuser(), casename, lids[0] + "*")
+            provenance_dirs = glob.glob(provenance_glob)
+            self.assertEqual(len(provenance_dirs), 1, msg="wrong number of provenance dirs, expected 1, got {}, looked for {}".format(provenance_dirs, provenance_glob))
+            verify_perms(self, ''.join(provenance_dirs))
 
     ###########################################################################
     def test_save_timings(self):

@@ -17,12 +17,13 @@
     </values>
   </entry>
   -->
+  <!--
   <entry id="PIO_VERSION">
     <values>
-      <value mpilib="mpi-serial">2</value>
+      <value></value>
     </values>
   </entry>
-
+  -->
 
   <!--- uncomment and fill in relevant sections
   <entry id="PIO_ROOT">
@@ -242,6 +243,11 @@
     </values>
   </entry>
 
+  <entry id="PIO_REARR_COMM_TYPE">
+    <values>
+      <value mpilib="mpi-serial">coll</value>
+    </values>
+  </entry>
 
   <!--- uncomment and fill in relevant sections
   <entry id="CPL_PIO_STRIDE">

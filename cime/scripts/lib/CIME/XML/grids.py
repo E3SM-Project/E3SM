@@ -18,8 +18,11 @@ class Grids(GenericXML):
             infile = files.get_value("GRIDS_SPEC_FILE")
         logger.debug(" Grid specification file is {}".format(infile))
         schema = files.get_schema("GRIDS_SPEC_FILE")
+        try:
+            GenericXML.__init__(self, infile, schema)
+        except:
+            expect(False, "Could not initialize Grids")
 
-        GenericXML.__init__(self, infile, schema)
         self._version = self.get_version()
 
         self._comp_gridnames = self._get_grid_names()
@@ -111,7 +114,7 @@ class Grids(GenericXML):
                 if compset_attrib and not_compset_attrib:
                     compset_match = re.search(compset_attrib, compset)
                     not_compset_match = re.search(not_compset_attrib, compset)
-                    if compset_match is not None and not_compset_match is not None:
+                    if compset_match is not None and not_compset_match is None:
                         foundcompset = True
                         model_gridnode = node
                         logger.debug("Found match for {} with compset_match {} and not_compset_match {}"

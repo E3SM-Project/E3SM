@@ -1,4 +1,5 @@
-#! /usr/bin/env python 
+#! /usr/bin/env python
+from __future__ import print_function
 import sys, getopt, os 
 
 #
@@ -6,46 +7,46 @@ import sys, getopt, os
 #
 def disp_usage(callType):
     if callType == 'ensemble.py':
-        print '\nSets up multiple CESM cases for either an ensemble of runs or a small (CAM-ECT = 3, POP-ECT = 1)'
-        print 'test set (default). Then use pyCECT utilities to create an ensemble'
-        print 'summary file or to evaluate the small test set of runs against the ensemble.'
-        print '  '
-        print '----------------------------'
-        print 'ensemble.py :'
+        print('\nSets up multiple CESM cases for either an ensemble of runs or a small (CAM-ECT = 3, POP-ECT = 1)')
+        print('test set (default). Then use pyCECT utilities to create an ensemble')
+        print('summary file or to evaluate the small test set of runs against the ensemble.')
+        print('  ')
+        print('----------------------------')
+        print('ensemble.py :')
     else: 
-        print '\nSets up a single CESM case. '
-        print '  '
-        print '----------------------------'
-        print 'single_run.py :'
-    print '----------------------------'
-    print ' '
-    print 'Required flags:'
+        print('\nSets up a single CESM case. ')
+        print('  ')
+        print('----------------------------')
+        print('single_run.py :')
+    print('----------------------------')
+    print(' ')
+    print('Required flags:')
     if callType == 'single_run.py':
-        print '  --case <name>    Case name passed on to create_newcase (incl. full path AND same)'
+        print('  --case <name>    Case name passed on to create_newcase (incl. full path AND same)')
     else:
-        print '  --case <name>    Case name passed on to create_newcase (incl. full path AND must end in ".000")'
-    print '  --mach <name>    Machine name passed on to create_newcase'
-    print ' ' 
-    print 'Optional flags (+ all "--" options to create_newcase): '
-    print '  --project <num>    Project number to charge in job scripts'
-    print '  --ect <cam,pop>    Specify whether ensemble is for CAM-ECT or POP-ECT (default = cam)'
+        print('  --case <name>    Case name passed on to create_newcase (incl. full path AND must end in ".000")')
+    print('  --mach <name>    Machine name passed on to create_newcase')
+    print(' ')
+    print('Optional flags (+ all "--" options to create_newcase): ')
+    print('  --project <num>    Project number to charge in job scripts')
+    print('  --ect <cam,pop>    Specify whether ensemble is for CAM-ECT or POP-ECT (default = cam)')
     if callType == 'single_run.py':
-       print '  --pertlim <num>    Run (CAM or POP) with specified non-zero pertlim'
-    print '  --walltime <hr:mn> Amount of walltime requested (default = 4:30 (CAM-ECT) 2:00 (POP-ECT), or 0:10 with --uf enabled)'
-    print '  --compiler <name>  Compiler to use (default = same as Machine default) '
-    print '  --compset <name>   Compset to use (default = F2000climo (CAM-ECT) or G (POP-ECT))'
-    print '  --res <name>       Resolution to run (default = f19_f19 (CAM-ECT) or T62_g17 (POP-ECT))'
-    print '  --uf               Enable ninth time step runs (ultra-fast mode for CAM-ECT) - otherwise the default is 12-month runs'
+       print('  --pertlim <num>    Run (CAM or POP) with specified non-zero pertlim')
+    print('  --walltime <hr:mn> Amount of walltime requested (default = 4:30 (CAM-ECT) 2:00 (POP-ECT), or 0:10 with --uf enabled)')
+    print('  --compiler <name>  Compiler to use (default = same as Machine default) ')
+    print('  --compset <name>   Compset to use (default = F2000climo (CAM-ECT) or G (POP-ECT))')
+    print('  --res <name>       Resolution to run (default = f19_f19 (CAM-ECT) or T62_g17 (POP-ECT))')
+    print('  --uf               Enable ninth time step runs (ultra-fast mode for CAM-ECT) - otherwise the default is 12-month runs')
     if callType == 'ensemble.py': 
-       print '  --nb               Disables auto building the root case of the ensemble'
-       print '  --ns               Disables auto submitting any members of the ensemble'
-       print '  --ensemble <size>  Build the ensemble (instead of building case(s) with random pertlim values for verification),'
-       print '                     and specify the number of ensemble members to generate (e.g.: 151 for CAM-ECT annual averages '
-       print '                     or 350 for ultra-fast CAM-ECT mode or 40 for POP-ECT)'
+       print('  --nb               Disables auto building the root case of the ensemble')
+       print('  --ns               Disables auto submitting any members of the ensemble')
+       print('  --ensemble <size>  Build the ensemble (instead of building case(s) with random pertlim values for verification),')
+       print('                     and specify the number of ensemble members to generate (e.g.: 151 for CAM-ECT annual averages ')
+       print('                     or 350 for ultra-fast CAM-ECT mode or 40 for POP-ECT)')
     else:
-       print '  --nb               Disables building (and submitting) the single case'
-       print '  --ns               Disables submitting the single case'
-    print '  --help, -h         Prints out this usage message'
+       print('  --nb               Disables building (and submitting) the single case')
+       print('  --ns               Disables submitting the single case')
+    print('  --help, -h         Prints out this usage message')
 
 ########
 def process_args_dict(caller, caller_argv):
@@ -117,7 +118,7 @@ def process_args_dict(caller, caller_argv):
             s_case_flags += ' ' + opt + ' ' + arg
         elif opt == '--pertlim':
             if caller == 'ensemble.py':
-                print "WARNING: pertlim ignored for ensemble.py."
+                print("WARNING: pertlim ignored for ensemble.py.")
                 opts_dict['pertlim'] = "0"
             else:
                 opts_dict['pertlim'] = arg
@@ -278,7 +279,7 @@ def single_case(opts_dict, case_flags, stat_dir):
     command = './case.setup'
     ret = os.system(command)
     
-    print "STATUS: Adjusting user_nl_* files...."
+    print("STATUS: Adjusting user_nl_* files....")
 
     #POP-ECT
     if opts_dict['ect'] == 'pop':

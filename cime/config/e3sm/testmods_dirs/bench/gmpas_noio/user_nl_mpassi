@@ -1,0 +1,2 @@
+config_am_timeseriesstatsdaily_enable=false
+config_am_regionalstatistics_enable=false

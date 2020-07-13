@@ -273,14 +273,24 @@ def get_cime_default_driver():
     expect(driver in ("mct", "nuopc", "moab"),"Attempt to set invalid driver {}".format(driver))
     return driver
 
+def get_all_cime_models():
+    modelsroot = os.path.join(get_cime_root(), "config")
+    models = []
+    for entry in os.listdir(modelsroot):
+        if os.path.isdir(os.path.join(modelsroot,entry)):
+            models.append(entry)
+    models.remove('xml_schemas')
+    return models
+
 def set_model(model):
     """
     Set the model to be used in this session
     """
     cime_config = get_cime_config()
+    cime_models = get_all_cime_models()
     if not cime_config.has_section('main'):
         cime_config.add_section('main')
-    expect(model in ['cesm','e3sm','ufs'],"model {} not recognized".format(model))
+    expect(model in cime_models,"model {} not recognized. The acceptable values of CIME_MODEL currently are {}".format(model, cime_models))
     cime_config.set('main','CIME_MODEL',model)
 
 def get_model():
@@ -304,10 +314,11 @@ def get_model():
     >>> reset_cime_config()
     """
     model = os.environ.get("CIME_MODEL")
-    if model in ['cesm', 'e3sm', 'ufs']:
+    cime_models = get_all_cime_models()
+    if model in cime_models:
         logger.debug("Setting CIME_MODEL={} from environment".format(model))
     else:
-        expect(model is None,"model {} not recognized".format(model))
+        expect(model is None,"model {} not recognized. The acceptable values of CIME_MODEL currently are {}".format(model, cime_models))
         cime_config = get_cime_config()
         if (cime_config.has_option('main','CIME_MODEL')):
             model = cime_config.get('main','CIME_MODEL')

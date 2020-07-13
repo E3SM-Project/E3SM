@@ -9,7 +9,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/src/flib -D_NETCDF
 
 # Is the user building with pnetcdf?
 if BUILD_PNETCDF
-AM_CPPFLAGS += -D_PETCDF
+AM_CPPFLAGS += -D_PNETCDF
 endif
 
 # Is the user building with netCDF-4 parallel I/O?

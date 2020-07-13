@@ -217,6 +217,14 @@ def _main_func(description):
     expect(not (os.path.exists(caseroot) and not test),
            "Case directory {} already exists".format(caseroot))
 
+    # create_newcase ... --test ... throws a CIMEError along with
+    # a very stern warning message to the user
+    # if it detects that it was invoked outside of create_test
+    if test:
+        expect(("FROM_CREATE_TEST" in os.environ and os.environ["FROM_CREATE_TEST"] == "True"),
+           "The --test argument is intended to only be called from inside create_test. Invoking this option from the command line is not appropriate usage.")
+        del os.environ['FROM_CREATE_TEST']
+
     with Case(caseroot, read_only=False) as case:
         # Configure the Case
         case.create(casename, srcroot, compset, grid, user_mods_dir=user_mods_dir,

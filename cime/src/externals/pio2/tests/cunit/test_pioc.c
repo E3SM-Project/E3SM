@@ -838,7 +838,7 @@ int test_names(int iosysid, int num_flavors, int *flavor, int my_rank,
     {
         int ncid;
         int varid;
-        char filename[PIO_MAX_NAME + 1]; /* Test filename. */
+        char filename[PIO_MAX_NAME * 2 + 1]; /* Test filename. */
         char iotype_name[PIO_MAX_NAME + 1];
         int dimids[NDIM];        /* The dimension IDs. */
         int att_val = ATT_VAL;
@@ -942,7 +942,7 @@ int test_files(int iosysid, int num_flavors, int *flavor, int my_rank)
      * available ways. */
     for (int fmt = 0; fmt < num_flavors; fmt++)
     {
-        char filename[PIO_MAX_NAME + 1]; /* Test filename. */
+        char filename[PIO_MAX_NAME * 2 + 1]; /* Test filename. */
         char iotype_name[PIO_MAX_NAME + 1];
 
         /* Overwrite existing test file. */
@@ -1041,7 +1041,7 @@ int test_empty_files(int iosysid, int num_flavors, int *flavor, int my_rank)
      * available ways. */
     for (int fmt = 0; fmt < num_flavors; fmt++)
     {
-        char filename[PIO_MAX_NAME + 1]; /* Test filename. */
+        char filename[PIO_MAX_NAME * 2 + 1]; /* Test filename. */
         char iotype_name[PIO_MAX_NAME + 1];
 
         /* Create a filename. */
@@ -1218,7 +1218,7 @@ int test_find_var_fillvalue(int iosysid, int num_flavors, int *flavor,
      * available ways. */
     for (int fmt = 0; fmt < num_flavors; fmt++)
     {
-        char filename[PIO_MAX_NAME + 1]; /* Test filename. */
+        char filename[PIO_MAX_NAME * 2 + 1]; /* Test filename. */
         char iotype_name[PIO_MAX_NAME + 1];
         int num_types = NUM_CLASSIC_TYPES;
 
@@ -1370,7 +1370,7 @@ int test_deletefile(int iosysid, int num_flavors, int *flavor, int my_rank)
      * available ways. */
     for (int fmt = 0; fmt < num_flavors; fmt++)
     {
-        char filename[PIO_MAX_NAME + 1]; /* Test filename. */
+        char filename[PIO_MAX_NAME * 2 + 1]; /* Test filename. */
         char iotype_name[PIO_MAX_NAME + 1];
         int old_method;
 
@@ -1456,7 +1456,7 @@ int test_nc4(int iosysid, int num_flavors, int *flavor, int my_rank)
      * available ways. */
     for (int fmt = 0; fmt < num_flavors; fmt++)
     {
-        char filename[PIO_MAX_NAME + 1]; /* Test filename. */
+        char filename[PIO_MAX_NAME * 2 + 1]; /* Test filename. */
         char iotype_name[PIO_MAX_NAME + 1];
 
         /* Create a filename. */
@@ -1793,7 +1793,7 @@ int test_scalar(int iosysid, int num_flavors, int *flavor, int my_rank, int asyn
      * available ways. */
     for (int fmt = 0; fmt < num_flavors; fmt++)
     {
-        char filename[PIO_MAX_NAME + 1]; /* Test filename. */
+        char filename[PIO_MAX_NAME * 2 + 1]; /* Test filename. */
         char iotype_name[PIO_MAX_NAME + 1];
 
         /* Create a filename. */
