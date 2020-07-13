@@ -416,51 +416,6 @@ flags should be captured within MPAS CMake files.
   <SFC> pgf95 </SFC>
 </compiler>
 
-<compiler COMPILER="pgiacc">
-  <CFLAGS>
-    <base> -time </base>
-    <append compile_threaded="TRUE"> -mp </append>
-  </CFLAGS>
-  <CPPDEFS>
-    <append> -DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16 -DUSE_CUDA_FORTRAN -DCPRPGI </append>
-  </CPPDEFS>
-  <CXX_LINKER>CXX</CXX_LINKER>
-  <FC_AUTO_R8>
-    <base> -r8 </base>
-  </FC_AUTO_R8>
-  <FFLAGS>
-    <base>  -i4 -time -Mstack_arrays -Mextend -byteswapio -Mflushz -Kieee  </base>
-    <append compile_threaded="TRUE"> -mp </append>
-    <append COMP_NAME="cam"> </append>
-    <append DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </append>
-    <append COMP_NAME="datm"> -Mnovect </append>
-    <append COMP_NAME="dlnd"> -Mnovect </append>
-    <append COMP_NAME="drof"> -Mnovect </append>
-    <append COMP_NAME="dwav"> -Mnovect </append>
-    <append COMP_NAME="dice"> -Mnovect </append>
-    <append COMP_NAME="docn"> -Mnovect </append>
-  </FFLAGS>
-  <FFLAGS_NOOPT>
-    <base> -O0 </base>
-  </FFLAGS_NOOPT>
-  <FIXEDFLAGS>
-    <base> -Mfixed </base>
-  </FIXEDFLAGS>
-  <FREEFLAGS>
-    <base> -Mfree </base>
-  </FREEFLAGS>
-  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
-  <LDFLAGS>
-    <base> -time -Wl,--allow-multiple-definition -acc</base>
-    <append compile_threaded="TRUE"> -mp </append>
-  </LDFLAGS>
-  <MPICC> mpicc </MPICC>
-  <MPICXX> mpicxx </MPICXX>
-  <MPIFC> mpif90 </MPIFC>
-  <SCC> pgcc </SCC>
-  <SCXX> pgc++ </SCXX>
-  <SFC> pgf95 </SFC>
-</compiler>
 
 <compiler COMPILER="pgigpu">
   <CFLAGS>
