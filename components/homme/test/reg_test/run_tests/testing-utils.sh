@@ -570,18 +570,25 @@ diffCprncOutput() {
     if [ "${DIFF_RESULT}" == IDENTICAL ] ; then
       # check for missing variables
       NUMVARS_RESULT=`grep -ae 'were not found on' ${cprncOutputFile} | awk '{ print $5 }'`
-      if [ "${NUMVARS_RESULT}" == "0" ] ; then
-         echo "The files are identical: DIFF_RESULT=${DIFF_RESULT} missing vars=${NUMVARS_RESULT}"
+      missing=0  
+      for num in $NUMVARS_RESULT
+      do
+          if [ "${num}" -ne "0" ] ; then
+              ((missing++))
+          fi
+      done
+      if [ "${missing}" == "0" ] ; then
+         echo "The files are identical: DIFF_RESULT=${DIFF_RESULT} missing vars=${missing}"
       else
          echo "The files are identical: DIFF_RESULT=${DIFF_RESULT}"
-         echo "But there were missing variables: =${NUMVARS_RESULT}"
+         echo "But there were missing variables: =${missing}"
          ((exitcode=exitcode-10))
       fi
     else
       echo "The files are different or missing: DIFF_RESULT=${DIFF_RESULT}"
       echo "############################################################################"
       echo "CPRNC returned the following RMS differences"
-      grep RMS ${cprncOutputFile}
+      grep -a RMS ${cprncOutputFile}
       echo "############################################################################"
       ((exitcode=exitcode-10))
     fi
