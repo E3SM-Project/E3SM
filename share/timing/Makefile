@@ -7,7 +7,7 @@ VPATH := $(GPTL_DIR)
 ifndef MOD_SUFFIX
    MOD_SUFFIX := mod
 endif
-ifeq ($(SMP),TRUE)
+ifeq ($(strip $(SMP)),TRUE)
   CPPDEFS +=  -DTHREADED_OMP
   compile_threaded=TRUE
 endif
