@@ -97,8 +97,6 @@
       <value compset="_CAM4%WC"       >-chem waccm_mozart</value>
       <value compset="_CAM5%WC"       >-chem waccm_mozart_mam3</value>
       <value compset="_CAM4%WCSC"     >-chem waccm_ghg</value>
-      <value compset="_CAM[45]%WCBC"  >-carma bc_strat</value>
-      <value compset="_CAM4%WCSF"     >-chem waccm_mozart_sulfur -carma sulfate</value>
       <value compset="_CAM[45]%WCMX"  >-waccmx</value>
       <!-- old MMF / super-parameterization compsets -->
       <!-- These are needed to test against the ECP fork  -->
@@ -279,11 +277,9 @@
       <value compset="RCP8_CAM4%WCCM"   >waccm_2005-2100_cam4_rcp85</value>
       <value compset="1850_CAM5%WCCM"   >waccm_1850_cam5</value>
       <value compset="2000_CAM5%WCCM"   >waccm_2000_cam5</value>
-      <value compset="2013_CAM4%WCBC"   >waccm_carma_bc_2013_cam4</value>
       <value compset="GEOS_CAM4%TMOZ"   >cam4_chem_radpsv_geos5</value>
       <value compset="GEOS_CAM4%TBAM"   >cam4_bam_radpsv_geos5</value>
       <value compset="GEOS_CAM4%WCCM"   >sd_waccm_geos5</value>
-      <value compset="GEOS_CAM4%WCSF"   >sd_waccm_sulfur</value>
       <value compset="_CAM4%MOZS"       >soa_chem_megan_emis</value>         
       <value compset="_CAM5%SMA3"       >2000_cam5_trop_strat_mam3</value>
       <value compset="_CAM5%SMA7"       >2000_cam5_trop_strat_mam7</value>
@@ -386,8 +382,6 @@
     <desc compset="_CAM[45]%WCCM">CAM WACCM with daily solar data and SPEs:</desc>
     <desc compset="_CAM[45]%WCMX">CAM WACCM-X:</desc>
     <desc compset="_CAM[45]%WCSC">CAM WACCM specified chemistry:</desc>
-    <desc compset="_CAM[45]%WCBC">CAM WACCM with the stratospheric black carbon CARMA model:</desc>
-    <desc compset="_CAM[45]%WCSF">CAM WACCM with sulfur chemistry and the sulfate CARMA model:</desc>
     <desc compset="_CAM[45]%FCHM">CAM super_fast_llnl chemistry:</desc> 
     <desc compset="_CAM[45]%TMOZ">CAM trop_mozart chemistry:</desc>
     <desc compset="_CAM[45]%TBAM">CAM trop_bam chemistry: </desc>
