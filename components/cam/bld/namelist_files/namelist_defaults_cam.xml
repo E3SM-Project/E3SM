@@ -118,7 +118,6 @@
 <ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="125"  ic_ymd="20000701" >atm/waccm/ic/cami_2000-07-01_1.9x2.5_L125_c040928.nc</ncdata>
 <ncdata dyn="fv"  hgrid="4x5"       nlev="66"   ic_ymd="19600101" >atm/waccm/ic/wa3_4x5_1950_spinup.cam2.i.1960-01-01-00000.nc</ncdata>
 <ncdata dyn="fv"  hgrid="10x15"     nlev="66"   ic_ymd="20000101" >atm/waccm/ic/cami_2000-01-01_10x15_L66_c041121.nc</ncdata>
-<ncdata dyn="fv"  hgrid="4x5"       nlev="66"  chem="waccm_mozart_sulfur"   ic_ymd="20000101" >atm/waccm/ic/f40.2000.4deg.wcm.carma.sulf.004.cam2.i.0008-01-01-00000.nc</ncdata>
 
 <ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="81"  waccmx="1"  ic_ymd="20000101" >atm/waccm/ic/WAX3548T08CO_2003top_f2000.waccm_0017bottom_L81_c110906.nc</ncdata>
 
@@ -503,21 +502,6 @@
 <radiation_scheme rad="camrt">camrt</radiation_scheme>
 <radiation_scheme rad="rrtmg">rrtmg</radiation_scheme>
 <radiation_scheme rad="rrtmgp">rrtmgp</radiation_scheme>
-
-<!-- CARMA file paths -->
-<carma_emis_file        carma="meteor_smoke">atm/waccm/emis/meteor_smoke_kalashnikova.nc</carma_emis_file> 
-<carma_escale_file      carma="meteor_smoke">atm/waccm/emis/smoke_grf_frentzke.nc</carma_escale_file> 
-<carma_emis_file        carma="mixed_sulfate">atm/waccm/emis/meteor_smoke_kalashnikova.nc</carma_emis_file> 
-<carma_escale_file      carma="mixed_sulfate">atm/waccm/emis/smoke_grf_frentzke.nc</carma_escale_file> 
-<carma_emis_file        carma="pmc">atm/waccm/emis/meteor_smoke_kalashnikova.nc</carma_emis_file> 
-<carma_escale_file      carma="pmc">atm/waccm/emis/smoke_grf_frentzke.nc</carma_escale_file> 
-<carma_mice_file        carma="pmc">atm/cam/physprops/mice_warren_2008.nc</carma_mice_file> 
-<carma_emis_file        carma="pmc_sulfate">atm/waccm/emis/meteor_smoke_kalashnikova.nc</carma_emis_file> 
-<carma_escale_file      carma="pmc_sulfate">atm/waccm/emis/smoke_grf_frentzke.nc</carma_escale_file> 
-<carma_mice_file        carma="pmc_sulfate">atm/cam/physprops/mice_warren_2008.nc</carma_mice_file> 
-<carma_soilerosion_file carma="cirrus_dust">atm/cam/dst/soil_erosion_factor_1x1_c120907.nc</carma_soilerosion_file> 
-<carma_soilerosion_file carma="dust">atm/cam/dst/soil_erosion_factor_1x1_c120907.nc</carma_soilerosion_file> 
-<carma_emis_file        carma="tholin">atm/waccm/emis/early_earth_haze.nc</carma_emis_file> 
 
 <!-- CAM-Chem ozone (2000 climatology) -->
 <prescribed_ozone_datapath>atm/cam/ozone</prescribed_ozone_datapath>
@@ -1066,7 +1050,6 @@
 <eddy_lbulk_max                       >40.D3</eddy_lbulk_max>
 
 <eddy_leng_max                            >40.D3</eddy_leng_max>
-<eddy_leng_max carma="cirrus"             >30.D0</eddy_leng_max>
 <eddy_leng_max phys="cam5" waccm_phys="1" >100.D0</eddy_leng_max>
 
 <eddy_max_bot_pressure                            >100.D3</eddy_max_bot_pressure>
@@ -1197,7 +1180,6 @@
 <cldfrc_ice phys="cam5" >.true.</cldfrc_ice>
 
 <cldfrc_rhminl                                                        > 0.900D0 </cldfrc_rhminl>
-<cldfrc_rhminl                   phys="cam5" carma="cirrus"           > 0.910D0 </cldfrc_rhminl>
 <cldfrc_rhminl dyn="fv"          phys="cam5" unicon="1"               > 0.850D0 </cldfrc_rhminl>
 <cldfrc_rhminl dyn="se"          phys="cam5" unicon="1"               > 0.920D0 </cldfrc_rhminl>
 <cldfrc_rhminl                   phys="cam5" microphys="mg2"          > 0.950D0 </cldfrc_rhminl>
@@ -1216,7 +1198,6 @@
 
 
 <cldfrc_rhminl_adj_land                                               > 0.100D0 </cldfrc_rhminl_adj_land>
-<cldfrc_rhminl_adj_land                      carma="cirrus"           > 0.000D0 </cldfrc_rhminl_adj_land>
 <cldfrc_rhminl_adj_land unicon="1"                                    > 0.000D0 </cldfrc_rhminl_adj_land>
 
 <cldfrc_rhminh                                                        > 0.800D0 </cldfrc_rhminh>
@@ -1272,13 +1253,9 @@
 
 <cldfrc_iceopt                             > 1 </cldfrc_iceopt>
 <cldfrc_iceopt  phys="cam5"                > 5 </cldfrc_iceopt>
-<cldfrc_iceopt  phys="cam4" carma="cirrus" > 4 </cldfrc_iceopt>
-<cldfrc_iceopt  phys="cam5" carma="cirrus" > 4 </cldfrc_iceopt>
 
 <cldfrc_icecrit                            > 0.95D0 </cldfrc_icecrit>
 <cldfrc_icecrit phys="cam5"                > 0.93D0 </cldfrc_icecrit>
-<cldfrc_icecrit             carma="cirrus" > 0.70D0 </cldfrc_icecrit>
-<cldfrc_icecrit phys="cam5" carma="cirrus" > 0.70D0 </cldfrc_icecrit>
 
 <cldfrc2m_rhmini               >  0.80D0  </cldfrc2m_rhmini>
 <cldfrc2m_rhmini   unicon="1"  >  0.85D0  </cldfrc2m_rhmini>
