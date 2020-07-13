@@ -2035,7 +2035,7 @@ subroutine shoc_assumed_pdf(&
   real(rtype) sqrtw2, sqrtthl, sqrtqt
   real(rtype) epsterm
   real(rtype) sqrtqw2_1, sqrtqw2_2, sqrtthl2_1, sqrtthl2_2
-  real(rtype) corrtest1, corrtest2, thl_tol, rt_tol, w_tol_sqd, w_thresh
+  real(rtype) thl_tol, rt_tol, w_tol_sqd, w_thresh
   character(len=200) :: err_msg 
 
   ! variables on thermo grid
