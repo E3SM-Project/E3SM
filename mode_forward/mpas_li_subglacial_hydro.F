@@ -928,6 +928,12 @@ module li_subglacial_hydro
          waterFluxDiffu = 0.0_RKIND
          waterVelocity = 0.0_RKIND
       end where
+      where (waterThicknessEdgeUpwind == 0.0_RKIND)  ! if no water to give, should have no flux!
+         waterFluxAdvec = 0.0_RKIND ! Should already be 0
+         waterFluxDiffu = 0.0_RKIND ! Might not be 0
+         waterVelocity = 0.0_RKIND
+      end where
+
       waterFlux(:) = waterFluxAdvec(:) + waterFluxDiffu(:)
 
    !--------------------------------------------------------------------
