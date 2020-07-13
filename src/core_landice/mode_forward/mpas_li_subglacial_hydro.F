@@ -732,6 +732,7 @@ module li_subglacial_hydro
       real (kind=RKIND), pointer :: alpha, beta
       real (kind=RKIND), pointer :: conduc_coeff
       character (len=StrKIND), pointer :: config_SGH_tangent_slope_calculation
+      real (kind=RKIND), pointer :: config_sea_level
       integer, pointer :: nEdges
       integer, pointer :: nCells
       integer, pointer :: nVertices
@@ -757,6 +758,7 @@ module li_subglacial_hydro
       call mpas_pool_get_config(liConfigs, 'config_SGH_beta', beta)
       call mpas_pool_get_config(liConfigs, 'config_SGH_conduc_coeff', conduc_coeff)
       call mpas_pool_get_config(liConfigs, 'config_SGH_tangent_slope_calculation', config_SGH_tangent_slope_calculation)
+      call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
 
       call mpas_pool_get_array(hydroPool, 'waterThickness', waterThickness)
       call mpas_pool_get_array(hydroPool, 'waterPressure', waterPressure)
@@ -807,9 +809,9 @@ module li_subglacial_hydro
       ! For land this would only happen if there is a supply of water, which is not currently handled.
       ! Do this by simply zeroing the hydropotential gradient in those cases.
       do iEdge = 1, nEdges
-         ! Find edges along GL or grounded margin to check for 'backwards' flow
+         ! Find edges along GL or margin to check for 'backwards' flow
          if ((li_mask_is_grounding_line(edgeMask(iEdge))) .or. &
-             (li_mask_is_margin(edgeMask(iEdge)) .and. li_mask_is_grounded_ice(edgeMask(iEdge)))) then
+             li_mask_is_margin(edgeMask(iEdge)) ) then
             ! Now check if flow is backwards
             cell1 = cellsOnEdge(1, iEdge)
             cell2 = cellsOnEdge(2, iEdge)
@@ -829,17 +831,18 @@ module li_subglacial_hydro
 
       ! At terrestrial margin, ignore the downslope bed topography gradient.  Including it can lead to unrealistically large
       ! hydropotential gradients and unstable channel growth.
+      ! Don't do this for marine margins, because there the hydropotential is controlled by sea level.
       do iEdge = 1, nEdges
          if (li_mask_is_margin(edgeMask(iEdge)) .and. li_mask_is_grounded_ice(edgeMask(iEdge))) then
             cell1 = cellsOnEdge(1, iEdge)
             cell2 = cellsOnEdge(2, iEdge)
             if (thickness(cell1) == 0.0_RKIND) then ! cell1 is the icefree cell
-               if (bedTopography(cell1) < bedTopography(cell2)) then
+               if ((bedTopography(cell1) < bedTopography(cell2)) .and. (bedTopography(cell1) >= config_sea_level)) then
                   hydropotentialBaseSlopeNormal(iEdge) = (hydropotentialBase(cell2) - rho_water * gravity * bedTopography(cell2))&
                      / dcEdge(iEdge)
                endif
             else ! cell2 is the icefree cell
-               if (bedTopography(cell2) < bedTopography(cell1)) then
+               if ((bedTopography(cell2) < bedTopography(cell1)) .and. (bedTopography(cell2) >= config_sea_level)) then
                   hydropotentialBaseSlopeNormal(iEdge) = (rho_water * gravity * bedTopography(cell1) - hydropotentialBase(cell1))&
                      / dcEdge(iEdge)
                endif
