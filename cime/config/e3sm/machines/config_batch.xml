@@ -516,6 +516,28 @@
      </queues>
    </batch_system>
 
+   <batch_system MACH="ascent" type="lsf" >
+     <directives>
+       <directive>-P {{ project }}</directive>
+     </directives>
+     <directives compiler="!.*gpu">
+       <directive>-alloc_flags smt2</directive>
+     </directives>
+     <directives compiler="ibmgpu">
+       <directive>-alloc_flags "gpumps smt2"</directive>
+     </directives>
+     <directives compiler="pgiacc">
+       <directive>-alloc_flags gpumps</directive>
+     </directives>
+     <directives compiler="pgigpu">
+       <directive>-alloc_flags gpumps</directive>
+     </directives>
+     <queues>
+       <queue walltimemax="02:00" default="true">batch</queue>
+     </queues>
+   </batch_system>
+
+
    <batch_system MACH="snl-white" type="lsf" >
      <queues>
        <queue walltimemax="02:00" default="true">rhel7G</queue>

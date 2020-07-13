@@ -61,6 +61,19 @@ cd /gpfs/alpine/csc399/proj-shared/zz217/e3sm_scratch/SMS_PS_Ld5.ne4_ne4.FC5AV1C
 To use the IBM compilers for OpenMP offloading, use `--compiler ibmgpu` in the above `create_test` command. 
 And put the source codes that have the OpenMP target directives in the `~/E3SM/cime/config/e3sm/machines/Depends.Summit.ibmgpu` file.
 
+
+**Ascent@ORNL**
+
+Similar steps to follow as for Summit above, with addition of the following:
+
+```
+./create_test SMS_PS_Ld5.ne4_ne4.FC5AV1C-L -t report --compiler pgiacc --walltime 00:30 --no-run -m ascent --output-root /path/to/
+```
+
+Note: Make sure /path/to/ exists are writable by the job.
+
+
+
 ### Configuration files 
 
 The following files under the `~/E3SM/cime/config/e3sm/machines` directory controls how a test case is built and run. 
@@ -139,4 +152,4 @@ cat  atm.log.215777.200710-220630.gz| head -n 10 | md5sum
 ``` 
 
 
-"testing..."
+
