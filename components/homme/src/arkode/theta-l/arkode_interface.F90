@@ -278,7 +278,7 @@ function FColumnSolSolve(b, t, y, gamma, x) result(ierr)
   real (kind=real_kind) :: JacU2(nlev-2,np,np)
   real (kind=real_kind) :: pnh(np,np,nlev)
   real (kind=real_kind) :: pnh_i(np,np,nlevp)
-  real (kind=real_kind) :: dp3d_i(np,np,nlevp)
+  real (kind=real_kind) :: dphi(np,np,nlev)
   real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
   real (kind=real_kind) :: exner(np,np,nlev)
   real (kind=real_kind) :: b1(nlev,np,np)
@@ -368,17 +368,14 @@ function FColumnSolSolve(b, t, y, gamma, x) result(ierr)
      call pnh_and_exner_from_eos(hvcoord, vtheta_dp, dp3d, phi_np1, &
              pnh, exner, dpnh_dp_i, pnh_i_out=pnh_i)
 
-     ! compute dp3d_i -- note that compute_stage_value_dirk
-     ! computes this twice (with potential memory reference issues in the second pass)
-     dp3d_i(:,:,1) = dp3d(:,:,1)
-     dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
-     do k=2,nlev
-        dp3d_i(:,:,k) = 0.5d0*(dp3d(:,:,k) + dp3d(:,:,k-1))
-     end do
+     ! compute dphi
+     do k=1,nlev
+       dphi(:,:,k)=phi_np1(:,:,k+1)-phi_np1(:,:,k)
+     enddo
 
      ! get tridigonal matrix M
      info(:,:) = 0
-     call get_dirk_jacobian(JacL,JacD,JacU,gamma,dp3d,phi_np1,pnh,1)
+     call get_dirk_jacobian(JacL,JacD,JacU,gamma,dp3d,dphi,pnh,1)
 
      ! loop over components of this ie
 #if (defined COLUMN_OPENMP)
