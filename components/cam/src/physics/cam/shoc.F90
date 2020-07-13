@@ -2035,7 +2035,6 @@ subroutine shoc_assumed_pdf(&
   real(rtype) sqrtw2, sqrtthl, sqrtqt
   real(rtype) epsterm
   real(rtype) sqrtqw2_1, sqrtqw2_2, sqrtthl2_1, sqrtthl2_2
-  real(rtype) thl_tol, rt_tol, w_tol_sqd, w_thresh
   real(rtype) corrtest1, corrtest2, thl_tol, rt_tol, w_tol_sqd, w_thresh
   character(len=200) :: err_msg 
 
@@ -2608,7 +2607,6 @@ subroutine shoc_assumed_pdf_compute_s(&
 
   if (std_s .ne. 0.0_rtype) then
     C=0.5_rtype*(1._rtype+erf(s/(sqrt2*std_s)))
-IF (C .ne. C) C = 0._rtype
     IF (C .ne. 0._rtype) qn=s*C+(std_s/sqrtpi)*exp(-0.5_rtype*(s/std_s)**2)
   else
     if (s .gt. 0._rtype) then
