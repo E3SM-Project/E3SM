@@ -311,7 +311,6 @@ contains
     use mo_chem_utls,  only : get_rxt_ndx, get_spc_ndx
     use mo_setinv,     only : inv_o2_ndx=>o2_ndx, inv_h2o_ndx=>h2o_ndx
     use physics_buffer,only : physics_buffer_desc
-    use carma_flags_mod, only : carma_do_hetchem
     use aero_model,      only : aero_model_surfarea
     use rad_constituents,only : rad_cnst_get_info
 
@@ -436,11 +435,6 @@ contains
     sad_total(:,:) = 0._r8
 
     if( usr_NO2_aer_ndx > 0 .or. usr_NO3_aer_ndx > 0 .or. usr_N2O5_aer_ndx > 0 .or. usr_HO2_aer_ndx > 0 ) then
-
-! sad_total should be set outside of usrrxt ?? 
-       if( carma_do_hetchem ) then
-          sad_total(:ncol,:pver)=strato_sad(:ncol,:pver)
-       else
 
           call aero_model_surfarea( &
                mmr, rm1, relhum, pmid, temp, strato_sad, &
@@ -892,14 +886,10 @@ contains
 !-------------------------------------------------------------------------
 ! 	... estimate sulfate particles surface area (cm2/cm3) in each grid
 !-------------------------------------------------------------------------
-            if ( carma_do_hetchem ) then
-               sur(:ncol) = strato_sad(:ncol,k)
-            else
-               sur(:) = sulfate(:,k)*m(:,k)/avo*wso4 &              ! xform mixing ratio to g/cm3
-                        / amas &                                    ! xform g/cm3 to num particels/cm3
-                        * fare &                                    ! xform num particels/cm3 to cm2/cm3
-                        * xr(:)*xr(:)                               ! humidity factor
-            endif
+            sur(:) = sulfate(:,k)*m(:,k)/avo*wso4 &              ! xform mixing ratio to g/cm3
+                     / amas &                                    ! xform g/cm3 to num particels/cm3
+                     * fare &                                    ! xform num particels/cm3 to cm2/cm3
+                     * xr(:)*xr(:)                               ! humidity factor
 !-----------------------------------------------------------------
 !	... compute the "aerosol" reaction rates
 !-----------------------------------------------------------------
