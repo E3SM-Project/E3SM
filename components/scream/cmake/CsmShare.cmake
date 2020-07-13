@@ -20,6 +20,6 @@ macro (CreateCsmShareTarget)
 
     include(Scorpio)
     CreateScorpioTarget(TRUE)
-    target_link_libraries(scream_csm_share INTERFACE scorpio_f)
+    target_link_libraries(scream_csm_share INTERFACE scream_piof)
   endif ()
 endmacro()
