@@ -1919,25 +1919,34 @@ subroutine f0_to_f5_diag_third_shoc_moment(thedz, thedz2, bet2, iso, isosqrt, & 
   !intent-out
   real(rtype), intent(out) :: f0, f1, f2, f3, f4, f5
 
+  !local variables
+  real(rtype) :: thl_sec_diff, wthl_sec_diff, wsec_diff, tke_diff
+
+  !Some common factors
+  thl_sec_diff  = thl_sec_kc  - thl_sec_kb
+  wthl_sec_diff = wthl_sec_kc - wthl_sec_kb
+  wsec_diff     = w_sec_kc    - w_sec
+  tke_diff      = tke_kc      - tke
+
   f0 = thedz2 * bet2**3 * iso**4 * wthl_sec * &
-       (thl_sec_kc-thl_sec_kb)
+       thl_sec_diff
 
   f1 = thedz2 * bet2**2 * iso**3 * (wthl_sec * &
-       (wthl_sec_kc-wthl_sec_kb) + 0.5_rtype * &
-       w_sec_zi*(thl_sec_kc-thl_sec_kb))
+       wthl_sec_diff + 0.5_rtype * &
+       w_sec_zi*thl_sec_diff)
 
   f2 = thedz * bet2 * isosqrt * wthl_sec * &
-       (w_sec_kc-w_sec)+ 2._rtype * thedz2 * bet2 * &
-       isosqrt * w_sec_zi * (wthl_sec_kc - wthl_sec_kb)
+       wsec_diff+ 2._rtype * thedz2 * bet2 * &
+       isosqrt * w_sec_zi * wthl_sec_diff
 
   f3 = thedz2 * bet2 * isosqrt * w_sec_zi * &
-       (wthl_sec_kc - wthl_sec_kb) + thedz * &
-       bet2 * isosqrt * (wthl_sec * (tke_kc - tke))
+       wthl_sec_diff + thedz * &
+       bet2 * isosqrt * (wthl_sec * tke_diff)
 
-  f4 = thedz * iso * w_sec_zi * ((w_sec_kc - w_sec + &
-       (tke_kc - tke)))
+  f4 = thedz * iso * w_sec_zi * (wsec_diff + &
+       tke_diff)
 
-  f5 = thedz * iso * w_sec_zi * (w_sec_kc - w_sec)
+  f5 = thedz * iso * w_sec_zi * wsec_diff
 
   return
 end subroutine f0_to_f5_diag_third_shoc_moment
