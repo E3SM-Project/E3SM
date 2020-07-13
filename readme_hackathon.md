@@ -70,7 +70,7 @@ Similar steps to follow as for Summit above, with addition of the following:
 ./create_test SMS_PS_Ld5.ne4_ne4.FC5AV1C-L -t report --compiler pgiacc --walltime 00:30 --no-run -m ascent --output-root /path/to/
 ```
 
-Note: Make sure /path/to/ exists are writable by the job.
+Note: Make sure /path/to/ exists and writable by the job.
 
 
 
