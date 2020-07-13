@@ -62,6 +62,41 @@ contains
 
   end subroutine sync_outfile_c
 !=====================================================================!
+  subroutine set_decomp_c(filename_in) bind(c)
+    use scream_scorpio_interface, only : set_decomp
+    type(c_ptr), intent(in) :: filename_in
+
+    character(len=256)       :: filename
+
+    call convert_c_string(filename_in,filename)
+    call set_decomp(trim(filename))
+  end subroutine set_decomp_c
+!=====================================================================!
+  subroutine set_dof_c(filename_in,varname_in,dof_len,dof_vec) bind(c)
+    use scream_scorpio_interface, only : set_dof
+    type(c_ptr), intent(in)                             :: filename_in
+    type(c_ptr), intent(in)                             :: varname_in
+    integer(kind=c_int), value, intent(in)              :: dof_len
+    integer(kind=c_int), intent(in), dimension(dof_len) :: dof_vec
+
+    character(len=256)       :: filename
+    character(len=256)       :: varname
+
+    call convert_c_string(filename_in,filename)
+    call convert_c_string(varname_in,varname)
+    call set_dof(trim(filename),trim(varname),dof_len,dof_vec)
+  end subroutine set_dof_c
+!=====================================================================!
+  subroutine eam_pio_closefile_c(filename_in) bind(c)
+    use scream_scorpio_interface, only : eam_pio_closefile
+    type(c_ptr), intent(in) :: filename_in
+    character(len=256)      :: filename
+
+    call convert_c_string(filename_in,filename)
+    call eam_pio_closefile(trim(filename))
+
+  end subroutine eam_pio_closefile_c
+!=====================================================================!
   subroutine pio_update_time_c(filename_in,time) bind(c)
     use scream_scorpio_interface, only : eam_update_time
     type(c_ptr), intent(in) :: filename_in
@@ -73,6 +108,35 @@ contains
     call eam_update_time(trim(filename),time)
 
   end subroutine pio_update_time_c
+!=====================================================================!
+  subroutine get_variable_c(filename_in, shortname_in, longname_in, numdims, var_dimensions_in, dtype, pio_decomp_tag_in) bind(c)
+    use scream_scorpio_interface, only : get_variable
+    type(c_ptr), intent(in)                :: filename_in
+    type(c_ptr), intent(in)                :: shortname_in
+    type(c_ptr), intent(in)                :: longname_in
+    integer(kind=c_int), value, intent(in) :: numdims
+    type(c_ptr), intent(in)                :: var_dimensions_in(numdims)
+    integer(kind=c_int), value, intent(in) :: dtype
+    type(c_ptr), intent(in)                :: pio_decomp_tag_in
+    
+    character(len=256) :: filename
+    character(len=256) :: shortname
+    character(len=256) :: longname
+    character(len=256) :: var_dimensions(numdims)
+    character(len=256) :: pio_decomp_tag
+    integer            :: ii
+    
+    call convert_c_string(filename_in,filename)
+    call convert_c_string(shortname_in,shortname)
+    call convert_c_string(longname_in,longname)
+    call convert_c_string(pio_decomp_tag_in,pio_decomp_tag)
+    do ii = 1,numdims
+      call convert_c_string(var_dimensions_in(ii), var_dimensions(ii))
+    end do
+   
+    call get_variable(filename,shortname,longname,numdims,var_dimensions,dtype,pio_decomp_tag)
+
+  end subroutine get_variable_c
 !=====================================================================!
   subroutine register_variable_c(filename_in, shortname_in, longname_in, numdims, var_dimensions_in, dtype, pio_decomp_tag_in) bind(c)
     use scream_scorpio_interface, only : register_variable
@@ -289,7 +353,7 @@ contains
 
   end subroutine grid_write_data_array_c_int_4d
 !=====================================================================!
-  subroutine grid_read_data_array_c_int_1d(filename_in,varname_in,dim1_length,hbuf_out) bind(c)
+  subroutine grid_read_data_array_c_int(filename_in,varname_in,dim1_length,hbuf_out) bind(c)
     use scream_scorpio_interface, only: grid_read_data_array
     use physics_utils, only: rtype
 
@@ -305,63 +369,9 @@ contains
     call convert_c_string(varname_in,varname)
     call grid_read_data_array(filename,hbuf_out,varname)
 
-  end subroutine grid_read_data_array_c_int_1d
+  end subroutine grid_read_data_array_c_int
 !=====================================================================!
-  subroutine grid_read_data_array_c_int_2d(filename_in,varname_in,dim1_length,dim2_length,hbuf_out) bind(c)
-    use scream_scorpio_interface, only: grid_read_data_array
-    use physics_utils, only: rtype
-
-    type(c_ptr), intent(in)                :: filename_in
-    type(c_ptr), intent(in)                :: varname_in
-    integer(kind=c_int), value, intent(in) :: dim1_length,dim2_length
-    integer(kind=c_int), intent(out), dimension(dim1_length,dim2_length) :: hbuf_out
-
-    character(len=256) :: filename
-    character(len=256) :: varname
-
-    call convert_c_string(filename_in,filename)
-    call convert_c_string(varname_in,varname)
-    call grid_read_data_array(filename,hbuf_out,varname)
-
-  end subroutine grid_read_data_array_c_int_2d
-!=====================================================================!
-  subroutine grid_read_data_array_c_int_3d(filename_in,varname_in,dim1_length,dim2_length,dim3_length,hbuf_out) bind(c)
-    use scream_scorpio_interface, only: grid_read_data_array
-    use physics_utils, only: rtype
-
-    type(c_ptr), intent(in)                :: filename_in
-    type(c_ptr), intent(in)                :: varname_in
-    integer(kind=c_int), value, intent(in) :: dim1_length,dim2_length,dim3_length
-    integer(kind=c_int), intent(out), dimension(dim1_length,dim2_length,dim3_length) :: hbuf_out
-
-    character(len=256) :: filename
-    character(len=256) :: varname
-
-    call convert_c_string(filename_in,filename)
-    call convert_c_string(varname_in,varname)
-    call grid_read_data_array(filename,hbuf_out,varname)
-
-  end subroutine grid_read_data_array_c_int_3d
-!=====================================================================!
-  subroutine grid_read_data_array_c_int_4d(filename_in,varname_in,dim1_length,dim2_length,dim3_length,dim4_length,hbuf_out) bind(c)
-    use scream_scorpio_interface, only: grid_read_data_array
-    use physics_utils, only: rtype
-
-    type(c_ptr), intent(in)                :: filename_in
-    type(c_ptr), intent(in)                :: varname_in
-    integer(kind=c_int), value, intent(in) :: dim1_length,dim2_length,dim3_length,dim4_length
-    integer(kind=c_int), intent(out), dimension(dim1_length,dim2_length,dim3_length,dim4_length ) :: hbuf_out
-
-    character(len=256) :: filename
-    character(len=256) :: varname
-
-    call convert_c_string(filename_in,filename)
-    call convert_c_string(varname_in,varname)
-    call grid_read_data_array(filename,hbuf_out,varname)
-
-  end subroutine grid_read_data_array_c_int_4d
-!=====================================================================!
-  subroutine grid_read_data_array_c_real_1d(filename_in,varname_in,dim1_length,hbuf_out) bind(c)
+  subroutine grid_read_data_array_c_real(filename_in,varname_in,dim1_length,hbuf_out) bind(c)
     use scream_scorpio_interface, only: grid_read_data_array
     use physics_utils, only: rtype
 
@@ -377,60 +387,6 @@ contains
     call convert_c_string(varname_in,varname)
     call grid_read_data_array(filename,hbuf_out,varname)
 
-  end subroutine grid_read_data_array_c_real_1d
-!=====================================================================!
-  subroutine grid_read_data_array_c_real_2d(filename_in,varname_in,dim1_length,dim2_length,hbuf_out) bind(c)
-    use scream_scorpio_interface, only: grid_read_data_array
-    use physics_utils, only: rtype
-
-    type(c_ptr), intent(in)                :: filename_in
-    type(c_ptr), intent(in)                :: varname_in
-    integer(kind=c_int), value, intent(in) :: dim1_length,dim2_length
-    real(kind=c_real), intent(out), dimension(dim1_length,dim2_length) :: hbuf_out
-
-    character(len=256) :: filename
-    character(len=256) :: varname
-
-    call convert_c_string(filename_in,filename)
-    call convert_c_string(varname_in,varname)
-    call grid_read_data_array(filename,hbuf_out,varname)
-
-  end subroutine grid_read_data_array_c_real_2d
-!=====================================================================!
-  subroutine grid_read_data_array_c_real_3d(filename_in,varname_in,dim1_length,dim2_length,dim3_length,hbuf_out) bind(c)
-    use scream_scorpio_interface, only: grid_read_data_array
-    use physics_utils, only: rtype
-
-    type(c_ptr), intent(in)                :: filename_in
-    type(c_ptr), intent(in)                :: varname_in
-    integer(kind=c_int), value, intent(in) :: dim1_length,dim2_length,dim3_length
-    real(kind=c_real), intent(out), dimension(dim1_length,dim2_length,dim3_length) :: hbuf_out
-
-    character(len=256) :: filename
-    character(len=256) :: varname
-
-    call convert_c_string(filename_in,filename)
-    call convert_c_string(varname_in,varname)
-    call grid_read_data_array(filename,hbuf_out,varname)
-
-  end subroutine grid_read_data_array_c_real_3d
-!=====================================================================!
-  subroutine grid_read_data_array_c_real_4d(filename_in,varname_in,dim1_length,dim2_length,dim3_length,dim4_length,hbuf_out) bind(c)
-    use scream_scorpio_interface, only: grid_read_data_array
-    use physics_utils, only: rtype
-
-    type(c_ptr), intent(in)                :: filename_in
-    type(c_ptr), intent(in)                :: varname_in
-    integer(kind=c_int), value, intent(in) :: dim1_length,dim2_length,dim3_length,dim4_length
-    real(kind=c_real), intent(out), dimension(dim1_length,dim2_length,dim3_length,dim4_length) :: hbuf_out
-
-    character(len=256) :: filename
-    character(len=256) :: varname
-
-    call convert_c_string(filename_in,filename)
-    call convert_c_string(varname_in,varname)
-    call grid_read_data_array(filename,hbuf_out,varname)
-
-  end subroutine grid_read_data_array_c_real_4d
+  end subroutine grid_read_data_array_c_real
 !=====================================================================!
 end module scream_scorpio_interface_iso_c
