@@ -14,7 +14,7 @@ def create_viewer(root_dir, parameters):
     viewer = OutputViewer(path=root_dir)
 
     # The name that's displayed on the viewer.
-    display_name = 'QBO'
+    display_name = 'Quasi-biennial Oscillation'
     set_name = 'qbo'
     # The title of the colums on the webpage.
     # Appears in the second and third columns of the bolded rows.
