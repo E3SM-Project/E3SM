@@ -28,6 +28,7 @@ module ocn_debug_diagnostics
    use mpas_io_units
 
    use ocn_constants
+   use ocn_config
    use ocn_diagnostics_routines
 
    implicit none
@@ -158,7 +159,6 @@ contains
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
       !type (mpas_pool_type), pointer :: debugDiagnosticsAM
 
@@ -173,12 +173,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: rx1MaxCell
       real (kind=RKIND), dimension(:,:), pointer :: zMid
 
-      logical, pointer :: config_AM_debugDiagnostics_check_state
-
       err = 0
-
-      call mpas_pool_get_config(domain % configs, 'config_AM_debugDiagnostics_check_state', &
-                                config_AM_debugDiagnostics_check_state)
 
       localMaxRx1 = 0.0_RKIND
 
