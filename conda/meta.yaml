@@ -1,16 +1,18 @@
+{% set name = "e3sm_diags" %}
+{% set version = "2.1.0" %}
+
 package:
-    name: e3sm_diags
-    version: 2.1.0
+    name: {{ name|lower }}
+    version: {{ version }}
 
 source:
-    #path: ..
-    git_url: https://github.com/E3SM-Project/e3sm_diags
-    git_rev: v2.1.0
+    url: https://github.com/E3SM-Project/e3sm_diags/archive/v{{ version }}.tar.gz
+    sha256: 9c169c27fcdfec870b4e20fd71c24a3a426136424c32003bb9a714af157a3cb5 
 
 build:
     number: 1
     noarch: python
-    script: "{{ PYTHON }} -m pip install . --no-deps -vv"
+    script: {{ PYTHON }} -m pip install . --no-deps -vv
 
 requirements:
   host:
@@ -37,4 +39,6 @@ requirements:
 
 about:
     home: https://github.com/E3SM-Project/e3sm_diags
+    license: BSD-3-Clause
+    license_file: LICENSE
     summary: Diagnostics package for the DOE's Energy Exascale Earth System Model (E3SM) project.
