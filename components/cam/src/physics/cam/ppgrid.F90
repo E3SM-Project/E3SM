@@ -27,6 +27,7 @@ module ppgrid
 
 #ifdef PPCOLS
    integer pcols      ! max number of columns per chunk (set at compile-time)
+!$acc declare create(pcols)   
 #endif
    integer psubcols   ! number of sub-columns (max)
    integer pver       ! number of vertical levels
@@ -49,6 +50,7 @@ module ppgrid
 !
 ! pcols set in physgrid_init
    integer :: pcols = -1    ! max number of columns per chunk (set at runtime)
+!$acc declare copyin(pcols)   
 #endif
 
 end module ppgrid
