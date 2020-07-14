@@ -11,6 +11,7 @@ set(PHYSICS_COMMON_SRCS
   physics_common.cpp
   physics_only_grids_manager.cpp
   ${SCREAM_BASE_DIR}/../cam/src/physics/cam/physics_utils.F90
+  ${SCREAM_BASE_DIR}/../cam/src/physics/cam/scream_abortutils.F90
 )
 
 # Add ETI source files if not on CUDA
