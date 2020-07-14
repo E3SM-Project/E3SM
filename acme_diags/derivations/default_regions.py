@@ -55,6 +55,9 @@ regions_specs = {
     'NINO3': {'domain': cdutil.region.domain(latitude=(-5., 5., 'ccb'), longitude=(210., 270., 'ccb'))},
     'NINO34': {'domain': cdutil.region.domain(latitude=(-5., 5., 'ccb'), longitude=(190., 240., 'ccb'))},
     'NINO4': {'domain': cdutil.region.domain(latitude=(-5., 5., 'ccb'), longitude=(160., 210., 'ccb'))},
+    # Below is for RRM(regionally refined model) domains.
+    #'CONUS_RRM': {'domain': cdutil.region.domain(latitude=(20., 50., 'ccb'), longitude=(-125., -65., 'ccb'))},For RRM dataset, negative value won't work
+    'CONUS_RRM': {'domain': cdutil.region.domain(latitude=(20., 50., 'ccb'), longitude=(235., 295., 'ccb'))},
     # Below is for debugging. A smaller latitude range reduces processing time.
     'DEBUG': {'domain': cdutil.region.domain(latitude=(-2., 2, 'ccb'))}
 }

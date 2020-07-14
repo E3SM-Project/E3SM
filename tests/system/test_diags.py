@@ -238,6 +238,9 @@ class TestAllSets(unittest.TestCase):
     def test_zonal_mean_xy(self):
         self.check_plots_plevs('zonal_mean_xy', 'global', [200.0])
 
+    def test_lat_lon_regional(self):
+        self.check_plots_plevs('lat_lon', 'CONUS_RRM', [850.0])
+
 
 if __name__ == '__main__':
     unittest.main()
