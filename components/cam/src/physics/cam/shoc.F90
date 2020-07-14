@@ -13,6 +13,7 @@
 module shoc
 
   use physics_utils, only: rtype, rtype8, itype, btype
+  use scream_abortutils, only: endscreamrun
 
 ! Bit-for-bit math functions.
 #ifdef SCREAM_CONFIG_IS_CMAKE
@@ -2156,7 +2157,8 @@ subroutine shoc_assumed_pdf(&
   real(rtype) epsterm
   real(rtype) sqrtqw2_1, sqrtqw2_2, sqrtthl2_1, sqrtthl2_2
   real(rtype) thl_tol, rt_tol, w_tol_sqd, w_thresh
- 
+  character(len=200) :: err_msg 
+
   ! variables on thermo grid
   real(rtype) :: wthl_sec_zt(shcol,nlev)
   real(rtype) :: wqw_sec_zt(shcol,nlev)
@@ -2266,6 +2268,17 @@ subroutine shoc_assumed_pdf(&
         thl1_2,basepres,pval,& ! Input
         Tl1_2)                 ! Output
 
+      ! Check to ensure Tl1_1 and Tl1_2 are not negative. endrun otherwise
+      if (Tl1_1 .le. 0._rtype) then
+         write(err_msg,*)'ERROR: Tl1_1 is .le. 0 before shoc_assumed_pdf_compute_qs in shoc. Tl1_1 is:',Tl1_1
+         call endscreamrun(err_msg)
+      endif
+
+      if (Tl1_2 .le. 0._rtype) then
+         write(err_msg,*)'ERROR: Tl1_2 is .le. 0 before shoc_assumed_pdf_compute_qs in shoc. Tl1_2 is:',Tl1_2
+         call endscreamrun(err_msg)
+      endif
+      
       ! Now compute qs
       call shoc_assumed_pdf_compute_qs(&
         Tl1_1,Tl1_2,pval,&   ! Input
@@ -2459,6 +2472,7 @@ subroutine shoc_assumed_pdf_thl_parameters(&
       +(Skew_thl-a*thl1_1**3-(1._rtype-a)*thl1_2**3))/ &
       (3._rtype*(1._rtype-a)*(thl1_2-thl1_1))))*thlsec
 
+
     thl1_1=thl1_1*sqrtthl+thl_first
     thl1_2=thl1_2*sqrtthl+thl_first
 
@@ -2506,6 +2520,7 @@ subroutine shoc_assumed_pdf_qw_parameters(&
   real(rtype), parameter :: w_thresh=0.0_rtype
 
   corrtest2=max(-1.0_rtype,min(1.0_rtype,wqwsec/(sqrtw2*sqrtqt)))
+
 
   if (qwsec .le. rt_tol**2 .or. abs(w1_2-w1_1) .le. w_thresh) then
     qw1_1=qw_first
@@ -2713,7 +2728,6 @@ subroutine shoc_assumed_pdf_compute_s(&
 
   if (std_s .ne. 0.0_rtype) then
     C=0.5_rtype*(1._rtype+erf(s/(sqrt2*std_s)))
-IF (C .ne. C) C = 0._rtype
     IF (C .ne. 0._rtype) qn=s*C+(std_s/sqrtpi)*exp(-0.5_rtype*(s/std_s)**2)
   else
     if (s .gt. 0._rtype) then
