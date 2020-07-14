@@ -171,7 +171,7 @@ dependencies:
   - zipp=0.6.0
   - zlib=1.2.11
   - zstd=1.4.3
-  - e3sm_diags=2.0.0
+  - e3sm_diags=2.1.0
   - pip:
     - cdms2==3.1.4
     - pyqt5-sip==4.19.18
