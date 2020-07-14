@@ -16,8 +16,8 @@
 !>  This module contains the routines for initializing the
 !>  TEMPLATE initial condition
 !>
-!>  In order to add a new analysis member, do the following:
-!>  1. In src/core_ocean/mode_init, copy these to your new analysis member name:
+!>  In order to add a new initial condition, do the following:
+!>  1. In src/core_ocean/mode_init, copy these to your new initial condition name:
 !>     cp mpas_ocn_init_TEMPLATE.F mpas_ocn_init_your_new_name.F
 !>     cp Registry_TEMPLATE.xml Registry_ocn_your_new_name.xml
 !>

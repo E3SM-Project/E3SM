@@ -83,6 +83,8 @@ mpas_ocn_init_hurricane.o: $(UTILS)
 
 mpas_ocn_init_tidal_boundary.o: $(UTILS)
 
+mpas_ocn_init_dam_break.o: $(UTILS)
+
 #mpas_ocn_init_TEMPLATE.o: $(UTILS)
 
 clean:

@@ -27,6 +27,7 @@ module ocn_init_lock_exchange
    use mpas_dmpar
 
    use ocn_constants
+   use ocn_config
    use ocn_init_vertical_grids
    use ocn_init_cell_markers
 
@@ -89,16 +90,9 @@ contains
 
       type (mpas_pool_type), pointer :: meshPool, statePool, verticalMeshPool, tracersPool
 
-      character (len=StrKIND), pointer :: config_init_configuration, config_vertical_grid, config_lock_exchange_layer_type, &
-            config_lock_exchange_direction
-
       integer, pointer :: nCellsSolve, nEdgesSolve, nVertLevels, nVertLevelsP1, index_temperature, index_salinity, index_tracer1
 
       integer, dimension(:), pointer :: maxLevelCell
-
-      real (kind=RKIND), pointer :: config_lock_exchange_cold_temperature, config_lock_exchange_warm_temperature, &
-                                    config_lock_exchange_salinity, config_lock_exchange_bottom_depth, &
-                                    config_lock_exchange_isopycnal_min_thickness
 
       real (kind=RKIND), dimension(:), pointer :: xCell, yCell, bottomDepth, refBottomDepthTopOfCell, refBottomDepth, &
                                                   vertCoordMovementWeights, dcEdge
@@ -113,20 +107,7 @@ contains
 
       iErr = 0
 
-      call mpas_pool_get_config(ocnConfigs, 'config_init_configuration', config_init_configuration)
-
       if (config_init_configuration .ne. trim('lock_exchange')) return
-
-      call mpas_pool_get_config(ocnConfigs, 'config_vertical_grid', config_vertical_grid)
-
-      call mpas_pool_get_config(ocnConfigs, 'config_lock_exchange_cold_temperature', config_lock_exchange_cold_temperature)
-      call mpas_pool_get_config(ocnConfigs, 'config_lock_exchange_warm_temperature', config_lock_exchange_warm_temperature)
-      call mpas_pool_get_config(ocnConfigs, 'config_lock_exchange_salinity', config_lock_exchange_salinity)
-      call mpas_pool_get_config(ocnConfigs, 'config_lock_exchange_bottom_depth', config_lock_exchange_bottom_depth)
-      call mpas_pool_get_config(ocnConfigs, 'config_lock_exchange_direction', config_lock_exchange_direction)
-      call mpas_pool_get_config(ocnConfigs, 'config_lock_exchange_isopycnal_min_thickness', &
-                                config_lock_exchange_isopycnal_min_thickness)
-      call mpas_pool_get_config(ocnConfigs, 'config_lock_exchange_layer_type', config_lock_exchange_layer_type)
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
       call mpas_pool_get_dimension(meshPool, 'nVertLevelsP1', nVertLevelsP1)
