@@ -114,12 +114,6 @@ OPTIONS
      -[no]age_of_air_trcs Switch on [off] age of air tracers. Default: on for waccm_phys, otherwise off
      -aquaplanet        Switch on aqua-planet mode w/ SST controlled by data ocean component in CIME
      -rce               Use homogenous conditions for radiative-convective equilibrium (RCE), normally used with aquaplanet 
-     -carma <name>      Build CAM with specified CARMA microphysics model
-                        [ none | bc_strat | cirrus | cirrus_dust | dust | meteor_impact | 
-                          meteor_smoke | mixed_sulfate | pmc | pmc_sulfate | sea_salt | sulfate | tholin |
-                          test_detrain | test_growth | test_passive | test_radiative | test_swelling |
-                          test_tracers, test_tracers2].
-                        Default: none.
      -chem <name>       Build CAM with specified prognostic chemistry package 
                         [ waccm_mozart | waccmx_mozart | waccm_mozart_sulfur | waccm_mozart_mam3 | waccm_sc | 
 			  waccm_sc_mam3 | waccm_tsmlt | waccm_tsmlt_mam3 | waccm_tsmlt_sulfur |
@@ -324,7 +318,6 @@ GetOptions(
     "aquaplanet"                => \$opts{'aquaplanet'},
     "cache=s"                   => \$opts{'cache'},
     "cachedir=s"                => \$opts{'cachedir'},
-    "carma=s"                   => \$opts{'carma'},
     "cam_bld=s"                 => \$opts{'cam_bld'},
     "cam_exe=s"                 => \$opts{'cam_exe'},
     "cam_exedir=s"              => \$opts{'cam_exedir'},
@@ -982,29 +975,6 @@ $cfg_ref->set('microphys', $microphys_pkg);
 if ($print>=2) { print "Microphysics package: $microphys_pkg$eol"; }
 
 #-----------------------------------------------------------------------------------------------
-# CARMA sectional microphysics package
-# The default for the current physics package is:
-my  $carma_pkg = 'none';
-
-# Allow the user to override the default via the commandline.
-if (defined $opts{'carma'}) {
-    $carma_pkg = lc($opts{'carma'});
-  
-    if ($print>=2 and ($carma_pkg ne 'none')) { print "Using CARMA for the microphysical model $carma_pkg.$eol"; }
-}
-
-if ($carma_pkg =~ m/cirrus/i) {
-    unless ($microphys_pkg =~ /^mg/) {
-	die <<"EOF";
-**    ERROR: microphysics package set to: $microphys_pkg
-**    The CARMA cirrus model only works with MG microphysics.
-EOF
-    }
-}
-
-$cfg_ref->set('carma', $carma_pkg);
-
-#-----------------------------------------------------------------------------------------------
 # CLUBB
 
 if (defined $opts{'clubb_sgs'}) {
@@ -1506,75 +1476,6 @@ if ($rain_evap_to_coarse_aero == 1 && ($chem_pkg =~ '_mam3' || $chem_pkg =~ '_ma
     $chem_cppdefs = "$chem_cppdefs  -DRAIN_EVAP_TO_COARSE_AERO "
 }
 
-my $carma_nadv = 0;
-my $carma_cppdefs = '';
-
-
-# CARMA sectional microphysics
-#
-# New CARMA models need to define the number of advected constituents.
-#
-# New CARMA models that want to do dry depostion need to provide the ccp_def PROGSSLT, so that
-# clm will return aerodynamic resistances and surface friction velocity.
-if ($carma_pkg eq 'bc_strat') {
-    $carma_nadv = 1;
-}
-elsif ($carma_pkg eq 'cirrus') {
-    $carma_nadv = 84;
-}
-elsif ($carma_pkg eq 'cirrus_dust') {
-    $carma_nadv = 140;
-}
-elsif ($carma_pkg eq 'dust') {
-    $carma_nadv = 16;
-}
-elsif ($carma_pkg eq 'meteor_impact') {
-    $carma_nadv = 42;
-}
-elsif ($carma_pkg eq 'meteor_smoke') {
-    $carma_nadv = 28;
-}
-elsif ($carma_pkg eq 'mixed_sulfate') {
-    $carma_nadv = 84;
-}
-elsif ($carma_pkg eq 'pmc') {
-    $carma_nadv = 84;
-}
-elsif ($carma_pkg eq 'pmc_sulfate') {
-    $carma_nadv = 140;
-}
-elsif ($carma_pkg eq 'sea_salt') {
-    $carma_nadv = 16;
-}
-elsif ($carma_pkg eq 'sulfate') {
-    $carma_nadv = 30;
-}
-elsif ($carma_pkg eq 'tholin') {
-    $carma_nadv = 40;
-}
-elsif ($carma_pkg eq 'test_detrain') {
-    $carma_nadv = 66;
-}
-elsif ($carma_pkg eq 'test_growth') {
-    $carma_nadv = 32;
-}
-elsif ($carma_pkg eq 'test_passive') {
-    $carma_nadv = 16;
-}
-elsif ($carma_pkg eq 'test_radiative') {
-    $carma_nadv = 16;
-}
-elsif ($carma_pkg eq 'test_swelling') {
-    $carma_nadv = 48;
-}
-elsif ($carma_pkg eq 'test_tracers') {
-    $carma_nadv = 372;
-}
-elsif ($carma_pkg eq 'test_tracers2') {
-    $carma_nadv = 434;
-}
-
-
 #-----------------------------------------------------------------------------------------------
 # Number of advected constituents
 my $nadv;
@@ -1624,11 +1525,6 @@ else {
         $nadv += $chem_nadv;
         if ($print>=2) { print "Advected constituents added by chemistry $chem_pkg: $chem_nadv$eol"; }
   
-        # CARMA package:
-        if ($carma_nadv > 0) {
-            $nadv += $carma_nadv;
-            if ($print>=2) { print "Advected constituents added by CARMA model $carma_pkg: $carma_nadv$eol"; }
-        }
 
         # UNICON tracers
         if ($unicon) {
@@ -1997,9 +1893,6 @@ if ( ($ccsm_seq) and ($spmd eq 'ON') ) { $cfg_cppdefs .= " -DSPMD"; }
 
 # Chem CPP defs
 $cfg_cppdefs .= $chem_cppdefs;
-
-# CARMA CPP defs
-$cfg_cppdefs .= $carma_cppdefs;
 
 #WACCM-X extended thermosphere/ionosphere model
 if ($waccmx) { $cfg_cppdefs .= ' -DWACCMX'; }
@@ -2623,7 +2516,6 @@ sub write_filepath
     my $chem          = $cfg_ref->get('chem');
     my $waccm_phys    = $cfg_ref->get('waccm_phys');
     my $waccmx        = $cfg_ref->get('waccmx');
-    my $carma         = $cfg_ref->get('carma');
     my $rad           = $cfg_ref->get('rad');
     my $dyn           = $cfg_ref->get('dyn');
     my $cppdefs       = $cfg_ref->get('cppdefs');
@@ -2661,15 +2553,6 @@ sub write_filepath
 
     # offline unit driver (defaults to stub)
     print $fh "$camsrcdir/cam/src/unit_drivers\n";
-
-    if ($carma ne 'none') {
-	# This directory needs to precede physics/cam/ to replace
-	# the CARMA stub package with CARMA. Putting it first allows
-	# any CAM file to be overridden by a particular CARMA model.
-	print $fh "$camsrcdir/cam/src/physics/carma/models/$carma\n";
-	print $fh "$camsrcdir/cam/src/physics/carma/cam\n";
-	print $fh "$camsrcdir/cam/src/physics/carma/base\n";
-    }
 
     # MMF/super-parameterization; this code section needs to appear before those
     # adding the physics and chemistry packages to override versions of files
