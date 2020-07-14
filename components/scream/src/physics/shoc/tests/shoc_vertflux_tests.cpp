@@ -77,14 +77,14 @@ TEST_CASE("shoc_vertflux", "shoc") {
 
   // Check that the inputs make sense
   
-  // Check to make sure that dz_zi values
-  //  (outside of the boundaries) are greater 
-  //  than zero 
+  // Check to make sure that dz_zi are tkh_zi
+  //  (outside of the boundaries) are greater than zero 
   for(Int s = 0; s < SDS.shcol; ++s) {
     // do NOT check boundaries!
     for(Int n = 1; n < SDS.nlevi; ++n) {
       const auto offset = n + s * SDS.nlev;
       REQUIRE(SDS.dz_zi[offset] > 0.0);
+      REQUIRE(SDS.tkh_zi[offset] > 0.0);
     }
   }
   
