@@ -658,8 +658,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_vmix_tend_implicit_spatially_variable_mannings(meshPool, bottomDrag, dt, kineticEnergyCell, & !{{{
-                                         vertViscTopOfEdge, layerThickness, &
+   subroutine ocn_vel_vmix_tend_implicit_spatially_variable_mannings(meshPool, forcingPool, bottomDrag, dt, & !{{{
+                                         kineticEnergyCell, vertViscTopOfEdge, layerThickness, &
                                          layerThicknessEdge, normalVelocity, ssh, bottomDepth, err)
 
       !-----------------------------------------------------------------
@@ -670,6 +670,9 @@ contains
 
       type (mpas_pool_type), intent(in) :: &
          meshPool          !< Input: mesh information
+
+      type (mpas_pool_type), intent(inout) :: &
+         forcingPool          !< Input: forcing information
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          kineticEnergyCell        !< Input: kinetic energy at cell
@@ -683,7 +686,7 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThickness !< Input: thickness at cell center
 
-       real (kind=RKIND), dimension(:), intent(in) :: &
+       real (kind=RKIND), dimension(:), intent(inout) :: &
          bottomDrag !< Input: bottomDrag at cell centeres
 
        real (kind=RKIND), dimension(:), pointer :: ssh
@@ -727,20 +730,69 @@ contains
 
       real (kind=RKIND), dimension(:), allocatable :: A, B, C, velTemp
 
+      ! vegetation_drag
+      logical, pointer :: config_use_vegetation_drag
+      real (kind=RKIND), pointer :: config_vegetation_drag_coefficient
+      real (kind=RKIND), pointer :: config_implicit_bottom_drag_coeff
+      real (kind=RKIND), dimension(:), pointer :: vegetationHeight
+      real (kind=RKIND), dimension(:), pointer :: vegetationDiameter
+      real (kind=RKIND), dimension(:), pointer ::vegetationDensity
+      integer, dimension(:), pointer ::vegetationMask
+      real (kind=RKIND) :: lambda, beta, alpha, total_h
+      real (kind=RKIND) :: inundation_depth, von_karman, cff1, cff2, cff3, cff4
+      integer:: iCell, nCells
+      integer, pointer :: nCellsSolve
+
       err = 0
+      von_karman = 0.4_RKIND
 
       if(.not.velVmixOn) return
 
       call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
 
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
 
+      call mpas_pool_get_config(ocnConfigs, 'config_use_vegetation_drag', config_use_vegetation_drag)
+      call mpas_pool_get_config(ocnConfigs, 'config_vegetation_drag_coefficient', config_vegetation_drag_coefficient)
+      call mpas_pool_get_config(ocnConfigs, 'config_implicit_bottom_drag_coeff', config_implicit_bottom_drag_coeff)
+
+      call mpas_pool_get_array(forcingPool, 'vegetationMask', vegetationMask)
+      call mpas_pool_get_array(forcingPool, 'vegetationHeight', vegetationHeight)
+      call mpas_pool_get_array(forcingPool, 'vegetationDensity', vegetationDensity)
+      call mpas_pool_get_array(forcingPool, 'vegetationDiameter', vegetationDiameter)
+
       nEdges = nEdgesArray( 1 )
+      nCells = nCellsSolve
 
       allocate(A(nVertLevels),B(nVertLevels),C(nVertLevels),velTemp(nVertLevels))
       A(1)=0.0_RKIND
+
+      ! Compute bottomDrag induced by vegetation
+      if (config_use_vegetation_drag) then
+        do iCell = 1, nCells
+          if (vegetationMask(iCell) .eq. 1) then
+            total_h = bottomDepth(iCell) + ssh(iCell)
+            inundation_depth = MIN(vegetationHeight(iCell), total_h)
+            inundation_depth = MAX(inundation_depth, 1e-6)
+            lambda = vegetationDiameter(iCell) * vegetationDensity(iCell)
+            alpha = (config_vegetation_drag_coefficient*lambda/ &
+                   (4.0_RKIND*von_karman**2.0_RKIND*inundation_depth**2.0_RKIND))**(1.0_RKIND/3.0_RKIND)
+            beta = 0.5_RKIND*alpha*inundation_depth*(1.0_RKIND - EXP(-2.0_RKIND*alpha*inundation_depth)) &
+                  / (1.0_RKIND - EXP(-alpha*inundation_depth))**2.0_RKIND
+            cff1 = total_h**(2.0_RKIND/3.0_RKIND) &
+                  * SQRT((0.5_RKIND*beta*lambda*config_vegetation_drag_coefficient*inundation_depth &
+                  + config_implicit_bottom_drag_coeff)/(gravity*total_h))
+            cff2 = (alpha*inundation_depth)**2.0_RKIND/(1.0_RKIND - EXP(-alpha*inundation_depth))
+            cff3 = (1.0_RKIND - EXP(-alpha*inundation_depth))/(alpha**2.0_RKIND*inundation_depth*total_h)
+            cff4 = LOG(total_h/inundation_depth) - (1.0_RKIND-inundation_depth/total_h) &
+                  * (1.0_RKIND - 1.0_RKIND/(alpha*inundation_depth))
+            bottomDrag(iCell) = cff1/(cff2*(cff3+cff4))
+          endif
+        enddo
+      endif
 
       !$omp do schedule(runtime)
       do iEdge = 1, nEdges
@@ -1060,7 +1112,7 @@ contains
             vertViscTopOfEdge, layerThickness, layerThicknessEdge, normalVelocity, err)
         else if (config_use_implicit_bottom_drag_variable_mannings) then
           ! update bottomDrag via Cd=g*n^2*h^(-1/3)
-          call ocn_vel_vmix_tend_implicit_spatially_variable_mannings(meshPool, bottomDrag, &
+          call ocn_vel_vmix_tend_implicit_spatially_variable_mannings(meshPool, forcingPool, bottomDrag, &
             dt, kineticEnergyCell, &
             vertViscTopOfEdge, layerThickness, layerThicknessEdge, normalVelocity, &
             ssh, bottomDepth, err)

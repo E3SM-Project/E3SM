@@ -731,6 +731,16 @@
 					possible_values="0.0 to turn off, 0.09 is typical value to use for scalar approximation"
 		/>
 	</nml_record>
+	<nml_record name="vegetation_drag" mode="init;forward">
+		<nml_option name="config_use_vegetation_drag" type="logical" default_value=".false." units="unitless"
+					description="Controls if vegetation_drag is used."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_vegetation_drag_coefficient" type="real" default_value="1.09" units="unitless"
+					description="Vegetation drag coefficient"
+					possible_values="O(1)"
+		/>
+	</nml_record>
 	<nml_record name="frazil_ice" mode="forward">
 		<nml_option name="config_use_frazil_ice_formation" type="logical" default_value=".false." units="unitless"
 					description="Controls if fluxes related to frazil ice process are computed."
@@ -1251,6 +1261,7 @@
 		<package name="landIceCouplingPKG" description="This package includes varibles required for land ice coupling but not land ice fluxes in standalone mode."/>
 		<package name="frazilIce" description="This package includes variables required for frazil ice formation."/>
 		<package name="tidalForcing" description="This package includes variables required for tidal forcing on a boundary."/>
+		<package name="vegetationDragPKG" description="This package includes vegetation properties used for computing vegetation drag"/>
 		<package name="forwardMode" description="This package controls variables that are intended to be used within the forward run mode of the ocean model."/>
 		<package name="analysisMode" description="This package controls variables that are intended to be used within the analysis run mode of the ocean model."/>
 		<package name="initMode" description="This package controls variables that are intended to be used within the init run mode of the ocean model."/>
@@ -3031,6 +3042,23 @@
 			 packages="tidalForcing"
 		/>
 
+		<!-- Input fields for vegetation properties -->
+		<var name="vegetationHeight" type="real" dimensions="nCells" units="m"
+			 description="Stem height of the vegetation"
+			 packages="vegetationDragPKG"
+		/>
+		<var name="vegetationDiameter" type="real" dimensions="nCells" units="m"
+			 description="Stem diameter of the vegetation"
+			 packages="vegetationDragPKG"
+		/>
+		<var name="vegetationDensity" type="real" dimensions="nCells" units="m^{-2}"
+			 description="Stem density of the vegetation per unit area"
+			 packages="vegetationDragPKG"
+		/>
+		<var name="vegetationMask" type="integer" dimensions="nCells" units="unitless"
+			 description="Mask value 1 as vegetated cell, and 0 as non-vegetated cell"
+			 packages="vegetationDragPKG"
+		/>
 		<!-- Output fields for forcing due to tides -->
 		<var name="tidalLayerThicknessTendency" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="layer thickness tendency due to tidal forcing"
