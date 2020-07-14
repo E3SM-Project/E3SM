@@ -930,7 +930,7 @@ subroutine hetfrz_classnuc_cam_calc( &
 
 !$acc  kernels loop collapse(2)  &
 !$acc& private(fn,i,k) &
-!$acc& copyin(nc,factnum,lcldm, r3lx, qc, deltatin, supersatice) &
+!$acc& copyin(ncol,nc,factnum,lcldm, r3lx, qc, deltatin, supersatice) &
 !$acc& copyin(pmid, t) &
 !$acc& copyout(frzbcdep(:,:),frzduimm(:,:),frzdudep(:,:),errstring,frzbcimm(:,:),frzbccnt(:,:),frzducnt(:,:)) &
 !$acc& default(present)
