@@ -14,6 +14,7 @@ set(P3_SRCS
   micro_p3_iso_f.f90
   ${SCREAM_BASE_DIR}/../cam/src/physics/cam/scream_abortutils.F90
   ${SCREAM_BASE_DIR}/../cam/src/physics/cam/micro_p3.F90
+  ${SCREAM_BASE_DIR}/../cam/src/physics/cam/debug_info.F90
   ${SCREAM_BASE_DIR}/../cam/src/physics/cam/micro_p3_utils.F90
   atmosphere_microphysics.cpp
   p3_inputs_initializer.cpp

@@ -1921,6 +1921,7 @@ subroutine tphysbc (ztodt,               &
     use subcol_utils,    only: subcol_ptend_copy, is_subcol_on
     use phys_control,    only: use_qqflx_fixer, use_mass_borrower
     use nudging,         only: Nudge_Model,Nudge_Loc_PhysOut,nudging_calc_tend
+    use debug_info,      only: get_debug_chunk, get_debug_macmiciter
 
     implicit none
 
@@ -2110,6 +2111,8 @@ subroutine tphysbc (ztodt,               &
 
     lchnk = state%lchnk
     ncol  = state%ncol
+
+    call get_debug_chunk(lchnk)
 
     rtdt = 1._r8/ztodt
 
@@ -2476,6 +2479,8 @@ end if
        snow_pcw_macmic = 0._r8
 
        do macmic_it = 1, cld_macmic_num_steps
+
+          call get_debug_macmiciter(macmic_it)
 
         if (l_st_mac) then
 

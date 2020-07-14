@@ -65,6 +65,8 @@ real(rtype), parameter :: w2tune=1.0_rtype
 real(rtype), parameter :: w3clip=1.2_rtype
 ! mixing length scaling parameter
 real(rtype), parameter :: length_fac=0.5_rtype
+! coefficient for diag third moment parameters
+real(rtype), parameter :: c_diag_3rd_mom = 7.0_rtype
 
 ! =========
 ! Below are options to activate certain features in SHOC
@@ -1634,89 +1636,208 @@ subroutine compute_diag_third_shoc_moment(&
   real(rtype) :: buoy_sgs2, bet2
   real(rtype) :: f0, f1, f2, f3, f4, f5
 
-  !LOCAL PARAMETERS
-  real(rtype), parameter :: c=7.0_rtype
-  real(rtype), parameter :: a0=(0.52_rtype*c**(-2))/(c-2._rtype)
-  real(rtype), parameter :: a1=0.87_rtype/(c**2)
-  real(rtype), parameter :: a2=0.5_rtype/c
-  real(rtype), parameter :: a3=0.6_rtype/(c*(c-2._rtype))
-  real(rtype), parameter :: a4=2.4_rtype/(3._rtype*c+5._rtype)
-  real(rtype), parameter :: a5=0.6_rtype/(c*(3._rtype+5._rtype*c))
-
   ! set lower condition
   w3(:,nlevi) = 0._rtype
 
   do k=2,nlev
 
-    kb=k+1
-    kc=k-1
-    do i=1,shcol
+     kb=k+1
+     kc=k-1
+     do i=1,shcol
 
-     thedz=dz_zi(i,k)
-     thedz2=dz_zt(i,k)+dz_zt(i,kc)
-     thedz=1._rtype/thedz
-     thedz2=1._rtype/thedz2
+        !Compute inputs for computing f0 to f5 terms
+        call fterms_input_for_diag_third_shoc_moment(dz_zi(i,k), dz_zt(i,k), dz_zt(i,kc), & !input
+             isotropy_zi(i,k), brunt_zi(i,k), thetal_zi(i,k), &                             !input
+             thedz, thedz2, iso, isosqrt, buoy_sgs2, bet2)                                  !output
 
-      iso=isotropy_zi(i,k)
-      isosqrt=iso**2
-      buoy_sgs2=isosqrt*brunt_zi(i,k)
-      bet2=ggr/thetal_zi(i,k)
+        !Compute f0 to f5 terms
+        call f0_to_f5_diag_third_shoc_moment(thedz, thedz2, bet2, iso, isosqrt, wthl_sec (i,k), & !input
+             wthl_sec(i,kc), wthl_sec(i,kb), thl_sec(i,k), thl_sec(i,kc), thl_sec(i,kb), &        !input
+             w_sec(i,k), w_sec(i,kc), w_sec_zi(i,k), &                                            !input
+             tke(i,k), tke(i,kc), &                                                               !input
+             f0, f1, f2, f3, f4, f5)                                                              !output
 
+        !Compute the omega terms
+        call omega_terms_diag_third_shoc_moment(buoy_sgs2, f3, f4, omega0, omega1, omega2)
 
-      f0=thedz2 * bet2**3 * iso**4 * wthl_sec(i,k) * &
-         (thl_sec(i,kc)-thl_sec(i,kb))
+        !Compute the X0, Y0, X1, Y1 terms
+        call x_y_terms_diag_third_shoc_moment(buoy_sgs2, f0, f1, f2, x0, y0, x1, y1)
 
-      f1=thedz2 * bet2**2 * iso**3 * (wthl_sec(i,k) * &
-         (wthl_sec(i,kc)-wthl_sec(i,kb)) + 0.5_rtype * &
-          w_sec_zi(i,k)*(thl_sec(i,kc)-thl_sec(i,kb)))
+        !Compute the AA0, AA1 terms
+        call aa_terms_diag_third_shoc_moment(omega0, omega1, omega2, x0, x1, y0, y1, aa0, aa1)
 
-      f2=thedz * bet2 * isosqrt * wthl_sec(i,k) * &
-         (w_sec(i,kc)-w_sec(i,k))+ 2._rtype * thedz2 * bet2 * &
-         isosqrt * w_sec_zi(i,k) * (wthl_sec(i,kc) - wthl_sec(i,kb))
+        !Finally, we have the third moment of w
+        w3(i,k) = w3_diag_third_shoc_moment(aa0, aa1, x0, x1, f5)
 
-      f3=thedz2 * bet2 * isosqrt * w_sec_zi(i,k) * &
-         (wthl_sec(i,kc) - wthl_sec(i,kb)) + thedz * &
-         bet2 * isosqrt * (wthl_sec(i,k) * (tke(i,kc) - tke(i,k)))
-
-      f4=thedz * iso * w_sec_zi(i,k) * ((w_sec(i,kc) - w_sec(i,k) + &
-         (tke(i,kc) - tke(i,k))))
-
-      f5=thedz * iso * w_sec_zi(i,k) * (w_sec(i,kc) - w_sec(i,k))
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      ! Compute the omega terms
-
-      omega0 = a4 / (1._rtype - a5 * buoy_sgs2)
-      omega1 = omega0/(2._rtype * c)
-      omega2 = omega1 * f3 + (5._rtype/4._rtype) * omega0 * f4
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      ! Compute the X0, Y0, X1, Y1 terms
-
-      X0 = (a2 * buoy_sgs2 * (1._rtype - a3 * buoy_sgs2)) / &
-        (1._rtype - (a1 + a3) * buoy_sgs2)
-      Y0 = (2._rtype * a2 * buoy_sgs2 * X0) / (1._rtype - a3 * buoy_sgs2)
-      X1 = (a0 * f0 + a1 * f1 + a2 * (1._rtype - a3 * buoy_sgs2) * f2) / &
-        (1._rtype - (a1 + a3) * buoy_sgs2)
-      Y1 = (2._rtype * a2 * (buoy_sgs2 * X1 + (a0/a1) * f0 + f1)) / &
-        (1._rtype - a3* buoy_sgs2)
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      ! Compute the A0, A1 terms
-
-      AA0 = omega0 * X0 + omega1 * Y0
-      AA1 = omega0 * X1 + omega1 * Y1 + omega2
-
-      ! Finally, we have the third moment of w
-      w3(i,k)=(AA1-1.2_rtype*X1-1.5_rtype*f5)/(c-1.2_rtype*X0+AA0)
-
-    enddo  ! end i loop (column loop)
+     enddo  ! end i loop (column loop)
   enddo  ! end k loop (vertical loop)
 
   ! set upper condition
   w3(:,1) = 0._rtype
 
 end subroutine compute_diag_third_shoc_moment
+
+subroutine fterms_input_for_diag_third_shoc_moment(dz_zi, dz_zt, dz_zt_kc, & !input
+     isotropy_zi, brunt_zi, thetal_zi, &                                     !input
+     thedz, thedz2, iso, isosqrt, buoy_sgs2, bet2)                           !output
+
+  !Compute inputs for computing f0 to f5 terms
+
+  implicit none
+
+  !intent-ins
+  real(rtype), intent(in) :: dz_zi, dz_zt, dz_zt_kc
+  real(rtype), intent(in) :: isotropy_zi, brunt_zi, thetal_zi
+
+  !intent-outs
+  real(rtype), intent(out) :: thedz, thedz2, iso, isosqrt
+  real(rtype), intent(out) :: buoy_sgs2, bet2
+
+  thedz  = 1._rtype/dz_zi
+  thedz2 = 1._rtype/(dz_zt+dz_zt_kc)
+
+  iso       = isotropy_zi
+  isosqrt   = iso**2
+  buoy_sgs2 = isosqrt*brunt_zi
+  bet2      = ggr/thetal_zi
+
+  return
+end subroutine fterms_input_for_diag_third_shoc_moment
+
+subroutine f0_to_f5_diag_third_shoc_moment(thedz, thedz2, bet2, iso, isosqrt, & !input
+     wthl_sec, wthl_sec_kc, wthl_sec_kb, thl_sec, thl_sec_kc, thl_sec_kb, &     !input
+     w_sec, w_sec_kc,w_sec_zi, tke, tke_kc, &                                   !input
+     f0, f1, f2, f3, f4, f5)                                                    !output
+
+  !Compute f0 to f5 terms
+
+  implicit none
+
+  !intent-ins
+  real(rtype), intent(in) :: thedz, thedz2, bet2, iso, isosqrt
+  real(rtype), intent(in) :: wthl_sec, wthl_sec_kc, wthl_sec_kb
+  real(rtype), intent(in) :: thl_sec, thl_sec_kc, thl_sec_kb
+  real(rtype), intent(in) :: w_sec, w_sec_kc, w_sec_zi, tke, tke_kc
+
+  !intent-out
+  real(rtype), intent(out) :: f0, f1, f2, f3, f4, f5
+
+  !local variables
+  real(rtype) :: thl_sec_diff, wthl_sec_diff, wsec_diff, tke_diff
+
+  !Some common factors
+  thl_sec_diff  = thl_sec_kc  - thl_sec_kb
+  wthl_sec_diff = wthl_sec_kc - wthl_sec_kb
+  wsec_diff     = w_sec_kc    - w_sec
+  tke_diff      = tke_kc      - tke
+
+  f0 = thedz2 * bet2**3 * iso**4 * wthl_sec * &
+       thl_sec_diff
+
+  f1 = thedz2 * bet2**2 * iso**3 * (wthl_sec * &
+       wthl_sec_diff + 0.5_rtype * &
+       w_sec_zi*thl_sec_diff)
+
+  f2 = thedz * bet2 * isosqrt * wthl_sec * &
+       wsec_diff+ 2._rtype * thedz2 * bet2 * &
+       isosqrt * w_sec_zi * wthl_sec_diff
+
+  f3 = thedz2 * bet2 * isosqrt * w_sec_zi * &
+       wthl_sec_diff + thedz * &
+       bet2 * isosqrt * (wthl_sec * tke_diff)
+
+  f4 = thedz * iso * w_sec_zi * (wsec_diff + &
+       tke_diff)
+
+  f5 = thedz * iso * w_sec_zi * wsec_diff
+
+  return
+end subroutine f0_to_f5_diag_third_shoc_moment
+
+subroutine omega_terms_diag_third_shoc_moment(buoy_sgs2, f3, f4, omega0, omega1, omega2)
+
+  implicit none
+
+  !Compute the omega terms
+
+  !initent-ins
+  real(rtype), intent(in) :: buoy_sgs2, f3, f4
+
+  !intent-out
+  real(rtype), intent(out) :: omega0, omega1, omega2
+
+  real(rtype), parameter :: a4=2.4_rtype/(3._rtype*c_diag_3rd_mom+5._rtype)
+  real(rtype), parameter :: a5=0.6_rtype/(c_diag_3rd_mom*(3._rtype+5._rtype*c_diag_3rd_mom))
+
+  omega0 = a4 / (1._rtype - a5 * buoy_sgs2)
+  omega1 = omega0/(2._rtype * c_diag_3rd_mom)
+  omega2 = omega1 * f3 + (5._rtype/4._rtype) * omega0 * f4
+
+  return
+end subroutine omega_terms_diag_third_shoc_moment
+
+subroutine x_y_terms_diag_third_shoc_moment(buoy_sgs2, f0, f1, f2, x0, y0, x1, y1)
+
+  implicit none
+
+  !Compute the X0, Y0, X1, Y1 terms
+
+  !intent-ins
+  real(rtype), intent(in) :: buoy_sgs2, f0, f1, f2
+
+  !intent-outs
+  real(rtype), intent(out) :: x0, y0, x1, y1
+
+  real(rtype), parameter :: a0=(0.52_rtype*c_diag_3rd_mom**(-2))/(c_diag_3rd_mom-2._rtype)
+  real(rtype), parameter :: a1=0.87_rtype/(c_diag_3rd_mom**2)
+  real(rtype), parameter :: a2=0.5_rtype/c_diag_3rd_mom
+  real(rtype), parameter :: a3=0.6_rtype/(c_diag_3rd_mom*(c_diag_3rd_mom-2._rtype))
+
+  x0 = (a2 * buoy_sgs2 * (1._rtype - a3 * buoy_sgs2)) / &
+       (1._rtype - (a1 + a3) * buoy_sgs2)
+  y0 = (2._rtype * a2 * buoy_sgs2 * x0) / (1._rtype - a3 * buoy_sgs2)
+  x1 = (a0 * f0 + a1 * f1 + a2 * (1._rtype - a3 * buoy_sgs2) * f2) / &
+       (1._rtype - (a1 + a3) * buoy_sgs2)
+  y1 = (2._rtype * a2 * (buoy_sgs2 * x1 + (a0/a1) * f0 + f1)) / &
+       (1._rtype - a3* buoy_sgs2)
+
+  return
+end subroutine x_y_terms_diag_third_shoc_moment
+
+subroutine aa_terms_diag_third_shoc_moment(omega0, omega1, omega2, x0, x1, y0, y1, aa0, aa1)
+
+  implicit none
+
+  !Compute the AA0, AA1 terms
+
+  !intent-ins
+  real(rtype), intent(in) :: omega0, omega1, omega2, x0, x1, y0, y1
+
+  !intent-outs
+  real(rtype), intent(out) :: aa0, aa1
+
+  aa0 = omega0 * x0 + omega1 * y0
+  aa1 = omega0 * x1 + omega1 * y1 + omega2
+
+  return
+end subroutine aa_terms_diag_third_shoc_moment
+
+pure function w3_diag_third_shoc_moment(aa0, aa1, x0, x1, f5) result(w3)
+
+  implicit none
+
+  !Compute third moment of w
+
+  !intent-ins
+  real(rtype), intent(in) :: aa0, aa1, x0, x1, f5
+
+  !return type
+  real(rtype) :: w3
+
+  w3 = (aa1-1.2_rtype*x1-1.5_rtype*f5)/(c_diag_3rd_mom-1.2_rtype*x0+aa0)
+
+  return
+end function w3_diag_third_shoc_moment
 
 subroutine clipping_diag_third_shoc_moments(nlevi,shcol,w_sec_zi,w3)
 
