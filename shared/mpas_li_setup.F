@@ -381,7 +381,7 @@ contains
       integer :: nVerticesOnThisCell
       real(kind=RKIND), dimension(:,:), allocatable :: vertexCoordsOnCell
       type (mpas_pool_type), pointer :: meshPoolPointer
-
+      real(kind=RKIND), dimension(3) :: coords
       ! Get pool stuff
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'maxEdges', maxEdges)
@@ -406,9 +406,12 @@ contains
             iVertex = verticesOnCell(v, iCell)
             vertexCoordsOnCell(:, v) = (/ xVertex(iVertex), yVertex(iVertex), zVertex(iVertex) /)
          enddo
+         coords(1) = xCell(iCell)
+         coords(2) = yCell(iCell)
+         coords(3) = zCell(iCell)
          wachspressWeightVertex(1:nVerticesOnThisCell, iCell) = mpas_wachspress_coordinates( &
                nVerticesOnThisCell, vertexCoordsOnCell(:, 1:nVerticesOnThisCell), &
-               (/ xCell(iCell), yCell(iCell), zCell(iCell) /), meshPoolPointer)
+               coords, meshPoolPointer)
       end do
 
       deallocate(vertexCoordsOnCell)
@@ -445,7 +448,7 @@ contains
       !-----------------------------------------------------------------
       ! output variables
       !-----------------------------------------------------------------
-      real(kind=RKIND), dimension(:), pointer, intent(out) :: cellValue  !< value on cells
+      real(kind=RKIND), dimension(:), intent(out) :: cellValue  !< value on cells
 
       !-----------------------------------------------------------------
       ! local variables
@@ -507,7 +510,7 @@ contains
       !-----------------------------------------------------------------
       ! output variables
       !-----------------------------------------------------------------
-      real(kind=RKIND), dimension(:,:), pointer, intent(out) :: cellValue  !< value on cells
+      real(kind=RKIND), dimension(:,:), intent(out) :: cellValue  !< value on cells
 
       !-----------------------------------------------------------------
       ! local variables
