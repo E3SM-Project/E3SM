@@ -762,7 +762,6 @@ subroutine hetfrz_classnuc_cam_calc( &
    character :: errstring(128)   ! Error status
    !-------------------------------------------------------------------------------
 
-   call t_startf('shan1')
    associate( &
       lchnk => state%lchnk,             &
       ncol  => state%ncol,              &
@@ -838,7 +837,7 @@ subroutine hetfrz_classnuc_cam_calc( &
    nicnt_dst(:ncol,:) = 0._r8
    nidep_dst(:ncol,:) = 0._r8
 
-
+   call t_startf('shan1')
 ! output aerosols as reference information for heterogeneous freezing
 ! shan , why K is needed ?
 !$acc enter data copyin(rho) &
@@ -860,6 +859,7 @@ subroutine hetfrz_classnuc_cam_calc( &
 !$acc update host(na500,coated_aer_num,tot_na500)  
 !$acc update host(total_cloudborne_aer_num,uncoated_aer_num,total_interstitial_aer_num) 
 !$acc update host(total_aer_num)
+   call t_stopf('shan1')
 
    do k = top_lev, pver
       do i = 1, state%ncol
@@ -926,15 +926,12 @@ subroutine hetfrz_classnuc_cam_calc( &
    numice10s_imm_dst(:ncol,:) = 0._r8
    numice10s_imm_bc(:ncol,:)  = 0._r8
 
-   call t_stopf('shan1')
    call t_startf('shan2')
 
 !$acc  kernels loop collapse(2)  &
-!ZZ!$acc& private(fn,i,k) &
-!$acc& private(fn) &
+!$acc& private(fn,i,k) &
 !$acc& copyin(nc,factnum,lcldm, r3lx, qc, deltatin, supersatice) &
-!ZZ!$acc& copyin(pmid, t) &
-!$acc& copyin(pmid, t,ncol) &
+!$acc& copyin(pmid, t) &
 !$acc& copyout(frzbcdep(:,:),frzduimm(:,:),frzdudep(:,:),errstring,frzbcimm(:,:),frzbccnt(:,:),frzducnt(:,:)) &
 !$acc& default(present)
    do i = 1, ncol
