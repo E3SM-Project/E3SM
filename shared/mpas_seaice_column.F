@@ -1216,6 +1216,9 @@ contains
          config_use_column_shortwave, &
          config_use_column_snow_tracers
 
+    type(block_type), pointer :: &
+         block
+
     call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
 
     if (config_use_column_package) then
@@ -1948,7 +1951,8 @@ contains
          nIceLayers, &
          nSnowLayers, &
          nAerosols, &
-         nBioLayers
+         nBioLayers, &
+         nBioLayersP1
 
     ! variables
     real(kind=RKIND), dimension(:), pointer :: &
@@ -1984,7 +1988,8 @@ contains
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
          iceVolumeCategory, &
-         snowVolumeCategory
+         snowVolumeCategory, &
+         brineFraction
 
     integer, dimension(:,:), pointer :: &
          newlyFormedIce
@@ -1997,18 +2002,33 @@ contains
          iCell, &
          iCategory, &
          iBioTracers, &
-         iBioData
+         iBioData, &
+         iBioLayers
 
-    logical, dimension(:), allocatable :: &
-         newlyFormedIceLogical
+    ! test carbon conservation
+    real(kind=RKIND), dimension(:), allocatable :: &
+         totalCarbonCatFinal, &
+         totalCarbonCatInitial, &
+         oceanBioFluxesTemp, &
+         verticalGridSpace
+
+    real(kind=RKIND) :: &
+         oceanCarbonFlux, &
+         totalCarbonFinal, &
+         totalCarbonInitial, &
+         carbonError
 
     real(kind=RKIND), dimension(:), allocatable :: &
          oceanBioConcentrationsUsed
 
+    logical, dimension(:), allocatable :: &
+         newlyFormedIceLogical
+
     logical :: &
          abortFlag, &
          setGetPhysicsTracers, &
-         setGetBGCTracers
+         setGetBGCTracers, &
+         checkCarbon
 
     character(len=strKIND) :: &
          abortMessage, &
@@ -2019,6 +2039,8 @@ contains
 
     ! day of year
     call get_day_of_year(clock, dayOfYear)
+
+    checkCarbon = .false.
 
     block => domain % blocklist
     do while (associated(block))
@@ -2048,6 +2070,7 @@ contains
        call MPAS_pool_get_dimension(mesh, "nAerosols", nAerosols)
        call MPAS_pool_get_dimension(block % dimensions, "nBioLayers", nBioLayers)
 
+       call MPAS_pool_get_dimension(block % dimensions, "nBioLayersP1", nBioLayersP1)
        call MPAS_pool_get_array(mesh, "indexToCellID", indexToCellID)
 
        call MPAS_pool_get_array(icestate, "iceAreaCategoryInitial", iceAreaCategoryInitial)
@@ -2059,6 +2082,7 @@ contains
        call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
        call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
        call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
+       call MPAS_pool_get_array(tracers, "brineFraction", brineFraction, 1)
 
        call MPAS_pool_get_array(atmos_coupling, "rainfallRate", rainfallRate)
 
@@ -2095,6 +2119,16 @@ contains
        ! newly formed ice
        allocate(newlyFormedIceLogical(nCategories))
        allocate(oceanBioConcentrationsUsed(ciceTracerObject % nBioTracers))
+       allocate(oceanBioFluxesTemp(ciceTracerObject % nBioTracers))
+       allocate(verticalGridSpace(nBioLayersP1))
+       if (checkCarbon) then
+          allocate(totalCarbonCatFinal(nCategories))
+          allocate(totalCarbonCatInitial(nCategories))
+       endif
+
+       verticalGridSpace(:) = 1.0_RKIND/real(nBioLayers,kind=RKIND)
+       verticalGridSpace(1) = verticalGridSpace(1)/2.0_RKIND
+       verticalGridSpace(nBioLayersP1) = verticalGridSpace(1)
 
        setGetPhysicsTracers = .true.
        setGetBGCTracers     = config_use_column_biogeochemistry
@@ -2123,12 +2157,22 @@ contains
           call set_cice_tracer_array_category(block, ciceTracerObject,&
                  tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
+          if (checkCarbon) then
+            totalCarbonInitial = 0.0_RKIND
+            call seaice_total_carbon_content_category(block,totalCarbonCatInitial,iceAreaCategory(1,:,:),iceVolumeCategory(1,:,:),iCell)
+            do iCategory = 1,nCategories
+               totalCarbonInitial = totalCarbonInitial + totalCarbonCatInitial(iCategory)*iceAreaCategory(1,iCategory,iCell)
+            enddo
+          endif
+
+          oceanBioFluxesTemp(:) = 0.0_RKIND
+
           call colpkg_clear_warnings()
           call colpkg_step_therm2(&
                config_dt, &
                nCategories, &
                nAerosols, &
-               ciceTracerObject % nBioTracersLayer, & !nltrcr, intent(in)
+               ciceTracerObject % nBioTracers, & !nbtrcr, intent(in)
                nIcelayers, &
                nSnowLayers, &
                categoryThicknessLimits(:), & !hin_max, intent(inout), dimension(0:ncat)
@@ -2164,13 +2208,18 @@ contains
                oceanAerosolFlux(:,iCell), &
                newlyFormedIceLogical(:), &         !first_ice, intent(inout)
                zSalinityFlux(iCell), &
-               oceanBioFluxes(:,iCell), &
+               oceanBioFluxesTemp(:), &
                oceanBioConcentrationsUsed(:), &    !ocean_bio, intent(in)
                abortFlag, &
                abortMessage, &
                frazilGrowthDiagnostic(iCell), &
                freezeOnset(iCell), &
                dayOfYear)
+
+               do iBioTracers = 1, ciceTracerObject % nBioTracers
+                  oceanBioFluxes(iBioTracers,iCell) = oceanBioFluxes(iBioTracers,iCell) + oceanBioFluxesTemp(iBioTracers)
+               enddo
+
           call column_write_warnings(abortFlag)
 
           ! update
@@ -2182,6 +2231,31 @@ contains
           ! get category tracer array
           call get_cice_tracer_array_category(block, ciceTracerObject, &
                  tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
+
+          if (checkCarbon) then
+            totalCarbonFinal = 0.0_RKIND
+            call seaice_total_carbon_content_category(block,totalCarbonCatFinal,iceAreaCategory(1,:,:),iceVolumeCategory(1,:,:),iCell)
+            call seaice_ocean_carbon_flux_cell(block,oceanCarbonFlux,oceanBioFluxesTemp,iCell)
+            do iCategory = 1,nCategories
+               totalCarbonFinal = totalCarbonFinal + totalCarbonCatFinal(iCategory)*iceAreaCategory(1,iCategory,iCell)
+            enddo
+            carbonError = totalCarbonInitial - oceanCarbonFlux*config_dt - totalCarbonFinal
+
+            if (abs(carbonError) > 1.0e-14_RKIND*MAXVAL((/totalCarbonInitial,totalCarbonFinal/))) then
+                  call mpas_log_write("column_step_therm2, carbon conservation error", messageType=MPAS_LOG_ERR)
+                  call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
+                  call mpas_log_write("carbonError: $r", messageType=MPAS_LOG_ERR, realArgs=(/carbonError/))
+                  call mpas_log_write("totalCarbonInitial: $r", messageType=MPAS_LOG_ERR, realArgs=(/totalCarbonInitial/))
+                  call mpas_log_write("totalCarbonFinal: $r", messageType=MPAS_LOG_ERR, realArgs=(/totalCarbonFinal/))
+                  call mpas_log_write("oceanCarbonFlux: $r", messageType=MPAS_LOG_ERR, realArgs=(/oceanCarbonFlux/))
+
+                  do iCategory = 1, nCategories
+                     call mpas_log_write("iCategory: $i", messageType=MPAS_LOG_ERR, intArgs=(/iCategory/))
+                     call mpas_log_write("totalCarbonCatFinal(iCategory): $r", messageType=MPAS_LOG_ERR, realArgs=(/totalCarbonCatFinal(iCategory)/))
+                     call mpas_log_write("totalCarbonCatInitial(iCategory): $r", messageType=MPAS_LOG_ERR, realArgs=(/totalCarbonCatFinal(iCategory)/))
+                  enddo
+            endif
+          endif
 
           ! cell-specific abort message
           if (abortFlag) then
@@ -2195,9 +2269,16 @@ contains
        call seaice_critical_error_write_block(domain, block, abortFlag)
        call seaice_check_critical_error(domain, abortFlag)
 
+       if (checkCarbon) then
+          deallocate(totalCarbonCatFinal)
+          deallocate(totalCarbonCatInitial)
+       endif
+
        ! newly formed ice
        deallocate(newlyFormedIceLogical)
        deallocate(oceanBioConcentrationsUsed)
+       deallocate(oceanBioFluxesTemp)
+       deallocate(verticalGridSpace)
 
        block => block % next
     end do
@@ -3441,7 +3522,9 @@ contains
          iceAreaCategory, &    ! tracers  (1,ncat,ncell)
          iceVolumeCategory, &  ! tracers  (1,ncat,ncell)
          snowVolumeCategory, & ! tracers  (1,ncat,ncell)
-         skeletalAlgaeConc
+         skeletalAlgaeConc, &
+         oceanBioFluxesCategory, &
+         brineFraction
 
     integer, dimension(:,:), pointer :: &
          newlyFormedIce
@@ -3463,8 +3546,21 @@ contains
          indexj, &
          iBioLayers
 
+    ! test carbon conservation
     real(kind=RKIND), dimension(:), allocatable :: &
-         oceanBioConcentrationsUsed
+         totalCarbonCatFinal, &
+         totalCarbonCatInitial, &
+         totalCarbonCatFlux, &
+         brineHeightCatInitial, &
+         brineHeightCatFinal
+
+    real(kind=RKIND), dimension(:), allocatable :: &
+         oceanBioConcentrationsUsed, &
+         iceCarbonInitialCategory, &
+         iceCarbonFinalCategory, &
+         iceCarbonFluxCategory, &
+         iceBrineInitialCategory, &
+         iceBrineFinalCategory
 
     logical, dimension(:), allocatable :: &
          newlyFormedIceLogical
@@ -3473,11 +3569,22 @@ contains
          abortFlag, &
          rayleighCriteria, &
          setGetPhysicsTracers, &
-         setGetBGCTracers
+         setGetBGCTracers, &
+         checkCarbon
 
     character(len=strKIND) :: &
          abortMessage, &
          abortLocation
+
+    real(kind=RKIND) :: &
+         carbonErrorCat, &
+         carbonErrorColumnPackage
+
+    real(kind=RKIND), parameter :: &
+         accuracy = 1.0e-14_RKIND
+
+    ! test carbon conservation
+    checkCarbon = .false.
 
     block => domain % blocklist
     do while (associated(block))
@@ -3557,6 +3664,7 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "atmosBlackCarbonFlux", atmosBlackCarbonFlux)
        call MPAS_pool_get_array(biogeochemistry, "atmosDustFlux", atmosDustFlux)
        call MPAS_pool_get_array(biogeochemistry, "oceanBioFluxes", oceanBioFluxes)
+       call MPAS_pool_get_array(biogeochemistry, "oceanBioFluxesCategory", oceanBioFluxesCategory)
        call MPAS_pool_get_array(biogeochemistry, "verticalNitrogenLosses", verticalNitrogenLosses)
        call MPAS_pool_get_array(biogeochemistry, "bioTemperature", bioTemperature)
        call MPAS_pool_get_array(biogeochemistry, "totalSkeletalAlgae", totalSkeletalAlgae)
@@ -3601,10 +3709,19 @@ contains
        call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
        call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
        call MPAS_pool_get_array(tracers, "skeletalAlgaeConc", skeletalAlgaeConc, 1)
+       call MPAS_pool_get_array(tracers, "brineFraction", brineFraction, 1)
 
        ! newly formed ice
        allocate(newlyFormedIceLogical(nCategories))
        allocate(oceanBioConcentrationsUsed(ciceTracerObject % nBioTracers))
+       allocate(brineHeightCatInitial(nCategories))
+
+       if (checkCarbon) then
+          allocate(totalCarbonCatFinal(nCategories))
+          allocate(totalCarbonCatInitial(nCategories))
+          allocate(totalCarbonCatFlux(nCategories))
+          allocate(brineHeightCatFinal(nCategories))
+        endif
 
        setGetPhysicsTracers = .true.
        setGetBGCTracers     = config_use_column_biogeochemistry
@@ -3614,10 +3731,11 @@ contains
        abortMessage = ""
 
        do iCell = 1, nCellsSolve
-
           ! newly formed ice
           do iCategory = 1, nCategories
              newlyFormedIceLogical(iCategory) = (newlyFormedIce(iCategory,iCell) == 1)
+             brineHeightCatInitial(iCategory) = brineFraction(1,iCategory,iCell) * &
+                iceVolumeCategoryInitial(iCategory,iCell)/(iceAreaCategoryInitial(iCategory,iCell) + seaicePuny)
           enddo ! iCategory
           rayleighCriteria = (rayleighCriteriaReal(iCell) > 0.5_RKIND)
 
@@ -3673,6 +3791,9 @@ contains
 
           call set_cice_tracer_array_category(block, ciceTracerObject, &
                tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
+
+          if (checkCarbon) call seaice_total_carbon_content_category(block,&
+               totalCarbonCatInitial,iceAreaCategoryInitial,iceVolumeCategoryInitial,iCell)
 
           call colpkg_clear_warnings()
           call colpkg_biogeochemistry(&
@@ -3746,17 +3867,42 @@ contains
                config_use_skeletal_biochemistry, &
                maxAlgaeType, &
                nZBGCTracers, &
+               oceanBioFluxesCategory(:,:,iCell), &
                abortFlag, &
                abortMessage)
           call column_write_warnings(abortFlag)
 
-          ! code abort
-          if (abortFlag) exit
-
           call get_cice_tracer_array_category(block, ciceTracerObject, &
                tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
-          ! update
+          if (checkCarbon) then
+            call seaice_total_carbon_content_category(block,totalCarbonCatFinal,iceAreaCategory(1,:,:),iceVolumeCategory(1,:,:),iCell)
+            call seaice_ocean_carbon_flux(block,totalCarbonCatFlux,oceanBioFluxesCategory(:,:,:),iCell)
+            do iCategory = 1,nCategories
+               brineHeightCatFinal(iCategory) = brineFraction(1,iCategory,iCell) * &
+                   iceVolumeCategory(1,iCategory,iCell)/(iceAreaCategory(1,iCategory,iCell) + seaicePuny)
+               carbonErrorCat = totalCarbonCatInitial(iCategory) - totalCarbonCatFlux(iCategory)*config_dt - &
+                   totalCarbonCatFinal(iCategory)
+               if (abs(carbonErrorCat) > accuracy*MAXVAL((/totalCarbonCatInitial(iCategory),totalCarbonCatFinal(iCategory)/))) then
+!                  abortFlag = .true.
+!                  abortMessage = "carbon conservation errror after column bgc"
+                  call mpas_log_write("column_biogeochemistry, carbon conservation error", messageType=MPAS_LOG_ERR)
+                  call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
+                  call mpas_log_write("iCategory: $i", messageType=MPAS_LOG_ERR, intArgs=(/iCategory/))
+                  call mpas_log_write("carbonErrorCat: $r", messageType=MPAS_LOG_ERR, realArgs=(/carbonErrorCat/))
+                  call mpas_log_write("carbonErrorCat*iceAreaCategory: $r", messageType=MPAS_LOG_ERR, realArgs=(/carbonErrorCat*iceAreaCategory(1,iCategory,iCell)/))
+                  call mpas_log_write("totalCarbonCatInitial(iCategory): $r", messageType=MPAS_LOG_ERR, realArgs=(/totalCarbonCatInitial(iCategory)/))
+                  call mpas_log_write("totalCarbonCatFinal(iCategory): $r", messageType=MPAS_LOG_ERR, realArgs=(/totalCarbonCatFinal(iCategory)/))
+                  call mpas_log_write("totalCarbonCatFlux(iCategory): $r", messageType=MPAS_LOG_ERR, realArgs=(/totalCarbonCatFlux(iCategory)/))
+                  call mpas_log_write("brineHeightCatInitial(iCategory): $r", messageType=MPAS_LOG_ERR, realArgs=(/brineHeightCatInitial(iCategory)/))
+                  call mpas_log_write("brineHeightCatFinal(iCategory): $r", messageType=MPAS_LOG_ERR, realArgs=(/brineHeightCatFinal(iCategory)/))
+               endif
+            enddo
+          endif
+
+          ! code abort
+          if (abortFlag) exit
+
           totalSkeletalAlgae(iCell) = 0.0_RKIND
           bioShortwaveFluxCell(:,iCell) = 0.0_RKIND
 
@@ -3791,6 +3937,14 @@ contains
        call seaice_critical_error_write_block(domain, block, abortFlag)
        call seaice_check_critical_error(domain, abortFlag)
 
+       if (checkCarbon) then
+          deallocate(totalCarbonCatFinal)
+          deallocate(totalCarbonCatInitial)
+          deallocate(totalCarbonCatFlux)
+          deallocate(brineHeightCatFinal)
+        endif
+
+       deallocate(brineHeightCatInitial)
        deallocate(newlyFormedIceLogical)
        deallocate(oceanBioConcentrationsUsed)
 
@@ -4224,7 +4378,8 @@ contains
          oceanDMSPpFlux, &
          oceanDMSPdFlux, &
          oceanHumicsFlux, &
-         oceanDustIronFlux
+         oceanDustIronFlux, &
+         totalOceanCarbonFlux
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          albedoVisibleDirectCategory, &
@@ -4249,6 +4404,12 @@ contains
     real(kind=RKIND), pointer :: &
          config_dt
 
+    real(kind=RKIND), pointer :: &
+         config_ratio_C_to_N_diatoms, &
+         config_ratio_C_to_N_small_plankton, &
+         config_ratio_C_to_N_phaeocystis, &
+         config_ratio_C_to_N_proteins
+
     integer, pointer :: &
          nCellsSolve, &
          nCategories, &
@@ -4269,12 +4430,19 @@ contains
          iBioData
 
     real(kind=RKIND), dimension(:), allocatable :: &
+         ratio_C_to_N
+
+    real(kind=RKIND), dimension(:), allocatable :: &
          oceanBioFluxesAll
 
     call MPAS_pool_get_config(domain % configs, "config_use_ocean_mixed_layer", config_use_ocean_mixed_layer)
     call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
     call MPAS_pool_get_config(domain % configs, "config_include_pond_freshwater_feedback", config_include_pond_freshwater_feedback)
     call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_diatoms", config_ratio_C_to_N_diatoms)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_small_plankton", config_ratio_C_to_N_small_plankton)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_phaeocystis", config_ratio_C_to_N_phaeocystis)
+    call MPAS_pool_get_config(domain % configs, "config_ratio_C_to_N_proteins", config_ratio_C_to_N_proteins)
 
     if (config_use_ocean_mixed_layer) &
          call seaice_column_ocean_mixed_layer(domain)
@@ -4357,6 +4525,7 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "oceanDONFlux", oceanDONFlux)
        call MPAS_pool_get_array(biogeochemistry, "oceanParticulateIronFlux", oceanParticulateIronFlux)
        call MPAS_pool_get_array(biogeochemistry, "oceanDissolvedIronFlux", oceanDissolvedIronFlux)
+       call MPAS_pool_get_array(biogeochemistry, "totalOceanCarbonFlux", totalOceanCarbonFlux)
 
        call MPAS_pool_get_dimension(mesh, "nZBGCTracers", nZBGCTracers)
        call MPAS_pool_get_dimension(mesh, "maxAlgaeType", maxAlgaeType)
@@ -4369,6 +4538,12 @@ contains
        call MPAS_pool_get_dimension(mesh, "maxDustType", maxDustType)
 
        allocate(oceanBioFluxesAll(nZBGCTracers))
+
+       allocate(ratio_C_to_N(3))
+
+       ratio_C_to_N(1) = config_ratio_C_to_N_diatoms
+       ratio_C_to_N(2) = config_ratio_C_to_N_small_plankton
+       ratio_C_to_N(3) = config_ratio_C_to_N_phaeocystis
 
        do iCell = 1, nCellsSolve
 
@@ -4458,6 +4633,7 @@ contains
           !-----------------------------------------------------------------
            if (config_use_column_biogeochemistry) then
 
+              totalOceanCarbonFlux(iCell)       = 0.0_RKIND
               oceanBioFluxesAll(:)              = 0.0_RKIND
               oceanAlgaeFlux(:,iCell)           = 0.0_RKIND
               oceanDOCFlux(:,iCell)             = 0.0_RKIND
@@ -4484,6 +4660,8 @@ contains
               do iBioTracers = 1, maxAlgaeType
                   iBioData = iBioData+1
                   oceanAlgaeFlux(iBioTracers,iCell) = oceanBioFluxesAll(iBioData)
+                  totalOceanCarbonFlux(iCell) = totalOceanCarbonFlux(iCell) + &
+                      oceanAlgaeFlux(iBioTracers,iCell) * ratio_C_to_N(iBioTracers)
               enddo
 
               ! Nitrate
@@ -4494,12 +4672,16 @@ contains
               do iBioTracers = 1, maxDOCType
                   iBioData = iBioData+1
                   oceanDOCFlux(iBioTracers,iCell) = oceanBioFluxesAll(iBioData)
+                  totalOceanCarbonFlux(iCell) = totalOceanCarbonFlux(iCell) + &
+                      oceanDOCFlux(iBioTracers,iCell)
               enddo
 
               ! DIC
               do iBioTracers = 1, maxDICType
                   iBioData = iBioData+1
                   oceanDICFlux(iBioTracers,iCell) = oceanBioFluxesAll(iBioData)
+                  totalOceanCarbonFlux(iCell) = totalOceanCarbonFlux(iCell) + &
+                      oceanDICFlux(iBioTracers,iCell)
               enddo
 
               ! Chlorophyll (not saved)
@@ -4525,11 +4707,15 @@ contains
               iBioData = iBioData+1
               oceanDMSFlux(iCell) = oceanBioFluxesAll(iBioData)
 
-              ! DON (Proteins)
+              ! PON
               iBioData = iBioData+1
+
+              ! DON (Proteins)
               do iBioTracers = 1, maxDONType
                   iBioData = iBioData+1
                   oceanDONFlux(iBioTracers,iCell) = oceanBioFluxesAll(iBioData)
+                  totalOceanCarbonFlux(iCell) = totalOceanCarbonFlux(iCell) + &
+                      oceanDONFlux(iBioTracers,iCell) * config_ratio_C_to_N_proteins
               enddo
 
               ! Dissolved Iron
@@ -4556,12 +4742,15 @@ contains
               ! Humics
               iBioData = iBioData+1
               oceanHumicsFlux(iCell) = oceanBioFluxesAll(iBioData)
+              totalOceanCarbonFlux(iCell) = totalOceanCarbonFlux(iCell) + &
+                     oceanHumicsFlux(iCell)
 
           endif ! config_use_column_biogeochemistry
 
        enddo ! iCell
 
        deallocate(oceanBioFluxesAll)
+       deallocate(ratio_C_to_N)
 
        block => block % next
     enddo
@@ -13345,7 +13534,8 @@ contains
          netBrineHeight, &
          zSalinityFlux, &
          zSalinityGDFlux, &
-         totalChlorophyll
+         totalChlorophyll, &
+         totalCarbonContentCell
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          oceanBioFluxes, &
@@ -13406,6 +13596,7 @@ contains
              call MPAS_pool_get_array(biogeochemistryPool, "snowIceBioFluxes", snowIceBioFluxes)
              call MPAS_pool_get_array(biogeochemistryPool, "totalVerticalBiologyIce", totalVerticalBiologyIce)
              call MPAS_pool_get_array(biogeochemistryPool, "totalVerticalBiologySnow", totalVerticalBiologySnow)
+             call MPAS_pool_get_array(biogeochemistryPool, "totalCarbonContentCell", totalCarbonContentCell)
 
              netBrineHeight             = 0.0_RKIND
              oceanBioFluxes             = 0.0_RKIND
@@ -13413,6 +13604,7 @@ contains
              snowIceBioFluxes           = 0.0_RKIND
              totalVerticalBiologyIce    = 0.0_RKIND
              totalVerticalBiologySnow   = 0.0_RKIND
+             totalCarbonContentCell     = 0.0_RKIND
 
           endif
 
@@ -14208,6 +14400,614 @@ contains
 
   end subroutine column_combine_snow_ice_tracers
 
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  seaice_ocean_carbon_flux
+!
+!> \brief
+!> \author Nicole Jeffery, LANL
+!> \date 26 May 2020
+!> \details Calculate the ocean carbon flux
+!> by summing the appropriate biogeochemical tracer fluxes in units of mmol C/m2/s
+!>
+!>      ocean carbon flux = algal nitrogen group fluxes * (C to N ratios)
+!>                   + dissolved carbon group fluxes
+!>                   + dissolved organic nitrogen * (C to N ratio)
+!>                   + dissolved inorganic carbon fluxes + humic fluxes
+!
+!-----------------------------------------------------------------------
+
+  subroutine seaice_ocean_carbon_flux(block,oceanCarbonFlux,oceanBioFluxes,iCell)
+
+    real(kind=RKIND), dimension(:), intent(out) :: &
+         oceanCarbonFlux
+
+    real(kind=RKIND), dimension(:,:,:), intent(in) :: &
+         oceanBioFluxes
+
+    integer, intent(in) :: &
+         iCell
+
+    type(block_type), intent(in) :: &
+         block
+
+    logical, pointer :: &
+         config_use_column_biogeochemistry, &
+         config_use_vertical_biochemistry, &
+         config_use_carbon, &
+         config_use_DON, &
+         config_use_humics
+
+    integer, pointer :: &
+         nAlgae, &
+         nDOC, &
+         nDON, &
+         nDIC
+
+    type(MPAS_pool_type), pointer :: &
+         mesh, &
+         biogeochemistry
+
+    real(kind=RKIND), pointer :: &
+         config_ratio_C_to_N_diatoms, &
+         config_ratio_C_to_N_small_plankton, &
+         config_ratio_C_to_N_phaeocystis, &
+         config_ratio_C_to_N_proteins
+
+    integer, pointer :: &
+         nCategories, &
+         nZBGCTracers, &
+         maxAlgaeType, &
+         maxDOCType, &
+         maxDICType, &
+         maxDONType, &
+         maxIronType, &
+         maxBCType, &
+         maxDustType, &
+         maxAerosolType
+
+    real(kind=RKIND), dimension(:), allocatable :: &
+         ratio_C_to_N
+
+    real(kind=RKIND), dimension(:,:), allocatable :: &
+         oceanBioFluxesAll
+
+    integer :: &
+         iBioTracers, &
+         iBioData, &
+         iCategory
+
+    call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+    call MPAS_pool_get_config(block % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
+    call MPAS_pool_get_config(block % configs, "config_use_carbon", config_use_carbon)
+    call MPAS_pool_get_config(block % configs, "config_use_DON", config_use_DON)
+    call MPAS_pool_get_config(block % configs, "config_use_humics",config_use_humics)
+    call MPAS_pool_get_config(block % configs, "config_ratio_C_to_N_diatoms", config_ratio_C_to_N_diatoms)
+    call MPAS_pool_get_config(block % configs, "config_ratio_C_to_N_small_plankton", config_ratio_C_to_N_small_plankton)
+    call MPAS_pool_get_config(block % configs, "config_ratio_C_to_N_phaeocystis", config_ratio_C_to_N_phaeocystis)
+    call MPAS_pool_get_config(block % configs, "config_ratio_C_to_N_proteins", config_ratio_C_to_N_proteins)
+
+    call MPAS_pool_get_dimension(block % dimensions, "nAlgae", nAlgae)
+    call MPAS_pool_get_dimension(block % dimensions, "nDOC", nDOC)
+    call MPAS_pool_get_dimension(block % dimensions, "nDIC", nDIC)
+    call MPAS_pool_get_dimension(block % dimensions, "nDON", nDON)
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistry)
+
+    call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
+    call MPAS_pool_get_dimension(mesh, "nZBGCTracers", nZBGCTracers)
+    call MPAS_pool_get_dimension(mesh, "maxAlgaeType", maxAlgaeType)
+    call MPAS_pool_get_dimension(mesh, "maxDOCType", maxDOCType)
+    call MPAS_pool_get_dimension(mesh, "maxDICType", maxDICType)
+    call MPAS_pool_get_dimension(mesh, "maxDONType", maxDONType)
+    call MPAS_pool_get_dimension(mesh, "maxAerosolType", maxAerosolType)
+    call MPAS_pool_get_dimension(mesh, "maxIronType", maxIronType)
+    call MPAS_pool_get_dimension(mesh, "maxBCType", maxBCType)
+    call MPAS_pool_get_dimension(mesh, "maxDustType", maxDustType)
+
+
+    allocate(oceanBioFluxesAll(nZBGCTracers,nCategories))
+    allocate(ratio_C_to_N(3))
+
+    ratio_C_to_N(1) = config_ratio_C_to_N_diatoms
+    ratio_C_to_N(2) = config_ratio_C_to_N_small_plankton
+    ratio_C_to_N(3) = config_ratio_C_to_N_phaeocystis
+
+    if (config_use_column_biogeochemistry) then
+
+       do iCategory = 1, nCategories
+
+       oceanCarbonFlux(iCategory)   = 0.0_RKIND
+       oceanBioFluxesAll(:,iCategory) = 0.0_RKIND
+
+       do iBioTracers = 1, ciceTracerObject % nBioTracers
+          iBioData = ciceTracerObject % index_LayerIndexToDataArray(iBioTracers)
+          oceanBioFluxesAll(iBioData,iCategory) = oceanBioFluxes(iBioTracers,iCategory,iCell)
+       enddo
+       iBioData = 0
+
+       ! Algae
+       do iBioTracers = 1, maxAlgaeType
+          iBioData = iBioData+1
+          oceanCarbonFlux(iCategory) = oceanCarbonFlux(iCategory) + &
+             oceanBioFluxesAll(iBioData,iCategory) * ratio_C_to_N(iBioTracers)
+       enddo
+
+       ! Nitrate
+       iBioData = iBioData+1
+
+       ! Polysaccharids and Lipids
+       do iBioTracers = 1, maxDOCType
+          iBioData = iBioData+1
+          oceanCarbonFlux(iCategory) = oceanCarbonFlux(iCategory) + &
+             oceanBioFluxesAll(iBioData,iCategory)
+       enddo
+
+       ! DIC
+       do iBioTracers = 1, maxDICType
+          iBioData = iBioData+1
+          oceanCarbonFlux(iCategory) = oceanCarbonFlux(iCategory) + &
+             oceanBioFluxesAll(iBioData,iCategory)
+       enddo
+
+       ! + Chlorophyll (maxAlgaeType) + Ammonium (1) + Silicate (1) + DMSPp (1) + DMSPd (1)
+       ! + DMS (1) + PON (1)
+
+       iBioData = iBioData+maxAlgaeType + 6
+
+       ! DON
+       do iBioTracers = 1, maxDONType
+          iBioData = iBioData+1
+          oceanCarbonFlux(iCategory) = oceanCarbonFlux(iCategory) + &
+             oceanBioFluxesAll(iBioData,iCategory) * config_ratio_C_to_N_proteins
+       enddo
+
+       ! + dFe (maxIronType) + pFe (maxIronType)
+       ! + Black Carbon (maxBCType) + Dust (maxDustType)
+
+       iBioData = iBioData + 2*maxIronType + maxBCType + maxDustType
+
+       ! Humics
+       iBioData = iBioData+1
+       oceanCarbonFlux(iCategory) = oceanCarbonFlux(iCategory) + &
+          oceanBioFluxesAll(iBioData,iCategory)
+
+       enddo ! nCategories
+    endif
+
+    deallocate(oceanBioFluxesAll)
+    deallocate(ratio_C_to_N)
+
+  end subroutine seaice_ocean_carbon_flux
+
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  seaice_ocean_carbon_flux_cell
+!
+!> \brief
+!> \author Nicole Jeffery, LANL
+!> \date 26 May 2020
+!> \details Calculate the ocean carbon flux
+!> by summing the appropriate biogeochemical tracer fluxes in units of mmol C/m2/s
+!>
+!>      ocean carbon flux = algal nitrogen group fluxes * (C to N ratios)
+!>                   + dissolved carbon group fluxes
+!>                   + dissolved organic nitrogen * (C to N ratio)
+!>                   + dissolved inorganic carbon fluxes + humic fluxes
+!
+!-----------------------------------------------------------------------
+
+  subroutine seaice_ocean_carbon_flux_cell(block,oceanCarbonFlux,oceanBioFluxes,iCell)
+
+    real(kind=RKIND), intent(out) :: &
+         oceanCarbonFlux
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         oceanBioFluxes
+
+    integer, intent(in) :: &
+         iCell
+
+    type(block_type), intent(in) :: &
+         block
+
+    logical, pointer :: &
+         config_use_column_biogeochemistry, &
+         config_use_vertical_biochemistry, &
+         config_use_carbon, &
+         config_use_DON, &
+         config_use_humics
+
+    integer, pointer :: &
+         nAlgae, &
+         nDOC, &
+         nDON, &
+         nDIC
+
+    type(MPAS_pool_type), pointer :: &
+         mesh, &
+         biogeochemistry
+
+    real(kind=RKIND), pointer :: &
+         config_ratio_C_to_N_diatoms, &
+         config_ratio_C_to_N_small_plankton, &
+         config_ratio_C_to_N_phaeocystis, &
+         config_ratio_C_to_N_proteins
+
+    integer, pointer :: &
+         nZBGCTracers, &
+         maxAlgaeType, &
+         maxDOCType, &
+         maxDICType, &
+         maxDONType, &
+         maxIronType, &
+         maxBCType, &
+         maxDustType, &
+         maxAerosolType
+
+    real(kind=RKIND), dimension(:), allocatable :: &
+         ratio_C_to_N
+
+    real(kind=RKIND), dimension(:), allocatable :: &
+         oceanBioFluxesAll
+
+    integer :: &
+         iBioTracers, &
+         iBioData
+
+    call MPAS_pool_get_config(block % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+    call MPAS_pool_get_config(block % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
+    call MPAS_pool_get_config(block % configs, "config_use_carbon", config_use_carbon)
+    call MPAS_pool_get_config(block % configs, "config_use_DON", config_use_DON)
+    call MPAS_pool_get_config(block % configs, "config_use_humics",config_use_humics)
+    call MPAS_pool_get_config(block % configs, "config_ratio_C_to_N_diatoms", config_ratio_C_to_N_diatoms)
+    call MPAS_pool_get_config(block % configs, "config_ratio_C_to_N_small_plankton", config_ratio_C_to_N_small_plankton)
+    call MPAS_pool_get_config(block % configs, "config_ratio_C_to_N_phaeocystis", config_ratio_C_to_N_phaeocystis)
+    call MPAS_pool_get_config(block % configs, "config_ratio_C_to_N_proteins", config_ratio_C_to_N_proteins)
+
+    call MPAS_pool_get_dimension(block % dimensions, "nAlgae", nAlgae)
+    call MPAS_pool_get_dimension(block % dimensions, "nDOC", nDOC)
+    call MPAS_pool_get_dimension(block % dimensions, "nDIC", nDIC)
+    call MPAS_pool_get_dimension(block % dimensions, "nDON", nDON)
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistry)
+
+    call MPAS_pool_get_dimension(mesh, "nZBGCTracers", nZBGCTracers)
+    call MPAS_pool_get_dimension(mesh, "maxAlgaeType", maxAlgaeType)
+    call MPAS_pool_get_dimension(mesh, "maxDOCType", maxDOCType)
+    call MPAS_pool_get_dimension(mesh, "maxDICType", maxDICType)
+    call MPAS_pool_get_dimension(mesh, "maxDONType", maxDONType)
+    call MPAS_pool_get_dimension(mesh, "maxAerosolType", maxAerosolType)
+    call MPAS_pool_get_dimension(mesh, "maxIronType", maxIronType)
+    call MPAS_pool_get_dimension(mesh, "maxBCType", maxBCType)
+    call MPAS_pool_get_dimension(mesh, "maxDustType", maxDustType)
+
+    allocate(oceanBioFluxesAll(nZBGCTracers))
+    allocate(ratio_C_to_N(3))
+
+    ratio_C_to_N(1) = config_ratio_C_to_N_diatoms
+    ratio_C_to_N(2) = config_ratio_C_to_N_small_plankton
+    ratio_C_to_N(3) = config_ratio_C_to_N_phaeocystis
+
+    if (config_use_column_biogeochemistry) then
+
+       oceanCarbonFlux   = 0.0_RKIND
+       oceanBioFluxesAll(:) = 0.0_RKIND
+
+       do iBioTracers = 1, ciceTracerObject % nBioTracers
+          iBioData = ciceTracerObject % index_LayerIndexToDataArray(iBioTracers)
+          oceanBioFluxesAll(iBioData) = oceanBioFluxes(iBioTracers)
+       enddo
+       iBioData = 0
+
+       ! Algae
+       do iBioTracers = 1, maxAlgaeType
+          iBioData = iBioData+1
+          oceanCarbonFlux = oceanCarbonFlux + &
+             oceanBioFluxesAll(iBioData) * ratio_C_to_N(iBioTracers)
+       enddo
+
+       ! Nitrate
+       iBioData = iBioData+1
+
+       ! Polysaccharids and Lipids
+       do iBioTracers = 1, maxDOCType
+          iBioData = iBioData+1
+          oceanCarbonFlux = oceanCarbonFlux + &
+             oceanBioFluxesAll(iBioData)
+       enddo
+
+       ! DIC
+       do iBioTracers = 1, maxDICType
+          iBioData = iBioData+1
+          oceanCarbonFlux = oceanCarbonFlux + &
+             oceanBioFluxesAll(iBioData)
+       enddo
+
+       ! + Chlorophyll (maxAlgaeType) + Ammonium (1) + Silicate (1) + DMSPp (1) + DMSPd (1)
+       ! + DMS (1) + PON (1)
+
+       iBioData = iBioData+maxAlgaeType + 6
+
+       ! DON
+       do iBioTracers = 1, maxDONType
+          iBioData = iBioData+1
+          oceanCarbonFlux = oceanCarbonFlux + &
+             oceanBioFluxesAll(iBioData) * config_ratio_C_to_N_proteins
+       enddo
+
+       ! + dFe (maxIronType) + pFe (maxIronType)
+       ! + Black Carbon (maxBCType) + Dust (maxDustType)
+
+       iBioData = iBioData + 2*maxIronType + maxBCType + maxDustType
+
+       ! Humics
+       iBioData = iBioData+1
+       oceanCarbonFlux = oceanCarbonFlux + &
+          oceanBioFluxesAll(iBioData)
+
+    endif
+
+    deallocate(oceanBioFluxesAll)
+    deallocate(ratio_C_to_N)
+
+  end subroutine seaice_ocean_carbon_flux_cell
+
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  seaice_total_carbon_content_category
+!
+!> \brief
+!> \author Nicole Jeffery, LANL
+!> \date 26 May 2020
+!> \details Calculate the total carbon concentration in the sea ice category
+!> by summing the appropriate biogeochemical tracers in units of mmol C
+!>
+!>      Total carbon = algal nitrogen groups * (C to N ratios) + dissolved carbon groups
+!>                   + dissolved inorganic carbon + humic material
+!>                   + dissolved organic nitrogen * (C to N ratio)
+!
+!-----------------------------------------------------------------------
+
+  subroutine seaice_total_carbon_content_category(block,totalCarbonContentCategory,iceAreaCategory,iceVolumeCategory,iCell)
+
+    use seaice_constants, only: &
+         skeletalLayerThickness, &
+         seaicePuny
+
+    real(kind=RKIND), dimension(:), intent(out) :: &
+         totalCarbonContentCategory
+
+    real(kind=RKIND), dimension(:,:), intent(in) :: &
+         iceAreaCategory, &
+         iceVolumeCategory
+
+    integer, intent(in) :: &
+         iCell
+
+    type(block_type), intent(in) :: &
+         block
+
+    logical, pointer :: &
+         config_use_skeletal_biochemistry, &
+         config_use_vertical_biochemistry, &
+         config_use_vertical_tracers, &
+         config_use_carbon, &
+         config_use_DON, &
+         config_use_humics
+
+    integer, pointer :: &
+         nCategories, &
+         nBioLayersP1, &
+         nBioLayers, &
+         nAlgae, &
+         nDOC, &
+         nDIC, &
+         nDON
+
+    type(MPAS_pool_type), pointer :: &
+         mesh, &
+         biogeochemistry, &
+         tracers
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         skeletalAlgaeConc, &
+         skeletalDOCConc, &
+         skeletalDICConc, &
+         skeletalDONConc, &
+         skeletalHumicsConc, &
+         verticalAlgaeConc, &
+         verticalDOCConc, &
+         verticalDICConc, &
+         verticalDONConc, &
+         verticalHumicsConc, &
+         brineFraction
+
+    real(kind=RKIND), pointer :: &
+         config_ratio_C_to_N_diatoms, &
+         config_ratio_C_to_N_small_plankton, &
+         config_ratio_C_to_N_phaeocystis, &
+         config_ratio_C_to_N_proteins
+
+    real(kind=RKIND), dimension(:), allocatable :: &
+         ratio_C_to_N, &
+         verticalGridSpace
+
+    real(kind=RKIND) :: &
+         brineHeight
+
+    integer :: &
+         iBioTracers, &
+         iBioCount, &
+         iLayers, &
+         iCategory
+
+    call MPAS_pool_get_config(block % configs, "config_use_skeletal_biochemistry", config_use_skeletal_biochemistry)
+    call MPAS_pool_get_config(block % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
+    call MPAS_pool_get_config(block % configs, "config_use_vertical_tracers", config_use_vertical_tracers)
+    call MPAS_pool_get_config(block % configs, "config_use_carbon", config_use_carbon)
+    call MPAS_pool_get_config(block % configs, "config_use_DON", config_use_DON)
+    call MPAS_pool_get_config(block % configs, "config_use_humics",config_use_humics)
+    call MPAS_pool_get_config(block % configs, "config_ratio_C_to_N_diatoms", config_ratio_C_to_N_diatoms)
+    call MPAS_pool_get_config(block % configs, "config_ratio_C_to_N_small_plankton", config_ratio_C_to_N_small_plankton)
+    call MPAS_pool_get_config(block % configs, "config_ratio_C_to_N_phaeocystis", config_ratio_C_to_N_phaeocystis)
+    call MPAS_pool_get_config(block % configs, "config_ratio_C_to_N_proteins", config_ratio_C_to_N_proteins)
+
+    call MPAS_pool_get_dimension(block % dimensions, "nBioLayers", nBioLayers)
+    call MPAS_pool_get_dimension(block % dimensions, "nBioLayersP1", nBioLayersP1)
+    call MPAS_pool_get_dimension(block % dimensions, "nAlgae", nAlgae)
+    call MPAS_pool_get_dimension(block % dimensions, "nDOC", nDOC)
+    call MPAS_pool_get_dimension(block % dimensions, "nDIC", nDIC)
+    call MPAS_pool_get_dimension(block % dimensions, "nDON", nDON)
+
+    call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
+    call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistry)
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+
+    call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
+
+    call MPAS_pool_get_array(tracers, "skeletalAlgaeConc", skeletalAlgaeConc, 1)
+    call MPAS_pool_get_array(tracers, "skeletalDOCConc", skeletalDOCConc, 1)
+    call MPAS_pool_get_array(tracers, "skeletalDICConc", skeletalDICConc, 1)
+    call MPAS_pool_get_array(tracers, "skeletalDONConc", skeletalDONConc, 1)
+    call MPAS_pool_get_array(tracers, "skeletalHumicsConc", skeletalHumicsConc, 1)
+    call MPAS_pool_get_array(tracers, "verticalAlgaeConc", verticalAlgaeConc, 1)
+    call MPAS_pool_get_array(tracers, "verticalDOCConc", verticalDOCConc, 1)
+    call MPAS_pool_get_array(tracers, "verticalDICConc", verticalDICConc, 1)
+    call MPAS_pool_get_array(tracers, "verticalDONConc", verticalDONConc, 1)
+    call MPAS_pool_get_array(tracers, "verticalHumicsConc", verticalHumicsConc, 1)
+    call MPAS_pool_get_array(tracers, "brineFraction", brineFraction, 1)
+
+    allocate(ratio_C_to_N(3))
+    allocate(verticalGridSpace(nBioLayersP1))
+
+    ratio_C_to_N(1) = config_ratio_C_to_N_diatoms
+    ratio_C_to_N(2) = config_ratio_C_to_N_small_plankton
+    ratio_C_to_N(3) = config_ratio_C_to_N_phaeocystis
+
+
+    verticalGridSpace(:) = 1.0_RKIND/real(nBioLayers,kind=RKIND)
+    verticalGridSpace(1) = verticalGridSpace(1)/2.0_RKIND
+    verticalGridSpace(nBioLayersP1) = verticalGridSpace(1)
+    totalCarbonContentCategory(:) = 0.0_RKIND
+
+
+    if (config_use_skeletal_biochemistry) then
+
+       do iCategory = 1, nCategories
+       ! algal nitrogen
+       do iBioTracers = 1, nAlgae
+          totalCarbonContentCategory(iCategory) = totalCarbonContentCategory(iCategory) +  skeletalAlgaeConc(iBioTracers,iCategory,iCell)* &
+             skeletalLayerThickness * ratio_C_to_N(iBioTracers)
+       enddo
+
+       if (config_use_carbon) then
+          ! DOC
+          do iBioTracers = 1, nDOC
+             totalCarbonContentCategory(iCategory) = totalCarbonContentCategory(iCategory) +  skeletalDOCConc(iBioTracers,iCategory,iCell)* &
+                skeletalLayerThickness
+          enddo
+
+          ! DIC
+          do iBioTracers = 1, nDIC
+             totalCarbonContentCategory(iCategory) = totalCarbonContentCategory(iCategory) +  skeletalDICConc(iBioTracers,iCategory,iCell)* &
+                skeletalLayerThickness
+          enddo
+       endif
+
+       if (config_use_DON) then
+          ! DON
+          do iBioTracers = 1, nDON
+             totalCarbonContentCategory(iCategory) = totalCarbonContentCategory(iCategory) +  skeletalDONConc(iBioTracers,iCategory,iCell)* &
+                config_ratio_C_to_N_proteins * skeletalLayerThickness
+          enddo
+       endif
+
+       ! humic material
+       if (config_use_humics) &
+          totalCarbonContentCategory(iCategory) = totalCarbonContentCategory(iCategory) +  skeletalHumicsConc(1,iCategory,iCell)* &
+             skeletalLayerThickness
+        enddo
+    elseif (config_use_vertical_tracers) then
+
+       do iCategory = 1, nCategories
+          brineHeight = 0.0_RKIND
+          if (iceAreaCategory(iCategory,iCell) > seaicePuny) then
+             brineHeight = iceVolumeCategory(iCategory,iCell)/iceAreaCategory(iCategory,iCell) * brineFraction(1,iCategory,iCell)
+          endif
+
+          if (config_use_vertical_biochemistry) then
+             iBioCount = 0
+             ! algal nitrogen
+             do iBioTracers = 1, nAlgae
+                do iLayers = 1,nBioLayersP1
+                   iBiocount = iBiocount + 1
+                   totalCarbonContentCategory(iCategory) = totalCarbonContentCategory(iCategory) + &
+                      verticalAlgaeConc(iBioCount,iCategory,iCell) * ratio_C_to_N(iBioTracers) * &
+                      verticalGridSpace(iLayers) * brineHeight
+                 enddo
+                 iBioCount = iBioCount+2   ! snow layers
+              enddo
+           endif
+
+           if (config_use_carbon) then
+              iBioCount = 0
+              ! DOC
+              do iBioTracers = 1, nDOC
+                 do iLayers = 1,nBioLayersP1
+                    iBioCount = iBioCount + 1
+                    totalCarbonContentCategory(iCategory) = totalCarbonContentCategory(iCategory) + &
+                       verticalDOCConc(iBioCount,iCategory,iCell) * verticalGridSpace(iLayers) * brineHeight
+                 enddo
+                 iBioCount = iBioCount+2  ! snow layers
+              enddo
+              iBioCount = 0
+              ! DIC
+              do iBioTracers = 1, nDIC
+
+                 do iLayers = 1,nBioLayersP1
+                    iBioCount = iBioCount + 1
+                    totalCarbonContentCategory(iCategory) = totalCarbonContentCategory(iCategory) + &
+                       verticalDICConc(iBioCount,iCategory,iCell)  * verticalGridSpace(iLayers) * brineHeight
+                 enddo
+                 iBioCount = iBioCount + 2 ! snow layers
+              enddo
+           endif
+
+          if (config_use_DON) then
+             iBioCount = 0
+             ! dissolved organic nitrogen
+             do iBioTracers = 1, nDON
+                do iLayers = 1,nBioLayersP1
+                   iBiocount = iBiocount + 1
+                   totalCarbonContentCategory(iCategory) = totalCarbonContentCategory(iCategory) + &
+                      verticalDONConc(iBioCount,iCategory,iCell) * config_ratio_C_to_N_proteins * &
+                      verticalGridSpace(iLayers) * brineHeight
+                 enddo
+                 iBioCount = iBioCount+2   ! snow layers
+              enddo
+           endif
+
+           ! humic material
+           if (config_use_humics) then
+              do iLayers = 1, nBioLayersP1
+                 totalCarbonContentCategory(iCategory) = totalCarbonContentCategory(iCategory) + &
+                    verticalHumicsConc(iLayers,iCategory,iCell)  * verticalGridSpace(iLayers) * brineHeight
+              enddo
+           endif
+       enddo
+    endif
+
+    deallocate(ratio_C_to_N)
+    deallocate(verticalGridSpace)
+
+  end subroutine seaice_total_carbon_content_category
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !-----------------------------------------------------------------------
 ! Warning messages
 !-----------------------------------------------------------------------

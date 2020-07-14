@@ -3773,10 +3773,10 @@
                                     skl_bgc,      z_tracers, &
                                     l_stop,       stop_label)
       
-      use ice_constants_colpkg, only: c0, c1, c2, p5
+      use ice_constants_colpkg, only: c0, c1, c2, p5, sk_l
       use ice_colpkg_tracers, only: nt_bgc_N, nt_zaero, tr_bgc_N, &
           tr_zaero, nlt_chl_sw, nlt_zaero_sw
-      use ice_colpkg_shared, only: dEdd_algae, bgc_flux_type, sk_l, &
+      use ice_colpkg_shared, only: dEdd_algae, bgc_flux_type, &
            R_chl2N, min_bgc, F_abs_chl,  hi_ssl
       use ice_zbgc_shared, only: remap_zbgc
 
