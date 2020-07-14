@@ -27,9 +27,8 @@ SET(NAMELIST_FILES
   ${HOMME_ROOT}/test/reg_test/namelists/tool-template2.nl
   ${HOMME_ROOT}/test/reg_test/namelists/tool-topooutput.nl
   ${HOMME_ROOT}/test/reg_test/namelists/tool-toposmooth-gll.nl
+  ${HOMME_ROOT}/test/reg_test/namelists/tool-zinterpolate.nl
 )
-# add when we turn on SCORPIO
-#   ${HOMME_ROOT}/test/reg_test/namelists/tool-zinterpolate.nl
 
 SET(VCOORD_FILES ${HOMME_ROOT}/test/vcoord/*26*)
 SET(MESH_FILES ${HOMME_ROOT}/test/mesh_files/mountain_10_x2.g ${HOMME_ROOT}/test/mesh_files/9x16_scrip.nc)
@@ -40,7 +39,5 @@ SET(NC_OUTPUT_FILES
   template2-ne0np4_tmp1.nc
   phis-baroclinic1.nc
   phis-smoothed1.nc
+  phis-smoothed1.interp1.nc
 )
-# add when we turn on SCORPIO
-#  phis-smoothed1.interp1.nc
-
