@@ -465,7 +465,7 @@
     config_AM_timeSeriesStatsMonthly_write_on_startup = false
     config_AM_timeSeriesStatsMonthly_compute_interval = 'dt'
     config_AM_timeSeriesStatsMonthly_output_stream = 'timeSeriesStatsMonthlyOutput'
-    config_AM_timeSeriesStatsMonthly_restart_stream = 'none'
+    config_AM_timeSeriesStatsMonthly_restart_stream = 'timeSeriesStatsMonthlyRestart'
     config_AM_timeSeriesStatsMonthly_operation = 'avg'
     config_AM_timeSeriesStatsMonthly_reference_times = 'initial_time'
     config_AM_timeSeriesStatsMonthly_duration_intervals = 'repeat_interval'

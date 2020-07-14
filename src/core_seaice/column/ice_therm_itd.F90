@@ -229,7 +229,7 @@
 
          if (tr_brine) then
             vbrin(n) = vbrin(n) + trcrn(nt_fbri,n) &
-                     * vicen(n)/real(nilyr,kind=dbl_kind)
+                     * vicen(n)
          endif
 
          do k = 1, nilyr
@@ -625,7 +625,7 @@
 
          if (tr_brine) then
             vbrin(n) = vbrin(n) + trcrn(nt_fbri,n) &
-                     * vicen(n)/real(nilyr,kind=dbl_kind)
+                     * vicen(n)
          endif
 
          do k = 1, nilyr
@@ -856,7 +856,7 @@
       use ice_colpkg_tracers, only: nt_qice, nt_qsno, nt_aero, tr_aero, &
                              tr_pond_topo, nt_apnd, nt_hpnd, bio_index
       use ice_colpkg_shared, only: z_tracers , hs_ssl, solve_zsal
-      use ice_zbgc, only: lateral_melt_bgc               
+      use ice_zbgc, only: lateral_melt_bgc
 
       real (kind=dbl_kind), intent(in) :: &
          dt        ! time step (s)
@@ -890,7 +890,7 @@
   
       real (kind=dbl_kind), dimension(nbtrcr), &
          intent(inout) :: &
-         flux_bio  ! biology tracer flux from layer bgc (mmol/m^2/s)  
+         flux_bio  ! biology tracer flux from layer bgc (mmol/m^2/s)
 
       real (kind=dbl_kind), dimension(:), intent(inout) :: &
          faero_ocn     ! aerosol flux to ocean (kg/m^2/s)
@@ -992,9 +992,10 @@
          if (solve_zsal .or. z_tracers) &
             call lateral_melt_bgc(dt,                         &
                                   ncat,        nblyr,         &
-                                  rside,       vicen_init,    &
+                                  rside,       vicen,         &
                                   trcrn,       fzsal,         &
-                                  flux_bio,    nbtrcr)
+                                  flux_bio,    nbtrcr,        &
+                                  vicen_init)
 
       endif          ! rside
 
@@ -1022,7 +1023,7 @@
 !
       subroutine add_new_ice (ncat,      nilyr,    nblyr,  &
                               n_aero,    dt,         &
-                              ntrcr,     nltrcr,            &
+                              ntrcr,     nbtrcr,     &
                               hin_max,   ktherm,     &
                               aicen,     trcrn,      &
                               vicen,     vsnon1,     &
@@ -1034,8 +1035,8 @@
                               Tf,        sss,        &
                               salinz,    phi_init,   &
                               dSin0_frazil,          &
-                              bgrid,      cgrid,      igrid,    &
-                              nbtrcr,    flux_bio,   &
+                              bgrid,     cgrid,      &
+                              igrid,     flux_bio,   &
                               ocean_bio, fzsal,      &
                               frazil_diag,           &
                               l_stop,    stop_label)
@@ -1057,7 +1058,7 @@
          nilyr , & ! number of ice layers
          nblyr , & ! number of bio layers
          ntrcr , & ! number of tracers
-         nltrcr, & ! number of zbgc tracers
+         nbtrcr, & ! number of bio tracer types
          n_aero, & ! number of aerosol tracers
          ktherm    ! type of thermodynamics (0 0-layer, 1 BL99, 2 mushy)
 
@@ -1119,9 +1120,6 @@
       real (kind=dbl_kind), dimension (nilyr+1), intent(in) :: &
          cgrid              ! CICE vertical coordinate   
 
-      integer (kind=int_kind), intent(in) :: &
-         nbtrcr          ! number of biology tracers
-
       real (kind=dbl_kind), dimension (:), intent(inout) :: &
          flux_bio   ! tracer flux to ocean from biology (mmol/m^2/s) 
         
@@ -1181,7 +1179,10 @@
          vbri_final      ! brine volume summed over categories
 
       real (kind=dbl_kind), dimension (ncat) :: &
-         vbrin           ! trcrn(nt_fbri,n)*vicen(n) 
+         vbrin             ! trcrn(nt_fbri,n)*vicen(n)
+
+      character(len=char_len_long) :: &
+         warning ! warning message
 
       !-----------------------------------------------------------------
       ! initialize
@@ -1506,12 +1507,12 @@
       !-----------------------------------------------------------------     
      if (tr_brine .or. nbtrcr > 0) &
         call add_new_ice_bgc(dt,         nblyr,                &
-                             ncat, nilyr, nltrcr, &
+                             ncat,       nilyr,      nbtrcr,   &
                              bgrid,      cgrid,      igrid,    &
                              aicen_init, vicen_init, vi0_init, &
                              aicen,      vicen,      vsnon1,   &
                              vi0new,     ntrcr,      trcrn,    &
-                             nbtrcr,     sss,        ocean_bio,&
+                             sss,        ocean_bio,            &
                              flux_bio,   hsurp,                &
                              l_stop,     stop_label,           &
                              l_conservation_check)

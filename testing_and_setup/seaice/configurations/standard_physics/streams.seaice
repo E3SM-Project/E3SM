@@ -204,8 +204,8 @@
         reference_time="0000-01-01_00:00:00"
         clobber_mode="truncate"
         packages="timeSeriesStatsMonthlyAMPKG"
-        input_interval="none"
-        output_interval="none" >
+        input_interval="initial_only"
+        output_interval="stream:restart:output_interval" >
 
 </stream>
 
