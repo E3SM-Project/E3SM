@@ -519,7 +519,7 @@
 
   <machine MACH="singularity">
     <DESC>Singularity container</DESC>
-    <NODENAME_REGEX>singularity</NODENAME_REGEX>
+    <NODENAME_REGEX>localhost</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
