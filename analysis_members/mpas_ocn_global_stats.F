@@ -26,6 +26,7 @@ module ocn_global_stats
    use mpas_stream_manager
 
    use ocn_constants
+   use ocn_config
    use ocn_diagnostics_routines
 
    implicit none
@@ -103,14 +104,10 @@ contains
       !-----------------------------------------------------------------
 
       type (dm_info), pointer :: dminfo
-      logical, pointer :: config_AM_globalStats_text_file
-      character (len=StrKIND), pointer :: config_AM_globalStats_directory
       integer :: fileID, i
 
       err = 0
 
-      call mpas_pool_get_config(domain % configs, 'config_AM_globalStats_directory', config_AM_globalStats_directory)
-      call mpas_pool_get_config(domain % configs, 'config_AM_globalStats_text_file', config_AM_globalStats_text_file)
       if (config_AM_globalStats_text_file) then
       dminfo => domain % dminfo
       if (dminfo % my_proc_id == IO_NODE) then
@@ -280,9 +277,6 @@ contains
       ! package flags
       logical, pointer :: frazilIcePkgActive, landIceFluxesPkgActive
       logical, pointer :: thicknessFilterActive
-
-      logical, pointer :: config_AM_globalStats_text_file
-      character (len=StrKIND), pointer :: config_AM_globalStats_directory
 
       real (kind=RKIND), dimension(:), allocatable :: restoringSaltFlux
 
@@ -1368,8 +1362,6 @@ contains
       maxGlobalStats(1:nVariables) =  maxes(1:nVariables)
       sumGlobalStats(1:nVariables) =  sums(1:nVariables)
 
-      call mpas_pool_get_config(domain % configs, 'config_AM_globalStats_text_file', config_AM_globalStats_text_file)
-      call mpas_pool_get_config(domain % configs, 'config_AM_globalStats_directory', config_AM_globalStats_directory)
       if (config_AM_globalStats_text_file) then
 
          call mpas_pool_get_subpool(domain % blocklist % structs, 'diagnostics', diagnosticsPool)
