@@ -13,6 +13,7 @@
 module shoc
 
   use physics_utils, only: rtype, rtype8, itype, btype
+  use scream_abortutils, only: endscreamrun
 
 ! Bit-for-bit math functions.
 #ifdef SCREAM_CONFIG_IS_CMAKE
@@ -1959,7 +1960,8 @@ subroutine shoc_assumed_pdf(&
   real(rtype) epsterm
   real(rtype) sqrtqw2_1, sqrtqw2_2, sqrtthl2_1, sqrtthl2_2
   real(rtype) thl_tol, rt_tol, w_tol_sqd, w_thresh
- 
+  character(len=200) :: err_msg 
+
   ! variables on thermo grid
   real(rtype) :: wthl_sec_zt(shcol,nlev)
   real(rtype) :: wqw_sec_zt(shcol,nlev)
@@ -2069,6 +2071,17 @@ subroutine shoc_assumed_pdf(&
         thl1_2,basepres,pval,& ! Input
         Tl1_2)                 ! Output
 
+      ! Check to ensure Tl1_1 and Tl1_2 are not negative. endrun otherwise
+      if (Tl1_1 .le. 0._rtype) then
+         write(err_msg,*)'ERROR: Tl1_1 is .le. 0 before shoc_assumed_pdf_compute_qs in shoc. Tl1_1 is:',Tl1_1
+         call endscreamrun(err_msg)
+      endif
+
+      if (Tl1_2 .le. 0._rtype) then
+         write(err_msg,*)'ERROR: Tl1_2 is .le. 0 before shoc_assumed_pdf_compute_qs in shoc. Tl1_2 is:',Tl1_2
+         call endscreamrun(err_msg)
+      endif
+      
       ! Now compute qs
       call shoc_assumed_pdf_compute_qs(&
         Tl1_1,Tl1_2,pval,&   ! Input
@@ -2262,6 +2275,7 @@ subroutine shoc_assumed_pdf_thl_parameters(&
       +(Skew_thl-a*thl1_1**3-(1._rtype-a)*thl1_2**3))/ &
       (3._rtype*(1._rtype-a)*(thl1_2-thl1_1))))*thlsec
 
+
     thl1_1=thl1_1*sqrtthl+thl_first
     thl1_2=thl1_2*sqrtthl+thl_first
 
@@ -2309,6 +2323,7 @@ subroutine shoc_assumed_pdf_qw_parameters(&
   real(rtype), parameter :: w_thresh=0.0_rtype
 
   corrtest2=max(-1.0_rtype,min(1.0_rtype,wqwsec/(sqrtw2*sqrtqt)))
+
 
   if (qwsec .le. rt_tol**2 .or. abs(w1_2-w1_1) .le. w_thresh) then
     qw1_1=qw_first
@@ -2516,7 +2531,6 @@ subroutine shoc_assumed_pdf_compute_s(&
 
   if (std_s .ne. 0.0_rtype) then
     C=0.5_rtype*(1._rtype+erf(s/(sqrt2*std_s)))
-IF (C .ne. C) C = 0._rtype
     IF (C .ne. 0._rtype) qn=s*C+(std_s/sqrtpi)*exp(-0.5_rtype*(s/std_s)**2)
   else
     if (s .gt. 0._rtype) then
@@ -2706,7 +2720,7 @@ subroutine shoc_tke(&
 
   !Compute eddy diffusivity for heat and momentum
   call eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
-       shoc_mix, sterm_zt, isotropy, tkh, tk, tke)
+       shoc_mix, sterm_zt, isotropy, tke, tkh, tk)
 
   return
 
@@ -2854,7 +2868,8 @@ subroutine adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
         a_diss(i,k)=Cee/shoc_mix(i,k)*tke(i,k)**1.5
 
         ! March equation forward one timestep
-        tke(i,k)=max(0._rtype,tke(i,k)+dtime*(max(0._rtype,a_prod_sh+a_prod_bu)-a_diss(i,k)))
+        tke(i,k)=max(mintke,tke(i,k)+dtime* &
+	  (max(0._rtype,a_prod_sh+a_prod_bu)-a_diss(i,k)))
 
         tke(i,k)=min(tke(i,k),maxtke)
      enddo
@@ -2924,7 +2939,7 @@ subroutine isotropic_ts(nlev, shcol, brunt_int, tke, a_diss, brunt, isotropy)
 end subroutine isotropic_ts
 
 subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
-     shoc_mix, sterm_zt, isotropy, tkh, tk, tke)
+     shoc_mix, sterm_zt, isotropy, tke, tkh, tk)
 
   !------------------------------------------------------------
   ! Compute eddy diffusivity for heat and momentum
@@ -2947,31 +2962,35 @@ subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
   real(rtype), intent(in) :: sterm_zt(shcol,nlev)
   ! Return to isotropic timescale [s]
   real(rtype), intent(in) :: isotropy(shcol,nlev)
+  ! turbulent kinetic energy [m2/s2]
+  real(rtype), intent(in) :: tke(shcol,nlev)  
 
   !intent-inouts
   ! eddy coefficient for heat [m2/s]
   real(rtype), intent(inout) :: tkh(shcol,nlev)
   ! eddy coefficient for momentum [m2/s]
   real(rtype), intent(inout) :: tk(shcol,nlev)
-  ! turbulent kinetic energy [m2/s2]
-  real(rtype), intent(inout) :: tke(shcol,nlev)
 
   !local vars
   integer     :: i, k
   real(rtype) :: z_over_L, zt_grid_1d(shcol)
+  real(rtype) :: Ckh_s, Ckm_s
 
   !parameters
-  ! Critical value of dimensionless Monin-Obukhov length
+  ! Critical value of dimensionless Monin-Obukhov length, 
+  !  for which diffusivities are no longer damped
   real(rtype), parameter :: zL_crit_val = 100.0_rtype
   ! Transition depth [m] above PBL top to allow
   ! stability diffusivities
   real(rtype), parameter :: pbl_trans = 200.0_rtype
-  real(rtype), parameter :: Ckh_s = 1.0_rtype
-  real(rtype), parameter :: Ckm_s = 1.0_rtype
   ! Turbulent coefficients
   real(rtype), parameter :: Ckh = 0.1_rtype
   real(rtype), parameter :: Ckm = 0.1_rtype
-
+  ! Default eddy coefficients for stable PBL diffusivities
+  real(rtype), parameter :: Ckh_s_def = 1.0_rtype
+  real(rtype), parameter :: Ckm_s_def = 1.0_rtype
+  ! Minimum allowable value for stability diffusivities
+  real(rtype), parameter :: Ck_s_min = 0.1_rtype  
 
   !store zt_grid at nlev in 1d array
   zt_grid_1d(1:shcol) = zt_grid(1:shcol,nlev)
@@ -2983,12 +3002,19 @@ subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
         !  the lowest model grid layer height to scale
         z_over_L = zt_grid_1d(i)/obklen(i)
 
-        if (z_over_L .gt. zL_crit_val .and. (zt_grid(i,k) .lt. pblh(i)+pbl_trans)) then
-           ! If surface layer is moderately to very stable, based on near surface
+        if (z_over_L .gt. 0._rtype .and. (zt_grid(i,k) .lt. pblh(i)+pbl_trans)) then
+           ! If surface layer is stable, based on near surface
            !  dimensionless Monin-Obukov use modified coefficients of
            !  tkh and tk that are primarily based on shear production
            !  and SHOC length scale, to promote mixing within the PBL
            !  and to a height slighty above to ensure smooth transition.
+	   
+	   ! Compute diffusivity coefficient as function of dimensionless
+           !  Obukhov, given a critical value
+           Ckh_s = max(Ck_s_min,min(Ckh_s_def,z_over_L/zL_crit_val))
+           Ckm_s = max(Ck_s_min,min(Ckm_s_def,z_over_L/zL_crit_val))	
+	   
+	   ! Compute stable PBL diffusivities   
            tkh(i,k) = Ckh_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
            tk(i,k)  = Ckm_s*(shoc_mix(i,k)**2)*sqrt(sterm_zt(i,k))
         else
@@ -2997,7 +3023,6 @@ subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
            tk(i,k)  = Ckm*isotropy(i,k)*tke(i,k)
         endif
 
-        tke(i,k) = max(mintke,tke(i,k))
      enddo
   enddo
 
