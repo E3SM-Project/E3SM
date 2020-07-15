@@ -27,6 +27,7 @@ module ocn_init_tidal_boundary
    use mpas_dmpar
 
    use ocn_constants
+   use ocn_config
    use ocn_init_vertical_grids
    use ocn_init_cell_markers
 
@@ -106,53 +107,13 @@ contains
     real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness, zMid
     real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers, debugTracers
 
-    ! Define configs
-    character (len=StrKIND), pointer :: config_init_configuration, &
-                                        config_vertical_grid, &
-                                        config_tidal_boundary_layer_type
-    logical, pointer :: config_tidal_boundary_use_distances, config_alter_ICs_for_pbcs
-    logical, pointer :: config_use_wetting_drying, config_tidal_start_dry
-    real (kind=RKIND), pointer :: config_tidal_boundary_right_bottom_depth, &
-                                  config_tidal_boundary_left_bottom_depth, &
-                                  config_tidal_boundary_plug_width_dist, config_tidal_boundary_plug_width_frac, &
-                                  config_tidal_boundary_plug_temperature, config_tidal_boundary_domain_temperature, &
-                                  config_tidal_boundary_salinity, config_tidal_boundary_isopycnal_min_thickness, &
-                                  config_tidal_boundary_left_value, &
-                                  config_tidal_boundary_right_value, &
-                                  config_drying_min_cell_height
-    integer, pointer :: config_tidal_boundary_min_vert_levels
-
-
     real (kind=RKIND), dimension(:), pointer :: interfaceLocations
     real (kind=RKIND),  parameter :: eps=1.0e-12
 
     iErr = 0
 
-
-    call mpas_pool_get_config(ocnConfigs, 'config_init_configuration', config_init_configuration)
-    call mpas_pool_get_config(ocnConfigs, 'config_tidal_boundary_layer_type', config_tidal_boundary_layer_type)
-
     call mpas_log_write('here')
     if(config_init_configuration .ne. trim('tidal_boundary')) return
-
-    call mpas_pool_get_config(ocnConfigs, 'config_vertical_grid', config_vertical_grid)
-
-    call mpas_pool_get_config(ocnConfigs, 'config_tidal_boundary_min_vert_levels', config_tidal_boundary_min_vert_levels)
-    call mpas_pool_get_config(ocnConfigs, 'config_tidal_boundary_right_value', config_tidal_boundary_right_value)
-    call mpas_pool_get_config(ocnConfigs, 'config_tidal_boundary_left_value', config_tidal_boundary_left_value)
-    call mpas_pool_get_config(ocnConfigs, 'config_tidal_boundary_right_bottom_depth', config_tidal_boundary_right_bottom_depth)
-    call mpas_pool_get_config(ocnConfigs, 'config_tidal_boundary_left_bottom_depth', config_tidal_boundary_left_bottom_depth)
-    call mpas_pool_get_config(ocnConfigs, 'config_tidal_boundary_plug_width_frac', config_tidal_boundary_plug_width_frac)
-    call mpas_pool_get_config(ocnConfigs, 'config_tidal_boundary_plug_temperature', config_tidal_boundary_plug_temperature)
-    call mpas_pool_get_config(ocnConfigs, 'config_tidal_boundary_domain_temperature', config_tidal_boundary_domain_temperature)
-    call mpas_pool_get_config(ocnConfigs, 'config_tidal_boundary_salinity', config_tidal_boundary_salinity)
-    call mpas_pool_get_config(ocnConfigs, 'config_alter_ICs_for_pbcs', config_alter_ICs_for_pbcs)
-
-    call mpas_pool_get_config(ocnConfigs, 'config_tidal_start_dry', config_tidal_start_dry)
-    call mpas_pool_get_config(ocnConfigs, 'config_use_wetting_drying', config_use_wetting_drying)
-    call mpas_pool_get_config(ocnConfigs, 'config_drying_min_cell_height', config_drying_min_cell_height)
-
-    call mpas_pool_get_config(ocnConfigs, 'config_tidal_boundary_use_distances', config_tidal_boundary_use_distances)
 
     call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
     call mpas_pool_get_dimension(meshPool, 'nVertLevelsP1', nVertLevelsP1)
