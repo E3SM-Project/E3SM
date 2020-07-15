@@ -1,7 +1,7 @@
 macro (CreateScorpioTarget CREATE_FLIB)
 
   # Some sanity checks
-  if (NOT CIME_BUILD)
+  if (NOT SCREAM_CIME_BUILD)
     message (FATAL_ERROR "Error! Scorpio.cmake currently only works in a CIME build.")
   endif ()
 
