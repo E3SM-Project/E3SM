@@ -538,7 +538,7 @@ int test_fill(int iosysid, int num_flavors, int *flavor, int my_rank,
          * available ways. */
         for (int fmt = 0; fmt < num_flavors; fmt++)
         {
-            char filename[PIO_MAX_NAME + 1]; /* Test filename. */
+            char filename[PIO_MAX_NAME * 2 + 1]; /* Test filename. */
             char iotype_name[PIO_MAX_NAME + 1];
             int ncid;
             int varid[NUM_NETCDF_TYPES];
@@ -547,7 +547,8 @@ int test_fill(int iosysid, int num_flavors, int *flavor, int my_rank,
             /* Create a filename. */
             if ((ret = get_iotype_name(flavor[fmt], iotype_name)))
                 ERR(ret);
-            snprintf(filename, PIO_MAX_NAME, "%s_default_fill_%d_%s.nc", TEST_NAME, default_fill, iotype_name);
+            snprintf(filename, PIO_MAX_NAME * 2, "%s_default_fill_%d_%s.nc", TEST_NAME,
+		     default_fill, iotype_name);
 
             /* Create test file with dims and vars defined. */
             if ((ret = create_putget_file(iosysid, flavor[fmt], dim_len, varid, filename,
@@ -635,7 +636,7 @@ int test_fill_mode(int iosysid, int num_flavors, int *flavor, int my_rank,
             {
                 for (int t = 0; t < NUM_TYPES_TO_TEST; t++)
                 {
-                    char filename[PIO_MAX_NAME + 1]; /* Test filename. */
+                    char filename[PIO_MAX_NAME * 2 + 1]; /* Test filename. */
                     char iotype_name[PIO_MAX_NAME + 1];
                     int ncid;
                     int dimid;
@@ -653,7 +654,7 @@ int test_fill_mode(int iosysid, int num_flavors, int *flavor, int my_rank,
                     /* Create a filename. */
                     if ((ret = get_iotype_name(flavor[fmt], iotype_name)))
                         ERR(ret);
-                    snprintf(filename, PIO_MAX_NAME, "%s_fill_mode_async_%d_default_fill_%d_extra_var_%d_%s.nc",
+                    snprintf(filename, PIO_MAX_NAME * 2, "%s_fill_mode_async_%d_default_fill_%d_extra_var_%d_%s.nc",
                              TEST_NAME, async, default_fill, extra_var, iotype_name);
 
                     /* Create the test file. */

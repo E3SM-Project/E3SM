@@ -13,7 +13,7 @@
 !<
 
 module pionfatt_mod
-  use pio_kinds, only : r4, r8, i4, pio_offset_kind
+  use pio_kinds, only : r4, r8, i4, i2, pio_offset_kind
   use pio_types
   use pio_support, only : replace_c_null
   use iso_c_binding
@@ -26,11 +26,11 @@ module pionfatt_mod
   public :: put_att
   interface put_att
      module procedure put_att_id_{TYPE}, put_att_desc_{TYPE}, put_att_vid_{TYPE}
-     ! TYPE real,int,double
+     ! TYPE real,int,double,short
      module procedure put_att_1d_id_{TYPE}
-     ! TYPE real,int,double
+     ! TYPE real,int,double,short
      module procedure put_att_1d_desc_{TYPE}
-     ! TYPE real,int,double
+     ! TYPE real,int,double,short
      module procedure put_att_1d_vid_{TYPE}
   end interface
 
@@ -41,7 +41,7 @@ module pionfatt_mod
   public :: get_att
   interface get_att
      module procedure get_att_{TYPE}, get_att_desc_{TYPE}, get_att_id_{TYPE}
-     ! TYPE real,int,double
+     ! TYPE real,int,double,short
      module procedure get_att_1d_{TYPE}, get_att_desc_1d_{TYPE}, get_att_1d_id_{TYPE}
   end interface
 
@@ -70,18 +70,29 @@ module pionfatt_mod
      end function PIOc_get_att_text
   end interface
 
-
   interface
-     integer(C_INT) function PIOc_put_att_int (ncid, varid, name, xtype, len, op) &
-          bind(C,name="PIOc_put_att_int")
+     ! TYPE int,double,short
+     integer(C_INT) function PIOc_put_att_{TYPE} (ncid, varid, name, xtype, len, op) &
+          bind(C,name="PIOc_put_att_{TYPE}")
        use iso_c_binding
        integer(C_INT), value    :: ncid
        integer(C_INT), value    :: varid
        character(C_CHAR)        :: name(*)
        integer(C_INT), value    :: xtype
        integer(C_SIZE_T), value :: len
-       integer(C_INT)           :: op
-     end function PIOc_put_att_int
+       {CTYPE}                  :: op
+     end function PIOc_put_att_{TYPE}
+  end interface
+  interface
+     ! TYPE int,double,short
+     integer(C_INT) function PIOc_get_att_{TYPE} (ncid, varid, name, op) &
+          bind(C,name="PIOc_get_att_{TYPE}")
+       use iso_c_binding
+       integer(C_INT), value         :: ncid
+       integer(C_INT), value         :: varid
+       character(C_CHAR)             :: name(*)
+       {CTYPE},        intent(out)   :: op
+     end function PIOc_get_att_{TYPE}
   end interface
   interface
      integer(C_INT) function PIOc_put_att_float (ncid, varid, name, xtype, len, op) &
@@ -96,50 +107,15 @@ module pionfatt_mod
      end function PIOc_put_att_float
   end interface
   interface
-     integer(C_INT) function PIOc_put_att_double (ncid, varid, name, xtype, len, op) &
-          bind(C,name="PIOc_put_att_double")
-       use iso_c_binding
-       integer(C_INT), value    :: ncid
-       integer(C_INT), value    :: varid
-       character(C_CHAR)        :: name(*)
-       integer(C_INT), value    :: xtype
-       integer(C_SIZE_T), value :: len
-       real(C_DOUBLE)           :: op
-     end function PIOc_put_att_double
-  end interface
-
-
-  interface
-     integer(C_INT) function PIOc_get_att_int (ncid, varid, name, op) &
-          bind(C,name="PIOc_get_att_int")
-       use iso_c_binding
-       integer(C_INT), value         :: ncid
-       integer(C_INT), value         :: varid
-       character(C_CHAR)             :: name(*)
-       integer(C_INT), intent(out)   :: op
-     end function PIOc_get_att_int
-  end interface
-
-  interface
+     ! TYPE int,double,short
      integer(C_INT) function PIOc_get_att_float (ncid, varid, name, op) &
           bind(C,name="PIOc_get_att_float")
        use iso_c_binding
        integer(C_INT), value         :: ncid
        integer(C_INT), value         :: varid
        character(C_CHAR)             :: name(*)
-       real(C_FLOAT), intent(out) :: op
+       real(C_FLOAT),        intent(out)   :: op
      end function PIOc_get_att_float
-  end interface
-
-  interface
-     integer(C_INT) function PIOc_get_att_double (ncid, varid, name, op) &
-          bind(C,name="PIOc_get_att_double")
-       use iso_c_binding
-       integer(C_INT), value         :: ncid
-       integer(C_INT), value         :: varid
-       character(C_CHAR)             :: name(*)
-       real(C_DOUBLE), intent(out)   :: op
-     end function PIOc_get_att_double
   end interface
   !> @endcond
 
@@ -174,7 +150,7 @@ contains
     ierr = put_att_id_{TYPE} (File%fh,varid,name,value)
 
   end function put_att_vid_{TYPE}
-  ! TYPE int,real,double
+  ! TYPE int,real,double,short
   integer function put_att_id_{TYPE} (ncid, varid, name, values) result(ierr)
     use iso_c_binding
     integer, intent(in) :: ncid
@@ -262,7 +238,7 @@ contains
   end function get_att_id_text
 
   !pl The next line is needed by genf90.pl, do not remove it.
-  ! TYPE real,double,int
+  ! TYPE real,double,int,short
   !>
   !! @public
   !! @ingroup PIO_put_att
@@ -286,7 +262,7 @@ contains
 
   end function put_att_1d_id_{TYPE}
 
-  ! TYPE real,double,int
+  ! TYPE real,double,int,short
   integer function put_att_1d_id_internal_{TYPE} (ncid, varid, name, len, values) result(ierr)
     integer, intent(in) :: ncid
     integer, intent(in) :: varid
@@ -300,7 +276,7 @@ contains
   end function put_att_1d_id_internal_{TYPE}
 
 
-  ! TYPE real,int,double
+  ! TYPE real,int,double,short
   !>
   !! @public
   !! @ingroup PIO_put_att
@@ -367,7 +343,7 @@ contains
   !! @param values : The value for the netcdf attribute
   !! @retval ierr @copydoc error_return
   !<
-  ! TYPE int,real,double
+  ! TYPE int,real,double,short
   integer function get_att_desc_1d_{TYPE} (File,varDesc,name,values) result(ierr)
 
     type (File_desc_t), intent(inout) , target :: File
@@ -392,7 +368,7 @@ contains
   !! @param values : The value for the netcdf attribute
   !! @retval ierr @copydoc error_return
   !<
-  ! TYPE int,real,double
+  ! TYPE int,real,double,short
   integer function get_att_id_{TYPE} (ncid, varid, name, values) result(ierr)
     use iso_c_binding
     integer, intent(in) :: ncid
@@ -419,7 +395,7 @@ contains
 
   end function get_att_{TYPE}
 
-  ! TYPE real,int,double
+  ! TYPE real,int,short,double
   !>
   !! @public
   !! @ingroup PIO_get_att
@@ -442,7 +418,7 @@ contains
   end function get_att_1d_{TYPE}
 
 
-  ! TYPE real,int,double
+  ! TYPE real,int,short,double
   integer function get_att_1d_id_{TYPE} (ncid,varid,name,values) result(ierr)
     integer, intent(in) :: ncid
     integer(i4), intent(in)        :: varid

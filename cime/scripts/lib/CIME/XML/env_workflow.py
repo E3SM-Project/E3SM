@@ -26,9 +26,9 @@ class EnvWorkflow(EnvBase):
     def create_job_groups(self, batch_jobs, is_test):
         # Subtle: in order to support dynamic batch jobs, we need to remove the
         # job_submission group and replace with job-based groups
-
-        orig_group = self.get_child("group", {"id":"job_submission"},
+        orig_group = self.get_optional_child("group", {"id":"job_submission"},
                                     err_msg="Looks like job groups have already been created")
+        expect(orig_group, "No workflow groups found")
         orig_group_children = super(EnvWorkflow, self).get_children(root=orig_group)
 
         childnodes = []

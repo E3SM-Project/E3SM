@@ -13,7 +13,7 @@
 !<
 module piodarray
   use pio_types, only : file_desc_t, io_desc_t, var_desc_t
-  use pio_kinds, only : i4, r4, r8, pio_offset_kind
+  use pio_kinds, only : i2, i4, r4, r8, pio_offset_kind
   use pio_support, only : piodie
   use iso_c_binding
 #ifdef TIMING
@@ -25,15 +25,15 @@ module piodarray
   public :: pio_read_darray, pio_write_darray, pio_set_buffer_size_limit
 
   interface PIO_write_darray
-! TYPE real,int,double
+! TYPE real,int,double,short
 ! DIMS 1,2,3,4,5,6,7
      module procedure write_darray_{DIMS}d_{TYPE}
-! TYPE real,int,double
+! TYPE real,int,double,short
      module procedure write_darray_multi_1d_{TYPE}
   end interface
 
   interface PIO_read_darray
-! TYPE real,int,double
+! TYPE real,int,double,short
 ! DIMS 1,2,3,4,5,6,7
      module procedure read_darray_{DIMS}d_{TYPE}
   end interface
@@ -100,7 +100,7 @@ contains
 
   end subroutine pio_set_buffer_size_limit
 
-! TYPE real,int,double
+! TYPE real,int,double,short
   !> 1D write_darray for type {TYPE}. Writes a 2-d slab of TYPE to a
   !! netcdf file.
   !<
@@ -139,7 +139,7 @@ contains
 #endif
   end subroutine write_darray_1d_cinterface_{TYPE}
 
-! TYPE real,int,double
+! TYPE real,int,double,short
   !> 1D write_darray_multi for type {TYPE}. Writes a 2-d slab of TYPE to a netcdf file.
   subroutine write_darray_multi_1d_cinterface_{TYPE} (File,varDesc,ioDesc,nvars,arraylen, array, iostat, fillval)
     use iso_c_binding
@@ -179,7 +179,7 @@ contains
 
   end subroutine write_darray_multi_1d_cinterface_{TYPE}
 
-! TYPE real,int,double
+! TYPE real,int,double,short
   !>
   !! @ingroup PIO_write_darray
   !! Writes a 1D array of type {TYPE}. Writes a block of TYPE to a netcdf file.
@@ -217,7 +217,7 @@ contains
 
   end subroutine write_darray_multi_1d_{TYPE}
 
-! TYPE real,int,double
+! TYPE real,int,double,short
   !> Writes a block of TYPE to a netcdf file.
   subroutine write_darray_1d_{TYPE} (File,varDesc,ioDesc, array, iostat, fillval)
     type (File_desc_t), intent(inout) :: &
@@ -241,7 +241,7 @@ contains
 
   end subroutine write_darray_1d_{TYPE}
 
-! TYPE real,int,double
+! TYPE real,int,double,short
 ! DIMS 2,3,4,5,6,7
   !>
   !! @ingroup PIO_write_darray
@@ -294,7 +294,7 @@ contains
 #endif
   end subroutine write_darray_{DIMS}d_{TYPE}
 
-! TYPE real,int,double
+! TYPE real,int,double,short
 ! DIMS 1,2,3,4,5,6,7
   !>
   !! @ingroup PIO_read_darray
@@ -309,7 +309,6 @@ contains
   !<
   subroutine read_darray_{DIMS}d_{TYPE} (File,varDesc, ioDesc, array, iostat)
     use iso_c_binding
-!    use ifcore, only: tracebackqq
 
     type (File_desc_t), intent(inout) :: &
          File                   ! file information
@@ -330,7 +329,7 @@ contains
 
   end subroutine read_darray_{DIMS}d_{TYPE}
 
-! TYPE real,int,double
+! TYPE real,int,double,short
   !> Internal read_darray for type {TYPE}
   subroutine read_darray_internal_{TYPE} (ncid, varid, ioid, alen, array, iostat)
     use iso_c_binding

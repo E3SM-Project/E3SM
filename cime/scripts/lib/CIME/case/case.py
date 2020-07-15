@@ -458,8 +458,17 @@ class Case(object):
         logger.debug(" Possible components for COMPSETS_SPEC_FILE are {}".format(components))
 
         self.set_lookup_value("COMP_INTERFACE", driver)
+        if self._cime_model == 'ufs':
+            config = {}
+            if 'ufsatm' in compset_name:
+                config['component']='nems'
+            else:
+                config['component']='cpl'
+            comp_root_dir_cpl = files.get_value("COMP_ROOT_DIR_CPL", attribute=config)
+
         if self._cime_model == 'cesm':
             comp_root_dir_cpl = files.get_value("COMP_ROOT_DIR_CPL")
+        if self._cime_model in ('cesm','ufs'):
             self.set_lookup_value("COMP_ROOT_DIR_CPL",comp_root_dir_cpl)
 
         # Loop through all of the files listed in COMPSETS_SPEC_FILE and find the file
@@ -485,6 +494,7 @@ class Case(object):
 
         # Fill in compset name
         self._compsetname, self._components = self.valid_compset(self._compsetname, compset_alias, files)
+
         # if this is a valiid compset longname there will be at least 7 components.
         components = self.get_compset_components()
         expect(len(components) > 6, "No compset alias {} found and this does not appear to be a compset longname.".format(compset_name))
@@ -614,6 +624,7 @@ class Case(object):
     # is handled consistenly, this should not affect functionality.
     # Note: interstitial digits are included (e.g., in FV3GFS).
     __mod_match_re__ = re.compile(r"([^%]*[^0-9%]+)")
+
     def valid_compset(self, compset_name, compset_alias, files):
         """Add stub models missing in <compset_name>, return full compset name.
         <files> is used to collect set of all supported components.
@@ -764,16 +775,18 @@ class Case(object):
             comp_name  = self._components[i-1]
             root_dir_node_name = 'COMP_ROOT_DIR_' + comp_class
             node_name = 'CONFIG_' + comp_class + '_FILE'
-            comp_root_dir = files.get_value(root_dir_node_name, {"component":comp_name}, resolved=False)
+            compatt = {"component":comp_name}
+            comp_root_dir = files.get_value(root_dir_node_name, compatt, resolved=False)
             if comp_root_dir is not None:
                 self.set_value(root_dir_node_name, comp_root_dir)
 
-            compatt = {"component":comp_name}
             # Add the group and elements for the config_files.xml
+
             comp_config_file = files.get_value(node_name, compatt, resolved=False)
             expect(comp_config_file is not None,"No component {} found for class {}".format(comp_name, comp_class))
             self.set_value(node_name, comp_config_file)
             comp_config_file =  files.get_value(node_name, compatt)
+
             expect(comp_config_file is not None and os.path.isfile(comp_config_file),
                    "Config file {} for component {} not found.".format(comp_config_file, comp_name))
             compobj = Component(comp_config_file, comp_class)
@@ -926,6 +939,7 @@ class Case(object):
         #--------------------------------------------
         # component config data
         #--------------------------------------------
+
         self._get_component_config_data(files, driver=driver)
 
         # This needs to be called after self.set_comp_classes, which is called
@@ -1088,14 +1102,17 @@ class Case(object):
         env_batch = self.get_env("batch")
 
         batch_system_type = machobj.get_value("BATCH_SYSTEM")
+
         logger.info("Batch_system_type is {}".format(batch_system_type))
         batch = Batch(batch_system=batch_system_type, machine=machine_name, files=files,
                       extra_machines_dir=extra_machines_dir)
+
         workflow = Workflow(files=files)
-        bjobs = workflow.get_workflow_jobs(machine=machine_name, workflowid=workflowid)
-        env_workflow = self.get_env("workflow")
 
         env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
+
+        bjobs = workflow.get_workflow_jobs(machine=machine_name, workflowid=workflowid)
+        env_workflow = self.get_env("workflow")
         env_workflow.create_job_groups(bjobs, test)
 
         if walltime:
@@ -1602,6 +1619,16 @@ directory, NOT in this subdirectory."""
             self.set_lookup_value("CASE", os.path.basename(casename))
             self.set_lookup_value("CASEROOT", self._caseroot)
             self.set_lookup_value("SRCROOT", srcroot)
+            # if the top level user_mods_dir contains a config_grids.xml file and
+            # gridfile was not set on the command line, use it.
+            if user_mods_dir:
+                um_config_grids = os.path.join(user_mods_dir,"config_grids.xml")
+                if os.path.exists(um_config_grids):
+                    if gridfile:
+                        logger.warning("A config_grids file was found in {} but also provided on the command line {}, command line takes precident".format(um_config_grids, gridfile))
+                    else:
+                        gridfile = um_config_grids
+
 
             # Configure the Case
             self.configure(compset_name, grid_name, machine_name=machine_name,

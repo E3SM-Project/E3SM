@@ -28,6 +28,7 @@ class Files(EntryID):
         # variables COMP_ROOT_DIR_{} are mutable, all other variables are read only
         self.COMP_ROOT_DIR = {}
         self._comp_interface = comp_interface
+        self._cpl_comp = {}
         # .config_file.xml at the top level may overwrite COMP_ROOT_DIR_ nodes in config_files
 
         if os.path.isfile(config_files_override):
@@ -35,6 +36,13 @@ class Files(EntryID):
             self.overwrite_existing_entries()
 
     def get_value(self, vid, attribute=None, resolved=True, subgroup=None):
+        if vid == "COMP_ROOT_DIR_CPL":
+            if self._cpl_comp:
+                attribute = self._cpl_comp
+            elif attribute:
+                self._cpl_comp = attribute
+            else:
+                self._cpl_comp['component'] = 'cpl'
         if "COMP_ROOT_DIR" in vid:
             if vid in self.COMP_ROOT_DIR:
                 if attribute is not None:
@@ -43,14 +51,27 @@ class Files(EntryID):
                 else:
                     return self.COMP_ROOT_DIR[vid]
 
-        value = super(Files, self).get_value(vid, attribute=attribute, resolved=False, subgroup=subgroup)
+        newatt = {"comp_interface":self._comp_interface}
+        if attribute:
+            newatt.update(attribute)
+        value = super(Files, self).get_value(vid, attribute=newatt, resolved=False, subgroup=subgroup)
         if value is None and attribute is not None:
+            value = super(Files, self).get_value(vid, attribute=attribute, resolved=False, subgroup=subgroup)
+        if value is None:
             value = super(Files, self).get_value(vid, attribute=None, resolved=False, subgroup=subgroup)
 
         if "COMP_ROOT_DIR" not in vid and value is not None and "COMP_ROOT_DIR" in value:
             m = re.search("(COMP_ROOT_DIR_[^/]+)/", value)
             comp_root_dir_var_name = m.group(1)
-            comp_root_dir = self.get_value(comp_root_dir_var_name, attribute=attribute, resolved=False, subgroup=subgroup)
+            newatt = {"comp_interface":self._comp_interface}
+            if attribute:
+                newatt.update(attribute)
+
+            crd_node = self.scan_optional_child(comp_root_dir_var_name, attributes=newatt)
+            if crd_node:
+                comp_root_dir = self.get_value(comp_root_dir_var_name, attribute=newatt, resolved=False, subgroup=subgroup)
+            else:
+                comp_root_dir = self.get_value(comp_root_dir_var_name, attribute=attribute, resolved=False, subgroup=subgroup)
             self.set_value(comp_root_dir_var_name, comp_root_dir,subgroup=attribute)
             if resolved:
                 value = value.replace("$"+comp_root_dir_var_name, comp_root_dir)

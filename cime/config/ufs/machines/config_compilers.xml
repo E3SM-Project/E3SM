@@ -581,4 +581,10 @@ using a fortran linker.
   <TRILINOS_PATH>$ENV{TRILINOS_PATH}</TRILINOS_PATH>
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
 </compiler>
+
+<compiler>
+  <FFLAGS>
+    <append MODEL="hycom">$(FC_AUTO_R8)</append>
+  </FFLAGS>
+</compiler>
 </config_compilers>

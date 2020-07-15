@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+# This tool expects two arguments, the caseroot and the new cimeroot
+# It is intended to fix links and update your case source if the caseroot or src is moved.
+#
+import os, sys
+caseroot = sys.argv[1]
+cimeroot = sys.argv[2]
+
+_LIBDIR = os.path.join(cimeroot, "scripts", "Tools")
+sys.path.append(_LIBDIR)
+_LIBDIR = os.path.join(cimeroot, "scripts", "lib")
+sys.path.append(_LIBDIR)
+try:
+    from standard_script_setup import *
+    from CIME.case import Case
+    from CIME.utils import symlink_force
+except:
+    print("ERROR: {} does not appear to be a valid CIMEROOT directory\n".format(cimeroot))
+
+# simple way to verify we are in a caseroot
+if not os.path.exists(os.path.join(caseroot,"env_case.xml")):
+    print("ERROR: {} does not appear to be a valid CASEROOT directory\n".format(caseroot))
+
+for dirpath, dirnames, filenames in os.walk(caseroot):
+    os.chdir(dirpath)
+    for _file in filenames:
+        if os.path.islink(_file):
+            oldpath = os.path.realpath(os.readlink(_file))
+            link_name = _file
+            cr = os.sep+'cime'+os.sep
+            if cr in oldpath:
+                index = oldpath.find(cr)+len(cr)-1
+                newpath = cimeroot + oldpath[index:]
+            if os.path.exists(newpath):
+                print("Updating link for {}".format(_file))
+                symlink_force(newpath, _file)
+os.chdir(caseroot)
+
+with Case(caseroot, read_only=False) as case:
+    print("Updating case xml")
+    case.set_value('CIMEROOT', cimeroot)
+    case.set_value('SRCROOT', os.path.dirname(cimeroot))
+    case.set_value('CASEROOT', caseroot)
+    model = case.get_value('MODEL')
+    case.set_value("MACHDIR", os.path.join(cimeroot,"config",model,"machines"))
+
+os.system('cp env_case.xml LockedFiles/')

@@ -203,6 +203,11 @@ TESTRUNDIFF       Produces a canned hist file. Env var TESTRUNDIFF_ALTERNATE can
                   be used to cause a DIFF. Used to check that baseline diffs are
                   detected and reported correctly.
 
+TESTRUNDIFF       Produces a canned hist file. Env var TESTRUNDIFF_ALTERNATE can
+\RESUBMIT         be used to cause a DIFF. Used to check that baseline diffs are
+                  detected and reported correctly. Sets Resubmit equal to one.
+
+
 TESTTESTDIFF      Simulates internal test diff (non baseline). Used to check that
                   internal comparison failures are detected and reported correctly.
 
@@ -472,6 +477,17 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <STOP_N>11</STOP_N>
     <CHECK_TIMING>FALSE</CHECK_TIMING>
     <DOUT_S>FALSE</DOUT_S>
+  </test>
+
+  <test NAME="TESTRUNDIFFRESUBMIT" INFRASTRUCTURE_TEST="TRUE">
+    <DESC>For testing infra only. Produces a canned hist file with a resubmit.</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <FORCE_BUILD_SMP>TRUE</FORCE_BUILD_SMP>
+    <STOP_N>11</STOP_N>
+    <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <DOUT_S>FALSE</DOUT_S>
+    <RESUBMIT>1</RESUBMIT>
   </test>
 
   <test NAME="TESTTESTDIFF" INFRASTRUCTURE_TEST="TRUE">

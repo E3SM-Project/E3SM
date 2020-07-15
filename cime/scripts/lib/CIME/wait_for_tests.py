@@ -423,7 +423,6 @@ def wait_for_tests_impl(test_paths, no_wait=False, check_throughput=False, check
 
     expect(set(test_paths) == set(completed_test_paths),
            "Missing results for test paths: {}".format(set(test_paths) - set(completed_test_paths)))
-
     return test_results
 
 ###############################################################################
