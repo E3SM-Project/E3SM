@@ -55,7 +55,7 @@ TEST_CASE("shoc_varorcovar", "shoc") {
   
   // First test we set invar2 equal to invar 1 to test
   //  the variance calculation.
-  invar2 = invar1;  
+  invar2[:] = invar1[:];  
 
   // Initialzie data structure for bridgeing to F90
   SHOCVarorcovarData SDS(shcol, nlev, nlevi);
@@ -100,7 +100,7 @@ TEST_CASE("shoc_varorcovar", "shoc") {
   }
   
   // Call the fortran implementation for variance
-  call calc_shoc_varorcovar(nlev, SDS);
+  calc_shoc_varorcovar(nlev, SDS);
   
   // Check the results
   for(Int s = 0; s < SDS.shcol; ++s) {   
@@ -109,19 +109,19 @@ TEST_CASE("shoc_varorcovar", "shoc") {
 
       // validate that the boundary points 
       //   have NOT been modified      
-      if (n = 0 || n = nlevi){
-        REQUIRE(SDS.varorcovar[offset] = 100.);
+      if (n == 0 || n == nlevi){
+        REQUIRE(SDS.varorcovar[offset] == 100.0);
       }
       else{
       
       // Validate that all values are greater to 
       //   or equal to zero 
       
-        REQUIRE(SDS.varorcovar[offset] >= 0);
+        REQUIRE(SDS.varorcovar[offset] >= 0.0);
       
         // well mixed layer test
-        if ((invar1[n-1] - invar1[n]) = 0){
-          REQUIRE(SDS.varorcovar[offset] = 0);
+        if ((invar1[n-1] - invar1[n]) == 0.0){
+          REQUIRE(SDS.varorcovar[offset] == 0.0);
         }
       }
     } 
@@ -129,10 +129,10 @@ TEST_CASE("shoc_varorcovar", "shoc") {
 
   // Now we check the covariance calculation
   // Change input values of invar2 to be total water [g/kg]
-  invar2 = {20.0, 15.0, 10.0, 5.0}
+  Real invar2_2[nlev] = {20.0, 15.0, 10.0, 5.0};
   
   // convert to [kg/kg]
-  invar2 = invar2/1000.
+  invar2_2[:] = invar2_2[:]/1000.0;
 
   // Update invar2 to be total water
   for(Int s = 0; s < SDS.shcol; ++s) {
@@ -140,12 +140,12 @@ TEST_CASE("shoc_varorcovar", "shoc") {
     for(Int n = 0; n < SDS.nlev; ++n) {
       const auto offset = n + s * SDS.nlev;
        
-      SDS.invar2[offset] = invar2[n];
+      SDS.invar2[offset] = invar2_2[n];
     }   
   }
   
   // Call the fortran implementation for covariance
-  call calc_shoc_varorcovar(nlev, SDS);
+  calc_shoc_varorcovar(nlev, SDS);
   
   // Check the results
   for(Int s = 0; s < SDS.shcol; ++s) {   
@@ -154,22 +154,22 @@ TEST_CASE("shoc_varorcovar", "shoc") {
 
       // validate that the boundary points 
       //   have NOT been modified      
-      if (n = 0 || n = nlevi){
-        REQUIRE(SDS.varorcovar[offset] = 100.);
+      if (n == 0 || n == nlevi){
+        REQUIRE(SDS.varorcovar[offset] == 100.);
       }
       else{  
       
         // well mixed layer test
-        if ((invar1[n-1] - invar1[n]) = 0 || \
-	    (invar2[n-1] - invar2[n]) = 0){
-          REQUIRE(SDS.varorcovar[offset] = 0);
+        if ((invar1[n-1] - invar1[n]) == 0.0 || \
+	    (invar2[n-1] - invar2[n]) == 0.0){
+          REQUIRE(SDS.varorcovar[offset] == 0.0);
         }
 	
 	// validate values are negative if potential
 	//  temperature decreases with height
-        if ((invar1[n-1] - invar1[n]) < 0 && \
-	    (invar2[n-1] - invar2[n]) > 0){
-          REQUIRE(SDS.varorcovar[offset] < 0);
+        if ((invar1[n-1] - invar1[n]) < 0.0 && \
+	    (invar2[n-1] - invar2[n]) > 0.0){
+          REQUIRE(SDS.varorcovar[offset] < 0.0);
         }	
 	
       }
@@ -182,7 +182,7 @@ TEST_CASE("shoc_varorcovar", "shoc") {
   //  at a constant rate per GRID box.  Assign dz that INCREASES
   //  with height and check that varorcovar DECREASES with height
   
-  invar1 = {320.0, 315.0, 310.0, 305.0};
+  Real invar1_2[nlev] = {320.0, 315.0, 310.0, 305.0};
   
   // Update invar1 and invar2 to be identical
   for(Int s = 0; s < SDS.shcol; ++s) {
@@ -190,13 +190,13 @@ TEST_CASE("shoc_varorcovar", "shoc") {
     for(Int n = 0; n < SDS.nlev; ++n) {
       const auto offset = n + s * SDS.nlev;
        
-      SDS.invar1[offset] = invar1[n];
-      SDS.invar2[offset] = invar1[n];
+      SDS.invar1[offset] = invar1_2[n];
+      SDS.invar2[offset] = invar1_2[n];
     }   
   }  
 
   // Call the fortran implementation for variance
-  call calc_shoc_varorcovar(nlev, SDS);
+  calc_shoc_varorcovar(nlev, SDS);
   
   // Check the results
   for(Int s = 0; s < SDS.shcol; ++s) {   
@@ -206,7 +206,7 @@ TEST_CASE("shoc_varorcovar", "shoc") {
       // Validate that values of varorcovar
       //  are decreasing with height
       REQUIRE(SDS.varorcovar[offset]-\
-              SDS.varorcovar[offset+1] < 0)        
+              SDS.varorcovar[offset+1] < 0.0);        
     
     }
   }

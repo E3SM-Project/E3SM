@@ -89,7 +89,7 @@ TEST_CASE("shoc_vertflux", "shoc") {
   }
   
   // Call the fortran implementation
-  call calc_shoc_vertflux(nlev, SDS);
+  calc_shoc_vertflux(nlev, SDS);
   
   // Check the results
   for(Int s = 0; s < SDS.shcol; ++s) {   
@@ -98,8 +98,8 @@ TEST_CASE("shoc_vertflux", "shoc") {
 
       // validate that the boundary points 
       //   have NOT been modified      
-      if (n = 0 || n = nlevi){
-        REQUIRE(SDS.vertflux[offset] = 100.);
+      if (n == 0 || n == nlevi){
+        REQUIRE(SDS.vertflux[offset] == 100.);
       }
       else{
       
@@ -107,16 +107,16 @@ TEST_CASE("shoc_vertflux", "shoc") {
       //   various possible layers
       
         // conditionally stable layer
-        if ((invar[n-1] - invar[n]) > 0){
-          REQUIRE(SDS.vertflux[offset] < 0);
+        if ((invar[n-1] - invar[n]) > 0.0){
+          REQUIRE(SDS.vertflux[offset] < 0.0);
         } 
         // well mixed layer
-        if ((invar[n-1] - invar[n]) = 0){
-          REQUIRE(SDS.vertflux[offset] = 0);
+        if ((invar[n-1] - invar[n]) == 0.0){
+          REQUIRE(SDS.vertflux[offset] == 0.0);
         }
         // unstable layer
-        if ((invar[n-1] - invar[n]) < 0){
-          REQUIRE(SDS.vertflux[offset] > 0);
+        if ((invar[n-1] - invar[n]) < 0.0){
+          REQUIRE(SDS.vertflux[offset] > 0.0);
         }
       }
     } 
