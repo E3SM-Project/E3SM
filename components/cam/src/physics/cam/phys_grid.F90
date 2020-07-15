@@ -174,6 +174,7 @@ module phys_grid
      integer, allocatable :: lat(:)    ! global latitude indices
      integer  :: owner                 ! id of process where chunk assigned
      integer  :: lcid                  ! local chunk index
+     integer  :: dcols                 ! number of columns in common with co-located dynamics blocks
      real(r8) :: estcost               ! estimated computational cost (normalized)
    end type chunk
 
@@ -813,6 +814,7 @@ contains
              endif
           enddo
           chunks(cid)%ncols = ncols
+          chunks(cid)%dcols = ncols
        enddo
 
        ! Clean-up
@@ -2441,6 +2443,9 @@ logical function phys_grid_initialized ()
    integer  :: cid                    ! global chunk id
    integer  :: owner                  ! chunk owner
    integer  :: ncols                  ! number of columns in chunk
+   integer  :: dcols                  ! number of columns in chunk in 
+                                      !  common with co-located dynamics
+                                      !  blocks
    integer  :: ierr                   ! error return
 
    real(r8) :: local_sums(4)          ! working vector for local sums
@@ -2581,11 +2586,12 @@ logical function phys_grid_initialized ()
             "PROC", iam, nlthreads, npchunks(iam), norm_proc_estcost, norm_proc_cost, phys_proc_cost, pspeedup
 	    
       write(unitn,'(a)') &
-            "CHNK  owner   lcid    cid  pcols  ncols  estcost (norm)  cost (norm)  cost (seconds)"
+            "CHNK  owner   lcid    cid  pcols  ncols  dcols  estcost (norm)  cost (norm)  cost (seconds)"
       do lcid = begchunk, endchunk
          cid          = lchunks(lcid)%cid
          owner        = chunks(cid)%owner
          ncols        = lchunks(lcid)%ncols
+         dcols        = chunks(cid)%dcols
          chnk_estcost = chunks(cid)%estcost
          chnk_cost    = lchunks(lcid)%cost
          ! Calculate normalized estimated chunk cost
@@ -2602,8 +2608,9 @@ logical function phys_grid_initialized ()
          else
             norm_chnk_cost = chnk_cost/avg_chnk_cost
          endif
-         write(unitn,'(a4,1x,i6,1x,i6,1x,i6,1x,i6,1x,i6,6x,f10.3,3x,f10.3,2x,e14.3)') &
-               "CHNK", owner, lcid, cid, pcols, ncols, norm_chnk_estcost, norm_chnk_cost, chnk_cost
+         write(unitn,'(a4,1x,i6,1x,i6,1x,i6,1x,i6,1x,i6,1x,i6,6x,f10.3,3x,f10.3,2x,e14.3)') &
+              "CHNK", owner, lcid, cid, pcols, ncols, dcols, &
+              norm_chnk_estcost, norm_chnk_cost, chnk_cost
       enddo
 
       close(unitn)
@@ -5944,6 +5951,8 @@ logical function phys_grid_initialized ()
    real(r8), dimension(:), allocatable :: chnk_cost
                                          ! estimated cost for chunks assigned to 
                                          !  a virtual SMP
+   real(r8):: min_chnk_cost              ! minimum estimated cost among chunks
+                                         !  assigned to a given virtual SMP
 
    ! min heap data structures used to maintain processes sorted by assigned 
    ! computational cost.
@@ -6066,6 +6075,9 @@ logical function phys_grid_initialized ()
       call IndexSet(nvsmpchunks(smp),chnk_dex)
       call IndexSort(nvsmpchunks(smp),chnk_dex,chnk_cost,descend=.true.)
 
+      ! Determine minimum estimated chunk cost
+      min_chnk_cost = chnk_cost(chnk_dex(nvsmpchunks(smp)))
+
       ! Initialize min heap of processes in virtual smp ordered by sum of
       ! estimated costs of chunks assigned to thread 0 of each process
       proc_heap(:) = -1
@@ -6103,13 +6115,19 @@ logical function phys_grid_initialized ()
 
          ! Identify process with most chunk columns in dynamics decomposition
          ! that also has the minimum cost (from root of the min heap) from 
-         ! among those that do not already have their assigned chunk quota 
-         ntmp1 = -1
+         ! among those that do not already have their assigned chunk quota.
+         ! If estimated cost for current chunk is the same as the minimum
+         ! (which implies that the same will be true for all subsequent chunks),
+         ! then there is nothing to be gained by picking a process with the
+         ! current minimum estimated cost - any will do as it will all work
+         ! out correctly in the end.
+         ntmp1 = 0
          ntmp2 = -1
          do i=1,ndyn_task
             p = dyn_task(i)
             if ((column_count(p) > ntmp1) .and. &
-	        (proc_cost(inv_proc_heap(p)) == proc_cost(1))) then
+                ((proc_cost(inv_proc_heap(p)) == proc_cost(1)) .or. &
+                 (chunks(cid)%estcost == min_chnk_cost))) then
                ntmp1 = column_count(p)
                ntmp2 = p
             endif
@@ -6117,7 +6135,7 @@ logical function phys_grid_initialized ()
 
          ! If no processes found that qualify, use the process at the top of
          ! the proc_heap (as this has the minimum proc_cost)
-         if (ntmp1 == -1) then
+         if (ntmp1 == 0) then
             ntmp2 = proc_heap(1)
          endif
 
@@ -6125,20 +6143,32 @@ logical function phys_grid_initialized ()
          ! estimated cost, and check whether process now has its quota of
          ! chunks. Estimated cost per process is based on sum of estimated
          ! costs assigned to thread 0 (also an estimate, since assumes a
-         ! wrap map of chunks to threads). Adjust proc_heap to reflect this update,
-         ! if there is one, or if process now has its quota of chunks.
-         proc_heap_update = .false.
-         proc_heap_remove = .false.
-         chunks(cid)%owner   = ntmp2
+         ! wrap map of chunks to threads). Adjust proc_heap to reflect this
+         ! update, if there is one, or if process now has its quota of chunks.
+         ! However, adjusting proc_heap should be delayed until just before
+         ! the estimated cost for the process could be updated again.
+         proc_heap_update  = .false.
+         proc_heap_remove  = .false.
+         chunks(cid)%owner = ntmp2
+         chunks(cid)%dcols = ntmp1
          cur_npchunks(ntmp2) = cur_npchunks(ntmp2) + 1
          if (mod(cur_npchunks(ntmp2)-1,npthreads(ntmp2)) == 0) then
             ! Note: first, npthreads(ntmp2)+1, 2*npthreads(ntmp2)+1, etc.
-            ! assigned chunk goes to thread 0, so subtract 1 from
+            ! assigned chunks go to thread 0, so subtract 1 from
             ! cur_npchunks(ntmp2) to get correct mod() comparison; cannot
             ! check that mod() == 1 since may only have 1 thread, in which
             ! case mod() is always 0.
             proc_cost(inv_proc_heap(ntmp2)) = proc_cost(inv_proc_heap(ntmp2)) &
                                               + chunks(cid)%estcost
+         endif
+         If (mod(cur_npchunks(ntmp2),npthreads(ntmp2)) == 0) then
+            ! While estimated cost is updated when thread 0 is assigned
+            ! a chunk, only adjust the heap when the last thread is assigned
+            ! a chunk. Since chunks are assigned in order of decreasing cost,
+            ! the process cost does not go up until the next chunk is assigned
+            ! to thread 0, so can continue to assign to this process (enabling
+            ! lower communication overhead) until all threads are assigned
+            ! another round of chunks.
             proc_heap_update = .true.
          endif
          if (cur_npchunks(ntmp2) == npchunks(ntmp2)) then
