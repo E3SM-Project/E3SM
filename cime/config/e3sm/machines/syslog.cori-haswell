@@ -20,7 +20,7 @@ while ($outlth < $outtarget)
   set outlth = `wc \-l $run/e3sm.log.$lid | sed 's/ *\([0-9]*\) *.*/\1/' `
 end
 
-set TimeLimit   = `sqs -f $jid | grep -F TimeLimit | sed 's/^ *RunTime=.*TimeLimit=\([0-9]*:[0-9]*:[0-9]*\) .*/\1/' `
+set TimeLimit   = `scontrol show jobid $jid | grep -F TimeLimit | sed 's/^ *RunTime=.*TimeLimit=\([0-9]*:[0-9]*:[0-9]*\) .*/\1/' `
 set limit_hours = `echo $TimeLimit | sed 's/^0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\1/' `
 set limit_mins  = `echo $TimeLimit | sed 's/^0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\2/' `
 set limit_secs  = `echo $TimeLimit | sed 's/^0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\3/' `
@@ -29,7 +29,7 @@ if ("X$limit_mins" == "X")  set limit_mins  = 0
 if ("X$limit_secs" == "X")  set limit_secs  = 0
 @ limit = 3600 * $limit_hours + 60 * $limit_mins + $limit_secs
 
-set RunTime    = `sqs -f $jid | grep -F RunTime | sed 's/^ *RunTime=\([0-9]*:[0-9]*:[0-9]*\) .*/\1/' `
+set RunTime    = `scontrol show jobid $jid | grep -F RunTime | sed 's/^ *RunTime=\([0-9]*:[0-9]*:[0-9]*\) .*/\1/' `
 set runt_hours = `echo $RunTime | sed 's/^0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\1/' `
 set runt_mins  = `echo $RunTime | sed 's/^0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\2/' `
 set runt_secs  = `echo $RunTime | sed 's/^0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\3/' `
@@ -68,7 +68,7 @@ while ($remaining > 0)
   # squeue -t R -o  "%.10i %R" > $dir/squeueR.$lid.$remaining
   chmod a+r $dir/*
   sleep $sample_interval
-  set RunTime    = `sqs -f $jid | grep -F RunTime | sed 's/^ *RunTime=\([0-9]*:[0-9]*:[0-9]*\) .*/\1/' `
+  set RunTime    = `scontrol show jobid $jid | grep -F RunTime | sed 's/^ *RunTime=\([0-9]*:[0-9]*:[0-9]*\) .*/\1/' `
   set runt_hours = `echo $RunTime | sed 's/^0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\1/' `
   set runt_mins  = `echo $RunTime | sed 's/^0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\2/' `
   set runt_secs  = `echo $RunTime | sed 's/^0*\([0-9]*\):0*\([0-9]*\):0*\([0-9]*\)/\3/' `
