@@ -55,9 +55,9 @@ module ocn_tracer_hmix_Redi
    !--------------------------------------------------------------------
 
    real(kind=RKIND) :: term1TaperFactor
+   real(kind=RKIND), dimension(:), allocatable :: rediKappaCell
    real(kind=RKIND), dimension(:, :, :), allocatable :: redi_term2_edge, redi_term3_topOfCell
    real(kind=RKIND), dimension(:, :, :), allocatable :: redi_term1, redi_term2, redi_term3
-   logical :: rediOn
 
 !***********************************************************************
 
@@ -76,7 +76,7 @@ contains
 
    subroutine ocn_tracer_hmix_Redi_tend(meshPool, layerThickness, layerThicknessEdge, zMid, tracers, &
                                         RediKappa, dt, isActiveTracer, slopeTriadUp, slopeTriadDown, &
-                                        kappaRediSfcTaper, kappaRediCell, rediLimiterCount, tend, err)!{{{
+                                        RediKappaSfcTaper, RediKappaScaling, rediLimiterCount, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -92,8 +92,8 @@ contains
       real(kind=RKIND), dimension(:, :), intent(in) :: &
          layerThicknessEdge, &!< Input: thickness at edge
          zMid, &!< Input: Z coordinate at the center of a cell
-         kappaRediSfcTaper, &!< Input: vertical structure of GM/Redi limiter
-         kappaRediCell, &
+         RediKappaSfcTaper, &!< Input: vertical structure of GM/Redi limiter
+         RediKappaScaling, &
          layerThickness
 
       real(kind=RKIND), dimension(:, :, :), intent(in) :: &
@@ -141,7 +141,7 @@ contains
       real(kind=RKIND) :: flux, flux_term1, flux_term2, flux_term3, dTracerDx, coef
       real(kind=RKIND) :: r_tmp, tracer_turb_flux, kappaRediEdgeVal
       real(kind=RKIND), dimension(:), pointer :: areaCell, dvEdge, dcEdge
-      real(kind=RKIND), dimension(:), allocatable :: minimumVal, rediKappaCell
+      real(kind=RKIND), dimension(:), allocatable :: minimumVal
       real(kind=RKIND), dimension(:, :), allocatable :: fluxRediZTop
       err = 0
 
@@ -168,7 +168,6 @@ contains
       nEdges = nEdgesArray(size(nEdgesArray))
 
       allocate (minimumVal(nTracers))
-      allocate (rediKappaCell(nCells))
       allocate (fluxRediZTop(nTracers, nVertLevels + 1))
       !$omp master
       allocate (rediKappaCell(nCells))
@@ -181,6 +180,7 @@ contains
       !$omp barrier
 
       nCells = nCellsArray(2)
+      !$omp do schedule(runtime) private(i, iEdge)
       do iCell = 1,nCells
         rediKappaCell(iCell) = 0.0_RKIND
         do i = 1, nEdgesOnCell(iCell)
@@ -189,6 +189,7 @@ contains
         enddo
         rediKappaCell(iCell) = rediKappaCell(iCell) / areaCell(iCell)
       enddo
+      !$omp end do
 
       nCells = nCellsArray(1)
       nCellsP1 = nCellsArray(size(nCellsArray)) + 1
@@ -220,10 +221,10 @@ contains
             coef = dvEdge(iEdge)
 
             k = 1
-            kappaRediEdgeVal = 0.25_RKIND*(kappaRediCell(k, cell1) + kappaRediCell(k, cell2) + &
-                                           kappaRediCell(k + 1, cell1) + kappaRediCell(k + 1, cell2))* &
-                               0.25_RKIND*(kappaRediSfcTaper(k, cell1) + kappaRediSfcTaper(k, cell2) + &
-                                           kappaRediSfcTaper(k + 1, cell1) + kappaRediSfcTaper(k + 1, cell2))
+            kappaRediEdgeVal = 0.25_RKIND*(RediKappaScaling(k, cell1) + RediKappaScaling(k, cell2) + &
+                                           RediKappaScaling(k + 1, cell1) + RediKappaScaling(k + 1, cell2))* &
+                               0.25_RKIND*(RediKappaSfcTaper(k, cell1) + RediKappaSfcTaper(k, cell2) + &
+                                           RediKappaSfcTaper(k + 1, cell1) + RediKappaSfcTaper(k + 1, cell2))
 
             do iTr = 1, nTracers
                tracer_turb_flux = tracers(iTr, k, cell2) - tracers(iTr, k, cell1)
@@ -244,10 +245,10 @@ contains
 
             do k = 2, maxLevelEdgeTop(iEdge) - 1
 
-               kappaRediEdgeVal = 0.25_RKIND*(kappaRediCell(k, cell1) + kappaRediCell(k, cell2) + &
-                                              kappaRediCell(k + 1, cell1) + kappaRediCell(k + 1, cell2))*0.25_RKIND* &
-                                  (kappaRediSfcTaper(k, cell1) + kappaRediSfcTaper(k, cell2) + &
-                                   kappaRediSfcTaper(k + 1, cell1) + kappaRediSfcTaper(k + 1, cell2))
+               kappaRediEdgeVal = 0.25_RKIND*(RediKappaScaling(k, cell1) + RediKappaScaling(k, cell2) + &
+                                              RediKappaScaling(k + 1, cell1) + RediKappaScaling(k + 1, cell2))*0.25_RKIND* &
+                                  (RediKappaSfcTaper(k, cell1) + RediKappaSfcTaper(k, cell2) + &
+                                   RediKappaSfcTaper(k + 1, cell1) + RediKappaSfcTaper(k + 1, cell2))
 
                do iTr = 1, nTracers
                   ! \kappa_2 \nabla \phi on edge
@@ -280,10 +281,10 @@ contains
             end do
 
             k = maxLevelEdgeTop(iEdge)
-            kappaRediEdgeVal = 0.25_RKIND*(kappaRediCell(k, cell1) + kappaRediCell(k, cell2) + &
-                                           kappaRediCell(k + 1, cell1) + kappaRediCell(k + 1, cell2))* &
-                               0.25_RKIND*(kappaRediSfcTaper(k, cell1) + kappaRediSfcTaper(k, cell2) + &
-                                           kappaRediSfcTaper(k + 1, cell1) + kappaRediSfcTaper(k + 1, cell2))
+            kappaRediEdgeVal = 0.25_RKIND*(RediKappaScaling(k, cell1) + RediKappaScaling(k, cell2) + &
+                                           RediKappaScaling(k + 1, cell1) + RediKappaScaling(k + 1, cell2))* &
+                               0.25_RKIND*(RediKappaSfcTaper(k, cell1) + RediKappaSfcTaper(k, cell2) + &
+                                           RediKappaSfcTaper(k + 1, cell1) + RediKappaSfcTaper(k + 1, cell2))
 
             do iTr = 1, nTracers
                tracer_turb_flux = tracers(iTr, k, cell2) - tracers(iTr, k, cell1)
@@ -333,9 +334,9 @@ contains
                ! Add tendency for Term 3: d/dz ( h S grad phi) = ( S grad phi) fluxes
                ! 2.0 in next line is because a dot product on a C-grid
                ! requires a factor of 1/2 to average to the cell center.
-               flux_term3 = RediKappa(iCell)*2.0_RKIND* &
-                            (kappaRediSfcTaper(k, iCell)*kappaRediCell(k, iCell)*fluxRediZTop(iTr, k)  &
-                            * invAreaCell - kappaRediSfcTaper(k + 1, iCell)*kappaRediCell(k + 1, iCell) &
+               flux_term3 = rediKappaCell(iCell)*2.0_RKIND* &
+                            (RediKappaSfcTaper(k, iCell)*RediKappaScaling(k, iCell)*fluxRediZTop(iTr, k)  &
+                            * invAreaCell - RediKappaSfcTaper(k + 1, iCell)*RediKappaScaling(k + 1, iCell) &
                             *fluxRediZTop(iTr, k + 1) * invAreaCell)
 
                redi_term3(iTr, k, iCell) = redi_term3(iTr, k, iCell) + flux_term3
@@ -392,9 +393,9 @@ contains
             do iTr = 1, ntracers
                tend(iTr, k, iCell) = tend(iTr, k, iCell) + redi_term1(iTr, k, iCell)
                tend(iTr, k, iCell) = tend(iTr, k, iCell) + rediKappaCell(iCell)*2.0_RKIND* &
-                                     (kappaRediSfcTaper(k, iCell)*kappaRediCell(k, iCell)* &
-                                      redi_term3_topOfCell(iTr, k, iCell) - kappaRediSfcTaper(k + 1, iCell) &
-                                      *kappaRediCell(k + 1, iCell)*redi_term3_topOfCell(iTr, k + 1, iCell))
+                                     (RediKappaSfcTaper(k, iCell)*RediKappaScaling(k, iCell)* &
+                                      redi_term3_topOfCell(iTr, k, iCell) - RediKappaSfcTaper(k + 1, iCell) &
+                                      *RediKappaScaling(k + 1, iCell)*redi_term3_topOfCell(iTr, k + 1, iCell))
             end do
          end do
 
@@ -412,8 +413,8 @@ contains
 
       deallocate (fluxRediZTop)
       deallocate (minimumVal)
-      deallocate (rediKappaCell)
       !$omp master
+      deallocate (rediKappaCell)
       deallocate (redi_term1)
       deallocate (redi_term2)
       deallocate (redi_term3)
@@ -485,7 +486,7 @@ contains
                RediKappa(iEdge) = config_Redi_kappa
             end do
             !$omp end do
-         else if (config_Redi_closure == 'data') then
+          else if (config_Redi_closure == 'data') then
             ! read RediKappa in from input
             call mpas_log_write("config_Redi_closure = 'data'. "// &
                                 "Make sure that the variable RediKappa is read in from an input file.")

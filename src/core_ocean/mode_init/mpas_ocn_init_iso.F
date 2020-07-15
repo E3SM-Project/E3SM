@@ -27,6 +27,7 @@ module ocn_init_iso
    use mpas_constants
 
    use ocn_constants
+   use ocn_config
    use ocn_init_vertical_grids
    use ocn_init_cell_markers
 
@@ -98,95 +99,6 @@ contains
 
       real (kind=RKIND), dimension(:), pointer :: interfaceLocations
 
-
-      ! Define config variable pointers
-      character (len=StrKIND), pointer :: config_init_configuration, config_vertical_grid
-
-      integer, pointer :: config_iso_vert_levels
-      real (kind=RKIND), pointer :: config_iso_main_channel_depth
-      real (kind=RKIND), pointer :: config_iso_north_wall_lat
-      real (kind=RKIND), pointer :: config_iso_south_wall_lat
-      logical, pointer :: config_iso_ridge_flag
-      real (kind=RKIND), pointer :: config_iso_ridge_center_lon
-      real (kind=RKIND), pointer :: config_iso_ridge_height
-      real (kind=RKIND), pointer :: config_iso_ridge_width
-      logical, pointer :: config_iso_plateau_flag
-      real (kind=RKIND), pointer :: config_iso_plateau_center_lon
-      real (kind=RKIND), pointer :: config_iso_plateau_center_lat
-      real (kind=RKIND), pointer :: config_iso_plateau_height
-      real (kind=RKIND), pointer :: config_iso_plateau_radius
-      real (kind=RKIND), pointer :: config_iso_plateau_slope_width
-      logical, pointer :: config_iso_shelf_flag
-      real (kind=RKIND), pointer :: config_iso_shelf_depth
-      real (kind=RKIND), pointer :: config_iso_shelf_width
-      logical, pointer :: config_iso_cont_slope_flag
-      real (kind=RKIND), pointer :: config_iso_max_cont_slope
-      logical, pointer :: config_iso_embayment_flag
-      real (kind=RKIND), pointer :: config_iso_embayment_radius
-      real (kind=RKIND), pointer :: config_iso_embayment_depth
-      real (kind=RKIND), pointer :: config_iso_embayment_center_lon
-      real (kind=RKIND), pointer :: config_iso_embayment_center_lat
-      logical, pointer :: config_iso_depression_flag
-      real (kind=RKIND), pointer :: config_iso_depression_width
-      real (kind=RKIND), pointer :: config_iso_depression_depth
-      real (kind=RKIND), pointer :: config_iso_depression_center_lon
-      real (kind=RKIND), pointer :: config_iso_depression_south_lat
-      real (kind=RKIND), pointer :: config_iso_depression_north_lat
-      real (kind=RKIND), pointer :: config_iso_salinity
-      real (kind=RKIND), pointer :: config_iso_wind_stress_max
-      real (kind=RKIND), pointer :: config_iso_asf_wind
-      real (kind=RKIND), pointer :: config_iso_acc_wind
-      real (kind=RKIND), pointer :: config_iso_wind_trans
-      real (kind=RKIND), pointer :: config_iso_heat_flux_south
-      real (kind=RKIND), pointer :: config_iso_heat_flux_middle
-      real (kind=RKIND), pointer :: config_iso_heat_flux_north
-      real (kind=RKIND), pointer :: config_iso_heat_flux_lat_ss
-      real (kind=RKIND), pointer :: config_iso_heat_flux_lat_sm
-      real (kind=RKIND), pointer :: config_iso_heat_flux_lat_mn
-      real (kind=RKIND), pointer :: config_iso_surface_temperature_piston_velocity
-      real (kind=RKIND), pointer :: config_iso_initial_temp_t1
-      real (kind=RKIND), pointer :: config_iso_initial_temp_t2
-      real (kind=RKIND), pointer :: config_iso_initial_temp_h0
-      real (kind=RKIND), pointer :: config_iso_initial_temp_h1
-      real (kind=RKIND), pointer :: config_iso_initial_temp_mt
-      real (kind=RKIND), pointer :: config_iso_initial_temp_latS
-      real (kind=RKIND), pointer :: config_iso_initial_temp_latN
-      real (kind=RKIND), pointer :: config_iso_region1_center_lon
-      real (kind=RKIND), pointer :: config_iso_region1_center_lat
-      real (kind=RKIND), pointer :: config_iso_region2_center_lon
-      real (kind=RKIND), pointer :: config_iso_region2_center_lat
-      real (kind=RKIND), pointer :: config_iso_region3_center_lon
-      real (kind=RKIND), pointer :: config_iso_region3_center_lat
-      real (kind=RKIND), pointer :: config_iso_region4_center_lon
-      real (kind=RKIND), pointer :: config_iso_region4_center_lat
-      logical, pointer :: config_iso_heat_flux_region1_flag
-      real (kind=RKIND), pointer :: config_iso_heat_flux_region1
-      real (kind=RKIND), pointer :: config_iso_heat_flux_region1_radius
-      logical, pointer :: config_iso_heat_flux_region2_flag
-      real (kind=RKIND), pointer :: config_iso_heat_flux_region2
-      real (kind=RKIND), pointer :: config_iso_heat_flux_region2_radius
-      real (kind=RKIND), pointer :: config_iso_temperature_sponge_t1
-      real (kind=RKIND), pointer :: config_iso_temperature_sponge_h1
-      real (kind=RKIND), pointer :: config_iso_temperature_sponge_l1
-      real (kind=RKIND), pointer :: config_iso_temperature_sponge_tau1
-
-      logical, pointer :: config_iso_temperature_restore_region1_flag
-      real (kind=RKIND), pointer :: config_iso_temperature_restore_t1
-      real (kind=RKIND), pointer :: config_iso_temperature_restore_lcx1
-      real (kind=RKIND), pointer :: config_iso_temperature_restore_lcy1
-      logical, pointer :: config_iso_temperature_restore_region2_flag
-      real (kind=RKIND), pointer :: config_iso_temperature_restore_t2
-      real (kind=RKIND), pointer :: config_iso_temperature_restore_lcx2
-      real (kind=RKIND), pointer :: config_iso_temperature_restore_lcy2
-      logical, pointer :: config_iso_temperature_restore_region3_flag
-      real (kind=RKIND), pointer :: config_iso_temperature_restore_t3
-      real (kind=RKIND), pointer :: config_iso_temperature_restore_lcx3
-      real (kind=RKIND), pointer :: config_iso_temperature_restore_lcy3
-      logical, pointer :: config_iso_temperature_restore_region4_flag
-      real (kind=RKIND), pointer :: config_iso_temperature_restore_t4
-      real (kind=RKIND), pointer :: config_iso_temperature_restore_lcx4
-      real (kind=RKIND), pointer :: config_iso_temperature_restore_lcy4
-
       ! Define dimension pointers
       integer, pointer :: nVertLevels, nCells, nVertLevelsP1
       integer, pointer :: index_temperature, index_salinity, index_tracer1
@@ -242,100 +154,7 @@ contains
 
       iErr = 0
 
-      call mpas_pool_get_config(domain % configs, 'config_init_configuration', config_init_configuration)
       if(config_init_configuration .ne. trim('iso')) return
-
-      ! get config variables
-      call mpas_pool_get_config(domain % configs, 'config_vertical_grid', config_vertical_grid)
-      call mpas_pool_get_config(domain % configs, 'config_iso_vert_levels', config_iso_vert_levels)
-      call mpas_pool_get_config(domain % configs, 'config_iso_main_channel_depth', config_iso_main_channel_depth)
-      call mpas_pool_get_config(domain % configs, 'config_iso_north_wall_lat', config_iso_north_wall_lat)
-      call mpas_pool_get_config(domain % configs, 'config_iso_south_wall_lat', config_iso_south_wall_lat)
-      call mpas_pool_get_config(domain % configs, 'config_iso_ridge_flag', config_iso_ridge_flag)
-      call mpas_pool_get_config(domain % configs, 'config_iso_ridge_center_lon', config_iso_ridge_center_lon)
-      call mpas_pool_get_config(domain % configs, 'config_iso_ridge_height', config_iso_ridge_height)
-      call mpas_pool_get_config(domain % configs, 'config_iso_ridge_width', config_iso_ridge_width)
-      call mpas_pool_get_config(domain % configs, 'config_iso_plateau_flag', config_iso_plateau_flag)
-      call mpas_pool_get_config(domain % configs, 'config_iso_plateau_center_lon', config_iso_plateau_center_lon)
-      call mpas_pool_get_config(domain % configs, 'config_iso_plateau_center_lat', config_iso_plateau_center_lat)
-      call mpas_pool_get_config(domain % configs, 'config_iso_plateau_height', config_iso_plateau_height)
-      call mpas_pool_get_config(domain % configs, 'config_iso_plateau_radius', config_iso_plateau_radius)
-      call mpas_pool_get_config(domain % configs, 'config_iso_plateau_slope_width', config_iso_plateau_slope_width)
-      call mpas_pool_get_config(domain % configs, 'config_iso_shelf_flag', config_iso_shelf_flag)
-      call mpas_pool_get_config(domain % configs, 'config_iso_shelf_depth', config_iso_shelf_depth)
-      call mpas_pool_get_config(domain % configs, 'config_iso_shelf_width', config_iso_shelf_width)
-      call mpas_pool_get_config(domain % configs, 'config_iso_cont_slope_flag', config_iso_cont_slope_flag)
-      call mpas_pool_get_config(domain % configs, 'config_iso_max_cont_slope', config_iso_max_cont_slope)
-      call mpas_pool_get_config(domain % configs, 'config_iso_embayment_flag', config_iso_embayment_flag)
-      call mpas_pool_get_config(domain % configs, 'config_iso_embayment_radius', config_iso_embayment_radius)
-      call mpas_pool_get_config(domain % configs, 'config_iso_embayment_depth', config_iso_embayment_depth)
-      call mpas_pool_get_config(domain % configs, 'config_iso_embayment_center_lon', config_iso_embayment_center_lon)
-      call mpas_pool_get_config(domain % configs, 'config_iso_embayment_center_lat', config_iso_embayment_center_lat)
-      call mpas_pool_get_config(domain % configs, 'config_iso_depression_flag', config_iso_depression_flag)
-      call mpas_pool_get_config(domain % configs, 'config_iso_depression_width', config_iso_depression_width)
-      call mpas_pool_get_config(domain % configs, 'config_iso_depression_depth', config_iso_depression_depth)
-      call mpas_pool_get_config(domain % configs, 'config_iso_depression_center_lon', config_iso_depression_center_lon)
-      call mpas_pool_get_config(domain % configs, 'config_iso_depression_south_lat', config_iso_depression_south_lat)
-      call mpas_pool_get_config(domain % configs, 'config_iso_depression_north_lat', config_iso_depression_north_lat)
-      call mpas_pool_get_config(domain % configs, 'config_iso_salinity', config_iso_salinity)
-      call mpas_pool_get_config(domain % configs, 'config_iso_wind_stress_max', config_iso_wind_stress_max)
-      call mpas_pool_get_config(domain % configs, 'config_iso_asf_wind', config_iso_asf_wind)
-      call mpas_pool_get_config(domain % configs, 'config_iso_acc_wind', config_iso_acc_wind)
-      call mpas_pool_get_config(domain % configs, 'config_iso_wind_trans', config_iso_wind_trans)
-      call mpas_pool_get_config(domain % configs, 'config_iso_heat_flux_south', config_iso_heat_flux_south)
-      call mpas_pool_get_config(domain % configs, 'config_iso_heat_flux_middle', config_iso_heat_flux_middle)
-      call mpas_pool_get_config(domain % configs, 'config_iso_heat_flux_north', config_iso_heat_flux_north)
-      call mpas_pool_get_config(domain % configs, 'config_iso_heat_flux_lat_ss', config_iso_heat_flux_lat_ss)
-      call mpas_pool_get_config(domain % configs, 'config_iso_heat_flux_lat_sm', config_iso_heat_flux_lat_sm)
-      call mpas_pool_get_config(domain % configs, 'config_iso_heat_flux_lat_mn', config_iso_heat_flux_lat_mn)
-      call mpas_pool_get_config(domain % configs, 'config_iso_surface_temperature_piston_velocity', &
-                                config_iso_surface_temperature_piston_velocity)
-      call mpas_pool_get_config(domain % configs, 'config_iso_initial_temp_t1', config_iso_initial_temp_t1)
-      call mpas_pool_get_config(domain % configs, 'config_iso_initial_temp_t2', config_iso_initial_temp_t2)
-      call mpas_pool_get_config(domain % configs, 'config_iso_initial_temp_h0', config_iso_initial_temp_h0)
-      call mpas_pool_get_config(domain % configs, 'config_iso_initial_temp_h1', config_iso_initial_temp_h1)
-      call mpas_pool_get_config(domain % configs, 'config_iso_initial_temp_mt', config_iso_initial_temp_mt)
-      call mpas_pool_get_config(domain % configs, 'config_iso_initial_temp_latS', config_iso_initial_temp_latS)
-      call mpas_pool_get_config(domain % configs, 'config_iso_initial_temp_latN', config_iso_initial_temp_latN)
-      call mpas_pool_get_config(domain % configs, 'config_iso_region1_center_lon', config_iso_region1_center_lon)
-      call mpas_pool_get_config(domain % configs, 'config_iso_region1_center_lat', config_iso_region1_center_lat)
-      call mpas_pool_get_config(domain % configs, 'config_iso_region2_center_lon', config_iso_region2_center_lon)
-      call mpas_pool_get_config(domain % configs, 'config_iso_region2_center_lat', config_iso_region2_center_lat)
-      call mpas_pool_get_config(domain % configs, 'config_iso_region3_center_lon', config_iso_region3_center_lon)
-      call mpas_pool_get_config(domain % configs, 'config_iso_region3_center_lat', config_iso_region3_center_lat)
-      call mpas_pool_get_config(domain % configs, 'config_iso_region4_center_lon', config_iso_region4_center_lon)
-      call mpas_pool_get_config(domain % configs, 'config_iso_region4_center_lat', config_iso_region4_center_lat)
-      call mpas_pool_get_config(domain % configs, 'config_iso_heat_flux_region1_flag', config_iso_heat_flux_region1_flag)
-      call mpas_pool_get_config(domain % configs, 'config_iso_heat_flux_region1', config_iso_heat_flux_region1)
-      call mpas_pool_get_config(domain % configs, 'config_iso_heat_flux_region1_radius', config_iso_heat_flux_region1_radius)
-      call mpas_pool_get_config(domain % configs, 'config_iso_heat_flux_region2_flag', config_iso_heat_flux_region2_flag)
-      call mpas_pool_get_config(domain % configs, 'config_iso_heat_flux_region2', config_iso_heat_flux_region2)
-      call mpas_pool_get_config(domain % configs, 'config_iso_heat_flux_region2_radius', config_iso_heat_flux_region2_radius)
-      call mpas_pool_get_config(domain % configs, 'config_iso_temperature_sponge_t1', config_iso_temperature_sponge_t1)
-      call mpas_pool_get_config(domain % configs, 'config_iso_temperature_sponge_h1', config_iso_temperature_sponge_h1)
-      call mpas_pool_get_config(domain % configs, 'config_iso_temperature_sponge_l1', config_iso_temperature_sponge_l1)
-      call mpas_pool_get_config(domain % configs, 'config_iso_temperature_sponge_tau1', config_iso_temperature_sponge_tau1)
-
-      call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_region1_flag', &
-                                config_iso_temperature_restore_region1_flag)
-      call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_t1', config_iso_temperature_restore_t1)
-      call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_lcx1', config_iso_temperature_restore_lcx1)
-      call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_lcy1', config_iso_temperature_restore_lcy1)
-      call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_region2_flag', &
-                                config_iso_temperature_restore_region2_flag)
-      call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_t2', config_iso_temperature_restore_t2)
-      call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_lcx2', config_iso_temperature_restore_lcx2)
-      call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_lcy2', config_iso_temperature_restore_lcy2)
-      call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_region3_flag', &
-                                config_iso_temperature_restore_region3_flag)
-      call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_t3', config_iso_temperature_restore_t3)
-      call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_lcx3', config_iso_temperature_restore_lcx3)
-      call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_lcy3', config_iso_temperature_restore_lcy3)
-      call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_region4_flag', &
-                                config_iso_temperature_restore_region4_flag)
-      call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_t4', config_iso_temperature_restore_t4)
-      call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_lcx4', config_iso_temperature_restore_lcx4)
-      call mpas_pool_get_config(domain % configs, 'config_iso_temperature_restore_lcy4', config_iso_temperature_restore_lcy4)
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)

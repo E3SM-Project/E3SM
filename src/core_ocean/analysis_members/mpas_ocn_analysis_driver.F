@@ -27,6 +27,7 @@ module ocn_analysis_driver
    use mpas_log
 
    use ocn_constants
+   use ocn_config
    use ocn_global_stats
    use ocn_surface_area_weighted_averages
    use ocn_layer_volume_weighted_averages
@@ -276,7 +277,7 @@ contains
       integer :: err_tmp
 
       character (len=StrKIND) :: configName, alarmName, restartStreamName, inputStreamName, timerName
-      logical, pointer :: config_AM_enable, config_do_restart
+      logical, pointer :: config_AM_enable
       character (len=StrKIND), pointer :: config_AM_restart_stream, config_AM_input_stream
       integer :: nameLength
       type (mpas_pool_iterator_type) :: poolItr
@@ -294,8 +295,6 @@ contains
       call mpas_pool_set_error_level(MPAS_POOL_SILENT)
 
       call mpas_timer_start('analysis_bootstrap')
-
-      call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
 
       call mpas_pool_begin_iteration(analysisMemberList)
       do while ( mpas_pool_get_next_member(analysisMemberList, poolItr) )
@@ -427,7 +426,7 @@ contains
 
       character (len=StrKIND) :: configName, alarmName, streamName, timerName
       logical, pointer :: config_AM_enable
-      character (len=StrKIND), pointer :: config_AM_compute_interval, config_AM_output_stream, config_start_time
+      character (len=StrKIND), pointer :: config_AM_compute_interval, config_AM_output_stream
       integer :: nameLength
       type (mpas_pool_iterator_type) :: poolItr
 
@@ -495,8 +494,6 @@ contains
                                                     MPAS_STREAM_PROPERTY_REF_TIME, referenceTimeString, err_tmp)
                   call mpas_set_time(referenceTime, dateTimeString=referenceTimeString, ierr=err_tmp)
                else
-                  call mpas_pool_get_config(domain % configs, 'config_start_time', config_start_time)
-
                   ! TODO FIXME I'm not sure what it's supposed to be
                   !            but 'file' is causing the code to fail
                   if (trim(config_start_time) == 'file') then
