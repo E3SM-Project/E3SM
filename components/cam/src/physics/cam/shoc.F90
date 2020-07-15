@@ -2111,7 +2111,7 @@ subroutine shoc_assumed_pdf(&
         qw2_2,sqrtthl2_2,sqrtqw2_2,r_qwthl_1,& ! Input
         s2,cthl2,cqt2,std_s2,qn2,C2)           ! Output
       endif
-
+      
       ql1=min(qn1,qw1_1)
       ql2=min(qn2,qw1_2)
 
@@ -2124,7 +2124,7 @@ subroutine shoc_assumed_pdf(&
         shoc_ql(i,k)) ! Output
 
       ! Compute cloud liquid variance (CLUBB formulation, adjusted to SHOC parameters based)
-      call shoc_assumed_pdf_compute_cloud_liquid_varaince(&
+      call shoc_assumed_pdf_compute_cloud_liquid_variance(&
         a,s1,ql1,C1,std_s1,s2,ql2,C2,std_s2,shoc_ql(i,k),& ! Input
         shoc_ql2(i,k))                                     ! Output
     
@@ -2539,7 +2539,7 @@ subroutine shoc_assumed_pdf_compute_s(&
     endif
   endif
 
-end subroutine
+end subroutine shoc_assumed_pdf_compute_s
 
 subroutine shoc_assumed_pdf_compute_sgs_liquid(&
   a, ql1, ql2,& ! Input
@@ -2560,7 +2560,7 @@ subroutine shoc_assumed_pdf_compute_sgs_liquid(&
 
 end subroutine shoc_assumed_pdf_compute_sgs_liquid
 
-subroutine shoc_assumed_pdf_compute_cloud_liquid_varaince(&
+subroutine shoc_assumed_pdf_compute_cloud_liquid_variance(&
   a,s1,ql1,C1,std_s1,s2,ql2,C2,std_s2,shoc_ql,& ! Input
   shoc_ql2)                                     ! Output
 
@@ -2586,7 +2586,7 @@ subroutine shoc_assumed_pdf_compute_cloud_liquid_varaince(&
     + ( 1._rtype-a ) * ( s2*ql2 + C2*std_s2**2.0 ) - shoc_ql**2.0
   shoc_ql2 = max( 0._rtype, shoc_ql2 )
 
-end subroutine shoc_assumed_pdf_compute_cloud_liquid_varaince
+end subroutine shoc_assumed_pdf_compute_cloud_liquid_variance
 
 subroutine shoc_assumed_pdf_compute_liquid_water_flux(&
   a,w1_1,w_first,ql1,w1_2,ql2,& ! Input
