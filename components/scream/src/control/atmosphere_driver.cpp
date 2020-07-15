@@ -159,6 +159,9 @@ void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
     }
   }
 
+  // Init surface coupling
+  init_surface_coupling ();
+
 #ifdef SCREAM_DEBUG
   create_bkp_field_repo();
   m_atm_process_group->set_field_repos(*m_field_repo,m_bkp_field_repo);
@@ -169,12 +172,22 @@ void AtmosphereDriver::run (const Real dt) {
   // Make sure the end of the time step is after the current start_time
   EKAT_REQUIRE_MSG (dt>0, "Error! Input time step must be positive.\n");
 
+  if (m_surface_coupling) {
+    // Import fluxes from the component coupler (if any)
+    m_surface_coupling->do_import();
+  }
+
   // The class AtmosphereProcessGroup will take care of dispatching arguments to
   // the individual processes, which will be called in the correct order.
   m_atm_process_group->run(dt);
 
   // Update current time stamps
   m_current_ts += dt;
+
+  if (m_surface_coupling) {
+    // Export fluxes from the component coupler (if any)
+    m_surface_coupling->do_export();
+  }
 }
 
 void AtmosphereDriver::finalize ( /* inputs? */ ) {
@@ -234,6 +247,15 @@ void AtmosphereDriver::register_groups () {
   };
   lambda( m_atm_process_group->get_required_groups() );
   lambda( m_atm_process_group->get_updated_groups() );
+}
+
+void AtmosphereDriver::init_surface_coupling () {
+#if defined(SCREAM_CIME_BUILD)
+  // If this is a CIME build, we need to prepare the surface coupling
+  m_surface_coupling = std::make_shared<SurfaceCoupling>();
+
+  // Add atm required surface fluxes here
+#endif
 }
 
 void AtmosphereDriver::init_atm_inputs () {

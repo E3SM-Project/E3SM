@@ -1,11 +1,13 @@
 #ifndef SCREAM_ATMOSPHERE_DRIVER_HPP
 #define SCREAM_ATMOSPHERE_DRIVER_HPP
 
+#include "control/surface_coupling.hpp"
+
 #include "share/field/field_repository.hpp"
 #include "share/grid/grids_manager.hpp"
+#include "share/util/scream_time_stamp.hpp"
 #include "share/scream_types.hpp"
 
-#include "share/util/scream_time_stamp.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
 #include "ekat/ekat_parameter_list.hpp"
 
@@ -61,11 +63,14 @@ public:
   const FieldRepository<Real>& get_bkp_field_repo () const { return m_bkp_field_repo; }
 #endif
 
+  const std::shared_ptr<SurfaceCoupling>& get_surface_coupling () const { return m_surface_coupling; }
+
   // Get atmosphere time stamp
   const util::TimeStamp& get_atm_time_stamp () const { return m_current_ts; }
 protected:
 
   void register_groups ();
+  void init_surface_coupling ();
   void init_atm_inputs ();
   void inspect_atm_dag ();
 #ifdef SCREAM_DEBUG
@@ -83,6 +88,9 @@ protected:
   std::shared_ptr<GridsManager>                       m_grids_manager;
 
   ekat::ParameterList                                 m_atm_params;
+
+  // Surface coupling stuff
+  std::shared_ptr<SurfaceCoupling>            m_surface_coupling;
 
   // This are the time stamps of the start and end of the time step.
   util::TimeStamp                       m_old_ts;

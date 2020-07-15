@@ -88,6 +88,52 @@ void scream_init (const MPI_Fint& f_comm,
   ekat::enable_fpes(fpe_mask);
 
 }
+
+void scream_register_surface_flux_ptr (const char*& name, double*& data, const bool import) {
+  using namespace scream;
+  using namespace scream::control;
+
+  // First of all, enable only scream fpes.
+  // Store the mask, so we can restore before returning.
+  int fpe_mask = get_enabled_fpes();
+  disable_all_fpes();
+  enable_default_fpes();
+
+  // Get the SurfaceCoupling from the AD, from the context, then register the pointer
+  auto& c = ScreamContext::singleton();
+  const auto& ad = c.get<AtmosphereDriver>();
+  const auto& sc = ad.get_surface_coupling();
+  if (import) {
+    sc->register_import_data_ptr(name,data);
+  } else {
+    sc->register_export_data_ptr(name,data);
+  }
+  // Restore the FPE flag as it was when control was handed to us.
+  disable_all_fpes();
+  enable_fpes(fpe_mask);
+}
+
+void scream_finalize_surface_coupling () {
+  using namespace scream;
+  using namespace scream::control;
+
+  // First of all, enable only scream fpes.
+  // Store the mask, so we can restore before returning.
+  int fpe_mask = get_enabled_fpes();
+  disable_all_fpes();
+  enable_default_fpes();
+
+  // Get the SurfaceCoupling from the AD, from the context, then register the pointer
+  auto& c = ScreamContext::singleton();
+  const auto& ad = c.get<AtmosphereDriver>();
+  const auto& sc = ad.get_surface_coupling();
+  sc->registration_ends();
+
+  // Restore the FPE flag as it was when control was handed to us.
+  disable_all_fpes();
+  enable_fpes(fpe_mask);
+}
+
 /*===============================================================================================*/
 void scream_run (const Real& dt) {
   // TODO: uncomment once you have valid inputs. I fear AD may crash with no inputs.

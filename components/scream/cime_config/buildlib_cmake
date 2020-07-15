@@ -31,6 +31,7 @@ def buildlib(bldroot, installpath, case):
 
     atm_dyn_tgt = case.get_value("ATM_DYN_TARGET")
     cmake_args += " -DSCREAM_DYN_TARGET={}".format(atm_dyn_tgt)
+    cmake_args += " -DSCREAM_CIME_BUILD=ON"
 
     print("scream cmake options: '{}'".format(cmake_args))
 
