@@ -96,7 +96,7 @@ public:
   get_reshaped_view () const;
 
   // Checks whether the underlying view has been already allocated.
-  bool is_allocated () const { return m_allocated; }
+  bool is_allocated () const { return m_view.data()!=nullptr; }
 
   // ---- Setters and non-const methods ---- //
 
@@ -132,7 +132,6 @@ template<typename RealType>
 Field<RealType>::
 Field (const identifier_type& id)
  : m_header    (new header_type(id))
- , m_allocated (false)
  , m_prop_checks(new property_check_list)
 {
   // At the very least, the allocation properties need to accommodate this field's value_type.
@@ -145,7 +144,6 @@ Field<RealType>::
 Field (const Field<SrcRealType>& src)
  : m_header    (src.get_header_ptr())
  , m_view      (src.get_view())
- , m_allocated (src.is_allocated())
 {
   using src_field_type = Field<SrcRealType>;
 
@@ -187,14 +185,12 @@ operator= (const Field<SrcRealType>& src) {
 
   // Since the type of *this and src may be different, we cannot do the usual
   // `if (this!=&src)`, cause the compiler cannot compare those pointers.
-  // Therefore, we compare the stored pointers. Note that we don't compare
-  // the 'm_allocated' member, cause its superfluous.
+  // Therefore, we compare the stored pointers.
   // If either header or view are different, we copy everything
   if (m_header!=src.get_header_ptr() ||
       m_view!=src.get_view()) {
     m_header    = src.get_header_ptr();
     m_view      = src.get_view();
-    m_allocated = src.is_allocated();
   }
 
   return *this;
@@ -212,7 +208,7 @@ Field<RealType>::get_reshaped_view () const {
   const auto& field_layout = m_header->get_identifier().get_layout();
 
   // Make sure input field is allocated
-  EKAT_REQUIRE_MSG(m_allocated, "Error! Cannot reshape a field that has not been allocated yet.\n");
+  EKAT_REQUIRE_MSG(is_allocated(), "Error! Cannot reshape a field that has not been allocated yet.\n");
 
   // Make sure DstDT has an eligible rank: can only reinterpret if the data type rank does not change or if either src or dst have rank 1.
   constexpr int DstRank = ekat::GetRanks<DT>::rank;
@@ -253,7 +249,7 @@ void Field<RealType>::allocate_view ()
   // a subview of the field). However, it *seems* suspicious to call
   // this method twice, and I think it's more likely than not that
   // such a scenario would indicate a bug. Therefore, I am prohibiting it.
-  EKAT_REQUIRE_MSG(!m_allocated, "Error! View was already allocated.\n");
+  EKAT_REQUIRE_MSG(!is_allocated(), "Error! View was already allocated.\n");
 
   // Short names
   const auto& id     = m_header->get_identifier();
@@ -270,8 +266,6 @@ void Field<RealType>::allocate_view ()
   const int view_dim = alloc_prop.get_alloc_size() / sizeof(value_type);
 
   m_view = view_type(id.name(),view_dim);
-
-  m_allocated = true;
 }
 
 } // namespace scream
