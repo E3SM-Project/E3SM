@@ -5967,6 +5967,12 @@ logical function phys_grid_initialized ()
                                          ! estimated computational cost for process
                                          !  at given location in heap, based on
                                          !  currently assigned chunks
+   real(r8), dimension(:), allocatable :: pending_proc_cost
+                                         ! location to hold estimated computational
+                                         !  cost for process (based on chunks
+                                         !  assigned to thread 0) until same number
+                                         !  of chunks have been assigned to all
+                                         !  threads
    logical :: proc_heap_update           ! flag indicating whether process
                                          !  estimated cost has been updated 
    logical :: proc_heap_remove           ! flag indicating whether process has 
@@ -6050,9 +6056,10 @@ logical function phys_grid_initialized ()
    ! estimated cost for chunks assigned to thread 0). Also allocate
    ! array for inverse mapping (from process id to heap index).
    max_nvsmptasks = maxval(nvsmptasks(0:nvsmp-1))
-   allocate( proc_heap(1:max_nvsmptasks) )
-   allocate( proc_cost(1:max_nvsmptasks) )
-   allocate( inv_proc_heap(0:npes-1)     )
+   allocate( proc_heap(1:max_nvsmptasks)         )
+   allocate( proc_cost(1:max_nvsmptasks)         )
+   allocate( pending_proc_cost(1:max_nvsmptasks) )
+   allocate( inv_proc_heap(0:npes-1)             )
    inv_proc_heap(:) = -1
 
    ! Initialize number of chunks assigned to each process. Then
@@ -6080,8 +6087,9 @@ logical function phys_grid_initialized ()
 
       ! Initialize min heap of processes in virtual smp ordered by sum of
       ! estimated costs of chunks assigned to thread 0 of each process
-      proc_heap(:) = -1
-      proc_cost(:) = 0
+      proc_heap(:)         = -1
+      proc_cost(:)         = 0
+      pending_proc_cost(:) = 0
       do i=1,nvsmptasks(smp)
          proc_heap(i) = vsmp_proc_map(i,smp)
          inv_proc_heap(proc_heap(i)) = i
@@ -6158,8 +6166,8 @@ logical function phys_grid_initialized ()
             ! cur_npchunks(ntmp2) to get correct mod() comparison; cannot
             ! check that mod() == 1 since may only have 1 thread, in which
             ! case mod() is always 0.
-            proc_cost(inv_proc_heap(ntmp2)) = proc_cost(inv_proc_heap(ntmp2)) &
-                                              + chunks(cid)%estcost
+            pending_proc_cost(inv_proc_heap(ntmp2)) = &
+               proc_cost(inv_proc_heap(ntmp2)) + chunks(cid)%estcost
          endif
          If (mod(cur_npchunks(ntmp2),npthreads(ntmp2)) == 0) then
             ! While estimated cost is updated when thread 0 is assigned
@@ -6169,6 +6177,8 @@ logical function phys_grid_initialized ()
             ! to thread 0, so can continue to assign to this process (enabling
             ! lower communication overhead) until all threads are assigned
             ! another round of chunks.
+            proc_cost(inv_proc_heap(ntmp2)) = &
+               pending_proc_cost(inv_proc_heap(ntmp2))
             proc_heap_update = .true.
          endif
          if (cur_npchunks(ntmp2) == npchunks(ntmp2)) then
@@ -6200,11 +6210,12 @@ logical function phys_grid_initialized ()
 !
 ! Clean-up
 !
-   deallocate( inv_proc_heap )
-   deallocate( proc_cost     )
-   deallocate( proc_heap     )
-   deallocate( chnk_cost     )
-   deallocate( chnk_dex      )
+   deallocate( inv_proc_heap         )
+   deallocate( proc_cost             )
+   deallocate( pending_proc_cost     )
+   deallocate( proc_heap             )
+   deallocate( chnk_cost             )
+   deallocate( chnk_dex              )
 !
    return
    end subroutine assign_chunks
