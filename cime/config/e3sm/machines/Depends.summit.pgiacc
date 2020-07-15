@@ -2,24 +2,26 @@ dyn_comp.o: dyn_comp.F90
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS_NOOPT) $(FREEFLAGS) $<
 
 microp_aero.o: microp_aero.F90
-	$(FC) -c $(INCLDIR) $(INCS) -acc -ta=tesla,cc70,pinned -Minfo=accel $(FFLAGS_NOOPT) $(FREEFLAGS) $<
+	$(FC) -c $(INCLDIR) $(INCS) -acc -ta=tesla:cc70,pinned -Minfo=accel $(FFLAGS_NOOPT) $(FREEFLAGS) $<
 ref_pres.o: ref_pres.F90
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -acc -ta=tesla,cc70,pinned -Minfo=accel $(FREEFLAGS) $<
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -acc -ta=tesla:cc70,pinned -Minfo=accel $(FREEFLAGS) $<
 wv_sat_methods.o: wv_sat_methods.F90
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -acc -ta=tesla,cc70,pinned -Minfo=accel $(FREEFLAGS) $<
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -acc -ta=tesla:cc70,pinned -Minfo=accel $(FREEFLAGS) $<
 wv_saturation.o: wv_saturation.F90
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -acc -ta=tesla,cc70,pinned -Minfo=accel $(FREEFLAGS) $<
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -acc -ta=tesla:cc70,pinned -Minfo=accel $(FREEFLAGS) $<
 hetfrz_classnuc.o: hetfrz_classnuc.F90
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -acc -ta=tesla,cc70,pinned -Minfo=accel $(FREEFLAGS) $<
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -acc -ta=tesla:cc70,pinned -Minfo=accel $(FREEFLAGS) $<
 cam_logfile.o: cam_logfile.F90 
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -acc -ta=tesla,cc70,pinned -Minfo=accel $(FREEFLAGS) $<
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -acc -ta=tesla:cc70,pinned -Minfo=accel $(FREEFLAGS) $<
 ndrop.o: ndrop.F90
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -acc -ta=tesla,cc70,pinned -Minfo=accel $(FREEFLAGS) $<
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -acc -ta=tesla:cc70,pinned -Minfo=accel $(FREEFLAGS) $<
 hetfrz_classnuc_cam.o: hetfrz_classnuc_cam.F90
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -acc -ta=tesla,cc70,pinned -Minfo=accel $(FREEFLAGS) $<
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -acc -ta=tesla:cc70,pinned -Minfo=accel $(FREEFLAGS) $<
 nucleate_ice.o: nucleate_ice.F90
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -acc -ta=tesla,cc70,pinned -Minfo=accel $(FREEFLAGS) $<
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -acc -ta=tesla:cc70,pinned -Minfo=accel $(FREEFLAGS) $<
 physconst.o: physconst.F90
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -DUSE_OPENACC=1 -acc -ta=tesla,cc70,pinned -Minfo=accel $(FREEFLAGS) $<
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -DUSE_OPENACC=1 -acc -ta=tesla:cc70,pinned -Minfo=accel $(FREEFLAGS) $<
+ppgrid.o: ppgrid.F90
+	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) -DUSE_OPENACC=1 -acc -ta=tesla:cc70,pinned -Minfo=accel $(FREEFLAGS) $<
 
 
