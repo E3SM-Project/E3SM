@@ -7,7 +7,10 @@ VPATH := $(GPTL_DIR)
 ifndef MOD_SUFFIX
    MOD_SUFFIX := mod
 endif
-
+ifeq ($(strip $(SMP)),TRUE)
+  CPPDEFS +=  -DTHREADED_OMP
+  compile_threaded=TRUE
+endif
 
 ifeq ($(strip $(MACFILE)),)
    MACFILE  := Macros.make
