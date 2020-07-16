@@ -1612,19 +1612,19 @@
     <NODENAME_REGEX>jlse.*</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel,gnu</COMPILERS>
-    <MPILIBS>mpich</MPILIBS>
-    <CIME_OUTPUT_ROOT>$ENV{HOME}/acme/scratch</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/home/azamat/acme/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/home/azamat/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <MPILIBS>impi,openmpi,mpich</MPILIBS>
+    <CIME_OUTPUT_ROOT>/gpfs/jlse-fs0/projects/climate/$USER/scratch/jlse</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/gpfs/jlse-fs0/projects/climate/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/gpfs/jlse-fs0/projects/climate/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>$ENV{HOME}/acme/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/home/azamat/acme/tools/cprnc/cprnc</CCSM_CPRNC>
+    <BASELINE_ROOT>/gpfs/jlse-fs0/projects/climate/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/gpfs/jlse-fs0/projects/climate/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
-    <TESTS>acme_developer</TESTS>
+    <TESTS>e3sm_integration</TESTS>
     <BATCH_SYSTEM>cobalt_theta</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE>112</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>56</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
@@ -1648,8 +1648,13 @@
         <command name="load">cmake/3.17.0-gcc-9.3.0-5dgh2gv</command>
       </modules>
       <modules compiler="intel">
-	<command name="load">intel/2018</command>
-	<command name="load">intelmpi/2018-intel</command>
+	<command name="load">intel/2019</command>
+      </modules>
+      <modules compiler="intel" mpilib="impi">
+	<command name="load">intelmpi/2019-intel</command>
+      </modules>
+      <modules compiler="intel" mpilib="openmpi">
+	<command name="load">openmpi/2.1.6-intel</command>
       </modules>
       <modules compiler="gnu">
 	<command name="load">gcc-vanilla/latest</command>
@@ -1659,23 +1664,42 @@
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <environment_variables>
-      <env name="MPICH_ENV_DISPLAY">1</env>
-      <env name="MPICH_VERSION_DISPLAY">1</env>
-      <env name="MPICH_CPUMASK_DISPLAY">1</env>
-      <env name="MPICH_MEMORY_REPORT">1</env>
       <env name="PATH">/home/azamat/perl5/bin:$ENV{PATH}</env>
       <env name="PERL5LIB">/home/azamat/perl5/lib/perl5</env>
       <env name="PERL_LOCAL_LIB_ROOT">/home/azamat/perl5</env>
       <env name="PERL_MB_OPT">"--install_base \"/home/azamat/perl5\""</env>
       <env name="PERL_MM_OPT">"INSTALL_BASE=/home/azamat/perl5"</env>
     </environment_variables>
-    <environment_variables compiler="intel">
-      <env name="LD_LIBRARY_PATH">/home/wuda/soft/hdf5/1.8.16-parallel/intel18/lib:/home/wuda/soft/szip/2.1.1/intel18/lib:/home/wuda/soft/zlib/1.2.11/intel18/lib:$ENV{LD_LIBRARY_PATH}</env>
-      <env name="HDF5_PATH">/home/wuda/soft/hdf5/1.8.16-parallel/intel18</env>
-      <env name="NETCDF_PATH">/home/wuda/soft/netcdf/4.4.1c-4.2cxx-4.4.4f-parallel/intel18</env>
-      <env name="PNETCDF_PATH">/home/wuda/soft/pnetcdf/1.12.0/intel18</env>
+    <environment_variables mpilib="impi">
       <env name="I_MPI_DEBUG">10</env>
       <env name="I_MPI_PIN_CELL">core</env>
+    </environment_variables>
+    <environment_variables mpilib="mpich">
+      <env name="MPICH_ENV_DISPLAY">1</env>
+      <env name="MPICH_VERSION_DISPLAY">1</env>
+      <env name="MPICH_CPUMASK_DISPLAY">1</env>
+      <env name="MPICH_MEMORY_REPORT">1</env>
+    </environment_variables>
+    <environment_variables compiler="intel">
+      <!--env name="LD_LIBRARY_PATH">/home/wuda/soft/hdf5/1.8.16-parallel/intel18/lib:/home/wuda/soft/szip/2.1.1/intel18/lib:/home/wuda/soft/zlib/1.2.11/intel18/lib:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="HDF5_PATH">/home/wuda/soft/hdf5/1.8.16-parallel/intel18</env>
+      <env name="NETCDF_PATH">/home/wuda/soft/netcdf/4.4.1c-4.2cxx-4.4.4f-parallel/intel18</env>
+      <env name="PNETCDF_PATH">/home/wuda/soft/pnetcdf/1.12.0/intel18</env-->
+      <env name="NETCDF_PATH">/gpfs/jlse-fs0/projects/climate/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/intel19</env>
+    </environment_variables>
+    <environment_variables compiler="intel" mpilib="impi">
+      <env name="PNETCDF_PATH">/gpfs/jlse-fs0/projects/climate/soft/pnetcdf/1.12.1/intel19</env>
+    </environment_variables>
+    <environment_variables compiler="intel" mpilib="openmpi">
+      <env name="PNETCDF_PATH">/gpfs/jlse-fs0/projects/climate/soft/pnetcdf/1.12.1/openmpi2.1.6</env>
+    </environment_variables>
+    <environment_variables compiler="intel" mpilib="mpich">
+      <env name="PATH">/gpfs/jlse-fs0/projects/climate/soft/mpich/3.3.2/intel19/bin:$ENV{PATH}</env>
+      <env name="MPICH_CC">icc</env>
+      <env name="MPICH_CXX">icpc</env>
+      <env name="MPICH_FC">ifort</env>
+      <env name="LD_LIBRARY_PATH">/gpfs/jlse-fs0/projects/climate/soft/mpich/3.3.2/intel19/lib:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="PNETCDF_PATH">/gpfs/jlse-fs0/projects/climate/soft/pnetcdf/1.12.1/mpich3.3.2</env>
     </environment_variables>
     <environment_variables compiler="!intel">
       <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.3.3.1c-4.2cxx-4.4.2f/gnu-arm</env>
