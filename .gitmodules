@@ -31,3 +31,7 @@
 	path = components/cam/src/physics/cosp2/external
 	url = git@github.com:CFMIP/COSPv2.0.git
 	branch = CESM_v2.1.4
+[submodule "cime"]
+	path = cime
+	url = git@github.com:ESMCI/cime.git
+	branch = master
