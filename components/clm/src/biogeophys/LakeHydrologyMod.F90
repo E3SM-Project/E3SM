@@ -135,6 +135,7 @@ contains
          forc_rain            =>  top_af%rain                           , & ! Input:  [real(r8) (:)   ]  rain rate (kg H2O/m**2/s, or mm liquid H2O/s)                        
          forc_snow            =>  top_af%snow                           , & ! Input:  [real(r8) (:)   ]  snow rate (kg H2O/m**2/s, or mm liquid H2O/s)                        
          forc_t               =>  top_as%tbot                           , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)        
+         forc_wind            =>  top_as%windbot                        , & ! Input:  [real(r8) (:) ]  atmospheric wind speed (m/s)
          qflx_floodg          =>  atm2lnd_vars%forc_flood_grc           , & ! Input:  [real(r8) (:)   ]  gridcell flux of flood water from RTM   
 
          watsat               =>  soilstate_vars%watsat_col             , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)
@@ -495,7 +496,7 @@ contains
       ! Natural compaction and metamorphosis.
 
       call SnowCompaction(bounds, num_shlakesnowc, filter_shlakesnowc, &
-           temperature_vars, waterstate_vars)
+           temperature_vars, waterstate_vars, top_as)
 
       ! Combine thin snow elements
 

@@ -22,6 +22,7 @@ Module HydrologyNoDrainageMod
   use ColumnType        , only : col_pp
   use ColumnDataType    , only : col_es, col_ws                
   use VegetationType    , only : veg_pp                
+  use TopounitDataType  , only : top_as, top_af ! Atmospheric state and flux variables
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -130,6 +131,8 @@ contains
          snl                => col_pp%snl                                , & ! Input:  [integer  (:)   ]  number of snow layers                    
          nlev2bed           => col_pp%nlevbed                           , & ! Input:  [integer  (:)   ]  number of layers to bedrock                     
          ctype              => col_pp%itype                              , & ! Input:  [integer  (:)   ]  column type                              
+
+         forc_wind          => top_as%windbot         , & ! Input:  [real(r8) (:) ]  atmospheric wind speed (m/s)
 
          t_h2osfc           => col_es%t_h2osfc          , & ! Input:  [real(r8) (:)   ]  surface water temperature               
          dTdz_top           => col_es%dTdz_top          , & ! Output: [real(r8) (:)   ]  temperature gradient in top layer (col) [K m-1] !
@@ -296,7 +299,7 @@ contains
       endif           
       ! Natural compaction and metamorphosis.
       call SnowCompaction(bounds, num_snowc, filter_snowc, &
-           temperature_vars, waterstate_vars)
+           temperature_vars, waterstate_vars, top_as)
 
       ! Combine thin snow elements
       call CombineSnowLayers(bounds, num_snowc, filter_snowc, &
