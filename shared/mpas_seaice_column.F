@@ -8787,7 +8787,11 @@ contains
          domain
 
     integer, pointer :: &
-         nCategories
+         nCategories, &
+         nSnowLayers, &
+         nIceLayers, &
+         config_nSnowLayers, &
+         config_nIceLayers
 
     character(len=strKIND), pointer :: &
          config_thermodynamics_type, &
@@ -8844,6 +8848,8 @@ contains
          config_snow_to_ice_transition_depth
 
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nCategories", nCategories)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nSnowLayers", nSnowLayers)
+    call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nIceLayers", nIceLayers)
 
     call MPAS_pool_get_config(domain % configs, "config_thermodynamics_type", config_thermodynamics_type)
     call MPAS_pool_get_config(domain % configs, "config_heat_conductivity_type", config_heat_conductivity_type)
@@ -8887,6 +8893,8 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_modal_aerosols", config_use_modal_aerosols)
     call MPAS_pool_get_config(domain % configs, "config_use_zaerosols", config_use_zaerosols)
     call MPAS_pool_get_config(domain % configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+    call MPAS_pool_get_config(domain % configs, "config_nSnowLayers", config_nSnowLayers)
+    call MPAS_pool_get_config(domain % configs, "config_nIceLayers", config_nIceLayers)
 
     !-----------------------------------------------------------------------
     ! Check values
@@ -8964,6 +8972,18 @@ contains
                trim(config_pond_refreezing_type) == "hlid")) then
        call config_error("config_pond_refreezing_type", config_pond_refreezing_type, "'cesm' or 'hlid'")
     endif
+
+    ! check for consistency in snow vertical dimension
+    if (config_nSnowLayers /= nSnowlayers) &
+       call mpas_log_write(&
+            'Check for inconsistencies in restart file: config_nSnowLayers /= nSnowLayers', &
+            messageType=MPAS_LOG_CRIT)
+
+    ! check for consistency in ice vertical dimension
+    if (config_nIceLayers /= nIcelayers) &
+       call mpas_log_write(&
+            'Check for inconsistencies in restart file: config_nIceLayers /= nIceLayers', &
+            messageType=MPAS_LOG_CRIT)
 
     !-----------------------------------------------------------------------
     ! Check combinations
