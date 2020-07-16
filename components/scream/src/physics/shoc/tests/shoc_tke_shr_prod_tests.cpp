@@ -30,8 +30,7 @@ TEST_CASE("shoc_tke_shr_prod", "shoc") {
   // Tests for the subroutine compute_shr_prod in the SHOC
   //   TKE module.  
 
-
-  // FIRST TEST INPUTS
+  // FIRST TEST
   //  For first tests input a sheared profile for both wind 
   //  components, one with zonal winds increasing with height
   //  at a constant rate per GRID box and another with meridional
@@ -125,6 +124,16 @@ TEST_CASE("shoc_tke_shr_prod", "shoc") {
   Real u_wind_cons[nlev] = {10.0, 10.0, 10.0, 10.0, 10.0};
   // Define meridional wind on nlev grid [m/s]
   Real v_wind_cons[nlev] = {-5.0, -5.0, -5.0, -5.0, -5.0};
+  
+  // Fill in test data on zt_grid.
+  for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int n = 0; n < SDS.nlev; ++n) {
+      const auto offset = n + s * SDS.nlev;
+
+      SDS.u_wind[offset] = u_wind_cons[n];
+      SDS.v_wind[offset] = v_wind_cons[n];
+    }
+  }  
   
   // Call the fortran implementation
   compute_shr_prod(nlev, SDS);
