@@ -1503,19 +1503,15 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: channelEffectivePressure
       real (kind=RKIND), dimension(:), pointer :: effectivePressure
       real (kind=RKIND), dimension(:), pointer :: channelDiffusivity
-      real (kind=RKIND), dimension(:), pointer :: openingRate
-      real (kind=RKIND), dimension(:), pointer :: waterVelocity
       integer, dimension(:), pointer :: waterFluxMask
       integer, dimension(:), pointer :: edgeMask
       real (kind=RKIND), dimension(:,:), pointer :: flowParamA
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, pointer :: nVertLevels
 
-      integer, pointer :: nEdgesSolve, nEdges
+      integer, pointer :: nEdgesSolve
       integer :: iEdge, cell1, cell2
 
-      real (kind=RKIND) :: openingRateEdge
-      real (kind=RKIND) :: velSign
 
       err = 0
 
@@ -1535,7 +1531,6 @@ module li_subglacial_hydro
       call mpas_pool_get_config(liConfigs, 'config_SGH_include_pressure_melt', config_SGH_include_pressure_melt)
 
       call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
-      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
       call mpas_pool_get_array(hydroPool, 'channelArea', channelArea)
@@ -1557,8 +1552,6 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
       call mpas_pool_get_array(hydroPool, 'waterFluxMask', waterFluxMask)
       call mpas_pool_get_array(hydroPool, 'channelDiffusivity', channelDiffusivity)
-      call mpas_pool_get_array(hydroPool, 'openingRate', openingRate)
-      call mpas_pool_get_array(hydroPool, 'waterVelocity', waterVelocity)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
 
       ! Calculate terms needed for opening (melt) rate
@@ -1589,7 +1582,6 @@ module li_subglacial_hydro
          channelDischarge = 0.0_RKIND
       end where
 
-
       channelVelocity = channelDischarge / (channelArea + 1.0e-12_RKIND)
 
       ! diffusivity used only to limit channel dt right now
@@ -1606,19 +1598,6 @@ module li_subglacial_hydro
       channelPressureFreeze = -1.0_RKIND * iceMeltingPointPressureDependence * cp_freshwater * rho_water * &
          (channelDischarge + waterFlux * config_SGH_incipient_channel_width) &
          * waterPressureSlopeNormal / latent_heat_ice
-
-      ! Disable channel melt where dissipation in sheet is small relative to passive opening and channel hasn't started melting yet
-      do iEdge = 1, nEdges
-         cell1 = cellsOnEdge(1, iEdge)
-         cell2 = cellsOnEdge(2, iEdge)
-         velSign = sign(1.0_RKIND, waterVelocity(iEdge))
-         openingRateEdge = max(velSign * openingRate(cell1), velSign * (-1.0_RKIND) * openingRate(cell2))
-         if ( ((abs(waterFlux(iEdge) * hydropotentialSlopeNormal(iEdge)) + &
-              max(0.0_RKIND, channelMelt(iEdge) / config_SGH_incipient_channel_width)) &
-              / (latent_heat_ice * rhoi) / (openingRateEdge+1.0e-15_RKIND)) < 0.1_RKIND) then
-            channelMelt(iEdge) = 0.0_RKIND
-         endif
-      end do
 
       if (config_SGH_include_pressure_melt) then
          channelOpeningRate = (channelMelt - channelPressureFreeze) / rhoi
