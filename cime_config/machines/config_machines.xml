@@ -1636,7 +1636,7 @@
       <executable>mpirun</executable>
       <arguments>
         <arg name="num_tasks">--tag-output -n $TOTALPES</arg>
-        <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to core</arg>
+        <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=1 --bind-to core</arg>
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
@@ -1711,7 +1711,7 @@
       <env name="OMP_STACKSIZE">256M</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="!intel">
-      <env name="OMP_PLACES">cores</env>
+      <env name="OMP_PLACES">threads</env>
       <env name="OMP_STACKSIZE">256M</env>
     </environment_variables>
   </machine>
