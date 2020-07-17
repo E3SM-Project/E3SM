@@ -375,6 +375,14 @@ Valid values: Positive real numbers
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_Redi_set_RediKappa_to_GMKappa" type="logical"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+If true RediKappa is forced to be equal to gmBolusKappa
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_Redi_maximum_slope" type="real"
 	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
 value of maximum allowed isopycnal slope from Danabasoglu et al 2008 equation (2)
@@ -402,6 +410,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_Redi_use_surface_taper" type="logical"
 	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
 If true, Redi slope is tapered near sfc based on Large et al 1997
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_use_N2_based_taper" type="logical"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+If true apply the N2 limiting of Danabasoglu and Marshall 2007
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -436,9 +452,57 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_GM_closure" type="char*1024"
 	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
-Control what method used to compute GM $\kappa$. Both 'constant' and 'N2_dependent' use the method in Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004). 'constant' uses a constant kappa in eqn 16a, while 'N2_dependent' varies kappa in the vertical according to Danabasoglu and Marshall 2007 (https://doi.org/10.1016/j.ocemod.2007.03.006).
+Control what method used to compute GM $\kappa$. Both 'constant' and 'N2_dependent' use the method in Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004). 'constant' uses a constant kappa in eqn 16a, while 'N2_dependent' varies kappa in the vertical according to Danabasoglu and Marshall 2007 (https://doi.org/10.1016/j.ocemod.2007.03.006). 'visbeck' implements a horizontally varying diffusivity of Visbeck et al 1997
 
-Valid values: 'N2_dependent', 'constant'
+Valid values: 'N2_dependent', 'constant', 'visbeck'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_baroclinic_mode" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+baroclinic wave mode chosen for the ferrari et al 2010 calculation
+
+Valid values: small positive numbers
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_visbeck_alpha" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+scaling factor on the visbeck diffusivity parameterization
+
+Valid values: small positive numbers
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_visbeck_min_depth" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+minimum depth for calculation of vertical average
+
+Valid values: values between zero and bottom depth
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_visbeck_max_depth" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+minimum depth for calculation of vertical average
+
+Valid values: values between zero and bottom depth
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_visbeck_min_kappa" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+minimum value of bolus diffusivity for visbeck scheme
+
+Valid values: values around 100s
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_visbeck_max_kappa" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+minimum value of bolus diffusivity for visbeck scheme
+
+Valid values: values around 100s
 Default: Defined in namelist_defaults.xml
 </entry>
 

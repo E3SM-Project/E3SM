@@ -104,7 +104,7 @@ OPTION(BUILD_HOMME_SWIM  "Shallow water equations implicit" OFF)
 OPTION(BUILD_HOMME_PRIM  "Primitive equations implicit" OFF)
 OPTION(BUILD_HOMME_TOOL  "Offline tool" ON)
 OPTION(HOMME_ENABLE_COMPOSE "Build COMPOSE semi-Lagrangian tracer transport code" ON)
-OPTION(HOMME_USE_SCORPIO  "Use Scorpio as the I/O library (the default I/O library used is \"Scorpio classic\")" OFF)
+OPTION(HOMME_USE_SCORPIO  "Use Scorpio as the I/O library (Disable to use Scorpio classic)" ON)
 
 #by default we don't need cxx
 SET(HOMME_USE_CXX FALSE)

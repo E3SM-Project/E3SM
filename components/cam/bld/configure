@@ -94,6 +94,7 @@ use FindBin qw($Bin);
 use lib "$Bin/perl5lib";
 use Build::ChemPreprocess qw(chem_preprocess chem_number_adv);
 use File::Copy;
+use Sys::Hostname;
 
 #-----------------------------------------------------------------------------------------------
 
@@ -143,6 +144,7 @@ OPTIONS
                         dlatxdlon for fv grids (dlat and dlon are the grid cell size
 			in degrees for latitude and longitude respectively); nexnp for
                         se grids.
+     -mach <name>       Name of target system, for setting system-specific namelist defaults
      -max_n_rad_cnst <n> Maximum number of constituents that are either radiatively
                         active, or in any single diagnostic list for the radiation.    
      -microphys <name>  Specify the microphysics option [mg1 | mg1.5 | mg2 | rk].
@@ -379,6 +381,7 @@ GetOptions(
     "ldflags=s"                 => \$opts{'ldflags'},
     "linker=s"                  => \$opts{'linker'},
     "lnd=s"                     => \$opts{'lnd'},
+    "mach=s"                    => \$opts{'mach'},
     "max_n_rad_cnst=s"          => \$opts{'max_n_rad_cnst'},
     "microphys=s"               => \$opts{'microphys'},
     "mpi_inc=s"                 => \$opts{'mpi_inc'},
@@ -689,6 +692,16 @@ if ($print>=2) { print "Configuration cache file: $config_cache_file$eol"; }
 #-----------------------------------------------------------------------------------------------
 # Platform properties ##########################################################################
 #-----------------------------------------------------------------------------------------------
+
+#-----------------------------------------------------------------------------------------------
+# Determine target system name, using hostname if not otherwsie specified
+my ($mach) = split /\./, hostname();
+if (defined $opts{'mach'}) {
+    $mach = $opts{'mach'};
+}
+$cfg_ref->set('mach', $mach);
+
+if ($print>=2) { print "MACH: $mach$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Determine target OS -- allow cross compilation only if target_os is specified on commandline.
@@ -1348,7 +1361,8 @@ if ($print>=2) { print "Horizontal grid specifier: $hgrid$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Maximum number of columns in a chunk. If set as an option, then it is a compile-time parameter
-# (ppcols == 'TRUE'). Otherwise, pcols is just the default value for a runtime parameter.
+# (ppcols == 'TRUE'). Otherwise, pcols is a runtime parameter set by the namelist parameter
+# phys_chnk_fdim.
 if (defined $opts{'pcols'}) {
     $cfg_ref->set('pcols', $opts{'pcols'});
     $cfg_ref->set('ppcols', 'TRUE');

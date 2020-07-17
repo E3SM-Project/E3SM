@@ -114,13 +114,22 @@
 <config_Leith_visc2_max>2.5e3</config_Leith_visc2_max>
 
 <!-- Redi_isopycnal_mixing -->
-<config_use_Redi>.false.</config_use_Redi>
-<config_Redi_kappa>1800.0</config_Redi_kappa>
-<config_Redi_kappa ocn_forcing="datm_forced_restoring">600.0</config_Redi_kappa>
-<config_Redi_maximum_slope>0.3</config_Redi_maximum_slope>
+<config_use_Redi>.true.</config_use_Redi>
+<config_use_Redi ocn_grid="oRRS30to10">.false.</config_use_Redi>
+<config_use_Redi ocn_grid="oRRS30to10v3">.false.</config_use_Redi>
+<config_use_Redi ocn_grid="oRRS30to10wLI">.false.</config_use_Redi>
+<config_use_Redi ocn_grid="oRRS30to10v3wLI">.false.</config_use_Redi>
+<config_use_Redi ocn_grid="oRRS18to6">.false.</config_use_Redi>
+<config_use_Redi ocn_grid="oRRS18to6v3">.false.</config_use_Redi>
+<config_use_Redi ocn_grid="oRRS15to5">.false.</config_use_Redi>
+<config_Redi_kappa>400.0</config_Redi_kappa>
+<config_Redi_kappa ocn_forcing="datm_forced_restoring">400.0</config_Redi_kappa>
+<config_Redi_set_RediKappa_to_GMKappa>.false.</config_Redi_set_RediKappa_to_GMKappa>
+<config_Redi_maximum_slope>0.01</config_Redi_maximum_slope>
 <config_Redi_closure>'constant'</config_Redi_closure>
 <config_Redi_use_slope_taper>.true.</config_Redi_use_slope_taper>
 <config_Redi_use_surface_taper>.true.</config_Redi_use_surface_taper>
+<config_Redi_use_N2_based_taper>.true.</config_Redi_use_N2_based_taper>
 <config_Redi_N2_limit_term1>.true.</config_Redi_N2_limit_term1>
 
 <!-- GM_eddy_parameterization -->
@@ -134,7 +143,13 @@
 <config_use_GM ocn_grid="oRRS15to5">.false.</config_use_GM>
 <config_GM_kappa>1800.0</config_GM_kappa>
 <config_GM_kappa ocn_forcing="datm_forced_restoring" ocn_grid="oEC60to30v3wLI">600.0</config_GM_kappa>
-<config_GM_closure>'N2_dependent'</config_GM_closure>
+<config_GM_closure>'visbeck'</config_GM_closure>
+<config_GM_baroclinic_mode>3.0</config_GM_baroclinic_mode>
+<config_GM_visbeck_alpha>0.13</config_GM_visbeck_alpha>
+<config_GM_visbeck_min_depth>50.0</config_GM_visbeck_min_depth>
+<config_GM_visbeck_max_depth>1000.0</config_GM_visbeck_max_depth>
+<config_GM_visbeck_min_kappa>300.0</config_GM_visbeck_min_kappa>
+<config_GM_visbeck_max_kappa>1200.0</config_GM_visbeck_max_kappa>
 <config_GM_min_stratification_ratio>0.1</config_GM_min_stratification_ratio>
 <config_GM_constant_gravWaveSpeed>0.3</config_GM_constant_gravWaveSpeed>
 
