@@ -368,6 +368,7 @@ end subroutine modal_aer_opt_init
 subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, ext_cmip6_sw, trop_level,  &
                          tauxar, wa, ga, fa)
 
+  use shr_log_mod ,     only: errmsg => shr_log_errmsg
    ! calculates aerosol sw radiative properties
 
    integer,             intent(in) :: list_idx       ! index of the climate or a diagnostic list
@@ -576,11 +577,32 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
    ! loop over all aerosol modes
    call rad_cnst_get_info(list_idx, nmodes=nmodes)
 
-      allocate(dgnumdry_m(pcols,pver,nmodes), dgnumwet_m(pcols,pver,nmodes), &
-               qaerwat_m(pcols,pver,nmodes),  wetdens_m(pcols,pver,nmodes), stat=istat)
-      if (istat > 0) then
-         call endrun('modal_aero_sw: allocation FAILURE: arrays for diagnostic calcs')
-      end if
+
+   !BSINGH-Future work:
+   !1. remove wetdens as it is not being used here
+   
+   if(.not. associated(dgnumdry_m)) then
+      allocate(dgnumdry_m(pcols,pver,nmodes),stat=istat)
+      if (istat .ne. 0) call endrun("Unable to allocate dgnumdry_m: "//errmsg(__FILE__,__LINE__) )
+   endif
+   if(.not. associated(dgnumwet_m)) then
+      allocate(dgnumwet_m(pcols,pver,nmodes),stat=istat)
+      if (istat .ne. 0) call endrun("Unable to allocate dgnumwet_m: "//errmsg(__FILE__,__LINE__) )
+   endif
+   if(.not. associated(qaerwat_m)) then
+      allocate(qaerwat_m(pcols,pver,nmodes),stat=istat)
+      if (istat .ne. 0) call endrun("Unable to allocate qaerwat_m: "//errmsg(__FILE__,__LINE__) )
+   endif
+   if(.not. associated(wetdens_m)) then
+      allocate(wetdens_m(pcols,pver,nmodes),stat=istat)
+      if (istat .ne. 0) call endrun("Unable to allocate wetdens_m: "//errmsg(__FILE__,__LINE__) )
+   endif
+
+   dgnumdry_m(:,:,:) = huge(1.0_r8)
+   dgnumwet_m(:,:,:) = huge(1.0_r8)
+   qaerwat_m(:,:,:)  = huge(1.0_r8)
+   wetdens_m(:,:,:)  = huge(1.0_r8)
+
       call modal_aero_calcsize_sub(state, pbuf, do_adjust_in=.false., do_aitacc_transfer_in=.false., &
            list_idx=list_idx, dgnumdry_m=dgnumdry_m)
       call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
@@ -1042,12 +1064,22 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
 
    end do ! nmodes
 
-   if (list_idx > 0) then
-      deallocate(dgnumdry_m)
-      deallocate(dgnumwet_m)
-      deallocate(qaerwat_m)
-      deallocate(wetdens_m)
-   end if
+   if(associated(dgnumdry_m))then
+      deallocate(dgnumdry_m, stat=istat)
+      if (istat .ne. 0) call endrun("Unable to deallocate dgnumdry_m: "//errmsg(__FILE__,__LINE__) )
+   endif
+   if(associated(dgnumwet_m))then
+      deallocate(dgnumwet_m, stat=istat)
+      if (istat .ne. 0) call endrun("Unable to deallocate dgnumwet_m: "//errmsg(__FILE__,__LINE__) )
+   endif
+   if(associated(qaerwat_m))then
+      deallocate(qaerwat_m, stat=istat)
+      if (istat .ne. 0) call endrun("Unable to deallocate qaerwat_m: "//errmsg(__FILE__,__LINE__) )
+   endif
+   if(associated(wetdens_m))then
+      deallocate(wetdens_m, stat=istat)
+      if (istat .ne. 0) call endrun("Unable to deallocate wetdens_m: "//errmsg(__FILE__,__LINE__) )
+   endif
 
    !Add contributions from volcanic aerosols directly read in extinction
    if(is_cmip6_volc) then
@@ -1173,7 +1205,7 @@ end subroutine modal_aero_sw
 !===============================================================================
 
 subroutine modal_aero_lw(list_idx, state, pbuf, tauxar)
-
+  use shr_log_mod ,     only: errmsg => shr_log_errmsg
    ! calculates aerosol lw radiative properties
 
    integer,             intent(in)  :: list_idx ! index of the climate or a diagnostic list
@@ -1246,11 +1278,28 @@ subroutine modal_aero_lw(list_idx, state, pbuf, tauxar)
    ! loop over all aerosol modes
    call rad_cnst_get_info(list_idx, nmodes=nmodes)
 
-      allocate(dgnumdry_m(pcols,pver,nmodes), dgnumwet_m(pcols,pver,nmodes), &
-               qaerwat_m(pcols,pver,nmodes),  wetdens_m(pcols,pver,nmodes), stat=istat)
-      if (istat > 0) then
-         call endrun('modal_aero_lw: allocation FAILURE: arrays for diagnostic calcs')
-      end if
+   if(.not. associated(dgnumdry_m)) then
+      allocate(dgnumdry_m(pcols,pver,nmodes),stat=istat)
+      if (istat > 0) call endrun("Unable to allocate dgnumdry_m: "//errmsg(__FILE__,__LINE__) )
+   endif
+   if(.not. associated(dgnumwet_m)) then
+      allocate(dgnumwet_m(pcols,pver,nmodes),stat=istat)
+      if (istat > 0) call endrun("Unable to allocate dgnumwet_m: "//errmsg(__FILE__,__LINE__) )
+   endif
+   if(.not. associated(qaerwat_m)) then
+      allocate(qaerwat_m(pcols,pver,nmodes),stat=istat)
+      if (istat > 0) call endrun("Unable to allocate qaerwat_m: "//errmsg(__FILE__,__LINE__) )
+   endif
+   if(.not. associated(wetdens_m)) then
+      allocate(wetdens_m(pcols,pver,nmodes),stat=istat)
+      if (istat > 0) call endrun("Unable to allocate wetdens_m: "//errmsg(__FILE__,__LINE__) )
+   endif
+   
+   dgnumdry_m(:,:,:) = huge(1.0_r8)
+   dgnumwet_m(:,:,:) = huge(1.0_r8)
+   qaerwat_m(:,:,:)  = huge(1.0_r8)
+   wetdens_m(:,:,:)  = huge(1.0_r8)
+   
       call modal_aero_calcsize_sub(state, pbuf, do_adjust_in=.false., do_aitacc_transfer_in=.false., &
            list_idx=list_idx, dgnumdry_m=dgnumdry_m)
       call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
@@ -1394,12 +1443,22 @@ subroutine modal_aero_lw(list_idx, state, pbuf, tauxar)
 
    end do ! m = 1, nmodes
 
-   if (list_idx > 0) then
-      deallocate(dgnumdry_m)
-      deallocate(dgnumwet_m)
-      deallocate(qaerwat_m)
-      deallocate(wetdens_m)
-   end if
+   if(associated(dgnumdry_m))then
+      deallocate(dgnumdry_m, stat=istat)
+      if (istat .ne. 0) call endrun("Unable to deallocate dgnumdry_m: "//errmsg(__FILE__,__LINE__) )
+   endif
+   if(associated(dgnumwet_m))then
+      deallocate(dgnumwet_m, stat=istat)
+      if (istat .ne. 0) call endrun("Unable to deallocate dgnumwet_m: "//errmsg(__FILE__,__LINE__) )
+   endif
+   if(associated(qaerwat_m))then
+      deallocate(qaerwat_m, stat=istat)
+      if (istat .ne. 0) call endrun("Unable to deallocate qaerwat_m: "//errmsg(__FILE__,__LINE__) )
+   endif
+   if(associated(wetdens_m))then
+      deallocate(wetdens_m, stat=istat)
+      if (istat .ne. 0) call endrun("Unable to deallocate wetdens_m: "//errmsg(__FILE__,__LINE__) )
+   endif
 
 end subroutine modal_aero_lw
 
