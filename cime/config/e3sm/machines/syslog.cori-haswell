@@ -13,7 +13,7 @@ set dir = $6
 # Target length was determined empirically (maximum number of lines before job mapping 
 #  information starts + number of nodes), and it may need to be adjusted in the future.
 # (Note that calling script 'touch'es the e3sm log file before spawning this script, so that 'wc' does not fail.)
-set nnodes = `sqs -f $jid | grep -F NumNodes | sed 's/ *NumNodes=\([0-9]*\) .*/\1/' `
+set nnodes = `scontrol show jobid $jid | grep -F NumNodes | sed 's/ *NumNodes=\([0-9]*\) .*/\1/' `
 @ target_lines = 150 + $nnodes
 sleep 10
 set outlth = `wc \-l $run/e3sm.log.$lid | sed 's/ *\([0-9]*\) *.*/\1/' `
