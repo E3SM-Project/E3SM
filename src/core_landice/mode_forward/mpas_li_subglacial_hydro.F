@@ -704,12 +704,14 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: bedTopography
       real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:), pointer :: hydropotentialBase
+      real (kind=RKIND), dimension(:), pointer :: hydropotential
       real (kind=RKIND), dimension(:), pointer :: hydropotentialBaseVertex
       real (kind=RKIND), dimension(:), pointer :: waterPressure
       real (kind=RKIND), dimension(:), pointer :: waterThicknessEdge
       real (kind=RKIND), dimension(:), pointer :: waterThicknessEdgeUpwind
       real (kind=RKIND), dimension(:), pointer :: waterThickness
       real (kind=RKIND), dimension(:), pointer :: hydropotentialBaseSlopeNormal
+      real (kind=RKIND), dimension(:), pointer :: hydropotentialSlopeNormal
       real (kind=RKIND), dimension(:), pointer :: waterPressureSlopeNormal
       real (kind=RKIND), dimension(:), pointer :: hydropotentialBaseSlopeTangent
       real (kind=RKIND), dimension(:), pointer :: gradMagPhiEdge
@@ -763,11 +765,13 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'waterThickness', waterThickness)
       call mpas_pool_get_array(hydroPool, 'waterPressure', waterPressure)
       call mpas_pool_get_array(hydroPool, 'hydropotentialBase', hydropotentialBase)
+      call mpas_pool_get_array(hydroPool, 'hydropotential', hydropotential)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(hydroPool, 'waterThicknessEdge', waterThicknessEdge)
       call mpas_pool_get_array(hydroPool, 'waterThicknessEdgeUpwind', waterThicknessEdgeUpwind)
       call mpas_pool_get_array(hydroPool, 'hydropotentialBaseSlopeNormal', hydropotentialBaseSlopeNormal)
+      call mpas_pool_get_array(hydroPool, 'hydropotentialSlopeNormal', hydropotentialSlopeNormal)
       call mpas_pool_get_array(hydroPool, 'waterPressureSlopeNormal', waterPressureSlopeNormal)
       call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
@@ -800,6 +804,7 @@ module li_subglacial_hydro
          endif
 
          hydropotentialBaseSlopeNormal(iEdge) = (hydropotentialBase(cell2) - hydropotentialBase(cell1)) / dcEdge(iEdge)
+         hydropotentialSlopeNormal(iEdge) = (hydropotential(cell2) - hydropotential(cell1)) / dcEdge(iEdge)
          waterPressureSlopeNormal(iEdge) = (waterPressure(cell2) - waterPressure(cell1)) / dcEdge(iEdge)
       end do
 
@@ -819,11 +824,13 @@ module li_subglacial_hydro
                ! flow is from cell2 to cell1
                if (.not. li_mask_is_grounded_ice(cellMask(cell2))) then
                   hydropotentialBaseSlopeNormal(iEdge) = 0.0_RKIND
+                  hydropotentialSlopeNormal(iEdge) = 0.0_RKIND
                endif
             else ! phi<=0
                ! flow is from cell1 to cell2
                if (.not. li_mask_is_grounded_ice(cellMask(cell1))) then
                   hydropotentialBaseSlopeNormal(iEdge) = 0.0_RKIND
+                  hydropotentialSlopeNormal(iEdge) = 0.0_RKIND
                endif
             endif
          endif ! GL edge or grounded margin
@@ -840,10 +847,14 @@ module li_subglacial_hydro
                if ((bedTopography(cell1) < bedTopography(cell2)) .and. (bedTopography(cell1) >= config_sea_level)) then
                   hydropotentialBaseSlopeNormal(iEdge) = (hydropotentialBase(cell2) - rho_water * gravity * bedTopography(cell2))&
                      / dcEdge(iEdge)
+                  hydropotentialSlopeNormal(iEdge) = (hydropotential(cell2) - rho_water * gravity * bedTopography(cell2))&
+                     / dcEdge(iEdge)
                endif
             else ! cell2 is the icefree cell
                if ((bedTopography(cell2) < bedTopography(cell1)) .and. (bedTopography(cell2) >= config_sea_level)) then
                   hydropotentialBaseSlopeNormal(iEdge) = (rho_water * gravity * bedTopography(cell1) - hydropotentialBase(cell1))&
+                     / dcEdge(iEdge)
+                  hydropotentialSlopeNormal(iEdge) = (rho_water * gravity * bedTopography(cell1) - hydropotential(cell1))&
                      / dcEdge(iEdge)
                endif
             endif ! which cell is icefree
@@ -1489,7 +1500,7 @@ module li_subglacial_hydro
       real (kind=RKIND), dimension(:), pointer :: channelVelocity
       real (kind=RKIND), dimension(:), pointer :: gradMagPhiEdge
       real (kind=RKIND), dimension(:), pointer :: waterFlux
-      real (kind=RKIND), dimension(:), pointer :: hydropotentialBaseSlopeNormal
+      real (kind=RKIND), dimension(:), pointer :: hydropotentialSlopeNormal
       real (kind=RKIND), dimension(:), pointer :: waterPressureSlopeNormal
       real (kind=RKIND), dimension(:), pointer :: channelOpeningRate
       real (kind=RKIND), dimension(:), pointer :: channelClosingRate
@@ -1534,7 +1545,7 @@ module li_subglacial_hydro
       call mpas_pool_get_array(hydroPool, 'channelDischarge', channelDischarge)
       call mpas_pool_get_array(hydroPool, 'channelVelocity', channelVelocity)
       call mpas_pool_get_array(hydroPool, 'gradMagPhiEdge', gradMagPhiEdge)
-      call mpas_pool_get_array(hydroPool, 'hydropotentialBaseSlopeNormal', hydropotentialBaseSlopeNormal)
+      call mpas_pool_get_array(hydroPool, 'hydropotentialSlopeNormal', hydropotentialSlopeNormal)
       call mpas_pool_get_array(hydroPool, 'waterPressureSlopeNormal', waterPressureSlopeNormal)
       call mpas_pool_get_array(hydroPool, 'waterFlux', waterFlux)
       call mpas_pool_get_array(hydroPool, 'channelOpeningRate', channelOpeningRate)
@@ -1555,7 +1566,7 @@ module li_subglacial_hydro
          channelDischarge(:) = 0.0_RKIND
       elsewhere
          channelDischarge = -1.0_RKIND * Kc * channelArea**alpha_c * gradMagPhiEdge**(beta_c - 2.0_RKIND) * &
-            hydropotentialBaseSlopeNormal
+            hydropotentialSlopeNormal
       end where
 
       where (waterFluxMask == 2)
@@ -1587,8 +1598,8 @@ module li_subglacial_hydro
             Kc * channelArea**(alpha_c - 1.0_RKIND) * gradMagPhiEdge**(beta_c - 2.0_RKIND))
       end where
 
-      channelMelt = (abs(channelDischarge * hydropotentialBaseSlopeNormal) &  ! channel dissipation
-                  +  abs(waterFlux * hydropotentialBaseSlopeNormal * config_SGH_incipient_channel_width) & !some sheet dissipation
+      channelMelt = (abs(channelDischarge * hydropotentialSlopeNormal) &  ! channel dissipation
+                  +  abs(waterFlux * hydropotentialSlopeNormal * config_SGH_incipient_channel_width) & !some sheet dissipation
                   ) / latent_heat_ice
       channelPressureFreeze = -1.0_RKIND * iceMeltingPointPressureDependence * cp_freshwater * rho_water * &
          (channelDischarge + waterFlux * config_SGH_incipient_channel_width) &

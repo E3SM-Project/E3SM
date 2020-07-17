@@ -192,6 +192,8 @@
                      description="hydropotential without water thickness contribution on vertices.  Only used for some choices of config_SGH_tangent_slope_calculation." />
                 <var name="hydropotentialBaseSlopeNormal" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
                      description="normal component of gradient of hydropotentialBase" />
+                <var name="hydropotentialSlopeNormal" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
+                     description="normal component of gradient of hydropotential" />
                 <var name="hydropotentialBaseSlopeTangent" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
                      description="tangent component of gradient of hydropotentialBase" />
              <var name="gradMagPhiEdge" type="real" dimensions="nEdges Time" units="Pa m^{-1}"
