@@ -1,7 +1,0 @@
-src/.env_mach*
-src/env_mach*
-src/Macros.make
-src/Depends*
-src/*.o
-src/*.optrpt
-map_field
