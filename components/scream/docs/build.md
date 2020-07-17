@@ -37,7 +37,7 @@ This usually looks something like the following:
 cd $RUN_ROOT_DIR
 cmake \
     -D CMAKE_BUILD_TYPE=Debug \
-    -D KOKKOS_ENABLE_DEBUG=ON \
+    -D KOKKOS_ENABLE_DEBUG=TRUE \
     -D KOKKOS_ENABLE_AGGRESSIVE_VECTORIZATION=OFF \
     -D KOKKOS_ENABLE_SERIAL=ON \
     -D KOKKOS_ENABLE_OPENMP=ON \
@@ -45,6 +45,16 @@ cmake \
     -D KOKKOS_ENABLE_DEPRECATED_CODE=OFF \
     -D KOKKOS_ENABLE_EXPLICIT_INSTANTIATION:BOOL=OFF \
     ${SCREAM_SRC_DIR}/components/scream
+```
+
+If you're building on your local laptop or workstation, make sure you have MPI
+compilers installed, and tell SCREAM about them by inserting these options before
+the last line of the above command:
+
+```
+    -D CMAKE_C_COMPILER=mpicc \
+    -D CMAKE_CXX_COMPILER=mpicxx \
+    -D CMAKE_Fortran_COMPILER=mpif90 \
 ```
 
 Here, we've configured a `Debug` build to make it easier to find and fix errors.
