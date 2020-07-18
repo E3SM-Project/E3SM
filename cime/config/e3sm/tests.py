@@ -369,17 +369,17 @@ _TESTS = {
     "e3sm_scream" : {
         "time"  : "03:00:00",
         "tests" : (
-            "SMS_D.ne4_ne4.FSCREAM-HR",
-            "SMS_D.ne4_ne4.FSCREAM-LR",
-            "SMS_D.ne4_ne4.FSCREAM-SA",
-            "ERS.ne4_ne4.FSCREAM-HR",
-            "ERS.ne4_ne4.FSCREAM-LR",
-            "ERP.ne4_ne4.FSCREAM-HR.cam-double_memleak_tol",
-            "ERP.ne4_ne4.FSCREAM-LR.cam-double_memleak_tol",
-            "REP.ne4_ne4.FSCREAM-HR",
-            "REP.ne4_ne4.FSCREAM-LR",
-            "PEM.ne4_ne4.FSCREAM-HR",
-            "PEM.ne4_ne4.FSCREAM-LR",
+            "SMS_D.ne4pg2_ne4pg2.F2010-SCREAM-HR",
+            "SMS_D.ne4pg2_ne4pg2.F2010-SCREAM-LR",
+            "SMS_D.ne4pg2_ne4pg2.F2000-SCREAM-SA",
+            "ERS.ne4pg2_ne4pg2.F2010-SCREAM-HR",
+            "ERS.ne4pg2_ne4pg2.F2010-SCREAM-LR",
+            "ERP.ne4pg2_ne4pg2.F2010-SCREAM-HR.cam-double_memleak_tol",
+            "ERP.ne4pg2_ne4pg2.F2010-SCREAM-LR.cam-double_memleak_tol",
+            "REP.ne4pg2_ne4pg2.F2010-SCREAM-HR",
+            "REP.ne4pg2_ne4pg2.F2010-SCREAM-LR",
+            "PEM.ne4pg2_ne4pg2.F2010-SCREAM-HR",
+            "PEM.ne4pg2_ne4pg2.F2010-SCREAM-LR",
             )
     }
 }

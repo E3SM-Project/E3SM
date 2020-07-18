@@ -34,7 +34,7 @@
 
 <!-- For comprehensive history -->
 <history_amwg>.true.</history_amwg>
-<history_aerosol>.true.</history_aerosol>
+<history_aerosol>.false.</history_aerosol>
 <history_aero_optics>.true.</history_aero_optics>
 
 <!-- File for BC dep in snow feature -->
@@ -99,7 +99,10 @@
 <iradsw hgrid="ne1024np4"> 4 </iradsw>
 <iradlw hgrid="ne1024np4"> 4 </iradlw>
 
-<!-- For high-res, we use se_ftype = 1 to improve dynamics/physics coupling -->
-<se_ftype hgrid="ne1024np4">1</se_ftype>
+<!-- Use se_ftype = 1 to improve dynamics/physics coupling -->
+<se_ftype>2</se_ftype>
+
+<!-- Use the less sensitive advection scheme -->
+<semi_lagrange_cdr_alg>3</semi_lagrange_cdr_alg>
 
 </namelist_defaults>

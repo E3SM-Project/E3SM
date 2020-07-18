@@ -98,8 +98,11 @@
 <theta_hydrostatic_mode>.false.</theta_hydrostatic_mode>
 <tstep_type>10</tstep_type>
 
-<!-- For high-res, we use se_ftype = 1 to improve dynamics/physics coupling -->
-<se_ftype hgrid="ne1024np4">1</se_ftype>
+<!-- Use se_ftype = 1 to improve dynamics/physics coupling -->
+<se_ftype>1</se_ftype>
+
+<!-- Use the less sensitive advection scheme -->
+<semi_lagrange_cdr_alg>3</semi_lagrange_cdr_alg>
 
 <!-- Turn off Gravity Waves -->
 <use_gw_front>.false.</use_gw_front>

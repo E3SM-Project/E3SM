@@ -31,7 +31,7 @@
     <valid_values>preqx,preqx_kokkos,preqx_acc,theta-l</valid_values>
     <default_value>preqx</default_value>
 	<values>
-	   <value compset="_CAM5%SCREAM-HR">theta-l</value>
+	   <value compset="_CAM5%SCREAM">theta-l</value>
 	</values>
     <group>build_component_cam</group>
     <file>env_build.xml</file>
@@ -299,6 +299,8 @@
       <value compset="AR97_CAM[45]"     >scam_arm97</value>
       <value compset="SCAM_CAM5"        >scam_generic</value>
       <value compset="PIPD_CAM5"        >1850-PD_cam5</value>
+      <value compset="2010_CAM5.*SCREAM-LR" >2010_scream_lr</value>
+      <value compset="2010_CAM5.*SCREAM-HR" >2010_scream_hr</value>
       <value compset="2000_CAM5.*SCREAM-LR" >2000_scream_lr</value>
       <value compset="2000_CAM5.*SCREAM-HR" >2000_scream_hr</value>
       <!-- Aqua planet -->
