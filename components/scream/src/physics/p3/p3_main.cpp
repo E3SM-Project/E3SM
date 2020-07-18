@@ -1,4 +1,4 @@
-#include "p3_functions_main_impl.hpp"
+#include "p3_main_impl.hpp"
 #include "ekat/scream_types.hpp"
 
 namespace scream {
