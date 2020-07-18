@@ -1629,13 +1629,13 @@
     <mpirun mpilib="impi">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks">-l -n $TOTALPES</arg>
+        <arg name="num_tasks">-l -n {{ total_tasks }}</arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="openmpi">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks">--tag-output -n $TOTALPES</arg>
+        <arg name="num_tasks">--tag-output -n {{ total_tasks }}</arg>
         <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=1 --bind-to core</arg>
       </arguments>
     </mpirun>
