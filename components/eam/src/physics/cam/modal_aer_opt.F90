@@ -71,7 +71,6 @@ character(len=4) :: diag(0:n_diag) = (/'    ','_d1 ','_d2 ','_d3 ','_d4 ','_d5 '
 real(r8), pointer :: dgnumdry_m(:,:,:) ! number mode dry diameter for all modes
 real(r8), pointer :: dgnumwet_m(:,:,:) ! number mode wet diameter for all modes
 real(r8), pointer :: qaerwat_m(:,:,:)  ! aerosol water (g/g) for all modes
-real(r8), pointer :: wetdens_m(:,:,:)  ! aerosol water (g/g) for all modes
 !$OMP THREADPRIVATE(dgnumdry_m, dgnumwet_m, qaerwat_m)
 
 logical :: clim_modal_aero ! true when radiatively constituents present (nmodes>0)
@@ -123,6 +122,7 @@ subroutine modal_aer_opt_init()
 
    use ioFileMod,        only: getfil
    use phys_control,     only: phys_getopts
+   use shr_log_mod ,     only: errmsg => shr_log_errmsg
 
    ! Local variables
 
@@ -191,6 +191,10 @@ subroutine modal_aer_opt_init()
                      history_verbose_out = history_verbose, &
                      history_aero_optics_out = history_aero_optics )
 
+
+   !obtain nmodes for the climate (ilist = 0) list
+   call rad_cnst_get_info(0, nmodes=nmodes)
+
    !Allocate dry and wet size variables in an OMP PARRALLEL region as these
    !arrays are private for each thread and needs to be allocated for each OMP thread
    !$OMP PARALLEL
@@ -200,8 +204,6 @@ subroutine modal_aer_opt_init()
    if (istat .ne. 0) call endrun("Unable to allocate dgnumwet_m: "//errmsg(__FILE__,__LINE__) )
    allocate(qaerwat_m(pcols,pver,nmodes),stat=istat)
    if (istat .ne. 0) call endrun("Unable to allocate qaerwat_m: "//errmsg(__FILE__,__LINE__) )
-   allocate(wetdens_m(pcols,pver,nmodes),stat=istat)
-   if (istat .ne. 0) call endrun("Unable to allocate wetdens_m: "//errmsg(__FILE__,__LINE__) )
    !$OMP END PARALLEL
 
    ! Add diagnostic fields to history output.

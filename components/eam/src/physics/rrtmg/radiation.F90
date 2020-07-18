@@ -850,6 +850,7 @@ end function radiation_nextsw_cday
 
     ! Arguments
     logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
+    real(r8), intent(in)    :: dt               !time step(s)
     real(r8), intent(in)    :: landfrac(pcols)  ! land fraction
     real(r8), intent(in)    :: dt               ! time step(s)
     real(r8), intent(in)    :: landm(pcols)     ! land fraction ramp
