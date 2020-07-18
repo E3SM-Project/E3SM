@@ -470,8 +470,8 @@ end subroutine modal_aero_calcsize_init
 
 !===============================================================================
 
-subroutine modal_aero_calcsize_sub(state, ptend, deltat, pbuf, do_adjust_in, &
-   do_aitacc_transfer_in)
+subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
+   do_aitacc_transfer_in, list_idx, dgnumdry_m)
 
    !-----------------------------------------------------------------------
    !
@@ -490,12 +490,15 @@ subroutine modal_aero_calcsize_sub(state, ptend, deltat, pbuf, do_adjust_in, &
 
    ! arguments
    type(physics_state), target, intent(in)    :: state       ! Physics state variables
-   type(physics_ptend), target, intent(inout) :: ptend       ! indivdual parameterization tendencies
-   real(r8),                    intent(in)    :: deltat      ! model time-step size (s)
    type(physics_buffer_desc),   pointer       :: pbuf(:)     ! physics buffer
+   type(physics_ptend), target, optional, intent(inout) :: ptend       ! indivdual parameterization tendencies
+   real(r8),                    optional, intent(in)    :: deltat      ! model time-step size (s)
+
 
    logical, optional :: do_adjust_in
    logical, optional :: do_aitacc_transfer_in
+   integer,  optional, intent(in)   :: list_idx    ! diagnostic list index
+   real(r8), optional, pointer      :: dgnumdry_m(:,:,:) ! interstital aerosol dry number mode radius (m)
 
 #ifdef MODAL_AERO
 
@@ -512,8 +515,8 @@ subroutine modal_aero_calcsize_sub(state, ptend, deltat, pbuf, do_adjust_in, &
    real(r8), pointer :: pdel(:,:)   ! pressure thickness of levels
    real(r8), pointer :: q(:,:,:)    ! Tracer MR array 
 
-   logical,  pointer :: dotend(:)   ! flag for doing tendency
-   real(r8), pointer :: dqdt(:,:,:) ! TMR tendency array
+   logical  :: dotend(pcnst)   ! flag for doing tendency
+   real(r8) :: dqdt(pcols,pver,pcnst) ! TMR tendency array
 
    real(r8), pointer :: dgncur_a(:,:,:)
 
@@ -522,7 +525,7 @@ subroutine modal_aero_calcsize_sub(state, ptend, deltat, pbuf, do_adjust_in, &
    integer  :: ixfer_acc2ait_sv(pcols,pver), ixfer_ait2acc_sv(pcols,pver)
    integer  :: j, jac, jsrflx, k 
    integer  :: l, l1, la, lc, lna, lnc, lsfrm, lstoo
-   integer  :: n, nacc, nait
+   integer  :: n, nacc, nait, stat
 
    integer, save  :: idiagaa = 1
 
@@ -596,11 +599,16 @@ subroutine modal_aero_calcsize_sub(state, ptend, deltat, pbuf, do_adjust_in, &
       do_adjust = do_adjust_default
    end if
 
+   !hardwire do_adjust for testing!BSINGH
+   !do_adjust = .false. !BSINGH
+
    if (present(do_aitacc_transfer_in)) then
       do_aitacc_transfer = do_aitacc_transfer_in
    else
       do_aitacc_transfer = do_aitacc_transfer_default
    end if
+   !hardwire do_aitacc_transfer for testing !BSINGH
+   !do_aitacc_transfer = .false. !BSINGH
 
    lchnk = state%lchnk
    ncol  = state%ncol
@@ -609,11 +617,29 @@ subroutine modal_aero_calcsize_sub(state, ptend, deltat, pbuf, do_adjust_in, &
    pmid => state%pmid
    pdel => state%pdel
    q    => state%q
-      
-   dotend => ptend%lq
-   dqdt   => ptend%q
 
-   call pbuf_get_field(pbuf, dgnum_idx, dgncur_a)
+   dotend(:)   = .false.
+   dqdt(:,:,:) = huge(1.0_r8)
+
+   if(present(ptend)) then
+      dotend = ptend%lq
+      dqdt   = ptend%q
+   endif
+
+   if (present(list_idx)) then
+      if (.not. present(dgnumdry_m)) then
+         call endrun('modal_aero_calcsize_sub called for'// &
+              'diagnostic list but dgnum_m pointer not present')
+      end if
+      allocate(dgnumdry_m(pcols,pver,ntot_amode), stat=stat)
+      if (stat > 0) then
+         call endrun('modal_aero_calcsize_diag: allocation FAILURE: dgnum_m')
+      end if
+
+      dgncur_a => dgnumdry_m(:,:,:)
+   else
+      call pbuf_get_field(pbuf, dgnum_idx, dgncur_a)
+   endif
 
    dotendqqcw(:) = .false.
    dqqcwdt(:,:,:) = 0.0_r8
@@ -622,15 +648,17 @@ subroutine modal_aero_calcsize_sub(state, ptend, deltat, pbuf, do_adjust_in, &
    nait = modeptr_aitken
    nacc = modeptr_accum
 
-   deltatinv = 1.0_r8/(deltat*(1.0_r8 + 1.0e-15_r8))
-   ! tadj = adjustment time scale for number, surface when they are prognosed
-   !           currently set to deltat
-   tadj = deltat
-   tadj = 86400
-   tadj = max( tadj, deltat )
-   tadjinv = 1.0_r8/(tadj*(1.0_r8 + 1.0e-15_r8))
-   fracadj = deltat*tadjinv
-   fracadj = max( 0.0_r8, min( 1.0_r8, fracadj ) )
+   if(present(deltat)) then
+      deltatinv = 1.0_r8/(deltat*(1.0_r8 + 1.0e-15_r8))
+      ! tadj = adjustment time scale for number, surface when they are prognosed
+      !           currently set to deltat
+      tadj = deltat
+      tadj = 86400
+      tadj = max( tadj, deltat )
+      tadjinv = 1.0_r8/(tadj*(1.0_r8 + 1.0e-15_r8))
+      fracadj = deltat*tadjinv
+      fracadj = max( 0.0_r8, min( 1.0_r8, fracadj ) )
+   endif
 
    
    !
@@ -888,10 +916,12 @@ subroutine modal_aero_calcsize_sub(state, ptend, deltat, pbuf, do_adjust_in, &
                   v2ncur_a(i,k,n) = num_a/drv_a
                end if
             end if
-            pdel_fac = pdel(i,k)/gravit   ! = rho*dz
-            jac = 1
-            qsrflx(i,lna,1,jac) = qsrflx(i,lna,1,jac) + max(0.0_r8,dqdt(i,k,lna))*pdel_fac
-            qsrflx(i,lna,2,jac) = qsrflx(i,lna,2,jac) + min(0.0_r8,dqdt(i,k,lna))*pdel_fac
+            if(present(ptend)) then
+               pdel_fac = pdel(i,k)/gravit   ! = rho*dz
+               jac = 1
+               qsrflx(i,lna,1,jac) = qsrflx(i,lna,1,jac) + max(0.0_r8,dqdt(i,k,lna))*pdel_fac
+               qsrflx(i,lna,2,jac) = qsrflx(i,lna,2,jac) + min(0.0_r8,dqdt(i,k,lna))*pdel_fac
+            endif
 
             if (drv_c > 0.0_r8) then
                if (num_c <= drv_c*v2nxx) then
@@ -905,9 +935,11 @@ subroutine modal_aero_calcsize_sub(state, ptend, deltat, pbuf, do_adjust_in, &
                   v2ncur_c(i,k,n) = num_c/drv_c
                end if
             end if
-            jac = 2
-            qsrflx(i,lnc,1,jac) = qsrflx(i,lnc,1,jac) + max(0.0_r8,dqqcwdt(i,k,lnc))*pdel_fac
-            qsrflx(i,lnc,2,jac) = qsrflx(i,lnc,2,jac) + min(0.0_r8,dqqcwdt(i,k,lnc))*pdel_fac
+            if(present(ptend)) then
+               jac = 2
+               qsrflx(i,lnc,1,jac) = qsrflx(i,lnc,1,jac) + max(0.0_r8,dqqcwdt(i,k,lnc))*pdel_fac
+               qsrflx(i,lnc,2,jac) = qsrflx(i,lnc,2,jac) + min(0.0_r8,dqqcwdt(i,k,lnc))*pdel_fac
+            endif
 
 
             ! save number and dryvol for aitken <--> accum transfer
@@ -1279,8 +1311,10 @@ subroutine modal_aero_calcsize_sub(state, ptend, deltat, pbuf, do_adjust_in, &
                                  dqqcwdt(i,k,lsfrm) = dqqcwdt(i,k,lsfrm) - xfertend
                                  dqqcwdt(i,k,lstoo) = dqqcwdt(i,k,lstoo) + xfertend
                               end if
-                              qsrflx(i,lsfrm,jsrflx,jac) = qsrflx(i,lsfrm,jsrflx,jac) - xfertend*pdel_fac
-                              qsrflx(i,lstoo,jsrflx,jac) = qsrflx(i,lstoo,jsrflx,jac) + xfertend*pdel_fac
+                              if(present(ptend)) then
+                                 qsrflx(i,lsfrm,jsrflx,jac) = qsrflx(i,lsfrm,jsrflx,jac) - xfertend*pdel_fac
+                                 qsrflx(i,lstoo,jsrflx,jac) = qsrflx(i,lstoo,jsrflx,jac) + xfertend*pdel_fac
+                              endif
                            end if
 
                         end do
