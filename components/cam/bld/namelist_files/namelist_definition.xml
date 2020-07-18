@@ -484,51 +484,28 @@
        Method to perform Nudging analyses.
        Default: Step
        </entry>
-
 <entry id="Nudge_Tau" type="real" category="nudging"
        group="nudging_nl" valid_values="" >
        Use user-defined relaxation time scale.
-       Default: 0
+       Default: -999
+       </entry>
+<entry id="Nudge_Loc" type="logical" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Change the location of calculation of nudging tendency to the same location
+       where the nudging data is written out
+       Default: FALSE
+       </entry>
+<entry id="Nudge_Curr" type="logical" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Linearly interpolate nudging data to current or future model time step
+       Default: FALSE
+       </entry>
+<entry id="Num_Slice" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Number of time slices per nudging data file; Must be 1 or Nudge_Times_Per_Day
+       Default: 1
        </entry>
 <!-- JS END -->
-
-<!-- SZ ADD -->
-<entry id="Nudge_Data" type="logical" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Toggle Generating Nudging Data ON/OFF.
-       Default: FALSE
-       </entry>
-<entry id="Nudge_Clim" type="logical" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Toggle Nudging to Climo ON/OFF.
-       Default: FALSE
-       </entry>
-<entry id="Nudge_Anls" type="logical" category="nudging"
-       group="nudging_nl" valid_values="" >
-       Toggle Nudging to Reanalysis ON/OFF.
-       Default: FALSE
-       </entry>
-<entry id="Nudge_Unam" type="char*80" category="nudging"
-       group="nudging_nl" valid_values="" >
-       U-name in Nudging data.
-       Default: "U"
-       </entry>
-<entry id="Nudge_Vnam" type="char*80" category="nudging"
-       group="nudging_nl" valid_values="" >
-       U-name in Nudging data.
-       Default: "V"
-       </entry>
-<entry id="Nudge_Tnam" type="char*80" category="nudging"
-       group="nudging_nl" valid_values="" >
-       U-name in Nudging data.
-       Default: "T"
-       </entry>
-<entry id="Nudge_Qnam" type="char*80" category="nudging"
-       group="nudging_nl" valid_values="" >
-       U-name in Nudging data.
-       Default: "Q"
-       </entry>
-<!-- SZ END -->
 
 <!-- Aerosols: Data (CAM version) -->
 

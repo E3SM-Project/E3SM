@@ -18,7 +18,7 @@ module physpkg
   use physconst,        only: latvap, latice, rh2o
   use physics_types,    only: physics_state, physics_tend, physics_state_set_grid, &
        physics_ptend, physics_tend_init,    &
-       physics_type_alloc, physics_ptend_dealloc, physics_state_copy, &
+       physics_type_alloc, physics_ptend_dealloc,&
        physics_state_alloc, physics_state_dealloc, physics_tend_alloc, physics_tend_dealloc
   use physics_update_mod,  only: physics_update, physics_update_init, hist_vars, nvars_prtrb_hist, get_var
   use phys_grid,        only: get_ncols_p
@@ -27,7 +27,6 @@ module physpkg
   use constituents,     only: pcnst, cnst_name, cnst_get_ind
   use camsrfexch,       only: cam_out_t, cam_in_t
 
-  use cam_history,      only: outfld
   use cam_control_mod,  only: ideal_phys, adiabatic
   use phys_control,     only: phys_do_flux_avg, phys_getopts, waccmx_is
   use zm_conv,          only: trigmem
@@ -938,9 +937,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
      use metdata,       only: get_met_srf1
 #endif
 
-    !! SZhang Nov 11, 2019   
-    use nudging,             only: Nudge_Model,Nudge_Data,nudging_timestep_init
-
     !
     ! Input arguments
     !
@@ -965,9 +961,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     integer  :: mpicom = 0
 #endif
     type(physics_buffer_desc), pointer :: phys_buffer_chunk(:)
-   
-    !SZ Nov 11, 2019
-    type(physics_state), dimension(begchunk:endchunk) :: phys_state_ndg
 
     call t_startf ('physpkg_st1')
     nstep = get_nstep()
@@ -1007,12 +1000,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 
        call phys_timestep_init( phys_state, cam_out, pbuf2d)
 
-       ! Initialize physics tendency arrays, copy the phys_state to phys_state_ndg
-       ! array to use in calculating nudging tendency
-       do c=begchunk, endchunk
-         call physics_state_copy(phys_state(c),phys_state_ndg(c))
-       end do 
-
        call t_stopf ('physpkg_st1')
 
 #ifdef TRACER_CHECK
@@ -1048,38 +1035,12 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 
           call tphysbc (ztodt, fsns(1,c), fsnt(1,c), flns(1,c), flnt(1,c), phys_state(c),        &
                        phys_tend(c), phys_buffer_chunk,  fsds(1,c), landm(1,c),          &
-                       sgh(1,c), sgh30(1,c), cam_out(c), cam_in(c), phys_state_ndg(c))
+                       sgh(1,c), sgh30(1,c), cam_out(c), cam_in(c) )
 
        end do
 
        !call t_adj_detailf(-1)
        call t_stopf ('bc_physics')
-
-       call t_startf ('cal_nudging_tend')
-
-       !--------------------------------------------------------
-       ! Generate Nudging data if needed. This data is used 
-       ! for nudging to CLIM experiment the output here is 
-       ! to make the output nudging data and calculation of 
-       ! nudging tendency  in the same time level
-       !-------------------------------------------------------
-       if (Nudge_Data)  then
-        do c=begchunk, endchunk
-          call outfld('T_ndg   ',phys_state_ndg(c)%t        , pcols   ,c   )
-          call outfld('PS_ndg  ',phys_state_ndg(c)%ps       , pcols   ,c   )
-          call outfld('U_ndg   ',phys_state_ndg(c)%u        , pcols   ,c   )
-          call outfld('V_ndg   ',phys_state_ndg(c)%v        , pcols   ,c   )
-          call outfld('Q_ndg   ',phys_state_ndg(c)%q(1,1,1) , pcols   ,c   )
-        end do
-       end if
-
-       !--------------------------------------------------------
-       ! Update Nudging values, if needed
-       !----------------------------------
-       if(Nudge_Model) call nudging_timestep_init(phys_state_ndg)
-
-       call t_stopf ('cal_nudging_tend')
-
 
        ! Don't call the rest in CRM mode
        if(single_column.and.scm_crm_mode) return
@@ -1722,6 +1683,16 @@ if (l_gw_drag) then
 
 end if ! l_gw_drag
 
+!==> JS ADD
+    !===================================================
+    ! Update Nudging values, if needed
+    !===================================================
+    if((Nudge_Model).and.(Nudge_ON)) then
+      call nudging_timestep_tend(state,ptend)
+      call physics_update(state,ptend,ztodt,tend)
+    endif
+!==> JS END
+
 if (l_ac_energy_chk) then
     !-------------- Energy budget checks vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 
@@ -1787,13 +1758,15 @@ end if ! l_ac_energy_chk
        endif
     endif
 
+!==> JS ADD
     !===================================================
     ! Update Nudging values, if needed
     !===================================================
-    if((Nudge_Model).and.(Nudge_ON)) then
-      call nudging_timestep_tend(state,ptend)
-      call physics_update(state,ptend,ztodt,tend)
-    endif
+!    if((Nudge_Model).and.(Nudge_ON)) then
+!      call nudging_timestep_tend(state,ptend)
+!      call physics_update_ndg(state,ptend,ztodt,tend)
+!    endif
+!==> JS END
 
     call diag_phys_tend_writeout (state, pbuf,  tend, ztodt, tmp_q, tmp_cldliq, tmp_cldice, &
          tmp_t, qini, cldliqini, cldiceini)
@@ -1824,7 +1797,7 @@ end subroutine tphysac
 subroutine tphysbc (ztodt,               &
        fsns,    fsnt,    flns,    flnt,    state,   &
        tend,    pbuf,     fsds,    landm,            &
-       sgh, sgh30, cam_out, cam_in, state_ndg )
+       sgh, sgh30, cam_out, cam_in )
     !----------------------------------------------------------------------- 
     ! 
     ! Purpose: 
@@ -1892,8 +1865,9 @@ subroutine tphysbc (ztodt,               &
     use subcol,          only: subcol_gen, subcol_ptend_avg
     use subcol_utils,    only: subcol_ptend_copy, is_subcol_on
     use phys_control,    only: use_qqflx_fixer, use_mass_borrower
-
-    use nudging,         only: Nudge_Model,Nudge_Data
+!==> JS ADD
+    use nudging,         only: Nudge_Model,Nudge_Loc,nudging_calc_tend
+!==> JS END
 
     implicit none
 
@@ -1911,7 +1885,6 @@ subroutine tphysbc (ztodt,               &
     real(r8), intent(in) :: sgh30(pcols)                     ! Std. deviation of 30 s orography for tms
 
     type(physics_state), intent(inout) :: state
-    type(physics_state), intent(inout) :: state_ndg          ! save state used for nudging
     type(physics_tend ), intent(inout) :: tend
     type(physics_buffer_desc), pointer :: pbuf(:)
 
@@ -2059,7 +2032,6 @@ subroutine tphysbc (ztodt,               &
     logical :: l_st_mic
     logical :: l_rad
     !HuiWan (2014/15): added for a short-term time step convergence test ==
-
 
     call phys_getopts( microp_scheme_out      = microp_scheme, &
                        macrop_scheme_out      = macrop_scheme, &
@@ -2714,6 +2686,14 @@ end if ! l_tracer_aero
 
     call t_stopf('bc_history_write')
 
+!==> JS ADD
+    ! Update Nudging values, if needed
+    !----------------------------------
+    if (Nudge_Model .and. Nudge_Loc) then
+       call nudging_calc_tend(state)
+    endif
+!==> JS END
+
     !===================================================
     ! Write cloud diagnostics on history file
     !===================================================
@@ -2723,12 +2703,6 @@ end if ! l_tracer_aero
     call cloud_diagnostics_calc(state, pbuf)
 
     call t_stopf('bc_cld_diag_history_write')
-
-    !===================================================
-    ! save the state to calculate nudging tendency 
-    !===================================================
-    if (Nudge_Model.or.Nudge_Data) call physics_state_copy(state,state_ndg)
-
 
 if (l_rad) then
     !===================================================
@@ -2809,6 +2783,7 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   use aerodep_flx,         only: aerodep_flx_adv
   use aircraft_emit,       only: aircraft_emit_adv
   use prescribed_volcaero, only: prescribed_volcaero_adv
+  use nudging,             only: Nudge_Model,nudging_timestep_init
 
   use seasalt_model,       only: advance_ocean_data, has_mam_mom
 
@@ -2879,6 +2854,9 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   ! age of air tracers
   call aoa_tracers_timestep_init(phys_state)
 
+  ! Update Nudging values, if needed
+  !----------------------------------
+  if(Nudge_Model) call nudging_timestep_init(phys_state)
 
 end subroutine phys_timestep_init
 
