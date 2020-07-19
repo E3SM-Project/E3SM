@@ -383,10 +383,11 @@ contains
          call ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName,  &
               config_global_ocean_ecosys_forcing_file, iErr)
          call ocn_init_setup_global_ocean_interpolate_ecosys_forcing(domain, fieldName, poolName, iErr)
-         fieldName = 'atmosphericPressure'; poolName = 'forcing'
-         call ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName,  &
-              config_global_ocean_ecosys_forcing_file, iErr)
-         call ocn_init_setup_global_ocean_interpolate_ecosys_forcing(domain, fieldName, poolName, iErr)
+         ! atmospheric pressure is zero from init mode.
+         !fieldName = 'atmosphericPressure'; poolName = 'forcing'
+         !call ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName,  &
+         !     config_global_ocean_ecosys_forcing_file, iErr)
+         !call ocn_init_setup_global_ocean_interpolate_ecosys_forcing(domain, fieldName, poolName, iErr)
          fieldName = 'shortWaveHeatFlux'; poolName = 'forcing'
          call ocn_init_setup_global_ocean_read_ecosys_forcing(domain, fieldName,  &
               config_global_ocean_ecosys_forcing_file, iErr)
