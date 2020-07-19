@@ -2787,7 +2787,7 @@
 		<var name="seaIcePressure" type="real" dimensions="nCells Time" units="Pa"
 			 description="Pressure at the sea surface due to sea ice."
 		/>
-		<var name="atmosphericPressure" type="real" dimensions="nCells Time" units="Pa"
+		<var name="atmosphericPressure" type="real" dimensions="nCells Time" units="Pa" default_value="0.0"
 			 description="Pressure at the sea surface due to the atmosphere."
 		/>
 		<var name="seaIceEnergy" type="real" dimensions="nCells Time" units="J m^{-2}"
