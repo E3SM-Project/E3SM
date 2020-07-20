@@ -16,7 +16,11 @@ contains
     dtdx = dtn/dx
     dtdy = dtn/dy
 
+#if defined(_OPENACC)
     !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(4)
+#endif
     do k=1,nzm
       do j=1,ny
         do i=1,nx

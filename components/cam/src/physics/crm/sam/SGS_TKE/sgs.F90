@@ -68,7 +68,9 @@ CONTAINS
 
 
   subroutine allocate_sgs(ncrms)
+#if defined(_OPENACC)
     use openacc_utils
+#endif
     implicit none
     integer, intent(in) :: ncrms
     real(crm_rknd) :: zero
@@ -84,7 +86,7 @@ CONTAINS
     tke(dimx1_s:,dimy1_s:,1:,1:) => sgs_field     (:,:,:,:,1)
     tk (dimx1_d:,dimy1_d:,1:,1:) => sgs_field_diag(:,:,:,:,1)
     tkh(dimx1_d:,dimy1_d:,1:,1:) => sgs_field_diag(:,:,:,:,2)
-
+#if defined(_OPENACC)
     call prefetch( sgs_field  )
     call prefetch( sgs_field_diag  )
     call prefetch( grdf_x  )
@@ -93,6 +95,16 @@ CONTAINS
     call prefetch( tkesbbuoy  )
     call prefetch( tkesbshear  )
     call prefetch( tkesbdiss  )
+#elif defined(_OPENMP)
+    !$omp target enter data map(alloc: sgs_field )
+    !$omp target enter data map(alloc: sgs_field_diag )
+    !$omp target enter data map(alloc: grdf_x )
+    !$omp target enter data map(alloc: grdf_y )
+    !$omp target enter data map(alloc: grdf_z )
+    !$omp target enter data map(alloc: tkesbbuoy  )
+    !$omp target enter data map(alloc: tkesbshear )
+    !$omp target enter data map(alloc: tkesbdiss  )
+#endif
 
     zero = 0
 
@@ -106,9 +118,18 @@ CONTAINS
     tkesbdiss = zero
   end subroutine allocate_sgs
 
-
   subroutine deallocate_sgs()
     implicit none
+#if defined(_OPENMP)
+    !$omp target exit data map(delete: sgs_field  )
+    !$omp target exit data map(delete: sgs_field_diag  )
+    !$omp target exit data map(delete: grdf_x  )
+    !$omp target exit data map(delete: grdf_y  )
+    !$omp target exit data map(delete: grdf_z  )
+    !$omp target exit data map(delete: tkesbbuoy  )
+    !$omp target exit data map(delete: tkesbshear  )
+    !$omp target exit data map(delete: tkesbdiss  )
+#endif
     deallocate( sgs_field  )
     deallocate( sgs_field_diag  )
     deallocate( grdf_x  )
@@ -119,6 +140,29 @@ CONTAINS
     deallocate( tkesbdiss  )
   end subroutine deallocate_sgs
 
+#if defined(_OPENMP)
+  subroutine update_device_sgs()
+    !$omp target update to( sgs_field  )
+    !$omp target update to( sgs_field_diag  )
+    !$omp target update to( grdf_x  )
+    !$omp target update to( grdf_y  )
+    !$omp target update to( grdf_z  )
+    !$omp target update to( tkesbbuoy  )
+    !$omp target update to( tkesbshear  )
+    !$omp target update to( tkesbdiss  )
+  end subroutine update_device_sgs
+
+  subroutine update_host_sgs()
+    !$omp target update from( sgs_field  )
+    !$omp target update from( sgs_field_diag  )
+    !$omp target update from( grdf_x  )
+    !$omp target update from( grdf_y  )
+    !$omp target update from( grdf_z  )
+    !$omp target update from( tkesbbuoy  )
+    !$omp target update from( tkesbshear  )
+    !$omp target update from( tkesbdiss  )
+  end subroutine update_host_sgs
+#endif
 
   ! required microphysics subroutines and function:
   !----------------------------------------------------------------------
@@ -177,7 +221,11 @@ CONTAINS
     integer k,icrm, i, j, l
 
     if(nrestart.eq.0) then
+#if defined(_OPENACC)
       !$acc parallel loop collapse(5) async(asyncid)
+#elif defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(5)
+#endif
       do l=1,nsgs_fields
         do k=1,nzm
           do j=dimy1_s,dimy2_s
@@ -189,7 +237,11 @@ CONTAINS
           enddo
         enddo
       enddo
+#if defined(_OPENACC)
       !$acc parallel loop collapse(5) async(asyncid)
+#elif defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(5)
+#endif
       do l=1,nsgs_fields_diag
         do k=1,nzm
           do j=dimy1_d,dimy2_d
@@ -202,8 +254,11 @@ CONTAINS
         enddo
       enddo
     end if
-    
+#if defined(_OPENACC)    
     !$acc parallel loop collapse(2) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(2)
+#endif
     do k=1,nzm
       do icrm = 1 , ncrms
         grdf_x(icrm,k) = min( real(16.,crm_rknd), dx**2/(adz(icrm,k)*dz(icrm))**2)
@@ -227,7 +282,9 @@ CONTAINS
     select case (ptype)
 
     case(0)
-
+#if defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(3)
+#endif
       do k=1,nzm
         do j=1,ny
           do i=1,nx
@@ -239,7 +296,9 @@ CONTAINS
       end do
 
     case(1)
-
+#if defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(3)
+#endif
       do k=1,nzm
         do j=1,ny
           do i=1,nx
@@ -253,7 +312,9 @@ CONTAINS
     case(2)
 
     case(3)   ! gcss wg1 smoke-cloud case
-
+#if defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(3)
+#endif
       do k=1,nzm
         do j=1,ny
           do i=1,nx
@@ -266,7 +327,9 @@ CONTAINS
 
 
     case(4)  ! gcss wg1 arm case
-
+#if defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(3)
+#endif
       do k=1,nzm
         do j=1,ny
           do i=1,nx
@@ -279,7 +342,9 @@ CONTAINS
 
 
     case(5)  ! gcss wg1 BOMEX case
-
+#if defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(3)
+#endif
       do k=1,nzm
         do j=1,ny
           do i=1,nx
@@ -292,7 +357,9 @@ CONTAINS
 
     case(6)  ! GCSS Lagragngian ASTEX
 
-
+#if defined(_OPENMP)
+      !$omp target teams distribute parallel do collapse(3)
+#endif
       do k=1,nzm
         do j=1,ny
           do i=1,nx
@@ -324,28 +391,40 @@ CONTAINS
     real(crm_rknd) tmp
 
     allocate(tkhmax(ncrms,nz))
+#if defined(_OPENACC)
     call prefetch(tkhmax)
-
+#elif defined(_OPENMP)
+    !$omp target enter data map(alloc: tkhmax)
+#endif
+#if defined(_OPENACC)
     !$acc parallel loop collapse(2) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(2)
+#endif
     do k = 1,nzm
       do icrm = 1 , ncrms
         tkhmax(icrm,k) = 0.
       enddo
     enddo
-
+#if defined(_OPENACC)
     !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(4)
+#endif
     do k = 1,nzm
       do j = 1 , ny
         do i = 1 , nx
           do icrm = 1 , ncrms
-            !$acc atomic update
             tkhmax(icrm,k) = max(tkhmax(icrm,k),sgs_field_diag(icrm,i,j,k,2))
           enddo
         enddo
       end do
     end do
-
+#if defined(_OPENACC)
     !$acc parallel loop collapse(2) reduction(max:cfl) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(2) reduction(max: cfl)
+#endif
     do k=1,nzm
       do icrm = 1 , ncrms
         tmp = max( 0.5*tkhmax(icrm,k)*grdf_z(icrm,k)*dt/(dz(icrm)*adzw(icrm,k))**2  , &
@@ -354,7 +433,9 @@ CONTAINS
         cfl = max( cfl , tmp )
       end do
     end do
-
+#if defined(_OPENMP)
+    !$omp target exit data map(delete: tkhmax)
+#endif
     deallocate(tkhmax)
 
   end subroutine kurant_sgs
@@ -387,7 +468,11 @@ CONTAINS
     integer i,j,kk,k,icrm
 
     allocate( dummy(ncrms,nz) )
+#if defined(_OPENACC)
     call prefetch(dummy)
+#elif defined(_OPENMP)
+    !$omp target enter data map(alloc: dummy)
+#endif
 
     call diffuse_scalar(ncrms,dimx1_d,dimx2_d,dimy1_d,dimy2_d,grdf_x,grdf_y,grdf_z,sgs_field_diag(:,:,:,:,2),t,fluxbt,fluxtt,tdiff,twsb)
 
@@ -434,7 +519,9 @@ CONTAINS
     call diffuse_scalar(ncrms,dimx1_d,dimx2_d,dimy1_d,dimy2_d,grdf_x,grdf_y,grdf_z,sgs_field_diag(:,:,:,:,2),&
                         v_esmt,fluxb_v_esmt,fluxt_v_esmt,v_esmt_diff,v_esmt_sgs)
 #endif
-
+#if defined(_OPENMP)
+    !$omp target exit data map(delete: dummy)
+#endif
     deallocate( dummy )
   end subroutine sgs_scalars
 
@@ -453,7 +540,11 @@ subroutine sgs_proc(ncrms)
                           grdf_x, grdf_y, grdf_z, dosmagor,   &
                           tkesbdiss, tkesbshear, tkesbbuoy,   &
                           sgs_field(:,:,:,:,1), sgs_field_diag(:,:,:,:,1), sgs_field_diag(:,:,:,:,2))
+#if defined(_OPENACC)
   !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(4)
+#endif
   do k = 1 , nzm
     do j = dimy1_s,dimy2_s
       do i = dimx1_s,dimx2_s
@@ -463,7 +554,11 @@ subroutine sgs_proc(ncrms)
       enddo
     enddo
   enddo
+#if defined(_OPENACC)
   !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(4)
+#endif
   do k = 1 , nzm
     do j = dimy1_d,dimy2_d
       do i = dimx1_d,dimx2_d

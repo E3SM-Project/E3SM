@@ -1,10 +1,10 @@
-module grid
 
+module grid
   use domain
   use advection, only: NADV, NADVS
   use params, only: crm_rknd
-
   implicit none
+  public
 
   character(6), parameter :: version = '6.10.4'
   character(8), parameter :: version_date = 'Feb 2013'
@@ -162,13 +162,18 @@ module grid
   real(crm_rknd), allocatable :: dt3  (:)   ! dynamical timesteps for three most recent time steps
 
   !-----------------------------------------
-
+  public :: allocate_grid
+  public :: deallocate_grid
+#if defined(_OPENMP)
+  public :: update_host_grid
+  public :: update_device_grid
+#endif
 contains
 
-
-
   subroutine allocate_grid(ncrms)
+#if defined(_OPENACC)
     use openacc_utils
+#endif
     implicit none
     integer, intent(in) :: ncrms
     real(crm_rknd) :: zero
@@ -181,7 +186,7 @@ contains
     allocate( adzw(ncrms,nz)    )
     allocate( dt3(3)      )
     allocate( dz(ncrms)         )
-
+#if defined(_OPENACC)
     call prefetch( z )
     call prefetch( pres )
     call prefetch( zi )
@@ -190,8 +195,17 @@ contains
     call prefetch( adzw )
     call prefetch( dt3 )
     call prefetch( dz )
-
-    zero = 0
+#elif defined(_OPENMP)
+    !$omp target enter data map(alloc: z)
+    !$omp target enter data map(alloc: pres)
+    !$omp target enter data map(alloc: zi)
+    !$omp target enter data map(alloc: presi)
+    !$omp target enter data map(alloc: adz)
+    !$omp target enter data map(alloc: adzw)
+    !$omp target enter data map(alloc: dt3)
+    !$omp target enter data map(alloc: dz)
+#endif
+    zero = 0.0_crm_rknd
 
     na=1
     nb=2
@@ -206,9 +220,44 @@ contains
     dz = zero
   end subroutine allocate_grid
 
+#if defined(_OPENMP)
+  subroutine update_device_grid()
+    implicit none
+    !$omp target update to( z )
+    !$omp target update to( pres )
+    !$omp target update to( zi )
+    !$omp target update to( presi )
+    !$omp target update to( adz )
+    !$omp target update to( adzw )
+    !$omp target update to( dt3 )
+    !$omp target update to( dz )
+  end subroutine update_device_grid
+
+  subroutine update_host_grid()
+    implicit none
+    !$omp target update from( z )
+    !$omp target update from( pres )
+    !$omp target update from( zi )
+    !$omp target update from( presi )
+    !$omp target update from( adz )
+    !$omp target update from( adzw )
+    !$omp target update from( dt3 )
+    !$omp target update from( dz )
+  end subroutine update_host_grid
+#endif
 
   subroutine deallocate_grid()
     implicit none
+#if defined(_OPENMP)
+    !$omp target exit data map(delete: z )
+    !$omp target exit data map(delete: pres )
+    !$omp target exit data map(delete: zi )
+    !$omp target exit data map(delete: presi )
+    !$omp target exit data map(delete: adz )
+    !$omp target exit data map(delete: adzw )
+    !$omp target exit data map(delete: dt3 )
+    !$omp target exit data map(delete: dz )
+#endif
     deallocate( z )
     deallocate( pres )
     deallocate( zi )
@@ -218,6 +267,4 @@ contains
     deallocate( dt3 )
     deallocate( dz )
   end subroutine deallocate_grid
-
-
 end module grid

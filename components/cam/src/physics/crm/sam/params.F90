@@ -78,7 +78,9 @@ contains
 
   
   subroutine allocate_params(ncrms)
+#if defined(_OPENACC)
     use openacc_utils
+#endif
     implicit none
     integer, intent(in) :: ncrms
     allocate(fcor (ncrms))
@@ -92,7 +94,7 @@ contains
     allocate(vhl       (ncrms))
     allocate(taux0     (ncrms))
     allocate(tauy0     (ncrms))
-
+#if defined(_OPENACC)
     call prefetch(fcor )
     call prefetch(fcorz)
     call prefetch(longitude0)
@@ -104,7 +106,19 @@ contains
     call prefetch(vhl)
     call prefetch(taux0)
     call prefetch(tauy0)
-
+#elif defined(_OPENMP)
+    !$omp target enter data map(alloc: fcor)
+    !$omp target enter data map(alloc: fcorz)
+    !$omp target enter data map(alloc: longitude0)
+    !$omp target enter data map(alloc: latitude0)
+    !$omp target enter data map(alloc: z0)
+    !$omp target enter data map(alloc: ocean)
+    !$omp target enter data map(alloc: land)
+    !$omp target enter data map(alloc: uhl)
+    !$omp target enter data map(alloc: vhl)
+    !$omp target enter data map(alloc: taux0)
+    !$omp target enter data map(alloc: tauy0)
+#endif
     fcor  = 0
     fcorz = 0
     longitude0 = 0
@@ -118,9 +132,51 @@ contains
     tauy0 = 0
   end subroutine allocate_params
 
+#if defined(_OPENMP)
+  subroutine update_device_params()
+    !$omp target update to( fcor )
+    !$omp target update to( fcorz)
+    !$omp target update to( longitude0)
+    !$omp target update to( latitude0 )
+    !$omp target update to( z0)
+    !$omp target update to( ocean)
+    !$omp target update to( land)
+    !$omp target update to( uhl)
+    !$omp target update to( vhl)
+    !$omp target update to( taux0)
+    !$omp target update to( tauy0)
+  end subroutine update_device_params
+
+  subroutine update_host_params()
+    !$omp target update from( fcor )
+    !$omp target update from( fcorz)
+    !$omp target update from( longitude0)
+    !$omp target update from( latitude0 )
+    !$omp target update from( z0)
+    !$omp target update from( ocean)
+    !$omp target update from( land)
+    !$omp target update from( uhl)
+    !$omp target update from( vhl)
+    !$omp target update from( taux0)
+    !$omp target update from( tauy0)
+  end subroutine update_host_params
+#endif
   
   subroutine deallocate_params()
     implicit none
+#if defined(_OPENMP)
+    !$omp target exit data map(delete: fcor)
+    !$omp target exit data map(delete: fcorz)
+    !$omp target exit data map(delete: longitude0)
+    !$omp target exit data map(delete: latitude0)
+    !$omp target exit data map(delete: z0)
+    !$omp target exit data map(delete: ocean)
+    !$omp target exit data map(delete: land)
+    !$omp target exit data map(delete: uhl)
+    !$omp target exit data map(delete: vhl)
+    !$omp target exit data map(delete: taux0)
+    !$omp target exit data map(delete: tauy0)
+#endif
     deallocate(fcor )
     deallocate(fcorz)
     deallocate(longitude0)

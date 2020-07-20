@@ -18,7 +18,9 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
 
   use vars
   use params
+#if defined(_OPENACC)
   use openacc_utils
+#endif
   implicit none
   integer, intent(in) :: ncrms
   !-----------------------------------------------------------------------
@@ -90,10 +92,15 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
   allocate( def2          (ncrms,nx,ny,nzm  ) )
   allocate( buoy_sgs_vert (ncrms,nx,ny,0:nzm) )
   allocate( a_prod_bu_vert(ncrms,nx,ny,0:nzm) )
+#if defined(_OPENACC)
   call prefetch( def2           )
   call prefetch( buoy_sgs_vert  )
   call prefetch( a_prod_bu_vert )
-
+#elif defined(_OPENMP)
+  !$omp target enter data map(alloc: def2)
+  !$omp target enter data map(alloc: buoy_sgs_vert)
+  !$omp target enter data map(alloc: a_prod_bu_vert)
+#endif
   !-----------------------------------------------------------------------
   !-----------------------------------------------------------------------
 
@@ -113,7 +120,11 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
   endif
 
   !!! initialize surface and top buoyancy flux to zero
+#if defined(_OPENACC)
   !$acc parallel loop collapse(3) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(3)
+#endif
   do j = 1 , ny
     do i = 1 , nx
       do icrm = 1 , ncrms
@@ -130,7 +141,11 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
   !-----------------------------------------------------------------------
   !!! compute subgrid buoyancy flux assuming clear conditions
   !!! we will over-write this later if conditions are cloudy
+#if defined(_OPENACC)
   !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(4)
+#endif
   do k = 1,nzm-1
     do j = 1,ny
       do i = 1,nx
@@ -235,8 +250,11 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
       end do ! j
     enddo !k
   enddo !icrm
-
+#if defined(_OPENACC)
   !$acc parallel loop collapse(2) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(2)
+#endif
   do k = 1,nzm-1
     do icrm = 1 , ncrms
       tkelediss(icrm,k)  = 0.
@@ -245,8 +263,11 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
       tkesbbuoy(icrm,k)  = 0.
     enddo
   enddo
-
+#if defined(_OPENACC)
   !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+  !$omp target teams distribute parallel do collapse(4)
+#endif
   do k = 1,nzm-1
     do j = 1,ny
       do i = 1,nx
@@ -288,19 +309,39 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
           tkh(icrm,i,j,k) = Pr*tk(icrm,i,j,k)
 
           tmp = a_prod_sh/float(nx*ny)
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           tkelediss(icrm,k)  = tkelediss(icrm,k) - tmp
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           tkesbdiss(icrm,k)  = tkesbdiss(icrm,k) + a_diss
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           tkesbshear(icrm,k) = tkesbshear(icrm,k)+ a_prod_sh
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           tkesbbuoy(icrm,k)  = tkesbbuoy(icrm,k) + a_prod_bu
         end do ! i
       end do ! j
     end do ! k
   enddo !icrm
-
+#if defined(_OPENMP)
+  !$omp target exit data map(delete: def2)
+  !$omp target exit data map(delete: buoy_sgs_vert)
+  !$omp target exit data map(delete: a_prod_bu_vert)
+#endif
   deallocate( def2           )
   deallocate( buoy_sgs_vert  )
   deallocate( a_prod_bu_vert )

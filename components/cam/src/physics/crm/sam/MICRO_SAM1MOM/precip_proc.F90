@@ -31,16 +31,22 @@ contains
     pows2 = (5 + b_snow) / 8.
     powg1 = (3 + b_grau) / 4.
     powg2 = (5 + b_grau) / 8.
-
+#if defined(_OPENACC)
     !$acc parallel loop collapse(2) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(2)
+#endif
     do k=1,nzm
       do icrm = 1 , ncrms
         qpsrc(icrm,k)=0.
         qpevp(icrm,k)=0.
       enddo
     enddo
-
+#if defined(_OPENACC)
     !$acc parallel loop collapse(4) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(4)
+#endif
     do k=1,nzm
       do j=1,ny
         do i=1,nx
@@ -97,10 +103,29 @@ contains
                 qii = (qii+dtn*autos*qci0)/(1.+dtn*(accris+accrig+autos))
                 dq = dtn *(accrr*qcc + autor*(qcc-qcw0)+(accris+accrig)*qii + (accrcs+accrcg)*qcc + autos*(qii-qci0))
                 dq = min(dq,qn(icrm,i,j,k))
-                qp(icrm,i,j,k) = qp(icrm,i,j,k) + dq
-                q(icrm,i,j,k) = q(icrm,i,j,k) - dq
-                qn(icrm,i,j,k) = qn(icrm,i,j,k) - dq
+#if defined(_OPENACC)
                 !$acc atomic update
+#elif defined(_OPENMP)
+                !$omp atomic update
+#endif
+                qp(icrm,i,j,k) = qp(icrm,i,j,k) + dq
+#if defined(_OPENACC)
+                !$acc atomic update
+#elif defined(_OPENMP)
+                !$omp atomic update
+#endif
+                q(icrm,i,j,k) = q(icrm,i,j,k) - dq
+#if defined(_OPENACC)
+                !$acc atomic update
+#elif defined(_OPENMP)
+                !$omp atomic update
+#endif
+                qn(icrm,i,j,k) = qn(icrm,i,j,k) - dq
+#if defined(_OPENACC)
+                !$acc atomic update
+#elif defined(_OPENMP)
+                !$omp atomic update
+#endif
                 qpsrc(icrm,k) = qpsrc(icrm,k) + dq
 
               elseif(qp(icrm,i,j,k).gt.qp_threshold.and.qn(icrm,i,j,k).eq.0.) then
@@ -123,15 +148,37 @@ contains
                 endif
                 dq = dq * dtn * (q(icrm,i,j,k) /qsatt-1.)
                 dq = max(-0.5*qp(icrm,i,j,k),dq)
-                qp(icrm,i,j,k) = qp(icrm,i,j,k) + dq
-                q(icrm,i,j,k) = q(icrm,i,j,k) - dq
+#if defined(_OPENACC)
                 !$acc atomic update
+#elif defined(_OPENMP)
+                !$omp atomic update
+#endif
+                qp(icrm,i,j,k) = qp(icrm,i,j,k) + dq
+#if defined(_OPENACC)
+                !$acc atomic update
+#elif defined(_OPENMP)
+                !$omp atomic update
+#endif
+                q(icrm,i,j,k) = q(icrm,i,j,k) - dq
+#if defined(_OPENACC)
+                !$acc atomic update
+#elif defined(_OPENMP)
+                !$omp atomic update
+#endif
                 qpevp(icrm,k) = qpevp(icrm,k) + dq
 
               else
-
-                q(icrm,i,j,k) = q(icrm,i,j,k) + qp(icrm,i,j,k)
+#if defined(_OPENACC)
                 !$acc atomic update
+#elif defined(_OPENMP)
+                !$omp atomic update
+#endif
+                q(icrm,i,j,k) = q(icrm,i,j,k) + qp(icrm,i,j,k)
+#if defined(_OPENACC)
+                !$acc atomic update
+#elif defined(_OPENMP)
+                !$omp atomic update
+#endif
                 qpevp(icrm,k) = qpevp(icrm,k) - qp(icrm,i,j,k)
                 qp(icrm,i,j,k) = 0.
 
@@ -141,6 +188,11 @@ contains
 
             dq = qp(icrm,i,j,k)
             qp(icrm,i,j,k)=max(real(0.,crm_rknd),qp(icrm,i,j,k))
+#if defined(_OPENACC)
+            !$acc atomic update
+#elif defined(_OPENMP)
+            !$omp atomic update
+#endif
             q(icrm,i,j,k) = q(icrm,i,j,k) + (dq-qp(icrm,i,j,k))
 
           enddo

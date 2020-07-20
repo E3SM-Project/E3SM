@@ -13,14 +13,32 @@ contains
     integer i,j,icrm
 
     !--------------------------------------------------------
+#if defined(_OPENACC)
     !$acc parallel loop async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do 
+#endif
     do icrm = 1 , ncrms
+#if defined(_OPENACC)
+      !$acc atomic update
+#elif defined(_OPENMP)
+      !$omp atomic update
+#endif
       uhl(icrm) = uhl(icrm) + dtn*utend(icrm,1)
+#if defined(_OPENACC)
+      !$acc atomic update
+#elif defined(_OPENMP)
+      !$omp atomic update
+#endif
       vhl(icrm) = vhl(icrm) + dtn*vtend(icrm,1)
       taux0(icrm) = 0.
       tauy0(icrm) = 0.
     end do
+#if defined(_OPENACC)
     !$acc parallel loop collapse(3) async(asyncid)
+#elif defined(_OPENMP)
+    !$omp target teams distribute parallel do collapse(3)
+#endif
     do j=1,ny
       do i=1,nx
         do icrm = 1 , ncrms
@@ -29,10 +47,18 @@ contains
           fluxbu(icrm,i,j) = -(0.5*(u(icrm,i+1,j,1)+u(icrm,i,j,1))+ug-uhl(icrm))/u_h0*tau00
           fluxbv(icrm,i,j) = -(0.5*(v(icrm,i,j+YES3D,1)+v(icrm,i,j,1))+vg-vhl(icrm))/u_h0*tau00
           tmp = fluxbu(icrm,i,j)/dble(nx*ny)
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif
           taux0(icrm) = taux0(icrm) + tmp
           tmp = fluxbv(icrm,i,j)/dble(nx*ny)
+#if defined(_OPENACC)
           !$acc atomic update
+#elif defined(_OPENMP)
+          !$omp atomic update
+#endif    
           tauy0(icrm) = tauy0(icrm) + tmp
         end do
       end do
@@ -104,7 +130,11 @@ contains
     ! Compute z0 from buoyancy flux, wind, and friction velocity
     ! 2004, Marat Khairoutdinov
     implicit none
+#if defined(_OPENACC)
     !$acc routine seq
+#elif defined(_OPENMP)
+    !$omp declare target
+#endif
     real(crm_rknd), parameter      :: vonk =  0.4   ! von Karmans constant
     real(crm_rknd), parameter      :: g    = 9.81   ! gravitational acceleration
     real(crm_rknd), parameter      :: am   =  4.8   !   "          "         "

@@ -3,8 +3,12 @@ module fft_mod
 contains
 
       subroutine fft991_crm(a,work,trigs,ifax,inc,jump,n,lot,isign)
-      !$acc routine seq
       use params, only: crm_rknd
+#if defined(_OPENACC)
+      !$acc routine seq
+#elif defined(_OPENMP)
+      !$omp declare target
+#endif
       ! dimension a(*),work(*),trigs(*),ifax(*)
       dimension ifax(*)
       real(crm_rknd), dimension(*) :: a, work, trigs
@@ -151,11 +155,13 @@ contains
 
 
 
-
-
       subroutine fftfax_crm(n,ifax,trigs)
-      !$acc routine seq
       use params, only: crm_rknd
+#if defined(_OPENACC)
+      !$acc routine seq
+#elif defined(_OPENMP)
+      !$omp declare target
+#endif
       dimension ifax(13)
       real(crm_rknd), dimension(1) :: trigs
       integer :: mode
@@ -175,11 +181,12 @@ contains
       end
 
 
-
-
-
       subroutine fax_crm(ifax,n,mode)
+#if defined(_OPENACC)
       !$acc routine seq
+#elif defined(_OPENMP)
+      !$omp declare target
+#endif
       dimension ifax(*)
       nn=n
       if (iabs(mode).eq.1) go to 10
@@ -241,12 +248,13 @@ contains
       end
 
 
-
-
-
       subroutine fftrig_crm(trigs,n,mode)
-      !$acc routine seq
       use params, only: crm_rknd
+#if defined(_OPENACC)
+      !$acc routine seq
+#elif defined(_OPENMP)
+      !$omp declare target
+#endif
       real(crm_rknd), dimension(*) :: trigs
       pi=real(2.0*asin(1.0),crm_rknd)
       imode=iabs(mode)
@@ -290,17 +298,13 @@ contains
       end
 
 
-
-
-
-
-
-
-
-
       subroutine fft99a_crm(a,work,trigs,inc,jump,n,lot)
-      !$acc routine seq
       use params, only: crm_rknd
+#if defined(_OPENACC)
+      !$acc routine seq
+#elif defined(_OPENMP)
+      !$omp declare target
+#endif
       real(crm_rknd), dimension(*) :: a, work, trigs
 !
 !     subroutine fft99a - preprocessing step for fft99, isign=+1
@@ -375,13 +379,13 @@ contains
       return
       end
 
-
-
-
-
       subroutine fft99b_crm(work,a,trigs,inc,jump,n,lot)
-      !$acc routine seq
       use params, only: crm_rknd
+#if defined(_OPENACC)
+      !$acc routine seq
+#elif defined(_OPENMP)
+      !$omp declare target
+#endif
       real(crm_rknd), dimension(*) :: work, a, trigs
 !
 !     subroutine fft99b - postprocessing step for fft99, isign=-1
@@ -461,12 +465,14 @@ contains
       return
       end
 
-
-
       subroutine vpassm_crm &
      &   (a,b,c,d,trigs,inc1,inc2,inc3,inc4,lot,n,ifac,la)
-      !$acc routine seq
       use params, only: crm_rknd
+#if defined(_OPENACC)
+      !$acc routine seq
+#elif defined(_OPENMP)
+      !$omp declare target
+#endif
       real(crm_rknd), dimension(*) :: a, b, c, d, trigs
 !
 !     subroutine "vpassm" - multiple version of "vpassa"
@@ -804,5 +810,4 @@ contains
   160 continue
       return
       end
-
 end module fft_mod
