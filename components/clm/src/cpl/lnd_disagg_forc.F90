@@ -107,7 +107,7 @@ contains
     real(r8) :: sum_of_hrise        ! Sum of height rise of air parcel of all subgrids of a grid
     real(r8) :: hrise               ! Temporary height rise
 
-    integer :: uaflag = 1
+    integer :: uaflag = 0
 
     character(len=*), parameter :: subname = 'downscale_grd_to_topounit'
     !----------------------------------------------------------------------------------------
@@ -182,10 +182,8 @@ contains
           top_as%vbot(t)    = x2l(index_x2l_Sa_v,i)         ! forc_vxy  Atm state m/s
           top_as%zbot(t)    = x2l(index_x2l_Sa_z,i)         ! zgcmxy    Atm state m
           
-          if (uaflag == 1) then
              sum_qbot_g = sum_qbot_g + top_pp%wtgcell(t)*top_as%qbot(t)
              sum_wtsq_g = sum_wtsq_g + top_pp%wtgcell(t)
-	      end if
                 
           ! assign the state forcing fields derived from other inputs
           ! Horizontal windspeed (m/s)
@@ -280,7 +278,6 @@ contains
     end if   
 		 
     if (numt_pg > 1) then
-       if (uaflag == 1) then
 
           ! Normalize forc_lwrad_c(c) to conserve energy
 
@@ -307,7 +304,6 @@ contains
 
           end do
 
-       end if
 
        ! Normalize forc_lwrad_c(c) to conserve energy
 
@@ -395,7 +391,14 @@ contains
        !end if
             
        tbot_t = tsfc_t + tbot_g - tsfc_g ! tsfc is from previous time step
-            
+!       if(masterproc) then
+!         write(iulog, *) 'gridcell = ', g
+!         write(iulog, *) 'topounit = ', t
+!         write(iulog, *) 'tsfc_t = ', tsfc_t
+!         write(iulog, *) 'tbot_g = ', tbot_g
+!         write(iulog, *) 'tsfc_g = ', tsfc_g
+!         write(iulog, *) 'tbot_t = ', tbot_t
+!       end if  
               
     end if
  
@@ -501,14 +504,14 @@ contains
        
        lwrad_t = lwrad_g + lnd2atm_vars%eflx_lwrad_out_grc(g) * &
           4._r8 * (tair_t - tair_g) / tsfc_g
-       if (masterproc) then  ! TKT debugging
-            write(iulog,*) ' lwrad_g =  ', lwrad_g 
-            write(iulog,*) ' lnd2atm_vars%eflx_lwrad_out_grc(g) ', lnd2atm_vars%eflx_lwrad_out_grc(g) 
-            write(iulog,*) ' tair_t ',tair_t
-            write(iulog,*) ' tair_g ',tair_g
-            write(iulog,*) ' tsfc_g ',tsfc_g
-            write(iulog,*) ' lwrad_t ',lwrad_t
-       end if
+!       if (masterproc) then  ! TKT debugging
+!            write(iulog,*) ' lwrad_g =  ', lwrad_g 
+!            write(iulog,*) ' lnd2atm_vars%eflx_lwrad_out_grc(g) ', lnd2atm_vars%eflx_lwrad_out_grc(g) 
+!            write(iulog,*) ' tair_t ',tair_t
+!            write(iulog,*) ' tair_g ',tair_g
+!            write(iulog,*) ' tsfc_g ',tsfc_g
+!            write(iulog,*) ' lwrad_t ',lwrad_t
+!       end if
        
     end if
        top_af%lwrad(t) = lwrad_t
