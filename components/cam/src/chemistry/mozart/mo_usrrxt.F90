@@ -436,11 +436,10 @@ contains
 
     if( usr_NO2_aer_ndx > 0 .or. usr_NO3_aer_ndx > 0 .or. usr_N2O5_aer_ndx > 0 .or. usr_HO2_aer_ndx > 0 ) then
 
-          call aero_model_surfarea( &
-               mmr, rm1, relhum, pmid, temp, strato_sad, &
-               sulfate, m, ltrop, het1_ndx, pbuf, ncol, sfc_array, dm_array, sad_total )
-
-       endif
+       call aero_model_surfarea( &
+            mmr, rm1, relhum, pmid, temp, strato_sad, &
+            sulfate, m, ltrop, het1_ndx, pbuf, ncol, sfc_array, dm_array, sad_total )
+       
     endif
 
     level_loop : do k = 1,pver

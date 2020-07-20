@@ -502,16 +502,15 @@ contains
     !-----------------------------------------------------------------
     ! ... zero out sulfate below tropopause
     !-----------------------------------------------------------------
-      do k = 1, pver
-         do i = 1, ncol
-            if( k < troplev(i) ) then
-               strato_sad(i,k) = sad_sage(i,k)
-            else
-               strato_sad(i,k) = 0.0_r8
-            endif
-         end do
-      end do
-    end if  
+    do k = 1, pver
+       do i = 1, ncol
+          if( k < troplev(i) ) then
+             strato_sad(i,k) = sad_sage(i,k)
+          else
+             strato_sad(i,k) = 0.0_r8
+          endif
+       end do
+    end do
 
     if ( has_strato_chem ) then
        !-----------------------------------------------------------------------      
