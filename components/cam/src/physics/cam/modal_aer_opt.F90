@@ -61,6 +61,7 @@ complex(r8) :: crefwlw(nlwbands) ! complex refractive index for water infrared
 ! physics buffer indices
 integer :: dgnumwet_idx = -1
 integer :: qaerwat_idx  = -1
+integer :: dgnumdry_idx = -1
 
 character(len=4) :: diag(0:n_diag) = (/'    ','_d1 ','_d2 ','_d3 ','_d4 ','_d5 ', &
                                        '_d6 ','_d7 ','_d8 ','_d9 ','_d10'/)
@@ -165,6 +166,12 @@ subroutine modal_aer_opt_init()
    if (errcode < 0) then
       call endrun(routine//' ERROR: cannot find physics buffer field QAERWAT')
    end if
+   dgnumdry_idx= pbuf_get_index('DGNUM',errcode)
+   if (errcode < 0) then
+      call endrun(routine//' ERROR: cannot find physics buffer field DGNUMDRY')
+   end if
+
+
 
    call getfil(water_refindex_file, locfile)
    call read_water_refindex(locfile)
@@ -175,6 +182,12 @@ subroutine modal_aer_opt_init()
                      history_aero_optics_out = history_aero_optics )
 
    ! Add diagnostic fields to history output.
+   call addfld ('dryballi',(/ 'lev' /),    'A','/m','Aerosol extinction', flag_xyfill=.true.)
+   call addfld ('wetballi',(/ 'lev' /),    'A','/m','Aerosol extinction', flag_xyfill=.true.)
+   call addfld ('qaerballi',(/ 'lev' /),    'A','/m','Aerosol extinction', flag_xyfill=.true.)
+   call add_default ('dryballi'     , 1, ' ')
+   call add_default ('wetballi'     , 1, ' ')
+   call add_default ('qaerballi'     , 1, ' ')
 
    call addfld ('EXTINCT',(/ 'lev' /),    'A','/m','Aerosol extinction', flag_xyfill=.true.)
    call addfld ('tropopause_m',horiz_only,    'A',' m  ','tropopause level in meters', flag_xyfill=.true.)
@@ -586,8 +599,13 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
 
    if (list_idx == 0) then
       ! water uptake and wet radius for the climate list has already been calculated
+      call pbuf_get_field(pbuf, dgnumdry_idx, dgnumdry_m)
       call pbuf_get_field(pbuf, dgnumwet_idx, dgnumwet_m)
       call pbuf_get_field(pbuf, qaerwat_idx,  qaerwat_m)
+      call outfld('dryballi',  dgnumdry_m, pcols, lchnk)
+      call outfld('wetballi',  dgnumwet_m, pcols, lchnk)
+      call outfld('qaerballi',  qaerwat_m, pcols, lchnk)
+
    else
       ! If doing a diagnostic calculation then need to calculate the wet radius
       ! and water uptake for the diagnostic modes

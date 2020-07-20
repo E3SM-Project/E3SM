@@ -595,12 +595,16 @@ subroutine modal_aero_calcsize_sub(state, ptend, deltat, pbuf, do_adjust_in, &
    else
       do_adjust = do_adjust_default
    end if
+   !hardwire do_adjust for testing!BSINGH
+   do_adjust = .false. !BSINGH
 
    if (present(do_aitacc_transfer_in)) then
       do_aitacc_transfer = do_aitacc_transfer_in
    else
       do_aitacc_transfer = do_aitacc_transfer_default
    end if
+   !hardwire do_aitacc_transfer for testing !BSINGH
+   do_aitacc_transfer = .false. !BSINGH
 
    lchnk = state%lchnk
    ncol  = state%ncol
