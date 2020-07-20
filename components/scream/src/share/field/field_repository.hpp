@@ -1,11 +1,11 @@
 #ifndef SCREAM_FIELD_REPOSITORY_HPP
 #define SCREAM_FIELD_REPOSITORY_HPP
 
-#include "share/scream_types.hpp"
-#include "share/scream_assert.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/scream_assert.hpp"
+#include "ekat/util/string_utils.hpp"
+#include "ekat/util/scream_std_utils.hpp"
 #include "share/field/field.hpp"
-#include "share/util/string_utils.hpp"
-#include "share/util/scream_std_utils.hpp"
 
 #include <map>
 #include <set>

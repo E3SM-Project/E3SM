@@ -1,5 +1,5 @@
 !-------------------------------------------------------------------------------
-! $Id$
+! $Id: parameter_indices.F90 7361 2014-11-04 21:51:02Z bmg2@uwm.edu $
 !===============================================================================
 module parameter_indices
 
@@ -17,7 +17,7 @@ module parameter_indices
 !   need to have the variable added to their list, but the order
 !   doesn't actually matter, since the i variables in here determine
 !   where in the params vector the number is placed.
-!   Finally, the namelists clubb_params_nl and initspread will need to
+!   Finally, the namelists initvars and initspread will need to
 !   have the parameter added to them.
 !-------------------------------------------------------------------------------
 
@@ -26,7 +26,7 @@ module parameter_indices
   private ! Default Scope
 
   integer, parameter, public ::  & 
-    nparams = 82 ! Total tunable parameters
+    nparams = 67 ! Total tunable parameters
 
 !***************************************************************
 !                    ***** IMPORTANT *****
@@ -66,66 +66,50 @@ module parameter_indices
     iC12              = 27, & 
     iC13              = 28, & 
     iC14              = 29, &
-    iC15              = 30, &
-    iC_wp2_splat      = 31
+    iC15              = 30
 
   integer, parameter, public :: &
-    iC6rt_Lscale0     = 32, &
-    iC6thl_Lscale0    = 33, &
-    iC7_Lscale0       = 34, &
-    iwpxp_L_thresh    = 35
+    iC6rt_Lscale0     = 31, &
+    iC6thl_Lscale0    = 32, &
+    iC7_Lscale0       = 33, &
+    iwpxp_L_thresh    = 34
 
   integer, parameter, public :: & 
-    ic_K              = 36, & 
-    ic_K1             = 37, & 
-    inu1              = 38, & 
-    ic_K2             = 39, & 
-    inu2              = 40, & 
-    ic_K6             = 41, & 
-    inu6              = 42, & 
-    ic_K8             = 43, & 
-    inu8              = 44, & 
-    ic_K9             = 45, & 
-    inu9              = 46, & 
-    inu10             = 47, &
-    ic_K_hm           = 48, & 
-    ic_K_hmb          = 49, & 
-    iK_hm_min_coef    = 50, & 
-    inu_hm            = 51 
+    ic_K              = 35, & 
+    ic_K1             = 36, & 
+    inu1              = 37, & 
+    ic_K2             = 38, & 
+    inu2              = 39, & 
+    ic_K6             = 40, & 
+    inu6              = 41, & 
+    ic_K8             = 42, & 
+    inu8              = 43, & 
+    ic_K9             = 44, & 
+    inu9              = 45, & 
+    inu10             = 46, &
+    ic_K_hm           = 47, & 
+    ic_K_hmb          = 48, & 
+    iK_hm_min_coef    = 49, & 
+    inu_hm            = 50 
 
-  integer, parameter, public :: &
-    islope_coef_spread_DG_means_w = 52, &
-    ipdf_component_stdev_factor_w = 53, &
-    icoef_spread_DG_means_rt      = 54, &
-    icoef_spread_DG_means_thl     = 55, &
-    igamma_coef                   = 56, & 
-    igamma_coefb                  = 57, & 
-    igamma_coefc                  = 58, & 
-    imu                           = 59, & 
-    ibeta                         = 60, & 
-    ilmin_coef                    = 61, &
-    iomicron                      = 62, &
-    izeta_vrnce_rat               = 63, &
-    iupsilon_precip_frac_rat      = 64, &
-    ilambda0_stability_coef       = 65, &
-    imult_coef                    = 66, &
-    itaumin                       = 67, &
-    itaumax                       = 68, &
-    iLscale_mu_coef               = 69, &
-    iLscale_pert_coef             = 70, &
-    ialpha_corr                   = 71, &
-    iSkw_denom_coef               = 72, &
-    ic_K10                        = 73, &
-    ic_K10h                       = 74, &
-    ithlp2_rad_coef               = 75, &
-    ithlp2_rad_cloud_frac_thresh  = 76, &
-    iup2_vp2_factor               = 77, &
-    iSkw_max_mag                  = 78, &
-    iC_invrs_tau_bkgnd            = 79, &
-    iC_invrs_tau_sfc              = 80, &
-    iC_invrs_tau_shear            = 81, &
-    iC_invrs_tau_N2               = 82
-
+  integer, parameter, public :: & 
+    igamma_coef                  = 51, & 
+    igamma_coefb                 = 52, & 
+    igamma_coefc                 = 53, & 
+    imu                          = 54, & 
+    ibeta                        = 55, & 
+    ilmin_coef                   = 56, &
+    icoef_hm_1_hm_2_corr_adj     = 57, & 
+    imult_coef                   = 58, &
+    itaumin                      = 59, & 
+    itaumax                      = 60, &
+    iLscale_mu_coef              = 61, &
+    iLscale_pert_coef            = 62, &
+    ialpha_corr                  = 63, &
+    iSkw_denom_coef              = 64, &
+    ic_K10                       = 65, &
+    ithlp2_rad_coef              = 66, &
+    ithlp2_rad_cloud_frac_thresh = 67
 
 end module parameter_indices
 !-----------------------------------------------------------------------

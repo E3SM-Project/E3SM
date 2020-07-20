@@ -342,6 +342,12 @@ def _main():
         logger.info("Setting NETCDF environment variable: {}".format(os.environ["NETCDF_PATH"]))
         os.environ["NETCDF"] = os.environ["NETCDF_PATH"]
 
+    if "NETCDFROOT" in os.environ and not "NETCDF" in os.environ:
+        # The CMake Netcdf find utility that we use (from pio2) seems to key off
+        # of the environment variable NETCDF, but not NETCDFROOT
+        logger.info("Setting NETCDF environment variable: {}".format(os.environ["NETCDFROOT"]))
+        os.environ["NETCDF"] = os.environ["NETCDFROOT"]
+
     if not use_mpi:
         mpirun_command = ""
     elif mpirun_command is None:

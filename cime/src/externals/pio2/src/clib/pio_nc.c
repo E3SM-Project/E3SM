@@ -926,8 +926,10 @@ PIOc_inq_var(int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
                 char my_name[NC_MAX_NAME + 1];
                 nc_type my_xtype;
                 int my_ndims = 0, my_dimids[ndims], my_natts = 0;
-                ierr = nc_inq_var(file->fh, varid, my_name, &my_xtype, &my_ndims, my_dimids, &my_natts);
-                PLOG((3, "my_name = %s my_xtype = %d my_ndims = %d my_natts = %d",  my_name, my_xtype, my_ndims, my_natts));
+                ierr = nc_inq_var(file->fh, varid, my_name, &my_xtype, &my_ndims, my_dimids,
+                                  &my_natts);
+                PLOG((3, "my_name = %s my_xtype = %d my_ndims = %d my_natts = %d",  my_name,
+                      my_xtype, my_ndims, my_natts));
                 if (!ierr)
                 {
                     if (name)
@@ -2107,7 +2109,7 @@ PIOc_def_dim(int ncid, const char *name, PIO_Offset len, int *idp)
 }
 
 /**
- * The PIO-C interface for the NetCDF function nc_def_var.
+ * The PIO-C interface for the NetCDF function nc_def_var
  *
  * This routine is called collectively by all tasks in the communicator
  * ios.union_comm. For more information on the underlying NetCDF commmand
@@ -2276,8 +2278,10 @@ PIOc_def_var(int ncid, const char *name, nc_type xtype, int ndims,
         PLOG((3, "defined var ierr %d file->iotype %d", ierr, file->iotype));
 
 #ifdef _NETCDF4
-        /* For netCDF-4 serial files, turn on compression for this variable. */
-        if (!ierr && file->iotype == PIO_IOTYPE_NETCDF4C)
+        /* For netCDF-4 serial files, turn on compression for this
+         * variable, unless this file was opened through the netCDF
+         * integration feature. */
+        if (!ierr && file->iotype == PIO_IOTYPE_NETCDF4C && !file->ncint_file)
             ierr = nc_def_var_deflate(file->fh, varid, 0, 1, 1);
 
         /* For netCDF-4 parallel files, set parallel access to collective. */
@@ -2300,7 +2304,7 @@ PIOc_def_var(int ncid, const char *name, nc_type xtype, int ndims,
 
     /* Add to the list of var_desc_t structs for this file. */
     if ((ierr = add_to_varlist(varid, rec_var, xtype, (int)pio_type_size, mpi_type,
-                               mpi_type_size, &file->varlist)))
+                               mpi_type_size, ndims, &file->varlist)))
         return pio_err(ios, NULL, ierr, __FILE__, __LINE__);
     file->nvars++;
 

@@ -21,11 +21,12 @@ module glc_elevclass_mod
   public :: glc_elevclass_init            ! initialize GLC elevation class data
   public :: glc_elevclass_clean           ! deallocate memory allocated here
   public :: glc_get_num_elevation_classes ! get the number of elevation classes
+  public :: glc_get_elevation_classes     ! get elevation class of each grid cell on the glc grid.
   public :: glc_get_elevation_class       ! get the elevation class index for a given elevation
   public :: glc_get_elevclass_bounds      ! get the boundaries of all elevation classes
   public :: glc_mean_elevation_virtual    ! get the mean elevation of a virtual elevation class
   public :: glc_elevclass_as_string       ! returns a string corresponding to a given elevation class
-  public :: glc_all_elevclass_strings     ! returns an array of strings for all elevation classes
+  public :: glc_get_fractional_icecov     ! get the fractional ice cover for each glc elevation class
   public :: glc_errcode_to_string         ! convert an error code into a string describing the error
 
   interface glc_elevclass_init
@@ -33,16 +34,20 @@ module glc_elevclass_mod
      module procedure glc_elevclass_init_override
   end interface glc_elevclass_init
 
+  interface glc_get_elevation_classes
+     module procedure glc_get_elevation_classes_with_bareland
+     module procedure glc_get_elevation_classes_without_bareland
+  end interface glc_get_elevation_classes
 
   !--------------------------------------------------------------------------
   ! Public data
   !--------------------------------------------------------------------------
 
   ! Possible error code values
-  integer, parameter, public :: GLC_ELEVCLASS_ERR_NONE = 0      ! err_code indicating no error
+  integer, parameter, public :: GLC_ELEVCLASS_ERR_NONE      = 0 ! err_code indicating no error
   integer, parameter, public :: GLC_ELEVCLASS_ERR_UNDEFINED = 1 ! err_code indicating elevation classes have not been defined
-  integer, parameter, public :: GLC_ELEVCLASS_ERR_TOO_LOW = 2   ! err_code indicating topo below lowest elevation class
-  integer, parameter, public :: GLC_ELEVCLASS_ERR_TOO_HIGH = 3  ! err_code indicating topo above highest elevation class
+  integer, parameter, public :: GLC_ELEVCLASS_ERR_TOO_LOW   = 2 ! err_code indicating topo below lowest elevation class
+  integer, parameter, public :: GLC_ELEVCLASS_ERR_TOO_HIGH  = 3 ! err_code indicating topo above highest elevation class
 
   ! String length for glc elevation classes represented as strings
   integer, parameter, public :: GLC_ELEVCLASS_STRLEN = 2
@@ -57,7 +62,6 @@ module glc_elevclass_mod
   ! upper elevation limit of each class (m)
   ! indexing starts at 0, with topomax(0) giving the lower elevation limit of EC 1
   real(r8), allocatable :: topomax(:)
-
 
 contains
 
@@ -78,7 +82,7 @@ contains
     !-----------------------------------------------------------------------
 
     glc_nec = my_glc_nec
-    allocate(topomax(0:glc_nec))
+    if (.not. allocated(topomax)) allocate(topomax(0:glc_nec))
 
     select case (glc_nec)
     case(0)
@@ -173,6 +177,116 @@ contains
   end function glc_get_num_elevation_classes
 
   !-----------------------------------------------------------------------
+  subroutine glc_get_elevation_classes_without_bareland(glc_topo, glc_elevclass, logunit)
+    !
+    ! !DESCRIPTION:
+    ! Get elevation class of each grid cell on the glc grid.
+    !
+    ! This does not consider glc_frac: it simply gives the elevation class that the grid
+    ! cell would be in if it were ice-covered. So it never returns an elevation class of
+    ! 0 (bare land). (This design would allow us, in the future, to have glc grid cells
+    ! that are part ice-covered, part ice-free.)
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    real(r8), intent(in)  :: glc_topo(:)      ! topographic height
+    integer , intent(out) :: glc_elevclass(:) ! elevation class
+    integer , intent(in)  :: logunit
+    !
+    ! !LOCAL VARIABLES:
+    integer :: npts
+    integer :: glc_pt
+    integer :: err_code
+
+    character(len=*), parameter :: subname = 'get_glc_elevation_classes'
+    !-----------------------------------------------------------------------
+
+    npts = size(glc_elevclass)
+    SHR_ASSERT_FL((size(glc_topo) == npts), __FILE__, __LINE__)
+
+    do glc_pt = 1, npts
+       call glc_get_elevation_class(glc_topo(glc_pt), glc_elevclass(glc_pt), err_code)
+       select case (err_code)
+       case (GLC_ELEVCLASS_ERR_NONE)
+          ! Do nothing
+       case (GLC_ELEVCLASS_ERR_TOO_LOW, GLC_ELEVCLASS_ERR_TOO_HIGH)
+          write(logunit,*) subname, ': WARNING, for glc_pt, topo = ', glc_pt, glc_topo(glc_pt)
+          write(logunit,*) glc_errcode_to_string(err_code)
+       case default
+          write(logunit,*) subname, ': ERROR getting elevation class for glc_pt = ', glc_pt
+          write(logunit,*) glc_errcode_to_string(err_code)
+          call shr_sys_abort(subname//': ERROR getting elevation class')
+       end select
+    end do
+
+  end subroutine glc_get_elevation_classes_without_bareland
+
+  !-----------------------------------------------------------------------
+  subroutine glc_get_elevation_classes_with_bareland(glc_ice_covered, glc_topo, glc_elevclass, logunit)
+    !
+    ! !DESCRIPTION:
+    ! Get the elevation class of each point on the glc grid.
+    ! For grid cells that are ice-free, the elevation class is set to 0.
+    ! All arguments (glc_ice_covered, glc_topo and glc_elevclass) must be the same size.
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    real(r8), intent(in)  :: glc_ice_covered(:) ! ice-covered (1) vs. ice-free (0)
+    real(r8), intent(in)  :: glc_topo(:)        ! ice topographic height
+    integer , intent(out) :: glc_elevclass(:)   ! elevation class
+    integer , intent(in)  :: logunit
+    !
+    ! !LOCAL VARIABLES:
+    integer :: npts
+    integer :: glc_pt
+    integer :: err_code
+
+    ! Tolerance for checking whether ice_covered is 0 or 1
+    real(r8), parameter :: ice_covered_tol = 1.e-13
+
+    character(len=*), parameter :: subname = 'get_glc_elevation_classes'
+    !-----------------------------------------------------------------------
+
+    npts = size(glc_elevclass)
+    SHR_ASSERT_FL((size(glc_ice_covered) == npts), __FILE__, __LINE__)
+    SHR_ASSERT_FL((size(glc_topo) == npts), __FILE__, __LINE__)
+
+    do glc_pt = 1, npts
+       if (abs(glc_ice_covered(glc_pt) - 1._r8) < ice_covered_tol) then
+          ! This is an ice-covered point
+
+          call glc_get_elevation_class(glc_topo(glc_pt), glc_elevclass(glc_pt), err_code)
+          if ( err_code == GLC_ELEVCLASS_ERR_NONE .or. &
+               err_code == GLC_ELEVCLASS_ERR_TOO_LOW .or. &
+               err_code == GLC_ELEVCLASS_ERR_TOO_HIGH) then
+             ! These are all acceptable "errors" - it is even okay for these purposes if
+             ! the elevation is lower than the lower bound of elevation class 1, or
+             ! higher than the upper bound of the top elevation class.
+
+             ! Do nothing
+          else
+             write(logunit,*) subname, ': ERROR getting elevation class for ', glc_pt
+             write(logunit,*) glc_errcode_to_string(err_code)
+             call shr_sys_abort(subname//': ERROR getting elevation class')
+          end if
+       else if (abs(glc_ice_covered(glc_pt) - 0._r8) < ice_covered_tol) then
+          ! This is a bare land point (no ice)
+          glc_elevclass(glc_pt) = 0
+       else
+          ! glc_ice_covered is some value other than 0 or 1
+          ! The lnd -> glc downscaling code would need to be reworked if we wanted to
+          ! handle a continuous fraction between 0 and 1.
+          write(logunit,*) subname, ': ERROR: glc_ice_covered must be 0 or 1'
+          write(logunit,*) 'glc_pt, glc_ice_covered = ', glc_pt, glc_ice_covered(glc_pt)
+          call shr_sys_abort(subname//': ERROR: glc_ice_covered must be 0 or 1')
+       end if
+    end do
+
+  end subroutine glc_get_elevation_classes_with_bareland
+
+  !-----------------------------------------------------------------------
   subroutine glc_get_elevation_class(topo, elevation_class, err_code)
     !
     ! !DESCRIPTION:
@@ -252,6 +366,36 @@ contains
 
   end function glc_get_elevclass_bounds
 
+  !-----------------------------------------------------------------------
+  function glc_elevclass_as_string(elevation_class) result(ec_string)
+    !
+    ! !DESCRIPTION:
+    ! Returns a string corresponding to a given elevation class.
+    !
+    ! This string can be used as a suffix for fields in MCT attribute vectors.
+    ! This is still needed by dlnd in the data models - even if they have nuopc caps.
+    !
+    ! ! NOTE(wjs, 2015-01-19) This function doesn't fully belong in this module, since it
+    ! doesn't refer to the data stored in this module. However, I can't think of a more
+    ! appropriate place for it.
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    character(len=GLC_ELEVCLASS_STRLEN) :: ec_string  ! function result
+    integer, intent(in) :: elevation_class
+    !
+    ! !LOCAL VARIABLES:
+    character(len=16) :: format_string
+
+    character(len=*), parameter :: subname = 'glc_elevclass_as_string'
+    !-----------------------------------------------------------------------
+
+    ! e.g., for GLC_ELEVCLASS_STRLEN = 2, format_string will be '(i2.2)'
+    write(format_string,'(a,i0,a,i0,a)') '(i', GLC_ELEVCLASS_STRLEN, '.', GLC_ELEVCLASS_STRLEN, ')'
+
+    write(ec_string,trim(format_string)) elevation_class
+  end function glc_elevclass_as_string
 
   !-----------------------------------------------------------------------
   function glc_mean_elevation_virtual(elevation_class, logunit) result(mean_elevation)
@@ -320,82 +464,6 @@ contains
 
   end function glc_mean_elevation_virtual
 
-
-  !-----------------------------------------------------------------------
-  function glc_elevclass_as_string(elevation_class) result(ec_string)
-    !
-    ! !DESCRIPTION:
-    ! Returns a string corresponding to a given elevation class.
-    !
-    ! This string can be used as a suffix for fields in MCT attribute vectors.
-    !
-    ! ! NOTE(wjs, 2015-01-19) This function doesn't fully belong in this module, since it
-    ! doesn't refer to the data stored in this module. However, I can't think of a more
-    ! appropriate place for it.
-    !
-    ! !USES:
-    !
-    ! !ARGUMENTS:
-    character(len=GLC_ELEVCLASS_STRLEN) :: ec_string  ! function result
-    integer, intent(in) :: elevation_class
-    !
-    ! !LOCAL VARIABLES:
-    character(len=16) :: format_string
-
-    character(len=*), parameter :: subname = 'glc_elevclass_as_string'
-    !-----------------------------------------------------------------------
-
-    ! e.g., for GLC_ELEVCLASS_STRLEN = 2, format_string will be '(i2.2)'
-    write(format_string,'(a,i0,a,i0,a)') '(i', GLC_ELEVCLASS_STRLEN, '.', GLC_ELEVCLASS_STRLEN, ')'
-
-    write(ec_string,trim(format_string)) elevation_class
-  end function glc_elevclass_as_string
-
-  !-----------------------------------------------------------------------
-  function glc_all_elevclass_strings(include_zero) result(ec_strings)
-    !
-    ! !DESCRIPTION:
-    ! Returns an array of strings corresponding to all elevation classes from 1 to glc_nec
-    !
-    ! If include_zero is present and true, then includes elevation class 0 - so goes from
-    ! 0 to glc_nec
-    !
-    ! These strings can be used as suffixes for fields in MCT attribute vectors.
-    !
-    ! !USES:
-    !
-    ! !ARGUMENTS:
-    character(len=GLC_ELEVCLASS_STRLEN), allocatable :: ec_strings(:)  ! function result
-    logical, intent(in), optional :: include_zero   ! if present and true, include elevation class 0 (default is false)
-    !
-    ! !LOCAL VARIABLES:
-    logical :: l_include_zero  ! local version of optional include_zero argument
-    integer :: lower_bound
-    integer :: i
-
-    character(len=*), parameter :: subname = 'glc_all_elevclass_strings'
-    !-----------------------------------------------------------------------
-
-    if (present(include_zero)) then
-       l_include_zero = include_zero
-    else
-       l_include_zero = .false.
-    end if
-
-    if (l_include_zero) then
-       lower_bound = 0
-    else
-       lower_bound = 1
-    end if
-
-    allocate(ec_strings(lower_bound:glc_nec))
-    do i = lower_bound, glc_nec
-       ec_strings(i) = glc_elevclass_as_string(i)
-    end do
-
-  end function glc_all_elevclass_strings
-
-
   !-----------------------------------------------------------------------
   function glc_errcode_to_string(err_code) result(err_string)
     !
@@ -427,5 +495,75 @@ contains
     end select
 
   end function glc_errcode_to_string
+
+  !-----------------------------------------------------------------------
+  subroutine glc_get_fractional_icecov(nec, glc_topo, glc_icefrac, glc_icefrac_ec, logunit)
+
+    !------------------
+    ! Get the fractional ice cover for each glc elevation class
+    !
+    ! First get elevation class of each grid cell on the glc grid.
+    ! This does not consider glc_frac: it simply gives the elevation class that the grid
+    ! cell would be in if it were ice-covered. So it never returns an elevation class of
+    ! 0 (bare land). (This design would allow us, in the future, to have glc grid cells
+    ! that are part ice-covered, part ice-free.)
+    !------------------
+
+    ! input/output variables
+    integer , intent(in)  :: nec              ! number of elevation classes 
+    real(r8), intent(in)  :: glc_topo(:)      ! topographic height
+    real(r8), intent(in)  :: glc_icefrac(:)
+    real(r8), intent(out) :: glc_icefrac_ec(:,:)
+    integer , intent(in)  :: logunit
+    !
+    ! local variables
+    integer , allocatable :: glc_elevclass(:) ! elevation class
+    integer :: npts
+    integer :: ec 
+    integer :: glc_pt
+    integer :: err_code
+    character(len=*), parameter :: subname = 'get_glc_elevation_classes'
+    !-----------------------------------------------------------------------
+
+    npts = size(glc_topo)
+    allocate(glc_elevclass(npts))
+
+    do glc_pt = 1, npts
+       call glc_get_elevation_class(glc_topo(glc_pt), glc_elevclass(glc_pt), err_code)
+       select case (err_code)
+       case (GLC_ELEVCLASS_ERR_NONE)
+          ! Do nothing
+       case (GLC_ELEVCLASS_ERR_TOO_LOW, GLC_ELEVCLASS_ERR_TOO_HIGH)
+          write(logunit,*) subname, ': WARNING, for glc_pt, topo = ', glc_pt, glc_topo(glc_pt)
+          write(logunit,*) glc_errcode_to_string(err_code)
+       case default
+          write(logunit,*) subname, ': ERROR getting elevation class for glc_pt = ', glc_pt
+          write(logunit,*) glc_errcode_to_string(err_code)
+          call shr_sys_abort(subname//': ERROR getting elevation class')
+       end select
+    end do
+
+    ! note that glc_elevclass gives the elevation class of each glc
+    ! grid cell, assuming that the grid cell is ice-covered.
+    ! glc_elevclass for a given glc gridcell spans [0 -> nec]
+    ! the first and undistributed dimension of glc_icefrac_ec spans [1 -> nec+1]
+
+    do ec = 0, nec
+       do glc_pt = 1,npts
+          if (ec == 0) then
+             glc_icefrac_ec(ec+1,glc_pt) = 1._r8 - glc_icefrac(glc_pt)
+          else
+             if (glc_elevclass(glc_pt) == ec) then
+                glc_icefrac_ec(ec+1,glc_pt) = glc_icefrac(glc_pt)
+             else
+                glc_icefrac_ec(ec+1,glc_pt) = 0._r8
+             end if
+          end if
+       end do
+    end do
+
+    deallocate(glc_elevclass)
+
+  end subroutine glc_get_fractional_icecov
 
 end module glc_elevclass_mod

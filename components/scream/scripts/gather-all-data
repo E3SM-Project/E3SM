@@ -27,7 +27,8 @@ check_minimum_python_version(3, 5)
 
 import argparse, sys, pathlib
 
-from gather_all_data import GatherAllData, MACHINE_METADATA
+from gather_all_data import GatherAllData
+from machines_specs import MACHINE_METADATA
 
 ###############################################################################
 def parse_command_line(args, description):

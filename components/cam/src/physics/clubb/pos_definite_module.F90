@@ -1,5 +1,5 @@
 !-------------------------------------------------------------------------
-!$Id$
+!$Id: pos_definite_module.F90 7140 2014-07-31 19:14:05Z betlej@uwm.edu $
 !===============================================================================
 module pos_definite_module
 
@@ -58,7 +58,7 @@ module pos_definite_module
       core_rknd ! Variable(s)
 
     use error_code, only: &
-        clubb_at_least_debug_level   ! Procedure
+      clubb_at_least_debug_level
 
     implicit none
 

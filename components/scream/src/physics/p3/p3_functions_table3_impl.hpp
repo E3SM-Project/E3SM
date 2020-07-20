@@ -14,11 +14,13 @@ namespace p3 {
 template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::lookup (const Smask& qr_gt_small, const Spack& mu_r,
-          const Spack& lamr, Table3& t) {
+::lookup (const Spack& mu_r,
+          const Spack& lamr, Table3& t,
+          const Smask& context)
+{
   // find location in scaled mean size space
   const auto dum1 = (mu_r+1) / lamr;
-  const auto dum1_lt = qr_gt_small && (dum1 <= sp(195.e-6));
+  const auto dum1_lt = context && (dum1 <= sp(195.e-6));
   t.dumii = 1;
   if (dum1_lt.any()) {
     scream_masked_loop(dum1_lt, s) {
@@ -33,7 +35,7 @@ void Functions<S,D>
       t.dumii[s] = dumii;
     }
   }
-  const auto dum1_gte = qr_gt_small && ! dum1_lt;
+  const auto dum1_gte = context && !dum1_lt;
   if (dum1_gte.any()) {
     scream_masked_loop(dum1_gte, s) {
       const auto inv_dum3 = C::THIRD * sp(0.1);
@@ -56,16 +58,16 @@ void Functions<S,D>
     IntSmallPack dumjj(rdumjj);
     dumjj  = max(dumjj, 1);
     dumjj  = min(dumjj, 9);
-    t.rdumjj.set(qr_gt_small, rdumjj);
+    t.rdumjj.set(context, rdumjj);
     t.dumjj = 1;
-    t.dumjj.set(qr_gt_small, dumjj);
+    t.dumjj.set(context, dumjj);
   }
 }
 
 template <typename S, typename D>
 KOKKOS_FUNCTION
 typename Functions<S,D>::Spack Functions<S,D>
-::apply_table (const Smask& qr_gt_small, const view_2d_table& table,
+::apply_table (const view_2d_table& table,
                const Table3& t) {
   const auto rdumii_m_dumii = t.rdumii - Spack(t.dumii);
   const auto t_im1_jm1 = index(table, t.dumii-1, t.dumjj-1);

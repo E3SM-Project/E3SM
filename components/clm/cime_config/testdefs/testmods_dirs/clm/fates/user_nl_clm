@@ -3,8 +3,9 @@ finidat           = ''
 hist_mfilt        = 365
 hist_nhtfrq       = -24
 hist_empty_htapes = .true.
+use_fates_spitfire = .true.
 hist_fincl1       = 'NPP','GPP','BTRAN','H2OSOI','TLAI','LITTER_IN_ELEM','LITTER_OUT_ELEM',
-   'FIRE_AREA','SCORCH_HEIGHT','FIRE_INTENSITY','FIRE_TFC_ROS','fire_fuel_mef',
-   'fire_fuel_bulkd','fire_fuel_sav','FIRE_NESTEROV_INDEX','PFTbiomass',
+   'FIRE_AREA','SCORCH_HEIGHT','FIRE_INTENSITY','FIRE_TFC_ROS','FIRE_FUEL_MEF',
+   'FIRE_FUEL_BULKD','FIRE_FUEL_SAV','FIRE_NESTEROV_INDEX','PFTbiomass',
    'PFTleafbiomass','FIRE_ROS','WIND','AREA_TREES','AREA_PLANT','HR','AR'
 

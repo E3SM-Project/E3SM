@@ -1051,7 +1051,7 @@ contains
           call shr_sys_abort()
        endif
        call ESMF_TimeIntervalSet( TimeStep, s=dtime(n), rc=rc )
-       if(CurrTime + TimeStep > minStopTime ) then
+       if(CurrTime + TimeStep > minStopTime .and. seq_comm_iamroot(CPLID)) then
           write(logunit,*) subname//" WARNING: Stop time too short, not all components will be advanced &
                                     &and restarts won't be written"
        endif

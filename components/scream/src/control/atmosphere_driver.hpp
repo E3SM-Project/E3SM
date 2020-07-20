@@ -1,12 +1,12 @@
 #ifndef SCREAM_ATMOSPHERE_DRIVER_HPP
 #define SCREAM_ATMOSPHERE_DRIVER_HPP
 
-#include "share/scream_types.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/util/time_stamp.hpp"
+#include "ekat/mpi/scream_comm.hpp"
+#include "ekat/scream_parameter_list.hpp"
 #include "share/field/field_repository.hpp"
-#include "share/mpi/scream_comm.hpp"
-#include "share/scream_parameter_list.hpp"
 #include "share/grid/grids_manager.hpp"
-#include "share/util/time_stamp.hpp"
 
 #include <memory>
 

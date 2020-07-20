@@ -55,12 +55,11 @@ This allows using a different mpirun command to launch unit tests
     <OS>CNL</OS>
     <COMPILERS>intel,gnu,cray</COMPILERS>
     <MPILIBS>mpt,mpi-serial</MPILIBS>
-    <CIME_OUTPUT_ROOT>$ENV{BASEDIR}</CIME_OUTPUT_ROOT>
+    <CIME_OUTPUT_ROOT>/proj/$ENV{USER}</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>$ENV{DIN_LOC_ROOT}</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>$DIN_LOC_ROOT</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>${CIME_OUTPUT_ROOT}/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>${CIME_OUTPUT_ROOT}/cesm_baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>/home/jedwards/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
     <SUPPORTED_BY> @ pusan.ac.kr</SUPPORTED_BY>
@@ -104,7 +103,7 @@ This allows using a different mpirun command to launch unit tests
         <command name="rm">perftools-base/7.0.4</command>
         <command name="load">cray-netcdf/4.6.1.3</command>
         <command name="load">cray-hdf5/1.10.2.0</command>
-        <command name="load">cray-parallel-netcdf/1.8.1.3</command>
+        <command name="load">cray-parallel-netcdf/1.11.1.1</command>
         <command name="load">papi/5.6.0.4</command>
         <command name="load">gridftp/6.0</command>
         <command name="load">cray-python/3.6.5.1</command>
@@ -364,7 +363,7 @@ This allows using a different mpirun command to launch unit tests
     <COMPILERS>intel,gnu,pgi</COMPILERS>
     <MPILIBS compiler="intel" >mpt,openmpi</MPILIBS>
     <MPILIBS compiler="pgi" >openmpi,mpt</MPILIBS>
-    <MPILIBS compiler="gnu" >openmpi</MPILIBS>
+    <MPILIBS compiler="gnu" >mpt,openmpi</MPILIBS>
     <CIME_OUTPUT_ROOT>/glade/scratch/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/glade/p/cgd/tss/CTSM_datm_forcing_data</DIN_LOC_ROOT_CLMFORC>
@@ -418,40 +417,56 @@ This allows using a different mpirun command to launch unit tests
       <cmd_path lang="csh">module</cmd_path>
       <modules>
 	<command name="purge"/>
-	<command name="load">ncarenv/1.2</command>
+	<command name="load">ncarenv/1.3</command>
       </modules>
       <modules compiler="intel">
-	<command name="load">intel/19.0.2</command>
+	<command name="load">intel/19.0.5</command>
 	<command name="load">esmf_libs</command>
 	<command name="load">mkl</command>
       </modules>
-      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE" comp_interface="mct">
-        <command name="load">esmf-7.1.0r-defio-mpi-g</command>
-      </modules>
-      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="FALSE" comp_interface="mct">
-        <command name="load">esmf-7.1.0r-defio-mpi-O</command>
-      </modules>
-      <modules compiler="intel" mpilib="mpi-serial" DEBUG="TRUE" comp_interface="mct">
-        <command name="load">esmf-7.1.0r-ncdfio-uni-g</command>
-      </modules>
-      <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE" comp_interface="mct">
-        <command name="load">esmf-7.1.0r-ncdfio-uni-O</command>
+      <modules compiler="gnu">
+        <command name="load">gnu/9.1.0</command>
+        <command name="load">openblas/0.3.6</command>
       </modules>
       <modules compiler="pgi">
 	<command name="load">pgi/19.3</command>
       </modules>
-      <modules compiler="gnu">
-        <command name="load">gnu/8.3.0</command>
-        <command name="load">openblas/0.3.6</command>
+
+      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE">
+        <command name="use">/glade/work/himanshu/PROGS/modulefiles/esmfpkgs/intel/19.0.5</command>
+        <command name="load">esmf-8.1.0b14-ncdfio-mpt-g</command>
       </modules>
+      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="FALSE">
+        <command name="use">/glade/work/himanshu/PROGS/modulefiles/esmfpkgs/intel/19.0.5</command>
+        <command name="load">esmf-8.1.0b14-ncdfio-mpt-O</command>
+      </modules>
+      <modules compiler="intel" mpilib="mpi-serial" DEBUG="TRUE">
+        <command name="use">/glade/work/himanshu/PROGS/modulefiles/esmfpkgs/intel/19.0.5</command>
+        <command name="load">esmf-8.1.0b14-ncdfio-mpiuni-g</command>
+      </modules>
+      <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE">
+        <command name="use">/glade/work/himanshu/PROGS/modulefiles/esmfpkgs/intel/19.0.5</command>
+        <command name="load">esmf-8.1.0b14-ncdfio-mpiuni-O</command>
+      </modules>
+      <modules compiler="gnu" mpilib="!mpi-serial" DEBUG="TRUE">
+        <command name="use">/glade/work/himanshu/PROGS/modulefiles/esmfpkgs/gnu/9.1.0</command>
+        <command name="load">esmf-8.1.0b14-ncdfio-mpt-g</command>
+      </modules>
+      <modules compiler="gnu" mpilib="!mpi-serial" DEBUG="FALSE">
+        <command name="use">/glade/work/himanshu/PROGS/modulefiles/esmfpkgs/gnu/9.1.0</command>
+        <command name="load">esmf-8.1.0b14-ncdfio-mpt-O</command>
+      </modules>
+
       <modules mpilib="mpt" compiler="gnu">
-	<command name="load">mpt/2.19</command>
-	<command name="load">netcdf-mpi/4.7.1</command>
+	<command name="load">mpt/2.21</command>
+	<command name="load">netcdf-mpi/4.7.3</command>
+	<command name="load">pnetcdf/1.12.1</command>
       </modules>
       <modules mpilib="mpt" compiler="intel">
-	<command name="load">mpt/2.19</command>
-	<command name="load">netcdf-mpi/4.7.1</command>
-	<command name="load">pnetcdf/1.11.0</command>
+	<command name="load">mpt/2.21</command>
+	<!-- known failure in parallel netcdf with mpt, use serial -->
+	<command name="load">netcdf/4.7.3</command>
+	<command name="load">pnetcdf/1.12.1</command>
       </modules>
       <modules mpilib="mpt" compiler="pgi">
 	<command name="load">mpt/2.19</command>
@@ -480,23 +495,11 @@ This allows using a different mpirun command to launch unit tests
       </modules>
     </module_system>
     <environment_variables>
-      <env name="OMP_STACKSIZE">256M</env>
+      <env name="OMP_STACKSIZE">1024M</env>
       <env name="TMPDIR">/glade/scratch/$USER</env>
       <env name="MPI_TYPE_DEPTH">16</env>
       <env name="MPI_IB_CONGESTED">1</env>
       <env name="MPI_USE_ARRAY"/>
-    </environment_variables>
-    <environment_variables comp_interface="nuopc" mpilib="mpi-serial" DEBUG="FALSE">
-      <env name="ESMFMKFILE">/glade/work/turuncu/ESMF/8.0.0b50/lib/libO/Linux.intel.64.mpiuni.default/esmf.mk</env>
-    </environment_variables>
-    <environment_variables comp_interface="nuopc" mpilib="mpi-serial" DEBUG="TRUE">
-      <env name="ESMFMKFILE">/glade/work/turuncu/ESMF/8.0.0b50/lib/libg/Linux.intel.64.mpiuni.default/esmf.mk</env>
-    </environment_variables>
-    <environment_variables comp_interface="nuopc" DEBUG="FALSE">
-      <env name="ESMFMKFILE">/glade/work/turuncu/ESMF/8.0.0b50/lib/libO/Linux.intel.64.mpt.default/esmf.mk</env>
-    </environment_variables>
-    <environment_variables comp_interface="nuopc" DEBUG="TRUE">
-      <env name="ESMFMKFILE">/glade/work/turuncu/ESMF/8.0.0b50/lib/libg/Linux.intel.64.mpt.default/esmf.mk</env>
     </environment_variables>
     <environment_variables comp_interface="nuopc">
       <env name="ESMF_RUNTIME_PROFILE">ON</env>
@@ -1425,7 +1428,7 @@ This allows using a different mpirun command to launch unit tests
     <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/projects/ptclm-data</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$ENV{HOME}/projects/scratch/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>$ENV{HOME}/projects/baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>$CIMEROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>$ENV{HOME}/cesm/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE>make</GMAKE>
     <GMAKE_J>4</GMAKE_J>
     <BATCH_SYSTEM>none</BATCH_SYSTEM>
@@ -1456,7 +1459,7 @@ This allows using a different mpirun command to launch unit tests
     <DIN_LOC_ROOT_CLMFORC>/project/tss</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/scratch/cluster/$USER/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/fs/cgd/csm/ccsm_baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>/fs/cgd/csm/tools/cime/tools/cprnc/cprnc.izumi</CCSM_CPRNC>
+    <CCSM_CPRNC>/fs/cgd/csm/tools/cime/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE>gmake --output-sync</GMAKE>
     <GMAKE_J>4</GMAKE_J>
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
@@ -1489,7 +1492,7 @@ This allows using a different mpirun command to launch unit tests
 	<command name="purge"></command>
       </modules>
       <modules compiler="intel">
-	<command name="load">compiler/intel/19.0.1</command>
+	<command name="load">compiler/intel/19.0.2</command>
 	<command name="load">tool/netcdf/4.6.1/intel</command>
       </modules>
       <modules compiler="intel" mpilib="mvapich2">
@@ -1548,7 +1551,7 @@ This allows using a different mpirun command to launch unit tests
     <!-- have not seen any performance benefit in smt -->
     <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>36</MAX_MPITASKS_PER_NODE>
-    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>mpiexec_mpt</executable>
       <arguments>
@@ -1557,42 +1560,44 @@ This allows using a different mpirun command to launch unit tests
       </arguments>
     </mpirun>
     <module_system type="module">
-      <init_path lang="perl">/picnic/u/apps/la/opt/lmod/7.5.3/gnu/4.8.5/lmod/lmod/init/perl</init_path>
-      <init_path lang="python">/picnic/u/apps/la/opt/lmod/7.5.3/gnu/4.8.5/lmod/lmod/init/env_modules_python.py</init_path>
-      <init_path lang="csh">/picnic/u/apps/la/opt/lmod/7.5.3/gnu/4.8.5/lmod/lmod/init/csh</init_path>
-      <init_path lang="sh">/picnic/u/apps/la/opt/lmod/7.5.3/gnu/4.8.5/lmod/lmod/init/sh</init_path>
-      <cmd_path lang="perl">/picnic/u/apps/la/opt/lmod/7.5.3/gnu/4.8.5/lmod/lmod/libexec/lmod perl</cmd_path>
-      <cmd_path lang="python">/picnic/u/apps/la/opt/lmod/7.5.3/gnu/4.8.5/lmod/lmod/libexec/lmod python</cmd_path>
+      <init_path lang="perl">/picnic/u/apps/la/opt/lmod/8.1.7/lmod/lmod/init/perl</init_path>
+      <init_path lang="python">/picnic/u/apps/la/opt/lmod/8.1.7/lmod/lmod/init/env_modules_python.py</init_path>
+      <init_path lang="csh">/picnic/u/apps/la/opt/lmod/8.1.7/lmod/lmod/init/csh</init_path>
+      <init_path lang="sh">/picnic/u/apps/la/opt/lmod/8.1.7/lmod/lmod/init/sh</init_path>
+      <cmd_path lang="perl">/picnic/u/apps/la/opt/lmod/8.1.7/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="python">/picnic/u/apps/la/opt/lmod/8.1.7/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
 	<command name="purge"/>
-	<command name="load">ncarenv/1.2</command>
+	<command name="load">ncarenv/1.3</command>
+	<command name="load">cmake/3.16.4</command>
       </modules>
       <modules compiler="intel">
-	<command name="load">intel/17.0.1</command>
+	<command name="load">intel/19.0.5</command>
 	<command name="load">mkl</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">gnu/6.3.0</command>
-        <command name="load">openblas/0.2.14</command>
+        <command name="load">gnu/9.1.0</command>
+        <command name="load">openblas/0.3.6</command>
       </modules>
       <modules mpilib="mpt">
-	<command name="load">mpt/2.17</command>
-	<command name="load">netcdf-mpi/4.4.1.1</command>
+	<command name="load">mpt/2.21</command>
+	<command name="load">netcdf-mpi/4.7.3</command>
       </modules>
       <modules mpilib="mpt" compiler="intel">
-	<command name="load">pnetcdf/1.8.1</command>
+	<command name="load">pnetcdf/1.12.1</command>
+	<command name="load">pio/2.4.4</command>
       </modules>
       <modules mpilib="openmpi">
-	<command name="load">openmpi/2.1.0</command>
-	<command name="load">netcdf/4.4.1.1</command>
+	<command name="load">openmpi/3.1.4</command>
+	<command name="load">netcdf-mpi/4.7.3</command>
       </modules>
       <modules>
-	<command name="load">ncarcompilers/0.4.1</command>
+	<command name="load">ncarcompilers/0.5.0</command>
       </modules>
       <modules mpilib="mpi-serial">
-	<command name="load">netcdf/4.4.1.1</command>
+	<command name="load">netcdf/4.7.3</command>
       </modules>
     </module_system>
     <environment_variables>
@@ -2365,18 +2370,18 @@ This allows using a different mpirun command to launch unit tests
         <command name="load">TACC</command>
         <command name="load">python/2.7.13</command>
         <command name="load">intel/18.0.2</command>
-        <command name="load">cmake/3.10.2</command>
+        <command name="load">cmake/3.16.1</command>
       </modules>
       <modules mpilib="mvapich2">
-        <command name="load">mvapich2/2.3b</command>
-        <command name="load">pnetcdf/1.11.0</command>
-        <command name="load">parallel-netcdf/4.3.3.1</command>
+        <command name="load">mvapich2/2.3.1</command>
+        <command name="load">pnetcdf/1.11</command>
+        <command name="load">parallel-netcdf/4.6.2</command>
       </modules>
       <modules mpilib="impi">
         <command name="rm">mvapich2</command>
         <command name="load">impi/18.0.2</command>
-        <command name="load">pnetcdf/1.11.0</command>
-        <command name="load">parallel-netcdf/4.3.3.1</command>
+        <command name="load">pnetcdf/1.11</command>
+        <command name="load">parallel-netcdf/4.6.2</command>
       </modules>
       <modules mpilib="mpi-serial">
         <command name="load">netcdf/4.3.3.1</command>
@@ -2599,6 +2604,85 @@ This allows using a different mpirun command to launch unit tests
         <command name="load">cray-parallel-netcdf/1.8.1.3</command>
       </modules>
     </module_system>
+  </machine>
+
+  <machine MACH="thunder">
+    <DESC>NCAR ARM platform, os is Linux, 64/128 pes/node, batch system is SLURM</DESC>
+    <NODENAME_REGEX>.*.thunder.ucar.edu</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <!-- arm LLVM compiler support is a work in progress -->
+    <COMPILERS>armgcc,gnu,arm</COMPILERS>
+    <MPILIBS>openmpi</MPILIBS>
+    <CIME_OUTPUT_ROOT>/glade/scratch/$USER</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$DIN_LOC_ROOT/CTSM_datm_forcing_data</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>$ENV{CESMDATAROOT}/cesm_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>16</GMAKE_J>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>cseg</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
+    <mpirun mpilib="default">
+      <executable>mpiexec</executable>
+      <arguments>
+	<arg name="labelstdout">--tag-output</arg>
+	<arg name="num_tasks"> -np {{ total_tasks }}</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="perl">/glade/u/apps/th/opt/lmod/8.1.7/lmod/lmod/init/perl</init_path>
+      <init_path lang="python">/glade/u/apps/th/opt/lmod/8.1.7/lmod/lmod/init/env_modules_python.py</init_path>
+      <init_path lang="csh">/glade/u/apps/th/opt/lmod/8.1.7/lmod/lmod/init/csh</init_path>
+      <init_path lang="sh">/glade/u/apps/th/opt/lmod/8.1.7/lmod/lmod/init/sh</init_path>
+      <cmd_path lang="perl">/glade/u/apps/th/opt/lmod/8.1.7/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="python">/glade/u/apps/th/opt/lmod/8.1.7/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+	<command name="purge"/>
+	<command name="load">ncarenv/1.3</command>
+	<command name="load">cmake/3.14.4</command>
+      </modules>
+      <modules compiler="arm">
+	<command name="load">arm/19.3</command>
+      </modules>
+      <modules compiler="armgcc">
+	<command name="load">armgcc/8.2.0</command>
+      </modules>
+      <modules compiler="gnu">
+        <command name="load">gnu/9.1.0</command>
+        <command name="load">openblas/0.3.6</command>
+	<command name="load">esmf_libs/8.0.0</command>
+      </modules>
+      <!-- must load after compiler -->
+      <modules>
+	<command name="load">ncarcompilers/0.5.0</command>
+      </modules>
+      <modules mpilib="openmpi">
+	<command name="load">openmpi/4.0.3</command>
+	<command name="load">netcdf-mpi/4.7.1</command>
+	<command name="load">pnetcdf/1.12.1</command>
+      </modules>
+      <modules mpilib="mpi-serial">
+	<command name="load">netcdf/4.7.1</command>
+      </modules>
+      <modules compiler="gnu" mpilib="mpi-serial" DEBUG="TRUE">
+	<command name="load">esmf-8.0.0-ncdfio-uni-g</command>
+      </modules>
+      <modules compiler="gnu" mpilib="mpi-serial" DEBUG="FALSE">
+	<command name="load">esmf-8.0.0-ncdfio-uni-O</command>
+      </modules>
+    </module_system>
+    <environment_variables>
+      <env name="OMP_STACKSIZE">256M</env>
+      <env name="NETCDF_PATH">$ENV{NETCDF}</env>
+    </environment_variables>
+    <environment_variables comp_interface="nuopc">
+      <env name="ESMF_RUNTIME_PROFILE">ON</env>
+      <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
+    </environment_variables>
   </machine>
 
   <default_run_suffix>

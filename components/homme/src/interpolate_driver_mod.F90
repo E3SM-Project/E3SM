@@ -46,7 +46,7 @@ module interpolate_driver_mod
 
   type var_t
      integer, pointer :: ndims(:)
-!     integer, pointer :: type(:)
+     integer, pointer :: vtype(:)
      integer, pointer :: dimids(:,:)
      character*(PIO_MAX_NAME), pointer :: name(:)
      type(var_desc_t), pointer :: vardesc(:)
@@ -145,6 +145,8 @@ contains
 
     deallocate(infile%vars%vardesc)
     nullify(infile%vars%vardesc)
+    deallocate(infile%vars%vtype)
+    nullify(infile%vars%vtype)
     deallocate(infile%vars%name)
     nullify(infile%vars%name)
     deallocate(infile%vars%ndims)
@@ -267,6 +269,7 @@ contains
     deallocate(ldof)
 
     allocate(infile%vars%vardesc(varcnt))   
+    allocate(infile%vars%vtype(varcnt))
     allocate(infile%vars%name(varcnt))   
     allocate(infile%vars%ndims(varcnt))   
     allocate(infile%vars%timedependent(varcnt))   
@@ -290,7 +293,7 @@ contains
        end if
 
        ret = PIO_inq_vartype(infile%FileID, infile%vars%vardesc(i),  &
-            infile%vars%vardesc(i)%type)
+            infile%vars%vtype(i))
        ret = PIO_inq_varndims(infile%FileID, infile%vars%vardesc(i), &
             infile%vars%ndims(i))
        ret = PIO_inq_vardimid(infile%FileID, infile%vars%vardesc(i), &
@@ -409,7 +412,7 @@ contains
     vardims=0
     do i=1,nvars
        k=1
-       otype(i)=infile%vars%vardesc(i)%type
+       otype(i)=infile%vars%vtype(i)
        do j=1,infile%vars%ndims(i)
           if(infile%vars%dimids(j,i).eq.ncoldimid) then
              if(infile%vars%name(i).eq.'lon') then
@@ -779,7 +782,7 @@ contains
              if(par%masterproc) print *,'Copying ',trim(infile%vars%name(i))
              ! copy non-decomposed data
              len =1
-             if( outfile%varlist(i)%vardesc%type .eq. PIO_Char) then
+             if( outfile%varlist(i)%vtype .eq. PIO_Char) then
                 do n=2,infile%vars%ndims(i)
                    len = len*infile%dims(infile%vars%dimids(n,i))%len
                 end do
@@ -1191,14 +1194,14 @@ contains
 
     use element_mod, only: element_t
     use parallel_mod, only: parallel_t
+    use kinds, only: real_kind
+    use dimensions_mod, only: nelemd, nlev, np, npsq
+    use common_io_mod, only: varname_len
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     use dof_mod, only: putuniquepoints
-    use kinds, only: real_kind
     use edge_mod, only: edgevpack, edgevunpack, initedgebuffer, freeedgebuffer
     use edgetype_mod, only: edgebuffer_t
-    use dimensions_mod, only: nelemd, nlev, np, npsq
     use bndry_mod, only: bndry_exchangeV
-    use common_io_mod, only: varname_len
 #endif
 
     character(len=*), intent(in) :: filename
@@ -1267,10 +1270,10 @@ contains
   subroutine read_physgrid_topo_file(infilename, elem, par, fieldnames, nphys, pg_fields, stat)
     use element_mod, only: element_t
     use parallel_mod, only: parallel_t
-#ifndef HOMME_WITHOUT_PIOLIBRARY
     use kinds, only: real_kind
-    use dimensions_mod, only: nelemd, nlev, np, npsq, nelem
     use common_io_mod, only: varname_len, io_stride, num_io_procs, num_agg
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    use dimensions_mod, only: nelemd, nlev, np, npsq, nelem
     use control_mod, only: max_string_len
     use pio, only: pio_init, pio_openfile, pio_rearr_box, pio_inquire, pio_inq_dimname, &
          pio_inq_dimlen, pio_initdecomp
@@ -1355,10 +1358,10 @@ contains
 
     use element_mod, only: element_t
     use parallel_mod, only: parallel_t
-#ifndef HOMME_WITHOUT_PIOLIBRARY
     use kinds, only: real_kind
     use dimensions_mod, only: nelemd, nlev, np, npsq, nelem
     use common_io_mod, only: varname_len
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     use pio_io_mod, only: nf_output_init_complete, nf_output_register_variables, nf_put_var_pio
     use control_mod, only: max_string_len
 #endif
@@ -1440,9 +1443,9 @@ contains
        gll_fields, pg_fields, nphys, history, output_latlon)
     use element_mod, only: element_t
     use parallel_mod, only: parallel_t
-#ifndef HOMME_WITHOUT_PIOLIBRARY
     use kinds, only: real_kind
     use dimensions_mod, only: nelemd, nlev, np, npsq, nelem
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     use common_io_mod, only: varname_len
     use pio_io_mod, only: nf_output_init_complete, nf_output_register_variables, nf_put_var_pio
     use control_mod, only: max_string_len

@@ -1,8 +1,8 @@
 #include <catch2/catch.hpp>
 
 #include "control/atmosphere_driver.hpp"
-#include "share/scream_parameter_list.hpp"
-#include "share/scream_parse_yaml_file.hpp"
+#include "ekat/scream_parameter_list.hpp"
+#include "ekat/scream_parse_yaml_file.hpp"
 #include "dummy_atm_setup.hpp"
 
 namespace scream {
@@ -25,7 +25,7 @@ TEST_CASE ("dag_check","[!throws]")
   // Create the driver
   control::AtmosphereDriver ad;
 
-  util::TimeStamp init_time(0,0,0);
+  util::TimeStamp init_time(0,0,0,0.0);
 
   // Since Physics_fwd has an unmet dependency, this should throw
   REQUIRE_THROWS(ad.initialize(atm_comm,ad_params,init_time));

@@ -230,7 +230,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    use hycoef,          only: hyai, hybi
    use cam_history,     only: outfld, hist_fld_active
    use prim_driver_base,only: applyCAMforcing_tracers
-   use time_manager,    only: is_first_step
+   use prim_advance_mod,only: applyCAMforcing_dynamics
    use element_ops,     only: get_temperature
 
    type(physics_state), intent(inout) :: phys_state(begchunk:endchunk)
@@ -359,33 +359,10 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       if (ftype==1) then
          ! apply forcing to state tl_f
-         ! requires forward-in-time timestepping, checked in namelist_mod.F90
+         ! requires forward-in-time timestepping, checked in namelist_mod.F90i
+
+         !ftype1 also requires a call ty applycamforcing_dynamics, below
          call applyCAMforcing_tracers(dyn_in%elem(ie),hvcoord,tl_f,tl_fQdp,dtime,.true.)
-
-         do k=1,nlev
-            do j=1,np
-               do i=1,np       
-                  ! force V, T, both timelevels
-                  do velcomp=1,2
-                     dyn_in%elem(ie)%state%v(i,j,velcomp,k,tl_f)= &
-                     dyn_in%elem(ie)%state%v(i,j,velcomp,k,tl_f) +  &
-                     dtime*dyn_in%elem(ie)%derived%FM(i,j,velcomp,k)
-                  enddo
-        
-#ifdef MODEL_THETA_L
-                  dyn_in%elem(ie)%state%vtheta_dp(i,j,k,tl_f)= &
-                  dyn_in%elem(ie)%state%vtheta_dp(i,j,k,tl_f) + &
-                  dtime*dyn_in%elem(ie)%derived%FVTheta(i,j,k)
-#else                  
-                  dyn_in%elem(ie)%state%T(i,j,k,tl_f)= &
-                  dyn_in%elem(ie)%state%T(i,j,k,tl_f) + &
-                  dtime*dyn_in%elem(ie)%derived%FT(i,j,k)    
-#endif
-        
-               end do
-            end do
-        end do
-
       endif !ftype=1 
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -412,6 +389,11 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
          end do
       endif ! ftype<0
    end do   ! ie loop
+
+   if (ftype==1) then
+      call applyCAMforcing_dynamics(dyn_in%elem,hvcoord,tl_f,dtime,1,nelemd)
+   endif
+
    call t_stopf('stepon_bndry_exch')
 
 

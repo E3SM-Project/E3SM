@@ -1,0 +1,7 @@
+#ifndef EKAT_CONFIG_H
+#define EKAT_CONFIG_H
+
+! If true, ekat tests will assume double precision instead of single
+#cmakedefine EKAT_DOUBLE_PRECISION
+
+#endif

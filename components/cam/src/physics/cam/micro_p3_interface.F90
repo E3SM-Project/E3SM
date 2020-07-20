@@ -528,8 +528,6 @@ end subroutine micro_p3_readnl
    call addfld('vap_liq_exchange',  (/ 'lev' /), 'A', 'kg/kg/s', 'Tendency for conversion from/to vapor phase to/from liquid phase')
    call addfld('vap_ice_exchange',  (/ 'lev' /), 'A', 'kg/kg/s', 'Tendency for conversion from/to vapor phase to/from frozen phase')
    call addfld('liq_ice_exchange',  (/ 'lev' /), 'A', 'kg/kg/s', 'Tendency for conversion from/to liquid phase to/from frozen phase')
-   call addfld('vap_cld_exchange',  (/ 'lev' /), 'A', 'kg/kg/s', 'Tendency for conversion from/to vapor phase to/from cloud category')
-
 
    ! determine the add_default fields
    call phys_getopts(history_amwg_out           = history_amwg         , &
@@ -568,7 +566,6 @@ end subroutine micro_p3_readnl
       call add_default('vap_liq_exchange',  1, ' ')
       call add_default('vap_ice_exchange',  1, ' ')
       call add_default('liq_ice_exchange',  1, ' ')
-      call add_default('vap_cld_exchange',  1, ' ')
       ! Microphysics tendencies
       ! warm-phase process rates
       if (micro_tend_output) then
@@ -753,7 +750,6 @@ end subroutine micro_p3_readnl
     real(rtype), dimension(pcols,pver) :: liq_ice_exchange ! sum of liq-ice phase change tendenices
     real(rtype), dimension(pcols,pver) :: vap_liq_exchange ! sum of vap-liq phase change tendenices
     real(rtype), dimension(pcols,pver) :: vap_ice_exchange ! sum of vap-ice phase change tendenices
-    real(rtype), dimension(pcols,pver) :: vap_cld_exchange ! sum of vap-cld phase change tendenices
     real(rtype) :: dummy_out(pcols,pver)    ! dummy_output variable for p3_main to replace unused variables.
 
     ! PBUF Variables
@@ -791,7 +787,7 @@ end subroutine micro_p3_readnl
     ! DONE PBUF
     ! For recording inputs/outputs to p3_main
     real(rtype) :: p3_main_inputs(pcols,pver+1,17) ! Record of inputs for p3_main
-    real(rtype) :: p3_main_outputs(pcols,pver+1,32) ! Record of outputs for p3_main
+    real(rtype) :: p3_main_outputs(pcols,pver+1,31) ! Record of outputs for p3_main
 
     ! Derived Variables
     real(rtype) :: icimrst(pcols,pver) ! stratus ice mixing ratio - on grid
@@ -1005,6 +1001,12 @@ end subroutine micro_p3_readnl
     !==============
     ! TODO: get proper value for 'it' from time module
     dummy_out(:,:) = 0.0_rtype
+    prt_liq = 0.0_rtype
+    prt_sol = 0.0_rtype
+    prec_pcw = 0.0_rtype
+    snow_pcw = 0.0_rtype
+    vap_liq_exchange = 0.0_rtype
+
     call t_startf('micro_p3_tend_loop')
     call p3_main( &
          cldliq(its:ite,kts:kte),     & ! INOUT  cloud, mass mixing ratio         kg kg-1
@@ -1057,7 +1059,6 @@ end subroutine micro_p3_readnl
          liq_ice_exchange(its:ite,kts:kte),& ! OUT sum of liq-ice phase change tendenices   
          vap_liq_exchange(its:ite,kts:kte),& ! OUT sun of vap-liq phase change tendencies
          vap_ice_exchange(its:ite,kts:kte),& ! OUT sum of vap-ice phase change tendencies
-         vap_cld_exchange(its:ite,kts:kte),& ! OUT sum of vap-cld phase change tendencies
          col_location(its:ite,:3)          & ! IN column locations
          )
 
@@ -1087,7 +1088,6 @@ end subroutine micro_p3_readnl
       p3_main_outputs(1,k,29) = liq_ice_exchange(1,k)
       p3_main_outputs(1,k,30) = vap_liq_exchange(1,k)
       p3_main_outputs(1,k,31) = vap_ice_exchange(1,k)
-      p3_main_outputs(1,k,32) = vap_cld_exchange(1,k)
     end do
     p3_main_outputs(1,1,11) = prt_liq(1)
     p3_main_outputs(1,1,12) = prt_sol(1)
@@ -1126,9 +1126,8 @@ end subroutine micro_p3_readnl
 
     ! Net micro_p3 condensation rate
     qme(:ncol,top_lev:pver) = cmeliq(:ncol,top_lev:pver) + cmeiout(:ncol,top_lev:pver)  ! cmeiout is output from p3 micro
-    ! Add cmeliq to  vap_liq_exchange and vap_cld_exchange
+    ! Add cmeliq to  vap_liq_exchange
     vap_liq_exchange(:ncol,top_lev:pver) = vap_liq_exchange(:ncol,top_lev:pver) + cmeliq(:ncol,top_lev:pver) 
-    vap_cld_exchange(:ncol,top_lev:pver) = vap_cld_exchange(:ncol,top_lev:pver) + cmeliq(:ncol,top_lev:pver)
 
 !====================== Export variables/Conservation START ======================!
      !For precip, accumulate only total precip in prec_pcw and snow_pcw variables.
@@ -1375,9 +1374,8 @@ end subroutine micro_p3_readnl
    call outfld('P3_mtend_TH',      tend_out(:,:,49), pcols, lchnk)
    ! Phase change tendencies 
    call outfld('vap_ice_exchange',      vap_ice_exchange,      pcols, lchnk)
-   call outfld('vap_liq_exchange',      vap_ice_exchange,      pcols, lchnk)
-   call outfld('liq_ice_exchange',      vap_ice_exchange,      pcols, lchnk)
-   call outfld('vap_cld_exchange',      vap_ice_exchange,      pcols, lchnk)
+   call outfld('vap_liq_exchange',      vap_liq_exchange,      pcols, lchnk)
+   call outfld('liq_ice_exchange',      liq_ice_exchange,      pcols, lchnk)
 
    call t_stopf('micro_p3_tend_finish')
   end subroutine micro_p3_tend

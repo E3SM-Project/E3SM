@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-! $Id$
+! $Id: stats_lh_sfc_module.F90 7315 2014-09-30 20:49:54Z schemena@uwm.edu $
 !===============================================================================
 
 module stats_lh_sfc_module
@@ -35,8 +35,6 @@ module stats_lh_sfc_module
       ilh_morr_snow_rate, & ! Variable(s)
       ilh_vwp, &
       ilh_lwp, &
-      ilh_sample_weights_sum, &
-      ilh_sample_weights_avg, &
       ik_lh_start
       
     use stats_type_utilities, only: & 
@@ -94,21 +92,6 @@ module stats_lh_sfc_module
         call stat_assign( var_index=ik_lh_start, var_name="k_lh_start", &
              var_description="Index of height level for SILHS sampling preferentially within &
                              &cloud [integer]", var_units="integer", l_silhs=.true., &
-             grid_kind=stats_lh_sfc )
-        k = k + 1
-
-      case ( 'lh_sample_weights_sum' )
-        ilh_sample_weights_sum = k
-        call stat_assign( var_index=ilh_sample_weights_sum, var_name="lh_sample_weights_sum", &
-             var_description="Sum of the sample point weights [-]", var_units="-", l_silhs=.true., &
-             grid_kind=stats_lh_sfc )
-        k = k + 1
-        
-      case ( 'lh_sample_weights_avg' )
-        ilh_sample_weights_avg = k
-        call stat_assign( var_index=ilh_sample_weights_avg, var_name="lh_sample_weights_avg", &
-             var_description="Average of the sample point weights [-]", & 
-             var_units="-", l_silhs=.true., &
              grid_kind=stats_lh_sfc )
         k = k + 1
 

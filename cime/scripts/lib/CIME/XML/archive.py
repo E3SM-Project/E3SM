@@ -27,7 +27,7 @@ class Archive(ArchiveBase):
         components_node = env_archive.make_child("components", attributes={"version":"2.0"})
 
         model = get_model()
-        if 'drv' not in components:
+        if 'drv' not in components and model != 'ufs':
             components.append('drv')
         if 'dart' not in components and model == 'cesm':
             components.append('dart')
@@ -64,7 +64,8 @@ class Archive(ArchiveBase):
             if attr:
                 compval = files.get_value("ARCHIVE_SPEC_FILE", attribute={"component":attr})
             else:
-                compval = self.text(comp)
+                compval = self.get_resolved_value(self.text(comp))
+
             if os.path.isfile(compval):
                 config_archive_files.append(compval)
 

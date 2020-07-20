@@ -1,12 +1,12 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/scream_kokkos.hpp"
-#include "share/scream_pack.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/scream_kokkos.hpp"
+#include "ekat/scream_pack.hpp"
+#include "ekat/util/scream_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
-#include "share/util/scream_kokkos_utils.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -47,8 +47,6 @@ static void run_phys()
 static void run_bfb_calc_bulk_rhime()
 {
   constexpr Scalar qsmall = C::QSMALL;
-  static constexpr Int max_pack_size = 16;
-  REQUIRE(Spack::n <= max_pack_size);
 
   // Load some lookup inputs, need at least one per pack value
   CalcBulkRhoRimeData cbrr_fortran[max_pack_size] = {
@@ -76,36 +74,38 @@ static void run_bfb_calc_bulk_rhime()
 
   // Sync to device, needs to happen before fortran calls so that
   // inout data is in original state
-  view_1d<CalcBulkRhoRimeData> cbrr_device("cbrr", Spack::n);
+  view_1d<CalcBulkRhoRimeData> cbrr_device("cbrr", max_pack_size);
   const auto cbrr_host = Kokkos::create_mirror_view(cbrr_device);
-  std::copy(&cbrr_fortran[0], &cbrr_fortran[0] + Spack::n, cbrr_host.data());
+  std::copy(&cbrr_fortran[0], &cbrr_fortran[0] + max_pack_size, cbrr_host.data());
   Kokkos::deep_copy(cbrr_device, cbrr_host);
 
   // Get data from fortran
-  for (Int i = 0; i < Spack::n; ++i) {
+  for (Int i = 0; i < max_pack_size; ++i) {
     if (cbrr_fortran[i].qi_tot > qsmall) {
       calc_bulk_rho_rime(cbrr_fortran[i]);
     }
   }
 
   // Calc bulk rime from a kernel and copy results back to host
-  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+  Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
+    const Int offset = i * Spack::n;
+
     // Init pack inputs
     Spack qi_tot, qi_rim, bi_rim;
-    for (Int s = 0; s < Spack::n; ++s) {
-      qi_tot[s] = cbrr_device(s).qi_tot;
-      qi_rim[s] = cbrr_device(s).qi_rim;
-      bi_rim[s] = cbrr_device(s).bi_rim;
+    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      qi_tot[s] = cbrr_device(vs).qi_tot;
+      qi_rim[s] = cbrr_device(vs).qi_rim;
+      bi_rim[s] = cbrr_device(vs).bi_rim;
     }
 
     Smask gt_small(qi_tot > qsmall);
-    Spack rho_rime = Functions::calc_bulk_rho_rime(gt_small, qi_tot, qi_rim, bi_rim);
+    Spack rho_rime = Functions::calc_bulk_rho_rime(qi_tot, qi_rim, bi_rim, gt_small);
 
     // Copy results back into views
-    for (Int s = 0; s < Spack::n; ++s) {
-      cbrr_device(s).qi_rim   = qi_rim[s];
-      cbrr_device(s).bi_rim   = bi_rim[s];
-      cbrr_device(s).rho_rime = rho_rime[s];
+    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      cbrr_device(vs).qi_rim   = qi_rim[s];
+      cbrr_device(vs).bi_rim   = bi_rim[s];
+      cbrr_device(vs).rho_rime = rho_rime[s];
     }
   });
 
@@ -113,7 +113,7 @@ static void run_bfb_calc_bulk_rhime()
   Kokkos::deep_copy(cbrr_host, cbrr_device);
 
   // Validate results
-  for (Int s = 0; s < Spack::n; ++s) {
+  for (Int s = 0; s < max_pack_size; ++s) {
     REQUIRE(cbrr_fortran[s].qi_rim   == cbrr_host(s).qi_rim);
     REQUIRE(cbrr_fortran[s].bi_rim   == cbrr_host(s).bi_rim);
     REQUIRE(cbrr_fortran[s].rho_rime == cbrr_host(s).rho_rime);

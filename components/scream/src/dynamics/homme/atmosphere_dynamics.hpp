@@ -2,7 +2,7 @@
 #define SCREAM_HOMME_DYNAMICS_HPP
 
 #include "share/atm_process/atmosphere_process.hpp"
-#include "share/scream_parameter_list.hpp"
+#include "ekat/scream_parameter_list.hpp"
 
 #include <string>
 

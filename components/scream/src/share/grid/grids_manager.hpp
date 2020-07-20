@@ -2,12 +2,12 @@
 #define SCREAM_GRIDS_MANAGER_HPP
 
 #include "share/grid/abstract_grid.hpp"
-#include "share/grid//remap/abstract_remapper.hpp"
-#include "share/grid//remap/identity_remapper.hpp"
-#include "share/util/scream_factory.hpp"
-#include "share/util/string_utils.hpp"
-#include "share/scream_parameter_list.hpp"
-#include "share/scream_assert.hpp"
+#include "share/grid/remap/abstract_remapper.hpp"
+#include "share/grid/remap/identity_remapper.hpp"
+#include "ekat/util/scream_factory.hpp"
+#include "ekat/util/string_utils.hpp"
+#include "ekat/scream_parameter_list.hpp"
+#include "ekat/scream_assert.hpp"
 
 #include <map>
 #include <set>
@@ -37,10 +37,12 @@ public:
     return get_grid("Reference");
   }
 
-  void build_grids (const std::set<std::string>& grid_names) {
+  void build_grids (const std::set<std::string>& grid_names,
+                    const std::string& reference_grid) {
     for (const auto& name : grid_names) {
       build_grid(name);
     }
+    build_grid(reference_grid);
   }
 
   remapper_ptr_type
@@ -68,9 +70,9 @@ public:
     return remapper;
   }
 
-  virtual void build_grid (const std::string& grid_name) = 0;
-
 protected:
+
+  virtual void build_grid (const std::string& grid_name) = 0;
 
   virtual remapper_ptr_type
   do_create_remapper (const grid_ptr_type from_grid,

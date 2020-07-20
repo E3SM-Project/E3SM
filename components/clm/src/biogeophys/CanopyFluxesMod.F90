@@ -574,7 +574,7 @@ contains
       ! --------------------------------------------------------------------------
       
       if(use_fates)then
-         call alm_fates%wrap_btran(bounds, fn, filterc_tmp(1:fn), soilstate_vars, waterstate_vars, &
+         call alm_fates%wrap_btran(bounds, fn, filterc_tmp(1:fn), soilstate_vars, &
                temperature_vars, energyflux_vars, soil_water_retention_curve)
          
       else
@@ -1239,7 +1239,7 @@ contains
       if ( use_fates ) then
          call alm_fates%wrap_accumulatefluxes(bounds,fn,filterp(1:fn))
          call alm_fates%wrap_hydraulics_drive(bounds,fn,filterp(1:fn),soilstate_vars, &
-               waterstate_vars,waterflux_vars,solarabs_vars,energyflux_vars)
+              solarabs_vars,energyflux_vars)
 
       else
 

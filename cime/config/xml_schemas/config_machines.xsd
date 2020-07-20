@@ -52,8 +52,8 @@
   <xs:element name="BATCH_SYSTEM" type="xs:NCName"/>
   <xs:element name="ALLOCATE_SPARE_NODES" type="upperBoolean"/>
   <xs:element name="SUPPORTED_BY" type="xs:string"/>
-  <xs:element name="MAX_TASKS_PER_NODE" type="xs:integer"/>
-  <xs:element name="MAX_MPITASKS_PER_NODE" type="xs:integer"/>
+  <xs:element name="MAX_TASKS_PER_NODE" type="AttrElement"/>
+  <xs:element name="MAX_MPITASKS_PER_NODE" type="AttrElement"/>
   <xs:element name="COSTPES_PER_NODE" type="xs:integer"/>
   <xs:element name="PROJECT_REQUIRED" type="xs:NCName"/>
   <xs:element name="executable" type="xs:string"/>
@@ -157,10 +157,10 @@
         <xs:element ref="SUPPORTED_BY" minOccurs="1" maxOccurs="1"/>
         <!-- MAX_TASKS_PER_NODE: maximum number of threads*tasks per
              shared memory node on this machine-->
-        <xs:element ref="MAX_TASKS_PER_NODE" minOccurs="1" maxOccurs="1"/>
+        <xs:element ref="MAX_TASKS_PER_NODE" minOccurs="1" maxOccurs="4"/>
         <!-- MAX_MPITASKS_PER_NODE: number of physical PES per shared node on
              this machine, in practice the MPI tasks per node will not exceed this value -->
-        <xs:element ref="MAX_MPITASKS_PER_NODE" minOccurs="1" maxOccurs="1"/>
+        <xs:element ref="MAX_MPITASKS_PER_NODE" minOccurs="1" maxOccurs="4"/>
         <!-- Optional cost factor per node unit -->
         <xs:element ref="COSTPES_PER_NODE" minOccurs="0" maxOccurs="1"/>
         <!-- PROJECT_REQUIRED: Does this machine require a project to be specified to

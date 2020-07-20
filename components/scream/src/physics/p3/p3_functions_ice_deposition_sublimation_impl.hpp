@@ -10,15 +10,18 @@ namespace p3 {
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::ice_deposition_sublimation(const Spack& qitot_incld, const Spack& nitot_incld, const Spack& t,   const Spack& qvs,
-			     const Spack& qvi,         const Spack& epsi,        const Spack& abi, const Spack& qv,
-			     Spack& qidep, Spack& qisub, Spack& nisub, Spack& qiberg)
+::ice_deposition_sublimation(
+  const Spack& qitot_incld, const Spack& nitot_incld, const Spack& t,   const Spack& qvs,
+  const Spack& qvi,         const Spack& epsi,        const Spack& abi, const Spack& qv,
+  Spack& qidep, Spack& qisub, Spack& nisub, Spack& qiberg,
+  const Smask& context)
 {
   constexpr Scalar QSMALL   = C::QSMALL;
   constexpr Scalar ZERODEGC = C::ZeroDegC;
-  const auto oabi           = sp(1.0)/abi;
+  const auto oabi           = 1 / abi;
 
-  const auto qitot_incld_not_small = qitot_incld >= QSMALL;
+  const auto qitot_incld_not_small = qitot_incld >= QSMALL && context;
+  const auto qitot_incld_small     = qitot_incld < QSMALL  && context;
 
   //Compute deposition/sublimation
   qidep.set(qitot_incld_not_small,epsi * oabi * (qv - qvi));
@@ -45,12 +48,11 @@ void Functions<S,D>
   }
 
   //if qitot_incld is small (i.e. !qitot_incld_not_small is true)
-  qiberg.set(!qitot_incld_not_small, 0);
-  qidep.set(!qitot_incld_not_small, 0);
-  qisub.set(!qitot_incld_not_small, 0);
-  nisub.set(!qitot_incld_not_small, 0);
+  qiberg.set(qitot_incld_small, 0);
+  qidep.set (qitot_incld_small, 0);
+  qisub.set (qitot_incld_small, 0);
+  nisub.set (qitot_incld_small, 0);
 }
-
 
 } // namespace p3
 } // namespace scream

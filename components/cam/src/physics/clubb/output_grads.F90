@@ -1,5 +1,5 @@
 !-------------------------------------------------------------------------------
-! $Id$
+! $Id: output_grads.F90 7140 2014-07-31 19:14:05Z betlej@uwm.edu $
 !===============================================================================
 module output_grads
 
@@ -287,7 +287,7 @@ module output_grads
 
     real( kind = core_rknd ), dimension(:), allocatable :: z_in
 
-    type (variable), dimension(:), allocatable :: var_in
+    type (variable), dimension(:), pointer :: var_in
 
 !-------------------------------------------------------------------------------
 
@@ -493,6 +493,9 @@ module output_grads
 
     use stat_file_module, only: & 
       stat_file ! Type
+
+    use clubb_precision, only:  & 
+      time_precision    ! Variable(s)
 
 !   use stat_file_module, only: &
 !     clubb_i, clubb_j ! Variable(s)

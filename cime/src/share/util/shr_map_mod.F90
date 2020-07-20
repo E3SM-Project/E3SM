@@ -110,6 +110,7 @@ module shr_map_mod
   public :: shr_map_checkFilled       ! check whether map wts are set
   public :: shr_map_put               ! put stuff into the datatype
   public :: shr_map_get               ! get stuff out of the datatype
+  public :: shr_map_getARptr          ! get ptrs out of the datatype
   public :: shr_map_mapSet            ! compute weights in map
   public :: shr_map_mapData           ! map data
   public :: shr_map_listValidOpts     ! list valid options
@@ -640,6 +641,43 @@ contains
     endif
 
   end subroutine shr_map_getAR
+
+  subroutine shr_map_getARptr(map,isrc,idst,wgts)
+
+    implicit none
+
+    ! !INPUT/OUTPUT PARAMETERS:
+
+    type(shr_map_mapType) ,intent(in) :: map
+    integer(SHR_KIND_IN),pointer,optional :: isrc(:)
+    integer(SHR_KIND_IN),pointer,optional :: idst(:)
+    real   (SHR_KIND_R8),pointer,optional :: wgts(:)
+
+    !EOP
+
+    !--- local ---
+    integer(SHR_KIND_IN) :: nwts
+
+    !--- formats ---
+    character(*),parameter :: subName = "('shr_map_getAR') "
+
+    !-------------------------------------------------------------------------------
+
+    nwts = map%nwts
+
+    if (present(isrc)) then
+       isrc(1:nwts) => map%isrc(1:nwts)
+    endif
+
+    if (present(idst)) then
+       idst(1:nwts) => map%idst(1:nwts)
+    endif
+
+    if (present(wgts)) then
+       wgts(1:nwts) => map%wgts(1:nwts)
+    endif
+
+  end subroutine shr_map_getARptr
 
   !===============================================================================
   !BOP ===========================================================================

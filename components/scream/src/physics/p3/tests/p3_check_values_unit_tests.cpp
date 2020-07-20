@@ -1,13 +1,13 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/scream_kokkos.hpp"
-#include "share/scream_pack.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/scream_kokkos.hpp"
+#include "ekat/scream_pack.hpp"
+#include "ekat/util/scream_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
 #include "physics/p3/p3_f90.hpp"
-#include "share/util/scream_kokkos_utils.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -78,7 +78,7 @@ TEST_CASE("p3_check_values", "[p3_functions]")
 {
   using TRS = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCheckValues;
 
-  scream::p3::p3_init(true); // need fortran table data
+  scream::p3::p3_init(); // need fortran table data
 
   TRS::run_check_values_phys();
   TRS::run_check_values_bfb();

@@ -2,7 +2,7 @@
 #define SCREAM_FIELD_LAYOUT_HPP
 
 #include "field_tag.hpp"
-#include <share/scream_assert.hpp>
+#include <ekat/scream_assert.hpp>
 
 #include <string>
 #include <vector>

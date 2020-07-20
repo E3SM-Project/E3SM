@@ -1,7 +1,7 @@
 #ifndef SCREAM_FIELD_TAG_HPP
 #define SCREAM_FIELD_TAG_HPP
 
-#include "share/scream_assert.hpp"
+#include "ekat/scream_assert.hpp"
 
 #include <string>
 

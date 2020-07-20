@@ -30,7 +30,7 @@ TESTS = run_tests.sh
 endif # RUN_TESTS
 
 # Distribute the test script.
-EXTRA_DIST = CMakeLists.txt run_tests.sh input.nl
+EXTRA_DIST = CMakeLists.txt run_tests.sh input.nl not_netcdf.ieee
 
 # Clean up files produced during testing.
 CLEANFILES = *.nc *.log *.mod

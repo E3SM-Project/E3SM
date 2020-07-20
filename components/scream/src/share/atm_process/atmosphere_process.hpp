@@ -5,16 +5,16 @@
 #include <set>
 
 #include "share/atm_process/atmosphere_process_utils.hpp"
-#include "share/scream_assert.hpp"
-#include "share/mpi/scream_comm.hpp"
 #include "share/field/field_identifier.hpp"
 #include "share/field/field_repository.hpp"
 #include "share/field/field.hpp"
 #include "share/grid/grids_manager.hpp"
-#include "share/util/scream_factory.hpp"
-#include "share/util/string_utils.hpp"
-#include "share/util/scream_std_enable_shared_from_this.hpp"
-#include "share/util/scream_std_utils.hpp"
+#include "ekat/scream_assert.hpp"
+#include "ekat/mpi/scream_comm.hpp"
+#include "ekat/util/scream_factory.hpp"
+#include "ekat/util/string_utils.hpp"
+#include "ekat/util/scream_std_enable_shared_from_this.hpp"
+#include "ekat/util/scream_std_utils.hpp"
 
 namespace scream
 {

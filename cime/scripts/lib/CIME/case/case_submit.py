@@ -29,8 +29,14 @@ def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resub
     if job is None:
         job = case.get_first_job()
 
+    # Check mediator
+    hasMediator = True
+    comp_classes = case.get_values("COMP_CLASSES")
+    if 'CPL' not in comp_classes:
+        hasMediator = False
+
     # Check if CONTINUE_RUN value makes sense
-    if job != "case.test" and case.get_value("CONTINUE_RUN"):
+    if job != "case.test" and case.get_value("CONTINUE_RUN") and hasMediator:
         rundir = case.get_value("RUNDIR")
         expect(os.path.isdir(rundir),
                "CONTINUE_RUN is true but RUNDIR {} does not exist".format(rundir))
@@ -124,8 +130,8 @@ manual edits to these file will be lost!
         unlock_file(os.path.basename(env_batch.filename))
         lock_file(os.path.basename(env_batch.filename))
 
+        case.check_case()
         if job == case.get_primary_job():
-            case.check_case()
             case.check_DA_settings()
             if case.get_value("MACH") == "mira":
                 with open(".original_host", "w") as fd:
@@ -213,7 +219,7 @@ def check_case(self):
     self.check_all_input_data()
 
     if self.get_value('COMP_WAV') == 'ww':
-        # the ww3 buildnml has dependancies on inputdata so we must run it again
+        # the ww3 buildnml has dependencies on inputdata so we must run it again
         self.create_namelists(component='WAV')
 
     expect(self.get_value("BUILD_COMPLETE"), "Build complete is "

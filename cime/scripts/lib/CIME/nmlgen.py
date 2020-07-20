@@ -494,7 +494,7 @@ class NamelistGenerator(object):
                     continue
                 filepath, filename = os.path.split(filename)
                 if not filepath:
-                    filepath = os.path.join(domain_filepath, os.path.dirname(filename.strip()))
+                    filepath = os.path.join(domain_filepath, filename.strip())
                 string = "domain{:d} = {}\n".format(i+1, filepath)
                 hashValue = hashlib.md5(string.rstrip().encode('utf-8')).hexdigest()
                 if hashValue not in lines_hash:
@@ -713,13 +713,13 @@ class NamelistGenerator(object):
         """ Write nuopc component modelio files"""
         self._namelist.write(filename, groups=["pio_inparm"], format_="nml")
 
-
-    # For NUOPC
-    def write_nuopc_config_file(self, filename, data_list_path=None, skip_comps=None):
+    def write_nuopc_config_file(self, filename, data_list_path=None ):
         """ Write the nuopc config file"""
         self._definition.validate(self._namelist)
         groups = self._namelist.get_group_names()
-        self._namelist.write(filename, skip_comps=skip_comps, groups=groups, format_='nuopc', sorted_groups=False)
+        # write the config file 
+        self._namelist.write_nuopc(filename, groups=groups, sorted_groups=False)
+
+        # append to input_data_list file
         if data_list_path is not None:
-            # append to input_data_list file
             self._write_input_files(data_list_path)

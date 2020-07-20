@@ -17,7 +17,7 @@ module decompInitMod
   use LandunitType    , only : lun_pp                
   use TopounitType    , only : top_pp                
   use ColumnType      , only : col_pp                
-  use FatesInterfaceMod, only : fates_maxElementsPerSite
+  use FatesInterfaceTypesMod, only : fates_maxElementsPerSite
   use VegetationType  , only : veg_pp                
   use decompMod
   use mct_mod

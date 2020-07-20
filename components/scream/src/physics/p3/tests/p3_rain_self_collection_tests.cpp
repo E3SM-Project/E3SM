@@ -1,12 +1,12 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/scream_kokkos.hpp"
-#include "share/scream_pack.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/scream_kokkos.hpp"
+#include "ekat/scream_pack.hpp"
+#include "ekat/util/scream_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
-#include "share/util/scream_kokkos_utils.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -27,9 +27,6 @@ template <typename D>
 struct UnitWrap::UnitTest<D>::TestRainSelfCollection {
 
   static void run_rain_self_collection_bfb_tests(){
-
-    static constexpr Int max_pack_size = 16;
-    REQUIRE(Spack::n <= max_pack_size);
 
     RainSelfCollectionData dc[max_pack_size] = {
       //  rho, qr_incld, nr_incld, nrslf
@@ -55,35 +52,38 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection {
     };
 
     //Sync to device
-    view_1d<RainSelfCollectionData> dc_device("dc", Spack::n);
+    view_1d<RainSelfCollectionData> dc_device("dc", max_pack_size);
     auto dc_host = Kokkos::create_mirror_view(dc_device);
 
-    std::copy(&dc[0], &dc[0] + Spack::n, dc_host.data());
+    std::copy(&dc[0], &dc[0] + max_pack_size, dc_host.data());
     Kokkos::deep_copy(dc_device, dc_host);
 
     //Get data from fortran
-    for (Int i = 0; i < Spack::n; ++i) {
+    for (Int i = 0; i < max_pack_size; ++i) {
       rain_self_collection(dc[i]);
     }
 
     //Run function from a kernal and copy results back to the host
-    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+    Kokkos::parallel_for(RangePolicy(0, num_test_itrs), KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
+
       // Init pack inputs
       Spack rho_local, qr_incld_local, nr_incld_local, nrslf_local;
-      for (Int s = 0; s < Spack::n; ++s) {
-        rho_local[s] = dc_device(s).rho;
-        qr_incld_local[s] = dc_device(s).qr_incld;
-        nr_incld_local[s] = dc_device(s).nr_incld;
-        nrslf_local[s] = dc_device(s).nrslf;
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        rho_local[s]      = dc_device(vs).rho;
+        qr_incld_local[s] = dc_device(vs).qr_incld;
+        nr_incld_local[s] = dc_device(vs).nr_incld;
+        nrslf_local[s]    = dc_device(vs).nrslf;
       }
 
       Functions::rain_self_collection(rho_local, qr_incld_local, nr_incld_local, nrslf_local);
+
       // Copy results back into views
-      for (Int s = 0; s < Spack::n; ++s) {
-        dc_device(s).rho = rho_local[s];
-        dc_device(s).qr_incld = qr_incld_local[s];
-        dc_device(s).nr_incld = nr_incld_local[s];
-        dc_device(s).nrslf = nrslf_local[s];
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        dc_device(vs).rho      = rho_local[s];
+        dc_device(vs).qr_incld = qr_incld_local[s];
+        dc_device(vs).nr_incld = nr_incld_local[s];
+        dc_device(vs).nrslf    = nrslf_local[s];
       }
     });
 
@@ -91,11 +91,11 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection {
     Kokkos::deep_copy(dc_host, dc_device);
 
     // Validate results
-    for (Int s = 0; s < Spack::n; ++s) {
-      REQUIRE(dc[s].rho == dc_host(s).rho);
+    for (Int s = 0; s < max_pack_size; ++s) {
+      REQUIRE(dc[s].rho      == dc_host(s).rho);
       REQUIRE(dc[s].qr_incld == dc_host(s).qr_incld);
       REQUIRE(dc[s].nr_incld == dc_host(s).nr_incld);
-      REQUIRE(dc[s].nrslf == dc_host(s).nrslf);
+      REQUIRE(dc[s].nrslf    == dc_host(s).nrslf);
     }
   }
 

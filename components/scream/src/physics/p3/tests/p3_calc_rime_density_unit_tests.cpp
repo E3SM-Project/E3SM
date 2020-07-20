@@ -1,12 +1,12 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/scream_kokkos.hpp"
-#include "share/scream_pack.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/scream_kokkos.hpp"
+#include "ekat/scream_pack.hpp"
+#include "ekat/util/scream_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
-#include "share/util/scream_kokkos_utils.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -29,9 +29,6 @@ static void run_phys()
 
 static void run_bfb()
 {
-  static constexpr Int max_pack_size = 16;
-  REQUIRE(Spack::n <= max_pack_size);
-
   // This is the threshold for whether the qc cloud mixing ratio is large
   // enough to affect the rime density.
   constexpr Scalar qsmall = C::QSMALL;
@@ -86,30 +83,32 @@ static void run_bfb()
   };
 
   // Sync to device
-  view_1d<CalcRimeDensityData> device_data("calc_rime_density", Spack::n);
+  view_1d<CalcRimeDensityData> device_data("calc_rime_density", max_pack_size);
   const auto host_data = Kokkos::create_mirror_view(device_data);
-  std::copy(&calc_rime_density_data[0], &calc_rime_density_data[0] + Spack::n,
+  std::copy(&calc_rime_density_data[0], &calc_rime_density_data[0] + max_pack_size,
             host_data.data());
   Kokkos::deep_copy(device_data, host_data);
 
   // Run the Fortran subroutine.
-  for (Int i = 0; i < Spack::n; ++i) {
+  for (Int i = 0; i < max_pack_size; ++i) {
     calc_rime_density(calc_rime_density_data[i]);
   }
 
   // Run the lookup from a kernel and copy results back to host
-  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+  Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
+    const Int offset = i * Spack::n;
+
     // Init pack inputs
     Spack t, rhofaci, f1pr02, acn, lamc, mu_c, qc_incld, qccol;
-    for (Int s = 0; s < Spack::n; ++s) {
-      t[s]        = device_data(s).t;
-      rhofaci[s]  = device_data(s).rhofaci;
-      f1pr02[s]   = device_data(s).f1pr02;
-      acn[s]      = device_data(s).acn;
-      lamc[s]     = device_data(s).lamc;
-      mu_c[s]     = device_data(s).mu_c;
-      qc_incld[s] = device_data(s).qc_incld;
-      qccol[s]    = device_data(s).qccol;
+    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      t[s]        = device_data(vs).t;
+      rhofaci[s]  = device_data(vs).rhofaci;
+      f1pr02[s]   = device_data(vs).f1pr02;
+      acn[s]      = device_data(vs).acn;
+      lamc[s]     = device_data(vs).lamc;
+      mu_c[s]     = device_data(vs).mu_c;
+      qc_incld[s] = device_data(vs).qc_incld;
+      qccol[s]    = device_data(vs).qccol;
     }
 
     Spack vtrmi1{0.0};
@@ -119,9 +118,9 @@ static void run_bfb()
                                  qc_incld, qccol, vtrmi1, rhorime_c);
 
     // Copy results back into views
-    for (Int s = 0; s < Spack::n; ++s) {
-      device_data(s).vtrmi1  = vtrmi1[s];
-      device_data(s).rhorime_c  = rhorime_c[s];
+    for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+      device_data(vs).vtrmi1  = vtrmi1[s];
+      device_data(vs).rhorime_c  = rhorime_c[s];
     }
   });
 
@@ -129,11 +128,10 @@ static void run_bfb()
   Kokkos::deep_copy(host_data, device_data);
 
   // Validate results.
-  for (Int s = 0; s < Spack::n; ++s) {
+  for (Int s = 0; s < max_pack_size; ++s) {
     REQUIRE(calc_rime_density_data[s].vtrmi1 == host_data[s].vtrmi1);
     REQUIRE(calc_rime_density_data[s].rhorime_c == host_data[s].rhorime_c);
   }
-
 }
 
 };

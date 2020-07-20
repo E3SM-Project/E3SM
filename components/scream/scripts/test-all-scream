@@ -64,6 +64,9 @@ OR
     parser.add_argument("-c", "--custom-cmake-opts", action="append", default=[],
         help="Extra custom options to pass to cmake. Can use multiple times for multiple cmake options. The -D is added for you")
 
+    parser.add_argument("-e", "--custom-env-vars", action="append", default=[],
+        help="Extra custom environment variables to be used. These will override (if applicable) whatever was found in machine_specs. Each -e flag supports a single env var, so to pass multiple env var, do -e ""KEY1=VALUE1"" -e ""KEY2=VALUE2"" ")
+
     parser.add_argument("-t", "--test", dest="tests", action="append", default=[],
         help="Only run specific test configurations, choices='dbg' (debug), 'sp' (single-prec), 'fpe' (floating-point exceptions)")
 
@@ -76,6 +79,12 @@ OR
 
     parser.add_argument("-d", "--dry-run", action="store_true",
                         help="Do a dry run, commands will be printed but not executed")
+
+    parser.add_argument("--make-parallel-level", action="store", type=int, default=0,
+        help="Max number of jobs to be created during compilation. If not provided, use default for given machine.")
+
+    parser.add_argument("--ctest-parallel-level", action="store", type=int, default=0,
+        help="Force to use this value for CTEST_PARALLEL_LEVEL. If not provided, use default for given machine.")
 
     return parser.parse_args(args[1:])
 

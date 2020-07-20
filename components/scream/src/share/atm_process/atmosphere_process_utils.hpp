@@ -1,7 +1,7 @@
 #ifndef SCREAM_ATMOSPHERE_PROCESS_UTILS_HPP
 #define SCREAM_ATMOSPHERE_PROCESS_UTILS_HPP
 
-#include "share/scream_assert.hpp"
+#include "ekat/scream_assert.hpp"
 #include <string>
 
 namespace scream {

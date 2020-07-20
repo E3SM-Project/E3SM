@@ -1,13 +1,13 @@
-#include "share/scream_assert.hpp"
+#include "ekat/scream_assert.hpp"
 #include "physics/p3/scream_p3_interface.hpp"
 #include "physics/p3/atmosphere_microphysics.hpp"
-#include "physics/p3/p3_standalone_field_initializer.hpp"
+#include "physics/p3/p3_inputs_initializer.hpp"
 
 #include <array>
 
 namespace scream
 {
-/* 
+/*
  * P3 Microphysics routines
 */
 
@@ -23,7 +23,7 @@ P3Microphysics::P3Microphysics (const Comm& comm,const ParameterList& params)
     m_p3_params.set("Grid",std::string("SE Physics"));
   }
 
-  m_initializer = create_field_initializer<P3StandAloneInit>();
+  m_initializer = create_field_initializer<P3InputsInitializer>();
 }
 
 // =========================================================================================
@@ -55,7 +55,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   auto nondim = m/m;
   m_required_fields.emplace("ast",    scalar3d_layout_mid,   nondim, grid_name);
   m_required_fields.emplace("naai",   scalar3d_layout_mid,     1/kg, grid_name);
-  m_required_fields.emplace("npccn",  scalar3d_layout_mid, 1/(kg*s), grid_name);
+  m_required_fields.emplace("ncnuc",  scalar3d_layout_mid, 1/(kg*s), grid_name);
   m_required_fields.emplace("pmid",   scalar3d_layout_mid,       Pa, grid_name);
   m_required_fields.emplace("dp",     scalar3d_layout_mid,       Pa, grid_name);
   m_required_fields.emplace("zi",     scalar3d_layout_int,        m, grid_name);
@@ -78,17 +78,32 @@ void P3Microphysics::initialize (const util::TimeStamp& t0)
   // Call f90 routine
   p3_init_f90 ();
 
-  // We may have to init some fields from within P3
-  if (m_p3_params.get<bool>("Standalone", false)) {
-    // Loop over required fields. If no provider/initializer is found for a field,
-    // assume P3StandAloneInit will init it.
-    std::array<std::string,9> inputs = {"q","T","FQ","ast","naai","npccn","pmid","dp","zi"};
+  // We may have to init some fields from within P3. This can be the case in a P3 standalone run.
+  // Some options:
+  //  - we can tell P3 it can init all inputs or specify which ones it can init. We call the
+  //    resulting list of inputs the 'initializaable' (or initable) inputs. The default is
+  //    that no inputs can be inited.
+  //  - we can request that P3 either inits no inputs or all of the initable ones (as specified
+  //    at the previous point). The default is that P3 must be in charge of init ing ALL or NONE
+  //    of its initable inputs.
+  // Recall that:
+  //  - initable fields may not need initialization (e.g., some other atm proc that
+  //    appears earlier in the atm dag might provide them).
+
+  std::vector<std::string> p3_inputs = {"q","T","FQ","ast","naai","ncnuc","pmid","dp","zi"};
+  using strvec = std::vector<std::string>;
+  const strvec& allowed_to_init = m_p3_params.get<strvec>("Initializable Inputs",strvec(0));
+  const bool can_init_all = m_p3_params.get<bool>("Can Initialize All Inputs", false);
+  const bool init_all_or_none = m_p3_params.get<bool>("Must Init All Inputs Or None", true);
+  
+  const strvec& initable = can_init_all ? p3_inputs : allowed_to_init;
+  if (initable.size()>0) {
     bool all_inited = true, all_uninited = true;
-    for (auto name : inputs) {
+    for (const auto& name : initable) {
       const auto& f = m_p3_fields_in.at(name);
       const auto& track = f.get_header().get_tracking();
       if (track.get_init_type()==InitType::None) {
-        // Nobody claimed to init this field. P3StandAloneInit will take care of it
+        // Nobody claimed to init this field. P3InputsInitializer will take care of it
         m_initializer->add_me_as_initializer(f);
         all_uninited &= true;
         all_inited &= false;
@@ -97,16 +112,19 @@ void P3Microphysics::initialize (const util::TimeStamp& t0)
         all_inited &= true;
       }
     }
-    scream_require_msg (all_inited || all_uninited,
-                        "Error! Some p3 inputs were inited, while other weren't.\n"
-                        "       P3 needs either all init-ed or all not init-ed.\n");
+
+    // In order to gurantee some consistency between inputs, it is best if P3
+    // initializes either none or all of the inputs.
+    scream_require_msg (!init_all_or_none || all_inited || all_uninited,
+                        "Error! Some p3 inputs were marked to be inited by P3, while others weren't.\n"
+                        "       P3 was requested to init either all or none of the inputs.\n");
   }
 }
 
 // =========================================================================================
 void P3Microphysics::run (const Real dt)
 {
-  // std::array<const char*, num_views> view_names = {"q", "FQ", "T", "zi", "pmid", "pdel", "ast", "naai", "npccn"};
+  // std::array<const char*, num_views> view_names = {"q", "FQ", "T", "zi", "pmid", "pdel", "ast", "naai", "ncnuc"};
 
   std::vector<const Real*> in;
   std::vector<Real*> out;
@@ -120,7 +138,7 @@ void P3Microphysics::run (const Real dt)
   }
 
   // Call f90 routine
-  p3_main_f90 (dt, m_raw_ptrs_in["zi"], m_raw_ptrs_in["pmid"], m_raw_ptrs_in["dp"], m_raw_ptrs_in["ast"], m_raw_ptrs_in["naai"], m_raw_ptrs_in["npccn"], m_raw_ptrs_out["q"], m_raw_ptrs_out["FQ"], m_raw_ptrs_out["T"]);
+  p3_main_f90 (dt, m_raw_ptrs_in["zi"], m_raw_ptrs_in["pmid"], m_raw_ptrs_in["dp"], m_raw_ptrs_in["ast"], m_raw_ptrs_in["naai"], m_raw_ptrs_in["ncnuc"], m_raw_ptrs_out["q"], m_raw_ptrs_out["FQ"], m_raw_ptrs_out["T"]);
 
   // Copy outputs back to device
   for (auto& it : m_p3_fields_out) {

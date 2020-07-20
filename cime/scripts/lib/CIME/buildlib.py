@@ -57,15 +57,14 @@ def build_cime_component_lib(case, compname, libroot, bldroot, use_old=True):
                                "src.{}\n".format(compname)) + "\n")
         if compname.startswith('d'):
             if (comp_interface == 'nuopc'):
-                out.write(os.path.join(cimeroot, "src", "components", "data_comps", "dshr_nuopc") + "\n")
-            out.write(os.path.join(cimeroot, "src", "components", "data_comps", compname, comp_interface) + "\n")
-            out.write(os.path.join(cimeroot, "src", "components", "data_comps", compname) + "\n")
+                out.write(os.path.join(cimeroot, "src", "components", "data_comps_"+comp_interface, "dshr_nuopc") + "\n")
+            out.write(os.path.join(cimeroot, "src", "components", "data_comps_"+comp_interface, compname, "src") + "\n")
+            out.write(os.path.join(cimeroot, "src", "components", "data_comps_"+comp_interface, compname) + "\n")
         elif compname.startswith('x'):
-            out.write(os.path.join(cimeroot, "src", "components", "xcpl_comps", "xshare") + "\n")
-            out.write(os.path.join(cimeroot, "src", "components", "xcpl_comps", "xshare", comp_interface) + "\n")
-            out.write(os.path.join(cimeroot, "src", "components", "xcpl_comps", compname, comp_interface) + "\n")
+            out.write(os.path.join(cimeroot, "src", "components", "xcpl_comps_"+comp_interface, "xshare") + "\n")
+            out.write(os.path.join(cimeroot, "src", "components", "xcpl_comps_"+comp_interface, compname, "src") + "\n")
         elif compname.startswith('s'):
-            out.write(os.path.join(cimeroot, "src", "components", "stub_comps", compname, comp_interface) + "\n")
+            out.write(os.path.join(cimeroot, "src", "components", "stub_comps_"+comp_interface, compname, "src") + "\n")
 
     with open(os.path.join(confdir, "CCSM_cppdefs"), "w") as out:
         out.write("")
@@ -93,8 +92,8 @@ def run_gmake(case, compclass, compname, libroot, bldroot, libname="", user_cppd
 
     makefile = os.path.join(case.get_value("CASETOOLS"), "Makefile")
 
-    cmd = "{} complib -j {:d} MODEL={} COMP_CLASS={} COMP_NAME={} COMPLIB={} {} -f {} -C {} " \
-        .format(gmake, gmake_j, compclass, compclass, compname, complib, gmake_args, makefile, bldroot)
+    cmd = "{gmake} complib -j {gmake_j:d} MODEL={compclass} COMP_CLASS={compclass} COMP_NAME={compname} COMPLIB={complib} {gmake_args} -f {makefile} -C {bldroot} " \
+        .format(gmake=gmake, gmake_j=gmake_j, compclass=compclass, compname=compname, complib=complib, gmake_args=gmake_args, makefile=makefile, bldroot=bldroot)
     if user_cppdefs:
         cmd = cmd + "USER_CPPDEFS='{}'".format(user_cppdefs )
 

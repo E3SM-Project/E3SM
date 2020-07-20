@@ -72,18 +72,85 @@ using a fortran linker.
     <!-- This should be removed AFTER MOM6 cap is fully unified -->
     <append> -DCESMCOUPLED </append>
     <append MODEL="pop"> -D_USE_FLOW_CONTROL </append>
-    <append MODEL="fv3gfs"> -DSPMD </append>
+    <append MODEL="ufsatm"> -DSPMD </append>
   </CPPDEFS>
 
   <INCLDIR>
-        <append MODEL="fv3gfs"> -I$(EXEROOT)/atm/obj/FMS </append>
+        <append MODEL="ufsatm"> -I$(EXEROOT)/atm/obj/FMS </append>
   </INCLDIR>
   <FFLAGS>
-    <append MODEL="fv3gfs"> $(FC_AUTO_R8) </append>
+    <append MODEL="ufsatm"> $(FC_AUTO_R8) </append>
     <append MODEL="mom"> $(FC_AUTO_R8) -Duse_LARGEFILE</append>
   </FFLAGS>
   <SUPPORTS_CXX>FALSE</SUPPORTS_CXX>
 </compiler>
+
+<compiler COMPILER="arm">
+  <!-- LLVM compiler support is a work in progess -->
+  <MPICC> mpicc  </MPICC>
+  <MPICXX> mpicxx </MPICXX>
+  <MPIFC> mpif90 </MPIFC>
+  <SCC> clang </SCC>
+  <SCXX> clang++ </SCXX>
+  <SFC> flang </SFC>
+  <CPPDEFS>
+    <append> -DCPRLLVM</append>
+    <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY  </append>
+  </CPPDEFS>
+</compiler>
+
+<compiler COMPILER="armgcc">
+  <CFLAGS>
+    <base> -std=gnu99 </base>
+    <append compile_threaded="TRUE"> -fopenmp </append>
+    <append DEBUG="TRUE"> -g -Wall -Og -fbacktrace -ffpe-trap=invalid,zero,overflow -fcheck=bounds </append>
+    <append DEBUG="FALSE"> -O </append>
+  </CFLAGS>
+  <CPPDEFS>
+    <!-- http://gcc.gnu.org/onlinedocs/gfortran/ -->
+    <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRGNU</append>
+  </CPPDEFS>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <FC_AUTO_R8>
+    <base> -fdefault-real-8 </base>
+  </FC_AUTO_R8>
+  <FFLAGS>
+    <!-- -ffree-line-length-none and -ffixed-line-length-none need to be in FFLAGS rather than in FIXEDFLAGS/FREEFLAGS
+       so that these are passed to cmake builds (cmake builds don't use FIXEDFLAGS and FREEFLAGS). -->
+    <base>  -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </base>
+    <append compile_threaded="TRUE"> -fopenmp </append>
+    <!-- Ideally, we would also have 'invalid' in the ffpe-trap list. But at
+         least with some versions of gfortran (confirmed with 5.4.0, 6.3.0 and
+         7.1.0), gfortran's isnan (which is called in cime via the
+         CPRGNU-specific shr_infnan_isnan) causes a floating point exception
+         when called on a signaling NaN. -->
+    <append DEBUG="TRUE"> -g -Wall -Og -fbacktrace -ffpe-trap=zero,overflow -fcheck=bounds </append>
+    <append DEBUG="FALSE"> -O </append>
+  </FFLAGS>
+  <FFLAGS_NOOPT>
+    <base> -O0 </base>
+  </FFLAGS_NOOPT>
+  <FIXEDFLAGS>
+    <base>  -ffixed-form </base>
+  </FIXEDFLAGS>
+  <FREEFLAGS>
+    <base> -ffree-form </base>
+  </FREEFLAGS>
+  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
+  <LDFLAGS>
+    <append compile_threaded="TRUE"> -fopenmp </append>
+  </LDFLAGS>
+  <MPICC> mpicc  </MPICC>
+  <MPICXX> mpicxx </MPICXX>
+  <MPIFC> mpif90 </MPIFC>
+  <SCC> gcc </SCC>
+  <SCXX> g++ </SCXX>
+  <SFC> gfortran </SFC>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+</compiler>
+
+
+
 
 <compiler COMPILER="cray">
   <CFLAGS>
@@ -469,38 +536,6 @@ using a fortran linker.
   <FFLAGS>
     <append compile_threaded="FALSE"> -heap-arrays </append>
   </FFLAGS>
-</compiler>
-
-<compiler MACH="athena">
-  <CPPDEFS>
-    <!-- these flags enable nano timers -->
-    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
-  </CPPDEFS>
-  <NETCDF_PATH>$ENV{NETCDF}</NETCDF_PATH>
-  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH>$ENV{PNETCDF}</PNETCDF_PATH>
-  <AR>xiar</AR>
-  <ARFLAGS>
-    <base>cru</base>
-  </ARFLAGS>
-</compiler>
-
-<compiler MACH="athena" COMPILER="intel">
-  <CFLAGS>
-    <append>  -xHost </append>
-  </CFLAGS>
-  <CPPDEFS>
-    <append> -DINTEL_MKL -DHAVE_SSE2 </append>
-  </CPPDEFS>
-  <FFLAGS>
-    <append>  -xHost </append>
-  </FFLAGS>
-  <MPICXX MPILIB="mpich2">mpiicpc</MPICXX>
-  <MPICC MPILIB="mpich2">mpiicc</MPICC>
-  <MPIFC MPILIB="mpich2">mpiifort</MPIFC>
-  <SCC>icc</SCC>
-  <SFC>ifort</SFC>
-  <TRILINOS_PATH MPILIB="mpich2">$ENV{TRILINOS_PATH}</TRILINOS_PATH>
 </compiler>
 
 <compiler MACH="aleph" COMPILER="intel">
@@ -939,6 +974,10 @@ using a fortran linker.
   </SLIBS>
 </compiler>
 
+<compiler MACH="izumi" COMPILER="intel">
+  <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="FALSE">/fs/cgd/csm/tools/pFUnit/pFUnit3.3.3_izumi_Intel19.0.1_noMPI_noOpenMP</PFUNIT_PATH>
+</compiler>
+
 <compiler MACH="hobart" COMPILER="intel">
   <CFLAGS>
     <append> -lifcore</append>
@@ -986,7 +1025,7 @@ using a fortran linker.
   <LDFLAGS>
     <!-- These LDFLAGS provide lapack and blas support on a Mac. This
          may require installation of the Apple Developer Tools. -->
-    <append> -framework Accelerate </append>
+    <append> -framework Accelerate -Wl,-rpath $(NETCDF)/lib</append>
   </LDFLAGS>
 </compiler>
 

@@ -1,20 +1,20 @@
 #ifndef SCREAM_FIELD_INITIALIZER_HPP
 #define SCREAM_FIELD_INITIALIZER_HPP
 
-#include "share/scream_types.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/util/scream_std_enable_shared_from_this.hpp"
 #include "share/field/field.hpp"
-#include "share/util/scream_std_enable_shared_from_this.hpp"
 
 namespace scream {
 
 /*
  * A class responsible to initialize a field
- * 
+ *
  * A FieldInitializer object has to be able to initialize
  * one or more field. This capability will be exploited by
  * the AtmosphereDriver (AD), to make sure all atm inputs
  * are initialized at the beginning of the simulation.
- * 
+ *
  * Most likely, some atm proc will also inherit from this class,
  * since they will claim the role of initializer for some fields.
  */

@@ -2,7 +2,7 @@
 # Environment variables CIME_COMPILER and CIME_MPILIB
 # can be used to send --compiler and --mpilib settings to scripts_regression_tests.py
 #
-
+PROJECT(cime)
 cmake_minimum_required(VERSION 2.8)
 
 include(CTest)

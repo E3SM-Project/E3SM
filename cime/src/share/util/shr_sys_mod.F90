@@ -311,7 +311,9 @@ SUBROUTINE shr_sys_flush(unit)
 ! all compilers that CESM supports for years now.
 !
 !-------------------------------------------------------------------------------
+!$OMP SINGLE
    flush(unit)
+!$OMP END SINGLE
 !
 ! The following code was originally present, but there's an obvious issue.
 ! Since shr_sys_flush is usually used to flush output to a log, when it

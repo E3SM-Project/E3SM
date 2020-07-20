@@ -46,4 +46,3 @@ create_dynamics_driven_grids_manager (const Comm& comm, const ParameterList& p) 
 } // namespace scream
 
 #endif // SCREAM_DYNAMICS_DRIVEN_GRIDS_MANAGER_HPP
-

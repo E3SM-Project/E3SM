@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-!  $Id$
+!  $Id: stats_clubb_utilities.F90 7377 2014-11-11 02:43:45Z bmg2@uwm.edu $
 !===============================================================================
 module stats_clubb_utilities
 
@@ -107,7 +107,7 @@ module stats_clubb_utilities
 
 #ifdef NETCDF
     use output_netcdf, only: &
-      open_netcdf_for_writing     ! Procedure
+      open_netcdf     ! Procedure
 #endif
 
     use stats_zm_module, only: &
@@ -138,24 +138,16 @@ module stats_clubb_utilities
       nvarmax_sfc, & ! Constant(s)
       stats_init_sfc ! Procedure(s)
 
+    use error_code, only: &
+      clubb_at_least_debug_level ! Function
+
     use constants_clubb, only: &
       fstdout, fstderr, var_length ! Constants
 
     use parameters_model, only: &
-        hydromet_dim, &  ! Variable(s)
-        sclr_dim, &
-        edsclr_dim
-
-    use error_code, only: &
-        clubb_at_least_debug_level, &   ! Procedure
-        err_code, &                     ! Error Indicator
-        clubb_fatal_error               ! Constant
+        hydromet_dim  ! Variable(s)
 
     implicit none
-
-    ! Local Constants
-    integer, parameter :: &
-      silhs_num_importance_categories = 8
 
     ! Input Variables
     integer, intent(in) :: iunit  ! File unit for fnamelist
@@ -302,10 +294,7 @@ module stats_clubb_utilities
       write(fstderr,*) "Maximum variables allowed for var_rad_zt = ", nvarmax_rad_zt
       write(fstderr,*) "Maximum variables allowed for var_rad_zm = ", nvarmax_rad_zm
       write(fstderr,*) "Maximum variables allowed for var_sfc = ", nvarmax_sfc
-      write(fstderr,*) "stats_init: Error reading stats namelist."
-      err_code = clubb_fatal_error
-      close(unit=iunit)
-      return
+      stop "stats_init: Error reading stats namelist."
     end if ! read_status /= 0
 
     close(unit=iunit)
@@ -395,8 +384,7 @@ module stats_clubb_utilities
     case default
       write(fstderr,*) "In module stats_clubb_utilities subroutine stats_init: "
       write(fstderr,*) "Invalid stats output format "//trim( stats_fmt )
-      err_code = clubb_fatal_error
-      return
+      stop "Fatal error"
 
     end select
 
@@ -436,9 +424,17 @@ module stats_clubb_utilities
     end do
     ntot = ivar - 1
 
-    if ( any( vars_zt == "hm_i" ) ) then
-       ! Correct for number of variables found under "hm_i".
-       ! Subtract "hm_i" from the number of zt statistical variables.
+    if ( any( vars_zt == "corr_w_hm_ov_adj" ) ) then
+       ! Correct for number of variables found under "corr_w_hm_ov_adj".
+       ! Subtract "corr_w_hm_ov_adj" from the number of zt statistical
+       ! variables.
+       ntot = ntot - 1
+       ! Add 1 for each hydrometeor to the number of zt statistical variables.
+       ntot = ntot + hydromet_dim
+    endif
+    if ( any( vars_zt == "hmi" ) ) then
+       ! Correct for number of variables found under "hmi".
+       ! Subtract "hmi" from the number of zt statistical variables.
        ntot = ntot - 1
        ! Add 2 (1st PDF component and 2nd PDF component) for each hydrometeor
        ! to the number of zt statistical variables.
@@ -570,7 +566,7 @@ module stats_clubb_utilities
        ! Subtract "corr_hmx_hmy_i" from the number of zt statistical variables.
        ntot = ntot - 1
        ! Add 2 (1st PDF component and 2nd PDF component) multipled by the
-       ! number of correlations of two hydrometeors, which is found by:
+       ! number of correlations between two hydrometeors, which is found by:
        ! (1/2) * hydromet_dim * ( hydromet_dim - 1 );
        ! to the number of zt statistical variables.
        ntot = ntot + hydromet_dim * ( hydromet_dim - 1 )
@@ -637,7 +633,7 @@ module stats_clubb_utilities
        ! Subtract "corr_hmx_hmy_i_n" from the number of zt statistical variables.
        ntot = ntot - 1
        ! Add 2 (1st PDF component and 2nd PDF component) multipled by the
-       ! number of normal space correlations of two hydrometeors, which is
+       ! number of normalized correlations between two hydrometeors, which is
        ! found by:  (1/2) * hydromet_dim * ( hydromet_dim - 1 );
        ! to the number of zt statistical variables.
        ntot = ntot + hydromet_dim * ( hydromet_dim - 1 )
@@ -659,48 +655,13 @@ module stats_clubb_utilities
        ntot = ntot + hydromet_dim
     endif
 
-    if ( any( vars_zt == "sclrm" ) ) then
-       ! Correct for number of variables found under "sclrm".
-       ! Subtract "sclrm" from the number of zt statistical variables.
-       ntot = ntot - 1
-       ! Add 1 for each scalar to the number of zt statistical variables.
-       ntot = ntot + sclr_dim
-    endif   
-
-    if ( any( vars_zt == "sclrm_f" ) ) then
-       ! Correct for number of variables found under "sclrm_f".
-       ! Subtract "sclrm_f" from the number of zt statistical variables.
-       ntot = ntot - 1
-       ! Add 1 for each scalar to the number of zt statistical variables.
-       ntot = ntot + sclr_dim
-    endif
-
-    if ( any( vars_zt == "edsclrm" ) ) then
-       ! Correct for number of variables found under "edsclrm".
-       ! Subtract "edsclrm" from the number of zt statistical variables.
-       ntot = ntot - 1
-       ! Add 1 for each scalar to the number of zt statistical variables.
-       ntot = ntot + edsclr_dim
-    endif
-
-    if ( any( vars_zt == "edsclrm_f" ) ) then
-       ! Correct for number of variables found under "edsclrm_f".
-       ! Subtract "edsclrm_f" from the number of zt statistical variables.
-       ntot = ntot - 1
-       ! Add 1 for each scalar to the number of zt statistical variables.
-       ntot = ntot + edsclr_dim
-    endif
-
     if ( ntot >= nvarmax_zt ) then
       write(fstderr,*) "There are more statistical variables listed in ",  &
                        "vars_zt than allowed for by nvarmax_zt."
       write(fstderr,*) "Check the number of variables listed for vars_zt ",  &
                        "in the stats namelist, or change nvarmax_zt."
       write(fstderr,*) "nvarmax_zt = ", nvarmax_zt
-      write(fstderr,*) "number of variables in vars_zt = ", ntot
-      write(fstderr,*) "stats_init:  number of zt statistical variables exceeds limit"
-      err_code = clubb_fatal_error
-      return
+      stop "stats_init:  number of zt statistical variables exceeds limit"
     end if
 
     stats_zt%num_output_fields = ntot
@@ -713,7 +674,7 @@ module stats_clubb_utilities
 
     allocate( stats_zt%accum_field_values( stats_zt%ii, stats_zt%jj, &
       stats_zt%kk, stats_zt%num_output_fields ) )
-    allocate( stats_zt%accum_num_samples( stats_zt%ii, stats_zt%jj, &
+    allocate( stats_zt %accum_num_samples( stats_zt%ii, stats_zt%jj, &
       stats_zt%kk, stats_zt%num_output_fields ) )
     allocate( stats_zt%l_in_update( stats_zt%ii, stats_zt%jj, stats_zt%kk, &
       stats_zt%num_output_fields ) )
@@ -782,12 +743,10 @@ module stats_clubb_utilities
 
     else ! Open NetCDF file
 #ifdef NETCDF
-      call open_netcdf_for_writing( nlat, nlon, fdir, fname, 1, stats_zt%kk, stats_zt%z, &  ! In
+      call open_netcdf( nlat, nlon, fdir, fname, 1, stats_zt%kk, stats_zt%z, &  ! In
                         day, month, year, rlat, rlon, &  ! In
                         time_current, stats_tout, stats_zt%num_output_fields, &  ! In
                         stats_zt%file ) ! InOut
-
-      if ( err_code == clubb_fatal_error ) return
 #else
       stop "This CLUBB program was not compiled with netCDF support."
 #endif
@@ -810,34 +769,13 @@ module stats_clubb_utilities
         ivar = ivar + 1
       end do
       ntot = ivar - 1
-      if ( any( vars_lh_zt == "silhs_variance_category" ) ) then
-        ! Correct for number of variables found under "silhs_variance_category".
-        ! Subtract "silhs_variance_category" from the number of lh_zt statistical
-        ! variables.
-        ntot = ntot - 1
-        ! Add 1 for each SILHS category to the number of lh_zt statistical variables
-        ntot = ntot + silhs_num_importance_categories
-      end if
-
-      if ( any( vars_lh_zt == "lh_samp_frac_category" ) ) then
-        ! Correct for number of variables found under "lh_samp_frac_category".
-        ! Subtract "lh_samp_frac_category" from the number of lh_zt statistical
-        ! variables.
-        ntot = ntot - 1
-        ! Add 1 for each SILHS category to the number of lh_zt statistical variables
-        ntot = ntot + silhs_num_importance_categories
-      end if
-
       if ( ntot == nvarmax_lh_zt ) then
         write(fstderr,*) "There are more statistical variables listed in ",  &
-                         "vars_lh_zt than allowed for by nvarmax_lh_zt."
+                         "vars_zt than allowed for by nvarmax_lh_zt."
         write(fstderr,*) "Check the number of variables listed for vars_lh_zt ",  &
                          "in the stats namelist, or change nvarmax_lh_zt."
         write(fstderr,*) "nvarmax_lh_zt = ", nvarmax_lh_zt
-        write(fstderr,*) "number of variables in vars_lh_zt = ", ntot
-        write(fstderr,*) "stats_init:  number of lh_zt statistical variables exceeds limit"
-        err_code = clubb_fatal_error
-        return
+        stop "stats_init:  number of lh_zt statistical variables exceeds limit"
       end if
 
       stats_lh_zt%num_output_fields = ntot
@@ -856,7 +794,7 @@ module stats_clubb_utilities
         stats_lh_zt%num_output_fields ) )
       call stats_zero( stats_lh_zt%ii, stats_lh_zt%jj, stats_lh_zt%kk, &
         stats_lh_zt%num_output_fields, &
-        stats_lh_zt%accum_field_values, stats_lh_zt%accum_num_samples, stats_lh_zt%l_in_update )
+        stats_lh_zt%accum_field_values, stats_lh_zt %accum_num_samples, stats_lh_zt%l_in_update )
 
       allocate( stats_lh_zt%file%var( stats_lh_zt%num_output_fields ) )
       allocate( stats_lh_zt%file%z( stats_lh_zt%kk ) )
@@ -875,12 +813,10 @@ module stats_clubb_utilities
 
       else ! Open NetCDF file
 #ifdef NETCDF
-        call open_netcdf_for_writing( nlat, nlon, fdir, fname, 1, stats_lh_zt%kk, &  ! In
-                          stats_lh_zt%z, day, month, year, rlat, rlon, &  ! In
+        call open_netcdf( nlat, nlon, fdir, fname, 1, stats_lh_zt%kk, stats_lh_zt%z, &  ! In
+                          day, month, year, rlat, rlon, &  ! In
                           time_current, stats_tout, stats_lh_zt%num_output_fields, &  ! In
                           stats_lh_zt%file ) ! InOut
-
-        if ( err_code == clubb_fatal_error ) return
 #else
         stop "This CLUBB program was not compiled with netCDF support."
 #endif
@@ -898,14 +834,11 @@ module stats_clubb_utilities
       ntot = ivar - 1
       if ( ntot == nvarmax_lh_sfc ) then
         write(fstderr,*) "There are more statistical variables listed in ",  &
-                         "vars_lh_sfc than allowed for by nvarmax_lh_sfc."
+                         "vars_zt than allowed for by nvarmax_lh_sfc."
         write(fstderr,*) "Check the number of variables listed for vars_lh_sfc ",  &
                          "in the stats namelist, or change nvarmax_lh_sfc."
         write(fstderr,*) "nvarmax_lh_sfc = ", nvarmax_lh_sfc
-        write(fstderr,*) "number of variables in vars_lh_sfc = ", ntot
-        write(fstderr,*) "stats_init:  number of lh_sfc statistical variables exceeds limit"
-        err_code = clubb_fatal_error
-        return
+        stop "stats_init:  number of lh_sfc statistical variables exceeds limit"
       end if
 
       stats_lh_sfc%num_output_fields = ntot
@@ -918,14 +851,14 @@ module stats_clubb_utilities
 
       allocate( stats_lh_sfc%accum_field_values( stats_lh_sfc%ii, stats_lh_sfc%jj, &
         stats_lh_sfc%kk, stats_lh_sfc%num_output_fields ) )
-      allocate( stats_lh_sfc%accum_num_samples( stats_lh_sfc%ii, stats_lh_sfc%jj, &
+      allocate( stats_lh_sfc %accum_num_samples( stats_lh_sfc%ii, stats_lh_sfc%jj, &
         stats_lh_sfc%kk, stats_lh_sfc%num_output_fields ) )
       allocate( stats_lh_sfc%l_in_update( stats_lh_sfc%ii, stats_lh_sfc%jj, &
         stats_lh_sfc%kk, stats_lh_sfc%num_output_fields ) )
 
       call stats_zero( stats_lh_sfc%ii, stats_lh_sfc%jj, stats_lh_sfc%kk, &
           stats_lh_sfc%num_output_fields, stats_lh_sfc%accum_field_values, &
-          stats_lh_sfc%accum_num_samples, stats_lh_sfc%l_in_update )
+          stats_lh_sfc %accum_num_samples, stats_lh_sfc%l_in_update )
 
       allocate( stats_lh_sfc%file%var( stats_lh_sfc%num_output_fields ) )
       allocate( stats_lh_sfc%file%z( stats_lh_sfc%kk ) )
@@ -943,12 +876,10 @@ module stats_clubb_utilities
 
       else ! Open NetCDF file
 #ifdef NETCDF
-        call open_netcdf_for_writing( nlat, nlon, fdir, fname, 1, stats_lh_sfc%kk, &  ! In
-                          stats_lh_sfc%z, day, month, year, rlat, rlon, &  ! In
+        call open_netcdf( nlat, nlon, fdir, fname, 1, stats_lh_sfc%kk, stats_lh_sfc%z, &  ! In
+                          day, month, year, rlat, rlon, &  ! In
                           time_current, stats_tout, stats_lh_sfc%num_output_fields, &  ! In
                           stats_lh_sfc%file ) ! InOut
-
-        if ( err_code == clubb_fatal_error ) return
 #else
         stop "This CLUBB program was not compiled with netCDF support."
 #endif
@@ -1001,16 +932,6 @@ module stats_clubb_utilities
        ntot = ntot + hydromet_dim
     endif
 
-    if ( any( vars_zm == "hmxphmyp" ) ) then
-       ! Correct for number of variables found under "hmxphmyp".
-       ! Subtract "hmxphmyp" from the number of zm statistical variables.
-       ntot = ntot - 1
-       ! Add the number of overall covariances of two hydrometeors, which is
-       ! found by:  (1/2) * hydromet_dim * ( hydromet_dim - 1 );
-       ! to the number of zm statistical variables.
-       ntot = ntot + hydromet_dim * ( hydromet_dim - 1 ) / 2
-    endif
-
     if ( any( vars_zm == "K_hm" ) ) then
        ! Correct for number of variables found under "K_hm".
        ! Subtract "K_hm" from the number of zm statistical variables.
@@ -1019,115 +940,13 @@ module stats_clubb_utilities
        ntot = ntot + hydromet_dim
     endif
 
-    if ( any( vars_zm == "sclrprtp" ) ) then
-       ! Correct for number of variables found under "sclrprtp".
-       ! Subtract "sclrprtp" from the number of zm statistical variables.
-       ntot = ntot - 1
-       ! Add 1 for each scalar to the number of zm statistical variables.
-       ntot = ntot + sclr_dim
-    endif
-
-    if ( any( vars_zm == "sclrp2" ) ) then
-       ! Correct for number of variables found under "sclrp2".
-       ! Subtract "sclrp2" from the number of zm statistical variables.
-       ntot = ntot - 1
-       ! Add 1 for each scalar to the number of zm statistical variables.
-       ntot = ntot + sclr_dim
-    endif
-
-
-    if ( any( vars_zm == "sclrpthvp" ) ) then
-       ! Correct for number of variables found under "sclrpthvp".
-       ! Subtract "sclrpthvp" from the number of zm statistical variables.
-       ntot = ntot - 1
-       ! Add 1 for each scalar to the number of zm statistical variables.
-       ntot = ntot + sclr_dim
-    endif
-
-
-    if ( any( vars_zm == "sclrpthlp" ) ) then
-       ! Correct for number of variables found under "sclrpthlp".
-       ! Subtract "sclrpthlp" from the number of zm statistical variables.
-       ntot = ntot - 1
-       ! Add 1 for each scalar to the number of zm statistical variables.
-       ntot = ntot + sclr_dim
-    endif
-
-
-    if ( any( vars_zm == "sclrprcp" ) ) then
-       ! Correct for number of variables found under "sclrprcp".
-       ! Subtract "sclrprcp" from the number of zm statistical variables.
-       ntot = ntot - 1
-       ! Add 1 for each scalar to the number of zm statistical variables.
-       ntot = ntot + sclr_dim
-    endif
-
-
-    if ( any( vars_zm == "wpsclrp" ) ) then
-       ! Correct for number of variables found under "wpsclrp".
-       ! Subtract "wpsclrp" from the number of zm statistical variables.
-       ntot = ntot - 1
-       ! Add 1 for each scalar to the number of zm statistical variables.
-       ntot = ntot + sclr_dim
-    endif
-
-
-    if ( any( vars_zm == "wpsclrp2" ) ) then
-       ! Correct for number of variables found under "wpsclrp2".
-       ! Subtract "wpsclrp2" from the number of zm statistical variables.
-       ntot = ntot - 1
-       ! Add 1 for each scalar to the number of zm statistical variables.
-       ntot = ntot + sclr_dim
-    endif
-
-
-    if ( any( vars_zm == "wp2sclrp" ) ) then
-       ! Correct for number of variables found under "wp2sclrp".
-       ! Subtract "wp2sclrp" from the number of zm statistical variables.
-       ntot = ntot - 1
-       ! Add 1 for each scalar to the number of zm statistical variables.
-       ntot = ntot + sclr_dim
-    endif
-
-
-    if ( any( vars_zm == "wpsclrprtp" ) ) then
-       ! Correct for number of variables found under "wpsclrprtp".
-       ! Subtract "wpsclrprtp" from the number of zm statistical variables.
-       ntot = ntot - 1
-       ! Add 1 for each scalar to the number of zm statistical variables.
-       ntot = ntot + sclr_dim
-    endif
-
-
-    if ( any( vars_zm == "wpsclrpthlp" ) ) then
-       ! Correct for number of variables found under "wpsclrpthlp".
-       ! Subtract "wpsclrpthlp" from the number of zm statistical variables.
-       ntot = ntot - 1
-       ! Add 1 for each scalar to the number of zm statistical variables.
-       ntot = ntot + sclr_dim
-    endif
-
-
-    if ( any( vars_zm == "wpedsclrp" ) ) then
-       ! Correct for number of variables found under "wpedsclrp".
-       ! Subtract "wpedsclrp" from the number of zm statistical variables.
-       ntot = ntot - 1
-       ! Add 1 for each scalar to the number of zm statistical variables.
-       ntot = ntot + edsclr_dim
-    endif
-
-
-
     if ( ntot == nvarmax_zm ) then
       write(fstderr,*) "There are more statistical variables listed in ",  &
                        "vars_zm than allowed for by nvarmax_zm."
       write(fstderr,*) "Check the number of variables listed for vars_zm ",  &
                        "in the stats namelist, or change nvarmax_zm."
       write(fstderr,*) "nvarmax_zm = ", nvarmax_zm
-      write(fstderr,*) "number of variables in vars_zm = ", ntot
-      write(fstderr,*) "stats_init:  number of zm statistical variables exceeds limit"
-      err_code = clubb_fatal_error
-      return
+      stop "stats_init:  number of zm statistical variables exceeds limit"
     end if
 
     stats_zm%num_output_fields = ntot
@@ -1140,13 +959,13 @@ module stats_clubb_utilities
 
     allocate( stats_zm%accum_field_values( stats_zm%ii, stats_zm%jj, &
       stats_zm%kk, stats_zm%num_output_fields ) )
-    allocate( stats_zm%accum_num_samples( stats_zm%ii, stats_zm%jj, &
+    allocate( stats_zm %accum_num_samples( stats_zm%ii, stats_zm%jj, &
       stats_zm%kk, stats_zm%num_output_fields ) )
     allocate( stats_zm%l_in_update( stats_zm%ii, stats_zm%jj, stats_zm%kk, &
       stats_zm%num_output_fields ) )
 
     call stats_zero( stats_zm%ii, stats_zm%jj, stats_zm%kk, stats_zm%num_output_fields, &
-      stats_zm%accum_field_values, stats_zm%accum_num_samples, stats_zm%l_in_update )
+      stats_zm%accum_field_values, stats_zm %accum_num_samples, stats_zm%l_in_update )
 
     allocate( stats_zm%file%var( stats_zm%num_output_fields ) )
     allocate( stats_zm%file%z( stats_zm%kk ) )
@@ -1203,12 +1022,11 @@ module stats_clubb_utilities
 
     else ! Open NetCDF file
 #ifdef NETCDF
-      call open_netcdf_for_writing( nlat, nlon, fdir, fname, 1, stats_zm%kk, stats_zm%z, &  ! In
+      call open_netcdf( nlat, nlon, fdir, fname, 1, stats_zm%kk, stats_zm%z, &  ! In
                         day, month, year, rlat, rlon, &  ! In
                         time_current, stats_tout, stats_zm%num_output_fields, &  ! In
                         stats_zm%file ) ! InOut
 
-      if ( err_code == clubb_fatal_error ) return
 #else
       stop "This CLUBB program was not compiled with netCDF support."
 #endif
@@ -1233,10 +1051,7 @@ module stats_clubb_utilities
         write(fstderr,*) "Check the number of variables listed for vars_rad_zt ",  &
                          "in the stats namelist, or change nvarmax_rad_zt."
         write(fstderr,*) "nvarmax_rad_zt = ", nvarmax_rad_zt
-        write(fstderr,*) "number of variables in vars_rad_zt = ", ntot
-        write(fstderr,*) "stats_init:  number of rad_zt statistical variables exceeds limit"
-        err_code = clubb_fatal_error
-        return
+        stop "stats_init:  number of rad_zt statistical variables exceeds limit"
       end if
 
       stats_rad_zt%num_output_fields = ntot
@@ -1272,13 +1087,12 @@ module stats_clubb_utilities
 
       else ! Open NetCDF file
 #ifdef NETCDF
-        call open_netcdf_for_writing( nlat, nlon, fdir, fname,  & 
+        call open_netcdf( nlat, nlon, fdir, fname,  & 
                           1, stats_rad_zt%kk, stats_rad_zt%z, & 
                           day, month, year, rlat, rlon, & 
                           time_current, stats_tout, & 
                           stats_rad_zt%num_output_fields, stats_rad_zt%file )
 
-        if ( err_code == clubb_fatal_error ) return
 #else
         stop "This CLUBB program was not compiled with netCDF support."
 #endif
@@ -1301,10 +1115,7 @@ module stats_clubb_utilities
         write(fstderr,*) "Check the number of variables listed for vars_rad_zm ",  &
                          "in the stats namelist, or change nvarmax_rad_zm."
         write(fstderr,*) "nvarmax_rad_zm = ", nvarmax_rad_zm
-        write(fstderr,*) "number of variables in vars_rad_zm = ", ntot
-        write(fstderr,*) "stats_init:  number of rad_zm statistical variables exceeds limit"
-        err_code = clubb_fatal_error
-        return
+        stop "stats_init:  number of rad_zm statistical variables exceeds limit"
       end if
 
       stats_rad_zm%num_output_fields = ntot
@@ -1341,13 +1152,12 @@ module stats_clubb_utilities
 
       else ! Open NetCDF file
 #ifdef NETCDF
-        call open_netcdf_for_writing( nlat, nlon, fdir, fname,  & 
+        call open_netcdf( nlat, nlon, fdir, fname,  & 
                           1, stats_rad_zm%kk, stats_rad_zm%z, & 
                           day, month, year, rlat, rlon, & 
                           time_current, stats_tout, & 
                           stats_rad_zm%num_output_fields, stats_rad_zm%file )
 
-        if ( err_code == clubb_fatal_error ) return
 #else
         stop "This CLUBB program was not compiled with netCDF support."
 #endif
@@ -1372,11 +1182,7 @@ module stats_clubb_utilities
       write(fstderr,*) "Check the number of variables listed for vars_sfc ",  &
                        "in the stats namelist, or change nvarmax_sfc."
       write(fstderr,*) "nvarmax_sfc = ", nvarmax_sfc
-      write(fstderr,*) "number of variables in vars_sfc = ", ntot
-      write(fstderr,*) "stats_init:  number of sfc statistical variables exceeds limit"
-      err_code = clubb_fatal_error
-      return
-
+      stop "stats_init:  number of sfc statistical variables exceeds limit"
     end if
 
     stats_sfc%num_output_fields = ntot
@@ -1413,12 +1219,11 @@ module stats_clubb_utilities
 
     else ! Open NetCDF files
 #ifdef NETCDF
-      call open_netcdf_for_writing( nlat, nlon, fdir, fname, 1, stats_sfc%kk, stats_sfc%z, &  ! In
+      call open_netcdf( nlat, nlon, fdir, fname, 1, stats_sfc%kk, stats_sfc%z, &  ! In
                         day, month, year, rlat, rlon, &  ! In
                         time_current, stats_tout, stats_sfc%num_output_fields, &  ! In
                         stats_sfc%file ) ! InOut
 
-      if ( err_code == clubb_fatal_error ) return
 #else
       stop "This CLUBB program was not compiled with netCDF support."
 #endif
@@ -1430,8 +1235,7 @@ module stats_clubb_utilities
 
     if ( l_error ) then
       write(fstderr,*) 'stats_init:  errors found'
-      err_code = clubb_fatal_error
-      return
+      stop "Fatal error"
     endif
 
     return
@@ -1613,10 +1417,6 @@ module stats_clubb_utilities
         write_netcdf ! Procedure(s)
 #endif
 
-    use error_code, only : &
-        err_code, &         ! Error Indicator
-        clubb_fatal_error   ! Constant
-
     implicit none
 
     ! External
@@ -1647,14 +1447,12 @@ module stats_clubb_utilities
       call stats_check_num_samples( stats_rad_zm, l_error )
     end if
 
-    ! Return if errors are found.
+    ! Stop the run if errors are found.
     if ( l_error ) then
       write(fstderr,*) 'Possible statistical sampling error'
       write(fstderr,*) 'For details, set debug_level to a value of at ',  &
                        'least 1 in the appropriate model.in file.'
-      write(fstderr,*) 'stats_end_timestep:  error(s) found'
-      err_code = clubb_fatal_error
-      return
+      stop 'stats_end_timestep:  error(s) found'
     end if ! l_error
 
     ! Compute averages
@@ -1698,7 +1496,6 @@ module stats_clubb_utilities
         end if
         call write_grads( stats_sfc%file  )
       else ! l_netcdf
-
 #ifdef NETCDF
         call write_netcdf( stats_zt%file  )
         call write_netcdf( stats_zm%file  )
@@ -1711,8 +1508,6 @@ module stats_clubb_utilities
           call write_netcdf( stats_rad_zm%file  )
         end if
         call write_netcdf( stats_sfc%file  )
-            
-        if ( err_code == clubb_fatal_error ) return
 #else
         stop "This program was not compiled with netCDF support"
 #endif /* NETCDF */
@@ -1753,16 +1548,14 @@ module stats_clubb_utilities
   subroutine stats_accumulate & 
                    ( um, vm, upwp, vpwp, up2, vp2, &
                      thlm, rtm, wprtp, wpthlp, &
-                     wp2, wp3, rtp2, rtp3, thlp2, thlp3, rtpthlp, &
-                     wpthvp, wp2thvp, rtpthvp, thlpthvp, &
+                     wp2, wp3, rtp2, thlp2, rtpthlp, &
                      p_in_Pa, exner, rho, rho_zm, &
-                     rho_ds_zm, rho_ds_zt, thv_ds_zm, thv_ds_zt, &
-                     wm_zt, wm_zm, rcm, wprcp, rc_coef, rc_coef_zm, &
+                     rho_ds_zm, rho_ds_zt, thv_ds_zm, &
+                     thv_ds_zt, wm_zt, wm_zm, rcm, wprcp, rc_coef, &
                      rcm_zm, rtm_zm, thlm_zm, cloud_frac, ice_supersat_frac, &
                      cloud_frac_zm, ice_supersat_frac_zm, rcm_in_layer, &
-                     cloud_cover, rcm_supersat_adj, sigma_sqd_w, &
-                     pdf_params, pdf_params_zm, sclrm, sclrp2, &
-                     sclrprtp, sclrpthlp, sclrm_forcing, sclrpthvp, &
+                     cloud_cover, sigma_sqd_w, pdf_params, &
+                     sclrm, sclrp2, sclrprtp, sclrpthlp, sclrm_forcing, &
                      wpsclrp, edsclrm, edsclrm_forcing )
 
     ! Description:
@@ -1800,11 +1593,10 @@ module stats_clubb_utilities
         icloud_frac, &
         iice_supersat_frac, & 
         ircm_in_layer, &
-        icloud_cover, &
-        ircm_supersat_adj
+        icloud_cover
 
     use stats_variables, only: &
-        ip_in_Pa, & ! Variable(s)
+        ip_in_Pa, & 
         iexner, & 
         irho_ds_zt, &
         ithv_ds_zt, &
@@ -1823,8 +1615,7 @@ module stats_clubb_utilities
     use stats_variables, only: & 
         iwp2thvp, &  ! Variable(s)
         iwp2rcp, & 
-        iwprtpthlp, &
-        irc_coef, &
+        iwprtpthlp, & 
         isigma_sqd_w_zt, & 
         irho, & 
         irsat, & 
@@ -1861,22 +1652,13 @@ module stats_clubb_utilities
         istdev_eta_2, &
         icovar_chi_eta_1, &
         icovar_chi_eta_2, &
-        icorr_w_chi_1, &
-        icorr_w_chi_2, &
-        icorr_w_eta_1, &
-        icorr_w_eta_2, &
         icorr_chi_eta_1, &
         icorr_chi_eta_2, &
         icrt_1, &
         icrt_2, &
         icthl_1, &
         icthl_2, &
-        icorr_w_rt_1, &
-        icorr_w_rt_2, &
-        icorr_w_thl_1, &
-        icorr_w_thl_2, &
-        icorr_rt_thl_1, &
-        icorr_rt_thl_2, &
+        irrtthl, &
         ichi
 
     use stats_variables, only: &
@@ -1892,9 +1674,7 @@ module stats_clubb_utilities
         ivpwp_zt, &
         iwp2, &
         irtp2, &
-        irtp3, &
         ithlp2, &
-        ithlp3, &
         irtpthlp, &
         iwprtp,  &
         iwpthlp, &
@@ -1906,8 +1686,9 @@ module stats_clubb_utilities
         ithlpthvp, & ! Variable(s)
         itau_zm, &
         iKh_zm, &
+        iK_hm, &
         iwprcp, &
-        irc_coef_zm, &
+        irc_coef, &
         ithlprcp, &
         irtprcp, &
         ircp2, &
@@ -1956,34 +1737,27 @@ module stats_clubb_utilities
         iwpedsclrp
 
     use stats_variables, only: &
-        icloud_frac_zm, &
-        iice_supersat_frac_zm, &
-        ircm_zm, &
-        irtm_zm, &
-        ithlm_zm
+      icloud_frac_zm, &
+      iice_supersat_frac_zm, &
+      ircm_zm, &
+      irtm_zm, &
+      ithlm_zm
 
     use stats_variables, only: &
-        iw_1_zm, & ! Variable(s)
-        iw_2_zm, &
-        ivarnce_w_1_zm, &
-        ivarnce_w_2_zm, &
-        imixt_frac_zm
+      iwp3_on_wp2, &
+      iwp3_on_wp2_zt, &
+      iSkw_velocity
 
     use stats_variables, only: &
-        iwp3_on_wp2, &
-        iwp3_on_wp2_zt, &
-        iSkw_velocity
-
-    use stats_variables, only: &
-        ia3_coef, & ! Variables
-        ia3_coef_zt, &
-        ircm_in_cloud
+      ia3_coef, & ! Variables
+      ia3_coef_zt, &
+      ircm_in_cloud
 
     use grid_class, only: & 
         gr ! Variable
 
     use grid_class, only: & 
-        zt2zm ! Procedure(s)
+      zt2zm ! Procedure(s)
 
     use variables_diagnostic_module, only: & 
         thvm, & ! Variable(s)
@@ -1998,6 +1772,7 @@ module stats_clubb_utilities
         Lscale_down, & 
         tau_zt, &
         Kh_zt, & 
+        wp2thvp, & 
         wp2rcp, & 
         wprtpthlp, & 
         sigma_sqd_w_zt, & 
@@ -2015,13 +1790,18 @@ module stats_clubb_utilities
         upwp_zt, &
         vpwp_zt, & 
         wp4, & 
+        rtpthvp, & 
+        thlpthvp, & 
+        wpthvp, &
         tau_zm, &
         Kh_zm, & 
+        K_hm,&
         thlprcp, & 
         rtprcp, & 
         rcp2, & 
         em, & 
         Frad, & 
+        sclrpthvp, & 
         sclrprcp, & 
         wp2sclrp, & 
         wpsclrp2, & 
@@ -2030,15 +1810,15 @@ module stats_clubb_utilities
         wpedsclrp
 
     use variables_diagnostic_module, only: & 
-        a3_coef, & ! Variable(s)
-        a3_coef_zt, &
-        wp3_zm, &
-        wp3_on_wp2, &
-        wp3_on_wp2_zt, &
-        Skw_velocity
+      a3_coef, & ! Variable(s)
+      a3_coef_zt, &
+      wp3_zm, &
+      wp3_on_wp2, &
+      wp3_on_wp2_zt, &
+      Skw_velocity
 
     use pdf_parameter_module, only: & 
-        pdf_parameter ! Type
+      pdf_parameter ! Type
 
     use T_in_K_module, only: & 
         thlm2T_in_K ! Procedure
@@ -2062,42 +1842,36 @@ module stats_clubb_utilities
         lin_interpolate_two_points             ! Procedure
 
     use saturation, only: &
-        sat_mixrat_ice ! Procedure
+      sat_mixrat_ice ! Procedure
 
     use clubb_precision, only: &
-        core_rknd ! Variable(s)
+      core_rknd ! Variable(s)
 
     implicit none
 
     ! Input Variable(s)
     real( kind = core_rknd ), intent(in), dimension(gr%nz) :: & 
-      um,       & ! u wind (thermodynamic levels)          [m/s]
-      vm,       & ! v wind (thermodynamic levels)          [m/s]
-      upwp,     & ! vertical u momentum flux (m levs.)     [m^2/s^2]
-      vpwp,     & ! vertical v momentum flux (m levs.)     [m^2/s^2]
-      up2,      & ! < u'^2 > (momentum levels)             [m^2/s^2]
-      vp2,      & ! < v'^2 > (momentum levels)             [m^2/s^2]
-      thlm,     & ! liquid potential temperature (t levs.) [K]
-      rtm,      & ! total water mixing ratio (t levs.)     [kg/kg]
-      wprtp,    & ! < w' r_t' > (momentum levels)          [m/s kg/kg]
-      wpthlp,   & ! < w' th_l' > (momentum levels)         [m/s K]
-      wp2,      & ! < w'^2 > (momentum levels)             [m^2/s^2]
-      wp3,      & ! < w'^3 > (thermodynamic levels)        [m^3/s^3]
-      rtp2,     & ! < r_t'^2 > (momentum levels)           [(kg/kg)^2]
-      rtp3,     & ! < r_t'^3 > (thermodynamic levels)      [(kg/kg)^3]
-      thlp2,    & ! < th_l'^2 > (momentum levels)          [K^2]
-      thlp3,    & ! < th_l'^3 > (thermodynamic levels)     [K^3]
-      rtpthlp,  & ! < r_t' th_l' > (momentum levels)       [kg/kg K]
-      wpthvp,   & ! < w' th_v' > (momentum levels)         [kg/kg K]
-      wp2thvp,  & ! < w'^2 th_v' > (thermodynamic levels)  [m^2/s^2 K]
-      rtpthvp,  & ! < r_t' th_v' > (momentum levels)       [kg/kg K]
-      thlpthvp    ! < th_l' th_v' > (momentum levels)      [K^2]
+      um,      & ! u wind                        [m/s]
+      vm,      & ! v wind                        [m/s]
+      upwp,    & ! vertical u momentum flux      [m^2/s^2]
+      vpwp,    & ! vertical v momentum flux      [m^2/s^2]
+      up2,     & ! u'^2                          [m^2/s^2]
+      vp2,     & ! v'^2                          [m^2/s^2]
+      thlm,    & ! liquid potential temperature  [K]
+      rtm,     & ! total water mixing ratio      [kg/kg]
+      wprtp,   & ! w'rt'                         [(kg/kg) m/s]
+      wpthlp,  & ! w'thl'                        [m K /s]
+      wp2,     & ! w'^2                          [m^2/s^2]
+      wp3,     & ! w'^3                          [m^3/s^3]
+      rtp2,    & ! rt'^2                         [(kg/kg)^2]
+      thlp2,   & ! thl'^2                        [K^2]
+      rtpthlp    ! rt'thl'                       [kg/kg K]
 
     real( kind = core_rknd ), intent(in), dimension(gr%nz) :: & 
       p_in_Pa,      & ! Pressure (Pa) on thermodynamic points    [Pa]
       exner,        & ! Exner function = ( p / p0 ) ** kappa     [-]
-      rho,          & ! Density (thermodynamic levels)           [kg/m^3]
-      rho_zm,       & ! Density on momentum levels               [kg/m^3]
+      rho,          & ! Density                                  [kg/m^3]
+      rho_zm,       & ! Density                                  [kg/m^3]
       rho_ds_zm,    & ! Dry, static density (momentum levels)    [kg/m^3]
       rho_ds_zt,    & ! Dry, static density (thermo. levs.)      [kg/m^3]
       thv_ds_zm,    & ! Dry, base-state theta_v (momentum levs.) [K]
@@ -2106,27 +1880,24 @@ module stats_clubb_utilities
       wm_zm           ! w on momentum levels                     [m/s]
 
     real( kind = core_rknd ), intent(in), dimension(gr%nz) :: & 
-      rcm_zm,               & ! Cloud water mixing ratio on m levs.      [kg/kg]
-      rtm_zm,               & ! Total water mixing ratio on m levs.      [kg/kg]
-      thlm_zm,              & ! Liquid potential temperature on m levs.  [K]
-      rcm,                  & ! Cloud water mixing ratio (t levs.)       [kg/kg]
-      wprcp,                & ! < w' r_c' > (momentum levels)            [m/s kg/kg]
-      rc_coef,              & ! Coefficient of X'r_c' (t-levs.)      [K/(kg/kg)]
-      rc_coef_zm,           & ! Coefficient of X'r_c' on m-levs.     [K/(kg/kg)]
-      cloud_frac,           & ! Cloud fraction (thermodynamic levels)    [-]
-      ice_supersat_frac,    & ! Ice cloud fracion (thermodynamic levels) [-]
+      rcm_zm,               & ! Total water mixing ratio                 [kg/kg]
+      rtm_zm,               & ! Total water mixing ratio                 [kg/kg]
+      thlm_zm,              & ! Liquid potential temperature             [K]
+      rcm,                  & ! Cloud water mixing ratio                 [kg/kg]
+      wprcp,                & ! w'rc'                                    [(kg/kg) m/s]
+      rc_coef,              & ! Coefficient of X' R_l' in Eq. (34)       [-]
+      cloud_frac,           & ! Cloud fraction                           [-]
+      ice_supersat_frac,    & ! Ice cloud fracion                        [-]
       cloud_frac_zm,        & ! Cloud fraction on zm levels              [-]
       ice_supersat_frac_zm, & ! Ice cloud fraction on zm levels          [-]
       rcm_in_layer,         & ! Cloud water mixing ratio in cloud layer  [kg/kg]
-      cloud_cover,          & ! Cloud cover                              [-]
-      rcm_supersat_adj        ! rcm adjustment due to supersaturation    [kg/kg]
+      cloud_cover             ! Cloud cover                              [-]
 
     real( kind = core_rknd ), intent(in), dimension(gr%nz) :: &
       sigma_sqd_w    ! PDF width parameter (momentum levels)    [-]
 
-    type(pdf_parameter), intent(in) :: & 
-      pdf_params,    & ! PDF parameters (thermodynamic levels)    [units vary]
-      pdf_params_zm    ! PDF parameters on momentum levels        [units vary]
+    type(pdf_parameter), dimension(gr%nz), intent(in) :: & 
+      pdf_params ! PDF parameters [units vary]
 
     real( kind = core_rknd ), intent(in), dimension(gr%nz,sclr_dim) :: & 
       sclrm,           & ! High-order passive scalar            [units vary]
@@ -2134,7 +1905,6 @@ module stats_clubb_utilities
       sclrprtp,        & ! High-order passive scalar covariance [units kg/kg]
       sclrpthlp,       & ! High-order passive scalar covariance [units K]
       sclrm_forcing,   & ! Large-scale forcing of scalar        [units/s]
-      sclrpthvp,       & ! High-order passive scalar covariance [units K]
       wpsclrp            ! w'sclr'                              [units m/s]
 
     real( kind = core_rknd ), intent(in), dimension(gr%nz,edsclr_dim) :: & 
@@ -2186,7 +1956,6 @@ module stats_clubb_utilities
       call stat_update_var( iice_supersat_frac, ice_supersat_frac, stats_zt)
       call stat_update_var( ircm_in_layer, rcm_in_layer, stats_zt )
       call stat_update_var( icloud_cover, cloud_cover, stats_zt )
-      call stat_update_var( ircm_supersat_adj, rcm_supersat_adj, stats_zt )
       call stat_update_var( ip_in_Pa, p_in_Pa, stats_zt )
       call stat_update_var( iexner, exner, stats_zt )
       call stat_update_var( irho_ds_zt, rho_ds_zt, stats_zt )
@@ -2204,7 +1973,6 @@ module stats_clubb_utilities
       call stat_update_var( iwp2thvp, wp2thvp, stats_zt )
       call stat_update_var( iwp2rcp, wp2rcp, stats_zt )
       call stat_update_var( iwprtpthlp, wprtpthlp, stats_zt )
-      call stat_update_var( irc_coef, rc_coef, stats_zt )
       call stat_update_var( isigma_sqd_w_zt, sigma_sqd_w_zt, stats_zt )
       call stat_update_var( irho, rho, stats_zt )
       call stat_update_var( irsat, rsat, stats_zt )
@@ -2240,29 +2008,18 @@ module stats_clubb_utilities
       call stat_update_var( istdev_eta_2, pdf_params%stdev_eta_2, stats_zt )
       call stat_update_var( icovar_chi_eta_1, pdf_params%covar_chi_eta_1, stats_zt )
       call stat_update_var( icovar_chi_eta_2, pdf_params%covar_chi_eta_2, stats_zt )
-      call stat_update_var( icorr_w_chi_1, pdf_params%corr_w_chi_1, stats_zt )
-      call stat_update_var( icorr_w_chi_2, pdf_params%corr_w_chi_2, stats_zt )
-      call stat_update_var( icorr_w_eta_1, pdf_params%corr_w_eta_1, stats_zt )
-      call stat_update_var( icorr_w_eta_2, pdf_params%corr_w_eta_2, stats_zt )
       call stat_update_var( icorr_chi_eta_1, pdf_params%corr_chi_eta_1, stats_zt )
       call stat_update_var( icorr_chi_eta_2, pdf_params%corr_chi_eta_2, stats_zt )
-      call stat_update_var( icorr_w_rt_1, pdf_params%corr_w_rt_1, stats_zt )
-      call stat_update_var( icorr_w_rt_2, pdf_params%corr_w_rt_2, stats_zt )
-      call stat_update_var( icorr_w_thl_1, pdf_params%corr_w_thl_1, stats_zt )
-      call stat_update_var( icorr_w_thl_2, pdf_params%corr_w_thl_2, stats_zt )
-      call stat_update_var( icorr_rt_thl_1, pdf_params%corr_rt_thl_1, stats_zt )
-      call stat_update_var( icorr_rt_thl_2, pdf_params%corr_rt_thl_2, stats_zt )
+      call stat_update_var( irrtthl, pdf_params%rrtthl, stats_zt )
       call stat_update_var( icrt_1, pdf_params%crt_1, stats_zt )
       call stat_update_var( icrt_2, pdf_params%crt_2, stats_zt )
       call stat_update_var( icthl_1, pdf_params%cthl_1, stats_zt )
       call stat_update_var( icthl_2, pdf_params%cthl_2, stats_zt )
       call stat_update_var( iwp2_zt, wp2_zt, stats_zt )
       call stat_update_var( ithlp2_zt, thlp2_zt, stats_zt )
-      call stat_update_var( ithlp3, thlp3, stats_zt )
       call stat_update_var( iwpthlp_zt, wpthlp_zt, stats_zt )
       call stat_update_var( iwprtp_zt, wprtp_zt, stats_zt )
       call stat_update_var( irtp2_zt, rtp2_zt, stats_zt )
-      call stat_update_var( irtp3, rtp3, stats_zt )
       call stat_update_var( irtpthlp_zt, rtpthlp_zt, stats_zt )
       call stat_update_var( iup2_zt, up2_zt, stats_zt )
       call stat_update_var( ivp2_zt, vp2_zt, stats_zt )
@@ -2327,7 +2084,7 @@ module stats_clubb_utilities
       call stat_update_var( itau_zm, tau_zm, stats_zm )
       call stat_update_var( iKh_zm, Kh_zm, stats_zm )
       call stat_update_var( iwprcp, wprcp, stats_zm )
-      call stat_update_var( irc_coef_zm, rc_coef_zm, stats_zm )
+      call stat_update_var( irc_coef, rc_coef, stats_zm )
       call stat_update_var( ithlprcp, thlprcp, stats_zm )
       call stat_update_var( irtprcp, rtprcp, stats_zm )
       call stat_update_var( ircp2, rcp2, stats_zm )
@@ -2351,11 +2108,6 @@ module stats_clubb_utilities
       call stat_update_var( ircm_zm, rcm_zm, stats_zm )
       call stat_update_var( irtm_zm, rtm_zm, stats_zm )
       call stat_update_var( ithlm_zm, thlm_zm, stats_zm )
-      call stat_update_var( iw_1_zm, pdf_params_zm%w_1, stats_zm )
-      call stat_update_var( iw_2_zm, pdf_params_zm%w_2, stats_zm )
-      call stat_update_var( ivarnce_w_1_zm, pdf_params_zm%varnce_w_1, stats_zm )
-      call stat_update_var( ivarnce_w_2_zm, pdf_params_zm%varnce_w_2, stats_zm )
-      call stat_update_var( imixt_frac_zm, pdf_params_zm%mixt_frac, stats_zm )
 
       if ( sclr_dim > 0 ) then
         do isclr=1, sclr_dim
@@ -2423,7 +2175,7 @@ module stats_clubb_utilities
         xtmp &
         = vertical_integral &
                ( (gr%nz - 2 + 1), rho_ds_zt(2:gr%nz), &
-                 rcm(2:gr%nz), gr%dzt(2:gr%nz) )
+                 rcm(2:gr%nz), gr%invrs_dzt(2:gr%nz) )
 
         call stat_update_var_pt( ilwp, 1, xtmp, stats_sfc )
 
@@ -2435,7 +2187,7 @@ module stats_clubb_utilities
         xtmp &
         = vertical_integral &
                ( (gr%nz - 2 + 1), rho_ds_zt(2:gr%nz), &
-                 ( rtm(2:gr%nz) - rcm(2:gr%nz) ), gr%dzt(2:gr%nz) )
+                 ( rtm(2:gr%nz) - rcm(2:gr%nz) ), gr%invrs_dzt(2:gr%nz) )
 
         call stat_update_var_pt( ivwp, 1, xtmp, stats_sfc )
 
@@ -2452,25 +2204,25 @@ module stats_clubb_utilities
       ! Vertical average of thlm.
       call stat_update_var_pt( ithlm_vert_avg, 1,  &
            vertical_avg( (gr%nz-2+1), rho_ds_zt(2:gr%nz), &
-                         thlm(2:gr%nz), gr%dzt(2:gr%nz) ), &
+                         thlm(2:gr%nz), gr%invrs_dzt(2:gr%nz) ), &
                                stats_sfc )
 
       ! Vertical average of rtm.
       call stat_update_var_pt( irtm_vert_avg, 1,  &
            vertical_avg( (gr%nz-2+1), rho_ds_zt(2:gr%nz), &
-                         rtm(2:gr%nz), gr%dzt(2:gr%nz) ), &
+                         rtm(2:gr%nz), gr%invrs_dzt(2:gr%nz) ), &
                                stats_sfc )
 
       ! Vertical average of um.
       call stat_update_var_pt( ium_vert_avg, 1,  &
            vertical_avg( (gr%nz-2+1), rho_ds_zt(2:gr%nz), &
-                         um(2:gr%nz), gr%dzt(2:gr%nz) ), &
+                         um(2:gr%nz), gr%invrs_dzt(2:gr%nz) ), &
                                stats_sfc )
 
       ! Vertical average of vm.
       call stat_update_var_pt( ivm_vert_avg, 1,  &
            vertical_avg( (gr%nz-2+1), rho_ds_zt(2:gr%nz), &
-                         vm(2:gr%nz), gr%dzt(2:gr%nz) ), &
+                         vm(2:gr%nz), gr%invrs_dzt(2:gr%nz) ), &
                                stats_sfc )
 
       ! Vertical average of momentum level variables.
@@ -2482,31 +2234,31 @@ module stats_clubb_utilities
       ! Vertical average of wp2.
       call stat_update_var_pt( iwp2_vert_avg, 1,  &
            vertical_avg( (gr%nz-1+1), rho_ds_zm(1:gr%nz), &
-                         wp2(1:gr%nz), gr%dzm(1:gr%nz) ), &
+                         wp2(1:gr%nz), gr%invrs_dzm(1:gr%nz) ), &
                                stats_sfc )
 
       ! Vertical average of up2.
       call stat_update_var_pt( iup2_vert_avg, 1,  &
            vertical_avg( (gr%nz-1+1), rho_ds_zm(1:gr%nz), &
-                         up2(1:gr%nz), gr%dzm(1:gr%nz) ), &
+                         up2(1:gr%nz), gr%invrs_dzm(1:gr%nz) ), &
                                stats_sfc )
 
       ! Vertical average of vp2.
       call stat_update_var_pt( ivp2_vert_avg, 1,  &
            vertical_avg( (gr%nz-1+1), rho_ds_zm(1:gr%nz), &
-                         vp2(1:gr%nz), gr%dzm(1:gr%nz) ), &
+                         vp2(1:gr%nz), gr%invrs_dzm(1:gr%nz) ), &
                                stats_sfc )
 
       ! Vertical average of rtp2.
       call stat_update_var_pt( irtp2_vert_avg, 1,  &
            vertical_avg( (gr%nz-1+1), rho_ds_zm(1:gr%nz), &
-                         rtp2(1:gr%nz), gr%dzm(1:gr%nz) ), &
+                         rtp2(1:gr%nz), gr%invrs_dzm(1:gr%nz) ), &
                                stats_sfc )
 
       ! Vertical average of thlp2.
       call stat_update_var_pt( ithlp2_vert_avg, 1,  &
            vertical_avg( (gr%nz-1+1), rho_ds_zm(1:gr%nz), &
-                         thlp2(1:gr%nz), gr%dzm(1:gr%nz) ), &
+                         thlp2(1:gr%nz), gr%invrs_dzm(1:gr%nz) ), &
                                stats_sfc )
 
 
@@ -2530,8 +2282,8 @@ module stats_clubb_utilities
       gr ! Variable(s)
 
     use array_index, only:  & 
-      iirr, iirs, iiri, iirg, & ! Variable(s)
-      iiNr, iiNs, iiNi, iiNg
+      iirrm, iirsm, iirim, iirgm, & ! Variable(s)
+      iiNrm, iiNsm, iiNim, iiNgm
 
     use stats_variables, only: &
       stats_sfc, & ! Variable(s)
@@ -2577,71 +2329,71 @@ module stats_clubb_utilities
 
     if ( l_stats_samp ) then
 
-      if ( iirr > 0 ) then
-        call stat_update_var( irrm, hydromet(:,iirr), stats_zt )
+      if ( iirrm > 0 ) then
+        call stat_update_var( irrm, hydromet(:,iirrm), stats_zt )
       end if
 
-      if ( iirs > 0 ) then
-        call stat_update_var( irsm, hydromet(:,iirs), stats_zt )
+      if ( iirsm > 0 ) then
+        call stat_update_var( irsm, hydromet(:,iirsm), stats_zt )
       end if
 
-      if ( iiri > 0 ) then
-        call stat_update_var( irim, hydromet(:,iiri), stats_zt )
+      if ( iirim > 0 ) then
+        call stat_update_var( irim, hydromet(:,iirim), stats_zt )
       end if
 
-      if ( iirg > 0 ) then
+      if ( iirgm > 0 ) then
         call stat_update_var( irgm,  & 
-                              hydromet(:,iirg), stats_zt )
+                              hydromet(:,iirgm), stats_zt )
       end if
 
-      if ( iiNi > 0 ) then
-        call stat_update_var( iNim, hydromet(:,iiNi), stats_zt )
+      if ( iiNim > 0 ) then
+        call stat_update_var( iNim, hydromet(:,iiNim), stats_zt )
       end if
 
-      if ( iiNr > 0 ) then
-        call stat_update_var( iNrm, hydromet(:,iiNr), stats_zt )
+      if ( iiNrm > 0 ) then
+        call stat_update_var( iNrm, hydromet(:,iiNrm), stats_zt )
       end if
 
-      if ( iiNs > 0 ) then
-        call stat_update_var( iNsm, hydromet(:,iiNs), stats_zt )
+      if ( iiNsm > 0 ) then
+        call stat_update_var( iNsm, hydromet(:,iiNsm), stats_zt )
       end if
 
-      if ( iiNg > 0 ) then
-        call stat_update_var( iNgm, hydromet(:,iiNg), stats_zt )
+      if ( iiNgm > 0 ) then
+        call stat_update_var( iNgm, hydromet(:,iiNgm), stats_zt )
       end if
 
       ! Snow Water Path
-      if ( iswp > 0 .and. iirs > 0 ) then
+      if ( iswp > 0 .and. iirsm > 0 ) then
 
         ! Calculate snow water path
         xtmp &
         = vertical_integral &
                ( (gr%nz - 2 + 1), rho_ds_zt(2:gr%nz), &
-                 hydromet(2:gr%nz,iirs), gr%dzt(2:gr%nz) )
+                 hydromet(2:gr%nz,iirsm), gr%invrs_dzt(2:gr%nz) )
 
         call stat_update_var_pt( iswp, 1, xtmp, stats_sfc )
 
-      end if ! iswp > 0 .and. iirs > 0
+      end if ! iswp > 0 .and. iirsm > 0
 
       ! Ice Water Path
-      if ( iiwp > 0 .and. iiri > 0 ) then
+      if ( iiwp > 0 .and. iirim > 0 ) then
 
         xtmp &
         = vertical_integral &
                ( (gr%nz - 2 + 1), rho_ds_zt(2:gr%nz), &
-                 hydromet(2:gr%nz,iiri), gr%dzt(2:gr%nz) )
+                 hydromet(2:gr%nz,iirim), gr%invrs_dzt(2:gr%nz) )
 
         call stat_update_var_pt( iiwp, 1, xtmp, stats_sfc )
 
       end if
 
       ! Rain Water Path
-      if ( irwp > 0 .and. iirr > 0 ) then
+      if ( irwp > 0 .and. iirrm > 0 ) then
 
         xtmp &
         = vertical_integral &
                ( (gr%nz - 2 + 1), rho_ds_zt(2:gr%nz), &
-                 hydromet(2:gr%nz,iirr), gr%dzt(2:gr%nz) )
+                 hydromet(2:gr%nz,iirrm), gr%invrs_dzt(2:gr%nz) )
 
         call stat_update_var_pt( irwp, 1, xtmp, stats_sfc )
 
@@ -2666,8 +2418,8 @@ module stats_clubb_utilities
       gr ! Variable(s)
 
     use array_index, only:  & 
-      iirr, iirs, iiri, iirg, & ! Variable(s)
-      iiNr, iiNs, iiNi, iiNg
+      iirrm, iirsm, iirim, iirgm, & ! Variable(s)
+      iiNrm, iiNsm, iiNim, iiNgm
 
     use stats_variables, only: &
       ilh_rrm_mc, & ! Variable(s)
@@ -2731,36 +2483,36 @@ module stats_clubb_utilities
 
       call stat_update_var( ilh_Ncm_mc, lh_Ncm_mc, stats_lh_zt )
 
-      if ( iirr > 0 ) then
-        call stat_update_var( ilh_rrm_mc, lh_hydromet_mc(:,iirr), stats_lh_zt )
+      if ( iirrm > 0 ) then
+        call stat_update_var( ilh_rrm_mc, lh_hydromet_mc(:,iirrm), stats_lh_zt )
       end if
 
-      if ( iirs > 0 ) then
-        call stat_update_var( ilh_rsm_mc, lh_hydromet_mc(:,iirs), stats_lh_zt )
+      if ( iirsm > 0 ) then
+        call stat_update_var( ilh_rsm_mc, lh_hydromet_mc(:,iirsm), stats_lh_zt )
       end if
 
-      if ( iiri > 0 ) then
-        call stat_update_var( ilh_rim_mc, lh_hydromet_mc(:,iiri), stats_lh_zt )
+      if ( iirim > 0 ) then
+        call stat_update_var( ilh_rim_mc, lh_hydromet_mc(:,iirim), stats_lh_zt )
       end if
 
-      if ( iirg > 0 ) then
-        call stat_update_var( ilh_rgm_mc, lh_hydromet_mc(:,iirg), stats_lh_zt )
+      if ( iirgm > 0 ) then
+        call stat_update_var( ilh_rgm_mc, lh_hydromet_mc(:,iirgm), stats_lh_zt )
       end if
 
-      if ( iiNi > 0 ) then
-        call stat_update_var( ilh_Nim_mc, lh_hydromet_mc(:,iiNi), stats_lh_zt )
+      if ( iiNim > 0 ) then
+        call stat_update_var( ilh_Nim_mc, lh_hydromet_mc(:,iiNim), stats_lh_zt )
       end if
 
-      if ( iiNr > 0 ) then
-        call stat_update_var( ilh_Nrm_mc, lh_hydromet_mc(:,iiNr), stats_lh_zt )
+      if ( iiNrm > 0 ) then
+        call stat_update_var( ilh_Nrm_mc, lh_hydromet_mc(:,iiNrm), stats_lh_zt )
       end if
 
-      if ( iiNs > 0 ) then
-        call stat_update_var( ilh_Nsm_mc, lh_hydromet_mc(:,iiNs), stats_lh_zt )
+      if ( iiNsm > 0 ) then
+        call stat_update_var( ilh_Nsm_mc, lh_hydromet_mc(:,iiNsm), stats_lh_zt )
       end if
 
-      if ( iiNg > 0 ) then
-        call stat_update_var( ilh_Ngm_mc, lh_hydromet_mc(:,iiNg), stats_lh_zt )
+      if ( iiNgm > 0 ) then
+        call stat_update_var( ilh_Ngm_mc, lh_hydromet_mc(:,iiNgm), stats_lh_zt )
       end if
 
       call stat_update_var( iAKm, AKm, stats_lh_zt )
@@ -2858,8 +2610,9 @@ module stats_clubb_utilities
         iwpedsclrp
 
     use stats_variables, only: &
-        ihm_1, &
-        ihm_2, &
+        icorr_w_hm_ov_adj, &
+        ihm1, &
+        ihm2, &
         imu_hm_1, &
         imu_hm_2, &
         imu_hm_1_n, &
@@ -2894,12 +2647,7 @@ module stats_clubb_utilities
         iwphydrometp, &
         iK_hm, &
         irtphmp, &
-        ithlphmp, &
-        ihmxphmyp
-
-    use stats_variables, only: &
-        isilhs_variance_category, & ! Variable(s)
-        ilh_samp_frac_category
+        ithlphmp
 
 #ifdef NETCDF
     use output_netcdf, only:  & 
@@ -2924,252 +2672,196 @@ module stats_clubb_utilities
 
     if ( l_stats ) then
       ! De-allocate all stats_zt variables
-      if (allocated(stats_zt%z)) then
-        deallocate( stats_zt%z )
+      deallocate( stats_zt%z )
 
-        deallocate( stats_zt%accum_field_values )
-        deallocate( stats_zt%accum_num_samples )
-        deallocate( stats_zt%l_in_update )
+      deallocate( stats_zt%accum_field_values )
 
-        deallocate( stats_zt%file%var )
-        deallocate( stats_zt%file%z )
-               
-        ! Check if pointer is allocated to prevent crash in netcdf (ticket 765)
-        if ( allocated( stats_zt%file%rlat ) ) then
-          deallocate( stats_zt%file%rlat )
-        end if
-        if ( allocated( stats_zt%file%rlon ) ) then
-          deallocate( stats_zt%file%rlon )
-        end if
+      deallocate( stats_zt%accum_num_samples )
+      deallocate( stats_zt%l_in_update )
 
-        deallocate ( ztscr01 )
-        deallocate ( ztscr02 )
-        deallocate ( ztscr03 )
-        deallocate ( ztscr04 )
-        deallocate ( ztscr05 )
-        deallocate ( ztscr06 )
-        deallocate ( ztscr07 )
-        deallocate ( ztscr08 )
-        deallocate ( ztscr09 )
-        deallocate ( ztscr10 )
-        deallocate ( ztscr11 )
-        deallocate ( ztscr12 )
-        deallocate ( ztscr13 )
-        deallocate ( ztscr14 )
-        deallocate ( ztscr15 )
-        deallocate ( ztscr16 )
-        deallocate ( ztscr17 )
-        deallocate ( ztscr18 )
-        deallocate ( ztscr19 )
-        deallocate ( ztscr20 )
-        deallocate ( ztscr21 )
-      end if
 
-      if ( l_silhs_out .and. allocated(stats_lh_zt%z) ) then
+      deallocate( stats_zt%file%var )
+      deallocate( stats_zt%file%z )
+      deallocate( stats_zt%file%rlat )
+      deallocate( stats_zt%file%rlon )
+
+      deallocate ( ztscr01 )
+      deallocate ( ztscr02 )
+      deallocate ( ztscr03 )
+      deallocate ( ztscr04 )
+      deallocate ( ztscr05 )
+      deallocate ( ztscr06 )
+      deallocate ( ztscr07 )
+      deallocate ( ztscr08 )
+      deallocate ( ztscr09 )
+      deallocate ( ztscr10 )
+      deallocate ( ztscr11 )
+      deallocate ( ztscr12 )
+      deallocate ( ztscr13 )
+      deallocate ( ztscr14 )
+      deallocate ( ztscr15 )
+      deallocate ( ztscr16 )
+      deallocate ( ztscr17 )
+      deallocate ( ztscr18 )
+      deallocate ( ztscr19 )
+      deallocate ( ztscr20 )
+      deallocate ( ztscr21 )
+
+      if ( l_silhs_out ) then
         ! De-allocate all stats_lh_zt variables
         deallocate( stats_lh_zt%z )
 
         deallocate( stats_lh_zt%accum_field_values )
+
         deallocate( stats_lh_zt%accum_num_samples )
         deallocate( stats_lh_zt%l_in_update )
 
+
         deallocate( stats_lh_zt%file%var )
         deallocate( stats_lh_zt%file%z )
-        
-        ! Check if pointer is allocated to prevent crash in netcdf (ticket 765)
-        if ( allocated(stats_lh_zt%file%rlat ) ) then
-          deallocate( stats_lh_zt%file%rlat )
-        end if
-        if ( allocated(stats_lh_zt%file%rlon ) ) then
-          deallocate( stats_lh_zt%file%rlon )
-        end if
+        deallocate( stats_lh_zt%file%rlat )
+        deallocate( stats_lh_zt%file%rlon )
 
         ! De-allocate all stats_lh_sfc variables
         deallocate( stats_lh_sfc%z )
 
         deallocate( stats_lh_sfc%accum_field_values )
+
         deallocate( stats_lh_sfc%accum_num_samples )
         deallocate( stats_lh_sfc%l_in_update )
 
+
         deallocate( stats_lh_sfc%file%var )
         deallocate( stats_lh_sfc%file%z )
-             
-        ! Check if pointer is allocated to prevent crash in netcdf (ticket 765)
-        if ( allocated( stats_lh_sfc%file%rlat ) ) then
-          deallocate( stats_lh_sfc%file%rlat )
-        end if
-        if ( allocated( stats_lh_sfc%file%rlon ) ) then
-          deallocate( stats_lh_sfc%file%rlon )
-        end if
+        deallocate( stats_lh_sfc%file%rlat )
+        deallocate( stats_lh_sfc%file%rlon )
       end if ! l_silhs_out
 
       ! De-allocate all stats_zm variables
-      if (allocated(stats_zm%z)) then
-        deallocate( stats_zm%z )
+      deallocate( stats_zm%z )
 
-        deallocate( stats_zm%accum_field_values )
-        deallocate( stats_zm%accum_num_samples )
-        deallocate( stats_zm%l_in_update )
+      deallocate( stats_zm%accum_field_values )
+      deallocate( stats_zm%accum_num_samples )
 
-        deallocate( stats_zm%file%var )
-        deallocate( stats_zm%file%z )
-             
-        ! Check if pointer is allocated to prevent crash in netcdf (ticket 765)
-        if ( allocated( stats_zm%file%rlat ) ) then
-          deallocate( stats_zm%file%rlat )
-        end if
-        if ( allocated( stats_zm%file%rlon ) ) then
-          deallocate( stats_zm%file%rlon )
-        end if
+      deallocate( stats_zm%file%var )
+      deallocate( stats_zm%file%z )
+      deallocate( stats_zm%file%rlat )
+      deallocate( stats_zm%file%rlon )
+      deallocate( stats_zm%l_in_update )
 
-        deallocate ( zmscr01 )
-        deallocate ( zmscr02 )
-        deallocate ( zmscr03 )
-        deallocate ( zmscr04 )
-        deallocate ( zmscr05 )
-        deallocate ( zmscr06 )
-        deallocate ( zmscr07 )
-        deallocate ( zmscr08 )
-        deallocate ( zmscr09 )
-        deallocate ( zmscr10 )
-        deallocate ( zmscr11 )
-        deallocate ( zmscr12 )
-        deallocate ( zmscr13 )
-        deallocate ( zmscr14 )
-        deallocate ( zmscr15 )
-        deallocate ( zmscr16 )
-        deallocate ( zmscr17 )
-      end if
+      deallocate ( zmscr01 )
+      deallocate ( zmscr02 )
+      deallocate ( zmscr03 )
+      deallocate ( zmscr04 )
+      deallocate ( zmscr05 )
+      deallocate ( zmscr06 )
+      deallocate ( zmscr07 )
+      deallocate ( zmscr08 )
+      deallocate ( zmscr09 )
+      deallocate ( zmscr10 )
+      deallocate ( zmscr11 )
+      deallocate ( zmscr12 )
+      deallocate ( zmscr13 )
+      deallocate ( zmscr14 )
+      deallocate ( zmscr15 )
+      deallocate ( zmscr16 )
+      deallocate ( zmscr17 )
 
       if ( l_output_rad_files ) then
         ! De-allocate all stats_rad_zt variables
-        if (allocated(stats_rad_zt%z)) then
-          deallocate( stats_rad_zt%z )
+        deallocate( stats_rad_zt%z )
 
-          deallocate( stats_rad_zt%accum_field_values )
-          deallocate( stats_rad_zt%accum_num_samples )
-          deallocate( stats_rad_zt%l_in_update )
+        deallocate( stats_rad_zt%accum_field_values )
+        deallocate( stats_rad_zt%accum_num_samples )
 
-          deallocate( stats_rad_zt%file%var )
-          deallocate( stats_rad_zt%file%z )
-               
-          ! Check if pointer is allocated to prevent crash in netcdf (ticket 765)
-          if ( allocated( stats_rad_zt%file%rlat ) ) then
-            deallocate( stats_rad_zt%file%rlat )
-          end if
-          if ( allocated( stats_rad_zt%file%rlon ) ) then
-            deallocate( stats_rad_zt%file%rlon )
-          end if
+        deallocate( stats_rad_zt%file%var )
+        deallocate( stats_rad_zt%file%z )
+        deallocate( stats_rad_zt%file%rlat )
+        deallocate( stats_rad_zt%file%rlon )
+        deallocate( stats_rad_zt%l_in_update )
 
-          ! De-allocate all stats_rad_zm variables
-          deallocate( stats_rad_zm%z )
+        ! De-allocate all stats_rad_zm variables
+        deallocate( stats_rad_zm%z )
 
-          deallocate( stats_rad_zm%accum_field_values )
-          deallocate( stats_rad_zm%accum_num_samples )
-          deallocate( stats_rad_zm%l_in_update )
+        deallocate( stats_rad_zm%accum_field_values )
+        deallocate( stats_rad_zm%accum_num_samples )
 
-          deallocate( stats_rad_zm%file%var )
-          deallocate( stats_rad_zm%file%z )
-
-          ! Check if pointer is allocated to prevent crash in netcdf (ticket 765)
-          if ( allocated( stats_rad_zm%file%rlat ) ) then
-            deallocate( stats_rad_zm%file%rlat )
-          end if
-          if ( allocated( stats_rad_zm%file%rlon ) ) then
-            deallocate( stats_rad_zm%file%rlon )
-          end if
-
-        end if
+        deallocate( stats_rad_zm%file%var )
+        deallocate( stats_rad_zm%file%z )
+        deallocate( stats_rad_zm%l_in_update )
 
       end if ! l_output_rad_files
 
       ! De-allocate all stats_sfc variables
-      if (allocated(stats_sfc%z)) then
-        deallocate( stats_sfc%z )
+      deallocate( stats_sfc%z )
 
-        deallocate( stats_sfc%accum_field_values )
-        deallocate( stats_sfc%accum_num_samples )
-        deallocate( stats_sfc%l_in_update )
+      deallocate( stats_sfc%accum_field_values )
+      deallocate( stats_sfc %accum_num_samples )
+      deallocate( stats_sfc%l_in_update )
 
-        deallocate( stats_sfc%file%var )
-        deallocate( stats_sfc%file%z )
-      end if
-             
-      ! Check if pointer is allocated to prevent crash in netcdf (ticket 765)
-      if ( allocated( stats_sfc%file%rlat ) ) then
-        deallocate( stats_sfc%file%rlat )
-      end if
-      if ( allocated( stats_sfc%file%rlon ) ) then
-        deallocate( stats_sfc%file%rlon )
-      end if
+      deallocate( stats_sfc%file%var )
+      deallocate( stats_sfc%file%z )
+      deallocate( stats_sfc%file%rlat )
+      deallocate( stats_sfc%file%rlon )
 
       ! De-allocate scalar indices
-      if (allocated(isclrm)) then
-        deallocate( isclrm )
-        deallocate( isclrm_f )
-        deallocate( iedsclrm )
-        deallocate( iedsclrm_f )
-        deallocate( isclrprtp )
-        deallocate( isclrp2 )
-        deallocate( isclrpthvp )
-        deallocate( isclrpthlp )
-        deallocate( isclrprcp )
-        deallocate( iwpsclrp )
-        deallocate( iwp2sclrp )
-        deallocate( iwpsclrp2 )
-        deallocate( iwpsclrprtp )
-        deallocate( iwpsclrpthlp )
-        deallocate( iwpedsclrp )
-      end if
+      deallocate( isclrm )
+      deallocate( isclrm_f )
+      deallocate( iedsclrm )
+      deallocate( iedsclrm_f )
+      deallocate( isclrprtp )
+      deallocate( isclrp2 )
+      deallocate( isclrpthvp )
+      deallocate( isclrpthlp )
+      deallocate( isclrprcp )
+      deallocate( iwpsclrp )
+      deallocate( iwp2sclrp )
+      deallocate( iwpsclrp2 )
+      deallocate( iwpsclrprtp )
+      deallocate( iwpsclrpthlp )
+      deallocate( iwpedsclrp )
 
       ! De-allocate hyderometeor statistical variables
-      if (allocated(ihm_1)) then
-        deallocate( ihm_1 )
-        deallocate( ihm_2 )
-        deallocate( imu_hm_1 )
-        deallocate( imu_hm_2 )
-        deallocate( imu_hm_1_n )
-        deallocate( imu_hm_2_n )
-        deallocate( isigma_hm_1 )
-        deallocate( isigma_hm_2 )
-        deallocate( isigma_hm_1_n )
-        deallocate( isigma_hm_2_n )
-        deallocate( icorr_w_hm_1 )
-        deallocate( icorr_w_hm_2 )
-        deallocate( icorr_chi_hm_1 )
-        deallocate( icorr_chi_hm_2 )
-        deallocate( icorr_eta_hm_1 )
-        deallocate( icorr_eta_hm_2 )
-        deallocate( icorr_Ncn_hm_1 )
-        deallocate( icorr_Ncn_hm_2 )
-        deallocate( icorr_hmx_hmy_1 )
-        deallocate( icorr_hmx_hmy_2 )
-        deallocate( icorr_w_hm_1_n )
-        deallocate( icorr_w_hm_2_n )
-        deallocate( icorr_chi_hm_1_n )
-        deallocate( icorr_chi_hm_2_n )
-        deallocate( icorr_eta_hm_1_n )
-        deallocate( icorr_eta_hm_2_n )
-        deallocate( icorr_Ncn_hm_1_n )
-        deallocate( icorr_Ncn_hm_2_n )
-        deallocate( icorr_hmx_hmy_1_n )
-        deallocate( icorr_hmx_hmy_2_n )
-        deallocate( ihmp2_zt )
-        deallocate( iwp2hmp )
-        deallocate( ihydrometp2 )
-        deallocate( iwphydrometp )
-        deallocate( irtphmp )
-        deallocate( ithlphmp )
-        deallocate( ihmxphmyp )
-        deallocate( iK_hm )
-      end if
-
-      if ( allocated( isilhs_variance_category ) ) then
-        deallocate( isilhs_variance_category )
-        deallocate( ilh_samp_frac_category )
-      end if
-
+      deallocate( icorr_w_hm_ov_adj )
+      deallocate( ihm1 )
+      deallocate( ihm2 )
+      deallocate( imu_hm_1 )
+      deallocate( imu_hm_2 )
+      deallocate( imu_hm_1_n )
+      deallocate( imu_hm_2_n )
+      deallocate( isigma_hm_1 )
+      deallocate( isigma_hm_2 )
+      deallocate( isigma_hm_1_n )
+      deallocate( isigma_hm_2_n )
+      deallocate( icorr_w_hm_1 )
+      deallocate( icorr_w_hm_2 )
+      deallocate( icorr_chi_hm_1 )
+      deallocate( icorr_chi_hm_2 )
+      deallocate( icorr_eta_hm_1 )
+      deallocate( icorr_eta_hm_2 )
+      deallocate( icorr_Ncn_hm_1 )
+      deallocate( icorr_Ncn_hm_2 )
+      deallocate( icorr_hmx_hmy_1 )
+      deallocate( icorr_hmx_hmy_2 )
+      deallocate( icorr_w_hm_1_n )
+      deallocate( icorr_w_hm_2_n )
+      deallocate( icorr_chi_hm_1_n )
+      deallocate( icorr_chi_hm_2_n )
+      deallocate( icorr_eta_hm_1_n )
+      deallocate( icorr_eta_hm_2_n )
+      deallocate( icorr_Ncn_hm_1_n )
+      deallocate( icorr_Ncn_hm_2_n )
+      deallocate( icorr_hmx_hmy_1_n )
+      deallocate( icorr_hmx_hmy_2_n )
+      deallocate( ihmp2_zt )
+      deallocate( iwp2hmp )
+      deallocate( ihydrometp2 )
+      deallocate( iwphydrometp )
+      deallocate( irtphmp )
+      deallocate( ithlphmp )
+      deallocate( iK_hm )
     end if ! l_stats
+
 
     return
   end subroutine stats_finalize
@@ -3197,7 +2889,7 @@ subroutine stats_check_num_samples( stats_grid, l_error )
     stats_tout
 
   use error_code, only: &
-    clubb_at_least_debug_level   ! Procedure
+    clubb_at_least_debug_level ! Procedure
 
   implicit none
 
@@ -3223,8 +2915,8 @@ subroutine stats_check_num_samples( stats_grid, l_error )
   do ivar = 1, stats_grid%num_output_fields
     do kvar = 1, stats_grid%kk
 
-      l_proper_sample = ( stats_grid%accum_num_samples(1,1,kvar,ivar) == 0 .or. &
-                          stats_grid%accum_num_samples(1,1,kvar,ivar) == &
+      l_proper_sample = ( stats_grid %accum_num_samples(1,1,kvar,ivar) == 0 .or. &
+                          stats_grid %accum_num_samples(1,1,kvar,ivar) == &
                             floor(stats_tout/stats_tsamp) )
 
       if ( .not. l_proper_sample ) then
@@ -3235,8 +2927,8 @@ subroutine stats_check_num_samples( stats_grid, l_error )
           write(fstderr,*) 'Possible sampling error for variable ',  &
                            trim(stats_grid%file%var(ivar)%name), ' in stats_grid ',  &
                            'at k = ', kvar,  &
-                           '; stats_grid%accum_num_samples(',kvar,',',ivar,') = ', &
-                            stats_grid%accum_num_samples(1,1,kvar,ivar)
+                           '; stats_grid %accum_num_samples(',kvar,',',ivar,') = ', &
+                            stats_grid %accum_num_samples(1,1,kvar,ivar)
         end if ! clubb_at_lest_debug_level 1
 
 

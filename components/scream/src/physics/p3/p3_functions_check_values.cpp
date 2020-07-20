@@ -1,5 +1,5 @@
 #include "p3_functions_check_values_impl.hpp"
-#include "share/scream_types.hpp"
+#include "ekat/scream_types.hpp"
 
 namespace scream {
 namespace p3 {

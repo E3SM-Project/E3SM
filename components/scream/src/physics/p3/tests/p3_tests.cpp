@@ -13,7 +13,7 @@ TEST_CASE("FortranDataIterator", "p3") {
   using scream::p3::ic::Factory;
   const auto d = Factory::create(Factory::mixed);
   scream::p3::FortranDataIterator fdi(d);
-  REQUIRE(fdi.nfield() == 43);
+  REQUIRE(fdi.nfield() == 41);
   const auto& f = fdi.getfield(0);
   REQUIRE(f.dim == 2);
   REQUIRE(f.extent[0] == 1);
@@ -23,18 +23,13 @@ TEST_CASE("FortranDataIterator", "p3") {
   REQUIRE(f.size == 72);
 }
 
-TEST_CASE("p3_init_f", "p3") {
-  int nerr = scream::p3::test_p3_init(true);
+TEST_CASE("p3_init", "p3") {
+  int nerr = scream::p3::test_p3_init();
   REQUIRE(nerr == 0);
 }
 
 TEST_CASE("p3_ic_f", "p3") {
   int nerr = scream::p3::test_p3_ic(true);
-  REQUIRE(nerr == 0);
-}
-
-TEST_CASE("p3_init_c", "p3") {
-  int nerr = scream::p3::test_p3_init(false);
   REQUIRE(nerr == 0);
 }
 

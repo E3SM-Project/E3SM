@@ -1131,7 +1131,8 @@ class Namelist(object):
             group_variables[name] = value
         return group_variables
 
-    def write(self, out_file, groups=None, append=False, format_='nml', sorted_groups=True, skip_comps=None):
+    def write(self, out_file, groups=None, append=False, format_='nml', sorted_groups=True):
+
         """Write a the output data (normally fortran namelist) to the  out_file
 
         As with `parse`, the `out_file` argument can be either a file name, or a
@@ -1146,22 +1147,16 @@ class Namelist(object):
         specifies the file format. Formats other than 'nml' may not support all
         possible output values.
         """
-        expect(format_ in ('nml', 'rc', 'nmlcontents', 'nuopc'),
+        expect(format_ in ('nml', 'rc', 'nmlcontents'),
                "Namelist.write: unexpected output format {!r}".format(str(format_)))
         if isinstance(out_file, six.string_types):
             logger.debug("Writing namelist to: {}".format(out_file))
             flag = 'a' if append else 'w'
             with open(out_file, flag) as file_obj:
-                if format_ == 'nuopc':
-                    self._write_nuopc(file_obj, groups, sorted_groups=sorted_groups, skip_comps=skip_comps)
-                else:
-                    self._write(file_obj, groups, format_, sorted_groups=sorted_groups)
+                self._write(file_obj, groups, format_, sorted_groups=sorted_groups)
         else:
             logger.debug("Writing namelist to file object")
-            if format_ == 'nuopc':
-                self._write_nuopc(out_file, groups, sorted_groups=sorted_groups, skip_comps=skip_comps)
-            else:
-                self._write(out_file, groups, format_, sorted_groups=sorted_groups)
+            self._write(out_file, groups, format_, sorted_groups=sorted_groups)
 
     def _write(self, out_file, groups, format_, sorted_groups):
         """Unwrapped version of `write` assuming that a file object is input."""
@@ -1211,7 +1206,24 @@ class Namelist(object):
             if format_ == 'nmlcontents':
                 out_file.write("\n")
 
-    def _write_nuopc(self, out_file, groups, sorted_groups, skip_comps):
+    def write_nuopc(self, out_file, groups=None, sorted_groups=True):
+        """Write a nuopc config file out_file
+
+        As with `parse`, the `out_file` argument can be either a file name, or a
+        file object with a `write` method that accepts unicode. If specified,
+        the `groups` argument specifies a subset of all groups to write out.
+        """
+        if isinstance(out_file, six.string_types):
+            logger.debug("Writing nuopc config file to: {}".format(out_file))
+            flag = 'w'
+            with open(out_file, flag) as file_obj:
+                self._write_nuopc(file_obj, groups, sorted_groups=sorted_groups)
+        else:
+            logger.debug("Writing nuopc config data to file object")
+            self._write_nuopc(out_file, groups, sorted_groups=sorted_groups)
+
+
+    def _write_nuopc(self, out_file,  groups, sorted_groups):
         """Unwrapped version of `write` assuming that a file object is input."""
         if groups is None:
             groups = self._groups.keys()
@@ -1230,11 +1242,6 @@ class Namelist(object):
             group = self._groups[group_name]
             for name in sorted(group.keys()):
                 values = group[name]
-
-                if "component_list" in name:
-                    for skip_comp in skip_comps:
-                        if skip_comp in values[0]:
-                            values[0] = values[0].replace(skip_comp,"")
 
                 # @ is used in a namelist to put the same namelist variable in multiple groups
                 # in the write phase, all characters in the namelist variable name after

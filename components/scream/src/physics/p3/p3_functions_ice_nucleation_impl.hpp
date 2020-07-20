@@ -9,9 +9,11 @@ namespace p3 {
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::ice_nucleation(const Spack& temp, const Spack& inv_rho, const Spack& nitot, const Spack& naai,
-                 const Spack& supi, const Scalar& odt, const bool& log_predictNc,
-                 Spack& qinuc, Spack& ninuc)
+::ice_nucleation(
+  const Spack& temp, const Spack& inv_rho, const Spack& nitot, const Spack& naai,
+  const Spack& supi, const Scalar& odt, const bool& log_predictNc,
+  Spack& qinuc, Spack& ninuc,
+  const Smask& context)
 {
    constexpr Scalar nsmall  = C::NSMALL;
    constexpr Scalar tmelt   = C::Tmelt;
@@ -23,8 +25,8 @@ void Functions<S,D>
    const auto t_lt_icenuct = temp < icenuct;
    const auto supi_ge_005 = supi >= 0.05;
 
-   const auto any_if_log     = t_lt_icenuct && supi_ge_005 && log_predictNc;
-   const auto any_if_not_log = t_lt_icenuct && supi_ge_005 && (!log_predictNc);
+   const auto any_if_log     = t_lt_icenuct && supi_ge_005 && log_predictNc && context;
+   const auto any_if_not_log = t_lt_icenuct && supi_ge_005 && (!log_predictNc) && context;
 
    Spack dum{0.0}, N_nuc{0.0}, Q_nuc{0.0};
 
@@ -35,7 +37,7 @@ void Functions<S,D>
 
      N_nuc = pack::max(zero, (dum-nitot)*odt);
 
-     const auto n_nuc_ge_nsmall = N_nuc >= nsmall;
+     const auto n_nuc_ge_nsmall = N_nuc >= nsmall && context;
 
      if (n_nuc_ge_nsmall.any()) {
        Q_nuc = pack::max(zero, (dum-nitot)*mi0*odt);

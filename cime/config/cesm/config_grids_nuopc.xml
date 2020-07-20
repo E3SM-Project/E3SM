@@ -3,6 +3,12 @@
 <gridmaps driver="nuopc">
 
     <!--- atm to ocean and ocean to atm mapping files -->
+    <gridmap atm_grid="0.9x1.25" ocn_grid="gx1v7">
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gx1v7_aave.151008.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gx1v7_blin.151008.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gx1v7_patc.151008.nc</map>
+    </gridmap>
+
     <gridmap atm_grid="T62" ocn_grid="tx0.66v1">
       <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/T62/map_T62_TO_tx0.66v1_aave.190314.nc</map>
       <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/T62/map_T62_TO_tx0.66v1_blin.190314.nc</map>
@@ -110,16 +116,17 @@
       <map name="LND2ATM_SMAPNAME">cpl/gridmaps/fv0.23x0.31/map_fv0.23x0.31_to_T341_aave_110413.nc</map>
     </gridmap>
 
+    <gridmap atm_grid="0.9x1.25" wav_grid="ww3a">
+      <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_ww3a_bilin.160324.nc</map>
+    </gridmap>
     <gridmap atm_grid="T31" wav_grid="ww3a">
       <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/T31/map_T31_TO_ww3a_bilin_131104.nc</map>
     </gridmap>
-
     <gridmap atm_grid="T62" wav_grid="ww3a">
       <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/T62/map_T62_TO_ww3a_bilin.150617.nc</map>
     </gridmap>
-
     <gridmap atm_grid="TL319" wav_grid="ww3a">
-          <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/TL319/map_TL319_TO_ww3a_bilin.170707.nc</map>
+      <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/TL319/map_TL319_TO_ww3a_bilin.170707.nc</map>
     </gridmap>
 
   </gridmaps>

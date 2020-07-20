@@ -10,6 +10,8 @@ import CIME.utils
 from CIME.utils import expect, Timeout, run_cmd_no_fail, safe_copy, CIMEError
 from CIME.XML.machines import Machines
 from CIME.test_status import *
+from CIME.provenance import save_test_success
+from CIME.case.case import Case
 
 SIGNAL_RECEIVED           = False
 E3SM_MAIN_CDASH           = "E3SM"
@@ -436,7 +438,8 @@ def wait_for_tests(test_paths,
                    cdash_build_group=CDASH_DEFAULT_BUILD_GROUP,
                    timeout=None,
                    force_log_upload=False,
-                   no_run=False):
+                   no_run=False,
+                   update_success=False):
 ###############################################################################
     # Set up signal handling, we want to print results before the program
     # is terminated
@@ -451,6 +454,13 @@ def wait_for_tests(test_paths,
         logging.info("Test '{}' finished with status '{}'".format(test_name, test_status))
         logging.info("    Path: {}".format(test_path))
         all_pass &= test_status == TEST_PASS_STATUS
+
+        if update_success:
+            caseroot = os.path.dirname(test_data[0])
+            with Case(caseroot, read_only=True) as case:
+                srcroot = case.get_value("CIMEROOT")
+                baseline_root = case.get_value("BASELINE_ROOT")
+                save_test_success(baseline_root, srcroot, test_name, test_status in [TEST_PASS_STATUS, NAMELIST_FAIL_STATUS])
 
     if cdash_build_name:
         create_cdash_xml(test_results, cdash_build_name, cdash_project, cdash_build_group, force_log_upload)

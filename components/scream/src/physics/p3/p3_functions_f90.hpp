@@ -1,8 +1,8 @@
 #ifndef SCREAM_P3_FUNCTIONS_F90_HPP
 #define SCREAM_P3_FUNCTIONS_F90_HPP
 
-#include "share/util/scream_utils.hpp"
-#include "share/scream_types.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/scream_types.hpp"
 
 #include "p3_functions.hpp"
 
@@ -187,7 +187,7 @@ extern "C"{
                               Real* qcacc, Real* qrevp, Real* qcaut,
                               Real* ncacc, Real* ncslf, Real* ncautc,
                               Real* nrslf, Real* nrevp, Real* ncautr,
-                              Real* qcnuc, Real* ncnuc, Real* qisub,
+                              Real* qisub,
                               Real* nrshdr, Real* qcheti, Real* qrcol,
                               Real* qcshd, Real* qimlt, Real* qccol,
                               Real* qrheti, Real* nimlt, Real* nccol,
@@ -220,7 +220,7 @@ extern "C"{
 struct CloudWaterConservationData
 {
   // inputs
-  Real qc, qcnuc, dt;
+  Real qc, dt;
 
   //output
   Real qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep;
@@ -229,7 +229,7 @@ struct CloudWaterConservationData
 void cloud_water_conservation(CloudWaterConservationData& d);
 
 extern "C"{
-  void cloud_water_conservation_f(Real qc, Real qcnuc, Real dt, Real* qcaut, Real* qcacc, Real* qccol,
+  void cloud_water_conservation_f(Real qc, Real dt, Real* qcaut, Real* qcacc, Real* qccol,
     Real* qcheti, Real* qcshd, Real* qiberg, Real* qisub, Real* qidep);
 }
 
@@ -440,7 +440,7 @@ Real subgrid_variance_scaling(SubgridVarianceScalingData& d);
 extern "C"{
   Real subgrid_variance_scaling_f(Real relvar,Real expon);
 }
-  
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct GetCloudDsd2Data
@@ -824,7 +824,7 @@ Real lcldm, Real rcldm, Real qvs, Real ab, Real epsr, Real qv, Real* qrevp, Real
 struct P3UpdatePrognosticLiqData
 {
   // Inputs
-  Real qcacc, ncacc, qcaut, ncautc, qcnuc, ncautr, ncslf, qrevp, nrevp, nrslf;
+  Real qcacc, ncacc, qcaut, ncautc, ncautr, ncslf, qrevp, nrevp, nrslf;
 
   bool log_predictNc;
 
@@ -838,7 +838,7 @@ void update_prognostic_liquid(P3UpdatePrognosticLiqData& d);
 
 extern "C"{
 
-void update_prognostic_liquid_f( Real qcacc, Real ncacc, Real qcaut, Real ncautc, Real qcnuc, Real ncautr,
+void update_prognostic_liquid_f( Real qcacc, Real ncacc, Real qcaut, Real ncautc, Real ncautr,
 Real ncslf, Real  qrevp, Real nrevp, Real nrslf , bool log_predictNc,
 Real inv_rho, Real exner, Real xxlv, Real dt, Real* th, Real* qv,
 Real* qc, Real* nc, Real* qr, Real* nr);
@@ -973,25 +973,6 @@ void ice_nucleation_f(Real temp, Real inv_rho, Real nitot, Real naai,
                       Real* qinuc, Real* ninuc);
 }
 
-struct DropletActivationData
-{
-  // Inputs
-  Real temp, pres, qv, qc, inv_rho, sup, xxlv, npccn, odt;
-
-  bool log_predictNc;
-
-  // In/Outputs
-  Real qcnuc, ncnuc;
-};
-void droplet_activation(DropletActivationData& d);
-
-extern "C" {
-void droplet_activation_f(Real temp, Real pres, Real qv, Real qc,
-                          Real inv_rho, Real sup, Real xxlv, Real npccn,
-                          bool log_predictNc, Real odt,
-                          Real* qcnuc, Real* ncnuc);
-}
-
 struct IceWetGrowthData
 {
   // Inputs
@@ -1095,16 +1076,16 @@ void calculate_incloud_mixingratios_f(Real qc, Real qr, Real qitot, Real qirim, 
 
 struct P3MainPreLoopData
 {
-  static constexpr size_t NUM_ARRAYS = 40;
+  static constexpr size_t NUM_ARRAYS = 39;
 
   // Inputs
   Int kts, kte, kbot, ktop, kdir;
   bool log_predictNc;
   Real dt;
-  Real* pres, *pdel, *dzq, *npccn, *exner, *inv_exner, *inv_lcldm, *inv_icldm, *inv_rcldm, *xxlv, *xxls, *xlf;
+  Real* pres, *pdel, *dzq, *ncnuc, *exner, *inv_exner, *inv_lcldm, *inv_icldm, *inv_rcldm, *xxlv, *xxls, *xlf;
 
   // In/out
-  Real* t, *rho, *inv_rho, *qvs, *qvi, *sup, *supi, *rhofacr, *rhofaci,
+  Real* t, *rho, *inv_rho, *qvs, *qvi, *supi, *rhofacr, *rhofaci,
     *acn, *qv, *th, *qc, *nc, *qr, *nr, *qitot, *nitot, *qirim, *birim, *qc_incld, *qr_incld, *qitot_incld,
     *qirim_incld, *nc_incld, *nr_incld, *nitot_incld, *birim_incld;
 
@@ -1134,12 +1115,201 @@ void p3_main_pre_main_loop_f(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
   bool log_predictNc,
   Real dt,
-  Real* pres, Real* pdel, Real* dzq, Real* npccn, Real* exner, Real* inv_exner, Real* inv_lcldm, Real* inv_icldm, Real* inv_rcldm, Real* xxlv, Real* xxls, Real* xlf,
-  Real* t, Real* rho, Real* inv_rho, Real* qvs, Real* qvi, Real* sup, Real* supi, Real* rhofacr, Real* rhofaci,
+  Real* pres, Real* pdel, Real* dzq, Real* ncnuc, Real* exner, Real* inv_exner, Real* inv_lcldm, Real* inv_icldm, Real* inv_rcldm, Real* xxlv, Real* xxls, Real* xlf,
+  Real* t, Real* rho, Real* inv_rho, Real* qvs, Real* qvi, Real* supi, Real* rhofacr, Real* rhofaci,
   Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* qc_incld, Real* qr_incld, Real* qitot_incld,
   Real* qirim_incld, Real* nc_incld, Real* nr_incld, Real* nitot_incld, Real* birim_incld,
   bool* log_nucleationPossible, bool* log_hydrometeorsPresent);
 
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct P3MainLoopData
+{
+  static constexpr size_t NUM_ARRAYS = 62;
+
+  // Inputs
+  Int kts, kte, kbot, ktop, kdir;
+  bool log_predictNc;
+  Real dt, odt;
+  Real* pres, *pdel, *dzq, *ncnuc, *exner, *inv_exner, *inv_lcldm, *inv_icldm, *inv_rcldm, *naai, *qc_relvar, *icldm, *lcldm, *rcldm;
+
+  // In/out
+  Real* t, *rho, *inv_rho, *qvs, *qvi, *supi, *rhofacr, *rhofaci, *acn,
+    *qv, *th, *qc, *nc, *qr, *nr, *qitot, *nitot, *qirim, *birim, *xxlv, *xxls, *xlf, *qc_incld, *qr_incld,
+    *qitot_incld, *qirim_incld, *nc_incld, *nr_incld, *nitot_incld, *birim_incld, *mu_c, *nu, *lamc, *cdist, *cdist1,
+    *cdistr, *mu_r, *lamr, *logn0r, *cmeiout, *prain, *nevapr, *prer_evap, *vap_liq_exchange,
+    *vap_ice_exchange, *liq_ice_exchange, *pratot, *prctot;
+
+  bool log_hydrometeorsPresent;
+
+  P3MainLoopData(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
+                     bool log_predictNc_, Real dt_,
+                     const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+
+  // deep copy
+  P3MainLoopData(const P3MainLoopData& rhs);
+
+  Int nk() const { return m_nk; }
+
+ private:
+  // Internals
+  Int m_nk;
+  std::vector<Real> m_data;
+};
+
+void p3_main_main_loop(P3MainLoopData& d);
+
+extern "C" {
+
+void p3_main_main_loop_f(
+  Int kts, Int kte, Int kbot, Int ktop, Int kdir, bool log_predictNc, Real dt, Real odt,
+  Real* pres, Real* pdel, Real* dzq, Real* ncnuc, Real* exner, Real* inv_exner, Real* inv_lcldm, Real* inv_icldm, Real* inv_rcldm, Real* naai, Real* qc_relvar, Real* icldm, Real* lcldm, Real* rcldm,
+  Real* t, Real* rho, Real* inv_rho, Real* qvs, Real* qvi, Real* supi, Real* rhofacr, Real* rhofaci, Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot,
+  Real* qirim, Real* birim, Real* xxlv, Real* xxls, Real* xlf, Real* qc_incld, Real* qr_incld, Real* qitot_incld, Real* qirim_incld, Real* nc_incld, Real* nr_incld,
+  Real* nitot_incld, Real* birim_incld, Real* mu_c, Real* nu, Real* lamc, Real* cdist, Real* cdist1, Real* cdistr, Real* mu_r, Real* lamr, Real* logn0r, Real* cmeiout, Real* prain,
+  Real* nevapr, Real* prer_evap, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* liq_ice_exchange, Real* pratot,
+  Real* prctot, bool* log_hydrometeorsPresent);
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct P3MainPostLoopData
+{
+  static constexpr size_t NUM_ARRAYS = 32;
+
+  // Inputs
+  Int kts, kte, kbot, ktop, kdir;
+  Real* exner, *lcldm, *rcldm;
+
+  // In/out
+  Real* rho, *inv_rho, *rhofaci,
+    *qv, *th, *qc, *nc, *qr, *nr, *qitot, *nitot, *qirim, *birim, *xxlv, *xxls,
+    *mu_c, *nu, *lamc, *mu_r,
+    *lamr, *vap_liq_exchange,
+    *ze_rain, *ze_ice, *diag_vmi, *diag_effi, *diag_di, *diag_rhoi, *diag_ze, *diag_effc;
+
+  P3MainPostLoopData(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
+                     const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+
+  // deep copy
+  P3MainPostLoopData(const P3MainPostLoopData& rhs);
+
+  Int nk() const { return m_nk; }
+
+ private:
+  // Internals
+  Int m_nk;
+  std::vector<Real> m_data;
+};
+
+void p3_main_post_main_loop(P3MainPostLoopData& d);
+
+extern "C" {
+
+void p3_main_post_main_loop_f(
+  Int kts, Int kte, Int kbot, Int ktop, Int kdir,
+  Real* exner, Real* lcldm, Real* rcldm,
+  Real* rho, Real* inv_rho, Real* rhofaci, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* xxlv, Real* xxls,
+  Real* mu_c, Real* nu, Real* lamc, Real* mu_r, Real* lamr, Real* vap_liq_exchange,
+  Real*  ze_rain, Real* ze_ice, Real* diag_vmi, Real* diag_effi, Real* diag_di, Real* diag_rhoi, Real* diag_ze, Real* diag_effc);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct P3MainData
+{
+  static constexpr size_t NUM_ARRAYS = 41;
+  static constexpr size_t NUM_INPUT_ARRAYS = 20;
+
+  // Inputs
+  Int its, ite, kts, kte, it;
+  Real* pres, *dzq, *ncnuc, *naai, *pdel, *exner, *icldm, *lcldm, *rcldm, *qc_relvar;
+  Real dt;
+  bool log_predictNc;
+
+  // In/out
+  Real* qc, *nc, *qr, *nr, *qitot, *qirim, *nitot, *birim, *qv, *th;
+
+  // Out
+  Real* diag_ze, *diag_effc, *diag_effi, *diag_vmi, *diag_di, *diag_rhoi, *mu_c, *lamc, *cmeiout, *prain, *nevapr, *prer_evap, *pratot, *prctot, *liq_ice_exchange, *vap_liq_exchange, *vap_ice_exchange, *rflx, *sflx, *prt_liq, *prt_sol;
+
+  P3MainData(Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool log_predictNc_,
+             const std::array< std::pair<Real, Real>, NUM_INPUT_ARRAYS >& ranges);
+
+  template <util::TransposeDirection::Enum D>
+  void transpose()
+  {
+    P3MainData d_trans(*this);
+
+    util::transpose<D>(pres, d_trans.pres, m_ni, m_nk);
+    util::transpose<D>(dzq, d_trans.dzq, m_ni, m_nk);
+    util::transpose<D>(ncnuc, d_trans.ncnuc, m_ni, m_nk);
+    util::transpose<D>(naai, d_trans.naai, m_ni, m_nk);
+    util::transpose<D>(pdel, d_trans.pdel, m_ni, m_nk);
+    util::transpose<D>(exner, d_trans.exner, m_ni, m_nk);
+    util::transpose<D>(icldm, d_trans.icldm, m_ni, m_nk);
+    util::transpose<D>(lcldm, d_trans.lcldm, m_ni, m_nk);
+    util::transpose<D>(rcldm, d_trans.rcldm, m_ni, m_nk);
+    util::transpose<D>(qc_relvar, d_trans.qc_relvar, m_ni, m_nk);
+    util::transpose<D>(qc, d_trans.qc, m_ni, m_nk);
+    util::transpose<D>(nc, d_trans.nc, m_ni, m_nk);
+    util::transpose<D>(qr, d_trans.qr, m_ni, m_nk);
+    util::transpose<D>(nr, d_trans.nr, m_ni, m_nk);
+    util::transpose<D>(qitot, d_trans.qitot, m_ni, m_nk);
+    util::transpose<D>(qirim, d_trans.qirim, m_ni, m_nk);
+    util::transpose<D>(nitot, d_trans.nitot, m_ni, m_nk);
+    util::transpose<D>(birim, d_trans.birim, m_ni, m_nk);
+    util::transpose<D>(qv, d_trans.qv, m_ni, m_nk);
+    util::transpose<D>(th, d_trans.th, m_ni, m_nk);
+    util::transpose<D>(diag_ze, d_trans.diag_ze, m_ni, m_nk);
+    util::transpose<D>(diag_effc, d_trans.diag_effc, m_ni, m_nk);
+    util::transpose<D>(diag_effi, d_trans.diag_effi, m_ni, m_nk);
+    util::transpose<D>(diag_vmi, d_trans.diag_vmi, m_ni, m_nk);
+    util::transpose<D>(diag_di, d_trans.diag_di, m_ni, m_nk);
+    util::transpose<D>(diag_rhoi, d_trans.diag_rhoi, m_ni, m_nk);
+    util::transpose<D>(mu_c, d_trans.mu_c, m_ni, m_nk);
+    util::transpose<D>(lamc, d_trans.lamc, m_ni, m_nk);
+    util::transpose<D>(cmeiout, d_trans.cmeiout, m_ni, m_nk);
+    util::transpose<D>(prain, d_trans.prain, m_ni, m_nk);
+    util::transpose<D>(nevapr, d_trans.nevapr, m_ni, m_nk);
+    util::transpose<D>(prer_evap, d_trans.prer_evap, m_ni, m_nk);
+    util::transpose<D>(pratot, d_trans.pratot, m_ni, m_nk);
+    util::transpose<D>(prctot, d_trans.prctot, m_ni, m_nk);
+    util::transpose<D>(liq_ice_exchange, d_trans.liq_ice_exchange, m_ni, m_nk);
+    util::transpose<D>(vap_liq_exchange, d_trans.vap_liq_exchange, m_ni, m_nk);
+    util::transpose<D>(vap_ice_exchange, d_trans.vap_ice_exchange, m_ni, m_nk);
+    util::transpose<D>(rflx, d_trans.rflx, m_ni, m_nk+1);
+    util::transpose<D>(sflx, d_trans.sflx, m_ni, m_nk+1);
+
+    *this = std::move(d_trans);
+  }
+
+  // deep copy
+  P3MainData(const P3MainData& rhs);
+
+  P3MainData& operator=(P3MainData&&) = default;
+
+  Int nt() const { return m_nt; }
+
+ private:
+  // Internals
+  Int m_ni, m_nk, m_nt;
+  std::vector<Real> m_data;
+};
+
+void p3_main(P3MainData& d);
+
+extern "C" {
+
+void p3_main_f(
+  Real* qc, Real* nc, Real* qr, Real* nr, Real* th, Real* qv, Real dt, Real* qitot, Real* qirim, Real* nitot, Real* birim,
+  Real* pres, Real* dzq, Real* ncnuc, Real* naai, Real* qc_relvar, Int it, Real* prt_liq, Real* prt_sol, Int its, Int ite, Int kts, Int kte, Real* diag_ze, Real* diag_effc,
+  Real* diag_effi, Real* diag_vmi, Real* diag_di, Real* diag_rhoi, bool log_predictNc,
+  Real* pdel, Real* exner, Real* cmeiout, Real* prain, Real* nevapr, Real* prer_evap, Real* rflx, Real* sflx, Real* rcldm, Real* lcldm, Real* icldm,
+  Real* pratot, Real* prctot, Real* mu_c, Real* lamc, Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

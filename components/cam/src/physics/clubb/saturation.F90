@@ -1,5 +1,5 @@
 !-------------------------------------------------------------------------
-!$Id$
+!$Id: saturation.F90 6849 2014-04-22 21:52:30Z charlass@uwm.edu $
 !===============================================================================
 module saturation
 
@@ -71,7 +71,7 @@ module saturation
     22723.592_core_rknd, 23779.273_core_rknd, 24876.709_core_rknd, 26017.258_core_rknd,         &
     27202.3_core_rknd, 28433.256_core_rknd, 29711.578_core_rknd, 31038.766_core_rknd /
 
-!$omp threadprivate( svp_liq_lookup_table )
+!$omp threadprivate(svp_liq_lookup_table)
 
   contains
 
@@ -126,7 +126,7 @@ module saturation
     !
     ! rs = (epsilon) * [ esat / ( p - esat ) ];
     ! where epsilon = R_d / R_v
-    sat_mixrat_liq = ep * esatv / ( p_in_Pa - esatv )
+    sat_mixrat_liq = ep * ( esatv / ( p_in_Pa - esatv ) )
 #endif
 
     end if
@@ -324,13 +324,11 @@ module saturation
 
     ! Relative error norm expansion (-85 to 70 deg_C) from
     ! Table 4 of pp. 1511 of Flatau et al.
-    !real( kind = core_rknd ), dimension(9), parameter :: a = & 
-    !100._core_rknd * &
-    !  Commented out because the form has been redone, causing these number to no longer be needed,
-    !  leaving them in for now for reference.
-    !         (/ 6.11583699_core_rknd,      0.444606896_core_rknd,     0.143177157E-01_core_rknd, &
-    !         0.264224321E-03_core_rknd, 0.299291081E-05_core_rknd, 0.203154182E-07_core_rknd, & 
-    !         0.702620698E-10_core_rknd, 0.379534310E-13_core_rknd,-0.321582393E-15_core_rknd /)
+    real( kind = core_rknd ), dimension(9), parameter :: a = & 
+    100._core_rknd * &
+             (/ 6.11583699_core_rknd,      0.444606896_core_rknd,     0.143177157E-01_core_rknd, &
+             0.264224321E-03_core_rknd, 0.299291081E-05_core_rknd, 0.203154182E-07_core_rknd, & 
+             0.702620698E-10_core_rknd, 0.379534310E-13_core_rknd,-0.321582393E-15_core_rknd /)
 
     real( kind = core_rknd ), parameter :: min_T_in_C = -85._core_rknd ! [deg_C]
 
@@ -341,7 +339,7 @@ module saturation
     real( kind = core_rknd ) :: esat  ! Saturation vapor pressure over water [Pa]
 
     ! Local Variables
-    real( kind = core_rknd ) :: T_in_C, T_in_C_sqd
+    real( kind = core_rknd ) :: T_in_C
 !   integer :: i ! Loop index
 
     ! ---- Begin Code ----
@@ -369,25 +367,8 @@ module saturation
     ! convective cases I noticed that absolute temperature often dips below
     ! -50 deg_C at higher altitudes, where the 6th order approximation is
     ! not accurate.  -dschanen 20 Nov 2008
-    !esat = a(1) + T_in_C*( a(2) + T_in_C*( a(3) + T_in_C*( a(4) + T_in_C &
-    !*( a(5) + T_in_C*( a(6) + T_in_C*( a(7) + T_in_C*( a(8) + T_in_C*( a(9) ) ) ) ) ) ) ) )
-
-
-    ! Factoring the polynomial above and changing it into this form allows the cpu
-    ! to complete the calculations out of order. This is because modern cpus can complete
-    ! multiple instructions at once if they do not depend on eachother, in the above case
-    ! each instruction relies on the result of the last. In this version however, the terms
-    ! in the parentheses could potentially be calculated in parallel by different execution
-    ! units in the cpu, then only when those terms are being multiplied together do the 
-    ! instructions need to be done one at a time. See clubb issue 834 for more info.
-    !   - Gunther Huebler, Aug 2018
-    T_in_C_sqd = T_in_C**2
-
-    esat = -3.21582393e-14_core_rknd * ( T_in_C - 646.5835252598777_core_rknd ) &
-            * ( T_in_C + 90.72381630364440_core_rknd ) &
-            * ( T_in_C_sqd + 111.0976961559954_core_rknd * T_in_C + 6459.629194243118_core_rknd ) &
-            * ( T_in_C_sqd + 152.3131930092453_core_rknd * T_in_C + 6499.774954705265_core_rknd ) &
-            * ( T_in_C_sqd + 174.4279584934021_core_rknd * T_in_C + 7721.679732114084_core_rknd )
+    esat = a(1) + T_in_C*( a(2) + T_in_C*( a(3) + T_in_C*( a(4) + T_in_C &
+    *( a(5) + T_in_C*( a(6) + T_in_C*( a(7) + T_in_C*( a(8) + T_in_C*( a(9) ) ) ) ) ) ) ) )
 
     return
   end function sat_vapor_press_liq_flatau
@@ -432,7 +413,7 @@ module saturation
 ! Description:
 ! copy from "GFDL polysvp.F90" 
 !  Compute saturation vapor pressure with respect to liquid  by using 
-! function from Goff and Gratch (1946)
+! function from Goff and Gatch (1946)
 
 !  Polysvp returned in units of pa.
 !  T_in_K  is input in units of K.
@@ -444,31 +425,19 @@ module saturation
     implicit none
 
     ! Input Variables
-    real( kind = core_rknd ), intent(in) :: T_in_K   ! Absolute temperature   [K]
+    real( kind = core_rknd ), intent(in) :: T_in_K   ! Temperature   [K]
 
     ! Output Variables
     real( kind = core_rknd ) :: esat  ! Saturation vapor pressure over water [Pa]
 
-    ! Local Variables
-    real( kind = core_rknd ), parameter :: & 
-       min_T_in_K = 203.15_core_rknd ! Lowest temperature at which Goff-Gratch is valid [K]
-
-    real( kind = core_rknd ) :: & 
-       T_in_K_clipped        ! Absolute temperature with minimum threshold applied [K]
-
-    ! Since the Goff-Gratch approximation is valid only down to -70 degrees Celsius,
-    !   we threshold the temperature.  This will yield a minimal saturation at
-    !   cold temperatures.
-    T_in_K_clipped = max( min_T_in_K, T_in_K )
-
-    ! Goff Gratch equation, uncertain below -70 C
+    ! Goff Gatch equation, uncertain below -70 C
       
-         esat = 10._core_rknd**(-7.90298_core_rknd*(373.16_core_rknd/T_in_K_clipped-1._core_rknd)+ &
-             5.02808_core_rknd*log10(373.16_core_rknd/T_in_K_clipped)- &
+         esat = 10._core_rknd**(-7.90298_core_rknd*(373.16_core_rknd/T_in_K-1._core_rknd)+ &
+             5.02808_core_rknd*log10(373.16_core_rknd/T_in_K)- &
              1.3816e-7_core_rknd*(10._core_rknd**(11.344_core_rknd &
-               *(1._core_rknd-T_in_K_clipped/373.16_core_rknd))-1._core_rknd)+ &
+               *(1._core_rknd-T_in_K/373.16_core_rknd))-1._core_rknd)+ &
              8.1328e-3_core_rknd*(10._core_rknd**(-3.49149_core_rknd &
-               *(373.16_core_rknd/T_in_K_clipped-1._core_rknd))-1._core_rknd)+ &
+               *(373.16_core_rknd/T_in_K-1._core_rknd))-1._core_rknd)+ &
              log10(1013.246_core_rknd))*100._core_rknd ! Known magic number
 
     return
@@ -695,8 +664,8 @@ module saturation
   elemental function sat_vapor_press_ice_gfdl( T_in_K ) result ( esati )
 ! Description:
 ! copy from "GFDL polysvp.F90" 
-!  Compute saturation vapor pressure with respect to liquid by using 
-! function from Goff and Gratch (1946)
+!  Compute saturation vapor pressure with respect to liquid  by using 
+! function from Goff and Gatch (1946)
 ! 
 !  Polysvp returned in units of pa.
 !  T_in_K is input in units of K.
@@ -708,29 +677,17 @@ module saturation
     implicit none
 
     ! Input Variables
-    real( kind = core_rknd ), intent(in) :: T_in_K   ! Absolute temperature   [K]
+    real( kind = core_rknd ), intent(in) :: T_in_K   ! Temperature   [K]
 
     ! Output Variables
     real( kind = core_rknd ) :: esati  ! Saturation vapor pressure over ice [Pa]
 
-    ! Local Variables
-    real( kind = core_rknd ), parameter :: &
-       min_T_in_K = 173.15_core_rknd ! Lowest temperature at which Goff-Gratch is valid [K]
-
-    real( kind = core_rknd ) :: &
-       T_in_K_clipped        ! Absolute temperature with minimum threshold applied [K]
-
-    ! Since the Goff-Gratch ice approximation is valid only down to -100 degrees Celsius,
-    !   we threshold the temperature.  This will yield a minimal saturation at
-    !   cold temperatures.
-    T_in_K_clipped = max( min_T_in_K, T_in_K )
-
-    ! Goff Gratch equation (good down to -100 C)
+    ! Goff Gatch equation (good down to -100 C)
 
     esati = 10._core_rknd**(-9.09718_core_rknd* &
-            (273.16_core_rknd/T_in_K_clipped-1._core_rknd)-3.56654_core_rknd* &
-          log10(273.16_core_rknd/T_in_K_clipped)+0.876793_core_rknd* &
-            (1._core_rknd-T_in_K_clipped/273.16_core_rknd)+ &
+            (273.16_core_rknd/T_in_k-1._core_rknd)-3.56654_core_rknd* &
+          log10(273.16_core_rknd/T_in_k)+0.876793_core_rknd* &
+            (1._core_rknd-T_in_k/273.16_core_rknd)+ &
           log10(6.1071_core_rknd))*100._core_rknd ! Known magic number
 
     return

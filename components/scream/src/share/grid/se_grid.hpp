@@ -2,8 +2,8 @@
 #define SCREAM_SE_GRID_HPP
 
 #include "share/grid/abstract_grid.hpp"
-#include "share/scream_types.hpp"
-#include "share/scream_assert.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/scream_assert.hpp"
 
 namespace scream
 {

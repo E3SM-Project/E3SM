@@ -155,6 +155,7 @@ contains
     logical                          :: samegrid_go   ! .true. => samegrid ocean and glc
     logical                          :: esmf_map_flag ! .true. => use esmf for mapping
     logical                          :: iamroot_CPLID ! .true. => CPLID masterproc
+    logical                          :: do_hist_l2x1yrg ! .true. => create aux files: l2x 1yr glc forcings
     character(CL)                    :: lnd_gnam      ! lnd grid
     character(CL)                    :: glc_gnam      ! glc grid
     character(CL)                    :: ocn_gnam      ! ocn grid
@@ -170,6 +171,7 @@ contains
     call seq_infodata_getData(infodata , &
          esmf_map_flag=esmf_map_flag   , &
          glc_present=glc_present       , &
+         histaux_l2x1yrg=do_hist_l2x1yrg, &
          lnd_gnam=lnd_gnam             , &
          glc_gnam=glc_gnam             , &
          ocn_gnam=ocn_gnam)
@@ -182,27 +184,32 @@ contains
 
     smb_renormalize = prep_glc_do_renormalize_smb(infodata)
 
+    if ((glc_present .and. lnd_c2_glc) .or. do_hist_l2x1yrg) then
+
+       l2x_lx => component_get_c2x_cx(lnd(1))
+       lsize_l = mct_aVect_lsize(l2x_lx)
+
+       allocate(l2gacc_lx(num_inst_lnd))
+       do eli = 1,num_inst_lnd
+          call mct_aVect_init(l2gacc_lx(eli), rList=seq_flds_l2x_fields_to_glc, lsize=lsize_l)
+          call mct_aVect_zero(l2gacc_lx(eli))
+       end do
+       l2gacc_lx_cnt = 0
+    end if
+
     if (glc_present .and. lnd_c2_glc) then
 
        call seq_comm_getData(CPLID, &
             mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
 
-       l2x_lx => component_get_c2x_cx(lnd(1))
-       lsize_l = mct_aVect_lsize(l2x_lx)
-
        x2g_gx => component_get_x2c_cx(glc(1))
        lsize_g = mct_aVect_lsize(x2g_gx)
 
        allocate(l2x_gx(num_inst_lnd))
-       allocate(l2gacc_lx(num_inst_lnd))
        do eli = 1,num_inst_lnd
           call mct_aVect_init(l2x_gx(eli), rList=seq_flds_x2g_fields, lsize=lsize_g)
           call mct_aVect_zero(l2x_gx(eli))
-
-          call mct_aVect_init(l2gacc_lx(eli), rList=seq_flds_l2x_fields_to_glc, lsize=lsize_l)
-          call mct_aVect_zero(l2gacc_lx(eli))
        enddo
-       l2gacc_lx_cnt = 0
 
        if (lnd_c2_glc) then
 
@@ -464,7 +471,7 @@ contains
   !================================================================================================
 
 
-  subroutine prep_glc_accum_avg(timer)
+  subroutine prep_glc_accum_avg(timer, lnd2glc_averaged_now)
 
     !---------------------------------------------------------------
     ! Description
@@ -476,6 +483,7 @@ contains
     !
     ! Arguments
     character(len=*), intent(in) :: timer
+    logical, intent(inout) :: lnd2glc_averaged_now ! Set to .true. if lnd2glc averages were taken this timestep (otherwise left unchanged)
     !
     ! Local Variables
     integer :: eli, egi
@@ -486,6 +494,9 @@ contains
 
     ! Accumulation for LND
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
+    if (l2gacc_lx_cnt > 0) then
+       lnd2glc_averaged_now = .true.
+    end if
     if (l2gacc_lx_cnt > 1) then
        do eli = 1,num_inst_lnd
           call mct_avect_avg(l2gacc_lx(eli), l2gacc_lx_cnt)

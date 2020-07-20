@@ -37,8 +37,6 @@ contains
       real(r8), intent(out) :: tint(:,:)
       real(r8), intent(out) :: pmid(:,:)
       real(r8), intent(out) :: pint(:,:)
-
-      real(r8) :: tint_cam(pcols,pver+1)
       integer :: ncol
 
       ncol = state%ncol
@@ -49,8 +47,7 @@ contains
       pint(1:ncol,ktop:kbot+1) = state%pint(1:ncol,1:pver+1)
 
       ! Calculate interface temperature explicitly
-      call set_interface_temperature(state, cam_in, tint_cam(1:ncol,1:pver+1))
-      tint(1:ncol,ktop:kbot+1) = tint_cam(1:ncol,1:pver+1)
+      call set_interface_temperature(state, cam_in, tint(1:ncol,ktop:kbot+1))
 
       ! Fill layer above model top; this is done 
       ! consistent with the RRTMG implementation

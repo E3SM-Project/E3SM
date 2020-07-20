@@ -2,10 +2,10 @@
 #define SCREAM_FIELD_HPP
 
 #include "field_header.hpp"
-#include "share/scream_types.hpp"
-#include "share/scream_kokkos_meta.hpp"
-#include "share/util/scream_std_meta.hpp"
-#include "share/util/scream_kokkos_utils.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/scream_kokkos_meta.hpp"
+#include "ekat/util/scream_std_meta.hpp"
+#include "ekat/util/scream_kokkos_utils.hpp"
 
 #include <memory>   // For std::shared_ptr
 

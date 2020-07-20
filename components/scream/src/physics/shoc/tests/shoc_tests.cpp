@@ -1,5 +1,5 @@
 #include "catch2/catch.hpp"
-#include "share/util/scream_test_utils.hpp"
+#include "ekat/util/scream_test_utils.hpp"
 #include "physics/shoc/shoc_f90.hpp"
 #include "physics/shoc/shoc_ic_cases.hpp"
 

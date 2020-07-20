@@ -1,13 +1,13 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/scream_kokkos.hpp"
-#include "share/scream_pack.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/scream_kokkos.hpp"
+#include "ekat/scream_pack.hpp"
+#include "ekat/util/scream_kokkos_utils.hpp"
+#include "ekat/util/scream_arch.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
-#include "share/util/scream_kokkos_utils.hpp"
-#include "share/util/scream_arch.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -30,7 +30,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
 
     using KTH = KokkosTypes<HostDevice>;
 
-    CloudWaterConservationData cwdc[1] = {{sp(1e-5), 0.0, sp(1.1), sp(1e-4), 0.0, 0.0, 0.0, 0.0, 0.0, sp(1.0), sp(1.0)}};
+    CloudWaterConservationData cwdc[1] = {{sp(1e-5), sp(1.1), sp(1e-4), 0.0, 0.0, 0.0, 0.0, 0.0, sp(1.0), sp(1.0)}};
 
     // Sync to device
     KTH::view_1d<CloudWaterConservationData> cwdc_host("cwdc_host", 1);
@@ -43,7 +43,6 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     // Run the lookup from a kernel and copy results back to host
     Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
       Spack qc(cwdc_device(0).qc);
-      Spack qcnuc(cwdc_device(0).qcnuc);
       Spack qcaut(cwdc_device(0).qcaut);
       Spack qcacc(cwdc_device(0).qcacc);
       Spack qccol(cwdc_device(0).qccol);
@@ -53,10 +52,9 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
       Spack qisub(cwdc_device(0).qisub);
       Spack qidep(cwdc_device(0).qidep);
 
-      Functions::cloud_water_conservation(qc, qcnuc, cwdc_device(0).dt, qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep);
+      Functions::cloud_water_conservation(qc, cwdc_device(0).dt, qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep);
 
       cwdc_device(0).qc = qc[0];
-      cwdc_device(0).qcnuc = qcnuc[0];
       cwdc_device(0).qcaut = qcaut[0];
       cwdc_device(0).qcacc = qcacc[0];
       cwdc_device(0).qccol = qccol[0];
@@ -190,78 +188,76 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
 
     using KTH = KokkosTypes<HostDevice>;
 
-    static constexpr Int max_pack_size = 16;
-    REQUIRE(Spack::n <= max_pack_size);
+    // These static asserts are important for many tests. If this test gets
+    // removed, please put these lines in another test.
+    static_assert(Spack::n <= max_pack_size,     "Unit testing infrastructure does not support this pack size (too big)");
+    static_assert(max_pack_size % Spack::n == 0, "Unit testing infrastructure does not support this pack size (does not evenly divide 16)");
 
     CloudWaterConservationData cwdc[max_pack_size] = {
-      //qc, qcnuc, cwdc_device(0).dt, qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep
-      {9.9999999999999995e-7, 0.0, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-      {6.4285714285714288e-5, 0.0, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326E-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7},
-      {0.0, 0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-      {7.1428571428571434e-5, 0.0, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7},
+      //qc, cwdc_device(0).dt, qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep
+      {9.9999999999999995e-7, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+      {6.4285714285714288e-5, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326E-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7},
+      {0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+      {7.1428571428571434e-5, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7},
 
-      {9.9999999999999995e-7, 0.0, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-      {6.4285714285714288e-5, 0.0, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326E-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7},
-      {0.0, 0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-      {7.1428571428571434e-5, 0.0, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7},
+      {9.9999999999999995e-7, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+      {6.4285714285714288e-5, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326E-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7},
+      {0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+      {7.1428571428571434e-5, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7},
 
-      {9.9999999999999995e-7, 0.0, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-      {6.4285714285714288e-5, 0.0, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326E-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7},
-      {0.0, 0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-      {7.1428571428571434e-5, 0.0, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7},
+      {9.9999999999999995e-7, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+      {6.4285714285714288e-5, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326E-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7},
+      {0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+      {7.1428571428571434e-5, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7},
 
-      {9.9999999999999995e-7, 0.0, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-      {6.4285714285714288e-5, 0.0, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326E-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7},
-      {0.0, 0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-      {7.1428571428571434e-5, 0.0, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7}
+      {9.9999999999999995e-7, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+      {6.4285714285714288e-5, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326E-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7},
+      {0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+      {7.1428571428571434e-5, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7}
     };
 
     // Sync to device
-    KTH::view_1d<CloudWaterConservationData> cwdc_host("cwdc_host", Spack::n);
-    view_1d<CloudWaterConservationData> cwdc_device("cwdc_host", Spack::n);
+    KTH::view_1d<CloudWaterConservationData> cwdc_host("cwdc_host", max_pack_size);
+    view_1d<CloudWaterConservationData> cwdc_device("cwdc_host", max_pack_size);
 
     // This copy only copies the input variables.
-    std::copy(&cwdc[0], &cwdc[0] + Spack::n, cwdc_host.data());
+    std::copy(&cwdc[0], &cwdc[0] + max_pack_size, cwdc_host.data());
     Kokkos::deep_copy(cwdc_device, cwdc_host);
 
     // Get data from fortran
-    for (Int i = 0; i < Spack::n; ++i) {
+    for (Int i = 0; i < max_pack_size; ++i) {
       cloud_water_conservation(cwdc[i]);
     }
 
-    // This copy also copies the output from the fortran function into the host view. These values
-    // are need to check the values returned from
-    std::copy(&cwdc[0], &cwdc[0] + Spack::n, cwdc_host.data());
-
     // Run the lookup from a kernel and copy results back to host
-    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+    Kokkos::parallel_for(RangePolicy(0, num_test_itrs), KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
+
       // Init pack inputs
-      Spack qc, qcnuc, qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep;
-      for (Int s = 0; s < Spack::n; ++s) {
-        qc[s] = cwdc_device(s).qc;
-        qcnuc[s] = cwdc_device(s).qcnuc;
-        qcaut[s] = cwdc_device(s).qcaut;
-        qcacc[s] = cwdc_device(s).qcacc;
-        qccol[s] = cwdc_device(s).qccol;
-        qcheti[s] = cwdc_device(s).qcheti;
-        qcshd[s] = cwdc_device(s).qcshd;
-        qiberg[s] = cwdc_device(s).qiberg;
-        qisub[s] = cwdc_device(s).qisub;
-        qidep[s] = cwdc_device(s).qidep;
+      Spack qc, qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep;
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        qc[s]     = cwdc_device(vs).qc;
+        qcaut[s]  = cwdc_device(vs).qcaut;
+        qcacc[s]  = cwdc_device(vs).qcacc;
+        qccol[s]  = cwdc_device(vs).qccol;
+        qcheti[s] = cwdc_device(vs).qcheti;
+        qcshd[s]  = cwdc_device(vs).qcshd;
+        qiberg[s] = cwdc_device(vs).qiberg;
+        qisub[s]  = cwdc_device(vs).qisub;
+        qidep[s]  = cwdc_device(vs).qidep;
       }
 
-      Functions::cloud_water_conservation(qc, qcnuc, cwdc_device(0).dt, qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep);
+      Functions::cloud_water_conservation(qc, cwdc_device(0).dt, qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep);
       // Copy results back into views
-      for (Int s = 0; s < Spack::n; ++s) {
-        cwdc_device(s).qc = qc[s];
-        cwdc_device(s).qcnuc = qcnuc[s];
-        cwdc_device(s).qcaut = qcaut[s];
-        cwdc_device(s).qcacc = qcacc[s];
-        cwdc_device(s).qccol = qccol[s];
-        cwdc_device(s).qcheti = qcheti[s];
-        cwdc_device(s).qiberg = qiberg[s];
-        cwdc_device(s).qisub = qisub[s];
-        cwdc_device(s).qidep = qidep[s];
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        cwdc_device(vs).qc     = qc[s];
+        cwdc_device(vs).qcaut  = qcaut[s];
+        cwdc_device(vs).qcacc  = qcacc[s];
+        cwdc_device(vs).qccol  = qccol[s];
+        cwdc_device(vs).qcheti = qcheti[s];
+        cwdc_device(vs).qiberg = qiberg[s];
+        cwdc_device(vs).qisub  = qisub[s];
+        cwdc_device(vs).qidep  = qidep[s];
       }
 
     });
@@ -269,16 +265,15 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     Kokkos::deep_copy(cwdc_host, cwdc_device);
 
     // Validate results
-    for (Int s = 0; s < Spack::n; ++s) {
-      REQUIRE(cwdc[s].qc == cwdc_host(s).qc);
-      REQUIRE(cwdc[s].qcnuc == cwdc_host(s).qcnuc);
-      REQUIRE(cwdc[s].qcaut == cwdc_host(s).qcaut);
-      REQUIRE(cwdc[s].qcacc == cwdc_host(s).qcacc);
-      REQUIRE(cwdc[s].qccol == cwdc_host(s).qccol);
+    for (Int s = 0; s < max_pack_size; ++s) {
+      REQUIRE(cwdc[s].qc     == cwdc_host(s).qc);
+      REQUIRE(cwdc[s].qcaut  == cwdc_host(s).qcaut);
+      REQUIRE(cwdc[s].qcacc  == cwdc_host(s).qcacc);
+      REQUIRE(cwdc[s].qccol  == cwdc_host(s).qccol);
       REQUIRE(cwdc[s].qcheti == cwdc_host(s).qcheti);
       REQUIRE(cwdc[s].qiberg == cwdc_host(s).qiberg);
-      REQUIRE(cwdc[s].qisub == cwdc_host(s).qisub);
-      REQUIRE(cwdc[s].qidep == cwdc_host(s).qidep);
+      REQUIRE(cwdc[s].qisub  == cwdc_host(s).qisub);
+      REQUIRE(cwdc[s].qidep  == cwdc_host(s).qidep);
     }
 
   }
@@ -286,9 +281,6 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
   static void ice_water_conservation_unit_bfb_tests()
   {
     using KTH = KokkosTypes<HostDevice>;
-
-    static constexpr Int max_pack_size = 16;
-    REQUIRE(Spack::n <= max_pack_size);
 
     IceWaterConservationData iwdc[max_pack_size] = {
       // qitot, qidep, qinuc, qiberg, qrcol, qccol, qrheti, qcheti, iwdc_device(0).dt, qisub, qimlt
@@ -314,61 +306,58 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     };
 
     // Sync to device
-    KTH::view_1d<IceWaterConservationData> iwdc_host("iwdc_host", Spack::n);
-    view_1d<IceWaterConservationData> iwdc_device("iwdc_host", Spack::n);
+    KTH::view_1d<IceWaterConservationData> iwdc_host("iwdc_host", max_pack_size);
+    view_1d<IceWaterConservationData> iwdc_device("iwdc_host", max_pack_size);
 
     // This copy only copies the input variables.
-    std::copy(&iwdc[0], &iwdc[0] + Spack::n, iwdc_host.data());
+    std::copy(&iwdc[0], &iwdc[0] + max_pack_size, iwdc_host.data());
     Kokkos::deep_copy(iwdc_device, iwdc_host);
 
     // Get data from fortran
-    for (Int i = 0; i < Spack::n; ++i) {
+    for (Int i = 0; i < max_pack_size; ++i) {
       ice_water_conservation(iwdc[i]);
     }
 
-    // This copy also copies the output from the fortran function into the host view. These values
-    // are need to check the values returned from
-    std::copy(&iwdc[0], &iwdc[0] + Spack::n, iwdc_host.data());
-
     // Run the lookup from a kernel and copy results back to host
-    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+    Kokkos::parallel_for(RangePolicy(0, num_test_itrs), KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
+
       // Init pack inputs
       Spack qitot,qidep,qinuc,qiberg,qrcol,qccol,qrheti,qcheti,qisub,qimlt;
-      for (Int s = 0; s < Spack::n; ++s) {
-        qitot[s]  = iwdc_device(s).qitot;
-        qidep[s]  = iwdc_device(s).qidep;
-        qinuc[s]  = iwdc_device(s).qinuc;
-        qiberg[s] = iwdc_device(s).qiberg;
-        qrcol[s]  = iwdc_device(s).qrcol;
-        qccol[s]  = iwdc_device(s).qccol;
-        qrheti[s] = iwdc_device(s).qrheti;
-        qcheti[s] = iwdc_device(s).qcheti;
-        qisub[s] = iwdc_device(s).qisub;
-        qimlt[s] = iwdc_device(s).qimlt;
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        qitot[s]  = iwdc_device(vs).qitot;
+        qidep[s]  = iwdc_device(vs).qidep;
+        qinuc[s]  = iwdc_device(vs).qinuc;
+        qiberg[s] = iwdc_device(vs).qiberg;
+        qrcol[s]  = iwdc_device(vs).qrcol;
+        qccol[s]  = iwdc_device(vs).qccol;
+        qrheti[s] = iwdc_device(vs).qrheti;
+        qcheti[s] = iwdc_device(vs).qcheti;
+        qisub[s] = iwdc_device(vs).qisub;
+        qimlt[s] = iwdc_device(vs).qimlt;
       }
 
       Functions::ice_water_conservation(qitot, qidep, qinuc, qiberg, qrcol, qccol, qrheti, qcheti, iwdc_device(0).dt, qisub, qimlt);
       // Copy results back into views
-      for (Int s = 0; s < Spack::n; ++s) {
-        iwdc_device(s).qitot = qitot[s];
-        iwdc_device(s).qidep = qidep[s];
-        iwdc_device(s).qinuc = qinuc[s];
-        iwdc_device(s).qiberg = qiberg[s];
-        iwdc_device(s).qrcol = qrcol[s];
-        iwdc_device(s).qccol = qccol[s];
-        iwdc_device(s).qrheti = qrheti[s];
-        iwdc_device(s).qcheti = qcheti[s];
-        iwdc_device(s).qisub = qisub[s];
-        iwdc_device(s).qimlt = qimlt[s];
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        iwdc_device(vs).qitot = qitot[s];
+        iwdc_device(vs).qidep = qidep[s];
+        iwdc_device(vs).qinuc = qinuc[s];
+        iwdc_device(vs).qiberg = qiberg[s];
+        iwdc_device(vs).qrcol = qrcol[s];
+        iwdc_device(vs).qccol = qccol[s];
+        iwdc_device(vs).qrheti = qrheti[s];
+        iwdc_device(vs).qcheti = qcheti[s];
+        iwdc_device(vs).qisub = qisub[s];
+        iwdc_device(vs).qimlt = qimlt[s];
       }
-
     });
 
     // Sync back to host
     Kokkos::deep_copy(iwdc_host, iwdc_device);
 
     // Validate results
-    for (Int s = 0; s < Spack::n; ++s) {
+    for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(iwdc[s].qitot == iwdc_host(s).qitot);
       REQUIRE(iwdc[s].qidep == iwdc_host(s).qidep );
       REQUIRE(iwdc[s].qinuc == iwdc_host(s).qinuc);
@@ -386,9 +375,6 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
   static void rain_water_conservation_unit_bfb_tests(){
 
     using KTH = KokkosTypes<HostDevice>;
-
-    static constexpr Int max_pack_size = 16;
-    REQUIRE(Spack::n <= max_pack_size);
 
     RainWaterConservationData rwdc[max_pack_size] = {
       // qr, qcaut, qcacc, qimlt, qcshd, rwdc_device(0).dt, qrevp, qrcol, qrheti
@@ -414,48 +400,46 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     };
 
     // Sync to device
-    KTH::view_1d<RainWaterConservationData> rwdc_host("rwdc_host", Spack::n);
-    view_1d<RainWaterConservationData> rwdc_device("rwdc_host", Spack::n);
+    KTH::view_1d<RainWaterConservationData> rwdc_host("rwdc_host", max_pack_size);
+    view_1d<RainWaterConservationData> rwdc_device("rwdc_host", max_pack_size);
 
     // This copy only copies the input variables.
-    std::copy(&rwdc[0], &rwdc[0] + Spack::n, rwdc_host.data());
+    std::copy(&rwdc[0], &rwdc[0] + max_pack_size, rwdc_host.data());
     Kokkos::deep_copy(rwdc_device, rwdc_host);
 
     // Get data from fortran
-    for (Int i = 0; i < Spack::n; ++i) {
+    for (Int i = 0; i < max_pack_size; ++i) {
       rain_water_conservation(rwdc[i]);
     }
 
-    // This copy also copies the output from the fortran function into the host view. These values
-    // are need to check the values returned from
-    std::copy(&rwdc[0], &rwdc[0] + Spack::n, rwdc_host.data());
-
     // Run the lookup from a kernel and copy results back to host
-    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+    Kokkos::parallel_for(RangePolicy(0, num_test_itrs), KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
+
       // Init pack inputs
       Spack qr, qcaut, qcacc, qimlt, qcshd, qrevp, qrcol, qrheti;
-      for (Int s = 0; s < Spack::n; ++s) {
-        qr[s] = rwdc_device(s).qr;
-        qcaut[s] = rwdc_device(s).qcaut;
-        qcacc[s] = rwdc_device(s).qcacc;
-        qimlt[s] = rwdc_device(s).qimlt;
-        qcshd[s] = rwdc_device(s).qcshd;
-        qrevp[s] = rwdc_device(s).qrevp;
-        qrcol[s] = rwdc_device(s).qrcol;
-        qrheti[s] = rwdc_device(s).qrheti;
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        qr[s]     = rwdc_device(vs).qr;
+        qcaut[s]  = rwdc_device(vs).qcaut;
+        qcacc[s]  = rwdc_device(vs).qcacc;
+        qimlt[s]  = rwdc_device(vs).qimlt;
+        qcshd[s]  = rwdc_device(vs).qcshd;
+        qrevp[s]  = rwdc_device(vs).qrevp;
+        qrcol[s]  = rwdc_device(vs).qrcol;
+        qrheti[s] = rwdc_device(vs).qrheti;
       }
 
       Functions::rain_water_conservation(qr, qcaut, qcacc, qimlt, qcshd, rwdc_device(0).dt, qrevp, qrcol, qrheti);
       // Copy results back into views
-      for (Int s = 0; s < Spack::n; ++s) {
-        rwdc_device(s).qr = qr[s];
-        rwdc_device(s).qcaut = qcaut[s];
-        rwdc_device(s).qcacc = qcacc[s];
-        rwdc_device(s).qimlt = qimlt[s];
-        rwdc_device(s).qcshd = qcshd[s];
-        rwdc_device(s).qrevp = qrevp[s];
-        rwdc_device(s).qrcol = qrcol[s];
-        rwdc_device(s).qrheti = qrheti[s];
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        rwdc_device(vs).qr     = qr[s];
+        rwdc_device(vs).qcaut  = qcaut[s];
+        rwdc_device(vs).qcacc  = qcacc[s];
+        rwdc_device(vs).qimlt  = qimlt[s];
+        rwdc_device(vs).qcshd  = qcshd[s];
+        rwdc_device(vs).qrevp  = qrevp[s];
+        rwdc_device(vs).qrcol  = qrcol[s];
+        rwdc_device(vs).qrheti = qrheti[s];
       }
 
     });
@@ -464,17 +448,16 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     Kokkos::deep_copy(rwdc_host, rwdc_device);
 
     // Validate results
-    for (Int s = 0; s < Spack::n; ++s) {
-      REQUIRE(rwdc[s].qr == rwdc_host(s).qr);
-      REQUIRE(rwdc[s].qcaut == rwdc_host(s).qcaut);
-      REQUIRE(rwdc[s].qcacc == rwdc_host(s).qcacc);
-      REQUIRE(rwdc[s].qimlt == rwdc_host(s).qimlt);
-      REQUIRE(rwdc[s].qcshd == rwdc_host(s).qcshd);
-      REQUIRE(rwdc[s].qrevp == rwdc_host(s).qrevp);
-      REQUIRE(rwdc[s].qrcol == rwdc_host(s).qrcol);
+    for (Int s = 0; s < max_pack_size; ++s) {
+      REQUIRE(rwdc[s].qr     == rwdc_host(s).qr);
+      REQUIRE(rwdc[s].qcaut  == rwdc_host(s).qcaut);
+      REQUIRE(rwdc[s].qcacc  == rwdc_host(s).qcacc);
+      REQUIRE(rwdc[s].qimlt  == rwdc_host(s).qimlt);
+      REQUIRE(rwdc[s].qcshd  == rwdc_host(s).qcshd);
+      REQUIRE(rwdc[s].qrevp  == rwdc_host(s).qrevp);
+      REQUIRE(rwdc[s].qrcol  == rwdc_host(s).qrcol);
       REQUIRE(rwdc[s].qrheti == rwdc_host(s).qrheti);
     }
-
   }
 
   static void run_bfb() {
@@ -492,9 +475,6 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
 {
   static void update_prognostic_ice_unit_bfb_tests() {
 
-    static constexpr Int max_pack_size = 16;
-
-    REQUIRE(Spack::n <= max_pack_size);
     constexpr Scalar nmltratio     = C::nmltratio;
     constexpr Scalar dt            = 1.8000E+03;
     constexpr bool   log_predictNc = true;
@@ -600,102 +580,103 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
     };
 
     // Sync to device
-    view_1d<P3UpdatePrognosticIceData> pupidc_device("pupidc", Spack::n);
+    view_1d<P3UpdatePrognosticIceData> pupidc_device("pupidc", max_pack_size);
     auto pupidc_host = Kokkos::create_mirror_view(pupidc_device);
 
     // This copy only copies the input variables.
-    std::copy(&pupidc[0], &pupidc[0] + Spack::n, pupidc_host.data());
+    std::copy(&pupidc[0], &pupidc[0] + max_pack_size, pupidc_host.data());
     Kokkos::deep_copy(pupidc_device, pupidc_host);
 
     // Get data from fortran
-    for (Int i = 0; i < Spack::n; ++i) {
+    for (Int i = 0; i < max_pack_size; ++i) {
       update_prognostic_ice(pupidc[i]);
     }
 
     // Run the lookup from a kernel and copy results back to host
-    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
-        // Init pack inputs
-        Spack qcheti, qccol, qcshd, nccol, ncheti, ncshdc, qrcol, nrcol, qrheti, nrheti, nrshdr,
-          qimlt, nimlt, qisub, qidep, qinuc, ninuc, nislf, nisub, qiberg, exner, xlf, xxls,
-          rhorime_c, th, qv, qc, nc, qr, nr, qitot, nitot, qirim, birim;
-        Scalar dt;
-        bool log_predictNc;
-        Smask log_wetgrowth;
+    Kokkos::parallel_for(RangePolicy(0, num_test_itrs), KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
 
-        // variables with single values assigned outside of the for loop
-        dt            = pupidc_device(0).dt;
-        log_predictNc = pupidc_device(0).log_predictNc;
+      // Init pack inputs
+      Spack qcheti, qccol, qcshd, nccol, ncheti, ncshdc, qrcol, nrcol, qrheti, nrheti, nrshdr,
+        qimlt, nimlt, qisub, qidep, qinuc, ninuc, nislf, nisub, qiberg, exner, xlf, xxls,
+        rhorime_c, th, qv, qc, nc, qr, nr, qitot, nitot, qirim, birim;
+      Scalar dt;
+      bool log_predictNc;
+      Smask log_wetgrowth;
 
-        for (Int s = 0; s < Spack::n; ++s) {
+      // variables with single values assigned outside of the for loop
+      dt            = pupidc_device(0).dt;
+      log_predictNc = pupidc_device(0).log_predictNc;
 
-          qcheti[s] = pupidc_device(s).qcheti;
-          qccol[s]  = pupidc_device(s).qccol;
-          qcshd[s]  = pupidc_device(s).qcshd;
-          nccol[s]  = pupidc_device(s).nccol;
-          ncheti[s] = pupidc_device(s).ncheti;
-          ncshdc[s] = pupidc_device(s).ncshdc;
-          qrcol[s]  = pupidc_device(s).qrcol;
-          nrcol[s]  = pupidc_device(s).nrcol;
-          qrheti[s] = pupidc_device(s).qrheti;
-          nrheti[s] = pupidc_device(s).nrheti;
-          nrshdr[s] = pupidc_device(s).nrshdr;
-          qimlt[s]  = pupidc_device(s).qimlt;
-          nimlt[s]  = pupidc_device(s).nimlt;
-          qisub[s]  = pupidc_device(s).qisub;
-          qidep[s]  = pupidc_device(s).qidep;
-          qinuc[s]  = pupidc_device(s).qinuc;
-          ninuc[s]  = pupidc_device(s).ninuc;
-          nislf[s]  = pupidc_device(s).nislf;
-          nisub[s]  = pupidc_device(s).nisub;
-          qiberg[s] = pupidc_device(s).qiberg;
-          exner[s]  = pupidc_device(s).exner;
-          xlf[s]    = pupidc_device(s).xlf;
-          xxls[s]   = pupidc_device(s).xxls;
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        qcheti[s] = pupidc_device(vs).qcheti;
+        qccol[s]  = pupidc_device(vs).qccol;
+        qcshd[s]  = pupidc_device(vs).qcshd;
+        nccol[s]  = pupidc_device(vs).nccol;
+        ncheti[s] = pupidc_device(vs).ncheti;
+        ncshdc[s] = pupidc_device(vs).ncshdc;
+        qrcol[s]  = pupidc_device(vs).qrcol;
+        nrcol[s]  = pupidc_device(vs).nrcol;
+        qrheti[s] = pupidc_device(vs).qrheti;
+        nrheti[s] = pupidc_device(vs).nrheti;
+        nrshdr[s] = pupidc_device(vs).nrshdr;
+        qimlt[s]  = pupidc_device(vs).qimlt;
+        nimlt[s]  = pupidc_device(vs).nimlt;
+        qisub[s]  = pupidc_device(vs).qisub;
+        qidep[s]  = pupidc_device(vs).qidep;
+        qinuc[s]  = pupidc_device(vs).qinuc;
+        ninuc[s]  = pupidc_device(vs).ninuc;
+        nislf[s]  = pupidc_device(vs).nislf;
+        nisub[s]  = pupidc_device(vs).nisub;
+        qiberg[s] = pupidc_device(vs).qiberg;
+        exner[s]  = pupidc_device(vs).exner;
+        xlf[s]    = pupidc_device(vs).xlf;
+        xxls[s]   = pupidc_device(vs).xxls;
 
-          rhorime_c[s] = pupidc_device(s).rhorime_c;
-          th[s]    = pupidc_device(s).th;
-          qv[s]    = pupidc_device(s).qv;
-          qc[s]    = pupidc_device(s).qc;
-          nc[s]    = pupidc_device(s).nc;
-          qr[s]    = pupidc_device(s).qr;
-          nr[s]    = pupidc_device(s).nr;
-          qitot[s] = pupidc_device(s).qitot;
-          nitot[s] = pupidc_device(s).nitot;
-          qirim[s] = pupidc_device(s).qirim;
-          birim[s] = pupidc_device(s).birim;
+        rhorime_c[s] = pupidc_device(vs).rhorime_c;
+        th[s]    = pupidc_device(vs).th;
+        qv[s]    = pupidc_device(vs).qv;
+        qc[s]    = pupidc_device(vs).qc;
+        nc[s]    = pupidc_device(vs).nc;
+        qr[s]    = pupidc_device(vs).qr;
+        nr[s]    = pupidc_device(vs).nr;
+        qitot[s] = pupidc_device(vs).qitot;
+        nitot[s] = pupidc_device(vs).nitot;
+        qirim[s] = pupidc_device(vs).qirim;
+        birim[s] = pupidc_device(vs).birim;
 
-          log_wetgrowth.set(s, pupidc_device(s).log_wetgrowth);
-        }
+        log_wetgrowth.set(s, pupidc_device(vs).log_wetgrowth);
+      }
 
-        Functions::update_prognostic_ice(qcheti, qccol, qcshd, nccol, ncheti,ncshdc,
-                                         qrcol,   nrcol,  qrheti,  nrheti,  nrshdr,
-                                         qimlt,  nimlt,  qisub,  qidep,  qinuc,  ninuc,
-                                         nislf,  nisub,  qiberg,  exner,  xxls,  xlf,
-                                         log_predictNc, log_wetgrowth,  dt,  pupidc_device(0).nmltratio,
-                                         rhorime_c, th, qv, qitot, nitot, qirim,
-                                         birim, qc, nc, qr, nr);
+      Functions::update_prognostic_ice(qcheti, qccol, qcshd, nccol, ncheti,ncshdc,
+                                       qrcol,   nrcol,  qrheti,  nrheti,  nrshdr,
+                                       qimlt,  nimlt,  qisub,  qidep,  qinuc,  ninuc,
+                                       nislf,  nisub,  qiberg,  exner,  xxls,  xlf,
+                                       log_predictNc, log_wetgrowth,  dt,  pupidc_device(0).nmltratio,
+                                       rhorime_c, th, qv, qitot, nitot, qirim,
+                                       birim, qc, nc, qr, nr);
 
-        // Copy results back into views
-        for (Int s = 0; s < Spack::n; ++s) {
-          pupidc_device(s).th    = th[s];
-          pupidc_device(s).qv	   = qv[s];
-          pupidc_device(s).qc	   = qc[s];
-          pupidc_device(s).nc	   = nc[s];
-          pupidc_device(s).qr	   = qr[s];
-          pupidc_device(s).nr    = nr[s];
-          pupidc_device(s).qitot = qitot[s];
-          pupidc_device(s).nitot = nitot[s];
-          pupidc_device(s).qirim = qirim[s];
-          pupidc_device(s).birim = birim[s];
-        }
+      // Copy results back into views
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        pupidc_device(vs).th    = th[s];
+        pupidc_device(vs).qv    = qv[s];
+        pupidc_device(vs).qc    = qc[s];
+        pupidc_device(vs).nc    = nc[s];
+        pupidc_device(vs).qr    = qr[s];
+        pupidc_device(vs).nr    = nr[s];
+        pupidc_device(vs).qitot = qitot[s];
+        pupidc_device(vs).nitot = nitot[s];
+        pupidc_device(vs).qirim = qirim[s];
+        pupidc_device(vs).birim = birim[s];
+      }
 
-      });
+    });
 
     // Sync back to host
     Kokkos::deep_copy(pupidc_host, pupidc_device);
 
     // Validate results
-    for (Int s = 0; s < Spack::n; ++s) {
+    for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(pupidc[s].th    == pupidc_host(s).th);
       REQUIRE(pupidc[s].qc    == pupidc_host(s).qc);
       REQUIRE(pupidc[s].nr    == pupidc_host(s).nr);
@@ -720,11 +701,7 @@ struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables
 {
   static void get_time_space_phys_variables_unit_bfb_tests(){
 
-    static constexpr Int max_pack_size = 16;
-
-    REQUIRE(Spack::n <= max_pack_size);
-
-      //fortran generated data is input to the following
+    //fortran generated data is input to the following
     GetTimeSpacePhysVarsData gtspvd[max_pack_size] = {
       //        t,       pres,        rho,       xxlv,       xxls,        qvs,        qvi
       {2.9792E+02, 9.8711E+04, 1.1532E+00, 2.5010E+06, 2.8347E+06, 2.0321E-02, 2.0321E-02},
@@ -746,74 +723,75 @@ struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables
     };
 
     // Sync to device
-    view_1d<GetTimeSpacePhysVarsData> gtspvd_device("gtspvd", Spack::n);
+    view_1d<GetTimeSpacePhysVarsData> gtspvd_device("gtspvd", max_pack_size);
     auto gtspvd_host = Kokkos::create_mirror_view(gtspvd_device);
 
     // This copy only copies the input variables.
-    std::copy(&gtspvd[0], &gtspvd[0] + Spack::n, gtspvd_host.data());
+    std::copy(&gtspvd[0], &gtspvd[0] + max_pack_size, gtspvd_host.data());
     Kokkos::deep_copy(gtspvd_device, gtspvd_host);
 
     // Get data from fortran
-    for (Int i = 0; i < Spack::n; ++i) {
+    for (Int i = 0; i < max_pack_size; ++i) {
       get_time_space_phys_variables(gtspvd[i]);
     }
 
     // Run the lookup from a kernel and copy results back to host
-    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+    Kokkos::parallel_for(RangePolicy(0, num_test_itrs), KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
 
-	// Init pack inputs
-	Spack t, pres, rho, xxlv, xxls, qvs, qvi, mu, dv, sc, dqsdt, dqsidt, ab, abi, kap, eii;
+      // Init pack inputs
+      Spack t, pres, rho, xxlv, xxls, qvs, qvi, mu, dv, sc, dqsdt, dqsidt, ab, abi, kap, eii;
 
-	for (Int s = 0; s < Spack::n; ++s) {
-	  t[s]      = gtspvd_device(s).t;
-	  pres[s]   = gtspvd_device(s).pres;
-	  rho[s]    = gtspvd_device(s).rho;
-	  xxlv[s]   = gtspvd_device(s).xxlv;
-	  xxls[s]   = gtspvd_device(s).xxls;
-	  qvs[s]    = gtspvd_device(s).qvs;
-	  qvi[s]    = gtspvd_device(s).qvi;
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        t[s]      = gtspvd_device(vs).t;
+        pres[s]   = gtspvd_device(vs).pres;
+        rho[s]    = gtspvd_device(vs).rho;
+        xxlv[s]   = gtspvd_device(vs).xxlv;
+        xxls[s]   = gtspvd_device(vs).xxls;
+        qvs[s]    = gtspvd_device(vs).qvs;
+        qvi[s]    = gtspvd_device(vs).qvi;
 
-	  mu[s]     = gtspvd_device(s).mu;
-	  dv[s]     = gtspvd_device(s).dv;
-	  sc[s]     = gtspvd_device(s).sc;
-	  dqsdt[s]  = gtspvd_device(s).dqsdt;
-	  dqsidt[s] = gtspvd_device(s).dqsidt;
-	  ab[s]     = gtspvd_device(s).ab;
-	  abi[s]    = gtspvd_device(s).abi;
-	  kap[s]    = gtspvd_device(s).kap;
-	  eii[s]    = gtspvd_device(s).eii;
-	}
+        mu[s]     = gtspvd_device(vs).mu;
+        dv[s]     = gtspvd_device(vs).dv;
+        sc[s]     = gtspvd_device(vs).sc;
+        dqsdt[s]  = gtspvd_device(vs).dqsdt;
+        dqsidt[s] = gtspvd_device(vs).dqsidt;
+        ab[s]     = gtspvd_device(vs).ab;
+        abi[s]    = gtspvd_device(vs).abi;
+        kap[s]    = gtspvd_device(vs).kap;
+        eii[s]    = gtspvd_device(vs).eii;
+      }
 
-	Functions::get_time_space_phys_variables(t, pres, rho, xxlv, xxls, qvs, qvi, mu, dv, sc, dqsdt, dqsidt,
-						 ab, abi, kap, eii);
+      Functions::get_time_space_phys_variables(t, pres, rho, xxlv, xxls, qvs, qvi, mu, dv, sc, dqsdt, dqsidt,
+                                               ab, abi, kap, eii);
 
-	// Copy results back into views
-	for (Int s = 0; s < Spack::n; ++s) {
-	  gtspvd_device(s).t      = t[s];
-	  gtspvd_device(s).pres   = pres[s];
-	  gtspvd_device(s).rho    = rho[s];
-	  gtspvd_device(s).xxlv   = xxlv[s];
-	  gtspvd_device(s).xxls   = xxls[s];
-	  gtspvd_device(s).qvs    = qvs[s];
-	  gtspvd_device(s).qvi    = qvi[s];
+      // Copy results back into views
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        gtspvd_device(vs).t      = t[s];
+        gtspvd_device(vs).pres   = pres[s];
+        gtspvd_device(vs).rho    = rho[s];
+        gtspvd_device(vs).xxlv   = xxlv[s];
+        gtspvd_device(vs).xxls   = xxls[s];
+        gtspvd_device(vs).qvs    = qvs[s];
+        gtspvd_device(vs).qvi    = qvi[s];
 
-	  gtspvd_device(s).mu     = mu[s];
-	  gtspvd_device(s).dv     = dv[s];
-	  gtspvd_device(s).sc     = sc[s];
-	  gtspvd_device(s).dqsdt  = dqsdt[s];
-	  gtspvd_device(s).dqsidt = dqsidt[s];
-	  gtspvd_device(s).ab     = ab[s];
-	  gtspvd_device(s).abi    = abi[s];
-	  gtspvd_device(s).kap    = kap[s];
-	  gtspvd_device(s).eii    = eii[s];
-	}
-      });
+        gtspvd_device(vs).mu     = mu[s];
+        gtspvd_device(vs).dv     = dv[s];
+        gtspvd_device(vs).sc     = sc[s];
+        gtspvd_device(vs).dqsdt  = dqsdt[s];
+        gtspvd_device(vs).dqsidt = dqsidt[s];
+        gtspvd_device(vs).ab     = ab[s];
+        gtspvd_device(vs).abi    = abi[s];
+        gtspvd_device(vs).kap    = kap[s];
+        gtspvd_device(vs).eii    = eii[s];
+      }
+    });
 
     // Sync back to host
     Kokkos::deep_copy(gtspvd_host, gtspvd_device);
 
     // Validate results
-    for (Int s = 0; s < Spack::n; ++s) {
+    for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(gtspvd[s].mu     == gtspvd_host(s).mu);
       REQUIRE(gtspvd[s].dv     == gtspvd_host(s).dv);
       REQUIRE(gtspvd[s].sc     == gtspvd_host(s).sc);
@@ -837,10 +815,6 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip
 {
   static void evaporate_sublimate_precip_unit_bfb_tests(){
 
-    static constexpr Int max_pack_size = 16;
-
-    REQUIRE(Spack::n <= max_pack_size);
-
     //fortran generated data is input to the following
     //This subroutine has 12 args, only 10 are supplied here for invoking it as last 2 are intent-outs
     EvapSublimatePrecipData espd[max_pack_size] = {
@@ -863,64 +837,65 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip
     };
 
     // Sync to device
-    view_1d<EvapSublimatePrecipData> espd_device("espd", Spack::n);
+    view_1d<EvapSublimatePrecipData> espd_device("espd", max_pack_size);
     auto espd_host = Kokkos::create_mirror_view(espd_device);
 
     // This copy only copies the input variables.
-    std::copy(&espd[0], &espd[0] + Spack::n, espd_host.data());
+    std::copy(&espd[0], &espd[0] + max_pack_size, espd_host.data());
     Kokkos::deep_copy(espd_device, espd_host);
 
     // Get data from fortran
-    for (Int i = 0; i < Spack::n; ++i) {
+    for (Int i = 0; i < max_pack_size; ++i) {
       evaporate_sublimate_precip(espd[i]);
     }
 
     // Run the lookup from a kernel and copy results back to host
-    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+    Kokkos::parallel_for(RangePolicy(0, num_test_itrs), KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
 
-        // Init pack inputs
-        Spack qr_incld, qc_incld, nr_incld, qitot_incld, lcldm, rcldm, qvs, ab, epsr, qv, qrevp, nrevp;
+      // Init pack inputs
+      Spack qr_incld, qc_incld, nr_incld, qitot_incld, lcldm, rcldm, qvs, ab, epsr, qv, qrevp, nrevp;
 
-        for (Int s = 0; s < Spack::n; ++s) {
-          qr_incld[s]    = espd_device(s).qr_incld;
-          qc_incld[s]    = espd_device(s).qc_incld;
-          nr_incld[s]    = espd_device(s).nr_incld;
-          qitot_incld[s] = espd_device(s).qitot_incld;
-          lcldm[s]       = espd_device(s).lcldm;
-          rcldm[s]       = espd_device(s).rcldm;
-          qvs[s]         = espd_device(s).qvs;
-          ab[s]          = espd_device(s).ab;
-          epsr[s]        = espd_device(s).epsr;
-          qv[s]          = espd_device(s).qv;
-          qrevp[s]       = espd_device(s).qrevp;
-          nrevp[s]       = espd_device(s).nrevp;
-        }
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        qr_incld[s]    = espd_device(vs).qr_incld;
+        qc_incld[s]    = espd_device(vs).qc_incld;
+        nr_incld[s]    = espd_device(vs).nr_incld;
+        qitot_incld[s] = espd_device(vs).qitot_incld;
+        lcldm[s]       = espd_device(vs).lcldm;
+        rcldm[s]       = espd_device(vs).rcldm;
+        qvs[s]         = espd_device(vs).qvs;
+        ab[s]          = espd_device(vs).ab;
+        epsr[s]        = espd_device(vs).epsr;
+        qv[s]          = espd_device(vs).qv;
+        qrevp[s]       = espd_device(vs).qrevp;
+        nrevp[s]       = espd_device(vs).nrevp;
+      }
 
-        Functions::evaporate_sublimate_precip(qr_incld, qc_incld, nr_incld, qitot_incld,  lcldm, rcldm, qvs, ab,
-					      epsr, qv, qrevp, nrevp);
+      Functions::evaporate_sublimate_precip(qr_incld, qc_incld, nr_incld, qitot_incld,  lcldm, rcldm, qvs, ab,
+                                            epsr, qv, qrevp, nrevp);
 
-        // Copy results back into views
-        for (Int s = 0; s < Spack::n; ++s) {
-          espd_device(s).qr_incld    = qr_incld[s];
-          espd_device(s).qc_incld    = qc_incld[s];
-          espd_device(s).nr_incld    = nr_incld[s];
-          espd_device(s).qitot_incld = qitot_incld[s];
-          espd_device(s).lcldm       = lcldm[s];
-          espd_device(s).rcldm       = rcldm[s];
-          espd_device(s).qvs         = qvs[s];
-          espd_device(s).ab          = ab[s];
-          espd_device(s).epsr        = epsr[s];
-          espd_device(s).qv          = qv[s];
-          espd_device(s).qrevp       = qrevp[s];
-          espd_device(s).nrevp       = nrevp[s];
-        }
-      });
+      // Copy results back into views
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        espd_device(vs).qr_incld    = qr_incld[s];
+        espd_device(vs).qc_incld    = qc_incld[s];
+        espd_device(vs).nr_incld    = nr_incld[s];
+        espd_device(vs).qitot_incld = qitot_incld[s];
+        espd_device(vs).lcldm       = lcldm[s];
+        espd_device(vs).rcldm       = rcldm[s];
+        espd_device(vs).qvs         = qvs[s];
+        espd_device(vs).ab          = ab[s];
+        espd_device(vs).epsr        = epsr[s];
+        espd_device(vs).qv          = qv[s];
+        espd_device(vs).qrevp       = qrevp[s];
+        espd_device(vs).nrevp       = nrevp[s];
+      }
+    });
 
     // Sync back to host
     Kokkos::deep_copy(espd_host, espd_device);
 
     // Validate results
-    for (Int s = 0; s < Spack::n; ++s) {
+    for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(espd[s].qrevp == espd_host(s).qrevp);
       REQUIRE(espd[s].nrevp == espd_host(s).nrevp);
     }
@@ -937,172 +912,165 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq
 {
   static void  update_prognostic_liquid_unit_bfb_tests(){
 
-    static constexpr Int max_pack_size = 16;
-
-    REQUIRE(Spack::n <= max_pack_size);
-
     //fortran generated data is input to the following
     P3UpdatePrognosticLiqData pupldc[max_pack_size] = {
 
-      {1.0631E-12, 1.0631E+00, 1.5833E-12, 1.5833E+00, 0.0000E+00, 2.4190E-02, 0.0000E+00, 0.0000E+00, 0.0000E+00, 4.2517E+00,
+      {1.0631E-12, 1.0631E+00, 1.5833E-12, 1.5833E+00, 2.4190E-02, 0.0000E+00, 0.0000E+00, 0.0000E+00, 4.2517E+00,
        true      , 8.6718E-01, 1.0037E+00, 2.5010E+06, 1.8000E+03, 2.9902E+02, 5.0000E-02, 1.0000E-06, 1.0000E+06, 1.0010E-06,
        6.3726E+05},
 
-      {3.2784E-08, 1.8780E+07, 2.1753E-11, 1.2461E+04, 0.0000E+00, 7.8657E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.8748E+04,
+      {3.2784E-08, 1.8780E+07, 2.1753E-11, 1.2461E+04, 7.8657E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.8748E+04,
        true      , 9.8387E-01, 1.0741E+00, 2.5010E+06, 1.8000E+03, 2.9033E+02, 3.7211E-03, 5.9050E-05,-6.6723E+09,-5.9050E-05,
        -8.6159E+07},
 
-      {3.2796E-09, 1.8778E+07, 1.8830E-12, 1.0782E+04, 0.0000E+00, 6.8061E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 6.3698E+04,
+      {3.2796E-09, 1.8778E+07, 1.8830E-12, 1.0782E+04, 6.8061E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 6.3698E+04,
        true      , 9.0740E-01, 1.0293E+00, 2.5010E+06, 1.8000E+03, 2.9376E+02, 5.0000E-03, 5.9067E-06,-6.9543E+09, 1.0439E-04,
        -1.6967E+07},
 
-      {6.5634E-09, 1.8778E+07, 3.8238E-12, 1.0940E+04, 0.0000E+00, 6.9061E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 6.3181E+04,
+      {6.5634E-09, 1.8778E+07, 3.8238E-12, 1.0940E+04, 6.9061E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 6.3181E+04,
        true      , 9.1484E-01, 1.0339E+00, 2.5010E+06, 1.8000E+03, 2.9291E+02, 5.0000E-03, 1.1821E-05,-6.9282E+09, 1.0615E-04,
        -2.8223E+07},
 
-      {9.8516E-09, 1.8779E+07, 5.8258E-12, 1.1105E+04, 0.0000E+00, 7.0101E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 6.2655E+04,
+      {9.8516E-09, 1.8779E+07, 5.8258E-12, 1.1105E+04, 7.0101E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 6.2655E+04,
        true      , 9.2251E-01, 1.0386E+00, 2.5010E+06, 1.8000E+03, 2.9206E+02, 5.0000E-03, 1.7743E-05,-6.9009E+09, 1.0790E-04,
        -3.9628E+07},
 
-      {1.3145E-08, 1.8779E+07, 7.8929E-12, 1.1276E+04, 0.0000E+00, 7.1180E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 6.2122E+04,
+      {1.3145E-08, 1.8779E+07, 7.8929E-12, 1.1276E+04, 7.1180E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 6.2122E+04,
        true      , 9.3043E-01, 1.0433E+00, 2.5010E+06, 1.8000E+03, 2.9123E+02, 5.0000E-03, 2.3674E-05,-6.8725E+09, 1.0963E-04,
        -5.1189E+07},
 
-      {1.6443E-08, 1.8779E+07, 1.0029E-11, 1.1454E+04, 0.0000E+00, 7.2303E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 6.1581E+04,
+      {1.6443E-08, 1.8779E+07, 1.0029E-11, 1.1454E+04, 7.2303E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 6.1581E+04,
        true      , 9.3860E-01, 1.0482E+00, 2.5010E+06, 1.8000E+03, 2.9040E+02, 5.0000E-03, 2.9615E-05,-6.8428E+09, 1.1136E-04,
        -6.2915E+07},
 
-      {1.9746E-08, 1.8779E+07, 1.2238E-11, 1.1639E+04, 0.0000E+00, 7.3471E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 6.1031E+04,
+      {1.9746E-08, 1.8779E+07, 1.2238E-11, 1.1639E+04, 7.3471E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 6.1031E+04,
        true      , 9.4705E-01, 1.0531E+00, 2.5010E+06, 1.8000E+03, 2.8958E+02, 5.0000E-03, 3.5565E-05,-6.8117E+09, 1.1308E-04,
        -7.4813E+07},
 
-      {2.3047E-08, 1.8779E+07, 1.4521E-11, 1.1832E+04, 0.0000E+00, 7.4688E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 6.0474E+04,
+      {2.3047E-08, 1.8779E+07, 1.4521E-11, 1.1832E+04, 7.4688E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 6.0474E+04,
        true      , 9.5579E-01, 1.0582E+00, 2.5010E+06, 1.8000E+03, 2.8941E+02, 4.7949E-03, 4.1510E-05,-6.7792E+09, 1.4787E-05,
        -8.2885E+07},
 
-      {2.6289E-08, 1.8779E+07, 1.6845E-11, 1.2033E+04, 0.0000E+00, 7.5955E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.9907E+04,
+      {2.6289E-08, 1.8779E+07, 1.6845E-11, 1.2033E+04, 7.5955E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.9907E+04,
        true      , 9.6483E-01, 1.0634E+00, 2.5010E+06, 1.8000E+03, 2.8972E+02, 4.4341E-03, 4.7350E-05,-6.7452E+09,-4.7350E-05,
        -8.3634E+07},
 
-      {2.9533E-08, 1.8779E+07, 1.9253E-11, 1.2242E+04, 0.0000E+00, 7.7277E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.9332E+04,
+      {2.9533E-08, 1.8779E+07, 1.9253E-11, 1.2242E+04, 7.7277E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.9332E+04,
        true      , 9.7418E-01, 1.0686E+00, 2.5010E+06, 1.8000E+03, 2.9002E+02, 4.0751E-03, 5.3194E-05,-6.7096E+09,-5.3194E-05,
        -8.4862E+07},
 
-      {3.2784E-08, 1.8780E+07, 2.1753E-11, 1.2461E+04, 0.0000E+00, 7.8657E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.8748E+04,
+      {3.2784E-08, 1.8780E+07, 2.1753E-11, 1.2461E+04, 7.8657E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.8748E+04,
        true      , 9.8387E-01, 1.0741E+00, 2.5010E+06, 1.8000E+03, 2.9033E+02, 3.7211E-03, 5.9050E-05,-6.6723E+09,-5.9050E-05,
        -8.6159E+07},
 
-      {3.6045E-08, 1.8780E+07, 2.4356E-11, 1.2689E+04, 0.0000E+00, 8.0098E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.8154E+04,
+      {3.6045E-08, 1.8780E+07, 2.4356E-11, 1.2689E+04, 8.0098E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.8154E+04,
        true      , 9.9391E-01, 1.0796E+00, 2.5010E+06, 1.8000E+03, 2.9063E+02, 3.3756E-03, 6.4925E-05,-6.6333E+09,-6.4925E-05,
        -8.7530E+07},
 
-      {3.9321E-08, 1.8780E+07, 2.7069E-11, 1.2928E+04, 0.0000E+00, 8.1605E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.7552E+04,
+      {3.9321E-08, 1.8780E+07, 2.7069E-11, 1.2928E+04, 8.1605E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.7552E+04,
        true      , 1.0043E+00, 1.0853E+00, 2.5010E+06, 1.8000E+03, 2.9092E+02, 3.0417E-03, 7.0827E-05,-6.5924E+09,-7.0827E-05,
        -8.8982E+07},
 
-      {4.2614E-08, 1.8780E+07, 2.9903E-11, 1.3178E+04, 0.0000E+00, 8.3182E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.6939E+04,
+      {4.2614E-08, 1.8780E+07, 2.9903E-11, 1.3178E+04, 8.3182E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.6939E+04,
        true      , 1.0151E+00, 1.0911E+00, 2.5010E+06, 1.8000E+03, 2.9119E+02, 2.7224E-03, 7.6760E-05,-6.5494E+09,-7.6760E-05,
        -9.0523E+07},
 
-      {4.5927E-08, 1.8780E+07, 3.2867E-11, 1.3440E+04, 0.0000E+00, 8.4833E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.6317E+04,
+      {4.5927E-08, 1.8780E+07, 3.2867E-11, 1.3440E+04, 8.4833E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.6317E+04,
        true      , 1.0263E+00, 1.0970E+00, 2.5010E+06, 1.8000E+03, 2.9143E+02, 2.4202E-03, 8.2728E-05,-6.5044E+09,-8.2728E-05,
        -9.0778E+07},
     };
 
     // Sync to device
-    view_1d<P3UpdatePrognosticLiqData> pupldc_device("pupldc", Spack::n);
+    view_1d<P3UpdatePrognosticLiqData> pupldc_device("pupldc", max_pack_size);
     auto pupldc_host = Kokkos::create_mirror_view(pupldc_device);
 
     // This copy only copies the input variables.
-    std::copy(&pupldc[0], &pupldc[0] + Spack::n, pupldc_host.data());
+    std::copy(&pupldc[0], &pupldc[0] + max_pack_size, pupldc_host.data());
     Kokkos::deep_copy(pupldc_device, pupldc_host);
 
     // Get data from fortran
-    for (Int i = 0; i < Spack::n; ++i) {
+    for (Int i = 0; i < max_pack_size; ++i) {
       update_prognostic_liquid(pupldc[i]);
     }
 
     // Run the lookup from a kernel and copy results back to host
-    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+    Kokkos::parallel_for(RangePolicy(0, num_test_itrs), KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
 
-        // Init pack inputs
-        Spack qcacc, ncacc, qcaut, ncautc, qcnuc, ncautr, ncslf, qrevp, nrevp, nrslf, inv_rho,
-          exner, xxlv, th, qv, qc, nc, qr, nr;
-        bool log_predictNc;
-        Scalar dt;
+      // Init pack inputs
+      Spack qcacc, ncacc, qcaut, ncautc, ncautr, ncslf, qrevp, nrevp, nrslf, inv_rho,
+        exner, xxlv, th, qv, qc, nc, qr, nr;
+      bool log_predictNc;
+      Scalar dt;
 
-        // variables with single values assigned outside of the for loop
-        dt            = pupldc_device(0).dt;
-        log_predictNc = pupldc_device(0).log_predictNc;
+      // variables with single values assigned outside of the for loop
+      dt            = pupldc_device(0).dt;
+      log_predictNc = pupldc_device(0).log_predictNc;
 
-        for (Int s = 0; s < Spack::n; ++s) {
-          qcacc[s]   = pupldc_device(s).qcacc;
-          ncacc[s]   = pupldc_device(s).ncacc;
-          qcaut[s]   = pupldc_device(s).qcaut;
-          ncautc[s]  = pupldc_device(s).ncautc;
-          qcnuc[s]   = pupldc_device(s).qcnuc;
-          ncautr[s]  = pupldc_device(s).ncautr;
-          ncslf[s]   = pupldc_device(s).ncslf;
-          qrevp[s]   = pupldc_device(s).qrevp;
-          nrevp[s]   = pupldc_device(s).nrevp;
-          nrslf[s]   = pupldc_device(s).nrslf;
-          inv_rho[s] = pupldc_device(s).inv_rho;
-          exner[s]   = pupldc_device(s).exner;
-          xxlv[s]    = pupldc_device(s).xxlv;
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        qcacc[s]   = pupldc_device(vs).qcacc;
+        ncacc[s]   = pupldc_device(vs).ncacc;
+        qcaut[s]   = pupldc_device(vs).qcaut;
+        ncautc[s]  = pupldc_device(vs).ncautc;
+        ncautr[s]  = pupldc_device(vs).ncautr;
+        ncslf[s]   = pupldc_device(vs).ncslf;
+        qrevp[s]   = pupldc_device(vs).qrevp;
+        nrevp[s]   = pupldc_device(vs).nrevp;
+        nrslf[s]   = pupldc_device(vs).nrslf;
+        inv_rho[s] = pupldc_device(vs).inv_rho;
+        exner[s]   = pupldc_device(vs).exner;
+        xxlv[s]    = pupldc_device(vs).xxlv;
 
-          th[s]      = pupldc_device(s).th;
-          qv[s]      = pupldc_device(s).qv;
-          qc[s]      = pupldc_device(s).qc;
-          nc[s]      = pupldc_device(s).nc;
-          qr[s]      = pupldc_device(s).qr;
-          nr[s]      = pupldc_device(s).nr;
-        }
+        th[s]      = pupldc_device(vs).th;
+        qv[s]      = pupldc_device(vs).qv;
+        qc[s]      = pupldc_device(vs).qc;
+        nc[s]      = pupldc_device(vs).nc;
+        qr[s]      = pupldc_device(vs).qr;
+        nr[s]      = pupldc_device(vs).nr;
+      }
 
-        Functions::update_prognostic_liquid(qcacc, ncacc, qcaut, ncautc, qcnuc, ncautr, ncslf,
-                                            qrevp, nrevp, nrslf, log_predictNc, inv_rho, exner,
-                                            xxlv, dt, th, qv, qc, nc, qr, nr);
+      Functions::update_prognostic_liquid(qcacc, ncacc, qcaut, ncautc, ncautr, ncslf,
+                                          qrevp, nrevp, nrslf, log_predictNc, inv_rho, exner,
+                                          xxlv, dt, th, qv, qc, nc, qr, nr);
 
-        // Copy results back into views
-        pupldc_device(0).dt            = dt;
-        pupldc_device(0).log_predictNc = log_predictNc;
+      // Copy results back into views
+      pupldc_device(0).dt            = dt;
+      pupldc_device(0).log_predictNc = log_predictNc;
 
-        for (Int s = 0; s < Spack::n; ++s) {
-          pupldc_device(s).qcacc   = qcacc[s];
-          pupldc_device(s).ncacc   = ncacc[s];
-          pupldc_device(s).qcaut   = qcaut[s];
-          pupldc_device(s).ncautc  = ncautc[s];
-          pupldc_device(s).qcnuc   = qcnuc[s];
-          pupldc_device(s).ncautr  = ncautr[s];
-          pupldc_device(s).ncslf   = ncslf[s];
-          pupldc_device(s).qrevp   = qrevp[s];
-          pupldc_device(s).nrevp   = nrevp[s];
-          pupldc_device(s).nrslf   = nrslf[s];
-          pupldc_device(s).inv_rho = inv_rho[s];
-          pupldc_device(s).exner   = exner[s];
-          pupldc_device(s).xxlv    = xxlv[s];
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        pupldc_device(vs).qcacc   = qcacc[s];
+        pupldc_device(vs).ncacc   = ncacc[s];
+        pupldc_device(vs).qcaut   = qcaut[s];
+        pupldc_device(vs).ncautc  = ncautc[s];
+        pupldc_device(vs).ncautr  = ncautr[s];
+        pupldc_device(vs).ncslf   = ncslf[s];
+        pupldc_device(vs).qrevp   = qrevp[s];
+        pupldc_device(vs).nrevp   = nrevp[s];
+        pupldc_device(vs).nrslf   = nrslf[s];
+        pupldc_device(vs).inv_rho = inv_rho[s];
+        pupldc_device(vs).exner   = exner[s];
+        pupldc_device(vs).xxlv    = xxlv[s];
 
-          pupldc_device(s).th      = th[s];
-          pupldc_device(s).qv      = qv[s];
-          pupldc_device(s).qc      = qc[s];
-          pupldc_device(s).nc      = nc[s];
-          pupldc_device(s).qr      = qr[s];
-          pupldc_device(s).nr      = nr[s];
-
-        }
-      });
+        pupldc_device(vs).th      = th[s];
+        pupldc_device(vs).qv      = qv[s];
+        pupldc_device(vs).qc      = qc[s];
+        pupldc_device(vs).nc      = nc[s];
+        pupldc_device(vs).qr      = qr[s];
+        pupldc_device(vs).nr      = nr[s];
+      }
+    });
 
     // Sync back to host
     Kokkos::deep_copy(pupldc_host, pupldc_device);
 
     // Validate results
-    for (Int s = 0; s < Spack::n; ++s) {
+    for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(pupldc[s].th == pupldc_host(s).th);
       REQUIRE(pupldc[s].qv == pupldc_host(s).qv);
       REQUIRE(pupldc[s].qc == pupldc_host(s).qc);
       REQUIRE(pupldc[s].nc == pupldc_host(s).nc);
       REQUIRE(pupldc[s].qr == pupldc_host(s).qr);
       REQUIRE(pupldc[s].nr == pupldc_host(s).nr);
-
     }
   }
 
@@ -1117,10 +1085,6 @@ template <typename D>
 struct UnitWrap::UnitTest<D>::TestP3IceDepSublimation
 {
   static void  ice_deposition_sublimation_unit_bfb_tests(){
-
-    static constexpr Int max_pack_size = 16;
-
-    REQUIRE(Spack::n <= max_pack_size);
 
     //fortran generated data is input to the following
     //NOTE: This array has 8 values instead of 12 as 4 are intent-out at the end and we do not need
@@ -1145,65 +1109,65 @@ struct UnitWrap::UnitTest<D>::TestP3IceDepSublimation
     };
 
     // Sync to device
-    view_1d<IceDepSublimationData> ids_device("ids", Spack::n);
+    view_1d<IceDepSublimationData> ids_device("ids", max_pack_size);
     auto ids_host = Kokkos::create_mirror_view(ids_device);
 
     // This copy only copies the input variables.
-    std::copy(&ids[0], &ids[0] + Spack::n, ids_host.data());
+    std::copy(&ids[0], &ids[0] + max_pack_size, ids_host.data());
     Kokkos::deep_copy(ids_device, ids_host);
 
     // Get data from fortran
-    for (Int i = 0; i < Spack::n; ++i) {
+    for (Int i = 0; i < max_pack_size; ++i) {
       ice_deposition_sublimation(ids[i]);
     }
 
     // Run the lookup from a kernel and copy results back to host
-    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+    Kokkos::parallel_for(RangePolicy(0, num_test_itrs), KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
 
-        // Init pack inputs
-        Spack qitot_incld, nitot_incld, t, qvs, qvi, epsi, abi, qv, qidep, qisub, nisub, qiberg;
+      // Init pack inputs
+      Spack qitot_incld, nitot_incld, t, qvs, qvi, epsi, abi, qv, qidep, qisub, nisub, qiberg;
 
-        for (Int s = 0; s < Spack::n; ++s) {
-          qitot_incld[s] = ids_device(s).qitot_incld;
-          nitot_incld[s] = ids_device(s).nitot_incld;
-          t[s]           = ids_device(s).t;
-          qvs[s]         = ids_device(s).qvs;
-          qvi[s]         = ids_device(s).qvi;
-          epsi[s]        = ids_device(s).epsi;
-          abi[s]         = ids_device(s).abi;
-          qv[s]          = ids_device(s).qv;
-          qidep[s]       = ids_device(s).qidep;
-          qisub[s]       = ids_device(s).qisub;
-          nisub[s]       = ids_device(s).nisub;
-          qiberg[s]      = ids_device(s).qiberg;
-        }
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        qitot_incld[s] = ids_device(vs).qitot_incld;
+        nitot_incld[s] = ids_device(vs).nitot_incld;
+        t[s]           = ids_device(vs).t;
+        qvs[s]         = ids_device(vs).qvs;
+        qvi[s]         = ids_device(vs).qvi;
+        epsi[s]        = ids_device(vs).epsi;
+        abi[s]         = ids_device(vs).abi;
+        qv[s]          = ids_device(vs).qv;
+        qidep[s]       = ids_device(vs).qidep;
+        qisub[s]       = ids_device(vs).qisub;
+        nisub[s]       = ids_device(vs).nisub;
+        qiberg[s]      = ids_device(vs).qiberg;
+      }
 
-        Functions::ice_deposition_sublimation(qitot_incld, nitot_incld, t, qvs, qvi, epsi, abi, qv,
-                                              qidep, qisub, nisub, qiberg);
+      Functions::ice_deposition_sublimation(qitot_incld, nitot_incld, t, qvs, qvi, epsi, abi, qv,
+                                            qidep, qisub, nisub, qiberg);
 
-        // Copy results back into views
-
-        for (Int s = 0; s < Spack::n; ++s) {
-          ids_device(s).qitot_incld = qitot_incld[s];
-          ids_device(s).nitot_incld = nitot_incld[s];
-          ids_device(s).t           = t[s];
-          ids_device(s).qvs         = qvs[s];
-          ids_device(s).qvi         = qvi[s];
-          ids_device(s).epsi        = epsi[s];
-          ids_device(s).abi         = abi[s];
-          ids_device(s).qv          = qv[s];
-          ids_device(s).qidep       = qidep[s];
-          ids_device(s).qisub       = qisub[s];
-          ids_device(s).nisub       = nisub[s];
-          ids_device(s).qiberg      = qiberg[s];
-        }
-      });
+      // Copy results back into views
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        ids_device(vs).qitot_incld = qitot_incld[s];
+        ids_device(vs).nitot_incld = nitot_incld[s];
+        ids_device(vs).t           = t[s];
+        ids_device(vs).qvs         = qvs[s];
+        ids_device(vs).qvi         = qvi[s];
+        ids_device(vs).epsi        = epsi[s];
+        ids_device(vs).abi         = abi[s];
+        ids_device(vs).qv          = qv[s];
+        ids_device(vs).qidep       = qidep[s];
+        ids_device(vs).qisub       = qisub[s];
+        ids_device(vs).nisub       = nisub[s];
+        ids_device(vs).qiberg      = qiberg[s];
+      }
+    });
 
     // Sync back to host
     Kokkos::deep_copy(ids_host, ids_device);
 
     // Validate results
-    for (Int s = 0; s < Spack::n; ++s) {
+    for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(ids[s].qidep  == ids_host(s).qidep);
       REQUIRE(ids[s].qisub  == ids_host(s).qisub);
       REQUIRE(ids[s].nisub  == ids_host(s).nisub);
@@ -1222,9 +1186,6 @@ template <typename D>
 struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi
 {
   static void impose_max_total_ni_bfb_test(){
-    static constexpr Int max_pack_size = 16;
-    REQUIRE(Spack::n <= max_pack_size);
-
     constexpr Scalar max_total_Ni = C::max_total_Ni;
 
     ImposeMaxTotalNiData dc[max_pack_size]= {
@@ -1248,45 +1209,46 @@ struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi
       {3.358E4, max_total_Ni, 9.691E-1},
       {0.000E0, max_total_Ni, 9.105E-1},
       {0.000E3, max_total_Ni, 3.371E0},
-
     };
 
     //Sync to device
-    view_1d<ImposeMaxTotalNiData> dc_device("dc", Spack::n);
+    view_1d<ImposeMaxTotalNiData> dc_device("dc", max_pack_size);
     auto dc_host = Kokkos::create_mirror_view(dc_device);
 
     //This copy only copies the input variables.
-    std::copy(&dc[0], &dc[0] + Spack::n, dc_host.data());
+    std::copy(&dc[0], &dc[0] + max_pack_size, dc_host.data());
     Kokkos::deep_copy(dc_device, dc_host);
 
     //Get data from fortran
-    for (Int i = 0; i < Spack::n; ++i) {
+    for (Int i = 0; i < max_pack_size; ++i) {
       impose_max_total_Ni(dc[i]);
     }
 
     //Run function from a kernal and copy results back to the host
-    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
-        // Init pack inputs
-        Spack nitot_local, inv_rho_local;
-        for (Int s = 0; s < Spack::n; ++s) {
-          nitot_local[s] = dc_device(s).nitot_local;
-          inv_rho_local[s] = dc_device(s).inv_rho_local;
-        }
+    Kokkos::parallel_for(RangePolicy(0, num_test_itrs), KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
 
-        Functions::impose_max_total_Ni(nitot_local, dc_device(0).max_total_Ni, inv_rho_local);
-        // Copy results back into views
-        for (Int s = 0; s < Spack::n; ++s) {
-          dc_device(s).nitot_local = nitot_local[s];
-          dc_device(s).inv_rho_local = inv_rho_local[s];
-        }
-      });
+      // Init pack inputs
+      Spack nitot_local, inv_rho_local;
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        nitot_local[s]   = dc_device(vs).nitot_local;
+        inv_rho_local[s] = dc_device(vs).inv_rho_local;
+      }
+
+      Functions::impose_max_total_Ni(nitot_local, dc_device(0).max_total_Ni, inv_rho_local);
+      // Copy results back into views
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        dc_device(vs).nitot_local   = nitot_local[s];
+        dc_device(vs).inv_rho_local = inv_rho_local[s];
+      }
+    });
 
     // Sync back to host
     Kokkos::deep_copy(dc_host, dc_device);
 
     // Validate results
-    for (Int s = 0; s < Spack::n; ++s) {
-      REQUIRE(dc[s].nitot_local == dc_host(s).nitot_local);
+    for (Int s = 0; s < max_pack_size; ++s) {
+      REQUIRE(dc[s].nitot_local   == dc_host(s).nitot_local);
       REQUIRE(dc[s].inv_rho_local == dc_host(s).inv_rho_local);
     }
   }

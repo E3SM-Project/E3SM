@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-! $Id$
+! $Id: csr_matrix_module.F90 7012 2014-07-07 14:18:31Z schemena@uwm.edu $
 !===============================================================================
 module csr_matrix_module
 
@@ -76,7 +76,7 @@ module csr_matrix_module
 
   private ! Default scope
 
-  integer, allocatable, dimension(:) :: &
+  integer, pointer, dimension(:) :: &
     csr_tridiag_ia, & !_ia array description for a tridiagonal matrix
     csr_tridiag_ja, & !_ja array description for a tridiagonal matrix
     csr_banddiag5_135_ia, & !_ia array description for a 5-band matrix
@@ -140,10 +140,6 @@ module csr_matrix_module
     use grid_class, only: &
       gr ! Variable(s)
 
-    use error_code, only: &
-      err_code, &           ! Error Indicator
-      clubb_fatal_error     ! Constant
-
     implicit none
 
     ! Local variables
@@ -198,16 +194,14 @@ module csr_matrix_module
               csr_intlc_s3b_f5b_ia(1:intlc_ia_size), &
               csr_intlc_s3b_f5b_ja(1:intlc_s3d_5d_ja_size), &
               csr_intlc_trid_5b_ia(1:intlc_ia_size), &
-              csr_intlc_trid_5b_ja(1:intlc_td_5d_ja_size), & 
+              csr_intlc_trid_5b_ja(1:intlc_td_5d_ja_size), &
               csr_intlc_5b_5b_ia(1:intlc_ia_size), &
               csr_intlc_5b_5b_ja(1:intlc_5d_5d_ja_size), &
               stat=error )
 
     if ( error /= 0 ) then
       write(fstderr,*) "Allocation of CSR matrix arrays failed."
-      write(fstderr,*) "Fatal error--allocation of CSR matrix arrays failed."
-      err_code = clubb_fatal_error
-      return
+      stop "Fatal error--allocation of CSR matrix arrays failed."
     end if
 
     ! Initialize the tridiagonal matrix arrays

@@ -1,13 +1,15 @@
 #ifndef SCREAM_PHYSICS_DYNAMICS_REMAPPER_HPP
 #define SCREAM_PHYSICS_DYNAMICS_REMAPPER_HPP
 
+#include "share/scream_config.hpp"
+
 #include "dynamics/homme/hommexx_dimensions.hpp"
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
 
 #include "share/grid/remap/abstract_remapper.hpp"
 #include "share/grid/se_grid.hpp"
-#include "share/scream_pack.hpp"
-#include "share/scream_assert.hpp"
+#include "ekat/scream_pack.hpp"
+#include "ekat/scream_assert.hpp"
 
 // Homme includes
 #include "Context.hpp"

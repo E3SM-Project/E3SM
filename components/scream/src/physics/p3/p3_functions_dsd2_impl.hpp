@@ -12,18 +12,20 @@ namespace p3 {
  */
 
 template <typename S, typename D>
-template <bool zero_out>
 void Functions<S,D>::
-get_cloud_dsd2(const Smask& qc_gt_small, const Spack& qc, Spack& nc, Spack& mu_c, const Spack& rho, Spack& nu,
-               const view_dnu_table& dnu, Spack& lamc, Spack& cdist, Spack& cdist1, const Spack& lcldm)
+get_cloud_dsd2(
+  const Spack& qc, Spack& nc, Spack& mu_c, const Spack& rho, Spack& nu,
+  const view_dnu_table& dnu, Spack& lamc, Spack& cdist, Spack& cdist1, const Spack& lcldm,
+  const Smask& context)
 {
-  if (zero_out) {
-    lamc =   0;
-    cdist =  0;
-    cdist1 = 0;
-    nu     = 0;
-    mu_c   = 0;
-  }
+  lamc.set(context   , 0);
+  cdist.set(context  , 0);
+  cdist1.set(context , 0);
+  nu.set(context     , 0);
+  mu_c.set(context   , 0);
+
+  constexpr Scalar qsmall = C::QSMALL;
+  const auto qc_gt_small = qc >= qsmall && context;
 
   if (qc_gt_small.any()) {
     constexpr Scalar nsmall = C::NSMALL;
@@ -71,15 +73,19 @@ get_cloud_dsd2(const Smask& qc_gt_small, const Spack& qc, Spack& nc, Spack& mu_c
 template <typename S, typename D>
 void Functions<S,D>::
 get_rain_dsd2 (
-    const Smask& qr_gt_small, const Spack& qr, Spack& nr, Spack& mu_r,
-    Spack& lamr, Spack& cdistr, Spack& logn0r, const Spack& rcldm)
+  const Spack& qr, Spack& nr, Spack& mu_r,
+  Spack& lamr, Spack& cdistr, Spack& logn0r, const Spack& rcldm,
+  const Smask& context)
 {
-  constexpr auto nsmall = scream::physics::Constants<Scalar>::NSMALL;
-  constexpr auto cons1 = scream::physics::Constants<Scalar>::CONS1;
+  constexpr auto nsmall = C::NSMALL;
+  constexpr auto qsmall = C::QSMALL;
+  constexpr auto cons1  = C::CONS1;
 
-  lamr = 0;
-  cdistr = 0;
-  logn0r = 0;
+  lamr.set(context  , 0);
+  cdistr.set(context, 0);
+  logn0r.set(context, 0);
+
+  const auto qr_gt_small = qr >= qsmall && context;
 
   if (qr_gt_small.any()) {
     constexpr Scalar mu_r_const = C::mu_r_const;

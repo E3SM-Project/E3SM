@@ -1,6 +1,6 @@
 #include "share/atm_process/atmosphere_process.hpp"
 #include "control/atmosphere_driver.hpp"
-#include "share/scream_pack.hpp"
+#include "ekat/scream_pack.hpp"
 
 namespace scream {
 

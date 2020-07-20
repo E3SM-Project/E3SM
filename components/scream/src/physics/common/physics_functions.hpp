@@ -1,9 +1,9 @@
 #ifndef PHYSICS_FUNCTIONS_HPP
 #define PHYSICS_FUNCTIONS_HPP
 
-#include "share/scream_types.hpp"
-#include "share/scream_pack_kokkos.hpp"
-#include "share/scream_workspace.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/scream_pack_kokkos.hpp"
+#include "ekat/scream_workspace.hpp"
 #include "physics_constants.hpp"
 
 namespace scream {

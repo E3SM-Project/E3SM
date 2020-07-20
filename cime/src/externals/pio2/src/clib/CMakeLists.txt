@@ -49,8 +49,8 @@ endif()
 # Library
 install (TARGETS pioc DESTINATION lib)
 
-# Include/Header File
-install (FILES ${CMAKE_CURRENT_SOURCE_DIR}/pio.h DESTINATION include)
+# Include/Header Files
+install (FILES pio.h uthash.h DESTINATION include)
 
 #==============================================================================
 #  DEFINE THE DEPENDENCIES

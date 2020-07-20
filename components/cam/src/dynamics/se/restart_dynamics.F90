@@ -605,7 +605,12 @@ CONTAINS
     end do
 
 #ifdef MODEL_THETA_L
-    if ( .not. theta_hydrostatic_mode )then
+    if ( theta_hydrostatic_mode ) then
+       do ie=1,nelemd
+          elem(ie)%state%w_i = 0
+          elem(ie)%state%phinh_i = 0
+       end do       
+    else
        call pio_setframe(File,Wdesc, t)
        call pio_read_darray(File, Wdesc, iodesc3dp, var3dp, ierr)
        cnt=0
@@ -637,6 +642,9 @@ CONTAINS
     endif
 #endif
 
+    do ie = 1,nelemd
+       elem(ie)%state%Qdp = 0
+    end do
     do q=1,qsize_d
        call pio_setframe(File,qdesc(q), t)
        call pio_read_darray(File, qdesc(q), iodesc3d, var3d, ierr)

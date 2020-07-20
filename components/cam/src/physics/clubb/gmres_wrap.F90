@@ -1,5 +1,5 @@
 !----------------------------------------------------------------------------
-! $Id$
+! $Id: gmres_wrap.F90 7012 2014-07-07 14:18:31Z schemena@uwm.edu $
 !==============================================================================
 
 module gmres_wrap
@@ -70,10 +70,10 @@ module gmres_wrap
 
   end subroutine gmres_init
 
-  subroutine gmres_solve( elements, numeqns, &                 !Intent(in)
-                          csr_a, csr_ia, csr_ja, tempsize, &   !Intent(in)
-                          prev_soln, prev_lu, rhs, temp, &     !Intent(in/out)
-                          solution )                           !Intent(out)
+  subroutine gmres_solve(elements, numeqns, &                 !Intent(in)
+                         csr_a, csr_ia, csr_ja, tempsize, &   !Intent(in)
+                         prev_soln, prev_lu, rhs, temp, &     !Intent(in/out)
+                         solution, err_code)                  !Intent(out)
 
     ! Description:
     ! Solves a matrix equation using GMRES. On the first timestep and every
@@ -93,9 +93,6 @@ module gmres_wrap
     use clubb_precision, only: &
       dp, & ! double precision
       core_rknd
-
-    use error_code, only: &
-      err_code  ! Error indicator
 
     implicit none
 
@@ -147,6 +144,9 @@ module gmres_wrap
     real( kind = core_rknd ), dimension(numeqns), intent(out) :: &
       solution     ! Solution vector, output of solver routine
 
+    integer, intent(out) :: &
+      err_code     ! Error code, nonzero if errors occurred.
+
     ! Local variables
     logical :: l_gmres_run ! Variable denoting if we need to loop and run
                            ! a GMRES iteration again.
@@ -194,6 +194,11 @@ module gmres_wrap
     ! We want to be running, initially.
     l_gmres_run = .true.
 
+    ! Set the default error code to 0 (no errors)
+    ! This is to make the default explicit; Fortran initializes
+    ! values to 0.
+    err_code = 0
+
     ! Convert our A array and rhs vector to double precision...
     csr_dbl_a = real(csr_a, kind=dp)
     dbl_rhs = real(rhs, kind=dp)
@@ -234,7 +239,7 @@ module gmres_wrap
 
     ! Generate our preconditioner matrix with the ILU0 subroutine.
     call dcsrilu0( numeqns, csr_dbl_a, csr_ia, csr_ja, &
-                     prev_lu, ipar, dpar )
+                     prev_lu, ipar, dpar, err_code )
 
     ! On the first timestep we need to solve our preconditioner to give us
     ! our first solution estimate. After this, the previous solution will
@@ -253,7 +258,7 @@ module gmres_wrap
 !      call pardiso( pt, 1, 1, real_nonsymm, 13, numeqns,        & !Intent(in)
 !                    prev_lu, csr_ia, csr_ja, perm, 1, iparm, 0, & !Intent(in)
 !                    dbl_rhs,                                    & !Intent(inout)
-!                    prev_soln )                                   !Intent(out)
+!                    prev_soln, err_code )                         !Intent(out)
 !    end if !iteration_num == 1
 
     !DEBUG: Set apporximate solution vector to 0.9 (?) for now
@@ -343,9 +348,9 @@ module gmres_wrap
           ! We got a response we weren't expecting. This is probably bad.
           ! (Then again, maybe it's just not something we accounted for?)
           ! Regardless, let's set an error code and break out of here.
-          write(fstderr,*) "Unknown rci_request returned from GMRES:", rci_req
-          err_code = clubb_fatal_error
-          return
+          print *, "Unknown rci_request returned from GMRES:", rci_req
+          l_gmres_run = .false.
+          err_code = -1
       end select
       ! Report current iteration
 !      call dfgmres_get( numeqns, dbl_soln, dbl_rhs, rci_req, &
@@ -359,22 +364,24 @@ module gmres_wrap
 !      print *, "========================================================"
 !      print *, "********************************************************"
     end do
+    !if (err_code == 0) then
 
-    ! Get the answer, convert it to single-precision
-    call dfgmres_get( numeqns, dbl_soln, dbl_rhs, rci_req, &
-                    ipar, dpar, temp, iters )
+      ! Get the answer, convert it to single-precision
+      call dfgmres_get( numeqns, dbl_soln, dbl_rhs, rci_req, &
+                        ipar, dpar, temp, iters )
 
-    !print *, "Total iterations for GMRES:",iters
+      !print *, "Total iterations for GMRES:",iters
 
-    !do i=1,numeqns,1
-    !  print *, "double value of soln, idx",i,"=",dbl_soln(i)
-    !end do
+      !do i=1,numeqns,1
+      !  print *, "double value of soln, idx",i,"=",dbl_soln(i)
+      !end do
 
-    ! Store our solution as the previous solution for use in the next
-    ! simulation timestep.
-    prev_soln = dbl_soln
+      ! Store our solution as the previous solution for use in the next
+      ! simulation timestep.
+      prev_soln = dbl_soln
 
-    solution = real(dbl_soln)
+      solution = real(dbl_soln)
+    !end if
     
   end subroutine gmres_solve
 

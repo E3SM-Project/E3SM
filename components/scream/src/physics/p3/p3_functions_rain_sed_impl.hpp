@@ -15,22 +15,24 @@ template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::compute_rain_fall_velocity(
-  const Smask& qr_gt_small, const view_2d_table& vn_table, const view_2d_table& vm_table,
+  const view_2d_table& vn_table, const view_2d_table& vm_table,
   const Spack& qr_incld, const Spack& rcldm, const Spack& rhofacr, Spack& nr,
-  Spack& nr_incld, Spack& mu_r, Spack& lamr, Spack& V_qr, Spack& V_nr)
+  Spack& nr_incld, Spack& mu_r, Spack& lamr, Spack& V_qr, Spack& V_nr,
+  const Smask& context)
 {
   Table3 table;
   Spack tmp1, tmp2; //ignore
-  get_rain_dsd2(qr_gt_small, qr_incld, nr_incld, mu_r, lamr, tmp1, tmp2, rcldm);
-  nr.set(qr_gt_small, nr_incld*rcldm);
+  get_rain_dsd2(qr_incld, nr_incld, mu_r, lamr, tmp1, tmp2, rcldm, context);
 
-  lookup(qr_gt_small, mu_r, lamr, table);
-  // mass-weighted fall speed:
-  V_qr.set(qr_gt_small,
-           apply_table(qr_gt_small, vm_table, table) * rhofacr);
-  // number-weighted fall speed:
-  V_nr.set(qr_gt_small,
-           apply_table(qr_gt_small, vn_table, table) * rhofacr);
+  nr.set(context, nr_incld*rcldm);
+
+  if (context.any()) {
+    lookup(mu_r, lamr, table, context);
+    // mass-weighted fall speed:
+    V_qr.set(context, apply_table(vm_table, table) * rhofacr);
+    // number-weighted fall speed:
+    V_nr.set(context, apply_table(vn_table, table) * rhofacr);
+  }
 }
 
 template <typename S, typename D>
@@ -108,9 +110,9 @@ void Functions<S,D>
         const auto range_mask = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
         const auto qr_gt_small = range_mask && qr_incld(pk) > qsmall;
         if (qr_gt_small.any()) {
-          compute_rain_fall_velocity(qr_gt_small, vn_table, vm_table,
+          compute_rain_fall_velocity(vn_table, vm_table,
                                      qr_incld(pk), rcldm(pk), rhofacr(pk),
-                                     nr(pk), nr_incld(pk), mu_r(pk), lamr(pk), V_qr(pk), V_nr(pk));
+                                     nr(pk), nr_incld(pk), mu_r(pk), lamr(pk), V_qr(pk), V_nr(pk), qr_gt_small);
         }
         const auto Co_max_local = max(qr_gt_small, -1,
                                       V_qr(pk) * dt_left * inv_dzq(pk));
@@ -121,15 +123,18 @@ void Functions<S,D>
       generalized_sedimentation<2>(rho, inv_rho, inv_dzq, team, nk, k_qxtop, k_qxbot, kbot, kdir, Co_max, dt_left, prt_accum, fluxes_ptr, vs_ptr, qnr_ptr);
 
       // AaronDonahue, rflx output
-      util::set_min_max(k_qxbot+1, k_qxtop+1, kmin, kmax, Spack::n);
       kmin_scalar = ( kdir == 1 ? k_qxbot+1 : k_qxtop+1);
       kmax_scalar = ( kdir == 1 ? k_qxtop+1 : k_qxbot+1);
+      util::set_min_max(kmin_scalar, kmax_scalar, kmin, kmax, Spack::n);
       Kokkos::parallel_for(
        Kokkos::TeamThreadRange(team, kmax-kmin+1), [&] (int pk_) {
         const int pk = kmin + pk_;
         const auto range_pack = scream::pack::range<IntSmallPack>(pk*Spack::n);
         const auto range_mask = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
-        const auto flux_qx_pk = index(sflux_qx, range_pack-1);
+        auto index_pack = range_pack-1;
+        const auto lt_zero = index_pack < 0;
+        index_pack.set(lt_zero, 0);
+        const auto flux_qx_pk = index(sflux_qx, index_pack);
         rflx(pk).set(range_mask, rflx(pk) + flux_qx_pk);
       });
     }
@@ -147,7 +152,6 @@ void Functions<S,D>
 
   workspace.template release_many_contiguous<4>(
     {&V_qr, &V_nr, &flux_qx, &flux_nx});
-
 }
 
 } // namespace p3

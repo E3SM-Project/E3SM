@@ -68,7 +68,7 @@ contains
     integer                     :: exi
     integer                     :: lsize_o
     integer                     :: lsize_a
-    character(SHR_KIND_CS)      :: aoflux_grid ! grid for atm ocn flux calc
+    character(CS)      :: aoflux_grid ! grid for atm ocn flux calc
     type(mct_avect) , pointer   :: a2x_ax
     type(mct_avect) , pointer   :: o2x_ox
     character(*)    , parameter :: subname = '(prep_aoflux_init)'

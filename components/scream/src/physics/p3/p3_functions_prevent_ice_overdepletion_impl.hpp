@@ -18,9 +18,9 @@ KOKKOS_FUNCTION
 void Functions<S,D>
 ::prevent_ice_overdepletion(
   const Spack& pres, const Spack& t, const Spack& qv, const Spack& xxls, const Scalar& odt,
-  Spack& qidep, Spack& qisub)
+  Spack& qidep, Spack& qisub,
+  const Smask& context)
 {
-
   using physics = scream::physics::Functions<Scalar, Device>;
 
   constexpr Scalar cp = C::CP;
@@ -29,8 +29,8 @@ void Functions<S,D>
   const auto dumqvi = physics::qv_sat(t,pres,true);
   const auto qdep_satadj = (qv-dumqvi) /
     (1 + square(xxls) * dumqvi / (cp * rv * square(t))) * odt;
-  qidep *= min(1, max(0,  qdep_satadj) / max(qidep, sp(1.e-20)));
-  qisub *= min(1, max(0, -qdep_satadj) / max(qisub, sp(1.e-20)));
+  qidep.set(context, qidep * min(1, max(0,  qdep_satadj) / max(qidep, sp(1.e-20))));
+  qisub.set(context, qisub * min(1, max(0, -qdep_satadj) / max(qisub, sp(1.e-20))));
 }
 
 } // namespace p3

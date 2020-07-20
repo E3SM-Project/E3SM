@@ -1,5 +1,5 @@
 !-------------------------------------------------------------------------------
-!$Id$
+!$Id: interpolation.F90 7200 2014-08-13 15:15:12Z betlej@uwm.edu $
 !===============================================================================
 module interpolation
 
@@ -271,7 +271,7 @@ module interpolation
   end function mono_cubic_interp
 
 !-------------------------------------------------------------------------------
-  integer function binary_search( n, array, var ) & 
+  pure integer function binary_search( n, array, var ) & 
     result( i )
 
     ! Description:
@@ -283,13 +283,7 @@ module interpolation
     !-----------------------------------------------------------------------
 
     use clubb_precision, only: &
-      core_rknd                  ! Variable(s)
-
-    use constants_clubb, only: &
-      fstderr                    ! Variable(s)
-    
-    use error_code, only: &
-      clubb_at_least_debug_level ! Error indicator
+      core_rknd ! Variable(s)
 
     implicit none
 
@@ -305,9 +299,18 @@ module interpolation
     ! The value being searched for
     real( kind = core_rknd ), intent(in) :: var
 
+    ! Local Variables
+
+    ! Has an index been found?
+    logical :: l_found
+
     ! Bounds of the search
     integer :: high
     integer :: low
+
+    ! Initialize local variables
+
+    l_found = .false.
 
     ! The initial value of low has been changed from 1 to 2 due to a problem
     ! that was occuring when var was close to the lower bound.
@@ -331,45 +334,43 @@ module interpolation
 
     high = n
 
-    ! Ensure variable is within range of array and array has more than 1 element
-    if ( var < array(1) .or. var > array(n) .or. n < 2 ) then
-        i = -1
-        return
-    end if
+    ! This line is here to avoid a false compiler warning about "i" being used
+    ! uninitialized in this function.
+    i = (low + high) / 2
 
-    ! Special case to cover var == array(1)
-    if ( var >= array(1) .and. var <= array(2) ) then
-        i = 2
-        return
-    end if
-
-
-    do while( low <= high )
+    do while( .not. l_found .and. low <= high )
 
       i = (low + high) / 2
 
-      if ( var > array(i-1) .and. var <= array(i) ) then
+      if ( var > array( i - 1 ) .and. var <= array( i ) ) then
 
-        return
+        l_found = .true.
 
-      elseif ( var < array(i) ) then
+      elseif ( var == array(1) ) then
+
+        ! Special case where var falls exactly on the lowest value in the
+        ! array, which is array(1).  This case is not covered by the statement
+        ! above.
+        l_found = .true.
+        ! The value of "i" must be set to 2 because an interpolation is
+        ! performed in the subroutine that calls this function that uses
+        ! indices "i" and "i-1".
+        i = 2
+
+      elseif ( var < array( i ) ) then
 
         high = i - 1
 
-      elseif ( var > array(i) ) then
+      elseif ( var > array( i ) ) then
 
         low = i + 1
 
       endif
 
-    enddo 
+    enddo  ! while ( ~l_found & low <= high )
 
-    ! Code should not get to this point, but return -1 to be safe
-    if ( clubb_at_least_debug_level( 0 ) ) then
-        write(fstderr,*) "Logic error in function binary_search."
-    end if
+    if ( .not. l_found ) i = -1
 
-    i = -1
     return
 
   end function binary_search
@@ -523,12 +524,12 @@ module interpolation
     real( kind = core_rknd ), intent(out) :: arrout            ! output array (interpolated)   
     
     !---------------------------Local variables-----------------------------
-    integer :: k                 ! indices
-    integer :: kupper            ! Level indices for interpolation
-    real( kind = core_rknd ) :: dpu              ! upper level pressure difference
-    real( kind = core_rknd ) :: dpl              ! lower level pressure difference
-    logical :: found             ! true if input levels found   	
-    logical :: error             ! true if error     
+    integer i,k               ! indices
+    integer kupper            ! Level indices for interpolation
+    real( kind = core_rknd ) dpu              ! upper level pressure difference
+    real( kind = core_rknd ) dpl              ! lower level pressure difference
+    logical found             ! true if input levels found   	
+    logical error             ! true if error     
     !-----------------------------------------------------------------
     !
     ! Initialize index array and logical flags
@@ -584,13 +585,14 @@ module interpolation
 ! Author: Michael Falk for COAMPS.
 !-------------------------------------------------------------------------------
 
+    use error_code, only: & 
+      clubb_debug, & ! Procedure(s)
+      clubb_at_least_debug_level
+
     use constants_clubb, only: fstderr ! Constant
 
     use clubb_precision, only: &
       core_rknd ! Variable(s)
-
-    use error_code, only: &
-      clubb_at_least_debug_level ! Error indicator
 
     implicit none
 
@@ -623,7 +625,7 @@ module interpolation
 !
 !-------------------------------------------------------------------------------
 
-     if ( clubb_at_least_debug_level( 0 ) ) then
+     if ( clubb_at_least_debug_level( 2 ) ) then
        do i=2,nparam
          if ( xlist(i) <= xlist(i-1) ) then
            write(fstderr,*) "xlist must be sorted for lin_interpolate_on_grid."
@@ -638,11 +640,9 @@ module interpolation
 !
 !-------------------------------------------------------------------------------
 
-    if ( clubb_at_least_debug_level( 0 ) ) then
-        if ( (xvalue < xlist(1)) .or. (xvalue > xlist(nparam)) ) then
-          write(fstderr,*) "lin_interpolate_on_grid: Value out of range"
-          stop
-        end if
+    if ( (xvalue < xlist(1)) .or. (xvalue > xlist(nparam)) ) then
+      write(fstderr,*) "lin_interpolate_on_grid: Value out of range"
+      stop
     end if
 
 !-------------------------------------------------------------------------------
@@ -662,9 +662,9 @@ module interpolation
       end if
     end do
 
-    if ( clubb_at_least_debug_level( 1 ) .and. (topbound == -1 .or. bottombound == -1) ) then
-      write(fstderr,*) "Sanity check failed! xlist is not properly sorted" 
-      write(fstderr,*) "in lin_interpolate_on_grid."
+    if ( topbound == -1 .or. bottombound == -1 ) then
+      call clubb_debug( 1, "Sanity check failed! xlist is not properly sorted" )
+      call clubb_debug( 1, "in lin_interpolate_on_grid.")
     end if
 
     tvalue =  & 

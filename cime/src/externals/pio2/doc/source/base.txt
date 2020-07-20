@@ -29,4 +29,5 @@ releases.
  - @ref users_guide
  - @ref api
  - @ref c_api
+ - @ref netcdf_integration
 */

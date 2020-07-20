@@ -19,7 +19,22 @@ logger = logging.getLogger(__name__)
 ###############################################################################
 def buildlib(bldroot, installpath, case):
 ###############################################################################
-    pass
+    scream_opts = case.get_value("SCREAM_CMAKE_OPTIONS")
+    print ("building scream")
+    tokens = scream_opts.split()
+    expect (len(tokens) % 2 == 0, "Error! SCREAM_CMAKE_OPTIONS should contain a string of the form 'option1 value1 option2 value2 ...'\n")
+    it = iter(tokens)
+
+    cmake_args = ""
+    for item in it:
+        cmake_args += " -D{}={}".format(item,next(it))
+
+    atm_dyn_tgt = case.get_value("ATM_DYN_TARGET")
+    cmake_args += " -DSCREAM_DYN_TARGET={}".format(atm_dyn_tgt)
+
+    print("scream cmake options: '{}'".format(cmake_args))
+
+    return cmake_args
 
 ###############################################################################
 def _main(argv, documentation):

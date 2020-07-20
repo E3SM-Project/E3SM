@@ -1,12 +1,12 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/scream_kokkos.hpp"
-#include "share/scream_pack.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/scream_kokkos.hpp"
+#include "ekat/scream_pack.hpp"
+#include "ekat/util/scream_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
-#include "share/util/scream_kokkos_utils.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -26,9 +26,6 @@ struct UnitWrap::UnitTest<D>::TestIceNucleation {
   static void run_ice_nucleation_bfb()
   {
     using KTH = KokkosTypes<HostDevice>;
-
-    static constexpr Int max_pack_size = 16;
-    REQUIRE(Spack::n <= max_pack_size);
 
     constexpr bool   log_predictNc = false;
     constexpr Scalar odt           = 9.558E-04;
@@ -57,41 +54,43 @@ struct UnitWrap::UnitTest<D>::TestIceNucleation {
     };
 
     // Get data from fortran
-    for (Int i = 0; i < Spack::n; ++i) {
+    for (Int i = 0; i < max_pack_size; ++i) {
       ice_nucleation(self[i]);
     }
 
     // Sync to device
-    KTH::view_1d<IceNucleationData> self_host("self_host", Spack::n);
-    view_1d<IceNucleationData> self_device("self_host", Spack::n);
-    std::copy(&self[0], &self[0] + Spack::n, self_host.data());
+    KTH::view_1d<IceNucleationData> self_host("self_host", max_pack_size);
+    view_1d<IceNucleationData> self_device("self_host", max_pack_size);
+    std::copy(&self[0], &self[0] + max_pack_size, self_host.data());
     Kokkos::deep_copy(self_device, self_host);
 
     // Run the lookup from a kernel and copy results back to host
-    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
-     // Init pack inputs
+    Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
+
+      // Init pack inputs
       Spack temp, inv_rho, nitot, naai, supi;
-      for (Int s = 0; s < Spack::n; ++s) {
-        temp[s]          = self_device(s).temp;
-        inv_rho[s]       = self_device(s).inv_rho;
-        nitot[s]         = self_device(s).nitot;
-        naai[s]          = self_device(s).naai;
-        supi[s]          = self_device(s).supi;
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        temp[s]          = self_device(vs).temp;
+        inv_rho[s]       = self_device(vs).inv_rho;
+        nitot[s]         = self_device(vs).nitot;
+        naai[s]          = self_device(vs).naai;
+        supi[s]          = self_device(vs).supi;
       }
       // outputs
       Spack qinuc{0.0};
       Spack ninuc{0.0};
       Functions::ice_nucleation(temp, inv_rho, nitot, naai, supi, self_device(0).odt, log_predictNc, qinuc, ninuc);
 
-      for (Int s = 0; s < Spack::n; ++s) {
-        self_device(s).qinuc = qinuc[s];
-        self_device(s).ninuc = ninuc[s];
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        self_device(vs).qinuc = qinuc[s];
+        self_device(vs).ninuc = ninuc[s];
       }
     });
 
     Kokkos::deep_copy(self_host, self_device);
 
-    for (Int s = 0; s < Spack::n; ++s) {
+    for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(self[s].qinuc == self_host(s).qinuc);
       REQUIRE(self[s].ninuc == self_host(s).ninuc);
     }

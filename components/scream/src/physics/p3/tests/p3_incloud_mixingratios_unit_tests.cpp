@@ -1,12 +1,12 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/scream_kokkos.hpp"
-#include "share/scream_pack.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/scream_kokkos.hpp"
+#include "ekat/scream_pack.hpp"
+#include "ekat/util/scream_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
-#include "share/util/scream_kokkos_utils.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -26,9 +26,6 @@ struct UnitWrap::UnitTest<D>::TestIncloudMixing {
   static void run_incloud_mixing_bfb()
   {
     using KTH = KokkosTypes<HostDevice>;
-
-    static constexpr Int max_pack_size = 16;
-    REQUIRE(Spack::n <= max_pack_size);
 
     constexpr Scalar qsmall = C::QSMALL;
     constexpr Scalar qc0 = 0.1*qsmall, qc1 = 0.9*qsmall, qc2 = 2.*qsmall, qc3 = 100.*qsmall;
@@ -69,32 +66,34 @@ struct UnitWrap::UnitTest<D>::TestIncloudMixing {
     };
 
     // Sync to device
-    KTH::view_1d<IncloudMixingData> self_host("self_host", Spack::n);
-    view_1d<IncloudMixingData> self_device("self_host", Spack::n);
-    std::copy(&self[0], &self[0] + Spack::n, self_host.data());
+    KTH::view_1d<IncloudMixingData> self_host("self_host", max_pack_size);
+    view_1d<IncloudMixingData> self_device("self_host", max_pack_size);
+    std::copy(&self[0], &self[0] + max_pack_size, self_host.data());
     Kokkos::deep_copy(self_device, self_host);
 
     // Get data from fortran
-    for (Int i = 0; i < Spack::n; ++i) {
+    for (Int i = 0; i < max_pack_size; ++i) {
        calculate_incloud_mixingratios(self[i]);
     }
 
     // Run the lookup from a kernel and copy results back to host
-    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+    Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
+
      // Init pack inputs
       Spack qc, qr, qitot, qirim, nc, nr, nitot, birim, inv_lcldm, inv_icldm, inv_rcldm;
-      for (Int s = 0; s < Spack::n; ++s) {
-        qc[s]            = self_device(s).qc;
-        qr[s]            = self_device(s).qr;
-        qitot[s]         = self_device(s).qitot;
-        qirim[s]         = self_device(s).qirim;
-        nc[s]            = self_device(s).nc;
-        nr[s]            = self_device(s).nr;
-        nitot[s]         = self_device(s).nitot;
-        birim[s]         = self_device(s).birim;
-        inv_lcldm[s]     = self_device(s).inv_lcldm;
-        inv_icldm[s]     = self_device(s).inv_icldm;
-        inv_rcldm[s]     = self_device(s).inv_rcldm;
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        qc[s]            = self_device(vs).qc;
+        qr[s]            = self_device(vs).qr;
+        qitot[s]         = self_device(vs).qitot;
+        qirim[s]         = self_device(vs).qirim;
+        nc[s]            = self_device(vs).nc;
+        nr[s]            = self_device(vs).nr;
+        nitot[s]         = self_device(vs).nitot;
+        birim[s]         = self_device(vs).birim;
+        inv_lcldm[s]     = self_device(vs).inv_lcldm;
+        inv_icldm[s]     = self_device(vs).inv_icldm;
+        inv_rcldm[s]     = self_device(vs).inv_rcldm;
       }
       // outputs
       Spack qc_incld{0.}, qr_incld{0.}, qitot_incld{0.}, qirim_incld{0.};
@@ -104,21 +103,21 @@ struct UnitWrap::UnitTest<D>::TestIncloudMixing {
                                                 qc_incld, qr_incld, qitot_incld, qirim_incld,
                                                 nc_incld, nr_incld, nitot_incld, birim_incld);
 
-      for (Int s = 0; s < Spack::n; ++s) {
-        self_device(s).qc_incld    = qc_incld[s];
-        self_device(s).qr_incld    = qr_incld[s];
-        self_device(s).qitot_incld = qitot_incld[s];
-        self_device(s).qirim_incld = qirim_incld[s];
-        self_device(s).nc_incld    = nc_incld[s];
-        self_device(s).nr_incld    = nr_incld[s];
-        self_device(s).nitot_incld = nitot_incld[s];
-        self_device(s).birim_incld = birim_incld[s];
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        self_device(vs).qc_incld    = qc_incld[s];
+        self_device(vs).qr_incld    = qr_incld[s];
+        self_device(vs).qitot_incld = qitot_incld[s];
+        self_device(vs).qirim_incld = qirim_incld[s];
+        self_device(vs).nc_incld    = nc_incld[s];
+        self_device(vs).nr_incld    = nr_incld[s];
+        self_device(vs).nitot_incld = nitot_incld[s];
+        self_device(vs).birim_incld = birim_incld[s];
       }
     });
 
     Kokkos::deep_copy(self_host, self_device);
 
-    for (Int s = 0; s < Spack::n; ++s) {
+    for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(self[s].qc_incld    == self_host(s).qc_incld);
       REQUIRE(self[s].qr_incld    == self_host(s).qr_incld);
       REQUIRE(self[s].qitot_incld == self_host(s).qitot_incld);

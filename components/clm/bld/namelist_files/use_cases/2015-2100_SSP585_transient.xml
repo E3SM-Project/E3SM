@@ -34,8 +34,6 @@
 
 <fsurdat>lnd/clm2/surfdata_map/surfdata_ne30np4_simyr1850_2015_c171018.nc </fsurdat>
 <flanduse_timeseries>lnd/clm2/surfdata_map/landuse.timeseries_ne30np4_ssp5_rcp8.5_simyr2015-2100_c190411.nc</flanduse_timeseries>
-<finidat hgrid="ne30np4" mask="oEC60to30v3">lnd/clm2/initdata_map/20180215.DECKv1b_H1.ne30_oEC.edison.clm2.r.2015-01-01-00000.27d91fb47_c20190824.nc</finidat>
-<check_finidat_year_consistency>.true.</check_finidat_year_consistency>
 <check_dynpft_consistency>.false.</check_dynpft_consistency>
 
 </namelist_defaults>

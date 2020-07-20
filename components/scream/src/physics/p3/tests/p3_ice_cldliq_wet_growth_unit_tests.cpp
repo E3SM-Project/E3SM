@@ -1,12 +1,12 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/scream_kokkos.hpp"
-#include "share/scream_pack.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/scream_kokkos.hpp"
+#include "ekat/scream_pack.hpp"
+#include "ekat/util/scream_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
-#include "share/util/scream_kokkos_utils.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -26,9 +26,6 @@ struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth {
   static void run_ice_cldliq_wet_growth_bfb()
   {
     using KTH = KokkosTypes<HostDevice>;
-
-    static constexpr Int max_pack_size = 16;
-    REQUIRE(Spack::n <= max_pack_size);
 
     IceWetGrowthData self[max_pack_size] = {
       // rho,temp,pres,rhofaci,f1pr05,f1pr14,xxlv,xlf,dv,kap,mu,sc,qv,qc_incld,qitot_incld,nitot_incld,qr_incld,log_wetgrowth,qrcol,qccol,qwgrth,nrshdr,qcshd
@@ -54,18 +51,20 @@ struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth {
     };
 
     // Sync to device
-    KTH::view_1d<IceWetGrowthData> self_host("self_host", Spack::n);
-    view_1d<IceWetGrowthData> self_device("self_device", Spack::n);
-    std::copy(&self[0], &self[0] + Spack::n, self_host.data());
+    KTH::view_1d<IceWetGrowthData> self_host("self_host", max_pack_size);
+    view_1d<IceWetGrowthData> self_device("self_device", max_pack_size);
+    std::copy(&self[0], &self[0] + max_pack_size, self_host.data());
     Kokkos::deep_copy(self_device, self_host);
 
     // Get data from fortran
-    for (Int i = 0; i < Spack::n; ++i) {
+    for (Int i = 0; i < max_pack_size; ++i) {
       ice_cldliq_wet_growth(self[i]);
     }
 
     // Run the lookup from a kernel and copy results back to host
-    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+    Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
+
       // Init pack inputs
       Spack rho,temp, pres,rhofaci,f1pr05,f1pr14,xxlv,xlf,dv,kap,mu,sc,
         qv,qc_incld,qitot_incld,nitot_incld,qr_incld;
@@ -74,49 +73,49 @@ struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth {
 
       Spack qrcol,qccol,qwgrth,nrshdr,qcshd;
 
-      for (Int s = 0; s < Spack::n; ++s) {
-        rho[s]         = self_device(s).rho;
-        temp[s]        = self_device(s).temp;
-        pres[s]        = self_device(s).pres;
-        rhofaci[s]     = self_device(s).rhofaci;
-        f1pr05[s]      = self_device(s).f1pr05;
-        f1pr14[s]      = self_device(s).f1pr14;
-        xxlv[s]        = self_device(s).xxlv;
-        xlf[s]         = self_device(s).xlf;
-        dv[s]          = self_device(s).dv;
-        kap[s]         = self_device(s).kap;
-        mu[s]          = self_device(s).mu;
-        sc[s]          = self_device(s).sc;
-        qv[s]          = self_device(s).qv;
-        qc_incld[s]    = self_device(s).qc_incld;
-        qitot_incld[s] = self_device(s).qitot_incld;
-        nitot_incld[s] = self_device(s).nitot_incld;
-        qr_incld[s]    = self_device(s).qr_incld;
-        qrcol[s]       = self_device(s).qrcol;
-        qccol[s]       = self_device(s).qccol;
-        qwgrth[s]      = self_device(s).qwgrth;
-        nrshdr[s]      = self_device(s).nrshdr;
-        qcshd[s]       = self_device(s).qcshd;
-        log_wetgrowth.set(s, self_device(s).log_wetgrowth);
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        rho[s]         = self_device(vs).rho;
+        temp[s]        = self_device(vs).temp;
+        pres[s]        = self_device(vs).pres;
+        rhofaci[s]     = self_device(vs).rhofaci;
+        f1pr05[s]      = self_device(vs).f1pr05;
+        f1pr14[s]      = self_device(vs).f1pr14;
+        xxlv[s]        = self_device(vs).xxlv;
+        xlf[s]         = self_device(vs).xlf;
+        dv[s]          = self_device(vs).dv;
+        kap[s]         = self_device(vs).kap;
+        mu[s]          = self_device(vs).mu;
+        sc[s]          = self_device(vs).sc;
+        qv[s]          = self_device(vs).qv;
+        qc_incld[s]    = self_device(vs).qc_incld;
+        qitot_incld[s] = self_device(vs).qitot_incld;
+        nitot_incld[s] = self_device(vs).nitot_incld;
+        qr_incld[s]    = self_device(vs).qr_incld;
+        qrcol[s]       = self_device(vs).qrcol;
+        qccol[s]       = self_device(vs).qccol;
+        qwgrth[s]      = self_device(vs).qwgrth;
+        nrshdr[s]      = self_device(vs).nrshdr;
+        qcshd[s]       = self_device(vs).qcshd;
+        log_wetgrowth.set(s, self_device(vs).log_wetgrowth);
       }
 
       Functions::ice_cldliq_wet_growth(rho, temp, pres, rhofaci, f1pr05, f1pr14, xxlv, xlf, dv, kap, mu, sc,
                                        qv, qc_incld, qitot_incld, nitot_incld, qr_incld,
                                        log_wetgrowth, qrcol, qccol, qwgrth, nrshdr, qcshd);
 
-      for (Int s = 0; s < Spack::n; ++s) {
-        self_device(s).log_wetgrowth = log_wetgrowth[s];
-        self_device(s).qrcol         = qrcol[s];
-        self_device(s).qccol         = qccol[s];
-        self_device(s).qwgrth        = qwgrth[s];
-        self_device(s).nrshdr        = nrshdr[s];
-        self_device(s).qcshd         = qcshd[s];
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        self_device(vs).log_wetgrowth = log_wetgrowth[s];
+        self_device(vs).qrcol         = qrcol[s];
+        self_device(vs).qccol         = qccol[s];
+        self_device(vs).qwgrth        = qwgrth[s];
+        self_device(vs).nrshdr        = nrshdr[s];
+        self_device(vs).qcshd         = qcshd[s];
       }
     });
 
     Kokkos::deep_copy(self_host, self_device);
 
-    for (Int s = 0; s < Spack::n; ++s) {
+    for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(static_cast<bool>(self[s].log_wetgrowth) == static_cast<bool>(self_host(s).log_wetgrowth));
 
       REQUIRE(self[s].qrcol         == self_host(s).qrcol);

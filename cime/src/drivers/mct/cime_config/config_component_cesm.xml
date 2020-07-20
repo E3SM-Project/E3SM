@@ -161,6 +161,8 @@
       <value compset="_CAM">CO2A</value>
       <value compset="_DATM">none</value>
       <value compset="_DATM%CPLHIST.+POP\d">CO2A</value>
+      <value compset="^OMIP_DATM%IAF.*_POP2%[^_]*ECO">CO2A</value>
+      <value compset="^OMIP_DATM%JRA.*_POP2%[^_]*ECO">CO2A</value>
       <value compset="HIST.*_DATM.*_CLM">CO2A</value>
       <value compset="SSP.*_DATM.*_CLM">CO2A</value>
       <value compset="_BGC%BPRP">CO2C</value>
@@ -228,6 +230,7 @@
       <value compset="_DATM.*_DICE.*_POP2">4</value>
       <value compset="_DATM.*_DICE.*_MOM6">24</value>
       <value compset="_DATM.*_SLND.*_CICE.*_POP2">24</value>
+      <value compset="_DATM.*_SLND.*_CICE.*_POP2" grid="oi%tx0.1v3">144</value>
       <value compset="_DATM.*_SLND.*_CICE.*_MOM6">24</value>
       <value compset="_DATM.*_CICE.*_DOCN">24</value>
       <value compset="_DATM.*_DOCN%US20">24</value>
@@ -245,7 +248,14 @@
       <value compset=".+" grid="a%ne240np4">384</value>
       <value compset=".+" grid="a%ne240np4.pg2">384</value>
       <value compset=".+" grid="a%ne240np4.pg3">384</value>
-      <value compset=".+" grid="a%ne0np4CONUS.ne30x8">144</value>
+      <value compset=".+" grid="a%ne0np4CONUS.ne30x8">384</value>
+      <value compset=".+" grid="a%ne0np4.ARCTIC.ne30x4">192</value>
+      <value compset=".+" grid="a%ne0np4.ARCTICGRIS.ne30x8">384</value>
+      <value compset=".+" grid="a%C24">48</value>
+      <value compset=".+" grid="a%C48">48</value>
+      <value compset=".+" grid="a%C96">48</value>
+      <value compset=".+" grid="a%C192">96</value>
+      <value compset=".+" grid="a%C384">192</value>
       <value compset=".+" grid="a%T42">72</value>
       <value compset=".+" grid="a%T85">144</value>
       <value compset=".+" grid="a%T341">288</value>
@@ -301,6 +311,7 @@
       <value compset="_POP2" grid="oi%tx0.1v2">4</value>
       <value compset="_POP2" grid="oi%gx1v6">24</value>
       <value compset="_POP2" grid="oi%gx1v7">24</value>
+      <value compset="_POP2" grid="oi%tx0.1v3">48</value>
       <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN.*_SWAV">1</value>
       <value compset="_DATM%NYF.*_DLND.*_DICE.*_DOCN.*_DWAV">1</value>
       <value compset="_DLND.*_CISM\d">1</value>
@@ -520,7 +531,8 @@
     <default_value>284.7</default_value>
     <values match="last">
       <value compset="^2000">367.0</value>
-      <value compset="DATM.*POP2%ECO">284.7</value>
+      <value compset="DATM.*_POP2%[^_]*ECO">284.317</value>
+      <value compset="DATM.*_POP2%[^_]*ECOCESM20">284.7</value>
     </values>
     <group>run_co2</group>
     <file>env_run.xml</file>

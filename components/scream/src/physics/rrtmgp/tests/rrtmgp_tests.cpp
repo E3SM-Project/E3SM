@@ -3,7 +3,7 @@
 
 namespace {
 
-TEST_CASE("Rrtmgp", "stub") {
+TEST_CASE("rrtmgp", "stub") {
   int val = scream::rrtmgp::rrtmgp_stub();
   REQUIRE(val == 42);
 }

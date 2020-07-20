@@ -37,9 +37,9 @@ ADD_EXECUTABLE(darray_no_async darray_no_async.c)
 TARGET_LINK_LIBRARIES(darray_no_async pioc)
 add_dependencies(tests darray_no_async)
 
-ADD_EXECUTABLE(darray_async darray_async.c)
-TARGET_LINK_LIBRARIES(darray_async pioc)
-add_dependencies(tests darray_async)
+# ADD_EXECUTABLE(darray_async darray_async.c)
+# TARGET_LINK_LIBRARIES(darray_async pioc)
+# add_dependencies(tests darray_async)
 
 if (PIO_USE_MPISERIAL)
   add_test(NAME examplePio COMMAND examplePio)

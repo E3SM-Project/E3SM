@@ -782,18 +782,28 @@ end function integrate_parabola
     real(kind=real_kind), intent(in) :: dx1,dx2,dx3,dx4,y1,y2,lo,hi
     real(kind=real_kind), intent(out) :: y3,y4
 
-    real(kind=real_kind), parameter :: half = 0.5d0
+    real(kind=real_kind) :: den,num,a
+    real(kind=real_kind) :: z3,z4
 
-    real(kind=real_kind) :: x1,x2,x3,x4,a
+    ! In exact arithmetic, the following is equivalent to
+    !   x1 = half*dx1
+    !   x2 = x1 + half*(dx1 + dx2)
+    !   x3 = x2 + half*(dx2 + dx3)
+    !   x4 = x3 + half*(dx3 + dx4)
+    !   a  = (x3-x1)/(x2-x1)
+    !   y3 = (1-a)*y1 + a*y2
+    !   a  = (x4-x1)/(x2-x1)
+    !   y4 = (1-a)*y1 + a*y2
+    ! In FP, -fp-model-fast -O3 produces different results depending
+    ! on whether -qopenmp is present.
 
-    x1 = half*dx1
-    x2 = x1 + half*(dx1 + dx2)
-    x3 = x2 + half*(dx2 + dx3)
-    x4 = x3 + half*(dx3 + dx4)
-
-    a  = (x3-x1)/(x2-x1)
+    den = (dx1 + dx2)/2
+    num = den + (dx2 + dx3)/2
+    a = num/den
     y3 = (1-a)*y1 + a*y2
-    a  = (x4-x1)/(x2-x1)
+
+    num = num + (dx3 + dx4)/2
+    a  = num/den
     y4 = (1-a)*y1 + a*y2
 
     y3 = max(lo, min(hi, y3))

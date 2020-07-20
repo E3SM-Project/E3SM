@@ -33,6 +33,7 @@ Currently supported options are:
 
 - comment: has no effect, but is written out when printing the test list
 
+- workflow: adds a workflow to the test
 """
 from CIME.XML.standard_module_setup import *
 

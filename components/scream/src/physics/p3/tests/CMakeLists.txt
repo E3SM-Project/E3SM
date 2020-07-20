@@ -27,7 +27,6 @@ set(P3_TESTS_SRCS
   p3_ice_nucleation_unit_tests.cpp
   p3_ice_melting_unit_tests.cpp
   p3_saturation_unit_tests.cpp
-  p3_droplet_activation_unit_tests.cpp
   p3_ice_cldliq_wet_growth_unit_tests.cpp
   p3_get_latent_heat_unit_tests.cpp
   p3_subgrid_variance_scaling_unit_tests.cpp
@@ -36,7 +35,10 @@ set(P3_TESTS_SRCS
   p3_main_unit_tests.cpp
 )
 
-CreateUnitTest(p3_tests "${P3_TESTS_SRCS}" "${NEED_LIBS}" THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC} DEP p3_tests_ut_np1_omp1)
+# NOTE: tests inside this if statement won't be built in a baselines-only build
+if (NOT ${SCREAM_BASELINES_ONLY})
+  CreateUnitTest(p3_tests "${P3_TESTS_SRCS}" "${NEED_LIBS}" THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC} DEP p3_tests_ut_np1_omp1)
+endif()
 
 CreateUnitTest(p3_run_and_cmp_cxx "p3_run_and_cmp.cpp" "${NEED_LIBS}" THREADS ${SCREAM_TEST_MAX_THREADS} EXE_ARGS "${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline" DEP p3_tests_ut_np1_omp1 OPTIONAL EXCLUDE_MAIN_CPP)
 

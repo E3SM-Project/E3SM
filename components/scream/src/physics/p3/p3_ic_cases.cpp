@@ -1,7 +1,8 @@
 #include "p3_ic_cases.hpp"
 #include "physics_constants.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/scream_assert.hpp"
+
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/scream_assert.hpp"
 
 namespace scream {
 namespace p3 {

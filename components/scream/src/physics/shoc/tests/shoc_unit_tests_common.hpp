@@ -1,9 +1,9 @@
 #ifndef SHOC_UNIT_TESTS_COMMON_HPP
 #define SHOC_UNIT_TESTS_COMMON_HPP
 
-#include "share/scream_types.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/scream_kokkos.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/scream_kokkos.hpp"
 #include "physics/shoc/shoc_functions.hpp"
 
 namespace scream {

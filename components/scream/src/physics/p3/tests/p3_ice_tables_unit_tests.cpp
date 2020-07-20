@@ -1,12 +1,12 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/scream_kokkos.hpp"
-#include "share/scream_pack.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "ekat/scream_kokkos.hpp"
+#include "ekat/scream_pack.hpp"
+#include "ekat/util/scream_kokkos_utils.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
-#include "share/util/scream_kokkos_utils.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -108,8 +108,6 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
     Functions::init_kokkos_ice_lookup_tables(itab, itabcol);
 
     constexpr Scalar qsmall = C::QSMALL;
-    static constexpr Int max_pack_size = 16;
-    REQUIRE(Spack::n <= max_pack_size);
 
     // Load some lookup inputs, need at least one per pack value
     LookupIceData lid[max_pack_size] = {
@@ -204,7 +202,7 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
     };
 
     // Get data from fortran
-    for (Int i = 0; i < Spack::n; ++i) {
+    for (Int i = 0; i < max_pack_size; ++i) {
       find_lookuptable_indices_1a(lid[i]);
       find_lookuptable_indices_1b(lidb[i]);
       access_lookup_table(altd[i]);
@@ -212,56 +210,59 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
     }
 
     // Sync to device
-    KTH::view_1d<LookupIceData> lid_host("lid_host", Spack::n);
-    KTH::view_1d<LookupIceDataB> lidb_host("lidb_host", Spack::n);
-    view_1d<LookupIceData> lid_device("lid_device", Spack::n);
-    view_1d<LookupIceDataB> lidb_device("lidb_device", Spack::n);
-    std::copy(&lid[0], &lid[0] + Spack::n, lid_host.data());
-    std::copy(&lidb[0], &lidb[0] + Spack::n, lidb_host.data());
+    KTH::view_1d<LookupIceData> lid_host("lid_host", max_pack_size);
+    KTH::view_1d<LookupIceDataB> lidb_host("lidb_host", max_pack_size);
+    view_1d<LookupIceData> lid_device("lid_device", max_pack_size);
+    view_1d<LookupIceDataB> lidb_device("lidb_device", max_pack_size);
+    std::copy(&lid[0], &lid[0] + max_pack_size, lid_host.data());
+    std::copy(&lidb[0], &lidb[0] + max_pack_size, lidb_host.data());
     Kokkos::deep_copy(lid_device, lid_host);
     Kokkos::deep_copy(lidb_device, lidb_host);
 
     // Run the lookup from a kernel and copy results back to host
-    view_1d<IntSmallPack> int_results("int results", 5);
-    view_1d<Spack> real_results("real results", 7);
-    Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    view_2d<Int>  int_results("int results", 5, max_pack_size);
+    view_2d<Real> real_results("real results", 7, max_pack_size);
+    Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
+      const Int offset = i * Spack::n;
+
       // Init packs
       TableIce ti;
       TableRain tr;
       Spack qitot, nitot, qirim, rhop, qr, nr;
-      for(Int s = 0; s < Spack::n; ++s) {
-        qitot[s] = lid_device(s).qitot;
-        nitot[s] = lid_device(s).nitot;
-        qirim[s] = lid_device(s).qirim;
-        rhop[s]  = lid_device(s).rhop;
-
-        qr[s]    = lidb_device(s).qr;
-        nr[s]    = lidb_device(s).nr;
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        qitot[s] = lid_device(vs).qitot;
+        nitot[s] = lid_device(vs).nitot;
+        qirim[s] = lid_device(vs).qirim;
+        rhop[s]  = lid_device(vs).rhop;
+        qr[s]    = lidb_device(vs).qr;
+        nr[s]    = lidb_device(vs).nr;
       }
 
       Smask qiti_gt_small(qitot > qsmall);
-      Functions::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, ti);
-      Functions::lookup_rain(qiti_gt_small, qr, nr, tr);
-      Spack ice_result = Functions::apply_table_ice(qiti_gt_small, access_table_index-1, itab, ti);
-      Spack rain_result = Functions::apply_table_coll(qiti_gt_small, access_table_index-1, itabcol, ti, tr);
+      Functions::lookup_ice(qitot, nitot, qirim, rhop, ti, qiti_gt_small);
+      Functions::lookup_rain(qr, nr, tr, qiti_gt_small);
+      Spack ice_result = Functions::apply_table_ice(access_table_index-1, itab, ti, qiti_gt_small);
+      Spack rain_result = Functions::apply_table_coll(access_table_index-1, itabcol, ti, tr, qiti_gt_small);
 
-      int_results(0) = ti.dumi;
-      int_results(1) = ti.dumjj;
-      int_results(2) = ti.dumii;
-      int_results(3) = ti.dumzz;
+      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+        int_results(0, vs) = ti.dumi[s];
+        int_results(1, vs) = ti.dumjj[s];
+        int_results(2, vs) = ti.dumii[s];
+        int_results(3, vs) = ti.dumzz[s];
 
-      int_results(4) = tr.dumj;
+        int_results(4, vs) = tr.dumj[s];
 
-      real_results(0) = ti.dum1;
-      real_results(1) = ti.dum4;
-      real_results(2) = ti.dum5;
-      real_results(3) = ti.dum6;
+        real_results(0, vs) = ti.dum1[s];
+        real_results(1, vs) = ti.dum4[s];
+        real_results(2, vs) = ti.dum5[s];
+        real_results(3, vs) = ti.dum6[s];
 
-      real_results(4) = tr.dum3;
+        real_results(4, vs) = tr.dum3[s];
 
-      real_results(5) = ice_result;
+        real_results(5, vs) = ice_result[s];
 
-      real_results(6) = rain_result;
+        real_results(6, vs) = rain_result[s];
+      }
     });
 
     // Sync results back to host
@@ -271,25 +272,25 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
     Kokkos::deep_copy(real_results_mirror, real_results);
 
     // Validate results
-    for(int s = 0; s < Spack::n; ++s) {
+    for(int s = 0; s < max_pack_size; ++s) {
       // +1 for O vs 1-based indexing
-      REQUIRE(int_results_mirror(0)[s]+1 == lid[s].dumi);
-      REQUIRE(int_results_mirror(1)[s]+1 == lid[s].dumjj);
-      REQUIRE(int_results_mirror(2)[s]+1 == lid[s].dumii);
-      REQUIRE(int_results_mirror(3)[s]+1 == lid[s].dumzz);
+      REQUIRE(int_results_mirror(0, s)+1 == lid[s].dumi);
+      REQUIRE(int_results_mirror(1, s)+1 == lid[s].dumjj);
+      REQUIRE(int_results_mirror(2, s)+1 == lid[s].dumii);
+      REQUIRE(int_results_mirror(3, s)+1 == lid[s].dumzz);
 
-      REQUIRE(int_results_mirror(4)[s]+1 == lidb[s].dumj);
+      REQUIRE(int_results_mirror(4, s)+1 == lidb[s].dumj);
 
-      REQUIRE(real_results_mirror(0)[s] == lid[s].dum1);
-      REQUIRE(real_results_mirror(1)[s] == lid[s].dum4);
-      REQUIRE(real_results_mirror(2)[s] == lid[s].dum5);
-      REQUIRE(real_results_mirror(3)[s] == lid[s].dum6);
+      REQUIRE(real_results_mirror(0, s) == lid[s].dum1);
+      REQUIRE(real_results_mirror(1, s) == lid[s].dum4);
+      REQUIRE(real_results_mirror(2, s) == lid[s].dum5);
+      REQUIRE(real_results_mirror(3, s) == lid[s].dum6);
 
-      REQUIRE(real_results_mirror(4)[s] == lidb[s].dum3);
+      REQUIRE(real_results_mirror(4, s) == lidb[s].dum3);
 
-      REQUIRE(real_results_mirror(5)[s] == altd[s].proc);
+      REQUIRE(real_results_mirror(5, s) == altd[s].proc);
 
-      REQUIRE(real_results_mirror(6)[s] == altcd[s].proc);
+      REQUIRE(real_results_mirror(6, s) == altcd[s].proc);
     }
   }
 
@@ -307,18 +308,16 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
 
         for (size_t k = 0; k < itab.extent(2); ++k) {
           for (size_t l = 0; l < itab.extent(3); ++l) {
-            Smask qiti_gt_small(true);
-
             // Init packs to same value, TODO: how to pick use values?
             Spack qitot(0.1), nitot(0.2), qirim(0.3), rhop(0.4), qr(0.5), nr(0.6);
 
             TableIce ti;
             TableRain tr;
-            Functions::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, ti);
-            Functions::lookup_rain(qiti_gt_small, qr, nr, tr);
+            Functions::lookup_ice(qitot, nitot, qirim, rhop, ti);
+            Functions::lookup_rain(qr, nr, tr);
 
-            /*Spack proc1 = */ Functions::apply_table_ice(qiti_gt_small, 1, itab, ti);
-            //Spack proc2 = Functions::apply_table_coll(qiti_gt_small, 1, itabcol, ti, tr);
+            /*Spack proc1 = */ Functions::apply_table_ice(1, itab, ti);
+            //Spack proc2 = Functions::apply_table_coll(1, itabcol, ti, tr);
 
             // TODO: how to test?
           }

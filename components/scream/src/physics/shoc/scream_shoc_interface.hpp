@@ -1,8 +1,8 @@
 #ifndef SCREAM_SHOC_INTERFACE_HPP
 #define SCREAM_SHOC_INTERFACE_HPP
 
-#include "share/scream_assert.hpp"
-#include "share/util/scream_utils.hpp"
+#include "ekat/scream_assert.hpp"
+#include "ekat/util/scream_utils.hpp"
 
 // Put everything into a scream namespace
 namespace scream {

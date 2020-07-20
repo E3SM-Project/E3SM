@@ -1137,19 +1137,19 @@ write_darray_multi_serial(file_desc_t *file, int nvars, int fndims, const int *v
 }
 
 /**
- * Read an array of data from a file to the (parallel) IO library.
+ * Read an array of data from a file using distributed arrays.
  *
  * @param file a pointer to the open file descriptor for the file
- * that will be written to
- * @param iodesc a pointer to the defined iodescriptor for the buffer
- * @param vid the variable id to be read
+ * that will be read from.
+ * @param iodesc a pointer to the defined iodescriptor for the buffer.
+ * @param vid the variable id to be read.
  * @param iobuf the buffer to be read into from this mpi task. May be
- * null. for example we have 8 ionodes and a distributed array with
+ * null. (For example we have 8 ionodes and a distributed array with
  * global size 4, then at least 4 nodes will have a null iobuf. In
- * practice the box rearranger trys to have at least blocksize bytes
+ * practice the box rearranger tries to have at least blocksize bytes
  * on each io task and so if the total number of bytes to write is
  * less than blocksize*numiotasks then some iotasks will have a NULL
- * iobuf.
+ * iobuf.)
  * @return 0 on success, error code otherwise.
  * @ingroup PIO_read_darray_c
  * @author Jim Edwards, Ed Hartnett
@@ -1189,13 +1189,14 @@ pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, int vid, void *iobuf)
     ndims = iodesc->ndims;
 
     /* Get the number of dims for this var in the file. */
-    if ((ierr = PIOc_inq_varndims(file->pio_ncid, vid, &fndims)))
-        return pio_err(ios, file, ierr, __FILE__, __LINE__);
+    fndims = vdesc->ndims;
+    PLOG((4, "fndims %d ndims %d", fndims, ndims));
+
+    /* ??? */
 #if USE_VARD_READ
     if(!ios->async || !ios->ioproc)
         ierr = get_gdim0(file, iodesc, vid, fndims, &gdim0);
 #endif
-    /* PLOG((4, "fndims %d ndims %d", fndims, ndims)); */
 
     /* IO procs will read the data. */
     if (ios->ioproc)
@@ -1461,15 +1462,14 @@ pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc, int vid,
     ndims = iodesc->ndims;
 
     /* Get number of dims for this var. */
-    if ((ierr = PIOc_inq_varndims(file->pio_ncid, vid, &fndims)))
-        return pio_err(ios, file, ierr, __FILE__, __LINE__);
+    fndims = vdesc->ndims;
 
     /* If setframe was not called, use a default value of 0. This is
      * required for backward compatibility. */
     if (fndims == ndims + 1 && vdesc->record < 0)
         vdesc->record = 0;
-    PLOG((3, "fndims %d ndims %d vdesc->record %d", fndims, ndims,
-          vdesc->record));
+    PLOG((3, "fndims %d ndims %d vdesc->record %d vdesc->ndims %d", fndims,
+          ndims, vdesc->record, vdesc->ndims));
 
     /* Confirm that we are being called with the correct ndims. */
     pioassert((fndims == ndims && vdesc->record < 0) ||
@@ -1714,6 +1714,7 @@ pio_read_darray_nc_serial(file_desc_t *file, io_desc_t *iodesc, int vid,
         return pio_err(ios, NULL, ierr, __FILE__, __LINE__);
 #endif /* TIMING */
 
+    PLOG((2, "pio_read_darray_nc_serial complete ierr %d", ierr));
     return PIO_NOERR;
 }
 

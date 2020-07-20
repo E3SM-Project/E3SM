@@ -95,6 +95,10 @@ character(len=256) :: cam_branch_file = ' '
 !
 ! seed_clock           logical: if .true., XOR the system_clock with the seed,
 !                      wheter it includes a custom seed or not. Default .false.
+! 
+! phys_chnk_fdim       Declared first dimension for physics variables (chunks).
+!                      See phys_grid module.  
+integer :: phys_chnk_fdim
 !
 ! phys_alltoall        Dynamics/physics transpose option. See phys_grid module.
 !
@@ -304,6 +308,7 @@ contains
                      tracers_flag, &
                      indirect, &
                      print_step_cost,  &
+                     phys_chnk_fdim,  &
                      phys_alltoall, phys_loadbalance, phys_twin_algorithm, &
                      phys_chnk_per_thd, phys_chnk_cost_write
 
@@ -337,6 +342,7 @@ contains
 
    ! Get default values of runtime options for physics chunking.
    call phys_grid_defaultopts(                      &
+      phys_chnk_fdim_out      =phys_chnk_fdim,      &
       phys_loadbalance_out    =phys_loadbalance,    &
       phys_twin_algorithm_out =phys_twin_algorithm, &
       phys_alltoall_out       =phys_alltoall,       &
@@ -410,6 +416,7 @@ contains
 
    ! Set runtime options for physics chunking.
    call phys_grid_setopts(                          &
+       phys_chnk_fdim_in      =phys_chnk_fdim,      &
        phys_loadbalance_in    =phys_loadbalance,    &
        phys_twin_algorithm_in =phys_twin_algorithm, &
        phys_alltoall_in       =phys_alltoall,       &
@@ -633,6 +640,7 @@ subroutine distnl
    call mpibcast (indirect     , 1 ,mpilog, 0,mpicom)
 
    ! Physics chunk tuning
+   call mpibcast (phys_chnk_fdim     ,1,mpiint,0,mpicom)
    call mpibcast (phys_loadbalance   ,1,mpiint,0,mpicom)
    call mpibcast (phys_twin_algorithm,1,mpiint,0,mpicom)
    call mpibcast (phys_alltoall      ,1,mpiint,0,mpicom)
