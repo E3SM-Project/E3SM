@@ -175,6 +175,12 @@ subroutine modal_aer_opt_init()
                      history_aero_optics_out = history_aero_optics )
 
    ! Add diagnostic fields to history output.
+   call addfld ('dryballi',(/ 'lev' /),    'A','/m','Aerosol extinction', flag_xyfill=.true.)
+   call addfld ('wetballi',(/ 'lev' /),    'A','/m','Aerosol extinction', flag_xyfill=.true.)
+   call addfld ('qaerballi',(/ 'lev' /),    'A','/m','Aerosol extinction', flag_xyfill=.true.)
+   call add_default ('dryballi'     , 1, ' ')
+   call add_default ('wetballi'     , 1, ' ')
+   call add_default ('qaerballi'     , 1, ' ')
 
    call addfld ('EXTINCT',(/ 'lev' /),    'A','/m','Aerosol extinction', flag_xyfill=.true.)
    call addfld ('tropopause_m',horiz_only,    'A',' m  ','tropopause level in meters', flag_xyfill=.true.)
@@ -372,19 +378,19 @@ end subroutine modal_aer_opt_init
 !===============================================================================
 
 subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, ext_cmip6_sw, trop_level,  &
-                         tauxar, wa, ga, fa)
+                         tauxar, wa, ga, fa,state_bef_aero,dt)
 
   use shr_log_mod ,     only: errmsg => shr_log_errmsg
    ! calculates aerosol sw radiative properties
 
    integer,             intent(in) :: list_idx       ! index of the climate or a diagnostic list
-   type(physics_state), intent(in), target :: state          ! state variables
+   type(physics_state), intent(in), target :: state,state_bef_aero          ! state variables
    
    type(physics_buffer_desc), pointer :: pbuf(:)
    integer,             intent(in) :: nnite          ! number of night columns
    integer,             intent(in) :: idxnite(nnite) ! local column indices of night columns
    integer,             intent(in) :: trop_level(pcols)!tropopause level for each column
-   real(r8),            intent(in) :: ext_cmip6_sw(pcols,pver) !balli comments
+   real(r8),            intent(in) :: ext_cmip6_sw(pcols,pver),dt !balli comments
    logical,             intent(in) :: is_cmip6_volc !BALLI-comments
 
    real(r8), intent(out) :: tauxar(pcols,0:pver,nswbands) ! layer extinction optical depth
@@ -611,11 +617,13 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
    qaerwat_m(:,:,:)  = huge(1.0_r8)
    wetdens_m(:,:,:)  = huge(1.0_r8)
 
-      call modal_aero_calcsize_sub(state, pbuf, do_adjust_in=.false., do_aitacc_transfer_in=.false., &
+      call modal_aero_calcsize_sub(state_bef_aero, pbuf,deltat=dt, do_adjust_in=.true., do_aitacc_transfer_in=.true., &
            list_idx=list_idx, dgnumdry_m=dgnumdry_m)
-      call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
+      call modal_aero_wateruptake_dr(state_bef_aero, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
                                      qaerwat_m, wetdens_m)
-
+      call outfld('dryballi',  dgnumdry_m, pcols, lchnk)
+      call outfld('wetballi',  dgnumwet_m, pcols, lchnk)
+      call outfld('qaerballi',  qaerwat_m, pcols, lchnk)
    do m = 1, nmodes
 
       ! diagnostics for visible band for each mode
@@ -1215,15 +1223,15 @@ end subroutine modal_aero_sw
 
 !===============================================================================
 
-subroutine modal_aero_lw(list_idx, state, pbuf, tauxar)
+subroutine modal_aero_lw(list_idx, state, pbuf, tauxar,state_bef_aero,dt)
   use shr_log_mod ,     only: errmsg => shr_log_errmsg
    ! calculates aerosol lw radiative properties
 
    integer,             intent(in)  :: list_idx ! index of the climate or a diagnostic list
-   type(physics_state), intent(in), target :: state    ! state variables
+   type(physics_state), intent(in), target :: state,state_bef_aero    ! state variables
    
    type(physics_buffer_desc), pointer :: pbuf(:)
-
+   real(r8) ::dt
    real(r8), intent(out) :: tauxar(pcols,pver,nlwbands) ! layer absorption optical depth
 
    ! Local variables
@@ -1311,9 +1319,9 @@ subroutine modal_aero_lw(list_idx, state, pbuf, tauxar)
    qaerwat_m(:,:,:)  = huge(1.0_r8)
    wetdens_m(:,:,:)  = huge(1.0_r8)
    
-      call modal_aero_calcsize_sub(state, pbuf, do_adjust_in=.false., do_aitacc_transfer_in=.false., &
+      call modal_aero_calcsize_sub(state_bef_aero, pbuf, deltat=dt, do_adjust_in=.true., do_aitacc_transfer_in=.true., &
            list_idx=list_idx, dgnumdry_m=dgnumdry_m)
-      call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
+      call modal_aero_wateruptake_dr(state_bef_aero, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
                                      qaerwat_m, wetdens_m)
 
    do m = 1, nmodes
