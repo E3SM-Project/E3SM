@@ -74,6 +74,7 @@ CONTAINS
     integer(IN)       :: shrloglev                 ! original log level
     integer(IN)       :: ierr                      ! error code
     logical           :: scmMode = .false.         ! single column mode
+    logical           :: iop_mode = .false.        ! IOP mode
     real(R8)          :: scmLat  = shr_const_SPVAL ! single column lat
     real(R8)          :: scmLon  = shr_const_SPVAL ! single column lon
     character(*), parameter :: F00   = "('(docn_comp_init) ',8a)"
@@ -91,6 +92,7 @@ CONTAINS
     ! Obtain infodata variables
     call seq_infodata_getData(infodata, &
          single_column=scmMode, &
+         iop_mode=iop_mode, &
          scmlat=scmlat, scmlon=scmLon, &
          read_restart=read_restart)
 
@@ -154,7 +156,7 @@ CONTAINS
          seq_flds_x2o_fields, seq_flds_o2x_fields, &
          SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
          inst_suffix, inst_name, logunit, read_restart, &
-         scmMode, scmlat, scmlon)
+         scmMode, iop_mode, scmlat, scmlon)
 
     !----------------------------------------------------------------------------
     ! Fill infodata that needs to be returned from docn
