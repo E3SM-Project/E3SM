@@ -5,7 +5,7 @@ namespace scream {
 namespace p3 {
 
 /*
- * Explicit instantiation for doing p3 get_time_space_phys_variables function on Reals using the
+ * Explicit instantiation for doing get_time_space_phys_variables function on Reals using the
  * default device.
  */
 

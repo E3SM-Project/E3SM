@@ -7,7 +7,7 @@ namespace scream {
 namespace p3 {
 
 /*
- * Implementation of p3 rime density calculation function.
+ * Implementation of rime density calculation function.
  * Clients should NOT #include this file, but include p3_functions.hpp instead.
  */
 

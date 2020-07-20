@@ -5,7 +5,7 @@ namespace scream {
 namespace p3 {
 
 /*
- * Explicit instatiation for doing p3 cloud sedimentation on Reals using the
+ * Explicit instatiation for doing cloud sedimentation on Reals using the
  * default device.
  */
 

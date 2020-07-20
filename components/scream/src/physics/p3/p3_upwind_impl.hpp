@@ -7,7 +7,7 @@ namespace scream {
 namespace p3 {
 
 /*
- * Implementation of p3 upwind functions. Clients should NOT #include
+ * Implementation of upwind functions. Clients should NOT #include
  * this file, #include p3_functions.hpp instead.
  */
 

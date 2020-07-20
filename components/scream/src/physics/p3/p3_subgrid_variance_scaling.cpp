@@ -5,7 +5,7 @@ namespace scream {
 namespace p3 {
 
 /*
- * Explicit instantiation for doing p3 subgrid variance calculation on Reals using the
+ * Explicit instantiation for doing subgrid variance calculation on Reals using the
  * default device.
  */
 

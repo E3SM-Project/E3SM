@@ -5,7 +5,7 @@ namespace scream {
 namespace p3 {
 
 /*
- * Explicit instatiation for doing p3 dsd2 functions on Reals using the
+ * Explicit instatiation for doing dsd2 functions on Reals using the
  * default device.
  */
 

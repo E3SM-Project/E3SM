@@ -5,7 +5,7 @@ namespace scream {
 namespace p3 {
 
 /*
- * Explicit instantiation for doing p3 find functions on Reals using the
+ * Explicit instantiation for doing find functions on Reals using the
  * default device.
  */
 

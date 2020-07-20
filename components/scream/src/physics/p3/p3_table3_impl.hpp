@@ -7,7 +7,7 @@ namespace scream {
 namespace p3 {
 
 /*
- * Implementation of p3 table functions. Clients should NOT #include
+ * Implementation of table functions. Clients should NOT #include
  * this file, #include p3_functions.hpp instead.
  */
 
