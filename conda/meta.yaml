@@ -7,10 +7,12 @@ package:
 
 source:
     url: https://github.com/E3SM-Project/e3sm_diags/archive/v{{ version }}.tar.gz
-    sha256: 9c169c27fcdfec870b4e20fd71c24a3a426136424c32003bb9a714af157a3cb5 
+    sha256: 9c169c27fcdfec870b4e20fd71c24a3a426136424c32003bb9a714af157a3cb5
+    patches:
+      - 0001-one-more-change-on-version-before-releasing.patch
 
 build:
-    number: 1
+    number: 2
     noarch: python
     script: {{ PYTHON }} -m pip install . --no-deps -vv
 
