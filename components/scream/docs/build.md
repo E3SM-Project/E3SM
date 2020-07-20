@@ -22,7 +22,7 @@ CMake's testing tool.
 ## 1. Start From a Trustworthy Commit
 
 First, make sure you've cloned the [SCREAM repo](https://github.com/E3SM-Project/scream)
-to `SCREAM_SRC_DIR`. If you're running a branch that's not `master`, check out
+to `SCREAM_SRC_DIR` (including all submodules). If you're running a branch that's not `master`, check out
 this branch with
 
 ```
@@ -74,16 +74,16 @@ make -j
 Before running the tests, generate a baseline file:
 
 ```
-cd $RUN_ROOT_DIR/test
+cd $RUN_ROOT_DIR
 make baseline
 ```
 
 The tests will run, automatically using the baseline file, which is located in
 the CMake-configurable path `${SCREAM_TEST_DATA_DIR}`. By default, this path is
-set to `data/` within your build directory (which is `$RUN_ROOT_DIR/test`, in
+set to `data/` within your build directory (which is `$RUN_ROOT_DIR`, in
 our case).
 
-To run all of SCREAM's tests, make sure you're in `RUN_ROOT_DIR/test` and type
+To run all of SCREAM's tests, make sure you're in `RUN_ROOT_DIR/tests` and type
 
 ```
 ctest -VV
