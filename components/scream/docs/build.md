@@ -83,7 +83,7 @@ the CMake-configurable path `${SCREAM_TEST_DATA_DIR}`. By default, this path is
 set to `data/` within your build directory (which is `$RUN_ROOT_DIR`, in
 our case).
 
-To run all of SCREAM's tests, make sure you're in `RUN_ROOT_DIR/tests` and type
+To run all of SCREAM's tests, make sure you're in `RUN_ROOT_DIR` and type
 
 ```
 ctest -VV
@@ -92,7 +92,7 @@ ctest -VV
 This runs everything and reports results in an extra-verbose (`-VV`) manner.
 
 You can also run subsets of the SCREAM tests. For example, to run only the
-P3 regression tests (again, from the `RUN_ROOT_DIR/test` directory), use
+P3 regression tests (again, from the `RUN_ROOT_DIR` directory), use
 
 ```
 ctest -R p3_regression
