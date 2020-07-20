@@ -5,7 +5,7 @@ namespace scream {
 namespace p3 {
 
 /*
- * Explicit instantiation for doing p3 conservation functions on Reals using the
+ * Explicit instantiation for computing rime density on Reals using the
  * default device.
  */
 
