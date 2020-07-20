@@ -587,7 +587,7 @@ end subroutine shr_scam_getCloseLatLonFile
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-subroutine shr_scam_checkSurface(scmlon, scmlat, ocn_compid, ocn_mpicom, &
+subroutine shr_scam_checkSurface(scmlon, scmlat, iop_mode, ocn_compid, ocn_mpicom, &
      lnd_present, sno_present, ocn_present, ice_present, &
      rof_present, flood_present, rofice_present)
 
@@ -601,6 +601,7 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, ocn_compid, ocn_mpicom, &
 ! !INPUT/OUTPUT PARAMETERS:
 
    real(R8),                     intent(in)  :: scmlon,scmlat ! single column lat lon
+   logical,                      intent(in)  :: iop_mode     ! iop mode logical
    integer(IN),                  intent(in)  :: ocn_compid   ! id for ocean model
    integer(IN),                  intent(in)  :: ocn_mpicom   ! mpi communicator for ocean
    logical,            optional, intent(inout) :: lnd_present  ! land point
@@ -712,7 +713,7 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, ocn_compid, ocn_mpicom, &
       call shr_strdata_readnml(SCAMSDAT,'docn_in')
       call shr_dmodel_readgrid(SCAMSDAT%grid,SCAMSDAT%gsmap,SCAMSDAT%nxg,SCAMSDAT%nyg,SCAMSDAT%nzg, &
            SCAMSDAT%domainfile, ocn_compid, ocn_mpicom, '2d1d', readfrac=.true., &
-           scmmode=.true.,scmlon=scmlon,scmlat=scmlat)
+           scmmode=.true.,iop_mode=iop_mode,scmlon=scmlon,scmlat=scmlat)
       nfrac = mct_aVect_indexRA(SCAMSDAT%grid%data,'frac')
 
       ocn_point = (SCAMSDAT%grid%data%rAttr(nfrac,1) > 0._r8)
