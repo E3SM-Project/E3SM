@@ -124,13 +124,14 @@ end subroutine aer_rad_props_init
 !==============================================================================
 
 subroutine aer_rad_props_sw(list_idx, state, pbuf,  nnite, idxnite, is_cmip6_volc, &
-                            tau, tau_w, tau_w_g, tau_w_f)
+                            tau, tau_w, tau_w_g, tau_w_f,state_bef_aero,dt)
 
    ! Return bulk layer tau, omega, g, f for all spectral intervals.
 
    ! Arguments
+   real(r8) :: dt
    integer,             intent(in) :: list_idx      ! index of the climate or a diagnostic list
-   type(physics_state), intent(in), target :: state
+   type(physics_state), intent(in), target :: state,state_bef_aero
    
    type(physics_buffer_desc), pointer :: pbuf(:)
    integer,             intent(in) :: nnite                ! number of night columns
@@ -263,7 +264,7 @@ subroutine aer_rad_props_sw(list_idx, state, pbuf,  nnite, idxnite, is_cmip6_vol
    ! Contributions from modal aerosols.
    if (nmodes > 0) then
       call modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, ext_cmip6_sw(:,:,idx_sw_diag), trop_level, &
-                         tau, tau_w, tau_w_g, tau_w_f)
+                         tau, tau_w, tau_w_g, tau_w_f,state_bef_aero,dt)
    else
       tau    (1:ncol,:,:) = 0._r8
       tau_w  (1:ncol,:,:) = 0._r8
@@ -346,7 +347,7 @@ end subroutine aer_rad_props_sw
 
 !==============================================================================
 
-subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, state, pbuf,  odap_aer)
+subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, state, pbuf,  odap_aer,state_bef_aero,dt)
 
    use radconstants,  only: ot_length
 
@@ -358,9 +359,10 @@ subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, state, pbuf,  odap_aer)
    ! similar to the sw with routines like get_hygro_lw_abs
 
    ! Arguments
+   real(r8) :: dt
    logical,             intent(in)  :: is_cmip6_volc
    integer,             intent(in)  :: list_idx                      ! index of the climate or a diagnostic list
-   type(physics_state), intent(in), target :: state
+   type(physics_state), intent(in), target :: state,state_bef_aero
    
    type(physics_buffer_desc), pointer :: pbuf(:)
    real(r8),            intent(out) :: odap_aer(pcols,pver,nlwbands) ! [fraction] absorption optical depth, per layer
@@ -418,7 +420,7 @@ subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, state, pbuf,  odap_aer)
 
    ! Contributions from modal aerosols.
    if (nmodes > 0) then
-      call modal_aero_lw(list_idx, state, pbuf, odap_aer)
+      call modal_aero_lw(list_idx, state, pbuf, odap_aer,state_bef_aero,dt)
    else
       odap_aer = 0._r8
    end if

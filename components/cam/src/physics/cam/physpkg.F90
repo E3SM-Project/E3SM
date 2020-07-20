@@ -1905,7 +1905,7 @@ subroutine tphysbc (ztodt,               &
     use microp_aero,     only: microp_aero_run
     use macrop_driver,   only: macrop_driver_tend
     use physics_types,   only: physics_state, physics_tend, physics_ptend, &
-         physics_ptend_init, physics_ptend_sum, physics_state_check, physics_ptend_scale
+         physics_ptend_init, physics_ptend_sum, physics_state_check, physics_ptend_scale,physics_state_copy
     use cam_diagnostics, only: diag_conv_tend_ini, diag_phys_writeout, diag_conv, diag_export, diag_state_b4_phys_write
     use cam_history,     only: outfld, fieldname_len
     use physconst,       only: cpair, latvap, gravit, rga
@@ -1965,7 +1965,7 @@ subroutine tphysbc (ztodt,               &
     !
 
     type(physics_ptend)   :: ptend            ! indivdual parameterization tendencies
-    type(physics_state)   :: state_sc         ! state for sub-columns
+    type(physics_state)   :: state_sc,state_bef_aero         ! state for sub-columns
     type(physics_ptend)   :: ptend_sc         ! ptend for sub-columns
     type(physics_ptend)   :: ptend_aero       ! ptend for microp_aero
     type(physics_ptend)   :: ptend_aero_sc    ! ptend for microp_aero on sub-columns
@@ -2722,7 +2722,9 @@ if (l_tracer_aero) then
             cam_out,                                                                 & !Intent-inout
             pbuf,                                                                    & !Pointer
             ptend                                                                    ) !Intent-out
-       
+
+       !BSINGH - copy sate
+       call physics_state_copy(state,state_bef_aero)
        call physics_update(state, ptend, ztodt, tend)
 
 
@@ -2801,7 +2803,7 @@ if (l_rad) then
          cam_out, cam_in, &
          cam_in%landfrac,landm,cam_in%icefrac, cam_in%snowhland, &
          fsns,    fsnt, flns,    flnt,  &
-         fsds, net_flx,is_cmip6_volc)
+         fsds, net_flx,is_cmip6_volc,state_bef_aero,ztodt)
 
     ! Set net flux used by spectral dycores
     do i=1,ncol
