@@ -39,11 +39,11 @@ TEST_CASE("shoc_tke_isotropic_ts", "shoc") {
   //  timescale with brunt > 0 is less.   
   
   // Integrated brunt vaisalla 
-  Real brunt_int_st[shcol] = {0.1, 0.1};
+  Real brunt_int_st = 0.1;
   // TKE [m2/s2]
-  Real tke_st[shcol] = {0.4, 0.4};
+  Real tke_st = 0.4;
   // Dissipation rate [m2/s3]
-  Real diss_st[shcol] = {0.1, 0.1};
+  Real diss_st = 0.1;
   // Brunt Vaisalla frequency [/s]
   Real brunt_st[shcol] = {0.004, -0.004}; 
 
@@ -55,12 +55,14 @@ TEST_CASE("shoc_tke_isotropic_ts", "shoc") {
 
   // Fill in test data on zt_grid.
   for(Int s = 0; s < SDS.shcol; ++s) {
-    SDS.brunt_int[s] = brunt_int_st[s];
+    // Column only input
+    SDS.brunt_int[s] = brunt_int_st;
     for(Int n = 0; n < SDS.nlev; ++n) {
       const auto offset = n + s * SDS.nlev;
 
-      SDS.tke[offset] = tke_st[n];
-      SDS.diss[offset] = diss_st[n];
+      SDS.tke[offset] = tke_st;
+      SDS.diss[offset] = diss_st;
+      SDS.brunt[offset] = brunt_st[s];
     }
   }
 
@@ -96,22 +98,23 @@ TEST_CASE("shoc_tke_isotropic_ts", "shoc") {
   //  a higher isotropy timescale   
   
   // Integrated brunt vaisalla 
-  Real brunt_int_diss[shcol] = {0.1, 0.1};
+  Real brunt_int_diss = 0.1;
   // TKE [m2/s2]
-  Real tke_diss[shcol] = {0.4, 0.4};
+  Real tke_diss = 0.4;
   // Dissipation rate [m2/s3]
   Real diss_diss[shcol] = {0.1, 0.2};
   // Brunt Vaisalla frequency [/s]
-  Real brunt_diss[shcol] = {0.004, 0.004}; 
+  Real brunt_diss = 0.004; 
   
   // Fill in test data on zt_grid.
   for(Int s = 0; s < SDS.shcol; ++s) {
-    SDS.brunt_int[s] = brunt_int_diss[s];
+    SDS.brunt_int[s] = brunt_int_diss;
     for(Int n = 0; n < SDS.nlev; ++n) {
       const auto offset = n + s * SDS.nlev;
 
-      SDS.tke[offset] = tke_diss[n];
-      SDS.diss[offset] = diss_diss[n];
+      SDS.tke[offset] = tke_diss;
+      SDS.diss[offset] = diss_diss[s];
+      SDS.brunt[offset] = brunt_diss;
     }
   }
 
