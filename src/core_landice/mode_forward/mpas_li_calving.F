@@ -1576,11 +1576,11 @@ module li_calving
 
          call mpas_log_write("distribute_calving_flux failed to distribute all required ice - " // &
                     " ice was left after depleting all neighbors." // &
-                    "  Search needs to be expanded to neighbors' neighbors.")
-         !call mpas_log_write("   On this processor: $i cells contain uncalved ice, " // &
-         !        "for a total uncalved volume of $r m^3 ($r%).", &
-         !        MPAS_LOG_WARN, intArgs=(/uncalvedCount/), &
-         !        realArgs=(/uncalvedTotal, 100.0_RKIND * uncalvedTotal/(requiredCalvingVolumeRate(iCell) * deltat)/))
+                    "  Search needs to be expanded to neighbors' neighbors.", MPAS_LOG_ERR)
+         call mpas_log_write("   On this processor: $i cells contain uncalved ice, " // &
+                 "for a total uncalved volume of $r m^3 ($r%).", &
+                 MPAS_LOG_ERR, intArgs=(/uncalvedCount/), &
+                 realArgs=(/uncalvedTotal, 100.0_RKIND * uncalvedTotal/(sum(requiredCalvingVolumeRate * deltat))/))
       endif
 
       call mpas_deallocate_scratch_field(cellVolumeField, .true.)
