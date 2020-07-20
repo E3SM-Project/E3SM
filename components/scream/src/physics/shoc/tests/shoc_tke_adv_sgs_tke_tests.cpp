@@ -144,21 +144,18 @@ TEST_CASE("shoc_tke_adv_sgs_tke", "shoc") {
   
   // Call the fortran implementation
   adv_sgs_tke(nlev, SDS);  
-  
+
   // Check to make sure that the column with 
   //  the smallest length scale has larger 
   //  dissipation rate
-  Real mix_small = 40000.0; // Initialize to something large
-  Real diss_large = 0.0; // Initialize to something small
   for(Int s = 0; s < SDS.shcol; ++s) {
     for(Int n = 0; n < SDS.nlev; ++n) {
       const auto offset = n + s * SDS.nlev;
-      
-      if (SDS.shoc_mix[offset] < mix_small){
-        REQUIRE(SDS.diss[offset] > diss_large);
-	mix_small = SDS.shoc_mix[offset];
-	diss_large = SDS.diss[offset];
-      }
+      // Get value corresponding to next column
+      const auto offsets = n = (s+1) * SDS.nlev; 
+      if(SDS.shoc_mix[offset] < SDS.shoc_mix[offsets]){
+        REQUIRE(SDS.diss[offset] > SDS.diss[offsets]);
+      }      
     }
   }  
   
