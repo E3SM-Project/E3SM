@@ -19,7 +19,7 @@ module SnowHydrologyMod
   use abortutils      , only : endrun
   use elm_varpar      , only : nlevsno
   use elm_varctl      , only : iulog, use_extrasnowlayers
-  use elm_varcon      , only : namec
+  use elm_varcon      , only : namec, h2osno_max
   use atm2lndType     , only : atm2lnd_type
   use AerosolType     , only : aerosol_type
   use TemperatureType , only : temperature_type
@@ -43,6 +43,7 @@ module SnowHydrologyMod
   public :: BuildSnowFilter            ! Construct snow/no-snow filters
   public :: InitSnowLayers             ! Initialize cold-start snow layer thickness  
   public :: NewSnowBulkDensity         ! Compute bulk density of any newly-fallen snow
+  public :: SnowCapping                ! Remove snow mass for capped columns
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: Combo            ! Returns the combined variables: dz, t, wliq, wice.
@@ -225,7 +226,7 @@ contains
          c = filter_snowc(fc)
          l=col_pp%landunit(c)
 
-         if (do_capsnow(c)) then
+         if (do_capsnow(c) .and. .not. use_extrasnowlayers) then
             wgdif = h2osoi_ice(c,snl(c)+1) - frac_sno_eff(c)*qflx_sub_snow(c)*dtime
             h2osoi_ice(c,snl(c)+1) = wgdif
             if (wgdif < 0._r8) then
@@ -2058,7 +2059,127 @@ contains
 
     end associate
    end subroutine InitSnowLayers
-   !ams++   
+   !ams++
+   
+   !ams++ from CLM (clm4_5_12_r190)
+   !-----------------------------------------------------------------------
+   subroutine SnowCapping(bounds, num_nolakec, filter_initc, num_snowc, filter_snowc, &
+        aerosol_vars, waterflux_vars, waterstate_vars )
+     !
+     ! !DESCRIPTION:
+     ! Removes mass from bottom snow layer for columns that exceed the maximum snow depth.
+     ! This routine is called twice: once for non-lake columns and once for lake columns. 
+     ! The initialization of the snow capping fluxes should only be done ONCE for each group,
+     ! therefore they are a passed as an extra argument (filter_initc). 
+     ! Density and temperature of the layer are conserved (density needs some work, temperature is a state
+     ! variable)
+     !
+     ! !USES:
+     use clm_time_manager   , only : get_step_size
+     !
+     ! !ARGUMENTS:
+     type(bounds_type)      , intent(in)    :: bounds          
+     integer                , intent(in)    :: num_nolakec       ! number of column points that need to be initialized
+     integer                , intent(in)    :: filter_initc(:) ! column filter for points that need to be initialized
+     integer                , intent(in)    :: num_snowc       ! number of column snow points in column filter
+     integer                , intent(in)    :: filter_snowc(:) ! column filter for snow points
+     type(aerosol_type)     , intent(inout) :: aerosol_vars
+     type(waterflux_type)   , intent(inout) :: waterflux_vars 
+     type(waterstate_type)  , intent(inout) :: waterstate_vars
+     !
+     ! !LOCAL VARIABLES:
+     real(r8)   :: dtime                            ! land model time step (sec)
+     real(r8)   :: mss_snwcp_tot                    ! total snow capping mass [kg/m2] 
+     real(r8)   :: mss_snow_bottom_lyr              ! total snow mass (ice+liquid) in bottom layer [kg/m2]
+     real(r8)   :: icefrac                          ! fraction of ice mass w.r.t. total mass [unitless]
+     real(r8)   :: frac_adjust                      ! fraction of mass remaining after capping
+     real(r8)   :: rho                              ! partial density of ice (not scaled with frac_sno) [kg/m3]
+     integer    :: fc, c                            ! counters
+     ! Always keep at least this fraction of the bottom snow layer when doing snow capping
+     ! This needs to be slightly greater than 0 to avoid roundoff problems
+     real(r8), parameter :: min_snow_to_keep = 1.e-9  ! fraction of bottom snow layer to keep with capping
+
+     !-----------------------------------------------------------------------
+     associate( &
+         qflx_snwcp_ice     => col_wf%qflx_snwcp_ice               , & ! Output: [real(r8) (:)   ]  excess solid h2o due to snow capping (outgoing) (mm H2O /s) [+]
+         qflx_snwcp_liq     => col_wf%qflx_snwcp_liq               , & ! Output: [real(r8) (:)   ]  excess liquid h2o due to snow capping (outgoing) (mm H2O /s) [+]
+         h2osoi_ice         => col_ws%h2osoi_ice                   , & ! In/Out: [real(r8) (:,:) ] ice lens (kg/m2)                       
+         h2osoi_liq         => col_ws%h2osoi_liq                   , & ! In/Out: [real(r8) (:,:) ] liquid water (kg/m2)                   
+         h2osno             => col_ws%h2osno                       , & ! Input:  [real(r8) (:)   ] snow water (mm H2O)
+         mss_bcphi          => aerosol_vars%mss_bcphi_col          , & ! In/Out: [real(r8) (:,:) ] hydrophilic BC mass in snow (col,lyr) [kg]
+         mss_bcpho          => aerosol_vars%mss_bcpho_col          , & ! In/Out: [real(r8) (:,:) ] hydrophobic BC mass in snow (col,lyr) [kg]
+         mss_ocphi          => aerosol_vars%mss_ocphi_col          , & ! In/Out: [real(r8) (:,:) ] hydrophilic OC mass in snow (col,lyr) [kg]
+         mss_ocpho          => aerosol_vars%mss_ocpho_col          , & ! In/Out: [real(r8) (:,:) ] hydrophobic OC mass in snow (col,lyr) [kg]
+         mss_dst1           => aerosol_vars%mss_dst1_col           , & ! In/Out: [real(r8) (:,:) ] dust species 1 mass in snow (col,lyr) [kg]
+         mss_dst2           => aerosol_vars%mss_dst2_col           , & ! In/Out: [real(r8) (:,:) ] dust species 2 mass in snow (col,lyr) [kg]
+         mss_dst3           => aerosol_vars%mss_dst3_col           , & ! In/Out: [real(r8) (:,:) ] dust species 3 mass in snow (col,lyr) [kg]
+         mss_dst4           => aerosol_vars%mss_dst4_col           , & ! In/Out: [real(r8) (:,:) ] dust species 4 mass in snow (col,lyr) [kg]
+         dz                 => col_pp%dz                             & ! In/Out: [real(r8) (:,:) ] layer thickness (m)
+     )
+
+     ! Determine model time step
+     dtime = get_step_size()
+
+     ! Initialize capping fluxes for all columns in domain (lake or non-lake)
+     do fc = 1, num_nolakec
+        c = filter_initc(fc)
+        qflx_snwcp_ice(c) = 0.0_r8
+        qflx_snwcp_liq(c) = 0.0_r8
+     end do
+
+     loop_columns: do fc = 1, num_snowc
+        c = filter_snowc(fc)
+
+        if (h2osno(c) > h2osno_max) then
+           mss_snow_bottom_lyr = h2osoi_ice(c,0) + h2osoi_liq(c,0) 
+           mss_snwcp_tot = min(h2osno(c)-h2osno_max, mss_snow_bottom_lyr * (1._r8 - min_snow_to_keep)) ! Can't remove more mass than available
+
+           ! Ratio of snow/liquid in bottom layer determines partitioning of runoff fluxes
+           icefrac = h2osoi_ice(c,0) / mss_snow_bottom_lyr
+           qflx_snwcp_ice(c) = mss_snwcp_tot/dtime * icefrac
+           qflx_snwcp_liq(c) = mss_snwcp_tot/dtime * (1._r8 - icefrac)
+
+           rho = h2osoi_ice(c,0) / dz(c,0) ! ice only
+
+           ! Adjust water content
+           h2osoi_ice(c,0) = h2osoi_ice(c,0) - qflx_snwcp_ice(c)*dtime
+           h2osoi_liq(c,0) = h2osoi_liq(c,0) - qflx_snwcp_liq(c)*dtime
+
+           ! Scale dz such that ice density (or: pore space) is conserved
+           !
+           ! Avoid scaling dz for very low ice densities. This can occur, in principle, if
+           ! the layer is mostly liquid water. Furthermore, this check is critical in the
+           ! unlikely event that rho is 0, which can happen if the layer is entirely liquid
+           ! water.
+           if (rho > 1.0_r8) then
+             dz(c,0) = h2osoi_ice(c,0) / rho 
+           end if
+
+           ! Check that water capacity is still positive
+           if (h2osoi_ice(c,0) < 0._r8 .or. h2osoi_liq(c,0) < 0._r8 ) then
+              write(iulog,*)'ERROR: capping procedure failed (negative mass remaining) c = ',c
+              write(iulog,*)'h2osoi_ice = ', h2osoi_ice(c,0), ' h2osoi_liq = ', h2osoi_liq(c,0)
+              call endrun(decomp_index=c, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))
+           end if
+
+           ! Correct the top layer aerosol mass to account for snow capping.
+           ! This approach conserves the aerosol mass concentration but not aerosol mass. 
+           frac_adjust = (mss_snow_bottom_lyr - mss_snwcp_tot) / mss_snow_bottom_lyr
+           mss_bcphi(c,0)   = mss_bcphi(c,0) * frac_adjust 
+           mss_bcpho(c,0)   = mss_bcpho(c,0) * frac_adjust
+           mss_ocphi(c,0)   = mss_ocphi(c,0) * frac_adjust
+           mss_ocpho(c,0)   = mss_ocpho(c,0) * frac_adjust
+           mss_dst1(c,0)    = mss_dst1(c,0) * frac_adjust
+           mss_dst2(c,0)    = mss_dst2(c,0) * frac_adjust
+           mss_dst3(c,0)    = mss_dst3(c,0) * frac_adjust
+           mss_dst4(c,0)    = mss_dst4(c,0) * frac_adjust
+        end if
+
+     end do loop_columns
+
+     end associate
+   end subroutine SnowCapping
+   
    !ams++ (subroutine from CESM2)
    !-----------------------------------------------------------------------
    subroutine NewSnowBulkDensity(bounds, num_c, filter_c, top_as_inst, bifall)

@@ -12,7 +12,7 @@ module histFileMod
   use shr_sys_mod    , only : shr_sys_flush
   use spmdMod        , only : masterproc
   use abortutils     , only : endrun
-  use elm_varctl     , only : iulog, use_vertsoilc, use_fates
+  use elm_varctl     , only : iulog, use_vertsoilc, use_fates, use_extrasnowlayers
   use elm_varcon     , only : spval, ispval, dzsoi_decomp 
   use elm_varcon     , only : grlnd, nameg, namet, namel, namec, namep
   use decompMod      , only : get_proc_bounds, get_proc_global, bounds_type
@@ -1627,13 +1627,21 @@ contains
        ! Fill output field appropriately for each layer
        ! When only a subset of snow layers exist, it is the LAST num_snow_layers that exist
 
-       do level = 1, num_nonexistent_layers
-          field_out(point, level) = no_snow_val
-       end do
-       do level = (num_nonexistent_layers + 1), num_levels
-          field_out(point, level) = field_in(point, level)
-       end do
-          
+       if (.not. use_extrasnowlayers) then
+          do level = 1, num_nonexistent_layers
+             field_out(point, level) = no_snow_val
+          end do
+          do level = (num_nonexistent_layers + 1), num_levels
+             field_out(point, level) = field_in(point, level)
+          end do
+       else ! Levels are rearranged such that the top snow layer (surface layer) becomes level 1, etc.
+          do level = num_levels, (num_levels-num_nonexistent_layers+1), -1
+             field_out(point, level) = no_snow_val
+          end do
+          do level = (num_levels-num_nonexistent_layers), 1, -1
+             field_out(point, level) = field_in(point, level+num_nonexistent_layers)
+          end do
+       end if
     end do
 
     end associate

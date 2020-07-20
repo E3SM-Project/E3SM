@@ -7,7 +7,7 @@ Module HydrologyNoDrainageMod
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use shr_log_mod       , only : errMsg => shr_log_errMsg
   use decompMod         , only : bounds_type
-  use elm_varctl        , only : iulog, use_vichydro
+  use elm_varctl        , only : iulog, use_vichydro, use_extrasnowlayers
   use elm_varcon        , only : e_ice, denh2o, denice, rpi, spval
   use atm2lndType       , only : atm2lnd_type
   use AerosolType       , only : aerosol_type
@@ -70,7 +70,7 @@ contains
     use elm_varctl           , only : use_cn, use_betr, use_fates, use_pflotran, pf_hmode
     use elm_varpar           , only : nlevgrnd, nlevsno, nlevsoi, nlevurb
     use clm_time_manager     , only : get_step_size, get_nstep
-    use SnowHydrologyMod     , only : SnowCompaction, CombineSnowLayers, DivideSnowLayers
+    use SnowHydrologyMod     , only : SnowCompaction, CombineSnowLayers, DivideSnowLayers, SnowCapping
     use SnowHydrologyMod     , only : SnowWater, BuildSnowFilter 
     use SoilHydrologyMod     , only : ELMVICMap, SurfaceRunoff, Infiltration, WaterTable
     use SoilWaterMovementMod , only : SoilWater 
@@ -297,6 +297,12 @@ contains
          !Jinyun Tang, Feb 4, 2015
          call ep_betr%CalcDewSubFlux(bounds, col_pp, num_hydrologyc, filter_hydrologyc)
       endif           
+      
+      if (use_extrasnowlayers) then
+         call SnowCapping(bounds, num_nolakec, filter_nolakec, num_snowc, filter_snowc, &
+                          aerosol_vars, waterflux_vars, waterstate_vars)
+      end if
+      
       ! Natural compaction and metamorphosis.
       call SnowCompaction(bounds, num_snowc, filter_snowc, &
            temperature_vars, waterstate_vars, top_as)

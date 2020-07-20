@@ -11,7 +11,7 @@ module elm_driver
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use shr_sys_mod            , only : shr_sys_flush
   use shr_log_mod            , only : errMsg => shr_log_errMsg
-  use elm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates
+  use elm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates, use_extrasnowlayers
   use elm_varpar             , only : nlevtrc_soil, nlevsoi
   use elm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates, use_betr  
   use elm_varctl             , only : use_cn, use_lch4, use_voc, use_noio, use_c13, use_c14
@@ -1552,11 +1552,14 @@ contains
          ! Save snow mass at previous time step
          h2osno_old(c) = h2osno(c)
 
-         ! Decide whether to cap snow
-         if (h2osno(c) > h2osno_max) then
-            do_capsnow(c) = .true.
-         else
-            do_capsnow(c) = .false.
+         if (.not. use_extrasnowlayers) then
+            ! Decide whether to cap snow
+            if (h2osno(c) > h2osno_max) then
+               do_capsnow(c) = .true.
+            else
+               do_capsnow(c) = .false.
+            end if
+         !++ams !else ! snow capping subroutine in SnowHydrologyMod
          end if
 
          ! Reset flux from beneath soil/ice column 
@@ -1680,23 +1683,25 @@ contains
          veg_wf%qflx_snow_grnd(bounds%begp:bounds%endp), &
          col_wf%qflx_snow_grnd(bounds%begc:bounds%endc))
     
-    call p2c (bounds, num_allc, filter_allc, &
-         veg_wf%qflx_snwcp_liq(bounds%begp:bounds%endp), &
-         col_wf%qflx_snwcp_liq(bounds%begc:bounds%endc))
-    !TODO - WJS has suggested that at this point qflx_snwcp_liq_patch should
-    ! now be set to nan in order to ensure that this variable is not used
-    ! for the remainder of the timestep - other variables where this should
-    ! occur in this routine should be examined as well
+    if (.not. use_extrasnowlayers) then
+       call p2c (bounds, num_allc, filter_allc, &
+            veg_wf%qflx_snwcp_liq(bounds%begp:bounds%endp), &
+            col_wf%qflx_snwcp_liq(bounds%begc:bounds%endc))
+            !TODO - WJS has suggested that at this point qflx_snwcp_liq_patch should
+            ! now be set to nan in order to ensure that this variable is not used
+            ! for the remainder of the timestep - other variables where this should
+            ! occur in this routine should be examined as well
 
-    ! For lakes, this field is initially set in LakeFluxesMod (which
-    ! is called before this routine; hence it is appropriate to
-    ! include lake columns in this p2c call.  However, it is later
-    ! overwritten in LakeHydrologyMod, both on the patch and the column
-    ! level.
+            ! For lakes, this field is initially set in LakeFluxesMod (which
+            ! is called before this routine; hence it is appropriate to
+            ! include lake columns in this p2c call.  However, it is later
+            ! overwritten in LakeHydrologyMod, both on the patch and the column
+            ! level.
 
-    call p2c (bounds, num_allc, filter_allc, &
-         veg_wf%qflx_snwcp_ice(bounds%begp:bounds%endp), &
-         col_wf%qflx_snwcp_ice(bounds%begc:bounds%endc))
+       call p2c (bounds, num_allc, filter_allc, &
+            veg_wf%qflx_snwcp_ice(bounds%begp:bounds%endp), &
+            col_wf%qflx_snwcp_ice(bounds%begc:bounds%endc))
+    end if
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
          veg_wf%qflx_tran_veg(bounds%begp:bounds%endp), &

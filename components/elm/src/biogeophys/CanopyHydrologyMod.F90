@@ -429,18 +429,23 @@ contains
 
           qflx_prec_grnd(p) = qflx_prec_grnd_snow(p) + qflx_prec_grnd_rain(p)
 
-          if (do_capsnow(c)) then
-             qflx_snwcp_liq(p) = qflx_prec_grnd_rain(p)
-             qflx_snwcp_ice(p) = qflx_prec_grnd_snow(p)
+          if (.not. use_extrasnowlayers) then
+             if (do_capsnow(c)) then
+                qflx_snwcp_liq(p) = qflx_prec_grnd_rain(p)
+                qflx_snwcp_ice(p) = qflx_prec_grnd_snow(p)
 
-             qflx_snow_grnd_patch(p) = 0._r8
-             qflx_rain_grnd(p) = 0._r8
+                qflx_snow_grnd_patch(p) = 0._r8
+                qflx_rain_grnd(p) = 0._r8
+             else
+                qflx_snwcp_liq(p) = 0._r8
+                qflx_snwcp_ice(p) = 0._r8
+                qflx_snow_grnd_patch(p) = qflx_prec_grnd_snow(p)           ! ice onto ground (mm/s)
+                qflx_rain_grnd(p)     = qflx_prec_grnd_rain(p)           ! liquid water onto ground (mm/s)
+             end if
           else
-             qflx_snwcp_liq(p) = 0._r8
-             qflx_snwcp_ice(p) = 0._r8
              qflx_snow_grnd_patch(p) = qflx_prec_grnd_snow(p)           ! ice onto ground (mm/s)
-             qflx_rain_grnd(p)     = qflx_prec_grnd_rain(p)           ! liquid water onto ground (mm/s)
-          end if
+             qflx_rain_grnd(p)     = qflx_prec_grnd_rain(p)           ! liquid water onto ground (mm/s)       
+          endif
 
        end do ! (end pft loop)
 
@@ -508,7 +513,7 @@ contains
              swe_old(c,j)=h2osoi_liq(c,j)+h2osoi_ice(c,j)
           enddo
 
-          if (do_capsnow(c)) then
+          if (do_capsnow(c) .and. .not. use_extrasnowlayers) then
              dz_snowf = 0._r8
              newsnow(c) = qflx_snow_grnd_col(c) * dtime
              frac_sno(c)=1._r8
@@ -653,21 +658,40 @@ contains
           ! as the surface air temperature
 
           newnode = 0    ! flag for when snow node will be initialized
-          if (snl(c) == 0 .and. qflx_snow_grnd_col(c) > 0.0_r8 .and. frac_sno(c)*snow_depth(c) >= 0.01_r8) then
-             newnode = 1
-             snl(c) = -1
-             dz(c,0) = snow_depth(c)                       ! meter
-             z(c,0) = -0.5_r8*dz(c,0)
-             zi(c,-1) = -dz(c,0)
-             t_soisno(c,0) = min(tfrz, forc_t(t))      ! K
-             h2osoi_ice(c,0) = h2osno(c)               ! kg/m2
-             h2osoi_liq(c,0) = 0._r8                   ! kg/m2
-             frac_iceold(c,0) = 1._r8
+          if (.not. use_extrasnowlayers) then
+             if (snl(c) == 0 .and. qflx_snow_grnd_col(c) > 0.0_r8 .and. frac_sno(c)*snow_depth(c) >= 0.01_r8) then
+                newnode = 1
+                snl(c) = -1
+                dz(c,0) = snow_depth(c)                       ! meter
+                z(c,0) = -0.5_r8*dz(c,0)
+                zi(c,-1) = -dz(c,0)
+                t_soisno(c,0) = min(tfrz, forc_t(t))      ! K
+                h2osoi_ice(c,0) = h2osno(c)               ! kg/m2
+                h2osoi_liq(c,0) = 0._r8                   ! kg/m2
+                frac_iceold(c,0) = 1._r8
 
-             ! intitialize SNICAR variables for fresh snow:
-             call aerosol_vars%Reset(column=c)
-             ! call waterstate_vars%Reset(column=c)
-             col_ws%snw_rds(c,0) = snw_rds_min
+                ! intitialize SNICAR variables for fresh snow:
+                call aerosol_vars%Reset(column=c)
+                ! call waterstate_vars%Reset(column=c)
+                col_ws%snw_rds(c,0) = snw_rds_min
+             end if
+          else
+             if (snl(c) == 0 .and. frac_sno(c)*snow_depth(c) >= 0.01_r8) then
+                newnode = 1
+                snl(c) = -1
+                dz(c,0) = snow_depth(c)                       ! meter
+                z(c,0) = -0.5_r8*dz(c,0)
+                zi(c,-1) = -dz(c,0)
+                t_soisno(c,0) = min(tfrz, forc_t(t))      ! K
+                h2osoi_ice(c,0) = h2osno(c)               ! kg/m2
+                h2osoi_liq(c,0) = 0._r8                   ! kg/m2
+                frac_iceold(c,0) = 1._r8
+
+                ! intitialize SNICAR variables for fresh snow:
+                call aerosol_vars%Reset(column=c)
+                ! call waterstate_vars%Reset(column=c)
+                col_ws%snw_rds(c,0) = snw_rds_min
+             end if             
           end if
 
           ! The change of ice partial density of surface node due to precipitation.
