@@ -50,7 +50,7 @@ contains
     use clm_varpar          , only : nlevlak
     use clm_varcon          , only : hvap, hsub, hfus, cpair, cpliq, tkwat, tkice, tkair
     use clm_varcon          , only : sb, vkc, grav, denh2o, tfrz, spval, zsno
-    use clm_varctl          , only : use_lch4
+    use clm_varctl          , only : use_lch4, use_extrasnowlayers
     use LakeCon             , only : betavis, z0frzlake, tdmax, emg_lake
     use LakeCon             , only : lake_use_old_fcrit_minz0
     use LakeCon             , only : minz0lake, cur0, cus, curm, fcrit
@@ -634,10 +634,12 @@ contains
          qflx_dirct_rain(p) = 0._r8
          qflx_leafdrip(p) = 0._r8
 
-         ! Because they will be used in pft2col initialize here.
-         ! This will be overwritten in LakeHydrology
-         qflx_snwcp_ice(p) = 0._r8
-         qflx_snwcp_liq(p) = 0._r8
+         if (.not. use_extrasnowlayers) then
+            ! Because they will be used in pft2col initialize here.
+            ! This will be overwritten in LakeHydrology
+            qflx_snwcp_ice(p) = 0._r8
+            qflx_snwcp_liq(p) = 0._r8
+         end if
 
       end do
 
