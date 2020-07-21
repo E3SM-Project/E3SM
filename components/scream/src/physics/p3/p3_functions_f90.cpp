@@ -2863,7 +2863,7 @@ void check_values_f(Real* qv, Real* temp, Int kstart, Int kend,
 
   kstart -= 1;
   kend -= 1;
-  const Int nk = (kend - kstart) + 1;
+  const unsigned long nk = (unsigned long)((kend - kstart) + 1);
   const Int nk_pack = scream::pack::npack<Spack>(nk);
   Kokkos::Array<view_1d, CheckValuesData::NUM_ARRAYS+1> cvd_d;
 

@@ -357,23 +357,45 @@
   <!-- SCREAM compsets -->
   <!-- *********************************** -->  
   
+  <!-- SCREAM compsets with CMIP6 2010 forcings -->
   <compset>
-    <alias>FSCREAM-LR</alias>
+    <alias>F2010-SCREAM-LR</alias>
+    <lname>2010_CAM5%SCREAM-LR_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset> 
+  
+  <compset>
+    <alias>F2010-SCREAM-HR</alias>
+    <lname>2010_CAM5%SCREAM-HR_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset> 
+
+  <compset>
+    <alias>F2010-SCREAM-LR-DYAMOND1</alias>
+    <lname>2010_CAM5%SCREAM-LR-DYAMOND1_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>F2010-SCREAM-HR-DYAMOND1</alias>
+    <lname>2010_CAM5%SCREAM-HR-DYAMOND1_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <!-- SCREAM compsets with old 2000 forcings -->
+  <compset>
+    <alias>F2000-SCREAM-LR</alias>
     <lname>2000_CAM5%SCREAM-LR_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset> 
   
   <compset>
-    <alias>FSCREAM-HR</alias>
+    <alias>F2000-SCREAM-HR</alias>
     <lname>2000_CAM5%SCREAM-HR_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset> 
 
   <compset>
-    <alias>FSCREAM-LR-DYAMOND1</alias>
+    <alias>F2000-SCREAM-LR-DYAMOND1</alias>
     <lname>2000_CAM5%SCREAM-LR-DYAMOND1_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
-    <alias>FSCREAM-HR-DYAMOND1</alias>
+    <alias>F2000-SCREAM-HR-DYAMOND1</alias>
     <lname>2000_CAM5%SCREAM-HR-DYAMOND1_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
