@@ -732,6 +732,7 @@ contains
 
       ! vegetation_drag
       logical, pointer :: config_use_vegetation_drag
+      logical, pointer :: config_use_vegetation_manning_equation
       real (kind=RKIND), pointer :: config_vegetation_drag_coefficient
       real (kind=RKIND), pointer :: config_implicit_bottom_drag_coeff
       real (kind=RKIND), dimension(:), pointer :: vegetationHeight
@@ -756,6 +757,7 @@ contains
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
 
       call mpas_pool_get_config(ocnConfigs, 'config_use_vegetation_drag', config_use_vegetation_drag)
+      call mpas_pool_get_config(ocnConfigs, 'config_use_vegetation_manning_equation', config_use_vegetation_manning_equation)
       call mpas_pool_get_config(ocnConfigs, 'config_vegetation_drag_coefficient', config_vegetation_drag_coefficient)
       call mpas_pool_get_config(ocnConfigs, 'config_implicit_bottom_drag_coeff', config_implicit_bottom_drag_coeff)
 
@@ -770,8 +772,8 @@ contains
       allocate(A(nVertLevels),B(nVertLevels),C(nVertLevels),velTemp(nVertLevels))
       A(1)=0.0_RKIND
 
-      ! Compute bottomDrag induced by vegetation
-      if (config_use_vegetation_drag) then
+      ! Compute bottomDrag (Manning roughness) induced by vegetation
+      if (config_use_vegetation_drag .AND. config_use_vegetation_manning_equation) then
         do iCell = 1, nCells
           if (vegetationDensity(iCell) * vegetationHeight(iCell) * vegetationDiameter(iCell) .eq. 0.0_RKIND) then
             vegetationMask(iCell) = 0
