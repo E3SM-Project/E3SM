@@ -738,9 +738,9 @@ contains
       real (kind=RKIND), dimension(:), pointer :: vegetationDiameter
       real (kind=RKIND), dimension(:), pointer ::vegetationDensity
       integer, dimension(:), pointer ::vegetationMask
-      real (kind=RKIND) :: lambda, beta, alpha, total_h
+      real (kind=RKIND) :: old_bottomDrag, lambda, beta, alpha, total_h
       real (kind=RKIND) :: inundation_depth, von_karman, cff1, cff2, cff3, cff4
-      integer:: iCell, nCells
+      integer :: iCell, nCells
       integer, pointer :: nCellsSolve
 
       err = 0
@@ -773,7 +773,11 @@ contains
       ! Compute bottomDrag induced by vegetation
       if (config_use_vegetation_drag) then
         do iCell = 1, nCells
+          if (vegetationDensity(iCell) * vegetationHeight(iCell) * vegetationDiameter(iCell) .eq. 0.0_RKIND) then
+            vegetationMask(iCell) = 0
+          endif
           if (vegetationMask(iCell) .eq. 1) then
+            old_bottomDrag = bottomDrag(iCell)
             total_h = bottomDepth(iCell) + ssh(iCell)
             inundation_depth = MIN(vegetationHeight(iCell), total_h)
             inundation_depth = MAX(inundation_depth, 1e-6)
@@ -790,6 +794,7 @@ contains
             cff4 = LOG(total_h/inundation_depth) - (1.0_RKIND-inundation_depth/total_h) &
                   * (1.0_RKIND - 1.0_RKIND/(alpha*inundation_depth))
             bottomDrag(iCell) = cff1/(cff2*(cff3+cff4))
+            bottomDrag(iCell) = MAX(bottomDrag(iCell), old_bottomDrag)
           endif
         enddo
       endif
