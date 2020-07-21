@@ -2,8 +2,13 @@ HOMME contains an executable "homme_tool" which can be used
 to get access to a variety of HOMME features without running
 a simulation.
 
-Tools currently include:
+scripts:
+test.job       runs all tools at NE4 (similar to hommetool regression test)
+template.job   create GLL SCRIP and subcell grid metadata files
+cori.job       perform parallel interpolation of EAM history file output
 
+
+Tools currently include:
 
 ================================================================
 Topo converter  tool = 'topo_pgn_to_smoothed'
