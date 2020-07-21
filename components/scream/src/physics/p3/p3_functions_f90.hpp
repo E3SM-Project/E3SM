@@ -1325,6 +1325,7 @@ Real cxx_gamma(Real input);
 Real cxx_log(Real input);
 Real cxx_log10(Real input);
 Real cxx_exp(Real input);
+Real cxx_tanh(Real input);
 
 }
 

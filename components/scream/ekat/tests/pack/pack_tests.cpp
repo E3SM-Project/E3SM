@@ -272,6 +272,7 @@ struct TestPack {
 
     test_pack_gen_unary_stdfn(abs);
     test_pack_gen_unary_stdfn(exp);
+    test_pack_gen_unary_stdfn(tanh);
     test_pack_gen_unary_stdfn(log);
     test_pack_gen_unary_stdfn(log10);
     test_pack_gen_unary_stdfn(tgamma);
