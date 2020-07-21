@@ -736,6 +736,10 @@
 					description="Controls if vegetation_drag is used."
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_use_vegetation_manning_equation" type="logical" default_value=".false." units="unitless"
+					description="Compute vegetation drag force using vegetation-induced Manning roughness coefficient."
+					possible_values=".true. or .false."
+		/>
 		<nml_option name="config_vegetation_drag_coefficient" type="real" default_value="1.09" units="unitless"
 					description="Vegetation drag coefficient"
 					possible_values="O(1)"
