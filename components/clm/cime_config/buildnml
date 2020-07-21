@@ -42,6 +42,7 @@ def buildnml(case, caseroot, compname):
     lnd_domain_path     = case.get_value("LND_DOMAIN_PATH")
     lnd_domain_file     = case.get_value("LND_DOMAIN_FILE")
     mask_grid           = case.get_value("MASK_GRID")
+    ncpl_base_period    = case.get_value("NCPL_BASE_PERIOD")
     ninst_lnd           = case.get_value("NINST_LND")
     rundir              = case.get_value("RUNDIR")
     run_type            = case.get_value("RUN_TYPE")
@@ -176,6 +177,7 @@ def buildnml(case, caseroot, compname):
         sysmod += " {} {} -res {} {} -clm_start_type {}".format(usecase, glc_opts, resolution, clmusr, start_type)
         sysmod += " -envxml_dir {} -l_ncpl {} -lnd_frac {}/{}".format(caseroot, lnd_ncpl, lnd_domain_path, lnd_domain_file)
         sysmod += " -glc_nec {} -co2_ppmv {} -co2_type {} ".format(glc_nec, ccsm_co2_ppmv, clm_co2_type)
+        sysmod += " -ncpl_base_period {} ".format(ncpl_base_period)
         sysmod += " -config {}/config_cache.xml {}".format(clmconf_dir, clm_bldnml_opts)
         if mask_grid != "reg":
             sysmod += " -mask {}".format(mask_grid)
