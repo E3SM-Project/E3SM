@@ -1647,25 +1647,35 @@ subroutine compute_diag_third_shoc_moment(&
      do i=1,shcol
 
         !Compute inputs for computing f0 to f5 terms
-        call fterms_input_for_diag_third_shoc_moment(dz_zi(i,k), dz_zt(i,k), dz_zt(i,kc), & !input
-             isotropy_zi(i,k), brunt_zi(i,k), thetal_zi(i,k), &                             !input
-             thedz, thedz2, iso, isosqrt, buoy_sgs2, bet2)                                  !output
+        call fterms_input_for_diag_third_shoc_moment(&
+	     dz_zi(i,k), dz_zt(i,k), dz_zt(i,kc), &               ! Input
+             isotropy_zi(i,k), brunt_zi(i,k), thetal_zi(i,k), &   ! Input
+             thedz, thedz2, iso, isosqrt, buoy_sgs2, bet2)        ! Output
 
         !Compute f0 to f5 terms
-        call f0_to_f5_diag_third_shoc_moment(thedz, thedz2, bet2, iso, isosqrt, wthl_sec (i,k), & !input
-             wthl_sec(i,kc), wthl_sec(i,kb), thl_sec(i,k), thl_sec(i,kc), thl_sec(i,kb), &        !input
-             w_sec(i,k), w_sec(i,kc), w_sec_zi(i,k), &                                            !input
-             tke(i,k), tke(i,kc), &                                                               !input
-             f0, f1, f2, f3, f4, f5)                                                              !output
+        call f0_to_f5_diag_third_shoc_moment(&
+	     thedz, thedz2, bet2, iso, isosqrt, &                 ! Input
+	     wthl_sec (i,k), wthl_sec(i,kc), wthl_sec(i,kb), &    ! Input
+	     thl_sec(i,k), thl_sec(i,kc), thl_sec(i,kb), &        ! Input
+             w_sec(i,k), w_sec(i,kc), w_sec_zi(i,k), &            ! Input
+             tke(i,k), tke(i,kc), &                               ! Input
+             f0, f1, f2, f3, f4, f5)                              ! Output
 
         !Compute the omega terms
-        call omega_terms_diag_third_shoc_moment(buoy_sgs2, f3, f4, omega0, omega1, omega2)
+        call omega_terms_diag_third_shoc_moment(&
+	     buoy_sgs2, f3, f4, &       ! Input
+	     omega0, omega1, omega2)    ! Output
 
         !Compute the X0, Y0, X1, Y1 terms
-        call x_y_terms_diag_third_shoc_moment(buoy_sgs2, f0, f1, f2, x0, y0, x1, y1)
+        call x_y_terms_diag_third_shoc_moment(&
+	     buoy_sgs2, f0, f1, f2, &   ! Input
+	     x0, y0, x1, y1)            ! Output
 
         !Compute the AA0, AA1 terms
-        call aa_terms_diag_third_shoc_moment(omega0, omega1, omega2, x0, x1, y0, y1, aa0, aa1)
+        call aa_terms_diag_third_shoc_moment(&
+	     omega0, omega1, omega2, &  ! Input
+	     x0, x1, y0, y1, &          ! Input
+	     aa0, aa1)                  ! Output
 
         !Finally, we have the third moment of w
         w3(i,k) = w3_diag_third_shoc_moment(aa0, aa1, x0, x1, f5)
@@ -1678,9 +1688,10 @@ subroutine compute_diag_third_shoc_moment(&
 
 end subroutine compute_diag_third_shoc_moment
 
-subroutine fterms_input_for_diag_third_shoc_moment(dz_zi, dz_zt, dz_zt_kc, & !input
-     isotropy_zi, brunt_zi, thetal_zi, &                                     !input
-     thedz, thedz2, iso, isosqrt, buoy_sgs2, bet2)                           !output
+subroutine fterms_input_for_diag_third_shoc_moment(&
+     dz_zi, dz_zt, dz_zt_kc, &                      ! Input
+     isotropy_zi, brunt_zi, thetal_zi, &            ! Input
+     thedz, thedz2, iso, isosqrt, buoy_sgs2, bet2)  ! Output
 
   !Compute inputs for computing f0 to f5 terms
 
@@ -1705,10 +1716,13 @@ subroutine fterms_input_for_diag_third_shoc_moment(dz_zi, dz_zt, dz_zt_kc, & !in
   return
 end subroutine fterms_input_for_diag_third_shoc_moment
 
-subroutine f0_to_f5_diag_third_shoc_moment(thedz, thedz2, bet2, iso, isosqrt, & !input
-     wthl_sec, wthl_sec_kc, wthl_sec_kb, thl_sec, thl_sec_kc, thl_sec_kb, &     !input
-     w_sec, w_sec_kc,w_sec_zi, tke, tke_kc, &                                   !input
-     f0, f1, f2, f3, f4, f5)                                                    !output
+subroutine f0_to_f5_diag_third_shoc_moment(&
+     thedz, thedz2, bet2, iso, isosqrt, &    ! Input
+     wthl_sec, wthl_sec_kc, wthl_sec_kb, &   ! Input
+     thl_sec, thl_sec_kc, thl_sec_kb, &      ! Input
+     w_sec, w_sec_kc,w_sec_zi, &             ! Input
+     tke, tke_kc, &                          ! Input
+     f0, f1, f2, f3, f4, f5)                 ! Output
 
   !Compute f0 to f5 terms
 
@@ -1755,7 +1769,9 @@ subroutine f0_to_f5_diag_third_shoc_moment(thedz, thedz2, bet2, iso, isosqrt, & 
   return
 end subroutine f0_to_f5_diag_third_shoc_moment
 
-subroutine omega_terms_diag_third_shoc_moment(buoy_sgs2, f3, f4, omega0, omega1, omega2)
+subroutine omega_terms_diag_third_shoc_moment(&
+           buoy_sgs2, f3, f4, &    ! Input
+	   omega0, omega1, omega2) ! Output
 
   implicit none
 
@@ -1777,7 +1793,9 @@ subroutine omega_terms_diag_third_shoc_moment(buoy_sgs2, f3, f4, omega0, omega1,
   return
 end subroutine omega_terms_diag_third_shoc_moment
 
-subroutine x_y_terms_diag_third_shoc_moment(buoy_sgs2, f0, f1, f2, x0, y0, x1, y1)
+subroutine x_y_terms_diag_third_shoc_moment(&
+           buoy_sgs2, f0, f1, f2,&  ! Input
+	   x0, y0, x1, y1)          ! Output
 
   implicit none
 
@@ -1805,7 +1823,10 @@ subroutine x_y_terms_diag_third_shoc_moment(buoy_sgs2, f0, f1, f2, x0, y0, x1, y
   return
 end subroutine x_y_terms_diag_third_shoc_moment
 
-subroutine aa_terms_diag_third_shoc_moment(omega0, omega1, omega2, x0, x1, y0, y1, aa0, aa1)
+subroutine aa_terms_diag_third_shoc_moment(&
+           omega0, omega1, omega2, & ! Input
+	   x0, x1, y0, y1, &         ! Input
+	   aa0, aa1)                 ! Output
 
   implicit none
 
@@ -1840,7 +1861,9 @@ pure function w3_diag_third_shoc_moment(aa0, aa1, x0, x1, f5) result(w3)
   return
 end function w3_diag_third_shoc_moment
 
-subroutine clipping_diag_third_shoc_moments(nlevi,shcol,w_sec_zi,w3)
+subroutine clipping_diag_third_shoc_moments(&
+           nlevi,shcol,w_sec_zi,& ! Input
+	   w3)                    ! Output
 
   ! perform clipping to prevent unrealistically large values from occuring
 
@@ -2111,7 +2134,7 @@ subroutine shoc_assumed_pdf(&
         qw2_2,sqrtthl2_2,sqrtqw2_2,r_qwthl_1,& ! Input
         s2,cthl2,cqt2,std_s2,qn2,C2)           ! Output
       endif
-      
+
       ql1=min(qn1,qw1_1)
       ql2=min(qn2,qw1_2)
 
@@ -2965,11 +2988,11 @@ subroutine eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
   ! turbulent kinetic energy [m2/s2]
   real(rtype), intent(in) :: tke(shcol,nlev)  
 
-  !intent-inouts
+  !intent-outs
   ! eddy coefficient for heat [m2/s]
-  real(rtype), intent(inout) :: tkh(shcol,nlev)
+  real(rtype), intent(out) :: tkh(shcol,nlev)
   ! eddy coefficient for momentum [m2/s]
-  real(rtype), intent(inout) :: tk(shcol,nlev)
+  real(rtype), intent(out) :: tk(shcol,nlev)
 
   !local vars
   integer     :: i, k
@@ -3940,8 +3963,8 @@ end subroutine pblintd_init
 subroutine pblintd_height(&
        shcol,nlev,&              ! Input
        z,u,v,ustar,&             ! Input
-       thv,thv_ref,   &               ! Input
-       pblh,rino,check)               ! Output
+       thv,thv_ref,&             ! Input
+       pblh,rino,check)          ! Output
     !------------------------------Arguments--------------------------------
     !
     ! Input arguments
