@@ -426,6 +426,10 @@
     <lname>2000_CAM5%MMF2_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
   <compset>
+    <alias>F-MMF2-ECPP</alias>
+    <lname>2000_CAM5%MMF2-ECPP_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
     <alias>F-MMF2-MAML</alias>
     <lname>2000_CAM5%MMF2-MAML_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
