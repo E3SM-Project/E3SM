@@ -158,6 +158,45 @@ module mpas_kd_tree
 
    end function mpas_kd_construct
 
+   !***********************************************************************
+   !
+   !  routine break_tie
+   !
+   !> \brief   Break a tie for two n-dim points
+   !> \author  Miles A. Curry
+   !> \date    07/07/20
+   !> \details
+   !> Compare 1..n dimensions of p1 and p2 and return -1 if p1(i) is less than
+   !> p2(i) and return 1 if p1(i) is greater than p2(i). If p1(i) and p2(i) are
+   !> equal, then the same comparison will be done on p1(i+1) and p2(i+1) until
+   !> p1(n) and p2(n). If p1(:) and p2(:) are equal across all n, then 0 will
+   !> be returned.
+   !
+   !-----------------------------------------------------------------------
+   function break_tie(p1, p2) result(tie)
+
+      implicit none
+
+      ! Input Variables
+      type (mpas_kd_type), intent(in) :: p1
+      type (mpas_kd_type), intent(in) :: p2
+      integer :: tie
+
+      integer :: i
+
+      tie = 0
+      do i = 1, size(p1 % point(:))
+          if (p1 % point(i) < p2 % point(i)) then
+              tie = -1
+              return
+          else if (p1 % point(i) > p2 % point(i)) then
+              tie = 1
+              return
+          endif
+      enddo
+
+   end function break_tie
+
 
    !***********************************************************************
    !
@@ -192,6 +231,15 @@ module mpas_kd_tree
       if (current_distance < distance) then
          distance = current_distance
          res => kdtree
+      else if (current_distance == distance) then
+          !
+          ! Consistently break a tie if a query is equidistant from two points
+          !
+          if (associated(res)) then
+              if (break_tie(res, kdtree) == 1) then
+                 res => kdtree
+              endif
+          endif
       endif
 
       !
