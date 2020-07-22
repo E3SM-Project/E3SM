@@ -22,7 +22,8 @@ OBJS =  \
 	mpas_atmphys_utilities.o \
 	mpas_stack.o \
 	mpas_kd_tree.o \
-	mpas_parse_geoindex.o
+	mpas_parse_geoindex.o \
+	mpas_geotile_manager.o
 
 all: core_hyd
 
@@ -88,7 +89,8 @@ mpas_init_atm_static.o: \
 	mpas_atmphys_utilities.o \
 	mpas_stack.o \
 	mpas_kd_tree.o \
-	mpas_parse_geoindex.o
+	mpas_parse_geoindex.o \
+	mpas_geotile_manager.o
 
 mpas_init_atm_surface.o: \
 	mpas_init_atm_hinterp.o  \
