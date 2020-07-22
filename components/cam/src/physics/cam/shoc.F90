@@ -1000,11 +1000,11 @@ subroutine diag_second_shoc_moments(&
   !  calculate the upper boundary conditions
   call diag_second_moments_ubycond(&
      shcol,num_tracer, &                    ! Input
-     thl_sec(:shcol,1), qw_sec(:shcol,1),&  ! Input/Output
-     wthl_sec(:shcol,1),wqw_sec(:shcol,1),& ! Input/Output
-     qwthl_sec(:shcol,1), uw_sec(:shcol,1),&! Input/Output
-     vw_sec(:shcol,1), wtke_sec(:shcol,1),& ! Input/Output
-     wtracer_sec(:shcol,num_tracer,1))      ! Input/Output
+     thl_sec(:shcol,1), qw_sec(:shcol,1),&  ! Output
+     wthl_sec(:shcol,1),wqw_sec(:shcol,1),& ! Output
+     qwthl_sec(:shcol,1), uw_sec(:shcol,1),&! Output
+     vw_sec(:shcol,1), wtke_sec(:shcol,1),& ! Output
+     wtracer_sec(:shcol,num_tracer,1))      ! Output
  
   return
 end subroutine diag_second_shoc_moments
@@ -1422,10 +1422,10 @@ end subroutine calc_shoc_vertflux
 
 subroutine diag_second_moments_ubycond(&
          shcol,num_tracer, &                    ! Input
-         thl_sec, qw_sec,&                      ! Input/Output
-         wthl_sec,wqw_sec,&                     ! Input/Output
-         qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Input/Output
-         wtracer_sec)                           ! Input/Output
+         thl_sec, qw_sec,&                      ! Output
+         wthl_sec,wqw_sec,&                     ! Output
+         qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Output
+         wtracer_sec)                           ! Output
 
   ! Purpose of this subroutine is to diagnose the upper
   !  boundary condition for the second order moments
@@ -1440,25 +1440,25 @@ subroutine diag_second_moments_ubycond(&
   ! number of tracers
   integer, intent(in) :: num_tracer
 
-  ! INPUT/OUTPUT VARIABLES
+  ! OUTPUT VARIABLES
   ! second order liquid wat. potential temp. [K^2]
-  real(rtype), intent(inout) :: thl_sec(shcol)
+  real(rtype), intent(out) :: thl_sec(shcol)
   ! second order total water mixing rat. [kg^2/kg^2]
-  real(rtype), intent(inout) :: qw_sec(shcol)
+  real(rtype), intent(out) :: qw_sec(shcol)
   ! covariance of temp and moisture [K kg/kg]
-  real(rtype), intent(inout) :: qwthl_sec(shcol)
+  real(rtype), intent(out) :: qwthl_sec(shcol)
   ! vertical flux of heat [K m/s]
-  real(rtype), intent(inout) :: wthl_sec(shcol)
+  real(rtype), intent(out) :: wthl_sec(shcol)
   ! vertical flux of total water [kg/kg m/s]
-  real(rtype), intent(inout) :: wqw_sec(shcol)
+  real(rtype), intent(out) :: wqw_sec(shcol)
   ! vertical flux of zonal wind [m2/s2]
-  real(rtype), intent(inout) :: uw_sec(shcol)
+  real(rtype), intent(out) :: uw_sec(shcol)
   ! vertical flux of meridional wind [m2/s2]
-  real(rtype), intent(inout) :: vw_sec(shcol)
+  real(rtype), intent(out) :: vw_sec(shcol)
   ! vertical flux of tke [m3/s3]
-  real(rtype), intent(inout) :: wtke_sec(shcol)
+  real(rtype), intent(out) :: wtke_sec(shcol)
   ! vertical flux of tracer [varies m/s]
-  real(rtype), intent(inout) :: wtracer_sec(shcol,num_tracer)
+  real(rtype), intent(out) :: wtracer_sec(shcol,num_tracer)
 
   ! LOCAL VARIABLES
   integer :: i
