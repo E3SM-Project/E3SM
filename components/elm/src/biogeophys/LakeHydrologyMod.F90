@@ -63,6 +63,7 @@ contains
     !    -> SnowCompaction:        compaction of snow layers
     !    -> CombineSnowLayers:     combine snow layers that are thinner than minimum
     !    -> DivideSnowLayers:      subdivide snow layers that are thicker than maximum
+    !    -> DivideExtraSnowLayers: subdivide up to 16 snow layers that are thicker than maximum    
     !
     !    Add water to soil if melting has left it with open pore space.
     !    If snow layers are found above a lake with unfrozen top layer, whose top
@@ -76,7 +77,7 @@ contains
     use elm_varctl      , only : iulog, use_extrasnowlayers
     use clm_time_manager, only : get_step_size
     use SnowHydrologyMod, only : SnowCompaction, CombineSnowLayers, SnowWater, BuildSnowFilter
-    use SnowHydrologyMod, only : DivideSnowLayers, SnowCapping
+    use SnowHydrologyMod, only : DivideSnowLayers, DivideExtraSnowLayers, SnowCapping
     use LakeCon         , only : lsadz
     !
     ! !ARGUMENTS:
@@ -514,10 +515,14 @@ contains
            aerosol_vars, temperature_vars, waterflux_vars, waterstate_vars)
 
       ! Divide thick snow elements
-
-      call DivideSnowLayers(bounds, num_shlakesnowc, filter_shlakesnowc, &
-           aerosol_vars, temperature_vars, waterstate_vars, is_lake=.true.)
-
+      if (.not. use_extrasnowlayers) then
+         call DivideSnowLayers(bounds, num_shlakesnowc, filter_shlakesnowc, &
+              aerosol_vars, temperature_vars, waterstate_vars, is_lake=.true.)
+      else
+         call DivideExtraSnowLayers(bounds, num_shlakesnowc, filter_shlakesnowc, &
+              aerosol_vars, temperature_vars, waterstate_vars, is_lake=.true.)
+      endif
+      
       ! Check for single completely unfrozen snow layer over lake.  Modeling this ponding is unnecessary and
       ! can cause instability after the timestep when melt is completed, as the temperature after melt can be
       ! excessive because the fluxes were calculated with a fixed ground temperature of freezing, but the 

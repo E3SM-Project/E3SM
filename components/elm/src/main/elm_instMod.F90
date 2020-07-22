@@ -291,7 +291,6 @@ contains
        l = col_pp%landunit(c)
        g = col_pp%gridcell(c)
 
-       !++ams
        if (.not. use_extrasnowlayers) then ! original 5 layer shallow snowpack model
            if (lun_pp%itype(l)==istice) then
                h2osno_col(c) = h2osno_max
@@ -306,7 +305,7 @@ contains
            endif
        else ! With a deeper firn model, we can no longer depend on "h2osno_max," because this will
            !  potentially be large, resulting in a lot of artificial firn at initialization.
-           ! However... (below docstring from CESM2.0)
+           ! However... (below docstring from CLMv5)
            ! In areas that should be snow-covered, it can be problematic to start with 0 snow
            ! cover, because this can affect the long-term state through soil heating, albedo
            ! feedback, etc. On the other hand, we would introduce hysteresis by putting too
@@ -324,7 +323,6 @@ contains
               h2osno_col(c) = 0._r8
            endif
        endif
-       !ams++
        snow_depth_col(c)  = h2osno_col(c) / bdsno
     end do
 

@@ -1559,7 +1559,7 @@ contains
             else
                do_capsnow(c) = .false.
             end if
-         !++ams !else ! snow capping subroutine in SnowHydrologyMod
+         ! else, snow capping subroutine in SnowHydrologyMod
          end if
 
          ! Reset flux from beneath soil/ice column 

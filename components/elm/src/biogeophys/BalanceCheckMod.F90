@@ -444,21 +444,23 @@ contains
                      + qflx_snwcp_ice(c) + qflx_snwcp_liq(c) + qflx_sl_top_soil(c)
 
                 if (lun_pp%itype(l) == istdlak) then 
-                   if ( do_capsnow(c) .and. .not. use_extrasnowlayers) then
-                      snow_sources(c) = qflx_snow_grnd_col(c) &
-                           + frac_sno_eff(c) * (qflx_dew_snow(c) + qflx_dew_grnd(c) ) 
+                   if (.not. use_extrasnowlayers) then
+                      if ( do_capsnow(c)) then
+                         snow_sources(c) = qflx_snow_grnd_col(c) &
+                              + frac_sno_eff(c) * (qflx_dew_snow(c) + qflx_dew_grnd(c) ) 
 
-                      snow_sinks(c)   = frac_sno_eff(c) * (qflx_sub_snow(c) + qflx_evap_grnd(c) ) &
-                           + (qflx_snwcp_ice(c) + qflx_snwcp_liq(c) - qflx_prec_grnd(c))  &
-                           + qflx_snow_melt(c)  + qflx_sl_top_soil(c)
-                   else if (.not. use_extrasnowlayers) then
-                      snow_sources(c) = qflx_snow_grnd_col(c) &
-                           + frac_sno_eff(c) * (qflx_rain_grnd_col(c) &
-                           +  qflx_dew_snow(c) + qflx_dew_grnd(c) ) 
+                         snow_sinks(c)   = frac_sno_eff(c) * (qflx_sub_snow(c) + qflx_evap_grnd(c) ) &
+                              + (qflx_snwcp_ice(c) + qflx_snwcp_liq(c) - qflx_prec_grnd(c))  &
+                              + qflx_snow_melt(c)  + qflx_sl_top_soil(c)
+                      else
+                         snow_sources(c) = qflx_snow_grnd_col(c) &
+                              + frac_sno_eff(c) * (qflx_rain_grnd_col(c) &
+                              +  qflx_dew_snow(c) + qflx_dew_grnd(c) ) 
 
-                      snow_sinks(c)  = frac_sno_eff(c) * (qflx_sub_snow(c) + qflx_evap_grnd(c) ) &
-                           + qflx_snow_melt(c)  + qflx_sl_top_soil(c)
-                   else if (use_extrasnowlayers) then !++ams i.e., firn model
+                         snow_sinks(c)  = frac_sno_eff(c) * (qflx_sub_snow(c) + qflx_evap_grnd(c) ) &
+                              + qflx_snow_melt(c)  + qflx_sl_top_soil(c)
+                      endif
+                   else ! firn model
                       snow_sources(c) = qflx_snow_grnd_col(c) &
                            + frac_sno_eff(c) * (qflx_rain_grnd_col(c) &
                            +  qflx_dew_snow(c) + qflx_dew_grnd(c) ) 
@@ -470,21 +472,23 @@ contains
                 endif
 
                 if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop .or. lun_pp%itype(l) == istwet ) then
-                   if ( do_capsnow(c) .and. .not. use_extrasnowlayers) then
-                      snow_sources(c) = frac_sno_eff(c) * (qflx_dew_snow(c) + qflx_dew_grnd(c) ) &
-                           + qflx_h2osfc_to_ice(c) + qflx_prec_grnd(c)
+                   if (.not. use_extrasnowlayers) then
+                      if (do_capsnow(c)) then
+                         snow_sources(c) = frac_sno_eff(c) * (qflx_dew_snow(c) + qflx_dew_grnd(c) ) &
+                              + qflx_h2osfc_to_ice(c) + qflx_prec_grnd(c)
 
-                      snow_sinks(c) = frac_sno_eff(c) * (qflx_sub_snow(c) + qflx_evap_grnd(c)) &
-                           + qflx_snwcp_ice(c) + qflx_snwcp_liq(c) &
-                           + qflx_snow_melt(c) + qflx_sl_top_soil(c)
-                   else if (.not. use_extrasnowlayers) then
-                      snow_sources(c) = (qflx_snow_grnd_col(c) - qflx_snow_h2osfc(c) ) &
-                           + frac_sno_eff(c) * (qflx_rain_grnd_col(c) &
-                           +  qflx_dew_snow(c) + qflx_dew_grnd(c) ) + qflx_h2osfc_to_ice(c)
+                         snow_sinks(c) = frac_sno_eff(c) * (qflx_sub_snow(c) + qflx_evap_grnd(c)) &
+                              + qflx_snwcp_ice(c) + qflx_snwcp_liq(c) &
+                              + qflx_snow_melt(c) + qflx_sl_top_soil(c)
+                      else
+                         snow_sources(c) = (qflx_snow_grnd_col(c) - qflx_snow_h2osfc(c) ) &
+                              + frac_sno_eff(c) * (qflx_rain_grnd_col(c) &
+                              +  qflx_dew_snow(c) + qflx_dew_grnd(c) ) + qflx_h2osfc_to_ice(c)
 
-                      snow_sinks(c) = frac_sno_eff(c) * (qflx_sub_snow(c) + qflx_evap_grnd(c)) &
-                           + qflx_snow_melt(c) + qflx_sl_top_soil(c)
-                   else if (use_extrasnowlayers) then !++ams i.e., firn model
+                         snow_sinks(c) = frac_sno_eff(c) * (qflx_sub_snow(c) + qflx_evap_grnd(c)) &
+                              + qflx_snow_melt(c) + qflx_sl_top_soil(c)
+                      endif
+                   else ! firn model
                       snow_sources(c) = (qflx_snow_grnd_col(c) - qflx_snow_h2osfc(c) ) &
                            + frac_sno_eff(c) * (qflx_rain_grnd_col(c) &
                            +  qflx_dew_snow(c) + qflx_dew_grnd(c) ) + qflx_h2osfc_to_ice(c)

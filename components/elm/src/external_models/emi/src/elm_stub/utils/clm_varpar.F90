@@ -172,12 +172,6 @@ contains
        nlevlak     =  25     ! number of lake layers (Yields better results for site simulations)
     end if
 
-    !if (.not. use_extrasnowlayers) then
-    !   nlevsno     =  5     ! maximum number of snow layers
-    !else
-    !   nlevsno     =  16    ! maximum number of snow layers (for firn model)
-    !end if
-
     if ( use_fates ) then
        i_cwd = 0
        i_met_lit = 1
@@ -211,8 +205,6 @@ contains
 
     endif
     
-
-
   end subroutine clm_varpar_init
 
 end module clm_varpar

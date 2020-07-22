@@ -61,6 +61,7 @@ contains
     !    -> SnowCompaction:        compaction of snow layers
     !    -> CombineSnowLayers:     combine snow layers that are thinner than minimum
     !    -> DivideSnowLayers:      subdivide snow layers that are thicker than maximum
+    !    -> DivideExtraSnowLayers: subdivide up to 16 snow layers that are thicker than maximum
     !
     ! !USES:
     use elm_varcon           , only : denh2o, denice, hfus, grav, tfrz
@@ -70,7 +71,7 @@ contains
     use elm_varctl           , only : use_cn, use_betr, use_fates, use_pflotran, pf_hmode
     use elm_varpar           , only : nlevgrnd, nlevsno, nlevsoi, nlevurb
     use clm_time_manager     , only : get_step_size, get_nstep
-    use SnowHydrologyMod     , only : SnowCompaction, CombineSnowLayers, DivideSnowLayers, SnowCapping
+    use SnowHydrologyMod     , only : SnowCompaction, CombineSnowLayers, DivideSnowLayers, DivideExtraSnowLayers, SnowCapping
     use SnowHydrologyMod     , only : SnowWater, BuildSnowFilter 
     use SoilHydrologyMod     , only : ELMVICMap, SurfaceRunoff, Infiltration, WaterTable
     use SoilWaterMovementMod , only : SoilWater 
@@ -312,9 +313,14 @@ contains
            aerosol_vars, temperature_vars, waterflux_vars, waterstate_vars)
 
       ! Divide thick snow elements
-      call DivideSnowLayers(bounds, num_snowc, filter_snowc, &
-           aerosol_vars, temperature_vars, waterstate_vars, is_lake=.false.)
-
+      if (.not. use_extrasnowlayers) then
+         call DivideSnowLayers(bounds, num_snowc, filter_snowc, &
+              aerosol_vars, temperature_vars, waterstate_vars, is_lake=.false.)
+      else
+         call DivideExtraSnowLayers(bounds, num_snowc, filter_snowc, &
+              aerosol_vars, temperature_vars, waterstate_vars, is_lake=.false.)
+      endif
+      
       ! Set empty snow layers to zero
       do j = -nlevsno+1,0
          do fc = 1, num_snowc
