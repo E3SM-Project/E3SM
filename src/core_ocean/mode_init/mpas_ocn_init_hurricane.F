@@ -362,11 +362,11 @@ contains
        if (config_use_variable_drag) then
          call mpas_pool_get_array(forcingPool, 'bottomDrag', bottomDrag)
          do iCell = 1, nCellsSolve
-           if (bottomDepth(iCell) < config_hurricane_land_z_limit) then
+           if (bottomDepth(iCell) <= config_hurricane_land_z_limit) then
              bottomDrag(iCell) = config_hurricane_land_drag
            else if (config_hurricane_land_z_limit < bottomDepth(iCell) .and. bottomDepth(iCell) < config_hurricane_marsh_z_limit) then
              bottomDrag(iCell) = config_hurricane_marsh_drag
-           else if (config_hurricane_marsh_z_limit < bottomDepth(iCell)) then
+           else if (config_hurricane_marsh_z_limit <= bottomDepth(iCell)) then
              bottomDrag(iCell) = config_hurricane_channel_drag
            else
              call mpas_log_write('Default value for drag is not selected' &
