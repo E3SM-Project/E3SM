@@ -31,7 +31,6 @@ module ocn_time_integration
    use mpas_log
 
    use ocn_constants
-   use ocn_config
    use ocn_time_integration_rk4
    use ocn_time_integration_split
 
@@ -141,7 +140,11 @@ module ocn_time_integration
 
       integer, intent(out) :: err
 
+      character (len=StrKIND), pointer :: config_time_integrator
+
       err = 0
+
+      call mpas_pool_get_config(ocnConfigs, 'config_time_integrator', config_time_integrator)
 
       rk4On = .false.
       splitOn = .false.
