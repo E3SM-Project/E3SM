@@ -1505,6 +1505,61 @@ contains
 
   !==========================================================================================!
 
+  real(rtype) function MurphyKoop_svp(t, i_type)
+
+    use scream_abortutils, only : endscreamrun
+
+    implicit none
+
+    !-------------------------------------------------------------------
+    ! Compute saturation vapor pressure (returned in units of pa)
+    ! Inputs:
+    ! "t", units [K]
+    !  i_type refers to saturation with respect to liquid (0) or ice (1)
+    !--------------------------------------------------------------------
+
+    !Murphy & Koop (2005)
+    real(rtype), intent(in) :: t
+    integer, intent(in)     :: i_type
+
+    !local vars
+    character(len=1000) :: err_msg
+    real(rtype)         :: logt, tmp
+
+    !parameters for ice saturation eqn
+    real(rtype), parameter :: ic(4)  =(/9.550426_rtype, 5723.265_rtype, 3.53068_rtype, &
+         0.00728332_rtype/)
+
+    !parameters for liq saturation eqn
+    real(rtype), parameter :: lq(10) = (/54.842763_rtype, 6763.22_rtype, 4.210_rtype, &
+         0.000367_rtype, 0.0415_rtype, 218.8_rtype, 53.878_rtype, 1331.22_rtype,       &
+         9.44523_rtype, 0.014025_rtype /)
+
+    logt = bfb_log(t)
+
+    if (i_type .eq. 1 .and. t .lt. zerodegc) then
+
+       !(good down to 110 K)
+       MurphyKoop_svp = bfb_exp(ic(1) - (ic(2) / t) + (ic(3) * logt) - (ic(4) * t))
+
+    elseif (i_type .eq. 0 .or. t .ge. zerodegc) then
+
+       ! (good for 123 < T < 332 K)
+       !For some reason, we cannot add line breaks if we use "bfb_exp", storing experssion in "tmp"
+       tmp = lq(1) - (lq(2) / t) - (lq(3) * logt) + (lq(4) * t) + &
+            (tanh(lq(5) * (t - lq(6))) * (lq(7) - (lq(8) / t) - &
+            (lq(9) * logt) + lq(10) * t))
+       MurphyKoop_svp = bfb_exp(tmp)
+    else
+
+       write(err_msg,*)'Error: Either MurphyKoop_svp i_type is not 0 or 1 or t=NaN. itype= ', &
+            i_type,' and temperature t=',t,' in file: ',__FILE__,' at line:',__LINE__
+       call endscreamrun(err_msg)
+    endif
+
+    return
+  end function MurphyKoop_svp
+
   !_rtype
   real(rtype) function polysvp1(t,i_type)
 
@@ -1590,6 +1645,35 @@ contains
    return
 
   end function polysvp1
+
+  subroutine check_temp(t, subname)
+    !Check if temprature values are in legit range
+    use scream_abortutils, only : endscreamrun
+    use ieee_arithmetic,   only : ieee_is_finite, ieee_is_nan
+
+    implicit none
+
+    real(rtype),      intent(in) :: t
+    character(len=*), intent(in) :: subname
+
+    character(len=1000) :: err_msg
+
+    if(t <= 0.0_rtype) then
+       write(err_msg,*)'Error: Called from:',trim(adjustl(subname)),'; Temperature is:',t,' which is <= 0._r8 in file:',__FILE__, &
+            ' at line:',__LINE__
+       call endscreamrun(err_msg)
+    elseif(.not. ieee_is_finite(t)) then
+       write(err_msg,*)'Error: Called from:',trim(adjustl(subname)),'; Temperature is:',t,' which is not finite in file:', &
+            __FILE__,' at line:',__LINE__
+       call endscreamrun(err_msg)
+    elseif(ieee_is_nan(t)) then
+       write(err_msg,*)'Error: Called from:',trim(adjustl(subname)),'; Temperature is:',t,' which is NaN in file:',__FILE__, &
+             'at line:',__LINE__
+       call endscreamrun(err_msg)
+    endif
+
+    return
+  end subroutine check_temp
 
   !------------------------------------------------------------------------------------------!
 
@@ -1968,8 +2052,11 @@ contains
     real(rtype)            :: e_pres         !saturation vapor pressure [Pa]
 
     !------------------
+    !Check if temprature is within legitimate range
+    call check_temp(t_atm, "qv_sat")
 
-    e_pres = polysvp1(t_atm,i_wrt)
+    !e_pres = polysvp1(t_atm,i_wrt)
+    e_pres = MurphyKoop_svp(t_atm,i_wrt)
     qv_sat = ep_2*e_pres/max(1.e-3_rtype,(p_atm-e_pres))
 
     return

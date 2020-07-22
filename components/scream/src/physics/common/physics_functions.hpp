@@ -70,7 +70,7 @@ struct Functions
   //
   // --------- Functions ---------
   //
-  
+
   //  compute saturation vapor pressure
   //  polysvp1 returned in units of pa.
   //  t is input in units of k.
@@ -78,14 +78,20 @@ struct Functions
   KOKKOS_FUNCTION
   static Spack polysvp1(const Spack& t, const bool ice);
 
-  // Calls polysvp1 to obtain the saturation vapor pressure, and then computes
+  //  compute saturation vapor pressure using Murphy and Koop(2005) formulation
+  //  MurphyKoop_svp returned in units of pa.
+  //  t is input in units of k.
+  //  ice refers to saturation with respect to liquid (false) or ice (true)
+  KOKKOS_FUNCTION
+  static Spack MurphyKoop_svp(const Spack& t, const bool ice);
+
+  // Calls a function to obtain the saturation vapor pressure, and then computes
   // and returns the saturation mixing ratio, with respect to either liquid or ice,
   // depending on value of 'ice'
   KOKKOS_FUNCTION
-  static Spack qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice);
-
+  static Spack qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice, const int& func_idx = 1);
 };
-  
+
 } // namespace physics
 } // namespace scream
 
