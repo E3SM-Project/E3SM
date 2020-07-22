@@ -1178,8 +1178,10 @@ contains
 
              ! apportion dry deposition into turb and gravitational settling for tapes
              do i=1,ncol
-                dep_trb(i)=sflx(i)*vlc_trb(i,jvlc)/vlc_dry(i,pver,jvlc)
-                dep_grv(i)=sflx(i)*vlc_grv(i,pver,jvlc)/vlc_dry(i,pver,jvlc)
+                if (vlc_dry(i,pver,jvlc) .ne. 0._r8) then
+                   dep_trb(i)=sflx(i)*vlc_trb(i,jvlc)/vlc_dry(i,pver,jvlc)
+                   dep_grv(i)=sflx(i)*vlc_grv(i,pver,jvlc)/vlc_dry(i,pver,jvlc)
+                endif
              enddo
 
              call outfld( trim(cnst_name(mm))//'DDF', sflx, pcols, lchnk)
@@ -1209,8 +1211,10 @@ contains
 
              ! apportion dry deposition into turb and gravitational settling for tapes
              do i=1,ncol
-                dep_trb(i)=sflx(i)*vlc_trb(i,jvlc)/vlc_dry(i,pver,jvlc)
-                dep_grv(i)=sflx(i)*vlc_grv(i,pver,jvlc)/vlc_dry(i,pver,jvlc)
+                if (vlc_dry(i,pver,jvlc) .ne. 0._r8) then
+                   dep_trb(i)=sflx(i)*vlc_trb(i,jvlc)/vlc_dry(i,pver,jvlc)
+                   dep_grv(i)=sflx(i)*vlc_grv(i,pver,jvlc)/vlc_dry(i,pver,jvlc)
+                endif
              enddo
 
              qaerwat(1:ncol,:,mm) = qaerwat(1:ncol,:,mm) + dqdt_tmp(1:ncol,:) * dt
@@ -1237,8 +1241,10 @@ contains
 
              ! apportion dry deposition into turb and gravitational settling for tapes
              do i=1,ncol
-                dep_trb(i)=sflx(i)*vlc_trb(i,jvlc)/vlc_dry(i,pver,jvlc)
-                dep_grv(i)=sflx(i)*vlc_grv(i,pver,jvlc)/vlc_dry(i,pver,jvlc)
+                if (vlc_dry(i,pver,jvlc) .ne. 0._r8) then
+                   dep_trb(i)=sflx(i)*vlc_trb(i,jvlc)/vlc_dry(i,pver,jvlc)
+                   dep_grv(i)=sflx(i)*vlc_grv(i,pver,jvlc)/vlc_dry(i,pver,jvlc)
+                endif
              enddo
 
              fldcw(1:ncol,:) = fldcw(1:ncol,:) + dqdt_tmp(1:ncol,:) * dt
@@ -2957,9 +2963,7 @@ do_lphase2_conditional: &
 
           ! in the MMF NaN's were occurring here but the root cause was not
           ! identified, so this check was added to work around the issue
-          if (use_MMF) then
-            if ( ieee_is_nan(vlc_grv(i,k)) ) vlc_grv(i,k) = 0.0_r8 
-          end if
+          if ( ieee_is_nan(vlc_grv(i,k)) ) vlc_grv(i,k) = 0.0_r8 
 
           vlc_dry(i,k)=vlc_grv(i,k)
        enddo
