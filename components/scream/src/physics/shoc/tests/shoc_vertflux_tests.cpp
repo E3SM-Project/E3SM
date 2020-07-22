@@ -99,7 +99,7 @@ TEST_CASE("shoc_vertflux", "shoc") {
       // validate that the boundary points 
       //   have NOT been modified      
       if (n == 0 || n == nlevi){
-        REQUIRE(SDS.vertflux[offset] == 100.);
+        REQUIRE(SDS.vertflux[offset] == 100.0);
       }
       else{
       
