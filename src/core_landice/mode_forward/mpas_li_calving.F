@@ -1345,6 +1345,8 @@ module li_calving
 !-----------------------------------------------------------------------
    subroutine von_Mises_calving(domain, err)
 
+      use li_diagnostic_vars
+
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
@@ -1366,12 +1368,15 @@ module li_calving
       integer :: iCell
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: geometryPool, meshPool, &
-                                        velocityPool, scratchPool
+                                        velocityPool, scratchPool, thermalPool
       real (kind=RKIND), pointer :: config_von_Mises_threshold_stress, &
                                     config_flowLawExponent
+      logical, pointer :: config_use_Albany_flowA_eqn 
       real (kind=RKIND), dimension(:), pointer :: eMax, eMin, & 
-                                        stiffnessFactor, calvingVelocity, &
+                                        calvingVelocity, thickness, &
                                         xvelmean, yvelmean
+      real (kind=RKIND), dimension(:,:), pointer :: flowParamA, &
+                                        temperature, layerThickness
       real (kind=RKIND), pointer :: config_default_flowParamA
       integer, pointer :: nCells
       real (kind=RKIND), dimension(:), pointer :: vonMisesStress       
@@ -1379,9 +1384,9 @@ module li_calving
       err = 0
       
       call mpas_pool_get_config(liConfigs, 'config_von_Mises_threshold_stress', config_von_Mises_threshold_stress)
-      call mpas_pool_get_config(liConfigs, 'config_default_flowParamA', config_default_flowParamA) ! REMOVE THIS ONCE YOU CAN GET A FROM ALBANY!!!!!
+      !call mpas_pool_get_config(liConfigs, 'config_default_flowParamA', config_default_flowParamA) ! REMOVE THIS ONCE YOU CAN GET A FROM ALBANY!!!!!
       call mpas_pool_get_config(liConfigs, 'config_flowLawExponent', config_flowLawExponent)
-      
+      call mpas_pool_get_config(liConfigs, 'config_use_Albany_flowA_eqn', config_use_Albany_flowA_eqn)
       
       block => domain % blocklist
       do while (associated(block))
@@ -1390,23 +1395,42 @@ module li_calving
           call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
           call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
           call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
+          call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
          ! get fields
           call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+          call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
           call mpas_pool_get_array(velocityPool, 'eMax', eMax)
           call mpas_pool_get_array(velocityPool, 'eMin', eMin)
           call mpas_pool_get_array(velocityPool, 'vonMisesStress', vonMisesStress)
-          call mpas_pool_get_array(velocityPool, 'stiffnessFactor', stiffnessFactor)
+          call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
           call mpas_pool_get_array(velocityPool, 'xvelmean', xvelmean)
           call mpas_pool_get_array(velocityPool, 'yvelmean', yvelmean)
           call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity) 
+          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+          call mpas_pool_get_array(thermalPool, 'temperature', temperature)
+          
+          vonMisesStress(:) = 0.0_RKIND
 
-         ! Calculate effective von Mises stress, ASSUMING "ice viscosity
-         ! parameter" = 2 * sitiffnessFactor * A**(-1/n)
-          vonMisesStress(:) = sqrt(3.0_RKIND) * 2.0_RKIND * stiffnessFactor(:) * &
-                              config_default_flowParamA**(-1.0_RKIND / config_flowLawExponent) * &
-                              ( 0.5_RKIND * ( (max(0.0_RKIND, eMax(:)))**2 + &
-                              (max(0.0_RKIND, eMin(:)))**2) )**(1 / (2 * config_flowLawExponent))
-         
+          ! get flowParamA from MPAS or use Albany-like equation
+          if ( config_use_Albany_flowA_eqn ) then
+          !calculate Albany-type flowParamA
+          else
+             call li_calculate_flowParamA(meshPool, temperature, thickness,flowParamA,err) ! Get MPAS flowParamA
+          endif
+    
+         !Using a depth-averaged ice viscosity parameter B_depthAvg
+         !=sum(layerThickness(:,iCell) *
+         !flowParamA(:,iCell)**(-1.0_RKIND/config_flowLawExponent), dim=1) /
+         !thickness(iCell)
+         ! Calculate effective von Mises stress.
+          do iCell = 1,nCells
+             if ( thickness(iCell) > 0.0_RKIND ) then
+                vonMisesStress(iCell) = sqrt(3.0_RKIND) * sum(layerThickness(:,iCell) * &
+                              flowParamA(:,iCell)**(-1.0_RKIND/config_flowLawExponent), dim=1) / &
+                              thickness(iCell) * ( 0.5_RKIND * ( (max(0.0_RKIND, eMax(iCell)))**2 + &
+                              (max(0.0_RKIND, eMin(iCell)))**2) )**(1 / (2 * config_flowLawExponent))
+             endif 
+          enddo 
         
           calvingVelocity(:) = 0.0_RKIND 
          ! Calculate calving velocity for grounded cells at marine margin
