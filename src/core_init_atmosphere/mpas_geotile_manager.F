@@ -35,7 +35,6 @@ module mpas_geotile_manager
         procedure, public :: init => mpas_geotile_mgr_init
         procedure, public :: finalize => mpas_geotile_mgr_finalize
         procedure, public :: get_tile => mpas_geotile_mgr_get_tile
-        procedure, public :: pixel_to_latlon => mpas_geotile_mgr_pixel_to_latlon
         procedure, public :: latlon_to_pixel => mpas_geotile_mgr_latlon_to_pixel
         procedure, public :: tile_to_latlon => mpas_geotile_mgr_tile_to_latlon
         procedure, public :: push_neighbors => mpas_geotile_mgr_push_neighbors
@@ -710,55 +709,6 @@ module mpas_geotile_manager
         endif
 
     end subroutine mpas_geotile_mgr_latlon_to_pixel
-
-
-    !***********************************************************************
-    !
-    !  public subroutine mpas_geotile_mgr_pixel_to_latlon => pixel_to_latlon
-    !
-    !> \brief   Translate a pixel coordinate to latitude longitude
-    !> \author  Miles A. Curry
-    !> \date    02/20/2020
-    !> \details
-    !> Translate a global pixel coordinate to a latitude, longitude coordinate
-    !
-    !-----------------------------------------------------------------------
-    subroutine mpas_geotile_mgr_pixel_to_latlon(mgr, x, y, lat, lon)
-
-        implicit none
-
-        class (mpas_geotile_mgr_type) :: mgr
-        integer, value :: x
-        integer, value :: y
-        real (kind=RKIND), intent(out) :: lat
-        real (kind=RKIND), intent(out) :: lon
-
-        integer, pointer :: tile_bdr
-        real (kind=RKIND), pointer :: known_lat
-        real (kind=RKIND), pointer :: known_lon
-        real (kind=RKIND), pointer :: known_x
-        real (kind=RKIND), pointer :: known_y
-        real, pointer :: dx
-        real, pointer :: dy
-        integer :: ierr
-
-        ierr = 0
-
-        call mpas_pool_get_config(mgr % pool, 'tile_bdr', tile_bdr)
-        call mpas_pool_get_config(mgr % pool, 'known_lat', known_lat)
-        call mpas_pool_get_config(mgr % pool, 'known_lon', known_lon)
-        call mpas_pool_get_config(mgr % pool, 'known_x', known_x)
-        call mpas_pool_get_config(mgr % pool, 'known_y', known_y)
-        call mpas_pool_get_config(mgr % pool, 'dx', dx)
-        call mpas_pool_get_config(mgr % pool, 'dy', dy)
-
-        lat = y * dy + known_lat
-        lon = x * dx + known_lon
-
-        call deg2Rad(lat)
-        call deg2Rad(lon)
-
-    end subroutine mpas_geotile_mgr_pixel_to_latlon
 
 
     !***********************************************************************
