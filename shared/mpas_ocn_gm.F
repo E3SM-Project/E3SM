@@ -613,10 +613,10 @@ contains
                                        layerThicknessEdge(k, iEdge)*gradDensityEdge(k, iEdge))/(layerThicknessEdge(k - 1, iEdge) + &
                                                                                                 layerThicknessEdge(k, iEdge))
                dzdxTopOfEdge = (layerThicknessEdge(k - 1, iEdge)*dzdxEdge(k - 1, iEdge) + &
-                                layerThicknessEdge(k, iEdge)*gradDensityEdge(k, iEdge))/(layerThicknessEdge(k - 1, iEdge) + &
+                                layerThicknessEdge(k, iEdge)*dzdxEdge(k, iEdge))/(layerThicknessEdge(k - 1, iEdge) + &
                                                                                          layerThicknessEdge(k, iEdge))
 
-               gradDensityConstZTopOfEdge = gradDensityTopOfEdge + dzdxTopOfEdge*drhoDzTopOfEdge(k, iEdge)
+               gradDensityConstZTopOfEdge = gradDensityTopOfEdge - dzdxTopOfEdge*drhoDzTopOfEdge(k, iEdge)
 
                kappaGMEdge = 0.5_RKIND*(gmKappaScaling(k, cell1) + gmKappaScaling(k, cell2))
                BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k, cell1) + BruntVaisalaFreqTop(k, cell2))
@@ -635,10 +635,10 @@ contains
                                        /(layerThicknessEdge(k - 1, iEdge) + &
                                        layerThicknessEdge(k, iEdge))
                   dzdxTopOfEdge = (layerThicknessEdge(k - 1, iEdge)*dzdxEdge(k - 1, iEdge) + &
-                                   layerThicknessEdge(k, iEdge)*gradDensityEdge(k, iEdge))/(layerThicknessEdge(k - 1, iEdge) + &
+                                   layerThicknessEdge(k, iEdge)*dzdxEdge(k, iEdge))/(layerThicknessEdge(k - 1, iEdge) + &
                                                                                             layerThicknessEdge(k, iEdge))
 
-                  gradDensityConstZTopOfEdge = gradDensityTopOfEdge + dzdxTopOfEdge*drhoDzTopOfEdge(k, iEdge)
+                  gradDensityConstZTopOfEdge = gradDensityTopOfEdge - dzdxTopOfEdge*drhoDzTopOfEdge(k, iEdge)
 
                   kappaGMEdge = 0.5_RKIND*(gmKappaScaling(k, cell1) + gmKappaScaling(k, cell2))
                   BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k, cell1) + BruntVaisalaFreqTop(k, cell2))
@@ -660,10 +660,10 @@ contains
                                                                                                 layerThicknessEdge(k, iEdge))
                kappaGMEdge = 0.5_RKIND*(gmKappaScaling(k, cell1) + gmKappaScaling(k, cell2))
                dzdxTopOfEdge = (layerThicknessEdge(k - 1, iEdge)*dzdxEdge(k - 1, iEdge) + &
-                                layerThicknessEdge(k, iEdge)*gradDensityEdge(k, iEdge))/(layerThicknessEdge(k - 1, iEdge) + &
+                                layerThicknessEdge(k, iEdge)*dzdxEdge(k, iEdge))/(layerThicknessEdge(k - 1, iEdge) + &
                                                                                             layerThicknessEdge(k, iEdge))
 
-               gradDensityConstZTopOfEdge = gradDensityTopOfEdge + dzdxTopOfEdge*drhoDzTopOfEdge(k, iEdge)
+               gradDensityConstZTopOfEdge = gradDensityTopOfEdge - dzdxTopOfEdge*drhoDzTopOfEdge(k, iEdge)
 
                BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k, cell1) + BruntVaisalaFreqTop(k, cell2))
                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
