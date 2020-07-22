@@ -5,12 +5,10 @@
 #include "ekat/scream_kokkos.hpp"
 #include "ekat/scream_pack.hpp"
 #include "ekat/util/scream_kokkos_utils.hpp"
-#include "physics/p3/p3_functions.hpp"
-#include "physics/p3/p3_functions_f90.hpp"
 #include "physics/share/physics_functions.hpp"
 #include "physics/share/physics_saturation_impl.hpp"
 
-#include "p3_unit_tests_common.hpp"
+#include "physics_unit_tests_common.hpp"
 
 #include <thread>
 #include <array>
@@ -19,11 +17,11 @@
 #include <iomanip>      // std::setprecision
 
 namespace scream {
-namespace p3 {
+namespace physics {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestP3Saturation
+struct UnitWrap::UnitTest<D>::TestSaturation
 {
 
   KOKKOS_FUNCTION static Scalar condNum(const Scalar& svp, const Scalar& temp, const bool isIce=false){
@@ -212,10 +210,10 @@ struct UnitWrap::UnitTest<D>::TestP3Saturation
       const int ncrv = 8; // 4 for each saturation scheme
 
       struct sat_test_args {
-	Scalar temp; //temperature [K]
-	Scalar pres; //pressure [Pa]
-	Scalar dp_data[ncrv]; // double precision expected vals for MK and polysvp1
-	Scalar sp_data[ncrv]; // single precision expected vals for MK and polysvp1
+      	Scalar temp; //temperature [K]
+      	Scalar pres; //pressure [Pa]
+      	Scalar dp_data[ncrv]; // double precision expected vals for MK and polysvp1
+      	Scalar sp_data[ncrv]; // single precision expected vals for MK and polysvp1
       };
 
       const auto ncases   = 10; //total number of test cases
@@ -396,16 +394,16 @@ struct UnitWrap::UnitTest<D>::TestP3Saturation
     Kokkos::fence();
     REQUIRE(nerr == 0);
   }
-}; //end of TestP3Saturation struct
+}; //end of TestSaturation struct
 
 } // namespace unit_test
-} // namespace p3
+} // namespace physics
 } // namespace scream
 
 namespace{
 
-TEST_CASE("p3_saturation_test", "[p3_saturation_test]"){
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3Saturation::run();
+TEST_CASE("physics_saturation_test", "[physics_saturation_test]"){
+  scream::physics::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestSaturation::run();
 
  } // TEST_CASE
 

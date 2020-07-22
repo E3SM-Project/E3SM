@@ -27,7 +27,7 @@ set_target_properties(physics_share PROPERTIES
   Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
 target_link_libraries(physics_share scream_share ${SCREAM_TPL_LIBRARIES})
 
-#if (NOT SCREAM_LIB_ONLY)
-#  add_subdirectory(tests)
-#endif()
+if (NOT SCREAM_LIB_ONLY)
+  add_subdirectory(tests)
+endif()
 
