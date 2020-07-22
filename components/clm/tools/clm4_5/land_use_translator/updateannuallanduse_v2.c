@@ -1,5 +1,5 @@
 /*-------------------
- README (June 2020):
+ README (July 2020):
   The outputs are now consistent across machines, compilers and optimizations.
  Inputs and outputs are no longer rounded to integer percient because it causes considerable
  divergence of outputs when different compiler optimizations are used.
@@ -24,27 +24,49 @@
       crop still has precedence over pasture if there isn't enough land
  
  To run this code standalone to compute land cover changes associated with Land-Use Harmonization (LUH) data
- you will need to load the netcdf module and run the Makefile and then pass the period of interest and the
+ you will need to load the netcdf module and run the Makefile and then pass the name of the land use states file and the
  directory of input files (and optionally the output path as arg 3) to the land_use_translator as a command-line arguments.
+ The harvest file must be named identically to the states file but with "_harvest" before the ".nc" because it is inferred
+ by the code based in the states file name.
+ The historical file names MUST CONTAIN the string "HIST" (in caps), and future file names MUST NOT CONTAIN "HIST"
+ because this is how the year to process are determined.
+ 
  For example:
  >> make
- >> ./land_use_translator historical /global/cfs/cdirs/e3sm/inputdata/lnd/clm2/rawdata/LUT_input_files_07082020/
+ >> ./land_use_translator LUH2_HIST_LUH1_format.nc /global/cfs/cdirs/e3sm/inputdata/lnd/clm2/rawdata/LUT_input_files_current/
  
  There is also an optional third arugment that is the path to the output files, which will otherwise
  go into a new directory ./output by default.
  
- Only historical and a ssp5 rcp85 files are currently available. The options for the first arguement are:
- historical (1851-2015), future (2016-2100), 1850 (which is just a single year historical run that sets up an 1850 start)
- Note that the initial years (1850, 2015 are given as inputs to the LUT)
+ Historical, ssp5 rcp85, and ssp2 rcp45 files are currently available. The state file names are:
+ LUH2_HIST_LUH1_format.nc (1851-2015), LUH2_SSP5_RCP85_LUH1_format.nc (2016-2100), and LUH2_SSP2_RCP45_LUH1_format.nc (2016-2100).
+ The 1850 option runs a single year historical run that sets up an 1850 initial file with the correct year.
+ Note that the initial years (1850, 2015 are given as inferred inputs to the LUT).
+ 
  The land conversion preferences are set to better match qualitative examination of ssp5 rcp85 scenario forest area changes
    while reducing undesired behavior in other scenarios (proportional addition and removal of pfts)
  
- If additional future files become available, the user needs to update three variables in the code
- before compiling (near the beginning of updateannuallanduse()), in order to account for a different future scenario:
+ If you create a new historical state input file you may want to create new 1850 initial files
+ to go along with it. This also applies if you change this code (although usually only the mcrop file
+ needs to be updated in this case).
  
- 5880: const char out_future_land_filebase[] = "LUT_LUH2_SSP5_RCP85";
- 5891: const char luh_future_file[] = "LUH2_SSP5_RCP85_LUH1_format.nc";
- 5893: const char luh_harvest_future_file[] = "LUH2_SSP5_RCP85_LUH1_format_harvest_updated.nc";
+ First update the default historical state file name in the code below, compile, and then enter "1850" in
+ place of the file name argument (otherwise the default files will be used). This step isn't necessary
+ if only changing this code.
+ Search for the following to find the line to update:
+ sprintf(usesfname, "LUH2_HIST_LUH1_format.nc");
+ 
+ Second, create new 1850 initial files by replacing the data in the original files with the 1850
+ data from the two new dynamic LUT files. The original files are currently named:
+ iESM_Ref_CropPast1850_c10142019.nc
+ surfdata_360x720_mcrop1850_c07082020.nc
+ and the dynamic files have either "Dyn" or "dyn" in the name
+ 
+ Third, update the new 1850 initial file names in the code below, compile, and then run using the
+ same historical file name as in the first step.
+ Search for the following to find the lines to update:
+ const char initial_hist_dyn_luh_file[] = "iESM_Ref_CropPast1850_c10142019.nc";
+ const char initial_hist_dyn_pft_file[] = "surfdata_360x720_mcrop1850_c07082020.nc";
  
  September 2019 update (adv):
  
@@ -4482,24 +4504,24 @@ void sethurttcrop(int outgrid, int modyear, int calcyear) {
                 printf("outavailpotvegherbpftsum: %f\n", outavailpotvegherbpftsum);
 #endif                                        
                 // check forest maximization
-                // this check takes into account rounding error up to 1/10 unit (percent) of veg land unit
+                // this check takes into account rounding error up to 1/100 percent of veg land unit
                 if (setavailtreefracrem == 0.0 && addpftsum >= availpotvegtreepftsum &&
-                    (outavailpotvegtreepftsum < -0.1 || outavailpotvegtreepftsum > 0.1)) {
+                    (outavailpotvegtreepftsum < -0.01 || outavailpotvegtreepftsum > 0.01)) {
                    printf("Error: notreemax when removing crops and when all avail trees and some herb need to be added\n");
                 }
                 if (setavailtreefracrem == 0.0 && addpftsum < availpotvegtreepftsum &&
-                    outavailpotvegherbpftsum != availpotvegherbpftsum) {
+                    (outavailpotvegherbpftsum - availpotvegherbpftsum > 0.01 || outavailpotvegherbpftsum - availpotvegherbpftsum < -0.01) ) {
                    printf("Error: notreemax when removing crops and when only avail trees need to be added\n");
                 }
                 
                 // check forest minimization
-                // this check takes into account rounding error up to 1/10 unit (percent) of veg land unit
+                // this check takes into account rounding error up to 1/100 percent of veg land unit
                 if (setavailtreefracrem == 2.0 && addpftsum >= availpotvegherbpftsum &&
-                    (outavailpotvegherbpftsum < -0.1 || outavailpotvegherbpftsum > 0.1)) {
+                    (outavailpotvegherbpftsum < -0.01 || outavailpotvegherbpftsum > 0.01)) {
                    printf("Error: notreemin when removing crops and when all avail herb and some trees need to be added\n");
                 }
                 if (setavailtreefracrem == 2.0 && addpftsum < availpotvegherbpftsum &&
-                    outavailpotvegtreepftsum != availpotvegtreepftsum) {
+                    (outavailpotvegtreepftsum - availpotvegtreepftsum > 0.01 || outavailpotvegtreepftsum - availpotvegtreepftsum < -0.01) ) {
                    printf("Error: notreemin when removing crops and when only avail herb need to be added\n");
                 }
                 
@@ -5496,24 +5518,24 @@ void sethurttpasture(int outgrid, int modyear, int calcyear) {
 				 printf("outavailpotvegherbpftsum: %f\n", outavailpotvegherbpftsum);
 #endif                                 
 				 // check forest maximization
-				 // this check takes into account rounding error up to 1/10 unit (percent) of veg land unit
+				 // this check takes into account rounding error up to 1/100 percent of veg land unit
 				 if (setavailtreefracrem == 0.0 && addpftsum >= availpotvegtreepftsum &&
-					 (outavailpotvegtreepftsum < -0.1 || outavailpotvegtreepftsum > 0.1)) {
+					 (outavailpotvegtreepftsum < -0.01 || outavailpotvegtreepftsum > 0.01)) {
                 printf("Error: notreemax when removing pasture and all avail trees and some herbaceous are added\n");
 				 }
 				 if (setavailtreefracrem == 0.0 && addpftsum < availpotvegtreepftsum &&
-					 outavailpotvegherbpftsum != availpotvegherbpftsum) {
+					 (outavailpotvegherbpftsum - availpotvegherbpftsum > 0.01 || outavailpotvegherbpftsum - availpotvegherbpftsum < -0.01) ) {
 					 printf("Error: notreemax when removing pasture and only avail trees should be added\n");
 				 }
 				 
 				 // check forest minimization
-				 // this check takes into account rounding error up to 1/10 unit (percent) of veg land unit
+				 // this check takes into account rounding error up to 1/100 percent of veg land unit
 				 if (setavailtreefracrem == 2.0 && addpftsum >= availpotvegherbpftsum &&
-					 (outavailpotvegherbpftsum < -0.1 || outavailpotvegherbpftsum > 0.1)) {
+					 (outavailpotvegherbpftsum < -0.01 || outavailpotvegherbpftsum > 0.01)) {
 					 printf("Error: notreemin when removing pasture and all avail herbaceous and some trees are added\n");
 				 }
 				 if (setavailtreefracrem == 2.0 && addpftsum < availpotvegherbpftsum &&
-					 outavailpotvegtreepftsum != availpotvegtreepftsum) {
+					 (outavailpotvegtreepftsum - availpotvegtreepftsum > 0.01 || outavailpotvegtreepftsum - availpotvegtreepftsum < -0.01) ) {
 					 printf("Error: notreemin when removing pasture and only avail herbaceous should be added\n");
 				 }
 				 
@@ -5812,15 +5834,16 @@ sethurttpotveg() {
 	plodata - array for storing the output of this function
 	inyear - the output year (which is the year of the input glm land use data); this is actually the current model year plus one
 			- the glmo harvest data is for the model year
- 	ISFUTURE is a flag to tell how many values (constants are defined at top) to read from the LUH files; 1=future, 0=historical
-	calulate the output year pfts from changes in the base year pfts, based on base year (pasture only) and output year glmo data
+ 	ISFUTURE - a flag to tell how many values (constants are defined at top) to read from the LUH files; 1=future, 0=historical
+      calulate the output year pfts from changes in the base year pfts, based on base year (pasture only) and output year glmo data
+   sfname - the land use state file name for the desired scenario, or 1850
 	-adv
 -----*/
 
-	// standalone does not need the array arguments:
+	// standalone does not need the array arguments, but needs other arguments:
 #ifdef STANDALONE
 void
-updateannuallanduse(int *inyear, int ISFUTURE, char *in_dir, char *out_dir) {
+updateannuallanduse(int *inyear, int ISFUTURE, char *sfname, char *in_dir, char *out_dir) {
 #else
 void
 updateannuallanduse_main(double glmo[][GLMONFLDS], double plodata[][PLONFLDS], int *inyear) {
@@ -5874,11 +5897,45 @@ updateannuallanduse_main(double glmo[][GLMONFLDS], double plodata[][PLONFLDS], i
 	strcpy(msg, "mkdir -p ");
 	strcat(msg, out_dir);
 	system(msg);
-	
+   
+   // set the default historical file name if sfname is 1850
+   char usesfname[1000];
+   if (!strcmp(sfname, "1850")) {
+      sprintf(usesfname, "LUH2_HIST_LUH1_format.nc");
+   } else {
+      // use the input file name
+      strcpy(usesfname, sfname);
+   }
+   
 	// output file base names for updated LUH-PFT data for mksrfdat - the output year and the creation date are appended
-	const char out_hist_land_filebase[] = "LUT_LUH2_historical";
-	const char out_future_land_filebase[] = "LUT_LUH2_SSP5_RCP85";
-	
+   // use the input file name minus the .nc, and prepend "LUT"
+   char out_land_filebase[1000];
+   memset(out_land_filebase, '\0', sizeof(out_land_filebase));
+   char inbase[1000];
+   memset(inbase, '\0', sizeof(inbase));
+   char *extaddr = strrchr(usesfname, '.');
+   int numkeep = extaddr - usesfname;
+   strncpy(inbase, usesfname, numkeep);
+   sprintf(out_land_filebase, "LUT_%s", inbase);
+   
+   // input luh file names
+   char luh_state_file[1000];
+   memset(luh_state_file, '\0', sizeof(luh_state_file));
+   char luh_harvest_file[1000];
+   memset(luh_harvest_file, '\0', sizeof(luh_harvest_file));
+   strcpy(luh_state_file, usesfname);
+   sprintf(luh_harvest_file, "%s_harvest.nc", inbase);
+   
+	//const char out_hist_land_filebase[] = "LUT_LUH2_historical";
+	//const char out_future_land_filebase[] = "LUT_LUH2_SSP5_RCP85";
+
+   // input luh data file names
+   //const char luh_hist_file[] = "iESM_Expt_rs_Ref_gfrac.nc";      // this is luh2 1850-2015 in luh format
+   //const char luh_future_file[] = "LUH2_SSP5_RCP85_LUH1_format.nc";      // this is luh2 2015-2100 in luh format
+   //const char luh_harvest_hist_file[] = "iESM_Expt_rs_Ref_harvest_updated.nc";      // this is luh2 harvest 1850-2014 in luh format
+   //const char luh_harvest_future_file[] = "LUH2_SSP5_RCP85_LUH1_format_harvest_updated.nc";      // this is luh2 harvest 2015-2099 in luh format
+   
+   
 	// initial historic dynamic lut file names - so that changing them is done here
 	const char initial_hist_dyn_luh_file[] = "iESM_Ref_CropPast1850_c10142019.nc";
 	const char initial_hist_dyn_pft_file[] = "surfdata_360x720_mcrop1850_c07082020.nc";
@@ -5886,12 +5943,7 @@ updateannuallanduse_main(double glmo[][GLMONFLDS], double plodata[][PLONFLDS], i
 	const char initial_future_dyn_luh_file[] = "iESM_Ref_CropPast2015_c10142019.nc";
 	const char initial_future_dyn_pft_file[] = "surfdata_360x720_mcrop2015_c07082020.nc";
 	
-	// input luh data file names
-	const char luh_hist_file[] = "iESM_Expt_rs_Ref_gfrac.nc";		// this is luh2 1850-2015 in luh format
-	const char luh_future_file[] = "LUH2_SSP5_RCP85_LUH1_format.nc";		// this is luh2 2015-2100 in luh format
-	const char luh_harvest_hist_file[] = "iESM_Expt_rs_Ref_harvest_updated.nc";		// this is luh2 harvest 1850-2014 in luh format
-	const char luh_harvest_future_file[] = "LUH2_SSP5_RCP85_LUH1_format_harvest_updated.nc";		// this is luh2 harvest 2015-2099 in luh format
-	// template for writing output files
+   // template for writing output files
 	const char out_land_template_file[] = "mksrf_landuse_template.nc";
 
 	// reference files for historic dynamic calculations
@@ -5961,9 +6013,10 @@ updateannuallanduse_main(double glmo[][GLMONFLDS], double plodata[][PLONFLDS], i
 	printf("\n***************\n");
 	
 	// contains GOTHR GSECD GCROP GPAST GURBN LANDMASK ...
+   // the historical/future file name has already been sorted out
 	if (modyear < initial_future_year){
 		strcpy(filenamestr, in_dir);
-      strcat(filenamestr, luh_hist_file);  // LUH2 data in LUH1 format (1850 - 2015) - use for historical simulations
+      strcat(filenamestr, luh_state_file);  // LUH2 data in LUH1 format (1850 - 2015) - use for historical simulations
 		if (opennetcdf(filenamestr) == 0) {
 			printf("LUH file %s is not available; current modyear = %li\n", filenamestr, modyear);
 			exit(0);
@@ -5977,7 +6030,7 @@ updateannuallanduse_main(double glmo[][GLMONFLDS], double plodata[][PLONFLDS], i
 	}
 	else {
       strcpy(filenamestr, in_dir);
-		strcat(filenamestr, luh_future_file);  //LUH2 future scenario in LUH1 format - for future simulations (2015-2100)
+		strcat(filenamestr, luh_state_file);  //LUH2 future scenario in LUH1 format - for future simulations (2015-2100)
 		if (opennetcdf(filenamestr) == 0) {
 			printf("LUH file %s is not available; current modyear = %li\n", filenamestr, modyear);
 			exit(0);
@@ -6031,9 +6084,10 @@ updateannuallanduse_main(double glmo[][GLMONFLDS], double plodata[][PLONFLDS], i
 	}
 	
 	// contains GFVH1 GFVH2 GFSH1 GFSH2 GFSH3
+   // the historical/future file name has already been sorted out
 	if (modyear < initial_future_year){
 		strcpy(filenamestr, in_dir);
-      strcat(filenamestr, luh_harvest_hist_file); // LUH2 wood harvest data in LUH1 format (1850 - 2014) - use for historical simulations
+      strcat(filenamestr, luh_harvest_file); // LUH2 wood harvest data in LUH1 format (1850 - 2014) - use for historical simulations
 		if (opennetcdf(filenamestr) == 0) {
 			printf("LUH harvest file %s is not available; current modyear = %li\n", filenamestr, modyear);
 			exit(0);
@@ -6047,7 +6101,7 @@ updateannuallanduse_main(double glmo[][GLMONFLDS], double plodata[][PLONFLDS], i
 	}
 	else {
 		strcpy(filenamestr, in_dir);
-      strcat(filenamestr, luh_harvest_future_file);  //LUH2 future wood harvest scenario in LUH1 format - use for future simulations (2015-2099)
+      strcat(filenamestr, luh_harvest_file);  //LUH2 future wood harvest scenario in LUH1 format - use for future simulations (2015-2099)
 		if (opennetcdf(filenamestr) == 0) {
 			printf("LUH harvest file %s is not available; current modyear = %li\n", filenamestr, modyear);
 			exit(0);
@@ -6320,13 +6374,15 @@ updateannuallanduse_main(double glmo[][GLMONFLDS], double plodata[][PLONFLDS], i
 	tm = localtime(&t);
 	strftime(buf,250, "c%m%d%Y", tm);
 	
-	// !!!! This is the file to which data is outputted
-	if (modyear < initial_future_year) {
-		sprintf(filenamestr, "%s%s_%i_%s.nc", out_dir, out_hist_land_filebase, *inyear, buf);  // use this naming structure for historical simulations
-	}
-	else {
-		sprintf(filenamestr, "%s%s_%i_%s.nc", out_dir, out_future_land_filebase, *inyear, buf); // use this naming structure for future simulations
-	}
+   // !!!! This is the file to which data are output; the name is based on the input file
+   sprintf(filenamestr, "%s%s_%i_%s.nc", out_dir, out_land_filebase, *inyear, buf);
+   
+	//if (modyear < initial_future_year) {
+		//sprintf(filenamestr, "%s%s_%i_%s.nc", out_dir, out_hist_land_filebase, *inyear, buf);  // use this naming structure for historical simulations
+	//}
+	//else {
+		//sprintf(filenamestr, "%s%s_%i_%s.nc", out_dir, out_future_land_filebase, *inyear, buf); // use this naming structure for future simulations
+	//}
 	
 	sprintf(msg, "cp -f %s%s ", in_dir, out_land_template_file);
 	strcat(msg, filenamestr);
@@ -6430,10 +6486,9 @@ int main(int argc, char **argv) {
 	
 	if(argc < 3 || argc > 4){
       printf("Usage:\nThere are two requried arguments and one optional argument:");
-      printf("\n\tFirst argument: Select output file years (3 choices):");
-      printf("\n\t\t1850 = a single-year 1849");
-      printf("\n\t\thistorical = 1851 to 2015");
-      printf("\n\t\tfuture = 2016 to 2100");
+      printf("\n\tFirst argument: Land use state file name:");
+      printf("\n\t\tThis determines which scenario to process");
+      printf("\n\t\tIf this is 1850 then the historical files are used to run a single year to create an 1850 initial file");
       printf("\n\tSecond argument: Full path to input files");
       printf("\n\tOptional third argument: Full path to output files");
       printf("\n\t\tThe defualt path to output files is ./output\n");
@@ -6460,6 +6515,7 @@ int main(int argc, char **argv) {
    
    const char *slash = "/";
    char *retstr;
+   char *histstr;
    
     fprintf(stdout, "\nProgram started at %s\n", asctime(tm));
    
@@ -6494,34 +6550,34 @@ int main(int argc, char **argv) {
    } // end if-else for adding slash at end of out_dir
    
    // note that these input values are outyear(inyear), which is modelyear+1
-	// the second input is ISFUTURE, which = 1 for the future and 0 for historical and 1849
-	if (!strcmp(argv[1], "historical")){
-    	for (i = 1851; i < 2016; i++) { // use this line for historical simulation
-			t = time(NULL);
-			tm = localtime(&t);
-			fprintf(stdout, "\ninyear %i started at %s\n", i, asctime(tm));
-		
-			updateannuallanduse(&i, 0, in_dir, out_dir);
-		}
-	} else if (!strcmp(argv[1], "future")){
+	// the second input is a scenario land use state file name, or 1850
+   // need to check whether historical or not to set years and ISFUTURE (the second argument below)
+   // since third arguemnt is now file name just let the read fail if not a valid name
+   histstr = strstr(argv[1], "HIST");
+   if (histstr != NULL) {
+      for (i = 1851; i < 2016; i++) { // use this line for historical simulation
+         t = time(NULL);
+         tm = localtime(&t);
+         fprintf(stdout, "\ninyear %i started at %s\n", i, asctime(tm));
+         
+         updateannuallanduse(&i, 0, argv[1], in_dir, out_dir);
+      }
+   } else if (!strcmp(argv[1], "1850")){
+      for (int i = 1850; i < 1851; i++) { // use this line for single-year 1849 run
+         t = time(NULL);
+         tm = localtime(&t);
+         fprintf(stdout, "\ninyear %i started at %s\n", i, asctime(tm));
+         
+         updateannuallanduse(&i, 0, argv[1], in_dir, out_dir);
+      }
+   } else {
     	for (int i = 2016; i < 2101; i++) { // use this line for future simulation
 			t = time(NULL);
 			tm = localtime(&t);
 			fprintf(stdout, "\ninyear %i started at %s\n", i, asctime(tm));
 		
-			updateannuallanduse(&i, 1, in_dir, out_dir);
+			updateannuallanduse(&i, 1, argv[1], in_dir, out_dir);
 		}
-	} else if (!strcmp(argv[1], "1850")){
-		for (int i = 1850; i < 1851; i++) { // use this line for single-year 1849 run
-			t = time(NULL);
-			tm = localtime(&t);
-			fprintf(stdout, "\ninyear %i started at %s\n", i, asctime(tm));
-			
-			updateannuallanduse(&i, 0, in_dir, out_dir);
-		}
-	} else {
-		printf("Usage:\nUse one of these three valid arguments for output file years:\n\t1850 = a single-year 1849 run\n\thistorical = 1851 to 2015\n\tfuture = 2016 to 2100\n");
-		exit(0);
 	}
     
     t = time(NULL);
