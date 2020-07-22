@@ -40,7 +40,7 @@ macro (CreateScorpioTarget CREATE_FLIB)
     # Create the imported library that scream targets can link to
     add_library(scream_piof UNKNOWN IMPORTED GLOBAL)
     set_target_properties(scream_piof PROPERTIES IMPORTED_LOCATION "${SCORPIO_F_LIB}")
-    target_link_libraries(scream_piof INTERFACE "${netecdf_f_lib};scream_pioc")
+    target_link_libraries(scream_piof INTERFACE "${netcdf_f_lib};scream_pioc")
     set_target_properties(scream_piof PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${INSTALL_SHAREDPATH}/include)
   endif ()
 
