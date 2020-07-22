@@ -26,6 +26,7 @@ module ocn_init_vertical_grids
    use mpas_timer
 
    use ocn_constants
+   use ocn_config
 
    implicit none
    private
@@ -89,12 +90,7 @@ contains
       else if ( trim(gridType) == '100layerE3SMv1' ) then
          call ocn_generate_100layerE3SMv1_vertical_grid(interfaceLocations)
       else if ( trim(gridType) == '1dCVTgenerator' ) then
-         if (.not. present(configPool)) then
-            call mpas_log_write("MPAS-ocean: requesting a 1d CVT vertical grid generation " &
-                                      // "without passing the corresponding parameters. Exiting...", MPAS_LOG_CRIT)
-         else
-            call ocn_generate_1dCVT_vertical_grid(configPool, interfaceLocations)
-         end if
+         call ocn_generate_1dCVT_vertical_grid(interfaceLocations)
       else
          call mpas_log_write( ' WARNING: '//trim(gridType)//' is an invalid vertical grid choice. No vertical ' &
                            // 'grid will be generated.')
@@ -453,42 +449,26 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_generate_1dCVT_vertical_grid(configPool, interfaceLocations)!{{{
+   subroutine ocn_generate_1dCVT_vertical_grid(interfaceLocations)!{{{
 
-      type (mpas_pool_type), intent(in) :: configPool
       real (kind=RKIND), dimension(:), intent(out) :: interfaceLocations
 
       integer :: k
       integer :: nInterfaces, nVertLevels
-      real (kind=RKIND) :: stretch1
-      real (kind=RKIND) :: stretch2
-      real (kind=RKIND) :: dzSeed
 
       real (kind=RKIND) :: stretch
       real (kind=RKIND) :: dz
       real (kind=RKIND) :: maxInterfaceLocation
 
-      real (kind=RKIND), pointer :: config_1dCVTgenerator_stretch1
-      real (kind=RKIND), pointer :: config_1dCVTgenerator_stretch2
-      real (kind=RKIND), pointer :: config_1dCVTgenerator_dzSeed
-
-      call mpas_pool_get_config(configPool, 'config_1dCVTgenerator_stretch1', config_1dCVTgenerator_stretch1)
-      call mpas_pool_get_config(configPool, 'config_1dCVTgenerator_stretch2', config_1dCVTgenerator_stretch2)
-      call mpas_pool_get_config(configPool, 'config_1dCVTgenerator_dzSeed', config_1dCVTgenerator_dzSeed)
-
-      stretch1 = config_1dCVTgenerator_stretch1
-      stretch2 = config_1dCVTgenerator_stretch2
-      dzSeed = config_1dCVTgenerator_dzSeed
-
       nInterfaces = size(interfaceLocations, dim=1)
       nVertLevels = nInterfaces - 1
 
       ! compute profile starting at top and stretch dz as we move down
-      dz = dzSeed
+      dz = config_1dCVTgenerator_dzSeed
       interfaceLocations(1) = 0.0_RKIND
       interfaceLocations(2) = dz
       do k=2,nVertLevels
-         stretch = stretch1 + (stretch2-stretch1)*k/nVertLevels
+         stretch = config_1dCVTgenerator_stretch1 + (config_1dCVTgenerator_stretch2-config_1dCVTgenerator_stretch1)*k/nVertLevels
          dz = stretch*dz
          interfaceLocations(k+1) = interfaceLocations(k) + dz
       enddo
@@ -595,14 +575,7 @@ contains
       real (kind=RKIND), dimension(maxLevelCell), intent(in) :: refBottomDepth
       integer, intent(out) :: iErr
       integer :: k
-
-      logical, pointer :: config_alter_ICs_for_pbcs
       real (kind=RKIND) :: minBottomDepth, minBottomDepthMid
-      real (kind=RKIND), pointer :: config_min_pbc_fraction
-      character (len=StrKIND), pointer :: config_pbc_alteration_type
-      call mpas_pool_get_config(ocnConfigs, 'config_alter_ICs_for_pbcs', config_alter_ICs_for_pbcs)
-      call mpas_pool_get_config(ocnConfigs, 'config_pbc_alteration_type', config_pbc_alteration_type)
-      call mpas_pool_get_config(ocnConfigs, 'config_min_pbc_fraction', config_min_pbc_fraction)
 
       iErr = 0
 
