@@ -30,3 +30,9 @@ target_compile_options(ekat PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:-cpp>)
 
 target_link_libraries(ekat PUBLIC ${EKAT_TPL_LIBRARIES})
 set_target_properties(ekat PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ekat_f90_modules)
+
+# Pre-compile ekat_catch_main.cpp into its own mini-library, so that individual
+# unit test don't have to all pointlessly rebuild the same file.
+add_library(ekat_test_main util/ekat_catch_main.cpp)
+target_link_libraries(ekat_test_main PUBLIC ekat)
+target_include_directories(ekat_test_main PUBLIC ${EKAT_SOURCE_DIR}/extern/catch2/include)
