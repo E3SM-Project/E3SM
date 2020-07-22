@@ -7,7 +7,7 @@ include(genf90_utils)
 include(Sourcelist_utils)
 
 set(PHYSICS_SHARE_SRCS
-  physics_share_iso_f.F90
+  physics_share_f2c.F90
   physics_share.cpp
   physics_only_grids_manager.cpp
   ${SCREAM_BASE_DIR}/../cam/src/physics/cam/physics_utils.F90
