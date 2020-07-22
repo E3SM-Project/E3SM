@@ -1,13 +1,13 @@
 
 prescribed_aero_cycle_yr = 01
 prescribed_aero_file = 'mam4_0.9x1.2_L72_2000clim_c170323.nc'
-prescribed_aero_datapath = '/gpfs/alpine/world-shared/csc190/e3sm/cesm/inputdata/atm/cam/chem/trop_mam/aero'
+prescribed_aero_datapath = '$DIN_LOC_ROOT/atm/cam/chem/trop_mam/aero'
 prescribed_aero_type = 'CYCLICAL'
 
 use_hetfrz_classnuc = .false.
 
 aerodep_flx_type = 'CYCLICAL'
-aerodep_flx_datapath = '/gpfs/alpine/world-shared/csc190/e3sm/cesm/inputdata/atm/cam/chem/trop_mam/aero'
+aerodep_flx_datapath = '$DIN_LOC_ROOT/atm/cam/chem/trop_mam/aero'
 aerodep_flx_file = 'mam4_0.9x1.2_L72_2000clim_c170323.nc'
 aerodep_flx_cycle_yr = 01
 
