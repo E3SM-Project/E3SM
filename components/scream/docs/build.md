@@ -21,9 +21,20 @@ CMake's testing tool.
 
 ## 1. Start From a Trustworthy Commit
 
-First, make sure you've cloned the [SCREAM repo](https://github.com/E3SM-Project/scream)
-to `SCREAM_SRC_DIR` (including all submodules). If you're running a branch that's not `master`, check out
-this branch with
+First, make sure you've cloned the [SCREAM repo (including all submodules)](https://github.com/E3SM-Project/scream)
+to `SCREAM_SRC_DIR` using the following command:
+
+```
+git clone --recurse-submodules https://github.com/E3SM-Project/scream
+```
+
+If you have already cloned the project and forgot to type `--recurse-submodules`, you can change to `$SCREAM_SRC_DIR` and using the following command to initialize, fetch and checkout all submodules:
+
+```
+git submodule update --init --recursive
+```
+
+If you're running a branch that's not `master`, check out this branch with
 
 ```
 git checkout <branch>
@@ -31,7 +42,7 @@ git checkout <branch>
 
 ## 2. Configure Your SCREAM Build
 
-Change to your `RUN_ROOT_DIR` directory and use CMake to configure your build.
+Change to your `$RUN_ROOT_DIR` directory and use CMake to configure your build.
 This usually looks something like the following:
 ```
 cd $RUN_ROOT_DIR
@@ -83,7 +94,7 @@ the CMake-configurable path `${SCREAM_TEST_DATA_DIR}`. By default, this path is
 set to `data/` within your build directory (which is `$RUN_ROOT_DIR`, in
 our case).
 
-To run all of SCREAM's tests, make sure you're in `RUN_ROOT_DIR` and type
+To run all of SCREAM's tests, make sure you're in `$RUN_ROOT_DIR` and type
 
 ```
 ctest -VV
@@ -92,7 +103,7 @@ ctest -VV
 This runs everything and reports results in an extra-verbose (`-VV`) manner.
 
 You can also run subsets of the SCREAM tests. For example, to run only the
-P3 regression tests (again, from the `RUN_ROOT_DIR` directory), use
+P3 regression tests (again, from the `$RUN_ROOT_DIR` directory), use
 
 ```
 ctest -R p3_regression
