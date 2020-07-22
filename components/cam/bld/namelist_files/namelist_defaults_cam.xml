@@ -1540,8 +1540,6 @@
 <!-- viscosity  -->
 
 <nu_top> 2.5e5 </nu_top>
-<nu_top dyn_target="preqx"   hgrid="ne45np4"> 2.5e5 </nu_top>
-<nu_top dyn_target="theta-l" hgrid="ne45np4"> 2.5e5 </nu_top>
 <nu_top dyn_target="preqx" hgrid="ne240np4"> 1.0e5 </nu_top>
 <nu_top dyn_target="theta-l" hgrid="ne120np4"> 1e5 </nu_top>
 <nu_top dyn_target="theta-l" hgrid="ne240np4"> 4.3e4 </nu_top>
@@ -1557,7 +1555,7 @@
 <nu hgrid="ne16np4" >  7.0e15 </nu>
 <nu hgrid="ne30np4" >  1.0e15 </nu>
 <nu dyn_target="preqx"   hgrid="ne45np4" > 3.0E+14 </nu>
-<nu dyn_target="theta-l" hgrid="ne45np4" > 3.5e-8 </nu>
+<nu dyn_target="theta-l" hgrid="ne45np4" > 3.4e-8 </nu>
 <nu hgrid="ne60np4" >  1.25e14 </nu>
 <nu hgrid="ne120np4">  1.0e13 </nu>
 <nu dyn_target="theta-l" hgrid="ne120np4">  1.5e13 </nu>
@@ -1656,16 +1654,24 @@
 <hypervis_subcycle_q dyn_target="preqx"> 1 </hypervis_subcycle_q>
 <hypervis_subcycle_tom dyn_target="preqx"> 0 </hypervis_subcycle_tom>
 
+<!-- ne45 defaults to new time step interface -->
+<dt_remap_factor  dyn_target="preqx" hgrid="ne45np4"> 2 </dt_remap_factor>
+<dt_tracer_factor dyn_target="preqx" hgrid="ne45np4"> 1 </dt_tracer_factor>
+
 <qsplit dyn_target="preqx">  1 </qsplit>
+<qsplit dyn_target="preqx" hgrid="ne45np4"> -1 </qsplit>
 
-<rsplit dyn_target="preqx" hgrid="ne4np4" >   1 </rsplit>
-<rsplit dyn_target="preqx" hgrid="ne11np4" >  2 </rsplit>
 <rsplit dyn_target="preqx">  3 </rsplit>
+<rsplit dyn_target="preqx" hgrid="ne4np4" >  1 </rsplit>
+<rsplit dyn_target="preqx" hgrid="ne11np4">  2 </rsplit>
+<rsplit dyn_target="preqx" hgrid="ne45np4"> -1 </rsplit>
 
+<se_nsplit dyn_target="preqx"> 2 </se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne4np4" >   4 </se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne11np4" >  4 </se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne16np4" >  1 </se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne30np4" >  2 </se_nsplit>
+<se_nsplit dyn_target="preqx" hgrid="ne45np4">  -1 </se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne60np4" >  4 </se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne120np4">  4 </se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne240np4">  5 </se_nsplit>
@@ -1679,15 +1685,6 @@
 <se_nsplit dyn_target="preqx" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 5 </se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne0np4_enax4v1">4</se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne0np4_twpx4v1" > 4 </se_nsplit>
-<se_nsplit dyn_target="preqx"> 2 </se_nsplit>
-
-<!-- ne45 defaults to new time step interface -->
-<se_tstep hgrid="ne45np4">  200 </se_tstep>
-<dt_remap_factor  dyn_target="preqx" hgrid="ne45np4"> 2 </dt_remap_factor>
-<dt_tracer_factor dyn_target="preqx" hgrid="ne45np4"> 1 </dt_tracer_factor>
-<qsplit    dyn_target="preqx" hgrid="ne45np4"> -1 </qsplit>
-<rsplit    dyn_target="preqx" hgrid="ne45np4"> -1 </rsplit>
-<se_nsplit dyn_target="preqx" hgrid="ne45np4"> -1 </se_nsplit>
 
 
 <hypervis_subcycle hgrid="ne4np4" dyn_target="preqx">   3 </hypervis_subcycle>
