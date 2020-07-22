@@ -1,0 +1,148 @@
+#include "catch2/catch.hpp"
+
+//#include "share/scream_types.hpp"
+#include <algorithm>
+#include <array>
+#include <random>
+#include <thread>
+
+#include "ekat/scream_kokkos.hpp"
+#include "ekat/scream_pack.hpp"
+#include "ekat/scream_types.hpp"
+#include "ekat/util/scream_arch.hpp"
+#include "ekat/util/scream_kokkos_utils.hpp"
+#include "ekat/util/scream_utils.hpp"
+#include "physics/common/physics_constants.hpp"
+#include "physics/shoc/shoc_functions.hpp"
+#include "physics/shoc/shoc_functions_f90.hpp"
+#include "shoc_unit_tests_common.hpp"
+
+namespace scream {
+namespace shoc {
+namespace unit_test {
+
+TEST_CASE("shoc_conv_vel_length", "shoc") {
+  constexpr Real gravit  = scream::physics::Constants<Real>::gravit;
+  constexpr Int shcol    = 2;
+  constexpr Int nlev     = 5;
+
+  // Tests for the convective velocity scale subroutine
+  
+  // Note that the output conv_vel from this subroutine 
+  //   represents the integrated buoyancy flux and not technically
+  //   the convective velocity scale, which is the cubed root
+  //   of conv_vel.   
+  
+  // FIRST TEST
+  // Verify that given negatively buoyant conditions that the
+  //   result is also negative.       
+
+  // PBL height [m] 
+  // for this test set to be higher than highest zt_grid value
+  Real pblh = 1000.0;
+  // Grid difference centered on thermo grid [m]
+  Real dz_zt[nlev] = {100.0, 100.0, 100.0, 100.0, 100.0};
+  // Grid height centered on thermo grid [m]
+  Real zt_grid[nlev] = {500.0, 400.0, 300.0, 200.0, 100.0};
+  // Virtual potential temperature on interface grid [K]
+  Real thv[nlev] = {310.0, 305.0, 300.0, 300.0, 295.0};
+  // Buoyancy flux [K m/s]
+  Real wthv_sec[nlev] = {-0.02, -0.01, -0.04, -0.02, -0.05};
+
+  // Initialzie data structure for bridgeing to F90
+  SHOCConvData SDS(shcol, nlev, nlevi);
+
+  // Test that the inputs are reasonable.
+  REQUIRE(SDS.shcol > 0);
+
+  // Fill in test data on zt_grid.
+  for(Int s = 0; s < SDS.shcol; ++s) {
+    SDS.pblh[s] = pblh;
+    for(Int n = 0; n < SDS.nlev; ++n) {
+      const auto offset = n + s * SDS.nlev;
+
+      SDS.dz_zt[offset] = dz_zt[n];
+      SDS.zt_grid[offset] = zt_grid[n];
+      SDS.thv[offset] = thv[n];
+      SDS.wthv_sec[offset] = wthv_sec[n];
+    }
+  }
+
+  // Check that the inputs make sense
+
+  for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int n = 0; n < SDS.nlev - 1; ++n) {
+      const auto offset = n + s * SDS.nlev;
+      // Be sure that relevant variables are greater than zero
+      REQUIRE(SDS.dz_zt[offset] > 0.0);
+      REQUIRE(SDS.thv[offset] > 0.0);
+      // check that zt increases upward
+      REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0.0);
+      // For this negative buoyancy test verify that all parcels
+      //  have negative buoyancy flux.  
+      REQUIRE(SDS.wthv_sec[offset] < 0.0);
+    }
+  }
+
+  // Call the fortran implementation
+  compute_conv_vel_shoc_length(nlev, SDS);
+
+  // Check the results
+  // Make sure that conv_vel is negative
+  for(Int s = 0; s < SDS.shcol; ++s) {   
+    REQUIRE(SDS.conv_vel[s] < 0.0);
+  }
+  
+  // SECOND TEST
+  // Symmetrical input test.  Here we feed input values of wthv_sec 
+  //  that are symmetrical around zero.  This is to verify that the 
+  //  result of conv_vel is also zero.  Here we need to assume 
+  //  a well mixed layer and constant profile of dz_zt
+  
+  Real dz_zt[nlev] = {100.0, 100.0, 100.0, 100.0, 100.0};
+  // Virtual potential temperature on interface grid [K]
+  Real thv[nlev] = {300.0, 300.0, 300.0, 300.0, 300.0};
+  // Buoyancy flux [K m/s]
+  Real wthv_sec[nlev] = {-0.04, -0.02, 0.0, 0.02, 0.04};
+  
+  // Fill in new test data on zt_grid.
+  for(Int s = 0; s < SDS.shcol; ++s) {
+    SDS.pblh[s] = pblh;
+    for(Int n = 0; n < SDS.nlev; ++n) {
+      const auto offset = n + s * SDS.nlev;
+
+      SDS.dz_zt[offset] = dz_zt[n];
+      SDS.thv[offset] = thv[n];
+      SDS.wthv_sec[offset] = wthv_sec[n];
+    }
+  }      
+  
+  // Check that the inputs make sense
+
+  for(Int s = 0; s < SDS.shcol; ++s) {
+    Real wthv_sum = 0.0;
+    for(Int n = 0; n < SDS.nlev - 1; ++n) {
+      const auto offset = n + s * SDS.nlev;
+      // Be sure that relevant variables are greater than zero
+      REQUIRE(SDS.dz_zt[offset] > 0.0);
+      REQUIRE(SDS.thv[offset] > 0.0);
+      wthv_sum += SDS.wthv_sec[offset];
+    }
+    // Make sure inputs of buoyancy flux sum to zero
+    REQUIRE(wthv_sum == 0.0);
+  } 
+  
+  // Call the fortran implementation
+  compute_conv_vel_shoc_length(nlev, SDS);  
+  
+  // Check the results
+  // Make sure that conv_vel is zero 
+  for(Int s = 0; s < SDS.shcol; ++s) {   
+    REQUIRE(SDS.conv_vel[s] == 0.0);
+  }  
+
+}
+
+}  // namespace unit_test
+}  // namespace shoc
+}  // namespace scream
