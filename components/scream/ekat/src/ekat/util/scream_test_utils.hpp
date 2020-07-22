@@ -3,8 +3,7 @@
 
 #include <ekat/scream_types.hpp>
 #include <ekat/scream_pack.hpp>
-
-#include <catch2/catch.hpp>
+#include <ekat/util/ekat_string_utils.hpp>
 
 namespace scream {
 namespace util {
@@ -72,6 +71,8 @@ void catch2_req_pk_sensitive(const Scalar lhs, const Scalar rhs)
     }
   }
 }
+
+int get_test_device (const int mpi_rank);
 
 } // namespace util
 } // namespace scream

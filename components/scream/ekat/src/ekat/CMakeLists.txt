@@ -8,6 +8,7 @@ set(EKAT_SOURCES
   util/array_io_mod.f90
   util/ekat_string_utils.cpp
   util/scream_arch.cpp
+  util/scream_test_utils.cpp
   util/scream_utils.cpp
   util/time_stamp.cpp
 )
