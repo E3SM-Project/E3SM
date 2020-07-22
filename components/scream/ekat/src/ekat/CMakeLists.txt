@@ -4,10 +4,11 @@ set(EKAT_SOURCES
   scream_session.cpp
   scream_parameter_list.cpp
   scream_parse_yaml_file.cpp
-  util/scream_utils.cpp
-  util/scream_arch.cpp
   util/array_io.cpp
   util/array_io_mod.f90
+  util/ekat_string_utils.cpp
+  util/scream_arch.cpp
+  util/scream_utils.cpp
   util/time_stamp.cpp
 )
 
