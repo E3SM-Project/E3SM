@@ -686,7 +686,7 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThickness !< Input: thickness at cell center
 
-       real (kind=RKIND), dimension(:), intent(inout) :: &
+       real (kind=RKIND), dimension(:), intent(in) :: &
          bottomDrag !< Input: bottomDrag at cell centeres
 
        real (kind=RKIND), dimension(:), pointer :: ssh
@@ -734,12 +734,12 @@ contains
       logical, pointer :: config_use_vegetation_drag
       logical, pointer :: config_use_vegetation_manning_equation
       real (kind=RKIND), pointer :: config_vegetation_drag_coefficient
-      real (kind=RKIND), pointer :: config_implicit_bottom_drag_coeff
       real (kind=RKIND), dimension(:), pointer :: vegetationHeight
       real (kind=RKIND), dimension(:), pointer :: vegetationDiameter
       real (kind=RKIND), dimension(:), pointer ::vegetationDensity
+      real (kind=RKIND), dimension(:), pointer ::vegetationManning
       integer, dimension(:), pointer ::vegetationMask
-      real (kind=RKIND) :: old_bottomDrag, lambda, beta, alpha, total_h
+      real (kind=RKIND) :: old_bottom_Cd, lambda, beta, alpha, total_h
       real (kind=RKIND) :: inundation_depth, von_karman, cff1, cff2, cff3, cff4
       integer :: iCell, nCells
       integer, pointer :: nCellsSolve
@@ -759,12 +759,12 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_use_vegetation_drag', config_use_vegetation_drag)
       call mpas_pool_get_config(ocnConfigs, 'config_use_vegetation_manning_equation', config_use_vegetation_manning_equation)
       call mpas_pool_get_config(ocnConfigs, 'config_vegetation_drag_coefficient', config_vegetation_drag_coefficient)
-      call mpas_pool_get_config(ocnConfigs, 'config_implicit_bottom_drag_coeff', config_implicit_bottom_drag_coeff)
 
       call mpas_pool_get_array(forcingPool, 'vegetationMask', vegetationMask)
       call mpas_pool_get_array(forcingPool, 'vegetationHeight', vegetationHeight)
       call mpas_pool_get_array(forcingPool, 'vegetationDensity', vegetationDensity)
       call mpas_pool_get_array(forcingPool, 'vegetationDiameter', vegetationDiameter)
+      call mpas_pool_get_array(forcingPool, 'vegetationManning', vegetationManning)
 
       nEdges = nEdgesArray( 1 )
       nCells = nCellsSolve
@@ -779,8 +779,8 @@ contains
             vegetationMask(iCell) = 0
           endif
           if (vegetationMask(iCell) .eq. 1) then
-            old_bottomDrag = bottomDrag(iCell)
             total_h = bottomDepth(iCell) + ssh(iCell)
+            old_bottom_Cd = gravity * bottomDrag(iCell)**2.0_RKIND * total_h**(1.0_RKIND/3.0_RKIND)
             inundation_depth = MIN(vegetationHeight(iCell), total_h)
             inundation_depth = MAX(inundation_depth, 1e-6)
             lambda = vegetationDiameter(iCell) * vegetationDensity(iCell)
@@ -790,13 +790,15 @@ contains
                   / (1.0_RKIND - EXP(-alpha*inundation_depth))**2.0_RKIND
             cff1 = total_h**(2.0_RKIND/3.0_RKIND) &
                   * SQRT((0.5_RKIND*beta*lambda*config_vegetation_drag_coefficient*inundation_depth &
-                  + config_implicit_bottom_drag_coeff)/(gravity*total_h))
+                  + old_bottom_Cd)/(gravity*total_h))
             cff2 = (alpha*inundation_depth)**2.0_RKIND/(1.0_RKIND - EXP(-alpha*inundation_depth))
             cff3 = (1.0_RKIND - EXP(-alpha*inundation_depth))/(alpha**2.0_RKIND*inundation_depth*total_h)
             cff4 = LOG(total_h/inundation_depth) - (1.0_RKIND-inundation_depth/total_h) &
                   * (1.0_RKIND - 1.0_RKIND/(alpha*inundation_depth))
-            bottomDrag(iCell) = cff1/(cff2*(cff3+cff4))
-            bottomDrag(iCell) = MAX(bottomDrag(iCell), old_bottomDrag)
+            vegetationManning(iCell) = cff1/(cff2*(cff3+cff4))
+            vegetationManning(iCell) = MAX(bottomDrag(iCell), vegetationManning(iCell))
+          else
+            vegetationManning(iCell) = bottomDrag(iCell)
           endif
         enddo
       endif
@@ -816,8 +818,13 @@ contains
          end do
 
          ! average cell-based implicit bottom drag to edges and convert Mannings n to Cd
-         implicitCd = gravity*(0.5_RKIND*(bottomDrag(cell1) + bottomDrag(cell2)))**2.0 * &
-          (0.5_RKIND * (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2)))**(-1.0_RKIND/3.0_RKIND)
+         if (config_use_vegetation_drag .AND. config_use_vegetation_manning_equation) then
+           implicitCd = gravity*(0.5_RKIND*(vegetationManning(cell1) + vegetationManning(cell2)))**2.0 * &
+            (0.5_RKIND * (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2)))**(-1.0_RKIND/3.0_RKIND)
+         else
+           implicitCd = gravity*(0.5_RKIND*(bottomDrag(cell1) + bottomDrag(cell2)))**2.0 * &
+            (0.5_RKIND * (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2)))**(-1.0_RKIND/3.0_RKIND)
+         endif
 
          ! A is lower diagonal term
          do k = 2, N
