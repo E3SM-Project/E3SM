@@ -787,87 +787,23 @@ flags should be captured within MPAS CMake files.
   <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
 </compiler>
 
-<compiler MACH="blues" COMPILER="gnu">
-  <ALBANY_PATH>/soft/climate/AlbanyTrilinos_06262017/Albany/build/install</ALBANY_PATH>
+<compiler MACH="blues" COMPILER="pgigpu">
   <CPPDEFS>
     <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY</append>
   </CPPDEFS>
+  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
+  <SLIBS>
+    <append>$SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --flibs} -llapack -lblas </append>
+    <append>$SHELL{$ENV{NETCDF_C_PATH}/bin/nc-config --libs} </append>
+  </SLIBS>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
   <CXX_LIBS>
     <base>-lstdc++</base>
   </CXX_LIBS>
-  <MPI_LIB_NAME MPILIB="mvapich">mpi</MPI_LIB_NAME>
-  <MPI_PATH MPILIB="mvapich">/blues/gpfs/home/software/spack/opt/spack/linux-x86_64/gcc-5.3.0/mvapich2-2.2b-sdh7nhddicl4sh5mgxjyzxtxox3ajqey</MPI_PATH>
-  <NETCDF_PATH>$ENV{NETCDFROOT}</NETCDF_PATH>
-  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
-  <SLIBS>
-    <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -llapack -lblas</append>
-  </SLIBS>
-</compiler>
-
-<compiler MACH="blues" COMPILER="intel">
-  <MPI_LIB_NAME MPILIB="mvapich">mpi</MPI_LIB_NAME>
-  <MPI_PATH MPILIB="mvapich">/soft/mvapich2/2.2b_psm/intel-15.0</MPI_PATH>
-  <NETCDF_PATH>$ENV{NETCDFROOT}</NETCDF_PATH>
-  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
-  <SLIBS>
-    <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -llapack -lblas </append>
-    <append> -Wl,-rpath -Wl,$ENV{NETCDFROOT}/lib </append>
-    <append MPILIB="mpich"> -mkl=cluster </append>
-    <append MPILIB="mpich2"> -mkl=cluster </append>
-    <append MPILIB="mpt"> -mkl=cluster </append>
-    <append MPILIB="openmpi"> -mkl=cluster </append>
-    <append MPILIB="mvapich"> -mkl=cluster </append>
-    <append MPILIB="impi"> -mkl=cluster </append>
-    <append MPILIB="mpi-serial"> -mkl </append>
-  </SLIBS>
-</compiler>
-
-<compiler MACH="blues" COMPILER="intel13">
-  <MPI_LIB_NAME MPILIB="openmpi"> mpi</MPI_LIB_NAME>
-  <MPI_LIB_NAME MPILIB="mpich">mpich</MPI_LIB_NAME>
-  <MPI_PATH MPILIB="openmpi">/soft/openmpi/1.8.2/intel-13.1</MPI_PATH>
-  <MPI_PATH MPILIB="mpich">/soft/mpich2/1.4.1-intel-13.1</MPI_PATH>
-  <NETCDF_PATH>$ENV{NETCDFROOT}</NETCDF_PATH>
-  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
-  <SLIBS>
-    <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -llapack -lblas</append>
-    <append MPILIB="mpich"> -mkl=cluster </append>
-    <append MPILIB="mpich2"> -mkl=cluster </append>
-    <append MPILIB="mpt"> -mkl=cluster </append>
-    <append MPILIB="openmpi"> -mkl=cluster </append>
-    <append MPILIB="mvapich"> -mkl=cluster </append>
-    <append MPILIB="impi"> -mkl=cluster </append>
-    <append MPILIB="mpi-serial"> -mkl </append>
-  </SLIBS>
-</compiler>
-
-<compiler MACH="blues" COMPILER="nag">
-  <MPI_LIB_NAME MPILIB="mpich"> mpi </MPI_LIB_NAME>
-  <MPI_PATH MPILIB="mpich">/home/robl/soft/mpich-3.1.4-nag-6.0</MPI_PATH>
-  <NETCDF_PATH>$ENV{NETCDFROOT}</NETCDF_PATH>
-  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
-  <SLIBS>
-    <append>$(shell $NETCDF_PATH/bin/nf-config --flibs) $SHELL{$NETCDF_PATH/bin/nc-config --libs} -llapack -lblas</append>
-  </SLIBS>
-</compiler>
-
-<compiler MACH="blues" COMPILER="pgi">
-  <MPI_LIB_NAME MPILIB="mvapich"> mpi</MPI_LIB_NAME>
-  <MPI_LIB_NAME MPILIB="openmpi"> mpi</MPI_LIB_NAME>
-  <MPI_LIB_NAME MPILIB="mpich">mpich</MPI_LIB_NAME>
-  <MPI_PATH MPILIB="openmpi">/soft/openmpi/1.8.2/pgi-13.9</MPI_PATH>
-  <MPI_PATH MPILIB="mpich">/soft/mpich2/1.4.1-pgi-13.9/</MPI_PATH>
-  <NETCDF_PATH>$ENV{NETCDFROOT}</NETCDF_PATH>
-  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH>$ENV{PNETCDFROOT}</PNETCDF_PATH>
-  <SLIBS>
-    <append>$SHELL{$NETCDF_PATH/bin/nf-config --flibs} -llapack -lblas</append>
-    <append> -rpath $ENV{NETCDFROOT}/lib </append>
-  </SLIBS>
+  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
 </compiler>
 
 <compiler MACH="cades" COMPILER="gnu">

@@ -265,14 +265,9 @@
     </directives>
   </batch_system>
 
-    <batch_system MACH="blues" type="pbs" >
-      <directives>
-        <directive>-A {{ PROJECT }}</directive>
-        <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-      </directives>
+    <batch_system MACH="blues" type="slurm">
       <queues>
-	<queue walltimemax="01:00:00" nodemax="4" strict="true">shared</queue>
-	<queue walltimemax="03:00:00" default="true">batch</queue>
+        <queue walltimemax="01:00:00" nodemax="6" default="true" strict="true">biggpu</queue>
       </queues>
     </batch_system>
 
