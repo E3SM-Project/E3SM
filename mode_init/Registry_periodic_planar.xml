@@ -12,9 +12,3 @@
 			possible_values="Any real number"
 		/>
 	</nml_record>
-	<var_struct name="scratch" time_levs="0">
-		<var name="psiVertex" type="real" dimensions="nVertices" persistence="scratch"
-			 default_value="0" units="unitless"
-			 description="Temporary space to hold vertex values for psi."
-		/>
-	</var_struct>

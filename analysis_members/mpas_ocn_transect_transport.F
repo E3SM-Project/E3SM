@@ -26,6 +26,7 @@ module ocn_transect_transport
    use mpas_stream_manager
 
    use ocn_constants
+   use ocn_config
    use ocn_diagnostics_routines
 
    implicit none
@@ -194,7 +195,6 @@ contains
       type (mpas_pool_type), pointer :: tracersPool
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: verticalMeshPool
-      type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: transectTransportAM
 
@@ -205,7 +205,6 @@ contains
       character (len=STRKIND), dimension(:), pointer :: transectNames, transectGroupNames
       integer, dimension(:), pointer ::  nTransectsInGroup
       integer, pointer :: nTransectGroups, maxTransectsInGroup
-      character (len=STRKIND), pointer :: additionalTransect
 
       ! Here are some example variables which may be needed for your analysis member
       integer, pointer :: nVertLevels, nEdgesSolve, num_tracers, nTransects
@@ -233,15 +232,13 @@ contains
 
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nTransectGroups', nTransectGroups)
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'maxTransectsInGroup', maxTransectsInGroup)
-      call mpas_pool_get_config(domain % configs, 'config_AM_transectTransport_transect_group', &
-                                additionalTransect)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'transects', transectPool)
       call mpas_pool_get_array(transectPool, 'transectsInGroup', transectsInGroup)
       call mpas_pool_get_array(transectPool, 'nTransectsInGroup', nTransectsInGroup)
       call mpas_pool_get_array(transectPool, 'transectNames', transectNames)
       call mpas_pool_get_array(transectPool, 'transectGroupNames', transectGroupNames)
       do i = 1, nTransectGroups
-         if (transectGroupNames(i) .eq. additionalTransect) then
+         if (transectGroupNames(i) .eq. config_AM_transectTransport_transect_group) then
             transectGroupNumber = i
          end if
       end do
@@ -259,7 +256,6 @@ contains
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'verticalMesh', verticalMeshPool)
          !call mpas_pool_get_subpool(block % structs, 'tracersPool', tracersPool)
-         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block % structs, 'transectTransportAM', transectTransportAMPool)
          call mpas_pool_get_subpool(domain % blocklist % structs, 'transects', transectPool)

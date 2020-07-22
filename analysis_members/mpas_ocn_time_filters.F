@@ -29,6 +29,7 @@ module ocn_time_filters
    use mpas_vector_reconstruction
 
    use ocn_constants
+   use ocn_config
    use ocn_diagnostics_routines
 #ifdef TIME_FILTERS_DEBUG
    use mpas_constants
@@ -112,7 +113,6 @@ contains
       !
       !-----------------------------------------------------------------
       type (block_type), pointer :: block
-      logical, pointer :: initializeFilters
       type (mpas_pool_type), pointer :: timeFiltersAMPool, statePool
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, normalVelocityLowPass, normalVelocityHighPass
 
@@ -125,8 +125,7 @@ contains
 
       err = 0
 
-      call mpas_pool_get_config(ocnConfigs, 'config_AM_timeFilters_initialize_filters', initializeFilters)
-      if (initializeFilters) then
+      if (config_AM_timeFilters_initialize_filters) then
 #ifdef TIME_FILTERS_DEBUG
         call mpas_log_write( 'initializing time filters')
 #endif
@@ -244,7 +243,6 @@ contains
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: timeFiltersAM
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, normalVelocityLowPass, normalVelocityHighPass, &
@@ -261,8 +259,6 @@ contains
       integer, dimension(:), pointer :: maxLevelEdgeBot
 
       type (MPAS_timeInterval_type) :: timeStepESMF
-      character(len=StrKIND), pointer :: config_dt
-      logical, pointer :: computeCC
       real (kind=RKIND) :: dt, tau
 #ifdef TIME_FILTERS_DEBUG
       integer :: iBlock
@@ -277,12 +273,10 @@ contains
 #endif
 
       ! get dt
-      call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
       call mpas_set_timeInterval(timeStepESMF, timeString=config_dt, ierr=err)
       call mpas_get_timeInterval(timeStepESMF, dt=dt)
       ! get tau
-      call mpas_pool_get_config(domain % configs, 'config_AM_timeFilters_tau', config_dt)
-      call mpas_set_timeInterval(timeStepESMF, timeString=config_dt, ierr=err)
+      call mpas_set_timeInterval(timeStepESMF, timeString=config_AM_timeFilters_tau, ierr=err)
       call mpas_get_timeInterval(timeStepESMF, dt=tau)
 
 #ifdef TIME_FILTERS_DEBUG
@@ -299,7 +293,6 @@ contains
 #endif
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block % structs, 'timeFiltersAM', timeFiltersAMPool)
 
@@ -338,9 +331,8 @@ contains
       end do
 
       ! do IO communications if this is an output time step
-      call mpas_pool_get_config(domain % configs, 'config_AM_timeFilters_compute_cell_centered_values', computeCC)
       if (mpas_stream_mgr_ringing_alarms(domain % streamManager, streamID='timeFiltersOutput', &
-          direction=MPAS_STREAM_OUTPUT, ierr=err) .and. computeCC) then
+          direction=MPAS_STREAM_OUTPUT, ierr=err) .and. config_AM_timeFilters_compute_cell_centered_values) then
         block => domain % blocklist
         do while (associated(block))
            call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
