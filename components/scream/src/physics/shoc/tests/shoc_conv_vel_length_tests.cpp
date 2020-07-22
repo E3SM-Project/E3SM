@@ -50,7 +50,7 @@ TEST_CASE("shoc_conv_vel_length", "shoc") {
   Real wthv_sec[nlev] = {-0.02, -0.01, -0.04, -0.02, -0.05};
 
   // Initialzie data structure for bridgeing to F90
-  SHOCConvData SDS(shcol, nlev, nlevi);
+  SHOCConvData SDS(shcol, nlev);
 
   // Test that the inputs are reasonable.
   REQUIRE(SDS.shcol > 0);
@@ -71,16 +71,18 @@ TEST_CASE("shoc_conv_vel_length", "shoc") {
   // Check that the inputs make sense
 
   for(Int s = 0; s < SDS.shcol; ++s) {
-    for(Int n = 0; n < SDS.nlev - 1; ++n) {
+    for(Int n = 0; n < SDS.nlev; ++n) {
       const auto offset = n + s * SDS.nlev;
       // Be sure that relevant variables are greater than zero
       REQUIRE(SDS.dz_zt[offset] > 0.0);
       REQUIRE(SDS.thv[offset] > 0.0);
-      // check that zt increases upward
-      REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0.0);
       // For this negative buoyancy test verify that all parcels
       //  have negative buoyancy flux.  
       REQUIRE(SDS.wthv_sec[offset] < 0.0);
+      if (n < nlev){
+        // check that zt increases upward
+        REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0.0);       
+      }
     }
   }
 
@@ -99,21 +101,20 @@ TEST_CASE("shoc_conv_vel_length", "shoc") {
   //  result of conv_vel is also zero.  Here we need to assume 
   //  a well mixed layer and constant profile of dz_zt
   
-  Real dz_zt[nlev] = {100.0, 100.0, 100.0, 100.0, 100.0};
+  Real dz_zt_sym[nlev] = {100.0, 100.0, 100.0, 100.0, 100.0};
   // Virtual potential temperature on interface grid [K]
-  Real thv[nlev] = {300.0, 300.0, 300.0, 300.0, 300.0};
+  Real thv_sym[nlev] = {300.0, 300.0, 300.0, 300.0, 300.0};
   // Buoyancy flux [K m/s]
-  Real wthv_sec[nlev] = {-0.04, -0.02, 0.0, 0.02, 0.04};
+  Real wthv_sec_sym[nlev] = {-0.04, -0.02, 0.0, 0.02, 0.04};
   
   // Fill in new test data on zt_grid.
   for(Int s = 0; s < SDS.shcol; ++s) {
-    SDS.pblh[s] = pblh;
     for(Int n = 0; n < SDS.nlev; ++n) {
       const auto offset = n + s * SDS.nlev;
 
-      SDS.dz_zt[offset] = dz_zt[n];
-      SDS.thv[offset] = thv[n];
-      SDS.wthv_sec[offset] = wthv_sec[n];
+      SDS.dz_zt[offset] = dz_zt_sym[n];
+      SDS.thv[offset] = thv_sym[n];
+      SDS.wthv_sec[offset] = wthv_sec_sym[n];
     }
   }      
   
