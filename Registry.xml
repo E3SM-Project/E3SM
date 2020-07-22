@@ -3063,6 +3063,10 @@
 			 description="Mask value 1 as vegetated cell, and 0 as non-vegetated cell"
 			 packages="vegetationDragPKG"
 		/>
+		<var name="vegetationManning" type="real" dimensions="nCells" units="unitless"
+			 description="Manning roughness coefficient induced by vegetation"
+			 packages="vegetationDragPKG"
+		/>
 		<!-- Output fields for forcing due to tides -->
 		<var name="tidalLayerThicknessTendency" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="layer thickness tendency due to tidal forcing"
