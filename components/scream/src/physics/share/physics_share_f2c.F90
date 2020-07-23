@@ -1,4 +1,4 @@
-module physics_common_iso_f
+module physics_share_f2c
   use iso_c_binding
   implicit none
 
@@ -94,4 +94,4 @@ interface
 
 end interface
 
-end module physics_common_iso_f
+end module physics_share_f2c

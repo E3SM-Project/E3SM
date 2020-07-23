@@ -6,9 +6,9 @@ set(ENABLE_GENF90 True)
 include(genf90_utils)
 include(Sourcelist_utils)
 
-set(PHYSICS_COMMON_SRCS
-  physics_common_iso_f.F90
-  physics_common.cpp
+set(PHYSICS_SHARE_SRCS
+  physics_share_f2c.F90
+  physics_share.cpp
   physics_only_grids_manager.cpp
   ${SCREAM_BASE_DIR}/../cam/src/physics/cam/physics_utils.F90
   ${SCREAM_BASE_DIR}/../cam/src/physics/cam/scream_abortutils.F90
@@ -20,14 +20,14 @@ if (NOT CUDA_BUILD)
   physics_saturation.cpp)
 endif()
 
-add_library(physics_common ${PHYSICS_COMMON_SRCS})
-target_include_directories(physics_common PUBLIC ${SCREAM_INCLUDE_DIRS})
-target_include_directories(physics_common SYSTEM PUBLIC ${SCREAM_TPL_INCLUDE_DIRS} ${CIMEROOT}/src/share/include)
-set_target_properties(physics_common PROPERTIES
+add_library(physics_share ${PHYSICS_SHARE_SRCS})
+target_include_directories(physics_share PUBLIC ${SCREAM_INCLUDE_DIRS})
+target_include_directories(physics_share SYSTEM PUBLIC ${SCREAM_TPL_INCLUDE_DIRS} ${CIMEROOT}/src/share/include)
+set_target_properties(physics_share PROPERTIES
   Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
-target_link_libraries(physics_common scream_share ${SCREAM_TPL_LIBRARIES})
+target_link_libraries(physics_share scream_share ${SCREAM_TPL_LIBRARIES})
 
-#if (NOT SCREAM_LIB_ONLY)
-#  add_subdirectory(tests)
-#endif()
+if (NOT SCREAM_LIB_ONLY)
+  add_subdirectory(tests)
+endif()
 
