@@ -40,14 +40,6 @@ if ("${SCREAM_DYNAMICS_DYCORE}" STREQUAL "HOMME")
   # target_link_libraries(${dynLibName} pio netcdff)
 endif()
 
-set (SCREAM_LIBS
-     scream_share
-     scream_control
-     ${dynLibName}
-     p3
-     shoc
-)
-
 set(ATM_SRC
   scream_cxx_f90_interface.cpp
   surface_coupling.cpp
@@ -68,23 +60,37 @@ else()
 endif()
 set(CSM_SHARE "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/csm_share")
 
-# In CIME builds, create interface targets for scorpio
+set (SCREAM_LIBS
+     scream_share
+     scream_control
+     ${dynLibName}
+     p3
+     shoc
+)
+
+# In CIME builds, create imported targets for scorpio and csm_share
 include (Scorpio)
-# Note: the two arguments are CLIB and FLIB. We want/need both, so look for both
-CreateScorpioTarget(TRUE TRUE)
+CreateScorpioTarget(TRUE) # Note: the input is whether we want FLIB too. We want/need both, so look for both
+include (CsmShare)
+CreateCsmShareTarget()
+
+set (SCREAM_CIME_LIBS
+     scream_pioc
+     scream_piof
+     scream_csm_share
+)
 
 # Create atm lib
 add_library(atm ${ATM_SRC})
 
 # Set includes
 target_include_directories(atm PUBLIC ${SCREAM_INCLUDE_DIRS})
-target_include_directories(atm SYSTEM PUBLIC ${SCREAM_TPL_INCLUDE_DIRS} ${CSM_SHARE} ${INSTALL_SHAREDPATH}/include)
 
 # Set f90 compiled modules dir
 set_target_properties(atm PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/cmake/atm)
 
 # Link libraries
-target_link_libraries(atm ${SCREAM_LIBS} ${SCREAM_TPL_LIBRARIES})
+target_link_libraries(atm PRIVATE ${SCREAM_LIBS} ${SCREAM_CIME_LIBS})
 
 #if (NOT SCREAM_LIB_ONLY)
 add_subdirectory(tests)
