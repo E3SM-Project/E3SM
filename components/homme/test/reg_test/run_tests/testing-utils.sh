@@ -573,11 +573,11 @@ diffCprncOutput() {
       missing=0  
       for num in $NUMVARS_RESULT
       do
-          if [ "${num}" -ne "0" ] ; then
+          if [ "${num}" -ne 0 ] ; then
               ((missing++))
           fi
       done
-      if [ "${missing}" == "0" ] ; then
+      if [ "${missing}" -eq 0 ] ; then
          echo "The files are identical: DIFF_RESULT=${DIFF_RESULT} missing vars=${missing}"
       else
          echo "The files are identical: DIFF_RESULT=${DIFF_RESULT}"
