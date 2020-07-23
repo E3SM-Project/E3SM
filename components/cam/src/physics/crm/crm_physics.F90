@@ -136,11 +136,6 @@ subroutine crm_physics_register()
    call pbuf_add_field('CRM_QI_RAD',  'physpkg', dtype_r8, dims_crm_rad, idx)
    call pbuf_add_field('CRM_CLD_RAD', 'physpkg', dtype_r8, dims_crm_rad, idx)
    call pbuf_add_field('CRM_QRAD',    'global',  dtype_r8, dims_crm_rad, idx)
-
-#ifdef MODAL_AERO
-   call pbuf_add_field('CRM_QAERWAT', 'physpkg', dtype_r8, dims_crm_aer, crm_qaerwat_idx)
-   call pbuf_add_field('CRM_DGNUMWET','physpkg', dtype_r8, dims_crm_aer, crm_dgnumwet_idx)
-#endif
    
    cldo_idx = pbuf_get_index('CLDO')
    call pbuf_add_field('CLDO', 'global', dtype_r8, (/pcols ,pver, dyn_time_lvls/), cldo_idx  )

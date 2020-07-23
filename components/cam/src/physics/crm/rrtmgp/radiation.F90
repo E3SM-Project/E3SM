@@ -1211,14 +1211,10 @@ contains
          mu, lambdac, dei, des, rei, rel
       real(r8), dimension(pcols,pver), target :: zeros
       real(r8), pointer, dimension(:,:,:,:) :: crm_t, crm_qv, crm_qc, crm_qi, crm_cld, crm_qrad
-      real(r8), pointer, dimension(:,:,:,:,:) :: crm_qaerwat, crm_dgnumwet
       real(r8), dimension(pcols,pver) :: iclwp_save, iciwp_save, cld_save
       integer :: ixwatvap, ixcldliq, ixcldice
 
       real(r8), pointer, dimension(:,:,:) :: qaerwat, dgnumwet
-#ifdef MODAL_AERO
-      real(r8), dimension(pcols,pver,ntot_amode) :: qaerwat_save, dgnumwet_save
-#endif
       real(r8), dimension(pcols,pver) :: dei_save, rei_save, rel_save
 
       ! Arrays to hold gas volume mixing ratios
@@ -1332,10 +1328,6 @@ contains
          call pbuf_get_field(pbuf, pbuf_get_index('CRM_QC_RAD' ), crm_qc )
          call pbuf_get_field(pbuf, pbuf_get_index('CRM_QI_RAD' ), crm_qi )
          call pbuf_get_field(pbuf, pbuf_get_index('CRM_CLD_RAD'), crm_cld)
-#ifdef MODAL_AERO
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QAERWAT' ), crm_qaerwat )
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_DGNUMWET'), crm_dgnumwet)
-#endif
          ! Output CRM cloud fraction
          call outfld('CRM_CLD_RAD', crm_cld(1:ncol,:,:,:), state%ncol, state%lchnk)
       end if
@@ -1359,10 +1351,6 @@ contains
       dei_save   = dei
       rei_save   = rei
       rel_save   = rel
-#ifdef MODAL_AERO
-      qaerwat_save = qaerwat
-      dgnumwet_save = dgnumwet
-#endif
  
       ! Indices into rad constituents arrays
       ixwatvap = 1
@@ -1482,19 +1470,7 @@ contains
                                  iclwp(ic,ilev) = 0
                                  iciwp(ic,ilev) = 0
                               end if
-#ifdef MODAL_AERO
-                              ! Use CRM scale aerosol water to calculate aerosol optical depth. Here we assume no
-                              ! aerosol water uptake for cloudy sky on CRM grids. This is not really physically
-                              ! correct, but if we assume 100% of relative humidity for aerosol water uptake, this
-                              ! will bias 'AODVIS' to be large, since 'AODVIS' is used to compare with observed
-                              ! clear sky AOD. In the future, AODVIS should be calculated from clear sky CRM AOD
-                              ! only. But before this is done, we will assume no water uptake on CRM grids for
-                              ! cloudy conditions (The radiative effects of this assumption will be small, since
-                              ! aerosol effects are small relative to cloud effects for cloudy sky anyway.
-                              ! -Minghuai Wang (minghuai.wang@pnl.gov)
-                              qaerwat (ic,ilev,1:ntot_amode) =  crm_qaerwat(ic,ix,iy,iz,1:ntot_amode)
-                              dgnumwet(ic,ilev,1:ntot_amode) = crm_dgnumwet(ic,ix,iy,iz,1:ntot_amode)
-#endif
+
                               ! DEI is used for 2-moment optics
                               dei(1:ncol,1:pver) = 2._r8 * rei(1:ncol,1:pver)
                            end do  ! ic = 1,ncol
@@ -1886,10 +1862,6 @@ contains
       dei   = dei_save
       rei   = rei_save
       rel   = rel_save
-#ifdef MODAL_AERO
-      qaerwat = qaerwat_save
-      dgnumwet = dgnumwet_save
-#endif
 
       ! Compute net radiative heating tendency
       call t_startf('radheat_tend')
