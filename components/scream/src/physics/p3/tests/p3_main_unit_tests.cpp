@@ -27,7 +27,7 @@ static void run_phys_p3_main_pre_loop()
   // TODO
 }
 
-static void run_phys_p3_main_main_loop()
+static void run_phys_p3_main_part2()
 {
   // TODO
 }
@@ -45,7 +45,7 @@ static void run_phys_p3_main()
 static void run_phys()
 {
   run_phys_p3_main_pre_loop();
-  run_phys_p3_main_main_loop();
+  run_phys_p3_main_part2();
   run_phys_p3_main_post_loop();
   run_phys_p3_main();
 }
@@ -120,13 +120,13 @@ static void run_bfb_p3_main_pre_loop()
 
     // Get data from fortran
   for (Int i = 0; i < num_runs; ++i) {
-    p3_main_pre_main_loop(isds_fortran[i]);
+    p3_main_part1(isds_fortran[i]);
   }
 
   // Get data from cxx
   for (Int i = 0; i < num_runs; ++i) {
     P3MainPreLoopData& d = isds_cxx[i];
-    p3_main_pre_main_loop_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir, d.log_predictNc, d.dt,
+    p3_main_part1_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir, d.log_predictNc, d.dt,
                             d.pres, d.pdel, d.dzq, d.ncnuc, d.exner, d.inv_exner, d.inv_lcldm, d.inv_icldm, d.inv_rcldm, d.xxlv, d.xxls, d.xlf,
                             d.t, d.rho, d.inv_rho, d.qvs, d.qvi, d.supi, d.rhofacr, d.rhofaci,
                             d.acn, d.qv, d.th, d.qc, d.nc, d.qr, d.nr, d.qitot, d.nitot, d.qirim, d.birim, d.qc_incld, d.qr_incld, d.qitot_incld,
@@ -171,7 +171,7 @@ static void run_bfb_p3_main_pre_loop()
   }
 }
 
-static void run_bfb_p3_main_main_loop()
+static void run_bfb_p3_main_part2()
 {
   constexpr Scalar qsmall     = C::QSMALL;
   constexpr Scalar zerodegc   = C::ZeroDegC;
@@ -264,13 +264,13 @@ static void run_bfb_p3_main_main_loop()
 
     // Get data from fortran
   for (Int i = 0; i < num_runs; ++i) {
-    p3_main_main_loop(isds_fortran[i]);
+    p3_main_part2(isds_fortran[i]);
   }
 
   // Get data from cxx
   for (Int i = 0; i < num_runs; ++i) {
     P3MainLoopData& d = isds_cxx[i];
-    p3_main_main_loop_f(
+    p3_main_part2_f(
       d.kts, d.kte, d.kbot, d.ktop, d.kdir, d.log_predictNc, d.dt, d.odt,
       d.pres, d.pdel, d.dzq, d.ncnuc, d.exner, d.inv_exner, d.inv_lcldm, d.inv_icldm, d.inv_rcldm, d.naai, d.qc_relvar, d.icldm, d.lcldm, d.rcldm,
       d.t, d.rho, d.inv_rho, d.qvs, d.qvi, d.supi, d.rhofacr, d.rhofaci, d.acn, d.qv, d.th, d.qc, d.nc, d.qr, d.nr, d.qitot, d.nitot,
@@ -397,13 +397,13 @@ static void run_bfb_p3_main_post_loop()
 
     // Get data from fortran
   for (Int i = 0; i < num_runs; ++i) {
-    p3_main_post_main_loop(isds_fortran[i]);
+    p3_main_part3(isds_fortran[i]);
   }
 
   // Get data from cxx
   for (Int i = 0; i < num_runs; ++i) {
     P3MainPostLoopData& d = isds_cxx[i];
-    p3_main_post_main_loop_f(
+    p3_main_part3_f(
       d.kts, d.kte, d.kbot, d.ktop, d.kdir,
       d.exner, d.lcldm, d.rcldm,
       d.rho, d.inv_rho, d.rhofaci, d.qv, d.th, d.qc, d.nc, d.qr, d.nr, d.qitot, d.nitot, d.qirim, d.birim, d.xxlv, d.xxls,
@@ -548,7 +548,7 @@ static void run_bfb_p3_main()
 static void run_bfb()
 {
   run_bfb_p3_main_pre_loop();
-  run_bfb_p3_main_main_loop();
+  run_bfb_p3_main_part2();
   run_bfb_p3_main_post_loop();
   run_bfb_p3_main();
 }

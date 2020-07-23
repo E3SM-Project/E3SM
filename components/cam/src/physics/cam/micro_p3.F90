@@ -340,7 +340,7 @@ contains
 
   !==========================================================================================!
 
-  SUBROUTINE p3_main_pre_main_loop(kts, kte, kbot, ktop, kdir, log_predictNc, dt, &
+  SUBROUTINE p3_main_part1(kts, kte, kbot, ktop, kdir, log_predictNc, dt, &
        pres, pdel, dzq, ncnuc, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, xxlv, xxls, xlf, &
        t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, &
        qitot, nitot, qirim, birim, qc_incld, qr_incld, qitot_incld, qirim_incld, &
@@ -448,9 +448,9 @@ contains
 
     enddo k_loop_1
 
-  END SUBROUTINE p3_main_pre_main_loop
+  END SUBROUTINE p3_main_part1
 
-  SUBROUTINE p3_main_main_loop(kts, kte, kbot, ktop, kdir, log_predictNc, dt, odt, &
+  SUBROUTINE p3_main_part2(kts, kte, kbot, ktop, kdir, log_predictNc, dt, odt, &
        pres, pdel, dzq, ncnuc, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, naai, qc_relvar, icldm, lcldm, rcldm,&
        t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, qitot, nitot, &
        qirim, birim, xxlv, xxls, xlf, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, &
@@ -920,9 +920,9 @@ contains
 
    enddo k_loop_main
 
- END SUBROUTINE p3_main_main_loop
+ END SUBROUTINE p3_main_part2
 
- subroutine p3_main_post_main_loop(kts, kte, kbot, ktop, kdir, &
+ subroutine p3_main_part3(kts, kte, kbot, ktop, kdir, &
       exner, lcldm, rcldm, &
       rho, inv_rho, rhofaci, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, &
       mu_c, nu, lamc, mu_r, lamr, vap_liq_exchange, &
@@ -1055,7 +1055,7 @@ contains
 
    enddo k_loop_final_diagnostics
 
- end subroutine p3_main_post_main_loop
+ end subroutine p3_main_part3
 
   !==========================================================================================!
 
@@ -1265,7 +1265,7 @@ contains
 
 !      if (debug_ON) call check_values(qv,T,i,it,debug_ABORT,100,col_location)
 
-       call p3_main_pre_main_loop(kts, kte, kbot, ktop, kdir, log_predictNc, dt, &
+       call p3_main_part1(kts, kte, kbot, ktop, kdir, log_predictNc, dt, &
             pres(i,:), pdel(i,:), dzq(i,:), ncnuc(i,:), exner(i,:), inv_exner(i,:), inv_lcldm(i,:), inv_icldm(i,:), inv_rcldm(i,:), xxlv(i,:), xxls(i,:), xlf(i,:), &
             t(i,:), rho(i,:), inv_rho(i,:), qvs(i,:), qvi(i,:), supi(i,:), rhofacr(i,:), rhofaci(i,:), acn(i,:), qv(i,:), th(i,:), qc(i,:), nc(i,:), qr(i,:), nr(i,:), &
             qitot(i,:), nitot(i,:), qirim(i,:), birim(i,:), qc_incld(i,:), qr_incld(i,:), qitot_incld(i,:), qirim_incld(i,:), &
@@ -1279,7 +1279,7 @@ contains
        !jump to end of i-loop if log_nucleationPossible=.false.  (i.e. skip everything)
        if (.not. (log_nucleationPossible .or. log_hydrometeorsPresent)) goto 333
 
-       call p3_main_main_loop(kts, kte, kbot, ktop, kdir, log_predictNc, dt, odt, &
+       call p3_main_part2(kts, kte, kbot, ktop, kdir, log_predictNc, dt, odt, &
             pres(i,:), pdel(i,:), dzq(i,:), ncnuc(i,:), exner(i,:), inv_exner(i,:), inv_lcldm(i,:), inv_icldm(i,:), inv_rcldm(i,:), naai(i,:), qc_relvar(i,:), icldm(i,:), lcldm(i,:), rcldm(i,:),&
             t(i,:), rho(i,:), inv_rho(i,:), qvs(i,:), qvi(i,:), supi(i,:), rhofacr(i,:), rhofaci(i,:), acn(i,:), qv(i,:), th(i,:), qc(i,:), nc(i,:), qr(i,:), nr(i,:), qitot(i,:), nitot(i,:), &
             qirim(i,:), birim(i,:), xxlv(i,:), xxls(i,:), xlf(i,:), qc_incld(i,:), qr_incld(i,:), qitot_incld(i,:), qirim_incld(i,:), nc_incld(i,:), nr_incld(i,:), &
@@ -1352,7 +1352,7 @@ contains
        !...................................................
        ! final checks to ensure consistency of mass/number
        ! and compute diagnostic fields for output
-       call p3_main_post_main_loop(kts, kte, kbot, ktop, kdir, &
+       call p3_main_part3(kts, kte, kbot, ktop, kdir, &
             exner(i,:), lcldm(i,:), rcldm(i,:), &
             rho(i,:), inv_rho(i,:), rhofaci(i,:), qv(i,:), th(i,:), qc(i,:), nc(i,:), qr(i,:), nr(i,:), qitot(i,:), nitot(i,:), &
             qirim(i,:), birim(i,:), xxlv(i,:), xxls(i,:), &

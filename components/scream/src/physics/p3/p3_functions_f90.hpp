@@ -1107,11 +1107,11 @@ struct P3MainPreLoopData
   std::vector<Real> m_data;
 };
 
-void p3_main_pre_main_loop(P3MainPreLoopData& d);
+void p3_main_part1(P3MainPreLoopData& d);
 
 extern "C" {
 
-void p3_main_pre_main_loop_f(
+void p3_main_part1_f(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
   bool log_predictNc,
   Real dt,
@@ -1159,11 +1159,11 @@ struct P3MainLoopData
   std::vector<Real> m_data;
 };
 
-void p3_main_main_loop(P3MainLoopData& d);
+void p3_main_part2(P3MainLoopData& d);
 
 extern "C" {
 
-void p3_main_main_loop_f(
+void p3_main_part2_f(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir, bool log_predictNc, Real dt, Real odt,
   Real* pres, Real* pdel, Real* dzq, Real* ncnuc, Real* exner, Real* inv_exner, Real* inv_lcldm, Real* inv_icldm, Real* inv_rcldm, Real* naai, Real* qc_relvar, Real* icldm, Real* lcldm, Real* rcldm,
   Real* t, Real* rho, Real* inv_rho, Real* qvs, Real* qvi, Real* supi, Real* rhofacr, Real* rhofaci, Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot,
@@ -1205,11 +1205,11 @@ struct P3MainPostLoopData
   std::vector<Real> m_data;
 };
 
-void p3_main_post_main_loop(P3MainPostLoopData& d);
+void p3_main_part3(P3MainPostLoopData& d);
 
 extern "C" {
 
-void p3_main_post_main_loop_f(
+void p3_main_part3_f(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
   Real* exner, Real* lcldm, Real* rcldm,
   Real* rho, Real* inv_rho, Real* rhofaci, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* xxlv, Real* xxls,
