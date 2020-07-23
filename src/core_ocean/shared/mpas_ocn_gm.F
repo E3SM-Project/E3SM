@@ -102,7 +102,7 @@ contains
       !-----------------------------------------------------------------
 
       real(kind=RKIND), dimension(:, :), pointer :: density, displacedDensity, zMid, normalGMBolusVelocity, &
-                                                    layerThicknessEdge, gradDensityEdge, &
+                                                    layerThicknessEdge, gradDensityEdge, drhoDzTopOfEdge, dzdxEdge, &
                                                     k33, gmStreamFuncTopOfEdge, BruntVaisalaFreqTop, gmStreamFuncTopOfCell, &
                                                     layerThickness, inSituThermalExpansionCoeff, &
                                                     inSituSalineContractionCoeff, RediKappaScaling, gmKappaScaling, RediKappaSfcTaper, &
@@ -120,13 +120,14 @@ contains
       real(kind=RKIND)                 :: sumRi, RiTopOfEdge, zEdge, zMLD, sshEdge, sfcTaper
       real(kind=RKIND) :: gradDensityTopOfEdge, dcEdgeInv, drhoDx, drhoDT, drhoDS, dTdx, dSdx, BVFcent
       real(kind=RKIND) :: slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown, invAreaCell
+      real(kind=RKIND) :: dzdxTopOfEdge, drhodz1, drhodz2, dTdz, dSdz, gradDensityConstZTopOfEdge
       real(kind=RKIND), dimension(:), allocatable :: dzTop, dTdzTop, dSdzTop, k33Norm
       ! Dimensions
       integer :: nsmooth, nCells, nEdges
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray, nEdgesArray
 
-      type(field2DReal), pointer :: gradDensityEdgeField
+      type(field2DReal), pointer :: gradDensityEdgeField, drhoDzTopOfEdgeField, dzdxEdgeField
 
       type(mpas_pool_type), pointer :: tracersPool
       real(kind=RKIND), dimension(:, :, :), pointer :: activeTracers
@@ -188,6 +189,14 @@ contains
       call mpas_pool_get_field(scratchPool, 'gradDensityEdge', gradDensityEdgeField)
       call mpas_allocate_scratch_field(gradDensityEdgeField, .True., .false.)
 
+      call mpas_pool_get_field(scratchPool, 'dzdxEdge', dzdxEdgeField)
+      call mpas_allocate_scratch_field(dzdxEdgeField, .True., .false.)
+
+      call mpas_pool_get_field(scratchPool, 'drhoDzTopOfEdge', drhoDzTopOfEdgeField)
+      call mpas_allocate_scratch_field(drhoDzTopOfEdgeField, .True., .false.)
+
+      drhoDzTopOfEdge => drhoDzTopOfEdgeField%array
+      dzdxEdge => dzdxEdgeField%array
       gradDensityEdge => gradDensityEdgeField%array
 
       allocate (rightHandSide(nVertLevels))
@@ -202,6 +211,8 @@ contains
       do iEdge = 1, nEdges
          do k = 1, nVertLevels
             gradDensityEdge(k, iEdge) = 0.0_RKIND
+            dzdxEdge(k, iEdge) = 0.0_RKIND
+            drhoDzTopOfEdge(k, iEdge) = 0.0_RKIND
             normalGMBolusVelocity(k, iEdge) = 0.0_RKIND
          end do
       end do
@@ -428,7 +439,21 @@ contains
             cell2 = cellsOnEdge(2, iEdge)
             dcEdgeInv = 1.0_RKIND/dcEdge(iEdge)
 
-            do k = 1, maxLevelEdgeTop(iEdge)
+            k=1
+            drhoDT = -0.5_RKIND*(inSituThermalExpansionCoeff(k, cell1) + &
+                                 inSituThermalExpansionCoeff(k, cell2))
+            drhoDS = 0.5_RKIND*(inSituSalineContractionCoeff(k, cell1) + &
+                                inSituSalineContractionCoeff(k, cell2))
+            dTdx = (activeTracers(indexTemperature, k, cell2) &
+                    - activeTracers(indexTemperature, k, cell1))*dcEdgeInv
+            dSdx = (activeTracers(indexSalinity, k, cell2) &
+                    - activeTracers(indexTemperature, k, cell1))*dcEdgeInv
+            drhoDx = drhoDT*dTdx + drhoDS*dSdx
+            gradDensityEdge(k, iEdge) = drhoDx*rho_sw
+            drhoDzTopOfEdge(k, iEdge) = 0.0_RKIND
+            dzdxEdge(k,iEdge) = 0.0_RKIND
+
+            do k = 2, maxLevelEdgeTop(iEdge)
                drhoDT = -0.5_RKIND*(inSituThermalExpansionCoeff(k, cell1) + &
                                     inSituThermalExpansionCoeff(k, cell2))
                drhoDS = 0.5_RKIND*(inSituSalineContractionCoeff(k, cell1) + &
@@ -442,6 +467,30 @@ contains
                drhoDx = drhoDT*dTdx + drhoDS*dSdx
 
                gradDensityEdge(k, iEdge) = drhoDx*rho_sw
+!
+               dTdz = (activeTracers(indexTemperature, k - 1, cell1) &
+                          - activeTracers(indexTemperature, k, cell1)) &
+                         /(zMid(k - 1, cell1) - zMid(k, cell1))
+               dSdz = (activeTracers(indexSalinity, k - 1, cell1) &
+                          - activeTracers(indexSalinity, k, cell1)) &
+                         /(zMid(k - 1, cell1) - zMid(k, cell1))
+               drhoDT = -inSituThermalExpansionCoeff(k, cell1)
+               drhoDS = inSituSalineContractionCoeff(k, cell1)
+               drhodz1 = drhoDT*dTdz + drhoDS*dSdz
+
+               dTdz = (activeTracers(indexTemperature, k - 1, cell2) &
+                          - activeTracers(indexTemperature, k, cell2)) &
+                         /(zMid(k - 1, cell2) - zMid(k, cell2))
+               dSdz = (activeTracers(indexSalinity, k - 1, cell2) &
+                          - activeTracers(indexSalinity, k, cell2)) &
+                         /(zMid(k - 1, cell2) - zMid(k, cell2))
+               drhoDT = -inSituThermalExpansionCoeff(k, cell2)
+               drhoDS = inSituSalineContractionCoeff(k, cell2)
+               drhodz2 = drhoDT*dTdz + drhoDS*dSdz
+
+               dzdxEdge(k, iEdge) = (zMid(k,cell2) - zMid(k,cell1))*dcEdgeInv
+               drhoDzTopOfEdge(k, iEdge) = rho_sw*0.5_RKIND*(drhodz1 + drhodz2)
+
             end do
          end do
          !$omp end do
@@ -563,6 +612,12 @@ contains
                gradDensityTopOfEdge = (layerThicknessEdge(k - 1, iEdge)*gradDensityEdge(k - 1, iEdge) + &
                                        layerThicknessEdge(k, iEdge)*gradDensityEdge(k, iEdge))/(layerThicknessEdge(k - 1, iEdge) + &
                                                                                                 layerThicknessEdge(k, iEdge))
+               dzdxTopOfEdge = (layerThicknessEdge(k - 1, iEdge)*dzdxEdge(k - 1, iEdge) + &
+                                layerThicknessEdge(k, iEdge)*dzdxEdge(k, iEdge))/(layerThicknessEdge(k - 1, iEdge) + &
+                                                                                         layerThicknessEdge(k, iEdge))
+
+               gradDensityConstZTopOfEdge = gradDensityTopOfEdge - dzdxTopOfEdge*drhoDzTopOfEdge(k, iEdge)
+
                kappaGMEdge = 0.5_RKIND*(gmKappaScaling(k, cell1) + gmKappaScaling(k, cell2))
                BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k, cell1) + BruntVaisalaFreqTop(k, cell2))
                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
@@ -571,7 +626,7 @@ contains
                tridiagC(k - 1) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThicknessEdge(k, iEdge) &
                                  /(layerThicknessEdge(k - 1, iEdge) + layerThicknessEdge(k, iEdge))
                rightHandSide(k - 1) = gmBolusKappa(iEdge)*kappaGMEdge*gravity/rho_sw &
-                                      *gradDensityTopOfEdge
+                                      *gradDensityConstZTopOfEdge
 
                ! Second to next to the last rows
                do k = 3, maxLevelEdgeTop(iEdge) - 1
@@ -579,6 +634,12 @@ contains
                                        layerThicknessEdge(k, iEdge)*gradDensityEdge(k, iEdge)) & 
                                        /(layerThicknessEdge(k - 1, iEdge) + &
                                        layerThicknessEdge(k, iEdge))
+                  dzdxTopOfEdge = (layerThicknessEdge(k - 1, iEdge)*dzdxEdge(k - 1, iEdge) + &
+                                   layerThicknessEdge(k, iEdge)*dzdxEdge(k, iEdge))/(layerThicknessEdge(k - 1, iEdge) + &
+                                                                                            layerThicknessEdge(k, iEdge))
+
+                  gradDensityConstZTopOfEdge = gradDensityTopOfEdge - dzdxTopOfEdge*drhoDzTopOfEdge(k, iEdge)
+
                   kappaGMEdge = 0.5_RKIND*(gmKappaScaling(k, cell1) + gmKappaScaling(k, cell2))
                   BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k, cell1) + BruntVaisalaFreqTop(k, cell2))
                   BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
@@ -589,7 +650,7 @@ contains
                   tridiagC(k - 1) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThicknessEdge(k, iEdge) &
                                     /(layerThicknessEdge(k - 1, iEdge) + layerThicknessEdge(k, iEdge))
                   rightHandSide(k - 1) = gmBolusKappa(iEdge)*kappaGMEdge*gravity/rho_sw &
-                                         *gradDensityTopOfEdge
+                                         *gradDensityConstZTopOfEdge
                end do
 
                ! Last row
@@ -598,6 +659,12 @@ contains
                                        layerThicknessEdge(k, iEdge)*gradDensityEdge(k, iEdge))/(layerThicknessEdge(k - 1, iEdge) + &
                                                                                                 layerThicknessEdge(k, iEdge))
                kappaGMEdge = 0.5_RKIND*(gmKappaScaling(k, cell1) + gmKappaScaling(k, cell2))
+               dzdxTopOfEdge = (layerThicknessEdge(k - 1, iEdge)*dzdxEdge(k - 1, iEdge) + &
+                                layerThicknessEdge(k, iEdge)*dzdxEdge(k, iEdge))/(layerThicknessEdge(k - 1, iEdge) + &
+                                                                                            layerThicknessEdge(k, iEdge))
+
+               gradDensityConstZTopOfEdge = gradDensityTopOfEdge - dzdxTopOfEdge*drhoDzTopOfEdge(k, iEdge)
+
                BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k, cell1) + BruntVaisalaFreqTop(k, cell2))
                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
                tridiagA(k - 2) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThicknessEdge(k - 1, iEdge) &
@@ -605,7 +672,7 @@ contains
                tridiagB(k - 1) = -2.0_RKIND*cGMphaseSpeed(iEdge)**2/(layerThicknessEdge(k - 1, iEdge) &
                                                                      *layerThicknessEdge(k, iEdge)) - BruntVaisalaFreqTopEdge
                rightHandSide(k - 1) = gmBolusKappa(iEdge)*kappaGMEdge*gravity/rho_sw &
-                                      *gradDensityTopOfEdge
+                                      *gradDensityConstZTopOfEdge
 
                ! Total number of rows
                N = maxLevelEdgeTop(iEdge) - 1
@@ -661,6 +728,8 @@ contains
       end if !end config_use_GM
 
       ! Deallocate scratch variables
+      call mpas_deallocate_scratch_field(dzdxEdgeField, .true.)
+      call mpas_deallocate_scratch_field(drhoDzTopOfEdgeField, .true.)
       call mpas_deallocate_scratch_field(gradDensityEdgeField, .true.)
       call mpas_timer_stop('gm bolus velocity')
 
