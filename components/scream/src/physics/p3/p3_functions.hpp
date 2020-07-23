@@ -271,7 +271,7 @@ struct Functions
   // Cloud sedimentation
   KOKKOS_FUNCTION
   static void cloud_sedimentation(
-    const uview_1d<const Spack>& qc_incld,
+    const uview_1d<Spack>& qc_incld,
     const uview_1d<const Spack>& rho,
     const uview_1d<const Spack>& inv_rho,
     const uview_1d<const Spack>& lcldm,
@@ -299,7 +299,7 @@ struct Functions
     const uview_1d<const Spack>& rhofacr,
     const uview_1d<const Spack>& rcldm,
     const uview_1d<const Spack>& inv_dzq,
-    const uview_1d<const Spack>& qr_incld,
+    const uview_1d<Spack>& qr_incld,
     const MemberType& team,
     const Workspace& workspace,
     const view_2d_table& vn_table, const view_2d_table& vm_table,

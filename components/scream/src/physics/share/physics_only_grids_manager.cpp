@@ -1,4 +1,4 @@
-#include "physics/common/physics_only_grids_manager.hpp"
+#include "physics/share/physics_only_grids_manager.hpp"
 
 #include "share/grid/remap/identity_remapper.hpp"
 #include "share/grid/se_grid.hpp"

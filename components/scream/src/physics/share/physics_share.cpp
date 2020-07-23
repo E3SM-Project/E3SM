@@ -1,4 +1,4 @@
-#include "physics_common.hpp"
+#include "physics_share.hpp"
 #include "ekat/scream_assert.hpp"
 #include "ekat/util/scream_utils.hpp"
 #include "ekat/util/scream_kokkos_utils.hpp"
