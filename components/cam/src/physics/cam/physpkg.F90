@@ -1936,6 +1936,7 @@ subroutine tphysbc (ztodt,               &
     use subcol_utils,    only: subcol_ptend_copy, is_subcol_on
     use phys_control,    only: use_qqflx_fixer, use_mass_borrower
     use nudging,         only: Nudge_Model,Nudge_Loc_PhysOut,nudging_calc_tend
+    use modal_aero_data
 
     implicit none
 
@@ -1984,6 +1985,7 @@ subroutine tphysbc (ztodt,               &
     real(r8) dlf2(pcols,pver)                  ! Detraining cld H20 from shallow convections
     real(r8) pflx(pcols,pverp)                 ! Conv rain flux thru out btm of lev
     real(r8) rtdt                              ! 1./ztodt
+    real(r8) cld_brn_copy(pcols,pver,7,4),cld_brn_num_copy(pcols,pver,4)
 
     integer lchnk                              ! chunk identifier
     integer ncol                               ! number of atmospheric columns
@@ -2084,7 +2086,7 @@ subroutine tphysbc (ztodt,               &
     integer :: ideep(pcols)
     
     ! w holds position of gathered points vs longitude index
-    integer :: lengath
+    integer :: lengath, mb, nb
 
     real(r8)  :: lcldo(pcols,pver)              !Pass old liqclf from macro_driver to micro_driver
 
@@ -2716,6 +2718,15 @@ if (l_tracer_aero) then
        if (do_clubb_sgs) then
           sh_e_ed_ratio = 0.0_r8
        endif
+       !BSINGH - copy pbuf cld borne fields
+       do nb = 1, 4
+          do mb = 1, nspec_amode(nb)
+             cld_brn_copy(:,:,mb,nb) = qqcw_get_field(pbuf,lmassptrcw_amode(mb,nb),lchnk)
+          enddo
+          cld_brn_num_copy(:,:,nb)   = qqcw_get_field(pbuf,numptrcw_amode(nb),lchnk,.true.)
+       enddo
+
+
 
        call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state, sh_e_ed_ratio,       & !Intent-ins
             mu, md, du, eu, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class,&
@@ -2725,6 +2736,7 @@ if (l_tracer_aero) then
 
        !BSINGH - copy sate
        call physics_state_copy(state,state_bef_aero)
+
        call physics_update(state, ptend, ztodt, tend)
 
 
@@ -2803,7 +2815,7 @@ if (l_rad) then
          cam_out, cam_in, &
          cam_in%landfrac,landm,cam_in%icefrac, cam_in%snowhland, &
          fsns,    fsnt, flns,    flnt,  &
-         fsds, net_flx,is_cmip6_volc,state_bef_aero,ztodt)
+         fsds, net_flx,is_cmip6_volc,state_bef_aero,ztodt,cld_brn_copy,cld_brn_num_copy)
 
     ! Set net flux used by spectral dycores
     do i=1,ncol

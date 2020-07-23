@@ -1,7 +1,8 @@
 module modal_aero_calcsize
 
 !   RCE 07.04.13:  Adapted from MIRAGE2 code
-
+use time_manager
+use module_perturb
 use shr_kind_mod,     only: r8 => shr_kind_r8
 use spmd_utils,       only: masterproc
 use physconst,        only: pi, rhoh2o, gravit
@@ -471,7 +472,7 @@ end subroutine modal_aero_calcsize_init
 !===============================================================================
 
 subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
-   do_aitacc_transfer_in, list_idx, dgnumdry_m)
+   do_aitacc_transfer_in, list_idx, dgnumdry_m,cp_buf,cp_num_buf)
 
    !-----------------------------------------------------------------------
    !
@@ -492,7 +493,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    type(physics_state), target, intent(in)    :: state       ! Physics state variables
    type(physics_buffer_desc),   pointer       :: pbuf(:)     ! physics buffer
    type(physics_ptend), target, optional, intent(inout) :: ptend       ! indivdual parameterization tendencies
-   real(r8),                    optional, intent(in)    :: deltat      ! model time-step size (s)
+   real(r8),                    optional, intent(in)    :: deltat, cp_buf(pcols,pver,7,4),cp_num_buf(pcols,pver,4)      ! model time-step size (s)
 
 
    logical, optional :: do_adjust_in
@@ -515,8 +516,8 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    real(r8), pointer :: pdel(:,:)   ! pressure thickness of levels
    real(r8), pointer :: q(:,:,:)    ! Tracer MR array 
 
-   logical  :: dotend(pcnst)   ! flag for doing tendency
-   real(r8) :: dqdt(pcols,pver,pcnst) ! TMR tendency array
+   logical,  pointer :: dotend(:)   ! flag for doing tendency
+   real(r8), pointer :: dqdt(:,:,:) ! TMR tendency array
 
    real(r8), pointer :: dgncur_a(:,:,:)
 
@@ -525,7 +526,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    integer  :: ixfer_acc2ait_sv(pcols,pver), ixfer_ait2acc_sv(pcols,pver)
    integer  :: j, jac, jsrflx, k 
    integer  :: l, l1, la, lc, lna, lnc, lsfrm, lstoo
-   integer  :: n, nacc, nait, stat
+   integer  :: n, nacc, nait, stat, n_use, m_use, nb,mb
 
    integer, save  :: idiagaa = 1
 
@@ -581,6 +582,15 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    real(r8) :: xferfrac_num_acc2ait, xferfrac_vol_acc2ait
    real(r8) :: xferfrac_num_ait2acc, xferfrac_vol_ait2acc
    real(r8) :: xfertend, xfertend_num(2,2)
+   type myptr
+      logical,dimension(pcnst) ::  lq = .false.
+   end type myptr
+   type(myptr), target :: dballi
+
+   type myptrq
+      real(r8), dimension(:,:,:),allocatable :: q
+   end type myptrq
+   type(myptrq), target :: dballiq
 
    integer, parameter :: nsrflx = 4    ! last dimension of qsrflx
    real(r8) :: qsrflx(pcols,pcnst,nsrflx,2)
@@ -604,11 +614,6 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    else
       do_aitacc_transfer = do_aitacc_transfer_default
    end if
-   !hardwire do_adjust for testing!BSINGH
-   do_adjust = .false. !BSINGH
-
-   !hardwire do_aitacc_transfer for testing !BSINGH
-   do_aitacc_transfer = .false. !BSINGH
 
    lchnk = state%lchnk
    ncol  = state%ncol
@@ -617,13 +622,16 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    pmid => state%pmid
    pdel => state%pdel
    q    => state%q
-
-   dotend(:)   = .false.
-   dqdt(:,:,:) = huge(1.0_r8)
-
+   
    if(present(ptend)) then
-      dotend = ptend%lq
-      dqdt   = ptend%q
+      dotend => ptend%lq
+      dqdt   => ptend%q
+   else
+      dballi%lq(:) = .false.
+      dotend   => dballi%lq
+      allocate(dballiq%q(pcols,pver,pcnst))
+      dballiq%q = huge(1.0_r8)
+      dqdt => dballiq%q
    endif
 
    if (present(list_idx)) then
@@ -648,17 +656,15 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    nait = modeptr_aitken
    nacc = modeptr_accum
 
-   if(present(deltat)) then
-      deltatinv = 1.0_r8/(deltat*(1.0_r8 + 1.0e-15_r8))
-      ! tadj = adjustment time scale for number, surface when they are prognosed
-      !           currently set to deltat
-      tadj = deltat
-      tadj = 86400
-      tadj = max( tadj, deltat )
-      tadjinv = 1.0_r8/(tadj*(1.0_r8 + 1.0e-15_r8))
-      fracadj = deltat*tadjinv
-      fracadj = max( 0.0_r8, min( 1.0_r8, fracadj ) )
-   endif
+   deltatinv = 1.0_r8/(deltat*(1.0_r8 + 1.0e-15_r8))
+   ! tadj = adjustment time scale for number, surface when they are prognosed
+   !           currently set to deltat
+   tadj = deltat
+   tadj = 86400
+   tadj = max( tadj, deltat )
+   tadjinv = 1.0_r8/(tadj*(1.0_r8 + 1.0e-15_r8))
+   fracadj = deltat*tadjinv
+   fracadj = max( 0.0_r8, min( 1.0_r8, fracadj ) )
 
    
    !
@@ -700,12 +706,27 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
          end do
 
          fldcw => qqcw_get_field(pbuf,lmassptrcw_amode(l1,n),lchnk)
-         do k=top_lev,pver
-            do i=1,ncol
-               dryvol_c(i,k) = dryvol_c(i,k)    &
-                  + max(0.0_r8,fldcw(i,k))*dummwdens
+         if(present(cp_buf)) then
+            do k=top_lev,pver
+               do i=1,ncol
+                  dryvol_c(i,k) = dryvol_c(i,k)    &
+                       + max(0.0_r8,cp_buf(i,k,l1,n))*dummwdens
+                  if(icolprnt(state%lchnk) == i .and. k==54) then
+                     write(103,*)'not:',dryvol_c(i,k),cp_buf(i,k,l1,n),get_nstep()
+                  endif
+               end do
             end do
-         end do
+         else
+            do k=top_lev,pver
+               do i=1,ncol
+                  dryvol_c(i,k) = dryvol_c(i,k)    &
+                       + max(0.0_r8,fldcw(i,k))*dummwdens
+                  if(icolprnt(state%lchnk) == i .and. k==54) then
+                     write(102,*)'ptend:',dryvol_c(i,k),fldcw(i,k),get_nstep()
+                  endif
+               end do
+            end do
+         endif
       end do
 
       ! set "short-hand" number pointers
@@ -732,12 +753,21 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
          end if
          if (lnc > 0) then
             dotendqqcw(lnc) = .true.
-            do k=top_lev,pver
-               do i=1,ncol
-                  dqqcwdt(i,k,lnc) = (dryvol_c(i,k)*voltonumb_amode(n)   &
-                     - fldcw(i,k)) * deltatinv
+            if(present(cp_num_buf)) then
+               do k=top_lev,pver
+                  do i=1,ncol
+                     dqqcwdt(i,k,lnc) = (dryvol_c(i,k)*voltonumb_amode(n)   &
+                          - cp_num_buf(i,k,n)) * deltatinv
+                  end do
                end do
-            end do
+            else
+               do k=top_lev,pver
+                  do i=1,ncol
+                     dqqcwdt(i,k,lnc) = (dryvol_c(i,k)*voltonumb_amode(n)   &
+                          - fldcw(i,k)) * deltatinv
+                  end do
+               end do
+            endif
          end if
       else
 
@@ -802,7 +832,11 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
             num_a0 = q(i,k,lna)
             num_a = max( 0.0_r8, num_a0 )
             drv_c = dryvol_c(i,k)
-            num_c0 = fldcw(i,k)
+            if(present(cp_num_buf)) then
+               num_c0 = cp_num_buf(i,k,n)
+            else
+               num_c0 = fldcw(i,k)
+            endif
             num_c = max( 0.0_r8, num_c0 )
 
             if ( do_adjust) then
@@ -916,12 +950,10 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
                   v2ncur_a(i,k,n) = num_a/drv_a
                end if
             end if
-            if(present(ptend)) then
-               pdel_fac = pdel(i,k)/gravit   ! = rho*dz
-               jac = 1
-               qsrflx(i,lna,1,jac) = qsrflx(i,lna,1,jac) + max(0.0_r8,dqdt(i,k,lna))*pdel_fac
-               qsrflx(i,lna,2,jac) = qsrflx(i,lna,2,jac) + min(0.0_r8,dqdt(i,k,lna))*pdel_fac
-            endif
+            pdel_fac = pdel(i,k)/gravit   ! = rho*dz
+            jac = 1
+            qsrflx(i,lna,1,jac) = qsrflx(i,lna,1,jac) + max(0.0_r8,dqdt(i,k,lna))*pdel_fac
+            qsrflx(i,lna,2,jac) = qsrflx(i,lna,2,jac) + min(0.0_r8,dqdt(i,k,lna))*pdel_fac
 
             if (drv_c > 0.0_r8) then
                if (num_c <= drv_c*v2nxx) then
@@ -935,11 +967,9 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
                   v2ncur_c(i,k,n) = num_c/drv_c
                end if
             end if
-            if(present(ptend)) then
-               jac = 2
-               qsrflx(i,lnc,1,jac) = qsrflx(i,lnc,1,jac) + max(0.0_r8,dqqcwdt(i,k,lnc))*pdel_fac
-               qsrflx(i,lnc,2,jac) = qsrflx(i,lnc,2,jac) + min(0.0_r8,dqqcwdt(i,k,lnc))*pdel_fac
-            endif
+            jac = 2
+            qsrflx(i,lnc,1,jac) = qsrflx(i,lnc,1,jac) + max(0.0_r8,dqqcwdt(i,k,lnc))*pdel_fac
+            qsrflx(i,lnc,2,jac) = qsrflx(i,lnc,2,jac) + min(0.0_r8,dqqcwdt(i,k,lnc))*pdel_fac
 
 
             ! save number and dryvol for aitken <--> accum transfer
@@ -1050,6 +1080,13 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
 
             drv_t = drv_a_aitsv(i,k) + drv_c_aitsv(i,k)
             num_t = num_a_aitsv(i,k) + num_c_aitsv(i,k)
+            if(icolprnt(state%lchnk) == i .and. k==54) then
+               if(.not.present(ptend)) then
+                  write(103,*)'not:',drv_t,drv_a_aitsv(i,k), drv_c_aitsv(i,k),get_nstep()
+               else
+                  write(102,*)'ptend:',drv_t,drv_a_aitsv(i,k), drv_c_aitsv(i,k),get_nstep()
+               endif
+            endif
             if (drv_t > 0.0_r8) then
                if (num_t < drv_t*v2nzz) then
                   ixfer_ait2acc = 1
@@ -1105,8 +1142,13 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
                         lc = lmassptrcw_amode(l1,nacc)
                         
                         fldcw => qqcw_get_field(pbuf,lmassptrcw_amode(l1,nacc),lchnk)
-                        drv_c_noxf = drv_c_noxf    &
-                           + max(0.0_r8,fldcw(i,k))*dummwdens
+                        if(present(cp_buf)) then
+                           drv_c_noxf = drv_c_noxf    &
+                                + max(0.0_r8,cp_buf(i,k,l1,nacc))*dummwdens
+                        else
+                           drv_c_noxf = drv_c_noxf    &
+                                + max(0.0_r8,fldcw(i,k))*dummwdens
+                        endif
                      end if
                   end do
                   drv_t_noxf = drv_a_noxf + drv_c_noxf
@@ -1148,7 +1190,13 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
                   xfertend_num(2,2) = num_c_accsv(i,k)*xfercoef_num_acc2ait
                end if
             end if
-
+            if(icolprnt(state%lchnk) == i .and. k==54) then
+               if(.not.present(ptend)) then
+                  write(103,*)'not:',ixfer_ait2acc,ixfer_acc2ait,get_nstep()
+               else
+                  write(102,*)'ptend:',ixfer_ait2acc,ixfer_acc2ait,get_nstep()
+               endif
+            endif
             ! jump to end-of-loop if no transfer is needed at current i,k
             if (ixfer_ait2acc+ixfer_acc2ait > 0) then
                ixfer_ait2acc_sv(i,k) = ixfer_ait2acc
@@ -1181,6 +1229,14 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
                      drv_c = drv_c_acc
                   end if
 
+                  if(icolprnt(state%lchnk) == i .and. k==54) then
+                     if(.not.present(ptend)) then
+                        write(103,*)'not:',drv_a
+                     else
+                        write(102,*)'ptend:',drv_a
+                     endif
+                  endif
+
                   if (drv_a > 0.0_r8) then
                      if (num_a <= drv_a*voltonumbhi_amode(n)) then
                         dgncur_a(i,k,n) = dgnumhi_amode(n)
@@ -1189,14 +1245,23 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
                         dgncur_a(i,k,n) = dgnumlo_amode(n)
                         v2ncur_a(i,k,n) = voltonumblo_amode(n)
                      else
+                        !if(.false.) then !BALLI
+                        if(icolprnt(state%lchnk) == i .and. k==54) then
+                        if(present(ptend)) then
+                           write(102,*)'ptend:',drv_a,dumfac,num_a,third,n
+                        else
+                           write(103,*)'not:',drv_a,dumfac,num_a,third,n
+                        endif
+                        endif
                         dgncur_a(i,k,n) = (drv_a/(dumfac*num_a))**third
+                        !endif !BALLI
                         v2ncur_a(i,k,n) = num_a/drv_a
                      end if
                   else
                      dgncur_a(i,k,n) = dgnum_amode(n)
                      v2ncur_a(i,k,n) = voltonumb_amode(n)
                   end if
-                  
+
                   if (drv_c > 0.0_r8) then
                      if (num_c <= drv_c*voltonumbhi_amode(n)) then
                         dgncur_c(i,k,n) = dgnumhi_amode(n)
@@ -1306,15 +1371,27 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
                                     xfertend = xfertend_num(j,jac)
                                  else
                                     fldcw => qqcw_get_field(pbuf,lsfrm,lchnk)
-                                    xfertend = max(0.0_r8,fldcw(i,k))*xfercoef
+                                    if(present(cp_buf)) then
+                                       n_use = huge(1)
+                                       m_use = huge(1)
+                                       do nb = 1,4
+                                          do mb = 1,nspec_amode(nb)
+                                             if(lsfrm == lmassptr_amode(mb,nb)) then
+                                                n_use = nb
+                                                m_use = mb
+                                             endif
+                                          enddo
+                                       enddo
+                                       xfertend = max(0.0_r8,cp_buf(i,k,m_use,n_use))*xfercoef
+                                    else
+                                       xfertend = max(0.0_r8,fldcw(i,k))*xfercoef
+                                    endif
                                  end if
                                  dqqcwdt(i,k,lsfrm) = dqqcwdt(i,k,lsfrm) - xfertend
                                  dqqcwdt(i,k,lstoo) = dqqcwdt(i,k,lstoo) + xfertend
                               end if
-                              if(present(ptend)) then
-                                 qsrflx(i,lsfrm,jsrflx,jac) = qsrflx(i,lsfrm,jsrflx,jac) - xfertend*pdel_fac
-                                 qsrflx(i,lstoo,jsrflx,jac) = qsrflx(i,lstoo,jsrflx,jac) + xfertend*pdel_fac
-                              endif
+                              qsrflx(i,lsfrm,jsrflx,jac) = qsrflx(i,lsfrm,jsrflx,jac) - xfertend*pdel_fac
+                              qsrflx(i,lstoo,jsrflx,jac) = qsrflx(i,lstoo,jsrflx,jac) + xfertend*pdel_fac
                            end if
 
                         end do
@@ -1334,6 +1411,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    !
    ! apply tendencies to cloud-borne species MRs
    !
+   if(present(ptend)) then
    do l = 1, pcnst
       lc = l
       if ( lc>0 .and. dotendqqcw(lc) ) then
@@ -1346,6 +1424,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
          end do
       end if
    end do
+
 
    !
    ! do outfld calls
@@ -1418,6 +1497,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
       end do   ! jac = ...
    end do   ! iq = ...
 
+   endif
 #endif
 
 end subroutine modal_aero_calcsize_sub
