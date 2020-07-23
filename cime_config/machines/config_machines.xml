@@ -1568,7 +1568,7 @@
         <command name="load">cmake/3.14.5</command>
       </modules>
       <modules compiler="intel">
-        <command name="load">intel/18.0.0.128</command>
+        <command name="load">intel/19.0.5.281</command>
         <command name="load">PrgEnv-intel/6.0.5</command>
       </modules>
       <modules compiler="gnu">
@@ -1592,6 +1592,7 @@
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
+      <env name="PERL5LIB">/projects/ccsm/acme/libs/perl5</env>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <env name="MPAS_TOOL_DIR">/projects/ccsm/acme/tools/mpas</env>
