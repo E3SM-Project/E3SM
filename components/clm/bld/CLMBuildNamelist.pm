@@ -2188,27 +2188,22 @@ sub setup_logic_delta_time {
     if ( $l_ncpl <= 0 ) {
       fatal_error("bad value for -l_ncpl option.\n");
     }
-    if ( defined($opts->{'ncpl_base_period'}) ) {
-      my $ncpl_base_period = $opts->{'ncpl_base_period'};
-      if ( $ncpl_base_period eq "null" ) {
+    my $ncpl_base_period = $opts->{'ncpl_base_period'};
+    my $val = 0;
+    if ($ncpl_base_period eq "year") {
+        $val = ( 3600 * 24 *365 ) / $l_ncpl;
+    } elsif ($ncpl_base_period eq "day") {
+        $val = ( 3600 * 24 ) / $l_ncpl;
+    } elsif ($ncpl_base_period eq "hour") {
+        $val = ( 3600 ) / $l_ncpl;
+    } else {
         fatal_error("bad value for -ncpl_base_period option.\n");
-      }
-      my $val = 0;
-      if ($ncpl_base_period eq "year") {
-          $val = ( 3600 * 24 *365 ) / $l_ncpl;
-      } elsif ($ncpl_base_period eq "day") {
-          $val = ( 3600 * 24 ) / $l_ncpl;
-      } elsif ($ncpl_base_period eq "hour") {
-          $val = ( 3600 ) / $l_ncpl;
-      } else {
-          fatal_error("bad value for -ncpl_base_period option.\n");
-      }
-      my $dtime = $nl->get_value('dtime');
-      if ( ! defined($dtime)  ) {
-        add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'dtime', 'val'=>$val);
-      } elsif ( $dtime ne $val ) {
-        fatal_error("can NOT set both -l_ncpl option (via LND_NCPL env variable) AND dtime namelist variable.\n");
-      }
+    }
+    my $dtime = $nl->get_value('dtime');
+    if ( ! defined($dtime)  ) {
+      add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'dtime', 'val'=>$val);
+    } elsif ( $dtime ne $val ) {
+      fatal_error("can NOT set both -l_ncpl option (via LND_NCPL env variable) AND dtime namelist variable.\n");
     }
   } else {
     add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'dtime', 'hgrid'=>$nl_flags->{'res'});
