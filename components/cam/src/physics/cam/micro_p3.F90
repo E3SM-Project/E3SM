@@ -1547,7 +1547,7 @@ contains
        ! (good for 123 < T < 332 K)
        !For some reason, we cannot add line breaks if we use "bfb_exp", storing experssion in "tmp"
        tmp = lq(1) - (lq(2) / t) - (lq(3) * logt) + (lq(4) * t) + &
-            (tanh(lq(5) * (t - lq(6))) * (lq(7) - (lq(8) / t) - &
+            (bfb_tanh(lq(5) * (t - lq(6))) * (lq(7) - (lq(8) / t) - &
             (lq(9) * logt) + lq(10) * t))
        MurphyKoop_svp = bfb_exp(tmp)
     else

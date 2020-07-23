@@ -21,67 +21,6 @@ interface
   ! the C++ versions in order to stay BFB.
   !
 
-  function cxx_pow(base, exp) bind(C)
-    use iso_c_binding
-
-    !arguments:
-    real(kind=c_real), value, intent(in)  :: base
-    real(kind=c_real), value, intent(in)  :: exp
-
-    ! return
-    real(kind=c_real)               :: cxx_pow
-  end function cxx_pow
-
-  function cxx_sqrt(base) bind(C)
-    use iso_c_binding
-
-    !arguments:
-    real(kind=c_real), value, intent(in)  :: base
-
-    ! return
-    real(kind=c_real)               :: cxx_sqrt
-  end function cxx_sqrt
-
-  function cxx_cbrt(base) bind(C)
-    use iso_c_binding
-
-    !arguments:
-    real(kind=c_real), value, intent(in)  :: base
-
-    ! return
-    real(kind=c_real)               :: cxx_cbrt
-  end function cxx_cbrt
-
-  function cxx_log(input) bind(C)
-    use iso_c_binding
-
-    !arguments:
-    real(kind=c_real), value, intent(in) :: input
-
-    ! return
-    real(kind=c_real)            :: cxx_log
-  end function cxx_log
-
-  function cxx_exp(input) bind(C)
-    use iso_c_binding
-
-    !arguments:
-    real(kind=c_real), value, intent(in) :: input
-
-    ! return
-    real(kind=c_real)            :: cxx_exp
-  end function cxx_exp
-
-  function cxx_tanh(input) bind(C)
-    use iso_c_binding
-
-    !arguments:
-    real(kind=c_real), value, intent(in) :: input
-
-    ! return
-    real(kind=c_real)            :: cxx_tanh
-  end function cxx_tanh
-
 end interface
 
 end module shoc_iso_f
