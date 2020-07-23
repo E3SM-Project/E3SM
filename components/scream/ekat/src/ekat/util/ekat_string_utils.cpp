@@ -20,6 +20,9 @@ std::vector<std::string> split(const std::string& str, const char del) {
     start = pos + 1;
     pos = str.find(del,start);
   }
+
+  // Don't forget to add the substring from the last occurrence of 'del' (if any) to the end of str
+  blocks.push_back(str.substr(start));
   return blocks;
 }
 
