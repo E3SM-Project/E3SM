@@ -3292,11 +3292,11 @@
 		<var name="gradDensityEdge" persistence="scratch" type="real" dimensions="nVertLevels nEdges Time" units=""
 			 description="Normal gradient of density"
 		/>
-		<var name="gradDensityConstZTopOfEdge" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges Time" units=""
-			 description="Normal gradient of density along constant z-level surface"
+		<var name="drhoDzTopOfEdge" persistence="scratch" type="real" dimensions="nVertLevels nEdges Time" units=""
+			 description="Gradient of density in vertical on edges"
 		/>
-		<var name="gradDensityTopOfEdge" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges Time" units=""
-			 description="Normal gradient of density at layer interfaces"
+		<var name="dzdxEdge" persistence="scratch" type="real" dimensions="nVertLevels nEdges Time" units=""
+			 description="gradient of depth at constant cell index"
 		/>
 		<var name="dDensityDzTopOfCell" persistence="scratch" type="real" dimensions="nVertLevelsP1 nCells Time" units=""
 			 description="Vertical gradient of potential density"
