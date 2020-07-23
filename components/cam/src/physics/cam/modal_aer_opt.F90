@@ -378,7 +378,7 @@ end subroutine modal_aer_opt_init
 !===============================================================================
 
 subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, ext_cmip6_sw, trop_level,  &
-                         tauxar, wa, ga, fa,state_bef_aero,dt)
+                         tauxar, wa, ga, fa,state_bef_aero,dt,cld_brn_copy,cld_brn_num_copy)
 
   use shr_log_mod ,     only: errmsg => shr_log_errmsg
    ! calculates aerosol sw radiative properties
@@ -390,7 +390,7 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
    integer,             intent(in) :: nnite          ! number of night columns
    integer,             intent(in) :: idxnite(nnite) ! local column indices of night columns
    integer,             intent(in) :: trop_level(pcols)!tropopause level for each column
-   real(r8),            intent(in) :: ext_cmip6_sw(pcols,pver),dt !balli comments
+   real(r8),            intent(in) :: ext_cmip6_sw(pcols,pver),dt,cld_brn_copy(pcols,pver,7,4),cld_brn_num_copy(pcols,pver,4) !balli comments
    logical,             intent(in) :: is_cmip6_volc !BALLI-comments
 
    real(r8), intent(out) :: tauxar(pcols,0:pver,nswbands) ! layer extinction optical depth
@@ -618,7 +618,7 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
    wetdens_m(:,:,:)  = huge(1.0_r8)
 
       call modal_aero_calcsize_sub(state_bef_aero, pbuf,deltat=dt, do_adjust_in=.true., do_aitacc_transfer_in=.true., &
-           list_idx=list_idx, dgnumdry_m=dgnumdry_m)
+           list_idx=list_idx, dgnumdry_m=dgnumdry_m,cp_buf=cld_brn_copy,cp_num_buf=cld_brn_num_copy)
       call modal_aero_wateruptake_dr(state_bef_aero, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
                                      qaerwat_m, wetdens_m)
       call outfld('dryballi',  dgnumdry_m, pcols, lchnk)
@@ -1223,7 +1223,7 @@ end subroutine modal_aero_sw
 
 !===============================================================================
 
-subroutine modal_aero_lw(list_idx, state, pbuf, tauxar,state_bef_aero,dt)
+subroutine modal_aero_lw(list_idx, state, pbuf, tauxar,state_bef_aero,dt,cld_brn_copy,cld_brn_num_copy)
   use shr_log_mod ,     only: errmsg => shr_log_errmsg
    ! calculates aerosol lw radiative properties
 
@@ -1231,7 +1231,7 @@ subroutine modal_aero_lw(list_idx, state, pbuf, tauxar,state_bef_aero,dt)
    type(physics_state), intent(in), target :: state,state_bef_aero    ! state variables
    
    type(physics_buffer_desc), pointer :: pbuf(:)
-   real(r8) ::dt
+   real(r8) ::dt,cld_brn_copy(pcols,pver,7,4),cld_brn_num_copy(pcols,pver,4)
    real(r8), intent(out) :: tauxar(pcols,pver,nlwbands) ! layer absorption optical depth
 
    ! Local variables
@@ -1320,7 +1320,7 @@ subroutine modal_aero_lw(list_idx, state, pbuf, tauxar,state_bef_aero,dt)
    wetdens_m(:,:,:)  = huge(1.0_r8)
    
       call modal_aero_calcsize_sub(state_bef_aero, pbuf, deltat=dt, do_adjust_in=.true., do_aitacc_transfer_in=.true., &
-           list_idx=list_idx, dgnumdry_m=dgnumdry_m)
+           list_idx=list_idx, dgnumdry_m=dgnumdry_m,cp_buf=cld_brn_copy,cp_num_buf=cld_brn_num_copy)
       call modal_aero_wateruptake_dr(state_bef_aero, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
                                      qaerwat_m, wetdens_m)
 
