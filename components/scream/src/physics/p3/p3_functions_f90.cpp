@@ -966,7 +966,7 @@ void compute_rain_fall_velocity(ComputeRainFallVelocityData& d)
                                &d.nr, &d.nr_incld, &d.mu_r, &d.lamr, &d.V_qr, &d.V_nr);
 }
 
-P3MainPreLoopData::P3MainPreLoopData(
+P3MainPart1Data::P3MainPart1Data(
   Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
   bool log_predictNc_, Real dt_,
   const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges) :
@@ -990,7 +990,7 @@ P3MainPreLoopData::P3MainPreLoopData(
   }
 }
 
-P3MainPreLoopData::P3MainPreLoopData(const P3MainPreLoopData& rhs) :
+P3MainPart1Data::P3MainPart1Data(const P3MainPart1Data& rhs) :
   kts(rhs.kts), kte(rhs.kte), kbot(rhs.kbot), ktop(rhs.ktop), kdir(rhs.kdir),
   log_predictNc(rhs.log_predictNc), dt(rhs.dt),
   m_nk(rhs.m_nk),
@@ -1011,7 +1011,7 @@ P3MainPreLoopData::P3MainPreLoopData(const P3MainPreLoopData& rhs) :
   }
 }
 
-void p3_main_part1(P3MainPreLoopData& d)
+void p3_main_part1(P3MainPart1Data& d)
 {
   p3_init();
   p3_main_part1_c(
@@ -1027,7 +1027,7 @@ void p3_main_part1(P3MainPreLoopData& d)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-P3MainLoopData::P3MainLoopData(
+P3MainPart2Data::P3MainPart2Data(
   Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
   bool log_predictNc_, Real dt_,
   const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges) :
@@ -1057,7 +1057,7 @@ P3MainLoopData::P3MainLoopData(
   }
 }
 
-P3MainLoopData::P3MainLoopData(const P3MainLoopData& rhs) :
+P3MainPart2Data::P3MainPart2Data(const P3MainPart2Data& rhs) :
   kts(rhs.kts), kte(rhs.kte), kbot(rhs.kbot), ktop(rhs.ktop), kdir(rhs.kdir),
   log_predictNc(rhs.log_predictNc), dt(rhs.dt), odt(rhs.odt),
   m_nk(rhs.m_nk),
@@ -1081,7 +1081,7 @@ P3MainLoopData::P3MainLoopData(const P3MainLoopData& rhs) :
   }
 }
 
-void p3_main_part2(P3MainLoopData& d)
+void p3_main_part2(P3MainPart2Data& d)
 {
   p3_init();
   p3_main_part2_c(
@@ -1096,7 +1096,7 @@ void p3_main_part2(P3MainLoopData& d)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-P3MainPostLoopData::P3MainPostLoopData(
+P3MainPart3Data::P3MainPart3Data(
   Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
   const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges) :
   kts(kts_), kte(kte_), kbot(kbot_), ktop(ktop_), kdir(kdir_),
@@ -1120,7 +1120,7 @@ P3MainPostLoopData::P3MainPostLoopData(
   }
 }
 
-P3MainPostLoopData::P3MainPostLoopData(const P3MainPostLoopData& rhs) :
+P3MainPart3Data::P3MainPart3Data(const P3MainPart3Data& rhs) :
   kts(rhs.kts), kte(rhs.kte), kbot(rhs.kbot), ktop(rhs.ktop), kdir(rhs.kdir),
   m_nk(rhs.m_nk),
   m_data(rhs.m_data)
@@ -1143,7 +1143,7 @@ P3MainPostLoopData::P3MainPostLoopData(const P3MainPostLoopData& rhs) :
   }
 }
 
-void p3_main_part3(P3MainPostLoopData& d)
+void p3_main_part3(P3MainPart3Data& d)
 {
   p3_init();
   p3_main_part3_c(
@@ -3105,7 +3105,7 @@ void p3_main_part1_f(
   const Int nk_pack = scream::pack::npack<Spack>(nk);
 
   // Set up views
-  Kokkos::Array<view_1d, P3MainPreLoopData::NUM_ARRAYS> temp_d;
+  Kokkos::Array<view_1d, P3MainPart1Data::NUM_ARRAYS> temp_d;
 
   pack::host_to_device({pres, pdel, dzq, ncnuc, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm,
         t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci,
@@ -3216,7 +3216,7 @@ void p3_main_part2_f(
   const Int nk_pack = scream::pack::npack<Spack>(nk);
 
   // Set up views
-  Kokkos::Array<view_1d, P3MainLoopData::NUM_ARRAYS> temp_d;
+  Kokkos::Array<view_1d, P3MainPart2Data::NUM_ARRAYS> temp_d;
 
   pack::host_to_device({pres, pdel, dzq, ncnuc, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, naai, qc_relvar, icldm, lcldm, rcldm,
         t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, acn,
@@ -3360,7 +3360,7 @@ void p3_main_part3_f(
   const Int nk_pack = scream::pack::npack<Spack>(nk);
 
   // Set up views
-  Kokkos::Array<view_1d, P3MainPostLoopData::NUM_ARRAYS> temp_d;
+  Kokkos::Array<view_1d, P3MainPart3Data::NUM_ARRAYS> temp_d;
 
   pack::host_to_device({
       exner, lcldm, rcldm,

@@ -22,7 +22,7 @@ namespace unit_test {
 template <typename D>
 struct UnitWrap::UnitTest<D>::TestP3Main {
 
-static void run_phys_p3_main_pre_loop()
+static void run_phys_p3_main_part1()
 {
   // TODO
 }
@@ -32,7 +32,7 @@ static void run_phys_p3_main_part2()
   // TODO
 }
 
-static void run_phys_p3_main_post_loop()
+static void run_phys_p3_main_part3()
 {
   // TODO
 }
@@ -44,20 +44,20 @@ static void run_phys_p3_main()
 
 static void run_phys()
 {
-  run_phys_p3_main_pre_loop();
+  run_phys_p3_main_part1();
   run_phys_p3_main_part2();
-  run_phys_p3_main_post_loop();
+  run_phys_p3_main_part3();
   run_phys_p3_main();
 }
 
-static void run_bfb_p3_main_pre_loop()
+static void run_bfb_p3_main_part1()
 {
   constexpr Scalar qsmall     = C::QSMALL;
   constexpr Scalar zerodegc   = C::ZeroDegC;
   constexpr Scalar sup_upper = -0.05;
   constexpr Scalar sup_lower = -0.1;
 
-  const std::array< std::pair<Real, Real>, P3MainPreLoopData::NUM_ARRAYS > ranges = {
+  const std::array< std::pair<Real, Real>, P3MainPart1Data::NUM_ARRAYS > ranges = {
     std::make_pair(0, 1), // pres
     std::make_pair(0, 1), // pdel
     std::make_pair(0, 1), // dzq
@@ -99,23 +99,23 @@ static void run_bfb_p3_main_pre_loop()
     std::make_pair(0, 1), // birim_incld
   };
 
-  P3MainPreLoopData isds_fortran[] = {
+  P3MainPart1Data isds_fortran[] = {
     //              kts, kte, ktop, kbot, kdir, log_predictNc,        dt, ranges
-    P3MainPreLoopData(1,  72,    1,   72,    1, false,         1.800E+03, ranges),
-    P3MainPreLoopData(1,  72,    1,   72,    1, true,          1.800E+03, ranges),
-    P3MainPreLoopData(1,  72,   72,    1,   -1, false,         1.800E+03, ranges),
-    P3MainPreLoopData(1,  72,   72,    1,   -1, true,          1.800E+03, ranges),
+    P3MainPart1Data(1,  72,    1,   72,    1, false,         1.800E+03, ranges),
+    P3MainPart1Data(1,  72,    1,   72,    1, true,          1.800E+03, ranges),
+    P3MainPart1Data(1,  72,   72,    1,   -1, false,         1.800E+03, ranges),
+    P3MainPart1Data(1,  72,   72,    1,   -1, true,          1.800E+03, ranges),
   };
 
-  static constexpr Int num_runs = sizeof(isds_fortran) / sizeof(P3MainPreLoopData);
+  static constexpr Int num_runs = sizeof(isds_fortran) / sizeof(P3MainPart1Data);
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
   // inout data is in original state
-  P3MainPreLoopData isds_cxx[num_runs] = {
-    P3MainPreLoopData(isds_fortran[0]),
-    P3MainPreLoopData(isds_fortran[1]),
-    P3MainPreLoopData(isds_fortran[2]),
-    P3MainPreLoopData(isds_fortran[3]),
+  P3MainPart1Data isds_cxx[num_runs] = {
+    P3MainPart1Data(isds_fortran[0]),
+    P3MainPart1Data(isds_fortran[1]),
+    P3MainPart1Data(isds_fortran[2]),
+    P3MainPart1Data(isds_fortran[3]),
   };
 
     // Get data from fortran
@@ -125,7 +125,7 @@ static void run_bfb_p3_main_pre_loop()
 
   // Get data from cxx
   for (Int i = 0; i < num_runs; ++i) {
-    P3MainPreLoopData& d = isds_cxx[i];
+    P3MainPart1Data& d = isds_cxx[i];
     p3_main_part1_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir, d.log_predictNc, d.dt,
                             d.pres, d.pdel, d.dzq, d.ncnuc, d.exner, d.inv_exner, d.inv_lcldm, d.inv_icldm, d.inv_rcldm, d.xxlv, d.xxls, d.xlf,
                             d.t, d.rho, d.inv_rho, d.qvs, d.qvi, d.supi, d.rhofacr, d.rhofaci,
@@ -178,7 +178,7 @@ static void run_bfb_p3_main_part2()
   constexpr Scalar sup_upper = -0.05;
   constexpr Scalar sup_lower = -0.1;
 
-  const std::array< std::pair<Real, Real>, P3MainLoopData::NUM_ARRAYS > ranges = {
+  const std::array< std::pair<Real, Real>, P3MainPart2Data::NUM_ARRAYS > ranges = {
     std::make_pair(0, 1), // pres
     std::make_pair(0, 1), // pdel
     std::make_pair(0, 1), // dzq
@@ -243,23 +243,23 @@ static void run_bfb_p3_main_part2()
     std::make_pair(0, 1)  // prctot
   };
 
-  P3MainLoopData isds_fortran[] = {
+  P3MainPart2Data isds_fortran[] = {
     //              kts, kte, ktop, kbot, kdir, log_predictNc,        dt, ranges
-    P3MainLoopData(1,  72,    1,   72,    1, false,         1.800E+03, ranges),
-    P3MainLoopData(1,  72,    1,   72,    1, true,          1.800E+03, ranges),
-    P3MainLoopData(1,  72,   72,    1,   -1, false,         1.800E+03, ranges),
-    P3MainLoopData(1,  72,   72,    1,   -1, true,          1.800E+03, ranges),
+    P3MainPart2Data(1,  72,    1,   72,    1, false,         1.800E+03, ranges),
+    P3MainPart2Data(1,  72,    1,   72,    1, true,          1.800E+03, ranges),
+    P3MainPart2Data(1,  72,   72,    1,   -1, false,         1.800E+03, ranges),
+    P3MainPart2Data(1,  72,   72,    1,   -1, true,          1.800E+03, ranges),
   };
 
-  static constexpr Int num_runs = sizeof(isds_fortran) / sizeof(P3MainLoopData);
+  static constexpr Int num_runs = sizeof(isds_fortran) / sizeof(P3MainPart2Data);
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
   // inout data is in original state
-  P3MainLoopData isds_cxx[num_runs] = {
-    P3MainLoopData(isds_fortran[0]),
-    P3MainLoopData(isds_fortran[1]),
-    P3MainLoopData(isds_fortran[2]),
-    P3MainLoopData(isds_fortran[3]),
+  P3MainPart2Data isds_cxx[num_runs] = {
+    P3MainPart2Data(isds_fortran[0]),
+    P3MainPart2Data(isds_fortran[1]),
+    P3MainPart2Data(isds_fortran[2]),
+    P3MainPart2Data(isds_fortran[3]),
   };
 
     // Get data from fortran
@@ -269,7 +269,7 @@ static void run_bfb_p3_main_part2()
 
   // Get data from cxx
   for (Int i = 0; i < num_runs; ++i) {
-    P3MainLoopData& d = isds_cxx[i];
+    P3MainPart2Data& d = isds_cxx[i];
     p3_main_part2_f(
       d.kts, d.kte, d.kbot, d.ktop, d.kdir, d.log_predictNc, d.dt, d.odt,
       d.pres, d.pdel, d.dzq, d.ncnuc, d.exner, d.inv_exner, d.inv_lcldm, d.inv_icldm, d.inv_rcldm, d.naai, d.qc_relvar, d.icldm, d.lcldm, d.rcldm,
@@ -337,11 +337,11 @@ static void run_bfb_p3_main_part2()
   }
 }
 
-static void run_bfb_p3_main_post_loop()
+static void run_bfb_p3_main_part3()
 {
   constexpr Scalar qsmall     = C::QSMALL;
 
-  const std::array< std::pair<Real, Real>, P3MainPostLoopData::NUM_ARRAYS > ranges = {
+  const std::array< std::pair<Real, Real>, P3MainPart3Data::NUM_ARRAYS > ranges = {
     std::make_pair(0, 1), // exner
     std::make_pair(0, 1), // lcldm
     std::make_pair(0, 1), // rcldm
@@ -376,23 +376,23 @@ static void run_bfb_p3_main_post_loop()
     std::make_pair(0, 1), // diag_effc
   };
 
-  P3MainPostLoopData isds_fortran[] = {
+  P3MainPart3Data isds_fortran[] = {
     //               kts, kte, ktop, kbot, kdir, ranges
-    P3MainPostLoopData(1,  72,    1,   72,    1, ranges),
-    P3MainPostLoopData(1,  72,    1,   72,    1, ranges),
-    P3MainPostLoopData(1,  72,   72,    1,   -1, ranges),
-    P3MainPostLoopData(1,  72,   72,    1,   -1, ranges),
+    P3MainPart3Data(1,  72,    1,   72,    1, ranges),
+    P3MainPart3Data(1,  72,    1,   72,    1, ranges),
+    P3MainPart3Data(1,  72,   72,    1,   -1, ranges),
+    P3MainPart3Data(1,  72,   72,    1,   -1, ranges),
   };
 
-  static constexpr Int num_runs = sizeof(isds_fortran) / sizeof(P3MainPostLoopData);
+  static constexpr Int num_runs = sizeof(isds_fortran) / sizeof(P3MainPart3Data);
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
   // inout data is in original state
-  P3MainPostLoopData isds_cxx[num_runs] = {
-    P3MainPostLoopData(isds_fortran[0]),
-    P3MainPostLoopData(isds_fortran[1]),
-    P3MainPostLoopData(isds_fortran[2]),
-    P3MainPostLoopData(isds_fortran[3]),
+  P3MainPart3Data isds_cxx[num_runs] = {
+    P3MainPart3Data(isds_fortran[0]),
+    P3MainPart3Data(isds_fortran[1]),
+    P3MainPart3Data(isds_fortran[2]),
+    P3MainPart3Data(isds_fortran[3]),
   };
 
     // Get data from fortran
@@ -402,7 +402,7 @@ static void run_bfb_p3_main_post_loop()
 
   // Get data from cxx
   for (Int i = 0; i < num_runs; ++i) {
-    P3MainPostLoopData& d = isds_cxx[i];
+    P3MainPart3Data& d = isds_cxx[i];
     p3_main_part3_f(
       d.kts, d.kte, d.kbot, d.ktop, d.kdir,
       d.exner, d.lcldm, d.rcldm,
@@ -547,9 +547,9 @@ static void run_bfb_p3_main()
 
 static void run_bfb()
 {
-  run_bfb_p3_main_pre_loop();
+  run_bfb_p3_main_part1();
   run_bfb_p3_main_part2();
-  run_bfb_p3_main_post_loop();
+  run_bfb_p3_main_part3();
   run_bfb_p3_main();
 }
 
