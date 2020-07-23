@@ -398,7 +398,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
 
 
   !_____________________________________________________________________
-  subroutine set_thermostate(elem,ps,temperature,hvcoord)
+  subroutine set_thermostate(elem,ps,temperature,hvcoord,qv)
   !
   ! Assuming a hydrostatic intital state and given surface pressure,
   ! and no moisture, compute theta and phi 
@@ -412,10 +412,13 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   real (kind=real_kind), intent(in) :: temperature(np,np,nlev)
   type (hvcoord_t),     intent(in)  :: hvcoord                      ! hybrid vertical coordinate struct
   real (kind=real_kind), intent(in) :: ps(np,np)
+  real (kind=real_kind), intent(in), optional :: qv(np,np,nlev)  ! water vapor mixing ratio
   
   !   local
   real (kind=real_kind) :: p(np,np,nlev)
+  real (kind=real_kind) :: pi_i(np,np,nlevp)
   real (kind=real_kind) :: dp(np,np,nlev)
+  real (kind=real_kind) :: Rstar(np,np,nlev)
   integer :: k, nt
 
   nt = 1
@@ -425,6 +428,17 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*ps(:,:)
   enddo
 
+! recompute pressure using same algrebra as EOS:
+! improves precision for initial T/theta conversion
+  pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
+  do k=1,nlev
+     pi_i(:,:,k+1)=pi_i(:,:,k) + dp(:,:,k)
+  enddo
+  do k=1,nlev
+     p(:,:,k)=pi_i(:,:,k) + dp(:,:,k)/2
+  enddo
+
+
 !set vtheta
   do k=1,nlev
      elem%state%vtheta_dp(:,:,k,nt)=dp(:,:,k)*temperature(:,:,k)* &
@@ -433,11 +447,29 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   enddo
   elem%state%ps_v(:,:,nt)=ps
 
-!set phi, copy from 1st timelevel to all
+  if (present(qv)) then
+     call get_R_star(Rstar,qv)
+     elem%state%vtheta_dp(:,:,:,nt)=elem%state%vtheta_dp(:,:,:,nt)*Rstar(:,:,:)/Rgas
+  endif
+
+
+  !set phi, copy from 1st timelevel to all
   call tests_finalize(elem,hvcoord)
 
-  end subroutine set_thermostate
 
+  ! verify T
+  call get_temperature(elem,p,hvcoord,nt)
+
+  dp=p-temperature
+  do k=1,nlev
+     if (maxval(abs(dp(:,:,k))) > 1e-9) then
+        write(iulog,*)'WARNING: T/theta initialization inconsistent!'
+        write(iulog,*)k,minval(dp(:,:,k)),maxval(dp(:,:,k))
+        write(iulog,*) 'T,Tnew',temperature(1,1,k),p(1,1,k)
+     endif
+  enddo
+
+  end subroutine set_thermostate
 
 
   !_____________________________________________________________________

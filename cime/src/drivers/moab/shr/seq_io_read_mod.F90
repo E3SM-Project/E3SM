@@ -1,1 +1,0 @@
-../../mct/shr/seq_io_read_mod.F90

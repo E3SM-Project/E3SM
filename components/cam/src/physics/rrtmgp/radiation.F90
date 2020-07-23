@@ -14,11 +14,13 @@ module radiation
    use shr_kind_mod,     only: r8=>shr_kind_r8, cl=>shr_kind_cl
    use ppgrid,           only: pcols, pver, pverp, begchunk, endchunk
    use cam_abortutils,   only: endrun
+   use cam_history_support, only: add_hist_coord
    use scamMod,          only: scm_crm_mode, single_column, swrad_off
    use rad_constituents, only: N_DIAG
-   use radconstants,     only: &
-      set_sw_spectral_boundaries, set_lw_spectral_boundaries, check_wavenumber_bounds, &
-      get_band_index_sw, get_band_index_lw, test_get_band_index
+   use radconstants,     only: nswbands, nlwbands, &
+      get_band_index_sw, get_band_index_lw, test_get_band_index, &
+      set_sw_spectral_boundaries, set_lw_spectral_boundaries, &
+      get_sw_spectral_midpoints, get_lw_spectral_midpoints
 
    ! RRTMGP gas optics object to store coefficient information. This is imported
    ! here so that we can make the k_dist objects module data and only load them
@@ -134,28 +136,20 @@ module radiation
    ! data because we only want to load those files once.
    type(ty_gas_optics_rrtmgp) :: k_dist_sw, k_dist_lw
 
-   ! k-distribution coefficients files to read from. Set via namelist.
+   ! k-distribution coefficients files to read from. These are set via namelist
+   ! variables.
    character(len=cl) :: rrtmgp_coefficients_file_sw, rrtmgp_coefficients_file_lw
 
    ! Should we clip temperatures when out of bounds of absorption coefficient
    ! look-up table data?
    logical :: rrtmgp_clip_temperatures = .false.
 
-   ! Number of shortwave and longwave bands in use by the RRTMGP radiation code.
-   ! This information will be stored in the k_dist_sw and k_dist_lw objects and may
-   ! be retrieved using the k_dist_sw%get_nband() and k_dist_lw%get_nband()
-   ! methods, but I think we need to save these as private module data so that we
-   ! can automatically allocate arrays later in subroutine headers, i.e.:
-   !
-   !     real(r8) :: cld_tau(pcols,pver,nswbands)
-   !
-   ! and so forth. Previously some of this existed in radconstants.F90, but I do
-   ! not think we need to use that.
-   ! EDIT: maybe these JUST below in radconstants.F90?
-   integer :: nswbands, nlwbands
-
-   ! Also, save number of g-points as private module data
+   ! Number of g-points in k-distribution (set based on absorption coefficient inputdata)
    integer :: nswgpts, nlwgpts
+
+   ! Band midpoints; these need to be module variables because of how cam_history works;
+   ! add_hist_coord sets up pointers to these, so they need to persist.
+   real(r8), target :: sw_band_midpoints(nswbands), lw_band_midpoints(nlwbands)
 
    ! Set name for this module (for purpose of writing output and log files)
    character(len=*), parameter :: module_name = 'radiation'
@@ -187,8 +181,8 @@ module radiation
    ! this mean?)
    integer, public, allocatable :: tot_chnk_till_this_prc(:,:,:)
 
-   ! indices to pbuf fields
-   integer :: cldfsnow_idx = 0 
+   ! Indices to pbuf fields
+   integer :: cldfsnow_idx = 0
 
    !============================================================================
 
@@ -423,7 +417,6 @@ contains
    !-------------------------------------------------------------------------------
       use physics_buffer,     only: pbuf_get_index
       use cam_history,        only: addfld, horiz_only, add_default
-      use cam_history_support, only: add_hist_coord
       use constituents,       only: cnst_get_ind
       use phys_control,       only: phys_getopts
       use rad_constituents,   only: N_DIAG, rad_cnst_get_call_list, rad_cnst_get_info
@@ -461,7 +454,6 @@ contains
       integer :: history_budget_histfile_num ! output history file number for budget fields
       integer :: err
       integer :: dtime  ! time step
-
       logical :: use_MMF  ! SPCAM flag
 
       character(len=128) :: error_message
@@ -473,7 +465,6 @@ contains
       ! methods).
       type(ty_gas_concs) :: available_gases
 
-      real(r8), allocatable :: sw_band_midpoints(:), lw_band_midpoints(:)
       character(len=32) :: subname = 'radiation_init'
 
       !-----------------------------------------------------------------------
@@ -505,16 +496,15 @@ contains
       call rrtmgp_load_coefficients(k_dist_sw, rrtmgp_coefficients_file_sw, available_gases)
       call rrtmgp_load_coefficients(k_dist_lw, rrtmgp_coefficients_file_lw, available_gases)
 
-      ! Get number of bands used in shortwave and longwave and set module data
-      ! appropriately so that these sizes can be used to allocate array sizes.
-      nswbands = k_dist_sw%get_nband()
-      nlwbands = k_dist_lw%get_nband()
+      ! Make sure number of bands in absorption coefficient files matches what we expect
+      call assert(nswbands == k_dist_sw%get_nband(), 'nswbands does not match absorption coefficient data')
+      call assert(nlwbands == k_dist_lw%get_nband(), 'nlwbands does not match absorption coefficient data')
 
-      ! Likewise for g-points
+      ! Number of gpoints depend on inputdata, so initialize here
       nswgpts = k_dist_sw%get_ngpt()
       nlwgpts = k_dist_lw%get_ngpt()
 
-      ! Set values in radconstants
+      ! Set band intervals based on inputdata
       call set_sw_spectral_boundaries(k_dist_sw%get_band_lims_wavenumber())
       call set_lw_spectral_boundaries(k_dist_lw%get_band_lims_wavenumber())
 
@@ -527,7 +517,7 @@ contains
 
       ! Indices on radiation grid that correspond to top and bottom of the model
       ! grid...this is for cases where we want to add an extra layer above the
-      ! model top to deal with radiative heating above the model top...why???
+      ! model top to deal with radiative heating above the model top.
       ktop = nlev_rad - pver + 1
       kbot = nlev_rad
 
@@ -585,13 +575,10 @@ contains
       !
       
       ! Register new dimensions
-      allocate(sw_band_midpoints(nswbands), lw_band_midpoints(nlwbands))
-      sw_band_midpoints(:) = get_band_midpoints(nswbands, k_dist_sw)
-      lw_band_midpoints(:) = get_band_midpoints(nlwbands, k_dist_lw)
-      call assert(all(sw_band_midpoints > 0), subname // ': negative sw_band_midpoints')
-      call add_hist_coord('swband', nswbands, 'Shortwave band', 'wavelength', sw_band_midpoints)
-      call add_hist_coord('lwband', nlwbands, 'Longwave band', 'wavelength', lw_band_midpoints)
-      deallocate(sw_band_midpoints, lw_band_midpoints)
+      call get_sw_spectral_midpoints(sw_band_midpoints, 'cm-1')
+      call get_lw_spectral_midpoints(lw_band_midpoints, 'cm-1')
+      call add_hist_coord('swband', nswbands, 'Shortwave wavenumber', 'cm-1', sw_band_midpoints)
+      call add_hist_coord('lwband', nlwbands, 'Longwave wavenumber', 'cm-1', lw_band_midpoints)
 
       ! Shortwave radiation
       call addfld('TOT_CLD_VISTAU', (/ 'lev' /), 'A',   '1', &
@@ -1031,36 +1018,6 @@ contains
    end subroutine set_available_gases
 
 
-   ! Function to calculate band midpoints from kdist band limits
-   function get_band_midpoints(nbands, kdist) result(band_midpoints)
-      integer, intent(in) :: nbands
-      type(ty_gas_optics_rrtmgp), intent(in) :: kdist
-      real(r8) :: band_midpoints(nbands)
-      real(r8) :: band_limits(2,nbands)
-      integer :: i
-      character(len=32) :: subname = 'get_band_midpoints'
-
-      call assert(kdist%get_nband() == nbands, trim(subname) // ': kdist%get_nband() /= nbands')
-
-      band_limits = kdist%get_band_lims_wavelength()
-
-      call assert(size(band_limits, 1) == size(kdist%get_band_lims_wavelength(), 1), &
-                  subname // ': band_limits and kdist inconsistently sized')
-      call assert(size(band_limits, 2) == size(kdist%get_band_lims_wavelength(), 2), &
-                  subname // ': band_limits and kdist inconsistently sized')
-      call assert(size(band_limits, 2) == size(band_midpoints), &
-                  subname // ': band_limits and band_midpoints inconsistently sized')
-      call assert(all(band_limits > 0), subname // ': negative band limit wavelengths!')
-
-      band_midpoints(:) = 0._r8
-      do i = 1,nbands
-         band_midpoints(i) = (band_limits(1,i) + band_limits(2,i)) / 2._r8
-      end do
-      call assert(all(band_midpoints > 0), subname // ': negative band_midpoints!')
-
-   end function get_band_midpoints
-
-
    !===============================================================================
         
    !----------------------------------------------------------------------------
@@ -1215,13 +1172,13 @@ contains
       logical :: active_calls(0:N_DIAG)
 
       ! Everyone needs a name
-      character(*), parameter :: subroutine_name = 'radiation_tend'
+      character(*), parameter :: subname = 'radiation_tend'
 
       ! Radiative fluxes
       type(ty_fluxes_byband) :: fluxes_allsky, fluxes_clrsky
 
+      ! Zero-array for cloud properties if not diagnosed by microphysics
       real(r8), target, dimension(pcols,pver) :: zeros
-
 
       !----------------------------------------------------------------------
 
@@ -1243,7 +1200,7 @@ contains
       call pbuf_get_field(pbuf, pbuf_get_index('LAMBDAC'), lambdac)
       call pbuf_get_field(pbuf, pbuf_get_index('MU'), mu)
       ! May or may not have snow properties depending on microphysics
-      if (cldfsnow_idx > 0) then
+      if (do_snow_optics()) then
          call pbuf_get_field(pbuf, pbuf_get_index('CLDFSNOW'), cldfsnow)
          call pbuf_get_field(pbuf, pbuf_get_index('ICSWP'), icswp)
          call pbuf_get_field(pbuf, pbuf_get_index('DES'), des)
@@ -1288,7 +1245,7 @@ contains
          call t_stopf('rrtmgp_check_temperatures')
 
       end if
-     
+
       ! Do shortwave stuff...
       if (radiation_do('sw')) then
 
@@ -1314,6 +1271,9 @@ contains
 
          ! Do shortwave cloud optics calculations
          call t_startf('rad_cld_optics_sw')
+         cld_tau_gpt_sw = 0._r8
+         cld_ssa_gpt_sw = 0._r8
+         cld_asm_gpt_sw = 0._r8
          call get_cloud_optics_sw( &
             ncol, pver, nswbands, do_snow_optics(), cld, cldfsnow, iclwp, iciwp, icswp, &
             lambdac, mu, dei, des, rel, rei, &
@@ -1346,6 +1306,9 @@ contains
                ! Get aerosol optics
                if (do_aerosol_rad) then
                   call t_startf('rad_aer_optics_sw')
+                  aer_tau_bnd_sw = 0._r8
+                  aer_ssa_bnd_sw = 0._r8
+                  aer_asm_bnd_sw = 0._r8
                   call set_aerosol_optics_sw( &
                      icall, state, pbuf, &
                      night_indices(1:nnight), &
@@ -1358,6 +1321,14 @@ contains
                   aer_ssa_bnd_sw = 0
                   aer_asm_bnd_sw = 0
                end if
+
+               ! Check (and possibly clip) values before passing to RRTMGP driver
+               call handle_error(clip_values(cld_tau_gpt_sw,  0._r8, huge(cld_tau_gpt_sw), trim(subname) // ' cld_tau_gpt_sw', tolerance=1e-10_r8))
+               call handle_error(clip_values(cld_ssa_gpt_sw,  0._r8,                1._r8, trim(subname) // ' cld_ssa_gpt_sw', tolerance=1e-10_r8))
+               call handle_error(clip_values(cld_asm_gpt_sw, -1._r8,                1._r8, trim(subname) // ' cld_asm_gpt_sw', tolerance=1e-10_r8))
+               call handle_error(clip_values(aer_tau_bnd_sw,  0._r8, huge(aer_tau_bnd_sw), trim(subname) // ' aer_tau_bnd_sw', tolerance=1e-10_r8))
+               call handle_error(clip_values(aer_ssa_bnd_sw,  0._r8,                1._r8, trim(subname) // ' aer_ssa_bnd_sw', tolerance=1e-10_r8))
+               call handle_error(clip_values(aer_asm_bnd_sw, -1._r8,                1._r8, trim(subname) // ' aer_asm_bnd_sw', tolerance=1e-10_r8))
 
                ! Call the shortwave radiation driver
                call radiation_driver_sw( &
@@ -1402,6 +1373,7 @@ contains
          call initialize_rrtmgp_fluxes(ncol, nlev_rad+1, nlwbands, fluxes_clrsky)
 
          call t_startf('rad_cld_optics_lw')
+         cld_tau_gpt_lw = 0._r8
          call get_cloud_optics_lw( &
             ncol, pver, nlwbands, do_snow_optics(), cld, cldfsnow, iclwp, iciwp, icswp, &
             lambdac, mu, dei, des, rei, &
@@ -1426,11 +1398,17 @@ contains
                ! Get aerosol optics
                if (do_aerosol_rad) then
                   call t_startf('rad_aer_optics_lw')
+                  aer_tau_bnd_lw = 0._r8
                   call aer_rad_props_lw(is_cmip6_volc, icall, state, pbuf, aer_tau_bnd_lw)
                   call t_stopf('rad_aer_optics_lw')
                else
                   aer_tau_bnd_lw = 0
                end if
+
+               ! Check (and possibly clip) values before passing to RRTMGP driver
+               call handle_error(clip_values(cld_tau_gpt_lw,  0._r8, huge(cld_tau_gpt_lw), trim(subname) // ': cld_tau_gpt_lw', tolerance=1e-10_r8))
+               call handle_error(clip_values(aer_tau_bnd_lw,  0._r8, huge(aer_tau_bnd_lw), trim(subname) // ': aer_tau_bnd_lw', tolerance=1e-10_r8))
+
                ! Call the longwave radiation driver to calculate fluxes and heating rates
                call radiation_driver_lw( &
                   ncol, active_gases, gas_vmr, &
@@ -1527,7 +1505,7 @@ contains
       use mo_fluxes_byband, only: ty_fluxes_byband
       use mo_optical_props, only: ty_optical_props_2str
       use mo_gas_concentrations, only: ty_gas_concs
-      use radiation_utils, only: calculate_heating_rate, clip_values
+      use radiation_utils, only: calculate_heating_rate
       use cam_optics, only: get_cloud_optics_sw, sample_cloud_optics_sw, &
                             compress_optics_sw, set_aerosol_optics_sw
 
@@ -2202,6 +2180,7 @@ contains
       ! Local namespace
       real(r8) :: wavenumber_limits(2,nswbands)
       integer :: ncol, iband
+      character(len=10) :: subname = 'set_albedo'
 
       ! Check dimension sizes of output arrays.
       ! albedo_dir and albedo_dif should have sizes nswbands,ncol, but ncol
@@ -2255,10 +2234,14 @@ contains
 
       ! Check values and clip if necessary (albedos should not be larger than 1)
       ! NOTE: this does actually issue warnings for albedos larger than 1, but this
-      ! was never checked for RRTMG, so albedos will probably be slight different
+      ! was never checked for RRTMG, so albedos will probably be slightly different
       ! than the implementation in RRTMG!
-      call clip_values(albedo_dir, 0._r8, 1._r8, varname='albedo_dir')
-      call clip_values(albedo_dif, 0._r8, 1._r8, varname='albedo_dif')
+      call handle_error(clip_values( &
+         albedo_dir, 0._r8, 1._r8, trim(subname) // ': albedo_dir', tolerance=0.01_r8) &
+      )
+      call handle_error(clip_values( &
+         albedo_dif, 0._r8, 1._r8, trim(subname) // ': albedo_dif', tolerance=0.01_r8) &
+      )
 
    end subroutine set_albedo
 
