@@ -10,6 +10,7 @@ check_minimum_python_version(3, 4)
 import os, shutil, pathlib
 import concurrent.futures as threading3
 import itertools
+import json
 
 ###############################################################################
 class TestAllScream(object):
@@ -190,7 +191,7 @@ class TestAllScream(object):
             ctest_remainder = ctest_max_jobs % len(self._tests)
             ctest_count     = ctest_max_jobs // len(self._tests)
 
-            # In case we have more tests than cores (unlikely)
+            # In case we have more items in self._tests than cores/gpus (unlikely)
             if make_count == 0:
                 make_count = 1
             if ctest_count == 0:
@@ -332,6 +333,42 @@ class TestAllScream(object):
         return start, end
 
     ###############################################################################
+    def create_ctest_resource_file(self, test, build_dir):
+    ###############################################################################
+        # Create a json file in the test build dir, which ctest will then use
+        # to schedule tests in parallel.
+        # In the resource file, we have N res groups with 1 slot, with N being
+        # what's in self._testing_res_count[test]. On CPU machines, res groups
+        # are cores, on GPU machines, res groups are GPUs. In other words, a
+        # res group is where we usually bind an individual MPI rank.
+        # The id of the res groups on is offset so that it is unique across all builds
+
+        # Note: on CPU, the actual ids are pointless, since ctest job is already places
+        # on correct cores with taskset. On GPU, however, these ids are used to select
+        # the kokkos device where the tests are run on.
+
+        it = itertools.takewhile(lambda name: name!=test, self._tests)
+        start = sum(self._testing_res_count[prevs] for prevs in it)
+        end   = start + self._testing_res_count[test]
+
+        data = {}
+
+        print ("test {} start dev id is {}, and end is {}".format(test,start,end))
+
+        # This is the only version numbering supported by ctest, so far
+        data['version'] = {"major":1,"minor":0}
+
+        devices = []
+        for res_id in range(start,end):
+            devices.append({"id":str(res_id)})
+
+        # Add resource groups
+        data['local'] = [{"devices":devices}]
+
+        with open("{}/ctest_resource_file.json".format(build_dir),'w') as outfile:
+            json.dump(data,outfile,indent=2)
+
+    ###############################################################################
     def generate_ctest_config(self, cmake_config, extra_configs, test):
     ###############################################################################
         name = self._test_full_names[test]
@@ -339,7 +376,11 @@ class TestAllScream(object):
         if self._submit:
             result += "CIME_MACHINE={} ".format(self._machine)
 
+        test_dir = self.get_test_dir(test)
+        self.create_ctest_resource_file(test,test_dir)
+
         result += "CTEST_PARALLEL_LEVEL={} ctest -V --output-on-failure ".format(self._testing_res_count[test])
+        result += "--resource-spec-file {}/ctest_resource_file.json ".format(test_dir)
 
         if self._baseline_dir is not None:
             cmake_config += " -DSCREAM_TEST_DATA_DIR={}".format(self.get_preexisting_baseline(test))
