@@ -4,6 +4,21 @@
 #include <string>
 #include <vector>
 
+/*
+ * A set of utilities for string manipulation
+ *
+ * This header (and its corresponding cpp file) contain two sets of things:
+ *  - A class for case insensitive string. This class inherits from std::string,
+ *    so *all* the functionalities of std::string are available. Additionally,
+ *    when comparing two strings (with ==, !=, <, or <=), if one of the two
+ *    operands is a CaseInsensitiveString object, then we perform a case
+ *    insensitive comparison.
+ *    Use this class if you want to allow all possible case styles for some inputs.
+ *  - Some utility functions to manipulate std::string objects, such as
+ *    removing leading/trailing whitespaces, split a string into substrings
+ *    at every occurrence of a given char, and more.
+ */
+
 namespace scream {
 namespace util {
 
