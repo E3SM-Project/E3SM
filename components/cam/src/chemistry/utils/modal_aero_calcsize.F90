@@ -1,8 +1,7 @@
 module modal_aero_calcsize
 
 !   RCE 07.04.13:  Adapted from MIRAGE2 code
-use time_manager
-use module_perturb
+
 use shr_kind_mod,     only: r8 => shr_kind_r8
 use spmd_utils,       only: masterproc
 use physconst,        only: pi, rhoh2o, gravit
@@ -711,9 +710,6 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
                do i=1,ncol
                   dryvol_c(i,k) = dryvol_c(i,k)    &
                        + max(0.0_r8,cp_buf(i,k,l1,n))*dummwdens
-                  if(icolprnt(state%lchnk) == i .and. k==54) then
-                     write(103,*)'not:',dryvol_c(i,k),cp_buf(i,k,l1,n),get_nstep()
-                  endif
                end do
             end do
          else
@@ -721,9 +717,6 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
                do i=1,ncol
                   dryvol_c(i,k) = dryvol_c(i,k)    &
                        + max(0.0_r8,fldcw(i,k))*dummwdens
-                  if(icolprnt(state%lchnk) == i .and. k==54) then
-                     write(102,*)'ptend:',dryvol_c(i,k),fldcw(i,k),get_nstep()
-                  endif
                end do
             end do
          endif
@@ -1080,13 +1073,6 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
 
             drv_t = drv_a_aitsv(i,k) + drv_c_aitsv(i,k)
             num_t = num_a_aitsv(i,k) + num_c_aitsv(i,k)
-            if(icolprnt(state%lchnk) == i .and. k==54) then
-               if(.not.present(ptend)) then
-                  write(103,*)'not:',drv_t,drv_a_aitsv(i,k), drv_c_aitsv(i,k),get_nstep()
-               else
-                  write(102,*)'ptend:',drv_t,drv_a_aitsv(i,k), drv_c_aitsv(i,k),get_nstep()
-               endif
-            endif
             if (drv_t > 0.0_r8) then
                if (num_t < drv_t*v2nzz) then
                   ixfer_ait2acc = 1
@@ -1190,13 +1176,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
                   xfertend_num(2,2) = num_c_accsv(i,k)*xfercoef_num_acc2ait
                end if
             end if
-            if(icolprnt(state%lchnk) == i .and. k==54) then
-               if(.not.present(ptend)) then
-                  write(103,*)'not:',ixfer_ait2acc,ixfer_acc2ait,get_nstep()
-               else
-                  write(102,*)'ptend:',ixfer_ait2acc,ixfer_acc2ait,get_nstep()
-               endif
-            endif
+
             ! jump to end-of-loop if no transfer is needed at current i,k
             if (ixfer_ait2acc+ixfer_acc2ait > 0) then
                ixfer_ait2acc_sv(i,k) = ixfer_ait2acc
@@ -1229,14 +1209,6 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
                      drv_c = drv_c_acc
                   end if
 
-                  if(icolprnt(state%lchnk) == i .and. k==54) then
-                     if(.not.present(ptend)) then
-                        write(103,*)'not:',drv_a
-                     else
-                        write(102,*)'ptend:',drv_a
-                     endif
-                  endif
-
                   if (drv_a > 0.0_r8) then
                      if (num_a <= drv_a*voltonumbhi_amode(n)) then
                         dgncur_a(i,k,n) = dgnumhi_amode(n)
@@ -1245,23 +1217,14 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
                         dgncur_a(i,k,n) = dgnumlo_amode(n)
                         v2ncur_a(i,k,n) = voltonumblo_amode(n)
                      else
-                        !if(.false.) then !BALLI
-                        if(icolprnt(state%lchnk) == i .and. k==54) then
-                        if(present(ptend)) then
-                           write(102,*)'ptend:',drv_a,dumfac,num_a,third,n
-                        else
-                           write(103,*)'not:',drv_a,dumfac,num_a,third,n
-                        endif
-                        endif
                         dgncur_a(i,k,n) = (drv_a/(dumfac*num_a))**third
-                        !endif !BALLI
                         v2ncur_a(i,k,n) = num_a/drv_a
                      end if
                   else
                      dgncur_a(i,k,n) = dgnum_amode(n)
                      v2ncur_a(i,k,n) = voltonumb_amode(n)
                   end if
-
+                  
                   if (drv_c > 0.0_r8) then
                      if (num_c <= drv_c*voltonumbhi_amode(n)) then
                         dgncur_c(i,k,n) = dgnumhi_amode(n)
@@ -1424,7 +1387,6 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
          end do
       end if
    end do
-
 
    !
    ! do outfld calls
