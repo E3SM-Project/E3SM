@@ -824,13 +824,13 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
                                        nc_incld, nr_incld, nitot_incld, birim_incld)
  end subroutine calculate_incloud_mixingratios_c
 
- subroutine p3_main_pre_main_loop_c(kts, kte, kbot, ktop, kdir, log_predictNc, dt, &
+ subroutine p3_main_part1_c(kts, kte, kbot, ktop, kdir, log_predictNc, dt, &
        pres, pdel, dzq, ncnuc, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, xxlv, xxls, xlf, &
        t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, &
        qitot, nitot, qirim, birim, qc_incld, qr_incld, qitot_incld, qirim_incld, &
        nc_incld, nr_incld, nitot_incld, birim_incld, log_nucleationPossible, log_hydrometeorsPresent) bind(C)
 
-   use micro_p3, only: p3_main_pre_main_loop
+   use micro_p3, only: p3_main_part1
 
    ! arguments
    integer(kind=c_int), value, intent(in) :: kts, kte, kbot, ktop, kdir
@@ -845,15 +845,15 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
 
    logical(kind=c_bool), intent(out) :: log_nucleationPossible, log_hydrometeorsPresent
 
-   call p3_main_pre_main_loop(kts, kte, kbot, ktop, kdir, log_predictNc, dt, &
+   call p3_main_part1(kts, kte, kbot, ktop, kdir, log_predictNc, dt, &
         pres, pdel, dzq, ncnuc, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, xxlv, xxls, xlf, &
         t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, &
         qitot, nitot, qirim, birim, qc_incld, qr_incld, qitot_incld, qirim_incld, &
         nc_incld, nr_incld, nitot_incld, birim_incld, log_nucleationPossible, log_hydrometeorsPresent)
 
- end subroutine p3_main_pre_main_loop_c
+ end subroutine p3_main_part1_c
 
- subroutine p3_main_main_loop_c(kts, kte, kbot, ktop, kdir, log_predictNc, dt, odt, &
+ subroutine p3_main_part2_c(kts, kte, kbot, ktop, kdir, log_predictNc, dt, odt, &
        pres, pdel, dzq, ncnuc, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, naai, qc_relvar, icldm, lcldm, rcldm,&
        t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, qitot, nitot, &
        qirim, birim, xxlv, xxls, xlf, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, &
@@ -861,7 +861,7 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
        nevapr, prer_evap, vap_liq_exchange, vap_ice_exchange, liq_ice_exchange, pratot, &
        prctot, log_hydrometeorsPresent) bind(C)
 
-   use micro_p3, only: p3_main_main_loop
+   use micro_p3, only: p3_main_part2
 
    !arguments
    integer(kind=c_int), value, intent(in) :: kts, kte, kbot, ktop, kdir
@@ -882,7 +882,7 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
    ! throwaway
    real(kind=c_real), dimension(kts:kte,49) :: p3_tend_out
 
-   call p3_main_main_loop(kts, kte, kbot, ktop, kdir, log_predictNc, dt, odt, &
+   call p3_main_part2(kts, kte, kbot, ktop, kdir, log_predictNc, dt, odt, &
         pres, pdel, dzq, ncnuc, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, naai, qc_relvar, icldm, lcldm, rcldm,&
         t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, qitot, nitot, &
         qirim, birim, xxlv, xxls, xlf, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, &
@@ -890,15 +890,15 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
         nevapr, prer_evap, vap_liq_exchange, vap_ice_exchange, liq_ice_exchange, pratot, &
         prctot, p3_tend_out, log_hydrometeorsPresent)
 
- end subroutine p3_main_main_loop_c
+ end subroutine p3_main_part2_c
 
- subroutine p3_main_post_main_loop_c(kts, kte, kbot, ktop, kdir, &
+ subroutine p3_main_part3_c(kts, kte, kbot, ktop, kdir, &
       exner, lcldm, rcldm, &
       rho, inv_rho, rhofaci, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, &
       mu_c, nu, lamc, mu_r, lamr, vap_liq_exchange, &
       ze_rain, ze_ice, diag_vmi, diag_effi, diag_di, diag_rhoi, diag_ze, diag_effc) bind(C)
 
-   use micro_p3, only: p3_main_post_main_loop
+   use micro_p3, only: p3_main_part3
 
    ! args
 
@@ -910,12 +910,12 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
         lamr, vap_liq_exchange, &
         ze_rain, ze_ice, diag_vmi, diag_effi, diag_di, diag_rhoi, diag_ze, diag_effc
 
-   call p3_main_post_main_loop(kts, kte, kbot, ktop, kdir, &
+   call p3_main_part3(kts, kte, kbot, ktop, kdir, &
         exner, lcldm, rcldm, &
         rho, inv_rho, rhofaci, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, &
         mu_c, nu, lamc, mu_r, lamr, vap_liq_exchange, &
         ze_rain, ze_ice, diag_vmi, diag_effi, diag_di, diag_rhoi, diag_ze, diag_effc)
 
- end subroutine p3_main_post_main_loop_c
+ end subroutine p3_main_part3_c
 
 end module micro_p3_iso_c

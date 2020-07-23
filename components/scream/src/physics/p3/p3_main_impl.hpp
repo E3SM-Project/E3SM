@@ -70,7 +70,7 @@ void Functions<S,D>
 template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::p3_main_pre_main_loop(
+::p3_main_part1(
   const MemberType& team,
   const Int& nk,
   const bool& log_predictNc,
@@ -229,7 +229,7 @@ void Functions<S,D>
 template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::p3_main_main_loop(
+::p3_main_part2(
   const MemberType& team,
   const Int& nk_pack,
   const bool& log_predictNc,
@@ -693,7 +693,7 @@ void Functions<S,D>
 template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::p3_main_post_main_loop(
+::p3_main_part3(
   const MemberType& team,
   const Int& nk_pack,
   const view_dnu_table& dnu,
@@ -1053,7 +1053,7 @@ void Functions<S,D>
       odiag_ze, ze_ice, ze_rain, odiag_effc, odiag_effi, inv_icldm, inv_lcldm, inv_rcldm, inv_exner, t, oqv, inv_dzq,
       prt_liq(i), prt_sol(i), zero_init);
 
-    p3_main_pre_main_loop(
+    p3_main_part1(
       team, nk, log_predictNc, dt,
       opres, opdel, odzq, oncnuc, oexner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, oxxlv, oxxls, oxlf,
       t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqitot, onitot, oqirim, obirim, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld,
@@ -1066,7 +1066,7 @@ void Functions<S,D>
 
     // ------------------------------------------------------------------------------------------
     // main k-loop (for processes):
-    p3_main_main_loop(
+    p3_main_part2(
       team, nk_pack, log_predictNc, dt, odt,
       dnu, itab, itabcol, revap_table,
       opres, opdel, odzq, oncnuc, oexner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, onaai, oqc_relvar, oicldm, olcldm, orcldm,
@@ -1114,7 +1114,7 @@ void Functions<S,D>
     // final checks to ensure consistency of mass/number
     // and compute diagnostic fields for output
     //
-    p3_main_post_main_loop(
+    p3_main_part3(
       team, nk_pack, dnu, itab,
       oexner, olcldm, orcldm,
       rho, inv_rho, rhofaci, oqv, oth, oqc, onc, oqr, onr, oqitot, onitot, oqirim, obirim, oxxlv, oxxls, omu_c, nu, olamc, mu_r, lamr, ovap_liq_exchange, ze_rain, ze_ice, odiag_vmi, odiag_effi, odiag_di, odiag_rhoi, odiag_ze, odiag_effc);

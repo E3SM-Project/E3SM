@@ -1074,7 +1074,7 @@ void calculate_incloud_mixingratios_f(Real qc, Real qr, Real qitot, Real qirim, 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct P3MainPreLoopData
+struct P3MainPart1Data
 {
   static constexpr size_t NUM_ARRAYS = 39;
 
@@ -1092,12 +1092,12 @@ struct P3MainPreLoopData
   // Output
   bool log_nucleationPossible, log_hydrometeorsPresent;
 
-  P3MainPreLoopData(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
+  P3MainPart1Data(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
                     bool log_predictNc_, Real dt_,
                     const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
 
   // deep copy
-  P3MainPreLoopData(const P3MainPreLoopData& rhs);
+  P3MainPart1Data(const P3MainPart1Data& rhs);
 
   Int nk() const { return m_nk; }
 
@@ -1107,11 +1107,11 @@ struct P3MainPreLoopData
   std::vector<Real> m_data;
 };
 
-void p3_main_pre_main_loop(P3MainPreLoopData& d);
+void p3_main_part1(P3MainPart1Data& d);
 
 extern "C" {
 
-void p3_main_pre_main_loop_f(
+void p3_main_part1_f(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
   bool log_predictNc,
   Real dt,
@@ -1125,7 +1125,7 @@ void p3_main_pre_main_loop_f(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct P3MainLoopData
+struct P3MainPart2Data
 {
   static constexpr size_t NUM_ARRAYS = 62;
 
@@ -1144,12 +1144,12 @@ struct P3MainLoopData
 
   bool log_hydrometeorsPresent;
 
-  P3MainLoopData(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
+  P3MainPart2Data(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
                      bool log_predictNc_, Real dt_,
                      const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
 
   // deep copy
-  P3MainLoopData(const P3MainLoopData& rhs);
+  P3MainPart2Data(const P3MainPart2Data& rhs);
 
   Int nk() const { return m_nk; }
 
@@ -1159,11 +1159,11 @@ struct P3MainLoopData
   std::vector<Real> m_data;
 };
 
-void p3_main_main_loop(P3MainLoopData& d);
+void p3_main_part2(P3MainPart2Data& d);
 
 extern "C" {
 
-void p3_main_main_loop_f(
+void p3_main_part2_f(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir, bool log_predictNc, Real dt, Real odt,
   Real* pres, Real* pdel, Real* dzq, Real* ncnuc, Real* exner, Real* inv_exner, Real* inv_lcldm, Real* inv_icldm, Real* inv_rcldm, Real* naai, Real* qc_relvar, Real* icldm, Real* lcldm, Real* rcldm,
   Real* t, Real* rho, Real* inv_rho, Real* qvs, Real* qvi, Real* supi, Real* rhofacr, Real* rhofaci, Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot,
@@ -1176,7 +1176,7 @@ void p3_main_main_loop_f(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct P3MainPostLoopData
+struct P3MainPart3Data
 {
   static constexpr size_t NUM_ARRAYS = 32;
 
@@ -1191,11 +1191,11 @@ struct P3MainPostLoopData
     *lamr, *vap_liq_exchange,
     *ze_rain, *ze_ice, *diag_vmi, *diag_effi, *diag_di, *diag_rhoi, *diag_ze, *diag_effc;
 
-  P3MainPostLoopData(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
+  P3MainPart3Data(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
                      const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
 
   // deep copy
-  P3MainPostLoopData(const P3MainPostLoopData& rhs);
+  P3MainPart3Data(const P3MainPart3Data& rhs);
 
   Int nk() const { return m_nk; }
 
@@ -1205,11 +1205,11 @@ struct P3MainPostLoopData
   std::vector<Real> m_data;
 };
 
-void p3_main_post_main_loop(P3MainPostLoopData& d);
+void p3_main_part3(P3MainPart3Data& d);
 
 extern "C" {
 
-void p3_main_post_main_loop_f(
+void p3_main_part3_f(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
   Real* exner, Real* lcldm, Real* rcldm,
   Real* rho, Real* inv_rho, Real* rhofaci, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* xxlv, Real* xxls,
