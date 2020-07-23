@@ -9,6 +9,7 @@ ANONYMOUS:
   Discretization: 
     Workset Size: -1
     Element Shape: Prism
+    #Exodus Output File Name: mali_gis_1to10km.exo
 
   Piro: 
 #   Nonlinear Solver Information
@@ -56,7 +57,6 @@ ANONYMOUS:
             Tolerance: 1.0e-8
           Stratimikos Linear Solver: 
             Stratimikos: 
-
 #             Linear Solver Information
               Linear Solver Type: Belos
               Linear Solver Types: 
@@ -73,7 +73,7 @@ ANONYMOUS:
                       Flexible Gmres: false
                   VerboseObject:
                     Output File: none
-                    Verbosity Level: none
+                    Verbosity Level: low
 
 #             Preconditioner Information
               Preconditioner Type: MueLu
@@ -136,12 +136,13 @@ ANONYMOUS:
                       R: myRestrictorFact
                       TransferFactories: 
                         For Coordinates: myToggleTransferCoordinatesFact
+                        #'rap: fix zero diagonals': true 
                     myRepartitionHeuristicFact: 
                       factory: RepartitionHeuristicFactory
                       A: myRAPFact
                       'repartition: min rows per proc': 3000
                       'repartition: max imbalance': 1.32699999999999996e+00
-                      'repartition: start level': 3
+                      'repartition: start level': 1
                     myZoltanInterface: 
                       factory: ZoltanInterface
                       A: myRAPFact
@@ -194,7 +195,7 @@ ANONYMOUS:
                   Hierarchy: 
                     max levels: 7
                     'coarse: max size': 2000
-                    verbosity: None
+                    verbosity: Low
                     Finest: 
                       Smoother: mySmoother1
                       CoarseSolver: mySmoother4
@@ -243,3 +244,41 @@ ANONYMOUS:
                     'coarse: max size': 2000
                     'coarse: pre or post': pre
                     max levels: 7
+                FROSch:
+                  FROSch Preconditioner Type: TwoLevelPreconditioner        # FROSch preconditioner type. Options: OneLevelPreconditioner, TwoLevelPreconditioner
+                  OverlappingOperator Type: AlgebraicOverlappingOperator    # First Level: AlgebrAlgebraicOverlappingOperator determines the overlap based on the graph of the matrix
+                  CoarseOperator Type: IPOUHarmonicCoarseOperator           # Second Level: IPOUHarmonicCoarseOperator work for all kinds of GDSW type coarse spaces
+                  Recycling: true                                           # This enables the possibility to re-use parts of the preconditioner in a Newton or time iteration
+                  Dimension : 3                                             # Spatial dimension of the problem
+                  DofsPerNode : 2                                           # Number of degrees of freedom per node
+                  Overlap: 0                                                # Number of layers of elements in the overlap
+                  Null Space Type: Input                                    # Null space is provided by Albany
+                  AlgebraicOverlappingOperator:
+                    'Reuse: Symbolic Factorization': true                   # Reuse of the symbolic factorization
+                    Adding Layers Strategy: CrsGraph
+                    Solver:                                                 # Solver on the first level
+                      SolverType: Amesos2                                   # Solver package: Amesos2 or Ifpack2
+                      Solver: Klu                                           # Solver name (depends on the solver package): Klu, RILUK, ...
+                  IPOUHarmonicCoarseOperator:
+                    'Reuse: Coarse Basis': true                             # Reuse of the coarse basis functions
+                    'Reuse: Coarse Matrix': false                           # Reuse of the coarse matrix
+                    'Reuse: Coarse Matrix Symbolic Factorization': true     # Reuse of the symbolic factorization of the coarse matrix
+                    Blocks:
+                      1:                                                    # For a multiphysics problem, the coarse space may be decomposed into several blocks. Here, we only need one block.
+                        InterfacePartitionOfUnity:                          # The interface partition of unity defines the specific GDSW type coarse space
+                          Type: RGDSW                                       # Possible types: GDSW, RGDSW
+                          GDSW:
+                            Type: Full                                      # Here, we could select subspaces of the GDSW coarse. Generally, we use "Full".
+                          RGDSW:
+                            Type: Full                                      # Here, we could select subspaces of the RGDSW coarse. Generally, we use "Full".
+                            Distance Function: Inverse Euclidean            # Options 1 and 2.2 differ in the distance function used to compute the interface values: "Constant" (Option 1) and "Inverse Euclidean" (Option 2.2)
+                    Interface Communication Strategy: CreateOneToOneMap
+                    ExtensionSolver:                                        # Solver for the energy-minimizing extensions
+                      SolverType: Amesos2                                   # Solver package: Amesos2 or Ifpack2
+                      Solver: Klu                                           # Solver name (depends on the solver package): Klu, RILUK, ...
+                    Distribution:                                           # Parallel distribution of the coarse problem
+                      Type: linear                                          # Specifies the parallel distribution strategy. For now, we use "linear"
+                      NumProcs: 1                                           # Number of ranks used for the coarse problem
+                    CoarseSolver:                                           # Solver for the coarse problem
+                      SolverType: Amesos2                                   # Solver package: Amesos2 or Ifpack2
+                      Solver: Klu                                           # Solver name (depends on the solver package): Klu, RILUK, ...
