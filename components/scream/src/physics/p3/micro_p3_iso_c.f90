@@ -445,7 +445,6 @@ end subroutine prevent_ice_overdepletion_c
     ! arguments
     integer(kind=c_int), value, intent(in) :: kts, kte, ktop, kbot, kdir
 
-    real(kind=c_real), intent(in), dimension(kts:kte) :: qc_incld
     real(kind=c_real), intent(in), dimension(kts:kte) :: rho
     real(kind=c_real), intent(in), dimension(kts:kte) :: inv_rho
     real(kind=c_real), intent(in), dimension(kts:kte) :: lcldm
@@ -458,6 +457,7 @@ end subroutine prevent_ice_overdepletion_c
 
     real(kind=c_real), intent(inout), dimension(kts:kte) :: qc
     real(kind=c_real), intent(inout), dimension(kts:kte) :: nc
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qc_incld
     real(kind=c_real), intent(inout), dimension(kts:kte) :: nc_incld
     real(kind=c_real), intent(inout), dimension(kts:kte) :: mu_c
     real(kind=c_real), intent(inout), dimension(kts:kte) :: lamc
@@ -513,8 +513,6 @@ end subroutine prevent_ice_overdepletion_c
 
     integer(kind=c_int), value, intent(in) :: kts, kte, ktop, kbot, kdir
 
-    real(kind=c_real), intent(in), dimension(kts:kte) :: qr_incld
-
     real(kind=c_real), intent(in), dimension(kts:kte) :: rho
     real(kind=c_real), intent(in), dimension(kts:kte) :: inv_rho
     real(kind=c_real), intent(in), dimension(kts:kte) :: rhofacr
@@ -524,6 +522,7 @@ end subroutine prevent_ice_overdepletion_c
 
     real(kind=c_real), intent(inout), target, dimension(kts:kte) :: qr
     real(kind=c_real), intent(inout), target, dimension(kts:kte) :: nr
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qr_incld
     real(kind=c_real), intent(inout), dimension(kts:kte) :: nr_incld
     real(kind=c_real), intent(inout), dimension(kts:kte) :: mu_r
     real(kind=c_real), intent(inout), dimension(kts:kte) :: lamr

@@ -166,7 +166,20 @@ void Functions<S,D>
       team.team_barrier();
 
       generalized_sedimentation<4>(rho, inv_rho, inv_dzq, team, nk, k_qxtop, k_qxbot, kbot, kdir, Co_max, dt_left, prt_accum, fluxes_ptr, vs_ptr, qnr_ptr);
-    }
+
+      //Update _incld values with end-of-step cell-ave values
+      //No prob w/ div by icldm because set to min of 1e-4 in interface.
+      Kokkos::parallel_for(
+        Kokkos::TeamThreadRange(team, qitot.extent(0)), [&] (int pk) {
+	  qitot_incld(pk)=qitot(pk)/icldm(pk);
+	  nitot_incld(pk)=nitot(pk)/icldm(pk);
+	  qirim_incld(pk)=qirim(pk)/icldm(pk);
+	  birim_incld(pk)=birim(pk)/icldm(pk);
+	});
+
+      
+    } //end CFL substep loop
+    
     Kokkos::single(
       Kokkos::PerTeam(team), [&] () {
         prt_sol += prt_accum * C::INV_RHOW * odt;

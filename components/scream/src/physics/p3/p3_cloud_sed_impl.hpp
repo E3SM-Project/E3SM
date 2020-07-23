@@ -15,7 +15,7 @@ template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::cloud_sedimentation(
-    const uview_1d<const Spack>& qc_incld,
+    const uview_1d<Spack>& qc_incld,
     const uview_1d<const Spack>& rho,
     const uview_1d<const Spack>& inv_rho,
     const uview_1d<const Spack>& lcldm,
@@ -92,8 +92,11 @@ void Functions<S,D>
             // compute Vq, Vn
             Spack nu, cdist, cdist1, dum;
             get_cloud_dsd2(qc_incld(pk), nc_incld(pk), mu_c(pk), rho(pk), nu, dnu, lamc(pk), cdist, cdist1, lcldm(pk), qc_gt_small);
-            nc(pk).set(qc_gt_small, nc_incld(pk)*lcldm(pk));
-            dum = 1 / (pack::pow(lamc(pk), bcn));
+
+	    //Doesn't make sense to do this here
+            //nc(pk).set(qc_gt_small, nc_incld(pk)*lcldm(pk));
+
+	    dum = 1 / (pack::pow(lamc(pk), bcn));
             V_qc(pk).set(qc_gt_small, acn(pk)*pack::tgamma(4 + bcn + mu_c(pk)) * dum / (pack::tgamma(mu_c(pk)+4)));
             if (log_predictNc) {
               V_nc(pk).set(qc_gt_small, acn(pk)*pack::tgamma(1 + bcn + mu_c(pk)) * dum / (pack::tgamma(mu_c(pk)+1)));
@@ -113,7 +116,16 @@ void Functions<S,D>
       else {
         generalized_sedimentation<1>(rho, inv_rho, inv_dzq, team, nk, k_qxtop, k_qxbot, kbot, kdir, Co_max, dt_left, prt_accum, flux_ptr, v_ptr, qr_ptr);
       }
-    }
+
+      //Update _incld values with end-of-step cell-ave values
+      //No prob w/ div by lcldm because set to min of 1e-4 in interface.
+      Kokkos::parallel_for(
+        Kokkos::TeamThreadRange(team, qc.extent(0)), [&] (int pk) {
+	  qc_incld(pk)=qc(pk)/lcldm(pk);
+	  nc_incld(pk)=nc(pk)/lcldm(pk);
+	});
+      
+    } //end CFL substep loop
 
     Kokkos::single(
       Kokkos::PerTeam(team), [&] () {
