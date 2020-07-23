@@ -1959,7 +1959,7 @@ flags should be captured within MPAS CMake files.
     <base> --host=Linux </base>
   </CONFIG_ARGS>
   <CFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
+    <append DEBUG="FALSE"> -O1 </append>
   </CFLAGS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O1 </append>
