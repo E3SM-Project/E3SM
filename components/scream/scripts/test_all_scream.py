@@ -353,8 +353,6 @@ class TestAllScream(object):
 
         data = {}
 
-        print ("test {} start dev id is {}, and end is {}".format(test,start,end))
-
         # This is the only version numbering supported by ctest, so far
         data['version'] = {"major":1,"minor":0}
 
