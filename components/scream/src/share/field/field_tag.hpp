@@ -37,7 +37,7 @@ enum class FieldTag {
   Variable
 };
 
-inline std::string tag2string (const FieldTag ft) {
+inline std::string e2str (const FieldTag ft) {
   std::string name = "";
   switch(ft) {
     case FieldTag::Invalid:

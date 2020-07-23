@@ -117,7 +117,7 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
       }
       s += " <";
       for (auto t : fid.get_layout().tags()) {
-        s += tag2string(t);
+        s += e2str(t);
         s += ",";
       }
       // Remove last ',' and add '>'.
