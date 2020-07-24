@@ -186,7 +186,7 @@ void calculate_incloud_mixingratios_c(Real qc, Real qr, Real qitot, Real qirim, 
                                       Real* qc_incld, Real* qr_incld, Real* qitot_incld, Real* qirim_incld,
                                       Real* nc_incld, Real* nr_incld, Real* nitot_incld, Real* birim_incld);
 
-void p3_main_pre_main_loop_c(
+void p3_main_part1_c(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
   bool log_predictNc,
   Real dt,
@@ -196,7 +196,7 @@ void p3_main_pre_main_loop_c(
   Real* qirim_incld, Real* nc_incld, Real* nr_incld, Real* nitot_incld, Real* birim_incld,
   bool* log_nucleationPossible, bool* log_hydrometeorsPresent);
 
-void p3_main_main_loop_c(
+void p3_main_part2_c(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir, bool log_predictNc, Real dt, Real odt,
   Real* pres, Real* pdel, Real* dzq, Real* ncnuc, Real* exner, Real* inv_exner, Real* inv_lcldm, Real* inv_icldm, Real* inv_rcldm, Real* naai, Real* qc_relvar, Real* icldm, Real* lcldm, Real* rcldm,
   Real* t, Real* rho, Real* inv_rho, Real* qvs, Real* qvi, Real* supi, Real* rhofacr, Real* rhofaci, Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot,
@@ -205,7 +205,7 @@ void p3_main_main_loop_c(
   Real* nevapr, Real* prer_evap, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* liq_ice_exchange, Real* pratot,
   Real* prctot, bool* log_hydrometeorsPresent);
 
-void p3_main_post_main_loop_c(
+void p3_main_part3_c(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
   Real* exner, Real* lcldm, Real* rcldm,
   Real* rho, Real* inv_rho, Real* rhofaci, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* xxlv, Real* xxls,
@@ -966,7 +966,7 @@ void compute_rain_fall_velocity(ComputeRainFallVelocityData& d)
                                &d.nr, &d.nr_incld, &d.mu_r, &d.lamr, &d.V_qr, &d.V_nr);
 }
 
-P3MainPreLoopData::P3MainPreLoopData(
+P3MainPart1Data::P3MainPart1Data(
   Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
   bool log_predictNc_, Real dt_,
   const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges) :
@@ -990,7 +990,7 @@ P3MainPreLoopData::P3MainPreLoopData(
   }
 }
 
-P3MainPreLoopData::P3MainPreLoopData(const P3MainPreLoopData& rhs) :
+P3MainPart1Data::P3MainPart1Data(const P3MainPart1Data& rhs) :
   kts(rhs.kts), kte(rhs.kte), kbot(rhs.kbot), ktop(rhs.ktop), kdir(rhs.kdir),
   log_predictNc(rhs.log_predictNc), dt(rhs.dt),
   m_nk(rhs.m_nk),
@@ -1011,10 +1011,10 @@ P3MainPreLoopData::P3MainPreLoopData(const P3MainPreLoopData& rhs) :
   }
 }
 
-void p3_main_pre_main_loop(P3MainPreLoopData& d)
+void p3_main_part1(P3MainPart1Data& d)
 {
   p3_init();
-  p3_main_pre_main_loop_c(
+  p3_main_part1_c(
     d.kts, d.kte, d.kbot, d.ktop, d.kdir,
     d.log_predictNc,
     d.dt,
@@ -1027,7 +1027,7 @@ void p3_main_pre_main_loop(P3MainPreLoopData& d)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-P3MainLoopData::P3MainLoopData(
+P3MainPart2Data::P3MainPart2Data(
   Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
   bool log_predictNc_, Real dt_,
   const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges) :
@@ -1057,7 +1057,7 @@ P3MainLoopData::P3MainLoopData(
   }
 }
 
-P3MainLoopData::P3MainLoopData(const P3MainLoopData& rhs) :
+P3MainPart2Data::P3MainPart2Data(const P3MainPart2Data& rhs) :
   kts(rhs.kts), kte(rhs.kte), kbot(rhs.kbot), ktop(rhs.ktop), kdir(rhs.kdir),
   log_predictNc(rhs.log_predictNc), dt(rhs.dt), odt(rhs.odt),
   m_nk(rhs.m_nk),
@@ -1081,10 +1081,10 @@ P3MainLoopData::P3MainLoopData(const P3MainLoopData& rhs) :
   }
 }
 
-void p3_main_main_loop(P3MainLoopData& d)
+void p3_main_part2(P3MainPart2Data& d)
 {
   p3_init();
-  p3_main_main_loop_c(
+  p3_main_part2_c(
     d.kts, d.kte, d.kbot, d.ktop, d.kdir, d.log_predictNc, d.dt, d.odt,
     d.pres, d.pdel, d.dzq, d.ncnuc, d.exner, d.inv_exner, d.inv_lcldm, d.inv_icldm, d.inv_rcldm, d.naai, d.qc_relvar, d.icldm, d.lcldm, d.rcldm,
     d.t, d.rho, d.inv_rho, d.qvs, d.qvi, d.supi, d.rhofacr, d.rhofaci, d.acn, d.qv, d.th, d.qc, d.nc, d.qr, d.nr, d.qitot, d.nitot,
@@ -1096,7 +1096,7 @@ void p3_main_main_loop(P3MainLoopData& d)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-P3MainPostLoopData::P3MainPostLoopData(
+P3MainPart3Data::P3MainPart3Data(
   Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
   const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges) :
   kts(kts_), kte(kte_), kbot(kbot_), ktop(ktop_), kdir(kdir_),
@@ -1120,7 +1120,7 @@ P3MainPostLoopData::P3MainPostLoopData(
   }
 }
 
-P3MainPostLoopData::P3MainPostLoopData(const P3MainPostLoopData& rhs) :
+P3MainPart3Data::P3MainPart3Data(const P3MainPart3Data& rhs) :
   kts(rhs.kts), kte(rhs.kte), kbot(rhs.kbot), ktop(rhs.ktop), kdir(rhs.kdir),
   m_nk(rhs.m_nk),
   m_data(rhs.m_data)
@@ -1143,10 +1143,10 @@ P3MainPostLoopData::P3MainPostLoopData(const P3MainPostLoopData& rhs) :
   }
 }
 
-void p3_main_post_main_loop(P3MainPostLoopData& d)
+void p3_main_part3(P3MainPart3Data& d)
 {
   p3_init();
-  p3_main_post_main_loop_c(
+  p3_main_part3_c(
     d.kts, d.kte, d.kbot, d.ktop, d.kdir,
     d.exner, d.lcldm, d.rcldm,
     d.rho, d.inv_rho, d.rhofaci, d.qv, d.th, d.qc, d.nc, d.qr, d.nr, d.qitot, d.nitot, d.qirim, d.birim, d.xxlv, d.xxls,
@@ -3074,7 +3074,7 @@ void ice_water_conservation_f(Real qitot_, Real qidep_, Real qinuc_, Real qiberg
   *qimlt_ = qimlt[0];
 }
 
-void p3_main_pre_main_loop_f(
+void p3_main_part1_f(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
   bool log_predictNc,
   Real dt,
@@ -3105,7 +3105,7 @@ void p3_main_pre_main_loop_f(
   const Int nk_pack = scream::pack::npack<Spack>(nk);
 
   // Set up views
-  Kokkos::Array<view_1d, P3MainPreLoopData::NUM_ARRAYS> temp_d;
+  Kokkos::Array<view_1d, P3MainPart1Data::NUM_ARRAYS> temp_d;
 
   pack::host_to_device({pres, pdel, dzq, ncnuc, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm,
         t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci,
@@ -3159,7 +3159,7 @@ void p3_main_pre_main_loop_f(
   auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
-    P3F::p3_main_pre_main_loop(
+    P3F::p3_main_part1(
       team, nk, log_predictNc, dt,
       pres_d, pdel_d, dzq_d, ncnuc_d, exner_d, inv_exner_d, inv_lcldm_d, inv_icldm_d, inv_rcldm_d, xxlv_d, xxls_d, xlf_d,
       t_d, rho_d, inv_rho_d, qvs_d, qvi_d, supi_d, rhofacr_d, rhofaci_d,
@@ -3186,7 +3186,7 @@ void p3_main_pre_main_loop_f(
   *log_hydrometeorsPresent = bools_h(1);
 }
 
-void p3_main_main_loop_f(
+void p3_main_part2_f(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir, bool log_predictNc, Real dt, Real odt,
   Real* pres, Real* pdel, Real* dzq, Real* ncnuc, Real* exner, Real* inv_exner, Real* inv_lcldm, Real* inv_icldm, Real* inv_rcldm, Real* naai, Real* qc_relvar, Real* icldm, Real* lcldm, Real* rcldm,
   Real* t, Real* rho, Real* inv_rho, Real* qvs, Real* qvi, Real* supi, Real* rhofacr, Real* rhofaci, Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot,
@@ -3216,7 +3216,7 @@ void p3_main_main_loop_f(
   const Int nk_pack = scream::pack::npack<Spack>(nk);
 
   // Set up views
-  Kokkos::Array<view_1d, P3MainLoopData::NUM_ARRAYS> temp_d;
+  Kokkos::Array<view_1d, P3MainPart2Data::NUM_ARRAYS> temp_d;
 
   pack::host_to_device({pres, pdel, dzq, ncnuc, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, naai, qc_relvar, icldm, lcldm, rcldm,
         t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, acn,
@@ -3300,7 +3300,7 @@ void p3_main_main_loop_f(
   auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
-    P3F::p3_main_main_loop(
+    P3F::p3_main_part2(
       team, nk_pack, log_predictNc, dt, odt, dnu, itab, itabcol, revap_table,
       pres_d, pdel_d, dzq_d, ncnuc_d, exner_d, inv_exner_d, inv_lcldm_d, inv_icldm_d, inv_rcldm_d, naai_d, qc_relvar_d, icldm_d, lcldm_d, rcldm_d,
       t_d, rho_d, inv_rho_d, qvs_d, qvi_d, supi_d, rhofacr_d, rhofaci_d, acn_d,
@@ -3333,7 +3333,7 @@ void p3_main_main_loop_f(
   *log_hydrometeorsPresent = bools_h(0);
 }
 
-void p3_main_post_main_loop_f(
+void p3_main_part3_f(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
   Real* exner, Real* lcldm, Real* rcldm,
   Real* rho, Real* inv_rho, Real* rhofaci, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* xxlv, Real* xxls,
@@ -3360,7 +3360,7 @@ void p3_main_post_main_loop_f(
   const Int nk_pack = scream::pack::npack<Spack>(nk);
 
   // Set up views
-  Kokkos::Array<view_1d, P3MainPostLoopData::NUM_ARRAYS> temp_d;
+  Kokkos::Array<view_1d, P3MainPart3Data::NUM_ARRAYS> temp_d;
 
   pack::host_to_device({
       exner, lcldm, rcldm,
@@ -3412,7 +3412,7 @@ void p3_main_post_main_loop_f(
   auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
-    P3F::p3_main_post_main_loop(team, nk_pack, dnu, itab,
+    P3F::p3_main_part3(team, nk_pack, dnu, itab,
                                 exner_d, lcldm_d, rcldm_d,
                                 rho_d, inv_rho_d, rhofaci_d, qv_d, th_d, qc_d, nc_d, qr_d, nr_d, qitot_d, nitot_d, qirim_d, birim_d, xxlv_d, xxls_d,
                                 mu_c_d, nu_d, lamc_d, mu_r_d, lamr_d, vap_liq_exchange_d,

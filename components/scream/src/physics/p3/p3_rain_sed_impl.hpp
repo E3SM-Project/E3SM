@@ -24,7 +24,8 @@ void Functions<S,D>
   Spack tmp1, tmp2; //ignore
   get_rain_dsd2(qr_incld, nr_incld, mu_r, lamr, tmp1, tmp2, rcldm, context);
 
-  nr.set(context, nr_incld*rcldm);
+  //PMC - nr isn't used in this fn and is already updated in generalized_sed.
+  //nr.set(context, nr_incld*rcldm);
 
   if (context.any()) {
     lookup(mu_r, lamr, table, context);
@@ -44,7 +45,7 @@ void Functions<S,D>
   const uview_1d<const Spack>& rhofacr,
   const uview_1d<const Spack>& rcldm,
   const uview_1d<const Spack>& inv_dzq,
-  const uview_1d<const Spack>& qr_incld,
+  const uview_1d<Spack>& qr_incld,
   const MemberType& team,
   const Workspace& workspace,
   const view_2d_table& vn_table, const view_2d_table& vm_table,
@@ -122,6 +123,14 @@ void Functions<S,D>
 
       generalized_sedimentation<2>(rho, inv_rho, inv_dzq, team, nk, k_qxtop, k_qxbot, kbot, kdir, Co_max, dt_left, prt_accum, fluxes_ptr, vs_ptr, qnr_ptr);
 
+      //Update _incld values with end-of-step cell-ave values
+      //No prob w/ div by rcldm because set to min of 1e-4 in interface.
+      Kokkos::parallel_for(
+        Kokkos::TeamThreadRange(team, qr.extent(0)), [&] (int pk) {
+	  qr_incld(pk)=qr(pk)/rcldm(pk);
+	  nr_incld(pk)=nr(pk)/rcldm(pk);
+	});
+      
       // AaronDonahue, rflx output
       kmin_scalar = ( kdir == 1 ? k_qxbot+1 : k_qxtop+1);
       kmax_scalar = ( kdir == 1 ? k_qxtop+1 : k_qxbot+1);

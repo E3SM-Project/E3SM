@@ -271,7 +271,7 @@ struct Functions
   // Cloud sedimentation
   KOKKOS_FUNCTION
   static void cloud_sedimentation(
-    const uview_1d<const Spack>& qc_incld,
+    const uview_1d<Spack>& qc_incld,
     const uview_1d<const Spack>& rho,
     const uview_1d<const Spack>& inv_rho,
     const uview_1d<const Spack>& lcldm,
@@ -299,7 +299,7 @@ struct Functions
     const uview_1d<const Spack>& rhofacr,
     const uview_1d<const Spack>& rcldm,
     const uview_1d<const Spack>& inv_dzq,
-    const uview_1d<const Spack>& qr_incld,
+    const uview_1d<Spack>& qr_incld,
     const MemberType& team,
     const Workspace& workspace,
     const view_2d_table& vn_table, const view_2d_table& vm_table,
@@ -649,7 +649,7 @@ struct Functions
     view_1d_ptr_array<Spack, 40>& zero_init);
 
   KOKKOS_FUNCTION
-  static void p3_main_pre_main_loop(
+  static void p3_main_part1(
     const MemberType& team,
     const Int& nk,
     const bool& log_predictNc,
@@ -697,7 +697,7 @@ struct Functions
     bool& log_hydrometeorsPresent);
 
   KOKKOS_FUNCTION
-  static void p3_main_main_loop(
+  static void p3_main_part2(
     const MemberType& team,
     const Int& nk_pack,
     const bool& log_predictNc,
@@ -772,7 +772,7 @@ struct Functions
     bool& log_hydrometeorsPresent);
 
   KOKKOS_FUNCTION
-  static void p3_main_post_main_loop(
+  static void p3_main_part3(
     const MemberType& team,
     const Int& nk_pack,
     const view_dnu_table& dnu,

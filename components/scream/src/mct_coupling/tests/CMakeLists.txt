@@ -1,5 +1,8 @@
 #include(ScreamUtils)
-include(EkatCreateUnitTest)
+include(ScreamUtils)
+
+include(CsmShare)
+CreateCsmShareTarget()
 
 set (ARRAY_SCORPIO_SRCS
   scorpio_tests.cpp
@@ -9,7 +12,9 @@ set (SCREAM_LIBS
      scream_share
      scream_control
      atm
-     ${SCREAM_TPL_LIBRARIES}
+     scream_piof
+     scream_csm_share
+     scream_pioc
 )
 
 set(CSM_SHARE "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/csm_share")
@@ -19,13 +24,11 @@ set (SCREAM_INCLUDE
      ${SCREAM_TPL_INCLUDE_DIRS}
      ${CSM_SHARE}
 )
+
 # Test atmosphere processes
-EkatCreateUnitTest(scorpio_interface "${ARRAY_SCORPIO_SRCS}" 
-  LIBS ${SCREAM_LIBS} csm_share
-  LIBS_DIRS ${SCREAM_INCLUDE} ${CSM_SHARE}
+CreateUnitTest(scorpio_interface "${ARRAY_SCORPIO_SRCS}" "${SCREAM_LIBS}"
   INCLUDE_DIRS ${SCREAM_INCLUDE}
-  THREADS 1 4
+  MPI_RANKS 1 4
 )
 
 configure_file(${SCREAM_DATA_DIR}/scorpio_output_baseline.nc scorpio_output_baseline.nc COPYONLY)
-

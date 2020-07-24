@@ -1,5 +1,5 @@
-#ifndef SCREAM_PHYSICS_COMMON_HPP
-#define SCREAM_PHYSICS_COMMON_HPP
+#ifndef SCREAM_PHYSICS_SHARE_HPP
+#define SCREAM_PHYSICS_SHARE_HPP
 
 #include "ekat/scream_types.hpp"
 

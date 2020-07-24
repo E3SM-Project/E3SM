@@ -11,7 +11,7 @@
 #include "physics/p3/atmosphere_microphysics.hpp"
 #include "physics/shoc/atmosphere_macrophysics.hpp"
 
-#include "physics/common/physics_only_grids_manager.hpp"
+#include "physics/share/physics_only_grids_manager.hpp"
 
 namespace scream {
 

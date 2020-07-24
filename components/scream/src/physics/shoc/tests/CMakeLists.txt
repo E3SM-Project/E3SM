@@ -1,6 +1,6 @@
 INCLUDE (ScreamUtils)
 
-SET (NEED_LIBS shoc physics_common scream_control scream_share)
+SET (NEED_LIBS shoc physics_share scream_control scream_share)
 set(SHOC_TESTS_SRCS
     shoc_tests.cpp
     shoc_grid_tests.cpp

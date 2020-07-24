@@ -168,6 +168,9 @@ set(SCREAM_TEST_THREAD_INC 1 CACHE STRING "Thread count increment for threaded t
 set (YAMLCPP_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/yaml-cpp)
 set (EKAT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ekat)
 
+# Whether to disable warnings from tpls.
+set (SCREAM_DISABLE_TPL_WARNINGS ON CACHE BOOL "")
+
 include(Ekat)
 if (SCREAM_DOUBLE_PRECISION)
   buildEkat("DOUBLE" PREFIX "SCREAM")
