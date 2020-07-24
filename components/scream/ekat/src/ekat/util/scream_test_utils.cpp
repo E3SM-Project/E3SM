@@ -20,7 +20,11 @@ int get_test_device (const int mpi_rank)
     // at the same time, exploiting the resources avaialble on the node.
     // Note: this logic should only be enabled on gpu builds
 
-    int res_group_count = std::atoi(count_str);
+    // Note: use std::stoi with a std::string rather than std::atoi on a c-string,
+    //       since the latter fails silently, while the former throws an exception
+    //       if the conversion fails (either invalid input or integer out of range).
+
+    int res_group_count = std::stoi(std::string(count_str));
 
     // Pick a resource group based on mpi rank (round robin);
     int my_res_group = mpi_rank % res_group_count;
@@ -62,7 +66,7 @@ int get_test_device (const int mpi_rank)
     scream_require_msg(id_N.size()==2, "Error! Something seems wrong with resource spec '" + res + "'\n");
     scream_require_msg(id_N[0]=="id", "Error! Something seems wrong with resource spec '" + res + "'\n");
 
-    dev_id = std::atoi(id_N[1]);
+    dev_id = std::stoi(id_N[1]);
   }
 #else
   (void) mpi_rank;
