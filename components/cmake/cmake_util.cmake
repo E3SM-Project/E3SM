@@ -80,6 +80,7 @@ function(e3sm_deoptimize_file FILE_ARG FFLAGS_NOOPT)
     # we have to remove the optimization flags first
 
     # Until we know which particular flags are related to optimization, we have to guess.
+    e3sm_remove_flags(${FILE_ARG} "-O1")
     e3sm_remove_flags(${FILE_ARG} "-O2")
     e3sm_remove_flags(${FILE_ARG} "-O3")
   endif()
