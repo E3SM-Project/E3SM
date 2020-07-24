@@ -59,4 +59,52 @@
 			description="Bottom drag of right side of the boundary."
 			possible_values="Any real number"
 		/>
+		<nml_option name="config_use_idealized_transect" type="logical" default_value="false" units=""
+			description="Logical to determine if idealized tidal flat profile is defined."
+			possible_values="True or False"
+		/>
+		<nml_option name="config_idealized_transect_Lshore" type="real" default_value="0.6" units=""
+			description="Ratio of shore length in the idealized coastal profile."
+			possible_values="Any positive real value between 0 and 1."
+		/>
+		<nml_option name="config_idealized_transect_Sshore" type="real" default_value="0.001" units=""
+			description="Shore slope."
+			possible_values="Any positive real value, should be a small value."
+		/>
+		<nml_option name="config_idealized_transect_Lcoast" type="real" default_value="0.3" units=""
+			description="Ratio of coast length in the idealized coastal profile"
+			possible_values="Any positive real value between 0 and 1."
+		/>
+		<nml_option name="config_idealized_transect_Scoast" type="real" default_value="0.001" units=""
+			description="Coast slope."
+			possible_values="Any positive real value."
+		/>
+		<nml_option name="config_idealized_transect_Lmarsh" type="real" default_value="0.1" units=""
+			description="Ratio of marsh length in the idealized coastal profile."
+			possible_values="Lmarsh=1-Lshore-Lcoast; any positive real value between 0 and 1."
+		/>
+		<nml_option name="config_idealized_transect_Smarsh" type="real" default_value="0.0" units=""
+			description="Marsh slope"
+			possible_values="Any real value, can be negative"
+		/>
+		<nml_option name="config_idealized_transect_roughness" type="real" default_value="0.025" units=""
+			description="Bottom roughness (Cd or Manning roughness) at non-vegetated region"
+			possible_values="Any real value, can be negative"
+		/>
+		<nml_option name="config_idealized_transect_roughness_marsh" type="real" default_value="0.075" units=""
+			description="Bottom roughness (Cd or Manning roughness) at vegetated region"
+			possible_values="Any real value, can be negative"
+		/>
+		<nml_option name="config_idealized_vegetation_diameter" type="real" default_value="0.05" units="m"
+					description="Constant vegetation diameter for idealized transect case"
+					possible_values="Any non-negative real value"
+		/>
+		<nml_option name="config_idealized_vegetation_height" type="real" default_value="0.2" units="m"
+					description="Constant vegetation height for idealized transect case"
+					possible_values="Any non-negative real value "
+		/>
+    <nml_option name="config_idealized_vegetation_density" type="real" default_value="1000" units="m^{-2}"
+					description="Constant vegetation density for indealized transect case"
+					possible_values="Any non-negative real value"
+		/>
 	</nml_record>
