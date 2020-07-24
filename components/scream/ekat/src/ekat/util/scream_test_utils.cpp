@@ -38,7 +38,7 @@ int get_test_device (const int mpi_rank)
                         "       CTEST_RESOURCE_COUNT: " + std::to_string(res_group_count) + "\n"
                         "       Res group id for this rank: " + std::to_string(my_res_group) + "\n");
 
-    key += "_" + std::string(res_type);
+    key += "_" + upper_case(std::string(res_type));
     scream_require_msg(getenv(key.c_str())!=nullptr,
                         "Error! Missing '" + key + "' env var. Something might be off with res group detection,\n"
                         "       or with the properties set for the test.\n"

@@ -49,6 +49,14 @@ std::string strint (const std::string& s, const int i) {
   return ss.str();
 }
 
+std::string upper_case (const std::string& s) {
+  std::string s_up = s;
+  std::transform(s_up.begin(), s_up.end(), s_up.begin(),
+                 [](unsigned char c)->char { return std::toupper(c); }
+                );
+  return s_up;
+}
+
 bool caseInsensitiveEqualString (const std::string& s1, const std::string& s2) {
   auto charComp = [](const char c1, const char c2)->bool{
     return c1==c2 || std::toupper(c1)==std::toupper(c2);

@@ -34,6 +34,9 @@ std::string trim (const std::string& s);
 // Small utility that cats a space and an integer to an input string.
 std::string strint (const std::string& s, const int i);
 
+// Conver the string to all upper case
+std::string upper_case (const std::string& s);
+
 // A no-overhead class that inherits from std::string, which we only
 // use to trigger different behavior in the ==,!=,<,<= operators.
 class CaseInsensitiveString final : public std::string
