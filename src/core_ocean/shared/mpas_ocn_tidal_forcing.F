@@ -241,7 +241,8 @@ contains
         ! compute the tidalHeight
         if (trim(config_tidal_forcing_model) == 'monochromatic') then
           tidalHeight = config_tidal_forcing_monochromatic_amp * &
-            SIN(2.0_RKIND*pii/config_tidal_forcing_monochromatic_period * daysSinceStartOfSim) - &
+            SIN(2.0_RKIND*pii/config_tidal_forcing_monochromatic_period * daysSinceStartOfSim - &
+            pii*config_tidal_forcing_monochromatic_phaseLag/180.0_RKIND) - &
             config_tidal_forcing_monochromatic_baseline
         !else if (trim(config_tidal_forcing_type) == 'data') then
         !  ! data option

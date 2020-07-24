@@ -680,6 +680,10 @@
 					description="Value of period of monochromatic tide."
 					possible_values="Any positive real number."
 		/>
+		<nml_option name="config_tidal_forcing_monochromatic_phaseLag" type="real" default_value="0.0" units=""
+					description="Value of phase of monochromatic tide."
+					possible_values="Any real number between."
+		/>
 		<nml_option name="config_tidal_forcing_monochromatic_baseline" type="real" default_value="0.0" units="days"
 					description="Value of baseline monochromatic tide, e.g., sea level rise."
 					possible_values="Any positive real number."

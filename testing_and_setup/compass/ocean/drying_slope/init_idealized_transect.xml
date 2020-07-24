@@ -1,0 +1,18 @@
+<template>
+	<namelist>
+		<option name="config_idealized_transect_Lcoast">0.3</option>
+		<option name="config_idealized_transect_Scoast">0.00125</option>
+		<option name="config_idealized_transect_Lshore">0.2</option>
+		<option name="config_idealized_transect_Sshore">0.0025</option>
+		<option name="config_idealized_transect_Lmarsh">0.5</option>
+		<option name="config_idealized_transect_Smarsh">0.0</option>
+		<option name="config_idealized_transect_roughness">0.025</option>
+		<option name="config_idealized_transect_roughness_marsh">0.025</option>
+		<option name="config_tidal_boundary_left_bottom_depth">0.0</option>
+		<option name="config_tidal_boundary_left_value">0.0</option>
+		<option name="config_tidal_boundary_right_value">8.0e3</option>
+		<option name="config_tidal_forcing_monochromatic_baseline">3.0</option>
+    <option name="config_alter_ICs_for_pbcs">.true.</option>
+		<option name="config_thickness_flux_type">'centered'</option>
+	</namelist>
+</template>

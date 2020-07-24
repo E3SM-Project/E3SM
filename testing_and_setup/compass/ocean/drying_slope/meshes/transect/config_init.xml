@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<config case="build_transect_mesh">
+	<run_script name="run.py">
+		<step executable="planar_hex">
+			<argument flag="--nx">4</argument>
+			<argument flag="--ny">116</argument>
+			<argument flag="--dc">80.0</argument>
+			<argument flag="--npy"></argument>
+			<argument flag="-o">grid.nc</argument>
+		</step>
+		<step executable="MpasCellCuller.x">
+			<argument flag="">grid.nc</argument>
+			<argument flag="">culled_mesh.nc</argument>
+		</step>
+		<step executable="MpasMeshConverter.x">
+			<argument flag="">culled_mesh.nc</argument>
+			<argument flag="">transectmesh.nc</argument>
+		</step>
+	</run_script>
+</config>
