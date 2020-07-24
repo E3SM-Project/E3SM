@@ -169,10 +169,14 @@
                         description="If true, then ice from small grounded islands is removed.  Specifically, this finds one- and two-cell masses of ice that are surrounded by open ocean and eliminates them by sending them to the calving flux.  Grounded such ice masses would be islands, floating would be icebergs.  The ice removed is added to the calvingThickness field."
 	                possible_values=".true. or .false."
 		/>
-		<nml_option name="config_von_Mises_threshold_stress" type="real" default_value="1.0e6" units="Pa"
-			    description="Threshold von Mises stress value required for calving velocity to exceed ice velocity. sigma_max in Morlighem et al. (2016) eq. 4. 1 MPa default value is from Morlighem et al.'s calibration for Store Glacier."
+		<nml_option name="config_grounded_von_Mises_threshold_stress" type="real" default_value="1.0e6" units="Pa"
+			    description="Threshold von Mises stress value required for calving velocity to exceed ice velocity on grounded ice. sigma_max in Morlighem et al. (2016) eq. 4. 1 MPa default value is from Morlighem et al.'s calibration for Store Glacier."
 			    possible_values="Any positive real value"
 		/>
+                <nml_option name="config_floating_von_Mises_threshold_stress" type="real" default_value="1.0e6" units="Pa"
+                            description="Threshold von Mises stress value required for calving velocity to exceed ice velocity on floating ice. Generally seems to need to be low (1e5 to 2e5 for Humboldt Glacier) to allow floating ice to retreat. sigma_max in Morlighem et al. (2016) eq. 4. 1 MPa default value is from Morlighem et al.'s calibration for Store Glacier."
+                            possible_values="Any positive real value"
+                />
 	</nml_record>
 
 	<nml_record name="thermal_solver" in_defaults="true">

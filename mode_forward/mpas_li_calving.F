@@ -1369,7 +1369,8 @@ module li_calving
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: geometryPool, meshPool, &
                                         velocityPool, scratchPool, thermalPool
-      real (kind=RKIND), pointer :: config_von_Mises_threshold_stress, &
+      real (kind=RKIND), pointer :: config_grounded_von_Mises_threshold_stress, &
+                                    config_floating_von_Mises_threshold_stress, &
                                     config_flowLawExponent
       logical, pointer :: config_use_Albany_flowA_eqn 
       real (kind=RKIND), dimension(:), pointer :: eMax, eMin, & 
@@ -1379,11 +1380,13 @@ module li_calving
                                         temperature, layerThickness
       real (kind=RKIND), pointer :: config_default_flowParamA
       integer, pointer :: nCells
+      integer, dimension(:), pointer :: cellMask
       real (kind=RKIND), dimension(:), pointer :: vonMisesStress       
 
       err = 0
       
-      call mpas_pool_get_config(liConfigs, 'config_von_Mises_threshold_stress', config_von_Mises_threshold_stress)
+      call mpas_pool_get_config(liConfigs, 'config_grounded_von_Mises_threshold_stress', config_grounded_von_Mises_threshold_stress)
+      call mpas_pool_get_config(liConfigs, 'config_floating_von_Mises_threshold_stress', config_floating_von_Mises_threshold_stress)
       !call mpas_pool_get_config(liConfigs, 'config_default_flowParamA', config_default_flowParamA) ! REMOVE THIS ONCE YOU CAN GET A FROM ALBANY!!!!!
       call mpas_pool_get_config(liConfigs, 'config_flowLawExponent', config_flowLawExponent)
       call mpas_pool_get_config(liConfigs, 'config_use_Albany_flowA_eqn', config_use_Albany_flowA_eqn)
@@ -1398,6 +1401,7 @@ module li_calving
           call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
          ! get fields
           call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
           call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
           call mpas_pool_get_array(velocityPool, 'eMax', eMax)
           call mpas_pool_get_array(velocityPool, 'eMin', eMin)
@@ -1422,7 +1426,9 @@ module li_calving
          !=sum(layerThickness(:,iCell) *
          !flowParamA(:,iCell)**(-1.0_RKIND/config_flowLawExponent), dim=1) /
          !thickness(iCell)
-         ! Calculate effective von Mises stress.
+         ! Calculate effective von  Mises stress.
+          calvingVelocity(:) = 0.0_RKIND
+
           do iCell = 1,nCells
              if ( thickness(iCell) > 0.0_RKIND ) then
                 vonMisesStress(iCell) = sqrt(3.0_RKIND) * sum(layerThickness(:,iCell) * &
@@ -1430,13 +1436,17 @@ module li_calving
                               thickness(iCell) * ( 0.5_RKIND * ( (max(0.0_RKIND, eMax(iCell)))**2 + &
                               (max(0.0_RKIND, eMin(iCell)))**2) )**(1 / (2 * config_flowLawExponent))
              endif 
-          enddo 
         
-          calvingVelocity(:) = 0.0_RKIND 
-         ! Calculate calving velocity for grounded cells at marine margin
-          calvingVelocity(:) = sqrt(xvelmean(:)**2 + yvelmean(:)**2) * &
-                                         vonMisesStress(:) / config_von_Mises_threshold_stress
-          
+             ! Calculate calving velocity for grounded cells at marine margin
+             if ( .not. li_mask_is_floating_ice(cellMask(iCell)) ) then
+                calvingVelocity(iCell) = sqrt(xvelmean(iCell)**2 + yvelmean(iCell)**2) * &
+                                         vonMisesStress(iCell) / config_grounded_von_Mises_threshold_stress
+             elseif ( li_mask_is_floating_ice(cellMask(iCell)) ) then
+                calvingVelocity(iCell) = sqrt(xvelmean(iCell)**2 + yvelmean(iCell)**2) * &
+                                         vonMisesStress(iCell) / config_floating_von_Mises_threshold_stress
+             endif
+          enddo
+
           call remove_calving_ice(meshPool, geometryPool, velocityPool, scratchPool, err)
 
           block => block % next
