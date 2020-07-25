@@ -158,7 +158,6 @@ _TESTS = {
             "SMS_D_Ld1.ne30_r05_oECv3.A_WCYCL1850",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1-TEST.cam-crmout",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1-RCEMIP",
-            "SMS.r05_r05.I1850CLM45CN",
             )
         },
 
