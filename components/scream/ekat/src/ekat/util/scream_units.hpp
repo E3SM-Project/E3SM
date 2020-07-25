@@ -3,7 +3,7 @@
 
 #include "ekat/util/scream_rational_constant.hpp"
 #include "ekat/util/scream_scaling_factor.hpp"
-#include "ekat/util/string_utils.hpp"
+#include "ekat/util/ekat_string_utils.hpp"
 
 namespace scream
 {

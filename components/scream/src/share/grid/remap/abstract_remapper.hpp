@@ -5,7 +5,7 @@
 #include "share/field/field_utils.hpp"
 #include "share/grid/abstract_grid.hpp"
 #include "ekat/util/scream_factory.hpp"
-#include "ekat/util/string_utils.hpp"
+#include "ekat/util/ekat_string_utils.hpp"
 #include "ekat/util/scream_std_utils.hpp"
 #include "ekat/scream_parameter_list.hpp"
 
