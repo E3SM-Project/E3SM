@@ -103,7 +103,8 @@ module namelist_mod
     dcmip2_x_d,                       &
     dcmip2_x_xi,                      &
     dcmip4_moist,                     &
-    dcmip4_X
+    dcmip4_X,                         &
+    ray_friction
 #endif
 
   use thread_mod,     only: nthreads, omp_set_num_threads, omp_get_max_threads, vthreads
@@ -296,7 +297,8 @@ module namelist_mod
       dcmip2_x_d,         & !dcmip2-x mountain half-width       (m)
       dcmip2_x_xi,        & !dcmip2-x mountain wavelength       (m)
       dcmip4_moist,       & !dcmip4   moist, 0 or 1
-      dcmip4_X              !dcmip4   scaling factor, nondim
+      dcmip4_X,           & !dcmip4   scaling factor, nondim
+      ray_friction
     namelist /vert_nl/        &
       vform,              &
       vfile_mid,          &
@@ -677,6 +679,7 @@ module namelist_mod
     call MPI_bcast(dcmip2_x_xi,     1, MPIreal_t,    par%root,par%comm,ierr)
     call MPI_bcast(dcmip4_moist,    1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(dcmip4_X,        1, MPIreal_t,    par%root,par%comm,ierr)
+    call MPI_bcast(ray_friction,    1, MPIlogical_t, par%root,par%comm,ierr)
 #endif
     call MPI_bcast(vthreads  ,      1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(smooth,          1, MPIreal_t,    par%root,par%comm,ierr)
@@ -1044,6 +1047,12 @@ module namelist_mod
        if(dcmip16_mu/=0)  write(iulog,'(a,2e9.2)')"1st order viscosity:  dcmip16_mu   = ",dcmip16_mu
        if(dcmip16_mu_s/=0)write(iulog,'(a,2e9.2)')"1st order viscosity:  dcmip16_mu_s = ",dcmip16_mu_s
        if(dcmip16_mu_q/=0)write(iulog,'(a,2e9.2)')"1st order viscosity:  dcmip16_mu_q = ",dcmip16_mu_q
+
+       if ( test_case=="dcmip2012_test2_0" .or. test_case=="dcmip2012_test2_1" .or. test_case=="dcmip2012_test2_2" &
+            .or. test_case=="dcmip2012_test3" &
+            .or. test_case=="mtest1".or. test_case=="mtest2" .or. test_case=="mtest3" ) then
+          write(iulog,*)"Rayleigh friction = ",ray_friction
+       endif
 
        if(initial_total_mass>0) then
           write(iulog,*) "initial_total_mass = ",initial_total_mass

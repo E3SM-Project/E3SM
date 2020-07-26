@@ -9,7 +9,7 @@ module dcmip12_wrapper
 
 ! Implementation of the dcmip2012 dycore tests for the preqx dynamics target
 
-use control_mod,          only: test_case, dcmip4_moist, dcmip4_X
+use control_mod,          only: test_case, dcmip4_moist, dcmip4_X, ray_friction
 use dcmip2012_test1_2_3,  only: test1_advection_deformation, test1_advection_hadley, test1_advection_orography, &
                                 test2_steady_state_mountain, test2_schaer_mountain,test3_gravity_wave
 use dcmip2012_test1_conv, only: test1_conv_advection_deformation
@@ -557,9 +557,11 @@ subroutine dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,n,dt)
   ! apply sponge layer forcing to momentum terms
   !f_d = -f_d/tau
 
-  do ie=nets,nete
-     call set_forcing_rayleigh_friction(elem(ie),z,z_i,ztop,zc,tau,u0(:,:,:,ie),v0(:,:,:,ie),n)
-  enddo
+  if (ray_friction) then
+    do ie=nets,nete
+      call set_forcing_rayleigh_friction(elem(ie),z,z_i,ztop,zc,tau,u0(:,:,:,ie),v0(:,:,:,ie),n)
+    enddo
+  endif
 
 
 end subroutine
