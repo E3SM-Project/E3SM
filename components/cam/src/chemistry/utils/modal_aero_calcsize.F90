@@ -520,7 +520,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
 
    real(r8), pointer :: dgncur_a(:,:,:)
 
-   integer  :: i, icol_diag, iduma, ipair, iq
+   integer  :: i, icol_diag, iduma, ipair, iq, nspec
    integer  :: ixfer_acc2ait, ixfer_ait2acc
    integer  :: ixfer_acc2ait_sv(pcols,pver), ixfer_ait2acc_sv(pcols,pver)
    integer  :: j, jac, jsrflx, k 
@@ -593,6 +593,9 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
 
    integer, parameter :: nsrflx = 4    ! last dimension of qsrflx
    real(r8) :: qsrflx(pcols,pcnst,nsrflx,2)
+   real(r8), pointer :: specmmr(:,:)  ! specie mmr
+   real(r8)          :: specdens      ! specie density
+
    ! process-specific column tracer tendencies
    ! 3rd index -- 
    !    1="standard" number adjust gain;
@@ -694,14 +697,25 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
 
       ! compute dry volume mixrats = 
       !      sum_over_components{ component_mass mixrat / density }
-      do l1 = 1, nspec_amode(n)
-         ! need qmass*dummwdens = (kg/kg-air) * [1/(kg/m3)] = m3/kg-air
-         dummwdens = 1.0_r8 / specdens_amode(lspectype_amode(l1,n))
+      nspec = nspec_amode(n)
+      if(present(list_idx)) call rad_cnst_get_info(list_idx, n, nspec=nspec)
+
+      do l1 = 1, nspec
          la = lmassptr_amode(l1,n)
+         ! need qmass*dummwdens = (kg/kg-air) * [1/(kg/m3)] = m3/kg-air
+         if(present(list_idx)) then
+            call rad_cnst_get_aer_mmr(list_idx, n, l1, 'a', state, pbuf, specmmr)
+            call rad_cnst_get_aer_props(list_idx, n, l1, density_aer=specdens)
+            dummwdens = 1.0_r8 / specdens
+         else
+            specmmr => q(:,:,la)
+            dummwdens = 1.0_r8 / specdens_amode(lspectype_amode(l1,n))
+         endif
+
          do k=top_lev,pver
             do i=1,ncol
                dryvol_a(i,k) = dryvol_a(i,k)    &
-                  + max(0.0_r8,q(i,k,la))*dummwdens
+                  + max(0.0_r8,specmmr(i,k))*dummwdens
             end do
          end do
 
@@ -1462,7 +1476,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
       end do   ! jac = ...
    end do   ! iq = ...
 
-   endif
+   endif!if(present(ptend))
 #endif
 
 end subroutine modal_aero_calcsize_sub
