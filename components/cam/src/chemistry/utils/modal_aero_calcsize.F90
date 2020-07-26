@@ -631,6 +631,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
       allocate(dballiq%q(pcols,pver,pcnst))
       dballiq%q = huge(1.0_r8)
       dqdt => dballiq%q
+      dqdt(:,:,:) = huge(1.0_r8)
    endif
 
    if (present(list_idx)) then
@@ -945,8 +946,10 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
             end if
             pdel_fac = pdel(i,k)/gravit   ! = rho*dz
             jac = 1
-            qsrflx(i,lna,1,jac) = qsrflx(i,lna,1,jac) + max(0.0_r8,dqdt(i,k,lna))*pdel_fac
-            qsrflx(i,lna,2,jac) = qsrflx(i,lna,2,jac) + min(0.0_r8,dqdt(i,k,lna))*pdel_fac
+            if (present(list_idx) .and. list_idx==0) then
+               qsrflx(i,lna,1,jac) = qsrflx(i,lna,1,jac) + max(0.0_r8,dqdt(i,k,lna))*pdel_fac
+               qsrflx(i,lna,2,jac) = qsrflx(i,lna,2,jac) + min(0.0_r8,dqdt(i,k,lna))*pdel_fac
+            endif
 
             if (drv_c > 0.0_r8) then
                if (num_c <= drv_c*v2nxx) then
