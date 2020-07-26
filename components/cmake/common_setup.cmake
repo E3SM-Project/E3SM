@@ -467,6 +467,4 @@ set(GPTLLIB "${GPTL_LIBDIR}/libgptl.a")
 #------------------------------------------------------------------------------
 # Set key cmake vars
 #------------------------------------------------------------------------------
-set(CMAKE_C_FLAGS "${CFLAGS}" PARENT_SCOPE)
-set(CMAKE_CXX_FLAGS "${CXXFLAGS}" PARENT_SCOPE)
 set(CMAKE_EXE_LINKER_FLAGS "${LDFLAGS}" PARENT_SCOPE)
