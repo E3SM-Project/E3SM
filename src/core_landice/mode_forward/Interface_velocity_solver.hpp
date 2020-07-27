@@ -219,7 +219,9 @@ void import2DFieldsObservations(std::map<int, int>& floatBdyExtensionMap,
             double const * observedThicknessTendency_F, double const * observedThicknessTendencyUncertainty_F,
             double const* surfaceAirTemperature_F, double const* basalHeatFlux_F,
             int const * indexToCellID_F);
- 
+
+void computeSortingIndices(std::vector<int>& sortingIndices, const std::vector<int>& vectorToSort, int numIndices);
+
 void write_ascii_mesh_field(std::vector<double> fieldData, std::string filenamebase);
 
 void write_ascii_mesh_field_int(std::vector<int> fieldData, std::string filenamebase);

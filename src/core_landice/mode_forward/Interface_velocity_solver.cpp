@@ -1705,6 +1705,14 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
        outfile << "Triangle " << 3 << "\n";  // second line saying it is a mesh of triangles
        outfile << nVertices << " " << nTriangles << " " << nVerticesBoundaryEdge << "\n";  // second line
 
+       if(!std::is_sorted(indexToVertexID.begin(), indexToVertexID.end())) {
+         std::cout << "ERROR: Global vertices IDs need to be sorted in the mesh" << std::endl;
+         exit(1);
+         //note, if not sorted, one has to sort the vertices before storing them in the mesh,
+         //also, one has to reorder accordingly all the fields defined on vertices
+         //(similarly to what is done for temperature, defined on triangles)
+       }
+
        for (int index = 0; index < nVertices; index++) { //coordinates lines
           int iCell = vertexToFCell[index];
           //setting boundary vertices labels, 2 for dirichlet nodes, 1 otherwise
@@ -1715,11 +1723,22 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
           outfile << indexToVertexID[index] << " " << xCell_F[iCell] / unit_length << " " << yCell_F[iCell] / unit_length << " " << vertexLabel << "\n"  ;
        }
 
-       for (int index = 0; index < nTriangles; index++) //triangles lines
-        outfile << indexToTriangleID[index] << " " << verticesOnTria[0 + 3 * index] + 1 << " " << verticesOnTria[1 + 3 * index] + 1 << " " << verticesOnTria[2 + 3 * index] + 1 << " " << 1 << "\n"; // last digit can be used to specify a 'material'.  Not used by Albany LandIce, so giving dummy value
+       // sort triangle IDs (needed by Albany)
+       std::vector<int> sortingIndex;
+       computeSortingIndices(sortingIndex, indexToTriangleID, nTriangles);
 
-       for (int index = 0; index < nVerticesBoundaryEdge; index++) // boundary edges lines
-       outfile <<  indexToEdgeID[index] << " " << boundaryEdges[0 + 3 * index] + 1 << " " << boundaryEdges[1 + 3 * index] + 1 << " " << boundaryEdges[2 + 3 * index] << "\n"; //last digit can be used to tell whether it's floating or not.. but let's worry about this later.
+       for (int iTria = 0; iTria < nTriangles; iTria++) {//triangles lines
+         int index = sortingIndex[iTria];
+         outfile << indexToTriangleID[index] << " " << verticesOnTria[0 + 3 * index] + 1 << " " << verticesOnTria[1 + 3 * index] + 1 << " " << verticesOnTria[2 + 3 * index] + 1 << " " << 1 << "\n"; // last digit can be used to specify a 'material'.  Not used by Albany LandIce, so giving dummy value
+       }
+
+       // sort edges IDs (needed by Albany)
+       computeSortingIndices(sortingIndex, indexToEdgeID, nVerticesBoundaryEdge);
+
+       for (int iEdge = 0; iEdge < nVerticesBoundaryEdge; iEdge++) { // boundary edges lines
+         int index = sortingIndex[iEdge];
+         outfile <<  indexToEdgeID[index] << " " << boundaryEdges[0 + 3 * index] + 1 << " " << boundaryEdges[1 + 3 * index] + 1 << " " << boundaryEdges[2 + 3 * index] << "\n"; //last digit can be used to tell whether it's floating or not.. but let's worry about this later.
+       }
 
        outfile.close();
        }
@@ -1800,11 +1819,17 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
         midLayer += layersRatio[il]/2.0;
       }
 
+      // sort triangle IDs (needed by Albany)
+      std::vector<int> sortingIndex;
+      computeSortingIndices(sortingIndex,indexToTriangleID,nTriangles);
+
       int lElemColumnShift = (Ordering == 1) ? 1 : nTriangles;
       int elemLayerShift = (Ordering == 0) ? 1 : nLayers;
       for(int il = 0; il<nLayers; ++il)
-        for(int i = 0; i<nTriangles; ++i)  //temperature values layer by layer
-          outfile << temperatureDataOnPrisms[i*elemLayerShift + il*lElemColumnShift]<<"\n";
+        for(int i = 0; i<nTriangles; ++i)  {//temperature values layer by layer
+          int index = sortingIndex[i];
+          outfile << temperatureDataOnPrisms[index*elemLayerShift + il*lElemColumnShift]<<"\n";
+        }
 
       outfile.close();
     }
@@ -1850,6 +1875,22 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
 
     std::cout << "\nWriting of all Albany fields complete." << std::endl;
 
+  }
+
+
+  // compute sortingIndices, so that vectorToSort[sortingIndices[i]], i=0, 1, ..., numIndices-1 is sorted
+  void computeSortingIndices(std::vector<int>& sortingIndices, const std::vector<int>& vectorToSort, int numIndices) {
+    // sort triangle IDs (needed by Albany)
+    sortingIndices.resize(numIndices);
+
+    // sortingIndices = [0,1,2,..,nTriangles-1];
+    for (int i = 0; i < numIndices; i++)
+      sortingIndices[i] = i;
+
+    //compute sortingIndices that makes indexToTriangleID sorted
+    std::sort(sortingIndices.begin(), sortingIndices.end(), [&](int il, int ir) {
+            return (vectorToSort[il] < vectorToSort[ir]);
+        });
   }
 
 
