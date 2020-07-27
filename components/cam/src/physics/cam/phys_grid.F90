@@ -354,8 +354,9 @@ module phys_grid
    integer, private, parameter :: def_alltoall = 1                ! default
    integer, private :: phys_alltoall = def_alltoall
 
-! Physics computational cost
-   real(r8), public :: phys_proc_cost ! measured physics cost on this process
+! Physics computational cost on this process
+! (running total of time measured over loops over chunks in physpkg.F90)
+   real(r8), public :: phys_proc_cost = 0.0_r8
 
 contains
 !========================================================================
