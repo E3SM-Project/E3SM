@@ -740,7 +740,7 @@ struct ComputeRainFallVelocityData
   Real qr_incld, rcldm, rhofacr;
 
   // In/out
-  Real nr, nr_incld;
+  Real nr_incld;
 
   // Outputs
   Real mu_r, lamr, V_qr, V_nr;
@@ -750,7 +750,7 @@ void compute_rain_fall_velocity(ComputeRainFallVelocityData& d);
 extern "C" {
 
 void compute_rain_fall_velocity_f(Real qr_incld, Real rcldm, Real rhofacr,
-                                  Real* nr, Real* nr_incld, Real* mu_r, Real* lamr, Real* V_qr, Real* V_nr);
+                                  Real* nr_incld, Real* mu_r, Real* lamr, Real* V_qr, Real* V_nr);
 
 }
 ///////////////////////////////////////////////////////////////////////////////

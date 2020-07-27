@@ -16,16 +16,13 @@ KOKKOS_FUNCTION
 void Functions<S,D>
 ::compute_rain_fall_velocity(
   const view_2d_table& vn_table, const view_2d_table& vm_table,
-  const Spack& qr_incld, const Spack& rcldm, const Spack& rhofacr, Spack& nr,
+  const Spack& qr_incld, const Spack& rcldm, const Spack& rhofacr,
   Spack& nr_incld, Spack& mu_r, Spack& lamr, Spack& V_qr, Spack& V_nr,
   const Smask& context)
 {
   Table3 table;
   Spack tmp1, tmp2; //ignore
   get_rain_dsd2(qr_incld, nr_incld, mu_r, lamr, tmp1, tmp2, rcldm, context);
-
-  //PMC - nr isn't used in this fn and is already updated in generalized_sed.
-  //nr.set(context, nr_incld*rcldm);
 
   if (context.any()) {
     lookup(mu_r, lamr, table, context);
@@ -113,7 +110,14 @@ void Functions<S,D>
         if (qr_gt_small.any()) {
           compute_rain_fall_velocity(vn_table, vm_table,
                                      qr_incld(pk), rcldm(pk), rhofacr(pk),
-                                     nr(pk), nr_incld(pk), mu_r(pk), lamr(pk), V_qr(pk), V_nr(pk), qr_gt_small);
+                                     nr_incld(pk), mu_r(pk), lamr(pk),
+				     V_qr(pk), V_nr(pk), qr_gt_small);
+	  
+	  //in compute_rain_fall_velocity, get_rain_dsd2 keeps the drop-size
+	  //distribution within reasonable bounds by modifying nr_incld.
+	  //The next line maintains consistency between nr_incld and nr
+	  nr(pk).set(qr_gt_small, nr_incld(pk)*rcldm(pk));
+
         }
         const auto Co_max_local = max(qr_gt_small, -1,
                                       V_qr(pk) * dt_left * inv_dzq(pk));

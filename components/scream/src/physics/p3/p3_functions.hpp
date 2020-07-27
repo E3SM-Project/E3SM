@@ -471,7 +471,7 @@ struct Functions
   KOKKOS_FUNCTION
   static void compute_rain_fall_velocity(
     const view_2d_table& vn_table, const view_2d_table& vm_table,
-    const Spack& qr_incld, const Spack& rcldm, const Spack& rhofacr, Spack& nr,
+    const Spack& qr_incld, const Spack& rcldm, const Spack& rhofacr, 
     Spack& nr_incld, Spack& mu_r, Spack& lamr, Spack& V_qr, Spack& V_nr,
     const Smask& context = Smask(true));
 

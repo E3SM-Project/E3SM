@@ -142,7 +142,7 @@ void ice_deposition_sublimation_c(
   Real abi, Real qv, Real* qidep, Real* qisub, Real* nisub, Real* qiberg);
 
 void compute_rain_fall_velocity_c(Real qr_incld, Real rcldm, Real rhofacr,
-                                  Real* nr, Real* nr_incld, Real* mu_r, Real* lamr, Real* V_qr, Real* V_nr);
+                                  Real* nr_incld, Real* mu_r, Real* lamr, Real* V_qr, Real* V_nr);
 
 void ice_cldliq_collection_c(Real rho, Real temp, Real rhofaci, Real f1pr04,
                              Real qitot_incld,Real qc_incld, Real nitot_incld, Real nc_incld,
@@ -963,7 +963,7 @@ void compute_rain_fall_velocity(ComputeRainFallVelocityData& d)
 {
   p3_init();
   compute_rain_fall_velocity_c(d.qr_incld, d.rcldm, d.rhofacr,
-                               &d.nr, &d.nr_incld, &d.mu_r, &d.lamr, &d.V_qr, &d.V_nr);
+                               &d.nr_incld, &d.mu_r, &d.lamr, &d.V_qr, &d.V_nr);
 }
 
 P3MainPart1Data::P3MainPart1Data(
@@ -2502,40 +2502,38 @@ void homogeneous_freezing_f(
 }
 
 void compute_rain_fall_velocity_f(Real qr_incld_, Real rcldm_, Real rhofacr_,
-                                  Real* nr_, Real* nr_incld_, Real* mu_r_, Real* lamr_, Real* V_qr_, Real* V_nr_)
+                                  Real* nr_incld_, Real* mu_r_, Real* lamr_, Real* V_qr_, Real* V_nr_)
 {
   using P3F  = Functions<Real, DefaultDevice>;
 
   using Spack   = typename P3F::Spack;
   using view_1d = typename P3F::view_1d<Real>;
 
-  Real local_nr = *nr_, local_nr_incld = *nr_incld_;
-  view_1d t_d("t_d", 6);
+  Real local_nr_incld = *nr_incld_;
+  view_1d t_d("t_d", 5);
   const auto t_h = Kokkos::create_mirror_view(t_d);
 
   const auto vn_table = P3GlobalForFortran::vn_table();
   const auto vm_table = P3GlobalForFortran::vm_table();
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
-    Spack qr_incld(qr_incld_), rcldm(rcldm_), rhofacr(rhofacr_), nr(local_nr), nr_incld(local_nr_incld),
+    Spack qr_incld(qr_incld_), rcldm(rcldm_), rhofacr(rhofacr_), nr_incld(local_nr_incld),
       mu_r, lamr, V_qr, V_nr;
 
     P3F::compute_rain_fall_velocity(vn_table, vm_table,
-                                    qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr);
-    t_d(0) = nr[0];
-    t_d(1) = nr_incld[0];
-    t_d(2) = mu_r[0];
-    t_d(3) = lamr[0];
-    t_d(4) = V_qr[0];
-    t_d(5) = V_nr[0];
+                                    qr_incld, rcldm, rhofacr, nr_incld, mu_r, lamr, V_qr, V_nr);
+    t_d(0) = nr_incld[0];
+    t_d(1) = mu_r[0];
+    t_d(2) = lamr[0];
+    t_d(3) = V_qr[0];
+    t_d(4) = V_nr[0];
   });
   Kokkos::deep_copy(t_h, t_d);
 
-  *nr_       = t_h(0);
-  *nr_incld_ = t_h(1);
-  *mu_r_     = t_h(2);
-  *lamr_     = t_h(3);
-  *V_qr_     = t_h(4);
-  *V_nr_     = t_h(5);
+  *nr_incld_ = t_h(0);
+  *mu_r_     = t_h(1);
+  *lamr_     = t_h(2);
+  *V_qr_     = t_h(3);
+  *V_nr_     = t_h(4);
 }
 
 void ice_cldliq_collection_f(Real rho_, Real temp_, Real rhofaci_, Real f1pr04_,

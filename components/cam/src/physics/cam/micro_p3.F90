@@ -3450,7 +3450,11 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
                   call get_cloud_dsd2(qc_incld(k),nc_incld(k),mu_c(k),rho(k),nu,dnu,   &
                        lamc(k),tmp1,tmp2,lcldm(k))
 
-                  !nc(k) = nc_incld(k)*lcldm(k) !Again, nc is already updated by gen_sed and isn't used below, so why do this? and if so why not also qc?
+                  !get_cloud_dsd2 keeps the drop-size distribution within reasonable
+                  !bounds by modifying nc_incld. The next line maintains consistency
+                  !between nc_incld and nc
+                  nc(k) = nc_incld(k)*lcldm(k)
+                  
                   dum = 1._rtype / bfb_pow(lamc(k), bcn)
                   V_qc(k) = acn(k)*bfb_gamma(4._rtype+bcn+mu_c(k))*dum/(bfb_gamma(mu_c(k)+4._rtype))
                   V_nc(k) = acn(k)*bfb_gamma(1._rtype+bcn+mu_c(k))*dum/(bfb_gamma(mu_c(k)+1._rtype))
@@ -3479,7 +3483,12 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
                qc_notsmall_c1: if (qc_incld(k)>qsmall) then
                   call get_cloud_dsd2(qc_incld(k),nc_incld(k),mu_c(k),rho(k),nu,dnu,   &
                        lamc(k),tmp1,tmp2,lcldm(k))
-                  !nc(k) = nc_incld(k)*lcldm(k) !Again, nc is already getting updated by gen_sed, so why do here? and if so why not also qc?
+                  
+                  !get_cloud_dsd2 keeps the drop-size distribution within reasonable
+                  !bounds by modifying nc_incld. The next line maintains consistency
+                  !between nc_incld and nc
+                  nc(k) = nc_incld(k)*lcldm(k)
+                  
                   dum = 1._rtype / bfb_pow(lamc(k), bcn)
                   V_qc(k) = acn(k)*bfb_gamma(4._rtype+bcn+mu_c(k))*dum/(bfb_gamma(mu_c(k)+4._rtype))
                endif qc_notsmall_c1
@@ -3593,8 +3602,13 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
             qr_notsmall_r1: if (qr_incld(k)>qsmall) then
 
-               call compute_rain_fall_velocity(qr_incld(k), rcldm(k), rhofacr(k), nr(k), nr_incld(k), &
+               call compute_rain_fall_velocity(qr_incld(k), rcldm(k), rhofacr(k), nr_incld(k), &
                     mu_r(k), lamr(k), V_qr(k), V_nr(k))
+
+               !in compute_rain_fall_velocity, get_rain_dsd2 keeps the drop-size
+               !distribution within reasonable bounds by modifying nr_incld. 
+               !The next line maintains consistency between nr_incld and nr.
+               nr = nr_incld*rcldm 
 
             endif qr_notsmall_r1
 
@@ -3627,12 +3641,11 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
 end subroutine rain_sedimentation
 
-subroutine compute_rain_fall_velocity(qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr)
+subroutine compute_rain_fall_velocity(qr_incld, rcldm, rhofacr, nr_incld, mu_r, lamr, V_qr, V_nr)
 
    real(rtype), intent(in) :: qr_incld
    real(rtype), intent(in) :: rcldm
    real(rtype), intent(in) :: rhofacr
-   real(rtype), intent(inout) :: nr
    real(rtype), intent(inout) :: nr_incld
    real(rtype), intent(out) :: mu_r
    real(rtype), intent(out) :: lamr
@@ -3647,11 +3660,6 @@ subroutine compute_rain_fall_velocity(qr_incld, rcldm, rhofacr, nr, nr_incld, mu
    call get_rain_dsd2(qr_incld,nr_incld,mu_r,lamr,tmp1,tmp2,rcldm)
 
    call find_lookupTable_indices_3(dumii,dumjj,dum1,rdumii,rdumjj,inv_dum3,mu_r,lamr)
-
-   !nr is not used elsewhere in this function. Here, the updated value from generalized_sed
-   !is getting overwritten with the incld value which wasn't getting updated until this PR.
-   !And why is nr getting updated but not qr? Should delete nr from this function entirely.
-   !nr = nr_incld*rcldm 
 
    !mass-weighted fall speed:
 

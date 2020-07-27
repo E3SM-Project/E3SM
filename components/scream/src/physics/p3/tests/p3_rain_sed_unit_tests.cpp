@@ -48,26 +48,26 @@ static void run_bfb_rain_vel()
 
   // Load some lookup inputs, need at least one per pack value
   ComputeRainFallVelocityData crfv_fortran[max_pack_size] = {
-    // qr_incld,       rcldm,    rhofacr,         nr, nr_incld
-    {1.1030E-04, 1.0000E+00, 1.3221E+00, 6.5282E+07, 6.2964E+05},
-    {2.1437E-13, 2.0000E+00, 1.0918E+00, 1.7935E+02, 6.5337E+07},
-    {5.6298E-05, 3.0000E+00, 1.1129E+00, 6.2909E+05, 1.6576E+02},
-    {1.0000E-02, 4.0000E+00, 1.0774E+00, 1.6986E+02, 1.9436E+02},
+    // qr_incld,       rcldm,    rhofacr,   nr_incld
+    {1.1030E-04, 1.0000E+00, 1.3221E+00, 6.2964E+05},
+    {2.1437E-13, 2.0000E+00, 1.0918E+00, 6.5337E+07},
+    {5.6298E-05, 3.0000E+00, 1.1129E+00, 1.6576E+02},
+    {1.0000E-02, 4.0000E+00, 1.0774E+00, 1.9436E+02},
 
-    {0.0       , 1.0000E+00, 1.3221E+00, 6.5282E+07, 6.2964E+05},
-    {2.1437E-13, 2.0000E+00, 1.0918E+00, 1.7935E+02, 6.5337E+07},
-    {0.0       , 3.0000E+00, 1.1129E+00, 6.2909E+05, 1.6576E+02},
-    {1.0000E-02, 4.0000E+00, 1.0774E+00, 1.6986E+02, 1.9436E+02},
+    {0.0       , 1.0000E+00, 1.3221E+00, 6.2964E+05},
+    {2.1437E-13, 2.0000E+00, 1.0918E+00, 6.5337E+07},
+    {0.0       , 3.0000E+00, 1.1129E+00, 1.6576E+02},
+    {1.0000E-02, 4.0000E+00, 1.0774E+00, 1.9436E+02},
 
-    {1.1030E-04, 1.0000E+00, 1.3221E+00, 6.5282E+07, 6.2964E+05},
-    {2.1437E-13, 2.0000E+00, 1.0918E+00, 1.7935E+02, 6.5337E+07},
-    {0.0       , 3.0000E+00, 1.1129E+00, 6.2909E+05, 1.6576E+02},
-    {0.0       , 4.0000E+00, 1.0774E+00, 1.6986E+02, 1.9436E+02},
+    {1.1030E-04, 1.0000E+00, 1.3221E+00, 6.2964E+05},
+    {2.1437E-13, 2.0000E+00, 1.0918E+00, 6.5337E+07},
+    {0.0       , 3.0000E+00, 1.1129E+00, 1.6576E+02},
+    {0.0       , 4.0000E+00, 1.0774E+00, 1.9436E+02},
 
-    {0.0       , 1.0000E+00, 1.3221E+00, 6.5282E+07, 6.2964E+05},
-    {2.1437E-13, 2.0000E+00, 1.0918E+00, 1.7935E+02, 6.5337E+07},
-    {5.6298E-05, 3.0000E+00, 1.1129E+00, 6.2909E+05, 1.6576E+02},
-    {1.0000E-02, 4.0000E+00, 1.0774E+00, 1.6986E+02, 1.9436E+02},
+    {0.0       , 1.0000E+00, 1.3221E+00, 6.2964E+05},
+    {2.1437E-13, 2.0000E+00, 1.0918E+00, 6.5337E+07},
+    {5.6298E-05, 3.0000E+00, 1.1129E+00, 1.6576E+02},
+    {1.0000E-02, 4.0000E+00, 1.0774E+00, 1.9436E+02},
   };
 
   // Sync to device, needs to happen before fortran calls so that
@@ -87,22 +87,20 @@ static void run_bfb_rain_vel()
     const Int offset = i * Spack::n;
 
     // Init pack inputs
-    Spack qr_incld, rcldm, rhofacr, nr, nr_incld;
+    Spack qr_incld, rcldm, rhofacr, nr_incld;
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
       qr_incld[s] = crfv_device(vs).qr_incld;
       rcldm[s]    = crfv_device(vs).rcldm;
       rhofacr[s]  = crfv_device(vs).rhofacr;
-      nr[s]       = crfv_device(vs).nr;
       nr_incld[s] = crfv_device(vs).nr_incld;
     }
 
     Spack mu_r(0), lamr(0), V_qr(0), V_nr(0);
     Functions::compute_rain_fall_velocity(
-      vn_table, vm_table, qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr);
+      vn_table, vm_table, qr_incld, rcldm, rhofacr, nr_incld, mu_r, lamr, V_qr, V_nr);
 
     // Copy results back into views
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-      crfv_device(vs).nr       = nr[s];
       crfv_device(vs).nr_incld = nr_incld[s];
       crfv_device(vs).mu_r     = mu_r[s];
       crfv_device(vs).lamr     = lamr[s];
@@ -116,7 +114,6 @@ static void run_bfb_rain_vel()
 
   // Validate results
   for (Int s = 0; s < max_pack_size; ++s) {
-    REQUIRE(crfv_fortran[s].nr       == crfv_host(s).nr);
     REQUIRE(crfv_fortran[s].nr_incld == crfv_host(s).nr_incld);
     REQUIRE(crfv_fortran[s].mu_r     == crfv_host(s).mu_r);
     REQUIRE(crfv_fortran[s].lamr     == crfv_host(s).lamr);

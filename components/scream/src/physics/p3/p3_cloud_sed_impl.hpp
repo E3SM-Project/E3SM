@@ -93,8 +93,10 @@ void Functions<S,D>
             Spack nu, cdist, cdist1, dum;
             get_cloud_dsd2(qc_incld(pk), nc_incld(pk), mu_c(pk), rho(pk), nu, dnu, lamc(pk), cdist, cdist1, lcldm(pk), qc_gt_small);
 
-	    //Doesn't make sense to do this here
-            //nc(pk).set(qc_gt_small, nc_incld(pk)*lcldm(pk));
+	    //get_cloud_dsd2 keeps the drop-size distribution within reasonable
+	    //bounds by modifying nc_incld. The next line maintains consistency
+	    //between nc_incld and nc
+            nc(pk).set(qc_gt_small, nc_incld(pk)*lcldm(pk));
 
 	    dum = 1 / (pack::pow(lamc(pk), bcn));
             V_qc(pk).set(qc_gt_small, acn(pk)*pack::tgamma(4 + bcn + mu_c(pk)) * dum / (pack::tgamma(mu_c(pk)+4)));

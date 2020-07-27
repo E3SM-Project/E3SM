@@ -573,15 +573,15 @@ end subroutine prevent_ice_overdepletion_c
          qc,nc,qr,nr,qitot,nitot,qirim,birim,th)
   end subroutine homogeneous_freezing_c
 
-  subroutine compute_rain_fall_velocity_c(qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr) bind(C)
+  subroutine compute_rain_fall_velocity_c(qr_incld, rcldm, rhofacr, nr_incld, mu_r, lamr, V_qr, V_nr) bind(C)
     use micro_p3, only: compute_rain_fall_velocity
 
     ! arguments:
     real(kind=c_real), value, intent(in) :: qr_incld, rcldm, rhofacr
-    real(kind=c_real), intent(inout) :: nr, nr_incld
+    real(kind=c_real), intent(inout) :: nr_incld
     real(kind=c_real), intent(out) :: mu_r, lamr, V_qr, V_nr
 
-    call compute_rain_fall_velocity(qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr)
+    call compute_rain_fall_velocity(qr_incld, rcldm, rhofacr, nr_incld, mu_r, lamr, V_qr, V_nr)
   end subroutine compute_rain_fall_velocity_c
 
 subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol,nrcol,qrheti,nrheti,nrshdr, &
