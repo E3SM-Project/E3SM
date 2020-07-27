@@ -280,34 +280,28 @@ TEST_CASE("scorpio_interface_output", "") {
   grid_read_data_array(outfilename,"x",dof_x[0],ekat::util::data(x_data)+xstart);
   grid_read_data_array(outfilename,"y",dof_y[0],ekat::util::data(y_data)+ystart);
   grid_read_data_array(outfilename,"z",dof_z[0],ekat::util::data(z_data)+zstart);
-  nerr = 0;
   for (Int ii=xstart;ii<=xstop;ii++) {
     if (x_data[ii] != x_i(ii,x_data.size())) { ++nerr;}
   }
   REQUIRE(nerr==0);
-  nerr = 0;
   for (Int jj=ystart;jj<=ystop;jj++) {
     if (y_data[jj] != y_i(jj,y_data.size())) { ++nerr;}
   }
   REQUIRE(nerr==0);
-  nerr = 0;
   for (Int kk=zstart;kk<=zstop;kk++) {
-    if (z_data[kk] != z_i(kk,z_data.size())) { ++nerr; std::printf("   - (%d) %f vs. %f\n",kk,z_data[kk],z_i(kk,z_data.size()));}
+    if (z_data[kk] != z_i(kk,z_data.size())) { ++nerr;} 
   }
   REQUIRE(nerr==0);
   /* Now read and compare the field data for each of the timestep */
-  nerr = 0;
   for (int tt=0;tt<3;tt++) {
     pio_update_time(outfilename,-999.0);
     grid_read_data_array(outfilename,"index_1d",dof_test_1d[0],ekat::util::data(test_index_1d)+test_1d_start);
     grid_read_data_array(outfilename,"data_1d", dof_test_1d[0],ekat::util::data(test_data_1d) +test_1d_start);
-    nerr = 0;
     for (int ii=0,ind=test_1d_start;ind<test_1d_stop;ii++,ind++) {
       if (*(ekat::util::data(test_data_1d) + ind)  != f_x(x_data[ind],tt*dt)) {++nerr;}
       if (*(ekat::util::data(test_index_1d) + ind) != ind_x(ind) + ind_t(tt))  {++nerr;}
     }
     REQUIRE(nerr==0);
-    nerr = 0;
     grid_read_data_array(outfilename,"index_2d",dof_test_2d[0],ekat::util::data(test_index_2d)+test_2d_start);
     grid_read_data_array(outfilename,"data_2d", dof_test_2d[0],ekat::util::data(test_data_2d) +test_2d_start);
     for (int ind=test_2d_start;ind<=test_2d_stop;ind++) {
@@ -317,7 +311,6 @@ TEST_CASE("scorpio_interface_output", "") {
       if (*(ekat::util::data(test_index_2d) + ind) != ind_y(jj) + ind_x(ii) + ind_t(tt))  {++nerr;}
     }
     REQUIRE(nerr==0);
-    nerr = 0;
     grid_read_data_array(outfilename,"index_3d",dof_test_3d[0],ekat::util::data(test_index_3d)+test_3d_start);
     grid_read_data_array(outfilename,"data_3d", dof_test_3d[0],ekat::util::data(test_data_3d) +test_3d_start);
     for (int ind=test_3d_start;ind<=test_3d_stop;ind++) {
@@ -501,17 +494,14 @@ TEST_CASE("scorpio_interface_input", "") {
     if (x_data[ii] != comp_x[ii]) { ++nerr;}
   }
   REQUIRE(nerr==0);
-  nerr = 0;
   for (Int jj=ystart;jj<=ystop;jj++) {
     if (y_data[jj] != comp_y[jj]) { ++nerr;}
   }
   REQUIRE(nerr==0);
-  nerr = 0;
   for (Int kk=zstart;kk<=zstop;kk++) {
     if (z_data[kk] != comp_z[kk]) { ++nerr;}
   }
   REQUIRE(nerr==0);
-  nerr = 0;
   for (int tt=0;tt<3;tt++) {
     pio_update_time(infilename,-999.0);
     grid_read_data_array(infilename,"index_1d",dof_test_1d[0],ekat::util::data(test_index_1d)+test_1d_start);
@@ -525,13 +515,11 @@ TEST_CASE("scorpio_interface_input", "") {
       if (*(ekat::util::data(test_data_1d) + ii)  != *(ekat::util::data(comp_data_1d[tt]) + ii))  {++nerr;}
     }
     REQUIRE(nerr==0);
-    nerr = 0;
     for (int ii=test_2d_start;ii<test_2d_stop;ii++) {
       if (*(ekat::util::data(test_index_2d) + ii) != *(ekat::util::data(comp_index_2d[tt]) + ii)) {++nerr;}
       if (*(ekat::util::data(test_data_2d) + ii)  != *(ekat::util::data(comp_data_2d[tt]) + ii))  {++nerr;}
     }
     REQUIRE(nerr==0);
-    nerr = 0;
     for (int ii=test_3d_start;ii<test_3d_stop;ii++) {
       if (*(ekat::util::data(test_index_3d) + ii) != *(ekat::util::data(comp_index_3d[tt]) + ii)) {++nerr;}
       if (*(ekat::util::data(test_data_3d) + ii)  != *(ekat::util::data(comp_data_3d[tt]) + ii))  {++nerr;}
@@ -588,10 +576,11 @@ Int ind_t(const Int tt) {
   return 10000*tt;
 }
 
-void get_dof(const std::size_t dimsize, const Int myrank, const Int numranks, Int &dof_len, Int &istart, Int &istop) {
+void get_dof(const std::size_t dimsize_in, const Int myrank, const Int numranks, Int &dof_len, Int &istart, Int &istop) {
 
+  Int extra_procs, dimsize;
+  dimsize = dimsize_in;
   dof_len = dimsize/numranks;
-  Int extra_procs;
   extra_procs = dimsize % numranks;
   if (extra_procs>0) {
     dof_len = dof_len+1;
@@ -600,13 +589,8 @@ void get_dof(const std::size_t dimsize, const Int myrank, const Int numranks, In
   if (myrank == numranks-1) {
     dof_len = std::max((Int) dimsize-istart,0);
   }
-  istop = istart + dof_len-1;
-  // Final check that we don't have more ranks than total dof
-  if (istart >= dimsize) {
-    dof_len = 0;
-    istop = istart - 1;
-  }
-
+  istop = std::min(istart + dof_len-1,dimsize-1);
+  dof_len = std::max(istop-istart + 1,0);
   return;
 }
 /* ================================================================================================================ */

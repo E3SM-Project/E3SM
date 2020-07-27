@@ -138,31 +138,31 @@ module scream_scorpio_interface
   ! Define a recursive structure because we do not know ahead of time how many
   ! decompositions will be require
   integer, parameter      :: tag_len           = 48
-  type iodesc_list
-    character(tag_len)          :: tag              ! Unique tag associated with this decomposition
-    type(io_desc_t),    pointer :: iodesc => NULL() ! PIO - decomposition
-    type(iodesc_list),  pointer :: next => NULL()   ! Needed for recursive definition
-  end type iodesc_list
-  ! Define the first iodesc_list 
-  type(iodesc_list), target :: iodesc_list_top
+  type iodesc_list_t
+    character(tag_len)           :: tag              ! Unique tag associated with this decomposition
+    type(io_desc_t),     pointer :: iodesc => NULL() ! PIO - decomposition
+    type(iodesc_list_t), pointer :: next => NULL()   ! Needed for recursive definition
+  end type iodesc_list_t
+  ! Define the first iodesc_list_t 
+  type(iodesc_list_t), target :: iodesc_list_top
 !----------------------------------------------------------------------
-  type hist_coord_list
-    type(hist_coord_t),    pointer :: coord => NULL() ! Pointer to a history dimension structure
-    type(hist_coord_list), pointer :: next => NULL()  ! Needed for recursive definition
-  end type hist_coord_list
+  type hist_coord_list_t
+    type(hist_coord_t),      pointer :: coord => NULL() ! Pointer to a history dimension structure
+    type(hist_coord_list_t), pointer :: next => NULL()  ! Needed for recursive definition
+  end type hist_coord_list_t
 !----------------------------------------------------------------------
-  type hist_var_list
-    type(hist_var_t),    pointer :: var => NULL()  ! Pointer to a history variable structure
-    type(hist_var_list), pointer :: next => NULL() ! Needed for recursive definition
-  end type hist_var_list
+  type hist_var_list_t
+    type(hist_var_t),      pointer :: var => NULL()  ! Pointer to a history variable structure
+    type(hist_var_list_t), pointer :: next => NULL() ! Needed for recursive definition
+  end type hist_var_list_t
 !----------------------------------------------------------------------
-  type pio_file_list
-    type(pio_atm_file_t), pointer :: pio_file => NULL() ! Pointer to an atm. pio file
-    type(pio_file_list),  pointer :: next => NULL()     ! Needed for recursive definition
-  end type pio_file_list
+  type pio_file_list_t
+    type(pio_atm_file_t),  pointer :: pio_file => NULL() ! Pointer to an atm. pio file
+    type(pio_file_list_t), pointer :: next => NULL()     ! Needed for recursive definition
+  end type pio_file_list_t
   ! Define the first pio_file_list
-  type(pio_file_list), target  :: pio_file_list_top
-  type(pio_file_list), pointer :: pio_file_list_bottom
+  type(pio_file_list_t), target  :: pio_file_list_top
+  type(pio_file_list_t), pointer :: pio_file_list_bottom
 !----------------------------------------------------------------------
   type, public :: pio_atm_file_t
         !> @brief Output filename.
@@ -175,13 +175,13 @@ module scream_scorpio_interface
         !  registration
         integer               :: DimCounter = 0
         !> @brief Recursive list of variables
-        type(hist_coord_list)   :: coord_list_top
+        type(hist_coord_list_t) :: coord_list_top
 
         !> @brief Number of output variable and counter to track them during
         !  registration
         integer               :: VarCounter = 0
         !> @brief Recursive list of variables
-        type(hist_var_list)   :: var_list_top
+        type(hist_var_list_t) :: var_list_top
 
         !> @brief Number of history records on this file
         integer               :: numRecs
@@ -222,6 +222,8 @@ module scream_scorpio_interface
 !----------------------------------------------------------------------
 contains
 !=====================================================================!
+  ! Register a new file for PIO output with the PIO Atmosphere list.
+  ! This step also creates the header meta-data for the new file.
   subroutine register_outfile(filename)
 
     character(len=*), intent(in) :: filename
@@ -233,6 +235,7 @@ contains
     
   end subroutine register_outfile
 !=====================================================================!
+  ! Register a file to be used PIO input with the PIO Atmosphere list.
   subroutine register_infile(filename)
 
     character(len=*), intent(in) :: filename
@@ -243,6 +246,9 @@ contains
     
   end subroutine register_infile
 !=====================================================================!
+  ! Mandatory call to finish the variable and dimension definition phase
+  ! of a new PIO file.  Once this routine is called it is not possible
+  ! to add new dimensions or variables to the file.
   subroutine eam_pio_enddef(filename)
 
     character(len=*), intent(in) :: filename
@@ -262,7 +268,16 @@ contains
 
   end subroutine eam_pio_enddef
 !=====================================================================!
-  ! Register a dimension with a specific pio output file 
+  ! Register a dimension with a specific pio output file.  Mandatory inputs
+  ! include:
+  ! pio_atm_filename: Name of file to add the dimension to.
+  ! shortname:        Short name descriptor for this dimension.  This will be
+  !                   name to find the dimension in the netCDF file.
+  ! longname:         A longer character string with a more descriptive name of
+  !                   the dimension.
+  ! length:           The dimension length (must be >=0).  Choosing 0 marks the
+  !                   dimensions as having "unlimited" length which is used for
+  !                   dimensions such as time.
   subroutine register_dimension(pio_atm_filename,shortname,longname,length)
     character(len=*), intent(in)        :: pio_atm_filename   ! Name of file to register the dimension on.
     character(len=*), intent(in)        :: shortname,longname ! Short- and long- names for this dimension, short: brief identifier and name for netCDF output, long: longer descriptor sentence to be included as meta-data in file.
@@ -270,7 +285,7 @@ contains
 
     type(pio_atm_file_t), pointer       :: pio_atm_file
     type(hist_coord_t), pointer         :: hist_coord
-    type(hist_coord_list), pointer      :: curr=>null(), prev=>null()
+    type(hist_coord_list_t), pointer    :: curr=>null(), prev=>null()
     integer                             :: ierr
     logical                             :: found
 
@@ -308,7 +323,25 @@ contains
     return
   end subroutine register_dimension
 !=====================================================================!
-  ! Register a variable with a specific pio output file
+  ! Register a variable with a specific pio input file. Mandatory inputs
+  ! include:
+  ! pio_atm_filename: The name of the netCDF file this variable will be
+  !                   registered with.
+  ! shortname:      A shortname descriptor (tag) for this variable.  This will be
+  !                 used to label the variable in the netCDF file as well.
+  ! longname:       A longer character string describing the variable.
+  ! numdims:        The number of dimensions associated with this variable,
+  !                 including time (if applicable).
+  ! var_dimensions: An array of character strings with the dimension shortnames
+  !                 for each dimension used by this variable.  Should have
+  !                 'numdims' entries.
+  ! dtype:          The data type for this variable using the proper netCDF
+  !                 integer tag.
+  ! pio_decomp_tag: A string that describes this particular dimension
+  !                 arrangement which will be used to create a unique PIO
+  !                 decomposition for reading this variable.  It is ok to reuse
+  !                 the pio_decomp_tag for variables that have the same
+  !                 dimensionality.  See get_decomp for more details.
   subroutine get_variable(pio_atm_filename,shortname,longname,numdims,var_dimensions,dtype,pio_decomp_tag)
     character(len=*), intent(in) :: pio_atm_filename         ! Name of the file to register this variable with
     character(len=*), intent(in) :: shortname,longname       ! short and long names for the variable.  Short: variable name in file, Long: more descriptive name
@@ -329,7 +362,7 @@ contains
     integer                      :: ii, istart, istop
     logical                      :: found
 
-    type(hist_var_list), pointer :: curr => null(), prev => null()
+    type(hist_var_list_t), pointer :: curr => null(), prev => null()
  
     ! Find the pointer for this file
     call lookup_pio_atm_file(trim(pio_atm_filename),pio_atm_file,found)
@@ -375,7 +408,25 @@ contains
     return
   end subroutine get_variable
 !=====================================================================!
-  ! Register a variable with a specific pio output file
+  ! Register a variable with a specific pio output file. Mandatory inputs
+  ! include:
+  ! pio_atm_filename: The name of the netCDF file this variable will be
+  !                   registered with.
+  ! shortname:      A shortname descriptor (tag) for this variable.  This will be
+  !                 used to label the variable in the netCDF file as well.
+  ! longname:       A longer character string describing the variable.
+  ! numdims:        The number of dimensions associated with this variable,
+  !                 including time (if applicable).
+  ! var_dimensions: An array of character strings with the dimension shortnames
+  !                 for each dimension used by this variable.  Should have
+  !                 'numdims' entries.
+  ! dtype:          The data type for this variable using the proper netCDF
+  !                 integer tag.
+  ! pio_decomp_tag: A string that describes this particular dimension
+  !                 arrangement which will be used to create a unique PIO
+  !                 decomposition for reading this variable.  It is ok to reuse
+  !                 the pio_decomp_tag for variables that have the same
+  !                 dimensionality.  See get_decomp for more details.
   subroutine register_variable(pio_atm_filename,shortname,longname,numdims,var_dimensions,dtype,pio_decomp_tag)
     character(len=*), intent(in) :: pio_atm_filename         ! Name of the file to register this variable with
     character(len=*), intent(in) :: shortname,longname       ! short and long names for the variable.  Short: variable name in file, Long: more descriptive name
@@ -396,7 +447,7 @@ contains
     integer                      :: ii, istart, istop
     logical                      :: found
 
-    type(hist_var_list), pointer :: curr => null(), prev => null()
+    type(hist_var_list_t), pointer :: curr => null(), prev => null()
  
     ! Find the pointer for this file
     call lookup_pio_atm_file(trim(pio_atm_filename),pio_atm_file,found)
@@ -446,6 +497,12 @@ contains
     return
   end subroutine register_variable
 !=====================================================================!
+  ! Update the time dimension for a specific PIO file.  This is needed when
+  ! reading or writing multiple time levels.  Unlimited dimensions are treated
+  ! differently in netCDF than typical static length variables.  Note, here
+  ! "time" is hardcoded as the only unlimited variable.  If, in the future,
+  ! scream decides to allow for other "unlimited" dimensions to be used our
+  ! input/output than this routine will need to be adjusted.
   subroutine eam_update_time(filename,time)
     character(len=*), intent(in) :: filename       ! PIO filename
     real(rtype), intent(in)      :: time 
@@ -462,6 +519,8 @@ contains
     if (time>=0) ierr = pio_put_var(pio_atm_file%pioFileDesc,var%piovar,(/ pio_atm_file%numRecs /), (/ 1 /), (/ time /))
   end subroutine eam_update_time
 !=====================================================================!
+  ! Synchronize a pio file after updating the unlimited dimensions and accessing
+  ! all desired variables.
   subroutine eam_sync_piofile(filename)
     character(len=*),          intent(in)    :: filename       ! PIO filename
     
@@ -472,7 +531,10 @@ contains
     call PIO_syncfile(pio_atm_file%pioFileDesc)
   end subroutine eam_sync_piofile
 !=====================================================================!
-  ! Assign header metadata to a specific pio output file.
+  ! Assign header metadata to a specific pio output file.  TODO: Fix this to be
+  ! more general.  Right now it is all dummy boiler plate.  Would make the most
+  ! sense to pass a structure with all of the relevant header info contained
+  ! within it.
   subroutine eam_pio_createHeader(File)
 
     type(file_desc_t), intent(in) :: File             ! Pio file Handle
@@ -494,7 +556,11 @@ contains
   end subroutine eam_pio_createHeader
 !=====================================================================!
   ! Query the pio subsystem, pio rank and number of pio ranks from the component
-  ! coupler.
+  ! coupler.  This is a MANDATORY first step before any other pio calls to files
+  ! can be initiated.
+  ! If local is set to false than pio subsystem will look for the pio_subsystem
+  ! that has been initialized by the component coupler.  Otherwise, it will be
+  ! initalized locally.
   subroutine eam_init_pio_subsystem(mpicom,atm_id,local)
     
     integer, intent(in) :: mpicom
@@ -531,7 +597,7 @@ contains
 
   end subroutine eam_init_pio_subsystem
 !=====================================================================!
-  ! Create a file with the appropriate name
+  ! Create a pio netCDF file with the appropriate name.
   subroutine eam_pio_createfile(File,fname)
 
     type(file_desc_t), intent(inout) :: File             ! Pio file Handle
@@ -546,6 +612,7 @@ contains
 
   end subroutine eam_pio_createfile
 !=====================================================================!
+  ! Open an already existing netCDF file.
   subroutine eam_pio_openfile(File,fname)
 
     type(file_desc_t), intent(inout) :: File             ! Pio file Handle
@@ -560,6 +627,8 @@ contains
 
   end subroutine eam_pio_openfile
 !=====================================================================!
+  ! Close a netCDF file.  To be done as a last step after all input or output
+  ! for that file has been finished.
   subroutine eam_pio_closefile(fname)
 
     character(len=*),  intent(in)    :: fname            ! Pio file name
@@ -578,11 +647,13 @@ contains
 
   end subroutine eam_pio_closefile
 !=====================================================================!
+  ! Finalize a PIO session within scream.  Close all open files and deallocate
+  ! the pio_subsystem session.
   subroutine eam_pio_finalize()
     ! May not be needed, possibly handled by PIO directly.
 
     integer :: ierr
-    type(pio_file_list), pointer :: curr => NULL()
+    type(pio_file_list_t), pointer :: curr => NULL()
 
     ! Close all the PIO Files 
     curr => pio_file_list_top
@@ -598,7 +669,8 @@ contains
 
   end subroutine eam_pio_finalize
 !=====================================================================!
-  ! Handle any errors that crop up
+  ! Handle any errors that occur in this module and print to screen an error
+  ! message.
   subroutine errorHandle(errMsg, retVal)
     use iso_c_binding
     implicit none
@@ -612,7 +684,7 @@ contains
     character(len=*),  intent(in)    :: errMsg
     integer,           intent(in)    :: retVal
 
-    type(pio_file_list), pointer :: curr => NULL()
+    type(pio_file_list_t), pointer :: curr => NULL()
 
     if (retVal .ne. PIO_NOERR) then
       write(*,'(I8,2x,A100)') retVal,trim(errMsg)
@@ -673,9 +745,9 @@ contains
     integer, intent(in)       :: compdof(:)       ! The degrees of freedom this rank is responsible for
     type(io_desc_t), pointer  :: iodesc           ! The pio decomposition that has been found or created
 
-    logical                   :: found            ! Keep track if a decomp has been found among the previously defined decompositions 
-    type(iodesc_list),pointer :: curr, prev       ! Used to toggle through the recursive list of decompositions
-    integer                   :: loc_len          ! Used to keep track of how many dimensions there are in decomp 
+    logical                     :: found            ! Keep track if a decomp has been found among the previously defined decompositions 
+    type(iodesc_list_t),pointer :: curr, prev       ! Used to toggle through the recursive list of decompositions
+    integer                     :: loc_len          ! Used to keep track of how many dimensions there are in decomp 
     
     ! Assign a PIO decomposition to variable, if none exists, create a new one:
     found = .false.
@@ -713,6 +785,27 @@ contains
 
   end subroutine get_decomp
 !=====================================================================!
+  ! Set the degrees of freedom (dof) this MPI rank is responsible for
+  ! reading/writing from/to file.  
+  ! Briefly, PIO distributes the work of reading/writing the total array
+  ! of any variable data over all of the MPI ranks assigned to PIO.
+  ! DOF's are assigned considering a 1D flattening of any array, ignoring
+  ! unlimited dimensions, which are handled elsewhere.
+  ! Once it is known which dof a rank is responsible for this routine is used to
+  ! set those locally for use with all read and write statements.
+  ! Arguments:
+  ! filename: name of PIO input/output file.
+  ! varname:  shortname of variable to set the dof for.
+  ! dof_len:  number of dof associated for this rank and this variable
+  ! dof_vec:  a vector of length dof_len which includes the global indices of
+  !           the flattened "varname" array that this MPI rank is responsible
+  !           for.
+  ! --- Example: If variable F has dimensions (x,y,t) of size (2,5,t), which means a ---
+  ! total of 2x5=10 dof, not counting the time dimension.
+  ! If 3 MPI ranks are used then a typical breakdown for dof might be:
+  ! Rank 1: (1,2,3)
+  ! Rank 2: (4,5,6)
+  ! Rank 3: (7,8,9,10)
   subroutine set_dof(filename,varname,dof_len,dof_vec)
     character(len=*), intent(in)            :: filename
     character(len=*), intent(in)            :: varname
@@ -735,15 +828,18 @@ contains
  
   end subroutine set_dof
 !=====================================================================!
+  ! Get and assign all pio decompositions for a specific PIO file.  This is a
+  ! mandatory step to be taken after all dimensions and variables have been
+  ! registered with an input or output file.
   subroutine set_decomp(filename)
 
-    character(len=*)              :: filename  ! Name of the pio file to set decomp for
+    character(len=*)               :: filename  ! Name of the pio file to set decomp for
 
-    type(pio_atm_file_t), pointer :: current_atm_file => null()
-    type(hist_var_list), pointer  :: curr     ! Used to cycle through recursive list of variables
-    type(hist_var_t), pointer     :: hist_var ! Pointer to the variable structure that has been found
-    integer                       :: loc_len
-    logical                       :: found
+    type(pio_atm_file_t), pointer  :: current_atm_file => null()
+    type(hist_var_list_t), pointer :: curr     ! Used to cycle through recursive list of variables
+    type(hist_var_t), pointer      :: hist_var ! Pointer to the variable structure that has been found
+    integer                        :: loc_len
+    logical                        :: found
 
     call lookup_pio_atm_file(filename,current_atm_file,found)
     if (current_atm_file%is_enddef) call errorHandle("PIO ERROR: unable to set decomposition in file: "//trim(current_atm_file%filename)//", definition phase has ended (pio_enddef)",999) 
@@ -768,11 +864,11 @@ contains
   ! Query the hist_var_t pointer for a specific variable on a specific file.
   subroutine get_var(pio_file,varname,var)
 
-    type(pio_atm_file_t), pointer :: pio_file ! Pio output file structure
-    character(len=*)              :: varname  ! Name of the variable to query
-    type(hist_var_t), pointer     :: var      ! Pointer to the variable structure that has been found
+    type(pio_atm_file_t), pointer  :: pio_file ! Pio output file structure
+    character(len=*)               :: varname  ! Name of the variable to query
+    type(hist_var_t), pointer      :: var      ! Pointer to the variable structure that has been found
     
-    type(hist_var_list), pointer  :: curr     ! Used to cycle through recursive list of variables
+    type(hist_var_list_t), pointer :: curr     ! Used to cycle through recursive list of variables
 
     curr => pio_file%var_list_top
     do while (associated(curr))
@@ -792,7 +888,7 @@ contains
   subroutine count_pio_atm_file(total_count)
     integer, intent(out) :: total_count
 
-    type(pio_file_list), pointer :: curr => NULL(), prev => NULL() ! Used to cycle through recursive list of pio atm files
+    type(pio_file_list_t), pointer :: curr => NULL(), prev => NULL() ! Used to cycle through recursive list of pio atm files
 
     total_count = 0
     curr => pio_file_list_top
@@ -811,9 +907,8 @@ contains
     character(len=*),intent(in)   :: filename     ! Name of file to be found
     type(pio_atm_file_t), pointer :: pio_file     ! Pointer to pio_atm_output structure associated with this filename
     logical, intent(out)          :: found        ! whether or not the file was found
-!    type(pio_file_list), optional, pointer :: curr_bottom
 
-    type(pio_file_list), pointer :: curr => NULL(), prev => NULL() ! Used to cycle through recursive list of pio atm files
+    type(pio_file_list_t), pointer :: curr => NULL(), prev => NULL() ! Used to cycle through recursive list of pio atm files
     integer :: cnt
     ! Starting at the top of the current list of PIO_FILES search for this
     ! filename.
@@ -837,15 +932,15 @@ contains
 
   end subroutine lookup_pio_atm_file
 !=====================================================================!
-  ! Lookup pointer for pio file based on filename.
+  ! Create a new pio file pointer based on filename.
   subroutine get_new_pio_atm_file(filename,pio_file,purpose)
 
     character(len=*),intent(in)   :: filename     ! Name of file to be found
     type(pio_atm_file_t), pointer :: pio_file     ! Pointer to pio_atm_output structure associated with this filename
     integer,intent(in)            :: purpose      ! Purpose for this file lookup, 0 = find already existing, 1 = create new as output, 2 = open new as input
 
-    logical                      :: found
-    type(pio_file_list), pointer :: curr => NULL()
+    logical                        :: found
+    type(pio_file_list_t), pointer :: curr => NULL()
 
     ! Make sure a there isn't a pio_atm_file pointer already estalished for a
     ! file with this filename.
@@ -869,6 +964,17 @@ contains
 
   end subroutine get_new_pio_atm_file
 !=====================================================================!
+  ! Write output to file based on type (int or real) and dimensionality
+  ! (currently support 1-4 dimensions).
+  ! --Note-- that any dimensionality could be written if it is flattened to 1D
+  ! before calling a write routine.
+  ! Mandatory inputs are:
+  ! filename: the netCDF filename to be written to.
+  ! hbuf:     An array of data that will be used to write the output.  NOTE:
+  !           If PIO MPI ranks > 1, hbuf should be the subset of the global array
+  !           which includes only those degrees of freedom that have been
+  !           assigned to this rank.  See set_dof above.
+  ! varname:  The shortname for the variable being written.
   !---------------------------------------------------------------------------
   !
   !  grid_write_darray_1d_int: Write a variable defined on this grid
@@ -1069,6 +1175,17 @@ contains
     call errorHandle( 'eam_grid_write_darray_4d_real: Error writing variable',ierr)
   end subroutine grid_write_darray_4d_real
 !=====================================================================!
+  ! Read output from file based on type (int or real) and dimensionality
+  ! (currently support 1-4 dimensions).
+  ! --Note-- that any dimensionality could be read if it is flattened to 1D
+  ! before calling a write routine.
+  ! Mandatory inputs are:
+  ! filename: the netCDF filename to be read from.
+  ! hbuf:     An array of data that will be used to read the input.  NOTE:
+  !           If PIO MPI ranks > 1, hbuf should be the subset of the global array
+  !           which includes only those degrees of freedom that have been
+  !           assigned to this rank.  See set_dof above.
+  ! varname:  The shortname for the variable being read.
   !---------------------------------------------------------------------------
   !
   !  grid_read_darray_1d_real: Read a variable defined on this grid
