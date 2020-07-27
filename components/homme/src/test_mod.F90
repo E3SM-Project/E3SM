@@ -191,6 +191,7 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
 !code is correct, too.
   select case(test_case)
 
+    case('dcmip2012_test2_0');  call dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,nt,dt)
     case('dcmip2012_test2_1');  call dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,nt,dt)
     case('dcmip2012_test2_2');  call dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,nt,dt)
     case('mtest1');             call dcmip2012_test2_x_forcing(elem,hybrid,hvcoord,nets,nete,nt,dt)
