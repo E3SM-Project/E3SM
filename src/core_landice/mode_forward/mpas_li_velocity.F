@@ -855,13 +855,6 @@ contains
          end where
       endif
 
-      if (.not. config_use_glp) then
-         where (li_mask_is_floating_ice(cellMask))
-            betaSolve = 0.0_RKIND
-         end where
-      endif
-
-
    !--------------------------------------------------------------------
    end subroutine calculate_beta
 
