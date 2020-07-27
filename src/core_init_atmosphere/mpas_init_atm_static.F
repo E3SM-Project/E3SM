@@ -17,6 +17,7 @@
  use init_atm_llxy
  use mpas_c_interfacing, only : mpas_f_to_c_string
 
+ use mpas_geometry_utils, only : mpas_in_cell
  use mpas_atmphys_utilities
 
  use iso_c_binding, only : c_char, c_int, c_float, c_loc, c_ptr
@@ -347,7 +348,7 @@
              xPixel = sphere_radius * cos(lon_pt) * cos(lat_pt)    ! at this point, so we need to ues the same radius
              yPixel = sphere_radius * sin(lon_pt) * cos(lat_pt)    ! for source pixel coordinates
 
-             if (in_cell(xPixel, yPixel, zPixel, xCell(iPoint), yCell(iPoint), zCell(iPoint), &
+             if (mpas_in_cell(xPixel, yPixel, zPixel, xCell(iPoint), yCell(iPoint), zCell(iPoint), &
                          nEdgesOnCell(iPoint), verticesOnCell(:,iPoint), xVertex, yVertex, zVertex)) then
 
                 ter(iPoint) = ter(iPoint) + rarray(i,j,1)
@@ -446,7 +447,7 @@ if (rarray(i,j,1) == 0) cycle
              xPixel = sphere_radius * cos(lon_pt) * cos(lat_pt)    ! at this point, so we need to ues the same radius
              yPixel = sphere_radius * sin(lon_pt) * cos(lat_pt)    ! for source pixel coordinates
 
-             if (in_cell(xPixel, yPixel, zPixel, xCell(iPoint), yCell(iPoint), zCell(iPoint), &
+             if (mpas_in_cell(xPixel, yPixel, zPixel, xCell(iPoint), yCell(iPoint), zCell(iPoint), &
                          nEdgesOnCell(iPoint), verticesOnCell(:,iPoint), xVertex, yVertex, zVertex)) then
 
                 ncat(int(rarray(i,j,1)),iPoint) = ncat(int(rarray(i,j,1)),iPoint) + 1
@@ -529,7 +530,7 @@ if (rarray(i,j,1) == 0) cycle
              xPixel = sphere_radius * cos(lon_pt) * cos(lat_pt)    ! at this point, so we need to ues the same radius
              yPixel = sphere_radius * sin(lon_pt) * cos(lat_pt)    ! for source pixel coordinates
 
-             if (in_cell(xPixel, yPixel, zPixel, xCell(iPoint), yCell(iPoint), zCell(iPoint), &
+             if (mpas_in_cell(xPixel, yPixel, zPixel, xCell(iPoint), yCell(iPoint), zCell(iPoint), &
                          nEdgesOnCell(iPoint), verticesOnCell(:,iPoint), xVertex, yVertex, zVertex)) then
 
                 ncat(int(rarray(i,j,1)),iPoint) = ncat(int(rarray(i,j,1)),iPoint) + 1
@@ -741,7 +742,7 @@ if (rarray(i,j,1) == 0) cycle
                    xPixel = sphere_radius * cos(lon_pt) * cos(lat_pt)    ! at this point, so we need to ues the same radius
                    yPixel = sphere_radius * sin(lon_pt) * cos(lat_pt)    ! for source pixel coordinates
 
-                   if (in_cell(xPixel, yPixel, zPixel, xCell(iPoint), yCell(iPoint), zCell(iPoint), &
+                   if (mpas_in_cell(xPixel, yPixel, zPixel, xCell(iPoint), yCell(iPoint), zCell(iPoint), &
                                nEdgesOnCell(iPoint), verticesOnCell(:,iPoint), xVertex, yVertex, zVertex)) then
                       snoalb(iPoint) = snoalb(iPoint) + rarray(ii,jj,1)
                       nhs(iPoint) = nhs(iPoint) + 1
@@ -936,7 +937,7 @@ if (rarray(i,j,1) == 0) cycle
                 xPixel = sphere_radius * cos(lon_pt) * cos(lat_pt)    ! at this point, so we need to ues the same radius
                 yPixel = sphere_radius * sin(lon_pt) * cos(lat_pt)    ! for source pixel coordinates
 
-                if (in_cell(xPixel, yPixel, zPixel, xCell(iPoint), yCell(iPoint), zCell(iPoint), &
+                if (mpas_in_cell(xPixel, yPixel, zPixel, xCell(iPoint), yCell(iPoint), zCell(iPoint), &
                             nEdgesOnCell(iPoint), verticesOnCell(:,iPoint), xVertex, yVertex, zVertex)) then
                    do k=1,nz
                       if (rarray(i,j,k) == msgval) then
@@ -1135,7 +1136,7 @@ if (rarray(i,j,1) == 0) cycle
                 xPixel = sphere_radius * cos(lon_pt) * cos(lat_pt)    ! at this point, so we need to ues the same radius
                 yPixel = sphere_radius * sin(lon_pt) * cos(lat_pt)    ! for source pixel coordinates
 
-                if (in_cell(xPixel, yPixel, zPixel, xCell(iPoint), yCell(iPoint), zCell(iPoint), &
+                if (mpas_in_cell(xPixel, yPixel, zPixel, xCell(iPoint), yCell(iPoint), zCell(iPoint), &
                             nEdgesOnCell(iPoint), verticesOnCell(:,iPoint), xVertex, yVertex, zVertex)) then
                    do k=1,nz
                       if (rarray(ii,jj,k) == msgval) then
@@ -1326,146 +1327,6 @@ if (rarray(i,j,1) == 0) cycle
  sphere_distance = 2.*radius*asin(arg1)
 
  end function sphere_distance
-
-
-!-----------------------------------------------------------------------
-!  routine mirror_point
-!
-!> \brief Finds the "mirror" of a point about a great-circle arc
-!> \author Michael Duda
-!> \date   7 March 2019
-!> \details
-!>  Given the endpoints of a great-circle arc (A,B) and a point, computes
-!>  the location of the point on the opposite side of the arc along a great-
-!>  circle arc that intersects (A,B) at a right angle, and such that the arc
-!>  between the point and its mirror is bisected by (A,B).
-!>
-!>  Assumptions: A, B, and the point to be reflected all lie on the surface
-!>  of the unit sphere.
-!
-!-----------------------------------------------------------------------
-subroutine mirror_point(xPoint, yPoint, zPoint, xA, yA, zA, xB, yB, zB, xMirror, yMirror, zMirror)
-
-   implicit none
-
-   real(kind=RKIND), intent(in) :: xPoint, yPoint, zPoint
-   real(kind=RKIND), intent(in) :: xA, yA, zA
-   real(kind=RKIND), intent(in) :: xB, yB, zB
-   real(kind=RKIND), intent(out) :: xMirror, yMirror, zMirror
-
-   real(kind=RKIND) :: alpha
-
-   !
-   ! Find the spherical angle between arcs AP and AB (where P is the point to be reflected)
-   !
-   alpha = sphere_angle(xA, yA, zA, xPoint, yPoint, zPoint, xB, yB, zB)
-
-   !
-   ! Rotate the point to be reflected by twice alpha about the vector from the origin to A
-   !
-   call rotate_about_vector(xPoint, yPoint, zPoint, 2.0_RKIND * alpha, 0.0_RKIND, 0.0_RKIND, 0.0_RKIND, &
-                            xA, yA, zA, xMirror, yMirror, zMirror)
-
-end subroutine mirror_point
-
-
-!-----------------------------------------------------------------------
-!  routine rotate_about_vector
-!
-!> \brief Rotates a point about a vector in R3
-!> \author Michael Duda
-!> \date   7 March 2019
-!> \details
-!>  Rotates the point (x,y,z) through an angle theta about the vector
-!>  originating at (a, b, c) and having direction (u, v, w).
-!
-!>  Reference: https://sites.google.com/site/glennmurray/Home/rotation-matrices-and-formulas/rotation-about-an-arbitrary-axis-in-3-dimensions
-!
-!-----------------------------------------------------------------------
-subroutine rotate_about_vector(x, y, z, theta, a, b, c, u, v, w, xp, yp, zp)
-
-   implicit none
-
-   real (kind=RKIND), intent(in) :: x, y, z, theta, a, b, c, u, v, w
-   real (kind=RKIND), intent(out) :: xp, yp, zp
-
-   real (kind=RKIND) :: vw2, uw2, uv2
-   real (kind=RKIND) :: m
-
-   vw2 = v**2.0 + w**2.0
-   uw2 = u**2.0 + w**2.0
-   uv2 = u**2.0 + v**2.0
-   m = sqrt(u**2.0 + v**2.0 + w**2.0)
-
-   xp = (a*vw2 + u*(-b*v-c*w+u*x+v*y+w*z) + ((x-a)*vw2+u*(b*v+c*w-v*y-w*z))*cos(theta) + m*(-c*v+b*w-w*y+v*z)*sin(theta))/m**2.0
-   yp = (b*uw2 + v*(-a*u-c*w+u*x+v*y+w*z) + ((y-b)*uw2+v*(a*u+c*w-u*x-w*z))*cos(theta) + m*( c*u-a*w+w*x-u*z)*sin(theta))/m**2.0
-   zp = (c*uv2 + w*(-a*u-b*v+u*x+v*y+w*z) + ((z-c)*uv2+w*(a*u+b*v-u*x-v*y))*cos(theta) + m*(-b*u+a*v-v*x+u*y)*sin(theta))/m**2.0
-
-end subroutine rotate_about_vector
-
-
-!-----------------------------------------------------------------------
-!  routine in_cell
-!
-!> \brief Determines whether a point is within a Voronoi cell
-!> \author Michael Duda
-!> \date   7 March 2019
-!> \details
-!>  Given a point on the surface of the sphere, the corner points of a Voronoi
-!>  cell, and the generating point for that Voronoi cell, determines whether
-!>  the given point is within the Voronoi cell.
-!
-!-----------------------------------------------------------------------
-logical function in_cell(xPoint, yPoint, zPoint, xCell, yCell, zCell, &
-                         nEdgesOnCell, verticesOnCell, xVertex, yVertex, zVertex)
-
-   use mpas_geometry_utils, only : mpas_arc_length
-
-   implicit none
-
-   real(kind=RKIND), intent(in) :: xPoint, yPoint, zPoint
-   real(kind=RKIND), intent(in) :: xCell, yCell, zCell
-   integer, intent(in) :: nEdgesOnCell
-   integer, dimension(:), intent(in) :: verticesOnCell
-   real(kind=RKIND), dimension(:), intent(in) :: xVertex, yVertex, zVertex
-
-   integer :: i
-   integer :: vtx1, vtx2
-   real(kind=RKIND) :: xNeighbor, yNeighbor, zNeighbor
-   real(kind=RKIND) :: inDist, outDist
-   real(kind=RKIND) :: radius
-   real(kind=RKIND) :: radius_inv
-
-   radius = sqrt(xCell * xCell + yCell * yCell + zCell * zCell)
-   radius_inv = 1.0_RKIND / radius
-
-   inDist = mpas_arc_length(xPoint, yPoint, zPoint, xCell, yCell, zCell)
-
-   in_cell = .true.
-
-   do i=1,nEdgesOnCell
-      vtx1 = verticesOnCell(i)
-      vtx2 = verticesOnCell(mod(i,nEdgesOnCell)+1)
-
-      call mirror_point(xCell*radius_inv, yCell*radius_inv, zCell*radius_inv, &
-                        xVertex(vtx1)*radius_inv, yVertex(vtx1)*radius_inv, zVertex(vtx1)*radius_inv, &
-                        xVertex(vtx2)*radius_inv, yVertex(vtx2)*radius_inv, zVertex(vtx2)*radius_inv, &
-                        xNeighbor, yNeighbor, zNeighbor)
-
-      xNeighbor = xNeighbor * radius
-      yNeighbor = yNeighbor * radius
-      zNeighbor = zNeighbor * radius
-
-      outDist = mpas_arc_length(xPoint, yPoint, zPoint, xNeighbor, yNeighbor, zNeighbor)
-
-      if (outDist < inDist) then
-         in_cell = .false.
-         return
-      end if
-
-   end do
-
-end function in_cell
 
 
 !==================================================================================================
