@@ -21,6 +21,7 @@
  use mpas_atmphys_utilities
 
  use mpas_kd_tree, only : mpas_kd_type, mpas_kd_construct, mpas_kd_free
+ use mpas_geotile_manager, only : mpas_geotile_mgr_type
 
  use iso_c_binding, only : c_char, c_int, c_float, c_loc, c_ptr
 
@@ -140,6 +141,9 @@
 
  type (mpas_kd_type), dimension(:), pointer :: kd_points
  type (mpas_kd_type), pointer :: tree
+
+ integer :: ierr
+ type (mpas_geotile_mgr_type) :: mgr
 
 !--------------------------------------------------------------------------------------------------
 
@@ -308,7 +312,18 @@
        call mpas_log_write('Please correct the namelist.', messageType=MPAS_LOG_CRIT)
  end select
 
+ ierr = mgr % init(trim(config_geog_data_path)//trim(geog_sub_path))
+ if (ierr /= 0) then
+    call mpas_log_write('Error occured when initalizing the interpolation of terrain height (ter)', messageType=MPAS_LOG_CRIT)
+ endif
+
  ter(:) = 0.0_RKIND
+
+ ierr = mgr % finalize()
+ if (ierr /= 0) then
+    call mpas_log_write('Error occured when finalizing the interpolation of terrain height (ter)', messageType=MPAS_LOG_CRIT)
+ endif
+
  call mpas_log_write('--- end interpolate TER')
 
 
