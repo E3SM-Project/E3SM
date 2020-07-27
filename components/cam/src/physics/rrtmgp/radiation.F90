@@ -33,7 +33,7 @@ module radiation
 
    use radiation_state, only: ktop, kbot, nlev_rad
    use radiation_utils, only: compress_day_columns, expand_day_columns, &
-                              check_range, handle_error
+                              handle_error
 
    implicit none
    private
@@ -131,18 +131,14 @@ module radiation
    real(r8) :: dt_avg = 0.0_r8  
 
    ! k-distribution coefficients. These will be populated by reading from the
-   ! RRTMGP coefficients files, specified by rrtmgp_coefficients_file_sw and
-   ! rrtmgp_coefficients_file_lw in the radiation namelist. They exist as module
-   ! data because we only want to load those files once.
+   ! RRTMGP coefficients files, specified by coefficients_file_sw and
+   ! coefficients_file_lw in the radiation namelist. They exist as module data
+   ! because we only want to load those files once.
    type(ty_gas_optics_rrtmgp) :: k_dist_sw, k_dist_lw
 
    ! k-distribution coefficients files to read from. These are set via namelist
    ! variables.
    character(len=cl) :: rrtmgp_coefficients_file_sw, rrtmgp_coefficients_file_lw
-
-   ! Should we clip temperatures when out of bounds of absorption coefficient
-   ! look-up table data?
-   logical :: rrtmgp_clip_temperatures = .false.
 
    ! Number of g-points in k-distribution (set based on absorption coefficient inputdata)
    integer :: nswgpts, nlwgpts
@@ -216,7 +212,6 @@ contains
       ! Variables defined in namelist
       namelist /radiation_nl/ rrtmgp_coefficients_file_lw,     &
                               rrtmgp_coefficients_file_sw,     &
-                              rrtmgp_clip_temperatures   , &
                               iradsw, iradlw, irad_always,     &
                               use_rad_dt_cosz, spectralflux,   &
                               do_aerosol_rad, fixed_total_solar_irradiance
@@ -241,7 +236,6 @@ contains
       ! Broadcast namelist variables
       call mpibcast(rrtmgp_coefficients_file_lw, cl, mpi_character, mstrid, mpicom, ierr)
       call mpibcast(rrtmgp_coefficients_file_sw, cl, mpi_character, mstrid, mpicom, ierr)
-      call mpibcast(rrtmgp_clip_temperatures, 1, mpi_logical, mstrid, mpicom, ierr)
       call mpibcast(iradsw, 1, mpi_integer, mstrid, mpicom, ierr)
       call mpibcast(iradlw, 1, mpi_integer, mstrid, mpicom, ierr)
       call mpibcast(irad_always, 1, mpi_integer, mstrid, mpicom, ierr)
@@ -1063,7 +1057,6 @@ contains
                             get_cloud_optics_lw, sample_cloud_optics_lw, &
                             set_aerosol_optics_sw
       use aer_rad_props, only: aer_rad_props_lw
-      use physconst, only: pi
 
       ! For running CFMIP Observation Simulator Package (COSP)
       use cospsimulator_intr, only: docosp, cospsimulator_intr_run, cosp_nradsteps
@@ -1152,10 +1145,6 @@ contains
       ! Gas volume mixing ratios
       real(r8), dimension(size(active_gases),pcols,pver) :: gas_vmr
 
-      ! Latitude and longitude arrays for extra debugging information when
-      ! things go wrong
-      real(r8), dimension(pcols) :: lat, lon
-
       ! Needed for shortwave aerosol; TODO: remove this dependency
       integer :: nday, nnight     ! Number of daylight columns
       integer :: day_indices(pcols), night_indices(pcols)   ! Indicies of daylight coumns
@@ -1165,7 +1154,7 @@ contains
       logical :: conserve_energy = .true.
 
       ! Number of columns
-      integer :: ncol, icol
+      integer :: ncol
 
       ! For loops over diagnostic calls
       integer :: icall
@@ -1226,26 +1215,20 @@ contains
          )
 
          ! Check temperatures to make sure they are within the bounds of the
-         ! absorption coefficient look-up tables. If out of bounds, optionally clip
-         ! values to min/max specified (depending on value of
-         ! rrtmgp_clip_temperatures)
-         do icol = 1,ncol
-            lat(icol) = state%lat(icol) * 180._r8 / pi
-            lon(icol) = state%lon(icol) * 180._r8 / pi
-         end do
+         ! absorption coefficient look-up tables. If out of bounds, clip
+         ! values to min/max specified
          call t_startf('rrtmgp_check_temperatures')
-         call check_range( &
+         call handle_error(clip_values( &
             tmid(1:ncol,1:nlev_rad), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
-            trim(subroutine_name) // ' tmid', lat, lon, clip_values=rrtmgp_clip_temperatures &
-         )
-         call check_range( &
+            trim(subname) // ' tmid' &
+         ), fatal=.false.)
+         call handle_error(clip_values( &
             tint(1:ncol,1:nlev_rad+1), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
-            trim(subroutine_name) // ' tint', lat, lon, clip_values=rrtmgp_clip_temperatures &
-         )
+            trim(subname) // ' tint' &
+         ), fatal=.false.)
          call t_stopf('rrtmgp_check_temperatures')
-
       end if
-
+     
       ! Do shortwave stuff...
       if (radiation_do('sw')) then
 
@@ -1490,7 +1473,6 @@ contains
 
    end subroutine radiation_tend
 
-
    !----------------------------------------------------------------------------
 
    subroutine radiation_driver_sw(ncol, &
@@ -1554,7 +1536,7 @@ contains
       real(r8) :: tsi_scaling
 
       ! Loop indices
-      integer :: iband, iday, icol, igas
+      integer :: iband
 
       ! State fields that are passed into RRTMGP. Some of these may need to
       ! modified from what exist in the physics_state object, i.e. to clip
@@ -1563,6 +1545,7 @@ contains
       real(r8), dimension(ncol,nlev_rad+1) :: pint_day, tint_day
 
       real(r8), dimension(size(active_gases),ncol,pver) :: gas_vmr_day
+      integer :: igas, iday, icol
 
       ! Everybody needs a name
       character(*), parameter :: subroutine_name = 'radiation_driver_sw'
@@ -1797,7 +1780,7 @@ contains
       use mo_fluxes_byband, only: ty_fluxes_byband
       use mo_optical_props, only: ty_optical_props_1scl
       use mo_gas_concentrations, only: ty_gas_concs
-      use radiation_utils, only: calculate_heating_rate, clip_values
+      use radiation_utils, only: calculate_heating_rate
 
       ! Inputs
       integer, intent(in) :: ncol
@@ -1821,7 +1804,6 @@ contains
       type(ty_gas_concs) :: gas_concentrations
       type(ty_optical_props_1scl) :: aer_optics_lw
       type(ty_optical_props_1scl) :: cld_optics_lw
-
 
       ! Set surface emissivity to 1 here. There is a note in the RRTMG
       ! implementation that this is treated in the land model, but the old
