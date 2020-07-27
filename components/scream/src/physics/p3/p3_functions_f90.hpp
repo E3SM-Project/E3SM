@@ -1221,7 +1221,7 @@ void p3_main_part3_f(
 
 struct P3MainData
 {
-  static constexpr size_t NUM_ARRAYS = 41;
+  static constexpr size_t NUM_ARRAYS = 36;
   static constexpr size_t NUM_INPUT_ARRAYS = 20;
 
   // Inputs
@@ -1234,7 +1234,9 @@ struct P3MainData
   Real* qc, *nc, *qr, *nr, *qitot, *qirim, *nitot, *birim, *qv, *th;
 
   // Out
-  Real* diag_ze, *diag_effc, *diag_effi, *diag_vmi, *diag_di, *diag_rhoi, *mu_c, *lamc, *cmeiout, *prain, *nevapr, *prer_evap, *pratot, *prctot, *liq_ice_exchange, *vap_liq_exchange, *vap_ice_exchange, *rflx, *sflx, *prt_liq, *prt_sol;
+  Real *diag_effc, *diag_effi, *diag_rhoi, *mu_c, *lamc, *cmeiout, *prain, *nevapr,
+       *prer_evap, *liq_ice_exchange, *vap_liq_exchange, *vap_ice_exchange,
+       *rflx, *sflx, *prt_liq, *prt_sol;
 
   P3MainData(Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool log_predictNc_,
              const std::array< std::pair<Real, Real>, NUM_INPUT_ARRAYS >& ranges);
@@ -1264,11 +1266,8 @@ struct P3MainData
     util::transpose<D>(birim, d_trans.birim, m_ni, m_nk);
     util::transpose<D>(qv, d_trans.qv, m_ni, m_nk);
     util::transpose<D>(th, d_trans.th, m_ni, m_nk);
-    util::transpose<D>(diag_ze, d_trans.diag_ze, m_ni, m_nk);
     util::transpose<D>(diag_effc, d_trans.diag_effc, m_ni, m_nk);
     util::transpose<D>(diag_effi, d_trans.diag_effi, m_ni, m_nk);
-    util::transpose<D>(diag_vmi, d_trans.diag_vmi, m_ni, m_nk);
-    util::transpose<D>(diag_di, d_trans.diag_di, m_ni, m_nk);
     util::transpose<D>(diag_rhoi, d_trans.diag_rhoi, m_ni, m_nk);
     util::transpose<D>(mu_c, d_trans.mu_c, m_ni, m_nk);
     util::transpose<D>(lamc, d_trans.lamc, m_ni, m_nk);
@@ -1276,8 +1275,6 @@ struct P3MainData
     util::transpose<D>(prain, d_trans.prain, m_ni, m_nk);
     util::transpose<D>(nevapr, d_trans.nevapr, m_ni, m_nk);
     util::transpose<D>(prer_evap, d_trans.prer_evap, m_ni, m_nk);
-    util::transpose<D>(pratot, d_trans.pratot, m_ni, m_nk);
-    util::transpose<D>(prctot, d_trans.prctot, m_ni, m_nk);
     util::transpose<D>(liq_ice_exchange, d_trans.liq_ice_exchange, m_ni, m_nk);
     util::transpose<D>(vap_liq_exchange, d_trans.vap_liq_exchange, m_ni, m_nk);
     util::transpose<D>(vap_ice_exchange, d_trans.vap_ice_exchange, m_ni, m_nk);
@@ -1305,11 +1302,14 @@ void p3_main(P3MainData& d);
 extern "C" {
 
 void p3_main_f(
-  Real* qc, Real* nc, Real* qr, Real* nr, Real* th, Real* qv, Real dt, Real* qitot, Real* qirim, Real* nitot, Real* birim,
-  Real* pres, Real* dzq, Real* ncnuc, Real* naai, Real* qc_relvar, Int it, Real* prt_liq, Real* prt_sol, Int its, Int ite, Int kts, Int kte, Real* diag_ze, Real* diag_effc,
-  Real* diag_effi, Real* diag_vmi, Real* diag_di, Real* diag_rhoi, bool log_predictNc,
-  Real* pdel, Real* exner, Real* cmeiout, Real* prain, Real* nevapr, Real* prer_evap, Real* rflx, Real* sflx, Real* rcldm, Real* lcldm, Real* icldm,
-  Real* pratot, Real* prctot, Real* mu_c, Real* lamc, Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange);
+  Real* qc, Real* nc, Real* qr, Real* nr, Real* th, Real* qv, Real dt,
+  Real* qitot, Real* qirim, Real* nitot, Real* birim, Real* pres, Real* dzq,
+  Real* ncnuc, Real* naai, Real* qc_relvar, Int it, Real* prt_liq,
+  Real* prt_sol, Int its, Int ite, Int kts, Int kte, Real* diag_effc,
+  Real* diag_effi, Real* diag_rhoi, bool log_predictNc, Real* pdel, Real* exner,
+  Real* cmeiout, Real* prain, Real* nevapr, Real* prer_evap, Real* rflx,
+  Real* sflx, Real* rcldm, Real* lcldm, Real* icldm, Real* mu_c, Real* lamc,
+  Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
