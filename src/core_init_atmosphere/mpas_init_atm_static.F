@@ -20,6 +20,8 @@
  use mpas_geometry_utils, only : mpas_in_cell
  use mpas_atmphys_utilities
 
+ use mpas_kd_tree, only : mpas_kd_type, mpas_kd_construct, mpas_kd_free
+
  use iso_c_binding, only : c_char, c_int, c_float, c_loc, c_ptr
 
  implicit none
@@ -136,6 +138,9 @@
 
  real (kind=RKIND) :: xPixel, yPixel, zPixel
 
+ type (mpas_kd_type), dimension(:), pointer :: kd_points
+ type (mpas_kd_type), pointer :: tree
+
 !--------------------------------------------------------------------------------------------------
 
 
@@ -226,6 +231,21 @@
  areaTriangle = areaTriangle * sphere_radius**2.0
  kiteAreasOnVertex = kiteAreasOnVertex * sphere_radius**2.0
 
+!
+! Initialize the KD-Tree
+!
+ allocate(kd_points(nCells))
+ do i = 1, nCells
+     allocate(kd_points(i) % point(3))
+     kd_points(i) % point = (/xCell(i), yCell(i), zCell(i)/)
+     kd_points(i) % id = i ! Cell ID
+ enddo
+ tree => null()
+ tree => mpas_kd_construct(kd_points, 3)
+ if (.not. associated(tree)) then
+     call mpas_log_write('Error creating the KD-Tree for static interpolation', messageType=MPAS_LOG_CRIT)
+ endif
+
 
 !
 ! Initialize Coriolis parameter field on edges and vertices
@@ -272,7 +292,6 @@
 !
 ! Interpolate HGT
 !
-
  select case(trim(config_topo_data))
     case('GTOPO30')
        call mpas_log_write('Using GTOPO30 terrain dataset')
@@ -1174,6 +1193,12 @@ if (rarray(i,j,1) == 0) cycle
  end if
 
  call mpas_log_write('--- end interpolate ALBEDO12M')
+
+!
+! Deallocate and free the KD Tree
+!
+ call mpas_kd_free(tree)
+ deallocate(kd_points)
 
 
  end subroutine init_atm_static
