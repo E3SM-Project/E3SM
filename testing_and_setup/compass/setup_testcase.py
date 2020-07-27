@@ -1556,7 +1556,9 @@ def get_case_name(config_file):  # {{{
 def link_load_compass_env(init_path, configs):  # {{{
 
     if configs.getboolean('conda', 'link_load_compass'):
-        target = configs.get('conda', 'load_compass_script')
+        target = '{}/{}/load_compass_env.sh'.format(
+            configs.get('script_paths', 'script_path'),
+            configs.get('script_paths', 'core_dir'))
 
         link_name = '{}/load_compass_env.sh'.format(init_path)
         try:
@@ -1611,8 +1613,8 @@ if __name__ == "__main__":
                         metavar="PATH")
     parser.add_argument("--link_load_compass", dest="link_load_compass",
                         action="store_true",
-                        help="If set, a link to load_compass_env.sh is included"
-                             " with each test case")
+                        help="If set, a link to <core>/load_compass_env.sh is "
+                             "included with each test case")
 
     args = parser.parse_args()
 
@@ -1709,11 +1711,6 @@ if __name__ == "__main__":
 
     if args.link_load_compass:
         config.set('conda', 'link_load_compass', 'True')
-
-    if config.getboolean('conda', 'link_load_compass'):
-        load_script = '{}/load_compass_env.sh'.format(
-            os.path.dirname(os.path.abspath(__file__)))
-        config.set('conda', 'load_compass_script', load_script)
 
     # Build variables for history output
     old_dir = os.getcwd()
