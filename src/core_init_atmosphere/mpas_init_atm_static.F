@@ -272,32 +272,14 @@
 !
 ! Interpolate HGT
 !
-!nx = 126
-!ny = 126
- nx = 1206
- ny = 1206
- nz = 1
- isigned  = 1
- endian   = 0
- wordsize = 2
- scalefactor = 1.0
- allocate(rarray(nx,ny,nz))
- allocate(nhs(nCells))
- nhs(:) = 0
- ter(:) = 0.0
 
- rarray_ptr = c_loc(rarray)
-
- start_lat = -89.99583
  select case(trim(config_topo_data))
     case('GTOPO30')
        call mpas_log_write('Using GTOPO30 terrain dataset')
        geog_sub_path = 'topo_30s/'
-       start_lon = -179.99583
     case('GMTED2010')
        call mpas_log_write('Using GMTED2010 terrain dataset')
        geog_sub_path = 'topo_gmted2010_30s/'
-       start_lon = 0.004166667
     case('default')
        call mpas_log_write('*****************************************************************', messageType=MPAS_LOG_ERR)
        call mpas_log_write('Invalid topography dataset '''//trim(config_topo_data) &
@@ -307,66 +289,7 @@
        call mpas_log_write('Please correct the namelist.', messageType=MPAS_LOG_CRIT)
  end select
 
- do jTileStart = 1,20401,ny-6
-    jTileEnd = jTileStart + ny - 1 - 6
-
-    do iTileStart=1,42001,nx-6
-       iTileEnd = iTileStart + nx - 1 - 6
-       write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)//trim(geog_sub_path), &
-                    iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
-       call mpas_log_write(trim(fname))
-       call mpas_f_to_c_string(fname, c_fname)
-
-       call read_geogrid(c_fname,rarray_ptr,nx,ny,nz,isigned,endian, &
-                         scalefactor,wordsize,istatus)
-       call init_atm_check_read_error(istatus, fname)
-
-       iPoint = 1
-       do j=4,ny-3
-       do i=4,nx-3
-          lat_pt = start_lat + (jTileStart + j - 5) * 0.0083333333
-          lon_pt = start_lon + (iTileStart + i - 5) * 0.0083333333
-          lat_pt = lat_pt * PI / 180.0
-          lon_pt = lon_pt * PI / 180.0
-
-          iPoint = nearest_cell(lat_pt,lon_pt,iPoint,nCells,maxEdges, &
-                                nEdgesOnCell,cellsOnCell, &
-                                latCell,lonCell)
-
-          !
-          ! For all but the outermost boundary cells, we can safely assume that the nearest
-          ! model grid cell contains the pixel (else, a different cell would be nearest)
-          !
-          if (bdyMaskCell(iPoint) < nBdyLayers) then
-             ter(iPoint) = ter(iPoint) + rarray(i,j,1)
-             nhs(iPoint) = nhs(iPoint) + 1
-
-          ! For outermost boundary cells, additional work is needed to verify that the pixel
-          ! actually lies within the nearest cell
-          else
-             zPixel = sphere_radius * sin(lat_pt)                  ! Model cell coordinates assume a "full" sphere radius
-             xPixel = sphere_radius * cos(lon_pt) * cos(lat_pt)    ! at this point, so we need to ues the same radius
-             yPixel = sphere_radius * sin(lon_pt) * cos(lat_pt)    ! for source pixel coordinates
-
-             if (mpas_in_cell(xPixel, yPixel, zPixel, xCell(iPoint), yCell(iPoint), zCell(iPoint), &
-                         nEdgesOnCell(iPoint), verticesOnCell(:,iPoint), xVertex, yVertex, zVertex)) then
-
-                ter(iPoint) = ter(iPoint) + rarray(i,j,1)
-                nhs(iPoint) = nhs(iPoint) + 1
-
-             end if
-          end if
-       end do
-       end do
-
-    end do
- end do
-
- do iCell = 1,nCells
-    ter(iCell) = ter(iCell) / real(nhs(iCell))
- end do
- deallocate(rarray)
- deallocate(nhs)
+ ter(:) = 0.0_RKIND
  call mpas_log_write('--- end interpolate TER')
 
 
