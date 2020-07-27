@@ -65,6 +65,48 @@ struct SHOCGridData {
 // and density. 
 void shoc_grid(Int nlev, SHOCGridData &d);
 
+
+//BSINGH- Add comments
+struct SHOCVertfluxData {
+  static constexpr size_t NUM_ARRAYS   = 1;
+  static constexpr size_t NUM_ARRAYS_i = 3;
+
+  // Inputs
+  Int   shcol, nlev, nlevi;
+  Real *tkh_zi, *dz_zi, *invar;
+
+  // In/out
+  Real *vertflux;
+
+  SHOCVertfluxData(Int shcol_, Int nevl_, Int nlevi_);
+  SHOCVertfluxData(const SHOCVertfluxData &rhs);
+  SHOCVertfluxData &operator=(const SHOCVertfluxData &rhs);
+
+  void init_ptrs();
+
+  // Internals
+  Int m_shcol, m_nlev, m_nlevi, m_total, m_totali;
+  std::vector<Real> m_data;
+  std::vector<Real> m_datai;
+
+  template <util::TransposeDirection::Enum D>
+  void transpose() {
+    SHOCVertfluxData d_trans(*this);
+
+    // Transpose on the zt grid
+    util::transpose<D>(invar, d_trans.invar, shcol, nlev);
+
+    // Transpose on the zi grid
+    util::transpose<D>(tkh_zi, d_trans.tkh_zi, shcol, nlevi);
+    util::transpose<D>(dz_zi, d_trans.dz_zi, shcol, nlevi);
+    util::transpose<D>(vertflux, d_trans.vertflux, shcol, nlevi);
+
+    *this = std::move(d_trans);
+  }
+};//SHOCVertfluxData
+
+void calc_shoc_vertflux(Int nlev, SHOCVertfluxData &d);
+
 }  // namespace shoc
 }  // namespace scream
 
