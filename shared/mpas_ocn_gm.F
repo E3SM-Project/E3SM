@@ -52,8 +52,22 @@ module ocn_gm
    logical :: local_config_GM_kappa_lat_depth_variable
    real(kind=RKIND) :: slopeTaperFactor, sfcTaperFactor, rediGMinitValue
 
-
-   real(kind=RKIND), dimension(:, :), pointer :: gradDensityEdge, drhoDzTopOfEdge, dzdxEdge
+   !--------------------------------------------------------------------                                          
+   !                                                                                                              
+   ! Replace calls to mpas_allocate_scratch_Field with straight allocates.                                        
+   ! These variables were moved from the subroutines, but will be moved back once the                             
+   ! threading implementation is changed to more localized threading                                              
+   !                                                                                                              
+   !--------------------------------------------------------------------
+   ! gradDensityEdge: Normal gradient of density
+   !           units: none
+   real(kind=RKIND), dimension(:, :), pointer :: gradDensityEdge
+   ! drhoDzTopOfEdge: Gradient of density in vertical on edges
+   !           units: None
+   real(kind=RKIND), dimension(:, :), pointer :: drhoDzTopOfEdge
+   ! dzdxEdge: Gradient of depth at constant cell indes
+   !    units: None
+   real(kind=RKIND), dimension(:, :), pointer :: dzdxEdge
 
 !***********************************************************************
 
