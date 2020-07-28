@@ -1346,6 +1346,7 @@ flags should be captured within MPAS CMake files.
 </compiler>
 
 <compiler MACH="singularity" COMPILER="gnu">
+  <HDF5_PATH> $ENV{HDF5_PATH}</HDF5_PATH>
   <NETCDF_PATH> $ENV{NETCDF_PATH}</NETCDF_PATH>
   <PNETCDF_PATH> $ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <SLIBS>
