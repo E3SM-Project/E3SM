@@ -25,6 +25,8 @@ import subprocess
 from six.moves import configparser
 import textwrap
 import netCDF4
+import shutil
+import errno
 
 try:
     from collections import defaultdict
@@ -515,6 +517,8 @@ def generate_driver_scripts(config_file, configs):  # {{{
         # Ensure work_dir exists before writing driver script there.
         if not os.path.exists(init_path):
             os.makedirs(init_path)
+
+        link_load_compass_env(init_path, configs)
 
         # Create script file
         script = open('{}/{}'.format(init_path, name), 'w')
@@ -1176,61 +1180,7 @@ def add_links(config_file, configs):  # {{{
     for child in config_root:
         # Process an <add_link> tag
         if child.tag == 'add_link':
-            try:
-                source = child.attrib['source']
-            except KeyError:
-                print(" add_link tag missing a 'source' attribute.")
-                print(" Exiting...")
-                sys.exit(1)
-
-            try:
-                source_path_name = child.attrib['source_path']
-
-                keyword_path = False
-                if source_path_name.find('work_') >= 0:
-                    keyword_path = True
-                elif source_path_name.find('script_') >= 0:
-                    keyword_path = True
-
-                if not keyword_path:
-                    if configs.has_option('paths', source_path_name):
-                        source_path = configs.get('paths', source_path_name)
-                    else:
-                        source_path = 'NONE'
-
-                    if source_path == 'NONE':
-                        if configs.has_option('script_paths',
-                                              source_path_name):
-                            source_path = configs.get('script_paths',
-                                                      source_path_name)
-                        else:
-                            source_path = 'NONE'
-
-                    if source_path == 'NONE':
-                        print("ERROR: source_path on <add_link> tag is '{}' "
-                              "which is not defined".format(source_path_name))
-                        print("Exiting...")
-                        sys.exit(1)
-
-                else:
-                    source_arr = source_path_name.split('_')
-                    base_name = source_arr[0]
-                    subname = '{}_{}'.format(source_arr[1], source_arr[2])
-
-                    if base_name == 'work':
-                        file_base_path = 'work_dir'
-                    elif base_name == 'script':
-                        file_base_path = 'script_path'
-
-                    if subname in {'core_dir', 'configuration_dir',
-                                   'resolution_dir', 'test_dir', 'case_dir'}:
-                        source_path = '{}/{}'.format(
-                                configs.get('script_paths', file_base_path),
-                                configs.get('script_paths', subname))
-
-                source_file = '{}/{}'.format(source_path, source)
-            except KeyError:
-                source_file = '{}'.format(source)
+            source_file = get_source_file(child, configs)
 
             dest = child.attrib['dest']
             old_cwd = os.getcwd()
@@ -1240,29 +1190,92 @@ def add_links(config_file, configs):  # {{{
                                    '{}'.format(dest)],
                                   stdout=dev_null, stderr=dev_null)
             os.chdir(old_cwd)
-            del source
-            del dest
         # Process an <add_executable> tag
         elif child.tag == 'add_executable':
             source_attr = child.attrib['source']
             dest = child.attrib['dest']
             if not configs.has_option("executables", source_attr):
-                print('ERROR: Configuration {} requires a definition of '
+                raise ValueError('Configuration {} requires a definition of '
                       '{}.'.format(config_file, source_attr))
-                sys.exit(1)
-            else:
-                source = configs.get("executables", source_attr)
+            source = configs.get("executables", source_attr)
 
             subprocess.check_call(['ln', '-sf', '{}'.format(source),
                                    '{}/{}'.format(base_path, dest)],
                                   stdout=dev_null, stderr=dev_null)
-            del source_attr
-            del source
-            del dest
 
-    del config_tree
-    del config_root
     dev_null.close()
+# }}}
+
+
+def get_source_file(child, config):  # {{{
+    try:
+        source = child.attrib['source']
+    except KeyError:
+        raise KeyError("{} tag missing a 'source' attribute.".format(
+            child.tag))
+
+    try:
+        source_path_name = child.attrib['source_path']
+    except KeyError:
+        return source
+
+    keyword_path = any(substring in source_path_name for
+                       substring in ['work_', 'script_'])
+
+    if keyword_path:
+        source_arr = source_path_name.split('_')
+        base_name = source_arr[0]
+        if base_name == 'work':
+            file_base_path = 'work_dir'
+        elif base_name == 'script':
+            file_base_path = 'script_path'
+        else:
+            raise ValueError('Unexpected source prefix {} in {} tag'.format(
+                base_name, child.tag))
+
+        subname = '{}_{}'.format(source_arr[1], source_arr[2])
+        if subname not in ['core_dir', 'configuration_dir',
+                           'resolution_dir', 'test_dir', 'case_dir']:
+            raise ValueError('Unexpected source suffix {} in {} tag'.format(
+                subname, child.tag))
+
+        source_path = '{}/{}'.format(
+            config.get('script_paths', file_base_path),
+            config.get('script_paths', subname))
+    else:
+        if config.has_option('paths', source_path_name):
+            source_path = config.get('paths', source_path_name)
+        else:
+            if not config.has_option('script_paths', source_path_name):
+                raise ValueError('Undefined source_path on {} tag: {}'.format(
+                    child.tag, source_path_name))
+            source_path = config.get('script_paths',  source_path_name)
+
+    source_file = '{}/{}'.format(source_path, source)
+    return source_file
+# }}}
+
+
+def copy_files(config_file, config):  # {{{
+    config_tree = ET.parse(config_file)
+    config_root = config_tree.getroot()
+
+    case = config_root.attrib['case']
+
+    # Determine the path for the case directory
+    test_path = '{}/{}'.format(config.get('script_paths', 'test_dir'), case)
+    base_path = '{}/{}'.format(config.get('script_paths', 'work_dir'),
+                               test_path)
+
+    # Process all children tags
+    for child in config_root:
+        # Process an <copy_file> tag
+        if child.tag == 'copy_file':
+            source = get_source_file(child, config)
+
+            dest = '{}/{}'.format(base_path, child.attrib['dest'])
+
+            shutil.copy(source, dest)
 # }}}
 
 
@@ -1539,6 +1552,24 @@ def get_case_name(config_file):  # {{{
 
     return name
 # }}}
+
+def link_load_compass_env(init_path, configs):  # {{{
+
+    if configs.getboolean('conda', 'link_load_compass'):
+        target = '{}/{}/load_compass_env.sh'.format(
+            configs.get('script_paths', 'script_path'),
+            configs.get('script_paths', 'core_dir'))
+
+        link_name = '{}/load_compass_env.sh'.format(init_path)
+        try:
+            os.symlink(target, link_name)
+        except OSError as e:
+            if e.errno == errno.EEXIST:
+                os.remove(link_name)
+                os.symlink(target, link_name)
+            else:
+                raise e
+# }}}
 # }}}
 
 
@@ -1580,6 +1611,10 @@ if __name__ == "__main__":
                         help="If set, script will create case directories in "
                              "work_dir rather than the current directory.",
                         metavar="PATH")
+    parser.add_argument("--link_load_compass", dest="link_load_compass",
+                        action="store_true",
+                        help="If set, a link to <core>/load_compass_env.sh is "
+                             "included with each test case")
 
     args = parser.parse_args()
 
@@ -1667,6 +1702,15 @@ if __name__ == "__main__":
     else:
         config.set('script_input_arguments', 'model_runtime',
                    args.model_runtime)
+
+    if not config.has_section('conda'):
+        config.add_section('conda')
+
+    if not config.has_option('conda', 'link_load_compass'):
+        config.set('conda', 'link_load_compass', 'False')
+
+    if args.link_load_compass:
+        config.set('conda', 'link_load_compass', 'True')
 
     # Build variables for history output
     old_dir = os.getcwd()
@@ -1764,6 +1808,8 @@ if __name__ == "__main__":
 
                     # Process all links for this case
                     add_links(config_file, config)
+
+                    copy_files(config_file, config)
 
                     # Generate run scripts for this case.
                     generate_run_scripts(config_file, '{}'.format(case_path),
