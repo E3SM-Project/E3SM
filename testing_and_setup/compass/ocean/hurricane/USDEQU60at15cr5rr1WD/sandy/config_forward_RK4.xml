@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<config case="forward_RK">
+<config case="forward_RK4">
 	<add_link source="../init/ocean.nc" dest="input.nc"/>
 	<add_link source="../init/graph.info" dest="graph.info"/>
 	<add_link source="../init/atmospheric_forcing.nc" dest="atmospheric_forcing.nc"/>
