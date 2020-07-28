@@ -1564,27 +1564,27 @@
         <command name="rm">craype</command>
         <command name="rm">perftools-base</command>
         <command name="rm">darshan</command>
-        <command name="load">craype/2.6.1</command>
+        <command name="load">craype/2.6.5</command>
         <command name="load">cmake/3.14.5</command>
       </modules>
       <modules compiler="intel">
-        <command name="load">intel/19.0.5.281</command>
-        <command name="load">PrgEnv-intel/6.0.5</command>
+        <command name="load">intel/19.1.0.166</command>
+        <command name="load">PrgEnv-intel/6.0.7</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">gcc/8.3.0</command>
-        <command name="load">PrgEnv-gnu/6.0.5</command>
+        <command name="load">gcc/9.3.0</command>
+        <command name="load">PrgEnv-gnu/6.0.7</command>
       </modules>
       <modules compiler="!intel">
-        <command name="load">cray-libsci/19.06.1</command>
+        <command name="load">cray-libsci/20.06.1</command>
       </modules>
       <modules>
         <command name="load">darshan</command>
         <command name="load">craype-mic-knl</command>
-        <command name="load">cray-mpich/7.7.10</command>
-        <command name="load">cray-hdf5/1.10.5.1</command>
-        <command name="load">cray-netcdf/4.6.3.1</command>
-        <command name="load">cray-parallel-netcdf/1.11.1.0</command>
+        <command name="load">cray-mpich/7.7.14</command>
+        <command name="load">cray-hdf5/1.10.6.1</command>
+        <command name="load">cray-netcdf/4.7.3.3</command>
+        <command name="load">cray-parallel-netcdf/1.12.0.1</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
