@@ -2130,6 +2130,7 @@ subroutine tphysbc (ztodt,               &
     logical           :: use_ECPP
     character(len=16) :: MMF_microphysics_scheme
     real(r8)          :: crm_run_time              ! length of CRM integration
+    real(r8), dimension(pcols,pver) :: mmf_clear_rh ! CRM clear air relative humidity used for aerosol water uptake
     real(r8), dimension(pcols) :: mmf_qchk_prec_dp  ! CRM precipitation diagostic (liq+ice)  used for check_energy_chng
     real(r8), dimension(pcols) :: mmf_qchk_snow_dp  ! CRM precipitation diagostic (ice only) used for check_energy_chng
     real(r8), dimension(pcols) :: mmf_rad_flux      ! CRM radiative flux diagnostic used for check_energy_chng
@@ -2790,7 +2791,7 @@ end if
       ! Run the CRM 
       !-------------------------------------------------------------------------
       call crm_physics_tend(ztodt, state, tend,ptend, pbuf, cam_in, cam_out,    &
-                            species_class, crm_ecpp_output,                     &
+                            species_class, crm_ecpp_output, mmf_clear_rh,       &
                             mmf_qchk_prec_dp, mmf_qchk_snow_dp, mmf_rad_flux)
 
       call physics_update(state, ptend, crm_run_time, tend)
@@ -2809,7 +2810,7 @@ end if
       ! set all ptend%lq to false as they will be set in modal_aero_calcsize_sub
       ptend%lq(:) = .false.
       call modal_aero_calcsize_sub (state, ptend, ztodt, pbuf)
-      call modal_aero_wateruptake_dr(state, pbuf)
+      call modal_aero_wateruptake_dr(state, pbuf, clear_rh_in=mmf_clear_rh)
 
       ! When ECPP is included, wet deposition is done ECPP,
       ! So tendency from wet depostion is not updated 
@@ -2906,7 +2907,11 @@ end if
         call t_startf('bc_aerosols')
         if (clim_modal_aero .and. .not. prog_modal_aero) then
           call modal_aero_calcsize_diag(state, pbuf)
-          call modal_aero_wateruptake_dr(state, pbuf)
+          if (use_MMF) then
+            call modal_aero_wateruptake_dr(state, pbuf, clear_rh_in=mmf_clear_rh)
+          else
+            call modal_aero_wateruptake_dr(state, pbuf)
+          end if
         endif
 
         if (do_clubb_sgs) then

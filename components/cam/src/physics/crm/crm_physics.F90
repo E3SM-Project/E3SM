@@ -269,7 +269,7 @@ end subroutine crm_physics_init
 !===================================================================================================
 
 subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
-                            species_class, crm_ecpp_output, &
+                            species_class, crm_ecpp_output, mmf_clear_rh, &
                             mmf_qchk_prec_dp, mmf_qchk_snow_dp, mmf_rad_flux)
 
    !------------------------------------------------------------------------------------------------
@@ -293,6 +293,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    use params,          only: crm_rknd
    use phys_control,    only: phys_getopts
    use crm_history,     only: crm_history_out
+   use wv_saturation,   only: qsat_water
 #if (defined  m2005 && defined MODAL_AERO)  
    ! modal_aero_data only exists if MODAL_AERO
    use modal_aero_data, only: ntot_amode, ntot_amode
@@ -309,18 +310,19 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    use crm_output_module,      only: crm_output_type, crm_output_initialize, crm_output_finalize
    use crm_ecpp_output_module, only: crm_ecpp_output_type
 
-   real(r8),                   intent(in   ) :: ztodt            ! global model time increment
-   type(physics_state),        intent(in   ) :: state            ! Global model state 
-   type(physics_tend),         intent(in   ) :: tend             ! 
-   type(physics_ptend),        intent(  out) :: ptend            ! output tendencies
-   type(physics_buffer_desc),  pointer       :: pbuf(:)          ! physics buffer
-   type(cam_in_t),             intent(in   ) :: cam_in           ! atm input from coupler
-   type(cam_out_t),            intent(inout) :: cam_out          ! atm output to coupler
-   integer,                    intent(in   ) :: species_class(:) ! aerosol species type
-   type(crm_ecpp_output_type), intent(inout) :: crm_ecpp_output  ! output data for ECPP calculations
-   real(r8), dimension(pcols), intent(out  ) :: mmf_qchk_prec_dp ! precipitation diagostic (liq+ice)  used for check_energy_chng
-   real(r8), dimension(pcols), intent(out  ) :: mmf_qchk_snow_dp ! precipitation diagostic (ice only) used for check_energy_chng
-   real(r8), dimension(pcols), intent(out  ) :: mmf_rad_flux     ! radiative flux diagnostic used for check_energy_chng
+   real(r8),                        intent(in   ) :: ztodt            ! global model time increment
+   type(physics_state),             intent(in   ) :: state            ! Global model state 
+   type(physics_tend),              intent(in   ) :: tend             ! 
+   type(physics_ptend),             intent(  out) :: ptend            ! output tendencies
+   type(physics_buffer_desc),       pointer       :: pbuf(:)          ! physics buffer
+   type(cam_in_t),                  intent(in   ) :: cam_in           ! atm input from coupler
+   type(cam_out_t),                 intent(inout) :: cam_out          ! atm output to coupler
+   integer,                         intent(in   ) :: species_class(:) ! aerosol species type
+   type(crm_ecpp_output_type),      intent(inout) :: crm_ecpp_output  ! output data for ECPP calculations
+   real(r8), dimension(pcols,pver), intent(  out) :: mmf_clear_rh     ! clear air relative humidity used for aerosol water uptake
+   real(r8), dimension(pcols),      intent(  out) :: mmf_qchk_prec_dp ! precipitation diagostic (liq+ice)  used for check_energy_chng
+   real(r8), dimension(pcols),      intent(  out) :: mmf_qchk_snow_dp ! precipitation diagostic (ice only) used for check_energy_chng
+   real(r8), dimension(pcols),      intent(  out) :: mmf_rad_flux     ! radiative flux diagnostic used for check_energy_chng
 
    !------------------------------------------------------------------------------------------------
    ! Local variables 
@@ -379,6 +381,11 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    logical  :: use_ECPP                            ! flag for ECPP mode
    character(len=16) :: microp_scheme              ! GCM microphysics scheme
    character(len=16) :: MMF_microphysics_scheme    ! CRM microphysics scheme
+
+   real(r8) :: tmp_e_sat                           ! temporary saturation vapor pressure
+   real(r8) :: tmp_q_sat                           ! temporary saturation specific humidity
+   real(r8) :: tmp_rh_sum                          ! temporary relative humidity sum
+   real(r8) :: tmp_rh_cnt                          ! temporary relative humidity count
 
    ! variables for changing CRM orientation
    real(crm_rknd), parameter        :: pi   = 3.14159265359
@@ -666,6 +673,9 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
 
       ! only need to do this once when crm_angle is static
       call pbuf_set_field(pbuf, pbuf_get_index('CRM_ANGLE'), crm_angle)
+
+      ! Set this output to zero on first step
+      mmf_clear_rh(1:ncol,1:pver) = 0
 
    else  ! not is_first_step
 
@@ -1047,6 +1057,29 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
                                                   qli_hydro_before(:ncol))/crm_run_time/1000._r8
       mmf_qchk_snow_dp(:ncol) = snow_dp(:ncol) + ( qi_hydro_after (:ncol) - &
                                                    qi_hydro_before(:ncol))/crm_run_time/1000._r8
+
+      !---------------------------------------------------------------------------------------------
+      ! Calculate clear air relative humdity for aerosol water uptake
+      !---------------------------------------------------------------------------------------------
+      mmf_clear_rh(1:ncol,1:pver) = 0
+      do icol = 1,ncol
+         do m = 1,crm_nz
+            k = pver-m+1
+            tmp_rh_sum = 0
+            tmp_rh_cnt = 0
+            do jj=1,crm_ny_rad
+            do ii=1,crm_nx_rad
+               if (crm_rad%cld<0.5) then
+                  call qsat_water( crm_rad%temperature(icol,ii,jj,m), state%pmid(icol,k), &
+                                   tmp_e_sat, tmp_q_sat)
+                  tmp_rh_sum = tmp_rh_cnt + tmp_q_sat / crm_rad%qv(icol,ii,jj,m)
+                  tmp_rh_cnt = tmp_rh_cnt + 1
+               end if
+            end do ! ii
+            end do ! jj
+            if (tmp_rh_cnt>0) mmf_clear_rh(icol,k) = tmp_rh_sum / tmp_rh_cnt
+         end do ! m = 1,crm_nz
+      end do ! i = 1,ncol
 
    end if ! (is_first_step())
 
