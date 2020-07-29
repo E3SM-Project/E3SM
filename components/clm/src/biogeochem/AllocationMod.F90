@@ -102,7 +102,7 @@ module AllocationMod
 
   real(r8), allocatable        :: decompmicc(:)                 ! column-level soil microbial decomposer biomass gC/m3
   real(r8), allocatable,target :: veg_rootc(:,:)                ! column-level fine-root biomas kgc/m3
-  integer,  allocatable        :: filter_pcomp(:)               ! this is a plant competitor map for FATES/ECA
+  integer,  allocatable        :: filter_pcomp(:)               ! this is a plant competitor map for FATES/ELM-BL w/ ECA
   integer,  allocatable,target :: ft_index(:)                   ! array holding the pft index of each competitor
   real(r8), allocatable,target :: plant_nh4demand_vr_fates(:,:) ! nutrient demands per competitor per soil layer
   real(r8), allocatable,target :: plant_no3demand_vr_fates(:,:)
@@ -367,11 +367,6 @@ contains
     type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
     !
     ! !LOCAL VARIABLES:
-!    real(r8) :: compet_decomp_no3      ! (unitless) relative competitiveness of immobilizers for NO3 for BGC module
-!    real(r8) :: compet_decomp_nh4      ! (unitless) relative competitiveness of immobilizers for NH4 for BGC module
-!    real(r8) :: compet_decomp_n        ! (unitless) relative competitiveness of immobilizers for N for CN module
-!    real(r8) :: compet_denit           ! (unitless) relative competitiveness of denitrifiers for NO3
-!    real(r8) :: compet_nit             ! (unitless) relative competitiveness of nitrifiers for NH4
     
     real(r8) :: fpi_no3_vr(bounds%begc:bounds%endc,1:nlevdecomp) ! fraction of potential immobilization supplied by no3(no units)
     real(r8) :: fpi_nh4_vr(bounds%begc:bounds%endc,1:nlevdecomp) ! fraction of potential immobilization supplied by nh4 (no units)
@@ -384,10 +379,6 @@ contains
     real(r8) :: excess_immob_nh4_vr(bounds%begc:bounds%endc,1:nlevdecomp) ! nh4 excess flux, if soil microbes are more P limited
     real(r8) :: excess_immob_no3_vr(bounds%begc:bounds%endc,1:nlevdecomp) ! no3 excess flux, if soil microbes are more P limited
     real(r8) :: excess_immob_p_vr(bounds%begc:bounds%endc,1:nlevdecomp)   ! P excess flux, if soil microbes are more N limited
-!    real(r8) :: compet_plant_no3(bounds%begp:bounds%endp)                 ! (unitless) relative compettiveness of plants for NO3 BGC mode
-!    real(r8) :: compet_plant_nh4(bounds%begp:bounds%endp)                 ! (unitless) relative compettiveness of plants for NH4 BGC mode
-!    real(r8) :: compet_plant_n(bounds%begp:bounds%endp)                   ! (unitless) relative compettiveness of plants for N CN mode
-!    real(r8) :: compet_plant_p(bounds%begp:bounds%endp)                   ! (unitless) relative competitiveness of plant for P
     real(r8) :: compet_leach_no3                                          ! (unitless) relative competitiveness of leaching for NO3
     real(r8) :: compet_decomp_p                                           ! (unitless) relative competitiveness of immobilizer for P
     real(r8) :: compet_minsurf_p                                          ! (unitless) relative competitiveness of mineral surface for P
@@ -1097,6 +1088,12 @@ contains
      ! the fluxes between the different competitors and pools.  There are two schemes
      ! presently, ECA and RD.
      !
+     ! There are X steps to this process:
+     !  1) Prepration of inputs, which come from different sources depending mostly
+     !     on weather you are using the big-leaf plant model or FATES
+     !  2) The competitive allocation modules, either ECA or RD
+     !  
+     !
      ! Inputs: 
      !       "col_nf%plant_ndemand" (for RD) the plant's demand for nitrogen
      !
@@ -1105,7 +1102,9 @@ contains
      !            the fraction of the plants demand for nutrients
      !       "col_nf%plant_ndemand" is known for RD entering the scheme, but is an
      !            output for ECA
+     ! ----------------------------------------------------------------------------------
 
+     
      
     ! PHASE-2 of Allocation     :  resolving N/P limitation
     ! !USES                     :
@@ -1159,7 +1158,7 @@ contains
     real(r8) :: fpi_no3_vr(bounds%begc:bounds%endc,1:nlevdecomp) ! fraction of potential immobilization supplied by no3(no units)
     real(r8) :: fpi_nh4_vr(bounds%begc:bounds%endc,1:nlevdecomp) ! fraction of potential immobilization supplied by nh4 (no units)
 
-    integer :: c,p,l,j,k                                             !indices
+    integer :: c,p,j,k                                             !indices
     integer :: f                                                     ! loop index for plant competitors
     integer :: fp                                                    !lake filter pft index
     integer :: fc                                                    !lake filter column index
@@ -1336,21 +1335,22 @@ contains
       !!! Starting resolving N and P limitations !!!
       ! =================================================================================
       ! This section is modified, Aug 2015 by Q. Zhu
-      ! Modified again, October 2019 by R. Knox, modularized uptake competition, added
-      !  interface for FATES plant competitors
+      ! 
       !
       ! (1) add nitrogen and phosphorus competition 
       ! (2) nitrogen and phosphorus uptake is based on root kinetics
       ! (3) no second pass nutrient uptake for plants
       ! =================================================================================
-
+      !
       ! Refactors (RGK 2020)
       ! 1) Consolidated code to use only 1 outer column loop.  There is no cross column
       ! info passing, so this removes a lot of unecessary loop calls
       ! 2) Moved RD and ECA, N and P competition modules into subroutines
       ! 3) Added an interface for FATES
+      ! =================================================================================
 
-
+      
+      ! Initialize some uptake rates to zero
       ! ---------------------------------------------------------------------------
       if(.not.use_fates) then
           do fp=1,num_soilp
@@ -1358,25 +1358,29 @@ contains
               sminn_to_plant_patch(p) = 0.0_r8
               sminp_to_plant_patch(p) = 0.0_r8
           end do
+          if (use_nitrif_denitrif) then
+              do fp=1,num_soilp
+                  p = filter_soilp(fp)
+                  smin_nh4_to_plant_patch(p) = 0.0_r8
+                  smin_no3_to_plant_patch(p) = 0.0_r8
+              end do
+          end if
       end if
       
       do fc=1,num_soilc
 
          c = filter_soilc(fc)
-         
+
+         ! ------------------------------------------------------------------------------
          ! PART I.
          ! Determine the boundary conditions for the competitive allocation modules
-         ! -------------------------------------------------------------------------------
-
-
-         ! Use FATES vegetation
          ! ------------------------------------------------------------------------------
+
          if(use_fates) then
 
             ci             = bounds%clump_index
             s              = elm_fates%f2hmap(ci)%hsites(c)
             n_pcomp        = elm_fates%fates(ci)%bc_out(s)%n_plant_comps
-
             
             if( nu_com.eq.'RD') then
                
@@ -1394,7 +1398,7 @@ contains
                
             else  !(ECA)
 
-               ! not necessary...?
+
                do f = 1,n_pcomp
                   filter_pcomp(f) = f
                end do
@@ -1422,10 +1426,8 @@ contains
    
         else   ! USE ELM Native vegetation (i.e. use_cn), not FATES
            
-
             if (nu_com .eq. 'RD') then
 
-               ! We fill the vertically resolved array to simplify some jointly used code
                do j = 1, nlevdecomp
                   col_plant_ndemand_vr(c,j) = plant_ndemand_col(c) * nuptake_prof(c,j)
                   col_plant_pdemand_vr(c,j) = plant_pdemand_col(c) * puptake_prof(c,j)
@@ -1441,8 +1443,14 @@ contains
                      filter_pcomp(f) = p
                      ft_index(p)     = ivt(p)
                      do j = 1,nlevdecomp
+
+                        ! microbial decomposer biomass [gc/m3]
                         decompmicc(j)  = decompmicc(j) + decompmicc_patch_vr(ivt(p),j)*veg_pp%wtcol(p)
+
+                        ! [gC/m2] fine root C in column =
+                        !         fine root C in patch [gC/m2]  * fraction in layer [-] * [m2/m2] patch fraction
                         veg_rootc(p,j) = frootc(p)*froot_prof(p,j)*veg_pp%wtcol(p)
+                        
                      end do
                   end if
                end do
@@ -1501,8 +1509,7 @@ contains
             
             if (nu_com .eq. 'RD') then ! 'RD' : relative demand approach
 
-               call NAllocationRD(plant_ndemand_col(c),              & ! IN (j)
-                                  nuptake_prof(c,:),                 & ! IN (j)
+               call NAllocationRD(col_plant_ndemand_vr(c,:),         & ! IN (j)
                                   potential_immob_vr(c,:),           & ! IN (j)
                                   AllocParamsInst%compet_plant_nh4,  & ! IN 
                                   AllocParamsInst%compet_decomp_nh4, & ! IN
@@ -1513,8 +1520,7 @@ contains
                                   actual_immob_vr(c,:),              & ! OUT (:)
                                   sminn_to_plant_vr(c,:))
 
-                call PAllocationRD(plant_pdemand_col(c),      &    ! IN (j)
-                                   puptake_prof(c,:),         &    ! IN (j)
+                call PAllocationRD(col_plant_pdemand_vr(c,:),         & ! IN (j)
                                    potential_immob_p_vr(c,:), &    ! IN (j)
                                    solutionp_vr(c,:),         &    ! IN (j)
                                    dt,                        &    ! IN
@@ -1662,10 +1668,10 @@ contains
                    if(.not.use_fates)then
                        do p = col_pp%pfti(c), col_pp%pftf(c)
                            if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
-                               sminn_to_plant_patch(p) = sminn_to_plant_patch(p) + plant_ndemand_vr_patch(p,j) * &
-                                     fpg_vr(c,j) *dzsoi_decomp(j)
-                               sminp_to_plant_patch(p) = sminp_to_plant_patch(p) + plant_pdemand_vr_patch(p,j) * &
-                                     fpg_p_vr(c,j) *dzsoi_decomp(j)
+                               sminn_to_plant_patch(p) = sminn_to_plant_patch(p) + &
+                                     plant_ndemand_vr_patch(p,j)/veg_pp%wtcol(p) * fpg_vr(c,j)*dzsoi_decomp(j)
+                               sminp_to_plant_patch(p) = sminp_to_plant_patch(p) + &
+                                     plant_pdemand_vr_patch(p,j)/veg_pp%wtcol(p) * fpg_p_vr(c,j)*dzsoi_decomp(j)
                            end if
                        end do
                    end if
@@ -1791,7 +1797,8 @@ contains
                     pnup_pfrootc(p) =  0.0_r8
                     if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                         do j = 1, nlevdecomp
-                            pnup_pfrootc(p) = pnup_pfrootc(p) + plant_ndemand_vr_patch(p,j) / max(frootc(p) * froot_prof(p,j)&
+                            pnup_pfrootc(p) = pnup_pfrootc(p) + (plant_ndemand_vr_patch(p,j)/veg_pp%wtcol(p)) &
+                                  / max(frootc(p) * froot_prof(p,j)&
                                   ,1e-20_r8) * fpg_nh4_vr(c,j) / max(cn_scalar(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8) &
                                   * dzsoi_decomp(j)
                         end do
@@ -1804,8 +1811,7 @@ contains
 
          if (nu_com .eq. 'RD') then
 
-            call NAllocationRD(plant_ndemand_col(c),  &  ! IN
-                               nuptake_prof(c,:),   &    ! IN (j)
+            call NAllocationRD(col_plant_ndemand_vr(c,:),  &  ! IN
                                potential_immob_vr(c,:),  &    ! IN (j)
                                AllocParamsInst%compet_plant_nh4, & ! IN
                                AllocParamsInst%compet_decomp_nh4,   &    ! IN
@@ -1929,8 +1935,7 @@ contains
          
          if (nu_com .eq. 'RD') then
          
-            call PAllocationRD(plant_pdemand_col(c),     &    ! IN 
-                               puptake_prof(c,:),         &    ! IN (j)
+            call PAllocationRD(col_plant_pdemand_vr(c,:),         & ! IN (j)
                                potential_immob_p_vr(c,:), &    ! IN (j)
                                solutionp_vr(c,:),         &    ! IN (j)
                                dt,                        &    ! IN
@@ -2121,17 +2126,14 @@ contains
             if(.not.use_fates) then
                ! Is this the same as filter_soilp?
                do p = col_pp%pfti(c), col_pp%pftf(c)
-                  smin_nh4_to_plant_patch(p) = 0.0_r8
-                  smin_no3_to_plant_patch(p) = 0.0_r8
-                  sminn_to_plant_patch(p) = 0.0_r8
-                  sminp_to_plant_patch(p) = 0.0_r8
+
                   if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                      do j = 1,nlevdecomp
-                        smin_nh4_to_plant_patch(p) = smin_nh4_to_plant_patch(p) + plant_nh4demand_vr_patch(p,j) * fpg_nh4_vr(c,j)&
+                        smin_nh4_to_plant_patch(p) = smin_nh4_to_plant_patch(p) + (plant_nh4demand_vr_patch(p,j)/veg_pp%wtcol(p)) * fpg_nh4_vr(c,j)&
                              *dzsoi_decomp(j)
-                        smin_no3_to_plant_patch(p) = smin_no3_to_plant_patch(p) + plant_no3demand_vr_patch(p,j) * fpg_no3_vr(c,j)&
+                        smin_no3_to_plant_patch(p) = smin_no3_to_plant_patch(p) + (plant_no3demand_vr_patch(p,j)/veg_pp%wtcol(p)) * fpg_no3_vr(c,j)&
                              *dzsoi_decomp(j)
-                        sminp_to_plant_patch(p) = sminp_to_plant_patch(p) + plant_pdemand_vr_patch(p,j) * fpg_p_vr(c,j) &
+                        sminp_to_plant_patch(p) = sminp_to_plant_patch(p) + (plant_pdemand_vr_patch(p,j)/veg_pp%wtcol(p)) * fpg_p_vr(c,j) &
                              *dzsoi_decomp(j)
                      end do
                      sminn_to_plant_patch(p) = smin_nh4_to_plant_patch(p) + smin_no3_to_plant_patch(p)
@@ -2192,10 +2194,10 @@ contains
                pnup_pfrootc(p) =  0.0_r8
                if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                   do j = 1, nlevdecomp
-                     pnup_pfrootc(p) =  pnup_pfrootc(p) + plant_nh4demand_vr_patch(p,j) / max(frootc(p) * froot_prof(p,j)&
+                     pnup_pfrootc(p) =  pnup_pfrootc(p) + (plant_nh4demand_vr_patch(p,j)/veg_pp%wtcol(p)) / max(frootc(p) * froot_prof(p,j)&
                           ,1e-20_r8) * fpg_nh4_vr(c,j) / max(cn_scalar(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8) &
                           * dzsoi_decomp(j)
-                     pnup_pfrootc(p) =  pnup_pfrootc(p) + plant_no3demand_vr_patch(p,j) / max(frootc(p) * froot_prof(p,j)&
+                     pnup_pfrootc(p) =  pnup_pfrootc(p) + (plant_no3demand_vr_patch(p,j)/veg_pp%wtcol(p)) / max(frootc(p) * froot_prof(p,j)&
                           ,1e-20_r8) * fpg_no3_vr(c,j) / max(cn_scalar(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8) &
                           * dzsoi_decomp(j)
                   end do
@@ -2389,8 +2391,6 @@ end subroutine Allocation2_ResolveNPLimit
 
       ! concentration of mineralized nutrient, per soil water
       solution_conc = smin_nh4_vr(j) / (bd(j)*adsorp_nh4_eff + h2osoi_vol(j))
-
-     
       
       e_km = 0._r8
       do i = 1, n_pcomp
@@ -2505,7 +2505,7 @@ end subroutine Allocation2_ResolveNPLimit
             ft = ft_index(i)
             e_km = e_km + e_plant_scalar*veg_rootc(i,j)/km_no3_plant(ft)
          end do
-         ! Note we do NOT need to re-combpute decompmicc_layer (aready calculated)
+         ! Note we do NOT need to re-compute decompmicc_layer (aready calculated)
          e_km = e_km + e_decomp_scalar*decompmicc(j)*(1._r8/km_decomp_no3 + 1._r8/km_den)
 
          do i = 1, n_pcomp
@@ -2801,8 +2801,7 @@ end subroutine Allocation2_ResolveNPLimit
 
  ! ======================================================================================
 
- subroutine NAllocationRD(col_plant_ndemand,   &    ! IN 
-                         nuptake_prof,        &    ! IN (j)
+ subroutine NAllocationRD(col_plant_ndemand_vr,   &! IN (j)
                          potential_immob_vr,  &    ! IN (j)
                          compet_plants_nh4,   &    ! IN 
                          compet_decomp_nh4,   &    ! IN
@@ -2828,9 +2827,7 @@ end subroutine Allocation2_ResolveNPLimit
 
    use clm_varpar, only : nlevdecomp
    ! Arguments
-   real(r8), intent(in)  :: col_plant_ndemand       ! How much N all plants demand as group [g/m3]
-   real(r8), intent(in)  :: nuptake_prof(:)         ! The normalized soil profile of
-                                                    ! mineralized N [g/m3]
+   real(r8), intent(in)  :: col_plant_ndemand_vr(:) ! How much N all plants demand as group [g/m3]
    real(r8), intent(in)  :: potential_immob_vr(:)   ! potential N immobilization [g/m3/s]
    real(r8), intent(in)  :: compet_plants_nh4       ! relative competability of plants (unitless)
    real(r8), intent(in)  :: compet_decomp_nh4       ! relative competability of decomposers (unitless)
@@ -2867,12 +2864,12 @@ end subroutine Allocation2_ResolveNPLimit
    do j = 1, nlevdecomp
       
       if(present(smin_no3_vr)) then
-         sum_nh4_demand        = col_plant_ndemand * nuptake_prof(j) + potential_immob_vr(j) + pot_f_nit_vr(j)
-         sum_nh4_demand_scaled = col_plant_ndemand * nuptake_prof(j) * compet_plants_nh4 + &
+         sum_nh4_demand        = col_plant_ndemand_vr(j) + potential_immob_vr(j) + pot_f_nit_vr(j)
+         sum_nh4_demand_scaled = col_plant_ndemand_vr(j) * compet_plants_nh4 + &
                                  potential_immob_vr(j)*compet_decomp_nh4 + pot_f_nit_vr(j)*compet_nit
       else
-         sum_nh4_demand        = col_plant_ndemand * nuptake_prof(j) + potential_immob_vr(j)
-         sum_nh4_demand_scaled = col_plant_ndemand * nuptake_prof(j) * compet_plants_nh4 + &
+         sum_nh4_demand        = col_plant_ndemand_vr(j) + potential_immob_vr(j)
+         sum_nh4_demand_scaled = col_plant_ndemand_vr(j) * compet_plants_nh4 + &
                                  potential_immob_vr(j)*compet_decomp_nh4
       end if
                   
@@ -2882,7 +2879,7 @@ end subroutine Allocation2_ResolveNPLimit
          nlimit_nh4(j) = 0
          fpi_nh4_vr(j) = 1.0_r8
          actual_immob_nh4_vr(j) = potential_immob_vr(j)
-         smin_nh4_to_plant_vr(j) = col_plant_ndemand * nuptake_prof(j)
+         smin_nh4_to_plant_vr(j) = col_plant_ndemand_vr(j)
          if(present(smin_no3_vr)) f_nit_vr(j) = pot_f_nit_vr(j)
                
       else
@@ -2895,9 +2892,9 @@ end subroutine Allocation2_ResolveNPLimit
               .and. sum_nh4_demand_scaled > 0.0_r8) then
             actual_immob_nh4_vr(j) = min((smin_nh4_vr(j)/dt)*(potential_immob_vr(j)* &
                  compet_decomp_nh4 / sum_nh4_demand_scaled), potential_immob_vr(j))
-            smin_nh4_to_plant_vr(j) = min((smin_nh4_vr(j)/dt)*(col_plant_ndemand* &
-                 nuptake_prof(j)*compet_plants_nh4 / sum_nh4_demand_scaled), &
-                 col_plant_ndemand*nuptake_prof(j))
+            smin_nh4_to_plant_vr(j) = min((smin_nh4_vr(j)/dt)*&
+                  (col_plant_ndemand_vr(j)*compet_plants_nh4 / sum_nh4_demand_scaled), &
+                  col_plant_ndemand_vr(j))
             
             if(present(smin_no3_vr)) f_nit_vr(j) =  min((smin_nh4_vr(j)/dt)*(pot_f_nit_vr(j)*compet_nit / &
                  sum_nh4_demand_scaled), pot_f_nit_vr(j))
@@ -2922,10 +2919,10 @@ end subroutine Allocation2_ResolveNPLimit
       if (present(smin_no3_vr)) then
          
          ! next compete for no3
-         sum_no3_demand = (col_plant_ndemand*nuptake_prof(j)-smin_nh4_to_plant_vr(j)) + &
+         sum_no3_demand = (col_plant_ndemand_vr(j)-smin_nh4_to_plant_vr(j)) + &
               (potential_immob_vr(j)-actual_immob_nh4_vr(j)) + pot_f_denit_vr(j)
          
-         sum_no3_demand_scaled = (col_plant_ndemand*nuptake_prof(j)-smin_nh4_to_plant_vr(j)) &
+         sum_no3_demand_scaled = (col_plant_ndemand_vr(j)-smin_nh4_to_plant_vr(j)) &
               * compet_plants_no3 + (potential_immob_vr(j)-actual_immob_nh4_vr(j))*compet_decomp_no3 &
               + pot_f_denit_vr(j)*compet_denit
                   
@@ -2936,7 +2933,7 @@ end subroutine Allocation2_ResolveNPLimit
             nlimit_no3(j) = 1
             fpi_no3_vr(j) = 1.0_r8 -  fpi_nh4_vr(j)
             actual_immob_no3_vr(j) = (potential_immob_vr(j)-actual_immob_nh4_vr(j))
-            smin_no3_to_plant_vr(j) = (col_plant_ndemand*nuptake_prof(j)-smin_nh4_to_plant_vr(j))
+            smin_no3_to_plant_vr(j) = (col_plant_ndemand_vr(j)-smin_nh4_to_plant_vr(j))
             f_denit_vr(j) = pot_f_denit_vr(j)
             
          else
@@ -2950,9 +2947,10 @@ end subroutine Allocation2_ResolveNPLimit
                actual_immob_no3_vr(j) = min((smin_no3_vr(j)/dt)*((potential_immob_vr(j)- &
                     actual_immob_nh4_vr(j))*compet_decomp_no3 / sum_no3_demand_scaled), &
                     potential_immob_vr(j)-actual_immob_nh4_vr(j))
-               smin_no3_to_plant_vr(j) = min((smin_no3_vr(j)/dt)*((col_plant_ndemand* &
-                    nuptake_prof(j)-smin_nh4_to_plant_vr(j))*compet_plants_no3 / sum_no3_demand_scaled), &
-                    col_plant_ndemand*nuptake_prof(j)-smin_nh4_to_plant_vr(j))
+               smin_no3_to_plant_vr(j) = min((smin_no3_vr(j)/dt) * &
+                     ((col_plant_ndemand_vr(j)-smin_nh4_to_plant_vr(j)) * &
+                     compet_plants_no3 / sum_no3_demand_scaled), &
+                    col_plant_ndemand_vr(j)-smin_nh4_to_plant_vr(j))
                f_denit_vr(j) =  min((smin_no3_vr(j)/dt)*(pot_f_denit_vr(j)*compet_denit / &
                     sum_no3_demand_scaled), pot_f_denit_vr(j))
             else
@@ -2976,8 +2974,7 @@ end subroutine Allocation2_ResolveNPLimit
 
  ! ======================================================================================
 
- subroutine PAllocationRD(col_plant_pdemand,    &    ! IN 
-                          puptake_prof,         &    ! IN (j)
+ subroutine PAllocationRD(col_plant_pdemand_vr, &    ! IN 
                           potential_immob_p_vr, &    ! IN (j)
                           solutionp_vr,         &    ! IN (j)
                           dt,                   &    ! IN
@@ -2992,9 +2989,7 @@ end subroutine Allocation2_ResolveNPLimit
    use clm_varpar, only : nlevdecomp
 
    ! Arguments
-   real(r8), intent(in) :: col_plant_pdemand        ! demand on phos, all plant grouped [g/m3]
-   real(r8), intent(in) :: puptake_prof(:)          ! normalized soil profile of
-                                                    ! mineralized P [g/m3]
+   real(r8), intent(in) :: col_plant_pdemand_vr(:)  ! demand on phos, all plant grouped [g/m3]
    real(r8), intent(in) :: potential_immob_p_vr(:)  ! potential P immobilization [g/m3/s]
    real(r8), intent(in) :: solutionp_vr(:)          ! soil mineral P   [g/m3]
    real(r8), intent(in) :: dt                       ! timestep in seconds
@@ -3012,11 +3007,11 @@ end subroutine Allocation2_ResolveNPLimit
    ! ------------------------------------------------------------------------------------
    if ( cnallocate_carbon_only() .or. cnallocate_carbonnitrogen_only() ) then !.or. &
       do j = 1, nlevdecomp
-         sum_pdemand = col_plant_pdemand * puptake_prof(j) + potential_immob_p_vr(j)
+         sum_pdemand = col_plant_pdemand_vr(j) + potential_immob_p_vr(j)
          plimit(j) = 1
          fpi_p_vr(j) = 1.0_r8
          actual_immob_p_vr(j) = potential_immob_p_vr(j)
-         sminp_to_plant_vr(j) =  col_plant_pdemand * puptake_prof(j)
+         sminp_to_plant_vr(j) =  col_plant_pdemand_vr(j)
          ! This "supplement" variable is apparently zeroed somewhere else
          supplement_to_sminp_vr(j) = sum_pdemand - (solutionp_vr(j)/dt)
       end do
@@ -3025,7 +3020,7 @@ end subroutine Allocation2_ResolveNPLimit
 
    do j = 1, nlevdecomp
       
-      sum_pdemand = col_plant_pdemand * puptake_prof(j) + potential_immob_p_vr(j)
+      sum_pdemand = col_plant_pdemand_vr(j) + potential_immob_p_vr(j)
 
       if (sum_pdemand*dt < solutionp_vr(j)) then
          
@@ -3034,7 +3029,7 @@ end subroutine Allocation2_ResolveNPLimit
          plimit(j) = 0
          fpi_p_vr(j) = 1.0_r8
          actual_immob_p_vr(j) = potential_immob_p_vr(j)
-         sminp_to_plant_vr(j) = col_plant_pdemand * puptake_prof(j)
+         sminp_to_plant_vr(j) = col_plant_pdemand_vr(j)
          
       else
          ! P availability can not satisfy the sum of immobilization and

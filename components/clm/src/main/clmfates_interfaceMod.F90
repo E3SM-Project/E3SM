@@ -322,6 +322,9 @@ contains
         end if
         call set_fates_ctrlparms('use_spitfire',ival=pass_spitfire)
 
+        ! We do not have fixed biogeography mode with ELM/FATES yet
+        call set_fates_ctrlparms('use_fixed_biogeog',ival=0)
+        
         if(use_fates_ed_st3) then
            pass_ed_st3 = 1
         else

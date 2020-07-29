@@ -427,9 +427,8 @@ contains
     this%km_den        = km_den
     this%km_ptase      = km_ptase
     this%lamda_ptase   = lamda_ptase
-
     this%tc_stress     = tc_stress
-     
+
   end subroutine veg_vp_init
 
 end module VegetationPropertiesType
