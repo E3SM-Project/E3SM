@@ -79,7 +79,6 @@ integer, parameter, public :: idx_nir_diag = 8 ! index to sw near infrared (778-
 integer, parameter, public :: idx_uv_diag = 11 ! index to sw uv (345-441 nm) band
 integer, parameter, public :: rrtmg_sw_cloudsim_band = 9  ! rrtmg band for .67 micron
 
-
 ! Number of evenly spaced intervals in rh
 ! The globality of this mesh may not be necessary
 ! Perhaps it could be specific to the aerosol
@@ -97,14 +96,9 @@ integer, parameter, public :: nrh = 1000
 
 ! These are indices to the band for diagnostic output
 integer, parameter, public :: idx_lw_diag = 7 ! index to (H20 window) LW band
-
 integer, parameter, public :: rrtmg_lw_cloudsim_band = 6  ! rrtmg band for 10.5 micron
 
-!These can go away when old camrt disappears
-! Index of volc. abs., H2O non-window
-integer, public, parameter :: idx_LW_H2O_NONWND=1
-! Index of volc. abs., H2O window
-integer, public, parameter :: idx_LW_H2O_WINDOW=2
+! These can go away when old camrt disappears
 ! Index of volc. cnt. abs. 0500--0650 cm-1
 integer, public, parameter :: idx_LW_0500_0650=3
 ! Index of volc. cnt. abs. 0650--0800 cm-1
@@ -123,10 +117,6 @@ integer, public, parameter :: gasnamelength = 5
 integer, public, parameter :: nradgas = 8
 character(len=gasnamelength), public, parameter :: gaslist(nradgas) &
    = (/'H2O  ','O3   ', 'O2   ', 'CO2  ', 'N2O  ', 'CH4  ', 'CFC11', 'CFC12'/)
-
-! what is the minimum mass mixing ratio that can be supported by radiation implementation?
-real(r8), public, parameter :: minmmr(nradgas) &
-   = epsilon(1._r8)
 
 ! Length of "optics type" string specified in optics files.
 integer, parameter, public :: ot_length = 32
