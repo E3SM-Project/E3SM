@@ -5914,7 +5914,7 @@ updateannuallanduse_main(double glmo[][GLMONFLDS], double plodata[][PLONFLDS], i
    char inbase[1000];
    memset(inbase, '\0', sizeof(inbase));
    char *extaddr = strrchr(usesfname, '.');
-   int numkeep = extaddr - usesfname;
+   int numkeep = (int) (extaddr - usesfname);
    strncpy(inbase, usesfname, numkeep);
    sprintf(out_land_filebase, "LUT_%s", inbase);
    
