@@ -2130,9 +2130,9 @@ subroutine tphysbc (ztodt,               &
     logical           :: use_ECPP
     character(len=16) :: MMF_microphysics_scheme
     real(r8)          :: crm_run_time              ! length of CRM integration
-    real(r8), dimension(pcols) :: sp_qchk_prec_dp  ! CRM precipitation diagostic (liq+ice)  used for check_energy_chng
-    real(r8), dimension(pcols) :: sp_qchk_snow_dp  ! CRM precipitation diagostic (ice only) used for check_energy_chng
-    real(r8), dimension(pcols) :: sp_rad_flux      ! CRM radiative flux diagnostic used for check_energy_chng
+    real(r8), dimension(pcols) :: mmf_qchk_prec_dp  ! CRM precipitation diagostic (liq+ice)  used for check_energy_chng
+    real(r8), dimension(pcols) :: mmf_qchk_snow_dp  ! CRM precipitation diagostic (ice only) used for check_energy_chng
+    real(r8), dimension(pcols) :: mmf_rad_flux      ! CRM radiative flux diagnostic used for check_energy_chng
 
     type(crm_ecpp_output_type)      :: crm_ecpp_output   ! CRM output data for ECPP calculations
 #if defined( ECPP )
@@ -2791,12 +2791,12 @@ end if
       !-------------------------------------------------------------------------
       call crm_physics_tend(ztodt, state, tend,ptend, pbuf, cam_in, cam_out,    &
                             species_class, crm_ecpp_output,                     &
-                            sp_qchk_prec_dp, sp_qchk_snow_dp, sp_rad_flux)
+                            mmf_qchk_prec_dp, mmf_qchk_snow_dp, mmf_rad_flux)
 
       call physics_update(state, ptend, crm_run_time, tend)
 
       call check_energy_chng(state, tend, "crm_tend", nstep, crm_run_time,  &
-                             zero, sp_qchk_prec_dp, sp_qchk_snow_dp, sp_rad_flux)
+                             zero, mmf_qchk_prec_dp, mmf_qchk_snow_dp, mmf_rad_flux)
 
       !-------------------------------------------------------------------------
       ! Modal aerosol wet radius for radiative calculation

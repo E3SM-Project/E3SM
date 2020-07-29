@@ -270,7 +270,7 @@ end subroutine crm_physics_init
 
 subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
                             species_class, crm_ecpp_output, &
-                            sp_qchk_prec_dp, sp_qchk_snow_dp, sp_rad_flux)
+                            mmf_qchk_prec_dp, mmf_qchk_snow_dp, mmf_rad_flux)
 
    !------------------------------------------------------------------------------------------------
    !
@@ -318,9 +318,9 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    type(cam_out_t),            intent(inout) :: cam_out          ! atm output to coupler
    integer,                    intent(in   ) :: species_class(:) ! aerosol species type
    type(crm_ecpp_output_type), intent(inout) :: crm_ecpp_output  ! output data for ECPP calculations
-   real(r8), dimension(pcols), intent(out  ) :: sp_qchk_prec_dp  ! precipitation diagostic (liq+ice)  used for check_energy_chng
-   real(r8), dimension(pcols), intent(out  ) :: sp_qchk_snow_dp  ! precipitation diagostic (ice only) used for check_energy_chng
-   real(r8), dimension(pcols), intent(out  ) :: sp_rad_flux      ! radiative flux diagnostic used for check_energy_chng
+   real(r8), dimension(pcols), intent(out  ) :: mmf_qchk_prec_dp ! precipitation diagostic (liq+ice)  used for check_energy_chng
+   real(r8), dimension(pcols), intent(out  ) :: mmf_qchk_snow_dp ! precipitation diagostic (ice only) used for check_energy_chng
+   real(r8), dimension(pcols), intent(out  ) :: mmf_rad_flux     ! radiative flux diagnostic used for check_energy_chng
 
    !------------------------------------------------------------------------------------------------
    ! Local variables 
@@ -841,10 +841,10 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       ptend%s(:ncol, :pver-crm_nz+2) = qrs(:ncol,:pver-crm_nz+2) + qrl(:ncol,:pver-crm_nz+2)
 
       ! This will be used to check energy conservation
-      sp_rad_flux(:ncol) = 0.0_r8
+      mmf_rad_flux(:ncol) = 0.0_r8
       do k = 1,pver
          do i = 1,ncol
-            sp_rad_flux(i) = sp_rad_flux(i) + ( qrs(i,k) + qrl(i,k) ) * state%pdel(i,k)/gravit
+            mmf_rad_flux(i) = mmf_rad_flux(i) + ( qrs(i,k) + qrl(i,k) ) * state%pdel(i,k)/gravit
          end do
       end do
 
@@ -1043,10 +1043,10 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
          qi_hydro_after(i)  =  qi_hydro_after(i)/(crm_nx*crm_ny)
       end do ! i = 1,ncold
 
-      sp_qchk_prec_dp(:ncol) = prec_dp(:ncol) + (qli_hydro_after (:ncol) - &
-                                                 qli_hydro_before(:ncol))/crm_run_time/1000._r8
-      sp_qchk_snow_dp(:ncol) = snow_dp(:ncol) + ( qi_hydro_after (:ncol) - &
-                                                  qi_hydro_before(:ncol))/crm_run_time/1000._r8
+      mmf_qchk_prec_dp(:ncol) = prec_dp(:ncol) + (qli_hydro_after (:ncol) - &
+                                                  qli_hydro_before(:ncol))/crm_run_time/1000._r8
+      mmf_qchk_snow_dp(:ncol) = snow_dp(:ncol) + ( qi_hydro_after (:ncol) - &
+                                                   qi_hydro_before(:ncol))/crm_run_time/1000._r8
 
    end if ! (is_first_step())
 
