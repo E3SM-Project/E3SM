@@ -1620,11 +1620,12 @@
     <BASELINE_ROOT>/gpfs/jlse-fs0/projects/climate/baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/gpfs/jlse-fs0/projects/climate/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>16</GMAKE_J>
-    <TESTS>e3sm_integration</TESTS>
+    <TESTS>e3sm_developer</TESTS>
+    <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>cobalt_theta</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>112</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>56</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>112</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="impi">
       <executable>mpirun</executable>
@@ -1636,7 +1637,7 @@
       <executable>mpirun</executable>
       <arguments>
         <arg name="num_tasks">--tag-output -n {{ total_tasks }}</arg>
-        <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=1 --bind-to core</arg>
+        <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to hwthread</arg>
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
@@ -1700,19 +1701,17 @@
     </environment_variables>
     <environment_variables mpilib="impi">
       <env name="I_MPI_DEBUG">10</env>
-      <env name="I_MPI_PIN_CELL">core</env>
-      <env name="MPICH_ENV_DISPLAY">1</env>
-      <env name="MPICH_VERSION_DISPLAY">1</env>
-      <env name="MPICH_CPUMASK_DISPLAY">1</env>
-      <env name="MPICH_MEMORY_REPORT">1</env>
+      <env name="I_MPI_PIN_DOMAIN">omp</env>
+      <env name="I_MPI_PIN_ORDER">spread</env>
+      <env name="I_MPI_PIN_CELL">unit</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="intel">
       <env name="KMP_AFFINITY">verbose,granularity=thread,scatter</env>
-      <env name="OMP_STACKSIZE">256M</env>
+      <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="!intel">
       <env name="OMP_PLACES">threads</env>
-      <env name="OMP_STACKSIZE">256M</env>
+      <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
   </machine>
 
