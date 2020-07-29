@@ -18,8 +18,9 @@ module radiation
    use rad_constituents, only: N_DIAG
    use radconstants,     only: &
       nswbands, nlwbands, &
-      set_sw_spectral_boundaries, set_lw_spectral_boundaries, &
-      get_sw_spectral_midpoints, get_lw_spectral_midpoints
+      get_band_index_sw, get_band_index_lw, test_get_band_index, &
+      get_sw_spectral_midpoints, get_lw_spectral_midpoints, &
+      rrtmg_to_rrtmgp_swbands
    use cam_history_support, only: add_hist_coord
 
    ! RRTMGP gas optics object to store coefficient information. This is imported
@@ -505,10 +506,6 @@ contains
       ! by the absorption coefficient data.
       nswgpts = k_dist_sw%get_ngpt()
       nlwgpts = k_dist_lw%get_ngpt()
-
-      ! Set band intervals based on inputdata
-      call set_sw_spectral_boundaries(k_dist_sw%get_band_lims_wavenumber())
-      call set_lw_spectral_boundaries(k_dist_lw%get_band_lims_wavenumber())
 
       ! Set number of levels used in radiation calculations
 #ifdef NO_EXTRA_RAD_LEVEL
@@ -1277,6 +1274,9 @@ contains
       real(r8), dimension(pcols,pver,nswbands) :: liq_tau_bnd_sw, ice_tau_bnd_sw, snw_tau_bnd_sw
       real(r8), dimension(pcols,pver,nlwbands) :: liq_tau_bnd_lw, ice_tau_bnd_lw, snw_tau_bnd_lw
 
+      ! Loop variables
+      integer :: icol, ilay
+
       !----------------------------------------------------------------------
 
       ! Copy state so we can use CAM routines with arrays replaced with data
@@ -1550,13 +1550,29 @@ contains
                            cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw, &
                            liq_tau_bnd_sw, ice_tau_bnd_sw, snw_tau_bnd_sw &
                         )
+                        ! Output the band-by-band cloud optics BEFORE we reorder bands, because
+                        ! we hard-coded the indices for diagnostic bands in radconstants.F90 to
+                        ! correspond to the optical property look-up tables.
+                        call output_cloud_optics_sw(state, cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw)
+                        ! Now reorder bands to be consistent with RRTMGP
+                        ! We need to fix band ordering because the old input files assume RRTMG
+                        ! band ordering, but this has changed in RRTMGP.
+                        ! TODO: fix the input files themselves!
+                        do icol = 1,size(cld_tau_bnd_sw,1)
+                           do ilay = 1,size(cld_tau_bnd_sw,2)
+                              cld_tau_bnd_sw(icol,ilay,:) = reordered(cld_tau_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
+                              cld_ssa_bnd_sw(icol,ilay,:) = reordered(cld_ssa_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
+                              cld_asm_bnd_sw(icol,ilay,:) = reordered(cld_asm_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
+                           end do
+                        end do
+                        ! And now do the MCICA sampling to get cloud optical properties by
+                        ! gpoint/cloud state
                         call sample_cloud_optics_sw( &
                            ncol, pver, nswgpts, k_dist_sw%get_gpoint_bands(), &
                            state%pmid, cld, cldfsnow, &
                            cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw, &
                            cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw &
                         )
-                        call output_cloud_optics_sw(state, cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw)
                         call t_stopf('rad_cloud_optics_sw')
                         ! Do aerosol optics
                         call t_startf('rad_aerosol_optics_sw')
@@ -1567,6 +1583,15 @@ contains
                            icall, state, pbuf, night_indices(1:nnight), is_cmip6_volc, &
                            aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw &
                         )
+                        ! Now reorder bands to be consistent with RRTMGP
+                        ! TODO: fix the input files themselves!
+                        do icol = 1,size(aer_tau_bnd_sw,1)
+                           do ilay = 1,size(aer_tau_bnd_sw,2)
+                              aer_tau_bnd_sw(icol,ilay,:) = reordered(aer_tau_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
+                              aer_ssa_bnd_sw(icol,ilay,:) = reordered(aer_ssa_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
+                              aer_asm_bnd_sw(icol,ilay,:) = reordered(aer_asm_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
+                           end do
+                        end do
                         call t_stopf('rad_aerosol_optics_sw')
                         ! Check (and possibly clip) values before passing to RRTMGP driver
                         call handle_error(clip_values(cld_tau_gpt_sw,  0._r8, huge(cld_tau_gpt_sw), trim(subname) // ' cld_tau_gpt_sw', tolerance=1e-10_r8))
@@ -2074,7 +2099,7 @@ contains
       real(r8), intent(in) :: gas_vmr(:,:,:)
       real(r8), intent(in) :: emis_sfc(:,:)
       real(r8), intent(in) :: pmid(:,:), tmid(:,:), pint(:,:), tint(:,:)
-      type(ty_optical_props_1scl), intent(in) :: cld_optics, aer_optics
+      type(ty_optical_props_1scl), intent(inout) :: cld_optics, aer_optics
       type(ty_fluxes_byband), intent(inout) :: fluxes_allsky, fluxes_clrsky
 
       type(ty_gas_concs) :: gas_concs
@@ -2657,6 +2682,31 @@ contains
 
    !----------------------------------------------------------------------------
 
+   ! Utility function to reorder an array given a new indexing
+   function reordered(array_in, new_indexing) result(array_out)
+
+      ! Inputs
+      real(r8), intent(in) :: array_in(:)
+      integer, intent(in) :: new_indexing(:)
+
+      ! Output, reordered array
+      real(r8), dimension(size(array_in)) :: array_out
+
+      ! Loop index
+      integer :: ii
+
+      ! Check inputs
+      call assert(size(array_in) == size(new_indexing), 'reorder_array: sizes inconsistent')
+
+      ! Reorder array based on input index mapping, which maps old indices to new
+      do ii = 1,size(new_indexing)
+         array_out(ii) = array_in(new_indexing(ii))
+      end do
+
+   end function reordered
+
+   !----------------------------------------------------------------------------
+
    subroutine output_cloud_optics_sw(state, tau, ssa, asm)
       use ppgrid, only: pver
       use physics_types, only: physics_state
@@ -2665,6 +2715,7 @@ contains
 
       type(physics_state), intent(in) :: state
       real(r8), intent(in), dimension(:,:,:) :: tau, ssa, asm
+      integer :: sw_band_index
       character(len=*), parameter :: subname = 'output_cloud_optics_sw'
 
       ! Check values
@@ -2685,8 +2736,9 @@ contains
       call outfld('CLOUD_G_SW', &
                   asm(1:state%ncol,1:pver,1:nswbands), &
                   state%ncol, state%lchnk)
+      sw_band_index = get_band_index_sw(550._r8, 'nm')
       call outfld('TOT_ICLD_VISTAU', &
-                  tau(1:state%ncol,1:pver,idx_sw_diag), &
+                  tau(1:state%ncol,1:pver,sw_band_index), &
                   state%ncol, state%lchnk)
    end subroutine output_cloud_optics_sw
 
