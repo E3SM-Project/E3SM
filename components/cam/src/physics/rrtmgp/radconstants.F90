@@ -40,12 +40,6 @@ integer, parameter, public :: nlwbands = 16
 ! properties are output before bands are reordered to the expected RRTMGP order.
 ! Optical properties should be reordered to RRTMGP order in the RRTMGP driver
 ! interface codes.
-!real(r8) :: wavenum_sw_lower(nswbands) = & ! in cm^-1
-!  (/ 820._r8, 2680._r8, 3250._r8, 4000._r8, 4650._r8, 5150._r8, 6150._r8, &
-!    7700._r8, 8050._r8,12850._r8,16000._r8,22650._r8,29000._r8,38000._r8/)
-!real(r8) :: wavenum_sw_upper(nswbands) = & ! in cm^-1
-!  (/2680._r8, 3250._r8, 4000._r8, 4650._r8, 5150._r8, 6150._r8, 7700._r8, &
-!    8050._r8,12850._r8,16000._r8,22650._r8,29000._r8,38000._r8,50000._r8/)
 real(r8), parameter :: wavenum_sw_lower(nswbands) = & ! in cm^-1
   (/2600._r8, 3250._r8, 4000._r8, 4650._r8, 5150._r8, 6150._r8, 7700._r8, &
     8050._r8,12850._r8,16000._r8,22650._r8,29000._r8,38000._r8,  820._r8/)
@@ -75,11 +69,6 @@ real(r8), parameter :: solar_ref_band_irradiance(nswbands) = &
    129.49_r8,  50.15_r8,   3.08_r8 &
    /)
 
-! These are indices to the band for diagnostic output
-!integer, parameter, public :: idx_sw_diag = 11 ! index to sw visible band (550 nm)
-!integer, parameter, public :: idx_nir_diag = 9 ! index to sw near infrared (778-1240 nm) band
-!integer, parameter, public :: idx_uv_diag = 12 ! index to sw uv (345-441 nm) band
-!integer, parameter, public :: rrtmg_sw_cloudsim_band = 10  ! rrtmg band for .67 micron
 ! These are indices to the band for diagnostic output
 ! NOTE: these are consistent with the RRTMG optical property input data, NOT the
 ! RRTMGP absorption coefficient data. This is because optical property
