@@ -145,7 +145,7 @@ contains
       !
       if (configALEthicknessProportionality==1) then ! restingThickness_times_weights
 
-         !$omp do schedule(runtime)
+         !$omp do schedule(runtime) private(kMax, thicknessSum, k, SSH_ALE_Thickness)
          do iCell = 1, nCells
             kMax = maxLevelCell(iCell)
    
@@ -165,7 +165,7 @@ contains
          !$omp end do
    
          elseif (configALEthicknessProportionality==2) then ! weights_only
-         !$omp do schedule(runtime)
+         !$omp do schedule(runtime) private(kMax, weightSum, k)
          do iCell = 1, nCells
             kMax = maxLevelCell(iCell)
    
@@ -204,7 +204,8 @@ contains
       !
       if (config_use_min_max_thickness) then
 
-         !$omp do schedule(runtime)
+         !$omp do schedule(runtime) private(kMax, prelim_ALE_Thickness, remainder, k, newThickness, &
+         !$omp             min_ALE_thickness_down, min_ALE_thickness_up)
          do iCell = 1, nCells
             kMax = maxLevelCell(iCell)
 
