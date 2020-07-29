@@ -319,29 +319,363 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 
 <mksrf_fvegtyp hgrid="3x3min"        sim_year="2000" crop="on"  >lnd/clm2/rawdata/pftlanduse.3minx3min.simyr2000.c110913/mksrf_24pftNT_landuse_rc2000_c121207.nc</mksrf_fvegtyp>
 
-<!-- All RCPs start with the ending historical file in 2015 -->
-<!-- Include only start and end years here for default; users should modify namelist for non-standard years -->
-<!-- Recall that sim_year just denotes the creation of a file for that year; transient LULCC years processed are based on the list in the file noted in the namelist -->
-<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2015" rcp="1.9" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2015_c07082020.nc</mksrf_fvegtyp>
-<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2100" rcp="1.9" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2015_c07082020.nc</mksrf_fvegtyp>
-<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2015" rcp="2.6" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2015_c07082020.nc</mksrf_fvegtyp>
-<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2100" rcp="2.6" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2015_c07082020.nc</mksrf_fvegtyp>
-<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2015" rcp="3.4" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2015_c07082020.nc</mksrf_fvegtyp>
-<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2100" rcp="3.4" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2015_c07082020.nc</mksrf_fvegtyp>
-<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2015" rcp="4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2015_c07082020.nc</mksrf_fvegtyp>
-<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2100" rcp="4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2015_c07082020.nc</mksrf_fvegtyp>
-<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2015" rcp="6.0" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2015_c07082020.nc</mksrf_fvegtyp>
-<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2100" rcp="6.0" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2015_c07082020.nc</mksrf_fvegtyp>
-<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2015" rcp="7.0" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2015_c07082020.nc</mksrf_fvegtyp>
-<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2100" rcp="7.0" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2015_c07082020.nc</mksrf_fvegtyp>
-<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2015" rcp="8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2015_c07082020.nc</mksrf_fvegtyp>
-<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2100" rcp="8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2015_c07082020.nc</mksrf_fvegtyp>
-
-<!-- Historical period from 1850 to 2015 always starts with 1850 file -->
-<!-- Include only start and end years here for default; users should modify namelist for non-standard years -->
+<!-- Historical period from 1850 to 2015 -->
 <!-- Recall that sim_year just denotes the creation of a file for that year; transient LULCC years processed are based on the list in the file noted in the namelist -->
 <mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1850" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1850_c07082020.nc</mksrf_fvegtyp>
-<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2015" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1850_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1851" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1851_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1852" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1852_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1853" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1853_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1854" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1854_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1855" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1855_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1856" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1856_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1857" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1857_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1858" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1858_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1859" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1859_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1860" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1860_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1861" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1861_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1862" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1862_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1863" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1863_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1864" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1864_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1865" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1865_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1866" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1866_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1867" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1867_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1868" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1868_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1869" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1869_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1870" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1870_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1871" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1871_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1872" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1872_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1873" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1873_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1874" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1874_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1875" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1875_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1876" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1876_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1877" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1877_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1878" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1878_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1879" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1879_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1880" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1880_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1881" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1881_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1882" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1882_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1883" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1883_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1884" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1884_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1885" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1885_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1886" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1886_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1887" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1887_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1888" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1888_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1889" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1889_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1890" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1890_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1891" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1891_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1892" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1892_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1893" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1893_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1894" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1894_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1895" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1895_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1896" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1896_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1897" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1897_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1898" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1898_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1899" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1899_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1900" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1900_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1901" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1901_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1902" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1902_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1903" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1903_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1904" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1904_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1905" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1905_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1906" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1906_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1907" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1907_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1908" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1908_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1909" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1909_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1910" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1910_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1911" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1911_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1912" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1912_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1913" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1913_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1914" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1914_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1915" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1915_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1916" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1916_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1917" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1917_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1918" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1918_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1919" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1919_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1920" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1920_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1921" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1921_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1922" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1922_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1923" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1923_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1924" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1924_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1925" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1925_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1926" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1926_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1927" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1927_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1928" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1928_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1929" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1929_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1930" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1930_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1931" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1931_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1932" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1932_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1933" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1933_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1934" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1934_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1935" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1935_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1936" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1936_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1937" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1937_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1938" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1938_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1939" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1939_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1940" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1940_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1941" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1941_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1942" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1942_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1943" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1943_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1944" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1944_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1945" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1945_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1946" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1946_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1947" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1947_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1948" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1948_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1949" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1949_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1950" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1950_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1951" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1951_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1952" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1952_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1953" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1953_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1954" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1954_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1955" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1955_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1956" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1956_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1957" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1957_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1958" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1958_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1959" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1959_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1960" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1960_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1961" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1961_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1962" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1962_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1963" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1963_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1964" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1964_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1965" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1965_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1966" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1966_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1967" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1967_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1968" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1968_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1969" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1969_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1970" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1970_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1971" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1971_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1972" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1972_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1973" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1973_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1974" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1974_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1975" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1975_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1976" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1976_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1977" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1977_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1978" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1978_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1979" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1979_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1980" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1980_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1981" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1981_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1982" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1982_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1983" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1983_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1984" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1984_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1985" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1985_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1986" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1986_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1987" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1987_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1988" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1988_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1989" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1989_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1990" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1990_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1991" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1991_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1992" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1992_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1993" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1993_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1994" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1994_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1995" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1995_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1996" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1996_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1997" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1997_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1998" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1998_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="1999" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_1999_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2000" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2000_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2001" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2001_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2002" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2002_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2003" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2003_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2004" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2004_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2005" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2005_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2006" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2006_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2007" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2007_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2008" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2008_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2009" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2009_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2010" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2010_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2011" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2011_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2012" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2012_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2013" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2013_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2014" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2014_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2015" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2015_c07082020.nc</mksrf_fvegtyp>
+
+<!-- All RCPs start with the ending historical file in 2015 -->
+<!-- For transient LULCC only 2 RCPs are currently available: SSP2 RCP4.5 and SSP5 RCP8.5 (LUT files need to be created for the others) -->
+<!-- But include the start year for the others in case the files become available -->
+<!-- Recall that sim_year just denotes the creation of a file for that year; transient LULCC years processed are based on the list in the file noted in the namelist -->
+<!-- See below for the files for the other years (as available) -->
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2015" rcp="1-1.9" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2015_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2015" rcp="1-2.6" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2015_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2015" rcp="4-3.4" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2015_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2015" rcp="5-3.4OS" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2015_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2015" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2015_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2015" rcp="4-6.0" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2015_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2015" rcp="3-7.0" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2015_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2015" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2015_c07082020.nc</mksrf_fvegtyp>
+
+<!-- MESSAGE SSP2 RCP 4.5 future scenario -->
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2016" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2016_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2017" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2017_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2018" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2018_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2019" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2019_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2020" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2020_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2021" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2021_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2022" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2022_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2023" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2023_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2024" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2024_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2025" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2025_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2026" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2026_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2027" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2027_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2028" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2028_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2029" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2029_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2030" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2030_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2031" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2031_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2032" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2032_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2033" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2033_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2034" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2034_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2035" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2035_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2036" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2036_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2037" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2037_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2038" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2038_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2039" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2039_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2040" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2040_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2041" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2041_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2042" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2042_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2043" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2043_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2044" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2044_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2045" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2045_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2046" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2046_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2047" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2047_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2048" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2048_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2049" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2049_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2050" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2050_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2051" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2051_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2052" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2052_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2053" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2053_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2054" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2054_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2055" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2055_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2056" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2056_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2057" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2057_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2058" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2058_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2059" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2059_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2060" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2060_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2061" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2061_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2062" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2062_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2063" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2063_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2064" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2064_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2065" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2065_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2066" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2066_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2067" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2067_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2068" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2068_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2069" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2069_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2070" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2070_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2071" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2071_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2072" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2072_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2073" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2073_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2074" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2074_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2075" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2075_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2076" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2076_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2077" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2077_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2078" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2078_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2079" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2079_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2080" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2080_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2081" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2081_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2082" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2082_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2083" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2083_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2084" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2084_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2085" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2085_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2086" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2086_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2087" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2087_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2088" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2088_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2089" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2089_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2090" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2090_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2091" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2091_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2092" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2092_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2093" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2093_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2094" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2094_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2095" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2095_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2096" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2096_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2097" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2097_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2098" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2098_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2099" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2099_c07222020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2100" rcp="2-4.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP2_RCP45_LUH1f_07222020/LUT_LUH2_SSP2_RCP45_LUH1_format_2100_c07222020.nc</mksrf_fvegtyp>
+
+<!-- MAGPIE SSP5 RCP 8.5 future scenario -->
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2016" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2016_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2017" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2017_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2018" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2018_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2019" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2019_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2020" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2020_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2021" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2021_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2022" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2022_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2023" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2023_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2024" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2024_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2025" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2025_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2026" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2026_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2027" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2027_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2028" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2028_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2029" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2029_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2030" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2030_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2031" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2031_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2032" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2032_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2033" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2033_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2034" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2034_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2035" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2035_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2036" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2036_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2037" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2037_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2038" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2038_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2039" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2039_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2040" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2040_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2041" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2041_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2042" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2042_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2043" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2043_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2044" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2044_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2045" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2045_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2046" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2046_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2047" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2047_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2048" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2048_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2049" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2049_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2050" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2050_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2051" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2051_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2052" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2052_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2053" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2053_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2054" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2054_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2055" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2055_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2056" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2056_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2057" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2057_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2058" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2058_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2059" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2059_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2060" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2060_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2061" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2061_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2062" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2062_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2063" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2063_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2064" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2064_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2065" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2065_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2066" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2066_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2067" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2067_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2068" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2068_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2069" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2069_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2070" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2070_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2071" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2071_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2072" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2072_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2073" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2073_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2074" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2074_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2075" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2075_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2076" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2076_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2077" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2077_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2078" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2078_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2079" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2079_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2080" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2080_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2081" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2081_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2082" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2082_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2083" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2083_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2084" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2084_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2085" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2085_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2086" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2086_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2087" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2087_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2088" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2088_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2089" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2089_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2090" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2090_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2091" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2091_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2092" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2092_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2093" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2093_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2094" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2094_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2095" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2095_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2096" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2096_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2097" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2097_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2098" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2098_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2099" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2099_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fvegtyp hgrid="0.5x0.5" sim_year="2100" rcp="5-8.5" crop="off" >lnd/clm2/rawdata/LUT_LUH2_SSP5_RCP85_LUH1f_07082020/LUT_LUH2_SSP5_RCP85_2100_c07082020.nc</mksrf_fvegtyp>
+
 
 <!-- Last millenium -->
 <mksrf_fvegtyp hgrid="0.5x0.5" sim_year="850" crop="off" >lnd/clm2/rawdata/pftlandusedyn.0.5x0.5.lastm.simyr0850-1850.c100522/mksrf_landuse_lastm0850_c100519.nc
