@@ -20,8 +20,8 @@
  use mpas_geometry_utils, only : mpas_in_cell
  use mpas_atmphys_utilities
 
- use mpas_kd_tree, only : mpas_kd_type, mpas_kd_construct, mpas_kd_free
- use mpas_geotile_manager, only : mpas_geotile_mgr_type
+ use mpas_kd_tree, only : mpas_kd_type, mpas_kd_construct, mpas_kd_free, mpas_kd_search
+ use mpas_geotile_manager, only : mpas_geotile_mgr_type, mpas_geotile_type, mpas_latlon_to_xyz
 
  use iso_c_binding, only : c_char, c_int, c_float, c_loc, c_ptr
 
@@ -106,7 +106,7 @@
  real(kind=RKIND),dimension(:,:,:),allocatable:: vegfra
 
  integer, pointer :: isice_lu, iswater_lu
- integer, pointer :: nCells, nEdges, nVertices, maxEdges
+ integer, pointer :: nCells, nCellsSolve, nEdges, nVertices, maxEdges
  logical, pointer :: on_a_sphere
  real (kind=RKIND), pointer :: sphere_radius
  
@@ -125,6 +125,7 @@
  real (kind=RKIND), dimension(:), pointer :: fEdge, fVertex
 
  real (kind=RKIND), dimension(:), pointer :: ter
+ integer (kind=I8KIND), dimension(:), pointer :: ter_integer
  real (kind=RKIND), dimension(:), pointer :: soiltemp
  real (kind=RKIND), dimension(:), pointer :: snoalb
  real (kind=RKIND), dimension(:), pointer :: shdmin, shdmax
@@ -141,9 +142,17 @@
 
  type (mpas_kd_type), dimension(:), pointer :: kd_points
  type (mpas_kd_type), pointer :: tree
+ type (mpas_kd_type), pointer :: res
 
- integer :: ierr
  type (mpas_geotile_mgr_type) :: mgr
+ type (mpas_geotile_type), pointer :: tile
+
+ real (kind=RKIND) :: tval
+ integer, pointer :: tile_bdr
+ integer, pointer :: tile_nx, tile_ny
+
+ logical :: all_pixels_mapped_to_halo_cells
+ integer :: ierr
 
 !--------------------------------------------------------------------------------------------------
 
@@ -216,6 +225,7 @@
  call mpas_pool_get_config(mesh, 'sphere_radius', sphere_radius)
 
  call mpas_pool_get_dimension(dims, 'nCells', nCells)
+ call mpas_pool_get_dimension(dims, 'nCellsSolve', nCellsSolve)
  call mpas_pool_get_dimension(dims, 'nEdges', nEdges)
  call mpas_pool_get_dimension(dims, 'nVertices', nVertices)
  call mpas_pool_get_dimension(dims, 'maxEdges', maxEdges)
@@ -317,7 +327,116 @@
     call mpas_log_write('Error occured when initalizing the interpolation of terrain height (ter)', messageType=MPAS_LOG_CRIT)
  endif
 
+
+ allocate(ter_integer(nCells))
+ allocate(nhs(nCells))
+
+ !
+ ! Store tile values as a I8KIND integer temporarily to avoid floating
+ ! point round off differences and to have +/- 9.22x10^18 range of representative
+ ! values. For example, a 120 km mesh with a 1 meter data set with 6 decimal of
+ ! precision will allow for values of 180x10^12.
+ !
+ ter_integer(:) = 0_I8KIND
  ter(:) = 0.0_RKIND
+ nhs(:) = 0
+
+ call mpas_pool_get_config(mgr % pool, 'tile_bdr', tile_bdr)
+ call mpas_pool_get_config(mgr % pool, 'tile_x', tile_nx)
+ call mpas_pool_get_config(mgr % pool, 'tile_y', tile_ny)
+
+ do iCell = 1, nCells
+     !
+     ! Load the tile at each cell center. This insures all cells receive values
+     !
+     if (nhs(iCell) == 0) then
+         tile => null()
+         ierr = mgr % get_tile(latCell(iCell), lonCell(iCell), tile)
+         if (ierr /= 0 .or. .not. associated(tile)) then
+             call mpas_log_write('Could not get tile that contained cell $i', intArgs=(/iCell/), messageType=MPAS_LOG_CRIT)
+         end if
+
+         ierr = mgr % push_tile(tile)
+         if (ierr /= 0) then
+             call mpas_log_write("Error pushing this tile onto the stack: "//trim(tile%fname), messageType=MPAS_LOG_CRIT)
+         end if
+     end if
+
+     !
+     ! Process each tile by removing it from the stack. Determine the closest cell center to each tile
+     ! pixel by using a KD search and assign its value to that cell.
+     !
+     do while (.not. mgr % is_stack_empty())
+         tile => mgr % pop_tile()
+
+         if (tile % is_processed) then
+             cycle
+         end if
+
+         call mpas_log_write('Processing tile: '//trim(tile%fname))
+
+         all_pixels_mapped_to_halo_cells = .true.
+
+         do j = 1 + tile_bdr, tile_ny + tile_bdr, 1
+            do i = 1 + tile_bdr, tile_nx + tile_bdr, 1
+
+               tval = tile % tile(i, j, 1)
+
+               call mgr % tile_to_latlon(tile, j, i, lat_pt, lon_pt)
+               call mpas_latlon_to_xyz(xPixel, yPixel, zPixel, sphere_radius, lat_pt, lon_pt)
+               call mpas_kd_search(tree, (/xPixel, yPixel, zPixel/), res)
+
+               !
+               ! For all but the outermost boundary cells, we can safely assume that the nearest
+               ! model grid cell contains the pixel (else, a different cell would be nearest)
+               !
+               if (bdyMaskCell(res % id) < nBdyLayers) then
+                  ter_integer(res % id) = ter_integer(res % id) + int(tval, kind=I8KIND)
+                  nhs(res % id) = nhs(res % id) + 1
+
+                  if (res % id <= nCellsSolve) then
+                      all_pixels_mapped_to_halo_cells = .false.
+                  end if
+
+               ! For outermost boundary cells, additional work is needed to verify that the pixel
+               ! actually lies within the nearest cell
+               else
+                  if (mpas_in_cell(xPixel, yPixel, zPixel, xCell(res % id), yCell(res % id), zCell(res % id), &
+                                   nEdgesOnCell(res % id), verticesOnCell(:,res % id), xVertex, yVertex, zVertex)) then
+
+                     ter_integer(res % id) = ter_integer(res % id) + int(tval, kind=I8KIND)
+                     nhs(res % id) = nhs(res % id) + 1
+
+                     if (res % id <= nCellsSolve) then
+                         all_pixels_mapped_to_halo_cells = .false.
+                     end if
+                  end if
+               end if
+            end do
+        end do
+
+        tile % is_processed = .true.
+
+        !
+        ! If a single pixel value maps to an owned cell (i.e. <= nCellsSolve) then
+        ! it is possible that the neighboring tiles might contain pixels that map
+        ! to this process' compute cells, so add them to the stack.
+        !
+        if (.not. all_pixels_mapped_to_halo_cells) then
+            ierr = mgr % push_neighbors(tile)
+            if (ierr /= 0) then
+                call mpas_log_write("Error pushing the tile neighbors of: "//trim(tile%fname), messageType=MPAS_LOG_CRIT)
+            end if
+        end if
+     end do
+ end do
+
+ do iCell = 1, nCells
+    ter(iCell) = real(ter_integer(iCell), kind=R8KIND) / real(nhs(iCell), kind=R8KIND)
+ end do
+
+ deallocate(ter_integer)
+ deallocate(nhs)
 
  ierr = mgr % finalize()
  if (ierr /= 0) then
