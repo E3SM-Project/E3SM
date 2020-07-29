@@ -15,6 +15,7 @@ module mpas_geotile_manager
 
     public :: mpas_geotile_mgr_type
     public :: mpas_geotile_type
+    public :: mpas_latlon_to_xyz
 
     private
 
@@ -969,6 +970,33 @@ module mpas_geotile_manager
 
     end function mpas_geotile_mgr_stack_is_empty
 
+
+    !***********************************************************************
+    !
+    !  public subroutine mpas_latlon_to_xyz
+    !
+    !> \brief   Convert a latitude, longitude coordinate into its Cartesian equivalent
+    !> \author  Miles A. Curry
+    !> \date    02/20/2020
+    !> \details
+    !> Given a latitude, longitude coordinate and a radius, convert the latitude,
+    !> longitude coordinate into the equivalent Cartesian coordinate.
+    !
+    !-----------------------------------------------------------------------
+    subroutine mpas_latlon_to_xyz(x, y, z, radius, lat, lon)
+
+       implicit none
+
+       real (kind=RKIND), intent(in) :: radius
+       real (kind=RKIND), intent(in) :: lat
+       real (kind=RKIND), intent(in) :: lon
+       real (kind=RKIND), intent(out) :: x, y, z
+
+       z = radius * sin(lat)
+       x = radius * cos(lon) * cos(lat)
+       y = radius * sin(lon) * cos(lat)
+
+    end subroutine mpas_latlon_to_xyz
 
 
     ! Convert radians to degrees
