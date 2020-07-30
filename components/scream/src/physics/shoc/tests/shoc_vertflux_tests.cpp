@@ -22,7 +22,7 @@ namespace shoc {
 namespace unit_test {
 
 TEST_CASE("shoc_vertflux", "shoc") {
-  constexpr Int shcol    = 1;
+  constexpr Int shcol    = 2;
   constexpr Int nlev     = 4;
   constexpr auto nlevi   = nlev + 1;
    
@@ -86,7 +86,7 @@ TEST_CASE("shoc_vertflux", "shoc") {
   for(Int s = 0; s < SDS.shcol; ++s) {
     // do NOT check boundaries!
     for(Int n = 1; n < SDS.nlevi-1; ++n) {
-      const auto offset = n + s * SDS.nlev;
+      const auto offset = n + s * SDS.nlevi;
       REQUIRE(SDS.dz_zi[offset] > 0.0);
       REQUIRE(SDS.tkh_zi[offset] > 0.0);
     }
