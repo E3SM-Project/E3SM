@@ -36,6 +36,7 @@ _TESTS = {
             "SMS_Ly2_P1x1.1x1_smallvilleIA.ICLM45CNCROP.clm-lulcc_sville",
             "ERS.r05_r05.RMOSGPCC.mosart-gpcc_1972",
             "ERS.MOS_USRDAT.RMOSGPCC.mosart-mos_usrdat",
+            "SMS.MOS_USRDAT.RMOSGPCC.mosart-unstructure",
             )
         },
 
