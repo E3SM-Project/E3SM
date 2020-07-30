@@ -35,7 +35,7 @@ TEST_CASE("shoc_vertflux", "shoc") {
   // zero to check that they are not modified.
     
   // Define delta z on the nlevi grid [m]
-  Real dz_zi[nlevi] = {0, 100.0, 50.0, 20.0, 0.0};
+  Real dz_zi[nlevi] = {0.0, 100.0, 50.0, 20.0, 0.0};
   // Eddy coefficients on the nlevi grid [m2s-1]
   Real tkh_zi[nlevi] = {0.0, 10.0, 10.0, 10.0, 0.0};
   // Invar (in this example we use potential temperature) [K]
@@ -87,7 +87,7 @@ TEST_CASE("shoc_vertflux", "shoc") {
     // do NOT check boundaries!
     for(Int n = 1; n < SDS.nlevi-1; ++n) {
       const auto offset = n + s * SDS.nlev;
-      REQUIRE(SDS.dz_zi[offset] > 0);
+      REQUIRE(SDS.dz_zi[offset] > 0.0);
       REQUIRE(SDS.tkh_zi[offset] > 0.0);
     }
   }
@@ -102,7 +102,7 @@ TEST_CASE("shoc_vertflux", "shoc") {
 
       // validate that the boundary points 
       //   have NOT been modified      
-      if (n == 0 || n == nlevi){
+      if (n == 0 || n == nlevi-1){
         REQUIRE(SDS.vertflux[offset] == 100.0);
       }
       else{
