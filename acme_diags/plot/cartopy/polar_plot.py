@@ -79,7 +79,7 @@ def plot_panel(n, fig, proj, pole, var, clevels,
     center, radius = [0.5, 0.5], 0.5
     verts = np.vstack([np.sin(theta), np.cos(theta)]).T
     circle = mpath.Path(verts * radius + center)
-    ax.set_boundary(circle, transform=ax.transAxes)
+    #ax.set_boundary(circle, transform=ax.transAxes)
 
     # Plot titles
     for i in range(3):
