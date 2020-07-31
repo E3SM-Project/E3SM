@@ -59,6 +59,10 @@ function(build_model COMP_CLASS COMP_NAME)
       include(${PROJECT_SOURCE_DIR}/cam/src/physics/cosp2/Cosp.cmake)
     endif()
 
+    if (USE_SAMXX)
+      message(STATUS "*** BUILDING SAMXX: ${CMAKE_CURRENT_SOURCE_DIR}")
+    endif()
+
   endif()
 
   #-------------------------------------------------------------------------------
