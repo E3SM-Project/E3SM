@@ -213,7 +213,9 @@ module clm_varctl
   !----------------------------------------------------------
 
   logical, public            :: use_fates = .false.              ! true => use  ED
-  logical, public            :: use_fates_spitfire = .false.  ! true => use spitfire model
+  integer, public            :: fates_spitfire_mode = 0                ! 0 for no fire; 1 for constant ignitions
+  logical, public            :: use_fates_fixed_biogeog = .false.           ! true => use fixed biogeography mode
+  logical, public            :: use_fates_spitfire = .false.           ! true => use spitfire model
   logical, public            :: use_fates_logging = .false.            ! true => turn on logging module
   logical, public            :: use_fates_planthydro = .false.         ! true => turn on fates hydro
   logical, public            :: use_fates_cohort_age_tracking = .false. ! true => turn on cohort age tracking

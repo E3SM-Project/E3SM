@@ -297,16 +297,20 @@ Toggle to turn on the FATES
 (ED = 'on' is EXPERIMENTAL NOT SUPPORTED!)
 </entry>
 
-<entry id="use_fates_spitfire" type="logical" category="physics"
-        group="clm_inparm" valid_values="" value=".false.">
-Toggle to turn on spitfire (only relevant if FATES is being used).
+<entry id="fates_spitfire_mode" type="integer" category="physics"
+        group="clm_inparm" valid_values="0,1" >
+Set to 0 to keep fire off. Set to 1 to turn on fates spitfire module (only relevant if FATES is being used).
 </entry>
 
 <entry id="fates_parteh_mode" type="integer" category="physics"
-       group="clm_inparm" valid_values="">
+       group="clm_inparm" valid_values="1">
 Switch deciding which nutrient model to use in FATES.
 </entry>
 
+<entry id="use_fates_fixed_biogeog" type="logical" category="physics"
+        group="clm_inparm" valid_values=".false." value=".false."> 
+Toggle to turn on FATES fixed biogeography mode (STUB ONLY, MUST BE FALSE).
+</entry>
 
 <entry id="use_fates_logging" type="logical" category="physics"
         group="clm_inparm" valid_values="" value=".false.">

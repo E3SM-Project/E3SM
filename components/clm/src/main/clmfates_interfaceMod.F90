@@ -45,7 +45,7 @@ module CLMFatesInterfaceMod
    use clm_varctl        , only : iulog
    use clm_varctl        , only : use_fates
    use clm_varctl        , only : use_vertsoilc 
-   use clm_varctl        , only : use_fates_spitfire
+   use clm_varctl        , only : fates_spitfire_mode
    use clm_varctl        , only : fates_parteh_mode
    use clm_varctl        , only : use_fates_planthydro
    use clm_varctl        , only : use_fates_cohort_age_tracking
@@ -53,6 +53,7 @@ module CLMFatesInterfaceMod
    use clm_varctl        , only : use_fates_ed_prescribed_phys
    use clm_varctl        , only : use_fates_logging
    use clm_varctl        , only : use_fates_inventory_init
+   use clm_varctl        , only : use_fates_fixed_biogeog
    use clm_varctl        , only : fates_inventory_ctrl_filename
    use clm_varcon        , only : tfrz
    use clm_varcon        , only : spval 
@@ -105,6 +106,7 @@ module CLMFatesInterfaceMod
    
 
    ! Used FATES Modules
+   use FatesConstantsMod     , only : ifalse
    use FatesInterfaceTypesMod, only : fates_interface_type
    use FatesInterfaceMod     , only : allocate_bcin
    use FatesInterfaceMod     , only : allocate_bcout
@@ -138,6 +140,9 @@ module CLMFatesInterfaceMod
    use FatesPlantHydraulicsMod, only : HydrSiteColdStart
    use FatesPlantHydraulicsMod, only : InitHydrSites
    use FatesPlantHydraulicsMod, only : RestartHydrStates
+
+   use dynHarvestMod          , only : num_harvest_vars, harvest_varnames
+   
    use FatesInterfaceTypesMod , only : bc_in_type, bc_out_type
    use CLMFatesParamInterfaceMod         , only : FatesReadParameters
 
@@ -230,7 +235,6 @@ contains
      logical                                        :: verbose_output
      integer                                        :: pass_masterproc
      integer                                        :: pass_vertsoilc
-     integer                                        :: pass_spitfire     
      integer                                        :: pass_ed_st3
      integer                                        :: pass_logging
      integer                                        :: pass_ed_prescribed_phys
@@ -238,7 +242,31 @@ contains
      integer                                        :: pass_inventory_init
      integer                                        :: pass_is_restart
      integer                                        :: pass_cohort_age_tracking
+     integer                                        :: pass_biogeog
+     integer                                        :: pass_num_lu_harvest_cats
+     integer                                        :: pass_lu_harvest
+     ! ----------------------------------------------------------------------------------
+     ! FATES lightning definitions
+     ! 1 : use a global constant lightning rate found in fates_params.
+     ! 2 : use an external lightning dataset. 
+     ! 3 : use an external confirmed ignitions dataset. 
+     ! 4 : use external lightning and population datasets to simulate
+     !     both natural and anthropogenic
+     ! Special note* external_lightning is not passed as a definition, because
+     ! this definition is not used in FATES (but will be added in later API)
+     ! as it is the resulting logic if not 0,1,3 or 4.
+     ! ----------------------------------------------------------------------------------
+     
+     integer, parameter :: no_fire = 0
+     integer, parameter :: scalar_lightning = 1
+     integer, parameter :: external_lightning = 2
+     integer, parameter :: successful_ignitions = 3
+     integer, parameter :: anthro_ignitions= 4
 
+     ! We will use this switch temporarily, until  we complete
+     ! the ELM-FATES harvest integration
+     logical, parameter :: do_elm_fates_harvest = .false.
+     
      if (use_fates) then
 
         verbose_output = .false.
@@ -274,26 +302,65 @@ contains
         end if
         call set_fates_ctrlparms('use_vertsoilc',ival=pass_vertsoilc)
 
-        if(use_fates_spitfire) then
-           pass_spitfire = 1
-        else
-           pass_spitfire = 0
-        end if
-        call set_fates_ctrlparms('use_spitfire',ival=pass_spitfire)
 
+        ! A note about spitfire: The CTSM team has added dataset
+        ! read capabilities for lightning and ignition sources.
+        ! THerefore since spitfire can be run in these different
+        ! ignition "modes", the "use_spitfire" on the FATES side
+        ! is no longer a binary switch, and is a "mode" flag where
+        ! 0 = no fire
+        ! 1 = spitfire on, with a scalar lighting rate
+        ! 2 = spitfire on, lightning strike rate from data
+        ! 3 = spitfire on, successful ignitions from data
+        ! 4 = spitfire on, anthro ignitions from data
+        ! Until we add this data stream connectivity in E3SM-Fates
+        ! we will always pass 0 or 1.
+        ! But.. we do have to define these modes, for now.
+        
+
+        call set_fates_ctrlparms('spitfire_mode',ival=fates_spitfire_mode)
+        call set_fates_ctrlparms('sf_nofire_def',ival=no_fire)
+        call set_fates_ctrlparms('sf_scalar_lightning_def',ival=scalar_lightning)
+        call set_fates_ctrlparms('sf_successful_ignitions_def',ival=successful_ignitions)
+        call set_fates_ctrlparms('sf_anthro_ignitions_def',ival=anthro_ignitions)
+
+        ! We currently do not run in a fixed biogeography mode with E3SM
+        if(use_fates_fixed_biogeog)then
+           pass_biogeog = 1
+        else 
+           pass_biogeog = 0
+        end if 
+        call set_fates_ctrlparms('use_fixed_biogeog',ival=pass_biogeog)
+
+        ! check fates logging namelist value first because hlm harvest overrides it
+        if(use_fates_logging) then
+           pass_logging = 1
+        else
+           pass_logging = 0
+        end if
+
+        if(do_elm_fates_harvest) then
+!        if(get_do_harvest()) then
+           pass_logging = 1
+           pass_num_lu_harvest_cats = num_harvest_vars
+           pass_lu_harvest = 1
+        else
+           pass_lu_harvest = 0
+           pass_num_lu_harvest_cats = 0
+        end if
+
+        call set_fates_ctrlparms('use_lu_harvest',ival=pass_lu_harvest)
+        call set_fates_ctrlparms('num_lu_harvest_cats',ival=pass_num_lu_harvest_cats)
+        call set_fates_ctrlparms('use_logging',ival=pass_logging)
+
+        
+        
         if(use_fates_ed_st3) then
            pass_ed_st3 = 1
         else
            pass_ed_st3 = 0
         end if
         call set_fates_ctrlparms('use_ed_st3',ival=pass_ed_st3)
-
-        if(use_fates_logging) then
-           pass_logging = 1
-        else
-           pass_logging = 0
-        end if
-        call set_fates_ctrlparms('use_logging',ival=pass_logging)
 
         if(use_fates_ed_prescribed_phys) then
            pass_ed_prescribed_phys = 1
@@ -494,7 +561,7 @@ contains
                ndecomp = 1
             end if
 
-            call allocate_bcin(this%fates(nc)%bc_in(s),col_pp%nlevbed(c),ndecomp)
+            call allocate_bcin(this%fates(nc)%bc_in(s),col_pp%nlevbed(c),ndecomp,num_harvest_vars)
             call allocate_bcout(this%fates(nc)%bc_out(s),col_pp%nlevbed(c),ndecomp)
             
             call zero_bcs(this%fates(nc),s)
@@ -1285,7 +1352,9 @@ contains
               call zero_site(this%fates(nc)%sites(s))
            end do
            
-           call set_site_properties(this%fates(nc)%nsites, this%fates(nc)%sites)
+           call set_site_properties(this%fates(nc)%nsites, &
+                                    this%fates(nc)%sites, &
+                                    this%fates(nc)%bc_in)
 
            ! ----------------------------------------------------------------------------
            ! Initialize Hydraulics Code if turned on
