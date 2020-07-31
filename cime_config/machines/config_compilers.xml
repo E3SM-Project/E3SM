@@ -713,6 +713,7 @@ flags should be captured within MPAS CMake files.
   </FFLAGS>
   <SLIBS>
     <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -lblas -llapack</append>
+    <append MPILIB="!mpi-serial"> -L$ENV{ADIOS2_DIR}/lib -ladios2_c_mpi -ladios2_c -ladios2_core_mpi -ladios2_core -lpthread</append>
   </SLIBS>
   <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH>
   <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
@@ -734,6 +735,7 @@ flags should be captured within MPAS CMake files.
   </FFLAGS>
   <SLIBS>
     <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} $SHELL{$ENV{NETCDF_PATH}/bin/nc-config --libs} -lblas -llapack</append>
+    <append MPILIB="!mpi-serial"> -L$ENV{ADIOS2_DIR}/lib -ladios2_c_mpi -ladios2_c -ladios2_core_mpi -ladios2_core</append>
   </SLIBS>
   <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH>
   <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
@@ -749,6 +751,7 @@ flags should be captured within MPAS CMake files.
   <SLIBS>
     <append>$SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --flibs}  -L$ENV{MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm -ldl </append>
     <append> $SHELL{$ENV{NETCDF_C_PATH}/bin/nc-config --libs} </append>
+    <append MPILIB="!mpi-serial"> -L$ENV{ADIOS2_DIR}/lib64 -ladios2_c_mpi -ladios2_c -ladios2_core_mpi -ladios2_core</append>
   </SLIBS>
   <CXX_LIBS>
     <base>-lstdc++</base>
@@ -804,6 +807,7 @@ flags should be captured within MPAS CMake files.
     <append> $SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --flibs} </append>
     <append> $SHELL{$ENV{NETCDF_C_PATH}/bin/nc-config --libs} </append>
     <append>-Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_sequential.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl</append>
+    <append MPILIB="!mpi-serial"> -L$ENV{ADIOS2_DIR}/lib64 -ladios2_c_mpi -ladios2_c -ladios2_core_mpi -ladios2_core</append>
   </SLIBS>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
@@ -832,6 +836,7 @@ flags should be captured within MPAS CMake files.
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
   <SLIBS>
     <append>$SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --flibs} $SHELL{$ENV{NETCDF_C_PATH}/bin/nc-config --libs} -mkl</append>
+    <append MPILIB="!mpi-serial"> -L$ENV{ADIOS2_DIR}/lib64 -ladios2_c_mpi -ladios2_c -ladios2_core_mpi -ladios2_core</append>
   </SLIBS>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
@@ -852,6 +857,7 @@ flags should be captured within MPAS CMake files.
   <SLIBS>
     <append>$SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --flibs} $SHELL{$ENV{NETCDF_C_PATH}/bin/nc-config --libs}</append>
     <append>-Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_gf_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_sequential.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl</append>
+    <append MPILIB="!mpi-serial"> -L$ENV{ADIOS2_DIR}/lib64 -ladios2_c_mpi -ladios2_c -ladios2_core_mpi -ladios2_core</append>
   </SLIBS>
   <CXX_LIBS>
     <base>-lstdc++</base>
@@ -877,6 +883,7 @@ flags should be captured within MPAS CMake files.
   <MPIFC  MPILIB="impi"> mpiifort </MPIFC>
   <SLIBS>
     <append>$SHELL{nf-config --flibs} -mkl</append>
+    <append MPILIB="!mpi-serial"> -L$ENV{ADIOS2_DIR}/lib64 -ladios2_c_mpi -ladios2_c -ladios2_core_mpi -ladios2_core</append>
   </SLIBS>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
@@ -893,10 +900,12 @@ flags should be captured within MPAS CMake files.
   <SLIBS>
     <append>$SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --flibs} $SHELL{$ENV{NETCDF_C_PATH}/bin/nc-config --libs}</append>
     <append>-L$ENV{MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl</append>
+    <append MPILIB="!mpi-serial"> -L$ENV{ADIOS2_DIR}/lib64 -ladios2_c_mpi -ladios2_c -ladios2_core_mpi -ladios2_core</append>
   </SLIBS>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
   <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
+  <HDF5_PATH>$ENV{HDF5_PATH}</HDF5_PATH>
 </compiler>
 
 <compiler MACH="blues" COMPILER="pgigpu">
@@ -1136,6 +1145,7 @@ flags should be captured within MPAS CMake files.
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <SLIBS>
     <base> -lpmi -L$NETCDF_PATH/lib -lnetcdf -lnetcdff -L$ENV{MKL_PATH}/lib/intel64/ -lmkl_rt $ENV{PNETCDF_LIBRARIES}</base>
+    <append MPILIB="!mpi-serial"> -L$ENV{ADIOS2_DIR}/lib64 -ladios2_c_mpi -ladios2_c -ladios2_core_mpi -ladios2_core</append>
   </SLIBS>
   <MPICC  MPILIB="impi">mpiicc</MPICC>
   <MPICXX MPILIB="impi">mpiicpc</MPICXX>
@@ -1165,6 +1175,7 @@ flags should be captured within MPAS CMake files.
   <PNETCDF_PATH>$ENV{PNETCDF_HOME}</PNETCDF_PATH>
   <SLIBS>
     <append> -lpmi -L$NETCDF_PATH/lib -lnetcdf -lnetcdff -L$ENV{MKL_PATH}/lib/intel64/ -lmkl_rt $ENV{PNETCDF_LIBRARIES} </append>
+    <append MPILIB="!mpi-serial"> -L$ENV{ADIOS2_DIR}/lib64 -ladios2_c_mpi -ladios2_c -ladios2_core_mpi -ladios2_core</append>
   </SLIBS>
   <MPICC  MPILIB="impi">mpipgcc</MPICC>
   <MPICXX MPILIB="impi">mpipgcxx</MPICXX>
@@ -1191,6 +1202,7 @@ flags should be captured within MPAS CMake files.
   <SLIBS>
     <append> -L$ENV{NETCDF_DIR} -lnetcdff -Wl,--as-needed,-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf </append>
     <append> -mkl -lpthread </append>
+    <append MPILIB="!mpi-serial"> -L$ENV{ADIOS2_DIR}/lib64 -ladios2_c_mpi -ladios2_c -ladios2_core_mpi -ladios2_core</append>
   </SLIBS>
 </compiler>
 
@@ -1201,6 +1213,9 @@ flags should be captured within MPAS CMake files.
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </FFLAGS>
+  <SLIBS>
+    <append MPILIB="!mpi-serial"> -L$ENV{ADIOS2_DIR}/lib64 -ladios2_c_mpi -ladios2_c -ladios2_core_mpi -ladios2_core</append>
+  </SLIBS>
   <CXX_LIBS>
     <base>-lstdc++</base>
   </CXX_LIBS>
@@ -1241,6 +1256,7 @@ flags should be captured within MPAS CMake files.
   <SLIBS>
     <append> -L$ENV{NETCDF_DIR} -lnetcdff -Wl,--as-needed,-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf </append>
     <append> -mkl -lpthread </append>
+    <append MPILIB="!mpi-serial"> -L$ENV{ADIOS2_DIR}/lib64 -ladios2_c_mpi -ladios2_c -ladios2_core_mpi -ladios2_core</append>
   </SLIBS>
 </compiler>
 
@@ -1251,6 +1267,9 @@ flags should be captured within MPAS CMake files.
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
   </FFLAGS>
+  <SLIBS>
+    <append MPILIB="!mpi-serial"> -L$ENV{ADIOS2_DIR}/lib64 -ladios2_c_mpi -ladios2_c -ladios2_core_mpi -ladios2_core</append>
+  </SLIBS>
   <CXX_LIBS>
     <base>-lstdc++</base>
   </CXX_LIBS>
@@ -1743,6 +1762,7 @@ flags should be captured within MPAS CMake files.
   <SLIBS>
     <append MPILIB="mpi-serial">-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{OLCF_NETLIB_LAPACK_ROOT}/lib -llapack</append>
     <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{OLCF_NETLIB_LAPACK_ROOT}/lib -llapack</append>
+    <append MPILIB="!mpi-serial"> -L$ENV{ADIOS2_DIR}/lib64 -ladios2_c_mpi -ladios2_c -ladios2_core_mpi -ladios2_core</append>
   </SLIBS>
   <CXX_LIBS>
     <base>-lstdc++</base>
@@ -1774,6 +1794,7 @@ flags should be captured within MPAS CMake files.
   <SLIBS>
     <append MPILIB="mpi-serial">-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{OLCF_NETLIB_LAPACK_ROOT}/lib -llapack</append>
     <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{OLCF_NETLIB_LAPACK_ROOT}/lib -llapack</append>
+    <append MPILIB="!mpi-serial"> -L$ENV{ADIOS2_DIR}/lib64 -ladios2_c_mpi -ladios2_c -ladios2_core_mpi -ladios2_core</append>
   </SLIBS>
   <CXX_LIBS>
     <base>-lstdc++</base>
@@ -1814,6 +1835,7 @@ flags should be captured within MPAS CMake files.
   <SLIBS>
     <append MPILIB="mpi-serial">-lxlopt -lxl -lxlsmp -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{OLCF_NETLIB_LAPACK_ROOT}/lib -llapack</append>
     <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -lxlopt -lxl -lxlsmp -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{OLCF_NETLIB_LAPACK_ROOT}/lib -llapack </append>
+    <append MPILIB="!mpi-serial"> -L$ENV{ADIOS2_DIR}/lib64 -ladios2_c_mpi -ladios2_c -ladios2_core_mpi -ladios2_core</append>
   </SLIBS>
   <CXX_LIBS>
     <base>-L/sw/summit/gcc/8.1.1/lib64 -lstdc++ -L$ENV{OLCF_XLC_ROOT}/lib -libmc++</base>
@@ -1881,6 +1903,7 @@ flags should be captured within MPAS CMake files.
   <SLIBS>
     <append MPILIB="mpi-serial">-lxlopt -lxl -lxlsmp -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{OLCF_NETLIB_LAPACK_ROOT}/lib -llapack</append>
     <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -lxlopt -lxl -lxlsmp -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{OLCF_NETLIB_LAPACK_ROOT}/lib -llapack </append>
+    <append MPILIB="!mpi-serial"> -L$ENV{ADIOS2_DIR}/lib64 -ladios2_c_mpi -ladios2_c -ladios2_core_mpi -ladios2_core</append>
   </SLIBS>
   <CXX_LIBS>
     <base>-L/sw/summit/gcc/8.1.1/lib64 -lstdc++ -L$ENV{OLCF_XLC_ROOT}/lib -libmc++</base>
@@ -1911,6 +1934,7 @@ flags should be captured within MPAS CMake files.
   </CPPDEFS>
   <SLIBS>
     <append> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{OLCF_NETLIB_LAPACK_ROOT}/lib -llapack</append>
+    <append MPILIB="!mpi-serial"> -L$ENV{ADIOS2_DIR}/lib64 -ladios2_c_mpi -ladios2_c -ladios2_core_mpi -ladios2_core</append>
   </SLIBS>
   <CXX_LINKER>FORTRAN</CXX_LINKER>
   <CXX_LIBS>
@@ -1944,6 +1968,7 @@ flags should be captured within MPAS CMake files.
   </LDFLAGS>
   <SLIBS>
     <append> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{OLCF_NETLIB_LAPACK_ROOT}/lib -llapack</append>
+    <append MPILIB="!mpi-serial"> -L$ENV{ADIOS2_DIR}/lib64 -ladios2_c_mpi -ladios2_c -ladios2_core_mpi -ladios2_core</append>
   </SLIBS>
   <CXX_LINKER>FORTRAN</CXX_LINKER>
   <CXX_LIBS>
@@ -2242,6 +2267,7 @@ flags should be captured within MPAS CMake files.
   </FFLAGS>
   <SLIBS>
     <append>$SHELL{nf-config --flibs}</append>
+    <append MPILIB="!mpi-serial"> -L$ENV{ADIOS2_DIR}/lib64 -ladios2_c_mpi -ladios2_c -ladios2_core_mpi -ladios2_core</append>
   </SLIBS>
   <CXX_LIBS>
     <base>-lstdc++</base>
@@ -2266,6 +2292,7 @@ flags should be captured within MPAS CMake files.
   <SLIBS>
     <append> -L$ENV{NETCDF_DIR}/lib -lnetcdff -L$ENV{NETCDF_DIR}/lib -lnetcdf -Wl,-rpath -Wl,$ENV{NETCDF_DIR}/lib </append>
     <append> -mkl -lpthread </append>
+    <append MPILIB="!mpi-serial"> -L$ENV{ADIOS2_DIR}/lib64 -ladios2_c_mpi -ladios2_c -ladios2_core_mpi -ladios2_core</append>
   </SLIBS>
 </compiler>
 
