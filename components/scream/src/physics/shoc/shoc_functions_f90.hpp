@@ -66,10 +66,10 @@ struct SHOCGridData {
 void shoc_grid(Int nlev, SHOCGridData &d);
 
 
-//BSINGH- Add comments
+//Create data structure to hold data for calc_shoc_vertflux
 struct SHOCVertfluxData {
-  static constexpr size_t NUM_ARRAYS   = 1;
-  static constexpr size_t NUM_ARRAYS_i = 3;
+  static constexpr size_t NUM_ARRAYS   = 1; //# of arrays with values at cell centers (zt grid)
+  static constexpr size_t NUM_ARRAYS_i = 3; //# of arrays with values at interface centers (zi grid)
 
   // Inputs
   Int   shcol, nlev, nlevi;
@@ -78,6 +78,7 @@ struct SHOCVertfluxData {
   // In/out
   Real *vertflux;
 
+  //functions to initialize data
   SHOCVertfluxData(Int shcol_, Int nevl_, Int nlevi_);
   SHOCVertfluxData(const SHOCVertfluxData &rhs);
   SHOCVertfluxData &operator=(const SHOCVertfluxData &rhs);

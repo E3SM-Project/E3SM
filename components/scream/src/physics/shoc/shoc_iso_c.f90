@@ -99,14 +99,14 @@ contains
 
   subroutine shoc_grid_c(shcol,nlev,nlevi,zt_grid,zi_grid,pdel,dz_zt,dz_zi,rho_zt) bind (C)
     use shoc, only: shoc_grid
-    
+
     integer(kind=c_int), intent(in), value :: shcol
     integer(kind=c_int), intent(in), value :: nlev
     integer(kind=c_int), intent(in), value :: nlevi
     real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
-    real(kind=c_real), intent(in) :: zi_grid(shcol,nlevi) 
-    real(kind=c_real), intent(in) :: pdel(shcol,nlev)    
-  
+    real(kind=c_real), intent(in) :: zi_grid(shcol,nlevi)
+    real(kind=c_real), intent(in) :: pdel(shcol,nlev)
+
     real(kind=c_real), intent(out) :: dz_zt(shcol,nlev)
     real(kind=c_real), intent(out) :: dz_zi(shcol,nlevi)
     real(kind=c_real), intent(out) :: rho_zt(shcol,nlev)
@@ -116,37 +116,20 @@ contains
   end subroutine shoc_grid_c
 
 
-  subroutine calc_shoc_vertflux_c(&
-       shcol,nlev,nlevi,tkh_zi,dz_zi,invar,&  ! Input
-       vertflux)bind (C)                      ! Input/Output
-
-    ! Compute either the vertical flux via
-    !  downgradient diffusion for a given set of
-    !  input variables
+  subroutine calc_shoc_vertflux_c(shcol, nlev, nlevi, tkh_zi, dz_zi, invar, vertflux) bind (C)
     use shoc, only: calc_shoc_vertflux
 
-    implicit none
-
-    ! INPUT VARIABLES
-    ! number of SHOC columns
     integer(kind=c_int), intent(in), value :: shcol
-    ! number of midpoint levels
     integer(kind=c_int), intent(in), value :: nlev
-    ! number of interface levels
     integer(kind=c_int), intent(in), value :: nlevi
-    ! Eddy diffusivity for heat [ms-2]
     real(kind=c_real), intent(in) :: tkh_zi(shcol,nlevi)
-    ! delta z centerend on zi grid [m]
     real(kind=c_real), intent(in) :: dz_zi(shcol,nlevi)
-    ! Input variable [units vary]
     real(kind=c_real), intent(in) :: invar(shcol,nlev)
 
-    ! INPUT/OUTPUT VARIABLES
     real(kind=c_real), intent(inout) :: vertflux(shcol,nlevi)
 
-    call calc_shoc_vertflux(&
-         shcol,nlev,nlevi,tkh_zi,dz_zi,invar,&  ! Input
-         vertflux)
+    call calc_shoc_vertflux(shcol, nlev, nlevi, tkh_zi, dz_zi, invar, vertflux)
+
   end subroutine calc_shoc_vertflux_c
 
 end module shoc_iso_c

@@ -121,7 +121,7 @@ void shoc_grid(Int nlev, SHOCGridData &d) {
 }
 
 
-  //bsingh- add comments
+//Initialize data for calc_shoc_vertflux function
 SHOCVertfluxData::SHOCVertfluxData(Int shcol_, Int nlev_, Int nlevi_)
   : shcol(shcol_),
     nlev(nlev_),
@@ -180,6 +180,8 @@ void SHOCVertfluxData::init_ptrs() {
   }
 }
 
+//Initialize shoc parameterization, trnaspose data from c to fortran,
+//call calc_shoc_vertflux fortran subroutine and transpose data back to c
 void calc_shoc_vertflux(Int nlev, SHOCVertfluxData &d) {
   shoc_init(nlev, true);
   d.transpose<util::TransposeDirection::c2f>();
