@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-! $Id: lapack_wrap.F90 6849 2014-04-22 21:52:30Z charlass@uwm.edu $
+! $Id$
 !===============================================================================
 module lapack_wrap
 
@@ -14,17 +14,9 @@ module lapack_wrap
   use constants_clubb, only:  & 
     fstderr ! Variable(s)
 
-  use error_code, only:  & 
-    clubb_singular_matrix,  & ! Variable(s)
-    clubb_bad_lapack_arg, & 
-    clubb_var_equals_NaN, &
-    clubb_no_error
-
   use clubb_precision, only: &
     core_rknd, & ! Variable(s)
     dp
-
-  use cam_abortutils, only: endrun
 
   implicit none
 
@@ -49,7 +41,7 @@ module lapack_wrap
 !-----------------------------------------------------------------------
   subroutine tridag_solvex( solve_type, ndim, nrhs, &
                             supd, diag, subd, rhs, &
-                            solution, rcond, err_code )
+                            solution, rcond )
 
 ! Description:
 !   Solves a tridiagonal system of equations (expert routine).
@@ -62,11 +54,14 @@ module lapack_wrap
 !   More expensive than the simple routine, but tridiagonal
 !   decomposition is still relatively cheap.
 !-----------------------------------------------------------------------
-    use error_code, only: &
-      clubb_at_least_debug_level ! Logical function
 
     use clubb_precision, only: &
       core_rknd ! Variable(s)
+
+    use error_code, only: &
+      clubb_at_least_debug_level,  & ! Procedure  
+      err_code,                    & ! Error Indicator
+      clubb_fatal_error              ! Constants
 
     implicit none
 
@@ -98,9 +93,6 @@ module lapack_wrap
     ! precision, and info == ndim+1.  If rcond == 0, then the LHS matrix
     ! is singular.  This condition is indicated by a return code of info > 0.
     real( kind = core_rknd ), intent(out) :: rcond
-
-    integer, intent(out) ::  & 
-      err_code ! Used to determine when a decomp. failed
 
     ! Output variables
     real( kind = core_rknd ), intent(out), dimension(ndim,nrhs) ::  & 
@@ -174,14 +166,12 @@ module lapack_wrap
     case( :-1 )
       write(fstderr,*) trim( solve_type )// & 
         "illegal value in argument", -info
-      err_code = clubb_bad_lapack_arg
+      err_code = clubb_fatal_error
 
     case( 0 )
       ! Success!
       if ( lapack_isnan( ndim, nrhs, solution ) ) then
-        err_code = clubb_var_equals_NaN 
-      else
-        err_code = clubb_no_error
+        err_code = clubb_fatal_error 
       end if
 
     case( 1: )
@@ -190,11 +180,10 @@ module lapack_wrap
           " Warning: matrix is singular to working precision."
         write(fstderr,'(a,e12.5)')  & 
           "Estimate of the reciprocal of the condition number: ", rcond
-        err_code = clubb_no_error
       else
         write(fstderr,*) solve_type// & 
           " singular matrix."
-        err_code = clubb_singular_matrix
+        err_code = clubb_fatal_error
       end if
 
     end select
@@ -206,7 +195,7 @@ module lapack_wrap
   subroutine tridag_solve & 
              ( solve_type, ndim, nrhs, &
                supd, diag, subd, rhs, &
-               solution, err_code )
+               solution )
 
 ! Description:
 !   Solves a tridiagonal system of equations (simple routine)
@@ -223,6 +212,11 @@ module lapack_wrap
     use, intrinsic :: ieee_exceptions
 #endif
 #endif
+
+    use error_code, only: &
+      err_code,                    & ! Error Indicator
+      clubb_fatal_error              ! Constants
+
     implicit none
 
     ! External
@@ -252,10 +246,6 @@ module lapack_wrap
     real( kind = core_rknd ), intent(out), dimension(ndim,nrhs) ::  & 
       solution ! Solution
 
-
-    integer, intent(out) ::  & 
-      err_code ! Used to determine when a decomp. failed
-
     ! Local Variables
 
     real( kind = dp ), dimension(ndim) :: &
@@ -279,7 +269,7 @@ module lapack_wrap
       call ieee_set_halting_mode(IEEE_DIVIDE_BY_ZERO, .false.) ! Turn off stopping on div-by-zero only
 #endif
 #endif
-      call dgtsv( ndim, nrhs, subd(2:ndim), diag, supd(1:ndim-1),  &
+      call dgtsv( ndim, nrhs, subd(2:ndim), diag, supd(1:ndim-1),  & 
                   rhs, ndim, info )
 #ifndef NDEBUG
 #if defined(ARCH_MIC_KNL) && defined(CPRINTEL)
@@ -310,23 +300,21 @@ module lapack_wrap
     case( :-1 )
       write(fstderr,*) trim( solve_type )// & 
         " illegal value in argument", -info
-      err_code = clubb_bad_lapack_arg
+      err_code = clubb_fatal_error
 
       solution = -999._core_rknd
 
     case( 0 )
       ! Success!
       if ( lapack_isnan( ndim, nrhs, rhs ) ) then
-        err_code = clubb_var_equals_NaN 
-      else
-        err_code = clubb_no_error
+        err_code = clubb_fatal_error 
       end if
 
       solution = rhs
 
     case( 1: )
       write(fstderr,*) trim( solve_type )//" singular matrix."
-      err_code = clubb_singular_matrix
+      err_code = clubb_fatal_error
 
       solution = -999._core_rknd
 
@@ -337,7 +325,7 @@ module lapack_wrap
 
 !-----------------------------------------------------------------------
   subroutine band_solvex( solve_type, nsup, nsub, ndim, nrhs,  & 
-                          lhs, rhs, solution, rcond, err_code )
+                          lhs, rhs, solution, rcond )
 ! Description:
 !   Restructure and then solve a band diagonal system, with
 !   diagnostic output
@@ -354,11 +342,14 @@ module lapack_wrap
 !   refinement of the solutions, which results in a slightly different answer
 !   than the simple driver does. -dschanen 24 Sep 2008
 !-----------------------------------------------------------------------
-    use error_code, only: &
-      clubb_at_least_debug_level ! Logical function
 
     use clubb_precision, only: &
       core_rknd ! Variable(s)
+
+    use error_code, only: &
+      clubb_at_least_debug_level,  & ! Procedure  
+      err_code,                    & ! Error Indicator
+      clubb_fatal_error              ! Constants
 
     implicit none
 
@@ -391,8 +382,6 @@ module lapack_wrap
     ! after equilibration (if done).
     real( kind = core_rknd ), intent(out) ::  & 
       rcond
-
-    integer, intent(out) :: err_code ! Valid calculation?
 
     ! Local Variables
 
@@ -479,9 +468,12 @@ module lapack_wrap
                    rcond, ferr, berr, work, iwork, info )
 
     else
-      stop "band_solvex: Cannot resolve the precision of real datatype"
-      ! One implication of this is that CLUBB cannot be used with quad
-      ! precision variables without a quad precision band diagonal solver
+
+      if ( clubb_at_least_debug_level( 0 ) ) then
+          write(fstderr,*) "in band_solvex: only single/double precision supported"
+          stop
+      end if
+
     end if
 
 ! %% debug
@@ -521,31 +513,28 @@ module lapack_wrap
     select case( info )
 
     case( :-1 )
-      write(fstderr,*) trim( solve_type )// & 
-        " illegal value for argument", -info
-      err_code = clubb_bad_lapack_arg
+        write(fstderr,*) "in band_solvex for ", trim( solve_type ), &
+            ": illegal value for argument", -info
+        err_code = clubb_fatal_error
 
     case( 0 )
       ! Success!
       if ( lapack_isnan( ndim, nrhs, solution ) ) then
-        err_code = clubb_var_equals_NaN 
-      else
-        err_code = clubb_no_error
+        err_code = clubb_fatal_error 
       end if
 
     case( 1: )
       if ( info == ndim+1 ) then
+
         write(fstderr,*) trim( solve_type )// & 
           " Warning: matrix singular to working precision."
         write(fstderr,'(a,e12.5)')  & 
           "Estimate of the reciprocal of the"// & 
           " condition number: ", rcond
-        err_code = clubb_no_error
       else
-        write(fstderr,*) trim( solve_type )// & 
-          " band solver: singular matrix"
-        err_code = clubb_singular_matrix
-        call endrun ('lapack_wrap.F90: Singular matrix detected in band_solvex')
+        write(fstderr,*) "in band_solvex for", trim( solve_type ), &
+          ": singular matrix, solution not computed"    
+        err_code = clubb_fatal_error
       end if
 
     end select
@@ -555,7 +544,7 @@ module lapack_wrap
 
 !-----------------------------------------------------------------------
   subroutine band_solve( solve_type, nsup, nsub, ndim, nrhs,  & 
-                          lhs, rhs, solution, err_code )
+                          lhs, rhs, solution )
 ! Description:
 !   Restructure and then solve a band diagonal system
 
@@ -566,6 +555,11 @@ module lapack_wrap
 
     use clubb_precision, only: &
       core_rknd ! Variable(s)
+
+    use error_code, only: &
+      clubb_at_least_debug_level, &
+      err_code,                    & ! Error Indicator
+      clubb_fatal_error              ! Constants
 
     implicit none
 
@@ -595,8 +589,6 @@ module lapack_wrap
     ! Output Variables
     real( kind = core_rknd ), dimension(ndim,nrhs), intent(out) :: solution
 
-    integer, intent(out) :: err_code ! Valid calculation?
-
     ! Local Variables
 
     ! Workspaces
@@ -617,49 +609,132 @@ module lapack_wrap
       offset, & ! Loop iterator
       imain  ! Main diagonal of the matrix
 
-    ! Copy LHS into Decomposition scratch space
-    lulhs = 0.0_core_rknd
-    lulhs(nsub+1:2*nsub+nsup+1, 1:ndim) = lhs(1:nsub+nsup+1, 1:ndim)
+    integer :: i, j
 
-!-----------------------------------------------------------------------
-!       Reorder LU Matrix to use LAPACK band matrix format
-
-!       Shift example for lulhs matrix (note the extra bands):
-
-!       [    +        +        +        +        +        +     ]
-!       [    +        +        +        +        +        +     ]
-!       [    *        *     lhs(1,1) lhs(1,2) lhs(1,3) lhs(1,4) ] (2)=>
-!       [    *     lhs(2,1) lhs(2,2) lhs(2,3) lhs(2,4) lhs(2,5) ] (1)=>
-!       [ lhs(3,1) lhs(3,2) lhs(3,3) lhs(3,4) lhs(3,5) lhs(3,6) ]
-! <=(1) [ lhs(4,2) lhs(4,3) lhs(4,4) lhs(4,5) lhs(4,6)    *     ]
-! <=(2) [ lhs(5,3) lhs(5,4) lhs(5,5) lhs(5,6)    *        *     ]
-!       [    +        +        +        +        +        +     ]
-!       [    +        +        +        +        +        +     ]
-
-!       The '*' indicates unreferenced elements.
-!       The '+' indicates an element overwritten during decomposition.
-!       For additional bands above and below the main diagonal, the
-!       shifts to the left or right increases by the distance from the
-!       main diagonal of the matrix.
-!-----------------------------------------------------------------------
+    !-----------------------------------------------------------------------
+    !       Reorder LU Matrix to use LAPACK band matrix format
+    ! 
+    !       Shift example for lulhs matrix given a 5x5 lhs matrix
+    !           
+    !                       
+    !  lulhs =  
+    !                            Columns
+    !         1  2       3          4          5         6           7
+    ! Rows       
+    ! 1     [ 0  0       0          0      lhs(3,1)   lhs(4,2)   lhs(5,3) ]
+    ! 2     [ 0  0       0      lhs(2,1)   lhs(3,2)   lhs(4,3)   lhs(5,4) ]
+    ! 3     [ 0  0   lhs(1,1)   lhs(2,2)   lhs(3,3)   lhs(4,4)   lhs(5,5) ]
+    ! 4     [ 0  0   lhs(1,2)   lhs(2,3)   lhs(3,4)   lhs(4,5)       0    ]
+    ! 5     [ 0  0   lhs(1,3)   lhs(2,4)   lhs(3,5)       0          0    ]
+    !                       
+    !         all       lhs        lhs        lhs        lhs        lhs  
+    !        set to   shifted     shifted      no      shifted    shifted
+    !          0       down 2      down 1    shift      up 1        up 2
+    ! 
+    !   The first nsup columns of lulhs are always set to 0; 
+    !   the rest of the columns are set to shifted 
+    !   columns of lhs. This can be thought of as taking lhs, never touching the middle column, but
+    !   shifting the columns that are n columns to the left of the middle down by n rows, and then
+    !   shifting the columns that are n columns to the right of the middle up by n rows, finally 
+    !   adding nsup columns of zeros onto the left of the array. This results in lulhs.
+    !-----------------------------------------------------------------------
 
     ! Reorder lulhs, omitting the additional 2*nsub bands
     ! that are used for the LU decomposition of the matrix.
 
     imain = nsub + nsup + 1
 
-    ! For the offset, (+) is left, and (-) is right
+    
+    ! The first nsup rows of lulhs will contain 0s that are end-shifted lhs values. This needs
+    ! to be handled differently so the algorithm to access lhs will not try to use out of bound
+    ! values.
+    !             ...   nsup     nsup+1    ...       imain   ... 
+    !                        \ /                 \ /
+    !                always   |  begins with nsup | all lhs values
+    !                   0       0s, and decreases  
+    !                           by one 0 each row 
+    ! 
+    !              ...  nsup     nsup+1    ...       imain   ... 
+    ! lulhs(:,1) =  0     0       0         0         lhs    lhs
+    ! lulhs(:,2) =  0     0       0        lhs        lhs    lhs
+    ! 
+    ! Since the first nsup rows are the first rows in lulhs, we're going to access them first to
+    ! avoid out of order memory accesses.
+    do i = 1, nsup
 
-    ! Sub diagonals
-    do offset = 1, nsub, 1
-      lulhs(imain+offset, 1:ndim) & 
-      = eoshift( lulhs(imain+offset, 1:ndim), offset )
+        ! Add 0s to first nsup columns, and decreasing number of end-shift affected columns
+        do j = 1, imain-i
+            lulhs(j,i) = 0.0_core_rknd
+        end do
+
+        ! Copy lhs values into appropriate lulhs spots
+        do j = imain-i+1, imain+nsub
+            lulhs(j,i) = lhs(j-nsub,i+j-imain)
+        end do
+
     end do
 
-    ! Super diagonals
-    do offset = 1, nsup, 1
-      lulhs(imain-offset, 1:ndim) & 
-      = eoshift( lulhs(imain-offset, 1:ndim), -offset )
+    ! After the first nsup rows are dealt with, the offset lhs values can be copied into lulhs
+    ! until the last nsup rows are reached. This is because the last nsup rows also contain
+    ! end-shifted values, set to 0 in the next loop.
+    ! 
+    !                      ...  nsup     nsup+1    ...  
+    !                                \ /   
+    !                       always    |    all lhs values                
+    ! 
+    !                      ...  nsup     nsup+1    ...    
+    ! lulhs(:,nsup+1)    =  0     0       lhs      lhs    
+    ! lulhs(:,ndim-nsub) =  0     0       lhs      lhs    
+    ! 
+    ! For all values not affected by end-shifting
+    do i = nsup+1, ndim-nsub
+
+        ! Set first nsup columns to 0
+        do j = 1, nsub
+            lulhs(j,i) = 0.0_core_rknd
+        end do
+
+        ! Copy lhs values into appropriate lulhs spots
+        do j = imain-nsub, imain+nsub
+            lulhs(j,i) = lhs(j-nsub, i+j-imain)
+        end do
+
+    end do
+
+
+    ! The last nsup rows of lulhs will contain 0s that are end-shifted lhs values. This needs
+    ! to be handled differently so the algorithm to access lhs will not try to use out of bound
+    ! values.
+    !             
+    ! 
+    !                        ...  nsup     nsup+1    ...      imain+1    ...    
+    ! lulhs(:,ndim-nsub+1) =  0     0       lhs      lhs        lhs       0  
+    ! lulhs(:,ndim)        =  0     0       lhs      lhs         0        0
+    !
+    !                                   |                   |   starts with one 0, then
+    !                          always   |   all lhs values  |  then increases to nsup 0s
+    !                                   |                   |       towards ndim
+    !                                  / \                 / \
+    !                        ...  nsup     nsup+1    ...          ndim-nsub+1 ... ndim
+    ! 
+    ! Finish the lulhs setup by accessing the last values last, keeping memory access ordered
+    do i = ndim-nsub+1, ndim
+    
+        ! Set first nsup columns to 0
+        do j = 1, nsub
+            lulhs(j,i) = 0.0_core_rknd
+        end do
+
+        ! Copy lhs values into appropriate lulhs spots
+        do j = imain-nsup, imain-(i-ndim)
+            lulhs(j,i) = lhs(j-nsub, i+j-imain)
+        end do
+
+        ! Set increasing number of end-shift affected columns to 0
+        do j = imain-(i-ndim)+1, imain+nsub
+            lulhs(j,i) = 0.0_core_rknd
+        end do
+        
     end do
 
 !-----------------------------------------------------------------------
@@ -690,29 +765,23 @@ module lapack_wrap
     select case( info )
 
     case( :-1 )
-      write(fstderr,*) trim( solve_type )// & 
-        " illegal value for argument ", -info
-      err_code = clubb_bad_lapack_arg
-
-      solution = -999._core_rknd
-
+          write(fstderr,*) "in band_solve for ", trim( solve_type ), &
+            ": illegal value for argument", -info
+          err_code = clubb_fatal_error
     case( 0 )
-      ! Success!
-      if ( lapack_isnan( ndim, nrhs, rhs ) ) then
-        err_code = clubb_var_equals_NaN 
-      else
-        err_code = clubb_no_error
-      end if
+          ! Success!
+          if ( clubb_at_least_debug_level( 1 ) ) then
+              if ( lapack_isnan( ndim, nrhs, rhs ) ) then
+                err_code = clubb_fatal_error 
+              end if
+          end if
 
-      solution = rhs
+          solution = rhs
 
     case( 1: )
-      write(fstderr,*) trim( solve_type )//" band solver: singular matrix"
-      err_code = clubb_singular_matrix
-
-      solution = -999._core_rknd
-      call endrun ('lapack_wrap.F90: Singular matrix detected in band_solve')
-
+        write(fstderr,*) "in band_solve for ", trim( solve_type ), &
+                       ": singular matrix, solution not computed"
+        err_code = clubb_fatal_error
     end select
 
     return

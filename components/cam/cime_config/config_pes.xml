@@ -482,7 +482,7 @@
     </mach>
   </grid>
   <grid name="a%ne30np4">
-    <mach name="melvin">
+    <mach name="melvin|mappy">
       <pes compset="any" pesize="any">
         <comment>none</comment>
         <ntasks>

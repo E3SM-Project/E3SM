@@ -1,0 +1,69 @@
+commit 5d29760c18d2ac2209dae94af7bba6439a9b6dd3
+Author: Nicolas Strike <strike@uwm.edu>
+Date:   Wed Jul 10 14:23:09 2019 -0500
+
+    Rensure plots match plotgen output. lba plots should now be consistent with plotgen. Added a few missing SAM plots for some panels.
+    https://github.com/larson-group/sys_admin/issues/542
+
+commit 1204d043849de0e5c3dc790f0ef7108a319bc890
+Author: Nicolas Strike <strike@uwm.edu>
+Date:   Tue Jul 9 14:10:59 2019 -0500
+
+    Rename Lineplot to Line
+    https://github.com/larson-group/sys_admin/issues/542
+
+commit 44946b9a02aaaa6fa7a4318c4a876d01462b6635
+Author: Nicolas Strike <strike@uwm.edu>
+Date:   Tue Jul 9 11:14:48 2019 -0500
+
+    Add initial version lba case, though the output is not yet identical to plotgen's.
+    https://github.com/larson-group/sys_admin/issues/542
+
+commit 36f0c546d0978cffbee001320e63fc3453f639d6
+Author: Nicolas Strike <strike@uwm.edu>
+Date:   Tue Jul 9 10:04:52 2019 -0500
+
+    Add initial versions of multiple variable groups
+    https://github.com/larson-group/sys_admin/issues/542
+
+commit 15f62b1155b133f79af128b8bdcf891dd97a08bb
+Author: Nicolas Strike <strike@uwm.edu>
+Date:   Tue Jul 9 07:55:47 2019 -0500
+
+    Fix time averaging bug that prevented many LES plots from appearing as expected/like their plotgen counterparts.
+    https://github.com/larson-group/sys_admin/issues/542
+
+commit 93326ab89ca144e1bc00cd33e6199a0571b9ea4c
+Author: Nicolas Strike <strike@uwm.edu>
+Date:   Mon Jul 8 15:08:32 2019 -0500
+
+    Fix bug where timeseries were being plotted as profile panels.
+    https://github.com/larson-group/sys_admin/issues/542
+
+commit 6a7474e714a3b47f57d542d7aba8ddf31838f805
+Author: Nicolas Strike <strike@uwm.edu>
+Date:   Mon Jul 8 14:31:19 2019 -0500
+
+    Resolve sam output wasn't being time averaged. Some code cleanup, indluding moving VariableGroupTest.py to VariableGroupBase.py. Removed some old/commented code, cleaned up print statements.
+    https://github.com/larson-group/sys_admin/issues/542
+
+commit f31e1654ea4d2f359a1040674f9d4839dea59bd2
+Merge: aed6ab0 e9dad98
+Author: Nicolas Strike <strike@uwm.edu>
+Date:   Mon Jul 8 12:57:14 2019 -0500
+
+    Merge remote-tracking branch 'origin/master'
+
+commit aed6ab0b3e36c41772bb1ba36e84a662c8442dbd
+Author: Nicolas Strike <strike@uwm.edu>
+Date:   Mon Jul 8 10:16:55 2019 -0500
+
+    Implement output folder command line parameter and general code cleanup. Passing an output folder into the launch parameters will now result in pyplotgen creating that folder (if not exists) and placing output in there.
+    https://github.com/larson-group/sys_admin/issues/542
+
+commit e01ea3f6f6dbffe24c8a7b3f230cbf9b3d0fd2df
+Author: Nicolas Strike <strike@uwm.edu>
+Date:   Mon Jul 8 08:51:44 2019 -0500
+
+    Further generalized variable group creation to make variable groups easier to create. Improved console output to provide useful information during plotting.
+    https://github.com/larson-group/sys_admin/issues/542
