@@ -1789,9 +1789,9 @@ flags should be captured within MPAS CMake files.
     <base>-convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent</base>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align -fp-speculation=off</append>
   </FFLAGS>
-  <MPIFC>mpiifort</MPIFC>
-  <MPICC>mpiicc</MPICC>
-  <MPICXX>mpiicpc</MPICXX>
+  <MPIFC  MPILIB="impi">mpiifort</MPIFC>
+  <MPICC  MPILIB="impi">mpiicc</MPICC>
+  <MPICXX MPILIB="impi">mpiicpc</MPICXX>
   <SCC>icc</SCC>
   <SCXX>icpc</SCXX>
   <SFC>ifort</SFC>
@@ -1867,21 +1867,22 @@ flags should be captured within MPAS CMake files.
   <CONFIG_ARGS>
     <base> --host=Linux </base>
   </CONFIG_ARGS>
+  <CPPDEFS>
+    <append> -DHAVE_SLASHPROC </append>
+  </CPPDEFS>
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </FFLAGS>
-  <MPIFC>mpif90</MPIFC>
-  <MPICC>mpigcc</MPICC>
-  <MPICXX>mpigxx</MPICXX>
-  <SCC>gcc</SCC>
-  <SCXX>g++</SCXX>
-  <SFC>gfortran</SFC>
   <SLIBS>
-    <append>$SHELL{$(NETCDF_PATH)/bin/nf-config --flibs} -Wl,-rpath -Wl,$(NETCDF_PATH)/lib -L/home/azamat/soft/libs -llapack -lblas</append>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -Wl,-rpath -Wl,$ENV{NETCDF_PATH}/lib</append>
+    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nc-config --libs}</append>
+    <append>-L/gpfs/jlse-fs0/projects/climate/soft/libs -llapack -lblas</append>
   </SLIBS>
+  <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
 </compiler>
 
 <compiler MACH="grizzly" COMPILER="gnu">

@@ -1612,24 +1612,32 @@
     <NODENAME_REGEX>jlse.*</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel,gnu</COMPILERS>
-    <MPILIBS>mpich</MPILIBS>
-    <CIME_OUTPUT_ROOT>$ENV{HOME}/acme/scratch</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/home/azamat/acme/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/home/azamat/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <MPILIBS>impi,openmpi</MPILIBS>
+    <CIME_OUTPUT_ROOT>/gpfs/jlse-fs0/projects/climate/$USER/scratch/jlse</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/gpfs/jlse-fs0/projects/climate/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/gpfs/jlse-fs0/projects/climate/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>$ENV{HOME}/acme/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/home/azamat/acme/tools/cprnc/cprnc</CCSM_CPRNC>
-    <GMAKE_J>8</GMAKE_J>
-    <TESTS>acme_developer</TESTS>
+    <BASELINE_ROOT>/gpfs/jlse-fs0/projects/climate/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/gpfs/jlse-fs0/projects/climate/tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>16</GMAKE_J>
+    <TESTS>e3sm_developer</TESTS>
+    <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>cobalt_theta</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE>112</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>112</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
-    <mpirun mpilib="default">
+    <mpirun mpilib="impi">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks">-l -n $TOTALPES</arg>
+        <arg name="num_tasks">-l -n {{ total_tasks }}</arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="openmpi">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="num_tasks">--tag-output -n {{ total_tasks }}</arg>
+        <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to hwthread</arg>
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
@@ -1648,21 +1656,18 @@
         <command name="load">cmake/3.17.0-gcc-9.3.0-5dgh2gv</command>
       </modules>
       <modules compiler="intel">
-	<command name="load">intel/2018</command>
-	<command name="load">intelmpi/2018-intel</command>
+	<command name="load">intel/2019</command>
+      </modules>
+      <modules compiler="intel" mpilib="impi">
+	<command name="load">intelmpi/2019-intel</command>
       </modules>
       <modules compiler="gnu">
-	<command name="load">gcc-vanilla/latest</command>
-	<command name="load">intelmpi/2018-gcc</command>
+	<command name="load">gcc/9.2.0</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <environment_variables>
-      <env name="MPICH_ENV_DISPLAY">1</env>
-      <env name="MPICH_VERSION_DISPLAY">1</env>
-      <env name="MPICH_CPUMASK_DISPLAY">1</env>
-      <env name="MPICH_MEMORY_REPORT">1</env>
       <env name="PATH">/home/azamat/perl5/bin:$ENV{PATH}</env>
       <env name="PERL5LIB">/home/azamat/perl5/lib/perl5</env>
       <env name="PERL_LOCAL_LIB_ROOT">/home/azamat/perl5</env>
@@ -1670,25 +1675,43 @@
       <env name="PERL_MM_OPT">"INSTALL_BASE=/home/azamat/perl5"</env>
     </environment_variables>
     <environment_variables compiler="intel">
-      <env name="LD_LIBRARY_PATH">/home/wuda/soft/hdf5/1.8.16-parallel/intel18/lib:/home/wuda/soft/szip/2.1.1/intel18/lib:/home/wuda/soft/zlib/1.2.11/intel18/lib:$ENV{LD_LIBRARY_PATH}</env>
-      <env name="HDF5_PATH">/home/wuda/soft/hdf5/1.8.16-parallel/intel18</env>
-      <env name="NETCDF_PATH">/home/wuda/soft/netcdf/4.4.1c-4.2cxx-4.4.4f-parallel/intel18</env>
-      <env name="PNETCDF_PATH">/home/wuda/soft/pnetcdf/1.12.0/intel18</env>
-      <env name="I_MPI_DEBUG">10</env>
-      <env name="I_MPI_PIN_CELL">core</env>
+      <env name="NETCDF_PATH">/gpfs/jlse-fs0/projects/climate/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/intel19</env>
     </environment_variables>
-    <environment_variables compiler="!intel">
-      <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.3.3.1c-4.2cxx-4.4.2f/gnu-arm</env>
-      <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.6.1/gnu-arm</env>
+    <environment_variables compiler="gnu">
+      <env name="NETCDF_PATH">/gpfs/jlse-fs0/projects/climate/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/gcc9.2.0</env>
+    </environment_variables>
+    <environment_variables compiler="intel" mpilib="impi">
+      <env name="PNETCDF_PATH">/gpfs/jlse-fs0/projects/climate/soft/pnetcdf/1.12.1/intel19</env>
+    </environment_variables>
+    <environment_variables compiler="intel" mpilib="openmpi">
+      <env name="OMPI_CC">icc</env>
+      <env name="OMPI_CXX">icpc</env>
+      <env name="OMPI_FC">ifort</env>
+      <env name="PATH">/gpfs/jlse-fs0/projects/climate/soft/openmpi/2.1.6/intel19/bin:$ENV{PATH}</env>
+      <env name="LD_LIBRARY_PATH">/gpfs/jlse-fs0/projects/climate/soft/openmpi/2.1.6/intel19/lib:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="PNETCDF_PATH">/gpfs/jlse-fs0/projects/climate/soft/pnetcdf/1.12.1/openmpi2.1.6</env>
+    </environment_variables>
+    <environment_variables compiler="gnu" mpilib="openmpi">
+      <env name="OMPI_CC">gcc</env>
+      <env name="OMPI_CXX">g++</env>
+      <env name="OMPI_FC">gfortran</env>
+      <env name="PATH">/gpfs/jlse-fs0/projects/climate/soft/openmpi/2.1.6/gcc9.2.0/bin:$ENV{PATH}</env>
+      <env name="LD_LIBRARY_PATH">/gpfs/jlse-fs0/projects/climate/soft/openmpi/2.1.6/gcc9.2.0/lib:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="PNETCDF_PATH">/gpfs/jlse-fs0/projects/climate/soft/pnetcdf/1.12.1/openmpi2.1.6-gcc9.2.0</env>
+    </environment_variables>
+    <environment_variables mpilib="impi">
+      <env name="I_MPI_DEBUG">10</env>
+      <env name="I_MPI_PIN_DOMAIN">omp</env>
+      <env name="I_MPI_PIN_ORDER">spread</env>
+      <env name="I_MPI_PIN_CELL">unit</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="intel">
       <env name="KMP_AFFINITY">verbose,granularity=thread,scatter</env>
-      <env name="OMP_STACKSIZE">256M</env>
+      <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="!intel">
-      <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
-      <env name="OMP_STACKSIZE">256M</env>
+      <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
   </machine>
 
