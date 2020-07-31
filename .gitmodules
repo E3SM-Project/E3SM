@@ -1,57 +1,57 @@
 [submodule "fates"]
 	path = components/elm/src/external_models/fates
-	url = git@github.com:NGEET/fates.git
+	url = https://github.com/NGEET/fates.git
 [submodule "alm-mpp"]
 	path = components/elm/src/external_models/mpp
-	url = git@github.com:MPP-LSM/MPP.git
+	url = https://github.com/MPP-LSM/MPP.git
 	branch = alm/develop
 [submodule "sbetr"]
 	path = components/elm/src/external_models/sbetr
-	url = git@github.com:BeTR-biogeochemistry-modeling/sbetr.git
+	url = https://github.com/BeTR-biogeochemistry-modeling/sbetr.git
 [submodule "externals/kokkos"]
 	path = externals/kokkos
-	url = git@github.com:E3SM-Project/kokkos.git
+	url = https://github.com/E3SM-Project/kokkos.git
 	branch = e3sm/kokkos
 [submodule "rrtmgp"]
 	path = components/eam/src/physics/rrtmgp/external
-	url = git@github.com:E3SM-Project/rte-rrtmgp.git
+	url = https://github.com/E3SM-Project/rte-rrtmgp.git
 	branch = master
 [submodule "externals/scorpio"]
 	path = externals/scorpio
-	url = git@github.com:E3SM-Project/scorpio.git
+	url = https://github.com/E3SM-Project/scorpio.git
 	branch = master
 [submodule "externals/scorpio_classic"]
 	path = externals/scorpio_classic
-	url = git@github.com:E3SM-Project/scorpio.git
+	url = https://github.com/E3SM-Project/scorpio.git
 	branch = scorpio_classic
 [submodule "cosp2"]
 	path = components/eam/src/physics/cosp2/external
-	url = git@github.com:CFMIP/COSPv2.0.git
+	url = https://github.com/CFMIP/COSPv2.0.git
 	branch = CESM_v2.1.4
 [submodule "cime"]
 	path = cime
-	url = git@github.com:ESMCI/cime.git
+	url = https://github.com/ESMCI/cime.git
 	branch = master
 [submodule "externals/YAKL"]
 	path = externals/YAKL
-	url = git@github.com:mrnorman/YAKL.git
+	url = https://github.com/mrnorman/YAKL.git
 [submodule "externals/cub"]
 	path = externals/cub
-	url = git@github.com:NVlabs/cub.git
+	url = https://github.com/NVlabs/cub.git
 [submodule "Submod"]
 	branch = rljacob/e3smconfig/elm-name
 [submodule "components/mpas-ocean/src/cvmix"]
 	path = components/mpas-ocean/src/cvmix
-	url = git@github.com:CVMix/CVMix-src.git
+	url = https://github.com/CVMix/CVMix-src.git
 [submodule "components/mpas-ocean/src/BGC"]
 	path = components/mpas-ocean/src/BGC
-	url = git@github.com:E3SM-Project/Ocean-BGC.git
+	url = https://github.com/E3SM-Project/Ocean-BGC.git
 [submodule "MARBL"]
 	path = components/mpas-ocean/src/MARBL
-	url = git@github.com:E3SM-Project/MARBL.git
+	url = https://github.com/E3SM-Project/MARBL.git
 [submodule "components/mpas-ocean/src/gotm"]
 	path = components/mpas-ocean/src/gotm
-	url = git@github.com:E3SM-Project/GOTMcode.git
+	url = https://github.com/E3SM-Project/GOTMcode.git
 [submodule "externals/mct"]
 	path = externals/mct
-	url = git@github.com:MCSclimate/MCT.git
+	url = https://github.com/MCSclimate/MCT.git
