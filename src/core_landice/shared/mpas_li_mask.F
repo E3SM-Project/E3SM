@@ -400,8 +400,8 @@ contains
            (trim(config_velocity_solver) == 'Stokes') ) then
          ! HO external FEM dycore
          ! Identify cells where the ice is above the ice dynamics thickness limit but not with a dirichletVelocity condition set
-         where ( li_mask_is_dynamic_ice(cellMask) .and.    &  ! same as for SIA case
-                 (maxval(dirichletVelocityMask(1:nVertInterfaces-1, :), dim=1) == 0) )  ! but exclude dirichletVelocityMask
+         where ( li_mask_is_dynamic_ice(cellMask) ) ! .and.    &  ! same as for SIA case
+                ! (maxval(dirichletVelocityMask(1:nVertInterfaces-1, :), dim=1) == 0) )  ! but exclude dirichletVelocityMask
                     ! locations set as lateral b.c.  We don't want to consider dirichlet b.c. on the basal boundary,
                     ! so we ignore the basal level
             cellMask = ior(cellMask, li_mask_ValueAlbanyActive)
