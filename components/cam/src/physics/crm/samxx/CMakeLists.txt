@@ -1,26 +1,23 @@
 ###############################################################################
-## This assumes you have already run add_subdirectory(${YAKL_HOME} ./yakl)
+## This assumes you have already run add_subdirectory(${YAKL_HOME} ${YAKL_BIN})
 ## It also assumes you've enabled CXX and C as languages
 ###############################################################################
 
-file(GLOB SAMXX_SRC *.F90 *.cpp)
-file(GLOB CUDA_SRC  *.cpp)
+file(GLOB F90_SRC   *.F90)
+file(GLOB CXX_SRC   *.cpp)
+file(GLOB SAMXX_SRC *.cpp *.F90)
 
-add_subdirectory(${YAKL_HOME} ./yakl  )
-include_directories(${YAKL_HOME})
+add_library(samxx ${SAMXX_SRC})
+target_link_libraries(samxx yakl)
 
-add_executable(cpp2d ../dmdf.F90 ../cpp_driver.F90 ../../fft.F90 ${CPP_SRC})
-target_link_libraries(cpp2d yakl ${NCFLAGS})
-set_property(TARGET cpp2d APPEND PROPERTY COMPILE_FLAGS ${DEFS2D} )
-
-set_source_files_properties(${CUDA_SRC} PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
+set_source_files_properties(${CXX_SRC} PROPERTIES COMPILE_FLAGS "${CPPDEFS} ${YAKL_CXX_FLAGS}")
+set_source_files_properties(${F90_SRC} PROPERTIES COMPILE_FLAGS "${CPPDEFS} ${FFLAGS}")
 if ("${ARCH}" STREQUAL "CUDA")
   enable_language(CUDA)
-  set_source_files_properties(${CUDA_SRC} PROPERTIES LANGUAGE CUDA)
-set_source_files_properties(${CUDA_SRC} PROPERTIES COMPILE_FLAGS "${CUDA_FLAGS}")
+  set_source_files_properties(${CXX_SRC} PROPERTIES LANGUAGE CUDA)
+  set_source_files_properties(${CXX_SRC} PROPERTIES COMPILE_FLAGS "${CUDA_FLAGS}")
   include_directories(${YAKL_CUB_HOME})
 endif()
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/../yakl)
-
+include_directories(${YAKL_BIN})
 include_directories(${YAKL_HOME})
 

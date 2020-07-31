@@ -59,8 +59,20 @@ function(build_model COMP_CLASS COMP_NAME)
       include(${PROJECT_SOURCE_DIR}/cam/src/physics/cosp2/Cosp.cmake)
     endif()
 
+    # Add YAKL if it's needed. Presumably we'll add a test for rrtmgpxx later
     if (USE_SAMXX)
-      message(STATUS "*** BUILDING SAMXX: ${CMAKE_CURRENT_SOURCE_DIR}")
+      message(STATUS "Building YAKL")
+      set(YAKL_HOME ${CMAKE_CURRENT_SOURCE_DIR}/../../../externals/YAKL)
+      set(YAKL_BIN  ${CMAKE_CURRENT_BINARY_DIR}/yakl)
+      add_subdirectory(${YAKL_HOME} ${YAKL_BIN})
+    endif()
+
+    # Add the samxx directory if it's needed
+    if (USE_SAMXX)
+      message(STATUS "Building SAMXX")
+      set(SAMXX_HOME ${CMAKE_CURRENT_SOURCE_DIR}/../../cam/src/physics/crm/samxx)
+      set(SAMXX_BIN  ${CMAKE_CURRENT_BINARY_DIR}/samxx)
+      add_subdirectory(${SAMXX_HOME} ${SAMXX_BIN})
     endif()
 
   endif()

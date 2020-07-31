@@ -290,7 +290,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    use physconst,       only: cpair, latvap, latice, gravit, cappa
    use constituents,    only: pcnst, cnst_get_ind
    use crm_module,      only: crm
-   use params,          only: crm_rknd
+   use params_kind,          only: crm_rknd
    use phys_control,    only: phys_getopts
    use crm_history,     only: crm_history_out
    use wv_saturation,   only: qsat_water

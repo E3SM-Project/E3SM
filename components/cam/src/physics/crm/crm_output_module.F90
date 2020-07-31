@@ -1,5 +1,5 @@
 module crm_output_module
-   use params,       only: crm_rknd
+   use params_kind,       only: crm_rknd
    use crmdims,      only: crm_nx, crm_ny, crm_nz
    use openacc_utils
    implicit none

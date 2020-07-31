@@ -1,6 +1,6 @@
 module crm_ecpp_output_module
 
-   use params, only: crm_rknd
+   use params_kind, only: crm_rknd
 
    implicit none
 
