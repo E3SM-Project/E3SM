@@ -277,6 +277,7 @@ OPTIONS
      -MMF_microphysics_scheme <string>   CRM microphysics package name [sam1mom | m2005 ].
      -use_ECPP          use CRM clouds for vertical transport, aqueous chemistry and wet removable of aerosols 
      -crm_adv           CRM advection scheme [MPDATA | UM5]
+     -crm <model>       CRM model [sam | samxx]
      -use_MAML          use multiple atmosphere and multiple land version of MMF
 EOF
 }
@@ -349,6 +350,7 @@ GetOptions(
     "crm_ny_rad=s"              => \$opts{'crm_ny_rad'},
     "MMF_microphysics_scheme=s"     => \$opts{'MMF_microphysics_scheme'},
     "crm_adv=s"                 => \$opts{'crm_adv'},
+    "crm=s"                     => \$opts{'crm'},
     "debug"                     => \$opts{'debug'},
     "rain_evap_to_coarse_aero"  => \$opts{'rain_evap_to_coarse_aero'},
     "bc_dep_to_snow_updates"    => \$opts{'bc_dep_to_snow_updates'},
@@ -1304,6 +1306,7 @@ if (defined $opts{'use_MMF'}) {
     if (defined $opts{'crm_ny_rad'}) { $cfg_ref->set('crm_ny_rad', $opts{'crm_ny_rad'}); }
     $cfg_ref->set('MMF_microphysics_scheme', $opts{'MMF_microphysics_scheme'});
     $cfg_ref->set('crm_adv', $opts{'crm_adv'});
+    $cfg_ref->set('crm', $opts{'crm'});
     # Check that model is not using threading for the MMF 
     if ($nthreads > 1) {
      die <<"EOF";
@@ -1805,6 +1808,7 @@ if (defined $opts{'use_MMF'}) {
     my $crm_dt = $cfg_ref->get('crm_dt');
     my $crm_nx_rad = $cfg_ref->get('crm_nx_rad');
     my $crm_ny_rad = $cfg_ref->get('crm_ny_rad');
+    my $crm = $cfg_ref->get('crm');
     my $MMF_microphysics_scheme = $cfg_ref->get('MMF_microphysics_scheme');
     my $crm_adv = $cfg_ref->get('crm_adv');
     my $yes3Dval = 1;
@@ -2561,30 +2565,6 @@ sub write_filepath
 
         # interface and base model code
         print $fh "$camsrcdir/cam/src/physics/crm\n";
-        print $fh "$camsrcdir/cam/src/physics/crm/sam\n";
-
-        # microphysics
-        my $MMF_microphysics_scheme = $cfg_ref->get('MMF_microphysics_scheme');
-        if ($MMF_microphysics_scheme eq 'sam1mom') {
-            print $fh "$camsrcdir/cam/src/physics/crm/sam/MICRO_SAM1MOM\n";
-        } elsif ($MMF_microphysics_scheme eq 'm2005') {
-            print $fh "$camsrcdir/cam/src/physics/crm/sam/MICRO_M2005\n";
-        }
-
-        # turbulence closure
-        print $fh "$camsrcdir/cam/src/physics/crm/sam/SGS_TKE\n";
-
-        if (defined $opts{'use_ECPP'}) {
-            print $fh "$camsrcdir/cam/src/physics/crm/ecpp\n";
-        }
-
-        # advection scheme
-        my $crm_adv = $cfg_ref->get('crm_adv');
-        if ($crm_adv eq 'UM5') {
-            print $fh "$camsrcdir/cam/src/physics/crm/sam/ADV_UM5\n"; 
-        } else {
-            print $fh "$camsrcdir/cam/src/physics/crm/sam/ADV_MPDATA\n";
-        }
 
         # MMF-specific radiation drivers (overrides default drivers that exist
         # in each individual radiation package; done this way to avoid
@@ -2594,6 +2574,44 @@ sub write_filepath
         } elsif ($rad eq 'rrtmgp') {
             print $fh "$camsrcdir/cam/src/physics/crm/rrtmgp\n";
         }
+
+        if (defined $opts{'use_ECPP'}) {
+            print $fh "$camsrcdir/cam/src/physics/crm/ecpp\n";
+        }
+
+        my $crm = $cfg_ref->get('crm');
+        if ($crm eq 'sam') {
+          #####################################################
+          ## -crm sam will GLOB directories for CMake
+          #####################################################
+          print $fh "$camsrcdir/cam/src/physics/crm/sam\n";
+          #
+          # microphysics
+          my $MMF_microphysics_scheme = $cfg_ref->get('MMF_microphysics_scheme');
+          if ($MMF_microphysics_scheme eq 'sam1mom') {
+              print $fh "$camsrcdir/cam/src/physics/crm/sam/MICRO_SAM1MOM\n";
+          } elsif ($MMF_microphysics_scheme eq 'm2005') {
+              print $fh "$camsrcdir/cam/src/physics/crm/sam/MICRO_M2005\n";
+          }
+
+          # turbulence closure
+          print $fh "$camsrcdir/cam/src/physics/crm/sam/SGS_TKE\n";
+          
+          # advection scheme
+          my $crm_adv = $cfg_ref->get('crm_adv');
+          if ($crm_adv eq 'UM5') {
+              print $fh "$camsrcdir/cam/src/physics/crm/sam/ADV_UM5\n"; 
+          } else {
+              print $fh "$camsrcdir/cam/src/physics/crm/sam/ADV_MPDATA\n";
+          }
+
+        } elsif ($crm eq 'samxx') {
+          #####################################################
+          ## -crm samxx will add_subdirectory in CMake rather
+          ##            than GLOBing.
+          #####################################################
+        }
+
     }
 
     # CAM chemistry, dynamics, physics, control and shared utilities.

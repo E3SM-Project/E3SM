@@ -112,7 +112,7 @@
       <value compset="_CAM5%SP1V1-MAML"      >-use_MAML -crm_ny 1 -crm_ny_rad 1 </value>
       <value compset="_CAM5%SP1V1-MAML_"     >-crm_nx 64 -crm_nx_rad 64 </value>
       <!-- New MMF / super-parameterization compsets -->
-      <value compset="_CAM5%MMF[12]"           >-use_MMF -crm_adv MPDATA -nlev 72 -crm_nz 58 </value>
+      <value compset="_CAM5%MMF[12]"           >-use_MMF -crm_adv MPDATA -nlev 72 -crm_nz 58 -crm sam</value>
       <value compset="_CAM5%MMF[12]"           >-crm_dx 1000 -crm_dt 5 </value>
       <value compset="_CAM5%MMF[12]"           >-microphys mg2  </value>
       <value compset="_CAM5%MMF[12]"           >-cppdefs ' -DMMF_DIR_NS ' </value>
@@ -127,6 +127,7 @@
       <value compset="_CAM5%MMF[12]-MAML"      >-crm_nx 64 -crm_nx_rad 64 -crm_ny 1 -crm_ny_rad 1 </value>
       <value compset="_CAM5%MMF[12]-AQUA"      >-aquaplanet </value>
       <value compset="_CAM5%MMF[12]-RCE"       >-aquaplanet -rce </value>
+      <value compset="_CAM5%MMFXX"             >-use_MMF -crm_adv MPDATA -nlev 72 -crm_nz 58 -crm samxx -crm_dx 1000 -crm_dt 5 -microphys mg2 -cppdefs ' -DMMF_DIR_NS ' -rad rrtmgp -MMF_microphysics_scheme sam1mom -chem none -crm_nx 64 -crm_nx_rad 16 -crm_ny 1 -crm_ny_rad 1 </value>
       <!--  -->
       <value compset="GEOS_CAM"       >-offline_dyn</value>
       <value compset="GEOS_CAM4"      >-nlev 56</value>

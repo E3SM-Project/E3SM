@@ -20,7 +20,7 @@ export CXXFLAGS=-O3
 export ARCH="CUDA"
 export CUDA_ARCH="-arch sm_70 -O3 --use_fast_math -D__USE_CUDA__ --expt-extended-lambda --expt-relaxed-constexpr"
 export YAKL_HOME="`pwd`/../../../../../../../../externals/YAKL"
-export YAKL_CUB_HOME="`pwd`/../../../../../../../../externals/cub"
+export YAKL_CUB_HOME="/ccs/home/$USER/cub"
 
 source activate rrtmgp-env
 
