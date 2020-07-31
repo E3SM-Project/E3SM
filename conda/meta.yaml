@@ -7,7 +7,7 @@ package:
 
 source:
     url: https://github.com/E3SM-Project/e3sm_diags/archive/v{{ version }}.tar.gz
-    sha256: 9c169c27fcdfec870b4e20fd71c24a3a426136424c32003bb9a714af157a3cb5
+    sha256: 985405f30609a1ff89e2563fa16bfcb552632dc122bdb1cc99d0c55bcfc0ca72
 
 build:
     number: 0
