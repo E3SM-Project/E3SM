@@ -1,5 +1,0 @@
-#
- ifeq ($(strip $(COMPILER)),pgi)
-  progseasalts_intr.o: progseasalts_intr.F90
-		      $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -Mnovect  $<
-endif

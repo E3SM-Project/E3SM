@@ -1,7 +1,7 @@
 #include <catch2/catch.hpp>
 
 #include "ekat/util/scream_utils.hpp"
-#include "ekat/util/string_utils.hpp"
+#include "ekat/util/ekat_string_utils.hpp"
 #include "ekat/scream_pack.hpp"
 #include "ekat/scream_kokkos_meta.hpp"
 
@@ -83,6 +83,18 @@ TEST_CASE("string","string") {
   REQUIRE (cis1!=cis3);
   REQUIRE (cis4<=cis1);
   REQUIRE (cis4<cis1);
+
+  std::string my_str  = "item 1  ; item2;  item3 ";
+  std::string my_list = "item1;item2;item3";
+
+  util::strip(my_str,' ');
+  REQUIRE(my_str==my_list);
+
+  auto items = util::split(my_list,';');
+  REQUIRE(items.size()==3);
+  REQUIRE(items[0]=="item1");
+  REQUIRE(items[1]=="item2");
+  REQUIRE(items[2]=="item3");
 }
 
 } // empty namespace

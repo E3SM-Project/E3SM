@@ -21,9 +21,20 @@ CMake's testing tool.
 
 ## 1. Start From a Trustworthy Commit
 
-First, make sure you've cloned the [SCREAM repo](https://github.com/E3SM-Project/scream)
-to `SCREAM_SRC_DIR`. If you're running a branch that's not `master`, check out
-this branch with
+First, make sure you've cloned the [SCREAM repo (including all submodules)](https://github.com/E3SM-Project/scream)
+to `SCREAM_SRC_DIR` using the following command:
+
+```
+git clone --recurse-submodules https://github.com/E3SM-Project/scream
+```
+
+If you have already cloned the project and forgot to type `--recurse-submodules`, you can change to `$SCREAM_SRC_DIR` and using the following command to initialize, fetch and checkout all submodules:
+
+```
+git submodule update --init --recursive
+```
+
+If you're running a branch that's not `master`, check out this branch with
 
 ```
 git checkout <branch>
@@ -31,13 +42,13 @@ git checkout <branch>
 
 ## 2. Configure Your SCREAM Build
 
-Change to your `RUN_ROOT_DIR` directory and use CMake to configure your build.
+Change to your `$RUN_ROOT_DIR` directory and use CMake to configure your build.
 This usually looks something like the following:
 ```
 cd $RUN_ROOT_DIR
 cmake \
     -D CMAKE_BUILD_TYPE=Debug \
-    -D KOKKOS_ENABLE_DEBUG=ON \
+    -D KOKKOS_ENABLE_DEBUG=TRUE \
     -D KOKKOS_ENABLE_AGGRESSIVE_VECTORIZATION=OFF \
     -D KOKKOS_ENABLE_SERIAL=ON \
     -D KOKKOS_ENABLE_OPENMP=ON \
@@ -45,6 +56,16 @@ cmake \
     -D KOKKOS_ENABLE_DEPRECATED_CODE=OFF \
     -D KOKKOS_ENABLE_EXPLICIT_INSTANTIATION:BOOL=OFF \
     ${SCREAM_SRC_DIR}/components/scream
+```
+
+If you're building on your local laptop or workstation, make sure you have MPI
+compilers installed, and tell SCREAM about them by inserting these options before
+the last line of the above command:
+
+```
+    -D CMAKE_C_COMPILER=mpicc \
+    -D CMAKE_CXX_COMPILER=mpicxx \
+    -D CMAKE_Fortran_COMPILER=mpif90 \
 ```
 
 Here, we've configured a `Debug` build to make it easier to find and fix errors.
@@ -64,16 +85,16 @@ make -j
 Before running the tests, generate a baseline file:
 
 ```
-cd $RUN_ROOT_DIR/test
+cd $RUN_ROOT_DIR
 make baseline
 ```
 
 The tests will run, automatically using the baseline file, which is located in
 the CMake-configurable path `${SCREAM_TEST_DATA_DIR}`. By default, this path is
-set to `data/` within your build directory (which is `$RUN_ROOT_DIR/test`, in
+set to `data/` within your build directory (which is `$RUN_ROOT_DIR`, in
 our case).
 
-To run all of SCREAM's tests, make sure you're in `RUN_ROOT_DIR/test` and type
+To run all of SCREAM's tests, make sure you're in `$RUN_ROOT_DIR` and type
 
 ```
 ctest -VV
@@ -82,7 +103,7 @@ ctest -VV
 This runs everything and reports results in an extra-verbose (`-VV`) manner.
 
 You can also run subsets of the SCREAM tests. For example, to run only the
-P3 regression tests (again, from the `RUN_ROOT_DIR/test` directory), use
+P3 regression tests (again, from the `$RUN_ROOT_DIR` directory), use
 
 ```
 ctest -R p3_regression

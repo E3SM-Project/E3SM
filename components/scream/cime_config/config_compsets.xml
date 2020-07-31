@@ -10,7 +10,7 @@
   <!-- E3SM C/G compsets -->
 
   <compset>
-    <alias>FSCREAM-SA</alias> <!-- SCREAM standalone -->
+    <alias>F2000-SCREAM-SA</alias> <!-- SCREAM standalone -->
     <lname>2000_SCREAM_SLND_SICE_SOCN_SROF_SGLC_SWAV</lname>
     <support_level>Experimental, under development</support_level>
   </compset>

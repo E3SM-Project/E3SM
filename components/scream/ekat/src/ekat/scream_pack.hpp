@@ -291,6 +291,7 @@ scream_pack_gen_unary_stdfn(log10)
 scream_pack_gen_unary_stdfn(tgamma)
 scream_pack_gen_unary_stdfn(sqrt)
 scream_pack_gen_unary_stdfn(cbrt)
+scream_pack_gen_unary_stdfn(tanh)
 
 template <typename PackType> KOKKOS_INLINE_FUNCTION
 OnlyPackReturn<PackType, typename PackType::scalar> min (const PackType& p) {

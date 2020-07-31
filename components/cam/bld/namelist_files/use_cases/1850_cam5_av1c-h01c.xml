@@ -58,6 +58,7 @@
 <clubb_gamma_coefb>   0.32   </clubb_gamma_coefb>
 <cldfrc2m_rhmaxi>    1.05D0 </cldfrc2m_rhmaxi>
 <clubb_c_K10>        0.3    </clubb_c_K10>
+<clubb_c_K10h>        0.3    </clubb_c_K10h>
 <effgw_beres>        0.4    </effgw_beres>
 <do_tms>             .false.</do_tms>
 <n_so4_monolayers_pcage>8.0D0 </n_so4_monolayers_pcage>

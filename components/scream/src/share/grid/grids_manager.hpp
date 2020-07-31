@@ -5,7 +5,7 @@
 #include "share/grid/remap/abstract_remapper.hpp"
 #include "share/grid/remap/identity_remapper.hpp"
 #include "ekat/util/scream_factory.hpp"
-#include "ekat/util/string_utils.hpp"
+#include "ekat/util/ekat_string_utils.hpp"
 #include "ekat/scream_parameter_list.hpp"
 #include "ekat/scream_assert.hpp"
 

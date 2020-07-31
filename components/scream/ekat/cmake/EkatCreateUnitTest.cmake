@@ -45,12 +45,10 @@ function(EkatCreateUnitTest target_name target_srcs)
   endif()
 
   # Create the executable
-  if (ecut_EXCLUDE_MAIN_CPP)
-    set (SRC_MAIN)
-  else()
-    set (SRC_MAIN ${EKAT_SOURCE_DIR}/src/ekat/util/ekat_catch_main.cpp)
+  add_executable (${target_name} ${target_srcs})
+  if (NOT ecut_EXCLUDE_MAIN_CPP)
+    target_link_libraries(${target_name} PUBLIC ekat_test_main)
   endif ()
-  add_executable (${target_name} ${target_srcs} ${SRC_MAIN})
 
   set (TEST_INCLUDE_DIRS
        ${CATCH_INCLUDE_DIR}
@@ -62,7 +60,7 @@ function(EkatCreateUnitTest target_name target_srcs)
   # Set all target properties
   target_include_directories(${target_name} PUBLIC ${TEST_INCLUDE_DIRS})
   if (ecut_LIBS)
-    target_link_libraries(${target_name} "${ecut_LIBS}")
+    target_link_libraries(${target_name} PUBLIC "${ecut_LIBS}")
   endif()
   if (ecut_LINKER_FLAGS)
     set_target_properties(${target_name} PROPERTIES LINK_FLAGS "${ecut_LINKER_FLAGS}")
@@ -192,6 +190,14 @@ function(EkatCreateUnitTest target_name target_srcs)
       if (ecut_LABELS)
         set_tests_properties(${FULL_TEST_NAME} PROPERTIES LABELS "${ecut_LABELS}")
       endif()
+
+      set (RES_GROUPS "devices:1")
+      if (${CURR_RANKS} GREATER 1)
+        foreach (rank RANGE 2 ${CURR_RANKS})
+          set (RES_GROUPS "${RES_GROUPS},devices:1")
+        endforeach()
+      endif()
+      set_property(TEST ${FULL_TEST_NAME} PROPERTY RESOURCE_GROUPS "${RES_GROUPS}")
 
       math(EXPR CURR_THREADS "${CURR_THREADS}+${THREAD_INCREMENT}")
     endwhile()

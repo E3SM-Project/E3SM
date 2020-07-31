@@ -6,8 +6,8 @@
 ! Make sure to place the following lines at the top of any modules
 ! that use these macros:
 !
-! use physics_common_iso_f, only: cxx_pow, cxx_sqrt, cxx_cbrt, cxx_gamma, cxx_log, &
-!                                 cxx_log10, cxx_exp
+! use physics_share_f2c, only: cxx_pow, cxx_sqrt, cxx_cbrt, cxx_gamma, cxx_log, &
+!                              cxx_log10, cxx_exp
 
 #ifndef SCREAM_BFB_MATH_INC
 #define SCREAM_BFB_MATH_INC

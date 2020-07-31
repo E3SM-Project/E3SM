@@ -10,6 +10,7 @@ check_minimum_python_version(3, 4)
 import os, shutil, pathlib
 import concurrent.futures as threading3
 import itertools
+import json
 
 ###############################################################################
 class TestAllScream(object):
@@ -112,14 +113,14 @@ class TestAllScream(object):
                         self._baseline_ref = "origin/master"
             self._must_generate_baselines = True
 
-            self._baseline_dir = pathlib.Path(default_baselines_root_dir).resolve()
+            self._baseline_dir = pathlib.Path(default_baselines_root_dir).absolute()
 
         else:
             # We treat the "AUTO" string as a request for automatic baseline dir.
             if self._baseline_dir == "AUTO":
                 self._baseline_dir = get_mach_baseline_root_dir(self._machine,default_baselines_root_dir)
 
-            self._baseline_dir = pathlib.Path(self._baseline_dir).resolve();
+            self._baseline_dir = pathlib.Path(self._baseline_dir).absolute()
 
             # Make sure the baseline root directory exists
             expect(self._baseline_dir.is_dir(), "Baseline_dir {} is not a dir".format(self._baseline_dir))
@@ -135,8 +136,8 @@ class TestAllScream(object):
         # Name of the file used to store/check the git sha of the repo used to generate baselines,
         # and name of the file used to store/check the builds for which baselines are available
         # Store it once to avoid typos-like bugs
-        self._baseline_sha_file = pathlib.Path(self._baseline_dir,"baseline_git_sha").resolve()
-        self._baseline_names_file = pathlib.Path(self._baseline_dir,"baseline_names").resolve()
+        self._baseline_sha_file   = pathlib.Path(self._baseline_dir, "baseline_git_sha")
+        self._baseline_names_file = pathlib.Path(self._baseline_dir, "baseline_names")
 
         if self._integration_test:
             master_sha = get_current_commit(commit=self._baseline_ref)
@@ -159,6 +160,9 @@ class TestAllScream(object):
         if ctest_parallel_level > 0:
             ctest_max_jobs = ctest_parallel_level
             print("Note: honoring requested value for ctest parallel level: {}".format(ctest_max_jobs))
+        elif "CTEST_PARALLEL_LEVEL" in os.environ:
+            ctest_max_jobs = int(os.environ["CTEST_PARALLEL_LEVEL"])
+            print("Note: honoring environment value for ctest parallel level: {}".format(ctest_max_jobs))
         else:
             ctest_max_jobs = get_mach_testing_resources(self._machine)
             print("Note: no value passed for --ctest-parallel-level. Using the default for this machine: {}".format(ctest_max_jobs))
@@ -187,7 +191,7 @@ class TestAllScream(object):
             ctest_remainder = ctest_max_jobs % len(self._tests)
             ctest_count     = ctest_max_jobs // len(self._tests)
 
-            # In case we have more tests than cores (unlikely)
+            # In case we have more items in self._tests than cores/gpus (unlikely)
             if make_count == 0:
                 make_count = 1
             if ctest_count == 0:
@@ -275,7 +279,7 @@ class TestAllScream(object):
         # baselines we need are there, then we're good
         valid_baselines = run_cmd_no_fail("cat {}".format(self._baseline_names_file.resolve()))
         for test in self._tests:
-           if not test in valid_baselines:
+            if not test in valid_baselines:
                 return True
 
         # No sha file => baselines expired
@@ -329,6 +333,40 @@ class TestAllScream(object):
         return start, end
 
     ###############################################################################
+    def create_ctest_resource_file(self, test, build_dir):
+    ###############################################################################
+        # Create a json file in the test build dir, which ctest will then use
+        # to schedule tests in parallel.
+        # In the resource file, we have N res groups with 1 slot, with N being
+        # what's in self._testing_res_count[test]. On CPU machines, res groups
+        # are cores, on GPU machines, res groups are GPUs. In other words, a
+        # res group is where we usually bind an individual MPI rank.
+        # The id of the res groups on is offset so that it is unique across all builds
+
+        # Note: on CPU, the actual ids are pointless, since ctest job is already places
+        # on correct cores with taskset. On GPU, however, these ids are used to select
+        # the kokkos device where the tests are run on.
+
+        it = itertools.takewhile(lambda name: name!=test, self._tests)
+        start = sum(self._testing_res_count[prevs] for prevs in it)
+        end   = start + self._testing_res_count[test]
+
+        data = {}
+
+        # This is the only version numbering supported by ctest, so far
+        data['version'] = {"major":1,"minor":0}
+
+        devices = []
+        for res_id in range(start,end):
+            devices.append({"id":str(res_id)})
+
+        # Add resource groups
+        data['local'] = [{"devices":devices}]
+
+        with open("{}/ctest_resource_file.json".format(build_dir),'w') as outfile:
+            json.dump(data,outfile,indent=2)
+
+    ###############################################################################
     def generate_ctest_config(self, cmake_config, extra_configs, test):
     ###############################################################################
         name = self._test_full_names[test]
@@ -336,7 +374,11 @@ class TestAllScream(object):
         if self._submit:
             result += "CIME_MACHINE={} ".format(self._machine)
 
+        test_dir = self.get_test_dir(test)
+        self.create_ctest_resource_file(test,test_dir)
+
         result += "CTEST_PARALLEL_LEVEL={} ctest -V --output-on-failure ".format(self._testing_res_count[test])
+        result += "--resource-spec-file {}/ctest_resource_file.json ".format(test_dir)
 
         if self._baseline_dir is not None:
             cmake_config += " -DSCREAM_TEST_DATA_DIR={}".format(self.get_preexisting_baseline(test))
@@ -434,7 +476,7 @@ class TestAllScream(object):
             # Store the name of the builds for which we created a baseline
             tmp_string = ""
             for test in self._tests:
-               tmp_string += " {}".format(test) 
+                tmp_string += " {}".format(test)
             run_cmd_no_fail("echo '{}' > {}".format(tmp_string,self._baseline_names_file))
 
         checkout_git_ref(git_head_ref, verbose=True)
