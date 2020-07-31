@@ -1,5 +1,5 @@
 {% set name = "e3sm_diags" %}
-{% set version = "2.1.0" %}
+{% set version = "2.1.1" %}
 
 package:
     name: {{ name|lower }}
@@ -8,11 +8,9 @@ package:
 source:
     url: https://github.com/E3SM-Project/e3sm_diags/archive/v{{ version }}.tar.gz
     sha256: 9c169c27fcdfec870b4e20fd71c24a3a426136424c32003bb9a714af157a3cb5
-    patches:
-      - 0001-one-more-change-on-version-before-releasing.patch
 
 build:
-    number: 2
+    number: 0
     noarch: python
     script: {{ PYTHON }} -m pip install . --no-deps -vv
 
@@ -38,6 +36,7 @@ requirements:
     - cartopy
     - beautifulsoup4
     - lxml
+    - dask 2.15.0
 
 about:
     home: https://github.com/E3SM-Project/e3sm_diags
