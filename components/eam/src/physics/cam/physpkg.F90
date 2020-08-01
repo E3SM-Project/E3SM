@@ -1774,9 +1774,10 @@ if (l_ac_energy_chk) then
     tmp_q     (:ncol,:pver) = state%q(:ncol,:pver,1)
     tmp_cldliq(:ncol,:pver) = state%q(:ncol,:pver,icldliq)
     tmp_cldice(:ncol,:pver) = state%q(:ncol,:pver,icldice)
-    call physics_dme_adjust(state, tend, qini, ztodt)
+!empty call since it is for LR
+!    call physics_dme_adjust(state, tend, qini, ztodt)
 !!!   REMOVE THIS CALL, SINCE ONLY Q IS BEING ADJUSTED. WON'T BALANCE ENERGY. TE IS SAVED BEFORE THIS
-    call check_energy_chng(state, tend, "drymass", nstep, ztodt, zero, zero, zero, zero)
+!    call check_energy_chng(state, tend, "drymass", nstep, ztodt, zero, zero, zero, zero)
 
     !-------------- Energy budget checks ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 end if ! l_ac_energy_chk
