@@ -1180,9 +1180,7 @@ end subroutine physics_ptend_copy
     !
     !-----------------------------------------------------------------------
     ! verify that the dycore is FV
-!    if (.not. dycore_is('LR') ) return
-
-!print *, 'OG HELLO DME'
+    if (.not. dycore_is('LR') ) return
 
     if (state%psetcols .ne. pcols) then
        call endrun('physics_dme_adjust: cannot pass in a state which has sub-columns')
