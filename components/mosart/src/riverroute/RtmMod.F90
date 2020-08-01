@@ -3546,8 +3546,7 @@ contains
           allocate (TUnit%wr_bf(begr:endr))
           TUnit%wr_bf = 0.0_r8   
 
-          allocate( TUnit%e_eprof_in2( 11, begr:endr ) )    
-          !allocate( e_eprof_in2( 11, begr:endr ) )  
+          allocate( TUnit%e_eprof_in2( Tctl%npt_elevProf, begr:endr ) )    
 
           ! --------------------------------- 
           ! (assign elevation values to TUnit%e_eprof_in2( :, : ) ).
@@ -4041,6 +4040,7 @@ contains
     character(len=*),parameter :: subname = '(read_elevation_profile)'
 
     type(var_desc_t)   :: vardesc    ! pio variable desc 
+    logical            :: readvar    ! If variable exists or not
     type(io_desc_t)    :: iodesc     ! pio io desc
     integer            :: ndims      ! ndims for var      
     integer            :: dsizes(3)  ! dim sizes
@@ -4050,41 +4050,98 @@ contains
     integer            :: ier
     integer            :: elesize    ! number of points for elevation profile
     real(r8), pointer  :: ele(:,:)
+    character(len=2)   :: str
 
     begr = rtmCTL%begr
     endr = rtmCTL%endr
 
-    ier = pio_inq_varid(ncid, name=varname, vardesc=vardesc)
-    ier = pio_inq_varndims(ncid, vardesc, ndims)
-    ier = pio_inq_vardimid(ncid, vardesc, dimids)
+    call check_var(ncid, varname, vardesc, readvar)
 
-    do n = 1,ndims
-      ier = pio_inq_dimlen(ncid,dimids(n),dsizes(n))
-    enddo
+    if (readvar) then
+      ier = pio_inq_varid(ncid, name=varname, vardesc=vardesc)
+      ier = pio_inq_varndims(ncid, vardesc, ndims)
+      ier = pio_inq_vardimid(ncid, vardesc, dimids)
 
-    elesize = dsizes(ndims)
-    allocate(compdof(rtmCTL%lnumr*elesize)) ! dims(ndims): 
-    cnt = 0
-
-    do n = 1, elesize
-      do m = rtmCTL%begr,rtmCTL%endr
-        cnt = cnt + 1
-        compDOF(cnt) = (n-1)* rtmCTL%numr + rtmCTL%gindex(m)
+      do n = 1,ndims
+        ier = pio_inq_dimlen(ncid,dimids(n),dsizes(n))
       enddo
-    enddo
 
-    call pio_initdecomp(pio_subsystem, pio_double, dsizes(1:ndims), compDOF, iodesc)
-    deallocate(compdof)
+      elesize = dsizes(ndims)
+      if (elesize /= Tctl%npt_elevProf) then
+        write(iulog,*) trim(subname),' MOSART ERROR: number of points in elevation profile is ', elesize
+        call shr_sys_abort(trim(subname)//' ERROR number of points in elevation profile is not euqal to 11')
+      endif
 
-    allocate(ele(begr:endr,1:elesize))
-    call pio_read_darray(ncid, vardesc, iodesc, ele, ier)
+      allocate(compdof(rtmCTL%lnumr*elesize)) ! dims(ndims): 
+      cnt = 0
 
-    do n = 1, elesize
-      e_eprof_in2(n,:) = ele(:,n)
-    enddo
+      do n = 1, elesize
+        do m = rtmCTL%begr,rtmCTL%endr
+          cnt = cnt + 1
+          compDOF(cnt) = (n-1)* rtmCTL%numr + rtmCTL%gindex(m)
+        enddo
+      enddo
 
-    deallocate(ele)
-    call pio_freedecomp(ncid, iodesc)
+      call pio_initdecomp(pio_subsystem, pio_double, dsizes(1:ndims), compDOF, iodesc)
+      deallocate(compdof)
+
+      allocate(ele(begr:endr,1:elesize))
+      call pio_read_darray(ncid, vardesc, iodesc, ele, ier)
+
+      do n = 1, elesize
+        e_eprof_in2(n,:) = ele(:,n)
+      enddo
+
+      deallocate(ele)
+      call pio_freedecomp(ncid, iodesc)
+
+    else
+
+      do n = 1, Tctl%npt_elevProf
+
+        if (Tctl%npt_elevProf-1<10) then 
+          write(str,'(I1)') Tctl%npt_elevProf-1
+        elseif (Tctl%npt_elevProf<100) then
+          write(str,'(I2)') Tctl%npt_elevProf-1
+        endif
+
+        call check_var(ncid, 'ele'//str, vardesc, readvar)
+
+        if (readvar) then
+          ier = pio_inq_varid(ncid, name='ele'//str, vardesc=vardesc)
+        else
+          call shr_sys_abort(trim(subname)//' ERROR missing elevation profile data')
+        endif
+
+        if (n==1) then
+
+          allocate(compdof(rtmCTL%lnumr))
+          cnt = 0
+          do m = rtmCTL%begr,rtmCTL%endr
+            cnt = cnt + 1
+            compDOF(cnt) = rtmCTL%gindex(m)
+          enddo
+
+          ier = pio_inq_varndims(ncid, vardesc, ndims)
+          ier = pio_inq_vardimid(ncid, vardesc, dimids)
+
+          do m = 1,ndims
+            ier = pio_inq_dimlen(ncid,dimids(m),dsizes(m))
+          enddo
+
+          call pio_initdecomp(pio_subsystem, pio_double, dsizes(1:ndims), compDOF, iodesc)
+
+        endif
+
+        call pio_read_darray(ncid, vardesc, iodesc, e_eprof_in2(n,:), ier)
+
+      enddo
+
+      if (masterproc) then
+         write(iulog,*) subname,'read elevattion profile successfully'
+      endif 
+
+    endif
 
   end subroutine read_elevation_profile
 
