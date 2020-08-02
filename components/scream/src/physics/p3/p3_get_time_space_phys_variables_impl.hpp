@@ -11,8 +11,8 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::get_time_space_phys_variables(
-  const Spack& t, const Spack& pres, const Spack& rho, const Spack& xxlv, const Spack& xxls,
-  const Spack& qvs, const Spack& qvi, Spack& mu, Spack& dv, Spack& sc, Spack& dqsdt,
+  const Spack& t, const Spack& pres, const Spack& rho, const Spack& latent_heat_vapor, const Spack& latent_heat_sublim,
+  const Spack& qv_sat_l, const Spack& qv_sat_i, Spack& mu, Spack& dv, Spack& sc, Spack& dqsdt,
   Spack& dqsidt, Spack& ab, Spack& abi, Spack& kap, Spack& eii,
   const Smask& context)
 {
@@ -27,10 +27,10 @@ void Functions<S,D>
   constexpr Scalar tval2  = 268.15;
 
   const auto dum = 1/(RV*square(t));
-  dqsdt.set(context, xxlv*qvs*dum);
-  dqsidt.set(context, xxls*qvi*dum);
-  ab.set(context, 1+dqsdt*xxlv*INV_CP);
-  abi.set(context, 1+dqsidt*xxls*INV_CP);
+  dqsdt.set(context, latent_heat_vapor*qv_sat_l*dum);
+  dqsidt.set(context, latent_heat_sublim*qv_sat_i*dum);
+  ab.set(context, 1+dqsdt*latent_heat_vapor*INV_CP);
+  abi.set(context, 1+dqsidt*latent_heat_sublim*INV_CP);
   kap.set(context, sp(1.414e+3)*mu);
 
   //very simple temperature dependent aggregation efficiency

@@ -197,7 +197,7 @@ static void run_phys()
 static void run_bfb()
 {
   CalcUpwindData cuds_fortran[] = {
-                // kts, kte, kdir, kbot, k_qxtop, na,   dt_sub,  rho range, inv_dzq range, vs range, qnx range
+                // kts, kte, kdir, kbot, k_qxtop, na,   dt_sub,  rho range, inv_dz range, vs range, qnx range
     CalcUpwindData(  1,  72,   -1,   72,      36,  2,  1.833E+03,
                    std::make_pair(4.056E-03, 1.153E+00),
                    std::make_pair(2.863E-05, 8.141E-03),
@@ -265,7 +265,7 @@ static void run_bfb()
   for (Int i = 0; i < num_runs; ++i) {
     calc_first_order_upwind_step_f(
       cuds_cxx[i].kts, cuds_cxx[i].kte, cuds_cxx[i].kdir, cuds_cxx[i].kbot, cuds_cxx[i].k_qxtop, cuds_cxx[i].dt_sub,
-      cuds_cxx[i].rho, cuds_cxx[i].inv_rho, cuds_cxx[i].inv_dzq,
+      cuds_cxx[i].rho, cuds_cxx[i].inv_rho, cuds_cxx[i].inv_dz,
       cuds_cxx[i].num_arrays, cuds_cxx[i].fluxes, cuds_cxx[i].vs, cuds_cxx[i].qnx);
   }
 
@@ -300,7 +300,7 @@ static void run_bfb()
 
   // GenSedData(Int kts_, Int kte_, Int kdir_, Int k_qxtop_, Int k_qxbot_, Int kbot_, Real Co_max_, Real dt_left_,
   //            Real prt_accum_, Int num_arrays_,
-  //            std::pair<Real, Real> rho_range, std::pair<Real, Real> inv_dzq_range,
+  //            std::pair<Real, Real> rho_range, std::pair<Real, Real> inv_dz_range,
   //            std::pair<Real, Real> vs_range, std::pair<Real, Real> qnx_range);
 
   GenSedData gsds_fortran[] = {
@@ -351,7 +351,7 @@ static void run_bfb()
   for (Int i = 0; i < num_runs; ++i) {
     generalized_sedimentation_f(gsds_cxx[i].kts, gsds_cxx[i].kte, gsds_cxx[i].kdir, gsds_cxx[i].k_qxtop,
                                 &gsds_cxx[i].k_qxbot, gsds_cxx[i].kbot, gsds_cxx[i].Co_max,
-                                &gsds_cxx[i].dt_left, &gsds_cxx[i].prt_accum, gsds_cxx[i].inv_dzq, gsds_cxx[i].inv_rho, gsds_cxx[i].rho,
+                                &gsds_cxx[i].dt_left, &gsds_cxx[i].prt_accum, gsds_cxx[i].inv_dz, gsds_cxx[i].inv_rho, gsds_cxx[i].rho,
                                 gsds_cxx[i].num_arrays, gsds_cxx[i].vs, gsds_cxx[i].fluxes, gsds_cxx[i].qnx);
   }
 

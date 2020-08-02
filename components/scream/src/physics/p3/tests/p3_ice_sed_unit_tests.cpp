@@ -126,22 +126,22 @@ static void run_bfb_ice_sed()
     std::make_pair(4.056E-03, 1.153E+00), // rho_range
     std::make_pair(0,         1.),        // inv_rho (ignored)
     std::make_pair(8.852E-01, 1.069E+00), // rhofaci
-    std::make_pair(1.000E+00, 1.100E+00), // icldm
-    std::make_pair(2.863E-05, 8.141E-03), // inv_dzq_range
-    std::make_pair(1.221E-14, 2.708E-03), // qitot
-    std::make_pair(5.164E-10, 2.293E-03), // qitot_incld
-    std::make_pair(9.558E+04, 6.596E+05), // nitot
-    std::make_pair(9.538E+04, 6.596E+05), // nitot_incld
-    std::make_pair(6.774E-15, 2.293E-03), // qirim
-    std::make_pair(7.075E-08, 2.418E-03), // qirim_incld
-    std::make_pair(4.469E-14, 2.557E-03), // birim
-    std::make_pair(7.861E-11, 4.179E-06), // birim_incld
+    std::make_pair(1.000E+00, 1.100E+00), // cld_frac_i
+    std::make_pair(2.863E-05, 8.141E-03), // inv_dz_range
+    std::make_pair(1.221E-14, 2.708E-03), // qi
+    std::make_pair(5.164E-10, 2.293E-03), // qi_incld
+    std::make_pair(9.558E+04, 6.596E+05), // ni
+    std::make_pair(9.538E+04, 6.596E+05), // ni_incld
+    std::make_pair(6.774E-15, 2.293E-03), // qm
+    std::make_pair(7.075E-08, 2.418E-03), // qm_incld
+    std::make_pair(4.469E-14, 2.557E-03), // bm
+    std::make_pair(7.861E-11, 4.179E-06), // bm_incld
     std::make_pair(5.164E-10, 2.733E-03), // qi_tend
     std::make_pair(1.370E+05, 6.582E+05), // ni_tend
   };
 
   IceSedData isds_fortran[] = {
-    //       kts, kte, ktop, kbot, kdir,        dt,       odt, prt_sol, ranges
+    //       kts, kte, ktop, kbot, kdir,        dt,       inv_dt, precip_ice_surf, ranges
     IceSedData(1,  72,   27,   72,   -1, 1.800E+03, 5.556E-04,     0.0, ranges),
     IceSedData(1,  72,   72,   27,    1, 1.800E+03, 5.556E-04,     1.0, ranges),
     IceSedData(1,  72,   27,   27,   -1, 1.800E+03, 5.556E-04,     0.0, ranges),
@@ -168,10 +168,10 @@ static void run_bfb_ice_sed()
   for (Int i = 0; i < num_runs; ++i) {
     IceSedData& d = isds_cxx[i];
     ice_sedimentation_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
-                        d.rho, d.inv_rho, d.rhofaci, d.icldm, d.inv_dzq,
-                        d.dt, d.odt,
-                        d.qitot, d.qitot_incld, d.nitot, d.qirim, d.qirim_incld, d.birim, d.birim_incld,
-                        d.nitot_incld, &d.prt_sol, d.qi_tend, d.ni_tend);
+                        d.rho, d.inv_rho, d.rhofaci, d.cld_frac_i, d.inv_dz,
+                        d.dt, d.inv_dt,
+                        d.qi, d.qi_incld, d.ni, d.qm, d.qm_incld, d.bm, d.bm_incld,
+                        d.ni_incld, &d.precip_ice_surf, d.qi_tend, d.ni_tend);
   }
 
   for (Int i = 0; i < num_runs; ++i) {
@@ -179,18 +179,18 @@ static void run_bfb_ice_sed()
     Int start = std::min(isds_fortran[i].kbot, isds_fortran[i].ktop) - 1; // 0-based indx
     Int end   = std::max(isds_fortran[i].kbot, isds_fortran[i].ktop);     // 0-based indx
     for (Int k = start; k < end; ++k) {
-      REQUIRE(isds_fortran[i].qitot[k]       == isds_cxx[i].qitot[k]);
-      REQUIRE(isds_fortran[i].qitot_incld[k] == isds_cxx[i].qitot_incld[k]);
-      REQUIRE(isds_fortran[i].nitot[k]       == isds_cxx[i].nitot[k]);
-      REQUIRE(isds_fortran[i].nitot_incld[k] == isds_cxx[i].nitot_incld[k]);
-      REQUIRE(isds_fortran[i].qirim[k]       == isds_cxx[i].qirim[k]);
-      REQUIRE(isds_fortran[i].qirim_incld[k] == isds_cxx[i].qirim_incld[k]);
-      REQUIRE(isds_fortran[i].birim[k]       == isds_cxx[i].birim[k]);
-      REQUIRE(isds_fortran[i].birim_incld[k] == isds_cxx[i].birim_incld[k]);
+      REQUIRE(isds_fortran[i].qi[k]       == isds_cxx[i].qi[k]);
+      REQUIRE(isds_fortran[i].qi_incld[k] == isds_cxx[i].qi_incld[k]);
+      REQUIRE(isds_fortran[i].ni[k]       == isds_cxx[i].ni[k]);
+      REQUIRE(isds_fortran[i].ni_incld[k] == isds_cxx[i].ni_incld[k]);
+      REQUIRE(isds_fortran[i].qm[k]       == isds_cxx[i].qm[k]);
+      REQUIRE(isds_fortran[i].qm_incld[k] == isds_cxx[i].qm_incld[k]);
+      REQUIRE(isds_fortran[i].bm[k]       == isds_cxx[i].bm[k]);
+      REQUIRE(isds_fortran[i].bm_incld[k] == isds_cxx[i].bm_incld[k]);
       REQUIRE(isds_fortran[i].qi_tend[k]     == isds_cxx[i].qi_tend[k]);
       REQUIRE(isds_fortran[i].ni_tend[k]     == isds_cxx[i].ni_tend[k]);
     }
-    REQUIRE(isds_fortran[i].prt_sol == isds_cxx[i].prt_sol);
+    REQUIRE(isds_fortran[i].precip_ice_surf == isds_cxx[i].precip_ice_surf);
   }
 }
 
@@ -199,15 +199,15 @@ static void run_bfb_homogeneous_freezing()
   const std::array< std::pair<Real, Real>, HomogeneousFreezingData::NUM_ARRAYS > ranges = {
     std::make_pair(C::homogfrze - 10, C::homogfrze + 10), // t
     std::make_pair(0.000E+00, 1.000E+00), // exner
-    std::make_pair(0.000E+00, 1.000E+00), // xlf
+    std::make_pair(0.000E+00, 1.000E+00), // latent_heat_fusion
     std::make_pair(0.000E+00, C::QSMALL*2), // qc
     std::make_pair(0.000E+00, 1.000E+00), // nc
     std::make_pair(0.000E+00, C::QSMALL*2), // qr
     std::make_pair(0.000E+00, 1.000E+00), // nr
-    std::make_pair(0.000E+00, 1.000E+00), // qitot
-    std::make_pair(0.000E+00, 1.000E+00), // nitot
-    std::make_pair(0.000E+00, 1.000E+00), // qirim
-    std::make_pair(0.000E+00, 1.000E+00), // birim
+    std::make_pair(0.000E+00, 1.000E+00), // qi
+    std::make_pair(0.000E+00, 1.000E+00), // ni
+    std::make_pair(0.000E+00, 1.000E+00), // qm
+    std::make_pair(0.000E+00, 1.000E+00), // bm
     std::make_pair(0.000E+00, 1.000E+00), // th
   };
 
@@ -239,8 +239,8 @@ static void run_bfb_homogeneous_freezing()
   for (Int i = 0; i < num_runs; ++i) {
     HomogeneousFreezingData& d = hfds_cxx[i];
     homogeneous_freezing_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
-                           d.t, d.exner, d.xlf,
-                           d.qc, d.nc, d.qr, d.nr, d.qitot, d.nitot, d.qirim, d.birim, d.th);
+                           d.t, d.exner, d.latent_heat_fusion,
+                           d.qc, d.nc, d.qr, d.nr, d.qi, d.ni, d.qm, d.bm, d.th);
   }
 
   for (Int i = 0; i < num_runs; ++i) {
@@ -252,10 +252,10 @@ static void run_bfb_homogeneous_freezing()
       REQUIRE(hfds_fortran[i].nc[k]    == hfds_cxx[i].nc[k]);
       REQUIRE(hfds_fortran[i].qr[k]    == hfds_cxx[i].qr[k]);
       REQUIRE(hfds_fortran[i].nr[k]    == hfds_cxx[i].nr[k]);
-      REQUIRE(hfds_fortran[i].qitot[k] == hfds_cxx[i].qitot[k]);
-      REQUIRE(hfds_fortran[i].nitot[k] == hfds_cxx[i].nitot[k]);
-      REQUIRE(hfds_fortran[i].qirim[k] == hfds_cxx[i].qirim[k]);
-      REQUIRE(hfds_fortran[i].birim[k] == hfds_cxx[i].birim[k]);
+      REQUIRE(hfds_fortran[i].qi[k] == hfds_cxx[i].qi[k]);
+      REQUIRE(hfds_fortran[i].ni[k] == hfds_cxx[i].ni[k]);
+      REQUIRE(hfds_fortran[i].qm[k] == hfds_cxx[i].qm[k]);
+      REQUIRE(hfds_fortran[i].bm[k] == hfds_cxx[i].bm[k]);
       REQUIRE(hfds_fortran[i].th[k]    == hfds_cxx[i].th[k]);
     }
   }

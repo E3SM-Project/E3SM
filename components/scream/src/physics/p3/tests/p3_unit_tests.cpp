@@ -43,41 +43,41 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     // Run the lookup from a kernel and copy results back to host
     Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
       Spack qc(cwdc_device(0).qc);
-      Spack qcaut(cwdc_device(0).qcaut);
-      Spack qcacc(cwdc_device(0).qcacc);
-      Spack qccol(cwdc_device(0).qccol);
-      Spack qcheti(cwdc_device(0).qcheti);
-      Spack qcshd(cwdc_device(0).qcshd);
-      Spack qiberg(cwdc_device(0).qiberg);
-      Spack qisub(cwdc_device(0).qisub);
-      Spack qidep(cwdc_device(0).qidep);
+      Spack qc2qr_autoconv_tend(cwdc_device(0).qc2qr_autoconv_tend);
+      Spack qc2qr_accret_tend(cwdc_device(0).qc2qr_accret_tend);
+      Spack qc2qi_collect_tend(cwdc_device(0).qc2qi_collect_tend);
+      Spack qc2qi_hetero_freeze_tend(cwdc_device(0).qc2qi_hetero_freeze_tend);
+      Spack qc2qr_ice_shed_tend(cwdc_device(0).qc2qr_ice_shed_tend);
+      Spack qc2qi_berg_tend(cwdc_device(0).qc2qi_berg_tend);
+      Spack qi2qv_sublim_tend(cwdc_device(0).qi2qv_sublim_tend);
+      Spack qv2qi_vapdep_tend(cwdc_device(0).qv2qi_vapdep_tend);
 
-      Functions::cloud_water_conservation(qc, cwdc_device(0).dt, qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep);
+      Functions::cloud_water_conservation(qc, cwdc_device(0).dt, qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend);
 
       cwdc_device(0).qc = qc[0];
-      cwdc_device(0).qcaut = qcaut[0];
-      cwdc_device(0).qcacc = qcacc[0];
-      cwdc_device(0).qccol = qccol[0];
-      cwdc_device(0).qcheti = qcheti[0];
-      cwdc_device(0).qcshd = qcshd[0];
-      cwdc_device(0).qiberg = qiberg[0];
-      cwdc_device(0).qisub = qisub[0];
-      cwdc_device(0).qidep = qidep[0];
+      cwdc_device(0).qc2qr_autoconv_tend = qc2qr_autoconv_tend[0];
+      cwdc_device(0).qc2qr_accret_tend = qc2qr_accret_tend[0];
+      cwdc_device(0).qc2qi_collect_tend = qc2qi_collect_tend[0];
+      cwdc_device(0).qc2qi_hetero_freeze_tend = qc2qi_hetero_freeze_tend[0];
+      cwdc_device(0).qc2qr_ice_shed_tend = qc2qr_ice_shed_tend[0];
+      cwdc_device(0).qc2qi_berg_tend = qc2qi_berg_tend[0];
+      cwdc_device(0).qi2qv_sublim_tend = qi2qv_sublim_tend[0];
+      cwdc_device(0).qv2qi_vapdep_tend = qv2qi_vapdep_tend[0];
     });
 
     // Sync back to host
     Kokkos::deep_copy(cwdc_host, cwdc_device);
 
-    const auto ratio = cwdc[0].qc/(cwdc[0].qcaut * cwdc[0].dt);
-    REQUIRE(std::abs(cwdc_host(0).qcaut - cwdc[0].qcaut*ratio) <= C::Tol);
-    REQUIRE(cwdc_host(0).qcacc == 0.0);
-    REQUIRE(cwdc_host(0).qccol == 0.0);
-    REQUIRE(cwdc_host(0).qcheti == 0.0);
-    REQUIRE(cwdc_host(0).qcshd == 0.0);
-    REQUIRE(cwdc_host(0).qiberg == 0.0);
-    REQUIRE(std::abs(cwdc_host(0).qisub -(1.0 - ratio)) <= C::Tol);
-    REQUIRE(std::abs(cwdc_host(0).qidep - (1.0 - ratio)) <= C::Tol);
-    REQUIRE(cwdc_host[0].qcaut * cwdc[0].dt <= cwdc_host[0].qc);
+    const auto ratio = cwdc[0].qc/(cwdc[0].qc2qr_autoconv_tend * cwdc[0].dt);
+    REQUIRE(std::abs(cwdc_host(0).qc2qr_autoconv_tend - cwdc[0].qc2qr_autoconv_tend*ratio) <= C::Tol);
+    REQUIRE(cwdc_host(0).qc2qr_accret_tend == 0.0);
+    REQUIRE(cwdc_host(0).qc2qi_collect_tend == 0.0);
+    REQUIRE(cwdc_host(0).qc2qi_hetero_freeze_tend == 0.0);
+    REQUIRE(cwdc_host(0).qc2qr_ice_shed_tend == 0.0);
+    REQUIRE(cwdc_host(0).qc2qi_berg_tend == 0.0);
+    REQUIRE(std::abs(cwdc_host(0).qi2qv_sublim_tend -(1.0 - ratio)) <= C::Tol);
+    REQUIRE(std::abs(cwdc_host(0).qv2qi_vapdep_tend - (1.0 - ratio)) <= C::Tol);
+    REQUIRE(cwdc_host[0].qc2qr_autoconv_tend * cwdc[0].dt <= cwdc_host[0].qc);
   }
 
   static void rain_water_conservation_tests_device() {
@@ -96,41 +96,41 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     // Run the lookup from a kernel and copy results back to host
     Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
       Spack qr(rwdc_device(0).qr);
-      Spack qcaut(rwdc_device(0).qcaut);
-      Spack qcacc(rwdc_device(0).qcacc);
-      Spack qimlt(rwdc_device(0).qimlt);
-      Spack qcshd(rwdc_device(0).qcshd);
-      Spack qrevp(rwdc_device(0).qrevp);
-      Spack qrcol(rwdc_device(0).qrcol);
-      Spack qrheti(rwdc_device(0).qrheti);
+      Spack qc2qr_autoconv_tend(rwdc_device(0).qc2qr_autoconv_tend);
+      Spack qc2qr_accret_tend(rwdc_device(0).qc2qr_accret_tend);
+      Spack qi2qr_melt_tend(rwdc_device(0).qi2qr_melt_tend);
+      Spack qc2qr_ice_shed_tend(rwdc_device(0).qc2qr_ice_shed_tend);
+      Spack qr2qv_evap_tend(rwdc_device(0).qr2qv_evap_tend);
+      Spack qr2qi_collect_tend(rwdc_device(0).qr2qi_collect_tend);
+      Spack qr2qi_immers_freeze_tend(rwdc_device(0).qr2qi_immers_freeze_tend);
 
-      Functions::rain_water_conservation(qr, qcaut, qcacc, qimlt, qcshd, rwdc_device(0).dt, qrevp, qrcol, qrheti);
+      Functions::rain_water_conservation(qr, qc2qr_autoconv_tend, qc2qr_accret_tend, qi2qr_melt_tend, qc2qr_ice_shed_tend, rwdc_device(0).dt, qr2qv_evap_tend, qr2qi_collect_tend, qr2qi_immers_freeze_tend);
 
       rwdc_device(0).qr = qr[0];
-      rwdc_device(0).qcaut = qcaut[0];
-      rwdc_device(0).qcacc = qcacc[0];
-      rwdc_device(0).qimlt = qimlt[0];
-      rwdc_device(0).qcshd = qcshd[0];
-      rwdc_device(0).qrevp = qrevp[0];
-      rwdc_device(0).qrcol = qrcol[0];
-      rwdc_device(0).qrheti = qrheti[0];
+      rwdc_device(0).qc2qr_autoconv_tend = qc2qr_autoconv_tend[0];
+      rwdc_device(0).qc2qr_accret_tend = qc2qr_accret_tend[0];
+      rwdc_device(0).qi2qr_melt_tend = qi2qr_melt_tend[0];
+      rwdc_device(0).qc2qr_ice_shed_tend = qc2qr_ice_shed_tend[0];
+      rwdc_device(0).qr2qv_evap_tend = qr2qv_evap_tend[0];
+      rwdc_device(0).qr2qi_collect_tend = qr2qi_collect_tend[0];
+      rwdc_device(0).qr2qi_immers_freeze_tend = qr2qi_immers_freeze_tend[0];
     });
 
     // Sync back to host
     Kokkos::deep_copy(rwdc_host, rwdc_device);
-    const auto ratio = rwdc[0].qr/(rwdc[0].qrevp * rwdc[0].dt);
+    const auto ratio = rwdc[0].qr/(rwdc[0].qr2qv_evap_tend * rwdc[0].dt);
 
     //Here we check cases where source > sinks and sinks > 1e-20
-    REQUIRE(rwdc_host(0).qcaut == 0.0);
-    REQUIRE(rwdc_host(0).qcacc == 0.0);
-    REQUIRE(rwdc_host(0).qimlt == 0.0);
-    REQUIRE(rwdc_host(0).qcshd == 0.0);
+    REQUIRE(rwdc_host(0).qc2qr_autoconv_tend == 0.0);
+    REQUIRE(rwdc_host(0).qc2qr_accret_tend == 0.0);
+    REQUIRE(rwdc_host(0).qi2qr_melt_tend == 0.0);
+    REQUIRE(rwdc_host(0).qc2qr_ice_shed_tend == 0.0);
 
-    //Check the value of qrevp
-    REQUIRE(std::abs(rwdc_host(0).qrevp- rwdc[0].qrevp*ratio)<= C::Tol);
+    //Check the value of qr2qv_evap_tend
+    REQUIRE(std::abs(rwdc_host(0).qr2qv_evap_tend- rwdc[0].qr2qv_evap_tend*ratio)<= C::Tol);
 
     //Now test that conservation has actually been enforced
-    REQUIRE( rwdc_host(0).qrevp * rwdc_host(0).dt  <= rwdc_host(0).qr);
+    REQUIRE( rwdc_host(0).qr2qv_evap_tend * rwdc_host(0).dt  <= rwdc_host(0).qr);
   }
 
   static void ice_water_conservation_tests_device(){
@@ -148,29 +148,29 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
 
     // Run the lookup from a kernel and copy results back to host
     Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
-      Spack qitot(iwdc_device(0).qitot);
-      Spack qidep(iwdc_device(0).qidep);
-      Spack qinuc(iwdc_device(0).qinuc);
-      Spack qrcol(iwdc_device(0).qrcol);
-      Spack qccol(iwdc_device(0).qccol);
-      Spack qrheti(iwdc_device(0).qrheti);
-      Spack qcheti(iwdc_device(0).qcheti);
-      Spack qiberg(iwdc_device(0).qiberg);
-      Spack qisub(iwdc_device(0).qisub);
-      Spack qimlt(iwdc_device(0).qimlt);
+      Spack qi(iwdc_device(0).qi);
+      Spack qv2qi_vapdep_tend(iwdc_device(0).qv2qi_vapdep_tend);
+      Spack qv2qi_nucleat_tend(iwdc_device(0).qv2qi_nucleat_tend);
+      Spack qr2qi_collect_tend(iwdc_device(0).qr2qi_collect_tend);
+      Spack qc2qi_collect_tend(iwdc_device(0).qc2qi_collect_tend);
+      Spack qr2qi_immers_freeze_tend(iwdc_device(0).qr2qi_immers_freeze_tend);
+      Spack qc2qi_hetero_freeze_tend(iwdc_device(0).qc2qi_hetero_freeze_tend);
+      Spack qc2qi_berg_tend(iwdc_device(0).qc2qi_berg_tend);
+      Spack qi2qv_sublim_tend(iwdc_device(0).qi2qv_sublim_tend);
+      Spack qi2qr_melt_tend(iwdc_device(0).qi2qr_melt_tend);
 
-      Functions::ice_water_conservation(qitot, qidep, qinuc, qrcol, qccol, qrheti, qcheti, qiberg, iwdc_device(0).dt, qisub, qimlt);
+      Functions::ice_water_conservation(qi, qv2qi_vapdep_tend, qv2qi_nucleat_tend, qr2qi_collect_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, qc2qi_berg_tend, iwdc_device(0).dt, qi2qv_sublim_tend, qi2qr_melt_tend);
 
-      iwdc_device(0).qitot = qitot[0];
-      iwdc_device(0).qidep = qidep[0];
-      iwdc_device(0).qinuc = qinuc[0];
-      iwdc_device(0).qrcol = qrcol[0];
-      iwdc_device(0).qccol = qccol[0];
-      iwdc_device(0).qrheti = qrheti[0];
-      iwdc_device(0).qcheti = qcheti[0];
-      iwdc_device(0).qiberg = qiberg[0];
-      iwdc_device(0).qisub = qisub[0];
-      iwdc_device(0).qimlt = qimlt[0];
+      iwdc_device(0).qi = qi[0];
+      iwdc_device(0).qv2qi_vapdep_tend = qv2qi_vapdep_tend[0];
+      iwdc_device(0).qv2qi_nucleat_tend = qv2qi_nucleat_tend[0];
+      iwdc_device(0).qr2qi_collect_tend = qr2qi_collect_tend[0];
+      iwdc_device(0).qc2qi_collect_tend = qc2qi_collect_tend[0];
+      iwdc_device(0).qr2qi_immers_freeze_tend = qr2qi_immers_freeze_tend[0];
+      iwdc_device(0).qc2qi_hetero_freeze_tend = qc2qi_hetero_freeze_tend[0];
+      iwdc_device(0).qc2qi_berg_tend = qc2qi_berg_tend[0];
+      iwdc_device(0).qi2qv_sublim_tend = qi2qv_sublim_tend[0];
+      iwdc_device(0).qi2qr_melt_tend = qi2qr_melt_tend[0];
     });
 
   }
@@ -194,7 +194,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     static_assert(max_pack_size % Spack::n == 0, "Unit testing infrastructure does not support this pack size (does not evenly divide 16)");
 
     CloudWaterConservationData cwdc[max_pack_size] = {
-      //qc, cwdc_device(0).dt, qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep
+      //qc, cwdc_device(0).dt, qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend
       {9.9999999999999995e-7, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
       {6.4285714285714288e-5, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326E-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7},
       {0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
@@ -234,30 +234,30 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
       const Int offset = i * Spack::n;
 
       // Init pack inputs
-      Spack qc, qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep;
+      Spack qc, qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend;
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         qc[s]     = cwdc_device(vs).qc;
-        qcaut[s]  = cwdc_device(vs).qcaut;
-        qcacc[s]  = cwdc_device(vs).qcacc;
-        qccol[s]  = cwdc_device(vs).qccol;
-        qcheti[s] = cwdc_device(vs).qcheti;
-        qcshd[s]  = cwdc_device(vs).qcshd;
-        qiberg[s] = cwdc_device(vs).qiberg;
-        qisub[s]  = cwdc_device(vs).qisub;
-        qidep[s]  = cwdc_device(vs).qidep;
+        qc2qr_autoconv_tend[s]  = cwdc_device(vs).qc2qr_autoconv_tend;
+        qc2qr_accret_tend[s]  = cwdc_device(vs).qc2qr_accret_tend;
+        qc2qi_collect_tend[s]  = cwdc_device(vs).qc2qi_collect_tend;
+        qc2qi_hetero_freeze_tend[s] = cwdc_device(vs).qc2qi_hetero_freeze_tend;
+        qc2qr_ice_shed_tend[s]  = cwdc_device(vs).qc2qr_ice_shed_tend;
+        qc2qi_berg_tend[s] = cwdc_device(vs).qc2qi_berg_tend;
+        qi2qv_sublim_tend[s]  = cwdc_device(vs).qi2qv_sublim_tend;
+        qv2qi_vapdep_tend[s]  = cwdc_device(vs).qv2qi_vapdep_tend;
       }
 
-      Functions::cloud_water_conservation(qc, cwdc_device(0).dt, qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep);
+      Functions::cloud_water_conservation(qc, cwdc_device(0).dt, qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend);
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         cwdc_device(vs).qc     = qc[s];
-        cwdc_device(vs).qcaut  = qcaut[s];
-        cwdc_device(vs).qcacc  = qcacc[s];
-        cwdc_device(vs).qccol  = qccol[s];
-        cwdc_device(vs).qcheti = qcheti[s];
-        cwdc_device(vs).qiberg = qiberg[s];
-        cwdc_device(vs).qisub  = qisub[s];
-        cwdc_device(vs).qidep  = qidep[s];
+        cwdc_device(vs).qc2qr_autoconv_tend  = qc2qr_autoconv_tend[s];
+        cwdc_device(vs).qc2qr_accret_tend  = qc2qr_accret_tend[s];
+        cwdc_device(vs).qc2qi_collect_tend  = qc2qi_collect_tend[s];
+        cwdc_device(vs).qc2qi_hetero_freeze_tend = qc2qi_hetero_freeze_tend[s];
+        cwdc_device(vs).qc2qi_berg_tend = qc2qi_berg_tend[s];
+        cwdc_device(vs).qi2qv_sublim_tend  = qi2qv_sublim_tend[s];
+        cwdc_device(vs).qv2qi_vapdep_tend  = qv2qi_vapdep_tend[s];
       }
 
     });
@@ -267,13 +267,13 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     // Validate results
     for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(cwdc[s].qc     == cwdc_host(s).qc);
-      REQUIRE(cwdc[s].qcaut  == cwdc_host(s).qcaut);
-      REQUIRE(cwdc[s].qcacc  == cwdc_host(s).qcacc);
-      REQUIRE(cwdc[s].qccol  == cwdc_host(s).qccol);
-      REQUIRE(cwdc[s].qcheti == cwdc_host(s).qcheti);
-      REQUIRE(cwdc[s].qiberg == cwdc_host(s).qiberg);
-      REQUIRE(cwdc[s].qisub  == cwdc_host(s).qisub);
-      REQUIRE(cwdc[s].qidep  == cwdc_host(s).qidep);
+      REQUIRE(cwdc[s].qc2qr_autoconv_tend  == cwdc_host(s).qc2qr_autoconv_tend);
+      REQUIRE(cwdc[s].qc2qr_accret_tend  == cwdc_host(s).qc2qr_accret_tend);
+      REQUIRE(cwdc[s].qc2qi_collect_tend  == cwdc_host(s).qc2qi_collect_tend);
+      REQUIRE(cwdc[s].qc2qi_hetero_freeze_tend == cwdc_host(s).qc2qi_hetero_freeze_tend);
+      REQUIRE(cwdc[s].qc2qi_berg_tend == cwdc_host(s).qc2qi_berg_tend);
+      REQUIRE(cwdc[s].qi2qv_sublim_tend  == cwdc_host(s).qi2qv_sublim_tend);
+      REQUIRE(cwdc[s].qv2qi_vapdep_tend  == cwdc_host(s).qv2qi_vapdep_tend);
     }
 
   }
@@ -283,7 +283,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     using KTH = KokkosTypes<HostDevice>;
 
     IceWaterConservationData iwdc[max_pack_size] = {
-      // qitot, qidep, qinuc, qiberg, qrcol, qccol, qrheti, qcheti, iwdc_device(0).dt, qisub, qimlt
+      // qi, qv2qi_vapdep_tend, qv2qi_nucleat_tend, qc2qi_berg_tend, qr2qi_collect_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, iwdc_device(0).dt, qi2qv_sublim_tend, qi2qr_melt_tend
       {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 1.9205467584100191e-4},
       {5.0e-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 1.8234653652173277e-7, 0.0},
       {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 2.3237448636383435e-3},
@@ -323,33 +323,33 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
       const Int offset = i * Spack::n;
 
       // Init pack inputs
-      Spack qitot,qidep,qinuc,qiberg,qrcol,qccol,qrheti,qcheti,qisub,qimlt;
+      Spack qi,qv2qi_vapdep_tend,qv2qi_nucleat_tend,qc2qi_berg_tend,qr2qi_collect_tend,qc2qi_collect_tend,qr2qi_immers_freeze_tend,qc2qi_hetero_freeze_tend,qi2qv_sublim_tend,qi2qr_melt_tend;
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        qitot[s]  = iwdc_device(vs).qitot;
-        qidep[s]  = iwdc_device(vs).qidep;
-        qinuc[s]  = iwdc_device(vs).qinuc;
-        qiberg[s] = iwdc_device(vs).qiberg;
-        qrcol[s]  = iwdc_device(vs).qrcol;
-        qccol[s]  = iwdc_device(vs).qccol;
-        qrheti[s] = iwdc_device(vs).qrheti;
-        qcheti[s] = iwdc_device(vs).qcheti;
-        qisub[s] = iwdc_device(vs).qisub;
-        qimlt[s] = iwdc_device(vs).qimlt;
+        qi[s]  = iwdc_device(vs).qi;
+        qv2qi_vapdep_tend[s]  = iwdc_device(vs).qv2qi_vapdep_tend;
+        qv2qi_nucleat_tend[s]  = iwdc_device(vs).qv2qi_nucleat_tend;
+        qc2qi_berg_tend[s] = iwdc_device(vs).qc2qi_berg_tend;
+        qr2qi_collect_tend[s]  = iwdc_device(vs).qr2qi_collect_tend;
+        qc2qi_collect_tend[s]  = iwdc_device(vs).qc2qi_collect_tend;
+        qr2qi_immers_freeze_tend[s] = iwdc_device(vs).qr2qi_immers_freeze_tend;
+        qc2qi_hetero_freeze_tend[s] = iwdc_device(vs).qc2qi_hetero_freeze_tend;
+        qi2qv_sublim_tend[s] = iwdc_device(vs).qi2qv_sublim_tend;
+        qi2qr_melt_tend[s] = iwdc_device(vs).qi2qr_melt_tend;
       }
 
-      Functions::ice_water_conservation(qitot, qidep, qinuc, qiberg, qrcol, qccol, qrheti, qcheti, iwdc_device(0).dt, qisub, qimlt);
+      Functions::ice_water_conservation(qi, qv2qi_vapdep_tend, qv2qi_nucleat_tend, qc2qi_berg_tend, qr2qi_collect_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, iwdc_device(0).dt, qi2qv_sublim_tend, qi2qr_melt_tend);
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        iwdc_device(vs).qitot = qitot[s];
-        iwdc_device(vs).qidep = qidep[s];
-        iwdc_device(vs).qinuc = qinuc[s];
-        iwdc_device(vs).qiberg = qiberg[s];
-        iwdc_device(vs).qrcol = qrcol[s];
-        iwdc_device(vs).qccol = qccol[s];
-        iwdc_device(vs).qrheti = qrheti[s];
-        iwdc_device(vs).qcheti = qcheti[s];
-        iwdc_device(vs).qisub = qisub[s];
-        iwdc_device(vs).qimlt = qimlt[s];
+        iwdc_device(vs).qi = qi[s];
+        iwdc_device(vs).qv2qi_vapdep_tend = qv2qi_vapdep_tend[s];
+        iwdc_device(vs).qv2qi_nucleat_tend = qv2qi_nucleat_tend[s];
+        iwdc_device(vs).qc2qi_berg_tend = qc2qi_berg_tend[s];
+        iwdc_device(vs).qr2qi_collect_tend = qr2qi_collect_tend[s];
+        iwdc_device(vs).qc2qi_collect_tend = qc2qi_collect_tend[s];
+        iwdc_device(vs).qr2qi_immers_freeze_tend = qr2qi_immers_freeze_tend[s];
+        iwdc_device(vs).qc2qi_hetero_freeze_tend = qc2qi_hetero_freeze_tend[s];
+        iwdc_device(vs).qi2qv_sublim_tend = qi2qv_sublim_tend[s];
+        iwdc_device(vs).qi2qr_melt_tend = qi2qr_melt_tend[s];
       }
     });
 
@@ -358,16 +358,16 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
 
     // Validate results
     for (Int s = 0; s < max_pack_size; ++s) {
-      REQUIRE(iwdc[s].qitot == iwdc_host(s).qitot);
-      REQUIRE(iwdc[s].qidep == iwdc_host(s).qidep );
-      REQUIRE(iwdc[s].qinuc == iwdc_host(s).qinuc);
-      REQUIRE(iwdc[s].qiberg == iwdc_host(s).qiberg);
-      REQUIRE(iwdc[s].qrcol  == iwdc_host(s).qrcol);
-      REQUIRE(iwdc[s].qccol == iwdc_host(s).qccol);
-      REQUIRE(iwdc[s].qrheti == iwdc_host(s).qrheti);
-      REQUIRE(iwdc[s].qcheti == iwdc_host(s).qcheti);
-      REQUIRE(iwdc[s].qisub == iwdc_host(s).qisub);
-      REQUIRE(iwdc[s].qimlt == iwdc_host(s).qimlt);
+      REQUIRE(iwdc[s].qi == iwdc_host(s).qi);
+      REQUIRE(iwdc[s].qv2qi_vapdep_tend == iwdc_host(s).qv2qi_vapdep_tend );
+      REQUIRE(iwdc[s].qv2qi_nucleat_tend == iwdc_host(s).qv2qi_nucleat_tend);
+      REQUIRE(iwdc[s].qc2qi_berg_tend == iwdc_host(s).qc2qi_berg_tend);
+      REQUIRE(iwdc[s].qr2qi_collect_tend  == iwdc_host(s).qr2qi_collect_tend);
+      REQUIRE(iwdc[s].qc2qi_collect_tend == iwdc_host(s).qc2qi_collect_tend);
+      REQUIRE(iwdc[s].qr2qi_immers_freeze_tend == iwdc_host(s).qr2qi_immers_freeze_tend);
+      REQUIRE(iwdc[s].qc2qi_hetero_freeze_tend == iwdc_host(s).qc2qi_hetero_freeze_tend);
+      REQUIRE(iwdc[s].qi2qv_sublim_tend == iwdc_host(s).qi2qv_sublim_tend);
+      REQUIRE(iwdc[s].qi2qr_melt_tend == iwdc_host(s).qi2qr_melt_tend);
     }
 
   }
@@ -377,7 +377,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     using KTH = KokkosTypes<HostDevice>;
 
     RainWaterConservationData rwdc[max_pack_size] = {
-      // qr, qcaut, qcacc, qimlt, qcshd, rwdc_device(0).dt, qrevp, qrcol, qrheti
+      // qr, qc2qr_autoconv_tend, qc2qr_accret_tend, qi2qr_melt_tend, qc2qr_ice_shed_tend, rwdc_device(0).dt, qr2qv_evap_tend, qr2qi_collect_tend, qr2qi_immers_freeze_tend
       {0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0, 0.0},
       {3.6842105263157901e-6, 1.8910609577335389e-12, 6.5659507736611415e-9, 2.0267066625093075e-3, 1.3686661018890648e-9, 1800.0, 0.0, 0.0, 0.0},
       {1.0000000000000001e-5, 1.3239078166546396e-11, 4.5967389456540289e-8, 0.0, 0.0, 1800.0, 0.0, 1.4619847302347994e-33, 1.3104200383028957e-8},
@@ -417,29 +417,29 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
       const Int offset = i * Spack::n;
 
       // Init pack inputs
-      Spack qr, qcaut, qcacc, qimlt, qcshd, qrevp, qrcol, qrheti;
+      Spack qr, qc2qr_autoconv_tend, qc2qr_accret_tend, qi2qr_melt_tend, qc2qr_ice_shed_tend, qr2qv_evap_tend, qr2qi_collect_tend, qr2qi_immers_freeze_tend;
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         qr[s]     = rwdc_device(vs).qr;
-        qcaut[s]  = rwdc_device(vs).qcaut;
-        qcacc[s]  = rwdc_device(vs).qcacc;
-        qimlt[s]  = rwdc_device(vs).qimlt;
-        qcshd[s]  = rwdc_device(vs).qcshd;
-        qrevp[s]  = rwdc_device(vs).qrevp;
-        qrcol[s]  = rwdc_device(vs).qrcol;
-        qrheti[s] = rwdc_device(vs).qrheti;
+        qc2qr_autoconv_tend[s]  = rwdc_device(vs).qc2qr_autoconv_tend;
+        qc2qr_accret_tend[s]  = rwdc_device(vs).qc2qr_accret_tend;
+        qi2qr_melt_tend[s]  = rwdc_device(vs).qi2qr_melt_tend;
+        qc2qr_ice_shed_tend[s]  = rwdc_device(vs).qc2qr_ice_shed_tend;
+        qr2qv_evap_tend[s]  = rwdc_device(vs).qr2qv_evap_tend;
+        qr2qi_collect_tend[s]  = rwdc_device(vs).qr2qi_collect_tend;
+        qr2qi_immers_freeze_tend[s] = rwdc_device(vs).qr2qi_immers_freeze_tend;
       }
 
-      Functions::rain_water_conservation(qr, qcaut, qcacc, qimlt, qcshd, rwdc_device(0).dt, qrevp, qrcol, qrheti);
+      Functions::rain_water_conservation(qr, qc2qr_autoconv_tend, qc2qr_accret_tend, qi2qr_melt_tend, qc2qr_ice_shed_tend, rwdc_device(0).dt, qr2qv_evap_tend, qr2qi_collect_tend, qr2qi_immers_freeze_tend);
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         rwdc_device(vs).qr     = qr[s];
-        rwdc_device(vs).qcaut  = qcaut[s];
-        rwdc_device(vs).qcacc  = qcacc[s];
-        rwdc_device(vs).qimlt  = qimlt[s];
-        rwdc_device(vs).qcshd  = qcshd[s];
-        rwdc_device(vs).qrevp  = qrevp[s];
-        rwdc_device(vs).qrcol  = qrcol[s];
-        rwdc_device(vs).qrheti = qrheti[s];
+        rwdc_device(vs).qc2qr_autoconv_tend  = qc2qr_autoconv_tend[s];
+        rwdc_device(vs).qc2qr_accret_tend  = qc2qr_accret_tend[s];
+        rwdc_device(vs).qi2qr_melt_tend  = qi2qr_melt_tend[s];
+        rwdc_device(vs).qc2qr_ice_shed_tend  = qc2qr_ice_shed_tend[s];
+        rwdc_device(vs).qr2qv_evap_tend  = qr2qv_evap_tend[s];
+        rwdc_device(vs).qr2qi_collect_tend  = qr2qi_collect_tend[s];
+        rwdc_device(vs).qr2qi_immers_freeze_tend = qr2qi_immers_freeze_tend[s];
       }
 
     });
@@ -450,13 +450,13 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     // Validate results
     for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(rwdc[s].qr     == rwdc_host(s).qr);
-      REQUIRE(rwdc[s].qcaut  == rwdc_host(s).qcaut);
-      REQUIRE(rwdc[s].qcacc  == rwdc_host(s).qcacc);
-      REQUIRE(rwdc[s].qimlt  == rwdc_host(s).qimlt);
-      REQUIRE(rwdc[s].qcshd  == rwdc_host(s).qcshd);
-      REQUIRE(rwdc[s].qrevp  == rwdc_host(s).qrevp);
-      REQUIRE(rwdc[s].qrcol  == rwdc_host(s).qrcol);
-      REQUIRE(rwdc[s].qrheti == rwdc_host(s).qrheti);
+      REQUIRE(rwdc[s].qc2qr_autoconv_tend  == rwdc_host(s).qc2qr_autoconv_tend);
+      REQUIRE(rwdc[s].qc2qr_accret_tend  == rwdc_host(s).qc2qr_accret_tend);
+      REQUIRE(rwdc[s].qi2qr_melt_tend  == rwdc_host(s).qi2qr_melt_tend);
+      REQUIRE(rwdc[s].qc2qr_ice_shed_tend  == rwdc_host(s).qc2qr_ice_shed_tend);
+      REQUIRE(rwdc[s].qr2qv_evap_tend  == rwdc_host(s).qr2qv_evap_tend);
+      REQUIRE(rwdc[s].qr2qi_collect_tend  == rwdc_host(s).qr2qi_collect_tend);
+      REQUIRE(rwdc[s].qr2qi_immers_freeze_tend == rwdc_host(s).qr2qi_immers_freeze_tend);
     }
   }
 
@@ -477,104 +477,104 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
 
     constexpr Scalar nmltratio     = C::nmltratio;
     constexpr Scalar dt            = 1.8000E+03;
-    constexpr bool   log_predictNc = true;
+    constexpr bool   do_predict_nc = true;
 
     //fortran generated data is input to the following
     P3UpdatePrognosticIceData pupidc[max_pack_size] = {
 
       {4.9078E-19, 1.5312E-09, 4.4387E-09, 3.7961E+06, 1.7737E-04, 0.0000E+00, 3.8085E-08, 5.1281E+04, 1.9251E-15,
        3.4778E-04, 3.5801E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.1386E-07, 0.0000E+00, 0.0000E+00, 2.7053E-02,
-       0.0000E+00, 1.9209E-10, 1.0686E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       0.0000E+00, 1.9209E-10, 1.0686E+00, 3.3370E+05, 2.8347E+06, do_predict_nc,    true,         dt, nmltratio,
        4.5312E+02, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        6.4286E-05, 1.0000E-02},
 
       {2.1097E-18, 2.7648E-09, 3.8261E-09, 3.7754E+06, 6.8685E-04, 0.0000E+00, 4.1018E-08, 5.1227E+04, 4.8876E-15,
        1.3468E-03, 2.8059E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 7.1049E-07, 0.0000E+00, 0.0000E+00, 2.4547E-02,
-       0.0000E+00, 2.8615E-10, 1.0741E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       0.0000E+00, 2.8615E-10, 1.0741E+00, 3.3370E+05, 2.8347E+06, do_predict_nc,    true,         dt, nmltratio,
        3.4890E+02, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        7.1429E-05, 1.0000E-02},
 
       {8.9820E-18, 4.2529E-09, 2.9520E-09, 3.7537E+06, 2.6598E-03, 0.0000E+00, 4.3700E-08, 5.1171E+04, 1.4266E-14,
        5.2153E-03, 1.9880E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 9.0244E-07, 0.0000E+00, 0.0000E+00, 2.1083E-02,
-       0.0000E+00, 3.7631E-10, 1.0796E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       0.0000E+00, 3.7631E-10, 1.0796E+00, 3.3370E+05, 2.8347E+06, do_predict_nc,    true,         dt, nmltratio,
        2.8656E+02, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        7.8571E-05, 1.0000E-02},
 
       {3.7942E-17, 6.0115E-09, 1.8004E-09, 3.7310E+06, 1.0300E-02, 0.0000E+00, 4.6119E-08, 5.1112E+04, 4.4518E-14,
        2.0196E-02, 1.1226E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 1.0879E-06, 0.0000E+00, 0.0000E+00, 1.7646E-02,
-       0.0000E+00, 4.5891E-10, 1.0853E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       0.0000E+00, 4.5891E-10, 1.0853E+00, 3.3370E+05, 2.8347E+06, do_predict_nc,    true,         dt, nmltratio,
        2.4570E+02, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        8.5714E-05, 1.0000E-02},
 
       {4.9078E-19, 1.5312E-09, 4.4387E-09, 3.7961E+06, 1.7737E-04, 0.0000E+00, 3.8085E-08, 5.1281E+04, 1.9251E-15,
        3.4778E-04, 3.5801E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.1386E-07, 0.0000E+00, 0.0000E+00, 2.7053E-02,
-       0.0000E+00, 1.9209E-10, 1.0686E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       0.0000E+00, 1.9209E-10, 1.0686E+00, 3.3370E+05, 2.8347E+06, do_predict_nc,    true,         dt, nmltratio,
        4.5312E+02, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        6.4286E-05, 1.0000E-02},
 
       {2.1097E-18, 2.7648E-09, 3.8261E-09, 3.7754E+06, 6.8685E-04, 0.0000E+00, 4.1018E-08, 5.1227E+04, 4.8876E-15,
        1.3468E-03, 2.8059E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 7.1049E-07, 0.0000E+00, 0.0000E+00, 2.4547E-02,
-       0.0000E+00, 2.8615E-10, 1.0741E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       0.0000E+00, 2.8615E-10, 1.0741E+00, 3.3370E+05, 2.8347E+06, do_predict_nc,    true,         dt, nmltratio,
        3.4890E+02, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        7.1429E-05, 1.0000E-02},
 
       {8.9820E-18, 4.2529E-09, 2.9520E-09, 3.7537E+06, 2.6598E-03, 0.0000E+00, 4.3700E-08, 5.1171E+04, 1.4266E-14,
        5.2153E-03, 1.9880E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 9.0244E-07, 0.0000E+00, 0.0000E+00, 2.1083E-02,
-       0.0000E+00, 3.7631E-10, 1.0796E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       0.0000E+00, 3.7631E-10, 1.0796E+00, 3.3370E+05, 2.8347E+06, do_predict_nc,    true,         dt, nmltratio,
        2.8656E+02, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        7.8571E-05, 1.0000E-02},
 
       {3.7942E-17, 6.0115E-09, 1.8004E-09, 3.7310E+06, 1.0300E-02, 0.0000E+00, 4.6119E-08, 5.1112E+04, 4.4518E-14,
        2.0196E-02, 1.1226E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 1.0879E-06, 0.0000E+00, 0.0000E+00, 1.7646E-02,
-       0.0000E+00, 4.5891E-10, 1.0853E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       0.0000E+00, 4.5891E-10, 1.0853E+00, 3.3370E+05, 2.8347E+06, do_predict_nc,    true,         dt, nmltratio,
        2.4570E+02, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        8.5714E-05, 1.0000E-02},
 
       {4.9078E-19, 1.5312E-09, 4.4387E-09, 3.7961E+06, 1.7737E-04, 0.0000E+00, 3.8085E-08, 5.1281E+04, 1.9251E-15,
        3.4778E-04, 3.5801E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.1386E-07, 0.0000E+00, 0.0000E+00, 2.7053E-02,
-       0.0000E+00, 1.9209E-10, 1.0686E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       0.0000E+00, 1.9209E-10, 1.0686E+00, 3.3370E+05, 2.8347E+06, do_predict_nc,    true,         dt, nmltratio,
        4.5312E+02, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        6.4286E-05, 1.0000E-02},
 
       {2.1097E-18, 2.7648E-09, 3.8261E-09, 3.7754E+06, 6.8685E-04, 0.0000E+00, 4.1018E-08, 5.1227E+04, 4.8876E-15,
        1.3468E-03, 2.8059E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 7.1049E-07, 0.0000E+00, 0.0000E+00, 2.4547E-02,
-       0.0000E+00, 2.8615E-10, 1.0741E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       0.0000E+00, 2.8615E-10, 1.0741E+00, 3.3370E+05, 2.8347E+06, do_predict_nc,    true,         dt, nmltratio,
        3.4890E+02, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        7.1429E-05, 1.0000E-02},
 
       {8.9820E-18, 4.2529E-09, 2.9520E-09, 3.7537E+06, 2.6598E-03, 0.0000E+00, 4.3700E-08, 5.1171E+04, 1.4266E-14,
        5.2153E-03, 1.9880E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 9.0244E-07, 0.0000E+00, 0.0000E+00, 2.1083E-02,
-       0.0000E+00, 3.7631E-10, 1.0796E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       0.0000E+00, 3.7631E-10, 1.0796E+00, 3.3370E+05, 2.8347E+06, do_predict_nc,    true,         dt, nmltratio,
        2.8656E+02, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        7.8571E-05, 1.0000E-02},
 
       {3.7942E-17, 6.0115E-09, 1.8004E-09, 3.7310E+06, 1.0300E-02, 0.0000E+00, 4.6119E-08, 5.1112E+04, 4.4518E-14,
        2.0196E-02, 1.1226E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 1.0879E-06, 0.0000E+00, 0.0000E+00, 1.7646E-02,
-       0.0000E+00, 4.5891E-10, 1.0853E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       0.0000E+00, 4.5891E-10, 1.0853E+00, 3.3370E+05, 2.8347E+06, do_predict_nc,    true,         dt, nmltratio,
        2.4570E+02, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        8.5714E-05, 1.0000E-02},
 
       {4.9078E-19, 1.5312E-09, 4.4387E-09, 3.7961E+06, 1.7737E-04, 0.0000E+00, 3.8085E-08, 5.1281E+04, 1.9251E-15,
        3.4778E-04, 3.5801E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.1386E-07, 0.0000E+00, 0.0000E+00, 2.7053E-02,
-       0.0000E+00, 1.9209E-10, 1.0686E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       0.0000E+00, 1.9209E-10, 1.0686E+00, 3.3370E+05, 2.8347E+06, do_predict_nc,    true,         dt, nmltratio,
        4.5312E+02, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        6.4286E-05, 1.0000E-02},
 
       {2.1097E-18, 2.7648E-09, 3.8261E-09, 3.7754E+06, 6.8685E-04, 0.0000E+00, 4.1018E-08, 5.1227E+04, 4.8876E-15,
        1.3468E-03, 2.8059E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 7.1049E-07, 0.0000E+00, 0.0000E+00, 2.4547E-02,
-       0.0000E+00, 2.8615E-10, 1.0741E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       0.0000E+00, 2.8615E-10, 1.0741E+00, 3.3370E+05, 2.8347E+06, do_predict_nc,    true,         dt, nmltratio,
        3.4890E+02, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        7.1429E-05, 1.0000E-02},
 
       {8.9820E-18, 4.2529E-09, 2.9520E-09, 3.7537E+06, 2.6598E-03, 0.0000E+00, 4.3700E-08, 5.1171E+04, 1.4266E-14,
        5.2153E-03, 1.9880E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 9.0244E-07, 0.0000E+00, 0.0000E+00, 2.1083E-02,
-       0.0000E+00, 3.7631E-10, 1.0796E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       0.0000E+00, 3.7631E-10, 1.0796E+00, 3.3370E+05, 2.8347E+06, do_predict_nc,    true,         dt, nmltratio,
        2.8656E+02, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        7.8571E-05, 1.0000E-02},
 
       {3.7942E-17, 6.0115E-09, 1.8004E-09, 3.7310E+06, 1.0300E-02, 0.0000E+00, 4.6119E-08, 5.1112E+04, 4.4518E-14,
        2.0196E-02, 1.1226E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 1.0879E-06, 0.0000E+00, 0.0000E+00, 1.7646E-02,
-       0.0000E+00, 4.5891E-10, 1.0853E+00, 3.3370E+05, 2.8347E+06, log_predictNc,    true,         dt, nmltratio,
+       0.0000E+00, 4.5891E-10, 1.0853E+00, 3.3370E+05, 2.8347E+06, do_predict_nc,    true,         dt, nmltratio,
        2.4570E+02, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
        8.5714E-05, 1.0000E-02},
     };
@@ -597,64 +597,64 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
       const Int offset = i * Spack::n;
 
       // Init pack inputs
-      Spack qcheti, qccol, qcshd, nccol, ncheti, ncshdc, qrcol, nrcol, qrheti, nrheti, nrshdr,
-        qimlt, nimlt, qisub, qidep, qinuc, ninuc, nislf, nisub, qiberg, exner, xlf, xxls,
-        rhorime_c, th, qv, qc, nc, qr, nr, qitot, nitot, qirim, birim;
+      Spack qc2qi_hetero_freeze_tend, qc2qi_collect_tend, qc2qr_ice_shed_tend, nc_collect_tend, nc2ni_immers_freeze_tend, ncshdc, qr2qi_collect_tend, nr_collect_tend, qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend, nr_ice_shed_tend,
+        qi2qr_melt_tend, ni2nr_melt_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend, qv2qi_nucleat_tend, ni_nucleat_tend, ni_selfcollect_tend, ni_sublim_tend, qc2qi_berg_tend, exner, latent_heat_fusion, latent_heat_sublim,
+        rho_qm_cloud, th, qv, qc, nc, qr, nr, qi, ni, qm, bm;
       Scalar dt;
-      bool log_predictNc;
+      bool do_predict_nc;
       Smask log_wetgrowth;
 
       // variables with single values assigned outside of the for loop
       dt            = pupidc_device(0).dt;
-      log_predictNc = pupidc_device(0).log_predictNc;
+      do_predict_nc = pupidc_device(0).do_predict_nc;
 
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        qcheti[s] = pupidc_device(vs).qcheti;
-        qccol[s]  = pupidc_device(vs).qccol;
-        qcshd[s]  = pupidc_device(vs).qcshd;
-        nccol[s]  = pupidc_device(vs).nccol;
-        ncheti[s] = pupidc_device(vs).ncheti;
+        qc2qi_hetero_freeze_tend[s] = pupidc_device(vs).qc2qi_hetero_freeze_tend;
+        qc2qi_collect_tend[s]  = pupidc_device(vs).qc2qi_collect_tend;
+        qc2qr_ice_shed_tend[s]  = pupidc_device(vs).qc2qr_ice_shed_tend;
+        nc_collect_tend[s]  = pupidc_device(vs).nc_collect_tend;
+        nc2ni_immers_freeze_tend[s] = pupidc_device(vs).nc2ni_immers_freeze_tend;
         ncshdc[s] = pupidc_device(vs).ncshdc;
-        qrcol[s]  = pupidc_device(vs).qrcol;
-        nrcol[s]  = pupidc_device(vs).nrcol;
-        qrheti[s] = pupidc_device(vs).qrheti;
-        nrheti[s] = pupidc_device(vs).nrheti;
-        nrshdr[s] = pupidc_device(vs).nrshdr;
-        qimlt[s]  = pupidc_device(vs).qimlt;
-        nimlt[s]  = pupidc_device(vs).nimlt;
-        qisub[s]  = pupidc_device(vs).qisub;
-        qidep[s]  = pupidc_device(vs).qidep;
-        qinuc[s]  = pupidc_device(vs).qinuc;
-        ninuc[s]  = pupidc_device(vs).ninuc;
-        nislf[s]  = pupidc_device(vs).nislf;
-        nisub[s]  = pupidc_device(vs).nisub;
-        qiberg[s] = pupidc_device(vs).qiberg;
+        qr2qi_collect_tend[s]  = pupidc_device(vs).qr2qi_collect_tend;
+        nr_collect_tend[s]  = pupidc_device(vs).nr_collect_tend;
+        qr2qi_immers_freeze_tend[s] = pupidc_device(vs).qr2qi_immers_freeze_tend;
+        nr2ni_immers_freeze_tend[s] = pupidc_device(vs).nr2ni_immers_freeze_tend;
+        nr_ice_shed_tend[s] = pupidc_device(vs).nr_ice_shed_tend;
+        qi2qr_melt_tend[s]  = pupidc_device(vs).qi2qr_melt_tend;
+        ni2nr_melt_tend[s]  = pupidc_device(vs).ni2nr_melt_tend;
+        qi2qv_sublim_tend[s]  = pupidc_device(vs).qi2qv_sublim_tend;
+        qv2qi_vapdep_tend[s]  = pupidc_device(vs).qv2qi_vapdep_tend;
+        qv2qi_nucleat_tend[s]  = pupidc_device(vs).qv2qi_nucleat_tend;
+        ni_nucleat_tend[s]  = pupidc_device(vs).ni_nucleat_tend;
+        ni_selfcollect_tend[s]  = pupidc_device(vs).ni_selfcollect_tend;
+        ni_sublim_tend[s]  = pupidc_device(vs).ni_sublim_tend;
+        qc2qi_berg_tend[s] = pupidc_device(vs).qc2qi_berg_tend;
         exner[s]  = pupidc_device(vs).exner;
-        xlf[s]    = pupidc_device(vs).xlf;
-        xxls[s]   = pupidc_device(vs).xxls;
+        latent_heat_fusion[s]    = pupidc_device(vs).latent_heat_fusion;
+        latent_heat_sublim[s]   = pupidc_device(vs).latent_heat_sublim;
 
-        rhorime_c[s] = pupidc_device(vs).rhorime_c;
+        rho_qm_cloud[s] = pupidc_device(vs).rho_qm_cloud;
         th[s]    = pupidc_device(vs).th;
         qv[s]    = pupidc_device(vs).qv;
         qc[s]    = pupidc_device(vs).qc;
         nc[s]    = pupidc_device(vs).nc;
         qr[s]    = pupidc_device(vs).qr;
         nr[s]    = pupidc_device(vs).nr;
-        qitot[s] = pupidc_device(vs).qitot;
-        nitot[s] = pupidc_device(vs).nitot;
-        qirim[s] = pupidc_device(vs).qirim;
-        birim[s] = pupidc_device(vs).birim;
+        qi[s] = pupidc_device(vs).qi;
+        ni[s] = pupidc_device(vs).ni;
+        qm[s] = pupidc_device(vs).qm;
+        bm[s] = pupidc_device(vs).bm;
 
         log_wetgrowth.set(s, pupidc_device(vs).log_wetgrowth);
       }
 
-      Functions::update_prognostic_ice(qcheti, qccol, qcshd, nccol, ncheti,ncshdc,
-                                       qrcol,   nrcol,  qrheti,  nrheti,  nrshdr,
-                                       qimlt,  nimlt,  qisub,  qidep,  qinuc,  ninuc,
-                                       nislf,  nisub,  qiberg,  exner,  xxls,  xlf,
-                                       log_predictNc, log_wetgrowth,  dt,  pupidc_device(0).nmltratio,
-                                       rhorime_c, th, qv, qitot, nitot, qirim,
-                                       birim, qc, nc, qr, nr);
+      Functions::update_prognostic_ice(qc2qi_hetero_freeze_tend, qc2qi_collect_tend, qc2qr_ice_shed_tend, nc_collect_tend, nc2ni_immers_freeze_tend,ncshdc,
+                                       qr2qi_collect_tend,   nr_collect_tend,  qr2qi_immers_freeze_tend,  nr2ni_immers_freeze_tend,  nr_ice_shed_tend,
+                                       qi2qr_melt_tend,  ni2nr_melt_tend,  qi2qv_sublim_tend,  qv2qi_vapdep_tend,  qv2qi_nucleat_tend,  ni_nucleat_tend,
+                                       ni_selfcollect_tend,  ni_sublim_tend,  qc2qi_berg_tend,  exner,  latent_heat_sublim,  latent_heat_fusion,
+                                       do_predict_nc, log_wetgrowth,  dt,  pupidc_device(0).nmltratio,
+                                       rho_qm_cloud, th, qv, qi, ni, qm,
+                                       bm, qc, nc, qr, nr);
 
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
@@ -664,10 +664,10 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
         pupidc_device(vs).nc    = nc[s];
         pupidc_device(vs).qr    = qr[s];
         pupidc_device(vs).nr    = nr[s];
-        pupidc_device(vs).qitot = qitot[s];
-        pupidc_device(vs).nitot = nitot[s];
-        pupidc_device(vs).qirim = qirim[s];
-        pupidc_device(vs).birim = birim[s];
+        pupidc_device(vs).qi = qi[s];
+        pupidc_device(vs).ni = ni[s];
+        pupidc_device(vs).qm = qm[s];
+        pupidc_device(vs).bm = bm[s];
       }
 
     });
@@ -683,10 +683,10 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
       REQUIRE(pupidc[s].qr    == pupidc_host(s).qr);
       REQUIRE(pupidc[s].qv    == pupidc_host(s).qv);
       REQUIRE(pupidc[s].nc    == pupidc_host(s).nc);
-      REQUIRE(pupidc[s].qitot == pupidc_host(s).qitot);
-      REQUIRE(pupidc[s].nitot == pupidc_host(s).nitot);
-      REQUIRE(pupidc[s].qirim == pupidc_host(s).qirim);
-      REQUIRE(pupidc[s].birim == pupidc_host(s).birim );
+      REQUIRE(pupidc[s].qi == pupidc_host(s).qi);
+      REQUIRE(pupidc[s].ni == pupidc_host(s).ni);
+      REQUIRE(pupidc[s].qm == pupidc_host(s).qm);
+      REQUIRE(pupidc[s].bm == pupidc_host(s).bm );
     }
   }
 
@@ -703,7 +703,7 @@ struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables
 
     //fortran generated data is input to the following
     GetTimeSpacePhysVarsData gtspvd[max_pack_size] = {
-      //        t,       pres,        rho,       xxlv,       xxls,        qvs,        qvi
+      //        t,       pres,        rho,       latent_heat_vapor,       latent_heat_sublim,        qv_sat_l,        qv_sat_i
       {2.9792E+02, 9.8711E+04, 1.1532E+00, 2.5010E+06, 2.8347E+06, 2.0321E-02, 2.0321E-02},
       {2.9792E+02, 9.8711E+04, 1.1532E+00, 2.5010E+06, 2.8347E+06, 2.0321E-02, 2.0321E-02},
       {2.9583E+02, 9.7322E+04, 1.1449E+00, 2.5010E+06, 2.8347E+06, 1.8120E-02, 1.8120E-02},
@@ -740,16 +740,16 @@ struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables
       const Int offset = i * Spack::n;
 
       // Init pack inputs
-      Spack t, pres, rho, xxlv, xxls, qvs, qvi, mu, dv, sc, dqsdt, dqsidt, ab, abi, kap, eii;
+      Spack t, pres, rho, latent_heat_vapor, latent_heat_sublim, qv_sat_l, qv_sat_i, mu, dv, sc, dqsdt, dqsidt, ab, abi, kap, eii;
 
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         t[s]      = gtspvd_device(vs).t;
         pres[s]   = gtspvd_device(vs).pres;
         rho[s]    = gtspvd_device(vs).rho;
-        xxlv[s]   = gtspvd_device(vs).xxlv;
-        xxls[s]   = gtspvd_device(vs).xxls;
-        qvs[s]    = gtspvd_device(vs).qvs;
-        qvi[s]    = gtspvd_device(vs).qvi;
+        latent_heat_vapor[s]   = gtspvd_device(vs).latent_heat_vapor;
+        latent_heat_sublim[s]   = gtspvd_device(vs).latent_heat_sublim;
+        qv_sat_l[s]    = gtspvd_device(vs).qv_sat_l;
+        qv_sat_i[s]    = gtspvd_device(vs).qv_sat_i;
 
         mu[s]     = gtspvd_device(vs).mu;
         dv[s]     = gtspvd_device(vs).dv;
@@ -762,7 +762,7 @@ struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables
         eii[s]    = gtspvd_device(vs).eii;
       }
 
-      Functions::get_time_space_phys_variables(t, pres, rho, xxlv, xxls, qvs, qvi, mu, dv, sc, dqsdt, dqsidt,
+      Functions::get_time_space_phys_variables(t, pres, rho, latent_heat_vapor, latent_heat_sublim, qv_sat_l, qv_sat_i, mu, dv, sc, dqsdt, dqsidt,
                                                ab, abi, kap, eii);
 
       // Copy results back into views
@@ -770,10 +770,10 @@ struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables
         gtspvd_device(vs).t      = t[s];
         gtspvd_device(vs).pres   = pres[s];
         gtspvd_device(vs).rho    = rho[s];
-        gtspvd_device(vs).xxlv   = xxlv[s];
-        gtspvd_device(vs).xxls   = xxls[s];
-        gtspvd_device(vs).qvs    = qvs[s];
-        gtspvd_device(vs).qvi    = qvi[s];
+        gtspvd_device(vs).latent_heat_vapor   = latent_heat_vapor[s];
+        gtspvd_device(vs).latent_heat_sublim   = latent_heat_sublim[s];
+        gtspvd_device(vs).qv_sat_l    = qv_sat_l[s];
+        gtspvd_device(vs).qv_sat_i    = qv_sat_i[s];
 
         gtspvd_device(vs).mu     = mu[s];
         gtspvd_device(vs).dv     = dv[s];
@@ -854,40 +854,40 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip
       const Int offset = i * Spack::n;
 
       // Init pack inputs
-      Spack qr_incld, qc_incld, nr_incld, qitot_incld, lcldm, rcldm, qvs, ab, epsr, qv, qrevp, nrevp;
+      Spack qr_incld, qc_incld, nr_incld, qi_incld, cld_frac_l, cld_frac_r, qv_sat_l, ab, epsr, qv, qr2qv_evap_tend, nr_evap_tend;
 
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         qr_incld[s]    = espd_device(vs).qr_incld;
         qc_incld[s]    = espd_device(vs).qc_incld;
         nr_incld[s]    = espd_device(vs).nr_incld;
-        qitot_incld[s] = espd_device(vs).qitot_incld;
-        lcldm[s]       = espd_device(vs).lcldm;
-        rcldm[s]       = espd_device(vs).rcldm;
-        qvs[s]         = espd_device(vs).qvs;
+        qi_incld[s] = espd_device(vs).qi_incld;
+        cld_frac_l[s]       = espd_device(vs).cld_frac_l;
+        cld_frac_r[s]       = espd_device(vs).cld_frac_r;
+        qv_sat_l[s]         = espd_device(vs).qv_sat_l;
         ab[s]          = espd_device(vs).ab;
         epsr[s]        = espd_device(vs).epsr;
         qv[s]          = espd_device(vs).qv;
-        qrevp[s]       = espd_device(vs).qrevp;
-        nrevp[s]       = espd_device(vs).nrevp;
+        qr2qv_evap_tend[s]       = espd_device(vs).qr2qv_evap_tend;
+        nr_evap_tend[s]       = espd_device(vs).nr_evap_tend;
       }
 
-      Functions::evaporate_sublimate_precip(qr_incld, qc_incld, nr_incld, qitot_incld,  lcldm, rcldm, qvs, ab,
-                                            epsr, qv, qrevp, nrevp);
+      Functions::evaporate_sublimate_precip(qr_incld, qc_incld, nr_incld, qi_incld,  cld_frac_l, cld_frac_r, qv_sat_l, ab,
+                                            epsr, qv, qr2qv_evap_tend, nr_evap_tend);
 
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         espd_device(vs).qr_incld    = qr_incld[s];
         espd_device(vs).qc_incld    = qc_incld[s];
         espd_device(vs).nr_incld    = nr_incld[s];
-        espd_device(vs).qitot_incld = qitot_incld[s];
-        espd_device(vs).lcldm       = lcldm[s];
-        espd_device(vs).rcldm       = rcldm[s];
-        espd_device(vs).qvs         = qvs[s];
+        espd_device(vs).qi_incld = qi_incld[s];
+        espd_device(vs).cld_frac_l       = cld_frac_l[s];
+        espd_device(vs).cld_frac_r       = cld_frac_r[s];
+        espd_device(vs).qv_sat_l         = qv_sat_l[s];
         espd_device(vs).ab          = ab[s];
         espd_device(vs).epsr        = epsr[s];
         espd_device(vs).qv          = qv[s];
-        espd_device(vs).qrevp       = qrevp[s];
-        espd_device(vs).nrevp       = nrevp[s];
+        espd_device(vs).qr2qv_evap_tend       = qr2qv_evap_tend[s];
+        espd_device(vs).nr_evap_tend       = nr_evap_tend[s];
       }
     });
 
@@ -896,8 +896,8 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip
 
     // Validate results
     for (Int s = 0; s < max_pack_size; ++s) {
-      REQUIRE(espd[s].qrevp == espd_host(s).qrevp);
-      REQUIRE(espd[s].nrevp == espd_host(s).nrevp);
+      REQUIRE(espd[s].qr2qv_evap_tend == espd_host(s).qr2qv_evap_tend);
+      REQUIRE(espd[s].nr_evap_tend == espd_host(s).nr_evap_tend);
     }
   }
 
@@ -998,28 +998,28 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq
       const Int offset = i * Spack::n;
 
       // Init pack inputs
-      Spack qcacc, ncacc, qcaut, ncautc, ncautr, ncslf, qrevp, nrevp, nrslf, inv_rho,
-        exner, xxlv, th, qv, qc, nc, qr, nr;
-      bool log_predictNc;
+      Spack qc2qr_accret_tend, nc_accret_tend, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, nc_selfcollect_tend, qr2qv_evap_tend, nr_evap_tend, nr_selfcollect_tend, inv_rho,
+        exner, latent_heat_vapor, th, qv, qc, nc, qr, nr;
+      bool do_predict_nc;
       Scalar dt;
 
       // variables with single values assigned outside of the for loop
       dt            = pupldc_device(0).dt;
-      log_predictNc = pupldc_device(0).log_predictNc;
+      do_predict_nc = pupldc_device(0).do_predict_nc;
 
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        qcacc[s]   = pupldc_device(vs).qcacc;
-        ncacc[s]   = pupldc_device(vs).ncacc;
-        qcaut[s]   = pupldc_device(vs).qcaut;
-        ncautc[s]  = pupldc_device(vs).ncautc;
+        qc2qr_accret_tend[s]   = pupldc_device(vs).qc2qr_accret_tend;
+        nc_accret_tend[s]   = pupldc_device(vs).nc_accret_tend;
+        qc2qr_autoconv_tend[s]   = pupldc_device(vs).qc2qr_autoconv_tend;
+        nc2nr_autoconv_tend[s]  = pupldc_device(vs).nc2nr_autoconv_tend;
         ncautr[s]  = pupldc_device(vs).ncautr;
-        ncslf[s]   = pupldc_device(vs).ncslf;
-        qrevp[s]   = pupldc_device(vs).qrevp;
-        nrevp[s]   = pupldc_device(vs).nrevp;
-        nrslf[s]   = pupldc_device(vs).nrslf;
+        nc_selfcollect_tend[s]   = pupldc_device(vs).nc_selfcollect_tend;
+        qr2qv_evap_tend[s]   = pupldc_device(vs).qr2qv_evap_tend;
+        nr_evap_tend[s]   = pupldc_device(vs).nr_evap_tend;
+        nr_selfcollect_tend[s]   = pupldc_device(vs).nr_selfcollect_tend;
         inv_rho[s] = pupldc_device(vs).inv_rho;
         exner[s]   = pupldc_device(vs).exner;
-        xxlv[s]    = pupldc_device(vs).xxlv;
+        latent_heat_vapor[s]    = pupldc_device(vs).latent_heat_vapor;
 
         th[s]      = pupldc_device(vs).th;
         qv[s]      = pupldc_device(vs).qv;
@@ -1029,27 +1029,27 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq
         nr[s]      = pupldc_device(vs).nr;
       }
 
-      Functions::update_prognostic_liquid(qcacc, ncacc, qcaut, ncautc, ncautr, ncslf,
-                                          qrevp, nrevp, nrslf, log_predictNc, inv_rho, exner,
-                                          xxlv, dt, th, qv, qc, nc, qr, nr);
+      Functions::update_prognostic_liquid(qc2qr_accret_tend, nc_accret_tend, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, nc_selfcollect_tend,
+                                          qr2qv_evap_tend, nr_evap_tend, nr_selfcollect_tend, do_predict_nc, inv_rho, exner,
+                                          latent_heat_vapor, dt, th, qv, qc, nc, qr, nr);
 
       // Copy results back into views
       pupldc_device(0).dt            = dt;
-      pupldc_device(0).log_predictNc = log_predictNc;
+      pupldc_device(0).do_predict_nc = do_predict_nc;
 
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        pupldc_device(vs).qcacc   = qcacc[s];
-        pupldc_device(vs).ncacc   = ncacc[s];
-        pupldc_device(vs).qcaut   = qcaut[s];
-        pupldc_device(vs).ncautc  = ncautc[s];
+        pupldc_device(vs).qc2qr_accret_tend   = qc2qr_accret_tend[s];
+        pupldc_device(vs).nc_accret_tend   = nc_accret_tend[s];
+        pupldc_device(vs).qc2qr_autoconv_tend   = qc2qr_autoconv_tend[s];
+        pupldc_device(vs).nc2nr_autoconv_tend  = nc2nr_autoconv_tend[s];
         pupldc_device(vs).ncautr  = ncautr[s];
-        pupldc_device(vs).ncslf   = ncslf[s];
-        pupldc_device(vs).qrevp   = qrevp[s];
-        pupldc_device(vs).nrevp   = nrevp[s];
-        pupldc_device(vs).nrslf   = nrslf[s];
+        pupldc_device(vs).nc_selfcollect_tend   = nc_selfcollect_tend[s];
+        pupldc_device(vs).qr2qv_evap_tend   = qr2qv_evap_tend[s];
+        pupldc_device(vs).nr_evap_tend   = nr_evap_tend[s];
+        pupldc_device(vs).nr_selfcollect_tend   = nr_selfcollect_tend[s];
         pupldc_device(vs).inv_rho = inv_rho[s];
         pupldc_device(vs).exner   = exner[s];
-        pupldc_device(vs).xxlv    = xxlv[s];
+        pupldc_device(vs).latent_heat_vapor    = latent_heat_vapor[s];
 
         pupldc_device(vs).th      = th[s];
         pupldc_device(vs).qv      = qv[s];
@@ -1126,40 +1126,40 @@ struct UnitWrap::UnitTest<D>::TestP3IceDepSublimation
       const Int offset = i * Spack::n;
 
       // Init pack inputs
-      Spack qitot_incld, nitot_incld, t, qvs, qvi, epsi, abi, qv, qidep, qisub, nisub, qiberg;
+      Spack qi_incld, ni_incld, t, qv_sat_l, qv_sat_i, epsi, abi, qv, qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend;
 
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        qitot_incld[s] = ids_device(vs).qitot_incld;
-        nitot_incld[s] = ids_device(vs).nitot_incld;
+        qi_incld[s] = ids_device(vs).qi_incld;
+        ni_incld[s] = ids_device(vs).ni_incld;
         t[s]           = ids_device(vs).t;
-        qvs[s]         = ids_device(vs).qvs;
-        qvi[s]         = ids_device(vs).qvi;
+        qv_sat_l[s]         = ids_device(vs).qv_sat_l;
+        qv_sat_i[s]         = ids_device(vs).qv_sat_i;
         epsi[s]        = ids_device(vs).epsi;
         abi[s]         = ids_device(vs).abi;
         qv[s]          = ids_device(vs).qv;
-        qidep[s]       = ids_device(vs).qidep;
-        qisub[s]       = ids_device(vs).qisub;
-        nisub[s]       = ids_device(vs).nisub;
-        qiberg[s]      = ids_device(vs).qiberg;
+        qv2qi_vapdep_tend[s]       = ids_device(vs).qv2qi_vapdep_tend;
+        qi2qv_sublim_tend[s]       = ids_device(vs).qi2qv_sublim_tend;
+        ni_sublim_tend[s]       = ids_device(vs).ni_sublim_tend;
+        qc2qi_berg_tend[s]      = ids_device(vs).qc2qi_berg_tend;
       }
 
-      Functions::ice_deposition_sublimation(qitot_incld, nitot_incld, t, qvs, qvi, epsi, abi, qv,
-                                            qidep, qisub, nisub, qiberg);
+      Functions::ice_deposition_sublimation(qi_incld, ni_incld, t, qv_sat_l, qv_sat_i, epsi, abi, qv,
+                                            qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend);
 
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        ids_device(vs).qitot_incld = qitot_incld[s];
-        ids_device(vs).nitot_incld = nitot_incld[s];
+        ids_device(vs).qi_incld = qi_incld[s];
+        ids_device(vs).ni_incld = ni_incld[s];
         ids_device(vs).t           = t[s];
-        ids_device(vs).qvs         = qvs[s];
-        ids_device(vs).qvi         = qvi[s];
+        ids_device(vs).qv_sat_l         = qv_sat_l[s];
+        ids_device(vs).qv_sat_i         = qv_sat_i[s];
         ids_device(vs).epsi        = epsi[s];
         ids_device(vs).abi         = abi[s];
         ids_device(vs).qv          = qv[s];
-        ids_device(vs).qidep       = qidep[s];
-        ids_device(vs).qisub       = qisub[s];
-        ids_device(vs).nisub       = nisub[s];
-        ids_device(vs).qiberg      = qiberg[s];
+        ids_device(vs).qv2qi_vapdep_tend       = qv2qi_vapdep_tend[s];
+        ids_device(vs).qi2qv_sublim_tend       = qi2qv_sublim_tend[s];
+        ids_device(vs).ni_sublim_tend       = ni_sublim_tend[s];
+        ids_device(vs).qc2qi_berg_tend      = qc2qi_berg_tend[s];
       }
     });
 
@@ -1168,10 +1168,10 @@ struct UnitWrap::UnitTest<D>::TestP3IceDepSublimation
 
     // Validate results
     for (Int s = 0; s < max_pack_size; ++s) {
-      REQUIRE(ids[s].qidep  == ids_host(s).qidep);
-      REQUIRE(ids[s].qisub  == ids_host(s).qisub);
-      REQUIRE(ids[s].nisub  == ids_host(s).nisub);
-      REQUIRE(ids[s].qiberg == ids_host(s).qiberg);
+      REQUIRE(ids[s].qv2qi_vapdep_tend  == ids_host(s).qv2qi_vapdep_tend);
+      REQUIRE(ids[s].qi2qv_sublim_tend  == ids_host(s).qi2qv_sublim_tend);
+      REQUIRE(ids[s].ni_sublim_tend  == ids_host(s).ni_sublim_tend);
+      REQUIRE(ids[s].qc2qi_berg_tend == ids_host(s).qc2qi_berg_tend);
     }
   }
 
@@ -1189,7 +1189,7 @@ struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi
     constexpr Scalar max_total_Ni = C::max_total_Ni;
 
     ImposeMaxTotalNiData dc[max_pack_size]= {
-      // nitot_local, max_total_Ni, inv_rho_local
+      // ni_local, max_total_Ni, inv_rho_local
       {0.000E0, max_total_Ni, 5.466E3},
       {3.358E4, max_total_Ni, 9.691E-1},
       {0.000E0, max_total_Ni, 9.105E-1},
@@ -1229,16 +1229,16 @@ struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi
       const Int offset = i * Spack::n;
 
       // Init pack inputs
-      Spack nitot_local, inv_rho_local;
+      Spack ni_local, inv_rho_local;
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        nitot_local[s]   = dc_device(vs).nitot_local;
+        ni_local[s]   = dc_device(vs).ni_local;
         inv_rho_local[s] = dc_device(vs).inv_rho_local;
       }
 
-      Functions::impose_max_total_Ni(nitot_local, dc_device(0).max_total_Ni, inv_rho_local);
+      Functions::impose_max_total_Ni(ni_local, dc_device(0).max_total_Ni, inv_rho_local);
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        dc_device(vs).nitot_local   = nitot_local[s];
+        dc_device(vs).ni_local   = ni_local[s];
         dc_device(vs).inv_rho_local = inv_rho_local[s];
       }
     });
@@ -1248,7 +1248,7 @@ struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi
 
     // Validate results
     for (Int s = 0; s < max_pack_size; ++s) {
-      REQUIRE(dc[s].nitot_local   == dc_host(s).nitot_local);
+      REQUIRE(dc[s].ni_local   == dc_host(s).ni_local);
       REQUIRE(dc[s].inv_rho_local == dc_host(s).inv_rho_local);
     }
   }

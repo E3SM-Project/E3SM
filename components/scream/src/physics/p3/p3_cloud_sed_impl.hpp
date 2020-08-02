@@ -18,13 +18,13 @@ void Functions<S,D>
     const uview_1d<Spack>& qc_incld,
     const uview_1d<const Spack>& rho,
     const uview_1d<const Spack>& inv_rho,
-    const uview_1d<const Spack>& lcldm,
+    const uview_1d<const Spack>& cld_frac_l,
     const uview_1d<const Spack>& acn,
-    const uview_1d<const Spack>& inv_dzq,
+    const uview_1d<const Spack>& inv_dz,
     const view_dnu_table& dnu,
     const MemberType& team,
     const Workspace& workspace,
-    const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir, const Scalar& dt, const Scalar& odt, const bool& log_predictNc,
+    const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir, const Scalar& dt, const Scalar& inv_dt, const bool& do_predict_nc,
     const uview_1d<Spack>& qc,
     const uview_1d<Spack>& nc,
     const uview_1d<Spack>& nc_incld,
@@ -32,7 +32,7 @@ void Functions<S,D>
     const uview_1d<Spack>& lamc,
     const uview_1d<Spack>& qc_tend,
     const uview_1d<Spack>& nc_tend,
-    Scalar& prt_liq)
+    Scalar& precip_liq_surf)
 {
   // Get temporary workspaces needed for the cloud-sed calculation
   uview_1d<Spack> V_qc, V_nc, flux_qx, flux_nx;
@@ -73,7 +73,7 @@ void Functions<S,D>
       Kokkos::parallel_for(
         Kokkos::TeamThreadRange(team, V_qc.extent(0)), [&] (Int k) {
           V_qc(k) = 0;
-          if (log_predictNc) {
+          if (do_predict_nc) {
             V_nc(k) = 0;
           }
       });
@@ -91,54 +91,54 @@ void Functions<S,D>
           if (qc_gt_small.any()) {
             // compute Vq, Vn
             Spack nu, cdist, cdist1, dum;
-            get_cloud_dsd2(qc_incld(pk), nc_incld(pk), mu_c(pk), rho(pk), nu, dnu, lamc(pk), cdist, cdist1, lcldm(pk), qc_gt_small);
+            get_cloud_dsd2(qc_incld(pk), nc_incld(pk), mu_c(pk), rho(pk), nu, dnu, lamc(pk), cdist, cdist1, cld_frac_l(pk), qc_gt_small);
 
 	    //get_cloud_dsd2 keeps the drop-size distribution within reasonable
 	    //bounds by modifying nc_incld. The next line maintains consistency
 	    //between nc_incld and nc
-            nc(pk).set(qc_gt_small, nc_incld(pk)*lcldm(pk));
+            nc(pk).set(qc_gt_small, nc_incld(pk)*cld_frac_l(pk));
 
 	    dum = 1 / (pack::pow(lamc(pk), bcn));
             V_qc(pk).set(qc_gt_small, acn(pk)*pack::tgamma(4 + bcn + mu_c(pk)) * dum / (pack::tgamma(mu_c(pk)+4)));
-            if (log_predictNc) {
+            if (do_predict_nc) {
               V_nc(pk).set(qc_gt_small, acn(pk)*pack::tgamma(1 + bcn + mu_c(pk)) * dum / (pack::tgamma(mu_c(pk)+1)));
             }
 
             const auto Co_max_local = max(qc_gt_small, -1,
-                                          V_qc(pk) * dt_left * inv_dzq(pk));
+                                          V_qc(pk) * dt_left * inv_dz(pk));
             if (Co_max_local > lmax)
               lmax = Co_max_local;
           }
       }, Kokkos::Max<Scalar>(Co_max));
       team.team_barrier();
 
-      if (log_predictNc) {
-        generalized_sedimentation<2>(rho, inv_rho, inv_dzq, team, nk, k_qxtop, k_qxbot, kbot, kdir, Co_max, dt_left, prt_accum, fluxes_ptr, vs_ptr, qnr_ptr);
+      if (do_predict_nc) {
+        generalized_sedimentation<2>(rho, inv_rho, inv_dz, team, nk, k_qxtop, k_qxbot, kbot, kdir, Co_max, dt_left, prt_accum, fluxes_ptr, vs_ptr, qnr_ptr);
       }
       else {
-        generalized_sedimentation<1>(rho, inv_rho, inv_dzq, team, nk, k_qxtop, k_qxbot, kbot, kdir, Co_max, dt_left, prt_accum, flux_ptr, v_ptr, qr_ptr);
+        generalized_sedimentation<1>(rho, inv_rho, inv_dz, team, nk, k_qxtop, k_qxbot, kbot, kdir, Co_max, dt_left, prt_accum, flux_ptr, v_ptr, qr_ptr);
       }
 
       //Update _incld values with end-of-step cell-ave values
-      //No prob w/ div by lcldm because set to min of 1e-4 in interface.
+      //No prob w/ div by cld_frac_l because set to min of 1e-4 in interface.
       Kokkos::parallel_for(
         Kokkos::TeamThreadRange(team, qc.extent(0)), [&] (int pk) {
-	  qc_incld(pk)=qc(pk)/lcldm(pk);
-	  nc_incld(pk)=nc(pk)/lcldm(pk);
+	  qc_incld(pk)=qc(pk)/cld_frac_l(pk);
+	  nc_incld(pk)=nc(pk)/cld_frac_l(pk);
 	});
       
     } //end CFL substep loop
 
     Kokkos::single(
       Kokkos::PerTeam(team), [&] () {
-        prt_liq = prt_accum * C::INV_RHOW * odt;
+        precip_liq_surf = prt_accum * C::INV_RHO_H2O * inv_dt;
       });
   }
 
   Kokkos::parallel_for(
     Kokkos::TeamThreadRange(team, qc_tend.extent(0)), [&] (int pk) {
-      qc_tend(pk) = (qc(pk) - qc_tend(pk)) * odt; // Liq. sedimentation tendency, measure
-      nc_tend(pk) = (nc(pk) - nc_tend(pk)) * odt; // Liq. # sedimentation tendency, measure
+      qc_tend(pk) = (qc(pk) - qc_tend(pk)) * inv_dt; // Liq. sedimentation tendency, measure
+      nc_tend(pk) = (nc(pk) - nc_tend(pk)) * inv_dt; // Liq. # sedimentation tendency, measure
   });
 
   workspace.template release_many_contiguous<4>(

@@ -12,7 +12,7 @@ KOKKOS_FUNCTION
 void Functions<S,D>
 ::cloud_water_autoconversion(
   const Spack& rho, const Spack& qc_incld, const Spack& nc_incld,
-  const Spack& qc_relvar, Spack& qcaut, Spack& ncautc, Spack& ncautr,
+  const Spack& inv_qc_relvar, Spack& qc2qr_autoconv_tend, Spack& nc2nr_autoconv_tend, Spack& ncautr,
   const Smask& context)
 {
   // Khroutdinov and Kogan (2000)
@@ -20,17 +20,17 @@ void Functions<S,D>
   constexpr Scalar CONS3 = C::CONS3;
   if(qc_not_small.any()){
     Spack sgs_var_coef;
-    sgs_var_coef = subgrid_variance_scaling(qc_relvar, sp(2.47) );
+    sgs_var_coef = subgrid_variance_scaling(inv_qc_relvar, sp(2.47) );
 
-    qcaut.set(qc_not_small,
+    qc2qr_autoconv_tend.set(qc_not_small,
               sgs_var_coef*1350*pow(qc_incld,sp(2.47))*pow(nc_incld*sp(1.e-6)*rho,sp(-1.79)));
-    // note: ncautr is change in Nr; ncautc is change in Nc
-    ncautr.set(qc_not_small, qcaut*CONS3);
-    ncautc.set(qc_not_small, qcaut*nc_incld/qc_incld);
+    // note: ncautr is change in Nr; nc2nr_autoconv_tend is change in Nc
+    ncautr.set(qc_not_small, qc2qr_autoconv_tend*CONS3);
+    nc2nr_autoconv_tend.set(qc_not_small, qc2qr_autoconv_tend*nc_incld/qc_incld);
   }
 
-  ncautc.set(qcaut == 0 && context, 0);
-  qcaut.set(ncautc == 0 && context, 0);
+  nc2nr_autoconv_tend.set(qc2qr_autoconv_tend == 0 && context, 0);
+  qc2qr_autoconv_tend.set(nc2nr_autoconv_tend == 0 && context, 0);
 }
 
 } // namespace p3

@@ -32,32 +32,32 @@ static void run_bfb()
   constexpr Scalar p1 = 0.1, p2 = 0.2, p3 = 0.3, p4 = 0.4;
   constexpr Scalar t1 = 0.2, t2 = 0.4, t3 = 0.6, t4 = 0.8;
   constexpr Scalar qv1 = 0.125, qv2 = 0.25, qv3 = 0.375, qv4 = 0.5;
-  constexpr Scalar xxls1 = 0.25, xxls2 = 0.5, xxls3 = 0.75, xxls4 = 1.0;
-  constexpr Scalar odt = 0.11;
-  constexpr Scalar qidep = 1.0;
-  constexpr Scalar qisub = 1.0;
+  constexpr Scalar latent_heat_sublim1 = 0.25, latent_heat_sublim2 = 0.5, latent_heat_sublim3 = 0.75, latent_heat_sublim4 = 1.0;
+  constexpr Scalar inv_dt = 0.11;
+  constexpr Scalar qv2qi_vapdep_tend = 1.0;
+  constexpr Scalar qi2qv_sublim_tend = 1.0;
 
   PreventIceOverdepletionData prevent_ice_overdepletion_data[max_pack_size] = {
-    // pres, t, qv, xxls, odt, qidep, qisub
-    {p1, t1, qv1, xxls1, odt, qidep, qisub},
-    {p1, t1, qv1, xxls1, odt, qidep, qisub},
-    {p1, t1, qv1, xxls1, odt, qidep, qisub},
-    {p1, t1, qv1, xxls1, odt, qidep, qisub},
+    // pres, t, qv, latent_heat_sublim, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend
+    {p1, t1, qv1, latent_heat_sublim1, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend},
+    {p1, t1, qv1, latent_heat_sublim1, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend},
+    {p1, t1, qv1, latent_heat_sublim1, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend},
+    {p1, t1, qv1, latent_heat_sublim1, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend},
 
-    {p2, t2, qv2, xxls2, odt, qidep, qisub},
-    {p2, t2, qv2, xxls2, odt, qidep, qisub},
-    {p2, t2, qv2, xxls2, odt, qidep, qisub},
-    {p2, t2, qv2, xxls2, odt, qidep, qisub},
+    {p2, t2, qv2, latent_heat_sublim2, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend},
+    {p2, t2, qv2, latent_heat_sublim2, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend},
+    {p2, t2, qv2, latent_heat_sublim2, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend},
+    {p2, t2, qv2, latent_heat_sublim2, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend},
 
-    {p3, t3, qv3, xxls3, odt, qidep, qisub},
-    {p3, t3, qv3, xxls3, odt, qidep, qisub},
-    {p3, t3, qv3, xxls3, odt, qidep, qisub},
-    {p3, t3, qv3, xxls3, odt, qidep, qisub},
+    {p3, t3, qv3, latent_heat_sublim3, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend},
+    {p3, t3, qv3, latent_heat_sublim3, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend},
+    {p3, t3, qv3, latent_heat_sublim3, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend},
+    {p3, t3, qv3, latent_heat_sublim3, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend},
 
-    {p4, t4, qv4, xxls4, odt, qidep, qisub},
-    {p4, t4, qv4, xxls4, odt, qidep, qisub},
-    {p4, t4, qv4, xxls4, odt, qidep, qisub},
-    {p4, t4, qv4, xxls4, odt, qidep, qisub}
+    {p4, t4, qv4, latent_heat_sublim4, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend},
+    {p4, t4, qv4, latent_heat_sublim4, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend},
+    {p4, t4, qv4, latent_heat_sublim4, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend},
+    {p4, t4, qv4, latent_heat_sublim4, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend}
   };
 
   // Sync to device
@@ -77,22 +77,22 @@ static void run_bfb()
     const Int offset = i * Spack::n;
 
     // Init pack inputs
-    Spack pres, t, qv, xxls, qidep, qisub;
+    Spack pres, t, qv, latent_heat_sublim, qv2qi_vapdep_tend, qi2qv_sublim_tend;
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
       pres[s]  = device_data(vs).pres;
       t[s]     = device_data(vs).t;
       qv[s]    = device_data(vs).qv;
-      xxls[s]  = device_data(vs).xxls;
-      qidep[s] = device_data(vs).qidep;
-      qisub[s] = device_data(vs).qisub;
+      latent_heat_sublim[s]  = device_data(vs).latent_heat_sublim;
+      qv2qi_vapdep_tend[s] = device_data(vs).qv2qi_vapdep_tend;
+      qi2qv_sublim_tend[s] = device_data(vs).qi2qv_sublim_tend;
     }
 
-    Functions::prevent_ice_overdepletion(pres, t, qv, xxls, device_data(0).odt, qidep, qisub);
+    Functions::prevent_ice_overdepletion(pres, t, qv, latent_heat_sublim, device_data(0).inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend);
 
     // Copy results back into views
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-      device_data(vs).qidep  = qidep[s];
-      device_data(vs).qisub  = qisub[s];
+      device_data(vs).qv2qi_vapdep_tend  = qv2qi_vapdep_tend[s];
+      device_data(vs).qi2qv_sublim_tend  = qi2qv_sublim_tend[s];
     }
   });
 
@@ -101,8 +101,8 @@ static void run_bfb()
 
   // Validate results.
   for (Int s = 0; s < max_pack_size; ++s) {
-    REQUIRE(prevent_ice_overdepletion_data[s].qidep == host_data[s].qidep);
-    REQUIRE(prevent_ice_overdepletion_data[s].qisub == host_data[s].qisub);
+    REQUIRE(prevent_ice_overdepletion_data[s].qv2qi_vapdep_tend == host_data[s].qv2qi_vapdep_tend);
+    REQUIRE(prevent_ice_overdepletion_data[s].qi2qv_sublim_tend == host_data[s].qi2qv_sublim_tend);
   }
 }
 

@@ -28,7 +28,7 @@ static void ice_melting_bfb(){
 
   // make array of input data (why not pass actual variables?). Copied 1st 4 rows 4x to fill pack size.
   IceMeltingData IceMelt[max_pack_size] = {
-    //rho,     t,        pres,     rhofaci,  f1pr05,   f1pr14,   xxlv,     xlf,      dv,       sc,       mu,       kap,      qv,       qitot_incld,nitot_incld
+    //rho,     t,        pres,     rhofaci,  table_val_qi2qr_melting,   table_val_qi2qr_vent_melt,   latent_heat_vapor,     latent_heat_fusion,      dv,       sc,       mu,       kap,      qv,       qi_incld,ni_incld
     {0.117E+01,0.299E+03,0.101E+06,0.829E+00,0.122E+01,0.562E-01,0.250E+07,0.334E+06,0.263E-04,0.601E+00,0.185E-04,0.261E-01,0.160E-01,0.510E-02,  0.195E-12},
     {0.114E+01,0.296E+03,0.973E+05,0.842E+00,0.122E+01,0.562E-01,0.250E+07,0.334E+06,0.268E-04,0.601E+00,0.183E-04,0.259E-01,0.149E-01,0.510E-02,  0.195E-12},
     {0.977E+00,0.287E+03,0.809E+05,0.913E+00,0.122E+01,0.562E-01,0.250E+07,0.334E+06,0.306E-04,0.599E+00,0.179E-04,0.253E-01,0.827E-02,0.000E+00,  0.000E+00},
@@ -67,32 +67,32 @@ static void ice_melting_bfb(){
     const Int offset = i * Spack::n;
 
     // Init pack inputs
-    Spack rho,t,pres,rhofaci,f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld,qimlt,nimlt;
+    Spack rho,t,pres,rhofaci,table_val_qi2qr_melting,table_val_qi2qr_vent_melt,latent_heat_vapor,latent_heat_fusion,dv,sc,mu,kap,qv,qi_incld,ni_incld,qi2qr_melt_tend,ni2nr_melt_tend;
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
       rho[s]         = IceMelt_device(vs).rho;
       t[s]           = IceMelt_device(vs).t;
       pres[s]        = IceMelt_device(vs).pres;
       rhofaci[s]     = IceMelt_device(vs).rhofaci;
-      f1pr05[s]      = IceMelt_device(vs).f1pr05;
-      f1pr14[s]      = IceMelt_device(vs).f1pr14;
-      xxlv[s]        = IceMelt_device(vs).xxlv;
-      xlf[s]         = IceMelt_device(vs).xlf;
+      table_val_qi2qr_melting[s]      = IceMelt_device(vs).table_val_qi2qr_melting;
+      table_val_qi2qr_vent_melt[s]      = IceMelt_device(vs).table_val_qi2qr_vent_melt;
+      latent_heat_vapor[s]        = IceMelt_device(vs).latent_heat_vapor;
+      latent_heat_fusion[s]         = IceMelt_device(vs).latent_heat_fusion;
       dv[s]          = IceMelt_device(vs).dv;
       sc[s]          = IceMelt_device(vs).sc;
       mu[s]          = IceMelt_device(vs).mu;
       kap[s]         = IceMelt_device(vs).kap;
       qv[s]          = IceMelt_device(vs).qv;
-      qitot_incld[s] = IceMelt_device(vs).qitot_incld;
-      nitot_incld[s] = IceMelt_device(vs).nitot_incld;
-      qimlt[s]       = IceMelt_device(vs).qimlt;
-      nimlt[s]       = IceMelt_device(vs).nimlt;
+      qi_incld[s] = IceMelt_device(vs).qi_incld;
+      ni_incld[s] = IceMelt_device(vs).ni_incld;
+      qi2qr_melt_tend[s]       = IceMelt_device(vs).qi2qr_melt_tend;
+      ni2nr_melt_tend[s]       = IceMelt_device(vs).ni2nr_melt_tend;
     }
 
-    Functions::ice_melting(rho,t,pres,rhofaci,f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld,qimlt,nimlt);
+    Functions::ice_melting(rho,t,pres,rhofaci,table_val_qi2qr_melting,table_val_qi2qr_vent_melt,latent_heat_vapor,latent_heat_fusion,dv,sc,mu,kap,qv,qi_incld,ni_incld,qi2qr_melt_tend,ni2nr_melt_tend);
     // Copy results back into views
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-      IceMelt_device(vs).qimlt = qimlt[s];
-      IceMelt_device(vs).nimlt = nimlt[s];
+      IceMelt_device(vs).qi2qr_melt_tend = qi2qr_melt_tend[s];
+      IceMelt_device(vs).ni2nr_melt_tend = ni2nr_melt_tend[s];
     }
 
   });
@@ -102,8 +102,8 @@ static void ice_melting_bfb(){
 
   // Validate results
   for (Int s = 0; s < max_pack_size; ++s) {
-    REQUIRE(IceMelt[s].qimlt == IceMelt_host(s).qimlt);
-    REQUIRE(IceMelt[s].nimlt == IceMelt_host(s).nimlt);
+    REQUIRE(IceMelt[s].qi2qr_melt_tend == IceMelt_host(s).qi2qr_melt_tend);
+    REQUIRE(IceMelt[s].ni2nr_melt_tend == IceMelt_host(s).ni2nr_melt_tend);
   }
 }; // TestP3IceMelting
 

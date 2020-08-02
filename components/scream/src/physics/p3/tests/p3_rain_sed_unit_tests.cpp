@@ -48,7 +48,7 @@ static void run_bfb_rain_vel()
 
   // Load some lookup inputs, need at least one per pack value
   ComputeRainFallVelocityData crfv_fortran[max_pack_size] = {
-    // qr_incld,       rcldm,    rhofacr,   nr_incld
+    // qr_incld,       cld_frac_r,    rhofacr,   nr_incld
     {1.1030E-04, 1.0000E+00, 1.3221E+00, 6.2964E+05},
     {2.1437E-13, 2.0000E+00, 1.0918E+00, 6.5337E+07},
     {5.6298E-05, 3.0000E+00, 1.1129E+00, 1.6576E+02},
@@ -87,17 +87,17 @@ static void run_bfb_rain_vel()
     const Int offset = i * Spack::n;
 
     // Init pack inputs
-    Spack qr_incld, rcldm, rhofacr, nr_incld;
+    Spack qr_incld, cld_frac_r, rhofacr, nr_incld;
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
       qr_incld[s] = crfv_device(vs).qr_incld;
-      rcldm[s]    = crfv_device(vs).rcldm;
+      cld_frac_r[s]    = crfv_device(vs).cld_frac_r;
       rhofacr[s]  = crfv_device(vs).rhofacr;
       nr_incld[s] = crfv_device(vs).nr_incld;
     }
 
     Spack mu_r(0), lamr(0), V_qr(0), V_nr(0);
     Functions::compute_rain_fall_velocity(
-      vn_table, vm_table, qr_incld, rcldm, rhofacr, nr_incld, mu_r, lamr, V_qr, V_nr);
+      vn_table, vm_table, qr_incld, cld_frac_r, rhofacr, nr_incld, mu_r, lamr, V_qr, V_nr);
 
     // Copy results back into views
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
@@ -128,8 +128,8 @@ static void run_bfb_rain_sed()
     std::make_pair(4.056E-03, 1.153E+00), // rho_range
     std::make_pair(0,         1.),        // inv_rho (ignored)
     std::make_pair(8.852E-01, 1.069E+00), // rhofacr
-    std::make_pair(1.000E+00, 1.100E+00), // rcldm
-    std::make_pair(2.863E-05, 8.141E-03), // inv_dzq_range
+    std::make_pair(1.000E+00, 1.100E+00), // cld_frac_r
+    std::make_pair(2.863E-05, 8.141E-03), // inv_dz_range
     std::make_pair(1.221E-14, 2.708E-03), // qr_incld
     std::make_pair(5.164E-10, 2.293E-03), // qr
     std::make_pair(9.558E+04, 6.596E+05), // nr
@@ -138,11 +138,11 @@ static void run_bfb_rain_sed()
     std::make_pair(7.075E-08, 2.418E-03), // lamr
     std::make_pair(7.861E-11, 4.179E-06), // qr_tend
     std::make_pair(5.164E-10, 2.733E-03), // nr_tend
-    std::make_pair(4.469E-14, 2.557E-03), // rflx
+    std::make_pair(4.469E-14, 2.557E-03), // precip_liq_flux
   };
 
   RainSedData rsds_fortran[] = {
-    //        kts, kte, ktop, kbot, kdir,        dt,       odt, prt_liq, ranges
+    //        kts, kte, ktop, kbot, kdir,        dt,       inv_dt, precip_liq_surf, ranges
     RainSedData(1,  72,   27,   72,   -1, 1.800E+03, 5.556E-04,     0.0, ranges),
     RainSedData(1,  72,   72,   27,    1, 1.800E+03, 5.556E-04,     1.0, ranges),
     RainSedData(1,  72,   27,   27,   -1, 1.800E+03, 5.556E-04,     0.0, ranges),
@@ -169,9 +169,9 @@ static void run_bfb_rain_sed()
   for (Int i = 0; i < num_runs; ++i) {
     RainSedData& d = rsds_cxx[i];
     rain_sedimentation_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
-                         d.qr_incld, d.rho, d.inv_rho, d.rhofacr, d.rcldm, d.inv_dzq,
-                         d.dt, d.odt,
-                         d.qr, d.nr, d.nr_incld, d.mu_r, d.lamr, &d.prt_liq, d.rflx,
+                         d.qr_incld, d.rho, d.inv_rho, d.rhofacr, d.cld_frac_r, d.inv_dz,
+                         d.dt, d.inv_dt,
+                         d.qr, d.nr, d.nr_incld, d.mu_r, d.lamr, &d.precip_liq_surf, d.precip_liq_flux,
                          d.qr_tend, d.nr_tend);
   }
 
@@ -185,12 +185,12 @@ static void run_bfb_rain_sed()
       REQUIRE(rsds_fortran[i].nr_incld[k] == rsds_cxx[i].nr_incld[k]);
       REQUIRE(rsds_fortran[i].mu_r[k]     == rsds_cxx[i].mu_r[k]);
       REQUIRE(rsds_fortran[i].lamr[k]     == rsds_cxx[i].lamr[k]);
-      REQUIRE(rsds_fortran[i].rflx[k]     == rsds_cxx[i].rflx[k]);
+      REQUIRE(rsds_fortran[i].precip_liq_flux[k]     == rsds_cxx[i].precip_liq_flux[k]);
       REQUIRE(rsds_fortran[i].qr_tend[k]  == rsds_cxx[i].qr_tend[k]);
       REQUIRE(rsds_fortran[i].nr_tend[k]  == rsds_cxx[i].nr_tend[k]);
     }
-    REQUIRE(rsds_fortran[i].rflx[end]     == rsds_cxx[i].rflx[end]);
-    REQUIRE(rsds_fortran[i].prt_liq == rsds_cxx[i].prt_liq);
+    REQUIRE(rsds_fortran[i].precip_liq_flux[end]     == rsds_cxx[i].precip_liq_flux[end]);
+    REQUIRE(rsds_fortran[i].precip_liq_surf == rsds_cxx[i].precip_liq_surf);
   }
 }
 

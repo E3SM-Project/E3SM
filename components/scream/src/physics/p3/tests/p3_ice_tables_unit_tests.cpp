@@ -111,7 +111,7 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
 
     // Load some lookup inputs, need at least one per pack value
     LookupIceData lid[max_pack_size] = {
-      // qitot,   nitot,     qirim,     rhop
+      // qi,   ni,     qm,     rhop
       {0.971E-07, 0.657E+06, 0.971E-07, 0.900E+03},
       {0.510E-02, 0.454E+06, 0.714E-05, 0.500E+02},
       {0.500E-07, 0.545E+06, 0.000E+00, 0.000E+00},
@@ -228,18 +228,18 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
       // Init packs
       TableIce ti;
       TableRain tr;
-      Spack qitot, nitot, qirim, rhop, qr, nr;
+      Spack qi, ni, qm, rhop, qr, nr;
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        qitot[s] = lid_device(vs).qitot;
-        nitot[s] = lid_device(vs).nitot;
-        qirim[s] = lid_device(vs).qirim;
+        qi[s] = lid_device(vs).qi;
+        ni[s] = lid_device(vs).ni;
+        qm[s] = lid_device(vs).qm;
         rhop[s]  = lid_device(vs).rhop;
         qr[s]    = lidb_device(vs).qr;
         nr[s]    = lidb_device(vs).nr;
       }
 
-      Smask qiti_gt_small(qitot > qsmall);
-      Functions::lookup_ice(qitot, nitot, qirim, rhop, ti, qiti_gt_small);
+      Smask qiti_gt_small(qi > qsmall);
+      Functions::lookup_ice(qi, ni, qm, rhop, ti, qiti_gt_small);
       Functions::lookup_rain(qr, nr, tr, qiti_gt_small);
       Spack ice_result = Functions::apply_table_ice(access_table_index-1, itab, ti, qiti_gt_small);
       Spack rain_result = Functions::apply_table_coll(access_table_index-1, itabcol, ti, tr, qiti_gt_small);
@@ -309,11 +309,11 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
         for (size_t k = 0; k < itab.extent(2); ++k) {
           for (size_t l = 0; l < itab.extent(3); ++l) {
             // Init packs to same value, TODO: how to pick use values?
-            Spack qitot(0.1), nitot(0.2), qirim(0.3), rhop(0.4), qr(0.5), nr(0.6);
+            Spack qi(0.1), ni(0.2), qm(0.3), rhop(0.4), qr(0.5), nr(0.6);
 
             TableIce ti;
             TableRain tr;
-            Functions::lookup_ice(qitot, nitot, qirim, rhop, ti);
+            Functions::lookup_ice(qi, ni, qm, rhop, ti);
             Functions::lookup_rain(qr, nr, tr);
 
             /*Spack proc1 = */ Functions::apply_table_ice(1, itab, ti);

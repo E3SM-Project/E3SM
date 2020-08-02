@@ -99,34 +99,34 @@ contains
 
   end subroutine p3_init_c
 
-  subroutine p3_main_c(qc,nc,qr,nr,th,qv,dt,qitot,qirim,nitot,birim,   &
-       pres,dzq,ncnuc,naai,qc_relvar,it,prt_liq,prt_sol,its,ite,kts,kte,diag_effc,     &
-       diag_effi,diag_rhoi,log_predictNc, pdel,exner,cmeiout,prain,nevapr, &
-       prer_evap,rflx,sflx,rcldm,lcldm,icldm,mu_c,lamc,liq_ice_exchange, &
+  subroutine p3_main_c(qc,nc,qr,nr,th,qv,dt,qi,qm,ni,bm,   &
+       pres,dz,nc_nuceat_tend,ni_activated,inv_qc_relvar,it,precip_liq_surf,precip_ice_surf,its,ite,kts,kte,diag_effc,     &
+       diag_effi,rho_qi,do_predict_nc, dpres,exner,cmeiout,precip_total_tend,nevapr, &
+       qr_evap_tend,precip_liq_flux,precip_ice_flux,cld_frac_r,cld_frac_l,cld_frac_i,mu_c,lamc,liq_ice_exchange, &
        vap_liq_exchange, vap_ice_exchange) bind(C)
     use micro_p3, only : p3_main
 
     real(kind=c_real), intent(inout), dimension(its:ite,kts:kte) :: qc, nc, qr, nr, qv, th
-    real(kind=c_real), intent(inout), dimension(its:ite,kts:kte) :: qitot, qirim, nitot, birim
-    real(kind=c_real), intent(in), dimension(its:ite,kts:kte) :: pres, dzq
-    real(kind=c_real), intent(in), dimension(its:ite,kts:kte) :: ncnuc,naai
-    real(kind=c_real), intent(in), dimension(its:ite,kts:kte) :: qc_relvar
+    real(kind=c_real), intent(inout), dimension(its:ite,kts:kte) :: qi, qm, ni, bm
+    real(kind=c_real), intent(in), dimension(its:ite,kts:kte) :: pres, dz
+    real(kind=c_real), intent(in), dimension(its:ite,kts:kte) :: nc_nuceat_tend,ni_activated
+    real(kind=c_real), intent(in), dimension(its:ite,kts:kte) :: inv_qc_relvar
     real(kind=c_real), value, intent(in) :: dt
-    real(kind=c_real), intent(out), dimension(its:ite) :: prt_liq, prt_sol
+    real(kind=c_real), intent(out), dimension(its:ite) :: precip_liq_surf, precip_ice_surf
     real(kind=c_real), intent(out), dimension(its:ite,kts:kte) :: diag_effc
-    real(kind=c_real), intent(out), dimension(its:ite,kts:kte) :: diag_effi, diag_rhoi
+    real(kind=c_real), intent(out), dimension(its:ite,kts:kte) :: diag_effi, rho_qi
     integer(kind=c_int), value, intent(in) :: its,ite, kts,kte, it
-    logical(kind=c_bool), value, intent(in) :: log_predictNc
+    logical(kind=c_bool), value, intent(in) :: do_predict_nc
 
-    real(kind=c_real), intent(in),    dimension(its:ite,kts:kte)      :: pdel
+    real(kind=c_real), intent(in),    dimension(its:ite,kts:kte)      :: dpres
     real(kind=c_real), intent(in),    dimension(its:ite,kts:kte)      :: exner
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: cmeiout
-    real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: prain
+    real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: precip_total_tend
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: nevapr
-    real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: prer_evap
-    real(kind=c_real), intent(out),   dimension(its:ite,kts:kte+1)    :: rflx
-    real(kind=c_real), intent(out),   dimension(its:ite,kts:kte+1)    :: sflx
-    real(kind=c_real), intent(in),    dimension(its:ite,kts:kte)      :: icldm, lcldm, rcldm
+    real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: qr_evap_tend
+    real(kind=c_real), intent(out),   dimension(its:ite,kts:kte+1)    :: precip_liq_flux
+    real(kind=c_real), intent(out),   dimension(its:ite,kts:kte+1)    :: precip_ice_flux
+    real(kind=c_real), intent(in),    dimension(its:ite,kts:kte)      :: cld_frac_i, cld_frac_l, cld_frac_r
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: mu_c, lamc
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: liq_ice_exchange
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: vap_liq_exchange
@@ -139,14 +139,14 @@ contains
       col_location(i,:) = real(i)
     end do
 
-    call p3_main(qc,nc,qr,nr,th,qv,dt,qitot,qirim,nitot,birim,   &
-         pres,dzq,ncnuc,naai,qc_relvar,it,prt_liq,prt_sol,its,ite,kts,kte,diag_effc, &
-         diag_effi,diag_rhoi,log_predictNc,pdel,exner,cmeiout,prain,nevapr, &
-         prer_evap,rflx,sflx,rcldm,lcldm,icldm,p3_tend_out,mu_c,lamc,liq_ice_exchange,&
+    call p3_main(qc,nc,qr,nr,th,qv,dt,qi,qm,ni,bm,   &
+         pres,dz,nc_nuceat_tend,ni_activated,inv_qc_relvar,it,precip_liq_surf,precip_ice_surf,its,ite,kts,kte,diag_effc, &
+         diag_effi,rho_qi,do_predict_nc,dpres,exner,cmeiout,precip_total_tend,nevapr, &
+         qr_evap_tend,precip_liq_flux,precip_ice_flux,cld_frac_r,cld_frac_l,cld_frac_i,p3_tend_out,mu_c,lamc,liq_ice_exchange,&
          vap_liq_exchange, vap_ice_exchange, col_location)
   end subroutine p3_main_c
 
-  subroutine micro_p3_utils_init_c(Cpair, Rair, RH2O, RhoH2O, &
+  subroutine micro_p3_utils_init_c(Cpair, Rair, RH2O, RHO_H2O, &
                  MWH2O, MWdry, gravit, LatVap, LatIce,        &
                  CpLiq, Tmelt, Pi, iulog_in, masterproc) bind(C)
 
@@ -154,7 +154,7 @@ contains
     real(kind=c_real), value, intent(in) :: Cpair
     real(kind=c_real), value, intent(in) :: Rair
     real(kind=c_real), value, intent(in) :: RH2O
-    real(kind=c_real), value, intent(in) :: RhoH2O
+    real(kind=c_real), value, intent(in) :: RHO_H2O
     real(kind=c_real), value, intent(in) :: MWH2O
     real(kind=c_real), value, intent(in) :: MWdry
     real(kind=c_real), value, intent(in) :: gravit
@@ -169,7 +169,7 @@ contains
     integer :: iulog
     iulog = iulog_in
 
-    call micro_p3_utils_init(Cpair,Rair,RH2O,RhoH2O,MWH2O,MWdry,gravit,LatVap,LatIce, &
+    call micro_p3_utils_init(Cpair,Rair,RH2O,RHO_H2O,MWH2O,MWdry,gravit,LatVap,LatIce, &
                    CpLiq,Tmelt,Pi,iulog,masterproc)
   end subroutine micro_p3_utils_init_c
 
@@ -185,17 +185,17 @@ contains
   end subroutine p3_init_a_c
 
   subroutine find_lookuptable_indices_1a_c(dumi,dumjj,dumii,dumzz,dum1,dum4,dum5,dum6,      &
-       qitot,nitot,qirim,rhop) bind(C)
+       qi,ni,qm,rhop) bind(C)
     use micro_p3, only: find_lookupTable_indices_1a
     use micro_p3_utils, only: densize,rimsize,isize
 
     ! arguments:
     integer(kind=c_int), intent(out) :: dumi,dumjj,dumii,dumzz
     real(kind=c_real),   intent(out) :: dum1,dum4,dum5,dum6
-    real(kind=c_real), value, intent(in)  :: qitot,nitot,qirim,rhop
+    real(kind=c_real), value, intent(in)  :: qi,ni,qm,rhop
 
     call find_lookupTable_indices_1a(dumi, dumjj, dumii, dumzz, dum1, dum4, dum5, dum6,      &
-         isize, rimsize, densize, qitot, nitot, qirim, rhop)
+         isize, rimsize, densize, qi, ni, qm, rhop)
   end subroutine find_lookuptable_indices_1a_c
 
   subroutine find_lookuptable_indices_1b_c(dumj,dum3,qr,nr) bind(C)
@@ -229,170 +229,170 @@ contains
     call access_lookup_table_coll(dumjj,dumii,dumj,dumi,index,dum1,dum3,dum4,dum5,proc)
   end subroutine access_lookup_table_coll_c
 
-  subroutine back_to_cell_average_c(lcldm,rcldm,icldm, qcacc,qrevp,qcaut,&
-    ncacc,ncslf,ncautc,nrslf,nrevp,ncautr,qisub,nrshdr,qcheti,&
-    qrcol,qcshd,qimlt,qccol,qrheti,nimlt,nccol,ncshdc,ncheti,nrcol,nislf,&
-    qidep,nrheti,nisub,qinuc,ninuc,qiberg) bind(C)
+  subroutine back_to_cell_average_c(cld_frac_l,cld_frac_r,cld_frac_i, qc2qr_accret_tend,qr2qv_evap_tend,qc2qr_autoconv_tend,&
+    nc_accret_tend,nc_selfcollect_tend,nc2nr_autoconv_tend,nr_selfcollect_tend,nr_evap_tend,ncautr,qi2qv_sublim_tend,nr_ice_shed_tend,qc2qi_hetero_freeze_tend,&
+    qr2qi_collect_tend,qc2qr_ice_shed_tend,qi2qr_melt_tend,qc2qi_collect_tend,qr2qi_immers_freeze_tend,ni2nr_melt_tend,nc_collect_tend,ncshdc,nc2ni_immers_freeze_tend,nr_collect_tend,ni_selfcollect_tend,&
+    qv2qi_vapdep_tend,nr2ni_immers_freeze_tend,ni_sublim_tend,qv2qi_nucleat_tend,ni_nucleat_tend,qc2qi_berg_tend) bind(C)
 
     use micro_p3, only: back_to_cell_average
-    real(kind=c_real), value, intent(in) :: lcldm, rcldm, icldm
+    real(kind=c_real), value, intent(in) :: cld_frac_l, cld_frac_r, cld_frac_i
 
-    real(kind=c_real), intent(inout) :: qcacc, qrevp, qcaut, ncacc, ncslf, ncautc,  &
-                                        nrslf, nrevp, ncautr, qisub,  &
-                                        nrshdr, qcheti, qrcol, qcshd, qimlt, qccol, &
-                                        qrheti, nimlt, nccol, ncshdc, ncheti, nrcol,&
-                                        nislf, qidep, nrheti, nisub, qinuc, ninuc,  &
-                                        qiberg
+    real(kind=c_real), intent(inout) :: qc2qr_accret_tend, qr2qv_evap_tend, qc2qr_autoconv_tend, nc_accret_tend, nc_selfcollect_tend, nc2nr_autoconv_tend,  &
+                                        nr_selfcollect_tend, nr_evap_tend, ncautr, qi2qv_sublim_tend,  &
+                                        nr_ice_shed_tend, qc2qi_hetero_freeze_tend, qr2qi_collect_tend, qc2qr_ice_shed_tend, qi2qr_melt_tend, qc2qi_collect_tend, &
+                                        qr2qi_immers_freeze_tend, ni2nr_melt_tend, nc_collect_tend, ncshdc, nc2ni_immers_freeze_tend, nr_collect_tend,&
+                                        ni_selfcollect_tend, qv2qi_vapdep_tend, nr2ni_immers_freeze_tend, ni_sublim_tend, qv2qi_nucleat_tend, ni_nucleat_tend,  &
+                                        qc2qi_berg_tend
 
-    call back_to_cell_average(lcldm, rcldm, icldm, qcacc, qrevp, qcaut,&
-      ncacc, ncslf, ncautc, nrslf, nrevp, ncautr, qisub, nrshdr, qcheti,&
-      qrcol, qcshd, qimlt, qccol, qrheti, nimlt, nccol, ncshdc, ncheti, nrcol, nislf,&
-      qidep, nrheti, nisub, qinuc, ninuc, qiberg)
+    call back_to_cell_average(cld_frac_l, cld_frac_r, cld_frac_i, qc2qr_accret_tend, qr2qv_evap_tend, qc2qr_autoconv_tend,&
+      nc_accret_tend, nc_selfcollect_tend, nc2nr_autoconv_tend, nr_selfcollect_tend, nr_evap_tend, ncautr, qi2qv_sublim_tend, nr_ice_shed_tend, qc2qi_hetero_freeze_tend,&
+      qr2qi_collect_tend, qc2qr_ice_shed_tend, qi2qr_melt_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, ni2nr_melt_tend, nc_collect_tend, ncshdc, nc2ni_immers_freeze_tend, nr_collect_tend, ni_selfcollect_tend,&
+      qv2qi_vapdep_tend, nr2ni_immers_freeze_tend, ni_sublim_tend, qv2qi_nucleat_tend, ni_nucleat_tend, qc2qi_berg_tend)
   end subroutine back_to_cell_average_c
 
-subroutine prevent_ice_overdepletion_c(pres,t,qv,xxls,odt,    &
-   qidep,qisub) bind(C)
+subroutine prevent_ice_overdepletion_c(pres,t,qv,latent_heat_sublim,inv_dt,    &
+   qv2qi_vapdep_tend,qi2qv_sublim_tend) bind(C)
     use micro_p3, only: prevent_ice_overdepletion
 
-    real(kind=c_real), value, intent(in) :: pres, t, qv, xxls, odt
-    real(kind=c_real), intent(inout) :: qidep, qisub
+    real(kind=c_real), value, intent(in) :: pres, t, qv, latent_heat_sublim, inv_dt
+    real(kind=c_real), intent(inout) :: qv2qi_vapdep_tend, qi2qv_sublim_tend
 
-    call prevent_ice_overdepletion(pres, t, qv, xxls, odt, qidep, qisub)
+    call prevent_ice_overdepletion(pres, t, qv, latent_heat_sublim, inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend)
 end subroutine prevent_ice_overdepletion_c
 
-  subroutine cloud_water_conservation_c(qc,dt,qcaut,qcacc,qccol,qcheti,qcshd,     &
-    qiberg,qisub,qidep) bind(C)
+  subroutine cloud_water_conservation_c(qc,dt,qc2qr_autoconv_tend,qc2qr_accret_tend,qc2qi_collect_tend,qc2qi_hetero_freeze_tend,qc2qr_ice_shed_tend,     &
+    qc2qi_berg_tend,qi2qv_sublim_tend,qv2qi_vapdep_tend) bind(C)
     use micro_p3, only: cloud_water_conservation
 
     real(kind=c_real), value, intent(in) :: qc, dt
-    real(kind=c_real), intent(inout) :: qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep
+    real(kind=c_real), intent(inout) :: qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend
 
-    call cloud_water_conservation(qc,dt,qcaut,qcacc,qccol,qcheti,qcshd,qiberg,qisub,qidep)
+    call cloud_water_conservation(qc,dt,qc2qr_autoconv_tend,qc2qr_accret_tend,qc2qi_collect_tend,qc2qi_hetero_freeze_tend,qc2qr_ice_shed_tend,qc2qi_berg_tend,qi2qv_sublim_tend,qv2qi_vapdep_tend)
   end subroutine cloud_water_conservation_c
 
-  subroutine rain_water_conservation_c(qr,qcaut,qcacc,qimlt,qcshd,dt,    &
-    qrevp,qrcol,qrheti) bind(C)
+  subroutine rain_water_conservation_c(qr,qc2qr_autoconv_tend,qc2qr_accret_tend,qi2qr_melt_tend,qc2qr_ice_shed_tend,dt,    &
+    qr2qv_evap_tend,qr2qi_collect_tend,qr2qi_immers_freeze_tend) bind(C)
     use micro_p3, only: rain_water_conservation
 
-    real(kind=c_real), value, intent(in) :: qr, qcaut, qcacc, qimlt, qcshd, dt
-    real(kind=c_real), intent(inout) :: qrevp, qrcol, qrheti
+    real(kind=c_real), value, intent(in) :: qr, qc2qr_autoconv_tend, qc2qr_accret_tend, qi2qr_melt_tend, qc2qr_ice_shed_tend, dt
+    real(kind=c_real), intent(inout) :: qr2qv_evap_tend, qr2qi_collect_tend, qr2qi_immers_freeze_tend
 
-    call rain_water_conservation(qr,qcaut,qcacc,qimlt,qcshd,dt,qrevp,qrcol,qrheti)
+    call rain_water_conservation(qr,qc2qr_autoconv_tend,qc2qr_accret_tend,qi2qr_melt_tend,qc2qr_ice_shed_tend,dt,qr2qv_evap_tend,qr2qi_collect_tend,qr2qi_immers_freeze_tend)
   end subroutine rain_water_conservation_c
 
-  subroutine rain_self_collection_c(rho, qr_incld, nr_incld, nrslf) bind(C)
+  subroutine rain_self_collection_c(rho, qr_incld, nr_incld, nr_selfcollect_tend) bind(C)
     use micro_p3, only: rain_self_collection
 
     real(kind=c_real), value, intent(in) :: rho, qr_incld, nr_incld
-    real(kind=c_real), intent(out) :: nrslf
+    real(kind=c_real), intent(out) :: nr_selfcollect_tend
 
-    call rain_self_collection(rho, qr_incld, nr_incld, nrslf)
+    call rain_self_collection(rho, qr_incld, nr_incld, nr_selfcollect_tend)
   end subroutine rain_self_collection_c
 
-  subroutine ice_water_conservation_c(qitot,qidep,qinuc,qiberg,qrcol,qccol,qrheti,qcheti,dt,    &
-    qisub,qimlt) bind(C)
+  subroutine ice_water_conservation_c(qi,qv2qi_vapdep_tend,qv2qi_nucleat_tend,qc2qi_berg_tend,qr2qi_collect_tend,qc2qi_collect_tend,qr2qi_immers_freeze_tend,qc2qi_hetero_freeze_tend,dt,    &
+    qi2qv_sublim_tend,qi2qr_melt_tend) bind(C)
     use micro_p3, only: ice_water_conservation
 
-    real(kind=c_real), value, intent(in) :: qitot, qidep, qinuc, qrcol, qccol, qrheti, qcheti, qiberg, dt
-    real(kind=c_real), intent(inout) :: qisub, qimlt
+    real(kind=c_real), value, intent(in) :: qi, qv2qi_vapdep_tend, qv2qi_nucleat_tend, qr2qi_collect_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, qc2qi_berg_tend, dt
+    real(kind=c_real), intent(inout) :: qi2qv_sublim_tend, qi2qr_melt_tend
 
-    call ice_water_conservation(qitot,qidep,qinuc,qrcol,qccol,qrheti,qcheti,qiberg,dt,qisub,qimlt)
+    call ice_water_conservation(qi,qv2qi_vapdep_tend,qv2qi_nucleat_tend,qr2qi_collect_tend,qc2qi_collect_tend,qr2qi_immers_freeze_tend,qc2qi_hetero_freeze_tend,qc2qi_berg_tend,dt,qi2qv_sublim_tend,qi2qr_melt_tend)
   end subroutine ice_water_conservation_c
 
-  subroutine get_cloud_dsd2_c(qc,nc,mu_c,rho,nu,lamc,cdist,cdist1,lcldm) bind(C)
+  subroutine get_cloud_dsd2_c(qc,nc,mu_c,rho,nu,lamc,cdist,cdist1,cld_frac_l) bind(C)
     use micro_p3, only: get_cloud_dsd2
     use micro_p3_utils, only: dnu
 
     !arguments:
-    real(kind=c_real), value, intent(in)        :: qc,rho,lcldm
+    real(kind=c_real), value, intent(in)        :: qc,rho,cld_frac_l
     real(kind=c_real), intent(inout)            :: nc
     real(kind=c_real), intent(out)              :: mu_c,nu,lamc,cdist,cdist1
 
-    call get_cloud_dsd2(qc,nc,mu_c,rho,nu,dnu,lamc,cdist,cdist1,lcldm)
+    call get_cloud_dsd2(qc,nc,mu_c,rho,nu,dnu,lamc,cdist,cdist1,cld_frac_l)
   end subroutine get_cloud_dsd2_c
 
-  subroutine get_rain_dsd2_c(qr,nr,mu_r,lamr,cdistr,logn0r,rcldm) bind(C)
+  subroutine get_rain_dsd2_c(qr,nr,mu_r,lamr,cdistr,logn0r,cld_frac_r) bind(C)
     use micro_p3, only: get_rain_dsd2
 
     !arguments:
-    real(kind=c_real), value, intent(in) :: qr,rcldm
+    real(kind=c_real), value, intent(in) :: qr,cld_frac_r
     real(kind=c_real), intent(inout)     :: nr
     real(kind=c_real), intent(out)       :: lamr,mu_r,cdistr,logn0r
 
-    call get_rain_dsd2(qr,nr,mu_r,lamr,cdistr,logn0r,rcldm)
+    call get_rain_dsd2(qr,nr,mu_r,lamr,cdistr,logn0r,cld_frac_r)
   end subroutine get_rain_dsd2_c
 
-  subroutine calc_rime_density_c(t,rhofaci,f1pr02,acn,lamc,mu_c,qc_incld,qccol, &
-                                 vtrmi1,rhorime_c) bind(C)
+  subroutine calc_rime_density_c(t,rhofaci,table_val_qi_fallspd,acn,lamc,mu_c,qc_incld,qc2qi_collect_tend, &
+                                 vtrmi1,rho_qm_cloud) bind(C)
 
       use micro_p3, only: calc_rime_density
-      real(kind=c_real), value, intent(in) :: t, rhofaci, f1pr02, acn, lamc, mu_c, qc_incld, qccol
-      real(kind=c_real), intent(out) :: vtrmi1, rhorime_c
+      real(kind=c_real), value, intent(in) :: t, rhofaci, table_val_qi_fallspd, acn, lamc, mu_c, qc_incld, qc2qi_collect_tend
+      real(kind=c_real), intent(out) :: vtrmi1, rho_qm_cloud
 
-      call calc_rime_density(t, rhofaci, f1pr02, acn, lamc, mu_c, qc_incld, qccol, vtrmi1, rhorime_c)
+      call calc_rime_density(t, rhofaci, table_val_qi_fallspd, acn, lamc, mu_c, qc_incld, qc2qi_collect_tend, vtrmi1, rho_qm_cloud)
   end subroutine calc_rime_density_c
 
-  subroutine cldliq_immersion_freezing_c(t,lamc,mu_c,cdist1,qc_incld,qc_relvar,qcheti,ncheti) bind(C)
+  subroutine cldliq_immersion_freezing_c(t,lamc,mu_c,cdist1,qc_incld,inv_qc_relvar,qc2qi_hetero_freeze_tend,nc2ni_immers_freeze_tend) bind(C)
 
       use micro_p3, only: cldliq_immersion_freezing
-      real(kind=c_real), value, intent(in) :: t, lamc, mu_c, cdist1, qc_incld,qc_relvar
-      real(kind=c_real), intent(out) :: qcheti, ncheti
+      real(kind=c_real), value, intent(in) :: t, lamc, mu_c, cdist1, qc_incld,inv_qc_relvar
+      real(kind=c_real), intent(out) :: qc2qi_hetero_freeze_tend, nc2ni_immers_freeze_tend
 
-      call cldliq_immersion_freezing(t, lamc, mu_c, cdist1, qc_incld, qc_relvar, qcheti, ncheti)
+      call cldliq_immersion_freezing(t, lamc, mu_c, cdist1, qc_incld, inv_qc_relvar, qc2qi_hetero_freeze_tend, nc2ni_immers_freeze_tend)
   end subroutine cldliq_immersion_freezing_c
 
-  subroutine rain_immersion_freezing_c(t,lamr,mu_r,cdistr,qr_incld,qrheti,nrheti) bind(C)
+  subroutine rain_immersion_freezing_c(t,lamr,mu_r,cdistr,qr_incld,qr2qi_immers_freeze_tend,nr2ni_immers_freeze_tend) bind(C)
 
       use micro_p3, only: rain_immersion_freezing
       real(kind=c_real), value, intent(in) :: t, lamr, mu_r, cdistr, qr_incld
-      real(kind=c_real), intent(out) :: qrheti, nrheti
+      real(kind=c_real), intent(out) :: qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend
 
-      call rain_immersion_freezing(t, lamr, mu_r, cdistr, qr_incld, qrheti, nrheti)
+      call rain_immersion_freezing(t, lamr, mu_r, cdistr, qr_incld, qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend)
   end subroutine rain_immersion_freezing_c
 
-  subroutine droplet_self_collection_c(rho,inv_rho,qc_incld,mu_c,nu,ncautc,ncslf) bind(C)
+  subroutine droplet_self_collection_c(rho,inv_rho,qc_incld,mu_c,nu,nc2nr_autoconv_tend,nc_selfcollect_tend) bind(C)
 
       use micro_p3, only: droplet_self_collection
-      real(kind=c_real), value, intent(in) :: rho, inv_rho, qc_incld, mu_c, nu, ncautc
-      real(kind=c_real), intent(out) :: ncslf
+      real(kind=c_real), value, intent(in) :: rho, inv_rho, qc_incld, mu_c, nu, nc2nr_autoconv_tend
+      real(kind=c_real), intent(out) :: nc_selfcollect_tend
 
-      call droplet_self_collection(rho, inv_rho, qc_incld, mu_c, nu, ncautc, ncslf)
+      call droplet_self_collection(rho, inv_rho, qc_incld, mu_c, nu, nc2nr_autoconv_tend, nc_selfcollect_tend)
   end subroutine droplet_self_collection_c
 
-  subroutine cloud_rain_accretion_c(rho,inv_rho,qc_incld,nc_incld,qr_incld,qc_relvar,qcacc,ncacc) bind(C)
+  subroutine cloud_rain_accretion_c(rho,inv_rho,qc_incld,nc_incld,qr_incld,inv_qc_relvar,qc2qr_accret_tend,nc_accret_tend) bind(C)
 
       use micro_p3, only: cloud_rain_accretion
-      real(kind=c_real), value, intent(in) :: rho, inv_rho, qc_incld, nc_incld, qr_incld,qc_relvar
-      real(kind=c_real), intent(out) :: qcacc, ncacc
+      real(kind=c_real), value, intent(in) :: rho, inv_rho, qc_incld, nc_incld, qr_incld,inv_qc_relvar
+      real(kind=c_real), intent(out) :: qc2qr_accret_tend, nc_accret_tend
 
-      call cloud_rain_accretion(rho, inv_rho, qc_incld, nc_incld, qr_incld, qc_relvar, qcacc, ncacc)
+      call cloud_rain_accretion(rho, inv_rho, qc_incld, nc_incld, qr_incld, inv_qc_relvar, qc2qr_accret_tend, nc_accret_tend)
   end subroutine cloud_rain_accretion_c
 
-  subroutine cloud_water_autoconversion_c(rho,qc_incld,nc_incld,qc_relvar,qcaut,ncautc,ncautr) bind(C)
+  subroutine cloud_water_autoconversion_c(rho,qc_incld,nc_incld,inv_qc_relvar,qc2qr_autoconv_tend,nc2nr_autoconv_tend,ncautr) bind(C)
 
       use micro_p3, only: cloud_water_autoconversion
-      real(kind=c_real), value, intent(in) :: rho, qc_incld, nc_incld,qc_relvar
-      real(kind=c_real), intent(inout) :: qcaut, ncautc, ncautr
+      real(kind=c_real), value, intent(in) :: rho, qc_incld, nc_incld,inv_qc_relvar
+      real(kind=c_real), intent(inout) :: qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr
 
-      call cloud_water_autoconversion(rho, qc_incld, nc_incld, qc_relvar, qcaut, ncautc, ncautr)
+      call cloud_water_autoconversion(rho, qc_incld, nc_incld, inv_qc_relvar, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr)
   end subroutine cloud_water_autoconversion_c
 
-  subroutine impose_max_total_ni_c(nitot_local, max_total_Ni, inv_rho_local) bind(C)
+  subroutine impose_max_total_ni_c(ni_local, max_total_Ni, inv_rho_local) bind(C)
     use micro_p3, only: impose_max_total_Ni
 
-    real(kind=c_real), intent(inout) :: nitot_local
+    real(kind=c_real), intent(inout) :: ni_local
     real(kind=c_real), value, intent(in) :: max_total_Ni, inv_rho_local
 
-    call impose_max_total_Ni(nitot_local, max_total_Ni, inv_rho_local)
+    call impose_max_total_Ni(ni_local, max_total_Ni, inv_rho_local)
   end subroutine impose_max_total_ni_c
 
-  subroutine calc_first_order_upwind_step_c(kts, kte, kdir, kbot, k_qxtop, dt_sub, rho, inv_rho, inv_dzq, num_arrays, fluxes, vs, qnx) bind(C)
+  subroutine calc_first_order_upwind_step_c(kts, kte, kdir, kbot, k_qxtop, dt_sub, rho, inv_rho, inv_dz, num_arrays, fluxes, vs, qnx) bind(C)
     use micro_p3, only: calc_first_order_upwind_step, realptr
 
     !arguments:
     integer(kind=c_int), value, intent(in) :: kts, kte, kdir, kbot, k_qxtop, num_arrays
     real(kind=c_real), value, intent(in) :: dt_sub
-    real(kind=c_real), dimension(kts:kte), intent(in) :: rho, inv_rho, inv_dzq
+    real(kind=c_real), dimension(kts:kte), intent(in) :: rho, inv_rho, inv_dz
     type(c_ptr), intent(in), dimension(num_arrays) :: fluxes, vs, qnx
 
     type(realptr), dimension(num_arrays) :: fluxes_f, vs_f, qnx_f
@@ -404,11 +404,11 @@ end subroutine prevent_ice_overdepletion_c
        call c_f_pointer(qnx(i),    qnx_f(i)%p ,   [(kte-kts)+1])
     end do
 
-    call calc_first_order_upwind_step(kts, kte, kdir, kbot, k_qxtop, dt_sub, rho, inv_rho, inv_dzq, num_arrays, fluxes_f, vs_f, qnx_f)
+    call calc_first_order_upwind_step(kts, kte, kdir, kbot, k_qxtop, dt_sub, rho, inv_rho, inv_dz, num_arrays, fluxes_f, vs_f, qnx_f)
 
   end subroutine calc_first_order_upwind_step_c
 
-  subroutine generalized_sedimentation_c(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum, inv_dzq, inv_rho, rho, num_arrays, vs, fluxes, qnx) bind(C)
+  subroutine generalized_sedimentation_c(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum, inv_dz, inv_rho, rho, num_arrays, vs, fluxes, qnx) bind(C)
     use micro_p3, only: generalized_sedimentation, realptr
 
     ! arguments
@@ -416,7 +416,7 @@ end subroutine prevent_ice_overdepletion_c
     integer(kind=c_int), intent(inout) :: k_qxbot
     real(kind=c_real), value, intent(in) :: Co_max
     real(kind=c_real), intent(inout) :: dt_left, prt_accum
-    real(kind=c_real), dimension(kts:kte), intent(in) :: inv_dzq, inv_rho, rho
+    real(kind=c_real), dimension(kts:kte), intent(in) :: inv_dz, inv_rho, rho
     type(c_ptr), intent(in), dimension(num_arrays) :: vs, fluxes, qnx
 
     type(realptr), dimension(num_arrays) :: fluxes_f, vs_f, qnx_f
@@ -428,14 +428,14 @@ end subroutine prevent_ice_overdepletion_c
        call c_f_pointer(qnx(i),    qnx_f(i)%p ,   [(kte-kts)+1])
     end do
 
-    call generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum, inv_dzq, inv_rho, rho, num_arrays, vs_f, fluxes_f, qnx_f)
+    call generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum, inv_dz, inv_rho, rho, num_arrays, vs_f, fluxes_f, qnx_f)
 
   end subroutine generalized_sedimentation_c
 
   subroutine cloud_sedimentation_c(kts,kte,ktop,kbot,kdir,   &
-       qc_incld,rho,inv_rho,lcldm,acn,inv_dzq,&
-       dt,odt,log_predictNc, &
-       qc, nc, nc_incld,mu_c,lamc,prt_liq,qc_tend,nc_tend) bind(C)
+       qc_incld,rho,inv_rho,cld_frac_l,acn,inv_dz,&
+       dt,inv_dt,do_predict_nc, &
+       qc, nc, nc_incld,mu_c,lamc,precip_liq_surf,qc_tend,nc_tend) bind(C)
     use micro_p3, only: cloud_sedimentation, dnu
 
     ! arguments
@@ -443,13 +443,13 @@ end subroutine prevent_ice_overdepletion_c
 
     real(kind=c_real), intent(in), dimension(kts:kte) :: rho
     real(kind=c_real), intent(in), dimension(kts:kte) :: inv_rho
-    real(kind=c_real), intent(in), dimension(kts:kte) :: lcldm
+    real(kind=c_real), intent(in), dimension(kts:kte) :: cld_frac_l
     real(kind=c_real), intent(in), dimension(kts:kte) :: acn
-    real(kind=c_real), intent(in), dimension(kts:kte) :: inv_dzq
+    real(kind=c_real), intent(in), dimension(kts:kte) :: inv_dz
 
     real(kind=c_real),    value, intent(in) :: dt
-    real(kind=c_real),    value, intent(in) :: odt
-    logical(kind=c_bool), value, intent(in) :: log_predictNc
+    real(kind=c_real),    value, intent(in) :: inv_dt
+    logical(kind=c_bool), value, intent(in) :: do_predict_nc
 
     real(kind=c_real), intent(inout), dimension(kts:kte) :: qc
     real(kind=c_real), intent(inout), dimension(kts:kte) :: nc
@@ -457,20 +457,20 @@ end subroutine prevent_ice_overdepletion_c
     real(kind=c_real), intent(inout), dimension(kts:kte) :: nc_incld
     real(kind=c_real), intent(inout), dimension(kts:kte) :: mu_c
     real(kind=c_real), intent(inout), dimension(kts:kte) :: lamc
-    real(kind=c_real), intent(inout) :: prt_liq
+    real(kind=c_real), intent(inout) :: precip_liq_surf
     real(kind=c_real), intent(inout), dimension(kts:kte) :: qc_tend
     real(kind=c_real), intent(inout), dimension(kts:kte) :: nc_tend
 
     call cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
-         qc_incld,rho,inv_rho,lcldm,acn,inv_dzq,&
-         dt,odt,dnu,log_predictNc, &
-         qc, nc, nc_incld,mu_c,lamc,prt_liq,qc_tend,nc_tend)
+         qc_incld,rho,inv_rho,cld_frac_l,acn,inv_dz,&
+         dt,inv_dt,dnu,do_predict_nc, &
+         qc, nc, nc_incld,mu_c,lamc,precip_liq_surf,qc_tend,nc_tend)
 
   end subroutine cloud_sedimentation_c
 
   subroutine ice_sedimentation_c(kts,kte,ktop,kbot,kdir,    &
-       rho,inv_rho,rhofaci,icldm,inv_dzq,dt,odt,  &
-       qitot,qitot_incld,nitot,qirim,qirim_incld,birim,birim_incld,nitot_incld,prt_sol,qi_tend,ni_tend) bind(C)
+       rho,inv_rho,rhofaci,cld_frac_i,inv_dz,dt,inv_dt,  &
+       qi,qi_incld,ni,qm,qm_incld,bm,bm_incld,ni_incld,precip_ice_surf,qi_tend,ni_tend) bind(C)
     use micro_p3, only: ice_sedimentation
 
     ! arguments
@@ -479,32 +479,32 @@ end subroutine prevent_ice_overdepletion_c
     real(kind=c_real), intent(in), dimension(kts:kte) :: rho
     real(kind=c_real), intent(in), dimension(kts:kte) :: inv_rho
     real(kind=c_real), intent(in), dimension(kts:kte) :: rhofaci
-    real(kind=c_real), intent(in), dimension(kts:kte) :: icldm
-    real(kind=c_real), intent(in), dimension(kts:kte) :: inv_dzq
-    real(kind=c_real), value, intent(in) :: dt, odt
+    real(kind=c_real), intent(in), dimension(kts:kte) :: cld_frac_i
+    real(kind=c_real), intent(in), dimension(kts:kte) :: inv_dz
+    real(kind=c_real), value, intent(in) :: dt, inv_dt
 
-    real(kind=c_real), intent(inout), dimension(kts:kte), target :: qitot
-    real(kind=c_real), intent(inout), dimension(kts:kte) :: qitot_incld
-    real(kind=c_real), intent(inout), dimension(kts:kte), target :: nitot
-    real(kind=c_real), intent(inout), dimension(kts:kte) :: nitot_incld
-    real(kind=c_real), intent(inout), dimension(kts:kte), target :: qirim
-    real(kind=c_real), intent(inout), dimension(kts:kte) :: qirim_incld
-    real(kind=c_real), intent(inout), dimension(kts:kte), target :: birim
-    real(kind=c_real), intent(inout), dimension(kts:kte) :: birim_incld
+    real(kind=c_real), intent(inout), dimension(kts:kte), target :: qi
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qi_incld
+    real(kind=c_real), intent(inout), dimension(kts:kte), target :: ni
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: ni_incld
+    real(kind=c_real), intent(inout), dimension(kts:kte), target :: qm
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qm_incld
+    real(kind=c_real), intent(inout), dimension(kts:kte), target :: bm
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: bm_incld
 
-    real(kind=c_real), intent(inout) :: prt_sol
+    real(kind=c_real), intent(inout) :: precip_ice_surf
     real(kind=c_real), intent(inout), dimension(kts:kte) :: qi_tend
     real(kind=c_real), intent(inout), dimension(kts:kte) :: ni_tend
 
     call ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
-         rho,inv_rho,rhofaci,icldm,inv_dzq,dt,odt,  &
-         qitot,qitot_incld,nitot,qirim,qirim_incld,birim,birim_incld,nitot_incld,prt_sol,qi_tend,ni_tend)
+         rho,inv_rho,rhofaci,cld_frac_i,inv_dz,dt,inv_dt,  &
+         qi,qi_incld,ni,qm,qm_incld,bm,bm_incld,ni_incld,precip_ice_surf,qi_tend,ni_tend)
 
   end subroutine ice_sedimentation_c
 
   subroutine rain_sedimentation_c(kts,kte,ktop,kbot,kdir,   &
-       qr_incld,rho,inv_rho,rhofacr,rcldm,inv_dzq,dt,odt,  &
-       qr,nr,nr_incld,mu_r,lamr,prt_liq,rflx,qr_tend,nr_tend) bind(C)
+       qr_incld,rho,inv_rho,rhofacr,cld_frac_r,inv_dz,dt,inv_dt,  &
+       qr,nr,nr_incld,mu_r,lamr,precip_liq_surf,precip_liq_flux,qr_tend,nr_tend) bind(C)
     use micro_p3, only: rain_sedimentation
 
     integer(kind=c_int), value, intent(in) :: kts, kte, ktop, kbot, kdir
@@ -512,9 +512,9 @@ end subroutine prevent_ice_overdepletion_c
     real(kind=c_real), intent(in), dimension(kts:kte) :: rho
     real(kind=c_real), intent(in), dimension(kts:kte) :: inv_rho
     real(kind=c_real), intent(in), dimension(kts:kte) :: rhofacr
-    real(kind=c_real), intent(in), dimension(kts:kte) :: rcldm
-    real(kind=c_real), intent(in), dimension(kts:kte) :: inv_dzq
-    real(kind=c_real), value, intent(in) :: dt, odt
+    real(kind=c_real), intent(in), dimension(kts:kte) :: cld_frac_r
+    real(kind=c_real), intent(in), dimension(kts:kte) :: inv_dz
+    real(kind=c_real), value, intent(in) :: dt, inv_dt
 
     real(kind=c_real), intent(inout), target, dimension(kts:kte) :: qr
     real(kind=c_real), intent(inout), target, dimension(kts:kte) :: nr
@@ -522,14 +522,14 @@ end subroutine prevent_ice_overdepletion_c
     real(kind=c_real), intent(inout), dimension(kts:kte) :: nr_incld
     real(kind=c_real), intent(inout), dimension(kts:kte) :: mu_r
     real(kind=c_real), intent(inout), dimension(kts:kte) :: lamr
-    real(kind=c_real), intent(inout) :: prt_liq
-    real(kind=c_real), intent(inout), dimension(kts:kte+1) :: rflx
+    real(kind=c_real), intent(inout) :: precip_liq_surf
+    real(kind=c_real), intent(inout), dimension(kts:kte+1) :: precip_liq_flux
     real(kind=c_real), intent(inout), dimension(kts:kte) :: qr_tend
     real(kind=c_real), intent(inout), dimension(kts:kte) :: nr_tend
 
     call rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
-         qr_incld,rho,inv_rho,rhofacr,rcldm,inv_dzq,dt,odt,  &
-         qr,nr,nr_incld,mu_r,lamr,prt_liq,rflx,qr_tend,nr_tend)
+         qr_incld,rho,inv_rho,rhofacr,cld_frac_r,inv_dz,dt,inv_dt,  &
+         qr,nr,nr_incld,mu_r,lamr,precip_liq_surf,precip_liq_flux,qr_tend,nr_tend)
 
   end subroutine rain_sedimentation_c
 
@@ -544,171 +544,171 @@ end subroutine prevent_ice_overdepletion_c
     call calc_bulkRhoRime(qi_tot, qi_rim, bi_rim, rho_rime)
   end subroutine calc_bulk_rho_rime_c
 
-  subroutine homogeneous_freezing_c(kts,kte,ktop,kbot,kdir,t,exner,xlf,    &
-   qc,nc,qr,nr,qitot,nitot,qirim,birim,th) bind(C)
+  subroutine homogeneous_freezing_c(kts,kte,ktop,kbot,kdir,t,exner,latent_heat_fusion,    &
+   qc,nc,qr,nr,qi,ni,qm,bm,th) bind(C)
     use micro_p3, only: homogeneous_freezing
 
     ! arguments:
     integer(kind=c_int), value, intent(in) :: kts, kte, ktop, kbot, kdir
     real(kind=c_real), intent(in), dimension(kts:kte) :: t
     real(kind=c_real), intent(in), dimension(kts:kte) :: exner
-    real(kind=c_real), intent(in), dimension(kts:kte) :: xlf
+    real(kind=c_real), intent(in), dimension(kts:kte) :: latent_heat_fusion
 
     real(kind=c_real), intent(inout), dimension(kts:kte) :: qc
     real(kind=c_real), intent(inout), dimension(kts:kte) :: nc
     real(kind=c_real), intent(inout), dimension(kts:kte) :: qr
     real(kind=c_real), intent(inout), dimension(kts:kte) :: nr
 
-    real(kind=c_real), intent(inout), dimension(kts:kte) :: qitot
-    real(kind=c_real), intent(inout), dimension(kts:kte) :: nitot
-    real(kind=c_real), intent(inout), dimension(kts:kte) :: qirim
-    real(kind=c_real), intent(inout), dimension(kts:kte) :: birim
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qi
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: ni
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qm
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: bm
     real(kind=c_real), intent(inout), dimension(kts:kte) :: th
 
-    call homogeneous_freezing(kts,kte,ktop,kbot,kdir,t,exner,xlf,    &
-         qc,nc,qr,nr,qitot,nitot,qirim,birim,th)
+    call homogeneous_freezing(kts,kte,ktop,kbot,kdir,t,exner,latent_heat_fusion,    &
+         qc,nc,qr,nr,qi,ni,qm,bm,th)
   end subroutine homogeneous_freezing_c
 
-  subroutine compute_rain_fall_velocity_c(qr_incld, rcldm, rhofacr, nr_incld, mu_r, lamr, V_qr, V_nr) bind(C)
+  subroutine compute_rain_fall_velocity_c(qr_incld, cld_frac_r, rhofacr, nr_incld, mu_r, lamr, V_qr, V_nr) bind(C)
     use micro_p3, only: compute_rain_fall_velocity
 
     ! arguments:
-    real(kind=c_real), value, intent(in) :: qr_incld, rcldm, rhofacr
+    real(kind=c_real), value, intent(in) :: qr_incld, cld_frac_r, rhofacr
     real(kind=c_real), intent(inout) :: nr_incld
     real(kind=c_real), intent(out) :: mu_r, lamr, V_qr, V_nr
 
-    call compute_rain_fall_velocity(qr_incld, rcldm, rhofacr, nr_incld, mu_r, lamr, V_qr, V_nr)
+    call compute_rain_fall_velocity(qr_incld, cld_frac_r, rhofacr, nr_incld, mu_r, lamr, V_qr, V_nr)
   end subroutine compute_rain_fall_velocity_c
 
-subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol,nrcol,qrheti,nrheti,nrshdr, &
-       qimlt,nimlt,qisub,qidep,qinuc,ninuc,nislf,nisub,qiberg,exner,xxls,xlf,log_predictNc,log_wetgrowth, &
-       dt,nmltratio,rhorime_c,th,qv,qitot,nitot,qirim,birim,qc,nc,qr,nr) bind(C)
+subroutine  update_prognostic_ice_c(qc2qi_hetero_freeze_tend,qc2qi_collect_tend,qc2qr_ice_shed_tend,nc_collect_tend,nc2ni_immers_freeze_tend,ncshdc,qr2qi_collect_tend,nr_collect_tend,qr2qi_immers_freeze_tend,nr2ni_immers_freeze_tend,nr_ice_shed_tend, &
+       qi2qr_melt_tend,ni2nr_melt_tend,qi2qv_sublim_tend,qv2qi_vapdep_tend,qv2qi_nucleat_tend,ni_nucleat_tend,ni_selfcollect_tend,ni_sublim_tend,qc2qi_berg_tend,exner,latent_heat_sublim,latent_heat_fusion,do_predict_nc,log_wetgrowth, &
+       dt,nmltratio,rho_qm_cloud,th,qv,qi,ni,qm,bm,qc,nc,qr,nr) bind(C)
     use micro_p3, only: update_prognostic_ice
 
     ! arguments
-    real(kind=c_real), value, intent(in) :: qcheti, qccol, qcshd, nccol, ncheti, ncshdc, qrcol, nrcol, &
-         qrheti, nrheti, nrshdr, qimlt, nimlt, qisub, qidep, qinuc, ninuc, nislf, nisub, qiberg, exner, &
-         xlf, xxls, dt, nmltratio, rhorime_c
+    real(kind=c_real), value, intent(in) :: qc2qi_hetero_freeze_tend, qc2qi_collect_tend, qc2qr_ice_shed_tend, nc_collect_tend, nc2ni_immers_freeze_tend, ncshdc, qr2qi_collect_tend, nr_collect_tend, &
+         qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend, nr_ice_shed_tend, qi2qr_melt_tend, ni2nr_melt_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend, qv2qi_nucleat_tend, ni_nucleat_tend, ni_selfcollect_tend, ni_sublim_tend, qc2qi_berg_tend, exner, &
+         latent_heat_fusion, latent_heat_sublim, dt, nmltratio, rho_qm_cloud
 
-    logical(kind=c_bool), value, intent(in) :: log_predictNc, log_wetgrowth
+    logical(kind=c_bool), value, intent(in) :: do_predict_nc, log_wetgrowth
 
-    real(kind=c_real), intent(inout) :: th, qv, qc, nc, qr, nr, qitot, nitot, qirim, birim
+    real(kind=c_real), intent(inout) :: th, qv, qc, nc, qr, nr, qi, ni, qm, bm
 
-    call update_prognostic_ice(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol,nrcol,qrheti,nrheti,nrshdr, &
-         qimlt,nimlt,qisub,qidep,qinuc,ninuc,nislf,nisub,qiberg,exner,xxls,xlf,log_predictNc,log_wetgrowth, &
-         dt,nmltratio,rhorime_c,th,qv,qitot,nitot,qirim,birim,qc,nc,qr,nr)
+    call update_prognostic_ice(qc2qi_hetero_freeze_tend,qc2qi_collect_tend,qc2qr_ice_shed_tend,nc_collect_tend,nc2ni_immers_freeze_tend,ncshdc,qr2qi_collect_tend,nr_collect_tend,qr2qi_immers_freeze_tend,nr2ni_immers_freeze_tend,nr_ice_shed_tend, &
+         qi2qr_melt_tend,ni2nr_melt_tend,qi2qv_sublim_tend,qv2qi_vapdep_tend,qv2qi_nucleat_tend,ni_nucleat_tend,ni_selfcollect_tend,ni_sublim_tend,qc2qi_berg_tend,exner,latent_heat_sublim,latent_heat_fusion,do_predict_nc,log_wetgrowth, &
+         dt,nmltratio,rho_qm_cloud,th,qv,qi,ni,qm,bm,qc,nc,qr,nr)
 
   end subroutine update_prognostic_ice_c
 
-  subroutine get_time_space_phys_variables_c(t, pres, rho, xxlv, xxls, qvs, qvi, mu, dv, sc, dqsdt, dqsidt, &
+  subroutine get_time_space_phys_variables_c(t, pres, rho, latent_heat_vapor, latent_heat_sublim, qv_sat_l, qv_sat_i, mu, dv, sc, dqsdt, dqsidt, &
                                              ab, abi, kap, eii) bind(C)
     use micro_p3, only: get_time_space_phys_variables
 
     !arguments
-    real(kind=c_real), value, intent(in) :: t, pres, rho, xxlv, xxls, qvs, qvi
+    real(kind=c_real), value, intent(in) :: t, pres, rho, latent_heat_vapor, latent_heat_sublim, qv_sat_l, qv_sat_i
     real(kind=c_real), intent(out) :: mu, dv, sc, dqsdt, dqsidt, ab, abi, kap, eii
 
-    call get_time_space_phys_variables(t, pres, rho, xxlv, xxls, qvs, qvi, mu, dv, sc, dqsdt, dqsidt, &
+    call get_time_space_phys_variables(t, pres, rho, latent_heat_vapor, latent_heat_sublim, qv_sat_l, qv_sat_i, mu, dv, sc, dqsdt, dqsidt, &
                                        ab, abi, kap, eii)
   end subroutine get_time_space_phys_variables_c
 
-  subroutine ice_cldliq_collection_c(rho, temp, rhofaci, f1pr04, qitot_incld, qc_incld, nitot_incld, &
-                                     nc_incld, qccol, nccol, qcshd, ncshdc) bind(C)
+  subroutine ice_cldliq_collection_c(rho, temp, rhofaci, table_val_qc2qi_collect, qi_incld, qc_incld, ni_incld, &
+                                     nc_incld, qc2qi_collect_tend, nc_collect_tend, qc2qr_ice_shed_tend, ncshdc) bind(C)
     use micro_p3, only: ice_cldliq_collection
 
     ! arguments:
-    real(kind=c_real), value, intent(in) :: rho, temp, rhofaci, f1pr04
-    real(kind=c_real), value, intent(in) :: qitot_incld, qc_incld, nitot_incld, nc_incld
-    real(kind=c_real), intent(out) :: qccol, nccol, qcshd, ncshdc
+    real(kind=c_real), value, intent(in) :: rho, temp, rhofaci, table_val_qc2qi_collect
+    real(kind=c_real), value, intent(in) :: qi_incld, qc_incld, ni_incld, nc_incld
+    real(kind=c_real), intent(out) :: qc2qi_collect_tend, nc_collect_tend, qc2qr_ice_shed_tend, ncshdc
 
-    call ice_cldliq_collection(rho, temp, rhofaci, f1pr04, qitot_incld, qc_incld, nitot_incld, &
-                               nc_incld, qccol, nccol, qcshd, ncshdc)
+    call ice_cldliq_collection(rho, temp, rhofaci, table_val_qc2qi_collect, qi_incld, qc_incld, ni_incld, &
+                               nc_incld, qc2qi_collect_tend, nc_collect_tend, qc2qr_ice_shed_tend, ncshdc)
   end subroutine ice_cldliq_collection_c
 
-  subroutine ice_rain_collection_c(rho, temp, rhofaci, logn0r, f1pr07, f1pr08, &
-                                   qitot_incld, nitot_incld, qr_incld, qrcol, nrcol) bind(C)
+  subroutine ice_rain_collection_c(rho, temp, rhofaci, logn0r, table_val_nr_collect, table_val_qr2qi_collect, &
+                                   qi_incld, ni_incld, qr_incld, qr2qi_collect_tend, nr_collect_tend) bind(C)
     use micro_p3, only: ice_rain_collection
 
     ! arguments:
-    real(kind=c_real), value, intent(in) :: rho, temp, rhofaci, logn0r, f1pr07, f1pr08
-    real(kind=c_real), value, intent(in) :: qitot_incld, nitot_incld, qr_incld
-    real(kind=c_real), intent(out) :: qrcol, nrcol
+    real(kind=c_real), value, intent(in) :: rho, temp, rhofaci, logn0r, table_val_nr_collect, table_val_qr2qi_collect
+    real(kind=c_real), value, intent(in) :: qi_incld, ni_incld, qr_incld
+    real(kind=c_real), intent(out) :: qr2qi_collect_tend, nr_collect_tend
 
-    call ice_rain_collection(rho, temp, rhofaci, logn0r, f1pr07, f1pr08,  &
-                             qitot_incld, nitot_incld, qr_incld, qrcol, nrcol)
+    call ice_rain_collection(rho, temp, rhofaci, logn0r, table_val_nr_collect, table_val_qr2qi_collect,  &
+                             qi_incld, ni_incld, qr_incld, qr2qi_collect_tend, nr_collect_tend)
   end subroutine ice_rain_collection_c
 
-  subroutine ice_self_collection_c(rho, rhofaci, f1pr03, eii, qirim_incld, &
-                                   qitot_incld, nitot_incld, nislf) bind(C)
+  subroutine ice_self_collection_c(rho, rhofaci, table_val_ni_self_collect, eii, qm_incld, &
+                                   qi_incld, ni_incld, ni_selfcollect_tend) bind(C)
     use micro_p3, only: ice_self_collection
 
     ! arguments:
-    real(kind=c_real), value, intent(in) :: rho, rhofaci, f1pr03, eii, qirim_incld
-    real(kind=c_real), value, intent(in) :: qitot_incld, nitot_incld
-    real(kind=c_real), intent(out) :: nislf
+    real(kind=c_real), value, intent(in) :: rho, rhofaci, table_val_ni_self_collect, eii, qm_incld
+    real(kind=c_real), value, intent(in) :: qi_incld, ni_incld
+    real(kind=c_real), intent(out) :: ni_selfcollect_tend
 
-    call ice_self_collection(rho, rhofaci, f1pr03, eii, qirim_incld, &
-                             qitot_incld, nitot_incld, nislf)
+    call ice_self_collection(rho, rhofaci, table_val_ni_self_collect, eii, qm_incld, &
+                             qi_incld, ni_incld, ni_selfcollect_tend)
   end subroutine ice_self_collection_c
 
-  subroutine evaporate_sublimate_precip_c(qr_incld, qc_incld, nr_incld, qitot_incld, lcldm, &
-       rcldm, qvs, ab, epsr, qv, qrevp, nrevp) bind(C)
+  subroutine evaporate_sublimate_precip_c(qr_incld, qc_incld, nr_incld, qi_incld, cld_frac_l, &
+       cld_frac_r, qv_sat_l, ab, epsr, qv, qr2qv_evap_tend, nr_evap_tend) bind(C)
     use micro_p3, only: evaporate_sublimate_precip
 
     ! arguments
-    real(kind=c_real), value, intent(in) :: qr_incld, qc_incld, nr_incld, qitot_incld, lcldm, &
-        rcldm, qvs, ab, epsr, qv
-    real(kind=c_real), intent(out) :: qrevp, nrevp
+    real(kind=c_real), value, intent(in) :: qr_incld, qc_incld, nr_incld, qi_incld, cld_frac_l, &
+        cld_frac_r, qv_sat_l, ab, epsr, qv
+    real(kind=c_real), intent(out) :: qr2qv_evap_tend, nr_evap_tend
 
-    call evaporate_sublimate_precip(qr_incld, qc_incld, nr_incld, qitot_incld, lcldm, &
-       rcldm, qvs, ab, epsr, qv, qrevp, nrevp)
+    call evaporate_sublimate_precip(qr_incld, qc_incld, nr_incld, qi_incld, cld_frac_l, &
+       cld_frac_r, qv_sat_l, ab, epsr, qv, qr2qv_evap_tend, nr_evap_tend)
   end subroutine evaporate_sublimate_precip_c
 
-  subroutine  update_prognostic_liquid_c(qcacc, ncacc, qcaut,ncautc, ncautr, ncslf, &
-       qrevp, nrevp, nrslf, log_predictNc, inv_rho, exner, xxlv, dt, th, qv, qc, nc, qr, nr) bind(C)
+  subroutine  update_prognostic_liquid_c(qc2qr_accret_tend, nc_accret_tend, qc2qr_autoconv_tend,nc2nr_autoconv_tend, ncautr, nc_selfcollect_tend, &
+       qr2qv_evap_tend, nr_evap_tend, nr_selfcollect_tend, do_predict_nc, inv_rho, exner, latent_heat_vapor, dt, th, qv, qc, nc, qr, nr) bind(C)
     use micro_p3, only: update_prognostic_liquid
 
     ! arguments
-    real(kind=c_real), value, intent(in) :: qcacc, ncacc, qcaut, ncautc, ncautr, ncslf, &
-         qrevp, nrevp, nrslf
+    real(kind=c_real), value, intent(in) :: qc2qr_accret_tend, nc_accret_tend, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, nc_selfcollect_tend, &
+         qr2qv_evap_tend, nr_evap_tend, nr_selfcollect_tend
 
-    logical(kind=c_bool), value, intent(in) :: log_predictNc
+    logical(kind=c_bool), value, intent(in) :: do_predict_nc
 
-    real(kind=c_real), value, intent(in) :: inv_rho, exner, xxlv, dt
+    real(kind=c_real), value, intent(in) :: inv_rho, exner, latent_heat_vapor, dt
 
     real(kind=c_real), intent(inout) :: th, qv, qc, nc, qr, nr
 
-    call update_prognostic_liquid(qcacc, ncacc, qcaut,ncautc, ncautr, ncslf, &
-       qrevp, nrevp, nrslf, log_predictNc, inv_rho, exner, xxlv, dt, th, qv, qc, nc, qr, nr)
+    call update_prognostic_liquid(qc2qr_accret_tend, nc_accret_tend, qc2qr_autoconv_tend,nc2nr_autoconv_tend, ncautr, nc_selfcollect_tend, &
+       qr2qv_evap_tend, nr_evap_tend, nr_selfcollect_tend, do_predict_nc, inv_rho, exner, latent_heat_vapor, dt, th, qv, qc, nc, qr, nr)
 
   end subroutine update_prognostic_liquid_c
 
-  subroutine ice_deposition_sublimation_c(qitot_incld, nitot_incld, t,  qvs, qvi, epsi, abi, qv, &
-           qidep, qisub, nisub, qiberg)  bind(C)
+  subroutine ice_deposition_sublimation_c(qi_incld, ni_incld, t,  qv_sat_l, qv_sat_i, epsi, abi, qv, &
+           qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend)  bind(C)
     use micro_p3, only: ice_deposition_sublimation
 
     !arguments
-    real(kind=c_real), value, intent(in) :: qitot_incld, nitot_incld, t, qvs, qvi, epsi, abi, qv
+    real(kind=c_real), value, intent(in) :: qi_incld, ni_incld, t, qv_sat_l, qv_sat_i, epsi, abi, qv
 
-    real(kind=c_real), intent(out) :: qidep, qisub, nisub, qiberg
+    real(kind=c_real), intent(out) :: qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend
 
-    call ice_deposition_sublimation(qitot_incld, nitot_incld, t,  qvs, qvi, epsi, abi, qv, &
-           qidep, qisub, nisub, qiberg)
+    call ice_deposition_sublimation(qi_incld, ni_incld, t,  qv_sat_l, qv_sat_i, epsi, abi, qv, &
+           qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend)
   end subroutine ice_deposition_sublimation_c
 
-  subroutine ice_relaxation_timescale_c(rho, temp, rhofaci, f1pr05, f1pr14,   &
-                                        dv, mu, sc, qitot_incld, nitot_incld, &
+  subroutine ice_relaxation_timescale_c(rho, temp, rhofaci, table_val_qi2qr_melting, table_val_qi2qr_vent_melt,   &
+                                        dv, mu, sc, qi_incld, ni_incld, &
                                         epsi, epsi_tot) bind(C)
     use micro_p3, only: calc_ice_relaxation_timescale
 
     ! arguments
-    real(kind=c_real), value, intent(in) :: rho, temp, rhofaci, f1pr05, f1pr14, &
-                                            dv, mu, sc, qitot_incld, nitot_incld
+    real(kind=c_real), value, intent(in) :: rho, temp, rhofaci, table_val_qi2qr_melting, table_val_qi2qr_vent_melt, &
+                                            dv, mu, sc, qi_incld, ni_incld
     real(kind=c_real), intent(out)   :: epsi
     real(kind=c_real), intent(inout) :: epsi_tot
 
-    call calc_ice_relaxation_timescale(rho, temp, rhofaci, f1pr05, f1pr14,   &
-                                       dv, mu, sc, qitot_incld, nitot_incld, &
+    call calc_ice_relaxation_timescale(rho, temp, rhofaci, table_val_qi2qr_melting, table_val_qi2qr_vent_melt,   &
+                                       dv, mu, sc, qi_incld, ni_incld, &
                                        epsi, epsi_tot)
   end subroutine ice_relaxation_timescale_c
 
@@ -728,47 +728,47 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
                                        epsc)
   end subroutine calc_liq_relaxation_timescale_c
 
-  subroutine ice_nucleation_c(temp, inv_rho, nitot, naai, supi, odt, &
-                              log_predictNc, qinuc, ninuc) bind(C)
+  subroutine ice_nucleation_c(temp, inv_rho, ni, ni_activated, qv_supersat_i, inv_dt, &
+                              do_predict_nc, qv2qi_nucleat_tend, ni_nucleat_tend) bind(C)
     use micro_p3, only: ice_nucleation
 
     ! arguments
-    real(kind=c_real), value, intent(in) :: temp, inv_rho, nitot, naai, supi, odt
-    logical(c_bool), value, intent(in) :: log_predictNc
+    real(kind=c_real), value, intent(in) :: temp, inv_rho, ni, ni_activated, qv_supersat_i, inv_dt
+    logical(c_bool), value, intent(in) :: do_predict_nc
 
-    real(kind=c_real), intent(inout) :: qinuc, ninuc
+    real(kind=c_real), intent(inout) :: qv2qi_nucleat_tend, ni_nucleat_tend
 
-    call ice_nucleation(temp, inv_rho, nitot, naai, supi, odt, &
-                        log_predictNc, qinuc, ninuc)
+    call ice_nucleation(temp, inv_rho, ni, ni_activated, qv_supersat_i, inv_dt, &
+                        do_predict_nc, qv2qi_nucleat_tend, ni_nucleat_tend)
  end subroutine ice_nucleation_c
 
- subroutine ice_melting_c(rho,t,pres,rhofaci,f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld,qimlt,nimlt) bind(C)
+ subroutine ice_melting_c(rho,t,pres,rhofaci,table_val_qi2qr_melting,table_val_qi2qr_vent_melt,latent_heat_vapor,latent_heat_fusion,dv,sc,mu,kap,qv,qi_incld,ni_incld,qi2qr_melt_tend,ni2nr_melt_tend) bind(C)
     use micro_p3, only: ice_melting
 
     ! arguments:
-    real(kind=c_real), value, intent(in) :: rho,t,pres,rhofaci,f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld
-    real(kind=c_real), intent(out) :: qimlt,nimlt
+    real(kind=c_real), value, intent(in) :: rho,t,pres,rhofaci,table_val_qi2qr_melting,table_val_qi2qr_vent_melt,latent_heat_vapor,latent_heat_fusion,dv,sc,mu,kap,qv,qi_incld,ni_incld
+    real(kind=c_real), intent(out) :: qi2qr_melt_tend,ni2nr_melt_tend
 
-    call ice_melting(rho,t,pres,rhofaci,f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld,qimlt,nimlt)
+    call ice_melting(rho,t,pres,rhofaci,table_val_qi2qr_melting,table_val_qi2qr_vent_melt,latent_heat_vapor,latent_heat_fusion,dv,sc,mu,kap,qv,qi_incld,ni_incld,qi2qr_melt_tend,ni2nr_melt_tend)
 
   end subroutine ice_melting_c
 
- subroutine ice_cldliq_wet_growth_c(rho, temp, pres, rhofaci, f1pr05, &
-                                    f1pr14, xxlv, xlf, dv, kap, mu, sc, qv, qc_incld,  &
-                                    qitot_incld, nitot_incld, qr_incld, &
-                                    log_wetgrowth, qrcol, qccol, qwgrth, nrshdr, qcshd) bind(C)
+ subroutine ice_cldliq_wet_growth_c(rho, temp, pres, rhofaci, table_val_qi2qr_melting, &
+                                    table_val_qi2qr_vent_melt, latent_heat_vapor, latent_heat_fusion, dv, kap, mu, sc, qv, qc_incld,  &
+                                    qi_incld, ni_incld, qr_incld, &
+                                    log_wetgrowth, qr2qi_collect_tend, qc2qi_collect_tend, qc_growth_rate, nr_ice_shed_tend, qc2qr_ice_shed_tend) bind(C)
    use micro_p3, only: ice_cldliq_wet_growth
 
    ! argmens
-   real(kind=c_real), value, intent(in) :: rho, temp ,pres, rhofaci, f1pr05, f1pr14, xxlv, xlf, dv, &
-                                           kap, mu, sc, qv, qc_incld, qitot_incld, nitot_incld,qr_incld
+   real(kind=c_real), value, intent(in) :: rho, temp ,pres, rhofaci, table_val_qi2qr_melting, table_val_qi2qr_vent_melt, latent_heat_vapor, latent_heat_fusion, dv, &
+                                           kap, mu, sc, qv, qc_incld, qi_incld, ni_incld,qr_incld
    logical(kind=c_bool), intent(inout) :: log_wetgrowth
-   real(kind=c_real), intent(inout) :: qrcol, qccol, qwgrth, nrshdr, qcshd
+   real(kind=c_real), intent(inout) :: qr2qi_collect_tend, qc2qi_collect_tend, qc_growth_rate, nr_ice_shed_tend, qc2qr_ice_shed_tend
 
-   call ice_cldliq_wet_growth(rho, temp, pres, rhofaci, f1pr05, &
-                              f1pr14, xxlv, xlf, dv, kap, mu, sc, qv, qc_incld, &
-                              qitot_incld, nitot_incld, qr_incld, &
-                              log_wetgrowth, qrcol, qccol, qwgrth, nrshdr, qcshd)
+   call ice_cldliq_wet_growth(rho, temp, pres, rhofaci, table_val_qi2qr_melting, &
+                              table_val_qi2qr_vent_melt, latent_heat_vapor, latent_heat_fusion, dv, kap, mu, sc, qv, qc_incld, &
+                              qi_incld, ni_incld, qr_incld, &
+                              log_wetgrowth, qr2qi_collect_tend, qc2qi_collect_tend, qc_growth_rate, nr_ice_shed_tend, qc2qr_ice_shed_tend)
  end subroutine ice_cldliq_wet_growth_c
 
  subroutine get_latent_heat_c(its,ite,kts,kte,v,s,f) bind(C)
@@ -804,113 +804,113 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
    call check_values(qv,Temp,kts,kte,timestepcount,force_abort,source_ind,col_loc)
  end subroutine check_values_c
 
- subroutine calculate_incloud_mixingratios_c(qc, qr, qitot, qirim, nc, nr, nitot, birim,   &
-                                             inv_lcldm, inv_icldm, inv_rcldm,              &
-                                             qc_incld, qr_incld, qitot_incld, qirim_incld, &
-                                             nc_incld, nr_incld, nitot_incld, birim_incld) bind(C)
+ subroutine calculate_incloud_mixingratios_c(qc, qr, qi, qm, nc, nr, ni, bm,   &
+                                             inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r,              &
+                                             qc_incld, qr_incld, qi_incld, qm_incld, &
+                                             nc_incld, nr_incld, ni_incld, bm_incld) bind(C)
    use micro_p3, only: calculate_incloud_mixingratios
 
    ! argumens
-   real(kind=c_real), value, intent(in) :: qc, qr, qitot, qirim, nc, nr, nitot, birim, inv_lcldm, inv_icldm, inv_rcldm
-   real(kind=c_real), intent(inout) :: qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld
+   real(kind=c_real), value, intent(in) :: qc, qr, qi, qm, nc, nr, ni, bm, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r
+   real(kind=c_real), intent(inout) :: qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld, ni_incld, bm_incld
 
-   call calculate_incloud_mixingratios(qc, qr, qitot, qirim, nc, nr, nitot, birim,   &
-                                       inv_lcldm, inv_icldm, inv_rcldm,              &
-                                       qc_incld, qr_incld, qitot_incld, qirim_incld, &
-                                       nc_incld, nr_incld, nitot_incld, birim_incld)
+   call calculate_incloud_mixingratios(qc, qr, qi, qm, nc, nr, ni, bm,   &
+                                       inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r,              &
+                                       qc_incld, qr_incld, qi_incld, qm_incld, &
+                                       nc_incld, nr_incld, ni_incld, bm_incld)
  end subroutine calculate_incloud_mixingratios_c
 
- subroutine p3_main_part1_c(kts, kte, kbot, ktop, kdir, log_predictNc, dt, &
-       pres, pdel, dzq, ncnuc, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, xxlv, xxls, xlf, &
-       t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, &
-       qitot, nitot, qirim, birim, qc_incld, qr_incld, qitot_incld, qirim_incld, &
-       nc_incld, nr_incld, nitot_incld, birim_incld, log_nucleationPossible, log_hydrometeorsPresent) bind(C)
+ subroutine p3_main_part1_c(kts, kte, kbot, ktop, kdir, do_predict_nc, dt, &
+       pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion, &
+       t, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, &
+       qi, ni, qm, bm, qc_incld, qr_incld, qi_incld, qm_incld, &
+       nc_incld, nr_incld, ni_incld, bm_incld, is_nucleat_possible, is_hydromet_present) bind(C)
 
    use micro_p3, only: p3_main_part1
 
    ! arguments
    integer(kind=c_int), value, intent(in) :: kts, kte, kbot, ktop, kdir
-   logical(kind=c_bool), value, intent(in) :: log_predictNc
+   logical(kind=c_bool), value, intent(in) :: do_predict_nc
    real(kind=c_real), value, intent(in) :: dt
 
-   real(kind=c_real), intent(in), dimension(kts:kte) :: pres, pdel, dzq, ncnuc, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, xxlv, xxls, xlf
+   real(kind=c_real), intent(in), dimension(kts:kte) :: pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion
 
-   real(kind=c_real), intent(inout), dimension(kts:kte) :: t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, &
-        acn, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, qc_incld, qr_incld, qitot_incld, &
-        qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld
+   real(kind=c_real), intent(inout), dimension(kts:kte) :: t, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, &
+        acn, qv, th, qc, nc, qr, nr, qi, ni, qm, bm, qc_incld, qr_incld, qi_incld, &
+        qm_incld, nc_incld, nr_incld, ni_incld, bm_incld
 
-   logical(kind=c_bool), intent(out) :: log_nucleationPossible, log_hydrometeorsPresent
+   logical(kind=c_bool), intent(out) :: is_nucleat_possible, is_hydromet_present
 
-   call p3_main_part1(kts, kte, kbot, ktop, kdir, log_predictNc, dt, &
-        pres, pdel, dzq, ncnuc, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, xxlv, xxls, xlf, &
-        t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, &
-        qitot, nitot, qirim, birim, qc_incld, qr_incld, qitot_incld, qirim_incld, &
-        nc_incld, nr_incld, nitot_incld, birim_incld, log_nucleationPossible, log_hydrometeorsPresent)
+   call p3_main_part1(kts, kte, kbot, ktop, kdir, do_predict_nc, dt, &
+        pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion, &
+        t, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, &
+        qi, ni, qm, bm, qc_incld, qr_incld, qi_incld, qm_incld, &
+        nc_incld, nr_incld, ni_incld, bm_incld, is_nucleat_possible, is_hydromet_present)
 
  end subroutine p3_main_part1_c
 
- subroutine p3_main_part2_c(kts, kte, kbot, ktop, kdir, log_predictNc, dt, odt, &
-       pres, pdel, dzq, ncnuc, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, naai, qc_relvar, icldm, lcldm, rcldm,&
-       t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, qitot, nitot, &
-       qirim, birim, xxlv, xxls, xlf, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, &
-       nitot_incld, birim_incld, mu_c, nu, lamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, cmeiout, prain, &
-       nevapr, prer_evap, vap_liq_exchange, vap_ice_exchange, liq_ice_exchange, pratot, &
-       prctot, log_hydrometeorsPresent) bind(C)
+ subroutine p3_main_part2_c(kts, kte, kbot, ktop, kdir, do_predict_nc, dt, inv_dt, &
+       pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r,&
+       t, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, qi, ni, &
+       qm, bm, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld, &
+       ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, cmeiout, precip_total_tend, &
+       nevapr, qr_evap_tend, vap_liq_exchange, vap_ice_exchange, liq_ice_exchange, pratot, &
+       prctot, is_hydromet_present) bind(C)
 
    use micro_p3, only: p3_main_part2
 
    !arguments
    integer(kind=c_int), value, intent(in) :: kts, kte, kbot, ktop, kdir
-   logical(kind=c_bool), value, intent(in) :: log_predictNc
-   real(kind=c_real), value, intent(in) :: dt, odt
+   logical(kind=c_bool), value, intent(in) :: do_predict_nc
+   real(kind=c_real), value, intent(in) :: dt, inv_dt
 
-   real(kind=c_real), intent(in), dimension(kts:kte) :: pres, pdel, dzq, ncnuc, exner, inv_exner, inv_lcldm, inv_icldm, &
-        inv_rcldm, naai, qc_relvar, icldm, lcldm, rcldm
+   real(kind=c_real), intent(in), dimension(kts:kte) :: pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i, &
+        inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r
 
-   real(kind=c_real), intent(inout), dimension(kts:kte) :: t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, acn, &
-        qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, xlf, qc_incld, qr_incld, &
-        qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld, mu_c, nu, lamc, cdist, cdist1, &
-        cdistr, mu_r, lamr, logn0r, cmeiout, prain, nevapr, prer_evap, vap_liq_exchange, &
+   real(kind=c_real), intent(inout), dimension(kts:kte) :: t, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn, &
+        qv, th, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion, qc_incld, qr_incld, &
+        qi_incld, qm_incld, nc_incld, nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, &
+        cdistr, mu_r, lamr, logn0r, cmeiout, precip_total_tend, nevapr, qr_evap_tend, vap_liq_exchange, &
         vap_ice_exchange, liq_ice_exchange, pratot, prctot
 
-   logical(kind=c_bool), intent(out) :: log_hydrometeorsPresent
+   logical(kind=c_bool), intent(out) :: is_hydromet_present
 
    ! throwaway
    real(kind=c_real), dimension(kts:kte,49) :: p3_tend_out
 
-   call p3_main_part2(kts, kte, kbot, ktop, kdir, log_predictNc, dt, odt, &
-        pres, pdel, dzq, ncnuc, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, naai, qc_relvar, icldm, lcldm, rcldm,&
-        t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, qitot, nitot, &
-        qirim, birim, xxlv, xxls, xlf, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, &
-        nitot_incld, birim_incld, mu_c, nu, lamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, cmeiout, prain, &
-        nevapr, prer_evap, vap_liq_exchange, vap_ice_exchange, liq_ice_exchange, pratot, &
-        prctot, p3_tend_out, log_hydrometeorsPresent)
+   call p3_main_part2(kts, kte, kbot, ktop, kdir, do_predict_nc, dt, inv_dt, &
+        pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r,&
+        t, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, qi, ni, &
+        qm, bm, latent_heat_vapor, latent_heat_sublim, latent_heat_fusion, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld, &
+        ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, cmeiout, precip_total_tend, &
+        nevapr, qr_evap_tend, vap_liq_exchange, vap_ice_exchange, liq_ice_exchange, pratot, &
+        prctot, p3_tend_out, is_hydromet_present)
 
  end subroutine p3_main_part2_c
 
  subroutine p3_main_part3_c(kts, kte, kbot, ktop, kdir, &
-      exner, lcldm, rcldm, &
-      rho, inv_rho, rhofaci, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, &
+      exner, cld_frac_l, cld_frac_r, &
+      rho, inv_rho, rhofaci, qv, th, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, &
       mu_c, nu, lamc, mu_r, lamr, vap_liq_exchange, &
-      ze_rain, ze_ice, diag_vmi, diag_effi, diag_di, diag_rhoi, diag_ze, diag_effc) bind(C)
+      ze_rain, ze_ice, diag_vmi, diag_effi, diag_di, rho_qi, diag_ze, diag_effc) bind(C)
 
    use micro_p3, only: p3_main_part3
 
    ! args
 
    integer(kind=c_int), value, intent(in) :: kts, kte, kbot, ktop, kdir
-   real(kind=c_real), intent(in), dimension(kts:kte) :: exner, lcldm, rcldm
+   real(kind=c_real), intent(in), dimension(kts:kte) :: exner, cld_frac_l, cld_frac_r
    real(kind=c_real), intent(inout), dimension(kts:kte) :: rho, inv_rho, rhofaci, &
-        qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, &
+        qv, th, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, &
         mu_c, nu, lamc, mu_r, &
         lamr, vap_liq_exchange, &
-        ze_rain, ze_ice, diag_vmi, diag_effi, diag_di, diag_rhoi, diag_ze, diag_effc
+        ze_rain, ze_ice, diag_vmi, diag_effi, diag_di, rho_qi, diag_ze, diag_effc
 
    call p3_main_part3(kts, kte, kbot, ktop, kdir, &
-        exner, lcldm, rcldm, &
-        rho, inv_rho, rhofaci, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, &
+        exner, cld_frac_l, cld_frac_r, &
+        rho, inv_rho, rhofaci, qv, th, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim, &
         mu_c, nu, lamc, mu_r, lamr, vap_liq_exchange, &
-        ze_rain, ze_ice, diag_vmi, diag_effi, diag_di, diag_rhoi, diag_ze, diag_effc)
+        ze_rain, ze_ice, diag_vmi, diag_effi, diag_di, rho_qi, diag_ze, diag_effc)
 
  end subroutine p3_main_part3_c
 

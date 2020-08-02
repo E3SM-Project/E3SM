@@ -22,7 +22,8 @@ struct Constants
   static constexpr Scalar Rair          = 287.042;
   static constexpr Scalar RH2O          = 461.505;
   static constexpr Scalar RV            = RH2O;         // Water vapor gas constant ~ J/K/kg     !461.51
-  static constexpr Scalar RhoH2O        = 1000.0;
+  static constexpr Scalar RHO_H2O       = 1000.0;
+  static constexpr Scalar INV_RHO_H2O   = 1.0/RHO_H2O;
   static constexpr Scalar RhoIce        = 917.0;        // Ice density at 0 C from Wallace+Hobbes 1977
   static constexpr Scalar MWH2O         = 18.016;
   static constexpr Scalar MWdry         = 28.966;
@@ -38,7 +39,7 @@ struct Constants
   static constexpr Scalar Pi            = 3.14159265;
   static constexpr long long int    iulog       = 98;
   static constexpr bool   masterproc    = true;
-  static constexpr Scalar RHOW          = RhoH2O;
+  static constexpr Scalar RHOW          = RHO_H2O;
   static constexpr Scalar INV_RHOW      = 1.0/RHOW;
   static constexpr Scalar RHO_RIMEMIN   =  50.0;  //Min limit for rime density [kg m-3]
   static constexpr Scalar RHO_RIMEMAX   = 900.0;  //Max limit for rime density [kg m-3]
@@ -65,6 +66,8 @@ struct Constants
   static constexpr Scalar RD            = Rair;          // gas constant for dry air, J/kg/K
   static constexpr Scalar RHOSUR        = P0/(RD*Tmelt);
   static constexpr Scalar rhosui        = 60000/(RD*253.15);
+  static constexpr Scalar RHO_1000MB    = P0/(RD*Tmelt);
+  static constexpr Scalar RHO_600MB     = 60000/(RD*253.15);
   static constexpr Scalar CP            = Cpair;          // heat constant of air at constant pressure, J/kg
   static constexpr Scalar INV_CP        = 1.0/CP;
   //  static constexpr Scalar Tol           = util::is_single_precision<Real>::value ? 2e-5 : 1e-14;

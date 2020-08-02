@@ -72,16 +72,16 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
       const Int offset = i * Spack::n;
 
       // Init pack inputs
-      Spack qc, rho, lcldm, nc;
+      Spack qc, rho, cld_frac_l, nc;
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         qc[s]    = gcdd_device(vs).qc;
         rho[s]   = gcdd_device(vs).rho;
-        lcldm[s] = gcdd_device(vs).lcldm;
+        cld_frac_l[s] = gcdd_device(vs).cld_frac_l;
         nc[s]    = gcdd_device(vs).nc_in;
       }
 
       Spack mu_c(0.0), nu(0.0), lamc(0.0), cdist(0.0), cdist1(0.0);
-      Functions::get_cloud_dsd2(qc, nc, mu_c, rho, nu, dnu, lamc, cdist, cdist1, lcldm);
+      Functions::get_cloud_dsd2(qc, nc, mu_c, rho, nu, dnu, lamc, cdist, cdist1, cld_frac_l);
 
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
@@ -155,15 +155,15 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
       const Int offset = i * Spack::n;
 
       // Init pack inputs
-      Spack qr, rcldm, nr;
+      Spack qr, cld_frac_r, nr;
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         qr[s]    = grdd_device(vs).qr;
-        rcldm[s] = grdd_device(vs).rcldm;
+        cld_frac_r[s] = grdd_device(vs).cld_frac_r;
         nr[s]    = grdd_device(vs).nr_in;
       }
 
       Spack mu_r(0.0), lamr(0.0), cdistr(0.0), logn0r(0.0);
-      Functions::get_rain_dsd2(qr, nr, mu_r, lamr, cdistr, logn0r, rcldm);
+      Functions::get_rain_dsd2(qr, nr, mu_r, lamr, cdistr, logn0r, cld_frac_r);
 
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
