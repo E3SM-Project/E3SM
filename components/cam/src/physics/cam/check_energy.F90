@@ -315,6 +315,9 @@ end subroutine check_energy_get_integrals
     real(r8), intent(in) :: pdel(pcols,pver) 
     real(r8), intent(in) :: phis(pcols) 
 
+!!!!
+!it is sometimes called with pcol arrays!
+!FIX IT?
 
     real(r8), intent(inout) :: ke(ncol)     ! vertical integral of kinetic energy
     real(r8), intent(inout) :: se(ncol)     ! vertical integral of static energy
