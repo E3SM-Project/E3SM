@@ -84,11 +84,20 @@ contains
     !-----------------------------------------------------------------------      
     do m = 1,clscnt1
        l = clsmap(m,1)
-       do i = 1,ncol
-          do k = ltrop(i)+1,pver
-             base_sol(i,k,l)  = base_sol(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
+       ! apply E90 loss in all levels, including stratosphere
+       if (trim(solsym(l)) == 'E90') then
+          do i = 1,ncol
+             do k = 1,pver
+                base_sol(i,k,l)  = base_sol(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
+             end do
           end do
-       end do
+       else
+          do i = 1,ncol
+             do k = ltrop(i)+1,pver
+                base_sol(i,k,l)  = base_sol(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
+             end do
+          end do
+       end if
 
        wrk(:,:) = (prod(:,:,m) + ind_prd(:,:,m))*xhnm
        call outfld( trim(solsym(l))//'_CHMP', wrk(:,:), ncol, lchnk )
