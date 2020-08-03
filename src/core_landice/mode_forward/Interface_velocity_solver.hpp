@@ -96,7 +96,7 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
     int *error = 0 );
 
 
-void velocity_solver_compute_2d_grid(int const* verticesMask_F, int const* _cellsMask_F, int const* dirichletNodesMask_F, int const* floatingEdgeMask_F);
+void velocity_solver_compute_2d_grid(int const* verticesMask_F, int const* _cellsMask_F, int const* dirichletNodesMask_F);
 
 void velocity_solver_set_grid_data(int const* _nCells_F, int const* _nEdges_F,
     int const* _nVertices_F, int const* _nLayers, int const* _nCellsSolve_F,
@@ -192,7 +192,7 @@ extern void velocity_solver_extrude_3d_grid__(
     const std::vector<int>& indexToEdgeID,
     const std::vector<int>& indexToTriangleID,
     const std::vector<int>& dirichletNodes,
-    const std::vector<int>&floatingEdges);
+    const std::vector<int>& iceMarginEdgesID);
 
 extern void velocity_solver_export_fo_velocity__(MPI_Comm reducedComm);
 

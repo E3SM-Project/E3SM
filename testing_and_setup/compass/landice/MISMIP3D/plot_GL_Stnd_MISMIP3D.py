@@ -101,7 +101,6 @@ for filename in filelist:
   #upperSurface = f.variables['upperSurface'][time_slice,:]
   #surfaceSpeed = f.variables['surfaceSpeed'][time_slice,:]
   #basalSpeed = f.variables['basalSpeed'][time_slice,:]
-  #floatingEdges = f.variables['floatingEdges'][time_slice,:]
   edgeMask = f.variables['edgeMask']  # just get the object
   #normalVelocity = f.variables['normalVelocity']
   #uReconstructX = f.variables['uReconstructX']
