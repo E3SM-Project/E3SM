@@ -328,10 +328,6 @@
 					description="scaling factor on the visbeck diffusivity parameterization"
 					possible_values="small positive numbers"
 		/>
-		<nml_option name="config_GM_visbeck_min_depth" type="real" default_value="50.0" units="m"
-					description="minimum depth for calculation of vertical average"
-					possible_values="values between zero and bottom depth"
-		/>
 		<nml_option name="config_GM_visbeck_max_depth" type="real" default_value="1000.0" units="m"
 					description="minimum depth for calculation of vertical average"
 					possible_values="values between zero and bottom depth"

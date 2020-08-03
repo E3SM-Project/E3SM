@@ -49,7 +49,6 @@ module ocn_gm
    logical :: local_config_GM_compute_visbeck
    logical :: local_config_GM_lat_variable_c2
    logical :: local_config_GM_kappa_lat_depth_variable
-   real(kind=RKIND), parameter :: local_config_GM_min_phase_speed = 0.1_RKIND
    real(kind=RKIND) :: slopeTaperFactor, sfcTaperFactor, rediGMinitValue
 !***********************************************************************
 
@@ -247,24 +246,19 @@ contains
       end do
       !$omp end do
 
-      if ( config_Redi_use_N2_based_taper .or. local_config_GM_kappa_lat_depth_variable ) then
+      if ( config_Redi_use_N2_based_taper .and. .not. local_config_GM_kappa_lat_depth_variable ) then
 
          !$omp do schedule(runtime) private(maxLocation, cell1, cell2, k, BruntVaisalaFreqTopEdge, maxN)
          do iCell = 1, nCells
-!            k = min(maxLevelCell(iCell) - 1, max(1, indMLD(iCell)))
-            k = 1
+            k = min(maxLevelCell(iCell) - 1, max(1, indMLD(iCell)))
             maxN = max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND)
-            do k = 1, maxLevelCell(iCell)
+            do while (BruntVaisalaFreqTop(k + 1, iCell) > maxN .and. k < maxLevelCell(iCell) - 1)
+              k = k + 1
               maxN = max(maxN,max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND))
             enddo
 
-!            do while (BruntVaisalaFreqTop(k + 1, iCell) > maxN .and. k < maxLevelCell(iCell) - 1)
-!               k = k + 1
-!               maxN = max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND)
-!            end do
-
-!            maxLocation = k
-!            do k = maxLocation, maxLevelCell(iCell)
+            maxLocation = k
+            do k = maxLocation, maxLevelCell(iCell)
             do k = 1,maxLevelCell(iCell)
                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND)
 
@@ -279,7 +273,20 @@ contains
       if (local_config_GM_kappa_lat_depth_variable) then
         !$omp do schedule(runtime)
         do iCell=1,nCells
-          gmKappaScaling(:, iCell) = RediKappaScaling(:,iCell)
+            k=1
+            maxN = max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND)
+            do k = 2, maxLevelCell(iCell)
+              maxN = max(maxN,max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND))
+            enddo
+
+            do k = 1,maxLevelCell(iCell)
+               BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND)
+
+               gmKappaScaling(k, iCell) = min(max(config_GM_min_stratification_ratio, &
+                                               BruntVaisalaFreqTopEdge/(maxN + 1.0E-10_RKIND)), &
+                                           1.0_RKIND)
+               RediKappaScaling(k, iCell) = gmKappaScaling(k, iCell)
+            end do
         enddo
         !$omp end do
       end if
@@ -522,9 +529,6 @@ contains
                   sumN2 = sumN2 + 0.5_RKIND*(lt1*max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND) + &
                                 lt2*max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND))
 
-               !   lt1 = 0.5_RKIND*(layerThicknessEdge(k,iEdge) + layerThicknessEdge(k-1,iEdge))
-               !   sumN2 = sumN2 + BruntVaisalaFreqTopEdge*lt1
-                !  ltSum = ltSum + layerThicknessEdge(k, iEdge)
                   ltSum = ltSum + 0.5_RKIND*(lt1+lt2)
                   countN2 = countN2 + 1
 
@@ -562,34 +566,20 @@ contains
               countN2 = 0
               cell1 = cellsOnEdge(1, iEdge)
               cell2 = cellsOnEdge(2, iEdge)
-              zEdge = 0.5_RKIND*(zTop(k,cell1) + zTop(k,cell2))
-!             do while(zEdge > -config_GM_visbeck_min_depth .and. k < maxLevelEdgeTop(iEdge))
-!                k = k+1
-!                zEdge = 0.5_RKIND*(zTop(k,cell1) + zTop(k,cell2))
-!              enddo
 
-              k = 2 
-             ! zEdge = 0.5_RKIND*(zTop(k,cell1) + zTop(k,cell2)) - 0.5_RKIND*(zTop(1,cell1) + zTop(1,Cell2))
+              k = 2
               zEdge = -layerThicknessEdge(k-1,iEdge)
               do while(zEdge > -config_GM_visbeck_max_depth .and. k < maxLevelEdgeTop(iEdge))
-!              do k=2,maxLevelEdgeTop(iEdge)
-!                BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k, cell1) + BruntVaisalaFreqTop(k, cell2))
-!                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
-!                sumN2 = sumN2 + layerThicknessEdge(k,iEdge)*BruntVaisalaFreqTopEdge
                 lt1 = 0.5_RKIND*(layerThickness(k,cell1) + layerThickness(k-1,cell1))
                 lt2 = 0.5_RKIND*(layerThickness(k,cell2) + layerThickness(k-1,cell2))
                 sumN2 = sumN2 + 0.5_RKIND*(lt1*max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND) + &
                                 lt2*max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND))
-!                RiTopOfEdge = 0.5_RKIND*(RiTopOfCell(k,cell1) + RiTopOfCell(k,cell2))
-!                RiTopOfEdge = max(RiTopOfEdge, 0.0_RKIND)
-!                sumRi = sumRi + layerThicknessEdge(k,iEdge)*RiTopOfEdge
                 sumRi = sumRi + 0.5_RKIND*(lt1*max(RiTopOfCell(k,cell1),0.0_RKIND) + &
                                     lt2*max(RiTopOfCell(k,cell2),0.0_RKIND))
                 ltsum = ltsum + 0.5_RKIND*(lt1+lt2)
                 countN2 = countN2 + 1
 
                 k = k + 1
-            !    zEdge = 0.5_RKIND*(zTop(k,cell1) + zTop(k,cell2)) - 0.5_RKIND*(zTop(1,cell1) + zTop(1,Cell2))
                 zEdge = zEdge - layerThicknessEdge(k-1,iEdge)
               end do
 
@@ -604,7 +594,7 @@ contains
                 gmBolusKappa(iEdge) = config_GM_visbeck_alpha * eddyLength(iEdge)**2.0_RKIND / (1.0E-15 + eddyTime(iEdge))
                 gmBolusKappa(iEdge) = max(config_GM_visbeck_min_kappa, min(gmBolusKappa(iEdge), config_GM_visbeck_max_kappa))
              else !for really shallow columns use min bolus kappa
-               gmBolusKappa(iEdge) = config_GM_visbeck_min_kappa
+                gmBolusKappa(iEdge) = config_GM_visbeck_min_kappa
              end if
            end do
            !omp end do
