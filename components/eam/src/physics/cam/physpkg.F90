@@ -51,6 +51,7 @@ module physpkg
 
   !  Physics buffer index
   integer ::  teout_idx          = 0  
+  integer ::  teout2_idx          = 0  
 
   integer ::  tini_idx           = 0 
   integer ::  qini_idx           = 0 
@@ -771,6 +772,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     call aoa_tracers_init()
 
     teout_idx = pbuf_get_index( 'TEOUT')
+    teout2_idx = pbuf_get_index( 'TEOUT2')
 
     ! For adiabatic or ideal physics don't need to initialize any of the
     ! parameterizations below:
@@ -1741,46 +1743,6 @@ end if ! l_gw_drag
       call physics_update(state,ptend,ztodt,tend)
     endif
 
-!adjust dp wrt Q(1)
-#if 0
-!almost COPYPASTE from dp_coupling
-    !adjust ps, keep the code close to applyCAMforcing_tracers
-
-    ps=0.0; pdel=0.0; 
-    te=0.0; tw=0.0; ke=0.0; se=0.0; wv=0.0; wl=0.0; wi=0.0; wr=0.0; ws=0.0;
-
-    dp_adj(:ncol,:) = state%pdel(:ncol,:)
-    do ic=1,ncol
-       do k=1,pver
-          fq = state%pdel(ic,k)*( state%q(ic,k,1) - state%q1(ic,k ) )
-          ps(ic)=ps(ic) + fq
-          dp_adj(ic,k)=dp_adj(ic,k) + fq   !  ps =  ps0+sum(dp(k))
-       enddo
-    enddo
-
-    ! compute water vapor adjusted dp3d:
-
-!with ps adjustment comment if below
-    if (adjust_ps) then
-       ! compute new dp3d from adjusted ps()
-       do k=1,pver
-          dp_adj(:ncol,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps(:ncol)
-       enddo
-    endif
-    pdel(:ncol,:pver)=dp_adj(:ncol,:pver)
-
-    call energy_helper_eam_def(state%u,state%v,state%t,state%q,ps,pdel,state%phis,&
-                                 ke,se,wv,wl,wi,wr,ws,te,tw, &
-                                 ncol)
-!manually overwrite te_cur
-
-    state%te_cur = te
-
-!    call check_energy_chng(state, tend, "dpadjust", nstep, ztodt, zero, zero, zero, zero)
-#endif  
-
-
 if (l_ac_energy_chk) then
     !-------------- Energy budget checks vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 
@@ -1822,9 +1784,60 @@ if (l_ac_energy_chk) then
     tmp_cldliq(:ncol,:pver) = state%q(:ncol,:pver,icldliq)
     tmp_cldice(:ncol,:pver) = state%q(:ncol,:pver,icldice)
 !empty call since it is for LR
-!    call physics_dme_adjust(state, tend, qini, ztodt)
+    call physics_dme_adjust(state, tend, qini, ztodt)
 !!!   REMOVE THIS CALL, SINCE ONLY Q IS BEING ADJUSTED. WON'T BALANCE ENERGY. TE IS SAVED BEFORE THIS
 !!!   call check_energy_chng(state, tend, "drymass", nstep, ztodt, zero, zero, zero, zero)
+
+
+
+
+
+!adjust dp wrt Q(1)
+#if 1
+!almost COPYPASTE from dp_coupling
+    !adjust ps, keep the code close to applyCAMforcing_tracers
+
+    !ps=0.0; pdel=0.0;
+    !te=0.0; tw=0.0; ke=0.0; se=0.0; wv=0.0; wl=0.0; wi=0.0; wr=0.0; ws=0.0;
+
+    dp_adj(:ncol,:) = state%pdel(:ncol,:)
+    do ic=1,ncol
+       do k=1,pver
+          fq = state%pdel(ic,k)*( state%q(ic,k,1) - state%q1(ic,k ) )
+          ps(ic)=ps(ic) + fq
+          dp_adj(ic,k)=dp_adj(ic,k) + fq   !  ps =  ps0+sum(dp(k))
+       enddo
+    enddo
+
+    ! compute water vapor adjusted dp3d:
+
+!with ps adjustment comment if below
+    if (adjust_ps) then
+       ! compute new dp3d from adjusted ps()
+       do k=1,pver
+          dp_adj(:ncol,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps(:ncol)
+       enddo
+    endif
+    pdel(:ncol,:pver)=dp_adj(:ncol,:pver)
+
+    call energy_helper_eam_def(state%u,state%v,state%t,state%q,ps,pdel,state%phis,&
+                                 ke,se,wv,wl,wi,wr,ws,te,tw, &
+                                 ncol)
+!manually overwrite te_cur
+
+!    state%te_cur(:ncol) = te(:ncol)
+
+!    call check_energy_chng(state, tend, "dpadjust", nstep, ztodt, zero, zero,
+!    zero, zero)
+
+    call pbuf_set_field(pbuf, teout2_idx, te, (/1,itim_old/),(/pcols,1/))       
+
+
+#endif  
+
+
+
 
     !-------------- Energy budget checks ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 end if ! l_ac_energy_chk

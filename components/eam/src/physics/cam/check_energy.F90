@@ -84,6 +84,7 @@ module check_energy
 ! Physics buffer indices
   
   integer  :: teout_idx  = 0       ! teout index in physics buffer 
+  integer  :: teout2_idx  = 0       ! teout index in physics buffer 
   integer  :: dtcore_idx = 0       ! dtcore index in physics buffer 
 
   type check_tracers_data
@@ -146,10 +147,12 @@ end subroutine check_energy_setopts
 ! Request physics buffer space for fields that persist across timesteps.
 
     call pbuf_add_field('TEOUT', 'global',dtype_r8 , (/pcols,dyn_time_lvls/),      teout_idx)
+    call pbuf_add_field('TEOUT2', 'global',dtype_r8 , (/pcols,dyn_time_lvls/),      teout2_idx)
     call pbuf_add_field('DTCORE','global',dtype_r8,  (/pcols,pver,dyn_time_lvls/),dtcore_idx)
 
     if(is_subcol_on()) then
       call pbuf_register_subcol('TEOUT', 'phys_register', teout_idx)
+      call pbuf_register_subcol('TEOUT2', 'phys_register', teout2_idx)
       call pbuf_register_subcol('DTCORE', 'phys_register', dtcore_idx)
     end if
 
@@ -260,19 +263,19 @@ end subroutine check_energy_get_integrals
     integer, optional                       :: col_type  ! Flag inidicating whether using grid or subcolumns
 !---------------------------Local storage-------------------------------
 
-    real(r8) :: ke(state%ncol)                     ! vertical integral of kinetic energy
-    real(r8) :: se(state%ncol)                     ! vertical integral of static energy
-    real(r8) :: te(state%ncol)          
-    real(r8) :: tw(state%ncol)
-    real(r8) :: wv(state%ncol)                     ! vertical integral of water (vapor)
-    real(r8) :: wl(state%ncol)                     ! vertical integral of water (liquid)
-    real(r8) :: wi(state%ncol)                     ! vertical integral of water (ice)
+    real(r8) :: ke(pcols)                     ! vertical integral of kinetic energy
+    real(r8) :: se(pcols)                     ! vertical integral of static energy
+    real(r8) :: te(pcols)          
+    real(r8) :: tw(pcols)
+    real(r8) :: wv(pcols)                     ! vertical integral of water (vapor)
+    real(r8) :: wl(pcols)                     ! vertical integral of water (liquid)
+    real(r8) :: wi(pcols)                     ! vertical integral of water (ice)
 
     integer lchnk                                  ! chunk identifier
     integer ncol                                   ! number of atmospheric columns
     integer  i,k                                   ! column, level indices
-    real(r8) :: wr(state%ncol)                     ! vertical integral of rain
-    real(r8) :: ws(state%ncol)                     ! vertical integral of snow
+    real(r8) :: wr(pcols)                     ! vertical integral of rain
+    real(r8) :: ws(pcols)                     ! vertical integral of snow
 !-----------------------------------------------------------------------
 
     lchnk = state%lchnk
@@ -297,6 +300,7 @@ end subroutine check_energy_get_integrals
 ! initialize physics buffer
     if (is_first_step()) then
        call pbuf_set_field(pbuf, teout_idx, state%te_ini, col_type=col_type)
+       call pbuf_set_field(pbuf, teout2_idx, state%te_ini, col_type=col_type)
     end if
 
   end subroutine check_energy_timestep_init
@@ -304,7 +308,7 @@ end subroutine check_energy_get_integrals
 !===============================================================================
   subroutine energy_helper_eam_def(u,v,T,q,ps,pdel,phis, &
                                    ke,se,wv,wl,wi,wr,ws,te,tw, &     
-                                   ncol,teloc,psterm)
+                                   ncol, teloc,psterm)
 
 !state vars are of size psetcols,pver, so, not exactly correct
     real(r8), intent(in) :: u(pcols,pver) 
@@ -319,20 +323,20 @@ end subroutine check_energy_get_integrals
 !it is sometimes called with pcol arrays!
 !FIX IT?
 
-    real(r8), intent(inout) :: ke(ncol)     ! vertical integral of kinetic energy
-    real(r8), intent(inout) :: se(ncol)     ! vertical integral of static energy
-    real(r8), intent(inout) :: wv(ncol)     ! vertical integral of water (vapor)
-    real(r8), intent(inout) :: wl(ncol)     ! vertical integral of water (liquid)
-    real(r8), intent(inout) :: wi(ncol)     ! vertical integral of water (ice)
-    real(r8), intent(inout) :: te(ncol)     ! vertical integral of total energy
-    real(r8), intent(inout) :: tw(ncol)     ! vertical integral of total water
-    real(r8), intent(inout) :: wr(ncol)     ! vertical integral of rain
-    real(r8), intent(inout) :: ws(ncol)     ! vertical integral of snow
+    real(r8), intent(inout) :: ke(pcols)     ! vertical integral of kinetic energy
+    real(r8), intent(inout) :: se(pcols)     ! vertical integral of static energy
+    real(r8), intent(inout) :: wv(pcols)     ! vertical integral of water (vapor)
+    real(r8), intent(inout) :: wl(pcols)     ! vertical integral of water (liquid)
+    real(r8), intent(inout) :: wi(pcols)     ! vertical integral of water (ice)
+    real(r8), intent(inout) :: te(pcols)     ! vertical integral of total energy
+    real(r8), intent(inout) :: tw(pcols)     ! vertical integral of total water
+    real(r8), intent(inout) :: wr(pcols)     ! vertical integral of rain
+    real(r8), intent(inout) :: ws(pcols)     ! vertical integral of snow
 
     real(r8), intent(inout), optional :: teloc(pcols,pver) 
     real(r8), intent(inout), optional :: psterm(pcols) 
 
-    integer, intent(in) :: ncol                   
+    integer, intent(in) :: ncol                  
     integer :: i,k                               
 
     ke = 0._r8
@@ -441,19 +445,19 @@ end subroutine check_energy_get_integrals
     real(r8) :: tw_rer(state%ncol)                 ! relative error in water column
     real(r8) :: tw_err(state%ncol)                 ! absolute error in water column
 
-    real(r8) :: ke(state%ncol)                     ! vertical integral of kinetic energy
-    real(r8) :: se(state%ncol)                     ! vertical integral of static energy
-    real(r8) :: wv(state%ncol)                     ! vertical integral of water (vapor)
-    real(r8) :: wl(state%ncol)                     ! vertical integral of water (liquid)
-    real(r8) :: wi(state%ncol)                     ! vertical integral of water (ice)
-    real(r8) :: te(state%ncol)                     ! vertical integral of total energy
-    real(r8) :: tw(state%ncol)                     ! vertical integral of total water
+    real(r8) :: ke(pcols)                     ! vertical integral of kinetic energy
+    real(r8) :: se(pcols)                     ! vertical integral of static energy
+    real(r8) :: wv(pcols)                     ! vertical integral of water (vapor)
+    real(r8) :: wl(pcols)                     ! vertical integral of water (liquid)
+    real(r8) :: wi(pcols)                     ! vertical integral of water (ice)
+    real(r8) :: te(pcols)                     ! vertical integral of total energy
+    real(r8) :: tw(pcols)                     ! vertical integral of total water
 
     integer lchnk                                  ! chunk identifier
     integer ncol                                   ! number of atmospheric columns
     integer  i,k                                   ! column, level indices
-    real(r8) :: wr(state%ncol)                     ! vertical integral of rain
-    real(r8) :: ws(state%ncol)                     ! vertical integral of snow
+    real(r8) :: wr(pcols)                     ! vertical integral of rain
+    real(r8) :: ws(pcols)                     ! vertical integral of snow
 !-----------------------------------------------------------------------
 
     lchnk = state%lchnk
@@ -574,7 +578,10 @@ end subroutine check_energy_get_integrals
        ! input energy
        te(:ncol,lchnk,1) = state(lchnk)%te_ini(:ncol)
        ! output energy
-       call pbuf_get_field(pbuf_get_chunk(pbuf2d,lchnk),teout_idx, teout)
+
+
+!       call pbuf_get_field(pbuf_get_chunk(pbuf2d,lchnk),teout_idx, teout)
+       call pbuf_get_field(pbuf_get_chunk(pbuf2d,lchnk),teout2_idx, teout)
 
        te(:ncol,lchnk,2) = teout(1:ncol)
        ! surface pressure for heating rate
@@ -1092,19 +1099,19 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
 !! Local 
 !!...................................................................
 
-    real(r8) :: wv(state%ncol)                     ! vertical integral of water (vapor)
-    real(r8) :: wl(state%ncol)                     ! vertical integral of water (liquid)
-    real(r8) :: wi(state%ncol)                     ! vertical integral of water (ice)
-    real(r8) :: ke(state%ncol)                     ! vertical integral of total water
-    real(r8) :: se(state%ncol)                     ! vertical integral of total water
-    real(r8) :: te(state%ncol)                     ! vertical integral of total water
-    real(r8) :: tw(state%ncol)                     ! vertical integral of total water
+    real(r8) :: wv(pcols)                    ! vertical integral of water (vapor)
+    real(r8) :: wl(pcols)                     ! vertical integral of water (liquid)
+    real(r8) :: wi(pcols)                     ! vertical integral of water (ice)
+    real(r8) :: ke(pcols)                     ! vertical integral of total water
+    real(r8) :: se(pcols)                     ! vertical integral of total water
+    real(r8) :: te(pcols)                     ! vertical integral of total water
+    real(r8) :: tw(pcols)                     ! vertical integral of total water
 
     integer lchnk                                  ! chunk identifier
     integer ncol                                   ! number of atmospheric columns
     integer  i,k                                   ! column, level indices
-    real(r8) :: wr(state%ncol)                     ! vertical integral of rain
-    real(r8) :: ws(state%ncol)                     ! vertical integral of snow
+    real(r8) :: wr(pcols)                     ! vertical integral of rain
+    real(r8) :: ws(pcols)                     ! vertical integral of snow
 !!...................................................................
 
     lchnk = state%lchnk
