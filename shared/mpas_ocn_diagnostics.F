@@ -999,7 +999,7 @@ contains
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray
       integer, dimension(:), pointer :: nEdgesOnCell, nEdgesOnEdge, &
-        maxLevelCell, maxLevelEdgeBot
+        maxLevelCell, maxLevelEdgeTop
       integer, dimension(:,:), pointer :: edgesOnCell, edgeSignOnCell
 
       real (kind=RKIND) :: flux, invAreaCell, div_hu_btr
@@ -1011,7 +1011,7 @@ contains
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-      call mpas_pool_get_array(meshPool, 'maxLevelEdgeBot', maxLevelEdgeBot)
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
 
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
@@ -1046,7 +1046,7 @@ contains
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
 
-            do k = 1, maxLevelEdgeBot(iEdge)
+            do k = 1, maxLevelEdgeTop(iEdge)
                flux = layerThicknessEdge(k, iEdge) * normalVelocity(k, iEdge) * dvEdge(iEdge) * edgeSignOnCell(i, iCell) &
                     * invAreaCell
                div_hu(k,iCell) = div_hu(k,iCell) - flux
