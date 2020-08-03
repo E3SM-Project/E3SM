@@ -116,7 +116,6 @@ contains
       real (kind=RKIND) :: weightSum, thicknessSum, remainder, newThickness, thicknessWithRemainder
       real (kind=RKIND), dimension(:), pointer :: vertCoordMovementWeights
       real (kind=RKIND), dimension(:), allocatable :: &
-         SSH_ALE_thickness,      & !> ALE thickness alteration due to SSH (z-star)
          prelim_ALE_thickness,   & !> ALE thickness at new time
          min_ALE_thickness_down, & !> ALE thickness alteration due to min/max thickness
          min_ALE_thickness_up      !> ALE thickness alteration due to min/max thickness
@@ -137,7 +136,7 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
-      allocate(SSH_ALE_thickness(nVertLevels), prelim_ALE_thickness(nVertLevels), &
+      allocate(prelim_ALE_thickness(nVertLevels), &
          min_ALE_thickness_down(nVertLevels), min_ALE_thickness_up(nVertLevels))
 
       !
@@ -151,15 +150,15 @@ contains
    
             thicknessSum = 1e-14_RKIND
             do k = 1, kMax
-               SSH_ALE_thickness(k) = SSH(iCell) * vertCoordMovementWeights(k) * restingThickness(k, iCell)
                thicknessSum = thicknessSum + vertCoordMovementWeights(k) * restingThickness(k, iCell)
             end do
    
             ! Note that restingThickness is nonzero, and remaining terms are perturbations about zero.
             ! This is equation 4 and 6 in Petersen et al 2015, but with eqn 6
             do k = 1, kMax
-               SSH_ALE_thickness(k) = SSH_ALE_thickness(k) / thicknessSum
-               ALE_thickness(k, iCell) = restingThickness(k, iCell) + SSH_ALE_thickness(k)
+               ALE_thickness(k, iCell) = restingThickness(k, iCell) &
+                  + ( SSH(iCell) * vertCoordMovementWeights(k) * restingThickness(k, iCell) ) &
+                    / thicknessSum
             end do
          enddo
          !$omp end do
@@ -239,7 +238,7 @@ contains
 
       endif ! config_use_min_max_thickness
 
-      deallocate(SSH_ALE_thickness, prelim_ALE_thickness, min_ALE_thickness_down, min_ALE_thickness_up)
+      deallocate(prelim_ALE_thickness, min_ALE_thickness_down, min_ALE_thickness_up)
 
    end subroutine ocn_ALE_thickness!}}}
 
