@@ -120,7 +120,7 @@ contains
       real(kind=RKIND)                 :: sumRi, RiTopOfEdge, zEdge, zMLD, sshEdge, sfcTaper
       real(kind=RKIND) :: gradDensityTopOfEdge, dcEdgeInv, drhoDx, drhoDT, drhoDS, dTdx, dSdx, BVFcent
       real(kind=RKIND) :: slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown, invAreaCell
-      real(kind=RKIND) :: dzdxTopOfEdge, drhodz1, drhodz2, dTdz, dSdz, gradDensityConstZTopOfEdge
+      real(kind=RKIND) :: lt1, lt2, dzdxTopOfEdge, drhodz1, drhodz2, dTdz, dSdz, gradDensityConstZTopOfEdge
       real(kind=RKIND), dimension(:), allocatable :: dzTop, dTdzTop, dSdzTop, k33Norm
       ! Dimensions
       integer :: nsmooth, nCells, nEdges
@@ -251,16 +251,21 @@ contains
 
          !$omp do schedule(runtime) private(maxLocation, cell1, cell2, k, BruntVaisalaFreqTopEdge, maxN)
          do iCell = 1, nCells
-            k = min(maxLevelCell(iCell) - 1, max(1, indMLD(iCell)))
+!            k = min(maxLevelCell(iCell) - 1, max(1, indMLD(iCell)))
             k = 1
             maxN = max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND)
-            do while (BruntVaisalaFreqTop(k + 1, iCell) > maxN .and. k < maxLevelCell(iCell) - 1)
-               k = k + 1
-               maxN = max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND)
-            end do
+            do k = 1, maxLevelCell(iCell)
+              maxN = max(maxN,max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND))
+            enddo
 
-            maxLocation = k
-            do k = maxLocation, maxLevelCell(iCell)
+!            do while (BruntVaisalaFreqTop(k + 1, iCell) > maxN .and. k < maxLevelCell(iCell) - 1)
+!               k = k + 1
+!               maxN = max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND)
+!            end do
+
+!            maxLocation = k
+!            do k = maxLocation, maxLevelCell(iCell)
+            do k = 1,maxLevelCell(iCell)
                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND)
 
                RediKappaScaling(k, iCell) = min(max(config_GM_min_stratification_ratio, &
@@ -506,13 +511,19 @@ contains
                ltSum = 0.0
                countN2 = 0
 
-               do k = 2, maxLevelEdgeTop(iEdge)
+               do k = 2, maxLevelEdgeTop(iEdge)-1
 
-                  BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k, cell1) + BruntVaisalaFreqTop(k, cell2))
-                  BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
+               !   BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k, cell1) + BruntVaisalaFreqTop(k, cell2))
+               !   BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
+               !   lt1 = 0.5_RKIND*(layerThickness(k,cell1) + layerThickness(k-1,cell1))
+               !   lt2 = 0.5_RKIND*(layerThickness(k,cell2) + layerThickness(k-1,cell2))
+               !   sumN2 = sumN2 + 0.5_RKIND*(lt1*max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND) + &
+               !                 lt2*max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND))
 
-                  sumN2 = sumN2 + BruntVaisalaFreqTopEdge*layerThicknessEdge(k, iEdge)
-                  ltSum = ltSum + layerThicknessEdge(k, iEdge)
+                  lt1 = 0.5_RKIND*(layerThicknessEdge(k,iEdge) + layerThicknessEdge(k-1,iEdge))
+                  sumN2 = sumN2 + BruntVaisalaFreqTopEdge*lt1
+                !  ltSum = ltSum + layerThicknessEdge(k, iEdge)
+                  ltSum = ltSum + lt1
                   countN2 = countN2 + 1
 
                end do
@@ -550,25 +561,32 @@ contains
               cell1 = cellsOnEdge(1, iEdge)
               cell2 = cellsOnEdge(2, iEdge)
               zEdge = 0.5_RKIND*(zTop(k,cell1) + zTop(k,cell2))
-              do while(zEdge > -config_GM_visbeck_min_depth .and. k < maxLevelEdgeTop(iEdge))
-                k = k+1
-                zEdge = 0.5_RKIND*(zTop(k,cell1) + zTop(k,cell2))
-              enddo
+!             do while(zEdge > -config_GM_visbeck_min_depth .and. k < maxLevelEdgeTop(iEdge))
+!                k = k+1
+!                zEdge = 0.5_RKIND*(zTop(k,cell1) + zTop(k,cell2))
+!              enddo
 
-              k = max(1,k - 1)
-              zEdge = 0.5_RKIND*(zTop(k,cell1) + zTop(k,cell2))
+              k = 2 
+              zEdge = 0.5_RKIND*(zTop(k,cell1) + zTop(k,cell2)) - 0.5_RKIND*(zTop(1,cell1) + zTop(1,Cell2))
               do while(zEdge > -config_GM_visbeck_max_depth .and. k < maxLevelEdgeTop(iEdge))
-                BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k, cell1) + BruntVaisalaFreqTop(k, cell2))
-                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
-                sumN2 = sumN2 + layerThicknessEdge(k,iEdge)*BruntVaisalaFreqTopEdge
+!              do k=2,maxLevelEdgeTop(iEdge)
+!                BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k, cell1) + BruntVaisalaFreqTop(k, cell2))
+!                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
+!                sumN2 = sumN2 + layerThicknessEdge(k,iEdge)*BruntVaisalaFreqTopEdge
+                lt1 = 0.5_RKIND*(layerThicknessEdge(k,iEdge) + layerThicknessEdge(k-1,iEdge))
+!                lt2 = 0.5_RKIND*(layerThickness(k,cell2) + layerThickness(k-1,cell2))
+                sumN2 = sumN2 + lt1*0.5_RKIND*(max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND) + &
+                                max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND))
                 RiTopOfEdge = 0.5_RKIND*(RiTopOfCell(k,cell1) + RiTopOfCell(k,cell2))
                 RiTopOfEdge = max(RiTopOfEdge, 0.0_RKIND)
-                sumRi = sumRi + layerThicknessEdge(k,iEdge)*RiTopOfEdge
-                ltsum = ltsum + layerThicknessEdge(k,iEdge)
+!                sumRi = sumRi + layerThicknessEdge(k,iEdge)*RiTopOfEdge
+                sumRi = sumRi + lt1*0.5_RKIND*(max(RiTopOfCell(k,cell1),0.0_RKIND) + &
+                                    max(RiTopOfCell(k,cell2),0.0_RKIND))
+                ltsum = ltsum + lt1
                 countN2 = countN2 + 1
 
                 k = k + 1
-                zEdge = 0.5_RKIND*(zTop(k,cell1) + zTop(k,cell2))
+                zEdge = 0.5_RKIND*(zTop(k,cell1) + zTop(k,cell2)) - 0.5_RKIND*(zTop(1,cell1) + zTop(1,Cell2))
              end do
 
              if (countN2 > 0) then
@@ -865,7 +883,7 @@ contains
 
          RediGMinitValue = 1.0_RKIND
          if (config_GM_closure == 'constant') then
-            local_config_GM_lat_variable_c2 = .false.
+            local_config_GM_lat_variable_c2 = .true.
             local_config_GM_kappa_lat_depth_variable = .false.
             local_config_GM_compute_visbeck = .false.
             !$omp do schedule(runtime)
@@ -886,7 +904,7 @@ contains
             end do
             !$omp end do
          else if (config_GM_closure == 'visbeck') then
-            local_config_GM_lat_variable_c2 = .true.
+            local_config_GM_lat_variable_c2 = .false.
             local_config_GM_kappa_lat_depth_variable = .false.
             local_config_GM_compute_visbeck = .true.
 
