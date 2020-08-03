@@ -34,6 +34,7 @@ module ocn_harmonic_analysis
    use mpas_stream_manager
    use mpas_constants
    use ocn_constants
+   use ocn_config
    use ocn_diagnostics_routines
    use ocn_vel_tidal_potential, only: char_array,tidal_constituent_factors
 
@@ -114,17 +115,6 @@ contains
       !
       !-----------------------------------------------------------------
 
-      logical, pointer :: config_do_restart 
-      logical, pointer :: config_AM_harmonicAnalysis_use_M2
-      logical, pointer :: config_AM_harmonicAnalysis_use_S2
-      logical, pointer :: config_AM_harmonicAnalysis_use_N2
-      logical, pointer :: config_AM_harmonicAnalysis_use_K2
-      logical, pointer :: config_AM_harmonicAnalysis_use_K1
-      logical, pointer :: config_AM_harmonicAnalysis_use_O1
-      logical, pointer :: config_AM_harmonicAnalysis_use_Q1
-      logical, pointer :: config_AM_harmonicAnalysis_use_P1
-      character (len=StrKIND), pointer :: config_tidal_potential_reference_time
-
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: harmonicAnalysisAMPool 
@@ -150,17 +140,6 @@ contains
       err = 0
 
       leastSquaresSolution = 0
-
-      call mpas_pool_get_config(ocnConfigs, 'config_do_restart', config_do_restart)
-      call mpas_pool_get_config(ocnConfigs, 'config_AM_harmonicAnalysis_use_M2', config_AM_harmonicAnalysis_use_M2)
-      call mpas_pool_get_config(ocnConfigs, 'config_AM_harmonicAnalysis_use_S2', config_AM_harmonicAnalysis_use_S2)
-      call mpas_pool_get_config(ocnConfigs, 'config_AM_harmonicAnalysis_use_N2', config_AM_harmonicAnalysis_use_N2)
-      call mpas_pool_get_config(ocnConfigs, 'config_AM_harmonicAnalysis_use_K2', config_AM_harmonicAnalysis_use_K2)
-      call mpas_pool_get_config(ocnConfigs, 'config_AM_harmonicAnalysis_use_K1', config_AM_harmonicAnalysis_use_K1)
-      call mpas_pool_get_config(ocnConfigs, 'config_AM_harmonicAnalysis_use_O1', config_AM_harmonicAnalysis_use_O1)
-      call mpas_pool_get_config(ocnConfigs, 'config_AM_harmonicAnalysis_use_Q1', config_AM_harmonicAnalysis_use_Q1)
-      call mpas_pool_get_config(ocnConfigs, 'config_AM_harmonicAnalysis_use_P1', config_AM_harmonicAnalysis_use_P1)
-      call mpas_pool_get_config(ocnConfigs, 'config_tidal_potential_reference_time', config_tidal_potential_reference_time)
 
       dminfo = domain % dminfo
 
@@ -316,8 +295,6 @@ contains
 
       integer, pointer :: nCellsSolve      
       integer, pointer :: nAnalysisConstituents
-      character (len=StrKIND), pointer :: config_AM_harmonicAnalysis_start
-      character (len=StrKIND), pointer :: config_AM_harmonicAnalysis_end
       real (kind=RKIND), pointer :: daysSinceStartOfSim
       real (kind=RKIND), dimension(:),   pointer :: ssh
       real (kind=RKIND), dimension(:,:), pointer :: leastSquaresLHSMatrix
@@ -354,9 +331,6 @@ contains
 
       block => domain % blocklist
       do while (associated(block))
-         call mpas_pool_get_config(ocnConfigs, 'config_AM_harmonicAnalysis_start', config_AM_harmonicAnalysis_start)
-         call mpas_pool_get_config(ocnConfigs, 'config_AM_harmonicAnalysis_end', config_AM_harmonicAnalysis_end)
-
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
