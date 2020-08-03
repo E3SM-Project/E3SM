@@ -110,13 +110,13 @@ module ocn_diagnostics
    ! Subroutine ocn_vert_transport_velocity_top
    ! projectedSSH: projected SSH at a new time
    !        units: none
-   real (kind=RKIND), dimension(:), allocatable ::  projectedSSH
-   ! div_hu: divergence of (thickness*velocity)
-   !  units: none
-   real (kind=RKIND), dimension(:,:), allocatable :: div_hu
-   ! ALE_Thickness: ALE thickness at new time
-   !         units: none
-   real (kind=RKIND), dimension(:,:), allocatable :: ALE_Thickness
+   !  real (kind=RKIND), dimension(:), allocatable ::  projectedSSH
+   !  ! div_hu: divergence of (thickness*velocity)
+   !  !  units: none
+   !  real (kind=RKIND), dimension(:,:), allocatable :: div_hu
+   !  ! ALE_Thickness: ALE thickness at new time
+   !  !         units: none
+   !  real (kind=RKIND), dimension(:,:), allocatable :: ALE_Thickness
 
    ! subroutine ocn_compute_KPP_input_fields
    ! densitySurfaceDisplaced: Density computed by displacing SST and SSS to every vertical
@@ -1004,6 +1004,14 @@ contains
 
       real (kind=RKIND) :: flux, invAreaCell, div_hu_btr
       real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell
+      real (kind=RKIND), dimension(:), pointer :: &
+         projectedSSH       !> projected SSH at new time
+      type (field1DReal), pointer :: projectedSSHField
+      real (kind=RKIND), dimension(:,:), pointer :: &
+         ALE_Thickness, & !> ALE thickness at new time
+         div_hu           !> divergence of (thickness*velocity)
+      type (field2DReal), pointer :: ALE_ThicknessField, div_huField
+
       err = 0
 
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
@@ -1024,15 +1032,26 @@ contains
 
       ncells = nCellsArray(size(nCellsArray))
 
-      !$omp master
-      allocate(div_hu(nVertLevels, nCells), &
-               projectedSSH(nCells), &
-               ALE_Thickness(nVertLevels, nCells))
-      !$omp end master
-      !$omp barrier
+      ! !$omp master
+      ! allocate(div_hu(nVertLevels, nCells), &
+      !          projectedSSH(nCells), &
+      !          ALE_Thickness(nVertLevels, nCells))
+      ! !$omp end master
+      ! !$omp barrier
 
       ! Only need to compute over 0 and 1 halos
       nCells = nCellsArray( 2 )
+
+      call mpas_pool_get_field(scratchPool, 'div_hu', div_huField)
+      call mpas_pool_get_field(scratchPool, 'projectedSSH', projectedSSHField)
+      call mpas_pool_get_field(scratchPool, 'ALE_Thickness', ALE_ThicknessField)
+      call mpas_allocate_scratch_field(div_huField, .true.)
+      call mpas_allocate_scratch_field(projectedSSHField, .true.)
+      call mpas_allocate_scratch_field(ALE_ThicknessField, .true.)
+
+      div_hu => div_huField % array
+      projectedSSH => projectedSSHField % array
+      ALE_Thickness => ALE_ThicknessField % array
 
       !
       ! thickness-weighted divergence and barotropic divergence
@@ -1086,12 +1105,15 @@ contains
       end do
       !$omp end do
 
-      !$omp barrier
-      !$omp master
-      deallocate(div_hu, &
-                 projectedSSH, &
-                 ALE_Thickness)
-      !$omp end master
+      !  !$omp barrier
+      !  !$omp master
+      !  deallocate(div_hu, &
+      !             projectedSSH, &
+      !             ALE_Thickness)
+      !  !$omp end master
+      call mpas_deallocate_scratch_field(div_huField, .true.)
+      call mpas_deallocate_scratch_field(projectedSSHField, .true.)
+      call mpas_deallocate_scratch_field(ALE_ThicknessField, .true.)
 
    end subroutine ocn_vert_transport_velocity_top!}}}
 
