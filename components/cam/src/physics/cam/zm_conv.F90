@@ -924,7 +924,9 @@ subroutine zm_convr(lchnk   ,ncol    , &
 ! gather back temperature and mixing ratio.
 !
    do k = msg + 1,pver
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
       do i = 1,lengath
 !
 ! q is updated to compute net precip.
@@ -948,7 +950,9 @@ subroutine zm_convr(lchnk   ,ncol    , &
       end do
    end do
 !
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
    do i = 1,lengath
       jctop(ideep(i)) = jt(i)
 !++bee
@@ -1412,7 +1416,9 @@ subroutine convtran(lchnk   , &
          end do
 ! %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
+#ifdef CPRCRAY
 !DIR$ NOINTERCHANGE
+#endif
          do k = kbm,pver
             km1 = max(1,k-1)
             do i = il1g,il2g
@@ -1448,7 +1454,9 @@ subroutine convtran(lchnk   , &
          dqdt(:,:,m) = 0._r8
          do k = 1,pver
             kp1 = min(pver,k+1)
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
             do i = il1g,il2g
                dqdt(ideep(i),k,m) = dcondt(i,k)
             end do
@@ -1773,7 +1781,9 @@ subroutine momtran(lchnk, ncol, &
 
   ! dcont for bottom layer
           !
+#ifdef CPRCRAY
           !DIR$ NOINTERCHANGE
+#endif
           do k = kbm,pver
              km1 = max(1,k-1)
              do i = il1g,il2g
@@ -3232,7 +3242,9 @@ subroutine q1q2_pjr(lchnk   , &
    end do
 
 !
+#ifdef CPRCRAY
 !DIR$ NOINTERCHANGE!
+#endif
    do k = kbm,pver
       do i = il1g,il2g
          if (k == mx(i)) then

@@ -13,9 +13,7 @@ int main (int argc, char **argv) {
   // Initialize MPI
   MPI_Init(&argc,&argv);
 
-  // Initialize scream;
-  scream::initialize_scream_session(argc, argv);
-
+  // Read possible scream-specific arguments
   auto const readCommaSeparaterParams = [] (const std::string& cmd_line_arg) {
     if (cmd_line_arg=="") {
       return;
@@ -44,6 +42,26 @@ int main (int argc, char **argv) {
 
   scream_require_msg(catch_session.applyCommandLine(argc,argv)==0,
                      "Error! Something went wrong while parsing command line.\n");
+
+  // If we are on a gpu build, we might have a test device id to use
+  // so start by creating a copy of argv that we can extend
+  std::vector<char*> args;
+  for (int i=0; i<argc; ++i) {
+    args.push_back(argv[i]);
+  }
+
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  int dev_id = scream::util::get_test_device(rank);
+  // Create it outside the if, so its c_str pointer survives
+  std::string new_arg;
+  if (dev_id>=0) {
+    new_arg = "--kokkos-device=" + std::to_string(dev_id);
+    args.push_back(const_cast<char*>(new_arg.c_str()));
+  }
+
+  // Initialize scream;
+  scream::initialize_scream_session(args.size(),args.data());
 
   // Run tests
   int num_failed = catch_session.run(argc, argv);

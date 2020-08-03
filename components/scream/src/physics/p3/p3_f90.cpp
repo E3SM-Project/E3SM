@@ -17,17 +17,14 @@ extern "C" {
                  Real* qv, Real dt, Real* qitot, Real* qirim,
                  Real* nitot, Real* birim, Real* pres,
                  Real* dzq, Real* ncnuc, Real* naai, Real* qc_relvar,
-		 Int it, Real* prt_liq, Real* prt_sol, Int its,
-                 Int ite, Int kts, Int kte, Real* diag_ze,
-                 Real* diag_effc, Real* diag_effi, Real* diag_vmi,
-                 Real* diag_di, Real* diag_rhoi,
-                 bool log_predictNc,
-                 Real* pdel, Real* exner, Real* cmeiout, Real* prain,
-                 Real* nevapr, Real* prer_evap,
+                 Int it, Real* prt_liq, Real* prt_sol, Int its,
+                 Int ite, Int kts, Int kte, Real* diag_effc, Real* diag_effi,
+                 Real* diag_rhoi, bool log_predictNc, Real* pdel, Real* exner,
+                 Real* cmeiout, Real* prain, Real* nevapr, Real* prer_evap,
                  Real* rflx, Real* sflx, // 1 extra column size
-                 Real* rcldm, Real* lcldm, Real* icldm, Real* pratot, Real* prctot,
-                 Real* mu_c, Real* lamc, Real* liq_ice_exchange,
-                 Real* vap_liq_exchange, Real* vap_ice_exchange);
+                 Real* rcldm, Real* lcldm, Real* icldm, Real* mu_c, Real* lamc,
+                 Real* liq_ice_exchange, Real* vap_liq_exchange,
+                 Real* vap_ice_exchange);
 }
 
 namespace scream {
@@ -60,11 +57,8 @@ FortranData::FortranData (Int ncol_, Int nlev_)
   // Out
   prt_liq = Array1("precipitation rate, liquid  m/s", ncol);
   prt_sol = Array1("precipitation rate, solid   m/s", ncol);
-  diag_ze = Array2("equivalent reflectivity, dBZ", ncol, nlev);
   diag_effc = Array2("effective radius, cloud, m", ncol, nlev);
   diag_effi = Array2("effective radius, ice, m", ncol, nlev);
-  diag_vmi = Array2("mass-weighted fall speed of ice, m/s", ncol, nlev);
-  diag_di = Array2("mean diameter of ice, m", ncol, nlev);
   diag_rhoi = Array2("bulk density of ice, kg/m", ncol, nlev);
   cmeiout = Array2("qitend due to deposition/sublimation ", ncol, nlev);
   prain = Array2("Total precipitation (rain + snow)", ncol, nlev);
@@ -75,8 +69,6 @@ FortranData::FortranData (Int ncol_, Int nlev_)
   rcldm = Array2("Rain cloud fraction", ncol, nlev);
   lcldm = Array2("Liquid cloud fraction", ncol, nlev);
   icldm = Array2("Ice cloud fraction", ncol, nlev);
-  pratot = Array2("Cloud drop accretion by rain", ncol, nlev);
-  prctot = Array2("Cloud drop autoconversion to rain", ncol, nlev);
   mu_c = Array2("Size distribution shape paramter", ncol, nlev);
   lamc = Array2("Size distribution slope paramter", ncol, nlev);
   liq_ice_exchange = Array2("sum of liq-ice phase change tendenices", ncol, nlev);
@@ -100,13 +92,11 @@ void FortranDataIterator::init (const FortranData::Ptr& dp) {
   fdipb(dzq); fdipb(ncnuc); fdipb(naai); fdipb(qc_relvar); fdipb(qc);
   fdipb(nc); fdipb(qr); fdipb(nr); fdipb(qitot); fdipb(nitot);
   fdipb(qirim); fdipb(birim); fdipb(prt_liq); fdipb(prt_sol);
-  fdipb(diag_ze); fdipb(diag_effc); fdipb(diag_effi);
-  fdipb(diag_vmi); fdipb(diag_di); fdipb(diag_rhoi);
+  fdipb(diag_effc); fdipb(diag_effi); fdipb(diag_rhoi);
   fdipb(pdel); fdipb(exner); fdipb(cmeiout); fdipb(prain);
   fdipb(nevapr); fdipb(prer_evap); fdipb(rflx); fdipb(sflx);
   fdipb(rcldm); fdipb(lcldm); fdipb(icldm);
-  fdipb(pratot); fdipb(prctot);
-  fdipb(mu_c); fdipb(lamc); fdipb(liq_ice_exchange); fdipb(vap_liq_exchange);
+  fdipb(mu_c); fdipb(lamc), fdipb(liq_ice_exchange); fdipb(vap_liq_exchange);
   fdipb(vap_ice_exchange);;
 #undef fdipb
 }
@@ -142,34 +132,27 @@ void p3_main (const FortranData& d, bool use_fortran) {
               d.th.data(), d.qv.data(), d.dt, d.qitot.data(),
               d.qirim.data(), d.nitot.data(), d.birim.data(),
               d.pres.data(), d.dzq.data(), d.ncnuc.data(), d.naai.data(), d.qc_relvar.data(),
-              d.it, d.prt_liq.data(),
-              d.prt_sol.data(), 1, d.ncol, 1, d.nlev, d.diag_ze.data(),
-              d.diag_effc.data(), d.diag_effi.data(), d.diag_vmi.data(),
-              d.diag_di.data(), d.diag_rhoi.data(),
-              d.log_predictNc,
-              d.pdel.data(), d.exner.data(), d.cmeiout.data(), d.prain.data(),
-              d.nevapr.data(), d.prer_evap.data(),
-              d.rflx.data(), d.sflx.data(),
-              d.rcldm.data(), d.lcldm.data(), d.icldm.data(),d.pratot.data(),d.prctot.data(),
-              d.mu_c.data(),d.lamc.data(),d.liq_ice_exchange.data(),
+              d.it, d.prt_liq.data(), d.prt_sol.data(), 1, d.ncol, 1, d.nlev,
+              d.diag_effc.data(), d.diag_effi.data(), d.diag_rhoi.data(),
+              d.log_predictNc, d.pdel.data(), d.exner.data(), d.cmeiout.data(),
+              d.prain.data(), d.nevapr.data(), d.prer_evap.data(),
+              d.rflx.data(), d.sflx.data(), d.rcldm.data(), d.lcldm.data(),
+              d.icldm.data(), d.mu_c.data(), d.lamc.data(),
+              d.liq_ice_exchange.data(),
               d.vap_liq_exchange.data(),d.vap_ice_exchange.data());
   }
   else {
-    p3_main_f(d.qc.data(), d.nc.data(), d.qr.data(), d.nr.data(),
-              d.th.data(), d.qv.data(), d.dt, d.qitot.data(),
-              d.qirim.data(), d.nitot.data(), d.birim.data(),
-              d.pres.data(), d.dzq.data(), d.ncnuc.data(), d.naai.data(), d.qc_relvar.data(),
-              d.it, d.prt_liq.data(),
-              d.prt_sol.data(), 1, d.ncol, 1, d.nlev, d.diag_ze.data(),
-              d.diag_effc.data(), d.diag_effi.data(), d.diag_vmi.data(),
-              d.diag_di.data(), d.diag_rhoi.data(),
-              d.log_predictNc,
+    p3_main_f(d.qc.data(), d.nc.data(), d.qr.data(), d.nr.data(), d.th.data(),
+              d.qv.data(), d.dt, d.qitot.data(), d.qirim.data(), d.nitot.data(),
+              d.birim.data(), d.pres.data(), d.dzq.data(), d.ncnuc.data(),
+              d.naai.data(), d.qc_relvar.data(), d.it, d.prt_liq.data(),
+              d.prt_sol.data(), 1, d.ncol, 1, d.nlev, d.diag_effc.data(),
+              d.diag_effi.data(), d.diag_rhoi.data(), d.log_predictNc,
               d.pdel.data(), d.exner.data(), d.cmeiout.data(), d.prain.data(),
-              d.nevapr.data(), d.prer_evap.data(),
-              d.rflx.data(), d.sflx.data(),
-              d.rcldm.data(), d.lcldm.data(), d.icldm.data(),d.pratot.data(),d.prctot.data(),
-              d.mu_c.data(),d.lamc.data(),d.liq_ice_exchange.data(),
-              d.vap_liq_exchange.data(),d.vap_ice_exchange.data());
+              d.nevapr.data(), d.prer_evap.data(), d.rflx.data(), d.sflx.data(),
+              d.rcldm.data(), d.lcldm.data(), d.icldm.data(), d.mu_c.data(),
+              d.lamc.data(), d.liq_ice_exchange.data(), d.vap_liq_exchange.data(),
+              d.vap_ice_exchange.data());
   }
 }
 

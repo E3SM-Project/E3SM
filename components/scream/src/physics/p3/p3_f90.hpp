@@ -31,8 +31,8 @@ struct FortranData {
     nitot, qirim, birim, pdel, exner;
   // Out
   Array1 prt_liq, prt_sol;
-  Array2 diag_ze, diag_effc, diag_effi, diag_vmi, diag_di, diag_rhoi, cmeiout, prain, nevapr, prer_evap, rflx, sflx, rcldm, lcldm, icldm;
-  Array2 pratot, prctot;
+  Array2 diag_effc, diag_effi, diag_rhoi, cmeiout, prain, nevapr, prer_evap,
+         rflx, sflx, rcldm, lcldm, icldm;
   Array3 p3_tend_out;
   Array2 mu_c, lamc;
   Array2 liq_ice_exchange,vap_liq_exchange,vap_ice_exchange;

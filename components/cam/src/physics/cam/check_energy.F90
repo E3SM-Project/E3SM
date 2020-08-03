@@ -609,7 +609,9 @@ end subroutine check_energy_get_integrals
 !-----------------------------------------------------------------------
 
     ! Copy total energy out of input and output states
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
     do lchnk = begchunk, endchunk
        ncol = state(lchnk)%ncol
        ! input energy
@@ -690,7 +692,9 @@ subroutine ieflx_gmean(state, tend, pbuf2d, cam_in, cam_out, nstep)
     snow = 0._r8 
     ienet = 0._r8 
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
     do lchnk = begchunk, endchunk
 
        ncol = state(lchnk)%ncol
@@ -726,7 +730,9 @@ subroutine ieflx_gmean(state, tend, pbuf2d, cam_in, cam_out, nstep)
 
     call gmean(ienet, ieflx_glob)
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
     do lchnk = begchunk, endchunk
 
        ieflx = ieflx_glob
@@ -806,7 +812,9 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
 
     qflx_glob = 0._r8 
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
     do lchnk = begchunk, endchunk
        ncol = state(lchnk)%ncol
        qflx(:ncol,lchnk) = cam_in(lchnk)%cflx(:ncol,1)

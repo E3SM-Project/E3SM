@@ -92,6 +92,115 @@ struct Functions
 
   using Workspace = typename WorkspaceManager<Spack, Device>::Workspace;
 
+  // This struct stores prognostic variables evolved by P3.
+  struct P3PrognosticState {
+    // Cloud mass mixing ratio [kg kg-1]
+    view_2d<Spack> qc;
+    // Cloud number mixing ratio [# kg-1]
+    view_2d<Spack> nc;
+    // Rain mass mixing ratio [kg kg-1]
+    view_2d<Spack> qr;
+    // Rain number mixing ratio [# kg-1]
+    view_2d<Spack> nr;
+    // Ice total mass mixing ratio [kg kg-1]
+    view_2d<Spack> qitot;
+    // Ice rime mass mixing ratio [kg kg-1]
+    view_2d<Spack> qirim;
+    // Ice total number mixing ratio [# kg-1]
+    view_2d<Spack> nitot;
+    // Ice rime volume mixing ratio [m3 kg-1]
+    view_2d<Spack> birim;
+    // Water vapor mixing ratio [kg kg-1]
+    view_2d<Spack> qv;
+    // Potential temperature [K]
+    view_2d<Spack> th;
+  };
+
+  // This struct stores diagnostic variables used by P3.
+  struct P3DiagnosticInputs {
+    // CCN activated number tendency [kg-1 s-1]
+    view_2d<const Spack> ncnuc;
+    // Activated ice nuclei concentration [1/kg]
+    view_2d<const Spack> naai;
+    // Assumed SGS 1/(var(qc)/mean(qc)) [kg2/kg2]
+    view_2d<const Spack> qc_relvar;
+    // Ice cloud fraction
+    view_2d<const Spack> icldm;
+    // Liquid cloud fraction
+    view_2d<const Spack> lcldm;
+    // Rain cloud fraction
+    view_2d<const Spack> rcldm;
+    // Pressure [Pa]
+    view_2d<const Spack> pres;
+    // Vertical grid spacing [m]
+    view_2d<const Spack> dzq;
+    // Pressure thickness [Pa]
+    view_2d<const Spack> pdel;
+    // Exner expression
+    view_2d<const Spack> exner;
+  };
+
+  // This struct stores diagnostic outputs computed by P3.
+  struct P3DiagnosticOutputs {
+    // Size distribution shape parameter for radiation
+    view_2d<Spack> mu_c;
+    // Size distribution slope parameter for radiation
+    view_2d<Spack> lamc;
+    // qitend due to deposition/sublimation
+    view_2d<Spack> cmeiout;
+    // Precipitation rate, liquid [m s-1]
+    view_1d<Scalar> prt_liq;
+    // Precipitation rate, solid [m s-1]
+    view_1d<Scalar> prt_sol;
+    // Effective cloud radius [m]
+    view_2d<Spack> diag_effc;
+    // Effective ice radius [m]
+    view_2d<Spack> diag_effi;
+    // Bulk density of ice [kg m-3]
+    view_2d<Spack> diag_rhoi;
+    // Total precipitation (rain + snow)
+    view_2d<Spack> prain;
+    // Evaporation of total precipitation (rain + snow)
+    view_2d<Spack> nevapr;
+    // Evaporation of rain
+    view_2d<Spack> prer_evap;
+    // Grid-box average rain flux [kg m^-2 s^-1] pverp
+    view_2d<Spack> rflx;
+    // Grid-box average ice/snow flux [kg m^-2 s^-1] pverp
+    view_2d<Spack> sflx;
+  };
+
+  // This struct stores time stepping and grid-index-related information.
+  struct P3Infrastructure {
+    // Model time step [s]
+    Real dt;
+    // Time step counter (1-based)
+    Int it;
+    // Lower bound for horizontal column indices.
+    Int its;
+    // Upper bound for horizontal column indices.
+    Int ite;
+    // Lower bound for vertical level indices.
+    Int kts;
+    // Upper bound for vertical level indices.
+    Int kte;
+    // Set to true to have P3 predict Nc, false to have Nc specified.
+    bool predictNc;
+    // Coordinates of columns, ni x 3
+    view_2d<const Scalar> col_location;
+  };
+
+  // This struct stores tendencies computed by P3 and used by other
+  // parameterizations.
+  struct P3HistoryOnly {
+    // Sum of liq-ice phase change tendencies
+    view_2d<Spack> liq_ice_exchange;
+    // Sum of vap-liq phase change tendencies
+    view_2d<Spack> vap_liq_exchange;
+    // Sum of vap-ice phase change tendencies
+    view_2d<Spack> vap_ice_exchange;
+  };
+
   // -- Table3 --
 
   struct Table3 {
@@ -471,7 +580,7 @@ struct Functions
   KOKKOS_FUNCTION
   static void compute_rain_fall_velocity(
     const view_2d_table& vn_table, const view_2d_table& vm_table,
-    const Spack& qr_incld, const Spack& rcldm, const Spack& rhofacr, Spack& nr,
+    const Spack& qr_incld, const Spack& rcldm, const Spack& rhofacr, 
     Spack& nr_incld, Spack& mu_r, Spack& lamr, Spack& V_qr, Spack& V_nr,
     const Smask& context = Smask(true));
 
@@ -646,10 +755,10 @@ struct Functions
     const uview_1d<Spack>& inv_dzq,
     Scalar& prt_liq,
     Scalar& prt_sol,
-    view_1d_ptr_array<Spack, 40>& zero_init);
+    view_1d_ptr_array<Spack, 36>& zero_init);
 
   KOKKOS_FUNCTION
-  static void p3_main_pre_main_loop(
+  static void p3_main_part1(
     const MemberType& team,
     const Int& nk,
     const bool& log_predictNc,
@@ -697,7 +806,7 @@ struct Functions
     bool& log_hydrometeorsPresent);
 
   KOKKOS_FUNCTION
-  static void p3_main_main_loop(
+  static void p3_main_part2(
     const MemberType& team,
     const Int& nk_pack,
     const bool& log_predictNc,
@@ -751,9 +860,9 @@ struct Functions
     const uview_1d<Spack>& nr_incld,
     const uview_1d<Spack>& nitot_incld,
     const uview_1d<Spack>& birim_incld,
-    const uview_1d<Spack>& omu_c,
+    const uview_1d<Spack>& mu_c,
     const uview_1d<Spack>& nu,
-    const uview_1d<Spack>& olamc,
+    const uview_1d<Spack>& lamc,
     const uview_1d<Spack>& cdist,
     const uview_1d<Spack>& cdist1,
     const uview_1d<Spack>& cdistr,
@@ -773,7 +882,7 @@ struct Functions
     const Int& nk=-1);
 
   KOKKOS_FUNCTION
-  static void p3_main_post_main_loop(
+  static void p3_main_part3(
     const MemberType& team,
     const Int& nk_pack,
     const view_dnu_table& dnu,
@@ -812,62 +921,13 @@ struct Functions
     const uview_1d<Spack>& diag_effc);
 
   static void p3_main(
-    // inputs
-    const view_2d<const Spack>& pres,          // pressure                             Pa
-    const view_2d<const Spack>& dzq,           // vertical grid spacing                m
-    const view_2d<const Spack>& ncnuc,         // IN ccn activated number tendency     kg-1 s-1
-    const view_2d<const Spack>& naai,          // IN actived ice nuclei concentration  1/kg
-    const view_2d<const Spack>& qc_relvar,     // assumed SGS 1/(var(qc)/mean(qc))     kg2/kg2
-    const Real&                 dt,            // model time step                      s
-    const Int&                  ni,            // num columns
-    const Int&                  nk,            // column size
-    const Int&                  it,            // time step counter NOTE: starts at 1 for first time step
-    const bool&                 log_predictNc, // .T. (.F.) for prediction (specification) of Nc
-    const view_2d<const Spack>& pdel,          // pressure thickness                   Pa
-    const view_2d<const Spack>& exner,         // Exner expression
-
-    // inputs needed for PBUF variables used by other parameterizations
-    const view_2d<const Spack>& icldm,         // ice cloud fraction
-    const view_2d<const Spack>& lcldm,         // liquid cloud fraction
-    const view_2d<const Spack>& rcldm,         // rain cloud fraction
-    const view_2d<const Scalar>& col_location, // ni x 3
-
-    // input/output  arguments
-    const view_2d<Spack>& qc,    // cloud, mass mixing ratio         kg kg-1
-    const view_2d<Spack>& nc,    // cloud, number mixing ratio       #  kg-1
-    const view_2d<Spack>& qr,    // rain, mass mixing ratio          kg kg-1
-    const view_2d<Spack>& nr,    // rain, number mixing ratio        #  kg-1
-    const view_2d<Spack>& qitot, // ice, total mass mixing ratio     kg kg-1
-    const view_2d<Spack>& qirim, // ice, rime mass mixing ratio      kg kg-1
-    const view_2d<Spack>& nitot, // ice, total number mixing ratio   #  kg-1
-    const view_2d<Spack>& birim, // ice, rime volume mixing ratio    m3 kg-1
-    const view_2d<Spack>& qv,    // water vapor mixing ratio         kg kg-1
-    const view_2d<Spack>& th,    // potential temperature            K
-
-    // output arguments
-    const view_1d<Scalar>& prt_liq,  // precipitation rate, liquid       m s-1
-    const view_1d<Scalar>& prt_sol,  // precipitation rate, solid        m s-1
-    const view_2d<Spack>& diag_ze,   // equivalent reflectivity          dBZ
-    const view_2d<Spack>& diag_effc, // effective radius, cloud          m
-    const view_2d<Spack>& diag_effi, // effective radius, ice            m
-    const view_2d<Spack>& diag_vmi,  // mass-weighted fall speed of ice  m s-1
-    const view_2d<Spack>& diag_di,   // mean diameter of ice             m
-    const view_2d<Spack>& diag_rhoi, // bulk density of ice              kg m-3
-    const view_2d<Spack>& mu_c,      // Size distribution shape parameter for radiation
-    const view_2d<Spack>& lamc,      // Size distribution slope parameter for radiation
-
-    // outputs for PBUF variables used by other parameterizations
-    const view_2d<Spack>& cmeiout,          // qitend due to deposition/sublimation
-    const view_2d<Spack>& prain,            // Total precipitation (rain + snow)
-    const view_2d<Spack>& nevapr,           // evaporation of total precipitation (rain + snow)
-    const view_2d<Spack>& prer_evap,        // evaporation of rain
-    const view_2d<Spack>& rflx,             // grid-box average rain flux (kg m^-2 s^-1) pverp
-    const view_2d<Spack>& sflx,             // grid-box average ice/snow flux (kg m^-2 s^-1) pverp
-    const view_2d<Spack>& pratot,           // accretion of cloud by rain
-    const view_2d<Spack>& prctot,           // autoconversion of cloud to rain
-    const view_2d<Spack>& liq_ice_exchange, // sum of liq-ice phase change tendencies
-    const view_2d<Spack>& vap_liq_exchange, // sum of vap-liq phase change tendencies
-    const view_2d<Spack>& vap_ice_exchange);// sum of vap-ice phase change tendencies
+    const P3PrognosticState& prognostic_state,
+    const P3DiagnosticInputs& diagnostic_inputs,
+    const P3DiagnosticOutputs& diagnostic_outputs,
+    const P3Infrastructure& infrastructure,
+    const P3HistoryOnly& history_only,
+    Int ni, // number of columns
+    Int nk); // number of vertical cells per column
 };
 
 template <typename ScalarT, typename DeviceT>
