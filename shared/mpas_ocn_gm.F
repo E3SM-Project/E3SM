@@ -259,7 +259,6 @@ contains
 
             maxLocation = k
             do k = maxLocation, maxLevelCell(iCell)
-            do k = 1,maxLevelCell(iCell)
                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND)
 
                RediKappaScaling(k, iCell) = min(max(config_GM_min_stratification_ratio, &
