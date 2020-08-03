@@ -281,7 +281,6 @@ contains
       real (kind=RKIND), dimension(:), pointer :: normalSlopeEdge
       real (kind=RKIND), dimension(:), pointer :: dcEdge
       real (kind=RKIND), dimension(:), pointer :: layerInterfaceFractions
-      integer, dimension(:), pointer :: floatingEdges
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, dimension(:,:), pointer :: cellsOnVertex
       integer, dimension(:,:), pointer :: verticesOnEdge
@@ -398,11 +397,8 @@ contains
             maxThicknessOnProc = max(maxThicknessOnProc, maxval(thickness))
 
             ! The interface expects an array where 1's are floating edges and 0's are non-floating edges.
-            call mpas_pool_get_array(velocityPool, 'floatingEdges', floatingEdges)
             call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
-            floatingEdges = li_mask_is_floating_ice_int(edgeMask)
             call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel=1)
-            call li_calculate_extrapolate_floating_edgemask(meshPool, vertexMask, floatingEdges)
 
             ! Determine if the vertex mask changed during this time step for this block (needed for external dycores)
             ! TODO:  There may be some aspects of the mask that are ok change for external dycores,
@@ -440,11 +436,6 @@ contains
 
          ! check for thickness on any proc
          call mpas_dmpar_max_real(domain % dminfo, maxThicknessOnProc, maxThicknessAllProcs)
-         ! Update halos on mask - the outermost cells/edges/vertices may be wrong for
-         ! mask components that need neighbor information
-         call mpas_timer_start("halo updates")
-         call mpas_dmpar_field_halo_exch(domain, 'floatingEdges')
-         call mpas_timer_stop("halo updates")
 
          ! Determine if the vertex mask has changed on any processor and store the value for later use
          ! (need to exit the block loop to do so)

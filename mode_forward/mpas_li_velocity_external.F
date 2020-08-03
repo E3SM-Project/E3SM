@@ -448,7 +448,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: effectivePressure
       real (kind=RKIND), dimension(:), pointer :: muFriction
       real (kind=RKIND), pointer :: deltat
-      integer, dimension(:), pointer :: vertexMask, cellMask, edgeMask, floatingEdges
+      integer, dimension(:), pointer :: vertexMask, cellMask, edgeMask
       integer, dimension(:,:), pointer :: dirichletVelocityMask
       character (len=StrKIND), pointer :: config_velocity_solver
       logical, pointer :: config_always_compute_fem_grid
@@ -511,7 +511,6 @@ contains
       call mpas_pool_get_array(velocityPool, 'anyDynamicVertexMaskChanged', anyDynamicVertexMaskChanged)
       call mpas_pool_get_array(velocityPool, 'dirichletMaskChanged', dirichletMaskChanged)
       call mpas_pool_get_array(velocityPool, 'dirichletVelocityMask', dirichletVelocityMask, timeLevel = 1)
-      call mpas_pool_get_array(velocityPool, 'floatingEdges', floatingEdges)
       call mpas_pool_get_array(velocityPool, 'stiffnessFactor', stiffnessFactor)
 
       ! Hydro variables
@@ -532,7 +531,7 @@ contains
           (dirichletMaskChanged == 1) ) then
          call mpas_log_write("Generating new external velocity solver FEM grid.", flushNow=.true.)
          call generate_fem_grid(config_velocity_solver, vertexMask, cellMask, dirichletVelocityMask, &
-              floatingEdges, layerThicknessFractions, lowerSurface, thickness, err)
+              layerThicknessFractions, lowerSurface, thickness, err)
       endif
 
 
@@ -764,7 +763,7 @@ subroutine li_velocity_external_write_albany_mesh(domain)
       real (kind=RKIND), dimension(:), pointer :: observedThicknessTendency, observedThicknessTendencyUncertainty
       real (kind=RKIND), dimension(:,:), pointer :: temperature
       real (kind=RKIND), dimension(:), pointer :: surfaceAirTemperature, basalHeatFlux
-      integer, dimension(:), pointer :: vertexMask, cellMask, edgeMask, floatingEdges, indexToCellID
+      integer, dimension(:), pointer :: vertexMask, cellMask, edgeMask, indexToCellID
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness
       real (kind=RKIND), dimension(:), pointer :: stiffnessFactor
       real (kind=RKIND), dimension(:), pointer :: effectivePressure
@@ -830,7 +829,6 @@ subroutine li_velocity_external_write_albany_mesh(domain)
       ! Velocity variables
       call mpas_pool_get_array(velocityPool, 'beta', beta)
       call mpas_pool_get_array(velocityPool, 'muFriction', muFriction)
-      call mpas_pool_get_array(velocityPool, 'floatingEdges', floatingEdges)
       call mpas_pool_get_array(velocityPool, 'dirichletVelocityMask', dirichletVelocityMask, timeLevel = 1)
       call mpas_pool_get_array(velocityPool, 'stiffnessFactor', stiffnessFactor)
 
@@ -854,7 +852,7 @@ subroutine li_velocity_external_write_albany_mesh(domain)
 
       !----
 
-      ! Calculate diagnostic variables to get 1. lowerSurface, 2. mask fields 3. floatingedges and updated edgemask.
+      ! Calculate diagnostic variables to get 1. lowerSurface, 2. mask fields 3. updated edgemask.
       ! We could call diagnostic_solve_before_velocity to do all that, but the way
       ! code is currently organized, that would be a circular dependency.a
 
@@ -867,9 +865,6 @@ subroutine li_velocity_external_write_albany_mesh(domain)
          lowerSurface = bedTopography
       end where
 
-      floatingEdges = li_mask_is_floating_ice_int(edgeMask)
-      call li_calculate_extrapolate_floating_edgemask(meshPool, vertexMask, floatingEdges)
-
       ! Ensure BMB uncertainty is 0 for grounded ice (and no ice locations)
       where (.not. (li_mask_is_floating_ice(cellMask)))
          floatingBasalMassBalUncertainty = 0.0_RKIND
@@ -878,7 +873,7 @@ subroutine li_velocity_external_write_albany_mesh(domain)
       ! Create FEM mesh
       call mpas_log_write("Generating new external velocity solver FEM grid.", flushNow=.true.)
       call generate_fem_grid(config_velocity_solver, vertexMask, cellMask, dirichletVelocityMask, &
-              floatingEdges, layerThicknessFractions, lowerSurface, thickness, err)
+              layerThicknessFractions, lowerSurface, thickness, err)
 
       ! call the C++ routine to write the mesh
       call mpas_log_write("Writing Albany ASCII mesh.", flushNow=.true.)
@@ -990,14 +985,14 @@ subroutine li_velocity_external_write_albany_mesh(domain)
 !
 !-----------------------------------------------------------------------
 
-   subroutine generate_fem_grid(config_velocity_solver, vertexMask, cellMask, dirichletVelocityMask, floatingEdges, &
+   subroutine generate_fem_grid(config_velocity_solver, vertexMask, cellMask, dirichletVelocityMask, &
               layerThicknessFractions, lowerSurface, thickness, err)
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
       character (len=StrKIND), pointer :: config_velocity_solver
-      integer, pointer, dimension(:), intent(in) :: vertexMask, cellMask, floatingEdges
+      integer, pointer, dimension(:), intent(in) :: vertexMask, cellMask
       integer, pointer, dimension(:,:), intent(in) :: dirichletVelocityMask
       real(kind=RKIND), pointer, dimension(:), intent(in) :: layerThicknessFractions, &
              lowerSurface, thickness
@@ -1020,7 +1015,7 @@ subroutine li_velocity_external_write_albany_mesh(domain)
 
 #if defined(USE_EXTERNAL_L1L2) || defined(USE_EXTERNAL_FIRSTORDER) || defined(USE_EXTERNAL_STOKES)
           call mpas_timer_start("velocity_solver_compute_2d_grid")
-          call velocity_solver_compute_2d_grid(vertexMask, cellMask, dirichletVelocityMask, floatingEdges)
+          call velocity_solver_compute_2d_grid(vertexMask, cellMask, dirichletVelocityMask)
           call mpas_timer_stop("velocity_solver_compute_2d_grid")
 #else
           call mpas_log_write("To run with an external velocity solver you must compile MPAS with one.", MPAS_LOG_ERR)

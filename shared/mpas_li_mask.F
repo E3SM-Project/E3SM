@@ -630,66 +630,6 @@ contains
    end subroutine li_calculate_mask
 
 
-!***********************************************************************
-!
-!  routine li_calculate_extrapolate_floating_edgemask
-!
-!> \brief   Extrapolates floating edges forward as needed by external FEM dycores
-!> \author  Matt Hoffman
-!> \date    29 January 2015
-!> \details
-!>  External FEM dycores include the first non-ice cells in their mesh.  They
-!>  also use a mask to apply floating lateral boundary conditions on edges.
-!>  Because they include extra cell center locations in their meshes, the triangle
-!>  edges connecting these extra nodes will not be covered by the standard
-!>  MPAS edge mask.  This routine deals with this problem by 'extrapolating'
-!>  the floating edge mask forward to cover the edges connecting these extra nodes.
-!>  It does so by looping over edges, and setting as floating any edge that has
-!>  at least one neighboring vertex that is 'floating'.  This makes use of the
-!>  convention that "Floating vertices have at least one neighboring cell floating".
-!
-!-----------------------------------------------------------------------
-
-   subroutine li_calculate_extrapolate_floating_edgemask(meshPool, vertexMask, floatingEdges)
-
-      !-----------------------------------------------------------------
-      ! input variables
-      !-----------------------------------------------------------------
-      type (mpas_pool_type), intent(in) :: &
-         meshPool          !< Input: mesh information
-      !-----------------------------------------------------------------
-      ! input/output variables
-      !-----------------------------------------------------------------
-      integer, dimension(:), intent(inout) :: &
-         vertexMask          !< Input/Output: vertexMask
-
-      integer, dimension(:), intent(inout) :: &
-         floatingEdges          !< Input/Output: 0/1 mask of floating edges
-
-      !-----------------------------------------------------------------
-      ! output variables
-      !-----------------------------------------------------------------
-
-      !-----------------------------------------------------------------
-      ! local variables
-      !-----------------------------------------------------------------
-      integer, dimension(:,:), pointer :: verticesOnEdge
-      integer, pointer :: nEdges
-      integer :: iEdge
-
-      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
-      call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
-
-      ! Build floatingEdges mask that is extended forward one extra edge
-      do iEdge = 1, nEdges
-         floatingEdges(iEdge) = maxval(li_mask_is_floating_ice_int(vertexMask(verticesOnEdge(:, iEdge))))
-      enddo
-
-      ! Now includes vertices that include 2 cells with ice and one extended floating cell
-      ! This will be when the two cells with ice were Dirichlet cells
-   end subroutine li_calculate_extrapolate_floating_edgemask
-
-
    ! ===================================
    ! Functions for decoding bitmasks - will work with cellMask, edgeMask, or vertexMask
    ! ===================================
