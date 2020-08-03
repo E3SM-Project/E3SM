@@ -1319,6 +1319,9 @@ contains
      integer :: s
      integer :: c
 
+     ! Set the FATES global time and date variables
+     call GetAndSetTime
+     
      nclumps = get_proc_clumps()
 
      !$OMP PARALLEL DO PRIVATE (nc,bounds_clump,s,c,j,vol_ice,eff_porosity)
