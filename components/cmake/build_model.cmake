@@ -59,20 +59,26 @@ function(build_model COMP_CLASS COMP_NAME)
       include(${PROJECT_SOURCE_DIR}/cam/src/physics/cosp2/Cosp.cmake)
     endif()
 
-    # Add YAKL if it's needed. Presumably we'll add a test for rrtmgpxx later
-    if (USE_SAMXX)
+    set(USE_YAKL ${USE_SAMXX})
+    if (USE_YAKL)
       message(STATUS "Building YAKL")
+      # Build YAKL as a library
       set(YAKL_HOME ${CMAKE_CURRENT_SOURCE_DIR}/../../../externals/YAKL)
       set(YAKL_BIN  ${CMAKE_CURRENT_BINARY_DIR}/yakl)
       add_subdirectory(${YAKL_HOME} ${YAKL_BIN})
+      include_directories(${YAKL_HOME} ${YAKL_BIN})
     endif()
 
     # Add the samxx directory if it's needed
     if (USE_SAMXX)
       message(STATUS "Building SAMXX")
+      # Build samxx as a library
       set(SAMXX_HOME ${CMAKE_CURRENT_SOURCE_DIR}/../../cam/src/physics/crm/samxx)
       set(SAMXX_BIN  ${CMAKE_CURRENT_BINARY_DIR}/samxx)
       add_subdirectory(${SAMXX_HOME} ${SAMXX_BIN})
+      # Add samxx F90 files to the main E3SM build
+      set(SOURCES ${SOURCES} cmake/atm/../../cam/src/physics/crm/samxx/cpp_interface_mod.F90
+                             cmake/atm/../../cam/src/physics/crm/samxx/params.F90)
     endif()
 
   endif()
@@ -221,6 +227,14 @@ function(build_model COMP_CLASS COMP_NAME)
     set(TARGET_NAME ${COMP_CLASS})
     add_library(${TARGET_NAME})
     target_sources(${TARGET_NAME} PRIVATE ${REAL_SOURCES})
+    if (COMP_NAME STREQUAL "cam")
+      if (USE_YAKL)
+        target_link_libraries(${TARGET_NAME} yakl)
+      endif()
+      if (USE_SAMXX)
+        target_link_libraries(${TARGET_NAME} samxx)
+      endif()
+    endif()
   endif()
 
   # Subtle: In order for fortran dependency scanning to work, our CPPFPP/DEFS must be registered
