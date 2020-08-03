@@ -695,7 +695,7 @@ contains
             qflx_qrgwl(c)     = forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - qflx_snwcp_ice(p) - &
               (endwb(c)-begwb(c))/dtime + qflx_floodg(g)
          else ! qlfx_snwcp_ice(c) has been computed in routine SnowCapping
-            qflx_qrgwl(c)     = forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - qflx_snwcp_ice(c) - &
+            qflx_qrgwl(c)     = forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - qflx_snwcp_ice_col(c) - &
               (endwb(c)-begwb(c))/dtime + qflx_floodg(g)
          end if
          qflx_floodc(c)    = qflx_floodg(g)

@@ -10,6 +10,7 @@ module clm_varpar
   use clm_varctl   , only: use_century_decomp, use_c13, use_c14, use_fates
   use clm_varctl   , only: iulog, create_crop_landunit, irrigate
   use clm_varctl   , only: use_vichydro
+  use clm_varctl   , only: use_extrasnowlayers
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -33,7 +34,7 @@ module clm_varpar
   integer            :: nlevtrc_soil
   integer            :: nlevtrc_full
   
-  integer, parameter :: nlevsno     =   5   ! maximum number of snow layers
+  integer            :: nlevsno               ! maximum number of snow layers
   integer, parameter :: ngases      =   3     ! CH4, O2, & CO2
   integer, parameter :: nlevcan     =   1     ! number of leaf layers in canopy layer
   integer, parameter :: numwat      =   5     ! number of water types (soil, ice, 2 lakes, wetland)
@@ -150,6 +151,12 @@ contains
     if (use_vichydro) then
        nlayert     =  nlayer + (nlevgrnd -nlevsoi)
     endif
+
+    if (.not. use_extrasnowlayers) then
+       nlevsno     =  5     ! maximum number of snow layers
+    else
+       nlevsno     =  16    ! maximum number of snow layers (for firn model)
+    end if
 
     ! here is a switch to set the number of soil levels for the biogeochemistry calculations.
     ! currently it works on either a single level or on nlevsoi and nlevgrnd levels
