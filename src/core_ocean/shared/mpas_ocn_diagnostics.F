@@ -397,7 +397,7 @@ contains
       !
       allocate(div_hu(nVertLevels),div_huTransport(nVertLevels),div_huGMBolus(nVertLevels))
 
-      !$omp do schedule(runtime)
+      !$omp do schedule(runtime) private(invAreaCell1, i, k, iEdge, edgeSignOnCell_temp, dcEdge_temp, dvEdge_temp, r_tmp)
       do iCell = 1, nCells
          divergence(:, iCell) = 0.0_RKIND
          kineticEnergyCell(:, iCell) = 0.0_RKIND
@@ -441,7 +441,7 @@ contains
 
       nEdges = nEdgesArray( 2 )
 
-      !$omp do schedule(runtime)
+      !$omp do schedule(runtime) private(i, eoe, weightsOnEdge_temp, k)
       do iEdge = 1, nEdges
          tangentialVelocity(:, iEdge) = 0.0_RKIND
          ! Compute v (tangential) velocities
