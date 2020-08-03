@@ -17,7 +17,7 @@ void Functions<S,D>
   const Spack& kap, const Spack& mu, const Spack& sc, const Spack& qv, const Spack& qc_incld,
   const Spack& qitot_incld, const Spack& nitot_incld, const Spack& qr_incld,
   Smask& log_wetgrowth, Spack& qrcol, Spack& qccol, Spack& qwgrth, Spack& nrshdr, Spack& qcshd,
-  const Smask& context)
+  const Smask& range_mask, const Smask& context)
 {
   using physics = scream::physics::Functions<Scalar, Device>;
 
@@ -43,7 +43,7 @@ void Functions<S,D>
   Spack dum1{0.};
 
   if (any_if.any()) {
-    qsat0 = physics::qv_sat( zerodeg,pres,0 );
+    qsat0 = physics::qv_sat( zerodeg,pres,0,range_mask);
 
     qwgrth.set(any_if,
                ((f1pr05+f1pr14*pack::cbrt(sc)*sqrt(rhofaci*rho/mu))*

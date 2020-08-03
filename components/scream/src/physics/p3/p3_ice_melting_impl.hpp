@@ -16,7 +16,7 @@ void Functions<S,D>
   const Spack& f1pr05, const Spack& f1pr14, const Spack& xxlv, const Spack& xlf,
   const Spack& dv, const Spack& sc, const Spack& mu, const Spack& kap,
   const Spack& qv, const Spack& qitot_incld, const Spack& nitot_incld,
-  Spack& qimlt, Spack& nimlt,
+  Spack& qimlt, Spack& nimlt, const Smask& range_mask,
   const Smask& context)
 {
   // Notes Left over from WRF Version:
@@ -36,7 +36,7 @@ void Functions<S,D>
 
   if (has_melt_qi.any()) {
     //    Note that qsat0 should be with respect to liquid. Confirmed F90 code did this.
-    const auto qsat0 = physics::qv_sat(Spack(Tmelt), pres, false); //last false means NOT saturation w/ respect to ice.
+    const auto qsat0 = physics::qv_sat(Spack(Tmelt), pres, false, range_mask); //"false" here means NOT saturation w/ respect to ice.
 
     qimlt.set(has_melt_qi, ( (f1pr05+f1pr14*pack::cbrt(sc)*pack::sqrt(rhofaci*rho/mu))
 			     *((t-Tmelt)*kap-rho*xxlv*dv*(qsat0-qv))

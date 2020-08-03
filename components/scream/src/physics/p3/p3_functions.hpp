@@ -165,7 +165,7 @@ struct Functions
   KOKKOS_FUNCTION
   static void prevent_ice_overdepletion(
     const Spack& pres, const Spack& t, const Spack& qv, const Spack& xxls, const Scalar& odt,
-    Spack& qidep, Spack& qisub,
+    Spack& qidep, Spack& qisub, const Smask& range_mask = Smask(true),
     const Smask& context = Smask(true) );
 
   //------------------------------------------------------------------------------------------!
@@ -543,7 +543,7 @@ struct Functions
 			  const Spack& f1pr05, const Spack& f1pr14, const Spack& xxlv, const Spack& xlf,
 			  const Spack& dv, const Spack& sc, const Spack& mu, const Spack& kap,
 			  const Spack& qv, const Spack& qitot_incld, const Spack& nitot_incld,
-			  Spack& qimlt, Spack& nimlt,
+			  Spack& qimlt, Spack& nimlt, const Smask& range_mask = Smask(true),
                           const Smask& context = Smask(true));
 
   //liquid-phase dependent processes:
@@ -599,7 +599,7 @@ struct Functions
                                     const Spack& kap, const Spack& mu, const Spack& sc, const Spack& qv, const Spack& qc_incld,
                                     const Spack& qitot_incld, const Spack& nitot_incld, const Spack& qr_incld,
                                     Smask& log_wetgrowth, Spack& qrcol, Spack& qccol, Spack& qwgrth, Spack& nrshdr, Spack& qcshd,
-                                    const Smask& context = Smask(true));
+                                    const Smask& range_mask = Smask(true), const Smask& context = Smask(true));
 
   // Note: not a kernel function
   static void get_latent_heat(const Int& ni, const Int& nk, view_2d<Spack>& v, view_2d<Spack>& s, view_2d<Spack>& f);
@@ -769,7 +769,8 @@ struct Functions
     const uview_1d<Spack>& liq_ice_exchange,
     const uview_1d<Spack>& pratot,
     const uview_1d<Spack>& prctot,
-    bool& log_hydrometeorsPresent);
+    bool& log_hydrometeorsPresent,
+    const Int& nk=-1);
 
   KOKKOS_FUNCTION
   static void p3_main_post_main_loop(

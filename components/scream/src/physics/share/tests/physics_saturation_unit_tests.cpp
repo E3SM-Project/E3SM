@@ -30,11 +30,11 @@ struct UnitWrap::UnitTest<D>::TestSaturation
 
     //Set constant values
     //--------------------------------------
-    const Scalar RV = C::RV;
-    const Scalar RhoLiq = C::RhoH2O;
-    const Scalar RhoIce = C::RhoIce;
-    const Scalar LatVap = C::LatVap;
-    const Scalar LatIce = C::LatIce;
+    static constexpr Scalar RV = C::RV;
+    static constexpr Scalar RhoLiq = C::RhoH2O;
+    static constexpr Scalar RhoIce = C::RhoIce;
+    static constexpr Scalar LatVap = C::LatVap;
+    static constexpr Scalar LatIce = C::LatIce;
 
     //==========================================================
     // Test Saturation Vapor Pressure
@@ -88,27 +88,30 @@ struct UnitWrap::UnitTest<D>::TestSaturation
     const Spack temps(temperature);
     const Spack pres(pressure);
 
+    //create a mask of all true values
+    const Smask alltrue(false);
+
     //Get values from polysvp1 and qv_sat (qv_sat calls polysvp1 here) to test against "expected" values
     //--------------------------------------
-    Spack sat_ice_fp  = physics::polysvp1(temps, true);
-    Spack sat_liq_fp  = physics::polysvp1(temps, false);
+    const Spack sat_ice_fp  = physics::polysvp1(temps, true);
+    const Spack sat_liq_fp  = physics::polysvp1(temps, false);
     //last argument "0" of qv_sat function below forces qv_sat to call "polysvp1"
-    Spack mix_ice_fr = physics::qv_sat(temps, pres, true, 0);
-    Spack mix_liq_fr = physics::qv_sat(temps, pres, false,0);
+    const Spack mix_ice_fr = physics::qv_sat(temps, pres, true,  Smask(true), 0);
+    const Spack mix_liq_fr = physics::qv_sat(temps, pres, false, Smask(true), 0);
 
     //Get values from MurphyKoop_svp and qv_sat (qv_sat calls MurphyKoop_svp here) to test against "expected" values
-    Spack sat_ice_mkp   = physics::MurphyKoop_svp(temps, true);
-    Spack sat_liq_mkp   = physics::MurphyKoop_svp(temps, false);
+    const Spack sat_ice_mkp   = physics::MurphyKoop_svp(temps, true);
+    const Spack sat_liq_mkp   = physics::MurphyKoop_svp(temps, false);
     //last argument "1" of qv_sat function below forces qv_sat to call "MurphyKoop_svp"
-    Spack mix_ice_mkr  = physics::qv_sat(temps, pres, true, 1);
-    Spack mix_liq_mkr  = physics::qv_sat(temps, pres, false,1);
+    const Spack mix_ice_mkr  = physics::qv_sat(temps, pres, true,  Smask(true), 1);
+    const Spack mix_liq_mkr  = physics::qv_sat(temps, pres, false, Smask(true), 1);
 
     //Set error tolerances
     //--------------------------------------
     //: C::Tol is machine epsilon for single or double precision as appropriate. This will be
     //multiplied by a condition # to get the actual expected numerical uncertainty.
 
-    const Scalar tol = C::Tol;
+    static constexpr Scalar tol = C::Tol;
 
     //PMC note: original version looped over pack dimension, testing each entry. This isn't
     //necessary b/c packs were created by copying a scalar up to pack size. Thus just evaluating
@@ -146,9 +149,9 @@ struct UnitWrap::UnitTest<D>::TestSaturation
 
     //Set constant values
     //--------------------------------------
-    const Scalar RV = C::RV;
-    const Scalar LatVap = C::LatVap;
-    const Scalar LatIce = C::LatIce;
+    static constexpr Scalar RV = C::RV;
+    static constexpr Scalar LatVap = C::LatVap;
+    static constexpr Scalar LatIce = C::LatIce;
 
     //==========================================================
     // Test Saturation Mixing Ratio
@@ -207,16 +210,16 @@ struct UnitWrap::UnitTest<D>::TestSaturation
       // https://github.com/E3SM-Project/scream-docs.git analysis-scripts/test_qv_sat.py
 
       //total number expected vals to store for each precision for both MK and polysvp1
-      const int ncrv = 8; // 4 for each saturation scheme
+      static constexpr int ncrv = 8; // 4 for each saturation scheme
 
       struct sat_test_args {
-      	Scalar temp; //temperature [K]
+      	Scalar t_atm; //temperature [K]
       	Scalar pres; //pressure [Pa]
       	Scalar dp_data[ncrv]; // double precision expected vals for MK and polysvp1
       	Scalar sp_data[ncrv]; // single precision expected vals for MK and polysvp1
       };
 
-      const auto ncases   = 10; //total number of test cases
+      static constexpr auto ncases   = 10; //total number of test cases
 
       sat_test_args stargs[ncases]; // variable to store all the data for launching tests
 
@@ -227,8 +230,8 @@ struct UnitWrap::UnitTest<D>::TestSaturation
       // directly from the RHS of table 4 of Flatau et al 1992.
       // Note that ice values are identical to liquid values b/c C++ uses liq val for T>=0 C.
 
-      const auto tmelt = C::Tmelt;
-      const auto atm_pres = 1e5;
+      static constexpr auto tmelt = C::Tmelt;
+      static constexpr auto atm_pres = 1e5;
 
       stargs[0] = {tmelt,
 		   atm_pres,
@@ -373,18 +376,18 @@ struct UnitWrap::UnitTest<D>::TestSaturation
       //---------------------------------------------
 
       //find out which precision to use
-      auto is_single_prec = util::is_single_precision<Scalar>::value;
+      constexpr auto is_single_prec = util::is_single_precision<Scalar>::value;
 
       if(is_single_prec){
-	for (int ista = 0; ista < ncases; ista++) {
+	for (size_t ista = 0; ista < ncases; ista++) {
 	  //use sp_data values
-	  saturation_tests(stargs[ista].temp,stargs[ista].pres,stargs[ista].sp_data,errors);
+	  saturation_tests(stargs[ista].t_atm,stargs[ista].pres,stargs[ista].sp_data,errors);
 	}
       }
       else{
-	for (int ista = 0; ista < ncases; ista++) {
+	for (size_t ista = 0; ista < ncases; ista++) {
 	  //use dp_data values
-	  saturation_tests(stargs[ista].temp,stargs[ista].pres,stargs[ista].dp_data,errors);
+	  saturation_tests(stargs[ista].t_atm,stargs[ista].pres,stargs[ista].dp_data,errors);
 	}
       }
 

@@ -152,8 +152,8 @@ void Functions<S,D>
 
     rho(k)     = pdel(k)/dzq(k) / g;
     inv_rho(k) = 1 / rho(k);
-    qvs(k)     = physics::qv_sat(t(k), pres(k), 0);
-    qvi(k)     = physics::qv_sat(t(k), pres(k), 1);
+    qvs(k)     = physics::qv_sat(t(k), pres(k), 0, range_mask);
+    qvi(k)     = physics::qv_sat(t(k), pres(k), 1, range_mask);
 
     supi(k) = qv(k) / qvi(k) - 1;
 
@@ -301,7 +301,7 @@ void Functions<S,D>
   const uview_1d<Spack>& liq_ice_exchange,
   const uview_1d<Spack>& pratot,
   const uview_1d<Spack>& prctot,
-  bool& log_hydrometeorsPresent)
+  bool& log_hydrometeorsPresent, const Int& nk)
 {
   constexpr Scalar qsmall       = C::QSMALL;
   constexpr Scalar nsmall       = C::NSMALL;
@@ -407,6 +407,10 @@ void Functions<S,D>
     const auto skip_micro = skip_all || !(qc_incld(k) >= qsmall || qr_incld(k) >= qsmall || qitot_incld(k) >= qsmall);
     const auto not_skip_micro = !skip_micro;
 
+    //compute mask to identify padded values in packs, which are undefined
+    const auto range_pack = scream::pack::range<IntSmallPack>(k*Spack::n);
+    const auto range_mask = range_pack < nk;
+
     if (not_skip_micro.any()) {
       // time/space varying physical variables
       get_time_space_phys_variables(
@@ -486,12 +490,12 @@ void Functions<S,D>
       // melting
       ice_melting(
         rho(k), t(k), pres(k), rhofaci(k), f1pr05, f1pr14, xxlv(k), xlf(k), dv, sc, mu, kap, qv(k), qitot_incld(k), nitot_incld(k),
-        qimlt, nimlt, not_skip_micro);
+        qimlt, nimlt, range_mask, not_skip_micro);
 
       // calculate wet growth
       ice_cldliq_wet_growth(
         rho(k), t(k), pres(k), rhofaci(k), f1pr05, f1pr14, xxlv(k), xlf(k), dv, kap, mu, sc, qv(k), qc_incld(k), qitot_incld(k), nitot_incld(k), qr_incld(k),
-        log_wetgrowth, qrcol, qccol, qwgrth, nrshdr, qcshd, not_skip_micro);
+        log_wetgrowth, qrcol, qccol, qwgrth, nrshdr, qcshd, range_mask, not_skip_micro);
 
       // calcualte total inverse ice relaxation timescale combined for all ice categories
       // note 'f1pr' values are normalized, so we need to multiply by N
@@ -595,7 +599,7 @@ void Functions<S,D>
     //   1) Should we be taking qinuc into consideration too?
     //   2) Is MG correct in NOT limiting qisub?
 
-    prevent_ice_overdepletion(pres(k), t(k), qv(k), xxls(k), odt, qidep, qisub, not_skip_all);
+    prevent_ice_overdepletion(pres(k), t(k), qv(k), xxls(k), odt, qidep, qisub, range_mask, not_skip_all);
 
     // vapor -- not needed, since all sinks already have limits imposed and the sum, therefore,
     //          cannot possibly overdeplete qv
@@ -1071,7 +1075,7 @@ void Functions<S,D>
       dnu, itab, itabcol, revap_table,
       opres, opdel, odzq, oncnuc, oexner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, onaai, oqc_relvar, oicldm, olcldm, orcldm,
       t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqitot, onitot, oqirim, obirim, oxxlv, oxxls, oxlf, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, nitot_incld, birim_incld, omu_c, nu, olamc, cdist, cdist1, cdistr, mu_r, lamr, logn0r, ocmeiout, oprain, onevapr, oprer_evap, ovap_liq_exchange, ovap_ice_exchange, oliq_ice_exchange, opratot, oprctot,
-      log_hydrometeorsPresent);
+      log_hydrometeorsPresent, nk);
 
     //NOTE: At this point, it is possible to have negative (but small) nc, nr, nitot.  This is not
     //      a problem; those values get clipped to zero in the sedimentation section (if necessary).
