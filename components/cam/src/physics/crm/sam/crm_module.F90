@@ -34,6 +34,7 @@ module crm_module
 #ifdef ECPP  
   use module_ecpp_crm_driver, only: ecpp_crm_stat, ecpp_crm_init, ecpp_crm_cleanup
 #endif
+  use crm_radiation, only: radiation_tend
 !---------------------------------------------------------------
 !  Super-parameterization's main driver
 !  Marat Khairoutdinov, 2001-2009
@@ -1024,6 +1025,8 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       enddo
     enddo
 
+    ! Do radiative transfer
+    call radiation_tend(crm_rad%mu0, crm_rad%sfc_alb_dir, crm_rad%sfc_alb_dif)
   enddo ! nstep
 
   ! for time-averaging crm output statistics

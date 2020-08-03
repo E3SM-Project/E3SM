@@ -31,6 +31,19 @@ module crm_rad_module
       real(crm_rknd), pointer :: ni(:,:,:,:) ! rad cloud ice crystal number (#/kg)
       real(crm_rknd), pointer :: qs(:,:,:,:) ! rad cloud snow (kg/kg)
       real(crm_rknd), pointer :: ns(:,:,:,:) ! rad cloud snow crystal number (#/kg)
+
+      ! Inputs specific to crm radiation
+      real(crm_rknd), pointer :: mu0(:)
+      real(crm_rknd), pointer :: sfc_alb_dir(:,:)
+      real(crm_rknd), pointer :: sfc_alb_dif(:,:)
+
+      ! Outputs from crm radiation
+      real(crm_rknd), pointer :: sw_flux_up(:,:)
+      real(crm_rknd), pointer :: sw_flux_dn(:,:)
+      real(crm_rknd), pointer :: sw_flux_dn_dir(:,:)
+      real(crm_rknd), pointer :: lw_flux_up(:,:)
+      real(crm_rknd), pointer :: lw_flux_dn(:,:)
+
    end type crm_rad_type
 
 contains

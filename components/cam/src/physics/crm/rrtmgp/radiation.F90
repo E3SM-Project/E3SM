@@ -55,6 +55,7 @@ module radiation
    ! radiation_setops, and radiation_printops would also then need to be removed
    ! from runtime_ops.
    public :: &
+      set_albedo,            &! Get surface albedo from cam_in structure
       radiation_register,    &! registers radiation physics buffer fields
       radiation_nextsw_cday, &! calendar day of next radiation calculation
       radiation_do,          &! query which radiation calcs are done this timestep
@@ -136,7 +137,7 @@ module radiation
    ! RRTMGP coefficients files, specified by coefficients_file_sw and
    ! coefficients_file_lw in the radiation namelist. They exist as module data
    ! because we only want to load those files once.
-   type(ty_gas_optics_rrtmgp) :: k_dist_sw, k_dist_lw
+   type(ty_gas_optics_rrtmgp), public :: k_dist_sw, k_dist_lw
 
    ! k-distribution coefficients files to read from. These are set via namelist
    ! variables.

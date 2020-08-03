@@ -16,6 +16,7 @@ module crm_physics
    use physics_types,   only: physics_state, physics_tend
    use ppgrid,          only: pcols, pver, pverp
    use constituents,    only: pcnst
+   use crm_radiation,   only: radiation_init
 #ifdef MODAL_AERO
    use modal_aero_data, only: ntot_amode
 #endif
@@ -230,6 +231,8 @@ subroutine crm_physics_init(species_class)
    call phys_getopts(use_ECPP_out = use_ECPP)
    call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
 
+   call radiation_init()
+
 #ifdef ECPP
    if (use_ECPP) then
       ! Initialize ECPP driver
@@ -313,6 +316,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    use crm_input_module,       only: crm_input_type
    use crm_output_module,      only: crm_output_type, crm_output_initialize, crm_output_finalize
    use crm_ecpp_output_module, only: crm_ecpp_output_type
+   use radiation, only: set_albedo
+   use radconstants, only: nswbands, nlwbands
 
    real(r8),                   intent(in   ) :: ztodt            ! global model time increment
    type(physics_state),        intent(in   ) :: state            ! Global model state 
@@ -411,6 +416,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    real(crm_rknd) :: crm_rotation_std     ! scaling factor for rotation (std dev of rotation angle)
    real(crm_rknd) :: crm_rotation_offset  ! offset to specify preferred rotation direction 
 #endif
+
+   real(crm_rknd), dimension(nswbands,pcols), target :: albedo_dir, albedo_dif
 
    !------------------------------------------------------------------------------------------------
    !------------------------------------------------------------------------------------------------
@@ -684,6 +691,17 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       crm_snw = 0.
 #endif
 
+      ! Set CRM radiation inputs
+      ! Get albedo. This uses CAM routines internally and just provides a
+      ! wrapper to improve readability of the code here.
+      albedo_dir = 0
+      albedo_dif = 0
+      call set_albedo(cam_in, albedo_dir(1:nswbands,1:ncol), albedo_dif(1:nswbands,1:ncol))
+      crm_rad%sfc_alb_dir => albedo_dir
+      crm_rad%sfc_alb_dif => albedo_dif
+
+      ! For now, set heating from other radiation interface. Do away with this
+      ! once we have CRM radiation working.
       do m = 1,crm_nz
          k = pver-m+1
          do i = 1,ncol
