@@ -474,14 +474,6 @@ Valid values: small positive numbers
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_GM_visbeck_min_depth" type="real"
-	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
-minimum depth for calculation of vertical average
-
-Valid values: values between zero and bottom depth
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_GM_visbeck_max_depth" type="real"
 	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
 minimum depth for calculation of vertical average
