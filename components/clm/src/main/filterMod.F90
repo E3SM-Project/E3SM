@@ -420,9 +420,10 @@ contains
           end if
        end if
     end do
+
     this_filter(nc)%num_pcropp   = fl
     this_filter(nc)%num_soilnopcropp = fnl   ! This wasn't being set before...
-
+    print *, "num_pcropp, filters, npcropmin:", fl, npcropmin
     ! Create landunit-level urban and non-urban filters
 
     f = 0

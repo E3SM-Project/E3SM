@@ -72,9 +72,9 @@ module SurfaceAlbedoMod
 
   !
   ! !PRIVATE DATA FUNCTIONS:
-  real(r8), allocatable, private :: albsat (:,:) ! wet soil albedo by color class and waveband (1=vis,2=nir)
-  real(r8), allocatable, private :: albdry (:,:) ! dry soil albedo by color class and waveband (1=vis,2=nir)
-  integer , allocatable, private :: isoicol(:)  ! column soil color class
+  real(r8), allocatable , public :: albsat (:,:) ! wet soil albedo by color class and waveband (1=vis,2=nir)
+  real(r8), allocatable , public :: albdry (:,:) ! dry soil albedo by color class and waveband (1=vis,2=nir)
+  integer , allocatable , public :: isoicol(:)  ! column soil color class
   !$acc declare create(albsat )
   !$acc declare create(albdry )
   !$acc declare create(isoicol)
@@ -429,7 +429,7 @@ contains
             num_nourbanc, filter_nourbanc, &
          coszen_col(bounds%begc:bounds%endc), &
          albsnd(bounds%begc:bounds%endc, :), &
-            albsni(bounds%begc:bounds%endc, :), &  
+            albsni(bounds%begc:bounds%endc, :), &
             lakestate_vars, surfalb_vars)
 
     ! set variables to pass to SNICAR.
@@ -552,8 +552,8 @@ contains
           mss_cnc_aer_in_frc_oc(bounds%begc:bounds%endc,:,6) = mss_cnc_dst2(bounds%begc:bounds%endc,:)
           mss_cnc_aer_in_frc_oc(bounds%begc:bounds%endc,:,7) = mss_cnc_dst3(bounds%begc:bounds%endc,:)
           mss_cnc_aer_in_frc_oc(bounds%begc:bounds%endc,:,8) = mss_cnc_dst4(bounds%begc:bounds%endc,:)
-       
-          
+
+
        ! OC FORCING CALCULATIONS
           flg_slr = 1; ! direct-beam
           if (use_snicar_ad) then

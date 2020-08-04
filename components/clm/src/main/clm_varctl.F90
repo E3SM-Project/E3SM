@@ -168,9 +168,9 @@ module clm_varctl
   logical, public :: override_bgc_restart_mismatch_dump = .false.
 
   ! Set in AllocationInit (TO DO - had to move it here to avoid circular dependency)
-  logical, public :: carbon_only
-  logical, public :: carbonnitrogen_only
-  logical, public :: carbonphosphorus_only
+  logical, public  :: carbon_only
+  logical, public  :: carbonnitrogen_only
+  logical, public  :: carbonphosphorus_only
   !$acc declare create(carbon_only          )
   !$acc declare create(carbonnitrogen_only  )
   !$acc declare create(carbonphosphorus_only)
@@ -185,12 +185,13 @@ module clm_varctl
   logical,  public :: wrtdia       = .false.
 
   ! atmospheric CO2 molar ratio (by volume) (umol/mol)
-  real(r8), public :: co2_ppmv     = 355._r8            !
+  real(r8), public :: co2_ppmv     = 355._r8
   !$acc declare copyin(co2_ppmv)
+
   ! Use constant climate during transient run (CPL_BYPASS only)
   logical, public :: const_climate_hist  = .false.
-  !$acc declare copyin(const_climate_hist)
 
+  !$acc declare copyin(const_climate_hist)
   !----------------------------------------------------------
   ! C isotopes
   !----------------------------------------------------------
@@ -247,7 +248,7 @@ module clm_varctl
 
   ! glacier_mec landunit is not created (set in controlMod)
   logical , public :: create_glacier_mec_landunit = .false.
-
+  !$acc declare create(create_glacier_mec_landunit)
   ! if true, pass surface mass balance info to GLC
   logical , public :: glc_smb = .true.
   !$acc declare create(glc_smb)
@@ -515,41 +516,35 @@ contains
 
   ! Set module carbon_only flag
   subroutine cnallocate_carbon_only_set(carbon_only_in)
-    !$acc routine seq
     logical, intent(in) :: carbon_only_in
     carbon_only = carbon_only_in
   end subroutine cnallocate_carbon_only_set
 
   ! Get module carbon_only flag
   logical function CNAllocate_Carbon_only()
-    !$acc routine seq
     cnallocate_carbon_only = carbon_only
   end function CNAllocate_Carbon_only
 
   ! Set module carbonnitrogen_only flag
   subroutine cnallocate_carbonnitrogen_only_set(carbonnitrogen_only_in)
-    !$acc routine seq
     logical, intent(in) :: carbonnitrogen_only_in
     carbonnitrogen_only = carbonnitrogen_only_in
   end subroutine cnallocate_carbonnitrogen_only_set
 
   ! Get module carbonnitrogen_only flag
   logical function CNAllocate_CarbonNitrogen_only()
-    !$acc routine seq
     cnallocate_carbonnitrogen_only = carbonnitrogen_only
   end function CNAllocate_CarbonNitrogen_only
 
 
   ! Set module carbonphosphorus_only flag
   subroutine cnallocate_carbonphosphorus_only_set(carbonphosphorus_only_in)
-    !$acc routine seq
     logical, intent(in) :: carbonphosphorus_only_in
     carbonphosphorus_only = carbonphosphorus_only_in
   end subroutine cnallocate_carbonphosphorus_only_set
 
   ! Get module carbonphosphorus_only flag
   logical function CNAllocate_CarbonPhosphorus_only()
-    !$acc routine seq
     cnallocate_carbonphosphorus_only = carbonphosphorus_only
   end function CNAllocate_CarbonPhosphorus_only
 

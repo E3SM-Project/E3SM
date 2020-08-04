@@ -86,7 +86,7 @@ subroutine update_acc_variables()
   !-------- clm_varctl ---------------------!
   !$acc       ,use_fates &
   !$acc       ,use_betr &
-  !$acc       ,use_c13, use_cn, use_lch4, glcmec_downscale_rain_snow_convert &
+  !$acc       ,use_c13, use_cn, glcmec_downscale_rain_snow_convert &
   !$acc       ,use_c14 &
   !$acc       ,glcmec_downscale_longwave, subgridflag &
   !$acc       ,use_nofire          &

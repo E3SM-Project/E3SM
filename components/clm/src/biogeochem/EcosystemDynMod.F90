@@ -169,7 +169,7 @@ contains
         !-----------------------------------------------------------------------
 
         call NitrogenStateUpdate3(num_soilc, filter_soilc, num_soilp, filter_soilp,dt)
-        
+
 
         call PhosphorusStateUpdate3(bounds,num_soilc, filter_soilc, num_soilp, filter_soilp, &
              cnstate_vars, dt)
@@ -448,15 +448,15 @@ contains
      integer                  , intent(in)    :: filter_pcropp(:)  ! filter for prognostic crop patches
      logical                  , intent(in)    :: doalb             ! true = surface albedo calculation time step
      type(cnstate_type)       , intent(inout) :: cnstate_vars
-     type(atm2lnd_type)       , intent(inout)    :: atm2lnd_vars
-     type(canopystate_type)   , intent(inout)    :: canopystate_vars
-     type(soilstate_type)     , intent(inout)    :: soilstate_vars
-     type(crop_type)          , intent(inout)    :: crop_vars
-     type(ch4_type)           , intent(inout)    :: ch4_vars
-     type(photosyns_type)     , intent(inout)    :: photosyns_vars
-     type(soilhydrology_type) , intent(inout)    :: soilhydrology_vars
-     type(energyflux_type)    , intent(inout)    :: energyflux_vars
-     type(sedflux_type)       , intent(inout)    :: sedflux_vars
+     type(atm2lnd_type)       , intent(inout) :: atm2lnd_vars
+     type(canopystate_type)   , intent(inout) :: canopystate_vars
+     type(soilstate_type)     , intent(inout) :: soilstate_vars
+     type(crop_type)          , intent(inout) :: crop_vars
+     type(ch4_type)           , intent(inout) :: ch4_vars
+     type(photosyns_type)     , intent(inout) :: photosyns_vars
+     type(soilhydrology_type) , intent(inout) :: soilhydrology_vars
+     type(energyflux_type)    , intent(inout) :: energyflux_vars
+     type(sedflux_type)       , intent(inout) :: sedflux_vars
      integer, intent(in)  :: year, mon, day,sec, tod, offset
      real(r8), intent(in) :: dayspyr ! days per year
      real(r8), intent(in) :: dt
@@ -618,7 +618,7 @@ contains
         !#py call t_stopf('SoilLittVertTransp')
 
         !#py call t_startf('CNGapMortality')
-        call GapMortality( num_soilc, filter_soilc, num_soilp, filter_soilp, &
+        call GapMortality( num_soilp, filter_soilp, &
              cnstate_vars, dayspyr )
         !#py call t_stopf('CNGapMortality')
 
