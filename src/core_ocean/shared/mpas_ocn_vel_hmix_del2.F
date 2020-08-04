@@ -55,21 +55,6 @@ module ocn_vel_hmix_del2
    !--------------------------------------------------------------------
 
    logical ::  hmixDel2On  !< integer flag to determine whether del2 chosen
-
-   !--------------------------------------------------------------------
-   !
-   ! Replace calls to mpas_allocate_scratch_Field with straight allocates.
-   ! These variables were moved from the subroutines, but will be moved back once the
-   ! threading implementation is changed to more localized threading
-   !
-   !--------------------------------------------------------------------
-
-   ! subroutine ocn_vel_hmix_del2_tensor_tend
-   real (kind=RKIND), dimension(:,:,:), allocatable :: strainRateR3Cell
-   real (kind=RKIND), dimension(:,:,:), allocatable :: strainRateR3Edge
-   real (kind=RKIND), dimension(:,:,:), allocatable :: divTensorR3Cell
-   real (kind=RKIND), dimension(:,:,:), allocatable :: outerProductEdge
-   real (kind=RKIND), dimension(:,:), allocatable :: normalVectorEdge
          
 !***********************************************************************
 

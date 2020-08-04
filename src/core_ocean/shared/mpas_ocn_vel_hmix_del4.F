@@ -69,18 +69,6 @@ module ocn_vel_hmix_del4
    real (kind=RKIND), dimension(:,:), allocatable :: delsq_relativeVorticity
    real (kind=RKIND), dimension(:,:), allocatable :: delsq_u
 
-   ! subroutine ocn_vel_hmix_del4_tensor_tend
-   real (kind=RKIND), dimension(:,:,:), allocatable :: strainRateR3Cell
-   real (kind=RKIND), dimension(:,:,:), allocatable :: strainRateR3Edge
-   real (kind=RKIND), dimension(:,:,:), allocatable :: divTensorR3Cell
-   real (kind=RKIND), dimension(:,:,:), allocatable :: outerProductEdge
-   ! normalVectorEdge: Vector component normal to an edge
-   !            units: m s^{-1}
-   real (kind=RKIND), dimension(:,:), allocatable :: normalVectorEdge
-   ! tangentialVectorEdge: Vector component tangent to an edge
-   !                units: m s^{-1}
-   real (kind=RKIND), dimension(:,:), allocatable :: tangentialVectorEdge
-
 !***********************************************************************
 
 contains
