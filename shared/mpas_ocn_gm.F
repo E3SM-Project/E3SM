@@ -45,11 +45,11 @@ module ocn_gm
    ! Config options
    real(kind=RKIND), parameter :: epsGM = 1.0e-12_RKIND
 
-   integer :: visbeckTopIndex, visbeckBottomIndex
+   ! The following logical variables are used to configure the three 
+   ! available GM closures (constant, N2_dependent, and visbeck)
    logical :: local_config_GM_compute_visbeck
    logical :: local_config_GM_lat_variable_c2
    logical :: local_config_GM_kappa_lat_depth_variable
-   real(kind=RKIND), parameter :: local_config_GM_min_phase_speed = 0.1_RKIND
    real(kind=RKIND) :: slopeTaperFactor, sfcTaperFactor, rediGMinitValue
 !***********************************************************************
 
@@ -62,9 +62,23 @@ contains
 !> \brief   Computes GM Bolus velocity
 !> \details
 !>  This routine is the main driver for the Gent-McWilliams (GM) parameterization.
-!>  It computes horizontal and vertical density gradients, the slope
-!>  of isopycnal surfaces, and solves a boundary value problem in each column
-!>  for the stream function, which is used to compute the Bolus velocity.
+!>  It computes GM via the boundary value problem proposed by Ferrari et al (2010)
+!>  Ocean Modeling.  It is written as
+!>
+!>  (c^2 d^2/dz^2 - N^2) psi = grav * kappa_GM / rho_o grad_z rho
+!>
+!>  Here c is the phase speed of low baroclinic modes, N^2 is the Brunt Vaisala Frequency
+!>  the gradient of density is taken at a fixed depth and kappa_GM is the specified
+!>  diffusivity.  Herein we have three options to specify the boundary value problem
+!>  these options use local flags to specify appropriate values for chosen configuration
+!>  The configurations are specified by config_GM_closure, the options are
+!>    1. Spatially constant kappa_GM, which also sets the c above to a constant value
+!>    2. N2 dependent, this uses three dimensional N2 to modify kappa GM as
+!>        kappa_GM = (N/N_ref)^2*kappa_GM(constant
+!>       where N_ref is taken as the maximum stratification in the column
+!>    3. Visbeck parameterization (Visbeck et al. 1997, JPO)
+!>  For options 2 and 3 the phase speed (c) is computed based on column integrated N2, i.e.,
+!>   c = (N * H)/(m*pi), where H is the column depth, m is the chosen baroclinic mode
 !
 !-----------------------------------------------------------------------
 
@@ -120,7 +134,7 @@ contains
       real(kind=RKIND)                 :: sumRi, RiTopOfEdge, zEdge, zMLD, sshEdge, sfcTaper
       real(kind=RKIND) :: gradDensityTopOfEdge, dcEdgeInv, drhoDx, drhoDT, drhoDS, dTdx, dSdx, BVFcent
       real(kind=RKIND) :: slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown, invAreaCell
-      real(kind=RKIND) :: dzdxTopOfEdge, drhodz1, drhodz2, dTdz, dSdz, gradDensityConstZTopOfEdge
+      real(kind=RKIND) :: lt1, lt2, dzdxTopOfEdge, drhodz1, drhodz2, dTdz, dSdz, gradDensityConstZTopOfEdge
       real(kind=RKIND), dimension(:), allocatable :: dzTop, dTdzTop, dSdzTop, k33Norm
       ! Dimensions
       integer :: nsmooth, nCells, nEdges
@@ -158,7 +172,7 @@ contains
 
       call mpas_pool_get_array(diagnosticsPool, 'cGMphaseSpeed', cGMphaseSpeed)
       call mpas_pool_get_array(diagnosticsPool, 'RediKappaScaling', RediKappaScaling)
-     call mpas_pool_get_array(diagnosticsPool, 'gmKappaScaling', gmKappaScaling)
+      call mpas_pool_get_array(diagnosticsPool, 'gmKappaScaling', gmKappaScaling)
       call mpas_pool_get_array(diagnosticsPool, 'RediKappaSfcTaper', RediKappaSfcTaper)
       call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'slopeTriadUp', slopeTriadUp)
@@ -247,17 +261,20 @@ contains
       end do
       !$omp end do
 
-      if ( config_Redi_use_N2_based_taper .or. local_config_GM_kappa_lat_depth_variable ) then
+      ! The following code computes scaling for Redi mixing terms and the slope triads
+      ! It is only needed when redi mixing is enabled.
+      if ( config_use_redi ) then
+
+      if ( config_Redi_use_N2_based_taper .and. .not. local_config_GM_kappa_lat_depth_variable ) then
 
          !$omp do schedule(runtime) private(maxLocation, cell1, cell2, k, BruntVaisalaFreqTopEdge, maxN)
          do iCell = 1, nCells
             k = min(maxLevelCell(iCell) - 1, max(1, indMLD(iCell)))
-            k = 1
             maxN = max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND)
             do while (BruntVaisalaFreqTop(k + 1, iCell) > maxN .and. k < maxLevelCell(iCell) - 1)
-               k = k + 1
-               maxN = max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND)
-            end do
+              k = k + 1
+              maxN = max(maxN,max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND))
+            enddo
 
             maxLocation = k
             do k = maxLocation, maxLevelCell(iCell)
@@ -269,14 +286,6 @@ contains
             end do
          end do
          !$omp end do
-      end if
-
-      if (local_config_GM_kappa_lat_depth_variable) then
-        !$omp do schedule(runtime)
-        do iCell=1,nCells
-          gmKappaScaling(:, iCell) = RediKappaScaling(:,iCell)
-        enddo
-        !$omp end do
       end if
 
       if (config_Redi_use_surface_taper) then
@@ -409,6 +418,8 @@ contains
       end do ! iCell
       !$omp end do
 
+      endif  !config_use_redi
+
       deallocate (dzTop)
       deallocate (dTdzTop)
       deallocate (dSdzTop)
@@ -495,8 +506,33 @@ contains
          end do
          !$omp end do
 
+         ! For config_GM_closure = 'N2_dependent' use a scaling to taper gmBolusKappa
+         ! based on stratification relative to the maximum in the column
+         if (local_config_GM_kappa_lat_depth_variable) then
+            !$omp do schedule(runtime) private(k, BruntVaisalaFreqTopEdge, maxN)
+            do iCell=1,nCells
+               k=1
+               maxN = max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND)
+               do k = 2, maxLevelCell(iCell)
+                 maxN = max(maxN,max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND))
+               enddo
+
+               do k = 1,maxLevelCell(iCell)
+                  BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND)
+
+                  gmKappaScaling(k, iCell) = min(max(config_GM_min_stratification_ratio, &
+                                               BruntVaisalaFreqTopEdge/(maxN + 1.0E-10_RKIND)), &
+                                               1.0_RKIND)
+                  RediKappaScaling(k, iCell) = gmKappaScaling(k, iCell)
+               end do
+           enddo
+           !$omp end do
+         end if
+
          nEdges = nEdgesArray(3)
 
+         ! For config_GM_closure = 'N2_dependent' or 'visbeck' compute a spatially variable
+         ! baroclinic phase speed, the mode can be specified by config_GM_baroclinic_mode
          if (local_config_GM_lat_variable_c2) then
             !$omp do schedule(runtime) private(k, cell1, cell2, sumN2, ltSum, countN2, BruntVaisalaFreqTopEdge)
             do iEdge = 1, nEdges
@@ -506,24 +542,29 @@ contains
                ltSum = 0.0
                countN2 = 0
 
-               do k = 2, maxLevelEdgeTop(iEdge)
+               cGMphaseSpeed(iEdge) = config_GM_constant_gravWaveSpeed
+
+               do k = 2, maxLevelEdgeTop(iEdge)-1
 
                   BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k, cell1) + BruntVaisalaFreqTop(k, cell2))
                   BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
+                  lt1 = 0.5_RKIND*(layerThickness(k,cell1) + layerThickness(k-1,cell1))
+                  lt2 = 0.5_RKIND*(layerThickness(k,cell2) + layerThickness(k-1,cell2))
+                  sumN2 = sumN2 + 0.5_RKIND*(lt1*max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND) + &
+                                lt2*max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND))
 
-                  sumN2 = sumN2 + BruntVaisalaFreqTopEdge*layerThicknessEdge(k, iEdge)
-                  ltSum = ltSum + layerThicknessEdge(k, iEdge)
+                  ltSum = ltSum + 0.5_RKIND*(lt1+lt2)
                   countN2 = countN2 + 1
 
                end do
 
-               if (countN2 > 0) cGMphaseSpeed(iEdge) = max(local_config_GM_min_phase_speed, sqrt(sumN2/ltSum)* &
+               if (countN2 > 0) cGMphaseSpeed(iEdge) = max(config_GM_constant_gravWaveSpeed, sqrt(sumN2/ltSum)* &
                             ltSum/(config_GM_baroclinic_mode*3.141592_RKIND))
 
             end do
             !$omp end do
 
-         else
+         else !constant phase speed for config_GM_closure = 'constant'
             !$omp do schedule(runtime)
             do iEdge = 1, nEdges
                cGMphaseSpeed(iEdge) = config_GM_constant_gravWaveSpeed
@@ -531,6 +572,8 @@ contains
             !$omp end do
          end if
 
+         ! When config_GM_closure = 'visbeck' actually modify the value of gmBolusKappa based on
+         ! Visbeck et al (1997), JPO as recast by Cessi (2008), JPO
          if (local_config_GM_compute_visbeck) then
            call mpas_pool_get_array(diagnosticsPool, 'betaEdge', betaEdge)
            call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
@@ -549,27 +592,22 @@ contains
               countN2 = 0
               cell1 = cellsOnEdge(1, iEdge)
               cell2 = cellsOnEdge(2, iEdge)
-              zEdge = 0.5_RKIND*(zTop(k,cell1) + zTop(k,cell2))
-              do while(zEdge > -config_GM_visbeck_min_depth .and. k < maxLevelEdgeTop(iEdge))
-                k = k+1
-                zEdge = 0.5_RKIND*(zTop(k,cell1) + zTop(k,cell2))
-              enddo
 
-              k = max(1,k - 1)
-              zEdge = 0.5_RKIND*(zTop(k,cell1) + zTop(k,cell2))
+              k = 2
+              zEdge = -layerThicknessEdge(k-1,iEdge)
               do while(zEdge > -config_GM_visbeck_max_depth .and. k < maxLevelEdgeTop(iEdge))
-                BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k, cell1) + BruntVaisalaFreqTop(k, cell2))
-                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
-                sumN2 = sumN2 + layerThicknessEdge(k,iEdge)*BruntVaisalaFreqTopEdge
-                RiTopOfEdge = 0.5_RKIND*(RiTopOfCell(k,cell1) + RiTopOfCell(k,cell2))
-                RiTopOfEdge = max(RiTopOfEdge, 0.0_RKIND)
-                sumRi = sumRi + layerThicknessEdge(k,iEdge)*RiTopOfEdge
-                ltsum = ltsum + layerThicknessEdge(k,iEdge)
+                lt1 = 0.5_RKIND*(layerThickness(k,cell1) + layerThickness(k-1,cell1))
+                lt2 = 0.5_RKIND*(layerThickness(k,cell2) + layerThickness(k-1,cell2))
+                sumN2 = sumN2 + 0.5_RKIND*(lt1*max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND) + &
+                                lt2*max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND))
+                sumRi = sumRi + 0.5_RKIND*(lt1*max(RiTopOfCell(k,cell1),0.0_RKIND) + &
+                                    lt2*max(RiTopOfCell(k,cell2),0.0_RKIND))
+                ltsum = ltsum + 0.5_RKIND*(lt1+lt2)
                 countN2 = countN2 + 1
 
                 k = k + 1
-                zEdge = 0.5_RKIND*(zTop(k,cell1) + zTop(k,cell2))
-             end do
+                zEdge = zEdge - layerThicknessEdge(k-1,iEdge)
+              end do
 
              if (countN2 > 0) then
                 c_visbeck(iEdge) = sqrt(sumN2*ltsum)
@@ -582,7 +620,7 @@ contains
                 gmBolusKappa(iEdge) = config_GM_visbeck_alpha * eddyLength(iEdge)**2.0_RKIND / (1.0E-15 + eddyTime(iEdge))
                 gmBolusKappa(iEdge) = max(config_GM_visbeck_min_kappa, min(gmBolusKappa(iEdge), config_GM_visbeck_max_kappa))
              else !for really shallow columns use min bolus kappa
-               gmBolusKappa(iEdge) = config_GM_visbeck_min_kappa
+                gmBolusKappa(iEdge) = config_GM_visbeck_min_kappa
              end if
            end do
            !omp end do
