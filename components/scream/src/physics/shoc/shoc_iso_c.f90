@@ -114,5 +114,31 @@ contains
     call shoc_grid(shcol,nlev,nlevi,zt_grid,zi_grid,pdel,dz_zt,dz_zi,rho_zt)
 
   end subroutine shoc_grid_c
+  
+  subroutine calc_shoc_varorcovar_c(&
+       shcol,nlev,nlevi,tunefac,&                ! Input
+       isotropy_zi,tkh_zi,dz_zi,invar1,invar2,&  ! Input
+       varorcovar)bind (C)                       ! Input/Output 
+       
+      use shoc, only: calc_shoc_varorcovar
+
+      integer(kind=c_int), intent(in), value :: shcol
+      integer(kind=c_int), intent(in), value :: nlev
+      integer(kind=c_int), intent(in), value :: nlevi 
+      real(kind=c_real), intent(in), value :: tunefac
+      real(kind=c_real), intent(in) :: isotropy_zi(shcol,nlevi)
+      real(kind=c_real), intent(in) :: tkh_zi(shcol,nlevi)
+      real(kind=c_real), intent(in) :: dz_zi(shcol,nlevi)
+      real(kind=c_real), intent(in) :: invar1(shcol,nlev)
+      real(kind=c_real), intent(in) :: invar2(shcol,nlev)
+	 
+      real(kind=c_real), intent(inout) :: varorcovar(shcol,nlevi)
+      
+      call calc_shoc_varorcovar(&
+           shcol,nlev,nlevi,tunefac,&               ! Input
+           isotropy_zi,tkh_zi,dz_zi,invar1,invar2,& ! Input
+           varorcovar)  
+	   
+  end subroutine calc_shoc_varorcovar_c      
 
 end module shoc_iso_c
