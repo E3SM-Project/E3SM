@@ -73,13 +73,13 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
     // Init pack inputs
     Spack rho, inv_rho, qc_incld, nc_incld, qr_incld, mu_c, nu, qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, inv_qc_relvar;
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-      rho[s]       = cwadc_device(vs).rho;
-      qc_incld[s]  = cwadc_device(vs).qc_incld;
-      nc_incld[s]  = cwadc_device(vs).nc_incld;
-      inv_qc_relvar[s] = cwadc_device(vs).inv_qc_relvar;
-      qc2qr_autoconv_tend[s]     = cwadc_device(vs).qc2qr_autoconv_tend;
-      nc2nr_autoconv_tend[s]    = cwadc_device(vs).nc2nr_autoconv_tend;
-      ncautr[s]    = cwadc_device(vs).ncautr;
+      rho[s]                 = cwadc_device(vs).rho;
+      qc_incld[s]            = cwadc_device(vs).qc_incld;
+      nc_incld[s]            = cwadc_device(vs).nc_incld;
+      inv_qc_relvar[s]       = cwadc_device(vs).inv_qc_relvar;
+      qc2qr_autoconv_tend[s] = cwadc_device(vs).qc2qr_autoconv_tend;
+      nc2nr_autoconv_tend[s] = cwadc_device(vs).nc2nr_autoconv_tend;
+      ncautr[s]              = cwadc_device(vs).ncautr;
     }
 
     Functions::cloud_water_autoconversion(rho, qc_incld, nc_incld,
@@ -87,13 +87,13 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
 
     // Copy results back into views
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-      cwadc_device(vs).rho       = rho[s];
-      cwadc_device(vs).qc_incld  = qc_incld[s];
-      cwadc_device(vs).nc_incld  = nc_incld[s];
-      cwadc_device(vs).inv_qc_relvar = inv_qc_relvar[s];
-      cwadc_device(vs).qc2qr_autoconv_tend     = qc2qr_autoconv_tend[s];
-      cwadc_device(vs).nc2nr_autoconv_tend    = nc2nr_autoconv_tend[s];
-      cwadc_device(vs).ncautr    = ncautr[s];
+      cwadc_device(vs).rho                 = rho[s];
+      cwadc_device(vs).qc_incld            = qc_incld[s];
+      cwadc_device(vs).nc_incld            = nc_incld[s];
+      cwadc_device(vs).inv_qc_relvar       = inv_qc_relvar[s];
+      cwadc_device(vs).qc2qr_autoconv_tend = qc2qr_autoconv_tend[s];
+      cwadc_device(vs).nc2nr_autoconv_tend = nc2nr_autoconv_tend[s];
+      cwadc_device(vs).ncautr              = ncautr[s];
     }
   });
 
@@ -102,13 +102,13 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
 
   // Validate results
   for (Int s = 0; s < max_pack_size; ++s) {
-    REQUIRE(cwadc[s].rho       == cwadc_host(s).rho);
-    REQUIRE(cwadc[s].qc_incld  == cwadc_host(s).qc_incld);
-    REQUIRE(cwadc[s].nc_incld  == cwadc_host(s).nc_incld);
-    REQUIRE(cwadc[s].inv_qc_relvar == cwadc_host(s).inv_qc_relvar);
-    REQUIRE(cwadc[s].qc2qr_autoconv_tend     == cwadc_host(s).qc2qr_autoconv_tend);
-    REQUIRE(cwadc[s].nc2nr_autoconv_tend    == cwadc_host(s).nc2nr_autoconv_tend);
-    REQUIRE(cwadc[s].ncautr    == cwadc_host(s).ncautr);
+    REQUIRE(cwadc[s].rho                  == cwadc_host(s).rho);
+    REQUIRE(cwadc[s].qc_incld             == cwadc_host(s).qc_incld);
+    REQUIRE(cwadc[s].nc_incld             == cwadc_host(s).nc_incld);
+    REQUIRE(cwadc[s].inv_qc_relvar        == cwadc_host(s).inv_qc_relvar);
+    REQUIRE(cwadc[s].qc2qr_autoconv_tend  == cwadc_host(s).qc2qr_autoconv_tend);
+    REQUIRE(cwadc[s].nc2nr_autoconv_tend  == cwadc_host(s).nc2nr_autoconv_tend);
+    REQUIRE(cwadc[s].ncautr               == cwadc_host(s).ncautr);
   }
 }
 

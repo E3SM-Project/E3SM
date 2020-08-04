@@ -22,12 +22,12 @@ void Functions<S,D>
   Spack& qc2qi_hetero_freeze_tend, Spack& nc2ni_immers_freeze_tend,
   const Smask& context)
 {
-  constexpr Scalar qsmall = C::QSMALL;
-  constexpr Scalar AIMM = C::AIMM;
+  constexpr Scalar qsmall   = C::QSMALL;
+  constexpr Scalar AIMM     = C::AIMM;
   constexpr Scalar RainFrze = C::RainFrze;
   constexpr Scalar ZeroDegC = C::ZeroDegC;
-  constexpr Scalar CONS5 = C::CONS5;
-  constexpr Scalar CONS6 = C::CONS6;
+  constexpr Scalar CONS5    = C::CONS5;
+  constexpr Scalar CONS6    = C::CONS6;
 
   const auto qc_not_small_and_t_freezing = (qc_incld >= qsmall) &&
                                            (t <= RainFrze) && context;

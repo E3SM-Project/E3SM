@@ -180,17 +180,17 @@ static void run_bfb_rain_sed()
     Int start = std::min(rsds_fortran[i].kbot, rsds_fortran[i].ktop) - 1; // 0-based indx
     Int end   = std::max(rsds_fortran[i].kbot, rsds_fortran[i].ktop);     // 0-based indx
     for (Int k = start; k < end; ++k) {
-      REQUIRE(rsds_fortran[i].qr[k]       == rsds_cxx[i].qr[k]);
-      REQUIRE(rsds_fortran[i].nr[k]       == rsds_cxx[i].nr[k]);
-      REQUIRE(rsds_fortran[i].nr_incld[k] == rsds_cxx[i].nr_incld[k]);
-      REQUIRE(rsds_fortran[i].mu_r[k]     == rsds_cxx[i].mu_r[k]);
-      REQUIRE(rsds_fortran[i].lamr[k]     == rsds_cxx[i].lamr[k]);
-      REQUIRE(rsds_fortran[i].precip_liq_flux[k]     == rsds_cxx[i].precip_liq_flux[k]);
-      REQUIRE(rsds_fortran[i].qr_tend[k]  == rsds_cxx[i].qr_tend[k]);
-      REQUIRE(rsds_fortran[i].nr_tend[k]  == rsds_cxx[i].nr_tend[k]);
+      REQUIRE(rsds_fortran[i].qr[k]              == rsds_cxx[i].qr[k]);
+      REQUIRE(rsds_fortran[i].nr[k]              == rsds_cxx[i].nr[k]);
+      REQUIRE(rsds_fortran[i].nr_incld[k]        == rsds_cxx[i].nr_incld[k]);
+      REQUIRE(rsds_fortran[i].mu_r[k]            == rsds_cxx[i].mu_r[k]);
+      REQUIRE(rsds_fortran[i].lamr[k]            == rsds_cxx[i].lamr[k]);
+      REQUIRE(rsds_fortran[i].precip_liq_flux[k] == rsds_cxx[i].precip_liq_flux[k]);
+      REQUIRE(rsds_fortran[i].qr_tend[k]         == rsds_cxx[i].qr_tend[k]);
+      REQUIRE(rsds_fortran[i].nr_tend[k]         == rsds_cxx[i].nr_tend[k]);
     }
-    REQUIRE(rsds_fortran[i].precip_liq_flux[end]     == rsds_cxx[i].precip_liq_flux[end]);
-    REQUIRE(rsds_fortran[i].precip_liq_surf == rsds_cxx[i].precip_liq_surf);
+    REQUIRE(rsds_fortran[i].precip_liq_flux[end] == rsds_cxx[i].precip_liq_flux[end]);
+    REQUIRE(rsds_fortran[i].precip_liq_surf      == rsds_cxx[i].precip_liq_surf);
   }
 }
 

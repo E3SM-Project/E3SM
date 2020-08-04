@@ -83,17 +83,17 @@ struct UnitWrap::UnitTest<D>::TestIncloudMixing {
      // Init pack inputs
       Spack qc, qr, qi, qm, nc, nr, ni, bm, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r;
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        qc[s]            = self_device(vs).qc;
-        qr[s]            = self_device(vs).qr;
-        qi[s]         = self_device(vs).qi;
-        qm[s]         = self_device(vs).qm;
-        nc[s]            = self_device(vs).nc;
-        nr[s]            = self_device(vs).nr;
-        ni[s]         = self_device(vs).ni;
-        bm[s]         = self_device(vs).bm;
-        inv_cld_frac_l[s]     = self_device(vs).inv_cld_frac_l;
-        inv_cld_frac_i[s]     = self_device(vs).inv_cld_frac_i;
-        inv_cld_frac_r[s]     = self_device(vs).inv_cld_frac_r;
+        qc[s]             = self_device(vs).qc;
+        qr[s]             = self_device(vs).qr;
+        qi[s]             = self_device(vs).qi;
+        qm[s]             = self_device(vs).qm;
+        nc[s]             = self_device(vs).nc;
+        nr[s]             = self_device(vs).nr;
+        ni[s]             = self_device(vs).ni;
+        bm[s]             = self_device(vs).bm;
+        inv_cld_frac_l[s] = self_device(vs).inv_cld_frac_l;
+        inv_cld_frac_i[s] = self_device(vs).inv_cld_frac_i;
+        inv_cld_frac_r[s] = self_device(vs).inv_cld_frac_r;
       }
       // outputs
       Spack qc_incld{0.}, qr_incld{0.}, qi_incld{0.}, qm_incld{0.};
@@ -104,12 +104,12 @@ struct UnitWrap::UnitTest<D>::TestIncloudMixing {
                                                 nc_incld, nr_incld, ni_incld, bm_incld);
 
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        self_device(vs).qc_incld    = qc_incld[s];
-        self_device(vs).qr_incld    = qr_incld[s];
+        self_device(vs).qc_incld = qc_incld[s];
+        self_device(vs).qr_incld = qr_incld[s];
         self_device(vs).qi_incld = qi_incld[s];
         self_device(vs).qm_incld = qm_incld[s];
-        self_device(vs).nc_incld    = nc_incld[s];
-        self_device(vs).nr_incld    = nr_incld[s];
+        self_device(vs).nc_incld = nc_incld[s];
+        self_device(vs).nr_incld = nr_incld[s];
         self_device(vs).ni_incld = ni_incld[s];
         self_device(vs).bm_incld = bm_incld[s];
       }
@@ -118,12 +118,12 @@ struct UnitWrap::UnitTest<D>::TestIncloudMixing {
     Kokkos::deep_copy(self_host, self_device);
 
     for (Int s = 0; s < max_pack_size; ++s) {
-      REQUIRE(self[s].qc_incld    == self_host(s).qc_incld);
-      REQUIRE(self[s].qr_incld    == self_host(s).qr_incld);
+      REQUIRE(self[s].qc_incld == self_host(s).qc_incld);
+      REQUIRE(self[s].qr_incld == self_host(s).qr_incld);
       REQUIRE(self[s].qi_incld == self_host(s).qi_incld);
       REQUIRE(self[s].qm_incld == self_host(s).qm_incld);
-      REQUIRE(self[s].nc_incld    == self_host(s).nc_incld);
-      REQUIRE(self[s].nr_incld    == self_host(s).nr_incld);
+      REQUIRE(self[s].nc_incld == self_host(s).nc_incld);
+      REQUIRE(self[s].nr_incld == self_host(s).nr_incld);
       REQUIRE(self[s].ni_incld == self_host(s).ni_incld);
       REQUIRE(self[s].bm_incld == self_host(s).bm_incld);
     }

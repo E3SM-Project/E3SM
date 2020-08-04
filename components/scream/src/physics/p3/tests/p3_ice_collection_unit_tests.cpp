@@ -77,14 +77,14 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
       // Init pack inputs
       Spack rho, temp, rhofaci, table_val_qc2qi_collect, qi_incld, qc_incld, ni_incld, nc_incld;
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        rho[s]            = cldliq_device(vs).rho;
-        temp[s]           = cldliq_device(vs).temp;
-        rhofaci[s]        = cldliq_device(vs).rhofaci;
-        table_val_qc2qi_collect[s]         = cldliq_device(vs).table_val_qc2qi_collect;
-        qi_incld[s]    = cldliq_device(vs).qi_incld;
-        qc_incld[s]       = cldliq_device(vs).qc_incld;
-        ni_incld[s]    = cldliq_device(vs).ni_incld;
-        nc_incld[s]       = cldliq_device(vs).nc_incld;
+        rho[s]                     = cldliq_device(vs).rho;
+        temp[s]                    = cldliq_device(vs).temp;
+        rhofaci[s]                 = cldliq_device(vs).rhofaci;
+        table_val_qc2qi_collect[s] = cldliq_device(vs).table_val_qc2qi_collect;
+        qi_incld[s]                = cldliq_device(vs).qi_incld;
+        qc_incld[s]                = cldliq_device(vs).qc_incld;
+        ni_incld[s]                = cldliq_device(vs).ni_incld;
+        nc_incld[s]                = cldliq_device(vs).nc_incld;
       }
 
       Spack qc2qi_collect_tend{0.0};
@@ -99,9 +99,9 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         cldliq_device(vs).qc2qi_collect_tend  = qc2qi_collect_tend[s];
-        cldliq_device(vs).nc_collect_tend  = nc_collect_tend[s];
-        cldliq_device(vs).qc2qr_ice_shed_tend  = qc2qr_ice_shed_tend[s];
-        cldliq_device(vs).ncshdc = ncshdc[s];
+        cldliq_device(vs).nc_collect_tend     = nc_collect_tend[s];
+        cldliq_device(vs).qc2qr_ice_shed_tend = qc2qr_ice_shed_tend[s];
+        cldliq_device(vs).ncshdc              = ncshdc[s];
       }
     });
 
@@ -111,9 +111,9 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
     // Validate results
     for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(cldliq[s].qc2qi_collect_tend   == cldliq_host(s).qc2qi_collect_tend);
-      REQUIRE(cldliq[s].nc_collect_tend   == cldliq_host(s).nc_collect_tend);
-      REQUIRE(cldliq[s].qc2qr_ice_shed_tend   == cldliq_host(s).qc2qr_ice_shed_tend);
-      REQUIRE(cldliq[s].ncshdc  == cldliq_host(s).ncshdc);
+      REQUIRE(cldliq[s].nc_collect_tend      == cldliq_host(s).nc_collect_tend);
+      REQUIRE(cldliq[s].qc2qr_ice_shed_tend  == cldliq_host(s).qc2qr_ice_shed_tend);
+      REQUIRE(cldliq[s].ncshdc               == cldliq_host(s).ncshdc);
     }
   }
 
@@ -167,15 +167,15 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
       // Init pack inputs
       Spack rho, temp, rhofaci, logn0r, table_val_nr_collect, table_val_qr2qi_collect, qi_incld, ni_incld, qr_incld;
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        rho[s]         = rain_device(vs).rho;
-        temp[s]        = rain_device(vs).temp;
-        rhofaci[s]     = rain_device(vs).rhofaci;
-        logn0r[s]      = rain_device(vs).logn0r;
-        table_val_nr_collect[s]      = rain_device(vs).table_val_nr_collect;
-        table_val_qr2qi_collect[s]      = rain_device(vs).table_val_qr2qi_collect;
-        qi_incld[s] = rain_device(vs).qi_incld;
-        ni_incld[s] = rain_device(vs).ni_incld;
-        qr_incld[s]    = rain_device(vs).qr_incld;
+        rho[s]                     = rain_device(vs).rho;
+        temp[s]                    = rain_device(vs).temp;
+        rhofaci[s]                 = rain_device(vs).rhofaci;
+        logn0r[s]                  = rain_device(vs).logn0r;
+        table_val_nr_collect[s]    = rain_device(vs).table_val_nr_collect;
+        table_val_qr2qi_collect[s] = rain_device(vs).table_val_qr2qi_collect;
+        qi_incld[s]                = rain_device(vs).qi_incld;
+        ni_incld[s]                = rain_device(vs).ni_incld;
+        qr_incld[s]                = rain_device(vs).qr_incld;
       }
 
       Spack qr2qi_collect_tend(0.0), nr_collect_tend(0.0);
@@ -186,7 +186,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         rain_device(vs).qr2qi_collect_tend = qr2qi_collect_tend[s];
-        rain_device(vs).nr_collect_tend = nr_collect_tend[s];
+        rain_device(vs).nr_collect_tend    = nr_collect_tend[s];
       }
     });
 
@@ -196,7 +196,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
     // Validate results
     for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(rain[s].qr2qi_collect_tend == rain_host(s).qr2qi_collect_tend);
-      REQUIRE(rain[s].nr_collect_tend == rain_host(s).nr_collect_tend);
+      REQUIRE(rain[s].nr_collect_tend    == rain_host(s).nr_collect_tend);
     }
   }
 
@@ -250,13 +250,13 @@ struct UnitWrap::UnitTest<D>::TestIceCollection {
       // Init pack inputs
       Spack rho, rhofaci, table_val_ni_self_collect, eii, qm_incld, qi_incld, ni_incld;
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        rho[s]         = self_device(vs).rho;
-        rhofaci[s]     = self_device(vs).rhofaci;
-        table_val_ni_self_collect[s]      = self_device(vs).table_val_ni_self_collect;
-        eii[s]         = self_device(vs).eii;
-        qm_incld[s] = self_device(vs).qm_incld;
-        qi_incld[s] = self_device(vs).qi_incld;
-        ni_incld[s] = self_device(vs).ni_incld;
+        rho[s]                        = self_device(vs).rho;
+        rhofaci[s]                    = self_device(vs).rhofaci;
+        table_val_ni_self_collect[s]  = self_device(vs).table_val_ni_self_collect;
+        eii[s]                        = self_device(vs).eii;
+        qm_incld[s]                   = self_device(vs).qm_incld;
+        qi_incld[s]                   = self_device(vs).qi_incld;
+        ni_incld[s]                   = self_device(vs).ni_incld;
       }
 
       Spack ni_selfcollect_tend{0.0};

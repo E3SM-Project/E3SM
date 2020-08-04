@@ -51,7 +51,7 @@ void Functions<S,D>
     qr_ptr    = {&qc};
 
   // find top, determine qxpresent
-  const auto sqc = scalarize(qc);
+  const auto sqc          = scalarize(qc);
   constexpr Scalar qsmall = C::QSMALL;
   constexpr Scalar bcn    = C::bcn;
   bool log_qxpresent;
@@ -85,8 +85,8 @@ void Functions<S,D>
       Kokkos::parallel_reduce(
         Kokkos::TeamThreadRange(team, kmax-kmin+1), [&] (int pk_, Scalar& lmax) {
           const int pk = kmin + pk_;
-          const auto range_pack = scream::pack::range<IntSmallPack>(pk*Spack::n);
-          const auto range_mask = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
+          const auto range_pack  = scream::pack::range<IntSmallPack>(pk*Spack::n);
+          const auto range_mask  = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
           const auto qc_gt_small = range_mask && qc_incld(pk) > qsmall;
           if (qc_gt_small.any()) {
             // compute Vq, Vn

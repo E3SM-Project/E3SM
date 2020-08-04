@@ -79,12 +79,12 @@ static void run_bfb()
     // Init pack inputs
     Spack pres, t, qv, latent_heat_sublim, qv2qi_vapdep_tend, qi2qv_sublim_tend;
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-      pres[s]  = device_data(vs).pres;
-      t[s]     = device_data(vs).t;
-      qv[s]    = device_data(vs).qv;
-      latent_heat_sublim[s]  = device_data(vs).latent_heat_sublim;
-      qv2qi_vapdep_tend[s] = device_data(vs).qv2qi_vapdep_tend;
-      qi2qv_sublim_tend[s] = device_data(vs).qi2qv_sublim_tend;
+      pres[s]               = device_data(vs).pres;
+      t[s]                  = device_data(vs).t;
+      qv[s]                 = device_data(vs).qv;
+      latent_heat_sublim[s] = device_data(vs).latent_heat_sublim;
+      qv2qi_vapdep_tend[s]  = device_data(vs).qv2qi_vapdep_tend;
+      qi2qv_sublim_tend[s]  = device_data(vs).qi2qv_sublim_tend;
     }
 
     Functions::prevent_ice_overdepletion(pres, t, qv, latent_heat_sublim, device_data(0).inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend);

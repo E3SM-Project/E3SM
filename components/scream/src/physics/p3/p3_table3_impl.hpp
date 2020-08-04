@@ -93,16 +93,16 @@ void Functions<S,D>
   using DeviceTable2   = typename view_2d_table::non_const_type;
   using DeviceDnuTable = typename view_dnu_table::non_const_type;
 
-  const auto vn_table_d   = DeviceTable2("vn_table");
-  const auto vm_table_d   = DeviceTable2("vm_table");
+  const auto vn_table_d    = DeviceTable2("vn_table");
+  const auto vm_table_d    = DeviceTable2("vm_table");
   const auto revap_table_d = DeviceTable2("revap_table");
-  const auto mu_r_table_d = DeviceTable1("mu_r_table");
-  const auto dnu_table_d  = DeviceDnuTable("dnu");
-  const auto vn_table_h  = Kokkos::create_mirror_view(vn_table_d);
-  const auto vm_table_h  = Kokkos::create_mirror_view(vm_table_d);
-  const auto revap_table_h  = Kokkos::create_mirror_view(revap_table_d);
-  const auto mu_table_h  = Kokkos::create_mirror_view(mu_r_table_d);
-  const auto dnu_table_h = Kokkos::create_mirror_view(dnu_table_d);
+  const auto mu_r_table_d  = DeviceTable1("mu_r_table");
+  const auto dnu_table_d   = DeviceDnuTable("dnu");
+  const auto vn_table_h    = Kokkos::create_mirror_view(vn_table_d);
+  const auto vm_table_h    = Kokkos::create_mirror_view(vm_table_d);
+  const auto revap_table_h = Kokkos::create_mirror_view(revap_table_d);
+  const auto mu_table_h    = Kokkos::create_mirror_view(mu_r_table_d);
+  const auto dnu_table_h   = Kokkos::create_mirror_view(dnu_table_d);
 
   // Need 2d-tables with fortran-style layout
   using P3F         = Functions<Real, HostDevice>;

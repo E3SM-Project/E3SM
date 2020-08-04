@@ -86,10 +86,10 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         gcdd_device(vs).nc_out = nc[s];
-        gcdd_device(vs).mu_c = mu_c[s];
-        gcdd_device(vs).nu = nu[s];
-        gcdd_device(vs).lamc = lamc[s];
-        gcdd_device(vs).cdist = cdist[s];
+        gcdd_device(vs).mu_c   = mu_c[s];
+        gcdd_device(vs).nu     = nu[s];
+        gcdd_device(vs).lamc   = lamc[s];
+        gcdd_device(vs).cdist  = cdist[s];
         gcdd_device(vs).cdist1 = cdist1[s];
       }
     });

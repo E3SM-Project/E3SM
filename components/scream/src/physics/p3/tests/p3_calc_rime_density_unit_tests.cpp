@@ -101,14 +101,14 @@ static void run_bfb()
     // Init pack inputs
     Spack t, rhofaci, table_val_qi_fallspd, acn, lamc, mu_c, qc_incld, qc2qi_collect_tend;
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-      t[s]        = device_data(vs).t;
-      rhofaci[s]  = device_data(vs).rhofaci;
-      table_val_qi_fallspd[s]   = device_data(vs).table_val_qi_fallspd;
-      acn[s]      = device_data(vs).acn;
-      lamc[s]     = device_data(vs).lamc;
-      mu_c[s]     = device_data(vs).mu_c;
-      qc_incld[s] = device_data(vs).qc_incld;
-      qc2qi_collect_tend[s]    = device_data(vs).qc2qi_collect_tend;
+      t[s]                    = device_data(vs).t;
+      rhofaci[s]              = device_data(vs).rhofaci;
+      table_val_qi_fallspd[s] = device_data(vs).table_val_qi_fallspd;
+      acn[s]                  = device_data(vs).acn;
+      lamc[s]                 = device_data(vs).lamc;
+      mu_c[s]                 = device_data(vs).mu_c;
+      qc_incld[s]             = device_data(vs).qc_incld;
+      qc2qi_collect_tend[s]   = device_data(vs).qc2qi_collect_tend;
     }
 
     Spack vtrmi1{0.0};

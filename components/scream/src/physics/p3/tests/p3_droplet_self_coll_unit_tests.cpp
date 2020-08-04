@@ -86,11 +86,11 @@ static void run_bfb()
     // Init pack inputs
     Spack rho, inv_rho, qc_incld, mu_c, nu, nc2nr_autoconv_tend;
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-      rho[s]      = device_data(vs).rho;
-      inv_rho[s]  = device_data(vs).inv_rho;
-      qc_incld[s] = device_data(vs).qc_incld;
-      mu_c[s]     = device_data(vs).mu_c;
-      nu[s]       = device_data(vs).nu;
+      rho[s]                   = device_data(vs).rho;
+      inv_rho[s]               = device_data(vs).inv_rho;
+      qc_incld[s]              = device_data(vs).qc_incld;
+      mu_c[s]                  = device_data(vs).mu_c;
+      nu[s]                    = device_data(vs).nu;
       nc2nr_autoconv_tend[s]   = device_data(vs).nc2nr_autoconv_tend;
     }
 

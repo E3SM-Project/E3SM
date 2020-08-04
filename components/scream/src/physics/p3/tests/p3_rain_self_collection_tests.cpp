@@ -80,10 +80,10 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection {
 
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        dc_device(vs).rho      = rho_local[s];
-        dc_device(vs).qr_incld = qr_incld_local[s];
-        dc_device(vs).nr_incld = nr_incld_local[s];
-        dc_device(vs).nr_selfcollect_tend    = nr_selfcollect_tend_local[s];
+        dc_device(vs).rho                  = rho_local[s];
+        dc_device(vs).qr_incld             = qr_incld_local[s];
+        dc_device(vs).nr_incld             = nr_incld_local[s];
+        dc_device(vs).nr_selfcollect_tend  = nr_selfcollect_tend_local[s];
       }
     });
 
@@ -92,10 +92,10 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection {
 
     // Validate results
     for (Int s = 0; s < max_pack_size; ++s) {
-      REQUIRE(dc[s].rho      == dc_host(s).rho);
-      REQUIRE(dc[s].qr_incld == dc_host(s).qr_incld);
-      REQUIRE(dc[s].nr_incld == dc_host(s).nr_incld);
-      REQUIRE(dc[s].nr_selfcollect_tend    == dc_host(s).nr_selfcollect_tend);
+      REQUIRE(dc[s].rho                 == dc_host(s).rho);
+      REQUIRE(dc[s].qr_incld            == dc_host(s).qr_incld);
+      REQUIRE(dc[s].nr_incld            == dc_host(s).nr_incld);
+      REQUIRE(dc[s].nr_selfcollect_tend == dc_host(s).nr_selfcollect_tend);
     }
   }
 

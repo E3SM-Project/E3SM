@@ -84,11 +84,11 @@ static void run_bfb()
     // Init pack inputs
     Spack t, lamc, mu_c, cdist1, qc_incld,inv_qc_relvar;
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-      t[s]        = device_data(vs).t;
-      lamc[s]     = device_data(vs).lamc;
-      mu_c[s]     = device_data(vs).mu_c;
-      cdist1[s]   = device_data(vs).cdist1;
-      qc_incld[s] = device_data(vs).qc_incld;
+      t[s]            = device_data(vs).t;
+      lamc[s]         = device_data(vs).lamc;
+      mu_c[s]         = device_data(vs).mu_c;
+      cdist1[s]       = device_data(vs).cdist1;
+      qc_incld[s]     = device_data(vs).qc_incld;
       inv_qc_relvar[s]= device_data(vs).inv_qc_relvar;
     }
 

@@ -74,28 +74,28 @@ struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth {
       Spack qr2qi_collect_tend,qc2qi_collect_tend,qc_growth_rate,nr_ice_shed_tend,qc2qr_ice_shed_tend;
 
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        rho[s]         = self_device(vs).rho;
-        temp[s]        = self_device(vs).temp;
-        pres[s]        = self_device(vs).pres;
-        rhofaci[s]     = self_device(vs).rhofaci;
-        table_val_qi2qr_melting[s]      = self_device(vs).table_val_qi2qr_melting;
-        table_val_qi2qr_vent_melt[s]      = self_device(vs).table_val_qi2qr_vent_melt;
-        latent_heat_vapor[s]        = self_device(vs).latent_heat_vapor;
+        rho[s]                        = self_device(vs).rho;
+        temp[s]                       = self_device(vs).temp;
+        pres[s]                       = self_device(vs).pres;
+        rhofaci[s]                    = self_device(vs).rhofaci;
+        table_val_qi2qr_melting[s]    = self_device(vs).table_val_qi2qr_melting;
+        table_val_qi2qr_vent_melt[s]  = self_device(vs).table_val_qi2qr_vent_melt;
+        latent_heat_vapor[s]          = self_device(vs).latent_heat_vapor;
         latent_heat_fusion[s]         = self_device(vs).latent_heat_fusion;
-        dv[s]          = self_device(vs).dv;
-        kap[s]         = self_device(vs).kap;
-        mu[s]          = self_device(vs).mu;
-        sc[s]          = self_device(vs).sc;
-        qv[s]          = self_device(vs).qv;
-        qc_incld[s]    = self_device(vs).qc_incld;
-        qi_incld[s] = self_device(vs).qi_incld;
-        ni_incld[s] = self_device(vs).ni_incld;
-        qr_incld[s]    = self_device(vs).qr_incld;
-        qr2qi_collect_tend[s]       = self_device(vs).qr2qi_collect_tend;
-        qc2qi_collect_tend[s]       = self_device(vs).qc2qi_collect_tend;
-        qc_growth_rate[s]      = self_device(vs).qc_growth_rate;
-        nr_ice_shed_tend[s]      = self_device(vs).nr_ice_shed_tend;
-        qc2qr_ice_shed_tend[s]       = self_device(vs).qc2qr_ice_shed_tend;
+        dv[s]                         = self_device(vs).dv;
+        kap[s]                        = self_device(vs).kap;
+        mu[s]                         = self_device(vs).mu;
+        sc[s]                         = self_device(vs).sc;
+        qv[s]                         = self_device(vs).qv;
+        qc_incld[s]                   = self_device(vs).qc_incld;
+        qi_incld[s]                   = self_device(vs).qi_incld;
+        ni_incld[s]                   = self_device(vs).ni_incld;
+        qr_incld[s]                   = self_device(vs).qr_incld;
+        qr2qi_collect_tend[s]         = self_device(vs).qr2qi_collect_tend;
+        qc2qi_collect_tend[s]         = self_device(vs).qc2qi_collect_tend;
+        qc_growth_rate[s]             = self_device(vs).qc_growth_rate;
+        nr_ice_shed_tend[s]           = self_device(vs).nr_ice_shed_tend;
+        qc2qr_ice_shed_tend[s]        = self_device(vs).qc2qr_ice_shed_tend;
         log_wetgrowth.set(s, self_device(vs).log_wetgrowth);
       }
 
@@ -104,12 +104,12 @@ struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth {
                                        log_wetgrowth, qr2qi_collect_tend, qc2qi_collect_tend, qc_growth_rate, nr_ice_shed_tend, qc2qr_ice_shed_tend);
 
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        self_device(vs).log_wetgrowth = log_wetgrowth[s];
-        self_device(vs).qr2qi_collect_tend         = qr2qi_collect_tend[s];
-        self_device(vs).qc2qi_collect_tend         = qc2qi_collect_tend[s];
-        self_device(vs).qc_growth_rate        = qc_growth_rate[s];
-        self_device(vs).nr_ice_shed_tend        = nr_ice_shed_tend[s];
-        self_device(vs).qc2qr_ice_shed_tend         = qc2qr_ice_shed_tend[s];
+        self_device(vs).log_wetgrowth       = log_wetgrowth[s];
+        self_device(vs).qr2qi_collect_tend  = qr2qi_collect_tend[s];
+        self_device(vs).qc2qi_collect_tend  = qc2qi_collect_tend[s];
+        self_device(vs).qc_growth_rate      = qc_growth_rate[s];
+        self_device(vs).nr_ice_shed_tend    = nr_ice_shed_tend[s];
+        self_device(vs).qc2qr_ice_shed_tend = qc2qr_ice_shed_tend[s];
       }
     });
 
@@ -118,11 +118,11 @@ struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth {
     for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(static_cast<bool>(self[s].log_wetgrowth) == static_cast<bool>(self_host(s).log_wetgrowth));
 
-      REQUIRE(self[s].qr2qi_collect_tend         == self_host(s).qr2qi_collect_tend);
-      REQUIRE(self[s].qc2qi_collect_tend         == self_host(s).qc2qi_collect_tend);
+      REQUIRE(self[s].qr2qi_collect_tend    == self_host(s).qr2qi_collect_tend);
+      REQUIRE(self[s].qc2qi_collect_tend    == self_host(s).qc2qi_collect_tend);
       REQUIRE(self[s].qc_growth_rate        == self_host(s).qc_growth_rate);
-      REQUIRE(self[s].nr_ice_shed_tend        == self_host(s).nr_ice_shed_tend);
-      REQUIRE(self[s].qc2qr_ice_shed_tend         == self_host(s).qc2qr_ice_shed_tend);
+      REQUIRE(self[s].nr_ice_shed_tend      == self_host(s).nr_ice_shed_tend);
+      REQUIRE(self[s].qc2qr_ice_shed_tend   == self_host(s).qc2qr_ice_shed_tend);
     }
   }
 

@@ -17,9 +17,9 @@ void Functions<S,D>
   // self-collection and breakup of rain
   // (breakup following modified Verlinde and Cotton scheme)
 
-  constexpr Scalar qsmall = C::QSMALL;
-  constexpr Scalar rho_h2o   = C::RHO_H2O;
-  constexpr Scalar pi     = C::Pi;
+  constexpr Scalar qsmall   = C::QSMALL;
+  constexpr Scalar rho_h2o  = C::RHO_H2O;
+  constexpr Scalar pi       = C::Pi;
 
   const auto qr_incld_not_small = qr_incld >= qsmall && context;
 

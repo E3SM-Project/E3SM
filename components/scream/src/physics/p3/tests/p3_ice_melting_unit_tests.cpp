@@ -69,23 +69,23 @@ static void ice_melting_bfb(){
     // Init pack inputs
     Spack rho,t,pres,rhofaci,table_val_qi2qr_melting,table_val_qi2qr_vent_melt,latent_heat_vapor,latent_heat_fusion,dv,sc,mu,kap,qv,qi_incld,ni_incld,qi2qr_melt_tend,ni2nr_melt_tend;
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-      rho[s]         = IceMelt_device(vs).rho;
-      t[s]           = IceMelt_device(vs).t;
-      pres[s]        = IceMelt_device(vs).pres;
-      rhofaci[s]     = IceMelt_device(vs).rhofaci;
-      table_val_qi2qr_melting[s]      = IceMelt_device(vs).table_val_qi2qr_melting;
-      table_val_qi2qr_vent_melt[s]      = IceMelt_device(vs).table_val_qi2qr_vent_melt;
-      latent_heat_vapor[s]        = IceMelt_device(vs).latent_heat_vapor;
-      latent_heat_fusion[s]         = IceMelt_device(vs).latent_heat_fusion;
-      dv[s]          = IceMelt_device(vs).dv;
-      sc[s]          = IceMelt_device(vs).sc;
-      mu[s]          = IceMelt_device(vs).mu;
-      kap[s]         = IceMelt_device(vs).kap;
-      qv[s]          = IceMelt_device(vs).qv;
-      qi_incld[s] = IceMelt_device(vs).qi_incld;
-      ni_incld[s] = IceMelt_device(vs).ni_incld;
-      qi2qr_melt_tend[s]       = IceMelt_device(vs).qi2qr_melt_tend;
-      ni2nr_melt_tend[s]       = IceMelt_device(vs).ni2nr_melt_tend;
+      rho[s]                       = IceMelt_device(vs).rho;
+      t[s]                         = IceMelt_device(vs).t;
+      pres[s]                      = IceMelt_device(vs).pres;
+      rhofaci[s]                   = IceMelt_device(vs).rhofaci;
+      table_val_qi2qr_melting[s]   = IceMelt_device(vs).table_val_qi2qr_melting;
+      table_val_qi2qr_vent_melt[s] = IceMelt_device(vs).table_val_qi2qr_vent_melt;
+      latent_heat_vapor[s]         = IceMelt_device(vs).latent_heat_vapor;
+      latent_heat_fusion[s]        = IceMelt_device(vs).latent_heat_fusion;
+      dv[s]                        = IceMelt_device(vs).dv;
+      sc[s]                        = IceMelt_device(vs).sc;
+      mu[s]                        = IceMelt_device(vs).mu;
+      kap[s]                       = IceMelt_device(vs).kap;
+      qv[s]                        = IceMelt_device(vs).qv;
+      qi_incld[s]                  = IceMelt_device(vs).qi_incld;
+      ni_incld[s]                  = IceMelt_device(vs).ni_incld;
+      qi2qr_melt_tend[s]           = IceMelt_device(vs).qi2qr_melt_tend;
+      ni2nr_melt_tend[s]           = IceMelt_device(vs).ni2nr_melt_tend;
     }
 
     Functions::ice_melting(rho,t,pres,rhofaci,table_val_qi2qr_melting,table_val_qi2qr_vent_melt,latent_heat_vapor,latent_heat_fusion,dv,sc,mu,kap,qv,qi_incld,ni_incld,qi2qr_melt_tend,ni2nr_melt_tend);

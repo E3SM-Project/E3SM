@@ -47,18 +47,18 @@ void Functions<S,D>
   Kokkos::parallel_for(
     Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
 
-    diag_ze(k)      = -99;
-    ze_ice(k)       = 1.e-22;
-    ze_rain(k)      = 1.e-22;
-    diag_effc(k)    = 10.e-6;
-    diag_effi(k)    = 25.e-6;
+    diag_ze(k)           = -99;
+    ze_ice(k)            = 1.e-22;
+    ze_rain(k)           = 1.e-22;
+    diag_effc(k)         = 10.e-6;
+    diag_effi(k)         = 25.e-6;
     inv_cld_frac_i(k)    = 1 / cld_frac_i(k);
     inv_cld_frac_l(k)    = 1 / cld_frac_l(k);
     inv_cld_frac_r(k)    = 1 / cld_frac_r(k);
-    inv_exner(k)    = 1 / exner(k);
-    t(k)            = th(k) * inv_exner(k);
-    qv(k)           = pack::max(qv(k), 0);
-    inv_dz(k)      = 1 / dz(k);
+    inv_exner(k)         = 1 / exner(k);
+    t(k)                 = th(k) * inv_exner(k);
+    qv(k)                = pack::max(qv(k), 0);
+    inv_dz(k)            = 1 / dz(k);
 
     for (size_t j = 0; j < zero_init.size(); ++j) {
       (*zero_init[j])(k) = 0;
@@ -122,9 +122,9 @@ void Functions<S,D>
 
   // load constants into local vars
   constexpr Scalar g            = C::gravit;
-  constexpr Scalar rho_1000mb       = C::RHO_1000MB;
-  constexpr Scalar rho_600mb       = C::RHO_600MB;
-  constexpr Scalar rho_h2o         = C::RHO_H2O;
+  constexpr Scalar rho_1000mb   = C::RHO_1000MB;
+  constexpr Scalar rho_600mb    = C::RHO_600MB;
+  constexpr Scalar rho_h2o      = C::RHO_H2O;
   constexpr Scalar nccnst       = C::NCCNST;
   constexpr Scalar zerodegc     = C::ZeroDegC;
   constexpr Scalar qsmall       = C::QSMALL;
@@ -150,8 +150,8 @@ void Functions<S,D>
     const auto range_pack = scream::pack::range<IntSmallPack>(k*Spack::n);
     const auto range_mask = range_pack < nk;
 
-    rho(k)     = dpres(k)/dz(k) / g;
-    inv_rho(k) = 1 / rho(k);
+    rho(k)          = dpres(k)/dz(k) / g;
+    inv_rho(k)      = 1 / rho(k);
     qv_sat_l(k)     = physics::qv_sat(t(k), pres(k), 0);
     qv_sat_i(k)     = physics::qv_sat(t(k), pres(k), 1);
 
@@ -491,7 +491,8 @@ void Functions<S,D>
 
       // calculate wet growth
       ice_cldliq_wet_growth(
-        rho(k), t(k), pres(k), rhofaci(k), table_val_qi2qr_melting, table_val_qi2qr_vent_melt, latent_heat_vapor(k), latent_heat_fusion(k), dv, kap, mu, sc, qv(k), qc_incld(k), qi_incld(k), ni_incld(k), qr_incld(k),
+        rho(k), t(k), pres(k), rhofaci(k), table_val_qi2qr_melting, table_val_qi2qr_vent_melt, latent_heat_vapor(k), 
+        latent_heat_fusion(k), dv, kap, mu, sc, qv(k), qc_incld(k), qi_incld(k), ni_incld(k), qr_incld(k),
         wetgrowth, qr2qi_collect_tend, qc2qi_collect_tend, qc_growth_rate, nr_ice_shed_tend, qc2qr_ice_shed_tend, not_skip_micro);
 
       // calcualte total inverse ice relaxation timescale combined for all ice categories
@@ -570,7 +571,8 @@ void Functions<S,D>
     back_to_cell_average(
       cld_frac_l(k), cld_frac_r(k), cld_frac_i(k), qc2qr_accret_tend, qr2qv_evap_tend, qc2qr_autoconv_tend,
       nc_accret_tend, nc_selfcollect_tend, nc2nr_autoconv_tend, nr_selfcollect_tend, nr_evap_tend, ncautr, qi2qv_sublim_tend, nr_ice_shed_tend, qc2qi_hetero_freeze_tend,
-      qr2qi_collect_tend, qc2qr_ice_shed_tend, qi2qr_melt_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, ni2nr_melt_tend, nc_collect_tend, ncshdc, nc2ni_immers_freeze_tend, nr_collect_tend, ni_selfcollect_tend,
+      qr2qi_collect_tend, qc2qr_ice_shed_tend, qi2qr_melt_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, ni2nr_melt_tend, nc_collect_tend, 
+      ncshdc, nc2ni_immers_freeze_tend, nr_collect_tend, ni_selfcollect_tend,
       qv2qi_vapdep_tend, nr2ni_immers_freeze_tend, ni_sublim_tend, qv2qi_nucleat_tend, ni_nucleat_tend, qc2qi_berg_tend, not_skip_all);
 
     //
@@ -946,44 +948,44 @@ void Functions<S,D>
 
     // Get single-column subviews of all inputs, shouldn't need any i-indexing
     // after this.
-    const auto opres             = util::subview(diagnostic_inputs.pres, i);
-    const auto odz              = util::subview(diagnostic_inputs.dz, i);
-    const auto onc_nuceat_tend            = util::subview(diagnostic_inputs.nc_nuceat_tend, i);
-    const auto oni_activated             = util::subview(diagnostic_inputs.ni_activated, i);
-    const auto oinv_qc_relvar        = util::subview(diagnostic_inputs.inv_qc_relvar, i);
-    const auto odpres             = util::subview(diagnostic_inputs.dpres, i);
-    const auto oexner            = util::subview(diagnostic_inputs.exner, i);
-    const auto ocld_frac_i            = util::subview(diagnostic_inputs.cld_frac_i, i);
-    const auto ocld_frac_l            = util::subview(diagnostic_inputs.cld_frac_l, i);
-    const auto ocld_frac_r            = util::subview(diagnostic_inputs.cld_frac_r, i);
-    const auto ocol_location     = util::subview(infrastructure.col_location, i);
-    const auto oqc               = util::subview(prognostic_state.qc, i);
-    const auto onc               = util::subview(prognostic_state.nc, i);
-    const auto oqr               = util::subview(prognostic_state.qr, i);
-    const auto onr               = util::subview(prognostic_state.nr, i);
-    const auto oqi            = util::subview(prognostic_state.qi, i);
-    const auto oqm            = util::subview(prognostic_state.qm, i);
-    const auto oni            = util::subview(prognostic_state.ni, i);
-    const auto obm            = util::subview(prognostic_state.bm, i);
-    const auto oqv               = util::subview(prognostic_state.qv, i);
-    const auto oth               = util::subview(prognostic_state.th, i);
-    const auto odiag_effc        = util::subview(diagnostic_outputs.diag_effc, i);
-    const auto odiag_effi        = util::subview(diagnostic_outputs.diag_effi, i);
-    const auto orho_qi        = util::subview(diagnostic_outputs.rho_qi, i);
-    const auto omu_c             = util::subview(diagnostic_outputs.mu_c, i);
-    const auto olamc             = util::subview(diagnostic_outputs.lamc, i);
-    const auto ocmeiout          = util::subview(diagnostic_outputs.cmeiout, i);
-    const auto oprecip_total_tend            = util::subview(diagnostic_outputs.precip_total_tend, i);
-    const auto onevapr           = util::subview(diagnostic_outputs.nevapr, i);
-    const auto oqr_evap_tend        = util::subview(diagnostic_outputs.qr_evap_tend, i);
-    const auto oprecip_liq_flux             = util::subview(diagnostic_outputs.precip_liq_flux, i);
-    const auto oprecip_ice_flux             = util::subview(diagnostic_outputs.precip_ice_flux, i);
-    const auto oliq_ice_exchange = util::subview(history_only.liq_ice_exchange, i);
-    const auto ovap_liq_exchange = util::subview(history_only.vap_liq_exchange, i);
-    const auto ovap_ice_exchange = util::subview(history_only.vap_ice_exchange, i);
-    const auto olatent_heat_vapor             = util::subview(latent_heat_vapor, i);
-    const auto olatent_heat_sublim             = util::subview(latent_heat_sublim, i);
-    const auto olatent_heat_fusion              = util::subview(latent_heat_fusion, i);
+    const auto opres               = util::subview(diagnostic_inputs.pres, i);
+    const auto odz                 = util::subview(diagnostic_inputs.dz, i);
+    const auto onc_nuceat_tend     = util::subview(diagnostic_inputs.nc_nuceat_tend, i);
+    const auto oni_activated       = util::subview(diagnostic_inputs.ni_activated, i);
+    const auto oinv_qc_relvar      = util::subview(diagnostic_inputs.inv_qc_relvar, i);
+    const auto odpres              = util::subview(diagnostic_inputs.dpres, i);
+    const auto oexner              = util::subview(diagnostic_inputs.exner, i);
+    const auto ocld_frac_i         = util::subview(diagnostic_inputs.cld_frac_i, i);
+    const auto ocld_frac_l         = util::subview(diagnostic_inputs.cld_frac_l, i);
+    const auto ocld_frac_r         = util::subview(diagnostic_inputs.cld_frac_r, i);
+    const auto ocol_location       = util::subview(infrastructure.col_location, i);
+    const auto oqc                 = util::subview(prognostic_state.qc, i);
+    const auto onc                 = util::subview(prognostic_state.nc, i);
+    const auto oqr                 = util::subview(prognostic_state.qr, i);
+    const auto onr                 = util::subview(prognostic_state.nr, i);
+    const auto oqi                 = util::subview(prognostic_state.qi, i);
+    const auto oqm                 = util::subview(prognostic_state.qm, i);
+    const auto oni                 = util::subview(prognostic_state.ni, i);
+    const auto obm                 = util::subview(prognostic_state.bm, i);
+    const auto oqv                 = util::subview(prognostic_state.qv, i);
+    const auto oth                 = util::subview(prognostic_state.th, i);
+    const auto odiag_effc          = util::subview(diagnostic_outputs.diag_effc, i);
+    const auto odiag_effi          = util::subview(diagnostic_outputs.diag_effi, i);
+    const auto orho_qi             = util::subview(diagnostic_outputs.rho_qi, i);
+    const auto omu_c               = util::subview(diagnostic_outputs.mu_c, i);
+    const auto olamc               = util::subview(diagnostic_outputs.lamc, i);
+    const auto ocmeiout            = util::subview(diagnostic_outputs.cmeiout, i);
+    const auto oprecip_total_tend  = util::subview(diagnostic_outputs.precip_total_tend, i);
+    const auto onevapr             = util::subview(diagnostic_outputs.nevapr, i);
+    const auto oqr_evap_tend       = util::subview(diagnostic_outputs.qr_evap_tend, i);
+    const auto oprecip_liq_flux    = util::subview(diagnostic_outputs.precip_liq_flux, i);
+    const auto oprecip_ice_flux    = util::subview(diagnostic_outputs.precip_ice_flux, i);
+    const auto oliq_ice_exchange   = util::subview(history_only.liq_ice_exchange, i);
+    const auto ovap_liq_exchange   = util::subview(history_only.vap_liq_exchange, i);
+    const auto ovap_ice_exchange   = util::subview(history_only.vap_ice_exchange, i);
+    const auto olatent_heat_vapor  = util::subview(latent_heat_vapor, i);
+    const auto olatent_heat_sublim = util::subview(latent_heat_sublim, i);
+    const auto olatent_heat_fusion = util::subview(latent_heat_fusion, i);
 
     // Need to watch out for race conditions with these shared variables
     bool &nucleationPossible  = bools(i, 0);

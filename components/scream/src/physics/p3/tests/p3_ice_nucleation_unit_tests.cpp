@@ -71,11 +71,11 @@ struct UnitWrap::UnitTest<D>::TestIceNucleation {
       // Init pack inputs
       Spack temp, inv_rho, ni, ni_activated, qv_supersat_i;
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        temp[s]          = self_device(vs).temp;
-        inv_rho[s]       = self_device(vs).inv_rho;
-        ni[s]         = self_device(vs).ni;
-        ni_activated[s]          = self_device(vs).ni_activated;
-        qv_supersat_i[s]          = self_device(vs).qv_supersat_i;
+        temp[s]            = self_device(vs).temp;
+        inv_rho[s]         = self_device(vs).inv_rho;
+        ni[s]              = self_device(vs).ni;
+        ni_activated[s]    = self_device(vs).ni_activated;
+        qv_supersat_i[s]   = self_device(vs).qv_supersat_i;
       }
       // outputs
       Spack qv2qi_nucleat_tend{0.0};
@@ -92,7 +92,7 @@ struct UnitWrap::UnitTest<D>::TestIceNucleation {
 
     for (Int s = 0; s < max_pack_size; ++s) {
       REQUIRE(self[s].qv2qi_nucleat_tend == self_host(s).qv2qi_nucleat_tend);
-      REQUIRE(self[s].ni_nucleat_tend == self_host(s).ni_nucleat_tend);
+      REQUIRE(self[s].ni_nucleat_tend    == self_host(s).ni_nucleat_tend);
     }
   }
 

@@ -187,8 +187,8 @@ static void run_bfb_ice_sed()
       REQUIRE(isds_fortran[i].qm_incld[k] == isds_cxx[i].qm_incld[k]);
       REQUIRE(isds_fortran[i].bm[k]       == isds_cxx[i].bm[k]);
       REQUIRE(isds_fortran[i].bm_incld[k] == isds_cxx[i].bm_incld[k]);
-      REQUIRE(isds_fortran[i].qi_tend[k]     == isds_cxx[i].qi_tend[k]);
-      REQUIRE(isds_fortran[i].ni_tend[k]     == isds_cxx[i].ni_tend[k]);
+      REQUIRE(isds_fortran[i].qi_tend[k]  == isds_cxx[i].qi_tend[k]);
+      REQUIRE(isds_fortran[i].ni_tend[k]  == isds_cxx[i].ni_tend[k]);
     }
     REQUIRE(isds_fortran[i].precip_ice_surf == isds_cxx[i].precip_ice_surf);
   }
@@ -248,15 +248,15 @@ static void run_bfb_homogeneous_freezing()
     Int start = std::min(hfds_fortran[i].kbot, hfds_fortran[i].ktop) - 1; // 0-based indx
     Int end   = std::max(hfds_fortran[i].kbot, hfds_fortran[i].ktop);     // 0-based indx
     for (Int k = start; k < end; ++k) {
-      REQUIRE(hfds_fortran[i].qc[k]    == hfds_cxx[i].qc[k]);
-      REQUIRE(hfds_fortran[i].nc[k]    == hfds_cxx[i].nc[k]);
-      REQUIRE(hfds_fortran[i].qr[k]    == hfds_cxx[i].qr[k]);
-      REQUIRE(hfds_fortran[i].nr[k]    == hfds_cxx[i].nr[k]);
+      REQUIRE(hfds_fortran[i].qc[k] == hfds_cxx[i].qc[k]);
+      REQUIRE(hfds_fortran[i].nc[k] == hfds_cxx[i].nc[k]);
+      REQUIRE(hfds_fortran[i].qr[k] == hfds_cxx[i].qr[k]);
+      REQUIRE(hfds_fortran[i].nr[k] == hfds_cxx[i].nr[k]);
       REQUIRE(hfds_fortran[i].qi[k] == hfds_cxx[i].qi[k]);
       REQUIRE(hfds_fortran[i].ni[k] == hfds_cxx[i].ni[k]);
       REQUIRE(hfds_fortran[i].qm[k] == hfds_cxx[i].qm[k]);
       REQUIRE(hfds_fortran[i].bm[k] == hfds_cxx[i].bm[k]);
-      REQUIRE(hfds_fortran[i].th[k]    == hfds_cxx[i].th[k]);
+      REQUIRE(hfds_fortran[i].th[k] == hfds_cxx[i].th[k]);
     }
   }
 }

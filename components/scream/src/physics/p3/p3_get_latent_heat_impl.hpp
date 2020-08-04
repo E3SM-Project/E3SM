@@ -25,14 +25,6 @@ void Functions<S,D>
     });
   });
 
-  // Original P3 definition of latent heats:
-  //       do i = its,ite
-  //          do k = kts,kte
-  //          latent_heat_vapor(i,k)    = 3.1484e6-2370.*t(i,k)
-  //          latent_heat_sublim(i,k)    = latent_heat_vapor(i,k)+0.3337e6
-  //          latent_heat_fusion(i,k)     = latent_heat_sublim(i,k)-latent_heat_vapor(i,k)
-  //          end do
-  //       end do
 }
 
 } // namespace p3

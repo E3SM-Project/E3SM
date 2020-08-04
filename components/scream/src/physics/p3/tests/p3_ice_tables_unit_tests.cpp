@@ -230,9 +230,9 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
       TableRain tr;
       Spack qi, ni, qm, rhop, qr, nr;
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        qi[s] = lid_device(vs).qi;
-        ni[s] = lid_device(vs).ni;
-        qm[s] = lid_device(vs).qm;
+        qi[s]    = lid_device(vs).qi;
+        ni[s]    = lid_device(vs).ni;
+        qm[s]    = lid_device(vs).qm;
         rhop[s]  = lid_device(vs).rhop;
         qr[s]    = lidb_device(vs).qr;
         nr[s]    = lidb_device(vs).nr;

@@ -92,7 +92,7 @@ static void run_bfb()
       qc_incld[s]       = device_data(vs).qc_incld;
       nc_incld[s]       = device_data(vs).nc_incld;
       qr_incld[s]       = device_data(vs).qr_incld;
-      inv_qc_relvar[s]      = device_data(vs).inv_qc_relvar;
+      inv_qc_relvar[s]  = device_data(vs).inv_qc_relvar;
     }
 
     Spack qc2qr_accret_tend{0.0};
@@ -104,7 +104,7 @@ static void run_bfb()
     // Copy results back into views
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
       device_data(vs).qc2qr_accret_tend  = qc2qr_accret_tend[s];
-      device_data(vs).nc_accret_tend  = nc_accret_tend[s];
+      device_data(vs).nc_accret_tend     = nc_accret_tend[s];
     }
   });
 

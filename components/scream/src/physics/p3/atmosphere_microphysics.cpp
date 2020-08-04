@@ -53,12 +53,12 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
 
   // Inputs
   auto nondim = m/m;
-  m_required_fields.emplace("ast",    scalar3d_layout_mid,   nondim, grid_name);
-  m_required_fields.emplace("ni_activated",   scalar3d_layout_mid,     1/kg, grid_name);
-  m_required_fields.emplace("nc_nuceat_tend",  scalar3d_layout_mid, 1/(kg*s), grid_name);
-  m_required_fields.emplace("pmid",   scalar3d_layout_mid,       Pa, grid_name);
-  m_required_fields.emplace("dp",     scalar3d_layout_mid,       Pa, grid_name);
-  m_required_fields.emplace("zi",     scalar3d_layout_int,        m, grid_name);
+  m_required_fields.emplace("ast",            scalar3d_layout_mid,   nondim, grid_name);
+  m_required_fields.emplace("ni_activated",   scalar3d_layout_mid,   1/kg, grid_name);
+  m_required_fields.emplace("nc_nuceat_tend", scalar3d_layout_mid,   1/(kg*s), grid_name);
+  m_required_fields.emplace("pmid",           scalar3d_layout_mid,   Pa, grid_name);
+  m_required_fields.emplace("dp",             scalar3d_layout_mid,   Pa, grid_name);
+  m_required_fields.emplace("zi",             scalar3d_layout_int,   m, grid_name);
 
   // Input-Outputs
   m_required_fields.emplace("FQ", tracers_layout,      Q, grid_name);

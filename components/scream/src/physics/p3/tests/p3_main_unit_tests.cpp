@@ -127,7 +127,8 @@ static void run_bfb_p3_main_part1()
   for (Int i = 0; i < num_runs; ++i) {
     P3MainPart1Data& d = isds_cxx[i];
     p3_main_part1_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir, d.do_predict_nc, d.dt,
-                            d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.exner, d.inv_exner, d.inv_cld_frac_l, d.inv_cld_frac_i, d.inv_cld_frac_r, d.latent_heat_vapor, d.latent_heat_sublim, d.latent_heat_fusion,
+                            d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.exner, d.inv_exner, d.inv_cld_frac_l, d.inv_cld_frac_i, 
+                            d.inv_cld_frac_r, d.latent_heat_vapor, d.latent_heat_sublim, d.latent_heat_fusion,
                             d.t, d.rho, d.inv_rho, d.qv_sat_l, d.qv_sat_i, d.qv_supersat_i, d.rhofacr, d.rhofaci,
                             d.acn, d.qv, d.th, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni, d.qm, d.bm, d.qc_incld, d.qr_incld, d.qi_incld,
                             d.qm_incld, d.nc_incld, d.nr_incld, d.ni_incld, d.bm_incld,
@@ -138,33 +139,33 @@ static void run_bfb_p3_main_part1()
     Int start = std::min(isds_fortran[i].kbot, isds_fortran[i].ktop) - 1; // 0-based indx
     Int end   = std::max(isds_fortran[i].kbot, isds_fortran[i].ktop);     // 0-based indx
     for (Int k = start; k < end; ++k) {
-      REQUIRE(isds_fortran[i].t[k]           == isds_cxx[i].t[k]);
-      REQUIRE(isds_fortran[i].rho[k]         == isds_cxx[i].rho[k]);
-      REQUIRE(isds_fortran[i].inv_rho[k]     == isds_cxx[i].inv_rho[k]);
-      REQUIRE(isds_fortran[i].qv_sat_l[k]         == isds_cxx[i].qv_sat_l[k]);
-      REQUIRE(isds_fortran[i].qv_sat_i[k]         == isds_cxx[i].qv_sat_i[k]);
-      REQUIRE(isds_fortran[i].qv_supersat_i[k]        == isds_cxx[i].qv_supersat_i[k]);
-      REQUIRE(isds_fortran[i].rhofacr[k]     == isds_cxx[i].rhofacr[k]);
-      REQUIRE(isds_fortran[i].rhofaci[k]     == isds_cxx[i].rhofaci[k]);
-      REQUIRE(isds_fortran[i].acn[k]         == isds_cxx[i].acn[k]);
-      REQUIRE(isds_fortran[i].qv[k]          == isds_cxx[i].qv[k]);
-      REQUIRE(isds_fortran[i].th[k]          == isds_cxx[i].th[k]);
-      REQUIRE(isds_fortran[i].qc[k]          == isds_cxx[i].qc[k]);
-      REQUIRE(isds_fortran[i].nc[k]          == isds_cxx[i].nc[k]);
-      REQUIRE(isds_fortran[i].qr[k]          == isds_cxx[i].qr[k]);
-      REQUIRE(isds_fortran[i].nr[k]          == isds_cxx[i].nr[k]);
-      REQUIRE(isds_fortran[i].qi[k]       == isds_cxx[i].qi[k]);
-      REQUIRE(isds_fortran[i].ni[k]       == isds_cxx[i].ni[k]);
-      REQUIRE(isds_fortran[i].qm[k]       == isds_cxx[i].qm[k]);
-      REQUIRE(isds_fortran[i].bm[k]       == isds_cxx[i].bm[k]);
-      REQUIRE(isds_fortran[i].qc_incld[k]    == isds_cxx[i].qc_incld[k]);
-      REQUIRE(isds_fortran[i].qr_incld[k]    == isds_cxx[i].qr_incld[k]);
-      REQUIRE(isds_fortran[i].qi_incld[k] == isds_cxx[i].qi_incld[k]);
-      REQUIRE(isds_fortran[i].qm_incld[k] == isds_cxx[i].qm_incld[k]);
-      REQUIRE(isds_fortran[i].nc_incld[k]    == isds_cxx[i].nc_incld[k]);
-      REQUIRE(isds_fortran[i].nr_incld[k]    == isds_cxx[i].nr_incld[k]);
-      REQUIRE(isds_fortran[i].ni_incld[k] == isds_cxx[i].ni_incld[k]);
-      REQUIRE(isds_fortran[i].bm_incld[k] == isds_cxx[i].bm_incld[k]);
+      REQUIRE(isds_fortran[i].t[k]             == isds_cxx[i].t[k]);
+      REQUIRE(isds_fortran[i].rho[k]           == isds_cxx[i].rho[k]);
+      REQUIRE(isds_fortran[i].inv_rho[k]       == isds_cxx[i].inv_rho[k]);
+      REQUIRE(isds_fortran[i].qv_sat_l[k]      == isds_cxx[i].qv_sat_l[k]);
+      REQUIRE(isds_fortran[i].qv_sat_i[k]      == isds_cxx[i].qv_sat_i[k]);
+      REQUIRE(isds_fortran[i].qv_supersat_i[k] == isds_cxx[i].qv_supersat_i[k]);
+      REQUIRE(isds_fortran[i].rhofacr[k]       == isds_cxx[i].rhofacr[k]);
+      REQUIRE(isds_fortran[i].rhofaci[k]       == isds_cxx[i].rhofaci[k]);
+      REQUIRE(isds_fortran[i].acn[k]           == isds_cxx[i].acn[k]);
+      REQUIRE(isds_fortran[i].qv[k]            == isds_cxx[i].qv[k]);
+      REQUIRE(isds_fortran[i].th[k]            == isds_cxx[i].th[k]);
+      REQUIRE(isds_fortran[i].qc[k]            == isds_cxx[i].qc[k]);
+      REQUIRE(isds_fortran[i].nc[k]            == isds_cxx[i].nc[k]);
+      REQUIRE(isds_fortran[i].qr[k]            == isds_cxx[i].qr[k]);
+      REQUIRE(isds_fortran[i].nr[k]            == isds_cxx[i].nr[k]);
+      REQUIRE(isds_fortran[i].qi[k]            == isds_cxx[i].qi[k]);
+      REQUIRE(isds_fortran[i].ni[k]            == isds_cxx[i].ni[k]);
+      REQUIRE(isds_fortran[i].qm[k]            == isds_cxx[i].qm[k]);
+      REQUIRE(isds_fortran[i].bm[k]            == isds_cxx[i].bm[k]);
+      REQUIRE(isds_fortran[i].qc_incld[k]      == isds_cxx[i].qc_incld[k]);
+      REQUIRE(isds_fortran[i].qr_incld[k]      == isds_cxx[i].qr_incld[k]);
+      REQUIRE(isds_fortran[i].qi_incld[k]      == isds_cxx[i].qi_incld[k]);
+      REQUIRE(isds_fortran[i].qm_incld[k]      == isds_cxx[i].qm_incld[k]);
+      REQUIRE(isds_fortran[i].nc_incld[k]      == isds_cxx[i].nc_incld[k]);
+      REQUIRE(isds_fortran[i].nr_incld[k]      == isds_cxx[i].nr_incld[k]);
+      REQUIRE(isds_fortran[i].ni_incld[k]      == isds_cxx[i].ni_incld[k]);
+      REQUIRE(isds_fortran[i].bm_incld[k]      == isds_cxx[i].bm_incld[k]);
     }
     REQUIRE( isds_fortran[i].is_hydromet_present == isds_cxx[i].is_hydromet_present );
     REQUIRE( isds_fortran[i].is_nucleat_possible == isds_cxx[i].is_nucleat_possible );
@@ -272,7 +273,8 @@ static void run_bfb_p3_main_part2()
     P3MainPart2Data& d = isds_cxx[i];
     p3_main_part2_f(
       d.kts, d.kte, d.kbot, d.ktop, d.kdir, d.do_predict_nc, d.dt, d.inv_dt,
-      d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.exner, d.inv_exner, d.inv_cld_frac_l, d.inv_cld_frac_i, d.inv_cld_frac_r, d.ni_activated, d.inv_qc_relvar, d.cld_frac_i, d.cld_frac_l, d.cld_frac_r,
+      d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.exner, d.inv_exner, d.inv_cld_frac_l, d.inv_cld_frac_i, 
+      d.inv_cld_frac_r, d.ni_activated, d.inv_qc_relvar, d.cld_frac_i, d.cld_frac_l, d.cld_frac_r,
       d.t, d.rho, d.inv_rho, d.qv_sat_l, d.qv_sat_i, d.qv_supersat_i, d.rhofacr, d.rhofaci, d.acn, d.qv, d.th, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni,
       d.qm, d.bm, d.latent_heat_vapor, d.latent_heat_sublim, d.latent_heat_fusion, d.qc_incld, d.qr_incld, d.qi_incld, d.qm_incld, d.nc_incld, d.nr_incld,
       d.ni_incld, d.bm_incld, d.mu_c, d.nu, d.lamc, d.cdist, d.cdist1, d.cdistr, d.mu_r, d.lamr, d.logn0r, d.cmeiout, d.precip_total_tend,
@@ -284,54 +286,54 @@ static void run_bfb_p3_main_part2()
     Int start = std::min(isds_fortran[i].kbot, isds_fortran[i].ktop) - 1; // 0-based indx
     Int end   = std::max(isds_fortran[i].kbot, isds_fortran[i].ktop);     // 0-based indx
     for (Int k = start; k < end; ++k) {
-      REQUIRE(isds_fortran[i].t[k]                == isds_cxx[i].t[k]);
-      REQUIRE(isds_fortran[i].rho[k]              == isds_cxx[i].rho[k]);
-      REQUIRE(isds_fortran[i].inv_rho[k]          == isds_cxx[i].inv_rho[k]);
-      REQUIRE(isds_fortran[i].qv_sat_l[k]              == isds_cxx[i].qv_sat_l[k]);
-      REQUIRE(isds_fortran[i].qv_sat_i[k]              == isds_cxx[i].qv_sat_i[k]);
-      REQUIRE(isds_fortran[i].qv_supersat_i[k]             == isds_cxx[i].qv_supersat_i[k]);
-      REQUIRE(isds_fortran[i].rhofacr[k]          == isds_cxx[i].rhofacr[k]);
-      REQUIRE(isds_fortran[i].rhofaci[k]          == isds_cxx[i].rhofaci[k]);
-      REQUIRE(isds_fortran[i].acn[k]              == isds_cxx[i].acn[k]);
-      REQUIRE(isds_fortran[i].qv[k]               == isds_cxx[i].qv[k]);
-      REQUIRE(isds_fortran[i].th[k]               == isds_cxx[i].th[k]);
-      REQUIRE(isds_fortran[i].qc[k]               == isds_cxx[i].qc[k]);
-      REQUIRE(isds_fortran[i].nc[k]               == isds_cxx[i].nc[k]);
-      REQUIRE(isds_fortran[i].qr[k]               == isds_cxx[i].qr[k]);
-      REQUIRE(isds_fortran[i].nr[k]               == isds_cxx[i].nr[k]);
-      REQUIRE(isds_fortran[i].qi[k]            == isds_cxx[i].qi[k]);
-      REQUIRE(isds_fortran[i].ni[k]            == isds_cxx[i].ni[k]);
-      REQUIRE(isds_fortran[i].qm[k]            == isds_cxx[i].qm[k]);
-      REQUIRE(isds_fortran[i].bm[k]            == isds_cxx[i].bm[k]);
-      REQUIRE(isds_fortran[i].latent_heat_vapor[k]             == isds_cxx[i].latent_heat_vapor[k]);
-      REQUIRE(isds_fortran[i].latent_heat_sublim[k]             == isds_cxx[i].latent_heat_sublim[k]);
-      REQUIRE(isds_fortran[i].latent_heat_fusion[k]              == isds_cxx[i].latent_heat_fusion[k]);
-      REQUIRE(isds_fortran[i].qc_incld[k]         == isds_cxx[i].qc_incld[k]);
-      REQUIRE(isds_fortran[i].qr_incld[k]         == isds_cxx[i].qr_incld[k]);
-      REQUIRE(isds_fortran[i].qi_incld[k]      == isds_cxx[i].qi_incld[k]);
-      REQUIRE(isds_fortran[i].qm_incld[k]      == isds_cxx[i].qm_incld[k]);
-      REQUIRE(isds_fortran[i].nc_incld[k]         == isds_cxx[i].nc_incld[k]);
-      REQUIRE(isds_fortran[i].nr_incld[k]         == isds_cxx[i].nr_incld[k]);
-      REQUIRE(isds_fortran[i].ni_incld[k]      == isds_cxx[i].ni_incld[k]);
-      REQUIRE(isds_fortran[i].bm_incld[k]      == isds_cxx[i].bm_incld[k]);
-      REQUIRE(isds_fortran[i].mu_c[k]             == isds_cxx[i].mu_c[k]);
-      REQUIRE(isds_fortran[i].nu[k]               == isds_cxx[i].nu[k]);
-      REQUIRE(isds_fortran[i].lamc[k]             == isds_cxx[i].lamc[k]);
-      REQUIRE(isds_fortran[i].cdist[k]            == isds_cxx[i].cdist[k]);
-      REQUIRE(isds_fortran[i].cdist1[k]           == isds_cxx[i].cdist1[k]);
-      REQUIRE(isds_fortran[i].cdistr[k]           == isds_cxx[i].cdistr[k]);
-      REQUIRE(isds_fortran[i].mu_r[k]             == isds_cxx[i].mu_r[k]);
-      REQUIRE(isds_fortran[i].lamr[k]             == isds_cxx[i].lamr[k]);
-      REQUIRE(isds_fortran[i].logn0r[k]           == isds_cxx[i].logn0r[k]);
-      REQUIRE(isds_fortran[i].cmeiout[k]          == isds_cxx[i].cmeiout[k]);
-      REQUIRE(isds_fortran[i].precip_total_tend[k]            == isds_cxx[i].precip_total_tend[k]);
-      REQUIRE(isds_fortran[i].nevapr[k]           == isds_cxx[i].nevapr[k]);
-      REQUIRE(isds_fortran[i].qr_evap_tend[k]        == isds_cxx[i].qr_evap_tend[k]);
-      REQUIRE(isds_fortran[i].vap_liq_exchange[k] == isds_cxx[i].vap_liq_exchange[k]);
-      REQUIRE(isds_fortran[i].vap_ice_exchange[k] == isds_cxx[i].vap_ice_exchange[k]);
-      REQUIRE(isds_fortran[i].liq_ice_exchange[k] == isds_cxx[i].liq_ice_exchange[k]);
-      REQUIRE(isds_fortran[i].pratot[k]           == isds_cxx[i].pratot[k]);
-      REQUIRE(isds_fortran[i].prctot[k]           == isds_cxx[i].prctot[k]);
+      REQUIRE(isds_fortran[i].t[k]                  == isds_cxx[i].t[k]);
+      REQUIRE(isds_fortran[i].rho[k]                == isds_cxx[i].rho[k]);
+      REQUIRE(isds_fortran[i].inv_rho[k]            == isds_cxx[i].inv_rho[k]);
+      REQUIRE(isds_fortran[i].qv_sat_l[k]           == isds_cxx[i].qv_sat_l[k]);
+      REQUIRE(isds_fortran[i].qv_sat_i[k]           == isds_cxx[i].qv_sat_i[k]);
+      REQUIRE(isds_fortran[i].qv_supersat_i[k]      == isds_cxx[i].qv_supersat_i[k]);
+      REQUIRE(isds_fortran[i].rhofacr[k]            == isds_cxx[i].rhofacr[k]);
+      REQUIRE(isds_fortran[i].rhofaci[k]            == isds_cxx[i].rhofaci[k]);
+      REQUIRE(isds_fortran[i].acn[k]                == isds_cxx[i].acn[k]);
+      REQUIRE(isds_fortran[i].qv[k]                 == isds_cxx[i].qv[k]);
+      REQUIRE(isds_fortran[i].th[k]                 == isds_cxx[i].th[k]);
+      REQUIRE(isds_fortran[i].qc[k]                 == isds_cxx[i].qc[k]);
+      REQUIRE(isds_fortran[i].nc[k]                 == isds_cxx[i].nc[k]);
+      REQUIRE(isds_fortran[i].qr[k]                 == isds_cxx[i].qr[k]);
+      REQUIRE(isds_fortran[i].nr[k]                 == isds_cxx[i].nr[k]);
+      REQUIRE(isds_fortran[i].qi[k]                 == isds_cxx[i].qi[k]);
+      REQUIRE(isds_fortran[i].ni[k]                 == isds_cxx[i].ni[k]);
+      REQUIRE(isds_fortran[i].qm[k]                 == isds_cxx[i].qm[k]);
+      REQUIRE(isds_fortran[i].bm[k]                 == isds_cxx[i].bm[k]);
+      REQUIRE(isds_fortran[i].latent_heat_vapor[k]  == isds_cxx[i].latent_heat_vapor[k]);
+      REQUIRE(isds_fortran[i].latent_heat_sublim[k] == isds_cxx[i].latent_heat_sublim[k]);
+      REQUIRE(isds_fortran[i].latent_heat_fusion[k] == isds_cxx[i].latent_heat_fusion[k]);
+      REQUIRE(isds_fortran[i].qc_incld[k]           == isds_cxx[i].qc_incld[k]);
+      REQUIRE(isds_fortran[i].qr_incld[k]           == isds_cxx[i].qr_incld[k]);
+      REQUIRE(isds_fortran[i].qi_incld[k]           == isds_cxx[i].qi_incld[k]);
+      REQUIRE(isds_fortran[i].qm_incld[k]           == isds_cxx[i].qm_incld[k]);
+      REQUIRE(isds_fortran[i].nc_incld[k]           == isds_cxx[i].nc_incld[k]);
+      REQUIRE(isds_fortran[i].nr_incld[k]           == isds_cxx[i].nr_incld[k]);
+      REQUIRE(isds_fortran[i].ni_incld[k]           == isds_cxx[i].ni_incld[k]);
+      REQUIRE(isds_fortran[i].bm_incld[k]           == isds_cxx[i].bm_incld[k]);
+      REQUIRE(isds_fortran[i].mu_c[k]               == isds_cxx[i].mu_c[k]);
+      REQUIRE(isds_fortran[i].nu[k]                 == isds_cxx[i].nu[k]);
+      REQUIRE(isds_fortran[i].lamc[k]               == isds_cxx[i].lamc[k]);
+      REQUIRE(isds_fortran[i].cdist[k]              == isds_cxx[i].cdist[k]);
+      REQUIRE(isds_fortran[i].cdist1[k]             == isds_cxx[i].cdist1[k]);
+      REQUIRE(isds_fortran[i].cdistr[k]             == isds_cxx[i].cdistr[k]);
+      REQUIRE(isds_fortran[i].mu_r[k]               == isds_cxx[i].mu_r[k]);
+      REQUIRE(isds_fortran[i].lamr[k]               == isds_cxx[i].lamr[k]);
+      REQUIRE(isds_fortran[i].logn0r[k]             == isds_cxx[i].logn0r[k]);
+      REQUIRE(isds_fortran[i].cmeiout[k]            == isds_cxx[i].cmeiout[k]);
+      REQUIRE(isds_fortran[i].precip_total_tend[k]  == isds_cxx[i].precip_total_tend[k]);
+      REQUIRE(isds_fortran[i].nevapr[k]             == isds_cxx[i].nevapr[k]);
+      REQUIRE(isds_fortran[i].qr_evap_tend[k]       == isds_cxx[i].qr_evap_tend[k]);
+      REQUIRE(isds_fortran[i].vap_liq_exchange[k]   == isds_cxx[i].vap_liq_exchange[k]);
+      REQUIRE(isds_fortran[i].vap_ice_exchange[k]   == isds_cxx[i].vap_ice_exchange[k]);
+      REQUIRE(isds_fortran[i].liq_ice_exchange[k]   == isds_cxx[i].liq_ice_exchange[k]);
+      REQUIRE(isds_fortran[i].pratot[k]             == isds_cxx[i].pratot[k]);
+      REQUIRE(isds_fortran[i].prctot[k]             == isds_cxx[i].prctot[k]);
     }
     REQUIRE( isds_fortran[i].is_hydromet_present == isds_cxx[i].is_hydromet_present );
   }
@@ -415,35 +417,35 @@ static void run_bfb_p3_main_part3()
     Int start = std::min(isds_fortran[i].kbot, isds_fortran[i].ktop) - 1; // 0-based indx
     Int end   = std::max(isds_fortran[i].kbot, isds_fortran[i].ktop);     // 0-based indx
     for (Int k = start; k < end; ++k) {
-      REQUIRE(isds_fortran[i].rho[k]              == isds_cxx[i].rho[k]);
-      REQUIRE(isds_fortran[i].inv_rho[k]          == isds_cxx[i].inv_rho[k]);
-      REQUIRE(isds_fortran[i].rhofaci[k]          == isds_cxx[i].rhofaci[k]);
-      REQUIRE(isds_fortran[i].qv[k]               == isds_cxx[i].qv[k]);
-      REQUIRE(isds_fortran[i].th[k]               == isds_cxx[i].th[k]);
-      REQUIRE(isds_fortran[i].qc[k]               == isds_cxx[i].qc[k]);
-      REQUIRE(isds_fortran[i].nc[k]               == isds_cxx[i].nc[k]);
-      REQUIRE(isds_fortran[i].qr[k]               == isds_cxx[i].qr[k]);
-      REQUIRE(isds_fortran[i].nr[k]               == isds_cxx[i].nr[k]);
-      REQUIRE(isds_fortran[i].qi[k]            == isds_cxx[i].qi[k]);
-      REQUIRE(isds_fortran[i].ni[k]            == isds_cxx[i].ni[k]);
-      REQUIRE(isds_fortran[i].qm[k]            == isds_cxx[i].qm[k]);
-      REQUIRE(isds_fortran[i].bm[k]            == isds_cxx[i].bm[k]);
-      REQUIRE(isds_fortran[i].latent_heat_vapor[k]             == isds_cxx[i].latent_heat_vapor[k]);
-      REQUIRE(isds_fortran[i].latent_heat_sublim[k]             == isds_cxx[i].latent_heat_sublim[k]);
-      REQUIRE(isds_fortran[i].mu_c[k]             == isds_cxx[i].mu_c[k]);
-      REQUIRE(isds_fortran[i].nu[k]               == isds_cxx[i].nu[k]);
-      REQUIRE(isds_fortran[i].lamc[k]             == isds_cxx[i].lamc[k]);
-      REQUIRE(isds_fortran[i].mu_r[k]             == isds_cxx[i].mu_r[k]);
-      REQUIRE(isds_fortran[i].lamr[k]             == isds_cxx[i].lamr[k]);
-      REQUIRE(isds_fortran[i].vap_liq_exchange[k] == isds_cxx[i].vap_liq_exchange[k]);
-      REQUIRE(isds_fortran[i].ze_rain[k]          == isds_cxx[i].ze_rain[k]);
-      REQUIRE(isds_fortran[i].ze_ice[k]           == isds_cxx[i].ze_ice[k]);
-      REQUIRE(isds_fortran[i].diag_vmi[k]         == isds_cxx[i].diag_vmi[k]);
-      REQUIRE(isds_fortran[i].diag_effi[k]        == isds_cxx[i].diag_effi[k]);
-      REQUIRE(isds_fortran[i].diag_di[k]          == isds_cxx[i].diag_di[k]);
-      REQUIRE(isds_fortran[i].rho_qi[k]        == isds_cxx[i].rho_qi[k]);
-      REQUIRE(isds_fortran[i].diag_ze[k]          == isds_cxx[i].diag_ze[k]);
-      REQUIRE(isds_fortran[i].diag_effc[k]        == isds_cxx[i].diag_effc[k]);
+      REQUIRE(isds_fortran[i].rho[k]                == isds_cxx[i].rho[k]);
+      REQUIRE(isds_fortran[i].inv_rho[k]            == isds_cxx[i].inv_rho[k]);
+      REQUIRE(isds_fortran[i].rhofaci[k]            == isds_cxx[i].rhofaci[k]);
+      REQUIRE(isds_fortran[i].qv[k]                 == isds_cxx[i].qv[k]);
+      REQUIRE(isds_fortran[i].th[k]                 == isds_cxx[i].th[k]);
+      REQUIRE(isds_fortran[i].qc[k]                 == isds_cxx[i].qc[k]);
+      REQUIRE(isds_fortran[i].nc[k]                 == isds_cxx[i].nc[k]);
+      REQUIRE(isds_fortran[i].qr[k]                 == isds_cxx[i].qr[k]);
+      REQUIRE(isds_fortran[i].nr[k]                 == isds_cxx[i].nr[k]);
+      REQUIRE(isds_fortran[i].qi[k]                 == isds_cxx[i].qi[k]);
+      REQUIRE(isds_fortran[i].ni[k]                 == isds_cxx[i].ni[k]);
+      REQUIRE(isds_fortran[i].qm[k]                 == isds_cxx[i].qm[k]);
+      REQUIRE(isds_fortran[i].bm[k]                 == isds_cxx[i].bm[k]);
+      REQUIRE(isds_fortran[i].latent_heat_vapor[k]  == isds_cxx[i].latent_heat_vapor[k]);
+      REQUIRE(isds_fortran[i].latent_heat_sublim[k] == isds_cxx[i].latent_heat_sublim[k]);
+      REQUIRE(isds_fortran[i].mu_c[k]               == isds_cxx[i].mu_c[k]);
+      REQUIRE(isds_fortran[i].nu[k]                 == isds_cxx[i].nu[k]);
+      REQUIRE(isds_fortran[i].lamc[k]               == isds_cxx[i].lamc[k]);
+      REQUIRE(isds_fortran[i].mu_r[k]               == isds_cxx[i].mu_r[k]);
+      REQUIRE(isds_fortran[i].lamr[k]               == isds_cxx[i].lamr[k]);
+      REQUIRE(isds_fortran[i].vap_liq_exchange[k]   == isds_cxx[i].vap_liq_exchange[k]);
+      REQUIRE(isds_fortran[i].ze_rain[k]            == isds_cxx[i].ze_rain[k]);
+      REQUIRE(isds_fortran[i].ze_ice[k]             == isds_cxx[i].ze_ice[k]);
+      REQUIRE(isds_fortran[i].diag_vmi[k]           == isds_cxx[i].diag_vmi[k]);
+      REQUIRE(isds_fortran[i].diag_effi[k]          == isds_cxx[i].diag_effi[k]);
+      REQUIRE(isds_fortran[i].diag_di[k]            == isds_cxx[i].diag_di[k]);
+      REQUIRE(isds_fortran[i].rho_qi[k]             == isds_cxx[i].rho_qi[k]);
+      REQUIRE(isds_fortran[i].diag_ze[k]            == isds_cxx[i].diag_ze[k]);
+      REQUIRE(isds_fortran[i].diag_effc[k]          == isds_cxx[i].diag_effc[k]);
     }
   }
 }
@@ -511,32 +513,32 @@ static void run_bfb_p3_main()
 
   for (Int i = 0; i < num_runs; ++i) {
     for (Int t = 0; t < isds_fortran[i].nt(); ++t) {
-      REQUIRE(isds_fortran[i].qc[t]               == isds_cxx[i].qc[t]);
-      REQUIRE(isds_fortran[i].nc[t]               == isds_cxx[i].nc[t]);
-      REQUIRE(isds_fortran[i].qr[t]               == isds_cxx[i].qr[t]);
-      REQUIRE(isds_fortran[i].nr[t]               == isds_cxx[i].nr[t]);
-      REQUIRE(isds_fortran[i].qi[t]            == isds_cxx[i].qi[t]);
-      REQUIRE(isds_fortran[i].qm[t]            == isds_cxx[i].qm[t]);
-      REQUIRE(isds_fortran[i].ni[t]            == isds_cxx[i].ni[t]);
-      REQUIRE(isds_fortran[i].bm[t]            == isds_cxx[i].bm[t]);
-      REQUIRE(isds_fortran[i].qv[t]               == isds_cxx[i].qv[t]);
-      REQUIRE(isds_fortran[i].th[t]               == isds_cxx[i].th[t]);
-      REQUIRE(isds_fortran[i].diag_effc[t]        == isds_cxx[i].diag_effc[t]);
-      REQUIRE(isds_fortran[i].diag_effi[t]        == isds_cxx[i].diag_effi[t]);
-      REQUIRE(isds_fortran[i].rho_qi[t]        == isds_cxx[i].rho_qi[t]);
-      REQUIRE(isds_fortran[i].mu_c[t]             == isds_cxx[i].mu_c[t]);
-      REQUIRE(isds_fortran[i].lamc[t]             == isds_cxx[i].lamc[t]);
-      REQUIRE(isds_fortran[i].cmeiout[t]          == isds_cxx[i].cmeiout[t]);
-      REQUIRE(isds_fortran[i].precip_total_tend[t]            == isds_cxx[i].precip_total_tend[t]);
-      REQUIRE(isds_fortran[i].nevapr[t]           == isds_cxx[i].nevapr[t]);
-      REQUIRE(isds_fortran[i].qr_evap_tend[t]        == isds_cxx[i].qr_evap_tend[t]);
-      REQUIRE(isds_fortran[i].liq_ice_exchange[t] == isds_cxx[i].liq_ice_exchange[t]);
-      REQUIRE(isds_fortran[i].vap_liq_exchange[t] == isds_cxx[i].vap_liq_exchange[t]);
-      REQUIRE(isds_fortran[i].vap_ice_exchange[t] == isds_cxx[i].vap_ice_exchange[t]);
-      REQUIRE(isds_fortran[i].precip_liq_flux[t]             == isds_cxx[i].precip_liq_flux[t]);
-      REQUIRE(isds_fortran[i].precip_ice_flux[t]             == isds_cxx[i].precip_ice_flux[t]);
-      REQUIRE(isds_fortran[i].precip_liq_surf[t]          == isds_cxx[i].precip_liq_surf[t]);
-      REQUIRE(isds_fortran[i].precip_ice_surf[t]          == isds_cxx[i].precip_ice_surf[t]);
+      REQUIRE(isds_fortran[i].qc[t]                == isds_cxx[i].qc[t]);
+      REQUIRE(isds_fortran[i].nc[t]                == isds_cxx[i].nc[t]);
+      REQUIRE(isds_fortran[i].qr[t]                == isds_cxx[i].qr[t]);
+      REQUIRE(isds_fortran[i].nr[t]                == isds_cxx[i].nr[t]);
+      REQUIRE(isds_fortran[i].qi[t]                == isds_cxx[i].qi[t]);
+      REQUIRE(isds_fortran[i].qm[t]                == isds_cxx[i].qm[t]);
+      REQUIRE(isds_fortran[i].ni[t]                == isds_cxx[i].ni[t]);
+      REQUIRE(isds_fortran[i].bm[t]                == isds_cxx[i].bm[t]);
+      REQUIRE(isds_fortran[i].qv[t]                == isds_cxx[i].qv[t]);
+      REQUIRE(isds_fortran[i].th[t]                == isds_cxx[i].th[t]);
+      REQUIRE(isds_fortran[i].diag_effc[t]         == isds_cxx[i].diag_effc[t]);
+      REQUIRE(isds_fortran[i].diag_effi[t]         == isds_cxx[i].diag_effi[t]);
+      REQUIRE(isds_fortran[i].rho_qi[t]            == isds_cxx[i].rho_qi[t]);
+      REQUIRE(isds_fortran[i].mu_c[t]              == isds_cxx[i].mu_c[t]);
+      REQUIRE(isds_fortran[i].lamc[t]              == isds_cxx[i].lamc[t]);
+      REQUIRE(isds_fortran[i].cmeiout[t]           == isds_cxx[i].cmeiout[t]);
+      REQUIRE(isds_fortran[i].precip_total_tend[t] == isds_cxx[i].precip_total_tend[t]);
+      REQUIRE(isds_fortran[i].nevapr[t]            == isds_cxx[i].nevapr[t]);
+      REQUIRE(isds_fortran[i].qr_evap_tend[t]      == isds_cxx[i].qr_evap_tend[t]);
+      REQUIRE(isds_fortran[i].liq_ice_exchange[t]  == isds_cxx[i].liq_ice_exchange[t]);
+      REQUIRE(isds_fortran[i].vap_liq_exchange[t]  == isds_cxx[i].vap_liq_exchange[t]);
+      REQUIRE(isds_fortran[i].vap_ice_exchange[t]  == isds_cxx[i].vap_ice_exchange[t]);
+      REQUIRE(isds_fortran[i].precip_liq_flux[t]   == isds_cxx[i].precip_liq_flux[t]);
+      REQUIRE(isds_fortran[i].precip_ice_flux[t]   == isds_cxx[i].precip_ice_flux[t]);
+      REQUIRE(isds_fortran[i].precip_liq_surf[t]   == isds_cxx[i].precip_liq_surf[t]);
+      REQUIRE(isds_fortran[i].precip_ice_surf[t]   == isds_cxx[i].precip_ice_surf[t]);
     }
   }
 }

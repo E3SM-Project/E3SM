@@ -33,10 +33,10 @@ contains
     real(kind=c_real), dimension(300,10), target :: vn_table_f, vm_table_f, revap_table_f
 
     call p3_get_tables(mu_table_f, revap_table_f, vn_table_f, vm_table_f)
-    vn_table_c(:,:) = vn_table_f(:,:)
-    vm_table_c(:,:) = vm_table_f(:,:)
+    vn_table_c(:,:)    = vn_table_f(:,:)
+    vm_table_c(:,:)    = vm_table_f(:,:)
     revap_table_c(:,:) = revap_table_f(:,:)
-    mu_table_c(:)   = mu_table_f(:)
+    mu_table_c(:)      = mu_table_f(:)
 
   end subroutine init_tables_from_f90_c
 
@@ -180,7 +180,7 @@ contains
     real(kind=c_real), intent(out), dimension(densize,rimsize,isize,tabsize) :: itab_c
     real(kind=c_real), intent(out), dimension(densize,rimsize,isize,rcollsize,colltabsize) :: itabcoll_c
 
-    itab_c(:,:,:,:) = itab(:,:,:,:)
+    itab_c(:,:,:,:)       = itab(:,:,:,:)
     itabcoll_c(:,:,:,:,:) = itabcoll(:,:,:,:,:)
   end subroutine p3_init_a_c
 

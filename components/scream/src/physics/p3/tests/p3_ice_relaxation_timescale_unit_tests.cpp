@@ -70,16 +70,16 @@ struct UnitWrap::UnitTest<D>::TestIceRelaxationTimescale {
       Spack rho, temp, rhofaci, table_val_qi2qr_melting, table_val_qi2qr_vent_melt, dv, mu, sc, qi_incld, ni_incld;
 
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        rho[s]         = self_device(vs).rho;
-        temp[s]        = self_device(vs).temp;
-        rhofaci[s]     = self_device(vs).rhofaci;
-        table_val_qi2qr_melting[s]      = self_device(vs).table_val_qi2qr_melting;
-        table_val_qi2qr_vent_melt[s]      = self_device(vs).table_val_qi2qr_vent_melt;
-        dv[s]          = self_device(vs).dv;
-        mu[s]          = self_device(vs).mu;
-        sc[s]          = self_device(vs).sc;
-        qi_incld[s] = self_device(vs).qi_incld;
-        ni_incld[s] = self_device(vs).ni_incld;
+        rho[s]                        = self_device(vs).rho;
+        temp[s]                       = self_device(vs).temp;
+        rhofaci[s]                    = self_device(vs).rhofaci;
+        table_val_qi2qr_melting[s]    = self_device(vs).table_val_qi2qr_melting;
+        table_val_qi2qr_vent_melt[s]  = self_device(vs).table_val_qi2qr_vent_melt;
+        dv[s]                         = self_device(vs).dv;
+        mu[s]                         = self_device(vs).mu;
+        sc[s]                         = self_device(vs).sc;
+        qi_incld[s]                   = self_device(vs).qi_incld;
+        ni_incld[s]                   = self_device(vs).ni_incld;
       }
 
       Spack epsi{0.0};
