@@ -70,11 +70,11 @@ module ocn_test
    ! yGMStreamFuncSolution: GM stream function reconstructured to the cell centers,
    !                        for analytic solution
    !                 units: m^2
-   real(kind=RKIND), dimension(:,:), pointer :: yGMStreamFuncSolution
+   real(kind=RKIND), dimension(:,:), allocatable :: yGMStreamFuncSolution
    ! yGMBolusVelocitySolution: Bolus velocity in Gent-McWilliams eddy parameterization,
    !                           y-direction, for analytic solution
    !                    units: m s
-   real(kind=RKIND), dimension(:,:), pointer :: yGMBolusVelocitySolution
+   real(kind=RKIND), dimension(:,:), allocatable :: yGMBolusVelocitySolution
 
 !***********************************************************************
 
