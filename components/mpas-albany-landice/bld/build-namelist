@@ -54,7 +54,7 @@ OPTIONS
      -ntasks_glc           NTASKS_GLC for this case
      -ninst_glc            NINST_GLC for this case
      -mali_dynamic         turns on dynamic ice sheet mode
-                           Options are: FALSE, TRUE
+                           Options are: False, True
 
 NOTE: The precedence for setting the values of namelist variables is (highest to lowest):
       1. namelist values set by specific command-line options, i.e. (none right now)
@@ -412,6 +412,8 @@ my $ntasks = $NTASKS_GLC / $NINST_GLC;
 if ($CONTINUE_RUN eq 'TRUE') {$RUN_TYPE = "continue";}
 
 print "MALI build-namelist: glc_grid is $GLC_GRID \n";
+print "MALI build-namelist: MALI_DYNAMIC is $MALI_DYNAMIC \n";
+print "MALI build-namelist: MALI_USE_ALBANY is $MALI_USE_ALBANY \n";
 
 (-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
 if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
@@ -427,8 +429,8 @@ if ($MALI_USE_ALBANY eq 'TRUE') {
 # Namelist group: velocity_solver #
 ###################################
 
-if ($MALI_DYNAMIC eq 'TRUE') {
-    add_default($nl, 'config_velocity_solver', 'masi_use_albany'=>"$MALI_USE_ALBANY");
+if ($MALI_DYNAMIC eq 'True') {
+    add_default($nl, 'config_velocity_solver', 'mali_use_albany'=>"$MALI_USE_ALBANY");
 } else {
     add_default($nl, 'config_velocity_solver', 'val'=>"none");
 }
@@ -444,12 +446,12 @@ add_default($nl, 'config_unrealistic_velocity');
 # Namelist group: advection #
 #############################
 
-if ($MALI_DYNAMIC eq 'TRUE') {
+if ($MALI_DYNAMIC eq 'True') {
     add_default($nl, 'config_thickness_advection');
 } else {
     add_default($nl, 'config_thickness_advection', 'val'=>"none");
 }
-if ($MALI_DYNAMIC eq 'TRUE') {
+if ($MALI_DYNAMIC eq 'True') {
     add_default($nl, 'config_tracer_advection');
 } else {
     add_default($nl, 'config_tracer_advection', 'val'=>"none");
