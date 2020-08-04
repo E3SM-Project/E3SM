@@ -61,13 +61,13 @@ module ocn_gm
    !--------------------------------------------------------------------
    ! gradDensityEdge: Normal gradient of density
    !           units: none
-   real(kind=RKIND), dimension(:, :), pointer :: gradDensityEdge
+   real(kind=RKIND), dimension(:, :), allocatable :: gradDensityEdge
    ! drhoDzTopOfEdge: Gradient of density in vertical on edges
    !           units: None
-   real(kind=RKIND), dimension(:, :), pointer :: drhoDzTopOfEdge
+   real(kind=RKIND), dimension(:, :), allocatable :: drhoDzTopOfEdge
    ! dzdxEdge: Gradient of depth at constant cell indes
    !    units: None
-   real(kind=RKIND), dimension(:, :), pointer :: dzdxEdge
+   real(kind=RKIND), dimension(:, :), allocatable :: dzdxEdge
 
 !***********************************************************************
 
