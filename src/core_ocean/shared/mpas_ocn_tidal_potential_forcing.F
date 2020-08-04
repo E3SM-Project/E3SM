@@ -28,6 +28,7 @@ module ocn_tidal_potential_forcing
    use mpas_timekeeping
    use mpas_timer
    use ocn_constants
+   use ocn_config
 
    implicit none
    private
@@ -110,7 +111,6 @@ contains
       !-----------------------------------------------------------------
 
       integer, pointer :: nCells
-      real (kind=RKIND), pointer :: tidalPotentialRamp
       real (kind=RKIND), dimension(:), pointer :: lonCell
       integer, dimension(:), pointer ::  maxLevelCell
 
@@ -132,7 +132,6 @@ contains
 
       if ( .not. tidalPotentialOn ) return
 
-      call mpas_pool_get_config(ocnConfigs, 'config_tidal_potential_ramp', tidalPotentialRamp)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
       call mpas_pool_get_array(forcingPool, 'nTidalPotentialConstituents', nTidalConstituents)
@@ -147,7 +146,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'tidalPotentialEta', eta)
       call mpas_pool_get_array(diagnosticsPool, "daysSinceStartOfSim", daysSinceStartOfSim)
 
-      ramp = tanh((2.0_RKIND*daysSinceStartOfSim)/tidalPotentialRamp)
+      ramp = tanh((2.0_RKIND*daysSinceStartOfSim)/config_tidal_potential_ramp)
       t = daysSinceStartOfSim*86400.0_RKIND
 
       do iCell = 1, nCells
@@ -192,17 +191,6 @@ contains
       type (domain_type), intent(inout) :: domain
       integer, intent(out) :: err !< Output: error flag
 
-      logical, pointer :: config_use_tidal_potential_forcing
-      logical, pointer :: config_use_tidal_potential_forcing_M2
-      logical, pointer :: config_use_tidal_potential_forcing_S2
-      logical, pointer :: config_use_tidal_potential_forcing_N2
-      logical, pointer :: config_use_tidal_potential_forcing_K2
-      logical, pointer :: config_use_tidal_potential_forcing_K1
-      logical, pointer :: config_use_tidal_potential_forcing_O1
-      logical, pointer :: config_use_tidal_potential_forcing_Q1
-      logical, pointer :: config_use_tidal_potential_forcing_P1
-      character (len=StrKIND), pointer :: config_tidal_potential_reference_time 
-
       type (block_type), pointer :: block_ptr 
       type (mpas_pool_type), pointer :: forcingPool
       type (mpas_pool_type), pointer :: meshPool
@@ -225,17 +213,6 @@ contains
 
 
       err = 0
-
-      call mpas_pool_get_config(ocnConfigs, 'config_use_tidal_potential_forcing', config_use_tidal_potential_forcing)
-      call mpas_pool_get_config(ocnConfigs, 'config_use_tidal_potential_forcing_M2', config_use_tidal_potential_forcing_M2)
-      call mpas_pool_get_config(ocnConfigs, 'config_use_tidal_potential_forcing_S2', config_use_tidal_potential_forcing_S2)
-      call mpas_pool_get_config(ocnConfigs, 'config_use_tidal_potential_forcing_N2', config_use_tidal_potential_forcing_N2)
-      call mpas_pool_get_config(ocnConfigs, 'config_use_tidal_potential_forcing_K2', config_use_tidal_potential_forcing_K2)
-      call mpas_pool_get_config(ocnConfigs, 'config_use_tidal_potential_forcing_K1', config_use_tidal_potential_forcing_K1)
-      call mpas_pool_get_config(ocnConfigs, 'config_use_tidal_potential_forcing_O1', config_use_tidal_potential_forcing_O1)
-      call mpas_pool_get_config(ocnConfigs, 'config_use_tidal_potential_forcing_Q1', config_use_tidal_potential_forcing_Q1)
-      call mpas_pool_get_config(ocnConfigs, 'config_use_tidal_potential_forcing_P1', config_use_tidal_potential_forcing_P1)
-      call mpas_pool_get_config(ocnConfigs, 'config_tidal_potential_reference_time', config_tidal_potential_reference_time)
 
       block_ptr => domain % blocklist
       do while(associated(block_ptr))

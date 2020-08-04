@@ -26,6 +26,7 @@ module ocn_effective_density_in_land_ice
    use mpas_pool_routines
 
    use ocn_constants
+   use ocn_config
 
    implicit none
    private
@@ -51,6 +52,18 @@ module ocn_effective_density_in_land_ice
    !
    !--------------------------------------------------------------------
 
+   !--------------------------------------------------------------------
+   !
+   ! Replace calls to mpas_allocate_scratch_Field with straight allocates.
+   ! These variables were moved from the subroutines, but will be moved back once the
+   ! threading implementation is changed to more localized threading
+   !
+   !--------------------------------------------------------------------
+
+   ! subroutine ocn_effective_density_in_land_ice_update
+   ! effectiveDensityScratch: effective seawater density in land ice before horizontal averaging
+   !                   units: kg m^{-3}
+   real (kind=RKIND), dimension(:), allocatable :: effectiveDensityScratch
 
 !***********************************************************************
 
@@ -71,7 +84,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_effective_density_in_land_ice_update(meshPool, forcingPool, statePool, scratchPool, ierr)!{{{
+   subroutine ocn_effective_density_in_land_ice_update(meshPool, forcingPool, statePool, ierr)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -87,7 +100,6 @@ contains
       !
       !-----------------------------------------------------------------
       type (mpas_pool_type), intent(inout) :: statePool !< Input/Output: state information
-      type (mpas_pool_type), intent(inout) :: scratchPool !< Input/Output: scratch information
 
       !-----------------------------------------------------------------
       !
@@ -103,17 +115,12 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character (len=StrKIND), pointer :: config_land_ice_flux_mode
-
       real (kind=RKIND), dimension(:), pointer :: landIcePressure, &
                                                   ssh, &
                                                   effectiveDensityCur, &
-                                                  effectiveDensityNew, &
-                                                  effectiveDensityScratch
-
+                                                  effectiveDensityNew
+                                                  
       integer, dimension(:), pointer :: landIceMask
-
-      type (field1DReal), pointer :: effectiveDensityField
 
       real (kind=RKIND) :: weightSum
 
@@ -126,7 +133,6 @@ contains
 
       ierr = 0
 
-      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
       if ( (trim(config_land_ice_flux_mode) .ne. 'coupled') ) then
          return
       end if
@@ -143,9 +149,10 @@ contains
       call mpas_pool_get_array(statePool, 'effectiveDensityInLandIce', effectiveDensityCur, 1)
       call mpas_pool_get_array(statePool, 'effectiveDensityInLandIce', effectiveDensityNew, 2)
 
-      call mpas_pool_get_field(scratchPool, 'effectiveDensityScratch', effectiveDensityField)
-      call mpas_allocate_scratch_field(effectiveDensityField, .true.)
-      effectiveDensityScratch => effectiveDensityField % array
+      !$omp master
+      allocate(effectiveDensityScratch(nCells))
+      !$omp end master
+      !$omp barrier
 
       !$omp do schedule(runtime)
       do iCell = 1, nCells
@@ -174,7 +181,11 @@ contains
          effectiveDensityNew(iCell) = effectiveDensityNew(iCell)/weightSum
       end do
       !$omp end do
-      call mpas_deallocate_scratch_field(effectiveDensityField, .true.)
+
+      !$omp barrier
+      !$omp master
+      deallocate(effectiveDensityScratch)
+      !$omp end master
 
    !--------------------------------------------------------------------
 

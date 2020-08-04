@@ -25,6 +25,7 @@ module ocn_vel_hmix_leith
    use mpas_pool_routines
    use mpas_constants
    use ocn_constants
+   use ocn_config
 
    implicit none
    private
@@ -133,8 +134,6 @@ contains
       real (kind=RKIND), dimension(:), pointer :: meshScalingDel2, &
               dcEdge, dvEdge
 
-      real (kind=RKIND), pointer :: config_leith_parameter, config_leith_dx, config_leith_visc2_max
-
       !-----------------------------------------------------------------
       !
       ! exit if this mixing is not selected
@@ -146,10 +145,6 @@ contains
       if(.not.hmixLeithOn) return
 
       call mpas_timer_start("vel leith")
-
-      call mpas_pool_get_config(ocnConfigs, 'config_Leith_parameter', config_leith_parameter)
-      call mpas_pool_get_config(ocnConfigs, 'config_Leith_dx', config_leith_dx)
-      call mpas_pool_get_config(ocnConfigs, 'config_Leith_visc2_max', config_leith_visc2_max)
 
       call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
 
@@ -226,11 +221,8 @@ contains
    ! set some local module variables based on input config choices
    !
    !--------------------------------------------------------------------
-   logical, pointer :: config_use_Leith_del2
 
    err = 0
-
-   call mpas_pool_get_config(ocnConfigs, 'config_use_Leith_del2', config_use_Leith_del2)
 
    hmixLeithOn = .false.
 

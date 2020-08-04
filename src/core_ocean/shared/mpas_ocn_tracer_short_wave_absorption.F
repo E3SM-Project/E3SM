@@ -17,6 +17,7 @@ module ocn_tracer_short_wave_absorption
    use mpas_derived_types
    use mpas_pool_routines
    use ocn_constants
+   use ocn_config
    use ocn_tracer_short_wave_absorption_jerlov
    use ocn_tracer_short_wave_absorption_variable
 
@@ -108,10 +109,6 @@ contains
       !
       !-----------------------------------------------------------------
 
-      character(len=strKIND), pointer :: config_sw_absorption_type
-
-      call MPAS_pool_get_config(ocnConfigs, 'config_sw_absorption_type', config_sw_absorption_type)
-
       if (trim(config_sw_absorption_type)=='none')  return
 
       call mpas_timer_start("short wave")
@@ -150,14 +147,7 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
-      logical, pointer :: config_use_activeTracers_surface_bulk_forcing
-      character (len=StrKind), pointer :: config_sw_absorption_type
-
       err = 0
-
-      call mpas_pool_get_config(ocnConfigs, 'config_sw_absorption_type', config_sw_absorption_type)
-      call MPAS_pool_get_config(ocnConfigs, 'config_use_activeTracers_surface_bulk_forcing', &
-                                config_use_activeTracers_surface_bulk_forcing)
 
       useJerlov=.false.
 

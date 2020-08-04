@@ -24,6 +24,7 @@ module ocn_thick_surface_flux
    use mpas_derived_types
    use mpas_pool_routines
    use ocn_constants
+   use ocn_config
 
    use ocn_forcing
 
@@ -187,11 +188,7 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
-      logical, pointer :: config_disable_thick_sflux
-
       err = 0
-
-      call mpas_pool_get_config(ocnConfigs, 'config_disable_thick_sflux', config_disable_thick_sflux)
 
       surfaceThicknessFluxOn = .true.
 

@@ -25,6 +25,7 @@ module ocn_thick_ale
    use mpas_timer
 
    use ocn_constants
+   use ocn_config
 
    implicit none
    private
@@ -115,25 +116,17 @@ contains
       real (kind=RKIND) :: weightSum, thicknessSum, remainder, newThickness, thicknessWithRemainder
       real (kind=RKIND), dimension(:), pointer :: vertCoordMovementWeights
       real (kind=RKIND), dimension(:), allocatable :: &
-         SSH_ALE_thickness,      & !> ALE thickness alteration due to SSH (z-star)
-         prelim_ALE_Thickness,   & !> ALE thickness at new time
+         prelim_ALE_thickness,   & !> ALE thickness at new time
          min_ALE_thickness_down, & !> ALE thickness alteration due to min/max thickness
          min_ALE_thickness_up      !> ALE thickness alteration due to min/max thickness
       real (kind=RKIND), dimension(:,:), pointer :: &
          restingThickness   !>  Layer thickness when the ocean is at rest, i.e. without SSH or internal perturbations.
 
       logical, pointer :: thicknessFilterActive
-      logical, pointer :: config_use_min_max_thickness
-      real (kind=RKIND), pointer :: config_max_thickness_factor
-      real (kind=RKIND), pointer :: config_min_thickness
 
       err = 0
 
       call mpas_pool_get_package(ocnPackages, 'thicknessFilterActive', thicknessFilterActive)
-
-      call mpas_pool_get_config(ocnConfigs, 'config_use_min_max_thickness', config_use_min_max_thickness)
-      call mpas_pool_get_config(ocnConfigs, 'config_max_thickness_factor', config_max_thickness_factor)
-      call mpas_pool_get_config(ocnConfigs, 'config_min_thickness', config_min_thickness)
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'vertCoordMovementWeights', vertCoordMovementWeights)
@@ -143,7 +136,7 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
-      allocate(SSH_ALE_thickness(nVertLevels), prelim_ALE_thickness(nVertLevels), &
+      allocate(prelim_ALE_thickness(nVertLevels), &
          min_ALE_thickness_down(nVertLevels), min_ALE_thickness_up(nVertLevels))
 
       !
@@ -151,27 +144,27 @@ contains
       !
       if (configALEthicknessProportionality==1) then ! restingThickness_times_weights
 
-         !$omp do schedule(runtime)
+         !$omp do schedule(runtime) private(kMax, thicknessSum, k)
          do iCell = 1, nCells
             kMax = maxLevelCell(iCell)
    
             thicknessSum = 1e-14_RKIND
             do k = 1, kMax
-               SSH_ALE_Thickness(k) = SSH(iCell) * vertCoordMovementWeights(k) * restingThickness(k, iCell)
                thicknessSum = thicknessSum + vertCoordMovementWeights(k) * restingThickness(k, iCell)
             end do
    
             ! Note that restingThickness is nonzero, and remaining terms are perturbations about zero.
             ! This is equation 4 and 6 in Petersen et al 2015, but with eqn 6
             do k = 1, kMax
-               SSH_ALE_Thickness(k) = SSH_ALE_Thickness(k) / thicknessSum
-               ALE_Thickness(k, iCell) = restingThickness(k, iCell) + SSH_ALE_Thickness(k)
+               ALE_thickness(k, iCell) = restingThickness(k, iCell) &
+                  + ( SSH(iCell) * vertCoordMovementWeights(k) * restingThickness(k, iCell) ) &
+                    / thicknessSum
             end do
          enddo
          !$omp end do
    
          elseif (configALEthicknessProportionality==2) then ! weights_only
-         !$omp do schedule(runtime)
+         !$omp do schedule(runtime) private(kMax, weightSum, k)
          do iCell = 1, nCells
             kMax = maxLevelCell(iCell)
    
@@ -186,7 +179,7 @@ contains
                ! This is equation 4 and 6 in Petersen et al 2015, but with eqn 6
                ! altered so only the W_k weights are used. The resting
                ! thickness shown in eqn 6 is not included here.
-               ALE_Thickness(k, iCell) = restingThickness(k, iCell) + ssh(iCell) * vertCoordMovementWeights(k) / weightSum
+               ALE_thickness(k, iCell) = restingThickness(k, iCell) + ssh(iCell) * vertCoordMovementWeights(k) / weightSum
    
             end do
          enddo
@@ -198,8 +191,8 @@ contains
          do iCell = 1, nCells
             kMax = maxLevelCell(iCell)
 
-            ALE_Thickness(1:kMax, iCell) = &
-                ALE_Thickness(1:kMax, iCell) &
+            ALE_thickness(1:kMax, iCell) = &
+                ALE_thickness(1:kMax, iCell) &
               + newHighFreqThickness(1:kMax,iCell)
          enddo
          !$omp end do
@@ -210,34 +203,34 @@ contains
       !
       if (config_use_min_max_thickness) then
 
-         !$omp do schedule(runtime)
+         !$omp do schedule(runtime) private(kMax, remainder, k, newThickness)
          do iCell = 1, nCells
             kMax = maxLevelCell(iCell)
 
             ! go down the column:
-            prelim_ALE_Thickness(1:kMax) = ALE_Thickness(1:kMax, iCell)
+            prelim_ALE_thickness(1:kMax) = ALE_thickness(1:kMax, iCell)
             remainder = 0.0_RKIND
             do k = 1, kMax
-               newThickness = max( min(prelim_ALE_Thickness(k) + remainder, &
+               newThickness = max( min(prelim_ALE_thickness(k) + remainder, &
                                       config_max_thickness_factor * restingThickness(k,iCell) ), &
                                   config_min_thickness)
-               min_ALE_thickness_down(k) = newThickness - prelim_ALE_Thickness(k)
+               min_ALE_thickness_down(k) = newThickness - prelim_ALE_thickness(k)
                remainder = remainder - min_ALE_thickness_down(k)
             end do
 
             ! go back up the column:
             min_ALE_thickness_up(kMax) = 0.0_RKIND
-            prelim_ALE_Thickness(1:kMax) = prelim_ALE_Thickness(1:kMax) + min_ALE_thickness_down(1:kMax)
+            prelim_ALE_thickness(1:kMax) = prelim_ALE_thickness(1:kMax) + min_ALE_thickness_down(1:kMax)
             do k = kMax-1, 1, -1
-               newThickness = max( min(prelim_ALE_Thickness(k) + remainder, &
+               newThickness = max( min(prelim_ALE_thickness(k) + remainder, &
                                       config_max_thickness_factor * restingThickness(k,iCell) ), &
                                   config_min_thickness)
-               min_ALE_thickness_up(k) = newThickness - prelim_ALE_Thickness(k)
+               min_ALE_thickness_up(k) = newThickness - prelim_ALE_thickness(k)
                remainder = remainder - min_ALE_thickness_up(k)
             end do
             min_ALE_thickness_up(1) = min_ALE_thickness_up(1) + remainder
 
-            ALE_Thickness(1:kMax, iCell) = ALE_Thickness(1:kMax, iCell) + min_ALE_thickness_down(1:kMax) &
+            ALE_thickness(1:kMax, iCell) = ALE_thickness(1:kMax, iCell) + min_ALE_thickness_down(1:kMax) &
                                          + min_ALE_thickness_up(1:kMax)
 
          enddo
@@ -245,7 +238,7 @@ contains
 
       endif ! config_use_min_max_thickness
 
-      deallocate(SSH_ALE_Thickness, prelim_ALE_thickness, min_ALE_thickness_down, min_ALE_thickness_up)
+      deallocate(prelim_ALE_thickness, min_ALE_thickness_down, min_ALE_thickness_up)
 
    end subroutine ocn_ALE_thickness!}}}
 
@@ -263,9 +256,6 @@ contains
 !-----------------------------------------------------------------------
    subroutine ocn_thick_ale_init(err)!{{{
       integer, intent(out) :: err !< Output: Error flag
-      character (len=StrKIND), pointer :: config_ALE_thickness_proportionality
-
-      call mpas_pool_get_config(ocnConfigs,'config_ALE_thickness_proportionality',config_ALE_thickness_proportionality)
 
       if (config_ALE_thickness_proportionality=='restingThickness_times_weights') then
           configALEthicknessProportionality = 1

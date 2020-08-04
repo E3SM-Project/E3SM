@@ -27,6 +27,7 @@ module ocn_vmix
    use mpas_timer
 
    use ocn_constants
+   use ocn_config
    use ocn_vmix_cvmix
    use ocn_vmix_coefs_redi
 
@@ -646,10 +647,6 @@ contains
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracerVertMixTendency
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop
       integer, dimension(:,:), pointer :: cellsOnEdge
-      logical, pointer :: config_use_cvmix,config_compute_active_tracer_budgets
-      logical, pointer :: config_cvmix_kpp_nonlocal_with_implicit_mix
-      logical, pointer :: config_Rayleigh_friction, config_Rayleigh_bottom_friction, &
-                          config_Rayleigh_damping_depth_variable
 
       type (mpas_pool_iterator_type) :: groupItr
 
@@ -668,17 +665,6 @@ contains
       end if
 
       call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', tracersSurfaceFluxPool)
-      call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix', config_use_cvmix)
-      call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_nonlocal_with_implicit_mix', &
-                                config_cvmix_kpp_nonlocal_with_implicit_mix)
-      call mpas_pool_get_config(ocnConfigs, 'config_compute_active_tracer_budgets',  &
-                                config_compute_active_tracer_budgets)
-      call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_friction', &
-                                             config_Rayleigh_friction)
-      call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_bottom_friction', &
-                                             config_Rayleigh_bottom_friction)
-      call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_damping_depth_variable', &
-                                             config_Rayleigh_damping_depth_variable)
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
 
@@ -821,32 +807,8 @@ contains
       integer, intent(out) :: err !< Output: error flag
 
       integer :: err_tmp
-      logical, pointer :: config_disable_vel_vmix, config_disable_tr_vmix
-      logical, pointer :: config_disable_vel_all_tend, config_disable_tr_all_tend
-      logical, pointer :: config_use_implicit_bottom_drag
-      real (kind=RKIND), pointer :: config_implicit_bottom_drag_coeff
-      logical, pointer :: config_Rayleigh_friction, config_Rayleigh_bottom_friction, &
-                          config_Rayleigh_damping_depth_variable
-      real (kind=RKIND), pointer :: config_Rayleigh_damping_coeff, config_Rayleigh_bottom_damping_coeff
 
       err = 0
-
-      call mpas_pool_get_config(ocnConfigs, 'config_disable_vel_vmix', config_disable_vel_vmix)
-      call mpas_pool_get_config(ocnConfigs, 'config_disable_tr_vmix', config_disable_tr_vmix)
-      call mpas_pool_get_config(ocnConfigs, 'config_disable_vel_all_tend', config_disable_vel_all_tend)
-      call mpas_pool_get_config(ocnConfigs, 'config_disable_tr_all_tend', config_disable_tr_all_tend)
-      call mpas_pool_get_config(ocnConfigs, 'config_use_implicit_bottom_drag', config_use_implicit_bottom_drag)
-      call mpas_pool_get_config(ocnConfigs, 'config_implicit_bottom_drag_coeff', config_implicit_bottom_drag_coeff)
-      call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_friction', &
-                                             config_Rayleigh_friction)
-      call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_bottom_friction', &
-                                             config_Rayleigh_bottom_friction)
-      call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_damping_coeff', &
-                                             config_Rayleigh_damping_coeff)
-      call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_damping_depth_variable', &
-                                             config_Rayleigh_damping_depth_variable)
-      call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_bottom_damping_coeff', &
-                                             config_Rayleigh_bottom_damping_coeff)
 
       rayleighDampingCoef = 0.0_RKIND
 

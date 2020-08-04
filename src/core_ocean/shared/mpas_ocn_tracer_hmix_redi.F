@@ -74,7 +74,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_hmix_Redi_tend(meshPool, scratchPool, layerThickness, layerThicknessEdge, zMid, tracers, &
+   subroutine ocn_tracer_hmix_Redi_tend(meshPool, layerThickness, layerThicknessEdge, zMid, tracers, &
                                         RediKappa, dt, isActiveTracer, slopeTriadUp, slopeTriadDown, &
                                         RediKappaSfcTaper, RediKappaScaling, rediLimiterCount, tend, err)!{{{
 
@@ -85,7 +85,6 @@ contains
       !-----------------------------------------------------------------
 
       type(mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
-      type(mpas_pool_type), intent(in) :: scratchPool !< Input: Scratch information
 
       real(kind=RKIND), dimension(:), intent(in) :: &
          RediKappa

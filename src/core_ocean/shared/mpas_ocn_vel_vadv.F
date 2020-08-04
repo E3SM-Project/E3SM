@@ -25,6 +25,7 @@ module ocn_vel_vadv
    use mpas_derived_types
    use mpas_pool_routines
    use ocn_constants
+   use ocn_config
 
    implicit none
    private
@@ -192,13 +193,7 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
-      character (len=StrKIND), pointer :: config_vert_coord_movement
-      logical, pointer :: config_disable_vel_vadv
-
       err = 0
-
-      call mpas_pool_get_config(ocnConfigs, 'config_vert_coord_movement', config_vert_coord_movement)
-      call mpas_pool_get_config(ocnConfigs, 'config_disable_vel_vadv', config_disable_vel_vadv)
 
       velVadvOn = .false.
 
