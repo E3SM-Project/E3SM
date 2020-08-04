@@ -42,15 +42,15 @@ Functions<S,D>::MurphyKoop_svp(const Spack& t_atm, const bool ice)
 
   Spack result;
   const auto tmelt = C::Tmelt;
-  const Smask ice_mask = (t_atm < tmelt) && ice;
-  const Smask liq_mask = !ice_mask;
+  Smask ice_mask = (t_atm < tmelt) && ice;
+  Smask liq_mask = !ice_mask;
 
   if (ice_mask.any()) {
     //Equation (7) of the paper
     // (good down to 110 K)
     //creating array for storing coefficients of ice sat equation
-    static constexpr Scalar ic[]= {9.550426, 5723.265, 3.53068, 0.00728332};
-    const Spack ice_result = exp(ic[0] - (ic[1] / t_atm) + (ic[2] * log(t_atm)) - (ic[3] * t_atm));
+    const Scalar ic[]= {9.550426, 5723.265, 3.53068, 0.00728332};
+    Spack ice_result = exp(ic[0] - (ic[1] / t_atm) + (ic[2] * log(t_atm)) - (ic[3] * t_atm));
 
     result.set(ice_mask, ice_result);
   }
@@ -59,10 +59,10 @@ Functions<S,D>::MurphyKoop_svp(const Spack& t_atm, const bool ice)
     //Equation (10) of the paper
     // (good for 123 < T < 332 K)
     //creating array for storing coefficients of liq sat equation
-    static constexpr Scalar lq[] = {54.842763, 6763.22, 4.210, 0.000367, 0.0415, 218.8, 53.878,
+    const Scalar lq[] = {54.842763, 6763.22, 4.210, 0.000367, 0.0415, 218.8, 53.878,
 			 1331.22, 9.44523, 0.014025 };
     const auto logt = log(t_atm);
-    const Spack liq_result = exp(lq[0] - (lq[1] / t_atm) - (lq[2] * logt) + (lq[3] * t_atm) +
+    Spack liq_result = exp(lq[0] - (lq[1] / t_atm) - (lq[2] * logt) + (lq[3] * t_atm) +
 			   (tanh(lq[4] * (t_atm - lq[5])) * (lq[6] - (lq[7] / t_atm) -
 							 (lq[8] * logt) + lq[9] * t_atm)));
 
