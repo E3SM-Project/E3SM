@@ -19,6 +19,7 @@ module ocn_tracer_short_wave_absorption_variable
    use mpas_forcing
    use mpas_stream_manager
    use ocn_constants
+   use ocn_config
    use ocn_framework_forcing
 
    implicit none
@@ -124,12 +125,10 @@ contains
 
       integer, dimension(:), pointer :: maxLevelCell
 
-      real (kind=RKIND), pointer :: config_surface_buoyancy_depth
       real (kind=RKIND) :: depth
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth
       real (kind=RKIND), dimension(:), allocatable :: weights
       real (kind=RKIND), dimension(:), pointer :: chlorophyllA, zenithAngle, clearSkyRadiation
-      character (len=StrKIND), pointer :: config_sw_absorption_type
       real (kind=RKIND), dimension(4) :: Avals, Kvals
       real (kind=RKIND) :: cloudRatio ! cloud Ratio = 1 - incident_sfc_sw_radiation/clearSkyRadiation
 
@@ -140,7 +139,6 @@ contains
 
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
-      call mpas_pool_get_config(ocnConfigs, 'config_surface_buoyancy_depth', config_surface_buoyancy_depth)
 
       allocate(weights(nVertLevels+1))
       weights = 0.0_RKIND
@@ -148,7 +146,6 @@ contains
       Avals(:)=0.0_RKIND
       Kvals(:)=0.0_RKIND
 
-      call mpas_pool_get_config(ocnConfigs, 'config_sw_absorption_type', config_sw_absorption_type)
       call mpas_pool_get_array(swForcingPool,'chlorophyllData',chlorophyllA)
 
       call mpas_pool_get_array(swForcingPool,'zenithAngle',zenithAngle)
@@ -215,11 +212,7 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
-      character (len=StrKIND), pointer :: config_sw_absorption_type
-
       err = 0
-
-      call mpas_pool_get_config(ocnConfigs, 'config_sw_absorption_type', config_sw_absorption_type)
 
       select case ( trim(config_sw_absorption_type) )
       case ('ohlmann00')
@@ -253,14 +246,9 @@ contains
 
    type(domain_type) :: domain
 
-   logical, pointer :: &
-        config_do_restart
-
    character(len=strKIND) :: &
         forcingIntervalMonthly,  &
         forcingReferenceTimeMonthly
-
-   call MPAS_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
 
    forcingIntervalMonthly = "0000-01-00_00:00:00"
    forcingReferenceTimeMonthly = "0000-01-01_00:00:00"
@@ -340,17 +328,8 @@ contains
         type (MPAS_timeInterval_type) :: timeStepSW
         type (MPAS_clock_type) :: simulationClock
 
-        logical,pointer :: config_use_activeTracers_surface_bulk_forcing
         logical, intent(in) :: firstTimeStep
-        character(len=strKind), pointer :: config_sw_absorption_type
-        character(len=strKind), pointer :: config_dt
         real(kind=RKIND) :: dt
-
-
-        call MPAS_pool_get_config(domain%configs, 'config_use_activeTracers_surface_bulk_forcing', &
-                                  config_use_activeTracers_surface_bulk_forcing)
-        call MPAS_pool_get_config(domain%configs, 'config_sw_absorption_type', config_sw_absorption_type)
-        call MPAS_pool_get_config(domain%configs, 'config_dt', config_dt)
 
         call mpas_set_timeInterval(timeStepSW,timeString=config_dt)
         call mpas_get_timeInterval(timeStepSW,dt=dt)
@@ -487,11 +466,6 @@ contains
    subroutine ocn_shortwave_forcing_write_restart(domain)!{{{
 
       type(domain_type) :: domain
-
-      character(len=strKind), pointer :: config_sw_absorption_type
-
-
-      call MPAS_pool_get_config(domain % configs, "config_sw_absorption_type", config_sw_absorption_type)
 
       if( trim(config_sw_absorption_type) == 'ohlmann00'  ) then
           call MPAS_forcing_write_restart_times(forcingGroupHead)

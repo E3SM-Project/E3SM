@@ -24,6 +24,7 @@ module ocn_sea_ice
    use mpas_pool_routines
    use mpas_timekeeping
    use ocn_constants
+   use ocn_config
    use ocn_equation_of_state
 
    implicit none
@@ -263,13 +264,7 @@ contains
       integer, intent(in) :: nVertLevels !< Input: Number of vertical levels suggested for level cap
       integer, intent(out) :: err !< Output: error flag
 
-      logical, pointer :: config_use_frazil_ice_formation, config_monotonic, config_frazil_in_open_ocean
-
       err = 0
-
-      call mpas_pool_get_config(ocnConfigs, 'config_use_frazil_ice_formation', config_use_frazil_ice_formation)
-      call mpas_pool_get_config(ocnConfigs, 'config_frazil_in_open_ocean', config_frazil_in_open_ocean)
-      call mpas_pool_get_config(ocnConfigs, 'config_monotonic', config_monotonic)
 
       frazilFormationOn = .false.
 

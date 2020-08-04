@@ -27,6 +27,7 @@ module ocn_vel_hmix_del2
    use mpas_vector_operations
    use mpas_matrix_operations
    use ocn_constants
+   use ocn_config
 
    implicit none
    private
@@ -54,7 +55,7 @@ module ocn_vel_hmix_del2
    !--------------------------------------------------------------------
 
    logical ::  hmixDel2On  !< integer flag to determine whether del2 chosen
-
+         
 !***********************************************************************
 
 contains
@@ -128,8 +129,6 @@ contains
       real (kind=RKIND), dimension(:), pointer :: meshScalingDel2, &
               dcEdge, dvEdge
 
-      real (kind=RKIND), pointer :: config_mom_del2
-
       !-----------------------------------------------------------------
       !
       ! exit if this mixing is not selected
@@ -141,8 +140,6 @@ contains
       if(.not.hmixDel2On) return
 
       call mpas_timer_start("vel del2")
-
-      call mpas_pool_get_config(ocnConfigs, 'config_mom_del2', config_mom_del2)
 
       call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
 
@@ -209,9 +206,6 @@ contains
 
    integer, intent(out) :: err !< Output: error flag
 
-   real (kind=RKIND), pointer :: config_mom_del2
-   logical, pointer :: config_use_mom_del2
-
    !--------------------------------------------------------------------
    !
    ! set some local module variables based on input config choices
@@ -219,9 +213,6 @@ contains
    !--------------------------------------------------------------------
 
    err = 0
-
-   call mpas_pool_get_config(ocnConfigs, 'config_mom_del2', config_mom_del2)
-   call mpas_pool_get_config(ocnConfigs, 'config_use_mom_del2', config_use_mom_del2)
 
    hmixDel2On = .false.
 

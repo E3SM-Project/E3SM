@@ -586,7 +586,6 @@ module ocn_core_interface
       character(len=StrKIND), intent(out) :: stream
       integer :: ierr
 
-      logical, pointer :: config_do_restart
       character(len=StrKIND), pointer :: config_ocean_run_mode
 
       ierr = 0
