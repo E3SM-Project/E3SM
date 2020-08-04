@@ -19,6 +19,7 @@ module ocn_vmix_coefs_redi
    use mpas_timer
 
    use ocn_constants
+   use ocn_config
 
    implicit none
    private
@@ -48,7 +49,6 @@ module ocn_vmix_coefs_redi
    !--------------------------------------------------------------------
 
    logical :: rediDiffOn
-   logical, pointer :: config_use_Redi
 
 !***********************************************************************
 

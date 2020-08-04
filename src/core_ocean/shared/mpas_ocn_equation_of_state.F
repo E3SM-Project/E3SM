@@ -27,6 +27,7 @@ module ocn_equation_of_state
    use ocn_equation_of_state_linear
    use ocn_equation_of_state_jm
    use ocn_constants
+   use ocn_config
    use mpas_log
 
    implicit none
@@ -88,7 +89,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_equation_of_state_density(statePool, diagnosticsPool,&
-                           meshPool, scratchPool, nCells, kDisplaced,  &
+                           meshPool, nCells, kDisplaced,  &
                            displacement_type, density, err,            &
                            thermalExpansionCoeff,                      &
                            salineContractionCoeff, timeLevelIn)
@@ -110,8 +111,7 @@ contains
       type (mpas_pool_type), intent(in) :: &
          statePool,           &! pool containing state variables
          diagnosticsPool,     &! pool containing some forcing fields
-         meshPool,            &! pool containing mesh quantities
-         scratchPool           ! pool containing some scratch space
+         meshPool              ! pool containing mesh quantities
 
       !-----------------------------------------------------------------
       ! Output variables
@@ -256,18 +256,11 @@ contains
       ! Local variables
       !-----------------------------------------------------------------
 
-      character (len=StrKIND), pointer :: &
-         config_eos_type   ! for extracting EOS choice from use inputs
-
       !-----------------------------------------------------------------
 
       !*** initialize error flag
 
       err = 0
-
-      !*** extract user choice for equation of state from config
-
-      call mpas_pool_get_config(ocnConfigs, 'config_eos_type', config_eos_type)
 
       !*** set use choice based on config and call appropriate
       !***  init routine
@@ -324,27 +317,17 @@ contains
       real (kind=RKIND) :: pressureOffset
 
       if(inLandIceCavity) then
-         call mpas_pool_get_config(ocnConfigs, 'config_land_ice_cavity_freezing_temperature_coeff_0', &
-                                   coeff_0)
-         call mpas_pool_get_config(ocnConfigs, 'config_land_ice_cavity_freezing_temperature_coeff_S', &
-                                   coeff_S)
-         call mpas_pool_get_config(ocnConfigs, 'config_land_ice_cavity_freezing_temperature_coeff_p', &
-                                   coeff_p)
-         call mpas_pool_get_config(ocnConfigs, 'config_land_ice_cavity_freezing_temperature_coeff_pS', &
-                                   coeff_pS)
-         call mpas_pool_get_config(ocnConfigs, 'config_land_ice_cavity_freezing_temperature_reference_pressure', &
-                                   reference_pressure)
+         coeff_0 => config_land_ice_cavity_freezing_temperature_coeff_0
+         coeff_S => config_land_ice_cavity_freezing_temperature_coeff_S
+         coeff_p => config_land_ice_cavity_freezing_temperature_coeff_p
+         coeff_pS => config_land_ice_cavity_freezing_temperature_coeff_pS
+         reference_pressure => config_land_ice_cavity_freezing_temperature_reference_pressure
       else
-         call mpas_pool_get_config(ocnConfigs, 'config_open_ocean_freezing_temperature_coeff_0', &
-                                   coeff_0)
-         call mpas_pool_get_config(ocnConfigs, 'config_open_ocean_freezing_temperature_coeff_S', &
-                                   coeff_S)
-         call mpas_pool_get_config(ocnConfigs, 'config_open_ocean_freezing_temperature_coeff_p', &
-                                   coeff_p)
-         call mpas_pool_get_config(ocnConfigs, 'config_open_ocean_freezing_temperature_coeff_pS', &
-                                   coeff_pS)
-         call mpas_pool_get_config(ocnConfigs, 'config_open_ocean_freezing_temperature_reference_pressure', &
-                                   reference_pressure)
+         coeff_0 => config_open_ocean_freezing_temperature_coeff_0
+         coeff_S => config_open_ocean_freezing_temperature_coeff_S
+         coeff_p => config_open_ocean_freezing_temperature_coeff_p
+         coeff_pS => config_open_ocean_freezing_temperature_coeff_pS
+         reference_pressure => config_open_ocean_freezing_temperature_reference_pressure
       end if
 
 
@@ -382,21 +365,14 @@ contains
       real (kind=RKIND) :: pressureOffset
 
       if(inLandIceCavity) then
-         call mpas_pool_get_config(ocnConfigs, 'config_land_ice_cavity_freezing_temperature_coeff_S', &
-                                   coeff_S)
-         call mpas_pool_get_config(ocnConfigs, 'config_land_ice_cavity_freezing_temperature_coeff_pS', &
-                                   coeff_pS)
-         call mpas_pool_get_config(ocnConfigs, 'config_land_ice_cavity_freezing_temperature_reference_pressure', &
-                                   reference_pressure)
+         coeff_S => config_land_ice_cavity_freezing_temperature_coeff_S
+         coeff_pS => config_land_ice_cavity_freezing_temperature_coeff_pS
+         reference_pressure => config_land_ice_cavity_freezing_temperature_reference_pressure
       else
-         call mpas_pool_get_config(ocnConfigs, 'config_open_ocean_freezing_temperature_coeff_S', &
-                                   coeff_S)
-         call mpas_pool_get_config(ocnConfigs, 'config_open_ocean_freezing_temperature_coeff_pS', &
-                                   coeff_pS)
-         call mpas_pool_get_config(ocnConfigs, 'config_open_ocean_freezing_temperature_reference_pressure', &
-                                   reference_pressure)
+         coeff_S => config_open_ocean_freezing_temperature_coeff_S
+         coeff_pS => config_open_ocean_freezing_temperature_coeff_pS
+         reference_pressure => config_open_ocean_freezing_temperature_reference_pressure
       end if
-
 
       pressureOffset = max(pressure - reference_pressure, 0.0_RKIND)
 

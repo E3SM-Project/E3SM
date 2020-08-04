@@ -253,7 +253,6 @@ contains
       type (mpas_pool_type), pointer :: am_epftPool
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: forcingPool
       type (mpas_pool_type), pointer :: diagnosticsPool
 
@@ -584,7 +583,7 @@ contains
          ! Compute potentialDensity over the entire block to ensure it's valid for EPFT computation
 
          call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
-                                            scratchPool, nCells, 1, 'absolute', potentialDensity, &
+                                            nCells, 1, 'absolute', potentialDensity, &
                                             err) !, timeLevelIn=1)
 
          !--------------------------------------------------

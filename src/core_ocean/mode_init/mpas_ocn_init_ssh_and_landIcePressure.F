@@ -168,7 +168,6 @@ contains
      block_ptr => domain % blocklist
      do while(associated(block_ptr))
        call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-       call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
        call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
        call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
 
@@ -177,7 +176,7 @@ contains
        call mpas_pool_get_array(diagnosticsPool, 'density', density)
 
        call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
-           scratchPool, nCells, 0, 'relative', density, iErr, &
+           nCells, 0, 'relative', density, iErr, &
            timeLevelIn=1)
 
        if(iErr .ne. 0) then
@@ -195,7 +194,6 @@ contains
        block_ptr => domain % blocklist
        do while(associated(block_ptr))
          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
          call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
          call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
          call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
@@ -217,7 +215,7 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'modifySSHMask', modifySSHMask)
 
          call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
-             scratchPool, nCells, 0, 'relative', density, iErr, &
+             nCells, 0, 'relative', density, iErr, &
              timeLevelIn=1)
 
          if(iErr .ne. 0) then
@@ -292,7 +290,7 @@ contains
 
 
        call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, &
-           scratchPool, nCells, 0, 'relative', density, iErr, &
+           nCells, 0, 'relative', density, iErr, &
            timeLevelIn=1)
 
        if(iErr .ne. 0) then

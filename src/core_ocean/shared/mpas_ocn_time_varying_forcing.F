@@ -21,6 +21,7 @@ module ocn_time_varying_forcing
   use mpas_stream_manager
   use ocn_framework_forcing
   use ocn_constants
+  use ocn_config
   use mpas_log, only: mpas_log_write
 
   implicit none
@@ -53,18 +54,10 @@ contains
 
     type (domain_type) :: domain
 
-    logical, pointer :: &
-         config_use_time_varying_atmospheric_forcing, &
-         config_use_time_varying_land_ice_forcing
-
-    call MPAS_pool_get_config(domain % configs, "config_use_time_varying_atmospheric_forcing", config_use_time_varying_atmospheric_forcing)
-
     ! init the atmospheric forcing
     if (config_use_time_varying_atmospheric_forcing) then
        call init_atmospheric_forcing(domain)
     endif
-
-    call MPAS_pool_get_config(domain % configs, "config_use_time_varying_land_ice_forcing", config_use_time_varying_land_ice_forcing)
 
     ! init other forcings, to be added later as needed
     if (config_use_time_varying_land_ice_forcing) then
@@ -94,16 +87,11 @@ contains
 
     type (domain_type) :: domain
 
-    character(len=strKIND), pointer :: &
-         config_atmospheric_forcing_type
-
-    call MPAS_pool_get_config(domain % configs, "config_time_varying_atmospheric_forcing_type", config_atmospheric_forcing_type)
-
-    select case (trim(config_atmospheric_forcing_type))
+    select case (trim(config_time_varying_atmospheric_forcing_type))
       case ("WINDPRES")
          call init_atmospheric_forcing_WINDPRES(domain)
       case default
-         call mpas_log_write("Atmospheric forcing type unknown: "//trim(config_atmospheric_forcing_type), MPAS_LOG_CRIT)
+         call mpas_log_write("Atmospheric forcing type unknown: "//trim(config_time_varying_atmospheric_forcing_type), MPAS_LOG_CRIT)
     end select
 
   end subroutine init_atmospheric_forcing!}}}
@@ -125,55 +113,14 @@ contains
 
     type(domain_type) :: domain
 
-    character(len=strKIND), pointer :: &
-         config_forcing_start_time, &
-         config_forcing_cycle_start, &
-         config_forcing_cycle_duration, &
-         forcingInterval, &
-         forcingReferenceTime
-
-    logical, pointer :: &
-         config_do_restart
-
-    ! get atmospheric forcing configuration options
-    call MPAS_pool_get_config(&
-         domain % configs, &
-         "config_time_varying_atmospheric_forcing_start_time", &
-         config_forcing_start_time)
-
-    call MPAS_pool_get_config(&
-         domain % configs, &
-         "config_time_varying_atmospheric_forcing_cycle_start", &
-         config_forcing_cycle_start)
-
-    call MPAS_pool_get_config(&
-         domain % configs, &
-         "config_time_varying_atmospheric_forcing_cycle_duration", &
-         config_forcing_cycle_duration)
-
-    call MPAS_pool_get_config(&
-         domain % configs, &
-         "config_time_varying_atmospheric_forcing_interval", &
-         forcingInterval)
-
-    call MPAS_pool_get_config(&
-         domain % configs, &
-         "config_time_varying_atmospheric_forcing_reference_time", &
-         forcingReferenceTime)
-
-    call MPAS_pool_get_config(&
-         domain % configs, &
-         "config_do_restart", &
-         config_do_restart)
-
     ! create the atmospheric forcing group
     call MPAS_forcing_init_group(&
          forcingGroupHead, &                     ! forcingGroupHead
          "ocn_atmospheric_forcing", &            ! forcingGroupName
          domain, &                               ! domain
-         config_forcing_start_time, &            ! startTimeStr
-         config_forcing_cycle_start, &           ! forcingCycleStart
-         config_forcing_cycle_duration, &        ! forcingCycleDuration
+         config_time_varying_atmospheric_forcing_start_time, &            ! startTimeStr
+         config_time_varying_atmospheric_forcing_cycle_start, &           ! forcingCycleStart
+         config_time_varying_atmospheric_forcing_cycle_duration, &        ! forcingCycleDuration
          config_do_restart)!, &                  ! restart
          !.false.)                               ! forcingCycleStartInclusive
 
@@ -187,8 +134,8 @@ contains
          "timeVaryingForcing", &                 ! poolname
          "windSpeedU", &                         ! fieldname
          "linear", &                             ! interpolationType
-         forcingReferenceTime, &                 ! forcingReferenceTimeStr
-         forcingInterval)!,                      ! forcingIntervalStr
+         config_time_varying_atmospheric_forcing_reference_time, &                 ! forcingReferenceTimeStr
+         config_time_varying_atmospheric_forcing_interval)!,                      ! forcingIntervalStr
          !"next")                                ! forcingInitializationType
 
     ! windSpeedV init
@@ -201,8 +148,8 @@ contains
          "timeVaryingForcing", &
          "windSpeedV", &
          "linear", &
-         forcingReferenceTime, &
-         forcingInterval)!, &
+         config_time_varying_atmospheric_forcing_reference_time, &
+         config_time_varying_atmospheric_forcing_interval)!, &
          !"next")
 
     ! atmosphericPressure init
@@ -215,8 +162,8 @@ contains
          "timeVaryingForcing", &
          "atmosPressure", &
          "linear", &
-         forcingReferenceTime, &
-         forcingInterval)!, &
+         config_time_varying_atmospheric_forcing_reference_time, &
+         config_time_varying_atmospheric_forcing_interval)!, &
          !"next")
 
     call MPAS_forcing_init_field_data(&
@@ -253,12 +200,6 @@ contains
 
     type (MPAS_clock_type) :: simulationClock
 
-    logical, pointer :: &
-         config_use_time_varying_atmospheric_forcing, &
-         config_use_time_varying_land_ice_forcing
-
-    call MPAS_pool_get_config(domain % configs, "config_use_time_varying_atmospheric_forcing", config_use_time_varying_atmospheric_forcing)
-
     if (config_use_time_varying_atmospheric_forcing) then
 
         call atmospheric_forcing(&
@@ -267,9 +208,6 @@ contains
              simulationClock)
 
     endif
-
-    call MPAS_pool_get_config(domain % configs, "config_use_time_varying_land_ice_forcing", &
-                              config_use_time_varying_land_ice_forcing)
 
     if (config_use_time_varying_land_ice_forcing) then
 
@@ -315,10 +253,6 @@ contains
 
     type (block_type), pointer :: block
 
-    character(len=StrKIND), pointer :: config_dt
-
-    character(len=strKIND), pointer :: config_atmospheric_forcing_type
-
     type (MPAS_timeInterval_type) :: timeStepESMF
 
     character(len=StrKIND) :: timeStamp
@@ -326,10 +260,6 @@ contains
     real (kind=RKIND) :: dtSim
 
     integer :: err
-
-    ! configurations
-    call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
-    call mpas_pool_get_config(domain % configs, 'config_time_varying_atmospheric_forcing_type', config_atmospheric_forcing_type)
 
     ! convert config_dt to real
     call mpas_set_timeInterval(timeStepESMF, timeString=config_dt,ierr=err)
@@ -354,7 +284,7 @@ contains
     do while (associated(block))
 
        ! apply drag law to compute wind stress from wind speed
-       if (trim(config_atmospheric_forcing_type) == "WINDPRES") then
+       if (trim(config_time_varying_atmospheric_forcing_type) == "WINDPRES") then
           call post_atmospheric_forcing(block)
        endif
 
@@ -406,7 +336,6 @@ contains
          windStressCoefficientLimit
 
     real(kind=RKIND), pointer:: &
-        config_forcing_ramp, &
         daysSinceStartOfSim
 
     integer, pointer :: &
@@ -414,8 +343,6 @@ contains
 
     integer :: &
          iCell
-
-    call MPAS_pool_get_config(block % configs, "config_time_varying_atmospheric_forcing_ramp", config_forcing_ramp)
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "forcing", forcingPool)
@@ -437,7 +364,7 @@ contains
     rhoAir = 1.225_RKIND
     windStressCoefficientLimit = 0.0035_RKIND
 
-    ramp = tanh((2.0_RKIND*daysSinceStartOfSim)/config_forcing_ramp)
+    ramp = tanh((2.0_RKIND*daysSinceStartOfSim)/config_time_varying_atmospheric_forcing_ramp)
 
     !$omp do schedule(runtime) private(iCell, windStressCoefficient)
     do iCell = 1, nCells
@@ -502,50 +429,21 @@ contains
 
     type (domain_type) :: domain
 
-    character(len=strKIND), pointer :: &
-         config_forcing_start_time, &
-         config_forcing_cycle_start, &
-         config_forcing_cycle_duration, &
-         forcingInterval, &
-         forcingReferenceTime
-
-    logical, pointer :: &
-         config_do_restart
-
-
-    ! get land-ice forcing configuration options
-    call mpas_pool_get_config(domain % configs, "config_time_varying_land_ice_forcing_start_time", &
-         config_forcing_start_time)
-
-    call mpas_pool_get_config(domain % configs, "config_time_varying_land_ice_forcing_cycle_start", &
-         config_forcing_cycle_start)
-
-    call mpas_pool_get_config(domain % configs, "config_time_varying_land_ice_forcing_cycle_duration", &
-         config_forcing_cycle_duration)
-
-    call mpas_pool_get_config(domain % configs, "config_time_varying_land_ice_forcing_interval", &
-         forcingInterval)
-
-    call mpas_pool_get_config(domain % configs, "config_time_varying_land_ice_forcing_reference_time", &
-         forcingReferenceTime)
-
-    call mpas_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
-
     ! create the land-ice forcing group
-    call mpas_forcing_init_group(forcingGroupHead, "ocn_land_ice_forcing", domain, config_forcing_start_time, &
-         config_forcing_cycle_start, config_forcing_cycle_duration, config_do_restart)
+    call mpas_forcing_init_group(forcingGroupHead, "ocn_land_ice_forcing", domain, config_time_varying_land_ice_forcing_start_time, &
+         config_time_varying_land_ice_forcing_cycle_start, config_time_varying_land_ice_forcing_cycle_duration, config_do_restart)
 
     call mpas_forcing_init_field(domain % streamManager, forcingGroupHead, "ocn_land_ice_forcing", &
          "landIcePressure", "land_ice_forcing", "timeVaryingForcing", "landIcePressureForcing", "linear", &
-         forcingReferenceTime, forcingInterval)
+         config_time_varying_land_ice_forcing_reference_time, config_time_varying_land_ice_forcing_interval)
 
     call mpas_forcing_init_field(domain % streamManager, forcingGroupHead, "ocn_land_ice_forcing", &
          "landIceFraction", "land_ice_forcing", "timeVaryingForcing", "landIceFractionForcing", "linear", &
-         forcingReferenceTime, forcingInterval)
+         config_time_varying_land_ice_forcing_reference_time, config_time_varying_land_ice_forcing_interval)
 
     call mpas_forcing_init_field(domain % streamManager, forcingGroupHead, "ocn_land_ice_forcing", &
          "landIceDraft", "land_ice_forcing", "timeVaryingForcing", "landIceDraftForcing", "linear", &
-         forcingReferenceTime, forcingInterval)
+         config_time_varying_land_ice_forcing_reference_time, config_time_varying_land_ice_forcing_interval)
 
     call mpas_forcing_init_field_data(&
          forcingGroupHead, &                     ! forcingGroupHead
@@ -580,7 +478,7 @@ contains
 
     type (block_type), pointer :: block
 
-    character(len=StrKIND), pointer :: config_dt
+!    character(len=StrKIND), pointer :: config_dt
 
     type (MPAS_timeInterval_type) :: timeStepESMF
 
@@ -608,9 +506,6 @@ contains
 
     integer :: &
          iCell
-
-    ! configurations
-    call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
 
     ! convert config_dt to real
     call mpas_set_timeInterval(timeStepESMF, timeString=config_dt,ierr=err)

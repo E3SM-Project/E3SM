@@ -27,6 +27,7 @@ module ocn_tracer_ecosys
    use mpas_forcing
    use mpas_stream_manager
    use ocn_constants
+   use ocn_config
    use ocn_framework_forcing
 
 !  use BGC_mod
@@ -168,16 +169,6 @@ contains
                                         ecosysDiagFieldsLevel3,  &
                                         ecosysDiagFieldsLevel4,  &
                                         ecosysDiagFieldsLevel5
-
-      logical, pointer ::  &
-         config_ecosys_atm_alt_co2_use_eco
-
-      logical, pointer ::  &
-         config_ecosysTracers_diagnostic_fields_level1,  &
-         config_ecosysTracers_diagnostic_fields_level2,  &
-         config_ecosysTracers_diagnostic_fields_level3,  &
-         config_ecosysTracers_diagnostic_fields_level4,  &
-         config_ecosysTracers_diagnostic_fields_level5
 
       !
       ! level 1 diagnostics
@@ -360,22 +351,6 @@ contains
       call mpas_pool_get_array(ecosysAuxiliary, 'PAR_surface', PAR_surface)
 
       call mpas_pool_get_array(forcingPool, 'shortWaveHeatFlux', shortWaveHeatFlux)
-
-      call mpas_pool_get_config(ocnConfigs, 'config_ecosys_atm_alt_co2_use_eco', &
-              config_ecosys_atm_alt_co2_use_eco)
-
-!maltrud change to diagnostics pool at some point (needs to be passed in)
-
-      call mpas_pool_get_config(ocnConfigs, 'config_ecosysTracers_diagnostic_fields_level1', &
-              config_ecosysTracers_diagnostic_fields_level1)
-      call mpas_pool_get_config(ocnConfigs, 'config_ecosysTracers_diagnostic_fields_level2', &
-              config_ecosysTracers_diagnostic_fields_level2)
-      call mpas_pool_get_config(ocnConfigs, 'config_ecosysTracers_diagnostic_fields_level3', &
-              config_ecosysTracers_diagnostic_fields_level3)
-      call mpas_pool_get_config(ocnConfigs, 'config_ecosysTracers_diagnostic_fields_level4', &
-              config_ecosysTracers_diagnostic_fields_level4)
-      call mpas_pool_get_config(ocnConfigs, 'config_ecosysTracers_diagnostic_fields_level5', &
-              config_ecosysTracers_diagnostic_fields_level5)
 
       if (config_ecosysTracers_diagnostic_fields_level1) then
          call mpas_pool_get_subpool(forcingPool, 'ecosysDiagFieldsLevel1', ecosysDiagFieldsLevel1)
@@ -1097,17 +1072,12 @@ contains
       real (kind=RKIND) :: convertLengthCGStoMKS = 0.01_RKIND
       real (kind=RKIND) :: convertLengthSquaredMKStoCGS = 1.0e4_RKIND
 
-      logical, pointer :: config_use_ecosysTracers_sea_ice_coupling
-
       !
       ! level 2 diagnostics
       !
 
       type (mpas_pool_type), pointer ::  &
          ecosysDiagFieldsLevel2
-
-      logical, pointer ::  &
-         config_ecosysTracers_diagnostic_fields_level2
 
       real (kind=RKIND), dimension(:), pointer :: &
          ecosys_diag_pistonVel_O2,         &
@@ -1159,9 +1129,6 @@ contains
       call mpas_pool_get_array(ecosysAuxiliary, 'CO2_gas_flux', CO2_gas_flux)
       call mpas_pool_get_array(ecosysAuxiliary, 'CO2_alt_gas_flux', CO2_alt_gas_flux)
 
-      call mpas_pool_get_config(ocnConfigs, 'config_use_ecosysTracers_sea_ice_coupling',  &
-                                             config_use_ecosysTracers_sea_ice_coupling)
-
       if (config_use_ecosysTracers_sea_ice_coupling) then
 
          call mpas_pool_get_subpool(forcingPool, 'ecosysSeaIceCoupling', ecosysSeaIceCoupling)
@@ -1177,9 +1144,6 @@ contains
          call mpas_pool_get_array(ecosysSeaIceCoupling, 'iceFluxFeDissolved', iceFluxFeDissolved)
 
       endif
-
-      call mpas_pool_get_config(ocnConfigs, 'config_ecosysTracers_diagnostic_fields_level2', &
-              config_ecosysTracers_diagnostic_fields_level2)
 
       if (config_ecosysTracers_diagnostic_fields_level2) then
          call mpas_pool_get_subpool(forcingPool, 'ecosysDiagFieldsLevel2', ecosysDiagFieldsLevel2)
@@ -1413,10 +1377,6 @@ contains
       character(len=strKIND) :: &
          forcingIntervalMonthly,  &
          forcingReferenceTimeMonthly
-
-      logical, pointer :: &
-         config_do_restart
-
 
       !
       ! get tracers pools
@@ -1763,8 +1723,6 @@ contains
       forcingIntervalMonthly = "0000-01-00_00:00:00"
       forcingReferenceTimeMonthly = "0000-01-15_00:00:00"
 
-      call MPAS_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
-
       call MPAS_forcing_init_group( forcingGroupHead,  &
                 "ecosysMonthlyClimatology", &
                 domain, &
@@ -1988,7 +1946,6 @@ contains
         type (MPAS_clock_type) :: simulationClock
 
         logical, intent(in) :: firstTimeStep
-        character(len=strKind), pointer :: config_dt
         real(kind=RKIND) :: dt
 
         type (mpas_pool_type), pointer :: forcingPool
@@ -2029,11 +1986,6 @@ contains
 
         integer, pointer :: nCells
         integer :: iCell
-
-        logical, pointer :: config_do_restart
-
-        call MPAS_pool_get_config(domain%configs, 'config_dt', config_dt)
-        call MPAS_pool_get_config(domain%configs, 'config_do_restart', config_do_restart)
 
         call mpas_set_timeInterval(timeStepEco,timeString=config_dt)
         call mpas_get_timeInterval(timeStepEco,dt=dt)

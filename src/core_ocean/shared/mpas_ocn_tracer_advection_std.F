@@ -49,6 +49,19 @@ module ocn_tracer_advection_std
    public :: ocn_tracer_advection_std_tend, &
              ocn_tracer_advection_std_init
 
+   !--------------------------------------------------------------------
+   !
+   ! Replace calls to mpas_allocate_scratch_Field with straight allocates.
+   ! These variables were moved from the subroutines, but will be moved back once the
+   ! threading implementation is changed to more localized threading
+   !
+   !--------------------------------------------------------------------
+
+   ! subroutine ocn_tracer_advection_std_tend
+   real (kind=RKIND), dimension(:,:), allocatable :: tracer_cur
+   real (kind=RKIND), dimension(:,:), allocatable :: high_order_horiz_flux
+   real (kind=RKIND), dimension(:,:), allocatable :: high_order_vert_flux
+
    contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -94,7 +107,6 @@ module ocn_tracer_advection_std
       real (kind=RKIND) :: tracer_weight, invAreaCell1
       real (kind=RKIND) :: verticalWeightK, verticalWeightKm1
       real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell, verticalDivergenceFactor
-      real (kind=RKIND), dimension(:,:), allocatable :: tracer_cur, high_order_horiz_flux, high_order_vert_flux
 
       real (kind=RKIND), parameter :: eps = 1.e-10_RKIND
 
@@ -117,11 +129,12 @@ module ocn_tracer_advection_std
       allocate(verticalDivergenceFactor(nVertLevels))
       verticalDivergenceFactor = 1.0_RKIND
 
-      allocate(high_order_horiz_flux(nVertLevels,nEdges))
-      allocate(tracer_cur(nVertLevels,nCells+1))
-      allocate(high_order_vert_flux(nVertLevels+1,nCells))
-
-      call mpas_threading_barrier()
+      !$omp master
+      allocate(high_order_horiz_flux(nVertLevels, nEdges), &
+               tracer_cur(nVertLevels, nCells), &
+               high_order_vert_flux(nVertLevels, nCells))
+      !$omp end master
+      !$omp barrier
 
       ! Loop over tracers. One tracer is advected at a time. It is copied into a temporary array in order to improve locality
       do iTracer = 1, num_tracers
@@ -225,7 +238,12 @@ module ocn_tracer_advection_std
         !$omp end do
       end do ! iTracer loop
 
-      call mpas_threading_barrier()
+      !$omp barrier
+      !$omp master
+      deallocate(high_order_horiz_flux, &
+                 high_order_vert_flux, &
+                 tracer_cur)
+      !$omp end master
 
       deallocate(tracer_cur, high_order_horiz_flux, high_order_vert_flux)
       deallocate(verticalDivergenceFactor)

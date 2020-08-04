@@ -27,6 +27,7 @@ module ocn_vel_hmix_del4
    use mpas_vector_operations
    use mpas_matrix_operations
    use ocn_constants
+   use ocn_config
 
    implicit none
    private
@@ -55,6 +56,19 @@ module ocn_vel_hmix_del4
 
    logical :: hmixDel4On       !< local flag to determine whether del4 chosen
 
+   !--------------------------------------------------------------------
+   !
+   ! Replace calls to mpas_allocate_scratch_Field with straight allocates.
+   ! These variables were moved from the subroutines, but will be moved back once the
+   ! threading implementation is changed to more localized threading
+   !
+   !--------------------------------------------------------------------
+
+   ! subroutine ocn_vel_hmix_del4_tend
+   real (kind=RKIND), dimension(:,:), allocatable :: delsq_divergence
+   real (kind=RKIND), dimension(:,:), allocatable :: delsq_relativeVorticity
+   real (kind=RKIND), dimension(:,:), allocatable :: delsq_u
+
 !***********************************************************************
 
 contains
@@ -77,7 +91,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_hmix_del4_tend(meshPool, scratchPool, divergence, relativeVorticity, tend, err)!{{{
+   subroutine ocn_vel_hmix_del4_tend(meshPool, divergence, relativeVorticity, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -87,8 +101,6 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          divergence      !< Input: velocity divergence
-
-      type (mpas_pool_type), intent(in) :: scratchPool !< Input: scratch variables
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          relativeVorticity       !< Input: relative vorticity
@@ -135,19 +147,11 @@ contains
       real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaTriangle, &
             meshScalingDel4, areaCell
 
-      real (kind=RKIND), dimension(:,:), pointer :: delsq_divergence, delsq_relativeVorticity, delsq_u
-      type (field2DReal), pointer :: delsq_uField, delsq_divergenceField, delsq_relativeVorticityField
-
-      real (kind=RKIND), pointer :: config_mom_del4, config_mom_del4_div_factor
-
       err = 0
 
       if(.not.hmixDel4On) return
 
       call mpas_timer_start("vel del4")
-
-      call mpas_pool_get_config(ocnConfigs, 'config_mom_del4', config_mom_del4)
-      call mpas_pool_get_config(ocnConfigs, 'config_mom_del4_div_factor', config_mom_del4_div_factor)
 
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
@@ -172,16 +176,15 @@ contains
       call mpas_pool_get_array(meshPool, 'edgeSignOnVertex', edgeSignOnVertex)
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
 
-      call mpas_pool_get_field(scratchPool, 'delsq_u', delsq_uField)
-      call mpas_pool_get_field(scratchPool, 'delsq_divergence', delsq_divergenceField)
-      call mpas_pool_get_field(scratchPool, 'delsq_relativeVorticity', delsq_relativeVorticityField)
-      call mpas_allocate_scratch_field(delsq_uField, .true., .false.)
-      call mpas_allocate_scratch_field(delsq_divergenceField, .true., .false.)
-      call mpas_allocate_scratch_field(delsq_relativeVorticityField, .true., .false.)
-
-      delsq_u => delsq_uField % array
-      delsq_divergence => delsq_divergenceField % array
-      delsq_relativeVorticity => delsq_relativeVorticityField % array
+      nEdges = nEdgesArray(size(nEdgesArray))
+      nCells = nCellsArray(size(nCellsArray))
+      nVertices = nVerticesArray(size(nVerticesArray))
+      !$omp master
+      allocate(delsq_u(nVertLevels, nEdges + 1), &
+               delsq_divergence(nVertLevels, nCells + 1), &
+               delsq_relativeVorticity(nVertLevels, nVertices + 1))
+      !$omp end master
+      !$omp barrier
 
       nEdges = nEdgesArray( 3 )
 
@@ -264,9 +267,12 @@ contains
       end do
       !$omp end do
 
-      call mpas_deallocate_scratch_field(delsq_uField, .true.)
-      call mpas_deallocate_scratch_field(delsq_divergenceField, .true.)
-      call mpas_deallocate_scratch_field(delsq_relativeVorticityField, .true.)
+      !$omp barrier
+      !$omp master
+      deallocate(delsq_u, &
+                 delsq_divergence, &
+                 delsq_relativeVorticity)
+      !$omp end master
 
       call mpas_timer_stop("vel del4")
 
@@ -297,13 +303,7 @@ contains
    !
    !--------------------------------------------------------------------
 
-   real (kind=RKIND), pointer :: config_mom_del4
-   logical, pointer :: config_use_mom_del4
-
    err = 0
-
-   call mpas_pool_get_config(ocnConfigs, 'config_mom_del4', config_mom_del4)
-   call mpas_pool_get_config(ocnConfigs, 'config_use_mom_del4', config_use_mom_del4)
 
    hmixDel4On = .false.
 

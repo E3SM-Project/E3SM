@@ -128,12 +128,6 @@ module ocn_forward_mode
       type (MPAS_TimeInterval_type) :: timeStep
       type (MPAS_TimeInterval_type) :: alarmTimeStep
 
-      logical, pointer :: config_do_restart, config_read_nearest_restart, config_filter_btr_mode, config_conduct_tests
-      character (len=StrKIND), pointer :: config_vert_coord_movement, config_pressure_gradient_type
-      character (len=StrKIND), pointer :: config_surface_salinity_monthly_restoring_compute_interval
-
-      real (kind=RKIND), pointer :: config_maxMeshDensity
-      logical, pointer :: config_use_surface_salinity_monthly_restoring
       ierr = 0
 
       !
@@ -149,17 +143,6 @@ module ocn_forward_mode
       ! Setup ocean config pool
       call ocn_config_init(domain % configs)
 
-      call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
-      call mpas_pool_get_config(domain % configs, 'config_read_nearest_restart', config_read_nearest_restart)
-      call mpas_pool_get_config(domain % configs, 'config_vert_coord_movement', config_vert_coord_movement)
-      call mpas_pool_get_config(domain % configs, 'config_pressure_gradient_type', config_pressure_gradient_type)
-      call mpas_pool_get_config(domain % configs, 'config_filter_btr_mode', config_filter_btr_mode)
-      call mpas_pool_get_config(domain % configs, 'config_maxMeshDensity', config_maxMeshDensity)
-      call mpas_pool_get_config(domain % configs, 'config_conduct_tests', config_conduct_tests)
-      call mpas_pool_get_config(domain % configs, 'config_use_surface_salinity_monthly_restoring', &
-                                config_use_surface_salinity_monthly_restoring)
-      call mpas_pool_get_config(domain % configs, 'config_surface_salinity_monthly_restoring_compute_interval', &
-              config_surface_salinity_monthly_restoring_compute_interval)
       !
       ! Read input data for model
       !
@@ -263,9 +246,6 @@ module ocn_forward_mode
       ierr = ior(ierr,err_tmp)
 
       call ocn_forcing_init(err_tmp)
-      ierr = ior(ierr,err_tmp)
-
-      call ocn_high_freq_thickness_hmix_del2_init(err_tmp)
       ierr = ior(ierr,err_tmp)
 
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nVertLevels', nVertLevels)
@@ -508,29 +488,8 @@ module ocn_forward_mode
       type (mpas_pool_type), pointer :: scratchPool
 
       type (MPAS_timeInterval_type) :: timeStep
-      character(len=StrKIND), pointer :: config_restart_timestamp_name, config_sw_absorption_type
-
-      logical, pointer :: config_write_output_on_startup
-      logical, pointer :: config_use_ecosysTracers
-      logical, pointer :: config_use_activeTracers_surface_restoring
-      logical, pointer :: config_use_surface_salinity_monthly_restoring
-      logical, pointer :: config_use_time_varying_atmospheric_forcing
-      logical, pointer :: config_use_time_varying_land_ice_forcing
 
       ierr = 0
-
-      call mpas_pool_get_config(domain % configs, 'config_write_output_on_startup', config_write_output_on_startup)
-      call mpas_pool_get_config(domain % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
-      call mpas_pool_get_config(domain % configs, 'config_sw_absorption_type', config_sw_absorption_type)
-      call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers', config_use_ecosysTracers)
-      call mpas_pool_get_config(domain % configs, 'config_use_activeTracers_surface_restoring',  &
-                                                   config_use_activeTracers_surface_restoring)
-      call mpas_pool_get_config(domain % configs, 'config_use_surface_salinity_monthly_restoring',  &
-                                                   config_use_surface_salinity_monthly_restoring)
-      call MPAS_pool_get_config(domain % configs, 'config_use_time_varying_atmospheric_forcing', &
-                                                   config_use_time_varying_atmospheric_forcing)
-      call MPAS_pool_get_config(domain % configs, 'config_use_time_varying_land_ice_forcing', &
-                                                   config_use_time_varying_land_ice_forcing)
 
       ! Eventually, dt should be domain specific
       timeStep = mpas_get_clock_timestep(domain % clock, ierr=ierr)

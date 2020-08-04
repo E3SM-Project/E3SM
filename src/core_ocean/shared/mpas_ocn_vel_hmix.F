@@ -30,6 +30,7 @@ module ocn_vel_hmix
    use ocn_vel_hmix_leith
    use ocn_vel_hmix_del4
    use ocn_constants
+   use ocn_config
 
    implicit none
    private
@@ -154,7 +155,7 @@ contains
       call ocn_vel_hmix_leith_tend(meshPool, divergence, relativeVorticity, viscosity, tend, err1)
       err = ior(err1, err)
 
-      call ocn_vel_hmix_del4_tend(meshPool, scratchPool, divergence, relativeVorticity, tend, err1)
+      call ocn_vel_hmix_del4_tend(meshPool, divergence, relativeVorticity, tend, err1)
       err = ior(err1, err)
 
       call mpas_timer_stop("vel hmix")
@@ -191,10 +192,6 @@ contains
       integer, intent(out) :: err !< Output: error flag
 
       integer :: err1, err2, err3
-
-      logical, pointer :: config_disable_vel_hmix
-
-      call mpas_pool_get_config(ocnConfigs, 'config_disable_vel_hmix', config_disable_vel_hmix)
 
       hmixOn = .true.
 

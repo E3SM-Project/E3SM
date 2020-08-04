@@ -36,6 +36,7 @@ module ocn_init_routines
    use ocn_diagnostics
    use ocn_gm
    use ocn_constants
+   use ocn_config
 
    use ocn_surface_land_ice_fluxes
    use ocn_forcing
@@ -457,7 +458,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       type (block_type), pointer :: block
 
       integer :: iTracer, cell, cell1, cell2
-      real (kind=RKIND) :: normalThicknessFluxSum, thicknessSum, hEdge1, zMidPBC, &
+      real (kind=RKIND) :: thicknessSum, hEdge1, zMidPBC, &
          depth1, depth2
 
       integer, dimension(:), pointer :: maxLevelCell, landIceMask
@@ -470,19 +471,7 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       integer, pointer :: nVertLevels, nCells
       logical :: consistentSSH
 
-      logical, pointer :: config_do_restart, config_check_ssh_consistency
-      logical, pointer :: config_check_zlevel_consistency
-      character (len=StrKIND), pointer :: config_vert_coord_movement
-      real (kind=RKIND), pointer :: config_vert_taper_weight_depth_1, config_vert_taper_weight_depth_2
-
       type (mpas_pool_iterator_type) :: groupItr
-
-      call mpas_pool_get_config(domain % configs, 'config_vert_coord_movement', config_vert_coord_movement)
-      call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
-      call mpas_pool_get_config(domain % configs, 'config_check_ssh_consistency', config_check_ssh_consistency)
-      call mpas_pool_get_config(domain % configs, 'config_check_zlevel_consistency', config_check_zlevel_consistency)
-      call mpas_pool_get_config(domain % configs, 'config_vert_taper_weight_depth_1', config_vert_taper_weight_depth_1)
-      call mpas_pool_get_config(domain % configs, 'config_vert_taper_weight_depth_2', config_vert_taper_weight_depth_2)
 
       ! Initialize z-level mesh variables from h, read in from input file.
       block => domain % blocklist
@@ -634,13 +623,6 @@ end subroutine ocn_init_routines_compute_max_level!}}}
       real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroup
 
       integer, pointer :: nCells, nEdges, nVertices, nVertLevels
-      integer, pointer :: config_horiz_tracer_adv_order
-      logical, pointer :: config_hmix_scaleWithMesh, config_do_restart
-      logical, pointer :: config_use_GM
-      logical, pointer :: config_use_Redi
-      logical, pointer :: config_hmix_use_ref_cell_width
-      real (kind=RKIND), pointer :: config_maxMeshDensity
-      real (kind=RKIND), pointer :: config_hmix_ref_cell_width
 
       type (mpas_pool_iterator_type) :: groupItr
 
@@ -684,15 +666,6 @@ end subroutine ocn_init_routines_compute_max_level!}}}
 
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
-
-      call mpas_pool_get_config(block % configs, 'config_horiz_tracer_adv_order', config_horiz_tracer_adv_order)
-      call mpas_pool_get_config(block % configs, 'config_hmix_scaleWithMesh', config_hmix_scaleWithMesh)
-      call mpas_pool_get_config(block % configs, 'config_maxMeshDensity', config_maxMeshDensity)
-      call mpas_pool_get_config(block % configs, 'config_hmix_use_ref_cell_width', config_hmix_use_ref_cell_width)
-      call mpas_pool_get_config(block % configs, 'config_hmix_ref_cell_width', config_hmix_ref_cell_width)
-      call mpas_pool_get_config(block % configs, 'config_use_GM', config_use_GM)
-      call mpas_pool_get_config(block % configs, 'config_use_Redi', config_use_Redi)
-      call mpas_pool_get_config(block % configs, 'config_do_restart', config_do_restart)
 
       call ocn_init_routines_setup_sign_and_index_fields(meshPool)
       call ocn_init_routines_area_weights(meshPool, edgeAreaFractionOfCell)
