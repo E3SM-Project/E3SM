@@ -169,8 +169,8 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   allocate( uln(ncrms,plev) )
   allocate( vln(ncrms,plev) )
 #if defined(MMF_ESMT)
-  allocate( uln_esmt(plev,ncrms) )
-  allocate( vln_esmt(plev,ncrms) )
+  allocate( uln_esmt(ncrms,plev) )
+  allocate( vln_esmt(ncrms,plev) )
 #endif
   allocate( cwp(ncrms,nx,ny) )
   allocate( cwph(ncrms,nx,ny) )
@@ -356,6 +356,10 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 #endif
           w   (icrm,i,j,k) = crm_state_w_wind     (icrm,i,j,k)
           tabs(icrm,i,j,k) = crm_state_temperature(icrm,i,j,k)
+#if defined(MMF_ESMT)
+          u_esmt(icrm,i,j,k) = crm_input%ul_esmt(icrm,plev-k+1)
+          v_esmt(icrm,i,j,k) = crm_input%vl_esmt(icrm,plev-k+1)
+#endif /* MMF_ESMT */
         enddo
       enddo
     enddo
@@ -380,13 +384,6 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       enddo
     enddo
   endif
-
-#if defined(MMF_ESMT)
-  do k=1,nzm
-    u_esmt(:,:,:,k) = crm_input%ul_esmt(icrm,plev-k+1)
-    v_esmt(:,:,:,k) = crm_input%vl_esmt(icrm,plev-k+1)
-  end do
-#endif
 
   ! Populate microphysics array from crm_state
   !$acc parallel loop collapse(4) async(asyncid)
@@ -1093,10 +1090,22 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   enddo
 
 #if defined( MMF_ESMT )
-  uln_esmt(1:ptop-1,:)  = crm_input%ul_esmt(:,1:ptop-1)
-  vln_esmt(1:ptop-1,:)  = crm_input%vl_esmt(:,1:ptop-1)
-  uln_esmt(ptop:plev,:) = 0.
-  vln_esmt(ptop:plev,:) = 0.
+  ! Initialize updated domain mean momentum scalars to input values above CRM 
+  !$acc parallel loop collapse(2) async(asyncid)
+  do k = 1,ptop-1
+    do icrm = 1 , ncrms
+      uln_esmt(icrm,k)  = crm_input%ul_esmt(icrm,k)
+      vln_esmt(icrm,k)  = crm_input%vl_esmt(icrm,k)
+    end do
+  end do
+  ! Initialize updated domain mean momentum scalars to zero for CRM levels
+  !$acc parallel loop collapse(2) async(asyncid)
+  do k = ptop,plev
+    do icrm = 1 , ncrms
+      uln_esmt(icrm,k) = 0.
+      vln_esmt(icrm,k) = 0.
+    end do
+  end do
 #endif /* MMF_ESMT */
 
   !$acc parallel loop collapse(4) async(asyncid)
@@ -1128,9 +1137,9 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 
 #if defined(MMF_ESMT)
           !$acc atomic update
-          uln_esmt(l,icrm) = uln_esmt(l,icrm)+u_esmt(icrm,i,j,k)
+          uln_esmt(icrm,l) = uln_esmt(icrm,l)+u_esmt(icrm,i,j,k)
           !$acc atomic update
-          vln_esmt(l,icrm) = vln_esmt(l,icrm)+v_esmt(icrm,i,j,k)
+          vln_esmt(icrm,l) = vln_esmt(icrm,l)+v_esmt(icrm,i,j,k)
 #endif
         enddo ! j
       enddo ! i
@@ -1140,13 +1149,13 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 #if defined(MMF_ESMT)
   !$acc wait(asyncid)
   do icrm=1,ncrms
-    uln_esmt(ptop:plev,icrm) = uln_esmt(ptop:plev,icrm) * factor_xy
-    vln_esmt(ptop:plev,icrm) = vln_esmt(ptop:plev,icrm) * factor_xy
+    uln_esmt(icrm,ptop:plev) = uln_esmt(icrm,ptop:plev) * factor_xy
+    vln_esmt(icrm,ptop:plev) = vln_esmt(icrm,ptop:plev) * factor_xy
 
-    crm_output%u_tend_esmt(icrm,:) = (uln_esmt(:,icrm) - crm_input%ul_esmt(icrm,:))*icrm_run_time
-    crm_output%v_tend_esmt(icrm,:) = (vln_esmt(:,icrm) - crm_input%vl_esmt(icrm,:))*icrm_run_time
+    crm_output%u_tend_esmt(icrm,:) = (uln_esmt(icrm,:) - crm_input%ul_esmt(icrm,:))*icrm_run_time
+    crm_output%v_tend_esmt(icrm,:) = (vln_esmt(icrm,:) - crm_input%vl_esmt(icrm,:))*icrm_run_time
 
-    ! don't use tendencies from two top levels,
+    ! don't use tendencies from two top CRM levels
     crm_output%u_tend_esmt(icrm,ptop:ptop+1) = 0.
     crm_output%v_tend_esmt(icrm,ptop:ptop+1) = 0.
   enddo

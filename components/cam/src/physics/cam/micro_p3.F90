@@ -354,7 +354,8 @@ contains
     logical(btype), intent(in) :: log_predictNc
     real(rtype), intent(in) :: dt
 
-    real(rtype), intent(in), dimension(kts:kte) :: pres, pdel, dzq, ncnuc, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, xxlv, xxls, xlf
+    real(rtype), intent(in), dimension(kts:kte) :: pres, pdel, dzq, ncnuc, exner, inv_exner, &
+         inv_lcldm, inv_icldm, inv_rcldm, xxlv, xxls, xlf
 
     real(rtype), intent(inout), dimension(kts:kte) :: t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, &
          acn, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, qc_incld, qr_incld, qitot_incld, &
@@ -1060,10 +1061,10 @@ contains
   !==========================================================================================!
 
   SUBROUTINE p3_main(qc,nc,qr,nr,th,qv,dt,qitot,qirim,nitot,birim,   &
-       pres,dzq,ncnuc,naai,qc_relvar,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
-       diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc, &
+       pres,dzq,ncnuc,naai,qc_relvar,it,prt_liq,prt_sol,its,ite,kts,kte,diag_effc,     &
+       diag_effi,diag_rhoi,log_predictNc, &
        pdel,exner,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm,  &
-       pratot,prctot,p3_tend_out,mu_c,lamc,liq_ice_exchange,vap_liq_exchange, &
+       p3_tend_out,mu_c,lamc,liq_ice_exchange,vap_liq_exchange, &
        vap_ice_exchange,col_location)
 
     !----------------------------------------------------------------------------------------!
@@ -1105,11 +1106,8 @@ contains
 
     real(rtype), intent(out),   dimension(its:ite)              :: prt_liq    ! precipitation rate, liquid       m s-1
     real(rtype), intent(out),   dimension(its:ite)              :: prt_sol    ! precipitation rate, solid        m s-1
-    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_ze    ! equivalent reflectivity          dBZ
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_effc  ! effective radius, cloud          m
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_effi  ! effective radius, ice            m
-    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_vmi   ! mass-weighted fall speed of ice  m s-1
-    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_di    ! mean diameter of ice             m
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_rhoi  ! bulk density of ice              kg m-3
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: mu_c       ! Size distribution shape parameter for radiation
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: lamc       ! Size distribution slope parameter for radiation
@@ -1130,8 +1128,6 @@ contains
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: prer_evap  ! evaporation of rain
     real(rtype), intent(out),   dimension(its:ite,kts:kte+1)    :: rflx       ! grid-box average rain flux (kg m^-2 s^-1) pverp
     real(rtype), intent(out),   dimension(its:ite,kts:kte+1)    :: sflx       ! grid-box average ice/snow flux (kg m^-2 s^-1) pverp
-    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: pratot     ! accretion of cloud by rain
-    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: prctot     ! autoconversion of cloud to rain
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: liq_ice_exchange ! sum of liq-ice phase change tendenices
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: vap_liq_exchange ! sum of vap-liq phase change tendenices
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: vap_ice_exchange ! sum of vap-ice phase change tendenices
@@ -1148,6 +1144,13 @@ contains
     !
     !----- Local variables and parameters:  -------------------------------------------------!
     !
+
+    ! These outputs are no longer provided by p3_main.
+    real(rtype), dimension(its:ite,kts:kte) :: diag_ze  ! equivalent reflectivity          dBZ
+    real(rtype), dimension(its:ite,kts:kte) :: diag_vmi ! mass-weighted fall speed of ice  m s-1
+    real(rtype), dimension(its:ite,kts:kte) :: diag_di  ! mean diameter of ice             m
+    real(rtype), dimension(its:ite,kts:kte) :: pratot   ! accretion of cloud by rain
+    real(rtype), dimension(its:ite,kts:kte) :: prctot   ! autoconversion of cloud to rain
 
     real(rtype), dimension(its:ite,kts:kte) :: mu_r  ! shape parameter of rain
     real(rtype), dimension(its:ite,kts:kte) :: t     ! temperature at the beginning of the microhpysics step [K]
@@ -1266,10 +1269,13 @@ contains
 !      if (debug_ON) call check_values(qv,T,i,it,debug_ABORT,100,col_location)
 
        call p3_main_part1(kts, kte, kbot, ktop, kdir, log_predictNc, dt, &
-            pres(i,:), pdel(i,:), dzq(i,:), ncnuc(i,:), exner(i,:), inv_exner(i,:), inv_lcldm(i,:), inv_icldm(i,:), inv_rcldm(i,:), xxlv(i,:), xxls(i,:), xlf(i,:), &
-            t(i,:), rho(i,:), inv_rho(i,:), qvs(i,:), qvi(i,:), supi(i,:), rhofacr(i,:), rhofaci(i,:), acn(i,:), qv(i,:), th(i,:), qc(i,:), nc(i,:), qr(i,:), nr(i,:), &
-            qitot(i,:), nitot(i,:), qirim(i,:), birim(i,:), qc_incld(i,:), qr_incld(i,:), qitot_incld(i,:), qirim_incld(i,:), &
-            nc_incld(i,:), nr_incld(i,:), nitot_incld(i,:), birim_incld(i,:), log_nucleationPossible, log_hydrometeorsPresent)
+            pres(i,:), pdel(i,:), dzq(i,:), ncnuc(i,:), exner(i,:), inv_exner(i,:), &
+            inv_lcldm(i,:), inv_icldm(i,:), inv_rcldm(i,:), xxlv(i,:), xxls(i,:), xlf(i,:), &
+            t(i,:), rho(i,:), inv_rho(i,:), qvs(i,:), qvi(i,:), supi(i,:), rhofacr(i,:), &
+            rhofaci(i,:), acn(i,:), qv(i,:), th(i,:), qc(i,:), nc(i,:), qr(i,:), nr(i,:), &
+            qitot(i,:), nitot(i,:), qirim(i,:), birim(i,:), qc_incld(i,:), qr_incld(i,:), &
+            qitot_incld(i,:), qirim_incld(i,:), nc_incld(i,:), nr_incld(i,:), &
+            nitot_incld(i,:), birim_incld(i,:), log_nucleationPossible, log_hydrometeorsPresent)
 
 !      if (debug_ON) then
 !         tmparr1(i,:) = th(i,:)*inv_exner(i,:)!(pres(i,:)*1.e-5)**(rd*inv_cp)
@@ -1280,12 +1286,17 @@ contains
        if (.not. (log_nucleationPossible .or. log_hydrometeorsPresent)) goto 333
 
        call p3_main_part2(kts, kte, kbot, ktop, kdir, log_predictNc, dt, odt, &
-            pres(i,:), pdel(i,:), dzq(i,:), ncnuc(i,:), exner(i,:), inv_exner(i,:), inv_lcldm(i,:), inv_icldm(i,:), inv_rcldm(i,:), naai(i,:), qc_relvar(i,:), icldm(i,:), lcldm(i,:), rcldm(i,:),&
-            t(i,:), rho(i,:), inv_rho(i,:), qvs(i,:), qvi(i,:), supi(i,:), rhofacr(i,:), rhofaci(i,:), acn(i,:), qv(i,:), th(i,:), qc(i,:), nc(i,:), qr(i,:), nr(i,:), qitot(i,:), nitot(i,:), &
-            qirim(i,:), birim(i,:), xxlv(i,:), xxls(i,:), xlf(i,:), qc_incld(i,:), qr_incld(i,:), qitot_incld(i,:), qirim_incld(i,:), nc_incld(i,:), nr_incld(i,:), &
-            nitot_incld(i,:), birim_incld(i,:), mu_c(i,:), nu(i,:), lamc(i,:), cdist(i,:), cdist1(i,:), cdistr(i,:), mu_r(i,:), lamr(i,:), logn0r(i,:), cmeiout(i,:), prain(i,:), &
-            nevapr(i,:), prer_evap(i,:), vap_liq_exchange(i,:), vap_ice_exchange(i,:), liq_ice_exchange(i,:), pratot(i,:), &
-            prctot(i,:), p3_tend_out(i,:,:), log_hydrometeorsPresent)
+            pres(i,:), pdel(i,:), dzq(i,:), ncnuc(i,:), exner(i,:), inv_exner(i,:), &
+            inv_lcldm(i,:), inv_icldm(i,:), inv_rcldm(i,:), naai(i,:), qc_relvar(i,:), &
+            icldm(i,:), lcldm(i,:), rcldm(i,:), t(i,:), rho(i,:), inv_rho(i,:), qvs(i,:), &
+            qvi(i,:), supi(i,:), rhofacr(i,:), rhofaci(i,:), acn(i,:), qv(i,:), th(i,:), &
+            qc(i,:), nc(i,:), qr(i,:), nr(i,:), qitot(i,:), nitot(i,:), qirim(i,:), &
+            birim(i,:), xxlv(i,:), xxls(i,:), xlf(i,:), qc_incld(i,:), qr_incld(i,:), &
+            qitot_incld(i,:), qirim_incld(i,:), nc_incld(i,:), nr_incld(i,:), nitot_incld(i,:), &
+            birim_incld(i,:), mu_c(i,:), nu(i,:), lamc(i,:), cdist(i,:), cdist1(i,:), &
+            cdistr(i,:), mu_r(i,:), lamr(i,:), logn0r(i,:), cmeiout(i,:), prain(i,:), &
+            nevapr(i,:), prer_evap(i,:), vap_liq_exchange(i,:), vap_ice_exchange(i,:), &
+            liq_ice_exchange(i,:), pratot(i,:), prctot(i,:), p3_tend_out(i,:,:), log_hydrometeorsPresent)
 
        ! measure microphysics processes tendency output
        p3_tend_out(i,:,42) = ( qc(i,:)    - qc_old(i,:) ) * odt    ! Liq. microphysics tendency, measure
@@ -1637,8 +1648,8 @@ contains
 
        call report_error_info('Something went wrong', 'polysvp1')
        write(err_msg,*)'** polysvp1 i_type must be 0 or 1 but is: ', &
-            i_type,' temperature is:',t,' in file: ',__FILE__,' at line:',__LINE__
-
+            i_type,' temperature is:',t,' in file: ',__FILE__, &
+            ' at line:',__LINE__
        call endscreamrun(err_msg)
     endif
 
@@ -2112,12 +2123,14 @@ contains
        ! check unrealistic values or NANs for T and Qv
        if (.not.(T(k)>T_low .and. T(k)<T_high)) then
           write(iulog,'(a60,i5,a2,i8,a2,f8.4,a2,f8.4,a2,i4,a2,i8,a2,e16.8)') &
-             '** WARNING IN P3_MAIN -- src, gcol, lon, lat, lvl, tstep, T:',source_ind,', ',int(col_loc(1)),', ',col_loc(2),', ',col_loc(3),', ',k,', ',timestepcount,', ',T(k)
+               '** WARNING IN P3_MAIN -- src, gcol, lon, lat, lvl, tstep, T:',source_ind,', ', &
+               int(col_loc(1)),', ',col_loc(2),', ',col_loc(3),', ',k,', ',timestepcount,', ',T(k)
           trap = .true.
        endif
        if (.not.(Qv(k)>=0. .and. Qv(k)<Q_high)) then
           write(iulog,'(a60,i5,a2,i8,a2,f8.4,a2,f8.4,a2,i4,a2,i8,a2,e16.8)') &
-             '** WARNING IN P3_MAIN -- src, gcol, lon, lat, lvl, tstep, Qv:',source_ind,', ',int(col_loc(1)),', ',col_loc(2),', ',col_loc(3),', ',k,', ',timestepcount,', ',Qv(k)
+               '** WARNING IN P3_MAIN -- src, gcol, lon, lat, lvl, tstep, Qv:',source_ind,', ', &
+               int(col_loc(1)),', ',col_loc(2),', ',col_loc(3),', ',k,', ',timestepcount,', ',Qv(k)
           !trap = .true.  !note, tentatively no trap, since Qv could be negative passed in to mp
        endif
 
@@ -2882,7 +2895,8 @@ subroutine back_to_cell_average(lcldm,rcldm,icldm,                         &
    real(rtype), intent(in) :: icldm
 
    real(rtype), intent(inout) :: qcacc, qrevp, qcaut, ncacc, ncslf, ncautc, nrslf, nrevp, ncautr
-   real(rtype), intent(inout) :: qisub, nrshdr, qcheti, qrcol, qcshd, qimlt, qccol, qrheti, nimlt, nccol, ncshdc, ncheti, nrcol, nislf, qidep
+   real(rtype), intent(inout) :: qisub, nrshdr, qcheti, qrcol, qcshd, qimlt, qccol, qrheti, nimlt, &
+        nccol, ncshdc, ncheti, nrcol, nislf, qidep
    real(rtype), intent(inout) :: nrheti, nisub, qinuc, ninuc, qiberg
 
    real(rtype) :: ir_cldm, il_cldm, lr_cldm
@@ -3464,7 +3478,8 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
             enddo kloop_sedi_c2
 
-            call generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum, inv_dzq, inv_rho, rho, num_arrays, vs, fluxes, qnr)
+            call generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, &
+                 prt_accum, inv_dzq, inv_rho, rho, num_arrays, vs, fluxes, qnr)
 
             !Update _incld values with end-of-step cell-ave values
             !Note that lcldm is set in interface to have min of mincld=1e-4
@@ -3496,7 +3511,8 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
                Co_max = max(Co_max, V_qc(k)*dt_left*inv_dzq(k))
             enddo kloop_sedi_c1
 
-            call generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum, inv_dzq, inv_rho, rho, 1, vs, fluxes, qnr)
+            call generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, &
+                 prt_accum, inv_dzq, inv_rho, rho, 1, vs, fluxes, qnr)
 
             !Update _incld values with end-of-step cell-ave values
             !Note that lcldm is set in interface to have min of mincld=1e-4
@@ -3617,7 +3633,8 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
          enddo kloop_sedi_r1
 
-         call generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum, inv_dzq, inv_rho, rho, num_arrays, vs, fluxes, qnr)
+         call generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, &
+              prt_accum, inv_dzq, inv_rho, rho, num_arrays, vs, fluxes, qnr)
 
          !-- AaronDonahue, rflx output
          do k = k_qxbot,k_qxtop,kdir
@@ -3812,7 +3829,8 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
 
          enddo kloop_sedi_i1
 
-         call generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum, inv_dzq, inv_rho, rho, num_arrays, vs, fluxes, qnr)
+         call generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, &
+              dt_left, prt_accum, inv_dzq, inv_rho, rho, num_arrays, vs, fluxes, qnr)
 
          !update _incld variables
          !Note that icldm is set in interface to have min of mincld=1e-4
@@ -3833,8 +3851,8 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
 
 end subroutine ice_sedimentation
 
-subroutine generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum, inv_dzq, inv_rho, rho, &
-     num_arrays, vs, fluxes, qnx)
+subroutine generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, &
+     prt_accum, inv_dzq, inv_rho, rho, num_arrays, vs, fluxes, qnx)
 
    implicit none
 

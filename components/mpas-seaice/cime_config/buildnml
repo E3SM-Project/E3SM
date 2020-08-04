@@ -43,6 +43,8 @@ def buildnml(case, caseroot, compname):
     run_type         = case.get_value("RUN_TYPE")
     run_refdate      = case.get_value("RUN_REFDATE")
     run_reftod       = case.get_value("RUN_REFTOD")
+    ncpl_base_period = case.get_value("NCPL_BASE_PERIOD")
+    atm_ncpl         = case.get_value("ATM_NCPL")
     stream_name      = 'streams.seaice'
 
     mpassiconf_dir = os.path.join(casebuild, "mpassiconf")
@@ -177,6 +179,11 @@ def buildnml(case, caseroot, compname):
         grid_prefix += 'seaice.ARRM60to10'
         decomp_date += '180723'
         decomp_prefix += 'mpas-cice.graph.info.'
+    elif ice_grid == 'oARRM60to10_ICG':
+        grid_date += '200422'
+        grid_prefix += 'seaice.ARRM60to10.restart_grizzly'
+        decomp_date += '180723'
+        decomp_prefix += 'mpas-cice.graph.info.'
     elif ice_grid == 'oARRM60to6':
         grid_date += '180803'
         grid_prefix += 'seaice.ARRM60to6'
@@ -233,9 +240,19 @@ def buildnml(case, caseroot, compname):
         # create mpassiconf/cesm_namelist
         # -----------------------------------------------------
 
+        if ncpl_base_period == 'day': 
+            config_dt = ( 3600 * 24 ) // atm_ncpl
+        if ncpl_base_period == 'hour': 
+            config_dt =  3600  // atm_ncpl
+
+        config_dt = float(config_dt)
+        infile_text = ""
+        infile_text += " config_dt = {} \n".format(config_dt)
+
         create_namelist_infile(case,
                                "{}/user_nl_mpassi{}".format(caseroot, inst_string),
-                               "{}/cesm_namelist".format(mpassiconf_dir))
+                               "{}/cesm_namelist".format(mpassiconf_dir),
+                               infile_text=infile_text)
 
         # -----------------------------------------------------
         # call build-namelist- output will go in $CASEBUILD/mpassiconf/mpassi_in

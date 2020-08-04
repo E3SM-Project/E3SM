@@ -690,7 +690,7 @@ contains
                                     debug_level, vfile_int, vform, vfile_mid, &
                                     topology, dt_remap_factor, dt_tracer_factor,&
                                     sub_case, limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
-                                    hypervis_subcycle_q, moisture, use_moisture, hypervis_subcycle_tom
+                                    hypervis_subcycle_q, hypervis_subcycle_tom
     use global_norms_mod,     only: test_global_integral, print_cfl
     use hybvcoord_mod,        only: hvcoord_t
     use parallel_mod,         only: parallel_t, haltmp, syncmp, abortmp
@@ -778,10 +778,6 @@ contains
     if (topology == "cube") then
        call test_global_integral(elem, hybrid,nets,nete)
     end if
-
-    ! should we assume Q(:,:,:,1) has water vapor:
-    use_moisture = ( moisture /= "dry") 
-    if (qsize<1) use_moisture = .false.  
 
 
     ! compute most restrictive dt*nu for use by variable res viscosity:

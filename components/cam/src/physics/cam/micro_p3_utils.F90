@@ -276,8 +276,10 @@ module micro_p3_utils
           qr_incld = 0._rtype
           nr_incld = 0._rtype
        end if
-       if (qc_incld.gt.incloud_limit .or.qitot_incld.gt.incloud_limit .or. qr_incld.gt.precip_limit .or.birim_incld.gt.incloud_limit) then
-!          write(errmsg,'(a3,i4,3(a5,1x,e16.8,1x))') 'k: ', k, ', qc:',qc_incld, ', qi:',qitot_incld,', qr:',qr_incld
+       if (qc_incld.gt.incloud_limit .or.qitot_incld.gt.incloud_limit &
+            .or. qr_incld.gt.precip_limit .or.birim_incld.gt.incloud_limit) then
+          !write(errmsg,'(a3,i4,3(a5,1x,e16.8,1x))') 'k: ', k, ', qc:',qc_incld, &
+          !     ', qi:',qitot_incld,', qr:',qr_incld
           qc_incld    = min(qc_incld,incloud_limit)
           qitot_incld = min(qitot_incld,incloud_limit)
           birim_incld = min(birim_incld,incloud_limit)

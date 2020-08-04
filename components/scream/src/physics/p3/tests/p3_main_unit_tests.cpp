@@ -500,11 +500,12 @@ static void run_bfb_p3_main()
     P3MainData& d = isds_cxx[i];
     d.transpose<util::TransposeDirection::c2f>();
     p3_main_f(
-      d.qc, d.nc, d.qr, d.nr, d.th, d.qv, d.dt, d.qitot, d.qirim, d.nitot, d.birim,
-      d.pres, d.dzq, d.ncnuc, d.naai, d.qc_relvar, d.it, d.prt_liq, d.prt_sol, d.its, d.ite, d.kts, d.kte, d.diag_ze, d.diag_effc,
-      d.diag_effi, d.diag_vmi, d.diag_di, d.diag_rhoi, d.log_predictNc,
-      d.pdel, d.exner, d.cmeiout, d.prain, d.nevapr, d.prer_evap, d.rflx, d.sflx, d.rcldm, d.lcldm, d.icldm,
-      d.pratot, d.prctot, d.mu_c, d.lamc, d.liq_ice_exchange, d.vap_liq_exchange, d.vap_ice_exchange);
+      d.qc, d.nc, d.qr, d.nr, d.th, d.qv, d.dt, d.qitot, d.qirim, d.nitot,
+      d.birim, d.pres, d.dzq, d.ncnuc, d.naai, d.qc_relvar, d.it, d.prt_liq,
+      d.prt_sol, d.its, d.ite, d.kts, d.kte, d.diag_effc, d.diag_effi,
+      d.diag_rhoi, d.log_predictNc, d.pdel, d.exner, d.cmeiout, d.prain,
+      d.nevapr, d.prer_evap, d.rflx, d.sflx, d.rcldm, d.lcldm, d.icldm, d.mu_c,
+      d.lamc, d.liq_ice_exchange, d.vap_liq_exchange, d.vap_ice_exchange);
     d.transpose<util::TransposeDirection::f2c>();
   }
 
@@ -520,11 +521,8 @@ static void run_bfb_p3_main()
       REQUIRE(isds_fortran[i].birim[t]            == isds_cxx[i].birim[t]);
       REQUIRE(isds_fortran[i].qv[t]               == isds_cxx[i].qv[t]);
       REQUIRE(isds_fortran[i].th[t]               == isds_cxx[i].th[t]);
-      REQUIRE(isds_fortran[i].diag_ze[t]          == isds_cxx[i].diag_ze[t]);
       REQUIRE(isds_fortran[i].diag_effc[t]        == isds_cxx[i].diag_effc[t]);
       REQUIRE(isds_fortran[i].diag_effi[t]        == isds_cxx[i].diag_effi[t]);
-      REQUIRE(isds_fortran[i].diag_vmi[t]         == isds_cxx[i].diag_vmi[t]);
-      REQUIRE(isds_fortran[i].diag_di[t]          == isds_cxx[i].diag_di[t]);
       REQUIRE(isds_fortran[i].diag_rhoi[t]        == isds_cxx[i].diag_rhoi[t]);
       REQUIRE(isds_fortran[i].mu_c[t]             == isds_cxx[i].mu_c[t]);
       REQUIRE(isds_fortran[i].lamc[t]             == isds_cxx[i].lamc[t]);
@@ -532,8 +530,6 @@ static void run_bfb_p3_main()
       REQUIRE(isds_fortran[i].prain[t]            == isds_cxx[i].prain[t]);
       REQUIRE(isds_fortran[i].nevapr[t]           == isds_cxx[i].nevapr[t]);
       REQUIRE(isds_fortran[i].prer_evap[t]        == isds_cxx[i].prer_evap[t]);
-      REQUIRE(isds_fortran[i].pratot[t]           == isds_cxx[i].pratot[t]);
-      REQUIRE(isds_fortran[i].prctot[t]           == isds_cxx[i].prctot[t]);
       REQUIRE(isds_fortran[i].liq_ice_exchange[t] == isds_cxx[i].liq_ice_exchange[t]);
       REQUIRE(isds_fortran[i].vap_liq_exchange[t] == isds_cxx[i].vap_liq_exchange[t]);
       REQUIRE(isds_fortran[i].vap_ice_exchange[t] == isds_cxx[i].vap_ice_exchange[t]);
