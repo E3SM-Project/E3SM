@@ -90,8 +90,9 @@ module interpolate_mod
 #ifndef CAM
   public :: var_is_vector_uvar, var_is_vector_vvar
 #endif
-  public :: cube_facepoint_ne
-  public :: cube_facepoint_unstructured
+  public :: find_ref_coordinates
+  !public :: cube_facepoint_ne             ! use find_ref_coordinates
+  !public :: cube_facepoint_unstructured   ! use find_ref_coordinates
   public :: parametric_coordinates
 
   public :: interpolate_tracers
@@ -99,8 +100,6 @@ module interpolate_mod
   public :: minmax_tracers
   public :: interpolate_2d
   public :: interpolate_create
-  public :: point_inside_quad
-
 
 
   interface interpolate_scalar
@@ -119,8 +118,13 @@ module interpolate_mod
   ! gridtype = 3       equally spaced, no poles (FV staggered velocity)
   ! Seven possible history files, last one is inithist and should be native grid
 #ifndef CAM
+#ifdef PIO_INTERP
   logical, public :: interpolate_analysis(8) = (/.true.,.false.,.false.,.false.,.false.,.false.,.false.,.false./)
+#else
+  logical, public :: interpolate_analysis(8) = .false.
 #endif
+#endif
+
   integer :: nlat,nlon
   real (kind=real_kind), pointer, public   :: lat(:)     => NULL()
   real (kind=real_kind), pointer, public   :: lon(:)     => NULL()
@@ -726,144 +730,6 @@ contains
 
 
 !
-! find element containing given point, useing HOMME's standard
-! equi-angular gnomonic map.
-! note that with this map, only coordinate lines are great circle arcs
-!
-  function point_inside_equiangular(elem, sphere, sphere_xyz) result(inside)
-    implicit none
-    type (spherical_polar_t), intent(in)     :: sphere
-    type (cartesian3D_t),     intent(in)    :: sphere_xyz
-    type (element_t)        , intent(in)     :: elem
-    logical                              :: inside, inside2
-    integer               :: i,j
-    type (cartesian2D_t) :: corners(4),sphere_xy,cart
-    type (cartesian3D_t) :: corners_xyz(4),center,a,b,cross(4)
-    real (kind=real_kind) :: yp(4), y, elem_diam,dotprod
-    real (kind=real_kind) :: xp(4), x, xc,yc
-    real (kind=real_kind) :: tol_inside
-    real (kind=real_kind) :: d1,d2
-
-    type (spherical_polar_t)    :: sphere_tmp
-
-    inside = .false.
-
-
-    ! first check if point is near the element:
-    corners_xyz(:) = elem%corners3D(:)
-    elem_diam = max( distance(corners_xyz(1),corners_xyz(3)), &
-         distance(corners_xyz(2),corners_xyz(4)) )
-
-    center%x = sum(corners_xyz(1:4)%x)/4
-    center%y = sum(corners_xyz(1:4)%y)/4
-    center%z = sum(corners_xyz(1:4)%z)/4
-    if ( distance(center,sphere_xyz) > 1.0*elem_diam ) return
-
-    tol_inside = 1e-10*elem_diam**2
-    ! the point is close to the element, so project both to cubed sphere
-    ! and perform contour integral
-    sphere_xy=sphere2cubedsphere(sphere,elem%FaceNum)
-    x = sphere_xy%x
-    y = sphere_xy%y
-    do i=1,4
-      xp(i) = elem%corners(i)%x
-      yp(i) = elem%corners(i)%y
-    end do
-
-
-    if (debug) then
-       print *,'point: ',x,y,elem%FaceNum
-       print *,'element:'
-       write(*,'(a,4e16.8,a)') 'x=[',xp(1:4),']'
-       write(*,'(a,4e16.8,a)') 'y=[',yp(1:4),']'
-
-       ! first check if centroid is in this element (sanity check)
-       sphere_tmp=change_coordinates(center)
-       sphere_xy=sphere2cubedsphere(sphere_tmp,elem%FaceNum)
-       xc=sphere_xy%x
-       yc=sphere_xy%y
-       print *,'cross product with centroid: all numbers should be negative'
-       j = 4
-       do i=1,4
-          print *,i,(xc-xp(j))*(yp(i)-yp(j))  - (yc-yp(j))*(xp(i)-xp(j))
-          j = i  ! within this loopk j = i-1
-       end do
-
-       print *,'cross product with search point'
-       j = 4
-       do i=1,4
-          print *,i,(x-xp(j))*(yp(i)-yp(j))  - (y-yp(j))*(xp(i)-xp(j))
-          j = i  ! within this loopk j = i-1
-       end do
-    endif
-
-    
-    j = 4
-    do i=1,4
-      ! a = x-xp(j), y-yp(j)
-      ! b = xp(i)-xp(j), yp(i)-yp(j)
-      ! compute a cross b:
-      if ( -( (x-xp(j))*(yp(i)-yp(j))  - (y-yp(j))*(xp(i)-xp(j))) > tol_inside ) then
-         return
-      endif
-      j = i  ! within this loopk j = i-1
-    end do
-    ! all cross products were negative, must be inside:
-    inside=.true.
-  end function point_inside_equiangular
-
-
-!
-! find if quad contains given point, with quad edges assumed to be great circle arcs
-! this will work with any map where straight lines are mapped to great circle arcs.
-! (thus it will fail on unstructured grids using the equi-angular gnomonic map)
-!
-  function point_inside_quad(corners_xyz, sphere_xyz) result(inside)
-    implicit none
-    type (cartesian3D_t),     intent(in)    :: sphere_xyz
-    type (cartesian3D_t)    , intent(in)    :: corners_xyz(4)
-    logical                              :: inside, inside2
-    integer               :: i,j,ii
-    type (cartesian2D_t) :: corners(4),sphere_xy,cart
-    type (cartesian3D_t) :: center,a,b,cross(4)
-    real (kind=real_kind) :: yp(4), y, elem_diam,dotprod
-    real (kind=real_kind) :: xp(4), x
-    real (kind=real_kind) :: d1,d2, tol_inside = 1e-12
-
-    type (spherical_polar_t)   :: sphere  ! debug
-
-    inside = .false.
-
-    ! first check if point is near the corners:
-    elem_diam = max( distance(corners_xyz(1),corners_xyz(3)), &
-         distance(corners_xyz(2),corners_xyz(4)) )
-
-    center%x = sum(corners_xyz(1:4)%x)/4
-    center%y = sum(corners_xyz(1:4)%y)/4
-    center%z = sum(corners_xyz(1:4)%z)/4
-    if ( distance(center,sphere_xyz) > 1.0*elem_diam ) return
-
-    j = 4
-    do i=1,4
-      ! outward normal to plane containing j->i edge:  corner(i) x corner(j)
-      ! sphere dot (corner(i) x corner(j) ) = negative if inside
-       cross(i)%x =  corners_xyz(i)%y*corners_xyz(j)%z - corners_xyz(i)%z*corners_xyz(j)%y
-       cross(i)%y =-(corners_xyz(i)%x*corners_xyz(j)%z - corners_xyz(i)%z*corners_xyz(j)%x)
-       cross(i)%z =  corners_xyz(i)%x*corners_xyz(j)%y - corners_xyz(i)%y*corners_xyz(j)%x
-       dotprod = cross(i)%x*sphere_xyz%x + cross(i)%y*sphere_xyz%y +&
-               cross(i)%z*sphere_xyz%z
-       j = i  ! within this loopk j = i-1
-
-       ! dot product is proportional to elem_diam. positive means outside,
-       ! but allow machine precision tolorence: 
-       if (dotprod > tol_inside*elem_diam) return 
-       !if (dotprod > 0) return 
-    end do
-    inside=.true.
-    return
-  end function point_inside_quad
-
-!
 ! find element containing given point, with element edges assumed to be great circle arcs
 ! this will work with any map where straight lines are mapped to great circle arcs.
 ! (thus it will fail on unstructured grids using the equi-angular gnomonic map)
@@ -972,6 +838,66 @@ contains
 
 
   !================================================
+  ! Interface to 
+  ! 
+  ! cube_facepoint_unstructured(): 
+  !      generic for all cases, uses Newton iteration
+  ! cube_facepoint_ne()
+  !      Original Nair routine, for cube sphere meshes with cubed_sphere_map=0
+  !      faster analytic solution
+  !      
+  !================================================
+  subroutine find_ref_coordinates(sphere,elem,ie,gid,cart)
+    !
+    ! search elements on this MPI task to see if they contain 'sphere'
+    ! input: sphere   lat/lon point
+    ! output:  ie      local elem index or -1 if point not found
+    !          gid     global id 
+    !          cart    reference element coordinates
+    !
+    implicit none
+    type (element_t)     , intent(in), target :: elem(:)
+    integer :: ie,gid
+    type (spherical_polar_t) :: sphere
+    type (cartesian2D_t)     :: cart
+
+    ! local
+    integer ii
+
+    ie = -1  ! assume not on this processor
+
+    if (cubed_sphere_map==0 .and. ne>0) then
+       ! analytic algorithm for cubed sphere grids with equi-angle gnomonic map
+       call cube_facepoint_ne(sphere, ne, cart, gid)
+       ! the sphere point belongs to the element number on face = face_no.
+       ! do I own this element?
+       if (gid /= -1) then
+          do ii=1,nelemd
+             if (gid == elem(ii)%vertex%number) then
+                ie  = ii
+                exit
+             endif
+          enddo
+          if (ie==-1) gid=-1  ! we dont own this element
+       endif
+    else
+       call cube_facepoint_unstructured(sphere, cart, ie, elem)
+       if (ie /= -1) then
+          ! If points are outside element but within tolerance, move to boundary
+          if (cart%x + 1.0d0.le.0.0d0) cart%x = -1.0d0
+          if (cart%x - 1.0d0.ge.0.0d0) cart%x = 1.0d0
+          if (cart%y + 1.0d0.le.0.0d0) cart%y = -1.0d0
+          if (cart%y - 1.0d0.ge.0.0d0) cart%y = 1.0d0
+          
+          gid = elem(ie)%vertex%number
+       endif
+    endif
+  end subroutine
+
+
+
+
+  !================================================
   !  (Nair) Cube face index and local coordinates
   !================================================
 
@@ -1062,14 +988,7 @@ contains
     maxglobalid = number
 !    print *,'WARNING: using GC map'
     do ii = 1,nelemd
-       ! for equiangular gnomonic map:
-       ! unstructed grid element edges are NOT great circles
-       if (cubed_sphere_map==0) then
-          found = point_inside_equiangular(elem(ii), sphere, sphere_xyz)
-       else 
-          ! assume element edges are great circle arcs:
-          found = point_inside_gc(elem(ii), sphere_xyz)
-       endif
+       found = point_inside_gc(elem(ii), sphere_xyz)
 
        if (found) then
           !get current global id
@@ -1248,42 +1167,13 @@ contains
        do i=1,nlon
           sphere%lat=lat(j)
           sphere%lon=lon(i)
+          call find_ref_coordinates(sphere,elem,local_elem_num(j,i),local_elem_gid(j,i),cart_vec(j,i))
 
-          !debug=.false.
-          !if (j==18 .and. i==95) debug=.true.
-          number = -1
-          if ( (cubed_sphere_map /= 0) .or. MeshUseMeshFile) then
-             call cube_facepoint_unstructured(sphere, cart, number, elem)
-             if (number /= -1) then
-                ! If points are outside element but within tolerance, move to boundary
-                if (cart%x + 1.0d0.le.0.0d0) cart%x = -1.0d0
-                if (cart%x - 1.0d0.ge.0.0d0) cart%x = 1.0d0
-                if (cart%y + 1.0d0.le.0.0d0) cart%y = -1.0d0
-                if (cart%y - 1.0d0.ge.0.0d0) cart%y = 1.0d0
-
-                local_elem_num(j,i) = number
-                local_elem_gid(j,i) = elem(number)%vertex%number
-                cart_vec(j,i)    = cart  ! local element coordiante of interpolation point
-             endif
-          else
-             call cube_facepoint_ne(sphere, ne, cart, number)
-             ! the sphere point belongs to the element number on face = face_no.
-             ! do I own this element?
-             if (number /= -1) then
-                do ii=1,nelemd
-                   if (number == elem(ii)%vertex%number) then
-                      local_elem_gid(j,i) = number
-                      local_elem_num(j,i) = ii
-                      cart_vec(j,i)        = cart   ! local element coordinate found above
-                      exit
-                   endif
-                enddo
-             endif
-          endif
           ii=local_elem_num(j,i)
           if (ii /= -1) then
              ! compute error: map 'cart' back to sphere and compare with original
              ! interpolation point:
+             cart=cart_vec(j,i)
              sphere2_xyz = spherical_to_cart( ref2sphere(cart%x,cart%y,     &
                   elem(ii)%corners3D,cubed_sphere_map,elem(ii)%corners,elem(ii)%facenum ))
              sphere_xyz = spherical_to_cart(sphere)
@@ -1319,7 +1209,11 @@ contains
                   print *,'Error: point not claimed by any element j,i,lat(j),lon(i)=',j,i,lat(j),lon(i)
           else if (local_elem_gid(j,i) == global_elem_gid(j,i)  ) then
              ii = local_elem_num(j,i)
-             interpdata(ii)%n_interp = interpdata(ii)%n_interp + 1
+             if (ii==-1) then
+                print *,'Error: interpolation inconsistency, ignoring point',i,j
+             else
+                interpdata(ii)%n_interp = interpdata(ii)%n_interp + 1
+             endif
           endif
        end do
     end do
