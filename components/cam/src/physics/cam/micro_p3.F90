@@ -59,7 +59,7 @@ module micro_p3
   ! Bit-for-bit math functions.
 #ifdef SCREAM_CONFIG_IS_CMAKE
   use physics_share_f2c, only: cxx_pow, cxx_sqrt, cxx_cbrt, cxx_gamma, cxx_log, &
-                                 cxx_log10, cxx_exp
+                                 cxx_log10, cxx_exp, cxx_tanh
 #endif
 
   implicit none
@@ -1547,7 +1547,7 @@ contains
        ! (good for 123 < T < 332 K)
        !For some reason, we cannot add line breaks if we use "bfb_exp", storing experssion in "tmp"
        tmp = lq(1) - (lq(2) / t) - (lq(3) * logt) + (lq(4) * t) + &
-            (tanh(lq(5) * (t - lq(6))) * (lq(7) - (lq(8) / t) - &
+            (bfb_tanh(lq(5) * (t - lq(6))) * (lq(7) - (lq(8) / t) - &
             (lq(9) * logt) + lq(10) * t))
        MurphyKoop_svp = bfb_exp(tmp)
     else
@@ -3454,7 +3454,7 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
                   !bounds by modifying nc_incld. The next line maintains consistency
                   !between nc_incld and nc
                   nc(k) = nc_incld(k)*lcldm(k)
-                  
+
                   dum = 1._rtype / bfb_pow(lamc(k), bcn)
                   V_qc(k) = acn(k)*bfb_gamma(4._rtype+bcn+mu_c(k))*dum/(bfb_gamma(mu_c(k)+4._rtype))
                   V_nc(k) = acn(k)*bfb_gamma(1._rtype+bcn+mu_c(k))*dum/(bfb_gamma(mu_c(k)+1._rtype))
@@ -3483,12 +3483,12 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
                qc_notsmall_c1: if (qc_incld(k)>qsmall) then
                   call get_cloud_dsd2(qc_incld(k),nc_incld(k),mu_c(k),rho(k),nu,dnu,   &
                        lamc(k),tmp1,tmp2,lcldm(k))
-                  
+
                   !get_cloud_dsd2 keeps the drop-size distribution within reasonable
                   !bounds by modifying nc_incld. The next line maintains consistency
                   !between nc_incld and nc
                   nc(k) = nc_incld(k)*lcldm(k)
-                  
+
                   dum = 1._rtype / bfb_pow(lamc(k), bcn)
                   V_qc(k) = acn(k)*bfb_gamma(4._rtype+bcn+mu_c(k))*dum/(bfb_gamma(mu_c(k)+4._rtype))
                endif qc_notsmall_c1
@@ -3503,7 +3503,7 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
             !so dividing by it is fine.
             qc_incld(:) = qc(:)/lcldm(:)
             nc_incld(:) = nc(:)/lcldm(:)
-            
+
          enddo substep_sedi_c1
 
       endif two_moment
@@ -3606,9 +3606,9 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
                     mu_r(k), lamr(k), V_qr(k), V_nr(k))
 
                !in compute_rain_fall_velocity, get_rain_dsd2 keeps the drop-size
-               !distribution within reasonable bounds by modifying nr_incld. 
+               !distribution within reasonable bounds by modifying nr_incld.
                !The next line maintains consistency between nr_incld and nr.
-               nr = nr_incld*rcldm 
+               nr(k) = nr_incld(k)*rcldm(k)
 
             endif qr_notsmall_r1
 
@@ -3629,7 +3629,7 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
          !so dividing by it is fine.
          qr_incld(:) = qr(:)/rcldm(:)
          nr_incld(:) = nr(:)/rcldm(:)
-         
+
       enddo substep_sedi_r
 
       prt_liq = prt_liq + prt_accum*inv_rhow*odt
@@ -3821,7 +3821,7 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
          nitot_incld(:) = nitot(:)/icldm(:)
          qirim_incld(:) = qirim(:)/icldm(:)
          birim_incld(:) = birim(:)/icldm(:)
-         
+
       enddo substep_sedi_i
 
       prt_sol = prt_sol + prt_accum*inv_rhow*odt
