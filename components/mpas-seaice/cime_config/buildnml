@@ -240,10 +240,14 @@ def buildnml(case, caseroot, compname):
         # create mpassiconf/cesm_namelist
         # -----------------------------------------------------
 
-        if ncpl_base_period == 'day': 
+        if ncpl_base_period == 'year':
+            config_dt = ( 3600 * 24 * 365 ) // atm_ncpl
+        elif ncpl_base_period == 'day':
             config_dt = ( 3600 * 24 ) // atm_ncpl
-        if ncpl_base_period == 'hour': 
-            config_dt =  3600  // atm_ncpl
+        elif ncpl_base_period == 'hour':
+            config_dt = ( 3600 ) // atm_ncpl
+        else:
+            logger.warning("WARNING: {} is being used".format(ncpl_base_period))
 
         config_dt = float(config_dt)
         infile_text = ""
