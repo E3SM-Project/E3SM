@@ -213,9 +213,6 @@ subroutine crm_physics_init(species_class)
 !---------------------------------------------------------------------------------------------------
    use physics_buffer,        only: pbuf_get_index
    use phys_control,          only: phys_getopts
-#ifdef MMF_SAM
-   use accelerate_crm_mod,    only: crm_accel_init
-#endif
    use crm_history,           only: crm_history_init
 #ifdef ECPP
    use module_ecpp_ppdriver2, only: papampollu_init
@@ -260,10 +257,6 @@ subroutine crm_physics_init(species_class)
 #endif
 
    call crm_history_init(species_class)
-
-#ifdef MMF_SAM
-   call crm_accel_init()
-#endif
 
    prec_dp_idx  = pbuf_get_index('PREC_DP')
    snow_dp_idx  = pbuf_get_index('SNOW_DP')
@@ -325,10 +318,10 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    use crm_input_module,       only: crm_input_type
    use crm_output_module,      only: crm_output_type, crm_output_initialize, crm_output_finalize
    use crm_ecpp_output_module, only: crm_ecpp_output_type
-#ifdef MMF_SAMXX
+
    use iso_c_binding, only: c_bool
    use phys_grid    , only: get_rlon_p, get_rlat_p, get_gcol_p  
-#endif
+   use spmd_utils,          only: masterproc
 
    real(r8),                        intent(in   ) :: ztodt            ! global model time increment
    type(physics_state),             intent(in   ) :: state            ! Global model state 
@@ -436,17 +429,15 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
 
    real(r8), dimension(pcols,crm_nz) :: crm_clear_rh
 
-#ifdef MMF_SAMXX
    real(crm_rknd), allocatable :: longitude0(:)
    real(crm_rknd), allocatable :: latitude0 (:)
-   real(crm_rknd), allocatable :: gcolp     (:)
+   integer       , allocatable :: gcolp     (:)
    real(crm_rknd)              :: crm_accel_factor
    logical                     :: use_crm_accel_tmp
    logical                     :: crm_accel_uv_tmp
    logical(c_bool)             :: use_crm_accel
    logical(c_bool)             :: crm_accel_uv
    integer                     :: igstep
-#endif
 
    !------------------------------------------------------------------------------------------------
    !------------------------------------------------------------------------------------------------
@@ -852,17 +843,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       if (.not.allocated(ptend%q)) write(*,*) '=== ptend%q not allocated ==='
       if (.not.allocated(ptend%s)) write(*,*) '=== ptend%s not allocated ==='
 
-#ifdef MMF_SAM
-
-      call t_startf ('crm_call')
-      call crm(lchnk, ncol, ztodt, pver,       &
-               crm_input, crm_state, crm_rad,  &
-               crm_ecpp_output, crm_output,    &
-               crm_clear_rh(1:ncol,:))
-      call t_stopf('crm_call')
-
-#elif defined(MMF_SAMXX)
-
       ! Load latitude, longitude, and unique column ID for all CRMs
       allocate(longitude0(ncol))
       allocate(latitude0 (ncol))
@@ -881,8 +861,36 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
                         crm_accel_uv_out     = crm_accel_uv_tmp)
       use_crm_accel = use_crm_accel_tmp
       crm_accel_uv = crm_accel_uv_tmp
+
+      if (masterproc) then
+        if (use_crm_accel) then
+#if !defined(sam1mom)
+          write(0,*) "CRM time step relaxation is only compatible with sam1mom microphysics"
+          call endrun('crm main')
+#endif
+          write(iulog, *) 'USING CRM MEAN STATE ACCELERATION'
+          write(iulog, *) 'crm_accel: use_crm_accel = ', use_crm_accel
+          write(iulog, *) 'crm_accel: crm_accel_factor = ', crm_accel_factor
+          write(iulog, *) 'crm_accel: crm_accel_uv = ', crm_accel_uv
+        endif
+      endif
+
       ! Load the nstep
       igstep = get_nstep()
+
+#ifdef MMF_SAM
+
+      call t_startf ('crm_call')
+
+      call crm(lchnk, ncol, ztodt, pver, &
+               crm_input, crm_state, crm_rad, &
+               crm_ecpp_output, crm_output, crm_clear_rh(1:ncol,:), &
+               latitude0, longitude0, gcolp, igstep, &
+               use_crm_accel_tmp, crm_accel_factor, crm_accel_uv_tmp)
+
+      call t_stopf('crm_call')
+
+#elif defined(MMF_SAMXX)
 
       call t_startf ('crm_call')
 
@@ -909,12 +917,12 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
                use_crm_accel, crm_accel_factor, crm_accel_uv)
 
       call t_stopf('crm_call')
+      
+#endif
 
       deallocate(longitude0)
       deallocate(latitude0 )
       deallocate(gcolp     )
-      
-#endif
 
       !---------------------------------------------------------------------------------------------
       ! Copy tendencies from CRM output to ptend

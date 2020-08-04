@@ -56,7 +56,7 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p, r
                             real *crm_input_tl_p, real *crm_input_qccl_p, real *crm_input_qiil_p, real *crm_input_ql_p, real *crm_input_tau00_p, 
                             real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_state_w_wind_p, real *crm_state_temperature_p, 
                             real *crm_state_qt_p, real *crm_state_qp_p, real *crm_state_qn_p, real *crm_rad_qrad_p, real *crm_output_timing_factor_p, 
-                            real *lat0_p, real *long0_p, real *gcolp_p, real *crm_output_cltot_p, real *crm_output_clhgh_p, real *crm_output_clmed_p,
+                            real *lat0_p, real *long0_p, int *gcolp_p, real *crm_output_cltot_p, real *crm_output_clhgh_p, real *crm_output_clmed_p,
                             real *crm_output_cllow_p);
                             
 
@@ -475,7 +475,7 @@ extern real1d crm_output_precsl;
 extern real3d crm_output_prec_crm; 
 extern real1d lat0; 
 extern real1d long0;
-extern real1d gcolp;
+extern int1d  gcolp;
 
 extern real factor_xy;
 extern real factor_xyt;

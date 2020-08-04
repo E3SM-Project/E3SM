@@ -5,7 +5,6 @@
 !   superparameterization.
 !
 ! PUBLIC SUBROUTINES:
-!   crm_accel_init: initialize quantities needed to apply MSA
 !   crm_accel_nstop: adjusts 'nstop' in crm_module based on crm_accel_factor
 !   accelerate_crm: calculates and applies MSA tendency to CRM
 !
@@ -25,54 +24,21 @@ module accelerate_crm_mod
     use params, only: asyncid, rc=>crm_rknd
 
     implicit none
+    public
 
-    ! private module variables
-    real(r8), parameter :: coef = 1._r8 / dble(nx * ny)  ! coefficient for horizontal averaging
+    real(rc), parameter :: coef = 1._r8 / dble(nx * ny)  ! coefficient for horizontal averaging
     logical :: crm_accel_uv  ! (false) apply MSA only to scalar fields (T and QT)
                              ! (true) apply MSA to winds (U/V) and scalar fields
 
     ! public module variables
     logical :: use_crm_accel  ! use MSA if true
-    real(r8) :: crm_accel_factor  ! 1 + crm_accel_factor = 'a' in Jones etal (2015)
+    real(rc) :: crm_accel_factor  ! 1 + crm_accel_factor = 'a' in Jones etal (2015)
 
-    private :: coef, crm_accel_uv
     public :: use_crm_accel, crm_accel_factor
     public :: accelerate_crm
     public :: crm_accel_nstop
-    public :: crm_accel_init
 
   contains
-    subroutine crm_accel_init()
-      ! initialize namelist options for CRM mean-state acceleration
-      use phys_control, only: phys_getopts
-      use cam_logfile, only: iulog
-      use spmd_utils,  only: masterproc
-      use cam_abortutils, only: endrun
-  
-      implicit none
-  
-      ! initialize defaults
-      use_crm_accel = .false.
-      crm_accel_factor = 0.
-      crm_accel_uv = .false.
-  
-      call phys_getopts(use_crm_accel_out = use_crm_accel, &
-                        crm_accel_factor_out = crm_accel_factor, &
-                        crm_accel_uv_out = crm_accel_uv)
-  
-      if (masterproc) then
-        if (use_crm_accel) then
-#if !defined(sam1mom)
-          write(0,*) "CRM time step relaxation is only compatible with sam1mom microphysics"
-          call endrun('crm main')
-#endif
-          write(iulog, *) 'USING CRM MEAN STATE ACCELERATION'
-          write(iulog, *) 'crm_accel: use_crm_accel = ', use_crm_accel
-          write(iulog, *) 'crm_accel: crm_accel_factor = ', crm_accel_factor
-          write(iulog, *) 'crm_accel: crm_accel_uv = ', crm_accel_uv
-        endif
-      endif
-    end subroutine crm_accel_init
 
 
     subroutine crm_accel_nstop(nstop)

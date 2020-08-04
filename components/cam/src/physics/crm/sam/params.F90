@@ -42,8 +42,6 @@ module params
 
   real(crm_rknd), allocatable :: fcor(:)          ! Coriolis parameter
   real(crm_rknd), allocatable :: fcorz(:)         ! Vertical Coriolis parameter
-  real(crm_rknd), allocatable :: longitude0(:)    ! latitude of the domain's center
-  real(crm_rknd), allocatable :: latitude0 (:)    ! longitude of the domain's center
   real(crm_rknd), allocatable :: z0(:)            ! roughness length
 
   logical, allocatable :: ocean(:)           ! flag indicating that surface is water
@@ -77,8 +75,6 @@ contains
     integer, intent(in) :: ncrms
     allocate(fcor (ncrms))
     allocate(fcorz(ncrms))
-    allocate(longitude0(ncrms))
-    allocate(latitude0 (ncrms))
     allocate(z0        (ncrms))
     allocate(ocean     (ncrms))
     allocate(land      (ncrms))
@@ -89,8 +85,6 @@ contains
 
     call prefetch(fcor )
     call prefetch(fcorz)
-    call prefetch(longitude0)
-    call prefetch(latitude0 )
     call prefetch(z0)
     call prefetch(ocean)
     call prefetch(land)
@@ -101,8 +95,6 @@ contains
 
     fcor  = 0
     fcorz = 0
-    longitude0 = 0
-    latitude0  = 0
     z0 = 0.035
     ocean = .false.
     land = .false.
@@ -117,8 +109,6 @@ contains
     implicit none
     deallocate(fcor )
     deallocate(fcorz)
-    deallocate(longitude0)
-    deallocate(latitude0 )
     deallocate(z0)
     deallocate(ocean)
     deallocate(land)

@@ -22,7 +22,7 @@ extern "C" void crm(int ncrms_in, int pcols_in, real dt_gl, int plev, real *crm_
                     real *crm_output_clhgh_p, real *crm_output_clmed_p, real *crm_output_cllow_p, real *crm_output_sltend_p, real *crm_output_qltend_p, real *crm_output_qcltend_p, 
                     real *crm_output_qiltend_p, real *crm_output_tk_p, real *crm_output_tkh_p, real *crm_output_qcl_p, real *crm_output_qci_p, real *crm_output_qpl_p, real *crm_output_qpi_p, 
                     real *crm_output_z0m_p, real *crm_output_taux_p, real *crm_output_tauy_p, real *crm_output_precc_p, real *crm_output_precl_p, real *crm_output_precsc_p, 
-                    real *crm_output_precsl_p, real *crm_output_prec_crm_p, real *lat0_p, real *long0_p, real *gcolp_p, int igstep_in,
+                    real *crm_output_precsl_p, real *crm_output_prec_crm_p, real *lat0_p, real *long0_p, int *gcolp_p, int igstep_in,
                     bool use_crm_accel_in, real crm_accel_factor_in, bool crm_accel_uv_in) {
 
   dt_glob = dt_gl;

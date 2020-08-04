@@ -610,7 +610,7 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p, r
                             real *crm_input_tl_p, real *crm_input_qccl_p, real *crm_input_qiil_p, real *crm_input_ql_p, real *crm_input_tau00_p, 
                             real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_state_w_wind_p, real *crm_state_temperature_p, 
                             real *crm_state_qt_p, real *crm_state_qp_p, real *crm_state_qn_p, real *crm_rad_qrad_p, real *crm_output_timing_factor_p, 
-                            real *lat0_p, real *long0_p, real *gcolp_p, real *crm_output_cltot_p, real *crm_output_clhgh_p, real *crm_output_clmed_p,
+                            real *lat0_p, real *long0_p, int *gcolp_p, real *crm_output_cltot_p, real *crm_output_clhgh_p, real *crm_output_clmed_p,
                             real *crm_output_cllow_p) {
 
   // Wrap the pointers we're going to copy to device Arrays
@@ -639,7 +639,7 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p, r
   realHost1d crm_output_timing_factor  = realHost1d( "crm_output_timing_factor",crm_output_timing_factor_p                                 , pcols); 
   realHost1d lat0                      = realHost1d( "lat0                    ",lat0_p                                                     , ncrms); 
   realHost1d long0                     = realHost1d( "long0                   ",long0_p                                                    , ncrms); 
-  realHost1d gcolp                     = realHost1d( "gcolp                   ",gcolp_p                                                    , ncrms); 
+  intHost1d  gcolp                     = intHost1d ( "gcolp                   ",gcolp_p                                                    , ncrms); 
   realHost1d crm_output_cltot          = realHost1d( "crm_output_cltot        ",crm_output_cltot_p                                         , pcols); 
   realHost1d crm_output_clhgh          = realHost1d( "crm_output_clhgh        ",crm_output_clhgh_p                                         , pcols); 
   realHost1d crm_output_clmed          = realHost1d( "crm_output_clmed        ",crm_output_clmed_p                                         , pcols); 
@@ -737,7 +737,7 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p, r
   ::crm_output_prec_crm       = real3d( "crm_output_prec_crm     "          , crm_ny    , crm_nx  , pcols);  
   ::lat0                      = real1d( "lat0                    "                                , ncrms); 
   ::long0                     = real1d( "long0                   "                                , ncrms); 
-  ::gcolp                     = real1d( "gcolp                   "                                , ncrms); 
+  ::gcolp                     = int1d ( "gcolp                   "                                , ncrms); 
 
   // Copy inputs from host Array to device Array
   crm_input_bflxls        .deep_copy_to(::crm_input_bflxls        );
@@ -1203,7 +1203,7 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
   ::crm_output_prec_crm       = real3d(); 
   ::lat0                      = real1d();
   ::long0                     = real1d();
-  ::gcolp                     = real1d();
+  ::gcolp                     = int1d();
 }
 
 
@@ -1610,7 +1610,7 @@ real1d crm_output_precsl;
 real3d crm_output_prec_crm; 
 real1d lat0; 
 real1d long0;
-real1d gcolp;
+int1d  gcolp;
 
 
 int pcols;
