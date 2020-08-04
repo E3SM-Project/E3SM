@@ -127,7 +127,7 @@ contains
     !
     ! populate each module with private parameters
     !       
-
+    print *, "is_active_betr_bgc, use_century_decomp:",is_active_betr_bgc, use_century_decomp
     if ( (use_cn .or. use_fates) ) then
 
        call readCNAllocParams(ncid)

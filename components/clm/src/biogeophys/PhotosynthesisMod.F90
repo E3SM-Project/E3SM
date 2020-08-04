@@ -27,9 +27,9 @@ module  PhotosynthesisMod
   use PhotosynthesisType  , only : photosyns_type
   use VegetationType      , only : veg_pp
   use AllocationMod       , only : nu_com_leaf_physiology
-  use clm_varctl          , only : cnallocate_carbon_only
-  use clm_varctl          , only : cnallocate_carbonnitrogen_only
-  use clm_varctl          , only : cnallocate_carbonphosphorus_only
+  use clm_varctl          , only : carbon_only
+  use clm_varctl          , only : carbonnitrogen_only
+  use clm_varctl          , only : carbonphosphorus_only
   use clm_varctl          , only : iulog
   use pftvarcon           , only : noveg
   use SharedParamsMod     , only : ParamsShareInst
@@ -94,12 +94,12 @@ module  PhotosynthesisMod
   !$acc declare copyin(stomatalcond_mtd_bb1987)
   !$acc declare copyin(stomatalcond_mtd_medlyn2011)
   type :: photo_params_type
-     real(r8),pointer , public  :: krmax              (:)   => null()  
-     real(r8),pointer , private :: kmax               (:,:) => null()
-     real(r8),pointer , private :: psi50              (:,:) => null()
-     real(r8),pointer , private :: ck                 (:,:) => null()
-     real(r8),pointer , public  :: psi_soil_ref       (:)   => null() 
-     real(r8),pointer , private :: lmr_intercept_atkin(:)   => null() 
+     real(r8),pointer , public  :: krmax              (:)   => null()
+     real(r8),pointer , public :: kmax               (:,:) => null()
+     real(r8),pointer , public :: psi50              (:,:) => null()
+     real(r8),pointer , public :: ck                 (:,:) => null()
+     real(r8),pointer , public  :: psi_soil_ref       (:)   => null()
+     real(r8),pointer , public :: lmr_intercept_atkin(:)   => null()
   contains
      procedure, private :: allocParams
      procedure, public :: readParams
@@ -162,8 +162,8 @@ contains
     !-----------------------------------------------------------------------
     ! read in parameters
     call params_inst%allocParams()
-    
-    
+
+
     tString = "krmax"
     call ncd_io(varname=trim(tString),data=temp1d, flag='read', ncid=ncid,readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
@@ -188,14 +188,14 @@ contains
     call ncd_io(varname=trim(tString),data=temp2d, flag='read', ncid=ncid,readvar=readv)
     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
     params_inst%ck=temp2d
-    
+
     !$acc update device(            &
     !$acc params_inst%krmax       , &
     !$acc params_inst%kmax        , &
     !$acc params_inst%psi50       , &
     !$acc params_inst%ck          , &
     !$acc params_inst%psi_soil_ref, &
-    !$acc params_inst%lmr_intercept_atkin ) 
+    !$acc params_inst%lmr_intercept_atkin )
 
  end subroutine readParams
 
@@ -217,7 +217,7 @@ contains
     ! !USES:
       !$acc routine seq
     use clm_varcon     , only : rgas, tfrz
-    use clm_varctl     , only : cnallocate_carbon_only
+    use clm_varctl     , only : carbon_only
     use pftvarcon      , only : nbrdlf_dcd_tmp_shrub, nsoybean, nsoybeanirrig, npcropmin
     use pftvarcon      , only : vcmax_np1, vcmax_np2, vcmax_np3, vcmax_np4, jmax_np1, jmax_np2, jmax_np3
     !
@@ -550,7 +550,7 @@ contains
             if (.not. use_cn) then
                vcmax25top = vcmax25top * fnitr(veg_pp%itype(p))
             else
-               if ( CNAllocate_Carbon_only() ) vcmax25top = vcmax25top * fnitr(veg_pp%itype(p))
+               if ( Carbon_only ) vcmax25top = vcmax25top * fnitr(veg_pp%itype(p))
             end if
 
             ! Parameters derived from vcmax25top. Bonan et al (2011) JGR, 116, doi:10.1029/2010JG001593
@@ -561,14 +561,14 @@ contains
 
             ! leaf level nutrient control on photosynthesis rate added by Q. Zhu Aug 2015
 
-            if ( CNAllocate_Carbon_only() .or. cnallocate_carbonphosphorus_only()) then
+            if ( Carbon_only  .or.  carbonphosphorus_only ) then
 
                lnc(p) = 1._r8 / (slatop(veg_pp%itype(p)) * leafcn(veg_pp%itype(p)))
                vcmax25top = lnc(p) * flnr(veg_pp%itype(p)) * fnr * act25 * dayl_factor(p)
                vcmax25top = vcmax25top * fnitr(veg_pp%itype(p))
                jmax25top = (2.59_r8 - 0.035_r8*min(max((t10(p)-tfrz),11._r8),35._r8)) * vcmax25top
 
-            else if ( cnallocate_carbonnitrogen_only() ) then ! only N control, from Kattge 2009 Global Change Biology 15 (4), 976-991
+            else if (  carbonnitrogen_only  ) then ! only N control, from Kattge 2009 Global Change Biology 15 (4), 976-991
 
                ! Leaf nitrogen concentration at the top of the canopy (g N leaf / m**2 leaf)
                sum_nscaler = 0.0_r8
@@ -1586,7 +1586,7 @@ contains
     ! !USES:
       !$acc routine seq
     use clm_varcon        , only : rgas, tfrz, rpi
-    use clm_varctl        , only : cnallocate_carbon_only
+    use clm_varctl        , only : carbon_only
     !use clm_varctl        , only : lnc_opt, reduce_dayl_factor, vcmax_opt
     use clm_varpar        , only : nlevsoi
     use pftvarcon         , only : nbrdlf_dcd_tmp_shrub, npcropmin
@@ -2081,7 +2081,7 @@ contains
             if (.not. use_cn) then
                vcmax25top = vcmax25top * fnitr(veg_pp%itype(p))
             else
-               if ( CNAllocate_Carbon_only() ) vcmax25top = vcmax25top *fnitr(veg_pp%itype(p))
+               if ( Carbon_only ) vcmax25top = vcmax25top *fnitr(veg_pp%itype(p))
             end if
 
             ! Parameters derived from vcmax25top. Bonan et al (2011) JGR, 116,
@@ -2095,14 +2095,14 @@ contains
             ! leaf level nutrient control on photosynthesis rate added by Q. Zhu
             ! Aug 2015
 
-            if ( CNAllocate_Carbon_only() .or.cnallocate_carbonphosphorus_only()) then
+            if ( Carbon_only  .or. carbonphosphorus_only) then
 
                lnc(p) = 1._r8 / (slatop(veg_pp%itype(p)) * leafcn(veg_pp%itype(p)))
                vcmax25top = lnc(p) * flnr(veg_pp%itype(p)) * fnr * act25 *dayl_factor(p)
                vcmax25top = vcmax25top * fnitr(veg_pp%itype(p))
                jmax25top = (2.59_r8 -0.035_r8*min(max((t10(p)-tfrz),11._r8),35._r8)) * vcmax25top
 
-            else if ( cnallocate_carbonnitrogen_only() ) then ! only N control,from Kattge 2009 Global Change Biology 15 (4), 976-991
+            else if ( carbonnitrogen_only ) then ! only N control,from Kattge 2009 Global Change Biology 15 (4), 976-991
 
                ! Leaf nitrogen concentration at the top of the canopy (g N leaf
                ! / m**2 leaf)

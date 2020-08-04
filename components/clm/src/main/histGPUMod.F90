@@ -282,7 +282,12 @@ contains
       field          =>  clmptr_rs(hpindex)%ptr &
       )
     ! set variables to check weights when allocate all pfts
-
+    !!if(tape_gpu%hlist(f)%name == "ZBOT") then
+    !!        print *, tape_gpu%hlist(f)%name
+    !!        print *, type1d, type1d_out
+    !!        print *,nameg, grlnd 
+    !!        print *, namep,namec,namet
+    !!end if 
     map2gcell = .false.
     if (type1d_out == nameg .or. type1d_out == grlnd) then
        if (type1d == namep) then
@@ -404,7 +409,6 @@ contains
           if ( end1d .eq. ubound(field,1) ) then
              k_offset = 0
           else
-             print *, "koffset != 0"
              k_offset = 1 - beg1d
           endif
           do k = beg1d,end1d
@@ -539,9 +543,8 @@ end subroutine hist_update_hbuf_field_1d_gpu
 
        field_allocated = .false.
     end if
-
+     
     ! set variables to check weights when allocate all pfts
-
     map2gcell = .false.
     if (type1d_out == nameg .or. type1d_out == grlnd) then
        if (type1d == namep) then

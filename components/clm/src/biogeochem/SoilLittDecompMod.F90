@@ -19,20 +19,12 @@ module SoilLittDecompMod
   use VerticalProfileMod     , only : decomp_vertprofiles
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNStateType            , only : cnstate_type
-  use CNNitrogenStateType    , only : nitrogenstate_type
-  use CNNitrogenFluxType     , only : nitrogenflux_type
   !!  add phosphorus  -X. YANG
-  use PhosphorusStateType    , only : phosphorusstate_type
-  use PhosphorusFluxType     , only : phosphorusflux_type
   use clm_varctl             , only : nu_com
 
-  use CNCarbonStateType      , only : carbonstate_type
-  use CNCarbonFluxType       , only : carbonflux_type
   use PhotosynthesisType     , only : photosyns_type
   use CanopyStateType        , only : canopystate_type
   use SoilStateType          , only : soilstate_type
-  use TemperatureType        , only : temperature_type
-  use WaterStateType         , only : waterstate_type
   use CH4Mod                 , only : ch4_type
   use cropType               , only : crop_type
   use ColumnDataType         , only : col_cs, col_cf
@@ -54,7 +46,7 @@ module SoilLittDecompMod
   public :: SoilLittDecompAlloc2
   !
   type, public :: CNDecompParamsType
-     real(r8) :: dnp         !denitrification proportion
+     real(r8), pointer :: dnp => null()         !denitrification proportion
   end type CNDecompParamsType
 
   type(CNDecompParamsType)  , public ::  CNDecompParamsInst
@@ -85,7 +77,7 @@ contains
      real(r8)           :: tempr ! temporary to read in constant
      character(len=100) :: tString ! temp. var for reading
      !-----------------------------------------------------------------------
-
+     allocate(CNDecompParamsInst%dnp)
      tString='dnp'
      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
@@ -123,17 +115,9 @@ contains
     integer                  , intent(in)    :: filter_soilp(:)    ! filter for soil patches
     type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(soilstate_type)     , intent(in)    :: soilstate_vars
-    !type(temperature_type)   , intent(in)    :: temperature_vars
-    !type(waterstate_type)    , intent(in)    :: waterstate_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
     type(ch4_type)           , intent(in)    :: ch4_vars
-    !type(carbonstate_type)   , intent(inout) :: carbonstate_vars
-    !type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    !type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-    !type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
     ! add phosphorus --
-    !type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
-    !type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
 !    type(crop_type)          , intent(in)    :: crop_vars
     real(r8),   intent(in)    :: dtime
     !
@@ -211,7 +195,7 @@ contains
          actual_immob_vr                  =>    col_nf%actual_immob_vr                  , &
          actual_immob_p_vr                =>    col_pf%actual_immob_p_vr                &
          )
- 
+
       !-------------------------------------------------------------------------------------------------
       ! call decomp_rate_constants_bgc() or decomp_rate_constants_cn(): now called in EcosystemDynNoLeaching1
       !-------------------------------------------------------------------------------------------------
@@ -280,10 +264,10 @@ contains
          do j = 1,nlevdecomp
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-                
+
                if (decomp_cpools_vr(c,j,cascade_donor_pool(k)) > 0._r8 .and. &
                     decomp_k(c,j,cascade_donor_pool(k)) > 0._r8 ) then
-                  
+
                  p_decomp_cpool_loss(c,j,k) = decomp_cpools_vr(c,j,cascade_donor_pool(k)) &
                        * decomp_k(c,j,cascade_donor_pool(k))  * pathfrac_decomp_cascade(c,j,k)
                   if ( .not. floating_cn_ratio_decomp_pools(cascade_receiver_pool(k)) ) then  !! not transition of cwd to litter
@@ -853,7 +837,7 @@ contains
     use Method_procs_acc, only : colps_setvalues_acc
     use Method_procs_acc, only : vegpf_setvalues_acc
     use Method_procs_acc, only : colpf_setvalues_acc
-    use clm_varctl   , only: cnallocate_carbon_only, cnallocate_carbonnitrogen_only
+    use clm_varctl   , only: carbon_only, carbonnitrogen_only
     use clm_varpar   , only: nlevdecomp, ndecomp_cascade_transitions
    !
    !ARGUMENTS:
@@ -862,11 +846,6 @@ contains
     integer                  , intent(in)    :: filter_soilc(:)    ! filter for soil columns
     integer                  , intent(in)    :: num_soilp          ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:)    ! filter for soil patches
-    !type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    !type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-    !! add phosphorus --
-    !type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
-    !type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
    !
    !CALLED FROM:
    !
@@ -895,7 +874,7 @@ contains
    end do
 
    ! pflotran not yet support phosphous cycle
-   if (cnallocate_carbon_only() .or. cnallocate_carbonnitrogen_only() ) then
+   if ( carbon_only .or.  carbonnitrogen_only  ) then
       call vegps_setvalues_acc(vegps=veg_ps,num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
       call colps_setvalues_acc(colps=col_ps,num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8)
 

@@ -181,6 +181,9 @@ contains
      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
      DecompBGCParamsInst%cn_s1_bgc=tempr
+     
+     print *, "cn_s1_bgc = ",DecompBGCParamsInst%cn_s1_bgc
+
 
      tString='cn_s2_bgc'
      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)

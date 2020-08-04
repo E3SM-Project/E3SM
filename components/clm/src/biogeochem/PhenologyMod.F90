@@ -31,6 +31,7 @@ module PhenologyMod
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_es, veg_ef, veg_cs, veg_cf, veg_ns, veg_nf
   use VegetationDataType  , only : veg_ps, veg_pf
+  !!!Added for gpu timing info
   use timeinfoMod
 
   !
@@ -46,23 +47,24 @@ module PhenologyMod
   !
   ! !PRIVATE DATA MEMBERS:
   type, private :: PnenolParamsType
-     real(r8) :: crit_dayl       ! critical day length for senescence
-     real(r8) :: crit_dayl_stress ! critical day length for senescence (stress)
-     real(r8) :: cumprec_onset   ! 10-day cumulative precipitation threshold for onset
-     real(r8) :: ndays_on        ! number of days to complete leaf onset
-     real(r8) :: ndays_off       ! number of days to complete leaf offset
-     real(r8) :: fstor2tran      ! fraction of storage to move to transfer for each onset
-     real(r8) :: crit_onset_fdd  ! critical number of freezing days to set gdd counter
-     real(r8) :: crit_onset_swi  ! critical number of days > soilpsi_on for onset
-     real(r8) :: soilpsi_on      ! critical soil water potential for leaf onset
-     real(r8) :: crit_offset_fdd ! critical number of freezing days to initiate offset
-     real(r8) :: crit_offset_swi ! critical number of water stress days to initiate offset
-     real(r8) :: soilpsi_off     ! critical soil water potential for leaf offset
-     real(r8) :: lwtop           ! live wood turnover proportion (annual fraction)
+     real(r8), pointer :: crit_dayl        => null() ! critical day length for senescence
+     real(r8), pointer :: crit_dayl_stress => null()  ! critical day length for senescence (stress)
+     real(r8), pointer :: cumprec_onset    => null() ! 10-day cumulative precipitation threshold for onset
+     real(r8), pointer :: ndays_on         => null() ! number of days to complete leaf onset
+     real(r8), pointer :: ndays_off        => null() ! number of days to complete leaf offset
+     real(r8), pointer :: fstor2tran       => null() ! fraction of storage to move to transfer for each onset
+     real(r8), pointer :: crit_onset_fdd   => null() ! critical number of freezing days to set gdd counter
+     real(r8), pointer :: crit_onset_swi   => null() ! critical number of days > soilpsi_on for onset
+     real(r8), pointer :: soilpsi_on       => null() ! critical soil water potential for leaf onset
+     real(r8), pointer :: crit_offset_fdd  => null() ! critical number of freezing days to initiate offset
+     real(r8), pointer :: crit_offset_swi  => null() ! critical number of water stress days to initiate offset
+     real(r8), pointer :: soilpsi_off      => null() ! critical soil water potential for leaf offset
+     real(r8), pointer :: lwtop            => null() ! live wood turnover proportion (annual fraction)
   end type PnenolParamsType
 
   ! PhenolParamsInst is populated in readPhenolParams
   type(PnenolParamsType), public ::  PhenolParamsInst
+  !$acc declare create(PhenolParamsInst)
 
   !real(r8) :: dt                            ! radiation time step delta t (seconds)
   real(r8) :: fracday                       ! dtime as a fraction of day
@@ -128,7 +130,6 @@ contains
      ! !USES:
      use ncdio_pio    , only: file_desc_t,ncd_io
      use clm_varcon   , only: secspday
-!#py
      ! !ARGUMENTS:
      implicit none
      type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
@@ -140,7 +141,19 @@ contains
      real(r8)           :: tempr ! temporary to read in parameter
      character(len=100) :: tString ! temp. var for reading
      !-----------------------------------------------------------------------
-!#py
+     allocate(PhenolParamsInst%crit_dayl       )
+     allocate(PhenolParamsInst%crit_dayl_stress)
+     allocate(PhenolParamsInst%cumprec_onset   )
+     allocate(PhenolParamsInst%ndays_on        )
+     allocate(PhenolParamsInst%ndays_off       )
+     allocate(PhenolParamsInst%fstor2tran      )
+     allocate(PhenolParamsInst%crit_onset_fdd  )
+     allocate(PhenolParamsInst%crit_onset_swi  )
+     allocate(PhenolParamsInst%soilpsi_on      )
+     allocate(PhenolParamsInst%crit_offset_fdd )
+     allocate(PhenolParamsInst%crit_offset_swi )
+     allocate(PhenolParamsInst%soilpsi_off     )
+     allocate(PhenolParamsInst%lwtop           )
      !
      ! read in parameters
      !
@@ -148,7 +161,7 @@ contains
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
      if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
      PhenolParamsInst%crit_dayl=tempr
-!#py
+
      tString='crit_dayl_stress'
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
      if ( .not. readv ) then
@@ -156,7 +169,7 @@ contains
      else
          PhenolParamsInst%crit_dayl_stress=tempr
      end if
-!#py
+
      tString='cumprec_onset'
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
      if ( .not. readv ) then
@@ -164,57 +177,60 @@ contains
      else
          PhenolParamsInst%cumprec_onset=tempr
      end if
-!#py
+
      tString='ndays_on'
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
      if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
      PhenolParamsInst%ndays_on=tempr
-!#py
+
      tString='ndays_off'
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
      if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
      PhenolParamsInst%ndays_off=tempr
-!#py
+
      tString='fstor2tran'
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
      if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
      PhenolParamsInst%fstor2tran=tempr
-!#py
+
      tString='crit_onset_fdd'
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
      if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
      PhenolParamsInst%crit_onset_fdd=tempr
-!#py
+
      tString='crit_onset_swi'
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
      if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
      PhenolParamsInst%crit_onset_swi=tempr
-!#py
+
      tString='soilpsi_on'
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
      if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
      PhenolParamsInst%soilpsi_on=tempr
-!#py
+
      tString='crit_offset_fdd'
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
      if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
      PhenolParamsInst%crit_offset_fdd=tempr
-!#py
+
      tString='crit_offset_swi'
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
      if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
      PhenolParamsInst%crit_offset_swi=tempr
-!#py
+
      tString='soilpsi_off'
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
      if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
      PhenolParamsInst%soilpsi_off=tempr
-!#py
+
      tString='lwtop_ann'
      call ncd_io(varname=trim(tString),data=tempr, flag='read', ncid=ncid, readvar=readv)
      if ( .not. readv ) call endrun( msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
      PhenolParamsInst%lwtop=tempr
-!#py
+
+     !!!!========== Update to device ========= !!!
+     !$acc enter data copyin(PhenolParamsInst)
+
    end subroutine readPhenolParams
 
   !-----------------------------------------------------------------------
@@ -257,7 +273,7 @@ contains
     call CNStressDecidPhenology(num_soilp, filter_soilp,   &
          soilstate_vars, atm2lnd_vars, cnstate_vars &
          )
-
+    print *, "num_pcropp",num_pcropp
    if (num_pcropp > 0 ) then
        call CropPlantDate(num_soilp, filter_soilp, num_pcropp, filter_pcropp,&
             cnstate_vars, crop_vars)
@@ -359,7 +375,6 @@ contains
     ! -----------------------------------------
     ! Call any subroutine specific initialization routines
     ! -----------------------------------------
-
     if ( crop_prog ) call CropPhenologyInit(bounds)
 
     !$acc update device(&
@@ -1480,9 +1495,6 @@ contains
 
       ! get time info
       !NEED TO FIX!
-      !#py dayspyr = get_days_per_year()
-      !#py jday    = get_curr_calday()
-      !#py call get_curr_date(kyr, kmo, kda, mcsec)
       dt = dtime_mod
       dayspyr = dayspyr_mod
       kyr = year_curr
@@ -2205,7 +2217,6 @@ contains
       ! and wet season are determined from either temperature thresholds or the
       ! P:PET ratio
 
-      !#py dt      = real( get_step_size(), r8 )
       dt = dtime_mod
 
 
@@ -2213,13 +2224,11 @@ contains
 
       if (num_pcropp > 0) then
          ! get time-related info
-         !#py call get_curr_date(kyr, kmo, kda, mcsec)
          kyr = year_curr
          kmo = mon_curr
          kda = day_curr
          mcsec = secs_curr
       end if
-
       do fp = 1,num_pcropp
          p = filter_pcropp(fp)
          c = veg_pp%column(p)
