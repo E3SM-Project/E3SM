@@ -1157,12 +1157,6 @@ is the value of that variable from the *previous* time level!
                      units="none"  description="flag needed by external velocity solvers that indicates if the Dirichlet boundary condition mask has changed (treated as a logical)"
                         packages="higherOrderVelocity"
                 />
-                <var name="floatingEdges"
-                        type="integer" dimensions="nEdges Time"
-                        units="unitless"
-                        description="edges which are floating have a value of 1.  non floating edges have a value of 0."
-                        packages="higherOrderVelocity"
-                />
         </var_struct>
 
 <!-- ================ -->
