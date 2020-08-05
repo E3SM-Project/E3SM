@@ -8,7 +8,9 @@ program driver
   use crm_state_module
   use crm_rad_module
   use dmdf
+#if HAVE_MPI
   use mpi
+#endif
   use iso_c_binding, only: c_bool, c_double
   use gator_mod, only: gator_init, gator_finalize
   implicit none
@@ -52,9 +54,14 @@ program driver
   integer, allocatable :: gcolp(:)
   integer(8) :: t1, t2, tr
 
+#if HAVE_MPI
   call mpi_init(ierr)
   call mpi_comm_size(mpi_comm_world,nranks,ierr)
   call mpi_comm_rank(mpi_comm_world,rank,ierr)
+#else
+  nranks = 1
+  rank = 0
+#endif
   call distr_indices(NCRMS,nranks,rank,myTasks_beg,myTasks_end)
   ncrms = myTasks_end - myTasks_beg + 1
   masterTask = rank == 0
@@ -207,7 +214,9 @@ program driver
   endif
   ! dmdf_write(dat,rank,fprefix,vname       ,first,last) !For scalar values
   ! dmdf_write(dat,rank,fprefix,vname,dnames,first,last) !For array values
+#if HAVE_MPI
   call mpi_barrier(mpi_comm_world,ierr)
+#endif
   do irank = 0 , nranks-1
     if (irank == rank) then
       do icrm = 1 , ncrms
@@ -297,11 +306,15 @@ program driver
         call dmdf_write( crm_rad%cld              (icrm,:,:,:) , 1 , fprefix , trim('rad_cld             ') , (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .true.  )
       enddo
     endif
+#if HAVE_MPI
     call mpi_barrier(mpi_comm_world,ierr)
+#endif
   enddo
 
   call gator_finalize()
+#if HAVE_MPI
   call mpi_finalize(ierr)
+#endif
 
 
 contains

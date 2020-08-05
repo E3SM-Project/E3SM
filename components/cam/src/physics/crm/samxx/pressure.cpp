@@ -1,5 +1,5 @@
 
-// #define USE_ORIG_FFT
+#define USE_ORIG_FFT
 
 #include "pressure.h"
 

@@ -9,7 +9,9 @@ program driver
   use accelerate_crm_mod
   use dmdf
   use crm_module
+#if HAVE_MPI
   use mpi
+#endif
   implicit none
   type(crm_input_type)         :: crm_input
   type(crm_output_type)        :: crm_output
@@ -50,9 +52,14 @@ program driver
   integer(8) :: t1, t2, tr
   integer :: ierr
 
+#if HAVE_MPI
   call mpi_init(ierr)
   call mpi_comm_size(mpi_comm_world,nranks,ierr)
   call mpi_comm_rank(mpi_comm_world,rank,ierr)
+#else
+  nranks = 1
+  rank = 0
+#endif
   call distr_indices(NCRMS,nranks,rank,myTasks_beg,myTasks_end)
   ncrms = myTasks_end - myTasks_beg + 1
   masterTask = rank == 0
@@ -209,7 +216,9 @@ program driver
   endif
   ! dmdf_write(dat,rank,fprefix,vname       ,first,last) !For scalar values
   ! dmdf_write(dat,rank,fprefix,vname,dnames,first,last) !For array values
+#if HAVE_MPI
   call mpi_barrier(mpi_comm_world,ierr)
+#endif
   do irank = 0 , nranks-1
     if (irank == rank) then
       do icrm = 1 , ncrms
@@ -299,10 +308,14 @@ program driver
         call dmdf_write( crm_rad%cld              (icrm,:,:,:) , 1 , fprefix , trim('rad_cld             ') , (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .true.  )
       enddo
     endif
+#if HAVE_MPI
     call mpi_barrier(mpi_comm_world,ierr)
+#endif
   enddo
 
+#if HAVE_MPI
   call mpi_finalize(ierr)
+#endif
 
 contains
 

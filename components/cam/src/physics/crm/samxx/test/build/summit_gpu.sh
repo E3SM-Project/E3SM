@@ -11,14 +11,14 @@ unset NCRMS
 
 export NCHOME=${OLCF_NETCDF_ROOT}
 export NFHOME=${OLCF_NETCDF_FORTRAN_ROOT}
-#export NCRMS=42
+export NCRMS=42
 export CC=mpicc
 export CXX=mpic++
 export FC=mpif90
 export FFLAGS="-O3 -ffree-line-length-none"
-export CXXFLAGS=-O3
+export CXXFLAGS="-O3 -DUSE_ORIG_FFT"
 export ARCH="CUDA"
-export CUDA_ARCH="-arch sm_70 -O3 --use_fast_math -D__USE_CUDA__ --expt-extended-lambda --expt-relaxed-constexpr"
+export CUDA_ARCH="-arch sm_70 -O3 -DUSE_ORIG_FFT --use_fast_math -D__USE_CUDA__ --expt-extended-lambda --expt-relaxed-constexpr"
 export YAKL_HOME="`pwd`/../../../../../../../../externals/YAKL"
 export YAKL_CUB_HOME="/ccs/home/$USER/cub"
 
