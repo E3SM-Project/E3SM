@@ -23,6 +23,7 @@
 #  define bfb_log(val) cxx_log(val)
 #  define bfb_log10(val) cxx_log10(val)
 #  define bfb_exp(val) cxx_exp(val)
+#  define bfb_tanh(val) cxx_tanh(val)
 #else
 #  define bfb_pow(base, exp) (base)**(exp)
 #  define bfb_cbrt(base) (base)**thrd
@@ -31,6 +32,7 @@
 #  define bfb_log10(val) log10(val)
 #  define bfb_exp(val) exp(val)
 #  define bfb_sqrt(val) sqrt(val)
+#  define bfb_tanh(val) tanh(val)
 #endif
 
 #endif
