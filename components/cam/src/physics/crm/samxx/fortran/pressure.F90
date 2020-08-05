@@ -13,7 +13,7 @@ contains
     !       Also, used for a 2D version
     !       For more processors for the given number of levels and 3D, use pressure_big
     use vars
-    use params, only: dowallx, dowally, docolumn, crm_rknd
+    use params, only: dowallx, dowally, crm_rknd
     use press_rhs_mod
     use press_grad_mod
     use fft_mod
@@ -73,8 +73,6 @@ contains
     jt = 0
 
     !-----------------------------------------------------------------
-
-    if(docolumn) return
 
     if(dowallx) then
       iwall=1
@@ -145,7 +143,6 @@ contains
       enddo
     endif
 
-
     !-------------------------------------------------
     !   Send Fourier coeffiecients back to subdomains:
     !$acc parallel loop collapse(4) async(asyncid)
@@ -158,7 +155,6 @@ contains
         enddo
       enddo
     enddo
-
 
     !-------------------------------------------------
     !   Solve the tri-diagonal system for Fourier coeffiecients
@@ -198,7 +194,6 @@ contains
         eign(i,j)=(2._8*cos(factx*xnx*xi)-2._8)*ddx2+(2._8*cos(facty*xny*xj)-2._8)*ddy2
       enddo
     enddo
-
 
     !For working aroung PGI OpenACC bug where it didn't create enough gangs
     numgangs = ceiling(ncrms*(nyp22-jwall)*(nxp2-iwall)/128.)

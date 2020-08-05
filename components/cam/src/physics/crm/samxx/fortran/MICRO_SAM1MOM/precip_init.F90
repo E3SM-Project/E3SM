@@ -14,7 +14,6 @@ contains
     implicit none
     integer, intent(in) :: ncrms
     real(crm_rknd) pratio, coef1, coef2,estw,esti,rrr1,rrr2
-    !real*4 :: gammafff
     real*8 :: gammafff
     external :: gammafff
     integer :: k,icrm

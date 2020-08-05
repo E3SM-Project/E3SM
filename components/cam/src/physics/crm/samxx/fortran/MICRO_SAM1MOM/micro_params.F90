@@ -35,17 +35,10 @@ module micro_params
   real(crm_rknd), parameter :: b_grau = 0.5D0  ! Fall speed exponent for graupel
 
   ! Autoconversion
-#ifdef CLUBB_CRM   /*microphysical tuning for CLUBB*/
-  real(crm_rknd), parameter :: qcw0 = 0.6D-3      ! Threshold for water autoconversion, g/g
-  real(crm_rknd), parameter :: qci0 = 1.D-4     ! Threshold for ice autoconversion, g/g
-  real(crm_rknd), parameter :: alphaelq = 10.D-3  ! autoconversion of cloud water rate coef
-  real(crm_rknd), parameter :: betaelq = 6.0D-3   ! autoconversion of cloud ice rate coef
-#else
   real(crm_rknd), parameter :: qcw0 = 1.D-3      ! Threshold for water autoconversion, g/g
   real(crm_rknd), parameter :: qci0 = 1.D-4     ! Threshold for ice autoconversion, g/g
   real(crm_rknd), parameter :: alphaelq = 1.D-3  ! autoconversion of cloud water rate coef
   real(crm_rknd), parameter :: betaelq = 1.D-3   ! autoconversion of cloud ice rate coef
-#endif /*CLUBB_CRM*/
 
   ! Accretion
 
@@ -77,16 +70,6 @@ module micro_params
   real(crm_rknd), bind(C) :: gamr2      ! Gamma function of (5 + b_rain)/2
   real(crm_rknd), bind(C) :: gamr3      ! Gamma function of (4 + b_rain)
 
-  !real*4 gam3       ! Gamma function of 3
-  !real*4 gams1      ! Gamma function of (3 + b_snow)
-  !real*4 gams2      ! Gamma function of (5 + b_snow)/2
-  !real*4 gams3      ! Gamma function of (4 + b_snow)
-  !real*4 gamg1      ! Gamma function of (3 + b_grau)
-  !real*4 gamg2      ! Gamma function of (5 + b_grau)/2
-  !real*4 gamg3      ! Gamma function of (4 + b_grau)
-  !real*4 gamr1      ! Gamma function of (3 + b_rain)
-  !real*4 gamr2      ! Gamma function of (5 + b_rain)/2
-  !real*4 gamr3      ! Gamma function of (4 + b_rain)
 
   real(crm_rknd), allocatable :: accrsc (:,:)
   real(crm_rknd), allocatable :: accrsi (:,:)
