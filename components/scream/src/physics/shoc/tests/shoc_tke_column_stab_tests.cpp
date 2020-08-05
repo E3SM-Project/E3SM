@@ -12,7 +12,7 @@
 #include "ekat/util/scream_arch.hpp"
 #include "ekat/util/scream_kokkos_utils.hpp"
 #include "ekat/util/scream_utils.hpp"
-#include "physics/common/physics_constants.hpp"
+#include "physics/share/physics_constants.hpp"
 #include "physics/shoc/shoc_functions.hpp"
 #include "physics/shoc/shoc_functions_f90.hpp"
 #include "shoc_unit_tests_common.hpp"
@@ -29,7 +29,7 @@ TEST_CASE("shoc_tke_column_stab", "shoc") {
   //   in the SHOC TKE module. 
 
   // FIRST TEST
-  // Symetric test.  Verify that given a profile 
+  // Symmetric test.  Verify that given a profile 
   //  of symetric inputs for brunt vaisalla and dz profile 
   //  that is uniform with height that the column integrated
   //  value is 0.0. 
@@ -40,13 +40,13 @@ TEST_CASE("shoc_tke_column_stab", "shoc") {
   // Define Pressure [hPa] (later convereted to Pa)
   Real pres[nlev] = {850., 900., 925.0, 950.0, 1000.0};
   // Brunt Vaisalla frequency [/s]
-  Real brunt_sym[nlev] = {0.5, -0.25, 0.0, 0.25, 0.5};
+  Real brunt_sym[nlev] = {-0.5, -0.25, 0.0, 0.25, 0.5};
 
   // Convert pres to Pa
   pres[:] = pres[:]*100.0;
 
   // Initialzie data structure for bridgeing to F90
-  SHOCColStabData SDS(shcol, nlev);
+  SHOCColstabData SDS(shcol, nlev);
 
   // Test that the inputs are reasonable.
   REQUIRE(SDS.shcol > 0);
@@ -63,13 +63,14 @@ TEST_CASE("shoc_tke_column_stab", "shoc") {
   }
 
   // Check that the inputs make sense
-
   for(Int s = 0; s < SDS.shcol; ++s) {
     for (Int n = 0; n < SDS.nlev; ++n){
-      const auto offset = n + s * SDS.nlevi;
+      const auto offset = n + s * SDS.nlev;
       // Should be greater than zero 
-      REQUIRE(SDS.dz_zi[offset] > 0.0);
-      REQUIRE(SDS.pres[offset] > 0.0);
+      REQUIRE(SDS.dz_zt[offset] > 0.0);
+      // Make sure all pressure levels are in the
+      //  lower troposphere for this test
+      REQUIRE(SDS.pres[offset] > 80000.0);
     }
   }
 
@@ -85,7 +86,7 @@ TEST_CASE("shoc_tke_column_stab", "shoc") {
   // SECOND TEST 
   // For set of inputs where brunt is negative at all
   //   points, then verify that output is negative 
-  
+ 
   // Brunt Vaisalla frequency [/s]
   Real brunt_neg[nlev] = {-0.3, -0.4, -0.1, -10.0, -0.5}; 
 
@@ -97,6 +98,14 @@ TEST_CASE("shoc_tke_column_stab", "shoc") {
     }
   }
   
+  for(Int s = 0; s < SDS.shcol; ++s) {
+    for (Int n = 0; n < SDS.nlev; ++n){
+      const auto offset = n + s * SDS.nlev;
+      // All points should be less than zero 
+      REQUIRE(SDS.brunt[offset] < 0.0);
+    }
+  }  
+  
   // Call the fortran implementation
   integ_column_stability(nlev, SDS);
   
@@ -105,7 +114,7 @@ TEST_CASE("shoc_tke_column_stab", "shoc") {
   for(Int s = 0; s < shcol; ++s) {
     REQUIRE(SDS.brunt_int[s] < 0.0);
   }  
-  
+ 
 }
 
 }  // namespace unit_test

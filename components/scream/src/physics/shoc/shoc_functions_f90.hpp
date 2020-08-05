@@ -66,6 +66,48 @@ struct SHOCGridData {
 void shoc_grid(Int nlev, SHOCGridData &d);
 
 
+//Create data structure to hold data for integ_column_stability
+struct SHOCColstabData {
+  static constexpr size_t NUM_ARRAYS   = 3; //# of arrays with values at cell centers (zt grid)
+  static constexpr size_t NUM_ARRAYS_c = 1; //# of arrays with column only dimensions
+
+  // Inputs
+  Int   shcol, nlev;
+  Real *dz_zt, *pres, *brunt;
+
+  // Output
+  Real *brunt_int;
+
+  //functions to initialize data
+  SHOCColstabData(Int shcol_, Int nlev_);
+  SHOCColstabData(const SHOCColstabData &rhs);
+  SHOCColstabData &operator=(const SHOCColstabData &rhs);
+
+  void init_ptrs();
+
+  // Internals
+  Int m_shcol, m_nlev, m_total, m_totalc;
+  std::vector<Real> m_data;
+  std::vector<Real> m_datac;
+
+  template <util::TransposeDirection::Enum D>
+  void transpose() {
+    SHOCColstabData d_trans(*this);
+
+    // Transpose on the zt grid
+    util::transpose<D>(dz_zt, d_trans.dz_zt, shcol, nlev);
+    util::transpose<D>(pres, d_trans.pres, shcol, nlev);
+    util::transpose<D>(brunt, d_trans.brunt, shcol, nlev);
+    
+    // Transpose on the column only grid
+    util::transpose<D>(brunt_int, d_trans.brunt_int, shcol, 1);
+
+    *this = std::move(d_trans);
+  }
+};//SHOCColstabData
+
+void integ_column_stability(Int nlev, SHOCColstabData &d);
+
 //Create data structure to hold data for calc_shoc_vertflux
 struct SHOCVertfluxData {
   static constexpr size_t NUM_ARRAYS   = 1; //# of arrays with values at cell centers (zt grid)
@@ -79,7 +121,7 @@ struct SHOCVertfluxData {
   Real *vertflux;
 
   //functions to initialize data
-  SHOCVertfluxData(Int shcol_, Int nevl_, Int nlevi_);
+  SHOCVertfluxData(Int shcol_, Int nlev_, Int nlevi_);
   SHOCVertfluxData(const SHOCVertfluxData &rhs);
   SHOCVertfluxData &operator=(const SHOCVertfluxData &rhs);
 

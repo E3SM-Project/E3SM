@@ -24,6 +24,9 @@ void shoc_init_c(int nlev, Real gravit, Real rair, Real rh2o, Real cpair,
 void shoc_grid_c(int shcol, int nlev, int nlevi, Real *zt_grid, Real *zi_grid,
                  Real *pdel, Real *dz_zt, Real *dzi_zi, Real *rho_zt);
 
+void integ_column_stability_c(Int nlev, Int shcol, Real *dz_zt, Real *pres,
+			      Real *brunt, Real *brunt_int);
+
 void calc_shoc_vertflux_c(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 			  Real *dz_zi, Real *invar, Real *vertflux);
 }
@@ -117,6 +120,72 @@ void shoc_grid(Int nlev, SHOCGridData &d) {
   d.transpose<util::TransposeDirection::c2f>();
   shoc_grid_c(d.shcol, d.nlev, d.nlevi, d.zt_grid, d.zi_grid, d.pdel, d.dz_zt,
               d.dz_zi, d.rho_zt);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+//Initialize data for integ_column_stability
+SHOCColstabData::SHOCColstabData(Int shcol_, Int nlev_)
+  : shcol(shcol_),
+    nlev(nlev_),
+    m_total(shcol_ * nlev_),
+    m_totalc(shcol_),
+    m_data(NUM_ARRAYS * m_total, 0),
+    m_datac(NUM_ARRAYS_c * m_totalc,0) {
+  init_ptrs();
+}
+
+SHOCColstabData::SHOCColstabData(const SHOCColstabData &rhs)
+  : shcol(rhs.shcol),
+    nlev(rhs.nlev),
+    m_total(rhs.m_total),
+    m_totalc(rhs.m_totalc),
+    m_data(rhs.m_data),
+    m_datac(rhs.m_datac) {
+  init_ptrs();
+}
+
+
+SHOCColstabData  &SHOCColstabData::operator=(const SHOCColstabData &rhs) {
+  init_ptrs();
+
+  shcol    = rhs.shcol;
+  nlev     = rhs.nlev;
+  m_total  = rhs.m_total;
+  m_totalc = rhs.m_totalc;
+  m_data   = rhs.m_data;
+  m_datac  = rhs.m_datac;  // Copy
+
+  return *this;
+}
+
+
+void SHOCColstabData::init_ptrs() {
+  Int offset         = 0;
+  Real *data_begin   = m_data.data();
+  Real *data_begin_c = m_datac.data();
+
+  std::array<Real **, NUM_ARRAYS> ptrs = {&dz_zt, &pres, &brunt};
+  std::array<Real **, NUM_ARRAYS_c> ptrs_c = {&brunt_int};
+
+  for(size_t i = 0; i < NUM_ARRAYS; ++i) {
+    *ptrs[i] = data_begin + offset;
+    offset += m_total;
+  }
+  
+  offset = 0;
+  for(size_t i = 0; i < NUM_ARRAYS_c; ++i) {
+    *ptrs_c[i] = data_begin_c + offset;
+    offset += m_totalc;
+  }
+  
+}
+
+//Initialize shoc parameterization, trnaspose data from c to fortran,
+//call calc_shoc_vertflux fortran subroutine and transpose data back to c
+void integ_column_stability(Int nlev, SHOCColstabData &d) {
+  shoc_init(nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  integ_column_stability_c(d.nlev, d.shcol, d.dz_zt, d.pres, d.brunt, d.brunt_int);
   d.transpose<util::TransposeDirection::f2c>();
 }
 

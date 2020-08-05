@@ -115,7 +115,21 @@ contains
 
   end subroutine shoc_grid_c
 
+  subroutine integ_column_stability_c(nlev, shcol, dz_zt, pres, brunt, brunt_int) bind (C)
+    use shoc, only: integ_column_stability
 
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in) :: dz_zt(shcol,nlev)
+    real(kind=c_real), intent(in) :: pres(shcol,nlev)
+    real(kind=c_real), intent(in) :: brunt(shcol,nlev)
+    
+    real(kind=c_real), intent(out) :: brunt_int(shcol)
+
+    call integ_column_stability(nlev, shcol, dz_zt, pres, brunt, brunt_int)
+
+  end subroutine integ_column_stability_c
+  
   subroutine calc_shoc_vertflux_c(shcol, nlev, nlevi, tkh_zi, dz_zi, invar, vertflux) bind (C)
     use shoc, only: calc_shoc_vertflux
 
