@@ -1260,9 +1260,10 @@ end subroutine physics_ptend_copy
 
 ! compute new total pressure variables
        state%pdel  (:ncol,k  ) = state%pdel(:ncol,k  ) * fdq(:ncol)
-       state%pint  (:ncol,k+1) = state%pint(:ncol,k  ) + state%pdel(:ncol,k)
-       state%lnpint(:ncol,k+1) = log(state%pint(:ncol,k+1))
-       state%rpdel (:ncol,k  ) = 1._r8/ state%pdel(:ncol,k  )
+!!these are not needed for TE so commenting out
+!       state%pint  (:ncol,k+1) = state%pint(:ncol,k  ) + state%pdel(:ncol,k)
+!       state%lnpint(:ncol,k+1) = log(state%pint(:ncol,k+1))
+!       state%rpdel (:ncol,k  ) = 1._r8/ state%pdel(:ncol,k  )
     end do
 
 !new ps
