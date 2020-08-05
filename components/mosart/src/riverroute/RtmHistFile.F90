@@ -11,7 +11,8 @@ module RtmHistFile
   use RunoffMod     , only : rtmCTL, Tunit
   use RtmVar        , only : rtmlon, rtmlat, spval, ispval, secspday, frivinp_rtm, &   
                              iulog, nsrest, caseid, inst_suffix, nsrStartup, nsrBranch, & 
-                             ctitle, version, hostname, username, conventions, source
+                             ctitle, version, hostname, username, conventions, source, &
+                             isgrid2d
   use RtmFileUtils  , only : get_filename, getfil
   use RtmTimeManager, only : get_nstep, get_curr_date, get_curr_time, get_ref_date, &
                              get_prev_time, get_prev_date, is_last_step
@@ -700,8 +701,12 @@ contains
 
     ! Global uncompressed dimensions (including non-land points)
     numrtm     = rtmCTL%numr
-    call ncd_defdim( lnfid, 'lon', rtmlon    , dimid)
-    call ncd_defdim( lnfid, 'lat', rtmlat    , dimid)
+    if (isgrid2d) then
+      call ncd_defdim( lnfid, 'lon',      rtmlon, dimid)
+      call ncd_defdim( lnfid, 'lat',      rtmlat, dimid)
+    else
+      call ncd_defdim( lnfid, 'gridcell', rtmlon, dimid)
+    endif
     call ncd_defdim( lnfid, 'allrof', numrtm    , dimid)
 
     call ncd_defdim(lnfid, 'string_length', 8, strlen_dimid)
@@ -805,18 +810,33 @@ contains
        call ncd_defvar(nfid(t), 'date_written', ncd_char, 2, dim2id, varid)
        call ncd_defvar(nfid(t), 'time_written', ncd_char, 2, dim2id, varid)
 
-       call ncd_defvar(varname='lon', xtype=tape(t)%ncprec, dim1name='lon', &
-            long_name='runoff coordinate longitude', units='degrees_east', ncid=nfid(t))
-       call ncd_defvar(varname='lat', xtype=tape(t)%ncprec, dim1name='lat', &
-            long_name='runoff coordinate latitude', units='degrees_north', ncid=nfid(t))
-       call ncd_defvar(varname='mask', xtype=ncd_int, dim1name='lon', dim2name='lat', &
-            long_name='runoff mask', units='unitless', ncid=nfid(t))
-       call ncd_defvar(varname='area', xtype=tape(t)%ncprec, dim1name='lon', dim2name='lat', &
-            long_name='runoff grid area', units='m2', ncid=nfid(t))
-       call ncd_defvar(varname='areatotal', xtype=tape(t)%ncprec, dim1name='lon', dim2name='lat', &
-            long_name='basin upstream areatotal', units='m2', ncid=nfid(t))
-       call ncd_defvar(varname='areatotal2', xtype=tape(t)%ncprec, dim1name='lon', dim2name='lat', &
-            long_name='computed basin upstream areatotal', units='m2', ncid=nfid(t))
+       if (isgrid2d) then
+         call ncd_defvar(varname='lon', xtype=tape(t)%ncprec, dim1name='lon', &
+              long_name='runoff coordinate longitude', units='degrees_east', ncid=nfid(t))
+         call ncd_defvar(varname='lat', xtype=tape(t)%ncprec, dim1name='lat', &
+              long_name='runoff coordinate latitude', units='degrees_north', ncid=nfid(t))
+         call ncd_defvar(varname='mask', xtype=ncd_int, dim1name='lon', dim2name='lat', &
+              long_name='runoff mask', units='unitless', ncid=nfid(t))
+         call ncd_defvar(varname='area', xtype=tape(t)%ncprec, dim1name='lon', dim2name='lat', &
+              long_name='runoff grid area', units='m2', ncid=nfid(t))
+         call ncd_defvar(varname='areatotal', xtype=tape(t)%ncprec, dim1name='lon', dim2name='lat', &
+              long_name='basin upstream areatotal', units='m2', ncid=nfid(t))
+         call ncd_defvar(varname='areatotal2', xtype=tape(t)%ncprec, dim1name='lon', dim2name='lat', &
+              long_name='computed basin upstream areatotal', units='m2', ncid=nfid(t))
+       else
+         call ncd_defvar(varname='lon', xtype=tape(t)%ncprec, dim1name='gridcell',       &
+              long_name='runoff coordinate longitude', units='degrees_east', ncid=nfid(t))
+         call ncd_defvar(varname='lat', xtype=tape(t)%ncprec, dim1name='gridcell',       &
+              long_name='runoff coordinate latitude', units='degrees_north', ncid=nfid(t))
+         call ncd_defvar(varname='mask', xtype=ncd_int, dim1name='gridcell',             &
+              long_name='runoff mask', units='unitless', ncid=nfid(t))
+         call ncd_defvar(varname='area', xtype=tape(t)%ncprec, dim1name='gridcell',      &
+              long_name='runoff grid area', units='m2', ncid=nfid(t))
+         call ncd_defvar(varname='areatotal', xtype=tape(t)%ncprec, dim1name='gridcell', &
+              long_name='basin upstream areatotal', units='m2', ncid=nfid(t))
+         call ncd_defvar(varname='areatotal2', xtype=tape(t)%ncprec, dim1name='gridcell',&
+              long_name='computed basin upstream areatotal', units='m2', ncid=nfid(t))
+       endif
 
     else if (mode == 'write') then
 
@@ -1007,10 +1027,18 @@ contains
                    call shr_sys_abort()
                 end select
                 
-                call ncd_defvar(ncid=nfid(t), varname=varname, xtype=tape(t)%ncprec, &
-                     dim1name='lon', dim2name='lat', dim3name='time', &
-                     long_name=long_name, units=units, cell_method=avgstr, &
-                     missing_value=spval, fill_value=spval)
+                if (isgrid2d) then
+                  call ncd_defvar(ncid=nfid(t), varname=varname, xtype=tape(t)%ncprec, &
+                       dim1name='lon', dim2name='lat', dim3name='time',                &
+                       long_name=long_name, units=units, cell_method=avgstr,           &
+                       missing_value=spval, fill_value=spval)
+                else
+                  call ncd_defvar(ncid=nfid(t), varname=varname, xtype=tape(t)%ncprec, &
+                       dim1name='gridcell', dim2name='time',                           &
+                       long_name=long_name, units=units, cell_method=avgstr,           &
+                       missing_value=spval, fill_value=spval)
+                endif
+
              end do
                 
              ! Exit define model
@@ -1210,13 +1238,21 @@ contains
                 long_name_acc  =  trim(long_name) // " accumulator number of samples"
                 nacs           => tape(t)%hlist(f)%nacs
                 hbuf           => tape(t)%hlist(f)%hbuf
-               
-                call ncd_defvar(ncid=ncid_hist(t), varname=trim(name), xtype=ncd_double, &
-                     dim1name='lon', dim2name='lat', &
-                     long_name=trim(long_name), units=trim(units))
-                call ncd_defvar(ncid=ncid_hist(t), varname=trim(name_acc), xtype=ncd_int,  &
-                     dim1name='lon', dim2name='lat', &
-                     long_name=trim(long_name_acc), units=trim(units_acc))
+                
+                if (isgrid2d) then
+                  call ncd_defvar(ncid=ncid_hist(t), varname=trim(name), xtype=ncd_double, &
+                       dim1name='lon', dim2name='lat', &
+                       long_name=trim(long_name), units=trim(units))
+                  call ncd_defvar(ncid=ncid_hist(t), varname=trim(name_acc), xtype=ncd_int,  &
+                       dim1name='lon', dim2name='lat', &
+                       long_name=trim(long_name_acc), units=trim(units_acc))
+                else
+                  call ncd_defvar(ncid=ncid_hist(t), varname=trim(name), xtype=ncd_double, &
+                       dim1name='gridcell', long_name=trim(long_name), units=trim(units))
+                  call ncd_defvar(ncid=ncid_hist(t), varname=trim(name_acc), xtype=ncd_int,  &
+                       dim1name='gridcell', long_name=trim(long_name_acc), units=trim(units_acc))
+                endif
+                
              end do
           endif
 

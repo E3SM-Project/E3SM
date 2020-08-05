@@ -60,6 +60,7 @@ module RtmVar
   ! Rtm grid size
   integer :: rtmlon = 1 ! number of rtm longitudes (initialize)
   integer :: rtmlat = 1 ! number of rtm latitudes  (initialize)
+  logical :: isgrid2d = .true. ! Determine if the inputs are 1d or 2d
 
   character(len=256), public :: rpntfil = 'rpointer.rof' ! file name for local restart pointer file
 
