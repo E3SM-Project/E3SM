@@ -265,6 +265,8 @@ lnd/clm2/surfdata_map/surfdata_ne4pg2_simyr2000_c190620.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_ne240np4_simyr2000_c170821.nc</fsurdat>
 <fsurdat hgrid="r05"         sim_year="2000" >
 lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr2000_c190418.nc</fsurdat>
+<fsurdat hgrid="r0125"       sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr2000_c190730.nc</fsurdat>
 
 <!-- Crop surface datasets -->
 <fsurdat hgrid="1.9x2.5"   sim_year="2000" use_crop=".true." >
