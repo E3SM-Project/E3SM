@@ -4,7 +4,7 @@
 module physics_types
 
   use shr_kind_mod, only: r8 => shr_kind_r8
-  use ppgrid,       only: pcols, pver, psubcols
+  use ppgrid,       only: pcols, pver, psubcols, pverp
   use constituents, only: pcnst, qmin, cnst_name
   use geopotential, only: geopotential_t
   use physconst,    only: zvir, gravit, cpair, rair, cpairv, rairv
@@ -66,6 +66,7 @@ module physics_types
           lat,     &! latitude (radians)
           lon,     &! longitude (radians)
           ps,      &! surface pressure
+          oldps,      &! surface pressure
           psdry,   &! dry surface pressure
           phis,    &! surface geopotential
           ulat,    &! unique latitudes  (radians)
@@ -79,6 +80,7 @@ module physics_types
           pmid,    &! midpoint pressure (Pa) 
           pmiddry, &! midpoint pressure dry (Pa) 
           pdel,    &! layer thickness (Pa)
+          oldpdel,    &! layer thickness (Pa)
           pdeldry, &! layer thickness dry (Pa)
           rpdel,   &! reciprocal of layer thickness (Pa)
           rpdeldry,&! recipricol layer thickness dry (Pa)
@@ -1210,7 +1212,7 @@ end subroutine physics_ptend_copy
     !
     !-----------------------------------------------------------------------
     ! verify that the dycore is FV
-    if (.not. dycore_is('LR') ) return
+!    if (.not. dycore_is('LR') ) return
 
     if (state%psetcols .ne. pcols) then
        call endrun('physics_dme_adjust: cannot pass in a state which has sub-columns')
@@ -1218,6 +1220,10 @@ end subroutine physics_ptend_copy
 
     lchnk = state%lchnk
     ncol  = state%ncol
+
+!save old values
+    state%oldpdel=state%pdel
+    state%oldps=state%ps
 
     ! adjust dry mass in each layer back to input value, while conserving
     ! constituents, momentum, and total energy
@@ -1227,10 +1233,11 @@ end subroutine physics_ptend_copy
        fdq(:ncol) = 1._r8 + state%q(:ncol,k,1) - qini(:ncol,k)
 
        ! adjust constituents to conserve mass in each layer
-       do m = 1, pcnst
-          state%q(:ncol,k,m) = state%q(:ncol,k,m) / fdq(:ncol)
-       end do
+!       do m = 1, pcnst
+!          state%q(:ncol,k,m) = state%q(:ncol,k,m) / fdq(:ncol)
+!       end do
 
+#if 0
        if (adjust_te) then
           ! compute specific total energy of unadjusted state (J/kg)
           te(:ncol) = state%s(:ncol,k) + 0.5_r8*(state%u(:ncol,k)**2 + state%v(:ncol,k)**2) 
@@ -1249,6 +1256,7 @@ end subroutine physics_ptend_copy
           ! compute adjusted static energy
           state%s(:ncol,k) = te(:ncol) - 0.5_r8*(state%u(:ncol,k)**2 + state%v(:ncol,k)**2)
        end if
+#endif
 
 ! compute new total pressure variables
        state%pdel  (:ncol,k  ) = state%pdel(:ncol,k  ) * fdq(:ncol)
@@ -1256,6 +1264,12 @@ end subroutine physics_ptend_copy
        state%lnpint(:ncol,k+1) = log(state%pint(:ncol,k+1))
        state%rpdel (:ncol,k  ) = 1._r8/ state%pdel(:ncol,k  )
     end do
+
+!new ps
+    state%ps(:ncol) = state%pint(:ncol,pverp)
+    do k=1,pver
+       state%ps(:ncol) = state%ps(:ncol) + state%pdel(:ncol, k)
+    enddo
 
     if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then 
       zvirv(:,:) = shr_const_rwv / rairv(:,:,state%lchnk) - 1._r8
@@ -1561,7 +1575,10 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   
   allocate(state%ps(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%ps')
-  
+ 
+  allocate(state%oldps(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%oldps')
+ 
   allocate(state%psdry(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%psdry')
   
@@ -1598,6 +1615,9 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   allocate(state%pdel(psetcols,pver), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%pdel')
   
+  allocate(state%oldpdel(psetcols,pver), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%oldpdel')
+
   allocate(state%pdeldry(psetcols,pver), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%pdeldry')
   
@@ -1713,6 +1733,9 @@ subroutine physics_state_dealloc(state)
   deallocate(state%ps, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%ps')
   
+  deallocate(state%oldps, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%oldps')
+
   deallocate(state%psdry, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%psdry')
   
@@ -1749,6 +1772,9 @@ subroutine physics_state_dealloc(state)
   deallocate(state%pdel, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%pdel')
   
+  deallocate(state%oldpdel, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%oldpdel')
+
   deallocate(state%pdeldry, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%pdeldry')
   
