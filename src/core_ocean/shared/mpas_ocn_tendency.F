@@ -298,7 +298,7 @@ contains
       !
       ! velocity tendency: start accumulating tendency terms
       !
-      !$omp parallel
+      !$omp Parallel
       !$omp do schedule(runtime)
       do iEdge = 1, nEdges
          tend_normalVelocity(:, iEdge) = 0.0_RKIND
@@ -734,6 +734,7 @@ contains
                      nTracerGroup, nCellsSolve, zMid, indexTemperature, indexSalinity, tracerGroupSurfaceFlux, err)
                endif
 
+               !
                ! ocean surface restoring
                !
                  if (config_use_tracerGroup_surface_restoring) then
@@ -856,11 +857,13 @@ contains
                if(trim(groupItr % memberName)=='activeTracers') then
                  isActiveTracer = .true.
                  if (config_compute_active_tracer_budgets) then
+                    !$omp parallel
                     !$omp do schedule(runtime)
                     do iCell = 1, nCells
                       activeTracerHorMixTendency(:,:,iCell) = tracerGroupTend(:,:,iCell)
                     enddo
                     !$omp end do
+                    !$omp end parallel
                  endif
                endif
                call ocn_tracer_hmix_tend(meshPool, scratchPool, layerThicknessEdge, layerThickness, zMid, tracerGroup, &
@@ -870,12 +873,14 @@ contains
                if(trim(groupItr % memberName)=='activeTracers') then
                  isActiveTracer = .true.
                  if (config_compute_active_tracer_budgets) then
+                    !$omp parallel
                     !$omp do schedule(runtime)
                     do iCell = 1, nCells
                       activeTracerHorMixTendency(:,:,iCell) = tracerGroupTend(:,:,iCell) - &
                                   activeTracerHorMixTendency(:,:,iCell)
                     enddo
                     !$omp end do
+                    !$omp end parallel
                  endif
                endif
  
@@ -1061,8 +1066,8 @@ contains
       allocate(div_hu(nVertLevels))
 
       !$omp parallel
-      !$omp do schedule(runtime) &
-      !$omp private(div_hu, div_hu_btr, invAreaCell, i, iEdge, k, flux, totalThickness)
+      !$omp do schedule(runtime) private(div_hu_btr, invAreaCell, i, iEdge, k, flux, totalThickness) &
+      !$omp firstprivate(div_hu)
       do iCell = 1, nCells
         tend_lowFreqDivergence(:, iCell) = 0.0_RKIND
         tend_highFreqThickness(:, iCell) = 0.0_RKIND
