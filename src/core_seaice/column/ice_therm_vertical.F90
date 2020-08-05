@@ -1454,6 +1454,9 @@
          ebot_mlt = ebot_mlt - dhs*zqsn(k)
          ebot_mlt = max(ebot_mlt, c0)
 
+         ! bug fix added by Andrew Roberts, August 5, 2020
+         melts = melts - dhs
+
       enddo                     ! nslyr
 
       !-----------------------------------------------------------------
