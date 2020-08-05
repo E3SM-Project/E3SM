@@ -303,7 +303,7 @@ Set to 0 to keep fire off. Set to 1 to turn on fates spitfire module (only relev
 </entry>
 
 <entry id="fates_parteh_mode" type="integer" category="physics"
-       group="clm_inparm" valid_values="1">
+       group="clm_inparm" valid_values="1,2">
 Switch deciding which nutrient model to use in FATES.
 </entry>
 
