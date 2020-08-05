@@ -23,6 +23,9 @@ void shoc_init_c(int nlev, Real gravit, Real rair, Real rh2o, Real cpair,
 
 void shoc_grid_c(int shcol, int nlev, int nlevi, Real *zt_grid, Real *zi_grid,
                  Real *pdel, Real *dz_zt, Real *dzi_zi, Real *rho_zt);
+
+void calc_shoc_vertflux_c(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
+			  Real *dz_zi, Real *invar, Real *vertflux);
 }
 
 namespace scream {
@@ -114,6 +117,76 @@ void shoc_grid(Int nlev, SHOCGridData &d) {
   d.transpose<util::TransposeDirection::c2f>();
   shoc_grid_c(d.shcol, d.nlev, d.nlevi, d.zt_grid, d.zi_grid, d.pdel, d.dz_zt,
               d.dz_zi, d.rho_zt);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+
+//Initialize data for calc_shoc_vertflux function
+SHOCVertfluxData::SHOCVertfluxData(Int shcol_, Int nlev_, Int nlevi_)
+  : shcol(shcol_),
+    nlev(nlev_),
+    nlevi(nlevi_),
+    m_total(shcol_ * nlev_),
+    m_totali(shcol_ * nlevi_),
+    m_data(NUM_ARRAYS * m_total, 0),
+    m_datai(NUM_ARRAYS_i * m_totali, 0) {
+  init_ptrs();
+}
+
+SHOCVertfluxData::SHOCVertfluxData(const SHOCVertfluxData &rhs)
+  : shcol(rhs.shcol),
+    nlev(rhs.nlev),
+    nlevi(rhs.nlevi),
+    m_total(rhs.m_total),
+    m_totali(rhs.m_totali),
+    m_data(rhs.m_data),
+    m_datai(rhs.m_datai) {
+  init_ptrs();
+}
+
+
+SHOCVertfluxData  &SHOCVertfluxData::operator=(const SHOCVertfluxData &rhs) {
+  init_ptrs();
+
+  shcol    = rhs.shcol;
+  nlev     = rhs.nlev;
+  nlevi    = rhs.nlevi;
+  m_total  = rhs.m_total;
+  m_totali = rhs.m_totali;
+  m_data   = rhs.m_data;
+  m_datai  = rhs.m_datai;  // Copy
+
+  return *this;
+}
+
+
+void SHOCVertfluxData::init_ptrs() {
+  Int offset         = 0;
+  Real *data_begin   = m_data.data();
+  Real *data_begin_i = m_datai.data();
+
+  std::array<Real **, NUM_ARRAYS> ptrs     = {&invar};
+  std::array<Real **, NUM_ARRAYS_i> ptrs_i = {&tkh_zi, &dz_zi, &vertflux};
+
+  for(size_t i = 0; i < NUM_ARRAYS; ++i) {
+    *ptrs[i] = data_begin + offset;
+    offset += m_total;
+  }
+
+  offset = 0;
+  for(size_t i = 0; i < NUM_ARRAYS_i; ++i) {
+    *ptrs_i[i] = data_begin_i + offset;
+    offset += m_totali;
+  }
+}
+
+//Initialize shoc parameterization, trnaspose data from c to fortran,
+//call calc_shoc_vertflux fortran subroutine and transpose data back to c
+void calc_shoc_vertflux(Int nlev, SHOCVertfluxData &d) {
+  shoc_init(nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  calc_shoc_vertflux_c(d.shcol, d.nlev, d.nlevi, d.tkh_zi, d.dz_zi, d.invar,
+		       d.vertflux);
   d.transpose<util::TransposeDirection::f2c>();
 }
 
