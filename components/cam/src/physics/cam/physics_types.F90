@@ -1266,7 +1266,7 @@ end subroutine physics_ptend_copy
     end do
 
 !new ps
-    state%ps(:ncol) = state%pint(:ncol,pverp)
+    state%ps(:ncol) = state%pint(:ncol,1)
     do k=1,pver
        state%ps(:ncol) = state%ps(:ncol) + state%pdel(:ncol, k)
     enddo
