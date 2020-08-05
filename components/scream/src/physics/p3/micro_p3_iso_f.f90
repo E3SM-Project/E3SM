@@ -689,6 +689,16 @@ subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
     real(kind=c_real)            :: cxx_exp
   end function cxx_exp
 
+  function cxx_tanh(input) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in) :: input
+
+    ! return
+    real(kind=c_real)            :: cxx_tanh
+  end function cxx_tanh
+
 end interface
 
 end module micro_p3_iso_f
