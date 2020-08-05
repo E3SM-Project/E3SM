@@ -23,7 +23,6 @@ module ocn_tracer_hmix_Redi
    use mpas_timer
    use mpas_derived_types
    use mpas_pool_routines
-   use mpas_threading
    use mpas_constants
 
    use ocn_config
@@ -177,6 +176,7 @@ contains
       allocate (redi_term3_topOfCell(nTracers, nVertLevels + 1, nCells))
 
       nCells = nCellsArray(2)
+      !$omp parallel
       !$omp do schedule(runtime) private(i, iEdge)
       do iCell = 1,nCells
         rediKappaCell(iCell) = 0.0_RKIND
@@ -187,6 +187,7 @@ contains
         rediKappaCell(iCell) = rediKappaCell(iCell) / areaCell(iCell)
       enddo
       !$omp end do
+      !$omp end parallel
 
       nCells = nCellsArray(1)
       nCellsP1 = nCellsArray(size(nCellsArray)) + 1
@@ -362,8 +363,7 @@ contains
       endif
 
       !$omp parallel
-      !$omp do schedule(runtime) &
-      !$omp private(k, iTr, tempTracer, iEdge)
+      !$omp do schedule(runtime) private(k, iTr, tempTracer, iEdge)
       do iCell = 1, nCells
          do k = 1, maxLevelCell(iCell)
             do iTr = 1, ntracers
@@ -387,10 +387,11 @@ contains
          end do
       end do ! iCell
       !$omp end do
+      !$omp end parallel
 
       !now go back and reapply all tendencies
-      !$omp do schedule(runtime) &
-      !$omp private(invAreaCell, k, iTr, i, iEdge)
+      !$omp parallel
+      !$omp do schedule(runtime) private(invAreaCell, k, iTr, i, iEdge)
       do iCell = 1, nCells
          invAreaCell = 1.0_RKIND/areaCell(iCell)
          do k = 1, maxLevelCell(iCell)
@@ -490,7 +491,7 @@ contains
             end do
             !$omp end do
             !$omp end parallel
-         else if (config_Redi_closure == 'data') then
+          else if (config_Redi_closure == 'data') then
             ! read RediKappa in from input
             call mpas_log_write("config_Redi_closure = 'data'. "// &
                                 "Make sure that the variable RediKappa is read in from an input file.")

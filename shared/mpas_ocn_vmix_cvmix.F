@@ -340,15 +340,15 @@ contains
       call mpas_timer_start('cvmix cell loop', .false.)
       do kpp_stage = 1,2
       ! TODO, mdt: determine where the openmp data race is coming from in this loop
-      !!$omp parallel
-      !!$omp do schedule(runtime) &
-      !!$omp private(iCell, invAreaCell, k, RiSmoothed, RiTemp, BVFSmoothed, nsmooth, &
-      !!$omp         langmuirNumber, langmuirEnhancementFactor, bulkRichardsonNumberStop, &
-      !!$omp         bulkRichardsonFlag, topIndex, kIndexOBL, deltaVelocitySquared, sigma, &
-      !!$omp         OBLDepths, interfaceForcings, surfaceAverageIndex, sfc_layer_depth, kav, &
-      !!$omp         i, iEdge, factor, normalVelocitySum, NormalVelocityAv, &
-      !!$omp         delU2, potentialDensitySum, blTemp) &
-      !!$omp firstprivate(cvmix_variables, Nsqr_iface, turbulentScalarVelocityScale)
+!      !$omp parallel
+!      !$omp do schedule(runtime) &
+!      !$omp private(k, RiSmoothed, RiTemp, nsmooth, BVFSmoothed, langmuirNumber, &
+!      !$omp         langmuirEnhancementFactor, bulkRichardsonNumberStop, bulkRichardsonFlag, &
+!      !$omp         topIndex, kIndexOBL, deltaVelocitySquared, sigma, OBLDepths, interfaceForcings, &
+!      !$omp         surfaceAverageIndex, sfc_layer_depth, kav, i, iEdge, &
+!      !$omp         normalVelocitySum, layerThicknessEdgeSum, normalVelocityAv, delU2, potentialDensitySum, &
+!      !$omp         layerThicknessSum, blTemp) &
+!      !$omp firstprivate(cvmix_variables, Nsqr_iface, turbulentScalarVelocityScale)
       do iCell = 1, nCells
 
          ! specify geometry/location
@@ -745,8 +745,8 @@ contains
 
  endif ! kpp stage 2 convection calc
       end do  ! do iCell=1,mesh%nCells
-      !!$omp end do
-      !!$omp end parallel
+!      !$omp end do
+!      !$omp end parallel
 
       if (kpp_stage == 1 .and. config_cvmix_use_BLD_smoothing) then ! smooth boundary layer
          nCells = nCellsArray(2)
