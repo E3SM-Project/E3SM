@@ -3,6 +3,7 @@
 
 #include "YAKL.h"
 #include "Array.h"
+#include <iomanip>
 
 using yakl::c::Bounds;
 using yakl::min;

@@ -1,5 +1,12 @@
 
-add_executable(cpp2d ../dmdf.F90 ../cpp_driver.F90 ../../fft.F90 ${CPP_SRC})
+add_executable(cpp2d ../dmdf.F90 ../cpp_driver.F90 ../../fft.F90
+               ../../fortran/crmdims.F90
+               ../../fortran/crm_input_module.F90
+               ../../fortran/crm_output_module.F90
+               ../../fortran/crm_rad_module.F90
+               ../../fortran/crm_state_module.F90
+               ../../fortran/openacc_utils.F90
+               ${CPP_SRC})
 target_link_libraries(cpp2d yakl ${NCFLAGS})
 set_property(TARGET cpp2d APPEND PROPERTY COMPILE_FLAGS ${DEFS2D} )
 

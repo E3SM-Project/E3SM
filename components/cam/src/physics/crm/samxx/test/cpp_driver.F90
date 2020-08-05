@@ -49,7 +49,7 @@ program driver
   real(crm_rknd), allocatable :: read_crm_rad_qi           (:,:,:,:)
   real(crm_rknd), allocatable :: read_crm_rad_cld          (:,:,:,:)
   character(len=64) :: fprefix = 'cpp_output'
-  real(crm_rknd), allocatable :: gcolp(:)
+  integer, allocatable :: gcolp(:)
   integer(8) :: t1, t2, tr
 
   call mpi_init(ierr)

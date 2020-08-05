@@ -48,6 +48,7 @@ program driver
   real(crm_rknd), allocatable :: read_crm_rad_cld          (:,:,:,:)
   character(len=64) :: fprefix = 'fortran_output'
   integer(8) :: t1, t2, tr
+  integer :: ierr
 
   call mpi_init(ierr)
   call mpi_comm_size(mpi_comm_world,nranks,ierr)

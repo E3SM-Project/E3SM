@@ -9,7 +9,7 @@ contains
     !        momentum tendency due to SGS diffusion
 
     use vars
-    use params, only: docolumn, crm_rknd
+    use params, only: crm_rknd
     use openacc_utils
     implicit none
     integer, intent(in) :: ncrms

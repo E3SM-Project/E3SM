@@ -8,8 +8,8 @@ module openacc_utils
   use cudafor
 #endif
   implicit none
-  integer :: ierr
-  integer :: asyncid_loc = 1
+  integer, private :: ierr
+  integer, private :: asyncid_loc = 1
 
   interface memset_async
     module procedure memset_r4_1d
