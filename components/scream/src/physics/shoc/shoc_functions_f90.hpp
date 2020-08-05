@@ -65,6 +65,7 @@ struct SHOCGridData {
 // and density. 
 void shoc_grid(Int nlev, SHOCGridData &d);
 
+
 //Create data structure to hold data for calc_shoc_vertflux
 struct SHOCVertfluxData {
   static constexpr size_t NUM_ARRAYS   = 1; //# of arrays with values at cell centers (zt grid)

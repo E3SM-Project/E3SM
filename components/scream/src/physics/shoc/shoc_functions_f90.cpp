@@ -124,6 +124,7 @@ void shoc_grid(Int nlev, SHOCGridData &d) {
   d.transpose<util::TransposeDirection::f2c>();
 }
 
+
 //Initialize data for calc_shoc_vertflux function
 SHOCVertfluxData::SHOCVertfluxData(Int shcol_, Int nlev_, Int nlevi_)
   : shcol(shcol_),
@@ -147,6 +148,7 @@ SHOCVertfluxData::SHOCVertfluxData(const SHOCVertfluxData &rhs)
   init_ptrs();
 }
 
+
 SHOCVertfluxData  &SHOCVertfluxData::operator=(const SHOCVertfluxData &rhs) {
   init_ptrs();
 
@@ -160,6 +162,7 @@ SHOCVertfluxData  &SHOCVertfluxData::operator=(const SHOCVertfluxData &rhs) {
 
   return *this;
 }
+
 
 void SHOCVertfluxData::init_ptrs() {
   Int offset         = 0;
