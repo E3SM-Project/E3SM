@@ -14,10 +14,8 @@ macro (CreateGPTLTarget)
     find_library(GPTL_LIB gptl REQUIRED PATHS ${INSTALL_SHAREDPATH}/lib)
 
     # Create the interface library that scream targets can link to
-    add_library(scream_gptl INTERFACE IMPORTED GLOBAL)
-    target_link_libraries (scream_gptl INTERFACE ${GPTL_LIB})
-
-    list(APPEND SCREAM_TPL_LIBRARIES scream_gptl)
-    list(APPEND SCREAM_TPL_INCLUDE_DIRS ${INSTALL_SHAREDPATH}/include)
+    add_library(scream_gptl UNKNOWN IMPORTED GLOBAL)
+    set_target_properties(scream_gptl  PROPERTIES IMPORTED_LOCATION ${GPTL_LIB})
+    set_target_properties(scream_gptl  PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${INSTALL_SHAREDPATH}/include)
   endif ()
 endmacro()

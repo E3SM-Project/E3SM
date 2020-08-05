@@ -909,6 +909,7 @@
 !-----------------------------------------------------------------------
 !
       use shr_kind_mod, only: r8 => shr_kind_r8
+      use cam_abortutils, only : endrun
       implicit none 
 !
 !------------------------------Arguments--------------------------------
@@ -926,7 +927,9 @@
 !
 !-----------------------------------------------------------------------
 !
-      IF (IYYY.EQ.0) PAUSE 'There is no Year Zero.'
+      IF (IYYY.EQ.0) THEN
+        call endrun('There is no Year Zero.')
+      ENDIF
       IF (IYYY.LT.0) IYYY=IYYY+1
       IF (MM.GT.2) THEN
         JY=IYYY

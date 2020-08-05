@@ -1581,9 +1581,13 @@ end function radiation_nextsw_cday
 
        ! convert radiative heating rates from Q*dp to Q for energy conservation
        if (conserve_energy) then
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
           do k =1 , pver
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
              do i = 1, ncol
                 qrs(i,k) = qrs(i,k)/state%pdel(i,k)
                 qrl(i,k) = qrl(i,k)/state%pdel(i,k)
@@ -1614,9 +1618,13 @@ end function radiation_nextsw_cday
 
     ! convert radiative heating rates to Q*dp for energy conservation
     if (conserve_energy) then
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
        do k =1 , pver
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
           do i = 1, ncol
              qrs(i,k) = qrs(i,k)*state%pdel(i,k)
              qrl(i,k) = qrl(i,k)*state%pdel(i,k)

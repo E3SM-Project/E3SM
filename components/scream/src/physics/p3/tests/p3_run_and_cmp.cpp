@@ -15,10 +15,30 @@ using namespace scream;
 using namespace scream::util;
 using namespace scream::p3;
 
+  /* p3_run_and_cmp can be run in 2 modes. First, generate_baseline 
+   * runs the baseline (aka reference, probably git master) version of 
+   * the code and saves its output as a raw binary file. Then run_and_cmp
+   * runs the new/experimental version of the code and compares it against
+   * the baseline data you've saved to file. Both baseline and cmp modes
+   * start from an initial condition in ../p3_ic_cases.cpp. By default, 
+   * tests are run with log_PredictNc=true and false and also for 1 step or
+   * 6 steps. This creates a total of 4 different cases. When 6 steps are run,
+   * output for each step is considered separately. 
+   */
+
+
+/* Given a column of data for variable "label" from the reference run 
+ * (probably master) and from your new exploratory run, loop over all 
+ * heights and confirm whether or not the relative difference between  
+ * runs is within tolerance "tol". If not, print debug info. Here, "a"
+ * is the value from the reference run and "b" is from the new run.
+ */  
 template <typename Scalar>
 static Int compare (const std::string& label, const Scalar* a,
                     const Scalar* b, const Int& n, const Real& tol) {
-  Int nerr = 0;
+
+  Int nerr1 = 0;
+  Int nerr2 = 0;
   Real den = 0;
   for (Int i = 0; i < n; ++i)
     den = std::max(den, std::abs(a[i]));
@@ -26,23 +46,38 @@ static Int compare (const std::string& label, const Scalar* a,
   for (Int i = 0; i < n; ++i) {
     if (std::isnan(a[i]) || std::isinf(a[i]) ||
         std::isnan(b[i]) || std::isinf(b[i])) {
-      ++nerr;
+      ++nerr1;
       continue;
     }
+    
     const auto num = std::abs(a[i] - b[i]);
     if (num > tol*den) {
-      ++nerr;
+      ++nerr2;
       worst = std::max(worst, num);
     }
   }
-  if (nerr)
-    std::cout << label << " nerr " << nerr << " worst " << (worst/den)
-              << " with denominator " << den << "\n";
-  return nerr;
+
+  if (nerr1) {
+    std::cout << label << " has " << nerr1 << " infs + nans.\n";
+
+  }
+  
+  if (nerr2) {
+    std::cout << label << " > tol " << nerr2 << " times. Max rel diff= " << (worst/den)
+	      << " normalized by ref impl val=" << den << ".\n";
+
+  }
+  
+  return nerr1 + nerr2;
 }
 
-Int compare (const std::string& label, const double& tol,
+ /* When called with the below 3 args, compare loops over all variables 
+  * and calls the above version of "compare" to check for and report 
+  * large discrepancies.
+  */
+ Int compare (const double& tol,
              const FortranData::Ptr& ref, const FortranData::Ptr& d) {
+ 
   Int nerr = 0;
   FortranDataIterator refi(ref), di(d);
   scream_assert(refi.nfield() == di.nfield());
@@ -50,8 +85,7 @@ Int compare (const std::string& label, const double& tol,
     const auto& fr = refi.getfield(i);
     const auto& fd = di.getfield(i);
     scream_assert(fr.size == fd.size);
-    nerr += compare(label + std::string(" ") + fr.name,
-                    fr.data, fd.data, fr.size, tol);
+    nerr += compare(fr.name, fr.data, fd.data, fr.size, tol);
   }
   return nerr;
 }
@@ -59,8 +93,8 @@ Int compare (const std::string& label, const double& tol,
 struct Baseline {
   Baseline () {
     for (const bool log_predictNc : {true, false})
-      for (const int it : {1, 6})
-        params_.push_back({ic::Factory::mixed, 300, it, log_predictNc});
+      //                 initial condit,     dt,  nsteps, prescribe or predict nc
+      params_.push_back({ic::Factory::mixed, 300, 6, log_predictNc});
   }
 
   Int generate_baseline (const std::string& filename, bool use_fortran) {
@@ -98,10 +132,10 @@ struct Baseline {
         set_params(ps, *d);
         p3_init();
         for (int it=0; it<ps.it; it++) {
-          std::cout << "--- checking case # " << case_num << ", it = " << it+1 << "/" << ps.it << " ---\n" << std::flush;
+          std::cout << "--- checking case # " << case_num << ", timestep # " << it+1 << " of " << ps.it << " ---\n" << std::flush;
           read(fid, d_ref);
           p3_main(*d, use_fortran);
-          ne = compare("ref", tol, d_ref, d);
+          ne = compare(tol, d_ref, d);
           if (ne) std::cout << "Ref impl failed.\n";
           nerr += ne;
         }

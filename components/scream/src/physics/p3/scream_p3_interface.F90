@@ -276,11 +276,8 @@ contains
          ite,                         & ! IN     horizontal index upper bound     -
          kts,                         & ! IN     vertical index lower bound       -
          kte,                         & ! IN     vertical index upper bound       -
-         diag_ze(its:ite,kts:kte),    & ! OUT    equivalent reflectivity          dBZ  UNUSED?
          rel(its:ite,kts:kte),        & ! OUT    effective radius, cloud          m
          rei(its:ite,kts:kte),        & ! OUT    effective radius, ice            m
-         diag_vmi(its:ite,kts:kte),   & ! OUT    mass-weighted fall speed of ice  m s-1
-         diag_di(its:ite,kts:kte),    & ! OUT    mean diameter of ice             m
          diag_rhoi(its:ite,kts:kte),  & ! OUT    bulk density of ice              kg m-3
          log_predictNc,               & ! IN     .true.=prognostic Nc, .false.=specified Nc
          ! AaronDonahue new stuff
@@ -295,11 +292,9 @@ contains
          rcldm(its:ite,kts:kte),      & ! IN rain cloud fraction
          lcldm(its:ite,kts:kte),      & ! IN liquid cloud fraction
          icldm(its:ite,kts:kte),      & ! IN ice cloud fraction
-         pratot(its:ite,kts:kte),     & ! OUT accretion of cloud by rain
-         prctot(its:ite,kts:kte),     & ! OUT autoconversion of cloud by rain
          tend_out(its:ite,kts:kte,:), & ! OUT p3 microphysics tendencies
          mu(its:ite,kts:kte),         & ! OUT Size distribution shape parameter for radiation
-         lambdac(its:ite,kts:kte),    & ! OUT Size distribution slope parameter for radiation
+         lambdac(its:ite,kts:kte),     & ! OUT Size distribution slope parameter for radiation
          liq_ice_exchange(its:ite,kts:kte),& ! OUT sum of liq-ice phase change tendenices
          vap_liq_exchange(its:ite,kts:kte),& ! OUT sun of vap-liq phase change tendencies
          vap_ice_exchange(its:ite,kts:kte),& ! OUT sum of vap-ice phase change tendencies

@@ -1409,7 +1409,9 @@
          str8(:,:,:) = c0
       endif
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, icellt

@@ -192,6 +192,12 @@ def buildnml(case, caseroot, compname):
         decomp_prefix += 'mpas-o.graph.info.'
         restoring_file += 'sss.monthlyClimatology.PHC2_salx.2004_08_03.ARRM60to10.190129.nc'
         analysis_mask_file += 'ARRM60to10_SingleRegionAtlanticWTransportTransects_masks.nc'
+    elif ocn_grid == 'oARRM60to10_ICG':
+        ic_date += '200422'
+        ic_prefix += 'ocean.ARRM60to10.restart_grizzly'
+        decomp_date += '180723'
+        decomp_prefix += 'mpas-o.graph.info.'
+        analysis_mask_file += 'ARRM60to10_SingleRegionAtlanticWTransportTransects_masks.nc'
     elif ocn_grid == 'oARRM60to6':
         ic_date += '180803'
         ic_prefix += 'ocean.ARRM60to6'
@@ -751,6 +757,29 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="oceanHeatContent2000mToBot"/>')
         lines.append('</stream>')
         lines.append('')
+        lines.append('<stream name="mixedLayerHeatBudgetOutput"')
+        lines.append('        type="output"')
+        lines.append('        precision="single"')
+        lines.append('        io_type="{}"'.format(ocn_pio_typename))
+        lines.append('        filename_template="mpaso.hist.am.mixedLayerHeatBudget.$Y-$M-$D.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="none"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="mixedLayerHeatBudgetAMPKG">')
+        lines.append('')
+        lines.append('    <var name="xtime"/>')
+        lines.append('    <var name="activeTracerForcingMLTend"/>')
+        lines.append('    <var name="activeTracerHorMixMLTend"/>')
+        lines.append('    <var name="activeTracerNonLocalMLTend"/>')
+        lines.append('    <var name="activeTracerVertAdvectionMLTend"/>')
+        lines.append('    <var name="activeTracerHorAdvectionMLTend"/>')
+        lines.append('    <var name="activeTracerVertMixMLTend"/>')
+        lines.append('    <var name="activeTracersML"/>')
+        lines.append('    <var name="bruntVaisalaFreqML"/>')
+        lines.append('    <var name="activeTracersTendML"/>')
+        lines.append('</stream>')
+        lines.append('')
         lines.append('<stream name="timeSeriesStatsDailyOutput"')
         lines.append('        type="output"')
         lines.append('        precision="single"')
@@ -912,6 +941,15 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="oceanHeatContentSfcTo700m"/>')
         lines.append('    <var name="oceanHeatContent700mTo2000m"/>')
         lines.append('    <var name="oceanHeatContent2000mToBot"/>')
+        lines.append('    <var name="activeTracerForcingMLTend"/>')
+        lines.append('    <var name="activeTracerHorMixMLTend"/>')
+        lines.append('    <var name="activeTracerNonLocalMLTend"/>')
+        lines.append('    <var name="activeTracerVertAdvectionMLTend"/>')
+        lines.append('    <var name="activeTracerHorAdvectionMLTend"/>')
+        lines.append('    <var name="activeTracerVertMixMLTend"/>')
+        lines.append('    <var name="activeTracersML"/>')
+        lines.append('    <var name="bruntVaisalaFreqML"/>')
+        lines.append('    <var name="activeTracersTendML"/>')
         lines.append('    <var_array name="activeTracerVerticalAdvectionTopFlux"/>')
         lines.append('    <var_array name="activeTracerHorizontalAdvectionEdgeFlux"/>')
         if ocn_iceberg == 'true':
@@ -1058,6 +1096,15 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="surfaceBuoyancyForcing"/>')
         lines.append('    <var name="boundaryLayerDepthSmooth"/>')
         lines.append('    <var name="SSHSquared"/>')
+        lines.append('    <var name="activeTracerForcingMLTend"/>')
+        lines.append('    <var name="activeTracerHorMixMLTend"/>')
+        lines.append('    <var name="activeTracerNonLocalMLTend"/>')
+        lines.append('    <var name="activeTracerVertAdvectionMLTend"/>')
+        lines.append('    <var name="activeTracerHorAdvectionMLTend"/>')
+        lines.append('    <var name="activeTracerVertMixMLTend"/>')
+        lines.append('    <var name="activeTracersML"/>')
+        lines.append('    <var name="bruntVaisalaFreqML"/>')
+        lines.append('    <var name="activeTracersTendML"/>')
         lines.append('</stream>')
         lines.append('')
         lines.append('<stream name="timeSeriesStatsMonthlyMinOutput"')
@@ -1110,6 +1157,15 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="surfaceBuoyancyForcing"/>')
         lines.append('    <var name="boundaryLayerDepthSmooth"/>')
         lines.append('    <var name="SSHSquared"/>')
+        lines.append('    <var name="activeTracerForcingMLTend"/>')
+        lines.append('    <var name="activeTracerHorMixMLTend"/>')
+        lines.append('    <var name="activeTracerNonLocalMLTend"/>')
+        lines.append('    <var name="activeTracerVertAdvectionMLTend"/>')
+        lines.append('    <var name="activeTracerHorAdvectionMLTend"/>')
+        lines.append('    <var name="activeTracerVertMixMLTend"/>')
+        lines.append('    <var name="activeTracersML"/>')
+        lines.append('    <var name="bruntVaisalaFreqML"/>')
+        lines.append('    <var name="activeTracersTendML"/>')
         lines.append('</stream>')
         lines.append('')
         lines.append('<stream name="timeSeriesStatsClimatologyOutput"')

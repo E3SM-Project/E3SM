@@ -188,7 +188,7 @@ contains
    logical, intent(in) :: is_host_file
    class(fates_parameters_type), intent(inout) :: fates_params
 
-   character(len=32)  :: subname = 'clmfates_interface::ReadParameters'
+   character(len=40)  :: subname = 'clmfates_interface::ReadParameters'
    character(len=256) :: locfn ! local file name
    type(file_desc_t)  :: ncid  ! pio netCDF file id
    integer            :: dimid ! netCDF dimension id

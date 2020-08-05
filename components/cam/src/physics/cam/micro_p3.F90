@@ -58,8 +58,8 @@ module micro_p3
 
   ! Bit-for-bit math functions.
 #ifdef SCREAM_CONFIG_IS_CMAKE
-  use physics_common_iso_f, only: cxx_pow, cxx_sqrt, cxx_cbrt, cxx_gamma, cxx_log, &
-                                  cxx_log10, cxx_exp
+  use physics_share_f2c, only: cxx_pow, cxx_sqrt, cxx_cbrt, cxx_gamma, cxx_log, &
+                                 cxx_log10, cxx_exp, cxx_tanh
 #endif
 
   implicit none
@@ -340,7 +340,7 @@ contains
 
   !==========================================================================================!
 
-  SUBROUTINE p3_main_pre_main_loop(kts, kte, kbot, ktop, kdir, log_predictNc, dt, &
+  SUBROUTINE p3_main_part1(kts, kte, kbot, ktop, kdir, log_predictNc, dt, &
        pres, pdel, dzq, ncnuc, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, xxlv, xxls, xlf, &
        t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, &
        qitot, nitot, qirim, birim, qc_incld, qr_incld, qitot_incld, qirim_incld, &
@@ -354,7 +354,8 @@ contains
     logical(btype), intent(in) :: log_predictNc
     real(rtype), intent(in) :: dt
 
-    real(rtype), intent(in), dimension(kts:kte) :: pres, pdel, dzq, ncnuc, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, xxlv, xxls, xlf
+    real(rtype), intent(in), dimension(kts:kte) :: pres, pdel, dzq, ncnuc, exner, inv_exner, &
+         inv_lcldm, inv_icldm, inv_rcldm, xxlv, xxls, xlf
 
     real(rtype), intent(inout), dimension(kts:kte) :: t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, &
          acn, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, qc_incld, qr_incld, qitot_incld, &
@@ -448,9 +449,9 @@ contains
 
     enddo k_loop_1
 
-  END SUBROUTINE p3_main_pre_main_loop
+  END SUBROUTINE p3_main_part1
 
-  SUBROUTINE p3_main_main_loop(kts, kte, kbot, ktop, kdir, log_predictNc, dt, odt, &
+  SUBROUTINE p3_main_part2(kts, kte, kbot, ktop, kdir, log_predictNc, dt, odt, &
        pres, pdel, dzq, ncnuc, exner, inv_exner, inv_lcldm, inv_icldm, inv_rcldm, naai, qc_relvar, icldm, lcldm, rcldm,&
        t, rho, inv_rho, qvs, qvi, supi, rhofacr, rhofaci, acn, qv, th, qc, nc, qr, nr, qitot, nitot, &
        qirim, birim, xxlv, xxls, xlf, qc_incld, qr_incld, qitot_incld, qirim_incld, nc_incld, nr_incld, &
@@ -920,9 +921,9 @@ contains
 
    enddo k_loop_main
 
- END SUBROUTINE p3_main_main_loop
+ END SUBROUTINE p3_main_part2
 
- subroutine p3_main_post_main_loop(kts, kte, kbot, ktop, kdir, &
+ subroutine p3_main_part3(kts, kte, kbot, ktop, kdir, &
       exner, lcldm, rcldm, &
       rho, inv_rho, rhofaci, qv, th, qc, nc, qr, nr, qitot, nitot, qirim, birim, xxlv, xxls, &
       mu_c, nu, lamc, mu_r, lamr, vap_liq_exchange, &
@@ -1055,15 +1056,15 @@ contains
 
    enddo k_loop_final_diagnostics
 
- end subroutine p3_main_post_main_loop
+ end subroutine p3_main_part3
 
   !==========================================================================================!
 
   SUBROUTINE p3_main(qc,nc,qr,nr,th,qv,dt,qitot,qirim,nitot,birim,   &
-       pres,dzq,ncnuc,naai,qc_relvar,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
-       diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc, &
+       pres,dzq,ncnuc,naai,qc_relvar,it,prt_liq,prt_sol,its,ite,kts,kte,diag_effc,     &
+       diag_effi,diag_rhoi,log_predictNc, &
        pdel,exner,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm,  &
-       pratot,prctot,p3_tend_out,mu_c,lamc,liq_ice_exchange,vap_liq_exchange, &
+       p3_tend_out,mu_c,lamc,liq_ice_exchange,vap_liq_exchange, &
        vap_ice_exchange,col_location)
 
     !----------------------------------------------------------------------------------------!
@@ -1105,11 +1106,8 @@ contains
 
     real(rtype), intent(out),   dimension(its:ite)              :: prt_liq    ! precipitation rate, liquid       m s-1
     real(rtype), intent(out),   dimension(its:ite)              :: prt_sol    ! precipitation rate, solid        m s-1
-    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_ze    ! equivalent reflectivity          dBZ
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_effc  ! effective radius, cloud          m
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_effi  ! effective radius, ice            m
-    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_vmi   ! mass-weighted fall speed of ice  m s-1
-    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_di    ! mean diameter of ice             m
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: diag_rhoi  ! bulk density of ice              kg m-3
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: mu_c       ! Size distribution shape parameter for radiation
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: lamc       ! Size distribution slope parameter for radiation
@@ -1130,8 +1128,6 @@ contains
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: prer_evap  ! evaporation of rain
     real(rtype), intent(out),   dimension(its:ite,kts:kte+1)    :: rflx       ! grid-box average rain flux (kg m^-2 s^-1) pverp
     real(rtype), intent(out),   dimension(its:ite,kts:kte+1)    :: sflx       ! grid-box average ice/snow flux (kg m^-2 s^-1) pverp
-    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: pratot     ! accretion of cloud by rain
-    real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: prctot     ! autoconversion of cloud to rain
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: liq_ice_exchange ! sum of liq-ice phase change tendenices
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: vap_liq_exchange ! sum of vap-liq phase change tendenices
     real(rtype), intent(out),   dimension(its:ite,kts:kte)      :: vap_ice_exchange ! sum of vap-ice phase change tendenices
@@ -1148,6 +1144,13 @@ contains
     !
     !----- Local variables and parameters:  -------------------------------------------------!
     !
+
+    ! These outputs are no longer provided by p3_main.
+    real(rtype), dimension(its:ite,kts:kte) :: diag_ze  ! equivalent reflectivity          dBZ
+    real(rtype), dimension(its:ite,kts:kte) :: diag_vmi ! mass-weighted fall speed of ice  m s-1
+    real(rtype), dimension(its:ite,kts:kte) :: diag_di  ! mean diameter of ice             m
+    real(rtype), dimension(its:ite,kts:kte) :: pratot   ! accretion of cloud by rain
+    real(rtype), dimension(its:ite,kts:kte) :: prctot   ! autoconversion of cloud to rain
 
     real(rtype), dimension(its:ite,kts:kte) :: mu_r  ! shape parameter of rain
     real(rtype), dimension(its:ite,kts:kte) :: t     ! temperature at the beginning of the microhpysics step [K]
@@ -1265,11 +1268,14 @@ contains
 
 !      if (debug_ON) call check_values(qv,T,i,it,debug_ABORT,100,col_location)
 
-       call p3_main_pre_main_loop(kts, kte, kbot, ktop, kdir, log_predictNc, dt, &
-            pres(i,:), pdel(i,:), dzq(i,:), ncnuc(i,:), exner(i,:), inv_exner(i,:), inv_lcldm(i,:), inv_icldm(i,:), inv_rcldm(i,:), xxlv(i,:), xxls(i,:), xlf(i,:), &
-            t(i,:), rho(i,:), inv_rho(i,:), qvs(i,:), qvi(i,:), supi(i,:), rhofacr(i,:), rhofaci(i,:), acn(i,:), qv(i,:), th(i,:), qc(i,:), nc(i,:), qr(i,:), nr(i,:), &
-            qitot(i,:), nitot(i,:), qirim(i,:), birim(i,:), qc_incld(i,:), qr_incld(i,:), qitot_incld(i,:), qirim_incld(i,:), &
-            nc_incld(i,:), nr_incld(i,:), nitot_incld(i,:), birim_incld(i,:), log_nucleationPossible, log_hydrometeorsPresent)
+       call p3_main_part1(kts, kte, kbot, ktop, kdir, log_predictNc, dt, &
+            pres(i,:), pdel(i,:), dzq(i,:), ncnuc(i,:), exner(i,:), inv_exner(i,:), &
+            inv_lcldm(i,:), inv_icldm(i,:), inv_rcldm(i,:), xxlv(i,:), xxls(i,:), xlf(i,:), &
+            t(i,:), rho(i,:), inv_rho(i,:), qvs(i,:), qvi(i,:), supi(i,:), rhofacr(i,:), &
+            rhofaci(i,:), acn(i,:), qv(i,:), th(i,:), qc(i,:), nc(i,:), qr(i,:), nr(i,:), &
+            qitot(i,:), nitot(i,:), qirim(i,:), birim(i,:), qc_incld(i,:), qr_incld(i,:), &
+            qitot_incld(i,:), qirim_incld(i,:), nc_incld(i,:), nr_incld(i,:), &
+            nitot_incld(i,:), birim_incld(i,:), log_nucleationPossible, log_hydrometeorsPresent)
 
 !      if (debug_ON) then
 !         tmparr1(i,:) = th(i,:)*inv_exner(i,:)!(pres(i,:)*1.e-5)**(rd*inv_cp)
@@ -1279,13 +1285,18 @@ contains
        !jump to end of i-loop if log_nucleationPossible=.false.  (i.e. skip everything)
        if (.not. (log_nucleationPossible .or. log_hydrometeorsPresent)) goto 333
 
-       call p3_main_main_loop(kts, kte, kbot, ktop, kdir, log_predictNc, dt, odt, &
-            pres(i,:), pdel(i,:), dzq(i,:), ncnuc(i,:), exner(i,:), inv_exner(i,:), inv_lcldm(i,:), inv_icldm(i,:), inv_rcldm(i,:), naai(i,:), qc_relvar(i,:), icldm(i,:), lcldm(i,:), rcldm(i,:),&
-            t(i,:), rho(i,:), inv_rho(i,:), qvs(i,:), qvi(i,:), supi(i,:), rhofacr(i,:), rhofaci(i,:), acn(i,:), qv(i,:), th(i,:), qc(i,:), nc(i,:), qr(i,:), nr(i,:), qitot(i,:), nitot(i,:), &
-            qirim(i,:), birim(i,:), xxlv(i,:), xxls(i,:), xlf(i,:), qc_incld(i,:), qr_incld(i,:), qitot_incld(i,:), qirim_incld(i,:), nc_incld(i,:), nr_incld(i,:), &
-            nitot_incld(i,:), birim_incld(i,:), mu_c(i,:), nu(i,:), lamc(i,:), cdist(i,:), cdist1(i,:), cdistr(i,:), mu_r(i,:), lamr(i,:), logn0r(i,:), cmeiout(i,:), prain(i,:), &
-            nevapr(i,:), prer_evap(i,:), vap_liq_exchange(i,:), vap_ice_exchange(i,:), liq_ice_exchange(i,:), pratot(i,:), &
-            prctot(i,:), p3_tend_out(i,:,:), log_hydrometeorsPresent)
+       call p3_main_part2(kts, kte, kbot, ktop, kdir, log_predictNc, dt, odt, &
+            pres(i,:), pdel(i,:), dzq(i,:), ncnuc(i,:), exner(i,:), inv_exner(i,:), &
+            inv_lcldm(i,:), inv_icldm(i,:), inv_rcldm(i,:), naai(i,:), qc_relvar(i,:), &
+            icldm(i,:), lcldm(i,:), rcldm(i,:), t(i,:), rho(i,:), inv_rho(i,:), qvs(i,:), &
+            qvi(i,:), supi(i,:), rhofacr(i,:), rhofaci(i,:), acn(i,:), qv(i,:), th(i,:), &
+            qc(i,:), nc(i,:), qr(i,:), nr(i,:), qitot(i,:), nitot(i,:), qirim(i,:), &
+            birim(i,:), xxlv(i,:), xxls(i,:), xlf(i,:), qc_incld(i,:), qr_incld(i,:), &
+            qitot_incld(i,:), qirim_incld(i,:), nc_incld(i,:), nr_incld(i,:), nitot_incld(i,:), &
+            birim_incld(i,:), mu_c(i,:), nu(i,:), lamc(i,:), cdist(i,:), cdist1(i,:), &
+            cdistr(i,:), mu_r(i,:), lamr(i,:), logn0r(i,:), cmeiout(i,:), prain(i,:), &
+            nevapr(i,:), prer_evap(i,:), vap_liq_exchange(i,:), vap_ice_exchange(i,:), &
+            liq_ice_exchange(i,:), pratot(i,:), prctot(i,:), p3_tend_out(i,:,:), log_hydrometeorsPresent)
 
        ! measure microphysics processes tendency output
        p3_tend_out(i,:,42) = ( qc(i,:)    - qc_old(i,:) ) * odt    ! Liq. microphysics tendency, measure
@@ -1352,7 +1363,7 @@ contains
        !...................................................
        ! final checks to ensure consistency of mass/number
        ! and compute diagnostic fields for output
-       call p3_main_post_main_loop(kts, kte, kbot, ktop, kdir, &
+       call p3_main_part3(kts, kte, kbot, ktop, kdir, &
             exner(i,:), lcldm(i,:), rcldm(i,:), &
             rho(i,:), inv_rho(i,:), rhofaci(i,:), qv(i,:), th(i,:), qc(i,:), nc(i,:), qr(i,:), nr(i,:), qitot(i,:), nitot(i,:), &
             qirim(i,:), birim(i,:), xxlv(i,:), xxls(i,:), &
@@ -1505,6 +1516,61 @@ contains
 
   !==========================================================================================!
 
+  real(rtype) function MurphyKoop_svp(t, i_type)
+
+    use scream_abortutils, only : endscreamrun
+
+    implicit none
+
+    !-------------------------------------------------------------------
+    ! Compute saturation vapor pressure (returned in units of pa)
+    ! Inputs:
+    ! "t", units [K]
+    !  i_type refers to saturation with respect to liquid (0) or ice (1)
+    !--------------------------------------------------------------------
+
+    !Murphy & Koop (2005)
+    real(rtype), intent(in) :: t
+    integer, intent(in)     :: i_type
+
+    !local vars
+    character(len=1000) :: err_msg
+    real(rtype)         :: logt, tmp
+
+    !parameters for ice saturation eqn
+    real(rtype), parameter :: ic(4)  =(/9.550426_rtype, 5723.265_rtype, 3.53068_rtype, &
+         0.00728332_rtype/)
+
+    !parameters for liq saturation eqn
+    real(rtype), parameter :: lq(10) = (/54.842763_rtype, 6763.22_rtype, 4.210_rtype, &
+         0.000367_rtype, 0.0415_rtype, 218.8_rtype, 53.878_rtype, 1331.22_rtype,       &
+         9.44523_rtype, 0.014025_rtype /)
+
+    logt = bfb_log(t)
+
+    if (i_type .eq. 1 .and. t .lt. zerodegc) then
+
+       !(good down to 110 K)
+       MurphyKoop_svp = bfb_exp(ic(1) - (ic(2) / t) + (ic(3) * logt) - (ic(4) * t))
+
+    elseif (i_type .eq. 0 .or. t .ge. zerodegc) then
+
+       ! (good for 123 < T < 332 K)
+       !For some reason, we cannot add line breaks if we use "bfb_exp", storing experssion in "tmp"
+       tmp = lq(1) - (lq(2) / t) - (lq(3) * logt) + (lq(4) * t) + &
+            (bfb_tanh(lq(5) * (t - lq(6))) * (lq(7) - (lq(8) / t) - &
+            (lq(9) * logt) + lq(10) * t))
+       MurphyKoop_svp = bfb_exp(tmp)
+    else
+
+       write(err_msg,*)'Error: Either MurphyKoop_svp i_type is not 0 or 1 or t=NaN. itype= ', &
+            i_type,' and temperature t=',t,' in file: ',__FILE__,' at line:',__LINE__
+       call endscreamrun(err_msg)
+    endif
+
+    return
+  end function MurphyKoop_svp
+
   !_rtype
   real(rtype) function polysvp1(t,i_type)
 
@@ -1582,14 +1648,43 @@ contains
 
        call report_error_info('Something went wrong', 'polysvp1')
        write(err_msg,*)'** polysvp1 i_type must be 0 or 1 but is: ', &
-            i_type,' temperature is:',t,' in file: ',__FILE__,' at line:',__LINE__
-
+            i_type,' temperature is:',t,' in file: ',__FILE__, &
+            ' at line:',__LINE__
        call endscreamrun(err_msg)
     endif
 
    return
 
   end function polysvp1
+
+  subroutine check_temp(t, subname)
+    !Check if temprature values are in legit range
+    use scream_abortutils, only : endscreamrun
+    use ieee_arithmetic,   only : ieee_is_finite, ieee_is_nan
+
+    implicit none
+
+    real(rtype),      intent(in) :: t
+    character(len=*), intent(in) :: subname
+
+    character(len=1000) :: err_msg
+
+    if(t <= 0.0_rtype) then
+       write(err_msg,*)'Error: Called from:',trim(adjustl(subname)),'; Temperature is:',t,' which is <= 0._r8 in file:',__FILE__, &
+            ' at line:',__LINE__
+       call endscreamrun(err_msg)
+    elseif(.not. ieee_is_finite(t)) then
+       write(err_msg,*)'Error: Called from:',trim(adjustl(subname)),'; Temperature is:',t,' which is not finite in file:', &
+            __FILE__,' at line:',__LINE__
+       call endscreamrun(err_msg)
+    elseif(ieee_is_nan(t)) then
+       write(err_msg,*)'Error: Called from:',trim(adjustl(subname)),'; Temperature is:',t,' which is NaN in file:',__FILE__, &
+             'at line:',__LINE__
+       call endscreamrun(err_msg)
+    endif
+
+    return
+  end subroutine check_temp
 
   !------------------------------------------------------------------------------------------!
 
@@ -1968,8 +2063,11 @@ contains
     real(rtype)            :: e_pres         !saturation vapor pressure [Pa]
 
     !------------------
+    !Check if temprature is within legitimate range
+    call check_temp(t_atm, "qv_sat")
 
-    e_pres = polysvp1(t_atm,i_wrt)
+    !e_pres = polysvp1(t_atm,i_wrt)
+    e_pres = MurphyKoop_svp(t_atm,i_wrt)
     qv_sat = ep_2*e_pres/max(1.e-3_rtype,(p_atm-e_pres))
 
     return
@@ -2025,12 +2123,14 @@ contains
        ! check unrealistic values or NANs for T and Qv
        if (.not.(T(k)>T_low .and. T(k)<T_high)) then
           write(iulog,'(a60,i5,a2,i8,a2,f8.4,a2,f8.4,a2,i4,a2,i8,a2,e16.8)') &
-             '** WARNING IN P3_MAIN -- src, gcol, lon, lat, lvl, tstep, T:',source_ind,', ',int(col_loc(1)),', ',col_loc(2),', ',col_loc(3),', ',k,', ',timestepcount,', ',T(k)
+               '** WARNING IN P3_MAIN -- src, gcol, lon, lat, lvl, tstep, T:',source_ind,', ', &
+               int(col_loc(1)),', ',col_loc(2),', ',col_loc(3),', ',k,', ',timestepcount,', ',T(k)
           trap = .true.
        endif
        if (.not.(Qv(k)>=0. .and. Qv(k)<Q_high)) then
           write(iulog,'(a60,i5,a2,i8,a2,f8.4,a2,f8.4,a2,i4,a2,i8,a2,e16.8)') &
-             '** WARNING IN P3_MAIN -- src, gcol, lon, lat, lvl, tstep, Qv:',source_ind,', ',int(col_loc(1)),', ',col_loc(2),', ',col_loc(3),', ',k,', ',timestepcount,', ',Qv(k)
+               '** WARNING IN P3_MAIN -- src, gcol, lon, lat, lvl, tstep, Qv:',source_ind,', ', &
+               int(col_loc(1)),', ',col_loc(2),', ',col_loc(3),', ',k,', ',timestepcount,', ',Qv(k)
           !trap = .true.  !note, tentatively no trap, since Qv could be negative passed in to mp
        endif
 
@@ -2795,7 +2895,8 @@ subroutine back_to_cell_average(lcldm,rcldm,icldm,                         &
    real(rtype), intent(in) :: icldm
 
    real(rtype), intent(inout) :: qcacc, qrevp, qcaut, ncacc, ncslf, ncautc, nrslf, nrevp, ncautr
-   real(rtype), intent(inout) :: qisub, nrshdr, qcheti, qrcol, qcshd, qimlt, qccol, qrheti, nimlt, nccol, ncshdc, ncheti, nrcol, nislf, qidep
+   real(rtype), intent(inout) :: qisub, nrshdr, qcheti, qrcol, qcshd, qimlt, qccol, qrheti, nimlt, &
+        nccol, ncshdc, ncheti, nrcol, nislf, qidep
    real(rtype), intent(inout) :: nrheti, nisub, qinuc, ninuc, qiberg
 
    real(rtype) :: ir_cldm, il_cldm, lr_cldm
@@ -3280,7 +3381,6 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
    integer, intent(in) :: kts, kte
    integer, intent(in) :: ktop, kbot, kdir
 
-   real(rtype), intent(in), dimension(kts:kte) :: qc_incld
    real(rtype), intent(in), dimension(kts:kte) :: rho
    real(rtype), intent(in), dimension(kts:kte) :: inv_rho
    real(rtype), intent(in), dimension(kts:kte) :: lcldm
@@ -3293,6 +3393,7 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
    real(rtype), intent(inout), dimension(kts:kte), target :: qc
    real(rtype), intent(inout), dimension(kts:kte), target :: nc
+   real(rtype), intent(inout), dimension(kts:kte) :: qc_incld
    real(rtype), intent(inout), dimension(kts:kte) :: nc_incld
    real(rtype), intent(inout), dimension(kts:kte) :: mu_c
    real(rtype), intent(inout), dimension(kts:kte) :: lamc
@@ -3363,7 +3464,11 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
                   call get_cloud_dsd2(qc_incld(k),nc_incld(k),mu_c(k),rho(k),nu,dnu,   &
                        lamc(k),tmp1,tmp2,lcldm(k))
 
+                  !get_cloud_dsd2 keeps the drop-size distribution within reasonable
+                  !bounds by modifying nc_incld. The next line maintains consistency
+                  !between nc_incld and nc
                   nc(k) = nc_incld(k)*lcldm(k)
+
                   dum = 1._rtype / bfb_pow(lamc(k), bcn)
                   V_qc(k) = acn(k)*bfb_gamma(4._rtype+bcn+mu_c(k))*dum/(bfb_gamma(mu_c(k)+4._rtype))
                   V_nc(k) = acn(k)*bfb_gamma(1._rtype+bcn+mu_c(k))*dum/(bfb_gamma(mu_c(k)+1._rtype))
@@ -3373,7 +3478,14 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
             enddo kloop_sedi_c2
 
-            call generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum, inv_dzq, inv_rho, rho, num_arrays, vs, fluxes, qnr)
+            call generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, &
+                 prt_accum, inv_dzq, inv_rho, rho, num_arrays, vs, fluxes, qnr)
+
+            !Update _incld values with end-of-step cell-ave values
+            !Note that lcldm is set in interface to have min of mincld=1e-4
+            !so dividing by it is fine.
+            qc_incld(:) = qc(:)/lcldm(:)
+            nc_incld(:) = nc(:)/lcldm(:)
 
          enddo substep_sedi_c2
       else
@@ -3386,7 +3498,12 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
                qc_notsmall_c1: if (qc_incld(k)>qsmall) then
                   call get_cloud_dsd2(qc_incld(k),nc_incld(k),mu_c(k),rho(k),nu,dnu,   &
                        lamc(k),tmp1,tmp2,lcldm(k))
+
+                  !get_cloud_dsd2 keeps the drop-size distribution within reasonable
+                  !bounds by modifying nc_incld. The next line maintains consistency
+                  !between nc_incld and nc
                   nc(k) = nc_incld(k)*lcldm(k)
+
                   dum = 1._rtype / bfb_pow(lamc(k), bcn)
                   V_qc(k) = acn(k)*bfb_gamma(4._rtype+bcn+mu_c(k))*dum/(bfb_gamma(mu_c(k)+4._rtype))
                endif qc_notsmall_c1
@@ -3394,7 +3511,14 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
                Co_max = max(Co_max, V_qc(k)*dt_left*inv_dzq(k))
             enddo kloop_sedi_c1
 
-            call generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum, inv_dzq, inv_rho, rho, 1, vs, fluxes, qnr)
+            call generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, &
+                 prt_accum, inv_dzq, inv_rho, rho, 1, vs, fluxes, qnr)
+
+            !Update _incld values with end-of-step cell-ave values
+            !Note that lcldm is set in interface to have min of mincld=1e-4
+            !so dividing by it is fine.
+            qc_incld(:) = qc(:)/lcldm(:)
+            nc_incld(:) = nc(:)/lcldm(:)
 
          enddo substep_sedi_c1
 
@@ -3418,7 +3542,6 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
    integer, intent(in) :: kts, kte
    integer, intent(in) :: ktop, kbot, kdir
 
-   real(rtype), intent(in), dimension(kts:kte) :: qr_incld
 
    real(rtype), intent(in), dimension(kts:kte) :: rho
    real(rtype), intent(in), dimension(kts:kte) :: inv_rho
@@ -3430,6 +3553,7 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
    real(rtype), intent(inout), target, dimension(kts:kte) :: qr
    real(rtype), intent(inout), target, dimension(kts:kte) :: nr
+   real(rtype), intent(inout), dimension(kts:kte) :: qr_incld
    real(rtype), intent(inout), dimension(kts:kte) :: nr_incld
    real(rtype), intent(inout), dimension(kts:kte) :: mu_r
    real(rtype), intent(inout), dimension(kts:kte) :: lamr
@@ -3494,8 +3618,13 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
             qr_notsmall_r1: if (qr_incld(k)>qsmall) then
 
-               call compute_rain_fall_velocity(qr_incld(k), rcldm(k), rhofacr(k), nr(k), nr_incld(k), &
+               call compute_rain_fall_velocity(qr_incld(k), rcldm(k), rhofacr(k), nr_incld(k), &
                     mu_r(k), lamr(k), V_qr(k), V_nr(k))
+
+               !in compute_rain_fall_velocity, get_rain_dsd2 keeps the drop-size
+               !distribution within reasonable bounds by modifying nr_incld.
+               !The next line maintains consistency between nr_incld and nr.
+               nr(k) = nr_incld(k)*rcldm(k)
 
             endif qr_notsmall_r1
 
@@ -3504,12 +3633,19 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
          enddo kloop_sedi_r1
 
-         call generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum, inv_dzq, inv_rho, rho, num_arrays, vs, fluxes, qnr)
+         call generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, &
+              prt_accum, inv_dzq, inv_rho, rho, num_arrays, vs, fluxes, qnr)
 
          !-- AaronDonahue, rflx output
          do k = k_qxbot,k_qxtop,kdir
             rflx(k+1) = rflx(k+1) + flux_qx(k) ! AaronDonahue
          enddo
+
+         !Update _incld values with end-of-step cell-ave values
+         !Note that rcldm is set in interface to have min of mincld=1e-4
+         !so dividing by it is fine.
+         qr_incld(:) = qr(:)/rcldm(:)
+         nr_incld(:) = nr(:)/rcldm(:)
 
       enddo substep_sedi_r
 
@@ -3522,12 +3658,11 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
 end subroutine rain_sedimentation
 
-subroutine compute_rain_fall_velocity(qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr)
+subroutine compute_rain_fall_velocity(qr_incld, rcldm, rhofacr, nr_incld, mu_r, lamr, V_qr, V_nr)
 
    real(rtype), intent(in) :: qr_incld
    real(rtype), intent(in) :: rcldm
    real(rtype), intent(in) :: rhofacr
-   real(rtype), intent(inout) :: nr
    real(rtype), intent(inout) :: nr_incld
    real(rtype), intent(out) :: mu_r
    real(rtype), intent(out) :: lamr
@@ -3542,8 +3677,6 @@ subroutine compute_rain_fall_velocity(qr_incld, rcldm, rhofacr, nr, nr_incld, mu
    call get_rain_dsd2(qr_incld,nr_incld,mu_r,lamr,tmp1,tmp2,rcldm)
 
    call find_lookupTable_indices_3(dumii,dumjj,dum1,rdumii,rdumjj,inv_dum3,mu_r,lamr)
-
-   nr = nr_incld*rcldm
 
    !mass-weighted fall speed:
 
@@ -3696,7 +3829,16 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
 
          enddo kloop_sedi_i1
 
-         call generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum, inv_dzq, inv_rho, rho, num_arrays, vs, fluxes, qnr)
+         call generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, &
+              dt_left, prt_accum, inv_dzq, inv_rho, rho, num_arrays, vs, fluxes, qnr)
+
+         !update _incld variables
+         !Note that icldm is set in interface to have min of mincld=1e-4
+         !so dividing by it is fine.
+         qitot_incld(:) = qitot(:)/icldm(:)
+         nitot_incld(:) = nitot(:)/icldm(:)
+         qirim_incld(:) = qirim(:)/icldm(:)
+         birim_incld(:) = birim(:)/icldm(:)
 
       enddo substep_sedi_i
 
@@ -3709,8 +3851,8 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
 
 end subroutine ice_sedimentation
 
-subroutine generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum, inv_dzq, inv_rho, rho, &
-     num_arrays, vs, fluxes, qnx)
+subroutine generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, &
+     prt_accum, inv_dzq, inv_rho, rho, num_arrays, vs, fluxes, qnx)
 
    implicit none
 
