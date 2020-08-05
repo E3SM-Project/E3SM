@@ -181,7 +181,7 @@ module ocn_lagrangian_particle_tracking_reset
      real (kind=RKIND), pointer :: xParticleReset, yParticleReset, zParticleReset, zLevelParticleReset
      real (kind=RKIND), pointer :: xParticle, yParticle, zParticle, zLevelParticle
      real (kind=RKIND), pointer :: timeSinceReset
-     real (kind=RKIND), pointer :: sumU, sumV, sumUU, sumUV, sumVV
+!     real (kind=RKIND), pointer :: sumU, sumV, sumUU, sumUV, sumVV
      integer, pointer :: resetTime
      real (kind=RKIND), pointer :: globalResetTimeValue
 
@@ -301,11 +301,11 @@ module ocn_lagrangian_particle_tracking_reset
        call mpas_pool_get_array(particle % haloDataPool, 'zLevelParticle', zLevelParticle)
        call mpas_pool_get_array(particle % haloDataPool, 'numTimesReset', numTimesReset)
        call mpas_pool_get_array(particle % haloDataPool, 'transfered', transfered)
-       call mpas_pool_get_array(particle % haloDataPool, 'sumU', sumU)
-       call mpas_pool_get_array(particle % haloDataPool, 'sumV', sumV)
-       call mpas_pool_get_array(particle % haloDataPool, 'sumUU', sumUU)
-       call mpas_pool_get_array(particle % haloDataPool, 'sumUV', sumUV)
-       call mpas_pool_get_array(particle % haloDataPool, 'sumVV', sumVV)
+!       call mpas_pool_get_array(particle % haloDataPool, 'sumU', sumU)
+!       call mpas_pool_get_array(particle % haloDataPool, 'sumV', sumV)
+!       call mpas_pool_get_array(particle % haloDataPool, 'sumUU', sumUU)
+!       call mpas_pool_get_array(particle % haloDataPool, 'sumUV', sumUV)
+!       call mpas_pool_get_array(particle % haloDataPool, 'sumVV', sumVV)
 
        ! reset the time
        timeSinceReset = 0.0_RKIND
@@ -328,12 +328,12 @@ module ocn_lagrangian_particle_tracking_reset
        zParticle = zParticleReset
        zLevelParticle = zLevelParticleReset
 
-       ! reset velocity sums
-       sumU = 0.0_RKIND
-       sumV = 0.0_RKIND
-       sumUU = 0.0_RKIND
-       sumUV = 0.0_RKIND
-       sumVV = 0.0_RKIND
+!       ! reset velocity sums
+!       sumU = 0.0_RKIND
+!       sumV = 0.0_RKIND
+!       sumUU = 0.0_RKIND
+!       sumUV = 0.0_RKIND
+!       sumVV = 0.0_RKIND
 
        ! more variables may need to be reset in the future
 

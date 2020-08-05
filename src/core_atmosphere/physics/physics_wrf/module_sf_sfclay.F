@@ -1,12 +1,3 @@
-!=================================================================================================================
-!module_sf_sfclay.F was originally copied from ./phys/module_sf_sfclay.F from WRF version 3.8.1.
-!Laura D. Fowler (laura@ucar.edu) / 2016-10-26.
-
-!modifications to sourcecode for MPAS:
-!   * added the actual size of each cell in the calculation of the Mahrt and Sun low-resolution correction.
-!     Laura D. Fowler (laura@ucar.edu) / 2016-10-26. 
-
-!=================================================================================================================
 !WRF:MODEL_LAYER:PHYSICS
 !
 MODULE module_sf_sfclay
@@ -33,11 +24,8 @@ CONTAINS
                      ids,ide, jds,jde, kds,kde,                    &
                      ims,ime, jms,jme, kms,kme,                    &
                      its,ite, jts,jte, kts,kte,                    &
-                     ustm,ck,cka,cd,cda,isftcflx,iz0tlnd,scm_force_flux &
-#if defined(mpas)
-                    ,dxCell                                        &
-#endif
-                         )
+                     ustm,ck,cka,cd,cda,                           &
+                     isftcflx,iz0tlnd,scm_force_flux)
 !-------------------------------------------------------------------
       IMPLICIT NONE
 !-------------------------------------------------------------------
@@ -185,8 +173,10 @@ CONTAINS
       REAL,     DIMENSION( ims:ime, jms:jme )                    , &
                 INTENT(INOUT)   ::                                 &
                                                               QGH
+      REAL,     INTENT(IN   )               ::   CP,G,ROVCP,R,XLV
 
-      REAL,     INTENT(IN   )               ::   CP,G,ROVCP,R,XLV,DX
+      REAL,     DIMENSION( ims:ime, jms:jme )                    , &
+                INTENT(IN   )               ::                 DX
  
       REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme )              , &
                 INTENT(OUT)     ::                  ck,cka,cd,cda
@@ -197,19 +187,15 @@ CONTAINS
       INTEGER,  OPTIONAL,  INTENT(IN )   ::     ISFTCFLX, IZ0TLND
       INTEGER,  OPTIONAL,  INTENT(IN )   ::     SCM_FORCE_FLUX
 
-#if defined(mpas)
-      real,intent(in),dimension(ims:ime,jms:jme),optional:: dxCell
-      real,intent(inout),dimension(ims:ime,jms:jme):: qsfc
-      real,intent(out),dimension(ims:ime,jms:jme)  :: u10,v10,th2,t2,q2
-#else
+      REAL,     DIMENSION( ims:ime, jms:jme )                    , &
+                INTENT(INOUT  )             ::               QSFC
+
       REAL,     DIMENSION( ims:ime, jms:jme )                    , &
                 INTENT(OUT  )               ::                U10, &
                                                               V10, &
                                                               TH2, &
                                                                T2, &
-                                                               Q2, &
-                                                             QSFC
-#endif
+                                                               Q2
 
 ! LOCAL VARS
 
@@ -221,9 +207,16 @@ CONTAINS
 
       REAL,     DIMENSION( its:ite ) ::                    dz8w1d
 
+      REAL,     DIMENSION( its:ite ) ::                      DX2D
+
       INTEGER ::  I,J
 
       DO J=jts,jte
+
+        DO i=its,ite
+           DX2D(i)=DX(i,j)
+        ENDDO
+
         DO i=its,ite
           dz8w1d(I) = dz8w(i,1,j)
         ENDDO
@@ -249,17 +242,13 @@ CONTAINS
                 U10(ims,j),V10(ims,j),TH2(ims,j),T2(ims,j),        &
                 Q2(ims,j),FLHC(ims,j),FLQC(ims,j),QGH(ims,j),      &
                 QSFC(ims,j),LH(ims,j),                             &
-                GZ1OZ0(ims,j),WSPD(ims,j),BR(ims,j),ISFFLX,DX,     &
+                GZ1OZ0(ims,j),WSPD(ims,j),BR(ims,j),ISFFLX,DX2D,   &
                 SVP1,SVP2,SVP3,SVPT0,EP1,EP2,KARMAN,EOMEG,STBOLT,  &
                 P1000mb,                                           &
                 ids,ide, jds,jde, kds,kde,                         &
                 ims,ime, jms,jme, kms,kme,                         &
                 its,ite, jts,jte, kts,kte                          &
-#if defined(mpas)
-               ,isftcflx,iz0tlnd,scm_force_flux,                   &
-               USTM(ims,j),CK(ims,j),CKA(ims,j),                   &
-               CD(ims,j),CDA(ims,j),dxCell(ims,j)                  &
-#elif ( EM_CORE == 1 )
+#if ( ( EM_CORE == 1 ) || ( defined(mpas) ) )
                 ,isftcflx,iz0tlnd,scm_force_flux,                  &
                 USTM(ims,j),CK(ims,j),CKA(ims,j),                  &
                 CD(ims,j),CDA(ims,j)                               &
@@ -285,11 +274,7 @@ CONTAINS
                      ims,ime, jms,jme, kms,kme,                    &
                      its,ite, jts,jte, kts,kte,                    &
                      isftcflx, iz0tlnd, scm_force_flux,            &
-#if defined(mpas)
-                     ustm,ck,cka,cd,cda,dxCell                     )
-#else
                      ustm,ck,cka,cd,cda                            )
-#endif
 !-------------------------------------------------------------------
       IMPLICIT NONE
 !-------------------------------------------------------------------
@@ -348,7 +333,9 @@ CONTAINS
                                                 TH2,T2,Q2,QSFC,LH
 
                                     
-      REAL,     INTENT(IN   )               ::   CP,G,ROVCP,R,XLV,DX
+      REAL,     INTENT(IN   )               ::   CP,G,ROVCP,R,XLV
+
+      REAL,     DIMENSION( its:ite ),  INTENT(IN   )   ::      DX
 
 ! MODULE-LOCAL VARIABLES, DEFINED IN SUBROUTINE SFCLAY
       REAL,     DIMENSION( its:ite ),  INTENT(IN   )   ::  dz8w1d
@@ -359,10 +346,6 @@ CONTAINS
                                                               P1D, &
                                                               T1D
  
-#if defined(mpas)
-      real,intent(in),dimension(ims:ime),optional:: dxCell
-#endif
-
       REAL, OPTIONAL, DIMENSION( ims:ime )                       , &
                 INTENT(OUT)     ::                  ck,cka,cd,cda
       REAL, OPTIONAL, DIMENSION( ims:ime )                       , &
@@ -539,14 +522,7 @@ CONTAINS
         VCONV = SQRT(DTHVM)
         endif
 ! Mahrt and Sun low-res correction
-!MPAS specific (Laura D. Fowler): We take into accound the actual size of individual
-!grid-boxes:
-        if(present(dxCell)) then
-           vsgd = 0.32 * (max(dxCell(i)/5000.-1.,0.))**.33
-        else
-           VSGD = 0.32 * (max(dx/5000.-1.,0.))**.33
-        endif
-!MPAS specific end.
+        VSGD = 0.32 * (max(dx(i)/5000.-1.,0.))**.33
         WSPD(I)=SQRT(WSPD(I)*WSPD(I)+VCONV*VCONV+vsgd*vsgd)
         WSPD(I)=AMAX1(WSPD(I),0.1)
         BR(I)=GOVRTH(I)*ZA(I)*DTHVDZ/(WSPD(I)*WSPD(I))                        
@@ -796,14 +772,19 @@ CONTAINS
            Cda(I)=(karman/psix)*(karman/psix)
         ENDIF
         IF ( PRESENT(IZ0TLND) ) THEN
-           IF ( IZ0TLND.EQ.1 .AND. (XLAND(I)-1.5).LE.0. ) THEN
+           IF ( IZ0TLND.GE.1 .AND. (XLAND(I)-1.5).LE.0. ) THEN
               ZL=ZNT(I)
 !             CZIL RELATED CHANGES FOR LAND
               VISC=(1.32+0.009*(SCR3(I)-273.15))*1.E-5
               RESTAR=UST(I)*ZL/VISC
-!             Modify CZIL according to Chen & Zhang, 2009
+!             Modify CZIL according to Chen & Zhang, 2009 if iz0tlnd = 1
+!             If iz0tlnd = 2, use traditional value
 
-              CZIL = 10.0 ** ( -0.40 * ( ZL / 0.07 ) )
+              IF ( IZ0TLND.EQ.1 ) THEN
+                 CZIL = 10.0 ** ( -0.40 * ( ZL / 0.07 ) )
+              ELSE IF ( IZ0TLND.EQ.2 ) THEN
+                 CZIL = 0.1
+              END IF
 
               PSIT=GZ1OZ0(I)-PSIH(I)+CZIL*KARMAN*SQRT(RESTAR)
               PSIQ=GZ1OZ0(I)-PSIH(I)+CZIL*KARMAN*SQRT(RESTAR)
@@ -863,6 +844,8 @@ CONTAINS
 !         ZNT(I)=CZO*UST(I)*UST(I)/G+OZO                                   
 ! Since V3.7 (ref: EC Physics document for Cy36r1)
           ZNT(I)=CZO*UST(I)*UST(I)/G+0.11*1.5E-5/UST(I)
+! V3.9: Add limit as in isftcflx = 1,2
+          ZNT(I)=MIN(ZNT(I),2.85e-3)
 ! COARE 3.5 (Edson et al. 2013)
 !         CZC = 0.0017*WSPD(I)-0.005
 !         CZC = min(CZC,0.028)

@@ -10,8 +10,8 @@
 
    ! Derived type for holding field attributes
    type att_list_type
-      character (len=StrKIND) :: attName
-      integer :: attType
+      character (len=StrKIND) :: attName = ''
+      integer :: attType = -1
       integer :: attValueInt
       integer, dimension(:), pointer :: attValueIntA => null()
       real (kind=RKIND) :: attValueReal
