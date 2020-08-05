@@ -511,9 +511,8 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    integer  :: ncol                 ! number of columns
 
    real(r8), pointer :: t(:,:)      ! Temperature in Kelvin
-   real(r8), pointer :: pmid(:,:)   ! pressure at model levels (Pa)
    real(r8), pointer :: pdel(:,:)   ! pressure thickness of levels
-   real(r8), pointer :: q(:,:,:)    ! Tracer MR array 
+   real(r8), pointer :: state_q(:,:,:)    ! Tracer MR array 
 
    logical,  pointer :: dotend(:)   ! flag for doing tendency
    real(r8), pointer :: dqdt(:,:,:) ! TMR tendency array
@@ -581,15 +580,6 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    real(r8) :: xferfrac_num_acc2ait, xferfrac_vol_acc2ait
    real(r8) :: xferfrac_num_ait2acc, xferfrac_vol_ait2acc
    real(r8) :: xfertend, xfertend_num(2,2)
-   type myptr
-      logical,dimension(pcnst) ::  lq = .false.
-   end type myptr
-   type(myptr), target :: dballi
-
-   type myptrq
-      real(r8), dimension(:,:,:),allocatable :: q
-   end type myptrq
-   type(myptrq), target :: dballiq
 
    integer, parameter :: nsrflx = 4    ! last dimension of qsrflx
    real(r8) :: qsrflx(pcols,pcnst,nsrflx,2)
@@ -620,21 +610,15 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    lchnk = state%lchnk
    ncol  = state%ncol
 
-   t    => state%t
-   pmid => state%pmid
    pdel => state%pdel
-   q    => state%q
-   
+   state_q    => state%q
+
    if(present(ptend)) then
       dotend => ptend%lq
       dqdt   => ptend%q
-   else
-      dballi%lq(:) = .false.
-      dotend   => dballi%lq
-      allocate(dballiq%q(pcols,pver,pcnst))
-      dballiq%q = huge(1.0_r8)
-      dqdt => dballiq%q
-      dqdt(:,:,:) = huge(1.0_r8)
+      dotendqqcw(:) = .false.
+      dqqcwdt(:,:,:) = 0.0_r8
+      qsrflx(:,:,:,:) = 0.0_r8
    endif
 
    if (present(list_idx)) then
@@ -652,9 +636,6 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
       call pbuf_get_field(pbuf, dgnum_idx, dgncur_a)
    endif
 
-   dotendqqcw(:) = .false.
-   dqqcwdt(:,:,:) = 0.0_r8
-   qsrflx(:,:,:,:) = 0.0_r8
 
    nait = modeptr_aitken
    nacc = modeptr_accum
@@ -663,13 +644,13 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    ! tadj = adjustment time scale for number, surface when they are prognosed
    !           currently set to deltat
    tadj = deltat
-   tadj = 86400
+   tadj = 86400.0_r8
    tadj = max( tadj, deltat )
    tadjinv = 1.0_r8/(tadj*(1.0_r8 + 1.0e-15_r8))
    fracadj = deltat*tadjinv
    fracadj = max( 0.0_r8, min( 1.0_r8, fracadj ) )
 
-   
+
    !
    !
    ! the "do 40000" loop does the original (pre jan-2006)
@@ -708,14 +689,13 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
             call rad_cnst_get_aer_props(list_idx, n, l1, density_aer=specdens)
             dummwdens = 1.0_r8 / specdens
          else
-            specmmr => q(:,:,la)
+            specmmr => state_q(:,:,la)
             dummwdens = 1.0_r8 / specdens_amode(lspectype_amode(l1,n))
          endif
 
          do k=top_lev,pver
             do i=1,ncol
-               dryvol_a(i,k) = dryvol_a(i,k)    &
-                  + max(0.0_r8,specmmr(i,k))*dummwdens
+               dryvol_a(i,k) = dryvol_a(i,k) + max(0.0_r8,specmmr(i,k))*dummwdens
             end do
          end do
 
@@ -751,16 +731,16 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
          !    current diagnosed values
          !
          if (lna > 0) then
-            dotend(lna) = .true.
+            if(present(ptend))dotend(lna) = .true.
             do k=top_lev,pver
                do i=1,ncol
-                  dqdt(i,k,lna) = (dryvol_a(i,k)*voltonumb_amode(n)   &
-                     - q(i,k,lna)) * deltatinv
+                  if(present(ptend))dqdt(i,k,lna) = (dryvol_a(i,k)*voltonumb_amode(n)   &
+                     - state_q(i,k,lna)) * deltatinv
                end do
             end do
          end if
          if (lnc > 0) then
-            dotendqqcw(lnc) = .true.
+            if(present(ptend))dotendqqcw(lnc) = .true.
             if(present(cp_num_buf)) then
                do k=top_lev,pver
                   do i=1,ncol
@@ -829,15 +809,15 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
       end if
 
       if (do_adjust) then
-         dotend(lna) = .true.
-         dotendqqcw(lnc) = .true.
+         if(present(ptend))dotend(lna) = .true.
+         if(present(ptend))dotendqqcw(lnc) = .true.
       end if
 
       do  k = top_lev, pver
          do  i = 1, ncol
 
             drv_a = dryvol_a(i,k)
-            num_a0 = q(i,k,lna)
+            num_a0 = state_q(i,k,lna)
             num_a = max( 0.0_r8, num_a0 )
             drv_c = dryvol_c(i,k)
             if(present(cp_num_buf)) then
@@ -860,7 +840,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
                   ! both interstitial and activated volumes are zero
                   ! adjust both numbers to zero
                   num_a = 0.0_r8
-                  dqdt(i,k,lna) = -num_a0*deltatinv
+                  if(present(ptend))dqdt(i,k,lna) = -num_a0*deltatinv
                   num_c = 0.0_r8
                   dqqcwdt(i,k,lnc) = -num_c0*deltatinv
                else if (drv_c <= 0.0_r8) then
@@ -871,12 +851,12 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
                   num_a1 = num_a
                   numbnd = max( drv_a*v2nxx, min( drv_a*v2nyy, num_a1 ) )
                   num_a  = num_a1 + (numbnd - num_a1)*fracadj
-                  dqdt(i,k,lna) = (num_a - num_a0)*deltatinv
+                  if(present(ptend))dqdt(i,k,lna) = (num_a - num_a0)*deltatinv
 
                else if (drv_a <= 0.0_r8) then
                   ! interstitial volume is zero, treat similar to above
                   num_a = 0.0_r8
-                  dqdt(i,k,lna) = -num_a0*deltatinv
+                  if(present(ptend))dqdt(i,k,lna) = -num_a0*deltatinv
                   num_c1 = num_c
                   numbnd = max( drv_c*v2nxx, min( drv_c*v2nyy, num_c1 ) )
                   num_c  = num_c1 + (numbnd - num_c1)*fracadj
@@ -936,7 +916,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
                      end if
                   end if
                   num_a = num_a2 + delnum_a3
-                  dqdt(i,k,lna) = (num_a - num_a0)*deltatinv
+                  if(present(ptend))dqdt(i,k,lna) = (num_a - num_a0)*deltatinv
                   num_c = num_c2 + delnum_c3
                   dqqcwdt(i,k,lnc) = (num_c - num_c0)*deltatinv
                end if
@@ -961,8 +941,8 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
             pdel_fac = pdel(i,k)/gravit   ! = rho*dz
             jac = 1
             if (present(list_idx) .and. list_idx==0) then
-               qsrflx(i,lna,1,jac) = qsrflx(i,lna,1,jac) + max(0.0_r8,dqdt(i,k,lna))*pdel_fac
-               qsrflx(i,lna,2,jac) = qsrflx(i,lna,2,jac) + min(0.0_r8,dqdt(i,k,lna))*pdel_fac
+               if(present(ptend))qsrflx(i,lna,1,jac) = qsrflx(i,lna,1,jac) + max(0.0_r8,dqdt(i,k,lna))*pdel_fac
+               if(present(ptend))qsrflx(i,lna,2,jac) = qsrflx(i,lna,2,jac) + min(0.0_r8,dqdt(i,k,lna))*pdel_fac
             endif
 
             if (drv_c > 0.0_r8) then
@@ -1050,14 +1030,14 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
          lsfrm = lspecfrma_csizxf(iq,ipair)
          lstoo = lspectooa_csizxf(iq,ipair)
          if ((lsfrm > 0) .and. (lstoo > 0)) then
-            dotend(lsfrm) = .true.
-            dotend(lstoo) = .true.
+            if(present(ptend))dotend(lsfrm) = .true.
+            if(present(ptend))dotend(lstoo) = .true.
          end if
          lsfrm = lspecfrmc_csizxf(iq,ipair)
          lstoo = lspectooc_csizxf(iq,ipair)
          if ((lsfrm > 0) .and. (lstoo > 0)) then
-            dotendqqcw(lsfrm) = .true.
-            dotendqqcw(lstoo) = .true.
+            if(present(ptend))dotendqqcw(lsfrm) = .true.
+            if(present(ptend))dotendqqcw(lstoo) = .true.
          end if
       end do
 
@@ -1141,7 +1121,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
                         dummwdens = 1.0_r8 / specdens_amode(lspectype_amode(l1,nacc))
                         la = lmassptr_amode(l1,nacc)
                         drv_a_noxf = drv_a_noxf    &
-                           + max(0.0_r8,q(i,k,la))*dummwdens
+                           + max(0.0_r8,state_q(i,k,la))*dummwdens
                         lc = lmassptrcw_amode(l1,nacc)
                         
                         fldcw => qqcw_get_field(pbuf,lmassptrcw_amode(l1,nacc),lchnk)
@@ -1342,10 +1322,10 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
                                  if (iq .eq. 1) then
                                     xfertend = xfertend_num(j,jac)
                                  else
-                                    xfertend = max(0.0_r8,q(i,k,lsfrm))*xfercoef
+                                    xfertend = max(0.0_r8,state_q(i,k,lsfrm))*xfercoef
                                  end if
-                                 dqdt(i,k,lsfrm) = dqdt(i,k,lsfrm) - xfertend
-                                 dqdt(i,k,lstoo) = dqdt(i,k,lstoo) + xfertend
+                                 if(present(ptend))dqdt(i,k,lsfrm) = dqdt(i,k,lsfrm) - xfertend
+                                 if(present(ptend))dqdt(i,k,lstoo) = dqdt(i,k,lstoo) + xfertend
                               else
                                  if (iq .eq. 1) then
                                     xfertend = xfertend_num(j,jac)
