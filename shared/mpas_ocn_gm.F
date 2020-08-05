@@ -216,6 +216,11 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
+      allocate (rightHandSide(nVertLevels))
+      allocate (tridiagA(nVertLevels))
+      allocate (tridiagB(nVertLevels))
+      allocate (tridiagC(nVertLevels))
+
       nCells = nCellsArray(size(nCellsArray))
       nEdges = nEdgesArray(size(nEdgesArray))
 
@@ -254,6 +259,7 @@ contains
          end do
       end do
       !$omp end do
+
       !$omp do schedule(runtime)
       do iCell = 1, nCells
          RediKappaScaling(:, iCell) = 1.0_RKIND
@@ -275,8 +281,7 @@ contains
       if ( config_Redi_use_N2_based_taper .and. .not. local_config_GM_kappa_lat_depth_variable ) then
 
          !$omp parallel
-         !$omp do schedule(runtime) &
-         !$omp private(k, maxN, maxLocation, BruntVaisalaFreqTopEdge)
+         !$omp do schedule(runtime) private(maxLocation, k, BruntVaisalaFreqTopEdge, maxN)
          do iCell = 1, nCells
             k = min(maxLevelCell(iCell) - 1, max(1, indMLD(iCell)))
             maxN = max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND)
@@ -315,7 +320,7 @@ contains
 
       nCells = nCellsArray(3)
       !$omp parallel
-      !$omp do schedule(runtime) &
+      !$omp do schedule(runtime)  &
       !$omp private(invAreaCell, k33Norm, k, dzTop, dTdzTop, dSdzTop, i, iEdge, cell1, cell2, &
       !$omp         iCellSelf, dcEdgeInv, areaEdge, drhoDT, drhoDS, dTdx, dSdx, drhoDx, &
       !$omp         slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown, sfcTaper) &
@@ -462,8 +467,9 @@ contains
       if (config_use_GM) then
          nEdges = nEdgesArray(3)
          !$omp parallel
-         !$omp do schedule(runtime) private(k, cell1, cell2, dcEdgeInv, &
-         !$omp       drhoDT, drhoDS, dTdx, dSdx, drhoDx)
+         !$omp do schedule(runtime) &
+         !$omp private(cell1, cell2, dcEdgeInv, k, drhoDT, drhoDS, dTdx, dSdx, drhoDx, dTdz, dSdz, &
+         !$omp         drhodz1, drhodz2)
          do iEdge = 1, nEdges
             cell1 = cellsOnEdge(1, iEdge)
             cell2 = cellsOnEdge(2, iEdge)
@@ -606,8 +612,9 @@ contains
            call mpas_pool_get_array(diagnosticsPool, 'RiTopOfCell', RiTopOfCell)
            call mpas_pool_get_array(diagnosticsPool, 'zTop', zTop)
            call mpas_pool_get_array(diagnosticsPool, 'c_visbeck', c_visbeck)
+!           !$omp parallel
            !$omp do schedule(runtime) private(k, cell1, cell2, sumN2, ltSum, sumRi, countN2, &
-           !$omp& zEdge, RiTopOfEdge, BruntVaisalaFreqTopEdge)
+           !$omp             zEdge, RiTopOfEdge, BruntVaisalaFreqTopEdge)
            do iEdge = 1, nEdges
               k=1
               sumN2 = 0.0_RKIND
@@ -633,7 +640,7 @@ contains
                 zEdge = zEdge - layerThicknessEdge(k-1,iEdge)
               end do
 
-             if (countN2 > 0) then
+              if (countN2 > 0) then
                 c_visbeck(iEdge) = sqrt(sumN2*ltsum)
                 sumRi = sumRi / (ltsum + 1.0E-11_RKIND)
 
@@ -648,27 +655,24 @@ contains
              end if
            end do
            !omp end do
+!           !omp end parallel
          end if
 
          if(config_Redi_set_RediKappa_to_GMKappa) then
+            !$omp parallel
             !$omp do schedule(runtime)
             do iEdge = 1, nEdges
                RediKappa(iEdge) = gmResolutionTaper(iEdge)*gmBolusKappa(iEdge)
             end do
             !$omp end do
+            !$omp end parallel
          endif
 
          nEdges = nEdgesArray(3)
-         !!$omp parallel
-
-         allocate (rightHandSide(nVertLevels))
-         allocate (tridiagA(nVertLevels))
-         allocate (tridiagB(nVertLevels))
-         allocate (tridiagC(nVertLevels))
-
-         !!$omp do schedule(runtime) &
-         !!$omp private(cell1, cell2, k,  gradDensityTopOfEdge, kappaGMEdge, BruntVaisalaFreqTopEdge) &
-         !!$omp firstprivate(tridiagA, tridiagB, tridiagC, rightHandSide, N)
+!         !$omp parallel
+!         !$omp do schedule(runtime) private(cell1, cell2, k, gradDensityTopOfEdge, dzdxTopOfEdge, &
+!         !$omp             gradDensityConstZTopOfEdge, kappaGMEdge, BruntVaisalaFreqTopEdge, N) &
+!         !$omp firstprivate(tridiagB, tridiagC, rightHandSide, tridiagA)
          do iEdge = 1, nEdges
             cell1 = cellsOnEdge(1, iEdge)
             cell2 = cellsOnEdge(2, iEdge)
@@ -752,8 +756,8 @@ contains
                                       gmStreamFuncTopOfEdge(2:maxLevelEdgeTop(iEdge), iEdge), N)
             end if
          end do
-         !!$omp end do
-         !!$omp end parallel
+!         !$omp end do
+!         !$omp end parallel
 
          nEdges = nEdgesArray(3)
          ! Compute normalGMBolusVelocity from the stream function and apply resolution taper of GM here
@@ -794,6 +798,11 @@ contains
          end do
          !$omp end do
          !$omp end parallel
+
+         deallocate (rightHandSide)
+         deallocate (tridiagA)
+         deallocate (tridiagB)
+         deallocate (tridiagC)
 
       end if !end config_use_GM
 
@@ -986,11 +995,13 @@ contains
 
          ! Add resolution taper
          if (config_eddying_resolution_taper == 'none') then
+            !$omp parallel
             !$omp do schedule(runtime)
             do iEdge = 1,nEdges
                gmResolutionTaper(iEdge) = 1.0_RKIND
             end do
             !$omp end do
+            !$omp end parallel
             ! Nothing to do, as we just keep the same assignment as above.
          else if (config_eddying_resolution_taper == 'ramp') then
             !$omp parallel
