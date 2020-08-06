@@ -58,19 +58,23 @@ macro (EkatDisableAllWarning targetName)
     message (FATAL_ERROR "Error! Cannot disable warnings for target ${targetName}; it is not built by this project.")
   endif ()
 
+  # Better let the user know, just in case he wasn't expecting this.
+  message (STATUS "WARNING: Disabling all warnings for target ${targetName}")
+
   # Add flags to ignore warnings to the target, for all Ekat-supported languages (C, CXX, Fortran)
   # Make the flag compiler-dependent. Notice that only one of the $<$<C_COMPILER_ID:blah>: "blahblah">
   # will expand to anything at all, so this is ok.
   # Note: even if a compiler collection (usually) has the same flag for all languages, we still
   #       add the flag separately for each langauge, since the user MAY be using different compilers
   #       for different langauges (e.g., icpc and gfortran).
+  # TODO: if we upgrade required cmake version to 3.16, we can use the more compact generator expression:
+  #         target_compile_options (${targetName} PRIVATE $<$<COMPILE_LANG_AND_ID:C,GNU,Intel>:-w>)
   target_compile_options (${targetName} PRIVATE
-    $<$<COMPILE_LANGUAGE:C>:$<$<C_COMPILER_ID:GNU>:-w> $<$<C_COMPILER_ID:Intel>: -warn>>)
-
+    $<$<COMPILE_LANGUAGE:C>:$<$<C_COMPILER_ID:GNU>:-w> $<$<C_COMPILER_ID:Intel>: -w>>)
   target_compile_options (${targetName} PRIVATE
-    $<$<COMPILE_LANGUAGE:Fortran>:$<$<Fortran_COMPILER_ID:GNU>:-w> $<$<Fortran_COMPILER_ID:Intel>: -warn>>)
+    $<$<COMPILE_LANGUAGE:Fortran>:$<$<Fortran_COMPILER_ID:GNU>:-w> $<$<Fortran_COMPILER_ID:Intel>: -w>>)
   target_compile_options (${targetName} PRIVATE
-    $<$<COMPILE_LANGUAGE:CXX>:$<$<CXX_COMPILER_ID:GNU>:-w> $<$<CXX_COMPILER_ID:Intel>: -warn>>)
+    $<$<COMPILE_LANGUAGE:CXX>:$<$<CXX_COMPILER_ID:GNU>:-w> $<$<CXX_COMPILER_ID:Intel>: -w>>)
 
 endmacro (EkatDisableAllWarning)
 
