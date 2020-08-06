@@ -39,11 +39,11 @@ void isotropic_ts_c(Int nlev, Int shcol, Real *brunt_int, Real *tke,
 		    
 void adv_sgs_tke_c(Int nlev, Int shcol, Real dtime, Real *shoc_mix, 
                    Real *wthv_sec, Real *sterm_zt, Real *tk, 
-		   Real *tke, Real *a_diss);
+                   Real *tke, Real *a_diss);
 		   
 void eddy_diffusivities_c(Int nlev, Int shcol, Real *obklen, Real *pblh, 
                           Real *zt_grid, Real *shoc_mix, Real *sterm_zt, 
-			  Real *isotropy, Real *tke, Real *tkh, Real *tk);		   		    	
+                          Real *isotropy, Real *tke, Real *tkh, Real *tk);		   	
 
 void calc_shoc_vertflux_c(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 			  Real *dz_zi, Real *invar, Real *vertflux);
