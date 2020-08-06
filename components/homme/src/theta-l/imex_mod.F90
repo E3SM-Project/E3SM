@@ -137,6 +137,18 @@ contains
 
     call t_startf('compute_stage_value_dirk')
 
+    if (theta_hydrostatic_mode) then
+       itercount=0
+       itererr=0
+       do ie=nets,nete
+          call phi_from_eos(hvcoord,elem(ie)%state%phis,elem(ie)%state%vtheta_dp(:,:,:,np1),&
+               elem(ie)%state%dp3d(:,:,:,np1),elem(ie)%state%phinh_i(:,:,:,np1))
+          elem(ie)%state%w_i(:,:,:,np1)=0
+       enddo
+       return
+    endif
+
+       
     ! dirk settings
     maxiter=20
     deltatol=1.0e-11_real_kind  ! exit if newton increment < deltatol
