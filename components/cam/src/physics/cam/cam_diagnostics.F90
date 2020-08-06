@@ -197,9 +197,17 @@ subroutine diag_init()
    call constituent_burden_init
 
    call addfld ('Z3',(/ 'lev' /), 'A','m','Geopotential Height (above sea level)')
-   call addfld ('Z1000',horiz_only,    'A','m','Geopotential Z at 700 mbar pressure surface')
+   call addfld ('Z1000',horiz_only,    'A','m','Geopotential Z at 1000 mbar pressure surface')
+   call addfld ('Z975',horiz_only,    'A','m','Geopotential Z at 975 mbar pressure surface')
+   call addfld ('Z950',horiz_only,    'A','m','Geopotential Z at 950 mbar pressure surface')
+   call addfld ('Z925',horiz_only,    'A','m','Geopotential Z at 925 mbar pressure surface')
+   call addfld ('Z900',horiz_only,    'A','m','Geopotential Z at 900 mbar pressure surface')
+   call addfld ('Z850',horiz_only,    'A','m','Geopotential Z at 850 mbar pressure surface')
+   call addfld ('Z800',horiz_only,    'A','m','Geopotential Z at 800 mbar pressure surface')
    call addfld ('Z700',horiz_only,    'A','m','Geopotential Z at 700 mbar pressure surface')
+   call addfld ('Z600',horiz_only,    'A','m','Geopotential Z at 600 mbar pressure surface')
    call addfld ('Z500',horiz_only,    'A','m','Geopotential Z at 500 mbar pressure surface')
+   call addfld ('Z400',horiz_only,    'A','m','Geopotential Z at 400 mbar pressure surface')
    call addfld ('Z300',horiz_only,    'A','m','Geopotential Z at 300 mbar pressure surface')
    call addfld ('Z200',horiz_only,    'A','m','Geopotential Z at 200 mbar pressure surface')
    call addfld ('Z100',horiz_only,    'A','m','Geopotential Z at 100 mbar pressure surface')
@@ -251,8 +259,37 @@ subroutine diag_init()
    call addfld ('OMEGA',(/ 'lev' /), 'A','Pa/s','Vertical velocity (pressure)')
    call addfld ('OMEGAT',(/ 'lev' /), 'A','K Pa/s  ','Vertical heat flux' )
    call addfld ('OMEGAU',(/ 'lev' /), 'A','m Pa/s2 ','Vertical flux of zonal momentum' )
+   call addfld ('OMEGA1000',horiz_only,    'A','Pa/s','Vertical velocity at 1000 mbar pressure surface')
+   call addfld ('OMEGA975',horiz_only,    'A','Pa/s','Vertical velocity at 975 mbar pressure surface')
+   call addfld ('OMEGA950',horiz_only,    'A','Pa/s','Vertical velocity at 950 mbar pressure surface')
+   call addfld ('OMEGA925',horiz_only,    'A','Pa/s','Vertical velocity at 925 mbar pressure surface')
+   call addfld ('OMEGA900',horiz_only,    'A','Pa/s','Vertical velocity at 900 mbar pressure surface')
    call addfld ('OMEGA850',horiz_only,    'A','Pa/s','Vertical velocity at 850 mbar pressure surface')
+   call addfld ('OMEGA800',horiz_only,    'A','Pa/s','Vertical velocity at 800 mbar pressure surface')
+   call addfld ('OMEGA700',horiz_only,    'A','Pa/s','Vertical velocity at 700 mbar pressure surface')
+   call addfld ('OMEGA600',horiz_only,    'A','Pa/s','Vertical velocity at 600 mbar pressure surface')
    call addfld ('OMEGA500',horiz_only,    'A','Pa/s','Vertical velocity at 500 mbar pressure surface')
+   call addfld ('OMEGA400',horiz_only,    'A','Pa/s','Vertical velocity at 400 mbar pressure surface')
+   call addfld ('OMEGA300',horiz_only,    'A','Pa/s','Vertical velocity at 300 mbar pressure surface')
+   call addfld ('OMEGA200',horiz_only,    'A','Pa/s','Vertical velocity at 200 mbar pressure surface')
+   call addfld ('OMEGA100',horiz_only,    'A','Pa/s','Vertical velocity at 100 mbar pressure surface')
+   call addfld ('OMEGABOT',horiz_only,    'A','Pa/s','Lowest model level vertical velocity')
+
+   call addfld ('RH1000',horiz_only,    'A','%','Relative humidity at 1000 mbar pressure surface')
+   call addfld ('RH975',horiz_only,    'A','%','Relative humidity at 975 mbar pressure surface')
+   call addfld ('RH950',horiz_only,    'A','%','Relative humidity at 950 mbar pressure surface')
+   call addfld ('RH925',horiz_only,    'A','%','Relative humidity at 925 mbar pressure surface')
+   call addfld ('RH900',horiz_only,    'A','%','Relative humidity at 900 mbar pressure surface')
+   call addfld ('RH850',horiz_only,    'A','%','Relative humidity at 850 mbar pressure surface')
+   call addfld ('RH800',horiz_only,    'A','%','Relative humidity at 800 mbar pressure surface')
+   call addfld ('RH700',horiz_only,    'A','%','Relative humidity at 700 mbar pressure surface')
+   call addfld ('RH600',horiz_only,    'A','%','Relative humidity at 600 mbar pressure surface')
+   call addfld ('RH500',horiz_only,    'A','%','Relative humidity at 500 mbar pressure surface')
+   call addfld ('RH400',horiz_only,    'A','%','Relative humidity at 400 mbar pressure surface')
+   call addfld ('RH300',horiz_only,    'A','%','Relative humidity at 300 mbar pressure surface')
+   call addfld ('RH200',horiz_only,    'A','%','Relative humidity at 200 mbar pressure surface')
+   call addfld ('RH100',horiz_only,    'A','%','Relative humidity at 100 mbar pressure surface')
+   call addfld ('RHBOT',horiz_only,    'A','%','Lowest model level relative humidity')
 
    call addfld ('MQ',(/ 'lev' /), 'A','kg/m2','Water vapor mass in layer')
    call addfld ('TMQ',horiz_only,    'A','kg/m2','Total (vertically integrated) precipitable water')
@@ -273,14 +310,39 @@ subroutine diag_init()
    call addfld ('T300',horiz_only,    'A','K','Temperature at 300 mbar pressure surface')
    call addfld ('T200',horiz_only,    'A','K','Temperature at 200 mbar pressure surface')
    call addfld ('Q850',horiz_only,    'A','kg/kg','Specific Humidity at 850 mbar pressure surface')
-   call addfld ('Q200',horiz_only,    'A','kg/kg','Specific Humidity at 700 mbar pressure surface')
+   call addfld ('Q500',horiz_only,    'A','kg/kg','Specific Humidity at 500 mbar pressure surface')
+   call addfld ('Q200',horiz_only,    'A','kg/kg','Specific Humidity at 200 mbar pressure surface')
+   call addfld ('U1000',horiz_only,    'A','m/s','Zonal wind at 1000 mbar pressure surface')
+   call addfld ('U975',horiz_only,    'A','m/s','Zonal wind at 975 mbar pressure surface')
+   call addfld ('U950',horiz_only,    'A','m/s','Zonal wind at 950 mbar pressure surface')
+   call addfld ('U925',horiz_only,    'A','m/s','Zonal wind at 925 mbar pressure surface')
+   call addfld ('U900',horiz_only,    'A','m/s','Zonal wind at 900 mbar pressure surface')
    call addfld ('U850',horiz_only,    'A','m/s','Zonal wind at 850 mbar pressure surface')
+   call addfld ('U800',horiz_only,    'A','m/s','Zonal wind at 800 mbar pressure surface')
+   call addfld ('U700',horiz_only,    'A','m/s','Zonal wind at 700 mbar pressure surface')
+   call addfld ('U600',horiz_only,    'A','m/s','Zonal wind at 600 mbar pressure surface')
+   call addfld ('U500',horiz_only,    'A','m/s','Zonal wind at 500 mbar pressure surface')
+   call addfld ('U400',horiz_only,    'A','m/s','Zonal wind at 400 mbar pressure surface')
+   call addfld ('U300',horiz_only,    'A','m/s','Zonal wind at 300 mbar pressure surface')
    call addfld ('U250',horiz_only,    'A','m/s','Zonal wind at 250 mbar pressure surface')
    call addfld ('U200',horiz_only,    'A','m/s','Zonal wind at 200 mbar pressure surface')
+   call addfld ('U100',horiz_only,    'A','m/s','Zonal wind at 100 mbar pressure surface')
    call addfld ('U010',horiz_only,    'A','m/s','Zonal wind at  10 mbar pressure surface')
+   call addfld ('V1000',horiz_only,    'A','m/s','Meridional wind at 1000 mbar pressure surface')
+   call addfld ('V975',horiz_only,    'A','m/s','Meridional wind at 975 mbar pressure surface')
+   call addfld ('V950',horiz_only,    'A','m/s','Meridional wind at 950 mbar pressure surface')
+   call addfld ('V925',horiz_only,    'A','m/s','Meridional wind at 925 mbar pressure surface')
+   call addfld ('V900',horiz_only,    'A','m/s','Meridional wind at 900 mbar pressure surface')
    call addfld ('V850',horiz_only,    'A','m/s','Meridional wind at 850 mbar pressure surface')
-   call addfld ('V200',horiz_only,    'A','m/s','Meridional wind at 200 mbar pressure surface')
+   call addfld ('V800',horiz_only,    'A','m/s','Meridional wind at 800 mbar pressure surface')
+   call addfld ('V700',horiz_only,    'A','m/s','Meridional wind at 700 mbar pressure surface')
+   call addfld ('V600',horiz_only,    'A','m/s','Meridional wind at 600 mbar pressure surface')
+   call addfld ('V500',horiz_only,    'A','m/s','Meridional wind at 500 mbar pressure surface')
+   call addfld ('V400',horiz_only,    'A','m/s','Meridional wind at 400 mbar pressure surface')
+   call addfld ('V300',horiz_only,    'A','m/s','Meridional wind at 300 mbar pressure surface')
    call addfld ('V250',horiz_only,    'A','m/s','Meridional wind at 250 mbar pressure surface')
+   call addfld ('V200',horiz_only,    'A','m/s','Meridional wind at 200 mbar pressure surface')
+   call addfld ('V100',horiz_only,    'A','m/s','Meridional wind at 100 mbar pressure surface')
 
    call addfld ('TT',(/ 'lev' /), 'A','K2','Eddy temperature variance' )
 
@@ -292,11 +354,27 @@ subroutine diag_init()
    call addfld ('ATMEINT',horiz_only, 'A','J/m2','Vertically integrated total atmospheric energy ')
 
    call addfld ('T1000',horiz_only,   'A','K','Temperature at 1000 mbar pressure surface')
+   call addfld ('T975',horiz_only,   'A','K','Temperature at 975 mbar pressure surface')   
+   call addfld ('T950',horiz_only,   'A','K','Temperature at 950 mbar pressure surface')   
    call addfld ('T925',horiz_only,   'A','K','Temperature at 925 mbar pressure surface')   
+   call addfld ('T900',horiz_only,   'A','K','Temperature at 900 mbar pressure surface')   
+   call addfld ('T800',horiz_only,   'A','K','Temperature at 800 mbar pressure surface')   
    call addfld ('T700',horiz_only,   'A','K','Temperature at 700 mbar pressure surface')
+   call addfld ('T600',horiz_only,   'A','K','Temperature at 600 mbar pressure surface')
+   call addfld ('T400',horiz_only,   'A','K','Temperature at 400 mbar pressure surface')
+   call addfld ('T100',horiz_only,   'A','K','Temperature at 100 mbar pressure surface')
    call addfld ('T010',horiz_only,   'A','K','Temperature at 10 mbar pressure surface')
    call addfld ('Q1000',horiz_only,   'A','kg/kg','Specific Humidity at 1000 mbar pressure surface')   
+   call addfld ('Q975',horiz_only,   'A','kg/kg','Specific Humidity at 975 mbar pressure surface')
+   call addfld ('Q950',horiz_only,   'A','kg/kg','Specific Humidity at 950 mbar pressure surface')
    call addfld ('Q925',horiz_only,   'A','kg/kg','Specific Humidity at 925 mbar pressure surface')
+   call addfld ('Q900',horiz_only,   'A','kg/kg','Specific Humidity at 900 mbar pressure surface')
+   call addfld ('Q800',horiz_only,   'A','kg/kg','Specific Humidity at 800 mbar pressure surface')
+   call addfld ('Q700',horiz_only,   'A','kg/kg','Specific Humidity at 700 mbar pressure surface')
+   call addfld ('Q600',horiz_only,   'A','kg/kg','Specific Humidity at 600 mbar pressure surface')
+   call addfld ('Q400',horiz_only,   'A','kg/kg','Specific Humidity at 400 mbar pressure surface')
+   call addfld ('Q300',horiz_only,   'A','kg/kg','Specific Humidity at 300 mbar pressure surface')
+   call addfld ('Q100',horiz_only,   'A','kg/kg','Specific Humidity at 100 mbar pressure surface')
 
    call addfld ('T7001000',horiz_only,   'A','K','Temperature difference 700 mb - 1000 mb')
    call addfld ('TH7001000',horiz_only,   'A','K','Theta difference 700 mb - 1000 mb')
@@ -927,13 +1005,45 @@ end subroutine diag_conv_tend_ini
        call vertinterp(ncol, pcols, pver, state%pmid, 100000._r8, z3, p_surf)
        call outfld('Z1000    ', p_surf, pcols, lchnk)
     end if
+    if (hist_fld_active('Z975')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 97500._r8, z3, p_surf)
+       call outfld('Z975    ', p_surf, pcols, lchnk)
+    end if
+    if (hist_fld_active('Z950')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 95000._r8, z3, p_surf)
+       call outfld('Z950    ', p_surf, pcols, lchnk)
+    end if
+    if (hist_fld_active('Z925')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 92500._r8, z3, p_surf)
+       call outfld('Z925    ', p_surf, pcols, lchnk)
+    end if
+    if (hist_fld_active('Z900')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 90000._r8, z3, p_surf)
+       call outfld('Z900    ', p_surf, pcols, lchnk)
+    end if
+    if (hist_fld_active('Z850')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 85000._r8, z3, p_surf)
+       call outfld('Z850    ', p_surf, pcols, lchnk)
+    end if
+    if (hist_fld_active('Z800')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 80000._r8, z3, p_surf)
+       call outfld('Z800    ', p_surf, pcols, lchnk)
+    end if
     if (hist_fld_active('Z700')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 70000._r8, z3, p_surf)
        call outfld('Z700    ', p_surf, pcols, lchnk)
     end if
+    if (hist_fld_active('Z600')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 60000._r8, z3, p_surf)
+       call outfld('Z600    ', p_surf, pcols, lchnk)
+    end if
     if (hist_fld_active('Z500')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 50000._r8, z3, p_surf)
        call outfld('Z500    ', p_surf, pcols, lchnk)
+    end if
+    if (hist_fld_active('Z400')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 40000._r8, z3, p_surf)
+       call outfld('Z400    ', p_surf, pcols, lchnk)
     end if
     if (hist_fld_active('Z300')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 30000._r8, z3, p_surf)
@@ -1084,13 +1194,64 @@ end subroutine diag_conv_tend_ini
 !
 ! Output omega at 850 and 500 mb pressure levels
 !
+    if (hist_fld_active('OMEGA1000')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 100000._r8, state%omega, p_surf)
+       call outfld('OMEGA1000', p_surf, pcols, lchnk)
+    end if
+    if (hist_fld_active('OMEGA975')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 97500._r8, state%omega, p_surf)
+       call outfld('OMEGA975', p_surf, pcols, lchnk)
+    end if
+    if (hist_fld_active('OMEGA950')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 95000._r8, state%omega, p_surf)
+       call outfld('OMEGA950', p_surf, pcols, lchnk)
+    end if
+    if (hist_fld_active('OMEGA925')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 92500._r8, state%omega, p_surf)
+       call outfld('OMEGA925', p_surf, pcols, lchnk)
+    end if
+    if (hist_fld_active('OMEGA900')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 90000._r8, state%omega, p_surf)
+       call outfld('OMEGA900', p_surf, pcols, lchnk)
+    end if
     if (hist_fld_active('OMEGA850')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 85000._r8, state%omega, p_surf)
        call outfld('OMEGA850', p_surf, pcols, lchnk)
     end if
+    if (hist_fld_active('OMEGA800')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 80000._r8, state%omega, p_surf)
+       call outfld('OMEGA800', p_surf, pcols, lchnk)
+    end if
+    if (hist_fld_active('OMEGA700')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 70000._r8, state%omega, p_surf)
+       call outfld('OMEGA700', p_surf, pcols, lchnk)
+    end if
+    if (hist_fld_active('OMEGA600')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 60000._r8, state%omega, p_surf)
+       call outfld('OMEGA600', p_surf, pcols, lchnk)
+    end if
     if (hist_fld_active('OMEGA500')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 50000._r8, state%omega, p_surf)
        call outfld('OMEGA500', p_surf, pcols, lchnk)
+    end if
+    if (hist_fld_active('OMEGA400')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 40000._r8, state%omega, p_surf)
+       call outfld('OMEGA400', p_surf, pcols, lchnk)
+    end if
+    if (hist_fld_active('OMEGA300')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 30000._r8, state%omega, p_surf)
+       call outfld('OMEGA300', p_surf, pcols, lchnk)
+    end if
+    if (hist_fld_active('OMEGA200')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 20000._r8, state%omega, p_surf)
+       call outfld('OMEGA200', p_surf, pcols, lchnk)
+    end if
+    if (hist_fld_active('OMEGA100')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 10000._r8, state%omega, p_surf)
+       call outfld('OMEGA100', p_surf, pcols, lchnk)
+    end if
+    if (hist_fld_active('OMEGABOT')) then
+       call outfld('OMEGABOT', state%omega(:,pver), pcols, lchnk)
     end if
 !     
 ! Mass of q, by layer and vertically integrated
@@ -1142,6 +1303,67 @@ end subroutine diag_conv_tend_ini
           call outfld ('RELHUM  ',ftem    ,pcols   ,lchnk     )
        end if
 
+       ! ftem defined above assuming RELHUM in one of the history tape
+       if (hist_fld_active('RH1000')) then
+          call vertinterp(ncol, pcols, pver, state%pmid, 100000._r8, ftem, p_surf)
+          call outfld('RH1000', p_surf, pcols, lchnk)
+       end if
+       if (hist_fld_active('RH975')) then
+          call vertinterp(ncol, pcols, pver, state%pmid, 97500._r8, ftem, p_surf)
+          call outfld('RH975', p_surf, pcols, lchnk)
+       end if
+       if (hist_fld_active('RH950')) then
+          call vertinterp(ncol, pcols, pver, state%pmid, 95000._r8, ftem, p_surf)
+          call outfld('RH950', p_surf, pcols, lchnk)
+       end if
+       if (hist_fld_active('RH925')) then
+          call vertinterp(ncol, pcols, pver, state%pmid, 92500._r8, ftem, p_surf)
+          call outfld('RH925', p_surf, pcols, lchnk)
+       end if
+       if (hist_fld_active('RH900')) then
+          call vertinterp(ncol, pcols, pver, state%pmid, 90000._r8, ftem, p_surf)
+          call outfld('RH900', p_surf, pcols, lchnk)
+       end if
+       if (hist_fld_active('RH850')) then
+          call vertinterp(ncol, pcols, pver, state%pmid, 85000._r8, ftem, p_surf)
+          call outfld('RH850', p_surf, pcols, lchnk)
+       end if
+       if (hist_fld_active('RH800')) then
+          call vertinterp(ncol, pcols, pver, state%pmid, 80000._r8, ftem, p_surf)
+          call outfld('RH800', p_surf, pcols, lchnk)
+       end if
+       if (hist_fld_active('RH700')) then
+          call vertinterp(ncol, pcols, pver, state%pmid, 70000._r8, ftem, p_surf)
+          call outfld('RH700', p_surf, pcols, lchnk)
+       end if
+       if (hist_fld_active('RH600')) then
+          call vertinterp(ncol, pcols, pver, state%pmid, 60000._r8, ftem, p_surf)
+          call outfld('RH600', p_surf, pcols, lchnk)
+       end if
+       if (hist_fld_active('RH500')) then
+          call vertinterp(ncol, pcols, pver, state%pmid, 50000._r8, ftem, p_surf)
+          call outfld('RH500', p_surf, pcols, lchnk)
+       end if
+       if (hist_fld_active('RH400')) then
+          call vertinterp(ncol, pcols, pver, state%pmid, 40000._r8, ftem, p_surf)
+          call outfld('RH400', p_surf, pcols, lchnk)
+       end if
+       if (hist_fld_active('RH300')) then
+          call vertinterp(ncol, pcols, pver, state%pmid, 30000._r8, ftem, p_surf)
+          call outfld('RH300', p_surf, pcols, lchnk)
+       end if
+       if (hist_fld_active('RH200')) then
+          call vertinterp(ncol, pcols, pver, state%pmid, 20000._r8, ftem, p_surf)
+          call outfld('RH200', p_surf, pcols, lchnk)
+       end if
+       if (hist_fld_active('RH100')) then
+          call vertinterp(ncol, pcols, pver, state%pmid, 10000._r8, ftem, p_surf)
+          call outfld('RH100', p_surf, pcols, lchnk)
+       end if
+       if (hist_fld_active('RHBOT')) then
+          call outfld('RHBOT', ftem(:,pver), pcols, lchnk)
+       end if
+
        if (hist_fld_active('RHW') .or. hist_fld_active('RHI') .or. hist_fld_active('RHCFMIP') ) then
 	  
           ! RH w.r.t liquid (water)
@@ -1191,13 +1413,37 @@ end subroutine diag_conv_tend_ini
 !
 ! Output T,q,u,v fields on pressure surfaces
 !
+    if (hist_fld_active('T975')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 97500._r8, state%t, p_surf)
+       call outfld('T975    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('T950')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 95000._r8, state%t, p_surf)
+       call outfld('T950    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('T900')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 90000._r8, state%t, p_surf)
+       call outfld('T900    ', p_surf, pcols, lchnk )
+    end if
     if (hist_fld_active('T850')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 85000._r8, state%t, p_surf)
        call outfld('T850    ', p_surf, pcols, lchnk )
     end if
+    if (hist_fld_active('T800')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 80000._r8, state%t, p_surf)
+       call outfld('T800    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('T600')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 60000._r8, state%t, p_surf)
+       call outfld('T600    ', p_surf, pcols, lchnk )
+    end if
     if (hist_fld_active('T500')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 50000._r8, state%t, p_surf)
        call outfld('T500    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('T400')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 40000._r8, state%t, p_surf)
+       call outfld('T400    ', p_surf, pcols, lchnk )
     end if
     if (hist_fld_active('T300')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 30000._r8, state%t, p_surf)
@@ -1207,17 +1453,105 @@ end subroutine diag_conv_tend_ini
        call vertinterp(ncol, pcols, pver, state%pmid, 20000._r8, state%t, p_surf)
        call outfld('T200    ', p_surf, pcols, lchnk )
     end if
+    if (hist_fld_active('T100')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 10000._r8, state%t, p_surf)
+       call outfld('T100    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('Q975')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 97500._r8, state%q(1,1,1), p_surf)
+       call outfld('Q975    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('Q950')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 95000._r8, state%q(1,1,1), p_surf)
+       call outfld('Q950    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('Q900')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 90000._r8, state%q(1,1,1), p_surf)
+       call outfld('Q900    ', p_surf, pcols, lchnk )
+    end if
     if (hist_fld_active('Q850')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 85000._r8, state%q(1,1,1), p_surf)
        call outfld('Q850    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('Q800')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 80000._r8, state%q(1,1,1), p_surf)
+       call outfld('Q800    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('Q700')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 70000._r8, state%q(1,1,1), p_surf)
+       call outfld('Q700    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('Q600')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 60000._r8, state%q(1,1,1), p_surf)
+       call outfld('Q600    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('Q500')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 50000._r8, state%q(1,1,1), p_surf)
+       call outfld('Q500    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('Q400')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 40000._r8, state%q(1,1,1), p_surf)
+       call outfld('Q400    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('Q300')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 30000._r8, state%q(1,1,1), p_surf)
+       call outfld('Q300    ', p_surf, pcols, lchnk )
     end if
     if (hist_fld_active('Q200')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 20000._r8, state%q(1,1,1), p_surf)
        call outfld('Q200    ', p_surf, pcols, lchnk )
     end if
+    if (hist_fld_active('Q100')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 10000._r8, state%q(1,1,1), p_surf)
+       call outfld('Q100    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('U1000')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 100000._r8, state%u, p_surf)
+       call outfld('U1000   ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('U975')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 97500._r8, state%u, p_surf)
+       call outfld('U975    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('U950')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 95000._r8, state%u, p_surf)
+       call outfld('U950    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('U925')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 92500._r8, state%u, p_surf)
+       call outfld('U925    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('U900')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 90000._r8, state%u, p_surf)
+       call outfld('U900    ', p_surf, pcols, lchnk )
+    end if
     if (hist_fld_active('U850')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 85000._r8, state%u, p_surf)
        call outfld('U850    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('U800')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 80000._r8, state%u, p_surf)
+       call outfld('U800    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('U700')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 70000._r8, state%u, p_surf)
+       call outfld('U700    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('U600')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 60000._r8, state%u, p_surf)
+       call outfld('U600    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('U500')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 50000._r8, state%u, p_surf)
+       call outfld('U500    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('U400')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 40000._r8, state%u, p_surf)
+       call outfld('U400    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('U300')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 30000._r8, state%u, p_surf)
+       call outfld('U300    ', p_surf, pcols, lchnk )
     end if
     if (hist_fld_active('U250')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 25000._r8, state%u, p_surf)
@@ -1227,13 +1561,61 @@ end subroutine diag_conv_tend_ini
        call vertinterp(ncol, pcols, pver, state%pmid, 20000._r8, state%u, p_surf)
        call outfld('U200    ', p_surf, pcols, lchnk )
     end if
+    if (hist_fld_active('U100')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 10000._r8, state%u, p_surf)
+       call outfld('U100    ', p_surf, pcols, lchnk )
+    end if
     if (hist_fld_active('U010')) then
        call vertinterp(ncol, pcols, pver, state%pmid,  1000._r8, state%u, p_surf)
        call outfld('U010    ', p_surf, pcols, lchnk )
     end if
+    if (hist_fld_active('V1000')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 100000._r8, state%v, p_surf)
+       call outfld('V1000   ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('V975')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 97500._r8, state%v, p_surf)
+       call outfld('V975    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('V950')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 95000._r8, state%v, p_surf)
+       call outfld('V950    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('V925')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 92500._r8, state%v, p_surf)
+       call outfld('V925    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('V900')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 90000._r8, state%v, p_surf)
+       call outfld('V900    ', p_surf, pcols, lchnk )
+    end if
     if (hist_fld_active('V850')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 85000._r8, state%v, p_surf)
        call outfld('V850    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('V800')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 80000._r8, state%v, p_surf)
+       call outfld('V800    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('V700')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 70000._r8, state%v, p_surf)
+       call outfld('V700    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('V600')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 60000._r8, state%v, p_surf)
+       call outfld('V600    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('V500')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 50000._r8, state%v, p_surf)
+       call outfld('V500    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('V400')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 40000._r8, state%v, p_surf)
+       call outfld('V400    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('V300')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 30000._r8, state%v, p_surf)
+       call outfld('V300    ', p_surf, pcols, lchnk )
     end if
     if (hist_fld_active('V250')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 25000._r8, state%v, p_surf)
@@ -1250,6 +1632,10 @@ end subroutine diag_conv_tend_ini
     if (hist_fld_active('V90M')) then
        call vertinterpz(ncol, pcols, pver, state%zm, 90._r8, state%v, p_surf)
        call outfld('V90M    ', p_surf, pcols, lchnk )
+    endif
+    if (hist_fld_active('V100')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 10000._r8, state%v, p_surf)
+       call outfld('V100    ', p_surf, pcols, lchnk )
     end if
 
     ftem(:ncol,:) = state%t(:ncol,:)*state%t(:ncol,:)

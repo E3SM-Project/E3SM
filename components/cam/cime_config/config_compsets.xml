@@ -87,6 +87,16 @@
   </compset>
 
   <compset>
+    <alias>F1850S-AR5-superfast</alias>
+    <lname>1850S_CAM5%AR5sf_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  
+  <compset>
+    <alias>F20TRS-AR5-superfast</alias>
+    <lname>20TRS_CAM5%AR5sf_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  
+  <compset>
     <alias>F1950C5-CMIP6-LR</alias>
     <lname>1950_CAM5%CMIP6-LR_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
@@ -217,6 +227,16 @@
   </compset>
 
   <compset>
+    <alias>F2010C5-CMIP6-LR</alias>
+    <lname>2010_CAM5%CMIP6-LR_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>F2010C5-CMIP6-HR</alias>
+    <lname>2010_CAM5%CMIP6-HR_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>FC5ATMMODCOSP</alias>
     <lname>2000_CAM5%ATMMODCOSP_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
@@ -341,6 +361,11 @@
     <lname>2000_CAM5%RCE_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
   </compset>
 
+  <compset>
+    <alias>F-MMF1-RCEMIP</alias>
+    <lname>2000_CAM5%MMF1-RCE_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
+  </compset>
+
   <!-- *********************************** -->
   <!-- idealized / adiabatic -->
   <!-- *********************************** -->
@@ -367,6 +392,51 @@
     <lname>SCAM_CAM5%SCAM_CLM45%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>   
 
+  <!-- ****************************************** -->
+  <!-- MMF compsets (i.e. super-parameterization) -->
+  <!-- ****************************************** -->
+
+  <!-- ********** F compsets ********** -->
+
+  <!-- Old MMF compsets for comparing with original ECP fork -->
+  <compset>
+    <alias>FSP1V1</alias>
+    <lname>2000_CAM5%SP1V1_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>FSP1V1-MAML</alias>
+    <lname>2000_CAM5%SP1V1-MAML_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>FSP2V1</alias>
+    <lname>2000_CAM5%SP2V1_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <!-- New MMF compsets for new implementation in E3SM repo -->
+  <compset>
+    <alias>F-MMF1</alias>
+    <lname>2000_CAM5%MMF1_CLM45%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-MMF1-MAML</alias>
+    <lname>2000_CAM5%MMF1-MAML_CLM45%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-MMF2</alias>
+    <lname>2000_CAM5%MMF2_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-MMF2-ECPP</alias>
+    <lname>2000_CAM5%MMF2-ECPP_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-MMF2-MAML</alias>
+    <lname>2000_CAM5%MMF2-MAML_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <!-- ******************************* -->
+  <!-- ******************************* -->
+
   <entries>
 
     <entry id="RUN_STARTDATE"> 
@@ -380,10 +450,8 @@
 	<value  compset="1996_CAM\d+%WCMX">1996-01-01</value>
 	<value  compset="2000_CAM\d+%WCMX">2000-01-01</value>
 	<value  compset="2000_CAM\d+%WCXI">2000-01-01</value>
-	<value  compset="2013_CAM\d+%WCBC">2013-01-01</value> 
 	<value  compset="GEOS_CAM\d+%WCCM">2005-01-01</value> 
 	<value  compset="GEOS_CAM\d+%WTSM">1990-01-01</value> 
-	<value  compset="GEOS_CAM\d+%WCSF">2010-01-01</value> 
 	<value  compset="GEOS_CAM\d+%TMOZ">2008-01-01</value> 
 	<value  compset="GEOS_CAM\d+%TBAM">2008-01-01</value>
 	<value  compset="GEOS_CAM\d+%S">2005-01-01</value>

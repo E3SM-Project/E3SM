@@ -1565,25 +1565,29 @@ end function radiation_nextsw_cday
           cosp_cnt(lchnk) = cosp_cnt(lchnk) + 1
 
           !! if counter is the same as cosp_nradsteps, run cosp and reset counter
-           if (cosp_nradsteps .eq. cosp_cnt(lchnk)) then
-              !call should be compatible with camrt radiation.F90 interface too, should be with (in),optional
-              ! N.B.: For snow optical properties, the GRID-BOX MEAN shortwave and longwave optical depths are passed.
-              call t_startf ('cosp_run')
-	      call cospsimulator_intr_run(state,  pbuf, cam_in, emis, coszrs, &
-                   cld_swtau_in=cld_tau(rrtmg_sw_cloudsim_band,:,:),&
-                   snow_tau_in=gb_snow_tau,snow_emis_in=gb_snow_lw)
-              cosp_cnt(lchnk) = 0  !! reset counter
-              call t_stopf ('cosp_run')
-           end if
+          if (cosp_nradsteps .eq. cosp_cnt(lchnk)) then
+             !call should be compatible with camrt radiation.F90 interface too, should be with (in),optional
+             ! N.B.: For snow optical properties, the GRID-BOX MEAN shortwave and longwave optical depths are passed.
+             call t_startf ('cosp_run')
+             call cospsimulator_intr_run(state,  pbuf, cam_in, emis, coszrs, &
+                  cld_swtau_in=cld_tau(rrtmg_sw_cloudsim_band,:,:),&
+                  snow_tau_in=gb_snow_tau,snow_emis_in=gb_snow_lw)
+             cosp_cnt(lchnk) = 0  !! reset counter
+             call t_stopf ('cosp_run')
+          end if
        end if
 
     else   !  if (dosw .or. dolw) then
 
        ! convert radiative heating rates from Q*dp to Q for energy conservation
        if (conserve_energy) then
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
           do k =1 , pver
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
              do i = 1, ncol
                 qrs(i,k) = qrs(i,k)/state%pdel(i,k)
                 qrl(i,k) = qrl(i,k)/state%pdel(i,k)
@@ -1614,9 +1618,13 @@ end function radiation_nextsw_cday
 
     ! convert radiative heating rates to Q*dp for energy conservation
     if (conserve_energy) then
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
        do k =1 , pver
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
           do i = 1, ncol
              qrs(i,k) = qrs(i,k)*state%pdel(i,k)
              qrl(i,k) = qrl(i,k)*state%pdel(i,k)

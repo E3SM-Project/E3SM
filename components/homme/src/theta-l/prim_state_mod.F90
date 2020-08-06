@@ -168,9 +168,10 @@ contains
     KEner    = 0
     PEner    = 0
     IEner    = 0
+    muvalue  = 0
     ! dynamics timelevels
     n0=tl%n0
-    call TimeLevel_Qdp( tl, qsplit, n0q) !get n0 level into t2_qdp 
+    call TimeLevel_Qdp(tl, qsplit, n0q) ! get n0 level into n0q
 
 
     dt=tstep*qsplit
@@ -206,7 +207,11 @@ contains
        enddo
        qvmax_p(q) = ParallelMax(tmp1,hybrid)
        do ie=nets,nete
-          global_shared_buf(ie,1) = SUM(elem(ie)%state%Q(:,:,:,q))
+          global_shared_buf(ie,1) = 0
+          do k=1,nlev
+             global_shared_buf(ie,1) = global_shared_buf(ie,1) + &
+                  SUM(elem(ie)%spheremp*elem(ie)%state%Qdp(:,:,k,q,n0q))
+          enddo
        enddo
        call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
        qvsum_p(q) = global_shared_sum(1)
@@ -217,6 +222,8 @@ contains
        if (theta_hydrostatic_mode) then
           ! show min/max/num of temperature as a diagnostic
           call get_field(elem(ie),'temperature',tdiag,hvcoord,n0,n0q)
+          !use muvalue to avoid if-statements below
+          muvalue(:,:,1:nlev) = tdiag(:,:,1:nlev)
        else
           ! show min/max/num of dpnh / dp as a diagnostic
           call get_field_i(elem(ie),'mu_i',muvalue,hvcoord,n0)
@@ -239,23 +246,23 @@ contains
        psmax_local(ie) = MAXVAL(tmp(:,:,ie))
 
        if (theta_hydrostatic_mode) then
-          call extremumLevelHelper(tmax_local,tdiag,'max',logical(ie == nets))
+          call extremumLevelHelper(tmax_local,muvalue,'max',logical(ie == nets),nlev)
        else
-          call extremumLevelHelper_i(tmax_local,muvalue,'max',logical(ie == nets))
+          call extremumLevelHelper(tmax_local,muvalue,'max',logical(ie == nets),nlevp)
        endif
-       call extremumLevelHelper(phimax_local,dphi,'max',logical(ie == nets))
-       call extremumLevelHelper(w_over_dz_max_local,w_over_dz,'max',logical(ie == nets))
+       call extremumLevelHelper(phimax_local,dphi,'max',logical(ie == nets),nlev)
+       call extremumLevelHelper(w_over_dz_max_local,w_over_dz,'max',logical(ie == nets),nlev)
 
        !======================================================
 
        psmin_local(ie) = MINVAL(tmp(:,:,ie))
 
        if (theta_hydrostatic_mode) then
-          call extremumLevelHelper(tmin_local,tdiag,'min',logical(ie == nets))
+          call extremumLevelHelper(tmin_local,muvalue,'min',logical(ie == nets),nlev)
        else
-          call extremumLevelHelper_i(tmin_local,muvalue,'min',logical(ie == nets))
+          call extremumLevelHelper(tmin_local,muvalue,'min',logical(ie == nets),nlevp)
        endif
-       call extremumLevelHelper(phimin_local,dphi,'min',logical(ie == nets))
+       call extremumLevelHelper(phimin_local,dphi,'min',logical(ie == nets),nlev)
 
        !======================================================
 
@@ -266,11 +273,7 @@ contains
        phisum_local(ie)  = SUM(dphi)
        Fusum_local(ie)   = SUM(elem(ie)%derived%FM(:,:,1,:))
        Fvsum_local(ie)   = SUM(elem(ie)%derived%FM(:,:,2,:))
-       if (theta_hydrostatic_mode) then
-          tsum_local(ie)    = SUM(tdiag)
-       else
-          tsum_local(ie)    = SUM(muvalue)
-       endif
+       tsum_local(ie)    = SUM(muvalue)
 
        dpsum_local(ie)    = SUM(elem(ie)%state%dp3d(:,:,:,n0))
 
@@ -417,7 +420,7 @@ contains
        endif
 
        do q=1,qsize
-          write(iulog,100) "qv= ",qvmin_p(q), qvmax_p(q), qvsum_p(q)
+          write(iulog,102) "qv(",q,")= ",qvmin_p(q), qvmax_p(q), qvsum_p(q)
        enddo
        write(iulog,100) "ps= ",psmin_p,psmax_p,pssum_p
        write(iulog,'(a,E23.15,a,E23.15,a)') "      M = ",Mass,' kg/m^2',Mass2,'mb     '
@@ -425,6 +428,7 @@ contains
     end if
  
 100 format (A10,3(E23.15))
+102 format (A4,I3,A3,3(E24.16))
 108 format (A10,E23.15,A6,E23.15,A6,E23.15)
 109 format (A10,E23.15,A2,I3,A1,E23.15,A2,I3,A1,E23.15)
 110 format (A33,E23.15,A2,I3,A1)
@@ -1004,14 +1008,15 @@ end subroutine prim_diag_scalars
 
 
 !helper routine to compute min/max for derived quantities
-subroutine extremumLevelHelper(res,field,operation,first)
+subroutine extremumLevelHelper(res,field,operation,first,klev)
    use kinds, only : real_kind
    use dimensions_mod, only : np, np, nlev
    implicit none
    real (kind=real_kind), intent(inout) :: res(1:2) ! extremum and level where it happened
    character(len=*),      intent(in)    :: operation
    logical,               intent(in)    :: first
-   real (kind=real_kind), intent(in)    :: field(np,np,nlev)
+   real (kind=real_kind), intent(in)    :: field(np,np,klev)
+   integer,               intent(in)    :: klev 
 
    real (kind=real_kind)                :: val
    integer                              :: location(3)
@@ -1020,82 +1025,32 @@ subroutine extremumLevelHelper(res,field,operation,first)
 
    if ( first ) then
       if( operation == 'max' ) then
-         res(1) = MAXVAL(field)
-         location = MAXLOC(field)
+         res(1) = MAXVAL(field(:,:,1:klev))
+         location = MAXLOC(field(:,:,1:klev))
          res(2) = location(3)
       else
-         res(1) = MINVAL(field)
-         location = MINLOC(field)
+         res(1) = MINVAL(field(:,:,1:klev))
+         location = MINLOC(field(:,:,1:klev))
          res(2) = location(3)
       endif
    else
       if( operation == 'max' ) then
-         val = MAXVAL(field)
+         val = MAXVAL(field(:,:,1:klev))
          if ( val > res(1) ) then
             res(1) = val
-            location = MAXLOC(field)
+            location = MAXLOC(field(:,:,1:klev))
             res(2) = location(3)
          endif
       else
-         val = MINVAL(field)
+         val = MINVAL(field(:,:,1:klev))
          if ( val < res(1) ) then
             res(1) = val
-            location = MINLOC(field)
+            location = MINLOC(field(:,:,1:klev))
             res(2) = location(3)
          endif
       endif
    endif
 end subroutine extremumLevelHelper
-
-
-
-!helper routine to compute min/max for derived quantities
-subroutine extremumLevelHelper_i(res,field,operation,first)
-   use kinds, only : real_kind
-   use dimensions_mod, only : np, np, nlev
-   implicit none
-   real (kind=real_kind), intent(inout) :: res(1:2) ! extremum and level where it happened
-   character(len=*),      intent(in)    :: operation
-   logical,               intent(in)    :: first
-   real (kind=real_kind), intent(in)    :: field(np,np,nlevp)
-
-   real (kind=real_kind)                :: val
-   integer                              :: location(3)
-
-   if((operation /= 'max').and.(operation /= 'min')) call abortmp('unknown operation in extremumLevelHelper_i()')
-
-   if ( first ) then
-      if( operation == 'max' ) then
-         res(1) = MAXVAL(field)
-         location = MAXLOC(field)
-         res(2) = location(3)
-      else
-         res(1) = MINVAL(field)
-         location = MINLOC(field)
-         res(2) = location(3)
-      endif
-   else
-      if( operation == 'max' ) then
-         val = MAXVAL(field)
-         if ( val > res(1) ) then
-            res(1) = val
-            location = MAXLOC(field)
-            res(2) = location(3)
-         endif
-      else
-         val = MINVAL(field)
-         if ( val < res(1) ) then
-            res(1) = val
-            location = MINLOC(field)
-            res(2) = location(3)
-         endif
-      endif
-   endif
-end subroutine extremumLevelHelper_i
-
-
-
-
 
 
 !doing extrema with level for all elems

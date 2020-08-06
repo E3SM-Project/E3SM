@@ -318,7 +318,6 @@ contains
 !
     use constituents, only: cnst_name, qmin
     use chemistry   , only: chem_implements_cnst, chem_init_cnst
-    use carma_intr,   only: carma_implements_cnst, carma_init_cnst
     use tracers     , only: tracers_implements_cnst, tracers_init_cnst
     use aoa_tracers , only: aoa_tracers_implements_cnst, aoa_tracers_init_cnst
     use clubb_intr,   only: clubb_implements_cnst, clubb_init_cnst
@@ -531,9 +530,6 @@ contains
           else if (aoa_tracers_implements_cnst(cnst_name(m_cnst))) then
              call aoa_tracers_init_cnst(cnst_name(m_cnst),q3tmp, gcid)
              if(masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' initialized by "aoa_tracers_init_cnst"'
-          else if (carma_implements_cnst(cnst_name(m_cnst))) then
-             call carma_init_cnst(cnst_name(m_cnst),q3tmp, gcid)
-             if(masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' initialized by "carma_init_cnst"'
           else if (co2_implements_cnst(cnst_name(m_cnst))) then
              call co2_init_cnst(cnst_name(m_cnst),q3tmp, gcid)
              if(masterproc) write(iulog,*) '          ', cnst_name(m_cnst), ' initialized by "co2_init_cnst"'

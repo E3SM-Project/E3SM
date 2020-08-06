@@ -61,7 +61,7 @@ module advance_clubb_core_module
 !  prior permission from Vincent Larson (vlarson@uwm.edu). If
 !  you wish to share CLUBB with your collaborators without
 !  seeking permission, please ask your collaborators to register
-!  as CLUBB users at http://clubb.larson-group.com and to
+!  as CLUBB users at https://carson.math.uwm.edu/larson-group/clubb_site/ and to
 !  download CLUBB from there.
 !
 ! 5. You may not use CLUBB for commercial purposes unless you
@@ -77,7 +77,7 @@ module advance_clubb_core_module
 ! consider them for inclusion in CLUBB. Such contributions will
 ! benefit all CLUBB users. We would be pleased to acknowledge
 ! contributors and list their CLUBB-related papers on our "About
-! CLUBB" webpage (http://clubb.larson-group.com/about.php) for
+! CLUBB" webpage (https://carson.math.uwm.edu/larson-group/clubb_site/about.html) for
 ! those contributors who so desire.
 !
 ! Thanks so much and best wishes for your research!

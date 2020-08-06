@@ -34,12 +34,10 @@
 <!-- if npg=0 then physics is done on GLL nodes -->
 <!-- if npg=N>0 then physics is done FV grid with NxN cells per element -->
 <!-- Formualas for ncol:           -->
-<!--   np4: ncol = (np-1)*6*ne^2+2 -->
-<!--   pg1: ncol = 6*ne^2          -->
-<!--   pg2: ncol = 6*ne^2*4        -->
+<!--   GLL grid (np4): ncol = (np-1)*6*ne^2+2 -->
+<!--   FV physgrid   : ncol = 6*ne^2*npg^2    -->
 <horiz_grid dyn="se"    hgrid="ne2np4"       ncol="218"     csne="2"   csnp="4" npg="0" />
 <horiz_grid dyn="se"    hgrid="ne4np4"       ncol="866"     csne="4"   csnp="4" npg="0" />
-<horiz_grid dyn="se"    hgrid="ne4np4.pg1"   ncol="96"      csne="4"   csnp="4" npg="1" />
 <horiz_grid dyn="se"    hgrid="ne4np4.pg2"   ncol="384"     csne="4"   csnp="4" npg="2" />
 <horiz_grid dyn="se"    hgrid="ne5np8"       ncol="7352"    csne="5"   csnp="8" npg="0" />
 <horiz_grid dyn="se"    hgrid="ne7np8"       ncol="14408"   csne="7"   csnp="8" npg="0" />
@@ -52,8 +50,9 @@
 <horiz_grid dyn="se"    hgrid="ne16np8"      ncol="75266"   csne="16"  csnp="8" npg="0" />
 <horiz_grid dyn="se"    hgrid="ne21np4"      ncol="23816"   csne="21"  csnp="4" npg="0" />
 <horiz_grid dyn="se"    hgrid="ne30np4"      ncol="48602"   csne="30"  csnp="4" npg="0" />
-<horiz_grid dyn="se"    hgrid="ne30np4.pg1"  ncol="5400"    csne="30"  csnp="4" npg="1" />
 <horiz_grid dyn="se"    hgrid="ne30np4.pg2"  ncol="21600"   csne="30"  csnp="4" npg="2" />
+<horiz_grid dyn="se"    hgrid="ne30np4.pg3"  ncol="48600"   csne="30"  csnp="4" npg="3" />
+<horiz_grid dyn="se"    hgrid="ne30np4.pg4"  ncol="86400"   csne="30"  csnp="4" npg="4" />
 <horiz_grid dyn="se"    hgrid="ne60np4"      ncol="194402"  csne="60"  csnp="4" npg="0" />
 <horiz_grid dyn="se"    hgrid="ne60np4.pg2"  ncol="86400"   csne="60"  csnp="4" npg="2" />
 <horiz_grid dyn="se"    hgrid="ne120np4"     ncol="777602"  csne="120" csnp="4" npg="0" />
@@ -70,7 +69,10 @@
 <!-- Spectral Element w/ Regional Refinement -->
 <horiz_grid dyn="se" hgrid="ne0np4_arm_x8v3_lowcon"           ncol="92558"  csne="0" csnp="4" npg="0" />
 <horiz_grid dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"         ncol="89147"  csne="0" csnp="4" npg="0" />
+<horiz_grid dyn="se" hgrid="ne0np4_conus_x4v1_lowcon.pg2"     ncol="39620"  csne="0" csnp="4" npg="2" />
 <horiz_grid dyn="se" hgrid="ne0np4_northamericax4v1"          ncol="130088" csne="0" csnp="4" npg="0" />
+<horiz_grid dyn="se" hgrid="ne0np4_northamericax4v1.pg2"      ncol="57816"  csne="0" csnp="4" npg="2" />
+<horiz_grid dyn="se" hgrid="ne0np4_antarcticax4v1"            ncol="109883" csne="0" csnp="4" npg="0" />
 <horiz_grid dyn="se" hgrid="ne0np4_svalbard_x8v1_lowcon"      ncol="71912"  csne="0" csnp="4" npg="0" />
 <horiz_grid dyn="se" hgrid="ne0np4_enax4v1"                   ncol="78788"  csne="0" csnp="4" npg="0" />
 <horiz_grid dyn="se" hgrid="ne0np4_twpx4v1"                   ncol="81434"  csne="0" csnp="4" npg="0" />

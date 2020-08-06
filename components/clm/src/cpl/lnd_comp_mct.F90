@@ -40,6 +40,7 @@ contains
     !
     ! !USES:
     use abortutils       , only : endrun
+    use shr_kind_mod     , only : SHR_KIND_CL
     use clm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, set_nextsw_cday
     use clm_initializeMod, only : initialize1, initialize2, initialize3
     use clm_instMod      , only : lnd2atm_vars, lnd2glc_vars

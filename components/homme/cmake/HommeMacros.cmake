@@ -129,7 +129,11 @@ macro(createTestExec execName execType macroNP macroNC
 
   TARGET_LINK_LIBRARIES(${execName} timing ${COMPOSE_LIBRARY} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
   IF(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
-    TARGET_LINK_LIBRARIES(${execName} pio)
+    IF(HOMME_USE_SCORPIO)
+      TARGET_LINK_LIBRARIES(${execName} piof pioc)
+    ELSE ()
+      TARGET_LINK_LIBRARIES(${execName} pio)
+    ENDIF ()
   ENDIF ()
 
   IF (HOMME_USE_KOKKOS)
@@ -160,10 +164,8 @@ macro(createTestExec execName execType macroNP macroNC
 
 
   IF (HOMME_USE_ARKODE AND "${execType}" STREQUAL "theta-l")
-    TARGET_LINK_LIBRARIES(${execName} sundials_farkode)
+    TARGET_LINK_LIBRARIES(${execName} sundials_farkode_mod)
     TARGET_LINK_LIBRARIES(${execName} sundials_arkode)
-    TARGET_LINK_LIBRARIES(${execName} sundials_nvecserial)
-    TARGET_LINK_LIBRARIES(${execName} sundials_fnvecserial)
   ENDIF ()
 
   INSTALL(TARGETS ${execName} RUNTIME DESTINATION tests)

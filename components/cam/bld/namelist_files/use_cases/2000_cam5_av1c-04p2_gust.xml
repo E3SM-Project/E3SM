@@ -71,12 +71,14 @@
 <clubb_C8>           5.2    </clubb_C8>
 <cldfrc2m_rhmaxi>    1.05D0 </cldfrc2m_rhmaxi>
 <clubb_c_K10>        0.35    </clubb_c_K10>
+<clubb_c_K10h>        0.35    </clubb_c_K10h>
 <effgw_beres>        0.4    </effgw_beres>
 <do_tms>             .false.</do_tms>
 <so4_sz_thresh_icenuc>0.080e-6</so4_sz_thresh_icenuc>
 <n_so4_monolayers_pcage>8.0D0 </n_so4_monolayers_pcage>
 <micro_mg_accre_enhan_fac>1.75D0</micro_mg_accre_enhan_fac>
 <micro_mg_berg_eff_factor>0.7D0</micro_mg_berg_eff_factor>
+<microp_aero_wsubmin>0.001D0</microp_aero_wsubmin>
 <zmconv_tiedke_add       >0.8D0</zmconv_tiedke_add>
 <zmconv_cape_cin         >1</zmconv_cape_cin>
 <zmconv_mx_bot_lyr_adj   >1</zmconv_mx_bot_lyr_adj>
@@ -104,10 +106,6 @@
 
 
 
-
-
-
-
 <!-- External forcing for BAM or MAM -->
 <so2_ext_file         >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so2_elev_1850-2014_c180205.nc</so2_ext_file>
 <soag_ext_file        >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_soag_elev_1850-2014_c180205.nc</soag_ext_file>
@@ -131,7 +129,6 @@
 <so4_a2_emis_file     >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a2_surf_1850-2014_c180205.nc</so4_a2_emis_file>
 
 <!-- Marine organic aerosol namelist settings -->
-
 <mam_mom_mixing_state>3</mam_mom_mixing_state>
 <mam_mom_cycle_yr  >1                                                                                    </mam_mom_cycle_yr  >
 <mam_mom_datapath  >'atm/cam/chem/trop_mam/marine_BGC/'                                                  </mam_mom_datapath  >
@@ -149,6 +146,9 @@
 <linoz_data_file            >linoz1800-2100_2006jpl_climo_1.9x2.5_26L_extended.c160204.nc</linoz_data_file>
 <linoz_data_path            >atm/cam/chem/trop_mozart/ub</linoz_data_path>
 <linoz_data_type            >CYCLICAL</linoz_data_type>
+
+<!-- Turn off ozone dry deposition, as Linoz O3v2 and ozone are not separated for now. Need to turn on ozone dry deposition when interactive tropospheric chemistry is implemented -->
+<drydep_list            >'H2O2', 'H2SO4', 'SO2'</drydep_list>
 
 <!-- sim_year used for CLM datasets and SSTs forcings -->
 <sim_year>2000</sim_year>

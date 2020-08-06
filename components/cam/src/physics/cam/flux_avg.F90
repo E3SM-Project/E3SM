@@ -79,6 +79,7 @@ subroutine flux_avg_init(cam_in,  pbuf2d)
    do lchnk = begchunk, endchunk
       ncol = get_ncols_p(lchnk)
       pbuf2d_chunk => pbuf_get_chunk(pbuf2d, lchnk)
+      
       call pbuf_set_field(pbuf2d_chunk, lhflx_idx,  cam_in(lchnk)%lhf(:ncol))
       call pbuf_set_field(pbuf2d_chunk, shflx_idx,  cam_in(lchnk)%shf(:ncol))
       call pbuf_set_field(pbuf2d_chunk, qflx_idx,   cam_in(lchnk)%cflx(:ncol,1))
@@ -180,7 +181,10 @@ subroutine smooth(new, old, res, nstep, deltat, ncol)
    integer,  intent(in)    :: ncol
 
    real(r8) :: temp(pcols)
+   real(r8) :: maxres
    integer i
+
+   real(r8), parameter :: timescale = 14400._r8    ! 4 hours
 
    temp(1:ncol) = new(1:ncol)
    if (nstep > 0) then
@@ -204,14 +208,14 @@ subroutine smooth(new, old, res, nstep, deltat, ncol)
    ! to include some of the residual
    ! If the residual is small we will just add it all, 
    ! but if it is large we will add it at the rate required to put
-   ! the residual back into the flux over a 2 hour period
+   ! the residual back into the flux over a 4 hour period
    do i = 1,ncol
-      if (abs(res(i)).lt.max(abs(new(i)),abs(old(i)))*0.05_r8) then
+      maxres = max( abs(new(i)) , abs(old(i)) )
+      if (abs(res(i)).lt.maxres*0.05_r8) then
          temp(i) = res(i)
          res(i) = 0._r8
       else
-         temp(i) = res(i)*deltat/7200._r8
-         !     temp(i) = res(i)*deltat*0.5/7200.
+         temp(i) = res(i)*deltat/timescale
          res(i) = res(i)-temp(i)
       endif
    end do

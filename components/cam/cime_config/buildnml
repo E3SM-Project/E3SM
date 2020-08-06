@@ -41,6 +41,7 @@ def buildnml(case, caseroot, compname):
     din_loc_root	= case.get_value("DIN_LOC_ROOT")
     exeroot		= case.get_value("EXEROOT")
     mpilib		= case.get_value("MPILIB")
+    ncpl_base_period	= case.get_value("NCPL_BASE_PERIOD")
     nthrds_atm		= case.get_value("NTHRDS_ATM")
     ntasks_atm		= case.get_value("NTASKS_ATM")
     ninst_atm		= case.get_value("NINST_ATM")
@@ -162,7 +163,15 @@ def buildnml(case, caseroot, compname):
                 if inst_string != "":
                     logger.warning("WARNING: {} is being used".format(cam_branch_file))
 
-        dtime = ( 3600 * 24 ) // atm_ncpl
+        if ncpl_base_period == 'year':
+            dtime = ( 3600 * 24 * 365 ) // atm_ncpl
+        elif ncpl_base_period == 'day':
+            dtime = ( 3600 * 24 ) // atm_ncpl
+        elif ncpl_base_period == 'hour':
+            dtime = ( 3600 ) // atm_ncpl
+        else:
+            logger.warning("WARNING: {} is being used".format(ncpl_base_period))
+
         start_ymd = run_startdate.replace("-", "")
         ntasks = ntasks_atm / ninst_atm
 

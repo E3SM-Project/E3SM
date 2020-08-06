@@ -133,7 +133,7 @@ contains
     real (kind=real_kind) :: KEvert,IEvert,T1,T2,T2_s,T2_m,S1,S2,S1_wet
     real (kind=real_kind) :: KEhorz,IEhorz,IEhorz_wet,IEvert_wet
     real (kind=real_kind) :: ddt_tot,ddt_diss
-    integer               :: n0, nm1, np1
+    integer               :: n0, n0q, nm1, np1
     integer               :: npts,n,q
     
     call t_startf('prim_printstate')
@@ -148,6 +148,7 @@ contains
     IEner_wet = 0
     ! dynamics timelevels
     n0=tl%n0
+    call TimeLevel_Qdp(tl, qsplit, n0q) ! get n0 level into n0q
 
     dt=tstep*qsplit
     if (rsplit>0) dt = tstep*qsplit*rsplit  ! vertical REMAP timestep 
@@ -182,7 +183,11 @@ contains
        qvmax_p(q) = ParallelMax(tmp1,hybrid)
 
        do ie=nets,nete
-          global_shared_buf(ie,1) = SUM(elem(ie)%state%Q(:,:,:,q))
+          global_shared_buf(ie,1) = 0
+          do k=1,nlev
+             global_shared_buf(ie,1) = global_shared_buf(ie,1) + &
+                  SUM(elem(ie)%spheremp*elem(ie)%state%Qdp(:,:,k,q,n0q))
+          enddo
        enddo
        call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
        qvsum_p(q) = global_shared_sum(1)
@@ -338,7 +343,7 @@ contains
        write(iulog,100) "dp    = ",dpmin_p,dpmax_p,dpsum_p
 
        do q=1,qsize
-          write(iulog,100) "qv= ",qvmin_p(q), qvmax_p(q), qvsum_p(q)
+          write(iulog,102) "qv(",q,")= ",qvmin_p(q), qvmax_p(q), qvsum_p(q)
        enddo
        write(iulog,100) "ps= ",psmin_p,psmax_p,pssum_p
        write(iulog,'(a,E23.15,a,E23.15,a)') "      M = ",Mass,' kg/m^2',Mass2,' mb     '
@@ -621,7 +626,7 @@ contains
     endif
     
 100 format (A10,3(E23.15))
-    
+102 format (A4,I3,A3,3(E23.15))
     
     ! initialize "E0" for printout of E-E0/E0
     ! energy is computed in timestep loop.  Save the value 

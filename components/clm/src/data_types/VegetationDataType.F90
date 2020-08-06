@@ -491,6 +491,8 @@ module VegetationDataType
     real(r8), pointer :: m_gresp_storage_to_litter_fire      (:) => null()    ! (gC/m2/s) from gresp_storage to litter C due to fire                       
     real(r8), pointer :: m_gresp_xfer_to_litter_fire         (:) => null()    ! (gC/m2/s) from gresp_xfer to litter C due to fire                       
     real(r8), pointer :: m_cpool_to_litter_fire              (:) => null()    ! (gC/m2/s) from cpool to litter C due to fire              
+
+  
                                                                  
     ! phenology fluxes from transfer pools                       
     real(r8), pointer :: grainc_xfer_to_grainc               (:) => null()    ! grain C growth from storage for prognostic crop(gC/m2/s)
@@ -6204,6 +6206,11 @@ module VegetationDataType
             avgflag='A', long_name='cpool fire mortality to litter', &
             ptr_patch=this%m_cpool_to_litter_fire, default='inactive')
 
+       this%m_cpool_to_litter(begp:endp) = spval
+       call hist_addfld1d (fname='M_CPOOL_TO_LITTER', units='gC/m^2/s', &
+            avgflag='A', long_name='cpool mortality to litter', &
+            ptr_patch=this%m_cpool_to_litter, default='inactive')
+
        this%leafc_xfer_to_leafc(begp:endp) = spval
        call hist_addfld1d (fname='LEAFC_XFER_TO_LEAFC', units='gC/m^2/s', &
             avgflag='A', long_name='leaf C growth from storage', &
@@ -8911,6 +8918,7 @@ module VegetationDataType
     allocate(this%fire_nloss_litter                   (begp:endp)) ; this%fire_nloss_litter                   (:) = nan
     allocate(this%hrv_nloss_litter                    (begp:endp)) ; this%hrv_nloss_litter                    (:) = nan
     allocate(this%sen_nloss_litter                    (begp:endp)) ; this%sen_nloss_litter                    (:) = nan
+
     
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of veg_nf
@@ -9011,6 +9019,11 @@ module VegetationDataType
     call hist_addfld1d (fname='M_RETRANSN_TO_LITTER', units='gN/m^2/s', &
          avgflag='A', long_name='retranslocated N pool mortality', &
          ptr_patch=this%m_retransn_to_litter, default='inactive')
+
+    this%m_npool_to_litter_fire(begp:endp) = spval
+    call hist_addfld1d (fname='M_NPOOL_TO_LITTER_FIRE', units='gN/m^2/s', &
+         avgflag='A', long_name='N pool mortality due to fire', &
+         ptr_patch=this%m_npool_to_litter_fire, default='inactive')
 
     this%m_npool_to_litter(begp:endp) = spval
     call hist_addfld1d (fname='M_NPOOL_TO_LITTER', units='gN/m^2/s', &
@@ -10116,6 +10129,11 @@ module VegetationDataType
     call hist_addfld1d (fname='M_RETRANSP_TO_LITTER', units='gP/m^2/s', &
          avgflag='A', long_name='retranslocated P pool mortality', &
          ptr_patch=this%m_retransp_to_litter, default='inactive')
+
+    this%m_ppool_to_litter_fire(begp:endp) = spval
+    call hist_addfld1d (fname='M_PPOOL_TO_LITTER_FIRE', units='gP/m^2/s', &
+         avgflag='A', long_name='P pool mortality due to fire', &
+         ptr_patch=this%m_ppool_to_litter_fire, default='inactive')
 
     this%m_ppool_to_litter(begp:endp) = spval
     call hist_addfld1d (fname='M_PPOOL_TO_LITTER', units='gP/m^2/s', &

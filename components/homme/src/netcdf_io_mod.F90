@@ -16,7 +16,7 @@ module netcdf_io_mod
        num_io_procs, num_agg, io_stride, output_dir, output_prefix, max_output_variables, &
        nf_selectedvar, get_varindex, get_current_varnames, get_varindex, &
        nf_dim, nf_variable, nf_handle, beginstate, dimsstate, varsstate, readystate, &
-       nfsizekind, unlim_dim, output_type
+       nfsizekind, unlim_dim, output_type, PIOFS
   use common_io_mod, only : nf_double, nf_noerr
 
   implicit none  
@@ -24,7 +24,6 @@ module netcdf_io_mod
   ! end of analysis_nl namelist variables
   type(io_desc_t), save, public :: iodesc3d, iodesc2d, iodesct, iodesc2d_nc, iodesc3d_nc, iodesc3d_subelem, &
                                    iodesc3dp1
-  type(iosystem_desc_t), save ,public :: pio_subsystem
 
 
   interface nf_put_var_netcdf
@@ -453,9 +452,6 @@ contains
 
 
     integer :: ios,ierr
-    logical :: isInit
-    isInit = .false.
-
     !
     ! Loop through output_streams, identify which will be used and open files for them
     !
@@ -463,37 +459,6 @@ contains
     do ios=1,max_output_streams
        if((output_frequency(ios) .gt. 0) .and. (output_start_time(ios) .le. output_end_time(ios))) then 
           ncdf(ios)%iframe=1
-
-          if (.not. isInit) then
-            ! Only initialize PIO once
-            call PIO_Init(rank,comm,num_io_procs,num_agg,io_stride,&
-                      PIO_REARR_BOX,pio_subsystem)
-            isInit = .true.
-#if 0
-  Flow control options. before testing these, be sure PIO is being
-  compiled with -D_NO_MPI_RSEND 
-
-  fcd=PIO_rearr_comm_coll or  PIO_rearr_comm_p2p
-  function PIO_set_rearr_opts(iosystem, comm_type, fcd,&
-                              enable_hs_c2i, enable_isend_c2i,&
-                              max_pend_req_c2i,&
-                              enable_hs_i2c, enable_isend_i2c,&
-                              max_pend_req_i2c) result(ierr)
-
-            ! attempt to mimick E3SM defaults
-            ierr=PIO_set_rearr_opts(pio_subsystem,PIO_REARR_COMM_P2P,&
-                 PIO_REARR_COMM_FC_2D_ENABLE,&
-                 .true.,.false.,0,.false.,.true.,64)
-
-            ! w/o NO_MPI_RSEND, cori was hanging in comp2io
-            ! worley suggested throttling down to 2:
-            ierr=PIO_set_rearr_opts(pio_subsystem,PIO_rearr_comm_coll,&
-                 PIO_REARR_COMM_FC_2D_ENABLE,&
-                 .true.,.false.,2,.false.,.true.,64)
-#endif
-          endif
-
-
 
           call nf_open_file(masterproc,nprocs,comm,rank,ios,&
                output_prefix,file_prefix,runtype,ncdf(ios)%ncFileID, ncdf(ios)%FileID)
@@ -630,7 +595,7 @@ contains
     do ios=1,max_output_streams
        call nf_close(ncdf_list(ios))
     end do
-    call PIO_finalize(pio_subsystem, ierr)
+    call PIO_finalize(PIOFS, ierr)
 
   end subroutine nf_close_all
 
@@ -665,13 +630,13 @@ contains
            TRIM(ADJUSTL(output_dir))//TRIM(output_prefix)//TRIM(ADJUSTL(file_prefix)),ios,".nc"
 
       if(output_type.eq.'netcdf') then
-         ierr = PIO_CreateFile(pio_subsystem, FileID, PIO_iotype_netcdf, filename, PIO_64BIT_OFFSET)
+         ierr = PIO_CreateFile(PIOFS, FileID, PIO_iotype_netcdf, filename, PIO_64BIT_OFFSET)
       else if(output_type.eq.'netcdf4p') then
-         ierr = PIO_CreateFile(pio_subsystem, FileID, PIO_iotype_netcdf4p, filename, PIO_64BIT_DATA)
+         ierr = PIO_CreateFile(PIOFS, FileID, PIO_iotype_netcdf4p, filename, PIO_64BIT_DATA)
       else if(output_type.eq.'pnetcdf64') then
-         ierr = PIO_CreateFile(pio_subsystem, FileID, PIO_iotype_pnetcdf, filename, PIO_64BIT_DATA)
+         ierr = PIO_CreateFile(PIOFS, FileID, PIO_iotype_pnetcdf, filename, PIO_64BIT_DATA)
       else
-         ierr = PIO_CreateFile(pio_subsystem, FileID, PIO_iotype_pnetcdf, filename, PIO_64BIT_OFFSET)
+         ierr = PIO_CreateFile(PIOFS, FileID, PIO_iotype_pnetcdf, filename, PIO_64BIT_OFFSET)
       endif
       ncFileID = 0
 

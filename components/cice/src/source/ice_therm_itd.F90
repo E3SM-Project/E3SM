@@ -294,7 +294,9 @@
 
       do n = 1, ncat-1
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, icells       ! aice(i,j) > puny
@@ -387,7 +389,9 @@
       ! Compute hbnew(ncat)
       !-----------------------------------------------------------------
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, icells         ! aice(i,j) > puny
@@ -443,7 +447,9 @@
       ! Find area lost due to melting of thin (category 1) ice
       !-----------------------------------------------------------------
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, iflag    ! remap_flag = .true.
@@ -517,7 +523,9 @@
 
       do n = 1, ncat-1
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, iflag   ! remap_flag = .true.
@@ -614,7 +622,9 @@
       ! Make sure hice(i,j,1) >= minimum ice thickness hi_min.
       !-----------------------------------------------------------------
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, iflag          ! remap_flag = .true.
@@ -999,7 +1009,9 @@
       ! Compute the volume, area, and thickness of new ice.
       !-----------------------------------------------------------------
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, icells
@@ -1097,7 +1109,9 @@
 
       do n = 1, ncat
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, kcells
@@ -1140,7 +1154,9 @@
          enddo                  ! ij
 
          do k = 1, nilyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
             do ij = 1, kcells
@@ -1160,7 +1176,9 @@
       ! Assume that vsnon and esnon are unchanged.
       !-----------------------------------------------------------------
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
       do ij = 1, jcells
@@ -1208,7 +1226,9 @@
       enddo                     ! ij
 
       do k = 1, nilyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, jcells
@@ -1364,7 +1384,9 @@
           enddo
          endif
 
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
          do ij = 1, icells
@@ -1393,7 +1415,9 @@
          enddo                  ! ij
 
          do k = 1, nilyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
             do ij = 1, icells
@@ -1412,7 +1436,9 @@
          enddo                  ! nilyr
 
          do k = 1, nslyr
+#ifdef CPRCRAY
 !DIR$ CONCURRENT !Cray
+#endif
 !cdir nodep      !NEC
 !ocl novrec      !Fujitsu
             do ij = 1, icells

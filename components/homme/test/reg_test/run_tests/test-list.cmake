@@ -30,14 +30,14 @@ SET(HOMME_TESTS
   thetanh-TC-nudiv.cmake
   thetanh-TC-nutop.cmake
   thetanhwet-TC.cmake
-  templates.cmake
+  hommetool.cmake
 )
 
 IF (${HOMME_ENABLE_COMPOSE})
   LIST(APPEND HOMME_TESTS
     thetah-sl-test11conv-r1t2-cdr20.cmake
     thetah-sl-test11conv-r0t1-cdr30-rrm.cmake
-    #thetah-sl-dcmip16_test1pg2.cmake
+    thetah-sl-dcmip16_test1pg2.cmake
     )
 ENDIF()
 

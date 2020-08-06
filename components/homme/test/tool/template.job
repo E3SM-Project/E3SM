@@ -1,0 +1,76 @@
+#!/bin/tcsh 
+#
+#  script to show how to run various HOMME tools
+#  
+#  Generate NP4 scrip and subcell files
+# 
+set TOOLDIR = `pwd`
+set WDIR = ~/scratch1/regtest/homme
+set MACH = $TOOLDIR/../../cmake/machineFiles/darwin.cmake
+set exe = $WDIR/src/tool/homme_tool
+
+set NE=4
+set NPTS=4   # be sure to rerun CMAKE if this is changed
+set mesh = ne${NE}np${NPTS}
+
+
+cd $WDIR
+if (!  -x $exe ) then
+  # configure  set output = `$TOOLDIR/../../../../cime/scripts/Tools/get_case_env`
+  eval $output
+  cmake -C $MACH -DPREQX_NP=$NPTS -DPREQX_PLEV=26 $TOOLDIR/../..
+  # compile the tool
+  make -j4 homme_tool
+  if ( $status ) then
+     echo Error compiling homme_tool. Ensure cmake configured properly.
+     exit
+  endif
+endif
+if ( ${?SLURM_NNODES} ) then
+   set mpirun = "srun -K -c 1 -N $SLURM_NNODES"
+else
+   set mpirun = "mpirun -np 4"
+endif
+
+
+# create namelist:
+rm -f input.nl
+cat > input.nl <<EOF
+&ctl_nl
+ne = $NE
+mesh_file = "none"
+/
+
+&vert_nl
+/
+
+&analysis_nl
+tool = 'grid_template_tool'
+
+output_dir = "./" 
+output_timeunits=1
+output_frequency=1
+output_varnames1='area','corners','cv_lat','cv_lon'
+output_type='netcdf'
+!output_type='netcdf4p'  ! needed for ne1024
+io_stride = 16                                                                                                    
+/
+
+EOF
+
+$mpirun $exe < input.nl
+
+# make the 'latlon' file
+ncks -O -v lat,lon,corners,area ${mesh}_tmp1.nc ${mesh}_tmp.nc
+ncl $TOOLDIR/ncl/HOMME2META.ncl  name=\"$mesh\"  ne=$NE  np=$NPTS
+
+# make the 'scrip' file
+ncks -O -v lat,lon,area,cv_lat,cv_lon ${mesh}_tmp1.nc ${mesh}_tmp.nc
+ncl $TOOLDIR/ncl/HOMME2SCRIP.ncl  name=\"$mesh\"  ne=$NE  np=$NPTS
+rm -f {$mesh}_tmp.nc {$mesh}_tmp1.nc
+
+# make some plots (ncl defaults to ne4np4 grid
+#ncl $TOOLDIR/ncl/plotscrip.ncl
+#ncl $TOOLDIR/ncl/plotlatlon.ncl
+
+

@@ -1,0 +1,4 @@
+./xmlchange RUN_STARTDATE=1850-01-01
+./xmlchange --id CAM_CONFIG_OPTS --append --val='-cosp'
+./xmlchange --id CAM_CONFIG_OPTS --append --val='-cppdefs -DCO2_BILIN_REGRID'
+./xmlchange --id CCSM_BGC --val=CO2C

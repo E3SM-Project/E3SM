@@ -13,7 +13,7 @@ module micro_mg1_5
 ! for questions contact Hugh Morrison, Andrew Gettelman
 ! e-mail: morrison@ucar.edu, andrew@ucar.edu
 !
-! NOTE: Modified to allow other microphysics packages (e.g. CARMA) to do ice
+! NOTE: Modified to allow other microphysics packages to do ice
 ! microphysics in cooperation with the MG liquid microphysics. This is
 ! controlled by the do_cldice variable.
 !
@@ -521,7 +521,7 @@ subroutine micro_mg_tend ( &
   ! Tendencies calculated by external schemes that can replace MG's native
   ! process tendencies.
 
-  ! Used with CARMA cirrus microphysics
+  ! Used with external microphysics scheme for cirrus microphysics
   ! (or similar external microphysics model)
   real(r8), intent(in), pointer :: tnd_qsnow(:,:) ! snow mass tendency (kg/kg/s)
   real(r8), intent(in), pointer :: tnd_nsnow(:,:) ! snow number tendency (#/kg/s)
@@ -2472,7 +2472,7 @@ subroutine micro_mg_tend ( &
            ! ice effective diameter for david mitchell's optics
            deffi(i,k)=effi(i,k)*rhoi/917._r8*2._r8
         else
-           ! NOTE: If CARMA is doing the ice microphysics, then the ice effective
+           ! NOTE: If external scheme is doing the ice microphysics, then the ice effective
            ! radius has already been determined from the size distribution.
            effi(i,k) = re_ice(i,k) * 1.e6_r8      ! m -> um
            deffi(i,k)=effi(i,k) * 2._r8

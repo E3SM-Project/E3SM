@@ -341,6 +341,9 @@ module PhosphorusFluxType
      real(r8), pointer :: hrv_ploss_litter                          (:)     ! total ploss from veg to litter pool due to harvest mortality
      real(r8), pointer :: sen_ploss_litter                          (:)     ! total ploss from veg to litter pool due to senescence
 
+     ! C4MIP output variable
+     real(r8), pointer :: plant_p_to_cwdp                           (:) ! sum of gap, fire, dynamic land use, and harvest mortality, plant phosphorus flux to CWD
+
    contains
 
      procedure , public  :: Init   

@@ -10,7 +10,6 @@ module mo_gas_phase_chemdr
   use ppgrid,           only : pcols, pver
   use spmd_utils,       only : iam
   use phys_control,     only : phys_getopts
-  use carma_flags_mod,  only : carma_do_hetchem
   use cam_logfile,      only : iulog
 
   implicit none
@@ -149,8 +148,6 @@ contains
     ndx_nevapr = pbuf_get_index('NEVAPR')
     ndx_prain  = pbuf_get_index('PRAIN')
     ndx_cldtop = pbuf_get_index('CLDTOP')
-
-    if (carma_do_hetchem) ndx_sadsulf= pbuf_get_index('SADSULF')
     
 !-----------------------------------------------------------------------
 ! get fixed oxidant (troposphere) index for Linoz_MAM
@@ -301,7 +298,6 @@ contains
     real(r8),       pointer    :: cmfdqr(:,:)
     real(r8),       pointer    :: cldfr(:,:)
     real(r8),       pointer    :: cldtop(:)
-    real(r8),       pointer    :: sadsulf_ptr(:,:)           ! CARMA sulfate SAD pointer
 
     integer      ::  i, k, m, n
     integer      ::  tim_ndx
@@ -381,6 +377,11 @@ contains
   ! for aerosol formation....  
     real(r8) :: del_h2so4_gasprod(ncol,pver)
     real(r8) :: vmr0(ncol,pver,gas_pcnst)
+
+    ! flags for MMF configuration
+    logical :: use_MMF, use_ECPP
+    call phys_getopts (use_MMF_out = use_MMF)
+    call phys_getopts (use_ECPP_out  = use_ECPP )
 
     call t_startf('chemdr_init')
 
@@ -498,28 +499,18 @@ contains
 !      end do
 !    end if
 
-
-    if (carma_do_hetchem) then 
-    !-----------------------------------------------------------------------      
-    !        ... use CARMA sulfate bins for surface area
-    !-----------------------------------------------------------------------      
-      call pbuf_get_field(pbuf, ndx_sadsulf, sadsulf_ptr)
-      strato_sad(:ncol,:pver)=sadsulf_ptr(:ncol,:pver)
-    else
-
     !-----------------------------------------------------------------
     ! ... zero out sulfate below tropopause
     !-----------------------------------------------------------------
-      do k = 1, pver
-         do i = 1, ncol
-            if( k < troplev(i) ) then
-               strato_sad(i,k) = sad_sage(i,k)
-            else
-               strato_sad(i,k) = 0.0_r8
-            endif
-         end do
-      end do
-    end if  
+    do k = 1, pver
+       do i = 1, ncol
+          if( k < troplev(i) ) then
+             strato_sad(i,k) = sad_sage(i,k)
+          else
+             strato_sad(i,k) = 0.0_r8
+          endif
+       end do
+    end do
 
     if ( has_strato_chem ) then
        !-----------------------------------------------------------------------      
@@ -580,12 +571,10 @@ contains
     call setrxt( reaction_rates, tfld, invariants(1,1,indexm), ncol )
 
     sulfate(:,:) = 0._r8
-    if ( .not. carma_do_hetchem ) then
-      if( so4_ndx < 1 ) then ! get offline so4 field if not prognostic
-         call sulf_interp( ncol, lchnk, sulfate )
-      else
-         sulfate(:,:) = vmr(:,:,so4_ndx)
-      endif
+    if( so4_ndx < 1 ) then ! get offline so4 field if not prognostic
+       call sulf_interp( ncol, lchnk, sulfate )
+    else
+       sulfate(:,:) = vmr(:,:,so4_ndx)
     endif
 
     !-----------------------------------------------------------------
@@ -726,9 +715,15 @@ contains
     if ( do_neu_wetdep ) then
       het_rates = 0._r8
     else
-      call sethet( het_rates, pmid, zmid, phis, tfld, &
-                   cmfdqr, prain, nevapr, delt, invariants(:,:,indexm), &
-                   vmr, ncol, lchnk )
+      if (use_MMF .and. use_ECPP) then
+        ! ECPP handles wet removal, so set to zero here
+        het_rates(:,:,:) = 0.0
+      else
+        call sethet( het_rates, pmid, zmid, phis, tfld, &
+                     cmfdqr, prain, nevapr, delt, invariants(:,:,indexm), &
+                     vmr, ncol, lchnk )
+      end if
+
        if(.not. convproc_do_aer) then 
           call het_diags( het_rates(:ncol,:,:), mmr(:ncol,:,:), pdel(:ncol,:), lchnk, ncol )
        endif
