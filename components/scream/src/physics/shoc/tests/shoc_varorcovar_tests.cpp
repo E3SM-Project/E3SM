@@ -147,8 +147,10 @@ TEST_CASE("shoc_varorcovar", "shoc") {
   
   // NOTE: all other inputs are reused from test one
   
-  // convert to [kg/kg]
-  invar_qw[:] = invar_qw[:]/1000.0;
+  // convert total water to [kg/kg]
+  for (Int n = 0; n < SDS.nlev; ++n){
+    invar_qw[n] = invar_qw[n]/1000.;
+  }
 
   // Update invar2 to be total water
   for(Int s = 0; s < SDS.shcol; ++s) {
