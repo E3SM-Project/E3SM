@@ -238,43 +238,7 @@ macro (SetCompilerFlags)
   endif()
 
   ##############################################################################
-  # Intel Phi (MIC) specific flags - only supporting the Intel compiler
-  ##############################################################################
-
-  # If kokkos thinks the archicture is KNL, we should probably have enable-phi on by default.
-  if ("${KOKKOS_GMAKE_ARCH}" STREQUAL "KNL")
-    set(ENABLE_INTEL_PHI_DEFAULT TRUE)
-  else()
-    set(ENABLE_INTEL_PHI_DEFAULT FALSE)
-  endif()
-
-  option(ENABLE_INTEL_PHI "Whether to build with Intel Xeon Phi (MIC) support" ${ENABLE_INTEL_PHI_DEFAULT})
-
-  if (ENABLE_INTEL_PHI)
-    if (NOT ${CMAKE_Fortran_COMPILER_ID} STREQUAL Intel)
-      message(FATAL_ERROR "Intel Phi acceleration only supported through the Intel compiler")
-    else ()
-      set(INTEL_PHI_FLAGS "-xMIC-AVX512")
-      set(AVX_VERSION "512")
-      set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${INTEL_PHI_FLAGS}")
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  ${INTEL_PHI_FLAGS}")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${INTEL_PHI_FLAGS}")
-      set(IS_ACCELERATOR TRUE)
-      # CMake magic for cross-compilation
-      set(CMAKE_SYSTEM_NAME Linux)
-      set(CMAKE_SYSTEM_PROCESSOR k1om)
-      set(CMAKE_SYSTEM_VERSION 1)
-      set(_CMAKE_TOOLCHAIN_PREFIX  x86_64-k1om-linux-)
-      # Specify the location of the target environment
-      if (TARGET_ROOT_PATH)
-        set(CMAKE_FIND_ROOT_PATH ${TARGET_ROOT_PATH})
-      else ()
-        set(CMAKE_FIND_ROOT_PATH /usr/linux-k1om-4.7)
-      endif ()
-    endif ()
-  endif ()
-  ##############################################################################
-  # Compiler FLAGS for AVX1 and AVX2 (CXX compiler only)
+  # Compiler FLAGS for AVX1, AVX2, and AVX512 (CXX compiler only)
   ##############################################################################
 
   # NOTE: This won't work on batch machines where the architecture of the
@@ -294,10 +258,8 @@ macro (SetCompilerFlags)
   endif ()
 
   if (AVX_VERSION STREQUAL "512")
-    if (NOT ENABLE_INTEL_PHI)
-      if (CMAKE_CXX_COMPILER_ID STREQUAL Intel)
-        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -xCORE-AVX512")
-      endif()
+    if (CMAKE_CXX_COMPILER_ID STREQUAL Intel)
+      set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -xCORE-AVX512")
     endif()
   elseif (AVX_VERSION STREQUAL "2")
     if (CMAKE_CXX_COMPILER_ID STREQUAL GNU)
