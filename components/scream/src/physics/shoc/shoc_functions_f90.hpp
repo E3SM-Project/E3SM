@@ -193,6 +193,50 @@ struct SHOCIsotropicData {
 
 void isotropic_ts(Int nlev, SHOCIsotropicData &d);
 
+//Create data structure to hold data for adv_sgs_tke
+struct SHOCAdvsgstkeData {
+  static constexpr size_t NUM_ARRAYS   = 7; //# of arrays with values at cell centers (zt grid)
+
+  // Inputs
+  Int   shcol, nlev;
+  Real dtime;
+  Real *shoc_mix, *wthv_sec, *sterm_zt, *tk;
+
+  // In/out
+  Real *tke;
+  
+  // Outputs
+  Real *a_diss;
+
+  //functions to initialize data
+  SHOCAdvsgstkeData(Int shcol_, Int nlev_, Real dtime_);
+  SHOCAdvsgstkeData(const SHOCAdvsgstkeData &rhs);
+  SHOCAdvsgstkeData &operator=(const SHOCAdvsgstkeData &rhs);
+
+  void init_ptrs();
+
+  // Internals
+  Int m_shcol, m_nlev, m_total;
+  std::vector<Real> m_data;
+
+  template <util::TransposeDirection::Enum D>
+  void transpose() {
+    SHOCAdvsgstkeData d_trans(*this);
+
+    // Transpose on the zt grid
+    util::transpose<D>(shoc_mix, d_trans.shoc_mix, shcol, nlev);
+    util::transpose<D>(wthv_sec, d_trans.wthv_sec, shcol, nlev);
+    util::transpose<D>(sterm_zt, d_trans.sterm_zt, shcol, nlev);
+    util::transpose<D>(tk, d_trans.tk, shcol, nlev);
+    util::transpose<D>(tke, d_trans.tke, shcol, nlev);
+    util::transpose<D>(a_diss, d_trans.a_diss, shcol, nlev);
+
+    *this = std::move(d_trans);
+  }
+};//SHOCAdvsgstkeData
+
+void adv_sgs_tke(Int nlev, SHOCAdvsgstkeData &d);
+
 //Create data structure to hold data for calc_shoc_vertflux
 struct SHOCVertfluxData {
   static constexpr size_t NUM_ARRAYS   = 1; //# of arrays with values at cell centers (zt grid)

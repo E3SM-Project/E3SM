@@ -89,7 +89,7 @@ TEST_CASE("shoc_tke_isotropic_ts", "shoc") {
       if(SDS.brunt[offset] < 0.0 & SDS.brunt[offsets] > 0.0){
         REQUIRE(SDS.isotropy[offset] > SDS.isotropy[offsets]);
       }
-      if(SDS.brunt[offset] > 0.0 & SDS.brunt[offsets] < 0.0){
+      else{
         REQUIRE(SDS.isotropy[offset] < SDS.isotropy[offsets]);
       }      
     }
@@ -144,7 +144,7 @@ TEST_CASE("shoc_tke_isotropic_ts", "shoc") {
       if(SDS.a_diss[offset] < SDS.a_diss[offsets]){
         REQUIRE(SDS.isotropy[offset] > SDS.isotropy[offsets]);
       }
-      if(SDS.a_diss[offset] > SDS.a_diss[offsets]){
+      else{
         REQUIRE(SDS.isotropy[offset] < SDS.isotropy[offsets]);
       }
     }

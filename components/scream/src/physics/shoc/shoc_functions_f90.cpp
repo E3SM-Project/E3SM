@@ -31,7 +31,11 @@ void compute_shr_prod_c(Int nlevi, Int nlev, Int shcol, Real *dz_zi,
                         Real *u_wind, Real *v_wind, Real *sterm);
 			
 void isotropic_ts_c(Int nlev, Int shcol, Real *brunt_int, Real *tke, 
-                    Real *a_diss, Real *brunt, Real *isotropy);		
+                    Real *a_diss, Real *brunt, Real *isotropy);	
+		    
+void adv_sgs_tke_c(Int nlev, Int shcol, Real dtime, Real *shoc_mix, 
+                   Real *wthv_sec, Real *sterm_zt, Real *tk, 
+		   Real *tke, Real *a_diss);		    	
 
 void calc_shoc_vertflux_c(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 			  Real *dz_zi, Real *invar, Real *vertflux);
@@ -323,12 +327,69 @@ void SHOCIsotropicData::init_ptrs() {
 }
 
 //Initialize shoc parameterization, trnaspose data from c to fortran,
-//call calc_shoc_vertflux fortran subroutine and transpose data back to c
+//call isotropic_ts fortran subroutine and transpose data back to c
 void isotropic_ts(Int nlev, SHOCIsotropicData &d) {
   shoc_init(nlev, true);
   d.transpose<util::TransposeDirection::c2f>();
   isotropic_ts_c(d.nlev, d.shcol, d.brunt_int, d.tke, d.a_diss, 
                  d.brunt, d.isotropy);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+//Initialize data for adv_sgs_tke function
+SHOCAdvsgstkeData::SHOCAdvsgstkeData(Int shcol_, Int nlev_, Real dtime_)
+  : shcol(shcol_),
+    nlev(nlev_),
+    dtime(dtime_),
+    m_total(shcol_ * nlev_),
+    m_data(NUM_ARRAYS * m_total, 0) {
+  init_ptrs();
+}
+
+SHOCAdvsgstkeData::SHOCAdvsgstkeData(const SHOCAdvsgstkeData &rhs)
+  : shcol(rhs.shcol),
+    nlev(rhs.nlev),
+    dtime(rhs.dtime),
+    m_total(rhs.m_total),
+    m_data(rhs.m_data) {
+  init_ptrs();
+}
+
+
+SHOCAdvsgstkeData  &SHOCAdvsgstkeData::operator=(const SHOCAdvsgstkeData &rhs) {
+  init_ptrs();
+
+  shcol    = rhs.shcol;
+  nlev     = rhs.nlev;
+  dtime    = rhs.dtime;
+  m_total  = rhs.m_total;
+  m_data   = rhs.m_data;  // Copy
+
+  return *this;
+}
+
+
+void SHOCAdvsgstkeData::init_ptrs() {
+  Int offset         = 0;
+  Real *data_begin   = m_data.data();
+
+  std::array<Real **, NUM_ARRAYS> ptrs = {&shoc_mix, &wthv_sec, &sterm_zt,
+                                          &tk, &tke, &a_diss, &tke};
+
+  for(size_t i = 0; i < NUM_ARRAYS; ++i) {
+    *ptrs[i] = data_begin + offset;
+    offset += m_total;
+  }
+
+}
+
+//Initialize shoc parameterization, trnaspose data from c to fortran,
+//call adv_sgs_tke fortran subroutine and transpose data back to c
+void adv_sgs_tke(Int nlev, SHOCAdvsgstkeData &d) {
+  shoc_init(nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  adv_sgs_tke_c(d.nlev, d.shcol, d.dtime, d.shoc_mix, d.wthv_sec, 
+                d.sterm_zt, d.tk, d.tke, d.a_diss);
   d.transpose<util::TransposeDirection::f2c>();
 }
 
