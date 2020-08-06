@@ -35,7 +35,11 @@ void isotropic_ts_c(Int nlev, Int shcol, Real *brunt_int, Real *tke,
 		    
 void adv_sgs_tke_c(Int nlev, Int shcol, Real dtime, Real *shoc_mix, 
                    Real *wthv_sec, Real *sterm_zt, Real *tk, 
-		   Real *tke, Real *a_diss);		    	
+		   Real *tke, Real *a_diss);
+		   
+void eddy_diffusivities_c(Int nlev, Int shcol, Real *obklen, Real *pblh, 
+                          Real *zt_grid, Real *shoc_mix, Real *sterm_zt, 
+			  Real *isotropy, Real *tke, Real *tkh, Real *tk);		   		    	
 
 void calc_shoc_vertflux_c(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 			  Real *dz_zi, Real *invar, Real *vertflux);
@@ -390,6 +394,74 @@ void adv_sgs_tke(Int nlev, SHOCAdvsgstkeData &d) {
   d.transpose<util::TransposeDirection::c2f>();
   adv_sgs_tke_c(d.nlev, d.shcol, d.dtime, d.shoc_mix, d.wthv_sec, 
                 d.sterm_zt, d.tk, d.tke, d.a_diss);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+//Initialize data for eddy_diffusivities
+SHOCEddydiffData::SHOCEddydiffData(Int shcol_, Int nlev_)
+  : shcol(shcol_),
+    nlev(nlev_),
+    m_total(shcol_ * nlev_),
+    m_totalc(shcol_),
+    m_data(NUM_ARRAYS * m_total, 0),
+    m_datac(NUM_ARRAYS_c * m_totalc,0) {
+  init_ptrs();
+}
+
+SHOCEddydiffData::SHOCEddydiffData(const SHOCEddydiffData &rhs)
+  : shcol(rhs.shcol),
+    nlev(rhs.nlev),
+    m_total(rhs.m_total),
+    m_totalc(rhs.m_totalc),
+    m_data(rhs.m_data),
+    m_datac(rhs.m_datac) {
+  init_ptrs();
+}
+
+
+SHOCEddydiffData  &SHOCEddydiffData::operator=(const SHOCEddydiffData &rhs) {
+  init_ptrs();
+
+  shcol    = rhs.shcol;
+  nlev     = rhs.nlev;
+  m_total  = rhs.m_total;
+  m_totalc = rhs.m_totalc;
+  m_data   = rhs.m_data;
+  m_datac  = rhs.m_datac;  // Copy
+
+  return *this;
+}
+
+
+void SHOCEddydiffData::init_ptrs() {
+  Int offset         = 0;
+  Real *data_begin   = m_data.data();
+  Real *data_begin_c = m_datac.data();
+
+  std::array<Real **, NUM_ARRAYS> ptrs = {&zt_grid, &shoc_mix, &sterm_zt,
+                                          &isotropy, &tke, &tkh, &tk};
+  std::array<Real **, NUM_ARRAYS_c> ptrs_c = {&obklen, &pblh};
+
+  for(size_t i = 0; i < NUM_ARRAYS; ++i) {
+    *ptrs[i] = data_begin + offset;
+    offset += m_total;
+  }
+  
+  offset = 0;
+  for(size_t i = 0; i < NUM_ARRAYS_c; ++i) {
+    *ptrs_c[i] = data_begin_c + offset;
+    offset += m_totalc;
+  }
+  
+}
+
+//Initialize shoc parameterization, trnaspose data from c to fortran,
+//call eddy_diffusivities fortran subroutine and transpose data back to c
+void eddy_diffusivities(Int nlev, SHOCEddydiffData &d) {
+  shoc_init(nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  eddy_diffusivities_c(d.nlev, d.shcol, d.obklen, d.pblh, d.zt_grid,
+     d.shoc_mix, d.sterm_zt, d.isotropy, d.tke, d.tkh, d.tk);
   d.transpose<util::TransposeDirection::f2c>();
 }
 

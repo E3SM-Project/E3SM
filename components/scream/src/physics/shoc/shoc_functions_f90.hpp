@@ -237,6 +237,54 @@ struct SHOCAdvsgstkeData {
 
 void adv_sgs_tke(Int nlev, SHOCAdvsgstkeData &d);
 
+//Create data structure to hold data for eddy_diffusivities
+struct SHOCEddydiffData {
+  static constexpr size_t NUM_ARRAYS   = 7; //# of arrays with values at cell centers (zt grid)
+  static constexpr size_t NUM_ARRAYS_c = 2; //# of arrays with column only dimensions
+
+  // Inputs
+  Int   shcol, nlev;
+  Real *pblh, *obklen, *zt_grid, *shoc_mix, *sterm_zt, 
+        *isotropy, *tke;
+
+  // Output
+  Real *tk, *tkh;
+
+  //functions to initialize data
+  SHOCEddydiffData(Int shcol_, Int nlev_);
+  SHOCEddydiffData(const SHOCEddydiffData &rhs);
+  SHOCEddydiffData &operator=(const SHOCEddydiffData &rhs);
+
+  void init_ptrs();
+
+  // Internals
+  Int m_shcol, m_nlev, m_total, m_totalc;
+  std::vector<Real> m_data;
+  std::vector<Real> m_datac;
+
+  template <util::TransposeDirection::Enum D>
+  void transpose() {
+    SHOCEddydiffData d_trans(*this);
+
+    // Transpose on the zt grid
+    util::transpose<D>(zt_grid, d_trans.zt_grid, shcol, nlev);
+    util::transpose<D>(shoc_mix, d_trans.shoc_mix, shcol, nlev);
+    util::transpose<D>(isotropy, d_trans.isotropy, shcol, nlev);
+    util::transpose<D>(tke, d_trans.tke, shcol, nlev);
+    util::transpose<D>(tk, d_trans.tk, shcol, nlev);
+    util::transpose<D>(tkh, d_trans.tkh, shcol, nlev);
+    
+    // Transpose on the column only grid
+    util::transpose<D>(obklen, d_trans.obklen, shcol, 1);
+    util::transpose<D>(pblh, d_trans.pblh, shcol, 1);
+
+    *this = std::move(d_trans);
+  }
+};//SHOCEddydiffData
+
+void eddy_diffusivities(Int nlev, SHOCEddydiffData &d);
+
+
 //Create data structure to hold data for calc_shoc_vertflux
 struct SHOCVertfluxData {
   static constexpr size_t NUM_ARRAYS   = 1; //# of arrays with values at cell centers (zt grid)

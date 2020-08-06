@@ -43,7 +43,9 @@ TEST_CASE("shoc_tke_column_stab", "shoc") {
   Real brunt_sym[nlev] = {-0.5, -0.25, 0.0, 0.25, 0.5};
 
   // Convert pres to Pa
-  pres[:] = pres[:]*100.0;
+  for (Int n = 0; n < nlev; ++n){
+    pres[n] = pres[n]*100.0;
+  }
 
   // Initialzie data structure for bridgeing to F90
   SHOCColstabData SDS(shcol, nlev);

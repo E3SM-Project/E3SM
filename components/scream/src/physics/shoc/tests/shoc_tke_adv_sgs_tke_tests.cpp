@@ -112,11 +112,11 @@ TEST_CASE("shoc_tke_adv_sgs_tke", "shoc") {
   // SHOC mixing length [m]
   Real shoc_mix_diss[shcol] = {1000.0, 500.};
   // Buoyancy flux [K m/s]
-  Real wthv_sec_diss[shcol] = {0.1, 0.1};
+  Real wthv_sec_diss = 0.1;
   // Shear production term [s-2]
-  Real sterm_diss[shcol] = {0.01, 0.01};
+  Real sterm_diss = 0.01;
   // TKE initial value
-  Real tke_init_diss[shcol] = {0.1, 0.1};      
+  Real tke_init_diss= 0.1;      
 
   // Fill in test data on zt_grid.
   for(Int s = 0; s < SDS.shcol; ++s) {
@@ -124,9 +124,9 @@ TEST_CASE("shoc_tke_adv_sgs_tke", "shoc") {
       const auto offset = n + s * SDS.nlev;
 
       SDS.shoc_mix[offset] = shoc_mix_diss[s];
-      SDS.wthv_sec[offset] = wthv_sec_diss[s];
-      SDS.sterm_zt[offset] = sterm_diss[s];
-      SDS.tke[offset] = tke_init_diss[s];
+      SDS.wthv_sec[offset] = wthv_sec_diss;
+      SDS.sterm_zt[offset] = sterm_diss;
+      SDS.tke[offset] = tke_init_diss;
     }
   }
 

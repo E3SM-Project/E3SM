@@ -181,7 +181,29 @@ contains
     call adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
                      sterm_zt, tk, tke, a_diss)
 
-  end subroutine adv_sgs_tke_c     
+  end subroutine adv_sgs_tke_c    
+  
+  subroutine eddy_diffusivities_c(nlev, shcol, obklen, pblh, zt_grid, &
+                          shoc_mix, sterm_zt, isotropy, tke, tkh, tk) bind (C)
+    use shoc, only: eddy_diffusivities
+
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in) :: obklen(shcol)
+    real(kind=c_real), intent(in) :: pblh(shcol)
+    real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
+    real(kind=c_real), intent(in) :: shoc_mix(shcol,nlev)
+    real(kind=c_real), intent(in) :: sterm_zt(shcol,nlev)
+    real(kind=c_real), intent(in) :: isotropy(shcol,nlev)    
+    real(kind=c_real), intent(in) :: tke(shcol,nlev)
+    
+    real(kind=c_real), intent(out) :: tkh(shcol,nlev)
+    real(kind=c_real), intent(out) :: tk(shcol,nlev)
+
+    call eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
+     shoc_mix, sterm_zt, isotropy, tke, tkh, tk)
+
+  end subroutine eddy_diffusivities_c   
   
   subroutine calc_shoc_vertflux_c(shcol, nlev, nlevi, tkh_zi, dz_zi, invar, vertflux) bind (C)
     use shoc, only: calc_shoc_vertflux
