@@ -152,8 +152,8 @@ void Functions<S,D>
 
     rho(k)     = pdel(k)/dzq(k) / g;
     inv_rho(k) = 1 / rho(k);
-    qvs(k)     = physics::qv_sat(t(k), pres(k), 0);
-    qvi(k)     = physics::qv_sat(t(k), pres(k), 1);
+    qvs(k)     = physics::qv_sat(t(k), pres(k), false);
+    qvi(k)     = physics::qv_sat(t(k), pres(k), true);
 
     supi(k) = qv(k) / qvi(k) - 1;
 

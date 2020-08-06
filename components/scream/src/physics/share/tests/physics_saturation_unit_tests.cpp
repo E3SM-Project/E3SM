@@ -93,15 +93,15 @@ struct UnitWrap::UnitTest<D>::TestSaturation
     Spack sat_ice_fp  = physics::polysvp1(temps, true);
     Spack sat_liq_fp  = physics::polysvp1(temps, false);
     //last argument "0" of qv_sat function below forces qv_sat to call "polysvp1"
-    Spack mix_ice_fr = physics::qv_sat(temps, pres, true, 0);
-    Spack mix_liq_fr = physics::qv_sat(temps, pres, false,0);
+    Spack mix_ice_fr = physics::qv_sat(temps, pres, true, physics::Polysvp1);
+    Spack mix_liq_fr = physics::qv_sat(temps, pres, false,physics::Polysvp1);
 
     //Get values from MurphyKoop_svp and qv_sat (qv_sat calls MurphyKoop_svp here) to test against "expected" values
     Spack sat_ice_mkp   = physics::MurphyKoop_svp(temps, true);
     Spack sat_liq_mkp   = physics::MurphyKoop_svp(temps, false);
     //last argument "1" of qv_sat function below forces qv_sat to call "MurphyKoop_svp"
-    Spack mix_ice_mkr  = physics::qv_sat(temps, pres, true, 1);
-    Spack mix_liq_mkr  = physics::qv_sat(temps, pres, false,1);
+    Spack mix_ice_mkr  = physics::qv_sat(temps, pres, true, physics::MurphyKoop);
+    Spack mix_liq_mkr  = physics::qv_sat(temps, pres, false,physics::MurphyKoop);
 
     //Set error tolerances
     //--------------------------------------
