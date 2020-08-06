@@ -150,6 +150,49 @@ struct SHOCTkeshearData {
 
 void compute_shr_prod(Int nlev, SHOCTkeshearData &d);
 
+//Create data structure to hold data for integ_column_stability
+struct SHOCIsotropicData {
+  static constexpr size_t NUM_ARRAYS   = 4; //# of arrays with values at cell centers (zt grid)
+  static constexpr size_t NUM_ARRAYS_c = 1; //# of arrays with column only dimensions
+
+  // Inputs
+  Int   shcol, nlev;
+  Real *tke, *a_diss, *brunt, *brunt_int;
+
+  // Output
+  Real *isotropy;
+
+  //functions to initialize data
+  SHOCIsotropicData(Int shcol_, Int nlev_);
+  SHOCIsotropicData(const SHOCIsotropicData &rhs);
+  SHOCIsotropicData &operator=(const SHOCIsotropicData &rhs);
+
+  void init_ptrs();
+
+  // Internals
+  Int m_shcol, m_nlev, m_total, m_totalc;
+  std::vector<Real> m_data;
+  std::vector<Real> m_datac;
+
+  template <util::TransposeDirection::Enum D>
+  void transpose() {
+    SHOCIsotropicData d_trans(*this);
+
+    // Transpose on the zt grid
+    util::transpose<D>(tke, d_trans.tke, shcol, nlev);
+    util::transpose<D>(a_diss, d_trans.a_diss, shcol, nlev);
+    util::transpose<D>(brunt, d_trans.brunt, shcol, nlev);
+    util::transpose<D>(isotropy, d_trans.isotropy, shcol, nlev);
+    
+    // Transpose on the column only grid
+    util::transpose<D>(brunt_int, d_trans.brunt_int, shcol, 1);
+
+    *this = std::move(d_trans);
+  }
+};//SHOCIsotropicData
+
+void isotropic_ts(Int nlev, SHOCIsotropicData &d);
+
 //Create data structure to hold data for calc_shoc_vertflux
 struct SHOCVertfluxData {
   static constexpr size_t NUM_ARRAYS   = 1; //# of arrays with values at cell centers (zt grid)

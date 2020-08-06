@@ -29,6 +29,9 @@ void integ_column_stability_c(Int nlev, Int shcol, Real *dz_zt, Real *pres,
 			      
 void compute_shr_prod_c(Int nlevi, Int nlev, Int shcol, Real *dz_zi, 
                         Real *u_wind, Real *v_wind, Real *sterm);
+			
+void isotropic_ts_c(Int nlev, Int shcol, Real *brunt_int, Real *tke, 
+                    Real *a_diss, Real *brunt, Real *isotropy);		
 
 void calc_shoc_vertflux_c(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 			  Real *dz_zi, Real *invar, Real *vertflux);
@@ -257,8 +260,75 @@ void SHOCTkeshearData::init_ptrs() {
 void compute_shr_prod(Int nlev, SHOCTkeshearData &d) {
   shoc_init(nlev, true);
   d.transpose<util::TransposeDirection::c2f>();
-  compute_shr_prod_c(d.nlev, d.nlevi, d.shcol, d.dz_zi, d.u_wind,
+  compute_shr_prod_c(d.nlevi, d.nlev, d.shcol, d.dz_zi, d.u_wind,
                        d.v_wind, d.sterm);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+//Initialize data for isotropic_ts
+SHOCIsotropicData::SHOCIsotropicData(Int shcol_, Int nlev_)
+  : shcol(shcol_),
+    nlev(nlev_),
+    m_total(shcol_ * nlev_),
+    m_totalc(shcol_),
+    m_data(NUM_ARRAYS * m_total, 0),
+    m_datac(NUM_ARRAYS_c * m_totalc,0) {
+  init_ptrs();
+}
+
+SHOCIsotropicData::SHOCIsotropicData(const SHOCIsotropicData &rhs)
+  : shcol(rhs.shcol),
+    nlev(rhs.nlev),
+    m_total(rhs.m_total),
+    m_totalc(rhs.m_totalc),
+    m_data(rhs.m_data),
+    m_datac(rhs.m_datac) {
+  init_ptrs();
+}
+
+
+SHOCIsotropicData  &SHOCIsotropicData::operator=(const SHOCIsotropicData &rhs) {
+  init_ptrs();
+
+  shcol    = rhs.shcol;
+  nlev     = rhs.nlev;
+  m_total  = rhs.m_total;
+  m_totalc = rhs.m_totalc;
+  m_data   = rhs.m_data;
+  m_datac  = rhs.m_datac;  // Copy
+
+  return *this;
+}
+
+
+void SHOCIsotropicData::init_ptrs() {
+  Int offset         = 0;
+  Real *data_begin   = m_data.data();
+  Real *data_begin_c = m_datac.data();
+
+  std::array<Real **, NUM_ARRAYS> ptrs = {&tke, &a_diss, &brunt, &isotropy};
+  std::array<Real **, NUM_ARRAYS_c> ptrs_c = {&brunt_int};
+
+  for(size_t i = 0; i < NUM_ARRAYS; ++i) {
+    *ptrs[i] = data_begin + offset;
+    offset += m_total;
+  }
+  
+  offset = 0;
+  for(size_t i = 0; i < NUM_ARRAYS_c; ++i) {
+    *ptrs_c[i] = data_begin_c + offset;
+    offset += m_totalc;
+  }
+  
+}
+
+//Initialize shoc parameterization, trnaspose data from c to fortran,
+//call calc_shoc_vertflux fortran subroutine and transpose data back to c
+void isotropic_ts(Int nlev, SHOCIsotropicData &d) {
+  shoc_init(nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  isotropic_ts_c(d.nlev, d.shcol, d.brunt_int, d.tke, d.a_diss, 
+                 d.brunt, d.isotropy);
   d.transpose<util::TransposeDirection::f2c>();
 }
 

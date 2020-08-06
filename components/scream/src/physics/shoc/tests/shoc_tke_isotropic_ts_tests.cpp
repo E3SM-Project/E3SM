@@ -12,7 +12,7 @@
 #include "ekat/util/scream_arch.hpp"
 #include "ekat/util/scream_kokkos_utils.hpp"
 #include "ekat/util/scream_utils.hpp"
-#include "physics/common/physics_constants.hpp"
+#include "physics/share/physics_constants.hpp"
 #include "physics/shoc/shoc_functions.hpp"
 #include "physics/shoc/shoc_functions_f90.hpp"
 #include "shoc_unit_tests_common.hpp"
@@ -45,10 +45,10 @@ TEST_CASE("shoc_tke_isotropic_ts", "shoc") {
   // Dissipation rate [m2/s3]
   Real diss_st = 0.1;
   // Brunt Vaisalla frequency [/s]
-  Real brunt_st[shcol] = {0.004, -0.004}; 
+  Real brunt_st[shcol] = {-0.004, 0.004}; 
 
   // Initialzie data structure for bridgeing to F90
-  SHOCIsoTsData SDS(shcol, nlev);
+  SHOCIsotropicData SDS(shcol, nlev);
 
   // Test that the inputs are reasonable.
   REQUIRE(SDS.shcol > 0);
@@ -61,7 +61,7 @@ TEST_CASE("shoc_tke_isotropic_ts", "shoc") {
       const auto offset = n + s * SDS.nlev;
 
       SDS.tke[offset] = tke_st;
-      SDS.diss[offset] = diss_st;
+      SDS.a_diss[offset] = diss_st;
       SDS.brunt[offset] = brunt_st[s];
     }
   }
@@ -69,10 +69,10 @@ TEST_CASE("shoc_tke_isotropic_ts", "shoc") {
   // Check that the inputs make sense
   for(Int s = 0; s < SDS.shcol; ++s) {
     for (Int n = 0; n < SDS.nlev; ++n){
-      const auto offset = n + s * SDS.nlevi;
+      const auto offset = n + s * SDS.nlev;
       // Should be greater than zero 
       REQUIRE(SDS.tke[offset] > 0.0);
-      REQUIRE(SDS.diss[offset] > 0.0);
+      REQUIRE(SDS.a_diss[offset] > 0.0);
     }
   }
 
@@ -85,17 +85,20 @@ TEST_CASE("shoc_tke_isotropic_ts", "shoc") {
     for(Int n = 0; n < SDS.nlev; ++n) {
       const auto offset = n + s * SDS.nlev;
       // Get value corresponding to next column
-      const auto offsets = n = (s+1) * SDS.nlev;     
+      const auto offsets = n + (s+1) * SDS.nlev;    
       if(SDS.brunt[offset] < 0.0 & SDS.brunt[offsets] > 0.0){
-        REQUIRE(SDS.isotropy[offset] < SDS.isotropy[offsets]);
+        REQUIRE(SDS.isotropy[offset] > SDS.isotropy[offsets]);
       }
+      if(SDS.brunt[offset] > 0.0 & SDS.brunt[offsets] < 0.0){
+        REQUIRE(SDS.isotropy[offset] < SDS.isotropy[offsets]);
+      }      
     }
   }  
 
   // SECOND TEST
   // Dissipation test.  Verify that two points with the same inputs
   //  but one with smaller dissipation rate, that that point has 
-  //  a higher isotropy timescale   
+  //  a higher isotropy timescale.   
   
   // Integrated brunt vaisalla 
   Real brunt_int_diss = 0.1;
@@ -113,7 +116,7 @@ TEST_CASE("shoc_tke_isotropic_ts", "shoc") {
       const auto offset = n + s * SDS.nlev;
 
       SDS.tke[offset] = tke_diss;
-      SDS.diss[offset] = diss_diss[s];
+      SDS.a_diss[offset] = diss_diss[s];
       SDS.brunt[offset] = brunt_diss;
     }
   }
@@ -121,10 +124,10 @@ TEST_CASE("shoc_tke_isotropic_ts", "shoc") {
   // Check that the inputs make sense
   for(Int s = 0; s < SDS.shcol; ++s) {
     for (Int n = 0; n < SDS.nlev; ++n){
-      const auto offset = n + s * SDS.nlevi;
+      const auto offset = n + s * SDS.nlev;
       // Should be greater than zero 
       REQUIRE(SDS.tke[offset] > 0.0);
-      REQUIRE(SDS.diss[offset] > 0.0);
+      REQUIRE(SDS.a_diss[offset] > 0.0);
     }
   }   
   
@@ -137,9 +140,12 @@ TEST_CASE("shoc_tke_isotropic_ts", "shoc") {
     for(Int n = 0; n < SDS.nlev; ++n) {
       const auto offset = n + s * SDS.nlev;
       // Get value corresponding to next column
-      const auto offsets = n = (s+1) * SDS.nlev;     
-      if(SDS.diss[offset] < SDS.diss[offsets]){
+      const auto offsets = n + (s+1) * SDS.nlev;     
+      if(SDS.a_diss[offset] < SDS.a_diss[offsets]){
         REQUIRE(SDS.isotropy[offset] > SDS.isotropy[offsets]);
+      }
+      if(SDS.a_diss[offset] > SDS.a_diss[offsets]){
+        REQUIRE(SDS.isotropy[offset] < SDS.isotropy[offsets]);
       }
     }
   }  

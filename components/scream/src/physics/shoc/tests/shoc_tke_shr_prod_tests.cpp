@@ -22,7 +22,7 @@ namespace shoc {
 namespace unit_test {
 
 TEST_CASE("shoc_tke_shr_prod", "shoc") {
-  constexpr Int shcol    = 1;
+  constexpr Int shcol    = 2;
   constexpr Int nlev     = 5;
   constexpr auto nlevi   = nlev + 1;
   
@@ -41,7 +41,8 @@ TEST_CASE("shoc_tke_shr_prod", "shoc") {
   // Define height thickness on nlevi grid [m]
   //   NOTE: First indicee is zero because it is never used
   //   Do a stretched grid
-  Real dz_zi[nlevi] = {0.0, 5000., 1000., 100., 50., 10.};
+  Real dz_zi[nlevi] = {0.0, 500., 200., 100., 50., 10.};
+//  Real dz_zi[nlevi] = {0.0, 10.0, 10.0, 10.0, 10.0, 10.0};
   // Define zonal wind on nlev grid [m/s]
   Real u_wind_shr[nlev] = {2.0, 1.0, 0.0, -1.0, -2.0};
   // Define meridional wind on nlev grid [m/s]
@@ -94,7 +95,7 @@ TEST_CASE("shoc_tke_shr_prod", "shoc") {
     // First check that sterm is ALWAYS greater than 
     //  zero for non boundary points, but exactly zero
     //  for boundary points.
-    for(Int n = 0; n < SDS.nlevi-1; ++n) {
+    for(Int n = 0; n < SDS.nlevi; ++n) {
       const auto offset = n + s * SDS.nlevi;
       if (n == 0 || n == nlevi-1){
         // Boundary point check
@@ -109,8 +110,7 @@ TEST_CASE("shoc_tke_shr_prod", "shoc") {
     //  in mind to exclude boundary points, which should be zero
     for(Int n = 1; n < SDS.nlevi-2; ++n){
       const auto offset = n + s * SDS.nlevi;
-      REQUIRE(SDS.sterm[offset]-\ 
-              SDS.sterm[offset+1] < 0.0);  
+      REQUIRE(SDS.sterm[offset]-SDS.sterm[offset+1] < 0.0);  
     }
   }
   
