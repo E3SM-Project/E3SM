@@ -108,6 +108,49 @@ struct SHOCVertfluxData {
 
 void calc_shoc_vertflux(Int nlev, SHOCVertfluxData &d);
 
+struct SHOCVarorcovarData {
+  static constexpr size_t NUM_ARRAYS   = 2;
+  static constexpr size_t NUM_ARRAYS_i = 4;
+
+  // Inputs
+  Int   shcol, nlev, nlevi;
+  Real tunefac;
+  Real *tkh_zi, *dz_zi, *isotropy_zi, *invar1, *invar2;
+
+  // In/out
+  Real *varorcovar;
+
+  SHOCVarorcovarData(Int shcol_, Int nlev_, Int nlevi_, Real tunefac_);
+  SHOCVarorcovarData(const SHOCVarorcovarData &rhs);
+  SHOCVarorcovarData &operator=(const SHOCVarorcovarData &rhs);
+
+  void init_ptrs();
+
+  // Internals
+  Int m_shcol, m_nlev, m_nlevi, m_total, m_totali;
+  std::vector<Real> m_data;
+  std::vector<Real> m_datai;
+
+  template <util::TransposeDirection::Enum D>
+  void transpose() {
+    SHOCVarorcovarData d_trans(*this);
+
+    // Transpose on the zt grid
+    util::transpose<D>(invar1, d_trans.invar1, shcol, nlev);
+    util::transpose<D>(invar2, d_trans.invar2, shcol, nlev);
+
+    // Transpose on the zi grid
+    util::transpose<D>(tkh_zi, d_trans.tkh_zi, shcol, nlevi);
+    util::transpose<D>(dz_zi, d_trans.dz_zi, shcol, nlevi);
+    util::transpose<D>(isotropy_zi, d_trans.isotropy_zi, shcol, nlevi);
+    util::transpose<D>(varorcovar, d_trans.varorcovar, shcol, nlevi);
+
+    *this = std::move(d_trans);
+  }
+};//SHOCVarorcovarData
+
+void calc_shoc_varorcovar(Int nlev, SHOCVarorcovarData &d);
+
 }  // namespace shoc
 }  // namespace scream
 
