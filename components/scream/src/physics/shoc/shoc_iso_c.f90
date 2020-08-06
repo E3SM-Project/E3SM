@@ -130,6 +130,22 @@ contains
 
   end subroutine integ_column_stability_c
   
+  subroutine compute_shr_prod_c(nlevi, nlev, shcol, dz_zi, u_wind, v_wind, sterm) bind (C)
+    use shoc, only: compute_shr_prod
+
+    integer(kind=c_int), intent(in), value :: nlevi
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in) :: dz_zi(shcol,nlevi)
+    real(kind=c_real), intent(in) :: u_wind(shcol,nlev)
+    real(kind=c_real), intent(in) :: v_wind(shcol,nlev)
+    
+    real(kind=c_real), intent(out) :: sterm(shcol,nlevi)
+
+    call compute_shr_prod(nlevi, nlev, shcol, dz_zi, u_wind, v_wind, sterm)
+
+  end subroutine compute_shr_prod_c  
+  
   subroutine calc_shoc_vertflux_c(shcol, nlev, nlevi, tkh_zi, dz_zi, invar, vertflux) bind (C)
     use shoc, only: calc_shoc_vertflux
 

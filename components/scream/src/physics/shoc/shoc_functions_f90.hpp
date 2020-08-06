@@ -109,6 +109,48 @@ struct SHOCColstabData {
 void integ_column_stability(Int nlev, SHOCColstabData &d);
 
 //Create data structure to hold data for calc_shoc_vertflux
+struct SHOCTkeshearData {
+  static constexpr size_t NUM_ARRAYS   = 2; //# of arrays with values at cell centers (zt grid)
+  static constexpr size_t NUM_ARRAYS_i = 2; //# of arrays with values at interface centers (zi grid)
+
+  // Inputs
+  Int   shcol, nlev, nlevi;
+  Real *dz_zi, *u_wind, *v_wind;
+
+  // In/out
+  Real *sterm;
+
+  //functions to initialize data
+  SHOCTkeshearData(Int shcol_, Int nlev_, Int nlevi_);
+  SHOCTkeshearData(const SHOCTkeshearData &rhs);
+  SHOCTkeshearData &operator=(const SHOCTkeshearData &rhs);
+
+  void init_ptrs();
+
+  // Internals
+  Int m_shcol, m_nlev, m_nlevi, m_total, m_totali;
+  std::vector<Real> m_data;
+  std::vector<Real> m_datai;
+
+  template <util::TransposeDirection::Enum D>
+  void transpose() {
+    SHOCTkeshearData d_trans(*this);
+
+    // Transpose on the zt grid
+    util::transpose<D>(u_wind, d_trans.u_wind, shcol, nlev);
+    util::transpose<D>(v_wind, d_trans.v_wind, shcol, nlev);
+
+    // Transpose on the zi grid
+    util::transpose<D>(dz_zi, d_trans.dz_zi, shcol, nlevi);
+    util::transpose<D>(sterm, d_trans.sterm, shcol, nlevi);
+
+    *this = std::move(d_trans);
+  }
+};//SHOCTkeshearData
+
+void compute_shr_prod(Int nlev, SHOCTkeshearData &d);
+
+//Create data structure to hold data for calc_shoc_vertflux
 struct SHOCVertfluxData {
   static constexpr size_t NUM_ARRAYS   = 1; //# of arrays with values at cell centers (zt grid)
   static constexpr size_t NUM_ARRAYS_i = 3; //# of arrays with values at interface centers (zi grid)

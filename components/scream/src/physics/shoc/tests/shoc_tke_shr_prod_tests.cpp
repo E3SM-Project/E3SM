@@ -12,7 +12,7 @@
 #include "ekat/util/scream_arch.hpp"
 #include "ekat/util/scream_kokkos_utils.hpp"
 #include "ekat/util/scream_utils.hpp"
-#include "physics/common/physics_constants.hpp"
+#include "physics/share/physics_constants.hpp"
 #include "physics/shoc/shoc_functions.hpp"
 #include "physics/shoc/shoc_functions_f90.hpp"
 #include "shoc_unit_tests_common.hpp"
@@ -22,8 +22,7 @@ namespace shoc {
 namespace unit_test {
 
 TEST_CASE("shoc_tke_shr_prod", "shoc") {
-  constexpr Real gravit  = scream::physics::Constants<Real>::gravit;
-  constexpr Int shcol    = 2;
+  constexpr Int shcol    = 1;
   constexpr Int nlev     = 5;
   constexpr auto nlevi   = nlev + 1;
   
@@ -49,7 +48,7 @@ TEST_CASE("shoc_tke_shr_prod", "shoc") {
   Real v_wind_shr[nlev] = {1.0, 2.0, 3.0, 4.0, 5.0};
 
   // Initialzie data structure for bridgeing to F90
-  SHOCTKEData SDS(shcol, nlev, nlevi);
+  SHOCTkeshearData SDS(shcol, nlev, nlevi);
 
   // Test that the inputs are reasonable.
   REQUIRE(SDS.nlevi - SDS.nlev == 1);
@@ -67,7 +66,7 @@ TEST_CASE("shoc_tke_shr_prod", "shoc") {
     // Fill in test data on zi_grid.
     for(Int n = 0; n < SDS.nlevi; ++n) {
       const auto offset   = n + s * SDS.nlevi;
-      SDS.dz_zi[offset] = dz_zi;
+      SDS.dz_zi[offset] = dz_zi[n];
     }
   }
 
@@ -95,9 +94,9 @@ TEST_CASE("shoc_tke_shr_prod", "shoc") {
     // First check that sterm is ALWAYS greater than 
     //  zero for non boundary points, but exactly zero
     //  for boundary points.
-    for(Int n = 0; n < SDS.nlevi; ++n) {
+    for(Int n = 0; n < SDS.nlevi-1; ++n) {
       const auto offset = n + s * SDS.nlevi;
-      if (n == 0 || n == nlevi){
+      if (n == 0 || n == nlevi-1){
         // Boundary point check
         REQUIRE(SDS.sterm[offset] == 0.0);
       } 

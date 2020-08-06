@@ -26,6 +26,9 @@ void shoc_grid_c(int shcol, int nlev, int nlevi, Real *zt_grid, Real *zi_grid,
 
 void integ_column_stability_c(Int nlev, Int shcol, Real *dz_zt, Real *pres,
 			      Real *brunt, Real *brunt_int);
+			      
+void compute_shr_prod_c(Int nlevi, Int nlev, Int shcol, Real *dz_zi, 
+                        Real *u_wind, Real *v_wind, Real *sterm);
 
 void calc_shoc_vertflux_c(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 			  Real *dz_zi, Real *invar, Real *vertflux);
@@ -189,6 +192,75 @@ void integ_column_stability(Int nlev, SHOCColstabData &d) {
   d.transpose<util::TransposeDirection::f2c>();
 }
 
+
+//Initialize data for compute_shr_prod function
+SHOCTkeshearData::SHOCTkeshearData(Int shcol_, Int nlev_, Int nlevi_)
+  : shcol(shcol_),
+    nlev(nlev_),
+    nlevi(nlevi_),
+    m_total(shcol_ * nlev_),
+    m_totali(shcol_ * nlevi_),
+    m_data(NUM_ARRAYS * m_total, 0),
+    m_datai(NUM_ARRAYS_i * m_totali, 0) {
+  init_ptrs();
+}
+
+SHOCTkeshearData::SHOCTkeshearData(const SHOCTkeshearData &rhs)
+  : shcol(rhs.shcol),
+    nlev(rhs.nlev),
+    nlevi(rhs.nlevi),
+    m_total(rhs.m_total),
+    m_totali(rhs.m_totali),
+    m_data(rhs.m_data),
+    m_datai(rhs.m_datai) {
+  init_ptrs();
+}
+
+
+SHOCTkeshearData  &SHOCTkeshearData::operator=(const SHOCTkeshearData &rhs) {
+  init_ptrs();
+
+  shcol    = rhs.shcol;
+  nlev     = rhs.nlev;
+  nlevi    = rhs.nlevi;
+  m_total  = rhs.m_total;
+  m_totali = rhs.m_totali;
+  m_data   = rhs.m_data;
+  m_datai  = rhs.m_datai;  // Copy
+
+  return *this;
+}
+
+
+void SHOCTkeshearData::init_ptrs() {
+  Int offset         = 0;
+  Real *data_begin   = m_data.data();
+  Real *data_begin_i = m_datai.data();
+
+  std::array<Real **, NUM_ARRAYS> ptrs     = {&u_wind, &v_wind};
+  std::array<Real **, NUM_ARRAYS_i> ptrs_i = {&dz_zi, &sterm};
+
+  for(size_t i = 0; i < NUM_ARRAYS; ++i) {
+    *ptrs[i] = data_begin + offset;
+    offset += m_total;
+  }
+
+  offset = 0;
+  for(size_t i = 0; i < NUM_ARRAYS_i; ++i) {
+    *ptrs_i[i] = data_begin_i + offset;
+    offset += m_totali;
+  }
+}
+
+//Initialize shoc parameterization, trnaspose data from c to fortran,
+//call compute_shr_prod fortran subroutine and transpose data back to c
+void compute_shr_prod(Int nlev, SHOCTkeshearData &d) {
+  shoc_init(nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  compute_shr_prod_c(d.nlev, d.nlevi, d.shcol, d.dz_zi, d.u_wind,
+                       d.v_wind, d.sterm);
+  d.transpose<util::TransposeDirection::f2c>();
+}
 
 //Initialize data for calc_shoc_vertflux function
 SHOCVertfluxData::SHOCVertfluxData(Int shcol_, Int nlev_, Int nlevi_)
