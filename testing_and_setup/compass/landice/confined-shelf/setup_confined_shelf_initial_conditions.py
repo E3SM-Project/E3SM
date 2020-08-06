@@ -45,7 +45,7 @@ except:
 
 # put the domain origin in the center of the center cell in the x-direction and in the 2nd row on the y-direction
 # Only do this if it appears this has not already been done:
-if xVertex[:].min() == 0.0:
+if xVertex[:].min() < 15000.0:  # 15000 is to allow for the periodic cells to have been removed from the mesh
    print('Shifting domain origin to center of shelf front, because it appears that this has not yet been done.')
    unique_xs=np.array(sorted(list(set(xCell[:]))))
    targetx = (unique_xs.max() - unique_xs.min()) / 2.0 + unique_xs.min()  # center of domain range
@@ -119,6 +119,10 @@ theSides = Counter(xCell[ np.nonzero(kinbcmask[0,:])[0] ]).most_common(4)  # nee
 for side in theSides:
     thesideindices = np.nonzero( np.logical_and( xCell[:] == side[0] , yCell[:] <= 0.0 ) )[0]
     kinbcmask[:, thesideindices] = 1
+# Now mark Dirichlet everywhere outside of the "box" to prevent Albany from calculating the extended cell solution there
+kinbcmask[:, xCell[:] < -L/2.0] = 1
+kinbcmask[:, xCell[:] >  L/2.0] = 1
+kinbcmask[:, yCell[:] >  L] = 1
 gridfile.variables['dirichletVelocityMask'][:] = kinbcmask[:]
 gridfile.sync()
 del kinbcmask
