@@ -450,10 +450,8 @@
 	<value  compset="1996_CAM\d+%WCMX">1996-01-01</value>
 	<value  compset="2000_CAM\d+%WCMX">2000-01-01</value>
 	<value  compset="2000_CAM\d+%WCXI">2000-01-01</value>
-	<value  compset="2013_CAM\d+%WCBC">2013-01-01</value> 
 	<value  compset="GEOS_CAM\d+%WCCM">2005-01-01</value> 
 	<value  compset="GEOS_CAM\d+%WTSM">1990-01-01</value> 
-	<value  compset="GEOS_CAM\d+%WCSF">2010-01-01</value> 
 	<value  compset="GEOS_CAM\d+%TMOZ">2008-01-01</value> 
 	<value  compset="GEOS_CAM\d+%TBAM">2008-01-01</value>
 	<value  compset="GEOS_CAM\d+%S">2005-01-01</value>

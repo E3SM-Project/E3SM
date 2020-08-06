@@ -200,7 +200,6 @@ integer :: &
      cc_qlst_idx
 
 ! Used to replace aspects of MG microphysics
-! (e.g. by CARMA)
 integer :: &
      tnd_qsnow_idx = -1, &
      tnd_nsnow_idx = -1, &
@@ -567,7 +566,7 @@ subroutine micro_mg_cam_register
     call pbuf_register_subcol('CV_REFFICE',  'micro_mg_cam_register', cv_reffice_idx)
   end if
 
-  ! Additional pbuf for CARMA interface
+  ! Additional pbuf for external micro interface
   call pbuf_add_field('TND_QSNOW',  'physpkg',dtype_r8,(/pcols,pver/), tnd_qsnow_idx)
   call pbuf_add_field('TND_NSNOW',  'physpkg',dtype_r8,(/pcols,pver/), tnd_nsnow_idx)
   call pbuf_add_field('RE_ICE',     'physpkg',dtype_r8,(/pcols,pver/), re_ice_idx)
@@ -1382,7 +1381,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8), pointer :: cvreffliq(:,:)    ! convective cloud liquid effective radius (um)
    real(r8), pointer :: cvreffice(:,:)    ! convective cloud ice effective radius (um)
 
-   ! physics buffer fields used with CARMA
+   ! physics buffer fields used with external micro scheme
    real(r8), pointer, dimension(:,:) :: tnd_qsnow    ! external tendency on snow mass (kg/kg/s)
    real(r8), pointer, dimension(:,:) :: tnd_nsnow    ! external tendency on snow number(#/kg/s)
    real(r8), pointer, dimension(:,:) :: re_ice       ! ice effective radius (m)
