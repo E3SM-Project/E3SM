@@ -370,7 +370,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    real(r8), dimension(pcols) ::  qi_hydro_after   ! column-integrated snow water + graupel water
    real(r8) :: sfactor                             ! used to determine precip type for sam1mom
 
-   integer  :: i, k, m, ii, jj                     ! loop iterators
+   integer  :: i, icol, k, m, ii, jj               ! loop iterators
    integer  :: ixcldliq, ixcldice                  ! constituent indices
    integer  :: ixnumliq, ixnumice                  ! constituent indices
    integer  :: ixrain, ixsnow                      ! constituent indices
@@ -413,6 +413,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    real(crm_rknd) :: crm_rotation_std     ! scaling factor for rotation (std dev of rotation angle)
    real(crm_rknd) :: crm_rotation_offset  ! offset to specify preferred rotation direction 
 #endif
+
+   real(r8), dimension(pcols,crm_nz) :: crm_clear_rh
 
    !------------------------------------------------------------------------------------------------
    !------------------------------------------------------------------------------------------------
@@ -820,8 +822,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
 
       call t_startf ('crm_call')
       call crm( lchnk, ncol, ztodt, pver,       &
-                crm_input, crm_state, crm_rad,  &
-                crm_ecpp_output, crm_output )
+                crm_input, crm_state, crm_rad, &
+                crm_ecpp_output, crm_output, crm_clear_rh(1:ncol,:) )
       call t_stopf('crm_call')
 
       !---------------------------------------------------------------------------------------------
@@ -1059,27 +1061,18 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
                                                    qi_hydro_before(:ncol))/crm_run_time/1000._r8
 
       !---------------------------------------------------------------------------------------------
-      ! Calculate clear air relative humdity for aerosol water uptake
+      ! copy clear air relative humdity for aerosol water uptake
       !---------------------------------------------------------------------------------------------
+      ! initialize to zero, so no aerosol water uptake occurs by default
       mmf_clear_rh(1:ncol,1:pver) = 0
       do icol = 1,ncol
          do m = 1,crm_nz
             k = pver-m+1
-            tmp_rh_sum = 0
-            tmp_rh_cnt = 0
-            do jj=1,crm_ny_rad
-            do ii=1,crm_nx_rad
-               if (crm_rad%cld<0.5) then
-                  call qsat_water( crm_rad%temperature(icol,ii,jj,m), state%pmid(icol,k), &
-                                   tmp_e_sat, tmp_q_sat)
-                  tmp_rh_sum = tmp_rh_cnt + tmp_q_sat / crm_rad%qv(icol,ii,jj,m)
-                  tmp_rh_cnt = tmp_rh_cnt + 1
-               end if
-            end do ! ii
-            end do ! jj
-            if (tmp_rh_cnt>0) mmf_clear_rh(icol,k) = tmp_rh_sum / tmp_rh_cnt
+            mmf_clear_rh(icol,k) = crm_clear_rh(icol,m)
          end do ! m = 1,crm_nz
       end do ! i = 1,ncol
+      !---------------------------------------------------------------------------------------------
+      !---------------------------------------------------------------------------------------------
 
    end if ! (is_first_step())
 

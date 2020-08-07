@@ -346,6 +346,18 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
       ! use input relative humidity
       rh(1:ncol,1:pver) = clear_rh_in(1:ncol,1:pver)
 
+      ! check that values are reasonable and apply upper limit
+      do k = top_lev, pver
+         do i = 1, ncol
+            if ( rh(i,k)<0 ) then
+               write(iulog,*) 'modal_aero_wateruptake_dr: clear_rh_in is negative - rh:',rh(i,k),' k=',k
+               call endrun('modal_aero_wateruptake_dr: clear_rh_in cannot be negative')
+            end if
+            ! limit RH to 98% to be consistent with behavior when clear_rh_in is not provided
+            rh(i,k) = min(rh(i,k), 0.98_r8)
+         end do ! i
+      end do ! k
+
    else
 
       ! estimate clear air relative humidity using cloud fraction

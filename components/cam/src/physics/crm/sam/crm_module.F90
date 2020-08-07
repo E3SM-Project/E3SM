@@ -43,11 +43,12 @@ use setparm_mod, only : setparm
 contains
 
 subroutine crm(lchnk, ncrms, dt_gl, plev,       &
-                crm_input, crm_state, crm_rad,  &
-                crm_ecpp_output, crm_output )
+                crm_input, crm_state, crm_rad, &
+                crm_ecpp_output, crm_output, crm_clear_rh )
     !-----------------------------------------------------------------------------------------------
     !-----------------------------------------------------------------------------------------------
     use shr_kind_mod          , only: r8 => shr_kind_r8
+    use shr_const_mod         , only: SHR_CONST_TKFRZ
     use ppgrid                , only: pcols
     use vars
     use params
@@ -86,7 +87,8 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     type(crm_state_type),      intent(inout) :: crm_state
     type(crm_rad_type), target,intent(inout) :: crm_rad
     type(crm_ecpp_output_type),intent(inout) :: crm_ecpp_output
-    type(crm_output_type), target,     intent(inout) :: crm_output
+    type(crm_output_type), target, intent(inout) :: crm_output
+    real(r8), dimension(ncrms,nz), intent(  out) :: crm_clear_rh
 
     !-----------------------------------------------------------------------------------------------
     ! Local variable declarations
@@ -103,7 +105,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     real(crm_rknd)  :: u2z,v2z,w2z
     integer         :: i,j,k,l,ptop,nn,icyc,icrm
     integer         :: kx
-    real(crm_rknd)  :: qsat, omg
+    real(crm_rknd)  :: qsat, omg, rh_tmp
     real(crm_rknd), allocatable  :: colprec(:), colprecs(:)
     real(crm_rknd), allocatable  :: ustar(:), bflx(:), wnd(:)
     real(r8)      , allocatable  :: qtot (:,:)    ! Total water for water conservation check
@@ -143,6 +145,8 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     real(r8), allocatable :: dd_crm (:,:)     ! mass entraiment from downdraft
     real(r8), allocatable :: mui_crm(:,:)     ! mass flux up at the interface
     real(r8), allocatable :: mdi_crm(:,:)     ! mass flux down at the interface
+
+    real(r8), allocatable :: crm_clear_rh_cnt(:,:) ! counter for clear air relative humidity
 
     real(crm_rknd), pointer :: crm_rad_temperature  (:,:,:,:)
     real(crm_rknd), pointer :: crm_rad_qv           (:,:,:,:)
@@ -190,6 +194,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   allocate( qtot (ncrms,20) )
   allocate( colprec (ncrms) )
   allocate( colprecs(ncrms) )
+  allocate( crm_clear_rh_cnt(ncrms,nz) )
 
   call prefetch( t00      )
   call prefetch( tln      )
@@ -216,6 +221,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   call prefetch( qtot     ) 
   call prefetch( colprec  ) 
   call prefetch( colprecs ) 
+  call prefetch( crm_clear_rh_cnt )
 
   call allocate_params(ncrms)
   call allocate_vars(ncrms)
@@ -340,6 +346,15 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   enddo
 
   call t_startf('crm_gpu_region')
+
+  ! Initialize clear air relative humidity for aerosol water uptake
+  !$acc parallel loop collapse(2) async(asyncid)
+  do k = 1, nzm
+    do icrm = 1, ncrms
+      crm_clear_rh(icrm,k) = 0
+      crm_clear_rh_cnt(icrm,k) = 0
+    end do
+  end do
 
   !  Initialize CRM fields:
   !$acc parallel loop collapse(4) async(asyncid)
@@ -950,6 +965,17 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
             if (qcl(icrm,i,j,k) + qci(icrm,i,j,k) > 0) then
                !$acc atomic update
                crm_rad_cld     (icrm,i_rad,j_rad,k) = crm_rad_cld        (icrm,i_rad,j_rad,k) + cf3d(icrm,i,j,k)
+            else
+               ! if (tabs(icrm,i,j,k)>SHR_CONST_TKFRZ) then
+               !    rh_tmp = qv(icrm,i,j,k)/qsatw_crm(tabs(icrm,i,j,k),pres(icrm,k))
+               ! else
+               !    rh_tmp = qv(icrm,i,j,k)/qsati_crm(tabs(icrm,i,j,k),pres(icrm,k))
+               ! end if
+               rh_tmp = qv(icrm,i,j,k)/qsatw_crm(tabs(icrm,i,j,k),pres(icrm,k))
+               !$acc atomic update
+               crm_clear_rh(icrm,k) = crm_clear_rh(icrm,k) + rh_tmp
+               !$acc atomic update
+               crm_clear_rh_cnt(icrm,k) = crm_clear_rh_cnt(icrm,k) + 1
             endif
 #ifdef m2005
             !$acc atomic update
@@ -1055,6 +1081,15 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 #endif /* m2005 */
         enddo
       enddo
+    enddo
+  enddo
+
+  !$acc parallel loop collapse(2) async(asyncid)
+  do k=1,nzm
+    do icrm = 1 , ncrms
+      if (crm_clear_rh_cnt(icrm,k)>0) then
+        crm_clear_rh(icrm,k) = crm_clear_rh(icrm,k) / crm_clear_rh_cnt(icrm,k)
+      endif
     enddo
   enddo
 
@@ -1657,6 +1692,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   deallocate( qtot )
   deallocate( colprec  )
   deallocate( colprecs )
+  deallocate( crm_clear_rh_cnt )
 
   call deallocate_params()
   call deallocate_grid()
