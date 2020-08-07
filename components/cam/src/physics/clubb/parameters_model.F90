@@ -1,5 +1,5 @@
 !-------------------------------------------------------------------------------
-! $Id: parameters_model.F90 7226 2014-08-19 15:52:41Z betlej@uwm.edu $
+! $Id$
 !===============================================================================
 module parameters_model
 
@@ -18,6 +18,9 @@ module parameters_model
 
   private ! Default scope
 
+  integer, parameter :: &
+    sp = selected_real_kind(6)  ! 32-bit floating point number
+
   ! Maximum magnitude of PDF parameter 'mixt_frac'. 
   real( kind = core_rknd ), public :: mixt_frac_max_mag
 
@@ -31,7 +34,7 @@ module parameters_model
 #ifdef GFDL
  real( kind = core_rknd ), public ::  &   ! h1g, 2010-06-15
     cloud_frac_min    ! minimum cloud fraction for droplet #
-!$omp threadprivate(cloud_frac_min)
+!$omp threadprivate( cloud_frac_min )
 #endif
 
 
@@ -40,7 +43,7 @@ module parameters_model
   real( kind = core_rknd), public :: &
     rtm_min = epsilon( rtm_min ), &             ! Value below which rtm will be nudged [kg/kg]
     rtm_nudge_max_altitude = 10000._core_rknd ! Highest altitude at which to nudge rtm [m]
-!$omp threadprivate(rtm_min, rtm_nudge_max_altitude)
+!$omp threadprivate( rtm_min, rtm_nudge_max_altitude )
 
   integer, public :: & 
     sclr_dim = 0,        & ! Number of passive scalars
@@ -54,7 +57,7 @@ module parameters_model
 
 !$omp threadprivate(sclr_tol)
 
-  real( kind = selected_real_kind(6) ), public :: PosInf
+  real( kind = sp ), public :: PosInf
 
 !$omp threadprivate(PosInf)
 
@@ -79,7 +82,8 @@ module parameters_model
 ! References:
 !   None
 !-------------------------------------------------------------------------------
-    use constants_clubb, only: Skw_max_mag, Skw_max_mag_sqd
+    use parameters_tunable, only: &
+        Skw_max_mag
 
     use clubb_precision, only: &
       core_rknd ! Variable(s)
@@ -118,7 +122,7 @@ module parameters_model
     mixt_frac_max_mag = 1.0_core_rknd &
       - ( 0.5_core_rknd * ( 1.0_core_rknd - Skw_max_mag / &
       sqrt( 4.0_core_rknd * ( 1.0_core_rknd - 0.4_core_rknd )**3 &
-      + Skw_max_mag_sqd ) ) ) ! Known magic number
+      + Skw_max_mag**2 ) ) ) ! Known magic number
 
     T0       = T0_in
     ts_nudge = ts_nudge_in

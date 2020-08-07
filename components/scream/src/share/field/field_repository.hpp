@@ -3,7 +3,7 @@
 
 #include "ekat/scream_types.hpp"
 #include "ekat/scream_assert.hpp"
-#include "ekat/util/string_utils.hpp"
+#include "ekat/util/ekat_string_utils.hpp"
 #include "ekat/util/scream_std_utils.hpp"
 #include "share/field/field.hpp"
 

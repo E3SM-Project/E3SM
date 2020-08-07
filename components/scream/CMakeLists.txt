@@ -15,9 +15,10 @@ if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.12.0")
 endif()
 
 # Add the ./cmake folder to cmake path. Also add EKAT's cmake folder
+set (EKAT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat)
 list(APPEND CMAKE_MODULE_PATH
      ${CMAKE_CURRENT_SOURCE_DIR}/cmake
-     ${CMAKE_CURRENT_SOURCE_DIR}/ekat/cmake
+     ${EKAT_SOURCE_DIR}/cmake
 )
 include(EkatMpiUtils)
 
@@ -166,7 +167,9 @@ set(SCREAM_TEST_THREAD_INC 1 CACHE STRING "Thread count increment for threaded t
 
 # Proecess the EKAT package
 set (YAMLCPP_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/yaml-cpp)
-set (EKAT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ekat)
+
+# Whether to disable warnings from tpls.
+set (SCREAM_DISABLE_TPL_WARNINGS ON CACHE BOOL "")
 
 include(Ekat)
 if (SCREAM_DOUBLE_PRECISION)

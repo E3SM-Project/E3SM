@@ -1,0 +1,6 @@
+./xmlchange LND_DOMAIN_FILE=domain.lnd.r05_oEC60to30v3.190418.nc
+./xmlchange ATM_DOMAIN_FILE=domain.lnd.r05_oEC60to30v3.190418.nc
+./xmlchange LND_DOMAIN_PATH="\$DIN_LOC_ROOT/share/domains"
+./xmlchange ATM_DOMAIN_PATH="\$DIN_LOC_ROOT/share/domains"
+./xmlchange DATM_CLMNCEP_YR_END=1972
+

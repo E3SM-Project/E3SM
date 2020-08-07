@@ -5,7 +5,7 @@
 #include "share/field/field_initializer.hpp"
 #include "share/field/field_utils.hpp"
 #include "ekat/scream_assert.hpp"
-#include "ekat/util/string_utils.hpp"
+#include "ekat/util/ekat_string_utils.hpp"
 
 namespace scream {
 
