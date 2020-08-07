@@ -1515,20 +1515,6 @@ contains
     ncol  = state%ncol
 
     call physics_ptend_init(ptend, state%psetcols, 'aero_model_wetdep_ma', lq=wetdep_lq)
-    
-    ! Do calculations of mode radius and water uptake if:
-    ! 1) modal aerosols are affecting the climate, or
-    ! 2) prognostic modal aerosols are enabled
-    
-    call t_startf('calcsize')
-    ! for prognostic modal aerosols the transfer of mass between aitken and accumulation
-    ! modes is done in conjunction with the dry radius calculation
-    call modal_aero_calcsize_sub(state, ptend, dt, pbuf)
-    call t_stopf('calcsize')
-
-    call t_startf('wateruptake')
-    call modal_aero_wateruptake_dr(state, pbuf)
-    call t_stopf('wateruptake')
 
     if (nwetdep<1) return
 

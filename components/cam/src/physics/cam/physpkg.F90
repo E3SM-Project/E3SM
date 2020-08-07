@@ -2613,51 +2613,59 @@ end if
 
      end if !microp_scheme
 
-if (l_tracer_aero) then
+   if (l_tracer_aero) then
+      if ( .not. deep_scheme_does_scav_trans() ) then
 
-    if ( .not. deep_scheme_does_scav_trans() ) then
+         !======================================================================
+         ! Aerosol wet chemistry determines scavenging and transformations.
+         ! This is followed by convective transport of all trace species except
+         ! water vapor and condensate. Scavenging needs to occur prior to
+         ! transport in order to determine interstitial fraction.
+         !======================================================================
 
-       !===================================================
-       !  Aerosol wet chemistry determines scavenging fractions, and transformations
-       !
-       !
-       !  Then do convective transport of all trace species except water vapor and
-       !     cloud liquid and ice (we needed to do the scavenging first
-       !     to determine the interstitial fraction) 
-       !===================================================
+         call t_startf('tphysbc_aerosols')
 
-       call t_startf('bc_aerosols')
-       if (clim_modal_aero .and. .not. prog_modal_aero) then
-          call modal_aero_calcsize_diag(state, pbuf)
-          call modal_aero_wateruptake_dr(state, pbuf)
-       endif
+         ! Calculate aerosol size distribution parameters
+         if (clim_modal_aero .and. .not. prog_modal_aero) then
+            call modal_aero_calcsize_diag(state, pbuf)
+         else
+            ! for prognostic modal aerosols the transfer of mass between aitken
+            ! and accumulation modes is done in conjunction with the dry radius
+            ! calculation in modal_aero_calcsize_sub().
+            ! Turn on all lq, so they are allocated
+            lq(:) = .true.
+            call physics_ptend_init(ptend, state%psetcols, 'aero_model_wetdep_ma', lq=lq)
+            ! set all ptend%lq to false, they will be updated in modal_aero_calcsize_sub
+            ptend%lq(:) = .false.
+            call modal_aero_calcsize_sub(state, ptend, ztodt, pbuf)
+            call physics_update (state, ptend, crm_run_time, tend)
+         endif
 
-       if (do_clubb_sgs) then
-          sh_e_ed_ratio = 0.0_r8
-       endif
+         ! Aerosol water uptake
+         call modal_aero_wateruptake_dr(state, pbuf)
 
-       call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state, sh_e_ed_ratio,       & !Intent-ins
-            mu, md, du, eu, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class,&
-            cam_out,                                                                 & !Intent-inout
-            pbuf,                                                                    & !Pointer
-            ptend                                                                    ) !Intent-out
-       
-       call physics_update(state, ptend, ztodt, tend)
+         if (do_clubb_sgs) sh_e_ed_ratio = 0.0_r8
 
-       call t_startf ('convect_deep_tend2')
-       call convect_deep_tend_2( state,   ptend,  ztodt,  pbuf, mu, eu, &
-          du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class )  
-       call t_stopf ('convect_deep_tend2')
+         ! Aerosol wet removal
+         call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state, sh_e_ed_ratio,       & !Intent-ins
+              mu, md, du, eu, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class,&
+              cam_out,                                                                 & !Intent-inout
+              pbuf,                                                                    & !Pointer
+              ptend                                                                    ) !Intent-out
+         call physics_update(state, ptend, ztodt, tend)
 
-       call physics_update(state, ptend, ztodt, tend)
+         ! deep convective aerosol transport
+         call convect_deep_tend_2( state,   ptend,  ztodt,  pbuf, mu, eu, &
+           du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class )
+         call physics_update(state, ptend, ztodt, tend)
 
-       ! check tracer integrals
-       call check_tracers_chng(state, tracerint, "cmfmca", nstep, ztodt,  zero_tracers)
+         ! check tracer integrals
+         call check_tracers_chng(state, tracerint, "cmfmca", nstep, ztodt,  zero_tracers)
 
-       call t_stopf('bc_aerosols')
+         call t_stopf('tphysbc_aerosols')
 
-   endif
-end if ! l_tracer_aero
+      end if
+   end if ! l_tracer_aero
 
 !<songxl 2011-9-20---------------------------------
    if(deep_scheme.eq.'ZM' .and. trigmem)then

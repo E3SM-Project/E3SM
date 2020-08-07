@@ -2802,7 +2802,7 @@ end if
       !-------------------------------------------------------------------------
       ! Modal aerosol wet radius for radiative calculation
       !-------------------------------------------------------------------------
-#if defined(MODAL_AERO)  
+#if defined( ECPP ) && defined(MODAL_AERO)
       ! temporarily turn on all lq, so it is allocated
       lq(:) = .true.
       call physics_ptend_init(ptend, state%psetcols, 'crm - modal_aero_wateruptake_dr', lq=lq)
@@ -2812,14 +2812,13 @@ end if
       call modal_aero_calcsize_sub (state, ptend, ztodt, pbuf)
       call modal_aero_wateruptake_dr(state, pbuf, clear_rh_in=mmf_clear_rh)
 
-      ! When ECPP is included, wet deposition is done ECPP,
-      ! So tendency from wet depostion is not updated 
-      ! in mz_aero_wet_intr (mz_aerosols_intr.F90)
-      ! tendency from other parts of crmclouds_aerosol_wet_intr() are still updated here.
+      ! ECPP handles aerosol wet deposition, so tendency from wet depostion is 
+      ! not updated in mz_aero_wet_intr (mz_aerosols_intr.F90), but tendencies
+      ! from other parts of crmclouds_aerosol_wet_intr() are still updated here.
       call physics_update (state, ptend, crm_run_time, tend)
       call check_energy_chng(state, tend, "crm_tend", nstep, crm_run_time, zero, zero, zero, zero)
-#endif /* MODAL_AERO */
 
+#endif /* ECPP and MODAL_AERO */
       !-------------------------------------------------------------------------
       ! ECPP - Explicit-Cloud Parameterized-Pollutant
       !-------------------------------------------------------------------------
@@ -2886,59 +2885,68 @@ end if
    !------------------------------------------------------------------------------------------------
    !================================================================================================
 
-    if (l_tracer_aero) then
-
-      if(use_MMF .and. use_ECPP .and. MMF_microphysics_scheme .eq. 'm2005') then
-        ! As ECPP is not linked with the sam1mom yet, conventional convective transport
-        ! and wet savenging are still needed for sam1mom to drive the BAM aerosol treatment
+   if (l_tracer_aero) then
+      if (use_MMF.and.use_ECPP.and.MMF_microphysics_scheme.eq.'m2005') then
+         ! With 2-mom MMF+ ECPP we can skip the conventional aerosol routines.
+         ! With 1-mom MMF we use prescribed or bulk aerosols so the conventional
+         ! convective transport and wet savenging are still needed.
       else if ( .not. deep_scheme_does_scav_trans() ) then
 
-        ! -------------------------------------------------------------------------------
-        ! 1. Wet Scavenging of Aerosols by Convective and Stratiform Precipitation.
-        ! 2. Convective Transport of Non-Water Aerosol Species.
-        !
-        !  . Aerosol wet chemistry determines scavenging fractions, and transformations
-        !  . Then do convective transport of all trace species except qv,ql,qi.
-        !  . We needed to do the scavenging first to determine the interstitial fraction.
-        !  . When UNICON is used as unified convection, we should still perform
-        !    wet scavenging but not 'convect_deep_tend2'.
-        ! -------------------------------------------------------------------------------
+         !======================================================================
+         ! Aerosol wet chemistry determines scavenging and transformations.
+         ! This is followed by convective transport of all trace species except
+         ! water vapor and condensate. Scavenging needs to occur prior to
+         ! transport in order to determine interstitial fraction.
+         !======================================================================
 
-        call t_startf('bc_aerosols')
-        if (clim_modal_aero .and. .not. prog_modal_aero) then
-          call modal_aero_calcsize_diag(state, pbuf)
-          if (use_MMF) then
+         call t_startf('bc_aerosols')
+
+         ! Calculate aerosol size distribution parameters
+         if (clim_modal_aero .and. .not. prog_modal_aero) then
+            call modal_aero_calcsize_diag(state, pbuf)
+         else
+            ! for prognostic modal aerosols the transfer of mass between aitken
+            ! and accumulation modes is done in conjunction with the dry radius
+            ! calculation in modal_aero_calcsize_sub().
+            ! Turn on all lq, so they are allocated
+            lq(:) = .true.
+            call physics_ptend_init(ptend, state%psetcols, 'aero_model_wetdep_ma', lq=lq)
+            ! set all ptend%lq to false, they will be updated in modal_aero_calcsize_sub
+            ptend%lq(:) = .false.
+            call modal_aero_calcsize_sub(state, ptend, ztodt, pbuf)
+            call physics_update (state, ptend, crm_run_time, tend)
+         endif
+
+         ! Aerosol water uptake
+         if (use_MMF) then
+            ! use alternate clear air RH for MMF
             call modal_aero_wateruptake_dr(state, pbuf, clear_rh_in=mmf_clear_rh)
-          else
+         else
             call modal_aero_wateruptake_dr(state, pbuf)
-          end if
-        endif
+         end if
 
-        if (do_clubb_sgs) then
-          sh_e_ed_ratio = 0.0_r8
-        endif
+         if (do_clubb_sgs) sh_e_ed_ratio = 0.0_r8
 
-        call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state, sh_e_ed_ratio,      & !Intent-ins
-            mu, md, du, eu, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class,&
-            cam_out,                                                                 & !Intent-inout
-            pbuf,                                                                    & !Pointer
-            ptend                                                                    ) !Intent-out
-        call physics_update(state, ptend, ztodt, tend)
+         ! Aerosol wet removal
+         call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state, sh_e_ed_ratio,       & !Intent-ins
+              mu, md, du, eu, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class,&
+              cam_out,                                                                 & !Intent-inout
+              pbuf,                                                                    & !Pointer
+              ptend                                                                    ) !Intent-out
+         call physics_update(state, ptend, ztodt, tend)
 
-        !!! deep convective transport (ZM)
-        call t_startf ('convect_deep_tend2')
-        call convect_deep_tend_2( state,   ptend,  ztodt,  pbuf, mu, eu, &
-          du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class )  
-        call physics_update(state, ptend, ztodt, tend)
-        call t_stopf ('convect_deep_tend2')
+         ! deep convective aerosol transport
+         call convect_deep_tend_2( state,   ptend,  ztodt,  pbuf, mu, eu, &
+           du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class )
+         call physics_update(state, ptend, ztodt, tend)
 
-        ! check tracer integrals
-        call check_tracers_chng(state, tracerint, "cmfmca", nstep, ztodt,  zero_tracers)
+         ! check tracer integrals
+         call check_tracers_chng(state, tracerint, "cmfmca", nstep, ztodt,  zero_tracers)
 
-        call t_stopf('bc_aerosols')
+         call t_stopf('tphysbc_aerosols')
 
-   endif
-end if ! l_tracer_aero
+      end if
+   end if ! l_tracer_aero
 
 !<songxl 2011-9-20---------------------------------
    if(deep_scheme.eq.'ZM' .and. trigmem)then
