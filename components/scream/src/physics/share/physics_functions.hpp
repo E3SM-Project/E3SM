@@ -93,7 +93,8 @@ struct Functions
 
   //checks temperature for negatives and NaNs
   KOKKOS_FUNCTION
-  static void check_temperature(const Spack& t_atm, const std::string& fname, const Smask& range_mask);
+  //static void check_temperature(const Spack& t_atm, const std::string& fname, const Smask& range_mask);
+  static void check_temperature(const Spack& t_atm, const Smask& range_mask);
 };
 
 } // namespace physics

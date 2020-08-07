@@ -14,20 +14,22 @@ namespace physics {
 template <typename S, typename D>
 KOKKOS_FUNCTION
 void  Functions<S,D>
-::check_temperature(const Spack& t_atm, const std::string& fname, const Smask& range_mask)
+//::check_temperature(const Spack& t_atm)//, const std::string& fname, const Smask& range_mask)
+::check_temperature(const Spack& t_atm, const Smask& range_mask)
 {
 
   //"range_mask" masks out packs which are padded with uninitialized values
-
+  
   const auto is_neg_t_atm = (t_atm <= 0) && range_mask; //find out if there are any negative temperatures in the pack
   if (is_neg_t_atm.any()){
-    scream::error::runtime_abort("Error: Called from:"+ fname +"; Temperature has <= 0 values"); //exit with an error message
+    scream_kerror_msg("Error: Temperature has <= 0 values.\n"); //exit with an error message
   }
 
   const auto is_nan_t_atm = isnan(t_atm) && range_mask;//find out if there are any NaN temperatures in the pack
   if (is_nan_t_atm.any()){
-    scream::error::runtime_abort("Error: Called from:"+ fname +"; Temperature has NaN values"); //exit with an error message
+    scream_kerror_msg("Error: Temperature has NaN values.\n"); //exit with an error message
   }
+  
 }
 
 template <typename S, typename D>
@@ -129,7 +131,7 @@ Functions<S,D>::qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice, c
   //func_idx = 1 --> MurphyKoop_svp (Murphy, D. M., and T. Koop 2005)
 
   //First check if the temperature is legitimate or not
-  //check_temperature(t_atm, "qv_sat", range_mask);
+  check_temperature(t_atm, range_mask);
 
   Spack e_pres; // saturation vapor pressure [Pa]
 
