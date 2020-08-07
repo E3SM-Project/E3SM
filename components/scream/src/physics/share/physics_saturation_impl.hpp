@@ -96,24 +96,24 @@ Functions<S,D>::polysvp1(const Spack& t, const bool ice)
 template <typename S, typename D>
 KOKKOS_FUNCTION
 typename Functions<S,D>::Spack
-Functions<S,D>::qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice, const int& func_idx)
+Functions<S,D>::qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice, const SaturationFcn func_idx)
 {
-  //func_idx is an optional argument to decide which scheme is to be called for saturation vapor pressure
-  //Currently default is set to "MurphyKoop_svp"
-  //func_idx = 0 --> polysvp1 (Flatau et al. 1992)
-  //func_idx = 1 --> MurphyKoop_svp (Murphy, D. M., and T. Koop 2005)
+  // func_idx is an optional argument to decide which scheme is to be called for saturation vapor pressure
+  // Currently default is set to "MurphyKoop_svp"
+  // func_idx = Polysvp1 (=0) --> polysvp1 (Flatau et al. 1992)
+  // func_idx = MurphyKoop (=1) --> MurphyKoop_svp (Murphy, D. M., and T. Koop 2005)
 
   Spack e_pres; // saturation vapor pressure [Pa]
 
   switch (func_idx){
-    case 0:
+    case Polysvp1:
       e_pres = polysvp1(t_atm, ice);
       break;
-    case 1:
+    case MurphyKoop:
       e_pres = MurphyKoop_svp(t_atm, ice);
       break;
     default:
-      scream::error::runtime_abort("Error: Invalid func_idx supplied to qv_sat:"+ func_idx );
+      scream_kerror_msg("Error! Invalid func_idx supplied to qv_sat.");
     }
 
   const auto ep_2 = C::ep_2;
