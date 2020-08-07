@@ -37,7 +37,7 @@ int nVertices, nEdges, nTriangles, globalVertexStride, globalEdgeStride,globalTr
 int maxNEdgesOnCell_F;
 int const *cellsOnEdge_F, *cellsOnVertex_F, *verticesOnCell_F,
     *verticesOnEdge_F, *edgesOnCell_F, *indexToCellID_F, *indexToEdgeID_F, *indexToVertexID_F, *nEdgesOnCells_F,
-    *verticesMask_F, *cellsMask_F, *dirichletCellsMask_F, *floatingEdgesMask_F;
+    *verticesMask_F, *cellsMask_F, *dirichletCellsMask_F;
 std::vector<double> layersRatio, levelsNormalizedThickness;
 int nLayers;
 double const *xCell_F, *yCell_F, *zCell_F, *xVertex_F,  *yVertex_F, *zVertex_F, *areaTriangle_F;
@@ -65,7 +65,7 @@ std::vector<int> indexToTriangleID,
     verticesOnTria, trianglesOnEdge, verticesOnEdge,
     trianglesProcIds, reduced_ranks;
 std::vector<int> indexToVertexID, vertexToFCell, vertexProcIDs, triangleToFVertex, indexToEdgeID, edgeToFEdge,
-    fVertexToTriangleID, fCellToVertex, floatingEdgesIds, dirichletNodesIDs;
+    fVertexToTriangleID, fCellToVertex, iceMarginEdgesLIds, dirichletNodesIDs;
 std::vector<double> dissipationHeatOnPrisms, velocityOnVertices, velocityOnCells,
     elevationData, thicknessData, betaData, bedTopographyData, stiffnessFactorData, effecPressData, muFrictionData, temperatureDataOnPrisms, smbData, thicknessOnCells, bodyForceOnBasalCell;
 std::vector<bool> isVertexBoundary, isBoundaryEdge;
@@ -264,9 +264,8 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
 
   if (!isDomainEmpty) {
 
-    std::map<int, int> floatBdyExtensionMap;
-    std::map<int, int> grdMarineBdyExtensionMap;
-    importFields(floatBdyExtensionMap, grdMarineBdyExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, stiffnessFactor_F, effecPress_F, muFriction_F, temperature_F, smb_F,  minThickness);
+    std::vector<std::pair<int, int> > marineBdyExtensionMap;
+    importFields(marineBdyExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, stiffnessFactor_F, effecPress_F, muFriction_F, temperature_F, smb_F,  minThickness);
 
     std::vector<double> regulThk(thicknessData);
     for (int index = 0; index < nVertices; index++)
@@ -348,13 +347,12 @@ void velocity_solver_finalize() {
  *
  */
 
-void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cellsMask_F, int const* _dirichletCellsMask_F, int const* _floatingEdgesMask_F) {
+void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cellsMask_F, int const* _dirichletCellsMask_F) {
   int numProcs, me;
   verticesMask_F = _verticesMask_F;
   cellsMask_F = _cellsMask_F;
   verticesMask_F = _verticesMask_F;
   dirichletCellsMask_F = _dirichletCellsMask_F;
-  floatingEdgesMask_F = _floatingEdgesMask_F;
 
   MPI_Comm_size(comm, &numProcs);
   MPI_Comm_rank(comm, &me);
@@ -566,16 +564,25 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
 
   nEdges = edgeToFEdge.size();
   indexToEdgeID.resize(nEdges);
-  floatingEdgesIds.clear();
-  floatingEdgesIds.reserve(nEdges);
+  iceMarginEdgesLIds.clear();
+  iceMarginEdgesLIds.reserve(numBoundaryEdges);
   int maxEdgeID=std::numeric_limits<int>::min(), minEdgeID=std::numeric_limits<int>::max(), maxGlobalEdgeID, minGlobalEdgeID;
   for (int index = 0; index < nEdges; index++) {
     int fEdge = edgeToFEdge[index];
     indexToEdgeID[index] = fEdgeToEdgeID[fEdge];
     maxEdgeID = (indexToEdgeID[index] > maxEdgeID) ? indexToEdgeID[index] : maxEdgeID;
     minEdgeID = (indexToEdgeID[index] < minEdgeID) ? indexToEdgeID[index] : minEdgeID;
-    if((floatingEdgesMask_F[fEdge]!=0)&&(index<numBoundaryEdges))
-      floatingEdgesIds.push_back(indexToEdgeID[index]);
+
+    if(index<numBoundaryEdges){
+      int fCell0 = cellsOnEdge_F[2 * fEdge] - 1;
+      int fCell1 = cellsOnEdge_F[2 * fEdge + 1] - 1;
+      bool isCell0OnMargin = !(cellsMask_F[fCell0] & dynamic_ice_bit_value) &&
+          (dirichletCellsMask_F[(nLayers+1)*fCell0] == 0);
+      bool isCell1OnMargin = !(cellsMask_F[fCell1] & dynamic_ice_bit_value) &&
+          (dirichletCellsMask_F[(nLayers+1)*fCell1] == 0);
+      if(isCell0OnMargin || isCell1OnMargin)
+        iceMarginEdgesLIds.push_back(index);
+    }
   }
 
   MPI_Allreduce(&maxEdgeID, &maxGlobalEdgeID, 1, MPI_INT, MPI_MAX, comm);
@@ -749,13 +756,18 @@ void velocity_solver_extrude_3d_grid(double const* levelsRatio_F) {
   for(int i=0; i< nVertices; i++)
     procsSharingVertex(i, procsSharingVertices[i]);
 
+
+  std::vector<int> iceMarginEdgesGIds(iceMarginEdgesLIds.size());
+  for (int i=0; i< iceMarginEdgesGIds.size(); ++i) {
+    iceMarginEdgesGIds[i] = indexToEdgeID[iceMarginEdgesLIds[i]];
+  }
+
   velocity_solver_extrude_3d_grid__(nLayers, globalTriangleStride, globalVertexStride,
       globalEdgeStride, Ordering, reducedComm, indexToVertexID, vertexProcIDs,
       verticesCoords, verticesOnTria, procsSharingVertices, isBoundaryEdge,
       trianglesOnEdge, verticesOnEdge, indexToEdgeID,
-      indexToTriangleID, dirichletNodesIDs, floatingEdgesIds);
+      indexToTriangleID, dirichletNodesIDs, iceMarginEdgesGIds);
   }
-
 
 // Function to set up how the MPAS log file will be used by Albany
 void interface_init_log(){
@@ -1093,7 +1105,7 @@ double signedTriangleAreaOnSphere(const double* x, const double* y,
 }
 
 
-void importFields(std::map<int, int>& floatBdyExtensionMap, std::map<int, int>& grdMarineBdyExtensionMap,  double const* bedTopography_F, double const * lowerSurface_F, double const * thickness_F,
+void importFields(std::vector<std::pair<int, int> >& marineBdyExtensionMap,  double const* bedTopography_F, double const * lowerSurface_F, double const * thickness_F,
     double const * beta_F, double const* stiffnessFactor_F, double const* effecPress_F, double const* muFriction_F,
     double const * temperature_F, double const * smb_F, double eps) {
 
@@ -1158,96 +1170,84 @@ void importFields(std::map<int, int>& floatBdyExtensionMap, std::map<int, int>& 
     }
   }
 
-  //extend thickness elevation and basal friction data to the border for floating vertices
-  std::set<int>::const_iterator iter;
+  //extend thickness and elevation data to the border for marine vertices
+  marineBdyExtensionMap.clear();
+  marineBdyExtensionMap.reserve(nVertices);
 
   for (int iV = 0; iV < nVertices; iV++) {
     int fCell = vertexToFCell[iV];
-    if (isVertexBoundary[iV] && !(cellsMask_F[fCell] & dynamic_ice_bit_value)) {
-      int c;
-      int nEdg = nEdgesOnCells_F[fCell];
-      bool isFloating = false;
-      for (int j = 0; (j < nEdg)&&(!isFloating); j++) {
-        int fEdge = edgesOnCell_F[maxNEdgesOnCell_F * fCell + j] - 1;
-        isFloating = (floatingEdgesMask_F[fEdge] != 0);
-      }
-      if(isFloating) {
+    bool isDynamicIceVertex = cellsMask_F[fCell] & dynamic_ice_bit_value;
 
-         // -- floating margin --
-         // Identify the lowest elevation neighboring cell with ice
-         // Scalar values will be mapped from that location to here.
-         double elevTemp =1e10;
-         bool foundNeighbor = false;
-         for (int j = 0; j < nEdg; j++) {
-           int fEdge = edgesOnCell_F[maxNEdgesOnCell_F * fCell + j] - 1;
-           int c0 = cellsOnEdge_F[2 * fEdge] - 1;
-           int c1 = cellsOnEdge_F[2 * fEdge + 1] - 1;
-           c = (fCellToVertex[c0] == iV) ? c1 : c0;
-           if((cellsMask_F[c] & dynamic_ice_bit_value)) {
-           double elev = thickness_F[c] + lowerSurface_F[c]; // - 1e-8*std::sqrt(pow(xCell_F[c0],2)+std::pow(yCell_F[c0],2));
-           if (elev < elevTemp) {
-             elevTemp = elev;
-             floatBdyExtensionMap[iV] = c;
-             foundNeighbor = true;
-           }
-           }
-         }
-         // check if we didn't assign anything.  This occurs if this node has no neighbors with ice that are floating.
-         // This should not ever occur, but including the check just to be safe.
-         if (!foundNeighbor) {
-            // -- grounded margin --
-            // Check that this margin location is not below sea level!
-            if (bedTopographyData[iV] < 0.0) { // This check is probably redundant...
-               thicknessData[iV] = eps*3.0; // insert special value here to make identifying these points easier in exo output
-               elevationData[iV] = (1.0 - rho_ice / rho_ocean) * thicknessData[iV];  // floating surface
+    if (isVertexBoundary[iV] && !isDynamicIceVertex) {
+      if(bedTopographyData[iV]<0) {
+        // -- marine margin --
+        // Identify the lowest elevation neighboring cell with ice
+        // Scalar values will be mapped from that location to here.
+        double elevTemp =1e10;
+        int nEdg = nEdgesOnCells_F[fCell];
+        int neighbor_cell = -1;
+        for (int j = 0; j < nEdg; j++) {
+          int fEdge = edgesOnCell_F[maxNEdgesOnCell_F * fCell + j] - 1;
+          int c0 = cellsOnEdge_F[2 * fEdge] - 1;
+          int c1 = cellsOnEdge_F[2 * fEdge + 1] - 1;
+          int c = (fCellToVertex[c0] == iV) ? c1 : c0;
+          if((cellsMask_F[c] & dynamic_ice_bit_value)) {
+            double elev = thickness_F[c] + lowerSurface_F[c]; // - 1e-8*std::sqrt(pow(xCell_F[c0],2)+std::pow(yCell_F[c0],2));
+            if (elev < elevTemp) {
+              elevTemp = elev;
+              neighbor_cell = c;
             }
-         }
-      } else {
-        // non-floating ("grounded") boundary
-        // This can either be terrestrial (bed above sea level) or marine (bed below sea level)
-        // If this margin location is below sea level, we need to force it to have reasonable values.
-        // Otherwise, it will have a surface elevation below sea level,
-        // which is unphysical and can cause large slopes and other issues.
-        if (bedTopographyData[iV] < 0.0) {
-          if (std::find(dirichletNodesIDs.begin(), dirichletNodesIDs.end(), indexToVertexID[iV]*vertexLayerShift) != dirichletNodesIDs.end()) 
-          { // Don't do this if location is a Dirichlet node!
-          } else {
-            grdMarineBdyExtensionMap[iV] = c; // Save this map for use in other areas
-            thicknessData[iV] = eps*2.0; // insert special small value here to make identifying these points easier in exo output
-            //set elevation depending on whether it's floating or not (for bed_topography of the order
-            //of -eps, the ice could be grounded)
-            elevationData[iV] = std::max((1.0 - rho_ice / rho_ocean) * thicknessData[iV],
-                bedTopographyData[iV] + thicknessData[iV]);  // floating surface
           }
-        } // if below sea level
-      }  // floating or not
-    } // is boundary
+        }
+        // check if we didn't assign anything.  This occurs if this node has no neighbors with (dynamic) ice.
+        // This should not ever occur, but including the check just to be safe.
+        if (neighbor_cell != -1) {
+          marineBdyExtensionMap.push_back(std::make_pair(iV,neighbor_cell));
+        } else {
+          std::cout << "WARNING: vertex with ID " << indexToVertexID[iV] <<
+              " is not connected to active ice." << std::endl;
+          // Check that this margin location is not below sea level!
+          thicknessData[iV] = eps*3.0; // insert special value here to make identifying these points easier in exo output
+          elevationData[iV] = (1.0 - rho_ice / rho_ocean) * thicknessData[iV];  // floating surface
+        }
+      } else {
+        // -- nonmarine margin -- (extend to zero thickness)
+
+        thicknessData[iV] = eps;
+        elevationData[iV] = bedTopographyData[iV]+eps;
+      }
+    } // is on margin
   }  // vertex loop
 
-  // Apply floating extension where needed
-  for (std::map<int, int>::iterator it = floatBdyExtensionMap.begin();
-      it != floatBdyExtensionMap.end(); ++it) {
+  // Apply extension on marine margin
+  for (std::vector<std::pair<int, int> >::iterator it = marineBdyExtensionMap.begin();
+      it != marineBdyExtensionMap.end(); ++it) {
     int iv = it->first;
     int ic = it->second;
-    thicknessData[iv] = std::max(thickness_F[ic] / unit_length, eps);
-    bedTopographyData[iv] = bedTopography_F[ic] / unit_length;
-    elevationData[iv] = thicknessData[iv] + lowerSurface_F[ic] / unit_length;
-    if (beta_F != 0)
-      betaData[iv] = beta_F[ic] / unit_length;
-    if (smb_F != 0)
-      smbData[iv] = smb_F[ic] * secondsInAYear/rho_ice;
-    if (stiffnessFactor_F != 0)
-      stiffnessFactorData[iv] = stiffnessFactor_F[ic];
-    if (effecPress_F != 0)
-      effecPressData[iv] = effecPress_F[ic] / unit_length;
-    if (muFriction_F != 0)
-      muFrictionData[iv] = muFriction_F[ic];
-  }
 
+    double bed = bedTopographyData[iv];
+    double elev = (lowerSurface_F[ic]+thickness_F[ic]) / unit_length;
+    double thick = thickness_F[ic] / unit_length;
+
+    //assume elevation as given and adjust thickness to avoid unphysical situations
+    thick = std::min(thick, elev - bed);
+    thick = std::min(thick, rho_ocean/(rho_ocean-rho_ice)*elev);
+
+    if(thick < eps) { //thickness needs to be greater than eps
+      thicknessData[iv] = eps;
+      elevationData[iv] = std::max(bed+eps, (1.0 - rho_ice/rho_ocean)*eps);
+    } else {
+      thicknessData[iv] = thick;
+      elevationData[iv] = elev;
+    }
+
+    bool floating = rho_ice * thicknessData[iv] + rho_ocean * bedTopographyData[iv] < 0;
+    if (floating && (effecPress_F != 0))
+      effecPressData[iv] = 0.0;
+  }
 }
 
-void import2DFieldsObservations(std::map<int, int>& floatBdyExtensionMap,
-            std::map<int, int>& grdMarineBdyExtensionMap,
+void import2DFieldsObservations(std::vector<std::pair<int, int> >& marineBdyExtensionMap,
             double const * thicknessUncertainty_F,
             double const * smbUncertainty_F,
             double const * bmb_F, double const * bmbUncertainty_F,
@@ -1295,54 +1295,6 @@ void import2DFieldsObservations(std::map<int, int>& floatBdyExtensionMap,
 
     indexToCellIDData[index] = indexToCellID_F[iCell];
   }
-
-  /* for now disable the extension, it is not clear whether it is useful
-
-  //extend to the border for floating vertices (using map created by importFields above)
-  for (std::map<int, int>::iterator it = floatBdyExtensionMap.begin();
-      it != floatBdyExtensionMap.end(); ++it) {
-    int iv = it->first;
-    int ic = it->second;
-
-    thicknessUncertaintyData[iv] = thicknessUncertainty_F[ic] / unit_length;
-    smbUncertaintyData[iv] = smbUncertainty_F[ic] * secondsInAYear / rho_ice;
-    bmbData[iv] = bmb_F[ic] * secondsInAYear / rho_ice;
-    bmbUncertaintyData[iv] = bmbUncertainty_F[ic] * secondsInAYear / rho_ice;
-
-    observedVeloXData[iv] = observedSurfaceVelocityX_F[ic] * secondsInAYear;
-    observedVeloYData[iv] = observedSurfaceVelocityY_F[ic] * secondsInAYear;
-    observedVeloUncertaintyData[iv] = observedSurfaceVelocityUncertainty_F[ic] * secondsInAYear;
-
-    observedDHDtData[iv] = observedThicknessTendency_F[ic] * secondsInAYear;
-    observedDHDtUncertaintyData[iv] = observedThicknessTendencyUncertainty_F[ic] * secondsInAYear;
-
-    surfaceAirTemperatureData[iv] = surfaceAirTemperature_F[ic];
-    basalHeatFluxData[iv] = basalHeatFlux_F[ic];
-  }
-
-  //extend to the border for grounded marine vertices (using map created by importFields above)
-  for (std::map<int, int>::iterator it = grdMarineBdyExtensionMap.begin();
-      it != grdMarineBdyExtensionMap.end(); ++it) {
-    int iv = it->first;
-    int ic = it->second;
-
-    thicknessUncertaintyData[iv] = thicknessUncertainty_F[ic] / unit_length;
-    smbUncertaintyData[iv] = smbUncertainty_F[ic] / unit_length * secondsInAYear / rho_ice;
-    // bmb should be 0 in these locations, but copying these anyway
-    bmbData[iv] = bmb_F[ic] / unit_length * secondsInAYear / rho_ice;
-    bmbUncertaintyData[iv] = bmbUncertainty_F[ic] / unit_length * secondsInAYear / rho_ice;
-
-    observedVeloXData[iv] = observedSurfaceVelocityX_F[ic] * secondsInAYear;
-    observedVeloYData[iv] = observedSurfaceVelocityY_F[ic] * secondsInAYear;
-    observedVeloUncertaintyData[iv] = observedSurfaceVelocityUncertainty_F[ic] * secondsInAYear;
-
-    observedDHDtData[iv] = observedThicknessTendency_F[ic] / unit_length * secondsInAYear;
-    observedDHDtUncertaintyData[iv] = observedThicknessTendencyUncertainty_F[ic] / unit_length * secondsInAYear;
-
-    surfaceAirTemperatureData[iv] = surfaceAirTemperature_F[ic];
-    basalHeatFluxData[iv] = 0.0; // no geothermal under floating ice
-  }
-  */
 }
 
 void exportDissipationHeat(double * dissipationHeat_F) {
@@ -1676,34 +1628,31 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
     outfile.open (name.str(), std::ios::out | std::ios::trunc);
     if (outfile.is_open()) {
 
-       int nVerticesBoundaryEdge = 0;
-       for (int index = 0; index < nEdges; index++) {
-          if (isBoundaryEdge[index]) nVerticesBoundaryEdge += 1;
-       }
-
-       //creating set from vector so that we can find elements in the set in log time
-       std::set<int> floatingEdgesSet;
-       for (int i = 0; i < floatingEdgesIds.size(); i++)
-         floatingEdgesSet.insert(floatingEdgesIds[i]);
-
+      //creating set from vector so that we can find elements in the set in log time
+      //boundary edges labels: 2 if ice margin, 1 otherwise
+       std::vector<int> bdEdgesLabels(numBoundaryEdges,1);
+       for (int i = 0; i < iceMarginEdgesLIds.size(); i++)
+         bdEdgesLabels[iceMarginEdgesLIds[i]] = 2;
 
        std::vector<int> boundaryEdges; //list of edge vertices and edge label
-       boundaryEdges.resize(3 * nVerticesBoundaryEdge);
-       int iVerticesBoundaryEdge = 0;
-       for (int index = 0; index < nEdges; index++) {
-          if (isBoundaryEdge[index]) {
-             boundaryEdges[0 + 3 * iVerticesBoundaryEdge] = verticesOnEdge[0 + 2 * index];
-             boundaryEdges[1 + 3 * iVerticesBoundaryEdge] = verticesOnEdge[1 + 2 * index];
-             auto search = floatingEdgesSet.find(indexToEdgeID[index]);  //slow but executed only when printing
-             //boundary edges labels: 2 if floating, 1 otherwise
-             boundaryEdges[2 + 3 * iVerticesBoundaryEdge] = (search != floatingEdgesSet.end()) ? 2 : 1;
-             iVerticesBoundaryEdge ++;
-          }
+       boundaryEdges.resize(3 * numBoundaryEdges);
+       for (int index = 0; index < numBoundaryEdges; index++) {
+         boundaryEdges[0 + 3 * index] = verticesOnEdge[0 + 2 * index];
+         boundaryEdges[1 + 3 * index] = verticesOnEdge[1 + 2 * index];
+         boundaryEdges[2 + 3 * index] = bdEdgesLabels[index];
        }
 
        outfile << "Format: " << 1 << "\n";  // first line stating the format (we are going to provide global ids)
        outfile << "Triangle " << 3 << "\n";  // second line saying it is a mesh of triangles
-       outfile << nVertices << " " << nTriangles << " " << nVerticesBoundaryEdge << "\n";  // second line
+       outfile << nVertices << " " << nTriangles << " " << numBoundaryEdges << "\n";  // second line
+
+       if(!std::is_sorted(indexToVertexID.begin(), indexToVertexID.end())) {
+         std::cout << "ERROR: Global vertices IDs need to be sorted in the mesh" << std::endl;
+         exit(1);
+         //note, if not sorted, one has to sort the vertices before storing them in the mesh,
+         //also, one has to reorder accordingly all the fields defined on vertices
+         //(similarly to what is done for temperature, defined on triangles)
+       }
 
        for (int index = 0; index < nVertices; index++) { //coordinates lines
           int iCell = vertexToFCell[index];
@@ -1715,11 +1664,22 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
           outfile << indexToVertexID[index] << " " << xCell_F[iCell] / unit_length << " " << yCell_F[iCell] / unit_length << " " << vertexLabel << "\n"  ;
        }
 
-       for (int index = 0; index < nTriangles; index++) //triangles lines
-        outfile << indexToTriangleID[index] << " " << verticesOnTria[0 + 3 * index] + 1 << " " << verticesOnTria[1 + 3 * index] + 1 << " " << verticesOnTria[2 + 3 * index] + 1 << " " << 1 << "\n"; // last digit can be used to specify a 'material'.  Not used by Albany LandIce, so giving dummy value
+       // sort triangle IDs (needed by Albany)
+       std::vector<int> sortingIndex;
+       computeSortingIndices(sortingIndex, indexToTriangleID, nTriangles);
 
-       for (int index = 0; index < nVerticesBoundaryEdge; index++) // boundary edges lines
-       outfile <<  indexToEdgeID[index] << " " << boundaryEdges[0 + 3 * index] + 1 << " " << boundaryEdges[1 + 3 * index] + 1 << " " << boundaryEdges[2 + 3 * index] << "\n"; //last digit can be used to tell whether it's floating or not.. but let's worry about this later.
+       for (int iTria = 0; iTria < nTriangles; iTria++) {//triangles lines
+         int index = sortingIndex[iTria];
+         outfile << indexToTriangleID[index] << " " << verticesOnTria[0 + 3 * index] + 1 << " " << verticesOnTria[1 + 3 * index] + 1 << " " << verticesOnTria[2 + 3 * index] + 1 << " " << 1 << "\n"; // last digit can be used to specify a 'material'.  Not used by Albany LandIce, so giving dummy value
+       }
+
+       // sort edges IDs (needed by Albany)
+       computeSortingIndices(sortingIndex, indexToEdgeID, numBoundaryEdges);
+
+       for (int iEdge = 0; iEdge < numBoundaryEdges; iEdge++) { // boundary edges lines
+         int index = sortingIndex[iEdge];
+         outfile <<  indexToEdgeID[index] << " " << boundaryEdges[0 + 3 * index] + 1 << " " << boundaryEdges[1 + 3 * index] + 1 << " " << boundaryEdges[2 + 3 * index] << "\n"; //last digit can be used to tell whether it's floating or not.. but let's worry about this later.
+       }
 
        outfile.close();
        }
@@ -1730,13 +1690,11 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
     // individual field values
     // Call needed functions to process MPAS fields to Albany units/format
 
-    std::map<int, int> floatBdyExtensionMap;  // local map to be created by importFields
-    std::map<int, int> grdMarineBdyExtensionMap;  // local map to be created by importFields
-    importFields(floatBdyExtensionMap, grdMarineBdyExtensionMap, 
-                   bedTopography_F, lowerSurface_F, thickness_F, beta_F,
+    std::vector<std::pair<int, int> > marineBdyExtensionMap;  // local map to be created by importFields
+    importFields(marineBdyExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F,
                    stiffnessFactor_F, effecPress_F, muFriction_F, temperature_F, smb_F, minThickness);
 
-    import2DFieldsObservations(floatBdyExtensionMap, grdMarineBdyExtensionMap,
+    import2DFieldsObservations(marineBdyExtensionMap,
                     thicknessUncertainty_F,
                     smbUncertainty_F,
                     bmb_F, bmbUncertainty_F,
@@ -1800,11 +1758,17 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
         midLayer += layersRatio[il]/2.0;
       }
 
+      // sort triangle IDs (needed by Albany)
+      std::vector<int> sortingIndex;
+      computeSortingIndices(sortingIndex,indexToTriangleID,nTriangles);
+
       int lElemColumnShift = (Ordering == 1) ? 1 : nTriangles;
       int elemLayerShift = (Ordering == 0) ? 1 : nLayers;
       for(int il = 0; il<nLayers; ++il)
-        for(int i = 0; i<nTriangles; ++i)  //temperature values layer by layer
-          outfile << temperatureDataOnPrisms[i*elemLayerShift + il*lElemColumnShift]<<"\n";
+        for(int i = 0; i<nTriangles; ++i)  {//temperature values layer by layer
+          int index = sortingIndex[i];
+          outfile << temperatureDataOnPrisms[index*elemLayerShift + il*lElemColumnShift]<<"\n";
+        }
 
       outfile.close();
     }
@@ -1850,6 +1814,22 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
 
     std::cout << "\nWriting of all Albany fields complete." << std::endl;
 
+  }
+
+
+  // compute sortingIndices, so that vectorToSort[sortingIndices[i]], i=0, 1, ..., numIndices-1 is sorted
+  void computeSortingIndices(std::vector<int>& sortingIndices, const std::vector<int>& vectorToSort, int numIndices) {
+    // sort triangle IDs (needed by Albany)
+    sortingIndices.resize(numIndices);
+
+    // sortingIndices = [0,1,2,..,nTriangles-1];
+    for (int i = 0; i < numIndices; i++)
+      sortingIndices[i] = i;
+
+    //compute sortingIndices that makes indexToTriangleID sorted
+    std::sort(sortingIndices.begin(), sortingIndices.end(), [&](int il, int ir) {
+            return (vectorToSort[il] < vectorToSort[ir]);
+        });
   }
 
 
