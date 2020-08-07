@@ -158,4 +158,21 @@ contains
 
   end subroutine calc_shoc_vertflux_c
 
+  
+  subroutine compute_brunt_shoc_length_c(nlev,nlevi,shcol,dz_zt,thv,thv_zi,brunt) bind (C)
+    use shoc, only: compute_brunt_shoc_length
+
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: nlevi
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in) :: dz_zt(shcol,nlev)
+    real(kind=c_real), intent(in) :: thv(shcol,nlev)  
+    real(kind=c_real), intent(in) :: thv_zi(shcol,nlevi)
+
+    real(kind=c_real), intent(out) :: brunt(shcol,nlev)
+
+    call compute_brunt_shoc_length(nlev,nlevi,shcol,dz_zt,thv,thv_zi,brunt)
+
+  end subroutine compute_brunt_shoc_length_c  
+
 end module shoc_iso_c

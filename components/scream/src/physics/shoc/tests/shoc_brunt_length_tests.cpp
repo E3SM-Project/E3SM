@@ -12,7 +12,7 @@
 #include "ekat/util/scream_arch.hpp"
 #include "ekat/util/scream_kokkos_utils.hpp"
 #include "ekat/util/scream_utils.hpp"
-#include "physics/common/physics_constants.hpp"
+#include "physics/share/physics_constants.hpp"
 #include "physics/shoc/shoc_functions.hpp"
 #include "physics/shoc/shoc_functions_f90.hpp"
 #include "shoc_unit_tests_common.hpp"
@@ -39,7 +39,7 @@ TEST_CASE("shoc_brunt_length", "shoc") {
   Real thv_zi[nlevi] = {310.0, 305.0, 300.0, 300.0, 295.0, 305.0};
 
   // Initialzie data structure for bridgeing to F90
-  SHOCBruntData SDS(shcol, nlev, nlevi);
+  SHOCBruntlengthData SDS(shcol, nlev, nlevi);
 
   // Test that the inputs are reasonable.
   REQUIRE(SDS.nlevi - SDS.nlev == 1);
@@ -74,7 +74,6 @@ TEST_CASE("shoc_brunt_length", "shoc") {
       REQUIRE(SDS.thv[offset] > 0.0);
     }
 
-    // Check that zi decreases upward
     for(Int n = 0; n < SDS.nlevi - 1; ++n) {
       const auto offset = n + s * SDS.nlevi;
       REQUIRE(SDS.thv_zi[offset] > 0.0);

@@ -30,6 +30,9 @@ void calc_shoc_varorcovar_c(Int shcol, Int nlev, Int nlevi,  Real tunefac,
 
 void calc_shoc_vertflux_c(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 			  Real *dz_zi, Real *invar, Real *vertflux);
+			  
+void compute_brunt_shoc_length_c(Int nlev,Int nlevi,Int shcol,Real *dz_zt,
+                                 Real *thv,Real *thv_zi, Real *brunt);
 }
 
 namespace scream {
@@ -260,6 +263,74 @@ void calc_shoc_varorcovar(Int nlev, SHOCVarorcovarData &d) {
   d.transpose<util::TransposeDirection::c2f>();
   calc_shoc_varorcovar_c(d.shcol, d.nlev, d.nlevi, d.tunefac, d.isotropy_zi, d.tkh_zi, 
                          d.dz_zi, d.invar1, d.invar2, d.varorcovar);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+//Initialize data for compute_brunt_shoc_length function
+SHOCBruntlengthData::SHOCBruntlengthData(Int shcol_, Int nlev_, Int nlevi_)
+  : shcol(shcol_),
+    nlev(nlev_),
+    nlevi(nlevi_),
+    m_total(shcol_ * nlev_),
+    m_totali(shcol_ * nlevi_),
+    m_data(NUM_ARRAYS * m_total, 0),
+    m_datai(NUM_ARRAYS_i * m_totali, 0) {
+  init_ptrs();
+}
+
+SHOCBruntlengthData::SHOCBruntlengthData(const SHOCBruntlengthData &rhs)
+  : shcol(rhs.shcol),
+    nlev(rhs.nlev),
+    nlevi(rhs.nlevi),
+    m_total(rhs.m_total),
+    m_totali(rhs.m_totali),
+    m_data(rhs.m_data),
+    m_datai(rhs.m_datai) {
+  init_ptrs();
+}
+
+
+SHOCBruntlengthData  &SHOCBruntlengthData::operator=(const SHOCBruntlengthData &rhs) {
+  init_ptrs();
+
+  shcol    = rhs.shcol;
+  nlev     = rhs.nlev;
+  nlevi    = rhs.nlevi;
+  m_total  = rhs.m_total;
+  m_totali = rhs.m_totali;
+  m_data   = rhs.m_data;
+  m_datai  = rhs.m_datai;  // Copy
+
+  return *this;
+}
+
+
+void SHOCBruntlengthData::init_ptrs() {
+  Int offset         = 0;
+  Real *data_begin   = m_data.data();
+  Real *data_begin_i = m_datai.data();
+
+  std::array<Real **, NUM_ARRAYS> ptrs     = {&dz_zt, &thv, &brunt};
+  std::array<Real **, NUM_ARRAYS_i> ptrs_i = {&thv_zi};
+
+  for(size_t i = 0; i < NUM_ARRAYS; ++i) {
+    *ptrs[i] = data_begin + offset;
+    offset += m_total;
+  }
+
+  offset = 0;
+  for(size_t i = 0; i < NUM_ARRAYS_i; ++i) {
+    *ptrs_i[i] = data_begin_i + offset;
+    offset += m_totali;
+  }
+}
+
+//Initialize shoc parameterization, trnaspose data from c to fortran,
+//call compute_brunt_shoc_length fortran subroutine and transpose data back to c
+void compute_brunt_shoc_length(Int nlev, SHOCBruntlengthData &d) {
+  shoc_init(nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  compute_brunt_shoc_length_c(d.nlev,d.nlevi,d.shcol,d.dz_zt,d.thv,d.thv_zi,d.brunt);
   d.transpose<util::TransposeDirection::f2c>();
 }
 
