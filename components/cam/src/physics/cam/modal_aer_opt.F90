@@ -618,12 +618,12 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
    wetdens_m(:,:,:)  = huge(1.0_r8)
    if (list_idx == 0) then
       call modal_aero_calcsize_sub(state_bef_aero, pbuf,deltat=dt, do_adjust_in=.true., do_aitacc_transfer_in=.true., &
-           list_idx=list_idx, dgnumdry_m=dgnumdry_m,cp_buf=cld_brn_copy,cp_num_buf=cld_brn_num_copy)
+           list_idx_in=list_idx, update_mmr_in = .false., dgnumdry_m=dgnumdry_m,cp_buf=cld_brn_copy,cp_num_buf=cld_brn_num_copy)
       call modal_aero_wateruptake_dr(state_bef_aero, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
            qaerwat_m, wetdens_m)
    else
       call modal_aero_calcsize_sub(state, pbuf,deltat=dt, do_adjust_in=.false., do_aitacc_transfer_in=.false., &
-           list_idx=list_idx, dgnumdry_m=dgnumdry_m)
+           list_idx_in=list_idx, update_mmr_in = .false., dgnumdry_m=dgnumdry_m)
       call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
            qaerwat_m, wetdens_m)
    endif
@@ -1327,12 +1327,12 @@ subroutine modal_aero_lw(list_idx, state, pbuf, tauxar,state_bef_aero,dt,cld_brn
 
    if ( list_idx == 0 ) then
       call modal_aero_calcsize_sub(state_bef_aero, pbuf, deltat=dt, do_adjust_in=.true., do_aitacc_transfer_in=.true., &
-           list_idx=list_idx, dgnumdry_m=dgnumdry_m,cp_buf=cld_brn_copy,cp_num_buf=cld_brn_num_copy)
+           list_idx_in=list_idx, update_mmr_in = .false., dgnumdry_m=dgnumdry_m,cp_buf=cld_brn_copy,cp_num_buf=cld_brn_num_copy)
       call modal_aero_wateruptake_dr(state_bef_aero, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
                                      qaerwat_m, wetdens_m)
    else
       call modal_aero_calcsize_sub(state, pbuf,deltat=dt, do_adjust_in=.false., do_aitacc_transfer_in=.false., &
-           list_idx=list_idx, dgnumdry_m=dgnumdry_m)
+           list_idx_in=list_idx, update_mmr_in = .false., dgnumdry_m=dgnumdry_m)
       call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
                                      qaerwat_m, wetdens_m)
    endif
