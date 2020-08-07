@@ -22,7 +22,6 @@ namespace shoc {
 namespace unit_test {
 
 TEST_CASE("shoc_brunt_length", "shoc") {
-  constexpr Real gravit  = scream::physics::Constants<Real>::gravit;
   constexpr Int shcol    = 2;
   constexpr Int nlev     = 5;
   constexpr auto nlevi   = nlev + 1;

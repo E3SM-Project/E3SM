@@ -33,6 +33,9 @@ void calc_shoc_vertflux_c(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 			  
 void compute_brunt_shoc_length_c(Int nlev,Int nlevi,Int shcol,Real *dz_zt,
                                  Real *thv,Real *thv_zi, Real *brunt);
+				 
+void compute_l_inf_shoc_length_c(Int nlev,Int shcol,Real *zt_grid,Real *dz_zt,
+                                 Real *tke,Real *l_inf)				 
 }
 
 namespace scream {
@@ -331,6 +334,72 @@ void compute_brunt_shoc_length(Int nlev, SHOCBruntlengthData &d) {
   shoc_init(nlev, true);
   d.transpose<util::TransposeDirection::c2f>();
   compute_brunt_shoc_length_c(d.nlev,d.nlevi,d.shcol,d.dz_zt,d.thv,d.thv_zi,d.brunt);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+
+//Initialize data for compute_l_inf_shoc_length function
+SHOCInflengthData::SHOCInflengthData(Int shcol_, Int nlev_)
+  : shcol(shcol_),
+    nlev(nlev_),
+    m_total(shcol_ * nlev_),
+    m_totalc(shcol_),
+    m_data(NUM_ARRAYS * m_total, 0)
+    m_datac(NUM_ARRAYSc * m_totalc,0) {
+  init_ptrs();
+}
+
+SHOCInglengthData::SHOCInglengthData(const SHOCInglengthData &rhs)
+  : shcol(rhs.shcol),
+    nlev(rhs.nlev),
+    m_total(rhs.m_total),
+    m_totalc(rhs.m_totalc)
+    m_data(rhs.m_data)
+    m_datac(rhs.m_datac) {
+  init_ptrs();
+}
+
+
+SHOCInflengthData  &SHOCInflengthData::operator=(const SHOCInftlengthData &rhs) {
+  init_ptrs();
+
+  shcol    = rhs.shcol;
+  nlev     = rhs.nlev;
+  m_total  = rhs.m_total;
+  m_totalc = rhs.m_totalc;
+  m_data   = rhs.m_data;
+  m_datac  = rhs.m_datac;  // Copy
+
+  return *this;
+}
+
+
+void SHOCInflengthData::init_ptrs() {
+  Int offset         = 0;
+  Real *data_begin   = m_data.data();
+  Real *data_being_c = m_datac.data();
+
+  std::array<Real **, NUM_ARRAYS> ptrs     = {&zt_grid, &dz_zt, &tke};
+  std::array<Real **, NUM_ARRAYS_c> ptrs_i = {&l_inf};
+
+  for(size_t i = 0; i < NUM_ARRAYS; ++i) {
+    *ptrs[i] = data_begin + offset;
+    offset += m_total;
+  }
+
+  offset = 0;
+  for(size_t i = 0; i < NUM_ARRAYS_c; ++i) {
+    *ptrs_c[i] = data_begin_i + offset;
+    offset += m_totalc;
+  }
+}
+
+//Initialize shoc parameterization, trnaspose data from c to fortran,
+//call compute_brunt_shoc_length fortran subroutine and transpose data back to c
+void compute_l_inf_shoc_length(Int nlev, SHOCInflengthData &d) {
+  shoc_init(nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  compute_l_inf_shoc_length_c(d.nlev,d.shcol,d.zt_grid,d.dz_zt,d.tke,d.l_inf);
   d.transpose<util::TransposeDirection::f2c>();
 }
 

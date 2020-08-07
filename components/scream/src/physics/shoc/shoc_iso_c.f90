@@ -174,5 +174,21 @@ contains
     call compute_brunt_shoc_length(nlev,nlevi,shcol,dz_zt,thv,thv_zi,brunt)
 
   end subroutine compute_brunt_shoc_length_c  
+  
+  
+  subroutine compute_l_inf_shoc_length_c(nlev,shcol,zt_grid,dz_zt,tke,l_inf) bind (C)
+    use shoc, only: compute_l_inf_shoc_length
+
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
+    real(kind=c_real), intent(in) :: dz_zt(shcol,nlev)
+    real(kind=c_real), intent(in) :: tke(shcol,nlev)  
+
+    real(kind=c_real), intent(out) :: l_inf(shcol,nlev)
+
+    call compute_l_inf_shoc_length(nlev,shcol,zt_grid,dz_zt,tke,l_inf)
+
+  end subroutine compute_l_inf_shoc_length_c  
 
 end module shoc_iso_c

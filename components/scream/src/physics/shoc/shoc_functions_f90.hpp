@@ -151,7 +151,7 @@ struct SHOCVarorcovarData {
 
 void calc_shoc_varorcovar(Int nlev, SHOCVarorcovarData &d);
 
-//Create data structure to hold data for calc_shoc_vertflux
+//Create data structure to hold data for compute_brunt_shoc_length
 struct SHOCBruntlengthData {
   static constexpr size_t NUM_ARRAYS   = 3; //# of arrays with values at cell centers (zt grid)
   static constexpr size_t NUM_ARRAYS_i = 1; //# of arrays with values at interface centers (zi grid)
@@ -192,6 +192,48 @@ struct SHOCBruntlengthData {
 };//SHOCBruntlengthData
 
 void compute_brunt_shoc_length(Int nlev, SHOCBruntlengthData &d);
+
+//Create data structure to hold data for compute_l_inf_shoc_length
+struct SHOCInflengthData {
+  static constexpr size_t NUM_ARRAYS   = 3; //# of arrays with values at cell centers (zt grid)
+  static constexpr size_t NUM_ARRAYS_c = 1; //# of arrays with column only dimensions
+
+  // Inputs
+  Int   shcol, nlev;
+  Real *zt_grid, *dz_zt, *tke;
+
+  // Outputs
+  Real *l_inf;
+
+  //functions to initialize data
+  SHOCInflengthData(Int shcol_, Int nevl_);
+  SHOCInflengthData(const SHOCInflengthData &rhs);
+  SHOCInflengthData &operator=(const SHOCInflengthData &rhs);
+
+  void init_ptrs();
+
+  // Internals
+  Int m_shcol, m_nlev, m_nlevc, m_total, m_totalc;
+  std::vector<Real> m_data;
+  std::vector<Real> m_datac;
+
+  template <util::TransposeDirection::Enum D>
+  void transpose() {
+    SHOCInflengthData d_trans(*this);
+
+    // Transpose on the zt grid
+    util::transpose<D>(zt_grid, d_trans.zt_grid, shcol, nlev);
+    util::transpose<D>(dz_zt, d_trans.dz_zt, shcol, nlev);
+    util::transpose<D>(tke, d_trans.tke, shcol, nlev);
+
+    // Transpose on the zi grid
+    util::transpose<D>(l_inf, d_trans.l_inf, shcol, 1);
+
+    *this = std::move(d_trans);
+  }
+};//SHOCInflengthData
+
+void compute_l_inf_shoc_length(Int nlev, SHOCInflengthData &d);
 
 }  // namespace shoc
 }  // namespace scream

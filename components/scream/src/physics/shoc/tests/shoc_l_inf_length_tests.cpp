@@ -12,7 +12,7 @@
 #include "ekat/util/scream_arch.hpp"
 #include "ekat/util/scream_kokkos_utils.hpp"
 #include "ekat/util/scream_utils.hpp"
-#include "physics/common/physics_constants.hpp"
+#include "physics/share/physics_constants.hpp"
 #include "physics/shoc/shoc_functions.hpp"
 #include "physics/shoc/shoc_functions_f90.hpp"
 #include "shoc_unit_tests_common.hpp"
@@ -22,7 +22,6 @@ namespace shoc {
 namespace unit_test {
 
 TEST_CASE("shoc_l_inf_length", "shoc") {
-  constexpr Real gravit  = scream::physics::Constants<Real>::gravit;
   constexpr Int shcol    = 2;
   constexpr Int nlev     = 5;
 
@@ -42,7 +41,7 @@ TEST_CASE("shoc_l_inf_length", "shoc") {
   Real tke[nlev] = {0.1, 0.15, 0.2, 0.25, 0.3};
 
   // Initialzie data structure for bridgeing to F90
-  SHOCLinfData SDS(shcol, nlev);
+  SHOCInflengthData SDS(shcol, nlev);
 
   // Test that the inputs are reasonable.
   //  At least two columns are needed for this test!
