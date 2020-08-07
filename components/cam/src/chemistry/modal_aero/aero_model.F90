@@ -1378,8 +1378,6 @@ contains
     use wetdep,                only: wetdepa_v2, wetdep_inputs_set, &
                                      wetdep_inputs_unset, wetdep_inputs_t
     use modal_aero_data
-    use modal_aero_calcsize,   only: modal_aero_calcsize_sub
-    use modal_aero_wateruptake,only: modal_aero_wateruptake_dr
     use modal_aero_convproc,   only: deepconv_wetdep_history, ma_convproc_intr
     use mo_constants,          only: pi
     use infnan,                only: nan, assignment(=)

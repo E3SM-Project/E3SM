@@ -41,8 +41,13 @@ module physpkg
   use cam_logfile,     only: iulog
   use camsrfexch,      only: cam_export
 
-  use modal_aero_calcsize,    only: modal_aero_calcsize_init, modal_aero_calcsize_diag, modal_aero_calcsize_reg, modal_aero_calcsize_sub
-  use modal_aero_wateruptake, only: modal_aero_wateruptake_init, modal_aero_wateruptake_dr, modal_aero_wateruptake_reg
+  use modal_aero_calcsize,    only: modal_aero_calcsize_init, &
+                                    modal_aero_calcsize_diag, &
+                                    modal_aero_calcsize_reg, &
+                                    modal_aero_calcsize_sub
+  use modal_aero_wateruptake, only: modal_aero_wateruptake_init, &
+                                    modal_aero_wateruptake_dr, &
+                                    modal_aero_wateruptake_reg
 #ifdef MAML
   use seq_comm_mct,       only : num_inst_atm
 #endif
@@ -2914,7 +2919,7 @@ end if
             ! set all ptend%lq to false, they will be updated in modal_aero_calcsize_sub
             ptend%lq(:) = .false.
             call modal_aero_calcsize_sub(state, ptend, ztodt, pbuf)
-            call physics_update (state, ptend, crm_run_time, tend)
+            call physics_update(state, ptend, ztodt, tend)
          endif
 
          ! Aerosol water uptake
