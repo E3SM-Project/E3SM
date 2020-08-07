@@ -1046,7 +1046,10 @@
       dgausw  = (/0.5_r8, 0.5_r8/)
 
       ! lamda in eq. 21
-      lamda = sqrt(gama1*gama1 - gama2*gama2)
+      ! lamda = sqrt(gama1*gama1 - gama2*gama2)
+      ! Saw the value in one occassion becomes negative, which eventually
+      ! causes NaN in LW flues. Impose a limit
+      lamda = sqrt(max(gama1*gama1 - gama2*gama2,1.0e-8_r8))
 
       ! gamma in eq. 22
       gama = gama2 / (gama1 + lamda)
