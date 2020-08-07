@@ -1576,14 +1576,15 @@
         <command name="load">PrgEnv-gnu/6.0.7</command>
       </modules>
       <modules compiler="!intel">
+        <command name="rm">cray-libsci</command>
         <command name="load">cray-libsci/20.06.1</command>
       </modules>
       <modules>
         <command name="load">darshan</command>
         <command name="load">craype-mic-knl</command>
         <command name="load">cray-mpich/7.7.14</command>
-        <command name="load">cray-hdf5/1.10.6.1</command>
-        <command name="load">cray-netcdf/4.7.3.3</command>
+        <command name="load">cray-hdf5-parallel/1.10.6.1</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.7.3.3</command>
         <command name="load">cray-parallel-netcdf/1.12.0.1</command>
       </modules>
     </module_system>
