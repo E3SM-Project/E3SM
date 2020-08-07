@@ -1,9 +1,0 @@
-MPICXX=@CMAKE_CXX_COMPILER@
-
-# Check if the user already set the variable.
-# If not, set it to point nvcc_wrapper.
-if [ -z "${@MPI_CXX_BACKEND_COMPILER_VAR_NAME@}" ]; then
-  export @MPI_CXX_BACKEND_COMPILER_VAR_NAME@=@KOKKOS_SOURCE_DIR@/bin/nvcc_wrapper
-fi
-
-${MPICXX} ""$@""
