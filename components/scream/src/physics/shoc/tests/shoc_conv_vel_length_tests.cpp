@@ -12,7 +12,7 @@
 #include "ekat/util/scream_arch.hpp"
 #include "ekat/util/scream_kokkos_utils.hpp"
 #include "ekat/util/scream_utils.hpp"
-#include "physics/common/physics_constants.hpp"
+#include "physics/share/physics_constants.hpp"
 #include "physics/shoc/shoc_functions.hpp"
 #include "physics/shoc/shoc_functions_f90.hpp"
 #include "shoc_unit_tests_common.hpp"
@@ -50,7 +50,7 @@ TEST_CASE("shoc_conv_vel_length", "shoc") {
   Real wthv_sec[nlev] = {-0.02, -0.01, -0.04, -0.02, -0.05};
 
   // Initialzie data structure for bridgeing to F90
-  SHOCConvData SDS(shcol, nlev);
+  SHOCConvvelData SDS(shcol, nlev);
 
   // Test that the inputs are reasonable.
   REQUIRE(SDS.shcol > 0);
@@ -79,7 +79,7 @@ TEST_CASE("shoc_conv_vel_length", "shoc") {
       // For this negative buoyancy test verify that all parcels
       //  have negative buoyancy flux.  
       REQUIRE(SDS.wthv_sec[offset] < 0.0);
-      if (n < nlev){
+      if (n < nlev-1){
         // check that zt increases upward
         REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0.0);       
       }
@@ -122,7 +122,7 @@ TEST_CASE("shoc_conv_vel_length", "shoc") {
 
   for(Int s = 0; s < SDS.shcol; ++s) {
     Real wthv_sum = 0.0;
-    for(Int n = 0; n < SDS.nlev - 1; ++n) {
+    for(Int n = 0; n < SDS.nlev; ++n) {
       const auto offset = n + s * SDS.nlev;
       // Be sure that relevant variables are greater than zero
       REQUIRE(SDS.dz_zt[offset] > 0.0);

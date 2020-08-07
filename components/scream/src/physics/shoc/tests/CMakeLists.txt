@@ -7,6 +7,8 @@ set(SHOC_TESTS_SRCS
     shoc_vertflux_tests.cpp
     shoc_varorcovar_tests.cpp
     shoc_brunt_length_tests.cpp
+    shoc_l_inf_length_tests.cpp
+    shoc_conv_vel_length_tests.cpp
     shoc_unit_tests.cpp)
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build

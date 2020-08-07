@@ -40,7 +40,7 @@ TEST_CASE("shoc_l_inf_length", "shoc") {
   // Turbulent kinetic energy [m2/s2]
   Real tke[nlev] = {0.1, 0.15, 0.2, 0.25, 0.3};
 
-  // Initialzie data structure for bridgeing to F90
+  // Initialize data structure for bridgeing to F90
   SHOCInflengthData SDS(shcol, nlev);
 
   // Test that the inputs are reasonable.
@@ -53,16 +53,11 @@ TEST_CASE("shoc_l_inf_length", "shoc") {
       const auto offset = n + s * SDS.nlev;
 
       SDS.dz_zt[offset] = dz_zt[n];
-      SDS.zt_grid[offset] = zt_grid[n];
+      SDS.zt_grid[offset] = (s*100.0)+zt_grid[n];
       // Testing identical columns but one with larger TKE
       //  set first column as "base" column, and the others
       //  to a larger value of TKE uniformly.  
-      if (s == 0){
-        SDS.tke[offset] = tke[n];
-      }
-      else{
-        SDS.tke[offset] = 2.0*tke[n];
-      }
+      SDS.tke[offset] = (1.0)*tke[n];
     }
   }
 
@@ -75,10 +70,15 @@ TEST_CASE("shoc_l_inf_length", "shoc") {
       REQUIRE(SDS.dz_zt[offset] > 0.0);
       REQUIRE(SDS.tke[offset] > 0.0); 
       REQUIRE(SDS.zt_grid[offset] > 0.0);
-      if (n < nlev){
+      if (n < nlev-1){
         // check that zt increases upward
         REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0.0);       
       }      
+      if (s < shcol-1){
+        // Verify that zt_grid is offset larger column by column
+        const auto offsets = n + (s+1) * SDS.nlev;
+	REQUIRE(SDS.zt_grid[offset] < SDS.zt_grid[offsets]);
+      }
     } 
   }
 
@@ -91,10 +91,10 @@ TEST_CASE("shoc_l_inf_length", "shoc") {
     REQUIRE(SDS.l_inf[s] > 0.0);
   } 
   
-  // Make sure that l_inf is greater than l_inf
-  //  in the first column 
-  for (Int s = 1; s < SDS.shcol; ++s){
-    REQUIRE(SDS.l_inf[s] > SDS.l_inf[0]);
+  // Make sure that l_inf is getting larger
+  //  per column 
+  for (Int s = 0; s < SDS.shcol-1; ++s){
+    REQUIRE(SDS.l_inf[s] < SDS.l_inf[s+1]);
   }
 
 }

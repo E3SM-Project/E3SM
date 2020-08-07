@@ -226,7 +226,7 @@ struct SHOCInflengthData {
     util::transpose<D>(dz_zt, d_trans.dz_zt, shcol, nlev);
     util::transpose<D>(tke, d_trans.tke, shcol, nlev);
 
-    // Transpose on the zi grid
+    // Transpose on the column only grid
     util::transpose<D>(l_inf, d_trans.l_inf, shcol, 1);
 
     *this = std::move(d_trans);
@@ -234,6 +234,50 @@ struct SHOCInflengthData {
 };//SHOCInflengthData
 
 void compute_l_inf_shoc_length(Int nlev, SHOCInflengthData &d);
+
+//Create data structure to hold data for compute_l_inf_shoc_length
+struct SHOCConvvelData {
+  static constexpr size_t NUM_ARRAYS   = 4; //# of arrays with values at cell centers (zt grid)
+  static constexpr size_t NUM_ARRAYS_c = 2; //# of arrays with column only dimensions
+
+  // Inputs
+  Int   shcol, nlev;
+  Real *pblh, *zt_grid, *dz_zt, *thv, *wthv_sec;
+
+  // Outputs
+  Real *conv_vel;
+
+  //functions to initialize data
+  SHOCConvvelData(Int shcol_, Int nevl_);
+  SHOCConvvelData(const SHOCConvvelData &rhs);
+  SHOCConvvelData &operator=(const SHOCConvvelData &rhs);
+
+  void init_ptrs();
+
+  // Internals
+  Int m_shcol, m_nlev, m_nlevc, m_total, m_totalc;
+  std::vector<Real> m_data;
+  std::vector<Real> m_datac;
+
+  template <util::TransposeDirection::Enum D>
+  void transpose() {
+    SHOCConvvelData d_trans(*this);
+
+    // Transpose on the zt grid
+    util::transpose<D>(zt_grid, d_trans.zt_grid, shcol, nlev);
+    util::transpose<D>(dz_zt, d_trans.dz_zt, shcol, nlev);
+    util::transpose<D>(thv, d_trans.thv, shcol, nlev);
+    util::transpose<D>(wthv_sec, d_trans.wthv_sec, shcol, nlev);
+
+    // Transpose on the column only grid
+    util::transpose<D>(pblh, d_trans.pblh, shcol, 1);
+    util::transpose<D>(conv_vel, d_trans.conv_vel, shcol, 1);
+
+    *this = std::move(d_trans);
+  }
+};//SHOCConvvelData
+
+void compute_conv_vel_shoc_length(Int nlev, SHOCConvvelData &d);
 
 }  // namespace shoc
 }  // namespace scream

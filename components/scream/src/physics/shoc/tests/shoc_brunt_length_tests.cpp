@@ -37,7 +37,7 @@ TEST_CASE("shoc_brunt_length", "shoc") {
   // Virtual potential temperature on interface grid [K]
   Real thv_zi[nlevi] = {310.0, 305.0, 300.0, 300.0, 295.0, 305.0};
 
-  // Initialzie data structure for bridgeing to F90
+  // Initialize data structure for bridgeing to F90
   SHOCBruntlengthData SDS(shcol, nlev, nlevi);
 
   // Test that the inputs are reasonable.
