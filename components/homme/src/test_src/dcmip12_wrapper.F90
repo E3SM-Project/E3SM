@@ -384,6 +384,15 @@ subroutine dcmip2012_test2_0(elem,hybrid,hvcoord,nets,nete)
      enddo; enddo; enddo; 
      call tests_finalize(elem(ie),hvcoord)
   enddo
+
+  ! store initial velocity fields for use in sponge layer
+  allocate( u0(np,np,nlev,nelemd) )
+  allocate( v0(np,np,nlev,nelemd) )
+
+  do ie = nets,nete
+    u0(:,:,:,ie) = elem(ie)%state%v(:,:,1,:,1)
+    v0(:,:,:,ie) = elem(ie)%state%v(:,:,2,:,1)
+  enddo
   
   end subroutine dcmip2012_test2_0
 
