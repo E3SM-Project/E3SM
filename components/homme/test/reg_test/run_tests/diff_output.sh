@@ -18,15 +18,9 @@ echo "Test name = ${TEST_NAME}"
 
 echo "Examining cprnc reference comparison output files"
 diffCprncRef
-echo "############################################################################"
-echo "  The diff using CPRNC has passed"
-echo "############################################################################"
 
 echo "Examining cprnc baseline comparison output files"
 diffCprncOutput
-echo "############################################################################"
-echo "  The diff using CPRNC has passed"
-echo "############################################################################"
 
 
 exit 0

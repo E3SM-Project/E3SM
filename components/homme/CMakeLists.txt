@@ -104,7 +104,7 @@ OPTION(BUILD_HOMME_SWIM  "Shallow water equations implicit" OFF)
 OPTION(BUILD_HOMME_PRIM  "Primitive equations implicit" OFF)
 OPTION(BUILD_HOMME_TOOL  "Offline tool" ON)
 OPTION(HOMME_ENABLE_COMPOSE "Build COMPOSE semi-Lagrangian tracer transport code" ON)
-OPTION(HOMME_USE_SCORPIO  "Use Scorpio as the I/O library (the default I/O library used is \"Scorpio classic\")" OFF)
+OPTION(HOMME_USE_SCORPIO  "Use Scorpio as the I/O library (Disable to use Scorpio classic)" ON)
 
 #by default we don't need cxx
 SET(HOMME_USE_CXX FALSE)
@@ -264,8 +264,9 @@ ENDIF ()
 
 # this section is for linking to SUNDIALS/ARKODE as an external library
 IF (DEFINED SUNDIALS_DIR)
-  LINK_DIRECTORIES(${SUNDIALS_DIR}/lib)
+  LINK_DIRECTORIES(${SUNDIALS_DIR}/lib64)
   INCLUDE_DIRECTORIES(${SUNDIALS_DIR}/include)
+  INCLUDE_DIRECTORIES(${SUNDIALS_DIR}/fortran)
 ENDIF ()
 
 ###########################################
@@ -354,6 +355,12 @@ if(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
       file(WRITE "${cprnc_dummy_file}" "#dummy Macros file for non-CIME machines")
     endif ()
 
+    # cprnc's CMake system needs various nonstandard variables:
+    set(FFLAGS ${CMAKE_Fortran_FLAGS})
+    set(BLDROOT ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/tools/cprnc)
+    set(SFC ${CMAKE_Fortran_COMPILER})
+    set(SCC ${CMAKE_C_COMPILER})
+    
     SET (CPRNC_INSTALL_DIR ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc)
     SET (CPRNC_BINARY ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
     ADD_SUBDIRECTORY(utils/cime/tools/cprnc)

@@ -86,10 +86,6 @@
 <mg_prc_coeff_fix        >.true.</mg_prc_coeff_fix>
 <rrtmg_temp_fix          >.true.</rrtmg_temp_fix>
 
-<!-- Super-Parameterization -->
-<!-- Without srf_flux_avg=1 the SP model develops unstable oscillations near the surface -->
-<srf_flux_avg>1</srf_flux_avg>>
-
 <!-- Prescribed aerosols -->
 <prescribed_aero_datapath>atm/cam/chem/trop_mam/aero</prescribed_aero_datapath>
 <prescribed_aero_file>mam4_0.9x1.2_L72_2000clim_c170323.nc</prescribed_aero_file>

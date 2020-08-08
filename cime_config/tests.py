@@ -32,7 +32,11 @@ _TESTS = {
             "ERS.f19_g16.I1850GSWCNPRDCTCBC.clm-ctc_f19_g16_I1850GSWCNPRDCTCBC",
             "ERS.f19_g16.I20TRGSWCNPRDCTCBC.clm-ctc_f19_g16_I20TRGSWCNPRDCTCBC",
             "ERS.f09_g16.ICLM45BC",
+            "SMS.r05_r05.I1850CLM45CN.clm-qian_1948",
             "SMS_Ly2_P1x1.1x1_smallvilleIA.ICLM45CNCROP.clm-lulcc_sville",
+            "ERS.r05_r05.RMOSGPCC.mosart-gpcc_1972",
+            "ERS.MOS_USRDAT.RMOSGPCC.mosart-mos_usrdat",
+            "SMS.MOS_USRDAT.RMOSGPCC.mosart-unstructure",
             )
         },
 
@@ -148,15 +152,13 @@ _TESTS = {
             "PET_Ln9_PS.ne30_oECv3_ICG.A_WCYCL1850S.allactive-mach-pet",
             "PEM_Ln9.ne30_oECv3_ICG.A_WCYCL1850S",
             "ERP_Ld3.ne30_oECv3_ICG.A_WCYCL1850S",
-            "SMS.f09_g16_a.MALI",
             "SMS_D_Ln5.conusx4v1_conusx4v1.FC5AV1C-L",
             "SMS.ne30_oECv3.BGCEXP_BCRC_CNPECACNT_1850.clm-bgcexp",
             "SMS.ne30_oECv3.BGCEXP_BCRC_CNPRDCTC_1850.clm-bgcexp",
             "SMS_D_Ld1.T62_oEC60to30v3.DTESTM",
             "SMS_D_Ld1.ne30_r05_oECv3.A_WCYCL1850",
-            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1-TEST.cam-crmout",
+            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1.cam-crmout",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF1-RCEMIP",
-            "SMS.r05_r05.I1850CLM45CN",
             )
         },
 
@@ -192,11 +194,11 @@ _TESTS = {
         "time" : "02:00:00",
         "tests" : (
             # MMF tests
-            "ERP_Ln9_P96x1.ne4_ne4.F-MMF1-TEST.cam-crmout",
-            "ERP_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF2-TEST",
-            "ERP_Ln9_P96x1.ne4_ne4.F-MMF2-ECPP-TEST",
-            "SMS_D_Ln3_P96x1.ne4_ne4.F-MMF1-TEST",
-            "SMS_D_Ln3_P96x1.ne4pg2_ne4pg2.F-MMF2-TEST",
+            "SMS_D_Ln3_P96x1.ne4_ne4.F-MMF1",
+            "SMS_D_Ln3_P96x1.ne4pg2_ne4pg2.F-MMF2",
+            "ERS_Ln9_P96x1.ne4_ne4.F-MMF1.cam-crmout",
+            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMF2",
+            "ERS_Ln9_P96x1.ne4_ne4.F-MMF2-ECPP",
             # non-MMF tests with RRTMGP
             "ERP_Ln9.ne4pg2_ne4pg2.FC5AV1C-L.cam-rrtmgp",
             )

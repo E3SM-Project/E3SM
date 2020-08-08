@@ -566,7 +566,6 @@ add_default($nl, 'config_GM_kappa');
 add_default($nl, 'config_GM_closure');
 add_default($nl, 'config_GM_baroclinic_mode');
 add_default($nl, 'config_GM_visbeck_alpha');
-add_default($nl, 'config_GM_visbeck_min_depth');
 add_default($nl, 'config_GM_visbeck_max_depth');
 add_default($nl, 'config_GM_visbeck_min_kappa');
 add_default($nl, 'config_GM_visbeck_max_kappa');

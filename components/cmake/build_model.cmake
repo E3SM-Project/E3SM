@@ -125,17 +125,30 @@ function(build_model COMP_CLASS COMP_NAME)
     list(APPEND SOURCES ${CMAKE_CURRENT_BINARY_DIR}/${BASENAME})
   endforeach ()
 
-  # Flags are slightly different for different fortran extensions
+  # Set compiler flags for source files
   foreach (SOURCE_FILE IN LISTS SOURCES)
-    # Cosp manages its own flags
-    if (NOT SOURCE_FILE IN_LIST COSP_SOURCES)
-      get_filename_component(SOURCE_EXT ${SOURCE_FILE} EXT)
-      if (SOURCE_EXT STREQUAL ".F" OR SOURCE_EXT STREQUAL ".f")
-        e3sm_add_flags("${SOURCE_FILE}" "${FIXEDFLAGS}")
-      elseif(SOURCE_EXT STREQUAL ".f90")
-        e3sm_add_flags("${SOURCE_FILE}" "${FREEFLAGS}")
-      elseif(SOURCE_EXT STREQUAL ".F90")
-        e3sm_add_flags("${SOURCE_FILE}" "${FREEFLAGS} ${CONTIGUOUS_FLAG}")
+    get_filename_component(SOURCE_EXT ${SOURCE_FILE} EXT)
+
+    # Set flags based on file extension. File extensions may change if the globs used by
+    # gather_sources changes.
+    if (SOURCE_EXT STREQUAL ".c")
+      e3sm_add_flags("${SOURCE_FILE}" "${CFLAGS}")
+    elseif (SOURCE_EXT STREQUAL ".cpp")
+      e3sm_add_flags("${SOURCE_FILE}" "${CXXFLAGS}")
+    else()
+      # This is a fortran source
+      e3sm_add_flags("${SOURCE_FILE}" "${FFLAGS}")
+
+      # Cosp manages its own flags
+      if (NOT SOURCE_FILE IN_LIST COSP_SOURCES)
+        # Flags are slightly different for different fortran extensions
+        if (SOURCE_EXT STREQUAL ".F" OR SOURCE_EXT STREQUAL ".f")
+          e3sm_add_flags("${SOURCE_FILE}" "${FIXEDFLAGS}")
+        elseif (SOURCE_EXT STREQUAL ".f90")
+          e3sm_add_flags("${SOURCE_FILE}" "${FREEFLAGS}")
+        elseif (SOURCE_EXT STREQUAL ".F90")
+          e3sm_add_flags("${SOURCE_FILE}" "${FREEFLAGS} ${CONTIGUOUS_FLAG}")
+        endif()
       endif()
     endif()
   endforeach()
@@ -153,7 +166,7 @@ function(build_model COMP_CLASS COMP_NAME)
 
   # Disable optimizations on some files that would take too long to compile, expect these to all be fortran files
   foreach (SOURCE_FILE IN LISTS NOOPT_FILES)
-    e3sm_add_flags("${SOURCE_FILE}" "${FFLAGS_NOOPT}")
+    e3sm_deoptimize_file("${SOURCE_FILE}" "${FFLAGS_NOOPT}")
   endforeach()
 
   #-------------------------------------------------------------------------------

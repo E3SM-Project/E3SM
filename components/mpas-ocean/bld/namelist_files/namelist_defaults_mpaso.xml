@@ -114,7 +114,7 @@
 <config_Leith_visc2_max>2.5e3</config_Leith_visc2_max>
 
 <!-- Redi_isopycnal_mixing -->
-<config_use_Redi>.false.</config_use_Redi>
+<config_use_Redi>.true.</config_use_Redi>
 <config_use_Redi ocn_grid="oRRS30to10">.false.</config_use_Redi>
 <config_use_Redi ocn_grid="oRRS30to10v3">.false.</config_use_Redi>
 <config_use_Redi ocn_grid="oRRS30to10wLI">.false.</config_use_Redi>
@@ -146,7 +146,6 @@
 <config_GM_closure>'visbeck'</config_GM_closure>
 <config_GM_baroclinic_mode>3.0</config_GM_baroclinic_mode>
 <config_GM_visbeck_alpha>0.13</config_GM_visbeck_alpha>
-<config_GM_visbeck_min_depth>50.0</config_GM_visbeck_min_depth>
 <config_GM_visbeck_max_depth>1000.0</config_GM_visbeck_max_depth>
 <config_GM_visbeck_min_kappa>300.0</config_GM_visbeck_min_kappa>
 <config_GM_visbeck_max_kappa>1200.0</config_GM_visbeck_max_kappa>
