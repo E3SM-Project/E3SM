@@ -4126,6 +4126,18 @@ Full pathname of boundary dataset for tropopause climatology.
 Default: set by build-namelist.
 </entry>
 
+<entry id="tropopause_output_all" type="logical" category="tropo"
+       group="tropopause_nl" valid_values="" >
+Flag to output optional tropopause variables.
+Default: FALSE
+</entry>
+
+<entry id="tropopause_E90_thrd" type="real" category="tropo"
+       group="tropopause_nl" valid_values="" >
+E90 tropopause vmr threshold.
+Default: 100.e-9
+</entry>
+
 <!-- CAM-CHEM -->
 
 <entry id="ipcc_aircraft_emis" type="logical" category="cam_chem"
