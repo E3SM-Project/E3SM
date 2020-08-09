@@ -82,6 +82,8 @@ mpas_stack.o:
 
 mpas_parse_geoindex.o:
 
+mpas_geotile_manager.o: mpas_parse_geoindex.o
+
 mpas_init_atm_static.o: \
 	mpas_atm_advection.o \
 	mpas_init_atm_hinterp.o \
