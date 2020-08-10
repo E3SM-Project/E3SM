@@ -23,6 +23,7 @@ namespace unit_test {
 
 TEST_CASE("shoc_conv_time_length", "shoc") {
   constexpr Int shcol    = 5;
+  constexpr Int nlev     = 1;
 
   // Tests to compute the eddy turnover timescale from the 
   //   subroutine compute_conv_time_shoc_length.
@@ -39,7 +40,7 @@ TEST_CASE("shoc_conv_time_length", "shoc") {
   Real conv_vel[shcol] = {10.0, -3.5, 0.1, -100.0, -0.4};
 
   // Initialzie data structure for bridgeing to F90
-  SHOCConvTimeData SDS(shcol);
+  SHOCConvtimeData SDS(shcol);
 
   // Test that the inputs are reasonable.
   REQUIRE(SDS.shcol > 0);

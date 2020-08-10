@@ -297,6 +297,18 @@ contains
 
     call compute_conv_vel_shoc_length(nlev,shcol,pblh,zt_grid,dz_zt,thv,wthv_sec,conv_vel)
 
-  end subroutine compute_conv_vel_shoc_length_c   
+  end subroutine compute_conv_vel_shoc_length_c 
+  
+  subroutine compute_conv_time_shoc_length_c(shcol,pblh,conv_vel,tscale) bind (C)
+    use shoc, only: compute_conv_time_shoc_length
+
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in) :: pblh(shcol)  
+    real(kind=c_real), intent(inout) :: conv_vel(shcol)
+    real(kind=c_real), intent(out) :: tscale(shcol)
+
+    call compute_conv_time_shoc_length(shcol,pblh,conv_vel,tscale)
+
+  end subroutine compute_conv_time_shoc_length_c      
 
 end module shoc_iso_c

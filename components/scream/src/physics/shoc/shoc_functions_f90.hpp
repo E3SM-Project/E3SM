@@ -383,7 +383,7 @@ struct SHOCBruntlengthData {
   Real *brunt;
 
   //functions to initialize data
-  SHOCBruntlengthData(Int shcol_, Int nevl_, Int nlevi_);
+  SHOCBruntlengthData(Int shcol_, Int nlev_, Int nlevi_);
   SHOCBruntlengthData(const SHOCBruntlengthData &rhs);
   SHOCBruntlengthData &operator=(const SHOCBruntlengthData &rhs);
 
@@ -425,7 +425,7 @@ struct SHOCInflengthData {
   Real *l_inf;
 
   //functions to initialize data
-  SHOCInflengthData(Int shcol_, Int nevl_);
+  SHOCInflengthData(Int shcol_, Int nlev_);
   SHOCInflengthData(const SHOCInflengthData &rhs);
   SHOCInflengthData &operator=(const SHOCInflengthData &rhs);
 
@@ -454,7 +454,7 @@ struct SHOCInflengthData {
 
 void compute_l_inf_shoc_length(Int nlev, SHOCInflengthData &d);
 
-//Create data structure to hold data for compute_l_inf_shoc_length
+//Create data structure to hold data for compute_conv_vel_shoc_length
 struct SHOCConvvelData {
   static constexpr size_t NUM_ARRAYS   = 4; //# of arrays with values at cell centers (zt grid)
   static constexpr size_t NUM_ARRAYS_c = 2; //# of arrays with column only dimensions
@@ -467,7 +467,7 @@ struct SHOCConvvelData {
   Real *conv_vel;
 
   //functions to initialize data
-  SHOCConvvelData(Int shcol_, Int nevl_);
+  SHOCConvvelData(Int shcol_, Int nlev_);
   SHOCConvvelData(const SHOCConvvelData &rhs);
   SHOCConvvelData &operator=(const SHOCConvvelData &rhs);
 
@@ -497,6 +497,43 @@ struct SHOCConvvelData {
 };//SHOCConvvelData
 
 void compute_conv_vel_shoc_length(Int nlev, SHOCConvvelData &d);
+
+//Create data structure to hold data for compute_conv_time_shoc_length
+struct SHOCConvtimeData {
+  static constexpr size_t NUM_ARRAYS_c = 3; //# of arrays with column only dimensions
+
+  // Inputs
+  Int   shcol, nlev;
+  Real *pblh, *conv_vel;
+
+  // Outputs
+  Real *tscale;
+
+  //functions to initialize data
+  SHOCConvtimeData(Int shcol_);
+  SHOCConvtimeData(const SHOCConvtimeData &rhs);
+  SHOCConvtimeData &operator=(const SHOCConvtimeData &rhs);
+
+  void init_ptrs();
+
+  // Internals
+  Int m_shcol, m_totalc;
+  std::vector<Real> m_datac;
+
+  template <util::TransposeDirection::Enum D>
+  void transpose() {
+    SHOCConvtimeData d_trans(*this);
+
+    // Transpose on the column only grid
+    util::transpose<D>(pblh, d_trans.pblh, shcol, 1);
+    util::transpose<D>(conv_vel, d_trans.conv_vel, shcol, 1);
+    util::transpose<D>(tscale, d_trans.tscale, shcol, 1);
+
+    *this = std::move(d_trans);
+  }
+};//SHOCConvtimeData
+
+void compute_conv_time_shoc_length(Int nlev, SHOCConvtimeData &d);
 
 }  // namespace shoc
 }  // namespace scream

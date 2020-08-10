@@ -57,6 +57,10 @@ void compute_l_inf_shoc_length_c(Int nlev, Int shcol, Real *zt_grid, Real *dz_zt
 void compute_conv_vel_shoc_length_c(Int nlev, Int shcol, Real *pblh, Real *zt_grid,
                                     Real *dz_zt, Real *thv, Real *wthv_sec,
 				    Real *conv_vel);
+
+void compute_conv_time_shoc_length_c(Int shcol, Real *pblh, Real *conv_vel, 
+                                     Real *tscale);			    
+				    
 }
 
 namespace scream {
@@ -751,7 +755,7 @@ void compute_l_inf_shoc_length(Int nlev, SHOCInflengthData &d) {
   d.transpose<util::TransposeDirection::f2c>();
 }
 
-//Initialize data for compute_l_inf_shoc_length function
+//Initialize data for compute_conv_vel_shoc_length function
 SHOCConvvelData::SHOCConvvelData(Int shcol_, Int nlev_)
   : shcol(shcol_),
     nlev(nlev_),
@@ -814,6 +818,55 @@ void compute_conv_vel_shoc_length(Int nlev, SHOCConvvelData &d) {
   d.transpose<util::TransposeDirection::c2f>();
   compute_conv_vel_shoc_length_c(d.nlev,d.shcol,d.pblh,d.zt_grid,
                                  d.dz_zt,d.thv,d.wthv_sec,d.conv_vel);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+//Initialize data for compute_conv_time_shoc_length function
+SHOCConvtimeData::SHOCConvtimeData(Int shcol_)
+  : shcol(shcol_),
+    m_totalc(shcol_),
+    m_datac(NUM_ARRAYS_c * m_totalc,0) {
+  init_ptrs();
+}
+
+SHOCConvtimeData::SHOCConvtimeData(const SHOCConvtimeData &rhs)
+  : shcol(rhs.shcol),
+    m_totalc(rhs.m_totalc),
+    m_datac(rhs.m_datac) {
+  init_ptrs();
+}
+
+
+SHOCConvtimeData  &SHOCConvtimeData::operator=(const SHOCConvtimeData &rhs) {
+  init_ptrs();
+
+  shcol    = rhs.shcol;
+  m_totalc = rhs.m_totalc;
+  m_datac  = rhs.m_datac;  // Copy
+
+  return *this;
+}
+
+
+void SHOCConvtimeData::init_ptrs() {
+  Int offset         = 0;
+  Real *data_begin_c = m_datac.data();
+
+  std::array<Real **, NUM_ARRAYS_c> ptrs_c = {&pblh, &conv_vel, &tscale};
+
+  offset = 0;
+  for(size_t i = 0; i < NUM_ARRAYS_c; ++i) {
+    *ptrs_c[i] = data_begin_c + offset;
+    offset += m_totalc;
+  }
+}
+
+//Initialize shoc parameterization, trnaspose data from c to fortran,
+//call compute_conv_time_shoc_length fortran subroutine and transpose data back to c
+void compute_conv_time_shoc_length(Int nlev, SHOCConvtimeData &d) {
+  shoc_init(nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  compute_conv_time_shoc_length_c(d.shcol,d.pblh,d.conv_vel,d.tscale);
   d.transpose<util::TransposeDirection::f2c>();
 }
 
