@@ -89,7 +89,7 @@ TEST_CASE("shoc_vertflux", "shoc") {
   }
 
   // Call the fortran implementation
-  calc_shoc_vertflux(nlev, SDS);
+  calc_shoc_vertflux(SDS);
 
   // Check the results
   for(Int s = 0; s < SDS.shcol; ++s) {

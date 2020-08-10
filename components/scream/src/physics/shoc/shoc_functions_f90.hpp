@@ -59,12 +59,11 @@ struct SHOCGridData {
   }
 };
 
-// This function initialzes the grid used by shoc. Given the 
-// locations of the cell center (location of thermodynaics quantities), cell 
+// This function initialzes the grid used by shoc. Given the
+// locations of the cell center (location of thermodynaics quantities), cell
 // interfaces, and pressure gradient the functon returns dz_zi, dz_zt,
-// and density. 
+// and density.
 void shoc_grid(Int nlev, SHOCGridData &d);
-
 
 //Create data structure to hold data for calc_shoc_vertflux
 struct SHOCVertfluxData {
@@ -86,9 +85,8 @@ struct SHOCVertfluxData {
   void init_ptrs();
 
   // Internals
-  Int m_shcol, m_nlev, m_nlevi, m_total, m_totali;
-  std::vector<Real> m_data;
-  std::vector<Real> m_datai;
+  Int m_total, m_totali;
+  std::vector<Real> m_data, m_datai;
 
   template <util::TransposeDirection::Enum D>
   void transpose() {
@@ -106,7 +104,7 @@ struct SHOCVertfluxData {
   }
 };//SHOCVertfluxData
 
-void calc_shoc_vertflux(Int nlev, SHOCVertfluxData &d);
+void calc_shoc_vertflux(SHOCVertfluxData &d);
 
 struct SHOCVarorcovarData {
   static constexpr size_t NUM_ARRAYS   = 2;

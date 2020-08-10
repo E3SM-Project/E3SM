@@ -60,6 +60,9 @@ struct Functions
   template <typename S>
   using uview_1d = typename ko::template Unmanaged<view_1d<S> >;
 
+  template <typename S>
+  using uview_2d = typename ko::template Unmanaged<view_2d<S> >;
+
   using MemberType = typename KT::MemberType;
 
   using Workspace = typename WorkspaceManager<Spack, Device>::Workspace;
@@ -67,6 +70,14 @@ struct Functions
   //
   // --------- Functions ---------
   //
+  static void calc_shoc_vertflux(
+    const MemberType& team,
+    const Int& shcol, const Int& nlev, const Int& nlevi,
+    const uview_2d<const Spack>& tkh_zi,
+    const uview_2d<const Spack>& dz_zi,
+    const uview_2d<const Spack>& invar,
+    const uview_2d<Spack>& vertflux);
+
 }; // struct Functions
 
 } // namespace shoc
