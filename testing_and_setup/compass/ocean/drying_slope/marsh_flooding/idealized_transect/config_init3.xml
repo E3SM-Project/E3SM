@@ -13,7 +13,7 @@
 		<option name="config_use_vegetation_drag">.true.</option>
 		<option name="config_idealized_vegetation_diameter">0.08</option>
 		<option name="config_idealized_vegetation_height">0.5</option>
-		<option name="config_idealized_vegetation_density">5000.0</option>
+		<option name="config_idealized_vegetation_density">250.0</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="init">

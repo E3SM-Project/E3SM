@@ -10,15 +10,11 @@
 		<template file="init_idealized_transect.xml" path_base="script_configuration_dir"/>
 		<option name="config_use_variable_drag">.true.</option>
 		<option name="config_use_idealized_transect">.true.</option>
-		<option name="config_use_vegetation_drag">.true.</option>
-		<option name="config_idealized_vegetation_diameter">0.08</option>
-		<option name="config_idealized_vegetation_height">0.1</option>
-		<option name="config_idealized_vegetation_density">5000.0</option>
+		<option name="config_idealized_transect_roughness_marsh">0.065</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="init">
 		<template file="init_template.xml" path_base="script_configuration_dir"/>
-		<template file="init_vegetation_properties.xml" path_base="script_configuration_dir"/>
 	</streams>
 
 	<run_script name="run.py">

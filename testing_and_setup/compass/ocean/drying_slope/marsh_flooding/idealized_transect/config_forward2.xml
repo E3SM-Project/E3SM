@@ -7,13 +7,10 @@
 	<namelist name="namelist.ocean" mode="forward">
 		<template file="forward_template.xml" path_base="script_configuration_dir"/>
 		<template file="forward_idealized_transect.xml" path_base="script_configuration_dir"/>
-		<option name="config_use_vegetation_drag">.true.</option>
-		<option name="config_use_vegetation_manning_equation">.true.</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">
 		<template file="forward_template.xml" path_base="script_configuration_dir"/>
-		<template file="forward_vegetation_properties.xml" path_base="script_configuration_dir"/>
 	</streams>
 
 	<run_script name="run.py">

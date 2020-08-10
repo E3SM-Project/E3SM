@@ -10,7 +10,7 @@
 		<template file="init_idealized_transect.xml" path_base="script_configuration_dir"/>
 		<option name="config_use_variable_drag">.true.</option>
 		<option name="config_use_idealized_transect">.true.</option>
-		<option name="config_idealized_transect_roughness_marsh">0.065</option>
+		<option name="config_idealized_transect_roughness_marsh">0.025</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="init">

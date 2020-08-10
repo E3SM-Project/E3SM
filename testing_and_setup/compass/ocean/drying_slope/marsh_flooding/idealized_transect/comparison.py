@@ -11,9 +11,9 @@ import os
 #import cv2
 # plot tidal amplitude at open boundary
 
-fname1 = 'NoVeg'
-fname2 = 'VegHeight0.1'
-fname3 = 'VegHeight0.5'
+fname1 = 'NoVegetation'
+fname2 = 'ConstantVegManning'
+fname3 = 'VegManningEquation'
 
 # mpas-o
 ds1 = xr.open_dataset(fname1+'.nc')
@@ -34,10 +34,10 @@ x = np.linspace(0,48.0,100)
 y = 1.5*np.sin(x*np.pi/12.0) - 3.0
 plt.plot(x, y, 'k-', lw=3, label='analytical')
 
-plt.legend(frameon=False, loc='upper right')
+plt.legend(frameon=False, loc='upper right', fontsize=8)
 plt.ylabel('Tidal amplitude (m)')
 plt.xlabel('Time (hrs)')
-plt.suptitle('Tidal amplitude forcing (right side) for test cases and analytical')
+plt.suptitle('Tidal amplitude forcing for test cases and analytical')
 plt.savefig('tidalcomparison.png',dpi=300)
 plt.close()
 
@@ -45,7 +45,7 @@ plt.close()
 bottomDepth = ds1.bottomDepth.values.reshape((116, 4))[:,1]
 x_along = np.linspace(0,8,116)
 # plot water elevation at selected time slices
-times = np.linspace(0.0,2.0,21)
+times = np.linspace(0.0,2.0,41)
 ii = 0
 figname_prefix = 'Waterlevel'
 for atime in times:

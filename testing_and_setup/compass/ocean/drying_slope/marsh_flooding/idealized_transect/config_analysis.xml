@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <config case="analysis">
   <add_link source="../comparison.py" dest="comparison.py"/>
-	<add_link source="../forward1/output.nc" dest="NoVeg.nc"/>
-	<add_link source="../forward2/output.nc" dest="VegHeight0.1.nc"/>
-	<add_link source="../forward3/output.nc" dest="VegHeight0.5.nc"/>
+	<add_link source="../forward1/output.nc" dest="NoVegetation.nc"/>
+	<add_link source="../forward2/output.nc" dest="ConstantVegManning.nc"/>
+	<add_link source="../forward3/output.nc" dest="VegManningEquation.nc"/>
 
 	<run_script name="run.py">
 		<step executable="./comparison.py">
