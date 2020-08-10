@@ -59,7 +59,11 @@ void compute_conv_vel_shoc_length_c(Int nlev, Int shcol, Real *pblh, Real *zt_gr
 				    Real *conv_vel);
 
 void compute_conv_time_shoc_length_c(Int shcol, Real *pblh, Real *conv_vel, 
-                                     Real *tscale);			    
+                                     Real *tscale);		
+				     
+void compute_shoc_mix_shoc_length_c(Int nlev, Int shcol,Real *tke, Real* brunt,
+                                    Real *tscale, Real *zt_grid, Real *l_inf,
+				    Real *shoc_mix);			     	    
 				    
 }
 
@@ -812,7 +816,7 @@ void SHOCConvvelData::init_ptrs() {
 }
 
 //Initialize shoc parameterization, trnaspose data from c to fortran,
-//call compute_conv_vel_shoc_length fortran subroutine and transpose data back to c
+//call compute_conv_time_shoc_length fortran subroutine and transpose data back to c
 void compute_conv_vel_shoc_length(Int nlev, SHOCConvvelData &d) {
   shoc_init(nlev, true);
   d.transpose<util::TransposeDirection::c2f>();
@@ -867,6 +871,72 @@ void compute_conv_time_shoc_length(Int nlev, SHOCConvtimeData &d) {
   shoc_init(nlev, true);
   d.transpose<util::TransposeDirection::c2f>();
   compute_conv_time_shoc_length_c(d.shcol,d.pblh,d.conv_vel,d.tscale);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+//Initialize data for compute_shoc_mix_shoc_length function
+SHOCMixlengthData::SHOCMixlengthData(Int shcol_, Int nlev_)
+  : shcol(shcol_),
+    nlev(nlev_),
+    m_total(shcol_ * nlev_),
+    m_totalc(shcol_),
+    m_data(NUM_ARRAYS * m_total, 0),
+    m_datac(NUM_ARRAYS_c * m_totalc,0) {
+  init_ptrs();
+}
+
+SHOCMixlengthData::SHOCMixlengthData(const SHOCMixlengthData &rhs)
+  : shcol(rhs.shcol),
+    nlev(rhs.nlev),
+    m_total(rhs.m_total),
+    m_totalc(rhs.m_totalc),
+    m_data(rhs.m_data),
+    m_datac(rhs.m_datac) {
+  init_ptrs();
+}
+
+
+SHOCMixlengthData  &SHOCMixlengthData::operator=(const SHOCMixlengthData &rhs) {
+  init_ptrs();
+
+  shcol    = rhs.shcol;
+  nlev     = rhs.nlev;
+  m_total  = rhs.m_total;
+  m_totalc = rhs.m_totalc;
+  m_data   = rhs.m_data;
+  m_datac  = rhs.m_datac;  // Copy
+
+  return *this;
+}
+
+
+void SHOCMixlengthData::init_ptrs() {
+  Int offset         = 0;
+  Real *data_begin   = m_data.data();
+  Real *data_begin_c = m_datac.data();
+
+  std::array<Real **, NUM_ARRAYS> ptrs     = {&tke, &brunt, &zt_grid, &shoc_mix};
+  std::array<Real **, NUM_ARRAYS_c> ptrs_c = {&tscale, &l_inf};
+
+  for(size_t i = 0; i < NUM_ARRAYS; ++i) {
+    *ptrs[i] = data_begin + offset;
+    offset += m_total;
+  }
+
+  offset = 0;
+  for(size_t i = 0; i < NUM_ARRAYS_c; ++i) {
+    *ptrs_c[i] = data_begin_c + offset;
+    offset += m_totalc;
+  }
+}
+
+//Initialize shoc parameterization, trnaspose data from c to fortran,
+//call compute_shoc_mix_shoc_length fortran subroutine and transpose data back to c
+void compute_shoc_mix_shoc_length(Int nlev, SHOCMixlengthData &d) {
+  shoc_init(nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  compute_shoc_mix_shoc_length_c(d.nlev,d.shcol,d.tke,d.brunt,d.tscale,
+                                 d.zt_grid,d.l_inf,d.shoc_mix);
   d.transpose<util::TransposeDirection::f2c>();
 }
 

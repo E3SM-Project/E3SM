@@ -309,6 +309,25 @@ contains
 
     call compute_conv_time_shoc_length(shcol,pblh,conv_vel,tscale)
 
-  end subroutine compute_conv_time_shoc_length_c      
+  end subroutine compute_conv_time_shoc_length_c 
+  
+  subroutine compute_shoc_mix_shoc_length_c(nlev,shcol,tke,brunt,tscale,&
+                                         zt_grid,l_inf,shoc_mix) bind (C)
+    use shoc, only: compute_shoc_mix_shoc_length
+
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in) :: tke(shcol,nlev)
+    real(kind=c_real), intent(in) :: brunt(shcol,nlev)
+    real(kind=c_real), intent(in) :: tscale(shcol)
+    real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
+    real(kind=c_real), intent(in) :: l_inf(shcol) 
+
+    real(kind=c_real), intent(out) :: shoc_mix(shcol,nlev)
+
+    call compute_shoc_mix_shoc_length(nlev,shcol,tke,brunt,tscale,zt_grid,&
+                                      l_inf,shoc_mix)
+
+  end subroutine compute_shoc_mix_shoc_length_c       
 
 end module shoc_iso_c

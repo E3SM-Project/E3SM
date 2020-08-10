@@ -535,6 +535,50 @@ struct SHOCConvtimeData {
 
 void compute_conv_time_shoc_length(Int nlev, SHOCConvtimeData &d);
 
+//Create data structure to hold data for compute_shoc_mix_shoc_length
+struct SHOCMixlengthData {
+  static constexpr size_t NUM_ARRAYS   = 4; //# of arrays with values at cell centers (zt grid)
+  static constexpr size_t NUM_ARRAYS_c = 2; //# of arrays with column only dimensions
+
+  // Inputs
+  Int   shcol, nlev;
+  Real *tke, *brunt, *tscale, *zt_grid, *l_inf;
+
+  // Outputs
+  Real *shoc_mix;
+
+  //functions to initialize data
+  SHOCMixlengthData(Int shcol_, Int nlev_);
+  SHOCMixlengthData(const SHOCMixlengthData &rhs);
+  SHOCMixlengthData &operator=(const SHOCMixlengthData &rhs);
+
+  void init_ptrs();
+
+  // Internals
+  Int m_shcol, m_nlev, m_nlevc, m_total, m_totalc;
+  std::vector<Real> m_data;
+  std::vector<Real> m_datac;
+
+  template <util::TransposeDirection::Enum D>
+  void transpose() {
+    SHOCMixlengthData d_trans(*this);
+
+    // Transpose on the zt grid
+    util::transpose<D>(tke, d_trans.tke, shcol, nlev);
+    util::transpose<D>(brunt, d_trans.brunt, shcol, nlev);
+    util::transpose<D>(zt_grid, d_trans.zt_grid, shcol, nlev);
+    util::transpose<D>(shoc_mix, d_trans.shoc_mix, shcol, nlev);
+
+    // Transpose on the column only grid
+    util::transpose<D>(l_inf, d_trans.l_inf, shcol, 1);
+    util::transpose<D>(tscale, d_trans.tscale, shcol, 1);
+
+    *this = std::move(d_trans);
+  }
+};//SHOCMixlengthData
+
+void compute_shoc_mix_shoc_length(Int nlev, SHOCMixlengthData &d);
+
 }  // namespace shoc
 }  // namespace scream
 
