@@ -141,7 +141,96 @@ contains
 	   
   end subroutine calc_shoc_varorcovar_c      
 
+  subroutine integ_column_stability_c(nlev, shcol, dz_zt, pres, brunt, brunt_int) bind (C)
+    use shoc, only: integ_column_stability
 
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in) :: dz_zt(shcol,nlev)
+    real(kind=c_real), intent(in) :: pres(shcol,nlev)
+    real(kind=c_real), intent(in) :: brunt(shcol,nlev)
+    
+    real(kind=c_real), intent(out) :: brunt_int(shcol)
+
+    call integ_column_stability(nlev, shcol, dz_zt, pres, brunt, brunt_int)
+
+  end subroutine integ_column_stability_c
+  
+  subroutine compute_shr_prod_c(nlevi, nlev, shcol, dz_zi, u_wind, v_wind, sterm) bind (C)
+    use shoc, only: compute_shr_prod
+
+    integer(kind=c_int), intent(in), value :: nlevi
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in) :: dz_zi(shcol,nlevi)
+    real(kind=c_real), intent(in) :: u_wind(shcol,nlev)
+    real(kind=c_real), intent(in) :: v_wind(shcol,nlev)
+    
+    real(kind=c_real), intent(out) :: sterm(shcol,nlevi)
+
+    call compute_shr_prod(nlevi, nlev, shcol, dz_zi, u_wind, v_wind, sterm)
+
+  end subroutine compute_shr_prod_c 
+  
+  subroutine isotropic_ts_c(nlev, shcol, brunt_int, tke, a_diss, brunt, isotropy) bind (C)
+    use shoc, only: isotropic_ts
+
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in) :: brunt_int(shcol)
+    real(kind=c_real), intent(in) :: tke(shcol,nlev)
+    real(kind=c_real), intent(in) :: a_diss(shcol,nlev)
+    real(kind=c_real), intent(in) :: brunt(shcol,nlev)
+    
+    real(kind=c_real), intent(out) :: isotropy(shcol,nlev)
+
+    call isotropic_ts(nlev, shcol, brunt_int, tke, a_diss, brunt, isotropy)
+
+  end subroutine isotropic_ts_c 
+  
+  subroutine adv_sgs_tke_c(nlev, shcol, dtime, shoc_mix, wthv_sec, &
+                           sterm_zt, tk, tke, a_diss) bind (C)
+    use shoc, only: adv_sgs_tke
+
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in), value :: dtime
+    real(kind=c_real), intent(in) :: shoc_mix(shcol,nlev)
+    real(kind=c_real), intent(in) :: wthv_sec(shcol,nlev)
+    real(kind=c_real), intent(in) :: sterm_zt(shcol,nlev)
+    real(kind=c_real), intent(in) :: tk(shcol,nlev)
+    
+    real(kind=c_real), intent(inout) :: tke(shcol,nlev)
+    
+    real(kind=c_real), intent(out) :: a_diss(shcol,nlev)
+
+    call adv_sgs_tke(nlev, shcol, dtime, shoc_mix, wthv_sec, &
+                     sterm_zt, tk, tke, a_diss)
+
+  end subroutine adv_sgs_tke_c    
+  
+  subroutine eddy_diffusivities_c(nlev, shcol, obklen, pblh, zt_grid, &
+                          shoc_mix, sterm_zt, isotropy, tke, tkh, tk) bind (C)
+    use shoc, only: eddy_diffusivities
+
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in) :: obklen(shcol)
+    real(kind=c_real), intent(in) :: pblh(shcol)
+    real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
+    real(kind=c_real), intent(in) :: shoc_mix(shcol,nlev)
+    real(kind=c_real), intent(in) :: sterm_zt(shcol,nlev)
+    real(kind=c_real), intent(in) :: isotropy(shcol,nlev)    
+    real(kind=c_real), intent(in) :: tke(shcol,nlev)
+    
+    real(kind=c_real), intent(out) :: tkh(shcol,nlev)
+    real(kind=c_real), intent(out) :: tk(shcol,nlev)
+
+    call eddy_diffusivities(nlev, shcol, obklen, pblh, zt_grid, &
+     shoc_mix, sterm_zt, isotropy, tke, tkh, tk)
+
+  end subroutine eddy_diffusivities_c   
+  
   subroutine calc_shoc_vertflux_c(shcol, nlev, nlevi, tkh_zi, dz_zi, invar, vertflux) bind (C)
     use shoc, only: calc_shoc_vertflux
 
