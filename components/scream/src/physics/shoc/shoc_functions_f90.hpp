@@ -17,137 +17,125 @@
 namespace scream {
 namespace shoc {
 
-///////////////////////////////////////////////////////////////////////////////
-// Converted subroutine helpers go here.
-struct SHOCGridData {
+// Base class for common SHOC data setup
+struct SHOCDataBase
+{
+  Int shcol, nlev, nlevi;
+
+  SHOCDataBase(Int shcol_, Int nlev_, Int nlevi_,
+               const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i);
+
+  SHOCDataBase(const SHOCDataBase &rhs);
+  SHOCDataBase &operator=(const SHOCDataBase &rhs);
+
+  template <util::TransposeDirection::Enum D>
+  void transpose() {
+    SHOCDataBase d_trans(*this);
+
+    // Transpose on the zt grid
+    for (size_t i = 0; i < m_ptrs.size(); ++i) {
+      util::transpose<D>(*(m_ptrs[i]), *(d_trans.m_ptrs[i]), shcol, nlev);
+    }
+
+    // Transpose on the zi grid
+    for (size_t i = 0; i < m_ptrs_i.size(); ++i) {
+      util::transpose<D>(*(m_ptrs_i[i]), *(d_trans.m_ptrs_i[i]), shcol, nlevi);
+    }
+
+    *this = std::move(d_trans);
+    init_ptrs();
+  }
+
+  Int total() const { return m_total; }
+  Int totali() const { return m_totali; }
+
+ private:
+  void init_ptrs();
+
+  // Internals
+  Int m_total, m_totali;
+  std::vector<Real**> m_ptrs, m_ptrs_i;
+  std::vector<Real> m_data;
+};
+
+struct SHOCGridData : public SHOCDataBase {
   static constexpr size_t NUM_ARRAYS   = 4;
   static constexpr size_t NUM_ARRAYS_i = 2;
 
   // Inputs
-  Int shcol, nlev, nlevi;
   Real *zt_grid, *zi_grid, *pdel;
 
   // In/out
   Real *dz_zt, *dz_zi, *rho_zt;
 
-  SHOCGridData(Int shcol_, Int nevl_, Int nlevi_);
-  SHOCGridData(const SHOCGridData &rhs);
-  SHOCGridData &operator=(const SHOCGridData &rhs);
+  SHOCGridData(Int shcol_, Int nlev_, Int nlevi_) :
+    SHOCDataBase(shcol_, nlev_, nlevi_, {&zt_grid, &dz_zt, &pdel, &rho_zt}, {&zi_grid, &dz_zi}) {}
 
-  void init_ptrs();
+  SHOCGridData(const SHOCGridData &rhs) : SHOCDataBase(rhs) {}
 
-  // Internals
-  Int m_shcol, m_nlev, m_nlevi, m_total, m_totali;
-  std::vector<Real> m_data;
-  std::vector<Real> m_datai;
-
-  template <util::TransposeDirection::Enum D>
-  void transpose() {
-    SHOCGridData d_trans(*this);
-
-    // Transpose on the zt grid
-    util::transpose<D>(zt_grid, d_trans.zt_grid, shcol, nlev);
-    util::transpose<D>(dz_zt, d_trans.dz_zt, shcol, nlev);
-    util::transpose<D>(pdel, d_trans.pdel, shcol, nlev);
-    util::transpose<D>(rho_zt, d_trans.rho_zt, shcol, nlev);
-
-    // Transpose on the zi grid
-    util::transpose<D>(zi_grid, d_trans.zi_grid, shcol, nlevi);
-    util::transpose<D>(dz_zi, d_trans.dz_zi, shcol, nlevi);
-
-    *this = std::move(d_trans);
-  }
+  SHOCGridData &operator=(const SHOCGridData &rhs) { SHOCDataBase::operator=(rhs); return *this; }
 };
 
-// This function initialzes the grid used by shoc. Given the
-// locations of the cell center (location of thermodynaics quantities), cell
-// interfaces, and pressure gradient the functon returns dz_zi, dz_zt,
-// and density.
-void shoc_grid(Int nlev, SHOCGridData &d);
-
 //Create data structure to hold data for calc_shoc_vertflux
-struct SHOCVertfluxData {
+struct SHOCVertfluxData : public SHOCDataBase {
   static constexpr size_t NUM_ARRAYS   = 1; //# of arrays with values at cell centers (zt grid)
   static constexpr size_t NUM_ARRAYS_i = 3; //# of arrays with values at interface centers (zi grid)
 
   // Inputs
-  Int   shcol, nlev, nlevi;
   Real *tkh_zi, *dz_zi, *invar;
 
   // In/out
   Real *vertflux;
 
-  //functions to initialize data
-  SHOCVertfluxData(Int shcol_, Int nevl_, Int nlevi_);
-  SHOCVertfluxData(const SHOCVertfluxData &rhs);
-  SHOCVertfluxData &operator=(const SHOCVertfluxData &rhs);
+  SHOCVertfluxData(Int shcol_, Int nlev_, Int nlevi_) :
+    SHOCDataBase(shcol_, nlev_, nlevi_, {&invar}, {&tkh_zi, &dz_zi, &vertflux}) {}
 
-  void init_ptrs();
+  SHOCVertfluxData(const SHOCVertfluxData &rhs) : SHOCDataBase(rhs) {}
 
-  // Internals
-  Int m_total, m_totali;
-  std::vector<Real> m_data, m_datai;
+  SHOCVertfluxData &operator=(const SHOCVertfluxData &rhs) { SHOCDataBase::operator=(rhs); return *this; }
+}; //SHOCVertfluxData
 
-  template <util::TransposeDirection::Enum D>
-  void transpose() {
-    SHOCVertfluxData d_trans(*this);
-
-    // Transpose on the zt grid
-    util::transpose<D>(invar, d_trans.invar, shcol, nlev);
-
-    // Transpose on the zi grid
-    util::transpose<D>(tkh_zi, d_trans.tkh_zi, shcol, nlevi);
-    util::transpose<D>(dz_zi, d_trans.dz_zi, shcol, nlevi);
-    util::transpose<D>(vertflux, d_trans.vertflux, shcol, nlevi);
-
-    *this = std::move(d_trans);
-  }
-};//SHOCVertfluxData
-
-void calc_shoc_vertflux(SHOCVertfluxData &d);
-
-struct SHOCVarorcovarData {
+struct SHOCVarorcovarData : public SHOCDataBase {
   static constexpr size_t NUM_ARRAYS   = 2;
   static constexpr size_t NUM_ARRAYS_i = 4;
 
   // Inputs
-  Int   shcol, nlev, nlevi;
   Real tunefac;
   Real *tkh_zi, *dz_zi, *isotropy_zi, *invar1, *invar2;
 
   // In/out
   Real *varorcovar;
 
-  SHOCVarorcovarData(Int shcol_, Int nlev_, Int nlevi_, Real tunefac_);
-  SHOCVarorcovarData(const SHOCVarorcovarData &rhs);
-  SHOCVarorcovarData &operator=(const SHOCVarorcovarData &rhs);
+  SHOCVarorcovarData(Int shcol_, Int nlev_, Int nlevi_, Real tunefac_) :
+    SHOCDataBase(shcol_, nlev_, nlevi_, {&invar1, &invar2}, {&tkh_zi, &dz_zi, &isotropy_zi, &varorcovar}), tunefac(tunefac_) {}
 
-  void init_ptrs();
+  SHOCVarorcovarData(const SHOCVarorcovarData &rhs) : SHOCDataBase(rhs), tunefac(rhs.tunefac) {}
 
-  // Internals
-  Int m_shcol, m_nlev, m_nlevi, m_total, m_totali;
-  std::vector<Real> m_data;
-  std::vector<Real> m_datai;
-
-  template <util::TransposeDirection::Enum D>
-  void transpose() {
-    SHOCVarorcovarData d_trans(*this);
-
-    // Transpose on the zt grid
-    util::transpose<D>(invar1, d_trans.invar1, shcol, nlev);
-    util::transpose<D>(invar2, d_trans.invar2, shcol, nlev);
-
-    // Transpose on the zi grid
-    util::transpose<D>(tkh_zi, d_trans.tkh_zi, shcol, nlevi);
-    util::transpose<D>(dz_zi, d_trans.dz_zi, shcol, nlevi);
-    util::transpose<D>(isotropy_zi, d_trans.isotropy_zi, shcol, nlevi);
-    util::transpose<D>(varorcovar, d_trans.varorcovar, shcol, nlevi);
-
-    *this = std::move(d_trans);
-  }
+  SHOCVarorcovarData &operator=(const SHOCVarorcovarData &rhs)
+  { SHOCDataBase::operator=(rhs); tunefac = rhs.tunefac; return *this; }
 };//SHOCVarorcovarData
 
-void calc_shoc_varorcovar(Int nlev, SHOCVarorcovarData &d);
+//
+// Glue functions to call fortran from from C++ with the Data struct
+//
+
+// This function initialzes the grid used by shoc. Given the
+// locations of the cell center (location of thermodynaics quantities), cell
+// interfaces, and pressure gradient the functon returns dz_zi, dz_zt,
+// and density.
+void shoc_grid(SHOCGridData &d);
+void calc_shoc_vertflux(SHOCVertfluxData &d);
+void calc_shoc_varorcovar(SHOCVarorcovarData &d);
+
+//
+// _f functions decls
+//
+extern "C" {
+
+void calc_shoc_vertflux_f(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
+			  Real *dz_zi, Real *invar, Real *vertflux);
+
+}
 
 }  // namespace shoc
 }  // namespace scream

@@ -74,7 +74,7 @@ TEST_CASE("shoc_grid", "shoc") {
   }
 
   // Call the fortran implementation
-  shoc_grid(nlev, SDS);
+  shoc_grid(SDS);
 
   // First check that dz is correct
   for(Int s = 0; s < shcol; ++s) {

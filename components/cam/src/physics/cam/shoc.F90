@@ -1380,9 +1380,9 @@ subroutine calc_shoc_vertflux(&
   !  downgradient diffusion for a given set of
   !  input variables
 
-#ifdef SCREAM_CONFIG_IS_CMAKE
-    use shoc_iso_f, only: calc_shoc_vertflux_f
-#endif
+! #ifdef SCREAM_CONFIG_IS_CMAKE
+!     use shoc_iso_f, only: calc_shoc_vertflux_f
+! #endif
 
   implicit none
 
@@ -1407,13 +1407,13 @@ subroutine calc_shoc_vertflux(&
   integer :: i, k, kt
   real(rtype) :: grid_dz
 
-#ifdef SCREAM_CONFIG_IS_CMAKE
-   if (use_cxx) then
-      call calc_shoc_vertflux_f(shcol,nlev,nlevi,tkh_zi,dz_zi,invar,&  ! Input
-           vertflux)                              ! Input/Output)
-      return
-   endif
-#endif
+! #ifdef SCREAM_CONFIG_IS_CMAKE
+!    if (use_cxx) then
+!       call calc_shoc_vertflux_f(shcol,nlev,nlevi,tkh_zi,dz_zi,invar,&  ! Input
+!            vertflux)                              ! Input/Output)
+!       return
+!    endif
+! #endif
 
   do k=2,nlev
 
