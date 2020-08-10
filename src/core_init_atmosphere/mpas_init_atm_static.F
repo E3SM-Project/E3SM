@@ -464,9 +464,20 @@
        call mpas_log_write('*****************************************************************', messageType=MPAS_LOG_ERR)
        call mpas_log_write('Please correct the namelist.', messageType=MPAS_LOG_CRIT)
  end select surface_input_select1
- lu_index(:) = 0
- call mpas_log_write('--- end interpolate LU_INDEX')
 
+ ierr = mgr % init(trim(config_geog_data_path)//trim(geog_sub_path))
+ if (ierr /= 0) then
+    call mpas_log_write('Error initalizing lu_index Geotile Manager', messageType=MPAS_LOG_CRIT)
+ endif
+
+ lu_index(:) = 0
+
+ ierr = mgr % finalize()
+ if (ierr /= 0) then
+    call mpas_log_write('Error finalizing the lu_index Geotile Manager', messageType=MPAS_LOG_CRIT)
+ endif
+
+ call mpas_log_write('--- end interpolate LU_INDEX')
 
 !
 ! Interpolate SOILCAT_TOP
