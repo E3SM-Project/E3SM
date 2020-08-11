@@ -881,12 +881,16 @@ contains
             dim1name='column', dim2name='levgrnd', switchdim=.true., &
             long_name='soil matric potential', units='mm', &
             interpinic_flag='interp', readvar=readvar, data=this%smp_l_col)
+       ! Initialize soil matric potential to 2.5 m below ground surface to avoid
+       ! NaN. It will be updated when soil hydrology is activated.
        if(flag=='read' .and. .not.readvar) this%smp_l_col = -2.5e3_r8
 
        call restartvar(ncid=ncid, flag=flag, varname='HK', xtype=ncd_double,  &
             dim1name='column', dim2name='levgrnd', switchdim=.true., &
             long_name='hydraulic conductivity', units='mm/s', &
             interpinic_flag='interp', readvar=readvar, data=this%hk_l_col)
+       ! Initialize hydraulic conductivity to avoid NaN.
+       ! It will be replaced with the correct value when soil hydrology is activated.
        if(flag=='read' .and. .not.readvar) this%hk_l_col = 1.e-9_r8
     endif
     if(use_dynroot) then
