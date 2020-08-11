@@ -132,9 +132,9 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux {
     SHOCVertfluxData SDS_f90[] = {
       //               shcol, nlev, nlevi
       SHOCVertfluxData(10, 71, 72),
-      SHOCVertfluxData(10, 17, 18),
       SHOCVertfluxData(10, 12, 13),
-      SHOCVertfluxData(7,  19, 20),
+      SHOCVertfluxData(7,  16, 17),
+      SHOCVertfluxData(2, 7, 8),
     };
 
     static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCVertfluxData);

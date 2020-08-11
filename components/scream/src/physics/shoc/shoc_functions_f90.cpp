@@ -183,7 +183,7 @@ void calc_shoc_vertflux_f(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 
   auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-    SHF::calc_shoc_vertflux(team, shcol, nlev, nlevi, tkh_zi_d, dz_zi_d, invar_d, vertflux_d);
+    SHF::calc_shoc_vertflux(team, shcol, nlev, tkh_zi_d, dz_zi_d, invar_d, vertflux_d);
   });
 
   // Sync back to host
