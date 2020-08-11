@@ -188,7 +188,7 @@ TEST_CASE("shoc_vertflux_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCalcShocVertflux;
 
-  //TestStruct::run_bfb();
+  TestStruct::run_bfb();
 }
 
 } // namespace

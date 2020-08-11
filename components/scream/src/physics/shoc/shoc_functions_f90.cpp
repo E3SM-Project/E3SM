@@ -52,14 +52,14 @@ SHOCDataBase::SHOCDataBase(Int shcol_, Int nlev_, Int nlevi_,
   init_ptrs();
 }
 
-SHOCDataBase::SHOCDataBase(const SHOCDataBase &rhs) :
+SHOCDataBase::SHOCDataBase(const SHOCDataBase &rhs, const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i) :
   shcol(rhs.shcol),
   nlev(rhs.nlev),
   nlevi(rhs.nlevi),
   m_total(rhs.m_total),
   m_totali(rhs.m_totali),
-  m_ptrs(rhs.m_ptrs),
-  m_ptrs_i(rhs.m_ptrs_i),
+  m_ptrs(ptrs),
+  m_ptrs_i(ptrs_i),
   m_data(rhs.m_data)
 {
   init_ptrs();
@@ -85,12 +85,12 @@ void SHOCDataBase::init_ptrs()
   Real *data_begin   = m_data.data();
 
   for (size_t i = 0; i < m_ptrs.size(); ++i) {
-    *m_ptrs[i] = data_begin + offset;
+    *(m_ptrs[i]) = data_begin + offset;
     offset += m_total;
   }
 
   for (size_t i = 0; i < m_ptrs_i.size(); ++i) {
-    *m_ptrs_i[i] = data_begin + offset;
+    *(m_ptrs_i[i]) = data_begin + offset;
     offset += m_totali;
   }
 }
