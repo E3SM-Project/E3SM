@@ -1401,7 +1401,7 @@ subroutine calc_shoc_vertflux(&
   real(rtype), intent(in) :: invar(shcol,nlev)
 
 ! INPUT/OUTPUT VARIABLES
-  real(rtype), intent(inout) :: vertflux(shcol,nlevi)
+  real(rtype), intent(out) :: vertflux(shcol,nlevi)
 
 ! LOCAL VARIABLES
   integer :: i, k, kt

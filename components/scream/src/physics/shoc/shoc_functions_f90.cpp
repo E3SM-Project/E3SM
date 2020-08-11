@@ -95,6 +95,24 @@ void SHOCDataBase::init_ptrs()
   }
 }
 
+void SHOCDataBase::randomize()
+{
+  std::default_random_engine generator;
+  std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
+
+  for (size_t i = 0; i < m_ptrs.size(); ++i) {
+    for (size_t j = 0; j < m_total; ++j) {
+      (*(m_ptrs[i]))[j] = data_dist(generator);
+    }
+  }
+
+  for (size_t i = 0; i < m_ptrs_i.size(); ++i) {
+    for (size_t j = 0; j < m_totali; ++j) {
+      (*(m_ptrs_i[i]))[j] = data_dist(generator);
+    }
+  }
+}
+
 //
 // Glue functions to call fortran from from C++ with the Data struct
 //

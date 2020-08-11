@@ -131,13 +131,17 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux {
   {
     SHOCVertfluxData SDS_f90[] = {
       //               shcol, nlev, nlevi
-      SHOCVertfluxData(10, 71, 72), //.randomize(),
-      SHOCVertfluxData(10, 71, 72), //.randomize(),
-      SHOCVertfluxData(10, 71, 72), //.randomize(),
-      SHOCVertfluxData(10, 71, 72), //.randomize(),
+      SHOCVertfluxData(10, 71, 72),
+      SHOCVertfluxData(10, 17, 18),
+      SHOCVertfluxData(10, 12, 13),
+      SHOCVertfluxData(7,  19, 20),
     };
 
     static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCVertfluxData);
+
+    for (Int i = 0; i < num_runs; ++i) {
+      SDS_f90[i].randomize();
+    }
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
     // inout data is in original state
@@ -148,18 +152,24 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux {
       SHOCVertfluxData(SDS_f90[3]),
     };
 
+    // Assume all data is in C layout
+
     // Get data from fortran
     for (Int i = 0; i < num_runs; ++i) {
+      // expects data in C layout
       calc_shoc_vertflux(SDS_f90[i]);
     }
 
     // Get data from cxx
     for (Int i = 0; i < num_runs; ++i) {
       SHOCVertfluxData& d = SDS_cxx[i];
+      d.transpose<util::TransposeDirection::c2f>();
+      // expects data in fortran layout
       calc_shoc_vertflux_f(d.shcol, d.nlev, d.nlevi, d.tkh_zi, d.dz_zi, d.invar, d.vertflux);
+      d.transpose<util::TransposeDirection::f2c>();
     }
 
-    // Verify BFB results
+    // Verify BFB results, all data should be in C layout
     for (Int i = 0; i < num_runs; ++i) {
       SHOCVertfluxData& d_f90 = SDS_f90[i];
       SHOCVertfluxData& d_cxx = SDS_cxx[i];

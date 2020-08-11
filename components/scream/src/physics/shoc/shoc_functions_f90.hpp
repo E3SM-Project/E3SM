@@ -46,6 +46,8 @@ struct SHOCDataBase
     m_data = data;
   }
 
+  void randomize();
+
   Int total() const { return m_total; }
   Int totali() const { return m_totali; }
 
