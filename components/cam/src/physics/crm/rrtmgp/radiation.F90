@@ -144,7 +144,7 @@ module radiation
    character(len=cl) :: coefficients_file_sw, coefficients_file_lw
 
    ! Number of g-points in k-distribution (set based on absorption coefficient inputdata)
-   integer :: nswgpts, nlwgpts
+   integer, public :: nswgpts, nlwgpts
 
    ! Band midpoints; these need to be module variables because of how cam_history works;
    ! add_hist_coord sets up pointers to these, so they need to persist.

@@ -1026,7 +1026,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     enddo
 
     ! Do radiative transfer
-    call radiation_tend(crm_rad%mu0, crm_rad%sfc_alb_dir, crm_rad%sfc_alb_dif)
+    call radiation_tend(ncrms, crm_rad%mu0, crm_rad%sfc_alb_dir, crm_rad%sfc_alb_dif)
   enddo ! nstep
 
   ! for time-averaging crm output statistics
