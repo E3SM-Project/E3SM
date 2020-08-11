@@ -1032,11 +1032,8 @@ end subroutine micro_p3_readnl
          ite,                         & ! IN     horizontal index upper bound     -
          kts,                         & ! IN     vertical index lower bound       -
          kte,                         & ! IN     vertical index upper bound       -
-         dummy_out(its:ite,kts:kte),    & ! OUT    equivalent reflectivity          dBZ  UNUSED?
          rel(its:ite,kts:kte),        & ! OUT    effective radius, cloud          m
          rei(its:ite,kts:kte),        & ! OUT    effective radius, ice            m
-         dummy_out(its:ite,kts:kte),   & ! OUT    mass-weighted fall speed of ice  m s-1
-         dummy_out(its:ite,kts:kte),    & ! OUT    mean diameter of ice             m
          diag_rhoi(its:ite,kts:kte),  & ! OUT    bulk density of ice              kg m-3
          log_predictNc,               & ! IN     .true.=prognostic Nc, .false.=specified Nc
          ! AaronDonahue new stuff
@@ -1051,8 +1048,6 @@ end subroutine micro_p3_readnl
          rcldm(its:ite,kts:kte),      & ! IN rain cloud fraction
          lcldm(its:ite,kts:kte),      & ! IN liquid cloud fraction
          icldm(its:ite,kts:kte),      & ! IN ice cloud fraction
-         dummy_out(its:ite,kts:kte),     & ! OUT accretion of cloud by rain
-         dummy_out(its:ite,kts:kte),     & ! OUT autoconversion of cloud by rain
          tend_out(its:ite,kts:kte,:), & ! OUT p3 microphysics tendencies
          mu(its:ite,kts:kte),         & ! OUT Size distribution shape parameter for radiation
          lambdac(its:ite,kts:kte),    & ! OUT Size distribution slope parameter for radiation

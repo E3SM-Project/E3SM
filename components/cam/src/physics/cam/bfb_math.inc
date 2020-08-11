@@ -33,6 +33,7 @@
 #  define bfb_exp(val) exp(val)
 #  define bfb_tanh(val) tanh(val)
 #  define bfb_sqrt(val) sqrt(val)
+#  define bfb_tanh(val) tanh(val)
 #endif
 
 #endif

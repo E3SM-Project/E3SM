@@ -43,7 +43,7 @@ void Functions<S,D>
   Spack dum1{0.};
 
   if (any_if.any()) {
-    qsat0 = physics::qv_sat( zerodeg,pres,0,range_mask);
+    qsat0 = physics::qv_sat( zerodeg,pres, false, range_mask );
 
     qwgrth.set(any_if,
                ((f1pr05+f1pr14*pack::cbrt(sc)*sqrt(rhofaci*rho/mu))*

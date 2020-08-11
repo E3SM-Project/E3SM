@@ -22,6 +22,8 @@ template <typename ScalarT, typename DeviceT>
 struct Functions
 {
 
+  enum SaturationFcn { Polysvp1 = 0, MurphyKoop = 1};
+
   //
   // ------- Types --------
   //
@@ -89,12 +91,11 @@ struct Functions
   // and returns the saturation mixing ratio, with respect to either liquid or ice,
   // depending on value of 'ice'
   KOKKOS_FUNCTION
-  static Spack qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice, const Smask& range_mask, const int& func_idx = 1);
+  static Spack qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice, const Smask& range_mask, const SaturationFcn func_idx = MurphyKoop);
 
   //checks temperature for negatives and NaNs
   KOKKOS_FUNCTION
-  //static void check_temperature(const Spack& t_atm, const std::string& fname, const Smask& range_mask);
-  static void check_temperature(const Spack& t_atm, const Smask& range_mask);
+  static void check_temperature(const Spack& t_atm, const char* func_name, const Smask& range_mask);
 };
 
 } // namespace physics

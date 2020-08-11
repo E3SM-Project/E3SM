@@ -14,22 +14,24 @@ namespace physics {
 template <typename S, typename D>
 KOKKOS_FUNCTION
 void  Functions<S,D>
-//::check_temperature(const Spack& t_atm)//, const std::string& fname, const Smask& range_mask)
-::check_temperature(const Spack& t_atm, const Smask& range_mask)
+::check_temperature(const Spack& t_atm, const char* func_name, const Smask& range_mask)
 {
 
-  //"range_mask" masks out packs which are padded with uninitialized values
+  //"range_mask" masks out packs which are padded with uninitialized values    
   
+  /*Future work:
+  Make error message dynamic so that it tells the user the function name (func_name) from where
+  this error is coming from. Current func_name is not used in this function */
+
   const auto is_neg_t_atm = (t_atm <= 0) && range_mask; //find out if there are any negative temperatures in the pack
   if (is_neg_t_atm.any()){
-    scream_kerror_msg("Error: Temperature has <= 0 values.\n"); //exit with an error message
+    scream_kerror_msg("Error! Temperature has <= 0 values.\n"); //exit with an error message
   }
 
   const auto is_nan_t_atm = isnan(t_atm) && range_mask;//find out if there are any NaN temperatures in the pack
   if (is_nan_t_atm.any()){
-    scream_kerror_msg("Error: Temperature has NaN values.\n"); //exit with an error message
-  }
-  
+    scream_kerror_msg("Error! Temperature has NaN values.\n"); //exit with an error message
+  } 
 }
 
 template <typename S, typename D>
@@ -117,33 +119,32 @@ Functions<S,D>::polysvp1(const Spack& t, const bool ice)
 template <typename S, typename D>
 KOKKOS_FUNCTION
 typename Functions<S,D>::Spack
-Functions<S,D>::qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice, const Smask& range_mask, const int& func_idx)
+Functions<S,D>::qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice, const Smask& range_mask, const SaturationFcn func_idx)
 {
+  /*Arguments:
+    ----------
+  t_atm: temperature; p_atm: pressure; ice: logical for ice
 
-  //Arguments:
-  //t_atm: temperature; p_atm: pressure; ice: logical for ice
-
-  //range_mask: is a mask which masks out padded values in the packs, which are uninitialized
-
-  //func_idx: is an optional argument to decide which scheme is to be called for saturation vapor pressure
-  //Currently default is set to "MurphyKoop_svp"
-  //func_idx = 0 --> polysvp1 (Flatau et al. 1992)
-  //func_idx = 1 --> MurphyKoop_svp (Murphy, D. M., and T. Koop 2005)
-
+  range_mask: is a mask which masks out padded values in the packs, which are uninitialized
+  func_idx is an optional argument to decide which scheme is to be called for saturation vapor pressure
+  Currently default is set to "MurphyKoop_svp"
+  func_idx = Polysvp1 (=0) --> polysvp1 (Flatau et al. 1992)
+  func_idx = MurphyKoop (=1) --> MurphyKoop_svp (Murphy, D. M., and T. Koop 2005)*/
+  
   //First check if the temperature is legitimate or not
-  check_temperature(t_atm, range_mask);
+  check_temperature(t_atm, "qv_sat", range_mask);
 
   Spack e_pres; // saturation vapor pressure [Pa]
 
   switch (func_idx){
-    case 0:
+    case Polysvp1:
       e_pres = polysvp1(t_atm, ice);
       break;
-    case 1:
+    case MurphyKoop:
       e_pres = MurphyKoop_svp(t_atm, ice);
       break;
     default:
-      scream::error::runtime_abort("Error: Invalid func_idx supplied to qv_sat:"+ func_idx );
+      scream_kerror_msg("Error! Invalid func_idx supplied to qv_sat.");
     }
 
   const auto ep_2 = C::ep_2;
