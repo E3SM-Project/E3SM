@@ -868,10 +868,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
           write(0,*) "CRM time step relaxation is only compatible with sam1mom microphysics"
           call endrun('crm main')
 #endif
-          write(iulog, *) 'USING CRM MEAN STATE ACCELERATION'
-          write(iulog, *) 'crm_accel: use_crm_accel = ', use_crm_accel
-          write(iulog, *) 'crm_accel: crm_accel_factor = ', crm_accel_factor
-          write(iulog, *) 'crm_accel: crm_accel_uv = ', crm_accel_uv
         endif
       endif
 
