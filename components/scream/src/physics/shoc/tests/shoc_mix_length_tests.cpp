@@ -72,7 +72,7 @@ TEST_CASE("shoc_mix_length", "shoc") {
   for(Int s = 0; s < SDS.shcol; ++s) {
     REQUIRE(SDS.l_inf[s] > 0.0);
     REQUIRE(SDS.tscale[s] > 0.0);
-    for(Int n = 0; n < SDS.nlev - 1; ++n) {
+    for(Int n = 0; n < SDS.nlev; ++n) {
       const auto offset = n + s * SDS.nlev;
       REQUIRE(SDS.tke[offset] > 0.0);
       REQUIRE(SDS.zt_grid[offset] > 0.0);

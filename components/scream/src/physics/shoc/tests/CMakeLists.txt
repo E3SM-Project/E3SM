@@ -9,6 +9,7 @@ set(SHOC_TESTS_SRCS
     shoc_brunt_length_tests.cpp
     shoc_l_inf_length_tests.cpp
     shoc_conv_vel_length_tests.cpp
+    shoc_check_length_tests.cpp
     shoc_mix_length_tests.cpp
     shoc_tke_column_stab_tests.cpp
     shoc_tke_shr_prod_tests.cpp

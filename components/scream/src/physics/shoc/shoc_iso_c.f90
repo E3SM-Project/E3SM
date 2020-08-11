@@ -328,6 +328,20 @@ contains
     call compute_shoc_mix_shoc_length(nlev,shcol,tke,brunt,tscale,zt_grid,&
                                       l_inf,shoc_mix)
 
-  end subroutine compute_shoc_mix_shoc_length_c       
+  end subroutine compute_shoc_mix_shoc_length_c 
+  
+  subroutine check_length_scale_shoc_length_c(nlev,shcol,host_dx,host_dy,shoc_mix) bind (C)
+    use shoc, only: check_length_scale_shoc_length
+
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in) :: host_dx(shcol)
+    real(kind=c_real), intent(in) :: host_dy(shcol)  
+
+    real(kind=c_real), intent(inout) :: shoc_mix(shcol,nlev)
+
+    call check_length_scale_shoc_length(nlev,shcol,host_dx,host_dy,shoc_mix)
+
+  end subroutine check_length_scale_shoc_length_c         
 
 end module shoc_iso_c

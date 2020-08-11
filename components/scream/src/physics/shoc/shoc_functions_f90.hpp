@@ -579,6 +579,47 @@ struct SHOCMixlengthData {
 
 void compute_shoc_mix_shoc_length(Int nlev, SHOCMixlengthData &d);
 
+//Create data structure to hold data for check_length_scale_shoc_length
+struct SHOCMixcheckData {
+  static constexpr size_t NUM_ARRAYS   = 1; //# of arrays with values at cell centers (zt grid)
+  static constexpr size_t NUM_ARRAYS_c = 2; //# of arrays with column only dimensions
+
+  // Inputs
+  Int   shcol, nlev;
+  Real *host_dx, *host_dy;
+
+  // Outputs
+  Real *shoc_mix;
+
+  //functions to initialize data
+  SHOCMixcheckData(Int shcol_, Int nlev_);
+  SHOCMixcheckData(const SHOCMixcheckData &rhs);
+  SHOCMixcheckData &operator=(const SHOCMixcheckData &rhs);
+
+  void init_ptrs();
+
+  // Internals
+  Int m_shcol, m_nlev, m_nlevc, m_total, m_totalc;
+  std::vector<Real> m_data;
+  std::vector<Real> m_datac;
+
+  template <util::TransposeDirection::Enum D>
+  void transpose() {
+    SHOCMixcheckData d_trans(*this);
+
+    // Transpose on the zt grid
+    util::transpose<D>(shoc_mix, d_trans.shoc_mix, shcol, nlev);
+
+    // Transpose on the column only grid
+    util::transpose<D>(host_dx, d_trans.host_dx, shcol, 1);
+    util::transpose<D>(host_dy, d_trans.host_dy, shcol, 1);
+
+    *this = std::move(d_trans);
+  }
+};//SHOCMixcheckData
+
+void check_length_scale_shoc_length(Int nlev, SHOCMixcheckData &d);
+
 }  // namespace shoc
 }  // namespace scream
 
