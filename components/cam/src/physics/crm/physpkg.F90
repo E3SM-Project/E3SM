@@ -2904,45 +2904,29 @@ end if
          ! transport in order to determine interstitial fraction.
          !======================================================================
 
-         call t_startf('bc_aerosols')
-
-         ! Calculate aerosol size distribution parameters
-         if (clim_modal_aero .and. .not. prog_modal_aero) then
-            call modal_aero_calcsize_diag(state, pbuf)
-         else
-            ! for prognostic modal aerosols the transfer of mass between aitken
-            ! and accumulation modes is done in conjunction with the dry radius
-            ! calculation in modal_aero_calcsize_sub().
-            ! Turn on all lq, so they are allocated
-            lq(:) = .true.
-            call physics_ptend_init(ptend, state%psetcols, 'aero_model_wetdep_ma', lq=lq)
-            ! set all ptend%lq to false, they will be updated in modal_aero_calcsize_sub
-            ptend%lq(:) = .false.
-            call modal_aero_calcsize_sub(state, ptend, ztodt, pbuf)
-            call physics_update(state, ptend, ztodt, tend)
-         endif
-
-         ! Aerosol water uptake
-         if (use_MMF) then
-            ! use alternate clear air RH for MMF
-            call modal_aero_wateruptake_dr(state, pbuf, clear_rh_in=mmf_clear_rh)
-         else
-            call modal_aero_wateruptake_dr(state, pbuf)
-         end if
+         call t_startf('tphysbc_aerosols')
 
          if (do_clubb_sgs) sh_e_ed_ratio = 0.0_r8
 
-         ! Aerosol wet removal
-         call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state, sh_e_ed_ratio,       & !Intent-ins
-              mu, md, du, eu, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class,&
-              cam_out,                                                                 & !Intent-inout
-              pbuf,                                                                    & !Pointer
-              ptend                                                                    ) !Intent-out
+         ! Aerosol wet removal (including aerosol water uptake)
+         if (use_MMF) then
+            call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state,  & ! inputs
+                   sh_e_ed_ratio, mu, md, du, eu, ed, dp, dsubcld,    &
+                   jt, maxg, ideep, lengath, species_class,           &
+                   cam_out, pbuf, ptend,                              & ! outputs
+                   clear_rh=mmf_clear_rh) ! clear air relative humidity for water uptake
+         else
+            call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state,  & ! inputs
+                   sh_e_ed_ratio, mu, md, du, eu, ed, dp, dsubcld,    &
+                   jt, maxg, ideep, lengath, species_class,           &
+                   cam_out, pbuf, ptend )                               ! outputs
+         end if
          call physics_update(state, ptend, ztodt, tend)
 
          ! deep convective aerosol transport
-         call convect_deep_tend_2( state,   ptend,  ztodt,  pbuf, mu, eu, &
-           du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class )
+         call convect_deep_tend_2( state, ptend, ztodt, pbuf, &
+                mu, eu, du, md, ed, dp, dsubcld, jt, maxg,    &
+                ideep, lengath, species_class )
          call physics_update(state, ptend, ztodt, tend)
 
          ! check tracer integrals

@@ -105,7 +105,7 @@ module aero_model
   integer :: nwetdep = 0
   integer,allocatable :: wetdep_indices(:)
   logical :: drydep_lq(pcnst)
-  logical :: wetdep_lq(pcnst)
+  logical, public :: wetdep_lq(pcnst)
 
 
 contains
@@ -1372,15 +1372,20 @@ contains
        species_class,                                                           &
        cam_out,                                                                 & !Intent-inout
        pbuf,                                                                    & !Pointer
-       ptend                                                                    ) !Intent-out
+       ptend,                                                                   & !Intent-out
+       clear_rh                                                                 ) !optional 
 
     use modal_aero_deposition, only: set_srf_wetdep
     use wetdep,                only: wetdepa_v2, wetdep_inputs_set, &
                                      wetdep_inputs_unset, wetdep_inputs_t
     use modal_aero_data
+    use modal_aero_calcsize,   only: modal_aero_calcsize_sub, modal_aero_calcsize_diag
+    use modal_aero_wateruptake,only: modal_aero_wateruptake_dr
     use modal_aero_convproc,   only: deepconv_wetdep_history, ma_convproc_intr
     use mo_constants,          only: pi
     use infnan,                only: nan, assignment(=)
+    use rad_constituents,      only: rad_cnst_get_info
+    use phys_control,          only: phys_getopts
 
     ! args
 
@@ -1411,6 +1416,9 @@ contains
     type(physics_buffer_desc), pointer :: pbuf(:)
 
     type(physics_ptend), intent(out)   :: ptend       ! indivdual parameterization tendencies
+
+    real(r8), optional,  intent(in)    :: clear_rh(pcols,pver) ! optional clear air relative humidity 
+                                                               ! that gets passed to modal_aero_wateruptake_dr
 
 
     ! local vars
@@ -1504,6 +1512,10 @@ contains
     real(r8), pointer :: sh_frac(:,:)    ! Shallow convective cloud fraction
     real(r8), pointer :: dp_frac(:,:)    ! Deep convective cloud fraction
 
+    integer           :: nmodes
+    logical           :: clim_modal_aero ! true when radiatively constituents present (nmodes>0)
+    logical           :: prog_modal_aero ! Prognostic modal aerosols present
+
     character(len=100) :: msg
 
     type(wetdep_inputs_t) :: dep_inputs
@@ -1513,6 +1525,32 @@ contains
     ncol  = state%ncol
 
     call physics_ptend_init(ptend, state%psetcols, 'aero_model_wetdep_ma', lq=wetdep_lq)
+
+    ! Do calculations of mode radius and water uptake if:
+    ! 1) modal aerosols are affecting the climate, or
+    ! 2) prognostic modal aerosols are enabled
+    ! If not using prognostic aerosol call the diagnostic version
+
+    call rad_cnst_get_info(0, nmodes=nmodes)
+    clim_modal_aero = (nmodes > 0)
+    call phys_getopts(prog_modal_aero_out=prog_modal_aero)
+
+    ! Calculate aerosol size distribution parameters
+    if (clim_modal_aero .and. .not. prog_modal_aero) then
+      call modal_aero_calcsize_diag(state, pbuf)
+    else
+      ! for prognostic modal aerosols the transfer of mass between aitken and 
+      ! accumulation modes is done in conjunction with the dry radius calculation
+      call modal_aero_calcsize_sub(state, ptend, dt, pbuf)
+    end if
+
+    ! Aerosol water uptake
+    if (present(clear_rh)) then
+      ! clear_rh allows us to provide alternate calculation of clear air RH
+      call modal_aero_wateruptake_dr(state, pbuf, clear_rh_in=clear_rh)
+    else
+      call modal_aero_wateruptake_dr(state, pbuf)
+    endif
 
     if (nwetdep<1) return
 

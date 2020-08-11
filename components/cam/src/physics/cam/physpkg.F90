@@ -1883,7 +1883,7 @@ subroutine tphysbc (ztodt,               &
                                check_tracers_data, check_tracers_init, &
                                check_tracers_chng, check_tracers_fini
     use dycore,          only: dycore_is
-    use aero_model,      only: aero_model_wetdep
+    use aero_model,      only: aero_model_wetdep, wetdep_lq
     use radiation,       only: radiation_tend
     use cloud_diagnostics, only: cloud_diagnostics_calc
     use perf_mod
@@ -1927,6 +1927,8 @@ subroutine tphysbc (ztodt,               &
     !
 
     type(physics_ptend)   :: ptend            ! indivdual parameterization tendencies
+    type(physics_ptend)   :: ptend_tmp1
+    type(physics_ptend)   :: ptend_tmp2
     type(physics_state)   :: state_sc         ! state for sub-columns
     type(physics_ptend)   :: ptend_sc         ! ptend for sub-columns
     type(physics_ptend)   :: ptend_aero       ! ptend for microp_aero
@@ -2630,38 +2632,19 @@ end if
 
          call t_startf('tphysbc_aerosols')
 
-         ! Calculate aerosol size distribution parameters
-         if (clim_modal_aero .and. .not. prog_modal_aero) then
-            call modal_aero_calcsize_diag(state, pbuf)
-         else
-            ! for prognostic modal aerosols the transfer of mass between aitken
-            ! and accumulation modes is done in conjunction with the dry radius
-            ! calculation in modal_aero_calcsize_sub().
-            ! Turn on all lq, so they are allocated
-            lq(:) = .true.
-            call physics_ptend_init(ptend, state%psetcols, 'aero_model_wetdep_ma', lq=lq)
-            ! set all ptend%lq to false, they will be updated in modal_aero_calcsize_sub
-            ptend%lq(:) = .false.
-            call modal_aero_calcsize_sub(state, ptend, ztodt, pbuf)
-            call physics_update(state, ptend, ztodt, tend)
-         endif
-
-         ! Aerosol water uptake
-         call modal_aero_wateruptake_dr(state, pbuf)
-
          if (do_clubb_sgs) sh_e_ed_ratio = 0.0_r8
 
-         ! Aerosol wet removal
-         call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state, sh_e_ed_ratio,       & !Intent-ins
-              mu, md, du, eu, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class,&
-              cam_out,                                                                 & !Intent-inout
-              pbuf,                                                                    & !Pointer
-              ptend                                                                    ) !Intent-out
+         ! Aerosol wet removal (including aerosol water uptake)
+         call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state,  & ! inputs
+                sh_e_ed_ratio, mu, md, du, eu, ed, dp, dsubcld,    &
+                jt, maxg, ideep, lengath, species_class,           &
+                cam_out, pbuf, ptend )                               ! outputs
          call physics_update(state, ptend, ztodt, tend)
 
          ! deep convective aerosol transport
-         call convect_deep_tend_2( state,   ptend,  ztodt,  pbuf, mu, eu, &
-           du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class )
+         call convect_deep_tend_2( state, ptend, ztodt, pbuf, &
+                mu, eu, du, md, ed, dp, dsubcld, jt, maxg,    &
+                ideep, lengath, species_class )
          call physics_update(state, ptend, ztodt, tend)
 
          ! check tracer integrals
