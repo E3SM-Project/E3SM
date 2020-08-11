@@ -26,6 +26,9 @@ TEST_CASE("shoc_brunt_length", "shoc") {
   constexpr Int nlev     = 5;
   constexpr auto nlevi   = nlev + 1;
 
+  // Tests for the SHOC function:
+  //   compute_brunt_shoc_length
+
   // Test for the Brunt Vaissalla frequency.  
   // Note that input temperature profiles are selected
   //  deliberately so that it includes a well mixed layer,

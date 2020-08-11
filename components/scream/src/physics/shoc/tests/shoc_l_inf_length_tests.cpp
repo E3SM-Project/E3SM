@@ -22,16 +22,15 @@ namespace shoc {
 namespace unit_test {
 
 TEST_CASE("shoc_l_inf_length", "shoc") {
-  constexpr Int shcol    = 2;
+  constexpr Int shcol    = 3;
   constexpr Int nlev     = 5;
 
-  // Tests for the compute_l_inf_shoc_length scale, which is the
-  //  asymptotic length scale parameter   
+  // Tests for the SHOC function:
+  //   compute_l_inf_shoc_length   
   
-  // Test two columns with identical profiles, EXCEPT 
-  //  one which has larger TKE values.  Verify that the column 
-  //  with the larger TKE values produces a larger asymptotic 
-  //  length scale.       
+  // Multi-column test, where the input heights for zt_grid
+  //  are increased uniformly by 100 m per column to verify
+  //  that l_inf always gets larger per column.        
 
   // Grid difference centered on thermo grid [m]
   Real dz_zt[nlev] = {100.0, 100.0, 100.0, 100.0, 100.0};
@@ -53,11 +52,11 @@ TEST_CASE("shoc_l_inf_length", "shoc") {
       const auto offset = n + s * SDS.nlev;
 
       SDS.dz_zt[offset] = dz_zt[n];
-      SDS.zt_grid[offset] = (s*100.0)+zt_grid[n];
-      // Testing identical columns but one with larger TKE
-      //  set first column as "base" column, and the others
-      //  to a larger value of TKE uniformly.  
-      SDS.tke[offset] = (1.0)*tke[n];
+      // Testing identical columns but one with larger zt heights.
+      //  first column set as "base" column, and the others
+      //  to a larger value of TKE uniformly.
+      SDS.zt_grid[offset] = (s*100.0)+zt_grid[n];  
+      SDS.tke[offset] = tke[n];
     }
   }
 

@@ -26,12 +26,12 @@ TEST_CASE("shoc_mix_length", "shoc") {
   constexpr Int nlev     = 5;
 
   // Tests for the SHOC function:
-  // compute_shoc_mix_shoc_length
+  //   compute_shoc_mix_shoc_length
   
   // Multi column test will verify that 1) mixing length increases 
   // with height given brunt vaisalla frequency and 
-  // TKE are constant with height and 2) Columns will increase with
-  // TKE values to ensure that mixing length is also increasing
+  // TKE are constant with height and 2) Columns with larger
+  // TKE values produce a larger length scale value
   
   // Define TKE [m2/s2] that will be used for each column
   Real tke_cons = 0.1;  
@@ -58,8 +58,8 @@ TEST_CASE("shoc_mix_length", "shoc") {
     for(Int n = 0; n < SDS.nlev; ++n) {
       const auto offset = n + s * SDS.nlev;
 
-      // for the second column, double the 
-      //  amount of TKE
+      // for the subsequent columns, increase 
+      //  the amount of TKE
       SDS.tke[offset] = (1.0+s)*tke_cons;
       SDS.brunt[offset] = brunt_cons;
       SDS.zt_grid[offset] = zt_grid[n];

@@ -26,7 +26,7 @@ TEST_CASE("shoc_check_length", "shoc") {
   constexpr Int nlev     = 5;
 
   // Tests for the SHOC function:
-  // check_length_scale_shoc_length
+  //   check_length_scale_shoc_length
   
   // Test this simple function.  Feed the routine values of
   //  mixing length that are zero and much larger than the
@@ -76,12 +76,11 @@ TEST_CASE("shoc_check_length", "shoc") {
   for(Int s = 0; s < SDS.shcol; ++s) {   
     for(Int n = 0; n < SDS.nlev; ++n) {
       const auto offset = n + s * SDS.nlev;   
-      // Require mixing length is greater than zero 
-      //  and is less than geometric grid mesh length
+      // Require mixing length is greater than zero and is
+      //  less than or equal to geometric grid mesh length
       REQUIRE(SDS.shoc_mix[offset] > 0.0); 
       REQUIRE(SDS.shoc_mix[offset] <= grid_mesh); 
-    }
-    
+    }   
   }
 
 }

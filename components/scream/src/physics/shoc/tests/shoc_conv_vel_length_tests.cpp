@@ -26,7 +26,8 @@ TEST_CASE("shoc_conv_vel_length", "shoc") {
   constexpr Int shcol    = 2;
   constexpr Int nlev     = 5;
 
-  // Tests for the convective velocity scale subroutine
+  // Tests for the SHOC function:
+  //   compute_conv_vel_shoc_length
   
   // Note that the output conv_vel from this subroutine 
   //   represents the integrated buoyancy flux and not technically
@@ -76,7 +77,7 @@ TEST_CASE("shoc_conv_vel_length", "shoc") {
       // Be sure that relevant variables are greater than zero
       REQUIRE(SDS.dz_zt[offset] > 0.0);
       REQUIRE(SDS.thv[offset] > 0.0);
-      // For this negative buoyancy test verify that all parcels
+      // For this negative buoyancy test, verify that all parcels
       //  have negative buoyancy flux.  
       REQUIRE(SDS.wthv_sec[offset] < 0.0);
       if (n < nlev-1){

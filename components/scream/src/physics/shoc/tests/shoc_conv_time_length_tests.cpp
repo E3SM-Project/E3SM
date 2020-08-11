@@ -25,14 +25,17 @@ TEST_CASE("shoc_conv_time_length", "shoc") {
   constexpr Int shcol    = 5;
   constexpr Int nlev     = 1;
 
-  // Tests to compute the eddy turnover timescale from the 
-  //   subroutine compute_conv_time_shoc_length.
+  // Tests for the SHOC function:
+  //   compute_conv_time_shoc_length
   
   // FIRST TEST    
-  //  Verify that no matter the input that conv_vel is always positive
+  //  Verify that no matter the input of conv_vel that
+  //  time scale is always return as positive.
   //  The main concern is that if input conv_vel is negative that
-  //  we avoid taking the cube root of this value in the 
-  //  subroutine call
+  //  we should avoid taking the cube root of this value in the 
+  //  subroutine call.
+  
+  //  For this function we test several one layer columns
 
   // PBL height [m] 
   Real pblh[shcol] = {1000.0, 400.0, 10.0, 500.0, 300.0};
@@ -61,7 +64,7 @@ TEST_CASE("shoc_conv_time_length", "shoc") {
   compute_conv_time_shoc_length(nlev, SDS);
 
   // Check the results
-  // Make sure that conv_vel is negative
+  // Make sure that timescale is positive always
   for(Int s = 0; s < SDS.shcol; ++s) {   
     REQUIRE(SDS.tscale[s] > 0.0);
   } 
@@ -97,7 +100,7 @@ TEST_CASE("shoc_conv_time_length", "shoc") {
   compute_conv_time_shoc_length(nlev, SDS);
   
   // Verify Results
-  // Make sure that if conv_vel is smaller than in a particular 
+  // Make sure that if conv_vel is smaller than in a neighboring
   //  column, that the tscale is larger
   for (Int s = 0; s < SDS.shcol-1; ++s){
     if (SDS.tscale[s] > SDS.tscale[s+1]){
@@ -136,8 +139,8 @@ TEST_CASE("shoc_conv_time_length", "shoc") {
   compute_conv_time_shoc_length(nlev, SDS);
   
   // Verify Results
-  // Make sure that if conv_vel is smaller than in a particular 
-  //  column, that the tscale is larger
+  // Make sure that if tscale is larger than in a 
+  //  neighboring column, that the PBL depth is larger
   for (Int s = 0; s < SDS.shcol-1; ++s){
     if (SDS.tscale[s] > SDS.tscale[s+1]){
       REQUIRE(SDS.pblh[s] > SDS.pblh[s+1]);

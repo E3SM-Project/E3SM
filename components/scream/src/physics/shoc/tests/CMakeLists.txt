@@ -10,13 +10,13 @@ set(SHOC_TESTS_SRCS
     shoc_l_inf_length_tests.cpp
     shoc_conv_vel_length_tests.cpp
     shoc_check_length_tests.cpp
+    shoc_conv_time_length_tests.cpp
     shoc_mix_length_tests.cpp
     shoc_tke_column_stab_tests.cpp
     shoc_tke_shr_prod_tests.cpp
     shoc_tke_isotropic_ts_tests.cpp
     shoc_tke_adv_sgs_tke_tests.cpp
     shoc_eddy_diffusivities_tests.cpp
-    shoc_conv_time_length_tests.cpp
     shoc_unit_tests.cpp)
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build
