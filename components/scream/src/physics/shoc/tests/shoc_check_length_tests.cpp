@@ -47,8 +47,9 @@ TEST_CASE("shoc_check_length", "shoc") {
   // Test that the inputs are reasonable.
   REQUIRE(SDS.shcol > 0);
   
-  // compute geometric grid mesh
-  const auto grid_mesh = sqrt(host_dx*host_dy);
+  // compute geometric grid mesh, provide an upper estimate
+  //  to allow for round off with the checker, hence add 1 m
+  const auto grid_mesh = 1.0+sqrt(host_dx*host_dy);
 
   // Fill in test data on zt_grid.
   for(Int s = 0; s < SDS.shcol; ++s) {
