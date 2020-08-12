@@ -1222,33 +1222,8 @@ contains
           endif
        endif  !end use_betr        
 
-       ! Execute FATES dynamics
-       if ( use_fates ) then
-          if ( is_beg_curr_day() ) then ! run ED at the start of each day
-             
-             if ( masterproc ) then
-                write(iulog,*)  'clm: calling FATES model ', get_nstep()
-             end if
-             
-             call alm_fates%dynamics_driv( bounds_clump, top_as,          &
-                  top_af, atm2lnd_vars, soilstate_vars, temperature_vars, &
-                  canopystate_vars, frictionvel_vars)
-
-             
-             ! TODO(wjs, 2016-04-01) I think this setFilters call should be replaced by a
-             ! call to reweight_wrapup, if it's needed at all.
-             ! (FATES-INTERF) Note that setFilters is commented out
-             !! call setFilters( bounds_clump, glc_behavior )
-             
-          end if
-       end if
-       
-       ! ============================================================================
-       ! Check the energy and water balance, also carbon and nitrogen balance
-       ! ============================================================================
 
        if (use_cn .or. use_fates) then
-          
           if (.not. is_active_betr_bgc)then
              call EcosystemDynLeaching(bounds_clump,                &
                   filter(nc)%num_soilc, filter(nc)%soilc,               &
@@ -1261,15 +1236,35 @@ contains
                   waterstate_vars, waterflux_vars, frictionvel_vars,    &
                   canopystate_vars,                                     &
                   phosphorusflux_vars,phosphorusstate_vars)
-          end if
-
-          if (use_cn .and. doalb) then   
-             call VegStructUpdate(filter(nc)%num_soilp, filter(nc)%soilp,   &
-                  waterstate_vars, frictionvel_vars, cnstate_vars, &
-                  carbonstate_vars, canopystate_vars, crop_vars)
-          end if
+         end if
        end if
-
+       
+       ! ============================================================================
+       ! Update Vegetation
+       ! ============================================================================
+       
+       ! Execute FATES dynamics
+       if ( use_fates ) then
+           ! Update high-frequency history diagnostics for FATES
+           call alm_fates%wrap_update_hifrq_hist(bounds_clump)
+           if ( is_beg_curr_day() ) then ! run ED at the start of each day
+               call alm_fates%dynamics_driv( bounds_clump, top_as,          &
+                    top_af, atm2lnd_vars, soilstate_vars, temperature_vars, &
+                    canopystate_vars, frictionvel_vars)
+           end if
+       end if
+       
+       if (use_cn .and. doalb) then   
+           call VegStructUpdate(filter(nc)%num_soilp, filter(nc)%soilp,   &
+                waterstate_vars, frictionvel_vars, cnstate_vars, &
+                carbonstate_vars, canopystate_vars, crop_vars)
+       end if
+       
+       
+       ! ============================================================================
+       ! Check the energy and water balance, also carbon and nitrogen balance
+       ! ============================================================================
+       
        call t_startf('balchk')
        call ColWaterBalanceCheck(bounds_clump, &
             filter(nc)%num_do_smb_c, filter(nc)%do_smb_c, &

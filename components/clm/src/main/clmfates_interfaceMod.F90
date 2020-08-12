@@ -211,7 +211,7 @@ module CLMFatesInterfaceMod
       procedure, public :: wrap_accumulatefluxes
       procedure, public :: prep_canopyfluxes
       procedure, public :: wrap_canopy_radiation
-      procedure, public :: wrap_bgc_summary
+      procedure, public :: wrap_update_hifrq_hist
       procedure, public :: TransferZ0mDisp
       procedure, public :: UpdateLitterFluxes
       procedure, private :: init_history_io
@@ -747,7 +747,6 @@ contains
 
       ! Set the FATES global time and date variables
       call GetAndSetTime
-
 
       do s=1,this%fates(nc)%nsites
 
@@ -2019,13 +2018,7 @@ contains
                                this%fates(nc)%bc_in,  &
                                this%fates(nc)%bc_out, &
                                dtime)
-
-    
-    call this%fates_hist%update_history_prod(nc, &
-                               this%fates(nc)%nsites,  &
-                               this%fates(nc)%sites, &
-                               dtime)
-
+    return
  end subroutine wrap_accumulatefluxes
 
  ! ======================================================================================
@@ -2117,7 +2110,7 @@ contains
 
  ! ======================================================================================
 
- subroutine wrap_bgc_summary(this, bounds_clump )
+ subroutine wrap_update_hifrq_hist(this, bounds_clump )
 
    
 
@@ -2148,7 +2141,7 @@ contains
       end do
       
       ! Update history variables that track these variables
-      call this%fates_hist%update_history_cbal(nc, &
+      call this%fates_hist%update_history_hifrq(nc, &
                                this%fates(nc)%nsites,  &
                                this%fates(nc)%sites,   &
                                this%fates(nc)%bc_in,   &
@@ -2156,7 +2149,7 @@ contains
 
       
     end associate
- end subroutine wrap_bgc_summary
+end subroutine wrap_update_hifrq_hist
 
  ! ======================================================================================
 
