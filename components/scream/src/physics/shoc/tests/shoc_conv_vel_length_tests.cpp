@@ -132,7 +132,7 @@ TEST_CASE("shoc_conv_vel_length", "shoc") {
       wthv_sum += SDS.wthv_sec[offset];
     }
     // Make sure inputs of buoyancy flux sum to zero
-    REQUIRE(abs(wthv_sum) == approx_zero);
+    REQUIRE(wthv_sum == approx_zero);
   }
 
   // Call the fortran implementation
@@ -141,7 +141,7 @@ TEST_CASE("shoc_conv_vel_length", "shoc") {
   // Check the results
   // Make sure that conv_vel is zero
   for(Int s = 0; s < SDS.shcol; ++s) {
-    REQUIRE(abs(SDS.conv_vel[s]) == approx_zero);
+    REQUIRE(SDS.conv_vel[s] == approx_zero);
   }
 
 }
