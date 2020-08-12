@@ -33,19 +33,30 @@ integer, parameter, public :: nlwbands = 16
 ! Note: Currently rad_solar_var extends the lowest band down to
 ! 100 cm^-1 if it is too high to cover the far-IR. Any changes meant
 ! to affect IR solar variability should take note of this.
-!real(r8), dimension(nswbands) :: wavenum_sw_lower, wavenum_sw_upper
-real(r8) :: wavenum_sw_lower(nswbands) = & ! in cm^-1
-  (/ 820._r8, 2680._r8, 3250._r8, 4000._r8, 4650._r8, 5150._r8, 6150._r8, &
-    7700._r8, 8050._r8,12850._r8,16000._r8,22650._r8,29000._r8,38000._r8/)
-real(r8) :: wavenum_sw_upper(nswbands) = & ! in cm^-1
-  (/2680._r8, 3250._r8, 4000._r8, 4650._r8, 5150._r8, 6150._r8, 7700._r8, &
-    8050._r8,12850._r8,16000._r8,22650._r8,29000._r8,38000._r8,50000._r8/)
-real(r8) :: wavenum_lw_lower(nlwbands) = &! Longwave spectral band limits (cm-1)
+!
+! Note: These band limits should correspond to the optical property look-up
+! table bands, and may not correspond directly to the RRTMGP absorption
+! coefficient bands. This is to workaround the issue where aerosol optical
+! properties are output before bands are reordered to the expected RRTMGP order.
+! Optical properties should be reordered to RRTMGP order in the RRTMGP driver
+! interface codes.
+real(r8), parameter :: wavenum_sw_lower(nswbands) = & ! in cm^-1
+  (/2600._r8, 3250._r8, 4000._r8, 4650._r8, 5150._r8, 6150._r8, 7700._r8, &
+    8050._r8,12850._r8,16000._r8,22650._r8,29000._r8,38000._r8,  820._r8/)
+real(r8), parameter :: wavenum_sw_upper(nswbands) = & ! in cm^-1
+  (/3250._r8, 4000._r8, 4650._r8, 5150._r8, 6150._r8, 7700._r8, 8050._r8, &
+   12850._r8,16000._r8,22650._r8,29000._r8,38000._r8,50000._r8, 2600._r8/)
+real(r8), parameter :: wavenum_lw_lower(nlwbands) = &! Longwave spectral band limits (cm-1)
     (/   10._r8,  250._r8, 500._r8,   630._r8,  700._r8,  820._r8,  980._r8, 1080._r8, &
        1180._r8, 1390._r8, 1480._r8, 1800._r8, 2080._r8, 2250._r8, 2390._r8, 2680._r8 /)
-real(r8) :: wavenum_lw_upper(nlwbands) = &! Longwave spectral band limits (cm-1)
+real(r8), parameter :: wavenum_lw_upper(nlwbands) = &! Longwave spectral band limits (cm-1)
     (/  250._r8,  500._r8,  630._r8,  700._r8,  820._r8,  980._r8, 1080._r8, 1180._r8, &
        1390._r8, 1480._r8, 1800._r8, 2080._r8, 2250._r8, 2390._r8, 2680._r8, 3250._r8 /)
+
+! Mapping from old RRTMG sw bands to new band ordering in RRTMGP
+integer, parameter, dimension(14), public :: rrtmg_to_rrtmgp_swbands = (/ &
+   14, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 &
+/)
 
 ! Solar irradiance at 1 A.U. in W/m^2 assumed by radiation code
 ! Rescaled so that sum is precisely 1368.22 and fractional amounts sum to 1.0
@@ -59,10 +70,14 @@ real(r8), parameter :: solar_ref_band_irradiance(nswbands) = &
    /)
 
 ! These are indices to the band for diagnostic output
-integer, parameter, public :: idx_sw_diag = 11 ! index to sw visible band
-integer, parameter, public :: idx_nir_diag = 9 ! index to sw near infrared (778-1240 nm) band
-integer, parameter, public :: idx_uv_diag = 12 ! index to sw uv (345-441 nm) band
-integer, parameter, public :: rrtmg_sw_cloudsim_band = 10  ! rrtmg band for .67 micron
+! NOTE: these are consistent with the RRTMG optical property input data, NOT the
+! RRTMGP absorption coefficient data. This is because optical property
+! diagnostics are output in buried places in the code (i.e., aerosol optics
+! codes) before the bands can be transformed to the RRTMGP bands.
+integer, parameter, public :: idx_sw_diag = 10 ! index to sw visible band
+integer, parameter, public :: idx_nir_diag = 8 ! index to sw near infrared (778-1240 nm) band
+integer, parameter, public :: idx_uv_diag = 11 ! index to sw uv (345-441 nm) band
+integer, parameter, public :: rrtmg_sw_cloudsim_band = 9  ! rrtmg band for .67 micron
 
 ! Number of evenly spaced intervals in rh
 ! The globality of this mesh may not be necessary
@@ -81,14 +96,9 @@ integer, parameter, public :: nrh = 1000
 
 ! These are indices to the band for diagnostic output
 integer, parameter, public :: idx_lw_diag = 7 ! index to (H20 window) LW band
-
 integer, parameter, public :: rrtmg_lw_cloudsim_band = 6  ! rrtmg band for 10.5 micron
 
-!These can go away when old camrt disappears
-! Index of volc. abs., H2O non-window
-integer, public, parameter :: idx_LW_H2O_NONWND=1
-! Index of volc. abs., H2O window
-integer, public, parameter :: idx_LW_H2O_WINDOW=2
+! These can go away when old camrt disappears
 ! Index of volc. cnt. abs. 0500--0650 cm-1
 integer, public, parameter :: idx_LW_0500_0650=3
 ! Index of volc. cnt. abs. 0650--0800 cm-1
@@ -108,18 +118,12 @@ integer, public, parameter :: nradgas = 8
 character(len=gasnamelength), public, parameter :: gaslist(nradgas) &
    = (/'H2O  ','O3   ', 'O2   ', 'CO2  ', 'N2O  ', 'CH4  ', 'CFC11', 'CFC12'/)
 
-! what is the minimum mass mixing ratio that can be supported by radiation implementation?
-real(r8), public, parameter :: minmmr(nradgas) &
-   = epsilon(1._r8)
-
 ! Length of "optics type" string specified in optics files.
 integer, parameter, public :: ot_length = 32
 
 public :: rad_gas_index
 
 public :: get_number_sw_bands, &
-          set_sw_spectral_boundaries, &
-          set_lw_spectral_boundaries, &
           get_sw_spectral_boundaries, &
           get_lw_spectral_boundaries, &
           get_sw_spectral_midpoints, &
@@ -180,28 +184,6 @@ subroutine get_number_sw_bands(number_of_bands)
    number_of_bands = nswbands
 
 end subroutine get_number_sw_bands
-
-!------------------------------------------------------------------------------
-
-subroutine set_sw_spectral_boundaries(wavenum_bnds)
-   real(r8), intent(in), dimension(:,:) :: wavenum_bnds
-   integer :: ibnd
-   do ibnd = 1,nswbands
-      wavenum_sw_lower(ibnd) = wavenum_bnds(1,ibnd)
-      wavenum_sw_upper(ibnd) = wavenum_bnds(2,ibnd)
-   end do
-end subroutine
-
-!------------------------------------------------------------------------------
-
-subroutine set_lw_spectral_boundaries(wavenum_bnds)
-   real(r8), intent(in), dimension(:,:) :: wavenum_bnds
-   integer :: ibnd
-   do ibnd = 1,nlwbands
-      wavenum_lw_lower(ibnd) = wavenum_bnds(1,ibnd)
-      wavenum_lw_upper(ibnd) = wavenum_bnds(2,ibnd)
-   end do
-end subroutine
 
 !------------------------------------------------------------------------------
 
