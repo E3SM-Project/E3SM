@@ -1161,6 +1161,9 @@ module li_calving
                * real(li_mask_is_floating_ice_int(cellMask(:)), kind=RKIND)
                   ! calculate only for floating ice - map of "potential" calving rate
 
+         calvingVelocity(:) = config_calving_eigencalving_parameter_scalar_value  !MJH HACK
+
+
          call remove_calving_ice(meshPool, geometryPool, velocityPool, scratchPool, err)
          
          block => block % next
