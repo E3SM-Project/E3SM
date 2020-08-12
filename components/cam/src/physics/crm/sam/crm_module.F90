@@ -966,11 +966,6 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
                !$acc atomic update
                crm_rad_cld     (icrm,i_rad,j_rad,k) = crm_rad_cld        (icrm,i_rad,j_rad,k) + cf3d(icrm,i,j,k)
             else
-               ! if (tabs(icrm,i,j,k)>SHR_CONST_TKFRZ) then
-               !    rh_tmp = qv(icrm,i,j,k)/qsatw_crm(tabs(icrm,i,j,k),pres(icrm,k))
-               ! else
-               !    rh_tmp = qv(icrm,i,j,k)/qsati_crm(tabs(icrm,i,j,k),pres(icrm,k))
-               ! end if
                rh_tmp = qv(icrm,i,j,k)/qsatw_crm(tabs(icrm,i,j,k),pres(icrm,k))
                !$acc atomic update
                crm_clear_rh(icrm,k) = crm_clear_rh(icrm,k) + rh_tmp
