@@ -182,6 +182,7 @@ contains
          effectiveDensityNew(iCell) = effectiveDensityNew(iCell)/weightSum
       end do
       !$omp end do
+      !$omp end parallel
 
       !$omp barrier
       !$omp master
