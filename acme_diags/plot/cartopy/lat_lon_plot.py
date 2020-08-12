@@ -74,6 +74,7 @@ def plot_panel(n, fig, proj, var, clevels, cmap,
     region_str = parameters.regions[0]
     region = regions_specs[region_str]
     global_domain = True
+    full_lon = True
     if 'domain' in region.keys():
         # Get domain to plot
         domain = region['domain']
@@ -81,10 +82,10 @@ def plot_panel(n, fig, proj, var, clevels, cmap,
     else:
         # Assume global domain
         domain = cdutil.region.domain(latitude=(-90., 90, 'ccb'))
-        proj = ccrs.PlateCarree(central_longitude=180)
     kargs = domain.components()[0].kargs
     lon_west, lon_east, lat_south, lat_north = (0, 360, -90, 90)
     if 'longitude' in kargs:
+        full_lon = False
         lon_west, lon_east, _ = kargs['longitude']
         # Note cartopy Problem with gridlines across the dateline:https://github.com/SciTools/cartopy/issues/821. Region cross dateline is not supported yet.
         if lon_west>180 and lon_east>180:
@@ -99,8 +100,11 @@ def plot_panel(n, fig, proj, var, clevels, cmap,
     # Subtract 0.50 to get 0 W to show up on the right side of the plot.
     # If less than 0.50 is subtracted, then 0 W will overlap 0 E on the left side of the plot.
     # If a number is added, then the value won't show up at all.
-    if global_domain:
+    if global_domain or full_lon:
         xticks = np.append(xticks, lon_east-0.50)
+        proj = ccrs.PlateCarree(central_longitude=180)
+    else:
+        xticks = np.append(xticks, lon_east)
     lat_covered = lat_north - lat_south
     lat_step = determine_tick_step(lat_covered)
     yticks = np.arange(lat_south, lat_north, lat_step)
@@ -122,7 +126,7 @@ def plot_panel(n, fig, proj, var, clevels, cmap,
     # Full world would be aspect 360/(2*180) = 1
     ax.set_aspect((lon_east - lon_west)/(2*(lat_north - lat_south)))
     ax.coastlines(lw=0.3)
-    if not global_domain:
+    if not global_domain and 'RRM' in region_str:
         ax.coastlines(resolution='50m', color='black', linewidth=1)
         state_borders = cfeature.NaturalEarthFeature(category='cultural', name='admin_1_states_provinces_lakes', scale='50m', facecolor='none')
         ax.add_feature(state_borders, edgecolor='black')
@@ -192,7 +196,6 @@ def plot(reference, test, diff, metrics_dict, parameter):
 
     # Create figure, projection
     fig = plt.figure(figsize=parameter.figsize, dpi=parameter.dpi)
-    #proj = ccrs.PlateCarree(central_longitude=180)
     proj = ccrs.PlateCarree()
 
     # First two panels
