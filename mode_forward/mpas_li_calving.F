@@ -1223,6 +1223,7 @@ module li_calving
       real (kind=RKIND), dimension(:), pointer :: dvEdge
       type (field1dInteger), pointer :: calvingFrontMaskField
       real (kind=RKIND), dimension(:), pointer :: calvingVelocity
+      real (kind=RKIND), dimension(:), pointer :: areaCell
       integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
       integer :: err_tmp
 
@@ -1240,6 +1241,7 @@ module li_calving
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
       call mpas_pool_get_field(scratchPool, 'iceCellMask2',  calvingFrontMaskField)
       call mpas_allocate_scratch_field(calvingFrontMaskField, .true.)
@@ -1268,6 +1270,8 @@ module li_calving
                 endif
                 cellCalvingFrontHeight = max(cellCalvingFrontHeight, thickness(jCell))
             enddo
+
+            cellCalvingFrontLength = sqrt(2.0/(3.0*sqrt(3.0))*areaCell(iCell))*2.0 !MJH Step 1
 
             requiredCalvingVolumeRate(iCell) = calvingVelocity(iCell) * cellCalvingFrontLength * cellCalvingFrontHeight ! m^3/s
 
