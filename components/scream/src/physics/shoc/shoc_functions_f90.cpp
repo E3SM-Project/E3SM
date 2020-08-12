@@ -238,9 +238,17 @@ void calc_shoc_vertflux_f(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
     invar_d   (temp_d[2]),
     vertflux_d(temp_d[3]);
 
-  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1);
+  const Int nk_pack = scream::pack::npack<Spack>(nlev);
+  const auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-    SHF::calc_shoc_vertflux(team, shcol, nlev, tkh_zi_d, dz_zi_d, invar_d, vertflux_d);
+    const Int i = team.league_rank();
+
+    const auto otkh_zi_d   = util::subview(tkh_zi_d, i);
+    const auto odz_zi_d    = util::subview(dz_zi_d, i);
+    const auto oinvar_d    = util::subview(invar_d, i);
+    const auto overtflux_d = util::subview(vertflux_d, i);
+
+    SHF::calc_shoc_vertflux(team, nlev, otkh_zi_d, odz_zi_d, oinvar_d, overtflux_d);
   });
 
   // Sync back to host

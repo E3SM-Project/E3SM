@@ -72,11 +72,11 @@ struct Functions
   //
   static void calc_shoc_vertflux(
     const MemberType& team,
-    const Int& shcol, const Int& nlev,
-    const uview_2d<const Spack>& tkh_zi,
-    const uview_2d<const Spack>& dz_zi,
-    const uview_2d<const Spack>& invar,
-    const uview_2d<Spack>& vertflux);
+    const Int& nlev,
+    const uview_1d<const Spack>& tkh_zi,
+    const uview_1d<const Spack>& dz_zi,
+    const uview_1d<const Spack>& invar,
+    const uview_1d<Spack>& vertflux);
 
 }; // struct Functions
 
