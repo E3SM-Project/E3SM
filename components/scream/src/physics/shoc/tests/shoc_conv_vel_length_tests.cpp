@@ -25,20 +25,21 @@ TEST_CASE("shoc_conv_vel_length", "shoc") {
   constexpr Real gravit  = scream::physics::Constants<Real>::gravit;
   constexpr Int shcol    = 2;
   constexpr Int nlev     = 5;
+  const auto approx_zero = Approx(0.0).margin(1e-16);
 
   // Tests for the SHOC function:
   //   compute_conv_vel_shoc_length
-  
-  // Note that the output conv_vel from this subroutine 
+
+  // Note that the output conv_vel from this subroutine
   //   represents the integrated buoyancy flux and not technically
   //   the convective velocity scale, which is the cubed root
-  //   of conv_vel.   
-  
+  //   of conv_vel.
+
   // FIRST TEST
   // Verify that given negatively buoyant conditions that the
-  //   result is also negative.       
+  //   result is also negative.
 
-  // PBL height [m] 
+  // PBL height [m]
   // for this test set to be higher than highest zt_grid value
   Real pblh = 1000.0;
   // Grid difference centered on thermo grid [m]
@@ -78,11 +79,11 @@ TEST_CASE("shoc_conv_vel_length", "shoc") {
       REQUIRE(SDS.dz_zt[offset] > 0.0);
       REQUIRE(SDS.thv[offset] > 0.0);
       // For this negative buoyancy test, verify that all parcels
-      //  have negative buoyancy flux.  
+      //  have negative buoyancy flux.
       REQUIRE(SDS.wthv_sec[offset] < 0.0);
       if (n < nlev-1){
         // check that zt increases upward
-        REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0.0);       
+        REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0.0);
       }
     }
   }
@@ -92,22 +93,22 @@ TEST_CASE("shoc_conv_vel_length", "shoc") {
 
   // Check the results
   // Make sure that conv_vel is negative
-  for(Int s = 0; s < SDS.shcol; ++s) {   
+  for(Int s = 0; s < SDS.shcol; ++s) {
     REQUIRE(SDS.conv_vel[s] < 0.0);
   }
-  
+
   // SECOND TEST
-  // Symmetrical input test.  Here we feed input values of wthv_sec 
-  //  that are symmetrical around zero.  This is to verify that the 
-  //  result of conv_vel is also zero.  Here we need to assume 
+  // Symmetrical input test.  Here we feed input values of wthv_sec
+  //  that are symmetrical around zero.  This is to verify that the
+  //  result of conv_vel is also zero.  Here we need to assume
   //  a well mixed layer and constant profile of dz_zt
-  
+
   Real dz_zt_sym[nlev] = {100.0, 100.0, 100.0, 100.0, 100.0};
   // Virtual potential temperature on interface grid [K]
   Real thv_sym[nlev] = {300.0, 300.0, 300.0, 300.0, 300.0};
   // Buoyancy flux [K m/s]
   Real wthv_sec_sym[nlev] = {0.04, 0.02, 0.00, -0.02, -0.04};
-  
+
   // Fill in new test data on zt_grid.
   for(Int s = 0; s < SDS.shcol; ++s) {
     for(Int n = 0; n < SDS.nlev; ++n) {
@@ -117,8 +118,8 @@ TEST_CASE("shoc_conv_vel_length", "shoc") {
       SDS.thv[offset] = thv_sym[n];
       SDS.wthv_sec[offset] = wthv_sec_sym[n];
     }
-  }      
-  
+  }
+
   // Check that the inputs make sense
 
   for(Int s = 0; s < SDS.shcol; ++s) {
@@ -131,17 +132,17 @@ TEST_CASE("shoc_conv_vel_length", "shoc") {
       wthv_sum += SDS.wthv_sec[offset];
     }
     // Make sure inputs of buoyancy flux sum to zero
-    REQUIRE(abs(wthv_sum) == 0.0);
-  } 
-  
+    REQUIRE(abs(wthv_sum) == approx_zero);
+  }
+
   // Call the fortran implementation
-  compute_conv_vel_shoc_length(nlev, SDS);  
-  
+  compute_conv_vel_shoc_length(nlev, SDS);
+
   // Check the results
-  // Make sure that conv_vel is zero 
-  for(Int s = 0; s < SDS.shcol; ++s) {   
-    REQUIRE(abs(SDS.conv_vel[s]) == 0.0);
-  }  
+  // Make sure that conv_vel is zero
+  for(Int s = 0; s < SDS.shcol; ++s) {
+    REQUIRE(abs(SDS.conv_vel[s]) == approx_zero);
+  }
 
 }
 
