@@ -27,6 +27,23 @@ void calc_shoc_varorcovar_c(Int shcol, Int nlev, Int nlevi,  Real tunefac,
                             Real *isotropy_zi, Real *tkh_zi, Real *dz_zi,
 			    Real *invar1, Real *invar2, Real *varorcovar);
 
+void integ_column_stability_c(Int nlev, Int shcol, Real *dz_zt, Real *pres,
+			      Real *brunt, Real *brunt_int);
+
+void compute_shr_prod_c(Int nlevi, Int nlev, Int shcol, Real *dz_zi,
+                        Real *u_wind, Real *v_wind, Real *sterm);
+
+void isotropic_ts_c(Int nlev, Int shcol, Real *brunt_int, Real *tke,
+                    Real *a_diss, Real *brunt, Real *isotropy);
+
+void adv_sgs_tke_c(Int nlev, Int shcol, Real dtime, Real *shoc_mix,
+                   Real *wthv_sec, Real *sterm_zt, Real *tk,
+                   Real *tke, Real *a_diss);
+
+void eddy_diffusivities_c(Int nlev, Int shcol, Real *obklen, Real *pblh,
+                          Real *zt_grid, Real *shoc_mix, Real *sterm_zt,
+                          Real *isotropy, Real *tke, Real *tkh, Real *tk);
+
 void calc_shoc_vertflux_c(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 			  Real *dz_zi, Real *invar, Real *vertflux);
 }
@@ -121,7 +138,10 @@ void SHOCDataBase::randomize()
 // 'true' argument is to set shoc to use its fortran implementations instead of
 // calling back to C++. We want this behavior since it doesn't make much sense
 // for C++ to bridge over to fortran only to have fortran bridge back to C++.
-// Anyone who wants the C++ implementation should call it directly.
+// Anyone who wants the C++ implementation should call it directly. We need
+// need to be aware of data layout since f90 is different from cxx. All these
+// functions will expect incoming data to be C layout. They will transpose to f90
+// before calling fortran and then back to C before returning.
 //
 
 void calc_shoc_varorcovar(SHOCVarorcovarData &d) {
@@ -140,8 +160,6 @@ void shoc_grid(SHOCGridData &d) {
   d.transpose<util::TransposeDirection::f2c>();
 }
 
-//Initialize shoc parameterization, trnaspose data from c to fortran,
-//call calc_shoc_vertflux fortran subroutine and transpose data back to c
 void calc_shoc_vertflux(SHOCVertfluxData &d) {
   shoc_init(d.nlev, true);
   d.transpose<util::TransposeDirection::c2f>();
@@ -150,8 +168,47 @@ void calc_shoc_vertflux(SHOCVertfluxData &d) {
   d.transpose<util::TransposeDirection::f2c>();
 }
 
+void integ_column_stability(SHOCColstabData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  integ_column_stability_c(d.nlev, d.shcol, d.dz_zt, d.pres, d.brunt, d.brunt_int);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+void compute_shr_prod(SHOCTkeshearData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  compute_shr_prod_c(d.nlevi, d.nlev, d.shcol, d.dz_zi, d.u_wind,
+                       d.v_wind, d.sterm);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+void isotropic_ts(SHOCIsotropicData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  isotropic_ts_c(d.nlev, d.shcol, d.brunt_int, d.tke, d.a_diss,
+                 d.brunt, d.isotropy);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+void adv_sgs_tke(SHOCAdvsgstkeData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  adv_sgs_tke_c(d.nlev, d.shcol, d.dtime, d.shoc_mix, d.wthv_sec,
+                d.sterm_zt, d.tk, d.tke, d.a_diss);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+void eddy_diffusivities(SHOCEddydiffData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  eddy_diffusivities_c(d.nlev, d.shcol, d.obklen, d.pblh, d.zt_grid,
+     d.shoc_mix, d.sterm_zt, d.isotropy, d.tke, d.tkh, d.tk);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
 //
-// _f function definitions
+// _f function definitions. These expect data in C layout
 //
 
 void calc_shoc_vertflux_f(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
@@ -165,7 +222,7 @@ void calc_shoc_vertflux_f(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
   using ExeSpace   = typename KT::ExeSpace;
   using MemberType = typename SHF::MemberType;
 
-  static constexpr Int num_arrays = SHOCVertfluxData::NUM_ARRAYS + SHOCVertfluxData::NUM_ARRAYS_i;
+  static constexpr Int num_arrays = 4;
 
   Kokkos::Array<view_2d, num_arrays> temp_d;
   Kokkos::Array<size_t, num_arrays> dim1_sizes     = {shcol,  shcol, shcol, shcol};
