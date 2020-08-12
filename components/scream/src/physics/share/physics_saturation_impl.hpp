@@ -45,7 +45,7 @@ Functions<S,D>::MurphyKoop_svp(const Spack& t_atm, const bool ice)
   //Soc., 131(608), 1539–1565,
 
   Spack result;
-  const auto tmelt = C::Tmelt;
+  static constexpr  auto tmelt = C::Tmelt;
   const Smask ice_mask = (t_atm < tmelt) && ice;
   const Smask liq_mask = !ice_mask;
 
@@ -85,7 +85,7 @@ Functions<S,D>::polysvp1(const Spack& t, const bool ice)
 
   const Spack dt = pack::max(t - sp(273.15), sp(-80));
   Spack result;
-  const auto tmelt = C::Tmelt;
+  static constexpr  auto tmelt = C::Tmelt;
   const Smask ice_mask = (t < tmelt) && ice;
   const Smask liq_mask = !ice_mask;
 
@@ -147,7 +147,7 @@ Functions<S,D>::qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice, c
       scream_kerror_msg("Error! Invalid func_idx supplied to qv_sat.");
     }
 
-  const auto ep_2 = C::ep_2;
+  static constexpr  auto ep_2 = C::ep_2;
   return ep_2 * e_pres / pack::max(p_atm-e_pres, sp(1.e-3));
 }
 
