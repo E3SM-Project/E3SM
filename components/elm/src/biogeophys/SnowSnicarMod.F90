@@ -316,6 +316,7 @@ contains
     integer :: j                                  ! aerosol number index [idx]
     integer :: n                                  ! tridiagonal matrix index [idx]
     integer :: m                                  ! secondary layer index [idx]
+    integer :: nint_snw_rds_min                   ! nearest integer value of snw_rds_min
    
     real(r8):: F_direct(-nlevsno+1:0)             ! direct-beam radiation at bottom of layer interface (lyr) [W/m^2]
     real(r8):: F_net(-nlevsno+1:0)                ! net radiative flux at bottom of layer interface (lyr) [W/m^2]
@@ -388,6 +389,7 @@ contains
 
       ! Define constants
       pi = SHR_CONST_PI
+      nint_snw_rds_min = nint(snw_rds_min)
 
       ! always use Delta approximation for snow
       DELTA = 1
@@ -430,7 +432,7 @@ contains
                   snl_lcl           =  -1
                   h2osno_ice_lcl(0) =  h2osno_lcl
                   h2osno_liq_lcl(0) =  0._r8
-                  snw_rds_lcl(0)    =  nint(snw_rds_min)
+                  snw_rds_lcl(0)    =  nint_snw_rds_min
                else
                   flg_nosnl         =  0
                   snl_lcl           =  snl(c_idx)
