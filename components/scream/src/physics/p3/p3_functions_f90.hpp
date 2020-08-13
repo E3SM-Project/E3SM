@@ -1312,23 +1312,6 @@ void p3_main_f(
   Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange);
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// BFB math stuff
-///////////////////////////////////////////////////////////////////////////////
-
-extern "C" {
-
-Real cxx_pow(Real base, Real exp);
-Real cxx_sqrt(Real base);
-Real cxx_cbrt(Real base);
-Real cxx_gamma(Real input);
-Real cxx_log(Real input);
-Real cxx_log10(Real input);
-Real cxx_exp(Real input);
-Real cxx_tanh(Real input);
-
-}
-
 }  // namespace p3
 }  // namespace scream
 

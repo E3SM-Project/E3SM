@@ -24,23 +24,23 @@ namespace unit_test {
 TEST_CASE("shoc_tke_adv_sgs_tke", "shoc") {
   constexpr Int shcol    = 2;
   constexpr Int nlev     = 1;
-  
-  // Tests for the subroutine adv_sgs_tke 
-  //   in the SHOC TKE module.     
-  
+
+  // Tests for the subroutine adv_sgs_tke
+  //   in the SHOC TKE module.
+
   // For this routine all inputs are on midpoint grid and
   //  there are no vertical derivatives, therefore we will
   //  consider one vertical level per test. Each column will
-  //  be loaded up with a different test (growth, decay)  
+  //  be loaded up with a different test (growth, decay)
 
   // FIRST TEST
   // TKE growth/decay test.  Given the correct conditions, verify
   //  that TKE grows/decays over a timestep.  For this we choose a
   //  large/small mixing length, positive buoyancy flux, positive
-  //  shear term, and large eddy diffusivity.  
-  
+  //  shear term, and large eddy diffusivity.
+
   // Values in the FIRST column represents the growth test
-  // Values in the SECOND column represents the decay test 
+  // Values in the SECOND column represents the decay test
 
   // Define timestep [s]
   Real dtime = 20.0;
@@ -76,7 +76,7 @@ TEST_CASE("shoc_tke_adv_sgs_tke", "shoc") {
     for (Int n = 0; n < SDS.nlev; ++n){
       const auto offset = n + s * SDS.nlev;
       // time step, mixing length, TKE values,
-      // shear terms should all be greater than zero 
+      // shear terms should all be greater than zero
       REQUIRE(SDS.dtime > 0.0);
       REQUIRE(SDS.shoc_mix[offset] > 0.0);
       REQUIRE(SDS.tke[offset] > 0.0);
@@ -85,14 +85,14 @@ TEST_CASE("shoc_tke_adv_sgs_tke", "shoc") {
   }
 
   // Call the fortran implementation
-  adv_sgs_tke(nlev, SDS);
-  
+  adv_sgs_tke(SDS);
+
   // Check to make sure that there has been
   //  TKE growth
   for(Int s = 0; s < SDS.shcol; ++s) {
     for(Int n = 0; n < SDS.nlev; ++n) {
       const auto offset = n + s * SDS.nlev;
-      
+
       if (s == 0){
         // Growth check
         REQUIRE(SDS.tke[offset] > tke_init_gr[s]);
@@ -103,11 +103,11 @@ TEST_CASE("shoc_tke_adv_sgs_tke", "shoc") {
       }
     }
   }
-  
+
   // SECOND TEST
   // TKE Dissipation test.  Given input values that are identical
   //  in two columns, verify that the dissipation rate is higher
-  //  when the length scale is lower.  
+  //  when the length scale is lower.
 
   // SHOC mixing length [m]
   Real shoc_mix_diss[shcol] = {1000.0, 500.};
@@ -116,7 +116,7 @@ TEST_CASE("shoc_tke_adv_sgs_tke", "shoc") {
   // Shear production term [s-2]
   Real sterm_diss = 0.01;
   // TKE initial value
-  Real tke_init_diss= 0.1;      
+  Real tke_init_diss= 0.1;
 
   // Fill in test data on zt_grid.
   for(Int s = 0; s < SDS.shcol; ++s) {
@@ -135,34 +135,34 @@ TEST_CASE("shoc_tke_adv_sgs_tke", "shoc") {
     for (Int n = 0; n < SDS.nlev; ++n){
       const auto offset = n + s * SDS.nlev;
       // time step, mixing length, TKE values,
-      // shear terms should all be greater than zero 
+      // shear terms should all be greater than zero
       REQUIRE(SDS.dtime > 0.0);
       REQUIRE(SDS.shoc_mix[offset] > 0.0);
       REQUIRE(SDS.tke[offset] > 0.0);
       REQUIRE(SDS.sterm_zt[offset] >= 0.0);
     }
   }
-  
-  // Call the fortran implementation
-  adv_sgs_tke(nlev, SDS);  
 
-  // Check to make sure that the column with 
-  //  the smallest length scale has larger 
+  // Call the fortran implementation
+  adv_sgs_tke(SDS);
+
+  // Check to make sure that the column with
+  //  the smallest length scale has larger
   //  dissipation rate
   for(Int s = 0; s < SDS.shcol-1; ++s) {
     for(Int n = 0; n < SDS.nlev; ++n) {
       const auto offset = n + s * SDS.nlev;
       // Get value corresponding to next column
-      const auto offsets = n + (s+1) * SDS.nlev; 
+      const auto offsets = n + (s+1) * SDS.nlev;
       if(SDS.shoc_mix[offset] > SDS.shoc_mix[offsets]){
         REQUIRE(SDS.a_diss[offset] < SDS.a_diss[offsets]);
-      } 
+      }
       else {
         REQUIRE(SDS.a_diss[offset] > SDS.a_diss[offsets]);
-      }     
+      }
     }
-  }  
-  
+  }
+
 }
 
 }  // namespace unit_test
