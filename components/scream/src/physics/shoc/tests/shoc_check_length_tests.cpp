@@ -70,7 +70,7 @@ TEST_CASE("shoc_check_length", "shoc") {
   }
 
   // Call the fortran implementation
-  check_length_scale_shoc_length(nlev, SDS);
+  check_length_scale_shoc_length(SDS);
 
   // Check the results
   for(Int s = 0; s < SDS.shcol; ++s) {   

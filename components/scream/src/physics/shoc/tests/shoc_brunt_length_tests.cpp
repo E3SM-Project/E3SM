@@ -83,7 +83,7 @@ TEST_CASE("shoc_brunt_length", "shoc") {
   }
 
   // Call the fortran implementation
-  compute_brunt_shoc_length(nlev, SDS);
+  compute_brunt_shoc_length(SDS);
 
   // Check the results
   for(Int s = 0; s < SDS.shcol; ++s) {   

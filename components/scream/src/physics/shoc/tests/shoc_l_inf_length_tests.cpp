@@ -82,7 +82,7 @@ TEST_CASE("shoc_l_inf_length", "shoc") {
   }
 
   // Call the fortran implementation
-  compute_l_inf_shoc_length(nlev, SDS);
+  compute_l_inf_shoc_length(SDS);
 
   // Check the results
   // Make sure that conv_vel is negative

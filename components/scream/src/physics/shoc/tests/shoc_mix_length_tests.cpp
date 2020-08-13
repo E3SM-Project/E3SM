@@ -91,7 +91,7 @@ TEST_CASE("shoc_mix_length", "shoc") {
   }
 
   // Call the fortran implementation
-  compute_shoc_mix_shoc_length(nlev, SDS);
+  compute_shoc_mix_shoc_length(SDS);
 
   // Check the results
   for(Int s = 0; s < SDS.shcol; ++s) {   

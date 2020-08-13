@@ -60,6 +60,7 @@ struct SHOCDataBase
   std::vector<Real> m_data;
 };
 
+//Create data structure to hold data for shoc_grid
 struct SHOCGridData : public SHOCDataBase {
   // Inputs
   Real *zt_grid, *zi_grid, *pdel;
@@ -75,6 +76,7 @@ struct SHOCGridData : public SHOCDataBase {
   SHOCGridData &operator=(const SHOCGridData &rhs) { SHOCDataBase::operator=(rhs); return *this; }
 };
 
+//Create data structure to hold data for integ_column_stability
 struct SHOCColstabData : public SHOCDataBase {
   // Inputs
   Real *dz_zt, *pres, *brunt;
@@ -88,6 +90,7 @@ struct SHOCColstabData : public SHOCDataBase {
   SHOCColstabData &operator=(const SHOCColstabData &rhs) { SHOCDataBase::operator=(rhs); return *this; }
 };//SHOCColstabData
 
+//Create data structure to hold data for compute_shr_prod
 struct SHOCTkeshearData : public SHOCDataBase {
   // Inputs
   Real *dz_zi, *u_wind, *v_wind;
@@ -102,6 +105,7 @@ struct SHOCTkeshearData : public SHOCDataBase {
   SHOCTkeshearData &operator=(const SHOCTkeshearData &rhs) { SHOCDataBase::operator=(rhs); return *this; }
 };//SHOCTkeshearData
 
+//Create data structure to hold data for isotropic_ts
 struct SHOCIsotropicData : public SHOCDataBase {
   // Inputs
   Real *tke, *a_diss, *brunt, *brunt_int;
@@ -116,6 +120,7 @@ struct SHOCIsotropicData : public SHOCDataBase {
   SHOCIsotropicData &operator=(const SHOCIsotropicData &rhs) { SHOCDataBase::operator=(rhs); return *this; }
 };//SHOCIsotropicData
 
+//Create data structure to hold data for adv_sgs_tke
 struct SHOCAdvsgstkeData : public SHOCDataBase {
   // Inputs
   Real dtime;
@@ -135,6 +140,7 @@ struct SHOCAdvsgstkeData : public SHOCDataBase {
   { SHOCDataBase::operator=(rhs); dtime = rhs.dtime; return *this; }
 };//SHOCAdvsgstkeData
 
+//Create data structure to hold data for eddy_diffusivities
 struct SHOCEddydiffData : public SHOCDataBase {
   // Inputs
   Real *pblh, *obklen, *zt_grid, *shoc_mix, *sterm_zt,
@@ -164,6 +170,7 @@ struct SHOCVertfluxData : public SHOCDataBase {
   SHOCVertfluxData &operator=(const SHOCVertfluxData &rhs) { SHOCDataBase::operator=(rhs); return *this; }
 }; //SHOCVertfluxData
 
+//Create data structure to hold data for calc_shoc_varorcovar
 struct SHOCVarorcovarData : public SHOCDataBase {
   // Inputs
   Real tunefac;
@@ -179,6 +186,103 @@ struct SHOCVarorcovarData : public SHOCDataBase {
   SHOCVarorcovarData &operator=(const SHOCVarorcovarData &rhs)
   { SHOCDataBase::operator=(rhs); tunefac = rhs.tunefac; return *this; }
 };//SHOCVarorcovarData
+
+//Create data structure to hold data for compute_brunt_shoc_length
+struct SHOCBruntlengthData : public SHOCDataBase {
+  // Inputs
+  Real *dz_zt, *thv, *thv_zi;
+
+  // In/out
+  Real *brunt;
+
+  SHOCBruntlengthData(Int shcol_, Int nlev_, Int nlevi_) :
+    SHOCDataBase(shcol_, nlev_, nlevi_, {&dz_zt, &thv, &brunt}, {&thv_zi}) {}
+  SHOCBruntlengthData(const SHOCBruntlengthData &rhs) :
+    SHOCDataBase(rhs, {&dz_zt, &thv, &brunt}, {&thv_zi}) {}
+  SHOCBruntlengthData &operator=(const SHOCBruntlengthData &rhs)
+  { SHOCDataBase::operator=(rhs); return *this; }
+};//SHOCBruntlengthData
+
+//Create data structure to hold data for compute_l_inf_shoc_length
+struct SHOCInflengthData : public SHOCDataBase {
+  // Inputs
+  Real *zt_grid, *dz_zt, *tke;
+
+  // In/out
+  Real *l_inf;
+
+  SHOCInflengthData(Int shcol_, Int nlev_) :
+    SHOCDataBase(shcol_, nlev_, 1, {&zt_grid, &dz_zt, &tke}, {&l_inf}) {}
+  SHOCInflengthData(const SHOCInflengthData &rhs) :
+    SHOCDataBase(rhs, {&zt_grid, &dz_zt, &tke}, {&l_inf}) {}
+  SHOCInflengthData &operator=(const SHOCInflengthData &rhs)
+  { SHOCDataBase::operator=(rhs); return *this; }
+};//SHOCInflengthData
+
+//Create data structure to hold data for compute_vel_shoc_length
+struct SHOCConvvelData : public SHOCDataBase {
+  // Inputs
+  Real *pblh, *zt_grid, *dz_zt, *thv, *wthv_sec;
+
+  // In/out
+  Real *conv_vel;
+
+  SHOCConvvelData(Int shcol_, Int nlev_) :
+    SHOCDataBase(shcol_, nlev_, 1, {&zt_grid, &dz_zt, &thv, &wthv_sec}, {&conv_vel, &pblh}) {}
+  SHOCConvvelData(const SHOCConvvelData &rhs) :
+    SHOCDataBase(rhs, {&zt_grid, &dz_zt, &thv, &wthv_sec}, {&conv_vel, &pblh}) {}
+  SHOCConvvelData &operator=(const SHOCConvvelData &rhs)
+  { SHOCDataBase::operator=(rhs); return *this; }
+};//SHOCConvvelData
+
+//Create data structure to hold data for compute_conv_time_shoc_length
+struct SHOCConvtimeData : public SHOCDataBase {
+  // Inputs
+  Real *pblh, *conv_vel;
+
+  // In/out
+  Real *tscale;
+
+  SHOCConvtimeData(Int shcol_, Int nlev_) :
+    SHOCDataBase(shcol_, nlev_, 1, {}, {&conv_vel, &pblh, &tscale}) {}
+  SHOCConvtimeData(const SHOCConvtimeData &rhs) :
+    SHOCDataBase(rhs, {}, {&conv_vel, &pblh, &tscale}) {}
+  SHOCConvtimeData &operator=(const SHOCConvtimeData &rhs)
+  { SHOCDataBase::operator=(rhs); return *this; }
+};//SHOCConvtimeData
+
+//Create data structure to hold data for compute_shoc_mix_shoc_length
+struct SHOCMixlengthData : public SHOCDataBase {
+  // Inputs
+  Real *tke, *brunt, *tscale, *zt_grid, *l_inf;
+
+  // In/out
+  Real *shoc_mix;
+
+  SHOCMixlengthData(Int shcol_, Int nlev_) :
+    SHOCDataBase(shcol_, nlev_, 1, {&tke, &brunt, &zt_grid, &shoc_mix}, {&l_inf, &tscale}) {}
+  SHOCMixlengthData(const SHOCMixlengthData &rhs) :
+    SHOCDataBase(rhs, {&tke, &brunt, &zt_grid, &shoc_mix}, {&l_inf, &tscale}) {}
+  SHOCMixlengthData &operator=(const SHOCMixlengthData &rhs)
+  { SHOCDataBase::operator=(rhs); return *this; }
+};//SHOCMixlengthData
+
+//Create data structure to hold data for check_length_scale_shoc_length
+struct SHOCMixcheckData : public SHOCDataBase {
+  // Inputs
+  Real *host_dx, *host_dy;
+
+  // In/out
+  Real *shoc_mix;
+
+  SHOCMixcheckData(Int shcol_, Int nlev_) :
+    SHOCDataBase(shcol_, nlev_, 1, {&shoc_mix}, {&host_dx, &host_dy}) {}
+  SHOCMixcheckData(const SHOCMixcheckData &rhs) :
+    SHOCDataBase(rhs, {&shoc_mix}, {&host_dx, &host_dy}) {}
+  SHOCMixcheckData &operator=(const SHOCMixcheckData &rhs)
+  { SHOCDataBase::operator=(rhs); return *this; }
+};//SHOCMixcheckData
+
 
 //
 // Glue functions to call fortran from from C++ with the Data struct
@@ -196,6 +300,12 @@ void compute_shr_prod(SHOCTkeshearData &d);
 void isotropic_ts(SHOCIsotropicData &d);
 void adv_sgs_tke(SHOCAdvsgstkeData &d);
 void eddy_diffusivities(SHOCEddydiffData &d);
+void compute_brunt_shoc_length(SHOCBruntlengthData &d);
+void compute_l_inf_shoc_length(SHOCInflengthData &d);
+void compute_conv_vel_shoc_length(SHOCConvvelData &d);
+void compute_conv_time_shoc_length(SHOCConvtimeData &d);
+void compute_shoc_mix_shoc_length(SHOCMixlengthData &d);
+void check_length_scale_shoc_length(SHOCMixcheckData &d);
 
 //
 // _f functions decls
@@ -206,256 +316,6 @@ void calc_shoc_vertflux_f(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 			  Real *dz_zi, Real *invar, Real *vertflux);
 
 }
-
-//Create data structure to hold data for compute_brunt_shoc_length
-struct SHOCBruntlengthData {
-  static constexpr size_t NUM_ARRAYS   = 3; //# of arrays with values at cell centers (zt grid)
-  static constexpr size_t NUM_ARRAYS_i = 1; //# of arrays with values at interface centers (zi grid)
-
-  // Inputs
-  Int   shcol, nlev, nlevi;
-  Real *dz_zt, *thv, *thv_zi;
-
-  // Outputs
-  Real *brunt;
-
-  //functions to initialize data
-  SHOCBruntlengthData(Int shcol_, Int nlev_, Int nlevi_);
-  SHOCBruntlengthData(const SHOCBruntlengthData &rhs);
-  SHOCBruntlengthData &operator=(const SHOCBruntlengthData &rhs);
-
-  void init_ptrs();
-
-  // Internals
-  Int m_shcol, m_nlev, m_nlevi, m_total, m_totali;
-  std::vector<Real> m_data;
-  std::vector<Real> m_datai;
-
-  template <util::TransposeDirection::Enum D>
-  void transpose() {
-    SHOCBruntlengthData d_trans(*this);
-
-    // Transpose on the zt grid
-    util::transpose<D>(dz_zt, d_trans.dz_zt, shcol, nlev);
-    util::transpose<D>(thv, d_trans.thv, shcol, nlev);
-    util::transpose<D>(brunt, d_trans.brunt, shcol, nlev);
-
-    // Transpose on the zi grid
-    util::transpose<D>(thv_zi, d_trans.thv_zi, shcol, nlevi);
-
-    *this = std::move(d_trans);
-  }
-};//SHOCBruntlengthData
-
-void compute_brunt_shoc_length(Int nlev, SHOCBruntlengthData &d);
-
-//Create data structure to hold data for compute_l_inf_shoc_length
-struct SHOCInflengthData {
-  static constexpr size_t NUM_ARRAYS   = 3; //# of arrays with values at cell centers (zt grid)
-  static constexpr size_t NUM_ARRAYS_c = 1; //# of arrays with column only dimensions
-
-  // Inputs
-  Int   shcol, nlev;
-  Real *zt_grid, *dz_zt, *tke;
-
-  // Outputs
-  Real *l_inf;
-
-  //functions to initialize data
-  SHOCInflengthData(Int shcol_, Int nlev_);
-  SHOCInflengthData(const SHOCInflengthData &rhs);
-  SHOCInflengthData &operator=(const SHOCInflengthData &rhs);
-
-  void init_ptrs();
-
-  // Internals
-  Int m_shcol, m_nlev, m_nlevc, m_total, m_totalc;
-  std::vector<Real> m_data;
-  std::vector<Real> m_datac;
-
-  template <util::TransposeDirection::Enum D>
-  void transpose() {
-    SHOCInflengthData d_trans(*this);
-
-    // Transpose on the zt grid
-    util::transpose<D>(zt_grid, d_trans.zt_grid, shcol, nlev);
-    util::transpose<D>(dz_zt, d_trans.dz_zt, shcol, nlev);
-    util::transpose<D>(tke, d_trans.tke, shcol, nlev);
-
-    // Transpose on the column only grid
-    util::transpose<D>(l_inf, d_trans.l_inf, shcol, 1);
-
-    *this = std::move(d_trans);
-  }
-};//SHOCInflengthData
-
-void compute_l_inf_shoc_length(Int nlev, SHOCInflengthData &d);
-
-//Create data structure to hold data for compute_conv_vel_shoc_length
-struct SHOCConvvelData {
-  static constexpr size_t NUM_ARRAYS   = 4; //# of arrays with values at cell centers (zt grid)
-  static constexpr size_t NUM_ARRAYS_c = 2; //# of arrays with column only dimensions
-
-  // Inputs
-  Int   shcol, nlev;
-  Real *pblh, *zt_grid, *dz_zt, *thv, *wthv_sec;
-
-  // Outputs
-  Real *conv_vel;
-
-  //functions to initialize data
-  SHOCConvvelData(Int shcol_, Int nlev_);
-  SHOCConvvelData(const SHOCConvvelData &rhs);
-  SHOCConvvelData &operator=(const SHOCConvvelData &rhs);
-
-  void init_ptrs();
-
-  // Internals
-  Int m_shcol, m_nlev, m_nlevc, m_total, m_totalc;
-  std::vector<Real> m_data;
-  std::vector<Real> m_datac;
-
-  template <util::TransposeDirection::Enum D>
-  void transpose() {
-    SHOCConvvelData d_trans(*this);
-
-    // Transpose on the zt grid
-    util::transpose<D>(zt_grid, d_trans.zt_grid, shcol, nlev);
-    util::transpose<D>(dz_zt, d_trans.dz_zt, shcol, nlev);
-    util::transpose<D>(thv, d_trans.thv, shcol, nlev);
-    util::transpose<D>(wthv_sec, d_trans.wthv_sec, shcol, nlev);
-
-    // Transpose on the column only grid
-    util::transpose<D>(pblh, d_trans.pblh, shcol, 1);
-    util::transpose<D>(conv_vel, d_trans.conv_vel, shcol, 1);
-
-    *this = std::move(d_trans);
-  }
-};//SHOCConvvelData
-
-void compute_conv_vel_shoc_length(Int nlev, SHOCConvvelData &d);
-
-//Create data structure to hold data for compute_conv_time_shoc_length
-struct SHOCConvtimeData {
-  static constexpr size_t NUM_ARRAYS_c = 3; //# of arrays with column only dimensions
-
-  // Inputs
-  Int   shcol, nlev;
-  Real *pblh, *conv_vel;
-
-  // Outputs
-  Real *tscale;
-
-  //functions to initialize data
-  SHOCConvtimeData(Int shcol_);
-  SHOCConvtimeData(const SHOCConvtimeData &rhs);
-  SHOCConvtimeData &operator=(const SHOCConvtimeData &rhs);
-
-  void init_ptrs();
-
-  // Internals
-  Int m_shcol, m_totalc;
-  std::vector<Real> m_datac;
-
-  template <util::TransposeDirection::Enum D>
-  void transpose() {
-    SHOCConvtimeData d_trans(*this);
-
-    // Transpose on the column only grid
-    util::transpose<D>(pblh, d_trans.pblh, shcol, 1);
-    util::transpose<D>(conv_vel, d_trans.conv_vel, shcol, 1);
-    util::transpose<D>(tscale, d_trans.tscale, shcol, 1);
-
-    *this = std::move(d_trans);
-  }
-};//SHOCConvtimeData
-
-void compute_conv_time_shoc_length(Int nlev, SHOCConvtimeData &d);
-
-//Create data structure to hold data for compute_shoc_mix_shoc_length
-struct SHOCMixlengthData {
-  static constexpr size_t NUM_ARRAYS   = 4; //# of arrays with values at cell centers (zt grid)
-  static constexpr size_t NUM_ARRAYS_c = 2; //# of arrays with column only dimensions
-
-  // Inputs
-  Int   shcol, nlev;
-  Real *tke, *brunt, *tscale, *zt_grid, *l_inf;
-
-  // Outputs
-  Real *shoc_mix;
-
-  //functions to initialize data
-  SHOCMixlengthData(Int shcol_, Int nlev_);
-  SHOCMixlengthData(const SHOCMixlengthData &rhs);
-  SHOCMixlengthData &operator=(const SHOCMixlengthData &rhs);
-
-  void init_ptrs();
-
-  // Internals
-  Int m_shcol, m_nlev, m_nlevc, m_total, m_totalc;
-  std::vector<Real> m_data;
-  std::vector<Real> m_datac;
-
-  template <util::TransposeDirection::Enum D>
-  void transpose() {
-    SHOCMixlengthData d_trans(*this);
-
-    // Transpose on the zt grid
-    util::transpose<D>(tke, d_trans.tke, shcol, nlev);
-    util::transpose<D>(brunt, d_trans.brunt, shcol, nlev);
-    util::transpose<D>(zt_grid, d_trans.zt_grid, shcol, nlev);
-    util::transpose<D>(shoc_mix, d_trans.shoc_mix, shcol, nlev);
-
-    // Transpose on the column only grid
-    util::transpose<D>(l_inf, d_trans.l_inf, shcol, 1);
-    util::transpose<D>(tscale, d_trans.tscale, shcol, 1);
-
-    *this = std::move(d_trans);
-  }
-};//SHOCMixlengthData
-
-void compute_shoc_mix_shoc_length(Int nlev, SHOCMixlengthData &d);
-
-//Create data structure to hold data for check_length_scale_shoc_length
-struct SHOCMixcheckData {
-  static constexpr size_t NUM_ARRAYS   = 1; //# of arrays with values at cell centers (zt grid)
-  static constexpr size_t NUM_ARRAYS_c = 2; //# of arrays with column only dimensions
-
-  // Inputs
-  Int   shcol, nlev;
-  Real *host_dx, *host_dy;
-
-  // Outputs
-  Real *shoc_mix;
-
-  //functions to initialize data
-  SHOCMixcheckData(Int shcol_, Int nlev_);
-  SHOCMixcheckData(const SHOCMixcheckData &rhs);
-  SHOCMixcheckData &operator=(const SHOCMixcheckData &rhs);
-
-  void init_ptrs();
-
-  // Internals
-  Int m_shcol, m_nlev, m_nlevc, m_total, m_totalc;
-  std::vector<Real> m_data;
-  std::vector<Real> m_datac;
-
-  template <util::TransposeDirection::Enum D>
-  void transpose() {
-    SHOCMixcheckData d_trans(*this);
-
-    // Transpose on the zt grid
-    util::transpose<D>(shoc_mix, d_trans.shoc_mix, shcol, nlev);
-
-    // Transpose on the column only grid
-    util::transpose<D>(host_dx, d_trans.host_dx, shcol, 1);
-    util::transpose<D>(host_dy, d_trans.host_dy, shcol, 1);
-
-    *this = std::move(d_trans);
-  }
-};//SHOCMixcheckData
-
-void check_length_scale_shoc_length(Int nlev, SHOCMixcheckData &d);
 
 }  // namespace shoc
 }  // namespace scream

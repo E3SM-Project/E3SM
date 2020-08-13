@@ -228,6 +228,50 @@ void eddy_diffusivities(SHOCEddydiffData &d) {
   d.transpose<util::TransposeDirection::f2c>();
 }
 
+void compute_brunt_shoc_length(SHOCBruntlengthData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  compute_brunt_shoc_length_c(d.nlev,d.nlevi,d.shcol,d.dz_zt,d.thv,d.thv_zi,d.brunt);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+void compute_l_inf_shoc_length(SHOCInflengthData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  compute_l_inf_shoc_length_c(d.nlev,d.shcol,d.zt_grid,d.dz_zt,d.tke,d.l_inf);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+void compute_conv_vel_shoc_length(SHOCConvvelData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  compute_conv_vel_shoc_length_c(d.nlev,d.shcol,d.pblh,d.zt_grid,
+                                 d.dz_zt,d.thv,d.wthv_sec,d.conv_vel);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+void compute_conv_time_shoc_length(SHOCConvtimeData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  compute_conv_time_shoc_length_c(d.shcol,d.pblh,d.conv_vel,d.tscale);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+void compute_shoc_mix_shoc_length(SHOCMixlengthData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  compute_shoc_mix_shoc_length_c(d.nlev,d.shcol,d.tke,d.brunt,d.tscale,
+                                 d.zt_grid,d.l_inf,d.shoc_mix);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+void check_length_scale_shoc_length(SHOCMixcheckData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  check_length_scale_shoc_length_c(d.nlev,d.shcol,d.host_dx,d.host_dy,d.shoc_mix);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
 //
 // _f function definitions. These expect data in C layout
 //
@@ -275,386 +319,6 @@ void calc_shoc_vertflux_f(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
   // Sync back to host
   Kokkos::Array<view_2d, 1> inout_views = {vertflux_d};
   pack::device_to_host({vertflux}, {shcol}, {nlevi}, inout_views, true);
-}
-
-//Initialize data for compute_brunt_shoc_length function
-SHOCBruntlengthData::SHOCBruntlengthData(Int shcol_, Int nlev_, Int nlevi_)
-  : shcol(shcol_),
-    nlev(nlev_),
-    nlevi(nlevi_),
-    m_total(shcol_ * nlev_),
-    m_totali(shcol_ * nlevi_),
-    m_data(NUM_ARRAYS * m_total, 0),
-    m_datai(NUM_ARRAYS_i * m_totali, 0) {
-  init_ptrs();
-}
-
-SHOCBruntlengthData::SHOCBruntlengthData(const SHOCBruntlengthData &rhs)
-  : shcol(rhs.shcol),
-    nlev(rhs.nlev),
-    nlevi(rhs.nlevi),
-    m_total(rhs.m_total),
-    m_totali(rhs.m_totali),
-    m_data(rhs.m_data),
-    m_datai(rhs.m_datai) {
-  init_ptrs();
-}
-
-
-SHOCBruntlengthData  &SHOCBruntlengthData::operator=(const SHOCBruntlengthData &rhs) {
-  init_ptrs();
-
-  shcol    = rhs.shcol;
-  nlev     = rhs.nlev;
-  nlevi    = rhs.nlevi;
-  m_total  = rhs.m_total;
-  m_totali = rhs.m_totali;
-  m_data   = rhs.m_data;
-  m_datai  = rhs.m_datai;  // Copy
-
-  return *this;
-}
-
-
-void SHOCBruntlengthData::init_ptrs() {
-  Int offset         = 0;
-  Real *data_begin   = m_data.data();
-  Real *data_begin_i = m_datai.data();
-
-  std::array<Real **, NUM_ARRAYS> ptrs     = {&dz_zt, &thv, &brunt};
-  std::array<Real **, NUM_ARRAYS_i> ptrs_i = {&thv_zi};
-
-  for(size_t i = 0; i < NUM_ARRAYS; ++i) {
-    *ptrs[i] = data_begin + offset;
-    offset += m_total;
-  }
-
-  offset = 0;
-  for(size_t i = 0; i < NUM_ARRAYS_i; ++i) {
-    *ptrs_i[i] = data_begin_i + offset;
-    offset += m_totali;
-  }
-}
-
-//Initialize shoc parameterization, trnaspose data from c to fortran,
-//call compute_brunt_shoc_length fortran subroutine and transpose data back to c
-void compute_brunt_shoc_length(Int nlev, SHOCBruntlengthData &d) {
-  shoc_init(nlev, true);
-  d.transpose<util::TransposeDirection::c2f>();
-  compute_brunt_shoc_length_c(d.nlev,d.nlevi,d.shcol,d.dz_zt,d.thv,d.thv_zi,d.brunt);
-  d.transpose<util::TransposeDirection::f2c>();
-}
-
-
-//Initialize data for compute_l_inf_shoc_length function
-SHOCInflengthData::SHOCInflengthData(Int shcol_, Int nlev_)
-  : shcol(shcol_),
-    nlev(nlev_),
-    m_total(shcol_ * nlev_),
-    m_totalc(shcol_),
-    m_data(NUM_ARRAYS * m_total, 0),
-    m_datac(NUM_ARRAYS_c * m_totalc,0) {
-  init_ptrs();
-}
-
-SHOCInflengthData::SHOCInflengthData(const SHOCInflengthData &rhs)
-  : shcol(rhs.shcol),
-    nlev(rhs.nlev),
-    m_total(rhs.m_total),
-    m_totalc(rhs.m_totalc),
-    m_data(rhs.m_data),
-    m_datac(rhs.m_datac) {
-  init_ptrs();
-}
-
-
-SHOCInflengthData  &SHOCInflengthData::operator=(const SHOCInflengthData &rhs) {
-  init_ptrs();
-
-  shcol    = rhs.shcol;
-  nlev     = rhs.nlev;
-  m_total  = rhs.m_total;
-  m_totalc = rhs.m_totalc;
-  m_data   = rhs.m_data;
-  m_datac  = rhs.m_datac;  // Copy
-
-  return *this;
-}
-
-
-void SHOCInflengthData::init_ptrs() {
-  Int offset         = 0;
-  Real *data_begin   = m_data.data();
-  Real *data_begin_c = m_datac.data();
-
-  std::array<Real **, NUM_ARRAYS> ptrs     = {&zt_grid, &dz_zt, &tke};
-  std::array<Real **, NUM_ARRAYS_c> ptrs_c = {&l_inf};
-
-  for(size_t i = 0; i < NUM_ARRAYS; ++i) {
-    *ptrs[i] = data_begin + offset;
-    offset += m_total;
-  }
-
-  offset = 0;
-  for(size_t i = 0; i < NUM_ARRAYS_c; ++i) {
-    *ptrs_c[i] = data_begin_c + offset;
-    offset += m_totalc;
-  }
-}
-
-//Initialize shoc parameterization, trnaspose data from c to fortran,
-//call compute_l_inf_shoc_length fortran subroutine and transpose data back to c
-void compute_l_inf_shoc_length(Int nlev, SHOCInflengthData &d) {
-  shoc_init(nlev, true);
-  d.transpose<util::TransposeDirection::c2f>();
-  compute_l_inf_shoc_length_c(d.nlev,d.shcol,d.zt_grid,d.dz_zt,d.tke,d.l_inf);
-  d.transpose<util::TransposeDirection::f2c>();
-}
-
-//Initialize data for compute_conv_vel_shoc_length function
-SHOCConvvelData::SHOCConvvelData(Int shcol_, Int nlev_)
-  : shcol(shcol_),
-    nlev(nlev_),
-    m_total(shcol_ * nlev_),
-    m_totalc(shcol_),
-    m_data(NUM_ARRAYS * m_total, 0),
-    m_datac(NUM_ARRAYS_c * m_totalc,0) {
-  init_ptrs();
-}
-
-SHOCConvvelData::SHOCConvvelData(const SHOCConvvelData &rhs)
-  : shcol(rhs.shcol),
-    nlev(rhs.nlev),
-    m_total(rhs.m_total),
-    m_totalc(rhs.m_totalc),
-    m_data(rhs.m_data),
-    m_datac(rhs.m_datac) {
-  init_ptrs();
-}
-
-
-SHOCConvvelData  &SHOCConvvelData::operator=(const SHOCConvvelData &rhs) {
-  init_ptrs();
-
-  shcol    = rhs.shcol;
-  nlev     = rhs.nlev;
-  m_total  = rhs.m_total;
-  m_totalc = rhs.m_totalc;
-  m_data   = rhs.m_data;
-  m_datac  = rhs.m_datac;  // Copy
-
-  return *this;
-}
-
-
-void SHOCConvvelData::init_ptrs() {
-  Int offset         = 0;
-  Real *data_begin   = m_data.data();
-  Real *data_begin_c = m_datac.data();
-
-  std::array<Real **, NUM_ARRAYS> ptrs     = {&zt_grid, &dz_zt, &thv, &wthv_sec};
-  std::array<Real **, NUM_ARRAYS_c> ptrs_c = {&pblh, &conv_vel};
-
-  for(size_t i = 0; i < NUM_ARRAYS; ++i) {
-    *ptrs[i] = data_begin + offset;
-    offset += m_total;
-  }
-
-  offset = 0;
-  for(size_t i = 0; i < NUM_ARRAYS_c; ++i) {
-    *ptrs_c[i] = data_begin_c + offset;
-    offset += m_totalc;
-  }
-}
-
-//Initialize shoc parameterization, trnaspose data from c to fortran,
-//call compute_conv_time_shoc_length fortran subroutine and transpose data back to c
-void compute_conv_vel_shoc_length(Int nlev, SHOCConvvelData &d) {
-  shoc_init(nlev, true);
-  d.transpose<util::TransposeDirection::c2f>();
-  compute_conv_vel_shoc_length_c(d.nlev,d.shcol,d.pblh,d.zt_grid,
-                                 d.dz_zt,d.thv,d.wthv_sec,d.conv_vel);
-  d.transpose<util::TransposeDirection::f2c>();
-}
-
-//Initialize data for compute_conv_time_shoc_length function
-SHOCConvtimeData::SHOCConvtimeData(Int shcol_)
-  : shcol(shcol_),
-    m_totalc(shcol_),
-    m_datac(NUM_ARRAYS_c * m_totalc,0) {
-  init_ptrs();
-}
-
-SHOCConvtimeData::SHOCConvtimeData(const SHOCConvtimeData &rhs)
-  : shcol(rhs.shcol),
-    m_totalc(rhs.m_totalc),
-    m_datac(rhs.m_datac) {
-  init_ptrs();
-}
-
-
-SHOCConvtimeData  &SHOCConvtimeData::operator=(const SHOCConvtimeData &rhs) {
-  init_ptrs();
-
-  shcol    = rhs.shcol;
-  m_totalc = rhs.m_totalc;
-  m_datac  = rhs.m_datac;  // Copy
-
-  return *this;
-}
-
-
-void SHOCConvtimeData::init_ptrs() {
-  Int offset         = 0;
-  Real *data_begin_c = m_datac.data();
-
-  std::array<Real **, NUM_ARRAYS_c> ptrs_c = {&pblh, &conv_vel, &tscale};
-
-  offset = 0;
-  for(size_t i = 0; i < NUM_ARRAYS_c; ++i) {
-    *ptrs_c[i] = data_begin_c + offset;
-    offset += m_totalc;
-  }
-}
-
-//Initialize shoc parameterization, trnaspose data from c to fortran,
-//call compute_conv_time_shoc_length fortran subroutine and transpose data back to c
-void compute_conv_time_shoc_length(Int nlev, SHOCConvtimeData &d) {
-  shoc_init(nlev, true);
-  d.transpose<util::TransposeDirection::c2f>();
-  compute_conv_time_shoc_length_c(d.shcol,d.pblh,d.conv_vel,d.tscale);
-  d.transpose<util::TransposeDirection::f2c>();
-}
-
-//Initialize data for compute_shoc_mix_shoc_length function
-SHOCMixlengthData::SHOCMixlengthData(Int shcol_, Int nlev_)
-  : shcol(shcol_),
-    nlev(nlev_),
-    m_total(shcol_ * nlev_),
-    m_totalc(shcol_),
-    m_data(NUM_ARRAYS * m_total, 0),
-    m_datac(NUM_ARRAYS_c * m_totalc,0) {
-  init_ptrs();
-}
-
-SHOCMixlengthData::SHOCMixlengthData(const SHOCMixlengthData &rhs)
-  : shcol(rhs.shcol),
-    nlev(rhs.nlev),
-    m_total(rhs.m_total),
-    m_totalc(rhs.m_totalc),
-    m_data(rhs.m_data),
-    m_datac(rhs.m_datac) {
-  init_ptrs();
-}
-
-
-SHOCMixlengthData  &SHOCMixlengthData::operator=(const SHOCMixlengthData &rhs) {
-  init_ptrs();
-
-  shcol    = rhs.shcol;
-  nlev     = rhs.nlev;
-  m_total  = rhs.m_total;
-  m_totalc = rhs.m_totalc;
-  m_data   = rhs.m_data;
-  m_datac  = rhs.m_datac;  // Copy
-
-  return *this;
-}
-
-
-void SHOCMixlengthData::init_ptrs() {
-  Int offset         = 0;
-  Real *data_begin   = m_data.data();
-  Real *data_begin_c = m_datac.data();
-
-  std::array<Real **, NUM_ARRAYS> ptrs     = {&tke, &brunt, &zt_grid, &shoc_mix};
-  std::array<Real **, NUM_ARRAYS_c> ptrs_c = {&tscale, &l_inf};
-
-  for(size_t i = 0; i < NUM_ARRAYS; ++i) {
-    *ptrs[i] = data_begin + offset;
-    offset += m_total;
-  }
-
-  offset = 0;
-  for(size_t i = 0; i < NUM_ARRAYS_c; ++i) {
-    *ptrs_c[i] = data_begin_c + offset;
-    offset += m_totalc;
-  }
-}
-
-//Initialize shoc parameterization, trnaspose data from c to fortran,
-//call compute_shoc_mix_shoc_length fortran subroutine and transpose data back to c
-void compute_shoc_mix_shoc_length(Int nlev, SHOCMixlengthData &d) {
-  shoc_init(nlev, true);
-  d.transpose<util::TransposeDirection::c2f>();
-  compute_shoc_mix_shoc_length_c(d.nlev,d.shcol,d.tke,d.brunt,d.tscale,
-                                 d.zt_grid,d.l_inf,d.shoc_mix);
-  d.transpose<util::TransposeDirection::f2c>();
-}
-
-//Initialize data for check_length_scale_shoc_length function
-SHOCMixcheckData::SHOCMixcheckData(Int shcol_, Int nlev_)
-  : shcol(shcol_),
-    nlev(nlev_),
-    m_total(shcol_ * nlev_),
-    m_totalc(shcol_),
-    m_data(NUM_ARRAYS * m_total, 0),
-    m_datac(NUM_ARRAYS_c * m_totalc,0) {
-  init_ptrs();
-}
-
-SHOCMixcheckData::SHOCMixcheckData(const SHOCMixcheckData &rhs)
-  : shcol(rhs.shcol),
-    nlev(rhs.nlev),
-    m_total(rhs.m_total),
-    m_totalc(rhs.m_totalc),
-    m_data(rhs.m_data),
-    m_datac(rhs.m_datac) {
-  init_ptrs();
-}
-
-
-SHOCMixcheckData  &SHOCMixcheckData::operator=(const SHOCMixcheckData &rhs) {
-  init_ptrs();
-
-  shcol    = rhs.shcol;
-  nlev     = rhs.nlev;
-  m_total  = rhs.m_total;
-  m_totalc = rhs.m_totalc;
-  m_data   = rhs.m_data;
-  m_datac  = rhs.m_datac;  // Copy
-
-  return *this;
-}
-
-
-void SHOCMixcheckData::init_ptrs() {
-  Int offset         = 0;
-  Real *data_begin   = m_data.data();
-  Real *data_begin_c = m_datac.data();
-
-  std::array<Real **, NUM_ARRAYS> ptrs     = {&shoc_mix};
-  std::array<Real **, NUM_ARRAYS_c> ptrs_c = {&host_dx, &host_dy};
-
-  for(size_t i = 0; i < NUM_ARRAYS; ++i) {
-    *ptrs[i] = data_begin + offset;
-    offset += m_total;
-  }
-
-  offset = 0;
-  for(size_t i = 0; i < NUM_ARRAYS_c; ++i) {
-    *ptrs_c[i] = data_begin_c + offset;
-    offset += m_totalc;
-  }
-}
-
-//Initialize shoc parameterization, trnaspose data from c to fortran,
-//call check_length_scale_shoc_length fortran subroutine and transpose data back to c
-void check_length_scale_shoc_length(Int nlev, SHOCMixcheckData &d) {
-  shoc_init(nlev, true);
-  d.transpose<util::TransposeDirection::c2f>();
-  check_length_scale_shoc_length_c(d.nlev,d.shcol,d.host_dx,d.host_dy,d.shoc_mix);
-  d.transpose<util::TransposeDirection::f2c>();
 }
 
 } // namespace shoc

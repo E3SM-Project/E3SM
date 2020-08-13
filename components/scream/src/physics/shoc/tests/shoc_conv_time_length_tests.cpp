@@ -43,7 +43,7 @@ TEST_CASE("shoc_conv_time_length", "shoc") {
   Real conv_vel[shcol] = {10.0, -3.5, 0.1, -100.0, -0.4};
 
   // Initialzie data structure for bridgeing to F90
-  SHOCConvtimeData SDS(shcol);
+  SHOCConvtimeData SDS(shcol, nlev);
 
   // Test that the inputs are reasonable.
   REQUIRE(SDS.shcol > 0);
@@ -61,7 +61,7 @@ TEST_CASE("shoc_conv_time_length", "shoc") {
   }
 
   // Call the fortran implementation
-  compute_conv_time_shoc_length(nlev, SDS);
+  compute_conv_time_shoc_length(SDS);
 
   // Check the results
   // Make sure that timescale is positive always
@@ -97,7 +97,7 @@ TEST_CASE("shoc_conv_time_length", "shoc") {
   }
   
   // Call the fortran implementation
-  compute_conv_time_shoc_length(nlev, SDS);
+  compute_conv_time_shoc_length(SDS);
   
   // Verify Results
   // Make sure that if conv_vel is smaller than in a neighboring
@@ -136,7 +136,7 @@ TEST_CASE("shoc_conv_time_length", "shoc") {
   }
   
   // Call the fortran implementation
-  compute_conv_time_shoc_length(nlev, SDS);
+  compute_conv_time_shoc_length(SDS);
   
   // Verify Results
   // Make sure that if tscale is larger than in a 
