@@ -46,6 +46,9 @@ void eddy_diffusivities_c(Int nlev, Int shcol, Real *obklen, Real *pblh,
 
 void calc_shoc_vertflux_c(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 			  Real *dz_zi, Real *invar, Real *vertflux);
+			  
+void update_host_dse_c(Int shcol, Int nlev, Real *thlm, Real *shoc_ql, 
+                       Real *exner, Real *zt_grid, Real *phis, Real *host_dse);		  
 }
 
 namespace scream {
@@ -157,6 +160,14 @@ void shoc_grid(SHOCGridData &d) {
   d.transpose<util::TransposeDirection::c2f>();
   shoc_grid_c(d.shcol, d.nlev, d.nlevi, d.zt_grid, d.zi_grid, d.pdel, d.dz_zt,
               d.dz_zi, d.rho_zt);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+void update_host_dse(SHOCEnergydseData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  update_host_dse_c(d.shcol, d.nlev, d.thlm, d.shoc_ql, d.exner, 
+                    d.zt_grid, d.phis, d.host_dse);
   d.transpose<util::TransposeDirection::f2c>();
 }
 

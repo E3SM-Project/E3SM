@@ -73,7 +73,7 @@ TEST_CASE("shoc_energy_host_dse", "shoc") {
   // Check that the inputs make sense
 
   for(Int s = 0; s < SDS.shcol; ++s) {
-    REQUIRE(SDS.phis >= 0.0);
+    REQUIRE(SDS.phis[s] >= 0.0);
     for (Int n = 0; n < SDS.nlev; ++n){
       const auto offset = n + s * SDS.nlev;
       
@@ -84,36 +84,37 @@ TEST_CASE("shoc_energy_host_dse", "shoc") {
       
       // make sure the two columns are different and
       //  as expected for the relevant variables
-      if (s = 0){
+      if (s == 0){
         const auto offsets = n + (s+1) * SDS.nlev;
       
-        REQUIRE(SDS.shoc_ql[offset] = 0.0);
+        REQUIRE(SDS.shoc_ql[offset] == 0.0);
         REQUIRE(SDS.shoc_ql[offsets] > SDS.shoc_ql[offset]);
       }    
-      
+  
       // Check that heights and thlm increase upward
-      if (n > nlev-1){
+      if (n < nlev-1){
         REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0.0);
 	REQUIRE(SDS.thlm[offset + 1] - SDS.thlm[offset] < 0.0);
-      }    
+      }  
+           
     }
   }
 
   // Call the fortran implementation
-  update_host_dse(nlev, SDS);
-  
+  update_host_dse(SDS);
+
   // Check test
   for(Int s = 0; s < SDS.shcol; ++s) {
     for(Int n = 0; n < SDS.nlev; ++n) {
       const auto offset = n + s * SDS.nlev;
       // Verify dse is reasonable
       REQUIRE(SDS.host_dse[offset] > 0.0);
-      
+     
       // Verify that dse increases with height upward
-      if (n > nlev-1){
+      if (n < nlev-1){
         REQUIRE(SDS.host_dse[offset + 1] - SDS.host_dse[offset] < 0.0);
       } 
-      
+            
       // Verify that dse is greater in points with condensate loading
       if (s == 0){
         const auto offsets = n + (s+1) * SDS.nlev;
@@ -121,7 +122,9 @@ TEST_CASE("shoc_energy_host_dse", "shoc") {
       }       
     }
   }
+
 }
+
 
 }  // namespace unit_test
 }  // namespace shoc

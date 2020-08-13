@@ -150,6 +150,20 @@ struct SHOCEddydiffData : public SHOCDataBase {
   SHOCEddydiffData &operator=(const SHOCEddydiffData &rhs) { SHOCDataBase::operator=(rhs); return *this; }
 };//SHOCEddydiffData
 
+struct SHOCEnergydseData : public SHOCDataBase {
+  // Inputs
+  Real *thlm, *shoc_ql, *exner, *zt_grid, *phis;
+
+  // Output
+  Real *host_dse;
+
+  //functions to initialize data
+  SHOCEnergydseData(Int shcol_, Int nlev_) :
+    SHOCDataBase(shcol_, nlev_, 1, {&thlm, &shoc_ql, &exner, &zt_grid, &host_dse}, {&phis}) {}
+  SHOCEnergydseData(const SHOCEnergydseData &rhs) : SHOCDataBase(rhs, {&thlm, &shoc_ql, &exner, &zt_grid, &host_dse}, {&phis}) {}
+  SHOCEnergydseData &operator=(const SHOCEnergydseData &rhs) { SHOCDataBase::operator=(rhs); return *this; }
+};//SHOCEnergydseData
+
 //Create data structure to hold data for calc_shoc_vertflux
 struct SHOCVertfluxData : public SHOCDataBase {
   // Inputs
@@ -189,6 +203,7 @@ struct SHOCVarorcovarData : public SHOCDataBase {
 // interfaces, and pressure gradient the functon returns dz_zi, dz_zt,
 // and density.
 void shoc_grid(SHOCGridData &d);
+void update_host_dse(SHOCEnergydseData &d);
 void calc_shoc_vertflux(SHOCVertfluxData &d);
 void calc_shoc_varorcovar(SHOCVarorcovarData &d);
 void integ_column_stability(SHOCColstabData &d);

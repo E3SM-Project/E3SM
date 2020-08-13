@@ -231,6 +231,25 @@ contains
 
   end subroutine eddy_diffusivities_c
 
+  subroutine update_host_dse_c(shcol, nlev, thlm, shoc_ql, exner, zt_grid, &
+                               phis, host_dse) bind (C)
+    use shoc, only: update_host_dse
+
+    integer(kind=c_int), intent(in), value :: shcol
+    integer(kind=c_int), intent(in), value :: nlev
+    real(kind=c_real), intent(in) :: thlm(shcol,nlev)
+    real(kind=c_real), intent(in) :: shoc_ql(shcol,nlev)
+    real(kind=c_real), intent(in) :: exner(shcol,nlev)
+    real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
+    real(kind=c_real), intent(in) :: phis(shcol)
+
+    real(kind=c_real), intent(out) :: host_dse(shcol,nlev)
+
+    call update_host_dse(shcol, nlev, thlm, shoc_ql, exner, zt_grid, &
+                           phis, host_dse)
+
+  end subroutine update_host_dse_c
+
   subroutine calc_shoc_vertflux_c(shcol, nlev, nlevi, tkh_zi, dz_zi, invar, vertflux) bind (C)
     use shoc, only: calc_shoc_vertflux
 
