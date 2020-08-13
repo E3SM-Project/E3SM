@@ -70,6 +70,7 @@ struct Functions
   //
   // --------- Functions ---------
   //
+  KOKKOS_FUNCTION
   static void calc_shoc_vertflux(
     const MemberType& team,
     const Int& nlev,

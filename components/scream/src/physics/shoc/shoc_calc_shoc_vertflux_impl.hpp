@@ -7,6 +7,7 @@ namespace scream {
 namespace shoc {
 
 template<typename S, typename D>
+KOKKOS_FUNCTION
 void Functions<S,D>
 ::calc_shoc_vertflux(
   const MemberType& team,
