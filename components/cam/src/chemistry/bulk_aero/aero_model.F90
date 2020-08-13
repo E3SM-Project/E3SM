@@ -49,6 +49,9 @@ module aero_model
 
   integer :: fracis_idx = 0
 
+  logical :: clim_modal_aero ! true when radiatively constituents present (nmodes>0)
+  logical :: prog_modal_aero ! Prognostic modal aerosols present
+
 contains
 
   !=============================================================================
@@ -121,6 +124,8 @@ contains
     use seasalt_model, only: seasalt_init
     use drydep_mod,    only: inidrydep
     use wetdep,        only: wetdep_init
+    use rad_constituents, only: rad_cnst_get_info
+
 
     ! args
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
@@ -128,6 +133,7 @@ contains
     ! local vars
     character(len=12), parameter :: subrname = 'aero_model_init'
     integer :: m, id
+    integer :: nmodes
     character(len=20) :: dummy
     logical  :: history_aerosol ! Output MAM or SECT aerosol tendencies
     
@@ -137,6 +143,11 @@ contains
     call dust_init()
     call seasalt_init()
     call wetdep_init()
+
+    ! set flags to check aerosol settings
+    call rad_cnst_get_info(0, nmodes=nmodes)
+    clim_modal_aero = (nmodes > 0)
+    call phys_getopts(prog_modal_aero_out=prog_modal_aero)
 
     fracis_idx = pbuf_get_index('FRACIS') 
 
@@ -542,8 +553,6 @@ contains
     use seasalt_model, only : sslt_names=>seasalt_names
     use modal_aero_calcsize,   only: modal_aero_calcsize_diag
     use modal_aero_wateruptake,only: modal_aero_wateruptake_dr
-    use rad_constituents,      only: rad_cnst_get_info
-    use phys_control,          only: phys_getopts
 
     ! args
 
@@ -608,26 +617,21 @@ contains
 
     type(wetdep_inputs_t) :: dep_inputs  ! obj that contains inputs to wetdepa routine
 
-    integer           :: nmodes
-    logical           :: clim_modal_aero ! true when radiatively constituents present (nmodes>0)
-    logical           :: prog_modal_aero ! Prognostic modal aerosols present
-
-    ! set flags to check aerosol settings
-    call rad_cnst_get_info(0, nmodes=nmodes)
-    clim_modal_aero = (nmodes > 0)
-    call phys_getopts(prog_modal_aero_out=prog_modal_aero)
-
     ! Calculate aerosol size distribution parameters and aerosol water uptake
     if (clim_modal_aero .and. .not. prog_modal_aero) then
       ! diagnostic aerosol size calculations
+      call t_startf('calcsize')
       call modal_aero_calcsize_diag(state, pbuf)
+      call t_stopf('calcsize')
       ! Aerosol water uptake
+      call t_startf('wateruptake')
       if (present(clear_rh)) then
         ! clear_rh provides alternate estimate non-cloudy relative humidity
         call modal_aero_wateruptake_dr(state, pbuf, clear_rh_in=clear_rh)
       else
         call modal_aero_wateruptake_dr(state, pbuf)
       endif
+      call t_stopf('wateruptake')
     end if
 
     if (nwetdep<1) return
