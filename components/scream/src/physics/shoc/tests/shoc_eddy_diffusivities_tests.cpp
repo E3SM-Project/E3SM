@@ -24,21 +24,21 @@ namespace unit_test {
 TEST_CASE("shoc_tke_eddy_diffusivities", "shoc") {
   constexpr Int shcol    = 2;
   constexpr Int nlev     = 1;
-  
+
   // Tests for the subroutine eddy_diffusivities
-  //   in the SHOC TKE module. 
+  //   in the SHOC TKE module.
 
   // For this routine all inputs are on midpoint grid and
   //  there are no vertical derivatives, therefore we will
   //  consider one vertical level per test.  Each column will
   //  be loaded up with a different test.
-  
+
   // FIRST TEST
   // Boundary layer regime test.  Input that have identical values
   //  except for the Monin Obukhov length, in this case will be positive
   //  and negative.  Test to make sure that the resulting diffusivites
-  //  are DIFFERENT    
-  
+  //  are DIFFERENT
+
   // Monin Obukov length [m]
   Real obklen_reg[shcol] = {-1.0, 1.0};
   // PBL depth [m]
@@ -52,7 +52,7 @@ TEST_CASE("shoc_tke_eddy_diffusivities", "shoc") {
   // Return to isotropy timescale [s]
   Real isotropy_reg = 500.0;
   // Turbulent kinetic energy [m2/s2]
-  Real tke_reg = 0.4; 
+  Real tke_reg = 0.4;
 
   // Initialzie data structure for bridgeing to F90
   SHOCEddydiffData SDS(shcol, nlev);
@@ -83,7 +83,7 @@ TEST_CASE("shoc_tke_eddy_diffusivities", "shoc") {
     REQUIRE(SDS.zt_grid[s] < SDS.pblh[s]);
     for (Int n = 0; n < SDS.nlev; ++n){
       const auto offset = n + s * SDS.nlev;
-      // Should be greater than zero 
+      // Should be greater than zero
       REQUIRE(SDS.tke[offset] > 0.0);
       REQUIRE(SDS.zt_grid[offset] > 0.0);
       REQUIRE(SDS.shoc_mix[offset] > 0.0);
@@ -93,24 +93,24 @@ TEST_CASE("shoc_tke_eddy_diffusivities", "shoc") {
   }
 
   // Call the fortran implementation
-  eddy_diffusivities(nlev, SDS);
+  eddy_diffusivities(SDS);
 
-  // Check to make sure the answers in the columns are different 
+  // Check to make sure the answers in the columns are different
   for(Int s = 0; s < SDS.shcol-1; ++s) {
     for(Int n = 0; n < SDS.nlev; ++n) {
       const auto offset = n + s * SDS.nlev;
       // Get value corresponding to next column
-      const auto offsets = n + (s+1) * SDS.nlev; 
+      const auto offsets = n + (s+1) * SDS.nlev;
       REQUIRE(SDS.tk[offset] != SDS.tk[offsets]);
-      REQUIRE(SDS.tkh[offset] != SDS.tkh[offsets]);    
+      REQUIRE(SDS.tkh[offset] != SDS.tkh[offsets]);
     }
-  }  
+  }
 
   // SECOND TEST
-  // Stable boundary layer test.  Given Obukhov length, 
-  //   verify that each regime behaves as expected when the relevant 
+  // Stable boundary layer test.  Given Obukhov length,
+  //   verify that each regime behaves as expected when the relevant
   //   inputs are modified.  Column with larger mixing length and
-  //   shear term should produce larger diffusivity values.         
+  //   shear term should produce larger diffusivity values.
 
   // Monin Obukov length [m]
   Real obklen_stab[shcol] = {1.0, 1.0};
@@ -121,16 +121,16 @@ TEST_CASE("shoc_tke_eddy_diffusivities", "shoc") {
   // Return to isotropy timescale [s]
   Real isotropy_stab = 500.0;
   // Turbulent kinetic energy [m2/s2]
-  Real tke_stab = 0.4; 
-  
+  Real tke_stab = 0.4;
+
   // Verify that input mixing length and shear term
-  //   are increasing in each column for this 
+  //   are increasing in each column for this
   //   test to be valid
   for(Int s = 0; s < SDS.shcol-1; ++s) {
     REQUIRE(shoc_mix_stab[s+1] > shoc_mix_stab[s]);
     REQUIRE(sterm_zt_stab[s+1] > sterm_zt_stab[s]);
   }
-  
+
   // Fill in test data on zt_grid.
   for(Int s = 0; s < SDS.shcol; ++s) {
     // Column only input
@@ -144,23 +144,23 @@ TEST_CASE("shoc_tke_eddy_diffusivities", "shoc") {
       SDS.isotropy[offset] = isotropy_stab;
     }
   }
-  
+
   // Check that the inputs make sense
   for(Int s = 0; s < SDS.shcol; ++s) {
     // Make sure we are testing stable boundary layer
     REQUIRE(SDS.obklen[s] > 0.0);
     for (Int n = 0; n < SDS.nlev; ++n){
       const auto offset = n + s * SDS.nlev;
-      // Should be greater than zero 
+      // Should be greater than zero
       REQUIRE(SDS.tke[offset] > 0.0);
       REQUIRE(SDS.shoc_mix[offset] > 0.0);
       REQUIRE(SDS.isotropy[offset] > 0.0);
       REQUIRE(SDS.sterm_zt[offset] > 0.0);
     }
-  }  
-  
+  }
+
   // Call the fortran implementation
-  eddy_diffusivities(nlev, SDS);
+  eddy_diffusivities(SDS);
 
   // Check to make sure the answers in the columns are larger
   //   when the length scale and shear term are larger
@@ -168,19 +168,19 @@ TEST_CASE("shoc_tke_eddy_diffusivities", "shoc") {
     for(Int n = 0; n < SDS.nlev; ++n) {
       const auto offset = n + s * SDS.nlev;
       // Get value corresponding to next column
-      const auto offsets = n + (s+1) * SDS.nlev; 
-      if (SDS.shoc_mix[offset] < SDS.shoc_mix[offsets] & 
+      const auto offsets = n + (s+1) * SDS.nlev;
+      if (SDS.shoc_mix[offset] < SDS.shoc_mix[offsets] &
           SDS.sterm_zt[offset] < SDS.sterm_zt[offsets]){
         REQUIRE(SDS.tk[offset] < SDS.tkh[offsets]);
-        REQUIRE(SDS.tkh[offset] < SDS.tkh[offsets]);	  
-      }    
+        REQUIRE(SDS.tkh[offset] < SDS.tkh[offsets]);
+      }
     }
-  } 
-  
+  }
+
   // THIRD TEST
-  // Unstable boundary layer test.  Given Obukhov length, 
-  //   verify that each regime behaves as expected when the relevant 
-  //   inputs are modified.       
+  // Unstable boundary layer test.  Given Obukhov length,
+  //   verify that each regime behaves as expected when the relevant
+  //   inputs are modified.
 
   // Monin Obukov length [m]
   Real obklen_ustab[shcol] = {-1.0, -1.0};
@@ -191,16 +191,16 @@ TEST_CASE("shoc_tke_eddy_diffusivities", "shoc") {
   // Return to isotropy timescale [s]
   Real isotropy_ustab[shcol] = {500.0, 550.0};
   // Turbulent kinetic energy [m2/s2]
-  Real tke_ustab[shcol] = {0.4, 0.5}; 
-  
+  Real tke_ustab[shcol] = {0.4, 0.5};
+
   // Verify that input isotropy and tke
-  //   are increasing in each column for this 
+  //   are increasing in each column for this
   //   test to be valid
   for(Int s = 0; s < SDS.shcol-1; ++s) {
     REQUIRE(isotropy_ustab[s+1] > isotropy_ustab[s]);
     REQUIRE(tke_ustab[s+1] > tke_ustab[s]);
-  }  
-  
+  }
+
   // Fill in test data on zt_grid.
   for(Int s = 0; s < SDS.shcol; ++s) {
     // Column only input
@@ -214,39 +214,39 @@ TEST_CASE("shoc_tke_eddy_diffusivities", "shoc") {
       SDS.isotropy[offset] = isotropy_ustab[s];
     }
   }
-  
+
   // Check that the inputs make sense
   for(Int s = 0; s < SDS.shcol; ++s) {
     // Make sure we are testing unstable boundary layer
     REQUIRE(SDS.obklen[s] < 0.0);
     for (Int n = 0; n < SDS.nlev; ++n){
       const auto offset = n + s * SDS.nlev;
-      // Should be greater than zero 
+      // Should be greater than zero
       REQUIRE(SDS.tke[offset] > 0.0);
       REQUIRE(SDS.shoc_mix[offset] > 0.0);
       REQUIRE(SDS.isotropy[offset] > 0.0);
       REQUIRE(SDS.sterm_zt[offset] > 0.0);
     }
-  }  
-  
-  // Call the fortran implementation
-  eddy_diffusivities(nlev, SDS);
+  }
 
-  // Check to make sure the diffusivities are smaller 
+  // Call the fortran implementation
+  eddy_diffusivities(SDS);
+
+  // Check to make sure the diffusivities are smaller
   //  in the columns where isotropy and tke are smaller
   for(Int s = 0; s < SDS.shcol-1; ++s) {
     for(Int n = 0; n < SDS.nlev; ++n) {
       const auto offset = n + s * SDS.nlev;
       // Get value corresponding to next column
-      const auto offsets = n + (s+1) * SDS.nlev; 
-      if (SDS.tke[offset] < SDS.tke[offsets] & 
+      const auto offsets = n + (s+1) * SDS.nlev;
+      if (SDS.tke[offset] < SDS.tke[offsets] &
           SDS.isotropy[offset] < SDS.isotropy[offsets]){
         REQUIRE(SDS.tk[offset] < SDS.tk[offsets]);
-        REQUIRE(SDS.tkh[offset] < SDS.tkh[offsets]);	  
-      }    
+        REQUIRE(SDS.tkh[offset] < SDS.tkh[offsets]);
+      }
     }
-  }    
-  
+  }
+
 }
 
 }  // namespace unit_test
