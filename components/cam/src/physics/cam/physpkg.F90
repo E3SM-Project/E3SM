@@ -1924,8 +1924,6 @@ subroutine tphysbc (ztodt,               &
     !
 
     type(physics_ptend)   :: ptend            ! indivdual parameterization tendencies
-    type(physics_ptend)   :: ptend_tmp1
-    type(physics_ptend)   :: ptend_tmp2
     type(physics_state)   :: state_sc         ! state for sub-columns
     type(physics_ptend)   :: ptend_sc         ! ptend for sub-columns
     type(physics_ptend)   :: ptend_aero       ! ptend for microp_aero
