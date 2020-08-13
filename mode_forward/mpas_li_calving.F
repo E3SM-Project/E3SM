@@ -1271,7 +1271,8 @@ module li_calving
                 cellCalvingFrontHeight = max(cellCalvingFrontHeight, thickness(jCell))
             enddo
 
-            cellCalvingFrontLength = sqrt(2.0/(3.0*sqrt(3.0))*areaCell(iCell))*2.0 !MJH Step 1
+!            cellCalvingFrontLength = sqrt(2.0/(3.0*sqrt(3.0))*areaCell(iCell))*2.0 !MJH Step 1
+            cellCalvingFrontLength = sqrt(1.0/2.0*sqrt(3.0)/6.0*areaCell(iCell))*2.0
 
             requiredCalvingVolumeRate(iCell) = calvingVelocity(iCell) * cellCalvingFrontLength * cellCalvingFrontHeight ! m^3/s
 
