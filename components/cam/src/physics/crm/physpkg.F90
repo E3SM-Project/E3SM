@@ -42,7 +42,6 @@ module physpkg
   use camsrfexch,      only: cam_export
 
   use modal_aero_calcsize,    only: modal_aero_calcsize_init, &
-                                    modal_aero_calcsize_diag, &
                                     modal_aero_calcsize_reg, &
                                     modal_aero_calcsize_sub
   use modal_aero_wateruptake, only: modal_aero_wateruptake_init, &
