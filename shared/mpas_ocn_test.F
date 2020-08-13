@@ -59,23 +59,6 @@ module ocn_test
 
    logical :: hmixOn
 
-   !--------------------------------------------------------------------
-   !
-   ! Replace calls to mpas_allocate_scratch_Field with straight allocates.
-   ! These variables were moved from the subroutines, but will be moved back once the
-   ! threading implementation is changed to more localized threading
-   !
-   !--------------------------------------------------------------------
-
-   ! yGMStreamFuncSolution: GM stream function reconstructured to the cell centers,
-   !                        for analytic solution
-   !                 units: m^2
-   real(kind=RKIND), dimension(:,:), allocatable :: yGMStreamFuncSolution
-   ! yGMBolusVelocitySolution: Bolus velocity in Gent-McWilliams eddy parameterization,
-   !                           y-direction, for analytic solution
-   !                    units: m s
-   real(kind=RKIND), dimension(:,:), allocatable :: yGMBolusVelocitySolution
-
 !***********************************************************************
 
 contains
@@ -299,6 +282,16 @@ contains
       real(kind=RKIND), dimension(:), pointer   :: bottomDepth, refBottomDepthTopOfCell, yCell, yEdge
       real(kind=RKIND), dimension(:,:), pointer :: zMid
 
+      ! Scratch Arrays
+      ! yGMStreamFuncSolution: GM stream function reconstructured to the cell centers,
+      !                        for analytic solution
+      !                 units: m^2
+      real(kind=RKIND), dimension(:,:), allocatable :: yGMStreamFuncSolution
+      ! yGMBolusVelocitySolution: Bolus velocity in Gent-McWilliams eddy parameterization,
+      !                           y-direction, for analytic solution
+      !                    units: m s
+      real(kind=RKIND), dimension(:,:), allocatable :: yGMBolusVelocitySolution
+
       integer :: nVertLevels
 
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
@@ -312,11 +305,8 @@ contains
 
       nVertLevels = maxval(maxLevelCell)
 
-      !$omp master
       allocate(yGMStreamFuncSolution(nVertLevels + 1, nCells), &
                yGMBolusVelocitySolution(nVertLevels, nCells))
-      !$omp end master
-      !$omp barrier
 
       ! These are flags that must match your initial conditions settings.  See gm_analytic initial condition in mode_init.
       config_gm_analytic_temperature2 = 10
@@ -360,11 +350,8 @@ contains
       !$omp end do
       !$omp end parallel
 
-      !$omp barrier
-      !$omp master
       deallocate(yGMStreamFuncSolution, &
                  yGMBolusVelocitySolution)
-      !$omp end master
 
    end subroutine ocn_init_gm_test_functions!}}}
 
