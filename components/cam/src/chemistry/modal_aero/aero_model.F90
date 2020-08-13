@@ -105,7 +105,7 @@ module aero_model
   integer :: nwetdep = 0
   integer,allocatable :: wetdep_indices(:)
   logical :: drydep_lq(pcnst)
-  logical, public :: wetdep_lq(pcnst)
+  logical :: wetdep_lq(pcnst)
 
 
 contains
