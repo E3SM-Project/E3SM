@@ -110,7 +110,6 @@ module ocn_time_integration
          call ocn_time_integrator_split(domain, dt)
      endif
 
-     !$omp master
      block => domain % blocklist
      do while (associated(block))
         call mpas_pool_get_subpool(block % structs, 'state', statePool)
@@ -132,8 +131,6 @@ module ocn_time_integration
 
         block => block % next
      end do
-     !$omp end master
-     !$omp barrier
 
    end subroutine ocn_timestep!}}}
 

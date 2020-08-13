@@ -331,7 +331,6 @@ module ocn_forward_mode
          block => block % next
       end do
 
-      !$omp master
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
@@ -346,8 +345,6 @@ module ocn_forward_mode
 
          block => block % next
       end do
-      !$omp end master
-      !$omp barrier
 
       ! Update any mesh fields that may have been modified during init
       call ocn_meshUpdateFields(domain)

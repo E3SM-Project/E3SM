@@ -61,26 +61,6 @@ module ocn_surface_land_ice_fluxes
 
    real (kind=RKIND) :: cp_land_ice, rho_land_ice
 
-   !--------------------------------------------------------------------
-   !
-   ! Replace calls to mpas_allocate_scratch_Field with straight allocates.
-   ! These variables were moved from the subroutines, but will be moved back once the
-   ! threading implementation is changed to more localized threading
-   !
-   !--------------------------------------------------------------------
-
-   ! subroutine ocn_surface_land_ice_fluxes_build_arrays
-   !---
-   ! freezeInterfaceSalinity: salinity at land ice-ocean interface where freezing is occurring
-   !                   units: PSU
-   real (kind=RKIND), dimension(:), allocatable :: freezeInterfaceSalinity
-   ! freezeInterfaceTemperature: temperature at land ice-ocean interface where freezing is occurring
-   !                      units: degrees C
-   real (kind=RKIND), dimension(:), allocatable :: freezeInterfaceTemperature
-   real (kind=RKIND), dimension(:), allocatable :: freezeFreshwaterFlux
-   real (kind=RKIND), dimension(:), allocatable :: freezeHeatFlux
-   real (kind=RKIND), dimension(:), allocatable :: freezeIceHeatFlux
-
 !***********************************************************************
 
 contains
@@ -442,6 +422,18 @@ contains
                                                     landIceTracerTransferVelocities
       integer, pointer :: indexBLT, indexBLS, indexIT, indexIS, indexHeatTrans, indexSaltTrans
 
+      ! Scratch Arrays
+      !---
+      ! freezeInterfaceSalinity: salinity at land ice-ocean interface where freezing is occurring
+      !                   units: PSU
+      real (kind=RKIND), dimension(:), allocatable :: freezeInterfaceSalinity
+      ! freezeInterfaceTemperature: temperature at land ice-ocean interface where freezing is occurring
+      !                      units: degrees C
+      real (kind=RKIND), dimension(:), allocatable :: freezeInterfaceTemperature
+      real (kind=RKIND), dimension(:), allocatable :: freezeFreshwaterFlux
+      real (kind=RKIND), dimension(:), allocatable :: freezeHeatFlux
+      real (kind=RKIND), dimension(:), allocatable :: freezeIceHeatFlux
+
       err = 0
 
       if ( .not. standaloneOn ) return
@@ -481,14 +473,11 @@ contains
       if(config_land_ice_flux_useHollandJenkinsAdvDiff) then
          call mpas_pool_get_array(forcingPool, 'landIceSurfaceTemperature', landIceSurfaceTemperature)
 
-         !$omp master
          allocate(freezeInterfaceSalinity(nCells), &
                   freezeInterfaceTemperature(nCells), &
                   freezeFreshwaterFlux(nCells), &
                   freezeHeatFlux(nCells), &
                   freezeIceHeatFlux(nCells))
-         !$omp end master
-         !$omp barrier
       end if
 
       nCells = nCellsArray( size(nCellsArray) )
@@ -616,14 +605,11 @@ contains
       end if
 
       if(config_land_ice_flux_useHollandJenkinsAdvDiff) then
-         !$omp barrier
-         !$omp master
          deallocate(freezeInterfaceSalinity, &
                     freezeInterfaceTemperature, &
                     freezeFreshwaterFlux, &
                     freezeHeatFlux, &
                     freezeIceHeatFlux)
-         !$omp end master
       end if
 
       ! accumulate land-ice mass and heat

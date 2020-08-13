@@ -52,23 +52,6 @@ module ocn_gm
    logical :: local_config_GM_kappa_lat_depth_variable
    real(kind=RKIND) :: slopeTaperFactor, sfcTaperFactor, rediGMinitValue
 
-   !--------------------------------------------------------------------                                          
-   !                                                                                                              
-   ! Replace calls to mpas_allocate_scratch_Field with straight allocates.                                        
-   ! These variables were moved from the subroutines, but will be moved back once the                             
-   ! threading implementation is changed to more localized threading                                              
-   !                                                                                                              
-   !--------------------------------------------------------------------
-   ! gradDensityEdge: Normal gradient of density
-   !           units: none
-   real(kind=RKIND), dimension(:, :), allocatable :: gradDensityEdge
-   ! drhoDzTopOfEdge: Gradient of density in vertical on edges
-   !           units: None
-   real(kind=RKIND), dimension(:, :), allocatable :: drhoDzTopOfEdge
-   ! dzdxEdge: Gradient of depth at constant cell indes
-   !    units: None
-   real(kind=RKIND), dimension(:, :), allocatable :: dzdxEdge
-
 !***********************************************************************
 
 contains
@@ -159,6 +142,16 @@ contains
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray, nEdgesArray
 
+      ! gradDensityEdge: Normal gradient of density
+      !           units: none
+      real(kind=RKIND), dimension(:, :), allocatable :: gradDensityEdge
+      ! drhoDzTopOfEdge: Gradient of density in vertical on edges
+      !           units: None
+      real(kind=RKIND), dimension(:, :), allocatable :: drhoDzTopOfEdge
+      ! dzdxEdge: Gradient of depth at constant cell indes
+      !    units: None
+      real(kind=RKIND), dimension(:, :), allocatable :: dzdxEdge
+
       type(mpas_pool_type), pointer :: tracersPool
       real(kind=RKIND), dimension(:, :, :), pointer :: activeTracers
       integer, pointer :: indexTemperature, indexSalinity
@@ -224,12 +217,9 @@ contains
       nCells = nCellsArray(size(nCellsArray))
       nEdges = nEdgesArray(size(nEdgesArray))
 
-      !$omp master
       allocate(gradDensityEdge(nVertLevels, nEdges), &
                dzdxEdge(nVertLevels, nEdges), &
                drhoDzTopOfEdge(nVertLevels, nEdges))
-      !$omp end master
-      !$omp barrier
 
       !$omp parallel
       !$omp do schedule(runtime) private(k)
@@ -808,12 +798,9 @@ contains
       end if !end config_use_GM
 
       ! Deallocate scratch variables
-      !!$omp barrier
-      !!$omp master
       deallocate(dzdxEdge, &
                  drhoDzTopOfEdge, &
                  gradDensityEdge)
-      !!$omp end master
       call mpas_timer_stop('gm bolus velocity')
 
    end subroutine ocn_GM_compute_Bolus_velocity!}}}

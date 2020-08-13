@@ -75,66 +75,6 @@ module ocn_diagnostics
 
    logical :: jenkinsOn, hollandJenkinsOn
 
-   !--------------------------------------------------------------------
-   !
-   ! Replace calls to mpas_allocate_scratch_Field with straight allocates.
-   ! These variables were moved from the subroutines, but will be moved back once the 
-   ! threading implementation is changed to more localized threading
-   !
-   !--------------------------------------------------------------------
-
-   ! Subroutine ocn_diagnostic_solve
-   ! kineticEnergyVertex: kinetic energy of horizontal velocity defined at vertices
-   !               units: m^2 s^{-2}
-   real (kind=RKIND), dimension(:,:), allocatable :: kineticEnergyVertex
-   ! kineticEnergyVertexOnCells: kinetic energy of horizontal velocity defined at vertices
-   !                      units: m^2 s^{-2}
-   real (kind=RKIND), dimension(:,:), allocatable :: kineticEnergyVertexOnCells
-   ! normalizedPlanetaryVorticityVertex: earth's rotational rate (Coriolis parameter, f)
-   !                                     divided by layer thickness, defined at vertices
-   !                              units: s^{-1}
-   real (kind=RKIND), dimension(:,:), allocatable :: normalizedPlanetaryVorticityVertex
-   ! normalizedRelativeVorticityVertex: curl of horizontal velocity divided by layer thickness,
-   !                                    defined at vertices
-   !                             units: s^{-1}
-   real (kind=RKIND), dimension(:,:), allocatable :: normalizedRelativeVorticityVertex
-   ! vorticityGradientNormalComponent: gradient of vorticity in the normal direction
-   !                                   (positive points from cell1 to cell2)
-   !                            units: s^{-1} m^{-1}
-   real (kind=RKIND), dimension(:,:), allocatable :: vorticityGradientNormalComponent
-   ! vorticityGradientTangentialComponent: gradient of vorticity in the tangent direction
-   !                                       (positive points from vertex1 to vertex2)
-   !                                units: s^{-1} m^{-1}
-   real (kind=RKIND), dimension(:,:), allocatable :: vorticityGradientTangentialComponent
-
-   ! Subroutine ocn_vert_transport_velocity_top
-   ! projectedSSH: projected SSH at a new time
-   !        units: none
-   real (kind=RKIND), dimension(:), allocatable ::  projectedSSH
-   ! div_hu: divergence of (thickness*velocity)
-   !  units: none
-   real (kind=RKIND), dimension(:,:), allocatable :: div_hu
-   ! ALE_Thickness: ALE thickness at new time
-   !         units: none
-   real (kind=RKIND), dimension(:,:), allocatable :: ALE_Thickness
-
-   ! subroutine ocn_compute_KPP_input_fields
-   ! densitySurfaceDisplaced: Density computed by displacing SST and SSS to every vertical
-   !                          layer within the column
-   !                   units: kg m^{-3}
-   real (kind=RKIND), dimension(:,:), allocatable :: densitySurfaceDisplaced
-   ! thermalExpansionCoeff: Thermal expansion coefficient (alpha), defined as $-1/\rho
-   !                        d\rho/dT$ (note negative sign)
-   !                 units: C^{-1}
-   real (kind=RKIND), dimension(:,:), allocatable :: thermalExpansionCoeff
-   ! salineContractionCoeff: Saline contraction coefficient (beta), defined as $1/\rho
-   !                         d\rho/dS$.  This is also called the haline contraction coefficient.
-   !                  units: PSU^{-1}
-   real (kind=RKIND), dimension(:,:), allocatable :: salineContractionCoeff
-
-   ! subroutine ocn_compute_land_ice_flux_input_fields
-   real (kind=RKIND), dimension(:), allocatable ::  blTempScratch, blSaltScratch
-
 !***********************************************************************
 
 contains
@@ -205,6 +145,30 @@ contains
       integer :: timeLevel
       integer, pointer :: indexTemperature, indexSalinity
 
+      ! Scratch Arrays
+      ! kineticEnergyVertex: kinetic energy of horizontal velocity defined at vertices
+      !               units: m^2 s^{-2}
+      real (kind=RKIND), dimension(:,:), allocatable :: kineticEnergyVertex
+      ! kineticEnergyVertexOnCells: kinetic energy of horizontal velocity defined at vertices
+      !                      units: m^2 s^{-2}
+      real (kind=RKIND), dimension(:,:), allocatable :: kineticEnergyVertexOnCells
+      ! normalizedPlanetaryVorticityVertex: earth's rotational rate (Coriolis parameter, f)
+      !                                     divided by layer thickness, defined at vertices
+      !                              units: s^{-1}
+      real (kind=RKIND), dimension(:,:), allocatable :: normalizedPlanetaryVorticityVertex
+      ! normalizedRelativeVorticityVertex: curl of horizontal velocity divided by layer thickness,
+      !                                    defined at vertices
+      !                             units: s^{-1}
+      real (kind=RKIND), dimension(:,:), allocatable :: normalizedRelativeVorticityVertex
+      ! vorticityGradientNormalComponent: gradient of vorticity in the normal direction
+      !                                   (positive points from cell1 to cell2)
+      !                            units: s^{-1} m^{-1}
+      real (kind=RKIND), dimension(:,:), allocatable :: vorticityGradientNormalComponent
+      ! vorticityGradientTangentialComponent: gradient of vorticity in the tangent direction
+      !                                       (positive points from vertex1 to vertex2)
+      !                                units: s^{-1} m^{-1}
+      real (kind=RKIND), dimension(:,:), allocatable :: vorticityGradientTangentialComponent
+   
 
       real (kind=RKIND), dimension(:), pointer :: surfaceFluxAttenuationCoefficient
       real (kind=RKIND), dimension(:), pointer :: surfaceFluxAttenuationCoefficientRunoff
@@ -472,11 +436,8 @@ contains
       !
       if ( ke_vertex_flag == 1 ) then
 
-         !$omp master
          allocate(kineticEnergyVertex(nVertLevels, nVertices), &
                   kineticEnergyVertexOnCells(nVertLevels, nCells))
-         !$omp end master
-         !$omp barrier
 
          !$omp parallel
          !$omp do schedule(runtime) private(i, iEdge, r_tmp, k)
@@ -520,21 +481,15 @@ contains
          !$omp end do
          !$omp end parallel
 
-         !$omp barrier
-         !$omp master
          deallocate(kineticEnergyVertex, &
                     kineticEnergyVertexOnCells)
-         !$omp end master
       end if
 
       !
       ! Compute normalized relative and planetary vorticity
       !
-      !$omp master
       allocate(normalizedPlanetaryVorticityVertex(nVertLevels, nVertices), &
                normalizedRelativeVorticityVertex(nVertLevels, nVertices))
-      !$omp end master
-      !$omp barrier
 
       nVertices = nVerticesArray( 3 )
 
@@ -603,11 +558,8 @@ contains
       ! Diagnostics required for the Anticipated Potential Vorticity Method (apvm).
       if (config_apvm_scale_factor>1e-10) then
 
-         !$omp master
          allocate(vorticityGradientNormalComponent(nVertLevels, nEdges), &
                   vorticityGradientTangentialComponent(nVertLevels, nEdges))
-         !$omp end master
-         !$omp barrier
 
          nEdges = nEdgesArray( 2 )
 
@@ -653,19 +605,13 @@ contains
          !$omp end do
          !$omp end parallel
 
-         !$omp barrier
-         !$omp master
          deallocate(vorticityGradientNormalComponent, &
                     vorticityGradientTangentialComponent)
-         !$omp end master
 
       endif
 
-      !$omp barrier
-      !$omp master
       deallocate(normalizedPlanetaryVorticityVertex, &
                  normalizedRelativeVorticityVertex)
-      !$omp end master
 
       !
       ! equation of state
@@ -1042,6 +988,17 @@ contains
       real (kind=RKIND) :: flux, invAreaCell, div_hu_btr
       real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell
 
+      ! Scratch Arrays
+      ! projectedSSH: projected SSH at a new time
+      !        units: none
+      real (kind=RKIND), dimension(:), allocatable ::  projectedSSH
+      ! div_hu: divergence of (thickness*velocity)
+      !  units: none
+      real (kind=RKIND), dimension(:,:), allocatable :: div_hu
+      ! ALE_Thickness: ALE thickness at new time
+      !         units: none
+      real (kind=RKIND), dimension(:,:), allocatable :: ALE_Thickness
+
       err = 0
 
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
@@ -1062,12 +1019,9 @@ contains
 
       ncells = nCellsArray(size(nCellsArray))
 
-      !$omp master
       allocate(div_hu(nVertLevels, nCells), &
                projectedSSH(nCells), &
                ALE_Thickness(nVertLevels, nCells))
-      !$omp end master
-      !$omp barrier
 
       ! Only need to compute over 0 and 1 halos
       nCells = nCellsArray( 2 )
@@ -1126,12 +1080,9 @@ contains
       !$omp end do
       !$omp end parallel
 
-      !$omp barrier
-      !$omp master
       deallocate(div_hu, &
                  projectedSSH, &
                  ALE_Thickness)
-      !$omp end master
 
    end subroutine ocn_vert_transport_velocity_top!}}}
 
@@ -1466,6 +1417,20 @@ contains
       real (kind=RKIND) :: numerator, denominator, turbulentVelocitySquared, fracAbsorbed, fracAbsorbedRunoff
       real (kind=RKIND) :: sumSurfaceStressSquared
 
+      ! Scratch Arrays
+      ! densitySurfaceDisplaced: Density computed by displacing SST and SSS to every vertical
+      !                          layer within the column
+      !                   units: kg m^{-3}
+      real (kind=RKIND), dimension(:,:), allocatable :: densitySurfaceDisplaced
+      ! thermalExpansionCoeff: Thermal expansion coefficient (alpha), defined as $-1/\rho
+      !                        d\rho/dT$ (note negative sign)
+      !                 units: C^{-1}
+      real (kind=RKIND), dimension(:,:), allocatable :: thermalExpansionCoeff
+      ! salineContractionCoeff: Saline contraction coefficient (beta), defined as $1/\rho
+      !                         d\rho/dS$.  This is also called the haline contraction coefficient.
+      !                  units: PSU^{-1}
+      real (kind=RKIND), dimension(:,:), allocatable :: salineContractionCoeff
+
       call mpas_timer_start('KPP input fields')
 
       if (present(timeLevelIn)) then
@@ -1521,12 +1486,10 @@ contains
 
       ! allocate scratch space displaced density computation
       ncells = nCellsArray(size(nCellsArray))
-      !$omp master
+
       allocate(densitySurfaceDisplaced(nVertLevels, nCells), &
                thermalExpansionCoeff(nVertLevels, nCells), &
                salineContractionCoeff(nVertLevels, nCells))
-      !$omp end master
-      !$omp barrier
 
       ! Only need to compute over the 0 and 1 halos
       nCells = nCellsArray( 3 )
@@ -1599,12 +1562,9 @@ contains
       !$omp end parallel
 
       ! deallocate scratch space
-      !$omp barrier
-      !$omp master
       deallocate(thermalExpansionCoeff, &
                  salineContractionCoeff, &
                  densitySurfaceDisplaced)
-      !$omp end master
 
       call mpas_timer_stop('KPP input fields')
 
@@ -1665,6 +1625,10 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: kineticEnergyCell, layerThickness, normalVelocity, &
                                                     landIceBoundaryLayerTracers, landIceTracerTransferVelocities
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
+
+      ! Scratch Arrays
+      real (kind=RKIND), dimension(:), allocatable ::  blTempScratch, blSaltScratch
+
 
       ! constants for Holland and Jenkins 1999 parameterization of the boundary layer
       real (kind=RKIND), parameter :: &
@@ -1741,11 +1705,8 @@ contains
       end if
       call mpas_pool_get_array(diagnosticsPool, 'surfaceFluxAttenuationCoefficient', surfaceFluxAttenuationCoefficient)
 
-      !$omp master
       allocate(blTempScratch(nCells), &
                blSaltScratch(nCells))
-      !$omp end master
-      !$omp barrier
 
       if(hollandJenkinsOn) then
          call mpas_pool_get_array(meshPool, 'fCell', fCell)
@@ -1858,11 +1819,8 @@ contains
          !$omp end parallel
       end if
 
-      !$omp barrier
-      !$omp master
       deallocate(blTempScratch, &
                  blSaltScratch)
-      !$omp end master
 
       ! modify the spatially-varying attenuation coefficient where there is land ice
       !$omp parallel
