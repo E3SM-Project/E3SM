@@ -12,9 +12,8 @@ using scream::Real;
 using scream::Int;
 
 //
-// A C++ interface to SHOC fortran calls and vice versa
+// A C interface to SHOC fortran calls. The stubs below will link to fortran definitions in shoc_iso_c.f90
 //
-
 extern "C" {
 
 void shoc_init_c(int nlev, Real gravit, Real rair, Real rh2o, Real cpair,
@@ -23,27 +22,27 @@ void shoc_init_c(int nlev, Real gravit, Real rair, Real rh2o, Real cpair,
 
 void shoc_grid_c(int shcol, int nlev, int nlevi, Real *zt_grid, Real *zi_grid,
                  Real *pdel, Real *dz_zt, Real *dzi_zi, Real *rho_zt);
-		 
+
 void calc_shoc_varorcovar_c(Int shcol, Int nlev, Int nlevi,  Real tunefac,
                             Real *isotropy_zi, Real *tkh_zi, Real *dz_zi,
-			    Real *invar1, Real *invar2, Real *varorcovar);		 
+			    Real *invar1, Real *invar2, Real *varorcovar);
 
 void integ_column_stability_c(Int nlev, Int shcol, Real *dz_zt, Real *pres,
 			      Real *brunt, Real *brunt_int);
-			      
-void compute_shr_prod_c(Int nlevi, Int nlev, Int shcol, Real *dz_zi, 
+
+void compute_shr_prod_c(Int nlevi, Int nlev, Int shcol, Real *dz_zi,
                         Real *u_wind, Real *v_wind, Real *sterm);
-			
-void isotropic_ts_c(Int nlev, Int shcol, Real *brunt_int, Real *tke, 
-                    Real *a_diss, Real *brunt, Real *isotropy);	
-		    
-void adv_sgs_tke_c(Int nlev, Int shcol, Real dtime, Real *shoc_mix, 
-                   Real *wthv_sec, Real *sterm_zt, Real *tk, 
+
+void isotropic_ts_c(Int nlev, Int shcol, Real *brunt_int, Real *tke,
+                    Real *a_diss, Real *brunt, Real *isotropy);
+
+void adv_sgs_tke_c(Int nlev, Int shcol, Real dtime, Real *shoc_mix,
+                   Real *wthv_sec, Real *sterm_zt, Real *tk,
                    Real *tke, Real *a_diss);
-		   
-void eddy_diffusivities_c(Int nlev, Int shcol, Real *obklen, Real *pblh, 
-                          Real *zt_grid, Real *shoc_mix, Real *sterm_zt, 
-                          Real *isotropy, Real *tke, Real *tkh, Real *tk);		   	
+
+void eddy_diffusivities_c(Int nlev, Int shcol, Real *obklen, Real *pblh,
+                          Real *zt_grid, Real *shoc_mix, Real *sterm_zt,
+                          Real *isotropy, Real *tke, Real *tkh, Real *tk);
 
 void calc_shoc_vertflux_c(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 			  Real *dz_zi, Real *invar, Real *vertflux);
@@ -52,559 +51,209 @@ void calc_shoc_vertflux_c(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 namespace scream {
 namespace shoc {
 
-// helper functions
+//
+// Data struct
+//
 
-// In all C++ -> Fortran bridge functions you should see shoc_init(nlev, true).
-// We are provisionally following P3 here in case SHOC uses global data. The
-// 'true' argument is to set shoc to use its fortran implementations instead of
-// calling back to C++. We want this behavior since it doesn't make much sense
-// for C++ to bridge over to fortran only to have fortran bridge back to C++.
-// Anyone who wants the C++ implementation should call it directly.
-
-struct SHOCSubroutineData  // example data struct
+SHOCDataBase::SHOCDataBase(Int shcol_, Int nlev_, Int nlevi_,
+                           const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i) :
+  shcol(shcol_),
+  nlev(nlev_),
+  nlevi(nlevi_),
+  m_total(shcol_ * nlev_),
+  m_totali(shcol_ * nlevi_),
+  m_ptrs(ptrs),
+  m_ptrs_i(ptrs_i),
+  m_data(m_ptrs.size() * m_total + m_ptrs_i.size() * m_totali, 0)
 {
-  // In
-  Real in1, in2, in3;
+  init_ptrs();
+}
 
-  // Out
-  Real out1, out2, out3;
-};
-
-void shoc_subroutine(SHOCSubroutineData &d)  // example wrapper function
+SHOCDataBase::SHOCDataBase(const SHOCDataBase &rhs, const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i) :
+  shcol(rhs.shcol),
+  nlev(rhs.nlev),
+  nlevi(rhs.nlevi),
+  m_total(rhs.m_total),
+  m_totali(rhs.m_totali),
+  m_ptrs(ptrs),
+  m_ptrs_i(ptrs_i),
+  m_data(rhs.m_data)
 {
-  Int nlev = 128;
-  shoc_init(nlev, true);
-  // shoc_subroutine_c(d.in1, d.in2, d.in3, &d.out1, &d.out2, &d.out3);
-}
-
-SHOCGridData::SHOCGridData(Int shcol_, Int nlev_, Int nlevi_)
-    : shcol(shcol_),
-      nlev(nlev_),
-      nlevi(nlevi_),
-      m_total(shcol_ * nlev_),
-      m_totali(shcol_ * nlevi_),
-      m_data(NUM_ARRAYS * m_total, 0),
-      m_datai(NUM_ARRAYS_i * m_totali, 0) {
   init_ptrs();
 }
 
-SHOCGridData::SHOCGridData(const SHOCGridData &rhs)
-    : shcol(rhs.shcol),
-      nlev(rhs.nlev),
-      nlevi(rhs.nlevi),
-      m_total(rhs.m_total),
-      m_totali(rhs.m_totali),
-      m_data(rhs.m_data),
-      m_datai(rhs.m_datai) {
-  init_ptrs();
-}
-
-SHOCGridData &SHOCGridData::operator=(const SHOCGridData &rhs) {
-  init_ptrs();
-
+SHOCDataBase& SHOCDataBase::operator=(const SHOCDataBase& rhs)
+{
   shcol    = rhs.shcol;
   nlev     = rhs.nlev;
   nlevi    = rhs.nlevi;
   m_total  = rhs.m_total;
   m_totali = rhs.m_totali;
-  m_data   = rhs.m_data;
-  m_datai  = rhs.m_datai;  // Copy
+  m_data   = rhs.m_data; // Copy
+
+  init_ptrs();
 
   return *this;
 }
 
-void SHOCGridData::init_ptrs() {
+void SHOCDataBase::init_ptrs()
+{
   Int offset         = 0;
   Real *data_begin   = m_data.data();
-  Real *data_begin_i = m_datai.data();
 
-  std::array<Real **, NUM_ARRAYS> ptrs     = {&zt_grid, &dz_zt, &pdel, &rho_zt};
-  std::array<Real **, NUM_ARRAYS_i> ptrs_i = {&zi_grid, &dz_zi};
-
-  for(size_t i = 0; i < NUM_ARRAYS; ++i) {
-    *ptrs[i] = data_begin + offset;
+  for (size_t i = 0; i < m_ptrs.size(); ++i) {
+    *(m_ptrs[i]) = data_begin + offset;
     offset += m_total;
   }
 
-  offset = 0;
-  for(size_t i = 0; i < NUM_ARRAYS_i; ++i) {
-    *ptrs_i[i] = data_begin_i + offset;
+  for (size_t i = 0; i < m_ptrs_i.size(); ++i) {
+    *(m_ptrs_i[i]) = data_begin + offset;
     offset += m_totali;
   }
 }
 
-void shoc_grid(Int nlev, SHOCGridData &d) {
-  shoc_init(nlev, true);
+void SHOCDataBase::randomize()
+{
+  std::default_random_engine generator;
+  std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
+
+  for (size_t i = 0; i < m_ptrs.size(); ++i) {
+    for (size_t j = 0; j < m_total; ++j) {
+      (*(m_ptrs[i]))[j] = data_dist(generator);
+    }
+  }
+
+  for (size_t i = 0; i < m_ptrs_i.size(); ++i) {
+    for (size_t j = 0; j < m_totali; ++j) {
+      (*(m_ptrs_i[i]))[j] = data_dist(generator);
+    }
+  }
+}
+
+//
+// Glue functions to call fortran from from C++ with the Data struct
+//
+// In all C++ -> Fortran bridge functions you should see shoc_init(nlev, true).
+// We are provisionally following P3 here in case SHOC uses global data. The
+// 'true' argument is to set shoc to use its fortran implementations instead of
+// calling back to C++. We want this behavior since it doesn't make much sense
+// for C++ to bridge over to fortran only to have fortran bridge back to C++.
+// Anyone who wants the C++ implementation should call it directly. We need
+// need to be aware of data layout since f90 is different from cxx. All these
+// functions will expect incoming data to be C layout. They will transpose to f90
+// before calling fortran and then back to C before returning.
+//
+
+void calc_shoc_varorcovar(SHOCVarorcovarData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  calc_shoc_varorcovar_c(d.shcol, d.nlev, d.nlevi, d.tunefac, d.isotropy_zi, d.tkh_zi,
+                         d.dz_zi, d.invar1, d.invar2, d.varorcovar);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+void shoc_grid(SHOCGridData &d) {
+  shoc_init(d.nlev, true);
   d.transpose<util::TransposeDirection::c2f>();
   shoc_grid_c(d.shcol, d.nlev, d.nlevi, d.zt_grid, d.zi_grid, d.pdel, d.dz_zt,
               d.dz_zi, d.rho_zt);
   d.transpose<util::TransposeDirection::f2c>();
 }
 
-//Initialize data for integ_column_stability
-SHOCColstabData::SHOCColstabData(Int shcol_, Int nlev_)
-  : shcol(shcol_),
-    nlev(nlev_),
-    m_total(shcol_ * nlev_),
-    m_totalc(shcol_),
-    m_data(NUM_ARRAYS * m_total, 0),
-    m_datac(NUM_ARRAYS_c * m_totalc,0) {
-  init_ptrs();
-}
-
-SHOCColstabData::SHOCColstabData(const SHOCColstabData &rhs)
-  : shcol(rhs.shcol),
-    nlev(rhs.nlev),
-    m_total(rhs.m_total),
-    m_totalc(rhs.m_totalc),
-    m_data(rhs.m_data),
-    m_datac(rhs.m_datac) {
-  init_ptrs();
-}
-
-
-SHOCColstabData  &SHOCColstabData::operator=(const SHOCColstabData &rhs) {
-  init_ptrs();
-
-  shcol    = rhs.shcol;
-  nlev     = rhs.nlev;
-  m_total  = rhs.m_total;
-  m_totalc = rhs.m_totalc;
-  m_data   = rhs.m_data;
-  m_datac  = rhs.m_datac;  // Copy
-
-  return *this;
-}
-
-
-void SHOCColstabData::init_ptrs() {
-  Int offset         = 0;
-  Real *data_begin   = m_data.data();
-  Real *data_begin_c = m_datac.data();
-
-  std::array<Real **, NUM_ARRAYS> ptrs = {&dz_zt, &pres, &brunt};
-  std::array<Real **, NUM_ARRAYS_c> ptrs_c = {&brunt_int};
-
-  for(size_t i = 0; i < NUM_ARRAYS; ++i) {
-    *ptrs[i] = data_begin + offset;
-    offset += m_total;
-  }
-  
-  offset = 0;
-  for(size_t i = 0; i < NUM_ARRAYS_c; ++i) {
-    *ptrs_c[i] = data_begin_c + offset;
-    offset += m_totalc;
-  }
-  
-}
-
-//Initialize shoc parameterization, trnaspose data from c to fortran,
-//call calc_shoc_vertflux fortran subroutine and transpose data back to c
-void integ_column_stability(Int nlev, SHOCColstabData &d) {
-  shoc_init(nlev, true);
-  d.transpose<util::TransposeDirection::c2f>();
-  integ_column_stability_c(d.nlev, d.shcol, d.dz_zt, d.pres, d.brunt, d.brunt_int);
-  d.transpose<util::TransposeDirection::f2c>();
-}
-
-
-//Initialize data for compute_shr_prod function
-SHOCTkeshearData::SHOCTkeshearData(Int shcol_, Int nlev_, Int nlevi_)
-  : shcol(shcol_),
-    nlev(nlev_),
-    nlevi(nlevi_),
-    m_total(shcol_ * nlev_),
-    m_totali(shcol_ * nlevi_),
-    m_data(NUM_ARRAYS * m_total, 0),
-    m_datai(NUM_ARRAYS_i * m_totali, 0) {
-  init_ptrs();
-}
-
-SHOCTkeshearData::SHOCTkeshearData(const SHOCTkeshearData &rhs)
-  : shcol(rhs.shcol),
-    nlev(rhs.nlev),
-    nlevi(rhs.nlevi),
-    m_total(rhs.m_total),
-    m_totali(rhs.m_totali),
-    m_data(rhs.m_data),
-    m_datai(rhs.m_datai) {
-  init_ptrs();
-}
-
-
-SHOCTkeshearData  &SHOCTkeshearData::operator=(const SHOCTkeshearData &rhs) {
-  init_ptrs();
-
-  shcol    = rhs.shcol;
-  nlev     = rhs.nlev;
-  nlevi    = rhs.nlevi;
-  m_total  = rhs.m_total;
-  m_totali = rhs.m_totali;
-  m_data   = rhs.m_data;
-  m_datai  = rhs.m_datai;  // Copy
-
-  return *this;
-}
-
-
-void SHOCTkeshearData::init_ptrs() {
-  Int offset         = 0;
-  Real *data_begin   = m_data.data();
-  Real *data_begin_i = m_datai.data();
-
-  std::array<Real **, NUM_ARRAYS> ptrs     = {&u_wind, &v_wind};
-  std::array<Real **, NUM_ARRAYS_i> ptrs_i = {&dz_zi, &sterm};
-
-  for(size_t i = 0; i < NUM_ARRAYS; ++i) {
-    *ptrs[i] = data_begin + offset;
-    offset += m_total;
-  }
-
-  offset = 0;
-  for(size_t i = 0; i < NUM_ARRAYS_i; ++i) {
-    *ptrs_i[i] = data_begin_i + offset;
-    offset += m_totali;
-  }
-}
-
-//Initialize shoc parameterization, trnaspose data from c to fortran,
-//call compute_shr_prod fortran subroutine and transpose data back to c
-void compute_shr_prod(Int nlev, SHOCTkeshearData &d) {
-  shoc_init(nlev, true);
-  d.transpose<util::TransposeDirection::c2f>();
-  compute_shr_prod_c(d.nlevi, d.nlev, d.shcol, d.dz_zi, d.u_wind,
-                       d.v_wind, d.sterm);
-  d.transpose<util::TransposeDirection::f2c>();
-}
-
-//Initialize data for isotropic_ts
-SHOCIsotropicData::SHOCIsotropicData(Int shcol_, Int nlev_)
-  : shcol(shcol_),
-    nlev(nlev_),
-    m_total(shcol_ * nlev_),
-    m_totalc(shcol_),
-    m_data(NUM_ARRAYS * m_total, 0),
-    m_datac(NUM_ARRAYS_c * m_totalc,0) {
-  init_ptrs();
-}
-
-SHOCIsotropicData::SHOCIsotropicData(const SHOCIsotropicData &rhs)
-  : shcol(rhs.shcol),
-    nlev(rhs.nlev),
-    m_total(rhs.m_total),
-    m_totalc(rhs.m_totalc),
-    m_data(rhs.m_data),
-    m_datac(rhs.m_datac) {
-  init_ptrs();
-}
-
-
-SHOCIsotropicData  &SHOCIsotropicData::operator=(const SHOCIsotropicData &rhs) {
-  init_ptrs();
-
-  shcol    = rhs.shcol;
-  nlev     = rhs.nlev;
-  m_total  = rhs.m_total;
-  m_totalc = rhs.m_totalc;
-  m_data   = rhs.m_data;
-  m_datac  = rhs.m_datac;  // Copy
-
-  return *this;
-}
-
-
-void SHOCIsotropicData::init_ptrs() {
-  Int offset         = 0;
-  Real *data_begin   = m_data.data();
-  Real *data_begin_c = m_datac.data();
-
-  std::array<Real **, NUM_ARRAYS> ptrs = {&tke, &a_diss, &brunt, &isotropy};
-  std::array<Real **, NUM_ARRAYS_c> ptrs_c = {&brunt_int};
-
-  for(size_t i = 0; i < NUM_ARRAYS; ++i) {
-    *ptrs[i] = data_begin + offset;
-    offset += m_total;
-  }
-  
-  offset = 0;
-  for(size_t i = 0; i < NUM_ARRAYS_c; ++i) {
-    *ptrs_c[i] = data_begin_c + offset;
-    offset += m_totalc;
-  }
-  
-}
-
-//Initialize shoc parameterization, trnaspose data from c to fortran,
-//call isotropic_ts fortran subroutine and transpose data back to c
-void isotropic_ts(Int nlev, SHOCIsotropicData &d) {
-  shoc_init(nlev, true);
-  d.transpose<util::TransposeDirection::c2f>();
-  isotropic_ts_c(d.nlev, d.shcol, d.brunt_int, d.tke, d.a_diss, 
-                 d.brunt, d.isotropy);
-  d.transpose<util::TransposeDirection::f2c>();
-}
-
-//Initialize data for adv_sgs_tke function
-SHOCAdvsgstkeData::SHOCAdvsgstkeData(Int shcol_, Int nlev_, Real dtime_)
-  : shcol(shcol_),
-    nlev(nlev_),
-    dtime(dtime_),
-    m_total(shcol_ * nlev_),
-    m_data(NUM_ARRAYS * m_total, 0) {
-  init_ptrs();
-}
-
-SHOCAdvsgstkeData::SHOCAdvsgstkeData(const SHOCAdvsgstkeData &rhs)
-  : shcol(rhs.shcol),
-    nlev(rhs.nlev),
-    dtime(rhs.dtime),
-    m_total(rhs.m_total),
-    m_data(rhs.m_data) {
-  init_ptrs();
-}
-
-
-SHOCAdvsgstkeData  &SHOCAdvsgstkeData::operator=(const SHOCAdvsgstkeData &rhs) {
-  init_ptrs();
-
-  shcol    = rhs.shcol;
-  nlev     = rhs.nlev;
-  dtime    = rhs.dtime;
-  m_total  = rhs.m_total;
-  m_data   = rhs.m_data;  // Copy
-
-  return *this;
-}
-
-
-void SHOCAdvsgstkeData::init_ptrs() {
-  Int offset         = 0;
-  Real *data_begin   = m_data.data();
-
-  std::array<Real **, NUM_ARRAYS> ptrs = {&shoc_mix, &wthv_sec, &sterm_zt,
-                                          &tk, &tke, &a_diss, &tke};
-
-  for(size_t i = 0; i < NUM_ARRAYS; ++i) {
-    *ptrs[i] = data_begin + offset;
-    offset += m_total;
-  }
-
-}
-
-//Initialize shoc parameterization, trnaspose data from c to fortran,
-//call adv_sgs_tke fortran subroutine and transpose data back to c
-void adv_sgs_tke(Int nlev, SHOCAdvsgstkeData &d) {
-  shoc_init(nlev, true);
-  d.transpose<util::TransposeDirection::c2f>();
-  adv_sgs_tke_c(d.nlev, d.shcol, d.dtime, d.shoc_mix, d.wthv_sec, 
-                d.sterm_zt, d.tk, d.tke, d.a_diss);
-  d.transpose<util::TransposeDirection::f2c>();
-}
-
-//Initialize data for eddy_diffusivities
-SHOCEddydiffData::SHOCEddydiffData(Int shcol_, Int nlev_)
-  : shcol(shcol_),
-    nlev(nlev_),
-    m_total(shcol_ * nlev_),
-    m_totalc(shcol_),
-    m_data(NUM_ARRAYS * m_total, 0),
-    m_datac(NUM_ARRAYS_c * m_totalc,0) {
-  init_ptrs();
-}
-
-SHOCEddydiffData::SHOCEddydiffData(const SHOCEddydiffData &rhs)
-  : shcol(rhs.shcol),
-    nlev(rhs.nlev),
-    m_total(rhs.m_total),
-    m_totalc(rhs.m_totalc),
-    m_data(rhs.m_data),
-    m_datac(rhs.m_datac) {
-  init_ptrs();
-}
-
-
-SHOCEddydiffData  &SHOCEddydiffData::operator=(const SHOCEddydiffData &rhs) {
-  init_ptrs();
-
-  shcol    = rhs.shcol;
-  nlev     = rhs.nlev;
-  m_total  = rhs.m_total;
-  m_totalc = rhs.m_totalc;
-  m_data   = rhs.m_data;
-  m_datac  = rhs.m_datac;  // Copy
-
-  return *this;
-}
-
-
-void SHOCEddydiffData::init_ptrs() {
-  Int offset         = 0;
-  Real *data_begin   = m_data.data();
-  Real *data_begin_c = m_datac.data();
-
-  std::array<Real **, NUM_ARRAYS> ptrs = {&zt_grid, &shoc_mix, &sterm_zt,
-                                          &isotropy, &tke, &tkh, &tk};
-  std::array<Real **, NUM_ARRAYS_c> ptrs_c = {&obklen, &pblh};
-
-  for(size_t i = 0; i < NUM_ARRAYS; ++i) {
-    *ptrs[i] = data_begin + offset;
-    offset += m_total;
-  }
-  
-  offset = 0;
-  for(size_t i = 0; i < NUM_ARRAYS_c; ++i) {
-    *ptrs_c[i] = data_begin_c + offset;
-    offset += m_totalc;
-  }
-  
-}
-
-//Initialize shoc parameterization, trnaspose data from c to fortran,
-//call eddy_diffusivities fortran subroutine and transpose data back to c
-void eddy_diffusivities(Int nlev, SHOCEddydiffData &d) {
-  shoc_init(nlev, true);
-  d.transpose<util::TransposeDirection::c2f>();
-  eddy_diffusivities_c(d.nlev, d.shcol, d.obklen, d.pblh, d.zt_grid,
-     d.shoc_mix, d.sterm_zt, d.isotropy, d.tke, d.tkh, d.tk);
-  d.transpose<util::TransposeDirection::f2c>();
-}
-
-//Initialize data for calc_shoc_vertflux function
-SHOCVertfluxData::SHOCVertfluxData(Int shcol_, Int nlev_, Int nlevi_)
-  : shcol(shcol_),
-    nlev(nlev_),
-    nlevi(nlevi_),
-    m_total(shcol_ * nlev_),
-    m_totali(shcol_ * nlevi_),
-    m_data(NUM_ARRAYS * m_total, 0),
-    m_datai(NUM_ARRAYS_i * m_totali, 0) {
-  init_ptrs();
-}
-
-SHOCVertfluxData::SHOCVertfluxData(const SHOCVertfluxData &rhs)
-  : shcol(rhs.shcol),
-    nlev(rhs.nlev),
-    nlevi(rhs.nlevi),
-    m_total(rhs.m_total),
-    m_totali(rhs.m_totali),
-    m_data(rhs.m_data),
-    m_datai(rhs.m_datai) {
-  init_ptrs();
-}
-
-
-SHOCVertfluxData  &SHOCVertfluxData::operator=(const SHOCVertfluxData &rhs) {
-  init_ptrs();
-
-  shcol    = rhs.shcol;
-  nlev     = rhs.nlev;
-  nlevi    = rhs.nlevi;
-  m_total  = rhs.m_total;
-  m_totali = rhs.m_totali;
-  m_data   = rhs.m_data;
-  m_datai  = rhs.m_datai;  // Copy
-
-  return *this;
-}
-
-
-void SHOCVertfluxData::init_ptrs() {
-  Int offset         = 0;
-  Real *data_begin   = m_data.data();
-  Real *data_begin_i = m_datai.data();
-
-  std::array<Real **, NUM_ARRAYS> ptrs     = {&invar};
-  std::array<Real **, NUM_ARRAYS_i> ptrs_i = {&tkh_zi, &dz_zi, &vertflux};
-
-  for(size_t i = 0; i < NUM_ARRAYS; ++i) {
-    *ptrs[i] = data_begin + offset;
-    offset += m_total;
-  }
-
-  offset = 0;
-  for(size_t i = 0; i < NUM_ARRAYS_i; ++i) {
-    *ptrs_i[i] = data_begin_i + offset;
-    offset += m_totali;
-  }
-}
-
-//Initialize shoc parameterization, trnaspose data from c to fortran,
-//call calc_shoc_vertflux fortran subroutine and transpose data back to c
-void calc_shoc_vertflux(Int nlev, SHOCVertfluxData &d) {
-  shoc_init(nlev, true);
+void calc_shoc_vertflux(SHOCVertfluxData &d) {
+  shoc_init(d.nlev, true);
   d.transpose<util::TransposeDirection::c2f>();
   calc_shoc_vertflux_c(d.shcol, d.nlev, d.nlevi, d.tkh_zi, d.dz_zi, d.invar,
 		       d.vertflux);
   d.transpose<util::TransposeDirection::f2c>();
 }
 
-SHOCVarorcovarData::SHOCVarorcovarData(Int shcol_, Int nlev_, Int nlevi_, Real tunefac_)
-  : shcol(shcol_),
-    nlev(nlev_),
-    nlevi(nlevi_),
-    tunefac(tunefac_),
-    m_total(shcol_ * nlev_),
-    m_totali(shcol_ * nlevi_),
-    m_data(NUM_ARRAYS * m_total, 0),
-    m_datai(NUM_ARRAYS_i * m_totali, 0) {
-  init_ptrs();
-}
-
-SHOCVarorcovarData::SHOCVarorcovarData(const SHOCVarorcovarData &rhs)
-  : shcol(rhs.shcol),
-    nlev(rhs.nlev),
-    nlevi(rhs.nlevi),
-    tunefac(rhs.tunefac),
-    m_total(rhs.m_total),
-    m_totali(rhs.m_totali),
-    m_data(rhs.m_data),
-    m_datai(rhs.m_datai) {
-  init_ptrs();
-}
-
-
-SHOCVarorcovarData  &SHOCVarorcovarData::operator=(const SHOCVarorcovarData &rhs) {
-  init_ptrs();
-
-  shcol    = rhs.shcol;
-  nlev     = rhs.nlev;
-  nlevi    = rhs.nlevi;
-  tunefac  = rhs.tunefac;
-  m_total  = rhs.m_total;
-  m_totali = rhs.m_totali;
-  m_data   = rhs.m_data;
-  m_datai  = rhs.m_datai;  // Copy
-
-  return *this;
-}
-
-
-void SHOCVarorcovarData::init_ptrs() {
-  Int offset         = 0;
-  Real *data_begin   = m_data.data();
-  Real *data_begin_i = m_datai.data();
-
-  std::array<Real **, NUM_ARRAYS> ptrs     = {&invar1, &invar2};
-  std::array<Real **, NUM_ARRAYS_i> ptrs_i = {&tkh_zi, &dz_zi, &isotropy_zi, &varorcovar};
-
-  for(size_t i = 0; i < NUM_ARRAYS; ++i) {
-    *ptrs[i] = data_begin + offset;
-    offset += m_total;
-  }
-
-  offset = 0;
-  for(size_t i = 0; i < NUM_ARRAYS_i; ++i) {
-    *ptrs_i[i] = data_begin_i + offset;
-    offset += m_totali;
-  }
-}
-
-void calc_shoc_varorcovar(Int nlev, SHOCVarorcovarData &d) {
-  shoc_init(nlev, true);
+void integ_column_stability(SHOCColstabData &d) {
+  shoc_init(d.nlev, true);
   d.transpose<util::TransposeDirection::c2f>();
-  calc_shoc_varorcovar_c(d.shcol, d.nlev, d.nlevi, d.tunefac, d.isotropy_zi, d.tkh_zi, 
-                         d.dz_zi, d.invar1, d.invar2, d.varorcovar);
+  integ_column_stability_c(d.nlev, d.shcol, d.dz_zt, d.pres, d.brunt, d.brunt_int);
   d.transpose<util::TransposeDirection::f2c>();
+}
+
+void compute_shr_prod(SHOCTkeshearData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  compute_shr_prod_c(d.nlevi, d.nlev, d.shcol, d.dz_zi, d.u_wind,
+                       d.v_wind, d.sterm);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+void isotropic_ts(SHOCIsotropicData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  isotropic_ts_c(d.nlev, d.shcol, d.brunt_int, d.tke, d.a_diss,
+                 d.brunt, d.isotropy);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+void adv_sgs_tke(SHOCAdvsgstkeData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  adv_sgs_tke_c(d.nlev, d.shcol, d.dtime, d.shoc_mix, d.wthv_sec,
+                d.sterm_zt, d.tk, d.tke, d.a_diss);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+void eddy_diffusivities(SHOCEddydiffData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  eddy_diffusivities_c(d.nlev, d.shcol, d.obklen, d.pblh, d.zt_grid,
+     d.shoc_mix, d.sterm_zt, d.isotropy, d.tke, d.tkh, d.tk);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+//
+// _f function definitions. These expect data in C layout
+//
+
+void calc_shoc_vertflux_f(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
+			  Real *dz_zi, Real *invar, Real *vertflux)
+{
+  using SHF = Functions<Real, DefaultDevice>;
+
+  using Spack      = typename SHF::Spack;
+  using view_2d    = typename SHF::view_2d<Spack>;
+  using KT         = typename SHF::KT;
+  using ExeSpace   = typename KT::ExeSpace;
+  using MemberType = typename SHF::MemberType;
+
+  static constexpr Int num_arrays = 4;
+
+  Kokkos::Array<view_2d, num_arrays> temp_d;
+  Kokkos::Array<size_t, num_arrays> dim1_sizes     = {shcol,  shcol, shcol, shcol};
+  Kokkos::Array<size_t, num_arrays> dim2_sizes     = {nlevi,  nlevi, nlev,  nlevi};
+  Kokkos::Array<const Real*, num_arrays> ptr_array = {tkh_zi, dz_zi, invar, vertflux};
+
+  // Sync to device
+  pack::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d, true);
+
+  view_2d
+    tkh_zi_d  (temp_d[0]),
+    dz_zi_d   (temp_d[1]),
+    invar_d   (temp_d[2]),
+    vertflux_d(temp_d[3]);
+
+  const Int nk_pack = scream::pack::npack<Spack>(nlev);
+  const auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    const auto otkh_zi_d   = util::subview(tkh_zi_d, i);
+    const auto odz_zi_d    = util::subview(dz_zi_d, i);
+    const auto oinvar_d    = util::subview(invar_d, i);
+    const auto overtflux_d = util::subview(vertflux_d, i);
+
+    SHF::calc_shoc_vertflux(team, nlev, otkh_zi_d, odz_zi_d, oinvar_d, overtflux_d);
+  });
+
+  // Sync back to host
+  Kokkos::Array<view_2d, 1> inout_views = {vertflux_d};
+  pack::device_to_host({vertflux}, {shcol}, {nlevi}, inout_views, true);
 }
 
 } // namespace shoc
