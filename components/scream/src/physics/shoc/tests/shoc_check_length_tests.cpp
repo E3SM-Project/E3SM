@@ -47,9 +47,8 @@ TEST_CASE("shoc_check_length", "shoc") {
   // Test that the inputs are reasonable.
   REQUIRE(SDS.shcol > 0);
   
-  // compute geometric grid mesh, provide an upper estimate
-  //  to allow for round off with the checker, hence add 1 m
-  const auto grid_mesh = 1.0+sqrt(host_dx*host_dy);
+  // compute geometric grid mesh
+  const auto grid_mesh = sqrt(host_dx*host_dy);
 
   // Fill in test data on zt_grid.
   for(Int s = 0; s < SDS.shcol; ++s) {
@@ -78,9 +77,9 @@ TEST_CASE("shoc_check_length", "shoc") {
     for(Int n = 0; n < SDS.nlev; ++n) {
       const auto offset = n + s * SDS.nlev;   
       // Require mixing length is greater than zero and is
-      //  less than or equal to geometric grid mesh length
+      //  less than geometric grid mesh length + 1 m
       REQUIRE(SDS.shoc_mix[offset] > 0.0); 
-      REQUIRE(SDS.shoc_mix[offset] <= grid_mesh); 
+      REQUIRE(SDS.shoc_mix[offset] < 1.0+grid_mesh); 
     }   
   }
 
