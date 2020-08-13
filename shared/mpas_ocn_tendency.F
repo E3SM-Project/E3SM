@@ -92,19 +92,6 @@ module ocn_tendency
 
    integer :: apply_Dhf_to_hhf, use_highFreqThick_restore
 
-   !--------------------------------------------------------------------
-   !
-   ! Replace calls to mpas_allocate_scratch_Field with straight allocates.
-   ! These variables were moved from the subroutines, but will be moved back once the
-   ! threading implementation is changed to more localized threading
-   !
-   !--------------------------------------------------------------------
-
-   ! subroutine ocn_tend_tracer
-   ! normalThicknessFlux: Flux of thickness through an edge
-   !               units: m^{2} s^{-1}
-   real (kind=RKIND), dimension(:,:), allocatable :: normalThicknessFlux
-
 !***********************************************************************
 
 contains
@@ -516,6 +503,11 @@ contains
       integer :: err, iCell, iEdge, k, timeLevel, nTracersEcosys
       logical :: activeTracersOnly, isActiveTracer    ! if true, only compute for active tracers
 
+      ! Scratch Arrays
+      ! normalThicknessFlux: Flux of thickness through an edge
+      !               units: m^{2} s^{-1}
+      real (kind=RKIND), dimension(:,:), allocatable :: normalThicknessFlux
+
       !
       ! set time level of optional argument is present
       !
@@ -588,10 +580,7 @@ contains
 
       call mpas_timer_start("ocn_tend_tracer")
 
-      !$omp master
       allocate(normalThicknessFlux(nVertLevels, nEdges+1))
-      !$omp end master
-      !$omp barrier
 
       !
       ! transport velocity for the tracer.
@@ -979,10 +968,7 @@ contains
          end if
       end do
 
-      !$omp barrier
-      !$omp master
       deallocate(normalThicknessFlux)
-      !$omp end master
 
       call mpas_timer_stop("ocn_tend_tracer")
 
