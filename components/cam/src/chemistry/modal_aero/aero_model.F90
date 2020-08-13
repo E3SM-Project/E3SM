@@ -1379,13 +1379,11 @@ contains
     use wetdep,                only: wetdepa_v2, wetdep_inputs_set, &
                                      wetdep_inputs_unset, wetdep_inputs_t
     use modal_aero_data
-    use modal_aero_calcsize,   only: modal_aero_calcsize_sub, modal_aero_calcsize_diag
+    use modal_aero_calcsize,   only: modal_aero_calcsize_sub
     use modal_aero_wateruptake,only: modal_aero_wateruptake_dr
     use modal_aero_convproc,   only: deepconv_wetdep_history, ma_convproc_intr
     use mo_constants,          only: pi
     use infnan,                only: nan, assignment(=)
-    use rad_constituents,      only: rad_cnst_get_info
-    use phys_control,          only: phys_getopts
 
     ! args
 
@@ -1512,10 +1510,6 @@ contains
     real(r8), pointer :: sh_frac(:,:)    ! Shallow convective cloud fraction
     real(r8), pointer :: dp_frac(:,:)    ! Deep convective cloud fraction
 
-    integer           :: nmodes
-    logical           :: clim_modal_aero ! true when radiatively constituents present (nmodes>0)
-    logical           :: prog_modal_aero ! Prognostic modal aerosols present
-
     character(len=100) :: msg
 
     type(wetdep_inputs_t) :: dep_inputs
@@ -1531,19 +1525,11 @@ contains
     ! 2) prognostic modal aerosols are enabled
     ! If not using prognostic aerosol call the diagnostic version
 
-    call rad_cnst_get_info(0, nmodes=nmodes)
-    clim_modal_aero = (nmodes > 0)
-    call phys_getopts(prog_modal_aero_out=prog_modal_aero)
-
     ! Calculate aerosol size distribution parameters
-    if (clim_modal_aero .and. .not. prog_modal_aero) then
-      call modal_aero_calcsize_diag(state, pbuf)
-    else
-      ! for prognostic modal aerosols the transfer of mass between aitken and 
-      ! accumulation modes is done in conjunction with the dry radius calculation
-      call modal_aero_calcsize_sub(state, ptend, dt, pbuf)
-    end if
-
+    ! for prognostic modal aerosols the transfer of mass between aitken and 
+    ! accumulation modes is done in conjunction with the dry radius calculation
+    call modal_aero_calcsize_sub(state, ptend, dt, pbuf)
+    
     ! Aerosol water uptake
     if (present(clear_rh)) then
       ! clear_rh allows us to provide alternate calculation of clear air RH
