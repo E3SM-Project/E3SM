@@ -132,6 +132,7 @@
  real (kind=RKIND), dimension(:,:), pointer :: greenfrac
  real (kind=RKIND), dimension(:,:), pointer :: albedo12m
  real (kind=RKIND) :: msgval, fillval
+ integer, pointer :: category_min, category_max
  integer, dimension(:), pointer :: lu_index
  integer, dimension(:), pointer :: soilcat_top
  integer, dimension(:), pointer :: landmask
@@ -282,13 +283,17 @@
 !
 ! Set land use and soil category parameters for water and ice
 !
+! TODO: Should this be moved to be above the interpolation of land use and soil at? Or
+! is it fine here?
  surface_input_select0: select case(trim(config_landuse_data))
     case('USGS')
+       ! Should we grab these values from the index file?
        isice_lu = 24
        iswater_lu = 16
        ismax_lu = 24
        write(mminlu,'(a)') 'USGS'
     case('MODIFIED_IGBP_MODIS_NOAH')
+       ! Should we grab these values from the index file?
        isice_lu = 15
        iswater_lu = 17
        ismax_lu = 20
@@ -467,14 +472,129 @@
 
  ierr = mgr % init(trim(config_geog_data_path)//trim(geog_sub_path))
  if (ierr /= 0) then
-    call mpas_log_write('Error initalizing lu_index Geotile Manager', messageType=MPAS_LOG_CRIT)
+    call mpas_log_write('Error occurred when initializing the interpolation of landuse category (lu_index)', &
+                         messageType=MPAS_LOG_CRIT)
  endif
 
+ allocate(ncat(ismax_lu, nCells))
+ ncat(:,:) = 0
  lu_index(:) = 0
+
+ call mpas_pool_get_config(mgr % pool, 'tile_bdr', tile_bdr)
+ call mpas_pool_get_config(mgr % pool, 'tile_x', tile_nx)
+ call mpas_pool_get_config(mgr % pool, 'tile_y', tile_ny)
+ call mpas_pool_get_config(mgr % pool, 'category_min', category_min)
+ call mpas_pool_get_config(mgr % pool, 'category_max', category_max)
+
+ ! Transfer iswater_lu_ptr, isice_lu_ptr to iswater_lu and isice_lu because
+ ! isawter_lu_ptr and isice_lu_ptr will become unassociated when calling
+ ! mgr % finalize. iswater_lu and isice_lu will be written to the output
+ ! stream
+ iswater_lu = iswater_lu_ptr
+ isice_lu = isice_lu_ptr
+
+ allocate(ncat(category_min:category_max, nCells))
+ ncat(:,:) = 0
+ lu_index(:) = 0
+
+ do iCell = 1, nCells
+
+     if (all(ncat(:,iCell) == 0)) then
+         tile => null()
+         ierr = mgr % get_tile(latCell(i), lonCell(i), tile)
+         if (ierr /= 0 .or. .not. associated(tile)) then
+             call mpas_log_write('Could not get the tile that contained cell $i', intArgs=(/i/), messageType=MPAS_LOG_CRIT)
+         end if
+
+         ierr = mgr % push_tile(tile)
+         if (ierr /= 0) then
+             call mpas_log_write('Error pushing this tile onto the stack: '//trim(tile%fname), messageType=MPAS_LOG_CRIT)
+         end if
+     end if
+
+
+     do while (.not. mgr % is_stack_empty())
+         tile => mgr % pop_tile()
+
+         if (tile % is_processed) then
+             cycle
+         endif
+
+         call mpas_log_write('Processing tile: '//trim(tile%fname))
+
+         all_pixels_mapped_to_halo_cells = .true.
+
+         do j = 1 + tile_bdr, tile_ny + tile_bdr, 1
+             do k = 1 + tile_bdr, tile_nx + tile_bdr, 1
+
+                !
+                ! The MODIS dataset has zeros at the South Pole, and possibly other places, so
+                ! skip any value that is less than category_min or greater than category_max as
+                ! reported in the index file.
+                !
+                if (tile % tile(i,j,1) < category_min .or. tile % tile(i,j,1) > category_max) then
+                    cycle
+                end if
+
+                call mgr % tile_to_latlon(tile, j, k, lat_pt, lon_pt)
+                call mpas_latlon_to_xyz(xPixel, yPixel, zPixel, sphere_radius, lat_pt, lon_pt)
+                call mpas_kd_search(tree, (/xPixel, yPixel, zPixel/), res)
+
+                !
+                ! For all but the outermost boundary cells, we can safely assume that the nearest
+                ! model grid cell contains the pixel (else, a different cell would be nearest)
+                !
+                if (bdyMaskCell(res % id) < nBdyLayers) then
+
+                   !write(0,*) tile % tile(k,j,1)
+                   ncat(int(tile % tile(k,j,1)), res % id) = ncat(int(tile % tile(k,j,1)), res % id) + 1
+
+                   if (res % id <= nCellsSolve) then
+                       all_pixels_mapped_to_halo_cells = .false.
+                   end if
+
+                ! For outermost boundary cells, additional work is needed to verify that the pixel
+                ! actually lies within the nearest cell
+                else
+                   if (mpas_in_cell(xPixel, yPixel, zPixel, xCell(res % id), yCell(res % id), zCell(res % id), &
+                                    nEdgesOnCell(res % id), verticesOnCell(:,res % id), xVertex, yVertex, zVertex)) then
+
+                      ncat(int(tile % tile(k,j,1)), res % id) = ncat(int(tile % tile(k,j,i)), res % id) + 1
+
+                      if (res % id <= nCellsSolve) then
+                          all_pixels_mapped_to_halo_cells = .false.
+                      end if
+                   end if
+                end if
+             end do
+         end do
+
+         tile % is_processed = .true.
+
+         if (.not. all_pixels_mapped_to_halo_cells) then
+             ierr = mgr % push_neighbors(tile)
+             if (ierr /= 0) then
+                 call mpas_log_write("Error pushing the tile neighbors of: "//trim(tile%fname), messageType=MPAS_LOG_CRIT)
+             endif
+         end if
+
+     end do
+ end do
+
+ do iCell = 1, nCells
+     lu_index(iCell) = 1
+     do i = 2, ismax_lu
+         if (ncat(i,iCell) > ncat(lu_index(iCell),iCell)) then
+             lu_index(iCell) = i
+         end if
+     end do
+ end do
+ deallocate(ncat)
 
  ierr = mgr % finalize()
  if (ierr /= 0) then
-    call mpas_log_write('Error finalizing the lu_index Geotile Manager', messageType=MPAS_LOG_CRIT)
+    call mpas_log_write('Error occurred when finalizing the interpolation of landuse category (lu_index)', &
+                         messageType=MPAS_LOG_CRIT)
  endif
 
  call mpas_log_write('--- end interpolate LU_INDEX')
