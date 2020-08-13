@@ -87,8 +87,7 @@ struct Functions
 // If a GPU build, make all code available to the translation unit; otherwise,
 // ETI is used.
 #ifdef KOKKOS_ENABLE_CUDA
-//# include "shoc_functions_math_impl.hpp"
-
+# include "shoc_calc_shoc_vertflux_impl.hpp"
 #endif
 
 #endif
