@@ -110,6 +110,7 @@ _TESTS = {
         "tests" : (
             "ERS_P480_Ld5.T62_oEC60to30v3wLI.GMPAS-DIB-IAF-ISMF",
             "PEM_P480_Ld5.T62_oEC60to30v3wLI.GMPAS-DIB-IAF-ISMF",
+            "SMS.ne30_oECv3_gis.IGCLM45_MLI.clm-extrasnowlayers",
             )
         },
 
