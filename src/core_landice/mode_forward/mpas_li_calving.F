@@ -1104,6 +1104,7 @@ module li_calving
       real (kind=RKIND), dimension(:), pointer :: eigencalvingParameter
       real (kind=RKIND), dimension(:), pointer :: calvingVelocity
       real (kind=RKIND), dimension(:), pointer :: eMax, eMin
+      real (kind=RKIND), dimension(:), pointer :: angleEdge
       integer, dimension(:), pointer :: cellMask
       type (field1dInteger), pointer :: calvingFrontMaskField
       real (kind=RKIND), pointer :: deltat  !< time step (s)
@@ -1131,6 +1132,7 @@ module li_calving
 
          ! get fields
          call mpas_pool_get_array(meshPool, 'deltat', deltat)
+         call mpas_pool_get_array(meshPool, 'angleEdge', angleEdge)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
          call mpas_pool_get_array(geometryPool, 'eigencalvingParameter', eigencalvingParameter)
          call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity)
@@ -1162,6 +1164,8 @@ module li_calving
                   ! calculate only for floating ice - map of "potential" calving rate
 
          calvingVelocity(:) = config_calving_eigencalving_parameter_scalar_value  !MJH HACK
+
+         calvingVelocity(:) = abs(calvingVelocity(:) * cos(angleEdge(:)))
 
 
          call remove_calving_ice(meshPool, geometryPool, velocityPool, scratchPool, err)
