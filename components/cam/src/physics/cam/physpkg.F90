@@ -1880,7 +1880,7 @@ subroutine tphysbc (ztodt,               &
                                check_tracers_data, check_tracers_init, &
                                check_tracers_chng, check_tracers_fini
     use dycore,          only: dycore_is
-    use aero_model,      only: aero_model_wetdep, wetdep_lq
+    use aero_model,      only: aero_model_wetdep
     use radiation,       only: radiation_tend
     use cloud_diagnostics, only: cloud_diagnostics_calc
     use perf_mod
