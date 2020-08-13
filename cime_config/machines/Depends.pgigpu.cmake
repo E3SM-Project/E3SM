@@ -5,22 +5,6 @@ list(APPEND NOOPT_FILES
   cam/src/dynamics/sld/dyn_comp.F90
   cam/src/physics/cam/microp_aero.F90)
 
-set(FILES_NEED_CUDA_FLAGS
-  homme/src/preqx_acc/bndry_mod.F90
-  homme/src/preqx_acc/derivative_mod.F90
-  homme/src/preqx_acc/edge_mod.F90
-  homme/src/share/element_mod.F90
-  homme/src/preqx_acc/element_state.F90
-  homme/src/preqx_acc/openacc_utils_mod.F90
-  homme/src/preqx_acc/prim_advection_mod.F90
-  homme/src/share/prim_si_mod.F90
-  homme/src/preqx_acc/model_init_mod.F90
-  homme/src/preqx_acc/viscosity_mod.F90
-  homme/src/preqx_acc/prim_driver_mod.F90
-  homme/src/share/prim_driver_base.F90
-  homme/src/share/physics_mod.F90
-  cam/src/control/physconst.F90)
-
 set(FILES_NEED_OPENACC_FLAGS
   cam/src/physics/crm/sam/ADV_MPDATA/advect_scalar.F90
   cam/src/physics/crm/sam/ADV_MPDATA/advect_scalar2D.F90
@@ -94,6 +78,29 @@ set(FILES_NEED_OPENACC_FLAGS
   cam/src/physics/crm/sam/openacc_utils.F90
   cam/src/physics/crm/sam/sat.F90 )
 
+# add accelerator/gpu flags for MPAS files
+set(CPPDEFS "${CPPDEFS} -DMPAS_OPENACC")
+list(APPEND MPAS_ADD_ACC_FLAGS
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_equation_of_state_jm.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_mesh.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_surface_bulk_forcing.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_surface_land_ice_fluxes.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_tendency.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_vel_forcing_explicit_bottom_drag.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_vel_forcing_surface_stress.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_vel_hadv_coriolis.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_vel_hmix_del2.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_vel_hmix_del4.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_vel_hmix_leith.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_vel_pressure_grad.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_vel_vadv.f90
+)
+
 foreach(ITEM IN LISTS FILES_NEED_OPENACC_FLAGS)
-  e3sm_add_flags("${ITEM}" "-Minline -ta=nvidia,cc70,fastmath,loadcache:L1,unroll,fma,managed,ptxinfo -Mcuda -Minfo=accel")
+  e3sm_add_flags("${ITEM}" "-Minline -acc -ta=tesla:ccall,fastmath,loadcache:L1,unroll,fma,managed,ptxinfo -Mcuda -Minfo=accel")
 endforeach()
+
+foreach(ITEM IN LISTS MPAS_ADD_ACC_FLAGS)
+  e3sm_add_flags("${ITEM}" "-Minline -acc -ta=tesla:ccall,fastmath,loadcache:L1,unroll,fma,deepcopy,nonvvm -Minfo=accel")
+endforeach()
+
