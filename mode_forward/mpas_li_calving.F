@@ -1392,8 +1392,10 @@ module li_calving
       real(kind=RKIND), dimension(:), pointer :: cellVolume
       real(kind=RKIND), dimension(:), pointer :: uncalvedVolume
       integer :: inwardNeighbors
+      integer :: outwardNeighbors
       integer :: uncalvedCount
       real(kind=RKIND) :: uncalvedTotal
+      integer, dimension(1000) :: tmpCellIdArray, neighborCellId, dynamicNeighborCellId
 
       err = 0
 
@@ -1428,6 +1430,23 @@ module li_calving
             volumeLeft = requiredCalvingVolumeRate(iCell) * deltat  ! units m^3
 
             ! First remove ice from "thin" neighbors
+            outwardNeighbors = 0
+            neighborCellId(:) = 0
+            do iNeighbor = 1, nEdgesOnCell(iCell)
+               jCell = cellsOnCell(iNeighbor, iCell)
+               if (li_mask_is_floating_ice(cellMask(jCell)) .and. .not. li_mask_is_dynamic_ice(cellMask(jCell))) then
+                  outwardNeighbors = outwardNeighbors + 1
+                  neighborCellId(outwardNeighbors) = jCell
+               endif
+            enddo
+            do iNeighbor = 1, outwardNeighbors
+               removeVolumeHere = volumeLeft/real(outwardNeighbors, kind=RKIND)
+               calvingThickness(jCell) = calvingThickness(jCell) + removeVolumeHere / areaCell(jCell)
+                      ! < apply to the field that will be used, in thickness units
+               cellVolume(jCell) = cellVolume(jCell) - removeVolumeHere ! update accounting on cell volume
+               volumeLeft = volumeLeft - removeVolumeHere ! update accounting on how much left to distribute from current iCell
+
+            enddo
             do iNeighbor = 1, nEdgesOnCell(iCell)
                jCell = cellsOnCell(iNeighbor, iCell)
                if (li_mask_is_floating_ice(cellMask(jCell)) .and. .not. li_mask_is_dynamic_ice(cellMask(jCell))) then
