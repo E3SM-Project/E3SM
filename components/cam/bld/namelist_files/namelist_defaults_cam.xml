@@ -19,6 +19,7 @@
 <dtime dyn="se"    hgrid="ne11np4" >7200</dtime>
 <dtime dyn="se"    hgrid="ne16np4" >1800</dtime>
 <dtime dyn="se"    hgrid="ne30np4" >1800</dtime>
+<dtime dyn="se"    hgrid="ne45np4" >1200</dtime>
 <dtime dyn="se"    hgrid="ne60np4" >1800</dtime>
 <dtime dyn="se"    hgrid="ne120np4">900 </dtime>
 <dtime dyn="se"    hgrid="ne240np4">600 </dtime>
@@ -153,6 +154,7 @@
 <ncdata dyn="se" hgrid="ne30np4"  nlev="26"             ic_ymd="901" >atm/cam/inic/homme/cami_0000-09-01_ne30np4_L26_c040422.nc</ncdata>
 <ncdata dyn="se" hgrid="ne30np4"  nlev="30"             ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-01_ne30np4_L30_c130424.nc</ncdata>
 <ncdata dyn="se" hgrid="ne30np4"  nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne30np4_L72_c160214.nc</ncdata>
+<ncdata dyn="se" hgrid="ne45np4"  nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne45np4_L72_c20200611.nc</ncdata>
 <ncdata dyn="se" hgrid="ne60np4"  nlev="30"             ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-ne60np4_L30_c090306.nc</ncdata>
 <ncdata dyn="se" hgrid="ne120np4" nlev="26"             ic_ymd="901" >atm/cam/inic/homme/cami_0000-09-01_ne120np4_L26_c061106.nc</ncdata>
 <ncdata dyn="se" hgrid="ne120np4" nlev="26"             ic_ymd="101" >atm/cam/inic/homme/cami_0000-01-01_ne120np4_L26_c110304.nc</ncdata>
@@ -172,6 +174,7 @@
 <ncdata dyn="se" hgrid="ne4np4"   nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne4np4_L72_c190218.nc</ncdata>
 <ncdata dyn="se" hgrid="ne16np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne16np4_L72_c190311.nc</ncdata>
 <ncdata dyn="se" hgrid="ne30np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne30np4_L72_c190215.nc</ncdata>
+<ncdata dyn="se" hgrid="ne45np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne45np4_L72_c20200611.nc</ncdata>
 
 <!-- E3SM RCE -->
 <ncdata dyn="se" hgrid="ne4np4"   nlev="72"  aquaplanet="1" rce="1" ic_ymd="101" >atm/cam/inic/homme/cami_rcemip_ne4np4_L72_c190919.nc</ncdata>
@@ -239,6 +242,7 @@
 <bnd_topo hgrid="ne30np4"  npg="2">atm/cam/topo/USGS-gtopo30_ne30np4pg2_16xdel2.c20200108.nc</bnd_topo>
 <bnd_topo hgrid="ne30np4"  npg="3">atm/cam/topo/USGS-gtopo30_ne30np4pg3_16xdel2.c20200504.nc</bnd_topo>
 <bnd_topo hgrid="ne30np4"  npg="4">atm/cam/topo/USGS-gtopo30_ne30np4pg4_16xdel2.c20200504.nc</bnd_topo>
+<bnd_topo hgrid="ne45np4"  npg="2">atm/cam/topo/USGS-gtopo30_ne45np4pg2_16xdel2.c20200615.nc</bnd_topo>
 <bnd_topo hgrid="ne60np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne60np4_16xconsistentSGH.c20140517.nc</bnd_topo>
 <bnd_topo hgrid="ne120np4" npg="0">atm/cam/topo/USGS-gtopo30_ne120np4_16xdel2-PFC-consistentSGH.nc</bnd_topo>
 <bnd_topo hgrid="ne120np4" npg="2">atm/cam/topo/USGS-gtopo30_ne120np4pg2_16xdel2.nc</bnd_topo>
@@ -824,6 +828,7 @@
 <drydep_srf_file hgrid="ne30np4" npg="2">atm/cam/chem/trop_mam/atmsrf_ne30pg2_200129.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne30np4" npg="3">atm/cam/chem/trop_mam/atmsrf_ne30pg3_200501.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne30np4" npg="4">atm/cam/chem/trop_mam/atmsrf_ne30pg4_200501.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne45np4" npg="2">atm/cam/chem/trop_mam/atmsrf_ne45pg2_200527.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne60np4" >atm/cam/chem/trop_mam/atmsrf_ne60np4_110920.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne120np4">atm/cam/chem/trop_mam/atmsrf_ne120np4_110920.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne240np4">atm/cam/chem/trop_mam/atmsrf_ne240np4_110920.nc</drydep_srf_file>
@@ -1077,6 +1082,7 @@
 <!-- dust emission tuning factor -->
 <dust_emis_fact                                                         >2.76D0</dust_emis_fact>
 <dust_emis_fact          hgrid="ne30np4"   phys="cam5"                  >1.38D0</dust_emis_fact>
+<dust_emis_fact          hgrid="ne45np4"   phys="cam5"                  >1.38D0</dust_emis_fact>
 <dust_emis_fact          hgrid="ne120np4"  phys="cam5"                  >1.2D0</dust_emis_fact>
 
 <dust_emis_fact                                         chem="trop_bam"	>4.2D0 </dust_emis_fact>
@@ -1525,6 +1531,8 @@
 <nu hgrid="ne11np4" >  2.0e16 </nu>
 <nu hgrid="ne16np4" >  7.0e15 </nu>
 <nu hgrid="ne30np4" >  1.0e15 </nu>
+<nu dyn_target="preqx"   hgrid="ne45np4" > 3.0E+14 </nu>
+<nu dyn_target="theta-l" hgrid="ne45np4" > 3.4e-8 </nu>
 <nu hgrid="ne60np4" >  1.25e14 </nu>
 <nu hgrid="ne120np4">  1.0e13 </nu>
 <nu dyn_target="theta-l" hgrid="ne120np4">  1.5e13 </nu>
@@ -1554,6 +1562,7 @@
 <nu_div dyn_target="preqx" hgrid="ne11np4" >  5.0e16 </nu_div>
 <nu_div dyn_target="preqx" hgrid="ne16np4" > 15.5e15 </nu_div>
 <nu_div dyn_target="preqx" hgrid="ne30np4" >  2.5e15 </nu_div>
+<nu_div dyn_target="preqx" hgrid="ne45np4" > 7.4E+14 </nu_div>
 <nu_div dyn_target="preqx" hgrid="ne60np4" >  2.5e14 </nu_div>
 <nu_div dyn_target="preqx" hgrid="ne120np4">  2.5e13 </nu_div>
 <nu_div dyn_target="preqx" hgrid="ne240np4">  2.5e12 </nu_div>
@@ -1571,6 +1580,7 @@
 <hypervis_order >     2 </hypervis_order>
 
 <hypervis_scaling> 0 </hypervis_scaling>
+<hypervis_scaling dyn_target="theta-l"  hgrid="ne45np4"> 3.0 </hypervis_scaling>
 <hypervis_scaling  hgrid="ne0np4_arm_x8v3_lowcon"  > 3.2 </hypervis_scaling>
 <hypervis_scaling  hgrid="ne0np4_conus_x4v1_lowcon"  > 3.2 </hypervis_scaling>
 <hypervis_scaling  hgrid="ne0np4_northamericax4v1"  > 3.2 </hypervis_scaling>
@@ -1604,6 +1614,7 @@
 <se_tstep dyn_target="theta-l" hgrid="ne11np4" >  600 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne16np4" >  600 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne30np4" >  300 </se_tstep>
+<se_tstep                      hgrid="ne45np4" >  200 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne60np4" >  150 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne120np4">  75 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne240np4">  40 </se_tstep>
@@ -1620,16 +1631,24 @@
 <hypervis_subcycle_q dyn_target="preqx"> 1 </hypervis_subcycle_q>
 <hypervis_subcycle_tom dyn_target="preqx"> 0 </hypervis_subcycle_tom>
 
+<!-- ne45 defaults to new time step interface -->
+<dt_remap_factor  dyn_target="preqx" hgrid="ne45np4"> 2 </dt_remap_factor>
+<dt_tracer_factor dyn_target="preqx" hgrid="ne45np4"> 1 </dt_tracer_factor>
+
 <qsplit dyn_target="preqx">  1 </qsplit>
+<qsplit dyn_target="preqx" hgrid="ne45np4"> -1 </qsplit>
 
-<rsplit dyn_target="preqx" hgrid="ne4np4" >   1 </rsplit>
-<rsplit dyn_target="preqx" hgrid="ne11np4" >  2 </rsplit>
 <rsplit dyn_target="preqx">  3 </rsplit>
+<rsplit dyn_target="preqx" hgrid="ne4np4" >  1 </rsplit>
+<rsplit dyn_target="preqx" hgrid="ne11np4">  2 </rsplit>
+<rsplit dyn_target="preqx" hgrid="ne45np4"> -1 </rsplit>
 
+<se_nsplit dyn_target="preqx"> 2 </se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne4np4" >   4 </se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne11np4" >  4 </se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne16np4" >  1 </se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne30np4" >  2 </se_nsplit>
+<se_nsplit dyn_target="preqx" hgrid="ne45np4">  -1 </se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne60np4" >  4 </se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne120np4">  4 </se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne240np4">  5 </se_nsplit>
@@ -1643,12 +1662,13 @@
 <se_nsplit dyn_target="preqx" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 5 </se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne0np4_enax4v1">4</se_nsplit>
 <se_nsplit dyn_target="preqx" hgrid="ne0np4_twpx4v1" > 4 </se_nsplit>
-<se_nsplit dyn_target="preqx"> 2 </se_nsplit>
+
 
 <hypervis_subcycle hgrid="ne4np4" dyn_target="preqx">   3 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne11np4" dyn_target="preqx" >  3 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne16np4" dyn_target="preqx">  3 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne30np4" dyn_target="preqx">  3 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne45np4" dyn_target="preqx">  4 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne60np4" dyn_target="preqx">  4 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne120np4" dyn_target="preqx">  4 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne240np4" dyn_target="preqx">  4 </hypervis_subcycle>
