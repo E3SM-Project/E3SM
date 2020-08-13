@@ -105,6 +105,16 @@ function(build_model COMP_CLASS COMP_NAME)
                              cmake/atm/../../eam/src/physics/crm/crm_ecpp_output_module.F90 )
     endif()
 
+    # Add rrtmgp++ source code if asked for
+    if (USE_RRTMGPXX)
+      message(STATUS "Building RRTMGPXX")
+      # Build rrtmgpxx as a library
+      set(RRTMGPXX_HOME ${CMAKE_CURRENT_SOURCE_DIR}/../../cam/src/physics/rrtmgp/external/cpp)
+      set(RRTMGPXX_BIN  ${CMAKE_CURRENT_BINARY_DIR}/rrtmgpxx)
+      add_subdirectory(${RRTMGPXX_HOME} ${RRTMGPXX_BIN})
+      # Add samxx F90 files to the main E3SM build
+      #set(SOURCES ${SOURCES} cmake/atm/../../cam/src/physics/crm/rrtmgpxx/cpp_interface_mod.F90)
+    endif()
   endif()
 
   #-------------------------------------------------------------------------------
@@ -247,6 +257,9 @@ function(build_model COMP_CLASS COMP_NAME)
       endif()
       if (USE_SAMXX)
         target_link_libraries(${TARGET_NAME} PRIVATE samxx)
+      endif()
+      if (USE_RRTMGPXX)
+        target_link_libraries(${TARGET_NAME} rrtmgp)
       endif()
     endif()
     if (USE_KOKKOS)
