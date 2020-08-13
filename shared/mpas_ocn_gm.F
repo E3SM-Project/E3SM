@@ -561,7 +561,8 @@ contains
          ! baroclinic phase speed, the mode can be specified by config_GM_baroclinic_mode
          if (local_config_GM_lat_variable_c2) then
             !$omp parallel
-            !$omp do schedule(runtime) private(k, cell1, cell2, sumN2, ltSum, countN2, BruntVaisalaFreqTopEdge)
+            !$omp do schedule(runtime) private(k, cell1, cell2, sumN2, ltSum, countN2, &
+            !$omp             BruntVaisalaFreqTopEdge, lt1, lt2)
             do iEdge = 1, nEdges
                cell1 = cellsOnEdge(1, iEdge)
                cell2 = cellsOnEdge(2, iEdge)
@@ -612,9 +613,9 @@ contains
            call mpas_pool_get_array(diagnosticsPool, 'RiTopOfCell', RiTopOfCell)
            call mpas_pool_get_array(diagnosticsPool, 'zTop', zTop)
            call mpas_pool_get_array(diagnosticsPool, 'c_visbeck', c_visbeck)
-!           !$omp parallel
+           !$omp parallel
            !$omp do schedule(runtime) private(k, cell1, cell2, sumN2, ltSum, sumRi, countN2, &
-           !$omp             zEdge, RiTopOfEdge, BruntVaisalaFreqTopEdge)
+           !$omp             zEdge, RiTopOfEdge, BruntVaisalaFreqTopEdge, lt1, lt2)
            do iEdge = 1, nEdges
               k=1
               sumN2 = 0.0_RKIND
@@ -654,8 +655,8 @@ contains
                 gmBolusKappa(iEdge) = config_GM_visbeck_min_kappa
              end if
            end do
-           !omp end do
-!           !omp end parallel
+           !$omp end do
+           !$omp end parallel
          end if
 
          if(config_Redi_set_RediKappa_to_GMKappa) then
@@ -669,10 +670,10 @@ contains
          endif
 
          nEdges = nEdgesArray(3)
-!         !$omp parallel
-!         !$omp do schedule(runtime) private(cell1, cell2, k, gradDensityTopOfEdge, dzdxTopOfEdge, &
-!         !$omp             gradDensityConstZTopOfEdge, kappaGMEdge, BruntVaisalaFreqTopEdge, N) &
-!         !$omp firstprivate(tridiagB, tridiagC, rightHandSide, tridiagA)
+         !!$omp parallel
+         !!$omp do schedule(runtime) private(cell1, cell2, k, gradDensityTopOfEdge, dzdxTopOfEdge, &
+         !!$omp             gradDensityConstZTopOfEdge, kappaGMEdge, BruntVaisalaFreqTopEdge, N) &
+         !!$omp firstprivate(tridiagB, tridiagC, rightHandSide, tridiagA)
          do iEdge = 1, nEdges
             cell1 = cellsOnEdge(1, iEdge)
             cell2 = cellsOnEdge(2, iEdge)
@@ -756,8 +757,8 @@ contains
                                       gmStreamFuncTopOfEdge(2:maxLevelEdgeTop(iEdge), iEdge), N)
             end if
          end do
-!         !$omp end do
-!         !$omp end parallel
+         !!$omp end do
+         !!$omp end parallel
 
          nEdges = nEdgesArray(3)
          ! Compute normalGMBolusVelocity from the stream function and apply resolution taper of GM here
@@ -807,12 +808,12 @@ contains
       end if !end config_use_GM
 
       ! Deallocate scratch variables
-      !$omp barrier
-      !$omp master
+      !!$omp barrier
+      !!$omp master
       deallocate(dzdxEdge, &
                  drhoDzTopOfEdge, &
                  gradDensityEdge)
-      !$omp end master
+      !!$omp end master
       call mpas_timer_stop('gm bolus velocity')
 
    end subroutine ocn_GM_compute_Bolus_velocity!}}}
