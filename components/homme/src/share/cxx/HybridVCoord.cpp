@@ -30,27 +30,29 @@ void HybridVCoord::init(const Real ps0_in,
   ps0 = ps0_in;
 
   // Create interface views
-  hybrid_ai = ExecViewManaged<Real[NUM_INTERFACE_LEV]>("Hybrid coordinates; coefficient A_interfaces");
-  hybrid_bi = ExecViewManaged<Real[NUM_INTERFACE_LEV]>("Hybrid coordinates; coefficient B_interfaces");
+  hybrid_ai_packed = ExecViewManaged<Scalar[NUM_LEV_P]>("Hybrid coordinates; coefficient A_interfaces");
+  hybrid_bi_packed = ExecViewManaged<Scalar[NUM_LEV_P]>("Hybrid coordinates; coefficient B_interfaces");
+
+  hybrid_ai = ExecViewUnmanaged<Real[NUM_INTERFACE_LEV]>(reinterpret_cast<Real*>(hybrid_ai_packed.data()));
+  hybrid_bi = ExecViewUnmanaged<Real[NUM_INTERFACE_LEV]>(reinterpret_cast<Real*>(hybrid_bi_packed.data()));
 
   // Create midpoints views
   hybrid_am = ExecViewManaged<Scalar[NUM_LEV]>("Hybrid coordinates; coefficient A_midpoints");
   hybrid_bm = ExecViewManaged<Scalar[NUM_LEV]>("Hybrid coordinates; coefficient B_midpoints");
-
-  hybrid_ai_packed = decltype(hybrid_ai_packed)(reinterpret_cast<Scalar*>(hybrid_ai.data()));
-  hybrid_bi_packed = decltype(hybrid_bi_packed)(reinterpret_cast<Scalar*>(hybrid_bi.data()));
+  ExecViewUnmanaged<Real[NUM_PHYSICAL_LEV]> am_unpacked(reinterpret_cast<Real*>(hybrid_am.data()));
+  ExecViewUnmanaged<Real[NUM_PHYSICAL_LEV]> bm_unpacked(reinterpret_cast<Real*>(hybrid_bm.data()));
 
   // Create views of input pointers
   HostViewUnmanaged<const Real[NUM_INTERFACE_LEV]> host_hybrid_ai(hybrid_ai_ptr);
   HostViewUnmanaged<const Real[NUM_INTERFACE_LEV]> host_hybrid_bi(hybrid_bi_ptr);
-  HostViewUnmanaged<const Scalar[NUM_LEV]> host_hybrid_am(reinterpret_cast<const Scalar*>(hybrid_am_ptr));
-  HostViewUnmanaged<const Scalar[NUM_LEV]> host_hybrid_bm(reinterpret_cast<const Scalar*>(hybrid_bm_ptr));
+  HostViewUnmanaged<const Real[NUM_PHYSICAL_LEV]> host_hybrid_am(hybrid_am_ptr);
+  HostViewUnmanaged<const Real[NUM_PHYSICAL_LEV]> host_hybrid_bm(hybrid_bm_ptr);
 
   // Copy inputs into class members
   Kokkos::deep_copy(hybrid_ai, host_hybrid_ai);
   Kokkos::deep_copy(hybrid_bi, host_hybrid_bi);
-  Kokkos::deep_copy(hybrid_am, host_hybrid_am);
-  Kokkos::deep_copy(hybrid_bm, host_hybrid_bm);
+  Kokkos::deep_copy(am_unpacked, host_hybrid_am);
+  Kokkos::deep_copy(bm_unpacked, host_hybrid_bm);
 
   // i don't think this saves us much now
   {
@@ -180,11 +182,9 @@ void HybridVCoord::compute_deltas ()
   hybrid_bi_delta = ExecViewManaged<Scalar[NUM_LEV]>("delta hybi");
   dp0 = ExecViewManaged<Scalar[NUM_LEV]>("dp0");
 
-  // Create Scalar version of Real views
-  ExecViewUnmanaged<Scalar[NUM_LEV_P]> hyai(reinterpret_cast<Scalar*>(hybrid_ai.data()));
-  ExecViewUnmanaged<Scalar[NUM_LEV_P]> hybi(reinterpret_cast<Scalar*>(hybrid_bi.data()));
-
   // Create local copies, to avoid issue of lambda on GPU
+  auto hyai = hybrid_ai_packed;
+  auto hybi = hybrid_bi_packed;
   auto dhyai = hybrid_ai_delta;
   auto dhybi = hybrid_bi_delta;
   auto ldp0 = dp0;

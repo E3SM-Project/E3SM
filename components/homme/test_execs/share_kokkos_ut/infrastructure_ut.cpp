@@ -10,6 +10,8 @@
 #include "utilities/BfbUtils.hpp"
 #include "utilities/VectorUtils.hpp"
 
+#include "HybridVCoord.hpp"
+
 #include <random>
 
 using namespace Homme;
@@ -462,4 +464,56 @@ TEST_CASE("", "test math functions") {
   REQUIRE(nextpow2(17) == 32);
   REQUIRE(prevpow2(16) == 16);
   REQUIRE(prevpow2(17) == 16);
+}
+
+TEST_CASE("hvcoord","hvcoord") {
+
+  // Set up the random number generator and a real pdf
+  using rngAlg = std::mt19937_64;
+  std::random_device rd;
+  const unsigned int catchRngSeed = Catch::rngSeed();
+  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+  std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
+  rngAlg engine(seed);
+
+  std::uniform_real_distribution<Real> pdf(0.001, 1e6);
+
+  constexpr int num_tests = 10;
+
+  std::array<Real,NUM_PHYSICAL_LEV>  am,bm;
+  std::array<Real,NUM_INTERFACE_LEV> ai,bi;
+  std::array<Real,NUM_INTERFACE_LEV>  dai,dbi;  // INTERFACE, not PHYSICAL, so we can use std::adjacent_differences
+  Real ps0;
+
+  for (int itest=0; itest<num_tests; ++itest) {
+    // Create random am, bm, ai, bi
+    genRandArray(am.data(),NUM_PHYSICAL_LEV,engine,pdf);
+    genRandArray(bm.data(),NUM_PHYSICAL_LEV,engine,pdf);
+    genRandArray(ai.data(),NUM_INTERFACE_LEV,engine,pdf);
+    genRandArray(bi.data(),NUM_INTERFACE_LEV,engine,pdf);
+    genRandArray(&ps0,1,engine,pdf);
+
+    // Compute delta of ai/bi. Recall that adjacent_difference sets output[0]=input[0].
+    std::adjacent_difference(ai.begin(), ai.end(), dai.begin());
+    std::adjacent_difference(bi.begin(), bi.end(), dbi.begin());
+
+    // Create and init a hv coord object
+    HybridVCoord hvcoord;
+    hvcoord.init(ps0,am.data(),ai.data(),bm.data(),bi.data());
+
+    // Get host copy of hyai_delta/hybi_delta
+    auto hyai_delta = Kokkos::create_mirror_view(hvcoord.hybrid_ai_delta);
+    auto hybi_delta = Kokkos::create_mirror_view(hvcoord.hybrid_bi_delta);
+    Kokkos::deep_copy(hyai_delta, hvcoord.hybrid_ai_delta);
+    Kokkos::deep_copy(hybi_delta, hvcoord.hybrid_bi_delta);
+
+    // Compare answers
+    for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
+      const int ilev = k / VECTOR_SIZE;
+      const int ivec = k % VECTOR_SIZE;
+
+      REQUIRE (dai[k+1]==hyai_delta(ilev)[ivec]);
+      REQUIRE (dbi[k+1]==hybi_delta(ilev)[ivec]);
+    }
+  }
 }

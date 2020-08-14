@@ -37,14 +37,14 @@ public:
   Real hybrid_ai0;
 
   // hybrid ai
-  ExecViewManaged<Real[NUM_INTERFACE_LEV]> hybrid_ai;
-  ExecViewUnmanaged<Scalar[NUM_LEV_P]> hybrid_ai_packed;
+  ExecViewUnmanaged<Real[NUM_INTERFACE_LEV]> hybrid_ai;
+  ExecViewManaged<Scalar[NUM_LEV_P]> hybrid_ai_packed;
   ExecViewManaged<Scalar[NUM_LEV]> hybrid_am;
   ExecViewManaged<Scalar[NUM_LEV]> hybrid_ai_delta;
 
   // hybrid bi
-  ExecViewManaged<Real[NUM_INTERFACE_LEV]> hybrid_bi;
-  ExecViewUnmanaged<Scalar[NUM_LEV_P]> hybrid_bi_packed;
+  ExecViewUnmanaged<Real[NUM_INTERFACE_LEV]> hybrid_bi;
+  ExecViewManaged<Scalar[NUM_LEV_P]> hybrid_bi_packed;
   ExecViewManaged<Scalar[NUM_LEV]> hybrid_bm;
   ExecViewManaged<Scalar[NUM_LEV]> hybrid_bi_delta;
 
