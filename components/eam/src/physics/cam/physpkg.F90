@@ -1418,8 +1418,6 @@ subroutine tphysac (ztodt,   cam_in,  &
     use unicon_cam,         only: unicon_cam_org_diags
     use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend
     use phys_control,       only: use_qqflx_fixer
-    use dyn_comp,           only: hvcoord
-    use control_mod,        only: adjust_ps
 
     implicit none
 
@@ -1733,7 +1731,6 @@ end if ! l_gw_drag
       call physics_update(state,ptend,ztodt,tend)
     endif
 
-
 if (l_ac_energy_chk) then
     !-------------- Energy budget checks vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 
@@ -1776,7 +1773,7 @@ if (l_ac_energy_chk) then
     tmp_cldice(:ncol,:pver) = state%q(:ncol,:pver,icldice)
     call physics_dme_adjust(state, tend, qini, ztodt)
 !!!   REMOVE THIS CALL, SINCE ONLY Q IS BEING ADJUSTED. WON'T BALANCE ENERGY. TE IS SAVED BEFORE THIS
-    call check_energy_chng(state, tend, "drymass", nstep, ztodt, zero, zero, zero, zero)
+!!!   call check_energy_chng(state, tend, "drymass", nstep, ztodt, zero, zero, zero, zero)
 
     !-------------- Energy budget checks ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 end if ! l_ac_energy_chk
