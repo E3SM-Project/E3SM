@@ -23,6 +23,13 @@ void shoc_init_c(int nlev, Real gravit, Real rair, Real rh2o, Real cpair,
 void shoc_grid_c(int shcol, int nlev, int nlevi, Real *zt_grid, Real *zi_grid,
                  Real *pdel, Real *dz_zt, Real *dzi_zi, Real *rho_zt);
 
+void update_host_dse_c(Int shcol, Int nlev, Real *thlm, Real *shoc_ql,
+                       Real *exner, Real *zt_grid, Real *phis, Real *host_dse);
+
+void shoc_energy_integrals_c(Int shcol, Int nlev, Real *host_dse, Real *pdel,
+                             Real *rtm, Real *rcm, Real *u_wind, Real *v_wind,
+                             Real *se_int, Real *ke_int, Real *wv_int, Real *wl_int);
+
 void calc_shoc_varorcovar_c(Int shcol, Int nlev, Int nlevi,  Real tunefac,
                             Real *isotropy_zi, Real *tkh_zi, Real *dz_zi,
 			    Real *invar1, Real *invar2, Real *varorcovar);
@@ -46,9 +53,6 @@ void eddy_diffusivities_c(Int nlev, Int shcol, Real *obklen, Real *pblh,
 
 void calc_shoc_vertflux_c(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 			  Real *dz_zi, Real *invar, Real *vertflux);
-			  
-void update_host_dse_c(Int shcol, Int nlev, Real *thlm, Real *shoc_ql, 
-                       Real *exner, Real *zt_grid, Real *phis, Real *host_dse);		  
 }
 
 namespace scream {
@@ -168,6 +172,15 @@ void update_host_dse(SHOCEnergydseData &d) {
   d.transpose<util::TransposeDirection::c2f>();
   update_host_dse_c(d.shcol, d.nlev, d.thlm, d.shoc_ql, d.exner, 
                     d.zt_grid, d.phis, d.host_dse);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+void shoc_energy_integrals(SHOCEnergyintData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  shoc_energy_integrals_c(d.shcol, d.nlev, d.host_dse, d.pdel,
+                          d.rtm, d.rcm, d.u_wind, d.v_wind,
+                          d.se_int, d.ke_int, d.wv_int, d.wl_int);
   d.transpose<util::TransposeDirection::f2c>();
 }
 

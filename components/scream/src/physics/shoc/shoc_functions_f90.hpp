@@ -164,6 +164,20 @@ struct SHOCEnergydseData : public SHOCDataBase {
   SHOCEnergydseData &operator=(const SHOCEnergydseData &rhs) { SHOCDataBase::operator=(rhs); return *this; }
 };//SHOCEnergydseData
 
+struct SHOCEnergyintData : public SHOCDataBase {
+  // Inputs
+  Real *host_dse, *pdel, *rtm, *rcm, *u_wind, *v_wind;
+
+  // Output
+  Real *se_int, *ke_int, *wv_int, *wl_int;
+
+  //functions to initialize data
+  SHOCEnergyintData(Int shcol_, Int nlev_) :
+    SHOCDataBase(shcol_, nlev_, 1, {&host_dse, &pdel, &rtm, &rcm, &u_wind, &v_wind}, {&se_int, &ke_int, &wv_int, &wl_int}) {}
+  SHOCEnergyintData(const SHOCEnergyintData &rhs) : SHOCDataBase(rhs, {&host_dse, &pdel, &rtm, &rcm, &u_wind, &v_wind}, {&se_int, &ke_int, &wv_int, &wl_int}) {}
+  SHOCEnergyintData &operator=(const SHOCEnergyintData &rhs) { SHOCDataBase::operator=(rhs); return *this; }
+};//SHOCEnergyintData
+
 //Create data structure to hold data for calc_shoc_vertflux
 struct SHOCVertfluxData : public SHOCDataBase {
   // Inputs
@@ -204,6 +218,7 @@ struct SHOCVarorcovarData : public SHOCDataBase {
 // and density.
 void shoc_grid(SHOCGridData &d);
 void update_host_dse(SHOCEnergydseData &d);
+void shoc_energy_integrals(SHOCEnergyintData &d);
 void calc_shoc_vertflux(SHOCVertfluxData &d);
 void calc_shoc_varorcovar(SHOCVarorcovarData &d);
 void integ_column_stability(SHOCColstabData &d);

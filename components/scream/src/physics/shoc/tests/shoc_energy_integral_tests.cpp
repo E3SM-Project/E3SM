@@ -49,7 +49,7 @@ TEST_CASE("shoc_energy_integrals", "shoc") {
   // Define the total water mixing ratio [g/kg] (converted to kg/kg later)
   Real rtm[nlev] = {7.0, 9.0, 11.0, 15.0, 20.0};
   // Define cloud mixing ratio [g/kg] (converted to kg/kg later)
-  Real rcm[nlev] = {0.0, 0.01, 0.04, 0.0, 0.0};
+  Real rcm[nlev] = {0.001, 0.01, 0.04, 0.002, 0.001};
 
   // Initialzie data structure for bridgeing to F90
   SHOCEnergyintData SDS(shcol, nlev);
@@ -93,19 +93,19 @@ TEST_CASE("shoc_energy_integrals", "shoc") {
       
       // make sure the two columns are different and
       //  as expected for the relevant variables
-      if (s = 0){
+      if (s == 0){
         const auto offsets = n + (s+1) * SDS.nlev;
       
         REQUIRE(abs(SDS.u_wind[offsets]) > abs(SDS.u_wind[offset]));
         REQUIRE(abs(SDS.v_wind[offsets]) > abs(SDS.v_wind[offset]));
-        REQUIRE(SDS.rcm[offset] = 0.0);
+        REQUIRE(SDS.rcm[offset] == 0.0);
         REQUIRE(SDS.rcm[offsets] > SDS.rcm[offset]);
       }      
     }
   }
 
   // Call the fortran implementation
-  shoc_energy_integrals(nlev, SDS);
+  shoc_energy_integrals(SDS);
   
   // Check test
   for(Int s = 0; s < shcol; ++s) {

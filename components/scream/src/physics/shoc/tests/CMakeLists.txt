@@ -7,6 +7,7 @@ set(SHOC_TESTS_SRCS
     shoc_vertflux_tests.cpp
     shoc_varorcovar_tests.cpp
     shoc_energy_update_dse_tests.cpp
+    shoc_energy_integral_tests.cpp
     shoc_tke_column_stab_tests.cpp
     shoc_tke_shr_prod_tests.cpp
     shoc_tke_isotropic_ts_tests.cpp

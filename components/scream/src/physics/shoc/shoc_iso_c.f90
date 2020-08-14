@@ -250,6 +250,31 @@ contains
 
   end subroutine update_host_dse_c
 
+  subroutine shoc_energy_integrals_c(shcol, nlev, host_dse, pdel,&
+                                     rtm, rcm, u_wind, v_wind,&
+                                     se_int, ke_int, wv_int, wl_int) bind (C)
+    use shoc, only: shoc_energy_integrals
+
+    integer(kind=c_int), intent(in), value :: shcol
+    integer(kind=c_int), intent(in), value :: nlev
+    real(kind=c_real), intent(in) :: host_dse(shcol,nlev)
+    real(kind=c_real), intent(in) :: pdel(shcol,nlev)
+    real(kind=c_real), intent(in) :: rtm(shcol,nlev)
+    real(kind=c_real), intent(in) :: rcm(shcol,nlev)
+    real(kind=c_real), intent(in) :: u_wind(shcol,nlev)
+    real(kind=c_real), intent(in) :: v_wind(shcol,nlev)
+
+    real(kind=c_real), intent(out) :: se_int(shcol)
+    real(kind=c_real), intent(out) :: ke_int(shcol)
+    real(kind=c_real), intent(out) :: wv_int(shcol)
+    real(kind=c_real), intent(out) :: wl_int(shcol)
+
+    call shoc_energy_integrals(shcol, nlev, host_dse, pdel,&
+                               rtm, rcm, u_wind, v_wind,&
+                               se_int, ke_int, wv_int, wl_int)
+
+  end subroutine shoc_energy_integrals_c
+
   subroutine calc_shoc_vertflux_c(shcol, nlev, nlevi, tkh_zi, dz_zi, invar, vertflux) bind (C)
     use shoc, only: calc_shoc_vertflux
 
