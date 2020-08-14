@@ -2141,6 +2141,12 @@ Updraft velocity paramterization option for ice nucleation.
 Default: 1
 </entry>
 
+<entry id="microp_aero_wsubmin" type="real" category="microphysics"
+       group="microp_aero_nl" valid_values="" >
+Minimum subgrid vertical velocity
+Default: 0.2
+</entry>
+
 <entry id="use_hetfrz_classnuc" type="logical" category="microphys"
        group="phys_ctl_nl" valid_values="" >
 Switch to turn on heterogeneous freezing code.
@@ -2363,7 +2369,11 @@ Bottom layer adjustment for setting "launching" level(mx) (to be at maximum mois
 Default: set by build-namelist
 </entry>
 
-
+<entry id="zmconv_tp_fac" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >
+Tpert scale factor in ZM deep convection scheme.
+Default: 0.D0
+</entry>
 
 
 <!-- Cloud sedimentation -->
@@ -2702,6 +2712,12 @@ CLUBB do explicit diffusion with a stability correction
 Default: .false.
 </entry>
 
+<entry id="clubb_use_sgv" type="logical"  category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+Enables subgrid features gustiness, tpert, and thv fix
+Default: .false.
+</entry>
+
 <!-- Clubb timestep -->
 <entry id="clubb_timestep" type="real" category="pblrad"
        group="clubbpbl_diff_nl" valid_values="" >
@@ -2864,6 +2880,18 @@ Constant associated with the dissipation of the variance of vertical velocity
 Default: 1.0. See clubb/parameters_tunable.F90
 </entry>
 
+<entry id="clubb_C1b" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Constant associated with the dissipation of the variance of vertical velocity
+Default: 1.0. See clubb/parameters_tunable.F90
+</entry>
+
+<entry id="clubb_C1c" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Constant associated with the dissipation of the variance of vertical velocity
+Default: 1.0. See clubb/parameters_tunable.F90
+</entry>
+
 <entry id="clubb_C2rt" type="real" category="pblrad"
        group="clubb_param_nl" valid_values="" >
 Constant associated with the dissipation of the variance of total water
@@ -2893,6 +2921,25 @@ Default: 4.0
 High skewness of Newtonian damping of water flux
 Default: 6.0
 </entry>
+
+<entry id="clubb_C6rtc" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+High skewness of Newtonian damping of water flux
+Default: 1.0
+</entry>
+
+<entry id="clubb_C6thlb" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Low skewness of Newtonian damping of water flux
+Default: 1.0
+</entry>
+
+<entry id="clubb_C6thlc" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Low skewness of Newtonian damping of water flux
+Default: 6.0
+</entry>
+
 
 <entry id="clubb_C7" type="real" category="pblrad"
        group="clubb_param_nl" valid_values="" >
@@ -2924,6 +2971,12 @@ High skewnes of buoyancy damping of the third moment of vertical velocity
 Default: 0.35
 </entry>
 
+<entry id="clubb_C11c" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+High skewnes of buoyancy damping of the third moment of vertical velocity
+Default: 0.5
+</entry>
+
 <entry id="clubb_C14" type="real" category="pblrad"
        group="clubb_param_nl" valid_values="" >
 Constant of Newtonian damping of the variances of u-wind and v-wind
@@ -2946,6 +2999,12 @@ Default: 0.32
        group="clubb_param_nl" valid_values="" >
 High Skw. gamma coef. Skw. Fnct.
 Default: 0.32 or clubb_gamma_coef if it is specified
+</entry>
+
+<entry id="clubb_gamma_coefc" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+High Skw. gamma coef. Skw. Fnct.
+Default: 5.0or clubb_gamma_coef if it is specified
 </entry>
 
 <entry id="clubb_mu" type="real" category="pblrad"
@@ -3787,6 +3846,34 @@ Convective water used in radiation?
 1 ==> Yes - Arithmetic average.
 2 ==> Yes - Average in emissivity.
 Default: set by build-namelist
+</entry>
+
+<entry id="no_cloud_lw_radheat_atm" type="logical" category="radiation"
+       group="phys_ctl_nl" valid_values="">
+  If set to .true., remove longwave cloud radiative heating from atm energy tend
+  If set to .false., longwave cloud radiative heating behaves normally
+  Default: .false.
+</entry>
+
+<entry id="no_cloud_sw_radheat_atm" type="logical" category="radiation"
+       group="phys_ctl_nl" valid_values="">
+  If set to .true., remove shortwave cloud radiative heating from atm energy tend
+  If set to .false., shortwave cloud radiative heating behaves normally
+  Default: .false.
+</entry>
+
+<entry id="no_cloud_lw_radheat_sfc" type="logical" category="radiation"
+       group="phys_ctl_nl" valid_values="">
+  If set to .true., remove longwave cloud radiative heating from sfc energy tend
+  If set to .false., longwave cloud radiative heating behaves normally
+  Default: .false.
+</entry>
+
+<entry id="no_cloud_sw_radheat_sfc" type="logical" category="radiation"
+       group="phys_ctl_nl" valid_values="">
+  If set to .true., remove shortwave cloud radiative heating from sfc energy tend
+  If set to .false., shortwave cloud radiative heating behaves normally
+  Default: .false.
 </entry>
 
 <entry id="absems_data" type="char*256" input_pathname="abs" category="radiation"
@@ -4919,6 +5006,153 @@ The time of day (seconds) corresponding to <varname>prescribed_ozone_fixed_ymd</
 at which the prescribed ozone data is fixed
 if <varname>prescribed_ozone_type</varname> is 'FIXED'.
 Default: 0 seconds
+</entry>
+
+<!-- cloud_locking : we add the prescribed cloud definitions here because
+                     they follow the model of prescribed ozone.           -->
+<entry id="prescribed_cloud_datapath" type="char*256" input_pathname="abs"
+       category="cam_chem" group="prescribed_cloud_nl" valid_values="" >
+Full pathname of the directory that contains the files specified in
+<varname>prescribed_cloud_filelist</varname>.
+Default: None, do not prescribe clouds by default.
+</entry>
+
+<entry id="prescribed_cloud_file" type="char*256"
+       input_pathname="rel:prescribed_cloud_datapath" category="cam_chem"
+       group="prescribed_cloud_nl" valid_values="" >
+Filename of dataset for prescribed cloud.
+Default: None, do not prescribe clouds by default.
+</entry>
+
+<entry id="prescribed_cloud_filelist" type="char*256"
+       input_pathname="rel:prescribed_cloud_datapath" category="cam_chem"
+       group="prescribed_cloud_nl" valid_values="" >
+Filename of file that contains a sequence of filenames for prescribed
+cloud.  The filenames in this file are relative to the directory specified
+by <varname>prescribed_cloud_datapath</varname>.
+Default: None, do not prescribe clouds by default.
+</entry>
+
+<entry id="prescribed_cloud_name" type="char*16" category="cam_chem"
+       group="prescribed_cloud_nl" valid_values="" >
+Name of variable containing cloud data in the prescribed cloud datasets.
+Default: 'cloud'
+</entry>
+
+<entry id="prescribed_cloud_rmfile" type="logical" category="cam_chem"
+       group="prescribed_cloud_nl" valid_values="" >
+Remove the file containing prescribed cloud concentrations from local disk when
+no longer needed.
+Default: FALSE
+</entry>
+
+<entry id="prescribed_cloud_type" type="char*32" category="cam_chem"
+       group="prescribed_cloud_nl"
+       valid_values="CYCLICAL,SERIAL,INTERP_MISSING_MONTHS,FIXED" >
+Type of time interpolation for data in prescribed_cloud files.
+Can be set to 'CYCLICAL', 'SERIAL', 'INTERP_MISSING_MONTHS', or 'FIXED'.
+Default: 'SERIAL'
+</entry>
+
+<entry id="prescribed_cloud_cycle_yr" type="integer" category="cam_chem"
+       group="prescribed_cloud_nl" valid_values="" >
+The cycle year of the prescribed cloud data
+if <varname>prescribed_cloud_type</varname>  is 'CYCLICAL'.
+Format: YYYY
+Default: 0
+</entry>
+
+<entry id="prescribed_cloud_fixed_ymd" type="integer" category="cam_chem"
+       group="prescribed_cloud_nl" valid_values="" >
+The date at which the prescribed cloud data is fixed
+if <varname>prescribed_cloud_type</varname> is 'FIXED'.
+Format: YYYYMMDD
+Default: 0
+</entry>
+
+<entry id="prescribed_cloud_fixed_tod" type="integer" category="cam_chem"
+       group="prescribed_cloud_nl" valid_values="" >
+The time of day (seconds) corresponding to <varname>prescribed_cloud_fixed_ymd</varname>
+at which the prescribed cloud data is fixed
+if <varname>prescribed_cloud_type</varname> is 'FIXED'.
+Default: 0 seconds
+</entry>
+
+<entry id="prescribed_cloud_num_file_years" type="real" category="cam_chem"
+       group="prescribed_cloud_nl" valid_values="" >
+The number of years in the prescribed cloud data file
+if <varname>prescribed_cloud_type</varname>  is 'CYCLICAL'.
+Default: 0.0
+</entry>
+
+<!-- sfc_flux_locking : we add the prescribed sfc flux definitions here because
+                        they follow the model of prescribed ozone.           -->
+<entry id="presc_sfc_flux_datapath" type="char*256" input_pathname="abs"
+       category="cam_chem" group="presc_sfc_flux_nl" valid_values="" >
+Full pathname of the directory that contains the files specified in
+<varname>presc_sfc_flux_filelist</varname>.
+Default: None, do not prescribe surface fluxes by default.
+</entry>
+
+<entry id="presc_sfc_flux_file" type="char*256"
+       input_pathname="rel:presc_sfc_flux_datapath" category="cam_chem"
+       group="presc_sfc_flux_nl" valid_values="" >
+Filename of dataset for prescribed surface fluxes.
+Default: None, do not prescribe surface fluxes by default.
+</entry>
+
+<entry id="presc_sfc_flux_filelist" type="char*256"
+       input_pathname="rel:presc_sfc_flux_datapath" category="cam_chem"
+       group="presc_sfc_flux_nl" valid_values="" >
+Filename of file that contains a sequence of filenames for prescribed
+surface fluxes.  The filenames in this file are relative to the directory 
+specified by <varname>presc_sfc_flux_datapath</varname>.
+Default: None, do not prescribe surface fluxes by default.
+</entry>
+
+<entry id="presc_sfc_flux_type" type="char*32" category="cam_chem"
+       group="presc_sfc_flux_nl"
+       valid_values="CYCLICAL,SERIAL,INTERP_MISSING_MONTHS,FIXED" >
+Type of time interpolation for data in prescribed_sfc flux files.
+Can be set to 'CYCLICAL', 'SERIAL', 'INTERP_MISSING_MONTHS', or 'FIXED'.
+Default: 'SERIAL'
+</entry>
+
+<entry id="presc_sfc_flux_cycle_yr" type="integer" category="cam_chem"
+       group="presc_sfc_flux_nl" valid_values="" >
+The cycle year of the prescribed sfc flux data
+if <varname>presc_sfc_flux_type</varname>  is 'CYCLICAL'.
+Format: YYYY
+Default: 0
+</entry>
+
+<entry id="presc_sfc_flux_fixed_ymd" type="integer" category="cam_chem"
+       group="presc_sfc_flux_nl" valid_values="" >
+The date at which the prescribed sfc flux data is fixed
+if <varname>presc_sfc_flux_type</varname> is 'FIXED'.
+Format: YYYYMMDD
+Default: 0
+</entry>
+
+<entry id="presc_sfc_flux_fixed_tod" type="integer" category="cam_chem"
+       group="presc_sfc_flux_nl" valid_values="" >
+The time of day (seconds) corresponding to <varname>presc_sfc_flux_fixed_ymd</varname>
+at which the prescribed sfc flux data is fixed
+if <varname>presc_sfc_flux_type</varname> is 'FIXED'.
+Default: 0 seconds
+</entry>
+
+<entry id="presc_sfc_flux_num_file_years" type="real" category="cam_chem"
+       group="presc_sfc_flux_nl" valid_values="" >
+The number of years in the prescribed surface flux data file
+if <varname>presc_sfc_flux_type</varname>  is 'CYCLICAL'.
+Default: 0.0
+</entry>
+
+<entry id="presc_sfc_flux_input_dtime" type="real" category="cam_chem"
+       group="presc_sfc_flux_nl" valid_values="" >
+The atm physics timestep for the run that produced the prescribed surface flux data file (in seconds)
+Default: 0.0
 </entry>
 
 <entry id="prescribed_volcaero_datapath" type="char*256" input_pathname="abs" category="cam_chem"

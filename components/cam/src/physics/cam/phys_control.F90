@@ -58,6 +58,11 @@ character(len=16) :: radiation_scheme     = unset_str  ! radiation package
 integer           :: srf_flux_avg         = unset_int  ! 1 => smooth surface fluxes, 0 otherwise
 integer           :: conv_water_in_rad    = unset_int  ! 0==> No; 1==> Yes-Arithmetic average;
                                                        ! 2==> Yes-Average in emissivity.
+logical           :: no_cloud_lw_radheat_atm = .false. ! if .true. remove cloud longwave heating from atm
+logical           :: no_cloud_sw_radheat_atm = .false. ! if .true. remove cloud shortwave heating from atm
+logical           :: no_cloud_lw_radheat_sfc = .false. ! if .true. remove cloud longwave heating from sfc
+logical           :: no_cloud_sw_radheat_sfc = .false. ! if .true. remove cloud shortwave heating from sfc
+
 
 logical           :: use_subcol_microp    = .false.    ! if .true. then use sub-columns in microphysics
 
@@ -190,7 +195,8 @@ subroutine phys_ctl_readnl(nlfile)
       mam_amicphys_optaa, n_so4_monolayers_pcage,micro_mg_accre_enhan_fac, &
       l_tracer_aero, l_vdiff, l_rayleigh, l_gw_drag, l_ac_energy_chk, &
       l_bc_energy_fix, l_dry_adj, l_st_mac, l_st_mic, l_rad, prc_coef1,prc_exp,prc_exp1,cld_sed,mg_prc_coeff_fix, &
-      rrtmg_temp_fix
+      rrtmg_temp_fix, no_cloud_lw_radheat_atm, no_cloud_sw_radheat_atm, no_cloud_lw_radheat_sfc, & 
+      no_cloud_sw_radheat_sfc
    !-----------------------------------------------------------------------------
 
    if (masterproc) then
@@ -234,6 +240,10 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(do_clubb_sgs,                    1 , mpilog,  0, mpicom)
    call mpibcast(do_aerocom_ind3,                 1 , mpilog,  0, mpicom)
    call mpibcast(conv_water_in_rad,               1 , mpiint,  0, mpicom)
+   call mpibcast(no_cloud_lw_radheat_atm,         1 , mpilog,  0, mpicom)
+   call mpibcast(no_cloud_sw_radheat_atm,         1 , mpilog,  0, mpicom)
+   call mpibcast(no_cloud_lw_radheat_sfc,         1 , mpilog,  0, mpicom)
+   call mpibcast(no_cloud_sw_radheat_sfc,         1 , mpilog,  0, mpicom)
    call mpibcast(do_tms,                          1 , mpilog,  0, mpicom)
    call mpibcast(use_mass_borrower,               1 , mpilog,  0, mpicom)
    call mpibcast(l_ieflx_fix,             1 , mpilog,  0, mpicom)
@@ -422,7 +432,9 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                         micro_mg_accre_enhan_fac_out, liqcf_fix_out, regen_fix_out,demott_ice_nuc_out, pergro_mods_out, pergro_test_active_out &
                        ,l_tracer_aero_out, l_vdiff_out, l_rayleigh_out, l_gw_drag_out, l_ac_energy_chk_out  &
                        ,l_bc_energy_fix_out, l_dry_adj_out, l_st_mac_out, l_st_mic_out, l_rad_out  &
-                       ,prc_coef1_out,prc_exp_out,prc_exp1_out, cld_sed_out,mg_prc_coeff_fix_out,rrtmg_temp_fix_out)
+                       ,prc_coef1_out,prc_exp_out,prc_exp1_out, cld_sed_out,mg_prc_coeff_fix_out,rrtmg_temp_fix_out &
+                       ,no_cloud_lw_radheat_atm_out, no_cloud_sw_radheat_atm_out &
+                       ,no_cloud_lw_radheat_sfc_out, no_cloud_sw_radheat_sfc_out)
 
 !-----------------------------------------------------------------------
 ! Purpose: Return runtime settings
@@ -456,6 +468,10 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    logical,           intent(out), optional :: micro_do_icesupersat_out
    integer,           intent(out), optional :: ieflx_opt_out
    integer,           intent(out), optional :: conv_water_in_rad_out
+   logical,           intent(out), optional :: no_cloud_lw_radheat_atm_out
+   logical,           intent(out), optional :: no_cloud_sw_radheat_atm_out
+   logical,           intent(out), optional :: no_cloud_lw_radheat_sfc_out
+   logical,           intent(out), optional :: no_cloud_sw_radheat_sfc_out
    character(len=32), intent(out), optional :: cam_chempkg_out
    logical,           intent(out), optional :: prog_modal_aero_out
    logical,           intent(out), optional :: do_tms_out
@@ -521,6 +537,10 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(do_aerocom_ind3_out ) ) do_aerocom_ind3_out = do_aerocom_ind3
    if ( present(micro_do_icesupersat_out )) micro_do_icesupersat_out = micro_do_icesupersat
    if ( present(conv_water_in_rad_out   ) ) conv_water_in_rad_out    = conv_water_in_rad
+   if ( present(no_cloud_lw_radheat_atm_out) ) no_cloud_lw_radheat_atm_out = no_cloud_lw_radheat_atm
+   if ( present(no_cloud_sw_radheat_atm_out) ) no_cloud_sw_radheat_atm_out = no_cloud_sw_radheat_atm
+   if ( present(no_cloud_lw_radheat_sfc_out) ) no_cloud_lw_radheat_sfc_out = no_cloud_lw_radheat_sfc
+   if ( present(no_cloud_sw_radheat_sfc_out) ) no_cloud_sw_radheat_sfc_out = no_cloud_sw_radheat_sfc
    if ( present(ieflx_opt_out   ) ) ieflx_opt_out    = ieflx_opt 
    if ( present(cam_chempkg_out         ) ) cam_chempkg_out          = cam_chempkg
    if ( present(prog_modal_aero_out     ) ) prog_modal_aero_out      = prog_modal_aero

@@ -127,6 +127,7 @@ module tracer_data
      logical :: initialized = .false.
      logical :: top_bndry = .false.
      logical :: stepTime = .false.  ! Do not interpolate in time, but use stepwise times
+     logical :: xyzint   = .true.   ! Do Spatial Interpolation
   endtype trfile
 
   integer, public, parameter :: MAXTRCRS = 100
@@ -1240,6 +1241,11 @@ contains
 
     endif
 
+    if (masterproc) then
+       write(iulog,*) 'read_next_trcdata: file  ',trim(file%curr_filename),'.  Record numbers = ',recnos(1),recnos(3)
+       write(iulog,*) 'read_next_trcdata: file  ',trim(file%curr_filename),'.  Record numbers = ',recnos(2),recnos(4)
+    end if
+
     !
     ! Set up hyperslab corners
     !
@@ -1620,6 +1626,7 @@ contains
     type (trfile), intent(in) :: file
 
     integer :: i,j,k, astat, c, ncols
+    integer :: ic,jc
     integer :: lons(pcols), lats(pcols)
 
     integer                     :: jlim(2), jl, ju, ierr
@@ -1690,6 +1697,21 @@ contains
        call lininterp_finish(lat_wgts)
     end do
    endif
+
+    if (.not. file%xyzint) then
+       do c=begchunk,endchunk
+          ncols = get_ncols_p(c)
+          call get_lon_all_p(c,ncols,lons)
+          call get_lat_all_p(c,ncols,lats)
+          do k=1,file%nlev
+             do i=1,ncols
+                ic = lons(i)
+                jc = lats(i)
+                loc_arr(i,k,c-begchunk+1) = wrk3d_in(ic,jc,k)
+             end do
+          end do
+       end do
+    endif
 
     if(allocated(wrk3d)) then
        deallocate( wrk3d, stat=astat )
@@ -1870,6 +1892,11 @@ contains
                 else
                    call vert_interp(ncol, file%nlev, pin, state(c)%pmid, datain, data_out(:,:) )
                 endif
+
+                if (.not. file%xyzint) then
+                   data_out(:ncol,:) = datain(:ncol,:)
+                endif
+
              endif
 
           endif

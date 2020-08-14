@@ -62,6 +62,7 @@ module restart_physics
     use ppgrid,              only: pver, pverp, pcols
     use chemistry,           only: chem_init_restart
     use prescribed_ozone,    only: init_prescribed_ozone_restart
+    use prescribed_cloud,    only: init_prescribed_cloud_restart
     use prescribed_ghg,      only: init_prescribed_ghg_restart
     use prescribed_aero,     only: init_prescribed_aero_restart
     use prescribed_volcaero, only: init_prescribed_volcaero_restart
@@ -112,6 +113,7 @@ module restart_physics
        call chem_init_restart(File)
 
        call init_prescribed_ozone_restart(File)
+       call init_prescribed_cloud_restart(File)
        call init_prescribed_ghg_restart(File)
        call init_prescribed_aero_restart(File)
        call init_prescribed_volcaero_restart(File)
@@ -219,6 +221,7 @@ module restart_physics
       use ppgrid,              only: begchunk, endchunk, pcols, pverp
       use chemistry,           only: chem_write_restart
       use prescribed_ozone,    only: write_prescribed_ozone_restart
+      use prescribed_cloud,    only: write_prescribed_cloud_restart
       use prescribed_ghg,      only: write_prescribed_ghg_restart
       use prescribed_aero,     only: write_prescribed_aero_restart
       use prescribed_volcaero, only: write_prescribed_volcaero_restart
@@ -271,6 +274,7 @@ module restart_physics
          call chem_write_restart(File)
 
          call write_prescribed_ozone_restart(File)
+         call write_prescribed_cloud_restart(File)
          call write_prescribed_ghg_restart(File)
          call write_prescribed_aero_restart(File)
          call write_prescribed_volcaero_restart(File)
@@ -514,6 +518,7 @@ module restart_physics
      use cam_history_support, only: fillvalue
      use radiation,           only: radiation_do
      use prescribed_ozone,    only: read_prescribed_ozone_restart
+     use prescribed_cloud,    only: read_prescribed_cloud_restart
      use prescribed_ghg,      only: read_prescribed_ghg_restart
      use prescribed_aero,     only: read_prescribed_aero_restart
      use prescribed_volcaero, only: read_prescribed_volcaero_restart
@@ -577,6 +582,7 @@ module restart_physics
         ! data for chemistry
         call chem_read_restart(File)
 
+        call read_prescribed_ozone_restart(File)
         call read_prescribed_ozone_restart(File)
         call read_prescribed_ghg_restart(File)
         call read_prescribed_aero_restart(File)

@@ -29,6 +29,8 @@ module physpkg
 
   use cam_control_mod,  only: ideal_phys, adiabatic
   use phys_control,     only: phys_do_flux_avg, phys_getopts, waccmx_is
+  use prescribed_cloud, only: has_prescribed_cloud
+  use prescribed_sfc_flux, only: has_presc_sfc_flux
   use zm_conv,          only: trigmem
   use scamMod,          only: single_column, scm_crm_mode
   use flux_avg,         only: flux_avg_init
@@ -67,6 +69,8 @@ module physpkg
   integer ::  prec_sh_idx        = 0
   integer ::  snow_sh_idx        = 0
   integer ::  rice2_idx          = 0
+  integer ::  i_cldliq           = 0
+  integer ::  i_cldice           = 0
   integer :: species_class(pcnst)  = -1 !BSINGH: Moved from modal_aero_data.F90 as it is being used in second call to zm deep convection scheme (convect_deep_tend_2)
 
   save
@@ -140,6 +144,8 @@ subroutine phys_register
     use ionosphere,         only: ionos_register
     use string_utils,       only: to_lower
     use prescribed_ozone,   only: prescribed_ozone_register
+    use prescribed_cloud,   only: prescribed_cloud_register
+    use prescribed_sfc_flux,only: presc_sfc_flux_register
     use prescribed_volcaero,only: prescribed_volcaero_register
     use prescribed_aero,    only: prescribed_aero_register
     use prescribed_ghg,     only: prescribed_ghg_register
@@ -267,6 +273,8 @@ subroutine phys_register
        end if
        call prescribed_volcaero_register()
        call prescribed_ozone_register()
+       call prescribed_cloud_register()
+       call presc_sfc_flux_register()
        call prescribed_aero_register()
        call prescribed_ghg_register()
        call sslt_rebin_register
@@ -363,7 +371,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
     real(r8), pointer :: qpert(:,:)
 
     character*11 :: subname='phys_inidat' ! subroutine name
-    integer :: tpert_idx, qpert_idx, pblh_idx
+    integer :: tpert_idx, qpert_idx, pblh_idx, vmag_gust_idx
 
     logical :: found=.false., found2=.false.
     integer :: ierr
@@ -427,6 +435,17 @@ subroutine phys_inidat( cam_out, pbuf2d )
     end if
     tpert_idx = pbuf_get_index( 'tpert')
     call pbuf_set_field(pbuf2d, tpert_idx, tptr)
+
+
+    call infld('vmag_gust', fh_ini, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
+         tptr(:,:), found, gridname='physgrid')
+    if(.not. found) then
+       tptr(:,:) = 0._r8
+       if (masterproc) write(iulog,*) 'vmag_gust initialized to 1.'
+    end if
+    vmag_gust_idx = pbuf_get_index( 'vmag_gust')
+    call pbuf_set_field(pbuf2d, vmag_gust_idx, tptr)
+
 
     fieldname='QPERT'  
     qpert_idx = pbuf_get_index( 'qpert',ierr)
@@ -671,6 +690,8 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use check_energy,       only: check_energy_init
     use chemistry,          only: chem_init
     use prescribed_ozone,   only: prescribed_ozone_init
+    use prescribed_cloud,   only: prescribed_cloud_init
+    use prescribed_sfc_flux,only: presc_sfc_flux_init
     use prescribed_ghg,     only: prescribed_ghg_init
     use prescribed_aero,    only: prescribed_aero_init
     use seasalt_model,      only: init_ocean_data, has_mam_mom
@@ -799,6 +820,8 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     ! Prescribed tracers
     call prescribed_ozone_init()
+    call prescribed_cloud_init(phys_state, pbuf2d)
+    call presc_sfc_flux_init()
     call prescribed_ghg_init()
     call prescribed_aero_init()
     call aerodep_flx_init()
@@ -881,6 +904,13 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     snow_dp_idx  = pbuf_get_index('SNOW_DP')
     prec_sh_idx  = pbuf_get_index('PREC_SH')
     snow_sh_idx  = pbuf_get_index('SNOW_SH')
+
+!! JGOmod    
+!    if (has_prescribed_cloud) then
+!       i_cldliq  = pbuf_get_index('CLDLIQ_in')
+!       i_cldice  = pbuf_get_index('CLDICE_in')
+!    end if
+!! JGOmod   
 
     if (shallow_scheme .eq. 'UNICON') then
         rice2_idx    = pbuf_get_index('rice2')
@@ -1159,6 +1189,9 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     use time_manager,   only: get_nstep
     use check_energy,   only: ieflx_gmean, check_ieflx_fix 
     use phys_control,   only: ieflx_opt
+!++BEH
+    use prescribed_sfc_flux, only: presc_sfc_flux_overwrite, has_presc_sfc_flux
+!--BEH
     !
     ! Input arguments
     !
@@ -1201,6 +1234,11 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     !
     call get_met_srf2( cam_in )
 #endif
+
+    if ( has_presc_sfc_flux ) then
+       call presc_sfc_flux_overwrite( cam_in, pbuf2d )
+    endif
+
     ! Set lightning production of NO
     call t_startf ('lightning_no_prod')
     call lightning_no_prod( phys_state, pbuf2d,  cam_in )
@@ -1414,6 +1452,8 @@ subroutine tphysac (ztodt,   cam_in,  &
     real(r8), pointer, dimension(:,:) :: qini
     real(r8), pointer, dimension(:,:) :: cldliqini
     real(r8), pointer, dimension(:,:) :: cldiceini
+    real(r8), pointer, dimension(:,:) :: cldliqrad
+    real(r8), pointer, dimension(:,:) :: cldicerad
     real(r8), pointer, dimension(:,:) :: dtcore
     real(r8), pointer, dimension(:,:) :: ast     ! relative humidity cloud fraction 
 
@@ -1974,6 +2014,8 @@ subroutine tphysbc (ztodt,               &
     real(r8) :: flx_heat(pcols)
     type(check_tracers_data):: tracerint             ! energy integrals and cummulative boundary fluxes
     real(r8) :: zero_tracers(pcols,pcnst)
+    real(r8) :: cldliq_sav(pcols,pver)
+    real(r8) :: cldice_sav(pcols,pver)
 
     logical   :: lq(pcnst)
 
@@ -2690,6 +2732,22 @@ end if ! l_tracer_aero
 
     call t_stopf('bc_cld_diag_history_write')
 
+    !===================================================
+    ! If prescribing cloud info for radiation, overwrite
+    ! cldliq/cldice with prescribed values (save old values)
+    !===================================================
+    
+!! JGOmod    
+!    if (has_prescribed_cloud) then
+!       cldliq_sav(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)
+!       cldice_sav(:ncol,:pver) = state%q(:ncol,:pver,ixcldice)
+!       call pbuf_get_field(pbuf, i_cldliq , cldliqrad )
+!       call pbuf_get_field(pbuf, i_cldice , cldicerad )
+!       state%q(:ncol,:pver,ixcldliq) = cldliqrad(:ncol,:pver)
+!       state%q(:ncol,:pver,ixcldice) = cldicerad(:ncol,:pver)
+!    end if
+!! JGOmod  
+
 if (l_rad) then
     !===================================================
     ! Radiation computations
@@ -2707,6 +2765,18 @@ if (l_rad) then
     do i=1,ncol
        tend%flx_net(i) = net_flx(i)
     end do
+
+    !===================================================
+    ! if prescribed clouds, replace cldliq/cldice with 
+    ! old pre-radiation values
+    !===================================================
+!! JGOmod    
+!    if (has_prescribed_cloud) then
+!       state%q(:ncol,:pver,ixcldliq) = cldliq_sav(:ncol,:pver)
+!       state%q(:ncol,:pver,ixcldice) = cldice_sav(:ncol,:pver)
+!    end if
+!! JGOmod   
+
     call physics_update(state, ptend, ztodt, tend)
     call check_energy_chng(state, tend, "radheat", nstep, ztodt, zero, zero, zero, net_flx)
 
@@ -2764,6 +2834,8 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   use perf_mod
 
   use prescribed_ozone,    only: prescribed_ozone_adv
+  use prescribed_cloud,    only: prescribed_cloud_adv
+  use prescribed_sfc_flux, only: presc_sfc_flux_adv
   use prescribed_ghg,      only: prescribed_ghg_adv
   use prescribed_aero,     only: prescribed_aero_adv
   use aerodep_flx,         only: aerodep_flx_adv
@@ -2793,6 +2865,8 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
 
   ! Prescribed tracers
   call prescribed_ozone_adv(phys_state, pbuf2d)
+  call prescribed_cloud_adv(phys_state, pbuf2d)
+  call presc_sfc_flux_adv(phys_state, pbuf2d)
   call prescribed_ghg_adv(phys_state, pbuf2d)
   call prescribed_aero_adv(phys_state, pbuf2d)
   call aircraft_emit_adv(phys_state, pbuf2d)

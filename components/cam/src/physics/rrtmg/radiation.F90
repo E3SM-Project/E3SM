@@ -31,6 +31,7 @@ use cam_logfile,     only: iulog
 
 use rad_constituents, only: N_DIAG, rad_cnst_get_call_list, rad_cnst_get_info
 use radconstants,     only: rrtmg_sw_cloudsim_band, rrtmg_lw_cloudsim_band, nswbands, nlwbands
+use prescribed_cloud, only: has_prescribed_cloud  ! cloud_locking
 
 implicit none
 private
@@ -63,6 +64,7 @@ integer :: ld_idx       = 0
 integer :: cldfsnow_idx = 0 
 integer :: cld_idx      = 0 
 integer :: concld_idx   = 0
+integer :: i_dei, i_mu, i_lambda, i_iciwp, i_iclwp, i_des, i_icswp ! cloud_locking
 
 ! Default values for namelist variables
 
@@ -627,6 +629,8 @@ end function radiation_nextsw_cday
                                                                            sampling_seq='rad_lwsw')
           call addfld('FLNS'//diag(icall), horiz_only,    'A',    'W/m2', 'Net longwave flux at surface', &
                                                                            sampling_seq='rad_lwsw')
+          call addfld('FLUS'//diag(icall), horiz_only,    'A',    'W/m2', 'Upwelling longwave flux at surface', &
+                                                                           sampling_seq='rad_lwsw')
           call addfld('FLNT'//diag(icall), horiz_only,    'A',    'W/m2', 'Net longwave flux at top of model', &
                                                                            sampling_seq='rad_lwsw')
           call addfld('FLUT'//diag(icall), horiz_only,    'A',    'W/m2', 'Upwelling longwave flux at top of model', &
@@ -710,15 +714,59 @@ end function radiation_nextsw_cday
        call add_default('FLUT', 3, ' ')
     end if
 
-    cldfsnow_idx = pbuf_get_index('CLDFSNOW',errcode=err)
+! cloud_locking : change retrieval of cld_idx and cldfsnow_idx to
+!                 depend on whether doing cloud-locking.
+!
+! original:
+!    cldfsnow_idx = pbuf_get_index('CLDFSNOW',errcode=err)
+!    cld_idx      = pbuf_get_index('CLD')
+!    concld_idx   = pbuf_get_index('CONCLD')
+
+   if (has_prescribed_cloud) then
+      i_dei        = pbuf_get_index('DEI_rad',errcode=err)
+      i_mu         = pbuf_get_index('MU_rad',errcode=err)
+      i_lambda     = pbuf_get_index('LAMBDAC_rad',errcode=err)
+      i_iciwp      = pbuf_get_index('ICIWP_rad',errcode=err)
+      i_iclwp      = pbuf_get_index('ICLWP_rad',errcode=err)
+      i_des        = pbuf_get_index('DES_rad',errcode=err)
+      i_icswp      = pbuf_get_index('ICSWP_rad',errcode=err)
+      cld_idx      = pbuf_get_index('CLD_rad')
+      cldfsnow_idx = pbuf_get_index('CLDFSNOW_rad', errcode=err)
+      concld_idx   = pbuf_get_index('CONCLD_rad')
+   else
+      i_dei        = pbuf_get_index('DEI',errcode=err)
+      i_mu         = pbuf_get_index('MU',errcode=err)
+      i_lambda     = pbuf_get_index('LAMBDAC',errcode=err)
+      i_iciwp      = pbuf_get_index('ICIWP',errcode=err)
+      i_iclwp      = pbuf_get_index('ICLWP',errcode=err)
+      i_des        = pbuf_get_index('DES',errcode=err)
+      i_icswp      = pbuf_get_index('ICSWP',errcode=err)
     cld_idx      = pbuf_get_index('CLD')
+      cldfsnow_idx = pbuf_get_index('CLDFSNOW', errcode=err)
     concld_idx   = pbuf_get_index('CONCLD')
+   endif
 
     if (cldfsnow_idx > 0) then
        call addfld ('CLDFSNOW',(/ 'lev' /),'I','1','CLDFSNOW',flag_xyfill=.true.)
        call addfld('SNOW_ICLD_VISTAU', (/ 'lev' /), 'A', '1', 'Snow in-cloud extinction visible sw optical depth', &
                                                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
     endif
+
+! cloud_locking : allow output for cloud-locking data
+    call addfld('DEI_rad'     , (/ 'lev' /), 'A',   'micron', 'DEI      output from radiation')
+    call addfld('MU_rad'      , (/ 'lev' /), 'A',        '1', 'MU       output from radiation')
+    call addfld('LAMBDAC_rad' , (/ 'lev' /), 'A',      '1/m', 'LAMBDAC  output from radiation')
+    call addfld('ICIWP_rad'   , (/ 'lev' /), 'A',    'kg/m2', 'ICIWP    output from radiation')
+    call addfld('ICLWP_rad'   , (/ 'lev' /), 'A',    'kg/m2', 'ICLWP    output from radiation')
+    call addfld('DES_rad'     , (/ 'lev' /), 'A',   'micron', 'DES      output from radiation')
+    call addfld('ICSWP_rad'   , (/ 'lev' /), 'A',    'kg/m2', 'ICSWP    output from radiation')
+    call addfld('CLD_rad'     , (/ 'lev' /), 'A', 'fraction', 'CLD      output from radiation')
+    call addfld('CLDFSNOW_rad', (/ 'lev' /), 'A', 'fraction', 'CLDFSNOW output from radiation')
+    call addfld('CONCLD_rad'  , (/ 'lev' /), 'A', 'fraction', 'CONCLD   output from radiation')
+!! JGOmod
+!   call addfld('CLDLIQ_rad' ,   'kg/kg', pver, 'A', 'CLDLIQ output from radiation', phys_decomp)
+!   call addfld('CLDICE_rad' ,   'kg/kg', pver, 'A', 'CLDICE output from radiation', phys_decomp)
+!! JGOmod
 
   end subroutine radiation_init
 
@@ -773,6 +821,7 @@ end function radiation_nextsw_cday
                                 liqcldoptics, icecldoptics
     use aer_rad_props,    only: aer_rad_props_sw, aer_rad_props_lw
     use interpolate_data, only: vertinterp
+    use constituents,     only: cnst_get_ind
     use cloud_rad_props,  only: get_ice_optics_sw, get_liquid_optics_sw, liquid_cloud_get_rad_props_lw, &
                ice_cloud_get_rad_props_lw, cloud_rad_props_get_lw, snow_cloud_get_rad_props_lw, get_snow_optics_sw
     use slingo,           only: slingo_liq_get_rad_props_lw, slingo_liq_optics_sw
@@ -782,6 +831,7 @@ end function radiation_nextsw_cday
     use rrtmg_state, only: rrtmg_state_create, rrtmg_state_update, rrtmg_state_destroy, rrtmg_state_t, num_rrtmg_levs
     use orbit,            only: zenith
     use output_aerocom_aie , only: do_aerocom_ind3
+    use phys_control,     only: phys_getopts
 
     ! Arguments
     logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
@@ -806,6 +856,10 @@ end function radiation_nextsw_cday
     ! Local variables
 
     logical :: dosw, dolw
+    logical :: no_cloud_lw_radheat_atm  ! flag to remove lw cloud rad. heating from atm tend
+    logical :: no_cloud_sw_radheat_atm  ! flag to remove sw cloud rad. heating from atm tend
+    logical :: no_cloud_lw_radheat_sfc  ! flag to remove lw cloud rad. heating from sfc tend
+    logical :: no_cloud_sw_radheat_sfc  ! flag to remove sw cloud rad. heating from sfc tend
     integer nstep                       ! current timestep number
     real(r8) britemp(pcols,pnf_msu)     ! Microwave brightness temperature
     real(r8) tb_ir(pcols,pnb_hirs)      ! Infrared brightness temperature
@@ -919,6 +973,7 @@ end function radiation_nextsw_cday
     real(r8) fsn200c(pcols)       ! fcns interpolated to 200 mb
     real(r8) fnl(pcols,pverp)     ! net longwave flux
     real(r8) fcnl(pcols,pverp)    ! net clear-sky longwave flux
+    real(r8) flus(pcols)          ! Upward flux at surface
 
     real(r8) pbr(pcols,pver)      ! Model mid-level pressures (dynes/cm2)
     real(r8) pnm(pcols,pverp)     ! Model interface pressures (dynes/cm2)
@@ -938,6 +993,7 @@ end function radiation_nextsw_cday
     real(r8), pointer, dimension(:,:,:) :: sd => NULL()  ! shortwave spectral flux down
     real(r8), pointer, dimension(:,:,:) :: lu => NULL()  ! longwave  spectral flux up
     real(r8), pointer, dimension(:,:,:) :: ld => NULL()  ! longwave  spectral flux down
+    real(r8), pointer, dimension(:,:)   :: dei, mu, lambda, iciwp, iclwp, des, icswp ! cloud_locking
 
     ! Aerosol radiative properties
     real(r8) :: aer_tau    (pcols,0:pver,nbndsw) ! aerosol extinction optical depth
@@ -954,6 +1010,8 @@ end function radiation_nextsw_cday
     integer, dimension(pcols) :: IdxNite ! Indicies of night coumns
 
     integer :: icall                     ! index through climate/diagnostic radiation calls
+    integer :: ixcldliq                  ! cloud liquid amount index
+    integer :: ixcldice                  ! cloud ice    amount index
     logical :: active_calls(0:N_DIAG)
 
     type(rrtmg_state_t), pointer :: r_state ! contains the atm concentratiosn in layers needed for RRTMG
@@ -964,6 +1022,14 @@ end function radiation_nextsw_cday
     real(r8) ::  angstrm(pcols)       ! Angstrom coefficient
     real(r8) ::  aerindex(pcols)      ! Aerosol index
     integer aod400_idx, aod700_idx, cld_tau_idx
+
+!++BEH
+    real(r8) :: invis_cld(nbndsw,pcols,pver) ! a set of zeros for 'invisible clouds' to go in tau
+    real(r8) dum_sols(pcols)                 ! dummy argument for downward SW visible direct
+    real(r8) dum_soll(pcols)                 ! dummy argument for downward SW near IR direct
+    real(r8) dum_solsd(pcols)                ! dummy argument for downward SW visible diffuse
+    real(r8) dum_solld(pcols)                ! dummy argument for downward SW near IR diffuse
+!--BEH
 
 
     character(*), parameter :: name = 'radiation_tend'
@@ -991,6 +1057,38 @@ end function radiation_nextsw_cday
     endif
     call pbuf_get_field(pbuf, cld_idx,      cld,      start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
     call pbuf_get_field(pbuf, concld_idx,   concld,   start=(/1,1,itim_old/), kount=(/pcols,pver,1/)  )
+
+! cloud_locking
+!
+! Output fields that will later be used as radiation boundary data
+
+!! JGOmod
+!    call cnst_get_ind('CLDLIQ', ixcldliq)
+!    call cnst_get_ind('CLDICE', ixcldice)
+!! JGOmod
+
+    call pbuf_get_field(pbuf, i_dei,    dei   )
+    call pbuf_get_field(pbuf, i_mu,     mu    )
+    call pbuf_get_field(pbuf, i_lambda, lambda)
+    call pbuf_get_field(pbuf, i_iciwp,  iciwp )
+    call pbuf_get_field(pbuf, i_iclwp,  iclwp )
+    call pbuf_get_field(pbuf, i_des,    des   )
+    call pbuf_get_field(pbuf, i_icswp,  icswp )
+
+    call outfld('DEI_rad',      dei,       pcols, lchnk)
+    call outfld('MU_rad',       mu,        pcols, lchnk)
+    call outfld('LAMBDAC_rad',  lambda,    pcols, lchnk)
+    call outfld('ICIWP_rad',    iciwp,     pcols, lchnk)
+    call outfld('ICLWP_rad',    iclwp,     pcols, lchnk)
+    call outfld('DES_rad',      des,       pcols, lchnk)
+    call outfld('ICSWP_rad',    icswp,     pcols, lchnk)
+    call outfld('CLD_rad',      cld,       pcols, lchnk)
+    call outfld('CLDFSNOW_rad', cldfsnow,  pcols, lchnk)
+    call outfld('CONCLD_rad',   concld,    pcols, lchnk)
+!!JGOmod
+!   call outfld('CLDLIQ_rad', state%q(1,1,ixcldliq), pcols, lchnk)
+!   call outfld('CLDICE_rad', state%q(1,1,ixcldice), pcols, lchnk)
+!!JGOmod
 
     call pbuf_get_field(pbuf, qrs_idx,      qrs)
     call pbuf_get_field(pbuf, qrl_idx,      qrl)
@@ -1120,6 +1218,16 @@ end function radiation_nextsw_cday
              c_cld_tau_w_f(1:nbndsw,1:ncol,:)= cld_tau_w_f(:,1:ncol,:)
           endif
 
+!++BEH
+          if (no_cloud_sw_radheat_sfc) then
+             do i=1,ncol
+                do k=1,pver
+                   invis_cld(1:nbndsw,i,k) = 0._r8
+                end do
+             end do
+          end if
+!--BEH
+
           if(do_aerocom_ind3) then
              call pbuf_set_field(pbuf,cld_tau_idx,cld_tau(rrtmg_sw_cloudsim_band, :, :))                   
           end if
@@ -1192,6 +1300,11 @@ end function radiation_nextsw_cday
           end do
        end do
 
+       ! BEH: to remove cloud radiative heating from atmosphere, simply apply
+       !      clear-sky heating rates to radheat_tend
+       call phys_getopts(no_cloud_lw_radheat_sfc_out=no_cloud_lw_radheat_sfc)
+       call phys_getopts(no_cloud_sw_radheat_sfc_out=no_cloud_sw_radheat_sfc)
+
        ! Solar radiation computation
 
        if (dosw) then
@@ -1213,8 +1326,10 @@ end function radiation_nextsw_cday
 
                   call aer_rad_props_sw( icall, state, pbuf, nnite, idxnite, is_cmip6_volc, &
                                          aer_tau, aer_tau_w, aer_tau_w_g, aer_tau_w_f)
-
+!++BEH
                   call t_startf ('rad_rrtmg_sw')
+                  if(no_cloud_sw_radheat_sfc) then
+                     ! Call SW twice.  Once without cloud, and once with.
                   call rad_rrtmg_sw( &
                        lchnk,        ncol,         num_rrtmg_levs, r_state,                    &
                        state%pmid,   cldfprime,                                                &
@@ -1227,9 +1342,57 @@ end function radiation_nextsw_cday
                        cam_out%solsd,cam_out%solld,fns,          fcns,                         &
                        Nday,         Nnite,        IdxDay,       IdxNite,      clm_seed,       &
                        su,           sd,                                                       &
+                          E_cld_tau=invis_cld, E_cld_tau_w=c_cld_tau_w, E_cld_tau_w_g=c_cld_tau_w_g, E_cld_tau_w_f=c_cld_tau_w_f, &
+                          old_convert = .false.)
+
+                     call rad_rrtmg_sw( &
+                          lchnk,        ncol,         num_rrtmg_levs, r_state,                    &
+                          state%pmid,   cldfprime,                                                &
+                          aer_tau,      aer_tau_w,    aer_tau_w_g,  aer_tau_w_f,                  &
+                          eccf,         coszrs,       solin,        sfac,                         &
+                          cam_in%asdir, cam_in%asdif, cam_in%aldir, cam_in%aldif,                 &
+                          qrs,          qrsc,         fsnt,         fsntc,        fsntoa, fsutoa, &
+                          fsntoac,      fsnirt,       fsnrtc,       fsnirtsq,     fsns,           &
+                          fsnsc,        fsdsc,        fsds,         dum_sols,     dum_soll,       &
+                          dum_solsd,    dum_solld,    fns,          fcns,                         &
+                          Nday,         Nnite,        IdxDay,       IdxNite,      clm_seed,       &
+                          su,           sd,                                                       &
                        E_cld_tau=c_cld_tau, E_cld_tau_w=c_cld_tau_w, E_cld_tau_w_g=c_cld_tau_w_g, E_cld_tau_w_f=c_cld_tau_w_f, &
                        old_convert = .false.)
+                  else
+                     call rad_rrtmg_sw( &
+                          lchnk,        ncol,         num_rrtmg_levs, r_state,                    &
+                          state%pmid,   cldfprime,                                                &
+                          aer_tau,      aer_tau_w,    aer_tau_w_g,  aer_tau_w_f,                  &
+                          eccf,         coszrs,       solin,        sfac,                         &
+                          cam_in%asdir, cam_in%asdif, cam_in%aldir, cam_in%aldif,                 &
+                          qrs,          qrsc,         fsnt,         fsntc,        fsntoa, fsutoa, &
+                          fsntoac,      fsnirt,       fsnrtc,       fsnirtsq,     fsns,           &
+                          fsnsc,        fsdsc,        fsds,         cam_out%sols, cam_out%soll,   &
+                          cam_out%solsd,cam_out%solld,fns,          fcns,                         &
+                          Nday,         Nnite,        IdxDay,       IdxNite,      clm_seed,       &
+                          su,           sd,                                                       &
+                          E_cld_tau=c_cld_tau, E_cld_tau_w=c_cld_tau_w, E_cld_tau_w_g=c_cld_tau_w_g, E_cld_tau_w_f=c_cld_tau_w_f, &
+                          old_convert = .false.)
+                  end if ! no_cloud_sw_radheat_sfc
                   call t_stopf ('rad_rrtmg_sw')
+!--BEH
+!BEH                  call t_startf ('rad_rrtmg_sw')
+!BEH                  call rad_rrtmg_sw( &
+!BEH                       lchnk,        ncol,         num_rrtmg_levs, r_state,                    &
+!BEH                       state%pmid,   cldfprime,                                                &
+!BEH                       aer_tau,      aer_tau_w,    aer_tau_w_g,  aer_tau_w_f,                  &
+!BEH                       eccf,         coszrs,       solin,        sfac,                         &
+!BEH                       cam_in%asdir, cam_in%asdif, cam_in%aldir, cam_in%aldif,                 &
+!BEH                       qrs,          qrsc,         fsnt,         fsntc,        fsntoa, fsutoa, &
+!BEH                       fsntoac,      fsnirt,       fsnrtc,       fsnirtsq,     fsns,           &
+!BEH                       fsnsc,        fsdsc,        fsds,         cam_out%sols, cam_out%soll,   &
+!BEH                       cam_out%solsd,cam_out%solld,fns,          fcns,                         &
+!BEH                       Nday,         Nnite,        IdxDay,       IdxNite,      clm_seed,       &
+!BEH                       su,           sd,                                                       &
+!BEH                       E_cld_tau=c_cld_tau, E_cld_tau_w=c_cld_tau_w, E_cld_tau_w_g=c_cld_tau_w_g, E_cld_tau_w_f=c_cld_tau_w_f, &
+!BEH                       old_convert = .false.)
+!BEH                  call t_stopf ('rad_rrtmg_sw')
 
                   !  Output net fluxes at 200 mb
                   call vertinterp(ncol, pcols, pverp, state%pint, 20000._r8, fcns, fsn200c)
@@ -1300,6 +1463,12 @@ end function radiation_nextsw_cday
                   call outfld('FSN200'//diag(icall),fsn200,pcols,lchnk)
                   call outfld('FSN200C'//diag(icall),fsn200c,pcols,lchnk)
                   call outfld('SWCF'//diag(icall),swcf  ,pcols,lchnk)
+
+                  if (no_cloud_sw_radheat_sfc) then
+                     do i = 1,ncol
+                        fsns(i) = fsnsc(i)
+                     end do
+                  end if
 
               end if ! (active_calls(icall))
           end do ! icall
@@ -1393,6 +1562,7 @@ end function radiation_nextsw_cday
 		  
 		  do i=1,ncol
                      lwcf(i)=flutc(i) - flut(i)
+                     flus(i)=flns(i) + cam_out%flwds(i)
                   end do
 
                   !  Output fluxes at 200 mb
@@ -1406,6 +1576,7 @@ end function radiation_nextsw_cday
                   call outfld('FLUTC'//diag(icall),flutc ,pcols,lchnk)
                   call outfld('FLNTC'//diag(icall),flntc ,pcols,lchnk)
                   call outfld('FLNS'//diag(icall),flns  ,pcols,lchnk)
+                  call outfld('FLUS'//diag(icall),flus  ,pcols,lchnk)
                   
                   call outfld('FLDSC'//diag(icall),fldsc ,pcols,lchnk)
                   call outfld('FLNSC'//diag(icall),flnsc ,pcols,lchnk)
@@ -1413,6 +1584,12 @@ end function radiation_nextsw_cday
                   call outfld('FLN200'//diag(icall),fln200,pcols,lchnk)
                   call outfld('FLN200C'//diag(icall),fln200c,pcols,lchnk)
                   call outfld('FLDS'//diag(icall),cam_out%flwds ,pcols,lchnk)
+
+                  if (no_cloud_lw_radheat_sfc) then
+                     do i=1,ncol
+                        cam_out%flwds(i) = fldsc(i)
+                     end do
+                  end if
 
               end if
           end do
@@ -1529,6 +1706,17 @@ end function radiation_nextsw_cday
        call t_stopf ('radiation_tend_init')
 
     end if   !  if (dosw .or. dolw) then
+
+    ! BEH: to remove cloud radiative heating from atmosphere, simply apply
+    !      clear-sky heating rates to radheat_tend
+    call phys_getopts(no_cloud_lw_radheat_atm_out=no_cloud_lw_radheat_atm)
+    call phys_getopts(no_cloud_sw_radheat_atm_out=no_cloud_sw_radheat_atm)
+    if (no_cloud_lw_radheat_atm) then
+       qrl = qrlc
+    end if
+    if (no_cloud_sw_radheat_atm) then
+       qrs = qrsc
+    end if
 
     call t_startf ('radheat_tend')
     ! Compute net radiative heating tendency
