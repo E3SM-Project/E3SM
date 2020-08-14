@@ -661,7 +661,7 @@ CONTAINS
 
     implicit none
     ! INPUT PARAMETERS:
-    type(physics_state), intent(inout), dimension(begchunk:endchunk) :: state
+    type(physics_state), intent(in), dimension(begchunk:endchunk) :: state
     type(physics_tend),  intent(inout), dimension(begchunk:endchunk) :: tend
     ! LOCAL VARIABLES
     integer                                      :: ncol, k, ic                                
@@ -768,9 +768,6 @@ CONTAINS
       !add new tendency from pressure adjustment to ttend
 !      tend(lchnk)%dtdt(:ncol,:) = tend(lchnk)%dtdt(:ncol,:) + ttendadj(:ncol,:)/dtime
 !print *, 'OG dtime ... ', dtime
-
-      state(lchnk)%te_cur=tebefore
-
     end do ! lchnk
 
   end subroutine measure_pressure_work
