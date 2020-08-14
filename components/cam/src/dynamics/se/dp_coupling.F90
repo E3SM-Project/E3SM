@@ -758,7 +758,8 @@ CONTAINS
       !sanity check
       call energy_helper_eam_def(ustate,vstate,tstate+ttendadj,&
                                  qstate,ps,pdel,phisstate,&
-                                 ke,se,wv,wl,wi,wr,ws,teadjusted,tw,ncol)
+                                 ke,se,wv,wl,wi,wr,ws,teadjusted,tw, &
+                                 ncol)
 
       call outfld('TEdiffadj', teadjusted-tebefore, pcols, lchnk)
 
