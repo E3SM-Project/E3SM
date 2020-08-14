@@ -602,7 +602,19 @@
 !
 ! Interpolate SOILCAT_TOP
 !
+ geog_sub_path = 'soiltype_top_30s/'
+
+ ierr = mgr % init(trim(config_geog_data_path)//trim(geog_sub_path))
+ if (ierr /= 0) then
+    call mpas_log_write('Error initalizing soiltype_top Geotile Manager', messageType=MPAS_LOG_CRIT)
+ endif
+
  soilcat_top(:) = 0
+
+ ierr = mgr % finalize()
+ if (ierr /= 0) then
+    call mpas_log_write('Error finalizing the soiltype_top Geotile Manager', messageType=MPAS_LOG_CRIT)
+ endif
  call mpas_log_write('--- end interpolate SOILCAT_TOP')
 
 
