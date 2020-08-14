@@ -60,11 +60,15 @@ function(build_model COMP_CLASS COMP_NAME)
     endif()
 
     set(USE_YAKL ${USE_SAMXX})
+
     if (USE_YAKL)
+      set(ARCH "CUDA")
+      set(CUDA_FLAGS "-arch sm_70")
       message(STATUS "Building YAKL")
       # Build YAKL as a library
       set(YAKL_HOME ${CMAKE_CURRENT_SOURCE_DIR}/../../../externals/YAKL)
       set(YAKL_BIN  ${CMAKE_CURRENT_BINARY_DIR}/yakl)
+      set(YAKL_CUB_HOME ${CMAKE_CURRENT_SOURCE_DIR}/../../../externals/cub)
       add_subdirectory(${YAKL_HOME} ${YAKL_BIN})
       include_directories(${YAKL_HOME} ${YAKL_BIN})
     endif()

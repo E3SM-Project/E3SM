@@ -7,7 +7,7 @@ file(GLOB F90_SRC   *.F90)
 file(GLOB CXX_SRC   *.cpp)
 file(GLOB SAMXX_SRC *.cpp *.F90)
 
-add_library(samxx ${SAMXX_SRC})
+add_library(samxx STATIC ${SAMXX_SRC})
 target_link_libraries(samxx yakl)
 
 set_source_files_properties(${CXX_SRC} PROPERTIES COMPILE_FLAGS "${CPPDEFS} ${YAKL_CXX_FLAGS}")

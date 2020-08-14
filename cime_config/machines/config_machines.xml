@@ -2805,7 +2805,7 @@
     <DESC>ORNL Summit. Node: 2x POWER9 + 6x Volta V100, 22 cores/socket, 4 HW threads/core.</DESC>
     <NODENAME_REGEX>.*summit.*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>ibm,ibmgpu,pgi,pgigpu,gnu</COMPILERS>
+    <COMPILERS>ibm,ibmgpu,pgi,pgigpu,gnu,gnugpu</COMPILERS>
     <MPILIBS>spectrum-mpi,mpi-serial</MPILIBS>
     <PROJECT>cli115</PROJECT>
     <CHARGE_ACCOUNT>cli115</CHARGE_ACCOUNT>
@@ -2826,9 +2826,11 @@
     <BATCH_SYSTEM>lsf</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>84</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="pgigpu">36</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="pgigpu">18</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="gnugpu">42</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>84</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="pgigpu">18</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="gnugpu">42</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="spectrum-mpi" compiler="ibmgpu">
       <executable>/gpfs/alpine/world-shared/cli115/mpirun.summit</executable>
@@ -2837,6 +2839,12 @@
       </arguments>
     </mpirun>
     <mpirun mpilib="spectrum-mpi" compiler="pgigpu">
+      <executable>/gpfs/alpine/world-shared/cli115/mpirun.summit</executable>
+      <arguments>
+        <arg name="num_tasks"> -n {{ total_tasks }} -N {{ tasks_per_node }} -gpu</arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="spectrum-mpi" compiler="gnugpu">
       <executable>/gpfs/alpine/world-shared/cli115/mpirun.summit</executable>
       <arguments>
         <arg name="num_tasks"> -n {{ total_tasks }} -N {{ tasks_per_node }} -gpu</arg>
@@ -2881,6 +2889,9 @@
       <modules compiler="pgigpu">
         <command name="load">cuda/10.1.243</command>
       </modules>
+      <modules compiler="gnugpu">
+        <command name="load">cuda/10.1.105</command>
+      </modules>
       <modules compiler="ibm.*">
         <command name="load">xl/16.1.1-7</command>
       </modules>
@@ -2888,6 +2899,9 @@
         <command name="load">cuda/10.1.243</command>
       </modules>
       <modules compiler="gnu">
+        <command name="load">gcc/8.1.1</command>
+      </modules>
+      <modules compiler="gnugpu">
         <command name="load">gcc/8.1.1</command>
       </modules>
       <modules>
@@ -2903,6 +2917,9 @@
         <command name="load">spectrum-mpi/10.3.1.2-20200121</command>
       </modules>
       <modules compiler="gnu" mpilib="!mpi-serial">
+        <command name="load">spectrum-mpi/10.3.1.2-20200121</command>
+      </modules>
+      <modules compiler="gnugpu" mpilib="!mpi-serial">
         <command name="load">spectrum-mpi/10.3.1.2-20200121</command>
       </modules>
 
