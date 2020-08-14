@@ -106,6 +106,9 @@
  real(kind=RKIND),dimension(:,:,:),allocatable:: vegfra
 
  integer, pointer :: isice_lu, iswater_lu
+ integer, pointer :: isice_lu_ptr, iswater_lu_ptr
+ integer :: iswater_soil
+ integer, pointer :: iswater_soil_ptr
  integer, pointer :: nCells, nCellsSolve, nEdges, nVertices, maxEdges
  logical, pointer :: on_a_sphere
  real (kind=RKIND), pointer :: sphere_radius
@@ -501,9 +504,9 @@
 
      if (all(ncat(:,iCell) == 0)) then
          tile => null()
-         ierr = mgr % get_tile(latCell(i), lonCell(i), tile)
+         ierr = mgr % get_tile(latCell(iCell), lonCell(iCell), tile)
          if (ierr /= 0 .or. .not. associated(tile)) then
-             call mpas_log_write('Could not get the tile that contained cell $i', intArgs=(/i/), messageType=MPAS_LOG_CRIT)
+             call mpas_log_write('Could not get the tile that contained cell $i', intArgs=(/iCell/), messageType=MPAS_LOG_CRIT)
          end if
 
          ierr = mgr % push_tile(tile)
@@ -525,7 +528,7 @@
          all_pixels_mapped_to_halo_cells = .true.
 
          do j = 1 + tile_bdr, tile_ny + tile_bdr, 1
-             do k = 1 + tile_bdr, tile_nx + tile_bdr, 1
+             do i = 1 + tile_bdr, tile_nx + tile_bdr, 1
 
                 !
                 ! The MODIS dataset has zeros at the South Pole, and possibly other places, so
@@ -536,7 +539,7 @@
                     cycle
                 end if
 
-                call mgr % tile_to_latlon(tile, j, k, lat_pt, lon_pt)
+                call mgr % tile_to_latlon(tile, j, i, lat_pt, lon_pt)
                 call mpas_latlon_to_xyz(xPixel, yPixel, zPixel, sphere_radius, lat_pt, lon_pt)
                 call mpas_kd_search(tree, (/xPixel, yPixel, zPixel/), res)
 
@@ -546,8 +549,7 @@
                 !
                 if (bdyMaskCell(res % id) < nBdyLayers) then
 
-                   !write(0,*) tile % tile(k,j,1)
-                   ncat(int(tile % tile(k,j,1)), res % id) = ncat(int(tile % tile(k,j,1)), res % id) + 1
+                   ncat(int(tile % tile(i,j,1)), res % id) = ncat(int(tile % tile(i,j,1)), res % id) + 1
 
                    if (res % id <= nCellsSolve) then
                        all_pixels_mapped_to_halo_cells = .false.
@@ -559,7 +561,7 @@
                    if (mpas_in_cell(xPixel, yPixel, zPixel, xCell(res % id), yCell(res % id), zCell(res % id), &
                                     nEdgesOnCell(res % id), verticesOnCell(:,res % id), xVertex, yVertex, zVertex)) then
 
-                      ncat(int(tile % tile(k,j,1)), res % id) = ncat(int(tile % tile(k,j,i)), res % id) + 1
+                      ncat(int(tile % tile(i,j,1)), res % id) = ncat(int(tile % tile(i,j,1)), res % id) + 1
 
                       if (res % id <= nCellsSolve) then
                           all_pixels_mapped_to_halo_cells = .false.
@@ -606,14 +608,120 @@
 
  ierr = mgr % init(trim(config_geog_data_path)//trim(geog_sub_path))
  if (ierr /= 0) then
-    call mpas_log_write('Error initalizing soiltype_top Geotile Manager', messageType=MPAS_LOG_CRIT)
+    call mpas_log_write('Error occurred when initalizing the interpolation of soil top category (soilcat_top)', &
+                         messageType=MPAS_LOG_CRIT)
  endif
 
+ call mpas_pool_get_config(mgr % pool, 'tile_bdr', tile_bdr)
+ call mpas_pool_get_config(mgr % pool, 'tile_x', tile_nx)
+ call mpas_pool_get_config(mgr % pool, 'tile_y', tile_ny)
+ call mpas_pool_get_config(mgr % pool, 'category_max', category_max)
+ call mpas_pool_get_config(mgr % pool, 'isoilwater', iswater_soil_ptr)
+
+ iswater_soil = iswater_soil_ptr
+
+ allocate(ncat(category_max, nCells))
  soilcat_top(:) = 0
+ ncat(:,:) = 0
+
+ do iCell = 1, nCells
+
+     if (all(ncat(:,iCell) == 0)) then
+         tile => null()
+         ierr = mgr % get_tile(latCell(iCell), lonCell(iCell), tile)
+         if (ierr /= 0 .or. .not. associated(tile)) then
+             call mpas_log_write('Could not get the tile that contained cell $i', intArgs=(/iCell/), messageType=MPAS_LOG_CRIT)
+         end if
+
+         ierr = mgr % push_tile(tile)
+         if (ierr /= 0) then
+             call mpas_log_write('Error pushing this tile onto the stack: '//trim(tile%fname), messageType=MPAS_LOG_CRIT)
+         end if
+    end if
+
+    do while(.not. mgr % is_stack_empty())
+        tile => mgr % pop_tile()
+
+        if (tile % is_processed) then
+            cycle
+        end if
+
+        call mpas_log_write('Processing tile: '//trim(tile%fname))
+
+        all_pixels_mapped_to_halo_cells = .true.
+
+        do j = 1 + tile_bdr, tile_ny + tile_bdr, 1
+            do i = 1 + tile_bdr, tile_nx + tile_bdr, 1
+
+                !
+                ! While the currently used soil type dataset, soiltype_top_30s, does not contain any
+                ! invalid values, have this sanity check for any future soil type datasets
+                !
+                if (tile % tile(i,j,1) < category_min .or. tile % tile(i,j,1) > category_max) then
+                    cycle
+                end if
+
+                call mgr % tile_to_latlon(tile, j, i, lat_pt, lon_pt)
+                call mpas_latlon_to_xyz(xPixel, yPixel, zPixel, sphere_radius, lat_pt, lon_pt)
+
+                res => null()
+                call mpas_kd_search(tree, (/xPixel, yPixel, zPixel/), res)
+
+                !
+                ! For all but the outermost boundary cells, we can safely assume that the nearest
+                ! model grid cell contains the pixel (else, a different cell would be nearest)
+                !
+                if (bdyMaskCell(res % id) < nBdyLayers) then
+
+                   ncat(int(tile % tile(i,j,1)), res % id) = ncat(int(tile % tile(i,j,1)), res % id) + 1
+
+                   if (res % id <= nCellsSolve) then
+                       all_pixels_mapped_to_halo_cells = .false.
+                   end if
+
+                ! For outermost boundary cells, additional work is needed to verify that the pixel
+                ! actually lies within the nearest cell
+                else
+                   if (mpas_in_cell(xPixel, yPixel, zPixel, xCell(res % id), yCell(res % id), zCell(res % id), &
+                                    nEdgesOnCell(res % id), verticesOnCell(:,res % id), xVertex, yVertex, zVertex)) then
+
+                      ncat(int(tile % tile(i,j,1)), res % id) = ncat(int(tile % tile(i,j,1)), res % id) + 1
+
+                      if (res % id <= nCellsSolve) then
+                          all_pixels_mapped_to_halo_cells = .false.
+                      end if
+                   end if
+                 end if
+            end do
+        end do
+
+        tile % is_processed = .true.
+
+        if (.not. all_pixels_mapped_to_halo_cells) then
+            ierr = mgr % push_neighbors(tile)
+            if (ierr /=0) then
+                call mpas_log_write("Error pushing the tile neighbors of: "//trim(tile%fname), messageType=MPAS_LOG_CRIT)
+            end if
+        end if
+
+    end do
+ end do
+
+ do iCell = 1, nCells
+     soilcat_top(iCell) = 1
+     do i = 2, category_max ! TODO: Should we replace 2 with category_min + 1? What is 2 for? Why not 1?
+         if (ncat(i,iCell) > ncat(soilcat_top(iCell),iCell)) then
+            soilcat_top(iCell) = i
+         end if
+     end do
+ end do
+
+ deallocate(ncat)
 
  ierr = mgr % finalize()
  if (ierr /= 0) then
-    call mpas_log_write('Error finalizing the soiltype_top Geotile Manager', messageType=MPAS_LOG_CRIT)
+    call mpas_log_write('Error occurred when finalizing the interpolation of soil top category (soilcat_top)', &
+                         messageType=MPAS_LOG_CRIT)
  endif
  call mpas_log_write('--- end interpolate SOILCAT_TOP')
 
@@ -628,14 +736,14 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  do iCell = 1,nCells
     if (lu_index(iCell) == iswater_lu .or. &
-        soilcat_top(iCell) == 14) then
+        soilcat_top(iCell) == iswater_soil) then
         if (lu_index(iCell) /= iswater_lu) then
             call mpas_log_write('Turning lu_index into water at $i', intArgs=(/iCell/))
             lu_index(iCell) = iswater_lu
         end if
-        if (soilcat_top(iCell) /= 14) then
+        if (soilcat_top(iCell) /= iswater_soil) then
             call mpas_log_write('Turning soilcat_top into water at $i', intArgs=(/iCell/))
-            soilcat_top(iCell) = 14
+            soilcat_top(iCell) = iswater_soil
         end if
     end if
  end do
