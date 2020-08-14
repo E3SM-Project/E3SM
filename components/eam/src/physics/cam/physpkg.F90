@@ -1402,8 +1402,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     use check_energy,       only: check_energy_chng, check_water, & 
                                   check_prect, check_qflx , &
                                   check_tracers_data, check_tracers_init, &
-                                  check_tracers_chng, check_tracers_fini, &
-energy_helper_eam_def
+                                  check_tracers_chng, check_tracers_fini
     use time_manager,       only: get_nstep
     use cam_abortutils,         only: endrun
     use dycore,             only: dycore_is
@@ -1492,13 +1491,6 @@ energy_helper_eam_def
     logical :: l_rayleigh
     logical :: l_gw_drag
     logical :: l_ac_energy_chk
-
-    !for dp adjustment
-    real (r8), dimension(pcols,pver) :: dp_adj, pdel
-    real (r8)                        :: fq
-    real (r8), dimension(pcols)      :: ps,te, tw, ke, se, wv, wl, wi, wr, ws
-    integer :: ic
-
 
     !
     !-----------------------------------------------------------------------
@@ -1741,45 +1733,6 @@ end if ! l_gw_drag
       call physics_update(state,ptend,ztodt,tend)
     endif
 
-!adjust dp wrt Q(1)
-#if 0
-!almost COPYPASTE from dp_coupling
-    !adjust ps, keep the code close to applyCAMforcing_tracers
-
-    ps=0.0; pdel=0.0; 
-    te=0.0; tw=0.0; ke=0.0; se=0.0; wv=0.0; wl=0.0; wi=0.0; wr=0.0; ws=0.0;
-
-    dp_adj(:ncol,:) = state%pdel(:ncol,:)
-    do ic=1,ncol
-       do k=1,pver
-          fq = state%pdel(ic,k)*( state%q(ic,k,1) - state%q1(ic,k ) )
-          ps(ic)=ps(ic) + fq
-          dp_adj(ic,k)=dp_adj(ic,k) + fq   !  ps =  ps0+sum(dp(k))
-       enddo
-    enddo
-
-    ! compute water vapor adjusted dp3d:
-
-!with ps adjustment comment if below
-    if (adjust_ps) then
-       ! compute new dp3d from adjusted ps()
-       do k=1,pver
-          dp_adj(:ncol,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps(:ncol)
-       enddo
-    endif
-    pdel(:ncol,:pver)=dp_adj(:ncol,:pver)
-
-    call energy_helper_eam_def(state%u,state%v,state%t,state%q,ps,pdel,state%phis,&
-                                 ke,se,wv,wl,wi,wr,ws,te,tw, &
-                                 ncol)
-!manually overwrite te_cur
-
-    state%te_cur = te
-
-!    call check_energy_chng(state, tend, "dpadjust", nstep, ztodt, zero, zero, zero, zero)
-#endif  
-
 
 if (l_ac_energy_chk) then
     !-------------- Energy budget checks vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
@@ -1824,7 +1777,7 @@ if (l_ac_energy_chk) then
 !empty call since it is for LR
 !    call physics_dme_adjust(state, tend, qini, ztodt)
 !!!   REMOVE THIS CALL, SINCE ONLY Q IS BEING ADJUSTED. WON'T BALANCE ENERGY. TE IS SAVED BEFORE THIS
-!!!   call check_energy_chng(state, tend, "drymass", nstep, ztodt, zero, zero, zero, zero)
+!    call check_energy_chng(state, tend, "drymass", nstep, ztodt, zero, zero, zero, zero)
 
     !-------------- Energy budget checks ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 end if ! l_ac_energy_chk
