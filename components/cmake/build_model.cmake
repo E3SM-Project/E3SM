@@ -62,8 +62,10 @@ function(build_model COMP_CLASS COMP_NAME)
     set(USE_YAKL ${USE_SAMXX})
 
     if (USE_YAKL)
-      set(ARCH "CUDA")
-      set(CUDA_FLAGS "-arch sm_70")
+      if ("${COMPILER}" STREQUAL "gnugpu")
+        set(ARCH "CUDA")
+        set(CUDA_FLAGS "-arch sm_70")
+      endif()
       message(STATUS "Building YAKL")
       # Build YAKL as a library
       set(YAKL_HOME ${CMAKE_CURRENT_SOURCE_DIR}/../../../externals/YAKL)
