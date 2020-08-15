@@ -11,6 +11,7 @@ set(SHOC_TESTS_SRCS
     shoc_tke_isotropic_ts_tests.cpp
     shoc_tke_adv_sgs_tke_tests.cpp
     shoc_eddy_diffusivities_tests.cpp
+    shoc_diag_second_mom_srf_test.cpp
     shoc_unit_tests.cpp)
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build

@@ -46,6 +46,10 @@ void eddy_diffusivities_c(Int nlev, Int shcol, Real *obklen, Real *pblh,
 
 void calc_shoc_vertflux_c(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 			  Real *dz_zi, Real *invar, Real *vertflux);
+
+void shoc_diag_second_moments_srf_c(Int shcol, Real* wthl, Real* uw, Real* vw, 
+                          Real* ustar2, Real* wstar);
+
 }
 
 namespace scream {
@@ -207,6 +211,14 @@ void eddy_diffusivities(SHOCEddydiffData &d) {
   d.transpose<util::TransposeDirection::f2c>();
 }
 
+void shoc_diag_second_moments_srf(SHOCSecondMomentSrfData& d)
+{
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  shoc_diag_second_moments_srf_c(d.shcol, d.wthl, d.uw, d.vw, d.ustar2, d.wstar);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
 //
 // _f function definitions. These expect data in C layout
 //
@@ -254,6 +266,42 @@ void calc_shoc_vertflux_f(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
   // Sync back to host
   Kokkos::Array<view_2d, 1> inout_views = {vertflux_d};
   pack::device_to_host({vertflux}, {shcol}, {nlevi}, inout_views, true);
+}
+
+void shoc_diag_second_moments_srf_f(Int shcol, Real* wthl, Real* uw, Real* vw, Real* ustar2, Real* wstar)
+{
+  using SHOC       = Functions<Real, DefaultDevice>;
+  using Spack      = typename SHOC::Spack;
+  using view_1d    = typename SHOC::view_1d<Spack>;
+  using KT         = typename SHOC::KT;
+  using ExeSpace   = typename KT::ExeSpace;
+  using MemberType = typename SHOC::MemberType;
+
+  const Int nshcol_pack = scream::pack::npack<Spack>(shcol);
+  static constexpr Int num_arrays = 5;
+
+  Kokkos::Array<view_1d, num_arrays> second_mom_srf_1d;
+
+  pack::host_to_device({wthl, uw, vw, ustar2, wstar}, shcol, second_mom_srf_1d);
+
+  view_1d wthl_d(  second_mom_srf_1d[0]),
+          uw_d(    second_mom_srf_1d[1]),
+          vw_d(    second_mom_srf_1d[2]),
+          ustar2_d(second_mom_srf_1d[3]),
+          wstar_d( second_mom_srf_1d[4]);
+
+  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nshcol_pack);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+
+    SHOC::shoc_diag_second_moments_srf(team, shcol, wthl_d, uw_d, vw_d, ustar2_d, wstar_d);
+
+  });
+
+  // back to host
+  Kokkos::Array<view_1d, 2> second_mom_host_views_1d = {ustar2_d, wstar_d};
+
+  pack::device_to_host({ustar2, wstar}, shcol, second_mom_host_views_1d);
+
 }
 
 } // namespace shoc

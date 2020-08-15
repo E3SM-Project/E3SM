@@ -79,6 +79,15 @@ struct Functions
     const uview_1d<const Spack>& invar,
     const uview_1d<Spack>& vertflux);
 
+  KOKKOS_FUNCTION
+  static void shoc_diag_second_moments_srf(
+    const MemberType& team, const Int& shcol,
+    const uview_1d<const Spack>& wthl_sfc, 
+    const uview_1d<const Spack>& uw_sfc, 
+    const uview_1d<const Spack>& vw_sfc,
+    const uview_1d<Spack>& ustar2, 
+    const uview_1d<Spack>& wstar);
+
 }; // struct Functions
 
 } // namespace shoc
@@ -88,6 +97,7 @@ struct Functions
 // ETI is used.
 #ifdef KOKKOS_ENABLE_CUDA
 # include "shoc_calc_shoc_vertflux_impl.hpp"
+# include "shoc_diag_second_moments_srf_impl.hpp"
 #endif
 
 #endif

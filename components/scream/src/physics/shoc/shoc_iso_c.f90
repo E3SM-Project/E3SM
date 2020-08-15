@@ -247,4 +247,15 @@ contains
 
   end subroutine calc_shoc_vertflux_c
 
+  subroutine shoc_diag_second_moments_srf_c(shcol, wthl, uw, vw, ustar2, wstar) bind(C)
+   use shoc, only: diag_second_moments_srf
+
+   ! argmens
+   integer(kind=c_int), value, intent(in) :: shcol
+   real(kind=c_real), intent(in)  :: wthl(shcol), uw(shcol), vw(shcol)
+   real(kind=c_real), intent(out) :: ustar2(shcol), wstar(shcol)
+
+   call diag_second_moments_srf(shcol, wthl, uw, vw, ustar2, wstar)
+ end subroutine shoc_diag_second_moments_srf_c
+
 end module shoc_iso_c

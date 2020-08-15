@@ -54,6 +54,7 @@ struct UnitWrap {
 
     // Put struct decls here
     struct TestCalcShocVertflux;
+    struct TestSecondMomSrf;
   };
 
 };
