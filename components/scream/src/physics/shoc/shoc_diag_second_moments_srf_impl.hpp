@@ -1,6 +1,6 @@
 
-#ifndef SHOC_CALC_SHOC_VERTFLUX_IMPL_HPP
-#define SHOC_CALC_SHOC_VERTFLUX_IMPL_HPP
+#ifndef SHOC_DIAG_SECOND_MOMENTS_SRF_IMPL_HPP
+#define SHOC_DIAG_SECOND_MOMENTS_SRF_IMPL_HPP
 
 #include "shoc_functions.hpp" // for ETI only but harmless for GPU
 #include "physics_functions.hpp" // also for ETI not on GPUs
