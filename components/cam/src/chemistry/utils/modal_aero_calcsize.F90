@@ -515,6 +515,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    integer  :: ncol                 ! number of columns
    integer  :: list_idx_local       !list idx local to this subroutine
 
+   real(r8), parameter :: close_to_one = 1.0_r8 + 1.0e-15_r8
    real(r8), pointer :: pdel(:,:)   ! pressure thickness of levels
    real(r8), pointer :: state_q(:,:,:)    ! Tracer MR array
 
@@ -544,7 +545,6 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    real(r8) :: dryvol_a(pcols,pver)          ! interstital aerosol dry
    ! volume (cm^3/mol_air)
    real(r8) :: dryvol_c(pcols,pver)          ! activated aerosol dry volume
-   real(r8) :: cmn_factor
    ! to size bounds
    real(r8) :: fracadj                       ! deltat/tadj
    real(r8) :: num_a0, num_c0        ! initial number (#/mol_air)
@@ -561,8 +561,6 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    real(r8) :: v2ncur_c(pcols,pver,ntot_amode)
    real(r8) :: v2nyy, v2nxx, v2nzz           ! voltonumblo/hi of current mode
    real(r8) :: v2nyyrl, v2nxxrl              ! relaxed voltonumblo/hi
-
-   integer, parameter :: nsrflx = 4    ! last dimension of qsrflx
    real(r8), pointer :: specmmr(:,:)  ! specie mmr
    real(r8)          :: specdens      ! specie density
 
@@ -578,6 +576,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    ! 4th index --
    !    1="a" species (interstitial); 2="c" species(cloud borne)
    !-----------------------------------------------------------------------
+   integer, parameter :: nsrflx = 4   ! last dimension of qsrflx
    real(r8) :: qsrflx(pcols,pcnst,nsrflx,2)
 
    !BALLI: THINGS TO DO:
@@ -638,36 +637,23 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    pdel     => state%pdel !balli add if for only update_mmr
    state_q  => state%q    ! only if list_idx is 0 or no list idx balli
 
-   deltatinv = 1.0_r8/(deltat*(1.0_r8 + 1.0e-15_r8)) !BALLI- should go just before they are used
+   !----------------------------------------------------------------------------
    ! tadj = adjustment time scale for number, surface when they are prognosed
-   !           currently set to deltat
-
-   tadj = deltat !BALLI- improve logic here.....repeated assignments overwriting going on here
-   tadj = 86400.0_r8
-   tadj = max( tadj, deltat )
-   tadjinv = 1.0_r8/(tadj*(1.0_r8 + 1.0e-15_r8))
-   fracadj = deltat*tadjinv
-   fracadj = max( 0.0_r8, min( 1.0_r8, fracadj ) )
-
+   !----------------------------------------------------------------------------
+   tadj    = max( 86400.0_r8, deltat )
+   tadjinv = 1.0_r8/(tadj*close_to_one)
+   fracadj = max( 0.0_r8, min( 1.0_r8, deltat*tadjinv ) )
 
    !grid parameters
    ncol  = state%ncol  !# of columns
    lchnk = state%lchnk !chunk # !BALLI- add if for only for cld borne
 
+   !inverse of time step
+   deltatinv = 1.0_r8/(deltat*close_to_one)
 
 
-
-   !
-   !
-   ! the "do 40000" loop does the original (pre jan-2006)
-   !   number adjustment, one mode at a time
-   ! this artificially adjusts number when mean particle size is too large
-   !   or too small
-   !
-   !
+   !Now compute dry diameter for both interstitial and cloud borne aerosols
    do imode = 1, ntot_amode
-
-      !BALLI- SET list_idx to zero if not present and grab mmrs always from rad_diag calls!!!!! THis will allow us to get rid of if conditions!!!
 
       !----------------------------------------------------------------------
       !Initialize all parameters to the default values for the mode
@@ -687,164 +673,29 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
       call rad_cnst_get_info(list_idx_local, imode, nspec=nspec)
 
       !----------------------------------------------------------------------
-      ! compute dry volume mixrats
-      ! volume = sum_over_components{ component_mass mixrat / density }
+      !Compute dry volume mixrats (aerosol diameter)
+      !Current default: number mmr is prognosed
+      !       Algorithm:calculate aerosol diameter from mass, number, and fixed sigmag
+      !
+      !sigmag ("sigma g") is "geometric standard deviation for aerosol mode"
+      !
+      !Volume = sum_over_components{ component_mass mixrat / density }
       !----------------------------------------------------------------------
       if(present(cp_buf)) then!<<TO BE REMOVED
-         call compute_dry_volume(top_lev, pver, ncol, imode, nspec, state, pbuf, state_q, dryvol_a, dryvol_c, list_idx_local, cp_buf)
+         call compute_dry_volume(top_lev, pver, ncol, imode, nspec, state, pbuf, dryvol_a, dryvol_c, list_idx_local, cp_buf)
          !^^TO BE REMOVED
       else!<<TO BE REMOVED
-         call compute_dry_volume(top_lev, pver, ncol, imode, nspec, state, pbuf, state_q, dryvol_a, dryvol_c, list_idx_local)
+         call compute_dry_volume(top_lev, pver, ncol, imode, nspec, state, pbuf, dryvol_a, dryvol_c, list_idx_local)
       endif
 
-      !------------------------------------------------------------------------------------------------
-      !Compute aerosol diameter based on whether number mmr of mode imode is prognosed or not
-      !mprognum_amode >  0: number mmr is prognosed (current default)
-      !       Algorithm:calculate aerosol diameter from mass, number, and fixed sigmag
-      !mprognum_amode <= 0: number mmr is NOT prognosed
-      !       Algoruthm: calculate number from mass, fixed Dgnum, and fixed sigmag
-      !
-      !sigmag is "geometric standard deviation for aerosol mode"
-      !------------------------------------------------------------------------------------------------
+      ! do size adjustment based on computed dry diameter values
+      call size_adjustment(top_lev, pver, ncol, lchnk, imode, dryvol_a, state_q, dryvol_c, pdel, & !input
+           do_adjust, update_mmr, do_aitacc_transfer, deltatinv, fracadj, pbuf, & !input
+           dgncur_a, dgncur_c, v2ncur_a, v2ncur_c, &!output
+           drv_a_accsv, drv_c_accsv, drv_a_aitsv, drv_c_aitsv, drv_a_sv, drv_c_sv, & !output
+           num_a_accsv, num_c_accsv, num_a_aitsv, num_c_aitsv, num_a_sv, num_c_sv, & !output
+           dotend, dotendqqcw, dqdt, dqqcwdt, qsrflx, cp_num_buf)!output
 
-      !find state q array number mode indices for interstitial and cloud borne aerosols
-      num_mode_idx        = numptr_amode(imode)
-      num_cldbrn_mode_idx = numptrcw_amode(imode)
-
-      !pointer to cloud borne number mmr for mode imode
-      fldcw => qqcw_get_field(pbuf,num_cldbrn_mode_idx,lchnk,.true.)
-
-      if(update_mmr) then
-
-         !if number mmr is NOT prognosed
-         if (mprognum_amode(imode) <= 0) then
-
-            ! option 1 -- number diagnosed (fixed dgnum and sigmag)
-            !    compute number tendencies that will bring numbers to their
-            !    current diagnosed values
-            call diagnose_number_mmr(top_lev, pver, ncol, imode, lchnk, num_mode_idx,       &
-                 num_cldbrn_mode_idx, deltatinv, dryvol_a, dryvol_c, state_q, fldcw, dotend, &
-                 dotendqqcw, dqdt, dqqcwdt, cp_num_buf )
-         else
-
-            !
-            ! option 2 -- number prognosed (variable dgnum, fixed sigmag)
-            !       Compute number tendencies to adjust numbers if they are outside
-            !    the limits determined by current volume and dgnumlo/hi
-            !       The interstitial and activated aerosol fractions can, at times,
-            !    be the lower or upper tail of the "total" distribution.  Thus they
-            !    can be expected to have a greater range of size parameters than
-            !    what is specified for the total distribution (via dgnumlo/hi)
-            !       When both the interstitial and activated dry volumes are positive,
-            !    the adjustment strategy is to (1) adjust the interstitial and activated
-            !    numbers towards relaxed bounds, then (2) adjust the total/combined
-            !    number towards the primary bounds.
-            !
-         end if
-      endif !update_mmr
-
-      nait = modeptr_aitken !aitken mode number
-      nacc = modeptr_accum  !accumulation mode number
-
-      !set hi/lo limits (min, max and their relaxed counterparts) for volumes and diameters
-      call compute_dgn_vol_limits(imode, nait, nacc, do_aitacc_transfer, & !input
-           v2nxx, v2nyy, v2nxxrl, v2nyyrl, dgnxx, dgnyy) !output
-
-      !set tendency logicals to true if we need to update mmr
-      if (update_mmr) then
-         dotend(num_mode_idx)            = .true.
-         dotendqqcw(num_cldbrn_mode_idx) = .true.
-      end if
-
-      do  klev = top_lev, pver
-         do  icol = 1, ncol
-
-            drv_a  = dryvol_a(icol,klev)
-            num_a0 = state_q(icol,klev,num_mode_idx)
-            num_a  = max( 0.0_r8, num_a0 )
-            drv_c  = dryvol_c(icol,klev)
-            if(present(cp_num_buf)) then
-               num_c0 = cp_num_buf(icol,klev,imode)
-            else
-               num_c0 = fldcw(icol,klev)
-            endif
-            num_c = max( 0.0_r8, num_c0 )
-
-            if ( do_adjust) then
-
-               !
-               ! do number adjustment for interstitial and activated particles
-               !    adjustments that (1) make numbers non-negative or (2) make numbers
-               !       zero when volume is zero are applied over time-scale deltat
-               !    adjustments that bring numbers to within specified bounds are
-               !       applied over time-scale tadj
-               !
-               if(update_mmr) then
-                  call adjust_num_sizes(icol, klev, num_mode_idx, num_cldbrn_mode_idx, &                   !input
-                       drv_a, num_a0, drv_c, num_c0, deltatinv, v2nxx, v2nxxrl, v2nyy, v2nyyrl, fracadj, & !input
-                       num_a, num_c, dqdt, dqqcwdt)                                                        !output
-
-               else
-                  call adjust_num_sizes(icol, klev, num_mode_idx, num_cldbrn_mode_idx, &                   !input
-                       drv_a, num_a0, drv_c, num_c0, deltatinv, v2nxx, v2nxxrl, v2nyy, v2nyyrl, fracadj, & !input
-                       num_a, num_c)                                                                       !output
-
-               endif
-            endif !do_adjust
-
-            !Compute a common factor for size computations
-            cmn_factor = exp(4.5_r8*alnsg_amode(imode)**2)*pi/6.0_r8
-
-            !
-            ! now compute current dgn and v2n
-            !
-            if(update_mmr) then
-               call update_dgn_voltonum(icol, klev, imode, num_mode_idx, gravit, cmn_factor, drv_a, num_a, &
-                    v2nxx, v2nyy, dgnxx, dgnyy, pdel, &
-                    dgncur_a, v2ncur_a, qsrflx, dqdt)
-
-               !for cloud borne aerosols
-               call update_dgn_voltonum(icol, klev, imode, num_cldbrn_mode_idx, gravit, cmn_factor, drv_c, num_c, &
-                    v2nxx, v2nyy, dgnumhi_amode(imode), dgnumlo_amode(imode), pdel, &
-                    dgncur_c, v2ncur_c, qsrflx, dqqcwdt)
-            else
-               call update_dgn_voltonum(icol, klev, imode, num_mode_idx, gravit, cmn_factor, drv_a, num_a, &
-                    v2nxx, v2nyy, dgnxx, dgnyy, pdel, &
-                    dgncur_a, v2ncur_a)
-
-               !for cloud borne aerosols
-               call update_dgn_voltonum(icol, klev, imode, num_cldbrn_mode_idx, gravit, cmn_factor, drv_c, num_c, &
-                    v2nxx, v2nyy, dgnumhi_amode(imode), dgnumlo_amode(imode), pdel, &
-                    dgncur_c, v2ncur_c)
-            endif
-
-            ! save number and dryvol for aitken <--> accum transfer
-            if ( do_aitacc_transfer ) then
-               if (imode == nait) then
-                  drv_a_aitsv(icol,klev) = drv_a
-                  num_a_aitsv(icol,klev) = num_a
-                  drv_c_aitsv(icol,klev) = drv_c
-                  num_c_aitsv(icol,klev) = num_c
-               else if (imode == nacc) then
-                  drv_a_accsv(icol,klev) = drv_a
-                  num_a_accsv(icol,klev) = num_a
-                  drv_c_accsv(icol,klev) = drv_c
-                  num_c_accsv(icol,klev) = num_c
-               end if
-            end if
-            drv_a_sv(icol,klev,imode) = drv_a
-            num_a_sv(icol,klev,imode) = num_a
-            drv_c_sv(icol,klev,imode) = drv_c
-            num_c_sv(icol,klev,imode) = num_c
-
-         end do
-      end do
-
-
-      !
-      ! option 3 -- number and surface prognosed (variable dgnum and sigmag)
-      !             this is not implemented
-      !
    end do  ! do imode = 1, ntot_amode
 
 
@@ -863,7 +714,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    !
    if ( do_aitacc_transfer ) then
       if(present(cp_buf)) then!<<TO BE REMOVED
-         call aitken_accum_exchange(ncol, lchnk, nait, nacc, tadjinv, &
+         call aitken_accum_exchange(ncol, lchnk, tadjinv, &
               deltat, pdel, state_q, &
               pbuf, &
               drv_a_aitsv, num_a_aitsv, drv_c_aitsv, num_c_aitsv, &
@@ -871,7 +722,7 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
               ipair, dgncur_a, v2ncur_a, dgncur_c, v2ncur_c, dotend, dotendqqcw, &
               dqdt, dqqcwdt, qsrflx, cp_buf)
       else!<<TO BE REMOVED
-         call aitken_accum_exchange(ncol, lchnk, nait, nacc, tadjinv, &
+         call aitken_accum_exchange(ncol, lchnk, tadjinv, &
               deltat, pdel, state_q, &
               pbuf, &
               drv_a_aitsv, num_a_aitsv, drv_c_aitsv, num_c_aitsv, &
@@ -1009,7 +860,7 @@ subroutine set_initial_sz_and_volumes(top_lev, pver, ncol, imode, & !input
 end subroutine set_initial_sz_and_volumes
 
 subroutine compute_dry_volume(top_lev, pver, ncol, imode, nspec, state, pbuf, &
-     state_q, dryvol_a, dryvol_c, list_idx_in, cp_buf)
+     dryvol_a, dryvol_c, list_idx_in, cp_buf)
 
 !balli: add comments and author, date , called by and calls
   implicit none
@@ -1020,7 +871,6 @@ subroutine compute_dry_volume(top_lev, pver, ncol, imode, nspec, state, pbuf, &
   integer,  intent(in) :: imode         !mode index
   integer,  intent(in) :: nspec         !# of species in mode "imode"
   integer,  intent(in) :: list_idx_in
-  real(r8), intent(in), pointer  :: state_q(:,:,:)
   type(physics_state), target, intent(in)    :: state       ! Physics state variables
   type(physics_buffer_desc),   pointer       :: pbuf(:)     ! physics buffer
   real(r8), intent(in), optional    :: cp_buf(:,:,:,:)
@@ -1031,7 +881,6 @@ subroutine compute_dry_volume(top_lev, pver, ncol, imode, nspec, state, pbuf, &
 
   !local vars
   integer  :: ispec, icol, klev, lchnk
-  integer  :: spec_idx  !specie index in state_q array
   real(r8) :: specdens  !specie density
   real(r8) :: dummwdens !density inverse
   real(r8), pointer :: specmmr(:,:)  !specie mmr (interstitial)
@@ -1151,6 +1000,171 @@ subroutine diagnose_number_mmr(top_lev, pver, ncol, imode, lchnk, num_mode_idx, 
   return
 
 end subroutine diagnose_number_mmr
+
+
+subroutine size_adjustment(top_lev, pver, ncol, lchnk, imode, dryvol_a, state_q, dryvol_c, pdel, &
+     do_adjust, update_mmr, do_aitacc_transfer, deltatinv, fracadj, pbuf, &
+     dgncur_a, dgncur_c, v2ncur_a, v2ncur_c, &
+     drv_a_accsv, drv_c_accsv, drv_a_aitsv, drv_c_aitsv, drv_a_sv, drv_c_sv, &
+     num_a_accsv, num_c_accsv, num_a_aitsv, num_c_aitsv, num_a_sv, num_c_sv, &
+     dotend, dotendqqcw, dqdt, dqqcwdt, qsrflx, cp_num_buf)
+
+  implicit none
+
+  !inputs
+  integer,  intent(in) :: top_lev, pver !for model level loop
+  integer,  intent(in) :: ncol          !# of columns
+  integer,  intent(in) :: lchnk
+  integer,  intent(in) :: imode         !mode index
+  real(r8), intent(in) :: deltatinv
+  real(r8), intent(in) :: fracadj
+  real(r8), intent(in) :: pdel(:,:)
+  real(r8), intent(in) :: dryvol_a(:,:), dryvol_c(:,:)
+  real(r8), intent(in) :: state_q(:,:,:)
+
+  logical, intent(in) :: do_adjust, update_mmr, do_aitacc_transfer
+  type(physics_buffer_desc),   pointer       :: pbuf(:)     ! physics buffer
+
+  !TO BE REMOVED
+  real(r8), intent(in), optional :: cp_num_buf(:,:,:)
+
+  !outputs
+  real(r8), intent(inout) :: dgncur_a(:,:,:) !BALLI- comments
+  real(r8), intent(inout) :: dgncur_c(:,:,:)
+  real(r8), intent(inout) :: v2ncur_a(:,:,:)
+  real(r8), intent(inout) :: v2ncur_c(:,:,:)
+  real(r8), intent(inout) :: drv_a_accsv(pcols,pver), drv_c_accsv(pcols,pver)
+  real(r8), intent(inout) :: drv_a_aitsv(pcols,pver), drv_c_aitsv(pcols,pver)
+  real(r8), intent(inout) :: drv_a_sv(pcols,pver,ntot_amode), drv_c_sv(pcols,pver,ntot_amode)
+  real(r8), intent(inout) :: num_a_accsv(pcols,pver), num_c_accsv(pcols,pver)
+  real(r8), intent(inout) :: num_a_aitsv(pcols,pver), num_c_aitsv(pcols,pver)
+  real(r8), intent(inout) :: num_a_sv(pcols,pver,ntot_amode), num_c_sv(pcols,pver,ntot_amode)
+
+  logical,  intent(inout), optional :: dotend(:), dotendqqcw(:)
+  real(r8), intent(inout), optional :: dqdt(:,:,:), dqqcwdt(:,:,:), qsrflx(:,:,:,:)
+
+  !local
+  integer :: klev, icol
+  integer :: num_mode_idx, num_cldbrn_mode_idx, nait, nacc
+  real(r8) :: v2nyy, v2nxx                  ! voltonumblo/hi of current mode
+  real(r8) :: v2nyyrl, v2nxxrl              ! relaxed voltonumblo/hi
+  real(r8) :: dgnyy, dgnxx                  ! dgnumlo/hi of current mode
+  real(r8) :: drv_a, drv_c                  ! dry volume (cm3/mol_air)
+  real(r8) :: num_a0, num_c0                ! initial number (#/mol_air)
+  real(r8) :: num_a, num_c                  ! working number (#/mol_air)
+  real(r8) :: cmn_factor
+  real(r8), pointer :: fldcw(:,:)           !specie mmr (cloud borne)
+
+  !find state q array number mode indices for interstitial and cloud borne aerosols
+  num_mode_idx        = numptr_amode(imode)
+  num_cldbrn_mode_idx = numptrcw_amode(imode)
+
+  nait = modeptr_aitken !aitken mode number
+  nacc = modeptr_accum  !accumulation mode number
+
+  !set hi/lo limits (min, max and their relaxed counterparts) for volumes and diameters
+  call compute_dgn_vol_limits(imode, nait, nacc, do_aitacc_transfer, & !input
+       v2nxx, v2nyy, v2nxxrl, v2nyyrl, dgnxx, dgnyy) !output
+
+  !set tendency logicals to true if we need to update mmr
+  if (update_mmr) then
+     dotend(num_mode_idx)            = .true.
+     dotendqqcw(num_cldbrn_mode_idx) = .true.
+  end if
+
+  !pointer to cloud borne number mmr for mode imode
+  fldcw => qqcw_get_field(pbuf,num_cldbrn_mode_idx,lchnk,.true.)
+
+  do  klev = top_lev, pver
+     do  icol = 1, ncol
+
+        drv_a  = dryvol_a(icol,klev)
+        num_a0 = state_q(icol,klev,num_mode_idx)
+        num_a  = max( 0.0_r8, num_a0 )
+        drv_c  = dryvol_c(icol,klev)
+        if(present(cp_num_buf)) then
+           num_c0 = cp_num_buf(icol,klev,imode)
+        else
+           num_c0 = fldcw(icol,klev)
+        endif
+        num_c = max( 0.0_r8, num_c0 )
+
+        if (do_adjust) then
+
+           !-----------------------------------------------------------------
+           ! Do number adjustment for interstitial and activated particles
+           !-----------------------------------------------------------------
+           !Adjustments that:
+           !(1) make numbers non-negative or
+           !(2) make numbers zero when volume is zero
+           !are applied over time-scale deltat
+           !Adjustments that bring numbers to within specified bounds are
+           !applied over time-scale tadj
+           !-----------------------------------------------------------------
+           if(update_mmr) then
+              call adjust_num_sizes(icol, klev, num_mode_idx, num_cldbrn_mode_idx, &                   !input
+                   drv_a, num_a0, drv_c, num_c0, deltatinv, v2nxx, v2nxxrl, v2nyy, v2nyyrl, fracadj, & !input
+                   num_a, num_c, dqdt, dqqcwdt)                                                        !output
+
+           else
+              call adjust_num_sizes(icol, klev, num_mode_idx, num_cldbrn_mode_idx, &                   !input
+                   drv_a, num_a0, drv_c, num_c0, deltatinv, v2nxx, v2nxxrl, v2nyy, v2nyyrl, fracadj, & !input
+                   num_a, num_c)                                                                       !output
+
+           endif
+        endif !do_adjust
+
+        !Compute a common factor for size computations
+        cmn_factor = exp(4.5_r8*alnsg_amode(imode)**2)*pi/6.0_r8
+
+        !
+        ! now compute current dgn and v2n
+        !
+        if(update_mmr) then
+           call update_dgn_voltonum(icol, klev, imode, num_mode_idx, gravit, cmn_factor, drv_a, num_a, &
+                v2nxx, v2nyy, dgnxx, dgnyy, pdel, &
+                dgncur_a, v2ncur_a, qsrflx, dqdt)
+
+           !for cloud borne aerosols
+           call update_dgn_voltonum(icol, klev, imode, num_cldbrn_mode_idx, gravit, cmn_factor, drv_c, num_c, &
+                v2nxx, v2nyy, dgnumhi_amode(imode), dgnumlo_amode(imode), pdel, &
+                dgncur_c, v2ncur_c, qsrflx, dqqcwdt)
+        else
+           call update_dgn_voltonum(icol, klev, imode, num_mode_idx, gravit, cmn_factor, drv_a, num_a, &
+                v2nxx, v2nyy, dgnxx, dgnyy, pdel, &
+                dgncur_a, v2ncur_a)
+
+           !for cloud borne aerosols
+           call update_dgn_voltonum(icol, klev, imode, num_cldbrn_mode_idx, gravit, cmn_factor, drv_c, num_c, &
+                v2nxx, v2nyy, dgnumhi_amode(imode), dgnumlo_amode(imode), pdel, &
+                dgncur_c, v2ncur_c)
+        endif
+
+        ! save number and dryvol for aitken <--> accum transfer
+        if ( do_aitacc_transfer ) then
+           if (imode == nait) then
+              drv_a_aitsv(icol,klev) = drv_a
+              num_a_aitsv(icol,klev) = num_a
+              drv_c_aitsv(icol,klev) = drv_c
+              num_c_aitsv(icol,klev) = num_c
+           else if (imode == nacc) then
+              drv_a_accsv(icol,klev) = drv_a
+              num_a_accsv(icol,klev) = num_a
+              drv_c_accsv(icol,klev) = drv_c
+              num_c_accsv(icol,klev) = num_c
+           end if
+        end if
+        drv_a_sv(icol,klev,imode) = drv_a
+        num_a_sv(icol,klev,imode) = num_a
+        drv_c_sv(icol,klev,imode) = drv_c
+        num_c_sv(icol,klev,imode) = num_c
+
+     end do
+  end do
+
+  return
+
+end subroutine size_adjustment
 
 
 subroutine compute_dgn_vol_limits(imode, nait, nacc, do_aitacc_transfer, & !input
@@ -1376,7 +1390,7 @@ subroutine update_dgn_voltonum(icol, klev, imode, num_idx, gravit, cmn_factor, d
 
 end subroutine update_dgn_voltonum
 
-subroutine  aitken_accum_exchange(ncol, lchnk, nait, nacc, tadjinv, &
+subroutine  aitken_accum_exchange(ncol, lchnk, tadjinv, &
      deltat, pdel, state_q, &
      pbuf, &
      drv_a_aitsv, num_a_aitsv, drv_c_aitsv, num_c_aitsv,     &
@@ -1386,7 +1400,7 @@ subroutine  aitken_accum_exchange(ncol, lchnk, nait, nacc, tadjinv, &
 
   implicit none
 
-  !FUTURE WORK:
+  !FUTURE WORK: balli
   !ipair seems to take value of 1 only
   !why call master proc......is it tp print something during first time step?
   !cloud borne processes and interstital can be combined and refactored into one subroutine.
@@ -1394,7 +1408,6 @@ subroutine  aitken_accum_exchange(ncol, lchnk, nait, nacc, tadjinv, &
 
   !inputs
   integer,  intent(in) :: ncol, lchnk
-  integer,  intent(in) :: nait, nacc
   real(r8), intent(in) :: tadjinv
   real(r8), intent(in) :: deltat
   real(r8), intent(in) :: pdel(:,:)
@@ -1420,6 +1433,7 @@ subroutine  aitken_accum_exchange(ncol, lchnk, nait, nacc, tadjinv, &
   integer  :: imode, jmode, jac, jsrflx, icol, klev, iq
   integer  :: lsfrm, lstoo, ispec, idx, n_use, m_use, nb, mb
   integer  :: ixfer_ait2acc, ixfer_acc2ait
+  integer  :: nait, nacc
   integer, save  :: idiagaa = 1
   real(r8) :: num_a, drv_a, num_c, drv_c
   real(r8) :: num_a_acc, num_c_acc
@@ -1448,6 +1462,9 @@ subroutine  aitken_accum_exchange(ncol, lchnk, nait, nacc, tadjinv, &
 
   ! check that calcsize transfer ipair=1 is aitken-->accum
   ipair = 1
+  nait = modeptr_aitken !aitken mode number
+  nacc = modeptr_accum  !accumulation mode number
+
   if ((modefrm_csizxf(ipair) .ne. nait) .or.   &
        (modetoo_csizxf(ipair) .ne. nacc)) then
      write( iulog, '(//2a//)' )   &
