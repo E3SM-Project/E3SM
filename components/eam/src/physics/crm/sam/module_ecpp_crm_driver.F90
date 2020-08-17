@@ -63,21 +63,21 @@ contains
     nystag = ny+1
     nzstag = nzm+1
 
-    upthresh    = 1.    !Multiples of std. dev. to classify as updraft
-    downthresh  = 1.    !Multiples of std. dev. to classify as downdraft
-    cloudthresh = 1e-6  !Cloud mixing ratio beyond which cell is "cloudy(liquid)" (kg/kg)
-    prcpthresh  = 1e-6  !Preciptation rate (precr) beyond which cell is raining (kg/m2/s)
-    ! this is used to classify precipitating vs. nonprecipitating class for wet scavenging.
+    upthresh    = 1.    ! Multiples of std. dev. to classify as updraft
+    downthresh  = 1.    ! Multiples of std. dev. to classify as downdraft
+    cloudthresh = 1e-6  ! Cloud mixing ratio beyond which cell is "cloudy(liquid)" (kg/kg)
+    prcpthresh  = 1e-6  ! Preciptation rate (precr) beyond which cell is raining (kg/m2/s)
+                        ! this is used to classify precip vs. nonprecip for wet scavenging.
 
     ! high thresholds are used to classify transport classes (following Xu et al., 2002, Q.J.R.M.S.
-    cloudthresh_trans = 1e-5  !Cloud mixing ratio beyond which cell is "cloudy" to classify transport classes (kg/kg)   +++mhwang
+    cloudthresh_trans = 1e-5  !Cloud mixing ratio beyond which cell is "cloudy" to classify transport classes (kg/kg)
+    
     ! the maxium of cloudthres_trans and 0.01*qvs is used to classify transport class
-    precthresh_trans  = 1e-4  !Preciptation mixing ratio beyond which cell is raining to classify transport classes (kg/kg)  !+++mwhang
+    precthresh_trans  = 1e-4  !Preciptation mixing ratio beyond which cell is raining to classify transport classes (kg/kg)
 
     !---------------------------------------------------------------------------
     ! determine number of updrafts and downdrafts
     !---------------------------------------------------------------------------
-    !
     ! updraft kbase & ktop definition:
     !    ww(i,j,k ) >  wup_thresh for k=kbase+1:ktop
     !               <= wup_thresh at  k=kbase and k=ktop+1
@@ -121,51 +121,73 @@ contains
     !---------------------------------------------------------------------------
     ! Allocate arrays
     !---------------------------------------------------------------------------
-    allocate( qlsink(nx,ny,nzm,ncrms), precr(nx,ny,nzm,ncrms), precsolid(nx,ny,nzm,ncrms), rh(nx, ny, nzm,ncrms), qvs(nx, ny, nzm,ncrms))
+    allocate( qlsink(   nx, ny, nzm, ncrms) )
+    allocate( precr(    nx, ny, nzm, ncrms) )
+    allocate( precsolid(nx, ny, nzm, ncrms) )
+    allocate( rh(       nx, ny, nzm, ncrms) )
+    allocate( qvs(      nx, ny, nzm, ncrms) )
 
-    allocate( qlsink_bf(nx, ny, nzm,ncrms), prain(nx, ny, nzm,ncrms), qcloud_bf(nx, ny, nzm,ncrms))
+    allocate( qlsink_bf(nx, ny, nzm, ncrms) )
+    allocate( prain(    nx, ny, nzm, ncrms) )
+    allocate( qcloud_bf(nx, ny, nzm, ncrms) )
 
-    allocate( qcloudsum1(nx,ny,nzm,ncrms), qcloud_bfsum1(nx,ny,nzm,ncrms), qrainsum1(nx,ny,nzm,ncrms), &
-    qicesum1(nx,ny,nzm,ncrms), qsnowsum1(nx,ny,nzm,ncrms), qgraupsum1(nx,ny,nzm,ncrms), &
-    qlsinksum1(nx,ny,nzm,ncrms), precrsum1(nx,ny,nzm,ncrms), &
-    precsolidsum1(nx,ny,nzm,ncrms), precallsum1(nx,ny,nzm,ncrms), &
-    altsum1(nx,ny,nzm,ncrms), rhsum1(nx,ny,nzm,ncrms), cf3dsum1(nx,ny,nzm,ncrms), &
-    wwsum1(nx,ny,nzstag,ncrms), wwsqsum1(nx,ny,nzstag,ncrms), &
-    tkesgssum1(nx, ny, nzm,ncrms), qlsink_bfsum1(nx, ny, nzm,ncrms), prainsum1(nx, ny, nzm,ncrms), qvssum1(nx, ny, nzm,ncrms) )
+    allocate( qcloudsum1(   nx, ny, nzm,    ncrms) )
+    allocate( qcloud_bfsum1(nx, ny, nzm,    ncrms) )
+    allocate( qrainsum1(    nx, ny, nzm,    ncrms) )
+    allocate( qicesum1(     nx, ny, nzm,    ncrms) )
+    allocate( qsnowsum1(    nx, ny, nzm,    ncrms) )
+    allocate( qgraupsum1(   nx, ny, nzm,    ncrms) )
+    allocate( qlsinksum1(   nx, ny, nzm,    ncrms) ) 
+    allocate( precrsum1(    nx, ny, nzm,    ncrms) )
+    allocate( precsolidsum1(nx, ny, nzm,    ncrms) )
+    allocate( precallsum1(  nx, ny, nzm,    ncrms) )
+    allocate( altsum1(      nx, ny, nzm,    ncrms) )
+    allocate( rhsum1(       nx, ny, nzm,    ncrms) )
+    allocate( cf3dsum1(     nx, ny, nzm,    ncrms) )
+    allocate( wwsum1(       nx, ny, nzstag, ncrms) )
+    allocate( wwsqsum1(     nx, ny, nzstag, ncrms) )
+    allocate( tkesgssum1(   nx, ny, nzm,    ncrms) )
+    allocate( qlsink_bfsum1(nx, ny, nzm,    ncrms) )
+    allocate( prainsum1(    nx, ny, nzm,    ncrms) )
+    allocate( qvssum1(      nx, ny, nzm,    ncrms) )
 
-    allocate(           &
-    xkhvsum(nzm,ncrms) )
+    allocate( xkhvsum(nzm,ncrms) )
 
-    allocate( wwqui_cen_sum(nzm,ncrms), wwqui_bnd_sum(nzm+1,ncrms),  &
-    wwqui_cloudy_cen_sum(nzm,ncrms), wwqui_cloudy_bnd_sum(nzm+1,ncrms))
+    allocate( wwqui_cen_sum(       nzm,  ncrms) )
+    allocate( wwqui_bnd_sum(       nzm+1,ncrms)
+    allocate( wwqui_cloudy_cen_sum(nzm,  ncrms) )
+    allocate( wwqui_cloudy_bnd_sum(nzm+1,ncrms) )
 
-    allocate( wup_thresh(nzm+1,ncrms), wdown_thresh(nzm+1,ncrms))
+    allocate( wup_thresh(  nzm+1,ncrms) )
+    allocate( wdown_thresh(nzm+1,ncrms) )
 
-    allocate( area_bnd_final( nzstag,NCLASS_CL,ndraft_max,NCLASS_PR,ncrms), &
-    area_bnd_sum(   nzstag,NCLASS_CL,ndraft_max,NCLASS_PR,ncrms), &
-    area_cen_final( nzm    ,NCLASS_CL,ndraft_max,NCLASS_PR,ncrms), &
-    area_cen_sum(   nzm    ,NCLASS_CL,ndraft_max,NCLASS_PR,ncrms), &
-    mass_bnd_final( nzstag,NCLASS_CL,ndraft_max,NCLASS_PR,ncrms), &
-    mass_bnd_sum(   nzstag,NCLASS_CL,ndraft_max,NCLASS_PR,ncrms), &
-    mass_cen_final( nzm    ,NCLASS_CL,ndraft_max,NCLASS_PR,ncrms), &
-    mass_cen_sum(   nzm    ,NCLASS_CL,ndraft_max,NCLASS_PR,ncrms), &
-    ent_bnd_sum(    nzstag,NCLASS_CL,ndraft_max,NCLASS_PR,ncrms), &
-    rh_cen_sum(     nzm    ,NCLASS_CL,ndraft_max,NCLASS_PR,ncrms), &
-    qcloud_cen_sum( nzm    ,NCLASS_CL,ndraft_max,NCLASS_PR,ncrms), &
-    qcloud_bf_cen_sum( nzm    ,NCLASS_CL,ndraft_max,NCLASS_PR,ncrms), &
-    qrain_cen_sum(  nzm    ,NCLASS_CL,ndraft_max,NCLASS_PR,ncrms), &
-    qice_cen_sum(   nzm    ,NCLASS_CL,ndraft_max,NCLASS_PR,ncrms), &
-    qsnow_cen_sum(  nzm    ,NCLASS_CL,ndraft_max,NCLASS_PR,ncrms), &
-    qgraup_cen_sum( nzm    ,NCLASS_CL,ndraft_max,NCLASS_PR,ncrms), &
-    qlsink_cen_sum( nzm    ,NCLASS_CL,ndraft_max,NCLASS_PR,ncrms), &
-    precr_cen_sum(  nzm    ,NCLASS_CL,ndraft_max,NCLASS_PR,ncrms), &
-    precsolid_cen_sum(nzm  ,NCLASS_CL,ndraft_max,NCLASS_PR,ncrms), &
-    precall_cen_sum(nzm    ,NCLASS_CL,ndraft_max,NCLASS_PR,ncrms), &
-    qlsink_bf_cen_sum( nzm    ,NCLASS_CL,ndraft_max,NCLASS_PR,ncrms), &
-    qlsink_avg_cen_sum( nzm    ,NCLASS_CL,ndraft_max,NCLASS_PR,ncrms), &
-    prain_cen_sum( nzm    ,NCLASS_CL,ndraft_max,NCLASS_PR,ncrms)  )
+    allocate( area_bnd_final(    nzstag,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
+    allocate( area_bnd_sum(      nzstag,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
+    allocate( area_cen_final(    nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
+    allocate( area_cen_sum(      nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
+    allocate( mass_bnd_final(    nzstag,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
+    allocate( mass_bnd_sum(      nzstag,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
+    allocate( mass_cen_final(    nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
+    allocate( mass_cen_sum(      nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
+    allocate( ent_bnd_sum(       nzstag,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
+    allocate( rh_cen_sum(        nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
+    allocate( qcloud_cen_sum(    nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
+    allocate( qcloud_bf_cen_sum( nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
+    allocate( qrain_cen_sum(     nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
+    allocate( qice_cen_sum(      nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
+    allocate( qsnow_cen_sum(     nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
+    allocate( qgraup_cen_sum(    nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
+    allocate( qlsink_cen_sum(    nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
+    allocate( precr_cen_sum(     nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
+    allocate( precsolid_cen_sum( nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
+    allocate( precall_cen_sum(   nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
+    allocate( qlsink_bf_cen_sum( nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
+    allocate( qlsink_avg_cen_sum(nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
+    allocate( prain_cen_sum(     nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
 
+    !---------------------------------------------------------------------------
     ! Initialize the running sums.
+    !---------------------------------------------------------------------------
     do icrm = 1 , ncrms
       call zero_out_sums1( qcloudsum1(:,:,:,icrm), qcloud_bfsum1(:,:,:,icrm), qrainsum1(:,:,:,icrm), &
       qicesum1(:,:,:,icrm), qsnowsum1(:,:,:,icrm), qgraupsum1(:,:,:,icrm), &
@@ -198,7 +220,9 @@ contains
     itavg1 = 0
     itavg2 = 0
 
+    !---------------------------------------------------------------------------
     ! set ntavg[12] and initialize itavg[12] counters
+    !---------------------------------------------------------------------------
     call ecpp_set_ntavg(dt_gl)
 
   end subroutine ecpp_crm_init
@@ -207,51 +231,72 @@ contains
   !=======================================================================================
   subroutine ecpp_crm_cleanup ()
     ! deallocate variables
-    deallocate (updraftbase, &
-    updrafttop )
-    deallocate (dndraftbase, &
-    dndrafttop )
+    deallocate( updraftbase )
+    deallocate( updrafttop )
+    deallocate( dndraftbase )
+    deallocate( dndrafttop )
 
-    deallocate( qlsink, precr, precsolid, rh, qvs)
+    deallocate( qlsink )
+    deallocate( precr )
+    deallocate( precsolid )
+    deallocate( rh )
+    deallocate( qvs )
+    deallocate( qlsink_bf )
+    deallocate( prain, )
+    deallocate( cloud_bf)
 
-    deallocate( qlsink_bf, prain, qcloud_bf)
+    deallocate( qcloudsum1 )
+    deallocate( qcloud_bfsum1 )
+    deallocate( qrainsum1 )
+    deallocate( qicesum1 )
+    deallocate( qsnowsum1 )
+    deallocate( qgraupsum1 )
+    deallocate( qlsinksum1 )
+    deallocate( precrsum1 )
+    deallocate( precsolidsum1 )
+    deallocate( precallsum1 )
+    deallocate( altsum1 )
+    deallocate( rhsum1 )
+    deallocate( cf3dsum1 )
+    deallocate( wwsum1 )
+    deallocate( wwsqsum1 )
+    deallocate( tkesgssum1 )
+    deallocate( qlsink_bfsum1 )
+    deallocate( prainsum1 )
+    deallocate( qvssum1 )
 
-    deallocate( qcloudsum1, qcloud_bfsum1, qrainsum1, &
-    qicesum1, qsnowsum1, qgraupsum1, &
-    qlsinksum1, precrsum1, &
-    precsolidsum1, precallsum1, &
-    altsum1, rhsum1, cf3dsum1, &
-    wwsum1, wwsqsum1, tkesgssum1, &
-    qlsink_bfsum1, prainsum1, qvssum1 )
+    deallocate( xkhvsum )
+    deallocate( wup_thresh )
+    deallocate( wdown_thresh )
 
-    deallocate(           &
-    xkhvsum, wup_thresh, wdown_thresh )
+    deallocate( wwqui_cen_sum )
+    deallocate( wwqui_bnd_sum )
+    deallocate( wwqui_cloudy_cen_sum )
+    deallocate( wwqui_cloudy_bnd_sum )
 
-    deallocate(wwqui_cen_sum, wwqui_bnd_sum, wwqui_cloudy_cen_sum, wwqui_cloudy_bnd_sum)
-
-    deallocate( area_bnd_final, &
-    area_bnd_sum, &
-    area_cen_final, &
-    area_cen_sum, &
-    mass_bnd_final, &
-    mass_bnd_sum, &
-    mass_cen_final, &
-    mass_cen_sum, &
-    ent_bnd_sum, &
-    rh_cen_sum, &
-    qcloud_cen_sum, &
-    qcloud_bf_cen_sum, &
-    qrain_cen_sum, &
-    qice_cen_sum, &
-    qsnow_cen_sum, &
-    qgraup_cen_sum, &
-    qlsink_cen_sum, &
-    precr_cen_sum, &
-    precsolid_cen_sum, &
-    precall_cen_sum, &
-    qlsink_bf_cen_sum, &
-    qlsink_avg_cen_sum, &
-    prain_cen_sum  )
+    deallocate( area_bnd_final )
+    deallocate( area_bnd_sum )
+    deallocate( area_cen_final )
+    deallocate( area_cen_sum )
+    deallocate( mass_bnd_final )
+    deallocate( mass_bnd_sum )
+    deallocate( mass_cen_final )
+    deallocate( mass_cen_sum )
+    deallocate( ent_bnd_sum )
+    deallocate( rh_cen_sum )
+    deallocate( qcloud_cen_sum )
+    deallocate( qcloud_bf_cen_sum )
+    deallocate( qrain_cen_sum )
+    deallocate( qice_cen_sum )
+    deallocate( qsnow_cen_sum )
+    deallocate( qgraup_cen_sum )
+    deallocate( qlsink_cen_sum )
+    deallocate( qlsink_bf_cen_sum )
+    deallocate( precr_cen_sum )
+    deallocate( precsolid_cen_sum )
+    deallocate( precall_cen_sum )
+    deallocate( qlsink_avg_cen_sum )
+    deallocate( prain_cen_sum  )
 
   end subroutine ecpp_crm_cleanup
   !---------------------------------------------------------------------------------------
