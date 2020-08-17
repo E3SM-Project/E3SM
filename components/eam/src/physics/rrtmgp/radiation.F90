@@ -28,7 +28,7 @@ module radiation
    ! here so that we can make the k_dist objects module data and only load them
    ! once.
    use rrtmgp_interface, only: &
-      k_dist_sw, k_dist_lw, rrtmgp_initialize, &
+      k_dist_sw, k_dist_lw, rrtmgp_initialize, rrtmgp_run_sw, &
       rrtmgp_nswbands => nswbands, rrtmgp_nlwbands => nlwbands, &
       rrtmgp_get_min_temperature => get_min_temperature, &
       rrtmgp_get_max_temperature => get_max_temperature, &
@@ -1688,19 +1688,19 @@ contains
 
       ! Do shortwave radiative transfer calculations
       call t_startf('rad_calculations_sw')
-      call handle_error(rte_sw( &
-         k_dist_sw, gas_concentrations, &
+      call rrtmgp_run_sw( &
+         nday, nlev_rad, &
+         gas_concentrations, &
          pmid_day(1:nday,1:nlev_rad), &
          tmid_day(1:nday,1:nlev_rad), &
          pint_day(1:nday,1:nlev_rad+1), &
          coszrs_day(1:nday), &
          albedo_dir_day(1:nswbands,1:nday), &
          albedo_dif_day(1:nswbands,1:nday), &
-         cld_optics_sw, &
+         cld_optics_sw, aer_optics_sw, &
          fluxes_allsky_day, fluxes_clrsky_day, &
-         aer_props=aer_optics_sw, &
-         tsi_scaling=tsi_scaling &
-      ))
+         tsi_scaling &
+      )
       call t_stopf('rad_calculations_sw')
 
       ! Calculate heating rates on the DAYTIME columns

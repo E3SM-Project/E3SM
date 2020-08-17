@@ -9,6 +9,9 @@ module rrtmgp_interface
    use mo_gas_concentrations, only: ty_gas_concs
    use mo_load_coefficients, only: load_and_init
    use mo_rte_kind, only: wp
+   use mo_optical_props, only: ty_optical_props_2str, ty_optical_props_1scl
+   use mo_fluxes_byband, only: ty_fluxes_byband
+   use mo_rrtmgp_clr_all_sky, only: rte_sw
 
    implicit none
 
@@ -23,7 +26,7 @@ module rrtmgp_interface
    ! interfaces.
    integer, public :: nswbands, nlwbands, nswgpts, nlwgpts
 
-   public :: rrtmgp_initialize, &
+   public :: rrtmgp_initialize, rrtmgp_run_sw, &
       get_nbnds_sw, get_nbnds_lw, &
       get_ngpts_sw, get_ngpts_lw, &
       get_gpoint_bands_sw, get_gpoint_bands_lw, &
@@ -81,6 +84,40 @@ contains
       nswgpts = k_dist_sw%get_ngpt()
       nlwgpts = k_dist_lw%get_ngpt()
    end subroutine rrtmgp_initialize
+
+   subroutine rrtmgp_run_sw( &
+         nday, nlev, gas_concentrations, &
+         pmid_day, tmid_day, pint_day, coszrs_day, &
+         albedo_dir_day, albedo_dif_day, &
+         cld_optics_sw, aer_optics_sw, &
+         fluxes_allsky_day, fluxes_clrsky_day, &
+         tsi_scaling &
+         )
+      integer, intent(in) :: nday, nlev
+      type(ty_gas_concs), intent(in) :: gas_concentrations
+      real(wp), intent(in), dimension(:,:) :: &
+         pmid_day, tmid_day, pint_day
+      real(wp), intent(in), dimension(:) :: coszrs_day
+      real(wp), intent(in), dimension(:,:) :: albedo_dir_day, albedo_dif_day
+      type(ty_optical_props_2str), intent(in) :: cld_optics_sw, aer_optics_sw
+      type(ty_fluxes_byband), intent(inout) :: fluxes_allsky_day, fluxes_clrsky_day
+      real(wp), intent(in) :: tsi_scaling
+
+      call handle_error(rte_sw( &
+         k_dist_sw, gas_concentrations, &
+         pmid_day(1:nday,1:nlev), &
+         tmid_day(1:nday,1:nlev), &
+         pint_day(1:nday,1:nlev+1), &
+         coszrs_day(1:nday), &
+         albedo_dir_day(1:nswbands,1:nday), &
+         albedo_dif_day(1:nswbands,1:nday), &
+         cld_optics_sw, &
+         fluxes_allsky_day, fluxes_clrsky_day, &
+         aer_props=aer_optics_sw, &
+         tsi_scaling=tsi_scaling &
+      ))
+   end subroutine rrtmgp_run_sw
+
 
    real(wp) function get_min_temperature()
       get_min_temperature = min(k_dist_sw%get_temp_min(), k_dist_lw%get_temp_min())
