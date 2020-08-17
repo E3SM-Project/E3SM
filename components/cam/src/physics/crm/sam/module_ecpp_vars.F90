@@ -7,10 +7,9 @@ module module_ecpp_vars
 
   public
 
-  integer, public, parameter :: nupdraft_in  = 1  ! Number of updraft class
-  integer, public, parameter :: ndndraft_in  = 1  ! Number of dndraft class
+  integer, public, parameter :: nupdraft     = 1  ! Number of updraft class
+  integer, public, parameter :: ndndraft     = 1  ! Number of dndraft class
   integer, public, parameter :: ncls_ecpp_in = 3  ! Number of total number of ecpp transport class
-  ! = nupdraft_in+1+ndndraft_in
   integer, public, parameter :: ncc_in       = 2  ! number of clear/cloudy sub-calsses
   integer, public, parameter :: nprcp_in     = 2  ! Number of non-precipitating/precipitating sub-classes.
 

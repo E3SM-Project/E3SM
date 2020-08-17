@@ -15,7 +15,7 @@ module module_ecpp_ppdriver2
   use constituents,   only: pcnst, cnst_name
   use cam_abortutils, only: endrun
   use crmdims,        only: crm_nz
-  use module_ecpp_vars, only: nupdraft_in, ndndraft_in, ncls_ecpp_in, ncc_in, nprcp_in 
+  use module_ecpp_vars, only: nupdraft, ndndraft, ncls_ecpp_in, ncc_in, nprcp_in 
   use crmclouds_camaerosols, only: ecpp_mixnuc_tend => crmclouds_mixnuc_tend 
   use module_data_ecpp1 
   use module_data_mosaic_asect
@@ -525,10 +525,10 @@ module module_ecpp_ppdriver2
     real(r8) :: tmpa, tmpb, tmpc, tmpd
     real(r8) :: za, zb, zc
 
-    integer, dimension( 1:nupdraft_in ) :: kupdraftbase
-    integer, dimension( 1:nupdraft_in ) :: kupdrafttop
-    integer, dimension( 1:ndndraft_in ) :: kdndraftbase
-    integer, dimension( 1:ndndraft_in ) :: kdndrafttop
+    integer, dimension( 1:nupdraft ) :: kupdraftbase
+    integer, dimension( 1:nupdraft ) :: kupdrafttop
+    integer, dimension( 1:ndndraft ) :: kdndraftbase
+    integer, dimension( 1:ndndraft ) :: kdndrafttop
 
     !-----------------------------------------------------------------------
     ! kupdraftbase, kupdrafttop - lower-most and upper-most level for each updraft class
@@ -761,8 +761,8 @@ module module_ecpp_ppdriver2
     end if
 
     ! check for valid ncls_ecpptmp
-    nupdraft = nupdraft_in
-    ndndraft = ndndraft_in
+    nupdraft = nupdraft
+    ndndraft = ndndraft
     ncls_ecpp = (nupdraft + ndndraft + 1)
     if (ncls_ecpp > maxcls_ecpp) then
       write(msg,'(a,2(1x,i6))')   &

@@ -21,6 +21,7 @@ module  module_ecpp_crm_driver
   use params, only: crm_rknd
   use module_ecpp_vars
   use module_ecpp_vars,  only: QUI, UP1, DN1, NCLASS_TR, NCLASS_CL, CLR, CLD, NCLASS_PR, PRN, PRY
+  use module_ecpp_vars, only: nupdraft, ndndraft, ncls_ecpp_in
   use cam_abortutils,  only: endrun
 
   public ecpp_crm_stat
@@ -30,19 +31,33 @@ module  module_ecpp_crm_driver
   private
   save
 
-  integer ::  nxstag, nystag, nzstag
+  integer :: nxstag, nystag, nzstag
   integer :: ntavg1_ss  ! # of seconds to average when computing categories
   integer :: ntavg2_ss  ! # of seconds to average between outputs.
   integer :: ntavg1, ntavg2  ! number of CRM steps in ntavg[12]_ss period
   integer :: itavg1, itavg2  ! level-1 and level-2 counters
 
-  real(crm_rknd) :: cloudthresh, prcpthresh, downthresh, upthresh
+  real(crm_rknd), parameter :: upthresh    = 1. ! Multiples of std. dev. to classify as updraft
+  real(crm_rknd), parameter :: downthresh  = 1. ! Multiples of std. dev. to classify as downdraft
+  
+  real(crm_rknd), parameter :: cloudthresh = 1e-6 ! Cloud mixing ratio beyond which cell is cloudy (liquid) (kg/kg)
+  real(crm_rknd), parameter :: prcpthresh  = 1e-6 ! Preciptation rate (precr) beyond which cell is raining (kg/m2/s)
+                                                  ! this is used to classify precip vs. nonprecip for wet scavenging
+  
+  ! total cloud water threshold for updraft or downdraft
+  ! high thresholds are used to classify transport classes (following Xu et al., 2002, Q.J.R.M.S.
+  ! the maxium of cloudthres_trans and 0.01*qvs is used to classify transport class
+  real(crm_rknd), parameter :: cloudthresh_trans = 1e-5 
+  
+  ! Preciptation mixing ratio beyond which cell is raining to classify transport classes (kg/kg)
+  real(crm_rknd), parameter :: precthresh_trans  = 1e-4
 
-  real(crm_rknd) :: cloudthresh_trans        !  the threshold total cloud water for updraft or downdraft
-  real(crm_rknd) :: precthresh_trans         !  the threshold total rain, snow and graupel for clear, updraft or downdraft
+  integer :: ndraft_total
 
-  integer, dimension(:,:), allocatable :: updraftbase, updrafttop, dndrafttop, dndraftbase
-  integer :: nupdraft, ndndraft, ndraft_total
+  integer, dimension(:,:), allocatable :: updraftbase
+  integer, dimension(:,:), allocatable :: updrafttop
+  integer, dimension(:,:), allocatable :: dndrafttop
+  integer, dimension(:,:), allocatable :: dndraftbase
 
 contains
 
@@ -53,7 +68,6 @@ subroutine ecpp_crm_init(ncrms,dt_gl)
   use grid, only: nx, ny, nzm
   use module_ecpp_vars,  only: allocate_ecpp_vars
   use module_ecpp_stats, only: zero_out_sums1, zero_out_sums2
-  use module_ecpp_ppdriver2, only: nupdraft_in, ndndraft_in, ncls_ecpp_in
   implicit none
   real(r8), intent(in) :: dt_gl  ! global model's time step
   integer , intent(in) :: ncrms
@@ -65,18 +79,6 @@ subroutine ecpp_crm_init(ncrms,dt_gl)
   nxstag = nx+1
   nystag = ny+1
   nzstag = nzm+1
-
-  upthresh    = 1.    ! Multiples of std. dev. to classify as updraft
-  downthresh  = 1.    ! Multiples of std. dev. to classify as downdraft
-  cloudthresh = 1e-6  ! Cloud mixing ratio beyond which cell is "cloudy(liquid)" (kg/kg)
-  prcpthresh  = 1e-6  ! Preciptation rate (precr) beyond which cell is raining (kg/m2/s)
-                      ! this is used to classify precip vs. nonprecip for wet scavenging.
-
-  ! high thresholds are used to classify transport classes (following Xu et al., 2002, Q.J.R.M.S.
-  cloudthresh_trans = 1e-5  !Cloud mixing ratio beyond which cell is "cloudy" to classify transport classes (kg/kg)
-  
-  ! the maxium of cloudthres_trans and 0.01*qvs is used to classify transport class
-  precthresh_trans  = 1e-4  !Preciptation mixing ratio beyond which cell is raining to classify transport classes (kg/kg)
 
   !-----------------------------------------------------------------------------
   ! determine number of updrafts and downdrafts
@@ -96,9 +98,6 @@ subroutine ecpp_crm_init(ncrms,dt_gl)
   ! for both updrafts and downdrafts,
   !    1 <= kbase < ktop < nzstag
 
-  nupdraft = 1
-  ndndraft = 1
-
   DN1 = nupdraft + 2 !Setup index of first downdraft class
   NCLASS_TR = nupdraft + ndndraft + 1
 
@@ -106,9 +105,6 @@ subroutine ecpp_crm_init(ncrms,dt_gl)
 
   if(NCLASS_TR.ne.ncls_ecpp_in) then
     call endrun('NCLASS_TR should be equal to ncls_ecpp_in')
-  end if
-  if((nupdraft.ne.nupdraft_in) .or. (ndndraft.ne.ndndraft_in)) then
-    call endrun('nupdraft or ndndraft is not set correctly')
   end if
 
   allocate (updraftbase(nupdraft,ncrms), updrafttop( nupdraft,ncrms) )
@@ -145,7 +141,10 @@ subroutine ecpp_crm_init(ncrms,dt_gl)
                          qlsink_bfsum1(:,:,:,icrm), &
                          prainsum1(:,:,:,icrm), &
                          qvssum1(:,:,:,icrm) )
-                         ndn = ndndraft ; nup = nupdraft
+    
+    ndn = ndndraft
+    nup = nupdraft
+    
     call zero_out_sums2( xkhvsum(:,icrm), &
                          wwqui_cen_sum(:,icrm), &
                          wwqui_bnd_sum(:,icrm), &
@@ -230,11 +229,10 @@ subroutine ecpp_crm_stat(ncrms)
 
   !-----------------------------------------------------------------------------
   !-----------------------------------------------------------------------------
-
-  ndn = ndndraft ; nup = nupdraft
   itavg1 = itavg1 + 1
   itavg2 = itavg2 + 1
-  ndn = ndndraft ; nup = nupdraft
+  ndn = ndndraft
+  nup = nupdraft
 
   ! Get values from SAM cloud fields
   do icrm = 1 , ncrms
