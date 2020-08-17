@@ -9,6 +9,7 @@ set(SHARE_SRC
   field/field_layout.cpp
   field/field_tracking.cpp
   util/scream_test_session.cpp
+  util/scream_time_stamp.cpp
 )
 
 add_library(scream_share ${SHARE_SRC})
