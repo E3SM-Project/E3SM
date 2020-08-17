@@ -73,8 +73,8 @@ def build_mesh(
                 color='gray',
                 alpha=0.5,
                 linestyle='-', zorder=2)
-            gl.xlabels_top = False
-            gl.ylabels_right = False
+            gl.top_labels = False
+            gl.right_labels = False
             plt.title(
                 'Grid cell size, km, min: {:.1f} max: {:.1f}'.format(
                 cellWidth.min(),cellWidth.max()))

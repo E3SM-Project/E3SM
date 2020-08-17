@@ -130,10 +130,10 @@ def plot_cartopy(nPlot, varName, var, map_name):
         alpha=0.5,
         linestyle='-', zorder=2)
     ax.coastlines()
-    gl.xlabels_top = False
-    gl.xlabels_bottom = False
-    gl.ylabels_right = False
-    gl.ylabels_left = False
+    gl.top_labels = False
+    gl.bottom_labels = False
+    gl.right_labels = False
+    gl.left_labels = False
     plt.colorbar(im, shrink=.9)
     plt.title(varName)
 
