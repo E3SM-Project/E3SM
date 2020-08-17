@@ -1,15 +1,13 @@
 <?xml version="1.0"?>
 <config case="init_step1">
 
-  <add_link source="../../../meshes/transect/build_transect_mesh/transectmesh.nc" dest="mesh.nc"/>
-  <add_link source="../../../meshes/transect/build_transect_mesh/graph.info" dest="graph.info"/>
+  <add_link source="../../../meshes/idealized_transect/build_transect_mesh/transectmesh.nc" dest="mesh.nc"/>
+  <add_link source="../../../meshes/idealized_transect/build_transect_mesh/graph.info" dest="graph.info"/>
 	<add_executable source="model" dest="ocean_model"/>
 
 	<namelist name="namelist.ocean" mode="init">
 		<template file="init_template.xml" path_base="script_configuration_dir"/>
 		<template file="init_idealized_transect.xml" path_base="script_configuration_dir"/>
-		<option name="config_use_variable_drag">.true.</option>
-		<option name="config_use_idealized_transect">.true.</option>
 		<option name="config_idealized_transect_roughness_marsh">0.025</option>
 	</namelist>
 

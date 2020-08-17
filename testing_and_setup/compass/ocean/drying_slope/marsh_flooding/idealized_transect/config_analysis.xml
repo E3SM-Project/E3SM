@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <config case="analysis">
-  <add_link source="../comparison.py" dest="comparison.py"/>
+	<add_link path_base="script_test_dir" source="comparison.py" dest="comparison.py"/>
 	<add_link source="../forward1/output.nc" dest="NoVegetation.nc"/>
 	<add_link source="../forward2/output.nc" dest="ConstantVegManning.nc"/>
 	<add_link source="../forward3/output.nc" dest="VegManningEquation.nc"/>
