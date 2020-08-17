@@ -374,11 +374,10 @@ end subroutine zero_out_sums2
 !-----------------------------------------------------------------------------
 subroutine categorization_stats( domass, &
   nx, ny, nz, nupdraft, ndndraft, ndraft_max, &
-  mode_updnthresh, upthresh, downthresh, &
-  upthresh2, downthresh2, cloudthresh, prcpthresh, &
+  upthresh, downthresh, &
+  cloudthresh, prcpthresh, &
   cloudthresh_trans, precthresh_trans,  &
   qvs,                    &
-  plumetype, allcomb, &
   qcloud, qcloud_bf, qrain, qice, qsnow, qgraup, &
   qlsink, precr, precsolid, precall, &
   alt, rh, cf3d, ww, wwsq, tkesgs, &
@@ -398,13 +397,10 @@ subroutine categorization_stats( domass, &
 
   ! Arguments
   logical, intent(in) :: domass !calculate mass fluxes? T/F
-  integer, intent(in) :: nx, ny, nz, nupdraft, ndndraft, ndraft_max, &
-  mode_updnthresh, plumetype
-  logical, intent(in) :: allcomb
+  integer, intent(in) :: nx, ny, nz, nupdraft, ndndraft, ndraft_max
   real(crm_rknd), intent(in) :: &
   cloudthresh, prcpthresh, &
-  downthresh, upthresh, &
-  downthresh2, upthresh2
+  downthresh, upthresh
   real(crm_rknd), intent(in) :: cloudthresh_trans,  precthresh_trans
   real(crm_rknd), dimension(:,:,:), intent(in) :: &
   qcloud, qcloud_bf, qrain, qice, qsnow, qgraup, &
@@ -489,8 +485,8 @@ subroutine categorization_stats( domass, &
 
   call determine_transport_thresh( &
   nx, ny, nz, &
-  mode_updnthresh, upthresh, downthresh, &
-  upthresh2, downthresh2, cloudthresh, &
+  upthresh, downthresh, &
+  cloudthresh, &
   ww, rhoair, &
   wdown_thresh_k, wup_thresh_k    &
   , cloudtop                       &
@@ -783,11 +779,8 @@ end subroutine categorization_stats
 !------------------------------------------------------------------------
 subroutine determine_transport_thresh( &
   nx, ny, nz, &
-  mode_updnthresh, upthresh, downthresh, &
-  upthresh2, downthresh2, cloudthresh, &
-  !     ctime, &
-  ww, rhoair, &
-  wdown_thresh_k, wup_thresh_k         &
+  upthresh, downthresh, cloudthresh, &
+  ww, rhoair, wdown_thresh_k, wup_thresh_k         &
   , cloudtop                           &
   , wup_rms_k, wup_bar_k, wup_stddev_k  &
   , wdown_rms_k, wdown_bar_k, wdown_stddev_k  &
@@ -802,12 +795,8 @@ subroutine determine_transport_thresh( &
   !
   ! Soubroutine arguments...
   !
-  integer, intent(in) :: nx, ny, nz, mode_updnthresh
-  real(crm_rknd), intent(in) :: &
-  cloudthresh, &
-  downthresh, upthresh, &
-  downthresh2, upthresh2
-  !  type(time), intent(in) :: ctime
+  integer, intent(in) :: nx, ny, nz
+  real(crm_rknd), intent(in) :: cloudthresh, downthresh, upthresh
   real(crm_rknd), dimension(:,:,:), intent(in) :: &
   ww
   real(crm_rknd), dimension(nz+1), intent(in) :: rhoair
@@ -840,11 +829,6 @@ subroutine determine_transport_thresh( &
   ! (assume periodic BC here)
   ijdel_upaa = 0 ; ijdel_downaa = 0
   ijdel_upbb = 0 ; ijdel_downbb = 0
-  if ((mode_updnthresh == 12) .or. (mode_updnthresh == 13)) then
-    !    ijdel_... = 1 corresponds to 3x3 stencil
-    ijdel_upaa = 1 ; ijdel_downaa = 1
-    ijdel_upbb = 1 ; ijdel_downbb = 1
-  end if
   ijdel = max( ijdel_upaa, ijdel_upbb, ijdel_downaa, ijdel_downbb )
 
   if (ijdel > 0) then
@@ -890,21 +874,13 @@ subroutine determine_transport_thresh( &
   !                        are used for calc of wup_rms and wdn_rms
   !   cloudtop_up/downbb - only grid cells with k<=cloudtop_up/downbb
   !                        can be classified as up/downdraft
-  if ((mode_updnthresh == 12) .or. (mode_updnthresh == 13)) then
-    ! mode_updnthresh >= 12 is a newer, more consistent usage of cloudtop info
-    ! the cloudtop_upaa/upbb/downaa/downbb values are identical,
-    !    and they correspond to the max cloudtop(i,j) over a 3x3 stencil
-    ! only grid cells with k <= this "local" cloudtop can be up/downdraft grids
-    continue
-  else
-    ! mode_updnthresh /= 12,13 corresponds to pre 11-jan-2008 versions of preprocessor
-    !   where only grid cells with k <= cloudtop(i,j) are used for calc of wup/dn_rms,
-    !   but any grid cells can be up/dn [even those with k >> cloudtop(i,j)]
-    cloudtop_upaa(:,:)   = cloudtop(:,:)
-    cloudtop_downaa(:,:) = cloudtop(:,:)
-    cloudtop_upbb(:,:)   = nz
-    cloudtop_downbb(:,:) = nz
-  end if
+  
+  ! only grid cells with k <= cloudtop(i,j) are used for calc of wup/dn_rms,
+  ! but any grid cells can be up/dn [even those with k >> cloudtop(i,j)]
+  cloudtop_upaa(:,:)   = cloudtop(:,:)
+  cloudtop_downaa(:,:) = cloudtop(:,:)
+  cloudtop_upbb(:,:)   = nz
+  cloudtop_downbb(:,:) = nz
 
   !
   ! Get standard deviation of up and down vertical velocity below the
@@ -1004,253 +980,51 @@ subroutine determine_transport_thresh( &
   wup_rms_ksmo(  nz+1) = wup_rms_ksmo(  nz)
   wdown_rms_ksmo(nz+1) = wdown_rms_ksmo(nz)
 
-  !  print "(2a,2(2x,3f8.4))", &
-  !     " ...wup_bar,std,rms;  wdown_bar,std,rms  ",   &
-  !     wup_bar, wup_stddev, wup_rms, wdown_bar, wdown_stddev, wdown_rms
-  !  if (mode_updnthresh >= 5) then
-  !     print "(a/(15f7.3))", &
-  !     " ...  wup_rms_k(2:nz)", (wup_rms_k(k), k=2,nz)
-  !     print "(a/(15f7.3))", &
-  !     " ...wdown_rms_k(2:nz)", (wdown_rms_k(k), k=2,nz)
-  !  end if
-
-  !
   ! Get masks to determine (cloud vs. clear) (up vs. down vs. other) categories.
   ! Vertical velocities are checked on the cell vertical interfaces to determine
   ! if they pass the threshold criteria. Clouds below the interface are then
   ! used for updrafts and above the int. for downdrafts. Quiescent (other)
   ! drafts use an average of the cloud above and below the interface to
   ! determine cloudiness.
-  !
-  select case ( mode_updnthresh )
-  case ( 1 )
-    wup_thresh_k(  :,1) =  wup_stddev*abs(upthresh)
-    wdown_thresh_k(:,1) = -wdown_stddev*abs(downthresh)
-    wup_thresh_k(  :,2) =  wup_stddev*abs(upthresh2)
-    wdown_thresh_k(:,2) = -wdown_stddev*abs(downthresh2)
-  case ( 2 )
-    wup_thresh_k(  :,1) = wup_bar   + wup_stddev*abs(upthresh)
-    wdown_thresh_k(:,1) = wdown_bar - wdown_stddev*abs(downthresh)
-    wup_thresh_k(  :,2) = wup_bar   + wup_stddev*abs(upthresh2)
-    wdown_thresh_k(:,2) = wdown_bar - wdown_stddev*abs(downthresh2)
-  case ( 3 )
-    wup_thresh_k(  :,1) =  abs(upthresh)
-    wdown_thresh_k(:,1) = -abs(downthresh)
-    wup_thresh_k(  :,2) =  abs(upthresh2)
-    wdown_thresh_k(:,2) = -abs(downthresh2)
-  case ( 4 )
-    wup_thresh_k(  :,1) =  (wup_rms  )*abs(upthresh)
-    wdown_thresh_k(:,1) = -(wdown_rms)*abs(downthresh)
-    wup_thresh_k(  :,2) =  (wup_rms  )*abs(upthresh2)
-    wdown_thresh_k(:,2) = -(wdown_rms)*abs(downthresh2)
+  
+  !    updraft   and k  > "updraft   center k",  use max( wup_rms_k, wup_rms )
+  !    updraft   and k <= "updraft   center k",  use wup_rms_k
+  !    downdraft and k  > "downdraft center k",  use max( wdown_rms_k, wdown_rms )
+  !    downdraft and k <= "downdraft center k",  use wdown_rms_k
+  ! The idea is to have a higher threshold in upper troposphere to
+  ! filter out gravity waves motions
+  tmpsuma = 0.0 ; tmpsumb = 1.0e-30
+  do k = 1, nz+1
+    tmpw = wup_rms_k(k)
+    tmpw = max(real(1.0e-4,crm_rknd),tmpw)
+    tmpw = tmpw * rhoair(k)
+    tmpsuma = tmpsuma + tmpw*k ; tmpsumb = tmpsumb + tmpw
+  end do
+  kup_center = nint(tmpsuma/tmpsumb)
+  tmpw_minval = 0.10
+  do k = 1, nz+1
+    tmpw = wup_rms_k(k)
+    if (k > kup_center) tmpw = max( tmpw, wup_rms )
+    tmpw = max( tmpw, tmpw_minval )
+    wup_thresh_k(k) = tmpw*abs(upthresh)
+  end do
 
-  case ( 5 )
-    ! For mode_updnthresh = 5, use a weighted average of wup_rms & wup_rms_ksmo(k)
-    ! because wup_rms_ksmo will be zero (or close to it) at many levels
-    wup_thresh_k(  :,1) =  (0.25*wup_rms  +0.75*wup_rms_ksmo(  :))*abs(upthresh)
-    wdown_thresh_k(:,1) = -(0.25*wdown_rms+0.75*wdown_rms_ksmo(:))*abs(downthresh)
-    wup_thresh_k(  :,2) =  (0.25*wup_rms  +0.75*wup_rms_ksmo(  :))*abs(upthresh2)
-    wdown_thresh_k(:,2) = -(0.25*wdown_rms+0.75*wdown_rms_ksmo(:))*abs(downthresh2)
+  tmpsuma = 0.0 ; tmpsumb = 1.0e-30
+  do k = 1, nz+1
+    tmpw = wdown_rms_k(k)
+    tmpw = max(real(1.0e-4,crm_rknd),tmpw)
+    tmpw = tmpw * rhoair(k)
+    tmpsuma = tmpsuma + tmpw*k ; tmpsumb = tmpsumb + tmpw
+  end do
+  kdown_center = nint(tmpsuma/tmpsumb)
+  tmpw_minval = 0.10
+  do k = 1, nz+1
+    tmpw = wdown_rms_k(k)
+    if (k > kdown_center) tmpw = max( tmpw, wdown_rms )
+    tmpw = max( tmpw, tmpw_minval )
+    wdown_thresh_k(k) = -tmpw*abs(downthresh)
+  end do
 
-  case ( 6, 7 )
-    ! For mode_updnthresh = 6 & 7, like case 4 except when k <= "updraft center k",
-    ! use minimum of wup_rms and wup_rms_k for updraft threshold
-    wup_thresh_k(  :,1) =  (wup_rms  )*abs(upthresh)
-    wdown_thresh_k(:,1) = -(wdown_rms)*abs(downthresh)
-    wup_thresh_k(  :,2) =  (wup_rms  )*abs(upthresh2)
-    wdown_thresh_k(:,2) = -(wdown_rms)*abs(downthresh2)
-
-    tmpsuma = 0.0 ; tmpsumb = 1.0e-30
-    do k = 1, nz
-      tmpw = wup_rms_k(k)
-      if (mode_updnthresh == 7) tmpw = wup_rms_ksmo(k)
-      tmpw = max(real(1.0e-4,crm_rknd),tmpw)
-      tmpw = tmpw * rhoair(k)
-      tmpsuma = tmpsuma + tmpw*k ; tmpsumb = tmpsumb + tmpw
-    end do
-    kup_center = nint(tmpsuma/tmpsumb)
-    tmpw_minval = 0.10
-    do k = 1, kup_center
-      tmpw = wup_rms_k(k)
-      if (mode_updnthresh == 7) tmpw = wup_rms_ksmo(k)
-      tmpw = max( tmpw, tmpw_minval )
-      tmpw = min( tmpw, wup_rms )
-      wup_thresh_k(k,1) = tmpw*abs(upthresh)
-      wup_thresh_k(k,2) = tmpw*abs(upthresh2)
-    end do
-
-  case ( 8, 9 )
-    ! For mode_updnthresh = 8 & 9, like case 6, 7 except that updraft and
-    ! downdraft are treated similarly.  So when k >= "downdraft center k",
-    ! use minimum of wdown_rms and wdown_rms_k for downdraft threshold
-    wup_thresh_k(  :,1) =  (wup_rms  )*abs(upthresh)
-    wdown_thresh_k(:,1) = -(wdown_rms)*abs(downthresh)
-    wup_thresh_k(  :,2) =  (wup_rms  )*abs(upthresh2)
-    wdown_thresh_k(:,2) = -(wdown_rms)*abs(downthresh2)
-
-    tmpsuma = 0.0 ; tmpsumb = 1.0e-30
-    do k = 1, nz+1
-      tmpw = wup_rms_k(k)
-      if (mode_updnthresh == 9) tmpw = wup_rms_ksmo(k)
-      tmpw = max(real(1.0e-4,crm_rknd),tmpw)
-      tmpw = tmpw * rhoair(k)
-      tmpsuma = tmpsuma + tmpw*k ; tmpsumb = tmpsumb + tmpw
-    end do
-    kup_center = nint(tmpsuma/tmpsumb)
-    tmpw_minval = 0.10
-    do k = 1, kup_center
-      tmpw = wup_rms_k(k)
-      if (mode_updnthresh == 9) tmpw = wup_rms_ksmo(k)
-      tmpw = max( tmpw, tmpw_minval )
-      tmpw = min( tmpw, wup_rms )
-      wup_thresh_k(k,1) = tmpw*abs(upthresh)
-      wup_thresh_k(k,2) = tmpw*abs(upthresh2)
-    end do
-
-    tmpsuma = 0.0 ; tmpsumb = 1.0e-30
-    do k = 1, nz+1
-      tmpw = wdown_rms_k(k)
-      if (mode_updnthresh == 9) tmpw = wdown_rms_ksmo(k)
-      tmpw = max(real(1.0e-4,crm_rknd),tmpw)
-      tmpw = tmpw * rhoair(k)
-      tmpsuma = tmpsuma + tmpw*k ; tmpsumb = tmpsumb + tmpw
-    end do
-    kdown_center = nint(tmpsuma/tmpsumb)
-    tmpw_minval = 0.10
-    do k = kdown_center, nz+1
-      tmpw = wdown_rms_k(k)
-      if (mode_updnthresh == 9) tmpw = wdown_rms_ksmo(k)
-      tmpw = max( tmpw, tmpw_minval )
-      tmpw = min( tmpw, wdown_rms )
-      wdown_thresh_k(k,1) = -tmpw*abs(downthresh)
-      wdown_thresh_k(k,2) = -tmpw*abs(downthresh2)
-    end do
-
-  case ( 14, 15 )
-    ! case 14 & 15 -- added on 10-dec-2009
-    !    updraft   and k  > "updraft   center k",  wup_rms
-    !    updraft   and k <= "updraft   center k",  use min( wup_rms_k, wup_rms )
-    !    downdraft and k  > "downdraft center k",  wdown_rms
-    !    downdraft and k <= "downdraft center k",  min( use wdown_rms_k, wdown_rms )
-    ! The idea is to have a higher threshold in upper troposphere to
-    ! filter out gravity waves motions
-    tmpsuma = 0.0 ; tmpsumb = 1.0e-30
-    do k = 1, nz+1
-      tmpw = wup_rms_k(k)
-      if (mode_updnthresh == 15) tmpw = wup_rms_ksmo(k)
-      tmpw = max(real(1.0e-4,crm_rknd),tmpw)
-      tmpw = tmpw * rhoair(k)
-      tmpsuma = tmpsuma + tmpw*k ; tmpsumb = tmpsumb + tmpw
-    end do
-    kup_center = nint(tmpsuma/tmpsumb)
-    tmpw_minval = 0.10
-    do k = 1, nz+1
-      tmpw = wup_rms_k(k)
-      if (mode_updnthresh == 15) tmpw = wup_rms_ksmo(k)
-      if (k > kup_center) then
-        tmpw = wup_rms
-      else
-        tmpw = min( tmpw, wup_rms )
-      end if
-      tmpw = max( tmpw, tmpw_minval )
-      wup_thresh_k(k,1) = tmpw*abs(upthresh)
-      wup_thresh_k(k,2) = tmpw*abs(upthresh2)
-    end do
-
-    tmpsuma = 0.0 ; tmpsumb = 1.0e-30
-    do k = 1, nz+1
-      tmpw = wdown_rms_k(k)
-      if (mode_updnthresh == 15) tmpw = wdown_rms_ksmo(k)
-      tmpw = max(real(1.0e-4,crm_rknd),tmpw)
-      tmpw = tmpw * rhoair(k)
-      tmpsuma = tmpsuma + tmpw*k ; tmpsumb = tmpsumb + tmpw
-    end do
-    kdown_center = nint(tmpsuma/tmpsumb)
-    tmpw_minval = 0.10
-    do k = 1, nz+1
-      tmpw = wdown_rms_k(k)
-      if (mode_updnthresh == 15) tmpw = wdown_rms_ksmo(k)
-      if (k > kdown_center) then
-        tmpw = wdown_rms
-      else
-        tmpw = min( tmpw, wdown_rms )
-      end if
-      tmpw = max( tmpw, tmpw_minval )
-      wdown_thresh_k(k,1) = -tmpw*abs(downthresh)
-      wdown_thresh_k(k,2) = -tmpw*abs(downthresh2)
-    end do
-
-  case ( 16, 17 )
-    ! case 16 & 17 -- added on 10-dec-2009
-    !    updraft   and k  > "updraft   center k",  use max( wup_rms_k, wup_rms )
-    !    updraft   and k <= "updraft   center k",  use wup_rms_k
-    !    downdraft and k  > "downdraft center k",  use max( wdown_rms_k, wdown_rms )
-    !    downdraft and k <= "downdraft center k",  use wdown_rms_k
-    ! The idea is to have a higher threshold in upper troposphere to
-    ! filter out gravity waves motions
-    tmpsuma = 0.0 ; tmpsumb = 1.0e-30
-    do k = 1, nz+1
-      tmpw = wup_rms_k(k)
-      if (mode_updnthresh == 17) tmpw = wup_rms_ksmo(k)
-      tmpw = max(real(1.0e-4,crm_rknd),tmpw)
-      tmpw = tmpw * rhoair(k)
-      tmpsuma = tmpsuma + tmpw*k ; tmpsumb = tmpsumb + tmpw
-    end do
-    kup_center = nint(tmpsuma/tmpsumb)
-    tmpw_minval = 0.10
-    do k = 1, nz+1
-      tmpw = wup_rms_k(k)
-      if (mode_updnthresh == 17) tmpw = wup_rms_ksmo(k)
-      if (k > kup_center) tmpw = max( tmpw, wup_rms )
-      tmpw = max( tmpw, tmpw_minval )
-      wup_thresh_k(k,1) = tmpw*abs(upthresh)
-      wup_thresh_k(k,2) = tmpw*abs(upthresh2)
-    end do
-
-    tmpsuma = 0.0 ; tmpsumb = 1.0e-30
-    do k = 1, nz+1
-      tmpw = wdown_rms_k(k)
-      if (mode_updnthresh == 17) tmpw = wdown_rms_ksmo(k)
-      tmpw = max(real(1.0e-4,crm_rknd),tmpw)
-      tmpw = tmpw * rhoair(k)
-      tmpsuma = tmpsuma + tmpw*k ; tmpsumb = tmpsumb + tmpw
-    end do
-    kdown_center = nint(tmpsuma/tmpsumb)
-    tmpw_minval = 0.10
-    do k = 1, nz+1
-      tmpw = wdown_rms_k(k)
-      if (mode_updnthresh == 17) tmpw = wdown_rms_ksmo(k)
-      if (k > kdown_center) tmpw = max( tmpw, wdown_rms )
-      tmpw = max( tmpw, tmpw_minval )
-      wdown_thresh_k(k,1) = -tmpw*abs(downthresh)
-      wdown_thresh_k(k,2) = -tmpw*abs(downthresh2)
-    end do
-
-  case ( 10, 11, 12, 13 )
-    ! For mode_updnthresh = 10, 11, use wup_rms_k and wdown_rms_k at all
-    ! levels (or the w---_rms_ksmo)
-    tmpw_minval = 0.10
-    do k = 1, nz+1
-      tmpw = wup_rms_k(k)
-      if (mode_updnthresh == 11) tmpw = wup_rms_ksmo(k)
-      if (mode_updnthresh == 13) tmpw = wup_rms_ksmo(k)
-      tmpw = max( tmpw, tmpw_minval )
-      wup_thresh_k(k,1) = tmpw*abs(upthresh)
-      wup_thresh_k(k,2) = tmpw*abs(upthresh2)
-    end do
-    tmpw_minval = 0.10
-    do k = 1, nz+1
-      tmpw = wdown_rms_k(k)
-      if (mode_updnthresh == 11) tmpw = wdown_rms_ksmo(k)
-      if (mode_updnthresh == 13) tmpw = wdown_rms_ksmo(k)
-      tmpw = max( tmpw, tmpw_minval )
-      wdown_thresh_k(k,1) = -tmpw*abs(downthresh)
-      wdown_thresh_k(k,2) = -tmpw*abs(downthresh2)
-    end do
-
-  case default
-    call endrun('determine_transport_thresh error - must have   1 <= mode_updnthresh <= 11')
-  end select
 
 end subroutine determine_transport_thresh
 
@@ -1329,8 +1103,7 @@ subroutine setup_class_masks( &
         !Transport upward at cell boundaries...
         !We have to take into account the possibility of multiple
         !updraft categories. At this point, we handle only the
-        !cases of one or two categories. We do not yet handle the
-        !allcomb option.
+        !cases of one or two categories. 
         !
         ! updraft only exist in cloudy area or precipitating clear area ++++mhwang
         cloudthresh_trans_temp = cloudthresh_trans

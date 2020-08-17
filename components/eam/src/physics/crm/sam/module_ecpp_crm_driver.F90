@@ -1,30 +1,10 @@
 module  module_ecpp_crm_driver
 #ifdef ECPP
   !------------------------------------------------------------------------
-  ! F90 module to prepare CRM output for ECPP module in the MMF model.
+  ! module to prepare CRM output for ECPP module in the MMF model.
   !
   ! This code was written originally by William Gustafson, and is adopted into
   ! the MMF model by Minghuai Wang (minghuai.wang@pnl.gov), November, 2009.
-  !
-  ! Assumptiont built into this code:
-  !
-  ! Open issues:
-  !  - The mask for determining a "moving" or limited spatial average
-  !    is not implemented.
-  !  - The dependencies in Makefile don't work. If a compile fails,
-  !    try "make clean; make" instead to clear out the module files.
-  !  - For uv_in/out, a simple time average is being done and one can
-  !    argue that it should be a weighted average since the number of in
-  !    and out points changes with each time step. The affect is probably
-  !    small for short time averages though.
-  !  - When calculating the standard deviation of vertical velocity,
-  !    each cell is treated equally and the std. dev. is over the 3 dims
-  !    below the cloud tops. We may want to consider weighting each cell
-  !    by either its volume or mass.
-  !  - To get cloud values at vertical cell interface, a simple average
-  !    is being done when an interpolation should technically be done.
-  !    This only affects quiescent cloudy/clear categories.
-  !  - Ditto for getting the density at the vertical cell interface (rho8w).
   !
   ! Differences between the methodology here and in Ferret:
   !  - When calculating wup_bar and wdown_bar, points with w==0 are ignored
@@ -37,39 +17,6 @@ module  module_ecpp_crm_driver
   !    interface was used. Now, the average of the cloud above and below
   !    is used.
   !
-  ! William.Gustafson@pnl.gov; 20-Jul-2006
-  !  v2.0 - Added two-level time averaging, one for the stats and a longer
-  !         period for output.
-  !  v2.1 - 25-Jul-2006; Fixed sign bug with uv_in/out.
-  !
-  !  v3.0 - aug-sep-2006 - many changes by r.easter and s.ghan
-  !         major change is option for multiple up and downdraft classes
-  !
-  !  v3.1 - 02-nov-2006 r.easter - replaced uv_in/outsum with u_in/outsum
-  !                                & v_in/outsum
-  !
-  !  v4.0 - 25-Jan-2007, wig;
-  !         - Added areaavgtype switch to output final areas either as
-  !           instantaneous, averaged over the last ntavg1 period of each
-  !           ntavg2 avg, or as averaged over ntavg2.
-  !         - Output areas as average over ntavg2 and also just at end
-  !           of it.
-  !         - Added entrainment averages to output (do not divide by dz).
-  !
-  !  postproc_wrfout_bb.f90 from postproc_wrfout.f90 - 15-nov-2007, rce;
-  !	- do multiple processings
-  !
-  !  v5.0 - Nov-2008, wig
-  !         - Major rewrite to include combinations of cloud, precipitation,
-  !           and transport classes
-  !         - Output format changes to multi-dimensional variables based
-  !           on the classes instead of outputting each class separately
-  !
-  ! 14-Apr-2009, wig: Fixed bug with mode_updnthresh at model top for
-  !           bad calculation of w thresholds.
-  !
-  ! 16-Apr-2009, wig: Added qcloud weighting to qlsink averages
-  !
   !----------------------------------------------------------------------------------------
   use shr_kind_mod, only: r8 => shr_kind_r8
   use params, only: crm_rknd
@@ -81,7 +28,6 @@ module  module_ecpp_crm_driver
   public ecpp_crm_init
   public ecpp_crm_cleanup
 
-
   private
   save
 
@@ -91,7 +37,6 @@ module  module_ecpp_crm_driver
   integer :: ntavg1, ntavg2  ! number of CRM steps in ntavg[12]_ss period
   integer :: itavg1, itavg2  ! level-1 and level-2 counters
 
-  integer :: mode_updnthresh
   integer :: areaavgtype
   ! Methodology to compute final area averages:
   ! 0 = area categories based on instantaneous
@@ -100,14 +45,6 @@ module  module_ecpp_crm_driver
   !     period of each ntavg2 period
   ! 2 = area cat. based on average of full ntavg2
   !     period
-  integer :: plumetype
-  ! 1 = single plume
-  ! 2 = two plumes, core and weak
-  ! 3 = multi-plume, number based on setting of
-  !     allcomb
-  logical :: allcomb
-  ! true if updrafts and downdrafts have all
-  ! combinations of bases and tops.
   real(crm_rknd) :: cloudthresh, prcpthresh, downthresh, downthresh2, upthresh, upthresh2
 
   real(crm_rknd) :: cloudthresh_trans        !  the threshold total cloud water for updraft or downdraft
@@ -135,67 +72,25 @@ contains
     nystag = ny+1
     nzstag = nzm+1
 
-    mode_updnthresh = 16
-    !     1 = method originally implemented by Bill G
-    !         wup_thresh   =  wup_stddev*abs(upthresh)
-    !         wdown_thresh = -wdown_stddev*abs(downthresh)
-    !     2 = similar to 1, but include the mean wup and wdown
-    !         wup_thresh   = wup_bar   + wup_stddev*abs(upthresh)
-    !         wdown_thresh = wdown_bar - wdown_stddev*abs(downthresh)
-    !     3 = user specifies an absolute threshold
-    !         wup_thresh   =  abs(upthresh)
-    !         wdown_thresh = -abs(downthresh)
-    !     4 = similar to 1, but do
-    !         wup_thresh   =  wup_rms*abs(upthresh)
-    !         wdown_thresh = -wdown_rms*abs(downthresh)
-    !
-    !     5     = see description  in module_ecpp_stats.f90
-    !     6,  7 = see descriptions in module_ecpp_stats.f90
-    !     8,  9 = see descriptions in module_ecpp_stats.f90
-    !    10, 11 = see descriptions in module_ecpp_stats.f90
-    !    12, 13 = see descriptions in module_ecpp_stats.f90
-
     upthresh    = 1.    !Multiples of std. dev. to classify as updraft
     downthresh  = 1.    !Multiples of std. dev. to classify as downdraft
-    upthresh2   = 0.5   ! ...ditto, except for weaker 2nd draft type when plumetype=2
-    downthresh2 = 0.5
     cloudthresh = 1e-6  !Cloud mixing ratio beyond which cell is "cloudy(liquid)" (kg/kg)
     prcpthresh  = 1e-6  !Preciptation rate (precr) beyond which cell is raining (kg/m2/s)
     ! this is used to classify precipitating vs. nonprecipitating class for wet scavenging.
 
-    !+++mhwang
     ! high thresholds are used to classify transport classes (following Xu et al., 2002, Q.J.R.M.S.
-    !
     cloudthresh_trans = 1e-5  !Cloud mixing ratio beyond which cell is "cloudy" to classify transport classes (kg/kg)   +++mhwang
     ! the maxium of cloudthres_trans and 0.01*qvs is used to classify transport class
     precthresh_trans  = 1e-4  !Preciptation mixing ratio beyond which cell is raining to classify transport classes (kg/kg)  !+++mwhang
-    !---mhwang
 
     areaavgtype= 1    !final area avg over 0=instantaneous, 1=ntavg1, 2=ntavg2
-    plumetype  = 1    !1 for single plume, 2 for core and weak plumes, 3 for multiple plumes
-    allcomb = .false. !true for all combinations of plume bases and tops, false for 1 plume per base
 
     !----------------------------------------------------------------------------------
     ! Sanity check...
     !----------------------------------------------------------------------------------
 
-    if(plumetype>3)then
-      msg = 'ecpp_crm, plumetype must be <=3'
-      call endrun(trim(msg))
-    endif
-
-    if(plumetype<3 .and. allcomb)then
-      msg='ecpp_crm, allcomb=true requires plumetype=3'
-      call endrun(trim(msg))
-    endif
-
     if(areaavgtype>2)then
       msg='ecpp_crm, areaavgtype must be <=2'
-      call endrun(trim(msg))
-    endif
-
-    if ((mode_updnthresh < 1) .or. (mode_updnthresh > 17)) then
-      msg='ecpp_crm, error - must have   1 <= mode_updnthresh <= 17'
       call endrun(trim(msg))
     endif
 
@@ -230,30 +125,9 @@ contains
     ndndraft = 0
     nupdraft_max = 0
     ndndraft_max = 0
-
-    select case (plumetype)
-    case (1) !single plume
-      nupdraft = 1
-      ndndraft = 1
-    case (2) !core and weak plumes
-      nupdraft = 2
-      ndndraft = 2
-    case (3)
-      do kbase=1,nzm-1
-        if(allcomb)then   ! all possible tops
-          nupdraft=nupdraft+nzm-kbase
-        else              ! one top per base
-          nupdraft=nupdraft+1
-        endif
-      enddo
-      do ktop=nzm,2,-1
-        if(allcomb)then   ! all possible bases
-          ndndraft=ndndraft+ktop-1
-        else              ! one base per top
-          ndndraft=ndndraft+1
-        endif
-      enddo
-    end select
+  
+    nupdraft = 1
+    ndndraft = 1
 
     nupdraft_max = max( nupdraft_max, nupdraft )
     ndndraft_max = max( ndndraft_max, ndndraft )
@@ -273,49 +147,11 @@ contains
     allocate (updraftbase(nupdraft_max,ncrms), updrafttop( nupdraft_max,ncrms) )
     allocate (dndraftbase(ndndraft_max,ncrms), dndrafttop( ndndraft_max,ncrms) )
 
-    do icrm = 1 , ncrms
-      select case (plumetype)
-      case (1) !single plume
-        updraftbase(1,icrm)=1
-        updrafttop( 1,icrm)=nzm
-        dndrafttop( 1,icrm)=nzm
-        dndraftbase(1,icrm)=1
-      case (2)
-        updraftbase(1:2,icrm)=1
-        updrafttop( 1:2,icrm)=nzm
-        dndrafttop( 1:2,icrm)=nzm
-        dndraftbase(1:2,icrm)=1
-      case (3)
-        m=0
-        do kbase=1,nzm-1
-          if(allcomb)then     ! loop over all possible tops.
-            do ktop=kbase+1,nzm
-              m=m+1
-              updraftbase(m,icrm)=kbase
-              updrafttop( m,icrm)=ktop
-            enddo
-          else                ! only one top per base
-            m=m+1
-            updraftbase(m,icrm)=kbase
-            updrafttop( m,icrm)=nzm
-          endif
-        enddo
-
-        m=0
-        do ktop=nzm,2,-1
-          if(allcomb)then    ! loop over all possible bases.
-            do kbase=ktop-1,1,-1
-              m=m+1
-              dndrafttop( m,icrm)=ktop
-              dndraftbase(m,icrm)=kbase
-            enddo
-          else               ! only one base per top
-            m=m+1
-            dndrafttop( m,icrm)=ktop
-            dndraftbase(m,icrm)=1
-          endif
-        enddo
-      end select
+    do icrm = 1 , ncrms  
+      updraftbase(1,icrm)=1
+      updrafttop( 1,icrm)=nzm
+      dndrafttop( 1,icrm)=nzm
+      dndraftbase(1,icrm)=1
     enddo
 
     !---------------------------------------------------------------------------
@@ -557,11 +393,10 @@ contains
       do icrm = 1 , ncrms
       call categorization_stats( .true., &
       nx, ny, nzm, nupdraft, ndndraft, ndraft_max, &
-      mode_updnthresh, upthresh, downthresh, &
+      upthresh, downthresh, &
       upthresh2, downthresh2, cloudthresh, prcpthresh, &
       cloudthresh_trans, precthresh_trans,  &
       qvssum1(:,:,:,icrm),          &
-      plumetype, allcomb, &
       qcloudsum1(:,:,:,icrm), qcloud_bfsum1(:,:,:,icrm), qrainsum1(:,:,:,icrm), &
       qicesum1(:,:,:,icrm), qsnowsum1(:,:,:,icrm), qgraupsum1(:,:,:,icrm), &
       qlsinksum1(:,:,:,icrm), precrsum1(:,:,:,icrm), &
