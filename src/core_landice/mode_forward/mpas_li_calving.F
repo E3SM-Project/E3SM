@@ -1434,7 +1434,7 @@ module li_calving
       do iCell = 1, nCells
 
          ! 1. Loop over downstream (non-dynamic, floating) cells
-         if (li_mask_is_floating_ice(cellMask(iCell)) .and. .not. li_mask_is_dynamic_ice(cellMask(iCell))) then
+         if (li_mask_is_floating_ice(cellMask(iCell)) .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell)))) then
 
             ! Find number of calving edges and total volume they have to offer
             nNeighbors = 0
@@ -1460,6 +1460,7 @@ module li_calving
                      removeVolumeHere = fracToUse * uncalvedVolume(iEdge)
                      calvingThickness(iCell) = calvingThickness(iCell) + removeVolumeHere / areaCell(iCell)
                      uncalvedVolume(iEdge) = uncalvedVolume(iEdge) - removeVolumeHere
+                     cellVolume(iCell) = cellVolume(iCell) - removeVolumeHere
                   endif
                enddo
             endif
