@@ -142,9 +142,10 @@ subroutine rsums2(ncrms, xkhv, xkhvsum )
 end subroutine rsums2
 
 !-----------------------------------------------------------------------------
-subroutine rsums2ToAvg( areaavgtype, nx, ny, nt1, nt2, &
+subroutine rsums2ToAvg( nx, ny, nt1, nt2, &
   xkhvsum, &
-  wwqui_cen_sum, wwqui_bnd_sum, wwqui_cloudy_cen_sum, wwqui_cloudy_bnd_sum,  &
+  wwqui_cen_sum, wwqui_bnd_sum, &
+  wwqui_cloudy_cen_sum, wwqui_cloudy_bnd_sum,  &
   area_bnd_final, area_bnd_sum, &
   area_cen_final, area_cen_sum, &
   mass_bnd_final, mass_bnd_sum, &
@@ -161,10 +162,10 @@ subroutine rsums2ToAvg( areaavgtype, nx, ny, nt1, nt2, &
   ! Note that variables that the statistics variables use a different
   ! number of times.
   !
-  ! nt1 = time length of average for area and mass for areaavgtype=2
+  ! nt1 = time length of average for area and mass
   ! nt2 = time length of average for 2nd averaging period (the whole time)
   !---------------------------------------------------------------------------
-  integer, intent(in) :: areaavgtype, nx, ny, nt1, nt2
+  integer, intent(in) :: nx, ny, nt1, nt2
   real(crm_rknd), dimension(:), intent(inout) :: &
   xkhvsum, wwqui_cen_sum, wwqui_bnd_sum, wwqui_cloudy_cen_sum, wwqui_cloudy_bnd_sum
   real(crm_rknd), dimension(:,:,:,:), intent(inout) :: &
@@ -181,18 +182,10 @@ subroutine rsums2ToAvg( areaavgtype, nx, ny, nt1, nt2, &
   integer :: i, k
   real(crm_rknd) :: ncount2, ncountwind, thesum
 
-  !  print*,"...end of level two averaging period."
-
   ncount2    = real(nx*ny*nt2,crm_rknd)
   ncountwind = real((nx+1)*ny*nt2,crm_rknd)
 
   xkhvsum      = xkhvsum/ncount2
-
-  ! Only touch final areas if doing averages over ntavg2
-  if( areaavgtype == 2 ) then
-    area_bnd_final = area_bnd_final/real(nt1,crm_rknd)
-    area_cen_final = area_cen_final/real(nt1,crm_rknd)
-  end if
 
   area_bnd_sum       = area_bnd_sum   /real(nt1,crm_rknd)
   area_cen_sum       = area_cen_sum   /real(nt1,crm_rknd)

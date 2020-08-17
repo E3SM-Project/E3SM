@@ -37,22 +37,13 @@ module  module_ecpp_crm_driver
   integer :: ntavg1, ntavg2  ! number of CRM steps in ntavg[12]_ss period
   integer :: itavg1, itavg2  ! level-1 and level-2 counters
 
-  integer :: areaavgtype
-  ! Methodology to compute final area averages:
-  ! 0 = area categories based on instantaneous
-  !     values at last time step of ntavg2
-  ! 1 = area cat. based on last ntavg1 avgeraging
-  !     period of each ntavg2 period
-  ! 2 = area cat. based on average of full ntavg2
-  !     period
-  real(crm_rknd) :: cloudthresh, prcpthresh, downthresh, downthresh2, upthresh, upthresh2
+  real(crm_rknd) :: cloudthresh, prcpthresh, downthresh, upthresh
 
   real(crm_rknd) :: cloudthresh_trans        !  the threshold total cloud water for updraft or downdraft
   real(crm_rknd) :: precthresh_trans         !  the threshold total rain, snow and graupel for clear, updraft or downdraft
 
   integer, dimension(:,:), allocatable :: updraftbase, updrafttop, dndrafttop, dndraftbase
-  integer :: nupdraft, ndndraft
-  integer :: ndraft_max, nupdraft_max, ndndraft_max
+  integer :: nupdraft, ndndraft, ndraft_max
 
 contains
 
@@ -83,28 +74,9 @@ contains
     ! the maxium of cloudthres_trans and 0.01*qvs is used to classify transport class
     precthresh_trans  = 1e-4  !Preciptation mixing ratio beyond which cell is raining to classify transport classes (kg/kg)  !+++mwhang
 
-    areaavgtype= 1    !final area avg over 0=instantaneous, 1=ntavg1, 2=ntavg2
-
-    !----------------------------------------------------------------------------------
-    ! Sanity check...
-    !----------------------------------------------------------------------------------
-
-    if(areaavgtype>2)then
-      msg='ecpp_crm, areaavgtype must be <=2'
-      call endrun(trim(msg))
-    endif
-
-    if( abs(upthresh2) > 0.90*abs(upthresh) ) then
-      msg='ecpp_crm, error - upthresh2 must be < 0.90*upthresh'
-      call endrun(trim(msg))
-    end if
-
-    if( abs(downthresh2) > 0.90*abs(downthresh) ) then
-      msg='ecpp_crm, error - downthresh2 must be < 0.90*downthresh'
-      call endrun(trim(msg))
-    end if
-
+    !---------------------------------------------------------------------------
     ! determine number of updrafts and downdrafts
+    !---------------------------------------------------------------------------
     !
     ! updraft kbase & ktop definition:
     !    ww(i,j,k ) >  wup_thresh for k=kbase+1:ktop
@@ -120,22 +92,14 @@ contains
     !
     ! for both updrafts and downdrafts,
     !    1 <= kbase < ktop < nzstag
-
-    nupdraft = 0
-    ndndraft = 0
-    nupdraft_max = 0
-    ndndraft_max = 0
   
     nupdraft = 1
     ndndraft = 1
 
-    nupdraft_max = max( nupdraft_max, nupdraft )
-    ndndraft_max = max( ndndraft_max, ndndraft )
-
     DN1 = nupdraft + 2 !Setup index of first downdraft class
     NCLASS_TR = nupdraft + ndndraft + 1
 
-    ndraft_max = 1 + nupdraft_max + ndndraft_max
+    ndraft_max = 1 + nupdraft + ndndraft
 
     if(NCLASS_TR.ne.ncls_ecpp_in) then
       call endrun('NCLASS_TR should be equal to ncls_ecpp_in')
@@ -144,8 +108,8 @@ contains
       call endrun('nupdraft or ndndraft is not set correctly')
     end if
 
-    allocate (updraftbase(nupdraft_max,ncrms), updrafttop( nupdraft_max,ncrms) )
-    allocate (dndraftbase(ndndraft_max,ncrms), dndrafttop( ndndraft_max,ncrms) )
+    allocate (updraftbase(nupdraft,ncrms), updrafttop( nupdraft,ncrms) )
+    allocate (dndraftbase(ndndraft,ncrms), dndrafttop( ndndraft,ncrms) )
 
     do icrm = 1 , ncrms  
       updraftbase(1,icrm)=1
@@ -394,7 +358,7 @@ contains
       call categorization_stats( .true., &
       nx, ny, nzm, nupdraft, ndndraft, ndraft_max, &
       upthresh, downthresh, &
-      upthresh2, downthresh2, cloudthresh, prcpthresh, &
+      cloudthresh, prcpthresh, &
       cloudthresh_trans, precthresh_trans,  &
       qvssum1(:,:,:,icrm),          &
       qcloudsum1(:,:,:,icrm), qcloud_bfsum1(:,:,:,icrm), qrainsum1(:,:,:,icrm), &
@@ -421,7 +385,7 @@ contains
       ! If we want final area categories based on the last avg1 period in each
       ! avg2 then we need to zero out the running sum just created for the areas
       ! if it is not the last block of time in ntavg2
-      if( areaavgtype==1 .and. .not. mod(itavg2,ntavg2)==0 ) then
+      if( .not. mod(itavg2,ntavg2)==0 ) then
         do icrm = 1 , ncrms
         call zero_out_areas( &
         area_bnd_final(:,:,1:1+ndn+nup,:,icrm), &
@@ -457,7 +421,7 @@ contains
       end if
 
       do icrm = 1 , ncrms
-      call rsums2ToAvg( areaavgtype, nx, ny, ncnt1, ncnt2, &
+      call rsums2ToAvg( nx, ny, ncnt1, ncnt2, &
       xkhvsum(:,icrm), &
       wwqui_cen_sum(:,icrm), wwqui_bnd_sum(:,icrm), wwqui_cloudy_cen_sum(:,icrm), wwqui_cloudy_bnd_sum(:,icrm),  &
       area_bnd_final(:,:,1:1+ndn+nup,:,icrm), area_bnd_sum(:,:,1:1+ndn+nup,:,icrm), &
