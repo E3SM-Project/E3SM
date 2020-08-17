@@ -41,7 +41,6 @@ subroutine rsums1( ncrms, qcloud,    qcloudsum1,    &
   rh,        rhsum1,        &
   cf3d,      cf3dsum1,      &
   ww,        wwsum1,        &
-  wwsq,      wwsqsum1,      &
   tkesgs,    tkesgssum1,    &
   qlsink_bf, qlsink_bfsum1, &
   prain,     prainsum1,     &
@@ -54,12 +53,12 @@ subroutine rsums1( ncrms, qcloud,    qcloudsum1,    &
   real(crm_rknd), dimension(:,:,:,:), intent(in) :: &
   qcloud, qcloud_bf, qrain, qice, qsnow, qgraup, &
   qlsink, precr, precsolid, precall, &
-  alt, rh, cf3d, ww, wwsq, tkesgs, qlsink_bf, prain, qvs
+  alt, rh, cf3d, ww, tkesgs, qlsink_bf, prain, qvs
   real(crm_rknd), dimension(:,:,:,:), intent(inout) :: &
   qcloudsum1, qcloud_bfsum1, qrainsum1, &
   qicesum1, qsnowsum1, qgraupsum1, &
   qlsinksum1, precrsum1, precsolidsum1, precallsum1, &
-  altsum1, rhsum1, cf3dsum1, wwsum1, wwsqsum1, tkesgssum1, &
+  altsum1, rhsum1, cf3dsum1, wwsum1, tkesgssum1, &
   qlsink_bfsum1, prainsum1, qvssum1
   integer :: icrm
 
@@ -78,7 +77,6 @@ subroutine rsums1( ncrms, qcloud,    qcloudsum1,    &
     rhsum1       (:,:,:,icrm) = rhsum1       (:,:,:,icrm) + rh(:,:,:,icrm)
     cf3dsum1     (:,:,:,icrm) = cf3dsum1     (:,:,:,icrm) + cf3d(icrm,:,:,:)
     wwsum1       (:,:,:,icrm) = wwsum1       (:,:,:,icrm) + ww(:,:,:,icrm)
-    wwsqsum1     (:,:,:,icrm) = wwsqsum1     (:,:,:,icrm) + wwsq(:,:,:,icrm)
     tkesgssum1   (:,:,:,icrm) = tkesgssum1   (:,:,:,icrm) + tkesgs(:,:,:,icrm)
     qlsink_bfsum1(:,:,:,icrm) = qlsink_bfsum1(:,:,:,icrm) + qlsink_bf(:,:,:,icrm)*qcloud_bf(:,:,:,icrm)  ! Note this is converted back in rsum2ToAvg
     prainsum1    (:,:,:,icrm) = prainsum1    (:,:,:,icrm) + prain(:,:,:,icrm)
@@ -90,7 +88,7 @@ end subroutine rsums1
 subroutine rsums1ToAvg( ncrms, nt, qcloudsum, qcloud_bfsum, qrainsum, &
   qicesum, qsnowsum, qgraupsum, &
   qlsinksum, precrsum, precsolidsum, precallsum, &
-  altsum, rhsum, cf3dsum, wwsum, wwsqsum, tkesgssum, qlsink_bfsum, prainsum, qvssum )
+  altsum, rhsum, cf3dsum, wwsum, tkesgssum, qlsink_bfsum, prainsum, qvssum )
   ! Turns the columns of running sums into averages for the level one time
   ! period.
   !--------------------------------------------------------------------------
@@ -98,7 +96,7 @@ subroutine rsums1ToAvg( ncrms, nt, qcloudsum, qcloud_bfsum, qrainsum, &
   real(crm_rknd), dimension(:,:,:,:), intent(inout) :: &
   qcloudsum, qcloud_bfsum, qrainsum, qicesum, qsnowsum, qgraupsum, &
   qlsinksum, precrsum, precsolidsum, precallsum, &
-  altsum, rhsum, cf3dsum, wwsum, wwsqsum, tkesgssum, qlsink_bfsum, prainsum, qvssum
+  altsum, rhsum, cf3dsum, wwsum, tkesgssum, qlsink_bfsum, prainsum, qvssum
   real(crm_rknd) :: ncount
   integer :: icrm
 
@@ -119,7 +117,6 @@ subroutine rsums1ToAvg( ncrms, nt, qcloudsum, qcloud_bfsum, qrainsum, &
     rhsum       (:,:,:,icrm) = rhsum       (:,:,:,icrm)/ncount
     cf3dsum     (:,:,:,icrm) = cf3dsum     (:,:,:,icrm)/ncount
     wwsum       (:,:,:,icrm) = wwsum       (:,:,:,icrm)/ncount
-    wwsqsum     (:,:,:,icrm) = wwsqsum     (:,:,:,icrm)/ncount
     tkesgssum   (:,:,:,icrm) = tkesgssum   (:,:,:,icrm)/ncount
     qlsink_bfsum(:,:,:,icrm) = qlsink_bfsum(:,:,:,icrm)/ncount
     prainsum    (:,:,:,icrm) = prainsum    (:,:,:,icrm)/ncount
@@ -276,14 +273,14 @@ end subroutine zero_out_areas
 subroutine zero_out_sums1( qcloudsum, qcloud_bfsum, qrainsum,                         &
   qicesum, qsnowsum, qgraupsum,                &
   qlsink, precr, precsolid, precall,           &
-  altsum, rhsum, cf3dsum, wwsum, wwsqsum, tkesgssum,    &
+  altsum, rhsum, cf3dsum, wwsum, tkesgssum,    &
   qlsink_bfsum, prainsum, qvssum     )
   ! Zeros out running sum arrays that are averaged every ntavg1_mm minutes.
   !------------------------------------------------------------------------
   real(crm_rknd),dimension(:,:,:), intent(out) :: &
   qcloudsum, qcloud_bfsum, qrainsum, qicesum, qsnowsum, qgraupsum, &
   qlsink, precr, precsolid, precall, &
-  altsum, rhsum, cf3dsum, wwsum, wwsqsum, tkesgssum, qlsink_bfsum, prainsum, qvssum
+  altsum, rhsum, cf3dsum, wwsum, tkesgssum, qlsink_bfsum, prainsum, qvssum
 
   qcloudsum=0.
   qcloud_bfsum=0.
@@ -299,7 +296,6 @@ subroutine zero_out_sums1( qcloudsum, qcloud_bfsum, qrainsum,                   
   rhsum=0.
   cf3dsum=0.
   wwsum=0.
-  wwsqsum=0.
   tkesgssum=0.
   qlsink_bfsum=0.0
   prainsum=0.0
@@ -373,7 +369,7 @@ subroutine categorization_stats( domass, &
   qvs,                    &
   qcloud, qcloud_bf, qrain, qice, qsnow, qgraup, &
   qlsink, precr, precsolid, precall, &
-  alt, rh, cf3d, ww, wwsq, tkesgs, &
+  alt, rh, cf3d, ww, tkesgs, &
   qlsink_bf, prain, &
   area_bnd_final, area_cen_final, &
   area_bnd_sum, area_cen_sum, ent_bnd_sum, mass_bnd_sum, &
@@ -398,7 +394,7 @@ subroutine categorization_stats( domass, &
   real(crm_rknd), dimension(:,:,:), intent(in) :: &
   qcloud, qcloud_bf, qrain, qice, qsnow, qgraup, &
   qlsink, precr, precsolid, precall, &
-  alt, rh, cf3d, ww, wwsq, tkesgs, qlsink_bf, prain, qvs
+  alt, rh, cf3d, ww, tkesgs, qlsink_bf, prain, qvs
   real(crm_rknd), dimension(:,:,:,:), intent(inout) :: &
   area_bnd_final, area_cen_final, &
   area_bnd_sum, area_cen_sum, ent_bnd_sum, mass_bnd_sum, &

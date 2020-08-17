@@ -145,7 +145,6 @@ contains
     allocate( rhsum1(       nx, ny, nzm,    ncrms) )
     allocate( cf3dsum1(     nx, ny, nzm,    ncrms) )
     allocate( wwsum1(       nx, ny, nzstag, ncrms) )
-    allocate( wwsqsum1(     nx, ny, nzstag, ncrms) )
     allocate( tkesgssum1(   nx, ny, nzm,    ncrms) )
     allocate( qlsink_bfsum1(nx, ny, nzm,    ncrms) )
     allocate( prainsum1(    nx, ny, nzm,    ncrms) )
@@ -194,7 +193,7 @@ contains
       qlsinksum1(:,:,:,icrm), precrsum1(:,:,:,icrm), &
       precsolidsum1(:,:,:,icrm), precallsum1(:,:,:,icrm), &
       altsum1(:,:,:,icrm), rhsum1(:,:,:,icrm), cf3dsum1(:,:,:,icrm), &
-      wwsum1(:,:,:,icrm), wwsqsum1(:,:,:,icrm), tkesgssum1(:,:,:,icrm), &
+      wwsum1(:,:,:,icrm), tkesgssum1(:,:,:,icrm), &
       qlsink_bfsum1(:,:,:,icrm), prainsum1(:,:,:,icrm), qvssum1(:,:,:,icrm) )
       ndn = ndndraft ; nup = nupdraft
       call zero_out_sums2( &
@@ -259,7 +258,6 @@ contains
     deallocate( rhsum1 )
     deallocate( cf3dsum1 )
     deallocate( wwsum1 )
-    deallocate( wwsqsum1 )
     deallocate( tkesgssum1 )
     deallocate( qlsink_bfsum1 )
     deallocate( prainsum1 )
@@ -319,7 +317,7 @@ contains
     integer :: ii, jj, kk
     integer :: icl, icls, ipr
     real(crm_rknd), dimension(nx, ny, nzm   , ncrms) :: qcloud, qrain, qice, qsnow, qgraup, precall, alt, xkhv, tketmp
-    real(crm_rknd), dimension(nx, ny, nzstag, ncrms) :: ww, wwsq
+    real(crm_rknd), dimension(nx, ny, nzstag, ncrms) :: ww
     real(crm_rknd) :: EVS
 
     !------------------------------------------------------------------------
@@ -352,7 +350,6 @@ contains
       end do
 
       ww(:,:,:,icrm)     = w(icrm,1:nx,1:ny,1:nzstag)
-      wwsq(:,:,:,icrm)   = 0.  ! subgrid vertical velocity is not used in the current version of ECPP.
       xkhv(:,:,:,icrm)   = tk(icrm,1:nx,1:ny,1:nzm)  ! eddy viscosity m2/s
     enddo
 
@@ -375,7 +372,6 @@ contains
                  rh,        rhsum1,        &
                  CF3D,      cf3dsum1,      &
                  ww,        wwsum1,        &
-                 wwsq,      wwsqsum1,      &
                  tketmp,    tkesgssum1,    &
                  qlsink_bf, qlsink_bfsum1, &
                  prain,     prainsum1,     &
@@ -396,7 +392,7 @@ contains
       end if
       call rsums1ToAvg( ncrms, ncnt1, qcloudsum1, qcloud_bfsum1, qrainsum1, &
       qicesum1, qsnowsum1, qgraupsum1, qlsinksum1, precrsum1, precsolidsum1, precallsum1, &
-      altsum1, rhsum1, cf3dsum1, wwsum1, wwsqsum1, tkesgssum1, qlsink_bfsum1, prainsum1, qvssum1  )
+      altsum1, rhsum1, cf3dsum1, wwsum1, tkesgssum1, qlsink_bfsum1, prainsum1, qvssum1  )
 
       ! Determine draft categories and get running sums of them.
       do icrm = 1 , ncrms
@@ -411,7 +407,7 @@ contains
       qlsinksum1(:,:,:,icrm), precrsum1(:,:,:,icrm), &
       precsolidsum1(:,:,:,icrm), precallsum1(:,:,:,icrm), &
       altsum1(:,:,:,icrm), rhsum1(:,:,:,icrm), cf3dsum1(:,:,:,icrm), &
-      wwsum1(:,:,:,icrm), wwsqsum1(:,:,:,icrm), tkesgssum1(:,:,:,icrm),  &
+      wwsum1(:,:,:,icrm), tkesgssum1(:,:,:,icrm),  &
       qlsink_bfsum1(:,:,:,icrm), prainsum1(:,:,:,icrm), &
       area_bnd_final(:,:,1:1+ndn+nup,:,icrm), area_cen_final(:,:,1:1+ndn+nup,:,icrm), &
       area_bnd_sum(:,:,1:1+ndn+nup,:,icrm), area_cen_sum(:,:,1:1+ndn+nup,:,icrm), &
@@ -445,7 +441,7 @@ contains
       qlsinksum1(:,:,:,icrm), precrsum1(:,:,:,icrm), &
       precsolidsum1(:,:,:,icrm), precallsum1(:,:,:,icrm), &
       altsum1(:,:,:,icrm), rhsum1(:,:,:,icrm), cf3dsum1(:,:,:,icrm), &
-      wwsum1(:,:,:,icrm), wwsqsum1(:,:,:,icrm), tkesgssum1(:,:,:,icrm), &
+      wwsum1(:,:,:,icrm), tkesgssum1(:,:,:,icrm), &
       qlsink_bfsum1(:,:,:,icrm), prainsum1(:,:,:,icrm), qvssum1(:,:,:,icrm) )
       enddo
 

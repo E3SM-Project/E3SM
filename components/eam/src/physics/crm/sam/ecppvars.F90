@@ -54,7 +54,6 @@ module ecppvars
   real(crm_rknd),dimension(:,:,:,:)   , allocatable :: rhsum1
   real(crm_rknd),dimension(:,:,:,:)   , allocatable :: cf3dsum1
   real(crm_rknd),dimension(:,:,:,:)   , allocatable :: wwsum1
-  real(crm_rknd),dimension(:,:,:,:)   , allocatable :: wwsqsum1
   real(crm_rknd),dimension(:,:,:,:)   , allocatable :: tkesgssum1
   real(crm_rknd),dimension(:,:,:,:)   , allocatable :: qvssum1
   ! dim1 = z
