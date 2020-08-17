@@ -21,101 +21,117 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-TEST_CASE("shoc_brunt_length", "shoc") {
-  constexpr Int shcol    = 2;
-  constexpr Int nlev     = 5;
-  constexpr auto nlevi   = nlev + 1;
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestCompBruntShocLength {
 
-  // Tests for the SHOC function:
-  //   compute_brunt_shoc_length
+  static void run_property()
+  {
+    static constexpr Int shcol    = 2;
+    static constexpr Int nlev     = 5;
+    static constexpr auto nlevi   = nlev + 1;
 
-  // Test for the Brunt Vaissalla frequency.  
-  // Note that input temperature profiles are selected
-  //  deliberately so that it includes a well mixed layer,
-  //  an unstable layer, and a conditionally unstable layer
-  //  to test a range of conditions.  
+    // Tests for the SHOC function:
+    //   compute_brunt_shoc_length
 
-  // Grid difference centered on thermo grid [m]
-  Real dz_zt[nlev] = {100.0, 75.0, 50.0, 25.0, 10.0};
-  // Virtual potential temperature on interface grid [K]
-  Real thv_zi[nlevi] = {310.0, 305.0, 300.0, 300.0, 295.0, 305.0};
+    // Test for the Brunt Vaissalla frequency.  
+    // Note that input temperature profiles are selected
+    //  deliberately so that it includes a well mixed layer,
+    //  an unstable layer, and a conditionally unstable layer
+    //  to test a range of conditions.  
 
-  // Initialize data structure for bridgeing to F90
-  SHOCBruntlengthData SDS(shcol, nlev, nlevi);
+    // Grid difference centered on thermo grid [m]
+    static constexpr Real dz_zt[nlev] = {100.0, 75.0, 50.0, 25.0, 10.0};
+    // Virtual potential temperature on interface grid [K]
+    static constexpr Real thv_zi[nlevi] = {310.0, 305.0, 300.0, 300.0, 295.0, 305.0};
 
-  // Test that the inputs are reasonable.
-  REQUIRE(SDS.nlevi - SDS.nlev == 1);
-  REQUIRE(SDS.shcol > 0);
+    // Initialize data structure for bridgeing to F90
+    SHOCBruntlengthData SDS(shcol, nlev, nlevi);
 
-  // Fill in test data on zt_grid.
-  for(Int s = 0; s < SDS.shcol; ++s) {
-    for(Int n = 0; n < SDS.nlev; ++n) {
-      const auto offset = n + s * SDS.nlev;
+    // Test that the inputs are reasonable.
+    REQUIRE(SDS.nlevi - SDS.nlev == 1);
+    REQUIRE(SDS.shcol > 0);
 
-      SDS.dz_zt[offset] = dz_zt[n];
-      // For theta_v on thermo grid just take the vertical average 
-      //  of thv_zi for this simple test.  Just used as a reference
-      //  in this subroutine.  
-      SDS.thv[offset] = 0.5*(thv_zi[n]+thv_zi[n+1]);
-    }
+    // Fill in test data on zt_grid.
+    for(Int s = 0; s < SDS.shcol; ++s) {
+      for(Int n = 0; n < SDS.nlev; ++n) {
+        const auto offset = n + s * SDS.nlev;
 
-    // Fill in test data on zi_grid.
-    for(Int n = 0; n < SDS.nlevi; ++n) {
-      const auto offset   = n + s * SDS.nlevi;
-      SDS.thv_zi[offset] = thv_zi[n];
-    }
-  }
-
-  // Check that the inputs make sense
-
-  // Be sure that relevant variables are greater than zero
-  for(Int s = 0; s < SDS.shcol; ++s) {
-    for(Int n = 0; n < SDS.nlev - 1; ++n) {
-      const auto offset = n + s * SDS.nlev;
-      REQUIRE(SDS.dz_zt[offset] > 0.0);
-      REQUIRE(SDS.thv[offset] > 0.0);
-    }
-
-    for(Int n = 0; n < SDS.nlevi - 1; ++n) {
-      const auto offset = n + s * SDS.nlevi;
-      REQUIRE(SDS.thv_zi[offset] > 0.0);
-    }
-  }
-
-  // Call the fortran implementation
-  compute_brunt_shoc_length(SDS);
-
-  // Check the results
-  for(Int s = 0; s < SDS.shcol; ++s) {   
-    for(Int n = 0; n < SDS.nlev; ++n) {
-      const auto offset = n + s * SDS.nlev;
-      
-      // Validate that brunt vaisalla frequency
-      //  is the correct sign given atmospheric conditions
-      
-      // well mixed layer
-      if (thv_zi[n] - thv_zi[n+1] == 0.0){
-        REQUIRE(SDS.brunt[offset] == 0.0);
+        SDS.dz_zt[offset] = dz_zt[n];
+        // For theta_v on thermo grid just take the vertical average 
+        //  of thv_zi for this simple test.  Just used as a reference
+        //  in this subroutine.  
+        SDS.thv[offset] = 0.5*(thv_zi[n]+thv_zi[n+1]);
       }
-      // unstable layer 
-      if (thv_zi[n] - thv_zi[n+1] < 0.0){
-        REQUIRE(SDS.brunt[offset] < 0.0);
-      }  
-      // stable layer
-      if (thv_zi[n] - thv_zi[n+1] > 0.0){
-        REQUIRE(SDS.brunt[offset] > 0.0);
+
+      // Fill in test data on zi_grid.
+      for(Int n = 0; n < SDS.nlevi; ++n) {
+        const auto offset   = n + s * SDS.nlevi;
+        SDS.thv_zi[offset] = thv_zi[n];
       }
+    }
+
+    // Check that the inputs make sense
+
+    // Be sure that relevant variables are greater than zero
+    for(Int s = 0; s < SDS.shcol; ++s) {
+      for(Int n = 0; n < SDS.nlev - 1; ++n) {
+        const auto offset = n + s * SDS.nlev;
+        REQUIRE(SDS.dz_zt[offset] > 0.0);
+        REQUIRE(SDS.thv[offset] > 0.0);
+      }
+
+      for(Int n = 0; n < SDS.nlevi - 1; ++n) {
+        const auto offset = n + s * SDS.nlevi;
+        REQUIRE(SDS.thv_zi[offset] > 0.0);
+      }
+    }
+
+    // Call the fortran implementation
+    compute_brunt_shoc_length(SDS);
+
+    // Check the results
+    for(Int s = 0; s < SDS.shcol; ++s) {   
+      for(Int n = 0; n < SDS.nlev; ++n) {
+        const auto offset = n + s * SDS.nlev;
       
-      // Validate that values fall within some 
-      //  reasonable bounds for this variable.  
-      REQUIRE(SDS.brunt[offset < 1.0]);
-      REQUIRE(SDS.brunt[offset > -1.0]);
+        // Validate that brunt vaisalla frequency
+        //  is the correct sign given atmospheric conditions
       
+        // well mixed layer
+        if (thv_zi[n] - thv_zi[n+1] == 0.0){
+          REQUIRE(SDS.brunt[offset] == 0.0);
+        }
+        // unstable layer 
+        if (thv_zi[n] - thv_zi[n+1] < 0.0){
+          REQUIRE(SDS.brunt[offset] < 0.0);
+        }  
+        // stable layer
+        if (thv_zi[n] - thv_zi[n+1] > 0.0){
+          REQUIRE(SDS.brunt[offset] > 0.0);
+        }
+      
+        // Validate that values fall within some 
+        //  reasonable bounds for this variable.  
+        REQUIRE(SDS.brunt[offset < 1.0]);
+        REQUIRE(SDS.brunt[offset > -1.0]);
+      
+      }
     }
   }
 
-}
+};
 
 }  // namespace unit_test
 }  // namespace shoc
 }  // namespace scream
+
+namespace{
+  
+TEST_CASE("shoc_brunt_length", "shoc")
+{
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCompBruntShocLength;
+  
+  TestStruct::run_property();
+}
+
+} // namespace
