@@ -1382,8 +1382,6 @@ module li_calving
       integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
       integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
       integer, dimension(:,:), pointer :: edgesOnCell ! list of edges that neighbor each cell
-      integer, dimension(:,:), pointer :: verticesOnEdge
-      integer, dimension(:,:), pointer :: edgesOnVertex
       integer, dimension(:), pointer :: cellMask
       integer, pointer :: nCells
       integer :: iEdge, iNeighbor, iCell
@@ -1397,9 +1395,6 @@ module li_calving
       real(kind=RKIND) :: fracToUse
       real(kind=RKIND) :: uncalvedTotal
       real(kind=RKIND) :: calvingVolumeDesired
-      integer :: iVertNeighb, iVert, jEdgeNeighb, jEdge, i
-      integer, dimension(100) :: edgeList
-      logical :: alreadyFound
 
       err = 0
 
@@ -1413,8 +1408,6 @@ module li_calving
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
-      call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
-      call mpas_pool_get_array(meshPool, 'edgesOnVertex', edgesOnVertex)
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
       call mpas_pool_get_field(scratchPool, 'workCell',  cellVolumeField)
@@ -1457,8 +1450,8 @@ module li_calving
             if (calvingVolumeDesired > 0.0_RKIND) then
                ! Calculate what fraction to take of total available ice to give
                fracToUse = min(cellVolume(iCell) / calvingVolumeDesired, 1.0_RKIND)
-               call mpas_log_write("Downstream: cell=$i, num=$i, fracToUse=$r", &
-                       intArgs=(/iCell, nNeighbors/), realArgs=(/fracToUse/))
+               !call mpas_log_write("Downstream: cell=$i, num=$i, fracToUse=$r", &
+               !        intArgs=(/iCell, nNeighbors/), realArgs=(/fracToUse/))
 
                ! Now actually set the amount to calve
                do iNeighbor = 1, nEdgesOnCell(iCell)
@@ -1475,70 +1468,9 @@ module li_calving
          endif ! if this is a downstream cell
       enddo
 
-      ! Make a second pass through non-dynamic cells. Find any that still have ice and try to
-      ! use up any required calving from their neighbors' neighbors
-      ! before moving on to upstream/dynamic cells.  This is to avoid accidentally stranding non-dynamic cells.
       do iCell = 1, nCells
-         if ((li_mask_is_floating_ice(cellMask(iCell))) .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell))) .and. &
-                 (cellVolume(iCell) > 0.0_RKIND) ) then
 
-            call mpas_log_write("Second pass for cell $i", intArgs=(/iCell/))
-
-            ! Find calving front edges adjacent to this cell's calving front edges
-            nNeighbors = 0
-            calvingVolumeDesired = 0.0_RKIND
-            edgeList(:) = -99
-            do iNeighbor = 1, nEdgesOnCell(iCell)
-               iEdge = edgesOnCell(iNeighbor, iCell)
-               if (calvingFrontMaskEdge(iEdge) == 1) then
-                  call mpas_log_write("  Looking for edges on edge $i", intArgs=(/iEdge/))
-                  do iVertNeighb = 1, 2
-                     iVert = verticesOnEdge(iVertNeighb, iEdge)
-                     do jEdgeNeighb = 1, 3 ! ASSUMING VERTEXDEGREE IS 3
-                        jEdge = edgesOnVertex(jEdgeNeighb, iVert)
-                        if ((calvingFrontMaskEdge(jEdge) == 1) .and. (jEdge /= iEdge)) then
-                           ! Check if we already found this edge
-                           alreadyFound = .false.
-                           do i = 1, nNeighbors
-                              if (jEdge == edgeList(i)) then
-                                 alreadyFound= .true.
-                                 continue ! If we found this edge already, skip this.
-                              endif
-                           enddo
-                           if (.not. alreadyFound) then
-                              nNeighbors = nNeighbors + 1
-                              edgeList(nNeighbors) = jEdge
-                              call mpas_log_write("     Found edge on edge $i", intArgs=(/jEdge/))
-                              calvingVolumeDesired = calvingVolumeDesired + uncalvedVolume(jEdge)
-                           endif
-                        endif
-                     enddo
-                  enddo
-               endif
-            enddo
-
-            if (calvingVolumeDesired > 0.0_RKIND) then
-               ! Calculate what fraction to take of total available ice to give
-               fracToUse = min(cellVolume(iCell) / calvingVolumeDesired, 1.0_RKIND)
-               call mpas_log_write("  Downstream Pass 2: cell=$i, num=$i, fracToUse=$r", &
-                       intArgs=(/iCell, nNeighbors/), realArgs=(/fracToUse/))
-
-               ! Now actually set the amount to calve
-               do i = 1, nNeighbors
-                  jEdge = edgeList(i)
-                  removeVolumeHere = fracToUse * uncalvedVolume(jEdge)
-                  calvingThickness(iCell) = calvingThickness(iCell) + removeVolumeHere / areaCell(iCell)
-                  uncalvedVolume(jEdge) = uncalvedVolume(jEdge) - removeVolumeHere
-                  cellVolume(iCell) = cellVolume(iCell) - removeVolumeHere
-               enddo ! edge list
-            endif ! if there is calving to give
-
-         endif ! if this is a non-dynamic floating cell
-      enddo ! outer cell loop
-
-
-      ! 2. Loop over upstream (dynamic, bed below sea level) cells
-      do iCell = 1, nCells
+         ! 2. Loop over upstream (dynamic, bed below sea level) cells
          if (calvingFrontMaskCell(iCell)==1) then
             ! Find number of calving edges and total volume they have to offer
             nNeighbors = 0
