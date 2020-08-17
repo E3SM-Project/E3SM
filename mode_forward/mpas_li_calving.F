@@ -1270,7 +1270,8 @@ module li_calving
                    edgeCalvingFrontHeight = thickness(jCell)
                 endif
             enddo
-
+            edgeCalvingFrontHeight = 300.0
+!  call mpas_log_write("edge=$i   Ht=$r", intArgs=(/iEdge/), realArgs=(/edgeCalvingFrontHeight/))
             ! TODO: dot product of velocity with edge orientation
             requiredCalvingVolume(iEdge) = calvingVelocity(iEdge) * edgeCalvingFrontLength * edgeCalvingFrontHeight * deltat !m^3
 
