@@ -129,6 +129,7 @@ contains
 !   tstep_type=7  KG5+BE      KG5(2nd order, 4.0CFL) + BE.  1st order max stability IMEX
 !   tstep_type=8  KG3+BE/CN   KG3 2nd order explicit, 1st order off-centering implicit
 !   tstep_type=9  KGU53+BE/CN KGU53 3rd order explicit, 2st order implicit
+!   tstep_type=10 KGU42+BE/optimized, from O. Guba
 !
 
 ! default weights for computing mean dynamics fluxes
@@ -329,7 +330,48 @@ contains
        a2=dt/36    ! 5/18 - 1/4 (due to the 1/4*u1 added above)
        a3=8*dt/18
        call compute_stage_value_dirk(nm1,a2,n0,a1,np1,a3,qn0,elem,hvcoord,hybrid,&
+            deriv,nets,nete,maxiter,itertol)
+
+    else if (tstep_type==10) then ! KG5(2nd order CFL=4) + optimized
+      dt2=dt/4
+      call compute_andor_apply_rhs(nm1,n0,n0,qn0,dt2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0,1.d0,0.d0,1.d0)
+      call compute_stage_value_dirk(nm1,0d0,n0,0d0,nm1,dt2,qn0,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
+
+      dt2=dt/6
+      call compute_andor_apply_rhs(np1,n0,nm1,qn0,dt2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
+      call compute_stage_value_dirk(nm1,0d0,n0,0d0,np1,dt2,qn0,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+
+      dt2=3*dt/8
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
+      call compute_stage_value_dirk(nm1,0d0,n0,0d0,np1,dt2,qn0,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+
+
+      dt2=dt/2
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
+      call compute_stage_value_dirk(nm1,0d0,n0,0d0,np1,dt2,qn0,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,eta_ave_w*1d0,1.d0,0d0,1.d0)
+
+
+      a1=.24362d0   
+      a2=.34184d0 
+      a3=1-(a1+a2)
+      call compute_stage_value_dirk(nm1,a2*dt,n0,a1*dt,np1,a3*dt,qn0,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+      !  u0 saved in elem(n0)
+      !  u1 saved in elem(nm1)
+      !  u4 saved in elem(np1)
+
+
 
 #ifdef ARKODE
     else if (tstep_type==20) then ! ARKode RK2
