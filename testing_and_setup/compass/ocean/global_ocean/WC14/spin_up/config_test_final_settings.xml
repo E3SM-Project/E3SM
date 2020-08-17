@@ -11,7 +11,7 @@
 	<namelist name="namelist.ocean" mode="forward">
 		<template file="template_forward.xml" path_base="script_configuration_dir"/>
 		<template file="template_forward.xml" path_base="script_resolution_dir"/>
-		<option name="config_run_duration">'00-01-00_00:00:00'</option>
+		<option name="config_run_duration">'00-00-24_00:00:00'</option>
 		<option name="config_do_restart">.true.</option>
 		<option name="config_start_time">'file'</option>
 		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
@@ -29,7 +29,7 @@
 			<attribute name="output_interval">00-00-10_00:00:00</attribute>
 		</stream>
 		<stream name="restart">
-			<attribute name="output_interval">00-01-00_00:00:00</attribute>
+			<attribute name="output_interval">00-00-06_00:00:00</attribute>
 		</stream>
 
 		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
