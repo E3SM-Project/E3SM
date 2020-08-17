@@ -26,7 +26,8 @@ set(SHOC_HEADERS
 # Add ETI source files if not on CUDA
 if (NOT CUDA_BUILD)
   list(APPEND SHOC_SRCS
-      )
+    shoc_calc_shoc_vertflux.cpp
+  )
 endif()
 
 add_library(shoc ${SHOC_SRCS})

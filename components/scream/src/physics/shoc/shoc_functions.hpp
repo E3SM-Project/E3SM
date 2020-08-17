@@ -60,6 +60,9 @@ struct Functions
   template <typename S>
   using uview_1d = typename ko::template Unmanaged<view_1d<S> >;
 
+  template <typename S>
+  using uview_2d = typename ko::template Unmanaged<view_2d<S> >;
+
   using MemberType = typename KT::MemberType;
 
   using Workspace = typename WorkspaceManager<Spack, Device>::Workspace;
@@ -67,6 +70,15 @@ struct Functions
   //
   // --------- Functions ---------
   //
+  KOKKOS_FUNCTION
+  static void calc_shoc_vertflux(
+    const MemberType& team,
+    const Int& nlev,
+    const uview_1d<const Spack>& tkh_zi,
+    const uview_1d<const Spack>& dz_zi,
+    const uview_1d<const Spack>& invar,
+    const uview_1d<Spack>& vertflux);
+
 }; // struct Functions
 
 } // namespace shoc
@@ -75,8 +87,7 @@ struct Functions
 // If a GPU build, make all code available to the translation unit; otherwise,
 // ETI is used.
 #ifdef KOKKOS_ENABLE_CUDA
-//# include "shoc_functions_math_impl.hpp"
-
+# include "shoc_calc_shoc_vertflux_impl.hpp"
 #endif
 
 #endif

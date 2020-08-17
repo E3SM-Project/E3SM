@@ -92,6 +92,6 @@ set_target_properties(atm PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR
 # Link libraries
 target_link_libraries(atm PRIVATE ${SCREAM_LIBS} ${SCREAM_CIME_LIBS})
 
-#if (NOT SCREAM_LIB_ONLY)
-add_subdirectory(tests)
-#endif()
+if (NOT SCREAM_LIB_ONLY)
+  add_subdirectory(tests)
+endif()

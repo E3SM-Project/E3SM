@@ -6,6 +6,11 @@ set(SHOC_TESTS_SRCS
     shoc_grid_tests.cpp
     shoc_vertflux_tests.cpp
     shoc_varorcovar_tests.cpp
+    shoc_tke_column_stab_tests.cpp
+    shoc_tke_shr_prod_tests.cpp
+    shoc_tke_isotropic_ts_tests.cpp
+    shoc_tke_adv_sgs_tke_tests.cpp
+    shoc_eddy_diffusivities_tests.cpp
     shoc_unit_tests.cpp)
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build
