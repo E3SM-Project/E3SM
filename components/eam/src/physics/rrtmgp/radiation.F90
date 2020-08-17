@@ -26,7 +26,10 @@ module radiation
    ! RRTMGP gas optics object to store coefficient information. This is imported
    ! here so that we can make the k_dist objects module data and only load them
    ! once.
-   use mo_gas_optics_rrtmgp, only: ty_gas_optics_rrtmgp
+   use rrtmgp_interface, only: &
+      k_dist_sw, k_dist_lw, rrtmgp_initialize, &
+      rrtmgp_nswbands => nswbands, rrtmgp_nlwbands => nlwbands, &
+      nswgpts, nlwgpts
    use mo_rte_kind, only: wp
 
    ! Use my assertion routines to perform sanity checks
@@ -137,18 +140,9 @@ module radiation
    ! angle calculation? What is the other behavior?
    real(r8) :: dt_avg = 0.0_r8  
 
-   ! k-distribution coefficients. These will be populated by reading from the
-   ! RRTMGP coefficients files, specified by coefficients_file_sw and
-   ! coefficients_file_lw in the radiation namelist. They exist as module data
-   ! because we only want to load those files once.
-   type(ty_gas_optics_rrtmgp) :: k_dist_sw, k_dist_lw
-
    ! k-distribution coefficients files to read from. These are set via namelist
    ! variables.
    character(len=cl) :: rrtmgp_coefficients_file_sw, rrtmgp_coefficients_file_lw
-
-   ! Number of g-points in k-distribution (set based on absorption coefficient inputdata)
-   integer :: nswgpts, nlwgpts
 
    ! Band midpoints; these need to be module variables because of how cam_history works;
    ! add_hist_coord sets up pointers to these, so they need to persist.
@@ -468,13 +462,6 @@ contains
 
       character(len=128) :: error_message
 
-      ! ty_gas_concs object that would normally hold volume mixing ratios for
-      ! radiatively-important gases. Here, this is just used to provide the names
-      ! of gases that are available in the model (needed by the kdist
-      ! initialization routines that are called within the load_coefficients
-      ! methods).
-      type(ty_gas_concs) :: available_gases
-
       character(len=32) :: subname = 'radiation_init'
 
       !-----------------------------------------------------------------------
@@ -492,27 +479,12 @@ contains
       ! Do initialization for perturbation growth tests
       call perturbation_growth_init()
 
-      ! Read gas optics coefficients from file
-      ! Need to initialize available_gases here! The only field of the
-      ! available_gases type that is used int he kdist initialize is
-      ! available_gases%gas_name, which gives the name of each gas that would be
-      ! present in the ty_gas_concs object. So, we can just set this here, rather
-      ! than trying to fully populate the ty_gas_concs object here, which would be
-      ! impossible from this initialization routine because I do not thing the
-      ! rad_cnst objects are setup yet.
-      ! the other tasks!
-      ! TODO: This needs to be fixed to ONLY read in the data if masterproc, and then broadcast
-      call set_available_gases(active_gases, available_gases)
-      call rrtmgp_load_coefficients(k_dist_sw, rrtmgp_coefficients_file_sw, available_gases)
-      call rrtmgp_load_coefficients(k_dist_lw, rrtmgp_coefficients_file_lw, available_gases)
+      ! Setup the RRTMGP interface
+      call rrtmgp_initialize(active_gases, rrtmgp_coefficients_file_sw, rrtmgp_coefficients_file_lw)
 
       ! Make sure number of bands in absorption coefficient files matches what we expect
-      call assert(nswbands == k_dist_sw%get_nband(), 'nswbands does not match absorption coefficient data')
-      call assert(nlwbands == k_dist_lw%get_nband(), 'nlwbands does not match absorption coefficient data')
-
-      ! Number of gpoints depend on inputdata, so initialize here
-      nswgpts = k_dist_sw%get_ngpt()
-      nlwgpts = k_dist_lw%get_ngpt()
+      call assert(nswbands == rrtmgp_nswbands, 'nswbands does not match absorption coefficient data')
+      call assert(nlwbands == rrtmgp_nlwbands, 'nlwbands does not match absorption coefficient data')
 
       ! Set number of levels used in radiation calculations
 #ifdef NO_EXTRA_RAD_LEVEL
@@ -1023,28 +995,6 @@ contains
 #endif /* DO_PERGRO_MODS */
 
    end subroutine perturbation_growth_init
-
-
-   subroutine set_available_gases(gases, gas_concentrations)
-
-      use mo_gas_concentrations, only: ty_gas_concs
-      use mo_rrtmgp_util_string, only: lower_case
-
-      type(ty_gas_concs), intent(inout) :: gas_concentrations
-      character(len=*), intent(in) :: gases(:)
-      character(len=32), dimension(size(gases)) :: gases_lowercase
-      integer :: igas
-
-      ! Initialize with lowercase gas names; we should work in lowercase
-      ! whenever possible because we cannot trust string comparisons in RRTMGP
-      ! to be case insensitive
-      do igas = 1,size(gases)
-         gases_lowercase(igas) = trim(lower_case(gases(igas)))
-      end do
-      call handle_error(gas_concentrations%init(gases_lowercase))
-
-   end subroutine set_available_gases
-
 
    !===============================================================================
         

@@ -27,7 +27,10 @@ module radiation
    ! RRTMGP gas optics object to store coefficient information. This is imported
    ! here so that we can make the k_dist objects module data and only load them
    ! once.
-   use mo_gas_optics_rrtmgp, only: ty_gas_optics_rrtmgp
+   use rrtmgp_interface, only: &
+      k_dist_sw, k_dist_lw, rrtmgp_initialize, &
+      rrtmgp_nswbands => nswbands, rrtmgp_nlwbands => nlwbands, &
+      nswgpts, nlwgpts
 
    ! Use my assertion routines to perform sanity checks
    use assertions, only: assert, assert_valid, assert_range
@@ -140,18 +143,9 @@ module radiation
    ! angle calculation? What is the other behavior?
    real(r8) :: dt_avg = 0.0_r8  
 
-   ! k-distribution coefficients. These will be populated by reading from the
-   ! RRTMGP coefficients files, specified by coefficients_file_sw and
-   ! coefficients_file_lw in the radiation namelist. They exist as module data
-   ! because we only want to load those files once.
-   type(ty_gas_optics_rrtmgp) :: k_dist_sw, k_dist_lw
-
    ! k-distribution coefficients files to read from. These are set via namelist
    ! variables.
-   character(len=cl) :: coefficients_file_sw, coefficients_file_lw
-
-   ! Number of g-points in k-distribution (set based on absorption coefficient inputdata)
-   integer :: nswgpts, nlwgpts
+   character(len=cl) :: rrtmgp_coefficients_file_sw, rrtmgp_coefficients_file_lw
 
    ! Band midpoints; these need to be module variables because of how cam_history works;
    ! add_hist_coord sets up pointers to these, so they need to persist.
@@ -215,7 +209,6 @@ contains
       integer :: unitn, ierr
       integer :: dtime  ! timestep size
       character(len=*), parameter :: subroutine_name = 'radiation_readnl'
-      character(len=cl) :: rrtmgp_coefficients_file_lw, rrtmgp_coefficients_file_sw
 
       ! Variables defined in namelist
       namelist /radiation_nl/ rrtmgp_coefficients_file_lw,     &
@@ -256,10 +249,6 @@ contains
       call mpibcast(rrtmgp_enable_temperature_warnings, 1, mpi_logical, mstrid, mpicom, ierr)
 #endif
 
-      ! Set module data
-      coefficients_file_lw = rrtmgp_coefficients_file_lw
-      coefficients_file_sw = rrtmgp_coefficients_file_sw
-
       ! Convert iradsw, iradlw and irad_always from hours to timesteps if necessary
       if (present(dtime_in)) then
          dtime = dtime_in
@@ -273,7 +262,7 @@ contains
       ! Print runtime options to log.
       if (masterproc) then
          write(iulog,*) 'RRTMGP radiation scheme parameters:'
-         write(iulog,10) trim(coefficients_file_lw), trim(coefficients_file_sw), &
+         write(iulog,10) trim(rrtmgp_coefficients_file_lw), trim(rrtmgp_coefficients_file_sw), &
                          iradsw, iradlw, irad_always, &
                          use_rad_dt_cosz, spectralflux, &
                          do_aerosol_rad, fixed_total_solar_irradiance, &
@@ -502,26 +491,12 @@ contains
       ! Do initialization for perturbation growth tests
       call perturbation_growth_init()
 
-      ! Read gas optics coefficients from file
-      ! Need to initialize available_gases here! The only field of the
-      ! available_gases type that is used int he kdist initialize is
-      ! available_gases%gas_name, which gives the name of each gas that would be
-      ! present in the ty_gas_concs object. So, we can just set this here, rather
-      ! than trying to fully populate the ty_gas_concs object here, which would be
-      ! impossible from this initialization routine because I do not thing the
-      ! rad_cnst objects are setup yet.
-      call set_available_gases(active_gases, available_gases)
-      call rrtmgp_load_coefficients(k_dist_sw, coefficients_file_sw, available_gases)
-      call rrtmgp_load_coefficients(k_dist_lw, coefficients_file_lw, available_gases)
+      ! Setup the RRTMGP interface
+      call rrtmgp_initialize(active_gases, rrtmgp_coefficients_file_sw, rrtmgp_coefficients_file_lw)
 
       ! Make sure number of bands in absorption coefficient files matches what we expect
-      call assert(nswbands == k_dist_sw%get_nband(), 'nswbands does not match absorption coefficient data')
-      call assert(nlwbands == k_dist_lw%get_nband(), 'nlwbands does not match absorption coefficient data')
-
-      ! Set number of g-points for used for correlated-k. These are determined
-      ! by the absorption coefficient data.
-      nswgpts = k_dist_sw%get_ngpt()
-      nlwgpts = k_dist_lw%get_ngpt()
+      call assert(nswbands == rrtmgp_nswbands, 'nswbands does not match absorption coefficient data')
+      call assert(nlwbands == rrtmgp_nlwbands, 'nlwbands does not match absorption coefficient data')
 
       ! Set number of levels used in radiation calculations
 #ifdef NO_EXTRA_RAD_LEVEL
