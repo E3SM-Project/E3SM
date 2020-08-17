@@ -1,10 +1,11 @@
 #ifndef SCREAM_FIELD_ALLOC_PROP_HPP
 #define SCREAM_FIELD_ALLOC_PROP_HPP
 
-#include "ekat/scream_assert.hpp"
-#include "ekat/scream_types.hpp"
-#include "ekat/util/scream_utils.hpp"
 #include "share/field/field_identifier.hpp"
+#include "share/scream_types.hpp"
+
+#include "ekat/ekat_scalar_traits.hpp"
+#include "ekat/ekat_assert.hpp"
 
 #include <vector>
 
@@ -78,33 +79,36 @@ protected:
 template<typename ValueType>
 void FieldAllocProp::request_value_type_allocation () {
 
-  error::runtime_check(!m_committed, "Error! Cannot change allocation properties after they have been commited.\n");
+  using ekat::ScalarTraits;
+  using namespace ekat::error;
+
+  ekat::error::runtime_check(!m_committed, "Error! Cannot change allocation properties after they have been commited.\n");
   
   constexpr int vts = sizeof(ValueType);
   if (m_scalar_type_size==0) {
     // This is the first time we receive a request. Set the scalar type properties
-    m_scalar_type_size = sizeof(typename util::ScalarProperties<ValueType>::scalar_type);
-    m_scalar_type_name = util::TypeName<typename util::ScalarProperties<ValueType>::scalar_type>::name();
+    m_scalar_type_size = sizeof(typename ScalarTraits<ValueType>::scalar_type);
+    m_scalar_type_name = ScalarTraits<typename ScalarTraits<ValueType>::scalar_type>::name();
   } else {
 
     // Make sure the scalar_type of the new requested type coincides with the one already stored
-    error::runtime_check(util::TypeName<typename util::ScalarProperties<ValueType>::scalar_type>::name()==m_scalar_type_name,
-                         "Error! There was already a value type request for this allocation, and the stored scalar_type name (" +
-                         m_scalar_type_name + ") does not match the one from the new request (" + util::TypeName<ValueType>::name() + ").\n");
-    error::runtime_check(sizeof(typename util::ScalarProperties<ValueType>::scalar_type)==m_scalar_type_size,
-                         "Error! There was already a value type request for this allocation, and the size of the stored scalar_type (" +
-                         std::to_string(m_scalar_type_size) + ") does not match the size of the scalar_type of the new request (" +
-                         std::to_string(sizeof(typename util::ScalarProperties<ValueType>::scalar_type)) + ").\n");
+    runtime_check(ScalarTraits<typename ScalarTraits<ValueType>::scalar_type>::name()==m_scalar_type_name,
+                  "Error! There was already a value type request for this allocation, and the stored scalar_type name (" +
+                  m_scalar_type_name + ") does not match the one from the new request (" + ScalarTraits<ValueType>::name() + ").\n");
+    runtime_check(sizeof(typename ScalarTraits<ValueType>::scalar_type)==m_scalar_type_size,
+                  "Error! There was already a value type request for this allocation, and the size of the stored scalar_type (" +
+                  std::to_string(m_scalar_type_size) + ") does not match the size of the scalar_type of the new request (" +
+                  std::to_string(sizeof(typename ScalarTraits<ValueType>::scalar_type)) + ").\n");
 
     // Furthermore, if value type is not the same as scalar type (by comparing name and size), ValueType *must* be a pack
-    const std::string vtn = util::TypeName<ValueType>::name();
-    error::runtime_check( (m_scalar_type_name==vtn && m_scalar_type_size==vts) || util::ScalarProperties<ValueType>::is_pack,
-                          "Error! Template argument ValueType must be either the ScalarType of this allocation, or a pack type.\n");
+    const std::string vtn = ScalarTraits<ValueType>::name();
+    runtime_check( (m_scalar_type_name==vtn && m_scalar_type_size==vts) || ScalarTraits<ValueType>::is_simd,
+                    "Error! Template argument ValueType must be either the ScalarType of this allocation, or a pack type.\n");
   }
 
   // If ValueType only contains N scalar_type inside, this will pass. If not, then it's a bad ValueType,
-  // or you have a wrong scalar_type in the specialization of ScalarProperties<ValueType>. Either way, error out.
-  scream_require_msg(vts % m_scalar_type_size == 0,
+  // or you have a wrong scalar_type in the specialization of ScalarTraits<ValueType>. Either way, error out.
+  EKAT_REQUIRE_MSG(vts % m_scalar_type_size == 0,
                      "Error! The size of the scalar_type (" + std::to_string(m_scalar_type_size) +
                      ") does not divide the size of the given value_type (" + std::to_string(vts) + ").\n");
 
@@ -113,22 +117,23 @@ void FieldAllocProp::request_value_type_allocation () {
 }
 
 inline int FieldAllocProp::get_alloc_size () const {
-  error::runtime_check(m_committed,"Error! You cannot query the allocation properties until they have been committed.");
+  ekat::error::runtime_check(m_committed,"Error! You cannot query the allocation properties until they have been committed.");
   return m_alloc_size;
 }
 
 inline int FieldAllocProp::get_last_dim_alloc_size () const {
-  error::runtime_check(m_committed,"Error! You cannot query the allocation properties until they have been committed.");
+  ekat::error::runtime_check(m_committed,"Error! You cannot query the allocation properties until they have been committed.");
   return m_last_dim_alloc_size;
 }
 
 template<typename ValueType>
 bool FieldAllocProp::is_allocation_compatible_with_value_type () const {
   using NonConstValueType = typename std::remove_const<ValueType>::type;
+  using ekat::ScalarTraits;
 
-  constexpr int  sts = sizeof(typename util::ScalarProperties<ValueType>::scalar_type);
+  constexpr int  sts = sizeof(typename ScalarTraits<ValueType>::scalar_type);
   constexpr int  vts = sizeof(ValueType);
-  const auto stn = util::TypeName<typename util::ScalarProperties<NonConstValueType>::scalar_type>::name();
+  const auto stn = ScalarTraits<typename ScalarTraits<NonConstValueType>::scalar_type>::name();
 
   return stn==m_scalar_type_name
       && sts==m_scalar_type_size && (m_last_dim_alloc_size%vts==0);

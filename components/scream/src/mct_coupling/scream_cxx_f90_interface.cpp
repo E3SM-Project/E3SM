@@ -1,25 +1,25 @@
-#include "ekat/scream_session.hpp"
-#include "scream_config.h"
-
-#include "ekat/scream_parse_yaml_file.hpp"
-#include "share/atm_process/atmosphere_process.hpp"
-#include "ekat/scream_pack.hpp"
-#include "share/grid/user_provided_grids_manager.hpp"
-#include "share/grid/se_grid.hpp"
-#include "control/atmosphere_driver.hpp"
+#include "mct_coupling/ScreamContext.hpp"
 
 #include "dynamics/register_dynamics.hpp"
-#include "physics/register_physics.hpp"
 
+#include "physics/register_physics.hpp"
 #include "physics/p3/scream_p3_interface.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
 #include "physics/shoc/scream_shoc_interface.hpp"
 
-#include "control/tests/dummy_grid.hpp"
+// #include "control/tests/dummy_grid.hpp"
+#include "control/atmosphere_driver.hpp"
 
-#include "mct_coupling/ScreamContext.hpp"
-#include "ekat/mpi/scream_comm.hpp"
-#include "ekat/scream_types.hpp"
+#include "share/atm_process/atmosphere_process.hpp"
+#include "share/grid/user_provided_grids_manager.hpp"
+#include "share/grid/se_grid.hpp"
+#include "share/scream_types.hpp"
+#include "share/scream_session.hpp"
+#include "scream_config.h"
+
+#include "ekat/mpi/ekat_comm.hpp"
+#include "ekat/ekat_pack.hpp"
+#include "ekat/ekat_parse_yaml_file.hpp"
 
 using scream::Real;
 
@@ -38,8 +38,8 @@ void scream_init (const MPI_Fint& f_comm,
 
   // First of all, disable all fpes we may have enabled.
   // Store the mask, so we can restore before returning.
-  int fpe_mask = get_enabled_fpes();
-  disable_all_fpes();
+  int fpe_mask = ekat::get_enabled_fpes();
+  ekat::disable_all_fpes();
 
   // First of all, initialize the scream session
   scream::initialize_scream_session();
@@ -49,16 +49,16 @@ void scream_init (const MPI_Fint& f_comm,
 
   // Create the C MPI_Comm from the Fortran one
   MPI_Comm mpi_comm_c = MPI_Comm_f2c(f_comm);
-  auto& atm_comm = c.create<scream::Comm>(mpi_comm_c);
+  auto& atm_comm = c.create<ekat::Comm>(mpi_comm_c);
 
 
   // Create a parameter list for inputs
   printf("[scream] reading parameterr from yaml file: %s\n",input_yaml_file);
-  ParameterList scream_params("Scream Parameters");
+  ekat::ParameterList scream_params("Scream Parameters");
   parse_yaml_file (input_yaml_file, scream_params);
   scream_params.print();
 
-  error::runtime_check(scream_params.isSublist("Atmosphere Driver"),
+  ekat::error::runtime_check(scream_params.isSublist("Atmosphere Driver"),
        "Error! Sublist 'Atmosphere Driver' not found inside '" +
        std::string(input_yaml_file) + "'.\n");
 
@@ -84,8 +84,8 @@ void scream_init (const MPI_Fint& f_comm,
   ad.initialize(atm_comm,ad_params,time);
 
   // Restore the FPE flag as it was when control was handed to us.
-  disable_all_fpes();
-  enable_fpes(fpe_mask);
+  ekat::disable_all_fpes();
+  ekat::enable_fpes(fpe_mask);
 
 }
 /*===============================================================================================*/
@@ -96,9 +96,9 @@ void scream_run (const Real& dt) {
 
   // First of all, enable only scream fpes.
   // Store the mask, so we can restore before returning.
-  int fpe_mask = get_enabled_fpes();
-  disable_all_fpes();
-  enable_default_fpes();
+  int fpe_mask = ekat::get_enabled_fpes();
+  ekat::disable_all_fpes();
+  ekat::enable_default_fpes();
 
   // Get the context
   auto& c = ScreamContext::singleton();
@@ -110,8 +110,8 @@ void scream_run (const Real& dt) {
   (void) dt;
 
   // Restore the FPE flag as it was when control was handed to us.
-  disable_all_fpes();
-  enable_fpes(fpe_mask);
+  ekat::disable_all_fpes();
+  ekat::enable_fpes(fpe_mask);
 }
 /*===============================================================================================*/
 void scream_finalize (/* args ? */) {
@@ -120,9 +120,9 @@ void scream_finalize (/* args ? */) {
 
   // First of all, enable only scream fpes.
   // Store the mask, so we can restore before returning.
-  int fpe_mask = get_enabled_fpes();
-  disable_all_fpes();
-  enable_default_fpes();
+  int fpe_mask = ekat::get_enabled_fpes();
+  ekat::disable_all_fpes();
+  ekat::enable_default_fpes();
 
   // TODO: uncomment once you have valid inputs. I fear AD may crash with no inputs.
   // Get the context
@@ -136,8 +136,8 @@ void scream_finalize (/* args ? */) {
   p3::P3GlobalForFortran::deinit();
 
   // Restore the FPE flag as it was when control was handed to us.
-  disable_all_fpes();
-  enable_fpes(fpe_mask);
+  ekat::disable_all_fpes();
+  ekat::enable_fpes(fpe_mask);
 }
 
 } // extern "C"

@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 
-#include "share/scream_pack.hpp"
+#include "share/ekat_pack.hpp"
 #include "share/field/field.hpp"
 #include "dynamics/homme/physics_dynamics_remapper.hpp"
 #include "share/util/scream_test_utils.hpp"
@@ -56,7 +56,7 @@ TEST_CASE("remap", "") {
 
   // Some type defs
   using Device = DefaultDevice;
-  using PackType = pack::Pack<Homme::Real,HOMMEXX_VECTOR_SIZE>;
+  using PackType = ekat::pack::Pack<Homme::Real,HOMMEXX_VECTOR_SIZE>;
   using Remapper = PhysicsDynamicsRemapper<Homme::Real,Device>;
   using RPDF = std::uniform_real_distribution<Real>;
   using IPDF = std::uniform_int_distribution<int>;
@@ -105,7 +105,7 @@ TEST_CASE("remap", "") {
       }
       break;
   }
-  scream_require_msg(num_local_columns>0, "Internal test error! Fix homme_pd_remap_tests, please.\n");
+  EKAT_REQUIRE_MSG(num_local_columns>0, "Internal test error! Fix homme_pd_remap_tests, please.\n");
 
   auto get_elem_pid = [&](const int elem_gid)->int {
     switch (world_size) {
@@ -418,14 +418,14 @@ TEST_CASE("remap", "") {
 
       // Generate random numbers
       if (fwd) {
-        util::genRandArray(scalar_2d_field_phys,  engine, pdf);
-        util::genRandArray(vector_2d_field_phys,  engine, pdf);
-        util::genRandArray(scalar_3d_field_phys,  engine, pdf);
-        util::genRandArray(vector_3d_field_phys,  engine, pdf);
+        ekat::util::genRandArray(scalar_2d_field_phys,  engine, pdf);
+        ekat::util::genRandArray(vector_2d_field_phys,  engine, pdf);
+        ekat::util::genRandArray(scalar_3d_field_phys,  engine, pdf);
+        ekat::util::genRandArray(vector_3d_field_phys,  engine, pdf);
 
-        util::genRandArray(scalar_state_3d_field_phys,  engine, pdf);
-        util::genRandArray(vector_state_3d_field_phys,  engine, pdf);
-        util::genRandArray(tracer_state_3d_field_phys,  engine, pdf);
+        ekat::util::genRandArray(scalar_state_3d_field_phys,  engine, pdf);
+        ekat::util::genRandArray(vector_state_3d_field_phys,  engine, pdf);
+        ekat::util::genRandArray(tracer_state_3d_field_phys,  engine, pdf);
       } else {
         // Note: for the dyn->phys test to run correctly, the dynamics input vector must be synced,
         //       meaning that the values at the interface between two elements must match.

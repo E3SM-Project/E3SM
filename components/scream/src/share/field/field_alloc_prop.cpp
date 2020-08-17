@@ -21,8 +21,8 @@ void FieldAllocProp::commit ()
   }
 
   // Sanity checks: we must have requested at least one value type, and the identifier needs all dimensions set by now.
-  scream_require_msg(m_value_type_sizes.size()>0, "Error! No value types requested for the allocation.\n");
-  scream_require_msg(m_layout.are_dimensions_set(), "Error! You need all field dimensions set before committing the allocation properties.\n");
+  EKAT_REQUIRE_MSG(m_value_type_sizes.size()>0, "Error! No value types requested for the allocation.\n");
+  EKAT_REQUIRE_MSG(m_layout.are_dimensions_set(), "Error! You need all field dimensions set before committing the allocation properties.\n");
 
   // Loop on all value type sizes.
   m_last_dim_alloc_size = 0;

@@ -1,7 +1,8 @@
-#include "ekat/scream_assert.hpp"
 #include "physics/p3/scream_p3_interface.hpp"
 #include "physics/p3/atmosphere_microphysics.hpp"
 #include "physics/p3/p3_inputs_initializer.hpp"
+
+#include "ekat/ekat_assert.hpp"
 
 #include <array>
 
@@ -12,7 +13,7 @@ namespace scream
 */
 
 // =========================================================================================
-P3Microphysics::P3Microphysics (const Comm& comm,const ParameterList& params)
+P3Microphysics::P3Microphysics (const ekat::Comm& comm, const ekat::ParameterList& params)
  : m_p3_comm (comm)
  , m_p3_params (params)
 {
@@ -29,7 +30,7 @@ P3Microphysics::P3Microphysics (const Comm& comm,const ParameterList& params)
 // =========================================================================================
 void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
-  using namespace units;
+  using namespace ekat::units;
 
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
@@ -115,9 +116,9 @@ void P3Microphysics::initialize (const util::TimeStamp& t0)
 
     // In order to gurantee some consistency between inputs, it is best if P3
     // initializes either none or all of the inputs.
-    scream_require_msg (!init_all_or_none || all_inited || all_uninited,
-                        "Error! Some p3 inputs were marked to be inited by P3, while others weren't.\n"
-                        "       P3 was requested to init either all or none of the inputs.\n");
+    EKAT_REQUIRE_MSG (!init_all_or_none || all_inited || all_uninited,
+                      "Error! Some p3 inputs were marked to be inited by P3, while others weren't.\n"
+                      "       P3 was requested to init either all or none of the inputs.\n");
   }
 }
 

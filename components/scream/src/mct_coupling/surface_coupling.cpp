@@ -3,7 +3,7 @@
 namespace scream {
 
 SurfaceCoupling::
-SurfaceCoupling (const Comm& comm, const ParameterList& /*params*/)
+SurfaceCoupling (const ekat::Comm& comm, const ekat::ParameterList& /*params*/)
  : m_comm(comm)
 {
   // Grab what you need from the parameter list

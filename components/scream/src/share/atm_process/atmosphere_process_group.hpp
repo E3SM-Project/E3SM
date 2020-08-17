@@ -3,7 +3,8 @@
 
 #include "share/grid/remap/abstract_remapper.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
-#include "ekat/scream_parameter_list.hpp"
+
+#include "ekat/ekat_parameter_list.hpp"
 
 #include <string>
 #include <list>
@@ -29,7 +30,7 @@ public:
   using remapper_ptr_type = std::shared_ptr<remapper_type>;
 
   // Constructor(s)
-  explicit AtmosphereProcessGroup (const Comm& comm, const ParameterList& params);
+  explicit AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& params);
 
   virtual ~AtmosphereProcessGroup () = default;
 
@@ -43,13 +44,13 @@ public:
   std::string name () const { return m_group_name; }
 
   // The communicator associated with this atm process
-  const Comm& get_comm () const { return m_comm; }
+  const ekat::Comm& get_comm () const { return m_comm; }
 
   // Grab the proper grid from the grids manager
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
   // The initialization, run, and finalization methods
-  void initialize (const util::TimeStamp& t0);
+  void initialize (const TimeStamp& t0);
   void run        (const Real dt);
   void finalize   (/* what inputs? */);
 
@@ -103,7 +104,7 @@ protected:
                                   const remapper_ptr_type& remapper);
 
   // The communicator that each process in this group uses
-  Comm              m_comm;
+  ekat::Comm        m_comm;
 
   // The name of the group. This is usually a concatenation of the names of the individual processes
   std::string       m_group_name;
@@ -159,7 +160,7 @@ protected:
 
 #endif
 
-  util::TimeStamp                             m_current_ts;
+  TimeStamp                                   m_current_ts;
 };
 
 } // namespace scream

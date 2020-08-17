@@ -1,12 +1,10 @@
 #include "catch2/catch.hpp"
 
-#include "ekat/scream_types.hpp"
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_kokkos.hpp"
-#include "ekat/scream_pack.hpp"
+#include "share/scream_types.hpp"
+#include "ekat/ekat_pack.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
-#include "ekat/util/scream_kokkos_utils.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -161,7 +159,7 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling
     int nerr = 0;
 
     //functions below use Spack size <16 but can't deal w/ exceptions on GPU, so do it here.
-    TeamPolicy policy(util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
+    TeamPolicy policy(ekat::util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
     Kokkos::parallel_reduce("SGSvarScaling::run", policy,
       KOKKOS_LAMBDA(const MemberType& /* team */, int& errors) {
         errors = 0;

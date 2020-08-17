@@ -1,13 +1,10 @@
 #include "physics_share.hpp"
-#include "ekat/scream_assert.hpp"
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/util/scream_kokkos_utils.hpp"
-#include "ekat/scream_pack_kokkos.hpp"
+
+#include "ekat/ekat_assert.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "ekat/ekat_pack_kokkos.hpp"
 
 #include <random>
-
-using scream::Real;
-using scream::Int;
 
 namespace scream {
 

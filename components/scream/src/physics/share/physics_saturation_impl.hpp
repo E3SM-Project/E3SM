@@ -71,7 +71,7 @@ Functions<S,D>::polysvp1(const Spack& t, const bool ice)
     0.264847430e-3,  0.302950461e-5,  0.206739458e-7,
     0.640689451e-10,-0.952447341e-13,-0.976195544e-15};
 
-  Spack dt = pack::max(t - sp(273.15), sp(-80.0));
+  Spack dt = ekat::pack::max(t - sp(273.15), sp(-80.0));
   Spack result;
   const auto tmelt = C::Tmelt;
   Smask ice_mask = (t < tmelt) && ice;
@@ -113,11 +113,11 @@ Functions<S,D>::qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice, c
       e_pres = MurphyKoop_svp(t_atm, ice);
       break;
     default:
-      scream_kerror_msg("Error! Invalid func_idx supplied to qv_sat.");
+      EKAT_KERNEL_ERROR_MSG("Error! Invalid func_idx supplied to qv_sat.");
     }
 
   const auto ep_2 = C::ep_2;
-  return ep_2 * e_pres / pack::max(p_atm-e_pres, sp(1.e-3));
+  return ep_2 * e_pres / ekat::pack::max(p_atm-e_pres, sp(1.e-3));
 }
 
 } // namespace physics

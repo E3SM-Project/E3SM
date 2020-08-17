@@ -1,19 +1,21 @@
 #include <catch2/catch.hpp>
-#include "ekat/scream_pack.hpp"
+
+#include "control/atmosphere_driver.hpp"
+
+#include "physics/rrtmgp/atmosphere_radiation.hpp"
+#include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
+
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/grid/user_provided_grids_manager.hpp"
 #include "share/grid/se_grid.hpp"
-#include "control/atmosphere_driver.hpp"
+
+#include "ekat/ekat.hpp"
 
 /*
  * This will eventually contain a standalone test for the RRTMGP driver
  * As of now, it is just a shell that at least requires RRTMGP to be built
  * with the SCREAM build and test system.
  */
-
-#include "physics/rrtmgp/atmosphere_radiation.hpp"
-#include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
-// #include "physics/rrtmgp/rrtmgp_functions_f90.hpp"
 
 namespace scream {
     // A dummy physics grids for this test //
@@ -37,7 +39,7 @@ namespace scream {
          */
 
         // Setup parameter list for inputs to the radiation interface
-        ParameterList ad_params("Atmosphere Driver");
+        ekat::ParameterList ad_params("Atmosphere Driver");
         auto& proc_params = ad_params.sublist("Atmosphere Processes");
         proc_params.set("Number of Entries", 1);
         proc_params.set<std::string>("Schedule Type", "Sequential");
@@ -66,7 +68,7 @@ namespace scream {
         upgm.set_reference_grid("Physics");
 
         // Create a MPI communicator
-        Comm atm_comm (MPI_COMM_WORLD);
+        ekat::Comm atm_comm (MPI_COMM_WORLD);
 
         // Create the driver
         AtmosphereDriver ad;

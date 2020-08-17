@@ -1,7 +1,7 @@
 #ifndef SCREAM_CONTEXT_HPP
 #define SCREAM_CONTEXT_HPP
 
-#include "ekat/util/scream_std_any.hpp"
+#include "ekat/std_meta/ekat_std_any.hpp"
 #include <map>
 #include <typeindex>
 
@@ -20,32 +20,32 @@ public:
   template<typename T,typename... Args>
   T& create (Args... args) {
     auto key = getKey<T>();
-    scream_require_msg(m_objects.find(key)==m_objects.end(),"Error! Object with key '" + (std::string)key.name() + "' was already created in the scream context.\n");
+    EKAT_REQUIRE_MSG(m_objects.find(key)==m_objects.end(),"Error! Object with key '" + (std::string)key.name() + "' was already created in the scream context.\n");
 
     auto& obj = m_objects[key];
     obj.template reset<T>(args...);
 
-    return util::any_cast<T>(obj);
+    return ekat::util::any_cast<T>(obj);
   }
 
   template<typename T>
   const T& get () const {
     auto key = getKey<T>();
-    scream_require_msg(m_objects.find(key)!=m_objects.end(),
+    EKAT_REQUIRE_MSG(m_objects.find(key)!=m_objects.end(),
                        "Error! Object with key '" + (std::string)key.name() + "' not found in the scream context.\n");
     const auto& obj = m_objects.at(key);
 
-    return util::any_cast<T>(obj);
+    return ekat::util::any_cast<T>(obj);
   }
 
   template<typename T>
   T& getNonConst () {
     auto key = getKey<T>();
-    scream_require_msg(m_objects.find(key)!=m_objects.end(),
+    EKAT_REQUIRE_MSG(m_objects.find(key)!=m_objects.end(),
                        "Error! Object with key '" + (std::string)key.name() + "' not found in the scream context.\n");
     auto& obj = m_objects.at(key);
 
-    return util::any_cast<T>(obj);
+    return ekat::util::any_cast<T>(obj);
   }
 
   void clean_up () {
@@ -62,7 +62,7 @@ private:
   template<typename T>
   static key_type getKey() { return std::type_index(typeid(T)); }
 
-  std::map<key_type,util::any>  m_objects;
+  std::map<key_type,ekat::util::any>  m_objects;
 };
 
 } // namespace scream

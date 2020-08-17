@@ -1,9 +1,8 @@
 #include "shoc_functions_f90.hpp"
 
-#include "ekat/scream_assert.hpp"
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/util/scream_kokkos_utils.hpp"
-#include "ekat/scream_pack_kokkos.hpp"
+#include "ekat/ekat_assert.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "ekat/ekat_pack_kokkos.hpp"
 #include "shoc_f90.hpp"
 
 #include <random>
@@ -14,6 +13,7 @@ using scream::Int;
 //
 // A C interface to SHOC fortran calls. The stubs below will link to fortran definitions in shoc_iso_c.f90
 //
+
 extern "C" {
 
 void shoc_init_c(int nlev, Real gravit, Real rair, Real rh2o, Real cpair,
@@ -167,109 +167,109 @@ void SHOCDataBase::randomize()
 
 void calc_shoc_varorcovar(SHOCVarorcovarData &d) {
   shoc_init(d.nlev, true);
-  d.transpose<util::TransposeDirection::c2f>();
+  d.transpose<ekat::util::TransposeDirection::c2f>();
   calc_shoc_varorcovar_c(d.shcol, d.nlev, d.nlevi, d.tunefac, d.isotropy_zi, d.tkh_zi,
                          d.dz_zi, d.invar1, d.invar2, d.varorcovar);
-  d.transpose<util::TransposeDirection::f2c>();
+  d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void shoc_grid(SHOCGridData &d) {
   shoc_init(d.nlev, true);
-  d.transpose<util::TransposeDirection::c2f>();
+  d.transpose<ekat::util::TransposeDirection::c2f>();
   shoc_grid_c(d.shcol, d.nlev, d.nlevi, d.zt_grid, d.zi_grid, d.pdel, d.dz_zt,
               d.dz_zi, d.rho_zt);
-  d.transpose<util::TransposeDirection::f2c>();
+  d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void calc_shoc_vertflux(SHOCVertfluxData &d) {
   shoc_init(d.nlev, true);
-  d.transpose<util::TransposeDirection::c2f>();
+  d.transpose<ekat::util::TransposeDirection::c2f>();
   calc_shoc_vertflux_c(d.shcol, d.nlev, d.nlevi, d.tkh_zi, d.dz_zi, d.invar,
 		       d.vertflux);
-  d.transpose<util::TransposeDirection::f2c>();
+  d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void integ_column_stability(SHOCColstabData &d) {
   shoc_init(d.nlev, true);
-  d.transpose<util::TransposeDirection::c2f>();
+  d.transpose<ekat::util::TransposeDirection::c2f>();
   integ_column_stability_c(d.nlev, d.shcol, d.dz_zt, d.pres, d.brunt, d.brunt_int);
-  d.transpose<util::TransposeDirection::f2c>();
+  d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void compute_shr_prod(SHOCTkeshearData &d) {
   shoc_init(d.nlev, true);
-  d.transpose<util::TransposeDirection::c2f>();
+  d.transpose<ekat::util::TransposeDirection::c2f>();
   compute_shr_prod_c(d.nlevi, d.nlev, d.shcol, d.dz_zi, d.u_wind,
                        d.v_wind, d.sterm);
-  d.transpose<util::TransposeDirection::f2c>();
+  d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void isotropic_ts(SHOCIsotropicData &d) {
   shoc_init(d.nlev, true);
-  d.transpose<util::TransposeDirection::c2f>();
+  d.transpose<ekat::util::TransposeDirection::c2f>();
   isotropic_ts_c(d.nlev, d.shcol, d.brunt_int, d.tke, d.a_diss,
                  d.brunt, d.isotropy);
-  d.transpose<util::TransposeDirection::f2c>();
+  d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void adv_sgs_tke(SHOCAdvsgstkeData &d) {
   shoc_init(d.nlev, true);
-  d.transpose<util::TransposeDirection::c2f>();
+  d.transpose<ekat::util::TransposeDirection::c2f>();
   adv_sgs_tke_c(d.nlev, d.shcol, d.dtime, d.shoc_mix, d.wthv_sec,
                 d.sterm_zt, d.tk, d.tke, d.a_diss);
-  d.transpose<util::TransposeDirection::f2c>();
+  d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void eddy_diffusivities(SHOCEddydiffData &d) {
   shoc_init(d.nlev, true);
-  d.transpose<util::TransposeDirection::c2f>();
+  d.transpose<ekat::util::TransposeDirection::c2f>();
   eddy_diffusivities_c(d.nlev, d.shcol, d.obklen, d.pblh, d.zt_grid,
      d.shoc_mix, d.sterm_zt, d.isotropy, d.tke, d.tkh, d.tk);
-  d.transpose<util::TransposeDirection::f2c>();
+  d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void compute_brunt_shoc_length(SHOCBruntlengthData &d) {
   shoc_init(d.nlev, true);
-  d.transpose<util::TransposeDirection::c2f>();
+  d.transpose<ekat::util::TransposeDirection::c2f>();
   compute_brunt_shoc_length_c(d.nlev,d.nlevi,d.shcol,d.dz_zt,d.thv,d.thv_zi,d.brunt);
-  d.transpose<util::TransposeDirection::f2c>();
+  d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void compute_l_inf_shoc_length(SHOCInflengthData &d) {
   shoc_init(d.nlev, true);
-  d.transpose<util::TransposeDirection::c2f>();
+  d.transpose<ekat::util::TransposeDirection::c2f>();
   compute_l_inf_shoc_length_c(d.nlev,d.shcol,d.zt_grid,d.dz_zt,d.tke,d.l_inf);
-  d.transpose<util::TransposeDirection::f2c>();
+  d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void compute_conv_vel_shoc_length(SHOCConvvelData &d) {
   shoc_init(d.nlev, true);
-  d.transpose<util::TransposeDirection::c2f>();
+  d.transpose<ekat::util::TransposeDirection::c2f>();
   compute_conv_vel_shoc_length_c(d.nlev,d.shcol,d.pblh,d.zt_grid,
                                  d.dz_zt,d.thv,d.wthv_sec,d.conv_vel);
-  d.transpose<util::TransposeDirection::f2c>();
+  d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void compute_conv_time_shoc_length(SHOCConvtimeData &d) {
   shoc_init(d.nlev, true);
-  d.transpose<util::TransposeDirection::c2f>();
+  d.transpose<ekat::util::TransposeDirection::c2f>();
   compute_conv_time_shoc_length_c(d.shcol,d.pblh,d.conv_vel,d.tscale);
-  d.transpose<util::TransposeDirection::f2c>();
+  d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void compute_shoc_mix_shoc_length(SHOCMixlengthData &d) {
   shoc_init(d.nlev, true);
-  d.transpose<util::TransposeDirection::c2f>();
+  d.transpose<ekat::util::TransposeDirection::c2f>();
   compute_shoc_mix_shoc_length_c(d.nlev,d.shcol,d.tke,d.brunt,d.tscale,
                                  d.zt_grid,d.l_inf,d.shoc_mix);
-  d.transpose<util::TransposeDirection::f2c>();
+  d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void check_length_scale_shoc_length(SHOCMixcheckData &d) {
   shoc_init(d.nlev, true);
-  d.transpose<util::TransposeDirection::c2f>();
+  d.transpose<ekat::util::TransposeDirection::c2f>();
   check_length_scale_shoc_length_c(d.nlev,d.shcol,d.host_dx,d.host_dy,d.shoc_mix);
-  d.transpose<util::TransposeDirection::f2c>();
+  d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 //
@@ -295,7 +295,7 @@ void calc_shoc_vertflux_f(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
   Kokkos::Array<const Real*, num_arrays> ptr_array = {tkh_zi, dz_zi, invar, vertflux};
 
   // Sync to device
-  pack::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d, true);
+  ekat::pack::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d, true);
 
   view_2d
     tkh_zi_d  (temp_d[0]),
@@ -303,22 +303,22 @@ void calc_shoc_vertflux_f(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
     invar_d   (temp_d[2]),
     vertflux_d(temp_d[3]);
 
-  const Int nk_pack = scream::pack::npack<Spack>(nlev);
-  const auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
+  const Int nk_pack = ekat::pack::npack<Spack>(nlev);
+  const auto policy = ekat::util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
 
-    const auto otkh_zi_d   = util::subview(tkh_zi_d, i);
-    const auto odz_zi_d    = util::subview(dz_zi_d, i);
-    const auto oinvar_d    = util::subview(invar_d, i);
-    const auto overtflux_d = util::subview(vertflux_d, i);
+    const auto otkh_zi_d   = ekat::util::subview(tkh_zi_d, i);
+    const auto odz_zi_d    = ekat::util::subview(dz_zi_d, i);
+    const auto oinvar_d    = ekat::util::subview(invar_d, i);
+    const auto overtflux_d = ekat::util::subview(vertflux_d, i);
 
     SHF::calc_shoc_vertflux(team, nlev, otkh_zi_d, odz_zi_d, oinvar_d, overtflux_d);
   });
 
   // Sync back to host
   Kokkos::Array<view_2d, 1> inout_views = {vertflux_d};
-  pack::device_to_host({vertflux}, {shcol}, {nlevi}, inout_views, true);
+  ekat::pack::device_to_host({vertflux}, {shcol}, {nlevi}, inout_views, true);
 }
 
 } // namespace shoc

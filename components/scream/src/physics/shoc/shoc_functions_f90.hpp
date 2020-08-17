@@ -1,8 +1,7 @@
 #ifndef SCREAM_SHOC_FUNCTIONS_F90_HPP
 #define SCREAM_SHOC_FUNCTIONS_F90_HPP
 
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_types.hpp"
+#include "share/scream_types.hpp"
 
 #include "shoc_functions.hpp"
 
@@ -29,18 +28,18 @@ struct SHOCDataBase
   SHOCDataBase(const SHOCDataBase &rhs, const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i);
   SHOCDataBase &operator=(const SHOCDataBase &rhs);
 
-  template <util::TransposeDirection::Enum D>
+  template <ekat::util::TransposeDirection::Enum D>
   void transpose() {
     std::vector<Real> data(m_data.size());
 
     // Transpose on the zt grid
     for (size_t i = 0; i < m_ptrs.size(); ++i) {
-      util::transpose<D>(*(m_ptrs[i]), data.data() + (m_total*i) , shcol, nlev);
+      ekat::util::transpose<D>(*(m_ptrs[i]), data.data() + (m_total*i) , shcol, nlev);
     }
 
     // Transpose on the zi grid
     for (size_t i = 0; i < m_ptrs_i.size(); ++i) {
-      util::transpose<D>(*(m_ptrs_i[i]), data.data() + (m_ptrs.size()*m_total) + (m_totali*i), shcol, nlevi);
+      ekat::util::transpose<D>(*(m_ptrs_i[i]), data.data() + (m_ptrs.size()*m_total) + (m_totali*i), shcol, nlevi);
     }
 
     m_data = data;

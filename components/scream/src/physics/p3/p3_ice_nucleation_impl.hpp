@@ -31,16 +31,16 @@ void Functions<S,D>
    Spack dum{0.0}, N_nuc{0.0}, Q_nuc{0.0};
 
    if (any_if_not_log.any()) {
-     dum = sp(0.005)*pack::exp(sp(0.304)*(tmelt-temp))*sp(1.0e3)*inv_rho;
+     dum = sp(0.005)*exp(sp(0.304)*(tmelt-temp))*sp(1.0e3)*inv_rho;
 
-     dum = pack::min(dum, sp(1.0e5)*inv_rho);
+     dum = min(dum, sp(1.0e5)*inv_rho);
 
-     N_nuc = pack::max(zero, (dum-ni)*inv_dt);
+     N_nuc = max(zero, (dum-ni)*inv_dt);
 
      const auto n_nuc_ge_nsmall = N_nuc >= nsmall && context;
 
      if (n_nuc_ge_nsmall.any()) {
-       Q_nuc = pack::max(zero, (dum-ni)*mi0*inv_dt);
+       Q_nuc = max(zero, (dum-ni)*mi0*inv_dt);
 
        qv2qi_nucleat_tend.set(any_if_not_log && n_nuc_ge_nsmall, Q_nuc);
 
@@ -48,7 +48,7 @@ void Functions<S,D>
      }
    }
    else {
-     ni_nucleat_tend.set(any_if_log, pack::max(zero, (ni_activated-ni)*inv_dt));
+     ni_nucleat_tend.set(any_if_log, max(zero, (ni_activated-ni)*inv_dt));
      qv2qi_nucleat_tend.set(any_if_log, ni_nucleat_tend*mi0);
    }
 }
@@ -56,4 +56,4 @@ void Functions<S,D>
 } // namespace p3
 } // namespace scream
 
-#endif
+#endif // P3_ICE_NUCLEATION_IMPL_HPP

@@ -1,8 +1,9 @@
 #ifndef SCREAM_P3_INTERFACE_HPP
 #define SCREAM_P3_INTERFACE_HPP
 
-#include "ekat/scream_assert.hpp"
-#include "ekat/util/scream_utils.hpp"
+#include "share/scream_types.hpp"
+
+#include "ekat/ekat_assert.hpp"
 
 // Put everything into a scream namespace
 namespace scream {

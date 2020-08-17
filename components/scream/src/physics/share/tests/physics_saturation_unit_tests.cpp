@@ -1,14 +1,13 @@
 #include "catch2/catch.hpp"
 
-#include "ekat/scream_types.hpp"
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_kokkos.hpp"
-#include "ekat/scream_pack.hpp"
-#include "ekat/util/scream_kokkos_utils.hpp"
 #include "physics/share/physics_functions.hpp"
 #include "physics/share/physics_saturation_impl.hpp"
-
 #include "physics_unit_tests_common.hpp"
+
+#include "share/scream_types.hpp"
+
+#include "ekat/ekat_pack.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 
 #include <thread>
 #include <array>
@@ -191,8 +190,8 @@ struct UnitWrap::UnitTest<D>::TestSaturation
      */
 
     int nerr = 0;
-    TeamPolicy policy(util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
-    Kokkos::parallel_reduce("TestTableIce::run", policy, KOKKOS_LAMBDA(const MemberType& team, int& errors) {
+    TeamPolicy policy(ekat::util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
+    Kokkos::parallel_reduce("TestTableIce::run", policy, KOKKOS_LAMBDA(const MemberType&, int& errors) {
 
       errors = 0;
 
@@ -373,21 +372,19 @@ struct UnitWrap::UnitTest<D>::TestSaturation
       //---------------------------------------------
 
       //find out which precision to use
-      auto is_single_prec = util::is_single_precision<Scalar>::value;
+      constexpr auto is_single_prec = ekat::is_single_precision<Scalar>::value;
 
-      if(is_single_prec){
-	for (int ista = 0; ista < ncases; ista++) {
-	  //use sp_data values
-	  saturation_tests(stargs[ista].temp,stargs[ista].pres,stargs[ista].sp_data,errors);
-	}
+      if (is_single_prec){
+        for (int ista = 0; ista < ncases; ista++) {
+          //use sp_data values
+          saturation_tests(stargs[ista].temp,stargs[ista].pres,stargs[ista].sp_data,errors);
+        }
+      } else {
+        for (int ista = 0; ista < ncases; ista++) {
+          //use dp_data values
+          saturation_tests(stargs[ista].temp,stargs[ista].pres,stargs[ista].dp_data,errors);
+        }
       }
-      else{
-	for (int ista = 0; ista < ncases; ista++) {
-	  //use dp_data values
-	  saturation_tests(stargs[ista].temp,stargs[ista].pres,stargs[ista].dp_data,errors);
-	}
-      }
-
 
     }, nerr);
 

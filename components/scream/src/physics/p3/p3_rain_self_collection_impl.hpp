@@ -1,7 +1,7 @@
 #ifndef P3_RAIN_SELF_COLLECTION_IMPL_HPP
 #define P3_RAIN_SELF_COLLECTION_IMPL_HPP
 
-#include "p3_functions.hpp" // for ETI only but harmless for GPU
+#include "physics/p3/p3_functions.hpp" // for ETI only but harmless for GPU
 
 namespace scream {
 namespace p3 {
@@ -25,14 +25,14 @@ void Functions<S,D>
 
   if (qr_incld_not_small.any()) {
     const Real dum1 = 280.e-6;
-    const auto dum2 = pack::cbrt((qr_incld)/(pi*rho_h2o*nr_incld));
+    const auto dum2 = cbrt((qr_incld)/(pi*rho_h2o*nr_incld));
 
     Spack dum;
     const auto dum2_lt_dum1 = dum2 < dum1 && qr_incld_not_small;
     const auto dum2_gt_dum1 = dum2 >= dum1 && qr_incld_not_small;
     dum.set(dum2_lt_dum1, 1);
     if (dum2_gt_dum1.any()) {
-      dum.set(dum2_gt_dum1, 2 - pack::exp(2300 * (dum2-dum1)));
+      dum.set(dum2_gt_dum1, 2 - exp(2300 * (dum2-dum1)));
     }
 
     nr_selfcollect_tend.set(qr_incld_not_small, dum*sp(5.78)*nr_incld*qr_incld*rho);
@@ -42,4 +42,4 @@ void Functions<S,D>
 } // namespace p3
 } // namespace scream
 
-#endif
+#endif // P3_RAIN_SELF_COLLECTION_IMPL_HPP

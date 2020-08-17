@@ -1,10 +1,12 @@
 #ifndef SHOC_FUNCTIONS_HPP
 #define SHOC_FUNCTIONS_HPP
 
-#include "ekat/scream_types.hpp"
-#include "ekat/scream_pack_kokkos.hpp"
-#include "ekat/scream_workspace.hpp"
-#include "physics_constants.hpp"
+#include "physics/share/physics_constants.hpp"
+
+#include "share/scream_types.hpp"
+
+#include "ekat/ekat_pack_kokkos.hpp"
+#include "ekat/ekat_workspace.hpp"
 
 namespace scream {
 namespace shoc {
@@ -29,25 +31,20 @@ struct Functions
   using Device = DeviceT;
 
   template <typename S>
-  using BigPack = scream::pack::BigPack<S>;
+  using BigPack = ekat::pack::Pack<S,SCREAM_PACK_SIZE>;
   template <typename S>
-  using SmallPack = scream::pack::SmallPack<S>;
-  using IntSmallPack = scream::pack::IntSmallPack;
+  using SmallPack = ekat::pack::Pack<S,SCREAM_SMALL_PACK_SIZE>;
 
+  using IntSmallPack = SmallPack<Int>;
   using Pack = BigPack<Scalar>;
   using Spack = SmallPack<Scalar>;
 
-  template <typename S>
-  using Mask = scream::pack::Mask<BigPack<S>::n>;
+  using Mask  = ekat::pack::Mask<Pack::n>;
+  using Smask = ekat::pack::Mask<Spack::n>;
 
-  template <typename S>
-  using SmallMask = scream::pack::Mask<SmallPack<S>::n>;
+  using KT = ekat::KokkosTypes<Device>;
 
-  using Smask = SmallMask<Scalar>;
-
-  using KT = KokkosTypes<Device>;
-
-  using C = scream::physics::Constants<Scalar>;
+  using C = physics::Constants<Scalar>;
 
   template <typename S>
   using view_1d = typename KT::template view_1d<S>;
@@ -58,14 +55,14 @@ struct Functions
   using view_1d_ptr_array = typename KT::template view_1d_ptr_carray<S, N>;
 
   template <typename S>
-  using uview_1d = typename ko::template Unmanaged<view_1d<S> >;
+  using uview_1d = typename ekat::util::template Unmanaged<view_1d<S> >;
 
   template <typename S>
-  using uview_2d = typename ko::template Unmanaged<view_2d<S> >;
+  using uview_2d = typename ekat::util::template Unmanaged<view_2d<S> >;
 
   using MemberType = typename KT::MemberType;
 
-  using Workspace = typename WorkspaceManager<Spack, Device>::Workspace;
+  using Workspace = typename ekat::WorkspaceManager<Spack, Device>::Workspace;
 
   //
   // --------- Functions ---------

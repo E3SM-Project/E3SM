@@ -8,8 +8,8 @@
 
 #include "share/grid/remap/abstract_remapper.hpp"
 #include "share/grid/se_grid.hpp"
-#include "ekat/scream_pack.hpp"
-#include "ekat/scream_assert.hpp"
+#include "ekat/ekat_pack.hpp"
+#include "ekat/ekat_assert.hpp"
 
 // Homme includes
 #include "Context.hpp"
@@ -55,7 +55,7 @@ public:
   bool compatible_layouts (const layout_type& src,
                            const layout_type& tgt) const override {
     auto tgt_tags = tgt.tags();
-    util::erase(tgt_tags,FieldTag::TimeLevel);
+    ekat::util::erase(tgt_tags,FieldTag::TimeLevel);
 
     return get_layout_type(src.tags())==get_layout_type(tgt_tags);
   }
@@ -119,8 +119,8 @@ PhysicsDynamicsRemapper (const grid_ptr_type& phys_grid,
                          const grid_ptr_type& dyn_grid)
  : base_type(phys_grid,dyn_grid)
 {
-  scream_require_msg(dyn_grid->type()==GridType::SE_CellBased,  "Error! Input dynamics grid is not a Dynamics grid.\n");
-  scream_require_msg(phys_grid->type()==GridType::SE_NodeBased, "Error! Input physics grid is not a Physics grid.\n");
+  EKAT_REQUIRE_MSG(dyn_grid->type()==GridType::SE_CellBased,  "Error! Input dynamics grid is not a Dynamics grid.\n");
+  EKAT_REQUIRE_MSG(phys_grid->type()==GridType::SE_NodeBased, "Error! Input physics grid is not a Physics grid.\n");
 
   m_phys_grid = std::dynamic_pointer_cast<const SEGrid>(phys_grid);
 }
@@ -134,20 +134,20 @@ create_src_layout (const FieldLayout& tgt_layout) const {
   auto dims = tgt_layout.dims();
 
   // Note down the position of the first 'GaussPoint' tag.
-  int pos = std::distance(tags.cbegin(),util::find(tags,SFTN::GP));
+  int pos = std::distance(tags.cbegin(),ekat::util::find(tags,SFTN::GP));
 
   // We replace 'Element' with 'Column'. The number of columns is taken from the src grid.
   tags[0] = SFTN::COL;
   dims[0] = this->m_src_grid->get_num_local_dofs();
 
   // Delete GP tags/dims
-  util::erase(tags,SFTN::GP);
-  util::erase(tags,SFTN::GP);
+  ekat::util::erase(tags,SFTN::GP);
+  ekat::util::erase(tags,SFTN::GP);
   dims.erase(dims.begin()+pos);
   dims.erase(dims.begin()+pos);
 
   // If the tgt layout contains the TimeLevel tag, we slice it off.
-  auto it_tl = util::find(tags,SFTN::TL);
+  auto it_tl = ekat::util::find(tags,SFTN::TL);
   if (it_tl!=tags.end()) {
     pos = std::distance(tags.cbegin(),it_tl);
     tags.erase(tags.begin()+pos);
@@ -201,7 +201,7 @@ create_tgt_layout (const FieldLayout& src_layout) const {
         break;
       }
     default:
-      scream_error_msg("Error! Unrecognized layout type.\n");
+      EKAT_ERROR_MSG("Error! Unrecognized layout type.\n");
   }
 
   return FieldLayout(tags,dims);
@@ -223,14 +223,14 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
   const auto& tgt_tags = tgt_layout.tags();
   const auto& tgt_dims = tgt_layout.dims();
 
-  const bool has_time_level  = util::contains(tgt_tags,FieldTag::TimeLevel);
+  const bool has_time_level  = ekat::util::contains(tgt_tags,FieldTag::TimeLevel);
   if (has_time_level) {
     const auto& data = tgt.get_header().get_extra_data();
 
     const bool is_tracer = data.find("Is Tracer State")!=data.end() &&
-                           util::any_cast<bool>(data.at("Is Tracer State"));
+                           ekat::util::any_cast<bool>(data.at("Is Tracer State"));
     const bool valid_tl_dim = (tgt_dims[1]==HOMMEXX_NUM_TIME_LEVELS) || (tgt_dims[1]==HOMMEXX_Q_NUM_TIME_LEVELS);
-    scream_require_msg (valid_tl_dim, "Error! Field has the TimeLevel tag, but it does not appear to be either a 'state' or 'tracer state'.\n");
+    EKAT_REQUIRE_MSG (valid_tl_dim, "Error! Field has the TimeLevel tag, but it does not appear to be either a 'state' or 'tracer state'.\n");
     m_is_tracer_field.push_back(is_tracer);
   } else {
     m_is_tracer_field.push_back(false);
@@ -276,8 +276,8 @@ template<typename ScalarType, typename DeviceType>
 void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
 do_remap_fwd() const
 {
-  using pack_type = pack::Pack<ScalarType,SCREAM_PACK_SIZE>;
-  using small_pack_type = pack::Pack<ScalarType,SCREAM_SMALL_PACK_SIZE>;
+  using pack_type = ekat::pack::Pack<ScalarType,SCREAM_PACK_SIZE>;
+  using small_pack_type = ekat::pack::Pack<ScalarType,SCREAM_SMALL_PACK_SIZE>;
 
   const auto& tl = Homme::Context::singleton().get_time_level();
 
@@ -323,7 +323,7 @@ do_remap_fwd() const
         }
         break;
       default:
-        error::runtime_abort("Error! Unhandled case in switch statement.\n");
+        ekat::error::runtime_abort("Error! Unhandled case in switch statement.\n");
     }
   }
 
@@ -334,8 +334,8 @@ do_remap_fwd() const
 template<typename ScalarType, typename DeviceType>
 void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
 do_remap_bwd() const {
-  using pack_type = pack::Pack<ScalarType,SCREAM_PACK_SIZE>;
-  using small_pack_type = pack::Pack<ScalarType,SCREAM_SMALL_PACK_SIZE>;
+  using pack_type = ekat::pack::Pack<ScalarType,SCREAM_PACK_SIZE>;
+  using small_pack_type = ekat::pack::Pack<ScalarType,SCREAM_SMALL_PACK_SIZE>;
 
   const auto& tl = Homme::Context::singleton().get_time_level();
 
@@ -376,7 +376,7 @@ do_remap_bwd() const {
         }
         break;
       default:
-        error::runtime_abort("Error! Unhandled case in switch statement.\n");
+        ekat::error::runtime_abort("Error! Unhandled case in switch statement.\n");
     }
   }
 }
@@ -439,7 +439,7 @@ setup_boundary_exchange () {
         }
         break;
     default:
-      error::runtime_abort("Error! Invalid layout. This is an internal error. Please, contact developers\n");
+      ekat::error::runtime_abort("Error! Invalid layout. This is an internal error. Please, contact developers\n");
     }
   }
 
@@ -530,7 +530,7 @@ setup_boundary_exchange () {
             }
             break;
         default:
-          error::runtime_abort("Error! Invalid layout. This is an internal error. Please, contact developers\n");
+          ekat::error::runtime_abort("Error! Invalid layout. This is an internal error. Please, contact developers\n");
         }
       }
       be->registration_completed();
@@ -623,7 +623,7 @@ local_remap_fwd_2d(const field_type& phys_field, const field_type& dyn_field, co
       break;
     }
     default:
-      error::runtime_abort("Error! Invalid layout. This is an internal error. Please, contact developers\n");
+      ekat::error::runtime_abort("Error! Invalid layout. This is an internal error. Please, contact developers\n");
   }
   Kokkos::fence();
 }
@@ -724,7 +724,7 @@ local_remap_fwd_3d_impl(const field_type& phys_field, const field_type& dyn_fiel
       break;
     }
     default:
-      error::runtime_abort("Error! Invalid layout. This is an internal error. Please, contact developers\n");
+      ekat::error::runtime_abort("Error! Invalid layout. This is an internal error. Please, contact developers\n");
   }
   Kokkos::fence();
 }
@@ -814,7 +814,7 @@ remap_bwd_2d(const field_type& phys_field, const field_type& dyn_field, const in
       break;
     }
     default:
-      error::runtime_abort("Error! Invalid layout. This is an internal error. Please, contact developers\n");
+      ekat::error::runtime_abort("Error! Invalid layout. This is an internal error. Please, contact developers\n");
   }
   Kokkos::fence();
 }
@@ -917,7 +917,7 @@ remap_bwd_3d_impl(const field_type& phys_field, const field_type& dyn_field, con
       break;
     }
     default:
-      error::runtime_abort("Error! Invalid layout. This is an internal error. Please, contact developers\n");
+      ekat::error::runtime_abort("Error! Invalid layout. This is an internal error. Please, contact developers\n");
   }
   Kokkos::fence();
 }

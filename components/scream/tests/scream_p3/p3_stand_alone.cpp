@@ -1,14 +1,17 @@
 #include <catch2/catch.hpp>
-#include "ekat/scream_pack.hpp"
-#include "ekat/scream_parse_yaml_file.hpp"
-#include "share/atm_process/atmosphere_process.hpp"
-#include "share/grid/user_provided_grids_manager.hpp"
-#include "share/grid/se_grid.hpp"
+
 #include "control/atmosphere_driver.hpp"
 
 #include "physics/p3/atmosphere_microphysics.hpp"
 #include "physics/p3/scream_p3_interface.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
+
+#include "share/atm_process/atmosphere_process.hpp"
+#include "share/grid/user_provided_grids_manager.hpp"
+#include "share/grid/se_grid.hpp"
+
+#include "ekat/ekat_pack.hpp"
+#include "ekat/ekat_parse_yaml_file.hpp"
 
 namespace scream {
 
@@ -34,7 +37,7 @@ TEST_CASE("p3-stand-alone", "") {
 
   // Load ad parameter list
   std::string fname = "input.yaml";
-  ParameterList ad_params("Atmosphere Driver");
+  ekat::ParameterList ad_params("Atmosphere Driver");
   REQUIRE_NOTHROW ( parse_yaml_file(fname,ad_params) );
 
   // Need to register products in the factory *before* we create any AtmosphereProcessGroup,
@@ -54,7 +57,7 @@ TEST_CASE("p3-stand-alone", "") {
   upgm.set_reference_grid("Physics");
 
   // Create a comm
-  Comm atm_comm (MPI_COMM_WORLD);
+  ekat::Comm atm_comm (MPI_COMM_WORLD);
 
   // Create the driver
   AtmosphereDriver ad;

@@ -42,12 +42,12 @@ public:
 
     auto g1 = std::dynamic_pointer_cast<const DummyPhysicsGrid>(grid1);
     auto g2 = std::dynamic_pointer_cast<const DummyPhysicsGrid>(grid2);
-    scream_require_msg (static_cast<bool>(g1) && static_cast<bool>(g2),
-                        "Error! This dummy remapper only works with DummyPhysicsGrid.\n");
+    EKAT_REQUIRE_MSG (static_cast<bool>(g1) && static_cast<bool>(g2),
+                      "Error! This dummy remapper only works with DummyPhysicsGrid.\n");
 
-    scream_require_msg((g1n=="Physics_fwd" && g2n=="Physics_bwd") ||
-                       (g1n=="Physics_bwd" && g2n=="Physics_fwd"),
-                       "Error! This dummy remapper only works if the two grids are one fwd and the other bwd.\n");
+    EKAT_REQUIRE_MSG((g1n=="Physics_fwd" && g2n=="Physics_bwd") ||
+                     (g1n=="Physics_bwd" && g2n=="Physics_fwd"),
+                     "Error! This dummy remapper only works if the two grids are one fwd and the other bwd.\n");
   }
 
   FieldLayout create_src_layout (const FieldLayout& tgt_layout) const override {

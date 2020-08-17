@@ -1,8 +1,7 @@
 #ifndef SCREAM_RRTMGP_INTERFACE_HPP
 #define SCREAM_RRTMGP_INTERFACE_HPP
 
-#include "ekat/scream_assert.hpp"
-#include "ekat/util/scream_utils.hpp"
+#include "ekat/ekat_assert.hpp"
 
 namespace scream {
     namespace rrtmgp {

@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 #include "share/atm_process/atmosphere_process.hpp"
-#include "share/scream_pack.hpp"
+#include "share/ekat_pack.hpp"
 #include "share/grid/user_provided_grids_manager.hpp"
 #include "share/grid/se_grid.hpp"
 #include "control/atmosphere_driver.hpp"

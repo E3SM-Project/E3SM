@@ -41,7 +41,12 @@ contains
   end subroutine init_tables_from_f90_c
 
   subroutine p3_init_c(lookup_file_dir_c, info) bind(c)
-    use array_io_mod
+    use ekat_array_io_mod, only: array_io_file_exists
+#ifdef SCREAM_DOUBLE_PRECISION
+    use ekat_array_io_mod, only: array_io_read=>array_io_read_double, array_io_write=>array_io_write_double
+#else
+    use ekat_array_io_mod, only: array_io_read=>array_io_read_float, array_io_write=>array_io_write_float
+#endif
     use micro_p3, only: p3_init_a, p3_init_b, p3_set_tables, p3_get_tables
 
     type(c_ptr), intent(in) :: lookup_file_dir_c

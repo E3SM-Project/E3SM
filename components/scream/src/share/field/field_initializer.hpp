@@ -1,8 +1,8 @@
 #ifndef SCREAM_FIELD_INITIALIZER_HPP
 #define SCREAM_FIELD_INITIALIZER_HPP
 
-#include "ekat/scream_types.hpp"
-#include "ekat/util/scream_std_enable_shared_from_this.hpp"
+#include "share/scream_types.hpp"
+#include "ekat/std_meta/ekat_std_enable_shared_from_this.hpp"
 #include "share/field/field.hpp"
 
 namespace scream {
@@ -19,7 +19,7 @@ namespace scream {
  * since they will claim the role of initializer for some fields.
  */
 
-class FieldInitializer : public util::enable_shared_from_this<FieldInitializer> {
+class FieldInitializer : public ekat::util::enable_shared_from_this<FieldInitializer> {
 public:
   using device_type = DefaultDevice; // may need to template class on this
 

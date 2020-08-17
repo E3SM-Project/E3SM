@@ -1,5 +1,5 @@
-#include "p3_main_impl.hpp"
-#include "ekat/scream_types.hpp"
+#include "physics/p3/p3_main_impl.hpp"
+#include "share/scream_types.hpp"
 
 namespace scream {
 namespace p3 {

@@ -11,12 +11,12 @@
 namespace scream
 {
 
-DynamicsDrivenGridsManager::DynamicsDrivenGridsManager (const Comm& /* comm */, const ParameterList& p)
+DynamicsDrivenGridsManager::DynamicsDrivenGridsManager (const ekat::Comm& /* comm */, const ekat::ParameterList& p)
  : m_params(p)
 {
   // This is debatable: in theory, HommeDynamics should be crated *before*
   // this grids manager, so homme should already be inited.
-  scream_require_msg (was_init_homme2_called_f90(),
+  EKAT_REQUIRE_MSG (was_init_homme2_called_f90(),
                       "Error! Homme needs to be inited before the DynamicsDrivenGridsManager is created.\n");
 }
 

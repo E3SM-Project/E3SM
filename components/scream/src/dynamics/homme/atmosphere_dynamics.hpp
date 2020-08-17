@@ -2,7 +2,7 @@
 #define SCREAM_HOMME_DYNAMICS_HPP
 
 #include "share/atm_process/atmosphere_process.hpp"
-#include "ekat/scream_parameter_list.hpp"
+#include "ekat/ekat_parameter_list.hpp"
 
 #include <string>
 
@@ -26,7 +26,7 @@ public:
   using const_field_type = Field<const Real,device_type>;
 
   // Constructor(s)
-  HommeDynamics (const Comm& comm, const ParameterList& params);
+  HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList& params);
 
   // The type of the subcomponent (dynamics or physics)
   AtmosphereProcessType type () const { return AtmosphereProcessType::Dynamics; }
@@ -41,7 +41,7 @@ public:
   std::string name () const { return "Dynamics"; }
 
   // The communicator used by the dynamics
-  const Comm& get_comm () const { return m_dynamics_comm; }
+  const ekat::Comm& get_comm () const { return m_dynamics_comm; }
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
@@ -71,7 +71,7 @@ protected:
   std::map<std::string,field_type>        m_dyn_fields_out;
 
   util::TimeStamp   m_current_ts;
-  Comm              m_dynamics_comm;
+  ekat::Comm              m_dynamics_comm;
 };
 
 } // namespace scream

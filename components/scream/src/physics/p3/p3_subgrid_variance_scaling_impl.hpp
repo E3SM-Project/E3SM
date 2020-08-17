@@ -31,14 +31,14 @@ Functions<S,D>::subgrid_variance_scaling(const Spack& relvar, const Scalar& expo
   const auto relvar_exceeds_bounds  = !(relvar > relvar_min && relvar < relvar_max);
 
   if (relvar_exceeds_bounds.any()) {
-    scream_require_msg( condition, "relvar outside allowable bounds" );
+    EKAT_REQUIRE_MSG( condition, "relvar outside allowable bounds" );
   }
 
   // Check that expon >0.
   //============================================
   if (expon < 0.0){
     const auto msg = "expon<0. This might be ok, but isn't unit tested and can drive subgrid_variance_scaling negative. Be careful if you proceed.";
-    scream_require_msg( condition, msg );
+    EKAT_REQUIRE_MSG( condition, msg );
   }
 
   */
@@ -47,7 +47,7 @@ Functions<S,D>::subgrid_variance_scaling(const Spack& relvar, const Scalar& expo
   //============================================
   Spack result;
   Spack exponent=Spack(expon);
-  result=pack::tgamma( relvar+exponent )/( pack::tgamma(relvar)*pack::pow(relvar,exponent) );
+  result=tgamma( relvar+exponent ) / ( tgamma(relvar)*pow(relvar,exponent) );
   
   return result;
 				
@@ -56,4 +56,4 @@ Functions<S,D>::subgrid_variance_scaling(const Spack& relvar, const Scalar& expo
 } // namespace p3
 } // namespace scream
 
-#endif
+#endif // P3_SUBGRID_VARIANCE_SCALING_IMPL_HPP

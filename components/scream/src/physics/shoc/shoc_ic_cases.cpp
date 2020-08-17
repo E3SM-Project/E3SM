@@ -1,7 +1,6 @@
 #include "shoc_ic_cases.hpp"
 #include "physics_constants.hpp"
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_assert.hpp"
+#include "ekat/ekat_assert.hpp"
 
 namespace scream {
 namespace shoc {
@@ -229,7 +228,7 @@ FortranData::Ptr make_standard(const Int shcol, Int nlev, Int num_qtracers) {
 FortranData::Ptr Factory::create (IC ic, Int shcol, Int nlev, Int num_qtracers) {
   switch (ic) {
     case standard: return make_standard(shcol, nlev, num_qtracers);
-    default: scream_require_msg(false, "Not an IC: " << ic);
+    default: EKAT_REQUIRE_MSG(false, "Not an IC: " << ic);
   }
 }
 

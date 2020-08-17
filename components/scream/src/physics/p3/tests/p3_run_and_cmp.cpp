@@ -1,18 +1,19 @@
-#include "ekat/scream_session.hpp"
-#include "ekat/util/file_utils.hpp"
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_types.hpp"
-#include "ekat/scream_assert.hpp"
+#include "share/scream_types.hpp"
+#include "share/scream_session.hpp"
 
 #include "physics/p3/p3_f90.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
 #include "physics/p3/p3_ic_cases.hpp"
 
+#include "ekat/util/ekat_file_utils.hpp"
+#include "ekat/util/ekat_test_utils.hpp"
+#include "ekat/ekat_assert.hpp"
+
 #include <vector>
 
 namespace {
 using namespace scream;
-using namespace scream::util;
+using namespace ekat::util;
 using namespace scream::p3;
 
   /* p3_run_and_cmp can be run in 2 modes. First, generate_baseline 
@@ -80,11 +81,11 @@ static Int compare (const std::string& label, const Scalar* a,
  
   Int nerr = 0;
   FortranDataIterator refi(ref), di(d);
-  scream_assert(refi.nfield() == di.nfield());
+  EKAT_ASSERT(refi.nfield() == di.nfield());
   for (Int i = 0, n = refi.nfield(); i < n; ++i) {
     const auto& fr = refi.getfield(i);
     const auto& fd = di.getfield(i);
-    scream_assert(fr.size == fd.size);
+    EKAT_ASSERT(fr.size == fd.size);
     nerr += compare(fr.name, fr.data, fd.data, fr.size, tol);
   }
   return nerr;
@@ -99,7 +100,7 @@ struct Baseline {
 
   Int generate_baseline (const std::string& filename, bool use_fortran) {
     auto fid = FILEPtr(fopen(filename.c_str(), "w"));
-    scream_require_msg( fid, "generate_baseline can't write " << filename);
+    EKAT_REQUIRE_MSG( fid, "generate_baseline can't write " << filename);
     Int nerr = 0;
     for (auto ps : params_) {
       // Run reference p3 on this set of parameters.
@@ -117,7 +118,7 @@ struct Baseline {
 
   Int run_and_cmp (const std::string& filename, const double& tol, bool use_fortran) {
     auto fid = FILEPtr(fopen(filename.c_str(), "r"));
-    scream_require_msg( fid, "generate_baseline can't read " << filename);
+    EKAT_REQUIRE_MSG( fid, "generate_baseline can't read " << filename);
     Int nerr = 0, ne;
     int case_num = 0;
     for (auto ps : params_) {
@@ -166,9 +167,9 @@ private:
     FortranDataIterator fdi(d);
     for (Int i = 0, n = fdi.nfield(); i < n; ++i) {
       const auto& f = fdi.getfield(i);
-      util::write(&f.dim, 1, fid);
-      util::write(f.extent, f.dim, fid);
-      util::write(f.data, f.size, fid);
+      ekat::util::write(&f.dim, 1, fid);
+      ekat::util::write(f.extent, f.dim, fid);
+      ekat::util::write(f.data, f.size, fid);
     }
   }
 
@@ -177,17 +178,17 @@ private:
     for (Int i = 0, n = fdi.nfield(); i < n; ++i) {
       const auto& f = fdi.getfield(i);
       int dim, ds[3];
-      util::read(&dim, 1, fid);
-      scream_require_msg(dim == f.dim,
+      ekat::util::read(&dim, 1, fid);
+      EKAT_REQUIRE_MSG(dim == f.dim,
                       "For field " << f.name << " read expected dim " <<
                       f.dim << " but got " << dim);
-      util::read(ds, dim, fid);
+      ekat::util::read(ds, dim, fid);
       for (int i = 0; i < dim; ++i)
-        scream_require_msg(ds[i] == f.extent[i],
+        EKAT_REQUIRE_MSG(ds[i] == f.extent[i],
                         "For field " << f.name << " read expected dim "
                         << i << " to have extent " << f.extent[i] << " but got "
                         << ds[i]);
-      util::read(f.data, f.size, fid);
+      ekat::util::read(f.data, f.size, fid);
     }
   }
 };
@@ -195,7 +196,7 @@ private:
 Int Baseline::ic_ncol = 3;
 
 void expect_another_arg (int i, int argc) {
-  scream_require_msg(i != argc-1, "Expected another cmd-line arg.");
+  EKAT_REQUIRE_MSG(i != argc-1, "Expected another cmd-line arg.");
 }
 
 } // namespace anon
@@ -216,9 +217,9 @@ int main (int argc, char** argv) {
   bool generate = false, use_fortran = false;
   scream::Real tol = 0;
   for (int i = 1; i < argc-1; ++i) {
-    if (util::eq(argv[i], "-g", "--generate")) generate = true;
-    if (util::eq(argv[i], "-f", "--fortran")) use_fortran = true;
-    if (util::eq(argv[i], "-t", "--tol")) {
+    if (ekat::util::argv_matches(argv[i], "-g", "--generate")) generate = true;
+    if (ekat::util::argv_matches(argv[i], "-f", "--fortran")) use_fortran = true;
+    if (ekat::util::argv_matches(argv[i], "-t", "--tol")) {
       expect_another_arg(i, argc);
       ++i;
       tol = std::atof(argv[i]);

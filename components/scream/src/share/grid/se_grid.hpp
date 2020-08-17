@@ -2,8 +2,8 @@
 #define SCREAM_SE_GRID_HPP
 
 #include "share/grid/abstract_grid.hpp"
-#include "ekat/scream_types.hpp"
-#include "ekat/scream_assert.hpp"
+#include "share/scream_types.hpp"
+#include "ekat/ekat_assert.hpp"
 
 namespace scream
 {
@@ -50,9 +50,9 @@ public:
    , m_dofs_gids      (dofs_gids)
    , m_dof_to_elgp    (dof_to_elgp)
   {
-    scream_require_msg(type==GridType::SE_CellBased || type==GridType::SE_NodeBased,
+    EKAT_REQUIRE_MSG(type==GridType::SE_CellBased || type==GridType::SE_NodeBased,
                        "Error! Grid type not (yet) supported by SEGrid.\n");
-    scream_require_msg(dofs_gids.extent_int(0)==dof_to_elgp.extent_int(0),
+    EKAT_REQUIRE_MSG(dofs_gids.extent_int(0)==dof_to_elgp.extent_int(0),
                        "Error! Dofs gids and dofs map views have mismatching dimensions.\n");
   }
 
