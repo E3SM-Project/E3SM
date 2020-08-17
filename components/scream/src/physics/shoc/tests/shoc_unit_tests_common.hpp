@@ -54,6 +54,13 @@ struct UnitWrap {
 
     // Put struct decls here
     struct TestCalcShocVertflux;
+    struct TestShocEddyDiff;
+    struct TestShocGrid;
+    struct TestShocAdvSgsTke;
+    struct TestShocIntColStab;
+    struct TestShocIsotropicTs;
+    struct TestShocShearProd;
+    struct TestShocVarorCovar;
   };
 
 };
