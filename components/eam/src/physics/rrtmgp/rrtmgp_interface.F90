@@ -26,6 +26,7 @@ module rrtmgp_interface
    public :: rrtmgp_initialize, &
       get_nbnds_sw, get_nbnds_lw, &
       get_ngpts_sw, get_ngpts_lw, &
+      get_gpoint_bands_sw, get_gpoint_bands_lw, &
       get_min_temperature, get_max_temperature
 
 contains
@@ -45,6 +46,16 @@ contains
    integer function get_ngpts_lw()
       get_ngpts_lw = k_dist_lw%get_ngpt()
    end function get_ngpts_lw
+
+   function get_gpoint_bands_sw() result(gpoint_bands)
+      integer, dimension(nswgpts) :: gpoint_bands
+      gpoint_bands = k_dist_sw%get_gpoint_bands()
+   end function get_gpoint_bands_sw
+
+   function get_gpoint_bands_lw() result(gpoint_bands)
+      integer, dimension(nlwgpts) :: gpoint_bands
+      gpoint_bands = k_dist_lw%get_gpoint_bands()
+   end function get_gpoint_bands_lw
 
    subroutine rrtmgp_initialize(active_gases, coefficients_file_sw, coefficients_file_lw)
       character(len=*), intent(in) :: active_gases(:)

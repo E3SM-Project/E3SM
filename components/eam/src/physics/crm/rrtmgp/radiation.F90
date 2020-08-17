@@ -32,6 +32,7 @@ module radiation
       rrtmgp_nswbands => nswbands, rrtmgp_nlwbands => nlwbands, &
       rrtmgp_get_min_temperature => get_min_temperature, &
       rrtmgp_get_max_temperature => get_max_temperature, &
+      get_gpoint_bands_sw, get_gpoint_bands_lw, &
       nswgpts, nlwgpts
 
    ! Use my assertion routines to perform sanity checks
@@ -1622,7 +1623,7 @@ contains
                         ! And now do the MCICA sampling to get cloud optical properties by
                         ! gpoint/cloud state
                         call sample_cloud_optics_sw( &
-                           ncol, pver, nswgpts, k_dist_sw%get_gpoint_bands(), &
+                           ncol, pver, nswgpts, get_gpoint_bands_sw(), &
                            state%pmid, cld, cldfsnow, &
                            cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw, &
                            cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw &
@@ -1645,7 +1646,7 @@ contains
                            cld_tau_bnd_lw, liq_tau_bnd_lw, ice_tau_bnd_lw, snw_tau_bnd_lw &
                         )
                         call sample_cloud_optics_lw( &
-                           ncol, pver, nlwgpts, k_dist_lw%get_gpoint_bands(), &
+                           ncol, pver, nlwgpts, get_gpoint_bands_sw(), &
                            state%pmid, cld, cldfsnow, &
                            cld_tau_bnd_lw, cld_tau_gpt_lw &
                         )
