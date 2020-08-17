@@ -1,4 +1,6 @@
 set(SHARE_SRC
+  scream_config.cpp
+  scream_session.cpp
   atm_process/atmosphere_process_group.cpp
   atm_process/atmosphere_process_dag.cpp
   field/field_alloc_prop.cpp
@@ -6,6 +8,7 @@ set(SHARE_SRC
   field/field_header.cpp
   field/field_layout.cpp
   field/field_tracking.cpp
+  util/scream_test_session.cpp
 )
 
 add_library(scream_share ${SHARE_SRC})
