@@ -111,7 +111,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <!-- ================================================================== -->
 <!-- FATES default parameter file                                       -->
 <!-- ================================================================== -->
-<fates_paramfile >lnd/clm2/paramdata/fates_params_default_12pft_api13.c200731.nc</fates_paramfile>
+<fates_paramfile >lnd/clm2/paramdata/fates_params_default_12pft_api10.c200501.nc</fates_paramfile>
 
 
 <!-- soil order related parameters (relative to {csmdata}) -->
@@ -127,10 +127,6 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 
 <finidat hgrid="ne4np4"   maxpft="17"  mask="oQU240" use_cn=".false." ic_ymd="20000101" more_vertlayers=".false."
  ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.ICRUCLM45.ne4_oQU240.67a0f98.0001-01-04-00000.nc
-</finidat>
-
-<finidat hgrid="r0125"   maxpft="17" mask="oRRS15to5" use_cn=".false." ic_ymd="20000101" more_vertlayers=".false."
- ic_tod="0" sim_year="2010" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/20180716.DECKv1b_A3.ne30_oEC.edison.clm2.r.2010-01-01-00000_to_r0125.20200213.nc
 </finidat>
 
 <!-- HOMME grid ne11 resolution -->
@@ -217,16 +213,7 @@ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".true." irrigate=".true." nu_co
 <finidat hgrid="ne0np4_enax4v1" sim_year="2000">lnd/clm2/initdata_map/clmi.ICRUCLM45SP.2000-01-01.enax4v1_oRRS18to6_simyr2000_c180430.nc</finidat>
 <finidat hgrid="ne0np4_twpx4v1" ic_ymd="101" sim_year="2000">lnd/clm2/initdata_map/clmi.ICRUCLM45SP.2000-01-01.twpx4v1_oRRS18to6v3_simyr2000_c180430.nc</finidat>
 
-<!-- for present day simulations - year 2010 -->
-<fsurdat hgrid="ne30np4"   sim_year="2010" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_ne30np4_simyr2010_c20181025.nc</fsurdat>
-<fsurdat hgrid="r0125"   sim_year="2010" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr2010_c191025.nc</fsurdat>
-<fsurdat hgrid="r05"   sim_year="2010" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr2010_c191025.nc</fsurdat>
-
 <!-- for present day simulations - year 2000 -->
->>>>>>> origin/wlin/lnd/F2010SC5-r05-fsurdat
 <fsurdat hgrid="360x720cru"   sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_360x720cru_simyr2000_c180216.nc</fsurdat>
 <fsurdat hgrid="48x96"     sim_year="2000" use_crop=".false." >
@@ -331,7 +318,7 @@ lnd/clm2/surfdata_map/surfdata_ne4np4_simyr1850_c160614.nc</fsurdat>
 <fsurdat hgrid="ne240np4"      sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne240np4_simyr1850_c170821.nc</fsurdat>
 <fsurdat hgrid="r05"          sim_year="1850" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c190418.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c200609.nc</fsurdat>
 <fsurdat hgrid="r0125"        sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr1850_c190730.nc</fsurdat>
 
@@ -486,12 +473,14 @@ this mask will have smb calculated over the entire global land surface
 <!-- MALI grids that could be used if the glc_grid logic was working. -->
 <fglcmask hgrid="0.9x1.25" glc_grid="mpas.gis20km">glc/cism/griddata/glcmaskdata_0.9x1.25_Gland5km.nc</fglcmask>  <!-- the CISM one works fine for this mesh -->
 <fglcmask hgrid="0.9x1.25" glc_grid="mpas.ais20km">lnd/clm2/griddata/glcmaskdata_0.9x1.25_60S.nc</fglcmask>
+<fglcmask hgrid="r05"      glc_grid="mpas.gis1to10km">lnd/clm2/griddata/glcmaskdata_0.5x0.5_GIS_AIS.nc</fglcmask>
 
 <!-- Land topo datasets (when running glc_nec) (relative to {csmdata}) -->
 <flndtopo hgrid="ne30np4"  >lnd/clm2/griddata/topodata_ne30np4_USGS_171002.nc</flndtopo>
 <flndtopo hgrid="0.9x1.25"  >lnd/clm2/griddata/topodata_0.9x1.25_USGS_070110.nc</flndtopo>
 <flndtopo hgrid="1.9x2.5"   >lnd/clm2/griddata/topodata_1.9x2.5_USGS_061130.nc</flndtopo>
 <flndtopo hgrid="48x96"     >lnd/clm2/griddata/topodata_48x96_USGS_070110.nc</flndtopo>
+<flndtopo hgrid="r05"       >lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c190418.nc</flndtopo>
 
 <!-- SNICAR (SNow, ICe, and Aerosol Radiative model) datasets -->
 <!--  ***********  Resolution independent:   ***********  -->
@@ -1778,8 +1767,7 @@ this mask will have smb calculated over the entire global land surface
 <!-- =========================================  -->
 <!-- Defaults for FATES interface -->
 <!-- =========================================  -->
-<fates_spitfire_mode           use_fates=".true.">0</fates_spitfire_mode>
-<use_fates_fixed_biogeog       use_fates=".true.">.false.</use_fates_fixed_biogeog>
+<use_fates_spitfire            use_fates=".true.">.false.</use_fates_spitfire>
 <use_fates_planthydro          use_fates=".true.">.false.</use_fates_planthydro>
 <use_fates_ed_st3              use_fates=".true.">.false.</use_fates_ed_st3>
 <use_fates_ed_prescribed_phys  use_fates=".true.">.false.</use_fates_ed_prescribed_phys>
