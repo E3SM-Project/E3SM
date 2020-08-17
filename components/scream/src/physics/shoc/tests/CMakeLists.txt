@@ -25,7 +25,7 @@ if (NOT ${SCREAM_BASELINES_ONLY})
   # CreateUnitTest(shoc_stand_alone "shoc_stand_alone.cpp" "${NEED_LIBS}")
 endif()
 
-CreateUnitTest(shoc_run_and_cmp "shoc_run_and_cmp.cpp" "${NEED_LIBS}" THREADS ${SCREAM_TEST_MAX_THREADS} EXE_ARGS "${SCREAM_TEST_DATA_DIR}/shoc_run_and_cmp.baseline" DEP shoc_tests_ut_np1_omp1 OPTIONAL EXCLUDE_MAIN_CPP)
+CreateUnitTest(shoc_run_and_cmp "shoc_run_and_cmp.cpp" "${NEED_LIBS}" THREADS ${SCREAM_TEST_MAX_THREADS} EXE_ARGS "${SCREAM_TEST_DATA_DIR}/shoc_run_and_cmp.baseline" DEP shoc_tests_ut_np1_omp1 EXCLUDE_MAIN_CPP)
 
 # By default, baselines should be created using all fortran
 add_custom_target(shoc_baseline
