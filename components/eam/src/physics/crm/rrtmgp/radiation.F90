@@ -30,6 +30,8 @@ module radiation
    use rrtmgp_interface, only: &
       k_dist_sw, k_dist_lw, rrtmgp_initialize, &
       rrtmgp_nswbands => nswbands, rrtmgp_nlwbands => nlwbands, &
+      rrtmgp_get_min_temperature => get_min_temperature, &
+      rrtmgp_get_max_temperature => get_max_temperature, &
       nswgpts, nlwgpts
 
    ! Use my assertion routines to perform sanity checks
@@ -1569,11 +1571,11 @@ contains
                      ! values to min/max specified
                      call t_startf('rad_check_temperatures')
                      call handle_error(clip_values( &
-                        tmid_col(1:ncol,1:nlev_rad), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
+                        tmid_col(1:ncol,1:nlev_rad), rrtmgp_get_min_temperature(), rrtmgp_get_max_temperature(), &
                         trim(subname) // ' tmid' &
                      ), fatal=.false., warn=rrtmgp_enable_temperature_warnings)
                      call handle_error(clip_values( &
-                        tint_col(1:ncol,1:nlev_rad+1), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
+                        tint_col(1:ncol,1:nlev_rad+1), rrtmgp_get_min_temperature(), rrtmgp_get_max_temperature(), &
                         trim(subname) // ' tint' &
                      ), fatal=.false., warn=rrtmgp_enable_temperature_warnings)
                      call t_stopf('rad_check_temperatures')

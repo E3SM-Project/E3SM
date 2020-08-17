@@ -8,6 +8,7 @@ module rrtmgp_interface
    use mo_gas_optics_rrtmgp, only: ty_gas_optics_rrtmgp
    use mo_gas_concentrations, only: ty_gas_concs
    use mo_load_coefficients, only: load_and_init
+   use mo_rte_kind, only: wp
 
    implicit none
 
@@ -24,7 +25,8 @@ module rrtmgp_interface
 
    public :: rrtmgp_initialize, &
       get_nbnds_sw, get_nbnds_lw, &
-      get_ngpts_sw, get_ngpts_lw
+      get_ngpts_sw, get_ngpts_lw, &
+      get_min_temperature, get_max_temperature
 
 contains
 
@@ -68,6 +70,14 @@ contains
       nswgpts = k_dist_sw%get_ngpt()
       nlwgpts = k_dist_lw%get_ngpt()
    end subroutine rrtmgp_initialize
+
+   real(wp) function get_min_temperature()
+      get_min_temperature = min(k_dist_sw%get_temp_min(), k_dist_lw%get_temp_min())
+   end function get_min_temperature
+     
+   real(wp) function get_max_temperature()
+      get_max_temperature = max(k_dist_sw%get_temp_max(), k_dist_lw%get_temp_max())
+   end function get_max_temperature
 
    ! --------------------------------------------------------------------------
    ! Private routines
