@@ -19,7 +19,7 @@
 module module_ecpp_stats
 #ifdef ECPP
 
-  use ecppvars, only: QUI, UP1, DN1, NCLASS_TR, NCLASS_CL, CLR, CLD, NCLASS_PR, PRN, PRY
+  use module_ecpp_vars, only: QUI, UP1, DN1, NCLASS_TR, NCLASS_CL, CLR, CLD, NCLASS_PR, PRN, PRY
   use cam_abortutils, only: endrun
   use params, only: crm_rknd
   implicit none

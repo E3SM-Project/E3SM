@@ -46,7 +46,7 @@ contains
 
    !------------------------------------------------------------------------------------------------
    subroutine crm_ecpp_initialize(this, ncol, nlev)
-      use ecppvars, only: NCLASS_CL, ncls_ecpp_in, NCLASS_PR
+      use module_ecpp_vars, only: NCLASS_CL, ncls_ecpp_in, NCLASS_PR
       class(crm_ecpp_output_type), intent(inout) :: this
       integer, intent(in) :: ncol, nlev
       if (.not.allocated(this%acen            )) allocate(this%acen            (ncol,nlev,NCLASS_CL,ncls_ecpp_in,NCLASS_PR) )

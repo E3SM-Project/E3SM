@@ -20,8 +20,8 @@ module  module_ecpp_crm_driver
   !----------------------------------------------------------------------------------------
   use shr_kind_mod, only: r8 => shr_kind_r8
   use params, only: crm_rknd
-  use ecppvars
-  use ecppvars,  only: QUI, UP1, DN1, NCLASS_TR, NCLASS_CL, CLR, CLD, NCLASS_PR, PRN, PRY
+  use module_ecpp_vars
+  use module_ecpp_vars,  only: QUI, UP1, DN1, NCLASS_TR, NCLASS_CL, CLR, CLD, NCLASS_PR, PRN, PRY
   use cam_abortutils,  only: endrun
 
   public ecpp_crm_stat
@@ -43,12 +43,13 @@ module  module_ecpp_crm_driver
   real(crm_rknd) :: precthresh_trans         !  the threshold total rain, snow and graupel for clear, updraft or downdraft
 
   integer, dimension(:,:), allocatable :: updraftbase, updrafttop, dndrafttop, dndraftbase
-  integer :: nupdraft, ndndraft, ndraft_max
+  integer :: nupdraft, ndndraft, ndraft_total
 
 contains
 
   subroutine ecpp_crm_init(ncrms,dt_gl)
     use grid, only: nx, ny, nzm
+    use module_ecpp_vars,  only: allocate_ecpp_vars
     use module_ecpp_stats, only: zero_out_sums1, zero_out_sums2
     use module_ecpp_ppdriver2, only: nupdraft_in, ndndraft_in, ncls_ecpp_in
     implicit none
@@ -99,7 +100,7 @@ contains
     DN1 = nupdraft + 2 !Setup index of first downdraft class
     NCLASS_TR = nupdraft + ndndraft + 1
 
-    ndraft_max = 1 + nupdraft + ndndraft
+    ndraft_total = 1 + nupdraft + ndndraft
 
     if(NCLASS_TR.ne.ncls_ecpp_in) then
       call endrun('NCLASS_TR should be equal to ncls_ecpp_in')
@@ -118,71 +119,7 @@ contains
       dndraftbase(1,icrm)=1
     enddo
 
-    !---------------------------------------------------------------------------
-    ! Allocate arrays
-    !---------------------------------------------------------------------------
-    allocate( qlsink(   nx, ny, nzm, ncrms) )
-    allocate( precr(    nx, ny, nzm, ncrms) )
-    allocate( precsolid(nx, ny, nzm, ncrms) )
-    allocate( rh(       nx, ny, nzm, ncrms) )
-    allocate( qvs(      nx, ny, nzm, ncrms) )
-
-    allocate( qlsink_bf(nx, ny, nzm, ncrms) )
-    allocate( prain(    nx, ny, nzm, ncrms) )
-    allocate( qcloud_bf(nx, ny, nzm, ncrms) )
-
-    allocate( qcloudsum1(   nx, ny, nzm,    ncrms) )
-    allocate( qcloud_bfsum1(nx, ny, nzm,    ncrms) )
-    allocate( qrainsum1(    nx, ny, nzm,    ncrms) )
-    allocate( qicesum1(     nx, ny, nzm,    ncrms) )
-    allocate( qsnowsum1(    nx, ny, nzm,    ncrms) )
-    allocate( qgraupsum1(   nx, ny, nzm,    ncrms) )
-    allocate( qlsinksum1(   nx, ny, nzm,    ncrms) ) 
-    allocate( precrsum1(    nx, ny, nzm,    ncrms) )
-    allocate( precsolidsum1(nx, ny, nzm,    ncrms) )
-    allocate( precallsum1(  nx, ny, nzm,    ncrms) )
-    allocate( altsum1(      nx, ny, nzm,    ncrms) )
-    allocate( rhsum1(       nx, ny, nzm,    ncrms) )
-    allocate( cf3dsum1(     nx, ny, nzm,    ncrms) )
-    allocate( wwsum1(       nx, ny, nzstag, ncrms) )
-    allocate( tkesgssum1(   nx, ny, nzm,    ncrms) )
-    allocate( qlsink_bfsum1(nx, ny, nzm,    ncrms) )
-    allocate( prainsum1(    nx, ny, nzm,    ncrms) )
-    allocate( qvssum1(      nx, ny, nzm,    ncrms) )
-
-    allocate( xkhvsum(nzm,ncrms) )
-
-    allocate( wwqui_cen_sum(       nzm,  ncrms) )
-    allocate( wwqui_bnd_sum(       nzm+1,ncrms)
-    allocate( wwqui_cloudy_cen_sum(nzm,  ncrms) )
-    allocate( wwqui_cloudy_bnd_sum(nzm+1,ncrms) )
-
-    allocate( wup_thresh(  nzm+1,ncrms) )
-    allocate( wdown_thresh(nzm+1,ncrms) )
-
-    allocate( area_bnd_final(    nzstag,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
-    allocate( area_bnd_sum(      nzstag,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
-    allocate( area_cen_final(    nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
-    allocate( area_cen_sum(      nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
-    allocate( mass_bnd_final(    nzstag,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
-    allocate( mass_bnd_sum(      nzstag,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
-    allocate( mass_cen_final(    nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
-    allocate( mass_cen_sum(      nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
-    allocate( ent_bnd_sum(       nzstag,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
-    allocate( rh_cen_sum(        nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
-    allocate( qcloud_cen_sum(    nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
-    allocate( qcloud_bf_cen_sum( nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
-    allocate( qrain_cen_sum(     nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
-    allocate( qice_cen_sum(      nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
-    allocate( qsnow_cen_sum(     nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
-    allocate( qgraup_cen_sum(    nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
-    allocate( qlsink_cen_sum(    nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
-    allocate( precr_cen_sum(     nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
-    allocate( precsolid_cen_sum( nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
-    allocate( precall_cen_sum(   nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
-    allocate( qlsink_bf_cen_sum( nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
-    allocate( qlsink_avg_cen_sum(nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
-    allocate( prain_cen_sum(     nzm   ,NCLASS_CL, ndraft_max, NCLASS_PR, ncrms) )
+    call allocate_ecpp_vars(ncrms, ndraft_total)
 
     !---------------------------------------------------------------------------
     ! Initialize the running sums.
@@ -216,8 +153,6 @@ contains
       wup_thresh(:,icrm) = 0.0
       wdown_thresh(:,icrm) = 0.0
     enddo
-    itavg1 = 0
-    itavg2 = 0
 
     !---------------------------------------------------------------------------
     ! set ntavg[12] and initialize itavg[12] counters
@@ -229,72 +164,15 @@ contains
 
   !=======================================================================================
   subroutine ecpp_crm_cleanup ()
+    use module_ecpp_vars,  only: deallocate_ecpp_vars
+
     ! deallocate variables
     deallocate( updraftbase )
     deallocate( updrafttop )
     deallocate( dndraftbase )
     deallocate( dndrafttop )
-
-    deallocate( qlsink )
-    deallocate( precr )
-    deallocate( precsolid )
-    deallocate( rh )
-    deallocate( qvs )
-    deallocate( qlsink_bf )
-    deallocate( prain, )
-    deallocate( cloud_bf)
-
-    deallocate( qcloudsum1 )
-    deallocate( qcloud_bfsum1 )
-    deallocate( qrainsum1 )
-    deallocate( qicesum1 )
-    deallocate( qsnowsum1 )
-    deallocate( qgraupsum1 )
-    deallocate( qlsinksum1 )
-    deallocate( precrsum1 )
-    deallocate( precsolidsum1 )
-    deallocate( precallsum1 )
-    deallocate( altsum1 )
-    deallocate( rhsum1 )
-    deallocate( cf3dsum1 )
-    deallocate( wwsum1 )
-    deallocate( tkesgssum1 )
-    deallocate( qlsink_bfsum1 )
-    deallocate( prainsum1 )
-    deallocate( qvssum1 )
-
-    deallocate( xkhvsum )
-    deallocate( wup_thresh )
-    deallocate( wdown_thresh )
-
-    deallocate( wwqui_cen_sum )
-    deallocate( wwqui_bnd_sum )
-    deallocate( wwqui_cloudy_cen_sum )
-    deallocate( wwqui_cloudy_bnd_sum )
-
-    deallocate( area_bnd_final )
-    deallocate( area_bnd_sum )
-    deallocate( area_cen_final )
-    deallocate( area_cen_sum )
-    deallocate( mass_bnd_final )
-    deallocate( mass_bnd_sum )
-    deallocate( mass_cen_final )
-    deallocate( mass_cen_sum )
-    deallocate( ent_bnd_sum )
-    deallocate( rh_cen_sum )
-    deallocate( qcloud_cen_sum )
-    deallocate( qcloud_bf_cen_sum )
-    deallocate( qrain_cen_sum )
-    deallocate( qice_cen_sum )
-    deallocate( qsnow_cen_sum )
-    deallocate( qgraup_cen_sum )
-    deallocate( qlsink_cen_sum )
-    deallocate( qlsink_bf_cen_sum )
-    deallocate( precr_cen_sum )
-    deallocate( precsolid_cen_sum )
-    deallocate( precall_cen_sum )
-    deallocate( qlsink_avg_cen_sum )
-    deallocate( prain_cen_sum  )
+    
+    call deallocate_ecpp_vars()
 
   end subroutine ecpp_crm_cleanup
   !---------------------------------------------------------------------------------------
@@ -397,7 +275,7 @@ contains
       ! Determine draft categories and get running sums of them.
       do icrm = 1 , ncrms
       call categorization_stats( .true., &
-      nx, ny, nzm, nupdraft, ndndraft, ndraft_max, &
+      nx, ny, nzm, nupdraft, ndndraft, ndraft_total, &
       upthresh, downthresh, &
       cloudthresh, prcpthresh, &
       cloudthresh_trans, precthresh_trans,  &
@@ -583,6 +461,10 @@ contains
     ! (alaways the case under current usage)
     ntavg1 = ntavg1_ss / dt
     ntavg2 = ntavg2_ss / dt
+
+    ! initialize counters
+    itavg1 = 0
+    itavg2 = 0
   end subroutine ecpp_set_ntavg
 
 #endif /*ECPP*/

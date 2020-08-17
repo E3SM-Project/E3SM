@@ -15,7 +15,7 @@ module module_ecpp_ppdriver2
   use constituents,   only: pcnst, cnst_name
   use cam_abortutils, only: endrun
   use crmdims,        only: crm_nz
-  use ecppvars,       only: nupdraft_in, ndndraft_in, ncls_ecpp_in, ncc_in, nprcp_in 
+  use module_ecpp_vars, only: nupdraft_in, ndndraft_in, ncls_ecpp_in, ncc_in, nprcp_in 
   use crmclouds_camaerosols, only: ecpp_mixnuc_tend => crmclouds_mixnuc_tend 
   use module_data_ecpp1 
   use module_data_mosaic_asect

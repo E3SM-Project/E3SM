@@ -61,13 +61,18 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 #endif
     use crmdims               , only: crm_nx_rad, crm_ny_rad
 #ifdef ECPP
-    use ecppvars              , only: qlsink, precr, precsolid, &
-                                      area_bnd_final, area_bnd_sum, area_cen_final, area_cen_sum, &
-                                      mass_bnd_final, mass_bnd_sum, rh_cen_sum, qcloud_cen_sum, qice_cen_sum, &
-                                      qlsink_cen_sum, precr_cen_sum, precsolid_cen_sum, xkhvsum, wup_thresh, wdown_thresh, &
-                                      wwqui_cen_sum, wwqui_bnd_sum, wwqui_cloudy_cen_sum, wwqui_cloudy_bnd_sum, &
-                                      qlsink_bf_cen_sum, qlsink_avg_cen_sum, prain_cen_sum, qlsink_bf, prain
-    use ecppvars              , only: NCLASS_CL, ncls_ecpp_in, NCLASS_PR
+    use module_ecpp_vars      , only: qlsink, precr, precsolid, &
+                                      area_bnd_final, area_bnd_sum, &
+                                      area_cen_final, area_cen_sum, &
+                                      mass_bnd_final, mass_bnd_sum, rh_cen_sum, &
+                                      qcloud_cen_sum, qice_cen_sum, &
+                                      qlsink_cen_sum, precr_cen_sum, precsolid_cen_sum, &
+                                      xkhvsum, wup_thresh, wdown_thresh, &
+                                      wwqui_cen_sum, wwqui_bnd_sum, &
+                                      wwqui_cloudy_cen_sum, wwqui_cloudy_bnd_sum, &
+                                      qlsink_bf_cen_sum, qlsink_avg_cen_sum, &
+                                      prain_cen_sum, qlsink_bf, prain, &
+                                      NCLASS_CL, ncls_ecpp_in, NCLASS_PR
 #endif /* ECPP */
     use accelerate_crm_mod    , only: use_crm_accel, crm_accel_factor, crm_accel_nstop, accelerate_crm, crm_accel_uv
 #ifndef MMF_STANDALONE

@@ -20,7 +20,7 @@ subroutine crm_history_register()
    use cam_history_support, only: add_hist_coord
    use crmdims,             only: crm_nx, crm_ny, crm_nz, crm_nx_rad, crm_ny_rad
 #ifdef ECPP
-   use ecppvars,            only: NCLASS_CL,ncls_ecpp_in,NCLASS_PR
+   use module_ecpp_vars,    only: NCLASS_CL,ncls_ecpp_in,NCLASS_PR
 #endif
    !----------------------------------------------------------------------------
    ! local variables

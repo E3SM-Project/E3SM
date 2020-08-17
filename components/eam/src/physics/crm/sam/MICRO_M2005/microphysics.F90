@@ -595,7 +595,7 @@ use grid, only: z, zi
 use vars, only: t, gamaz, precsfc, precssfc, precflux, qpfall, tlat, prec_xy, &
                 nstep, nstatis, icycle, total_water_prec
 #ifdef ECPP
-use ecppvars, only: qlsink, qlsink_bf, prain, precr, precsolid, rh, qcloud_bf
+use module_ecpp_vars, only: qlsink, qlsink_bf, prain, precr, precsolid, rh, qcloud_bf
 #endif
 
 implicit none
