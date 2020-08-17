@@ -27,6 +27,17 @@ if (NOT MOD_SUFFIX)
   set(MOD_SUFFIX "mod")
 endif()
 
+string(FIND "${CAM_CONFIG_OPTS}" "-crm samxx" HAS_SAMXX)
+if (NOT HAS_SAMXX EQUAL -1)
+  # The following is for the SAMXX code:
+  set(USE_SAMXX TRUE)
+endif()
+
+set(USE_YAKL ${USE_SAMXX})
+if (${USE_YAKL})
+  set(USE_CXX TRUE)
+endif()
+
 #===============================================================================
 # set CPP options (must use this before any flags or cflags settings)
 #===============================================================================
@@ -372,12 +383,6 @@ string(FIND "${CAM_CONFIG_OPTS}" "-cosp" HAS_COSP)
 if (NOT HAS_COSP EQUAL -1)
   # The following is for the COSP simulator code:
   set(USE_COSP TRUE)
-endif()
-
-string(FIND "${CAM_CONFIG_OPTS}" "-crm samxx" HAS_SAMXX)
-if (NOT HAS_SAMXX EQUAL -1)
-  # The following is for the SAMXX code:
-  set(USE_SAMXX TRUE)
 endif()
 
 # System libraries (netcdf, mpi, pnetcdf, esmf, trilinos, etc.)
