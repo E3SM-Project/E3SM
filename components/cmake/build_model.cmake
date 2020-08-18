@@ -59,26 +59,38 @@ function(build_model COMP_CLASS COMP_NAME)
       include(${PROJECT_SOURCE_DIR}/cam/src/physics/cosp2/Cosp.cmake)
     endif()
 
+    # If YAKL is needed, then set YAKL CMake vars
     if (USE_YAKL)
       if ("${COMPILER}" STREQUAL "gnugpu")
+        # ARCH can be CUDA, HIP, or unset
         set(ARCH "CUDA")
-        set(CUDA_FLAGS "-arch sm_70")
+        # This eventually needs to be grabbed from config_compilers.xml
+        if ("${MACH}" STREQUAL "summit")
+          set(CUDA_FLAGS "-arch sm_70")
+        endif()
       endif()
       message(STATUS "Building YAKL")
-      # Build YAKL as a library
+      # Build YAKL as a static CUDA-linked library
+      # YAKL_HOME is YAKL's source directlry
       set(YAKL_HOME ${CMAKE_CURRENT_SOURCE_DIR}/../../../externals/YAKL)
+      # YAKL_BIN is where we're placing the YAKL library
       set(YAKL_BIN  ${CMAKE_CURRENT_BINARY_DIR}/yakl)
+      # YAKL_CUB_HOME is where Nvidia's cub repo lives (submodule)
       set(YAKL_CUB_HOME ${CMAKE_CURRENT_SOURCE_DIR}/../../../externals/cub)
+      # Build the YAKL static CUDA-linked library
       add_subdirectory(${YAKL_HOME} ${YAKL_BIN})
+      # Add both YAKL source and YAKL binary directories to the include paths
       include_directories(${YAKL_HOME} ${YAKL_BIN})
     endif()
 
-    # Add the samxx directory if it's needed
+    # if samxx is needed, build samxx as a static CUDA-linked library
     if (USE_SAMXX)
       message(STATUS "Building SAMXX")
-      # Build samxx as a library
+      # SAMXX_HOME is where the samxx source code lives
       set(SAMXX_HOME ${CMAKE_CURRENT_SOURCE_DIR}/../../cam/src/physics/crm/samxx)
+      # SAMXX_BIN is where the samxx library will live
       set(SAMXX_BIN  ${CMAKE_CURRENT_BINARY_DIR}/samxx)
+      # Build the static CUDA-linked samxx library
       add_subdirectory(${SAMXX_HOME} ${SAMXX_BIN})
       # Add samxx F90 files to the main E3SM build
       set(SOURCES ${SOURCES} cmake/atm/../../cam/src/physics/crm/samxx/cpp_interface_mod.F90

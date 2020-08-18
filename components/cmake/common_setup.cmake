@@ -27,13 +27,18 @@ if (NOT MOD_SUFFIX)
   set(MOD_SUFFIX "mod")
 endif()
 
+# Look for -crm samxx in the CAM_CONFIG_OPTS CIME variable
+# If it's found, then enable USE_SAMXX
 string(FIND "${CAM_CONFIG_OPTS}" "-crm samxx" HAS_SAMXX)
 if (NOT HAS_SAMXX EQUAL -1)
   # The following is for the SAMXX code:
   set(USE_SAMXX TRUE)
 endif()
 
+# If samxx is being used, then YAKL must be used as well
 set(USE_YAKL ${USE_SAMXX})
+
+# If YAKL is being used, then we need to enable USE_CXX
 if (${USE_YAKL})
   set(USE_CXX TRUE)
 endif()
