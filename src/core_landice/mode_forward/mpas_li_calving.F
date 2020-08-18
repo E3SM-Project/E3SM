@@ -1393,8 +1393,11 @@ module li_calving
       integer :: nNeighbors
       integer :: uncalvedCount
       real(kind=RKIND) :: fracToUse
+      real(kind=RKIND) :: fracToRemove
       real(kind=RKIND) :: uncalvedTotal
       real(kind=RKIND) :: calvingVolumeDesired
+      real(kind=RKIND) :: dsVolumeRemaining, calvingAvailable
+      real(kind=RKIND) :: calvingSubtotal
 
       err = 0
 
@@ -1419,6 +1422,8 @@ module li_calving
 
       cellVolume(:) = areaCell(:) * thickness(:)
 
+      call mpas_log_write("Beginning to distribute calving.  Total to be removed=$r", &
+              realArgs=(/sum(requiredCalvingVolume(:))/))
 
       ! The calving volume needs to be distributed in steps:
       ! 1. We need to first remove any downstream ice (non-dynamic) from the calving front edges
@@ -1431,9 +1436,10 @@ module li_calving
       !    remove ice "inland" of this cell until the total required mass is removed
       !    TODO: Not sure if this violates a CFL-like condition
 
+      ! 1. Loop over downstream (non-dynamic, floating) cells
+      calvingSubtotal = 0.0_RKIND
       do iCell = 1, nCells
 
-         ! 1. Loop over downstream (non-dynamic, floating) cells
          if (li_mask_is_floating_ice(cellMask(iCell)) .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell)))) then
 
             ! Find number of calving edges and total volume they have to offer
@@ -1461,16 +1467,62 @@ module li_calving
                      calvingThickness(iCell) = calvingThickness(iCell) + removeVolumeHere / areaCell(iCell)
                      uncalvedVolume(iEdge) = uncalvedVolume(iEdge) - removeVolumeHere
                      cellVolume(iCell) = cellVolume(iCell) - removeVolumeHere
+                     calvingSubtotal = calvingSubtotal + removeVolumeHere
                   endif
                enddo
             endif
 
          endif ! if this is a downstream cell
       enddo
+      call mpas_log_write("Phase 1 complete. Removed $r m^3 from downstream cells.", &
+              realArgs=(/calvingSubtotal/))
 
+
+
+      ! 1a. Try to eliminate any remaining downstream cells
+      calvingSubtotal = 0.0_RKIND
+      dsVolumeRemaining = 0.0_RKIND
+      do iCell = 1, nCells
+         if (li_mask_is_floating_ice(cellMask(iCell)) .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell)))) then
+             dsVolumeRemaining = dsVolumeRemaining + cellVolume(iCell)
+         endif ! if this is a downstream cell
+      enddo
+      calvingAvailable = sum(uncalvedVolume(:))
+      if ((calvingAvailable == 0.0_RKIND) .or. (dsVolumeRemaining == 0.0_RKIND)) then
+         fracToUse = 0.0_RKIND
+         fracToRemove = 0.0_RKIND
+      else
+         if (calvingAvailable > dsVolumeRemaining) then
+            fracToUse = dsVolumeRemaining / calvingAvailable
+            fracToRemove = 1.0_RKIND
+         else
+            fracToUse = 1.0_RKIND
+            fracToRemove = calvingAvailable / dsVolumeRemaining
+         endif
+      endif
+      call mpas_log_write("Step 1a.  dsVolRemaining=$r, calvingAvail=$r, fracToUse=$r, fracToRemove=$r", &
+              realArgs=(/dsVolumeRemaining, calvingAvailable, fracToUse, fracToRemove/))
+
+      ! Remove the ice
+      do iCell = 1, nCells
+         if (li_mask_is_floating_ice(cellMask(iCell)) .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell)))) then
+            removeVolumeHere = fracToRemove * cellVolume(iCell)
+            calvingThickness(iCell) = calvingThickness(iCell) + removeVolumeHere / areaCell(iCell)
+            cellVolume(iCell) = cellVolume(iCell) - removeVolumeHere
+            calvingSubtotal = calvingSubtotal + removeVolumeHere
+         endif
+      enddo
+      ! Update the volume remaining to be calved
+      uncalvedVolume(:) = (1.0_RKIND - fracToUse) * uncalvedVolume(:)
+      call mpas_log_write("Phase 1a complete. Removed $r m^3 from downstream cells.", &
+              realArgs=(/calvingSubtotal/))
+
+
+
+      ! 2. Loop over upstream (dynamic, bed below sea level) cells
+      calvingSubtotal = 0.0_RKIND
       do iCell = 1, nCells
 
-         ! 2. Loop over upstream (dynamic, bed below sea level) cells
          if (calvingFrontMaskCell(iCell)==1) then
             ! Find number of calving edges and total volume they have to offer
             nNeighbors = 0
@@ -1498,13 +1550,18 @@ module li_calving
                      removeVolumeHere = fracToUse * uncalvedVolume(iEdge)
                      calvingThickness(iCell) = calvingThickness(iCell) + removeVolumeHere / areaCell(iCell)
                      uncalvedVolume(iEdge) = uncalvedVolume(iEdge) - removeVolumeHere
+                     calvingSubtotal = calvingSubtotal + removeVolumeHere
                   endif
                enddo
             endif
          endif ! if a calving front cell
 
       enddo
+      call mpas_log_write("Phase 2 complete. Removed $r m^3 from upstream cells.", &
+              realArgs=(/calvingSubtotal/))
 
+      call mpas_log_write("Calving complete. Removed $r m^3.", &
+              realArgs=(/sum(calvingThickness*areaCell)/))
       if (maxval(uncalvedVolume) > 0.0_RKIND) then
 
          uncalvedTotal = sum(uncalvedVolume)
