@@ -144,7 +144,10 @@ contains
 
       nEdges = nEdgesArray ( 1 )
 
-      !$omp do schedule(runtime)
+      !$omp parallel
+      !$omp do schedule(runtime) &
+      !$omp private(zTop, cell1, cell2, attenuationCoeff, transmissionCoeffTop, &
+      !$omp         remainingStress, k, zBot, transmissionCoeffBot)
       do iEdge = 1, nEdges
         zTop = 0.0_RKIND
         cell1 = cellsOnEdge(1,iEdge)
@@ -174,6 +177,7 @@ contains
         end if
       enddo
       !$omp end do
+      !$omp end parallel
 
       call mpas_timer_stop('vel surface stress')
 

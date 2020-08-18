@@ -120,11 +120,13 @@ contains
 
       ! zero tracers at surface to TTDMask at top-most layer
       ! TTDMask should be 1 within region of interest and zero elsewhere
+      !$omp parallel
       !$omp do schedule(runtime)
       do iCell = 1, nCellsSolve
          tracers(:, 1, iCell) = TTDMask(:, iCell)
       end do
       !$omp end do
+      !$omp end parallel
 
    !--------------------------------------------------------------------
 

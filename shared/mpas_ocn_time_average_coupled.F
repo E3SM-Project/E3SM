@@ -86,6 +86,7 @@ module ocn_time_average_coupled
         call mpas_pool_get_array(forcingPool, 'avgSSHGradient', avgSSHGradient)
         call mpas_pool_get_array(forcingPool, 'nAccumulatedCoupled', nAccumulatedCoupled)
 
+        !$omp parallel
         !$omp do schedule(runtime)
         do iCell = 1, nCells
            avgSurfaceVelocity(:, iCell) = 0.0_RKIND
@@ -93,12 +94,14 @@ module ocn_time_average_coupled
            avgSSHGradient(:, iCell) = 0.0_RKIND
         end do
         !$omp end do
+        !$omp end parallel
 
         if(trim(config_land_ice_flux_mode) == 'coupled') then
            call mpas_pool_get_array(forcingPool, 'avgLandIceBoundaryLayerTracers', avgLandIceBoundaryLayerTracers)
            call mpas_pool_get_array(forcingPool, 'avgLandIceTracerTransferVelocities', avgLandIceTracerTransferVelocities)
            call mpas_pool_get_array(forcingPool, 'avgEffectiveDensityInLandIce', avgEffectiveDensityInLandIce)
 
+           !$omp parallel
            !$omp do schedule(runtime)
            do iCell = 1, nCells
               avgLandIceBoundaryLayerTracers(:, iCell) = 0.0_RKIND
@@ -106,6 +109,7 @@ module ocn_time_average_coupled
               avgEffectiveDensityInLandIce(iCell) = 0.0_RKIND
            end do
            !$omp end do
+           !$omp end parallel
         end if
 
         !  set up BGC coupling fields if necessary
@@ -125,6 +129,7 @@ module ocn_time_average_coupled
            call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceFeParticulate', avgOceanSurfaceFeParticulate)
            call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceFeDissolved', avgOceanSurfaceFeDissolved)
 
+           !$omp parallel
            !$omp do schedule(runtime)
            do iCell = 1, nCells
               avgCO2_gas_flux(iCell) = 0.0_RKIND
@@ -140,6 +145,7 @@ module ocn_time_average_coupled
               avgOceanSurfaceFeDissolved(iCell) = 0.0_RKIND
            end do
            !$omp end do
+           !$omp end parallel
         end if
 
         if (config_use_DMSTracers) then
@@ -148,12 +154,14 @@ module ocn_time_average_coupled
            call mpas_pool_get_array(DMSSeaIceCoupling, 'avgOceanSurfaceDMS', avgOceanSurfaceDMS)
            call mpas_pool_get_array(DMSSeaIceCoupling, 'avgOceanSurfaceDMSP', avgOceanSurfaceDMSP)
 
+           !$omp parallel
            !$omp do schedule(runtime)
            do iCell = 1, nCells
               avgOceanSurfaceDMS(iCell) = 0.0_RKIND
               avgOceanSurfaceDMSP(iCell) = 0.0_RKIND
            end do
            !$omp end do
+           !$omp end parallel
         endif
         if (config_use_MacroMoleculesTracers) then
            call mpas_pool_get_subpool(forcingPool, 'MacroMoleculesSeaIceCoupling', MacroMoleculesSeaIceCoupling)
@@ -161,20 +169,17 @@ module ocn_time_average_coupled
            call mpas_pool_get_array(MacroMoleculesSeaIceCoupling, 'avgOceanSurfaceDOC', avgOceanSurfaceDOC)
            call mpas_pool_get_array(MacroMoleculesSeaIceCoupling, 'avgOceanSurfaceDON', avgOceanSurfaceDON)
 
+           !$omp parallel
            !$omp do schedule(runtime)
            do iCell = 1, nCells
               avgOceanSurfaceDOC(:,iCell) = 0.0_RKIND
               avgOceanSurfaceDON(iCell) = 0.0_RKIND
            end do
            !$omp end do
+           !$omp end parallel
         endif
 
-        !$omp master
-
         nAccumulatedCoupled = 0
-
-        !$omp end master
-        call mpas_threading_barrier()
 
     end subroutine ocn_time_average_coupled_init!}}}
 
@@ -249,6 +254,7 @@ module ocn_time_average_coupled
 
         call mpas_pool_get_array(forcingPool, 'nAccumulatedCoupled', nAccumulatedCoupled)
 
+        !$omp parallel
         !$omp do schedule(runtime)
         do iCell = 1, nCells
            avgTracersSurfaceValue(:, iCell) = avgTracersSurfaceValue(:, iCell) * nAccumulatedCoupled &
@@ -264,6 +270,7 @@ module ocn_time_average_coupled
                                         / ( nAccumulatedCoupled + 1 )
         end do
         !$omp end do
+        !$omp end parallel
 
         if(trim(config_land_ice_flux_mode) == 'coupled') then
            call mpas_pool_get_array(diagnosticsPool, 'landIceBoundaryLayerTracers', landIceBoundaryLayerTracers)
@@ -274,6 +281,7 @@ module ocn_time_average_coupled
            call mpas_pool_get_array(forcingPool, 'avgLandIceTracerTransferVelocities', avgLandIceTracerTransferVelocities)
            call mpas_pool_get_array(forcingPool, 'avgEffectiveDensityInLandIce', avgEffectiveDensityInLandIce)
 
+           !$omp parallel
            !$omp do schedule(runtime)
            do iCell = 1, nCells
               avgLandIceBoundaryLayerTracers(:, iCell) = ( avgLandIceBoundaryLayerTracers(:, iCell) * nAccumulatedCoupled &
@@ -284,6 +292,7 @@ module ocn_time_average_coupled
                  + effectiveDensityInLandIce(iCell) ) / ( nAccumulatedCoupled + 1)
            end do
            !$omp end do
+           !$omp end parallel
         end if
 
         !  accumulate BGC coupling fields if necessary
@@ -307,6 +316,7 @@ module ocn_time_average_coupled
          call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
          call mpas_pool_get_array(tracersPool, 'ecosysTracers', ecosysTracers, 1)
 
+           !$omp parallel
            !$omp do schedule(runtime)
            do iCell = 1, nCells
 
@@ -338,6 +348,7 @@ module ocn_time_average_coupled
 
            end do
            !$omp end do
+           !$omp end parallel
         end if
 
         if (config_use_DMSTracers) then
@@ -349,6 +360,7 @@ module ocn_time_average_coupled
            call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
            call mpas_pool_get_array(tracersPool, 'DMSTracers', DMSTracers, 1)
 
+           !$omp parallel
            !$omp do schedule(runtime)
            do iCell = 1, nCells
            avgOceanSurfaceDMS(iCell) = ( avgOceanSurfaceDMS(iCell) * nAccumulatedCoupled &
@@ -357,6 +369,7 @@ module ocn_time_average_coupled
               + DMSTracers(dmsIndices%dmsp_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
            end do
            !$omp end do
+           !$omp end parallel
         endif
 
         if (config_use_MacroMoleculesTracers) then
@@ -368,6 +381,7 @@ module ocn_time_average_coupled
            call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
            call mpas_pool_get_array(tracersPool, 'MacroMoleculesTracers', MacroMoleculesTracers, 1)
 
+           !$omp parallel
            !$omp do schedule(runtime)
            do iCell = 1, nCells
            avgOceanSurfaceDOC(1,iCell) = ( avgOceanSurfaceDOC(1,iCell) * nAccumulatedCoupled &
@@ -379,14 +393,10 @@ module ocn_time_average_coupled
               + MacroMoleculesTracers(macrosIndices%prot_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
            end do
            !$omp end do
+           !$omp end parallel
         endif
 
-        !$omp master
-
         nAccumulatedCoupled = nAccumulatedCoupled + 1
-
-        !$omp end master
-        call mpas_threading_barrier()
 
     end subroutine ocn_time_average_coupled_accumulate!}}}
 
