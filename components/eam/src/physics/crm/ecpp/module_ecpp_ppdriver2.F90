@@ -14,7 +14,34 @@ module module_ecpp_ppdriver2
   use crmdims,          only: crm_nz
   use module_ecpp_vars, only: nupdraft, ndndraft, ncls_ecpp_in, ncc_in, nprcp_in 
   use module_data_ecpp1 
-  use module_data_mosaic_asect
+
+  ! Variables moved from the old mosaic module (module_data_mosaic_asect)
+  integer, save :: ntype_aer   ! number of aerosol types
+  integer, save :: nphase_aer  ! number of aerosol phases
+  integer, save :: maxd_atype  ! maximum allowable # of aerosol types
+  integer, save :: maxd_asize  ! maximum allowable # of aerosol size bins
+  integer, save :: maxd_acomp  ! maximum allowable # of chemical components
+  integer, save :: maxd_aphase ! maximum allowable # of aerosol phases (gas, cloud, ice, rain, ...)
+  integer, save :: ai_phase    ! phase (p) index for interstitial (unactivated) aerosol particles
+  integer, save :: cw_phase    ! phase (p) index for aerosol particles in cloud water
+  integer, allocatable :: nsize_aer(:)         ! number of aerosol size bins for each aerosol type
+  integer, allocatable :: ncomp_aer(:)         ! number of chemical components for each aerosol type
+  integer, allocatable :: massptr_aer(:,:,:,:) ! index for chemical component mixing-ratio
+  integer, allocatable :: numptr_aer(:,:,:)    ! index for particle number mixing-ratio 
+  real,    allocatable :: dens_aer(:,:)        ! dry density (g/cm^3) of aerosol chemical component
+  real,    allocatable :: hygro_aer(:,:)       ! hygroscopicity 
+  real,    allocatable :: sigmag_aer(:,:)      ! geometric standard deviation for aerosol
+  real,    allocatable :: volumhi_sect(:,:)    ! 1-particle volume (cm^3) at upper boundary of section m
+  real,    allocatable :: volumlo_sect(:,:)    ! 1-particle volume (cm^3) at lower boundary of section m
+  real,    allocatable :: dcen_sect(:,:)       ! volume-mean diameter?
+  real,    allocatable :: dlo_sect(:,:)        ! volume-mean diameter?
+  real,    allocatable :: dhi_sect(:,:)        ! volume-mean diameter?
+  logical, allocatable :: is_aerosol(:)        ! true if field is aerosol (any phase)
+  integer, allocatable :: iphase_of_aerosol(:)
+  integer, allocatable :: isize_of_aerosol(:)
+  integer, allocatable :: itype_of_aerosol(:)
+  integer, allocatable :: inmw_of_aerosol(:)
+  integer, allocatable :: laicwpair_of_aerosol(:)
 
   implicit none
 
@@ -122,12 +149,9 @@ subroutine   papampollu_init ( )
 
     sigmag_aer(1, n) = sigmag_amode(n)
     !-----------------------------------------------------------------------
-    ! Notes: 
     !   the tmpa factor is because
-    !   dcen_sect, dlo_sect, dhi_sect are used as,
-    !       and are compared to, volume-mean diameters
-    !   dgnum_amode, dgnumlo_amode, dgnumhi_amode are used as,
-    !       and are compared to, number-distribution geometric-mean diameters
+    !   dcen_sect, dlo_sect, dhi_sect             => volume-mean diameters
+    !   dgnum_amode, dgnumlo_amode, dgnumhi_amode => number-distribution geometric-mean diameters
     !   volume_mixing_ratio/(number_mixing_ratio*pi/6)
     !           = volume_mean_diameter**3
     !           = (number_geometric_mean_diameter*tmpa)**3
