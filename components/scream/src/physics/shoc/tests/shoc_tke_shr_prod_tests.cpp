@@ -42,7 +42,6 @@ TEST_CASE("shoc_tke_shr_prod", "shoc") {
   //   NOTE: First indicee is zero because it is never used
   //   Do a stretched grid
   Real dz_zi[nlevi] = {0.0, 500., 200., 100., 50., 10.};
-//  Real dz_zi[nlevi] = {0.0, 10.0, 10.0, 10.0, 10.0, 10.0};
   // Define zonal wind on nlev grid [m/s]
   Real u_wind_shr[nlev] = {2.0, 1.0, 0.0, -1.0, -2.0};
   // Define meridional wind on nlev grid [m/s]
