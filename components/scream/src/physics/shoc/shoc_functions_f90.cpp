@@ -273,29 +273,35 @@ void shoc_diag_second_moments_srf_f(Int shcol, Real* wthl, Real* uw, Real* vw, R
   using SHOC       = Functions<Real, DefaultDevice>;
   using Spack      = typename SHOC::Spack;
   using view_1d    = typename SHOC::view_1d<Spack>;
-  using KT         = typename SHOC::KT;
-  using ExeSpace   = typename KT::ExeSpace;
-  using MemberType = typename SHOC::MemberType;
 
   const Int nshcol_pack = scream::pack::npack<Spack>(shcol);
-  static constexpr Int num_arrays = 5;
+  static constexpr Int num_arrays = 3;
 
   Kokkos::Array<view_1d, num_arrays> second_mom_srf_1d;
 
-  pack::host_to_device({wthl, uw, vw, ustar2, wstar}, shcol, second_mom_srf_1d);
+  pack::host_to_device({wthl, uw, vw}, shcol, second_mom_srf_1d);
 
-  view_1d wthl_d(  second_mom_srf_1d[0]),
-          uw_d(    second_mom_srf_1d[1]),
-          vw_d(    second_mom_srf_1d[2]),
-          ustar2_d(second_mom_srf_1d[3]),
-          wstar_d( second_mom_srf_1d[4]);
+  view_1d wthl_d(second_mom_srf_1d[0]),
+          uw_d(  second_mom_srf_1d[1]),
+          vw_d(  second_mom_srf_1d[2]);
 
-  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nshcol_pack);
-  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+  view_1d ustar2_d("ustar2",nshcol_pack),
+          wstar_d("wstar",nshcol_pack);
 
-    SHOC::shoc_diag_second_moments_srf(team, shcol, wthl_d, uw_d, vw_d, ustar2_d, wstar_d);
+  Kokkos::parallel_for("parallel_moments_srf", nshcol_pack, KOKKOS_LAMBDA (const int& i) {
 
-  });
+     Spack wthl_s{wthl_d(i)};
+     Spack uw_s{uw_d(i)};
+     Spack vw_s{vw_d(i)};
+
+     Spack ustar2_s{0.};
+     Spack wstar_s{0.};
+
+     SHOC::shoc_diag_second_moments_srf(shcol, wthl_s, uw_s, vw_s, ustar2_s, wstar_s);
+
+     ustar2_d(i) = ustar2_s;
+     wstar_d(i)  = wstar_s;
+   });
 
   // back to host
   Kokkos::Array<view_1d, 2> second_mom_host_views_1d = {ustar2_d, wstar_d};

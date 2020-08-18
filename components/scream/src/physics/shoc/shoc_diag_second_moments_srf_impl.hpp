@@ -12,9 +12,9 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::shoc_diag_second_moments_srf(
-    const MemberType& team, const Int& shcol, 
-    const uview_1d<const Spack>& wthl_sfc, const uview_1d<const Spack>& uw_sfc, const uview_1d<const Spack>& vw_sfc,
-    const uview_1d<Spack>& ustar2, const uview_1d<Spack>& wstar)
+    const Int& shcol, 
+    const Spack& wthl_sfc, const Spack& uw_sfc, const Spack& vw_sfc,
+    Spack& ustar2, Spack& wstar)
 {
  // Purpose of this subroutine is to diagnose surface
  // properties needed for the the lower
@@ -27,21 +27,14 @@ void Functions<S,D>
  const auto ggr      = C::gravit;
  const auto basetemp = C::basetemp;
 
- const Int nshcol_pack = scream::pack::npack<Spack>(shcol);
+ ustar2 = pack::sqrt(uw_sfc*uw_sfc+vw_sfc*vw_sfc);
 
- Kokkos::parallel_for(
-    Kokkos::TeamThreadRange(team, nshcol_pack), [&] (Int k) {
+ const auto is_wthl_ge_zero = wthl_sfc >= zero;
 
-    ustar2(k) = pack::sqrt(uw_sfc(k)*uw_sfc(k)+vw_sfc(k)*vw_sfc(k));
+ wstar.set(is_wthl_ge_zero,
+           pack::pow(one/basetemp*ggr*wthl_sfc*one, third));
 
-    const auto is_wthl_ge_zero = wthl_sfc(k) >= zero;
-
-    wstar(k).set(is_wthl_ge_zero,
-              pack::pow(one/basetemp*ggr*wthl_sfc(k)*one, third));
-
-    wstar(k).set(!is_wthl_ge_zero, zero);
-   }
- );
+ wstar.set(!is_wthl_ge_zero, zero);
 
 }
 
