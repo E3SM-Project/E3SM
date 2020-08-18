@@ -48,7 +48,7 @@ void calc_shoc_vertflux_c(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 			  Real *dz_zi, Real *invar, Real *vertflux);
 
 void shoc_diag_second_moments_srf_c(Int shcol, Real* wthl, Real* uw, Real* vw, 
-                          Real* ustar2, Real* wstar);
+                                   Real* ustar2, Real* wstar);
 
 }
 
