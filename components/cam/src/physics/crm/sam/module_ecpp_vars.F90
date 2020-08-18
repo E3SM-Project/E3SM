@@ -88,6 +88,8 @@ module module_ecpp_vars
   real(crm_rknd), dimension(:,:,:,:,:), allocatable :: prain_cen_sum
   real(crm_rknd), dimension(:,:,:,:,:), allocatable :: qlsink_avg_cen_sum
 
+contains
+
   !-----------------------------------------------------------------------------
   subroutine allocate_ecpp_vars(ncrms, ndraft)
     ! use openacc_utils
