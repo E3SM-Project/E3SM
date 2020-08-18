@@ -10,7 +10,6 @@
 
 	<namelist name="namelist.ocean" mode="forward">
 		<template file="template_forward.xml" path_base="script_configuration_dir"/>
-		<template file="template_monthly_output.xml" path_base="script_configuration_dir"/>
 		<template file="template_forward.xml" path_base="script_resolution_dir"/>
 		<option name="config_run_duration">'00-01-00_00:00:00'</option>
 		<option name="config_do_restart">.true.</option>
