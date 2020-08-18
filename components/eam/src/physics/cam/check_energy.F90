@@ -59,8 +59,6 @@ module check_energy
 
   public :: energy_helper_eam_def
 
-!  public :: setup_moist_indices
-
   public :: qflx_gmean              ! calculate global mean of qflx for water conservation check 
   public :: check_qflx              ! output qflx at certain locations for water conservation check  
   public :: check_prect             ! output prect at certain locations for water conservation check  
@@ -236,11 +234,6 @@ end subroutine check_energy_get_integrals
        call addfld('SHFLXORI', horiz_only, 'A', 'W/m2', 'SHFLX before adding IEFLX')
        call add_default ('IEFLX', 1, ' ') 
     end if 
-
-!    call cnst_get_ind('CLDICE', icldice, abort=.false.)
-!    call cnst_get_ind('CLDLIQ', icldliq, abort=.false.)
-!    call cnst_get_ind('RAINQM', irain, abort=.false.)
-!    call cnst_get_ind('SNOWQM', isnow, abort=.false.)
 
   end subroutine check_energy_init
 
