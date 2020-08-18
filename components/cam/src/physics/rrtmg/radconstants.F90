@@ -95,11 +95,7 @@ real(r8), parameter :: wavenumber2_longwave(nlwbands) = &! Longwave spectral ban
     (/  350._r8,  500._r8,  630._r8,  700._r8,  820._r8,  980._r8, 1080._r8, 1180._r8, &
        1390._r8, 1480._r8, 1800._r8, 2080._r8, 2250._r8, 2390._r8, 2600._r8, 3250._r8 /)
 
-!These can go away when old camrt disappears
-! Index of volc. abs., H2O non-window
-integer, public, parameter :: idx_LW_H2O_NONWND=1
-! Index of volc. abs., H2O window
-integer, public, parameter :: idx_LW_H2O_WINDOW=2
+! These can go away when old camrt disappears
 ! Index of volc. cnt. abs. 0500--0650 cm-1
 integer, public, parameter :: idx_LW_0500_0650=3
 ! Index of volc. cnt. abs. 0650--0800 cm-1
@@ -118,10 +114,6 @@ integer, public, parameter :: gasnamelength = 5
 integer, public, parameter :: nradgas = 8
 character(len=gasnamelength), public, parameter :: gaslist(nradgas) &
    = (/'H2O  ','O3   ', 'O2   ', 'CO2  ', 'N2O  ', 'CH4  ', 'CFC11', 'CFC12'/)
-
-! what is the minimum mass mixing ratio that can be supported by radiation implementation?
-real(r8), public, parameter :: minmmr(nradgas) &
-   = epsilon(1._r8)
 
 ! Length of "optics type" string specified in optics files.
 integer, parameter, public :: ot_length = 32

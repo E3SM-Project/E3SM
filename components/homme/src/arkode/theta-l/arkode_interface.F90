@@ -368,13 +368,16 @@ function FColumnSolSolve(b, t, y, gamma, x) result(ierr)
      call pnh_and_exner_from_eos(hvcoord, vtheta_dp, dp3d, phi_np1, &
              pnh, exner, dpnh_dp_i, pnh_i_out=pnh_i)
 
-     ! compute dphi
+     ! compute dp3d_i -- note that compute_stage_value_dirk
+     ! computes this twice (with potential memory reference issues in the second pass)
      do k=1,nlev
        dphi(:,:,k)=phi_np1(:,:,k+1)-phi_np1(:,:,k)
      enddo
 
+
      ! get tridigonal matrix M
      info(:,:) = 0
+
      call get_dirk_jacobian(JacL,JacD,JacU,gamma,dp3d,dphi,pnh,1)
 
      ! loop over components of this ie
@@ -424,6 +427,291 @@ function FColumnSolSolve(b, t, y, gamma, x) result(ierr)
   end do   ! end ie loop
 
   return
-end function FColumnSolSolve
+end subroutine FColumnSolSolve
 
+!=================================================================
+
+
+!-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+!
+! NOTE: All of the remaining subroutines are not required when
+! interfacing with ARKode, and so they are not currently
+! implemented.  These may be provided to improve ARKode
+! performance on this application; if so they should be 'enabled'
+! by calling the relevant ARKode interface routine.
+!
+!-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+
+subroutine farkjtimes(v_C, Jv_C, t, y_C, fy_C, h, ipar, rpar, v1_C, ierr)
+  !-----------------------------------------------------------------
+  ! Description: farkjtimes provides the Jacobian-vector product
+  !    routine for the linearized Newton system.
+  !
+  !  Arguments:
+  !       v_C - (ptr) C pointer to NVec_t vector to multiply
+  !      Jv_C - (ptr) C pointer to NVec_t for result of Jacobian-vector product
+  !         t - (dbl, input) current time
+  !       y_C - (ptr) C pointer to NVec_t containing current solution
+  !      fy_C - (ptr) C pointer to NVec_t containing current implicit ODE rhs
+  !         h - (dbl, input) time step size for last internal step
+  !      ipar - (long int(*), input) integer user parameter data
+  !             (passed back here, unused)
+  !      rpar - (dbl(*), input) real user parameter data (passed here,
+  !             unused)
+  !      v1_C - (ptr) C pointer to NVec_t scratch vector
+  !      ierr - (int, output) return flag: 0=>success,
+  !             1=>recoverable error, -1=>non-recoverable error
+  !-----------------------------------------------------------------
+  !======= Inclusions ===========
+  use iso_c_binding
+  use HommeNVector,   only: NVec_t
+  use dimensions_mod, only: np, nlev
+
+  !======= Declarations =========
+  implicit none
+
+  ! calling variables
+  type(c_ptr),     intent(in), target :: v_C
+  type(c_ptr),     intent(in), target :: Jv_C
+  real*8,          intent(in)         :: t
+  type(c_ptr),     intent(in), target :: y_C
+  type(c_ptr),     intent(in), target :: fy_C
+  real*8,          intent(in)         :: h
+  integer(C_LONG), intent(in)         :: ipar(1)
+  real*8,          intent(in)         :: rpar(1)
+  type(c_ptr),     intent(in), target :: v1_C
+  integer(C_INT),  intent(out)        :: ierr
+
+  ! local variables
+  type(NVec_t), pointer :: v  => NULL()
+  type(NVec_t), pointer :: Jv => NULL()
+  type(NVec_t), pointer :: y  => NULL()
+  type(NVec_t), pointer :: fy => NULL()
+  type(NVec_t), pointer :: v1 => NULL()
+
+
+  !======= Internals ============
+
+  ! set return value to success
+  ierr = 0
+
+  ! dereference pointer for NVec_t objects
+  call c_f_pointer(v_C, v)
+  call c_f_pointer(Jv_C, Jv)
+  call c_f_pointer(y_C, y)
+  call c_f_pointer(fy_C, fy)
+  call c_f_pointer(v1_C, v1)
+
+  ! perform matrix-vector product, inserting result into Jv
+
+  return
+end subroutine farkjtimes
+!=================================================================
+
+
+
+
+
+
+subroutine farkjtsetup(t, y_C, fy_C, h, ipar, rpar, ierr)
+  !-----------------------------------------------------------------
+  ! Description: farkjtsetup performs any preparations for
+  !    subsequent calls to farkjtimes.
+  !
+  !  Arguments:
+  !         t - (dbl, input) current time
+  !       y_C - (ptr) C pointer to NVec_t containing current solution
+  !      fy_C - (ptr) C pointer to NVec_t containing current implicit ODE rhs
+  !         h - (dbl, input) time step size for last internal step
+  !      ipar - (long int(*), input) integer user parameter data
+  !             (passed back here, unused)
+  !      rpar - (dbl(*), input) real user parameter data (passed here,
+  !             unused)
+  !      ierr - (int, output) return flag: 0=>success,
+  !             1=>recoverable error, -1=>non-recoverable error
+  !-----------------------------------------------------------------
+  !======= Inclusions ===========
+  use iso_c_binding
+  use HommeNVector,   only: NVec_t
+  use dimensions_mod, only: np, nlev
+
+  !======= Declarations =========
+  implicit none
+
+  ! calling variables
+  real*8,          intent(in)         :: t
+  type(c_ptr),     intent(in), target :: y_C
+  type(c_ptr),     intent(in), target :: fy_C
+  real*8,          intent(in)         :: h
+  integer(C_LONG), intent(in)         :: ipar(1)
+  real*8,          intent(in)         :: rpar(1)
+  integer(C_INT),  intent(out)        :: ierr
+
+  ! local variables
+  type(NVec_t), pointer :: y  => NULL()
+  type(NVec_t), pointer :: fy => NULL()
+
+
+  !======= Internals ============
+
+  ! set return value to success
+  ierr = 0
+
+  ! dereference pointer for NVec_t objects
+  call c_f_pointer(y_C, y)
+  call c_f_pointer(fy_C, fy)
+
+  ! perform setup for matrix-vector products
+
+  return
+end subroutine farkjtsetup
+!=================================================================
+
+
+
+
+subroutine farkpset(t, y_C, fy_C, jok, jcur, gamma, h, ipar, rpar, ierr)
+  !-----------------------------------------------------------------
+  ! Description: farkpset provides the preconditioner setup
+  !    routine for the linearized Newton system.
+  !
+  !  Arguments:
+  !         t - (dbl, input) current time
+  !       y_C - (ptr) C pointer to NVec_t containing current solution
+  !      fy_C - (ptr) C pointer to NVec_t containing current implicit ODE rhs
+  !       jok - (int, input) flag denoting whether to recompute
+  !              Jacobian-related data: 0=>recompute, 1=>unnecessary
+  !      jcur - (int, output) output flag to say if Jacobian data
+  !              was recomputed: 1=>was recomputed, 0=>was not
+  !     gamma - (dbl, input) the scalar appearing in the Newton matrix
+  !              A = M-gamma*J
+  !         h - (dbl, input) time step size for last internal step
+  !      ipar - (long int(*), input) integer user parameter data
+  !             (passed back here, unused)
+  !      rpar - (dbl(*), input) real user parameter data (passed here,
+  !             unused)
+  !      ierr - (int, output) return flag: 0=>success,
+  !             1=>recoverable error, -1=>non-recoverable error
+  !-----------------------------------------------------------------
+  !======= Inclusions ===========
+  use iso_c_binding
+  use HommeNVector,   only: NVec_t
+  use dimensions_mod, only: np, nlev
+
+  !======= Declarations =========
+  implicit none
+
+  ! calling variables
+  real*8,          intent(in)         :: t
+  type(c_ptr),     intent(in), target :: y_C
+  type(c_ptr),     intent(in), target :: fy_C
+  integer(C_INT),  intent(in)         :: jok
+  integer(C_INT),  intent(out)        :: jcur
+  real*8,          intent(in)         :: gamma
+  real*8,          intent(in)         :: h
+  integer(C_LONG), intent(in)         :: ipar(1)
+  real*8,          intent(in)         :: rpar(1)
+  integer(C_INT),  intent(out)        :: ierr
+
+  ! local variables
+  type(NVec_t), pointer :: y  => NULL()
+  type(NVec_t), pointer :: fy => NULL()
+
+  !======= Internals ============
+
+  ! initialize return value to success, jcur to not-recomputed
+  ierr = 0
+  jcur = 0
+
+  ! dereference pointer for NVec_t objects
+  call c_f_pointer(y_C, y)
+  call c_f_pointer(fy_C, fy)
+
+  ! return if no preconditioner update is required
+  if (jok == 1)  return
+
+  ! update the preconditioner
+
+  ! set Jacobian recomputation flag
+  jcur = 1
+
+  return
+end subroutine farkpset
+!=================================================================
+
+
+
+
+subroutine farkpsol(t, y_C, fy_C, r_C, z_C, gamma, delta, lr, ipar, &
+                    rpar, ierr)
+  !-----------------------------------------------------------------
+  ! Description: farkpsol provides the preconditioner solve routine
+  !    for the preconditioning of the linearized Newton system.
+  !         i.e. solves P*z = r
+  !
+  ! Arguments:
+  !         t - (dbl, input) current time
+  !       y_C - (ptr) C pointer to NVec_t containing current solution
+  !      fy_C - (ptr) C pointer to NVec_t containing current implicit ODE rhs
+  !       r_C - (ptr) C pointer to NVec_t rhs vector of prec. system
+  !       z_C - (ptr) C pointer to NVec_t solution vector of prec. system
+  !     gamma - (dbl, input) scalar appearing in the Newton Matrix
+  !             A = M-gamma*J
+  !     delta - (dbl, input) desired tolerance if using an iterative
+  !             method.  In that case, solve until
+  !                  Sqrt[Sum((r-Pz).*ewt)^2] < delta
+  !             where the ewt vector is obtainable by calling
+  !             FARKGETERRWEIGHTS()
+  !        lr - (int, input) flag indicating preconditioning type to
+  !             apply: 1 => left,  2 => right
+  !      ipar - (long int(*), input) integer user parameter data
+  !             (passed back here, unused)
+  !      rpar - (dbl(*), input) real user parameter data (passed here,
+  !             unused)
+  !      ierr - (int, output) return flag: 0=>success,
+  !             1=>recoverable error, -1=>non-recoverable error
+  !-----------------------------------------------------------------
+  !======= Inclusions ===========
+  use iso_c_binding
+  use HommeNVector,   only: NVec_t
+  use dimensions_mod, only: np, nlev
+
+  !======= Declarations =========
+  implicit none
+
+  ! calling variables
+  real*8,          intent(in)         :: t
+  type(c_ptr),     intent(in), target :: y_C
+  type(c_ptr),     intent(in), target :: fy_C
+  type(c_ptr),     intent(in), target :: r_C
+  type(c_ptr),     intent(in), target :: z_C
+  real*8,          intent(in)         :: gamma
+  real*8,          intent(in)         :: delta
+  integer(C_INT),  intent(in)         :: lr
+  integer(C_LONG), intent(in)         :: ipar(1)
+  real*8,          intent(in)         :: rpar(1)
+  integer(C_INT),  intent(out)        :: ierr
+
+  ! local variables
+  type(NVec_t), pointer :: y  => NULL()
+  type(NVec_t), pointer :: fy => NULL()
+  type(NVec_t), pointer :: r  => NULL()
+  type(NVec_t), pointer :: z  => NULL()
+
+  !======= Internals ============
+
+  ! set return value to success
+  ierr = 0
+
+  ! dereference pointer for NVec_t objects
+  call c_f_pointer(y_C, y)
+  call c_f_pointer(fy_C, fy)
+  call c_f_pointer(r_C, r)
+  call c_f_pointer(z_C, z)
+
+  ! perform preconditioner solve to fill z
+
+  return
+end subroutine farkpsol
 !=================================================================

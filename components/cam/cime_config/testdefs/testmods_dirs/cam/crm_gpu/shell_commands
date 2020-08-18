@@ -1,0 +1,4 @@
+#!/bin/bash
+
+./xmlchange CAM_CONFIG_OPTS="-phys cam5 -use_MMF  -rad rrtmg -nlev 72 -microphys mg2 -crm_nz 58 -crm_adv MPDATA -crm_dt 5 -crm_nx 64 -crm_ny 1 -crm_dx 1000 -crm_nx_rad 1 -crm_ny_rad 1 -bc_dep_to_snow_updates -MMF_microphysics_scheme sam1mom -chem none -cppdefs ' -DSP_DIR_NS -DSP_MCICA_RAD ' "
+./xmlchange ATM_NCPL=288
