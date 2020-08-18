@@ -3,10 +3,11 @@
 
 path='/p/user_pub/e3sm/zhang40/analysis_data_e3sm_diags/ERA5/'
 
-original_data_path='/p/user_pub/pmp/pmp_obs_preparation/orig/data/ERA5-CREATEIP/'
-time_series_output_path=$path'time_series/'
-climo_output_path=$path'climatology/'
-tmp=$path'tmp/'
+#original_data_path='/p/user_pub/pmp/pmp_obs_preparation/orig/data/ERA5-CREATEIP/'
+original_data_path='/p/css03/esgf_publish/CREATE-IP/reanalysis/ECMWF/IFS-Cy41r2/ERA5/atmos/mon/v20200608/'
+time_series_output_path=$path'time_series_full/'
+climo_output_path=$path'climatology_full/'
+tmp=$path'tmp_full/'
 
 start_yr=1979
 end_yr=2019
@@ -50,14 +51,16 @@ do
 #rm ${time_series_output_path}*monthly*nc
 done
 
-#Combine all variables in one climo file then rename
-#vars=hfls hfss pr prw psl rlds rlus rlut rlutcs rsds rsdt rsus rsut rsutcs tauu tauv uas vas
-#vars=hfls hfss pr prw psl rlds rlus rlut rlutcs rsds rsdt rsus rsut rsutcs tauu tauv uas
-#vars=zg
-vars=psl ta tas ua va zg
-
+echo ${vars}
+##Combine all variables in one climo file then rename
+##vars=hfls hfss pr prw psl rlds rlus rlut rlutcs rsds rsdt rsus rsut rsutcs tauu tauv uas vas
+##vars=hfls hfss pr prw psl rlds rlus rlut rlutcs rsds rsdt rsus rsut rsutcs tauu tauv uas
+##vars=zg
+#vars=psl ta tas ua va zg
+#
 cd ${climo_output_path}
-echo $vars
+#echo $vars
+#
 
 declare -a sn=("ANN" "DJF" "MAM" "JJA" "SON" "01" "02" "03" "04" "05" "06" "07" "08" "09" "10" "11" "12")
 #declare -a sn=("JJA" "SON" "01" "02" "03" "04" "05" "06" "07" "08" "09" "10" "11" "12")
@@ -69,7 +72,8 @@ do
     ncks -A ERA5_monthly_${i}_${j}_*nc ERA5_monthly_ts_${j}_*nc
     done
 done
-
+#
 for i in ERA5_monthly_ts*.nc; do mv "$i" "${i/ERA5_monthly_ts/ERA5}" ; done
 rm ERA5_monthly_*.nc
 
+exit
