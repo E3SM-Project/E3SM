@@ -1,5 +1,5 @@
-!------------------------------------------------------------------------
-! F90 module to calculate cloud-model stats needed as innput into ECPP.
+!===============================================================================
+! module to calculate cloud-model stats needed as innput into ECPP.
 !
 ! Routines in this module:
 !   categorization_stats
@@ -15,18 +15,20 @@
 !   zero_out_areas
 !   zero_out_sums1
 !   zero_out_sums2
-!-------------------------------------------------------------------------------
+!===============================================================================
 module module_ecpp_stats
 #ifdef ECPP
 
-  use module_ecpp_vars, only: QUI, UP1, DN1, NCLASS_TR, NCLASS_CL, CLR, CLD, NCLASS_PR, PRN, PRY
+  use module_ecpp_vars, only: QUI, UP1, DN1, NCLASS_TR, NCLASS_CL, &
+                              CLR, CLD, NCLASS_PR, PRN, PRY
   use cam_abortutils, only: endrun
   use params, only: crm_rknd
   implicit none
 
 contains
 
-!-----------------------------------------------------------------------------
+!===============================================================================
+!===============================================================================
 subroutine rsums1( ncrms, qcloud,    qcloudsum1,    &
   qcloud_bf, qcloud_bfsum1, &
   qrain,     qrainsum1,     &
@@ -48,7 +50,7 @@ subroutine rsums1( ncrms, qcloud,    qcloudsum1,    &
 
   ! Increments 3-D running sums for the variables averaged every
   ! ntavg1_mm minutes.
-  !---------------------------------------------------------------------------
+  !-----------------------------------------------------------------------------
   integer, intent(in) :: ncrms
   real(crm_rknd), dimension(:,:,:,:), intent(in) :: &
   qcloud, qcloud_bf, qrain, qice, qsnow, qgraup, &
@@ -84,14 +86,14 @@ subroutine rsums1( ncrms, qcloud,    qcloudsum1,    &
   enddo
 end subroutine rsums1
 
-!-----------------------------------------------------------------------------
+!===============================================================================
+!===============================================================================
 subroutine rsums1ToAvg( ncrms, nt, qcloudsum, qcloud_bfsum, qrainsum, &
   qicesum, qsnowsum, qgraupsum, &
   qlsinksum, precrsum, precsolidsum, precallsum, &
   altsum, rhsum, cf3dsum, wwsum, tkesgssum, qlsink_bfsum, prainsum, qvssum )
-  ! Turns the columns of running sums into averages for the level one time
-  ! period.
-  !--------------------------------------------------------------------------
+  ! Turn the columns of running sums into averages for the level one time avg
+  !-----------------------------------------------------------------------------
   integer, intent(in) :: nt, ncrms
   real(crm_rknd), dimension(:,:,:,:), intent(inout) :: &
   qcloudsum, qcloud_bfsum, qrainsum, qicesum, qsnowsum, qgraupsum, &
@@ -124,13 +126,14 @@ subroutine rsums1ToAvg( ncrms, nt, qcloudsum, qcloud_bfsum, qrainsum, &
   enddo
 end subroutine rsums1ToAvg
 
-!-----------------------------------------------------------------------------
+!===============================================================================
+!===============================================================================
 subroutine rsums2(ncrms, xkhv, xkhvsum )
   ! Increment the running sums for the level 2 time averaging period for
   ! variables that are not already incremented (i.e. not the area and mass
   ! flux categories and in/out-flow speed that are already done). The 3-D
   ! variables are collapsed to 1-D columns.
-  !---------------------------------------------------------------------------
+  !-----------------------------------------------------------------------------
   integer, intent(in) :: ncrms
   real(crm_rknd), dimension(:,:,:,:), intent(in) :: xkhv
   real(crm_rknd), dimension(:,:), intent(inout) :: xkhvsum
@@ -138,7 +141,8 @@ subroutine rsums2(ncrms, xkhv, xkhvsum )
   call xyrsumof3d(ncrms,xkhv,xkhvsum)
 end subroutine rsums2
 
-!-----------------------------------------------------------------------------
+!===============================================================================
+!===============================================================================
 subroutine rsums2ToAvg( nx, ny, nt1, nt2, &
   xkhvsum, &
   wwqui_cen_sum, wwqui_bnd_sum, &
@@ -154,14 +158,13 @@ subroutine rsums2ToAvg( nx, ny, nt1, nt2, &
   qlsink_cen_sum, precr_cen_sum, &
   precsolid_cen_sum, precall_cen_sum, &
   qlsink_bf_cen_sum, prain_cen_sum )
-
-  ! Turns the columns of level two time period running sums into averages.
+  ! Turn the columns of level two time period running sums into averages.
   ! Note that variables that the statistics variables use a different
   ! number of times.
   !
   ! nt1 = time length of average for area and mass
   ! nt2 = time length of average for 2nd averaging period (the whole time)
-  !---------------------------------------------------------------------------
+  !-----------------------------------------------------------------------------
   integer, intent(in) :: nx, ny, nt1, nt2
   real(crm_rknd), dimension(:), intent(inout) :: &
   xkhvsum, wwqui_cen_sum, wwqui_bnd_sum, wwqui_cloudy_cen_sum, wwqui_cloudy_bnd_sum
@@ -184,18 +187,18 @@ subroutine rsums2ToAvg( nx, ny, nt1, nt2, &
 
   xkhvsum      = xkhvsum/ncount2
 
-  area_bnd_sum       = area_bnd_sum   /real(nt1,crm_rknd)
-  area_cen_sum       = area_cen_sum   /real(nt1,crm_rknd)
-  ent_bnd_sum        = ent_bnd_sum    /real(nt1,crm_rknd)
-  mass_bnd_sum       = mass_bnd_sum   /real(nt1,crm_rknd)
-  mass_cen_sum       = mass_cen_sum   /real(nt1,crm_rknd)
-  rh_cen_sum         = rh_cen_sum     /real(nt1,crm_rknd)
-  qcloud_cen_sum     = qcloud_cen_sum /real(nt1,crm_rknd)
+  area_bnd_sum       = area_bnd_sum     /real(nt1,crm_rknd)
+  area_cen_sum       = area_cen_sum     /real(nt1,crm_rknd)
+  ent_bnd_sum        = ent_bnd_sum      /real(nt1,crm_rknd)
+  mass_bnd_sum       = mass_bnd_sum     /real(nt1,crm_rknd)
+  mass_cen_sum       = mass_cen_sum     /real(nt1,crm_rknd)
+  rh_cen_sum         = rh_cen_sum       /real(nt1,crm_rknd)
+  qcloud_cen_sum     = qcloud_cen_sum   /real(nt1,crm_rknd)
   qcloud_bf_cen_sum  = qcloud_bf_cen_sum/real(nt1,crm_rknd)
-  qrain_cen_sum      = qrain_cen_sum  /real(nt1,crm_rknd)
-  qice_cen_sum       = qice_cen_sum   /real(nt1,crm_rknd)
-  qsnow_cen_sum      = qsnow_cen_sum  /real(nt1,crm_rknd)
-  qgraup_cen_sum     = qgraup_cen_sum /real(nt1,crm_rknd)
+  qrain_cen_sum      = qrain_cen_sum    /real(nt1,crm_rknd)
+  qice_cen_sum       = qice_cen_sum     /real(nt1,crm_rknd)
+  qsnow_cen_sum      = qsnow_cen_sum    /real(nt1,crm_rknd)
+  qgraup_cen_sum     = qgraup_cen_sum   /real(nt1,crm_rknd)
   do k=1,size(qlsink_cen_sum,1) !Note: must be after qcloud_cen_sum is turned into an avg
     ! see rsums1 where qlsink=qlsink*qcloud
     thesum = sum(qcloud_cen_sum(k,:,:,:))
@@ -226,24 +229,24 @@ subroutine rsums2ToAvg( nx, ny, nt1, nt2, &
 
 end subroutine rsums2ToAvg
 
-
-!-----------------------------------------------------------------------------
+!===============================================================================
+!===============================================================================
 subroutine xyrsumof2d(xin,sumout)
   ! For a 2-D intput variable (x,y), the x & y dimensions are summed and
   ! added to a running sum.
-  !---------------------------------------------------------------------------
+  !-----------------------------------------------------------------------------
   real(crm_rknd), dimension(:,:), intent(in) :: xin
   real(crm_rknd), intent(out) :: sumout
 
   sumout = sumout + sum(xin(:,:))
 end subroutine xyrsumof2d
 
-
-!-----------------------------------------------------------------------------
+!===============================================================================
+!===============================================================================
 subroutine xyrsumof3d(ncrms,xin,sumout)
   ! For a 3-D intput variable (x,y,z), the x & y dimensions are summed and
   ! added to a column  to return a running sum.
-  !------------------------------------------------------------------------
+  !-----------------------------------------------------------------------------
   integer, intent(in) :: ncrms
   real(crm_rknd), dimension(:,:,:,:), intent(in) :: xin
   real(crm_rknd), dimension(:,:), intent(out) :: sumout
@@ -255,69 +258,68 @@ subroutine xyrsumof3d(ncrms,xin,sumout)
   end do
 end subroutine xyrsumof3d
 
-
-!-----------------------------------------------------------------------------
+!===============================================================================
+!===============================================================================
 subroutine zero_out_areas( &
   area_bnd_final, area_cen_final )
   ! Zeros out the running sums of final area categories.
-  !------------------------------------------------------------------------
+  !-----------------------------------------------------------------------------
   real(crm_rknd), dimension(:,:,:,:), intent(out) :: &
   area_bnd_final, area_cen_final
 
-  area_bnd_final=0.
-  area_cen_final=0.
+  area_bnd_final = 0.
+  area_cen_final = 0.
 end subroutine zero_out_areas
 
-
-!-----------------------------------------------------------------------------
-subroutine zero_out_sums1( qcloudsum, qcloud_bfsum, qrainsum,                         &
+!===============================================================================
+!===============================================================================
+subroutine zero_out_sums1( qcloudsum, qcloud_bfsum, qrainsum,  &
   qicesum, qsnowsum, qgraupsum,                &
   qlsink, precr, precsolid, precall,           &
   altsum, rhsum, cf3dsum, wwsum, tkesgssum,    &
   qlsink_bfsum, prainsum, qvssum     )
   ! Zeros out running sum arrays that are averaged every ntavg1_mm minutes.
-  !------------------------------------------------------------------------
+  !-----------------------------------------------------------------------------
   real(crm_rknd),dimension(:,:,:), intent(out) :: &
   qcloudsum, qcloud_bfsum, qrainsum, qicesum, qsnowsum, qgraupsum, &
   qlsink, precr, precsolid, precall, &
   altsum, rhsum, cf3dsum, wwsum, tkesgssum, qlsink_bfsum, prainsum, qvssum
 
-  qcloudsum=0.
-  qcloud_bfsum=0.
-  qrainsum=0.
-  qicesum=0.
-  qsnowsum=0.
-  qgraupsum=0.
-  qlsink=0.
-  precr=0.
-  precsolid=0.
-  precall=0.
-  altsum=0.
-  rhsum=0.
-  cf3dsum=0.
-  wwsum=0.
-  tkesgssum=0.
-  qlsink_bfsum=0.0
-  prainsum=0.0
-  qvssum=0.0
+  qcloudsum     = 0.
+  qcloud_bfsum  = 0.
+  qrainsum      = 0.
+  qicesum       = 0.
+  qsnowsum      = 0.
+  qgraupsum     = 0.
+  qlsink        = 0.
+  precr         = 0.
+  precsolid     = 0.
+  precall       = 0.
+  altsum        = 0.
+  rhsum         = 0.
+  cf3dsum       = 0.
+  wwsum         = 0.
+  tkesgssum     = 0.
+  qlsink_bfsum  = 0.
+  prainsum      = 0.
+  qvssum        = 0.
 end subroutine zero_out_sums1
 
-
-!-----------------------------------------------------------------------------
+!===============================================================================
+!===============================================================================
 subroutine zero_out_sums2( &
   xkhvsum, &
   wwqui_cen_sum, wwqui_bnd_sum, wwqui_cloudy_cen_sum, wwqui_cloudy_bnd_sum,  &
   area_bnd_final, area_bnd_sum, area_cen_final, area_cen_sum, &
   mass_bnd_final, mass_bnd_sum, mass_cen_final, mass_cen_sum, &
-  ent_bnd_sum, &
-  rh_cen_sum, &
+  ent_bnd_sum, rh_cen_sum, &
   qcloud_cen_sum, qcloud_bf_cen_sum, qrain_cen_sum, &
   qice_cen_sum, qsnow_cen_sum, qgraup_cen_sum, &
   qlsink_cen_sum, &
   precr_cen_sum, precsolid_cen_sum, precall_cen_sum, &
   qlsink_bf_cen_sum, qlsink_avg_cen_sum, prain_cen_sum )
   ! Zeros out running sum arrays that are averaged every ntavg2_mm minutes.
-  !------------------------------------------------------------------------
+  !-----------------------------------------------------------------------------
   real(crm_rknd),dimension(:), intent(out) :: &
   xkhvsum, wwqui_cen_sum, wwqui_bnd_sum, wwqui_cloudy_cen_sum, wwqui_cloudy_bnd_sum
   real(crm_rknd),dimension(:,:,:,:), intent(out) :: &
@@ -330,60 +332,59 @@ subroutine zero_out_sums2( &
   precr_cen_sum, precsolid_cen_sum, precall_cen_sum, &
   qlsink_bf_cen_sum, qlsink_avg_cen_sum, prain_cen_sum
 
-  xkhvsum=0.
-  wwqui_cen_sum=0.
-  wwqui_bnd_sum=0.
-  wwqui_cloudy_cen_sum=0.
-  wwqui_cloudy_bnd_sum=0.
-  area_bnd_final=0.
-  area_bnd_sum=0.
-  area_cen_final=0.
-  area_cen_sum=0.
-  mass_bnd_final=0.
-  mass_bnd_sum=0.
-  mass_cen_final=0.
-  mass_cen_sum=0.
-  ent_bnd_sum=0.
-  rh_cen_sum=0.
-  qcloud_cen_sum=0.
-  qcloud_bf_cen_sum=0.
-  qrain_cen_sum=0.
-  qice_cen_sum=0.
-  qsnow_cen_sum=0.
-  qgraup_cen_sum=0.
-  qlsink_cen_sum=0.
-  precr_cen_sum=0.
-  precsolid_cen_sum=0.
-  precall_cen_sum=0.
-  qlsink_bf_cen_sum=0.
-  qlsink_avg_cen_sum=0.
-  prain_cen_sum=0.
+  xkhvsum               = 0.
+  wwqui_cen_sum         = 0.
+  wwqui_bnd_sum         = 0.
+  wwqui_cloudy_cen_sum  = 0.
+  wwqui_cloudy_bnd_sum  = 0.
+  area_bnd_final        = 0.
+  area_bnd_sum          = 0.
+  area_cen_final        = 0.
+  area_cen_sum          = 0.
+  mass_bnd_final        = 0.
+  mass_bnd_sum          = 0.
+  mass_cen_final        = 0.
+  mass_cen_sum          = 0.
+  ent_bnd_sum           = 0.
+  rh_cen_sum            = 0.
+  qcloud_cen_sum        = 0.
+  qcloud_bf_cen_sum     = 0.
+  qrain_cen_sum         = 0.
+  qice_cen_sum          = 0.
+  qsnow_cen_sum         = 0.
+  qgraup_cen_sum        = 0.
+  qlsink_cen_sum        = 0.
+  precr_cen_sum         = 0.
+  precsolid_cen_sum     = 0.
+  precall_cen_sum       = 0.
+  qlsink_bf_cen_sum     = 0.
+  qlsink_avg_cen_sum    = 0.
+  prain_cen_sum         = 0.
 end subroutine zero_out_sums2
 
-!-----------------------------------------------------------------------------
+!===============================================================================
+!===============================================================================
 subroutine categorization_stats( domass, &
   nx, ny, nz, nupdraft, ndndraft, ndraft_max, &
   upthresh, downthresh, &
   cloudthresh, prcpthresh, &
   cloudthresh_trans, precthresh_trans,  &
-  qvs,                    &
-  qcloud, qcloud_bf, qrain, qice, qsnow, qgraup, &
+  qvs,qcloud, qcloud_bf, qrain, qice, qsnow, qgraup, &
   qlsink, precr, precsolid, precall, &
   alt, rh, cf3d, ww, tkesgs, &
   qlsink_bf, prain, &
   area_bnd_final, area_cen_final, &
   area_bnd_sum, area_cen_sum, ent_bnd_sum, mass_bnd_sum, &
-  rh_cen_sum, &
-  qcloud_cen_sum, qcloud_bf_cen_sum, qrain_cen_sum, &
+  rh_cen_sum, qcloud_cen_sum, qcloud_bf_cen_sum, qrain_cen_sum, &
   qice_cen_sum, qsnow_cen_sum, qgraup_cen_sum, &
   qlsink_cen_sum, precr_cen_sum, &
   precsolid_cen_sum, precall_cen_sum, &
   qlsink_bf_cen_sum, prain_cen_sum,  &
   wwqui_cen_sum, wwqui_bnd_sum, wwqui_cloudy_cen_sum, wwqui_cloudy_bnd_sum, &
   wup_thresh, wdown_thresh )
-  !------------------------------------------------------------------------
+  !-----------------------------------------------------------------------------
   use module_data_ecpp1, only: a_quiescn_minaa
-
+  !-----------------------------------------------------------------------------
   ! Arguments
   logical, intent(in) :: domass !calculate mass fluxes? T/F
   integer, intent(in) :: nx, ny, nz, nupdraft, ndndraft, ndraft_max
@@ -406,7 +407,7 @@ subroutine categorization_stats( domass, &
 
   real(crm_rknd), dimension(:), intent(inout) :: wwqui_cen_sum, wwqui_bnd_sum, wwqui_cloudy_cen_sum, wwqui_cloudy_bnd_sum
   real(crm_rknd), dimension(nz+1), intent(out)  :: wdown_thresh, wup_thresh
-
+  !-----------------------------------------------------------------------------
   ! Local variables
   real(crm_rknd), dimension(nx,ny,nz+1,NCLASS_CL,ndraft_max,NCLASS_PR) :: mask_bnd
   real(crm_rknd), dimension(nx,ny,nz,NCLASS_CL,ndraft_max,NCLASS_PR) :: mask_cen
@@ -429,7 +430,7 @@ subroutine categorization_stats( domass, &
   integer :: iter
 
   logical :: thresh_calc_not_done
-
+  !-----------------------------------------------------------------------------
   acen_quiesc_minaa = a_quiescn_minaa + 0.01
 
   nxy = nx*ny
@@ -530,10 +531,9 @@ subroutine categorization_stats( domass, &
       end if
     end do
 
-    !  fix a bug in the WRF_ECPP, Minghuai Wang, 2009-12.
-    !  set wdown_thresh_k and wup_thresh_k to be an extreme value
-    !  above updraft (kup_top) and downdraft top(kdown_top).
-    !  This will make sure there is no updraft or downdraft above kup_top and kdown_top
+    ! set wdown_thresh_k and wup_thresh_k to be an extreme value
+    ! above updraft (kup_top) and downdraft top(kdown_top).
+    ! This will make sure there is no updraft or downdraft above kup_top and kdown_top
     do k=kup_top, nz+1
       wup_thresh_k(k, :) = wlarge
     end do
@@ -550,9 +550,7 @@ subroutine categorization_stats( domass, &
     cloudmixr_total, cloudthresh_trans, precthresh_trans,  &
     qvs, precmixr_total  )
 
-    ! ( code added on 14-dec-2009 to guarantee quiescent class
-    !    area > acen_quiesc_minaa )
-    ! at each level
+    ! guarantee quiescent class area > acen_quiesc_minaa at each level
     !    calculate total fractional area for quiescent class
     !       using the current level-1 averages
     !    if (acen_quiesc < acen_quiesc_minaa), increase the
@@ -604,7 +602,7 @@ subroutine categorization_stats( domass, &
   wwqui_bar_bnd(:) = 0.0
   wwqui_cloudy_bar_bnd(:) = 0.0
 
-  XYCLASSLOOPS: do j = 1,ny
+  do j = 1,ny
     do i = 1,nx
       do ipr = 1,NCLASS_PR
         do itr = 1,ndraft_max
@@ -632,9 +630,8 @@ subroutine categorization_stats( domass, &
                 precall_cen_sum(k,icl,itr,ipr) = precall_cen_sum(k,icl,itr,ipr) + precall(i,j,k)*mask
                 qlsink_bf_cen_sum(k,icl,itr,ipr) = qlsink_bf_cen_sum(k,icl,itr,ipr) + qlsink_bf(i,j,k)*mask
                 prain_cen_sum(k,icl,itr,ipr) = prain_cen_sum(k,icl,itr,ipr) + prain(i,j,k)*mask
-                !
+
                 ! calculate the mean vertical velocity over the quiescent class  +++mhwang
-                !
                 if(itr.eq.QUI) then
                   wwqui_bar_cen(k) = wwqui_bar_cen(k)+(ww(i,j,k)+ww(i,j,k+1))*0.5*mask
                   if(icl.eq.CLD) then
@@ -644,10 +641,9 @@ subroutine categorization_stats( domass, &
 
               end if
             end do !k
-            !
+
             ! Now, we can do a similar aggregation for the cell boundaries. Here, we
             ! will also calculate the mass flux and entrainment.
-            !
             do k = 1,nzstag
               mask = mask_bnd(i,j,k,icl,itr,ipr)/real(nxy,crm_rknd)
 
@@ -666,9 +662,7 @@ subroutine categorization_stats( domass, &
                 mass_bnd_sum(k,icl,itr,ipr) = mass_bnd_sum(k,icl,itr,ipr) + wwrho_k*mask
                 ent_bnd_sum(k,icl,itr,ipr) = ent_bnd_sum(k,icl,itr,ipr) + max(real(0.,crm_rknd), wwrho_k-wwrho_km1)*mask
 
-                !
                 ! calculate the mean vertical velocity over the quiescent class  +++mhwang
-                !
                 if(itr.eq.QUI) then
                   wwqui_bar_bnd(k) = wwqui_bar_bnd(k)+ww(i,j,k)*mask
                   if(icl.eq.CLD) then
@@ -683,7 +677,7 @@ subroutine categorization_stats( domass, &
         end do !itr
       end do !pr
     end do !i
-  end do XYCLASSLOOPS !j
+  end do !j
 
   ! calcualte vertical velocity variance for quiescent class (total and cloudy)  +++mhwang
   do k=1, nz
@@ -711,14 +705,13 @@ subroutine categorization_stats( domass, &
     end if
   end do
 
-  QUIELOOPS: do j = 1,ny
+  do j = 1,ny
     do i = 1,nx
       do ipr = 1,NCLASS_PR
         do icl = 1,NCLASS_CL
 
           do k = 1,nz
             mask = mask_cen(i,j,k,icl,QUI,ipr)/real(nxy,crm_rknd)
-
 
             ! calculate the vertical velocity variance over the quiescent class  +++mhwang
             ! wwqui_bar_cen is used in for both all sky and cloudy sky.
@@ -751,9 +744,9 @@ subroutine categorization_stats( domass, &
         end do !icl
       end do !pr
     end do !i
-  end do QUIELOOPS !j
+  end do !j
 
-  ! testing small queiscent fraction +++mhwang
+  ! testing small queiscent fraction
   do k=1, nz
     if(sum(area_cen_final(k,:,1,:)).lt.1.0e-3) then
       write(0, *) 'ecpp, area_cen_final, quiescent', sum(area_cen_final(k,:,1,:)), k, area_cen_final(k,:,1,:), wdown_thresh_k(k,1), wup_thresh_k(k,1)
@@ -762,10 +755,11 @@ subroutine categorization_stats( domass, &
       !      call endrun('area_cen_final less  then 1.0-e3')
     end if
   end do
-  ! ---mhwang
+
 end subroutine categorization_stats
 
-!------------------------------------------------------------------------
+!===============================================================================
+!===============================================================================
 subroutine determine_transport_thresh( &
   nx, ny, nz, &
   upthresh, downthresh, cloudthresh, &
@@ -779,11 +773,8 @@ subroutine determine_transport_thresh( &
   ! motion is up, down, or quiescent. This is down for two threshold values
   ! in each direction by level. A dozen options are available on how this
   ! is done as documented below and at the top of postproc_wrfout.
-  !------------------------------------------------------------------------
-  !  use timeroutines
-  !
-  ! Soubroutine arguments...
-  !
+  !-----------------------------------------------------------------------------
+  ! Arguments
   integer, intent(in) :: nx, ny, nz
   real(crm_rknd), intent(in) :: cloudthresh, downthresh, upthresh
   real(crm_rknd), dimension(:,:,:), intent(in) :: &
@@ -793,13 +784,10 @@ subroutine determine_transport_thresh( &
   integer, dimension(nx,ny), intent(in) :: cloudtop
   real(crm_rknd), dimension(nz+1), intent(out) :: wup_rms_k, wup_bar_k, wup_stddev_k, wdown_bar_k, wdown_rms_k, wdown_stddev_k
   integer, intent(out) :: kup_top, kdown_top  ! defined as the maximum level that allows updraft and downdraft
-  !
-  ! Local vars...
-  !
+  !-----------------------------------------------------------------------------
+  ! Local vars
   real(crm_rknd), dimension(nz+1) :: &
-  tmpveca, tmpvecb, &
-  !       wdown_bar_k, wdown_rms_k, wdown_stddev_k, &
-  !       wup_bar_k, wup_rms_k, wup_stddev_k, &
+  tmpveca, tmpvecb
   wup_rms_ksmo, wdown_rms_ksmo
   real(crm_rknd) :: tmpsuma, tmpsumb, tmpw, tmpw_minval, &
   wdown_bar, wdown_rms, wdown_stddev, &
@@ -812,7 +800,7 @@ subroutine determine_transport_thresh( &
   k, kk, kup_center, kdown_center
   integer :: ndown, nup
   integer :: ijdel, ijdel_cur, ijdel_upaa, ijdel_upbb, ijdel_downaa, ijdel_downbb
-
+  !-----------------------------------------------------------------------------
   ! Calc cloudtop_upaa(i,j) = max( cloudtop(i-del:i+del,j-del:j+del) )
   ! and similar for cloudtop_upbb, cloudtop_downaa/bb
   ! (assume periodic BC here)
@@ -1017,7 +1005,8 @@ subroutine determine_transport_thresh( &
 
 end subroutine determine_transport_thresh
 
-!-----------------------------------------------------------------------------
+!===============================================================================
+!===============================================================================
 subroutine setup_class_masks( &
   nx, ny, nz, nupdraft, ndndraft, ndraft_max, &
   cloudmixr, cf3d, precall, ww, &
@@ -1026,15 +1015,13 @@ subroutine setup_class_masks( &
   mask_bnd, mask_cen,  &
   cloudmixr_total, cloudthresh_trans, precthresh_trans, &
   qvs, precmixr_total )
-  !
   ! Sets up the masks used for determining quiescent/up/down, clear/cloudy,
   ! and non-precipitatin/precipitating classes.
 
-  ! Modification by Minghuai Wang (Minghuai.Wang@pnl.gov), April 23, 2010
   ! use total condensate (liquid+ice),  different condensate and precipitating thresholds
   ! to classify transport classes.
   ! See Xu et al., 2002, Q.J.R.M.S.
-  !------------------------------------------------------------------------
+  !-----------------------------------------------------------------------------
   ! Arguments
   integer, intent(in) :: nx, ny, nz, nupdraft, ndndraft, ndraft_max
   real(crm_rknd), dimension(:,:,:), intent(in) :: &
@@ -1066,7 +1053,7 @@ subroutine setup_class_masks( &
   mask_cen = 0.
 
   ! Loop over the horizontal dimensions...
-  XYLOOPS : do j = 1,ny
+  do j = 1,ny
     do i=1,nx
       !
       ! Set initial mask values for the vertical cell boundaries...
@@ -1083,10 +1070,8 @@ subroutine setup_class_masks( &
       maskpry_bnd = 0
       maskprn_bnd = 0
 
-      if( nupdraft > 2 .or. ndndraft > 2 ) then
-        call endrun('OOPS. Cannot have more than 2 updraft or 2 downdraft categories right now.')
-      end if
-
+      !-------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
       do k = 1,nzstag
 
         !Transport upward at cell boundaries...
@@ -1096,235 +1081,218 @@ subroutine setup_class_masks( &
         !
         ! updraft only exist in cloudy area or precipitating clear area ++++mhwang
         cloudthresh_trans_temp = cloudthresh_trans
-        !           cloudthresh_trans_temp = max(cloudthresh_trans, 0.01 * (qvs(i,j,max(k-1,1))+qvs(i,j,min(k,nz)))*0.5)
         if( (cloudmixr_total(i,j,max(k-1,1))+cloudmixr_total(i,j,min(k,nz)))*0.5 > cloudthresh_trans_temp  &
-        !               .or. (precall(i,j,max(k-1,1))+precall(i,j,min(k,nz)))*0.5 > prcpthresh_trans) then   !+++mhwang
-        .or. (precmixr_total(i,j,max(k-1,1))+precmixr_total(i,j,min(k,nz)))*0.5 > precthresh_trans) then   !+++mhwang
-        select case (nupdraft)
-        case (1) !Only one threshold
+        .or. (precmixr_total(i,j,max(k-1,1))+precmixr_total(i,j,min(k,nz)))*0.5 > precthresh_trans) then
+          
           if( ww(i,j,k) > wup_thresh_k(k,1) ) then
             maskup(k,1) = 1
           end if
-        case (2) !Two thresholds, assumes 1st is stronger wind
-          if( ww(i,j,k) > wup_thresh_k(k,1) ) then
-            maskup(k,1) = 1
-          else if( ww(i,j,k) > wup_thresh_k(k,2) &
-            .and. ww(i,j,k) <= wup_thresh_k(k,1) ) then
-            maskup(k,2) = 1
-          end if
-        end select
-      end if  ! end cloudmixr_total    +++mhwang
+        
+        end if  ! end cloudmixr_total
 
-      !Transport downward at cell boundaries...
+        !Transport downward at cell boundaries...
 
-      ! downdraft only exist in cloudy area or precipitating clear area   +++mhwang
-      if( (cloudmixr_total(i,j,max(k-1,1))+cloudmixr_total(i,j,min(k,nz)))*0.5 > cloudthresh_trans_temp   &
-        !               .or. (precall(i,j,max(k-1,1))+precall(i,j,min(k,nz)))*0.5 > prcpthresh_trans) then   !+++mhwang
-        .or. (precmixr_total(i,j,max(k-1,1))+precmixr_total(i,j,min(k,nz)))*0.5 > precthresh_trans) then   !+++mhwang
-        select case (ndndraft)
-        case (1) !Only one threshold
+        ! downdraft only exist in cloudy area or precipitating clear area   +++mhwang
+        if( (cloudmixr_total(i,j,max(k-1,1))+cloudmixr_total(i,j,min(k,nz)))*0.5 > cloudthresh_trans_temp   &
+          .or. (precmixr_total(i,j,max(k-1,1))+precmixr_total(i,j,min(k,nz)))*0.5 > precthresh_trans) then
           if( ww(i,j,k) < wdown_thresh_k(k,1) ) then
             maskdn(k,1) = 1
           end if
-        case (2) !Two thresholds, assumes 1st is stronger wind
-          if( ww(i,j,k) < wdown_thresh_k(k,1) ) then
-            maskdn(k,1) = 1
-          else if( ww(i,j,k) < wdown_thresh_k(k,2) &
-            .and. ww(i,j,k) >= wdown_thresh_k(k,1) ) then
-            maskdn(k,2) = 1
+        end if  ! end cloudmixr_total, and precall
+
+        !Transport quiescent at cell boundaries if neither up or
+        !down triggered...
+        if( sum(maskup(k,:))+sum(maskdn(k,:)) < 1 ) then
+          maskqu(k) = 1
+        end if
+
+        ! Cloudy or clear at cell boundaries...
+        if( (cloudmixr(i,j,max(k-1,1))+cloudmixr(i,j,min(k,nz)))*0.5 > cloudthresh ) then
+          maskcld_bnd(k) = 1
+        else
+          maskclr_bnd(k) = 1
+        end if
+
+        ! Raining or not at cell boundaries...
+        if( (precall(i,j,max(k-1,1))+precall(i,j,min(k,nz)))*0.5 > prcpthresh ) then
+          maskpry_bnd(k) = 1
+        else
+          maskprn_bnd(k) = 1
+        end if
+
+      end do !k
+
+      !-------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
+      do k = 1,nz
+
+        ! Cloudy or clear at cell centers...
+        if( cloudmixr(i,j,k) > cloudthresh ) then
+          maskcld(k) = 1
+        else
+          maskclr(k) = 1
+        end if
+
+        ! Raining or not at cell centers...
+        if( precall(i,j,k) > prcpthresh ) then
+          maskpry(k) = 1
+        else
+          maskprn(k) = 1
+        end if
+
+      end do !k
+
+      !-------------------------------------------------------------------------
+      ! use the initial boundary masks by class to generate a 
+      ! combined mask for the cell boundaries.
+      !-------------------------------------------------------------------------
+
+      do k = 1,nzstag
+
+        ! Upward, or at least upward quiescent
+        if( sum(maskup(k,:)) > 0 .or. (maskqu(k) > 0 .and. ww(i,j,k) > 0) ) then
+
+          ! Are we are here because of maskup? If so, then we 
+          ! need to parse the correct updraft category.
+          if( maskqu(k) < 1 ) then
+            itr = UP1 + maxloc(maskup(k,:),1)-1
+          else
+            itr = QUI
           end if
-        end select
-      end if  ! end cloudmixr_total, and precall   +++mhwang
 
-      !Transport quiescent at cell boundaries if neither up or
-      !down triggered...
-      if( sum(maskup(k,:))+sum(maskdn(k,:)) < 1 ) then
-        maskqu(k) = 1
-      end if
+          ! For upward motion, determine cloud and precip characteristics
+          ! based on the cell-center values below the boundary.
+          if( k==1 ) then
+            icl = CLR
+            ipr = PRN
+          else
+            call cloud_prcp_check(maskcld, CLD, maskclr, CLR, k-1, icl, &
+            "setup_class_masks: bnd cloud up")
+            call cloud_prcp_check(maskpry, PRY, maskprn, PRN, k-1, ipr, &
+            "setup_class_masks: bnd prcp up")
+          end if
 
-      ! Cloudy or clear at cell boundaries...
-      if( (cloudmixr(i,j,max(k-1,1))+cloudmixr(i,j,min(k,nz)))*0.5 > cloudthresh ) then
-        maskcld_bnd(k) = 1
-      else
-        maskclr_bnd(k) = 1
-      end if
+          ! Downward, or at least downward quiescent
+        else if( sum(maskdn(k,:)) > 0 .or. &
+          (maskqu(k) > 0 .and. ww(i,j,k) < 0) ) then
 
-      ! Raining or not at cell boundaries...
-      if( (precall(i,j,max(k-1,1))+precall(i,j,min(k,nz)))*0.5 > prcpthresh ) then
-        maskpry_bnd(k) = 1
-      else
-        maskprn_bnd(k) = 1
-      end if
+          !Are we here because of maskdn? If so, then we need to
+          !parse the correct downdraft category.
+          if( maskqu(k) < 1 ) then
+            itr = DN1 + maxloc(maskdn(k,:),1)-1
+          else
+            itr = QUI
+          end if
 
-    end do !k
-    do k = 1,nz
+          ! For downward motion, determine cloud and precip characteristics
+          ! based on the cell-center values above the boundary.
+          if( k==nzstag ) then
+            icl = CLR
+            ipr = PRN
+          else
+            call cloud_prcp_check(maskcld, CLD, maskclr, CLR, k, icl, &
+            "setup_class_masks: bnd cloud down")
+            call cloud_prcp_check(maskpry, PRY, maskprn, PRN, k, ipr, &
+            "setup_class_masks: bnd prcp down")
+          end if
 
-      ! Cloudy or clear at cell centers...
-      if( cloudmixr(i,j,k) > cloudthresh ) then
-        maskcld(k) = 1
-      else
-        maskclr(k) = 1
-      end if
+          ! Quiescent with w=0. Use the cell-center values averaged
+          ! surrounding the boundary for the cloud/prcp states.
+        else
+          itr = QUI
+          call cloud_prcp_check(maskcld_bnd, CLD, maskclr_bnd, CLR, k, icl, &
+          "setup_class_masks: bnd cloud quiescent")
+          call cloud_prcp_check(maskpry_bnd, PRY, maskprn_bnd, PRN, k, ipr, &
+          "setup_class_masks: bnd prcp quiescent")
+        end if
 
-      ! Raining or not at cell centers...
-      if( precall(i,j,k) > prcpthresh ) then
-        maskpry(k) = 1
-      else
-        maskprn(k) = 1
-      end if
+        ! We have all the class indices determined so now we can set
+        ! the correct mask location to 1.
+        !           mask_bnd(i,j,k,icl,itr,ipr) = 1.
+        ! use fractioal cloudiness in SAM
+        if(icl.eq.CLR) then
+          mask_bnd(i,j,k,icl,itr,ipr) = 1.
+        else if(icl.eq.CLD) then
+          mask_bnd(i,j,k,CLD,itr,ipr) = (cf3d(i,j,max(k-1,1))+cf3d(i,j,min(k, nz)))*0.5
+          mask_bnd(i,j,k,CLR,itr,ipr) = 1. - (cf3d(i,j,max(k-1,1))+cf3d(i,j,min(k, nz)))*0.5
+        end if
 
-    end do !k
+      end do ! k-loop mask for boundaries
 
-    ! Now, use the initial boundary masks by class to generate a combined
-    ! mask for the cell boundaries.
+      !-------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
 
-    do k = 1,nzstag
+      ! Now, use the initial boundary masks by class to generate a combined
+      ! mask for the cell centers. We determine the transport class based on
+      ! splitting the cell conceptually in half with the upper boundary
+      ! influencing the top half of the cell and the bottom boundary the bottom
+      ! half. Each contributes either 0 or 0.5 of the total contribution of the
+      ! cell's transport. e.g. if both boundaries are upward, then the cell is
+      ! fully an "up" transport cell. If the two boundaries are opposite, then
+      ! the cell is weighted half in each direction for the masking.
 
-      !Upward, or at least upward quiescent
-      if( sum(maskup(k,:)) > 0 .or. &
-      (maskqu(k) > 0 .and. ww(i,j,k) > 0) ) then
+      do k = 1,nz
 
-      !Are we are here because of maskup? If so, then we need to
-      !parse the correct updraft category.
-      if( maskqu(k) < 1 ) then
-        itr = UP1 + maxloc(maskup(k,:),1)-1
-      else
-        itr = QUI
-      end if
+        !Get the cloud/prcp characteristics at cell center.
+        call cloud_prcp_check(maskcld, CLD, maskclr, CLR, k, icl)
+        call cloud_prcp_check(maskpry, PRY, maskprn, PRN, k, ipr)
 
-      !For upward motion, determine cloud and precip characteristics
-      !based on the cell-center values below the boundary.
-      if( k==1 ) then
-        icl = CLR
-        ipr = PRN
-      else
-        call cloud_prcp_check(maskcld, CLD, maskclr, CLR, k-1, icl, &
-        "setup_class_masks: bnd cloud up")
-        call cloud_prcp_check(maskpry, PRY, maskprn, PRN, k-1, ipr, &
-        "setup_class_masks: bnd prcp up")
-      end if
+        !Look at the bottom boundary first and determine it's
+        !contribution to the cell center transport class.
+        if( sum(maskup(k,:)) > 0 ) then
+          itr = UP1 + maxloc(maskup(k,:),1)-1
+        else if( sum(maskdn(k,:)) > 0 ) then
+          itr = DN1 + maxloc(maskdn(k,:),1)-1
+        else if( maskqu(k) > 0 ) then
+          itr = QUI
+        else
+          call endrun("ERROR: setup_class_masks: We should not be in this place for cell bottoms.")
+          stop
+        end if
 
-      !Downward, or at least downward quiescent
-    else if( sum(maskdn(k,:)) > 0 .or. &
-      (maskqu(k) > 0 .and. ww(i,j,k) < 0) ) then
+        !We have what we need for the cell bottom classes so increment
+        !the center mask for the bottom half...
+        !           mask_cen(i,j,k,icl,itr,ipr) = mask_cen(i,j,k,icl,itr,ipr) + 0.5
+        ! Use fractional cloudiness at SAM
+        if(icl.eq.CLR) then
+          mask_cen(i,j,k,icl,itr,ipr) = mask_cen(i,j,k,icl,itr,ipr) + 0.5
+        else if(icl.eq.CLD) then
+          mask_cen(i,j,k,CLD,itr,ipr) =  mask_cen(i,j,k,CLD,itr,ipr) + (cf3d(i,j,k))*0.5
+          mask_cen(i,j,k,CLR,itr,ipr) =  mask_cen(i,j,k,CLR,itr,ipr) + (1. - cf3d(i,j,k)) * 0.5
+        end if
 
-      !Are we here because of maskdn? If so, then we need to
-      !parse the correct downdraft category.
-      if( maskqu(k) < 1 ) then
-        itr = DN1 + maxloc(maskdn(k,:),1)-1
-      else
-        itr = QUI
-      end if
+        !Next, look at the top boundary and determine it's
+        !contribution to the cell center transport class.
+        if( sum(maskup(k+1,:)) > 0 ) then
+          itr = UP1 + maxloc(maskup(k+1,:),1)-1
+        else if( sum(maskdn(k+1,:)) > 0 ) then
+          itr = DN1 + maxloc(maskdn(k+1,:),1)-1
+        else if( maskqu(k+1) > 0 ) then
+          itr = QUI
+        else
+          call endrun("ERROR: setup_class_masks: We should not be in this place for cell tops.")
+        end if
 
-      !For downward motion, determine cloud and precip characteristics
-      !based on the cell-center values above the boundary.
-      if( k==nzstag ) then
-        icl = CLR
-        ipr = PRN
-      else
-        call cloud_prcp_check(maskcld, CLD, maskclr, CLR, k, icl, &
-        "setup_class_masks: bnd cloud down")
-        call cloud_prcp_check(maskpry, PRY, maskprn, PRN, k, ipr, &
-        "setup_class_masks: bnd prcp down")
-      end if
+        !We have what we need for the cell top classes so increment
+        !the center mask for the top half...
+        !           mask_cen(i,j,k,icl,itr,ipr) = mask_cen(i,j,k,icl,itr,ipr) + 0.5
+        ! use fractional cloudiness in SAM
+        if(icl.eq.CLR) then
+          mask_cen(i,j,k,icl,itr,ipr) = mask_cen(i,j,k,icl,itr,ipr) + 0.5
+        else if(icl.eq.CLD) then
+          mask_cen(i,j,k,CLD,itr,ipr) =  mask_cen(i,j,k,CLD,itr,ipr) + (cf3d(i,j,k))*0.5
+          mask_cen(i,j,k,CLR,itr,ipr) =  mask_cen(i,j,k,CLR,itr,ipr) + (1. - cf3d(i,j,k)) * 0.5
+        end if
 
-      !Quiescent with w=0. Use the cell-center values averaged
-      !surrounding the boundary for the cloud/prcp states.
-    else
-      itr = QUI
-      call cloud_prcp_check(maskcld_bnd, CLD, maskclr_bnd, CLR, k, icl, &
-      "setup_class_masks: bnd cloud quiescent")
-      call cloud_prcp_check(maskpry_bnd, PRY, maskprn_bnd, PRN, k, ipr, &
-      "setup_class_masks: bnd prcp quiescent")
-    end if
+      end do !k-loop mask for centers
 
-
-    !We have all the class indices determined so now we can set
-    !the correct mask location to 1.
-    !           mask_bnd(i,j,k,icl,itr,ipr) = 1.
-    ! use fractioal cloudiness in SAM
-    if(icl.eq.CLR) then
-      mask_bnd(i,j,k,icl,itr,ipr) = 1.
-    else if(icl.eq.CLD) then
-      mask_bnd(i,j,k,CLD,itr,ipr) = (cf3d(i,j,max(k-1,1))+cf3d(i,j,min(k, nz)))*0.5
-      mask_bnd(i,j,k,CLR,itr,ipr) = 1. - (cf3d(i,j,max(k-1,1))+cf3d(i,j,min(k, nz)))*0.5
-    end if
-
-
-  end do !k-loop mask for boundaries
-
-  ! Now, use the initial boundary masks by class to generate a combined
-  ! mask for the cell centers. We determine the transport class based on
-  ! splitting the cell conceptually in half with the upper boundary
-  ! influencing the top half of the cell and the bottom boundary the bottom
-  ! half. Each contributes either 0 or 0.5 of the total contribution of the
-  ! cell's transport. e.g. if both boundaries are upward, then the cell is
-  ! fully an "up" transport cell. If the two boundaries are opposite, then
-  ! the cell is weighted half in each direction for the masking.
-
-  do k = 1,nz
-
-    !Get the cloud/prcp characteristics at cell center.
-    call cloud_prcp_check(maskcld, CLD, maskclr, CLR, k, icl)
-    call cloud_prcp_check(maskpry, PRY, maskprn, PRN, k, ipr)
-
-    !Look at the bottom boundary first and determine it's
-    !contribution to the cell center transport class.
-    if( sum(maskup(k,:)) > 0 ) then
-      itr = UP1 + maxloc(maskup(k,:),1)-1
-    else if( sum(maskdn(k,:)) > 0 ) then
-      itr = DN1 + maxloc(maskdn(k,:),1)-1
-    else if( maskqu(k) > 0 ) then
-      itr = QUI
-    else
-      call endrun("ERROR: setup_class_masks: We should not be in this place for cell bottoms.")
-      stop
-    end if
-
-    !We have what we need for the cell bottom classes so increment
-    !the center mask for the bottom half...
-    !           mask_cen(i,j,k,icl,itr,ipr) = mask_cen(i,j,k,icl,itr,ipr) + 0.5
-    ! Use fractional cloudiness at SAM
-    if(icl.eq.CLR) then
-      mask_cen(i,j,k,icl,itr,ipr) = mask_cen(i,j,k,icl,itr,ipr) + 0.5
-    else if(icl.eq.CLD) then
-      mask_cen(i,j,k,CLD,itr,ipr) =  mask_cen(i,j,k,CLD,itr,ipr) + (cf3d(i,j,k))*0.5
-      mask_cen(i,j,k,CLR,itr,ipr) =  mask_cen(i,j,k,CLR,itr,ipr) + (1. - cf3d(i,j,k)) * 0.5
-    end if
-
-    !Next, look at the top boundary and determine it's
-    !contribution to the cell center transport class.
-    if( sum(maskup(k+1,:)) > 0 ) then
-      itr = UP1 + maxloc(maskup(k+1,:),1)-1
-    else if( sum(maskdn(k+1,:)) > 0 ) then
-      itr = DN1 + maxloc(maskdn(k+1,:),1)-1
-    else if( maskqu(k+1) > 0 ) then
-      itr = QUI
-    else
-      call endrun("ERROR: setup_class_masks: We should not be in this place for cell tops.")
-    end if
-
-    !We have what we need for the cell top classes so increment
-    !the center mask for the top half...
-    !           mask_cen(i,j,k,icl,itr,ipr) = mask_cen(i,j,k,icl,itr,ipr) + 0.5
-    ! use fractional cloudiness in SAM
-    if(icl.eq.CLR) then
-      mask_cen(i,j,k,icl,itr,ipr) = mask_cen(i,j,k,icl,itr,ipr) + 0.5
-    else if(icl.eq.CLD) then
-      mask_cen(i,j,k,CLD,itr,ipr) =  mask_cen(i,j,k,CLD,itr,ipr) + (cf3d(i,j,k))*0.5
-      mask_cen(i,j,k,CLR,itr,ipr) =  mask_cen(i,j,k,CLR,itr,ipr) + (1. - cf3d(i,j,k)) * 0.5
-    end if
-
-  end do !k-loop mask for centers
-
-end do
-end do XYLOOPS
+    end do
+  end do XYLOOPS
 end subroutine setup_class_masks
 
-
-!-------------------------------------------------------------------------------
+!===============================================================================
+!===============================================================================
 subroutine cloud_prcp_check(mask1, flag1, mask2, flag2, k, iout, msg)
-  !
   ! Assigns the flag associated with the mask value that is true to the
   ! output index. The masks are assumed to be 1-D arrays and k is the
   ! position in the array to check.
@@ -1355,6 +1323,9 @@ subroutine cloud_prcp_check(mask1, flag1, mask2, flag2, k, iout, msg)
   end if
 
 end subroutine cloud_prcp_check
+
+!===============================================================================
+!===============================================================================
 
 #endif /*ECPP*/
 end module module_ecpp_stats
