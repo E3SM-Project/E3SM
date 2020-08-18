@@ -72,7 +72,7 @@ IF (NOT PREQX_NP)
   SET (PREQX_NP 4) 
 ENDIF ()
 IF (NOT PREQX_PLEV)
-  SET (PREQX_PLEV 20) 
+  SET (PREQX_PLEV 72) 
 ENDIF ()
 IF (NOT PREQX_USE_PIO)
   SET (PREQX_USE_PIO FALSE) 
@@ -105,3 +105,18 @@ thetal_setup()
 createTestExec(theta-l theta-l ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY} ${QSIZE_D})
 
 TARGET_LINK_LIBRARIES(theta-l dl)
+
+
+#addign setup to quickly use src/theta-l 
+CONFIGURE_FILE (${CMAKE_SOURCE_DIR}/test/reg_test/namelists/theta.nl
+                ${CMAKE_CURRENT_BINARY_DIR}/namelist.nl)
+
+FILE (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/movies)
+
+FILE (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/vcoord)
+
+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/test/vcoord/acme-72m.ascii
+               ${CMAKE_CURRENT_BINARY_DIR}/vcoord COPYONLY)
+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/test/vcoord/acme-72i.ascii
+               ${CMAKE_CURRENT_BINARY_DIR}/vcoord COPYONLY)
+
