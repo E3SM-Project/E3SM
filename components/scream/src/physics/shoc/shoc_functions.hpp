@@ -81,7 +81,6 @@ struct Functions
 
   KOKKOS_FUNCTION
   static void shoc_diag_second_moments_srf(
-    const Int& shcol,                        
     const Spack& wthl_sfc, const Spack& uw_sfc, const Spack& vw_sfc,
     Spack& ustar2, Spack& wstar);
 

@@ -297,7 +297,7 @@ void shoc_diag_second_moments_srf_f(Int shcol, Real* wthl, Real* uw, Real* vw, R
      Spack ustar2_s{0.};
      Spack wstar_s{0.};
 
-     SHOC::shoc_diag_second_moments_srf(shcol, wthl_s, uw_s, vw_s, ustar2_s, wstar_s);
+     SHOC::shoc_diag_second_moments_srf(wthl_s, uw_s, vw_s, ustar2_s, wstar_s);
 
      ustar2_d(i) = ustar2_s;
      wstar_d(i)  = wstar_s;

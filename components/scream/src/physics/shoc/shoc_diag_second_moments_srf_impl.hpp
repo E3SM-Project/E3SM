@@ -12,7 +12,6 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::shoc_diag_second_moments_srf(
-    const Int& shcol, 
     const Spack& wthl_sfc, const Spack& uw_sfc, const Spack& vw_sfc,
     Spack& ustar2, Spack& wstar)
 {
