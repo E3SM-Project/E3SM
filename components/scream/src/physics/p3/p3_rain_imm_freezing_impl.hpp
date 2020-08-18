@@ -16,7 +16,7 @@ KOKKOS_FUNCTION
 void Functions<S,D>
 ::rain_immersion_freezing(const Spack& t, const Spack& lamr,
                           const Spack& mu_r, const Spack& cdistr,
-                          const Spack& qr_incld, Spack& qrheti, Spack& nrheti,
+                          const Spack& qr_incld, Spack& qr2qi_immers_freeze_tend, Spack& nr2ni_immers_freeze_tend,
                           const Smask& context)
 {
   constexpr Scalar qsmall = C::QSMALL;
@@ -29,11 +29,11 @@ void Functions<S,D>
   const auto qr_not_small_and_t_freezing = (qr_incld >= qsmall) &&
                                            (t <= RainFrze) && context;
   if (qr_not_small_and_t_freezing.any()) {
-    qrheti.set(qr_not_small_and_t_freezing,
+    qr2qi_immers_freeze_tend.set(qr_not_small_and_t_freezing,
                CONS6 *
                exp(log(cdistr) + log(tgamma(sp(7.)+mu_r)) - sp(6.)*log(lamr)) *
                exp(AIMM*(ZeroDegC-t)));
-    nrheti.set(qr_not_small_and_t_freezing,
+    nr2ni_immers_freeze_tend.set(qr_not_small_and_t_freezing,
                CONS5 *
                exp(log(cdistr) + log(tgamma(sp(4.)+mu_r)) - sp(3.)*log(lamr)) *
                exp(AIMM*(ZeroDegC-t)));
