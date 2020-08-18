@@ -170,8 +170,8 @@ contains
     deallocate( rh )
     deallocate( qvs )
     deallocate( qlsink_bf )
-    deallocate( prain, )
-    deallocate( cloud_bf)
+    deallocate( prain )
+    deallocate( cloud_bf )
 
     deallocate( qcloudsum1 )
     deallocate( qcloud_bfsum1 )
