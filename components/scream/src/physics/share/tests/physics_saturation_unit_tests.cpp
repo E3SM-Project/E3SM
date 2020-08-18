@@ -31,7 +31,7 @@ struct UnitWrap::UnitTest<D>::TestSaturation
     //Set constant values
     //--------------------------------------
     const Scalar RV = C::RV;
-    const Scalar RhoLiq = C::RhoH2O;
+    const Scalar RhoLiq = C::RHO_H2O;
     const Scalar RhoIce = C::RhoIce;
     const Scalar LatVap = C::LatVap;
     const Scalar LatIce = C::LatIce;

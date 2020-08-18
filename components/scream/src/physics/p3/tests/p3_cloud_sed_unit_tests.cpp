@@ -33,9 +33,9 @@ static void run_bfb()
     std::make_pair(5.100E-03, 9.952E-07), // qc_incld_range
     std::make_pair(4.056E-03, 1.153E+00), // rho_range
     std::make_pair(0,         1.),        // inv_rho (ignored)
-    std::make_pair(0.9, 1.1),             // lcldm_range
+    std::make_pair(0.9, 1.1),             // cld_frac_l_range
     std::make_pair(2.959E+07, 5.348E+07), // acn_range
-    std::make_pair(2.863E-05, 8.141E-03), // inv_dzq_range
+    std::make_pair(2.863E-05, 8.141E-03), // inv_dz_range
     std::make_pair(7.701E-16, 2.119E-04), // qc_range
     std::make_pair(7.701E-16, 2.119E-04), // nc_range
     std::make_pair(9.952E+05, 1.734E+08), // nc_incld_range
@@ -46,7 +46,7 @@ static void run_bfb()
   };
 
   CloudSedData csds_fortran[] = {
-    //         kts, kte, ktop, kbot, kdir,        dt,       odt, log_predictNc, prt_liq, ranges
+    //         kts, kte, ktop, kbot, kdir,        dt,       inv_dt, do_predict_nc, precip_liq_surf, ranges
     CloudSedData(1,  72,   27,   72,   -1, 1.800E+03, 5.556E-04,         false,     0.0, ranges),
     CloudSedData(1,  72,   72,   27,    1, 1.800E+03, 5.556E-04,         false,     0.0, ranges),
     CloudSedData(1,  72,   27,   72,   -1, 1.800E+03, 5.556E-04,          true,     0.0, ranges),
@@ -75,9 +75,9 @@ static void run_bfb()
   for (Int i = 0; i < num_runs; ++i) {
     CloudSedData& d = csds_cxx[i];
     cloud_sedimentation_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
-                          d.qc_incld, d.rho, d.inv_rho, d.lcldm, d.acn, d.inv_dzq,
-                          d.dt, d.odt, d.log_predictNc,
-                          d.qc, d.nc, d.nc_incld, d.mu_c, d.lamc, &d.prt_liq, d.qc_tend, d.nc_tend);
+                          d.qc_incld, d.rho, d.inv_rho, d.cld_frac_l, d.acn, d.inv_dz,
+                          d.dt, d.inv_dt, d.do_predict_nc,
+                          d.qc, d.nc, d.nc_incld, d.mu_c, d.lamc, &d.precip_liq_surf, d.qc_tend, d.nc_tend);
   }
 
   for (Int i = 0; i < num_runs; ++i) {
@@ -93,7 +93,7 @@ static void run_bfb()
       REQUIRE(csds_fortran[i].qc_tend[k]  == csds_cxx[i].qc_tend[k]);
       REQUIRE(csds_fortran[i].nc_tend[k]  == csds_cxx[i].nc_tend[k]);
     }
-    REQUIRE(csds_fortran[i].prt_liq == csds_cxx[i].prt_liq);
+    REQUIRE(csds_fortran[i].precip_liq_surf == csds_cxx[i].precip_liq_surf);
   }
 
 }

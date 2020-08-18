@@ -18,16 +18,16 @@ void Functions<S,D>
 ::cldliq_immersion_freezing(
   const Spack& t, const Spack& lamc,
   const Spack& mu_c, const Spack& cdist1,
-  const Spack& qc_incld, const Spack& qc_relvar,
-  Spack& qcheti, Spack& ncheti,
+  const Spack& qc_incld, const Spack& inv_qc_relvar,
+  Spack& qc2qi_hetero_freeze_tend, Spack& nc2ni_immers_freeze_tend,
   const Smask& context)
 {
-  constexpr Scalar qsmall = C::QSMALL;
-  constexpr Scalar AIMM = C::AIMM;
+  constexpr Scalar qsmall   = C::QSMALL;
+  constexpr Scalar AIMM     = C::AIMM;
   constexpr Scalar RainFrze = C::RainFrze;
   constexpr Scalar ZeroDegC = C::ZeroDegC;
-  constexpr Scalar CONS5 = C::CONS5;
-  constexpr Scalar CONS6 = C::CONS6;
+  constexpr Scalar CONS5    = C::CONS5;
+  constexpr Scalar CONS6    = C::CONS6;
 
   const auto qc_not_small_and_t_freezing = (qc_incld >= qsmall) &&
                                            (t <= RainFrze) && context;
@@ -37,12 +37,12 @@ void Functions<S,D>
     inv_lamc3.set(qc_not_small_and_t_freezing, cube(1/lamc));
 
     Spack sgs_var_coef;
-    sgs_var_coef = subgrid_variance_scaling(qc_relvar, 2);
+    sgs_var_coef = subgrid_variance_scaling(inv_qc_relvar, 2);
 
-    qcheti.set(qc_not_small_and_t_freezing,
+    qc2qi_hetero_freeze_tend.set(qc_not_small_and_t_freezing,
                sgs_var_coef * CONS6 * cdist1 * tgamma(7+mu_c) * expAimmDt *
                square(inv_lamc3));
-    ncheti.set(qc_not_small_and_t_freezing,
+    nc2ni_immers_freeze_tend.set(qc_not_small_and_t_freezing,
                CONS5 * cdist1 * tgamma(sp(4.0)+mu_c) * expAimmDt * inv_lamc3);
   }
 }

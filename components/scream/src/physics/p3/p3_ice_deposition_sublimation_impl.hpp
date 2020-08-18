@@ -11,47 +11,47 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::ice_deposition_sublimation(
-  const Spack& qitot_incld, const Spack& nitot_incld, const Spack& t,   const Spack& qvs,
-  const Spack& qvi,         const Spack& epsi,        const Spack& abi, const Spack& qv,
-  Spack& qidep, Spack& qisub, Spack& nisub, Spack& qiberg,
+  const Spack& qi_incld, const Spack& ni_incld, const Spack& t,   const Spack& qv_sat_l,
+  const Spack& qv_sat_i,         const Spack& epsi,        const Spack& abi, const Spack& qv,
+  Spack& qv2qi_vapdep_tend, Spack& qi2qv_sublim_tend, Spack& ni_sublim_tend, Spack& qc2qi_berg_tend,
   const Smask& context)
 {
   constexpr Scalar QSMALL   = C::QSMALL;
   constexpr Scalar ZERODEGC = C::ZeroDegC;
   const auto oabi           = 1 / abi;
 
-  const auto qitot_incld_not_small = qitot_incld >= QSMALL && context;
-  const auto qitot_incld_small     = qitot_incld < QSMALL  && context;
+  const auto qi_incld_not_small = qi_incld >= QSMALL && context;
+  const auto qi_incld_small     = qi_incld < QSMALL  && context;
 
   //Compute deposition/sublimation
-  qidep.set(qitot_incld_not_small,epsi * oabi * (qv - qvi));
+  qv2qi_vapdep_tend.set(qi_incld_not_small,epsi * oabi * (qv - qv_sat_i));
 
   //Split into deposition or sublimation.
-  //if "t" is greater than 0 degree celcius and qidep is positive
-  const auto t_gt_zerodegc_pos_qidep = (t < ZERODEGC && qidep > 0);
+  //if "t" is greater than 0 degree celcius and qv2qi_vapdep_tend is positive
+  const auto t_gt_zerodegc_pos_qv2qi_vapdep_tend = (t < ZERODEGC && qv2qi_vapdep_tend > 0);
 
-  qisub.set(qitot_incld_not_small && t_gt_zerodegc_pos_qidep, 0);
+  qi2qv_sublim_tend.set(qi_incld_not_small && t_gt_zerodegc_pos_qv2qi_vapdep_tend, 0);
 
-  //make qisub positive for consistency with other evap/sub processes
-  qisub.set(qitot_incld_not_small && !t_gt_zerodegc_pos_qidep, -pack::min(qidep,0));
-  qidep.set(qitot_incld_not_small && !t_gt_zerodegc_pos_qidep, 0);
+  //make qi2qv_sublim_tend positive for consistency with other evap/sub processes
+  qi2qv_sublim_tend.set(qi_incld_not_small && !t_gt_zerodegc_pos_qv2qi_vapdep_tend, -pack::min(qv2qi_vapdep_tend,0));
+  qv2qi_vapdep_tend.set(qi_incld_not_small && !t_gt_zerodegc_pos_qv2qi_vapdep_tend, 0);
 
   //sublimation occurs @ any T. Not so for berg.
   const auto t_lt_zerodegc = t < ZERODEGC;
 
   //Compute bergeron rate assuming cloud for whole step.
-  qiberg.set(qitot_incld_not_small && t_lt_zerodegc, pack::max(epsi*oabi*(qvs - qvi), 0));
-  qiberg.set(qitot_incld_not_small && !t_lt_zerodegc, 0);
+  qc2qi_berg_tend.set(qi_incld_not_small && t_lt_zerodegc, pack::max(epsi*oabi*(qv_sat_l - qv_sat_i), 0));
+  qc2qi_berg_tend.set(qi_incld_not_small && !t_lt_zerodegc, 0);
 
-  if (qitot_incld_not_small.any()) {
-    nisub.set(qitot_incld_not_small, qisub*(nitot_incld/qitot_incld));
+  if (qi_incld_not_small.any()) {
+    ni_sublim_tend.set(qi_incld_not_small, qi2qv_sublim_tend*(ni_incld/qi_incld));
   }
 
-  //if qitot_incld is small (i.e. !qitot_incld_not_small is true)
-  qiberg.set(qitot_incld_small, 0);
-  qidep.set (qitot_incld_small, 0);
-  qisub.set (qitot_incld_small, 0);
-  nisub.set (qitot_incld_small, 0);
+  //if qi_incld is small (i.e. !qi_incld_not_small is true)
+  qc2qi_berg_tend.set(qi_incld_small, 0);
+  qv2qi_vapdep_tend.set (qi_incld_small, 0);
+  qi2qv_sublim_tend.set (qi_incld_small, 0);
+  ni_sublim_tend.set (qi_incld_small, 0);
 }
 
 } // namespace p3

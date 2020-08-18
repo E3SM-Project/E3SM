@@ -80,21 +80,21 @@ void Functions<S,D>
 template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::lookup_ice (const Spack& qitot, const Spack& nitot,
-              const Spack& qirim, const Spack& rhop, TableIce& t,
+::lookup_ice (const Spack& qi, const Spack& ni,
+              const Spack& qm, const Spack& rhop, TableIce& t,
               const Smask& context)
 {
-  // find index for qi (normalized ice mass mixing ratio = qitot/nitot)
-  //   dum1 = (log10(qitot)+16.)/0.70757  !orig
-  //   dum1 = (log10(qitot)+16.)*1.41328
+  // find index for qi (normalized ice mass mixing ratio = qi/ni)
+  //   dum1 = (log10(qi)+16.)/0.70757  !orig
+  //   dum1 = (log10(qi)+16.)*1.41328
   // we are inverting this equation from the lookup table to solve for i:
-  // qitot/nitot=261.7**((i+10)*0.1)*1.e-18
-  // dum1 = (log10(qitot/nitot)+18.)/(0.1*log10(261.7))-10.
+  // qi/ni=261.7**((i+10)*0.1)*1.e-18
+  // dum1 = (log10(qi/ni)+18.)/(0.1*log10(261.7))-10.
 
   if (!context.any()) return;
 
   const auto lookup_table_1a_dum1_c = P3C::lookup_table_1a_dum1_c;
-  t.dum1 = (pack::log10(qitot/nitot)+18) * lookup_table_1a_dum1_c - 10;
+  t.dum1 = (pack::log10(qi/ni)+18) * lookup_table_1a_dum1_c - 10;
   t.dumi = IntSmallPack(t.dum1);
 
   // set limits (to make sure the calculated index doesn't exceed range of lookup table)
@@ -104,7 +104,7 @@ void Functions<S,D>
   t.dumi = pack::min(P3C::isize-1, t.dumi);
 
   // find index for rime mass fraction
-  t.dum4  = (qirim/qitot)*3 + 1;
+  t.dum4  = (qm/qi)*3 + 1;
   t.dumii = IntSmallPack(t.dum4);
 
   // set limits
@@ -154,7 +154,7 @@ void Functions<S,D>
   // calculate scaled mean size for consistency with ice lookup table
   Spack dumlr(1);
   if (gt_small.any()) {
-    dumlr.set(gt_small, pack::cbrt(qr/(C::Pi * C::RHOW * nr)));
+    dumlr.set(gt_small, pack::cbrt(qr/(C::Pi * C::RHO_H2O * nr)));
   }
   t.dum3 = (pack::log10(1*dumlr) + 5)*sp(10.70415);
   t.dumj = IntSmallPack(t.dum3);

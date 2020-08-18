@@ -92,9 +92,9 @@ static Int compare (const std::string& label, const Scalar* a,
 
 struct Baseline {
   Baseline () {
-    for (const bool log_predictNc : {true, false})
+    for (const bool do_predict_nc : {true, false})
       //                 initial condit,     dt,  nsteps, prescribe or predict nc
-      params_.push_back({ic::Factory::mixed, 300, 6, log_predictNc});
+      params_.push_back({ic::Factory::mixed, 300, 6, do_predict_nc});
   }
 
   Int generate_baseline (const std::string& filename, bool use_fortran) {
@@ -151,13 +151,13 @@ private:
     ic::Factory::IC ic;
     Real dt;
     Int it;
-    bool log_predictNc;
+    bool do_predict_nc;
   };
 
   static void set_params (const ParamSet& ps, FortranData& d) {
     d.dt = ps.dt;
     d.it = ps.it;
-    d.log_predictNc = ps.log_predictNc;
+    d.do_predict_nc = ps.do_predict_nc;
   }
 
   std::vector<ParamSet> params_;
