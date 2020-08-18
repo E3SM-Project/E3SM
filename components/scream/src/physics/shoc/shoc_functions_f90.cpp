@@ -29,6 +29,13 @@ void update_host_dse_c(Int shcol, Int nlev, Real *thlm, Real *shoc_ql,
 void shoc_energy_integrals_c(Int shcol, Int nlev, Real *host_dse, Real *pdel,
                              Real *rtm, Real *rcm, Real *u_wind, Real *v_wind,
                              Real *se_int, Real *ke_int, Real *wv_int, Real *wl_int);
+			     
+void shoc_energy_total_fixer(Int shcol, Int nlev, Int nlevi, Real dtime, Real nadv,
+                             Real *zt_grid, Real *zi_grid,
+                             Real *se_b, Real *ke_b, Real *wv_b, Real *wl_b,
+                             Real *se_a, Real *ke_a, Real *wv_a, Real *wl_a,
+                             Real *wthl_sfc, Real *wqw_sfc, Real *rho_zt,
+                             Real *te_a, Real *te_b)			     
 
 void calc_shoc_varorcovar_c(Int shcol, Int nlev, Int nlevi,  Real tunefac,
                             Real *isotropy_zi, Real *tkh_zi, Real *dz_zi,
@@ -181,6 +188,18 @@ void shoc_energy_integrals(SHOCEnergyintData &d) {
   shoc_energy_integrals_c(d.shcol, d.nlev, d.host_dse, d.pdel,
                           d.rtm, d.rcm, d.u_wind, d.v_wind,
                           d.se_int, d.ke_int, d.wv_int, d.wl_int);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+void shoc_energy_total_fixer(SHOCEnergytotData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  shoc_energy_total_fixer_c(d.shcol, d.nlev, d.nlevi, d.dtime, d.nadv,
+                            d.zt_grid, d.zi_grid,       
+                            d.se_b, d.ke_b, d.wv_b, d.wl_b,
+                            d.se_a, d.ke_a, d.wv_a, d.wl_a,
+                            d.wthl_sfc, d.wqw_sfc, d.rho_zt,
+                            d.te_a, d.te_b);
   d.transpose<util::TransposeDirection::f2c>();
 }
 

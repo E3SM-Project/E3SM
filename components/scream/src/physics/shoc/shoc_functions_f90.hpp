@@ -150,6 +150,7 @@ struct SHOCEddydiffData : public SHOCDataBase {
   SHOCEddydiffData &operator=(const SHOCEddydiffData &rhs) { SHOCDataBase::operator=(rhs); return *this; }
 };//SHOCEddydiffData
 
+//create data structure for update_host_dse
 struct SHOCEnergydseData : public SHOCDataBase {
   // Inputs
   Real *thlm, *shoc_ql, *exner, *zt_grid, *phis;
@@ -164,6 +165,7 @@ struct SHOCEnergydseData : public SHOCDataBase {
   SHOCEnergydseData &operator=(const SHOCEnergydseData &rhs) { SHOCDataBase::operator=(rhs); return *this; }
 };//SHOCEnergydseData
 
+//create data structure for shoc_energy_integrals
 struct SHOCEnergyintData : public SHOCDataBase {
   // Inputs
   Real *host_dse, *pdel, *rtm, *rcm, *u_wind, *v_wind;
@@ -177,6 +179,23 @@ struct SHOCEnergyintData : public SHOCDataBase {
   SHOCEnergyintData(const SHOCEnergyintData &rhs) : SHOCDataBase(rhs, {&host_dse, &pdel, &rtm, &rcm, &u_wind, &v_wind}, {&se_int, &ke_int, &wv_int, &wl_int}) {}
   SHOCEnergyintData &operator=(const SHOCEnergyintData &rhs) { SHOCDataBase::operator=(rhs); return *this; }
 };//SHOCEnergyintData
+
+//Create data structure for shoc_energy_total_fixer
+struct SHOCEnergytotData : public SHOCDataBase {
+  // Inputs
+  Int nadv;
+  Real dtime;
+  Real *zt_grid, *zi_grid, *se_b, *ke_b, *wv_b, *wl_b, *se_a, *ke_a, *wv_a, *wl_a, *wthl_sec, *wqw_sfc, *rho_zt;
+
+  // Output
+  Real *te_a, *te_b;
+
+  //functions to initialize data
+  SHOCEnergytotData(Int shcol_, Int nlev_, Real dtime_, Int nadv_) :
+    SHOCDataBase(shcol_, nlev_, 1, {&zt_grid, &zi_grid, &rho_zt}, {&se_b, &ke_b, &wv_b, &wl_b, &se_a, &ke_a, &wv_a, &wl_a, &wthl_sfc, &wqw_sfc, &te_a, &te_b}), dtime(dtime_), nadv(nadv_) {}
+  SHOCEnergytotData(const SHOCEnergytotData &rhs) : SHOCDataBase(rhs, {&zt_grid, &zi_grid, &rho_zt}, {&se_b, &ke_b, &wv_b, &wl_b, &se_a, &ke_a, &wv_a, &wl_a, &wthl_sfc, &wqw_sfc, &te_a, &te_b}) {}
+  SHOCEnergytotData &operator=(const SHOCEnergytotData &rhs) { SHOCDataBase::operator=(rhs); dtime = rhs.dtime; nadv = rhs.nadv; return *this; }
+};//SHOCEnergytotData
 
 //Create data structure to hold data for calc_shoc_vertflux
 struct SHOCVertfluxData : public SHOCDataBase {
