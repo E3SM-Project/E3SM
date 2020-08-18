@@ -120,6 +120,7 @@ contains
 
       err = 0
 
+      !$omp parallel
       !$omp do schedule(runtime) private(invAreaTri1, i, iEdge, k, r_tmp)
       do iVertex = 1, nVertices
          circulation(:, iVertex) = 0.0_RKIND
@@ -136,6 +137,7 @@ contains
          end do
       end do
       !$omp end do
+      !$omp end parallel
 
    !--------------------------------------------------------------------
 
