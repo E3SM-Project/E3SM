@@ -117,7 +117,7 @@ subroutine ecpp_crm_init(ncrms,dt_gl)
     dndraftbase(1,icrm)=1
   enddo
 
-  call allocate_ecpp_vars(ncrms, ndraft_total)
+  call allocate_ecpp_vars(ncrms, ndraft_total, nzstag)
 
   !-----------------------------------------------------------------------------
   ! Initialize the running sums.

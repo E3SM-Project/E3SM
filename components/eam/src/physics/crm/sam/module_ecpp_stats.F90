@@ -411,7 +411,7 @@ subroutine categorization_stats( domass, &
   ! Local variables
   real(crm_rknd), dimension(nx,ny,nz+1,NCLASS_CL,ndraft_max,NCLASS_PR) :: mask_bnd
   real(crm_rknd), dimension(nx,ny,nz,NCLASS_CL,ndraft_max,NCLASS_PR) :: mask_cen
-  real(crm_rknd), dimension(nz+1,2) :: wdown_thresh_k, wup_thresh_k
+  real(crm_rknd), dimension(nz+1) :: wdown_thresh_k, wup_thresh_k
   real(crm_rknd), dimension(nx,ny,nz) :: cloudmixr, cloudmixr_total, precmixr_total
   integer, dimension(nx,ny)  :: cloudtop
   real(crm_rknd), dimension(nz+1)  :: wup_rms_k, wup_bar_k, wup_stddev_k  &
@@ -484,8 +484,8 @@ subroutine categorization_stats( domass, &
   , wdown_rms_k, wdown_bar_k, wdown_stddev_k   &
   , kup_top, kdown_top )
 
-  wdown_thresh(:) = wdown_thresh_k(:,1)
-  wup_thresh(:) = wup_thresh_k(:,1)
+  wdown_thresh(:) = wdown_thresh_k(:)
+  wup_thresh(:) = wup_thresh_k(:)
 
   if ((nupdraft > 1) .or. (ndndraft > 1)) then
     call endrun('*** code for thresh_factorbb_up/down needs nup/dndraft = 1')
@@ -513,20 +513,20 @@ subroutine categorization_stats( domass, &
         tmpa = maxval( thresh_factorbb_up(k-1:k) )
         tmpb = maxval( thresh_factorbb_down(k-1:k) )
       end if
-      wup_thresh_k(  k,:) = wup_thresh_k(  k,:) * tmpa
-      wdown_thresh_k(k,:) = wdown_thresh_k(k,:) * tmpb
+      wup_thresh_k(  k) = wup_thresh_k(  k) * tmpa
+      wdown_thresh_k(k) = wdown_thresh_k(k) * tmpb
     end do ! k
 
     do k=1, max(1, kup_top-1)
-      wup_thresh(k) =  wup_thresh_k(k,1)
+      wup_thresh(k) =  wup_thresh_k(k)
     end do
     do k=1, max(1, kdown_top-1)
-      wdown_thresh(k) = wdown_thresh_k(k,1)
+      wdown_thresh(k) = wdown_thresh_k(k)
     end do
 
     do k=1, nzstag
       if(wup_thresh(k).lt.0.05) then
-        write(0,*) 'erros in wup_thresh', k, wup_thresh_k(:,1), thresh_factorbb_up(:)
+        write(0,*) 'erros in wup_thresh', k, wup_thresh_k(:), thresh_factorbb_up(:)
         call endrun('wup_thresh errors in ecpp_stat')
       end if
     end do
@@ -535,10 +535,10 @@ subroutine categorization_stats( domass, &
     ! above updraft (kup_top) and downdraft top(kdown_top).
     ! This will make sure there is no updraft or downdraft above kup_top and kdown_top
     do k=kup_top, nz+1
-      wup_thresh_k(k, :) = wlarge
+      wup_thresh_k(k) = wlarge
     end do
     do k=kdown_top, nz+1
-      wdown_thresh_k(k,:) = -1. * wlarge
+      wdown_thresh_k(k) = -1. * wlarge
     end do
 
     call setup_class_masks( &
@@ -589,7 +589,7 @@ subroutine categorization_stats( domass, &
         if(iter.gt.5) then
           write(0, *) 'warning: The number of iteration is larger than 5 in ecpp_stat', 'iter=', iter ,   &
           'acen_quiesc=', acen_quiesc, 'acen_up=', acen_up, 'k=', k,    &
-          'wthreshdown=', wdown_thresh_k(k,1), 'wthreshup=', wup_thresh_k(k,1)
+          'wthreshdown=', wdown_thresh_k(k), 'wthreshup=', wup_thresh_k(k)
           !           call endrun('The number of iteration is larger than 10 in ecpp_stat')
         end if
       end if
@@ -749,7 +749,7 @@ subroutine categorization_stats( domass, &
   ! testing small queiscent fraction
   do k=1, nz
     if(sum(area_cen_final(k,:,1,:)).lt.1.0e-3) then
-      write(0, *) 'ecpp, area_cen_final, quiescent', sum(area_cen_final(k,:,1,:)), k, area_cen_final(k,:,1,:), wdown_thresh_k(k,1), wup_thresh_k(k,1)
+      write(0, *) 'ecpp, area_cen_final, quiescent', sum(area_cen_final(k,:,1,:)), k, area_cen_final(k,:,1,:), wdown_thresh_k(k), wup_thresh_k(k)
       write(0, *)  'ecpp, area_cen_final, quiescent, wwk', ww(:,:,k), i, wup_rms_k(k), wup_bar_k(k), wup_stddev_k(k)
       write(0, *) 'ecpp, area_cen_final, quiescent, wwk+1', ww(:,:,k+1), i, wup_rms_k(k+1), wup_bar_k(k+1), wup_stddev_k(k+1)
       !      call endrun('area_cen_final less  then 1.0-e3')
@@ -780,15 +780,14 @@ subroutine determine_transport_thresh( &
   real(crm_rknd), dimension(:,:,:), intent(in) :: &
   ww
   real(crm_rknd), dimension(nz+1), intent(in) :: rhoair
-  real(crm_rknd), dimension(nz+1,2), intent(out) :: wdown_thresh_k, wup_thresh_k
+  real(crm_rknd), dimension(nz+1), intent(out) :: wdown_thresh_k, wup_thresh_k
   integer, dimension(nx,ny), intent(in) :: cloudtop
   real(crm_rknd), dimension(nz+1), intent(out) :: wup_rms_k, wup_bar_k, wup_stddev_k, wdown_bar_k, wdown_rms_k, wdown_stddev_k
   integer, intent(out) :: kup_top, kdown_top  ! defined as the maximum level that allows updraft and downdraft
   !-----------------------------------------------------------------------------
   ! Local vars
   real(crm_rknd), dimension(nz+1) :: &
-  tmpveca, tmpvecb
-  wup_rms_ksmo, wdown_rms_ksmo
+  tmpveca, tmpvecb, wup_rms_ksmo, wdown_rms_ksmo
   real(crm_rknd) :: tmpsuma, tmpsumb, tmpw, tmpw_minval, &
   wdown_bar, wdown_rms, wdown_stddev, &
   wup_bar, wup_rms, wup_stddev
@@ -1026,7 +1025,7 @@ subroutine setup_class_masks( &
   integer, intent(in) :: nx, ny, nz, nupdraft, ndndraft, ndraft_max
   real(crm_rknd), dimension(:,:,:), intent(in) :: &
   cloudmixr, cf3d, precall, ww
-  real(crm_rknd), dimension(nz+1,2), intent(in) :: wdown_thresh_k, wup_thresh_k
+  real(crm_rknd), dimension(nz+1), intent(in) :: wdown_thresh_k, wup_thresh_k
   real(crm_rknd), intent(in) :: cloudthresh, prcpthresh
   real(crm_rknd), dimension(nx,ny,nz+1,NCLASS_CL,ndraft_max,NCLASS_PR), &
   intent(out) :: mask_bnd
@@ -1084,7 +1083,7 @@ subroutine setup_class_masks( &
         if( (cloudmixr_total(i,j,max(k-1,1))+cloudmixr_total(i,j,min(k,nz)))*0.5 > cloudthresh_trans_temp  &
         .or. (precmixr_total(i,j,max(k-1,1))+precmixr_total(i,j,min(k,nz)))*0.5 > precthresh_trans) then
           
-          if( ww(i,j,k) > wup_thresh_k(k,1) ) then
+          if( ww(i,j,k) > wup_thresh_k(k) ) then
             maskup(k,1) = 1
           end if
         
@@ -1095,7 +1094,7 @@ subroutine setup_class_masks( &
         ! downdraft only exist in cloudy area or precipitating clear area   +++mhwang
         if( (cloudmixr_total(i,j,max(k-1,1))+cloudmixr_total(i,j,min(k,nz)))*0.5 > cloudthresh_trans_temp   &
           .or. (precmixr_total(i,j,max(k-1,1))+precmixr_total(i,j,min(k,nz)))*0.5 > precthresh_trans) then
-          if( ww(i,j,k) < wdown_thresh_k(k,1) ) then
+          if( ww(i,j,k) < wdown_thresh_k(k) ) then
             maskdn(k,1) = 1
           end if
         end if  ! end cloudmixr_total, and precall
@@ -1287,7 +1286,8 @@ subroutine setup_class_masks( &
       end do !k-loop mask for centers
 
     end do
-  end do XYLOOPS
+  end do 
+  
 end subroutine setup_class_masks
 
 !===============================================================================

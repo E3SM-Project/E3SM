@@ -513,7 +513,7 @@ module module_ecpp_ppdriver2
     integer :: k, ka, kb, lk
     integer :: l, ll, levdbg_err, levdbg_info
     integer :: lun, lun60, lun61, lun131, lun132, lun133, lun134, lun135
-    integer :: n, ncls_ecpp, nupdraft, ndndraft
+    integer :: n, ncls_ecpp
     integer :: itmpcnt(pver+1,4)
     integer :: idiagaa_ecpp(1:199), ldiagaa_ecpp(1:199)
 
@@ -761,8 +761,6 @@ module module_ecpp_ppdriver2
     end if
 
     ! check for valid ncls_ecpptmp
-    nupdraft = nupdraft
-    ndndraft = ndndraft
     ncls_ecpp = (nupdraft + ndndraft + 1)
     if (ncls_ecpp > maxcls_ecpp) then
       write(msg,'(a,2(1x,i6))')   &
