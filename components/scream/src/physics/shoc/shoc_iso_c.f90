@@ -247,4 +247,101 @@ contains
 
   end subroutine calc_shoc_vertflux_c
 
+  
+  subroutine compute_brunt_shoc_length_c(nlev,nlevi,shcol,dz_zt,thv,thv_zi,brunt) bind (C)
+    use shoc, only: compute_brunt_shoc_length
+
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: nlevi
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in) :: dz_zt(shcol,nlev)
+    real(kind=c_real), intent(in) :: thv(shcol,nlev)  
+    real(kind=c_real), intent(in) :: thv_zi(shcol,nlevi)
+
+    real(kind=c_real), intent(out) :: brunt(shcol,nlev)
+
+    call compute_brunt_shoc_length(nlev,nlevi,shcol,dz_zt,thv,thv_zi,brunt)
+
+  end subroutine compute_brunt_shoc_length_c  
+  
+  
+  subroutine compute_l_inf_shoc_length_c(nlev,shcol,zt_grid,dz_zt,tke,l_inf) bind (C)
+    use shoc, only: compute_l_inf_shoc_length
+
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
+    real(kind=c_real), intent(in) :: dz_zt(shcol,nlev)
+    real(kind=c_real), intent(in) :: tke(shcol,nlev)  
+
+    real(kind=c_real), intent(out) :: l_inf(shcol)
+
+    call compute_l_inf_shoc_length(nlev,shcol,zt_grid,dz_zt,tke,l_inf)
+
+  end subroutine compute_l_inf_shoc_length_c  
+  
+  
+  subroutine compute_conv_vel_shoc_length_c(nlev,shcol,pblh,zt_grid,dz_zt,&
+                                            thv,wthv_sec,conv_vel) bind (C)
+    use shoc, only: compute_conv_vel_shoc_length
+
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in) :: pblh(shcol)
+    real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
+    real(kind=c_real), intent(in) :: dz_zt(shcol,nlev)
+    real(kind=c_real), intent(in) :: thv(shcol,nlev)
+    real(kind=c_real), intent(in) :: wthv_sec(shcol,nlev)  
+
+    real(kind=c_real), intent(out) :: conv_vel(shcol)
+
+    call compute_conv_vel_shoc_length(nlev,shcol,pblh,zt_grid,dz_zt,thv,wthv_sec,conv_vel)
+
+  end subroutine compute_conv_vel_shoc_length_c 
+  
+  subroutine compute_conv_time_shoc_length_c(shcol,pblh,conv_vel,tscale) bind (C)
+    use shoc, only: compute_conv_time_shoc_length
+
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in) :: pblh(shcol)  
+    real(kind=c_real), intent(inout) :: conv_vel(shcol)
+    real(kind=c_real), intent(out) :: tscale(shcol)
+
+    call compute_conv_time_shoc_length(shcol,pblh,conv_vel,tscale)
+
+  end subroutine compute_conv_time_shoc_length_c 
+  
+  subroutine compute_shoc_mix_shoc_length_c(nlev,shcol,tke,brunt,tscale,&
+                                         zt_grid,l_inf,shoc_mix) bind (C)
+    use shoc, only: compute_shoc_mix_shoc_length
+
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in) :: tke(shcol,nlev)
+    real(kind=c_real), intent(in) :: brunt(shcol,nlev)
+    real(kind=c_real), intent(in) :: tscale(shcol)
+    real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
+    real(kind=c_real), intent(in) :: l_inf(shcol) 
+
+    real(kind=c_real), intent(out) :: shoc_mix(shcol,nlev)
+
+    call compute_shoc_mix_shoc_length(nlev,shcol,tke,brunt,tscale,zt_grid,&
+                                      l_inf,shoc_mix)
+
+  end subroutine compute_shoc_mix_shoc_length_c 
+  
+  subroutine check_length_scale_shoc_length_c(nlev,shcol,host_dx,host_dy,shoc_mix) bind (C)
+    use shoc, only: check_length_scale_shoc_length
+
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in) :: host_dx(shcol)
+    real(kind=c_real), intent(in) :: host_dy(shcol)  
+
+    real(kind=c_real), intent(inout) :: shoc_mix(shcol,nlev)
+
+    call check_length_scale_shoc_length(nlev,shcol,host_dx,host_dy,shoc_mix)
+
+  end subroutine check_length_scale_shoc_length_c         
+
 end module shoc_iso_c

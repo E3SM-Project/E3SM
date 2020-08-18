@@ -46,6 +46,27 @@ void eddy_diffusivities_c(Int nlev, Int shcol, Real *obklen, Real *pblh,
 
 void calc_shoc_vertflux_c(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 			  Real *dz_zi, Real *invar, Real *vertflux);
+			  
+void compute_brunt_shoc_length_c(Int nlev, Int nlevi, Int shcol ,Real *dz_zt,
+                                 Real *thv, Real *thv_zi, Real *brunt);
+				 
+void compute_l_inf_shoc_length_c(Int nlev, Int shcol, Real *zt_grid, Real *dz_zt,
+                                 Real *tke, Real *l_inf);	
+				 
+void compute_conv_vel_shoc_length_c(Int nlev, Int shcol, Real *pblh, Real *zt_grid,
+                                    Real *dz_zt, Real *thv, Real *wthv_sec,
+				    Real *conv_vel);
+
+void compute_conv_time_shoc_length_c(Int shcol, Real *pblh, Real *conv_vel, 
+                                     Real *tscale);		
+				     
+void compute_shoc_mix_shoc_length_c(Int nlev, Int shcol, Real *tke, Real* brunt,
+                                    Real *tscale, Real *zt_grid, Real *l_inf,
+				    Real *shoc_mix);
+				    
+void check_length_scale_shoc_length_c(Int nlev, Int shcol, Real *host_dx,
+                                    Real *host_dy, Real *shoc_mix);
+				    
 }
 
 namespace scream {
@@ -204,6 +225,50 @@ void eddy_diffusivities(SHOCEddydiffData &d) {
   d.transpose<util::TransposeDirection::c2f>();
   eddy_diffusivities_c(d.nlev, d.shcol, d.obklen, d.pblh, d.zt_grid,
      d.shoc_mix, d.sterm_zt, d.isotropy, d.tke, d.tkh, d.tk);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+void compute_brunt_shoc_length(SHOCBruntlengthData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  compute_brunt_shoc_length_c(d.nlev,d.nlevi,d.shcol,d.dz_zt,d.thv,d.thv_zi,d.brunt);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+void compute_l_inf_shoc_length(SHOCInflengthData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  compute_l_inf_shoc_length_c(d.nlev,d.shcol,d.zt_grid,d.dz_zt,d.tke,d.l_inf);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+void compute_conv_vel_shoc_length(SHOCConvvelData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  compute_conv_vel_shoc_length_c(d.nlev,d.shcol,d.pblh,d.zt_grid,
+                                 d.dz_zt,d.thv,d.wthv_sec,d.conv_vel);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+void compute_conv_time_shoc_length(SHOCConvtimeData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  compute_conv_time_shoc_length_c(d.shcol,d.pblh,d.conv_vel,d.tscale);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+void compute_shoc_mix_shoc_length(SHOCMixlengthData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  compute_shoc_mix_shoc_length_c(d.nlev,d.shcol,d.tke,d.brunt,d.tscale,
+                                 d.zt_grid,d.l_inf,d.shoc_mix);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+void check_length_scale_shoc_length(SHOCMixcheckData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  check_length_scale_shoc_length_c(d.nlev,d.shcol,d.host_dx,d.host_dy,d.shoc_mix);
   d.transpose<util::TransposeDirection::f2c>();
 }
 

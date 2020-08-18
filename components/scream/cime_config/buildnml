@@ -32,7 +32,10 @@ def buildnml(case, caseroot, compname):
             os.mkdir(target)
 
         for item in os.listdir(src):
-            safe_copy(os.path.join(src, item), target)
+            # Do not overwrite existing files because that would remove any
+            # local mods made by the user.
+            if not os.path.exists(os.path.join(target, item)):
+                safe_copy(os.path.join(src, item), target)
 
 ###############################################################################
 def _main_func():
