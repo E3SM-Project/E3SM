@@ -56,7 +56,7 @@ class TimeSeriesPlotter(object):
 
         self.ds = xarray.open_mfdataset(
             '{}/timeSeriesStatsMonthly*.nc'.format(self.inFolder),
-            concat_dim='Time')
+            concat_dim='Time', combine='nested')
 
         try:
             os.makedirs(self.outFolder)
@@ -226,7 +226,7 @@ class MoviePlotter(object):
 
         self.ds = xarray.open_mfdataset(
             '{}/timeSeriesStatsMonthly*.nc'.format(self.inFolder),
-            concat_dim='Time')
+            concat_dim='Time', combine='nested')
 
         self._compute_section_x_z()
 

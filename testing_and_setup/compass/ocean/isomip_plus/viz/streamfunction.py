@@ -371,7 +371,8 @@ def _interpolate_horizontal_transport_zlevel(ds, z, outFileName):
 
     bar.finish()
 
-    dsOut = xarray.open_mfdataset(fileNames, concat_dim='Time')
+    dsOut = xarray.open_mfdataset(fileNames, concat_dim='Time',
+                                  combine='nested')
 
     dsOut['xtime_startMonthly'] = ds.xtime_startMonthly
     dsOut['xtime_endMonthly'] = ds.xtime_endMonthly
@@ -529,7 +530,7 @@ def _horizontally_bin_overturning_streamfunction(ds, dsMesh, x, osfFileName,
 
     bar.finish()
 
-    dsOSF = xarray.open_mfdataset(fileNames, concat_dim='nx')
+    dsOSF = xarray.open_mfdataset(fileNames, concat_dim='nx', combine='nested')
     dsOSF['xtime_startMonthly'] = ds.xtime_startMonthly
     dsOSF['xtime_endMonthly'] = ds.xtime_endMonthly
     dsOSF['x'] = x
