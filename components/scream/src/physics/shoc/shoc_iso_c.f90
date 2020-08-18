@@ -274,6 +274,46 @@ contains
                                se_int, ke_int, wv_int, wl_int)
 
   end subroutine shoc_energy_integrals_c
+  
+  subroutine shoc_energy_total_fixer_c(&
+                                shcol,nlev,nlevi,dtime,nadv,&
+                                zt_grid,zi_grid,&
+                                se_b,ke_b,wv_b,wl_b,&
+                                se_a,ke_a,wv_a,wl_a,&
+                                wthl_sfc,wqw_sfc,rho_zt,&
+                                te_a,te_b) bind (C)
+    use shoc, only: shoc_energy_integrals
+
+    integer(kind=c_int), intent(in), value :: shcol
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: nlevi
+    integer(kind=c_int), intent(in), value :: nadv
+    real(kind=c_real), intent(in), value :: dtime
+    real(kind=c_real), intent(in) :: se_b(shcol)
+    real(kind=c_real), intent(in) :: ke_b(shcol)
+    real(kind=c_real), intent(in) :: wv_b(shcol)
+    real(kind=c_real), intent(in) :: wl_b(shcol)
+    real(kind=c_real), intent(in) :: se_a(shcol)
+    real(kind=c_real), intent(in) :: ke_a(shcol)
+    real(kind=c_real), intent(in) :: wv_a(shcol)
+    real(kind=c_real), intent(in) :: wl_a(shcol)
+    real(kind=c_real), intent(in) :: wthl_sfc(shcol)
+    real(kind=c_real), intent(in) :: wqw_sfc(shcol)
+    real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
+    real(kind=c_real), intent(in) :: zi_grid(shcol,nlev)
+    real(kind=c_real), intent(in) :: rho_zt(shcol,nlev)
+
+    real(kind=c_real), intent(out) :: te_a(shcol)
+    real(kind=c_real), intent(out) :: te_b(shcol)
+
+    call shoc_energy_total_fixer(shcol,nlev,nlevi,dtime,nadv,&
+                                 zt_grid,zi_grid,&
+                                 se_b,ke_b,wv_b,wl_b,&
+                                 se_a,ke_a,wv_a,wl_a,&
+                                 wthl_sfc,wqw_sfc,rho_zt,&
+                                 te_a,te_b)
+
+  end subroutine shoc_energy_total_fixer_c  
 
   subroutine calc_shoc_vertflux_c(shcol, nlev, nlevi, tkh_zi, dz_zi, invar, vertflux) bind (C)
     use shoc, only: calc_shoc_vertflux

@@ -55,7 +55,7 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
     static constexpr Real wqw_sfc = 0.01;
 
     // Initialzie data structure for bridgeing to F90
-    SHOCEnergytotData SDS(shcol, nlev);
+    SHOCEnergytotData SDS(shcol, nlev, nlevi);
 
     // Test that the inputs are reasonable.
     // for this test we need exactly two columns
