@@ -352,28 +352,25 @@ subroutine diag_init()
 
    call addfld ('ATMEINT',horiz_only, 'A','J/m2','Vertically integrated total atmospheric energy ')
 
+#ifdef ENERGY_DIAGNOSTICS
    call addfld ('TEbeforeadj',horiz_only, 'A','J/m2','TE before')
    call addfld ('TEafteradj',horiz_only, 'A','J/m2','TE after ')
    call addfld ('KEbeforeadj',horiz_only, 'A','J/m2','TE after ')
    call addfld ('KEafteradj',horiz_only, 'A','J/m2','TE after ')
 
-!difference between TE after and before moist pressure adjustment
+   !difference between TE after and before moist pressure adjustment
    call addfld ('TEdiff',horiz_only, 'A','J/m2','TE diff ')
-!difference between TE before adjustment and after 'fixer' in T was applied,
-!expected to be ~zero
+   !difference between TE before adjustment and after 'fixer' in T was applied,
+   !expected to be ~zero
    call addfld ('TEdiffadj',horiz_only, 'A','J/m2','TE diff ')
    call addfld ('KEdiff',horiz_only, 'A','J/m2','TE diff ')
-!q1 output in routine that diagn moisture adjustment
-   call addfld ('TEq1',(/ 'lev' /), 'A','J/m2','TE q1 ')
-!q1 at the beginning of the physics timestep, needed to compute moist tendency
-!for pressure
-   call addfld ('TEq1p',(/ 'lev' /), 'A','J/m2','TE q1p ')
-!delta T computed to 'fix' moisure adjustment, similarly to what fixer does, via
-!c_pT term
+   !delta T computed to 'fix' moisure adjustment, similarly to what fixer does, via
+   !c_pT term
    call addfld ('dTadj',(/ 'lev' /), 'A','K','delta T from adjustment')
-!TTEND and dTadj vertically summed 
+   !TTEND and dTadj vertically summed 
    call addfld ('TTENDhor',horiz_only, 'A','K/s','TTEND summed ')
    call addfld ('dTadjhor',horiz_only, 'A','K','dTadj summed ')
+#endif
 
    call addfld ('T1000',horiz_only,   'A','K','Temperature at 1000 mbar pressure surface')
    call addfld ('T975',horiz_only,   'A','K','Temperature at 975 mbar pressure surface')   
