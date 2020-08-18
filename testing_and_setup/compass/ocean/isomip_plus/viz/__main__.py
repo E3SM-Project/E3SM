@@ -37,7 +37,7 @@ def main():
     dsMesh = xarray.open_dataset('{}/init.nc'.format(folder))
 
     ds = xarray.open_mfdataset('{}/timeSeriesStatsMonthly*.nc'.format(folder),
-                               concat_dim='Time')
+                               concat_dim='Time', combine='nested')
 
     if args.streamfunctions:
         compute_barotropic_streamfunction(dsMesh, ds, folder)
