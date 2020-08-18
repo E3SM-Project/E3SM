@@ -1,3 +1,129 @@
+8/10/2020
+
+* salloc -N 4 -t 30:00 -p acme-small -A condo
+
+  This now seems to be giving me some problems allocating - fairly long
+  delays.  I don't know if that's something new, or if I got lucky in the
+  past, or what.  Is there an interactive queue on anvil?  Go ahead and try
+  -p interactive and see...
+
+  Well, no interactive, but it might be in an maintenance mode.  Let me
+  just try to run regularly without a salloc call and see.
+
+* Um, I really have no notes about where to change acme to acme-small?
+  Sheesh.  Apparently I modify env_batch.xml to replace acme with
+  acme-small.
+
+* And, I'm right, the maintenance mode means my job is submitted, but not
+  accepted - that's why the salloc didn't work just now.
+
+* Worried about the X11 lag - the DMF is much worse, for whatever reason,
+  but I still see a minute delay to pop up an xterm.
+
+6/10/2020
+
+* By default, E3SM builds with -DNDEBUG command line option to the
+  compilers, whcih turns off assert() functions.  But when you specify the
+  DEBUG=TRUE E3SM build option (in the .xml files), it turns off -DNDEBUG,
+  which is why building a debug version of es3m.exe suddenly found all
+  these problems with assert()s in gcam.
+
+  Kate says that there are a ton of assert() functions throughout e3sm that
+  are obsolete - the problems I found were all because of obsolete variable
+  names, either because they'e been superceded or renamed something else.
+  They got around this legacy problem by simply always compiling with
+  -DNDEBUG - otherwise, they are going to have to clean up all their
+  assert() calls.
+
+  The DEBUG=TRUE E3SM build option basically turns on -g -O0 - and there is
+  no reason why this should be incompatible with -DNDEBUG, which is
+  actually a C/C++ standard used by assert.h to void out assert() calls if
+  set. 
+
+  So, it is my claim that having E3SM turn off NDEBUG if DEBUG is set is
+  incorrect - they can coexist peacefully (i.e. -g -O0 -DNDEBUG is
+  perfectly valid and functional).  I kludged the Tools/Makefile to always
+  set -DNDEBUG in CPPDEFS no matter what, but realistically it should be
+  allowed in it's own E3SM build options.  I tried setting it using
+  xmlchange, but that won't me set an environment variable that's not
+  already defined, so we'd have to modify the schema or something.
+
+* Anyway, right now my kludged solution has let me build a debugging
+  version of e3sm.exe with asserts all turned off.  So, yay for me.
+
+6/9/2020
+
+* So, this is weird - I suddenly cannot compile gcam anymore.
+
+* Acutal error:
+
+  /blues/gpfs/home/ac.shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/util/base/source/calibrate_resource_visitor.cpp(152): error: class "SubRenewableResource" has no member "gdpSupplyElasticity"
+
+  calibrate_resource_visitor.cpp is the only place a straight
+  "gdpSupplyElasticity" is used without some kind of prefix; it's in an
+  assert that it is 0.
+
+* Conjecture: this came about because I ran xmlchange to change to DEBUG and
+  also to change NTASKS - I think the latter forced a ./case.build
+  --clean-all and maybe another thing, and that may have forced a
+  recheckout of the repo, with the faulty calibrate_resource_visitor.cpp file.
+
+* I don't have any notes below on dealing with this, but when originally
+  building gcam I had to hide a number of standalone files and some others
+  for use with gcam builds in different contexts.  So my conjecture is that
+  I originally hid this file, and the checkout brought it back.  But I
+  don't know...
+
+* The other possibility is that moving to ac.shippert has messed soemthing
+  up in buildlib and it's compiling wrong.  Or something.
+
+* Anyway, my current solution is to hide this offending source file.  If
+  that doesn't work, maybe remove the offending assert?
+
+  I checked out a whole new build into ~/iac_ZLND_debug, but the native
+  build failed in the same way, even without any xmlchange mods.
+
+* So, removing the assert worked, as did removing the file altogether...at
+  least, they both lead to this failure in
+  /land_allocator/source/land_leaf.cpp, line 207:
+
+    assert( mCarbonContentCalc.get() );
+
+  ...which gets me:
+
+    /blues/gpfs/home/ac.shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/land_allocator/source/land_leaf.cpp(207):
+    error: expression must have class type 
+
+  Yeah, I don't know.  So I commented out *that* assert, as well...
+
+* Now this:
+
+  /blues/gpfs/home/ac.shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/containers/source/scenario.cpp(190): error: identifier "world" is undefined
+  /blues/gpfs/home/ac.shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/containers/source/scenario.cpp(200): error: identifier "modeltime" is undefined
+  gmake: *** [scenario.o] Error 2
+  /blues/gpfs/home/ac.shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/sectors/source/sector.cpp(389): error: identifier "subsec" is undefined
+  /blues/gpfs/home/ac.shippert/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cvs/objects/sectors/source/sector.cpp(404): error: identifier "subsec" is undefined
+
+
+6/3/2020
+
+* config_compilers.xml for compiler options.  Probably somewhere in
+  config_machines.xml for machine specific options.
+
+5/22/2020
+
+* Some links to help runnign and debugging:
+
+1 https://acme-climate.atlassian.net/wiki/spaces/ED/pages/98992379/Anvil+-+ACME+s+dedicated+nodes+hosted+on+Blues
+2 https://www.lcrc.anl.gov/for-users/using-lcrc/running-jobs/running-jobs-on-blues/
+
+* To make an interactive session, use salloc (from 2, above).  
+
+* The idea seems to be to use ./preview_run to help, and to modify some of
+  the .sh scripts to start up totalview.  Or, it could be to run totalview
+  withe e3sm.exe executable, after setting up a salloc, and calling from
+  there.  Time to review the NERSC doc, below (5/11/2020).
+
 5/13/2020
 
 * Ah, I think I know how to set environment variables - it's hidden in the
@@ -268,6 +394,12 @@ XXXXXXXXXXXX
   renaming these files and hoping for the best.
 
 3/24/2020
+
+* [UPDATE: 6/3/2020] The *ccsminterface* functions were replaced with
+  *e3sminterface* functions in
+  ./src/iac/gcam/cpl/source/GCAM_E3SM_interface_wrapper.cpp.  The hector
+  and java stuff is set in definitions.h, and probably should be set as
+  compiler options in the build system, once I figure that out.
 
 * WTH!
   

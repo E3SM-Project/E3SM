@@ -86,14 +86,7 @@ USE_GCAM := TRUE
 # These are needed for GCAM - need to have a USE_GCAM kind of tag here.
 ifeq ($(strip $(USE_GCAM)), TRUE)
   # Hardcoded to my local directory on anvil.  Obviously not correct
-  XDIR := /blues/gpfs/home/shippert/local/lib
-
-  #Does not work - cannot find a good dynamic option
-  #GLIBS := -R/blues/gpfs/home/shippert/local/lib -L/blues/gpfs/home/shippert/local/lib -lxerces-c -lstdc++ - ldd can't find
-  #GLIBS := -Wl,-Bstatic -L$(XDIR) -lxerces-c - I think cannot link system libraries statically, so we have to turn dynamic back on
-  #GLIBS := -Wl,-rpath,$(XDIR) -lxerces-c - cannot find xerces, so rpath doesn't work (need -L)
-
-  #Works 
+  XDIR := /blues/gpfs/home/ac.shippert/local/lib
 
   # Static link options
   #GLIBS := $(XDIR)/libxerces-c.a 
@@ -122,6 +115,8 @@ ifeq ($(strip $(DEBUG)),TRUE)
 else
    CPPDEFS += -DNDEBUG
 endif
+
+CPPDEFS += -DNDEBUG
 
 # USE_ESMF_LIB is currently only defined in env_build.xml
 ifeq ($(USE_ESMF_LIB), TRUE)
