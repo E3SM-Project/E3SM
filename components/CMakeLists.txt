@@ -42,13 +42,13 @@ function(set_compilers_e3sm)
   set(CMAKE_CXX_COMPILER     ${CXX} CACHE STRING "The CXX compiler")
   set(CMAKE_C_COMPILER       ${CC}  CACHE STRING "The C   compiler")
   set(CMAKE_Fortran_COMPILER ${FC}  CACHE STRING "The Fortran compiler")
+  set(USE_CUDA ${USE_CUDA} PARENT_SCOPE)
 endfunction()
 set_compilers_e3sm()
 
 project(E3SM C CXX Fortran)
 
-find_package(CUDA)
-if (CUDA_FOUND)
+if(USE_CUDA)
   enable_language(CUDA)
 endif()
 

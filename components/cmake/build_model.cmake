@@ -61,13 +61,10 @@ function(build_model COMP_CLASS COMP_NAME)
 
     # If YAKL is needed, then set YAKL CMake vars
     if (USE_YAKL)
-      if ("${COMPILER}" STREQUAL "gnugpu")
-        # ARCH can be CUDA, HIP, or unset
+      # ARCH can be CUDA, HIP, or unset
+      if (USE_CUDA)
         set(ARCH "CUDA")
-        # This eventually needs to be grabbed from config_compilers.xml
-        if ("${MACH}" STREQUAL "summit")
-          set(CUDA_FLAGS "-arch sm_70")
-        endif()
+        # CUDA_FLAGS is set through Macros.cmake / config_compilers.xml
       endif()
       message(STATUS "Building YAKL")
       # Build YAKL as a static CUDA-linked library
