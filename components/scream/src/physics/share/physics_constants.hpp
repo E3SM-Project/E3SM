@@ -91,6 +91,7 @@ struct Constants
   static constexpr Scalar f1r           = 0.78;
   static constexpr Scalar f2r           = 0.32;
   static constexpr Scalar nmltratio     = 0.2; // ratio of rain number produced to ice number loss from melting
+  static constexpr Scalar basetemp      = 300.0;
 
   // Table dimension constants
   static constexpr int VTABLE_DIM0    = 300;
