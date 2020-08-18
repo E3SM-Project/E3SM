@@ -9,7 +9,7 @@ param.test_data_path = '/global/cfs/cdirs/e3sm/acme_diags/test_model_data_for_ac
 param.test_name = '20161118.beta0.FC5COSP.ne30_ne30.edison'
 param.seasons = ["ANN", "JJA"]    #Default setting: seasons = ["ANN", "DJF", "MAM", "JJA", "SON"]
 param.multiprocessing = True
-param.num_workers = 32
+param.num_workers = 30
 
 #Additional parameters:
 #param.short_test_name = 'beta0.FC5COSP.ne30'

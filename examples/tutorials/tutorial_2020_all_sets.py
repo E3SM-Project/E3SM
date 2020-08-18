@@ -15,7 +15,7 @@ param.seasons = ["ANN","JJA"]    #Default setting: seasons = ["ANN", "DJF", "MAM
 prefix = '/global/cfs/cdirs/e3sm/www/zhang40/tutorial2020'
 param.results_dir = os.path.join(prefix, 'all_sets_10yr')
 param.multiprocessing = True
-param.num_workers = 32
+param.num_workers = 30
 
 #Additional parameters:
 #param.short_test_name = 'beta0.FC5COSP.ne30'
