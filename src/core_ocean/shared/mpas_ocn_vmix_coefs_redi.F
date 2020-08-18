@@ -209,6 +209,7 @@ contains
 
       nCells = nCellsArray(1)
 
+      !$omp parallel
       !$omp do schedule(runtime) private(i, rediKappaCell, iEdge)
       do iCell = 1, nCells
          rediKappaCell = 0.0_RKIND
@@ -221,6 +222,7 @@ contains
                         / areaCell(iCell)
       end do
       !$omp end do
+      !$omp end parallel
 
       call mpas_timer_stop('tracer redi coef')
 

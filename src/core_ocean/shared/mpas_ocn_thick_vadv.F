@@ -133,6 +133,7 @@ contains
 
       nCells = nCellsArray( 1 )
 
+      !$omp parallel
       !$omp do schedule(runtime) private(k)
       do iCell = 1, nCells
          do k = 1, maxLevelCell(iCell)
@@ -140,6 +141,7 @@ contains
          end do
       end do
       !$omp end do
+      !$omp end parallel
 
       call mpas_timer_stop("thick vadv")
 

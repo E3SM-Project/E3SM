@@ -92,19 +92,6 @@ module ocn_tendency
 
    integer :: apply_Dhf_to_hhf, use_highFreqThick_restore
 
-   !--------------------------------------------------------------------
-   !
-   ! Replace calls to mpas_allocate_scratch_Field with straight allocates.
-   ! These variables were moved from the subroutines, but will be moved back once the
-   ! threading implementation is changed to more localized threading
-   !
-   !--------------------------------------------------------------------
-
-   ! subroutine ocn_tend_tracer
-   ! normalThicknessFlux: Flux of thickness through an edge
-   !               units: m^{2} s^{-1}
-   real (kind=RKIND), dimension(:,:), allocatable :: normalThicknessFlux
-
 !***********************************************************************
 
 contains
@@ -153,6 +140,7 @@ contains
       !
       ! height tendency: start accumulating tendency terms
       !
+      !$omp parallel
       !$omp do schedule(runtime)
       do iCell = 1, nCells
          tend_layerThickness(:, iCell) = 0.0_RKIND
@@ -160,6 +148,7 @@ contains
          surfaceThicknessFluxRunoff(iCell) = 0.0_RKIND
       end do
       !$omp end do
+      !$omp end parallel
 
       if(config_disable_thick_all_tend) return
 
@@ -296,6 +285,7 @@ contains
       !
       ! velocity tendency: start accumulating tendency terms
       !
+      !$omp Parallel
       !$omp do schedule(runtime)
       do iEdge = 1, nEdges
          tend_normalVelocity(:, iEdge) = 0.0_RKIND
@@ -308,6 +298,7 @@ contains
          surfaceStressMagnitude(iCell) = 0.0_RKIND
       end do
       !$omp end do
+      !$omp end parallel
 
       if(config_disable_vel_all_tend) return
 
@@ -394,11 +385,13 @@ contains
       !
       ! velocity tendency: zero if drying
       !
+      !$omp parallel
       !$omp do schedule(runtime)
       do iEdge = 1, nEdges
          tend_normalVelocity(:, iEdge) = tend_normalVelocity(:, iEdge) * (1.0_RKIND - wettingVelocity(:, iEdge))
       end do
       !$omp end do
+      !$omp end parallel
 
       !
       ! velocity tendency: vertical mixing d/dz( nu_v du/dz))
@@ -510,6 +503,11 @@ contains
       integer :: err, iCell, iEdge, k, timeLevel, nTracersEcosys
       logical :: activeTracersOnly, isActiveTracer    ! if true, only compute for active tracers
 
+      ! Scratch Arrays
+      ! normalThicknessFlux: Flux of thickness through an edge
+      !               units: m^{2} s^{-1}
+      real (kind=RKIND), dimension(:,:), allocatable :: normalThicknessFlux
+
       !
       ! set time level of optional argument is present
       !
@@ -582,14 +580,12 @@ contains
 
       call mpas_timer_start("ocn_tend_tracer")
 
-      !$omp master
       allocate(normalThicknessFlux(nVertLevels, nEdges+1))
-      !$omp end master
-      !$omp barrier
 
       !
       ! transport velocity for the tracer.
       !
+      !$omp parallel
       !$omp do schedule(runtime) private(k)
       do iEdge = 1, nEdges
          do k = 1, nVertLevels
@@ -597,6 +593,7 @@ contains
          end do
       end do
       !$omp end do
+      !$omp end parallel
 
       !
       ! begin iterate over tracer categories
@@ -654,31 +651,32 @@ contains
                !
                ! initialize tracer surface flux and tendency to zero.
                !
+               !$omp parallel
                !$omp do schedule(runtime)
                do iCell = 1, nCells
                  tracerGroupTend(:,:, iCell) = 0.0_RKIND
                  tracerGroupSurfaceFlux(:, iCell) = 0.0_RKIND
                end do
                !$omp end do
+               !$omp end parallel
 
                !
                ! fill components of surface tracer flux
                !
                if (config_use_tracerGroup_surface_bulk_forcing) then
+                  !$omp parallel
                   !$omp do schedule(runtime)
                   do iCell = 1, nCells
                     tracerGroupSurfaceFluxRunoff(:, iCell) = 0.0_RKIND
                     tracerGroupSurfaceFluxRemoved(:, iCell) = 0.0_RKIND
                   end do
                   !$omp end do
+                  !$omp end parallel
 
                   call ocn_surface_bulk_forcing_tracers(meshPool, groupItr % memberName, forcingPool, tracerGroup, &
                                                         tracerGroupSurfaceFlux, tracerGroupSurfaceFluxRunoff, &
                                                         tracerGroupSurfaceFluxRemoved, dt, layerThickness, err)
                end if
-
-
-               !$omp master
 
                !
                ! compute ecosystem source-sink tendencies and net surface fluxes
@@ -724,9 +722,6 @@ contains
                   call ocn_tracer_MacroMolecules_surface_flux_compute(activeTracers, tracerGroup, forcingPool,  &
                      nTracerGroup, nCellsSolve, zMid, indexTemperature, indexSalinity, tracerGroupSurfaceFlux, err)
                endif
-
-               !$omp end master
-               call mpas_threading_barrier()
 
                !
                ! ocean surface restoring
@@ -851,11 +846,13 @@ contains
                if(trim(groupItr % memberName)=='activeTracers') then
                  isActiveTracer = .true.
                  if (config_compute_active_tracer_budgets) then
+                    !$omp parallel
                     !$omp do schedule(runtime)
                     do iCell = 1, nCells
                       activeTracerHorMixTendency(:,:,iCell) = tracerGroupTend(:,:,iCell)
                     enddo
                     !$omp end do
+                    !$omp end parallel
                  endif
                endif
                call ocn_tracer_hmix_tend(meshPool, scratchPool, layerThicknessEdge, layerThickness, zMid, tracerGroup, &
@@ -865,12 +862,14 @@ contains
                if(trim(groupItr % memberName)=='activeTracers') then
                  isActiveTracer = .true.
                  if (config_compute_active_tracer_budgets) then
+                    !$omp parallel
                     !$omp do schedule(runtime)
                     do iCell = 1, nCells
                       activeTracerHorMixTendency(:,:,iCell) = tracerGroupTend(:,:,iCell) - &
                                   activeTracerHorMixTendency(:,:,iCell)
                     enddo
                     !$omp end do
+                    !$omp end parallel
                  endif
                endif
  
@@ -880,11 +879,13 @@ contains
                !
                if (config_compute_active_tracer_budgets) then
                   if ( trim(groupItr % memberName) == 'activeTracers' ) then
+                     !$omp parallel
                      !$omp do schedule(runtime)
                      do iCell = 1, nCells
                         activeTracerSurfaceFluxTendency(:,:,iCell) = tracerGroupTend(:,:,iCell)
                      end do
                      !$omp end do
+                     !$omp end parallel
                   endif
                endif
 
@@ -898,6 +899,7 @@ contains
                if ( trim(groupItr % memberName) == 'activeTracers' ) then
 
                   if (config_compute_active_tracer_budgets) then
+                     !$omp parallel
                      !$omp do schedule(runtime)
                      do iCell = 1, nCells
                         activeTracerSurfaceFluxTendency(:,:,iCell) = tracerGroupTend(:,:,iCell) &
@@ -905,18 +907,21 @@ contains
                         temperatureShortWaveTendency(:,iCell) = tracerGroupTend(indexTemperature,:,iCell)
                      end do
                      !$omp end do
+                     !$omp end parallel
                   endif
 
                   call ocn_tracer_short_wave_absorption_tend(meshPool, swForcingPool, forcingPool, indexTemperature, &
                            layerThickness, penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL, tracerGroupTend, err)
 
                   if (config_compute_active_tracer_budgets) then
+                     !$omp parallel
                      !$omp do schedule(runtime)
                      do iCell = 1, nCells
                         temperatureShortWaveTendency(:,iCell) = tracerGroupTend(indexTemperature,:,iCell) - &
                                         temperatureShortWaveTendency(:,iCell)
                      end do
                      !$omp end do
+                     !$omp end parallel
                   endif
                endif
 
@@ -929,19 +934,23 @@ contains
                   if (.not. config_cvmix_kpp_nonlocal_with_implicit_mix) then
                      if( trim(groupItr % memberName) == 'activeTracers' ) then
                         if (config_compute_active_tracer_budgets) then
+                           !$omp parallel
                            !$omp do schedule(runtime)
                            do iCell = 1, nCells
                               activeTracerNonLocalTendency(:,:,iCell) = tracerGroupTend(:,:,iCell)
                            end do
                            !$omp end do
+                           !$omp end parallel
                         endif
                         call ocn_tracer_nonlocalflux_tend(meshPool, vertNonLocalFlux, nonLocalSurfaceTracerFlux, tracerGroupTend, err)
                         if (config_compute_active_tracer_budgets) then
+                           !$omp parallel
                            !$omp do schedule(runtime)
                            do iCell = 1, nCells
                               activeTracerNonLocalTendency(:,:,iCell) = tracerGroupTend(:,:,iCell)-activeTracerNonLocalTendency(:,:,iCell)
                            end do
                            !$omp end do
+                           !$omp end parallel
                         endif
                      else
                         call ocn_tracer_nonlocalflux_tend(meshPool, vertNonLocalFlux, tracerGroupSurfaceFlux, tracerGroupTend, err)
@@ -959,10 +968,7 @@ contains
          end if
       end do
 
-      !$omp barrier
-      !$omp master
       deallocate(normalThicknessFlux)
-      !$omp end master
 
       call mpas_timer_stop("ocn_tend_tracer")
 
@@ -1045,7 +1051,9 @@ contains
 
       allocate(div_hu(nVertLevels))
 
-      !$omp do schedule(runtime)
+      !$omp parallel
+      !$omp do schedule(runtime) private(div_hu_btr, invAreaCell, i, iEdge, k, flux, totalThickness) &
+      !$omp firstprivate(div_hu)
       do iCell = 1, nCells
         tend_lowFreqDivergence(:, iCell) = 0.0_RKIND
         tend_highFreqThickness(:, iCell) = 0.0_RKIND
@@ -1078,6 +1086,7 @@ contains
         end do
       end do
       !$omp end do
+      !$omp end parallel
 
       deallocate(div_hu)
 

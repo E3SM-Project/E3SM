@@ -58,17 +58,6 @@ module ocn_tracer_hmix_del4
 
    real (kind=RKIND) :: eddyDiff4
 
-   !--------------------------------------------------------------------
-   !
-   ! Replace calls to mpas_allocate_scratch_Field with straight allocates.
-   ! These variables were moved from the subroutines, but will be moved back once the
-   ! threading implementation is changed to more localized threading
-   !
-   !--------------------------------------------------------------------
-
-   ! subroutine ocn_vel_hmix_del4_tensor_tend
-   real (kind=RKIND), dimension(:,:,:), allocatable :: delsq_tracer
-
 !***********************************************************************
 
 contains
@@ -138,6 +127,8 @@ contains
 
       real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell, meshScalingDel4
 
+      ! Scratch Arrays
+      real (kind=RKIND), dimension(:,:,:), allocatable :: delsq_tracer
 
       !-----------------------------------------------------------------
       !
@@ -173,15 +164,13 @@ contains
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
 
-      !$omp master
       allocate(delsq_tracer(num_tracers, nVertLevels, nCells))
-      !$omp end master
-      !$omp barrier
 
       ! Need 1 halo around owned cells
       nCells = nCellsArray( 2 )
 
       ! first del2: div(h \nabla \phi) at cell center
+      !$omp parallel
       !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, invdcEdge, cell1, cell2, k, iTracer, r_tmp1, r_tmp2)
       do iCell = 1, nCells
         delsq_tracer(:, :, iCell) = 0.0_RKIND
@@ -205,11 +194,13 @@ contains
         end do
       end do
       !$omp end do
+      !$omp end parallel
 
       ! Only need tendency on owned cells
       nCells = nCellsArray( 1 )
 
       ! second del2: div(h \nabla [delsq_tracer]) at cell center
+      !$omp parallel
       !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, cell1, cell2, invdcEdge, k, iTracer, tracer_turb_flux, flux)
       do iCell = 1, nCells
         invAreaCell1 = 1.0_RKIND / areaCell(iCell)
@@ -232,11 +223,9 @@ contains
         end do
       end do
       !$omp end do
+      !$omp end parallel
 
-      !$omp barrier
-      !$omp master
       deallocate(delsq_tracer)
-      !$omp end master
 
       call mpas_timer_stop("tracer del4")
 
