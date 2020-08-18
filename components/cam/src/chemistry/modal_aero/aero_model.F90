@@ -2963,7 +2963,9 @@ do_lphase2_conditional: &
 
           ! in the MMF NaN's were occurring here but the root cause was not
           ! identified, so this check was added to work around the issue
-          if ( ieee_is_nan(vlc_grv(i,k)) ) vlc_grv(i,k) = 0.0_r8 
+          if (use_MMF) then
+             if ( ieee_is_nan(vlc_grv(i,k)) ) vlc_grv(i,k) = 0.0_r8 
+          end if
 
           vlc_dry(i,k)=vlc_grv(i,k)
        enddo
