@@ -609,7 +609,10 @@ contains
   end subroutine test_timestep_make_parameters_consistent
 
 
+!call thisroutine after timestep_make_... routines
   subroutine control_params_init
+    use time_mod, only : nsplit, tstep, dt_remap, dt_tracer, dt_hv, dt_forcing, dt_run_sub 
+    use parallel_mod, only: abortmp
 #ifdef MODEL_THETA_L
     if (dt_remap_factor==0) then
        adjust_ps=.true.   ! stay on reference levels for Eulerian case
@@ -620,7 +623,27 @@ contains
     adjust_ps=.true.      ! preqx requires forcing to stay on reference levels
 #endif
 
-  print *, 'OG in control_params_init', adjust_ps
+    !check that dt_remap_factor, etc. were set
+    if(dt_remap_factor /= -1) then
+      dt_hv = tstep !dt_hv = dyn. dt
+
+      dt_remap = tstep*dt_remap_factor
+      dt_tracer = tstep*dt_tracer_factor
+
+      dt_run_sub = tstep*max(dt_remap_factor,dt_tracer_factor)
+
+      if(ftype == 1 .or. ftype == 0) dt_forcing = nsplit*dt_run_sub
+      if(ftype == 4) dt_forcing = tstep
+
+      if(ftype == 2) then
+        if (dt_remap_factor > 0)  dt_forcing = tstep*dt_remap_factor
+        if (dt_remap_factor == 0) dt_forcing = tstep
+      endif
+
+    else
+      call abortmp('control_params_init should be called after factor params are set')
+    endif
+
   end subroutine control_params_init
 
 

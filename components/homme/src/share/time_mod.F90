@@ -13,6 +13,7 @@ module time_mod
   integer,public                :: ndays          ! Max number of days
   integer,public                :: nextOutputStep ! Next timestep where output will occur
   real (kind=real_kind), public :: tstep          ! Dynamics timestep
+  real (kind=real_kind), public :: dt_remap, dt_tracer, dt_hv, dt_forcing, dt_run_sub  ! other timesteps
 
   real (kind=real_kind), public, parameter :: secphr = 3600.0D0 ! Timestep filter
   real (kind=real_kind), public, parameter :: secpday = 86400.0D0 ! Timestep filter
