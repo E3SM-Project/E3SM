@@ -144,6 +144,7 @@ contains
       !
       if (configALEthicknessProportionality==1) then ! restingThickness_times_weights
 
+         !$omp parallel
          !$omp do schedule(runtime) private(kMax, thicknessSum, k)
          do iCell = 1, nCells
             kMax = maxLevelCell(iCell)
@@ -162,8 +163,10 @@ contains
             end do
          enddo
          !$omp end do
+         !$omp end parallel
    
          elseif (configALEthicknessProportionality==2) then ! weights_only
+         !$omp parallel
          !$omp do schedule(runtime) private(kMax, weightSum, k)
          do iCell = 1, nCells
             kMax = maxLevelCell(iCell)
@@ -184,9 +187,11 @@ contains
             end do
          enddo
          !$omp end do
+         !$omp end parallel
       endif
 
       if (thicknessFilterActive) then
+         !$omp parallel
          !$omp do schedule(runtime) private(kMax)
          do iCell = 1, nCells
             kMax = maxLevelCell(iCell)
@@ -196,6 +201,7 @@ contains
               + newHighFreqThickness(1:kMax,iCell)
          enddo
          !$omp end do
+         !$omp end parallel
       end if
 
       !
@@ -203,7 +209,10 @@ contains
       !
       if (config_use_min_max_thickness) then
 
-         !$omp do schedule(runtime) private(kMax, remainder, k, newThickness)
+         !$omp parallel
+         !$omp do schedule(runtime) &
+         !$omp private(kMax, prelim_ALE_Thickness, remainder, k, newThickness, &
+         !$omp         min_ALE_thickness_down, min_ALE_thickness_up)
          do iCell = 1, nCells
             kMax = maxLevelCell(iCell)
 
@@ -235,6 +244,7 @@ contains
 
          enddo
          !$omp end do
+         !$omp end parallel
 
       endif ! config_use_min_max_thickness
 

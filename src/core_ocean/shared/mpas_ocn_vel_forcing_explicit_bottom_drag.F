@@ -130,6 +130,7 @@ contains
 
       nEdges = nEdgesArray( 1 )
 
+      !$omp parallel
       !$omp do schedule(runtime) private(k, cell1, cell2)
       do iEdge = 1, nEdges
         cell1 = cellsOnEdge(1,iEdge)
@@ -148,6 +149,7 @@ contains
 
       enddo
       !$omp end do
+      !$omp end parallel
 
       call mpas_timer_stop('vel explicit bottom drag')
 

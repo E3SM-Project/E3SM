@@ -183,6 +183,7 @@ contains
       nCells = nCellsArray( 2 )
 
       ! Build surface fluxes at cell centers
+      !$omp parallel
       !$omp do schedule(runtime) private(k)
       do iCell = 1, nCells
         do k = 1, maxLevelCell(iCell)
@@ -190,6 +191,7 @@ contains
         end do
       end do
       !$omp end do
+      !$omp end parallel
 
       call mpas_timer_stop("frazil thickness tendency")
 
@@ -266,6 +268,7 @@ contains
       nCells = nCellsArray( 2 )
 
       ! add to surface fluxes at cell centers
+      !$omp parallel
       !$omp do schedule(runtime) private(k)
       do iCell = 1, nCells
         do k = 1, maxLevelCell(iCell)
@@ -275,6 +278,7 @@ contains
         end do
       end do
       !$omp end do
+      !$omp end parallel
 
    end subroutine ocn_frazil_forcing_active_tracers!}}}
 
@@ -427,7 +431,13 @@ contains
       nCells = nCellsArray( 2 )
 
       ! loop over all columns
-      !$omp do schedule(runtime)
+      !$omp parallel
+      !$omp do schedule(runtime) &
+      !$omp private(underLandIce, kBottomFrazil, columnTemperatureMin, k, sumNewFrazilIceThickness, &
+      !$omp         sumNewThicknessWeightedSaltContent, oceanFreezingTemperature, potential, &
+      !$omp         freezingEnergy, meltingEnergy, frazilSalinity, newFrazilIceThickness, &
+      !$omp         newThicknessWeightedSaltContent, meltedFrazilIceThickness, &
+      !$omp         meltedThicknessWeightedSaltContent)
       do iCell=1,nCells
 
         underLandIce = .false.
@@ -583,13 +593,16 @@ contains
 
       enddo   ! do iCell = 1, nCells
       !$omp end do
+      !$omp end parallel
 
       if ( config_frazil_use_surface_pressure ) then
+        !$omp parallel
         !$omp do schedule(runtime)
         do iCell = 1, nCells
            frazilSurfacePressure(iCell) = accumulatedFrazilIceMassNew(iCell) * gravity
         end do
         !$omp end do
+        !$omp end parallel
       end if
 
       call mpas_timer_stop("frazil")

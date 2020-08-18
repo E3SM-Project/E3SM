@@ -52,19 +52,6 @@ module ocn_effective_density_in_land_ice
    !
    !--------------------------------------------------------------------
 
-   !--------------------------------------------------------------------
-   !
-   ! Replace calls to mpas_allocate_scratch_Field with straight allocates.
-   ! These variables were moved from the subroutines, but will be moved back once the
-   ! threading implementation is changed to more localized threading
-   !
-   !--------------------------------------------------------------------
-
-   ! subroutine ocn_effective_density_in_land_ice_update
-   ! effectiveDensityScratch: effective seawater density in land ice before horizontal averaging
-   !                   units: kg m^{-3}
-   real (kind=RKIND), dimension(:), allocatable :: effectiveDensityScratch
-
 !***********************************************************************
 
 contains
@@ -131,6 +118,11 @@ contains
 
       integer, dimension(:), pointer :: nEdgesOnCell
 
+      ! Scratch Arrays
+      ! effectiveDensityScratch: effective seawater density in land ice before horizontal averaging
+      !                   units: kg m^{-3}
+      real (kind=RKIND), dimension(:), allocatable :: effectiveDensityScratch
+
       ierr = 0
 
       if ( (trim(config_land_ice_flux_mode) .ne. 'coupled') ) then
@@ -149,11 +141,9 @@ contains
       call mpas_pool_get_array(statePool, 'effectiveDensityInLandIce', effectiveDensityCur, 1)
       call mpas_pool_get_array(statePool, 'effectiveDensityInLandIce', effectiveDensityNew, 2)
 
-      !$omp master
       allocate(effectiveDensityScratch(nCells))
-      !$omp end master
-      !$omp barrier
 
+      !$omp parallel
       !$omp do schedule(runtime)
       do iCell = 1, nCells
          ! TODO: should only apply to floating land ice, once wetting/drying is supported
@@ -181,11 +171,9 @@ contains
          effectiveDensityNew(iCell) = effectiveDensityNew(iCell)/weightSum
       end do
       !$omp end do
+      !$omp end parallel
 
-      !$omp barrier
-      !$omp master
       deallocate(effectiveDensityScratch)
-      !$omp end master
 
    !--------------------------------------------------------------------
 

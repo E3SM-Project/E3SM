@@ -23,7 +23,6 @@ module ocn_tracer_hmix_Redi
    use mpas_timer
    use mpas_derived_types
    use mpas_pool_routines
-   use mpas_threading
    use mpas_constants
 
    use ocn_config
@@ -169,17 +168,15 @@ contains
 
       allocate (minimumVal(nTracers))
       allocate (fluxRediZTop(nTracers, nVertLevels + 1))
-      !$omp master
       allocate (rediKappaCell(nCells))
       allocate (redi_term1(nTracers, nVertLevels, nCells))
       allocate (redi_term2(nTracers, nVertLevels, nCells))
       allocate (redi_term3(nTracers, nVertLevels, nCells))
       allocate (redi_term2_edge(nTracers, nVertLevels, nEdges))
       allocate (redi_term3_topOfCell(nTracers, nVertLevels + 1, nCells))
-      !$omp end master
-      !$omp barrier
 
       nCells = nCellsArray(2)
+      !$omp parallel
       !$omp do schedule(runtime) private(i, iEdge)
       do iCell = 1,nCells
         rediKappaCell(iCell) = 0.0_RKIND
@@ -190,14 +187,18 @@ contains
         rediKappaCell(iCell) = rediKappaCell(iCell) / areaCell(iCell)
       enddo
       !$omp end do
+      !$omp end parallel
 
       nCells = nCellsArray(1)
       nCellsP1 = nCellsArray(size(nCellsArray)) + 1
 
       ! Term 1: this is the "standard" horizontal del2 term, but with RediKappa coefficient.
       ! \kappa_2 \nabla \phi on edge
-      !$omp do schedule(runtime) private(invAreaCell, i, k, iTr, iEdge, cell1, cell2, iCellSelf, &
-      !$omp& r_tmp, coef, kappaRediEdgeVal, tracer_turb_flux, flux, flux_term2, flux_term3, dTracerDx)
+      !$omp parallel
+      !$omp do schedule(runtime) &
+      !$omp private(fluxRediZTop, invAreaCell, i, iEdge, cell1, cell2, iCellSelf, r_tmp, coef, k, &
+      !$omp         kappaRediEdgeVal, iTr, tracer_turb_flux, flux, flux_term2, flux_term3, &
+      !$omp         dTracerDx)
       do iCell = 1, nCells
          redi_term1(:, :, iCell) = 0.0_RKIND
          redi_term2(:, :, iCell) = 0.0_RKIND
@@ -344,21 +345,24 @@ contains
          end do
       end do ! iCell
       !$omp end do
-      !$omp barrier
+      !$omp end parallel
 
       !loop over cells and check for out of bounds
       if (isActiveTracer) then
          minimumVal(1) = -2.0_RKIND
          minimumVal(2:nTracers) = 0.0_RKIND
+         !$omp parallel
          !$omp do schedule(runtime)
          do iCell = 1, nCells
             rediLimiterCount(:, iCell) = 0
          end do
          !$omp end do
+         !$omp end parallel
       else
          minimumVal(:) = 0.0_RKIND
       endif
 
+      !$omp parallel
       !$omp do schedule(runtime) private(k, iTr, tempTracer, iEdge)
       do iCell = 1, nCells
          do k = 1, maxLevelCell(iCell)
@@ -383,9 +387,10 @@ contains
          end do
       end do ! iCell
       !$omp end do
-      !$omp barrier
+      !$omp end parallel
 
       !now go back and reapply all tendencies
+      !$omp parallel
       !$omp do schedule(runtime) private(invAreaCell, k, iTr, i, iEdge)
       do iCell = 1, nCells
          invAreaCell = 1.0_RKIND/areaCell(iCell)
@@ -410,18 +415,16 @@ contains
          end do
       end do ! iCell
       !$omp end do
+      !$omp end parallel
 
       deallocate (fluxRediZTop)
       deallocate (minimumVal)
-      !$omp master
       deallocate (rediKappaCell)
       deallocate (redi_term1)
       deallocate (redi_term2)
       deallocate (redi_term3)
       deallocate (redi_term2_edge)
       deallocate (redi_term3_topOfCell)
-      !$omp end master
-      !$omp barrier
 
       call mpas_timer_stop("tracer redi")
 
@@ -481,11 +484,13 @@ contains
          call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
          ! initialize Redi kappa array
          if (config_Redi_closure == 'constant') then
+            !$omp parallel
             !$omp do schedule(runtime)
             do iEdge = 1, nEdges
                RediKappa(iEdge) = config_Redi_kappa
             end do
             !$omp end do
+            !$omp end parallel
           else if (config_Redi_closure == 'data') then
             ! read RediKappa in from input
             call mpas_log_write("config_Redi_closure = 'data'. "// &
@@ -500,6 +505,7 @@ contains
          if (config_eddying_resolution_taper == 'none') then
             ! Nothing to do, as we just keep the same assignment as above.
          else if (config_eddying_resolution_taper == 'ramp') then
+            !$omp parallel
             !$omp do schedule(runtime) 
             do iEdge=1,nEdges
                if (dcEdge(iEdge) <= config_eddying_resolution_ramp_min) then
@@ -513,6 +519,7 @@ contains
                end if
             end do ! iCell
             !$omp end do
+            !$omp end parallel
          else
             call mpas_log_write('Invalid choice of config_eddying_resolution_taper.', MPAS_LOG_CRIT)
             err = 1
