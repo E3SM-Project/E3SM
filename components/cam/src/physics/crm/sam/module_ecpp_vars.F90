@@ -90,7 +90,7 @@ module module_ecpp_vars
 
   !-----------------------------------------------------------------------------
   subroutine allocate_ecpp_vars(ncrms, ndraft)
-    use openacc_utils
+    ! use openacc_utils
     implicit none
     integer, intent(in) :: ncrms
 
@@ -126,7 +126,7 @@ module module_ecpp_vars
     allocate( xkhvsum(nzm,ncrms) )
 
     allocate( wwqui_cen_sum(       nzm,  ncrms) )
-    allocate( wwqui_bnd_sum(       nzm+1,ncrms)
+    allocate( wwqui_bnd_sum(       nzm+1,ncrms) )
     allocate( wwqui_cloudy_cen_sum(nzm,  ncrms) )
     allocate( wwqui_cloudy_bnd_sum(nzm+1,ncrms) )
 
