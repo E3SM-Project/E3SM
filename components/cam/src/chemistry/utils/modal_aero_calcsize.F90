@@ -2,7 +2,7 @@ module modal_aero_calcsize
 
 !   RCE 07.04.13:  Adapted from MIRAGE2 code
 
-use shr_kind_mod,     only: r8 => shr_kind_r8
+use shr_kind_mod,     only: r8 => shr_kind_r8, cxx => SHR_KIND_CXX
 use spmd_utils,       only: masterproc
 use physconst,        only: pi, rhoh2o, gravit
 
@@ -113,7 +113,7 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
 
    ! local
    integer  :: ipair, iq, iqfrm, iqtoo
-   integer  :: jac
+   integer  :: aer_type
    integer  :: lsfrm, lstoo, lsfrma, lsfrmc, lstooa, lstooc, lunout
    integer  :: mfrm, mtoo
    integer  :: n, nacc, nait, nspec
@@ -350,8 +350,8 @@ do_adjust_if_block2: &
    do n = 1, ntot_amode
       if (mprognum_amode(n) <= 0) cycle
 
-      do jac = 1, 2
-         if (jac == 1) then
+      do aer_type = 1, 2
+         if (aer_type == 1) then
             tmpnamea = cnst_name(numptr_amode(n))
          else
             tmpnamea = cnst_name_cw(numptrcw_amode(n))
@@ -372,7 +372,7 @@ do_adjust_if_block2: &
             call add_default(fieldname, 1, ' ')
          end if
          if ( masterproc ) write(iulog,'(2a)') 'calcsize addfld - ', fieldname
-      end do   ! jac = ...
+      end do   ! aer_type = ...
 
    end do   ! n = ...
 
@@ -393,12 +393,12 @@ do_aitacc_transfer_if_block2: &
 
       do iq = 1, nspecfrm_csizxf(ipair)
 
-! jac=1 does interstitial ("_a"); jac=2 does activated ("_c");
-         do jac = 1, 2
+! aer_type=1 does interstitial ("_a"); aer_type=2 does activated ("_c");
+         do aer_type = 1, 2
 
 ! the lspecfrma_csizxf (and lspecfrmc_csizxf) are aitken species
 ! the lspectooa_csizxf (and lspectooc_csizxf) are accum  species
-            if (jac .eq. 1) then
+            if (aer_type .eq. 1) then
                lsfrm = lspecfrma_csizxf(iq,ipair)
                lstoo = lspectooa_csizxf(iq,ipair)
             else
@@ -407,7 +407,7 @@ do_aitacc_transfer_if_block2: &
             end if
             if ((lsfrm <= 0) .or. (lstoo <= 0)) cycle
 
-            if (jac .eq. 1) then
+            if (aer_type .eq. 1) then
                tmpnamea = cnst_name(lsfrm)
                tmpnameb = cnst_name(lstoo)
             else
@@ -450,7 +450,7 @@ do_aitacc_transfer_if_block2: &
             end if
             if ( masterproc ) write(iulog,'(2a)') 'calcsize addfld - ', fieldname
 
-         end do   ! jac = ...
+         end do   ! aer_type = ...
       end do   ! iq = ...
 
       end if do_aitacc_transfer_if_block2
@@ -524,14 +524,14 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
 
    real(r8), pointer :: dgncur_a(:,:,:)
 
-   integer  :: ipair, iq, nspec, imode, klev, icol
-   integer  :: jac, jsrflx, icnst, num_idx, lc
+   integer  :: ipair, iq, nspec, imode, klev, icol, idx
+   integer  :: aer_type, jsrflx, icnst, num_idx, lc
    integer  :: num_mode_idx, num_cldbrn_mode_idx, lsfrm, lstoo
    integer  :: nacc, nait, stat
 
    logical  :: dotendqqcw(pcnst)
 
-   character(len=fieldname_len)   :: tmpnamea, tmpnameb
+   character(len=fieldname_len)   :: tmpnamea, tmpnameb, name
    character(len=fieldname_len+3) :: fieldname
    real(r8), pointer :: fldcw(:,:)
    real(r8) :: deltatinv                     ! 1/deltat
@@ -584,6 +584,8 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
    !2. In compute_dry_volume, find if _c spec for radiation diags is same as _a spec
    !3. In compute_dry_volume, see if two nested do loops for _a and _c can be combined
    !4. deltat should NOT be optional
+   !5.remove unused vars
+   !6. update mmr should not happen for diagnostics, add a check!!!
 
    !-----------------------------------------------------------------------------------
    !Extract info about optional variables and initialize local variables accordingly
@@ -631,8 +633,9 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
       dqdt   => ptend%q
       dotendqqcw(:) = .false.
       dqqcwdt(:,:,:) = 0.0_r8!balli- else put NaNs here
-      qsrflx(:,:,:,:) = 0.0_r8 !balli- else put NaNs here
+
    endif
+   qsrflx(:,:,:,:) = 0.0_r8 !balli- else put NaNs here
 
    pdel     => state%pdel !balli add if for only update_mmr
    state_q  => state%q    ! only if list_idx is 0 or no list idx balli
@@ -690,11 +693,11 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
 
       ! do size adjustment based on computed dry diameter values
       call size_adjustment(top_lev, pver, ncol, lchnk, imode, dryvol_a, state_q, dryvol_c, pdel, & !input
-           do_adjust, update_mmr, do_aitacc_transfer, deltatinv, fracadj, pbuf, & !input
-           dgncur_a, dgncur_c, v2ncur_a, v2ncur_c, &!output
-           drv_a_accsv, drv_c_accsv, drv_a_aitsv, drv_c_aitsv, drv_a_sv, drv_c_sv, & !output
-           num_a_accsv, num_c_accsv, num_a_aitsv, num_c_aitsv, num_a_sv, num_c_sv, & !output
-           dotend, dotendqqcw, dqdt, dqqcwdt, qsrflx, cp_num_buf)!output
+           do_adjust, update_mmr, do_aitacc_transfer, deltatinv, fracadj, pbuf,                  & !input
+           dgncur_a, dgncur_c, v2ncur_a, v2ncur_c,                                               & !output
+           drv_a_accsv, drv_c_accsv, drv_a_aitsv, drv_c_aitsv, drv_a_sv, drv_c_sv,               & !output
+           num_a_accsv, num_c_accsv, num_a_aitsv, num_c_aitsv, num_a_sv, num_c_sv,               & !output
+           dotend, dotendqqcw, dqdt, dqqcwdt, qsrflx, cp_num_buf)                                  !output
 
    end do  ! do imode = 1, ntot_amode
 
@@ -732,95 +735,123 @@ subroutine modal_aero_calcsize_sub(state, pbuf, ptend, deltat, do_adjust_in, &
       endif
    end if  !  do_aitacc_transfer
 
-   lsfrm = -123456789   ! executable statement for debugging
+   lsfrm = -huge(lsfrm) !initialize
 
 
-   !
+   !----------------------------------------------------------------------
    ! apply tendencies to cloud-borne species MRs
-   !
+   ! Only if "update_mmr" is TRUE
+   !----------------------------------------------------------------------
    if(update_mmr) then
-      do icnst = 1, pcnst
-         lc = icnst
-         if ( lc>0 .and. dotendqqcw(lc) ) then
-            fldcw=> qqcw_get_field(pbuf,icnst,lchnk)
-            do klev = top_lev, pver
-               do icol = 1, ncol
-                  fldcw(icol,klev) = max( 0.0_r8,   &
-                       (fldcw(icol,klev) + dqqcwdt(icol,klev,lc)*deltat) )
-               end do
-            end do
-         end if
-      end do
+      call update_cld_brn_mmr(top_lev, pver, ncol, lchnk, pcnst, deltat, pbuf, dotendqqcw, dqqcwdt)
 
-      !
+      !----------------------------------------------------------------------
       ! do outfld calls
-      !
+      !----------------------------------------------------------------------
 
       ! history fields for number-adjust source-sink for all modes
-      if ( .not. do_adjust ) return
+      if ( .not. do_adjust ) return ! return if adjustment not required
 
       do imode = 1, ntot_amode
          if (mprognum_amode(imode) <= 0) cycle
 
-         do jac = 1, 2
-            if (jac == 1) then
-               num_idx = numptr_amode(imode)
-               tmpnamea = cnst_name(num_idx)
-            else
-               num_idx = numptrcw_amode(imode)
-               tmpnamea = cnst_name_cw(num_idx)
-            end if
-            fieldname = trim(tmpnamea) // '_sfcsiz1'
-            call outfld( fieldname, qsrflx(:,num_idx,1,jac), pcols, lchnk)
+         !interstitial
+         aer_type  = 1
+         idx  = numptr_amode(imode)
+         name = cnst_name(idx)
+         call output_flds(name, idx, lchnk, aer_type, qsrflx)
 
-            fieldname = trim(tmpnamea) // '_sfcsiz2'
-            call outfld( fieldname, qsrflx(:,num_idx,2,jac), pcols, lchnk)
-         end do   ! jac = ...
-
-      end do   ! imode = ...
-
+         !cloud borne
+         aer_type = 2
+         idx = numptrcw_amode(imode)
+         name = cnst_name_cw(idx)
+         call output_flds(name, idx, lchnk, aer_type, qsrflx)
+      end do   ! imode
 
       ! history fields for aitken-accum transfer
-      if ( .not. do_aitacc_transfer ) return
+      if ( .not. do_aitacc_transfer ) return ! return if transfer of species not required
+
 
       do iq = 1, nspecfrm_csizxf(ipair)
 
-         ! jac=1 does interstitial ("_a"); jac=2 does activated ("_c");
-         do jac = 1, 2
+         ! aer_type=1 does interstitial ("_a"); aer_type=2 does activated ("_c");
+
+         aer_type = 1
+         lsfrm = lspecfrma_csizxf(iq,ipair)
+         lstoo = lspectooa_csizxf(iq,ipair)
+
+         if ((lsfrm > 0) .and. (lstoo > 0)) then
+            tmpnamea = cnst_name(lsfrm)
+            tmpnameb = cnst_name(lstoo)
+            fieldname = trim(tmpnamea) // '_sfcsiz3'
+            call outfld( fieldname, qsrflx(:,lsfrm,3,aer_type), pcols, lchnk)
+
+            fieldname = trim(tmpnameb) // '_sfcsiz3'
+            call outfld( fieldname, qsrflx(:,lstoo,3,aer_type), pcols, lchnk)
+
+            fieldname = trim(tmpnamea) // '_sfcsiz4'
+            call outfld( fieldname, qsrflx(:,lsfrm,4,aer_type), pcols, lchnk)
+
+            fieldname = trim(tmpnameb) // '_sfcsiz4'
+            call outfld( fieldname, qsrflx(:,lstoo,4,aer_type), pcols, lchnk)
+         endif
+
+         aer_type = 2
+         lsfrm = lspecfrmc_csizxf(iq,ipair)
+         lstoo = lspectooc_csizxf(iq,ipair)
+         if ((lsfrm > 0) .and. (lstoo > 0)) then
+            tmpnamea = cnst_name_cw(lsfrm)
+            tmpnameb = cnst_name_cw(lstoo)
+
+            fieldname = trim(tmpnamea) // '_sfcsiz3'
+            call outfld( fieldname, qsrflx(:,lsfrm,3,aer_type), pcols, lchnk)
+
+            fieldname = trim(tmpnameb) // '_sfcsiz3'
+            call outfld( fieldname, qsrflx(:,lstoo,3,aer_type), pcols, lchnk)
+
+            fieldname = trim(tmpnamea) // '_sfcsiz4'
+            call outfld( fieldname, qsrflx(:,lsfrm,4,aer_type), pcols, lchnk)
+
+            fieldname = trim(tmpnameb) // '_sfcsiz4'
+            call outfld( fieldname, qsrflx(:,lstoo,4,aer_type), pcols, lchnk)
+         endif
+
+
+!         do aer_type = 1, 2
 
             ! the lspecfrma_csizxf (and lspecfrmc_csizxf) are aitken species
             ! the lspectooa_csizxf (and lspectooc_csizxf) are accum  species
-            if (jac .eq. 1) then
-               lsfrm = lspecfrma_csizxf(iq,ipair)
-               lstoo = lspectooa_csizxf(iq,ipair)
-            else
-               lsfrm = lspecfrmc_csizxf(iq,ipair)
-               lstoo = lspectooc_csizxf(iq,ipair)
-            end if
-            if ((lsfrm <= 0) .or. (lstoo <= 0)) cycle
+!            if (aer_type .eq. 1) then
+!               lsfrm = lspecfrma_csizxf(iq,ipair)
+!               lstoo = lspectooa_csizxf(iq,ipair)
+!            else
+!               lsfrm = lspecfrmc_csizxf(iq,ipair)
+!               lstoo = lspectooc_csizxf(iq,ipair)
+!            end if
+!            if ((lsfrm <= 0) .or. (lstoo <= 0)) cycle
 
-            if (jac .eq. 1) then
-               tmpnamea = cnst_name(lsfrm)
-               tmpnameb = cnst_name(lstoo)
-            else
-               tmpnamea = cnst_name_cw(lsfrm)
-               tmpnameb = cnst_name_cw(lstoo)
-            end if
-            if ((lsfrm <= 0) .or. (lstoo <= 0)) cycle
+!            if (aer_type .eq. 1) then
+!               tmpnamea = cnst_name(lsfrm)
+!               tmpnameb = cnst_name(lstoo)
+!            else
+!               tmpnamea = cnst_name_cw(lsfrm)
+!               tmpnameb = cnst_name_cw(lstoo)
+!            end if
+!            if ((lsfrm <= 0) .or. (lstoo <= 0)) cycle
 
-            fieldname = trim(tmpnamea) // '_sfcsiz3'
-            call outfld( fieldname, qsrflx(:,lsfrm,3,jac), pcols, lchnk)
+!            fieldname = trim(tmpnamea) // '_sfcsiz3'
+!            call outfld( fieldname, qsrflx(:,lsfrm,3,aer_type), pcols, lchnk)
 
-            fieldname = trim(tmpnameb) // '_sfcsiz3'
-            call outfld( fieldname, qsrflx(:,lstoo,3,jac), pcols, lchnk)
+!            fieldname = trim(tmpnameb) // '_sfcsiz3'
+!            call outfld( fieldname, qsrflx(:,lstoo,3,aer_type), pcols, lchnk)
 
-            fieldname = trim(tmpnamea) // '_sfcsiz4'
-            call outfld( fieldname, qsrflx(:,lsfrm,4,jac), pcols, lchnk)
+!            fieldname = trim(tmpnamea) // '_sfcsiz4'
+!            call outfld( fieldname, qsrflx(:,lsfrm,4,aer_type), pcols, lchnk)
 
-            fieldname = trim(tmpnameb) // '_sfcsiz4'
-            call outfld( fieldname, qsrflx(:,lstoo,4,jac), pcols, lchnk)
+!            fieldname = trim(tmpnameb) // '_sfcsiz4'
+!            call outfld( fieldname, qsrflx(:,lstoo,4,aer_type), pcols, lchnk)
 
-         end do   ! jac = ...
+!         end do   ! aer_type = ...
       end do   ! iq = ...
 
    endif!if(update_mmr)
@@ -925,82 +956,6 @@ subroutine compute_dry_volume(top_lev, pver, ncol, imode, nspec, state, pbuf, &
 
   return
 end subroutine compute_dry_volume
-
-
-
-subroutine diagnose_number_mmr(top_lev, pver, ncol, imode, lchnk, num_mode_idx,  &
-     num_cldbrn_mode_idx, deltatinv, dryvol_a, dryvol_c, state_q, fldcw, dotend, &
-     dotendqqcw, dqdt, dqqcwdt, cp_num_buf )
-
-  implicit none
-
-  !----------------------------------------------------------------------
-  !tendency = vol*(num to vol ratio) * mmr * dt
-  !
-  !Author: Balwinder Singh
-  !----------------------------------------------------------------------
-
-  !inputs
-  integer, intent(in)  :: top_lev, pver, ncol, lchnk, imode
-  integer, intent(in)  :: num_mode_idx, num_cldbrn_mode_idx
-
-  real(r8), intent(in) :: deltatinv
-  real(r8), intent(in) :: dryvol_a(:,:), dryvol_c(:,:)
-  real(r8), intent(in) :: state_q(:,:,:)
-  real(r8), intent(in) :: fldcw(:,:)
-
-  !TO BE REMOVED
-  real(r8), intent(in), optional :: cp_num_buf(:,:,:)
-  !^^TO BE REMOVED
-
-  !output
-  logical,  intent(inout)  :: dotend(:), dotendqqcw(:)
-  real(r8), intent(inout) :: dqdt(:,:,:)
-  real(r8), intent(inout) :: dqqcwdt(:,:,:)
-
-  !local vars
-  integer  :: klev, icol
-
-  !update tendency for interstitial species
-  if (num_mode_idx > 0) then
-     dotend(num_mode_idx) = .true. !update tendency
-     do klev=top_lev,pver
-        do icol=1,ncol
-           dqdt(icol,klev,num_mode_idx) = (dryvol_a(icol,klev)*voltonumb_amode(imode)   &
-                - state_q(icol,klev,num_mode_idx)) * deltatinv
-        end do
-     end do
-  end if
-
-  !update tendency for cloud borne species
-  if (num_cldbrn_mode_idx > 0) then
-
-     dotendqqcw(num_cldbrn_mode_idx) = .true.
-
-     !TO BE REMOVED
-     if(present(cp_num_buf)) then
-        do klev=top_lev,pver
-           do icol=1,ncol
-              dqqcwdt(icol,klev,num_cldbrn_mode_idx) = (dryvol_c(icol,klev)*voltonumb_amode(imode)   &
-                   - cp_num_buf(icol,klev,imode)) * deltatinv
-           end do
-        end do
-     else
-     !^^^^TO BE REMOVED
-        do klev=top_lev,pver
-           do icol=1,ncol
-              dqqcwdt(icol,klev,num_cldbrn_mode_idx) = (dryvol_c(icol,klev)*voltonumb_amode(imode)   &
-                   - fldcw(icol,klev)) * deltatinv
-           end do
-        end do
-
-     endif
-  end if
-
-  return
-
-end subroutine diagnose_number_mmr
-
 
 subroutine size_adjustment(top_lev, pver, ncol, lchnk, imode, dryvol_a, state_q, dryvol_c, pdel, &
      do_adjust, update_mmr, do_aitacc_transfer, deltatinv, fracadj, pbuf, &
@@ -1121,21 +1076,21 @@ subroutine size_adjustment(top_lev, pver, ncol, lchnk, imode, dryvol_a, state_q,
         ! now compute current dgn and v2n
         !
         if(update_mmr) then
-           call update_dgn_voltonum(icol, klev, imode, num_mode_idx, gravit, cmn_factor, drv_a, num_a, &
+           call update_dgn_voltonum(icol, klev, imode, num_mode_idx, 1, gravit, cmn_factor, drv_a, num_a, &
                 v2nxx, v2nyy, dgnxx, dgnyy, pdel, &
                 dgncur_a, v2ncur_a, qsrflx, dqdt)
 
            !for cloud borne aerosols
-           call update_dgn_voltonum(icol, klev, imode, num_cldbrn_mode_idx, gravit, cmn_factor, drv_c, num_c, &
+           call update_dgn_voltonum(icol, klev, imode, num_cldbrn_mode_idx, 2, gravit, cmn_factor, drv_c, num_c, &
                 v2nxx, v2nyy, dgnumhi_amode(imode), dgnumlo_amode(imode), pdel, &
                 dgncur_c, v2ncur_c, qsrflx, dqqcwdt)
         else
-           call update_dgn_voltonum(icol, klev, imode, num_mode_idx, gravit, cmn_factor, drv_a, num_a, &
+           call update_dgn_voltonum(icol, klev, imode, num_mode_idx, 1, gravit, cmn_factor, drv_a, num_a, &
                 v2nxx, v2nyy, dgnxx, dgnyy, pdel, &
                 dgncur_a, v2ncur_a)
 
            !for cloud borne aerosols
-           call update_dgn_voltonum(icol, klev, imode, num_cldbrn_mode_idx, gravit, cmn_factor, drv_c, num_c, &
+           call update_dgn_voltonum(icol, klev, imode, num_cldbrn_mode_idx, 2, gravit, cmn_factor, drv_c, num_c, &
                 v2nxx, v2nyy, dgnumhi_amode(imode), dgnumlo_amode(imode), pdel, &
                 dgncur_c, v2ncur_c)
         endif
@@ -1346,14 +1301,14 @@ subroutine adjust_num_sizes(icol, klev, num_mode_idx, num_cldbrn_mode_idx, &
 end subroutine adjust_num_sizes
 
 
-subroutine update_dgn_voltonum(icol, klev, imode, num_idx, gravit, cmn_factor, drv, num, &
+subroutine update_dgn_voltonum(icol, klev, imode, num_idx, aer_type, gravit, cmn_factor, drv, num, &
      v2nxx, v2nyy, dgnxx, dgnyy, pdel, &
      dgncur, v2ncur, qsrflx, dqdt)
 
   implicit none
 
   !inputs
-  integer,  intent(in) :: icol, klev, imode, num_idx
+  integer,  intent(in) :: icol, klev, imode, num_idx, aer_type
   real(r8), intent(in) :: gravit, cmn_factor
   real(r8), intent(in) :: drv, num
   real(r8), intent(in) :: v2nxx, v2nyy, dgnxx, dgnyy
@@ -1364,8 +1319,8 @@ subroutine update_dgn_voltonum(icol, klev, imode, num_idx, gravit, cmn_factor, d
   real(r8), intent(inout), optional :: qsrflx(:,:,:,:)
 
   !local
-  logical :: update_mmr
-  integer :: pdel_fac
+  logical  :: update_mmr
+  real(r8) :: pdel_fac
 
   update_mmr = .false.
   if(present(qsrflx) .and. present(dqdt)) update_mmr = .true.
@@ -1384,8 +1339,8 @@ subroutine update_dgn_voltonum(icol, klev, imode, num_idx, gravit, cmn_factor, d
   end if
   if (update_mmr) then
      pdel_fac = pdel(icol,klev)/gravit   ! = rho*dz
-     qsrflx(icol,num_idx,1,1) = qsrflx(icol,num_idx,1,1) + max(0.0_r8,dqdt(icol,klev,num_idx))*pdel_fac
-     qsrflx(icol,num_idx,2,1) = qsrflx(icol,num_idx,2,1) + min(0.0_r8,dqdt(icol,klev,num_idx))*pdel_fac
+     qsrflx(icol,num_idx,1,aer_type) = qsrflx(icol,num_idx,1,aer_type) + max(0.0_r8,dqdt(icol,klev,num_idx))*pdel_fac
+     qsrflx(icol,num_idx,2,aer_type) = qsrflx(icol,num_idx,2,aer_type) + min(0.0_r8,dqdt(icol,klev,num_idx))*pdel_fac
   endif
 
 end subroutine update_dgn_voltonum
@@ -1430,7 +1385,7 @@ subroutine  aitken_accum_exchange(ncol, lchnk, tadjinv, &
   integer,  intent(out)   :: ipair
 
   !local
-  integer  :: imode, jmode, jac, jsrflx, icol, klev, iq
+  integer  :: imode, jmode, aer_type, jsrflx, icol, klev, iq
   integer  :: lsfrm, lstoo, ispec, idx, n_use, m_use, nb, mb
   integer  :: ixfer_ait2acc, ixfer_acc2ait
   integer  :: nait, nacc
@@ -1693,9 +1648,9 @@ subroutine  aitken_accum_exchange(ncol, lchnk, tadjinv, &
               if (idiagaa > 0) then
                  do jmode = 1, 2
                     do iq = 1, nspecfrm_csizxf(ipair)
-                       do jac = 1, 2
+                       do aer_type = 1, 2
                           if (jmode .eq. 1) then
-                             if (jac .eq. 1) then
+                             if (aer_type .eq. 1) then
                                 lsfrm = lspecfrma_csizxf(iq,ipair)
                                 lstoo = lspectooa_csizxf(iq,ipair)
                              else
@@ -1703,7 +1658,7 @@ subroutine  aitken_accum_exchange(ncol, lchnk, tadjinv, &
                                 lstoo = lspectooc_csizxf(iq,ipair)
                              end if
                           else
-                             if (jac .eq. 1) then
+                             if (aer_type .eq. 1) then
                                 lsfrm = lspectooa_csizxf(iq,ipair)
                                 lstoo = lspecfrma_csizxf(iq,ipair)
                              else
@@ -1711,8 +1666,8 @@ subroutine  aitken_accum_exchange(ncol, lchnk, tadjinv, &
                                 lstoo = lspecfrmc_csizxf(iq,ipair)
                              end if
                           end if
-                          write( iulog, '(a,3i3,2i4)' ) 'calcsize jmode,iq,jac, lsfrm,lstoo',   &
-                               jmode,iq,jac, lsfrm,lstoo
+                          write( iulog, '(a,3i3,2i4)' ) 'calcsize jmode,iq,aer_type, lsfrm,lstoo',   &
+                               jmode,iq,aer_type, lsfrm,lstoo
                        end do
                     end do
                  end do
@@ -1736,15 +1691,15 @@ subroutine  aitken_accum_exchange(ncol, lchnk, tadjinv, &
 
                  do  iq = 1, nspecfrm_csizxf(ipair)
 
-                    ! jac=1 does interstitial ("_a"); jac=2 does activated ("_c");
-                    do  jac = 1, 2
+                    ! aer_type=1 does interstitial ("_a"); aer_type=2 does activated ("_c");
+                    do  aer_type = 1, 2
 
                        ! the lspecfrma_csizxf (and lspecfrmc_csizxf) are aitken species
                        ! the lspectooa_csizxf (and lspectooc_csizxf) are accum  species
                        ! for jmode=1, want lsfrm=aitken species, lstoo=accum  species
                        ! for jmode=2, want lsfrm=accum  species,  lstoo=aitken species
                        if (jmode .eq. 1) then
-                          if (jac .eq. 1) then
+                          if (aer_type .eq. 1) then
                              lsfrm = lspecfrma_csizxf(iq,ipair)
                              lstoo = lspectooa_csizxf(iq,ipair)
                           else
@@ -1752,7 +1707,7 @@ subroutine  aitken_accum_exchange(ncol, lchnk, tadjinv, &
                              lstoo = lspectooc_csizxf(iq,ipair)
                           end if
                        else
-                          if (jac .eq. 1) then
+                          if (aer_type .eq. 1) then
                              lsfrm = lspectooa_csizxf(iq,ipair)
                              lstoo = lspecfrma_csizxf(iq,ipair)
                           else
@@ -1762,9 +1717,9 @@ subroutine  aitken_accum_exchange(ncol, lchnk, tadjinv, &
                        end if
 
                        if ((lsfrm > 0) .and. (lstoo > 0)) then
-                          if (jac .eq. 1) then
+                          if (aer_type .eq. 1) then
                              if (iq .eq. 1) then
-                                xfertend = xfertend_num(jmode,jac)
+                                xfertend = xfertend_num(jmode,aer_type)
                              else
                                 xfertend = max(0.0_r8,state_q(icol,klev,lsfrm))*xfercoef
                              end if
@@ -1772,7 +1727,7 @@ subroutine  aitken_accum_exchange(ncol, lchnk, tadjinv, &
                              if(update_mmr)dqdt(icol,klev,lstoo) = dqdt(icol,klev,lstoo) + xfertend
                           else
                              if (iq .eq. 1) then
-                                xfertend = xfertend_num(jmode,jac)
+                                xfertend = xfertend_num(jmode,aer_type)
                              else
                                 fldcw => qqcw_get_field(pbuf,lsfrm,lchnk)
                                 if(present(cp_buf)) then
@@ -1794,8 +1749,8 @@ subroutine  aitken_accum_exchange(ncol, lchnk, tadjinv, &
                              dqqcwdt(icol,klev,lsfrm) = dqqcwdt(icol,klev,lsfrm) - xfertend
                              dqqcwdt(icol,klev,lstoo) = dqqcwdt(icol,klev,lstoo) + xfertend
                           end if
-                          qsrflx(icol,lsfrm,jsrflx,jac) = qsrflx(icol,lsfrm,jsrflx,jac) - xfertend*pdel_fac
-                          qsrflx(icol,lstoo,jsrflx,jac) = qsrflx(icol,lstoo,jsrflx,jac) + xfertend*pdel_fac
+                          qsrflx(icol,lsfrm,jsrflx,aer_type) = qsrflx(icol,lsfrm,jsrflx,aer_type) - xfertend*pdel_fac
+                          qsrflx(icol,lstoo,jsrflx,aer_type) = qsrflx(icol,lstoo,jsrflx,aer_type) + xfertend*pdel_fac
                        end if
 
                     end do
@@ -1809,6 +1764,63 @@ subroutine  aitken_accum_exchange(ncol, lchnk, tadjinv, &
 
   return
 end subroutine aitken_accum_exchange
+
+subroutine update_cld_brn_mmr(top_lev, pver, ncol, lchnk, pcnst, deltat, pbuf, dotendqqcw, dqqcwdt)
+
+  !input
+  integer,  intent(in) :: top_lev, pver !for model level loop
+  integer,  intent(in) :: ncol          !# of columns
+  integer,  intent(in) :: lchnk
+  integer,  intent(in) :: pcnst         !# of constituents
+  real(r8), intent(in) :: deltat        !time step
+
+  logical,  intent(in) :: dotendqqcw(:)
+
+  type(physics_buffer_desc), pointer :: pbuf(:)     ! physics buffer
+
+  !output
+  real(r8), intent(inout) :: dqqcwdt(:,:,:)
+
+  !local
+  integer :: icnst, lc, klev, icol
+  real(r8), pointer :: fldcw(:,:)    !specie mmr (cloud borne)
+
+  do icnst = 1, pcnst
+     lc = icnst
+     if ( lc>0 .and. dotendqqcw(lc) ) then
+        fldcw=> qqcw_get_field(pbuf,icnst,lchnk)
+        do klev = top_lev, pver
+           do icol = 1, ncol
+              fldcw(icol,klev) = max( 0.0_r8, (fldcw(icol,klev) + dqqcwdt(icol,klev,lc)*deltat) )
+           end do
+        end do
+     end if
+  end do
+
+end subroutine update_cld_brn_mmr
+
+
+subroutine output_flds(name, idx, lchnk, aer_type, qsrflx)
+
+  implicit none
+
+  !inputs
+  character(len=*), intent(in) :: name
+
+  integer,  intent(in) :: idx, lchnk, aer_type
+  real(r8), intent(in) :: qsrflx(:,:,:,:)
+
+  !local
+  character(len=fieldname_len) :: fieldname
+
+  fieldname = trim(name) // '_sfcsiz1'
+  call outfld( fieldname, qsrflx(:,idx,1,aer_type), pcols, lchnk)
+
+  fieldname = trim(name) // '_sfcsiz2'
+  call outfld( fieldname, qsrflx(:,idx,2,aer_type), pcols, lchnk)
+
+  return
+end subroutine output_flds
 
 !----------------------------------------------------------------------
 
