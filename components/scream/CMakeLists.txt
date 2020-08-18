@@ -172,6 +172,7 @@ set (YAMLCPP_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/yaml-cpp)
 set (SCREAM_DISABLE_TPL_WARNINGS ON CACHE BOOL "")
 
 include(Ekat)
+set (EKAT_ENABLE_TESTS OFF CACHE BOOL "Whether to build EKAT's tests. Off by default.")
 buildEkat(${EKAT_SOURCE_DIR} PREFIX "SCREAM")
 
 # Init scream TPLs info to whatever EKAT set.
