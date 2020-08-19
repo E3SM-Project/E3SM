@@ -24,11 +24,11 @@ void diffuse_scalar2D(real4d &field, real3d &fluxb, real3d &fluxt, real5d &tkh,
     real4d dfdt("dfdt", nzm, ny, nx, ncrms);
 
     // for (int k=0; k<nzm; k++) {
-		//  for (int i=0; i<nx; i++) {
-		//    for (int icrm=0; icrm<ncrms; icrm++) {
+    //  for (int i=0; i<nx; i++) {
+    //    for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       dfdt(k,j,i,icrm)=0.0;
-	  });
+    });
 
     if (!docolumn) {
       // for (int k=0; k<nzm; k++) {
@@ -39,7 +39,7 @@ void diffuse_scalar2D(real4d &field, real3d &fluxb, real3d &fluxt, real5d &tkh,
         int ic=i+1;
         real tkx=rdx5*(tkh(ind_tkh,k,j,i+offx_d-1,icrm)+tkh(ind_tkh,k,j,ic+offx_d-1,icrm));
         flx(k+offz_flx,j,i,icrm)=-tkx*(field(k,j,ic+offx_s-1,icrm)-field(k,j,i+offx_s-1,icrm));
-	    });
+      });
 
       // for (int k=0; k<nzm; k++) {
       //  for (int i=0; i<nx; i++) {
@@ -47,18 +47,18 @@ void diffuse_scalar2D(real4d &field, real3d &fluxb, real3d &fluxt, real5d &tkh,
       parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
         int ib=i-1;
         dfdt(k,j,i,icrm)=dfdt(k,j,i,icrm)-(flx(k+offz_flx,j,i+offx_flx,icrm)-flx(k+offz_flx,j,ib+offx_flx,icrm));
-	    });
+      });
     }
 
     // for (int k=0; k<nzm; k++) {
-		//  for (int icrm=0; icrm<ncrms; icrm++) {
+    //  for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
       flux(k,icrm) = 0.0;
-	  });
+    });
 
     // for (int k=0; k<nzm; k++) {
-		//  for (int i=0; i<nx; i++) {
-		//    for (int icrm=0; icrm<ncrms; icrm++) {
+    //  for (int i=0; i<nx; i++) {
+    //    for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       if (k <= nzm-2) {
         int kc=k+1;
@@ -75,17 +75,17 @@ void diffuse_scalar2D(real4d &field, real3d &fluxb, real3d &fluxt, real5d &tkh,
         flx(nzm-1,j,i+offx_flx,icrm)=fluxt(j,i,icrm)*rdz*tmp*rhow(nz-1,icrm);
         yakl::atomicAdd(flux(0,icrm),flx(0,j,i+offx_flx,icrm));
       }
-	  });
+    });
 
     // for (int k=0; k<nzm; k++) {
-		//     for (int i=0; i<nx; i++) {
-		//       for (int icrm=0; icrm<ncrms; icrm++) {
+    //     for (int i=0; i<nx; i++) {
+    //       for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       int kb=k-1;
       real rhoi = 1.0/(adz(k,icrm)*rho(k,icrm));
       dfdt(k,j,i,icrm)=dtn*(dfdt(k,j,i,icrm)-(flx(k+offz_flx,j,i+offx_flx,icrm)-flx(kb+offz_flx,j,i+offx_flx,icrm))*rhoi);
       field(k,j,i+offx_s,icrm)=field(k,j,i+offx_s,icrm) + dfdt(k,j,i,icrm);
-	  });
+    });
   }
 }
 
@@ -113,11 +113,11 @@ void diffuse_scalar2D(real5d &field, int ind_field, real3d &fluxb, real3d &fluxt
     real4d dfdt("dfdt", nzm, ny, nx, ncrms);
 
     // for (int k=0; k<nzm; k++) {
-		//  for (int i=0; i<nx; i++) {
-		//    for (int icrm=0; icrm<ncrms; icrm++) {
+    //  for (int i=0; i<nx; i++) {
+    //    for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       dfdt(k,j,i,icrm)=0.0;
-	  });
+    });
 
     if (!docolumn) {
       // for (int k=0; k<nzm; k++) {
@@ -128,7 +128,7 @@ void diffuse_scalar2D(real5d &field, int ind_field, real3d &fluxb, real3d &fluxt
         int ic=i+1;
         real tkx=rdx5*(tkh(ind_tkh,k,j,i+offx_d-1,icrm)+tkh(ind_tkh,k,j,ic+offx_d-1,icrm));
         flx(k+offz_flx,j,i,icrm)=-tkx*(field(ind_field,k,j,ic+offx_s-1,icrm)-field(ind_field,k,j,i+offx_s-1,icrm));
-	    });
+      });
 
       // for (int k=0; k<nzm; k++) {
       //  for (int i=0; i<nx; i++) {
@@ -136,18 +136,18 @@ void diffuse_scalar2D(real5d &field, int ind_field, real3d &fluxb, real3d &fluxt
       parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
         int ib=i-1;
         dfdt(k,j,i,icrm)=dfdt(k,j,i,icrm)-(flx(k+offz_flx,j,i+offx_flx,icrm)-flx(k+offz_flx,j,ib+offx_flx,icrm));
-	    });
+      });
     }
 
     // for (int k=0; k<nzm; k++) {
-		//  for (int icrm=0; icrm<ncrms; icrm++) {
+    //  for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
       flux(k,icrm) = 0.0;
-	  });
+    });
 
     // for (int k=0; k<nzm; k++) {
-		//  for (int i=0; i<nx; i++) {
-		//    for (int icrm=0; icrm<ncrms; icrm++) {
+    //  for (int i=0; i<nx; i++) {
+    //    for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       if (k <= nzm-2) {
         int kc=k+1;
@@ -164,17 +164,17 @@ void diffuse_scalar2D(real5d &field, int ind_field, real3d &fluxb, real3d &fluxt
         flx(nzm-1,j,i+offx_flx,icrm)=fluxt(j,i,icrm)*rdz*tmp*rhow(nz-1,icrm);
         yakl::atomicAdd(flux(0,icrm),flx(0,j,i+offx_flx,icrm));
       }
-	  });
+    });
 
     // for (int k=0; k<nzm; k++) {
-		//     for (int i=0; i<nx; i++) {
-		//       for (int icrm=0; icrm<ncrms; icrm++) {
+    //     for (int i=0; i<nx; i++) {
+    //       for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       int kb=k-1;
       real rhoi = 1.0/(adz(k,icrm)*rho(k,icrm));
       dfdt(k,j,i,icrm)=dtn*(dfdt(k,j,i,icrm)-(flx(k+offz_flx,j,i+offx_flx,icrm)-flx(kb+offz_flx,j,i+offx_flx,icrm))*rhoi);
       field(ind_field,k,j,i+offx_s,icrm)=field(ind_field,k,j,i+offx_s,icrm) + dfdt(k,j,i,icrm);
-	  });
+    });
   }
 }
 
@@ -201,11 +201,11 @@ void diffuse_scalar2D(real5d &field, int ind_field, real4d &fluxb, int ind_fluxb
     real4d dfdt("dfdt", nzm, ny, nx, ncrms);
 
     // for (int k=0; k<nzm; k++) {
-		//  for (int i=0; i<nx; i++) {
-		//    for (int icrm=0; icrm<ncrms; icrm++) {
+    //  for (int i=0; i<nx; i++) {
+    //    for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       dfdt(k,j,i,icrm)=0.0;
-	  });
+    });
 
     if (!docolumn) {
       // for (int k=0; k<nzm; k++) {
@@ -216,7 +216,7 @@ void diffuse_scalar2D(real5d &field, int ind_field, real4d &fluxb, int ind_fluxb
         int ic=i+1;
         real tkx=rdx5*(tkh(ind_tkh,k,j,i+offx_d-1,icrm)+tkh(ind_tkh,k,j,ic+offx_d-1,icrm));
         flx(k+offz_flx,j,i,icrm)=-tkx*(field(ind_field,k,j,ic+offx_s-1,icrm)-field(ind_field,k,j,i+offx_s-1,icrm));
-	    });
+      });
 
       // for (int k=0; k<nzm; k++) {
       //  for (int i=0; i<nx; i++) {
@@ -224,18 +224,18 @@ void diffuse_scalar2D(real5d &field, int ind_field, real4d &fluxb, int ind_fluxb
       parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
         int ib=i-1;
         dfdt(k,j,i,icrm)=dfdt(k,j,i,icrm)-(flx(k+offz_flx,j,i+offx_flx,icrm)-flx(k+offz_flx,j,ib+offx_flx,icrm));
-	    });
+      });
     }
 
     // for (int k=0; k<nzm; k++) {
-		//  for (int icrm=0; icrm<ncrms; icrm++) {
+    //  for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
       flux(ind_flux,k,icrm) = 0.0;
-	  });
+    });
 
     // for (int k=0; k<nzm; k++) {
-		//  for (int i=0; i<nx; i++) {
-		//    for (int icrm=0; icrm<ncrms; icrm++) {
+    //  for (int i=0; i<nx; i++) {
+    //    for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       if (k <= nzm-2) {
         int kc=k+1;
@@ -253,17 +253,17 @@ void diffuse_scalar2D(real5d &field, int ind_field, real4d &fluxb, int ind_fluxb
         flx(nzm-1,j,i+offx_flx,icrm)=fluxt(ind_fluxt,j,i,icrm)*rdz*tmp*rhow(nz-1,icrm);
         yakl::atomicAdd(flux(ind_flux,0,icrm),flx(0,j,i+offx_flx,icrm));
       }
-	  });
+    });
 
     // for (int k=0; k<nzm; k++) {
-		//     for (int i=0; i<nx; i++) {
-		//       for (int icrm=0; icrm<ncrms; icrm++) {
+    //     for (int i=0; i<nx; i++) {
+    //       for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       int kb=k-1;
       real rhoi = 1.0/(adz(k,icrm)*rho(k,icrm));
       dfdt(k,j,i,icrm)=dtn*(dfdt(k,j,i,icrm)-(flx(k+offz_flx,j,i+offx_flx,icrm)-flx(kb+offz_flx,j,i+offx_flx,icrm))*rhoi);
       field(ind_field,k,j,i+offx_s,icrm)=field(ind_field,k,j,i+offx_s,icrm) + dfdt(k,j,i,icrm);
-	  });
+    });
   }
 }
 

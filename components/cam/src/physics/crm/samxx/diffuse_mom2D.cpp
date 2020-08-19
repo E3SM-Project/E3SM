@@ -36,8 +36,8 @@ void diffuse_mom2D(real5d &tk) {
 
   if (!docolumn) {
     // for (int k=0; k<nzm; k++) {
-		//     for (int i=0; i<nx; i++) {
-		//       for (int icrm=0; icrm<ncrms; icrm++) {
+    //     for (int i=0; i<nx; i++) {
+    //       for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( Bounds<3>(nzm,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       int kc=k+1;
       int kcu=min(kc,nzm-1);
@@ -52,30 +52,30 @@ void diffuse_mom2D(real5d &tk) {
             tk(0,kcu,j+offy_d,i-1+offx_d,icrm)+tk(0,kcu,j+offy_d,ic-1+offx_d,icrm));
       fw(k,j,i,icrm) = -tkx*(w(kc,j+offy_w,ic-1+offx_w,icrm)-w(kc,j+offy_w,i-1+offx_w,icrm)+
                        (u(kcu,j+offy_u,ic-1+offx_u,icrm)-u(k,j+offy_u,ic-1+offx_u,icrm))*dxz);
-	  });
+    });
 
     // for (int k=0; k<nzm; k++) {
-		//  for (int i=0; i<nx; i++) {
-		//    for (int icrm=0; icrm<ncrms; icrm++) {
+    //  for (int i=0; i<nx; i++) {
+    //    for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       int kc=k+1;
       int ib=i-1;
       dudt(na-1,k,j,i,icrm)=dudt(na-1,k,j,i,icrm)-(fu(k,j,i+1,icrm)-fu(k,j,ib+1,icrm));
       dvdt(na-1,k,j,i,icrm)=dvdt(na-1,k,j,i,icrm)-(fv(k,j,i+1,icrm)-fv(k,j,ib+1,icrm));
       dwdt(na-1,kc,j,i,icrm)=dwdt(na-1,kc,j,i,icrm)-(fw(k,j,i+1,icrm)-fw(k,j,ib+1,icrm));
-	  });
+    });
   }
 
   // for (int k=0; k<nzm; k++) {
-	//  for (int icrm=0; icrm<ncrms; icrm++) {
+  //  for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     uwsb(k,icrm)=0.0;
     vwsb(k,icrm)=0.0;
-	});
+  });
 
   // for (int k=0; k<nzm-1; k++) {
-	//  for (int i=0; i<nx; i++) {
-	//    for (int icrm=0; icrm<ncrms; icrm++) {
+  //  for (int i=0; i<nx; i++) {
+  //    for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<3>(nzm-1,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
     int kc=k+1;
     real rdz=1.0/dz(icrm);
@@ -95,10 +95,10 @@ void diffuse_mom2D(real5d &tk) {
     fv(kc,j,i+1,icrm)=-tkz*(v(kc,j+offy_v,i+offx_v,icrm)-v(k,j+offy_v,i+offx_v,icrm))*iadzw*rhow(kc,icrm);
     yakl::atomicAdd(uwsb(kc,icrm),fu(kc,j,i+1,icrm));
     yakl::atomicAdd(vwsb(kc,icrm),fv(kc,j,i+1,icrm));
-	 });
+   });
   
-	//     for (int i=0; i<nx; i++) {
-	//       for (int icrm=0; icrm<ncrms; icrm++) {
+  //     for (int i=0; i<nx; i++) {
+  //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<2>(nx,ncrms) , YAKL_LAMBDA (int i, int icrm) {
     real rdz=1.0/dz(icrm);
     real rdz2 = rdz*rdz * grdf_z(nzm-2,icrm);
@@ -110,25 +110,25 @@ void diffuse_mom2D(real5d &tk) {
     fv(nz-1,j,i+1,icrm)=fluxtv(j,i,icrm) * rdz * rhow(nz-1,icrm);
     yakl::atomicAdd(uwsb(0,icrm),fu(0,j,i+1,icrm));
     yakl::atomicAdd(vwsb(0,icrm),fv(0,j,i+1,icrm));
-	});
+  });
  
   // for (int k=0; k<nzm; k++) {
-	//  for (int i=0; i<nx; i++) {
-	//    for (int icrm=0; icrm<ncrms; icrm++) {
+  //  for (int i=0; i<nx; i++) {
+  //    for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
     int kc=k+1;
     real rhoi = 1.0/(rho(k,icrm)*adz(k,icrm));
     dudt(na-1,k,j,i,icrm)=dudt(na-1,k,j,i,icrm)-(fu(kc,j,i+1,icrm)-fu(k,j,i+1,icrm))*rhoi;
     dvdt(na-1,k,j,i,icrm)=dvdt(na-1,k,j,i,icrm)-(fv(kc,j,i+1,icrm)-fv(k,j,i+1,icrm))*rhoi;
-	});
+  });
 
   // for (int k=0; k<nzm-1; k++) {
-	//     for (int i=0; i<nx; i++) {
-	//       for (int icrm=0; icrm<ncrms; icrm++) {
+  //     for (int i=0; i<nx; i++) {
+  //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<3>(nzm-1,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
     real rhoi = 1.0/(rhow(k+1,icrm)*adzw(k+1,icrm));
     dwdt(na-1,k+1,j,i,icrm)=dwdt(na-1,k+1,j,i,icrm)-(fw(k+2,j,i+1,icrm)-fw(k+1,j,i+1,icrm))*rhoi;
-	});
+  });
 
 }
 

@@ -1,6 +1,6 @@
 
 module atmosphere_mod
-	implicit none
+  implicit none
 
 contains
 

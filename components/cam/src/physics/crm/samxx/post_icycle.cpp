@@ -44,9 +44,9 @@ void post_icycle() {
   auto &qpl                 = :: qpl;
   auto &ncrms               = :: ncrms;
 
-	// for (int j=0; j<ny; j++) {
-	//  for (int i=0; i<nx; i++) {
-	//    for (int icrm=0; icrm<ncrms; icrm++) {
+  // for (int j=0; j<ny; j++) {
+  //  for (int i=0; i<nx; i++) {
+  //    for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     cwp     (j,i,icrm) = 0.0;
     cwph    (j,i,icrm) = 0.0;
@@ -57,11 +57,11 @@ void post_icycle() {
     cmtemp  (j,i,icrm) = 0.0;
     chtemp  (j,i,icrm) = 0.0;
     cttemp  (j,i,icrm) = 0.0;
-	});
+  });
 
-	// for (int j=0; j<ny; j++) {
-	//  for (int i=0; i<nx; i++) {
-	//    for (int icrm=0; icrm<ncrms; icrm++) {
+  // for (int j=0; j<ny; j++) {
+  //  for (int i=0; i<nx; i++) {
+  //    for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     for (int k=0; k<nzm; k++) {
       int l = plev-(k+1);
@@ -111,12 +111,12 @@ void post_icycle() {
       yakl::atomicAdd(crm_output_gliqwp(l,icrm) , qcl(k,j,i,icrm));
       yakl::atomicAdd(crm_output_gicewp(l,icrm) , qci(k,j,i,icrm));
     }
-	});
+  });
 
   // for (int k=0; k<nzm; k++) {
-	//   for (int j=0; j<ny; j++) {
-	//     for (int i=0; i<nx; i++) {
-	//       for (int icrm=0; icrm<ncrms; icrm++) {
+  //   for (int j=0; j<ny; j++) {
+  //     for (int i=0; i<nx; i++) {
+  //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     // Reduced radiation method allows for fewer radiation calculations
     // by collecting statistics and doing radiation over column groups
@@ -131,14 +131,14 @@ void post_icycle() {
     if (qcl(k,j,i,icrm) + qci(k,j,i,icrm) > 0) {
       yakl::atomicAdd(crm_rad_cld(k,j_rad,i_rad,icrm) , CF3D(k,j,i,icrm));
     }
-	});
+  });
 
   // Diagnose mass fluxes to drive CAM's convective transport of tracers.
   // definition of mass fluxes is taken from Xu et al., 2002, QJRMS.
 
-	// for (int j=0; j<ny; j++) {
-	//  for (int i=0; i<nx; i++) {
-	//    for (int icrm=0; icrm<ncrms; icrm++) {
+  // for (int j=0; j<ny; j++) {
+  //  for (int i=0; i<nx; i++) {
+  //    for (int icrm=0; icrm<ncrms; icrm++) {
   //      for (int k=0; k<nzm+1; k++) {
   parallel_for( Bounds<4>(nzm+1,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int l=plev+1-(k+1);
@@ -163,11 +163,11 @@ void post_icycle() {
         yakl::atomicAdd(mdi_crm(l,icrm) , tmp);
       }
     }
-	});
+  });
 
-	// for (int j=0; j<ny; j++) {
-	//  for (int i=0; i<nx; i++) {
-	//    for (int icrm=0; icrm<ncrms; icrm++) {
+  // for (int j=0; j<ny; j++) {
+  //  for (int i=0; i<nx; i++) {
+  //    for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     if(cwp(j,i,icrm) > cwp_threshold) {
       yakl::atomicAdd(crm_output_cltot(icrm) , cttemp(j,i,icrm));
@@ -181,7 +181,7 @@ void post_icycle() {
     if(cwpl(j,i,icrm) > cwp_threshold) {
       yakl::atomicAdd(crm_output_cllow(icrm) , cltemp(j,i,icrm));
     }
-	});
+  });
 
 }
 

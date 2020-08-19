@@ -14,7 +14,7 @@ void periodic(int flag) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( Bounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
       w(nz-1,j+offy_w,i+offx_w,icrm) = sstxy(j+offy_sstxy,i+offx_sstxy,icrm);
-	  });
+    });
 
     bound_exchange(w,nz,1,1,1,1, 3);
     //   for (int j=0; j<ny+2*YES3D; j++) {
@@ -30,7 +30,7 @@ void periodic(int flag) {
       if ( iInd>= iStart && i<= (nx-1) && jInd >= jStart && jInd <= (ny-1)) {
         sstxy(jInd+offy_sstxy,iInd+offx_sstxy,icrm) = w(nz-1,jInd+offy_w,iInd+offx_w,icrm);
       }
-	  });
+    });
 
     //   for (int j=0; j<ny+2*YES3D; j++) {
     //     for (int i=0; i<nxp3; i++) {
@@ -45,7 +45,7 @@ void periodic(int flag) {
       if( iInd>= iStart && iInd<= (nx-1) && jInd >= jStart && jInd <= ny+YES3D-1) {
         w(nz-1,jInd+offy_w,iInd+offx_w,icrm) = 0.0;
       }
-	  });
+    });
   }
 
   if (flag == 2) {

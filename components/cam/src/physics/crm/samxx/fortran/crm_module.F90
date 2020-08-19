@@ -650,11 +650,11 @@ subroutine crm(ncrms, dt_gl, plev, &
       dtfactor = dtn/dt
 
       !---------------------------------------------
-      !  	the Adams-Bashforth scheme in time
+      !   the Adams-Bashforth scheme in time
       call abcoefs(ncrms)
 
       !---------------------------------------------
-      !  	initialize stuff:
+      !   initialize stuff:
       call zero(ncrms)
 
       !-----------------------------------------------------------
@@ -680,7 +680,7 @@ subroutine crm(ncrms, dt_gl, plev, &
       enddo
 
       !----------------------------------------------------------
-      !   	suppress turbulence near the upper boundary (spange):
+      !     suppress turbulence near the upper boundary (spange):
       if (dodamping) call damping(ncrms)
 
       !---------------------------------------------------------
@@ -720,7 +720,7 @@ subroutine crm(ncrms, dt_gl, plev, &
       call advect_mom(ncrms)
 
       !----------------------------------------------------------
-      !	SGS effects on momentum:
+      ! SGS effects on momentum:
       if(dosgs) call sgs_mom(ncrms)
 
       !-----------------------------------------------------------

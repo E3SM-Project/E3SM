@@ -57,7 +57,7 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
     buoy_sgs_vert(0,j,i,icrm) = 0.0;
     a_prod_bu_vert(nzm,j,i,icrm) = 0.0;
     buoy_sgs_vert(nzm,j,i,icrm) = 0.0;
-	});
+  });
 
   // for (int k=0; k<nzm-1; k++) {
   //   for (int j=0; j<ny; j++) {
@@ -178,7 +178,7 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
       }
     }
 
-	});
+  });
   
   // for (int k=0; k<nzm-1; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
@@ -187,7 +187,7 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
     tkesbdiss(k,icrm) = 0.0;
     tkesbshear(k,icrm) = 0.0;
     tkesbbuoy(k,icrm) = 0.0;
-	});
+  });
 
   // for (int k=0; k<nzm-1; k++) {
   //   for (int j=0; j<ny; j++) {
@@ -240,7 +240,7 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
     yakl::atomicAdd(tkesbshear(k,icrm),a_prod_sh);
     yakl::atomicAdd(tkesbbuoy(k,icrm),a_prod_bu);
 
-	});
+  });
 }
 
 

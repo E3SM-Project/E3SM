@@ -17,9 +17,9 @@ void cloud(real5d &q, int ind_q, real5d &qp, int ind_qp) {
   real constexpr ag   = 1.0/(tgrmax-tgrmin);
 
   // for (int k=0; k<nzm; k++) {
-	//   for (int j=0; j<ny; j++) {
-	//     for (int i=0; i<nx; i++) {
-	//       for (int icrm=0; icrm<ncrms; icrm++) {
+  //   for (int j=0; j<ny; j++) {
+  //     for (int i=0; i<nx; i++) {
+  //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     q(ind_q,k,j+offy_s,i+offx_s,icrm)=max(0.0,q(ind_q,k,j+offy_s,i+offx_s,icrm));
     // Initial guess for temperature assuming no cloud water/ice:
@@ -110,6 +110,6 @@ void cloud(real5d &q, int ind_q, real5d &qp, int ind_qp) {
     }
     tabs(k,j,i,icrm) = tabs1;
     qp(ind_qp,k,j+offy_s,i+offx_s,icrm) = max(0.0,qp(ind_qp,k,j+offy_s,i+offx_s,icrm)); // just in case
-	});
+  });
 
 }

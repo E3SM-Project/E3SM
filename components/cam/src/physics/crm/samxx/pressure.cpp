@@ -40,12 +40,12 @@ void pressure() {
   press_rhs();
 
   // for (int k=0; k<nzslab; k++) {
-	//   for (int j=0; j<ny; j++) {
-	//     for (int i=0; i<nx; i++) {
-	//       for (int icrm=0; icrm<ncrms; icrm++) {
+  //   for (int j=0; j<ny; j++) {
+  //     for (int i=0; i<nx; i++) {
+  //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<4>(nzslab,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     f(k,j,i,icrm) = p(k,j+offy_p,i+offx_p,icrm);
-	});
+  });
 
   #ifndef USE_ORIG_FFT
 
@@ -137,10 +137,10 @@ void pressure() {
   parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     a(k,icrm)=rhow(k,icrm)/(adz(k,icrm)*adzw(k,icrm)*dz(icrm)*dz(icrm));
     c(k,icrm)=rhow(k+1,icrm)/(adz(k,icrm)*adzw(k+1,icrm)*dz(icrm)*dz(icrm));
-	});
+  });
 
-	//   for (int j=0; j<nypp; j++) {
-	//     for (int i=0; i<nx+1; i++) {
+  //   for (int j=0; j<nypp; j++) {
+  //     for (int i=0; i<nx+1; i++) {
   parallel_for( Bounds<2>(nypp,nx+1) , YAKL_LAMBDA (int j, int i) {
     int jt = 0;
     int it = 0;
@@ -157,11 +157,11 @@ void pressure() {
     real factx = 2.0;
     real xi=id;
     eign(j,i)=(2.0*cos(factx*xnx*xi)-2.0)*ddx2+(2.0*cos(facty*xny*xj)-2.0)*ddy2;
-	});
+  });
 
-	// for (int j=0; j<nypp; j++) {
-	//  for (int i=0; i<nx+1; i++) {
-	//    for (int icrm=0; icrm<ncrms; icrm++) {
+  // for (int j=0; j<nypp; j++) {
+  //  for (int i=0; i<nx+1; i++) {
+  //    for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<3>(nypp,nx+1,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     SArray<real,1,nzm-1> alfa;
     SArray<real,1,nzm-1> beta;
@@ -195,12 +195,12 @@ void pressure() {
   });
 
   // for (int k=0; k<nzslab; k++) {
-	//   for (int j=0; j<nypp; j++) {
-	//     for (int i=0; i<nx+1; i++) {
-	//       for (int icrm=0; icrm<ncrms; icrm++) {
+  //   for (int j=0; j<nypp; j++) {
+  //     for (int i=0; i<nx+1; i++) {
+  //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<4>(nzslab,nypp,nx+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     f(k,j,i,icrm) = ff(k,j,i,icrm);
-	});
+  });
 
   #ifndef USE_ORIG_FFT
 

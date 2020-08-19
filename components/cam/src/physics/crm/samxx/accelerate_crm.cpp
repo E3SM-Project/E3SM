@@ -38,7 +38,7 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   // for (int k=0; k<nzm; k++) {
-	//  for (int icrm=0; icrm<ncrms; icrm++) {
+  //  for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     tbaccel(k,icrm) = 0.0;
     qtbaccel(k,icrm) = 0.0;
@@ -46,12 +46,12 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
       ubaccel(k,icrm) = 0.0;
       vbaccel(k,icrm) = 0.0;
     }
-	});
+  });
 
   // for (int k=0; k<nzm; k++) {
-	//   for (int j=0; j<ny; j++) {
-	//     for (int i=0; i<nx; i++) {
-	//       for (int icrm=0; icrm<ncrms; icrm++) {
+  //   for (int j=0; j<ny; j++) {
+  //     for (int i=0; i<nx; i++) {
+  //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     // calculate tendency * dtn
     yakl::atomicAdd( tbaccel(k,icrm) , t(k,j+offy_s,i+offx_s,icrm) * crm_accel_coef );
@@ -60,7 +60,7 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
       yakl::atomicAdd( ubaccel(k,icrm) , u(k,j+offy_u,i+offx_u,icrm) * crm_accel_coef );
       yakl::atomicAdd( vbaccel(k,icrm) , v(k,j+offy_v,i+offx_v,icrm) * crm_accel_coef );
     }
-	});
+  });
 
   //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   //!! Compute the accelerated tendencies
@@ -69,7 +69,7 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
   ScalarLiveOut<bool> ceaseflag_liveout(false);
 
   // for (int k=0; k<nzm; k++) {
-	//  for (int icrm=0; icrm<ncrms; icrm++) {
+  //  for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     ttend_acc(k,icrm) = tbaccel(k,icrm) - t0(k,icrm);
     qtend_acc(k,icrm) = qtbaccel(k,icrm) - q0(k,icrm);
@@ -80,7 +80,7 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
     if (abs(ttend_acc(k,icrm)) > ttend_threshold) {
       ceaseflag_liveout = true;
     }
-	});
+  });
   ceaseflag = ceaseflag_liveout.hostRead();
 
 
@@ -114,9 +114,9 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
   //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   // for (int k=0; k<nzm; k++) {
-	//   for (int j=0; j<ny; j++) {
-	//     for (int i=0; i<nx; i++) {
-	//       for (int icrm=0; icrm<ncrms; icrm++) {
+  //   for (int j=0; j<ny; j++) {
+  //     for (int i=0; i<nx; i++) {
+  //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     // don't let T go negative!
     t(k,j+offy_s,i+offx_s,icrm) = max(tmin, t(k,j+offy_s,i+offx_s,icrm) + crm_accel_factor * ttend_acc(k,icrm));
@@ -125,24 +125,24 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
       v(k,j+offy_v,i+offx_v,icrm) = v(k,j+offy_v,i+offx_v,icrm) + crm_accel_factor * vtend_acc(k,icrm); 
     }
     micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) + crm_accel_factor * qtend_acc(k,icrm);
-	});
+  });
 
   //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   //!! Fix negative micro and readjust among separate water species
   //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   // for (int k=0; k<nzm; k++) {
-	//  for (int icrm=0; icrm<ncrms; icrm++) {
+  //  for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     qpoz(k,icrm) = 0.0;
     qneg(k,icrm) = 0.0;
-	});
+  });
 
   // separately accumulate positive and negative qt values in each layer k
   // for (int k=0; k<nzm; k++) {
-	//   for (int j=0; j<ny; j++) {
-	//     for (int i=0; i<nx; i++) {
-	//       for (int icrm=0; icrm<ncrms; icrm++) {
+  //   for (int j=0; j<ny; j++) {
+  //     for (int i=0; i<nx; i++) {
+  //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     if (micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) < 0.0) {
       yakl::atomicAdd( qneg(k,icrm) , micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) ); 
@@ -150,12 +150,12 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
     else {
       yakl::atomicAdd( qpoz(k,icrm) , micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) );
     }
-	});
+  });
 
   // for (int k=0; k<nzm; k++) {
-	//   for (int j=0; j<ny; j++) {
-	//     for (int i=0; i<nx; i++) {
-	//       for (int icrm=0; icrm<ncrms; icrm++) {
+  //   for (int j=0; j<ny; j++) {
+  //     for (int i=0; i<nx; i++) {
+  //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     real factor;
     if (qpoz(k,icrm) + qneg(k,icrm) <= 0.0) {
@@ -188,7 +188,7 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
         }
       }
     } 
-	});
+  });
 }
 
 

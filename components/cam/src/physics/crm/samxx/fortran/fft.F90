@@ -29,7 +29,7 @@ contains
 !     n is the length of the data vectors
 !     lot is the number of data vectors
 !     isign = +1 for transform from spectral to gridpoint
-!	    = -1 for transform from gridpoint to spectral
+!     = -1 for transform from gridpoint to spectral
 !
 !     ordering of coefficients:
 !         a(0),b(0),a(1),b(1),a(2),b(2),...,a(n/2),b(n/2)
@@ -50,7 +50,7 @@ contains
 !         where c(k)=a(k)+i*b(k) and c(n-k)=a(k)-i*b(k)
 !
 !     isign=-1: a(k)=(1/n)*sum(j=0,...,n-1)(x(j)*cos(2*j*k*pi/n))
-!		b(k)=-(1/n)*sum(j=0,...,n-1)(x(j)*sin(2*j*k*pi/n))
+!   b(k)=-(1/n)*sum(j=0,...,n-1)(x(j)*sin(2*j*k*pi/n))
 !
 !
 !
@@ -673,7 +673,7 @@ contains
      &   -s1*((b(ia+i)-b(ic+i))+(a(ib+i)-a(id+i)))
       d(jb+j)=&
      &    s1*((a(ia+i)-a(ic+i))-(b(ib+i)-b(id+i)))&
-     &	 +c1*((b(ia+i)-b(ic+i))+(a(ib+i)-a(id+i)))
+     &   +c1*((b(ia+i)-b(ic+i))+(a(ib+i)-a(id+i)))
       c(jd+j)=&
      &    c3*((a(ia+i)-a(ic+i))+(b(ib+i)-b(id+i)))&
      &   -s3*((b(ia+i)-b(ic+i))-(a(ib+i)-a(id+i)))
@@ -757,7 +757,7 @@ contains
       c(jb+j)=&
      &    c1*((a(ia+i)+cos72*(a(ib+i)+a(ie+i))-cos36*(a(ic+i)+a(id+i)))&
      &      -(sin72*(b(ib+i)-b(ie+i))+sin36*(b(ic+i)-b(id+i))))&
-     &	 -s1*((b(ia+i)+cos72*(b(ib+i)+b(ie+i))-cos36*(b(ic+i)+b(id+i)))&
+     &   -s1*((b(ia+i)+cos72*(b(ib+i)+b(ie+i))-cos36*(b(ic+i)+b(id+i)))&
      &      +(sin72*(a(ib+i)-a(ie+i))+sin36*(a(ic+i)-a(id+i))))
       d(jb+j)=&
      &    s1*((a(ia+i)+cos72*(a(ib+i)+a(ie+i))-cos36*(a(ic+i)+a(id+i)))&
@@ -778,7 +778,7 @@ contains
      &    c2*((a(ia+i)-cos36*(a(ib+i)+a(ie+i))+cos72*(a(ic+i)+a(id+i)))&
      &      -(sin36*(b(ib+i)-b(ie+i))-sin72*(b(ic+i)-b(id+i))))&
      &   -s2*((b(ia+i)-cos36*(b(ib+i)+b(ie+i))+cos72*(b(ic+i)+b(id+i)))&
-     &	    +(sin36*(a(ib+i)-a(ie+i))-sin72*(a(ic+i)-a(id+i))))
+     &      +(sin36*(a(ib+i)-a(ie+i))-sin72*(a(ic+i)-a(id+i))))
       d(jc+j)=&
      &    s2*((a(ia+i)-cos36*(a(ib+i)+a(ie+i))+cos72*(a(ic+i)+a(id+i)))&
      &      -(sin36*(b(ib+i)-b(ie+i))-sin72*(b(ic+i)-b(id+i))))&

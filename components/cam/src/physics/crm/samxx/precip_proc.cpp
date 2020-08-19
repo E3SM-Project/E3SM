@@ -33,16 +33,16 @@ void precip_proc(real5d &q, int ind_q, real5d &qp, int ind_qp) {
   real powg2 = (5.0 + b_grau) / 8.0;
 
   // for (int k=0; k<nzm; k++) {
-	//  for (int icrm=0; icrm<ncrms; icrm++) {
+  //  for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     qpsrc(k,icrm)=0.0;
     qpevp(k,icrm)=0.0;
-	});
+  });
 
   // for (int k=0; k<nzm; k++) {
-	//   for (int j=0; j<ny; j++) {
-	//     for (int i=0; i<nx; i++) {
-	//       for (int icrm=0; icrm<ncrms; icrm++) {
+  //   for (int j=0; j<ny; j++) {
+  //     for (int i=0; i<nx; i++) {
+  //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     //-------     Autoconversion/accretion
     real omn, omp, omg, qcc, qii, autor, autos, accrr, qrr, accrcs, accris,

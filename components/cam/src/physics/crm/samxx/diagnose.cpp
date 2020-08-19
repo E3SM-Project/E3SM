@@ -43,7 +43,7 @@ void diagnose() {
   real coef = 1.0/(nx*ny);
 
   // for (int k=0; k<nzm; k++) {
-	//  for (int icrm=0; icrm<ncrms; icrm++) {
+  //  for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     u0   (k,icrm)=0.0;
     v0   (k,icrm)=0.0;
@@ -55,12 +55,12 @@ void diagnose() {
     qn0  (k,icrm)=0.0;
     qp0  (k,icrm)=0.0;
     p0   (k,icrm)=0.0;
-	});
+  });
 
   // for (int k=0; k<nzm; k++) {
-	//   for (int j=0; j<ny; j++) {
-	//     for (int i=0; i<nx; i++) {
-	//       for (int icrm=0; icrm<ncrms; icrm++) {
+  //   for (int j=0; j<ny; j++) {
+  //     for (int i=0; i<nx; i++) {
+  //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     real coef1 = rho(k,icrm)*dz(icrm)*adz(k,icrm)*dtfactor;
     tabs(k,j,i,icrm) = t(k,j+offy_s,i+offx_s,icrm)-gamaz(k,icrm)+ fac_cond *
@@ -78,10 +78,10 @@ void diagnose() {
     yakl::atomicAdd(qp0(k,icrm),tmp);
     tmp = qv(k,j,i,icrm)*coef1;
     // TODO: There should seemingly be an atomic statement here
-	});
+  });
 
   // for (int k=0; k<nzm; k++) {
-	//  for (int icrm=0; icrm<ncrms; icrm++) {
+  //  for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     u0   (k,icrm)=u0   (k,icrm)*coef;
     v0   (k,icrm)=v0   (k,icrm)*coef;
@@ -91,30 +91,30 @@ void diagnose() {
     qn0  (k,icrm)=qn0  (k,icrm)*coef;
     qp0  (k,icrm)=qp0  (k,icrm)*coef;
     p0   (k,icrm)=p0   (k,icrm)*coef;
-	});
+  });
 
-	//   for (int j=0; j<ny; j++) {
-	//     for (int i=0; i<nx; i++) {
-	//       for (int icrm=0; icrm<ncrms; icrm++) {
+  //   for (int j=0; j<ny; j++) {
+  //     for (int i=0; i<nx; i++) {
+  //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     usfc_xy(j,i,icrm) = usfc_xy(j,i,icrm) + u(0,j+offy_s,i+offx_s,icrm)*dtfactor;
     vsfc_xy(j,i,icrm) = vsfc_xy(j,i,icrm) + v(0,j+offy_s,i+offx_s,icrm)*dtfactor;
-	});
+  });
 
   // for (int k=0; k<nzm; k++) {
-	//  for (int icrm=0; icrm<ncrms; icrm++) {
+  //  for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     qv0(k,icrm) = q0(k,icrm) - qn0(k,icrm);
-	});
+  });
 
   //=====================================================
   // UW ADDITIONS
   // FIND VERTICAL INDICES OF 850MB, COMPUTE SWVP
   
   // for (int k=0; k<nzm; k++) {
-	//   for (int j=0; j<ny; j++) {
-	//     for (int i=0; i<nx; i++) {
-	//       for (int icrm=0; icrm<ncrms; icrm++) {
+  //   for (int j=0; j<ny; j++) {
+  //     for (int i=0; i<nx; i++) {
+  //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     real coef1 = rho(k,icrm)*dz(icrm)*adz(k,icrm)*dtfactor;
     // Saturated water vapor path with respect to water. Can be used
@@ -124,16 +124,16 @@ void diagnose() {
     qsatw_crm(tabs(k,j,i,icrm),pres(k,icrm),tmp);
     tmp = tmp*coef1;
     yakl::atomicAdd(swvp_xy(j,i,icrm),tmp);
-	});
+  });
 
   // ACCUMULATE AVERAGES OF TWO-DIMENSIONAL STATISTICS
 
-	//   for (int j=0; j<ny; j++) {
-	//     for (int i=0; i<nx; i++) {
-	//       for (int icrm=0; icrm<ncrms; icrm++) {
+  //   for (int j=0; j<ny; j++) {
+  //     for (int i=0; i<nx; i++) {
+  //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     psfc_xy(j,i,icrm) = psfc_xy(j,i,icrm) + (100.0*pres(0,icrm) + p(0,j+offy_p,i+offx_p,icrm))*dtfactor;
-	});
+  });
 
   // COMPUTE CLOUD/ECHO HEIGHTS AS WELL AS CLOUD TOP TEMPERATURE
   // WHERE CLOUD TOP IS DEFINED AS THE HIGHEST MODEL LEVEL WITH A
@@ -141,19 +141,19 @@ void diagnose() {
   // WHERE THE PRECIPITATE MIXING RATIO > 0.001 G/KG.
   // initially, zero out heights and set cloudtoptemp to SST
 
-	//   for (int j=0; j<ny; j++) {
-	//     for (int i=0; i<nx; i++) {
-	//       for (int icrm=0; icrm<ncrms; icrm++) {
+  //   for (int j=0; j<ny; j++) {
+  //     for (int i=0; i<nx; i++) {
+  //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     cloudtopheight(j,i,icrm) = 0.0;
     cloudtoptemp(j,i,icrm) = sstxy(j+offy_sstxy,i+offx_sstxy,icrm);
     echotopheight(j,i,icrm) = 0.0;
-	});
+  });
 
   // for (int k=0; k<nzm; k++) {
-	//   for (int j=0; j<ny; j++) {
-	//     for (int i=0; i<nx; i++) {
-	//       for (int icrm=0; icrm<ncrms; icrm++) {
+  //   for (int j=0; j<ny; j++) {
+  //     for (int i=0; i<nx; i++) {
+  //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     // FIND CLOUD TOP HEIGHT
     real tmp_lwp = 0.0;
@@ -173,7 +173,7 @@ void diagnose() {
         break;
       }
     }
-	});
+  });
   // END UW ADDITIONS
   //=====================================================
 

@@ -444,7 +444,7 @@ CONTAINS
       enddo
     enddo
 
-    ! 	Add sedimentation of precipitation field to the vert. vel.
+    !   Add sedimentation of precipitation field to the vert. vel.
     prec_cfl = 0.D0
     !$acc parallel loop gang vector collapse(4) reduction(max:prec_cfl) async(asyncid)
     do k=1,nzm

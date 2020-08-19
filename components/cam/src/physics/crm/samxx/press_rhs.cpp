@@ -25,20 +25,20 @@ void press_rhs() {
   
   if (dowallx && rank%nsubdomains_x == 0) {
     // for (int k=0; k<nzm; k++) {
-		//  for (int j=0; j<ny; j++) {
-		//    for (int icrm=0; icrm<ncrms; icrm++) {
+    //  for (int j=0; j<ny; j++) {
+    //    for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( Bounds<3>(nzm,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
       dudt(na-1,k,j,0,icrm) = 0.0;
-	  });
+    });
   }
 
   if (dowally && RUN3D == 1 && rank < nsubdomains_x) {
     // for (int k=0; k<nzm; k++) {
-		//  for (int i=0; i<nx; i++) {
-		//    for (int icrm=0; icrm<ncrms; icrm++) {
+    //  for (int i=0; i<nx; i++) {
+    //    for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       dvdt(na-1,k,0,i,icrm) = 0.0;
-	  });
+    });
   }
 
   bound_duvdt();
@@ -51,9 +51,9 @@ void press_rhs() {
   if (RUN3D) {
 
     // for (int k=0; k<nzm; k++) {
-		//   for (int j=0; j<ny; j++) {
-		//     for (int i=0; i<nx; i++) {
-		//       for (int icrm=0; icrm<ncrms; icrm++) {
+    //   for (int j=0; j<ny; j++) {
+    //     for (int i=0; i<nx; i++) {
+    //       for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int kc=k+1;
       real rdz=1.0/(adz(k,icrm)*dz(icrm));
@@ -75,14 +75,14 @@ void press_rhs() {
                                   rdy*(dvdt(nc-1,k,jc,i,icrm)-dvdt(nc-1,k,j,i,icrm))+
                                   (dwdt(nc-1,kc,j,i,icrm)*rup-dwdt(nc-1,k,j,i,icrm)*rdn) );
       p(k,j+offy_p,i+offx_p,icrm)=p(k,j+offy_p,i+offx_p,icrm)*rho(k,icrm);
-	  });
+    });
 
   } else {
 
     int j=0;
     // for (int k=0; k<nzm; k++) {
-		//     for (int i=0; i<nx; i++) {
-		//       for (int icrm=0; icrm<ncrms; icrm++) {
+    //     for (int i=0; i<nx; i++) {
+    //       for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       int kc=k+1;
       real rdz=1.0/(adz(k,icrm)*dz(icrm));
@@ -100,7 +100,7 @@ void press_rhs() {
                                   ctat*(rdx*(dudt(nc-1,k,j,ic,icrm)-dudt(nc-1,k,j,i,icrm))+
                                   (dwdt(nc-1,kc,j,i,icrm)*rup-dwdt(nc-1,k,j,i,icrm)*rdn) );
                                   p(k,j+offy_p,i+offx_p,icrm)=p(k,j+offy_p,i+offx_p,icrm)*rho(k,icrm);
-	  });
+    });
 
   }
 }

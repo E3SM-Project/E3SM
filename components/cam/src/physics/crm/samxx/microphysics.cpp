@@ -40,23 +40,23 @@ void precip_fall(int hydro_type, real4d &omega) {
   real2d rhofac("rhofac",nzm,ncrms);
 
   // for (int k=0; k<nzm; k++) {
-	//  for (int icrm=0; icrm<ncrms; icrm++) {
+  //  for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     rhofac(k,icrm) = sqrt(1.29/rho(k,icrm));
     irhoadz(k,icrm) = 1.0/(rho(k,icrm)*adz(k,icrm));
     int kb = max(0,k-1);
     real wmax       = dz(icrm)*adz(kb,icrm)/dtn;   // Velocity equivalent to a cfl of 1.0.
     iwmax(k,icrm)   = 1.0/wmax;
-	});
+  });
 
-  // 	Add sedimentation of precipitation field to the vert. vel.
+  //  Add sedimentation of precipitation field to the vert. vel.
   real prec_cfl = 0.0;
   real4d prec_cfl_arr("prec_cfl_arr",nzm,ny,nx,ncrms);
 
   // for (int k=0; k<nzm; k++) {
   //   for (int j=0; j<ny; j++) {
-	//     for (int i=0; i<nx; i++) {
-	//       for (int icrm=0; icrm<ncrms; icrm++) {
+  //     for (int i=0; i<nx; i++) {
+  //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     if (hydro_type == 0) {
       lfac(k,j,i,icrm) = fac_cond;
@@ -83,7 +83,7 @@ void precip_fall(int hydro_type, real4d &omega) {
       www(nz-1,j,i,icrm)=0.0;
       lfac(nz-1,j,i,icrm)=0.0;
     }
-	});
+  });
 
   yakl::ParallelMax<real,yakl::memDevice> pmax( nzm*ny*nx*ncrms );
   real prec_cfl_loc  = pmax( prec_cfl_arr.data() );
@@ -102,7 +102,7 @@ void precip_fall(int hydro_type, real4d &omega) {
       // wp already includes factor of dt, so reduce it by a
       // factor equal to the number of precipitation steps.
       wp(k,j,i,icrm) = wp(k,j,i,icrm)/nprec;
-	  });
+    });
   } else {
     nprec = 1;
   }
@@ -117,7 +117,7 @@ void precip_fall(int hydro_type, real4d &omega) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       tmp_qp(k,j,i,icrm) = micro_field(1,k,j+offy_s,i+offx_s,icrm); // Temporary array for qp in this column
-	  });
+    });
 
     // for (int k=0; k<nzm; k++) {
     //   for (int j=0; j<ny; j++) {
@@ -132,7 +132,7 @@ void precip_fall(int hydro_type, real4d &omega) {
       }
       // Define upwind precipitation flux
       fz(k,j,i,icrm)=tmp_qp(k,j,i,icrm)*wp(k,j,i,icrm);
-	  });
+    });
 
     // for (int k=0; k<nzm; k++) {
     //   for (int j=0; j<ny; j++) {
@@ -141,7 +141,7 @@ void precip_fall(int hydro_type, real4d &omega) {
     parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int kc=k+1;
       tmp_qp(k,j,i,icrm)=tmp_qp(k,j,i,icrm)-(fz(kc,j,i,icrm)-fz(k,j,i,icrm))*irhoadz(k,icrm); //Update temporary qp
-	  });
+    });
 
     // for (int k=0; k<nzm; k++) {
     //   for (int j=0; j<ny; j++) {
@@ -157,7 +157,7 @@ void precip_fall(int hydro_type, real4d &omega) {
       // anti-diffusive flux is used here which accounts for
       // this and results in reduced numerical diffusion.
       www(k,j,i,icrm) = 0.5*(1.0+wp(k,j,i,icrm)*irhoadz(k,icrm))*(tmp_qp(kb,j,i,icrm)*wp(kb,j,i,icrm) - tmp_qp(k,j,i,icrm)*wp(k,j,i,icrm)); // works for wp(k)<0
-	  });
+    });
 
     if (nonos) {
       // for (int k=0; k<nzm; k++) {
@@ -172,7 +172,7 @@ void precip_fall(int hydro_type, real4d &omega) {
         kc=min(nzm-1,k+1);
         mx(k,j,i,icrm)=rho(k,icrm)*adz(k,icrm)*(mx(k,j,i,icrm)-tmp_qp(k,j,i,icrm))/(pn(www(kc,j,i,icrm)) + pp(www(k,j,i,icrm))+eps);
         mn(k,j,i,icrm)=rho(k,icrm)*adz(k,icrm)*(tmp_qp(k,j,i,icrm)-mn(k,j,i,icrm))/(pp(www(kc,j,i,icrm)) + pn(www(k,j,i,icrm))+eps);
-	    });
+      });
 
       // for (int k=0; k<nzm; k++) {
       //   for (int j=0; j<ny; j++) {
@@ -183,7 +183,7 @@ void precip_fall(int hydro_type, real4d &omega) {
         // Add limited flux correction to fz(k).
         fz(k,j,i,icrm) = fz(k,j,i,icrm) + pp(www(k,j,i,icrm))*min(1.0,min(mx(k,j,i,icrm), mn(kb,j,i,icrm))) -
                                         pn(www(k,j,i,icrm))*min(1.0,min(mx(kb,j,i,icrm),mn(k,j,i,icrm))); // Anti-diffusive flux
-	    });
+      });
     }
 
     // Update precipitation mass fraction and liquid-ice static
@@ -212,7 +212,7 @@ void precip_fall(int hydro_type, real4d &omega) {
         precssfc(j,i,icrm) = precssfc(j,i,icrm) - fz(0,j,i,icrm)*(1.0-omega(0,j,i,icrm))*flagstat;
         prec_xy(j,i,icrm) = prec_xy(j,i,icrm) - fz(0,j,i,icrm)*flagstat;
       }
-	  });
+    });
 
     if (iprec < nprec) {
       // Re-compute precipitation velocity using new value of qp.
@@ -236,7 +236,7 @@ void precip_fall(int hydro_type, real4d &omega) {
           www(nz-1,j,i,icrm)=0.0;
           lfac(nz-1,j,i,icrm)=0.0;
         }
-	    });
+      });
     }
   } // iprec loop
 }
@@ -257,12 +257,12 @@ void micro_precip_fall() {
   vgrau = a_grau * gamg3 / 6.0 / pow((pi * rhog * nzerog), cgrau);
 
   // for (int k=0; k<nzm; k++) {
-	//   for (int j=0; j<ny; j++) {
-	//     for (int i=0; i<nx; i++) {
-	//       for (int icrm=0; icrm<ncrms; icrm++) {
+  //   for (int j=0; j<ny; j++) {
+  //     for (int i=0; i<nx; i++) {
+  //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     omega(k,j,i,icrm) = max(0.0,min(1.0,(tabs(k,j,i,icrm)-tprmin)*a_pr));
-	});
+  });
 
   precip_fall(2,omega);
 }
@@ -298,9 +298,9 @@ void micro_diagnose() {
   auto &ncrms         = :: ncrms;
 
   // for (int k=0; k<nzm; k++) {
-	//   for (int j=0; j<ny; j++) {
-	//     for (int i=0; i<nx; i++) {
-	//       for (int icrm=0; icrm<ncrms; icrm++) {
+  //   for (int j=0; j<ny; j++) {
+  //     for (int i=0; i<nx; i++) {
+  //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     qv(k,j,i,icrm) = micro_field(0,k,j+offy_s,i+offx_s,icrm) - qn(k,j,i,icrm);
     real omn = max(0.0,min(1.0,(tabs(k,j,i,icrm)-tbgmin)*a_bg));
@@ -309,7 +309,7 @@ void micro_diagnose() {
     real omp = max(0.0,min(1.0,(tabs(k,j,i,icrm)-tprmin)*a_pr));
     qpl(k,j,i,icrm) = micro_field(1,k,j+offy_s,i+offx_s,icrm)*omp;
     qpi(k,j,i,icrm) = micro_field(1,k,j+offy_s,i+offx_s,icrm)*(1.0-omp);
-	});
+  });
 }
 
 void micro_proc() {
@@ -353,7 +353,7 @@ void micro_init() {
     parallel_for( Bounds<4>(nmicro_fields,ny,nx,ncrms) , YAKL_LAMBDA (int l, int j, int i, int icrm) {
       fluxbmk(l,j,i,icrm) = 0.0;
       fluxtmk(l,j,i,icrm) = 0.0;
-	  });
+    });
     if (docloud || dosmoke) {
       micro_diagnose();
     }
@@ -361,19 +361,19 @@ void micro_init() {
 
   // for (int l=0; l<nmicro_fields; k++) {
   //  for (int k=0; k<nz; k++) {
-	//    for (int icrm=0; icrm<ncrms; icrm++) {
+  //    for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<3>(nmicro_fields,nz,ncrms) , YAKL_LAMBDA (int l, int k, int icrm) {
     mkwle (l,k,icrm) = 0.0;
     mkwsb (l,k,icrm) = 0.0;
     mkadv (l,k,icrm) = 0.0;
     mkdiff(l,k,icrm) = 0.0;
-	});
+  });
   
   // for (int k=0; k<nz; k++) {
-	//       for (int icrm=0; icrm<ncrms; icrm++) {
+  //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<2>(nz,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     qpsrc(k,icrm) = 0.0;
     qpevp(k,icrm) = 0.0;
-	});
+  });
 }
 

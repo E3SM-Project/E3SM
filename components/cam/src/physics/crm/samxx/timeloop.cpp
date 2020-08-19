@@ -17,7 +17,7 @@ void timeloop() {
 
     parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
       crm_output_timing_factor(icrm) = crm_output_timing_factor(icrm)+1;
-	  });
+    });
 
     //------------------------------------------------------------------
     //  Check if the dynamical time step should be decreased
@@ -34,11 +34,11 @@ void timeloop() {
       dtfactor = dtn/dt;
 
       //---------------------------------------------
-      //  	the Adams-Bashforth scheme in time
+      //    the Adams-Bashforth scheme in time
       abcoefs();
 
       //---------------------------------------------
-      //  	initialize stuff:
+      //    initialize stuff:
       zero();
 
       //-----------------------------------------------------------
@@ -51,17 +51,17 @@ void timeloop() {
 
       // Apply radiative tendency
       // for (int k=0; k<nzm; k++) {
-		  //   for (int j=0; j<ny; j++) {
-		  //     for (int i=0; i<nx; i++) {
-		  //       for (int icrm=0; icrm<ncrms; icrm++) {
+      //   for (int j=0; j<ny; j++) {
+      //     for (int i=0; i<nx; i++) {
+      //       for (int icrm=0; icrm<ncrms; icrm++) {
       parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
         int i_rad = i / (nx/crm_nx_rad);
         int j_rad = j / (ny/crm_ny_rad);
         t(k,j+offy_s,i+offx_s,icrm) = t(k,j+offy_s,i+offx_s,icrm) + crm_rad_qrad(k,j_rad,i_rad,icrm)*dtn;
-	    });
+      });
 
       //----------------------------------------------------------
-      //   	suppress turbulence near the upper boundary (spange):
+      //    suppress turbulence near the upper boundary (spange):
       if (dodamping) { 
         damping();
       }
@@ -101,7 +101,7 @@ void timeloop() {
       advect_mom();
 
       //----------------------------------------------------------
-      //	SGS effects on momentum:
+      //  SGS effects on momentum:
       if (dosgs) { 
         sgs_mom();
       }

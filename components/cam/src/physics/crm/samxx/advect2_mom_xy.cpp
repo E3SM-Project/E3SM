@@ -22,9 +22,9 @@ void advect2_mom_xy() {
   if (RUN3D) {
 
     // for (int k=0; k<nzm; k++) {
-		//   for (int j=0; j<ny; j++) {
-		//     for (int i=0; i<nx; i++) {
-		//       for (int icrm=0; icrm<ncrms; icrm++) {
+    //   for (int j=0; j<ny; j++) {
+    //     for (int i=0; i<nx; i++) {
+    //       for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int kc= k+1;
       int kcu = min(kc, nzm-1);
@@ -52,13 +52,13 @@ void advect2_mom_xy() {
       fw1 = dy25*(v(k,jc-1+offy_v,i+offx_v,icrm)*rho(k,icrm)*adz(k,icrm)+v(kcu,jc-1+offy_v,i+offx_v,icrm)*rho(kcu,icrm)*adz(kcu,icrm))*(w(kc,j-1+offy_w,i+offx_w,icrm)+w(kc,jc-1+offy_w,i+offx_w,icrm));
       fw2 = dy25*(v(k,jc+offy_v,i+offx_v,icrm)*rho(k,icrm)*adz(k,icrm)+v(kcu,jc+offy_v,i+offx_v,icrm)*rho(kcu,icrm)*adz(kcu,icrm))*(w(kc,j+offy_w,i+offx_w,icrm)+w(kc,jc+offy_w,i+offx_w,icrm));
       dwdt(na-1,kc,j,i,icrm)= dwdt(na-1,kc,j,i,icrm)-irho*(fw2-fw1);
-	  });
+    });
 
   } else {
 
     // for (int k=0; k<nzm; k++) {
-		//    for (int i=0; i<nx; i++) {
-		//       for (int icrm=0; icrm<ncrms; icrm++) {
+    //    for (int i=0; i<nx; i++) {
+    //       for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       int j=0;
       int kc= k+1;
@@ -74,7 +74,7 @@ void advect2_mom_xy() {
       real fw1 = dx25*(u(k,j+offy_u,ic-1+offx_u,icrm)*rho(k,icrm)*adz(k,icrm)+u(kcu,j+offy_u,ic-1+offx_u,icrm)*rho(kcu,icrm)*adz(kcu,icrm))*(w(kc,j+offy_w,i-1+offx_w,icrm)+w(kc,j+offy_w,ic-1+offx_w,icrm));
       real fw2 = dx25*(u(k,j+offy_u,ic+offx_u,icrm)*rho(k,icrm)*adz(k,icrm)+u(kcu,j+offy_u,ic+offx_u,icrm)*rho(kcu,icrm)*adz(kcu,icrm))*(w(kc,j+offy_w,i+offx_w,icrm)+w(kc,j+offy_w,ic+offx_w,icrm));
       dwdt(na-1,kc,j,i,icrm) = dwdt(na-1,kc,j,i,icrm)-irho*(fw2-fw1);
-	  });
+    });
 
   }
 

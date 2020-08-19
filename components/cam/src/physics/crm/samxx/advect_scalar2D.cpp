@@ -25,11 +25,11 @@ void advect_scalar2D(real4d &f, real2d &flux) {
   real2d irho ("irho" ,nzm,ncrms);
   real2d irhow("irhow",nzm,ncrms);
 
-	// for (int i=0; i<nx+4; i++) {
-	//  for (int icrm=0; icrm<ncrms; icrm++) {
+  // for (int i=0; i<nx+4; i++) {
+  //  for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<2>(nx+4,ncrms) , YAKL_LAMBDA (int i, int icrm) {
     www(nz-1,j,i,icrm)=0.0;
-	});
+  });
 
   if (dowallx) {
     if (rank%nsubdomains_x == 0) {
@@ -38,7 +38,7 @@ void advect_scalar2D(real4d &f, real2d &flux) {
       //    for (int icrm=0; icrm<ncrms; icrm++) {
       parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
         u(k,j,i,icrm) = 0.0;
-	    });
+      });
     }
     if (rank%nsubdomains_x==nsubdomains_x-1) {
       // for (int k=0; k<nzm; k++) {
@@ -47,7 +47,7 @@ void advect_scalar2D(real4d &f, real2d &flux) {
       parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
         int iInd = i+ (nx+2);
         u(k,j,iInd,icrm) = 0.0;
-	    });
+      });
     }
   }
 
@@ -64,7 +64,7 @@ void advect_scalar2D(real4d &f, real2d &flux) {
                      max(f(kc,j,i+offx_s-1,icrm),f(k,j,i+offx_s-1,icrm)))));
       mn(k,j,i,icrm)=min(f(k,j,ib+offx_s-1,icrm),min(f(k,j,ic+offx_s-1,icrm),min(f(kb,j,i+offx_s-1,icrm),
                      min(f(kc,j,i+offx_s-1,icrm),f(k,j,i+offx_s-1,icrm)))));
-	  });
+    });
   }// nonos
 
   // for (int k=0; k<nzm; k++) {
@@ -80,7 +80,7 @@ void advect_scalar2D(real4d &f, real2d &flux) {
     if (i == 1) {
       flux(k,icrm) = 0.0;
     }
-	});
+  });
 
 
   // for (int k=0; k<nzm; k++) {
@@ -89,7 +89,7 @@ void advect_scalar2D(real4d &f, real2d &flux) {
     irho(k,icrm) = 1.0/rho(k,icrm);
     iadz(k,icrm) = 1.0/adz(k,icrm);
     irhow(k,icrm) = 1.0/(rhow(k,icrm)*adz(k,icrm));
-	});
+  });
 
   // for (int k=0; k<nzm; k++) {
   //  for (int i=0; i<nx+4; i++) {
@@ -100,7 +100,7 @@ void advect_scalar2D(real4d &f, real2d &flux) {
     }
     f(k,j,i+offx_s-2,icrm) = f(k,j,i+offx_s-2,icrm) - (uuu(k,j,i+1,icrm)-uuu(k,j,i,icrm) +
                                                       (www(k+1,j,i,icrm)-www(k,j,i,icrm))*iadz(k,icrm))*irho(k,icrm);
-	});
+  });
 
   // for (int k=0; k<nzm; k++) {
   //  for (int i=0; i<nx+3; i++) {
@@ -123,13 +123,13 @@ void advect_scalar2D(real4d &f, real2d &flux) {
                  w(k,j,i+offx_w-1,icrm), u(kb,j,i+offx_u-1,icrm)+u(k,j,i+offx_u-1,icrm)+u(k,j,ic+offx_u-1,icrm)+
                  u(kb,j,ic+offx_u-1,icrm)) *irho(k,icrm);
     }
-	});
+  });
 
   //  for (int i=0; i<nx+4; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<2>(nx+4,ncrms) , YAKL_LAMBDA (int i, int icrm) {
     www(0,j,i,icrm) = 0.0;
-	});
+  });
 
   if (nonos) {
     // for (int k=0; k<nzm; k++) {
@@ -144,7 +144,7 @@ void advect_scalar2D(real4d &f, real2d &flux) {
                      max(f(kc,j,i+offx_s-1,icrm),max(f(k,j,i+offx_s-1,icrm),mx(k,j,i,icrm))))));
       mn(k,j,i,icrm)=min(f(k,j,ib+offx_s-1,icrm),min(f(k,j,ic+offx_s-1,icrm),min(f(kb,j,i+offx_s-1,icrm),
                      min(f(kc,j,i+offx_s-1,icrm),min(f(k,j,i+offx_s-1,icrm),mn(k,j,i,icrm))))));
-	  });
+    });
 
     // for (int k=0; k<nzm; k++) {
     //  for (int i=0; i<nx+2; i++) {
@@ -158,7 +158,7 @@ void advect_scalar2D(real4d &f, real2d &flux) {
       mn(k,j,i,icrm)=rho(k,icrm)*(f(k,j,i+offx_s-1,icrm)-mn(k,j,i,icrm))/(pp2(uuu(k,j,ic+offx_uuu-1,icrm)) +
                      pn2(uuu(k,j,i+offx_uuu-1,icrm))+iadz(k,icrm)*(pp2(www(kc,j,i+offx_www-1,icrm)) +
                      pn2(www(k,j,i+offx_www-1,icrm)))+eps);
-	  });
+    });
 
     // for (int k=0; k<nzm; k++) {
     //  for (int i=0; i<nx+1; i++) {
@@ -175,7 +175,7 @@ void advect_scalar2D(real4d &f, real2d &flux) {
             pn2(www(k,j,i+offx_www,icrm))*min(1.0,min(mx(kb,j,i+offx_m,icrm),mn(k,j,i+offx_m,icrm)));
         yakl::atomicAdd(flux(k,icrm), www(k,j,i+offx_www,icrm));
       }
-	  });
+    });
   } // nonos
 
   // for (int k=0; k<nzm; k++) {
@@ -189,7 +189,7 @@ void advect_scalar2D(real4d &f, real2d &flux) {
     //     most likely truncation error.
     f(k,j,i+offx_s,icrm)= max(0.0, f(k,j,i+offx_s,icrm) - (uuu(k,j,i+1+offx_uuu,icrm)-uuu(k,j,i+offx_uuu,icrm) +
                          (www(k+1,j,i+offx_www,icrm)-www(k,j,i+offx_www,icrm))*iadz(k,icrm))*irho(k,icrm));
-	});
+  });
 
 }
 
@@ -220,11 +220,11 @@ void advect_scalar2D(real5d &f, int ind_f, real2d &flux) {
   real2d irho ("irho" ,nzm,ncrms);
   real2d irhow("irhow",nzm,ncrms);
 
-	// for (int i=0; i<nx+4; i++) {
-	//  for (int icrm=0; icrm<ncrms; icrm++) {
+  // for (int i=0; i<nx+4; i++) {
+  //  for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<2>(nx+4,ncrms) , YAKL_LAMBDA (int i, int icrm) {
     www(nz-1,j,i,icrm)=0.0;
-	});
+  });
 
   if (dowallx) {
     if (rank%nsubdomains_x == 0) {
@@ -233,7 +233,7 @@ void advect_scalar2D(real5d &f, int ind_f, real2d &flux) {
       //    for (int icrm=0; icrm<ncrms; icrm++) {
       parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
         u(k,j,i,icrm) = 0.0;
-	    });
+      });
     }
     if (rank%nsubdomains_x==nsubdomains_x-1) {
       // for (int k=0; k<nzm; k++) {
@@ -242,7 +242,7 @@ void advect_scalar2D(real5d &f, int ind_f, real2d &flux) {
       parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
         int iInd = i+ (nx+2);
         u(k,j,iInd,icrm) = 0.0;
-	    });
+      });
     }
   }
 
@@ -259,7 +259,7 @@ void advect_scalar2D(real5d &f, int ind_f, real2d &flux) {
                      max(f(ind_f,kb,j,i+offx_s-1,icrm),max(f(ind_f,kc,j,i+offx_s-1,icrm),f(ind_f,k,j,i+offx_s-1,icrm)))));
       mn(k,j,i,icrm)=min(f(ind_f,k,j,ib+offx_s-1,icrm),min(f(ind_f,k,j,ic+offx_s-1,icrm),
                      min(f(ind_f,kb,j,i+offx_s-1,icrm),min(f(ind_f,kc,j,i+offx_s-1,icrm),f(ind_f,k,j,i+offx_s-1,icrm)))));
-	  });
+    });
   }// nonos
 
   // for (int k=0; k<nzm; k++) {
@@ -276,7 +276,7 @@ void advect_scalar2D(real5d &f, int ind_f, real2d &flux) {
     if (i == 1) {
       flux(k,icrm) = 0.0;
     }
-	});
+  });
 
 
   // for (int k=0; k<nzm; k++) {
@@ -285,7 +285,7 @@ void advect_scalar2D(real5d &f, int ind_f, real2d &flux) {
     irho(k,icrm) = 1.0/rho(k,icrm);
     iadz(k,icrm) = 1.0/adz(k,icrm);
     irhow(k,icrm) = 1.0/(rhow(k,icrm)*adz(k,icrm));
-	});
+  });
 
   // for (int k=0; k<nzm; k++) {
   //  for (int i=0; i<nx+4; i++) {
@@ -297,7 +297,7 @@ void advect_scalar2D(real5d &f, int ind_f, real2d &flux) {
     f(ind_f,k,j,i+offx_s-2,icrm) = f(ind_f,k,j,i+offx_s-2,icrm) -
                                    (uuu(k,j,i+1,icrm)-uuu(k,j,i,icrm) +
                                    (www(k+1,j,i,icrm)-www(k,j,i,icrm))*iadz(k,icrm))*irho(k,icrm);
-	});
+  });
 
   // for (int k=0; k<nzm; k++) {
   //  for (int i=0; i<nx+3; i++) {
@@ -322,13 +322,13 @@ void advect_scalar2D(real5d &f, int ind_f, real2d &flux) {
                   w(k,j,i+offx_w-1,icrm), u(kb,j,i+offx_u-1,icrm)+u(k,j,i+offx_u-1,icrm)+
                   u(k,j,ic+offx_u-1,icrm)+u(kb,j,ic+offx_u-1,icrm)) *irho(k,icrm);
     }
-	});
+  });
 
   //  for (int i=0; i<nx+4; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<2>(nx+4,ncrms) , YAKL_LAMBDA (int i, int icrm) {
     www(0,j,i,icrm) = 0.0;
-	});
+  });
 
   if (nonos) {
     // for (int k=0; k<nzm; k++) {
@@ -343,7 +343,7 @@ void advect_scalar2D(real5d &f, int ind_f, real2d &flux) {
                      max(f(ind_f,kc,j,i+offx_s-1,icrm),max(f(ind_f,k,j,i+offx_s-1,icrm),mx(k,j,i,icrm))))));
       mn(k,j,i,icrm)=min(f(ind_f,k,j,ib+offx_s-1,icrm),min(f(ind_f,k,j,ic+offx_s-1,icrm),min(f(ind_f,kb,j,i+offx_s-1,icrm),
                      min(f(ind_f,kc,j,i+offx_s-1,icrm),min(f(ind_f,k,j,i+offx_s-1,icrm),mn(k,j,i,icrm))))));
-	  });
+    });
 
     // for (int k=0; k<nzm; k++) {
     //  for (int i=0; i<nx+2; i++) {
@@ -357,7 +357,7 @@ void advect_scalar2D(real5d &f, int ind_f, real2d &flux) {
       mn(k,j,i,icrm)=rho(k,icrm)*(f(ind_f,k,j,i+offx_s-1,icrm)-mn(k,j,i,icrm))/(pp2(uuu(k,j,ic+offx_uuu-1,icrm)) +
                      pn2(uuu(k,j,i+offx_uuu-1,icrm))+iadz(k,icrm)*(pp2(www(kc,j,i+offx_www-1,icrm)) +
                      pn2(www(k,j,i+offx_www-1,icrm)))+eps);
-	  });
+    });
 
     // for (int k=0; k<nzm; k++) {
     //  for (int i=0; i<nx+1; i++) {
@@ -373,7 +373,7 @@ void advect_scalar2D(real5d &f, int ind_f, real2d &flux) {
 
         yakl::atomicAdd(flux(k,icrm), www(k,j,i+offx_www,icrm));
       }
-	  });
+    });
   } // nonos
 
   // for (int k=0; k<nzm; k++) {
@@ -387,7 +387,7 @@ void advect_scalar2D(real5d &f, int ind_f, real2d &flux) {
     //     most likely truncation error.
     f(ind_f,k,j,i+offx_s,icrm)= max(0.0, f(ind_f,k,j,i+offx_s,icrm) - (uuu(k,j,i+1+offx_uuu,icrm)-uuu(k,j,i+offx_uuu,icrm) +
                    (www(k+1,j,i+offx_www,icrm)-www(k,j,i+offx_www,icrm))*iadz(k,icrm))*irho(k,icrm));
-	});
+  });
 
 }
 
@@ -416,11 +416,11 @@ void advect_scalar2D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
   real2d irho ("irho" ,nzm,ncrms);
   real2d irhow("irhow",nzm,ncrms);
 
-	// for (int i=0; i<nx+4; i++) {
-	//  for (int icrm=0; icrm<ncrms; icrm++) {
+  // for (int i=0; i<nx+4; i++) {
+  //  for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<2>(nx+4,ncrms) , YAKL_LAMBDA (int i, int icrm) {
     www(nz-1,j,i,icrm)=0.0;
-	});
+  });
 
   if (dowallx) {
     if (rank%nsubdomains_x == 0) {
@@ -429,7 +429,7 @@ void advect_scalar2D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
       //    for (int icrm=0; icrm<ncrms; icrm++) {
       parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
         u(k,j,i,icrm) = 0.0;
-	    });
+      });
     }
     if (rank%nsubdomains_x==nsubdomains_x-1) {
       // for (int k=0; k<nzm; k++) {
@@ -438,7 +438,7 @@ void advect_scalar2D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
       parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
         int iInd = i+ (nx+2);
         u(k,j,iInd,icrm) = 0.0;
-	    });
+      });
     }
   }
 
@@ -456,7 +456,7 @@ void advect_scalar2D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
                      max(f(ind_f,kc,j,i+offx_s-1,icrm),f(ind_f,k,j,i+offx_s-1,icrm)))));
       mn(k,j,i,icrm)=min(f(ind_f,k,j,ib+offx_s-1,icrm),min(f(ind_f,k,j,ic+offx_s-1,icrm),min(f(ind_f,kb,j,i+offx_s-1,icrm),
                      min(f(ind_f,kc,j,i+offx_s-1,icrm),f(ind_f,k,j,i+offx_s-1,icrm)))));
-	  });
+    });
   }// nonos
 
   // for (int k=0; k<nzm; k++) {
@@ -472,7 +472,7 @@ void advect_scalar2D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
     if (i == 1) {
       flux(ind_flux,k,icrm) = 0.0;
     }
-	});
+  });
 
 
   // for (int k=0; k<nzm; k++) {
@@ -481,7 +481,7 @@ void advect_scalar2D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
     irho(k,icrm) = 1.0/rho(k,icrm);
     iadz(k,icrm) = 1.0/adz(k,icrm);
     irhow(k,icrm) = 1.0/(rhow(k,icrm)*adz(k,icrm));
-	});
+  });
 
   // for (int k=0; k<nzm; k++) {
   //  for (int i=0; i<nx+4; i++) {
@@ -492,7 +492,7 @@ void advect_scalar2D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
     }
     f(ind_f,k,j,i+offx_s-2,icrm) = f(ind_f,k,j,i+offx_s-2,icrm) - (uuu(k,j,i+1,icrm)-uuu(k,j,i,icrm) +
                                    (www(k+1,j,i,icrm)-www(k,j,i,icrm))*iadz(k,icrm))*irho(k,icrm);
-	});
+  });
 
   // for (int k=0; k<nzm; k++) {
   //  for (int i=0; i<nx+3; i++) {
@@ -517,13 +517,13 @@ void advect_scalar2D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
                  w(k,j,i+offx_w-1,icrm), u(kb,j,i+offx_u-1,icrm)+u(k,j,i+offx_u-1,icrm)+
                  u(k,j,ic+offx_u-1,icrm)+u(kb,j,ic+offx_u-1,icrm)) *irho(k,icrm);
     }
-	});
+  });
 
   //  for (int i=0; i<nx+4; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<2>(nx+4,ncrms) , YAKL_LAMBDA (int i, int icrm) {
     www(0,j,i,icrm) = 0.0;
-	});
+  });
 
   if (nonos) {
     // for (int k=0; k<nzm; k++) {
@@ -538,7 +538,7 @@ void advect_scalar2D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
                      max(f(ind_f,kc,j,i+offx_s-1,icrm),max(f(ind_f,k,j,i+offx_s-1,icrm),mx(k,j,i,icrm))))));
       mn(k,j,i,icrm)=min(f(ind_f,k,j,ib+offx_s-1,icrm),min(f(ind_f,k,j,ic+offx_s-1,icrm),min(f(ind_f,kb,j,i+offx_s-1,icrm),
                      min(f(ind_f,kc,j,i+offx_s-1,icrm),min(f(ind_f,k,j,i+offx_s-1,icrm),mn(k,j,i,icrm))))));
-	  });
+    });
 
     // for (int k=0; k<nzm; k++) {
     //  for (int i=0; i<nx+2; i++) {
@@ -552,7 +552,7 @@ void advect_scalar2D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
       mn(k,j,i,icrm)=rho(k,icrm)*(f(ind_f,k,j,i+offx_s-1,icrm)-mn(k,j,i,icrm))/(pp2(uuu(k,j,ic+offx_uuu-1,icrm)) +
                      pn2(uuu(k,j,i+offx_uuu-1,icrm))+iadz(k,icrm)*(pp2(www(kc,j,i+offx_www-1,icrm)) +
                      pn2(www(k,j,i+offx_www-1,icrm)))+eps);
-	  });
+    });
 
     // for (int k=0; k<nzm; k++) {
     //  for (int i=0; i<nx+1; i++) {
@@ -568,7 +568,7 @@ void advect_scalar2D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
 
         yakl::atomicAdd(flux(ind_flux,k,icrm), www(k,j,i+offx_www,icrm));
       }
-	  });
+    });
   } // nonos
 
   // for (int k=0; k<nzm; k++) {
@@ -582,6 +582,6 @@ void advect_scalar2D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
     //     most likely truncation error.
     f(ind_f,k,j,i+offx_s,icrm)= max(0.0, f(ind_f,k,j,i+offx_s,icrm) - (uuu(k,j,i+1+offx_uuu,icrm)-uuu(k,j,i+offx_uuu,icrm) +
                                 (www(k+1,j,i+offx_www,icrm)-www(k,j,i+offx_www,icrm))*iadz(k,icrm))*irho(k,icrm));
-	});
+  });
 
 }

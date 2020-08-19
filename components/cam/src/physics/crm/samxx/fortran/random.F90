@@ -23,7 +23,7 @@ contains
     nsteps = iseed*10000
     do i = 1,nsteps
       m = ranf_()
-      !	m = rand_(0)
+      ! m = rand_(0)
     end do
     return
   end

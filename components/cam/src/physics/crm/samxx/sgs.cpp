@@ -63,14 +63,14 @@ void sgs_proc() {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<4>(nzm,dimy_s,dimx_s,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     tke2(k,j,i,icrm) = sgs_field(0,k,j,i,icrm);
-	});
+  });
   // for (int k=0; k<nzm; k++) {
   //   for (int j=0; j<dimy_d; j++) {
   //     for (int i=0; i<dimx_d; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<4>(nzm,dimy_d,dimx_d,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     tk2(k,j,i,icrm) = sgs_field_diag(0,k,j,i,icrm);
-	});
+  });
 }
 
 
@@ -113,42 +113,42 @@ void sgs_init() {
   if (nrestart == 0) {
     // for (int l=0; l<nsgs_fields; l++) {
     //  for (int k=0; k<nzm; k++) {
-		//    for (int j=0; j<dimy_s; j++) {
-		//      for (int i=0; i<dimx_s; i++) {
-		//        for (int icrm=0; icrm<ncrms; icrm++) {
+    //    for (int j=0; j<dimy_s; j++) {
+    //      for (int i=0; i<dimx_s; i++) {
+    //        for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( Bounds<5>(nsgs_fields,nzm,dimy_s,dimx_s,ncrms) , YAKL_LAMBDA (int l, int k, int j, int i, int icrm) {
       sgs_field(l,k,j,i,icrm) = 0.0;
-	  });
+    });
 
     // for (int k=0; k<nsgs_fields_diag; k++) {
     //  for (int k=0; k<nzm; k++) {
-		//    for (int j=0; j<dimy_d; j++) {
-		//      for (int i=0; i<dimx_d; i++) {
-		//        for (int icrm=0; icrm<ncrms; icrm++) {
+    //    for (int j=0; j<dimy_d; j++) {
+    //      for (int i=0; i<dimx_d; i++) {
+    //        for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( Bounds<5>(nsgs_fields_diag,nzm,dimy_d,dimx_d,ncrms) , YAKL_LAMBDA (int l, int k, int j, int i, int icrm) {
       sgs_field_diag(l,k,j,i,icrm) = 0.0;
-	  });
+    });
   }
 
   if (les) {
     // for (int k=0; k<nzm; k++) {
-		//  for (int icrm=0; icrm<ncrms; icrm++) {
+    //  for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
       real tmp1 = (adz(k,icrm)*dz(icrm));
       real tmp2 = (adz(k,icrm)*dz(icrm));
       grdf_x(k,icrm) = dx*dx/(tmp1*tmp1);
       grdf_y(k,icrm) = dy*dy/(tmp2*tmp2);
       grdf_z(k,icrm) = 1.0;
-	  });
+    });
   } else {
     // for (int k=0; k<nzm; k++) {
-		//  for (int icrm=0; icrm<ncrms; icrm++) {
+    //  for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
       real tmp1 = (adz(k,icrm)*dz(icrm));
       real tmp2 = (adz(k,icrm)*dz(icrm));
       grdf_x(k,icrm) = min( 16.0, dx*dx/(tmp1*tmp1));
       grdf_y(k,icrm) = min( 16.0, dy*dy/(tmp2*tmp2));
       grdf_z(k,icrm) = 1.0;
-	  });
+    });
   }
 }
