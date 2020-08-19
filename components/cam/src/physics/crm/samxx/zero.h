@@ -5,4 +5,3 @@
 #include "vars.h"
 
 void zero();
-
