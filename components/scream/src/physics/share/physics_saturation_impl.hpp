@@ -17,20 +17,21 @@ void  Functions<S,D>
 ::check_temperature(const Spack& t_atm, const char* func_name, const Smask& range_mask)
 {
 
-  //"range_mask" masks out packs which are padded with uninitialized values    
-  
+  //"range_mask" masks out packs which are padded with uninitialized values
+
   /*Future work:
   Make error message dynamic so that it tells the user the function name (func_name) from where
   this error is coming from. Currently func_name is not used in this function */
 
+  //NOTE: scream_krequire_msg requires first argument to be "False" to exit with an error message
+
   //find out if there are any negative temperatures in the pack
   const auto is_neg_t_atm = (t_atm <= 0) && range_mask;
-  printf('%d',is_neg_t_atm);
-  scream_krequire_msg(is_neg_t_atm.any(), "Error! Temperature has <= 0 values.\n"); //exit with an error message
-  
+  scream_krequire_msg(!(is_neg_t_atm.any()), "Error! Temperature has <= 0 values.\n"); //exit with an error message
+
   //find out if there are any NaN temperatures in the pack
   const auto is_nan_t_atm = isnan(t_atm) && range_mask;
-  //scream_krequire_msg(is_nan_t_atm, "Error! Temperature has NaN values.\n"); //exit with an error message
+  scream_krequire_msg(!(is_nan_t_atm.any()), "Error! Temperature has NaN values.\n"); //exit with an error message
 
 }
 
@@ -130,7 +131,7 @@ Functions<S,D>::qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice, c
   Currently default is set to "MurphyKoop_svp"
   func_idx = Polysvp1 (=0) --> polysvp1 (Flatau et al. 1992)
   func_idx = MurphyKoop (=1) --> MurphyKoop_svp (Murphy, D. M., and T. Koop 2005)*/
-  
+
   //First check if the temperature is legitimate or not
   check_temperature(t_atm, "qv_sat", range_mask);
 
