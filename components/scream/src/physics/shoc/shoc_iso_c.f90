@@ -282,7 +282,7 @@ contains
                                 se_a,ke_a,wv_a,wl_a,&
                                 wthl_sfc,wqw_sfc,rho_zt,&
                                 te_a,te_b) bind (C)
-    use shoc, only: shoc_energy_integrals
+    use shoc, only: shoc_energy_total_fixer
 
     integer(kind=c_int), intent(in), value :: shcol
     integer(kind=c_int), intent(in), value :: nlev
@@ -300,7 +300,7 @@ contains
     real(kind=c_real), intent(in) :: wthl_sfc(shcol)
     real(kind=c_real), intent(in) :: wqw_sfc(shcol)
     real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
-    real(kind=c_real), intent(in) :: zi_grid(shcol,nlev)
+    real(kind=c_real), intent(in) :: zi_grid(shcol,nlevi)
     real(kind=c_real), intent(in) :: rho_zt(shcol,nlev)
 
     real(kind=c_real), intent(out) :: te_a(shcol)

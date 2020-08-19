@@ -70,27 +70,32 @@ namespace shoc {
 //
 
 SHOCDataBase::SHOCDataBase(Int shcol_, Int nlev_, Int nlevi_,
-                           const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i) :
+                           const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i,
+			   const std::vector<Real**>& ptrs_c) :
   shcol(shcol_),
   nlev(nlev_),
   nlevi(nlevi_),
   m_total(shcol_ * nlev_),
   m_totali(shcol_ * nlevi_),
+  m_totalc(shcol_),
   m_ptrs(ptrs),
   m_ptrs_i(ptrs_i),
-  m_data(m_ptrs.size() * m_total + m_ptrs_i.size() * m_totali, 0)
+  m_ptrs_c(ptrs_c),
+  m_data(m_ptrs.size() * m_total + m_ptrs_i.size() * m_totali + m_ptrs_c.size() * m_totalc, 0)
 {
   init_ptrs();
 }
 
-SHOCDataBase::SHOCDataBase(const SHOCDataBase &rhs, const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i) :
+SHOCDataBase::SHOCDataBase(const SHOCDataBase &rhs, const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i, const std::vector<Real**>& ptrs_c) :
   shcol(rhs.shcol),
   nlev(rhs.nlev),
   nlevi(rhs.nlevi),
   m_total(rhs.m_total),
   m_totali(rhs.m_totali),
+  m_totalc(rhs.m_totalc),
   m_ptrs(ptrs),
   m_ptrs_i(ptrs_i),
+  m_ptrs_c(ptrs_c),
   m_data(rhs.m_data)
 {
   init_ptrs();
@@ -103,6 +108,7 @@ SHOCDataBase& SHOCDataBase::operator=(const SHOCDataBase& rhs)
   nlevi    = rhs.nlevi;
   m_total  = rhs.m_total;
   m_totali = rhs.m_totali;
+  m_totalc = rhs.m_totalc;
   m_data   = rhs.m_data; // Copy
 
   init_ptrs();
@@ -124,6 +130,11 @@ void SHOCDataBase::init_ptrs()
     *(m_ptrs_i[i]) = data_begin + offset;
     offset += m_totali;
   }
+  
+  for (size_t i = 0; i < m_ptrs_c.size(); ++i) {
+    *(m_ptrs_c[i]) = data_begin + offset;
+    offset += m_totalc;
+  }  
 }
 
 void SHOCDataBase::randomize()
@@ -140,6 +151,12 @@ void SHOCDataBase::randomize()
   for (size_t i = 0; i < m_ptrs_i.size(); ++i) {
     for (size_t j = 0; j < m_totali; ++j) {
       (*(m_ptrs_i[i]))[j] = data_dist(generator);
+    }
+  }
+  
+  for (size_t i = 0; i < m_ptrs_c.size(); ++i) {
+    for (size_t j = 0; j < m_totalc; ++j) {
+      (*(m_ptrs_c[i]))[j] = data_dist(generator);
     }
   }
 }

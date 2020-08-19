@@ -23,10 +23,11 @@ struct SHOCDataBase
   Int shcol, nlev, nlevi;
 
   SHOCDataBase(Int shcol_, Int nlev_, Int nlevi_,
-               const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i);
+               const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i,
+	       const std::vector<Real**>& ptrs_c);
 
   SHOCDataBase(const SHOCDataBase &rhs) = delete;
-  SHOCDataBase(const SHOCDataBase &rhs, const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i);
+  SHOCDataBase(const SHOCDataBase &rhs, const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i, const std::vector<Real**>& ptrs_c);
   SHOCDataBase &operator=(const SHOCDataBase &rhs);
 
   template <util::TransposeDirection::Enum D>
@@ -42,6 +43,11 @@ struct SHOCDataBase
     for (size_t i = 0; i < m_ptrs_i.size(); ++i) {
       util::transpose<D>(*(m_ptrs_i[i]), data.data() + (m_ptrs.size()*m_total) + (m_totali*i), shcol, nlevi);
     }
+    
+    // Transpose on the column only grid
+    for (size_t i = 0; i < m_ptrs_c.size(); ++i) {
+      util::transpose<D>(*(m_ptrs_c[i]), data.data() + (m_ptrs.size()*m_total) + (m_totalc*i), shcol, 1);
+    }    
 
     m_data = data;
   }
@@ -50,13 +56,14 @@ struct SHOCDataBase
 
   Int total() const { return m_total; }
   Int totali() const { return m_totali; }
+  Int totalc() const { return m_totalc; }
 
  private:
   void init_ptrs();
 
   // Internals
-  Int m_total, m_totali;
-  std::vector<Real**> m_ptrs, m_ptrs_i;
+  Int m_total, m_totali, m_totalc;
+  std::vector<Real**> m_ptrs, m_ptrs_i, m_ptrs_c;
   std::vector<Real> m_data;
 };
 
@@ -68,9 +75,9 @@ struct SHOCGridData : public SHOCDataBase {
   Real *dz_zt, *dz_zi, *rho_zt;
 
   SHOCGridData(Int shcol_, Int nlev_, Int nlevi_) :
-    SHOCDataBase(shcol_, nlev_, nlevi_, {&zt_grid, &dz_zt, &pdel, &rho_zt}, {&zi_grid, &dz_zi}) {}
+    SHOCDataBase(shcol_, nlev_, nlevi_, {&zt_grid, &dz_zt, &pdel, &rho_zt}, {&zi_grid, &dz_zi}, {}) {}
 
-  SHOCGridData(const SHOCGridData &rhs) : SHOCDataBase(rhs, {&zt_grid, &dz_zt, &pdel, &rho_zt}, {&zi_grid, &dz_zi}) {}
+  SHOCGridData(const SHOCGridData &rhs) : SHOCDataBase(rhs, {&zt_grid, &dz_zt, &pdel, &rho_zt}, {&zi_grid, &dz_zi}, {}) {}
 
   SHOCGridData &operator=(const SHOCGridData &rhs) { SHOCDataBase::operator=(rhs); return *this; }
 };
@@ -83,8 +90,8 @@ struct SHOCColstabData : public SHOCDataBase {
   Real *brunt_int;
 
   SHOCColstabData(Int shcol_, Int nlev_) :
-    SHOCDataBase(shcol_, nlev_, 1, {&dz_zt, &pres, &brunt}, {&brunt_int}) {}
-  SHOCColstabData(const SHOCColstabData &rhs) : SHOCDataBase(rhs, {&dz_zt, &pres, &brunt}, {&brunt_int}) {}
+    SHOCDataBase(shcol_, nlev_, 0, {&dz_zt, &pres, &brunt}, {}, {&brunt_int}) {}
+  SHOCColstabData(const SHOCColstabData &rhs) : SHOCDataBase(rhs, {&dz_zt, &pres, &brunt}, {}, {&brunt_int}) {}
   SHOCColstabData &operator=(const SHOCColstabData &rhs) { SHOCDataBase::operator=(rhs); return *this; }
 };//SHOCColstabData
 
@@ -97,8 +104,8 @@ struct SHOCTkeshearData : public SHOCDataBase {
 
   //functions to initialize data
   SHOCTkeshearData(Int shcol_, Int nlev_, Int nlevi_) :
-    SHOCDataBase(shcol_, nlev_, nlevi_, {&u_wind, &v_wind}, {&dz_zi, &sterm}) {}
-  SHOCTkeshearData(const SHOCTkeshearData &rhs) : SHOCDataBase(rhs, {&u_wind, &v_wind}, {&dz_zi, &sterm}) {}
+    SHOCDataBase(shcol_, nlev_, nlevi_, {&u_wind, &v_wind}, {&dz_zi, &sterm},{}) {}
+  SHOCTkeshearData(const SHOCTkeshearData &rhs) : SHOCDataBase(rhs, {&u_wind, &v_wind}, {&dz_zi, &sterm}, {}) {}
   SHOCTkeshearData &operator=(const SHOCTkeshearData &rhs) { SHOCDataBase::operator=(rhs); return *this; }
 };//SHOCTkeshearData
 
@@ -111,8 +118,8 @@ struct SHOCIsotropicData : public SHOCDataBase {
 
   //functions to initialize data
   SHOCIsotropicData(Int shcol_, Int nlev_) :
-    SHOCDataBase(shcol_, nlev_, 1, {&tke, &a_diss, &brunt, &isotropy}, {&brunt_int}) {}
-  SHOCIsotropicData(const SHOCIsotropicData &rhs) : SHOCDataBase(rhs, {&tke, &a_diss, &brunt, &isotropy}, {&brunt_int}) {}
+    SHOCDataBase(shcol_, nlev_, 0, {&tke, &a_diss, &brunt, &isotropy}, {}, {&brunt_int}) {}
+  SHOCIsotropicData(const SHOCIsotropicData &rhs) : SHOCDataBase(rhs, {&tke, &a_diss, &brunt, &isotropy}, {}, {&brunt_int}) {}
   SHOCIsotropicData &operator=(const SHOCIsotropicData &rhs) { SHOCDataBase::operator=(rhs); return *this; }
 };//SHOCIsotropicData
 
@@ -129,8 +136,8 @@ struct SHOCAdvsgstkeData : public SHOCDataBase {
 
   //functions to initialize data
   SHOCAdvsgstkeData(Int shcol_, Int nlev_, Real dtime_) :
-    SHOCDataBase(shcol_, nlev_, 0, {&shoc_mix, &wthv_sec, &sterm_zt, &tk, &tke, &a_diss}, {}), dtime(dtime_) {}
-  SHOCAdvsgstkeData(const SHOCAdvsgstkeData &rhs) : SHOCDataBase(rhs, {&shoc_mix, &wthv_sec, &sterm_zt, &tk, &tke, &a_diss}, {}), dtime(rhs.dtime) {}
+    SHOCDataBase(shcol_, nlev_, 0, {&shoc_mix, &wthv_sec, &sterm_zt, &tk, &tke, &a_diss}, {}, {}), dtime(dtime_) {}
+  SHOCAdvsgstkeData(const SHOCAdvsgstkeData &rhs) : SHOCDataBase(rhs, {&shoc_mix, &wthv_sec, &sterm_zt, &tk, &tke, &a_diss}, {}, {}), dtime(rhs.dtime) {}
   SHOCAdvsgstkeData &operator=(const SHOCAdvsgstkeData &rhs)
   { SHOCDataBase::operator=(rhs); dtime = rhs.dtime; return *this; }
 };//SHOCAdvsgstkeData
@@ -145,8 +152,8 @@ struct SHOCEddydiffData : public SHOCDataBase {
 
   //functions to initialize data
   SHOCEddydiffData(Int shcol_, Int nlev_) :
-    SHOCDataBase(shcol_, nlev_, 1, {&zt_grid, &shoc_mix, &isotropy, &tke, &tk, &tkh, &sterm_zt}, {&obklen, &pblh}) {}
-  SHOCEddydiffData(const SHOCEddydiffData &rhs) : SHOCDataBase(rhs, {&zt_grid, &shoc_mix, &isotropy, &tke, &tk, &tkh, &sterm_zt}, {&obklen, &pblh}) {}
+    SHOCDataBase(shcol_, nlev_, 0, {&zt_grid, &shoc_mix, &isotropy, &tke, &tk, &tkh, &sterm_zt}, {}, {&obklen, &pblh}) {}
+  SHOCEddydiffData(const SHOCEddydiffData &rhs) : SHOCDataBase(rhs, {&zt_grid, &shoc_mix, &isotropy, &tke, &tk, &tkh, &sterm_zt}, {}, {&obklen, &pblh}) {}
   SHOCEddydiffData &operator=(const SHOCEddydiffData &rhs) { SHOCDataBase::operator=(rhs); return *this; }
 };//SHOCEddydiffData
 
@@ -160,8 +167,8 @@ struct SHOCEnergydseData : public SHOCDataBase {
 
   //functions to initialize data
   SHOCEnergydseData(Int shcol_, Int nlev_) :
-    SHOCDataBase(shcol_, nlev_, 1, {&thlm, &shoc_ql, &exner, &zt_grid, &host_dse}, {&phis}) {}
-  SHOCEnergydseData(const SHOCEnergydseData &rhs) : SHOCDataBase(rhs, {&thlm, &shoc_ql, &exner, &zt_grid, &host_dse}, {&phis}) {}
+    SHOCDataBase(shcol_, nlev_, 0, {&thlm, &shoc_ql, &exner, &zt_grid, &host_dse}, {}, {&phis}) {}
+  SHOCEnergydseData(const SHOCEnergydseData &rhs) : SHOCDataBase(rhs, {&thlm, &shoc_ql, &exner, &zt_grid, &host_dse}, {}, {&phis}) {}
   SHOCEnergydseData &operator=(const SHOCEnergydseData &rhs) { SHOCDataBase::operator=(rhs); return *this; }
 };//SHOCEnergydseData
 
@@ -175,8 +182,8 @@ struct SHOCEnergyintData : public SHOCDataBase {
 
   //functions to initialize data
   SHOCEnergyintData(Int shcol_, Int nlev_) :
-    SHOCDataBase(shcol_, nlev_, 1, {&host_dse, &pdel, &rtm, &rcm, &u_wind, &v_wind}, {&se_int, &ke_int, &wv_int, &wl_int}) {}
-  SHOCEnergyintData(const SHOCEnergyintData &rhs) : SHOCDataBase(rhs, {&host_dse, &pdel, &rtm, &rcm, &u_wind, &v_wind}, {&se_int, &ke_int, &wv_int, &wl_int}) {}
+    SHOCDataBase(shcol_, nlev_, 0, {&host_dse, &pdel, &rtm, &rcm, &u_wind, &v_wind}, {}, {&se_int, &ke_int, &wv_int, &wl_int}) {}
+  SHOCEnergyintData(const SHOCEnergyintData &rhs) : SHOCDataBase(rhs, {&host_dse, &pdel, &rtm, &rcm, &u_wind, &v_wind}, {}, {&se_int, &ke_int, &wv_int, &wl_int}) {}
   SHOCEnergyintData &operator=(const SHOCEnergyintData &rhs) { SHOCDataBase::operator=(rhs); return *this; }
 };//SHOCEnergyintData
 
@@ -193,7 +200,7 @@ struct SHOCEnergytotData : public SHOCDataBase {
 
   //functions to initialize data for shoc_energy_total_fixer
   SHOCEnergytotData(Int shcol_, Int nlev_, Int nlevi_, Real dtime_, Int nadv_) :
-    SHOCDataBase(shcol_, nlev_, nlevi_, 1, {&zt_grid, &rho_zt}, {&zi_grid}, {&se_b, &ke_b, &wv_b, &wl_b, &se_a, &ke_a, &wv_a, &wl_a, &wthl_sfc, &wqw_sfc, &te_a, &te_b}), dtime(dtime_), nadv(nadv_) {}
+    SHOCDataBase(shcol_, nlev_, nlevi_, {&zt_grid, &rho_zt}, {&zi_grid}, {&se_b, &ke_b, &wv_b, &wl_b, &se_a, &ke_a, &wv_a, &wl_a, &wthl_sfc, &wqw_sfc, &te_a, &te_b}), dtime(dtime_), nadv(nadv_) {}
   SHOCEnergytotData(const SHOCEnergytotData &rhs) : SHOCDataBase(rhs, {&zt_grid, &rho_zt}, {&zi_grid}, {&se_b, &ke_b, &wv_b, &wl_b, &se_a, &ke_a, &wv_a, &wl_a, &wthl_sfc, &wqw_sfc, &te_a, &te_b}) {}
   SHOCEnergytotData &operator=(const SHOCEnergytotData &rhs) { SHOCDataBase::operator=(rhs); dtime = rhs.dtime; nadv = rhs.nadv; return *this; }
 };//SHOCEnergytotData
@@ -207,8 +214,8 @@ struct SHOCVertfluxData : public SHOCDataBase {
   Real *vertflux;
 
   SHOCVertfluxData(Int shcol_, Int nlev_, Int nlevi_) :
-    SHOCDataBase(shcol_, nlev_, nlevi_, {&invar}, {&tkh_zi, &dz_zi, &vertflux}) {}
-  SHOCVertfluxData(const SHOCVertfluxData &rhs) : SHOCDataBase(rhs, {&invar}, {&tkh_zi, &dz_zi, &vertflux}) {}
+    SHOCDataBase(shcol_, nlev_, nlevi_, {&invar}, {&tkh_zi, &dz_zi, &vertflux}, {}) {}
+  SHOCVertfluxData(const SHOCVertfluxData &rhs) : SHOCDataBase(rhs, {&invar}, {&tkh_zi, &dz_zi, &vertflux}, {}) {}
   SHOCVertfluxData &operator=(const SHOCVertfluxData &rhs) { SHOCDataBase::operator=(rhs); return *this; }
 }; //SHOCVertfluxData
 
@@ -221,9 +228,9 @@ struct SHOCVarorcovarData : public SHOCDataBase {
   Real *varorcovar;
 
   SHOCVarorcovarData(Int shcol_, Int nlev_, Int nlevi_, Real tunefac_) :
-    SHOCDataBase(shcol_, nlev_, nlevi_, {&invar1, &invar2}, {&tkh_zi, &dz_zi, &isotropy_zi, &varorcovar}), tunefac(tunefac_) {}
+    SHOCDataBase(shcol_, nlev_, nlevi_, {&invar1, &invar2}, {&tkh_zi, &dz_zi, &isotropy_zi, &varorcovar}, {}), tunefac(tunefac_) {}
   SHOCVarorcovarData(const SHOCVarorcovarData &rhs) :
-    SHOCDataBase(rhs, {&invar1, &invar2}, {&tkh_zi, &dz_zi, &isotropy_zi, &varorcovar}), tunefac(rhs.tunefac) {}
+    SHOCDataBase(rhs, {&invar1, &invar2}, {&tkh_zi, &dz_zi, &isotropy_zi, &varorcovar}, {}), tunefac(rhs.tunefac) {}
   SHOCVarorcovarData &operator=(const SHOCVarorcovarData &rhs)
   { SHOCDataBase::operator=(rhs); tunefac = rhs.tunefac; return *this; }
 };//SHOCVarorcovarData
@@ -239,6 +246,7 @@ struct SHOCVarorcovarData : public SHOCDataBase {
 void shoc_grid(SHOCGridData &d);
 void update_host_dse(SHOCEnergydseData &d);
 void shoc_energy_integrals(SHOCEnergyintData &d);
+void shoc_energy_total_fixer(SHOCEnergytotData &d);
 void calc_shoc_vertflux(SHOCVertfluxData &d);
 void calc_shoc_varorcovar(SHOCVarorcovarData &d);
 void integ_column_stability(SHOCColstabData &d);
