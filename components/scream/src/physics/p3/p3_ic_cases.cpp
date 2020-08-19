@@ -30,12 +30,12 @@ FortranData::Ptr make_mixed (const Int ncol) {
     for (k = 0; k < nk; ++k) d.nr(i,k) = 1e6;
 
     //                                                      v (in the python)
-    for (k = 0; k < 15; ++k) d.qitot(i,nk-20+k) = 1e-4; //*(1 - double(k)/14)
-    for (k = 0; k < nk; ++k) d.nitot(i,k) = 1e6;
-    for (k = 0; k < 15; ++k) d.qirim(i,nk-20+k) = 1e-4*(1 - double(k)/14);
+    for (k = 0; k < 15; ++k) d.qi(i,nk-20+k) = 1e-4; //*(1 - double(k)/14)
+    for (k = 0; k < nk; ++k) d.ni(i,k) = 1e6;
+    for (k = 0; k < 15; ++k) d.qm(i,nk-20+k) = 1e-4*(1 - double(k)/14);
     // guess at reasonable value based on: m3/kg is 1/density and liquid water has
     // a density of 1000 kg/m3
-    for (k = 0; k < 15; ++k) d.birim(i,nk-20+k) = 1e-2;
+    for (k = 0; k < 15; ++k) d.bm(i,nk-20+k) = 1e-2;
 
     // qv goes to zero halfway through profile (to avoid condensate near model
     // top)
@@ -48,18 +48,18 @@ FortranData::Ptr make_mixed (const Int ncol) {
 
     // pres is actually an input variable, but needed here to compute theta.
     for (k = 0; k < nk; ++k) d.pres(i,k) = 100 + 1e5/double(nk)*k;
-    // pdel is actually an input variable, but needed here to compute theta.
-    for (k = 0; k < nk; ++k) d.pdel(i,k) = 1e5/double(nk);
+    // dpres is actually an input variable, but needed here to compute theta.
+    for (k = 0; k < nk; ++k) d.dpres(i,k) = 1e5/double(nk);
     // exner is actually an input variable, but needed here to compute theta.
     for (k = 0; k < nk; ++k) d.exner(i,k) = std::pow((1e5/d.pres(i,k)), (287.15/1005.0));
     // cloud fraction is an input variable, just set to 1 everywhere
-    for (k = 0; k < nk; ++k) d.icldm(i,k) = 1.0;
-    for (k = 0; k < nk; ++k) d.lcldm(i,k) = 1.0;
-    for (k = 0; k < nk; ++k) d.rcldm(i,k) = 1.0;
-    // qc_relvar=mean(qc)/var(qc) measures subgrid qc variability. It is computed in SHOC
+    for (k = 0; k < nk; ++k) d.cld_frac_i(i,k) = 1.0;
+    for (k = 0; k < nk; ++k) d.cld_frac_l(i,k) = 1.0;
+    for (k = 0; k < nk; ++k) d.cld_frac_r(i,k) = 1.0;
+    // inv_qc_relvar=mean(qc)/var(qc) measures subgrid qc variability. It is computed in SHOC
     // and used by P3. It can range between 0.1 and 10.0. Setting to a typical value of 1.0
     // here.
-    for (k = 0; k < nk; ++k) d.qc_relvar(i,k) = 1.0;
+    for (k = 0; k < nk; ++k) d.inv_qc_relvar(i,k) = 1.0;
     
     // To get potential temperature, start by making absolute temperature vary
     // between 150K at top of atmos and 300k at surface, then convert to potential
@@ -73,7 +73,7 @@ FortranData::Ptr make_mixed (const Int ncol) {
 
     // The next section modifies inout variables to satisfy weird conditions
     // needed for code coverage.
-    d.qitot(i,nk-1) = 1e-9;
+    d.qi(i,nk-1) = 1e-9;
     d.qv(i,nk-1) = 5e-2; // also needs to be supersaturated to avoid getting set
     // to 0 earlier.
 
@@ -82,8 +82,8 @@ FortranData::Ptr make_mixed (const Int ncol) {
     d.qr(i,nk-1) = 1e-6;
     d.qc(i,nk-1) = 1e-6;
 
-    // make qitot>1e-8 where qr=0 to test rain collection conditional.
-    d.qitot(i,nk-25) = 5e-8;
+    // make qi>1e-8 where qr=0 to test rain collection conditional.
+    d.qi(i,nk-25) = 5e-8;
 
     // make qc>0 and qr>0 where T<233.15 to test homogeneous freezing.
     d.qc(i,35) = 1e-7;
@@ -95,7 +95,7 @@ FortranData::Ptr make_mixed (const Int ncol) {
     // input variables.
     d.dt = 1800;
 
-    // compute vertical grid spacing dzq (in m) from pres and theta.
+    // compute vertical grid spacing dz (in m) from pres and theta.
     static constexpr double
       g = 9.8; // gravity, m/s^2
     for (k = 0; k < nk; ++k) {
@@ -107,7 +107,7 @@ FortranData::Ptr make_mixed (const Int ncol) {
         d.pres(i,nk-1) + 0.5*(d.pres(i,nk-1) - d.pres(i,nk-2))/(1 - 0) :
         0.5*(d.pres(i,k) + d.pres(i,k+1));
       const auto dpres = phi - plo;
-      d.dzq(i,k) = consts::RD*T(k)/(g*d.pres(i,k))*dpres;
+      d.dz(i,k) = consts::RD*T(k)/(g*d.pres(i,k))*dpres;
     }
   }
 

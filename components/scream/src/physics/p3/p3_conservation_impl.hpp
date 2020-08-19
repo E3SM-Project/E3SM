@@ -11,10 +11,11 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::cloud_water_conservation(const Spack& qc, const Scalar dt,
-  Spack& qcaut, Spack& qcacc, Spack &qccol, Spack& qcheti, Spack& qcshd, Spack& qiberg, Spack& qisub, Spack& qidep,
+  Spack& qc2qr_autoconv_tend, Spack& qc2qr_accret_tend, Spack &qc2qi_collect_tend, Spack& qc2qi_hetero_freeze_tend, 
+  Spack& qc2qr_ice_shed_tend, Spack& qc2qi_berg_tend, Spack& qi2qv_sublim_tend, Spack& qv2qi_vapdep_tend,
   const Smask& context)
 {
-  const auto sinks = (qcaut+qcacc+qccol+qcheti+qcshd+qiberg)*dt; // Sinks of cloud water
+  const auto sinks = (qc2qr_autoconv_tend+qc2qr_accret_tend+qc2qi_collect_tend+qc2qi_hetero_freeze_tend+qc2qr_ice_shed_tend+qc2qi_berg_tend)*dt; // Sinks of cloud water
   const auto sources = qc; // Source of cloud water
   Spack ratio;
 
@@ -24,26 +25,26 @@ void Functions<S,D>
 
   if (enforce_conservation.any()){
     ratio.set(enforce_conservation, sources/sinks);
-    qcaut.set(enforce_conservation, qcaut*ratio);
-    qcacc.set(enforce_conservation, qcacc*ratio);
-    qccol.set(enforce_conservation, qccol*ratio);
-    qcheti.set(enforce_conservation, qcheti*ratio);
-    qcshd.set(enforce_conservation, qcshd*ratio);
-    qiberg.set(enforce_conservation, qiberg*ratio);
+    qc2qr_autoconv_tend.set(enforce_conservation, qc2qr_autoconv_tend*ratio);
+    qc2qr_accret_tend.set(enforce_conservation, qc2qr_accret_tend*ratio);
+    qc2qi_collect_tend.set(enforce_conservation, qc2qi_collect_tend*ratio);
+    qc2qi_hetero_freeze_tend.set(enforce_conservation, qc2qi_hetero_freeze_tend*ratio);
+    qc2qr_ice_shed_tend.set(enforce_conservation, qc2qr_ice_shed_tend*ratio);
+    qc2qi_berg_tend.set(enforce_conservation, qc2qi_berg_tend*ratio);
   }
 
   if(nothing_todo.any()){
     ratio.set(nothing_todo, 1); // If not limiting sinks on qc then most likely did not run out of qc
   }
 
-  //PMC: ratio is also frac of step w/ liq. thus we apply qiberg for
+  //PMC: ratio is also frac of step w/ liq. thus we apply qc2qi_berg_tend for
   //"ratio" of timestep and vapor deposition and sublimation  for the
   //remaining frac of the timestep.  Only limit if there will be cloud
   // water to begin with.
   enforce_conservation = sources > qtendsmall && context;
   if (enforce_conservation.any()){
-    qidep.set(enforce_conservation, qidep*(1-ratio));
-    qisub.set(enforce_conservation, qisub*(1-ratio));
+    qv2qi_vapdep_tend.set(enforce_conservation, qv2qi_vapdep_tend*(1-ratio));
+    qi2qv_sublim_tend.set(enforce_conservation, qi2qv_sublim_tend*(1-ratio));
   }
 }
 
@@ -51,12 +52,13 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::rain_water_conservation(
-  const Spack& qr, const Spack& qcaut, const Spack& qcacc, const Spack& qimlt, const Spack& qcshd, const Scalar dt,
-  Spack& qrevp, Spack& qrcol, Spack& qrheti,
+  const Spack& qr, const Spack& qc2qr_autoconv_tend, const Spack& qc2qr_accret_tend, 
+  const Spack& qi2qr_melt_tend, const Spack& qc2qr_ice_shed_tend, const Scalar dt,
+  Spack& qr2qv_evap_tend, Spack& qr2qi_collect_tend, Spack& qr2qi_immers_freeze_tend,
   const Smask& context)
 {
-  const auto sinks   = (qrevp+qrcol+qrheti)*dt; // Sinks of rain water
-  const auto sources = qr + (qcaut+qcacc+qimlt+qcshd)*dt; // Sources of rain water
+  const auto sinks   = (qr2qv_evap_tend+qr2qi_collect_tend+qr2qi_immers_freeze_tend)*dt; // Sinks of rain water
+  const auto sources = qr + (qc2qr_autoconv_tend+qc2qr_accret_tend+qi2qr_melt_tend+qc2qr_ice_shed_tend)*dt; // Sources of rain water
   Spack ratio;
 
   constexpr Scalar qtendsmall = C::QTENDSMALL;
@@ -64,9 +66,9 @@ void Functions<S,D>
 
   if (enforce_conservation.any()){
     ratio.set(enforce_conservation, sources/sinks);
-    qrevp.set(enforce_conservation, qrevp*ratio);
-    qrcol.set(enforce_conservation, qrcol*ratio);
-    qrheti.set(enforce_conservation, qrheti*ratio);
+    qr2qv_evap_tend.set(enforce_conservation, qr2qv_evap_tend*ratio);
+    qr2qi_collect_tend.set(enforce_conservation, qr2qi_collect_tend*ratio);
+    qr2qi_immers_freeze_tend.set(enforce_conservation, qr2qi_immers_freeze_tend*ratio);
   }
 }
 
@@ -74,19 +76,22 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::ice_water_conservation(
-  const Spack& qitot,const Spack& qidep,const Spack& qinuc,const Spack& qiberg, const Spack &qrcol,const Spack &qccol,const Spack& qrheti,const Spack& qcheti,const Scalar dt,
-  Spack& qisub, Spack& qimlt,
+  const Spack& qi,const Spack& qv2qi_vapdep_tend,const Spack& qv2qi_nucleat_tend,const Spack& qc2qi_berg_tend, 
+  const Spack &qr2qi_collect_tend,const Spack &qc2qi_collect_tend,const Spack& qr2qi_immers_freeze_tend,
+  const Spack& qc2qi_hetero_freeze_tend,const Scalar dt,
+  Spack& qi2qv_sublim_tend, Spack& qi2qr_melt_tend,
   const Smask& context)
 {
-  const auto sinks = (qisub+qimlt)*dt; // Sinks of ice water
-  const auto sources = qitot + (qidep+qinuc+qrcol+qccol+qrheti+qcheti+qiberg)*dt; // Sources of ice water
+  const auto sinks = (qi2qv_sublim_tend+qi2qr_melt_tend)*dt; // Sinks of ice water
+  const auto sources = qi + (qv2qi_vapdep_tend+qv2qi_nucleat_tend+qr2qi_collect_tend+qc2qi_collect_tend
+                          + qr2qi_immers_freeze_tend+qc2qi_hetero_freeze_tend+qc2qi_berg_tend)*dt; // Sources of ice water
   Spack ratio;
   constexpr Scalar qtendsmall = C::QTENDSMALL;
   Smask enforce_conservation  = sinks > sources && sinks >= qtendsmall && context;  // determine if  conservation corrction is necessary
   if(enforce_conservation.any()){
     ratio.set(enforce_conservation, sources/sinks);
-    qisub.set(enforce_conservation, qisub*ratio);
-    qimlt.set(enforce_conservation, qimlt*ratio);
+    qi2qv_sublim_tend.set(enforce_conservation, qi2qv_sublim_tend*ratio);
+    qi2qr_melt_tend.set(enforce_conservation, qi2qr_melt_tend*ratio);
   }
 }
 

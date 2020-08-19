@@ -23,8 +23,8 @@ void P3InputsInitializer::initialize_fields ()
   count += m_fields.count("q");
   count += m_fields.count("T");
   count += m_fields.count("ast");
-  count += m_fields.count("naai");
-  count += m_fields.count("ncnuc");
+  count += m_fields.count("ni_activated");
+  count += m_fields.count("nc_nuceat_tend");
   count += m_fields.count("pmid");
   count += m_fields.count("dp");
   count += m_fields.count("zi");
@@ -34,7 +34,7 @@ void P3InputsInitializer::initialize_fields ()
   }
 
   scream_require_msg (count==8,
-    "Error! P3InputsInitializer is expected to init 'q','T','ast','naai','ncnuc','pmid','dp','zi'.\n"
+    "Error! P3InputsInitializer is expected to init 'q','T','ast','ni_activated','nc_nuceat_tend','pmid','dp','zi'.\n"
     "       Only " + std::to_string(count) + " of those have been found.\n"
     "       Please, check the atmosphere processes you are using,"
     "       and make sure they agree on who's initializing each field.\n");
@@ -43,43 +43,43 @@ void P3InputsInitializer::initialize_fields ()
   auto d_q     = m_fields.at("q").get_view();
   auto d_T     = m_fields.at("T").get_view();
   auto d_ast   = m_fields.at("ast").get_view();
-  auto d_naai  = m_fields.at("naai").get_view();
-  auto d_ncnuc = m_fields.at("ncnuc").get_view();
+  auto d_ni_activated  = m_fields.at("ni_activated").get_view();
+  auto d_nc_nuceat_tend = m_fields.at("nc_nuceat_tend").get_view();
   auto d_pmid  = m_fields.at("pmid").get_view();
-  auto d_pdel  = m_fields.at("dp").get_view();
+  auto d_dpres  = m_fields.at("dp").get_view();
   auto d_zi    = m_fields.at("zi").get_view();
 
   // Create host mirrors
   auto h_q     = Kokkos::create_mirror_view(d_q);
   auto h_T     = Kokkos::create_mirror_view(d_T);
   auto h_ast   = Kokkos::create_mirror_view(d_ast);
-  auto h_naai  = Kokkos::create_mirror_view(d_naai);
-  auto h_ncnuc = Kokkos::create_mirror_view(d_ncnuc);
+  auto h_ni_activated  = Kokkos::create_mirror_view(d_ni_activated);
+  auto h_nc_nuceat_tend = Kokkos::create_mirror_view(d_nc_nuceat_tend);
   auto h_pmid  = Kokkos::create_mirror_view(d_pmid);
-  auto h_pdel  = Kokkos::create_mirror_view(d_pdel);
+  auto h_dpres  = Kokkos::create_mirror_view(d_dpres);
   auto h_zi    = Kokkos::create_mirror_view(d_zi);
 
   // Get host mirros' raw pointers
   auto q     = h_q.data();
   auto T     = h_T.data();
   auto ast   = h_ast.data();
-  auto naai  = h_naai.data();
-  auto ncnuc = h_ncnuc.data();
+  auto ni_activated  = h_ni_activated.data();
+  auto nc_nuceat_tend = h_nc_nuceat_tend.data();
   auto pmid  = h_pmid.data();
-  auto pdel  = h_pdel.data();
+  auto dpres  = h_dpres.data();
   auto zi    = h_zi.data();
 
   // Call f90 routine
-  p3_standalone_init_f90 (q, T, zi, pmid, pdel, ast, naai, ncnuc);
+  p3_standalone_init_f90 (q, T, zi, pmid, dpres, ast, ni_activated, nc_nuceat_tend);
 
   // Deep copy back to device
   Kokkos::deep_copy(d_q,h_q);
   Kokkos::deep_copy(d_T,h_T);
   Kokkos::deep_copy(d_ast,h_ast);
-  Kokkos::deep_copy(d_naai,h_naai);
-  Kokkos::deep_copy(d_ncnuc,h_ncnuc);
+  Kokkos::deep_copy(d_ni_activated,h_ni_activated);
+  Kokkos::deep_copy(d_nc_nuceat_tend,h_nc_nuceat_tend);
   Kokkos::deep_copy(d_pmid,h_pmid);
-  Kokkos::deep_copy(d_pdel,h_pdel);
+  Kokkos::deep_copy(d_dpres,h_dpres);
   Kokkos::deep_copy(d_zi,h_zi);
 
   // If we are in charge of init-ing FQ as well, init it to 0.

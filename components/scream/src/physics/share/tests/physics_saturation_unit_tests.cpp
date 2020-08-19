@@ -31,7 +31,7 @@ struct UnitWrap::UnitTest<D>::TestSaturation
     //Set constant values
     //--------------------------------------
     static constexpr Scalar RV = C::RV;
-    static constexpr Scalar RhoLiq = C::RhoH2O;
+    static constexpr Scalar RhoLiq = C::RHO_H2O;
     static constexpr Scalar RhoIce = C::RhoIce;
     static constexpr Scalar LatVap = C::LatVap;
     static constexpr Scalar LatIce = C::LatIce;
