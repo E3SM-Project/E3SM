@@ -105,6 +105,7 @@ CONTAINS
 #ifdef HAVE_MOAB
     use seq_comm_mct,      only: MHID, MHFID  ! id of homme moab coarse and fine applications
     use seq_comm_mct,      only: ATMID
+    use seq_comm_mct,      only: mhpgid       ! id of pgx moab application
 #endif
 
     ! PARAMETERS:
@@ -170,7 +171,7 @@ CONTAINS
            write(iulog,*) " "
        endif
        appname="HM_FINE"//CHAR(0)
-       ATM_ID1 = 119
+       ATM_ID1 = 119 ! this number should not conflict with other components IDs; how do we know?
        ierr = iMOAB_RegisterFortranApplication(appname, par%comm, ATM_ID1, MHFID)
        if (ierr > 0 )  &
            call endrun('Error: cannot register moab app for fine mesh')
@@ -179,6 +180,19 @@ CONTAINS
            write(iulog,*) "register MOAB app:", trim(appname), "  MHFID=", MHFID
            write(iulog,*) " "
        endif
+       if ( fv_nphys > 0 ) then
+         appname="HM_PGX"//CHAR(0)
+         ATM_ID1 = 120 ! this number should not conflict with other components IDs; how do we know?
+         ierr = iMOAB_RegisterFortranApplication(appname, par%comm, ATM_ID1, mhpgid)
+         if (ierr > 0 )  &
+             call endrun('Error: cannot register moab app for fine mesh')
+         if(par%masterproc) then
+             write(iulog,*) " "
+             write(iulog,*) "register MOAB app:", trim(appname), "  MHPGID=", mhpgid
+             write(iulog,*) " "
+         endif
+       endif
+
 #endif
 
        call prim_init1(elem,par,dom_mt,TimeLevel)
