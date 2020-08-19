@@ -22,7 +22,7 @@ module micro_p3_interface
                             physics_ptend_init
   use physconst,      only: mwdry, cpair, mwh2o, gravit, rair, cpliq, pi, &
                             rh2o, latvap, latice, tmelt, rhoh2o, rairv 
-  use constituents,   only: cnst_add, pcnst, precip_ice_fluxnam, apcnst, bpcnst, pcnst,&
+  use constituents,   only: cnst_add, pcnst, sflxnam, apcnst, bpcnst, pcnst,&
                             cnst_name, cnst_get_ind,cnst_longname
   use physics_buffer, only: physics_buffer_desc, dtype_r8, &
                             pbuf_get_field, pbuf_add_field,dyn_time_lvls,dtype_i4, &
@@ -373,19 +373,19 @@ end subroutine micro_p3_readnl
           ! mass mixing ratios
           call addfld(cnst_name(mm), (/ 'lev' /), 'A', 'kg/kg', &
             cnst_longname(mm) )
-          call addfld(precip_ice_fluxnam(mm), horiz_only, 'A', 'kg/m2/s', &
+          call addfld(sflxnam(mm), horiz_only, 'A', 'kg/m2/s', &
             trim(cnst_name(mm))//' surface flux')
        else if ( any(mm == (/ ixnumliq, ixnumice, ixnumrain /)) ) then
           ! number concentrations
           call addfld(cnst_name(mm), (/ 'lev' /), 'A', '1/kg', &
             cnst_longname(mm) )
-          call addfld(precip_ice_fluxnam(mm), horiz_only, 'A', '1/m2/s', &
+          call addfld(sflxnam(mm), horiz_only, 'A', '1/m2/s', &
             trim(cnst_name(mm))//' surface flux')
        else if ( mm == ixrimvol ) then
           ! number concentrations
           call addfld(cnst_name(mm), (/ 'lev' /), 'A', 'm3/kg', &
             cnst_longname(mm) )
-          call addfld(precip_ice_fluxnam(mm), horiz_only, 'A', 'm3/m2/s', &
+          call addfld(sflxnam(mm), horiz_only, 'A', 'm3/m2/s', &
             trim(cnst_name(mm))//' surface flux')
        else
           call endrun( "micro_p3_acme_init: &
@@ -905,7 +905,7 @@ end subroutine micro_p3_readnl
     exner(:ncol,:pver) = 1._rtype/((state%pmid(:ncol,:pver)*1.e-5_rtype)**(rair*inv_cp))
     do icol = 1,ncol
        do k = 1,pver
-! Note: dz is calculated in the opposite direction that dpres is calculated,
+! Note: dz is calculated in the opposite direction that pdel is calculated,
 ! thus when considering any dp/dz calculation we must also change the sign.
           dz(icol,k) = state%zi(icol,k) - state%zi(icol,k+1)
           th(icol,k)  = state%t(icol,k)*exner(icol,k) !/(state%pmid(icol,k)*1.e-5)**(rd*inv_cp) 
@@ -992,7 +992,7 @@ end subroutine micro_p3_readnl
       p3_main_inputs(1,k,13) = numrain(1,k)
       p3_main_inputs(1,k,14) = qm(1,k)
       p3_main_inputs(1,k,15) = rimvol(1,k)
-      p3_main_inputs(1,k,16) = state%dpres(1,k)
+      p3_main_inputs(1,k,16) = state%pdel(1,k)
       p3_main_inputs(1,k,17) = relvar(1,k)
     end do
     p3_main_inputs(1,pver+1,5) = state%zi(1,pver+1)
@@ -1034,12 +1034,10 @@ end subroutine micro_p3_readnl
          kte,                         & ! IN     vertical index upper bound       -
          rel(its:ite,kts:kte),        & ! OUT    effective radius, cloud          m
          rei(its:ite,kts:kte),        & ! OUT    effective radius, ice            m
-         dummy_out(its:ite,kts:kte),   & ! OUT    mass-weighted fall speed of ice  m s-1
-         dummy_out(its:ite,kts:kte),    & ! OUT    mean diameter of ice             m
          rho_qi(its:ite,kts:kte),  & ! OUT    bulk density of ice              kg m-3
          do_predict_nc,               & ! IN     .true.=prognostic Nc, .false.=specified Nc
          ! AaronDonahue new stuff
-         state%dpres(its:ite,kts:kte), & ! IN pressure level thickness for computing total mass
+         state%pdel(its:ite,kts:kte), & ! IN pressure level thickness for computing total mass
          exner(its:ite,kts:kte),      & ! IN exner values
          cmeiout(its:ite,kts:kte),    & ! OUT Deposition/sublimation rate of cloud ice 
          precip_total_tend(its:ite,kts:kte),      & ! OUT Total precipitation (rain + snow)
@@ -1050,8 +1048,6 @@ end subroutine micro_p3_readnl
          cld_frac_r(its:ite,kts:kte),      & ! IN rain cloud fraction
          cld_frac_l(its:ite,kts:kte),      & ! IN liquid cloud fraction
          cld_frac_i(its:ite,kts:kte),      & ! IN ice cloud fraction
-         dummy_out(its:ite,kts:kte),     & ! OUT accretion of cloud by rain
-         dummy_out(its:ite,kts:kte),     & ! OUT autoconversion of cloud by rain
          tend_out(its:ite,kts:kte,:), & ! OUT p3 microphysics tendencies
          mu(its:ite,kts:kte),         & ! OUT Size distribution shape parameter for radiation
          lambdac(its:ite,kts:kte),    & ! OUT Size distribution slope parameter for radiation
@@ -1224,7 +1220,7 @@ end subroutine micro_p3_readnl
 
    ! Column droplet concentration
    cdnumc(:ncol) = sum(numliq(:ncol,top_lev:pver) * &
-        state%dpres(:ncol,top_lev:pver)/gravit, dim=2)
+        state%pdel(:ncol,top_lev:pver)/gravit, dim=2)
    do k = top_lev, pver
       do icol = 1, ncol
          if ( cld_frac_l(icol,k) > 0.01_rtype .and. icwmrst(icol,k) > 5.e-5_rtype ) then
