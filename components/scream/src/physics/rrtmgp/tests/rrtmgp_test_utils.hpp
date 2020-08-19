@@ -1,7 +1,8 @@
 #include "mo_gas_concentrations.h"
 #include "mo_fluxes.h"
 #include "mo_cloud_optics.h"
-namespace rrtmgp {
+namespace rrtmgpTest {
+    bool all_equals(real2d &arr1, real2d &arr2);
     void dummy_clouds(
             CloudOptics &cloud_optics, real2d &p_lay, real2d &t_lay, 
             real2d &lwp, real2d &iwp, real2d &rel, real2d &rei

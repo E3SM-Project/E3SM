@@ -2,38 +2,13 @@
 #include <cmath>
 #include "catch2/catch.hpp"
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
-#include "rrtmgp_dummy_atmos.hpp"
+#include "rrtmgp_test_utils.hpp"
 #include "netcdf.h"
 #include "mo_gas_concentrations.h"
 #include "mo_fluxes.h"
 #include "mo_cloud_optics.h"
-#include "FortranIntrinsics.h"
+#include "Intrinsics.h"
 namespace {
-
-    // TODO: use YAKL intrinsics for this; this won't work on the GPU
-    bool all_equals(real2d &arr1, real2d &arr2) {
-        double tolerance = 0.01;
-        /*
-        real2d residual = arr1 - arr2;
-        if (yakl::fortran::anyGT(residual, tolerance) || yakl::fortran::anyLT(residual, -tolerance)) {
-            printf("max(arr1 - arr2) = %f\n", yakl::fortran::maxval(residual));
-            return false;
-        } else {
-            return true;
-        }
-        */
-        int nx = arr1.dimension[0];
-        int ny = arr2.dimension[1];
-        for (int i=1; i<nx+1; i++) {
-            for (int j=1; j<ny+1; j++) {
-                if (abs(arr1(i,j) - arr2(i,j)) > tolerance) {
-                    printf("arr1 = %f, arr2 = %f\n", arr1(i,j), arr2(i,j));
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
 
     template <class T> double arrmin(T &arr) {
         double minval = arr.myData[0];
@@ -67,7 +42,7 @@ namespace {
         real2d sw_flux_dn_dir_ref;
         real2d lw_flux_up_ref;
         real2d lw_flux_dn_ref;
-        rrtmgp::read_fluxes(inputfile, sw_flux_up_ref, sw_flux_dn_ref, sw_flux_dn_dir_ref, lw_flux_up_ref, lw_flux_dn_ref );
+        rrtmgpTest::read_fluxes(inputfile, sw_flux_up_ref, sw_flux_dn_ref, sw_flux_dn_dir_ref, lw_flux_up_ref, lw_flux_dn_ref );
 
         // Get dimension sizes
         int ncol = sw_flux_up_ref.dimension[0];
@@ -94,7 +69,7 @@ namespace {
         real2d iwp;
         real2d rel;
         real2d rei;
-        rrtmgp::dummy_atmos(
+        rrtmgpTest::dummy_atmos(
                 inputfile, ncol, p_lay, t_lay, p_lev, t_lev, gas_concs, col_dry, 
                 sfc_alb_dir, sfc_alb_dif, mu0,
                 lwp, iwp, rel, rei
@@ -131,11 +106,11 @@ namespace {
                 lw_flux_up, lw_flux_dn);
  
         // Check values
-        REQUIRE(all_equals(sw_flux_up_ref    , sw_flux_up    ));
-        REQUIRE(all_equals(sw_flux_dn_ref    , sw_flux_dn    ));
-        REQUIRE(all_equals(sw_flux_dn_dir_ref, sw_flux_dn_dir));
-        REQUIRE(all_equals(lw_flux_up_ref    , lw_flux_up    ));
-        REQUIRE(all_equals(lw_flux_dn_ref    , lw_flux_dn    ));
+        REQUIRE(rrtmgpTest::all_equals(sw_flux_up_ref    , sw_flux_up    ));
+        REQUIRE(rrtmgpTest::all_equals(sw_flux_dn_ref    , sw_flux_dn    ));
+        REQUIRE(rrtmgpTest::all_equals(sw_flux_dn_dir_ref, sw_flux_dn_dir));
+        REQUIRE(rrtmgpTest::all_equals(lw_flux_up_ref    , lw_flux_up    ));
+        REQUIRE(rrtmgpTest::all_equals(lw_flux_dn_ref    , lw_flux_dn    ));
 
         // ALTERNATIVELY: create a single or two-layer atmosphere to do a dummy calc
     }

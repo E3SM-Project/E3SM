@@ -9,13 +9,14 @@ Atmosphere Processes:
   Process 0:
     Process Name: RRTMGP
     Grid: Physics
+    Can Initialize All Inputs: true
 
 Grids Manager:
   Type: Physics Only
   Reference Grid: Physics
   Physics Only:
-    Number of global columns: 384
-    Number of vertical levels: 72
+    Number of global columns:  128
+    Number of vertical levels: 42
 
 # The name of the file containing the initial conditions for this test.
 Initial Conditions:

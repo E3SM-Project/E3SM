@@ -1,11 +1,36 @@
 #include <iostream>
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
-#include "rrtmgp_dummy_atmos.hpp"
+#include "rrtmgp_test_utils.hpp"
 #include "mo_gas_concentrations.h"
 #include "mo_garand_atmos_io.h"
 #include "mo_fluxes.h"
 #include "mo_cloud_optics.h"
-namespace rrtmgp {
+namespace rrtmgpTest {
+
+    // TODO: use YAKL intrinsics for this; this won't work on the GPU
+    bool all_equals(real2d &arr1, real2d &arr2) {
+        double tolerance = 0.01;
+        /*
+        real2d residual = arr1 - arr2;
+        if (yakl::fortran::anyGT(residual, tolerance) || yakl::fortran::anyLT(residual, -tolerance)) {
+            printf("max(arr1 - arr2) = %f\n", yakl::fortran::maxval(residual));
+            return false;
+        } else {
+            return true;
+        }
+        */
+        int nx = arr1.dimension[0];
+        int ny = arr2.dimension[1];
+        for (int i=1; i<nx+1; i++) {
+            for (int j=1; j<ny+1; j++) {
+                if (abs(arr1(i,j) - arr2(i,j)) > tolerance) {
+                    printf("arr1 = %f, arr2 = %f\n", arr1(i,j), arr2(i,j));
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 
     void dummy_atmos(
             std::string inputfile, 

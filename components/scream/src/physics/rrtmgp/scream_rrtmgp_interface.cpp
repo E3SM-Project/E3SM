@@ -38,17 +38,39 @@ namespace scream {
         CloudOptics cloud_optics_sw;
         CloudOptics cloud_optics_lw;
 
-        /* 
-         * Define some dummy routines so we can start working on the interface
-         * between SCREAM and RRTMGP
+        /*
+         * Gas concentrations. We want to initialize this once, since it will
+         * determine the absorbing gases that we keep track of in the k-dist
+         * objects. So we will initialize once, and then just update values
+         * at runtime.
+         */
+        GasConcs gas_concs;
+
+        bool initialized = false;
+
+        /*
+         * The following routines provide a simple interface to RRTMGP. These
+         * can be used as-is, but are intended to be wrapped by the SCREAM AD
+         * interface to radiation.
          */
         void rrtmgp_initialize() {
 
+            /* If we've already initialized, just exit */
+            if (initialized) { 
+                std::cout << "RRTMGP is already initialized; skipping\n";
+                return; 
+            }
+
             /* Initialize YAKL */
-            yakl::init();
+            if (!yakl::isInitialized()) {
+                yakl::init();
+            }
 
             /* 
-             * Names of active gases; this should come from the calling program 
+             * Names of active gases
+             * TODO: this should come from the calling program! This is the list
+             * of gases that the model will use, not necessarily the complete
+             * list of gases that RRTMGP knows about.
              * NOTE: YAKL uses 1-based indexing!!!!
              */
             int ngas = 8;
@@ -63,7 +85,7 @@ namespace scream {
             gas_names(8) = std::string("n2" );
 
             // Initialize GasConcs object but populate with dummy values 
-            int ncol = 10;
+            int ncol = 128;
             int nlay = 2;
             GasConcs gas_concs;
             gas_concs.init(gas_names,ncol,nlay);
@@ -78,9 +100,18 @@ namespace scream {
             // Load and initialize cloud optical property look-up table information
             load_cld_lutcoeff(cloud_optics_sw, cloud_optics_file_sw);
             load_cld_lutcoeff(cloud_optics_lw, cloud_optics_file_lw);
+
+            // We are now initialized!
+            initialized = true;
         }
 
-        void rrtmgp_finalize() {}
+        void rrtmgp_finalize() {
+            initialized = false;
+            k_dist_sw.finalize();
+            k_dist_lw.finalize();
+            cloud_optics_sw.finalize(); //~CloudOptics();
+            cloud_optics_lw.finalize(); //~CloudOptics();
+        }
 
         void rrtmgp_main(
                 real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev, 

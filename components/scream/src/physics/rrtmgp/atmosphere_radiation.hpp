@@ -58,12 +58,25 @@ namespace scream {
             std::set<FieldIdentifier> m_required_fields;
             std::set<FieldIdentifier> m_computed_fields;
 
+            // Input and input/output fields
             std::map<std::string,const_field_type> m_rrtmgp_fields_in;
             std::map<std::string,field_type>       m_rrtmgp_fields_out;
+
+            std::map<std::string,const_field_type::view_type::HostMirror>  m_rrtmgp_host_views_in;
+            std::map<std::string,field_type::view_type::HostMirror>        m_rrtmgp_host_views_out;
+
+            std::map<std::string,const Real*>  m_raw_ptrs_in;
+            std::map<std::string,Real*>        m_raw_ptrs_out;
+
+            std::shared_ptr<FieldInitializer> m_initializer;
 
             util::TimeStamp m_current_ts;
             ekat::Comm            m_rrtmgp_comm;
             ekat::ParameterList   m_rrtmgp_params;
+
+        private: 
+            void require_unpadded(const Field<const Real>& f);
+
     };  // class RRTMGPRadiation
 }  // namespace scream
 
