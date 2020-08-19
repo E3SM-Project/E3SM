@@ -28,7 +28,7 @@ module dlnd_shr_mod
   character(CL) , public :: restfilm              ! model restart file namelist
   character(CL) , public :: restfils              ! stream restart file namelist
   logical       , public :: force_prognostic_true ! if true set prognostic true
-  character(CL) , public :: domain_fracname       ! name of fraction field on first stream file
+  character(CL) , public :: domain_fracname       ! name of fraction field on first stream file ('null' implies this is unused)
 
   ! variables obtained from namelist read
   character(CL) , public :: rest_file             ! restart filename

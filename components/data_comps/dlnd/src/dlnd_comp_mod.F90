@@ -133,6 +133,7 @@ CONTAINS
     integer(IN)        :: nflds_glc_nec  ! number of snow fields separated by elev class
     integer(IN)        :: field_num ! field number
     character(nec_len) :: nec_str   ! elevation class, as character string
+    character(*), parameter :: domain_fracname_unset = 'null'
 
     !--- formats ---
     character(*), parameter :: F00   = "('(dlnd_comp_init) ',8a)"
@@ -169,12 +170,21 @@ CONTAINS
     if (scmmode) then
        if (my_task == master_task) &
             write(logunit,F05) ' scm lon lat = ',scmlon,scmlat
-       call shr_strdata_init(SDLND,mpicom,compid,name='lnd', &
-            scmmode=scmmode,scmlon=scmlon,scmlat=scmlat, calendar=calendar, &
-            dmodel_domain_fracname_from_stream=domain_fracname)
+       if (domain_fracname == domain_fracname_unset) then
+          call shr_strdata_init(SDLND,mpicom,compid,name='lnd', &
+               scmmode=scmmode,scmlon=scmlon,scmlat=scmlat, calendar=calendar)
+       else
+          call shr_strdata_init(SDLND,mpicom,compid,name='lnd', &
+               scmmode=scmmode,scmlon=scmlon,scmlat=scmlat, calendar=calendar, &
+               dmodel_domain_fracname_from_stream=domain_fracname)
+       end if
     else
-       call shr_strdata_init(SDLND,mpicom,compid,name='lnd', calendar=calendar, &
-            dmodel_domain_fracname_from_stream=domain_fracname)
+       if (domain_fracname == domain_fracname_unset) then
+          call shr_strdata_init(SDLND,mpicom,compid,name='lnd', calendar=calendar)
+       else
+          call shr_strdata_init(SDLND,mpicom,compid,name='lnd', calendar=calendar, &
+               dmodel_domain_fracname_from_stream=domain_fracname)
+       end if
     endif
 
     if (my_task == master_task) then
