@@ -46,7 +46,7 @@ struct SHOCDataBase
     
     // Transpose on the column only grid
     for (size_t i = 0; i < m_ptrs_c.size(); ++i) {
-      util::transpose<D>(*(m_ptrs_c[i]), data.data() + (m_ptrs.size()*m_total) + (m_totalc*i), shcol, 1);
+      util::transpose<D>(*(m_ptrs_c[i]), data.data() + (m_ptrs.size()*m_total) + (m_ptrs_i.size()*m_totali) + (m_totalc*i), shcol, 1);
     }    
 
     m_data = data;

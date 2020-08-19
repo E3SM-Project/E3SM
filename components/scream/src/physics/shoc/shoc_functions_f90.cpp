@@ -30,7 +30,7 @@ void shoc_energy_integrals_c(Int shcol, Int nlev, Real *host_dse, Real *pdel,
                              Real *rtm, Real *rcm, Real *u_wind, Real *v_wind,
                              Real *se_int, Real *ke_int, Real *wv_int, Real *wl_int);
 			     
-void shoc_energy_total_fixer_c(Int shcol, Int nlev, Int nlevi, Real dtime, Real nadv,
+void shoc_energy_total_fixer_c(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv,
                                Real *zt_grid, Real *zi_grid,
                                Real *se_b, Real *ke_b, Real *wv_b, Real *wl_b,
                                Real *se_a, Real *ke_a, Real *wv_a, Real *wl_a,

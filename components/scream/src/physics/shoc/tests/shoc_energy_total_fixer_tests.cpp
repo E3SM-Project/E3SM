@@ -60,9 +60,10 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
     // Test that the inputs are reasonable.
     // for this test we need exactly two columns
     REQUIRE(SDS.shcol == 2);
+    REQUIRE(SDS.nlevi == SDS.nlev+1);
 
-    SDS.dtime = dtime;
-    SDS.nadv = nadv;
+//    SDS.dtime = dtime;
+//    SDS.nadv = nadv;
     for(Int s = 0; s < SDS.shcol; ++s) {
       // Set before and after integrals equal
       SDS.se_a[s] = se;
@@ -84,6 +85,7 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
 
 	// For zt grid, set as midpoint of zi grid
 	SDS.zt_grid[offset] = 0.5*(zi_grid[n]+zi_grid[n+1]);
+	SDS.rho_zt[offset] = rho_zt[n];
       }
       // Fill in test data on zi_grid.     
       for(Int n = 0; n < SDS.nlevi; ++n) {
@@ -100,6 +102,7 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
 	const auto offset = n + s * SDS.nlev;
 
 	REQUIRE(SDS.zt_grid[offset] >= 0.0);  
+	REQUIRE(SDS.rho_zt[offset] > 0.0);
 
 	// Check that heights increase upward
 	if (n > nlev-1){
@@ -120,7 +123,7 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
 
     // Call the fortran implementation
     shoc_energy_total_fixer(SDS);
-/*
+
     // Check test
 
     // For first column verify that total energies are the same
@@ -129,7 +132,7 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
     // Verify that second column "before" energy is greater than
     //  the first column, since here we have active surface fluxes
     REQUIRE(SDS.te_b[1] > SDS.te_b[0]); 
-*/  
+  
   }
   
 };
