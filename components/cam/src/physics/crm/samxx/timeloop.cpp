@@ -2,21 +2,22 @@
 #include "timeloop.h"
 
 void timeloop() {
-  auto &crm_output_timing_factor = ::crm_output_timing_factor;
-  auto &t = ::t;
-  auto &crm_rad_qrad = ::crm_rad_qrad;
-  auto &dtn = ::dtn;
-  auto &ncrms = ::ncrms;
-  auto &na = ::na;
-  auto &dt3 = ::dt3;
+  auto &crm_output_timing_factor = :: crm_output_timing_factor;
+  auto &t                        = :: t;
+  auto &crm_rad_qrad             = :: crm_rad_qrad;
+  auto &dtn                      = :: dtn;
+  auto &ncrms                    = :: ncrms;
+  auto &na                       = :: na;
+  auto &dt3                      = :: dt3;
 
   nstep = 0;
 
   do {
     nstep = nstep + 1;
 
-    parallel_for(
-        ncrms, YAKL_LAMBDA(int icrm) { crm_output_timing_factor(icrm) = crm_output_timing_factor(icrm) + 1; });
+    parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
+      crm_output_timing_factor(icrm) = crm_output_timing_factor(icrm)+1;
+    });
 
     //------------------------------------------------------------------
     //  Check if the dynamical time step should be decreased
@@ -24,12 +25,13 @@ void timeloop() {
     //------------------------------------------------------------------
     kurant();
 
-    for (int icyc = 1; icyc <= ncycle; icyc++) {
+    for(int icyc=1; icyc<=ncycle; icyc++) {
       icycle = icyc;
-      dtn = dt / ncycle;
-      parallel_for(
-          1, YAKL_LAMBDA(int i) { dt3(na - 1) = dtn; });
-      dtfactor = dtn / dt;
+      dtn = dt/ncycle;
+      parallel_for( 1 , YAKL_LAMBDA ( int i ) {
+        dt3(na-1) = dtn;
+      });
+      dtfactor = dtn/dt;
 
       //---------------------------------------------
       //    the Adams-Bashforth scheme in time
@@ -52,23 +54,21 @@ void timeloop() {
       //   for (int j=0; j<ny; j++) {
       //     for (int i=0; i<nx; i++) {
       //       for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for(
-          Bounds<4>(nzm, ny, nx, ncrms), YAKL_LAMBDA(int k, int j, int i, int icrm) {
-            int i_rad = i / (nx / crm_nx_rad);
-            int j_rad = j / (ny / crm_ny_rad);
-            t(k, j + offy_s, i + offx_s, icrm) =
-                t(k, j + offy_s, i + offx_s, icrm) + crm_rad_qrad(k, j_rad, i_rad, icrm) * dtn;
-          });
+      parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+        int i_rad = i / (nx/crm_nx_rad);
+        int j_rad = j / (ny/crm_ny_rad);
+        t(k,j+offy_s,i+offx_s,icrm) = t(k,j+offy_s,i+offx_s,icrm) + crm_rad_qrad(k,j_rad,i_rad,icrm)*dtn;
+      });
 
       //----------------------------------------------------------
       //    suppress turbulence near the upper boundary (spange):
-      if (dodamping) {
+      if (dodamping) { 
         damping();
       }
 
       //---------------------------------------------------------
       //   Ice fall-out
-      if (docloud) {
+      if (docloud) { 
         ice_fall();
       }
 
@@ -102,7 +102,7 @@ void timeloop() {
 
       //----------------------------------------------------------
       //  SGS effects on momentum:
-      if (dosgs) {
+      if (dosgs) { 
         sgs_mom();
       }
 
@@ -139,7 +139,7 @@ void timeloop() {
 
       //---------------------------------------------------------
       //      SGS effects on scalars :
-      if (dosgs) {
+      if (dosgs) { 
         sgs_scalars();
       }
 
@@ -167,13 +167,14 @@ void timeloop() {
       //----------------------------------------------------------
       // Rotate the dynamic tendency arrays for Adams-bashforth scheme:
 
-      int nn = na;
-      na = nc;
-      nc = nb;
-      nb = nn;
+      int nn=na;
+      na=nc;
+      nc=nb;
+      nb=nn;
     } // icycle
 
     post_icycle();
 
   } while (nstep < nstop);
+
 }

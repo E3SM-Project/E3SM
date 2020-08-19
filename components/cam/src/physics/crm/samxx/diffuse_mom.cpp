@@ -8,3 +8,4 @@ void diffuse_mom() {
     diffuse_mom2D(sgs_field_diag);
   }
 }
+
