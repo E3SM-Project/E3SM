@@ -36,7 +36,7 @@ MACHINE_METADATA = {
     "weaver"   : (["module purge", "module load devpack/20190814/openmpi/4.0.1/gcc/7.2.0/cuda/10.1.105 git/2.10.1 python/3.7.3", "module switch cmake/3.18.0"],
                   "$(which mpicxx)",
                   "bsub -I -q rhel7W",
-                  128,
+                  40,
                   4,
                   "/home/projects/e3sm/scream/pr-autotester/master-baselines/weaver/"),
     "white"    : (["module purge", "module load devpack/20181011/openmpi/2.1.2/gcc/7.2.0/cuda/9.2.88 git/2.10.1", "module switch cmake/3.12.3 cmake/3.18.0", "export PATH=/ascldap/users/jgfouca/packages/Python-3.6.8-white/bin:$PATH"],
