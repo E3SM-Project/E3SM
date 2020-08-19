@@ -4,7 +4,6 @@
 #include "samxx_const.h"
 #include "vars.h"
 
-
 YAKL_INLINE real esati_crm(real t) {
 
   real const a0 = 6.11147274;
@@ -17,13 +16,12 @@ YAKL_INLINE real esati_crm(real t) {
   real const a7 = 0.146898966e-11;
   real const a8 = 0.252751365e-14;
 
-  real dtt = t-273.16;
+  real dtt = t - 273.16;
   real esati;
-  if(dtt > -80.0) {
-    esati = a0 + dtt*(a1+dtt*(a2+dtt*(a3+dtt*(a4+dtt*(a5+dtt*(a6+dtt*(a7+a8*dtt)))))));
-  }
-  else {
-    esati = 0.01*exp(9.550426 - 5723.265/t + 3.53068*log(t) - 0.00728332*t);
+  if (dtt > -80.0) {
+    esati = a0 + dtt * (a1 + dtt * (a2 + dtt * (a3 + dtt * (a4 + dtt * (a5 + dtt * (a6 + dtt * (a7 + a8 * dtt)))))));
+  } else {
+    esati = 0.01 * exp(9.550426 - 5723.265 / t + 3.53068 * log(t) - 0.00728332 * t);
   }
 
   return esati;
@@ -41,14 +39,13 @@ YAKL_INLINE real esatw_crm(real t) {
   real const a7 = 0.2564861e-13;
   real const a8 = -0.3704404e-15;
 
-  real dtt = t-273.16;
+  real dtt = t - 273.16;
 
   real esatw;
-  if(dtt > -80.0) {
-    esatw = a0 + dtt*(a1+dtt*(a2+dtt*(a3+dtt*(a4+dtt*(a5+dtt*(a6+dtt*(a7+a8*dtt)))))));
-  }
-  else {
-    esatw = 2.0*0.01*exp(9.550426 - 5723.265/t + 3.53068*log(t) - 0.00728332*t);
+  if (dtt > -80.0) {
+    esatw = a0 + dtt * (a1 + dtt * (a2 + dtt * (a3 + dtt * (a4 + dtt * (a5 + dtt * (a6 + dtt * (a7 + a8 * dtt)))))));
+  } else {
+    esatw = 2.0 * 0.01 * exp(9.550426 - 5723.265 / t + 3.53068 * log(t) - 0.00728332 * t);
   }
   return esatw;
 }
@@ -65,13 +62,12 @@ YAKL_INLINE real dtesati_crm(real t) {
   real const a7 = 0.390204672e-13;
   real const a8 = 0.497275778e-16;
 
-  real dtt = t-273.16;
+  real dtt = t - 273.16;
   real dtesati;
-  if(dtt > -80.0) {
-    dtesati = a0 + dtt*(a1+dtt*(a2+dtt*(a3+dtt*(a4+dtt*(a5+dtt*(a6+dtt*(a7+a8*dtt)))))));
-  }
-  else {
-    dtesati= esati_crm(t+1.0)-esati_crm(t);
+  if (dtt > -80.0) {
+    dtesati = a0 + dtt * (a1 + dtt * (a2 + dtt * (a3 + dtt * (a4 + dtt * (a5 + dtt * (a6 + dtt * (a7 + a8 * dtt)))))));
+  } else {
+    dtesati = esati_crm(t + 1.0) - esati_crm(t);
   }
 
   return dtesati;
@@ -89,13 +85,12 @@ YAKL_INLINE real dtesatw_crm(real t) {
   real const a7 = -0.792933209e-14;
   real const a8 = -0.599634321e-17;
 
-  real dtt = t-273.16;
+  real dtt = t - 273.16;
   real dtesatw;
-  if(dtt > -80.0) {
-    dtesatw = a0 + dtt*(a1+dtt*(a2+dtt*(a3+dtt*(a4+dtt*(a5+dtt*(a6+dtt*(a7+a8*dtt)))))));
-  }
-  else {
-    dtesatw = esatw_crm(t+1.0)-esatw_crm(t);
+  if (dtt > -80.0) {
+    dtesatw = a0 + dtt * (a1 + dtt * (a2 + dtt * (a3 + dtt * (a4 + dtt * (a5 + dtt * (a6 + dtt * (a7 + a8 * dtt)))))));
+  } else {
+    dtesatw = esatw_crm(t + 1.0) - esatw_crm(t);
   }
 
   return dtesatw;
@@ -105,24 +100,15 @@ YAKL_INLINE void qsati_crm(real t, real p, real &qsati) {
 
   real esati;
   esati = esati_crm(t);
-  qsati = 0.622*esati/max(esati,p-esati);
+  qsati = 0.622 * esati / max(esati, p - esati);
 }
 
 YAKL_INLINE void qsatw_crm(real t, real p, real &qsatw) {
 
   real esatw;
   esatw = esatw_crm(t);
-  qsatw = 0.622*esatw/max(esatw,p-esatw);
+  qsatw = 0.622 * esatw / max(esatw, p - esatw);
 }
-YAKL_INLINE void dtqsati_crm(real t, real p, real &dtqsati) {
+YAKL_INLINE void dtqsati_crm(real t, real p, real &dtqsati) { dtqsati = 0.622 * dtesati_crm(t) / p; }
 
-  dtqsati = 0.622*dtesati_crm(t)/p;
-
-}
-
-YAKL_INLINE void dtqsatw_crm(real t, real p, real &dtqsatw) {
-
-  dtqsatw = 0.622*dtesatw_crm(t)/p;
-
-}
-
+YAKL_INLINE void dtqsatw_crm(real t, real p, real &dtqsatw) { dtqsatw = 0.622 * dtesatw_crm(t) / p; }

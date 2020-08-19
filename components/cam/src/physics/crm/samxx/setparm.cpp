@@ -2,18 +2,18 @@
 #include "setparm.h"
 
 extern "C" void setparm() {
-  doprecip  = true;
-  dosgs     = true;
+  doprecip = true;
+  dosgs = true;
   dosurface = true;
   dodamping = true;
-  dt        = crm_dt;
-  dx        = crm_dx;
-  dy        = crm_dy;
-  docloud   = true;
-  rank      = 0;   // in MMF model, rank = 0
+  dt = crm_dt;
+  dx = crm_dx;
+  dy = crm_dy;
+  docloud = true;
+  rank = 0; // in MMF model, rank = 0
 
   if (RUN2D) {
-    dy=dx;
+    dy = dx;
   }
 
   if (RUN2D && YES3D) {
@@ -25,32 +25,30 @@ extern "C" void setparm() {
     exit(-1);
   }
   if (ny == 1) {
-    dy=dx;
+    dy = dx;
   }
 
   dtn = dt;
 
-  //Instead of writing function I just inline what sgs_setparm does
+  // Instead of writing function I just inline what sgs_setparm does
   dosmagor = true;
   advect_sgs = !dosmagor;
 
   if (dosmoke) {
-    epsv=0.0;
+    epsv = 0.0;
   } else {
-    epsv=0.61;
+    epsv = 0.61;
   }
 
   if (navgmom_x < 0 || navgmom_y < 0) {
-    nstatmom        = 1;
-    nstatmomstart    = 99999999;
-    nstatmomend      = 999999999;
+    nstatmom = 1;
+    nstatmomstart = 99999999;
+    nstatmomend = 999999999;
   }
 
-  if (rank==0) {
+  if (rank == 0) {
     masterproc = true;
   } else {
     masterproc = false;
   }
 }
-
-
