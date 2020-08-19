@@ -14,7 +14,7 @@ namespace p3 {
   ::calc_first_order_upwind_step<nfield>(                               \
     const uview_1d<const Spack>& rho,                                   \
     const uview_1d<const Spack>& inv_rho,                               \
-    const uview_1d<const Spack>& inv_dzq,                               \
+    const uview_1d<const Spack>& inv_dz,                               \
     const MemberType& team,                                             \
     const Int& nk, const Int& k_bot, const Int& k_top, const Int& kdir, \
     const Scalar& dt_sub,                                               \
@@ -31,7 +31,7 @@ ETI_UPWIND(4)
   ::generalized_sedimentation<nfield>(                                  \
     const uview_1d<const Spack>& rho,                                   \
     const uview_1d<const Spack>& inv_rho,                               \
-    const uview_1d<const Spack>& inv_dzq,                               \
+    const uview_1d<const Spack>& inv_dz,                               \
     const MemberType& team,                                             \
     const Int& nk, const Int& k_qxtop, Int& k_qxbot, const Int& kbot, const Int& kdir, \
     const Scalar& Co_max, Scalar& dt_left, Scalar& prt_accum,           \

@@ -15,7 +15,7 @@ template <typename S, typename D>
 void Functions<S,D>::
 get_cloud_dsd2(
   const Spack& qc, Spack& nc, Spack& mu_c, const Spack& rho, Spack& nu,
-  const view_dnu_table& dnu, Spack& lamc, Spack& cdist, Spack& cdist1, const Spack& lcldm,
+  const view_dnu_table& dnu, Spack& lamc, Spack& cdist, Spack& cdist1, const Spack& cld_frac_l,
   const Smask& context)
 {
   lamc.set(context   , 0);
@@ -63,10 +63,10 @@ get_cloud_dsd2(
     lamc.set(lamc_lt_min, lammin);
     lamc.set(lamc_gt_max, lammax);
 
-    nc.set(min_or_max, 6 * (lamc * lamc * lamc) * qc / (C::Pi * C::RHOW * (mu_c + 3) * (mu_c + 2) * (mu_c + 1)));
+    nc.set(min_or_max, 6 * (lamc * lamc * lamc) * qc / (C::Pi * C::RHO_H2O * (mu_c + 3) * (mu_c + 2) * (mu_c + 1)));
 
     cdist.set(qc_gt_small, nc * (mu_c+1) / lamc);
-    cdist1.set(qc_gt_small, nc * lcldm / pack::tgamma(mu_c + 1));
+    cdist1.set(qc_gt_small, nc * cld_frac_l / pack::tgamma(mu_c + 1));
   }
 }
 
@@ -74,7 +74,7 @@ template <typename S, typename D>
 void Functions<S,D>::
 get_rain_dsd2 (
   const Spack& qr, Spack& nr, Spack& mu_r,
-  Spack& lamr, Spack& cdistr, Spack& logn0r, const Spack& rcldm,
+  Spack& lamr, Spack& cdistr, Spack& logn0r, const Spack& cld_frac_r,
   const Smask& context)
 {
   constexpr auto nsmall = C::NSMALL;
@@ -124,7 +124,7 @@ get_rain_dsd2 (
       }
     }
 
-    cdistr.set(qr_gt_small, nr*rcldm/pack::tgamma(mu_r + 1));
+    cdistr.set(qr_gt_small, nr*cld_frac_r/pack::tgamma(mu_r + 1));
     // note: logn0r is calculated as log10(n0r)
     logn0r.set(qr_gt_small, pack::log10(nr) + (mu_r + 1) * pack::log10(lamr) - pack::log10(pack::tgamma(mu_r+1)));
   }

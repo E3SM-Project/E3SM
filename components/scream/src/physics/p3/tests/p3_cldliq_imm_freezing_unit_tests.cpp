@@ -30,7 +30,7 @@ static void run_phys()
 static void run_bfb()
 {
   // This is the threshold for whether the qc and qr cloud mixing ratios are
-  // large enough to affect the warm-phase process rates qcacc and ncacc.
+  // large enough to affect the warm-phase process rates qc2qr_accret_tend and nc_accret_tend.
   constexpr Scalar qsmall = C::QSMALL;
 
   constexpr Scalar t_freezing = 0.9 * C::RainFrze,
@@ -40,29 +40,29 @@ static void run_bfb()
   constexpr Scalar lamc1 = 0.1, lamc2 = 0.2, lamc3 = 0.3, lamc4 = 0.4;
   constexpr Scalar mu_c1 = 0.2, mu_c2 = 0.4, mu_c3 = 0.6, mu_c4 = 0.8;
   constexpr Scalar cdist11 = 0.25, cdist12 = 0.5, cdist13 = 0.75, cdist14 = 1.0;
-  constexpr Scalar qc_relvar_val = 1;
+  constexpr Scalar inv_qc_relvar_val = 1;
 
   CldliqImmersionFreezingData cldliq_imm_freezing_data[max_pack_size] = {
-    // t, lamc, mu_c, cdist1, qc_incld, qc_relvar
-    {t_not_freezing, lamc1, mu_c1, cdist11, qc_incld_small,qc_relvar_val},
-    {t_not_freezing, lamc2, mu_c2, cdist12, qc_incld_small,qc_relvar_val},
-    {t_not_freezing, lamc3, mu_c3, cdist13, qc_incld_small,qc_relvar_val},
-    {t_not_freezing, lamc4, mu_c4, cdist14, qc_incld_small,qc_relvar_val},
+    // t, lamc, mu_c, cdist1, qc_incld, inv_qc_relvar
+    {t_not_freezing, lamc1, mu_c1, cdist11, qc_incld_small,inv_qc_relvar_val},
+    {t_not_freezing, lamc2, mu_c2, cdist12, qc_incld_small,inv_qc_relvar_val},
+    {t_not_freezing, lamc3, mu_c3, cdist13, qc_incld_small,inv_qc_relvar_val},
+    {t_not_freezing, lamc4, mu_c4, cdist14, qc_incld_small,inv_qc_relvar_val},
 
-    {t_not_freezing, lamc1, mu_c1, cdist11, qc_incld_not_small,qc_relvar_val},
-    {t_not_freezing, lamc2, mu_c2, cdist12, qc_incld_not_small,qc_relvar_val},
-    {t_not_freezing, lamc3, mu_c3, cdist13, qc_incld_not_small,qc_relvar_val},
-    {t_not_freezing, lamc4, mu_c4, cdist14, qc_incld_not_small,qc_relvar_val},
+    {t_not_freezing, lamc1, mu_c1, cdist11, qc_incld_not_small,inv_qc_relvar_val},
+    {t_not_freezing, lamc2, mu_c2, cdist12, qc_incld_not_small,inv_qc_relvar_val},
+    {t_not_freezing, lamc3, mu_c3, cdist13, qc_incld_not_small,inv_qc_relvar_val},
+    {t_not_freezing, lamc4, mu_c4, cdist14, qc_incld_not_small,inv_qc_relvar_val},
 
-    {t_freezing, lamc1, mu_c1, cdist11, qc_incld_small,qc_relvar_val},
-    {t_freezing, lamc2, mu_c2, cdist12, qc_incld_small,qc_relvar_val},
-    {t_freezing, lamc3, mu_c3, cdist13, qc_incld_small,qc_relvar_val},
-    {t_freezing, lamc4, mu_c4, cdist14, qc_incld_small,qc_relvar_val},
+    {t_freezing, lamc1, mu_c1, cdist11, qc_incld_small,inv_qc_relvar_val},
+    {t_freezing, lamc2, mu_c2, cdist12, qc_incld_small,inv_qc_relvar_val},
+    {t_freezing, lamc3, mu_c3, cdist13, qc_incld_small,inv_qc_relvar_val},
+    {t_freezing, lamc4, mu_c4, cdist14, qc_incld_small,inv_qc_relvar_val},
 
-    {t_freezing, lamc1, mu_c1, cdist11, qc_incld_not_small,qc_relvar_val},
-    {t_freezing, lamc2, mu_c2, cdist12, qc_incld_not_small,qc_relvar_val},
-    {t_freezing, lamc3, mu_c3, cdist13, qc_incld_not_small,qc_relvar_val},
-    {t_freezing, lamc4, mu_c4, cdist14, qc_incld_not_small,qc_relvar_val}
+    {t_freezing, lamc1, mu_c1, cdist11, qc_incld_not_small,inv_qc_relvar_val},
+    {t_freezing, lamc2, mu_c2, cdist12, qc_incld_not_small,inv_qc_relvar_val},
+    {t_freezing, lamc3, mu_c3, cdist13, qc_incld_not_small,inv_qc_relvar_val},
+    {t_freezing, lamc4, mu_c4, cdist14, qc_incld_not_small,inv_qc_relvar_val}
   };
 
   // Sync to device
@@ -82,26 +82,26 @@ static void run_bfb()
     const Int offset = i * Spack::n;
 
     // Init pack inputs
-    Spack t, lamc, mu_c, cdist1, qc_incld,qc_relvar;
+    Spack t, lamc, mu_c, cdist1, qc_incld,inv_qc_relvar;
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-      t[s]        = device_data(vs).t;
-      lamc[s]     = device_data(vs).lamc;
-      mu_c[s]     = device_data(vs).mu_c;
-      cdist1[s]   = device_data(vs).cdist1;
-      qc_incld[s] = device_data(vs).qc_incld;
-      qc_relvar[s]= device_data(vs).qc_relvar;
+      t[s]            = device_data(vs).t;
+      lamc[s]         = device_data(vs).lamc;
+      mu_c[s]         = device_data(vs).mu_c;
+      cdist1[s]       = device_data(vs).cdist1;
+      qc_incld[s]     = device_data(vs).qc_incld;
+      inv_qc_relvar[s]= device_data(vs).inv_qc_relvar;
     }
 
-    Spack qcheti{0.0};
-    Spack ncheti{0.0};
+    Spack qc2qi_hetero_freeze_tend{0.0};
+    Spack nc2ni_immers_freeze_tend{0.0};
 
-    Functions::cldliq_immersion_freezing(t, lamc, mu_c, cdist1, qc_incld, qc_relvar,
-                                         qcheti, ncheti);
+    Functions::cldliq_immersion_freezing(t, lamc, mu_c, cdist1, qc_incld, inv_qc_relvar,
+                                         qc2qi_hetero_freeze_tend, nc2ni_immers_freeze_tend);
 
     // Copy results back into views
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-      device_data(vs).qcheti  = qcheti[s];
-      device_data(vs).ncheti  = ncheti[s];
+      device_data(vs).qc2qi_hetero_freeze_tend  = qc2qi_hetero_freeze_tend[s];
+      device_data(vs).nc2ni_immers_freeze_tend  = nc2ni_immers_freeze_tend[s];
     }
   });
 
@@ -110,8 +110,8 @@ static void run_bfb()
 
   // Validate results.
   for (Int s = 0; s < max_pack_size; ++s) {
-    REQUIRE(cldliq_imm_freezing_data[s].qcheti == host_data[s].qcheti);
-    REQUIRE(cldliq_imm_freezing_data[s].ncheti == host_data[s].ncheti);
+    REQUIRE(cldliq_imm_freezing_data[s].qc2qi_hetero_freeze_tend == host_data[s].qc2qi_hetero_freeze_tend);
+    REQUIRE(cldliq_imm_freezing_data[s].nc2ni_immers_freeze_tend == host_data[s].nc2ni_immers_freeze_tend);
   }
 }
 

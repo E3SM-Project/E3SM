@@ -69,23 +69,23 @@ void Functions<S,D>
   const uview_1d<const Spack>& rho,
   const uview_1d<const Spack>& inv_rho,
   const uview_1d<const Spack>& rhofaci,
-  const uview_1d<const Spack>& icldm,
-  const uview_1d<const Spack>& inv_dzq,
+  const uview_1d<const Spack>& cld_frac_i,
+  const uview_1d<const Spack>& inv_dz,
   const MemberType& team,
   const Workspace& workspace,
-  const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir, const Scalar& dt, const Scalar& odt,
-  const uview_1d<Spack>& qitot,
-  const uview_1d<Spack>& qitot_incld,
-  const uview_1d<Spack>& nitot,
-  const uview_1d<Spack>& nitot_incld,
-  const uview_1d<Spack>& qirim,
-  const uview_1d<Spack>& qirim_incld,
-  const uview_1d<Spack>& birim,
-  const uview_1d<Spack>& birim_incld,
+  const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir, const Scalar& dt, const Scalar& inv_dt,
+  const uview_1d<Spack>& qi,
+  const uview_1d<Spack>& qi_incld,
+  const uview_1d<Spack>& ni,
+  const uview_1d<Spack>& ni_incld,
+  const uview_1d<Spack>& qm,
+  const uview_1d<Spack>& qm_incld,
+  const uview_1d<Spack>& bm,
+  const uview_1d<Spack>& bm_incld,
   const uview_1d<Spack>& qi_tend,
   const uview_1d<Spack>& ni_tend,
   const view_itab_table& itab,
-  Scalar& prt_sol)
+  Scalar& precip_ice_surf)
 {
   // Get temporary workspaces needed for the ice-sed calculation
   uview_1d<Spack> V_qit, V_nit, flux_nit, flux_bir, flux_qir, flux_qit;
@@ -96,21 +96,21 @@ void Functions<S,D>
   const view_1d_ptr_array<Spack, 4>
     fluxes_ptr = {&flux_qit, &flux_nit, &flux_qir, &flux_bir},
     vs_ptr     = {&V_qit, &V_nit, &V_qit, &V_qit},
-    qnr_ptr    = {&qitot, &nitot, &qirim, &birim};
+    qnr_ptr    = {&qi, &ni, &qm, &bm};
 
   // find top, determine qxpresent
-  const auto sqitot = scalarize(qitot);
+  const auto sqi = scalarize(qi);
   constexpr Scalar qsmall = C::QSMALL;
   constexpr Scalar nsmall = C::NSMALL;
   bool log_qxpresent;
-  const Int k_qxtop = find_top(team, sqitot, qsmall, kbot, ktop, kdir, log_qxpresent);
+  const Int k_qxtop = find_top(team, sqi, qsmall, kbot, ktop, kdir, log_qxpresent);
 
   if (log_qxpresent) {
     Scalar dt_left   = dt;  // time remaining for sedi over full model (mp) time step
     Scalar prt_accum = 0.0; // precip rate for individual category
 
     // find bottom
-    Int k_qxbot = find_bottom(team, sqitot, qsmall, kbot, k_qxtop, kdir, log_qxpresent);
+    Int k_qxbot = find_bottom(team, sqi, qsmall, kbot, k_qxtop, kdir, log_qxpresent);
 
     while (dt_left > C::dt_left_tol) {
       Scalar Co_max = 0.0;
@@ -135,46 +135,46 @@ void Functions<S,D>
         const int pk = kmin + pk_;
         const auto range_pack = scream::pack::range<IntSmallPack>(pk*Spack::n);
         const auto range_mask = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
-        const auto qi_gt_small = range_mask && qitot_incld(pk) > qsmall;
+        const auto qi_gt_small = range_mask && qi_incld(pk) > qsmall;
         if (qi_gt_small.any()) {
           // impose lower limits to prevent log(<0)
-          nitot_incld(pk).set(qi_gt_small, pack::max(nitot_incld(pk), nsmall));
+          ni_incld(pk).set(qi_gt_small, pack::max(ni_incld(pk), nsmall));
 
-          const auto rhop = calc_bulk_rho_rime(qitot_incld(pk), qirim_incld(pk), birim_incld(pk), qi_gt_small);
+          const auto rhop = calc_bulk_rho_rime(qi_incld(pk), qm_incld(pk), bm_incld(pk), qi_gt_small);
 
           TableIce t;
-          lookup_ice(qitot_incld(pk), nitot_incld(pk), qirim_incld(pk), rhop, t, qi_gt_small);
+          lookup_ice(qi_incld(pk), ni_incld(pk), qm_incld(pk), rhop, t, qi_gt_small);
 
-          const auto f1pr01 = apply_table_ice(0, itab, t, qi_gt_small);
-          const auto f1pr02 = apply_table_ice(1, itab, t, qi_gt_small);
-          const auto f1pr09 = apply_table_ice(6, itab, t, qi_gt_small);
-          const auto f1pr10 = apply_table_ice(7, itab, t, qi_gt_small);
+          const auto table_val_ni_fallspd = apply_table_ice(0, itab, t, qi_gt_small);
+          const auto table_val_qi_fallspd = apply_table_ice(1, itab, t, qi_gt_small);
+          const auto table_val_ni_lammax = apply_table_ice(6, itab, t, qi_gt_small);
+          const auto table_val_ni_lammin = apply_table_ice(7, itab, t, qi_gt_small);
 
           // impose mean ice size bounds (i.e. apply lambda limiters)
           // note that the Nmax and Nmin are normalized and thus need to be multiplied by existing N
-          nitot_incld(pk).set(qi_gt_small, pack::min(nitot_incld(pk), f1pr09 * nitot_incld(pk)));
-          nitot_incld(pk).set(qi_gt_small, pack::max(nitot_incld(pk), f1pr10 * nitot_incld(pk)));
-          nitot(pk).set(qi_gt_small, nitot_incld(pk) * icldm(pk));
+          ni_incld(pk).set(qi_gt_small, pack::min(ni_incld(pk), table_val_ni_lammax * ni_incld(pk)));
+          ni_incld(pk).set(qi_gt_small, pack::max(ni_incld(pk), table_val_ni_lammin * ni_incld(pk)));
+          ni(pk).set(qi_gt_small, ni_incld(pk) * cld_frac_i(pk));
 
-          V_qit(pk).set(qi_gt_small, f1pr02 * rhofaci(pk)); // mass-weighted   fall speed (with density factor)
-          V_nit(pk).set(qi_gt_small, f1pr01 * rhofaci(pk)); // number-weighted fall speed (with density factor)
+          V_qit(pk).set(qi_gt_small, table_val_qi_fallspd * rhofaci(pk)); // mass-weighted   fall speed (with density factor)
+          V_nit(pk).set(qi_gt_small, table_val_ni_fallspd * rhofaci(pk)); // number-weighted fall speed (with density factor)
         }
         const auto Co_max_local = max(qi_gt_small, -1,
-                                      V_qit(pk) * dt_left * inv_dzq(pk));
+                                      V_qit(pk) * dt_left * inv_dz(pk));
         if (Co_max_local > lmax) lmax = Co_max_local;
       }, Kokkos::Max<Scalar>(Co_max));
       team.team_barrier();
 
-      generalized_sedimentation<4>(rho, inv_rho, inv_dzq, team, nk, k_qxtop, k_qxbot, kbot, kdir, Co_max, dt_left, prt_accum, fluxes_ptr, vs_ptr, qnr_ptr);
+      generalized_sedimentation<4>(rho, inv_rho, inv_dz, team, nk, k_qxtop, k_qxbot, kbot, kdir, Co_max, dt_left, prt_accum, fluxes_ptr, vs_ptr, qnr_ptr);
 
       //Update _incld values with end-of-step cell-ave values
-      //No prob w/ div by icldm because set to min of 1e-4 in interface.
+      //No prob w/ div by cld_frac_i because set to min of 1e-4 in interface.
       Kokkos::parallel_for(
-        Kokkos::TeamThreadRange(team, qitot.extent(0)), [&] (int pk) {
-	  qitot_incld(pk)=qitot(pk)/icldm(pk);
-	  nitot_incld(pk)=nitot(pk)/icldm(pk);
-	  qirim_incld(pk)=qirim(pk)/icldm(pk);
-	  birim_incld(pk)=birim(pk)/icldm(pk);
+        Kokkos::TeamThreadRange(team, qi.extent(0)), [&] (int pk) {
+	  qi_incld(pk)=qi(pk)/cld_frac_i(pk);
+	  ni_incld(pk)=ni(pk)/cld_frac_i(pk);
+	  qm_incld(pk)=qm(pk)/cld_frac_i(pk);
+	  bm_incld(pk)=bm(pk)/cld_frac_i(pk);
 	});
 
       
@@ -182,14 +182,14 @@ void Functions<S,D>
     
     Kokkos::single(
       Kokkos::PerTeam(team), [&] () {
-        prt_sol += prt_accum * C::INV_RHOW * odt;
+        precip_ice_surf += prt_accum * C::INV_RHO_H2O * inv_dt;
     });
   }
 
   Kokkos::parallel_for(
     Kokkos::TeamThreadRange(team, qi_tend.extent(0)), [&] (int pk) {
-      qi_tend(pk) = (qitot(pk) - qi_tend(pk)) * odt; // Liq. sedimentation tendency, measure
-      ni_tend(pk) = (nitot(pk) - ni_tend(pk)) * odt; // Liq. # sedimentation tendency, measure
+      qi_tend(pk) = (qi(pk) - qi_tend(pk)) * inv_dt; // Liq. sedimentation tendency, measure
+      ni_tend(pk) = (ni(pk) - ni_tend(pk)) * inv_dt; // Liq. # sedimentation tendency, measure
   });
 
   workspace.template release_many_contiguous<6>(
@@ -202,17 +202,17 @@ void Functions<S,D>
 ::homogeneous_freezing(
   const uview_1d<const Spack>& t,
   const uview_1d<const Spack>& exner,
-  const uview_1d<const Spack>& xlf,
+  const uview_1d<const Spack>& latent_heat_fusion,
   const MemberType& team,
   const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir,
   const uview_1d<Spack>& qc,
   const uview_1d<Spack>& nc,
   const uview_1d<Spack>& qr,
   const uview_1d<Spack>& nr,
-  const uview_1d<Spack>& qitot,
-  const uview_1d<Spack>& nitot,
-  const uview_1d<Spack>& qirim,
-  const uview_1d<Spack>& birim,
+  const uview_1d<Spack>& qi,
+  const uview_1d<Spack>& ni,
+  const uview_1d<Spack>& qm,
+  const uview_1d<Spack>& bm,
   const uview_1d<Spack>& th)
 {
   constexpr Scalar qsmall          = C::QSMALL;
@@ -242,17 +242,17 @@ void Functions<S,D>
 
     Spack Qc_nuc(qc(pk)), Qr_nuc(qr(pk)), Nc_nuc(pack::max(nc(pk), nsmall)), Nr_nuc(pack::max(nr(pk), nsmall));
 
-    qirim(pk).set(qc_gt_small, qirim(pk) + Qc_nuc);
-    qitot(pk).set(qc_gt_small, qitot(pk) + Qc_nuc);
-    birim(pk).set(qc_gt_small, birim(pk) + Qc_nuc*inv_rho_rimeMax);
-    nitot(pk).set(qc_gt_small, nitot(pk) + Nc_nuc);
-    th(pk).set   (qc_gt_small, th(pk) + exner(pk)*Qc_nuc*xlf(pk)*inv_cp);
+    qm(pk).set(qc_gt_small, qm(pk) + Qc_nuc);
+    qi(pk).set(qc_gt_small, qi(pk) + Qc_nuc);
+    bm(pk).set(qc_gt_small, bm(pk) + Qc_nuc*inv_rho_rimeMax);
+    ni(pk).set(qc_gt_small, ni(pk) + Nc_nuc);
+    th(pk).set   (qc_gt_small, th(pk) + exner(pk)*Qc_nuc*latent_heat_fusion(pk)*inv_cp);
 
-    qirim(pk).set(qr_gt_small, qirim(pk) + Qr_nuc);
-    qitot(pk).set(qr_gt_small, qitot(pk) + Qr_nuc);
-    birim(pk).set(qr_gt_small, birim(pk) + Qr_nuc*inv_rho_rimeMax);
-    nitot(pk).set(qr_gt_small, nitot(pk) + Nr_nuc);
-    th(pk).set   (qr_gt_small, th(pk) + exner(pk)*Qr_nuc*xlf(pk)*inv_cp);
+    qm(pk).set(qr_gt_small, qm(pk) + Qr_nuc);
+    qi(pk).set(qr_gt_small, qi(pk) + Qr_nuc);
+    bm(pk).set(qr_gt_small, bm(pk) + Qr_nuc*inv_rho_rimeMax);
+    ni(pk).set(qr_gt_small, ni(pk) + Nr_nuc);
+    th(pk).set   (qr_gt_small, th(pk) + exner(pk)*Qr_nuc*latent_heat_fusion(pk)*inv_cp);
 
     qc(pk).set(qc_gt_small, 0);
     nc(pk).set(qc_gt_small, 0);
