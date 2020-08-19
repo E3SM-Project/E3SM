@@ -23,15 +23,15 @@ void  Functions<S,D>
   Make error message dynamic so that it tells the user the function name (func_name) from where
   this error is coming from. Currently func_name is not used in this function */
 
-  const auto is_neg_t_atm = (t_atm <= 0) && range_mask; //find out if there are any negative temperatures in the pack
-  if (is_neg_t_atm.any()){
-    scream_kerror_msg("Error! Temperature has <= 0 values.\n"); //exit with an error message
-  }
+  //find out if there are any negative temperatures in the pack
+  const auto is_neg_t_atm = (t_atm <= 0) && range_mask;
+  printf('%d',is_neg_t_atm);
+  scream_krequire_msg(is_neg_t_atm.any(), "Error! Temperature has <= 0 values.\n"); //exit with an error message
+  
+  //find out if there are any NaN temperatures in the pack
+  const auto is_nan_t_atm = isnan(t_atm) && range_mask;
+  //scream_krequire_msg(is_nan_t_atm, "Error! Temperature has NaN values.\n"); //exit with an error message
 
-  const auto is_nan_t_atm = isnan(t_atm) && range_mask;//find out if there are any NaN temperatures in the pack
-  if (is_nan_t_atm.any()){
-    scream_kerror_msg("Error! Temperature has NaN values.\n"); //exit with an error message
-  } 
 }
 
 template <typename S, typename D>
