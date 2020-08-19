@@ -12,8 +12,8 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::shoc_diag_second_moments_srf(
-    const Spack& wthl_sfc, const Spack& uw_sfc, const Spack& vw_sfc,
-    Spack& ustar2, Spack& wstar)
+    const Scalar& wthl_sfc, const Scalar& uw_sfc, const Scalar& vw_sfc,
+    Scalar& ustar2, Scalar& wstar)
 {
  // Purpose of this subroutine is to diagnose surface
  // properties needed for the the lower
@@ -25,18 +25,18 @@ void Functions<S,D>
  const auto third    = C::THIRD;
  const auto ggr      = C::gravit;
  const auto basetemp = C::basetemp;
-
- ustar2 = pack::sqrt(uw_sfc*uw_sfc+vw_sfc*vw_sfc);
+ 
+ ustar2 = std::sqrt(uw_sfc*uw_sfc+vw_sfc*vw_sfc);
 
  const auto is_wthl_ge_zero = wthl_sfc >= zero;
 
- wstar.set(is_wthl_ge_zero,
-           pack::pow(one/basetemp*ggr*wthl_sfc*one, third));
-
- wstar.set(!is_wthl_ge_zero, zero);
-
+ if (is_wthl_ge_zero) {
+   wstar = std::pow(one/basetemp*ggr*wthl_sfc*one, third);
+ } 
+ else {
+   wstar = zero;
+ }
 }
-
 } // namespace shoc
 } // namespace scream
 

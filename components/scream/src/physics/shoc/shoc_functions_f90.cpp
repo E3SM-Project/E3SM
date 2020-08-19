@@ -271,31 +271,31 @@ void calc_shoc_vertflux_f(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 void shoc_diag_second_moments_srf_f(Int shcol, Real* wthl, Real* uw, Real* vw, Real* ustar2, Real* wstar)
 {
   using SHOC       = Functions<Real, DefaultDevice>;
-  using Spack      = typename SHOC::Spack;
-  using view_1d    = typename SHOC::view_1d<Spack>;
+  using Scalar     = typename SHOC::Scalar;
+  using view_1d    = typename SHOC::view_1d<Scalar>;
 
-  const Int nshcol_pack = scream::pack::npack<Spack>(shcol);
-  static constexpr Int num_arrays = 3;
+  view_1d wthl_d(wthl, shcol),
+          uw_d(uw, shcol),
+          vw_d(vw, shcol);
 
-  Kokkos::Array<view_1d, num_arrays> second_mom_srf_1d;
+//  auto wthl_h = Kokkos::create_mirror_view(wthl_d);
+//  auto uw_h   = Kokkos::create_mirror_view(uw_d);
+//  auto vw_h   = Kokkos::create_mirror_view(vw_d);
 
-  pack::host_to_device({wthl, uw, vw}, shcol, second_mom_srf_1d);
+  view_1d ustar2_d("ustar2",shcol),
+          wstar_d("wstar",shcol);
+ 
+  auto ustar2_h = Kokkos::create_mirror_view(ustar2_d);
+  auto wstar_h  = Kokkos::create_mirror_view(wstar_d);
 
-  view_1d wthl_d(second_mom_srf_1d[0]),
-          uw_d(  second_mom_srf_1d[1]),
-          vw_d(  second_mom_srf_1d[2]);
+  Kokkos::parallel_for("parallel_moments_srf", shcol, KOKKOS_LAMBDA (const int& i) {
 
-  view_1d ustar2_d("ustar2",nshcol_pack),
-          wstar_d("wstar",nshcol_pack);
+     Scalar wthl_s{wthl_d(i)};
+     Scalar uw_s{uw_d(i)};
+     Scalar vw_s{vw_d(i)};
 
-  Kokkos::parallel_for("parallel_moments_srf", nshcol_pack, KOKKOS_LAMBDA (const int& i) {
-
-     Spack wthl_s{wthl_d(i)};
-     Spack uw_s{uw_d(i)};
-     Spack vw_s{vw_d(i)};
-
-     Spack ustar2_s{0.};
-     Spack wstar_s{0.};
+     Scalar ustar2_s{0.};
+     Scalar wstar_s{0.};
 
      SHOC::shoc_diag_second_moments_srf(wthl_s, uw_s, vw_s, ustar2_s, wstar_s);
 
@@ -303,11 +303,13 @@ void shoc_diag_second_moments_srf_f(Int shcol, Real* wthl, Real* uw, Real* vw, R
      wstar_d(i)  = wstar_s;
    });
 
-  // back to host
-  Kokkos::Array<view_1d, 2> second_mom_host_views_1d = {ustar2_d, wstar_d};
+  Kokkos::deep_copy(ustar2_h, ustar2_d);
+  Kokkos::deep_copy(wstar_h, wstar_d);
 
-  pack::device_to_host({ustar2, wstar}, shcol, second_mom_host_views_1d);
-
+  for (auto i=0; i<shcol; ++i) {
+     *(ustar2+i) = ustar2_h(i);
+     *(wstar+i)  = wstar_h(i);
+  }
 }
 
 } // namespace shoc
