@@ -852,7 +852,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
         longitude0(icrm) = get_rlon_p(lchnk,icrm) * 57.296_r8
         gcolp     (icrm) = get_gcol_p(lchnk,icrm)
       enddo
-      ! Load the MSA parameters
+      ! set CRM mean state acceleration (MSA) parameters from namelist
       use_crm_accel = .false.
       crm_accel_factor = 0.
       crm_accel_uv = .false.
