@@ -3516,7 +3516,7 @@ subroutine shoc_energy_fixer(&
   ! heights on midpoint grid [m]
   real(rtype), intent(in) :: zt_grid(shcol,nlev)
   ! heights on interface grid [m]
-  real(rtype), intent(in) :: zi_grid(shcol,nlev)
+  real(rtype), intent(in) :: zi_grid(shcol,nlevi)
   ! pressure on interface grid [Pa]
   real(rtype), intent(in) :: pint(shcol,nlevi)
   ! density on midpoint grid [kg/m^3]
@@ -3601,7 +3601,7 @@ subroutine shoc_energy_total_fixer(&
   ! heights on midpoint grid [m]
   real(rtype), intent(in) :: zt_grid(shcol,nlev)
   ! heights on interface grid [m]
-  real(rtype), intent(in) :: zi_grid(shcol,nlev)
+  real(rtype), intent(in) :: zi_grid(shcol,nlevi)
   ! density on midpoint grid [kg/m^3]
   real(rtype), intent(in) :: rho_zt(shcol,nlev)
 
