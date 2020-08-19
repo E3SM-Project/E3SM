@@ -28,7 +28,7 @@ include(EkatMpiUtils)
 DisableMpiCxxBindings()
 
 if (KOKKOS_ENABLE_CUDA)
-  set (KOKKOS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/kokkos)
+  set (Kokkos_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/kokkos)
   include (EkatSetNvccWrapper)
   EkatSetNvccWrapper()
 endif()
