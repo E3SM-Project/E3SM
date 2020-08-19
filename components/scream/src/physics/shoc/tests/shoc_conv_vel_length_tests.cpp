@@ -157,11 +157,17 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvVel {
 
 namespace {
 
-TEST_CASE("shoc_conv_vel_length", "shoc")
+TEST_CASE("shoc_conv_vel_length_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCompShocConvVel;
 
   TestStruct::run_property();
+}
+
+TEST_CASE("shoc_conv_vel_length_b4b", "shoc")
+{
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCompShocConvVel;
+
 }
 
 } // namespace

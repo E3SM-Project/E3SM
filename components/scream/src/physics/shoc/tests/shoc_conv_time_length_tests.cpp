@@ -160,11 +160,17 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvTime {
 
 namespace {
 
-TEST_CASE("shoc_conv_time_length", "shoc")
+TEST_CASE("shoc_conv_time_length_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCompShocConvTime;
 
   TestStruct::run_property();
+}
+
+TEST_CASE("shoc_conv_time_length_b4b", "shoc")
+{
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCompShocConvTime;
+
 }
 
 } // namespace
