@@ -585,7 +585,7 @@
     </desc>
     <values>
       <value>null</value>
-      <value stream="sno.cplhist">doml_frac</value>
+      <value dlnd_mode="GLC_CPLHIST">doml_frac</value>
     </values>
   </entry>
 
