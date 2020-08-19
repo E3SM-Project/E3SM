@@ -93,7 +93,6 @@ function(build_model COMP_CLASS COMP_NAME)
       set(SOURCES ${SOURCES} cmake/atm/../../cam/src/physics/crm/samxx/cpp_interface_mod.F90
                              cmake/atm/../../cam/src/physics/crm/samxx/params.F90
                              cmake/atm/../../cam/src/physics/crm/samxx/crm_ecpp_output_module.F90 )
-      message(STATUS "${SOURCES}")
     endif()
 
   endif()

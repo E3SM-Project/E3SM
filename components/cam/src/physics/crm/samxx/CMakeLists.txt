@@ -3,9 +3,9 @@
 ## It also assumes you've enabled CXX and C as languages
 ###############################################################################
 
-file(GLOB F90_SRC   *.F90)
+file(GLOB F90_SRC   cpp_interface_mod.F90 fft.F90 params.F90)
 file(GLOB CXX_SRC   *.cpp)
-file(GLOB SAMXX_SRC *.cpp *.F90)
+file(GLOB SAMXX_SRC ${CXX_SRC} ${F90_SRC})
 
 # samxx will be a static library
 add_library(samxx STATIC ${SAMXX_SRC})
