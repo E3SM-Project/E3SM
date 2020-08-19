@@ -38,7 +38,7 @@ MACHINE_METADATA = {
                   "bsub -I -q rhel7W",
                   128,
                   4,
-                  ""),
+                  "/home/projects/e3sm/scream/pr-autotester/master-baselines/weaver/"),
     "white"    : (["module purge", "module load devpack/20181011/openmpi/2.1.2/gcc/7.2.0/cuda/9.2.88 git/2.10.1", "module switch cmake/3.12.3 cmake/3.18.0", "export PATH=/ascldap/users/jgfouca/packages/Python-3.6.8-white/bin:$PATH"],
                   "$(which mpicxx)",
                   "bsub -I -q rhel7G",
