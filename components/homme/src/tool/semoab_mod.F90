@@ -19,6 +19,9 @@ module semoab_mod
   use cam_abortutils,   only : endrun
 
   use seq_comm_mct,  only: MHID, MHFID !  app id on moab side, for homme moab coarse and fine mesh
+  use seq_comm_mct,  only: MHPGID      !  app id on moab side, for PGx style mesh, uniform from se
+
+  use dyn_grid,      only: fv_nphys, fv_physgrid ! phys grid mesh will be replicated too
 
   implicit none
 
@@ -65,6 +68,8 @@ contains
     integer  tagtype, numco, tag_sto_len, ent_type, tagindex
     type (cartesian3D_t)             :: cart
     integer  igcol, ii
+
+    integer nedges_c, nverts_pg, nelem_pg
 
     ! for np=4,
     !      28, 32, 36, 35
@@ -477,6 +482,23 @@ contains
       if (ierr > 0 )  &
         call endrun('Error: fail to write the mesh file')
 #endif
+
+     if (fv_nphys > 0 ) then
+       ! create FV mesh, base on PGx
+       ! first count the number of edges in the coarse mesh;
+       ! use euler: v-m+f = 2 => m = v + f - 2
+       nedges_c = nverts_c + nelemd - 2
+       nelem_pg =  fv_nphys * fv_nphys * nelemd ! each coarse cell is divided in fv_nphys x fv_nphys subcells
+       !
+       ! there are new vertices on each coarse edge (fv_phys - 1) , and (fv_nphys - 1) * (fv_nphys - 1)
+       !   new vertices on each coarse cell
+       nverts_pg = nverts_c + (fv_nphys - 1) * nedges_c + (fv_nphys - 1) * (fv_nphys - 1) * nelemd
+
+       if(par%masterproc) then
+         write (iulog, *) " MOAB: there are ", nverts_pg, " local vertices on master task on pg mesh ", nedges_c , " local coarse edges "
+       endif
+
+     endif
 
      ! initialize
      num_calls_export = 0
