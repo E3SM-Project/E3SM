@@ -163,11 +163,17 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs {
 
 namespace {
 
-TEST_CASE("shoc_tke_isotropic_ts", "shoc")
+TEST_CASE("shoc_tke_isotropic_ts_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocIsotropicTs;
 
   TestStruct::run_property();
+}
+
+TEST_CASE("shoc_tke_isotropic_ts_b4b", "shoc")
+{
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocIsotropicTs;
+
 }
 
 } // namespace

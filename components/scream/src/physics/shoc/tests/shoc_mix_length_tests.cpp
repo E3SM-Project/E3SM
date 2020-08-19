@@ -127,11 +127,17 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength {
 
 namespace {
 
-TEST_CASE("shoc_mix_length", "shoc")
+TEST_CASE("shoc_mix_length_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCompShocMixLength;
 
   TestStruct::run_property();
+}
+
+TEST_CASE("shoc_mix_length_b4b", "shoc")
+{
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCompShocMixLength;
+
 }
 
 } // namespace

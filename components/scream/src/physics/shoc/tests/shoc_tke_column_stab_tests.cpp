@@ -130,11 +130,17 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab {
 
 namespace {
 
-TEST_CASE("shoc_tke_column_stab", "shoc")
+TEST_CASE("shoc_tke_column_stab_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocIntColStab;
 
   TestStruct::run_property();
+}
+
+TEST_CASE("shoc_tke_column_stab_b4b", "shoc")
+{
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocIntColStab;
+
 }
 
 } // namespace

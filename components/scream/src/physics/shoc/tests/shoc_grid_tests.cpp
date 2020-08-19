@@ -133,11 +133,17 @@ struct UnitWrap::UnitTest<D>::TestShocGrid {
 
 namespace {
 
-TEST_CASE("shoc_grid", "shoc")
+TEST_CASE("shoc_grid_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocGrid;
 
   TestStruct::run_property();
+}
+
+TEST_CASE("shoc_grid_b4b", "shoc")
+{
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocGrid;
+
 }
 
 } // namespace

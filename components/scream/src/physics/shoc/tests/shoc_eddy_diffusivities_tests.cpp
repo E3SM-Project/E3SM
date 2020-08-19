@@ -260,11 +260,17 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
 
 namespace {
 
-TEST_CASE("shoc_tke_eddy_diffusivities", "shoc")
+TEST_CASE("shoc_tke_eddy_diffusivities_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEddyDiff;
 
   TestStruct::run_property();
+}
+
+TEST_CASE("shoc_tke_eddy_diffusivities_b4b", "shoc")
+{
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEddyDiff;
+
 }
 
 } // namespace

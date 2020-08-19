@@ -278,11 +278,17 @@ struct UnitWrap::UnitTest<D>::TestShocVarorCovar {
 
 namespace {
 
-TEST_CASE("shoc_varorcovar", "shoc")
+TEST_CASE("shoc_varorcovar_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocVarorCovar;
 
   TestStruct::run_property();
+}
+
+TEST_CASE("shoc_varorcovar_b4b", "shoc")
+{
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocVarorCovar;
+
 }
 
 } // namespace

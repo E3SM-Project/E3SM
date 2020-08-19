@@ -158,11 +158,17 @@ struct UnitWrap::UnitTest<D>::TestShocShearProd {
 
 namespace {
 
-TEST_CASE("shoc_tke_shr_prod", "shoc")
+TEST_CASE("shoc_tke_shr_prod_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocShearProd;
 
   TestStruct::run_property();
+}
+
+TEST_CASE("shoc_tke_shr_prod_b4b", "shoc")
+{
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocShearProd;
+
 }
 
 } // namespace
