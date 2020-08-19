@@ -377,7 +377,7 @@ class TestAllScream(object):
         test_dir = self.get_test_dir(test)
         self.create_ctest_resource_file(test,test_dir)
 
-        result += "CTEST_PARALLEL_LEVEL={} ctest -V --output-on-failure ".format(self._testing_res_count[test])
+        result += "SCREAM_BUILD_PARALLEL_LEVEL={} CTEST_PARALLEL_LEVEL={} ctest -V --output-on-failure ".format(self._compile_res_count[test], self._testing_res_count[test])
         result += "--resource-spec-file {}/ctest_resource_file.json ".format(test_dir)
 
         if self._baseline_dir is not None:
