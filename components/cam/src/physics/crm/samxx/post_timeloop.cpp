@@ -308,7 +308,8 @@ void post_timeloop() {
     crm_output_mcdn  (k,icrm) = crm_output_mcdn (k,icrm) * factor_xyt;
     crm_output_mcuup (k,icrm) = crm_output_mcuup(k,icrm) * factor_xyt;
     crm_output_mcudn (k,icrm) = crm_output_mcudn(k,icrm) * factor_xyt;
-    crm_output_mctot (k,icrm) = crm_output_mcup(k,icrm) + crm_output_mcdn(k,icrm) + crm_output_mcuup(k,icrm) + crm_output_mcudn(k,icrm);
+    crm_output_mctot (k,icrm) = crm_output_mcup(k,icrm) + crm_output_mcdn(k,icrm) + 
+                                crm_output_mcuup(k,icrm) + crm_output_mcudn(k,icrm);
 
     crm_output_qc_mean(k,icrm) = crm_output_qc_mean(k,icrm) * factor_xy;
     crm_output_qi_mean(k,icrm) = crm_output_qi_mean(k,icrm) * factor_xy;

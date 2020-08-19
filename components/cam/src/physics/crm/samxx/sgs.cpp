@@ -125,7 +125,8 @@ void sgs_init() {
     //    for (int j=0; j<dimy_d; j++) {
     //      for (int i=0; i<dimx_d; i++) {
     //        for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<5>(nsgs_fields_diag,nzm,dimy_d,dimx_d,ncrms) , YAKL_LAMBDA (int l, int k, int j, int i, int icrm) {
+    parallel_for( Bounds<5>(nsgs_fields_diag,nzm,dimy_d,dimx_d,ncrms) , 
+                  YAKL_LAMBDA (int l, int k, int j, int i, int icrm) {
       sgs_field_diag(l,k,j,i,icrm) = 0.0;
     });
   }

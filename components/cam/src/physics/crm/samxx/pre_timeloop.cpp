@@ -361,7 +361,8 @@ void pre_timeloop() {
     int l = plev-(k+1);
     uln  (l,icrm) = min( UMAX, max(-UMAX,crm_input_ul(l,icrm)) );
     vln  (l,icrm) = min( UMAX, max(-UMAX,crm_input_vl(l,icrm)) )*YES3D;
-    ttend(k,icrm) = (crm_input_tl(l,icrm)+gamaz(k,icrm)- fac_cond*(crm_input_qccl(l,icrm)+crm_input_qiil(l,icrm))-fac_fus*crm_input_qiil(l,icrm)-t00(k,icrm))*idt_gl;
+    ttend(k,icrm) = (crm_input_tl(l,icrm)+gamaz(k,icrm)- fac_cond*(crm_input_qccl(l,icrm)+crm_input_qiil(l,icrm))-
+                                                         fac_fus*crm_input_qiil(l,icrm)-t00(k,icrm))*idt_gl;
     qtend(k,icrm) = (crm_input_ql(l,icrm)+crm_input_qccl(l,icrm)+crm_input_qiil(l,icrm)-q0(k,icrm))*idt_gl;
     utend(k,icrm) = (uln(l,icrm)-u0(k,icrm))*idt_gl;
     vtend(k,icrm) = (vln(l,icrm)-v0(k,icrm))*idt_gl;

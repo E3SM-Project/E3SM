@@ -188,7 +188,8 @@ void pressure() {
       alfa(k)=-c(k,icrm)*e;
       beta(k)=(ff(k,j,i,icrm)-a(k,icrm)*beta(k-1))*e;
     }
-    ff(nzm-1,j,i,icrm)=(ff(nzm-1,j,i,icrm)-a(nzm-1,icrm)*beta(nzm-2))/(eign(j,i)*rho(nzm-1,icrm)-a(nzm-1,icrm)+a(nzm-1,icrm)*alfa(nzm-2));
+    ff(nzm-1,j,i,icrm)=(ff(nzm-1,j,i,icrm)-a(nzm-1,icrm)*beta(nzm-2))/
+                       (eign(j,i)*rho(nzm-1,icrm)-a(nzm-1,icrm)+a(nzm-1,icrm)*alfa(nzm-2));
     for(int k=nzm-2; k>=0; k--) {
       ff(k,j,i,icrm)=alfa(k)*ff(k+1,j,i,icrm)+beta(k);
     }

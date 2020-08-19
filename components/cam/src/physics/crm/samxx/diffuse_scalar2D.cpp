@@ -155,7 +155,8 @@ void diffuse_scalar2D(real5d &field, int ind_field, real3d &fluxb, real3d &fluxt
         real rdz2=1.0/(dz(icrm)*dz(icrm));
         real rdz5=0.5*rdz2 * grdf_z(k,icrm);
         real tkz=rdz5*(tkh(ind_tkh,k,j,i+offx_d,icrm)+tkh(ind_tkh,kc,j,i+offx_d,icrm));
-        flx(k+offz_flx,j,i+offx_flx,icrm)=-tkz*(field(ind_field,kc,j,i+offx_s,icrm)-field(ind_field,k,j,i+offx_s,icrm))*rhoi;
+        flx(k+offz_flx,j,i+offx_flx,icrm)=-tkz*(field(ind_field,kc,j,i+offx_s,icrm)-
+                                                field(ind_field,k,j,i+offx_s,icrm))*rhoi;
         yakl::atomicAdd(flux(kc,icrm), flx(k+offz_flx,j,i+offx_flx,icrm));
       } else if (k == nzm-1) {
         real tmp=1.0/adzw(nz-1,icrm);
@@ -243,7 +244,8 @@ void diffuse_scalar2D(real5d &field, int ind_field, real4d &fluxb, int ind_fluxb
         real rdz2=1.0/(dz(icrm)*dz(icrm));
         real rdz5=0.5*rdz2 * grdf_z(k,icrm);
         real tkz=rdz5*(tkh(ind_tkh,k,j,i+offx_d,icrm)+tkh(ind_tkh,kc,j,i+offx_d,icrm));
-        flx(k+offz_flx,j,i+offx_flx,icrm)=-tkz*(field(ind_field,kc,j,i+offx_s,icrm)-field(ind_field,k,j,i+offx_s,icrm))*rhoi;
+        flx(k+offz_flx,j,i+offx_flx,icrm)=-tkz*(field(ind_field,kc,j,i+offx_s,icrm)-
+                                                field(ind_field,k,j,i+offx_s,icrm))*rhoi;
         yakl::atomicAdd(flux(ind_flux,kc,icrm), flx(k+offz_flx,j,i+offx_flx,icrm));
       }
       else if (k == nzm-1) {

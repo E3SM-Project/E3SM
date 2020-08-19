@@ -31,7 +31,8 @@ void forcing() {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     t(k, j+offy_s, i+offx_s, icrm) = t(k, j+offy_s, i+offx_s, icrm) + ttend(k,icrm) * dtn;
-    micro_field(index_water_vapor, k, j+offy_s, i+offx_s, icrm) = micro_field(index_water_vapor, k, j+offy_s, i+offx_s, icrm) + qtend(k,icrm) * dtn;
+    micro_field(index_water_vapor, k, j+offy_s, i+offx_s, icrm) = 
+          micro_field(index_water_vapor, k, j+offy_s, i+offx_s, icrm) + qtend(k,icrm) * dtn;
 
     if (micro_field(index_water_vapor, k, j+offy_s, i+offx_s, icrm) < 0.0) {
       yakl::atomicAdd(nneg(k,icrm),1);
@@ -51,7 +52,8 @@ void forcing() {
     real factor;
     if(nneg(k,icrm) > 0 && qpoz(k,icrm)+qneg(k,icrm) > 0.0) {
       factor =  1.0 + qneg(k,icrm)/qpoz(k,icrm);
-      micro_field(index_water_vapor, k, j+offy_s, i+offx_s, icrm) = max(0.0,micro_field(index_water_vapor, k, j+offy_s, i+offx_s, icrm)*factor);
+      micro_field(index_water_vapor, k, j+offy_s, i+offx_s, icrm) = 
+            max(0.0,micro_field(index_water_vapor, k, j+offy_s, i+offx_s, icrm)*factor);
     }
   });
 }

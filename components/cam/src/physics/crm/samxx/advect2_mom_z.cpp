@@ -52,8 +52,10 @@ void advect2_mom_z() {
       real dz25=1.0/(4.0*dz(icrm));
       int kb = k-1;
       real rhoi = dz25 * rhow(k+1,icrm);
-      fuz(k+1,j,i,icrm) = rhoi*(w(k+1,j+offy_w,i+offx_w,icrm)+w(k+1,j+offy_w,i-1+offx_w,icrm))*(u(k+1,j+offy_u,i+offx_u,icrm)+u(kb+1,j+offy_u,i+offx_u,icrm));
-      fvz(k+1,j,i,icrm) = rhoi*(w(k+1,j+offy_w,i+offx_w,icrm)+w(k+1,j-1+offy_w,i+offx_w,icrm))*(v(k+1,j+offy_v,i+offx_v,icrm)+v(kb+1,j+offy_v,i+offx_v,icrm));
+      fuz(k+1,j,i,icrm) = rhoi*(w(k+1,j+offy_w,i+offx_w,icrm)+w(k+1,j+offy_w,i-1+offx_w,icrm))*
+                               (u(k+1,j+offy_u,i+offx_u,icrm)+u(kb+1,j+offy_u,i+offx_u,icrm));
+      fvz(k+1,j,i,icrm) = rhoi*(w(k+1,j+offy_w,i+offx_w,icrm)+w(k+1,j-1+offy_w,i+offx_w,icrm))*
+                               (v(k+1,j+offy_v,i+offx_v,icrm)+v(kb+1,j+offy_v,i+offx_v,icrm));
       yakl::atomicAdd(uwle(k+1,icrm),fuz(k+1,j,i,icrm));
       yakl::atomicAdd(vwle(k+1,icrm),fvz(k+1,j,i,icrm));
     });
@@ -87,7 +89,8 @@ void advect2_mom_z() {
     real rhoi = 1.0/(rho(k,icrm)*adz(k,icrm));
     dudt(na-1,k,j,i,icrm)=dudt(na-1,k,j,i,icrm)-(fuz(kc,j,i,icrm)-fuz(k,j,i,icrm))*rhoi;
     dvdt(na-1,k,j,i,icrm)=dvdt(na-1,k,j,i,icrm)-(fvz(kc,j,i,icrm)-fvz(k,j,i,icrm))*rhoi;
-    fwz(k,j,i,icrm)=dz25*(w(kc,j+offy_w,i+offx_w,icrm)*rhow(kc,icrm)+w(k,j+offy_w,i+offx_w,icrm)*rhow(k,icrm))*(w(kc,j+offy_w,i+offx_w,icrm)+w(k,j+offy_w,i+offx_w,icrm));
+    fwz(k,j,i,icrm)=dz25*(w(kc,j+offy_w,i+offx_w,icrm)*rhow(kc,icrm)+w(k,j+offy_w,i+offx_w,icrm)*
+                          rhow(k,icrm))*(w(kc,j+offy_w,i+offx_w,icrm)+w(k,j+offy_w,i+offx_w,icrm));
   });
 
   // for (int k=0; k<nzm-1; k++) {

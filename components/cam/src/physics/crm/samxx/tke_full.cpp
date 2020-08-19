@@ -174,7 +174,8 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
                  + ( bbb*fac_sub -(1.0+fac_sub *dqsat)*tabs(k,j,i,icrm) ) * ( qpi(kc,j,i,icrm)-qpi(kb,j,i,icrm) ) );
 
         buoy_sgs_vert(k+1,j,i,icrm) = buoy_sgs;
-        a_prod_bu_vert(k+1,j,i,icrm) = -0.5*(tkh(ind_tkh,kc,j+offy_d,i+offx_d,icrm)+tkh(ind_tkh,kb,j+offy_d,i+offx_d,icrm)+0.002)*buoy_sgs;
+        a_prod_bu_vert(k+1,j,i,icrm) = -0.5*(tkh(ind_tkh,kc,j+offy_d,i+offx_d,icrm)+
+                                             tkh(ind_tkh,kb,j+offy_d,i+offx_d,icrm)+0.002)*buoy_sgs;
       }
     }
 
@@ -228,7 +229,8 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
       a_prod_bu = 0.5*( a_prod_bu_vert(k,j,i,icrm) + a_prod_bu_vert(k+1,j,i,icrm) );
       // cap the diss rate (useful for large time steps)
       a_diss = min(tke(ind_tke,k,j+offy_s,i+offx_s,icrm)/(4.0*dt),Cee/smix*pow(tke(ind_tke,k,j+offy_s,i+offx_s,icrm),1.5));
-      tke(ind_tke,k,j+offy_s,i+offx_s,icrm) = max(0.0,tke(ind_tke,k,j+offy_s,i+offx_s,icrm)+dtn*(max(0.0,a_prod_sh+a_prod_bu)-a_diss));
+      tke(ind_tke,k,j+offy_s,i+offx_s,icrm) = max(0.0,tke(ind_tke,k,j+offy_s,i+offx_s,icrm)+
+                                                      dtn*(max(0.0,a_prod_sh+a_prod_bu)-a_diss));
       tk(ind_tk,k,j+offy_d,i+offx_d,icrm)  = Ck*smix*sqrt(tke(ind_tke,k,j+offy_s,i+offx_s,icrm));
     }
     tk(ind_tk,k,j+offy_d,i+offx_d,icrm)  = min(tk(ind_tk,k,j+offy_d,i+offx_d,icrm),tkmax);

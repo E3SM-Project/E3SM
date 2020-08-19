@@ -103,7 +103,8 @@ void diffuse_mom2D(real5d &tk) {
     real rdz=1.0/dz(icrm);
     real rdz2 = rdz*rdz * grdf_z(nzm-2,icrm);
     real tkz=rdz2*grdf_z(nzm-1,icrm)*tk(0,nzm-1,j+offy_d,i+offx_d,icrm);
-    fw(nz-1,j,i+1,icrm)=-2.0*tkz*(w(nz-1,j+offy_d,i+offx_d,icrm)-w(nzm-1,j+offy_w,i+offx_w,icrm))/adz(nzm-1,icrm)*rho(nzm-1,icrm);
+    fw(nz-1,j,i+1,icrm)=-2.0*tkz*(w(nz-1,j+offy_d,i+offx_d,icrm)-w(nzm-1,j+offy_w,i+offx_w,icrm))/
+                        adz(nzm-1,icrm)*rho(nzm-1,icrm);
     fu(0,j,i+1,icrm)=fluxbu(j,i,icrm) * rdz * rhow(0,icrm);
     fv(0,j,i+1,icrm)=fluxbv(j,i,icrm) * rdz * rhow(0,icrm);
     fu(nz-1,j,i+1,icrm)=fluxtu(j,i,icrm) * rdz * rhow(nz-1,icrm);

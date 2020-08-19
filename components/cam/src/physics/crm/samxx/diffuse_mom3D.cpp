@@ -51,10 +51,14 @@ void diffuse_mom3D(real5d &tk) {
     real rdx251=rdx25  * grdf_x(k,icrm);
     real tkx=rdx21*tk(0,k,j+offy_d,i-1+offx_d,icrm);
     fu(k,j+1,i,icrm)=-2.0*tkx*(u(k,j+offy_u,ic-1+offx_u,icrm)-u(k,j+offy_u,i-1+offx_u,icrm));
-    tkx=rdx251*(tk(0,k,j+offy_d,i-1+offx_d,icrm)+tk(0,k,jb+offy_d,i-1+offx_d,icrm)+tk(0,k,j+offy_d,ic-1+offx_d,icrm)+tk(0,k,jb+offy_d,ic-1+offx_d,icrm));
-    fv(k,j+1,i,icrm)=-tkx*(v(k,j+offy_v,ic-1+offx_v,icrm)-v(k,j+offy_v,i-1+offx_v,icrm)+(u(k,j+offy_u,ic-1+offx_u,icrm)-u(k,jb+offy_u,ic-1+offx_u,icrm))*dxy);
-    tkx=rdx251*(tk(0,k,j+offy_d,i-1+offx_d,icrm)+tk(0,k,j+offy_d,ic-1+offx_d,icrm)+tk(0,kcu,j+offy_d,i-1+offx_d,icrm)+tk(0,kcu,j+offy_d,ic-1+offx_d,icrm));
-    fw(k,j+1,i,icrm)=-tkx*(w(kc,j+offy_w,ic-1+offx_w,icrm)-w(kc,j+offy_w,i-1+offx_w,icrm)+(u(kcu,j+offy_u,ic-1+offx_u,icrm)-u(k,j+offy_u,ic-1+offx_u,icrm))*dxz);
+    tkx=rdx251*(tk(0,k,j+offy_d,i-1+offx_d,icrm)+tk(0,k,jb+offy_d,i-1+offx_d,icrm)+
+                tk(0,k,j+offy_d,ic-1+offx_d,icrm)+tk(0,k,jb+offy_d,ic-1+offx_d,icrm));
+    fv(k,j+1,i,icrm)=-tkx*(v(k,j+offy_v,ic-1+offx_v,icrm)-v(k,j+offy_v,i-1+offx_v,icrm)+
+                          (u(k,j+offy_u,ic-1+offx_u,icrm)-u(k,jb+offy_u,ic-1+offx_u,icrm))*dxy);
+    tkx=rdx251*(tk(0,k,j+offy_d,i-1+offx_d,icrm)+tk(0,k,j+offy_d,ic-1+offx_d,icrm)+
+                tk(0,kcu,j+offy_d,i-1+offx_d,icrm)+tk(0,kcu,j+offy_d,ic-1+offx_d,icrm));
+    fw(k,j+1,i,icrm)=-tkx*(w(kc,j+offy_w,ic-1+offx_w,icrm)-w(kc,j+offy_w,i-1+offx_w,icrm)+
+                          (u(kcu,j+offy_u,ic-1+offx_u,icrm)-u(k,j+offy_u,ic-1+offx_u,icrm))*dxz);
   });
 
   // for (int k=0; k<nzm; k++) {
@@ -83,10 +87,14 @@ void diffuse_mom3D(real5d &tk) {
     real rdy251=rdy25  * grdf_y(k,icrm);
     real tky=rdy21*tk(0,k,j-1+offy_d,i+offx_d,icrm);
     fv(k,j,i+1,icrm)=-2.0*tky*(v(k,jc-1+offy_v,i+offx_v,icrm)-v(k,j-1+offy_v,i+offx_v,icrm));
-    tky=rdy251*(tk(0,k,j-1+offy_d,i+offx_d,icrm)+tk(0,k,j-1+offy_d,ib+offx_d,icrm)+tk(0,k,jc-1+offy_d,i+offx_d,icrm)+tk(0,k,jc-1+offy_d,ib+offx_d,icrm));
-    fu(k,j,i+1,icrm)=-tky*(u(k,jc-1+offy_u,i+offx_u,icrm)-u(k,j-1+offy_u,i+offx_u,icrm)+(v(k,jc-1+offy_v,i+offx_v,icrm)-v(k,jc-1+offy_v,ib+offx_v,icrm))*dyx);
-    tky=rdy251*(tk(0,k,j-1+offy_d,i+offx_d,icrm)+tk(0,k,jc-1+offy_d,i+offx_d,icrm)+tk(0,kcu,j-1+offy_d,i+offx_d,icrm)+tk(0,kcu,jc-1+offy_d,i+offx_d,icrm));
-    fw(k,j,i+1,icrm)=-tky*(w(kc,jc-1+offy_w,i+offx_w,icrm)-w(kc,j-1+offy_w,i+offx_w,icrm)+(v(kcu,jc-1+offy_v,i+offx_v,icrm)-v(k,jc-1+offy_v,i+offx_v,icrm))*dyz);
+    tky=rdy251*(tk(0,k,j-1+offy_d,i+offx_d,icrm)+tk(0,k,j-1+offy_d,ib+offx_d,icrm)+
+                tk(0,k,jc-1+offy_d,i+offx_d,icrm)+tk(0,k,jc-1+offy_d,ib+offx_d,icrm));
+    fu(k,j,i+1,icrm)=-tky*(u(k,jc-1+offy_u,i+offx_u,icrm)-u(k,j-1+offy_u,i+offx_u,icrm)+
+                          (v(k,jc-1+offy_v,i+offx_v,icrm)-v(k,jc-1+offy_v,ib+offx_v,icrm))*dyx);
+    tky=rdy251*(tk(0,k,j-1+offy_d,i+offx_d,icrm)+tk(0,k,jc-1+offy_d,i+offx_d,icrm)+
+                tk(0,kcu,j-1+offy_d,i+offx_d,icrm)+tk(0,kcu,jc-1+offy_d,i+offx_d,icrm));
+    fw(k,j,i+1,icrm)=-tky*(w(kc,jc-1+offy_w,i+offx_w,icrm)-w(kc,j-1+offy_w,i+offx_w,icrm)+
+                          (v(kcu,jc-1+offy_v,i+offx_v,icrm)-v(k,jc-1+offy_v,i+offx_v,icrm))*dyz);
   });
 
 
@@ -126,10 +134,14 @@ void diffuse_mom3D(real5d &tk) {
     real dzy=dz(icrm)/dy;
     real tkz=rdz2*tk(0,k,j+offy_d,i+offx_d,icrm);
     fw(kc,j+1,i+1,icrm)=-2.0*tkz*(w(kc,j+offy_w,i+offx_w,icrm)-w(k,j+offy_w,i+offx_w,icrm))*rho(k,icrm)*iadz;
-    tkz=rdz25*(tk(0,k,j+offy_d,i+offx_d,icrm)+tk(0,k,j+offy_d,ib+offx_d,icrm)+tk(0,kc,j+offy_d,i+offx_d,icrm)+tk(0,kc,j+offy_d,ib+offx_d,icrm));
-    fu(kc,j+1,i+1,icrm)=-tkz*( (u(kc,j+offy_u,i+offx_u,icrm)-u(k,j+offy_u,i+offx_u,icrm))*iadzw + (w(kc,j+offy_w,i+offx_w,icrm)-w(kc,j+offy_w,ib+offx_w,icrm))*dzx)*rhow(kc,icrm);
-    tkz=rdz25*(tk(0,k,j+offy_d,i+offx_d,icrm)+tk(0,k,jb+offy_d,i+offx_d,icrm)+tk(0,kc,j+offy_d,i+offx_d,icrm)+tk(0,kc,jb+offy_d,i+offx_d,icrm));
-    fv(kc,j+1,i+1,icrm)=-tkz*( (v(kc,j+offy_v,i+offx_v,icrm)-v(k,j+offy_v,i+offx_v,icrm))*iadzw + (w(kc,j+offy_w,i+offx_w,icrm)-w(kc,jb+offy_w,i+offx_w,icrm))*dzy)*rhow(kc,icrm);
+    tkz=rdz25*(tk(0,k,j+offy_d,i+offx_d,icrm)+tk(0,k,j+offy_d,ib+offx_d,icrm)+tk(0,kc,j+offy_d,i+offx_d,icrm)+
+               tk(0,kc,j+offy_d,ib+offx_d,icrm));
+    fu(kc,j+1,i+1,icrm)=-tkz*( (u(kc,j+offy_u,i+offx_u,icrm)-u(k,j+offy_u,i+offx_u,icrm))*iadzw + 
+                               (w(kc,j+offy_w,i+offx_w,icrm)-w(kc,j+offy_w,ib+offx_w,icrm))*dzx)*rhow(kc,icrm);
+    tkz=rdz25*(tk(0,k,j+offy_d,i+offx_d,icrm)+tk(0,k,jb+offy_d,i+offx_d,icrm)+tk(0,kc,j+offy_d,i+offx_d,icrm)+
+               tk(0,kc,jb+offy_d,i+offx_d,icrm));
+    fv(kc,j+1,i+1,icrm)=-tkz*( (v(kc,j+offy_v,i+offx_v,icrm)-v(k,j+offy_v,i+offx_v,icrm))*iadzw + 
+                               (w(kc,j+offy_w,i+offx_w,icrm)-w(kc,jb+offy_w,i+offx_w,icrm))*dzy)*rhow(kc,icrm);
     yakl::atomicAdd(uwsb(kc,icrm),fu(kc,j+1,i+1,icrm));
     yakl::atomicAdd(vwsb(kc,icrm),fv(kc,j+1,i+1,icrm));
   });
@@ -141,7 +153,8 @@ void diffuse_mom3D(real5d &tk) {
     real rdz=1.0/dz(icrm);
     real rdz2 = rdz*rdz * grdf_z(nzm-2,icrm);
     real tkz=rdz2*grdf_z(nzm-1,icrm)*tk(0,nzm-1,j+offy_d,i+offx_d,icrm);
-    fw(nz-1,j+1,i+1,icrm)=-2.0*tkz*(w(nz-1,j+offy_d,i+offx_d,icrm)-w(nzm-1,j+offy_w,i+offx_w,icrm))/adz(nzm-1,icrm)*rho(nzm-1,icrm);
+    fw(nz-1,j+1,i+1,icrm)=-2.0*tkz*(w(nz-1,j+offy_d,i+offx_d,icrm)-w(nzm-1,j+offy_w,i+offx_w,icrm))/
+                          adz(nzm-1,icrm)*rho(nzm-1,icrm);
     fu(0,j+1,i+1,icrm)=fluxbu(j,i,icrm) * rdz * rhow(0,icrm);
     fv(0,j+1,i+1,icrm)=fluxbv(j,i,icrm) * rdz * rhow(0,icrm);
     fu(nz-1,j+1,i+1,icrm)=fluxtu(j,i,icrm) * rdz * rhow(nz-1,icrm);

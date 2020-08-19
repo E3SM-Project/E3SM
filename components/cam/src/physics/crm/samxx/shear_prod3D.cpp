@@ -44,11 +44,16 @@ void shear_prod3D(real4d &def2) {
       real tmp1 = ((u(k,j+offy_u,ic+offx_u,icrm)-u(k,j+offy_u,i+offx_u,icrm))*rdx);
       real tmp2 = ((v(k,jc+offy_v,i+offx_v,icrm)-v(k,j+offy_v,i+offx_v,icrm))*rdy);
       real tmp3 = ((w(kc,j+offy_w,i+offx_w,icrm)-w(k,j+offy_w,i+offx_w,icrm))*rdz);
-      real tmp4 = (u(k,jc+offy_u,ic+offx_u,icrm)-u(k,j+offy_v,ic+offx_v,icrm))*rdy +(v(k,jc+offy_v,ic+offx_v,icrm)-v(k,jc+offy_v,i+offx_v,icrm))*rdx;
-      real tmp5 = (u(k,jc+offy_u,i+offx_u,icrm)-u(k,j+offy_v,i+offx_v,icrm))*rdy +(v(k,jc+offy_v,i+offx_v,icrm)-v(k,jc+offy_v,ib+offx_v,icrm))*rdx;
-      real tmp6 = (u(k,j+offy_u,ic+offx_u,icrm)-u(k,jb+offy_v,ic+offx_v,icrm))*rdy +(v(k,j+offy_v,ic+offx_v,icrm)-v(k,j+offy_v,i+offx_v,icrm))*rdx;
-      real tmp7 = (u(k,j+offy_u,i+offx_u,icrm)-u(k,jb+offy_v,i+offx_v,icrm))*rdy +(v(k,j+offy_v,i+offx_v,icrm)-v(k,j+offy_v,ib+offx_v,icrm))*rdx;
-      def2(k,j,i,icrm) = 2.0 * ( tmp1*tmp1 + tmp2*tmp2 + tmp3*tmp3 ) + 0.25 * ( tmp4*tmp4 + tmp5*tmp5 + tmp6*tmp6 + tmp7*tmp7);
+      real tmp4 = (u(k,jc+offy_u,ic+offx_u,icrm)-u(k,j+offy_v,ic+offx_v,icrm))*rdy +
+                  (v(k,jc+offy_v,ic+offx_v,icrm)-v(k,jc+offy_v,i+offx_v,icrm))*rdx;
+      real tmp5 = (u(k,jc+offy_u,i+offx_u,icrm)-u(k,j+offy_v,i+offx_v,icrm))*rdy +
+                  (v(k,jc+offy_v,i+offx_v,icrm)-v(k,jc+offy_v,ib+offx_v,icrm))*rdx;
+      real tmp6 = (u(k,j+offy_u,ic+offx_u,icrm)-u(k,jb+offy_v,ic+offx_v,icrm))*rdy +
+                  (v(k,j+offy_v,ic+offx_v,icrm)-v(k,j+offy_v,i+offx_v,icrm))*rdx;
+      real tmp7 = (u(k,j+offy_u,i+offx_u,icrm)-u(k,jb+offy_v,i+offx_v,icrm))*rdy +
+                  (v(k,j+offy_v,i+offx_v,icrm)-v(k,j+offy_v,ib+offx_v,icrm))*rdx;
+      def2(k,j,i,icrm) = 2.0 * ( tmp1*tmp1 + tmp2*tmp2 + tmp3*tmp3 ) + 
+                         0.25 * ( tmp4*tmp4 + tmp5*tmp5 + tmp6*tmp6 + tmp7*tmp7);
 
       tmp1 = (u(kc,j+offy_u,ic+offx_u,icrm)-u0(kc,icrm)-u(k,j+offy_u,ic+offx_u,icrm)+u0(k,icrm))*rdzw_up +
              (w(kc,j+offy_w,ic+offx_w,icrm)-w(kc,j+offy_w,i+offx_w,icrm))*rdx_up;
@@ -87,10 +92,14 @@ void shear_prod3D(real4d &def2) {
       real tmp1  = (u(k,j+offy_u,ic+offx_u,icrm)-u(k,j+offy_u,i+offx_u,icrm))*rdx;
       real tmp2  = (v(k,jc+offy_v,i+offx_v,icrm)-v(k,j+offy_v,i+offx_v,icrm))*rdy;
       real tmp3  = (w(kc,j+offy_w,i+offx_w,icrm)-w(k,j+offy_w,i+offx_w,icrm))*rdz;
-      real tmp4  = (u(k,jc+offy_u,ic+offx_u,icrm)-u(k,j+offy_u,ic+offx_u,icrm))*rdy + (v(k,jc+offy_v,ic+offx_v,icrm)-v(k,jc+offy_v,i+offx_v,icrm))*rdx;
-      real tmp5  = (u(k,jc+offy_u,i+offx_u,icrm)-u(k,j+offy_u,i+offx_u,icrm))*rdy + (v(k,jc+offy_v,i+offx_v,icrm)-v(k,jc+offy_v,ib+offx_v,icrm))*rdx  ;
-      real tmp6  = (u(k,j+offy_u,ic+offx_u,icrm)-u(k,jb+offy_u,ic+offx_u,icrm))*rdy + (v(k,j+offy_v,ic+offx_v,icrm)-v(k,j+offy_v,i+offx_v,icrm))*rdx  ;
-      real tmp7  = (u(k,j+offy_u,i+offx_u,icrm)-u(k,jb+offy_u,i+offx_u,icrm))*rdy + (v(k,j+offy_v,i+offx_v,icrm)-v(k,j+offy_v,ib+offx_v,icrm))*rdx    ;
+      real tmp4  = (u(k,jc+offy_u,ic+offx_u,icrm)-u(k,j+offy_u,ic+offx_u,icrm))*rdy + 
+                   (v(k,jc+offy_v,ic+offx_v,icrm)-v(k,jc+offy_v,i+offx_v,icrm))*rdx;
+      real tmp5  = (u(k,jc+offy_u,i+offx_u,icrm)-u(k,j+offy_u,i+offx_u,icrm))*rdy + 
+                   (v(k,jc+offy_v,i+offx_v,icrm)-v(k,jc+offy_v,ib+offx_v,icrm))*rdx  ;
+      real tmp6  = (u(k,j+offy_u,ic+offx_u,icrm)-u(k,jb+offy_u,ic+offx_u,icrm))*rdy + 
+                   (v(k,j+offy_v,ic+offx_v,icrm)-v(k,j+offy_v,i+offx_v,icrm))*rdx  ;
+      real tmp7  = (u(k,j+offy_u,i+offx_u,icrm)-u(k,jb+offy_u,i+offx_u,icrm))*rdy + 
+                   (v(k,j+offy_v,i+offx_v,icrm)-v(k,j+offy_v,ib+offx_v,icrm))*rdx    ;
       real tmp8  = (v(kc,jc+offy_v,i+offx_v,icrm)-v0(kc,icrm)-v(k,jc+offy_v,i+offx_v,icrm)+v0(k,icrm))*rdzw_up +
                    (w(kc,jc+offy_w,i+offx_w,icrm)-w(kc,j+offy_w,i+offx_w,icrm))*rdy_up;
       real tmp9  = (v(kc,j+offy_v,i+offx_v,icrm)-v0(kc,icrm)-v(k,j+offy_v,i+offx_v,icrm)+v0(k,icrm))*rdzw_up +
@@ -100,7 +109,8 @@ void shear_prod3D(real4d &def2) {
       real tmp11 = (u(kc,j+offy_u,i+offx_u,icrm)-u0(kc,icrm)-u(k,j+offy_u,i+offx_u,icrm)+u0(k,icrm))*rdzw_up +
                    (w(kc,j+offy_w,i+offx_w,icrm)-w(kc,j+offy_w,ib+offx_w,icrm))*rdx_up;
 
-      def2(k,j,i,icrm) = 2.0 * ( tmp1*tmp1 + tmp2*tmp2 + tmp3*tmp3 ) + 0.25 * ( tmp4*tmp4 + tmp5*tmp5 + tmp6*tmp6 + tmp7*tmp7 ) +
+      def2(k,j,i,icrm) = 2.0 * ( tmp1*tmp1 + tmp2*tmp2 + tmp3*tmp3 ) + 
+                        0.25 * ( tmp4*tmp4 + tmp5*tmp5 + tmp6*tmp6 + tmp7*tmp7 ) +
                          0.5 * ( tmp8*tmp8 + tmp9*tmp9 ) + 0.5 * ( tmp10*tmp10 + tmp11*tmp11 );
 
     } else if (k==nzm-1) {
@@ -121,10 +131,14 @@ void shear_prod3D(real4d &def2) {
       real tmp1  = (u(k,j+offy_u,ic+offx_u,icrm)-u(k,j+offy_u,i+offx_u,icrm))*rdx;
       real tmp2  = (v(k,jc+offy_v,i+offx_v,icrm)-v(k,j+offy_v,i+offx_v,icrm))*rdy;
       real tmp3  = (w(kc,j+offy_w,i+offx_w,icrm)-w(k,j+offy_w,i+offx_w,icrm))*rdz;
-      real tmp4  = (u(k,jc+offy_u,ic+offx_u,icrm)-u(k,j+offy_u,ic+offx_u,icrm))*rdy + (v(k,jc+offy_v,ic+offx_v,icrm)-v(k,jc+offy_v,i+offx_v,icrm))*rdx;
-      real tmp5  = (u(k,jc+offy_u,i+offx_u,icrm)-u(k,j+offy_u,i+offx_u,icrm))*rdy + (v(k,jc+offy_v,i+offx_v,icrm)-v(k,jc+offy_v,ib+offx_v,icrm))*rdx  ;
-      real tmp6  = (u(k,j+offy_u,ic+offx_u,icrm)-u(k,jb+offy_u,ic+offx_u,icrm))*rdy + (v(k,j+offy_v,ic+offx_v,icrm)-v(k,j+offy_v,i+offx_v,icrm))*rdx  ;
-      real tmp7  = (u(k,j+offy_u,i+offx_u,icrm)-u(k,jb+offy_u,i+offx_u,icrm))*rdy + (v(k,j+offy_v,i+offx_v,icrm)-v(k,j+offy_v,ib+offx_v,icrm))*rdx    ;
+      real tmp4  = (u(k,jc+offy_u,ic+offx_u,icrm)-u(k,j+offy_u,ic+offx_u,icrm))*rdy + 
+                   (v(k,jc+offy_v,ic+offx_v,icrm)-v(k,jc+offy_v,i+offx_v,icrm))*rdx;
+      real tmp5  = (u(k,jc+offy_u,i+offx_u,icrm)-u(k,j+offy_u,i+offx_u,icrm))*rdy + 
+                   (v(k,jc+offy_v,i+offx_v,icrm)-v(k,jc+offy_v,ib+offx_v,icrm))*rdx  ;
+      real tmp6  = (u(k,j+offy_u,ic+offx_u,icrm)-u(k,jb+offy_u,ic+offx_u,icrm))*rdy + 
+                   (v(k,j+offy_v,ic+offx_v,icrm)-v(k,j+offy_v,i+offx_v,icrm))*rdx  ;
+      real tmp7  = (u(k,j+offy_u,i+offx_u,icrm)-u(k,jb+offy_u,i+offx_u,icrm))*rdy + 
+                   (v(k,j+offy_v,i+offx_v,icrm)-v(k,j+offy_v,ib+offx_v,icrm))*rdx    ;
       real tmp8  = (v(k,jc+offy_v,i+offx_v,icrm)-v0(k,icrm)-v(kb,jc+offy_v,i+offx_v,icrm)+v0(kb,icrm))*rdzw_dn +
                    (w(k,jc+offy_w,i+offx_w,icrm)-w(k,j+offy_w,i+offx_w,icrm))*rdy_dn;
       real tmp9  = (v(k,j+offy_v,i+offx_v,icrm)-v0(k,icrm)-v(kb,j+offy_v,i+offx_v,icrm)+v0(kb,icrm))*rdzw_dn +
@@ -134,7 +148,8 @@ void shear_prod3D(real4d &def2) {
       real tmp11 = (u(k,j+offy_u,i+offx_u,icrm)-u0(k,icrm)-u(kb,j+offy_u,i+offx_u,icrm)+u0(kb,icrm))*rdzw_dn +
                    (w(k,j+offy_w,i+offx_w,icrm)-w(k,j+offy_w,ib+offx_w,icrm))*rdx_dn  ;
 
-      def2(k,j,i,icrm) = 2.0 * ( tmp1*tmp1 + tmp2*tmp2 + tmp3*tmp3 ) + 0.25 * ( tmp4*tmp4 + tmp5*tmp5 + tmp6*tmp6 + tmp7*tmp7 ) +
+      def2(k,j,i,icrm) = 2.0 * ( tmp1*tmp1 + tmp2*tmp2 + tmp3*tmp3 ) +
+                        0.25 * ( tmp4*tmp4 + tmp5*tmp5 + tmp6*tmp6 + tmp7*tmp7 ) +
                          0.5 * ( tmp8*tmp8 + tmp9*tmp9 ) + 0.5 * ( tmp10*tmp10 + tmp11*tmp11 );
 
     }

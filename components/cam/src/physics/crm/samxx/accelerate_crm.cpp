@@ -124,7 +124,8 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
       u(k,j+offy_u,i+offx_u,icrm) = u(k,j+offy_u,i+offx_u,icrm) + crm_accel_factor * utend_acc(k,icrm); 
       v(k,j+offy_v,i+offx_v,icrm) = v(k,j+offy_v,i+offx_v,icrm) + crm_accel_factor * vtend_acc(k,icrm); 
     }
-    micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) + crm_accel_factor * qtend_acc(k,icrm);
+    micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) = 
+        micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) + crm_accel_factor * qtend_acc(k,icrm);
   });
 
   //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

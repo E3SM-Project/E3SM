@@ -24,7 +24,8 @@ void cloud(real5d &q, int ind_q, real5d &qp, int ind_qp) {
     q(ind_q,k,j+offy_s,i+offx_s,icrm)=max(0.0,q(ind_q,k,j+offy_s,i+offx_s,icrm));
     // Initial guess for temperature assuming no cloud water/ice:
     tabs(k,j,i,icrm) = t(k,j+offy_s,i+offx_s,icrm)-gamaz(k,icrm);
-    real tabs1=(tabs(k,j,i,icrm)+fac1*qp(ind_qp,k,j+offy_s,i+offx_s,icrm))/(1.0+fac2*qp(ind_qp,k,j+offy_s,i+offx_s,icrm));
+    real tabs1=(tabs(k,j,i,icrm)+fac1*qp(ind_qp,k,j+offy_s,i+offx_s,icrm))/
+               (1.0+fac2*qp(ind_qp,k,j+offy_s,i+offx_s,icrm));
 
     real qsatt;
     real om;
@@ -96,8 +97,10 @@ void cloud(real5d &q, int ind_q, real5d &qp, int ind_qp) {
           lstarp=fac_cond+(1.0-omp)*fac_fus;
           dlstarp=ap*fac_fus;
         }
-        fff = tabs(k,j,i,icrm)-tabs1+lstarn*(q(ind_q,k,j+offy_s,i+offx_s,icrm)-qsatt)+lstarp*qp(ind_qp,k,j+offy_s,i+offx_s,icrm);
-        dfff=dlstarn*(q(ind_q,k,j+offy_s,i+offx_s,icrm)-qsatt)+dlstarp*qp(ind_qp,k,j+offy_s,i+offx_s,icrm)-lstarn*dqsat-1.0;
+        fff = tabs(k,j,i,icrm)-tabs1+lstarn*(q(ind_q,k,j+offy_s,i+offx_s,icrm)-qsatt)+
+              lstarp*qp(ind_qp,k,j+offy_s,i+offx_s,icrm);
+        dfff=dlstarn*(q(ind_q,k,j+offy_s,i+offx_s,icrm)-qsatt)+dlstarp*qp(ind_qp,k,j+offy_s,i+offx_s,icrm)-
+             lstarn*dqsat-1.0;
         dtabs=-fff/dfff;
         niter=niter+1;
         tabs1=tabs1+dtabs;

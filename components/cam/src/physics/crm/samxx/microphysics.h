@@ -8,8 +8,8 @@
 #include "precip_proc.h"
 
 YAKL_INLINE real term_vel_qp(int icrm, int i, int j, int k, real qploc, real vrain, real vsnow, 
-                                       real vgrau, real crain, real csnow, real cgrau, real rho,
-                                       real tabs, real a_pr, real a_gr) {
+                             real vgrau, real crain, real csnow, real cgrau, real rho,
+                             real tabs, real a_pr, real a_gr) {
   real term_vel = 0.0;
   if(qploc > qp_threshold) {
     real omp = max(0.0,min(1.0,(tabs-tprmin)*a_pr));

@@ -73,14 +73,14 @@ void post_icycle() {
         flag_top(j,i,icrm) = 0;
       }
       if (pres(nz-(k+1)-1,icrm) >= 700.0) {
-          cwpl(j,i,icrm) = cwpl(j,i,icrm)+tmp1;
-          cltemp(j,i,icrm) = max(CF3D(nz-(k+1)-1,j,i,icrm), cltemp(j,i,icrm));
+        cwpl(j,i,icrm) = cwpl(j,i,icrm)+tmp1;
+        cltemp(j,i,icrm) = max(CF3D(nz-(k+1)-1,j,i,icrm), cltemp(j,i,icrm));
       } else if (pres(nz-(k+1)-1,icrm) < 400.0) {
-          cwph(j,i,icrm) = cwph(j,i,icrm)+tmp1;
-          chtemp(j,i,icrm) = max(CF3D(nz-(k+1)-1,j,i,icrm), chtemp(j,i,icrm));
+        cwph(j,i,icrm) = cwph(j,i,icrm)+tmp1;
+        chtemp(j,i,icrm) = max(CF3D(nz-(k+1)-1,j,i,icrm), chtemp(j,i,icrm));
       } else {
-          cwpm(j,i,icrm) = cwpm(j,i,icrm)+tmp1;
-          cmtemp(j,i,icrm) = max(CF3D(nz-(k+1)-1,j,i,icrm), cmtemp(j,i,icrm));
+        cwpm(j,i,icrm) = cwpm(j,i,icrm)+tmp1;
+        cmtemp(j,i,icrm) = max(CF3D(nz-(k+1)-1,j,i,icrm), cmtemp(j,i,icrm));
       }
       tmp1 = rho(k,icrm)*adz(k,icrm)*dz(icrm);
       real tmp;

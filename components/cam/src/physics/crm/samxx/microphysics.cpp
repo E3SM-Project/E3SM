@@ -156,7 +156,8 @@ void precip_fall(int hydro_type, real4d &omega) {
       // precipitation mass fraction.  Therefore, a reformulated
       // anti-diffusive flux is used here which accounts for
       // this and results in reduced numerical diffusion.
-      www(k,j,i,icrm) = 0.5*(1.0+wp(k,j,i,icrm)*irhoadz(k,icrm))*(tmp_qp(kb,j,i,icrm)*wp(kb,j,i,icrm) - tmp_qp(k,j,i,icrm)*wp(k,j,i,icrm)); // works for wp(k)<0
+      www(k,j,i,icrm) = 0.5*(1.0+wp(k,j,i,icrm)*irhoadz(k,icrm))*(tmp_qp(kb,j,i,icrm)*wp(kb,j,i,icrm) - 
+                        tmp_qp(k,j,i,icrm)*wp(k,j,i,icrm)); // works for wp(k)<0
     });
 
     if (nonos) {
@@ -170,8 +171,10 @@ void precip_fall(int hydro_type, real4d &omega) {
         mx(k,j,i,icrm)=max(tmp_qp(kb,j,i,icrm),max(tmp_qp(kc,j,i,icrm),max(tmp_qp(k,j,i,icrm),mx(k,j,i,icrm))));
         mn(k,j,i,icrm)=min(tmp_qp(kb,j,i,icrm),min(tmp_qp(kc,j,i,icrm),min(tmp_qp(k,j,i,icrm),mn(k,j,i,icrm))));
         kc=min(nzm-1,k+1);
-        mx(k,j,i,icrm)=rho(k,icrm)*adz(k,icrm)*(mx(k,j,i,icrm)-tmp_qp(k,j,i,icrm))/(pn(www(kc,j,i,icrm)) + pp(www(k,j,i,icrm))+eps);
-        mn(k,j,i,icrm)=rho(k,icrm)*adz(k,icrm)*(tmp_qp(k,j,i,icrm)-mn(k,j,i,icrm))/(pp(www(kc,j,i,icrm)) + pn(www(k,j,i,icrm))+eps);
+        mx(k,j,i,icrm)=rho(k,icrm)*adz(k,icrm)*(mx(k,j,i,icrm)-tmp_qp(k,j,i,icrm))/(pn(www(kc,j,i,icrm)) + 
+                                                                                    pp(www(k,j,i,icrm))+eps);
+        mn(k,j,i,icrm)=rho(k,icrm)*adz(k,icrm)*(tmp_qp(k,j,i,icrm)-mn(k,j,i,icrm))/(pp(www(kc,j,i,icrm)) + 
+                                                                                    pn(www(k,j,i,icrm))+eps);
       });
 
       // for (int k=0; k<nzm; k++) {
@@ -199,7 +202,8 @@ void precip_fall(int hydro_type, real4d &omega) {
       // Note that fz is the total flux, including both the
       // upwind flux and the anti-diffusive correction.
       real flagstat = 1.0;
-      micro_field(1,k,j+offy_s,i+offx_s,icrm)=micro_field(1,k,j+offy_s,i+offx_s,icrm)-(fz(kc,j,i,icrm)-fz(k,j,i,icrm))*irhoadz(k,icrm);
+      micro_field(1,k,j+offy_s,i+offx_s,icrm)=micro_field(1,k,j+offy_s,i+offx_s,icrm)-(fz(kc,j,i,icrm)-
+                                                                                       fz(k,j,i,icrm))*irhoadz(k,icrm);
       real tmp = -(fz(kc,j,i,icrm)-fz(k,j,i,icrm))*irhoadz(k,icrm)*flagstat;  // For qp budget
       yakl::atomicAdd(qpfall(k,icrm),tmp);
       real lat_heat = -(lfac(kc,j,i,icrm)*fz(kc,j,i,icrm)-lfac(k,j,i,icrm)*fz(k,j,i,icrm))*irhoadz(k,icrm);

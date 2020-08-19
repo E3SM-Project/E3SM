@@ -60,7 +60,8 @@ void precip_init() {
     coef1  =(lsub/(tabs0(k,icrm)*rv)-1.0)*lsub/(therco*rrr1*tabs0(k,icrm));
     coef2  = rv*tabs0(k,icrm)/(diffelq*rrr2*esti);
     evaps1(k,icrm)  =  0.65*4.0*nzeros/sqrt(pi*rhos*nzeros)/(coef1+coef2)/sqrt(rho(k,icrm));
-    evaps2(k,icrm)  =  0.49*4.0*nzeros*gams2*sqrt(a_snow/(muelq*rrr1))/pow((pi*rhos*nzeros) , ((5.0+b_snow)/8.0)) / (coef1+coef2) * pow(rho(k,icrm) , ((1.0+b_snow)/8.0))*sqrt(pratio);
+    evaps2(k,icrm)  =  0.49*4.0*nzeros*gams2*sqrt(a_snow/(muelq*rrr1))/pow((pi*rhos*nzeros) , ((5.0+b_snow)/8.0)) / 
+                       (coef1+coef2) * pow(rho(k,icrm) , ((1.0+b_snow)/8.0))*sqrt(pratio);
       
     // accretion by graupel:
     coef1 = 0.25*pi*nzerog*a_grau*gamg1*pratio/pow((pi*rhog*nzerog/rho(k,icrm)) , ((3.0+b_grau)/4.0));
@@ -72,7 +73,8 @@ void precip_init() {
     coef1  =(lsub/(tabs0(k,icrm)*rv)-1.0)*lsub/(therco*rrr1*tabs0(k,icrm));
     coef2  = rv*tabs0(k,icrm)/(diffelq*rrr2*esti);
     evapg1(k,icrm)  = 0.65*4.0*nzerog/sqrt(pi*rhog*nzerog)/(coef1+coef2)/sqrt(rho(k,icrm));
-    evapg2(k,icrm)  = 0.49*4.0*nzerog*gamg2*sqrt(a_grau/(muelq*rrr1))/pow((pi * rhog * nzerog) , ((5.0+b_grau)/8.0)) / (coef1+coef2) * pow(rho(k,icrm) , ((1.0+b_grau)/8.0))*sqrt(pratio);
+    evapg2(k,icrm)  = 0.49*4.0*nzerog*gamg2*sqrt(a_grau/(muelq*rrr1))/pow((pi * rhog * nzerog) , ((5.0+b_grau)/8.0)) / 
+                      (coef1+coef2) * pow(rho(k,icrm) , ((1.0+b_grau)/8.0))*sqrt(pratio);
 
     // accretion by rain:
     accrrc(k,icrm)=  0.25 * pi * nzeror * a_rain * gamr1 * pratio/pow((pi * rhor * nzeror / rho(k,icrm)) , ((3+b_rain)/4.))* erccoef;
@@ -82,7 +84,9 @@ void precip_init() {
     coef2  = rv*tabs0(k,icrm)/(diffelq * rrr2 * estw);
     evapr1(k,icrm)  =  0.78 * 2.0 * pi * nzeror / 
     sqrt(pi * rhor * nzeror) / (coef1+coef2) / sqrt(rho(k,icrm));
-    evapr2(k,icrm)  =  0.31 * 2.0 * pi  * nzeror * gamr2 * 0.89 * sqrt(a_rain/(muelq*rrr1))/pow((pi * rhor * nzeror) , ((5.0+b_rain)/8.0)) / (coef1+coef2) * pow(rho(k,icrm) , ((1.0+b_rain)/8.0))*sqrt(pratio);
+    evapr2(k,icrm)  =  0.31 * 2.0 * pi  * nzeror * gamr2 * 0.89 * sqrt(a_rain/(muelq*rrr1))/
+                        pow((pi * rhor * nzeror) , ((5.0+b_rain)/8.0)) / 
+                        (coef1+coef2) * pow(rho(k,icrm) , ((1.0+b_rain)/8.0))*sqrt(pratio);
   });
 }
 
