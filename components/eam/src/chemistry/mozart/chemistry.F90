@@ -1355,7 +1355,7 @@ end function chem_is_active
     use spmd_utils,          only : iam
     use camsrfexch,          only : cam_in_t, cam_out_t     
     use perf_mod,            only : t_startf, t_stopf
-    use tropopause,          only : tropopause_find, TROP_ALG_HYBSTOB, TROP_ALG_CLIMATE
+    use tropopause,          only : tropopause_find, TROP_ALG_HYBSTOB, TROP_ALG_CLIMATE, TROP_ALG_E90
     use mo_drydep,           only : drydep_update
     use mo_neu_wetdep,       only : neu_wetdep_tend, do_neu_wetdep
     use aerodep_flx,         only : aerodep_flx_prescribed
@@ -1427,7 +1427,7 @@ end function chem_is_active
 !-----------------------------------------------------------------------
 ! get tropopause level
 !-----------------------------------------------------------------------
-    call tropopause_find(state, tropLev, primary=TROP_ALG_HYBSTOB, backup=TROP_ALG_CLIMATE)
+    call tropopause_find(state, tropLev, primary=TROP_ALG_E90, backup=TROP_ALG_CLIMATE)
 
     tim_ndx = pbuf_old_tim_idx()
     call pbuf_get_field(pbuf, ndx_pblh,       pblh)
