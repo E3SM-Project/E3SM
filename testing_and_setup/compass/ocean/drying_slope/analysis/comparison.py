@@ -79,9 +79,9 @@ def plot_MPASO(times, fileno, *args, **kwargs):
     for atime in times:
         # factor of 1e-16 needed to account for annoying round-off issue to get right time slices
         plottime = int((float(atime)/0.2 + 1e-16)*24.0)
-        ds = xr.open_mfdataset('output'+ fileno + '.nc')
+        ds = xr.open_dataset('output'+ fileno + '.nc')
         print('{} {} {}'.format(atime, plottime, ds.isel(Time=plottime).xtime.values))
-        ds = ds.drop(np.setdiff1d([i for i in ds.variables], ['yCell','ssh']))
+        ds = ds.drop_vars(np.setdiff1d([i for i in ds.variables], ['yCell','ssh']))
         ymean = ds.isel(Time=plottime).groupby('yCell').mean(dim=xr.ALL_DIMS)
         x = ymean.yCell.values/1000.0
         y = ymean.ssh.values
@@ -93,7 +93,7 @@ def plot_MPASO(times, fileno, *args, **kwargs):
 def plot_tidal_forcing_comparison():
     # data from MPAS-O on boundary
     for fileno in ['1','2']:
-        ds = xr.open_mfdataset('output' + fileno +'.nc')
+        ds = xr.open_dataset('output' + fileno +'.nc')
         ympas = ds.ssh.where(ds.tidalInputMask).mean('nCells').values
         x = np.linspace(0, 1.0, len(ds.xtime))*12.0
         plt.plot(x, ympas, marker='o', label='MPAS-O forward' + fileno)

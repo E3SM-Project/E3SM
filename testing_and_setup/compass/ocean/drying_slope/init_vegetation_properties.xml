@@ -1,0 +1,16 @@
+<template>
+	<streams>
+		<stream name="forcing_data_init">
+			<attribute name="type">output</attribute>
+			<attribute name="filename_template">forcing.nc</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="output_interval">0000_00:00:01</attribute>
+			<add_contents>
+				<member name="vegetationMask" type="var"/>
+				<member name="vegetationDiameter" type="var"/>
+				<member name="vegetationHeight" type="var"/>
+				<member name="vegetationDensity" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>

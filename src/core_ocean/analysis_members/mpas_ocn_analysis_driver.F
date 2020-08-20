@@ -51,6 +51,9 @@ module ocn_analysis_driver
    use ocn_moc_streamfunction
    use ocn_ocean_heat_content
    use ocn_mixed_layer_heat_budget
+   use ocn_sediment_flux_index
+   use ocn_sediment_transport
+   use ocn_harmonic_analysis
 !   use ocn_TEM_PLATE
 
    implicit none
@@ -198,6 +201,9 @@ contains
       call mpas_pool_add_config(analysisMemberList, 'eddyProductVariables', 1)
       call mpas_pool_add_config(analysisMemberList, 'mocStreamfunction', 1)
       call mpas_pool_add_config(analysisMemberList, 'oceanHeatContent', 1)
+      call mpas_pool_add_config(analysisMemberList, 'sedimentFluxIndex', 1)
+      call mpas_pool_add_config(analysisMemberList, 'sedimentTransport', 1)
+      call mpas_pool_add_config(analysisMemberList, 'harmonicAnalysis', 1)
 !     call mpas_pool_add_config(analysisMemberList, 'temPlate', 1)
 
       ! DON'T EDIT BELOW HERE
@@ -1057,6 +1063,8 @@ contains
          call ocn_bootstrap_pointwise_stats(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'transectTransport' ) then
         call ocn_init_transect_transport(domain, err_tmp)
+!      else if ( analysisMemberName(1:nameLength) == 'sedimentFluxIndex' ) then
+!        call ocn_init_sediment_flux_index(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_init_TEM_PLATE(domain, err_tmp)
       end if
@@ -1128,6 +1136,12 @@ contains
          call ocn_init_ocean_heat_content(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'mixedLayerHeatBudget' ) then
          call ocn_init_mixed_layer_heat_budget(domain,err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'sedimentFluxIndex' ) then
+         call ocn_init_sediment_flux_index(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'sedimentTransport' ) then
+         call ocn_init_sediment_transport(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'harmonicAnalysis' ) then
+        call ocn_init_harmonic_analysis(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_init_TEM_PLATE(domain, err_tmp)
       ! rpn is third to last
@@ -1224,6 +1238,12 @@ contains
          call ocn_compute_ocean_heat_content(domain, timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'mixedLayerHeatBudget' ) then
          call ocn_compute_mixed_layer_heat_budget(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'sedimentFluxIndex' ) then
+         call ocn_compute_sediment_flux_index(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'sedimentTransport' ) then
+         call ocn_compute_sediment_transport(domain, timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'harmonicAnalysis' ) then
+         call ocn_compute_harmonic_analysis(domain, timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_compute_TEM_PLATE(domain, timeLevel, err_tmp)
       ! rpn is third to last
@@ -1325,6 +1345,12 @@ contains
          call ocn_restart_ocean_heat_content(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'mixedLayerHeatBudget' ) then
          call ocn_restart_mixed_layer_heat_budget(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'sedimentFluxIndex' ) then
+         call ocn_restart_sediment_flux_index(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'sedimentTransport' ) then
+         call ocn_restart_sediment_transport(domain, err_tmp)
+     else if ( analysisMemberName(1:nameLength) == 'harmonicAnalysis' ) then
+        call ocn_restart_harmonic_analysis(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_restart_TEM_PLATE(domain, err_tmp)
       ! rpn is third to last
@@ -1420,6 +1446,12 @@ contains
          call ocn_finalize_ocean_heat_content(domain,err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'mixedLayerHeatBudget' ) then
          call ocn_finalize_mixed_layer_heat_budget(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'sedimentFluxIndex' ) then
+         call ocn_finalize_sediment_flux_index(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'sedimentTransport' ) then
+         call ocn_finalize_sediment_transport(domain, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'harmonicAnalysis' ) then
+         call ocn_finalize_harmonic_analysis(domain, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'temPlate' ) then
 !        call ocn_finalize_TEM_PLATE(domain, err_tmp)
       ! rpn is third to last

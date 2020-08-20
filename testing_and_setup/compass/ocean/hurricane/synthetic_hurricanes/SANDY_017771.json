@@ -1,0 +1,2206 @@
+{
+  "stormId": "17771",
+  "name": "SANDY",
+  "description": "",
+  "date": "20121028",
+  "timeUnits": "hours",
+  "distanceUnits": "miles",
+  "windspeedUnits": "knots",
+  "pressureUnits": "mb",
+  "initialTime": "2012-01-04_00:00:00",
+  "stormTrack": {
+    "type": "FeatureCollection",
+    "features": [
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-74.7, 30.5]
+        },
+        "properties": {
+          "time": 144,
+          "vf": 10.6573,
+          "minP": 960,
+          "wMax": 65,
+          "rMax": 29.6751,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 37.0939,
+                "y": 0,
+                "value": 62.9054
+              },
+              {
+                "x": 89.0254,
+                "y": 0,
+                "value": 16.9449
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-74.5648, 30.6339]
+        },
+        "properties": {
+          "time": 145,
+          "vf": 10.6476,
+          "minP": 959.8746,
+          "wMax": 64.6601,
+          "rMax": 29.7844,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 37.2305,
+                "y": 0,
+                "value": 62.5808
+              },
+              {
+                "x": 89.3531,
+                "y": 0,
+                "value": 16.9182
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-74.4323, 30.7696]
+        },
+        "properties": {
+          "time": 146,
+          "vf": 10.6228,
+          "minP": 959.8169,
+          "wMax": 64.5268,
+          "rMax": 29.9093,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 37.3867,
+                "y": 0,
+                "value": 62.4562
+              },
+              {
+                "x": 89.728,
+                "y": 0,
+                "value": 16.9464
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-74.3011, 30.9055]
+        },
+        "properties": {
+          "time": 147,
+          "vf": 10.5783,
+          "minP": 959.7638,
+          "wMax": 64.5471,
+          "rMax": 30.036,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 37.545,
+                "y": 0,
+                "value": 62.4803
+              },
+              {
+                "x": 90.108,
+                "y": 0,
+                "value": 17.0151
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-74.1696, 31.0403]
+        },
+        "properties": {
+          "time": 148,
+          "vf": 10.5134,
+          "minP": 959.652,
+          "wMax": 64.6681,
+          "rMax": 30.1501,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 37.6876,
+                "y": 0,
+                "value": 62.6018
+              },
+              {
+                "x": 90.4503,
+                "y": 0,
+                "value": 17.1097
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-74.0364, 31.1723]
+        },
+        "properties": {
+          "time": 149,
+          "vf": 10.4312,
+          "minP": 959.4185,
+          "wMax": 64.8368,
+          "rMax": 30.237,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 37.7962,
+                "y": 0,
+                "value": 62.7693
+              },
+              {
+                "x": 90.7109,
+                "y": 0,
+                "value": 17.2155
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-73.9, 31.3]
+        },
+        "properties": {
+          "time": 150,
+          "vf": 10.3393,
+          "minP": 959,
+          "wMax": 65,
+          "rMax": 30.2815,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 37.8519,
+                "y": 0,
+                "value": 62.9314
+              },
+              {
+                "x": 90.8446,
+                "y": 0,
+                "value": 17.3174
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-73.7592, 31.4224]
+        },
+        "properties": {
+          "time": 151,
+          "vf": 10.2773,
+          "minP": 958.3563,
+          "wMax": 65.1146,
+          "rMax": 30.2732,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 37.8415,
+                "y": 0,
+                "value": 63.0461
+              },
+              {
+                "x": 90.8197,
+                "y": 0,
+                "value": 17.403
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-73.6141, 31.5405]
+        },
+        "properties": {
+          "time": 152,
+          "vf": 10.2726,
+          "minP": 957.5383,
+          "wMax": 65.1761,
+          "rMax": 30.2222,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 37.7778,
+                "y": 0,
+                "value": 63.1093
+              },
+              {
+                "x": 90.6667,
+                "y": 0,
+                "value": 17.4717
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-73.4652, 31.6558]
+        },
+        "properties": {
+          "time": 153,
+          "vf": 10.3186,
+          "minP": 956.6199,
+          "wMax": 65.1901,
+          "rMax": 30.1445,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 37.6806,
+                "y": 0,
+                "value": 63.1263
+              },
+              {
+                "x": 90.4334,
+                "y": 0,
+                "value": 17.5259
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-73.3129, 31.7698]
+        },
+        "properties": {
+          "time": 154,
+          "vf": 10.4105,
+          "minP": 955.6749,
+          "wMax": 65.1618,
+          "rMax": 30.0566,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 37.5708,
+                "y": 0,
+                "value": 63.1023
+              },
+              {
+                "x": 90.1699,
+                "y": 0,
+                "value": 17.568
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-73.1577, 31.8841]
+        },
+        "properties": {
+          "time": 155,
+          "vf": 10.5457,
+          "minP": 954.777,
+          "wMax": 65.0966,
+          "rMax": 29.9763,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 37.4703,
+                "y": 0,
+                "value": 63.0426
+              },
+              {
+                "x": 89.9288,
+                "y": 0,
+                "value": 17.6004
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-73, 32]
+        },
+        "properties": {
+          "time": 156,
+          "vf": 10.7236,
+          "minP": 954,
+          "wMax": 65,
+          "rMax": 29.9217,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 37.4021,
+                "y": 0,
+                "value": 62.9525
+              },
+              {
+                "x": 89.7651,
+                "y": 0,
+                "value": 17.6256
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-72.8401, 32.1191]
+        },
+        "properties": {
+          "time": 157,
+          "vf": 10.949,
+          "minP": 953.3992,
+          "wMax": 64.8817,
+          "rMax": 29.9077,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 37.3846,
+                "y": 0,
+                "value": 62.8416
+              },
+              {
+                "x": 89.723,
+                "y": 0,
+                "value": 17.6471
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-72.6779, 32.2425]
+        },
+        "properties": {
+          "time": 158,
+          "vf": 11.2274,
+          "minP": 952.9556,
+          "wMax": 64.7687,
+          "rMax": 29.9322,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 37.4152,
+                "y": 0,
+                "value": 62.736
+              },
+              {
+                "x": 89.7966,
+                "y": 0,
+                "value": 17.6729
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-72.5131, 32.3712]
+        },
+        "properties": {
+          "time": 159,
+          "vf": 11.5603,
+          "minP": 952.6315,
+          "wMax": 64.6926,
+          "rMax": 29.9886,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 37.4858,
+                "y": 0,
+                "value": 62.6663
+              },
+              {
+                "x": 89.9658,
+                "y": 0,
+                "value": 17.7118
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-72.3453, 32.5064]
+        },
+        "properties": {
+          "time": 160,
+          "vf": 11.9493,
+          "minP": 952.3893,
+          "wMax": 64.6848,
+          "rMax": 30.07,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 37.5875,
+                "y": 0,
+                "value": 62.6631
+              },
+              {
+                "x": 90.21,
+                "y": 0,
+                "value": 17.7728
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-72.1744, 32.6489]
+        },
+        "properties": {
+          "time": 161,
+          "vf": 12.3961,
+          "minP": 952.1913,
+          "wMax": 64.7768,
+          "rMax": 30.1692,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 37.7115,
+                "y": 0,
+                "value": 62.7567
+              },
+              {
+                "x": 90.5075,
+                "y": 0,
+                "value": 17.8653
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-72, 32.8]
+        },
+        "properties": {
+          "time": 162,
+          "vf": 12.9025,
+          "minP": 952,
+          "wMax": 65,
+          "rMax": 30.2787,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 37.8484,
+                "y": 0,
+                "value": 62.9778
+              },
+              {
+                "x": 90.8362,
+                "y": 0,
+                "value": 17.9985
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-71.8224, 32.9604]
+        },
+        "properties": {
+          "time": 163,
+          "vf": 13.3784,
+          "minP": 951.7829,
+          "wMax": 65.3819,
+          "rMax": 30.392,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 37.9901,
+                "y": 0,
+                "value": 63.3529
+              },
+              {
+                "x": 91.1761,
+                "y": 0,
+                "value": 18.1808
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-71.6445, 33.1301]
+        },
+        "properties": {
+          "time": 164,
+          "vf": 13.739,
+          "minP": 951.5282,
+          "wMax": 65.9342,
+          "rMax": 30.5064,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 38.1329,
+                "y": 0,
+                "value": 63.8936
+              },
+              {
+                "x": 91.5191,
+                "y": 0,
+                "value": 18.4161
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-71.4697, 33.3091]
+        },
+        "properties": {
+          "time": 165,
+          "vf": 13.9962,
+          "minP": 951.2292,
+          "wMax": 66.6645,
+          "rMax": 30.6198,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 38.2748,
+                "y": 0,
+                "value": 64.607
+              },
+              {
+                "x": 91.8595,
+                "y": 0,
+                "value": 18.7072
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-71.3016, 33.4971]
+        },
+        "properties": {
+          "time": 166,
+          "vf": 14.1653,
+          "minP": 950.8792,
+          "wMax": 67.5804,
+          "rMax": 30.7305,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 38.4132,
+                "y": 0,
+                "value": 65.5009
+              },
+              {
+                "x": 92.1916,
+                "y": 0,
+                "value": 19.057
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-71.1439, 33.6941]
+        },
+        "properties": {
+          "time": 167,
+          "vf": 14.266,
+          "minP": 950.4717,
+          "wMax": 68.6897,
+          "rMax": 30.8366,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 38.5457,
+                "y": 0,
+                "value": 66.5826
+              },
+              {
+                "x": 92.5097,
+                "y": 0,
+                "value": 19.4685
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-71, 33.9]
+        },
+        "properties": {
+          "time": 168,
+          "vf": 14.3227,
+          "minP": 950,
+          "wMax": 70,
+          "rMax": 30.9358,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 38.6697,
+                "y": 0,
+                "value": 67.8596
+              },
+              {
+                "x": 92.8074,
+                "y": 0,
+                "value": 19.945
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-70.8731, 34.1146]
+        },
+        "properties": {
+          "time": 169,
+          "vf": 14.3909,
+          "minP": 949.4646,
+          "wMax": 71.5073,
+          "rMax": 31.0278,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 38.7847,
+                "y": 0,
+                "value": 69.3281
+              },
+              {
+                "x": 93.0834,
+                "y": 0,
+                "value": 20.4863
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-70.7636, 34.3374]
+        },
+        "properties": {
+          "time": 170,
+          "vf": 14.5024,
+          "minP": 948.8947,
+          "wMax": 73.1611,
+          "rMax": 31.119,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 38.8987,
+                "y": 0,
+                "value": 70.9393
+              },
+              {
+                "x": 93.3569,
+                "y": 0,
+                "value": 21.0791
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-70.6716, 34.568]
+        },
+        "properties": {
+          "time": 171,
+          "vf": 14.6511,
+          "minP": 948.3269,
+          "wMax": 74.8994,
+          "rMax": 31.2177,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 39.0221,
+                "y": 0,
+                "value": 72.6331
+              },
+              {
+                "x": 93.6531,
+                "y": 0,
+                "value": 21.7063
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-70.597, 34.8056]
+        },
+        "properties": {
+          "time": 172,
+          "vf": 14.8314,
+          "minP": 947.7975,
+          "wMax": 76.6601,
+          "rMax": 31.3329,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 39.1662,
+                "y": 0,
+                "value": 74.3491
+              },
+              {
+                "x": 93.9988,
+                "y": 0,
+                "value": 22.3507
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-70.5398, 35.0498]
+        },
+        "properties": {
+          "time": 173,
+          "vf": 15.0376,
+          "minP": 947.3431,
+          "wMax": 78.381,
+          "rMax": 31.4739,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 39.3423,
+                "y": 0,
+                "value": 76.0273
+              },
+              {
+                "x": 94.4216,
+                "y": 0,
+                "value": 22.9942
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-70.5, 35.3]
+        },
+        "properties": {
+          "time": 174,
+          "vf": 15.2646,
+          "minP": 947,
+          "wMax": 80,
+          "rMax": 31.6503,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 39.5629,
+                "y": 0,
+                "value": 77.6073
+              },
+              {
+                "x": 94.9509,
+                "y": 0,
+                "value": 23.6188
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-70.4792, 35.5556]
+        },
+        "properties": {
+          "time": 175,
+          "vf": 15.5058,
+          "minP": 946.7847,
+          "wMax": 81.4593,
+          "rMax": 31.867,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 39.8337,
+                "y": 0,
+                "value": 79.033
+              },
+              {
+                "x": 95.6009,
+                "y": 0,
+                "value": 24.2068
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-70.4861, 35.8162]
+        },
+        "properties": {
+          "time": 176,
+          "vf": 15.8328,
+          "minP": 946.6337,
+          "wMax": 82.7175,
+          "rMax": 32.1076,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 40.1345,
+                "y": 0,
+                "value": 80.2642
+              },
+              {
+                "x": 96.3228,
+                "y": 0,
+                "value": 24.7444
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-70.531, 36.0814]
+        },
+        "properties": {
+          "time": 177,
+          "vf": 16.3838,
+          "minP": 946.4633,
+          "wMax": 83.7378,
+          "rMax": 32.3497,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 40.4372,
+                "y": 0,
+                "value": 81.2649
+              },
+              {
+                "x": 97.0492,
+                "y": 0,
+                "value": 25.2185
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-70.6244, 36.3508]
+        },
+        "properties": {
+          "time": 178,
+          "vf": 17.3149,
+          "minP": 946.19,
+          "wMax": 84.483,
+          "rMax": 32.57,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 40.7125,
+                "y": 0,
+                "value": 81.999
+              },
+              {
+                "x": 97.7099,
+                "y": 0,
+                "value": 25.6158
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-70.7771, 36.6239]
+        },
+        "properties": {
+          "time": 179,
+          "vf": 18.772,
+          "minP": 945.7301,
+          "wMax": 84.9161,
+          "rMax": 32.7438,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 40.9298,
+                "y": 0,
+                "value": 82.4303
+              },
+              {
+                "x": 98.2315,
+                "y": 0,
+                "value": 25.922
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-71, 36.9]
+        },
+        "properties": {
+          "time": 180,
+          "vf": 20.8617,
+          "minP": 945,
+          "wMax": 85,
+          "rMax": 32.8453,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 41.0566,
+                "y": 0,
+                "value": 82.5227
+              },
+              {
+                "x": 98.5358,
+                "y": 0,
+                "value": 26.1229
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-71.2985, 37.1771]
+        },
+        "properties": {
+          "time": 181,
+          "vf": 22.9098,
+          "minP": 943.9613,
+          "wMax": 84.7158,
+          "rMax": 32.8578,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 41.0723,
+                "y": 0,
+                "value": 82.2576
+              },
+              {
+                "x": 98.5735,
+                "y": 0,
+                "value": 26.2083
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-71.6556, 37.4477]
+        },
+        "properties": {
+          "time": 182,
+          "vf": 24.0469,
+          "minP": 942.7556,
+          "wMax": 84.1169,
+          "rMax": 32.8105,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 41.0131,
+                "y": 0,
+                "value": 81.6863
+              },
+              {
+                "x": 98.4314,
+                "y": 0,
+                "value": 26.1892
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-72.0482, 37.7035]
+        },
+        "properties": {
+          "time": 183,
+          "vf": 24.1401,
+          "minP": 941.5699,
+          "wMax": 83.2744,
+          "rMax": 32.7465,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 40.9332,
+                "y": 0,
+                "value": 80.8777
+              },
+              {
+                "x": 98.2396,
+                "y": 0,
+                "value": 26.082
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-72.4527, 37.936]
+        },
+        "properties": {
+          "time": 184,
+          "vf": 23.1226,
+          "minP": 940.5908,
+          "wMax": 82.2599,
+          "rMax": 32.7131,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 40.8913,
+                "y": 0,
+                "value": 79.901
+              },
+              {
+                "x": 98.1392,
+                "y": 0,
+                "value": 25.9047
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-72.8448, 38.1374]
+        },
+        "properties": {
+          "time": 185,
+          "vf": 20.9596,
+          "minP": 940.0052,
+          "wMax": 81.1446,
+          "rMax": 32.7599,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 40.9498,
+                "y": 0,
+                "value": 78.8252
+              },
+              {
+                "x": 98.2796,
+                "y": 0,
+                "value": 25.6759
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-73.2, 38.3]
+        },
+        "properties": {
+          "time": 186,
+          "vf": 17.635,
+          "minP": 940,
+          "wMax": 80,
+          "rMax": 32.9383,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 41.1729,
+                "y": 0,
+                "value": 77.7195
+              },
+              {
+                "x": 98.8149,
+                "y": 0,
+                "value": 25.4156
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-73.501, 38.4283]
+        },
+        "properties": {
+          "time": 187,
+          "vf": 15.0684,
+          "minP": 940.6754,
+          "wMax": 78.8194,
+          "rMax": 33.2859,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 41.6074,
+                "y": 0,
+                "value": 76.5778
+              },
+              {
+                "x": 99.8577,
+                "y": 0,
+                "value": 25.126
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-73.7605, 38.5738]
+        },
+        "properties": {
+          "time": 188,
+          "vf": 15.6224,
+          "minP": 941.7861,
+          "wMax": 77.2848,
+          "rMax": 33.7867,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 42.2334,
+                "y": 0,
+                "value": 75.0927
+              },
+              {
+                "x": 101.3602,
+                "y": 0,
+                "value": 24.7351
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-74, 38.8]
+        },
+        "properties": {
+          "time": 189,
+          "vf": 20.5106,
+          "minP": 943,
+          "wMax": 75,
+          "rMax": 34.4144,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 43.018,
+                "y": 0,
+                "value": 72.8814
+              },
+              {
+                "x": 103.2431,
+                "y": 0,
+                "value": 24.148
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-74.2283, 39.1265]
+        },
+        "properties": {
+          "time": 190,
+          "vf": 22.2445,
+          "minP": 944.059,
+          "wMax": 71.9945,
+          "rMax": 35.1187,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 43.8984,
+                "y": 0,
+                "value": 69.9726
+              },
+              {
+                "x": 105.3562,
+                "y": 0,
+                "value": 23.3752
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-74.4, 39.4]
+        },
+        "properties": {
+          "time": 191,
+          "vf": 12.3061,
+          "minP": 945,
+          "wMax": 70,
+          "rMax": 35.7324,
+          "thetaMax": 0,
+          "overland": false,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 44.6655,
+                "y": 0,
+                "value": 68.0436
+              },
+              {
+                "x": 107.1972,
+                "y": 0,
+                "value": 22.8873
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-74.5, 39.5]
+        },
+        "properties": {
+          "time": 192,
+          "vf": 6.3975,
+          "minP": 946,
+          "wMax": 70,
+          "rMax": 36.1588,
+          "thetaMax": 0,
+          "overland": true,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 45.1985,
+                "y": 0,
+                "value": 68.0474
+              },
+              {
+                "x": 108.4764,
+                "y": 0,
+                "value": 22.9512
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-74.658, 39.5656]
+        },
+        "properties": {
+          "time": 193,
+          "vf": 10.1382,
+          "minP": 947.4082,
+          "wMax": 69.1725,
+          "rMax": 36.667,
+          "thetaMax": 0,
+          "overland": true,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 45.8338,
+                "y": 0,
+                "value": 67.2458
+              },
+              {
+                "x": 110.0011,
+                "y": 0,
+                "value": 22.7273
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-74.8931, 39.6367]
+        },
+        "properties": {
+          "time": 194,
+          "vf": 13.0918,
+          "minP": 949.2622,
+          "wMax": 67.0774,
+          "rMax": 37.3136,
+          "thetaMax": 0,
+          "overland": true,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 46.642,
+                "y": 0,
+                "value": 65.2122
+              },
+              {
+                "x": 111.9408,
+                "y": 0,
+                "value": 22.0914
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-75.1853, 39.7094]
+        },
+        "properties": {
+          "time": 195,
+          "vf": 15.1327,
+          "minP": 951.5052,
+          "wMax": 64.1637,
+          "rMax": 38.072,
+          "thetaMax": 0,
+          "overland": true,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 47.59,
+                "y": 0,
+                "value": 62.3827
+              },
+              {
+                "x": 114.216,
+                "y": 0,
+                "value": 21.1854
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-75.5141, 39.7799]
+        },
+        "properties": {
+          "time": 196,
+          "vf": 16.2308,
+          "minP": 954.0804,
+          "wMax": 60.8803,
+          "rMax": 38.9143,
+          "thetaMax": 0,
+          "overland": true,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 48.6429,
+                "y": 0,
+                "value": 59.1935
+              },
+              {
+                "x": 116.7429,
+                "y": 0,
+                "value": 20.1532
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-75.8593, 39.8445]
+        },
+        "properties": {
+          "time": 197,
+          "vf": 16.3763,
+          "minP": 956.9309,
+          "wMax": 57.6761,
+          "rMax": 39.8117,
+          "thetaMax": 0,
+          "overland": true,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 49.7647,
+                "y": 0,
+                "value": 56.0809
+              },
+              {
+                "x": 119.4352,
+                "y": 0,
+                "value": 19.1404
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-76.2, 39.9]
+        },
+        "properties": {
+          "time": 198,
+          "vf": 15.5667,
+          "minP": 960,
+          "wMax": 55,
+          "rMax": 40.7351,
+          "thetaMax": 0,
+          "overland": true,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 50.9188,
+                "y": 0,
+                "value": 53.4813
+              },
+              {
+                "x": 122.2052,
+                "y": 0,
+                "value": 18.2947
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-76.5194, 39.9442]
+        },
+        "properties": {
+          "time": 199,
+          "vf": 14.3441,
+          "minP": 963.2223,
+          "wMax": 53.1844,
+          "rMax": 41.6547,
+          "thetaMax": 0,
+          "overland": true,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 52.0683,
+                "y": 0,
+                "value": 51.7179
+              },
+              {
+                "x": 124.964,
+                "y": 0,
+                "value": 17.7272
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-76.8153, 39.9795]
+        },
+        "properties": {
+          "time": 200,
+          "vf": 13.2434,
+          "minP": 966.4989,
+          "wMax": 52.0954,
+          "rMax": 42.5402,
+          "thetaMax": 0,
+          "overland": true,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 53.1752,
+                "y": 0,
+                "value": 50.6609
+              },
+              {
+                "x": 127.6205,
+                "y": 0,
+                "value": 17.3958
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-77.0896, 40.0094]
+        },
+        "properties": {
+          "time": 201,
+          "vf": 12.2569,
+          "minP": 969.7223,
+          "wMax": 51.4828,
+          "rMax": 43.3654,
+          "thetaMax": 0,
+          "overland": true,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 54.2067,
+                "y": 0,
+                "value": 50.0668
+              },
+              {
+                "x": 130.0961,
+                "y": 0,
+                "value": 17.2192
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-77.3439, 40.0371]
+        },
+        "properties": {
+          "time": 202,
+          "vf": 11.3828,
+          "minP": 972.7853,
+          "wMax": 51.0963,
+          "rMax": 44.1099,
+          "thetaMax": 0,
+          "overland": true,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 55.1374,
+                "y": 0,
+                "value": 49.6924
+              },
+              {
+                "x": 132.3298,
+                "y": 0,
+                "value": 17.1152
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-77.58, 40.0662]
+        },
+        "properties": {
+          "time": 203,
+          "vf": 10.6279,
+          "minP": 975.5803,
+          "wMax": 50.6855,
+          "rMax": 44.7601,
+          "thetaMax": 0,
+          "overland": true,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 55.9501,
+                "y": 0,
+                "value": 49.2942
+              },
+              {
+                "x": 134.2803,
+                "y": 0,
+                "value": 17.0014
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-77.8, 40.1]
+        },
+        "properties": {
+          "time": 204,
+          "vf": 10.0107,
+          "minP": 978,
+          "wMax": 50,
+          "rMax": 45.3078,
+          "thetaMax": 0,
+          "overland": true,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 56.6347,
+                "y": 0,
+                "value": 48.6289
+              },
+              {
+                "x": 135.9233,
+                "y": 0,
+                "value": 16.7948
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-78.0057, 40.1409]
+        },
+        "properties": {
+          "time": 205,
+          "vf": 9.5272,
+          "minP": 979.9711,
+          "wMax": 48.8539,
+          "rMax": 45.7546,
+          "thetaMax": 0,
+          "overland": true,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 57.1933,
+                "y": 0,
+                "value": 47.5157
+              },
+              {
+                "x": 137.2639,
+                "y": 0,
+                "value": 16.4333
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-78.1994, 40.1879]
+        },
+        "properties": {
+          "time": 206,
+          "vf": 9.1416,
+          "minP": 981.5571,
+          "wMax": 47.3187,
+          "rMax": 46.123,
+          "thetaMax": 0,
+          "overland": true,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 57.6537,
+                "y": 0,
+                "value": 46.0238
+              },
+              {
+                "x": 138.3689,
+                "y": 0,
+                "value": 15.9404
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-78.3834, 40.2393]
+        },
+        "properties": {
+          "time": 207,
+          "vf": 8.8355,
+          "minP": 982.8555,
+          "wMax": 45.5299,
+          "rMax": 46.4358,
+          "thetaMax": 0,
+          "overland": true,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 58.0447,
+                "y": 0,
+                "value": 44.2854
+              },
+              {
+                "x": 139.3074,
+                "y": 0,
+                "value": 15.361
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-78.56, 40.293]
+        },
+        "properties": {
+          "time": 208,
+          "vf": 8.594,
+          "minP": 983.9637,
+          "wMax": 43.6234,
+          "rMax": 46.7123,
+          "thetaMax": 0,
+          "overland": true,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 58.3903,
+                "y": 0,
+                "value": 42.4323
+              },
+              {
+                "x": 140.1368,
+                "y": 0,
+                "value": 14.7402
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-78.7315, 40.3472]
+        },
+        "properties": {
+          "time": 209,
+          "vf": 8.4073,
+          "minP": 984.9794,
+          "wMax": 41.7349,
+          "rMax": 46.9686,
+          "thetaMax": 0,
+          "overland": true,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 58.7108,
+                "y": 0,
+                "value": 40.5965
+              },
+              {
+                "x": 140.9059,
+                "y": 0,
+                "value": 14.1233
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-78.9, 40.4]
+        },
+        "properties": {
+          "time": 210,
+          "vf": 8.2722,
+          "minP": 986,
+          "wMax": 40,
+          "rMax": 47.2188,
+          "thetaMax": 0,
+          "overland": true,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 59.0235,
+                "y": 0,
+                "value": 38.9102
+              },
+              {
+                "x": 141.6564,
+                "y": 0,
+                "value": 13.5561
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-79.0671, 40.45]
+        },
+        "properties": {
+          "time": 211,
+          "vf": 8.1243,
+          "minP": 987.0968,
+          "wMax": 38.5295,
+          "rMax": 47.4714,
+          "thetaMax": 0,
+          "overland": true,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 59.3393,
+                "y": 0,
+                "value": 37.4808
+              },
+              {
+                "x": 142.4143,
+                "y": 0,
+                "value": 13.0761
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-79.2308, 40.4981]
+        },
+        "properties": {
+          "time": 212,
+          "vf": 7.8959,
+          "minP": 988.2356,
+          "wMax": 37.3336,
+          "rMax": 47.7213,
+          "thetaMax": 0,
+          "overland": true,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 59.6517,
+                "y": 0,
+                "value": 36.3184
+              },
+              {
+                "x": 143.164,
+                "y": 0,
+                "value": 12.6875
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-79.3886, 40.5457]
+        },
+        "properties": {
+          "time": 213,
+          "vf": 7.5881,
+          "minP": 989.3559,
+          "wMax": 36.3975,
+          "rMax": 47.9613,
+          "thetaMax": 0,
+          "overland": true,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 59.9516,
+                "y": 0,
+                "value": 35.4087
+              },
+              {
+                "x": 143.8838,
+                "y": 0,
+                "value": 12.3859
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-79.5378, 40.5942]
+        },
+        "properties": {
+          "time": 214,
+          "vf": 7.2086,
+          "minP": 990.397,
+          "wMax": 35.7064,
+          "rMax": 48.1855,
+          "thetaMax": 0,
+          "overland": true,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 60.2319,
+                "y": 0,
+                "value": 34.7373
+              },
+              {
+                "x": 144.5566,
+                "y": 0,
+                "value": 12.167
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-79.6758, 40.6452]
+        },
+        "properties": {
+          "time": 215,
+          "vf": 6.7741,
+          "minP": 991.2986,
+          "wMax": 35.2455,
+          "rMax": 48.3898,
+          "thetaMax": 0,
+          "overland": true,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 60.4872,
+                "y": 0,
+                "value": 34.2899
+              },
+              {
+                "x": 145.1693,
+                "y": 0,
+                "value": 12.0263
+              }
+            ]
+          }
+        }
+      },
+      {
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-79.8, 40.7]
+        },
+        "properties": {
+          "time": 216,
+          "vf": 6.3143,
+          "minP": 992,
+          "wMax": 35,
+          "rMax": 48.5707,
+          "thetaMax": 0,
+          "overland": true,
+          "windData": {
+            "coordinateSystem": "cartesian",
+            "samplePoints": [
+              {
+                "x": 60.7133,
+                "y": 0,
+                "value": 34.0521
+              },
+              {
+                "x": 145.712,
+                "y": 0,
+                "value": 11.9596
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

@@ -83,6 +83,7 @@ contains
 
     type (block_type), pointer :: block_ptr
     type (mpas_pool_type), pointer :: meshPool
+    type (mpas_pool_type), pointer :: forcingPool
     type (mpas_pool_type), pointer :: statePool
     type (mpas_pool_type), pointer :: tracersPool
     type (mpas_pool_type), pointer :: verticalMeshPool
@@ -104,6 +105,7 @@ contains
     logical, pointer :: on_a_sphere
     integer, dimension(:), pointer :: maxLevelCell
     real (kind=RKIND), dimension(:), pointer :: ssh
+    real (kind=RKIND), dimension(:), pointer :: bottomDrag
     real (kind=RKIND), dimension(:), pointer :: refBottomDepth, refZMid, &
          vertCoordMovementWeights, bottomDepth, bottomDepthObserved, &
          fCell, fEdge, fVertex, &
@@ -180,6 +182,7 @@ contains
     do while(associated(block_ptr))
        call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
        call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+       call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
        call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
        call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
        call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
@@ -275,15 +278,7 @@ contains
             end if
           end do
 
-          ! shift coordinates to accomodate wetting and drying
-          do k = 1, nVertLevels
-            refBottomDepth(k) = refBottomDepth(k) - globalMinBottomDepth
-          end do
-
           do iCell = 1, nCellsSolve
-
-            bottomDepth(iCell) = bottomDepth(iCell) - globalMinBottomDepth
-            ssh(iCell) = ssh(iCell) + globalMinBottomDepth
 
             ! make sure depth is thick enough via ssh = TOTAL_DEPTH - bottomDepth
             ssh(iCell) = - bottomDepth(iCell) + &
@@ -362,6 +357,24 @@ contains
        do iVertex = 1, nVerticesSolve
          fVertex(iVertex) = 2.0_RKIND * omega * sin(latVertex(iVertex))
        end do
+
+       ! Set depth-variable drag
+       if (config_use_variable_drag) then
+         call mpas_pool_get_array(forcingPool, 'bottomDrag', bottomDrag)
+         do iCell = 1, nCellsSolve
+           if (bottomDepth(iCell) <= config_hurricane_land_z_limit) then
+             bottomDrag(iCell) = config_hurricane_land_drag
+           else if (config_hurricane_land_z_limit < bottomDepth(iCell) .and. bottomDepth(iCell) < config_hurricane_marsh_z_limit) then
+             bottomDrag(iCell) = config_hurricane_marsh_drag
+           else if (config_hurricane_marsh_z_limit <= bottomDepth(iCell)) then
+             bottomDrag(iCell) = config_hurricane_channel_drag
+           else
+             call mpas_log_write('Default value for drag is not selected' &
+               // ' properly for bottomDepth of $r in cell $i!', &
+             realArgs=(/bottomDepth(iCell)/), intArgs=(/iCell/))
+           end if
+         end do
+       end if
 
 
        block_ptr => block_ptr % next

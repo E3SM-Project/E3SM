@@ -31,3 +31,6 @@
 #include "Registry_moc_streamfunction.xml"
 #include "Registry_ocean_heat_content.xml"
 #include "Registry_mixed_layer_heat_budget.xml"
+#include "Registry_sediment_flux_index.xml"
+#include "Registry_sediment_transport.xml"
+#include "Registry_harmonic_analysis.xml"

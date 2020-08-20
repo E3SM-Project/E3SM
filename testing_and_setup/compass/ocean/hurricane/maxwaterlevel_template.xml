@@ -1,0 +1,52 @@
+<template>
+	<namelist name="namelist.ocean" mode="forward">
+		<option name="config_AM_timeSeriesStatsCustom_enable">.true.</option>
+		<option name="config_AM_timeSeriesStatsCustom_compute_on_startup">.false.</option>
+		<option name="config_AM_timeSeriesStatsCustom_compute_interval">'dt'</option>
+		<option name="config_AM_timeSeriesStatsCustom_operation">'max'</option>
+		<option name="config_AM_timeSeriesStatsCustom_reset_intervals">'00-00-90_00:00:00'</option>
+		<option name="config_AM_timeSeriesStatsCustom_backward_output_offset">'00-00-90_00:00:00'</option>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable" mode="forward">
+		<stream name="timeSeriesStatsCustomOutput">
+			<attribute name="type">output</attribute>
+			<attribute name="filename_template">maxWaterLevel.nc</attribute>
+			<attribute name="filename_interval">00-01-00_00:00:00</attribute>
+			<attribute name="reference_time">01-01-01_00:00:00</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="io_type">pnetcdf</attribute>
+			<attribute name="packages">timeSeriesStatsCustomAMPKG</attribute>
+			<attribute name="output_interval">00-00-00_01:00:00</attribute>
+			<remove_contents>
+				<member name="tracersSurfaceValue" type="var"/>
+				<member name="surfaceVelocity" type="var"/>
+				<member name="normalVelocity" type="var"/>
+				<member name="velocityZonal" type="var"/>
+				<member name="velocityMeridional" type="var"/>
+				<member name="normalTransportVelocity" type="var"/>
+				<member name="transportVelocityZonal" type="var"/>
+				<member name="transportVelocityMeridional" type="var"/>
+				<member name="vertTransportVelocityTop" type="var"/>
+			</remove_contents>
+			<add_contents>
+				<member name="lonCell" type="var"/>
+				<member name="latCell" type="var"/>
+				<member name="xtime" type="var"/>
+				<member name="ssh" type="var"/>
+				<member name="bottomDepth" type="var"/>
+			</add_contents>
+		</stream>
+
+		<stream name="timeSeriesStatsCustomRestart">
+			<attribute name="type">input;output</attribute>
+			<attribute name="filename_template">restarts/mpaso.rst.am.timeSeriesStatsCustom.$Y-$M-$D_$S.nc</attribute>
+			<attribute name="filename_interval">output_interval</attribute>
+			<attribute name="reference_time">0001-01-01_00:00:00</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="packages">timeSeriesStatsCustomAMPKG</attribute>
+			<attribute name="input_interval">initial_only</attribute>
+			<attribute name="output_interval">stream:restart:output_interval</attribute>
+		</stream>
+	</streams>
+</template>

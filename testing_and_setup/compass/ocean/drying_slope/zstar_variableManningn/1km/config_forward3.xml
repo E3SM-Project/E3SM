@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<config case="forward3">
+	<add_link source="../init_step3/ocean.nc" dest="init.nc"/>
+	<add_link source="../init_step3/forcing.nc" dest="forcing.nc"/>
+	<add_link source="../init_step3/graph.info" dest="graph.info"/>
+
+	<namelist name="namelist.ocean" mode="forward">
+		<template file="forward_template.xml" path_base="script_configuration_dir"/>
+		<option name="config_Rayleigh_friction">.false.</option>
+		<option name="config_Rayleigh_damping_depth_variable">.false.</option>
+		<option name="config_use_implicit_bottom_drag">.false.</option>
+		<option name="config_use_implicit_bottom_drag_variable_mannings">.true.</option>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable" mode="forward">
+		<template file="forward_template.xml" path_base="script_configuration_dir"/>
+	</streams>
+
+	<run_script name="run.py">
+		<step executable="gpmetis">
+			<argument flag="graph.info">4</argument>
+		</step>
+		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+	</run_script>
+</config>
