@@ -209,6 +209,21 @@ module mpas_tracer_advection_helpers
              advCellsForEdge(iCell, iEdge) = sorted_cell_indices(2, iCell)
            end do
 
+           ! equation 7 in Skamarock, W. C., & Gassmann, A. (2011):
+           ! F(u,psi)_{i+1/2} = u_{i+1/2} *
+           !  [   1/2 (psi_{i+1} + psi_i)                       term 1
+           !    - 1/12(dx^2psi_{i+1} + dx^2psi_i)               term 2
+           !    + sign(u) beta/12 (dx^2psi_{i+1} - dx^2psi_i)]  term 3 (note minus sign)
+           !
+           ! adv_coefs accounts for terms 1 and 2 in SG11 equation 7. Term 1 is
+           ! the 2nd-order flux-function term. adv_coefs accounts for this with
+           ! the "+ 0.5" lines below. In the advection routines that use these
+           ! coefficients, the 2nd-order flux loop is then skipped. Term 2 is
+           ! the 4th-order flux-function term. adv_coefs_3rd accounts for term
+           ! 3, the beta term. beta > 0 corresponds to the third-order flux
+           ! function. The - sign in the deriv_two accumulation is for the i+1
+           ! part of term 3, while the + sign is for the i part.
+
            adv_coefs(:,iEdge) = 0.
            adv_coefs_3rd(:,iEdge) = 0.
 
