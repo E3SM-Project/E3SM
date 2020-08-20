@@ -997,8 +997,11 @@ is the value of that variable from the *previous* time level!
                 <var name="requiredCalvingVolume" type="real" dimensions="nEdges Time" units="m^3" time_levs="1"
                      description="total volume of ice that needs to be removed based on calving rate for the given time step"
                 />
-               <var name="uncalvedVolume" type="real" dimensions="nEdges Time" units="m^3" time_levs="1"
-                     description="volume of ice that was left uncalved from required calving flux due to only applying flux over immediate neighbors (bookkeeping field)"
+                <var name="uncalvedVolumeNonDynCell" type="real" dimensions="nCells Time" units="m^3" time_levs="1"
+                     description="volume of ice that was left uncalved from required calving flux at non-dynamic cells"
+                />
+                <var name="uncalvedVolumeDynCell" type="real" dimensions="nCells Time" units="m^3" time_levs="1"
+                     description="volume of ice that was left uncalved from required calving flux at dynamic cells"
                 />
                 <var name="basalWaterThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
                      description="thickness of basal water"

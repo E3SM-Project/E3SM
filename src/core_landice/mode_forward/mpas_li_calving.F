@@ -1233,7 +1233,6 @@ module li_calving
 
       integer, pointer :: nEdges, nCells
       integer :: iEdge, iCell, jCell, iNeighbor
-      integer, dimension(:), pointer :: calvingFrontMaskCell, calvingFrontMaskEdge
       real (kind=RKIND) :: edgeCalvingFrontLength, edgeCalvingFrontHeight
       real (kind=RKIND), dimension(:), pointer :: requiredCalvingVolume
       real (kind=RKIND), dimension(:), pointer :: thickness
@@ -1254,11 +1253,12 @@ module li_calving
       real (kind=RKIND), dimension(:), allocatable :: thicknessForCalving
       real (kind=RKIND), dimension(:), allocatable :: requiredCalvingVolumeNonDynEdge, requiredCalvingVolumeNonDynCell
       real (kind=RKIND), dimension(:), allocatable :: requiredCalvingVolumeDynEdge, requiredCalvingVolumeDynCell
-      real (kind=RKIND), dimension(:), allocatable :: uncalvedVolumeNonDynCell, uncalvedVolumeDynCell
+      real (kind=RKIND), dimension(:), pointer :: uncalvedVolumeNonDynCell, uncalvedVolumeDynCell
       real (kind=RKIND), dimension(:), allocatable :: cellVolume
-      real(kind=RKIND) :: calvingSubtotal
+      real(kind=RKIND) :: calvingSubtotal1, calvingSubtotal2
       real(kind=RKIND) :: thkSum, thkCount
       real(kind=RKIND) :: removeVolumeHere
+      real(kind=RKIND) :: volumeAvailableToPass
       real(kind=RKIND) :: calvLengthCell, calvLengthEdge
       logical :: openOceanNeighbor
       integer :: err_tmp
@@ -1279,15 +1279,11 @@ module li_calving
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
       call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
-      call mpas_pool_get_array(geometryPool, 'calvingFrontMaskCell', calvingFrontMaskCell)
-      call mpas_pool_get_array(geometryPool, 'calvingFrontMaskEdge', calvingFrontMaskEdge)
+      call mpas_pool_get_array(geometryPool, 'uncalvedVolumeNonDynCell', uncalvedVolumeNonDynCell)
+      call mpas_pool_get_array(geometryPool, 'uncalvedVolumeDynCell', uncalvedVolumeDynCell)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
       call mpas_pool_get_array(meshPool, 'deltat', deltat)
-
-      ! make mask for effective calving front.
-      ! This is last dynamic cell, but also make sure it has a neighbor that is open ocean or thin floating ice.
-      call calculate_calving_front_mask(meshPool, geometryPool, calvingFrontMaskCell, calvingFrontMaskEdge)
 
 
       ! Init fields for accounting
@@ -1302,16 +1298,12 @@ module li_calving
       requiredCalvingVolumeNonDynCell(:) = 0.0_RKIND
       requiredCalvingVolumeDynEdge(:) = 0.0_RKIND
       requiredCalvingVolumeDynCell(:) = 0.0_RKIND
-      allocate(uncalvedVolumeNonDynCell(nCells+1))
-      allocate(uncalvedVolumeDynCell(nCells+1))
-      uncalvedVolumeNonDynCell(:) = 0.0_RKIND
-      uncalvedVolumeDynCell(:) = 0.0_RKIND
       allocate(thicknessForCalving(nCells+1))
       thicknessForCalving = 0.0_RKIND
 
 
       ! 1. Calculate calving rate for all non-dynamic cells by working with their ocean-going edges
-      calvingSubtotal = 0.0_RKIND
+      calvingSubtotal1 = 0.0_RKIND
       do iCell = 1, nCells
          if (li_mask_is_floating_ice(cellMask(iCell)) .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell)))) then
             ! a. Translate the calving front height based on dynamic cells to the non-dynamic locations
@@ -1326,7 +1318,7 @@ module li_calving
                endif
             enddo
             if (thkCount == 0) then
-               call mpas_log_write("Found a stranded non-dynamic floating cell!", MPAS_LOG_WARN)
+               !call mpas_log_write("Found a stranded non-dynamic floating cell!", MPAS_LOG_WARN)
                ! TODO: Make an error? Print a warning?  Suppress?)
             else
                thicknessForCalving(iCell) = thkSum / real(thkCount, kind=RKIND)
@@ -1351,14 +1343,14 @@ module li_calving
             calvingThickness(iCell) = removeVolumeHere / areaCell(iCell)
             uncalvedVolumeNonDynCell(iCell) = requiredCalvingVolumeNonDynCell(iCell) - removeVolumeHere
             cellVolume(iCell) = cellVolume(iCell) - removeVolumeHere
-            calvingSubtotal = calvingSubtotal + removeVolumeHere
+            calvingSubtotal1 = calvingSubtotal1 + removeVolumeHere
          endif
       enddo
-      call mpas_log_write("Done calculating calving for non-dynamic floating cells. Removed $r m^3", realArgs=(/calvingSubtotal/))
+      call mpas_log_write("Done calculating calving for non-dynamic floating cells. Removed $r m^3", realArgs=(/calvingSubtotal1/))
 
 
       ! 4. Calculate calving for dynamic cells
-      calvingSubtotal = 0.0_RKIND
+      calvingSubtotal2 = 0.0_RKIND
 
       ! a. Calculate calving on dynamic margin edges
       do iCell = 1, nCells
@@ -1389,7 +1381,12 @@ module li_calving
       do iCell = 1, nCells
          if (li_mask_is_floating_ice(cellMask(iCell)) .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell))) .and. &
                  uncalvedVolumeNonDynCell(iCell) > 0.0_RKIND) then
-            ! This is a non-dynamic location that still has calving to offer - a location where calving needs to be propagateda
+            ! This is a non-dynamic location that still has calving to offer - a location where calving needs to be propagated
+
+            !call mpas_log_write("Passing calving from non-dynamic cell $i.  $r available to pass", &
+            !        realArgs=(/uncalvedVolumeNonDynCell(iCell)/), intArgs=(/iCell/))
+
+            volumeAvailableToPass = uncalvedVolumeNonDynCell(iCell)
 
             ! Find total length of interface with dynamic cells at this cell
             calvLengthCell = 0.0_RKIND
@@ -1407,13 +1404,16 @@ module li_calving
                jCell = cellsOnCell(iNeighbor, iCell)
                if (li_mask_is_dynamic_ice(edgeMask(iEdge))) then
                   calvLengthEdge = abs(cos(angleEdge(iEdge))) * dvEdge(iEdge)
-                  requiredCalvingVolumeDynEdge(iEdge) = calvLengthEdge / calvLengthCell * uncalvedVolumeNonDynCell(iCell)
+                  requiredCalvingVolumeDynEdge(iEdge) = calvLengthEdge / calvLengthCell * volumeAvailableToPass
+                  uncalvedVolumeNonDynCell(iCell) = uncalvedVolumeNonDynCell(iCell) - requiredCalvingVolumeDynEdge(iEdge)
+                  !call mpas_log_write("   Passed calving $r from non-dynamic cell $i to dynamic cell $i", &
+                  !        realArgs=(/requiredCalvingVolumeDynEdge(iEdge)/), intArgs=(/iCell, jCell/))
                endif
             enddo
          endif
       enddo
 
-      ! Now apply calving to each cell
+      ! c. Now apply calving to each cell
       do iCell = 1, nCells
          if (li_mask_is_floating_ice(cellMask(iCell)) .and. li_mask_is_dynamic_ice(cellMask(iCell)) .and. &
                  li_mask_is_dynamic_margin(cellMask(iCell)) ) then
@@ -1428,10 +1428,32 @@ module li_calving
             calvingThickness(iCell) = removeVolumeHere / areaCell(iCell)
             uncalvedVolumeDynCell(iCell) = requiredCalvingVolumeDynCell(iCell) - removeVolumeHere
             cellVolume(iCell) = cellVolume(iCell) - removeVolumeHere
-            calvingSubtotal = calvingSubtotal + removeVolumeHere
+            calvingSubtotal2 = calvingSubtotal2 + removeVolumeHere
          endif
       enddo
-      call mpas_log_write("Done calculating calving for dynamic floating cells. Removed $r m^3", realArgs=(/calvingSubtotal/))
+      call mpas_log_write("Done calculating calving for dynamic floating cells. Removed $r m^3", realArgs=(/calvingSubtotal2/))
+
+
+
+      ! End of routine accounting/reporting
+      call mpas_log_write("Calving complete. Total calved=$r; Calved from non-dynamic cells=$r; Calved from dynamic cells=$r", &
+              realArgs=(/sum(calvingThickness*areaCell), calvingSubtotal1, calvingSubtotal2/))
+      call mpas_log_write("   Uncalved volumes: Non-dynamic cells=$r; Dynamic cells=$r", &
+              realArgs=(/sum(uncalvedVolumeNonDynCell), sum(uncalvedVolumeDynCell)/))
+!      if (maxval(uncalvedVolume) > 0.0_RKIND) then
+!
+!         uncalvedTotal = sum(uncalvedVolume)
+!         uncalvedCount = count(uncalvedVolume > 0.0_RKIND)
+!
+!         call mpas_log_write("distribute_calving_flux failed to distribute all required ice - " // &
+!                    " ice was left after depleting all neighbors." // &
+!                    "  Search needs to be expanded to neighbors' neighbors.")
+!         call mpas_log_write("   On this processor: $i edges contain uncalved ice, " // &
+!                 "for a total uncalved volume of $r m^3 ($r%).", &
+!                 MPAS_LOG_WARN, intArgs=(/uncalvedCount/), &
+!                 realArgs=(/uncalvedTotal, 100.0_RKIND * uncalvedTotal/sum(requiredCalvingVolume(:))/))
+!         ! TODO: Global reduce
+!      endif
 
 
       deallocate(cellVolume)
@@ -1440,8 +1462,6 @@ module li_calving
       deallocate(requiredCalvingVolumeDynEdge)
       deallocate(requiredCalvingVolumeDynCell)
       deallocate(thicknessForCalving)
-      deallocate(uncalvedVolumeNonDynCell)
-      deallocate(uncalvedVolumeDynCell)
 
       ! === apply calving ===
       thickness(:) = thickness(:) - calvingThickness(:)
@@ -1450,7 +1470,6 @@ module li_calving
       call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
       err = ior(err, err_tmp)
 
-      call calculate_calving_front_mask(meshPool, geometryPool, calvingFrontMaskCell, calvingFrontMaskEdge)
 
 !      ! Now also remove thin floating, dynamic ice (based on chosen thickness threshold) after mask is updated.
 !
