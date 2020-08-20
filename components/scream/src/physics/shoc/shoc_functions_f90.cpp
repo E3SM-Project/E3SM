@@ -46,29 +46,29 @@ void eddy_diffusivities_c(Int nlev, Int shcol, Real *obklen, Real *pblh,
 
 void calc_shoc_vertflux_c(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 			  Real *dz_zi, Real *invar, Real *vertflux);
-			  
+
 void compute_brunt_shoc_length_c(Int nlev, Int nlevi, Int shcol ,Real *dz_zt,
                                  Real *thv, Real *thv_zi, Real *brunt);
-				 
+
 void compute_l_inf_shoc_length_c(Int nlev, Int shcol, Real *zt_grid, Real *dz_zt,
-                                 Real *tke, Real *l_inf);	
-				 
+                                 Real *tke, Real *l_inf);
+
 void compute_conv_vel_shoc_length_c(Int nlev, Int shcol, Real *pblh, Real *zt_grid,
                                     Real *dz_zt, Real *thv, Real *wthv_sec,
 				    Real *conv_vel);
 
-void compute_conv_time_shoc_length_c(Int shcol, Real *pblh, Real *conv_vel, 
-                                     Real *tscale);		
-				     
+void compute_conv_time_shoc_length_c(Int shcol, Real *pblh, Real *conv_vel,
+                                     Real *tscale);
+
 void compute_shoc_mix_shoc_length_c(Int nlev, Int shcol, Real *tke, Real* brunt,
                                     Real *tscale, Real *zt_grid, Real *l_inf,
 				    Real *shoc_mix);
-				    
+
 void check_length_scale_shoc_length_c(Int nlev, Int shcol, Real *host_dx,
                                     Real *host_dy, Real *shoc_mix);
-				    
 
-void shoc_diag_second_moments_srf_c(Int shcol, Real* wthl, Real* uw, Real* vw, 
+
+void shoc_diag_second_moments_srf_c(Int shcol, Real* wthl, Real* uw, Real* vw,
                                    Real* ustar2, Real* wstar);
 
 }
@@ -337,44 +337,39 @@ void shoc_diag_second_moments_srf_f(Int shcol, Real* wthl, Real* uw, Real* vw, R
 {
   using SHOC       = Functions<Real, DefaultDevice>;
   using Scalar     = typename SHOC::Scalar;
-  using view_1d    = typename SHOC::view_1d<Scalar>;
+  using Pack1      = typename pack::Pack<Real, 1>;
+  using view_1d    = typename SHOC::view_1d<Pack1>;
 
-  view_1d wthl_d(wthl, shcol),
-          uw_d(uw, shcol),
-          vw_d(vw, shcol);
+  Kokkos::Array<view_1d, 3> temp_d;
+  pack::host_to_device({wthl, uw, vw}, shcol, temp_d);
 
-//  auto wthl_h = Kokkos::create_mirror_view(wthl_d);
-//  auto uw_h   = Kokkos::create_mirror_view(uw_d);
-//  auto vw_h   = Kokkos::create_mirror_view(vw_d);
+  // inputs
+  view_1d
+    wthl_d (temp_d[0]),
+    uw_d   (temp_d[1]),
+    vw_d   (temp_d[2]);
 
-  view_1d ustar2_d("ustar2",shcol),
-          wstar_d("wstar",shcol);
- 
-  auto ustar2_h = Kokkos::create_mirror_view(ustar2_d);
-  auto wstar_h  = Kokkos::create_mirror_view(wstar_d);
+  // outputs
+  view_1d ustar2_d("ustar2", shcol),
+          wstar_d ("wstar", shcol);
 
   Kokkos::parallel_for("parallel_moments_srf", shcol, KOKKOS_LAMBDA (const int& i) {
 
-     Scalar wthl_s{wthl_d(i)};
-     Scalar uw_s{uw_d(i)};
-     Scalar vw_s{vw_d(i)};
+     Scalar wthl_s{wthl_d(i)[0]};
+     Scalar uw_s{uw_d(i)[0]};
+     Scalar vw_s{vw_d(i)[0]};
 
-     Scalar ustar2_s{0.};
-     Scalar wstar_s{0.};
+     Scalar ustar2_s{0};
+     Scalar wstar_s{0};
 
      SHOC::shoc_diag_second_moments_srf(wthl_s, uw_s, vw_s, ustar2_s, wstar_s);
 
-     ustar2_d(i) = ustar2_s;
-     wstar_d(i)  = wstar_s;
+     ustar2_d(i)[0] = ustar2_s;
+     wstar_d(i)[0]  = wstar_s;
    });
 
-  Kokkos::deep_copy(ustar2_h, ustar2_d);
-  Kokkos::deep_copy(wstar_h, wstar_d);
-
-  for (auto i=0; i<shcol; ++i) {
-     *(ustar2+i) = ustar2_h(i);
-     *(wstar+i)  = wstar_h(i);
-  }
+  Kokkos::Array<view_1d, 2> out_views = {ustar2_d, wstar_d};
+  pack::device_to_host({ustar2, wstar}, shcol, out_views);
 }
 
 } // namespace shoc
