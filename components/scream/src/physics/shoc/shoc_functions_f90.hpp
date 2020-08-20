@@ -44,9 +44,12 @@ struct SHOCDataBase
       util::transpose<D>(*(m_ptrs_i[i]), data.data() + (m_ptrs.size()*m_total) + (m_totali*i), shcol, nlevi);
     }
     
+//    const auto c_start_offset = m_ptrs.size()*m_total + m_ptrs_i.size()*m_totali;
+//    std::copy(m_data.begin() = c_start_offset, m_data.end(), data.begin() + //c_start_offset);
+    
     // Transpose on the column only grid
     for (size_t i = 0; i < m_ptrs_c.size(); ++i) {
-      util::transpose<D>(*(m_ptrs_c[i]), data.data() + (m_ptrs.size()*m_total) + (m_ptrs_i.size()*m_totali) + (m_totalc*i), shcol, 1);
+      util::transpose<D>(*(m_ptrs_c[i]), data.data() + (m_ptrs.size()*m_total) + (m_ptrs_i.size()*m_totali) + (shcol*i), shcol, 1);
     }    
 
     m_data = data;
@@ -56,7 +59,6 @@ struct SHOCDataBase
 
   Int total() const { return m_total; }
   Int totali() const { return m_totali; }
-  Int totalc() const { return m_totalc; }
 
  private:
   void init_ptrs();
