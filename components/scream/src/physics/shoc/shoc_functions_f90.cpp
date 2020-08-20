@@ -67,6 +67,10 @@ void compute_shoc_mix_shoc_length_c(Int nlev, Int shcol, Real *tke, Real* brunt,
 void check_length_scale_shoc_length_c(Int nlev, Int shcol, Real *host_dx,
                                     Real *host_dy, Real *shoc_mix);
 				    
+
+void shoc_diag_second_moments_srf_c(Int shcol, Real* wthl, Real* uw, Real* vw, 
+                                   Real* ustar2, Real* wstar);
+
 }
 
 namespace scream {
@@ -272,6 +276,14 @@ void check_length_scale_shoc_length(SHOCMixcheckData &d) {
   d.transpose<util::TransposeDirection::f2c>();
 }
 
+void shoc_diag_second_moments_srf(SHOCSecondMomentSrfData& d)
+{
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  shoc_diag_second_moments_srf_c(d.shcol, d.wthl, d.uw, d.vw, d.ustar2, d.wstar);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
 //
 // _f function definitions. These expect data in C layout
 //
@@ -319,6 +331,50 @@ void calc_shoc_vertflux_f(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
   // Sync back to host
   Kokkos::Array<view_2d, 1> inout_views = {vertflux_d};
   pack::device_to_host({vertflux}, {shcol}, {nlevi}, inout_views, true);
+}
+
+void shoc_diag_second_moments_srf_f(Int shcol, Real* wthl, Real* uw, Real* vw, Real* ustar2, Real* wstar)
+{
+  using SHOC       = Functions<Real, DefaultDevice>;
+  using Scalar     = typename SHOC::Scalar;
+  using view_1d    = typename SHOC::view_1d<Scalar>;
+
+  view_1d wthl_d(wthl, shcol),
+          uw_d(uw, shcol),
+          vw_d(vw, shcol);
+
+//  auto wthl_h = Kokkos::create_mirror_view(wthl_d);
+//  auto uw_h   = Kokkos::create_mirror_view(uw_d);
+//  auto vw_h   = Kokkos::create_mirror_view(vw_d);
+
+  view_1d ustar2_d("ustar2",shcol),
+          wstar_d("wstar",shcol);
+ 
+  auto ustar2_h = Kokkos::create_mirror_view(ustar2_d);
+  auto wstar_h  = Kokkos::create_mirror_view(wstar_d);
+
+  Kokkos::parallel_for("parallel_moments_srf", shcol, KOKKOS_LAMBDA (const int& i) {
+
+     Scalar wthl_s{wthl_d(i)};
+     Scalar uw_s{uw_d(i)};
+     Scalar vw_s{vw_d(i)};
+
+     Scalar ustar2_s{0.};
+     Scalar wstar_s{0.};
+
+     SHOC::shoc_diag_second_moments_srf(wthl_s, uw_s, vw_s, ustar2_s, wstar_s);
+
+     ustar2_d(i) = ustar2_s;
+     wstar_d(i)  = wstar_s;
+   });
+
+  Kokkos::deep_copy(ustar2_h, ustar2_d);
+  Kokkos::deep_copy(wstar_h, wstar_d);
+
+  for (auto i=0; i<shcol; ++i) {
+     *(ustar2+i) = ustar2_h(i);
+     *(wstar+i)  = wstar_h(i);
+  }
 }
 
 } // namespace shoc
