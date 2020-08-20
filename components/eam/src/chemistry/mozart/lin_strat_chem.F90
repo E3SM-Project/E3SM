@@ -270,11 +270,11 @@ end subroutine linoz_readnl
           !
           ! skip if not in the stratosphere
           !
-          if ( pmid(i,k) > pressure_threshold ) THEN   ! PJC diagnostic
-             WRITE(iulog,*)'LINOZ WARNING: Exceeded PRESSURE threshold (i,k,p_threshold,pmid,o3)=',&
-               i,k,nint(pressure_threshold/100._r8),'mb',nint(pmid(i,k)/100._r8),'mb',nint(o3_vmr(i,k)*1e9_r8),'ppb'   !PJC
-!             cycle LOOP_LEV
-          endif
+          !if ( pmid(i,k) > pressure_threshold ) THEN   ! PJC diagnostic
+          !   WRITE(iulog,*)'LINOZ WARNING: Exceeded PRESSURE threshold (i,k,p_threshold,pmid,o3)=',&
+          !     i,k,nint(pressure_threshold/100._r8),'mb',nint(pmid(i,k)/100._r8),'mb',nint(o3_vmr(i,k)*1e9_r8),'ppb'   !PJC
+!         !    cycle LOOP_LEV
+          !endif
           !
           ! diagnostic for output
           !
