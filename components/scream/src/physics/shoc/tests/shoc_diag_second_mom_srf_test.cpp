@@ -28,19 +28,18 @@ struct UnitWrap::UnitTest<D>::TestSecondMomSrf {
 static void run_second_mom_srf_bfb()
 {
   SHOCSecondMomentSrfData mom_srf_data_f90[] = {
-    //               shcol
+    //                      shcol
     SHOCSecondMomentSrfData(36),
     SHOCSecondMomentSrfData(72),
     SHOCSecondMomentSrfData(128),
     SHOCSecondMomentSrfData(256),
   };
-    
+
   static constexpr Int num_runs = sizeof(mom_srf_data_f90) / sizeof(SHOCSecondMomentSrfData);
 
   for (Int i = 0; i < num_runs; ++i) {
-    mom_srf_data_f90[i].randomize();
+    mom_srf_data_f90[i].randomize({ {-1, 1} });
   }
-
 
   SHOCSecondMomentSrfData mom_srf_data_cxx[] = {
     SHOCSecondMomentSrfData(mom_srf_data_f90[0]),
@@ -51,15 +50,13 @@ static void run_second_mom_srf_bfb()
 
   for (Int i = 0; i < num_runs; ++i) {
     // expects data in C layout
-    shoc_diag_second_moments_srf(mom_srf_data_f90[i]);     
+    shoc_diag_second_moments_srf(mom_srf_data_f90[i]);
   }
-
 
   for (Int i = 0; i < num_runs; ++i) {
     SHOCSecondMomentSrfData& d = mom_srf_data_cxx[i];
     shoc_diag_second_moments_srf_f(d.shcol, d.wthl, d.uw, d.vw, d.ustar2, d.wstar);
   }
-
 
   for (Int i = 0; i < num_runs; ++i) {
     Int shcol = mom_srf_data_cxx[i].shcol;
@@ -72,18 +69,27 @@ static void run_second_mom_srf_bfb()
 
 static void run_second_mom_srf_phys()
 {
-    // TODO
-}
-};
-}
-}
+  // TODO
 }
 
+};
+
+} // namespace unit_test
+} // namespace shoc
+} // namespace scream
+
 namespace {
-TEST_CASE("shoc_second_moments_srf", "shoc") {
+
+TEST_CASE("shoc_second_moments_srf_property", "shoc") {
   using TRS = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestSecondMomSrf;
 
   TRS::run_second_mom_srf_phys();
+}
+
+TEST_CASE("shoc_second_moments_srf_bfb", "shoc") {
+  using TRS = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestSecondMomSrf;
+
   TRS::run_second_mom_srf_bfb();
 }
+
 }

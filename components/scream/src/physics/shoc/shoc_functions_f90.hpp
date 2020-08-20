@@ -46,7 +46,8 @@ struct SHOCDataBase
     m_data = data;
   }
 
-  void randomize();
+  void randomize(const std::vector<std::pair<Real, Real> >& ranges = {},
+                 const std::vector<std::pair<Real, Real> >& ranges_i = {});
 
   Int total() const { return m_total; }
   Int totali() const { return m_totali; }
@@ -294,7 +295,7 @@ struct SHOCSecondMomentSrfData : public SHOCDataBase {
   SHOCDataBase(shcol_, 1, 1, {&wthl, &uw, &vw, &ustar2, &wstar}, {}) {}
   SHOCSecondMomentSrfData(const SHOCSecondMomentSrfData &rhs) : SHOCDataBase(rhs, {&wthl, &uw, &vw, &ustar2, &wstar}, {}) {}
   SHOCSecondMomentSrfData &operator=(const SHOCSecondMomentSrfData &rhs) { SHOCDataBase::operator=(rhs); return *this; }
-}; 
+};
 
 //
 // Glue functions to call fortran from from C++ with the Data struct
@@ -327,7 +328,7 @@ extern "C" {
 
 void calc_shoc_vertflux_f(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 			  Real *dz_zi, Real *invar, Real *vertflux);
-void shoc_diag_second_moments_srf_f(Int shcol, Real* wthl, Real* uw, Real* vw, 
+void shoc_diag_second_moments_srf_f(Int shcol, Real* wthl, Real* uw, Real* vw,
                          Real* ustar2, Real* wstar);
 
 }
