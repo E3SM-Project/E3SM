@@ -1335,7 +1335,10 @@ module li_calving
             !    to calculate the calving volume on those edges and this cell
             do iNeighbor = 1, nEdgesOnCell(iCell)
                iEdge = edgesOnCell(iNeighbor, iCell)
-               if (li_mask_is_floating_ice(edgeMask(iEdge)) .and. li_mask_is_margin(edgeMask(iEdge))) then
+               jCell = cellsOnCell(iNeighbor, iCell)
+               if (li_mask_is_floating_ice(edgeMask(iEdge)) .and. li_mask_is_margin(edgeMask(iEdge)) .and. &
+                   .not. li_mask_is_ice(cellMask(jCell)) .and. bedTopography(jCell) < config_sea_level & ! ensure margin is w/ocn
+                   ) then
                   requiredCalvingVolumeNonDynEdge(iEdge) = calvingVelocity(iCell) * abs(cos(angleEdge(iEdge))) * dvEdge(iEdge) &
                           * thicknessForCalving(iCell) * deltat
                   ! TODO: Change cos to use flow velo!
