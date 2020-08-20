@@ -1260,6 +1260,7 @@ module li_calving
       real(kind=RKIND) :: thkSum, thkCount
       real(kind=RKIND) :: removeVolumeHere
       real(kind=RKIND) :: calvLengthCell, calvLengthEdge
+      logical :: openOceanNeighbor
       integer :: err_tmp
 
       call mpas_pool_get_config(liConfigs, 'config_calving_thickness', config_calving_thickness)
@@ -1360,13 +1361,23 @@ module li_calving
       do iCell = 1, nCells
          if (li_mask_is_floating_ice(cellMask(iCell)) .and. li_mask_is_dynamic_ice(cellMask(iCell)) .and. &
                  li_mask_is_margin(cellMask(iCell)) ) then
+            ! only consider dynamic margins adjacent to open ocean (need to exclude dynamic margins adjacent to land)
+            openOceanNeighbor = .false.
             do iNeighbor = 1, nEdgesOnCell(iCell)
-               iEdge = edgesOnCell(iNeighbor, iCell)
-               if (li_mask_is_margin(edgeMask(iEdge))) then
-                  requiredCalvingVolumeDynEdge(iEdge) = calvingVelocity(iCell) * abs(cos(angleEdge(iEdge))) * dvEdge(iEdge) &
-                          * thickness(iCell) * deltat
+               jCell = cellsOnCell(iNeighbor, iCell)
+               if ((.not. li_mask_is_ice(cellMask(jCell))) .and. (bedTopography(jCell) <= config_sea_level)) then
+                  openOceanNeighbor = .true.
                endif
             enddo
+            if (openOceanNeighbor) then
+               do iNeighbor = 1, nEdgesOnCell(iCell)
+                  iEdge = edgesOnCell(iNeighbor, iCell)
+                  if (li_mask_is_margin(edgeMask(iEdge))) then
+                     requiredCalvingVolumeDynEdge(iEdge) = calvingVelocity(iCell) * abs(cos(angleEdge(iEdge))) * dvEdge(iEdge) &
+                             * thickness(iCell) * deltat
+                  endif
+               enddo
+            endif
          endif
       enddo
 
