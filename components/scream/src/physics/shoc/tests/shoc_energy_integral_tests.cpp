@@ -136,11 +136,17 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
 
 namespace {
 
-TEST_CASE("shoc_energy_integrals", "shoc")
+TEST_CASE("shoc_energy_integrals_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEnergyInt;
 
   TestStruct::run_property();
+}
+
+TEST_CASE("shoc_energy_integrals_b4b", "shoc")
+{
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEnergyInt;
+
 }
 
 } // namespace

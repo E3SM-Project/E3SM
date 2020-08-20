@@ -143,11 +143,17 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
 
 namespace {
 
-TEST_CASE("shoc_energy_total_fixer", "shoc")
+TEST_CASE("shoc_energy_total_fixer_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEnergyFixer;
 
   TestStruct::run_property();
+}
+
+TEST_CASE("shoc_energy_total_fixer_b4b", "shoc")
+{
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEnergyFixer;
+
 }
 
 } // namespace

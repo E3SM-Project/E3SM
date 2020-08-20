@@ -136,11 +136,17 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse {
 
 namespace {
 
-TEST_CASE("shoc_energy_host_dse", "shoc")
+TEST_CASE("shoc_energy_host_dse_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocUpdateDse;
 
   TestStruct::run_property();
+}
+
+TEST_CASE("shoc_energy_host_dse_b4b", "shoc")
+{
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocUpdateDse;
+
 }
 
 } // namespace
