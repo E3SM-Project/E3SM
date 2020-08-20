@@ -229,14 +229,14 @@ module mpas_tracer_advection_helpers
            k = mpas_binary_search(sorted_cell_indices, 2, 1, nAdvCellsForEdge(iEdge), indexToCellID(cell2))
            if(k <= nAdvCellsForEdge(iEdge)) then
              adv_coefs(k, iEdge) = adv_coefs(k, iEdge) + deriv_two(1,2,iEdge)
-             adv_coefs_3rd(k, iEdge) = adv_coefs_3rd(k, iEdge) + deriv_two(1,2,iEdge)
+             adv_coefs_3rd(k, iEdge) = adv_coefs_3rd(k, iEdge) - deriv_two(1,2,iEdge)
            end if
 
            do iCell = 1, nEdgesOnCell(cell2)
              k = mpas_binary_search(sorted_cell_indices, 2, 1, nAdvCellsForEdge(iEdge), indexToCellID(cellsOnCell(iCell,cell2)))
              if(k <= nAdvCellsForEdge(iEdge)) then
                adv_coefs(k, iEdge) = adv_coefs(k, iEdge) + deriv_two(iCell+1, 2, iEdge)
-               adv_coefs_3rd(k, iEdge) = adv_coefs_3rd(k, iEdge) + deriv_two(iCell+1, 2, iEdge)
+               adv_coefs_3rd(k, iEdge) = adv_coefs_3rd(k, iEdge) - deriv_two(iCell+1, 2, iEdge)
              end if
            end do ! loop over iCell
 
