@@ -44,8 +44,8 @@ struct SHOCDataBase
       util::transpose<D>(*(m_ptrs_i[i]), data.data() + (m_ptrs.size()*m_total) + (m_totali*i), shcol, nlevi);
     }
     
-//    const auto c_start_offset = m_ptrs.size()*m_total + m_ptrs_i.size()*m_totali;
-//    std::copy(m_data.begin() = c_start_offset, m_data.end(), data.begin() + //c_start_offset);
+    const Int c_start_offset = m_ptrs.size()*m_total + m_ptrs_i.size()*m_totali;
+    std::copy(m_data.begin() + c_start_offset, m_data.end(), data.begin() + //c_start_offset);
     
     // Transpose on the column only grid
     for (size_t i = 0; i < m_ptrs_c.size(); ++i) {
@@ -213,6 +213,22 @@ struct SHOCEnergytotData : public SHOCDataBase {
   SHOCEnergytotData &operator=(const SHOCEnergytotData &rhs) { SHOCDataBase::operator=(rhs); dtime = rhs.dtime; nadv = rhs.nadv; return *this; }
 };//SHOCEnergytotData
 
+//create data structure for shoc_energy_dse_fixer
+struct SHOCEnergydsefixerData : public SHOCDataBase {
+  // Inputs
+  Real *se_dis;
+  Int *shoctop;
+
+  // Output
+  Real *host_dse;
+
+  //functions to initialize data
+  SHOCEnergydsefixerData(Int shcol_, Int nlev_) :
+    SHOCDataBase(shcol_, nlev_, 0, {&host_dse}, {}, {&se_dis, &shoctop}) {}
+  SHOCEnergydsefixerData(const SHOCEnergydsefixerData &rhs) : SHOCDataBase(rhs, {&host_dse}, {}, {&se_dis, &shoctop}) {}
+  SHOCEnergydsefixerData &operator=(const SHOCEnergydsefixerData &rhs) { SHOCDataBase::operator=(rhs); return *this; }
+};//SHOCEnergydsefixerData
+
 //Create data structure to hold data for calc_shoc_vertflux
 struct SHOCVertfluxData : public SHOCDataBase {
   // Inputs
@@ -353,6 +369,7 @@ void shoc_grid(SHOCGridData &d);
 void update_host_dse(SHOCEnergydseData &d);
 void shoc_energy_integrals(SHOCEnergyintData &d);
 void shoc_energy_total_fixer(SHOCEnergytotData &d);
+void shoc_energy_dse_fixer(SHOCEnergydsefixerData &d);
 void calc_shoc_vertflux(SHOCVertfluxData &d);
 void calc_shoc_varorcovar(SHOCVarorcovarData &d);
 void integ_column_stability(SHOCColstabData &d);

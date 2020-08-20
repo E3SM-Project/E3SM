@@ -314,7 +314,25 @@ contains
                                  wthl_sfc,wqw_sfc,rho_zt,&
                                  te_a,te_b)
 
-  end subroutine shoc_energy_total_fixer_c  
+  end subroutine shoc_energy_total_fixer_c
+  
+  subroutine shoc_energy_dse_fixer_c(shcol,nlev, &
+                                     se_dis,shoctop, &
+                                     host_dse) bind (C)
+    use shoc, only: shoc_energy_dse_fixer
+
+    integer(kind=c_int), intent(in), value :: shcol
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in) :: shoctop(shcol)
+    real(kind=c_real), intent(in) :: se_dis(shcol)
+
+    real(kind=c_real), intent(inout) :: host_dse(shcol,nlev)
+
+    call shoc_energy_dse_fixer(shcol,nlev, &
+                               se_dis,shoctop, &
+                               host_dse)
+
+  end subroutine shoc_energy_dse_fixer_c  
 
   subroutine calc_shoc_vertflux_c(shcol, nlev, nlevi, tkh_zi, dz_zi, invar, vertflux) bind (C)
     use shoc, only: calc_shoc_vertflux

@@ -57,6 +57,7 @@ struct UnitWrap {
     struct TestShocUpdateDse;
     struct TestShocEnergyInt;
     struct TestShocEnergyFixer;
+    struct TestShocEnergyDseFixer;
     struct TestShocEddyDiff;
     struct TestShocGrid;
     struct TestShocAdvSgsTke;
