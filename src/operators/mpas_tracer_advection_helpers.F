@@ -188,7 +188,7 @@ module mpas_tracer_advection_helpers
                sorted_cell_indices(2, n) = cellsOnCell(i, cell1)
                call mpas_hash_insert(cell_hash, cellsOnCell(i, cell1))
              end if
-           end do ! loop over i
+           end do
 
            do i = 1, nEdgesOnCell(cell2)
              if(.not. mpas_hash_search(cell_hash, cellsOnCell(i, cell2))) then
@@ -198,7 +198,7 @@ module mpas_tracer_advection_helpers
                sorted_cell_indices(2, n) = cellsOnCell(i, cell2)
                call mpas_hash_insert(cell_hash, cellsOnCell(i, cell2))
              end if
-           end do ! loop over i
+           end do
 
            call mpas_hash_destroy(cell_hash)
 
@@ -207,11 +207,13 @@ module mpas_tracer_advection_helpers
            nAdvCellsForEdge(iEdge) = n
            do iCell = 1, nAdvCellsForEdge(iEdge)
              advCellsForEdge(iCell, iEdge) = sorted_cell_indices(2, iCell)
-           end do ! loop over iCell
+           end do
 
            adv_coefs(:,iEdge) = 0.
            adv_coefs_3rd(:,iEdge) = 0.
 
+           ! pull together third and fourth order contributions to the flux
+           ! first from cell1
            k = mpas_binary_search(sorted_cell_indices, 2, 1, nAdvCellsForEdge(iEdge), indexToCellID(cell1))
            if(k <= nAdvCellsForEdge(iEdge)) then
              adv_coefs(k, iEdge) = adv_coefs(k, iEdge) + deriv_two(1,1,iEdge)
@@ -224,8 +226,10 @@ module mpas_tracer_advection_helpers
                adv_coefs(k, iEdge) = adv_coefs(k, iEdge) + deriv_two(iCell+1, 1, iEdge)
                adv_coefs_3rd(k, iEdge) = adv_coefs_3rd(k, iEdge) + deriv_two(iCell+1, 1, iEdge)
              end if
-           end do ! loop over iCell
+           end do
 
+           ! pull together third and fourth order contributions to the flux
+           ! now from cell2
            k = mpas_binary_search(sorted_cell_indices, 2, 1, nAdvCellsForEdge(iEdge), indexToCellID(cell2))
            if(k <= nAdvCellsForEdge(iEdge)) then
              adv_coefs(k, iEdge) = adv_coefs(k, iEdge) + deriv_two(1,2,iEdge)
@@ -238,13 +242,14 @@ module mpas_tracer_advection_helpers
                adv_coefs(k, iEdge) = adv_coefs(k, iEdge) + deriv_two(iCell+1, 2, iEdge)
                adv_coefs_3rd(k, iEdge) = adv_coefs_3rd(k, iEdge) - deriv_two(iCell+1, 2, iEdge)
              end if
-           end do ! loop over iCell
+           end do
 
            do iCell = 1,nAdvCellsForEdge(iEdge)
              adv_coefs    (iCell,iEdge) = - (dcEdge(iEdge) **2) * adv_coefs    (iCell,iEdge) / 12.
              adv_coefs_3rd(iCell,iEdge) = - (dcEdge(iEdge) **2) * adv_coefs_3rd(iCell,iEdge) / 12.
-           end do ! loop over iCell
+           end do
 
+           ! 2nd order centered contribution - place this in the main flux weights
            k = mpas_binary_search(sorted_cell_indices, 2, 1, nAdvCellsForEdge(iEdge), indexToCellID(cell1))
            if(k <= nAdvCellsForEdge(iEdge)) then
              adv_coefs(k, iEdge) = adv_coefs(k, iEdge) + 0.5
@@ -255,11 +260,12 @@ module mpas_tracer_advection_helpers
              adv_coefs(k, iEdge) = adv_coefs(k, iEdge) + 0.5
            end if
 
+           !  multiply by edge length - thus the flux is just dt*ru times the results of the vector-vector multiply
            do iCell=1,nAdvCellsForEdge(iEdge)
              adv_coefs    (iCell,iEdge) = dvEdge(iEdge) * adv_coefs    (iCell,iEdge)
              adv_coefs_3rd(iCell,iEdge) = dvEdge(iEdge) * adv_coefs_3rd(iCell,iEdge)
-           end do ! loop over iCell
-        end if
+           end do
+        end if  ! only do for edges of owned-cells
       end do ! end loop over edges
 
       deallocate(cell_indices)
