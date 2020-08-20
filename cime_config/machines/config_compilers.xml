@@ -1060,6 +1060,15 @@ flags should be captured within MPAS CMake files.
   </SLIBS>
 </compiler>
 
+<compiler MACH="cori-haswell" COMPILER="gnu">
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+  </CFLAGS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+  </FFLAGS>
+</compiler>
+
 <compiler MACH="cori-knl" COMPILER="intel">
   <ALBANY_PATH>/global/cfs/cdirs/acme/software/AlbanyTrilinos20190823/albany-build/install</ALBANY_PATH>
   <CFLAGS>
@@ -1096,6 +1105,15 @@ flags should be captured within MPAS CMake files.
     <append> -L$ENV{NETCDF_DIR} -lnetcdff -Wl,--as-needed,-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf </append>
     <append> -mkl -lpthread </append>
   </SLIBS>
+</compiler>
+
+<compiler MACH="cori-knl" COMPILER="gnu">
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+  </CFLAGS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+  </FFLAGS>
 </compiler>
 
 <compiler MACH="ghost" COMPILER="intel">
