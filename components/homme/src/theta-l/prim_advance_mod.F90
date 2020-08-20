@@ -364,6 +364,10 @@ contains
 
       a1=.24362d0   
       a2=.34184d0 
+
+!      a1=0.d0
+!      a2=0.d0
+
       a3=1-(a1+a2)
       call compute_stage_value_dirk(nm1,a2*dt,n0,a1*dt,np1,a3*dt,qn0,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
