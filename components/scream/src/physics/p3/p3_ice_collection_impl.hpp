@@ -15,7 +15,7 @@ void Functions<S,D>
   const Spack& qi_incld, const Spack& qc_incld,
   const Spack& ni_incld, const Spack& nc_incld,
   Spack& qc2qi_collect_tend, Spack& nc_collect_tend, Spack& qc2qr_ice_shed_tend, Spack& ncshdc,
-  const Smask& context)
+  const Smask& range_mask, const Smask& context)
 {
   constexpr Scalar qsmall = C::QSMALL;
   constexpr Scalar tmelt  = C::Tmelt;

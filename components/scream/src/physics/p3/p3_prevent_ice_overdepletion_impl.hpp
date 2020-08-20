@@ -18,7 +18,7 @@ KOKKOS_FUNCTION
 void Functions<S,D>
 ::prevent_ice_overdepletion(
   const Spack& pres, const Spack& t, const Spack& qv, const Spack& latent_heat_sublim, const Scalar& inv_dt,
-  Spack& qv2qi_vapdep_tend, Spack& qi2qv_sublim_tend,
+  Spack& qv2qi_vapdep_tend, Spack& qi2qv_sublim_tend, const Smask& range_mask,
   const Smask& context)
 {
   using physics = scream::physics::Functions<Scalar, Device>;
@@ -26,7 +26,7 @@ void Functions<S,D>
   constexpr Scalar cp = C::CP;
   constexpr Scalar rv = C::RH2O;
 
-  const auto dumqv_sat_i = physics::qv_sat(t,pres,true);
+  const auto dumqv_sat_i = physics::qv_sat(t,pres,true, range_mask);
   const auto qdep_satadj = (qv-dumqv_sat_i) /
     (1 + square(latent_heat_sublim) * dumqv_sat_i / (cp * rv * square(t))) * inv_dt;
   qv2qi_vapdep_tend.set(context, qv2qi_vapdep_tend * min(1, max(0,  qdep_satadj) / max(qv2qi_vapdep_tend, sp(1.e-20))));
