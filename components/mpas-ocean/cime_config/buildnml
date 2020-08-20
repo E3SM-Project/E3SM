@@ -111,6 +111,13 @@ def buildnml(case, caseroot, compname):
         decomp_prefix += 'mpas-o.graph.info.'
         restoring_file += 'sss.monthlyClimatology.PHC2_salx_040803.oEC60to30v3wLI.nc'
         analysis_mask_file += 'masks_SingleRegionAtlanticWTransportTransects_EC60to30v3wLI_171116.nc'
+    elif ocn_grid == 'ECwISC30to60E1r2':
+        ic_date += '200408'
+        ic_prefix += 'ocean.ECwISC30to60E1r2'
+        decomp_date += '200408'
+        decomp_prefix += 'mpas-o.graph.info.'
+        restoring_file += 'sss.PHC2_monthlyClimatology.ECwISC30to60E1r02.200408.nc'
+        analysis_mask_file += 'ECwISC30to60E1r02_transportTransects.nc'
     elif ocn_grid == 'oEC60to30v3wLI_ICG':
         ic_date += '171116'
         ic_prefix += 'oEC60to30v3wLI60lev.restart_theta_year26'
