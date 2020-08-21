@@ -1176,8 +1176,6 @@ module li_calving
 
          calvingVelocity(:) = config_calving_eigencalving_parameter_scalar_value  !MJH HACK
 
-!         calvingVelocity(:) = abs(calvingVelocity(:) * cos(angleEdge(:)))
-
 
          ! Convert calvingVelocity to calvingThickness
          call apply_calving_velocity(meshPool, geometryPool, velocityPool, domain, err)
@@ -1309,6 +1307,8 @@ module li_calving
       real (kind=RKIND), dimension(:), pointer :: angleEdge
       real (kind=RKIND), dimension(:), pointer :: calvingVelocity
       real (kind=RKIND), dimension(:), pointer :: areaCell
+      real (kind=RKIND), dimension(:,:), pointer :: uReconstructX
+      real (kind=RKIND), dimension(:,:), pointer :: uReconstructY
       integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
       real (kind=RKIND), pointer :: deltat  !< time step (s)
       real (kind=RKIND), dimension(:), allocatable :: thicknessForCalving
@@ -1323,6 +1323,7 @@ module li_calving
       real(kind=RKIND) :: calvLengthCell, calvLengthEdge
       real(kind=RKIND), dimension(5) :: localInfo, globalInfo
       logical :: openOceanNeighbor
+      real(kind=RKIND) :: edgeLengthScaling
 
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
 
@@ -1332,6 +1333,8 @@ module li_calving
       call mpas_pool_get_array(meshPool, 'angleEdge', angleEdge)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_array(velocityPool, 'uReconstructX', uReconstructX)
+      call mpas_pool_get_array(velocityPool, 'uReconstructY', uReconstructY)
       call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
@@ -1391,9 +1394,9 @@ module li_calving
                if (li_mask_is_floating_ice(edgeMask(iEdge)) .and. li_mask_is_margin(edgeMask(iEdge)) .and. &
                    .not. li_mask_is_ice(cellMask(jCell)) .and. bedTopography(jCell) < config_sea_level & ! ensure margin is w/ocn
                    ) then
-                  requiredCalvingVolumeNonDynEdge(iEdge) = calvingVelocity(iCell) * abs(cos(angleEdge(iEdge))) * dvEdge(iEdge) &
-                          * thicknessForCalving(iCell) * deltat
-                  ! TODO: Change cos to use flow velo!
+                  edgeLengthScaling = scale_edge_length(angleEdge(iEdge), uReconstructX(1,iCell), uReconstructY(1,iCell))
+                  requiredCalvingVolumeNonDynEdge(iEdge) = calvingVelocity(iCell) * &
+                          edgeLengthScaling * dvEdge(iEdge) * thicknessForCalving(iCell) * deltat
                   requiredCalvingVolumeNonDynCell(iCell) = requiredCalvingVolumeNonDynCell(iCell) + &
                           requiredCalvingVolumeNonDynEdge(iEdge) ! Keep running total
                endif
@@ -1429,8 +1432,9 @@ module li_calving
                do iNeighbor = 1, nEdgesOnCell(iCell)
                   iEdge = edgesOnCell(iNeighbor, iCell)
                   if (li_mask_is_margin(edgeMask(iEdge))) then
-                     requiredCalvingVolumeDynEdge(iEdge) = calvingVelocity(iCell) * abs(cos(angleEdge(iEdge))) * dvEdge(iEdge) &
-                             * thickness(iCell) * deltat
+                     edgeLengthScaling = scale_edge_length(angleEdge(iEdge), uReconstructX(1,iCell), uReconstructY(1,iCell))
+                     requiredCalvingVolumeDynEdge(iEdge) = calvingVelocity(iCell) * &
+                          edgeLengthScaling * dvEdge(iEdge) * thickness(iCell) * deltat
                   endif
                enddo
             endif
@@ -1454,7 +1458,8 @@ module li_calving
             do iNeighbor = 1, nEdgesOnCell(iCell)
                iEdge = edgesOnCell(iNeighbor, iCell)
                if (li_mask_is_dynamic_ice(edgeMask(iEdge))) then
-                  calvLengthEdge = abs(cos(angleEdge(iEdge))) * dvEdge(iEdge)
+                  edgeLengthScaling = scale_edge_length(angleEdge(iEdge), uReconstructX(1,iCell), uReconstructY(1,iCell))
+                  calvLengthEdge = edgeLengthScaling * dvEdge(iEdge)
                   calvLengthCell = calvLengthCell + calvLengthEdge
                endif
             enddo
@@ -1464,7 +1469,8 @@ module li_calving
                iEdge = edgesOnCell(iNeighbor, iCell)
                jCell = cellsOnCell(iNeighbor, iCell)
                if (li_mask_is_dynamic_ice(edgeMask(iEdge))) then
-                  calvLengthEdge = abs(cos(angleEdge(iEdge))) * dvEdge(iEdge)
+                  edgeLengthScaling = scale_edge_length(angleEdge(iEdge), uReconstructX(1,iCell), uReconstructY(1,iCell))
+                  calvLengthEdge = edgeLengthScaling * dvEdge(iEdge)
                   requiredCalvingVolumeDynEdge(iEdge) = calvLengthEdge / calvLengthCell * volumeAvailableToPass
                   uncalvedVolumeNonDynCell(iCell) = uncalvedVolumeNonDynCell(iCell) - requiredCalvingVolumeDynEdge(iEdge)
                   !call mpas_log_write("   Passed calving $r from non-dynamic cell $i to dynamic cell $i", &
@@ -1530,6 +1536,23 @@ module li_calving
       deallocate(thicknessForCalving)
 
     end subroutine apply_calving_velocity
+
+    ! Helper function for subroutine apply_calving_velocity
+    ! Calculates the amount to scale an edge length based on the orientation of the edge with the surface velocity
+    function scale_edge_length(angleEdgeHere, u, v)
+       real(kind=RKIND), intent(in) :: angleEdgeHere
+       real(kind=RKIND), intent(in) :: u
+       real(kind=RKIND), intent(in) :: v
+       real(kind=RKIND) :: scale_edge_length
+
+       real(kind=RKIND) :: mag
+
+       mag = sqrt(u**2 + v**2)
+       if (mag == 0.0_RKIND) mag = 1.0_RKIND
+       !scale_edge_length =  abs(u/mag * cos(-1.0*angleEdgeHere) + v/mag * sin(-1.0*angleEdgeHere))  ! dot product of unit vectors
+       scale_edge_length = abs(cos(angleEdgeHere - atan2(v, u)))
+    end function scale_edge_length
+
 
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
