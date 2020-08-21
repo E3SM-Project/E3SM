@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<config case="forward">
+	<add_link source="../init/ocean.nc" dest="input.nc"/>
+	<add_link source="../init/graph.info" dest="graph.info"/>
+	<add_link source="../init/out.nc" dest="atmospheric_forcing.nc"/>
+	<add_link source="../init/points.nc" dest="points.nc"/>
+	<add_link source="../spinup/restarts" dest="restarts"/>
+	<add_link source="../spinup/Restart_timestamp" dest="Restart_timestamp"/>
+	<add_link source="../init/forcing.nc" dest="forcing.nc"/>
+
+	<namelist name="namelist.ocean" mode="forward">
+		<template file="forward_template.xml" path_base="script_configuration_dir"/>
+		<template file="forward_wetting_drying_template.xml" path_base="script_configuration_dir"/>
+		<template file="forward_variable_drag.xml" path_base="script_configuration_dir"/>
+
+		<option name="config_dt">'00:00:50'</option>
+		<option name="config_time_integrator">'RK4'</option>
+		<option name="config_mom_del4">4.0e9</option>
+
+		<option name="config_do_restart">.true.</option>
+		<option name="config_restart_timestamp_name">'Restart_timestamp'</option>
+		<option name="config_start_time">'file'</option>
+		<option name="config_stop_time">'2012-01-12_23:00:00'</option>
+		<option name="config_time_varying_atmospheric_forcing_start_time">'2012-01-10_00:00:00'</option>
+		<option name="config_time_varying_atmospheric_forcing_reference_time">'2012-01-10_00:00:00'</option>
+		<option name="config_time_varying_atmospheric_forcing_ramp">0.5</option>
+		<option name="config_time_varying_atmospheric_forcing_ramp_delay">9.0</option>
+		<option name="config_tidal_potential_reference_time">'2012-01-01_00:00:00'</option>
+		<option name="config_tidal_potential_ramp">9.0</option>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable" mode="forward">
+		<template file="forward_template.xml" path_base="script_configuration_dir"/>
+		<template file="forward_wetting_drying_template.xml" path_base="script_configuration_dir"/>
+		<template file="forward_variable_drag.xml" path_base="script_configuration_dir"/>
+		<stream name="restart">
+			<attribute name="output_interval">0009_00:00:00</attribute>
+			<attribute name="reference_time">2012-01-01_00:00:00</attribute>
+		</stream>
+	</streams>
+
+	<run_script name="run.py">
+		<step executable="gpmetis">
+			<argument flag="graph.info">72</argument>
+		</step>
+		<model_run procs="72" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+	</run_script>
+</config>

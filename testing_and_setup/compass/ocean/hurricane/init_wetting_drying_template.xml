@@ -1,0 +1,8 @@
+<template>
+	<namelist name="namelist.ocean" mode="init">
+		<option name="config_hurricane_min_depth">-10.0</option>
+		<option name="config_hurricane_max_depth">6000.0</option>
+		<option name="config_use_wetting_drying">.true.</option>
+		<option name="config_drying_min_cell_height">0.0100001</option>
+	</namelist>
+</template>

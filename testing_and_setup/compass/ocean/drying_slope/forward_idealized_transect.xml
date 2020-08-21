@@ -1,0 +1,16 @@
+<template>
+	<namelist>
+		<option name="config_Rayleigh_friction">.false.</option>
+		<option name="config_Rayleigh_damping_depth_variable">.false.</option>
+		<option name="config_use_implicit_bottom_drag">.false.</option>
+		<option name="config_use_implicit_bottom_drag_variable">.false.</option>
+		<option name="config_use_implicit_bottom_drag_variable_mannings">.true.</option>
+		<option name="config_thickness_flux_type">'centered'</option>
+		<option name="config_dt">'0000_00:00:05'</option>
+		<option name="config_run_duration">'0000_48:00:01'</option>
+		<option name="config_tidal_forcing_monochromatic_amp">1.5</option>
+		<option name="config_tidal_forcing_monochromatic_period">1.0</option>
+		<option name="config_tidal_forcing_monochromatic_phaseLag">0.0</option>
+		<option name="config_tidal_forcing_monochromatic_baseline">3.0</option>
+  </namelist>
+</template>

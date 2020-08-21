@@ -1,0 +1,439 @@
+\documentclass[11pt]{report}
+
+\usepackage{epsf,amsmath,amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{color}
+\usepackage{natbib}
+\usepackage{multirow}
+\usepackage{hyperref}
+
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+\setlength{\textheight}{8in}
+\setlength{\topmargin}{0.5in}
+
+\newcommand{\ds}{\displaystyle}
+\setlength{\parskip}{1.2ex}
+\setlength{\parindent}{0mm}
+\newcommand{\bea}{\begin{eqnarray}}
+\newcommand{\eea}{\end{eqnarray}}
+\newcommand{\nn}{\nonumber}
+
+\def\Mark#1{{\textcolor{red}{\bf \textit{By Mark: } #1}}} % new text
+\def\Phillip#1{{\textcolor{cyan}{\bf \textit{By PhilW: } #1}}} % new text
+\def\Steven#1{{\textcolor{blue}{\bf \textit{By Steven: } #1}}} % new text
+\def\Luke#1{{\textcolor{green}{\bf \textit{By Luke: } #1}}} % new text
+\def\Comment#1{{\textcolor{magenta}{\bf \textit{Comment: } #1}}} % new text
+\begin{document}
+
+\title{MPAS-O Ocean Tidal Harmonic Decomposition }
+\author{Steven Brus, Brian Arbic, Kristin Barton, Nairita Pal, \\ Mark Petersen, Andrew Roberts, Joannes Westerink }
+
+
+ 
+\maketitle
+\tableofcontents
+
+%-----------------------------------------------------------------------
+
+\chapter{Summary}
+
+
+
+%The purpose of this section is to summarize what capability is to be added to the MPAS system through this design process. It should be clear what new code will do that the current code does not. Summarizing the primary challenges with respect to software design and implementation is also appropriate for this section. Finally, this statement should contain general statement with regard to what is ``success.''
+
+\section{MPAS-Ocean contributions}
+Decomposing the computed sea surface height into the amplitude and phase of the known tidal constituent frequencies is a common and useful way to visualize and validate tidal model results. These types of global plots are also valuable in assessing how changes in the model (mesh resolution, bathymetry, parameterizations, etc.) effect the tides globally. 
+
+In a harmonic decomposition, the sea surface is approximated as a harmonic series with known constituent frequencies. The amplitudes and phases associated with these frequencies must be solved for in a manner that most closely matches the time series of the actual computed sea surface height with the series approximation. Once these amplitudes and phases are known, they can be plotted globally for each tidal constituent and compared with highly accurate data-assimilated tidal models.
+
+This type of analysis is implemented as a new analysis member in MPAS-Ocean. This allows the time interval at which the analysis is computed and written to file to be controlled using existing code infrastructure. It also allows this capability to be easily turned off for simulations which do not include tidal forcing.
+
+The methodology implemented is based on the harmonic least squares method \cite{westerink_lsq} implemented in the ADCIRC model \cite{Luettich1992ADCIRC} and borrows routines from the ADCIRC source code.
+
+\section{Science Questions}
+\begin{enumerate}
+    \item Assess the accuracy of MPAS-Ocean tidal simulations with observations and highly accurate, data-assimilated tidal models
+    \item Identify regions where the computed tidal solution is inaccurate to focus efforts on improving accuracy due to mesh resolution, bathymetry, dissipation parameterizations, etc.
+    \item Demonstrate how coupling with other E3SM components effects the computed tidal solution
+\end{enumerate}
+
+%-----------------------------------------------------------------------
+
+\chapter{Requirements}
+
+\section{Requirement: The harmonic analysis should decompose the computed sea surface height into amplitude and phase values for each major tidal constituent}
+The amplitudes and phases associated with the known constituent frequencies must be solved for in a manner that most closely matches the actual computed sea surface height with the series approximation. The method must be able to selectively and accurately separate closely spaced harmonics. 
+
+\section{Requirement: Decomposition is calculated on-line during the simulations}
+The harmonic analysis capability should not require writing high-frequency global time-series to file. This would result in large storage requirements and require a subsequent step to compute the decomposition. 
+
+\section{Requirement: Harmonic analysis should be able to be restarted at any point in the simulation}
+The restarted simulation should produce a result that is bit-for-bit with the uninterrupted simulation.
+
+\section{Requirement: The harmonic analysis should allow for general specification of the tidal constituent frequencies included in the analysis}
+Each of the major constituents should have namelist options which specify whether a given constituent is used in the analysis.
+
+\section{Requirement: The time period over which the harmonic analysis is performed should be user-specified}
+The harmonic analysis should not include the tidal-spin up period used to ramp the tidal forcing at the beginning of the simulation. Also, in some situations, additional time-series information does not improve the results of the decomposition.
+
+\section{Requirement: The interval at which the computed sea surface height is sampled for the harmonic analysis should be user-specified }
+This sampling interval can be used to controls the balance of accuracy and efficiency in the harmonic decomposition.
+%-----------------------------------------------------------------------
+
+\chapter{Algorithmic Formulations}
+Information in sections \ref{sec:astronomical_forcing}-\ref{sec:goverining_eqns} is reproduced here from the Tides Design Document for completeness.
+
+\section{Astronomical forcing}
+\label{sec:astronomical_forcing}
+The Newtonian equilibrium tidal potential is given by $\eta_{EQ}$.  For the three largest semidiurnal tidal constituents, $\eta_{EQ}$ is given by equation (5) from \citet{chassignet_primer_2018} for $i=$ M$_{2}$, S$_{2}$, N$_{2}$ (applied 3 times and summed together), viz:
+\begin{equation}
+\eta_{EQ,i} = A_if_i(t_{ref})(1+k_{2,i}-h_{2,i})\cos^2(\phi)\cos\left[\omega_i(t-t_{ref}) + \chi_i(t_{ref}) + \nu_i(t_{ref}) + 2\lambda\right],
+\label{eq:Eq5}
+\end{equation}
+
+where the tidal amplitude is $A$, $f(t_{ref})$ is the the nodal factor accounting for the small modulations of amplitude (computed about once per year), $f(t_{ref})$ is slow modulation of amplitude (computed about once per year), the Love numbers $k_2$ and $h_2$ respectively account for the deformation of the solid earth due to the astronomical tidal forcing and the perturbation gravitational potential due to this deformation, $\phi$ is latitude, $\omega$ is tidal frequency, $t_{ref}$ is a reference time (often taken to be the beginning of a model run), $\chi(t_{ref})$ is the astronomical argument, and $\nu(t_ref)$ is the nodal factor accounting for the small modulations of phase, and $\lambda$ is longitude.
+
+For the diurnal constituents, the equilibrium tide is given by equation (6) of \citet{chassignet_primer_2018}, applied twice for $j=$ K$_{1}$ and O$_{1}$, viz:
+
+\begin{equation}
+\eta_{EQ,j} = A_j f_j(t_{ref}) (1+k_{2,j}-h_{2,j})\sin(2\phi)\cos\left[\omega_j(t-t_{ref}) + \chi_j(t_{ref}) + \nu_j(t_{ref}) + \lambda \right].
+\label{eq:Eq6}
+\end{equation}
+
+\section{Self-attraction and loading}
+\label{sec:SAL}
+
+Self-attraction and loading (SAL) constituent static file maps should be derived for SAL amplitude and phase from FES, for $k=$ M$_2$, S$_2$, N$_2$, K$_1$, and O$_1$.  The maps can be used to compute $\eta_{SAL}$ as a sum, e.g., equation (12) from \citet{chassignet_primer_2018},
+
+\begin{equation}
+   \eta_{k,SAL}(\phi,\lambda) = A_m(\phi,\lambda)f(t_{ref})\cos\left[\omega (t-t_{ref}) + \chi(t_{ref}) + \nu(t_{ref}) - \phi_p(\phi,\lambda)\right],
+\label{eq:SAL}
+\end{equation}
+where $A_m(\phi,\lambda)$ is the amplitude of the SAL of the $k$ constituent as a function of latitude ($\lambda$) and longitude ($\phi$) and $\phi_p(\phi,\lambda)$ is the phase of SAL as function of lat/lon.
+Equation \ref{eq:SAL} takes amplitude and phase maps that provide a prediction with amplitude and phase using nodal factors and astronomical arguments.
+
+The self-attraction and loading harmonic constituents $A_m$ and $\phi_p$ can be derived from a harmonic analysis of self-attraction and loading maps produced by global tidal models, e.g., TPXO (\url{http://volkov.oce.orst.edu/tides/global.html}) or TUGO-m (\url{http://sirocco.obs-mip.fr/ocean-models/tugo/}).
+
+\section{Incorporation into governing equations}
+\label{sec:goverining_eqns}
+
+Once $\eta_{EQ}$ and $\eta_{SAL}$ are obtained, they can be used in an ocean model.  For instance, in a shallow water model, we replace the term $\nabla \eta$ in the momentum equation with a gradient of $\eta$ referenced to the equilibrium tide and self-attraction and loading terms, viz:
+
+\begin{equation}
+    \nabla\eta \rightarrow \nabla\left( \eta - \eta_{EQ} - \eta_{SAL}\right)
+\end{equation}
+
+In essence, the equilibrium tide and self-attraction and loading terms reset the reference against which pressure gradients are computed.
+
+
+\begin{table}
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|}
+\hline 
+Constituent & $\omega\;\left(10^{-4}\,s^{-1}\right)$ & $A\;\left(\textrm{cm}\right)$ & $1+k_{2}-h_{2}$ & Period (solar days)\tabularnewline
+\hline 
+\hline 
+$\textrm{M}_{m}$ & 0.026392 & 2.2191 & 0.693 & 27.5546\tabularnewline
+\hline 
+$\textrm{M}_{f}$ & 0.053234 & 4.2041 & 0.693 & 13.6608\tabularnewline
+\hline 
+$\textrm{Q}_{1}$ & 0.6495854 & 1.9273 & 0.695 & 1.1195\tabularnewline
+\hline 
+$\textrm{O}_{1}$ & 0.6759774 & 10.0661 & 0.695 & 1.0758\tabularnewline
+\hline 
+$\textrm{P}_{1}$ & 0.7252295 & 4.6848 & 0.706 & 1.0027\tabularnewline
+\hline 
+$\textrm{K}_{1}$ & 0.7292117 & 14.1565 & 0.736 & 0.9973\tabularnewline
+\hline 
+$\textrm{N}_{2}$ & 1.378797 & 4.6397 & 0.693 & 0.5274\tabularnewline
+\hline 
+$\textrm{M}_{2}$ & 1.405189 & 24.2334 & 0.693 & 0.5175\tabularnewline
+\hline 
+$\textrm{S}_{2}$ & 1.454441 & 11.2743 & 0.693 & 0.5000\tabularnewline
+\hline 
+$\textrm{K}_{2}$ & 1.458423 & 3.0684 & 0.693 & 0.4986\tabularnewline
+\hline 
+\end{tabular}
+\label{tab:astronimcalFactors}
+\caption{Constituent-dependent frequencies $\omega$, astronomical forcing amplitudes A, and Love number combinations $1 + k_2 - h_2$ used to compute equilibrium tide $\eta_{EQ}$. The periods $2\pi/\omega$ are also given. Reproduced from Table 1 of \citet{chassignet_primer_2018, arbic2004accuracy}.}
+\end{center}
+\end{table}
+
+
+\section{Harmonic Least Squares Method}
+The method outlined here is described in more detail in \cite{westerink_lsq}.
+The computed sea-surface height $\eta(t)$ is sampled to obtain values $\eta(t_k)$ at time sampling points $t_k,~k=1,M$. The following harmonic series is used to approximate the sea surface height in the least-squares procedure:
+\begin{align}
+    g(t) = \sum_{j=1}^N(a_j\cos\omega_j t + b_j\sin\omega_j t).
+\end{align}
+In this equation, $a_j$ and $b_j$ are the unknown harmonic coefficients and $\omega_j$ are the frequencies associated with the $j=1,N$ tidal constituents. The error at a fiven sampling time between the approximate harmonic series and the computed sea surface height is
+\begin{align}
+    \varepsilon(t_k) = \sum_{j=1}^N(a_j\cos\omega_j t_k + b_j\sin\omega_j t_k) -\eta(t_k).
+\end{align}
+The sum of the squared error at all sampling times is
+\begin{align}
+    E = \sum_{k=1}^M\left(\varepsilon(t_k) \right)^2.
+\end{align}
+The error minimization between $g(t)$ and $f(t)$ is accomplished by requiring the partial derivatives of $E$with respect to each of the $a_j$ and $b_j$ coefficients to be zero:
+\begin{align}
+    \frac{\partial E}{\partial a_i} &= 0, \quad i=1,N \\
+    \frac{\partial E}{\partial b_i} &= 0, \quad i=1,N
+\end{align}
+Substituting for $E$:
+\begin{align}
+    \sum_{k=1}^M \left(2\varepsilon(t_k)\frac{\partial \varepsilon(t_k)}{\partial a_i}\right) &= 0, \quad i=1,N \\
+    \sum_{k=1}^M \left(2\varepsilon(t_k)\frac{\partial \varepsilon(t_k)}{\partial b_i}\right) &= 0, \quad i=1,N.
+\end{align}
+Substituting for the partial derivatives of $\varepsilon$ and dividing through by 2:
+\begin{align}
+    \sum_{k=1}^M \left(\varepsilon(t_k)\cos\omega_i t_k\right) &= 0, \quad i=1,N \\
+    \sum_{k=1}^M \left(\varepsilon(t_k)\sin\omega_i t_k\right) &= 0, \quad i=1,N
+\end{align}
+Substituting for $\varepsilon$ and rearranging:
+\begin{align}
+    \sum_{k=1}^M \left(\sum_{j=1}^N(a_j\cos\omega_j t_k + b_j\sin\omega_j t_k)\cos\omega_i t_k\right) &= \sum_{k=1}^M \eta(t_k)\cos\omega_i t_k, \quad i=1,N \\
+    \sum_{k=1}^M \left(\sum_{j=1}^N(a_j\cos\omega_j t_k + b_j\sin\omega_j t_k)\sin\omega_i t_k\right) &= \sum_{k=1}^M \eta(t_k)\sin\omega_i t_k, \quad i=1,N
+\end{align}
+Rearranging further:
+\begin{align}
+    \sum_{j=1}^N \left(a_j\sum_{k=1}^M(\cos\omega_j t_k\cos\omega_i t_k) + b_j\sum_{k=1}^M(\sin\omega_j t_k\cos\omega_i t_k)\right) &= \sum_{k=1}^M \eta(t_k)\cos\omega_i t_k, \quad i=1,N \\
+    \sum_{j=1}^N \left(a_j\sum_{k=1}^M(\cos\omega_j t_k\sin\omega_i t_k) + b_j\sum_{k=1}^M(\sin\omega_j t_k\sin\omega_i t_k)\right) &= \sum_{k=1}^M \eta(t_k)\sin\omega_i t_k, \quad i=1,N
+\end{align}
+This leads to the system of equations (example for 2 constituents):
+\begin{align}
+   \underbrace{\sum_{k=1}^M \begin{bmatrix}
+        \cos\omega_1 t_k\cos\omega_1 t_k &  \sin\omega_1 t_k\cos\omega_1 t_k &  \cos\omega_2 t_k\cos\omega_1 t_k &  \sin\omega_2 t_k\cos\omega_1 t_k\\
+        \cos\omega_1 t_k\sin\omega_1 t_k &  \sin\omega_1 t_k\sin\omega_1 t_k &  \cos\omega_2 t_k\sin\omega_1 t_k &  \sin\omega_2 t_k\sin\omega_1 t_k\\  \cos\omega_1 t_k\cos\omega_2 t_k &  \sin\omega_1 t_k\cos\omega_2 t_k &  \cos\omega_2 t_k\cos\omega_2 t_k &  \sin\omega_2 t_k\cos\omega_2 t_k\\
+        \cos\omega_1 t_k\sin\omega_2 t_k &  \sin\omega_1 t_k\sin\omega_2 t_k &  \cos\omega_2 t_k\sin\omega_2 t_k &  \sin\omega_2 t_k\sin\omega_2 t_k\\        
+    \end{bmatrix}}_{\mathbf{M}}
+    \underbrace{\begin{bmatrix}
+       a_1 \\ b_1 \\ a_2 \\ b_2 
+    \end{bmatrix}}_{\mathbf{a}}
+    = 
+    \underbrace{\sum_{k=1}^M\begin{bmatrix}
+    \eta(t_k)\cos\omega_1 t_k \\
+    \eta(t_k)\sin\omega_1 t_k \\
+    \eta(t_k)\cos\omega_2 t_k \\
+    \eta(t_k)\sin\omega_2 t_k 
+    \end{bmatrix}}_{\mathbf{f}}
+\end{align}
+For each mesh cell $l=1,K$ the linear system for that cell is solved
+\begin{align}
+    \mathbf{M}\mathbf{a}_l = \mathbf{f}_l.
+\end{align}
+Note that the LHS matrix $\mathbf{M}$ is the same for each cell. In addition, $\mathbf{M}$ is symmetric and in the code, only the lower triangular part is stored. The upper triangular part is filled out before the matrix is decomposed prior to solving each individual linear system for the mesh cells.
+Once the $a_j$ and $b_j$ coefficients are known, the amplitude and phase the the $j^\mathrm{th}$ constituent can be calculated as follows:
+\begin{align}
+    A_j &= \frac{\sqrt{a_j^2+b_j^2}}{f(t_{ref})}, \\
+    \Phi_j &= \arctan2(a_j,b_j) + \chi(t_{ref}) + \nu(t_{ref}),
+\end{align}
+%-----------------------------------------------------------------------
+
+\chapter{Design and Implementation}
+
+\section{Namelist options}
+\begin{verbatim}
+&AM_harmonicAnalysis
+    config_AM_harmonicAnalysis_enable = .true.
+    config_AM_harmonicAnalysis_compute_interval = 00:30:00
+    config_AM_harmonicAnalysis_start = 2012-11-01_00:00:00
+    config_AM_harmonicAnalysis_end = 2012-12-20_00:00:00
+    config_AM_harmonicAnalysis_output_stream = 'harmonicAnalysisOutput'
+    config_AM_harmonicAnalysis_restart_stream = 'harmonicAnalysisRestart'
+    config_AM_harmonicAnalysis_compute_on_startup = .false.
+    config_AM_harmonicAnalysis_write_on_startup = .false.
+    config_AM_harmonicAnalysis_use_M2 = .true.
+    config_AM_harmonicAnalysis_use_S2 = .true.
+    config_AM_harmonicAnalysis_use_N2 = .true.
+    config_AM_harmonicAnalysis_use_K2 = .true.
+    config_AM_harmonicAnalysis_use_K1 = .true.
+    config_AM_harmonicAnalysis_use_O1 = .true.
+    config_AM_harmonicAnalysis_use_Q1 = .true.
+    config_AM_harmonicAnalysis_use_P1 = .true.
+\end{verbatim}
+\section{Output stream}
+\begin{verbatim}
+<stream name="harmonicAnalysisOutput"
+        filename_template="harmonicAnalysis.nc"
+        type="output"
+        mode="forward;analysis"
+        output_interval="90_00:00:00"
+        packages="harmonicAnalysisAMPKG"
+        clobber_mode="truncate"
+        runtime_format="single_file">
+
+    <stream name="mesh"/>
+    <var name="M2Amplitude"/>
+    <var name="M2Phase"/>
+    <var name="S2Amplitude"/>
+    <var name="S2Phase"/>
+    <var name="N2Amplitude"/>
+    <var name="N2Phase"/>
+    <var name="K2Amplitude"/>
+    <var name="K2Phase"/>
+    <var name="K1Amplitude"/>
+    <var name="K1Phase"/>
+    <var name="O1Amplitude"/>
+    <var name="O1Phase"/>
+    <var name="Q1Amplitude"/>
+    <var name="Q1Phase"/>
+    <var name="P1Amplitude"/>
+    <var name="P1Phase"/>
+</stream>
+\end{verbatim}
+
+\section{Restart stream}
+\begin{verbatim}
+<stream name="harmonicAnalysisRestart"
+        filename_template="restarts/mpaso.rst.am.harmonicAnalysisRestart.$Y-$M-$D_$h.$m.$s.nc"
+        filename_interval="output_interval"
+        type="input;output"
+        mode="forward;analysis"
+        output_interval="stream:restart:output_interval"
+        input_interval="initial_only"
+        packages="harmonicAnalysisAMPKG"
+        clobber_mode="truncate"
+        runtime_format="single_file"
+        reference_time="0001-01-01_00:00:00">
+
+    <var name="leastSquaresLHSMatrix"/>
+    <var name="leastSquaresRHSVector"/>
+</stream>    
+\end{verbatim}
+
+\section{Subroutine calls}
+The subroutines involved in computing the harmonic decomposition and how they function based on throughout the harmonic analysis period is summarized in \ref{tab:subroutines}
+\begin{table}[ht]
+\caption{Subroutine calls for harmonic analysis AM}
+\begin{center}
+\begin{tabular}{ll}
+    \hline
+    \multirow{5}{*}{Initialization} &  {\tt ocn\_init\_harmonic\_analysis()} \\
+    &~~~~~ determine constituents selected in namelist \\
+    &~~~~~ {\tt tidal\_constituent\_factors()} \\
+    &~~~~~~~~~~ compute tidal constituent nodal factors \\
+    &~~~~~ zero out least squares matrix and vector \\ \cline{2-2}
+    \multirow{2}{*}{$t < t_{HAstart}$} & {\tt ocn\_compute\_harmonic\_analysis()} \\
+    &~~~~~ return \\ \cline{2-2}
+    \multirow{5}{*}{$t > t_{HAstart}$ \& $t < t_{HAend}$} & {\tt ocn\_compute\_harmonic\_analysis()} \\
+    &~~~~~ {\tt update\_least\_squares\_LHS\_matrix()} \\
+    &~~~~~~~~~~ sum $t_k$ contribution into $\mathbf{M}$ \\
+    &~~~~~ {\tt update\_least\_squares\_RHS\_vector()} \\
+    &~~~~~~~~~~ sum $t_k$ contribution into each $\mathbf{f}_l$\\ \cline{2-2}
+    \multirow{8}{*}{$t > t_{HAend}$ (first time)} & {\tt ocn\_compute\_harmonic\_analysis()} \\
+    &~~~~~ {\tt harmonic\_analysis\_solve()}\\ 
+    &~~~~~~~~~~ {\tt least\_squares\_decompose()}\\
+    &~~~~~~~~~~~~~~~ decompose $\mathbf{M}$ once\\
+    &~~~~~~~~~~ {\tt least\_squares\_solve()}\\
+    &~~~~~~~~~~~~~~~ solve each $\mathbf{M}\mathbf{a}_l=\mathbf{f}_l$ system\\
+    &~~~~~~~~~~ compute $A$ and $\Phi$ for each mesh cell and constituent\\
+    &~~~~~ separate solutions into output arrays \\ \cline{2-2}
+    \multirow{2}{*}{$t > t_{HAend}$ (subsequent times)} & {\tt ocn\_compute\_harmonic\_analysis()} \\
+    &~~~~~ return \\
+    \hline
+\end{tabular}
+\end{center}
+\label{tab:subroutines}
+\end{table}
+
+%-----------------------------------------------------------------------
+
+\chapter{Testing and Validation}
+
+The test case used is a 3-month global tidal simulation. This includes a 15 day tidal spin-up period. The harmonic analysis begins after the completion of the first 30 days and ends after an additional period of 49 days. The horizontal mesh can be found in Figure \ref{fig:mesh}. Globally, it is a 120km mesh with 30km resolution in the northwest Atlantic Ocean and 10km resolution in the Delaware bay region. The vertical mesh is the {\tt 100layerE3SMv1} configuration. Tidal potential forcing for the 8 major constituents ($M_2$, $S_2$, $N_2$, $K_2$, $K_1$, $O_1$, $Q_1$, $P_1$) is applied. The split explicit time integrator is used with a 5 minute baroclinic time step and a 15 second barotropic time step.
+
+The MPAS-Ocean results are compared with the data-assimilated TPXO8 model. Given the coarse mesh resolution and the lack of tuning, the results are not very accurate. However, the comparison does show that the harmonic analysis is being computed correctly. A direct water level comparison is shown in Figure \ref{fig:water_level}. The amplitude and phase plots are shown in \ref{fig:M2Amplitude}-\ref{fig:K1Phase} 
+
+\begin{figure}
+    \centering
+    \includegraphics[width=4in]{cellWidth.png}
+    \caption{USDEQU120at30cr10}
+    \label{fig:mesh}
+\end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[width=3.5in]{8537121.png}
+    \caption{Water level comparison}
+    \label{fig:water_level}
+\end{figure}
+\begin{figure}
+    \begin{minipage}{.5\textwidth}
+    \centering
+    \includegraphics[width=2.75in]{M2Amplitude_comparison_compressed.png}
+    \caption{$M_2$ amplitude comparison}
+    \label{fig:M2Amplitude}
+    \end{minipage}
+    \begin{minipage}{.5\textwidth}
+    \centering
+    \includegraphics[width=2.75in]{M2Phase_comparison_compressed.png}
+    \caption{$M_2$ phase comparison}
+    \label{fig:M2Phase}
+    \end{minipage}
+\end{figure}
+\begin{figure}
+    \begin{minipage}{.5\textwidth}
+    \centering
+    \includegraphics[width=2.75in]{N2Amplitude_comparison_compressed.png}
+    \caption{$N_2$ amplitude comparison}
+    \label{fig:N2Amplitude}
+    \end{minipage}
+    \begin{minipage}{.5\textwidth}
+    \centering
+    \includegraphics[width=2.75in]{N2Phase_comparison_compressed.png}
+    \caption{$N_2$ phase comparison}
+    \label{fig:N2Phase}
+    \end{minipage}
+\end{figure}
+\begin{figure}
+    \begin{minipage}{.5\textwidth}
+    \centering
+    \includegraphics[width=2.75in]{S2Amplitude_comparison_compressed.png}
+    \caption{$S_2$ amplitude comparison}
+    \label{fig:S2Amplitude}
+    \end{minipage}
+    \begin{minipage}{.5\textwidth}
+    \centering
+    \includegraphics[width=2.75in]{S2Phase_comparison_compressed.png}
+    \caption{$S_2$ phase comparison}
+    \label{fig:S2Phase}
+    \end{minipage}
+\end{figure}
+\begin{figure}
+    \begin{minipage}{.5\textwidth}
+    \centering
+    \includegraphics[width=2.75in]{O1Amplitude_comparison_compressed.png}
+    \caption{$O_1$ amplitude comparison}
+    \label{fig:O1Amplitude}
+    \end{minipage}
+    \begin{minipage}{.5\textwidth}
+    \centering
+    \includegraphics[width=2.75in]{O1Phase_comparison_compressed.png}
+    \caption{$O_1$ phase comparison}
+    \label{fig:O1Phase}
+    \end{minipage}
+\end{figure}
+\begin{figure}
+    \begin{minipage}{.5\textwidth}
+    \centering
+    \includegraphics[width=2.75in]{K1Amplitude_comparison_compressed.png}
+    \caption{$K_1$ amplitude comparison}
+    \label{fig:K1Amplitude}
+    \end{minipage}
+    \begin{minipage}{.5\textwidth}
+    \centering
+    \includegraphics[width=2.75in]{K1Phase_comparison_compressed.png}
+    \caption{$K_1$ phase comparison}
+    \label{fig:K1Phase}
+    \end{minipage}
+\end{figure}
+
+%-----------------------------------------------------------------------
+\bibliographystyle{unsrtnat}
+\bibliography{tides}
+
+
+\end{document}
+

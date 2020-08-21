@@ -364,7 +364,12 @@ contains
     rhoAir = 1.225_RKIND
     windStressCoefficientLimit = 0.0035_RKIND
 
-    ramp = tanh((2.0_RKIND*daysSinceStartOfSim)/config_time_varying_atmospheric_forcing_ramp)
+    if (daysSinceStartOfSim >= config_time_varying_atmospheric_forcing_ramp_delay) then
+      ramp = tanh((2.0_RKIND*(daysSinceStartOfSim-config_time_varying_atmospheric_forcing_ramp_delay)) &
+                              /config_time_varying_atmospheric_forcing_ramp)
+    else
+      ramp = 0.0_RKIND
+    end if
 
     !$omp parallel
     !$omp do schedule(runtime) private(windStressCoefficient)

@@ -11,6 +11,7 @@
 		<option name="config_drying_min_cell_height">1.000001e-3</option>
 		<option name="config_use_tidal_forcing">.true.</option>
 		<option name="config_write_cull_cell_mask">.false.</option>
+		<option name="config_use_variable_drag">.true.</option>
 	</namelist>
 
 	<streams>
@@ -24,6 +25,7 @@
 			<attribute name="output_interval">0000_00:00:01</attribute>
 			<add_contents>
 				<member name="tidalInputMask" type="var"/>
+				<member name="bottomDrag" type="var"/>
 			</add_contents>
 		</stream>
 		<stream name="output_init">

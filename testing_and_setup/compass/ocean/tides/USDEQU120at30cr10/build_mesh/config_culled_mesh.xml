@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<config case="culled_mesh">
+	<get_file dest_path="bathymetry_database" file_name="SRTM15_plus_earth_relief_15s.nc">
+		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/bathymetry_database/"/>
+	</get_file>
+
+	<add_link source="../base_mesh/base_mesh.nc" dest="base_mesh.nc"/>
+	<add_link source_path="mpas_model" source="testing_and_setup/compass/ocean/jigsaw_to_MPAS" dest="jigsaw_to_MPAS"/>
+	<add_link source_path="mpas_model" source="testing_and_setup/compass/ocean/global_ocean/cull_mesh.py" dest="cull_mesh.py"/>
+	<add_link source_path="bathymetry_database" source="SRTM15_plus_earth_relief_15s.nc" dest="earth_relief_15s.nc"/>
+
+	<run_script name="run.py">
+		<step executable="./cull_mesh.py">
+			<argument flag="--with_critical_passages"></argument>
+		</step>
+		<step executable="python">
+			<argument flag="-m">jigsaw_to_MPAS.inject_bathymetry</argument>
+			<argument flag="">culled_mesh.nc</argument>
+		</step>
+
+	</run_script>
+</config>

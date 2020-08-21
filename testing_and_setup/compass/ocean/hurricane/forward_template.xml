@@ -18,19 +18,23 @@
                 <option name="config_use_cvmix_background">.true.</option>
                 <option name="config_cvmix_background_viscosity">1.0e4</option>
 
-                <option name="config_use_bulk_wind_stress">.true.</option>
-                <option name="config_use_time_varying_atmospheric_forcing">.true.</option>
-                <option name="config_time_varying_atmospheric_forcing_start_time">'2012-10-10_00:00:00'</option>
-                <option name="config_time_varying_atmospheric_forcing_reference_time">'2012-10-10_00:00:00'</option>
-                <option name="config_time_varying_atmospheric_forcing_cycle_start">'none'</option>
-                <option name="config_time_varying_atmospheric_forcing_interval">'01:00:00'</option>
-                <option name="config_time_varying_atmospheric_forcing_ramp">10.0</option>
+		<option name="config_use_variable_drag">.false.</option>
 
-                <option name="config_use_tidal_potential_forcing">.true.</option>
-                <option name="config_tidal_potential_reference_time">'2012-10-10_00:00:00'</option>
-                <option name="config_tidal_potential_ramp">10.0</option>
+		<option name="config_use_bulk_wind_stress">.true.</option>
+		<option name="config_use_time_varying_atmospheric_forcing">.true.</option>
+		<option name="config_time_varying_atmospheric_forcing_start_time">'2012-10-10_00:00:00'</option>
+		<option name="config_time_varying_atmospheric_forcing_reference_time">'2012-10-10_00:00:00'</option>
+		<option name="config_time_varying_atmospheric_forcing_cycle_start">'none'</option>
+		<option name="config_time_varying_atmospheric_forcing_interval">'01:00:00'</option>
+		<option name="config_time_varying_atmospheric_forcing_ramp">10.0</option>
 
-                <option name="config_AM_pointwiseStats_enable">.true.</option>
+		<option name="config_use_tidal_potential_forcing">.true.</option>
+		<option name="config_tidal_potential_reference_time">'2012-10-10_00:00:00'</option>
+		<option name="config_tidal_potential_ramp">10.0</option>
+
+		<option name="config_pressure_gradient_type">'ssh_gradient'</option>
+
+		<option name="config_AM_pointwiseStats_enable">.true.</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">
@@ -39,6 +43,9 @@
 		</stream>
 		<stream name="input">
 			<attribute name="filename_template">input.nc</attribute>
+			<add_contents>
+				<member name="bottomDrag" type="var"/>
+			</add_contents>
 		</stream>
 		<stream name="pointLocationsInput">
 			<attribute name="filename_template">points.nc</attribute>

@@ -1,0 +1,29 @@
+<driver_script name="run_test.py">
+	<case name="init_step1">
+		<step executable="./run.py" quiet="true" pre_message=" * Running init_step1" post_message="     Complete"/>
+	</case>
+	<case name="forward1">
+		<step executable="./run.py" quiet="true" pre_message=" * Running forward1" post_message="     Complete"/>
+	</case>
+	<case name="init_step2">
+		<step executable="./run.py" quiet="true" pre_message=" * Running init_step2" post_message="     Complete"/>
+	</case>
+	<case name="forward2">
+		<step executable="./run.py" quiet="true" pre_message=" * Running forward2" post_message="     Complete"/>
+	</case>
+	<case name="init_step3">
+		<step executable="./run.py" quiet="true" pre_message=" * Running init_step3" post_message="     Complete"/>
+	</case>
+	<case name="forward3">
+		<step executable="./run.py" quiet="true" pre_message=" * Running forward3" post_message="     Complete"/>
+	</case>
+	<case name="init_step4">
+		<step executable="./run.py" quiet="true" pre_message=" * Running init_step4" post_message="     Complete"/>
+	</case>
+	<case name="forward4">
+		<step executable="./run.py" quiet="true" pre_message=" * Running forward4" post_message="     Complete"/>
+	</case>
+	<case name="analysis">
+		<step executable="./run.py" quiet="true" pre_message=" * Running analysis" post_message="     Complete"/>
+	</case>
+</driver_script>
