@@ -1359,9 +1359,18 @@ subroutine phys_final( phys_state, phys_tend, pbuf2d )
     end if
     deallocate(phys_state)
     deallocate(phys_tend)
+
+    call t_startf ('chem_final')
     call chem_final
+    call t_stopf ('chem_final')
+
+    call t_startf ('wv_sat_final')
     call wv_sat_final
+    call t_stopf ('wv_sat_final')
+
+    call t_startf ('print_cost_p')
     call print_cost_p
+    call t_stopf ('print_cost_p')
 
 end subroutine phys_final
 

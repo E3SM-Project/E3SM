@@ -97,7 +97,8 @@ module phys_grid
                                local_dp_map
    use mpishorthand
 #endif
-   use spmd_utils,       only: iam, masterproc, npes, proc_smp_map, nsmps
+   use spmd_utils,       only: iam, masterproc, masterprocid, &
+                                    npes, proc_smp_map, nsmps
    use m_MergeSorts,     only: IndexSet, IndexSort
    use cam_abortutils,   only: endrun
    use perf_mod
@@ -2438,32 +2439,66 @@ logical function phys_grid_initialized ()
 !-----------------------------------------------------------------------
 !---------------------------Local workspace-----------------------------
    integer  :: unitn                  ! file unit number
-   integer  :: signal                 ! handshake variable
    integer  :: lcid                   ! local chunk id
    integer  :: tid                    ! thread id
+   integer, allocatable :: proc_stats_i4(:,:)
+                                      ! i4 per process data for all processes
+                                      ! (nlthreads, nlchunks, begchunk,
+                                      !  endchunk, pcols)
+   integer  :: local_proc_stats_i4(5) ! local i4 per process data
+                                      ! (nlthreads, nlchunks, begchunk,
+                                      !  endchunk, pcols)
+   integer  :: ierr                   ! error return
+   integer  :: p                      ! process id do loop variable
+   integer  :: min_begchunk_p         ! minimum begchunk over all processes
+   integer  :: max_endchunk_p         ! maximum endchunk over all processes
+   integer, allocatable :: chnk_stats_i4(:,:)
+                                      ! i4 per chunk data for all processes
+                                      ! (cid, owner, ncols, dcols)
+   integer  :: local_chnk_stats_i4(4,begchunk:endchunk)
+                                      ! i4 per chunk data for local chunks
+                                      ! (cid, owner, ncols, dcols)
    integer  :: cid                    ! global chunk id
+   integer, allocatable :: recvcnts(:)! number of chunks per process,
+                                      !  for use in gatherv call
+   integer, allocatable :: displs(:)  ! offset in gatherv receive buffer
+                                      !  for gathered data, in number of
+                                      !  chunks (so needs to be multiplied
+                                      !  by number of variables per chunk)
+   integer  :: nlchunks_p             ! number of local chunks for indicated
+                                      !  process (in loop over processes)
+   integer  :: owner_save             ! owner of previous chunk
    integer  :: owner                  ! chunk owner
    integer  :: ncols                  ! number of columns in chunk
    integer  :: dcols                  ! number of columns in chunk in 
                                       !  common with co-located dynamics
                                       !  blocks
-   integer  :: ierr                   ! error return
+   integer  :: pcols_p                ! declared first dimension of chunk data
+                                      !  structure for indicated process 
+                                      !  (in loop over chunks)
+   integer  :: nlthreads_p            ! number of threads on indicated
+                                      !  process (in loop over processes)
 
-   real(r8) :: local_sums(4)          ! working vector for local sums
-   real(r8) :: global_sums(4)         ! working vector for global sums
    real(r8) :: chnk_estcost_lsum      ! local sum of estimated
                                       !  chunk costs
-   real(r8) :: chnk_estcost_gsum      ! global sum of estimated
-                                      !  chunk costs
    real(r8) :: chnk_cost_lsum         ! local sum of measured
+                                      !  chunk costs
+   real(r8) :: proc_estcost           ! estimated process cost for
+                                      !  chunk loops in bc_physics 
+                                      !  and ac_physics
+   real(r8), allocatable :: proc_stats_r8(:,:)
+                                      ! r8 per process data for all processes
+                                      ! (chnk_estcost_lsum, chnk_cost_lsum,
+                                      !  proc_estcost, phys_proc_cost)
+   real(r8) :: local_proc_stats_r8(4) ! local r8 per process data
+                                      ! (chnk_estcost_lsum, chnk_cost_lsum,
+                                      !  proc_estcost, phys_proc_cost)
+   real(r8) :: chnk_estcost_gsum      ! global sum of estimated
                                       !  chunk costs
    real(r8) :: chnk_cost_gsum         ! global sum of measured
                                       !  chunk costs
    real(r8) :: thrd_estcost(0:nlthreads-1)
                                       ! estimated thread cost for
-                                      !  chunk loops in bc_physics 
-                                      !  and ac_physics
-   real(r8) :: proc_estcost           ! estimated process cost for
                                       !  chunk loops in bc_physics 
                                       !  and ac_physics
    real(r8) :: proc_estcost_sum       ! sum of proc_estcost over all
@@ -2476,6 +2511,23 @@ logical function phys_grid_initialized ()
    real(r8) :: avg_chnk_cost          ! average measured chunk cost
    real(r8) :: avg_proc_estcost       ! average estimated process cost
    real(r8) :: avg_proc_cost          ! average measured process cost
+   real(r8), allocatable :: chnk_stats_r8(:,:)
+                                      ! r8 per chunk data for all processes
+                                      ! (estcost, cost)
+   real(r8) :: local_chnk_stats_r8(2,begchunk:endchunk)
+                                      ! r8 per chunk data for local chunks
+                                      ! (estcost, cost)
+   real(r8) :: chnk_cost_lsum_p       ! local sum of measured
+                                      !  chunk costs on indicated
+                                      !  process (in loop over processes)
+   real(r8) :: proc_estcost_p         ! estimated process cost for
+                                      !  chunk loops in bc_physics 
+                                      !  and ac_physics on indicated
+                                      !  process (in loop over processes)
+   real(r8) :: phys_proc_cost_p       ! measured process cost for
+                                      !  chunk loops in bc_physics 
+                                      !  and ac_physics on indicated
+                                      !  process (in loop over processes)
    real(r8) :: chnk_estcost           ! chunk estimated cost
    real(r8) :: chnk_cost              ! chunk cost
    real(r8) :: norm_chnk_estcost      ! normalized estimated chunk cost
@@ -2510,39 +2562,140 @@ logical function phys_grid_initialized ()
       enddo
       proc_estcost = maxval(thrd_estcost)
 
+      ! Gather per process data
+      if (masterproc) then
+         allocate( proc_stats_r8(4,0:npes-1) )
+         allocate( proc_stats_i4(5,0:npes-1) )
+      else
+         allocate( proc_stats_r8(4,iam:iam) )
+         allocate( proc_stats_i4(5,iam:iam) )
+      endif
+      proc_stats_r8(:,:) = 0.0_r8
+      proc_stats_i4(:,:) = -1
+
 #if ( defined SPMD )
-      global_sums(:) = 0.0_r8
-      local_sums(1)  = chnk_estcost_lsum
-      local_sums(2)  = chnk_cost_lsum
-      local_sums(3)  = proc_estcost
-      local_sums(4)  = phys_proc_cost
-      call MPI_ALLREDUCE(local_sums, global_sums, 4, MPI_REAL8, MPI_SUM, &
-                         mpicom, ierr)
-      chnk_estcost_gsum = global_sums(1)
-      chnk_cost_gsum    = global_sums(2)
-      proc_estcost_sum  = global_sums(3)
-      proc_cost_sum     = global_sums(4)
+      local_proc_stats_r8(1)  = chnk_estcost_lsum
+      local_proc_stats_r8(2)  = chnk_cost_lsum
+      local_proc_stats_r8(3)  = proc_estcost
+      local_proc_stats_r8(4)  = phys_proc_cost
+      call MPI_GATHER(local_proc_stats_r8, 4, MPI_REAL8,   &
+                      proc_stats_r8, 4, MPI_REAL8,         &
+                      masterprocid, mpicom, ierr           )
+
+      local_proc_stats_i4(1)  = nlthreads
+      local_proc_stats_i4(2)  = nlchunks
+      local_proc_stats_i4(3)  = begchunk
+      local_proc_stats_i4(4)  = endchunk
+      local_proc_stats_i4(5)  = pcols
+      call MPI_GATHER(local_proc_stats_i4, 5, MPI_INTEGER, &
+                      proc_stats_i4, 5, MPI_INTEGER,       &
+                      masterprocid, mpicom, ierr           )
 #else
-      chnk_cost_gsum    = chnk_cost_lsum
-      chnk_estcost_gsum = chnk_estcost_lsum
-      proc_cost_sum     = phys_proc_cost
-      proc_estcost_sum  = proc_estcost
+      proc_stats_r8(1,0)  = chnk_estcost_lsum
+      proc_stats_r8(2,0)  = chnk_cost_lsum
+      proc_stats_r8(3,0)  = proc_estcost
+      proc_stats_r8(4,0)  = phys_proc_cost
+      
+      proc_stats_i4(1,0)  = nlthreads
+      proc_stats_i4(2,0)  = nlchunks
+      proc_stats_i4(3,0)  = begchunk
+      proc_stats_i4(4,0)  = endchunk
+      proc_stats_i4(5,0)  = pcols
 #endif
 
-      ! Calculate average estimated chunk cost
-      avg_chnk_estcost = chnk_estcost_gsum/real(nchunks,r8)
+      ! Gather per chunk data
+      if (masterproc) then
+         min_begchunk_p = minval(proc_stats_i4(3,:))
+         max_endchunk_p = maxval(proc_stats_i4(4,:))
+         
+         allocate( chnk_stats_r8(2,min_begchunk_p:max_endchunk_p) )
+         allocate( chnk_stats_i4(4,min_begchunk_p:max_endchunk_p) )
+      else
+         allocate( chnk_stats_r8(2,begchunk:endchunk) )
+         allocate( chnk_stats_i4(5,begchunk:endchunk) )
+      endif
+      chnk_stats_r8(:,:)    = 0.0_r8
+      chnk_stats_i4(:,:)    = -1
 
-      ! Calculate average measured chunk cost
-      avg_chnk_cost = chnk_cost_gsum/real(nchunks,r8)
+#if ( defined SPMD )
 
-      ! Calculate average estimated process cost
-      avg_proc_estcost = proc_estcost_sum/real(npes,r8)
+      if (masterproc) then
+         allocate( recvcnts(0:npes-1) )
+         allocate( displs  (0:npes-1) )
 
-      ! Calculate average measured process cost
-      avg_proc_cost = proc_cost_sum/real(npes,r8)
+         nlchunks_p  = proc_stats_i4(2,0)
+         recvcnts(0) = nlchunks_p
+         displs(0)   = 0
+         do p=1,npes-1
+            nlchunks_p  = proc_stats_i4(2,p)
+            recvcnts(p) = nlchunks_p
+            displs(p)   = displs(p-1) + recvcnts(p-1)
+         enddo
+      else
+         allocate( displs  (iam:iam) )
+         allocate( recvcnts(iam:iam) )
+         displs(:)      = 0
+         recvcnts(:)    = 0
+      endif
 
-      ! Take turns writing to fname.
-      if (iam == 0) then
+      do lcid = begchunk, endchunk
+         cid = lchunks(lcid)%cid
+
+         local_chnk_stats_r8(1,lcid) = chunks(cid)%estcost
+         local_chnk_stats_r8(2,lcid) = lchunks(lcid)%cost
+         local_chnk_stats_i4(1,lcid) = cid
+         local_chnk_stats_i4(2,lcid) = chunks(cid)%owner
+         local_chnk_stats_i4(3,lcid) = lchunks(lcid)%ncols
+         local_chnk_stats_i4(4,lcid) = chunks(cid)%dcols
+      enddo
+
+      call MPI_GATHERV(local_chnk_stats_r8, 2*nlchunks, MPI_REAL8,             &
+                       chnk_stats_r8, 2*recvcnts(:), 2*displs(:), MPI_REAL8,   &
+                       masterprocid, mpicom, ierr                              )
+      call MPI_GATHERV(local_chnk_stats_i4, 4*nlchunks, MPI_INTEGER,           &
+                       chnk_stats_i4, 4*recvcnts(:), 4*displs(:), MPI_INTEGER, &
+                       masterprocid, mpicom, ierr                              )
+#else
+      do lcid = begchunk, endchunk
+         cid = lchunks(lcid)%cid
+
+         chnk_stats_r8(1,lcid) = chunks(cid)%estcost
+         chnk_stats_r8(2,lcid) = lchunks(lcid)%cost
+
+         chnk_stats_i4(1,lcid) = cid
+         chnk_stats_i4(2,lcid) = chunks(cid)%owner
+         chnk_stats_i4(3,lcid) = lchunks(lcid)%ncols
+         chnk_stats_i4(4,lcid) = chunks(cid)%dcols
+      enddo
+#endif
+
+      if (masterproc) then
+
+         ! Calculate global sums of per process data
+         chnk_estcost_gsum = proc_stats_r8(1,0)
+         chnk_cost_gsum    = proc_stats_r8(2,0)
+         proc_estcost_sum  = proc_stats_r8(3,0)
+         proc_cost_sum     = proc_stats_r8(4,0)
+         do p=1,npes-1
+            chnk_estcost_gsum = chnk_estcost_gsum + proc_stats_r8(1,p)
+            chnk_cost_gsum    = chnk_cost_gsum    + proc_stats_r8(2,p)
+            proc_estcost_sum  = proc_estcost_sum  + proc_stats_r8(3,p)
+            proc_cost_sum     = proc_cost_sum     + proc_stats_r8(4,p)
+         enddo
+
+         ! Calculate average estimated chunk cost
+         avg_chnk_estcost = chnk_estcost_gsum/real(nchunks,r8)
+
+         ! Calculate average measured chunk cost
+         avg_chnk_cost = chnk_cost_gsum/real(nchunks,r8)
+
+         ! Calculate average estimated process cost
+         avg_proc_estcost = proc_estcost_sum/real(npes,r8)
+
+         ! Calculate average measured process cost
+         avg_proc_cost = proc_cost_sum/real(npes,r8)
+
+         ! Print cost statistics
          open( unitn, file=trim(fname), status='REPLACE', &
                       form='FORMATTED', access='SEQUENTIAL' )
 
@@ -2551,78 +2704,92 @@ logical function phys_grid_initialized ()
          write(unitn,'(a)') " This is a measure of load balance, not traditional speed-up, which is"
          write(unitn,'(a)') " relative to the serial cost.)"
 
-         signal = 1
-#if ( defined SPMD )
-      else
-         call mpirecv(signal, 1, mpiint, iam-1, iam, mpicom) 
-         open( unitn, file=trim(fname), status='OLD', &
-                      form='FORMATTED', access='SEQUENTIAL', position='APPEND' )
-#endif
-      endif
+         owner_save = -1
+         do lcid = min_begchunk_p, max_endchunk_p
+            cid          = chnk_stats_i4(1,lcid)
+            owner        = chnk_stats_i4(2,lcid)
+            ncols        = chnk_stats_i4(3,lcid)
+            dcols        = chnk_stats_i4(4,lcid)
+            chnk_estcost = chnk_stats_r8(1,lcid)
+            chnk_cost    = chnk_stats_r8(2,lcid)
+            pcols_p      = proc_stats_i4(5,owner)
 
-      write(unitn,'(/,a)') &
-            "PROC     id nthrds nchnks estcost (norm)  cost (norm)  cost (seconds) 'speed-up'"
-      ! Calculate normalized estimated process cost
-      if ((exponent(proc_estcost) - exponent(avg_proc_estcost) >= maxexponent(proc_estcost)) .or. &
-          (avg_proc_estcost == 0)) then
-         norm_proc_estcost = huge(proc_estcost)
-      else
-         norm_proc_estcost = proc_estcost/avg_proc_estcost
-      endif
-      ! Calculate normalized process cost
-      if ((exponent(phys_proc_cost) - exponent(avg_proc_cost) >= maxexponent(phys_proc_cost)) .or. &
-          (avg_proc_cost == 0)) then
-         norm_proc_cost    = huge(phys_proc_cost)
-      else
-         norm_proc_cost    = phys_proc_cost/avg_proc_cost
-      endif
-      ! Calculate load imbalance in threading
-      if ((exponent(chnk_cost_lsum) - exponent(phys_proc_cost) >= maxexponent(chnk_cost_lsum)) .or. &
-          (phys_proc_cost == 0)) then
-         pspeedup = huge(chnk_cost_lsum)
-      else
-         pspeedup = chnk_cost_lsum/phys_proc_cost
-      endif
-      write(unitn,'(a4,1x,i6,1x,i6,1x,i6,5x,f10.3,3x,f10.3,2x,e14.3,1x,f10.3)') &
-            "PROC", iam, nlthreads, npchunks(iam), norm_proc_estcost, norm_proc_cost, phys_proc_cost, pspeedup
-	    
-      write(unitn,'(a)') &
-            "CHNK  owner   lcid    cid  pcols  ncols  dcols  estcost (norm)  cost (norm)  cost (seconds)"
-      do lcid = begchunk, endchunk
-         cid          = lchunks(lcid)%cid
-         owner        = chunks(cid)%owner
-         ncols        = lchunks(lcid)%ncols
-         dcols        = chunks(cid)%dcols
-         chnk_estcost = chunks(cid)%estcost
-         chnk_cost    = lchunks(lcid)%cost
-         ! Calculate normalized estimated chunk cost
-         if ((exponent(chnk_estcost) - exponent(avg_chnk_estcost) >= maxexponent(chnk_estcost)) .or. &
-             (avg_chnk_estcost == 0)) then
-            norm_chnk_estcost = huge(chnk_estcost)
-         else
-            norm_chnk_estcost = chnk_estcost/avg_chnk_estcost
-         endif
-         ! Calculate normalized chunk cost
-         if ((exponent(chnk_cost) - exponent(avg_chnk_cost) >= maxexponent(chnk_cost)) .or. &
-             (avg_chnk_cost == 0)) then
-            norm_chnk_cost = huge(chnk_cost)
-         else
-            norm_chnk_cost = chnk_cost/avg_chnk_cost
-         endif
-         write(unitn,'(a4,1x,i6,1x,i6,1x,i6,1x,i6,1x,i6,1x,i6,6x,f10.3,3x,f10.3,2x,e14.3)') &
-              "CHNK", owner, lcid, cid, pcols, ncols, dcols, &
-              norm_chnk_estcost, norm_chnk_cost, chnk_cost
-      enddo
+            if (owner /= owner_save) then
+         
+               write(unitn,'(/,a)') &
+                  "PROC     id nthrds nchnks estcost (norm)  cost (norm)  cost (seconds) 'speed-up'"
 
-      close(unitn)
+               nlthreads_p      = proc_stats_i4(1,owner)      
+               nlchunks_p       = proc_stats_i4(2,owner)
+               chnk_cost_lsum_p = proc_stats_r8(2,owner)      
+               proc_estcost_p   = proc_stats_r8(3,owner)
+               phys_proc_cost_p = proc_stats_r8(4,owner)
 
-#if ( defined SPMD )
-      if (iam+1 < npes) then
-         call mpisend(signal, 1, mpiint, iam+1, iam+1, mpicom)
+               ! Calculate normalized estimated process cost
+               if ((exponent(proc_estcost) - exponent(avg_proc_estcost) >= maxexponent(proc_estcost)) .or. &
+                   (avg_proc_estcost == 0)) then
+                  norm_proc_estcost = huge(proc_estcost_p)
+               else
+                  norm_proc_estcost = proc_estcost_p/avg_proc_estcost
+               endif
+               ! Calculate normalized process cost
+               if ((exponent(phys_proc_cost) - exponent(avg_proc_cost) >= maxexponent(phys_proc_cost)) .or. &
+                   (avg_proc_cost == 0)) then
+                  norm_proc_cost    = huge(phys_proc_cost_p)
+               else
+                  norm_proc_cost    = phys_proc_cost_p/avg_proc_cost
+               endif
+               ! Calculate load imbalance in threading
+               if ((exponent(chnk_cost_lsum) - exponent(phys_proc_cost) >= maxexponent(chnk_cost_lsum)) .or. &
+                   (phys_proc_cost == 0)) then
+                  pspeedup = huge(chnk_cost_lsum_p)
+               else
+                  pspeedup = chnk_cost_lsum_p/phys_proc_cost_p
+               endif
+               write(unitn,'(a4,1x,i6,1x,i6,1x,i6,5x,f10.3,3x,f10.3,2x,e14.3,1x,f10.3)') &
+                  "PROC", owner, nlthreads_p, nlchunks_p, norm_proc_estcost, norm_proc_cost, &
+                  phys_proc_cost_p, pspeedup
+               write(unitn,'(a)') &
+                  "CHNK  owner   lcid    cid  pcols  ncols  dcols  estcost (norm)  cost (norm)  cost (seconds)"
+
+               owner_save = owner
+            endif
+       
+            ! Calculate normalized estimated chunk cost
+            if ((exponent(chnk_estcost) - exponent(avg_chnk_estcost) >= maxexponent(chnk_estcost)) .or. &
+                (avg_chnk_estcost == 0)) then
+               norm_chnk_estcost = huge(chnk_estcost)
+            else
+               norm_chnk_estcost = chnk_estcost/avg_chnk_estcost
+            endif
+            ! Calculate normalized chunk cost
+            if ((exponent(chnk_cost) - exponent(avg_chnk_cost) >= maxexponent(chnk_cost)) .or. &
+                (avg_chnk_cost == 0)) then
+               norm_chnk_cost = huge(chnk_cost)
+            else
+               norm_chnk_cost = chnk_cost/avg_chnk_cost
+            endif
+            write(unitn,'(a4,1x,i6,1x,i6,1x,i6,1x,i6,1x,i6,1x,i6,6x,f10.3,3x,f10.3,2x,e14.3)') &
+              "CHNK", owner, lcid, cid, pcols_p, ncols, dcols, norm_chnk_estcost, norm_chnk_cost, chnk_cost
+
+         enddo
+
+         close(unitn)
+
       endif
-#endif
 
       call freeunit(unitn)
+
+      ! Clean up
+#if ( defined SPMD )
+      deallocate( displs        )
+      deallocate( recvcnts      )
+#endif
+      deallocate( chnk_stats_i4 )
+      deallocate( chnk_stats_r8 )
+      deallocate( proc_stats_i4 )
+      deallocate( proc_stats_r8 )
+
    endif
 
    return
