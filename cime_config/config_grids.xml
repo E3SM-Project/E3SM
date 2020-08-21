@@ -3519,7 +3519,7 @@
     <gridmap atm_grid="T62" ocn_grid="ECwISC30to60E1r2">
       <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/T62/map_T62_to_ECwISC30to60E1r2_aave.200410.nc</map>
       <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/T62/map_T62_to_ECwISC30to60E1r2-nomask_bilin.200408.nc</map>
-      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ECwISC30to60E1r2/map_T62_to_ECwISC30to60E1r2_patch.200410.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/T62/map_T62_to_ECwISC30to60E1r2_patch.200410.nc</map>
       <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/ECwISC30to60E1r2/map_ECwISC30to60E1r2_to_T62_aave.200410.nc</map>
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/ECwISC30to60E1r2/map_ECwISC30to60E1r2_to_T62_aave.200410.nc</map>
     </gridmap>
@@ -3616,8 +3616,8 @@
       <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/TL319/map_TL319_to_ECwISC30to60E1r2_aave.200819.nc</map>
       <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/TL319/map_TL319_to_ECwISC30to60E1r2-nomask_bilin.200819.nc</map>
       <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/TL319/map_TL319_to_ECwISC30to60E1r2_patch.200819.nc</map>
-      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/oEC60to30v3wLI/map_ECwISC30to60E1r2_to_TL319_aave.200819.nc</map>
-      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/oEC60to30v3wLI/map_ECwISC30to60E1r2_to_TL319_aave.200819.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/ECwISC30to60E1r2/map_ECwISC30to60E1r2_to_TL319_aave.200819.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/ECwISC30to60E1r2/map_ECwISC30to60E1r2_to_TL319_aave.200819.nc</map>
     </gridmap>
 
     <gridmap atm_grid="TL319" ocn_grid="oARRM60to10">
