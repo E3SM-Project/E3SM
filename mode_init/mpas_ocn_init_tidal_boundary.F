@@ -93,7 +93,7 @@ contains
     type (mpas_pool_type), pointer :: verticalMeshPool
     type (mpas_pool_type), pointer :: tracersPool
 
-    integer :: iCell, k
+    integer :: iCell, k, N
 
     ! Define dimensions
     integer, pointer :: nCellsSolve, nEdgesSolve, nVertLevels, nVertLevelsP1
@@ -101,14 +101,17 @@ contains
 
     ! Define arrays
     integer, dimension(:), pointer :: maxLevelCell
+    integer, dimension(:), pointer :: vegetationMask
+    real (kind=RKIND), dimension(:), pointer :: vegetationHeight,vegetationDensity, vegetationDiameter
     real (kind=RKIND), dimension(:), pointer :: yCell, refBottomDepth, bottomDepth, vertCoordMovementWeights, dcEdge
     real (kind=RKIND), dimension(:), pointer :: tidalInputMask
+    real (kind=RKIND), dimension(:), pointer :: bottomDrag
     real (kind=RKIND), dimension(:), pointer :: ssh
     real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness, zMid
     real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers, debugTracers
-
     real (kind=RKIND), dimension(:), pointer :: interfaceLocations
     real (kind=RKIND),  parameter :: eps=1.0e-12
+    real (kind=RKIND) :: cff1,cff2,cff3, dep_mark1, dep_mark2 ! intermediate variables
 
     iErr = 0
 
@@ -190,9 +193,19 @@ contains
       end if
 
       ! Set refBottomDepth, bottomDepth, and maxLevelCell
-      do k = 1, nVertLevels
-        refBottomDepth(k) = config_tidal_boundary_right_bottom_depth * interfaceLocations(k+1)
-      end do
+      if (min(config_tidal_boundary_left_bottom_depth, config_tidal_boundary_right_bottom_depth) < 0.0_RKIND) then
+        ! consider the case where there is wetting / drying and vertical mesh resolution is needed "on land"
+        do k = 1, nVertLevels
+          refBottomDepth(k) = config_tidal_boundary_left_bottom_depth + &
+            (config_tidal_boundary_right_bottom_depth - config_tidal_boundary_left_bottom_depth)* interfaceLocations(k+1)
+        end do
+      else
+        ! assumes we just need to build vertical mesh to deepest point (e.g., no "on land' vertical mesh)
+        do k = 1, nVertLevels
+          refBottomDepth(k) = \
+          max(config_tidal_boundary_left_bottom_depth, config_tidal_boundary_right_bottom_depth) * interfaceLocations(k+1)
+        end do
+      end if
 
       if (config_tidal_boundary_use_distances) then
         yMin = config_tidal_boundary_left_value
@@ -203,6 +216,78 @@ contains
         bottomDepth(iCell) = config_tidal_boundary_left_bottom_depth &
           + (yCell(iCell) - yMin) / (yMax - yMin)  * &
           (config_tidal_boundary_right_bottom_depth - config_tidal_boundary_left_bottom_depth)
+      end do
+
+      if (config_use_variable_drag) then
+        call mpas_pool_get_array(forcingPool, 'bottomDrag', bottomDrag)
+        do iCell = 1, nCellsSolve
+          bottomDrag(iCell) = config_tidal_forcing_left_Cd_or_n &
+            + (yCell(iCell) - yMin) / (yMax - yMin)  * &
+            (config_tidal_forcing_right_Cd_or_n - config_tidal_forcing_left_Cd_or_n)
+        end do
+      end if
+
+      if (config_use_vegetation_drag) then
+        call mpas_pool_get_array(forcingPool, 'vegetationMask', vegetationMask)
+        vegetationMask = 0
+        call mpas_pool_get_array(forcingPool, 'vegetationDiameter', vegetationDiameter)
+        vegetationDiameter = config_idealized_vegetation_diameter
+        call mpas_pool_get_array(forcingPool, 'vegetationHeight', vegetationHeight)
+        vegetationHeight = config_idealized_vegetation_height
+        call mpas_pool_get_array(forcingPool, 'vegetationDensity', vegetationDensity)
+        vegetationDensity = config_idealized_vegetation_density
+      endif
+
+      if (config_use_idealized_transect) then
+        call mpas_pool_get_array(forcingPool, 'bottomDrag', bottomDrag)
+        config_idealized_transect_Lmarsh = 1.0_RKIND - config_idealized_transect_Lcoast &
+                                                    - config_idealized_transect_Lshore
+        if (config_idealized_transect_Lmarsh .lt. 0.0_RKIND) then
+          call mpas_log_write("Lshore+Lcoast cannot be bigger than 1.0")
+          iErr = 1
+        endif
+        cff1 = yMax*config_idealized_transect_Lcoast
+        cff2 = yMax*config_idealized_transect_Lmarsh
+        cff3 = yMax*config_idealized_transect_Lshore
+        ! by defining the slopes and left_bottom_depth, the pre-defined right_bottom_depth won't work.
+        ! Need redefine it.
+        config_tidal_boundary_right_bottom_depth = config_tidal_boundary_left_bottom_depth + &
+                                                   cff1*config_idealized_transect_Scoast + &
+                                                   cff2*config_idealized_transect_Smarsh + &
+                                                   cff3*config_idealized_transect_Sshore
+        do iCell = 1, nCellsSolve
+          if (yCell(iCell) .lt. cff1) then
+            bottomDepth(iCell) = config_tidal_boundary_left_bottom_depth &
+              + (yCell(iCell)-yMin)*config_idealized_transect_Scoast
+            dep_mark1 = bottomDepth(iCell)
+            bottomDrag(iCell) = config_idealized_transect_roughness
+          elseif (yCell(iCell) .lt. (cff1+cff2)) then
+            bottomDepth(iCell) = dep_mark1 + (yCell(iCell)-cff1)*config_idealized_transect_Smarsh
+            dep_mark2 = bottomDepth(iCell)
+            bottomDrag(iCell) = config_idealized_transect_roughness_marsh
+            if (config_use_vegetation_drag) vegetationMask(iCell) = 1
+          else
+            if (cff2 .eq. 0.0_RKIND) dep_mark2 = dep_mark1
+            bottomDepth(iCell) = dep_mark2 + (yCell(iCell)-cff1-cff2)*config_idealized_transect_Sshore
+            bottomDrag(iCell) = config_idealized_transect_roughness
+          endif
+        end do !! do iCell
+      else
+      ! if not config_idealized_transect, assign a constant slope
+        do iCell = 1, nCellsSolve
+          bottomDepth(iCell) = config_tidal_boundary_left_bottom_depth &
+            + (yCell(iCell) - yMin) / (yMax - yMin)  * &
+            (config_tidal_boundary_right_bottom_depth - config_tidal_boundary_left_bottom_depth)
+        end do
+      end if   !! if config_idealized_transect
+
+      if (config_tidal_boundary_right_bottom_depth < config_tidal_boundary_left_bottom_depth) then
+        call mpas_log_write('Right boundary must be deeper than left boundary!', MPAS_LOG_CRIT)
+      end if
+
+      ! Set refBottomDepth, bottomDepth, and maxLevelCell
+      do k = 1, nVertLevels
+        refBottomDepth(k) = config_tidal_boundary_right_bottom_depth * interfaceLocations(k+1)
       end do
 
       if (config_use_wetting_drying .and. config_tidal_start_dry .and. &
@@ -281,6 +366,7 @@ contains
       if (config_use_wetting_drying .and. config_tidal_start_dry) then
         do iCell = 1, nCellsSolve
           ssh(iCell) = -bottomDepth(iCell) + config_drying_min_cell_height*maxLevelCell(iCell)
+          ssh(iCell) = MAX(ssh(iCell),-config_tidal_forcing_monochromatic_baseline)
           ! also computes zMid
           do k = 1, maxLevelCell(iCell)
             layerThickness(k,iCell) = (ssh(iCell) + bottomDepth(iCell))/maxLevelCell(iCell)
@@ -307,13 +393,18 @@ contains
       ! Set tidal boundary mask
       do iCell = 1, nCellsSolve
         tidalInputMask(iCell) = 0.0_RKIND
-        if (yCell(iCell) > (25.0e3 - dcEdgeMinGlobal/2.0_RKIND)) then
+        if (yCell(iCell) > (yMax - dcEdgeMinGlobal/2.0_RKIND)) then
           tidalInputMask(iCell) = 1.0_RKIND
         ! spread it over multiple cells
         !if (yCell(iCell) > (25.0e3 - 3*dcEdgeMinGlobal)) then
         !  tidalInputMask(iCell) = exp(-((yCell(iCell)-25.0e3)/dcEdgeMinGlobal)**2.0)
         end if
       end do
+
+      ! check that there is some tidalInputMask 
+      if (.not. sum(tidalInputMask) > 0) then
+        call mpas_log_write('Input mask for tidal case is not set!', MPAS_LOG_CRIT)
+      end if
 
       ! Set salinity
       if ( associated(activeTracers) ) then
