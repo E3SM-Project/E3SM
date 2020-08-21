@@ -824,11 +824,11 @@ CONTAINS
 
        enddo   ! lsize
 
-    case('CORE_IAF_JRA')
+    case('CORE_IAF_JRA', 'CORE_RYF_JRA')
        if (firstcall) then
           if (sprec < 1 .or. sswdn < 1) then
-             write(logunit,F00) 'ERROR: prec and swdn must be in streams for CORE_IAF_JRA'
-             call shr_sys_abort(trim(subname)//'ERROR: prec and swdn must be in streams for CORE_IAF_JRA')
+             write(logunit,F00) 'ERROR: prec and swdn must be in streams for IAF/RYF JRA'
+             call shr_sys_abort(trim(subname)//'ERROR: prec and swdn must be in streams for IAF/RYF JRA')
           endif
           if (trim(factorFn) == 'null') then
              windFactor = 1.0_R8
