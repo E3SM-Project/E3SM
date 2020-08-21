@@ -979,11 +979,8 @@ is the value of that variable from the *previous* time level!
                 <var name="calvingMask" type="integer" dimensions="nCells Time" units="m" time_levs="1"
                         description="mask of grid cells that should be calved.  0=no calving, 1=should be calved"
                 />
-                <var name="calvingFrontMaskCell" type="integer" dimensions="nCells Time" units="none" time_levs="1"
+                <var name="calvingFrontMask" type="integer" dimensions="nCells Time" units="none" time_levs="1"
                         description="mask of the calving front position on cells"
-                />
-                <var name="calvingFrontMaskEdge" type="integer" dimensions="nEdges Time" units="none" time_levs="1"
-                        description="mask of the calving front position on edges"
                 />
                 <var name="calvingThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
                         description="thickness of ice that calves on a given timestep (less than or equal to ice thickness)"
@@ -993,9 +990,6 @@ is the value of that variable from the *previous* time level!
                 />
                 <var name="calvingVelocity" type="real" dimensions="nEdges Time" units="m s^{-1}" time_levs="1"
                      description="rate of calving front retreat due to calving, represented as a velocity normal to the calving front (in the x-y plane)."
-                />
-                <var name="requiredCalvingVolume" type="real" dimensions="nEdges Time" units="m^3" time_levs="1"
-                     description="total volume of ice that needs to be removed based on calving rate for the given time step"
                 />
                 <var name="uncalvedVolumeNonDynCell" type="real" dimensions="nCells Time" units="m^3" time_levs="1"
                      description="volume of ice that was left uncalved from required calving flux at non-dynamic cells"
