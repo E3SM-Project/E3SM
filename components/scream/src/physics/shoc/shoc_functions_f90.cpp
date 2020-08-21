@@ -137,18 +137,25 @@ void SHOCDataBase::init_ptrs()
   }
 }
 
-void SHOCDataBase::randomize()
+void SHOCDataBase::randomize(const std::vector<std::pair<Real, Real> >& ranges,
+                             const std::vector<std::pair<Real, Real> >& ranges_i)
 {
   std::default_random_engine generator;
-  std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
 
+  scream_assert_msg(ranges.size() <= m_ptrs.size(), "Provided more ranges than data items");
   for (size_t i = 0; i < m_ptrs.size(); ++i) {
+    std::uniform_real_distribution<Real> data_dist(i < ranges.size() ? ranges[i].first : 0.0,
+                                                   i < ranges.size() ? ranges[i].second : 1.0);
     for (size_t j = 0; j < m_total; ++j) {
       (*(m_ptrs[i]))[j] = data_dist(generator);
     }
   }
 
+  scream_assert_msg(ranges_i.size() <= m_ptrs_i.size(), "Provided more ranges than data items");
   for (size_t i = 0; i < m_ptrs_i.size(); ++i) {
+    std::uniform_real_distribution<Real> data_dist(i < ranges_i.size() ? ranges_i[i].first : 0.0,
+                                                   i < ranges_i.size() ? ranges_i[i].second : 1.0);
+
     for (size_t j = 0; j < m_totali; ++j) {
       (*(m_ptrs_i[i]))[j] = data_dist(generator);
     }
