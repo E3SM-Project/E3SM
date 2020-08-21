@@ -37,6 +37,10 @@ void shoc_energy_total_fixer_c(Int shcol, Int nlev, Int nlevi, Real dtime, Int n
                                Real *wthl_sfc, Real *wqw_sfc, Real *rho_zt,
                                Real *te_a, Real *te_b);
 
+void shoc_energy_threshold_fixer_c(Int shcol, Int nlev, Int nlevi,
+                             Real *pint, Real *tke, Real *te_a, Real *te_b,
+                             Real *se_dis, Int *shoctop);
+
 void shoc_energy_dse_fixer_c(Int shcol, Int nlev,
                              Real *se_dis, Int *shoctop,
                              Real *host_dse);
@@ -272,6 +276,15 @@ void shoc_energy_total_fixer(SHOCEnergytotData &d) {
                             d.se_a, d.ke_a, d.wv_a, d.wl_a,
                             d.wthl_sfc, d.wqw_sfc, d.rho_zt,
                             d.te_a, d.te_b);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+void shoc_energy_threshold_fixer(SHOCEnergythreshfixerData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  shoc_energy_threshold_fixer_c(d.shcol, d.nlev, d.nlevi,
+                          d.pint, d.tke, d.te_a, d.te_b,
+			  d.se_dis, d.shoctop);
   d.transpose<util::TransposeDirection::f2c>();
 }
 

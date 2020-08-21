@@ -315,6 +315,29 @@ contains
                                  te_a,te_b)
 
   end subroutine shoc_energy_total_fixer_c
+
+  subroutine shoc_energy_threshold_fixer_c(shcol,nlev,nlevi, &
+                                     pint,tke,te_a,te_b, &
+                                     se_dis,shoctop) bind (C)
+    use shoc, only: shoc_energy_threshold_fixer
+
+    integer(kind=c_int), intent(in), value :: shcol
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: nlevi
+    
+    real(kind=c_real), intent(in) :: pint(shcol,nlevi)
+    real(kind=c_real), intent(in) :: tke(shcol,nlev)
+    real(kind=c_real), intent(in) :: te_a(shcol)
+    real(kind=c_real), intent(in) :: te_b(shcol)
+    
+    real(kind=c_real), intent(out) :: se_dis(shcol)
+    integer(kind=c_int), intent(out) :: shoctop(shcol)
+
+    call shoc_energy_threshold_fixer(shcol,nlev,nlevi, &
+                                     pint,tke,te_a,te_b, &
+                                     se_dis,shoctop)
+
+  end subroutine shoc_energy_threshold_fixer_c
   
   subroutine shoc_energy_dse_fixer_c(shcol,nlev, &
                                      se_dis,shoctop, &

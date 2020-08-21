@@ -178,6 +178,7 @@ struct SHOCEddydiffData : public SHOCDataBase {
   SHOCEddydiffData &operator=(const SHOCEddydiffData &rhs) { SHOCDataBase::operator=(rhs); return *this; }
 };//SHOCEddydiffData
 
+
 //create data structure for update_host_dse
 struct SHOCEnergydseData : public SHOCDataBase {
   // Inputs
@@ -225,6 +226,22 @@ struct SHOCEnergytotData : public SHOCDataBase {
   SHOCEnergytotData(const SHOCEnergytotData &rhs) : SHOCDataBase(rhs, {&zt_grid, &rho_zt}, {&zi_grid}, {&se_b, &ke_b, &wv_b, &wl_b, &se_a, &ke_a, &wv_a, &wl_a, &wthl_sfc, &wqw_sfc, &te_a, &te_b}) {}
   SHOCEnergytotData &operator=(const SHOCEnergytotData &rhs) { SHOCDataBase::operator=(rhs); dtime = rhs.dtime; nadv = rhs.nadv; return *this; }
 };//SHOCEnergytotData
+
+//create data structure for shoc_energy_threshold_fixer
+struct SHOCEnergythreshfixerData : public SHOCDataBase {
+  // Inputs
+  Real *pint, *tke, *te_a, *te_b;
+
+  // In/out
+  Real *se_dis;
+  Int *shoctop;
+
+  //functions to initialize data
+  SHOCEnergythreshfixerData(Int shcol_, Int nlev_, Int nlevi_) :
+    SHOCDataBase(shcol_, nlev_, nlevi_, {&tke}, {&pint}, {&se_dis, &te_a, &te_b}, {&shoctop}) {}
+  SHOCEnergythreshfixerData(const SHOCEnergythreshfixerData &rhs) : SHOCDataBase(rhs, {&tke}, {&pint}, {&se_dis, &te_a, &te_b}, {&shoctop}) {}
+  SHOCEnergythreshfixerData &operator=(const SHOCEnergythreshfixerData &rhs) { SHOCDataBase::operator=(rhs); return *this; }
+};//SHOCEnergythreshfixerData
 
 //create data structure for shoc_energy_dse_fixer
 struct SHOCEnergydsefixerData : public SHOCDataBase {
@@ -394,6 +411,7 @@ void shoc_grid(SHOCGridData &d);
 void update_host_dse(SHOCEnergydseData &d);
 void shoc_energy_integrals(SHOCEnergyintData &d);
 void shoc_energy_total_fixer(SHOCEnergytotData &d);
+void shoc_energy_threshold_fixer(SHOCEnergythreshfixerData &d);
 void shoc_energy_dse_fixer(SHOCEnergydsefixerData &d);
 void calc_shoc_vertflux(SHOCVertfluxData &d);
 void calc_shoc_varorcovar(SHOCVarorcovarData &d);
