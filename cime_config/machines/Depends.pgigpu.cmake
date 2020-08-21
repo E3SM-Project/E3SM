@@ -76,6 +76,7 @@ set(FILES_NEED_OPENACC_FLAGS
   cam/src/physics/crm/sam/vars.F90
   cam/src/physics/crm/sam/zero.F90
   cam/src/physics/crm/sam/openacc_utils.F90
+  cam/src/physics/crm/sam/crm_data_module.F90
   cam/src/physics/crm/sam/sat.F90 )
 
 # add accelerator/gpu flags for MPAS files
