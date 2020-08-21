@@ -1179,7 +1179,9 @@ module li_calving
 !         calvingVelocity(:) = abs(calvingVelocity(:) * cos(angleEdge(:)))
 
 
-         call apply_calving_velocity(meshPool, geometryPool, velocityPool, scratchPool, err)
+         ! Convert calvingVelocity to calvingThickness
+         call apply_calving_velocity(meshPool, geometryPool, velocityPool, domain, err)
+
 
          ! === apply calving ===
          thickness(:) = thickness(:) - calvingThickness(:)
@@ -1272,21 +1274,21 @@ module li_calving
 !> perpendicular to the calving flux.
 !>
 !> The output of this routine is calvingThickness, which then needs to be applied to thickness
-!> by the calling routine.
+!> by the calling routine.  A halo update on calvingThickness is required before applying it!
 !-----------------------------------------------------------------------
 
-   subroutine apply_calving_velocity(meshPool, geometryPool, velocityPool, scratchPool, err)
+   subroutine apply_calving_velocity(meshPool, geometryPool, velocityPool, domain, err)
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
       type (mpas_pool_type), pointer, intent(in) :: meshPool !< Input: Mesh pool
-      type (mpas_pool_type), pointer, intent(in) :: scratchPool !< Input: scratch pool
       type (mpas_pool_type), pointer, intent(in) :: velocityPool !< Input: velocity pool
 
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: domain          !< Input: domain object
       type (mpas_pool_type), pointer, intent(inout) :: geometryPool !< Input: geometry pool
 
       !-----------------------------------------------------------------
@@ -1319,6 +1321,7 @@ module li_calving
       real(kind=RKIND) :: removeVolumeHere
       real(kind=RKIND) :: volumeAvailableToPass
       real(kind=RKIND) :: calvLengthCell, calvLengthEdge
+      real(kind=RKIND), dimension(5) :: localInfo, globalInfo
       logical :: openOceanNeighbor
 
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
@@ -1356,6 +1359,7 @@ module li_calving
       requiredCalvingVolumeDynCell(:) = 0.0_RKIND
       allocate(thicknessForCalving(nCells+1))
       thicknessForCalving = 0.0_RKIND
+
 
 
       ! 1. Calculate calving rate for all non-dynamic cells by working with their ocean-going edges
@@ -1405,7 +1409,8 @@ module li_calving
       call mpas_log_write("Done calculating calving for non-dynamic floating cells. Removed $r m^3", realArgs=(/calvingSubtotal1/))
 
 
-      ! 4. Calculate calving for dynamic cells
+
+      ! 2. Calculate calving for dynamic cells
       calvingSubtotal2 = 0.0_RKIND
 
       ! a. Calculate calving on dynamic margin edges
@@ -1492,25 +1497,30 @@ module li_calving
 
 
       ! End of routine accounting/reporting
+      localInfo(1) = sum(calvingThickness*areaCell)
+      localInfo(2) = calvingSubtotal1
+      localInfo(3) = calvingSubtotal2
+      localInfo(4) = sum(uncalvedVolumeNonDynCell)
+      localInfo(5) = sum(uncalvedVolumeDynCell)
+      ! NOTE: THIS WILL NOT WORK ON MULTIPLE BLOCKS PER PROCESSOR
+      call mpas_dmpar_sum_real_array(domain % dminfo, 5, localInfo, globalInfo)
       call mpas_log_write("Calving complete. Total calved=$r; Calved from non-dynamic cells=$r; Calved from dynamic cells=$r", &
-              realArgs=(/sum(calvingThickness*areaCell), calvingSubtotal1, calvingSubtotal2/))
+!              realArgs=(/sum(calvingThickness*areaCell), calvingSubtotal1, calvingSubtotal2/))
+              realArgs=(/globalInfo(1), globalInfo(2), globalInfo(3)/))
       call mpas_log_write("   Uncalved volumes: Non-dynamic cells=$r; Dynamic cells=$r", &
-              realArgs=(/sum(uncalvedVolumeNonDynCell), sum(uncalvedVolumeDynCell)/))
-!      if (maxval(uncalvedVolume) > 0.0_RKIND) then
-!
-!         uncalvedTotal = sum(uncalvedVolume)
-!         uncalvedCount = count(uncalvedVolume > 0.0_RKIND)
-!
-!         call mpas_log_write("distribute_calving_flux failed to distribute all required ice - " // &
-!                    " ice was left after depleting all neighbors." // &
-!                    "  Search needs to be expanded to neighbors' neighbors.")
-!         call mpas_log_write("   On this processor: $i edges contain uncalved ice, " // &
-!                 "for a total uncalved volume of $r m^3 ($r%).", &
-!                 MPAS_LOG_WARN, intArgs=(/uncalvedCount/), &
-!                 realArgs=(/uncalvedTotal, 100.0_RKIND * uncalvedTotal/sum(requiredCalvingVolume(:))/))
-!         ! TODO: Global reduce
-!      endif
+!              realArgs=(/sum(uncalvedVolumeNonDynCell), sum(uncalvedVolumeDynCell)/))
+              realArgs=(/globalInfo(4), globalInfo(5)/))
+      if (globalInfo(2) + globalInfo(3) > 0.0_RKIND) then
+         call mpas_log_write("Calving scheme failed to calve $r m^3.", MPAS_LOG_WARN, realArgs=(/globalInfo(2) + globalInfo(3)/))
+      endif
 
+
+      ! Update halos on calvingThickness before applying it.
+      ! Testing seemed to indicate this is not necessary, but I don't understand why not, so leaving it.
+      ! NOTE: THIS WILL NOT WORK ON MULTIPLE BLOCKS PER PROCESSOR
+      call mpas_timer_start("halo updates")
+      call mpas_dmpar_field_halo_exch(domain, 'calvingThickness')
+      call mpas_timer_stop("halo updates")
 
       deallocate(cellVolume)
       deallocate(requiredCalvingVolumeNonDynEdge)
@@ -1518,7 +1528,6 @@ module li_calving
       deallocate(requiredCalvingVolumeDynEdge)
       deallocate(requiredCalvingVolumeDynCell)
       deallocate(thicknessForCalving)
-
 
     end subroutine apply_calving_velocity
 
