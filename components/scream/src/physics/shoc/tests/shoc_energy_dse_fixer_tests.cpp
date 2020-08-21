@@ -32,22 +32,21 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyDseFixer {
 
     // Tests for the SHOC function
     //     shoc_energy_dse_fixer
-    
+
     // TEST ONE
-    // For columns that are identical EXCEPT for the shoctop indicee, 
-    //  verify that given a positive value of energy imbalance that 
+    // For columns that are identical EXCEPT for the shoctop indicee,
+    //  verify that given a positive value of energy imbalance that
     //  columns with a higher SHOC top were subject to more energy removal.
 
     // Host model dry static energy [K]
     static constexpr Real host_dse_input[nlev] = {350.0, 325.0, 315.0, 310.0, 300.0};
 
     // Energy disbalance.  For this test we assume all columns have
-    //  the same disbalance magnitude.  
+    //  the same disbalance magnitude.
     static constexpr Real se_dis = 0.1;
-    
-    // level indicee of SHOC top layer
-    static constexpr Int shoctop[shcol] = {5, 3, 1}; 
 
+    // level indicee of SHOC top layer
+    static constexpr Int shoctop[shcol] = {5, 3, 1};
 
     // Initialzie data structure for bridgeing to F90
     SHOCEnergydsefixerData SDS(shcol, nlev);
@@ -59,12 +58,11 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyDseFixer {
     // Fill in test data on zt_grid.
     for(Int s = 0; s < SDS.shcol; ++s) {
       SDS.shoctop[s] = shoctop[s];
-      SDS.se_dis[s] = se_dis[s];
+      SDS.se_dis[s] = se_dis;
       for(Int n = 0; n < SDS.nlev; ++n) {
 	const auto offset = n + s * SDS.nlev;
 
 	SDS.host_dse[offset] = host_dse_input[n];
-
       }
     }
 
@@ -73,19 +71,17 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyDseFixer {
     for(Int s = 0; s < SDS.shcol; ++s) {
       // For this test we WANT se_dis > 0
       REQUIRE(SDS.se_dis[s] > 0.0);
-      REQUIRE(SDS.shoc_top >= 1);
-      REQUIRE(SDS.shoc_top <= nlev);
+      REQUIRE(SDS.shoctop[s] >= 1);
+      REQUIRE(SDS.shoctop[s] <= nlev);
       for (Int n = 0; n < SDS.nlev; ++n){
 	const auto offset = n + s * SDS.nlev;
 
 	REQUIRE(SDS.host_dse[offset] > 0.0);
-
       }
     }
 
     // Call the fortran implementation
     shoc_energy_dse_fixer(SDS);
-
   }
 
 };
