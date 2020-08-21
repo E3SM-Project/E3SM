@@ -739,7 +739,9 @@ contains
          write(iulog,*)'supplement_to_sminp = ',supplement_to_sminp(c)*dt
          write(iulog,*)'secondp_to_occlp = ',secondp_to_occlp(c)*dt
          write(iulog,*)'sminp_leached = ',sminp_leached(c)*dt
-
+         if(use_fates)then
+             write(iulog,*) 'plant_to_litter_flux = ',plant_to_litter_pflux(c)*dt
+         end if
          if (ero_ccycle) then
             write(iulog,*)'SOP erosion = ',som_p_yield(c)*dt
             write(iulog,*)'SIP erosion = ',(labilep_yield(c)+secondp_yield(c)+occlp_yield(c)+primp_yield(c))*dt
