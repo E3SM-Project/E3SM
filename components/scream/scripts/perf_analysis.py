@@ -222,7 +222,7 @@ class PerfAnalysis(object):
             os.environ["NUMA_PREFIX"] = "numactl -i 1"
         elif self._machine == "blake":
             os.environ["OMP_NUM_THREADS"] = "96"
-        elif self._machine in ["white", "waterman", "melvin"]:
+        elif self._machine in ["white", "weaver", "melvin"]:
             pass
         else:
             print("WARNING: Unrecognized machine {}".format(self._machine))
