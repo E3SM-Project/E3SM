@@ -8,8 +8,6 @@ management (used for Jenkins for example).
 It is expected that you are able to do a passwordless ssh to all
 machines and that the given repo on the target machines are clean.
 Since testbeds do not allow login via ssh key, you'll need to use kinit.
-Waterman is on the SRN, so you'll need to start from a SRN machine. I've
-had good luck using face.sandia.gov as my launch machine.
 
 It is expected that your current repo is clean and that your current commit
 is the one you want to test.

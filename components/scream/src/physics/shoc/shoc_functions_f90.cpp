@@ -64,27 +64,31 @@ void eddy_diffusivities_c(Int nlev, Int shcol, Real *obklen, Real *pblh,
 
 void calc_shoc_vertflux_c(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 			  Real *dz_zi, Real *invar, Real *vertflux);
-			  
+
 void compute_brunt_shoc_length_c(Int nlev, Int nlevi, Int shcol ,Real *dz_zt,
                                  Real *thv, Real *thv_zi, Real *brunt);
-				 
+
 void compute_l_inf_shoc_length_c(Int nlev, Int shcol, Real *zt_grid, Real *dz_zt,
-                                 Real *tke, Real *l_inf);	
-				 
+                                 Real *tke, Real *l_inf);
+
 void compute_conv_vel_shoc_length_c(Int nlev, Int shcol, Real *pblh, Real *zt_grid,
                                     Real *dz_zt, Real *thv, Real *wthv_sec,
 				    Real *conv_vel);
 
-void compute_conv_time_shoc_length_c(Int shcol, Real *pblh, Real *conv_vel, 
-                                     Real *tscale);		
-				     
+void compute_conv_time_shoc_length_c(Int shcol, Real *pblh, Real *conv_vel,
+                                     Real *tscale);
+
 void compute_shoc_mix_shoc_length_c(Int nlev, Int shcol, Real *tke, Real* brunt,
                                     Real *tscale, Real *zt_grid, Real *l_inf,
 				    Real *shoc_mix);
-				    
+
 void check_length_scale_shoc_length_c(Int nlev, Int shcol, Real *host_dx,
                                     Real *host_dy, Real *shoc_mix);
-				    
+
+
+void shoc_diag_second_moments_srf_c(Int shcol, Real* wthl, Real* uw, Real* vw,
+                                   Real* ustar2, Real* wstar);
+
 }
 
 namespace scream {
@@ -159,18 +163,25 @@ void SHOCDataBase::init_ptrs()
   }  
 }
 
-void SHOCDataBase::randomize()
+void SHOCDataBase::randomize(const std::vector<std::pair<Real, Real> >& ranges,
+                             const std::vector<std::pair<Real, Real> >& ranges_i)
 {
   std::default_random_engine generator;
-  std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
 
+  scream_assert_msg(ranges.size() <= m_ptrs.size(), "Provided more ranges than data items");
   for (size_t i = 0; i < m_ptrs.size(); ++i) {
+    std::uniform_real_distribution<Real> data_dist(i < ranges.size() ? ranges[i].first : 0.0,
+                                                   i < ranges.size() ? ranges[i].second : 1.0);
     for (size_t j = 0; j < m_total; ++j) {
       (*(m_ptrs[i]))[j] = data_dist(generator);
     }
   }
 
+  scream_assert_msg(ranges_i.size() <= m_ptrs_i.size(), "Provided more ranges than data items");
   for (size_t i = 0; i < m_ptrs_i.size(); ++i) {
+    std::uniform_real_distribution<Real> data_dist(i < ranges_i.size() ? ranges_i[i].first : 0.0,
+                                                   i < ranges_i.size() ? ranges_i[i].second : 1.0);
+
     for (size_t j = 0; j < m_totali; ++j) {
       (*(m_ptrs_i[i]))[j] = data_dist(generator);
     }
@@ -341,6 +352,14 @@ void check_length_scale_shoc_length(SHOCMixcheckData &d) {
   d.transpose<util::TransposeDirection::f2c>();
 }
 
+void shoc_diag_second_moments_srf(SHOCSecondMomentSrfData& d)
+{
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  shoc_diag_second_moments_srf_c(d.shcol, d.wthl, d.uw, d.vw, d.ustar2, d.wstar);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
 //
 // _f function definitions. These expect data in C layout
 //
@@ -388,6 +407,45 @@ void calc_shoc_vertflux_f(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
   // Sync back to host
   Kokkos::Array<view_2d, 1> inout_views = {vertflux_d};
   pack::device_to_host({vertflux}, {shcol}, {nlevi}, inout_views, true);
+}
+
+void shoc_diag_second_moments_srf_f(Int shcol, Real* wthl, Real* uw, Real* vw, Real* ustar2, Real* wstar)
+{
+  using SHOC       = Functions<Real, DefaultDevice>;
+  using Scalar     = typename SHOC::Scalar;
+  using Pack1      = typename pack::Pack<Real, 1>;
+  using view_1d    = typename SHOC::view_1d<Pack1>;
+
+  Kokkos::Array<view_1d, 3> temp_d;
+  pack::host_to_device({wthl, uw, vw}, shcol, temp_d);
+
+  // inputs
+  view_1d
+    wthl_d (temp_d[0]),
+    uw_d   (temp_d[1]),
+    vw_d   (temp_d[2]);
+
+  // outputs
+  view_1d ustar2_d("ustar2", shcol),
+          wstar_d ("wstar", shcol);
+
+  Kokkos::parallel_for("parallel_moments_srf", shcol, KOKKOS_LAMBDA (const int& i) {
+
+     Scalar wthl_s{wthl_d(i)[0]};
+     Scalar uw_s{uw_d(i)[0]};
+     Scalar vw_s{vw_d(i)[0]};
+
+     Scalar ustar2_s{0};
+     Scalar wstar_s{0};
+
+     SHOC::shoc_diag_second_moments_srf(wthl_s, uw_s, vw_s, ustar2_s, wstar_s);
+
+     ustar2_d(i)[0] = ustar2_s;
+     wstar_d(i)[0]  = wstar_s;
+   });
+
+  Kokkos::Array<view_1d, 2> out_views = {ustar2_d, wstar_d};
+  pack::device_to_host({ustar2, wstar}, shcol, out_views);
 }
 
 } // namespace shoc
