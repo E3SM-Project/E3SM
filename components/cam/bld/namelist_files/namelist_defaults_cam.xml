@@ -1009,6 +1009,7 @@
 <mg_prc_coeff_fix     microphys="mg2">  .false.     </mg_prc_coeff_fix>
 <micro_nccons         microphys="mg2">  100.D6      </micro_nccons>
 <micro_nicons         microphys="mg2">  0.1D6       </micro_nicons>
+<micro_mincdnc        microphys="mg2">  -999.       </micro_mincdnc>
 
 <rrtmg_temp_fix                      > .false.      </rrtmg_temp_fix>
 

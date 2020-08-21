@@ -2055,6 +2055,12 @@ Ice crystal concentration (in #/cc) when micro_do_nicons=.true.
 Default: set by build-namelist
 </entry> 
 
+<entry id="micro_mincdnc" type="real" category="microphys"
+       group="micro_mg_nl" valid_values="" >
+Minimum droplet number conc (#/m3) imposed when micro_mincdnc > 0. 
+Default: -999.
+</entry>
+
 <entry id="micro_mg_version" type="integer" category="microphys"
        group="micro_mg_nl" valid_values="" >
 Version number for MG microphysics
