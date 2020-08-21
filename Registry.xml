@@ -133,7 +133,7 @@
 		            description="Defines the topographic height below which ice calves (for topographic_threshold option)."
 		            possible_values="Any non-positive real value"
 		/>
-		<nml_option name="config_calving_thickness" type="real" default_value="100.0" units="m of ice"
+		<nml_option name="config_calving_thickness" type="real" default_value="0.0" units="m of ice"
 		            description="Defines the ice thickness below which ice calves (for thickness_threshold option)."
 		            possible_values="Any positive real value"
 		/>
