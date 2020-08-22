@@ -731,9 +731,6 @@ contains
       real (kind=RKIND), dimension(:), allocatable :: A, B, C, velTemp
 
       ! vegetation_drag
-      logical, pointer :: config_use_vegetation_drag
-      logical, pointer :: config_use_vegetation_manning_equation
-      real (kind=RKIND), pointer :: config_vegetation_drag_coefficient
       real (kind=RKIND), dimension(:), pointer :: vegetationHeight
       real (kind=RKIND), dimension(:), pointer :: vegetationDiameter
       real (kind=RKIND), dimension(:), pointer ::vegetationDensity
@@ -755,10 +752,6 @@ contains
 
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-
-      call mpas_pool_get_config(ocnConfigs, 'config_use_vegetation_drag', config_use_vegetation_drag)
-      call mpas_pool_get_config(ocnConfigs, 'config_use_vegetation_manning_equation', config_use_vegetation_manning_equation)
-      call mpas_pool_get_config(ocnConfigs, 'config_vegetation_drag_coefficient', config_vegetation_drag_coefficient)
 
       call mpas_pool_get_array(forcingPool, 'vegetationMask', vegetationMask)
       call mpas_pool_get_array(forcingPool, 'vegetationHeight', vegetationHeight)
