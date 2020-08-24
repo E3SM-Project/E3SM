@@ -56,8 +56,8 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
     // Initialzie data structure for bridgeing to F90
     SHOCLinearintData SDS(shcol, km1, km2, minthresh);
 
-    // Test that the inputs are reasonable.
-    REQUIRE(SDS.shcol > 0);
+    // For this test we need exactly two columns
+    REQUIRE(SDS.shcol == 2);
 
     // Fill in test data on zt_grid.
     for(Int s = 0; s < SDS.shcol; ++s) {
