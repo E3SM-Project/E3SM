@@ -1372,7 +1372,8 @@ contains
        species_class,                                                           &
        cam_out,                                                                 & !Intent-inout
        pbuf,                                                                    & !Pointer
-       ptend                                                                    ) !Intent-out
+       ptend,                                                                   & !Intent-out
+       clear_rh                                                                 ) !optional 
 
     use modal_aero_deposition, only: set_srf_wetdep
     use wetdep,                only: wetdepa_v2, wetdep_inputs_set, &
@@ -1413,6 +1414,9 @@ contains
     type(physics_buffer_desc), pointer :: pbuf(:)
 
     type(physics_ptend), intent(out)   :: ptend       ! indivdual parameterization tendencies
+
+    real(r8), optional,  intent(in)    :: clear_rh(pcols,pver) ! optional clear air relative humidity 
+                                                               ! that gets passed to modal_aero_wateruptake_dr
 
 
     ! local vars
@@ -1515,19 +1519,27 @@ contains
     ncol  = state%ncol
 
     call physics_ptend_init(ptend, state%psetcols, 'aero_model_wetdep_ma', lq=wetdep_lq)
-    
+
     ! Do calculations of mode radius and water uptake if:
     ! 1) modal aerosols are affecting the climate, or
     ! 2) prognostic modal aerosols are enabled
-    
+    ! If not using prognostic aerosol call the diagnostic version
+
+    ! Calculate aerosol size distribution parameters
+    ! for prognostic modal aerosols the transfer of mass between aitken and 
+    ! accumulation modes is done in conjunction with the dry radius calculation
     call t_startf('calcsize')
-    ! for prognostic modal aerosols the transfer of mass between aitken and accumulation
-    ! modes is done in conjunction with the dry radius calculation
     call modal_aero_calcsize_sub(state, ptend, dt, pbuf)
     call t_stopf('calcsize')
-
+    
+    ! Aerosol water uptake
     call t_startf('wateruptake')
-    call modal_aero_wateruptake_dr(state, pbuf)
+    if (present(clear_rh)) then
+      ! clear_rh allows us to provide alternate calculation of clear air RH
+      call modal_aero_wateruptake_dr(state, pbuf, clear_rh_in=clear_rh)
+    else
+      call modal_aero_wateruptake_dr(state, pbuf)
+    endif
     call t_stopf('wateruptake')
 
     if (nwetdep<1) return

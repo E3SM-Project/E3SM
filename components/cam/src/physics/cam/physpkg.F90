@@ -39,8 +39,10 @@ module physpkg
   use cam_logfile,     only: iulog
   use camsrfexch,      only: cam_export
 
-  use modal_aero_calcsize,    only: modal_aero_calcsize_init, modal_aero_calcsize_diag, modal_aero_calcsize_reg
-  use modal_aero_wateruptake, only: modal_aero_wateruptake_init, modal_aero_wateruptake_dr, modal_aero_wateruptake_reg
+  use modal_aero_calcsize,    only: modal_aero_calcsize_init, &
+                                    modal_aero_calcsize_reg
+  use modal_aero_wateruptake, only: modal_aero_wateruptake_init, &
+                                    modal_aero_wateruptake_reg
 
   implicit none
   private
@@ -2622,51 +2624,40 @@ end if
 
      end if !microp_scheme
 
-if (l_tracer_aero) then
+   if (l_tracer_aero) then
+      if ( .not. deep_scheme_does_scav_trans() ) then
 
-    if ( .not. deep_scheme_does_scav_trans() ) then
+         !======================================================================
+         ! Aerosol wet chemistry determines scavenging and transformations.
+         ! This is followed by convective transport of all trace species except
+         ! water vapor and condensate. Scavenging needs to occur prior to
+         ! transport in order to determine interstitial fraction.
+         !======================================================================
 
-       !===================================================
-       !  Aerosol wet chemistry determines scavenging fractions, and transformations
-       !
-       !
-       !  Then do convective transport of all trace species except water vapor and
-       !     cloud liquid and ice (we needed to do the scavenging first
-       !     to determine the interstitial fraction) 
-       !===================================================
+         call t_startf('tphysbc_aerosols')
 
-       call t_startf('bc_aerosols')
-       if (clim_modal_aero .and. .not. prog_modal_aero) then
-          call modal_aero_calcsize_diag(state, pbuf)
-          call modal_aero_wateruptake_dr(state, pbuf)
-       endif
+         if (do_clubb_sgs) sh_e_ed_ratio = 0.0_r8
 
-       if (do_clubb_sgs) then
-          sh_e_ed_ratio = 0.0_r8
-       endif
+         ! Aerosol wet removal (including aerosol water uptake)
+         call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state,  & ! inputs
+                sh_e_ed_ratio, mu, md, du, eu, ed, dp, dsubcld,    &
+                jt, maxg, ideep, lengath, species_class,           &
+                cam_out, pbuf, ptend )                               ! outputs
+         call physics_update(state, ptend, ztodt, tend)
 
-       call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state, sh_e_ed_ratio,       & !Intent-ins
-            mu, md, du, eu, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class,&
-            cam_out,                                                                 & !Intent-inout
-            pbuf,                                                                    & !Pointer
-            ptend                                                                    ) !Intent-out
-       
-       call physics_update(state, ptend, ztodt, tend)
+         ! deep convective aerosol transport
+         call convect_deep_tend_2( state, ptend, ztodt, pbuf, &
+                mu, eu, du, md, ed, dp, dsubcld, jt, maxg,    &
+                ideep, lengath, species_class )
+         call physics_update(state, ptend, ztodt, tend)
 
-       call t_startf ('convect_deep_tend2')
-       call convect_deep_tend_2( state,   ptend,  ztodt,  pbuf, mu, eu, &
-          du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, species_class )  
-       call t_stopf ('convect_deep_tend2')
+         ! check tracer integrals
+         call check_tracers_chng(state, tracerint, "cmfmca", nstep, ztodt,  zero_tracers)
 
-       call physics_update(state, ptend, ztodt, tend)
+         call t_stopf('tphysbc_aerosols')
 
-       ! check tracer integrals
-       call check_tracers_chng(state, tracerint, "cmfmca", nstep, ztodt,  zero_tracers)
-
-       call t_stopf('bc_aerosols')
-
-   endif
-end if ! l_tracer_aero
+      end if
+   end if ! l_tracer_aero
 
 !<songxl 2011-9-20---------------------------------
    if(deep_scheme.eq.'ZM' .and. trigmem)then
