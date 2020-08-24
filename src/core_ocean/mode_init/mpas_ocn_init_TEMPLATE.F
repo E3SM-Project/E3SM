@@ -44,6 +44,7 @@ module ocn_init_TEMPLATE
    use mpas_constants
 
    use ocn_constants
+   use ocn_config
    use ocn_init_vertical_grids
    use ocn_init_cell_markers
 
@@ -108,11 +109,6 @@ contains
     real (kind=RKIND) :: localVar1, localVar2
     real (kind=RKIND), dimension(:), pointer :: interfaceLocations
 
-    ! Define config variable pointers
-    character (len=StrKIND), pointer :: config_init_configuration, config_vertical_grid
-    logical, pointer :: config_TEMPLATE_example_flag1
-    real (kind=RKIND), pointer :: config_TEMPLATE_example_flag2
-
     ! Define dimension pointers
     integer, pointer :: nCellsSolve, nEdgesSolve, nVertLevels, nVertLevelsP1
     integer, pointer :: index_temperature, index_salinity
@@ -128,16 +124,7 @@ contains
 
     iErr = 0
 
-    call mpas_pool_get_config(ocnConfigs, 'config_init_configuration', config_init_configuration)
-
     if(config_init_configuration .ne. trim('TEMPLATE')) return
-
-    ! Get config flag settings
-
-    call mpas_pool_get_config(ocnConfigs, 'config_vertical_grid', config_vertical_grid)
-
-    call mpas_pool_get_config(ocnConfigs, 'config_TEMPLATE_example_flag1', config_TEMPLATE_example_flag1)
-    call mpas_pool_get_config(ocnConfigs, 'config_TEMPLATE_example_flag2', config_TEMPLATE_example_flag2)
 
     ! Determine vertical grid for configuration
     call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
