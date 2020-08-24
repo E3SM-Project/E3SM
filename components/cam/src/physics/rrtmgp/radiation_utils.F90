@@ -312,10 +312,11 @@ contains
       end if
    end function clip_values_3d
    !-------------------------------------------------------------------------------
-   subroutine handle_error(error_message, fatal)
+   subroutine handle_error(error_message, fatal, warn)
       use cam_abortutils, only: endrun
       character(len=*), intent(in) :: error_message
       logical, intent(in), optional :: fatal
+      logical, intent(in), optional :: warn
       logical :: fatal_local = .true.
 
       ! Allow passing of an optional flag to not stop the run if an error is
@@ -333,7 +334,9 @@ contains
          if (fatal_local) then
             call endrun(trim(error_message))
          else
-            print *, trim(error_message)
+            if (present(warn)) then
+               print *, trim(error_message)
+            end if
          end if
       end if
    end subroutine handle_error
