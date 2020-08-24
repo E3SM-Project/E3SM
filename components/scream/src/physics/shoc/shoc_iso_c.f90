@@ -367,13 +367,7 @@ contains
     
     real(kind=c_real), intent(out) :: y2(ncol,km2)
 
-    write(*,*) 'ncol ', ncol
-    write(*,*) 'temp in ', y1
-    write(*,*) 'x1 in ', km1, x1
-    write(*,*) 'x2 in ', km2, x2
     call linear_interp(x1,x2,y1,y2,km1,km2,ncol,minthresh)
-    
-    write(*,*) 'temp out ', y2
 
   end subroutine linear_interp_c  
 

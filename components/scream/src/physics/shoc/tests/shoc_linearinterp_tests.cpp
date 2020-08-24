@@ -26,7 +26,6 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
 
   static void run_property()
   {
-    static constexpr Real gravit  = scream::physics::Constants<Real>::gravit;
     static constexpr Int shcol    = 2;
     static constexpr Int km1     = 5;
     static constexpr auto km2   = km1 + 1;
@@ -36,15 +35,23 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
     //  in this case the nlev grid is denoted by variable km1 and the nlevi 
     //  grid is represented by variable km2.  This is because the linear
     //  interp routine can interpolate from midpoint to interface grid or
-    //  vice versa so notation should be flexible 
+    //  vice versa so notation should be flexible.   
+    
+    // Note that in this test we are testing TWO profils.  The first column
+    //  will be loaded up with potential temperature values while the second
+    //  column will be loaded up with meridional wind values.  
 
     // Define the interface height grid [m]
     static constexpr Real zi_grid[km2] = {12500., 7500., 3000., 750., 250.0, 0.};
     // Define the liquid water potential temperature [K]
     //  on the midpoint grid
     static constexpr Real thetal_zt[km1] = {320.0, 310.0, 300.0, 300.0, 306.0};
-    // Define minimum threshold for this experiment
-    static constexpr Real minthresh = 0.0;
+    // Define meridional wind on midpoint grid
+    static constexpr Real u_wind_zt[km1] = {-2.0, -0.5, 0.0, 5.0, 2.0};
+    // Define minimum threshold for this experiment, since we are
+    //  dealing with negative winds in a column then set to a large
+    //  negative value since we do not want to clip.  
+    static constexpr Real minthresh = -99999.0;
 
     // Initialzie data structure for bridgeing to F90
     SHOCLinearintData SDS(shcol, km1, km2, minthresh);
@@ -60,7 +67,12 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
 	// For zt grid heights compute as midpoint
 	//  between interface heights
 	SDS.x1[offset] = 0.5*(zi_grid[n]+zi_grid[n+1]);
-	SDS.y1[offset] = thetal_zt[n];
+	if (s == 0){
+	  SDS.y1[offset] = thetal_zt[n];
+	}
+	else{
+	  SDS.y1[offset] = u_wind_zt[n];
+	}
       }
 
       // Fill in test data on zi_grid.
@@ -95,7 +107,7 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
       for(Int n = 0; n < km1; ++n) {
 	const auto offset = n + s * km1;
 	const auto offseti = n + s * km2;
-	REQUIRE(SDS.y2[offset] > 0.0);
+	
 	// check boundary points
 	// First upper boundary
 	if (n == 0){
@@ -157,7 +169,7 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
     // NOTE that km2 and km1 grid must be switched here.
     // Must initialize a new data structure since km1 and km2 are swapped.
     SHOCLinearintData SDS2(shcol, km2, km1, minthresh); 
-/*
+
     // Fill in test data on zi_grid.
     for(Int s = 0; s < SDS.shcol; ++s) {
       for(Int n = 0; n < km2; ++n) {
@@ -170,7 +182,8 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
 	SDS2.y1[offset] = SDS.y2[offset];
       }
 
-      // Load up stuff on midpoint grid
+      // Load up stuff on midpoint grid, use output from 
+      //  the last test here.  
       for(Int n = 0; n < km1; ++n) {
 	const auto offset   = n + s * km1;
 	SDS2.x2[offset] = SDS.x1[offset];
@@ -179,29 +192,30 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt {
     
     linear_interp(SDS2);
     
-    // Check the result
+    // Check the result, make sure output is bounded correctly
    
     for(Int s = 0; s < SDS2.shcol; ++s) {
       for(Int n = 0; n < km1; ++n) {
 	const auto offset = n + s * km1;
-	REQUIRE(SDS2.y2[offset] > 0.0);
+	const auto offseti = n + s * km2;
+
 	// compute gradient
-	const auto gradient = SDS2.y1[offset] - SDS2.y1[offset+1];
+	const auto gradient = SDS2.y1[offseti] - SDS2.y1[offseti+1];
 
         if (gradient == 0.0){
-	  REQUIRE(SDS2.y2[offset] == SDS2.y1[offset]);
+	  REQUIRE(SDS2.y2[offset] == SDS2.y1[offseti]);
 	} 
 	else if (gradient > 0.0){
-	  REQUIRE(SDS2.y2[offset] > SDS2.y1[offset+1]);
-	  REQUIRE(SDS2.y2[offset] < SDS2.y1[offset]);
+	  REQUIRE(SDS2.y2[offset] > SDS2.y1[offseti+1]);
+	  REQUIRE(SDS2.y2[offset] < SDS2.y1[offseti]);
 	}
 	else {
-	  REQUIRE(SDS2.y2[offset] < SDS2.y1[offset+1]);
-	  REQUIRE(SDS2.y2[offset] > SDS2.y1[offset]);	    
+	  REQUIRE(SDS2.y2[offset] < SDS2.y1[offseti+1]);
+	  REQUIRE(SDS2.y2[offset] > SDS2.y1[offseti]);	    
 	}
       }
     }
- */       
+        
   }
   
 };
