@@ -297,6 +297,23 @@ struct SHOCSecondMomentSrfData : public SHOCDataBase {
   SHOCSecondMomentSrfData &operator=(const SHOCSecondMomentSrfData &rhs) { SHOCDataBase::operator=(rhs); return *this; }
 };
 
+//Create data structure to hold data for linear_interp
+struct SHOCLinearintData : public SHOCDataBase {
+  // Inputs
+  Real minthresh;
+  Real *x1, *x2, *y1;
+
+  // In/out
+  Real *y2;
+
+  SHOCLinearintData(Int shcol_, Int nlev_, Int nlevi_, Real minthresh_) :
+    SHOCDataBase(shcol_, nlev_, nlevi_, {&x1, &y1}, {&x2, &y2}), minthresh(minthresh_) {}
+  SHOCLinearintData(const SHOCLinearintData &rhs) :
+    SHOCDataBase(rhs, {&x1, &y1}, {&x2, &y2}), minthresh(rhs.minthresh) {}
+  SHOCLinearintData &operator=(const SHOCLinearintData &rhs)
+  { SHOCDataBase::operator=(rhs); minthresh = rhs.minthresh; return *this; }
+};//SHOCLinearintData
+
 //
 // Glue functions to call fortran from from C++ with the Data struct
 //
@@ -320,6 +337,7 @@ void compute_conv_time_shoc_length(SHOCConvtimeData &d);
 void compute_shoc_mix_shoc_length(SHOCMixlengthData &d);
 void check_length_scale_shoc_length(SHOCMixcheckData &d);
 void shoc_diag_second_moments_srf(SHOCSecondMomentSrfData& d);
+void linear_interp(SHOCLinearintData &d);
 
 //
 // _f functions decls
