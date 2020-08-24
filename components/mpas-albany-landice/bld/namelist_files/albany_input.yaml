@@ -7,7 +7,7 @@ ANONYMOUS:
 
 # Discretization Description
   Discretization:
-    Exodus Output File Name: albany_output.exo
+#    Exodus Output File Name: albany_output.exo
     
   Piro: 
 #   Nonlinear Solver Information
