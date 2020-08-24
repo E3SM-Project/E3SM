@@ -1057,9 +1057,6 @@ contains
        integer, pointer :: nCells
        integer, dimension(:), pointer :: maxLevelCell, landIceMask, modifySSHMask
 
-       real (kind=RKIND), pointer :: config_global_ocean_topography_smooth_weight
-       integer, pointer :: config_global_ocean_topography_smooth_iterations
-
        integer :: iCell
 
        iErr = 0

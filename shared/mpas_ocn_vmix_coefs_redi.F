@@ -262,8 +262,6 @@ contains
 
       err = 0
 
-      call mpas_pool_get_config(ocnConfigs, 'config_use_Redi',config_use_Redi)
-
       if (config_use_Redi) then
          rediDiffOn = .True.
       else
