@@ -315,8 +315,6 @@ subroutine shoc_main ( &
   ! time counter
   integer :: t
 
-  ! vertical flux of tracers [varies]
-  real(rtype) :: wtracer_sec(shcol,nlevi,num_qtracers)
   ! air density on thermo grid [kg/m3]
   real(rtype) :: rho_zt(shcol,nlev)
 
@@ -417,7 +415,6 @@ subroutine shoc_main ( &
        wtracer_sfc, &                         ! Input
        thl_sec, qw_sec,wthl_sec,wqw_sec,&     ! Output
        qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Output
-       wtracer_sec,&                          ! Output
        w_sec)                                 ! Output
 
     ! Diagnose the third moment of vertical velocity,
@@ -882,7 +879,6 @@ subroutine diag_second_shoc_moments(&
          wtracer_sfc, &                         ! Input
          thl_sec,qw_sec,wthl_sec,wqw_sec,&      ! Output
          qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Output
-         wtracer_sec,&                          ! Output
          w_sec)                                 ! Output
 
   ! This is the main routine to compute the second
@@ -954,8 +950,6 @@ subroutine diag_second_shoc_moments(&
   real(rtype), intent(out) :: vw_sec(shcol,nlevi)
   ! vertical flux of tke [m3/s3]
   real(rtype), intent(out) :: wtke_sec(shcol,nlevi)
-  ! vertical flux of tracer [varies m/s]
-  real(rtype), intent(out) :: wtracer_sec(shcol,nlevi,num_tracer)
   ! second order vertical velocity [m2/s2]
   real(rtype), intent(out) :: w_sec(shcol,nlev)
 
@@ -979,8 +973,7 @@ subroutine diag_second_shoc_moments(&
      wthl_sec(:shcol,nlevi),wqw_sec(:shcol,nlevi),&  ! Output
      uw_sec(:shcol,nlevi), vw_sec(:shcol,nlevi),&    ! Output
      wtke_sec(:shcol,nlevi), thl_sec(:shcol,nlevi),& ! Output
-     qw_sec(:shcol,nlevi), qwthl_sec(:shcol,nlevi),& ! Output
-     wtracer_sec(:shcol,nlevi,:num_tracer))          ! Output
+     qw_sec(:shcol,nlevi), qwthl_sec(:shcol,nlevi))  ! Output
 
   ! Diagnose the second order moments,
   !  for points away from boundaries.  this is
@@ -993,7 +986,6 @@ subroutine diag_second_shoc_moments(&
      dz_zi,zt_grid,zi_grid,shoc_mix, &      ! Input
      thl_sec, qw_sec,wthl_sec,wqw_sec,&     ! Input/Output
      qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Input/Output
-     wtracer_sec,&                          ! Input/Output
      w_sec)                                 ! Output
 
   ! Diagnose the second order moments,
@@ -1003,8 +995,7 @@ subroutine diag_second_shoc_moments(&
      thl_sec(:shcol,1), qw_sec(:shcol,1),&  ! Output
      wthl_sec(:shcol,1),wqw_sec(:shcol,1),& ! Output
      qwthl_sec(:shcol,1), uw_sec(:shcol,1),&! Output
-     vw_sec(:shcol,1), wtke_sec(:shcol,1),& ! Output
-     wtracer_sec(:shcol,num_tracer,1))      ! Output
+     vw_sec(:shcol,1), wtke_sec(:shcol,1))  ! Output
 
   return
 end subroutine diag_second_shoc_moments
@@ -1085,8 +1076,7 @@ subroutine diag_second_moments_lbycond(&
          wtracer_sfc,ustar2,wstar,&                   ! Input
          wthl_sec,wqw_sec,&                           ! Output
          uw_sec, vw_sec, wtke_sec,&                   ! Output
-         thl_sec,qw_sec,qwthl_sec,&                   ! Output
-         wtracer_sec)                                 ! Output
+         thl_sec,qw_sec,qwthl_sec)                    ! Output
 
   ! Purpose of this subroutine is to diagnose the lower
   !  boundary condition for the second order moments needed
@@ -1130,8 +1120,6 @@ subroutine diag_second_moments_lbycond(&
   real(rtype), intent(out) :: vw_sec(shcol)
   ! vertical flux of tke [m3/s3]
   real(rtype), intent(out) :: wtke_sec(shcol)
-  ! vertical flux of tracer [varies m/s]
-  real(rtype), intent(out) :: wtracer_sec(shcol,num_tracer)
   ! second order liquid wat. potential temp. [K^2]
   real(rtype), intent(out) :: thl_sec(shcol)
   ! second order total water mixing rat. [kg^2/kg^2]
@@ -1167,9 +1155,6 @@ subroutine diag_second_moments_lbycond(&
     uw_sec(i) = uw_sfc(i)
     vw_sec(i) = vw_sfc(i)
     wtke_sec(i) = max(sqrt(ustar2(i)),0.01_rtype)**3
-    do p=1,num_tracer
-      wtracer_sec(i,p) = wtracer_sfc(i,p)
-    enddo
 
   enddo ! end i loop (column loop)
   return
@@ -1183,7 +1168,6 @@ subroutine diag_second_moments(&
          dz_zi,zt_grid,zi_grid,shoc_mix, &      ! Input
          thl_sec,qw_sec,wthl_sec,wqw_sec,&      ! Input/Output
          qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Input/Output
-         wtracer_sec,&                          ! Input/Output
          w_sec)                                 ! Output
 
   ! Purpose of this subroutine is to diagnose the second
@@ -1249,8 +1233,6 @@ subroutine diag_second_moments(&
   real(rtype), intent(inout) :: vw_sec(shcol,nlevi)
   ! vertical flux of tke [m3/s3]
   real(rtype), intent(inout) :: wtke_sec(shcol,nlevi)
-  ! vertical flux of tracer [varies m/s]
-  real(rtype), intent(inout) :: wtracer_sec(shcol,nlevi,num_tracer)
 
 ! OUTPUT VARIABLES
   ! second order vertical velocity [m2/s2]
@@ -1313,13 +1295,6 @@ subroutine diag_second_moments(&
   call calc_shoc_vertflux(&
          shcol,nlev,nlevi,tk_zi,dz_zi,v_wind,&    ! Input
          vw_sec)                                  ! Input/Output
-
-  ! Calculate vertical flux for tracers
-  do p=1,num_tracer
-    call calc_shoc_vertflux(&
-           shcol,nlev,nlevi,tkh_zi,dz_zi,tracer(:shcol,:nlev,p),& ! Input
-           wtracer_sec(:shcol,:nlev,p))                           ! Input/Output
-  enddo
 
   return
 end subroutine diag_second_moments
@@ -1445,8 +1420,7 @@ subroutine diag_second_moments_ubycond(&
          shcol,num_tracer, &                    ! Input
          thl_sec, qw_sec,&                      ! Output
          wthl_sec,wqw_sec,&                     ! Output
-         qwthl_sec, uw_sec, vw_sec, wtke_sec, & ! Output
-         wtracer_sec)                           ! Output
+         qwthl_sec, uw_sec, vw_sec, wtke_sec)   ! Output
 
   ! Purpose of this subroutine is to diagnose the upper
   !  boundary condition for the second order moments
@@ -1478,8 +1452,6 @@ subroutine diag_second_moments_ubycond(&
   real(rtype), intent(out) :: vw_sec(shcol)
   ! vertical flux of tke [m3/s3]
   real(rtype), intent(out) :: wtke_sec(shcol)
-  ! vertical flux of tracer [varies m/s]
-  real(rtype), intent(out) :: wtracer_sec(shcol,num_tracer)
 
   ! LOCAL VARIABLES
   integer :: i
@@ -1490,7 +1462,6 @@ subroutine diag_second_moments_ubycond(&
     wqw_sec(i) = 0._rtype
     uw_sec(i) = 0._rtype
     vw_sec(i) = 0._rtype
-    wtracer_sec(i,:) = 0._rtype
     wtke_sec(i) = 0._rtype
 
     thl_sec(i) = 0._rtype
