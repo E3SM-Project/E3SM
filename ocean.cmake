@@ -106,7 +106,7 @@ list(APPEND RAW_SOURCES
   core_ocean/shared/mpas_ocn_framework_forcing.F
   core_ocean/shared/mpas_ocn_time_varying_forcing.F
   core_ocean/shared/mpas_ocn_wetting_drying.F
-  core_ocean/shared/mpas_ocn_tidal_potential_forcing.F
+  core_ocean/shared/mpas_ocn_vel_tidal_potential.F
 )
 
 set(OCEAN_DRIVER
@@ -179,6 +179,9 @@ list(APPEND RAW_SOURCES
   core_ocean/analysis_members/mpas_ocn_moc_streamfunction.F
   core_ocean/analysis_members/mpas_ocn_ocean_heat_content.F
   core_ocean/analysis_members/mpas_ocn_mixed_layer_heat_budget.F
+  core_ocean/analysis_members/mpas_ocn_sediment_flux_index.F
+  core_ocean/analysis_members/mpas_ocn_sediment_transport.F
+  core_ocean/analysis_members/mpas_ocn_harmonic_analysis.F
   core_ocean/analysis_members/mpas_ocn_analysis_driver.F
 )
 
