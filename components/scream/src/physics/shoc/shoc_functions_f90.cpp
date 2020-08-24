@@ -23,6 +23,28 @@ void shoc_init_c(int nlev, Real gravit, Real rair, Real rh2o, Real cpair,
 void shoc_grid_c(int shcol, int nlev, int nlevi, Real *zt_grid, Real *zi_grid,
                  Real *pdel, Real *dz_zt, Real *dzi_zi, Real *rho_zt);
 
+void update_host_dse_c(Int shcol, Int nlev, Real *thlm, Real *shoc_ql,
+                       Real *exner, Real *zt_grid, Real *phis, Real *host_dse);
+
+void shoc_energy_integrals_c(Int shcol, Int nlev, Real *host_dse, Real *pdel,
+                             Real *rtm, Real *rcm, Real *u_wind, Real *v_wind,
+                             Real *se_int, Real *ke_int, Real *wv_int, Real *wl_int);
+
+void shoc_energy_total_fixer_c(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv,
+                               Real *zt_grid, Real *zi_grid,
+                               Real *se_b, Real *ke_b, Real *wv_b, Real *wl_b,
+                               Real *se_a, Real *ke_a, Real *wv_a, Real *wl_a,
+                               Real *wthl_sfc, Real *wqw_sfc, Real *rho_zt,
+                               Real *te_a, Real *te_b);
+
+void shoc_energy_threshold_fixer_c(Int shcol, Int nlev, Int nlevi,
+                             Real *pint, Real *tke, Real *te_a, Real *te_b,
+                             Real *se_dis, Int *shoctop);
+
+void shoc_energy_dse_fixer_c(Int shcol, Int nlev,
+                             Real *se_dis, Int *shoctop,
+                             Real *host_dse);
+
 void calc_shoc_varorcovar_c(Int shcol, Int nlev, Int nlevi,  Real tunefac,
                             Real *isotropy_zi, Real *tkh_zi, Real *dz_zi,
 			    Real *invar1, Real *invar2, Real *varorcovar);
@@ -67,7 +89,6 @@ void compute_shoc_mix_shoc_length_c(Int nlev, Int shcol, Real *tke, Real* brunt,
 void check_length_scale_shoc_length_c(Int nlev, Int shcol, Real *host_dx,
                                     Real *host_dy, Real *shoc_mix);
 
-
 void shoc_diag_second_moments_srf_c(Int shcol, Real* wthl, Real* uw, Real* vw,
                                    Real* ustar2, Real* wstar);
 				   
@@ -84,7 +105,8 @@ namespace shoc {
 //
 
 SHOCDataBase::SHOCDataBase(Int shcol_, Int nlev_, Int nlevi_,
-                           const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i) :
+                           const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i,
+			   const std::vector<Real**>& ptrs_c, const std::vector<Int**>& idx_c) :
   shcol(shcol_),
   nlev(nlev_),
   nlevi(nlevi_),
@@ -92,12 +114,17 @@ SHOCDataBase::SHOCDataBase(Int shcol_, Int nlev_, Int nlevi_,
   m_totali(shcol_ * nlevi_),
   m_ptrs(ptrs),
   m_ptrs_i(ptrs_i),
-  m_data(m_ptrs.size() * m_total + m_ptrs_i.size() * m_totali, 0)
+  m_ptrs_c(ptrs_c),
+  m_indices_c(idx_c),
+  m_data(m_ptrs.size() * m_total + m_ptrs_i.size() * m_totali + m_ptrs_c.size() * shcol, 0),
+  m_idx_data(idx_c.size() * shcol, 0)
 {
   init_ptrs();
 }
 
-SHOCDataBase::SHOCDataBase(const SHOCDataBase &rhs, const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i) :
+SHOCDataBase::SHOCDataBase(const SHOCDataBase &rhs,
+                           const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i,
+                           const std::vector<Real**>& ptrs_c, const std::vector<Int**>& idx_c) :
   shcol(rhs.shcol),
   nlev(rhs.nlev),
   nlevi(rhs.nlevi),
@@ -105,19 +132,23 @@ SHOCDataBase::SHOCDataBase(const SHOCDataBase &rhs, const std::vector<Real**>& p
   m_totali(rhs.m_totali),
   m_ptrs(ptrs),
   m_ptrs_i(ptrs_i),
-  m_data(rhs.m_data)
+  m_ptrs_c(ptrs_c),
+  m_indices_c(idx_c),
+  m_data(rhs.m_data),
+  m_idx_data(rhs.m_idx_data)
 {
   init_ptrs();
 }
 
 SHOCDataBase& SHOCDataBase::operator=(const SHOCDataBase& rhs)
 {
-  shcol    = rhs.shcol;
-  nlev     = rhs.nlev;
-  nlevi    = rhs.nlevi;
-  m_total  = rhs.m_total;
-  m_totali = rhs.m_totali;
-  m_data   = rhs.m_data; // Copy
+  shcol      = rhs.shcol;
+  nlev       = rhs.nlev;
+  nlevi      = rhs.nlevi;
+  m_total    = rhs.m_total;
+  m_totali   = rhs.m_totali;
+  m_data     = rhs.m_data;      // Copy
+  m_idx_data = rhs.m_idx_data;  // Copy
 
   init_ptrs();
 
@@ -126,8 +157,8 @@ SHOCDataBase& SHOCDataBase::operator=(const SHOCDataBase& rhs)
 
 void SHOCDataBase::init_ptrs()
 {
-  Int offset         = 0;
-  Real *data_begin   = m_data.data();
+  Int offset       = 0;
+  Real *data_begin = m_data.data();
 
   for (size_t i = 0; i < m_ptrs.size(); ++i) {
     *(m_ptrs[i]) = data_begin + offset;
@@ -138,29 +169,57 @@ void SHOCDataBase::init_ptrs()
     *(m_ptrs_i[i]) = data_begin + offset;
     offset += m_totali;
   }
+
+  for (size_t i = 0; i < m_ptrs_c.size(); ++i) {
+    *(m_ptrs_c[i]) = data_begin + offset;
+    offset += shcol;
+  }
+
+  for (size_t i = 0; i < m_indices_c.size(); ++i) {
+    *(m_indices_c[i]) = m_idx_data.data() + shcol*i;
+  }
 }
 
 void SHOCDataBase::randomize(const std::vector<std::pair<Real, Real> >& ranges,
-                             const std::vector<std::pair<Real, Real> >& ranges_i)
+                             const std::vector<std::pair<Real, Real> >& ranges_i,
+                             const std::vector<std::pair<Real, Real> >& ranges_c,
+                             const std::vector<std::pair<Int, Int> >&   ranges_idx)
 {
   std::default_random_engine generator;
 
   scream_assert_msg(ranges.size() <= m_ptrs.size(), "Provided more ranges than data items");
   for (size_t i = 0; i < m_ptrs.size(); ++i) {
-    std::uniform_real_distribution<Real> data_dist(i < ranges.size() ? ranges[i].first : 0.0,
+    std::uniform_real_distribution<Real> data_dist(i < ranges.size() ? ranges[i].first  : 0.0,
                                                    i < ranges.size() ? ranges[i].second : 1.0);
     for (size_t j = 0; j < m_total; ++j) {
       (*(m_ptrs[i]))[j] = data_dist(generator);
     }
   }
 
-  scream_assert_msg(ranges_i.size() <= m_ptrs_i.size(), "Provided more ranges than data items");
+  scream_assert_msg(ranges_i.size() <= m_ptrs_i.size(), "Provided more ranges_i than data items");
   for (size_t i = 0; i < m_ptrs_i.size(); ++i) {
-    std::uniform_real_distribution<Real> data_dist(i < ranges_i.size() ? ranges_i[i].first : 0.0,
+    std::uniform_real_distribution<Real> data_dist(i < ranges_i.size() ? ranges_i[i].first  : 0.0,
                                                    i < ranges_i.size() ? ranges_i[i].second : 1.0);
 
     for (size_t j = 0; j < m_totali; ++j) {
       (*(m_ptrs_i[i]))[j] = data_dist(generator);
+    }
+  }
+
+  scream_assert_msg(ranges_i.size() <= m_ptrs_i.size(), "Provided more ranges_c than data items");
+  for (size_t i = 0; i < m_ptrs_c.size(); ++i) {
+    std::uniform_real_distribution<Real> data_dist(i < ranges_c.size() ? ranges_c[i].first  : 0.0,
+                                                   i < ranges_c.size() ? ranges_c[i].second : 1.0);
+    for (size_t j = 0; j < shcol; ++j) {
+      (*(m_ptrs_c[i]))[j] = data_dist(generator);
+    }
+  }
+
+  scream_assert_msg(ranges_idx.size() == m_indices_c.size(), "Must provide ranges_idx for index data");
+  for (size_t i = 0; i < m_indices_c.size(); ++i) {
+    std::uniform_int_distribution<Int> data_dist(ranges_idx[i].first, ranges_idx[i].second);
+    for (size_t j = 0; j < shcol; ++j) {
+      (*(m_indices_c[i]))[j] = data_dist(generator);
     }
   }
 }
@@ -192,6 +251,52 @@ void shoc_grid(SHOCGridData &d) {
   d.transpose<util::TransposeDirection::c2f>();
   shoc_grid_c(d.shcol, d.nlev, d.nlevi, d.zt_grid, d.zi_grid, d.pdel, d.dz_zt,
               d.dz_zi, d.rho_zt);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+void update_host_dse(SHOCEnergydseData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  update_host_dse_c(d.shcol, d.nlev, d.thlm, d.shoc_ql, d.exner,
+                    d.zt_grid, d.phis, d.host_dse);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+void shoc_energy_integrals(SHOCEnergyintData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  shoc_energy_integrals_c(d.shcol, d.nlev, d.host_dse, d.pdel,
+                          d.rtm, d.rcm, d.u_wind, d.v_wind,
+                          d.se_int, d.ke_int, d.wv_int, d.wl_int);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+void shoc_energy_total_fixer(SHOCEnergytotData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  shoc_energy_total_fixer_c(d.shcol, d.nlev, d.nlevi, d.dtime, d.nadv,
+                            d.zt_grid, d.zi_grid,
+                            d.se_b, d.ke_b, d.wv_b, d.wl_b,
+                            d.se_a, d.ke_a, d.wv_a, d.wl_a,
+                            d.wthl_sfc, d.wqw_sfc, d.rho_zt,
+                            d.te_a, d.te_b);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+void shoc_energy_threshold_fixer(SHOCEnergythreshfixerData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  shoc_energy_threshold_fixer_c(d.shcol, d.nlev, d.nlevi,
+                          d.pint, d.tke, d.te_a, d.te_b,
+			  d.se_dis, d.shoctop);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+void shoc_energy_dse_fixer(SHOCEnergydsefixerData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  shoc_energy_dse_fixer_c(d.shcol, d.nlev,
+                          d.se_dis, d.shoctop, d.host_dse);
   d.transpose<util::TransposeDirection::f2c>();
 }
 
