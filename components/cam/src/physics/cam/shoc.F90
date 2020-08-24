@@ -3697,7 +3697,6 @@ subroutine shoc_energy_threshold_fixer(&
 
 end subroutine shoc_energy_threshold_fixer
 
-
 !==============================================================
 ! Subroutine foe SHOC energy fixer with host model temp
 
@@ -3734,11 +3733,8 @@ subroutine shoc_energy_dse_fixer(&
 
 end subroutine shoc_energy_dse_fixer
 
-
-
-
-  !==============================================================
-  ! Linear interpolation to get values on various grids
+!==============================================================
+! Linear interpolation to get values on various grids
 
 subroutine shoc_diag_obklen(&
          shcol,uw_sfc,vw_sfc,&      ! Input
