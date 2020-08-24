@@ -11,8 +11,9 @@ add_default($nl, 'config_flowParamA_calculation');
 add_default($nl, 'config_do_velocity_reconstruction_for_external_dycore');
 add_default($nl, 'config_simple_velocity_type');
 add_default($nl, 'config_use_glp');
-add_default($nl, 'config_beta_use_effective_pressure');
+add_default($nl, 'config_beta_thawed_only');
 add_default($nl, 'config_unrealistic_velocity');
+add_default($nl, 'config_nonconvergence_error');
 
 #############################
 # Namelist group: advection #
@@ -170,6 +171,7 @@ add_default($nl, 'config_SGH_creep_coefficient');
 add_default($nl, 'config_SGH_englacial_porosity');
 add_default($nl, 'config_SGH_till_max');
 add_default($nl, 'config_SGH_chnl_active');
+add_default($nl, 'config_SGH_chnl_include_DCFL');
 add_default($nl, 'config_SGH_chnl_alpha');
 add_default($nl, 'config_SGH_chnl_beta');
 add_default($nl, 'config_SGH_chnl_conduc_coeff');
