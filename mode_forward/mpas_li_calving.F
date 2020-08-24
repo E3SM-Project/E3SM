@@ -1324,6 +1324,7 @@ module li_calving
       real(kind=RKIND), dimension(5) :: localInfo, globalInfo
       logical :: openOceanNeighbor
       real(kind=RKIND) :: edgeLengthScaling
+      real(kind=RKIND), parameter :: calvingSmallThk = 1.0e-8 ! in meters, a small thickness threshold
 
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
 
@@ -1381,7 +1382,8 @@ module li_calving
                endif
             enddo
             if (thkCount == 0) then
-               !call mpas_log_write("Found a stranded non-dynamic floating cell!", MPAS_LOG_WARN)
+               call mpas_log_write("Found a stranded non-dynamic floating cell: cell $i with thickness=$r m.", MPAS_LOG_WARN, &
+                  intArgs=(/iCell/), realArgs=(/thickness(iCell)/))
                ! TODO: Make an error? Print a warning?  Suppress?)
             else
                thicknessForCalving(iCell) = thkSum / real(thkCount, kind=RKIND)
@@ -1500,6 +1502,13 @@ module li_calving
       enddo
       call mpas_log_write("Done calculating calving for dynamic floating cells. Removed $r m^3", realArgs=(/calvingSubtotal2/))
 
+
+      ! Clean up to account for roundoff level errors that can occur
+      do iCell = 1, nCells
+         if (abs(calvingThickness(iCell) - thickness(iCell)) < calvingSmallThk) then
+            calvingThickness(iCell) = thickness(iCell)
+         endif
+      enddo
 
 
       ! End of routine accounting/reporting
