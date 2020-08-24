@@ -1237,7 +1237,8 @@ contains
     !EOP
 
     !----- local -----
-    character(SHR_KIND_CX) :: l1,l2   ! local char strings
+    character(len=len(list1)) :: l1
+    character(len=len(list2)) :: l2
     integer(SHR_KIND_IN)   :: rCode   ! return code
     integer(SHR_KIND_IN)   :: t01 = 0 ! timer
 
@@ -1253,11 +1254,6 @@ contains
     if (debug>1 .and. t01<1) call shr_timer_get(t01,subName)
     if (debug>1) call shr_timer_start(t01)
     rCode = 0
-
-    !--- make sure temp strings are large enough ---
-    if ( (len(l1) < len_trim(list1)) .or. (len(l2) < len_trim(list2))) then
-       call shr_string_abort(subName//'ERROR: temp string not large enough')
-    end if
 
     call shr_string_clean(l1)
     call shr_string_clean(l2)
