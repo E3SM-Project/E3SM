@@ -10,6 +10,7 @@ import genutil
 import cdms2
 from acme_diags import container
 from acme_diags.derivations.default_regions import regions_specs
+import errno
 
 def strictly_increasing(L):
     return all(x<y for x, y in zip(L, L[1:]))
@@ -307,7 +308,7 @@ def get_output_dir(set_num, parameter, ignore_container=False):
         try:
             os.makedirs(pth, 0o755)
         except OSError as e:
-            if e.errno != os.errno.EEXIST:
+            if e.errno != errno.EEXIST:
                 raise
 
     return pth
