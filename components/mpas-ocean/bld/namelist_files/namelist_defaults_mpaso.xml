@@ -206,6 +206,7 @@
 <config_cvmix_kpp_langmuir_entrainment_opt>'NONE'</config_cvmix_kpp_langmuir_entrainment_opt>
 
 <!-- forcing -->
+<config_use_variable_drag>.false.</config_use_variable_drag>
 <config_use_bulk_wind_stress>.true.</config_use_bulk_wind_stress>
 <config_use_bulk_thickness_flux>.true.</config_use_bulk_thickness_flux>
 <config_flux_attenuation_coefficient>0.001</config_flux_attenuation_coefficient>
@@ -219,6 +220,20 @@
 <config_sw_absorption_type>'jerlov'</config_sw_absorption_type>
 <config_jerlov_water_type>3</config_jerlov_water_type>
 <config_surface_buoyancy_depth>1</config_surface_buoyancy_depth>
+
+<!-- tidal_potential_forcing -->
+<config_use_tidal_potential_forcing>.false.</config_use_tidal_potential_forcing>
+<config_tidal_potential_reference_time>'0001-01-01_00:00:00'</config_tidal_potential_reference_time>
+<config_use_tidal_potential_forcing_M2>.true.</config_use_tidal_potential_forcing_M2>
+<config_use_tidal_potential_forcing_S2>.true.</config_use_tidal_potential_forcing_S2>
+<config_use_tidal_potential_forcing_N2>.true.</config_use_tidal_potential_forcing_N2>
+<config_use_tidal_potential_forcing_K2>.true.</config_use_tidal_potential_forcing_K2>
+<config_use_tidal_potential_forcing_K1>.true.</config_use_tidal_potential_forcing_K1>
+<config_use_tidal_potential_forcing_O1>.true.</config_use_tidal_potential_forcing_O1>
+<config_use_tidal_potential_forcing_Q1>.true.</config_use_tidal_potential_forcing_Q1>
+<config_use_tidal_potential_forcing_P1>.true.</config_use_tidal_potential_forcing_P1>
+<config_tidal_potential_ramp>10.0</config_tidal_potential_ramp>
+<config_self_attraction_and_loading_beta>0.09</config_self_attraction_and_loading_beta>
 
 <!-- frazil_ice -->
 <config_use_frazil_ice_formation>.true.</config_use_frazil_ice_formation>
@@ -267,6 +282,8 @@
 <!-- bottom_drag -->
 <config_use_implicit_bottom_drag>.true.</config_use_implicit_bottom_drag>
 <config_implicit_bottom_drag_coeff>1.0e-3</config_implicit_bottom_drag_coeff>
+<config_use_implicit_bottom_drag_variable>.false.</config_use_implicit_bottom_drag_variable>
+<config_use_implicit_bottom_drag_variable_mannings>.false.</config_use_implicit_bottom_drag_variable_mannings>
 <config_use_explicit_bottom_drag>.false.</config_use_explicit_bottom_drag>
 <config_explicit_bottom_drag_coeff>1.0e-3</config_explicit_bottom_drag_coeff>
 
@@ -854,5 +871,58 @@
 <config_AM_mixedLayerHeatBudget_output_stream>'mixedLayerHeatBudgetOutput'</config_AM_mixedLayerHeatBudget_output_stream>
 <config_AM_mixedLayerHeatBudget_compute_on_startup>.false.</config_AM_mixedLayerHeatBudget_compute_on_startup>
 <config_AM_mixedLayerHeatBudget_write_on_startup>.false.</config_AM_mixedLayerHeatBudget_write_on_startup>
+
+<!-- AM_sedimentFluxIndex -->
+<config_AM_sedimentFluxIndex_enable>.false.</config_AM_sedimentFluxIndex_enable>
+<config_AM_sedimentFluxIndex_compute_on_startup>.true.</config_AM_sedimentFluxIndex_compute_on_startup>
+<config_AM_sedimentFluxIndex_write_on_startup>.true.</config_AM_sedimentFluxIndex_write_on_startup>
+<config_AM_sedimentFluxIndex_compute_interval>'output_interval'</config_AM_sedimentFluxIndex_compute_interval>
+<config_AM_sedimentFluxIndex_output_stream>'sedimentFluxIndexOutput'</config_AM_sedimentFluxIndex_output_stream>
+<config_AM_sedimentFluxIndex_directory>'analysis_members'</config_AM_sedimentFluxIndex_directory>
+<config_AM_sedimentFluxIndex_use_lat_lon_coords>.true.</config_AM_sedimentFluxIndex_use_lat_lon_coords>
+
+<!-- AM_sedimentTransport -->
+<config_AM_sedimentTransport_enable>.false.</config_AM_sedimentTransport_enable>
+<config_AM_sedimentTransport_compute_on_startup>.true.</config_AM_sedimentTransport_compute_on_startup>
+<config_AM_sedimentTransport_write_on_startup>.true.</config_AM_sedimentTransport_write_on_startup>
+<config_AM_sedimentTransport_compute_interval>'output_interval'</config_AM_sedimentTransport_compute_interval>
+<config_AM_sedimentTransport_output_stream>'sedimentTransportOutput'</config_AM_sedimentTransport_output_stream>
+<config_AM_sedimentTransport_directory>'analysis_members'</config_AM_sedimentTransport_directory>
+<config_AM_sedimentTransport_grain_size>2.5e-4</config_AM_sedimentTransport_grain_size>
+<config_AM_sedimentTransport_ws_formula>'VanRijn1993'</config_AM_sedimentTransport_ws_formula>
+<config_AM_sedimentTransport_bedld_formula>'Soulsby-Damgaard'</config_AM_sedimentTransport_bedld_formula>
+<config_AM_sedimentTransport_SSC_ref_formula>'Lee2004'</config_AM_sedimentTransport_SSC_ref_formula>
+<config_AM_sedimentTransport_drag_coefficient>2.5e-3</config_AM_sedimentTransport_drag_coefficient>
+<config_AM_sedimentTransport_erate>5.0e-4</config_AM_sedimentTransport_erate>
+<config_AM_sedimentTransport_tau_ce>0.1</config_AM_sedimentTransport_tau_ce>
+<config_AM_sedimentTransport_tau_cd>0.1</config_AM_sedimentTransport_tau_cd>
+<config_AM_sedimentTransport_Manning_coef>0.022</config_AM_sedimentTransport_Manning_coef>
+<config_AM_sedimentTransport_grain_porosity>0.5</config_AM_sedimentTransport_grain_porosity>
+<config_AM_sedimentTransport_water_density>1020</config_AM_sedimentTransport_water_density>
+<config_AM_sedimentTransport_grain_density>2650</config_AM_sedimentTransport_grain_density>
+<config_AM_sedimentTransport_alpha>1e-2</config_AM_sedimentTransport_alpha>
+<config_AM_sedimentTransport_kinematic_viscosity>1e-6</config_AM_sedimentTransport_kinematic_viscosity>
+<config_AM_sedimentTransport_vertical_diffusion_coefficient>1e-2</config_AM_sedimentTransport_vertical_diffusion_coefficient>
+<config_AM_sedimentTransport_bedload>.true.</config_AM_sedimentTransport_bedload>
+<config_AM_sedimentTransport_suspended>.true.</config_AM_sedimentTransport_suspended>
+<config_AM_sedimentTransport_use_lat_lon_coords>.true.</config_AM_sedimentTransport_use_lat_lon_coords>
+
+<!-- AM_harmonicAnalysis -->
+<config_AM_harmonicAnalysis_enable>.false.</config_AM_harmonicAnalysis_enable>
+<config_AM_harmonicAnalysis_compute_interval>'output_interval'</config_AM_harmonicAnalysis_compute_interval>
+<config_AM_harmonicAnalysis_start>'0001-01-01_00:00:00'</config_AM_harmonicAnalysis_start>
+<config_AM_harmonicAnalysis_end>'0001-01-01_00:00:00'</config_AM_harmonicAnalysis_end>
+<config_AM_harmonicAnalysis_output_stream>'harmonicAnalysisOutput'</config_AM_harmonicAnalysis_output_stream>
+<config_AM_harmonicAnalysis_restart_stream>'harmonicAnalysisRestart'</config_AM_harmonicAnalysis_restart_stream>
+<config_AM_harmonicAnalysis_compute_on_startup>.false.</config_AM_harmonicAnalysis_compute_on_startup>
+<config_AM_harmonicAnalysis_write_on_startup>.false.</config_AM_harmonicAnalysis_write_on_startup>
+<config_AM_harmonicAnalysis_use_M2>.true.</config_AM_harmonicAnalysis_use_M2>
+<config_AM_harmonicAnalysis_use_S2>.true.</config_AM_harmonicAnalysis_use_S2>
+<config_AM_harmonicAnalysis_use_N2>.true.</config_AM_harmonicAnalysis_use_N2>
+<config_AM_harmonicAnalysis_use_K2>.true.</config_AM_harmonicAnalysis_use_K2>
+<config_AM_harmonicAnalysis_use_K1>.true.</config_AM_harmonicAnalysis_use_K1>
+<config_AM_harmonicAnalysis_use_O1>.true.</config_AM_harmonicAnalysis_use_O1>
+<config_AM_harmonicAnalysis_use_Q1>.true.</config_AM_harmonicAnalysis_use_Q1>
+<config_AM_harmonicAnalysis_use_P1>.true.</config_AM_harmonicAnalysis_use_P1>
 
 </namelist_defaults>
