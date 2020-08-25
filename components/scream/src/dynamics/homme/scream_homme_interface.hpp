@@ -1,8 +1,8 @@
 #ifndef SCREAM_HOMME_INTERFACE_HPP
 #define SCREAM_HOMME_INTERFACE_HPP
 
-#include "ekat/mpi/scream_comm.hpp"
-#include "ekat/scream_assert.hpp"
+#include "ekat/mpi/ekat_comm.hpp"
+#include "ekat/ekat_assert.hpp"
 #include <mpi.h>
 #include <string>
 
@@ -28,12 +28,12 @@ bool get_homme_bool_param_value_f90(const char** name);
 
 } // extern "C"
 
-inline void init_homme1 (const Comm& comm) {
+inline void init_homme1 (const ekat::Comm& comm) {
   if (!was_init_homme1_called_f90()) {
     // Make sure MPI is inited
     int flag;
     MPI_Initialized(&flag);
-    scream_require_msg(flag==1, "Error! MPI does not seem to be initialized yet.\n");
+    EKAT_REQUIRE_MSG(flag==1, "Error! MPI does not seem to be initialized yet.\n");
 
     // Initialize homme, via F90 calls
     auto f_comm = MPI_Comm_c2f(comm.mpi_comm()); 

@@ -1,10 +1,10 @@
 #include <catch2/catch.hpp>
 
 #include "scream_config.h"
-#include "ekat/scream_pack.hpp"
+#include "ekat/ekat_pack.hpp"
 #include "mct_coupling/scream_scorpio_interface.hpp"
-#include "ekat/mpi/scream_comm.hpp"
-#include "ekat/scream_types.hpp"
+#include "ekat/mpi/ekat_comm.hpp"
+#include "share/scream_types.hpp"
 #include "ekat/util/ekat_md_array.hpp"
 
 

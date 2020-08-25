@@ -1,8 +1,7 @@
 #ifndef SCREAM_SCORPIO_INTERFACE_HPP
 #define SCREAM_SCORPIO_INTERFACE_HPP
 
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_types.hpp"
+#include "share/scream_types.hpp"
 
 // TODO, figure out a better way to define netCDF output type for fields
 #ifdef SCREAM_CONFIG_IS_CMAKE

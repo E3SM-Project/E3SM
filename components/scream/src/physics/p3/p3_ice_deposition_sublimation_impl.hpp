@@ -1,8 +1,8 @@
 #ifndef P3_ICE_DEPOSITION_SUBLIMATION_IMPL_HPP
 #define P3_ICE_DEPOSITION_SUBLIMATION_IMPL_HPP
 
-#include "p3_functions.hpp"
-#include "physics_constants.hpp"
+#include "physics/p3/p3_functions.hpp"
+#include "physics/share/physics_constants.hpp"
 
 namespace scream {
 namespace p3 {
@@ -33,14 +33,14 @@ void Functions<S,D>
   qi2qv_sublim_tend.set(qi_incld_not_small && t_gt_zerodegc_pos_qv2qi_vapdep_tend, 0);
 
   //make qi2qv_sublim_tend positive for consistency with other evap/sub processes
-  qi2qv_sublim_tend.set(qi_incld_not_small && !t_gt_zerodegc_pos_qv2qi_vapdep_tend, -pack::min(qv2qi_vapdep_tend,0));
+  qi2qv_sublim_tend.set(qi_incld_not_small && !t_gt_zerodegc_pos_qv2qi_vapdep_tend, -min(qv2qi_vapdep_tend,0));
   qv2qi_vapdep_tend.set(qi_incld_not_small && !t_gt_zerodegc_pos_qv2qi_vapdep_tend, 0);
 
   //sublimation occurs @ any T. Not so for berg.
   const auto t_lt_zerodegc = t < ZERODEGC;
 
   //Compute bergeron rate assuming cloud for whole step.
-  qc2qi_berg_tend.set(qi_incld_not_small && t_lt_zerodegc, pack::max(epsi*oabi*(qv_sat_l - qv_sat_i), 0));
+  qc2qi_berg_tend.set(qi_incld_not_small && t_lt_zerodegc, max(epsi*oabi*(qv_sat_l - qv_sat_i), 0));
   qc2qi_berg_tend.set(qi_incld_not_small && !t_lt_zerodegc, 0);
 
   if (qi_incld_not_small.any()) {
@@ -57,4 +57,4 @@ void Functions<S,D>
 } // namespace p3
 } // namespace scream
 
-#endif
+#endif // P3_ICE_DEPOSITION_SUBLIMATION_IMPL_HPP

@@ -1,9 +1,8 @@
 #include "scream_scorpio_interface.hpp"
 #include "scream_config.h"
 
-#include "ekat/scream_assert.hpp"
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_types.hpp"
+#include "ekat/ekat_assert.hpp"
+#include "share/scream_types.hpp"
 
 #include <string>
 

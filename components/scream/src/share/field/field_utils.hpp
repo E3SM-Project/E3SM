@@ -2,7 +2,7 @@
 #define SCREAM_FIELD_UTILS_HPP
 
 #include "field_tag.hpp"
-#include "ekat/util/scream_std_utils.hpp"
+#include "ekat/std_meta/ekat_std_utils.hpp"
 
 namespace scream {
 
@@ -41,7 +41,8 @@ enum class LayoutType {
 };
 
 inline LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
-  using util::erase;
+  using ekat::util::erase;
+  using ekat::util::count;
 
   auto tags = field_tags;
 
@@ -55,9 +56,9 @@ inline LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
   constexpr auto VAR  = FieldTag::Variable;
   constexpr auto VL   = FieldTag::VerticalLevel;
 
-  const int n_element = util::count(tags,EL);
-  const int n_column  = util::count(tags,COL);
-  const int ngp       = util::count(tags,GP);
+  const int n_element = count(tags,EL);
+  const int n_column  = count(tags,COL);
+  const int ngp       = count(tags,GP);
 
   // Start from undefined/invalid
   LayoutType result = LayoutType::Invalid;

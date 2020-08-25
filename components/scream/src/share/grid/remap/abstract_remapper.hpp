@@ -4,10 +4,11 @@
 #include "share/field/field.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/grid/abstract_grid.hpp"
-#include "ekat/util/scream_factory.hpp"
+
+#include "ekat/util/ekat_factory.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
-#include "ekat/util/scream_std_utils.hpp"
-#include "ekat/scream_parameter_list.hpp"
+#include "ekat/std_meta/ekat_std_utils.hpp"
+#include "ekat/ekat_parameter_list.hpp"
 
 namespace scream
 {
@@ -53,11 +54,11 @@ public:
 
   // The actual remap routine.
   void remap (const bool forward) const {
-    scream_require_msg(m_state!=RepoState::Open,
+    EKAT_REQUIRE_MSG(m_state!=RepoState::Open,
                        "Error! Cannot perform remapping at this time.\n"
                        "       Did you forget to call 'registration_ends'?\n");
 
-    scream_require_msg(m_num_bound_fields==m_num_fields,
+    EKAT_REQUIRE_MSG(m_num_bound_fields==m_num_fields,
                        "Error! Not all fields have been set in the remapper.\n"
                        "       In particular, field " +
                        std::to_string(std::distance(m_fields_are_bound.begin(),std::find(m_fields_are_bound.begin(),m_fields_are_bound.end(),false))) +
@@ -77,29 +78,29 @@ public:
   grid_ptr_type get_tgt_grid () const { return m_tgt_grid; }
 
   const identifier_type& get_src_field_id (const int ifield) const {
-    scream_require_msg(ifield>=0 && ifield<m_num_registered_fields,
+    EKAT_REQUIRE_MSG(ifield>=0 && ifield<m_num_registered_fields,
                        "Error! Field index out of bounds.\n");
     return do_get_src_field_id(ifield);
   }
 
   const identifier_type& get_tgt_field_id (const int ifield) const {
-    scream_require_msg(ifield>=0 && ifield<m_num_registered_fields,
+    EKAT_REQUIRE_MSG(ifield>=0 && ifield<m_num_registered_fields,
                        "Error! Field index out of bounds.\n");
     return do_get_tgt_field_id(ifield);
   }
 
   const field_type& get_src_field (const int ifield) const {
-    scream_require_msg(m_state==RepoState::Closed,
+    EKAT_REQUIRE_MSG(m_state==RepoState::Closed,
                        "Error! Cannot call 'get_src_field' until registration has ended.\n");
-    scream_require_msg(ifield>=0 && ifield<m_num_registered_fields,
+    EKAT_REQUIRE_MSG(ifield>=0 && ifield<m_num_registered_fields,
                        "Error! Field index out of bounds.\n");
     return do_get_src_field(ifield);
   }
 
   const field_type& get_tgt_field (const int ifield) const {
-    scream_require_msg(m_state==RepoState::Closed,
+    EKAT_REQUIRE_MSG(m_state==RepoState::Closed,
                        "Error! Cannot call 'get_tgt_field' until registration has ended.\n");
-    scream_require_msg(ifield>=0 && ifield<m_num_registered_fields,
+    EKAT_REQUIRE_MSG(ifield>=0 && ifield<m_num_registered_fields,
                        "Error! Field index out of bounds.\n");
     return do_get_tgt_field(ifield);
   }
@@ -126,7 +127,7 @@ public:
   }
 
   int get_num_fields () const {
-    scream_require_msg(m_state!=RepoState::Open,
+    EKAT_REQUIRE_MSG(m_state!=RepoState::Open,
                        "Error! Cannot call 'get_num_fields' durin the registration phase.\n");
     return m_num_fields;
   }
@@ -197,14 +198,14 @@ AbstractRemapper (const grid_ptr_type& src_grid,
  , m_fields_are_bound      (0)
  , m_num_bound_fields      (0)
 {
-  scream_require_msg(static_cast<bool>(src_grid), "Error! Invalid source grid pointer.\n");
-  scream_require_msg(static_cast<bool>(tgt_grid), "Error! Invalid target grid pointer.\n");
+  EKAT_REQUIRE_MSG(static_cast<bool>(src_grid), "Error! Invalid source grid pointer.\n");
+  EKAT_REQUIRE_MSG(static_cast<bool>(tgt_grid), "Error! Invalid target grid pointer.\n");
 }
 
 template<typename ScalarType, typename DeviceType>
 void AbstractRemapper<ScalarType,DeviceType>::
 registration_begins () {
-  scream_require_msg(m_state==RepoState::Clean,
+  EKAT_REQUIRE_MSG(m_state==RepoState::Clean,
                        "Error! Cannot start registration on a non-clean repo.\n"
                        "       Did you call 'registration_begins' already?\n");
 
@@ -216,19 +217,19 @@ registration_begins () {
 template<typename ScalarType, typename DeviceType>
 void AbstractRemapper<ScalarType,DeviceType>::
 register_field (const identifier_type& src, const identifier_type& tgt) {
-  scream_require_msg(m_state!=RepoState::Clean,
+  EKAT_REQUIRE_MSG(m_state!=RepoState::Clean,
                        "Error! Cannot register fields in the remapper at this time.\n"
                        "       Did you forget to call 'registration_begins' ?");
-  scream_require_msg(m_state!=RepoState::Closed,
+  EKAT_REQUIRE_MSG(m_state!=RepoState::Closed,
                        "Error! Cannot register fields in the remapper at this time.\n"
                        "       Did you accidentally call 'registration_ends' already?");
 
-  scream_require_msg(src.get_grid_name()==m_src_grid->name(),
+  EKAT_REQUIRE_MSG(src.get_grid_name()==m_src_grid->name(),
                        "Error! Source field stores the wrong grid.\n");
-  scream_require_msg(tgt.get_grid_name()==m_tgt_grid->name(),
+  EKAT_REQUIRE_MSG(tgt.get_grid_name()==m_tgt_grid->name(),
                        "Error! Target field stores the wrong grid.\n");
 
-  scream_require_msg(compatible_layouts(src.get_layout(),tgt.get_layout()),
+  EKAT_REQUIRE_MSG(compatible_layouts(src.get_layout(),tgt.get_layout()),
                      "Error! Source and target layouts are not compatible.\n");
 
   do_register_field (src,tgt);
@@ -248,11 +249,11 @@ register_field (const field_type& src, const field_type& tgt) {
 template<typename ScalarType, typename DeviceType>
 void AbstractRemapper<ScalarType,DeviceType>::
 unregister_field (const identifier_type& src, const identifier_type& tgt) {
-  scream_require_msg(m_state==RepoState::Open,
+  EKAT_REQUIRE_MSG(m_state==RepoState::Open,
                      "Error! You can only un-register fields during the registration phase.\n");
 
   const int ifield = find_field(src,tgt);
-  scream_require_msg(ifield>=0,
+  EKAT_REQUIRE_MSG(ifield>=0,
                      "Error! The src/tgt pair of fields \n"
                      "         " + src.get_id_string() + "\n"
                      "         " + tgt.get_id_string() + "\n"
@@ -271,7 +272,7 @@ unregister_field (const identifier_type& src, const identifier_type& tgt) {
 template<typename ScalarType, typename DeviceType>
 void AbstractRemapper<ScalarType,DeviceType>::
 bind_field (const field_type& src, const field_type& tgt) {
-  scream_require_msg(m_state!=RepoState::Clean,
+  EKAT_REQUIRE_MSG(m_state!=RepoState::Clean,
                      "Error! Cannot bind fields in the remapper at this time.\n"
                      "       Did you forget to call 'registration_begins' ?");
 
@@ -280,16 +281,16 @@ bind_field (const field_type& src, const field_type& tgt) {
 
   // Try to locate the pair of fields
   const int ifield = find_field(src_fid, tgt_fid);
-  scream_require_msg(ifield>=0,
+  EKAT_REQUIRE_MSG(ifield>=0,
                      "Error! The src/tgt field pair\n"
                      "         " + src_fid.get_id_string() + "\n"
                      "         " + tgt_fid.get_id_string() + "\n"
                      "       was not registered. Please, register fields before binding them.\n");
 
-  scream_require_msg(src.is_allocated(), "Error! Source field is not yet allocated.\n");
-  scream_require_msg(tgt.is_allocated(), "Error! Source field is not yet allocated.\n");
+  EKAT_REQUIRE_MSG(src.is_allocated(), "Error! Source field is not yet allocated.\n");
+  EKAT_REQUIRE_MSG(tgt.is_allocated(), "Error! Source field is not yet allocated.\n");
 
-  scream_require_msg(!m_fields_are_bound[ifield],
+  EKAT_REQUIRE_MSG(!m_fields_are_bound[ifield],
                      "Error! Field already bound.\n");
 
   do_bind_field(ifield,src,tgt);
@@ -301,7 +302,7 @@ bind_field (const field_type& src, const field_type& tgt) {
 template<typename ScalarType, typename DeviceType>
 void AbstractRemapper<ScalarType,DeviceType>::
 registration_ends () {
-  scream_require_msg(m_state!=RepoState::Closed,
+  EKAT_REQUIRE_MSG(m_state!=RepoState::Closed,
                        "Error! Cannot call registration_ends at this time.\n"
                        "       Did you accidentally call 'registration_ends' already?");
 
@@ -315,10 +316,10 @@ registration_ends () {
 // A short name for an AbstractRemapper factory
 template<typename ScalarType, typename Device>
 using RemapperFactory =
-    util::Factory<AbstractRemapper<ScalarType,Device>,
-                  util::CaseInsensitiveString,
+    ekat::util::Factory<AbstractRemapper<ScalarType,Device>,
+                  ekat::util::CaseInsensitiveString,
                   std::shared_ptr<AbstractRemapper<ScalarType,Device>>,
-                  const ParameterList&>;
+                  const ekat::ParameterList&>;
 
 } // namespace scream
 

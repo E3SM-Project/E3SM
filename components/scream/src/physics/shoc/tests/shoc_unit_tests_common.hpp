@@ -1,10 +1,9 @@
 #ifndef SHOC_UNIT_TESTS_COMMON_HPP
 #define SHOC_UNIT_TESTS_COMMON_HPP
 
-#include "ekat/scream_types.hpp"
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_kokkos.hpp"
 #include "physics/shoc/shoc_functions.hpp"
+#include "share/scream_types.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 
 namespace scream {
 namespace shoc {
@@ -39,7 +38,7 @@ struct UnitWrap {
     using view_3d = typename KokkosTypes<Device>::template view_3d<S>;
 
     template <typename S>
-    using uview_1d = typename ko::template Unmanaged<view_1d<S> >;
+    using uview_1d = typename ekat::util::template Unmanaged<view_1d<S> >;
 
     using Functions          = scream::shoc::Functions<Real, Device>;
     using Scalar             = typename Functions::Scalar;

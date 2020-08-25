@@ -2,7 +2,7 @@
 #define SCREAM_RRTMGP_RADIATION_HPP
 
 #include "share/atm_process/atmosphere_process.hpp"
-#include "ekat/scream_parameter_list.hpp"
+#include "ekat/ekat_parameter_list.hpp"
 #include <string>
 
 namespace scream {
@@ -17,7 +17,7 @@ namespace scream {
             using const_field_type = Field<const Real, device_type>;
 
             // Constructors
-            RRTMGPRadiation (const Comm& comm, const ParameterList& params);
+            RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params);
 
             // The type of the subcomponent
             AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
@@ -26,7 +26,7 @@ namespace scream {
             std::string name () const { return "Radiation"; }
 
             // The communicator used by the subcomponent
-            const Comm& get_comm () const { return m_rrtmgp_comm; }
+            const ekat::Comm& get_comm () const { return m_rrtmgp_comm; }
 
             // Required grid for the subcomponent (??)
             std::set<std::string> get_required_grids () const {
@@ -64,8 +64,8 @@ namespace scream {
             std::shared_ptr<FieldInitializer> m_initializer;
 
             util::TimeStamp m_current_ts;
-            Comm            m_rrtmgp_comm;
-            ParameterList   m_rrtmgp_params;
+            ekat::Comm            m_rrtmgp_comm;
+            ekat::ParameterList   m_rrtmgp_params;
     };  // class RRTMGPRadiation
 }  // namespace scream
 

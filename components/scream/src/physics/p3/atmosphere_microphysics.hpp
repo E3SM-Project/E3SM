@@ -2,7 +2,7 @@
 #define SCREAM_P3_MICROPHYSICS_HPP
 
 #include "share/atm_process/atmosphere_process.hpp"
-#include "ekat/scream_parameter_list.hpp"
+#include "ekat/ekat_parameter_list.hpp"
 
 #include <string>
 
@@ -25,7 +25,7 @@ public:
   using const_field_type = Field<const Real,device_type>;
 
   // Constructors
-  P3Microphysics (const Comm& comm, const ParameterList& params);
+  P3Microphysics (const ekat::Comm& comm, const ekat::ParameterList& params);
 
   // The type of subcomponent
   AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
@@ -34,7 +34,7 @@ public:
   std::string name () const { return "Microphysics"; }
 
   // The communicator used by subcomponent
-  const Comm& get_comm () const { return m_p3_comm; }
+  const ekat::Comm& get_comm () const { return m_p3_comm; }
 
   // Get the required grid for subcomponent
   std::set<std::string> get_required_grids () const {
@@ -80,9 +80,9 @@ protected:
   std::shared_ptr<FieldInitializer>  m_initializer;
 
   util::TimeStamp   m_current_ts;
-  Comm              m_p3_comm;
+  ekat::Comm              m_p3_comm;
 
-  ParameterList     m_p3_params;
+  ekat::ParameterList     m_p3_params;
 
 }; // class P3Microphysics
 

@@ -1,5 +1,5 @@
 #include "p3_cloud_rain_acc_impl.hpp"
-#include "ekat/scream_types.hpp"
+#include "share/scream_types.hpp"
 
 namespace scream {
 namespace p3 {

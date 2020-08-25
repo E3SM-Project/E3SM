@@ -1,7 +1,7 @@
 #ifndef SCREAM_FIELD_TAG_HPP
 #define SCREAM_FIELD_TAG_HPP
 
-#include "ekat/scream_assert.hpp"
+#include "ekat/ekat_assert.hpp"
 
 #include <string>
 
@@ -71,7 +71,7 @@ inline std::string tag2string (const FieldTag ft) {
       name = "VAR";
       break;
     default:
-      scream_error_msg("Error! Unrecognized field tag.");
+      EKAT_ERROR_MSG("Error! Unrecognized field tag.");
   }
 
   return name;

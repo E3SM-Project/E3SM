@@ -1,21 +1,19 @@
 #include "catch2/catch.hpp"
 
-//#include "share/scream_types.hpp"
+#include "shoc_unit_tests_common.hpp"
+#include "physics/shoc/shoc_functions.hpp"
+#include "physics/shoc/shoc_functions_f90.hpp"
+#include "physics/share/physics_constants.hpp"
+#include "share/scream_types.hpp"
+
+#include "ekat/ekat_pack.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "ekat/util/ekat_arch.hpp"
+
 #include <algorithm>
 #include <array>
 #include <random>
 #include <thread>
-
-#include "ekat/scream_kokkos.hpp"
-#include "ekat/scream_pack.hpp"
-#include "ekat/scream_types.hpp"
-#include "ekat/util/scream_arch.hpp"
-#include "ekat/util/scream_kokkos_utils.hpp"
-#include "ekat/util/scream_utils.hpp"
-#include "physics/share/physics_constants.hpp"
-#include "physics/shoc/shoc_functions.hpp"
-#include "physics/shoc/shoc_functions_f90.hpp"
-#include "shoc_unit_tests_common.hpp"
 
 namespace scream {
 namespace shoc {

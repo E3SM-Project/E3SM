@@ -126,19 +126,19 @@ void Functions<S,D>
       team.team_barrier();
 
       // Convert top/bot to pack indices
-      util::set_min_max(k_qxbot, k_qxtop, kmin, kmax, Spack::n);
+      ekat::util::set_min_max(k_qxbot, k_qxtop, kmin, kmax, Spack::n);
 
       // compute Vq, Vn (get values from lookup table)
       Kokkos::parallel_reduce(
         Kokkos::TeamThreadRange(team, kmax-kmin+1), [&] (int pk_, Scalar& lmax) {
 
         const int pk = kmin + pk_;
-        const auto range_pack = scream::pack::range<IntSmallPack>(pk*Spack::n);
+        const auto range_pack = ekat::pack::range<IntSmallPack>(pk*Spack::n);
         const auto range_mask = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
         const auto qi_gt_small = range_mask && qi_incld(pk) > qsmall;
         if (qi_gt_small.any()) {
           // impose lower limits to prevent log(<0)
-          ni_incld(pk).set(qi_gt_small, pack::max(ni_incld(pk), nsmall));
+          ni_incld(pk).set(qi_gt_small, max(ni_incld(pk), nsmall));
 
           const auto rhop = calc_bulk_rho_rime(qi_incld(pk), qm_incld(pk), bm_incld(pk), qi_gt_small);
 
@@ -152,8 +152,8 @@ void Functions<S,D>
 
           // impose mean ice size bounds (i.e. apply lambda limiters)
           // note that the Nmax and Nmin are normalized and thus need to be multiplied by existing N
-          ni_incld(pk).set(qi_gt_small, pack::min(ni_incld(pk), table_val_ni_lammax * ni_incld(pk)));
-          ni_incld(pk).set(qi_gt_small, pack::max(ni_incld(pk), table_val_ni_lammin * ni_incld(pk)));
+          ni_incld(pk).set(qi_gt_small, min(ni_incld(pk), table_val_ni_lammax * ni_incld(pk)));
+          ni_incld(pk).set(qi_gt_small, max(ni_incld(pk), table_val_ni_lammin * ni_incld(pk)));
           ni(pk).set(qi_gt_small, ni_incld(pk) * cld_frac_i(pk));
 
           V_qit(pk).set(qi_gt_small, table_val_qi_fallspd * rhofaci(pk)); // mass-weighted   fall speed (with density factor)
@@ -226,7 +226,7 @@ void Functions<S,D>
 
   // Convert top/bot to pack indices
   Int kmin, kmax;
-  util::set_min_max(kbot, ktop, kmin, kmax, Spack::n);
+  ekat::util::set_min_max(kbot, ktop, kmin, kmax, Spack::n);
 
   Kokkos::parallel_for(
     Kokkos::TeamThreadRange(team, kmax-kmin+1), [&] (int pk_) {
@@ -234,13 +234,13 @@ void Functions<S,D>
     const int pk = kmin + pk_;
 
     // Set up masks
-    const auto range_pack    = scream::pack::range<IntSmallPack>(pk*Spack::n);
+    const auto range_pack    = ekat::pack::range<IntSmallPack>(pk*Spack::n);
     const auto range_mask    = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
     const auto t_lt_homogf   = t(pk) < homogfrze;
     const auto qc_gt_small   = range_mask && t_lt_homogf && qc(pk) > qsmall;
     const auto qr_gt_small   = range_mask && t_lt_homogf && qr(pk) > qsmall;
 
-    Spack Qc_nuc(qc(pk)), Qr_nuc(qr(pk)), Nc_nuc(pack::max(nc(pk), nsmall)), Nr_nuc(pack::max(nr(pk), nsmall));
+    Spack Qc_nuc(qc(pk)), Qr_nuc(qr(pk)), Nc_nuc(max(nc(pk), nsmall)), Nr_nuc(max(nr(pk), nsmall));
 
     qm(pk).set(qc_gt_small, qm(pk) + Qc_nuc);
     qi(pk).set(qc_gt_small, qi(pk) + Qc_nuc);
@@ -264,4 +264,4 @@ void Functions<S,D>
 } // namespace p3
 } // namespace scream
 
-#endif
+#endif // P3_ICE_SED_IMPL_HPP

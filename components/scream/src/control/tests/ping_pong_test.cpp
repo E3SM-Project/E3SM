@@ -1,9 +1,9 @@
-#include <catch2/catch.hpp>
-#include "share/grid/user_provided_grids_manager.hpp"
-#include "ekat/scream_parse_yaml_file.hpp"
-#include "control/atmosphere_driver.hpp"
-
 #include "dummy_atm_setup.hpp"
+
+#include "control/atmosphere_driver.hpp"
+#include "share/grid/user_provided_grids_manager.hpp"
+#include "ekat/ekat_parse_yaml_file.hpp"
+#include <catch2/catch.hpp>
 
 #include <numeric>
 
@@ -16,12 +16,12 @@ TEST_CASE("ping-pong", "") {
 
   // Load ad parameter list
   std::string fname = "ping_pong.yaml";
-  ParameterList ad_params("Atmosphere Driver");
+  ekat::ParameterList ad_params("Atmosphere Driver");
   REQUIRE_NOTHROW ( parse_yaml_file(fname,ad_params) );
   const int vec_length = ad_params.sublist("Atmosphere Processes").sublist("Process 0").get<int>("Number of vector components");
 
   // Create a comm
-  Comm atm_comm (MPI_COMM_WORLD);
+  ekat::Comm atm_comm (MPI_COMM_WORLD);
 
   // Setup the atm factories and grid manager
   dummy_atm_init (num_cols);
@@ -40,7 +40,7 @@ TEST_CASE("ping-pong", "") {
   std::vector<FieldTag> tags = {FieldTag::Column,FieldTag::Component};
   std::vector<int> dims = {num_cols, vec_length};
   FieldLayout layout (tags,dims);
-  FieldIdentifier fid("field_0",layout,units::m,"Physics_fwd");
+  FieldIdentifier fid("field_0",layout,ekat::units::m,"Physics_fwd");
   const auto& repo = ad.get_field_repo();
   const auto& field = repo.get_field(fid);
   auto d_view = field.get_view();

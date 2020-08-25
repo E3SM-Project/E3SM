@@ -1,5 +1,6 @@
 include(CMakeParseArguments) # Needed for backwards compatibility
 include(EkatCreateUnitTest)
+include(EkatUtils)
 
 # This function takes the following arguments:
 #    - target_name: the name of the executable
@@ -12,10 +13,11 @@ include(EkatCreateUnitTest)
 #      Note: One test will be created per combination of valid mpi-rank and thread value
 
 function(CreateUnitTest target_name target_srcs scream_libs)
-  set(options OPTIONAL EXCLUDE_MAIN_CPP)
+  set(options EXCLUDE_MAIN_CPP)
   set(oneValueArgs EXE_ARGS DEP)
   set(multiValueArgs MPI_RANKS THREADS CONFIG_DEFS INCLUDE_DIRS COMPILER_FLAGS LABELS)
-  cmake_parse_arguments(CreateUnitTest "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+  cmake_parse_arguments(PARSE_ARGV 3 CreateUnitTest "${options}" "${oneValueArgs}" "${multiValueArgs}")
+  CheckMacroArgs(CreateUnitTest CreateUnitTest "${options}" "${oneValueArgs}" "${multiValueArgs}")
 
   set (TEST_INCLUDE_DIRS
        ${SCREAM_INCLUDE_DIRS}
@@ -25,43 +27,56 @@ function(CreateUnitTest target_name target_srcs scream_libs)
        ${CreateUnitTest_INCLUDE_DIRS}
   )
 
-  set (test_libs ${scream_libs})
-  list(APPEND test_libs ${SCREAM_TPL_LIBRARIES})
+  set (test_libs "${scream_libs}")
+  list(APPEND test_libs "${SCREAM_TPL_LIBRARIES}")
 
+  if ("${target_name}" MATCHES "field")
+    message ("field libs: ${test_libs}")
+  endif()
+
+  if (NOT CreateUnitTest_MPI_RANKS)
+    set (CreateUnitTest_MPI_RANKS 1)
+  endif ()
+  if (NOT CreateUnitTest_THREADS)
+    set (CreateUnitTest_THREADS 1)
+  endif ()
+
+  # Note: some args are likely empty, so tell Ekat to suppress warnings
   if (CreateUnitTest_EXCLUDE_MAIN_CPP)
     EkatCreateUnitTest(${target_name} "${target_srcs}"
-      DEP "${CreateUnitTest_DEP}"
+      DEP " ${CreateUnitTest_DEP}"
       MPI_EXEC_NAME ${SCREAM_MPIRUN_EXE}
       MPI_NP_FLAG -np
       MPI_RANKS "${CreateUnitTest_MPI_RANKS}"
       THREADS "${CreateUnitTest_THREADS}"
-      EXE_ARGS "${CreateUnitTest_EXE_ARGS}"
-      MPI_EXTRA_ARGS "${SCREAM_MPI_EXTRA_ARGS}"
-      COMPILER_DEFS "${CreateUnitTest_CONFIG_DEFS}"
-      INCLUDE_DIRS "${TEST_INCLUDE_DIRS}"
-      COMPILER_FLAGS "${CreateUnitTest_COMPILER_FLAGS}"
-      LIBS "${test_libs}"
-      LIBS_DIRS "${SCREAM_TPL_LIBRARY_DIRS}"
-      LINKER_FLAGS "${SCREAM_LINK_FLAGS}"
-      LABELS "${CreateUnitTest_LABELS}"
-      EXCLUDE_MAIN_CPP
+      EXE_ARGS " ${CreateUnitTest_EXE_ARGS}"
+      MPI_EXTRA_ARGS " ${SCREAM_MPI_EXTRA_ARGS}"
+      COMPILER_DEFS " ${CreateUnitTest_CONFIG_DEFS}"
+      INCLUDE_DIRS " ${TEST_INCLUDE_DIRS}"
+      COMPILER_FLAGS " ${CreateUnitTest_COMPILER_FLAGS}"
+      LIBS " ${test_libs}"
+      LIBS_DIRS " ${SCREAM_TPL_LIBRARY_DIRS}"
+      LINKER_FLAGS " ${SCREAM_LINK_FLAGS}"
+      LABELS " ${CreateUnitTest_LABELS}"
+      EXCLUDE_MAIN_CPP EXCLUDE_TEST_SESSION
     )
   else ()
     EkatCreateUnitTest(${target_name} "${target_srcs}"
-      DEP "${CreateUnitTest_DEP}"
+      DEP " ${CreateUnitTest_DEP}"
       MPI_EXEC_NAME ${SCREAM_MPIRUN_EXE}
       MPI_NP_FLAG -np
       MPI_RANKS "${CreateUnitTest_MPI_RANKS}"
       THREADS "${CreateUnitTest_THREADS}"
-      EXE_ARGS "${CreateUnitTest_EXE_ARGS}"
-      MPI_EXTRA_ARGS "${SCREAM_MPI_EXTRA_ARGS}"
-      COMPILER_DEFS "${CreateUnitTest_CONFIG_DEFS}"
-      INCLUDE_DIRS "${TEST_INCLUDE_DIRS}"
-      COMPILER_FLAGS "${CreateUnitTest_COMPILER_FLAGS}"
-      LIBS "${test_libs}"
-      LIBS_DIRS "${SCREAM_TPL_LIBRARY_DIRS}"
-      LINKER_FLAGS "${SCREAM_LINK_FLAGS}"
-      LABELS "${CreateUnitTest_LABELS}"
+      EXE_ARGS " ${CreateUnitTest_EXE_ARGS}"
+      MPI_EXTRA_ARGS " ${SCREAM_MPI_EXTRA_ARGS}"
+      COMPILER_DEFS " ${CreateUnitTest_CONFIG_DEFS}"
+      INCLUDE_DIRS " ${TEST_INCLUDE_DIRS}"
+      COMPILER_FLAGS " ${CreateUnitTest_COMPILER_FLAGS}"
+      LIBS " ${test_libs}"
+      LIBS_DIRS " ${SCREAM_TPL_LIBRARY_DIRS}"
+      LINKER_FLAGS " ${SCREAM_LINK_FLAGS}"
+      LABELS " ${CreateUnitTest_LABELS}"
+      EXCLUDE_TEST_SESSION
     )
   endif ()
 

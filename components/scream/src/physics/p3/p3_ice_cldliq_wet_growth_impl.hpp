@@ -1,9 +1,9 @@
 #ifndef P3_ICE_CLDLIQ_WET_GROWTH_IMPL_HPP
 #define P3_ICE_CLDLIQ_WET_GROWTH_IMPL_HPP
 
-#include "p3_functions.hpp" // for ETI only but harmless for GPU
-#include "physics_functions.hpp" // also for ETI not on GPU
-#include "physics_saturation_impl.hpp"
+#include "physics/p3/p3_functions.hpp" // for ETI only but harmless for GPU
+#include "physics/share/physics_functions.hpp" // also for ETI not on GPU
+#include "physics/share/physics_saturation_impl.hpp"
 
 namespace scream {
 namespace p3 {
@@ -46,14 +46,14 @@ void Functions<S,D>
     qsat0 = physics::qv_sat( zerodeg,pres, false, range_mask );
 
     qc_growth_rate.set(any_if,
-               ((table_val_qi2qr_melting+table_val_qi2qr_vent_melt*pack::cbrt(sc)*sqrt(rhofaci*rho/mu))*
+               ((table_val_qi2qr_melting+table_val_qi2qr_vent_melt*cbrt(sc)*sqrt(rhofaci*rho/mu))*
                 twopi*(rho*latent_heat_vapor*dv*(qsat0-qv)-(temp-tmelt)*kap)/
                 (latent_heat_fusion+cpw*(temp-tmelt)))*ni_incld);
 
     qc_growth_rate.set(any_if,
-               pack::max(qc_growth_rate, zero));
+               max(qc_growth_rate, zero));
 
-    dum = pack::max(zero, (qc2qi_collect_tend+qr2qi_collect_tend)-qc_growth_rate);
+    dum = max(zero, (qc2qi_collect_tend+qr2qi_collect_tend)-qc_growth_rate);
 
     auto const dum_ge_small = dum >= sp(1.0e-10) && context;
 
@@ -80,4 +80,4 @@ void Functions<S,D>
 } // namespace p3
 } // namespace scream
 
-#endif
+#endif // P3_ICE_CLDLIQ_WET_GROWTH_IMPL_HPP

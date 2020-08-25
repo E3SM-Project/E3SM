@@ -28,7 +28,7 @@ include(EkatMpiUtils)
 DisableMpiCxxBindings()
 
 if (KOKKOS_ENABLE_CUDA)
-  set (KOKKOS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/kokkos)
+  set (Kokkos_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/kokkos)
   include (EkatSetNvccWrapper)
   EkatSetNvccWrapper()
 endif()
@@ -172,11 +172,8 @@ set (YAMLCPP_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/yaml-cpp)
 set (SCREAM_DISABLE_TPL_WARNINGS ON CACHE BOOL "")
 
 include(Ekat)
-if (SCREAM_DOUBLE_PRECISION)
-  buildEkat("DOUBLE" PREFIX "SCREAM")
-else()
-  buildEkat("SINGLE" PREFIX "SCREAM")
-endif()
+set (EKAT_ENABLE_TESTS OFF CACHE BOOL "Whether to build EKAT's tests. Off by default.")
+buildEkat(${EKAT_SOURCE_DIR} PREFIX "SCREAM")
 
 # Init scream TPLs info to whatever EKAT set.
 set (SCREAM_TPL_LIBRARIES ${EKAT_TPL_LIBRARIES} CACHE INTERNAL "TPL libs that SCREAM targets can link to")

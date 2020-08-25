@@ -68,8 +68,8 @@ void Functions<S,D>
   constexpr auto eri = C::eri;
 
   // note: table_val_qr2qi_collect and logn0r are already calculated as log_10
-  qr2qi_collect_tend.set(both_gt_small_neg_t, pack::pow(ten, table_val_qr2qi_collect+logn0r)*rho*rhofaci*eri*ni_incld);
-  nr_collect_tend.set(both_gt_small_neg_t, pack::pow(ten, table_val_nr_collect+logn0r)*rho*rhofaci*eri*ni_incld);
+  qr2qi_collect_tend.set(both_gt_small_neg_t, pow(ten, table_val_qr2qi_collect+logn0r)*rho*rhofaci*eri*ni_incld);
+  nr_collect_tend.set(both_gt_small_neg_t, pow(ten, table_val_nr_collect+logn0r)*rho*rhofaci*eri*ni_incld);
 
   // rain number sink due to collection
   // for T > 273.15, assume collected rain number is shed as
@@ -78,7 +78,7 @@ void Functions<S,D>
   // rate of ice mass due to melting
   // collection of rain above freezing does not impact total rain mass
   nr_collect_tend.set(both_gt_small && !t_is_negative,
-            pack::pow(ten, table_val_nr_collect + logn0r)*rho*rhofaci*eri*ni_incld);
+            pow(ten, table_val_nr_collect + logn0r)*rho*rhofaci*eri*ni_incld);
   // for now neglect shedding of ice collecting rain above freezing, since snow is
   // not expected to shed in these conditions (though more hevaily rimed ice would be
   // expected to lead to shedding)

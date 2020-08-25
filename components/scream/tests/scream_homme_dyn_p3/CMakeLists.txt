@@ -4,7 +4,6 @@ INCLUDE (ScreamUtils)
 #                 HOMME_TARGET   NP PLEV QSIZE_D USE_PIO USE_ENERGY 
 CreateDynamicsLib("preqx_kokkos"  4   72   35    FALSE   FALSE)
 
-SET (EXTRA_INCLUDE_DIRS ${HOMME_INCLUDE_DIRS})
 SET (EXTRA_CONFIG_DEFS
      HAVE_CONFIG_H
      HOMMEXX_CONFIG_IS_CMAKE
@@ -15,7 +14,7 @@ SET (NEED_LIBS ${p3Lib} ${dynLibName} scream_control scream_share pio timing ${B
 SET (UNIT_TEST_EXTRA_LIBRARY_DIRS ${dynLibDir})
 
 # Test atmosphere processes
-CreateUnitTest(homme_p3 "homme_p3.cpp" "${NEED_LIBS}" CONFIG_DEFS ${EXTRA_CONFIG_DEFS} INCLUDE_DIRS ${EXTRA_INCLUDE_DIRS} EXE_ARGS "< namelist.nl" LABELS "dynamics;p3;driver")
+CreateUnitTest(homme_p3 "homme_p3.cpp" "${NEED_LIBS}" CONFIG_DEFS ${EXTRA_CONFIG_DEFS} EXE_ARGS "< namelist.nl" LABELS "dynamics;p3;driver")
 
 # Set homme's test options, so that we can configure the namelist correctly
 SET (HOMME_TEST_NE 2)

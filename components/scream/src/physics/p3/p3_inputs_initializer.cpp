@@ -33,7 +33,7 @@ void P3InputsInitializer::initialize_fields ()
     return;
   }
 
-  scream_require_msg (count==8,
+  EKAT_REQUIRE_MSG (count==8,
     "Error! P3InputsInitializer is expected to init 'q','T','ast','ni_activated','nc_nuceat_tend','pmid','dp','zi'.\n"
     "       Only " + std::to_string(count) + " of those have been found.\n"
     "       Please, check the atmosphere processes you are using,"

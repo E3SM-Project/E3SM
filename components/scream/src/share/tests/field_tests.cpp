@@ -4,13 +4,14 @@
 #include "share/field/field_header.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_repository.hpp"
-#include "ekat/scream_pack.hpp"
+
+#include "ekat/ekat_pack.hpp"
 
 namespace {
 
 TEST_CASE("field_identifier", "") {
   using namespace scream;
-  using namespace units;
+  using namespace ekat::units;
 
   std::vector<FieldTag> tags1 = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::GaussPoint};
   std::vector<FieldTag> tags2 = {FieldTag::Element, FieldTag::Component, FieldTag::VerticalLevel};
@@ -57,8 +58,8 @@ TEST_CASE("field_tracking", "") {
 
 TEST_CASE("field", "") {
   using namespace scream;
-  using namespace scream::pack;
-  using namespace units;
+  using namespace ekat::pack;
+  using namespace ekat::units;
 
   using Device = DefaultDevice;
 
@@ -127,9 +128,7 @@ TEST_CASE("field", "") {
 
 TEST_CASE("field_repo", "") {
   using namespace scream;
-  using namespace units;
-
-  using Device = DefaultDevice;
+  using namespace ekat::units;
 
   std::vector<FieldTag> tags1 = {FieldTag::Element, FieldTag::GaussPoint, FieldTag::GaussPoint};
   std::vector<FieldTag> tags2 = {FieldTag::Column};
@@ -150,7 +149,7 @@ TEST_CASE("field_repo", "") {
   fid3.set_dimensions(dims3);
   fid4.set_dimensions(dims3);
 
-  FieldRepository<Real,Device>  repo;
+  FieldRepository<Real,DefaultDevice>  repo;
 
   // Should not be able to register fields yet
   REQUIRE_THROWS(repo.register_field(fid1,"group_1"));
@@ -180,14 +179,14 @@ TEST_CASE("field_repo", "") {
   REQUIRE (f1.get_header().get_identifier()!=f2.get_header().get_identifier());
 
   // Check that the groups names are in the header. While at it, make sure that case insensitive works fine.
-  REQUIRE (util::contains(f1.get_header().get_tracking().get_groups_names(),"gRouP_1"));
-  REQUIRE (util::contains(f2.get_header().get_tracking().get_groups_names(),"Group_2"));
+  REQUIRE (ekat::util::contains(f1.get_header().get_tracking().get_groups_names(),"gRouP_1"));
+  REQUIRE (ekat::util::contains(f2.get_header().get_tracking().get_groups_names(),"Group_2"));
 
   // Check that the groups in the repo contain the correct fields
   REQUIRE (repo.get_field_groups().count("GROUP_1")==1);
   REQUIRE (repo.get_field_groups().count("GRoup_2")==1);
-  REQUIRE (util::contains(repo.get_field_groups().at("group_1"),"Field_1"));
-  REQUIRE (util::contains(repo.get_field_groups().at("group_2"),"Field_2"));
+  REQUIRE (ekat::util::contains(repo.get_field_groups().at("group_1"),"Field_1"));
+  REQUIRE (ekat::util::contains(repo.get_field_groups().at("group_2"),"Field_2"));
 }
 
 } // anonymous namespace

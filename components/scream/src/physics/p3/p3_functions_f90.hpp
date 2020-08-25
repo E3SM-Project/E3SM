@@ -1,13 +1,12 @@
 #ifndef SCREAM_P3_FUNCTIONS_F90_HPP
 #define SCREAM_P3_FUNCTIONS_F90_HPP
 
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_types.hpp"
-
-#include "p3_functions.hpp"
+#include "physics/p3/p3_functions.hpp"
+#include "share/scream_types.hpp"
 
 #include <array>
 #include <utility>
+#include <memory>   // for shared_ptr
 
 //
 // Bridge functions to call fortran version of p3 functions from C++
@@ -1241,45 +1240,47 @@ struct P3MainData
   P3MainData(Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool do_predict_nc_,
              const std::array< std::pair<Real, Real>, NUM_INPUT_ARRAYS >& ranges);
 
-  template <util::TransposeDirection::Enum D>
+  template <ekat::util::TransposeDirection::Enum D>
   void transpose()
   {
+    using ekat::util::transpose;
+
     P3MainData d_trans(*this);
 
-    util::transpose<D>(pres, d_trans.pres, m_ni, m_nk);
-    util::transpose<D>(dz, d_trans.dz, m_ni, m_nk);
-    util::transpose<D>(nc_nuceat_tend, d_trans.nc_nuceat_tend, m_ni, m_nk);
-    util::transpose<D>(ni_activated, d_trans.ni_activated, m_ni, m_nk);
-    util::transpose<D>(dpres, d_trans.dpres, m_ni, m_nk);
-    util::transpose<D>(exner, d_trans.exner, m_ni, m_nk);
-    util::transpose<D>(cld_frac_i, d_trans.cld_frac_i, m_ni, m_nk);
-    util::transpose<D>(cld_frac_l, d_trans.cld_frac_l, m_ni, m_nk);
-    util::transpose<D>(cld_frac_r, d_trans.cld_frac_r, m_ni, m_nk);
-    util::transpose<D>(inv_qc_relvar, d_trans.inv_qc_relvar, m_ni, m_nk);
-    util::transpose<D>(qc, d_trans.qc, m_ni, m_nk);
-    util::transpose<D>(nc, d_trans.nc, m_ni, m_nk);
-    util::transpose<D>(qr, d_trans.qr, m_ni, m_nk);
-    util::transpose<D>(nr, d_trans.nr, m_ni, m_nk);
-    util::transpose<D>(qi, d_trans.qi, m_ni, m_nk);
-    util::transpose<D>(qm, d_trans.qm, m_ni, m_nk);
-    util::transpose<D>(ni, d_trans.ni, m_ni, m_nk);
-    util::transpose<D>(bm, d_trans.bm, m_ni, m_nk);
-    util::transpose<D>(qv, d_trans.qv, m_ni, m_nk);
-    util::transpose<D>(th, d_trans.th, m_ni, m_nk);
-    util::transpose<D>(diag_effc, d_trans.diag_effc, m_ni, m_nk);
-    util::transpose<D>(diag_effi, d_trans.diag_effi, m_ni, m_nk);
-    util::transpose<D>(rho_qi, d_trans.rho_qi, m_ni, m_nk);
-    util::transpose<D>(mu_c, d_trans.mu_c, m_ni, m_nk);
-    util::transpose<D>(lamc, d_trans.lamc, m_ni, m_nk);
-    util::transpose<D>(cmeiout, d_trans.cmeiout, m_ni, m_nk);
-    util::transpose<D>(precip_total_tend, d_trans.precip_total_tend, m_ni, m_nk);
-    util::transpose<D>(nevapr, d_trans.nevapr, m_ni, m_nk);
-    util::transpose<D>(qr_evap_tend, d_trans.qr_evap_tend, m_ni, m_nk);
-    util::transpose<D>(liq_ice_exchange, d_trans.liq_ice_exchange, m_ni, m_nk);
-    util::transpose<D>(vap_liq_exchange, d_trans.vap_liq_exchange, m_ni, m_nk);
-    util::transpose<D>(vap_ice_exchange, d_trans.vap_ice_exchange, m_ni, m_nk);
-    util::transpose<D>(precip_liq_flux, d_trans.precip_liq_flux, m_ni, m_nk+1);
-    util::transpose<D>(precip_ice_flux, d_trans.precip_ice_flux, m_ni, m_nk+1);
+    transpose<D>(pres, d_trans.pres, m_ni, m_nk);
+    transpose<D>(dz, d_trans.dz, m_ni, m_nk);
+    transpose<D>(nc_nuceat_tend, d_trans.nc_nuceat_tend, m_ni, m_nk);
+    transpose<D>(ni_activated, d_trans.ni_activated, m_ni, m_nk);
+    transpose<D>(dpres, d_trans.dpres, m_ni, m_nk);
+    transpose<D>(exner, d_trans.exner, m_ni, m_nk);
+    transpose<D>(cld_frac_i, d_trans.cld_frac_i, m_ni, m_nk);
+    transpose<D>(cld_frac_l, d_trans.cld_frac_l, m_ni, m_nk);
+    transpose<D>(cld_frac_r, d_trans.cld_frac_r, m_ni, m_nk);
+    transpose<D>(inv_qc_relvar, d_trans.inv_qc_relvar, m_ni, m_nk);
+    transpose<D>(qc, d_trans.qc, m_ni, m_nk);
+    transpose<D>(nc, d_trans.nc, m_ni, m_nk);
+    transpose<D>(qr, d_trans.qr, m_ni, m_nk);
+    transpose<D>(nr, d_trans.nr, m_ni, m_nk);
+    transpose<D>(qi, d_trans.qi, m_ni, m_nk);
+    transpose<D>(qm, d_trans.qm, m_ni, m_nk);
+    transpose<D>(ni, d_trans.ni, m_ni, m_nk);
+    transpose<D>(bm, d_trans.bm, m_ni, m_nk);
+    transpose<D>(qv, d_trans.qv, m_ni, m_nk);
+    transpose<D>(th, d_trans.th, m_ni, m_nk);
+    transpose<D>(diag_effc, d_trans.diag_effc, m_ni, m_nk);
+    transpose<D>(diag_effi, d_trans.diag_effi, m_ni, m_nk);
+    transpose<D>(rho_qi, d_trans.rho_qi, m_ni, m_nk);
+    transpose<D>(mu_c, d_trans.mu_c, m_ni, m_nk);
+    transpose<D>(lamc, d_trans.lamc, m_ni, m_nk);
+    transpose<D>(cmeiout, d_trans.cmeiout, m_ni, m_nk);
+    transpose<D>(precip_total_tend, d_trans.precip_total_tend, m_ni, m_nk);
+    transpose<D>(nevapr, d_trans.nevapr, m_ni, m_nk);
+    transpose<D>(qr_evap_tend, d_trans.qr_evap_tend, m_ni, m_nk);
+    transpose<D>(liq_ice_exchange, d_trans.liq_ice_exchange, m_ni, m_nk);
+    transpose<D>(vap_liq_exchange, d_trans.vap_liq_exchange, m_ni, m_nk);
+    transpose<D>(vap_ice_exchange, d_trans.vap_ice_exchange, m_ni, m_nk);
+    transpose<D>(precip_liq_flux, d_trans.precip_liq_flux, m_ni, m_nk+1);
+    transpose<D>(precip_ice_flux, d_trans.precip_ice_flux, m_ni, m_nk+1);
 
     *this = std::move(d_trans);
   }
