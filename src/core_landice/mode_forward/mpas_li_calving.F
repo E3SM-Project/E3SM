@@ -1321,6 +1321,7 @@ module li_calving
           call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
           call mpas_pool_get_array(velocityPool, 'xvelmean', xvelmean)
           call mpas_pool_get_array(velocityPool, 'yvelmean', yvelmean)
+          call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
           call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity) 
           call mpas_pool_get_array(geometryPool, 'thickness', thickness)
           call mpas_pool_get_array(thermalPool, 'temperature', temperature)
