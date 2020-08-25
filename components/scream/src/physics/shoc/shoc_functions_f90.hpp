@@ -416,6 +416,17 @@ struct SHOCLinearintData : public SHOCDataBase {
   { SHOCDataBase::operator=(rhs); minthresh = rhs.minthresh; return *this; }
 };//SHOCLinearintData
 
+//Create data structure to hold data for shoc_assumed_pdf_tilda_to_real
+struct SHOCPDFtildaData
+{
+  // inputs
+  Real w_first, sqrtw2;
+  
+  // outputs
+  Real w1;
+
+};
+
 //
 // Glue functions to call fortran from from C++ with the Data struct
 //
@@ -445,6 +456,7 @@ void compute_shoc_mix_shoc_length(SHOCMixlengthData &d);
 void check_length_scale_shoc_length(SHOCMixcheckData &d);
 void shoc_diag_second_moments_srf(SHOCSecondMomentSrfData& d);
 void linear_interp(SHOCLinearintData &d);
+void shoc_assumed_pdf_tilda_to_real(SHOCPDFtildaData &d);
 
 //
 // _f functions decls

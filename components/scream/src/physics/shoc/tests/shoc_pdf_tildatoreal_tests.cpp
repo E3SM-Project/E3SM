@@ -14,7 +14,7 @@
 #include "ekat/util/scream_utils.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "physics/shoc/shoc_functions.hpp"
-#include "physics/shoc/shoc_functions_f90.cpp"
+#include "physics/shoc/shoc_functions_f90.hpp"
 #include "shoc_unit_tests_common.hpp"
 
 namespace scream {
@@ -31,8 +31,14 @@ struct UnitWrap::UnitTest<D>::TestShocPdfTildatoReal {
     static constexpr Real w_first = 1;
     static constexpr Real sqrtw2 = 0.5;
     Real w1 = 0.1;
+    
+    SHOCPDFtildaData SDS;
+    
+    SDS.w_first = w_first;
+    SDS.sqrtw2 = sqrtw2;
+    SDS.w1 = w1;
 
-    shoc_assumed_pdf_tilda_to_real_c(w_first, sqrtw2, w1);
+    shoc_assumed_pdf_tilda_to_real(SDS);
 
     // Check the test here
 
