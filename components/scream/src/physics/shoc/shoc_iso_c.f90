@@ -508,5 +508,25 @@ contains
     call shoc_assumed_pdf_tilda_to_real(w_first, sqrtw2, w1)
 
   end subroutine shoc_assumed_pdf_tilda_to_real_c   
+  
+  subroutine shoc_assumed_pdf_vv_parameters_c(w_first,w_sec,w3var,&         
+                                              Skew_w,w1_1,w1_2,w2_1,w2_2,a) bind (C)
+    use shoc, only: shoc_assumed_pdf_vv_parameters
+
+    real(kind=c_real), intent(in), value :: w_first
+    real(kind=c_real), intent(in), value :: w_sec
+    real(kind=c_real), intent(in), value :: w3var
+    
+    real(kind=c_real), intent(out) :: Skew_w
+    real(kind=c_real), intent(out) :: w1_1
+    real(kind=c_real), intent(out) :: w1_2
+    real(kind=c_real), intent(out) :: w2_1
+    real(kind=c_real), intent(out) :: w2_2
+    real(kind=c_real), intent(out) :: a
+
+    call shoc_assumed_pdf_vv_parameters(w_first,w_sec,w3var,&         
+                                        Skew_w,w1_1,w1_2,w2_1,w2_2,a)
+
+  end subroutine shoc_assumed_pdf_vv_parameters_c   
 
 end module shoc_iso_c

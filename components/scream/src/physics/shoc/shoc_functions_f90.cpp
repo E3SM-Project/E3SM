@@ -95,7 +95,11 @@ void shoc_diag_second_moments_srf_c(Int shcol, Real* wthl, Real* uw, Real* vw,
 void linear_interp_c(Real *x1, Real *x2, Real *y1, Real *y2, Int km1,
                      Int km2, Int ncol, Real minthresh);
 		     
-void shoc_assumed_pdf_tilda_to_real_c(Real w_first, Real sqrtw2, Real* w1);		     			   
+void shoc_assumed_pdf_tilda_to_real_c(Real w_first, Real sqrtw2, Real* w1);	
+
+void shoc_assumed_pdf_vv_parameters_c(Real w_first, Real w_sec, Real w3var,       
+                                      Real *Skew_w, Real *w1_1, Real *w1_2,
+				      Real *w2_1, Real *w2_2, Real *a);	     			   
 
 }
 
@@ -413,6 +417,13 @@ void shoc_assumed_pdf_tilda_to_real(SHOCPDFtildaData &d)
 {
   shoc_init(1, true);
   shoc_assumed_pdf_tilda_to_real_c(d.w_first, d.sqrtw2, &d.w1);
+}
+
+void shoc_assumed_pdf_vv_parameters(SHOCPDFvvparamData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_vv_parameters_c(d.w_first,d.w_sec,d.w3var,         
+                                   &d.Skew_w,&d.w1_1,&d.w1_2,&d.w2_1,&d.w2_2,&d.a);
 }
 
 //

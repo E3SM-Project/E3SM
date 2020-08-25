@@ -427,6 +427,16 @@ struct SHOCPDFtildaData
 
 };
 
+// Create data structure to hold data for shoc_assumed_pdf_vv_parameters
+struct SHOCPDFvvparamData
+{
+  // inputs
+  Real w_first, w_sec, w3var;
+  
+  // outputs
+  Real Skew_w, w1_1, w1_2, w2_1, w2_2, a;
+};
+
 //
 // Glue functions to call fortran from from C++ with the Data struct
 //
@@ -457,6 +467,7 @@ void check_length_scale_shoc_length(SHOCMixcheckData &d);
 void shoc_diag_second_moments_srf(SHOCSecondMomentSrfData& d);
 void linear_interp(SHOCLinearintData &d);
 void shoc_assumed_pdf_tilda_to_real(SHOCPDFtildaData &d);
+void shoc_assumed_pdf_vv_parameters(SHOCPDFvvparamData &d);
 
 //
 // _f functions decls
