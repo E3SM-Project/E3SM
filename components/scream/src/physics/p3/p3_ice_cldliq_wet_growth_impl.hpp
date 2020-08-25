@@ -17,7 +17,7 @@ void Functions<S,D>
   const Spack& kap, const Spack& mu, const Spack& sc, const Spack& qv, const Spack& qc_incld,
   const Spack& qi_incld, const Spack& ni_incld, const Spack& qr_incld,
   Smask& log_wetgrowth, Spack& qr2qi_collect_tend, Spack& qc2qi_collect_tend, Spack& qc_growth_rate, Spack& nr_ice_shed_tend, Spack& qc2qr_ice_shed_tend,
-  const Smask& context)
+  const Smask& range_mask, const Smask& context)
 {
   using physics = scream::physics::Functions<Scalar, Device>;
 
@@ -43,7 +43,7 @@ void Functions<S,D>
   Spack dum1{0.};
 
   if (any_if.any()) {
-    qsat0 = physics::qv_sat( zerodeg,pres, false );
+    qsat0 = physics::qv_sat( zerodeg,pres, false, range_mask );
 
     qc_growth_rate.set(any_if,
                ((table_val_qi2qr_melting+table_val_qi2qr_vent_melt*cbrt(sc)*sqrt(rhofaci*rho/mu))*

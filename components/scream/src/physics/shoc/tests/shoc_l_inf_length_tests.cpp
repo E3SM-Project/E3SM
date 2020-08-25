@@ -107,11 +107,17 @@ struct UnitWrap::UnitTest<D>::TestLInfShocLength {
 
 namespace {
 
-TEST_CASE("shoc_l_inf_length", "shoc")
+TEST_CASE("shoc_l_inf_length_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestLInfShocLength;
 
   TestStruct::run_property();
+}
+
+TEST_CASE("shoc_l_inf_length_b4b", "shoc")
+{
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestLInfShocLength;
+
 }
 
 } // namespace

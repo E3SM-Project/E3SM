@@ -23,6 +23,28 @@ void shoc_init_c(int nlev, Real gravit, Real rair, Real rh2o, Real cpair,
 void shoc_grid_c(int shcol, int nlev, int nlevi, Real *zt_grid, Real *zi_grid,
                  Real *pdel, Real *dz_zt, Real *dzi_zi, Real *rho_zt);
 
+void update_host_dse_c(Int shcol, Int nlev, Real *thlm, Real *shoc_ql,
+                       Real *exner, Real *zt_grid, Real *phis, Real *host_dse);
+
+void shoc_energy_integrals_c(Int shcol, Int nlev, Real *host_dse, Real *pdel,
+                             Real *rtm, Real *rcm, Real *u_wind, Real *v_wind,
+                             Real *se_int, Real *ke_int, Real *wv_int, Real *wl_int);
+
+void shoc_energy_total_fixer_c(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv,
+                               Real *zt_grid, Real *zi_grid,
+                               Real *se_b, Real *ke_b, Real *wv_b, Real *wl_b,
+                               Real *se_a, Real *ke_a, Real *wv_a, Real *wl_a,
+                               Real *wthl_sfc, Real *wqw_sfc, Real *rho_zt,
+                               Real *te_a, Real *te_b);
+
+void shoc_energy_threshold_fixer_c(Int shcol, Int nlev, Int nlevi,
+                             Real *pint, Real *tke, Real *te_a, Real *te_b,
+                             Real *se_dis, Int *shoctop);
+
+void shoc_energy_dse_fixer_c(Int shcol, Int nlev,
+                             Real *se_dis, Int *shoctop,
+                             Real *host_dse);
+
 void calc_shoc_varorcovar_c(Int shcol, Int nlev, Int nlevi,  Real tunefac,
                             Real *isotropy_zi, Real *tkh_zi, Real *dz_zi,
 			    Real *invar1, Real *invar2, Real *varorcovar);
@@ -46,27 +68,33 @@ void eddy_diffusivities_c(Int nlev, Int shcol, Real *obklen, Real *pblh,
 
 void calc_shoc_vertflux_c(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 			  Real *dz_zi, Real *invar, Real *vertflux);
-			  
+
 void compute_brunt_shoc_length_c(Int nlev, Int nlevi, Int shcol ,Real *dz_zt,
                                  Real *thv, Real *thv_zi, Real *brunt);
-				 
+
 void compute_l_inf_shoc_length_c(Int nlev, Int shcol, Real *zt_grid, Real *dz_zt,
-                                 Real *tke, Real *l_inf);	
-				 
+                                 Real *tke, Real *l_inf);
+
 void compute_conv_vel_shoc_length_c(Int nlev, Int shcol, Real *pblh, Real *zt_grid,
                                     Real *dz_zt, Real *thv, Real *wthv_sec,
 				    Real *conv_vel);
 
-void compute_conv_time_shoc_length_c(Int shcol, Real *pblh, Real *conv_vel, 
-                                     Real *tscale);		
-				     
+void compute_conv_time_shoc_length_c(Int shcol, Real *pblh, Real *conv_vel,
+                                     Real *tscale);
+
 void compute_shoc_mix_shoc_length_c(Int nlev, Int shcol, Real *tke, Real* brunt,
                                     Real *tscale, Real *zt_grid, Real *l_inf,
 				    Real *shoc_mix);
-				    
+
 void check_length_scale_shoc_length_c(Int nlev, Int shcol, Real *host_dx,
                                     Real *host_dy, Real *shoc_mix);
-				    
+
+void shoc_diag_second_moments_srf_c(Int shcol, Real* wthl, Real* uw, Real* vw,
+                                   Real* ustar2, Real* wstar);
+				   
+void linear_interp_c(Real *x1, Real *x2, Real *y1, Real *y2, Int km1,
+                     Int km2, Int ncol, Real minthresh);			   
+
 }
 
 namespace scream {
@@ -77,7 +105,8 @@ namespace shoc {
 //
 
 SHOCDataBase::SHOCDataBase(Int shcol_, Int nlev_, Int nlevi_,
-                           const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i) :
+                           const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i,
+			   const std::vector<Real**>& ptrs_c, const std::vector<Int**>& idx_c) :
   shcol(shcol_),
   nlev(nlev_),
   nlevi(nlevi_),
@@ -85,12 +114,17 @@ SHOCDataBase::SHOCDataBase(Int shcol_, Int nlev_, Int nlevi_,
   m_totali(shcol_ * nlevi_),
   m_ptrs(ptrs),
   m_ptrs_i(ptrs_i),
-  m_data(m_ptrs.size() * m_total + m_ptrs_i.size() * m_totali, 0)
+  m_ptrs_c(ptrs_c),
+  m_indices_c(idx_c),
+  m_data(m_ptrs.size() * m_total + m_ptrs_i.size() * m_totali + m_ptrs_c.size() * shcol, 0),
+  m_idx_data(idx_c.size() * shcol, 0)
 {
   init_ptrs();
 }
 
-SHOCDataBase::SHOCDataBase(const SHOCDataBase &rhs, const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i) :
+SHOCDataBase::SHOCDataBase(const SHOCDataBase &rhs,
+                           const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i,
+                           const std::vector<Real**>& ptrs_c, const std::vector<Int**>& idx_c) :
   shcol(rhs.shcol),
   nlev(rhs.nlev),
   nlevi(rhs.nlevi),
@@ -98,19 +132,23 @@ SHOCDataBase::SHOCDataBase(const SHOCDataBase &rhs, const std::vector<Real**>& p
   m_totali(rhs.m_totali),
   m_ptrs(ptrs),
   m_ptrs_i(ptrs_i),
-  m_data(rhs.m_data)
+  m_ptrs_c(ptrs_c),
+  m_indices_c(idx_c),
+  m_data(rhs.m_data),
+  m_idx_data(rhs.m_idx_data)
 {
   init_ptrs();
 }
 
 SHOCDataBase& SHOCDataBase::operator=(const SHOCDataBase& rhs)
 {
-  shcol    = rhs.shcol;
-  nlev     = rhs.nlev;
-  nlevi    = rhs.nlevi;
-  m_total  = rhs.m_total;
-  m_totali = rhs.m_totali;
-  m_data   = rhs.m_data; // Copy
+  shcol      = rhs.shcol;
+  nlev       = rhs.nlev;
+  nlevi      = rhs.nlevi;
+  m_total    = rhs.m_total;
+  m_totali   = rhs.m_totali;
+  m_data     = rhs.m_data;      // Copy
+  m_idx_data = rhs.m_idx_data;  // Copy
 
   init_ptrs();
 
@@ -119,8 +157,8 @@ SHOCDataBase& SHOCDataBase::operator=(const SHOCDataBase& rhs)
 
 void SHOCDataBase::init_ptrs()
 {
-  Int offset         = 0;
-  Real *data_begin   = m_data.data();
+  Int offset       = 0;
+  Real *data_begin = m_data.data();
 
   for (size_t i = 0; i < m_ptrs.size(); ++i) {
     *(m_ptrs[i]) = data_begin + offset;
@@ -131,22 +169,57 @@ void SHOCDataBase::init_ptrs()
     *(m_ptrs_i[i]) = data_begin + offset;
     offset += m_totali;
   }
+
+  for (size_t i = 0; i < m_ptrs_c.size(); ++i) {
+    *(m_ptrs_c[i]) = data_begin + offset;
+    offset += shcol;
+  }
+
+  for (size_t i = 0; i < m_indices_c.size(); ++i) {
+    *(m_indices_c[i]) = m_idx_data.data() + shcol*i;
+  }
 }
 
-void SHOCDataBase::randomize()
+void SHOCDataBase::randomize(const std::vector<std::pair<Real, Real> >& ranges,
+                             const std::vector<std::pair<Real, Real> >& ranges_i,
+                             const std::vector<std::pair<Real, Real> >& ranges_c,
+                             const std::vector<std::pair<Int, Int> >&   ranges_idx)
 {
   std::default_random_engine generator;
-  std::uniform_real_distribution<Real> data_dist(0.0, 1.0);
 
+  EKAT_ASSERT_MSG(ranges.size() <= m_ptrs.size(), "Provided more ranges than data items");
   for (size_t i = 0; i < m_ptrs.size(); ++i) {
-    for (size_t j = 0; j < m_total; ++j) {
+    std::uniform_real_distribution<Real> data_dist(i < ranges.size() ? ranges[i].first  : 0.0,
+                                                   i < ranges.size() ? ranges[i].second : 1.0);
+    for (int j = 0; j < m_total; ++j) {
       (*(m_ptrs[i]))[j] = data_dist(generator);
     }
   }
 
+  EKAT_ASSERT_MSG(ranges_i.size() <= m_ptrs_i.size(), "Provided more ranges_i than data items");
   for (size_t i = 0; i < m_ptrs_i.size(); ++i) {
-    for (size_t j = 0; j < m_totali; ++j) {
+    std::uniform_real_distribution<Real> data_dist(i < ranges_i.size() ? ranges_i[i].first  : 0.0,
+                                                   i < ranges_i.size() ? ranges_i[i].second : 1.0);
+
+    for (int j = 0; j < m_totali; ++j) {
       (*(m_ptrs_i[i]))[j] = data_dist(generator);
+    }
+  }
+
+  EKAT_ASSERT_MSG(ranges_i.size() <= m_ptrs_i.size(), "Provided more ranges_c than data items");
+  for (size_t i = 0; i < m_ptrs_c.size(); ++i) {
+    std::uniform_real_distribution<Real> data_dist(i < ranges_c.size() ? ranges_c[i].first  : 0.0,
+                                                   i < ranges_c.size() ? ranges_c[i].second : 1.0);
+    for (int j = 0; j < shcol; ++j) {
+      (*(m_ptrs_c[i]))[j] = data_dist(generator);
+    }
+  }
+
+  EKAT_ASSERT_MSG(ranges_idx.size() == m_indices_c.size(), "Must provide ranges_idx for index data");
+  for (size_t i = 0; i < m_indices_c.size(); ++i) {
+    std::uniform_int_distribution<Int> data_dist(ranges_idx[i].first, ranges_idx[i].second);
+    for (int j = 0; j < shcol; ++j) {
+      (*(m_indices_c[i]))[j] = data_dist(generator);
     }
   }
 }
@@ -178,6 +251,52 @@ void shoc_grid(SHOCGridData &d) {
   d.transpose<ekat::util::TransposeDirection::c2f>();
   shoc_grid_c(d.shcol, d.nlev, d.nlevi, d.zt_grid, d.zi_grid, d.pdel, d.dz_zt,
               d.dz_zi, d.rho_zt);
+  d.transpose<ekat::util::TransposeDirection::f2c>();
+}
+
+void update_host_dse(SHOCEnergydseData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<ekat::util::TransposeDirection::c2f>();
+  update_host_dse_c(d.shcol, d.nlev, d.thlm, d.shoc_ql, d.exner,
+                    d.zt_grid, d.phis, d.host_dse);
+  d.transpose<ekat::util::TransposeDirection::f2c>();
+}
+
+void shoc_energy_integrals(SHOCEnergyintData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<ekat::util::TransposeDirection::c2f>();
+  shoc_energy_integrals_c(d.shcol, d.nlev, d.host_dse, d.pdel,
+                          d.rtm, d.rcm, d.u_wind, d.v_wind,
+                          d.se_int, d.ke_int, d.wv_int, d.wl_int);
+  d.transpose<ekat::util::TransposeDirection::f2c>();
+}
+
+void shoc_energy_total_fixer(SHOCEnergytotData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<ekat::util::TransposeDirection::c2f>();
+  shoc_energy_total_fixer_c(d.shcol, d.nlev, d.nlevi, d.dtime, d.nadv,
+                            d.zt_grid, d.zi_grid,
+                            d.se_b, d.ke_b, d.wv_b, d.wl_b,
+                            d.se_a, d.ke_a, d.wv_a, d.wl_a,
+                            d.wthl_sfc, d.wqw_sfc, d.rho_zt,
+                            d.te_a, d.te_b);
+  d.transpose<ekat::util::TransposeDirection::f2c>();
+}
+
+void shoc_energy_threshold_fixer(SHOCEnergythreshfixerData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<ekat::util::TransposeDirection::c2f>();
+  shoc_energy_threshold_fixer_c(d.shcol, d.nlev, d.nlevi,
+                          d.pint, d.tke, d.te_a, d.te_b,
+			  d.se_dis, d.shoctop);
+  d.transpose<ekat::util::TransposeDirection::f2c>();
+}
+
+void shoc_energy_dse_fixer(SHOCEnergydsefixerData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<ekat::util::TransposeDirection::c2f>();
+  shoc_energy_dse_fixer_c(d.shcol, d.nlev,
+                          d.se_dis, d.shoctop, d.host_dse);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
@@ -272,6 +391,22 @@ void check_length_scale_shoc_length(SHOCMixcheckData &d) {
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
+void shoc_diag_second_moments_srf(SHOCSecondMomentSrfData& d)
+{
+  shoc_init(d.nlev, true);
+  d.transpose<ekat::util::TransposeDirection::c2f>();
+  shoc_diag_second_moments_srf_c(d.shcol, d.wthl, d.uw, d.vw, d.ustar2, d.wstar);
+  d.transpose<ekat::util::TransposeDirection::f2c>();
+}
+
+void linear_interp(SHOCLinearintData& d)
+{
+  shoc_init(d.nlev, true);
+  d.transpose<ekat::util::TransposeDirection::c2f>();
+  linear_interp_c(d.x1,d.x2,d.y1,d.y2,d.nlev,d.nlevi,d.shcol,d.minthresh);
+  d.transpose<ekat::util::TransposeDirection::f2c>();
+}
+
 //
 // _f function definitions. These expect data in C layout
 //
@@ -319,6 +454,45 @@ void calc_shoc_vertflux_f(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
   // Sync back to host
   Kokkos::Array<view_2d, 1> inout_views = {vertflux_d};
   ekat::pack::device_to_host({vertflux}, {shcol}, {nlevi}, inout_views, true);
+}
+
+void shoc_diag_second_moments_srf_f(Int shcol, Real* wthl, Real* uw, Real* vw, Real* ustar2, Real* wstar)
+{
+  using SHOC       = Functions<Real, DefaultDevice>;
+  using Scalar     = typename SHOC::Scalar;
+  using Pack1      = typename ekat::pack::Pack<Real, 1>;
+  using view_1d    = typename SHOC::view_1d<Pack1>;
+
+  Kokkos::Array<view_1d, 3> temp_d;
+  ekat::pack::host_to_device({wthl, uw, vw}, shcol, temp_d);
+
+  // inputs
+  view_1d
+    wthl_d (temp_d[0]),
+    uw_d   (temp_d[1]),
+    vw_d   (temp_d[2]);
+
+  // outputs
+  view_1d ustar2_d("ustar2", shcol),
+          wstar_d ("wstar", shcol);
+
+  Kokkos::parallel_for("parallel_moments_srf", shcol, KOKKOS_LAMBDA (const int& i) {
+
+     Scalar wthl_s{wthl_d(i)[0]};
+     Scalar uw_s{uw_d(i)[0]};
+     Scalar vw_s{vw_d(i)[0]};
+
+     Scalar ustar2_s{0};
+     Scalar wstar_s{0};
+
+     SHOC::shoc_diag_second_moments_srf(wthl_s, uw_s, vw_s, ustar2_s, wstar_s);
+
+     ustar2_d(i)[0] = ustar2_s;
+     wstar_d(i)[0]  = wstar_s;
+   });
+
+  Kokkos::Array<view_1d, 2> out_views = {ustar2_d, wstar_d};
+  ekat::pack::device_to_host({ustar2, wstar}, shcol, out_views);
 }
 
 } // namespace shoc
