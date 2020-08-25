@@ -44,6 +44,7 @@
     CORE_IAF_JRA	= JRA55 intra-annual year forcing (for forcing POP and CICE)
     CORE_IAF_JRA_1p4_2018 = JRA55 intra-annual year forcing, v1.4, through 2018 (for forcing POP and CICE)
     CORE_RYF8485_JRA = JRA55 repeat year forcing, v1.3, 1984-1985 (for forcing POP and CICE)
+    CORE_RYF9091_JRA = JRA55 repeat year forcing, v1.3, 1990-1991 (for forcing POP and CICE)
     CPLHIST     	= Streams for lnd or ocn/ice forcing used for spinup
     presaero		= Prescribed aerosol forcing
     topo		= Surface topography
@@ -205,6 +206,7 @@
       <value datm_mode="CORE_IAF_JRA_1p4_2018" >CORE_IAF_JRA_1p4_2018.GCGCS.PREC,CORE_IAF_JRA_1p4_2018.GISS.LWDN,CORE_IAF_JRA_1p4_2018.GISS.SWDN,CORE_IAF_JRA_1p4_2018.NCEP.Q_10,CORE_IAF_JRA_1p4_2018.NCEP.SLP_,CORE_IAF_JRA_1p4_2018.NCEP.T_10,CORE_IAF_JRA_1p4_2018.NCEP.U_10,CORE_IAF_JRA_1p4_2018.NCEP.V_10</value>
       <value datm_mode="CORE_IAF_JRA" >CORE_IAF_JRA.GCGCS.PREC,CORE_IAF_JRA.GISS.LWDN,CORE_IAF_JRA.GISS.SWDN,CORE_IAF_JRA.NCEP.Q_10,CORE_IAF_JRA.NCEP.SLP_,CORE_IAF_JRA.NCEP.T_10,CORE_IAF_JRA.NCEP.U_10,CORE_IAF_JRA.NCEP.V_10</value>
       <value datm_mode="CORE_RYF8485_JRA" >CORE_RYF8485_JRA.GISS,CORE_RYF8485_JRA.GCGCS,CORE_RYF8485_JRA.NCEP</value>
+      <value datm_mode="CORE_RYF9091_JRA" >CORE_RYF9091_JRA.GISS,CORE_RYF9091_JRA.GCGCS,CORE_RYF9091_JRA.NCEP</value>
       <value datm_mode="CORE2_IAF" atm_grid="01col" >CORE2_IAF.NCEP.DENS.SOFS,CORE2_IAF.NCEP.PSLV.SOFS,CORE2_IAF.PREC.SOFS.DAILY,CORE2_IAF.LWDN.SOFS.DAILY,CORE2_IAF.SWDN.SOFS.DAILY,CORE2_IAF.SWUP.SOFS.DAILY,CORE2_IAF.SHUM.SOFS.6HOUR,CORE2_IAF.TBOT.SOFS.6HOUR,CORE2_IAF.U.SOFS.6HOUR,CORE2_IAF.V.SOFS.6HOUR,CORE2_IAF.CORE2.ArcFactor</value>
       <value datm_mode="CPLHIST">CPLHISTForcing.Solar,CPLHISTForcing.nonSolarFlux,CPLHISTForcing.State3hr,CPLHISTForcing.State1hr</value>
     </values>
@@ -2177,6 +2179,9 @@
       <value stream="CORE_RYF8485_JRA.GISS">RAF_8485.JRA.v1.3.radiation.TL319.180404.nc</value>
       <value stream="CORE_RYF8485_JRA.GCGCS">RAF_8485.JRA.v1.3.prec.TL319.180404.nc</value>
       <value stream="CORE_RYF8485_JRA.NCEP">RAF_8485.JRA.v1.3.states.TL319.180404.nc</value>
+      <value stream="CORE_RYF9091_JRA.GISS">RAF_9091.JRA.v1.3.radiation.TL319.180404.nc</value>
+      <value stream="CORE_RYF9091_JRA.GCGCS">RAF_9091.JRA.v1.3.prec.TL319.180404.nc</value>
+      <value stream="CORE_RYF9091_JRA.NCEP">RAF_9091.JRA.v1.3.states.TL319.180404.nc</value>
       <value stream="co2tseries.20tr.latbnd">fco2_datm_lat-bands_simyr_1750-2015_CMIP6_c180929.nc</value>
       <value stream="co2tseries.20tr" cime_model="cesm">fco2_datm_global_simyr_1750-2014_CMIP6_c180929.nc</value>
       <value stream="co2tseries.20tr" cime_model="e3sm">fco2_datm_1765-2007_c100614.nc</value>
@@ -2507,14 +2512,14 @@
       <value  stream="CORE_IAF_JRA.*.NCEP.V_10">
         v_10  v
       </value>
-      <value stream="CORE_RYF8485_JRA.GISS">
+      <value stream="CORE_RYF.*.GISS">
         lwdn  lwdn
         swdn  swdn
       </value>
-      <value stream="CORE_RYF8485_JRA.GCGCS">
+      <value stream="CORE_RYF.*.GCGCS">
         prec  prec
       </value>
-      <value stream="CORE_RYF8485_JRA.NCEP">
+      <value stream="CORE_RYF.*.NCEP">
         slp  pslv
         q_10  shum
         t_10  tbot
@@ -2687,7 +2692,8 @@
       <value stream="CORE2_IAF.NCEP.V_10">1948</value>
       <value stream="CORE2_IAF.CORE2.ArcFactor">1948</value>
       <value stream="CORE_IAF_JRA.*">1958</value>
-      <value stream="CORE_RYF*">1984</value>
+      <value stream="CORE_RYF8485_JRA">1984</value>
+      <value stream="CORE_RYF9091_JRA">1990</value>
       <value stream="co2tseries.20tr">1850</value>
       <value stream="co2tseries.omip">1850</value>
       <value stream="co2tseries.SSP">2015</value>
@@ -2755,7 +2761,8 @@
       <value stream="co2tseries.20tr" cime_model="cesm">2014</value>
       <value stream="CORE_IAF_JRA.*2018">2018</value>
       <value stream="CORE_IAF_JRA.*">2016</value>
-      <value stream="CORE_RYF*">1984</value>
+      <value stream="CORE_RYF8485_JRA">1984</value>
+      <value stream="CORE_RYF9091_JRA">1990</value>
       <value stream="co2tseries.omip">2019</value>
       <value stream="co2tseries.SSP">2500</value>
       <value stream="BC.QIAN.Precip">2004</value>
