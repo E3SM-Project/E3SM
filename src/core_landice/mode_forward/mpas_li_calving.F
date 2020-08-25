@@ -1317,7 +1317,8 @@ module li_calving
       real (kind=RKIND), dimension(:), pointer :: uncalvedVolumeNonDynCell, uncalvedVolumeDynCell
       real (kind=RKIND), dimension(:), allocatable :: cellVolume
       real(kind=RKIND) :: calvingSubtotal1, calvingSubtotal2
-      real(kind=RKIND) :: thkSum, thkCount
+      real(kind=RKIND) :: thkSum
+      integer :: thkCount
       real(kind=RKIND) :: removeVolumeHere
       real(kind=RKIND) :: volumeAvailableToPass
       real(kind=RKIND) :: calvLengthCell, calvLengthEdge
