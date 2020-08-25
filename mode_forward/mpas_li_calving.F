@@ -1108,12 +1108,17 @@ module li_calving
       real (kind=RKIND), dimension(:), pointer :: angleEdge
       real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:), pointer :: calvingThickness
+      integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
+      integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
       integer, dimension(:), pointer :: cellMask
       integer, dimension(:), pointer :: calvingFrontMask
       real (kind=RKIND), pointer :: deltat  !< time step (s)
       real (kind=RKIND), dimension(:), pointer :: dvEdge
+      real (kind=RKIND), dimension(:), pointer :: areaCell
       integer, pointer :: nCells
       integer :: iCell, jCell, iNeighbor
+      logical :: dynamicNeighbor
+      real(kind=RKIND) :: calvingSubtotal
       integer :: err_tmp
 
       err = 0
@@ -1149,6 +1154,7 @@ module li_calving
          call mpas_pool_get_array(velocityPool, 'eMin', eMin)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
          call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
+         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
 
          ! get parameter value
@@ -1170,11 +1176,9 @@ module li_calving
 
          calvingVelocity(:) = 0.0_RKIND
          ! First calculate the front retreat rate (Levermann eq. 1)
-!         calvingVelocity(:) = eigencalvingParameter(:) * max(0.0_RKIND, eMax(:)) * max(0.0_RKIND, eMin(:)) & ! m/s
-!               * real(li_mask_is_floating_ice_int(cellMask(:)), kind=RKIND)
+         calvingVelocity(:) = eigencalvingParameter(:) * max(0.0_RKIND, eMax(:)) * max(0.0_RKIND, eMin(:)) & ! m/s
+               * real(li_mask_is_floating_ice_int(cellMask(:)), kind=RKIND)
                   ! calculate only for floating ice - map of "potential" calving rate
-
-         calvingVelocity(:) = config_calving_eigencalving_parameter_scalar_value  !MJH HACK
 
 
          ! Convert calvingVelocity to calvingThickness
@@ -1206,30 +1210,34 @@ module li_calving
                thickness(iCell) = 0.0_RKIND
             endif
          enddo
+         ! TODO: global reduce & reporting on amount of calving generated in this step
 
          ! update mask
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
          err = ior(err, err_tmp)
 
-!      ! remove abandoned floating ice (i.e. icebergs) and add it to the calving flux
-!      ! Defined as: floating ice (dynamic or non-dynamic) that is not adjacent to dynamic ice (floating or grounded)
-!      ! This won't necessarily find all abandoned ice, but in practice it does a pretty good job at general cleanup
-!      do iCell = 1, nCells
-!        if (li_mask_is_floating_ice(cellMask(iCell))) then
-!           ! check neighbors for dynamic ice (floating or grounded)
-!           dynamicNeighbor = .false.
-!           do iNeighbor = 1, nEdgesOnCell(iCell)
-!              jCell = cellsOnCell(iNeighbor, iCell)
-!              if (li_mask_is_dynamic_ice(cellMask(jCell))) dynamicNeighbor = .true.
-!           enddo
-!           if (.not. dynamicNeighbor) then  ! calve this ice
-!              calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)
-!              thickness(iCell) = 0.0_RKIND
-!           endif
-!        endif
-!      enddo
-!
-!      call remove_small_islands(meshPool, geometryPool)
+         ! remove abandoned floating ice (i.e. icebergs) and add it to the calving flux
+         ! Defined as: floating ice (dynamic or non-dynamic) that is not adjacent to dynamic ice (floating or grounded)
+         ! This won't necessarily find all abandoned ice, but in practice it does a pretty good job at general cleanup
+         calvingSubtotal = 0.0_RKIND
+         do iCell = 1, nCells
+           if (li_mask_is_floating_ice(cellMask(iCell))) then
+              ! check neighbors for dynamic ice (floating or grounded)
+              dynamicNeighbor = .false.
+              do iNeighbor = 1, nEdgesOnCell(iCell)
+                 jCell = cellsOnCell(iNeighbor, iCell)
+                 if (li_mask_is_dynamic_ice(cellMask(jCell))) dynamicNeighbor = .true.
+              enddo
+              if (.not. dynamicNeighbor) then  ! calve this ice
+                 calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)
+                 thickness(iCell) = 0.0_RKIND
+                 calvingSubtotal = calvingSubtotal + calvingThickness(iCell) * areaCell(iCell)
+              endif
+           endif
+         enddo
+         ! TODO: global reduce & reporting on amount of calving generated in this step
+
+         call remove_small_islands(meshPool, geometryPool)
 
          block => block % next
       enddo
