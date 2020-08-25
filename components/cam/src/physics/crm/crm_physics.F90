@@ -70,7 +70,7 @@ subroutine crm_physics_register()
    use phys_control,        only: phys_getopts
    use crmdims,             only: crm_nx, crm_ny, crm_nz, crm_dx, crm_dy, crm_dt, &
                                   crm_nx_rad, crm_ny_rad
-#ifdef MMF_SAMXX
+#if defined(MMF_SAMXX)
    use cpp_interface_mod,   only: setparm
    use gator_mod, only: gator_init
 #elif defined(MMF_SAM)
@@ -294,7 +294,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    use crmdims,         only: crm_nx, crm_ny, crm_nz, crm_nx_rad, crm_ny_rad
    use physconst,       only: cpair, latvap, latice, gravit, cappa
    use constituents,    only: pcnst, cnst_get_ind
-#ifdef MMF_SAMXX
+#if defined(MMF_SAMXX)
    use cpp_interface_mod, only: crm
 #elif defined(MMF_SAM)
    use crm_module       , only: crm
@@ -874,7 +874,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       ! Load the nstep
       igstep = get_nstep()
 
-#ifdef MMF_SAM
+#if defined(MMF_SAM)
 
       call t_startf ('crm_call')
 
