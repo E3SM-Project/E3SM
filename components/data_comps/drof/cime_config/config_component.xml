@@ -13,7 +13,7 @@
   -->
 
   <description modifier_mode="1">
-    <desc rof="DROF[%NULL][%NYF][%IAF][%IAFAIS00][%IAFAIS45][%IAFAIS55][%CPLHIST][%JRA][%JRA-1p4-2018][%JRA-1p4-2018-AIS0ICE][%JRA-1p4-2018-AIS0LIQ][%JRA-1p4-2018-AIS0ROF[%JRA-RYF8485][%JRA-RYF9091]">Data runoff model</desc>
+    <desc rof="DROF[%NULL][%NYF][%IAF][%IAFAIS00][%IAFAIS45][%IAFAIS55][%CPLHIST][%JRA][%JRA-1p4-2018][%JRA-1p4-2018-AIS0ICE][%JRA-1p4-2018-AIS0LIQ][%JRA-1p4-2018-AIS0ROF[%JRA-RYF8485][%JRA-RYF9091][%JRA-RYF0304]">Data runoff model</desc>
     <desc option="NULL"     >NULL mode</desc>
     <desc option="NYF"      >COREv2 normal year forcing:</desc>
     <desc option="IAF"      >COREv2 interannual year forcing:</desc>
@@ -28,6 +28,7 @@
     <desc option="JRA"      >JRA55 interannual forcing</desc>
     <desc option="JRA-RYF8485">JRA55 Repeat Year Forcing v1.3 1984-1985</desc>
     <desc option="JRA-RYF9091">JRA55 Repeat Year Forcing v1.3 1990-1991</desc>
+    <desc option="JRA-RYF0304">JRA55 Repeat Year Forcing v1.3 2003-2004</desc>
   </description>
 
   <entry id="COMP_ROF">
@@ -41,7 +42,7 @@
 
   <entry id="DROF_MODE">
     <type>char</type>
-    <valid_values>CPLHIST,DIATREN_ANN_RX1,DIATREN_IAF_RX1,DIATREN_IAF_AIS00_RX1,DIATREN_IAF_AIS45_RX1,DIATREN_IAF_AIS55_RX1,IAF_JRA,IAF_JRA_1p4_2018,IAF_JRA_1p4_2018_AIS0ICE,IAF_JRA_1p4_2018_AIS0LIQ,IAF_JRA_1p4_2018_AIS0ROF,RYF8485_JRA,RYF9091_JRA,NULL</valid_values>
+    <valid_values>CPLHIST,DIATREN_ANN_RX1,DIATREN_IAF_RX1,DIATREN_IAF_AIS00_RX1,DIATREN_IAF_AIS45_RX1,DIATREN_IAF_AIS55_RX1,IAF_JRA,IAF_JRA_1p4_2018,IAF_JRA_1p4_2018_AIS0ICE,IAF_JRA_1p4_2018_AIS0LIQ,IAF_JRA_1p4_2018_AIS0ROF,RYF8485_JRA,RYF9091_JRA,RYF0304_JRA,NULL</valid_values>
     <default_value>DIATREN_ANN_RX1</default_value>
     <values match="last">
       <value compset="_DROF%NULL">NULL</value>
@@ -61,6 +62,7 @@
       <value compset="_DROF%JRA-1p4-2018-AIS0ROF" >IAF_JRA_1p4_2018_AIS0ROF</value>
       <value compset="_DROF%JRA-RYF8485" >RYF8485_JRA</value>
       <value compset="_DROF%JRA-RYF9091" >RYF9091_JRA</value>
+      <value compset="_DROF%JRA-RYF0304" >RYF0304_JRA</value>
       <value compset=".+" grid="r%null">NULL</value> <!-- overwrites above if runoff grid is null -->
     </values>
     <group>run_component_drof</group>
