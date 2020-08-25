@@ -3,7 +3,7 @@
 This script creates histogram plots of the initial condition.
 """
 # import modules
-from netCDF4 import Dataset
+import xarray
 import numpy as np
 import argparse
 import datetime
@@ -29,10 +29,11 @@ def main():
     args = parser.parse_args()
 
     # load mesh variables
-    ncfile = Dataset(args.input_file_name, 'r')
-    nCells = ncfile.dimensions['nCells'].size
-    nEdges = ncfile.dimensions['nEdges'].size
-    nVertLevels = ncfile.dimensions['nVertLevels'].size
+    chunks = {'nCells': 32768, 'nEdges': 32768}
+    ds = xarray.open_dataset(args.input_file_name, chunks=chunks)
+    nCells = ds.sizes['nCells']
+    nEdges = ds.sizes['nEdges']
+    nVertLevels = ds.sizes['nVertLevels']
 
     fig = plt.figure()
     fig.set_size_inches(16.0, 12.0)
@@ -51,63 +52,70 @@ def main():
 
     plt.subplot(3, 3, 2)
     varName = 'maxLevelCell'
-    var = ncfile.variables[varName]
-    maxLevelCell = var[:]
-    plt.hist(var, bins=nVertLevels - 4)
+    var = ds[varName]
+    maxLevelCell = var.values - 1
+    xarray.plot.hist(var, bins=nVertLevels - 4)
     plt.ylabel('frequency')
     plt.xlabel(varName)
-    txt = '{}{:9.2e} {:9.2e} {}\n'.format(txt, np.amin(var), np.amax(var), varName)
+    txt = '{}{:9.2e} {:9.2e} {}\n'.format(txt, var.min().values, 
+                                          var.max().values, varName)
 
     plt.subplot(3, 3, 3)
     varName = 'bottomDepth'
-    var = ncfile.variables[varName]
-    plt.hist(var, bins=nVertLevels - 4)
+    var = ds[varName]
+    xarray.plot.hist(var, bins=nVertLevels - 4)
     plt.xlabel(varName)
-    txt = '{}{:9.2e} {:9.2e} {}\n'.format(txt, np.amin(var), np.amax(var), varName)
+    txt = '{}{:9.2e} {:9.2e} {}\n'.format(txt, var.min().values, 
+                                          var.max().values, varName)
 
-    cellsOnEdge = ncfile.variables['cellsOnEdge']
+    cellsOnEdge = ds['cellsOnEdge'].values - 1
     cellMask = np.zeros((nCells, nVertLevels), bool)
     edgeMask = np.zeros((nEdges, nVertLevels), bool)
     for k in range(nVertLevels):
-        cellMask[:, k] = k < maxLevelCell
-        cell0 = cellsOnEdge[:, 0]-1
-        cell1 = cellsOnEdge[:, 1]-1
+        cellMask[:, k] = k <= maxLevelCell
+        cell0 = cellsOnEdge[:, 0]
+        cell1 = cellsOnEdge[:, 1]
         edgeMask[:, k] = np.logical_and(np.logical_and(cellMask[cell0, k],
                                                        cellMask[cell1, k]),
                                         np.logical_and(cell0 >= 0,
                                                        cell1 >= 0))
+    cellMask = xarray.DataArray(data=cellMask, dims=('nCells', 'nVertLevels'))
+    edgeMask = xarray.DataArray(data=edgeMask, dims=('nEdges', 'nVertLevels'))
 
     plt.subplot(3, 3, 4)
     varName = 'temperature'
-    var = ncfile.variables[varName][0, :, :][cellMask]
-    plt.hist(var, bins=100, log=True)
+    var = ds[varName].isel(Time=0).where(cellMask)
+    xarray.plot.hist(var, bins=100, log=True)
     plt.ylabel('frequency')
     plt.xlabel(varName)
-    txt = '{}{:9.2e} {:9.2e} {}\n'.format(txt, np.amin(var), np.amax(var), varName)
+    txt = '{}{:9.2e} {:9.2e} {}\n'.format(txt, var.min().values, 
+                                          var.max().values, varName)
 
     plt.subplot(3, 3, 5)
     varName = 'salinity'
-    var = ncfile.variables[varName][0, :, :][cellMask]
-    plt.hist(var, bins=100, log=True)
+    var = ds[varName].isel(Time=0).where(cellMask)
+    xarray.plot.hist(var, bins=100, log=True)
     plt.xlabel(varName)
-    txt = '{}{:9.2e} {:9.2e} {}\n'.format(txt, np.amin(var), np.amax(var), varName)
+    txt = '{}{:9.2e} {:9.2e} {}\n'.format(txt, var.min().values, 
+                                          var.max().values, varName)
 
     plt.subplot(3, 3, 6)
     varName = 'layerThickness'
-    var = ncfile.variables[varName][0, :, :][cellMask]
-    plt.hist(var, bins=100, log=True)
+    var = ds[varName].isel(Time=0).where(cellMask)
+    xarray.plot.hist(var, bins=100, log=True)
     plt.xlabel(varName)
-    txt = '{}{:9.2e} {:9.2e} {}\n'.format(txt, np.amin(var), np.amax(var), varName)
+    txt = '{}{:9.2e} {:9.2e} {}\n'.format(txt, var.min().values, 
+                                          var.max().values, varName)
 
-    rx1Edge = ncfile.variables['rx1Edge']
     plt.subplot(3, 3, 7)
     varName = 'rx1Edge'
-    var = ncfile.variables[varName][0, :, :][edgeMask]
-    plt.hist(var, bins=100, log=True)
+    var = ds[varName].isel(Time=0).where(edgeMask)
+    maxRx1Edge = var.max().values
+    xarray.plot.hist(var, bins=100, log=True)
     plt.ylabel('frequency')
-    plt.xlabel('Haney Number, max={:4.2f}'.format(
-        np.max(rx1Edge[:].ravel())))
-    txt = '{}{:9.2e} {:9.2e} {}\n'.format(txt, np.amin(var), np.amax(var), varName)
+    plt.xlabel('Haney Number, max={:4.2f}'.format(maxRx1Edge))
+    txt = '{}{:9.2e} {:9.2e} {}\n'.format(txt, var.min().values, 
+                                          var.max().values, varName)
 
     font = FontProperties()
     font.set_family('monospace')
@@ -117,7 +125,9 @@ def main():
     plt.text(0, 1, txt, verticalalignment='top', fontproperties=font)
     plt.axis('off')
 
-    plt.savefig(args.output_file_name)
+    plt.tight_layout(pad=4.0)
+
+    plt.savefig(args.output_file_name, bbox_inches='tight', pad_inches=0.1)
 
 
 if __name__ == '__main__':
