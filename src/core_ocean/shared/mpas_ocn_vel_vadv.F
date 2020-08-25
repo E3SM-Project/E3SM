@@ -140,8 +140,12 @@ contains
 
       !$omp parallel
       !$omp do schedule(runtime) &
+#ifdef CPRPGI
+      !$omp private(iEdge, cell1, cell2, k, vertAleTransportTopEdge, w_dudzTopEdge)
+#else
       !$omp private(iEdge, cell1, cell2, k, vertAleTransportTopEdge) &
       !$omp firstprivate(w_dudzTopEdge)
+#endif
       do iEdge = 1, nEdges
         cell1 = cellsOnEdge(1,iEdge)
         cell2 = cellsOnEdge(2,iEdge)
