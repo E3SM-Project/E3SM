@@ -91,6 +91,10 @@ void check_length_scale_shoc_length_c(Int nlev, Int shcol, Real *host_dx,
 
 void shoc_diag_second_moments_srf_c(Int shcol, Real* wthl, Real* uw, Real* vw,
                                    Real* ustar2, Real* wstar);
+				   
+void linear_interp_c(Real *x1, Real *x2, Real *y1, Real *y2, Int km1,
+                     Int km2, Int ncol, Real minthresh);			   
+
 }
 
 namespace scream {
@@ -392,6 +396,14 @@ void shoc_diag_second_moments_srf(SHOCSecondMomentSrfData& d)
   shoc_init(d.nlev, true);
   d.transpose<util::TransposeDirection::c2f>();
   shoc_diag_second_moments_srf_c(d.shcol, d.wthl, d.uw, d.vw, d.ustar2, d.wstar);
+  d.transpose<util::TransposeDirection::f2c>();
+}
+
+void linear_interp(SHOCLinearintData& d)
+{
+  shoc_init(d.nlev, true);
+  d.transpose<util::TransposeDirection::c2f>();
+  linear_interp_c(d.x1,d.x2,d.y1,d.y2,d.nlev,d.nlevi,d.shcol,d.minthresh);
   d.transpose<util::TransposeDirection::f2c>();
 }
 

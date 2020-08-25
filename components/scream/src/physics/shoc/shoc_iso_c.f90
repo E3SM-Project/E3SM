@@ -479,5 +479,22 @@ contains
 
    call diag_second_moments_srf(shcol, wthl, uw, vw, ustar2, wstar)
  end subroutine shoc_diag_second_moments_srf_c
+ 
+  subroutine linear_interp_c(x1,x2,y1,y2,km1,km2,ncol,minthresh) bind (C)
+    use shoc, only: linear_interp
+
+    integer(kind=c_int), intent(in), value :: ncol
+    integer(kind=c_int), intent(in), value :: km1
+    integer(kind=c_int), intent(in), value :: km2
+    real(kind=c_real), intent(in), value :: minthresh
+    real(kind=c_real), intent(in) :: x1(ncol,km1)
+    real(kind=c_real), intent(in) :: y1(ncol,km1)
+    real(kind=c_real), intent(in) :: x2(ncol,km2)
+    
+    real(kind=c_real), intent(out) :: y2(ncol,km2)
+
+    call linear_interp(x1,x2,y1,y2,km1,km2,ncol,minthresh)
+
+  end subroutine linear_interp_c  
 
 end module shoc_iso_c
