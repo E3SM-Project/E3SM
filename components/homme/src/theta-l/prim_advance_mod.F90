@@ -48,6 +48,11 @@ module prim_advance_mod
     use prim_derived_type_mod ,only : derived_type, initialize
     use, intrinsic :: iso_c_binding
 #endif
+
+#ifdef CAM
+   use cam_history, only : outfld
+#endif
+
  
   implicit none
   private
@@ -608,6 +613,10 @@ contains
         elem(ie)%state%vtheta_dp(:,:,k,nt)=&
              elem(ie)%state%vtheta_dp(:,:,k,nt)/elem(ie)%state%dp3d(:,:,k,nt)
      enddo
+
+   call outfld('HOMMEu',elem(ie)%state%vtheta_dp(1,1,1,nt),np*np,ie)
+
+
   enddo
 
 

@@ -32,6 +32,11 @@ module prim_driver_base
   use test_mod,         only: set_test_initial_conditions, compute_test_forcing
 #endif
 
+#ifdef CAM
+  use cam_history,      only : addfld
+#endif
+
+
   implicit none
 
   private
@@ -135,6 +140,7 @@ contains
     call TimeLevel_init(tl)
 
     if(par%masterproc) write(iulog,*) 'end of prim_init1'
+
   end subroutine prim_init1
 
 
@@ -968,6 +974,12 @@ contains
     if (hybrid%masterthread) write(iulog,*) "initial state:"
     call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete)
     call Prim_Advec_Init2(elem(:), hvcoord, hybrid)
+
+
+#ifdef CAM
+    call addfld('HOMMEu', (/ 'lev' /), 'A', 'm/s', 'description', gridname='GLL')
+#endif
+
 
   end subroutine prim_init2
 
