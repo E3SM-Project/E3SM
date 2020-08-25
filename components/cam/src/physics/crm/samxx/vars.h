@@ -75,7 +75,7 @@ void copy_outputs(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_
                   real *crm_output_clhgh_p, real *crm_output_clmed_p, real *crm_output_cllow_p, real *crm_output_sltend_p, real *crm_output_qltend_p, real *crm_output_qcltend_p, 
                   real *crm_output_qiltend_p, real *crm_output_tk_p, real *crm_output_tkh_p, real *crm_output_qcl_p, real *crm_output_qci_p, real *crm_output_qpl_p, real *crm_output_qpi_p, 
                   real *crm_output_z0m_p, real *crm_output_taux_p, real *crm_output_tauy_p, real *crm_output_precc_p, real *crm_output_precl_p, real *crm_output_precsc_p, 
-                  real *crm_output_precsl_p, real *crm_output_prec_crm_p);
+                  real *crm_output_precsl_p, real *crm_output_prec_crm_p, real *crm_clear_rh_p);
                             
 
 
@@ -93,7 +93,7 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
                               real *crm_output_clhgh_p, real *crm_output_clmed_p, real *crm_output_cllow_p, real *crm_output_sltend_p, real *crm_output_qltend_p, real *crm_output_qcltend_p, 
                               real *crm_output_qiltend_p, real *crm_output_tk_p, real *crm_output_tkh_p, real *crm_output_qcl_p, real *crm_output_qci_p, real *crm_output_qpl_p, real *crm_output_qpi_p, 
                               real *crm_output_z0m_p, real *crm_output_taux_p, real *crm_output_tauy_p, real *crm_output_precc_p, real *crm_output_precl_p, real *crm_output_precsc_p, 
-                              real *crm_output_precsl_p, real *crm_output_prec_crm_p);
+                              real *crm_output_precsl_p, real *crm_output_prec_crm_p, rea *crm_clear_rh_p);
 
 
                             
@@ -473,6 +473,8 @@ extern real1d crm_output_precl;
 extern real1d crm_output_precsc; 
 extern real1d crm_output_precsl; 
 extern real3d crm_output_prec_crm; 
+extern real2d crm_clear_rh;
+extern real2d crm_clear_rh_cnt;
 extern real1d lat0; 
 extern real1d long0;
 extern int1d  gcolp;

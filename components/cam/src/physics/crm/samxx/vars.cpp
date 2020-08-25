@@ -170,6 +170,7 @@ void allocate() {
   cloudtopheight   = real3d( "cloudtopheight  "           , ny         , nx     , ncrms ); 
   echotopheight    = real3d( "echotopheight   "           , ny         , nx     , ncrms ); 
   cloudtoptemp     = real3d( "cloudtoptemp    "           , ny         , nx     , ncrms ); 
+  crm_clear_rh     = real2d( "crm_clear_rh    "                        , nzm    , ncrms ); 
 
   yakl::memset(t00               ,0.);
   yakl::memset(tln               ,0.);
@@ -338,6 +339,7 @@ void allocate() {
   yakl::memset(cloudtopheight    ,0.);
   yakl::memset(echotopheight     ,0.);
   yakl::memset(cloudtoptemp      ,0.);
+  yakl::memset(crm_clear_rh      ,0.);
 }
 
 
@@ -600,6 +602,7 @@ void finalize() {
   cloudtopheight   = real3d();
   echotopheight    = real3d();
   cloudtoptemp     = real3d();
+  crm_clear_rh_cnt = real2d();
 }
 
 
@@ -788,7 +791,7 @@ void copy_outputs(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_
                   real *crm_output_clhgh_p, real *crm_output_clmed_p, real *crm_output_cllow_p, real *crm_output_sltend_p, real *crm_output_qltend_p, real *crm_output_qcltend_p, 
                   real *crm_output_qiltend_p, real *crm_output_tk_p, real *crm_output_tkh_p, real *crm_output_qcl_p, real *crm_output_qci_p, real *crm_output_qpl_p, real *crm_output_qpi_p, 
                   real *crm_output_z0m_p, real *crm_output_taux_p, real *crm_output_tauy_p, real *crm_output_precc_p, real *crm_output_precl_p, real *crm_output_precsc_p, 
-                  real *crm_output_precsl_p, real *crm_output_prec_crm_p) {
+                  real *crm_output_precsl_p, real *crm_output_prec_crm_p, crm_clear_rh) {
 
   realHost4d crm_state_u_wind          = realHost4d( "crm_state_u_wind        ",crm_state_u_wind_p         , crm_nz, crm_ny    , crm_nx    , pcols);
   realHost4d crm_state_v_wind          = realHost4d( "crm_state_v_wind        ",crm_state_v_wind_p         , crm_nz, crm_ny    , crm_nx    , pcols);
@@ -864,6 +867,7 @@ void copy_outputs(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_
   realHost1d crm_output_precsc         = realHost1d( "crm_output_precsc       ",crm_output_precsc_p                                        , pcols); 
   realHost1d crm_output_precsl         = realHost1d( "crm_output_precsl       ",crm_output_precsl_p                                        , pcols); 
   realHost3d crm_output_prec_crm       = realHost3d( "crm_output_prec_crm     ",crm_output_prec_crm_p                , crm_ny    , crm_nx  , pcols);  
+  realHost2d crm_clear_rh              = realHost2d( "crm_clear_rh            ",crm_clear_rh                                  , plev       , pcols);
 
   crm_state_u_wind          .deep_copy_to( ::crm_state_u_wind           );
   crm_state_v_wind          .deep_copy_to( ::crm_state_v_wind           );
@@ -939,6 +943,7 @@ void copy_outputs(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_
   crm_output_precsc         .deep_copy_to( ::crm_output_precsc          ); 
   crm_output_precsl         .deep_copy_to( ::crm_output_precsl          ); 
   crm_output_prec_crm       .deep_copy_to( ::crm_output_prec_crm        );  
+  crm_clear_rh              .deep_copy_to( ::crm_clear_rh               );  
 }
 
 
@@ -957,7 +962,7 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
                               real *crm_output_clhgh_p, real *crm_output_clmed_p, real *crm_output_cllow_p, real *crm_output_sltend_p, real *crm_output_qltend_p, real *crm_output_qcltend_p, 
                               real *crm_output_qiltend_p, real *crm_output_tk_p, real *crm_output_tkh_p, real *crm_output_qcl_p, real *crm_output_qci_p, real *crm_output_qpl_p, real *crm_output_qpi_p, 
                               real *crm_output_z0m_p, real *crm_output_taux_p, real *crm_output_tauy_p, real *crm_output_precc_p, real *crm_output_precl_p, real *crm_output_precsc_p, 
-                              real *crm_output_precsl_p, real *crm_output_prec_crm_p) {
+                              real *crm_output_precsl_p, real *crm_output_prec_crm_p, real *crm_clear_rh) {
   
   // Wrap arrays we'll be copying out
   realHost4d crm_state_u_wind          = realHost4d( "crm_state_u_wind        ",crm_state_u_wind_p         , crm_nz, crm_ny    , crm_nx    , pcols);
@@ -1034,6 +1039,7 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
   realHost1d crm_output_precsc         = realHost1d( "crm_output_precsc       ",crm_output_precsc_p                                        , pcols); 
   realHost1d crm_output_precsl         = realHost1d( "crm_output_precsl       ",crm_output_precsl_p                                        , pcols); 
   realHost3d crm_output_prec_crm       = realHost3d( "crm_output_prec_crm     ",crm_output_prec_crm_p                , crm_ny    , crm_nx  , pcols);  
+  realHost2d crm_clear_rh              = realHost2d( "crm_clear_rh            ",crm_clear_rh                                  , plev       , pcols); 
 
   // Copy to outputs
   ::crm_state_u_wind        .deep_copy_to(crm_state_u_wind        );
@@ -1110,6 +1116,7 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
   ::crm_output_precsc       .deep_copy_to(crm_output_precsc       );
   ::crm_output_precsl       .deep_copy_to(crm_output_precsl       );
   ::crm_output_prec_crm     .deep_copy_to(crm_output_prec_crm     );
+  ::crm_clear_rh            .deep_copy_to(crm_clear_rh            );
 
   // Deallocate data
   ::crm_input_bflxls          = real1d();
@@ -1200,7 +1207,8 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
   ::crm_output_precl          = real1d();
   ::crm_output_precsc         = real1d();
   ::crm_output_precsl         = real1d();
-  ::crm_output_prec_crm       = real3d(); 
+  ::crm_output_prec_crm       = real3d();
+  ::crm_clear_rh              = real2d();
   ::lat0                      = real1d();
   ::long0                     = real1d();
   ::gcolp                     = int1d();
@@ -1608,6 +1616,8 @@ real1d crm_output_precl;
 real1d crm_output_precsc; 
 real1d crm_output_precsl; 
 real3d crm_output_prec_crm; 
+real2d crm_clear_rh;
+real2d crm_clear_rh_cnt;
 real1d lat0; 
 real1d long0;
 int1d  gcolp;

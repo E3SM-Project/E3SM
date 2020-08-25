@@ -84,6 +84,7 @@ void post_timeloop() {
   auto &precsfc                 = :: precsfc;
   auto &precssfc                = :: precssfc;
   auto &crm_output_prec_crm     = :: crm_output_prec_crm;
+  auto &crm_clear_rh            = :: crm_clear_rh;
   auto &crm_output_cltot        = :: crm_output_cltot;
   auto &crm_output_clhgh        = :: crm_output_clhgh;
   auto &crm_output_clmed        = :: crm_output_clmed;

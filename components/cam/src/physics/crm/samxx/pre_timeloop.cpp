@@ -12,6 +12,8 @@ void pre_timeloop() {
   auto &crm_rad_qc               = :: crm_rad_qc;
   auto &crm_rad_qi               = :: crm_rad_qi;
   auto &crm_rad_cld              = :: crm_rad_cld;
+  auto &crm_clear_rh             = :: crm_clear_rh;
+  auto &crm_clear_rh_cnt         = :: crm_clear_rh_cnt;
   auto &bflx                     = :: bflx;
   auto &wnd                      = :: wnd;
   auto &crm_input_bflxls         = :: crm_input_bflxls;
@@ -252,6 +254,14 @@ void pre_timeloop() {
   parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
     rhow(0,icrm) = 2.0*rhow(1,icrm) - rhow(2,icrm);
     rhow(nz-1,icrm)= 2.0*rhow(nzm-1,icrm) - rhow(nzm-2,icrm);
+  });
+
+  // Initialize clear air relative humidity for aerosol water uptake
+  // for (int icrm=0; icrm<ncrms; icrm++) {
+  //   for (int k=0; k<nzm; k++) {
+  parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+    crm_clear_rh(k,icrm)     = 0.0 ;
+    crm_clear_rh_cnt(k,icrm) = 0.0 ;
   });
 
   //  Initialize CRM fields:

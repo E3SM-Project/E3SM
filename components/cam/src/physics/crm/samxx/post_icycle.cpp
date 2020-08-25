@@ -31,6 +31,7 @@ void post_icycle() {
   auto &crm_rad_qi          = :: crm_rad_qi;
   auto &tabs                = :: tabs;
   auto &crm_rad_cld         = :: crm_rad_cld;
+  auto &crm_clear_rh        = :: crm_clear_rh;
   auto &pres                = :: pres;
   auto &rhow                = :: rhow;
   auto &mui_crm             = :: mui_crm;
@@ -122,6 +123,8 @@ void post_icycle() {
     // by collecting statistics and doing radiation over column groups
     int i_rad = i / (nx/crm_nx_rad);
     int j_rad = j / (ny/crm_ny_rad);
+    real qsat;
+    real rh_tmp;
 
     yakl::atomicAdd(crm_rad_temperature(k,j_rad,i_rad,icrm) , tabs(k,j,i,icrm));
     real tmp = max(0.0,qv(k,j,i,icrm));
@@ -130,6 +133,11 @@ void post_icycle() {
     yakl::atomicAdd(crm_rad_qi(k,j_rad,i_rad,icrm) , qci(k,j,i,icrm));
     if (qcl(k,j,i,icrm) + qci(k,j,i,icrm) > 0) {
       yakl::atomicAdd(crm_rad_cld(k,j_rad,i_rad,icrm) , CF3D(k,j,i,icrm));
+    } else {
+      qsatw_crm(tabs(k,j,i,icrm),pres(k,icrm),qsat)
+      rh_tmp = qv(k,j,i,icrm)/qsat
+      yakl::atomicAdd(crm_clear_rh(k,icrm) , rh_tmp)
+      crm_clear_rh_cnt(icrm,k) = crm_clear_rh_cnt(icrm,k) + 1;
     }
   });
 
