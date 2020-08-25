@@ -32,6 +32,7 @@ void post_icycle() {
   auto &tabs                = :: tabs;
   auto &crm_rad_cld         = :: crm_rad_cld;
   auto &crm_clear_rh        = :: crm_clear_rh;
+  auto &crm_clear_rh_cnt    = :: crm_clear_rh_cnt;
   auto &pres                = :: pres;
   auto &rhow                = :: rhow;
   auto &mui_crm             = :: mui_crm;
@@ -134,9 +135,9 @@ void post_icycle() {
     if (qcl(k,j,i,icrm) + qci(k,j,i,icrm) > 0) {
       yakl::atomicAdd(crm_rad_cld(k,j_rad,i_rad,icrm) , CF3D(k,j,i,icrm));
     } else {
-      qsatw_crm(tabs(k,j,i,icrm),pres(k,icrm),qsat)
-      rh_tmp = qv(k,j,i,icrm)/qsat
-      yakl::atomicAdd(crm_clear_rh(k,icrm) , rh_tmp)
+      qsatw_crm(tabs(k,j,i,icrm),pres(k,icrm),qsat);
+      rh_tmp = qv(k,j,i,icrm)/qsat;
+      yakl::atomicAdd(crm_clear_rh(k,icrm) , rh_tmp);
       crm_clear_rh_cnt(icrm,k) = crm_clear_rh_cnt(icrm,k) + 1;
     }
   });
