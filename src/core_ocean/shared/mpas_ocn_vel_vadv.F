@@ -138,11 +138,9 @@ contains
 
       nEdges = nEdgesArray( 1 )
 
+#ifndef CPRPGI
       !$omp parallel
       !$omp do schedule(runtime) &
-#ifdef CPRPGI
-      !$omp private(iEdge, cell1, cell2, k, vertAleTransportTopEdge, w_dudzTopEdge)
-#else
       !$omp private(iEdge, cell1, cell2, k, vertAleTransportTopEdge) &
       !$omp firstprivate(w_dudzTopEdge)
 #endif
@@ -165,8 +163,10 @@ contains
           tend(k,iEdge) = tend(k,iEdge) - edgeMask(k, iEdge) * 0.5 * (w_dudzTopEdge(k) + w_dudzTopEdge(k+1))
         enddo
       enddo
+#ifndef CPRPGI
       !$omp end do
       !$omp end parallel
+#endif
 
       deallocate(w_dudzTopEdge)
 
