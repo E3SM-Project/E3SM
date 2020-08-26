@@ -144,9 +144,11 @@ contains
 
       nCells = nCellsArray( 3 )
 
+#ifndef CPRPGI
       !$omp parallel
       !$omp do schedule(runtime) private(depth, k, depLev) &
       !$omp firstprivate(weights)
+#endif
       do iCell = 1, nCells
          depth = 0.0_RKIND
          do k = 1, maxLevelCell(iCell)
@@ -171,8 +173,10 @@ contains
          penetrativeTemperatureFluxOBL(iCell)=penetrativeTemperatureFlux(iCell)*weights(depLev)
 
       end do
+#ifndef CPRPGI
       !$omp end do
       !$omp end parallel
+#endif
 
       deallocate(weights)
 
