@@ -1302,8 +1302,9 @@ module li_calving
       !-----------------------------------------------------------------
       integer, intent(out) :: err !< Output: error flag
 
-      integer, pointer :: nEdges, nCells, nCellsSolve, nEmptyNeighbors
+      integer, pointer :: nEdges, nCells, nCellsSolve
       integer :: iEdge, iCell, jCell, iNeighbor
+      integer :: nEmptyNeighbors
       real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:), pointer :: bedTopography
       integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
@@ -1332,7 +1333,6 @@ module li_calving
       real(kind=RKIND) :: volumeAvailableToPass
       real(kind=RKIND) :: calvLengthCell, calvLengthEdge
       real(kind=RKIND), dimension(6) :: localInfo, globalInfo
-      logical :: openOceanNeighbor
       real(kind=RKIND) :: edgeLengthScaling
       real(kind=RKIND), parameter :: calvingSmallThk = 1.0e-8 ! in meters, a small thickness threshold
       integer :: err_tmp
@@ -1364,42 +1364,42 @@ module li_calving
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
       call mpas_pool_get_array(meshPool, 'deltat', deltat)
 
-      do iCell = 1, nCellsSolve
-      ! Define marine marginal cells as those that are (1) at the ice
-      ! margin, (2) have at least one neighboring cell without ice, (3)
-      ! contain
-      ! grounded ice, and (4) have bed topography below sea level.
-      ! OR is adjacent to an inactive floating margin cell
-        nEmptyNeighbors = 0
-      ! Check if neighboring cells contain ice and have bed topo below sea
-      ! level
-        do iEdge = 1, nEdgesOnCell(iCell)
+      groundedMarineMarginMask(:) = 0
+      do iCell = 1, nCells
+         ! Define marine m      arginal cells as those that are (1) at the ice
+         ! margin, (2) have at least one neighboring cell without ice, (3) contain
+         ! grounded ice, and (4) have bed topography below sea level.
+         ! OR is adjacent to an inactive floating margin cell
+
+         ! Check if neighboring cells contain ice and have bed topo below sea level
+         nEmptyNeighbors = 0
+         do iEdge = 1, nEdgesOnCell(iCell)
            iNeighbor = cellsOnCell(iEdge, iCell)
-           if ( ((thickness(iNeighbor) == 0.0_RKIND) & 
-              .and. bedTopography(iNeighbor) < config_sea_level) &
-              .or. (li_mask_is_floating_ice(cellMask(iNeighbor)) & 
+           if ( (((thickness(iNeighbor) == 0.0_RKIND) &
+              .and. bedTopography(iNeighbor) < config_sea_level)) &
+              .or. ((li_mask_is_floating_ice(cellMask(iNeighbor)) &
               .and. li_mask_is_margin(cellMask(iNeighbor)) &
-              .and. (.not. li_mask_is_dynamic_ice(cellMask(iNeighbor))))) then
+              .and. (.not. li_mask_is_dynamic_ice(cellMask(iNeighbor)))))) then
                nEmptyNeighbors = nEmptyNeighbors + 1
            endif
-        enddo 
-        
-        if ( nEmptyNeighbors > 0 &
-           .and. thickness(iCell) > 0.0_RKIND &
+         enddo
+
+         if ( nEmptyNeighbors > 0 &
            .and. li_mask_is_grounded_ice(cellMask(iCell)) &
            .and. bedTopography(iCell) < config_sea_level &
            .and. li_mask_is_dynamic_ice(cellMask(iCell)) ) then
-                
-            groundedMarineMarginMask(iCell) = 1
-        else 
-            groundedMarineMarginMask(iCell) = 0
-        endif
 
-     enddo
- 
+            groundedMarineMarginMask(iCell) = 1
+         else
+            groundedMarineMarginMask(iCell) = 0
+         endif
+      enddo
+
 
       ! Init fields for accounting
       calvingThickness(:) = 0.0_RKIND
+      uncalvedVolumeNonDynCell(:) = 0.0_RKIND
+      uncalvedVolumeDynCell(:) = 0.0_RKIND
       allocate(cellVolume(nCells+1))
       cellVolume(:) = areaCell(:) * thickness(:)
       allocate(requiredCalvingVolumeNonDynEdge(nEdges+1))
@@ -1467,26 +1467,19 @@ module li_calving
 
       ! a. Calculate calving on dynamic margin edges
       do iCell = 1, nCellsSolve
-         if ( (li_mask_is_floating_ice(cellMask(iCell)) .and. li_mask_is_dynamic_ice(cellMask(iCell)) .and. &
-                 li_mask_is_margin(cellMask(iCell))) .or.  (groundedMarineMarginMask(iCell) == 1) ) then
+         if ( ( (li_mask_is_floating_ice(cellMask(iCell)) .and. li_mask_is_dynamic_ice(cellMask(iCell)) ) & ! floating dynamic
+                .or.  (groundedMarineMarginMask(iCell) == 1) ) &
+              .and. li_mask_is_margin(cellMask(iCell)) ) then
             ! only consider dynamic margins adjacent to open ocean (need to exclude dynamic margins adjacent to land)
-            openOceanNeighbor = .false.
             do iNeighbor = 1, nEdgesOnCell(iCell)
                jCell = cellsOnCell(iNeighbor, iCell)
                if ((.not. li_mask_is_ice(cellMask(jCell))) .and. (bedTopography(jCell) <= config_sea_level)) then
-                  openOceanNeighbor = .true.
+                  iEdge = edgesOnCell(iNeighbor, iCell)
+                  edgeLengthScaling = scale_edge_length(angleEdge(iEdge), uReconstructX(1,iCell), uReconstructY(1,iCell))
+                  requiredCalvingVolumeDynEdge(iEdge) = calvingVelocity(iCell) * &
+                          edgeLengthScaling * dvEdge(iEdge) * thickness(iCell) * deltat
                endif
             enddo
-            if (openOceanNeighbor) then
-               do iNeighbor = 1, nEdgesOnCell(iCell)
-                  iEdge = edgesOnCell(iNeighbor, iCell)
-                  if (li_mask_is_margin(edgeMask(iEdge))) then
-                     edgeLengthScaling = scale_edge_length(angleEdge(iEdge), uReconstructX(1,iCell), uReconstructY(1,iCell))
-                     requiredCalvingVolumeDynEdge(iEdge) = calvingVelocity(iCell) * &
-                          edgeLengthScaling * dvEdge(iEdge) * thickness(iCell) * deltat
-                  endif
-               enddo
-            endif
          endif
       enddo
 
@@ -1520,6 +1513,12 @@ module li_calving
                if (li_mask_is_dynamic_ice(edgeMask(iEdge))) then
                   edgeLengthScaling = scale_edge_length(angleEdge(iEdge), uReconstructX(1,iCell), uReconstructY(1,iCell))
                   calvLengthEdge = edgeLengthScaling * dvEdge(iEdge)
+                  if (requiredCalvingVolumeDynEdge(iEdge) > 0.0_RKIND) then
+                     call mpas_log_write("Unexpectedly found a dynamic edge that already has calving assigned to it." // &
+                           "  There is a flaw in apply_calving_velocity that needs to be fixed!", MPAS_LOG_ERR)
+                     err_tmp = 1
+                     err = ior(err, err_tmp)
+                  endif
                   requiredCalvingVolumeDynEdge(iEdge) = calvLengthEdge / calvLengthCell * volumeAvailableToPass
                   uncalvedVolumeNonDynCell(iCell) = uncalvedVolumeNonDynCell(iCell) - requiredCalvingVolumeDynEdge(iEdge)
                   !call mpas_log_write("   Passed calving $r from non-dynamic cell $i to dynamic cell $i", &
