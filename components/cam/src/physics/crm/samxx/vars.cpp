@@ -340,6 +340,7 @@ void allocate() {
   yakl::memset(echotopheight     ,0.);
   yakl::memset(cloudtoptemp      ,0.);
   yakl::memset(crm_clear_rh      ,0.);
+  yakl::memset(crm_clear_rh_cnt  ,0.);
 }
 
 

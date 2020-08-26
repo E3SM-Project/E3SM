@@ -138,7 +138,7 @@ void post_icycle() {
       qsatw_crm(tabs(k,j,i,icrm),pres(k,icrm),qsat);
       rh_tmp = qv(k,j,i,icrm)/qsat;
       yakl::atomicAdd(crm_clear_rh(k,icrm) , rh_tmp);
-      crm_clear_rh_cnt(icrm,k) = crm_clear_rh_cnt(icrm,k) + 1;
+      crm_clear_rh_cnt(k,icrm) = crm_clear_rh_cnt(k,icrm) + 1;
     }
   });
 
