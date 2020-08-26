@@ -85,6 +85,7 @@ void post_timeloop() {
   auto &precssfc                = :: precssfc;
   auto &crm_output_prec_crm     = :: crm_output_prec_crm;
   auto &crm_clear_rh            = :: crm_clear_rh;
+  auto &crm_clear_rh_cnt        = :: crm_clear_rh_cnt;
   auto &crm_output_cltot        = :: crm_output_cltot;
   auto &crm_output_clhgh        = :: crm_output_clhgh;
   auto &crm_output_clmed        = :: crm_output_clmed;
@@ -155,6 +156,15 @@ void post_timeloop() {
     crm_rad_qc         (k,j,i,icrm) = crm_rad_qc         (k,j,i,icrm) * tmp1;
     crm_rad_qi         (k,j,i,icrm) = crm_rad_qi         (k,j,i,icrm) * tmp1;
     crm_rad_cld        (k,j,i,icrm) = crm_rad_cld        (k,j,i,icrm) * tmp1;
+  });
+
+  // Convert clear RH sum to average
+  // for (int k=0; k<nzm; k++) {
+  //  for (int icrm=0; icrm<ncrms; icrm++) {
+  parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+    if (crm_clear_rh_cnt(k,icrm)>0) {
+      crm_clear_rh(k,icrm) = crm_clear_rh(k,icrm) / crm_clear_rh_cnt(k,icrm)
+    }
   });
 
   // no CRM tendencies above its top
