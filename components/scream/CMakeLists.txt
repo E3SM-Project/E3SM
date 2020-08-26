@@ -110,6 +110,7 @@ set(DEFAULT_LIB_ONLY FALSE)
 if (CIME_BUILD)
   set(DEFAULT_LIB_ONLY TRUE)
 endif()
+set(DEFAULT_NUM_VERTICAL_LEV 72)
 
 set(SCREAM_MIMIC_GPU ${DEFAULT_MIMIC_GPU} CACHE BOOL "Mimic GPU to correctness-test inter-column parallelism on non-GPU platform")
 set(SCREAM_PACK_CHECK_BOUNDS FALSE CACHE BOOL "If defined, scream::pack objects check indices against bounds")
@@ -122,6 +123,11 @@ set(SCREAM_LIB_ONLY ${DEFAULT_LIB_ONLY} CACHE BOOL "Only build libraries, no exe
 # of building only baseline-related execs. By default, this option is off (menaing "build everything).
 # However, when generating baselines, this can be useful to reduce the amount of stuff compiled.
 set(SCREAM_BASELINES_ONLY FALSE CACHE BOOL "Whether building only baselines-related executables")
+
+# Set number of vertical levels
+set(SCREAM_NUM_VERTICAL_LEV ${DEFAULT_NUM_VERTICAL_LEV} CACHE STRING
+    "The number of levels used in the vertical grid."
+)
 
 ## Work out pack sizes.
 # Determine the master pack size.
@@ -203,6 +209,7 @@ print_var(CUDA_BUILD)
 print_var(SCREAM_DOUBLE_PRECISION)
 print_var(SCREAM_MIMIC_GPU)
 print_var(SCREAM_FPE)
+print_var(SCREAM_NUM_VERTICAL_LEV)
 print_var(SCREAM_PACK_SIZE)
 print_var(SCREAM_SMALL_PACK_SIZE)
 print_var(SCREAM_POSSIBLY_NO_PACK_SIZE)
