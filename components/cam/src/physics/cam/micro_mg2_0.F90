@@ -1092,6 +1092,14 @@ subroutine micro_mg_tend ( &
      ncal = 0._r8
   end where
 
+  !! impose minimum droplet number (in-cloud) 
+
+  if (mincdnc.gt.0._r8) then
+     where(nc < mincdnc/rho*lcldm .and. qc >= qsmall)
+        nc = mincdnc/rho*lcldm
+     end where 
+  end if
+
   where (t < icenuct)
      ncai = naai*rho
   elsewhere
@@ -1208,7 +1216,7 @@ subroutine micro_mg_tend ( &
            ncic(i,k)=max(nc(i,k)/lcldm(i,k),0._r8)
 
            ! impose minimum droplet number conc (in-cloud) 
-           if (mincdnc.gt.0.) then
+           if (mincdnc.gt.0._r8) then
               ncic(i,k)=max(ncic(i,k),mincdnc/rho(i,k))
            end if
 
@@ -2033,6 +2041,13 @@ subroutine micro_mg_tend ( &
   nc = ncn
   nctend = nctend + npccn
 
+  ! impose minimum droplet number conc (in-cloud) 
+  if (mincdnc.gt.0._r8) then
+     where((nc+nctend*deltat) < mincdnc/rho*lcldm .and. (qc+qctend*deltat) > qsmall) 
+        nctend = ( mincdnc/rho*lcldm - nc)/deltat
+     end where
+  end if
+
   ! Re-apply rain freezing and snow melting.
   dum_2D = qs
   qs = qsn
@@ -2193,6 +2208,11 @@ subroutine micro_mg_tend ( &
         if (dumi(i,k).lt.qsmall) dumni(i,k)=0._r8
         if (dumr(i,k).lt.qsmall) dumnr(i,k)=0._r8
         if (dums(i,k).lt.qsmall) dumns(i,k)=0._r8
+
+        ! impose minimum droplet number conc (in-cloud); dumnc here is grid-box mean  
+        if (mincdnc.gt.0._r8) then
+           dumnc(i,k)=max(dumnc(i,k),mincdnc/rho(i,k)*lcldm(i,k))
+        end if
 
      end do       !!! vertical loop
 
@@ -2757,6 +2777,16 @@ subroutine micro_mg_tend ( &
         if (dumc(i,k).ge.qsmall) then
 
 
+           dum = dumnc(i,k)
+
+           call size_dist_param_liq(mg_liq_props, dumc(i,k), dumnc(i,k), rho(i,k), &
+                pgam(i,k), lamc(i,k))
+
+           if (dum /= dumnc(i,k)) then
+              ! adjust number conc if needed to keep mean size in reasonable range
+              nctend(i,k)=(dumnc(i,k)*lcldm(i,k)-nc(i,k))/deltat
+           end if
+
            ! impose minimum droplet number conc (in-cloud) 
            if (mincdnc.gt.0._r8) then
               nctend(i,k)=( max(nc(i,k)+nctend(i,k)*deltat, mincdnc/rho(i,k)*lcldm(i,k)) - nc(i,k))/deltat
@@ -2771,16 +2801,6 @@ subroutine micro_mg_tend ( &
 
               nctend(i,k)=(ncnst/rho(i,k)*lcldm(i,k)-nc(i,k))/deltat
 
-           end if
-
-           dum = dumnc(i,k)
-
-           call size_dist_param_liq(mg_liq_props, dumc(i,k), dumnc(i,k), rho(i,k), &
-                pgam(i,k), lamc(i,k))
-
-           if (dum /= dumnc(i,k)) then
-              ! adjust number conc if needed to keep mean size in reasonable range
-              nctend(i,k)=(dumnc(i,k)*lcldm(i,k)-nc(i,k))/deltat
            end if
 
            effc(i,k) = (pgam(i,k)+3._r8)/lamc(i,k)/2._r8*1.e6_r8
