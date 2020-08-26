@@ -27,7 +27,7 @@
   dcmip16_prec_type = 1                         ! 0=kessler physics
   dcmip16_pbl_type  = -1                        ! 0=reed-jablonowski pbl, -1 = none
   transport_alg     = 12
-  semi_lagrange_cdr_alg   = 30
+  semi_lagrange_cdr_alg   = 3
   semi_lagrange_cdr_check = .true.
   semi_lagrange_nearest_point_lev = 256
   limiter_option    = 9

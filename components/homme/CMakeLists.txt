@@ -104,6 +104,7 @@ OPTION(BUILD_HOMME_SWIM  "Shallow water equations implicit" OFF)
 OPTION(BUILD_HOMME_PRIM  "Primitive equations implicit" OFF)
 OPTION(BUILD_HOMME_TOOL  "Offline tool" ON)
 OPTION(HOMME_ENABLE_COMPOSE "Build COMPOSE semi-Lagrangian tracer transport code" ON)
+OPTION(HOMME_USE_SCORPIO  "Use Scorpio as the I/O library (Disable to use Scorpio classic)" ON)
 
 #by default we don't need cxx
 SET(HOMME_USE_CXX FALSE)
@@ -278,8 +279,9 @@ ENDIF ()
 
 # this section is for linking to SUNDIALS/ARKODE as an external library
 IF (DEFINED SUNDIALS_DIR)
-  LINK_DIRECTORIES(${SUNDIALS_DIR}/lib)
+  LINK_DIRECTORIES(${SUNDIALS_DIR}/lib64)
   INCLUDE_DIRECTORIES(${SUNDIALS_DIR}/include)
+  INCLUDE_DIRECTORIES(${SUNDIALS_DIR}/fortran)
 ENDIF ()
 
 ###########################################
@@ -301,24 +303,24 @@ ADD_SUBDIRECTORY(utils/cime/src/share/timing)
 # CMAKE_CURRENT_SOURCE_DIR == homme
 SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/CMake" ${CMAKE_MODULE_PATH})
-SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/pio2/cmake" ${CMAKE_MODULE_PATH})
+SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/externals/scorpio/cmake" ${CMAKE_MODULE_PATH})
 
 
 
 #
-# PIO
+# Scorpio
 #
-#set search paths for PIO's findNetCDF
+#set search paths for SCORPIO's findNetCDF
 # HOMME machine files set NETCDF_DIR, PNETCDF_DIR which we copy
-# to variables used by PIO.  Newer machine files sould direclty set
-# necessyar PIO variables:
+# to variables used by SCORPIO.  Newer machine files sould direclty set
+# necessary SCORPIO variables:
 #
 ADD_DEFINITIONS(-D_NO_MPI_RSEND)
 
 if(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
 SET(NetCDF_PATH ${NETCDF_DIR})
 SET(PnetCDF_PATH ${PNETCDF_DIR})
-message("** Configuring PIO with:")
+message("** Configuring SCORPIO with:")
 message("-- NetCDF_PATH = ${NetCDF_PATH}")
 message("-- PnetCDF_PATH = ${PnetCDF_PATH}")
 message("-- NetCDF_Fortran_PATH = ${NetCDF_Fortran_PATH}")
@@ -327,7 +329,13 @@ message("-- PnetCDF_Fortran_PATH = ${PnetCDF_Fortran_PATH}")
 message("-- PnetCDF_C_PATH = ${PnetCDF_C_PATH}")
 # pio needs cime/externals/genf90/genf90.pl
 SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/genf90)
-ADD_SUBDIRECTORY(utils/cime/src/externals/pio1)
+if (HOMME_USE_SCORPIO)
+  SET(PIO_ENABLE_TOOLS OFF CACHE BOOL "Disabling Scorpio tool build")
+  ADD_SUBDIRECTORY(utils/externals/scorpio)
+else ()
+  # The default I/O library used in "Scorpio classic"
+  ADD_SUBDIRECTORY(utils/externals/scorpio_classic)
+endif ()
 ENDIF()
 
 
@@ -362,6 +370,12 @@ if(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
       file(WRITE "${cprnc_dummy_file}" "#dummy Macros file for non-CIME machines")
     endif ()
 
+    # cprnc's CMake system needs various nonstandard variables:
+    set(FFLAGS ${CMAKE_Fortran_FLAGS})
+    set(BLDROOT ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/tools/cprnc)
+    set(SFC ${CMAKE_Fortran_COMPILER})
+    set(SCC ${CMAKE_C_COMPILER})
+    
     SET (CPRNC_INSTALL_DIR ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc)
     SET (CPRNC_BINARY ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
     ADD_SUBDIRECTORY(utils/cime/tools/cprnc)

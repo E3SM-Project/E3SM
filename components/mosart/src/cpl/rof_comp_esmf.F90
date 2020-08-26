@@ -49,7 +49,8 @@ module rof_comp_esmf
                                 index_r2x_Forr_rofl, index_r2x_Forr_rofi, &
                                 index_r2x_Flrr_flood, &
                                 index_r2x_Flrr_volr, index_r2x_Flrr_volrmch, &
-                                index_r2x_Flrr_supply, index_x2r_Flrl_demand
+                                index_r2x_Flrr_supply, index_x2r_Flrl_demand, &
+                                index_r2x_Flrr_deficit
   use perf_mod         , only : t_startf, t_stopf, t_barrierf
 !
 ! !PUBLIC MEMBER FUNCTIONS:
@@ -666,6 +667,7 @@ contains
     real(R8), pointer :: fptr(:, :)
     integer :: n2, n, nt, begr, endr, nliq, nfrz
     real(R8) :: tmp1, tmp2
+    real(R8) :: shum
     character(len=32), parameter :: sub = 'rof_import_mct'
     !---------------------------------------------------------------------------
     
@@ -724,6 +726,8 @@ contains
           THeat%forc_lwrad(n)= fptr(index_x2r_Faxa_lwdn ,n2)
           THeat%forc_solar(n)= fptr(index_x2r_Faxa_swvdr,n2) + fptr(index_x2r_Faxa_swvdf,n2) + &
                                fptr(index_x2r_Faxa_swndr,n2) + fptr(index_x2r_Faxa_swndf,n2)
+          shum               = fptr(index_x2r_Sa_shum,n2)
+          THeat%forc_vp(n)   = shum * THeat%forc_pbot(n)  / (0.622_r8 + 0.378_r8 * shum)
        end if                 
 
     enddo
@@ -830,6 +834,7 @@ contains
 
        if (wrmflag) then
           fptr(index_r2x_Flrr_supply,ni)  = StorWater%Supply(n) / (rtmCTL%area(n)*0.001_r8)    ! convert m3/s to mm/s
+          fptr(index_r2x_Flrr_deficit,ni)  = (abs(rtmCTL%qdem(n,nliq)) - abs(StorWater%Supply(n))) / (rtmCTL%area(n)*0.001_r8)   !send deficit back to ELM
        endif
 
     end do

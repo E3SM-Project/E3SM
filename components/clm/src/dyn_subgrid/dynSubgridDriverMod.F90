@@ -313,16 +313,13 @@ contains
                phosphorusstate_vars,phosphorusflux_vars, veg_ps)
 
           call CarbonStateUpdateDynPatch(bounds_clump, &
-               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
-               grc_cs, grc_cf, col_cs, col_cf)
+               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc)
 
           call NitrogenStateUpdateDynPatch(bounds_clump, &
-               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
-               nitrogenflux_vars, nitrogenstate_vars)
+               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc)
 
           call PhosphorusStateUpdateDynPatch(bounds_clump, &
-               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
-               phosphorusflux_vars, phosphorusstate_vars)
+               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc)
 
           call dyn_cnbal_column(bounds_clump, nc, column_state_updater, &
                col_cs, c13_col_cs, c14_col_cs, &

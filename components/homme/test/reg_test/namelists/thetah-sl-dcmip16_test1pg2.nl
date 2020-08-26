@@ -16,7 +16,7 @@
   integration       = 'explicit'                ! explicit time integration
   tstep_type        = 5 
   dt_tracer_factor  = 6
-  dt_remap_factor   = 1
+  dt_remap_factor   = 2
   nu                = 6e17                      ! default= 1e15*(ne30/ne8)**3.2 = 6.9e16
   nu_s              = 6e17
   nu_p              = 6e17  

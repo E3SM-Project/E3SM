@@ -55,7 +55,8 @@ module ocn_comp_mct
    use ocn_tracer_short_wave_absorption_variable
    use ocn_tracer_ecosys
    use ocn_tracer_surface_restoring
-
+   use ocn_gm
+   use ocn_config
 !
 ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -164,7 +165,6 @@ contains
                                       averagePool, scratchPool
 
     logical :: exists
-    logical :: no_taskmap_output                     ! true then do not write out task-to-node mapping
     logical :: verbose_taskmap_output                ! true then use verbose task-to-node mapping format
 
     character(kind=c_char), dimension(StrKIND+1) :: c_filename       ! StrKIND+1 for C null-termination character
@@ -329,8 +329,6 @@ contains
 
     if (info_taskmap_comp > 0) then
 
-       no_taskmap_output = .false.
-
        if (info_taskmap_comp == 1) then
           verbose_taskmap_output = .false.
        else
@@ -348,19 +346,13 @@ contains
           call shr_sys_flush(ocnLogUnit)
        endif
 
-    else
-
-       no_taskmap_output = .true.
-       verbose_taskmap_output = .false.
+       call t_startf("shr_taskmap_write")
+       call shr_taskmap_write(ocnLogUnit, mpicom_o,                 &
+                              'OCN #'//trim(adjustl(c_inst_index)), &
+                              verbose=verbose_taskmap_output        )
+       call t_stopf("shr_taskmap_write")
 
     endif
-
-    call t_startf("shr_taskmap_write")
-    call shr_taskmap_write(ocnLogUnit, mpicom_o,                 &
-                           'OCN #'//trim(adjustl(c_inst_index)), &
-                           verbose=verbose_taskmap_output,       &
-                           no_output=no_taskmap_output           )
-    call t_stopf("shr_taskmap_write")
 
     ! Setup function pointers for MPASO core and domain types
     call ocn_setup_core(corelist)
@@ -970,6 +962,12 @@ contains
             call mpas_timer_stop("land_ice_build_arrays")
 
             call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, diagnosticsPool, statePool, ierr)
+
+            ! Compute normalGMBolusVelocity, relativeSlope and RediDiffVertCoef if respective flags are turned on
+            if (config_use_Redi.or.config_use_GM) then
+              call ocn_gm_compute_Bolus_velocity(statePool, diagnosticsPool, meshPool, scratchPool, timeLevelIn=1)
+            endif
+
             block_ptr => block_ptr % next
          end do
          if (debugOn) call mpas_log_write('   Finished building forcing arrays')
@@ -1021,9 +1019,7 @@ contains
 
          if (debugOn) call mpas_log_write('   Performing forward update')
          call mpas_timer_start("time integration", .false.)
-         !$omp parallel default(firstprivate) shared(domain, dt, timeStamp)
          call ocn_timestep(domain, dt, timeStamp)
-         !$omp end parallel
          call mpas_timer_stop("time integration")
          if (debugOn) call mpas_log_write('   Finished performing forward update')
 

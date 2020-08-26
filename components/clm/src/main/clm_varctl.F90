@@ -130,6 +130,20 @@ module clm_varctl
 
   ! True is 2way, false is 1way
   logical, public :: tw_irr = .false.  
+  
+  !----------------------------------------------------------
+  ! Extra groundwater pumping for irrigation
+  !----------------------------------------------------------
+
+  ! True is extra pumping, false is stick with the gw fraction
+  logical, public :: extra_gw_irr = .false. 
+  
+  !----------------------------------------------------------
+  ! FIRRIG data
+  !----------------------------------------------------------
+
+  ! True is read from surface data, false is constant
+  logical, public :: firrig_data = .false. 
 
   !----------------------------------------------------------
   ! Landunit logic
@@ -199,9 +213,11 @@ module clm_varctl
   !----------------------------------------------------------
 
   logical, public            :: use_fates = .false.              ! true => use  ED
-  logical, public            :: use_fates_spitfire = .false.  ! true => use spitfire model
+  integer, public            :: fates_spitfire_mode = 0                ! 0 for no fire; 1 for constant ignitions
+  logical, public            :: use_fates_fixed_biogeog = .false.           ! true => use fixed biogeography mode
   logical, public            :: use_fates_logging = .false.            ! true => turn on logging module
   logical, public            :: use_fates_planthydro = .false.         ! true => turn on fates hydro
+  logical, public            :: use_fates_cohort_age_tracking = .false. ! true => turn on cohort age tracking
   logical, public            :: use_fates_ed_st3   = .false.           ! true => static stand structure
   logical, public            :: use_fates_ed_prescribed_phys = .false. ! true => prescribed physiology
   logical, public            :: use_fates_inventory_init = .false.     ! true => initialize fates from inventory
@@ -318,6 +334,7 @@ module clm_varctl
   logical, public :: use_vichydro        = .false.
   logical, public :: use_century_decomp  = .false.
   logical, public :: use_cn              = .false.
+  logical, public :: use_cndv            = .false.
   logical, public :: use_crop            = .false.
   logical, public :: use_snicar_frc      = .false.
   logical, public :: use_snicar_ad       = .false.

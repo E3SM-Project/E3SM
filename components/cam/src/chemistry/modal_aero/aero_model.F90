@@ -36,6 +36,14 @@ module aero_model
   public :: aero_model_emissions  ! aerosol emissions
   public :: aero_model_surfarea   ! aerosol surface area for chemistry
 
+  ! These are made public to be used by MMF w/ ECPP
+  public :: calc_1_impact_rate
+  public :: dlndg_nimptblgrow
+  public :: nimptblgrow_mind
+  public :: nimptblgrow_maxd
+  public :: scavimptblnum
+  public :: scavimptblvol
+
  ! Misc private data 
 
   ! number of modes
@@ -232,13 +240,14 @@ contains
        if ( convproc_do_aer ) then 
           do m = 1,gas_pcnst
              call cnst_get_ind( solsym(m), l, abort=.false. )
-             if ( ( history_aerosol ) .and. &
-                  (species_class(l) == spec_class_gas) ) then !RCE - only output WD_xxx and DF_xxx for gases
-                wetdep_name = 'WD_'//trim(solsym(m))
-                depflx_name = 'DF_'//trim(solsym(m)) 
-                nspc = get_het_ndx(solsym(m)) 
-                if (nspc > 0) call add_default( wetdep_name, 1, ' ' )
-                call add_default( depflx_name, 1, ' ' )
+             if ( ( history_aerosol ) .and. (l > 0) ) then
+                if  ( species_class(l) == spec_class_gas ) then !RCE - only output WD_xxx and DF_xxx for gases
+                   wetdep_name = 'WD_'//trim(solsym(m))
+                   depflx_name = 'DF_'//trim(solsym(m)) 
+                   nspc = get_het_ndx(solsym(m)) 
+                   if (nspc > 0) call add_default( wetdep_name, 1, ' ' )
+                   call add_default( depflx_name, 1, ' ' )
+                endif
              endif
           end do ! m = 1,gas_pcnst
        endif
@@ -1169,8 +1178,10 @@ contains
 
              ! apportion dry deposition into turb and gravitational settling for tapes
              do i=1,ncol
-                dep_trb(i)=sflx(i)*vlc_trb(i,jvlc)/vlc_dry(i,pver,jvlc)
-                dep_grv(i)=sflx(i)*vlc_grv(i,pver,jvlc)/vlc_dry(i,pver,jvlc)
+                if (vlc_dry(i,pver,jvlc) .ne. 0._r8) then
+                   dep_trb(i)=sflx(i)*vlc_trb(i,jvlc)/vlc_dry(i,pver,jvlc)
+                   dep_grv(i)=sflx(i)*vlc_grv(i,pver,jvlc)/vlc_dry(i,pver,jvlc)
+                endif
              enddo
 
              call outfld( trim(cnst_name(mm))//'DDF', sflx, pcols, lchnk)
@@ -1200,8 +1211,10 @@ contains
 
              ! apportion dry deposition into turb and gravitational settling for tapes
              do i=1,ncol
-                dep_trb(i)=sflx(i)*vlc_trb(i,jvlc)/vlc_dry(i,pver,jvlc)
-                dep_grv(i)=sflx(i)*vlc_grv(i,pver,jvlc)/vlc_dry(i,pver,jvlc)
+                if (vlc_dry(i,pver,jvlc) .ne. 0._r8) then
+                   dep_trb(i)=sflx(i)*vlc_trb(i,jvlc)/vlc_dry(i,pver,jvlc)
+                   dep_grv(i)=sflx(i)*vlc_grv(i,pver,jvlc)/vlc_dry(i,pver,jvlc)
+                endif
              enddo
 
              qaerwat(1:ncol,:,mm) = qaerwat(1:ncol,:,mm) + dqdt_tmp(1:ncol,:) * dt
@@ -1228,8 +1241,10 @@ contains
 
              ! apportion dry deposition into turb and gravitational settling for tapes
              do i=1,ncol
-                dep_trb(i)=sflx(i)*vlc_trb(i,jvlc)/vlc_dry(i,pver,jvlc)
-                dep_grv(i)=sflx(i)*vlc_grv(i,pver,jvlc)/vlc_dry(i,pver,jvlc)
+                if (vlc_dry(i,pver,jvlc) .ne. 0._r8) then
+                   dep_trb(i)=sflx(i)*vlc_trb(i,jvlc)/vlc_dry(i,pver,jvlc)
+                   dep_grv(i)=sflx(i)*vlc_grv(i,pver,jvlc)/vlc_dry(i,pver,jvlc)
+                endif
              enddo
 
              fldcw(1:ncol,:) = fldcw(1:ncol,:) + dqdt_tmp(1:ncol,:) * dt
@@ -1357,10 +1372,12 @@ contains
        species_class,                                                           &
        cam_out,                                                                 & !Intent-inout
        pbuf,                                                                    & !Pointer
-       ptend                                                                    ) !Intent-out
+       ptend,                                                                   & !Intent-out
+       clear_rh                                                                 ) !optional 
 
     use modal_aero_deposition, only: set_srf_wetdep
-    use wetdep,                only: wetdepa_v2, wetdep_inputs_set, wetdep_inputs_t
+    use wetdep,                only: wetdepa_v2, wetdep_inputs_set, &
+                                     wetdep_inputs_unset, wetdep_inputs_t
     use modal_aero_data
     use modal_aero_calcsize,   only: modal_aero_calcsize_sub
     use modal_aero_wateruptake,only: modal_aero_wateruptake_dr
@@ -1397,6 +1414,9 @@ contains
     type(physics_buffer_desc), pointer :: pbuf(:)
 
     type(physics_ptend), intent(out)   :: ptend       ! indivdual parameterization tendencies
+
+    real(r8), optional,  intent(in)    :: clear_rh(pcols,pver) ! optional clear air relative humidity 
+                                                               ! that gets passed to modal_aero_wateruptake_dr
 
 
     ! local vars
@@ -1499,19 +1519,27 @@ contains
     ncol  = state%ncol
 
     call physics_ptend_init(ptend, state%psetcols, 'aero_model_wetdep_ma', lq=wetdep_lq)
-    
+
     ! Do calculations of mode radius and water uptake if:
     ! 1) modal aerosols are affecting the climate, or
     ! 2) prognostic modal aerosols are enabled
-    
+    ! If not using prognostic aerosol call the diagnostic version
+
+    ! Calculate aerosol size distribution parameters
+    ! for prognostic modal aerosols the transfer of mass between aitken and 
+    ! accumulation modes is done in conjunction with the dry radius calculation
     call t_startf('calcsize')
-    ! for prognostic modal aerosols the transfer of mass between aitken and accumulation
-    ! modes is done in conjunction with the dry radius calculation
     call modal_aero_calcsize_sub(state, ptend, dt, pbuf)
     call t_stopf('calcsize')
-
+    
+    ! Aerosol water uptake
     call t_startf('wateruptake')
-    call modal_aero_wateruptake_dr(state, pbuf)
+    if (present(clear_rh)) then
+      ! clear_rh allows us to provide alternate calculation of clear air RH
+      call modal_aero_wateruptake_dr(state, pbuf, clear_rh_in=clear_rh)
+    else
+      call modal_aero_wateruptake_dr(state, pbuf)
+    endif
     call t_stopf('wateruptake')
 
     if (nwetdep<1) return
@@ -2252,8 +2280,9 @@ do_lphase2_conditional: &
        call t_stopf('ma_convproc')       
     endif
 
+    call wetdep_inputs_unset(dep_inputs)
 
-  endsubroutine aero_model_wetdep
+  end subroutine aero_model_wetdep
 
 
   !=============================================================================
@@ -2359,6 +2388,7 @@ do_lphase2_conditional: &
     use modal_aero_newnuc,     only : modal_aero_newnuc_sub
     use mo_setsox,             only : setsox, has_sox
     use modal_aero_data,       only : cnst_name_cw, qqcw_get_field
+    use phys_control,          only : phys_getopts
 
     !-----------------------------------------------------------------------
     !      ... dummy arguments
@@ -2406,6 +2436,10 @@ do_lphase2_conditional: &
 
     real(r8), pointer :: fldcw(:,:)
 
+    logical :: use_ECPP
+
+    call phys_getopts( use_ECPP_out  = use_ECPP ) 
+
     call pbuf_get_field(pbuf, dgnum_idx,      dgnum,  start=(/1,1,1/), kount=(/pcols,pver,ntot_amode/) )
     call pbuf_get_field(pbuf, dgnumwet_idx,   dgnumwet )
     call pbuf_get_field(pbuf, wetdens_ap_idx, wetdens )
@@ -2435,55 +2469,72 @@ do_lphase2_conditional: &
 !
     call qqcw2vmr( lchnk, vmrcw, mbar, ncol, loffset, pbuf )
 
-    dvmrdt(:ncol,:,:) = vmr(:ncol,:,:)
-    dvmrcwdt(:ncol,:,:) = vmrcw(:ncol,:,:)
+    !------------------------------------------------------
+    if (.not. use_ECPP) then  ! non-MMF Model
 
-  ! aqueous chemistry ...
+      dvmrdt(:ncol,:,:) = vmr(:ncol,:,:)
+      dvmrcwdt(:ncol,:,:) = vmrcw(:ncol,:,:)
 
-    if( has_sox ) then
-       call setsox(   &
-            ncol,     &
-            lchnk,    &
-            loffset,  &
-            delt,     &
-            pmid,     &
-            pdel,     &
-            tfld,     &
-            mbar,     &
-            cwat,     &
-            cldfr,    &
-            cldnum,   &
-            airdens,  &
-            invariants, &
-            vmrcw,    &
-            vmr       &
-            )
-    endif
+      ! aqueous chemistry ...
 
-!   Tendency due to aqueous chemistry 
-!   When mam_amicphys_optaa > 0, dvmrdt & dvmrcwdt to hold vmr & vmrcw 
-!      before aqueous chemistry, and cannot be used to hold aq. chem. tendencies
-!***Note - should calc & output tendencies for cloud-borne aerosol species 
-!          rather than interstitial here
-    if (mam_amicphys_optaa <= 0) then
-       dvmrdt   = (vmr - dvmrdt) / delt
-       dvmrcwdt = (vmrcw - dvmrcwdt) / delt
-    endif
-    do m = 1, gas_pcnst
-      wrk(:) = 0._r8
-      do k = 1,pver
-        if (mam_amicphys_optaa <= 0) then
-          ! here dvmrdt is (delta vmr from aqueous chemistry)/(delt)
-          wrk(:ncol) = wrk(:ncol) + dvmrdt(:ncol,k,m) * adv_mass(m)/mbar(:ncol,k)*pdel(:ncol,k)/gravit
-        else
-          ! here dvmrdt is vmr before aqueous chemistry, so need to calculate (delta vmr)/(delt)
-          wrk(:ncol) = wrk(:ncol) + ((vmr(:ncol,k,m)-dvmrdt(:ncol,k,m))/delt) &
-                                                      * adv_mass(m)/mbar(:ncol,k)*pdel(:ncol,k)/gravit
-        endif
-      end do
-      name = 'AQ_'//trim(solsym(m))
-      call outfld( name, wrk(:ncol), ncol, lchnk )
-    enddo
+      if( has_sox ) then
+         call setsox(   &
+              ncol,     &
+              lchnk,    &
+              loffset,  &
+              delt,     &
+              pmid,     &
+              pdel,     &
+              tfld,     &
+              mbar,     &
+              cwat,     &
+              cldfr,    &
+              cldnum,   &
+              airdens,  &
+              invariants, &
+              vmrcw,    &
+              vmr       &
+              )
+      endif
+
+      ! Tendency due to aqueous chemistry 
+      ! When mam_amicphys_optaa > 0, dvmrdt & dvmrcwdt to hold vmr & vmrcw 
+      ! before aqueous chemistry, and cannot be used to hold aq. chem. tendencies
+      ! ***Note - should calc & output tendencies for cloud-borne aerosol species 
+      !           rather than interstitial here
+      if (mam_amicphys_optaa <= 0) then
+         dvmrdt   = (vmr - dvmrdt) / delt
+         dvmrcwdt = (vmrcw - dvmrcwdt) / delt
+      endif
+      do m = 1, gas_pcnst
+        wrk(:) = 0._r8
+        do k = 1,pver
+          if (mam_amicphys_optaa <= 0) then
+            ! here dvmrdt is (delta vmr from aqueous chemistry)/(delt)
+            wrk(:ncol) = wrk(:ncol) + dvmrdt(:ncol,k,m) * adv_mass(m)/mbar(:ncol,k)*pdel(:ncol,k)/gravit
+          else
+            ! here dvmrdt is vmr before aqueous chemistry, so need to calculate (delta vmr)/(delt)
+            wrk(:ncol) = wrk(:ncol) + ((vmr(:ncol,k,m)-dvmrdt(:ncol,k,m))/delt) &
+                                                        * adv_mass(m)/mbar(:ncol,k)*pdel(:ncol,k)/gravit
+          endif
+        end do
+        name = 'AQ_'//trim(solsym(m))
+        call outfld( name, wrk(:ncol), ncol, lchnk )
+      enddo
+
+    !------------------------------------------------------
+    else if (use_ECPP) then  ! MMF w/ ECPP
+      ! when ECPP is used, aqueous chemistry is done in ECPP, and not updated here. 
+      ! Minghuai Wang, 2010-02 (Minghuai.Wang@pnl.gov)
+      if (mam_amicphys_optaa <= 0) then
+        dvmrdt = 0.0_r8  
+        dvmrcwdt = 0.0_r8
+      else  
+        dvmrdt(:ncol,:,:) = vmr(:ncol,:,:)
+        dvmrcwdt(:ncol,:,:) = vmrcw(:ncol,:,:)
+      end if
+   end if ! use_ECPP
+   !------------------------------------------------------
 
     if (mam_amicphys_optaa <= 0) then
     ! do gas-aerosol exchange, nucleation, and coagulation using old routines
@@ -2807,6 +2858,8 @@ do_lphase2_conditional: &
     !
     use physconst,     only: pi,boltz, gravit, rair
     use mo_drydep,     only: n_land_type, fraction_landuse
+    use ieee_arithmetic, only: ieee_is_nan
+    use phys_control,    only: phys_getopts
 
     ! !ARGUMENTS:
     !
@@ -2853,6 +2906,7 @@ do_lphase2_conditional: &
     integer  :: lt
     real(r8) :: lnd_frc
     real(r8) :: wrk1, wrk2, wrk3
+    logical  :: use_MMF
 
     ! constants
     real(r8) gamma(11)      ! exponent of schmidt number
@@ -2891,7 +2945,7 @@ do_lphase2_conditional: &
               -1/
     save iwet
 
-
+    call phys_getopts( use_MMF_out = use_MMF )
     !------------------------------------------------------------------------
     do k=1,pver
        do i=1,ncol
@@ -2918,6 +2972,12 @@ do_lphase2_conditional: &
           vlc_grv(i,k) = (4.0_r8/18.0_r8) * radius_moment(i,k)*radius_moment(i,k)*density_part(i,k)* &
                   gravit*slp_crc(i,k) / vsc_dyn_atm(i,k) ![m s-1] Stokes' settling velocity SeP97 p. 466
           vlc_grv(i,k) = vlc_grv(i,k) * dispersion
+
+          ! in the MMF NaN's were occurring here but the root cause was not
+          ! identified, so this check was added to work around the issue
+          if (use_MMF) then
+             if ( ieee_is_nan(vlc_grv(i,k)) ) vlc_grv(i,k) = 0.0_r8 
+          end if
 
           vlc_dry(i,k)=vlc_grv(i,k)
        enddo

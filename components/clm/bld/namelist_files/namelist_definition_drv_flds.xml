@@ -119,13 +119,4 @@
     Default: TRUE
   </entry>
 
-  <!-- ========================================================================================  -->
-  <!-- CARMA fields                                                                              -->
-  <!-- ========================================================================================  -->
-
-  <entry id="carma_fields" type="char*256" category="carma"
-	 group="carma_inparm" valid_values="" >
-    List of fluxes needed by the CARMA model, from CLM to CAM.
-  </entry>
-
 </namelist_definition>

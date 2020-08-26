@@ -75,6 +75,7 @@ module parameters_tunable
     clubb_mu,                      &
     clubb_nu1,                     &
     clubb_c_K10,                   &
+    clubb_c_K10h,                   &
     clubb_wpxp_L_thresh
     
 
@@ -468,6 +469,7 @@ module parameters_tunable
     clubb_mu,                      &
     clubb_nu1,                     &
     clubb_c_K10,                   &
+    clubb_c_K10h,                   &
     clubb_wpxp_L_thresh
 
     integer :: read_status
@@ -503,6 +505,7 @@ module parameters_tunable
     clubb_mu = init_value
     clubb_nu1 = init_value
     clubb_c_K10 = init_value
+    clubb_c_K10h = init_value
     clubb_wpxp_L_thresh = init_value
 
     if (masterproc) then
@@ -545,6 +548,7 @@ module parameters_tunable
    call mpibcast(clubb_mu,         1, mpir8,  0, mpicom)
    call mpibcast(clubb_nu1,        1, mpir8,  0, mpicom)
    call mpibcast(clubb_c_K10,      1, mpir8,  0, mpicom)
+   call mpibcast(clubb_c_K10h,     1, mpir8,  0, mpicom)
    call mpibcast(clubb_wpxp_L_thresh, 1, mpir8,  0, mpicom)
 #endif
 
@@ -1161,6 +1165,7 @@ module parameters_tunable
     if (clubb_mu /= init_value) mu = clubb_mu
     if (clubb_nu1 /= init_value) nu1 = clubb_nu1
     if (clubb_c_K10 /= init_value) c_K10 = clubb_c_K10
+    if (clubb_c_K10h /= init_value) c_K10h = clubb_c_K10h
     if (clubb_wpxp_L_thresh /= init_value)wpxp_L_thresh = clubb_wpxp_L_thresh
 
     ! Put the variables in the output array

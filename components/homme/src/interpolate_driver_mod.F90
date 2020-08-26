@@ -33,7 +33,8 @@ module interpolate_driver_mod
 !#include "pnetcdf.inc"
 #endif
   public :: interpolate_driver, pio_read_phis, &
-       pio_read_gll_topo_file, pio_write_physgrid_topo_file
+       read_gll_topo_file, read_physgrid_topo_file, write_physgrid_topo_file, &
+       write_physgrid_smoothed_phis_file
 
 #ifndef HOMME_WITHOUT_PIOLIBRARY
   integer :: nlat, nlon
@@ -45,7 +46,7 @@ module interpolate_driver_mod
 
   type var_t
      integer, pointer :: ndims(:)
-!     integer, pointer :: type(:)
+     integer, pointer :: vtype(:)
      integer, pointer :: dimids(:,:)
      character*(PIO_MAX_NAME), pointer :: name(:)
      type(var_desc_t), pointer :: vardesc(:)
@@ -74,7 +75,7 @@ module interpolate_driver_mod
   character*(pio_max_name) nsnames (maxdims)
   character*(pio_max_name) znames (maxdims)
   character*(pio_max_name) ncolnames (maxdims)
-
+  character(len=6) :: ncoldimname='ncol'   ! change to ncol_d if detected
   integer :: newnames, nnsnames, nznames, nncolnames
 
 
@@ -144,6 +145,8 @@ contains
 
     deallocate(infile%vars%vardesc)
     nullify(infile%vars%vardesc)
+    deallocate(infile%vars%vtype)
+    nullify(infile%vars%vtype)
     deallocate(infile%vars%name)
     nullify(infile%vars%name)
     deallocate(infile%vars%ndims)
@@ -176,16 +179,13 @@ contains
     integer :: ret, i, ncid, n
     integer :: varid, ncols, lev
     integer :: ne_file, np_file, nlev_file
-
-    integer, pointer :: ldof(:)
+    
+    integer*8, pointer :: ldof(:)
     integer(kind=PIO_OFFSET_KIND) :: start(3), count(3)
     integer :: iorank, dimcnt
     character(len=80) :: name
 
     if (par%masterproc) print *,'initializing input file: ',trim(infilename)
-
-    call PIO_Init(par%rank, par%comm, num_io_procs, num_agg, &
-         io_stride, pio_rearr_box, PIOFS)
 
 !    call pio_setdebuglevel(1)
     if(output_type.eq.'netcdf') then
@@ -202,10 +202,20 @@ contains
     allocate(infile%dims(ndims))
 
     nlev_file=-1
+
+    ! is this an output file with "ncol", or "ncol_d"?
+    ! set ncoldimname before calling "is_ncolfile"
+    do i=1,ndims
+       ret = PIO_inq_dimname(Infile%fileid, i, infile%dims(i)%name)
+       if(infile%dims(i)%name.eq.'ncol_d') ncoldimname='ncol_d'
+    end do
+    if (par%masterproc) print *,'interpolating dimension = ',ncoldimname
+
+    ncols=0
     do i=1,ndims
        ret = PIO_inq_dimname(Infile%fileid, i, infile%dims(i)%name)
        ret = PIO_inq_dimlen(Infile%fileid, i, infile%dims(i)%len)
-       if(infile%dims(i)%name.eq.'ncol') ncols=infile%dims(i)%len
+       if(is_ncoldim(infile%dims(i)%name)) ncols=infile%dims(i)%len
        if(infile%dims(i)%name.eq.'lev') nlev_file = infile%dims(i)%len
     end do
     if(trim(varnames(1)) == 'all') then
@@ -266,6 +276,7 @@ contains
     deallocate(ldof)
 
     allocate(infile%vars%vardesc(varcnt))   
+    allocate(infile%vars%vtype(varcnt))
     allocate(infile%vars%name(varcnt))   
     allocate(infile%vars%ndims(varcnt))   
     allocate(infile%vars%timedependent(varcnt))   
@@ -289,7 +300,7 @@ contains
        end if
 
        ret = PIO_inq_vartype(infile%FileID, infile%vars%vardesc(i),  &
-            infile%vars%vardesc(i)%type)
+            infile%vars%vtype(i))
        ret = PIO_inq_varndims(infile%FileID, infile%vars%vardesc(i), &
             infile%vars%ndims(i))
        ret = PIO_inq_vardimid(infile%FileID, infile%vars%vardesc(i), &
@@ -313,8 +324,7 @@ contains
              lev=nlev+1
           endif
           if(infile%dims(infile%vars%dimids(n,i))%name.eq.'time') infile%vars%timedependent(i)=.true.
-          if(infile%dims(infile%vars%dimids(n,i))%name.eq.'ncol') infile%vars%decomposed(i)=.true.
-
+          if(is_ncoldim(infile%dims(infile%vars%dimids(n,i))%name)) infile%vars%decomposed(i)=.true.
        end do
     end do
     if (par%masterproc) print *,'input file: nlev,ne=',nlev,ne
@@ -349,7 +359,6 @@ contains
     integer :: ofdims, nvars, ierr
     character*(pio_max_name), allocatable :: dimnames(:)
     integer , allocatable :: vardims(:,:), dimsize(:), otype(:)
-    logical lonregistered, latregistered
     logical, allocatable :: varrequired(:)
 
     real(kind=real_kind), allocatable :: lon(:), lat(:), gw(:), lev(:), ilev(:)
@@ -403,31 +412,30 @@ contains
        end if
     end do
 
-    lonregistered=.false.
-    latregistered=.false.
+    if (hybrid%masterthread) print *,'Examining input variables:'
     vardims=0
     do i=1,nvars
        k=1
-       otype(i)=infile%vars%vardesc(i)%type
+       otype(i)=infile%vars%vtype(i)
        do j=1,infile%vars%ndims(i)
-          if(infile%vars%dimids(j,i).eq.ncoldimid) then
-             if(infile%vars%name(i).eq.'lon') then
-                vardims(k,i) = londimid
-                lonregistered=.true.
-             else if(infile%vars%name(i).eq.'lat') then
-                vardims(k,i) = latdimid
-                latregistered=.true.
-             else
-                vardims(k,i) = londimid
-                vardims(k+1,i) = latdimid
-                k=k+1
-             end if
-             k=k+1
+         if(infile%vars%dimids(j,i).eq.ncoldimid) then
+            vardims(k,i) = londimid
+            vardims(k+1,i) = latdimid
+            k=k+2
           else
              vardims(k,i)=infile%vars%dimids(j,i)
              k=k+1
           end if
        end do
+       if (hybrid%masterthread) then
+          print *,'var=',trim(infile%vars%name(i)),' remap=',infile%vars%decomposed(i)
+       endif
+
+       ! if the file happens to have a variable 'lat','lon' or 'gw', rename so it doesnt conflict
+       ! with the interpolated output
+       if (trim(infile%vars%name(i))=='lat')  infile%vars%name(i)='lat_orig'
+       if (trim(infile%vars%name(i))=='lon')  infile%vars%name(i)='lon_orig'
+       if (trim(infile%vars%name(i))=='gw')  infile%vars%name(i)='gw_orig'
     end do
 
     ndnt = index(infilename,".nc")
@@ -436,6 +444,7 @@ contains
          hybrid%par%comm, infilename(1:ndnt)//'interp'   ,0)
     
     call nf_output_register_dims(ncdf, ofdims, dimnames, dimsize)
+    if (hybrid%par%masterproc) print *,'creating PIO decompositions'
     call create_output_decomps(ncdf, interpdata, nlon, nlat)
     if (hybrid%par%masterproc) then
       print *,'registering output variables -- '//&
@@ -448,15 +457,11 @@ contains
     call nf_output_register_variables(ncdf, 1, (/'gw'/), vardims(1:1,:), &
          (/pio_double/), (/.true./))
     ! if the user did not specify lat,lon, be sure to add them:
-    if (.not. latregistered) then
-       call nf_output_register_variables(ncdf, 1, (/'lat'/), vardims(1:1,:), &
-            (/pio_double/), (/.true./))
-    endif
-    if (.not. lonregistered) then
-       vardims(1,1)=londimid
-       call nf_output_register_variables(ncdf, 1, (/'lon'/), vardims(1:1,:), &
-            (/pio_double/), (/.true./))
-    endif
+    call nf_output_register_variables(ncdf, 1, (/'lat'/), vardims(1:1,:), &
+         (/pio_double/), (/.true./))
+    vardims(1,1)=londimid
+    call nf_output_register_variables(ncdf, 1, (/'lon'/), vardims(1:1,:), &
+         (/pio_double/), (/.true./))
 
 
     deallocate(dimnames, dimsize, varrequired, vardims, otype)
@@ -535,11 +540,14 @@ contains
     real(kind=real_kind), pointer :: zeta(:,:,:,:),div(:,:,:,:)
 
     integer(kind=nfsizekind) :: start(3), count(3)
-    integer :: starti(3), counti(3)
+    integer :: starti(3), counti(3), index(1)
     integer :: len, ii, iu, iv, k, it, nd, offset, iuvar
-    integer :: nvars, i, n, ncnt_out, ncnt_in, st, en, ncols, ierr, ie, lev, ntimes, ndims
+    integer :: nvars, i, j, n, ncnt_out, ncnt_in, st, en, ncols, ierr, ie, lev, ntimes, ndims
     character*(PIO_MAX_NAME) :: tmpname
     integer(kind=nfsizekind) :: start2d(3), count2d(3), start3d(4), count3d(4)
+
+                   
+
 
     if(outfile%state .ne. readystate) then
        print *,__FILE__,__LINE__,outfile%state
@@ -551,12 +559,12 @@ contains
     ncnt_in = sum(elem(1:nelemd)%idxp%numUniquePts)
     ncnt_out = sum(interpdata(1:nelemd)%n_interp)
 
-!    call initedgebuffer(par,edge,2*nlev)
-    call initedgebuffer(par,edge,elem,4*nlev)
+    call initedgebuffer(par,edge,elem,2*nlev)
 
 
     VARLOOP: do i=nvars,1,-1
-       if(trim(infile%vars%name(i)).eq.'lat' .or. trim(infile%vars%name(i)).eq.'lon') then
+       if(trim(infile%vars%name(i)).eq.'lat' .or. trim(infile%vars%name(i)).eq.'lon' .or. &
+            trim(infile%vars%name(i)).eq.'lat_d' .or. trim(infile%vars%name(i)).eq.'lon_d'    ) then
           ! do nothing
        else 
           lev=1
@@ -693,13 +701,9 @@ contains
                    
                    deallocate(varray)
                 end do
-! Ignore these
-!             else if(scan(infile%vars%name(i),'V').eq.1) then  ! ignores everything that starts with V
-!             else if(infile%vars%name(i).eq.'lon') then    ! already ignored above
-!             else if(infile%vars%name(i).eq.'lat') then    ! already ignored above
-! 
+
              else 
-                if(par%masterproc) print *,'Interpolating ',trim(infile%vars%name(i))
+                if(par%masterproc) print *,'Interpolating ',trim(infile%vars%name(i)),' nlev=',lev
                 if(par%masterproc) then
                    if (get_interp_parameter('itype')==0) print *,'using native spectral element interpolation'
                    if (get_interp_parameter('itype')==1) print *,'using bilinear interpolation'
@@ -727,8 +731,8 @@ contains
                       call pio_read_darray(infile%FileID, infile%vars%vardesc(i), iodesc3dp1, farray, ierr)
                    end if
                    offset=0
+                   allocate(ftmp(np*np, lev))
                    do ie=1,nelemd
-                      allocate(ftmp(elem(ie)%idxP%NumUniquePts, lev))
                       do k=1,lev
                          do ii=1,elem(ie)%idxP%NumUniquePts
                             !iv=(elem(ie)%idxp%UniquePtOffset+ii+(k-1)*ncnt_in)-1
@@ -739,9 +743,9 @@ contains
                       offset = offset+elem(ie)%idxP%NumUniquePts
                       elem(ie)%state%Q(:,:,:,1) = 0.0d0
                       call putUniquePoints(elem(ie)%idxP, lev, ftmp, elem(ie)%state%Q(:,:,1:lev,1))
-                      call edgevpack(edge, elem(ie)%state%Q(:,:,1:lev,1),lev,0,ie)
-                      deallocate(ftmp)
+                      call edgevpack(edge, elem(ie)%state%Q(:,:,:,1),lev,0,ie)
                    end do
+                   deallocate(ftmp)
 
                    call bndry_exchangeV(par, edge)
                    st = 1
@@ -750,7 +754,7 @@ contains
                    array=0
                    do ie=1,nelemd
                       en=st+interpdata(ie)%n_interp-1
-                      call edgeVunpack(edge, elem(ie)%state%Q(:,:,1:lev,1),lev,0,ie)
+                      call edgeVunpack(edge, elem(ie)%state%Q(:,:,:,1),lev,0,ie)
                       
                       call interpolate_scalar(interpdata(ie), elem(ie)%state%Q(:,:,1:lev,1), &
                            np, lev, array(st:en,:))
@@ -778,7 +782,7 @@ contains
              if(par%masterproc) print *,'Copying ',trim(infile%vars%name(i))
              ! copy non-decomposed data
              len =1
-             if( outfile%varlist(i)%vardesc%type .eq. PIO_Char) then
+             if( outfile%varlist(i)%vtype .eq. PIO_Char) then
                 do n=2,infile%vars%ndims(i)
                    len = len*infile%dims(infile%vars%dimids(n,i))%len
                 end do
@@ -789,14 +793,31 @@ contains
                    do n=1,infile%vars%ndims(i)
                       len = len*infile%dims(infile%vars%dimids(n,i))%len
                    end do
-                   call copy_pio_var(infile%FileID, Outfile%fileid, infile%vars%vardesc(i), &
-                        outfile%varlist(i)%vardesc, len)
+                   if(infile%vars%timedependent(i)) then
+                      ! bug in copy_pio_var - it will not copy the unlim dimension
+                      ! workaround: (assumes variable can be read into a real*8)
+                      allocate(farray(len))
+                      ierr = pio_get_var(infile%FileID, infile%vars%vardesc(i), farray)
+                      do j=1,len
+                         index(1)=j
+                         ierr = pio_put_var(Outfile%fileid, outfile%varlist(i)%vardesc,index, farray(j))
+                      enddo
+                      deallocate(farray)
+                   else
+                      call copy_pio_var(infile%FileID, Outfile%fileid, infile%vars%vardesc(i), &
+                           outfile%varlist(i)%vardesc, len)
+                   endif
                 else
                    do n=1,infile%vars%ndims(i)
                       counti(n) = infile%dims(infile%vars%dimids(n,i))%len
                    end do
-                   call copy_pio_var(infile%FileID, Outfile%fileid, infile%vars%vardesc(i), &
-                        outfile%varlist(i)%vardesc, counti(1:infile%vars%ndims(i)))
+                   if (infile%vars%ndims(i) <= 2 ) then
+                      call copy_pio_var(infile%FileID, Outfile%fileid, infile%vars%vardesc(i), &
+                           outfile%varlist(i)%vardesc, counti(1:infile%vars%ndims(i)))
+                   else
+                      ! PIO1's copy_pio_var only copies variables with up to 2 dimensions
+                      if(par%masterproc) print *,"SKIPPING copy. ndims>2.  ndims=",ndims
+                   endif
                 end if
              end if
           end if
@@ -882,232 +903,6 @@ contains
 #endif
   end subroutine pio_read_phis
   
-  subroutine pio_read_gll_topo_file(filename, elem, par, fields, fieldnames)
-    ! fields(:np,:np,:nelemd,i) is field i in the list
-    !     PHIS, SGH, SGH30, LANDM_COSLAT, LANDFRAC
-
-    use element_mod, only : element_t
-    use parallel_mod, only : parallel_t, syncmp
-    use kinds, only : real_kind
-    use dimensions_mod, only : nelemd, nlev, np, npsq
-    use common_io_mod, only : varname_len
-#ifndef HOMME_WITHOUT_PIOLIBRARY
-    use dof_mod, only : putuniquepoints
-    use edge_mod, only : edgevpack, edgevunpack, initedgebuffer, freeedgebuffer
-    use edgetype_mod, only : edgebuffer_t
-    use bndry_mod, only : bndry_exchangeV
-#endif
-
-    character(len=*), intent(in) :: filename
-    type(element_t), intent(inout) :: elem(:)
-    type(parallel_t),intent(in) :: par
-    real(kind=real_kind), intent(out), dimension(np,np,nelemd,5) :: fields
-    character(len=varname_len), intent(out) :: fieldnames(5)
-
-#ifndef HOMME_WITHOUT_PIOLIBRARY
-    type(file_t) :: infile
-    type(edgeBuffer_t) :: edge    
-    real(kind=real_kind), allocatable :: farray(:)
-    real(kind=real_kind) :: ftmp(npsq)
-    real(kind=real_kind), pointer :: arr3(:,:,:)
-
-    integer :: ii,ie,ilev,iv,ierr,offset,vari,ncnt_in,nlyr
-
-    fieldnames(1) = 'PHIS'
-    fieldnames(2) = 'SGH'
-    fieldnames(3) = 'SGH30'
-    fieldnames(4) = 'LANDM_COSLAT'
-    fieldnames(5) = 'LANDFRAC'
-
-    ilev = 1
-    nlyr = ilev*size(fieldnames)
-
-    call initedgebuffer(par, edge, elem, nlyr)
-    ncnt_in = sum(elem(1:nelemd)%idxp%numUniquePts)
-
-    call infile_initialize(elem, par, trim(filename), fieldnames, infile)
-
-    allocate(farray(ncnt_in))
-    do vari = 1,nlyr
-       farray = 1.0e-37
-       call pio_read_darray(infile%FileID, infile%vars%vardesc(vari), iodesc2d, farray, ierr)
-
-       offset = 0
-       do ie = 1,nelemd
-          do ii = 1,elem(ie)%idxP%NumUniquePts
-             iv = offset + ii
-             ftmp(ii) = farray(iv)
-          end do
-          offset = offset+elem(ie)%idxP%NumUniquePts
-          fields(:,:,ie,vari) = 0
-          call putUniquePoints(elem(ie)%idxP, ftmp(:elem(ie)%idxP%NumUniquePts), fields(:,:,ie,vari))
-          call edgevpack(edge, fields(:,:,ie,vari), 1, vari-1, ie)
-       end do
-    end do
-
-    call bndry_exchangeV(par, edge)
-
-    do ie = 1,nelemd
-       do vari = 1,nlyr
-          call edgeVunpack(edge, fields(:,:,ie,vari), 1, vari-1, ie)
-       end do
-    end do
-
-    deallocate(farray)
-    call freeedgebuffer(edge)
-
-    call pio_closefile(infile%fileid)
-    call free_infile(infile)
-#endif
-  end subroutine pio_read_gll_topo_file
-
-  subroutine pio_write_physgrid_topo_file(infilename, outfilenameprefix, elem, par, &
-       gll_fields, pg_fields, latlon, fieldnames, nphys, history)
-    ! gll_fields and fieldnames are as output from pio_read_gll_topo_file.
-
-    use element_mod, only : element_t
-    use parallel_mod, only : parallel_t, syncmp
-    use kinds, only : real_kind
-    use dimensions_mod, only : nelemd, nlev, np, npsq, nelem
-    use common_io_mod, only : varname_len, output_frequency, output_start_time, &
-         output_end_time, output_dir, output_prefix
-#ifndef HOMME_WITHOUT_PIOLIBRARY
-    use dof_mod, only : UniquePoints, putUniquePoints
-    use edge_mod, only : edgevpack, edgevunpack, initedgebuffer, freeedgebuffer
-    use edgetype_mod, only : edgebuffer_t
-    use bndry_mod, only : bndry_exchangeV
-    use pio_io_mod, only : nf_output_init_begin, nf_output_init_complete, &
-         nf_output_register_dims, nf_output_register_variables, nf_init_decomp, &
-         nf_put_var_pio
-    use control_mod, only: max_string_len
-#endif
-
-    integer, parameter :: nvar = 8, nvar_old = 5
-
-    character(len=*), intent(in) :: infilename, outfilenameprefix, history
-    type(element_t), intent(in) :: elem(:)
-    type(parallel_t), intent(in) :: par
-    real(kind=real_kind), intent(in) :: &
-         gll_fields(np, np,      nelemd, nvar-1), &
-         pg_fields (nphys*nphys, nelemd, nvar-1), &
-         latlon    (nphys*nphys, nelemd, 2) ! (:,:,1) is lat, (:,:,2) is lon
-    character(len=varname_len), intent(in) :: fieldnames(nvar_old)
-    integer, intent(in) :: nphys
-
-#ifndef HOMME_WITHOUT_PIOLIBRARY
-    integer, parameter :: ndim = 2
-
-    character(len=varname_len) :: dimnames(ndim), varnames(nvar), name
-    character(len=max_string_len) :: output_dir_save, output_prefix_save
-    integer :: nf2, ie, i, j, k, n, dimsizes(ndim), vardims(1,nvar), vartypes(nvar), itmp(1)
-    integer, pointer :: dof(:)
-    integer(kind=nfsizekind) :: unused(1)
-    logical :: varreqs(nvar)
-    real(kind=real_kind), allocatable :: gll_unique(:)
-    type(file_t) :: infile
-
-    ! Save global output-file state.
-    output_dir_save = output_dir
-    output_prefix_save = output_prefix
-
-    ! We get a spurious '1' at the end of the output filename, but other than
-    ! that, we get exactly what we want.
-    output_prefix = ''
-    output_dir = ''
-    output_frequency(2:max_output_streams) = 0
-    output_frequency(1) = 1
-    output_start_time(1) = 0
-    output_end_time(1) = 1
-
-    nf2 = nphys*nphys
-
-    call nf_output_init_begin(ncdf, par%masterproc, par%nprocs, par%rank, par%comm, &
-         outfilenameprefix, 0)
-
-    ! dimensions
-    dimnames(1) = 'ncol'
-    dimsizes(1) = nelem*nf2
-    dimnames(2) = 'ncol_d'
-    ! Euler's formula applied to the GLL grid:
-    !   v - e + f = 2 => v = e - f + 2 = 2 f - f + 2 = (np-1)^2 nelem + 2
-    dimsizes(2) = (np-1)**2*nelem + 2
-    call nf_output_register_dims(ncdf, ndim, dimnames, dimsizes)
-
-    ! physgrid decomp
-    allocate(dof(nelemd*nf2))
-    do ie = 1,nelemd
-       do j = 1,nf2
-          dof(nf2*(ie-1) + j) = nf2*(elem(ie)%globalid-1) + j
-       end do
-    end do
-    call nf_init_decomp(ncdf, (/1/), dof, &
-         itmp, unused, unused) ! these args are unused
-    deallocate(dof)
-    ! GLL decomp
-    call getcompdof(dof, elem, 1)
-    call nf_init_decomp(ncdf, (/2/), dof, itmp, unused, unused)
-    deallocate(dof)
-
-    ! variables
-    do i = 1,nvar_old
-       varnames(i) = fieldnames(i)
-       vardims(1,i) = 1
-    end do
-    varnames(nvar_old+1) = 'lat'
-    vardims(1,nvar_old+1) = 1
-    varnames(nvar_old+2) = 'lon'
-    vardims(1,nvar_old+2) = 1
-    varnames(nvar) = 'PHIS_d'
-    vardims(1,nvar) = 2
-    varreqs = .true.
-    vartypes = pio_double
-    call nf_output_register_variables(ncdf, nvar, varnames, vardims, vartypes, varreqs)
-
-    ! Copy variable and global attributes from the GLL source topography file.
-    call infile_initialize(elem, par, trim(infilename), varnames(1:nvar-1), infile)
-    call copy_attributes(infile, ncdf(1))
-    ! Copy PHIS attributes to PHIS_d.
-    k = infile%vars%vardesc(1)%varid ! PHIS id
-    j = pio_inq_varnatts(infile%fileid, k, n) ! n atts
-    do i = 1,n
-       j = pio_inq_attname(infile%fileid, k, i, name) ! att name
-       j = pio_copy_att(infile%fileid, k, name, ncdf(1)%fileid, nvar) ! PHIS_d has id nvar
-    end do
-    call pio_closefile(infile%fileid)
-    call free_infile(infile)
-    j = pio_put_att(ncdf(1)%fileid, pio_global, 'history', history)
-    
-    call nf_output_init_complete(ncdf)
-
-    ! Write physgrid topo fields.
-    do i = 1,nvar_old
-       call nf_put_var_pio(ncdf(1), reshape(pg_fields(:,:,i), (/nf2*nelemd/)), &
-            unused, unused, ncdf(1)%varlist(i))
-    end do
-    ! Write lat-lon.
-    do i = nvar_old+1,nvar-1
-       call nf_put_var_pio(ncdf(1), reshape(latlon(:,:,i-nvar_old), (/nf2*nelemd/)), &
-            unused, unused, ncdf(1)%varlist(i))
-    end do
-    ! Write GLL field PHIS_d.
-    allocate(gll_unique(sum(elem%idxp%NumUniquePts)))
-    k = 1
-    do i = 1,nelemd
-       call UniquePoints(elem(i)%idxP, gll_fields(:,:,i,1), &
-            gll_unique(k : k + elem(i)%idxp%NumUniquePts - 1))
-       k = k + elem(i)%idxp%NumUniquePts
-    end do
-    call nf_put_var_pio(ncdf(1), gll_unique, unused, unused, ncdf(1)%varlist(nvar))
-    deallocate(gll_unique)
-
-    call pio_closefile(ncdf(1)%fileid)
-
-    ! Restore global output-file state.
-    output_prefix = output_prefix_save
-    output_dir = output_dir_save
-#endif
-  end subroutine pio_write_physgrid_topo_file
-
 !
 ! Create the pio decomps for the output file.
 !
@@ -1121,14 +916,14 @@ contains
     type(nf_handle) :: ncdf(:)
     type(interpdata_t):: interpdata(:)
     integer, intent(in) :: nlon, nlat
-    integer, pointer :: ldof2d(:),ldof3d(:), iodof2d(:), iodof3d(:)
-    integer, pointer :: latdof(:), londof(:)
+    integer*8, pointer :: ldof2d(:),ldof3d(:)
 
-    integer :: icnt, ie, i, lcount, tdof(1), tiodof(1)
+    integer :: icnt, ie, i, lcount
     integer :: k, iorank
     integer(kind=nfsizekind) :: start1d(1), count1d(1)
     integer :: londim, latdim, timedim, levdim, ilevdim
     integer(kind=nfsizekind) :: start2d(3), count2d(3), start3d(4), count3d(4)
+    integer*8 :: nlon8,nlat8
 
     ! files might only have 2D data, or only lev data
     levdim=0
@@ -1144,18 +939,21 @@ contains
     lcount = sum(interpdata(1:nelemd)%n_interp)
     iorank = pio_iotask_rank(piofs)
 
+    nlon8=nlon ! force all calculations involving these dims to i*8
+    nlat8=nlat 
+
     ! Create the DOF arrays
     allocate(ldof2d(lcount))
     icnt=0
     do ie=1,nelemd
        do i=1,interpdata(ie)%n_interp
           icnt=icnt+1
-          ldof2d(icnt)=interpdata(ie)%ilon(i)+(interpdata(ie)%ilat(i)-1)*nlon
+          ldof2d(icnt)=interpdata(ie)%ilon(i)+(interpdata(ie)%ilat(i)-1)*nlon8
        end do
     end do
-    call getiodof(2, (/nlon,nlat/), iorank, iodof2d, start2d(1:2), count2d(1:2))
-    call nf_init_decomp(ncdf, (/londim,latdim/), ldof2d, iodof2d,start2d(1:2),count2d(1:2))
-    deallocate(iodof2d, ldof2d)
+    call getiodof(2, (/nlon,nlat/), iorank, start2d(1:2), count2d(1:2))
+    call nf_init_decomp(ncdf, (/londim,latdim/), ldof2d, start2d(1:2),count2d(1:2))
+    deallocate(ldof2d)
 
     if (levdim>0) then
     allocate(ldof3d(lcount*nlev))
@@ -1164,13 +962,13 @@ contains
        do ie=1,nelemd
           do i=1,interpdata(ie)%n_interp
              icnt=icnt+1
-             ldof3d(icnt)=interpdata(ie)%ilon(i)+(interpdata(ie)%ilat(i)-1)*nlon+(k-1)*nlat*nlon
+             ldof3d(icnt)=interpdata(ie)%ilon(i)+(interpdata(ie)%ilat(i)-1)*nlon8+(k-1)*nlat8*nlon8
           end do
        end do
     end do
-    call getiodof(3, (/nlon,nlat,nlev/), iorank, iodof3d, start3d(1:3), count3d(1:3))
-    call nf_init_decomp(ncdf, (/londim,latdim,levdim/), ldof3d, iodof3d,start3d(1:3),count3d(1:3))
-    deallocate(iodof3d, ldof3d)
+    call getiodof(3, (/nlon,nlat,nlev/), iorank, start3d(1:3), count3d(1:3))
+    call nf_init_decomp(ncdf, (/londim,latdim,levdim/), ldof3d, start3d(1:3),count3d(1:3))
+    deallocate(ldof3d)
     endif
 
     if (ilevdim>0) then
@@ -1180,13 +978,13 @@ contains
        do ie=1,nelemd
           do i=1,interpdata(ie)%n_interp
              icnt=icnt+1
-             ldof3d(icnt)=interpdata(ie)%ilon(i)+(interpdata(ie)%ilat(i)-1)*nlon+(k-1)*nlat*nlon
+             ldof3d(icnt)=interpdata(ie)%ilon(i)+(interpdata(ie)%ilat(i)-1)*nlon8+(k-1)*nlat8*nlon8
           end do
        end do
     end do
-    call getiodof(3, (/nlon,nlat,nlev+1/), iorank, iodof3d, start3d(1:3), count3d(1:3))
-    call nf_init_decomp(ncdf, (/londim,latdim,ilevdim/), ldof3d(1:icnt), iodof3d,start3d(1:3),count3d(1:3))
-    deallocate(iodof3d, ldof3d)
+    call getiodof(3, (/nlon,nlat,nlev+1/), iorank, start3d(1:3), count3d(1:3))
+    call nf_init_decomp(ncdf, (/londim,latdim,ilevdim/), ldof3d(1:icnt), start3d(1:3),count3d(1:3))
+    deallocate(ldof3d)
     endif
 
   end subroutine create_output_decomps
@@ -1236,7 +1034,7 @@ contains
     nsnames(2) = 'slat'
     znames(1)  = 'lev'
     znames(2)  = 'ilev'
-    ncolnames(1) = 'ncol'
+    ncolnames(1) = ncoldimname
 
     do n=1,size (ewnames)
        if (ewnames(n) == ' ') exit
@@ -1383,7 +1181,7 @@ contains
     use element_mod, only : element_t
 
     type(element_t), intent(in) :: elem(:)
-    integer, pointer :: Compdof(:)
+    integer*8, pointer :: Compdof(:)
     integer, intent(in) :: lev
 
     integer :: nxyp, icnt, i, ie, k
@@ -1407,9 +1205,475 @@ contains
   end subroutine getcompdof
 #endif
 
+  ! ----------------------------------------------------------------------------
+  ! GLL-physgrid topography file utilites
+
+  subroutine read_gll_topo_file(filename, elem, par, fields, fieldnames)
+    ! fields(:np,:np,:nelemd,i) is field i in the list
+    !     PHIS, SGH, SGH30, LANDM_COSLAT, LANDFRAC
+
+    use element_mod, only: element_t
+    use parallel_mod, only: parallel_t
+    use kinds, only: real_kind
+    use dimensions_mod, only: nelemd, nlev, np, npsq
+    use common_io_mod, only: varname_len
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    use dof_mod, only: putuniquepoints
+    use edge_mod, only: edgevpack, edgevunpack, initedgebuffer, freeedgebuffer
+    use edgetype_mod, only: edgebuffer_t
+    use bndry_mod, only: bndry_exchangeV
+#endif
+
+    character(len=*), intent(in) :: filename
+    type(element_t), intent(inout) :: elem(:)
+    type(parallel_t),intent(in) :: par
+    real(kind=real_kind), intent(out), dimension(np,np,nelemd,5) :: fields
+    character(len=varname_len), intent(out) :: fieldnames(5)
+
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    type(file_t) :: infile
+    type(edgeBuffer_t) :: edge    
+    real(kind=real_kind), allocatable :: farray(:)
+    real(kind=real_kind) :: ftmp(npsq)
+    real(kind=real_kind), pointer :: arr3(:,:,:)
+
+    integer :: ii,ie,ilev,iv,ierr,offset,vari,ncnt_in,nlyr
+
+    fieldnames(1) = 'PHIS'
+    fieldnames(2) = 'SGH'
+    fieldnames(3) = 'SGH30'
+    fieldnames(4) = 'LANDM_COSLAT'
+    fieldnames(5) = 'LANDFRAC'
+
+    ilev = 1
+    nlyr = ilev*size(fieldnames)
+
+    call initedgebuffer(par, edge, elem, nlyr)
+    ncnt_in = sum(elem(1:nelemd)%idxp%numUniquePts)
+
+    call infile_initialize(elem, par, trim(filename), fieldnames, infile)
+
+    allocate(farray(ncnt_in))
+    do vari = 1,nlyr
+       farray = 1.0e-37
+       call pio_read_darray(infile%FileID, infile%vars%vardesc(vari), iodesc2d, farray, ierr)
+
+       offset = 0
+       do ie = 1,nelemd
+          do ii = 1,elem(ie)%idxP%NumUniquePts
+             iv = offset + ii
+             ftmp(ii) = farray(iv)
+          end do
+          offset = offset+elem(ie)%idxP%NumUniquePts
+          fields(:,:,ie,vari) = 0
+          call putUniquePoints(elem(ie)%idxP, ftmp(:elem(ie)%idxP%NumUniquePts), fields(:,:,ie,vari))
+          call edgevpack(edge, fields(:,:,ie,vari), 1, vari-1, ie)
+       end do
+    end do
+
+    call bndry_exchangeV(par, edge)
+
+    do ie = 1,nelemd
+       do vari = 1,nlyr
+          call edgeVunpack(edge, fields(:,:,ie,vari), 1, vari-1, ie)
+       end do
+    end do
+
+    deallocate(farray)
+    call freeedgebuffer(edge)
+
+    call pio_closefile(infile%fileid)
+    call free_infile(infile)
+#endif
+  end subroutine read_gll_topo_file
+
+  subroutine read_physgrid_topo_file(infilename, elem, par, fieldnames, nphys, pg_fields, stat)
+    use element_mod, only: element_t
+    use parallel_mod, only: parallel_t
+    use kinds, only: real_kind
+    use common_io_mod, only: varname_len, io_stride, num_io_procs, num_agg
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    use dimensions_mod, only: nelemd, nlev, np, npsq, nelem
+    use control_mod, only: max_string_len
+    use pio, only: pio_init, pio_openfile, pio_rearr_box, pio_inquire, pio_inq_dimname, &
+         pio_inq_dimlen, pio_initdecomp
+#endif
+
+    character(len=*), intent(in) :: infilename
+    type(element_t), intent(in) :: elem(:)
+    type(parallel_t), intent(in) :: par
+    character(len=varname_len), intent(in) :: fieldnames(:)
+    real(kind=real_kind), intent(out) :: pg_fields(:,:,:)
+    integer, intent(out) :: nphys, stat
+
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    type(file_desc_t) :: fileid
+    type(var_desc_t) :: vardesc
+    integer :: ndims, ncol, nvars, natts, nfield, fldi, iotype, nf2, ie
+    character(len=pio_max_name) :: dimname
+    integer*8, pointer :: dof(:)
+    real(real_kind), allocatable :: raw(:)
+
+    iotype = get_iotype()
+    stat = pio_openfile(piofs, fileid, iotype, infilename)
+    stat = pio_inquire(fileid, ndimensions=ndims, nvariables=nvars)
+    if (ndims /= 1) then
+       if (par%masterproc) print *, 'read_physgrid_topo expects input file to have 1 dim'
+       stat = -1; return
+    end if
+
+    stat = pio_inq_dimname(fileid, 1, dimname)
+    if (dimname /= 'ncol') then
+       if (par%masterproc) print *, 'read_physgrid_topo expects dimname "ncol"'
+       stat = -1; return
+    end if
+    stat = pio_inq_dimlen(fileid, 1, ncol)
+
+    nphys = nint(sqrt(real(ncol/nelem, real_kind)))
+    if (nphys*nphys*nelem /= ncol) then
+       if (par%masterproc) then
+          print *, 'read_physgrid_topo has inconsistent nelem, ncol, nphys:', &
+               nelem, ncol, nphys
+       end if
+       stat = -1; return
+    end if
+    if (nphys > np) then
+       if (par%masterproc) print *, 'read_physgrid_topo has nphys > np:', nphys, np
+       stat = -1; return
+    end if
+    nf2 = nphys*nphys
+
+    call make_physgrid_dof(elem, nphys, dof)
+    call pio_initdecomp(piofs, pio_double, (/ncol/), dof, iodesc2d)
+    deallocate(dof)
+
+    allocate(raw(nf2*nelemd))
+    nfield = size(fieldnames)
+    do fldi = 1,nfield
+       stat = pio_inq_varid(fileid, fieldnames(fldi), vardesc)
+       if (stat /= 0) then
+          if (par%masterproc) print *, 'read_physgrid_topo: could not find var', fieldnames(fldi)
+          return
+       end if
+       call pio_read_darray(fileid, vardesc, iodesc2d, raw, stat)
+       if (stat /= 0) then
+          if (par%masterproc) print *, 'read_physgrid_topo: pio_read_darray returned stat', stat
+          return
+       end if
+       do ie = 1,nelemd
+          pg_fields(:nf2,ie,fldi) = raw(nf2*(ie-1)+1 : nf2*ie)
+       end do
+    end do
+    deallocate(raw)
+
+    call pio_closefile(fileid)
+    stat = 0
+#endif
+  end subroutine read_physgrid_topo_file
+
+  subroutine write_physgrid_topo_file(infilename, outfilenameprefix, elem, par, &
+       gll_fields, pg_fields, latlon, fieldnames, nphys, history)
+    ! gll_fields and fieldnames are as output from pio_read_gll_topo_file.
+
+    use element_mod, only: element_t
+    use parallel_mod, only: parallel_t
+    use kinds, only: real_kind
+    use dimensions_mod, only: nelemd, nlev, np, npsq, nelem
+    use common_io_mod, only: varname_len
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    use pio_io_mod, only: nf_output_init_complete, nf_output_register_variables, nf_put_var_pio
+    use control_mod, only: max_string_len
+#endif
+
+    integer, parameter :: nvar = 8, nvar_old = 5
+
+    character(len=*), intent(in) :: infilename, outfilenameprefix, history
+    type(element_t), intent(in) :: elem(:)
+    type(parallel_t), intent(in) :: par
+    real(kind=real_kind), intent(in) :: &
+         gll_fields(np, np,      nelemd, nvar-1), &
+         pg_fields (nphys*nphys, nelemd, nvar-1), &
+         latlon    (nphys*nphys, nelemd, 2) ! (:,:,1) is lat, (:,:,2) is lon
+    character(len=varname_len), intent(in) :: fieldnames(nvar_old)
+    integer, intent(in) :: nphys
+
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    character(len=varname_len) :: varnames(nvar), name
+    character(len=max_string_len) :: save_state(2)
+    integer :: nf2, i, j, k, n, vardims(1,nvar), vartypes(nvar)
+    integer(kind=nfsizekind) :: unused(1)
+    logical :: varreqs(nvar)
+    type(file_t) :: infile
+
+    nf2 = nphys*nphys
+    call set_output_vars(save_state)
+    call physgrid_topo_begin_write(elem, par, outfilenameprefix, nphys)
+
+    ! variables
+    do i = 1,nvar_old
+       varnames(i) = fieldnames(i)
+       vardims(1,i) = 1
+    end do
+    varnames(nvar_old+1) = 'lat'
+    vardims(1,nvar_old+1) = 1
+    varnames(nvar_old+2) = 'lon'
+    vardims(1,nvar_old+2) = 1
+    varnames(nvar) = 'PHIS_d'
+    vardims(1,nvar) = 2
+    varreqs = .true.
+    vartypes = pio_double
+    call nf_output_register_variables(ncdf, nvar, varnames, vardims, vartypes, varreqs)
+
+    ! Copy variable and global attributes from the GLL source topography file.
+    call infile_initialize(elem, par, trim(infilename), varnames(1:nvar-1), infile)
+    call copy_attributes(infile, ncdf(1))
+    ! Copy PHIS attributes to PHIS_d.
+    k = infile%vars%vardesc(1)%varid ! PHIS id
+    j = pio_inq_varnatts(infile%fileid, k, n) ! n atts
+    do i = 1,n
+       j = pio_inq_attname(infile%fileid, k, i, name) ! att name
+       j = pio_copy_att(infile%fileid, k, name, ncdf(1)%fileid, nvar) ! PHIS_d has id nvar
+    end do
+    call pio_closefile(infile%fileid)
+    call free_infile(infile)
+    j = pio_put_att(ncdf(1)%fileid, pio_global, 'history', history)
+    
+    call nf_output_init_complete(ncdf)
+
+    ! Write physgrid topo fields.
+    do i = 1,nvar_old
+       call nf_put_var_pio(ncdf(1), reshape(pg_fields(:,:,i), (/nf2*nelemd/)), &
+            unused, unused, ncdf(1)%varlist(i))
+    end do
+    ! Write lat-lon.
+    do i = nvar_old+1,nvar-1
+       call nf_put_var_pio(ncdf(1), reshape(latlon(:,:,i-nvar_old), (/nf2*nelemd/)), &
+            unused, unused, ncdf(1)%varlist(i))
+    end do
+    ! Write GLL field PHIS_d.
+    call write_gll_field(elem, ncdf(1), gll_fields(:,:,:,1), ncdf(1)%varlist(nvar))
+
+    call pio_closefile(ncdf(1)%fileid)
+    call restore_output_vars(save_state)
+#endif
+  end subroutine write_physgrid_topo_file
+
+  subroutine write_physgrid_smoothed_phis_file(outfilenameprefix, elem, par, &
+       gll_fields, pg_fields, nphys, history, output_latlon)
+    use element_mod, only: element_t
+    use parallel_mod, only: parallel_t
+    use kinds, only: real_kind
+    use dimensions_mod, only: nelemd, nlev, np, npsq, nelem
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    use common_io_mod, only: varname_len
+    use pio_io_mod, only: nf_output_init_complete, nf_output_register_variables, nf_put_var_pio
+    use control_mod, only: max_string_len
+#endif
+
+    integer, parameter :: max_nvar = 6
+
+    character(len=*), intent(in) :: outfilenameprefix, history
+    type(element_t), intent(in) :: elem(:)
+    type(parallel_t), intent(in) :: par
+    real(kind=real_kind), intent(in) :: gll_fields(:,:,:,:), pg_fields(:,:,:)
+    integer, intent(in) :: nphys
+    logical, optional, intent(in) :: output_latlon
+
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+    character(len=varname_len) :: varnames(max_nvar), name
+    character(len=max_string_len) :: save_state(2)
+    integer :: i, nf2, stat, nvar, vardims(1,max_nvar), vartypes(max_nvar)
+    integer(kind=nfsizekind) :: unused(1)
+    logical :: varreqs(max_nvar), outll
+
+    outll = .false.
+    if (present(output_latlon)) outll = output_latlon
+    if (outll .and. (size(gll_fields,4) < 3 .or. size(pg_fields,3) < 3)) then
+       if (par%masterproc) then
+          print *, 'write_physgrid_smoothed_phis_file: gll_fields and pg_fields must&
+               & have 3 fields if output_latlon=true; setting output_latlon=false'
+       end if
+       outll = .false.
+    end if
+
+    nvar = 2
+    if (outll) nvar = 6
+
+    nf2 = nphys*nphys
+    call set_output_vars(save_state)
+    call physgrid_topo_begin_write(elem, par, outfilenameprefix, nphys)
+
+    ! variables
+    varnames(1) = 'PHIS'  ; vardims(1,1) = 1
+    varnames(2) = 'PHIS_d'; vardims(1,2) = 2
+    if (outll) then
+       varnames(3) = 'lat'  ; vardims(1,3) = 1
+       varnames(4) = 'lat_d'; vardims(1,4) = 2
+       varnames(5) = 'lon'  ; vardims(1,5) = 1
+       varnames(6) = 'lon_d'; vardims(1,6) = 2
+    end if
+    varreqs = .true.
+    vartypes = pio_double
+    call nf_output_register_variables(ncdf, nvar, varnames, vardims, vartypes, varreqs)
+    stat = pio_put_att(ncdf(1)%fileid, pio_global, 'history', history)
+    call nf_output_init_complete(ncdf)
+
+    call nf_put_var_pio(ncdf(1), reshape(pg_fields(:nf2,:,1), (/nf2*nelemd/)), &
+         unused, unused, ncdf(1)%varlist(1))
+    call write_gll_field(elem, ncdf(1), gll_fields(:,:,:,1), ncdf(1)%varlist(2))
+    if (outll) then
+       do i = 1,2
+          call nf_put_var_pio(ncdf(1), reshape(pg_fields(:nf2,:,i+1), (/nf2*nelemd/)), &
+               unused, unused, ncdf(1)%varlist(1 + 2*i))
+          call write_gll_field(elem, ncdf(1), gll_fields(:,:,:,i+1), ncdf(1)%varlist(2 + 2*i))
+       end do
+    end if
+
+    call pio_closefile(ncdf(1)%fileid)
+    call restore_output_vars(save_state)
+#endif
+  end subroutine write_physgrid_smoothed_phis_file
+
+  ! ------------------------------------
+  ! Utils
+
+#ifndef HOMME_WITHOUT_PIOLIBRARY
+  function get_iotype() result(iotype)
+    use pio, only: iotype_netcdf, iotype_pnetcdf
+
+    integer :: iotype
+
+    if (output_type == 'netcdf') then
+       iotype = iotype_netcdf
+    else
+       iotype = iotype_pnetcdf
+    end if
+  end function get_iotype
+
+  subroutine make_physgrid_dof(elem, nphys, dof)
+    ! Caller must deallocate dof when done.
+
+    use element_mod, only: element_t
+    use dimensions_mod, only: nelemd
+
+    type(element_t), intent(in) :: elem(:)
+    integer, intent(in) :: nphys
+    integer*8, intent(out), pointer :: dof(:)
+    
+    integer :: nf2, ie, j
+
+    nf2 = nphys*nphys
+    allocate(dof(nelemd*nf2))
+    do ie = 1,nelemd
+       do j = 1,nf2
+          dof(nf2*(ie-1) + j) = nf2*(elem(ie)%globalid-1) + j
+       end do
+    end do
+  end subroutine make_physgrid_dof
+
+  subroutine set_output_vars(save_state)
+    use common_io_mod, only: output_frequency, output_start_time, output_end_time, &
+         output_dir, output_prefix
+    use control_mod, only: max_string_len
+    
+    character(len=max_string_len), intent(out) :: save_state(2)
+
+    ! Save global output-file state.
+    save_state(1) = output_dir
+    save_state(2) = output_prefix
+
+    ! We get a spurious '1' at the end of the output filename, but other than
+    ! that, we get exactly what we want.
+    output_prefix = ''
+    output_dir = ''
+    output_frequency(2:max_output_streams) = 0
+    output_frequency(1) = 1
+    output_start_time(1) = 0
+    output_end_time(1) = 1
+  end subroutine set_output_vars
+
+  subroutine restore_output_vars(save_state)
+    use common_io_mod, only: output_frequency, output_start_time, output_end_time, &
+         output_dir, output_prefix
+    use control_mod, only: max_string_len
+    
+    character(len=max_string_len), intent(in) :: save_state(2)
+
+    output_dir = save_state(1)
+    output_prefix = save_state(2)
+  end subroutine restore_output_vars
+
+  subroutine physgrid_topo_begin_write(elem, par, outfilenameprefix, nphys)
+    use element_mod, only: element_t
+    use parallel_mod, only: parallel_t
+    use dimensions_mod, only: np, nelem
+    use pio_io_mod, only: nf_output_init_begin, nf_output_register_dims, nf_init_decomp
+    use common_io_mod, only: varname_len
+
+    integer, parameter :: ndim = 2
+
+    type(element_t), intent(in) :: elem(:)
+    type(parallel_t), intent(in) :: par
+    character(len=*), intent(in) :: outfilenameprefix
+    integer, intent(in) :: nphys
+
+    character(len=varname_len) :: dimnames(ndim)
+    integer :: dimsizes(ndim), nf2
+    integer*8 :: itmp(1)
+    integer(kind=nfsizekind) :: unused(1)
+    integer*8, pointer :: dof(:)
+
+    call nf_output_init_begin(ncdf, par%masterproc, par%nprocs, par%rank, par%comm, &
+         outfilenameprefix, 0)
+
+    ! dimensions
+    nf2 = nphys*nphys
+    dimnames(1) = 'ncol'
+    dimsizes(1) = nelem*nf2
+    dimnames(2) = 'ncol_d'
+    ! Euler's formula applied to the GLL grid:
+    !   v - e + f = 2 => v = e - f + 2 = 2 f - f + 2 = (np-1)^2 nelem + 2
+    dimsizes(2) = (np-1)**2*nelem + 2
+    call nf_output_register_dims(ncdf, ndim, dimnames, dimsizes)
+
+    ! physgrid decomp
+    call make_physgrid_dof(elem, nphys, dof)
+    call nf_init_decomp(ncdf, (/1/), dof, &
+         unused, unused) ! these args are unused
+    deallocate(dof)
+    ! GLL decomp
+    call getcompdof(dof, elem, 1)
+    call nf_init_decomp(ncdf, (/2/), dof, unused, unused)
+    deallocate(dof)
+  end subroutine physgrid_topo_begin_write
+  
+  subroutine write_gll_field(elem, ncdf, phis, nfvar)
+    use element_mod, only: element_t
+    use common_io_mod, only: nf_variable
+    use dof_mod, only: UniquePoints
+    use dimensions_mod, only: nelemd
+    use kinds, only: real_kind
+    use pio_io_mod, only: nf_put_var_pio
+
+    type(element_t), intent(in) :: elem(:)
+    type(nf_handle), intent(inout) :: ncdf
+    real(real_kind), intent(in) :: phis(:,:,:)
+    type(nf_variable), intent(in) :: nfvar
+
+    integer(kind=nfsizekind) :: unused(1)
+    real(kind=real_kind), allocatable :: gll_unique(:)
+    integer :: k, i
+
+    allocate(gll_unique(sum(elem%idxp%NumUniquePts)))
+    k = 1
+    do i = 1,nelemd
+       call UniquePoints(elem(i)%idxP, phis(:,:,i), &
+            gll_unique(k : k + elem(i)%idxp%NumUniquePts - 1))
+       k = k + elem(i)%idxp%NumUniquePts
+    end do
+    call nf_put_var_pio(ncdf, gll_unique, unused, unused, nfvar)
+    deallocate(gll_unique)
+  end subroutine write_gll_field
+#endif
+
 end module interpolate_driver_mod
-
-
-
-
-

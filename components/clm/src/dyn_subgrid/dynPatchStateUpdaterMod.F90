@@ -309,7 +309,7 @@ contains
   !-----------------------------------------------------------------------
   subroutine update_patch_state_partition_flux_by_type(this, bounds, &
        num_filterp_with_inactive, filterp_with_inactive, &
-       flux1_fraction_by_pft_type, &
+       flux1_out_dest, flux1_fraction_by_pft_type, &
        var, flux1_out, flux2_out, &
        seed, seed_addition)
     !
@@ -325,6 +325,7 @@ contains
     type(bounds_type), intent(in) :: bounds
     integer, intent(in) :: num_filterp_with_inactive ! number of points in filterp_with_inactive
     integer, intent(in) :: filterp_with_inactive(:) ! patch filter that includes inactive points
+    character(len=*), intent(in) :: flux1_out_dest  ! flux1_out to column or grid (default)
     real(r8), intent(in) :: flux1_fraction_by_pft_type( 0: ) ! fraction of flux that goes into flux1_out, indexed by pft type
     real(r8), intent(inout) :: var( bounds%begp: ) ! patch-level state variable
 
@@ -356,10 +357,17 @@ contains
     SHR_ASSERT_ALL((ubound(flux1_fraction_by_pft_type) == (/mxpft/)), errMsg(sourcefile, __LINE__))
 
     total_flux_out(bounds%begp:bounds%endp) = 0._r8
-    call this%update_patch_state(bounds, &
-       num_filterp_with_inactive, filterp_with_inactive, &
-       var, flux_out_grc_area = total_flux_out, &
-       seed = seed, seed_addition = seed_addition)
+    if (trim(flux1_out_dest)=='flux_out_col_area') then
+       call this%update_patch_state(bounds, &
+          num_filterp_with_inactive, filterp_with_inactive, &
+          var, flux_out_col_area = total_flux_out, &
+          seed = seed, seed_addition = seed_addition)
+    else
+       call this%update_patch_state(bounds, &
+          num_filterp_with_inactive, filterp_with_inactive, &
+          var, flux_out_grc_area = total_flux_out, &
+          seed = seed, seed_addition = seed_addition)
+    end if
 
     do fp = 1, num_filterp_with_inactive
        p = filterp_with_inactive(fp)

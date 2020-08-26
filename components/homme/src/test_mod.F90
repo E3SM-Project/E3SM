@@ -80,7 +80,8 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
   endselect
 
   !initial conditions for initial run, runtype=0
-  if (runtype == 0) then
+  ! also does other test case setup.  
+!  if (runtype == 0) then
     select case(test_case)
  
       case('asp_baroclinic');     call asp_baroclinic   (elem,hybrid,hvcoord,nets,nete)
@@ -115,7 +116,7 @@ subroutine set_test_initial_conditions(elem, deriv, hybrid, hvcoord, tl, nets, n
       case default;               call abortmp('unrecognized test case')
 
     endselect
-  endif
+!  endif
 end subroutine
 
 !_______________________________________________________________________

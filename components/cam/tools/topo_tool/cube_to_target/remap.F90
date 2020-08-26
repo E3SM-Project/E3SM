@@ -148,7 +148,11 @@ MODULE remap
       IF (tmp<-1.0E-9) THEN
         WRITE(*,*) "sum of weights is negative - negative area?",tmp,jx,jy
         !              ldbgr=.TRUE.
-        stop
+        ! Turn this off as part of physgrid work. This utility emits this
+        ! message a few tens of times during the course of an ne30pg2 run, but
+        ! there appears to be no issue in the final topo dataset. If we leave
+        ! this stop statement, we can't get output from cube_to_target.
+        !stop
       END IF
     else
       jcollect = 0

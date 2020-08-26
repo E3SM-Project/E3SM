@@ -21,6 +21,8 @@ FILE(GLOB TARGET_F90 ${TARGET_DIR}/share/*.F90 ${TARGET_DIR}/*.F90 ${SRC_SHARE_D
 IF (HOMME_USE_ARKODE)
   SET(TARGET_F90
     ${TARGET_F90}
+    ${ARKODE_DIR}/arkode_tables.F90
+    ${ARKODE_DIR}/homme_sunlinsol.F90
     ${ARKODE_DIR}/theta-l/arkode_interface.F90
     ${ARKODE_DIR}/theta-l/arkode_mod.F90
     ${ARKODE_DIR}/theta-l/homme_nvector.F90

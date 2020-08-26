@@ -77,17 +77,6 @@ module dyn_grid
   type(block_global_data), allocatable :: gblocks(:)
   type(element_t), public, pointer :: elem(:) => null()
 
-  ! FV physics grid stucture
-  type, public :: fv_physgrid_struct
-    real(kind=r8), allocatable :: area(:,:)   ! spherical area of fv cell
-    real(kind=r8), allocatable :: lon(:,:)    ! longitude
-    real(kind=r8), allocatable :: lat(:,:)    ! latitude
-    real(kind=r8), allocatable :: corner_lon(:,:,:)    ! longitude
-    real(kind=r8), allocatable :: corner_lat(:,:,:)    ! latitude
-    real(kind=r8), allocatable :: topo(:,:)   ! topography data
-  end type fv_physgrid_struct
-  type(fv_physgrid_struct), public, pointer :: fv_physgrid(:) => null()
-
   public :: dyn_grid_init, define_cam_grids
   public :: get_block_owner_d, get_gcol_block_d, get_gcol_block_cnt_d
   public :: get_block_gcol_cnt_d, get_horiz_grid_dim_d, get_block_levels_d
@@ -621,6 +610,7 @@ contains
   subroutine define_cam_grids()
     use cam_grid_support, only: horiz_coord_t, horiz_coord_create
     use cam_grid_support, only: cam_grid_register, cam_grid_attribute_register
+    use gllfvremap_mod,   only: gfr_f_get_area, gfr_f_get_latlon
     !----------------------------Local-Variables--------------------------------
     character(len=16)            :: gridname, latname, lonname, ncolname, areaname
     type(horiz_coord_t), pointer :: lat_coord
@@ -628,7 +618,7 @@ contains
     integer(iMap),       pointer :: grid_map_d(:,:)
     integer(iMap),       pointer :: grid_map_p(:,:)
     integer                      :: ie, i, j, k, mapind ! Loop variables
-    real(r8)                     :: area_scm(1)
+    real(r8)                     :: area_scm(1), lat, lon
     integer                      :: ncols_p_lcl         ! local column count
     integer                      :: ncols_p_gbl         ! global column count
     integer(iMap),       pointer :: physgrid_map(:)
@@ -729,9 +719,12 @@ contains
           do i = 1,fv_nphys
             mapind = k + (ie-1)*fv_nphys*fv_nphys
             physgrid_map(mapind) = k + (elem(ie)%GlobalId-1)*fv_nphys*fv_nphys
-            physgrid_area(mapind)= fv_physgrid(ie)%area(i,j)
-            physgrid_lat(mapind) = fv_physgrid(ie)%lat(i,j)*rad2deg
-            physgrid_lon(mapind) = fv_physgrid(ie)%lon(i,j)*rad2deg
+            physgrid_area(mapind)= gfr_f_get_area(ie, i, j)
+            call gfr_f_get_latlon(ie, i, j, lat, lon)
+            lat = lat*rad2deg
+            lon = lon*rad2deg
+            physgrid_lat(mapind) = lat
+            physgrid_lon(mapind) = lon
             k = k + 1
           end do ! i
         end do ! j
@@ -867,6 +860,7 @@ contains
   !
   subroutine compute_global_area(area_d)
     use dof_mod,                only: UniqueCoords, UniquePoints
+    use gllfvremap_mod,         only: gfr_f_get_area
     !------------------------------Arguments------------------------------------
     real(r8), pointer :: area_d(:)
     !----------------------------Local-Variables--------------------------------
@@ -901,7 +895,7 @@ contains
       do ie = 1,nelemd
         do j = 1,fv_nphys
           do i = 1,fv_nphys
-            area_local(icol) = fv_physgrid(ie)%area(i,j)
+            area_local(icol) = gfr_f_get_area(ie, i, j)
             icol = icol+1
           end do ! i
         end do ! j
@@ -987,6 +981,7 @@ contains
   !
   subroutine compute_global_coords(clat, clon, lat_out, lon_out, corner_lat_out, corner_lon_out)
     use dof_mod,                only: UniqueCoords, UniquePoints
+    use gllfvremap_mod,         only: gfr_f_get_latlon, gfr_f_get_corner_latlon
     !------------------------------Arguments------------------------------------
     real(r8),           intent(out) :: clat(:)                ! radians
     real(r8),           intent(out) :: clon(:)                ! radians
@@ -1028,8 +1023,7 @@ contains
       do ie = 1,nelemd
         do j = 1,fv_nphys
           do i = 1,fv_nphys
-            lat_rad_local(icol) = fv_physgrid(ie)%lat(i,j)
-            lon_rad_local(icol) = fv_physgrid(ie)%lon(i,j)
+            call gfr_f_get_latlon(ie, i, j, lat_rad_local(icol), lon_rad_local(icol))
             icol = icol+1
           end do ! i
         end do ! j
@@ -1101,8 +1095,8 @@ contains
           do j = 1,fv_nphys
             do i = 1,fv_nphys
               do c = 1,4
-                corner_lat_rad_local(icol,c) = fv_physgrid(ie)%corner_lat(i,j,c)
-                corner_lon_rad_local(icol,c) = fv_physgrid(ie)%corner_lon(i,j,c)
+                call gfr_f_get_corner_latlon(ie, i, j, c, &
+                     corner_lat_rad_local(icol,c), corner_lon_rad_local(icol,c))
               end do
               icol = icol+1
             end do ! i
@@ -1507,149 +1501,17 @@ contains
   !=================================================================================================
   !
   subroutine fv_physgrid_init()
-    use control_mod,            only: cubed_sphere_map, se_fv_phys_remap_alg
-    use kinds,                  only: lng_dbl => longdouble_kind
-    use cube_mod,               only: ref2sphere
-    use coordinate_systems_mod, only: spherical_polar_t, cartesian3D_t
-    use coordinate_systems_mod, only: sphere_tri_area, change_coordinates 
-    use derivative_mod,         only: allocate_subcell_integration_matrix
     use gllfvremap_mod,         only: gfr_init
-    !------------------------------Arguments------------------------------------
-    ! type(element_t)         , intent(in   ) :: elem(:)
-    ! type(fv_physgrid_struct), intent(inout) :: fv_physgrid(nelemd)
-    !----------------------------Local-Variables--------------------------------
-    type(spherical_polar_t) :: sphere_coord
-    real(kind=lng_dbl)      :: ref_i
-    real(kind=lng_dbl)      :: ref_j
-    real(kind=lng_dbl)      :: ref_corner_i
-    real(kind=lng_dbl)      :: ref_corner_j
-    real(kind=lng_dbl)      :: corner_offset_i(4)
-    real(kind=lng_dbl)      :: corner_offset_j(4)
-    type(cartesian3D_t)     :: corner_tmp(4)
-    type(cartesian3D_t)     :: center_tmp
-    integer  :: ie, sb, eb, i, j, ip, fv_cnt, c
-    integer  :: ierr
-    integer  :: ibuf
-    real(r8) :: area1, area2
-    !---------------------------------------------------------------------------  
-    
-    ! Allocate stuff
-    allocate(fv_physgrid(nelemd))
-    do ie = 1,nelemd
-      allocate( fv_physgrid(ie)%lat        (fv_nphys,fv_nphys) )
-      allocate( fv_physgrid(ie)%lon        (fv_nphys,fv_nphys) )
-      allocate( fv_physgrid(ie)%area       (fv_nphys,fv_nphys) )
-      allocate( fv_physgrid(ie)%topo       (fv_nphys,fv_nphys) )
-      allocate( fv_physgrid(ie)%corner_lat(fv_nphys,fv_nphys,4) )
-      allocate( fv_physgrid(ie)%corner_lon(fv_nphys,fv_nphys,4) )
-    end do ! ie
 
-    ! allocate subcell integration matrix
-    call allocate_subcell_integration_matrix(np,fv_nphys)
-    
-    ! These offsets define the order of the corners of each element subcell, 
-    ! used to define the physics grid coordinates. The specific order does not 
-    ! matter here, but it should generally always be counter-clockwise.
-    corner_offset_i = (/-1.,1.,1.,-1./)
-    corner_offset_j = (/-1.,-1.,1.,1./)
-    
-    ! calculate coordinates and area for local blocks
-    do ie = 1, nelemd
-      do j = 1, fv_nphys
-        do i = 1, fv_nphys
-          !---------------------------------------------------------------------
-          ! FV coordinates are defined on the reference element defined 
-          ! over [-1,1] and then mapped to the sphere using ref2sphere
-          ! The code below is a reduction of a general formula to define
-          ! midpoints m of n cells over a range [a,b]:
-          ! m(i) = a + (b-a)/n * ( i - 0.5 )      where i = 1,n
-          ! Note: the max() is to fool the compiler debug mode when fv_nphys=0
-          !---------------------------------------------------------------------
-          ref_i = -1._lng_dbl + 2._lng_dbl/real(max(1,fv_nphys),lng_dbl) & 
-                                * ( real(i,lng_dbl) - 0.5_lng_dbl )
-          ref_j = -1._lng_dbl + 2._lng_dbl/real(max(1,fv_nphys),lng_dbl) & 
-                                * ( real(j,lng_dbl) - 0.5_lng_dbl )
-          !---------------------------------------------------------------------
-          ! Although this is a simpler method of defining cell centers, 
-          ! it is inconsistent with the method used by TempestRemap.
-          ! Instead use the average of cell corners in cartesian coordinates.
-          !---------------------------------------------------------------------
-          ! sphere_coord = ref2sphere(ref_i, ref_j,                         &
-          !                           elem(ie)%corners3D, cubed_sphere_map, &
-          !                           elem(ie)%corners, elem(ie)%facenum )
-          ! fv_physgrid(ie)%lat(i,j) = sphere_coord%lat
-          ! fv_physgrid(ie)%lon(i,j) = sphere_coord%lon
-          !---------------------------------------------------------------------
-          ! cell corner locations
-          !---------------------------------------------------------------------
-          center_tmp%x = 0.0_lng_dbl
-          center_tmp%y = 0.0_lng_dbl
-          center_tmp%z = 0.0_lng_dbl
-          do c = 1,4
-            ref_corner_i = ref_i + corner_offset_i(c)/real(max(1,fv_nphys),lng_dbl)
-            ref_corner_j = ref_j + corner_offset_j(c)/real(max(1,fv_nphys),lng_dbl)
-
-            ! change element local reference coordinate to spherical
-            sphere_coord = ref2sphere(ref_corner_i, ref_corner_j,           &
-                                      elem(ie)%corners3D, cubed_sphere_map, &
-                                      elem(ie)%corners, elem(ie)%facenum )
-
-            fv_physgrid(ie)%corner_lat(i,j,c) = sphere_coord%lat
-            fv_physgrid(ie)%corner_lon(i,j,c) = sphere_coord%lon
-
-            ! change spherical to cartesian
-            corner_tmp(c) = change_coordinates(sphere_coord)
-
-            ! average corner coordinates to find center
-            center_tmp%x = center_tmp%x + corner_tmp(c)%x/4._lng_dbl
-            center_tmp%y = center_tmp%y + corner_tmp(c)%y/4._lng_dbl
-            center_tmp%z = center_tmp%z + corner_tmp(c)%z/4._lng_dbl
-
-          end do ! c
-          !---------------------------------------------------------------------
-          ! define cell centers by converting cartesian to spherical coords
-          !---------------------------------------------------------------------
-          sphere_coord = change_coordinates(center_tmp)
-          fv_physgrid(ie)%lat(i,j) = sphere_coord%lat
-          fv_physgrid(ie)%lon(i,j) = sphere_coord%lon
-          !---------------------------------------------------------------------
-          ! define cell area as the sum of two spherical triangle areas
-          !---------------------------------------------------------------------
-          call sphere_tri_area( corner_tmp(1), &
-                                corner_tmp(2), &
-                                corner_tmp(3), area1 )
-          call sphere_tri_area( corner_tmp(3), &
-                                corner_tmp(4), &
-                                corner_tmp(1), area2 )
-          fv_physgrid(ie)%area(i,j) = area1 + area2 
-          !---------------------------------------------------------------------
-          !---------------------------------------------------------------------
-        end do ! i
-      end do ! j
-    end do ! ie
-
-    if (se_fv_phys_remap_alg == 1) call gfr_init(par, elem, fv_nphys)
+    call gfr_init(par, elem, fv_nphys)
   end subroutine fv_physgrid_init
   !
   !=================================================================================================
   !
   subroutine fv_physgrid_final()
-    use control_mod,      only: se_fv_phys_remap_alg
     use gllfvremap_mod,   only: gfr_finish
 
-    !----------------------------Local-Variables--------------------------------
-    integer :: ie
-    !---------------------------------------------------------------------------  
-    do ie = 1,nelemd
-      deallocate( fv_physgrid(ie)%lat  )
-      deallocate( fv_physgrid(ie)%lon  )
-      deallocate( fv_physgrid(ie)%area )
-      deallocate( fv_physgrid(ie)%topo )
-      deallocate( fv_physgrid(ie)%corner_lat )
-      deallocate( fv_physgrid(ie)%corner_lon )
-    end do ! ie
-
-    if (se_fv_phys_remap_alg == 1) call gfr_finish()
+    call gfr_finish()
   end subroutine fv_physgrid_final
   !
   !=================================================================================================

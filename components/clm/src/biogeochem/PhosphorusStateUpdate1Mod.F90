@@ -45,8 +45,8 @@ module PhosphorusStateUpdate1Mod
   !-----------------------------------------------------------------------
 
 contains
-  subroutine PhosphorusStateUpdateDynPatch(bounds, num_soilc_with_inactive, filter_soilc_with_inactive, &
-       phosphorusflux_vars, phosphorusstate_vars)
+  subroutine PhosphorusStateUpdateDynPatch(bounds, num_soilc_with_inactive, &
+       filter_soilc_with_inactive)
     !
     ! !DESCRIPTION:
     ! Update phosphorus states based on fluxes from dyn_cnbal_patch
@@ -55,8 +55,6 @@ contains
     type(bounds_type)          , intent(in)    :: bounds
     integer                    , intent(in)    :: num_soilc_with_inactive       ! number of columns in soil filter
     integer                    , intent(in)    :: filter_soilc_with_inactive(:) ! soil column filter that includes inactive points
-    type(phosphorusflux_type)  , intent(in)    :: phosphorusflux_vars
-    type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     !
     ! !LOCAL VARIABLES:
     integer                                    :: c                             ! column index
@@ -67,11 +65,6 @@ contains
 
     character(len=*)           , parameter     :: subname = 'PhosphorusStateUpdateDynPatch'
     !-----------------------------------------------------------------------
-
-    associate( &
-         pf => phosphorusflux_vars  , &
-         ps => phosphorusstate_vars   &
-         )
 
       dt = real( get_step_size(), r8 )
 
@@ -84,9 +77,14 @@ contains
                  - grc_pf%dwt_seedp_to_ppool(g)    * dt
          end do
 
-         do j = 1,nlevdecomp
-            do fc = 1, num_soilc_with_inactive
-               c = filter_soilc_with_inactive(fc)
+         do fc = 1, num_soilc_with_inactive
+            
+            c = filter_soilc_with_inactive(fc)
+            col_ps%prod10p(c) = col_ps%prod10p(c) + col_pf%dwt_prod10p_gain(c)*dt
+            col_ps%prod100p(c) = col_ps%prod100p(c) + col_pf%dwt_prod100p_gain(c)*dt
+            col_ps%prod1p(c) = col_ps%prod1p(c) + col_pf%dwt_crop_productp_gain(c)*dt            
+
+            do j = 1,nlevdecomp
 
                col_ps%decomp_ppools_vr(c,j,i_met_lit) = col_ps%decomp_ppools_vr(c,j,i_met_lit) + &
                     col_pf%dwt_frootp_to_litr_met_p(c,j) * dt
@@ -100,8 +98,6 @@ contains
             end do
          end do
       end if
-
-    end associate
 
   end subroutine PhosphorusStateUpdateDynPatch
 

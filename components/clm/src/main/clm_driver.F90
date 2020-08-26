@@ -893,7 +893,7 @@ contains
 
        if (use_erosion) then
           call t_startf('erosion')
-          call SoilErosion(bounds_clump, filter(nc)%num_hydrologyc, filter(nc)%hydrologyc, &
+          call SoilErosion(bounds_clump, filter(nc)%num_soilc, filter(nc)%soilc, &
                atm2lnd_vars, canopystate_vars, soilstate_vars, waterstate_vars, &
                waterflux_vars, sedflux_vars)
           call t_stopf('erosion')
@@ -1184,8 +1184,7 @@ contains
              
              call alm_fates%dynamics_driv( bounds_clump, top_as,          &
                   top_af, atm2lnd_vars, soilstate_vars, temperature_vars, &
-                  waterstate_vars, canopystate_vars, carbonflux_vars,     &
-                  frictionvel_vars)
+                  canopystate_vars, carbonflux_vars, frictionvel_vars)
 
              
              ! TODO(wjs, 2016-04-01) I think this setFilters call should be replaced by a

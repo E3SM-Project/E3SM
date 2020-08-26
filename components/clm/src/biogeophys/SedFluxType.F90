@@ -27,6 +27,7 @@ module SedFluxType
      real(r8), pointer :: sed_p_ero_col(:)          ! col sed detach driven by rainfall (kg/m2/s)
      real(r8), pointer :: sed_q_ero_col(:)          ! col sed detach driven by runoff (kg/m2/s)
      real(r8), pointer :: sed_ero_col(:)            ! col total sed detach (kg/m2/s)
+     real(r8), pointer :: sed_crop_ero_col(:)       ! col sed detach on cropland (kg/m2/s) 
      real(r8), pointer :: sed_yld_col(:)            ! col total sed yield (kg/m2/s) 
 
   contains
@@ -76,6 +77,7 @@ contains
     allocate( this%sed_p_ero_col       (begc:endc))      ; this%sed_p_ero_col          (:) = nan
     allocate( this%sed_q_ero_col       (begc:endc))      ; this%sed_q_ero_col          (:) = nan
     allocate( this%sed_ero_col         (begc:endc))      ; this%sed_ero_col            (:) = nan
+    allocate( this%sed_crop_ero_col    (begc:endc))      ; this%sed_crop_ero_col       (:) = nan 
     allocate( this%sed_yld_col         (begc:endc))      ; this%sed_yld_col            (:) = nan
 
     allocate( this%pfactor_col         (begc:endc))      ; this%pfactor_col            (:) = nan
@@ -123,6 +125,12 @@ contains
     call hist_addfld1d (fname='SED_ERO',  units='kg/m^2/s',  &
          avgflag='A', long_name='hillslope total erosion', &
          ptr_col=this%sed_ero_col, l2g_scale_type= 'veg', &
+         default='inactive')
+
+    this%sed_crop_ero_col(begc:endc) = spval
+    call hist_addfld1d (fname='SED_CROP_ERO',  units='kg/m^2/s',  &
+         avgflag='A', long_name='hillslope cropland erosion', &
+         ptr_col=this%sed_crop_ero_col, l2g_scale_type= 'veg', &
          default='inactive')
 
     this%sed_yld_col(begc:endc) = spval
@@ -178,6 +186,7 @@ contains
        this%sed_p_ero_col(c)                 = 0._r8
        this%sed_q_ero_col(c)                 = 0._r8
        this%sed_ero_col(c)                   = 0._r8
+       this%sed_crop_ero_col(c)              = 0._r8
        this%sed_yld_col(c)                   = 0._r8
 
        g = col_pp%gridcell(c)

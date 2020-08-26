@@ -60,6 +60,7 @@
 <clubb_gamma_coefb>   0.32   </clubb_gamma_coefb>
 <cldfrc2m_rhmaxi>    1.05D0 </cldfrc2m_rhmaxi>
 <clubb_c_K10>        0.3    </clubb_c_K10>
+<clubb_c_K10h>        0.3    </clubb_c_K10h>
 <effgw_beres>        0.4    </effgw_beres>
 <do_tms>             .false.</do_tms>
 <so4_sz_thresh_icenuc>0.075e-6</so4_sz_thresh_icenuc>
@@ -75,7 +76,6 @@
 <prc_coef1               >30500.0D0</prc_coef1>
 <prc_exp                 >3.19D0</prc_exp>
 <prc_exp1                >-1.2D0</prc_exp1>
-<se_ftype                >2</se_ftype>
 <relvar_fix              >.true.</relvar_fix>
 <mg_prc_coeff_fix        >.true.</mg_prc_coeff_fix>
 <rrtmg_temp_fix          >.true.</rrtmg_temp_fix>

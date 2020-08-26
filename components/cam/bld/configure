@@ -94,6 +94,7 @@ use FindBin qw($Bin);
 use lib "$Bin/perl5lib";
 use Build::ChemPreprocess qw(chem_preprocess chem_number_adv);
 use File::Copy;
+use Sys::Hostname;
 
 #-----------------------------------------------------------------------------------------------
 
@@ -112,12 +113,7 @@ OPTIONS
 
      -[no]age_of_air_trcs Switch on [off] age of air tracers. Default: on for waccm_phys, otherwise off
      -aquaplanet        Switch on aqua-planet mode w/ SST controlled by data ocean component in CIME
-     -carma <name>      Build CAM with specified CARMA microphysics model
-                        [ none | bc_strat | cirrus | cirrus_dust | dust | meteor_impact | 
-                          meteor_smoke | mixed_sulfate | pmc | pmc_sulfate | sea_salt | sulfate | tholin |
-                          test_detrain | test_growth | test_passive | test_radiative | test_swelling |
-                          test_tracers, test_tracers2].
-                        Default: none.
+     -rce               Use homogenous conditions for radiative-convective equilibrium (RCE), normally used with aquaplanet 
      -chem <name>       Build CAM with specified prognostic chemistry package 
                         [ waccm_mozart | waccmx_mozart | waccm_mozart_sulfur | waccm_mozart_mam3 | waccm_sc | 
 			  waccm_sc_mam3 | waccm_tsmlt | waccm_tsmlt_mam3 | waccm_tsmlt_sulfur |
@@ -126,7 +122,8 @@ OPTIONS
 			  trop_mam7 | trop_mam9 | super_fast_llnl | super_fast_llnl_mam3 |
                           linoz_mam3 | linoz_mam4_resus | linoz_mam4_resus_soag |
 			  linoz_mam4_resus_mom | linoz_mam4_resus_mom_soag |
-                          trop_strat_soa | trop_strat_mam3 | trop_strat_mam7 | none ].  Default: trop_mam3.
+                          trop_strat_soa | trop_strat_mam3 | trop_strat_mam7 | superfast_mam4_resus_mom_soag | 
+			  none ].  Default: trop_mam3.
      -clubb_sgs         Turns on CLUBB_SGS
      -clubb_opts <list> Comma separated list of CLUBB options to turn on/off.  By default they are all off.  Current
                         options are: clubb_do_adv(Advect CLUBB moments), clubb_do_deep(CLUBB does the deep convection) 
@@ -141,6 +138,7 @@ OPTIONS
                         dlatxdlon for fv grids (dlat and dlon are the grid cell size
 			in degrees for latitude and longitude respectively); nexnp for
                         se grids.
+     -mach <name>       Name of target system, for setting system-specific namelist defaults
      -max_n_rad_cnst <n> Maximum number of constituents that are either radiatively
                         active, or in any single diagnostic list for the radiation.    
      -microphys <name>  Specify the microphysics option [mg1 | mg1.5 | mg2 | rk].
@@ -265,6 +263,21 @@ OPTIONS
                         perl \$OSNAME variable.
      -usr_src <dir1>[,<dir2>[,<dir3>[...]]]
                         Directories containing user source code.
+
+  Options for MMF:
+
+     -use_MMF           Build the MMF configuration (super-parameterized EAM)
+     -crm_nx <n>        CRM's x-grid.
+     -crm_ny <n>        CRM's y-grid.
+     -crm_nz <n>        CRM's z-grid.
+     -crm_dx <n>        CRM's horizontal grid spacing.
+     -crm_dt <n>        CRM's timestep.
+     -crm_nx_rad <n>    number of averaged columns for CRM radiation calculation in x direction
+     -crm_ny_rad <n>    number of averaged columns for CRM radiation calculation in y direction
+     -MMF_microphysics_scheme <string>   CRM microphysics package name [sam1mom | m2005 ].
+     -use_ECPP          use CRM clouds for vertical transport, aqueous chemistry and wet removable of aerosols 
+     -crm_adv           CRM advection scheme [MPDATA | UM5]
+     -use_MAML          use multiple atmosphere and multiple land version of MMF
 EOF
 }
 
@@ -305,10 +318,10 @@ GetOptions(
     "aquaplanet"                => \$opts{'aquaplanet'},
     "cache=s"                   => \$opts{'cache'},
     "cachedir=s"                => \$opts{'cachedir'},
-    "carma=s"                   => \$opts{'carma'},
     "cam_bld=s"                 => \$opts{'cam_bld'},
     "cam_exe=s"                 => \$opts{'cam_exe'},
     "cam_exedir=s"              => \$opts{'cam_exedir'},
+    "caseroot=s"                => \$opts{'caseroot'},
     "e3smreplay"                => \$opts{'e3smreplay'},
     "cc=s"                      => \$opts{'cc'},
     "ccsm_seq"                  => \$opts{'ccsm_seq'},
@@ -324,6 +337,18 @@ GetOptions(
     "comp_intf=s"               => \$opts{'comp_intf'},
     "cosp"                      => \$opts{'cosp'},
     "cppdefs=s"                 => \$opts{'cppdefs'},
+    "use_MMF"                   => \$opts{'use_MMF'},
+    "use_ECPP"                  => \$opts{'use_ECPP'},
+    "use_MAML"                  => \$opts{'use_MAML'},
+    "crm_nx=s"                  => \$opts{'crm_nx'},
+    "crm_ny=s"                  => \$opts{'crm_ny'},
+    "crm_nz=s"                  => \$opts{'crm_nz'},
+    "crm_dx=s"                  => \$opts{'crm_dx'},
+    "crm_dt=s"                  => \$opts{'crm_dt'},
+    "crm_nx_rad=s"              => \$opts{'crm_nx_rad'},
+    "crm_ny_rad=s"              => \$opts{'crm_ny_rad'},
+    "MMF_microphysics_scheme=s"     => \$opts{'MMF_microphysics_scheme'},
+    "crm_adv=s"                 => \$opts{'crm_adv'},
     "debug"                     => \$opts{'debug'},
     "rain_evap_to_coarse_aero"  => \$opts{'rain_evap_to_coarse_aero'},
     "bc_dep_to_snow_updates"    => \$opts{'bc_dep_to_snow_updates'},
@@ -349,6 +374,7 @@ GetOptions(
     "ldflags=s"                 => \$opts{'ldflags'},
     "linker=s"                  => \$opts{'linker'},
     "lnd=s"                     => \$opts{'lnd'},
+    "mach=s"                    => \$opts{'mach'},
     "max_n_rad_cnst=s"          => \$opts{'max_n_rad_cnst'},
     "microphys=s"               => \$opts{'microphys'},
     "mpi_inc=s"                 => \$opts{'mpi_inc'},
@@ -371,6 +397,7 @@ GetOptions(
     "prog_species=s"            => \$opts{'prog_species'},
     "psubcols=s"                => \$opts{'psubcols'},
     "rad=s"                     => \$opts{'rad'},
+    "rce"                       => \$opts{'rce'},
     "res=s"                     => \$opts{'res'},
     "rof=s"                     => \$opts{'rof'},
     "scam"                      => \$opts{'scam'},
@@ -611,6 +638,10 @@ EOF
     if ($print>=2) { print "CAM executable will be created in: $cam_exedir$eol"; }
 }
 
+if (defined $opts{'caseroot'}) {
+    $cfg_ref->set('caseroot', $opts{'caseroot'})
+}
+
 #-----------------------------------------------------------------------------------------------
 # User source directories.
 my $usr_src = '';
@@ -654,6 +685,16 @@ if ($print>=2) { print "Configuration cache file: $config_cache_file$eol"; }
 #-----------------------------------------------------------------------------------------------
 # Platform properties ##########################################################################
 #-----------------------------------------------------------------------------------------------
+
+#-----------------------------------------------------------------------------------------------
+# Determine target system name, using hostname if not otherwsie specified
+my ($mach) = split /\./, hostname();
+if (defined $opts{'mach'}) {
+    $mach = $opts{'mach'};
+}
+$cfg_ref->set('mach', $mach);
+
+if ($print>=2) { print "MACH: $mach$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Determine target OS -- allow cross compilation only if target_os is specified on commandline.
@@ -755,6 +796,21 @@ if (defined $opts{'dyn'}) {
       print "+------------------------------------------------+\n";
     } else {
       $cfg_ref->set('dyn', lc($opts{'dyn'}) );
+    }
+    if (defined $opts{'dyn_target'}) {                                                        
+        #$cfg_ref->set('dyn_target', $opts{'dyn_target'});
+        if (substr($opts{'dyn_target'},0,5) eq 'preqx') {
+            # preqx, preqx_acc, preqx_kokkos use 'preqx' namelist defaults
+            $cfg_ref->set('dyn_target', 'preqx');
+        }
+        if (substr($opts{'dyn_target'},0,5) eq 'theta') {
+            # theta_* uses 'theta-l' namelist defaults
+            $cfg_ref->set('dyn_target', 'theta-l');
+        }
+        print  "SE dycore target options:\n";
+        print  "  build target:    $opts{'dyn_target'}\n";
+        my $temp = $cfg_ref->get('dyn_target');
+        print  "  namelist target: $temp\n";
     }
 }
 
@@ -919,29 +975,6 @@ $cfg_ref->set('microphys', $microphys_pkg);
 if ($print>=2) { print "Microphysics package: $microphys_pkg$eol"; }
 
 #-----------------------------------------------------------------------------------------------
-# CARMA sectional microphysics package
-# The default for the current physics package is:
-my  $carma_pkg = 'none';
-
-# Allow the user to override the default via the commandline.
-if (defined $opts{'carma'}) {
-    $carma_pkg = lc($opts{'carma'});
-  
-    if ($print>=2 and ($carma_pkg ne 'none')) { print "Using CARMA for the microphysical model $carma_pkg.$eol"; }
-}
-
-if ($carma_pkg =~ m/cirrus/i) {
-    unless ($microphys_pkg =~ /^mg/) {
-	die <<"EOF";
-**    ERROR: microphysics package set to: $microphys_pkg
-**    The CARMA cirrus model only works with MG microphysics.
-EOF
-    }
-}
-
-$cfg_ref->set('carma', $carma_pkg);
-
-#-----------------------------------------------------------------------------------------------
 # CLUBB
 
 if (defined $opts{'clubb_sgs'}) {
@@ -1103,6 +1136,23 @@ my $aqua_mode = $aquaplanet ? "ON" : "OFF";
 if ($print>=2) { print "Aqua-planet mode: $aqua_mode$eol"; }
 
 #-----------------------------------------------------------------------------------------------
+# RCE mode (radiative-convective equilibrium)
+# This provides a flag to indicate that we are running an RCE case. This is normally used 
+# along with the aquaplanet flag, but could be used with an idealized land surface. 
+# This flag is mainly used to set the initial condition files that matches the grid.
+# this flag is not sufficient to run an RCE case, as many namelist variables need to be set
+# by the use case file to use idleaized ozone, disable rotation, and homogenize 
+# radiation, albedo, SST, and solar zenith angle.
+my $rce = 0;
+# user override
+if (defined $opts{'rce'}) {
+    $rce = 1;
+}
+$cfg_ref->set('rce', $rce);
+my $rce_mode = $rce ? "ON" : "OFF";
+if ($print>=2) { print "Radiative-Convctive Equilibrium mode: $rce_mode$eol"; }
+
+#-----------------------------------------------------------------------------------------------
 # Ocean model
 my $ocn_pkg = 'docn';
 # If the physics package is adiabatic, or ideal, change the default
@@ -1240,6 +1290,31 @@ EOF
 if ($print>=2) { print "Produce IOP file for SCAM: $e3smreplay$eol"; }
 
 #-----------------------------------------------------------------------------------------------
+# Superparameterization mode (MMF)
+if (defined $opts{'use_MMF'}) {
+    if (defined $opts{'use_ECPP'})            { $cfg_ref->set('use_ECPP', 1); }
+    if (defined $opts{'use_MAML'})            { $cfg_ref->set('use_MAML', 1); }
+    $cfg_ref->set('use_MMF', 1);
+    $cfg_ref->set('crm_nx', $opts{'crm_nx'});
+    $cfg_ref->set('crm_ny', $opts{'crm_ny'});
+    $cfg_ref->set('crm_nz', $opts{'crm_nz'});
+    $cfg_ref->set('crm_dx', $opts{'crm_dx'});
+    $cfg_ref->set('crm_dt', $opts{'crm_dt'});
+    if (defined $opts{'crm_nx_rad'}) { $cfg_ref->set('crm_nx_rad', $opts{'crm_nx_rad'}); }
+    if (defined $opts{'crm_ny_rad'}) { $cfg_ref->set('crm_ny_rad', $opts{'crm_ny_rad'}); }
+    $cfg_ref->set('MMF_microphysics_scheme', $opts{'MMF_microphysics_scheme'});
+    $cfg_ref->set('crm_adv', $opts{'crm_adv'});
+    # Check that model is not using threading for the MMF 
+    if ($nthreads > 1) {
+     die <<"EOF";
+**  ERROR: MMF mode may only use single thread
+**         nthreads set to $nthreads
+**         
+EOF
+    }
+}
+
+#-----------------------------------------------------------------------------------------------
 # Horizontal grid parameters
 if (defined $opts{'hgrid'}) {
     $cfg_ref->set('hgrid', $opts{'hgrid'});
@@ -1255,16 +1330,22 @@ set_horiz_grid("$cfgdir/$horiz_grid_file", $cfg_ref);
 if ($print>=2) { print "Horizontal grid specifier: $hgrid$eol"; }
 
 #-----------------------------------------------------------------------------------------------
-# Maximum number of columns in a chunk.
+# Maximum number of columns in a chunk. If set as an option, then it is a compile-time parameter
+# (ppcols == 'TRUE'). Otherwise, pcols is a runtime parameter set by the namelist parameter
+# phys_chnk_fdim.
 if (defined $opts{'pcols'}) {
     $cfg_ref->set('pcols', $opts{'pcols'});
+    $cfg_ref->set('ppcols', 'TRUE');
+} else {
+    $cfg_ref->set('ppcols', 'FALSE');
 }
 my $pcols = $cfg_ref->get('pcols');
 
-# Override PCOLS setting if configuring for SCAM
+# Override PCOLS setting if configuring for SCAM. Also make it a compile-time parameter.
 if ($scam eq 'ON') {
     $pcols = 1;
     $cfg_ref->set('pcols', $pcols);
+    $cfg_ref->set('ppcols', 'TRUE');
 }
 
 # Check valid value of pcols
@@ -1395,75 +1476,6 @@ if ($rain_evap_to_coarse_aero == 1 && ($chem_pkg =~ '_mam3' || $chem_pkg =~ '_ma
     $chem_cppdefs = "$chem_cppdefs  -DRAIN_EVAP_TO_COARSE_AERO "
 }
 
-my $carma_nadv = 0;
-my $carma_cppdefs = '';
-
-
-# CARMA sectional microphysics
-#
-# New CARMA models need to define the number of advected constituents.
-#
-# New CARMA models that want to do dry depostion need to provide the ccp_def PROGSSLT, so that
-# clm will return aerodynamic resistances and surface friction velocity.
-if ($carma_pkg eq 'bc_strat') {
-    $carma_nadv = 1;
-}
-elsif ($carma_pkg eq 'cirrus') {
-    $carma_nadv = 84;
-}
-elsif ($carma_pkg eq 'cirrus_dust') {
-    $carma_nadv = 140;
-}
-elsif ($carma_pkg eq 'dust') {
-    $carma_nadv = 16;
-}
-elsif ($carma_pkg eq 'meteor_impact') {
-    $carma_nadv = 42;
-}
-elsif ($carma_pkg eq 'meteor_smoke') {
-    $carma_nadv = 28;
-}
-elsif ($carma_pkg eq 'mixed_sulfate') {
-    $carma_nadv = 84;
-}
-elsif ($carma_pkg eq 'pmc') {
-    $carma_nadv = 84;
-}
-elsif ($carma_pkg eq 'pmc_sulfate') {
-    $carma_nadv = 140;
-}
-elsif ($carma_pkg eq 'sea_salt') {
-    $carma_nadv = 16;
-}
-elsif ($carma_pkg eq 'sulfate') {
-    $carma_nadv = 30;
-}
-elsif ($carma_pkg eq 'tholin') {
-    $carma_nadv = 40;
-}
-elsif ($carma_pkg eq 'test_detrain') {
-    $carma_nadv = 66;
-}
-elsif ($carma_pkg eq 'test_growth') {
-    $carma_nadv = 32;
-}
-elsif ($carma_pkg eq 'test_passive') {
-    $carma_nadv = 16;
-}
-elsif ($carma_pkg eq 'test_radiative') {
-    $carma_nadv = 16;
-}
-elsif ($carma_pkg eq 'test_swelling') {
-    $carma_nadv = 48;
-}
-elsif ($carma_pkg eq 'test_tracers') {
-    $carma_nadv = 372;
-}
-elsif ($carma_pkg eq 'test_tracers2') {
-    $carma_nadv = 434;
-}
-
-
 #-----------------------------------------------------------------------------------------------
 # Number of advected constituents
 my $nadv;
@@ -1513,11 +1525,6 @@ else {
         $nadv += $chem_nadv;
         if ($print>=2) { print "Advected constituents added by chemistry $chem_pkg: $chem_nadv$eol"; }
   
-        # CARMA package:
-        if ($carma_nadv > 0) {
-            $nadv += $carma_nadv;
-            if ($print>=2) { print "Advected constituents added by CARMA model $carma_pkg: $carma_nadv$eol"; }
-        }
 
         # UNICON tracers
         if ($unicon) {
@@ -1789,6 +1796,36 @@ $cfg_cppdefs .= " -DMAXPATCH_PFT=numpft+1 -DLSMLAT=1 -DLSMLON=1";
 # Building for perturbation growth tests
 if ($pergro eq "ON") { $cfg_cppdefs .= " -DPERGRO"; }
 
+# Building for MMF/super-parameterization
+if (defined $opts{'use_MMF'}) {
+    my $crm_nx = $cfg_ref->get('crm_nx');
+    my $crm_ny = $cfg_ref->get('crm_ny');
+    my $crm_nz = $cfg_ref->get('crm_nz');
+    my $crm_dx = $cfg_ref->get('crm_dx');
+    my $crm_dt = $cfg_ref->get('crm_dt');
+    my $crm_nx_rad = $cfg_ref->get('crm_nx_rad');
+    my $crm_ny_rad = $cfg_ref->get('crm_ny_rad');
+    my $MMF_microphysics_scheme = $cfg_ref->get('MMF_microphysics_scheme');
+    my $crm_adv = $cfg_ref->get('crm_adv');
+    my $yes3Dval = 1;
+    if ($crm_ny eq 1) {$yes3Dval = 0;}
+    $cfg_cppdefs .= " -D_$crm_adv -D$MMF_microphysics_scheme -DYES3DVAL=$yes3Dval";
+    $cfg_cppdefs .= " -DCRM_NX=$crm_nx -DCRM_NY=$crm_ny -DCRM_NZ=$crm_nz ";
+    $cfg_cppdefs .= " -DCRM_DX=$crm_dx -DCRM_DT=$crm_dt ";
+    if (defined $opts{'use_ECPP'}) { $cfg_cppdefs .= " -DECPP " }
+    if (defined $opts{'use_MAML'}) { $cfg_cppdefs .= " -DMAML " }
+    if (defined $opts{'crm_nx_rad'}) { 
+        $cfg_cppdefs .= " -DCRM_NX_RAD=$crm_nx_rad " 
+    } else {
+        $cfg_cppdefs .= " -DCRM_NX_RAD=$crm_nx " 
+    }
+    if (defined $opts{'crm_ny_rad'}) { 
+        $cfg_cppdefs .= " -DCRM_NY_RAD=$crm_ny_rad " 
+    } else {
+        $cfg_cppdefs .= " -DCRM_NY_RAD=$crm_ny " 
+    }
+}
+
 # Configure CAM to produce IOP files for SCAM
 if ($e3smreplay eq 'ON') { $cfg_cppdefs .= " -DE3SM_SCM_REPLAY"; }
 
@@ -1825,6 +1862,11 @@ my $pcols = $cfg_ref->get('pcols');
 my $psubcols = $cfg_ref->get('psubcols');
 $cfg_cppdefs .= " -DPLEV=$nlev -DPCNST=$nadv -DPCOLS=$pcols -DPSUBCOLS=$psubcols";
 
+# PCOLS is a compile-time parameter if set in CAM_CONFIG_OPTS. Otherwise it is a runtime parameter
+# and PCOLS just specifies the default for the runtime parameter.
+my $ppcols = $cfg_ref->get('ppcols');
+if ($ppcols eq 'TRUE') { $cfg_cppdefs .= " -DPPCOLS"; }
+
 # Radiatively active constituent number
 $cfg_cppdefs .= " -DN_RAD_CNST=$max_n_rad_cnst";
 
@@ -1843,7 +1885,7 @@ if ($offline_dyn) { $cfg_cppdefs .= ' -DOFFLINE_DYN'; }
 # Spectral Element dycore
 if($dyn_pkg eq 'se'){
     if ($spmd eq 'ON'){	$cfg_cppdefs .=" -D_MPI"; }
-    $cfg_cppdefs .= " -DCAM  -D_WK_GRAD -D_PRIM ";
+    $cfg_cppdefs .= " -DCAM -D_PRIM ";
 }
 
 # -DSPMD only added for CESM build.  The CAM Makefile has a separate SPMD macro.
@@ -1851,9 +1893,6 @@ if ( ($ccsm_seq) and ($spmd eq 'ON') ) { $cfg_cppdefs .= " -DSPMD"; }
 
 # Chem CPP defs
 $cfg_cppdefs .= $chem_cppdefs;
-
-# CARMA CPP defs
-$cfg_cppdefs .= $carma_cppdefs;
 
 #WACCM-X extended thermosphere/ionosphere model
 if ($waccmx) { $cfg_cppdefs .= ' -DWACCMX'; }
@@ -2216,6 +2255,7 @@ if ($print>=2) { print "CPP definitions set by configure: \'$cfg_cppdefs\'$eol";
 
 #-----------------------------------------------------------------------------------------------
 # COSP library.
+# JGF: We can get rid of this stuff once the legacy build system is removed
 if ($cosp) {
 
     # Set the directory used to build cosp.  Add location and library name
@@ -2241,7 +2281,7 @@ if ($cosp) {
     }
 
     # Create the COSP Makefile from a template and copy it into the cosp bld directory
-    write_cosp_makefile("$cfgdir/../src/physics/cosp/Makefile.cospinline.in", "$cosp_libdir/Makefile");
+    write_cosp_makefile("$cfgdir/../src/physics/cosp2/Makefile.cospinline.in", "$cosp_libdir/Makefile");
     if ($print) { print "creating $cosp_libdir/Makefile\n"; }
 }
 
@@ -2476,7 +2516,6 @@ sub write_filepath
     my $chem          = $cfg_ref->get('chem');
     my $waccm_phys    = $cfg_ref->get('waccm_phys');
     my $waccmx        = $cfg_ref->get('waccmx');
-    my $carma         = $cfg_ref->get('carma');
     my $rad           = $cfg_ref->get('rad');
     my $dyn           = $cfg_ref->get('dyn');
     my $cppdefs       = $cfg_ref->get('cppdefs');
@@ -2487,6 +2526,7 @@ sub write_filepath
     my $lnd           = $cfg_ref->get('lnd');
     my $ice           = $cfg_ref->get('ice');
     my $rof           = $cfg_ref->get('rof');
+    my $caseroot      = $cfg_ref->get('caseroot');
 
     # Root directory
     my $camsrcdir = "$cam_root/components";
@@ -2508,20 +2548,52 @@ sub write_filepath
 
     # CESM has a standard source mods location.
     if ($ccsm_seq) {
-	my $CASEROOT = "$ENV{'CASEROOT'}";
-	print $fh "$CASEROOT/SourceMods/src.cam\n";
+	print $fh "$caseroot/SourceMods/src.cam\n";
     }
 
     # offline unit driver (defaults to stub)
     print $fh "$camsrcdir/cam/src/unit_drivers\n";
 
-    if ($carma ne 'none') {
-	# This directory needs to precede physics/cam/ to replace
-	# the CARMA stub package with CARMA. Putting it first allows
-	# any CAM file to be overridden by a particular CARMA model.
-	print $fh "$camsrcdir/cam/src/physics/carma/models/$carma\n";
-	print $fh "$camsrcdir/cam/src/physics/carma/cam\n";
-	print $fh "$camsrcdir/cam/src/physics/carma/base\n";
+    # MMF/super-parameterization; this code section needs to appear before those
+    # adding the physics and chemistry packages to override versions of files
+    # that appear in both places
+    if (defined $opts{'use_MMF'}) {
+
+        # interface and base model code
+        print $fh "$camsrcdir/cam/src/physics/crm\n";
+        print $fh "$camsrcdir/cam/src/physics/crm/sam\n";
+
+        # microphysics
+        my $MMF_microphysics_scheme = $cfg_ref->get('MMF_microphysics_scheme');
+        if ($MMF_microphysics_scheme eq 'sam1mom') {
+            print $fh "$camsrcdir/cam/src/physics/crm/sam/MICRO_SAM1MOM\n";
+        } elsif ($MMF_microphysics_scheme eq 'm2005') {
+            print $fh "$camsrcdir/cam/src/physics/crm/sam/MICRO_M2005\n";
+        }
+
+        # turbulence closure
+        print $fh "$camsrcdir/cam/src/physics/crm/sam/SGS_TKE\n";
+
+        if (defined $opts{'use_ECPP'}) {
+            print $fh "$camsrcdir/cam/src/physics/crm/ecpp\n";
+        }
+
+        # advection scheme
+        my $crm_adv = $cfg_ref->get('crm_adv');
+        if ($crm_adv eq 'UM5') {
+            print $fh "$camsrcdir/cam/src/physics/crm/sam/ADV_UM5\n"; 
+        } else {
+            print $fh "$camsrcdir/cam/src/physics/crm/sam/ADV_MPDATA\n";
+        }
+
+        # MMF-specific radiation drivers (overrides default drivers that exist
+        # in each individual radiation package; done this way to avoid
+        # dependency on MMF-specific variables)
+        if ($rad eq 'rrtmg') {
+            print $fh "$camsrcdir/cam/src/physics/crm/rrtmg\n";
+        } elsif ($rad eq 'rrtmgp') {
+            print $fh "$camsrcdir/cam/src/physics/crm/rrtmgp\n";
+        }
     }
 
     # CAM chemistry, dynamics, physics, control and shared utilities.
@@ -2832,13 +2904,14 @@ sub write_cosp_makefile
 
 
 CAM_BLD    := $cam_bld
-COSP_PATH  := $cam_root/components/cam/src/physics/cosp
-ISCCP_PATH := $cam_root/components/cam/src/physics/icarus-scops
-RS_PATH    := $cam_root/components/cam/src/physics/cosp/quickbeam
-CS_PATH    := $cam_root/components/cam/src/physics/cosp/actsim
-LLNL_PATH  := $cam_root/components/cam/src/physics/cosp/llnl
-MISR_PATH  := $cam_root/components/cam/src/physics/cosp/MISR_simulator
-MODIS_PATH := $cam_root/components/cam/src/physics/cosp/MODIS_simulator
+COSP_PATH  := $cam_root/components/cam/src/physics/cosp2
+ISCCP_PATH := $cam_root/components/cam/src/physics/cosp2/src/simulator/icarus
+RS_PATH    := $cam_root/components/cam/src/physics/cosp2/src/simulator/quickbeam
+CS_PATH    := $cam_root/components/cam/src/physics/cosp2/src/simulator/actsim
+RT_PATH    := $cam_root/components/cam/src/physics/cosp2/src/simulator/rttov
+MISR_PATH  := $cam_root/components/cam/src/physics/cosp2/src/simulator/MISR_simulator
+MODIS_PATH := $cam_root/components/cam/src/physics/cosp2/src/simulator/MODIS_simulator
+PARASOL_PATH  := $cam_root/components/cam/src/physics/cosp2/src/simulator/parasol
 
 EOF
 

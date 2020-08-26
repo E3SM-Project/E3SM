@@ -20,7 +20,8 @@ module geopotential
   private
   save
 
-  public geopotential_dse
+!  Do not use this subroutine
+!  public geopotential_dse
   public geopotential_t
 
 contains

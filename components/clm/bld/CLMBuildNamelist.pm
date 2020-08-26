@@ -198,7 +198,8 @@ OPTIONS
                               (requires use_crop to be true in the clm configuration)
                               Seek surface datasets with irrigation turned on.  (for CLM4.0 physics)
                               Default: .false.
-     -l_ncpl "LND_NCPL"       Number of CLM coupling time-steps in a day.
+     -l_ncpl "LND_NCPL"       Number of CLM coupling time-steps in a NCPL_BASE_PERIOD.
+     -ncpl_base_period        Length of base period for CLM coupling (hour, day, year)
      -mask "landmask"         Type of land-mask (default, navy, gx3v5, gx1v5 etc.)
                               "-mask list" to list valid land masks.
      -methane                 Toggle for prognostic methane model.
@@ -280,6 +281,7 @@ sub process_commandline {
                glc_present           => 0,
                glc_smb               => "default",
                l_ncpl                => undef,
+               ncpl_base_period      => "null",
                lnd_frac              => undef,
                dir                   => "$cwd",
                rcp                   => "default",
@@ -332,6 +334,7 @@ sub process_commandline {
              "infile=s"                  => \$opts{'infile'},
              "lnd_frac=s"                => \$opts{'lnd_frac'},
              "l_ncpl=i"                  => \$opts{'l_ncpl'},
+             "ncpl_base_period=s"        => \$opts{'ncpl_base_period'},
              "inputdata=s"               => \$opts{'inputdata'},
              "mask=s"                    => \$opts{'mask'},
              "namelist=s"                => \$opts{'namelist'},
@@ -788,10 +791,10 @@ sub setup_cmdl_fates_mode {
 
       # The following variables may be set by the user and are compatible with use_fates
       # no need to set defaults, covered in a different routine
-      my @list  = (  "use_fates_spitfire", "use_vertsoilc", "use_century_decomp",
+      my @list  = (  "fates_spitfire_mode", "use_vertsoilc", "use_century_decomp",
                      "use_fates_planthydro", "use_fates_ed_st3", "use_fates_ed_prescribed_phys", 
-		     "use_fates_inventory_init", "fates_inventory_ctrl_filename","use_fates_logging",
-		     "use_fates_parteh_mode");
+		     "use_fates_inventory_init", "use_fates_fixed_biogeog", "fates_inventory_ctrl_filename","use_fates_logging",
+		     "use_fates_parteh_mode","use_fates_cohort_age_tracking");
       foreach my $var ( @list ) {
 	  if ( defined($nl->get_value($var))  ) {
 	      $nl_flags->{$var} = $nl->get_value($var);
@@ -810,7 +813,15 @@ sub setup_cmdl_fates_mode {
 
     } else {
 	# we only dis-allow ed_spitfire with non-ed runs
-       $var = "use_fates_spitfire";
+       $var = "fates_spitfire_mode";
+       if ( defined($nl->get_value($var)) ) {
+           fatal_error("$var is being set, but can ONLY be set when -bgc ed option is used.\n");
+       }
+       $var = "use_fates_cohort_age_tracking";
+       if ( defined($nl->get_value($var)) ) {
+           fatal_error("$var is being set, but can ONLY be set when -bgc ed option is used.\n");
+       }
+	   $var = "use_fates_fixed_biogeog";
        if ( defined($nl->get_value($var)) ) {
            fatal_error("$var is being set, but can ONLY be set when -bgc ed option is used.\n");
        }
@@ -1314,6 +1325,10 @@ sub setup_cmdl_nutrient_comp {
 
           $nl_flags->{$var} = 'ECA';
 
+          $var = "nfix_ptase_plant";
+          $val = '.true.';
+          $nl->set_variable_value($group, $var, $val);
+
         } else {
           fatal_error("-nutrient_comp_pathway has a value ($val) that is not valid. Valid values are: [rd, eca] \n");
         }
@@ -1428,7 +1443,7 @@ sub setup_cmdl_maxpft {
     # NOTE: maxpatchpft sizes already checked for clm4_0 by configure.
   } else {
     my %maxpatchpft;
-    $maxpatchpft{'.true.'}   = 79;
+    $maxpatchpft{'.true.'}   = 25;
     $maxpatchpft{'.false.'} = 17;
     if ( $opts->{$var} ne "default") {
       $val = $opts->{$var};
@@ -1877,7 +1892,7 @@ sub process_namelist_commandline_use_case {
     my $uc_defaults = Build::NamelistDefaults->new("$opts->{'use_case_dir'}/$opts->{'use_case'}.xml", $cfg);
 
     my %settings;
-    $settings{'res'}            = $nl_flags->{'res'};
+    $settings{'hgrid'}          = $nl_flags->{'res'};
     $settings{'rcp'}            = $nl_flags->{'rcp'};
     $settings{'mask'}           = $nl_flags->{'mask'};
     $settings{'sim_year'}       = $nl_flags->{'sim_year'};
@@ -2177,7 +2192,17 @@ sub setup_logic_delta_time {
     if ( $l_ncpl <= 0 ) {
       fatal_error("bad value for -l_ncpl option.\n");
     }
-    my $val = ( 3600 * 24 ) / $l_ncpl;
+    my $ncpl_base_period = $opts->{'ncpl_base_period'};
+    my $val = 0;
+    if ($ncpl_base_period eq "year") {
+        $val = ( 3600 * 24 *365 ) / $l_ncpl;
+    } elsif ($ncpl_base_period eq "day") {
+        $val = ( 3600 * 24 ) / $l_ncpl;
+    } elsif ($ncpl_base_period eq "hour") {
+        $val = ( 3600 ) / $l_ncpl;
+    } else {
+        fatal_error("bad value for -ncpl_base_period option.\n");
+    }
     my $dtime = $nl->get_value('dtime');
     if ( ! defined($dtime)  ) {
       add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'dtime', 'val'=>$val);
@@ -3340,7 +3365,8 @@ sub setup_logic_fates {
     my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
     if ($physv->as_long() >= $physv->as_long("clm4_5") && value_is_true( $nl_flags->{'use_fates'})  ) {
- 	add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_spitfire', 'use_fates'=>$nl_flags->{'use_fates'} );
+ 	add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_spitfire_mode',          'use_fates'=>$nl_flags->{'use_fates'} );
+	add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_fixed_biogeog',      'use_fates'=>$nl_flags->{'use_fates'} );
 	add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_logging',            'use_fates'=>$nl_flags->{'use_fates'});
 	add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_planthydro',         'use_fates'=>$nl_flags->{'use_fates'});
 	add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_parteh_mode',            'use_fates'=>$nl_flags->{'use_fates'});
@@ -3348,6 +3374,7 @@ sub setup_logic_fates {
 	add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_ed_prescribed_phys', 'use_fates'=>$nl_flags->{'use_fates'});
 	add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_inventory_init',     'use_fates'=>$nl_flags->{'use_fates'});
 	add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_inventory_ctrl_filename','use_fates'=>$nl_flags->{'use_fates'});
+	add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_cohort_age_tracking','use_fates'=>$nl_flags->{'use_fates'});
         add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_paramfile', 'phys'=>$nl_flags->{'phys'});
     }
 }
@@ -3683,6 +3710,7 @@ sub check_use_case_name {
                   "in namelist_files/use_cases/README\n";
   my $desc = "[a-zA-Z0-9]*";
   my $rcp  = "rcp[0-9\.]+";
+  my $rcp  = "(rcp|SSP)[0-9\.]+"; 
   if (      $use_case =~ /^[0-9]+-[0-9]+([a-zA-Z0-9_\.]*)_transient$/ ) {
     my $string = $1;
     if (      $string =~ /^_($rcp)_*($desc)$/ ) {

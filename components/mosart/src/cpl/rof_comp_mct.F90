@@ -7,7 +7,7 @@ module rof_comp_mct
 ! in MCT (Model Coupling Toolkit) format and converting it to use by MOSART
 
   use seq_flds_mod
-  use shr_kind_mod     , only : r8 => shr_kind_r8
+  use shr_kind_mod     , only : r8 => shr_kind_r8, SHR_KIND_CL
   use shr_file_mod     , only : shr_file_setLogUnit, shr_file_setLogLevel, &
                                 shr_file_getLogUnit, shr_file_getLogLevel, &
                                 shr_file_getUnit, shr_file_setIO
@@ -46,7 +46,7 @@ module rof_comp_mct
                                 index_r2x_Forr_rofl, index_r2x_Forr_rofi, &
                                 index_r2x_Flrr_flood, &
                                 index_r2x_Flrr_volr, index_r2x_Flrr_volrmch, &
-                                index_r2x_Flrr_supply
+                                index_r2x_Flrr_supply, index_r2x_Flrr_deficit
 
   use mct_mod
   use ESMF
@@ -103,7 +103,6 @@ contains
     integer :: lsize                                 ! size of attribute vector
     integer :: g,i,j,n                               ! indices
     logical :: exists                                ! true if file exists
-    logical :: no_taskmap_output                     ! true then do not write out task-to-node mapping
     logical :: verbose_taskmap_output                ! true then use verbose task-to-node mapping format
     integer :: nsrest                                ! restart type
     integer :: ref_ymd                               ! reference date (YYYYMMDD)
@@ -179,8 +178,6 @@ contains
 
     if (info_taskmap_comp > 0) then
 
-       no_taskmap_output = .false.
-
        if (info_taskmap_comp == 1) then
           verbose_taskmap_output = .false.
        else
@@ -197,19 +194,13 @@ contains
           call shr_sys_flush(iulog)
        endif
 
-    else
-
-       no_taskmap_output = .true.
-       verbose_taskmap_output = .false.
+       call t_startf("shr_taskmap_write")
+       call shr_taskmap_write(iulog, mpicom_rof,                    &
+                              'ROF #'//trim(adjustl(c_inst_index)), &
+                              verbose=verbose_taskmap_output        )
+       call t_stopf("shr_taskmap_write")
 
     endif
-
-    call t_startf("shr_taskmap_write")
-    call shr_taskmap_write(iulog, mpicom_rof,                    &
-                           'ROF #'//trim(adjustl(c_inst_index)), &
-                           verbose=verbose_taskmap_output,       &
-                           no_output=no_taskmap_output           )
-    call t_stopf("shr_taskmap_write")
 
     ! Initialize mosart
     call seq_timemgr_EClockGetData(EClock,                               &
@@ -570,6 +561,7 @@ contains
     ! LOCAL VARIABLES
     integer :: n2, n, nt, begr, endr, nliq, nfrz
     real(R8) :: tmp1, tmp2
+    real(R8) :: shum
     character(len=32), parameter :: sub = 'rof_import_mct'
     !---------------------------------------------------------------------------
     
@@ -603,7 +595,7 @@ contains
        else
           rtmCTL%qdto(n,nliq) = 0.0_r8
        endif
-      rtmCTL%qdem(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_demand,n2) * (rtmCTL%area(n)*0.001_r8)
+       rtmCTL%qdem(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_demand,n2) * (rtmCTL%area(n)*0.001_r8)
        rtmCTL%qsur(n,nfrz) = x2r_r%rAttr(index_x2r_Flrl_rofi,n2) * (rtmCTL%area(n)*0.001_r8)
        rtmCTL%qsub(n,nfrz) = 0.0_r8
        rtmCTL%qgwl(n,nfrz) = 0.0_r8
@@ -624,6 +616,8 @@ contains
           THeat%forc_lwrad(n)= x2r_r%rAttr(index_x2r_Faxa_lwdn ,n2)
           THeat%forc_solar(n)= x2r_r%rAttr(index_x2r_Faxa_swvdr,n2) + x2r_r%rAttr(index_x2r_Faxa_swvdf,n2) + &
                                x2r_r%rAttr(index_x2r_Faxa_swndr,n2) + x2r_r%rAttr(index_x2r_Faxa_swndf,n2)
+          shum = x2r_r%rAttr(index_x2r_Sa_shum,n2)
+          THeat%forc_vp(n)   = shum * THeat%forc_pbot(n)  / (0.622_r8 + 0.378_r8 * shum)
        end if
     enddo
 
@@ -720,9 +714,11 @@ contains
        r2x_r%rattr(index_r2x_Flrr_flood,ni)   = -rtmCTL%flood(n) / (rtmCTL%area(n)*0.001_r8)
        r2x_r%rattr(index_r2x_Flrr_volr,ni)    = (Trunoff%wr(n,nliq) + Trunoff%wt(n,nliq)) / rtmCTL%area(n)
        r2x_r%rattr(index_r2x_Flrr_volrmch,ni) = Trunoff%wr(n,nliq) / rtmCTL%area(n)
-       r2x_r%rattr(index_r2x_Flrr_supply,ni)  = 0._r8 
+       r2x_r%rattr(index_r2x_Flrr_supply,ni)  = 0._r8
+       r2x_r%rattr(index_r2x_Flrr_deficit,ni)  = 0._r8
        if (wrmflag) then
-          r2x_r%rattr(index_r2x_Flrr_supply,ni)  = StorWater%Supply(n) / (rtmCTL%area(n)*0.001_r8)   !converted to mm/s (Tian)
+          r2x_r%rattr(index_r2x_Flrr_supply,ni)  = StorWater%Supply(n) / (rtmCTL%area(n)*0.001_r8)   !converted to mm/s
+          r2x_r%rattr(index_r2x_Flrr_deficit,ni)  = (abs(rtmCTL%qdem(n,nliq)) - abs(StorWater%Supply(n))) / (rtmCTL%area(n)*0.001_r8)   !send deficit back to ELM
        endif
     end do
 

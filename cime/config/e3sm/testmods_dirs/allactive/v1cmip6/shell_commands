@@ -1,6 +1,0 @@
-#!/bin/bash
-./xmlchange --append CAM_CONFIG_OPTS='-cosp'
-./xmlchange --id BUDGETS --val TRUE
-./xmlchange PIO_TYPENAME=netcdf
-if [ `./xmlquery --value MACH` == cetus ]||[ `./xmlquery --value MACH` == mira ]; then sed s/64M/128M/ env_mach_specific.xml >tmp && mv tmp env_mach_specific.xml; fi
-

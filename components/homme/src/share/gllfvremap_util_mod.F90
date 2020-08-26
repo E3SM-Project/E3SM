@@ -3,6 +3,22 @@
 #endif
 
 module gllfvremap_util_mod
+  ! Utilities and extended tests for high-order, mass-conserving, optionally
+  ! shape-preserving
+  !     FV physics <-> GLL dynamics
+  ! remap.
+  !
+  ! Tests operate at the level of gllfvremap_mod's API.
+  !
+  ! Utilities are to support homme_tool. So far these focus on creating
+  ! topography files.
+  !   A topography file contains FV data -- PHIS, SGH*, etc -- plus ncol_d and
+  ! PHIS_d that are the original GLL data. The FV PHIS data are consistent with
+  ! PHIS_d in the sense that an integral of either one over a finite volume
+  ! subcell has the same value.
+  !
+  ! AMB 2019/07-2020/06 Initial
+
   use hybrid_mod, only: hybrid_t
   use kinds, only: real_kind
   use dimensions_mod, only: nelemd, np, nlev, nlevp, qsize
@@ -34,8 +50,12 @@ module gllfvremap_util_mod
   public :: &
        ! Test gllfvremap's main API.
        gfr_check_api, &
-       ! Convert a topography file from pure GLL to physgrid format.
-       gfr_convert_topo
+       ! Convert a topography file from pure GLL to physgrid format, as a
+       ! convenience to avoid going through the full tool chain; see next
+       ! function.
+       gfr_convert_topo, &
+       ! One part of the full physgrid from-scratch topography tool chain.
+       gfr_pgn_to_smoothed_topo
 
 contains
   
@@ -98,11 +118,12 @@ contains
     real(kind=real_kind) :: wr(np,np,nlev,2)
     integer :: i, j, k, q, d, tl
 
+    elem%state%Q(:,:,:,1) = zero ! moisture tracer is 0
     do j = 1,np
        do i = 1,np
           p = change_coordinates(elem%spherep(i,j))
           do k = 1,nlev
-             do q = 1,qsize
+             do q = 2,qsize
                 elem%state%Q(i,j,k,q) = one + &
                      half*sin((half + modulo(q,2))*p%x)* &
                      sin((half + modulo(q,3))*1.5d0*p%y)* &
@@ -177,15 +198,15 @@ contains
     character(32) :: msg
 
     type (cartesian3D_t) :: p
-    real(kind=real_kind) :: wr(np,np,nlev), tend(np,np,nlev), f, a, b, c, rd, &
+    real(kind=real_kind) :: wg(np,np,nlev), tend(np,np,nlev), f, a, b, c, rd, &
          qmin1(qsize+3), qmax1(qsize+3), qmin2, qmax2, mass1, mass2, &
-         wr1(np,np,nlev), wr2(np,np,nlev), dt, wr3(np*np), pressure(np,np,nlev), &
-         p_fv(np,np,nlev)
-    integer :: nf, ncol, nt1, nt2, ie, i, j, k, d, q, qi, tl, col
+         wg1(np,np,nlev), wg2(np,np,nlev), dt, pressure(np,np,nlev), &
+         p_fv(np*np,nlev), wf1(np*np,nlev), wf2(np*np,nlev), wf3(np*np)
+    integer :: nf, nf2, nt1, nt2, ie, i, j, k, d, q, qi, tl, col
     logical :: domass
 
     nf = nphys
-    ncol = nf*nf
+    nf2 = nf*nf
     nt1 = 1
     nt2 = 2
     dt = 0.42_real_kind
@@ -216,8 +237,9 @@ contains
        do ie = nets,nete
           if (ftype == 0) then
              do k = 1,nlev
-                wr(:nf,:nf,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
-                     (hvcoord%hybi(k+1) - hvcoord%hybi(k))*reshape(pg_data%ps(:,ie), (/nf,nf/))
+                wg(:nf,:nf,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
+                                (hvcoord%hybi(k+1) - hvcoord%hybi(k))* &
+                                reshape(pg_data%ps(:,ie), (/nf,nf/))
              end do
           end if
           do j = 1,nf
@@ -228,10 +250,10 @@ contains
                 pg_data%uv(col,:,:,ie) = f/dt
                 pg_data%T(col,:,ie) = f/dt
                 ! no moisture adjustment => no dp3d adjustment
+                pg_data%q(col,:,1,ie) = zero
                 if (ftype == 0) then
-                   pg_data%q(col,:,1,ie) = zero
                    do q = 2,qsize
-                      pg_data%q(col,:,q,ie) = f*wr(i,j,:)/dt
+                      pg_data%q(col,:,q,ie) = f*wg(i,j,:)/dt
                    end do
                 else
                    pg_data%q(col,:,2:qsize,ie) = pg_data%q(col,:,2:qsize,ie) + f
@@ -264,10 +286,10 @@ contains
     mass1 = zero; mass2 = zero
     qmin1 = one; qmax1 = -one
     qmin2 = one; qmax2 = -one
-    do q = 1, qsize+4
+    do q = 2, qsize+4
        do ie = nets,nete
           do k = 1,nlev
-             wr(:,:,k) = elem(ie)%spheremp
+             wg(:,:,k) = elem(ie)%spheremp
           end do
           if (tendency .and. q > 1) then
              do j = 1,np
@@ -281,16 +303,16 @@ contains
              qi = q - qsize
              if (qi < 3) then
                 global_shared_buf(ie,1) = &
-                     sum(wr*( &
+                     sum(wg*( &
                      elem(ie)%state%v(:,:,qi,:,nt2) - &
                      (elem(ie)%state%v(:,:,qi,:,nt1) + tend))**2)
                 global_shared_buf(ie,2) = &
-                     sum(wr*(elem(ie)%state%v(:,:,qi,:,nt1) + tend)**2)
+                     sum(wg*(elem(ie)%state%v(:,:,qi,:,nt1) + tend)**2)
              elseif (qi == 3) then
-                call get_temperature(elem(ie), wr1, hvcoord, nt1)
-                call get_temperature(elem(ie), wr2, hvcoord, nt2)
-                global_shared_buf(ie,1) = sum(wr*(wr2 - (wr1 + tend))**2)
-                global_shared_buf(ie,2) = sum(wr*(wr1 + tend)**2)
+                call get_temperature(elem(ie), wg1, hvcoord, nt1)
+                call get_temperature(elem(ie), wg2, hvcoord, nt2)
+                global_shared_buf(ie,1) = sum(wg*(wg2 - (wg1 + tend))**2)
+                global_shared_buf(ie,2) = sum(wg*(wg1 + tend)**2)
              else
                 ! Test omega_p, phis, ps. These were remapped to FV
                 ! but don't get remapped to GLL. Make sure they all
@@ -298,38 +320,41 @@ contains
                 ! machine precision.
                 !  omega_p
                 !  True omega on GLL and FV grids.
-                call get_field(elem(ie), 'omega', wr1, hvcoord, nt1, -1)
-                call gfr_g2f_scalar(ie, elem(ie)%metdet, wr1, wr2)
-                !  Convert omega_p on FV grid to omega. When omega_p
-                !  is removed, remove the pressure calculations here.
+                call get_field(elem(ie), 'omega', wg1, hvcoord, nt1, -1)
+                call gfr_g2f_scalar(ie, elem(ie)%metdet, wg1, wf1)
+                !  Convert omega_p on FV grid to omega for preqx
                 call get_field(elem(ie), 'p', pressure, hvcoord, nt1, -1)
                 call gfr_g2f_scalar(ie, elem(ie)%metdet, pressure, p_fv)
-                wr1(:nf,:nf,:) = reshape(pg_data%omega_p(:,:,ie), (/nf,nf,nlev/))*p_fv(:nf,:nf,:)
+#ifdef MODEL_THETA_L
+                wf2(:nf2,:) = pg_data%omega_p(:,:,ie)
+#else                
+                wf2(:nf2,:) = pg_data%omega_p(:,:,ie)*p_fv(:nf2,:)
+#endif                
                 !  Compare.
-                global_shared_buf(ie,1) = sum((wr1(:nf,:nf,:) - wr2(:nf,:nf,:))**2)
-                global_shared_buf(ie,2) = sum(wr2(:nf,:nf,:)**2)
+                global_shared_buf(ie,1) = sum((wf2(:nf2,:) - wf1(:nf2,:))**2)
+                global_shared_buf(ie,2) = sum(wf1(:nf2,:)**2)
                 !  phis
-                call gfr_dyn_to_fv_phys_topo_elem(elem, ie, wr3)
+                call gfr_dyn_to_fv_phys_topo_elem(elem, ie, wf3)
                 global_shared_buf(ie,1) = global_shared_buf(ie,1) + &
-                     sum((wr3(:ncol) - pg_data%zs(:,ie))**2)
+                     sum((wf3(:nf2) - pg_data%zs(:,ie))**2)
                 global_shared_buf(ie,2) = global_shared_buf(ie,2) + &
                      sum(pg_data%zs(:,ie)**2)
                 !  ps
-                wr(:,:,1) = elem(ie)%state%ps_v(:,:,nt1)
-                wr(:nf,:nf,2) = reshape(pg_data%ps(:,ie), (/nf,nf/))
-                call gfr_g2f_scalar(ie, elem(ie)%metdet, wr(:,:,1:1), wr(:,:,3:3))
+                wg(:,:,1) = elem(ie)%state%ps_v(:,:,nt1)
+                wf1(:nf2,2) = pg_data%ps(:,ie)
+                call gfr_g2f_scalar(ie, elem(ie)%metdet, wg(:,:,1:1), wf1(:,3:3))
                 global_shared_buf(ie,1) = global_shared_buf(ie,1) + &
-                     sum((wr(:nf,:nf,2) - wr(:nf,:nf,3))**2)
+                     sum((wf1(:nf2,2) - wf1(:nf2,3))**2)
                 global_shared_buf(ie,2) = global_shared_buf(ie,2) + &
-                     sum(wr(:nf,:nf,2)**2)
+                     sum(wf1(:nf2,2)**2)
              end if
           else
              global_shared_buf(ie,1) = &
-                  sum(wr*( &
+                  sum(wg*( &
                   elem(ie)%state%Q(:,:,:,q) - &
                   (elem(ie)%state%Qdp(:,:,:,q,nt1)/elem(ie)%state%dp3d(:,:,:,nt1) + tend))**2)
              global_shared_buf(ie,2) = &
-                  sum(wr*( &
+                  sum(wg*( &
                   elem(ie)%state%Qdp(:,:,:,q,nt1)/elem(ie)%state%dp3d(:,:,:,nt1) + tend)**2)
           end if
        end do
@@ -399,19 +424,19 @@ contains
     do ie = nets,nete
        if (ftype == 0) then
           do k = 1,nlev
-             wr(:nf,:nf,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
+             wg(:nf,:nf,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
                   (hvcoord%hybi(k+1) - hvcoord%hybi(k))*reshape(pg_data%ps(:,ie), (/nf,nf/))
           end do
        end if
-       pg_data%q(:ncol,:,:,ie) = two*pg_data%q(:ncol,:,:,ie)
+       pg_data%q(:nf2,:,:,ie) = two*pg_data%q(:nf2,:,:,ie)
        do q = 2,qsize
           qmin1(q) = min(qmin1(q), minval(elem(ie)%state%Q(:,:,1,q)))
           qmax1(q) = max(qmax1(q), maxval(elem(ie)%state%Q(:,:,1,q)))
-          qmin1(q) = min(qmin1(q), minval(pg_data%q(:ncol,1,q,ie)))
-          qmax1(q) = max(qmax1(q), maxval(pg_data%q(:ncol,1,q,ie)))
+          qmin1(q) = min(qmin1(q), minval(pg_data%q(:nf2,1,q,ie)))
+          qmax1(q) = max(qmax1(q), maxval(pg_data%q(:nf2,1,q,ie)))
           if (ftype == 0) then
-             pg_data%q(:ncol,:,q,ie) = &
-                  half*reshape(wr(:nf,:nf,:), (/ncol,nlev/))*pg_data%q(:ncol,:,q,ie)/dt
+             pg_data%q(:nf2,:,q,ie) = &
+                  half*reshape(wg(:nf,:nf,:), (/nf2,nlev/))*pg_data%q(:nf2,:,q,ie)/dt
           end if
        end do
     end do
@@ -427,7 +452,7 @@ contains
        qmin2 = one; qmax2 = -one
        do ie = nets,nete
           do k = 1,nlev
-             wr(:,:,k) = elem(ie)%spheremp
+             wg(:,:,k) = elem(ie)%spheremp
           end do
           if (q > qsize) then
              qi = q - qsize
@@ -435,25 +460,25 @@ contains
                 ! With contravariant-velocity approach, we don't
                 ! expect mass conservation.
                 domass = .false.
-                global_shared_buf(ie,3) = sum(wr(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)* &
+                global_shared_buf(ie,3) = sum(wg(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)* &
                      elem(ie)%derived%FM(:,:,qi,1))
-                global_shared_buf(ie,4) = sum(wr(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)* &
+                global_shared_buf(ie,4) = sum(wg(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)* &
                      elem(ie)%state%v(:,:,qi,1,nt1))
                 global_shared_buf(ie,1) = &
-                     sum(wr*( &
+                     sum(wg*( &
                      elem(ie)%derived%FM(:,:,qi,:) - &
                      elem(ie)%state%v(:,:,qi,:,nt1))**2)
                 global_shared_buf(ie,2) = &
-                     sum(wr*elem(ie)%state%v(:,:,qi,:,nt1)**2)
+                     sum(wg*elem(ie)%state%v(:,:,qi,:,nt1)**2)
              else
-                call get_temperature(elem(ie), wr1, hvcoord, nt1)
-                global_shared_buf(ie,1) = sum(wr*(elem(ie)%derived%FT - wr1)**2)
-                global_shared_buf(ie,2) = sum(wr*wr1**2)                
-                wr1 = wr1*(elem(ie)%state%dp3d(:,:,:,nt1)/p0)**kappa
-                global_shared_buf(ie,4) = sum(wr(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)*wr1(:,:,1))
-                wr1 = elem(ie)%derived%FT
-                wr1 = wr1*(elem(ie)%state%dp3d(:,:,:,nt1)/p0)**kappa
-                global_shared_buf(ie,3) = sum(wr(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)*wr1(:,:,1))
+                call get_temperature(elem(ie), wg1, hvcoord, nt1)
+                global_shared_buf(ie,1) = sum(wg*(elem(ie)%derived%FT - wg1)**2)
+                global_shared_buf(ie,2) = sum(wg*wg1**2)                
+                wg1 = wg1*(p0/elem(ie)%state%dp3d(:,:,:,nt1))**kappa
+                global_shared_buf(ie,4) = sum(wg(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)*wg1(:,:,1))
+                wg1 = elem(ie)%derived%FT
+                wg1 = wg1*(p0/elem(ie)%state%dp3d(:,:,:,nt1))**kappa
+                global_shared_buf(ie,3) = sum(wg(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)*wg1(:,:,1))
              end if
           else
              if (ftype == 0) then
@@ -465,17 +490,17 @@ contains
              qmin2 = min(qmin2, minval(elem(ie)%derived%FQ(:,:,1,q)))
              qmax2 = max(qmax2, maxval(elem(ie)%derived%FQ(:,:,1,q)))
              ! Mass in level 1.
-             global_shared_buf(ie,3) = sum(wr(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)* &
+             global_shared_buf(ie,3) = sum(wg(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)* &
                   elem(ie)%derived%FQ(:,:,1,q))
-             global_shared_buf(ie,4) = sum(wr(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)* &
+             global_shared_buf(ie,4) = sum(wg(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)* &
                   two*elem(ie)%state%Q(:,:,1,q))
              ! l2 error in volume.
              global_shared_buf(ie,1) = &
-                  sum(wr*( &
+                  sum(wg*( &
                   elem(ie)%derived%FQ(:,:,:,q) - &
                   two*elem(ie)%state%Q(:,:,:,q))**2)
              global_shared_buf(ie,2) = &
-                  sum(wr*elem(ie)%state%Q(:,:,:,q)**2)
+                  sum(wg*elem(ie)%state%Q(:,:,:,q)**2)
           end if
        end do
        call wrap_repro_sum(nvars=4, comm=hybrid%par%comm)
@@ -532,10 +557,11 @@ contains
              if (hybrid%ithr == 0) then
                 ftype = 2
                 if (ftype_idx == 2) ftype = 0
-                ! check=.true. means that the remap routines to
+                ! check=2 means that the remap routines due
                 ! element-level verification of properties and output
-                ! messages if a property fails.
-                call gfr_init(hybrid%par, elem, nphys, .true., boost_pg1)
+                ! messages if a property fails. check >= 1 means that
+                ! global properties are checked.
+                call gfr_init(hybrid%par, elem, nphys, 2, boost_pg1)
                 call init(nphys)
              end if
              !$omp barrier
@@ -560,16 +586,11 @@ contains
 
   subroutine gfr_convert_topo(par, elem, nphys, intopofn, outtopoprefix)
     ! Read a pure-GLL topography file. Remap all fields to physgrid. Write a new
-    ! topography file that contains physgrid data, plus ncol_d and PHIS_d that
-    ! are the original GLL data.
-    !   The resulting file has physgrid PHIS data that are consistent with
-    ! PHIS_d in the sense that an integral of either one over a finite volume
-    ! subcell has the same value.
 
 #ifndef CAM
     use common_io_mod, only: varname_len
     use gllfvremap_mod, only: gfr_init, gfr_finish, gfr_dyn_to_fv_phys_topo_data, gfr_f_get_latlon
-    use interpolate_driver_mod, only: pio_read_gll_topo_file, pio_write_physgrid_topo_file
+    use interpolate_driver_mod, only: read_gll_topo_file, write_physgrid_topo_file
     use physical_constants, only: dd_pi
 #endif
     use parallel_mod, only: parallel_t
@@ -586,11 +607,11 @@ contains
     character(len=varname_len) :: fieldnames(5)
 
     nf2 = nphys*nphys
-    call gfr_init(par, elem, nphys, check=.true.)
+    call gfr_init(par, elem, nphys)
 
     allocate(gll_fields(np,np,nelemd,5), pg_fields(nf2,nelemd,5), latlon(nf2,nelemd,2))
 
-    call pio_read_gll_topo_file(intopofn, elem, par, gll_fields, fieldnames)
+    call read_gll_topo_file(intopofn, elem, par, gll_fields, fieldnames)
 
     do vari = 1,size(fieldnames)
        if (trim(fieldnames(vari)) == 'PHIS') then
@@ -622,11 +643,112 @@ contains
 
     call gfr_finish()
 
-    call pio_write_physgrid_topo_file(intopofn, outtopoprefix, elem, par, &
+    call write_physgrid_topo_file(intopofn, outtopoprefix, elem, par, &
          gll_fields, pg_fields, latlon, fieldnames, nphys, &
          'Converted from '// trim(intopofn) // ' by HOMME gfr_convert_topo')
 
     deallocate(gll_fields, pg_fields, latlon)
 #endif
   end subroutine gfr_convert_topo
+
+  function gfr_pgn_to_smoothed_topo(par, elem, output_nphys, intopofn, outtopoprefix) result(stat)
+#ifndef CAM
+    use common_io_mod, only: varname_len
+    use gllfvremap_mod, only: gfr_init, gfr_finish, gfr_fv_phys_to_dyn_topo, &
+         gfr_dyn_to_fv_phys_topo, gfr_f_get_latlon
+    use interpolate_driver_mod, only: read_physgrid_topo_file, write_physgrid_smoothed_phis_file
+    use physical_constants, only: dd_pi
+    use edge_mod, only: edgevpack_nlyr, edgevunpack_nlyr, edge_g
+    use bndry_mod, only: bndry_exchangev
+    use prim_driver_base, only: smooth_topo_datasets
+    use hybrid_mod, only: hybrid_t, hybrid_create
+#endif
+    use parallel_mod, only: parallel_t
+
+    type (parallel_t), intent(in) :: par
+    type (element_t), intent(inout) :: elem(:)
+    integer, intent(in) :: output_nphys
+    character(*), intent(in) :: intopofn, outtopoprefix
+    integer :: stat
+
+#ifndef CAM
+    real(real_kind), allocatable :: gll_fields(:,:,:,:), pg_fields(:,:,:)
+    integer :: intopo_nphys, ie, i, j, k, nvar, nf2
+    character(len=varname_len) :: fieldnames(1)
+    real(real_kind) :: rad2deg
+    logical :: write_latlon
+    type(hybrid_t) :: hybrid
+
+    write_latlon = .false.
+
+    nvar = 1
+    if (write_latlon) nvar = 3
+
+    allocate(gll_fields(np,np,nelemd,nvar), pg_fields(np*np,nelemd,nvar))
+
+    ! Read the unsmoothed physgrid topo data from cube_to_target's first
+    ! run. Here, pg4 will give the best quality.
+    fieldnames(1) = 'PHIS'
+    call read_physgrid_topo_file(intopofn, elem, par, fieldnames, intopo_nphys, pg_fields, stat)
+    if (stat /= 0) return
+
+    ! Map this topo field to GLL.
+    call gfr_init(par, elem, intopo_nphys)
+    call gfr_fv_phys_to_dyn_topo(par, elem, pg_fields(:,:,1))
+    do ie = 1,nelemd
+       call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%phis, 1, 0, 1)
+    end do
+    call bndry_exchangeV(par, edge_g)
+    do ie = 1,nelemd
+       call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%phis, 1, 0, 1)
+    end do
+    call gfr_finish()
+
+    ! Smooth on the GLL grid.
+    hybrid = hybrid_create(par, 0, 1)
+    call smooth_topo_datasets(elem, hybrid, 1, nelemd)
+    do ie = 1,nelemd
+       gll_fields(:,:,ie,1) = elem(ie)%state%phis
+    end do
+
+    ! Map the GLL data to the target physgrid, e.g., pg2.
+    call gfr_init(par, elem, output_nphys)
+    call gfr_dyn_to_fv_phys_topo(par, elem, pg_fields(:,:,1))
+    if (write_latlon) then
+       rad2deg = 180.0_real_kind/dd_pi
+       do ie = 1,nelemd
+          do j = 1,output_nphys
+             do i = 1,output_nphys
+                k = output_nphys*(j-1) + i
+                call gfr_f_get_latlon(ie, i, j, pg_fields(k,ie,2), pg_fields(k,ie,3))
+             end do
+          end do
+       end do
+       nf2 = output_nphys*output_nphys
+       pg_fields(:nf2,:,2:3) = pg_fields(:nf2,:,2:3)*rad2deg
+       do ie = 1,nelemd
+          do j = 1,np
+             do i = 1,np
+                gll_fields(i,j,ie,2) = elem(ie)%spherep(i,j)%lat*rad2deg
+                gll_fields(i,j,ie,3) = elem(ie)%spherep(i,j)%lon*rad2deg
+             end do
+          end do
+       end do
+    end if
+    call gfr_finish()
+
+    ! Write the netcdf file that will be used as the --smoothed-topography file
+    ! in the second run of cube_to_target. Only ncol, PHIS are needed for
+    ! this. We include PHIS_d for use in the final assembled GLL-physgrid topo
+    ! file. Optionally, we also include physgrid and GLL lat-lon data for easy
+    ! visualization using just this file.
+    call write_physgrid_smoothed_phis_file(outtopoprefix, elem, par, &
+         gll_fields, pg_fields, output_nphys, &
+         'Created from '// trim(intopofn) // ' by HOMME gfr_pgn_to_smoothed_topo', &
+         write_latlon)
+
+    deallocate(gll_fields, pg_fields)
+#endif
+    stat = 0
+  end function gfr_pgn_to_smoothed_topo
 end module gllfvremap_util_mod

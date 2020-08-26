@@ -255,7 +255,7 @@ contains
     use reduction_mod, only : ParallelMin,ParallelMax
     use physical_constants, only : rrearth, rearth,dd_pi
     use control_mod, only : nu, nu_q, nu_div, hypervis_order, nu_top, hypervis_power, &
-                            fine_ne, rk_stage_user, max_hypervis_courant, hypervis_scaling, dcmip16_mu,dcmip16_mu_s,dcmip16_mu_q
+                            fine_ne, max_hypervis_courant, hypervis_scaling, dcmip16_mu,dcmip16_mu_s,dcmip16_mu_q
     use control_mod, only : tstep_type
     use parallel_mod, only : abortmp, global_shared_buf, global_shared_sum
     use edgetype_mod, only : EdgeBuffer_t 
@@ -525,13 +525,10 @@ contains
      if (hybrid%masterthread) then
        write(iulog,'(a,f10.2)') 'CFL estimates in terms of S=time step stability region'
        write(iulog,'(a,f10.2)') '(i.e. advection w/leapfrog: S=1, viscosity w/forward Euler: S=2)'
-       if (rk_stage_user>0) then
-          write(iulog,'(a,f10.2,a)') 'SSP preservation (120m/s) RKSSP euler step dt  < S *', &
-               min_gw/(120.0d0*max_normDinv*rrearth),'s'
-       endif
-       if (qsize>0) &
-          write(iulog,'(a,f10.2,a)') 'Stability: advective (120m/s)   dt_tracer < S *',&
-               1/(120.0d0*max_normDinv*lambda_max*rrearth),'s'
+       write(iulog,'(a,f10.2,a)') 'SSP preservation (120m/s) RKSSP euler step dt  < S *', &
+            min_gw/(120.0d0*max_normDinv*rrearth),'s'
+       write(iulog,'(a,f10.2,a)') 'Stability: advective (120m/s)   dt_tracer < S *',&
+            1/(120.0d0*max_normDinv*lambda_max*rrearth),'s'
        write(iulog,'(a,f10.2,a)') 'Stability: advective (120m/s)   dt_tracer < S *', &
                                    1/(120.0d0*max_normDinv*lambda_max*rrearth),'s'
        write(iulog,'(a,f10.2,a)') 'Stability: gravity wave(342m/s)   dt_dyn  < S *', &

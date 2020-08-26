@@ -9,7 +9,7 @@ module dcmip12_wrapper
 
 ! Implementation of the dcmip2012 dycore tests for the preqx dynamics target
 
-use control_mod,          only: test_case, dcmip4_moist, dcmip4_X
+use control_mod,          only: test_case, dcmip4_moist, dcmip4_X, vanalytic
 use dcmip2012_test1_2_3,  only: test1_advection_deformation, test1_advection_hadley, test1_advection_orography, &
                                 test2_steady_state_mountain, test2_schaer_mountain,test3_gravity_wave
 use dcmip2012_test1_conv, only: test1_conv_advection_deformation
@@ -631,9 +631,19 @@ subroutine dcmip2012_test4_init(elem,hybrid,hvcoord,nets,nete)
   real(rl):: p,z,phis,u,v,w,T,ps,rho,dp    !pointwise field values
   real(rl):: q,q1,q2,qarray(3),pressure
   integer :: qs
+  real(rl):: ztop    = 10000.d0
+  real(rl):: H       = Rd * 300d0 / g
 
   if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2012 test 4: baroclinic wave'
 
+  if (vanalytic==1) then
+     if (hybrid%masterthread) write(iulog,*) 'using analytic veritcal coordinates'
+     call get_evenly_spaced_z(zi,zm, 0.0_rl,ztop)                                    ! get evenly spaced z levels
+     hvcoord%etai  = exp(-zi/H)                                            ! set eta levels from z in orography-free region
+     call set_hybrid_coefficients(hvcoord,hybrid,  hvcoord%etai(1), 1.0_rl)! set hybrid A and B from eta levels
+     call set_layer_locations(hvcoord, .true., hybrid%masterthread)
+  endif
+     
   ! set initial conditions
 
   do ie = nets,nete; 
@@ -728,7 +738,7 @@ subroutine set_hybrid_coefficients(hv, hybrid, eta_t, c)
     tmp        = max( (hv%etai(k)-eta_c)/(1.0-eta_c), 0.0_rl)
     hv%hybi(k) = tmp**c
     hv%hyai(k) = hv%etai(k) - hv%hybi(k)
-    if(hybrid%par%masterproc) write(*,'(i4,a,f18.15,a,f18.15,a,f18.15)') &
+    if(hybrid%masterthread) write(*,'(i4,a,f18.15,a,f18.15,a,f18.15)') &
          k,': etai=',hv%etai(k),' Ai=',hv%hyai(k),' Bi=',hv%hybi(k);
 
     ! get derivatives of hybrid coefficients

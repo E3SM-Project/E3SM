@@ -173,6 +173,12 @@ program convterr
   call parse_arguments(target_grid_file      , input_topography_file   , &
                        output_topography_file, smoothed_topography_file, &
                        lsmooth_terr                                      )
+
+  if (lsmooth_terr) then
+     status = nf_open(trim(smoothed_topography_file), 0, ncid)
+     IF (STATUS .NE. NF_NOERR) CALL HANDLE_ERR(STATUS)
+     status = nf_close(ncid)
+  end if
                        
   !
   !*********************************************************
@@ -566,6 +572,7 @@ program convterr
         END DO
         DEALLOCATE(terr_smooth)
       END IF
+      status = nf_close(ncid)
     ELSE
       WRITE(*,*) "unstested software - uncomment this line of you know what you are doing!"
       STOP
@@ -1686,7 +1693,7 @@ SUBROUTINE overlap_weights(weights_lgr_index_all,weights_eul_index_all,weights_a
   tmp = 0.0
   jall = 1
   DO i=1,ntarget
-    WRITE(*,*) "cell",i,"  ",100.0*DBLE(i)/DBLE(ntarget),"% done"
+    if (mod(i,1000) == 0) WRITE(*,*) "cell",i,"  ",100.0*DBLE(i)/DBLE(ntarget),"% done"
     !
     !---------------------------------------------------          
     !

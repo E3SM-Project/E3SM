@@ -491,6 +491,8 @@ module VegetationDataType
     real(r8), pointer :: m_gresp_storage_to_litter_fire      (:) => null()    ! (gC/m2/s) from gresp_storage to litter C due to fire                       
     real(r8), pointer :: m_gresp_xfer_to_litter_fire         (:) => null()    ! (gC/m2/s) from gresp_xfer to litter C due to fire                       
     real(r8), pointer :: m_cpool_to_litter_fire              (:) => null()    ! (gC/m2/s) from cpool to litter C due to fire              
+
+  
                                                                  
     ! phenology fluxes from transfer pools                       
     real(r8), pointer :: grainc_xfer_to_grainc               (:) => null()    ! grain C growth from storage for prognostic crop(gC/m2/s)
@@ -808,8 +810,6 @@ module VegetationDataType
     real(r8), pointer :: livecrootn_to_retransn              (:)   => null()  ! live coarse root N to retranslocated N pool (gN/m2/s)
     ! summary (diagnostic) flux variables, not involved in mass balance
     real(r8), pointer :: ndeploy                             (:)   => null()  ! total N deployed to growth and storage (gN/m2/s)
-    real(r8), pointer :: ninputs                             (:)   => null()  ! total N inputs to pft-level (gN/m2/s)
-    real(r8), pointer :: noutputs                            (:)   => null()  ! total N outputs from pft-level (gN/m2/s)
     real(r8), pointer :: wood_harvestn                       (:)   => null()  ! total N losses to wood product pools (gN/m2/s)
     ! deposition fluxes
     real(r8), pointer :: nfix_to_plantn                      (:)   => null()  ! nitrogen fixation goes to plant
@@ -982,8 +982,6 @@ module VegetationDataType
     real(r8), pointer :: livecrootp_to_deadcrootp            (:)     ! live coarse root P turnover (gP/m2/s)
     real(r8), pointer :: livecrootp_to_retransp              (:)     ! live coarse root P to retranslocated P pool (gP/m2/s)
     real(r8), pointer :: pdeploy                             (:)     ! total P deployed to growth and storage (gP/m2/s)
-    real(r8), pointer :: pinputs                             (:)     ! total P inputs to pft-level (gP/m2/s)
-    real(r8), pointer :: poutputs                            (:)     ! total P outputs from pft-level (gP/m2/s)
     real(r8), pointer :: wood_harvestp                       (:)     ! total P losses to wood product pools (gP/m2/s)
     real(r8), pointer :: biochem_pmin_to_plant               (:)     ! biochemical P mineralization directly goes to plant (gP/m2/s)
     real(r8), pointer :: crop_seedp_to_leaf                  (:)     ! (gP/m2/s) seed source to leaf, for crops
@@ -6208,6 +6206,11 @@ module VegetationDataType
             avgflag='A', long_name='cpool fire mortality to litter', &
             ptr_patch=this%m_cpool_to_litter_fire, default='inactive')
 
+       this%m_cpool_to_litter(begp:endp) = spval
+       call hist_addfld1d (fname='M_CPOOL_TO_LITTER', units='gC/m^2/s', &
+            avgflag='A', long_name='cpool mortality to litter', &
+            ptr_patch=this%m_cpool_to_litter, default='inactive')
+
        this%leafc_xfer_to_leafc(begp:endp) = spval
        call hist_addfld1d (fname='LEAFC_XFER_TO_LEAFC', units='gC/m^2/s', &
             avgflag='A', long_name='leaf C growth from storage', &
@@ -7824,7 +7827,7 @@ module VegetationDataType
        this%dwt_prod100c_gain(begp:endp) = spval
        call hist_addfld1d (fname='C14_DWT_PROD100C_GAIN_PATCH', units='gC14/m^2/s', &
             avgflag='A', long_name='C14 landcover change-driven addition to 100-yr wood product pool', &
-            ptr_patch=this%dwt_prod10c_gain, default='inactive')
+            ptr_patch=this%dwt_prod100c_gain, default='inactive')
 
        this%dwt_seedc_to_leaf(begp:endp) = spval
        call hist_addfld1d (fname='C14_DWT_SEEDC_TO_LEAF_PATCH', units='gC14/m^2/s', &
@@ -8070,12 +8073,10 @@ module VegetationDataType
             this%psnshade_to_cpool(p)
 
        ! maintenance respiration (MR)
-       if ( trim(isotope) == 'c13' .or. trim(isotope) == 'c14') then
-          this%leaf_mr(p)      = this%leaf_curmr(p)      + this%leaf_xsmr(p)
-          this%froot_mr(p)     = this%froot_curmr(p)     + this%froot_xsmr(p)
-          this%livestem_mr(p)  = this%livestem_curmr(p)  + this%livestem_xsmr(p)
-          this%livecroot_mr(p) = this%livecroot_curmr(p) + this%livecroot_xsmr(p)
-       endif
+       this%leaf_mr(p)      = this%leaf_curmr(p)      + this%leaf_xsmr(p)
+       this%froot_mr(p)     = this%froot_curmr(p)     + this%froot_xsmr(p)
+       this%livestem_mr(p)  = this%livestem_curmr(p)  + this%livestem_xsmr(p)
+       this%livecroot_mr(p) = this%livecroot_curmr(p) + this%livecroot_xsmr(p)
 
        this%mr(p)  = &
             this%leaf_mr(p)     + &
@@ -8881,8 +8882,6 @@ module VegetationDataType
     allocate(this%livecrootn_to_deadcrootn            (begp:endp)) ; this%livecrootn_to_deadcrootn            (:) = nan
     allocate(this%livecrootn_to_retransn              (begp:endp)) ; this%livecrootn_to_retransn              (:) = nan
     allocate(this%ndeploy                             (begp:endp)) ; this%ndeploy                             (:) = nan
-    allocate(this%ninputs                             (begp:endp)) ; this%ninputs                             (:) = nan
-    allocate(this%noutputs                            (begp:endp)) ; this%noutputs                            (:) = nan
     allocate(this%wood_harvestn                       (begp:endp)) ; this%wood_harvestn                       (:) = nan
     allocate(this%fire_nloss                          (begp:endp)) ; this%fire_nloss                          (:) = nan
     allocate(this%npool_to_grainn                     (begp:endp)) ; this%npool_to_grainn                     (:) = nan
@@ -8919,6 +8918,7 @@ module VegetationDataType
     allocate(this%fire_nloss_litter                   (begp:endp)) ; this%fire_nloss_litter                   (:) = nan
     allocate(this%hrv_nloss_litter                    (begp:endp)) ; this%hrv_nloss_litter                    (:) = nan
     allocate(this%sen_nloss_litter                    (begp:endp)) ; this%sen_nloss_litter                    (:) = nan
+
     
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of veg_nf
@@ -9019,6 +9019,11 @@ module VegetationDataType
     call hist_addfld1d (fname='M_RETRANSN_TO_LITTER', units='gN/m^2/s', &
          avgflag='A', long_name='retranslocated N pool mortality', &
          ptr_patch=this%m_retransn_to_litter, default='inactive')
+
+    this%m_npool_to_litter_fire(begp:endp) = spval
+    call hist_addfld1d (fname='M_NPOOL_TO_LITTER_FIRE', units='gN/m^2/s', &
+         avgflag='A', long_name='N pool mortality due to fire', &
+         ptr_patch=this%m_npool_to_litter_fire, default='inactive')
 
     this%m_npool_to_litter(begp:endp) = spval
     call hist_addfld1d (fname='M_NPOOL_TO_LITTER', units='gN/m^2/s', &
@@ -9671,8 +9676,6 @@ module VegetationDataType
        this%livecrootn_to_deadcrootn(i)            = value_patch
        this%livecrootn_to_retransn(i)              = value_patch
        this%ndeploy(i)                             = value_patch
-       this%ninputs(i)                             = value_patch
-       this%noutputs(i)                            = value_patch
        this%wood_harvestn(i)                       = value_patch
        this%fire_nloss(i)                          = value_patch
        this%nfix_to_plantn(i)                      = value_patch
@@ -9998,8 +10001,6 @@ module VegetationDataType
     allocate(this%livecrootp_to_deadcrootp            (begp:endp)) ; this%livecrootp_to_deadcrootp            (:) = nan
     allocate(this%livecrootp_to_retransp              (begp:endp)) ; this%livecrootp_to_retransp              (:) = nan
     allocate(this%pdeploy                             (begp:endp)) ; this%pdeploy                             (:) = nan
-    allocate(this%pinputs                             (begp:endp)) ; this%pinputs                             (:) = nan
-    allocate(this%poutputs                            (begp:endp)) ; this%poutputs                            (:) = nan
     allocate(this%wood_harvestp                       (begp:endp)) ; this%wood_harvestp                       (:) = nan
     allocate(this%fire_ploss                          (begp:endp)) ; this%fire_ploss                          (:) = nan
     allocate(this%ppool_to_grainp                     (begp:endp)) ; this%ppool_to_grainp                     (:) = nan
@@ -10128,6 +10129,11 @@ module VegetationDataType
     call hist_addfld1d (fname='M_RETRANSP_TO_LITTER', units='gP/m^2/s', &
          avgflag='A', long_name='retranslocated P pool mortality', &
          ptr_patch=this%m_retransp_to_litter, default='inactive')
+
+    this%m_ppool_to_litter_fire(begp:endp) = spval
+    call hist_addfld1d (fname='M_PPOOL_TO_LITTER_FIRE', units='gP/m^2/s', &
+         avgflag='A', long_name='P pool mortality due to fire', &
+         ptr_patch=this%m_ppool_to_litter_fire, default='inactive')
 
     this%m_ppool_to_litter(begp:endp) = spval
     call hist_addfld1d (fname='M_PPOOL_TO_LITTER', units='gP/m^2/s', &
@@ -10782,8 +10788,6 @@ module VegetationDataType
        this%livecrootp_to_deadcrootp(i)            = value_patch
        this%livecrootp_to_retransp(i)              = value_patch
        this%pdeploy(i)                             = value_patch
-       this%pinputs(i)                             = value_patch
-       this%poutputs(i)                            = value_patch
        this%wood_harvestp(i)                       = value_patch
        this%fire_ploss(i)                          = value_patch
        this%biochem_pmin_to_plant(i)               = value_patch

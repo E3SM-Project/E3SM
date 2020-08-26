@@ -84,7 +84,7 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    use inital,           only: cam_initial
    use cam_restart,      only: cam_read_restart
    use stepon,           only: stepon_init
-   use physpkg,          only: phys_init, phys_register
+   use physpkg,          only: phys_init
    
    use dycore,           only: dycore_is
 #if (defined E3SM_SCM_REPLAY)
@@ -140,10 +140,6 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    !
    call trunc()
    !
-   ! Initialize index values for advected and non-advected tracers
-   !
-   call phys_register ()
-   !
    ! Determine input namelist filename
    !
    filein = "atm_in" // trim(inst_suffix)
@@ -173,7 +169,6 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
       call initialize_iop_history()
 #endif
    end if
-
 
    call phys_init( phys_state, phys_tend, pbuf2d,  cam_out )
 
@@ -460,11 +455,18 @@ subroutine cam_final( cam_out, cam_in )
    real(r8) :: mpi_wtime
 #endif
 
+   call t_startf ('phys_final')
    call phys_final( phys_state, phys_tend , pbuf2d)
+   call t_stopf ('phys_final')
+
+   call t_startf ('stepon_final')
    call stepon_final(dyn_in, dyn_out)
+   call t_stopf ('stepon_final')
 
    if(nsrest==0) then
+      call t_startf ('cam_initfiles_close')
       call cam_initfiles_close()
+      call t_stopf ('cam_initfiles_close')
    end if
 
    call hub2atm_deallocate(cam_in)

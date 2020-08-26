@@ -275,7 +275,7 @@ contains
 
   subroutine SetElemOffset(par,elem,GlobalUniqueColsP)
 #ifdef _MPI
-     use parallel_mod, only : mpi_sum
+     use parallel_mod, only : mpi_sum, MPI_IN_PLACE
 #endif
      type (parallel_t) :: par
      type (element_t) :: elem(:)
@@ -292,8 +292,8 @@ contains
      gOffset=0
 
      do ie=1,nelemd
-	ig = elem(ie)%GlobalId
-	gOffset(ig) = elem(ie)%idxP%NumUniquePts
+       ig = elem(ie)%GlobalId
+       gOffset(ig) = elem(ie)%idxP%NumUniquePts
      enddo
 #ifdef _MPI
      call MPI_Allreduce(gOffset,numElem2P,nelem,MPIinteger_t,MPI_SUM,par%comm,ierr) 
@@ -303,7 +303,7 @@ contains
 
      gOffset(1)=1
      do ig=2,nelem
-	gOffset(ig) = gOffset(ig-1)+numElem2P(ig-1)
+        gOffset(ig) = gOffset(ig-1)+numElem2P(ig-1)
      enddo
      do ie=1,nelemd
         ig = elem(ie)%GlobalId

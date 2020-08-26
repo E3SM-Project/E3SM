@@ -66,7 +66,7 @@ module zm_conv
 !DCAPE-ULL
    real(r8), parameter :: trigdcapelmt = 0._r8  ! threshold value of dcape for deep convection
    logical :: trigdcape_ull    = .false. !true to use DCAPE trigger and -ULL 
-   integer :: dcapemx(pcols) ! save maxi from 1st call for CAPE calculation and used in 2nd call when DCAPE-ULL active
+   integer, allocatable :: dcapemx(:) ! save maxi from 1st call for CAPE calculation and used in 2nd call when DCAPE-ULL active
 !  May need to change to use local variable !  as passed via dummy argument. For now, making it threadprivate as follows,
 !$omp threadprivate (dcapemx)
 
@@ -521,6 +521,8 @@ subroutine zm_convr(lchnk   ,ncol    , &
    integer ii
    integer k
    integer msg                      !  ic number of missing moisture levels at the top of model.
+   integer ierror
+
    real(r8) qdifr
    real(r8) sdifr
 
@@ -658,7 +660,13 @@ subroutine zm_convr(lchnk   ,ncol    , &
                   rgas    ,grav    ,cpres   ,msg     , &
                   tpert   ,iclosure)
          
-      if (trigdcape_ull) dcapemx(:) = maxi(:)
+      if (trigdcape_ull) then
+         if (.not. allocated(dcapemx)) then
+            allocate (dcapemx(pcols), stat=ierror)
+            if ( ierror /= 0 ) call endrun('ZM_CONVR error: allocation error dcapemx')
+         endif
+         dcapemx(:ncol) = maxi(:ncol)
+      endif
         
       if(trigmem)then
          call buoyan_dilute(lchnk   ,ncol    , &
@@ -916,7 +924,9 @@ subroutine zm_convr(lchnk   ,ncol    , &
 ! gather back temperature and mixing ratio.
 !
    do k = msg + 1,pver
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
       do i = 1,lengath
 !
 ! q is updated to compute net precip.
@@ -940,7 +950,9 @@ subroutine zm_convr(lchnk   ,ncol    , &
       end do
    end do
 !
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
    do i = 1,lengath
       jctop(ideep(i)) = jt(i)
 !++bee
@@ -1404,7 +1416,9 @@ subroutine convtran(lchnk   , &
          end do
 ! %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
+#ifdef CPRCRAY
 !DIR$ NOINTERCHANGE
+#endif
          do k = kbm,pver
             km1 = max(1,k-1)
             do i = il1g,il2g
@@ -1440,7 +1454,9 @@ subroutine convtran(lchnk   , &
          dqdt(:,:,m) = 0._r8
          do k = 1,pver
             kp1 = min(pver,k+1)
+#ifdef CPRCRAY
 !DIR$ CONCURRENT
+#endif
             do i = il1g,il2g
                dqdt(ideep(i),k,m) = dcondt(i,k)
             end do
@@ -1765,7 +1781,9 @@ subroutine momtran(lchnk, ncol, &
 
   ! dcont for bottom layer
           !
+#ifdef CPRCRAY
           !DIR$ NOINTERCHANGE
+#endif
           do k = kbm,pver
              km1 = max(1,k-1)
              do i = il1g,il2g
@@ -3224,7 +3242,9 @@ subroutine q1q2_pjr(lchnk   , &
    end do
 
 !
+#ifdef CPRCRAY
 !DIR$ NOINTERCHANGE!
+#endif
    do k = kbm,pver
       do i = il1g,il2g
          if (k == mx(i)) then

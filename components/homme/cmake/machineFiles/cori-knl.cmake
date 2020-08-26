@@ -7,7 +7,7 @@ SET (CMAKE_Fortran_COMPILER ftn CACHE FILEPATH "")
 SET (CMAKE_C_COMPILER cc CACHE FILEPATH "")
 SET (CMAKE_CXX_COMPILER CC CACHE FILEPATH "")
 
-#SET (PIO_FILESYSTEM_HINTS lustre CACHE FILEPATH "")
+SET (PIO_FILESYSTEM_HINTS lustre CACHE FILEPATH "")
 
 SET (NETCDF_DIR $ENV{NETCDF_DIR} CACHE FILEPATH "")
 SET (PNETCDF_DIR $ENV{PARALLEL_NETCDF_DIR} CACHE FILEPATH "")
@@ -26,7 +26,7 @@ SET (USE_MPIEXEC "srun" CACHE STRING "")
 # temporary fix:
 SET (USE_MPI_OPTIONS "-c 4 --cpu_bind=cores" CACHE STRING "")
 
-SET (CPRNC_DIR /project/projectdirs/acme/tools/cprnc.cori CACHE FILEPATH "")
+SET (CPRNC_DIR /global/cfs/cdirs/acme/tools/cprnc.cori CACHE FILEPATH "")
 
 # by default, cori env loads haswell mod, do
 # module unload craype-haswell ; module load craype-mic-knl
