@@ -622,6 +622,20 @@ contains
                 qwthlsec,qw1_1,qw_first,thl1_1,thl_first,qw1_2,thl1_2,&
                 r_qwthl_1)
 
-  end subroutine shoc_assumed_pdf_inplume_correlations_c       
+  end subroutine shoc_assumed_pdf_inplume_correlations_c    
+  
+  subroutine shoc_assumed_pdf_compute_temperature_c(&
+                                   thl1,basepres,pval,Tl1) bind (C)
+    use shoc, only: shoc_assumed_pdf_compute_temperature
+
+    real(kind=c_real), intent(in), value :: thl1
+    real(kind=c_real), intent(in), value :: basepres
+    real(kind=c_real), intent(in), value :: pval
+    
+    real(kind=c_real), intent(out) :: Tl1
+
+    call shoc_assumed_pdf_compute_temperature(thl1,basepres,pval,Tl1)
+
+  end subroutine shoc_assumed_pdf_compute_temperature_c       
 
 end module shoc_iso_c

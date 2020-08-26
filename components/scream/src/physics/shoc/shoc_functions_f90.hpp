@@ -469,6 +469,17 @@ struct SHOCPDFinplumeData
   Real r_qwthl_1;
 };
 
+//Create data structure to hold data for shoc_assumed_pdf_compute_temperature
+struct SHOCPDFcomptempData
+{
+  // inputs
+  Real thl1, basepres, pval;
+  
+  // outputs
+  Real Tl1;
+
+};
+
 //
 // Glue functions to call fortran from from C++ with the Data struct
 //
@@ -503,6 +514,7 @@ void shoc_assumed_pdf_vv_parameters(SHOCPDFvvparamData &d);
 void shoc_assumed_pdf_thl_parameters(SHOCPDFthlparamData &d);
 void shoc_assumed_pdf_qw_parameters(SHOCPDFqwparamData &d);
 void shoc_assumed_pdf_inplume_correlations(SHOCPDFinplumeData &d);
+void shoc_assumed_pdf_compute_temperature(SHOCPDFcomptempData &d);
 
 //
 // _f functions decls

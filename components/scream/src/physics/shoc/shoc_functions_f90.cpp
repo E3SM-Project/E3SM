@@ -119,7 +119,10 @@ void shoc_assumed_pdf_inplume_correlations_c(Real sqrtqw2_1, Real sqrtthl2_1,
                                      Real a, Real sqrtqw2_2, Real sqrtthl2_2,
                                      Real qwthlsec, Real qw1_1, Real qw_first,
 				     Real thl1_1, Real thl_first, Real qw1_2,
-				     Real thl1_2, Real *r_qwthl_1);				       			       
+				     Real thl1_2, Real *r_qwthl_1);
+				     
+void shoc_assumed_pdf_compute_temperature_c(Real thl1, Real basepres, 
+                                            Real pval, Real *Tl1);				       			       
 }
 
 namespace scream {
@@ -471,6 +474,12 @@ void shoc_assumed_pdf_inplume_correlations(SHOCPDFinplumeData &d)
                                           d.qwthlsec,d.qw1_1,d.qw_first,d.thl1_1,
 			                  d.thl_first,d.qw1_2,d.thl1_2,
                                           &d.r_qwthl_1);
+}
+
+void shoc_assumed_pdf_compute_temperature(SHOCPDFcomptempData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_compute_temperature_c(d.thl1, d.basepres, d.pval, &d.Tl1);
 }
 
 //
