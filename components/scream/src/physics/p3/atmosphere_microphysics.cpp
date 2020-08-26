@@ -37,7 +37,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   auto Q = kg/kg;
   Q.set_string("kg/kg");
 
-  constexpr int NVL = 72;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
+  constexpr int NVL = SCREAM_NUM_VERTICAL_LEV;
   constexpr int QSZ =  35;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
 
   const auto& grid_name = m_p3_params.get<std::string>("Grid");

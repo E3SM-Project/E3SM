@@ -24,7 +24,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   auto Q = kg/kg;
   Q.set_string("kg/kg");
 
-  constexpr int NVL = 72;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
+  constexpr int NVL = SCREAM_NUM_VERTICAL_LEV;
   constexpr int QSZ =  35;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
 
   auto grid = grids_manager->get_grid("Physics");
