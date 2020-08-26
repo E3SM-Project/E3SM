@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function, \
     unicode_literals
 
 import numpy as np
-import jigsaw_to_MPAS.coastal_tools as ct
+import mpas_tools.mesh.creation.coastal_tools as ct
 
 
 def cellWidthVsLatLon():
@@ -59,7 +59,7 @@ def cellWidthVsLatLon():
                             "exclude":[]}
     params["trans_start"] = 400.0*km
     cell_width,lon,lat = ct.coastal_refined_mesh(params,cell_width,lon,lat)
-    
+
     print("***Greenland***")
     params["region_box"] = ct.Greenland
     params["restrict_box"] = ct.Empty

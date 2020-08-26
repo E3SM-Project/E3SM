@@ -12,7 +12,7 @@ It contains the following resolution resgions:
 
 '''
 import numpy as np
-import jigsaw_to_MPAS.coastal_tools as ct
+import mpas_tools.mesh.creation.coastal_tools as ct
 
 
 def cellWidthVsLatLon():

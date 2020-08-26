@@ -29,7 +29,7 @@ import xarray
 
 from geometric_features import GeometricFeatures, FeatureCollection, \
     read_feature_collection
-from mpas_tools import conversion
+from mpas_tools.mesh import conversion
 from mpas_tools.io import write_netcdf
 from mpas_tools.ocean.coastline_alteration import widen_transect_edge_masks, \
     add_critical_land_blockages, add_land_locked_cells_to_mask

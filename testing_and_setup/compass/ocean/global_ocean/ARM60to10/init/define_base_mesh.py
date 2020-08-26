@@ -2,9 +2,10 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
 import numpy as np
-import jigsaw_to_MPAS.mesh_definition_tools as mdt
-from jigsaw_to_MPAS.coastal_tools import signed_distance_from_geojson, \
-    mask_from_geojson
+import mpas_tools.mesh.creation.mesh_definition_tools as mdt
+from mpas_tools.mesh.creation.coastal_tools import \
+    signed_distance_from_geojson, mask_from_geojson
+from mpas_tools.viz.colormaps import register_sci_viz_colormaps
 from geometric_features import read_feature_collection
 import xarray
 import matplotlib
@@ -40,7 +41,7 @@ def cellWidthVsLatLon():
     fig = plt.figure()
     plt.clf()
     fig.set_size_inches(10.0, 10.0)
-    mdt.register_sci_viz_colormaps()
+    register_sci_viz_colormaps()
 
     # Create cell width vs latitude for Atlantic and Pacific basins
     QU1 = np.ones(lat.size)
