@@ -37,9 +37,9 @@ struct UnitWrap::UnitTest<D>::TestShocThlParameters {
 
     // Define the flux of thetal [K m/s]
     static constexpr Real wthlsec_test1 = 0.02;
-    // Define the standard deviation of vertical velocity [m/s]
+    // Define the variance of vertical velocity [m/s]
     static constexpr Real sqrtw2_test1 = 0.5;
-    // Define the standard deviation of thetal [K] small value
+    // Define the variance of thetal [K] small value
     static constexpr Real thlsec_small = 1;
     // Define the standard deviation of thetal [K] large value
     static constexpr Real thlsec_large = 1.5;

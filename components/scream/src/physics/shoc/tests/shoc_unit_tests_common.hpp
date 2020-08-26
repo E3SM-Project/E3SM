@@ -77,6 +77,8 @@ struct UnitWrap {
     struct TestShocPdfTildatoReal;
     struct TestShocVVParameters;
     struct TestShocThlParameters;
+    struct TestShocQwParameters;
+    struct TestShocInPlumeCorr;
   };
 
 };

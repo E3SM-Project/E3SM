@@ -448,6 +448,27 @@ struct SHOCPDFthlparamData
   Real thl1_1, thl1_2, thl2_1, thl2_2, sqrtthl2_1, sqrtthl2_2, Skew_thl;
 };
 
+// Create data structure to hold data for shoc_assumed_pdf_qw_parameters
+struct SHOCPDFqwparamData
+{
+  // inputs
+  Real wqwsec, qwsec, sqrtw2, sqrtqt, qw_first, w1_1, w1_2, Skew_w, a;
+  
+  // outputs
+  Real qw1_1, qw1_2, qw2_1, qw2_2, sqrtqw2_1, sqrtqw2_2, Skew_qw;
+};
+
+// Create data structure to hold data for shoc_assumed_pdf_inplume_correlations
+struct SHOCPDFinplumeData
+{
+  // inputs
+  Real sqrtqw2_1,sqrtthl2_1,a,sqrtqw2_2,sqrtthl2_2;
+  Real qwthlsec,qw1_1,qw_first,thl1_1,thl_first,qw1_2,thl1_2;
+  
+  // outputs
+  Real r_qwthl_1;
+};
+
 //
 // Glue functions to call fortran from from C++ with the Data struct
 //
@@ -480,6 +501,8 @@ void linear_interp(SHOCLinearintData &d);
 void shoc_assumed_pdf_tilda_to_real(SHOCPDFtildaData &d);
 void shoc_assumed_pdf_vv_parameters(SHOCPDFvvparamData &d);
 void shoc_assumed_pdf_thl_parameters(SHOCPDFthlparamData &d);
+void shoc_assumed_pdf_qw_parameters(SHOCPDFqwparamData &d);
+void shoc_assumed_pdf_inplume_correlations(SHOCPDFinplumeData &d);
 
 //
 // _f functions decls

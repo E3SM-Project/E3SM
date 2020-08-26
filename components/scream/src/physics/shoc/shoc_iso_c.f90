@@ -561,6 +561,67 @@ contains
                            thl1_1,thl1_2,thl2_1,thl2_2,sqrtthl2_1,&
                            sqrtthl2_2,Skew_thl)
 
-  end subroutine shoc_assumed_pdf_thl_parameters_c   
+  end subroutine shoc_assumed_pdf_thl_parameters_c  
+  
+  subroutine shoc_assumed_pdf_qw_parameters_c(&
+                           wqwsec,sqrtw2,Skew_w,sqrtqt,qwsec,& 
+                           w1_1,w1_2,qw_first,a,&
+                           qw1_1,qw1_2,qw2_1,qw2_2,sqrtqw2_1,&
+                           sqrtqw2_2,Skew_qw) bind (C)
+    use shoc, only: shoc_assumed_pdf_qw_parameters
+
+    real(kind=c_real), intent(in), value :: wqwsec
+    real(kind=c_real), intent(in), value :: sqrtw2
+    real(kind=c_real), intent(in), value :: sqrtqt
+    real(kind=c_real), intent(in), value :: qwsec
+    real(kind=c_real), intent(in), value :: qw_first
+    real(kind=c_real), intent(in), value :: w1_1
+    real(kind=c_real), intent(in), value :: w1_2
+    real(kind=c_real), intent(in), value :: Skew_w
+    real(kind=c_real), intent(in), value :: a
+
+    real(kind=c_real), intent(out) :: qw1_1
+    real(kind=c_real), intent(out) :: qw1_2
+    real(kind=c_real), intent(out) :: qw2_1
+    real(kind=c_real), intent(out) :: qw2_2
+    real(kind=c_real), intent(out) :: sqrtqw2_1
+    real(kind=c_real), intent(out) :: sqrtqw2_2
+    real(kind=c_real), intent(out) :: Skew_qw
+
+    call shoc_assumed_pdf_qw_parameters(&
+                          wqwsec,sqrtw2,Skew_w,sqrtqt,qwsec,& 
+                          w1_1,w1_2,qw_first,a,&
+                          qw1_1,qw1_2,qw2_1,qw2_2,sqrtqw2_1,&
+                          sqrtqw2_2,Skew_qw)
+
+  end subroutine shoc_assumed_pdf_qw_parameters_c
+  
+  subroutine shoc_assumed_pdf_inplume_correlations_c(&
+                sqrtqw2_1,sqrtthl2_1,a,sqrtqw2_2,sqrtthl2_2,&
+                qwthlsec,qw1_1,qw_first,thl1_1,thl_first,qw1_2,thl1_2,&
+                r_qwthl_1) bind (C)
+    use shoc, only: shoc_assumed_pdf_inplume_correlations
+
+    real(kind=c_real), intent(in), value :: sqrtqw2_1
+    real(kind=c_real), intent(in), value :: sqrtthl2_1
+    real(kind=c_real), intent(in), value :: a
+    real(kind=c_real), intent(in), value :: sqrtqw2_2
+    real(kind=c_real), intent(in), value :: sqrtthl2_2
+    real(kind=c_real), intent(in), value :: qwthlsec
+    real(kind=c_real), intent(in), value :: qw1_1
+    real(kind=c_real), intent(in), value :: qw_first
+    real(kind=c_real), intent(in), value :: thl1_1
+    real(kind=c_real), intent(in), value :: thl_first
+    real(kind=c_real), intent(in), value :: qw1_2
+    real(kind=c_real), intent(in), value :: thl1_2
+
+    real(kind=c_real), intent(out) :: r_qwthl_1
+
+    call shoc_assumed_pdf_inplume_correlations(&
+                sqrtqw2_1,sqrtthl2_1,a,sqrtqw2_2,sqrtthl2_2,&
+                qwthlsec,qw1_1,qw_first,thl1_1,thl_first,qw1_2,thl1_2,&
+                r_qwthl_1)
+
+  end subroutine shoc_assumed_pdf_inplume_correlations_c       
 
 end module shoc_iso_c
