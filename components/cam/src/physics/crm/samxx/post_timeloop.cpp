@@ -163,7 +163,7 @@ void post_timeloop() {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     if (crm_clear_rh_cnt(k,icrm)>0) {
-      crm_clear_rh(k,icrm) = crm_clear_rh(k,icrm) / crm_clear_rh_cnt(k,icrm)
+      crm_clear_rh(k,icrm) = crm_clear_rh(k,icrm) / crm_clear_rh_cnt(k,icrm);
     }
   });
 
