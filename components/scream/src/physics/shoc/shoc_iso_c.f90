@@ -528,5 +528,39 @@ contains
                                         Skew_w,w1_1,w1_2,w2_1,w2_2,a)
 
   end subroutine shoc_assumed_pdf_vv_parameters_c   
+  
+  subroutine shoc_assumed_pdf_thl_parameters_c(&
+                           wthlsec,sqrtw2,sqrtthl,thlsec,thl_first,& 
+                           w1_1,w1_2,Skew_w,a,dothetal_skew,&
+                           thl1_1,thl1_2,thl2_1,thl2_2,sqrtthl2_1,&
+                           sqrtthl2_2,Skew_thl) bind (C)
+    use shoc, only: shoc_assumed_pdf_thl_parameters
+
+    real(kind=c_real), intent(in), value :: wthlsec
+    real(kind=c_real), intent(in), value :: sqrtw2
+    real(kind=c_real), intent(in), value :: sqrtthl
+    real(kind=c_real), intent(in), value :: thlsec
+    real(kind=c_real), intent(in), value :: thl_first
+    real(kind=c_real), intent(in), value :: w1_1
+    real(kind=c_real), intent(in), value :: w1_2
+    real(kind=c_real), intent(in), value :: Skew_w
+    real(kind=c_real), intent(in), value :: a
+    logical(kind=c_bool), intent(in), value :: dothetal_skew
+
+    real(kind=c_real), intent(out) :: thl1_1
+    real(kind=c_real), intent(out) :: thl1_2
+    real(kind=c_real), intent(out) :: thl2_1
+    real(kind=c_real), intent(out) :: thl2_2
+    real(kind=c_real), intent(out) :: sqrtthl2_1
+    real(kind=c_real), intent(out) :: sqrtthl2_2
+    real(kind=c_real), intent(out) :: Skew_thl
+
+    call shoc_assumed_pdf_thl_parameters(&
+                           wthlsec,sqrtw2,sqrtthl,thlsec,thl_first,& 
+                           w1_1,w1_2,Skew_w,a,dothetal_skew,&
+                           thl1_1,thl1_2,thl2_1,thl2_2,sqrtthl2_1,&
+                           sqrtthl2_2,Skew_thl)
+
+  end subroutine shoc_assumed_pdf_thl_parameters_c   
 
 end module shoc_iso_c

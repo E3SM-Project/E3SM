@@ -26,6 +26,7 @@ set(SHOC_TESTS_SRCS
     shoc_linearinterp_tests.cpp
     shoc_pdf_tildatoreal_tests.cpp
     shoc_pdf_vv_parameters_tests.cpp
+    shoc_pdf_thl_parameters_tests.cpp
     shoc_unit_tests.cpp)
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build

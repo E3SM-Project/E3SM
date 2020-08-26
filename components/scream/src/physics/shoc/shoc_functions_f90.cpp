@@ -99,8 +99,14 @@ void shoc_assumed_pdf_tilda_to_real_c(Real w_first, Real sqrtw2, Real* w1);
 
 void shoc_assumed_pdf_vv_parameters_c(Real w_first, Real w_sec, Real w3var,       
                                       Real *Skew_w, Real *w1_1, Real *w1_2,
-				      Real *w2_1, Real *w2_2, Real *a);	     			   
-
+				      Real *w2_1, Real *w2_2, Real *a);
+				      
+void shoc_assumed_pdf_thl_parameters_c(Real wthlsec, Real sqrtw2, Real sqrtthl,
+                                       Real thlsec, Real thl_first, Real w1_1, 
+				       Real w1_2, Real Skew_w, Real a, bool dothetal_skew,
+                                       Real *thl1_1, Real *thl1_2, Real *thl2_1,
+				       Real *thl2_2, Real *sqrtthl2_1,
+                                       Real *sqrtthl2_2, Real *Skew_thl);
 }
 
 namespace scream {
@@ -424,6 +430,15 @@ void shoc_assumed_pdf_vv_parameters(SHOCPDFvvparamData &d)
   shoc_init(1, true);
   shoc_assumed_pdf_vv_parameters_c(d.w_first,d.w_sec,d.w3var,         
                                    &d.Skew_w,&d.w1_1,&d.w1_2,&d.w2_1,&d.w2_2,&d.a);
+}
+
+void shoc_assumed_pdf_thl_parameters(SHOCPDFthlparamData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_thl_parameters_c(d.wthlsec,d.sqrtw2,d.sqrtthl,d.thlsec,d.thl_first,
+                                    d.w1_1,d.w1_2,d.Skew_w,d.a,d.dothetal_skew,
+                                    &d.thl1_1,&d.thl1_2,&d.thl2_1,&d.thl2_2,&d.sqrtthl2_1,
+                                    &d.sqrtthl2_2,&d.Skew_thl);
 }
 
 //

@@ -437,6 +437,17 @@ struct SHOCPDFvvparamData
   Real Skew_w, w1_1, w1_2, w2_1, w2_2, a;
 };
 
+// Create data structure to hold data for shoc_assumed_pdf_thl_parameters
+struct SHOCPDFthlparamData
+{
+  // inputs
+  Real wthlsec, sqrtw2, sqrtthl, thlsec, thl_first, w1_1, w1_2, Skew_w, a;
+  bool dothetal_skew;
+  
+  // outputs
+  Real thl1_1, thl1_2, thl2_1, thl2_2, sqrtthl2_1, sqrtthl2_2, Skew_thl;
+};
+
 //
 // Glue functions to call fortran from from C++ with the Data struct
 //
@@ -468,6 +479,7 @@ void shoc_diag_second_moments_srf(SHOCSecondMomentSrfData& d);
 void linear_interp(SHOCLinearintData &d);
 void shoc_assumed_pdf_tilda_to_real(SHOCPDFtildaData &d);
 void shoc_assumed_pdf_vv_parameters(SHOCPDFvvparamData &d);
+void shoc_assumed_pdf_thl_parameters(SHOCPDFthlparamData &d);
 
 //
 // _f functions decls
