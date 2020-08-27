@@ -12,8 +12,13 @@
 		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/initial_condition_database/"/>
 	</get_file>
 
+<<<<<<< HEAD
 	<get_file dest_path="initial_condition_database" file_name="ETOPO2v2c_f4_151106.nc">
 		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/initial_condition_database/"/>
+=======
+	<get_file dest_path="initial_condition_database" file_name="BedMachineAntarctica_and_GEBCO_2019_0.05_degree.200128.nc">
+		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/bathymetry_database/"/>
+>>>>>>> 275da8b8... Updates EC6030 mesh to use GEBCO bathymetry
 	</get_file>
 
 	<get_file dest_path="initial_condition_database" file_name="chlorophyllA_monthly_averages_1deg.151201.nc">
