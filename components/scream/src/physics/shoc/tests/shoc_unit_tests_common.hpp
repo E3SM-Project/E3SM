@@ -80,6 +80,12 @@ struct UnitWrap {
     struct TestShocQwParameters;
     struct TestShocInPlumeCorr;
     struct TestShocPdfComputeTemp;
+    struct TestShocPdfComputeQs;
+    struct TestShocPdfComputeS;
+    struct TestShocPdfComputeSgsLiq;
+    struct TestShocPdfCompCldVar;
+    struct TestShocPdfCompLiqFlux;
+    struct TestShocPdfCompBuoyFlux;
   };
 
 };

@@ -636,6 +636,136 @@ contains
 
     call shoc_assumed_pdf_compute_temperature(thl1,basepres,pval,Tl1)
 
-  end subroutine shoc_assumed_pdf_compute_temperature_c       
+  end subroutine shoc_assumed_pdf_compute_temperature_c    
+  
+  subroutine shoc_assumed_pdf_compute_qs_c(&
+                              Tl1_1,Tl1_2,pval,&
+                              qs1,beta1,qs2,beta2) bind (C)
+    use shoc, only: shoc_assumed_pdf_compute_qs
+
+    real(kind=c_real), intent(in), value :: Tl1_1
+    real(kind=c_real), intent(in), value :: Tl1_2
+    real(kind=c_real), intent(in), value :: pval
+    
+    real(kind=c_real), intent(out) :: qs1
+    real(kind=c_real), intent(out) :: beta1
+    real(kind=c_real), intent(out) :: qs2
+    real(kind=c_real), intent(out) :: beta2
+
+    call shoc_assumed_pdf_compute_qs(&
+                              Tl1_1,Tl1_2,pval,&
+                              qs1,beta1,qs2,beta2)
+
+  end subroutine shoc_assumed_pdf_compute_qs_c  
+  
+  subroutine shoc_assumed_pdf_compute_s_c(&
+                              qw1,qs1,beta,pval,thl2,&
+                              qw2,sqrtthl2,sqrtqw2,r_qwthl,&
+                              s,cthl,cqt,std_s,qn,C) bind (C)
+    use shoc, only: shoc_assumed_pdf_compute_s
+
+    real(kind=c_real), intent(in), value :: qw1
+    real(kind=c_real), intent(in), value :: qs1
+    real(kind=c_real), intent(in), value :: beta
+    real(kind=c_real), intent(in), value :: pval
+    real(kind=c_real), intent(in), value :: thl2
+    real(kind=c_real), intent(in), value :: qw2
+    real(kind=c_real), intent(in), value :: sqrtthl2
+    real(kind=c_real), intent(in), value :: sqrtqw2
+    real(kind=c_real), intent(in), value :: r_qwthl
+    
+    real(kind=c_real), intent(out) :: s
+    real(kind=c_real), intent(out) :: cthl
+    real(kind=c_real), intent(out) :: cqt
+    real(kind=c_real), intent(out) :: std_s
+    real(kind=c_real), intent(out) :: qn
+    real(kind=c_real), intent(out) :: C
+
+    call shoc_assumed_pdf_compute_s(&
+                              qw1,qs1,beta,pval,thl2,&
+                              qw2,sqrtthl2,sqrtqw2,r_qwthl,&
+                              s,cthl,cqt,std_s,qn,C)
+
+  end subroutine shoc_assumed_pdf_compute_s_c 
+  
+  subroutine shoc_assumed_pdf_compute_sgs_liquid_c(&
+                              a,ql1,ql2,shoc_ql) bind (C)
+    use shoc, only: shoc_assumed_pdf_compute_sgs_liquid
+
+    real(kind=c_real), intent(in), value :: a
+    real(kind=c_real), intent(in), value :: ql1
+    real(kind=c_real), intent(in), value :: ql2
+    
+    real(kind=c_real), intent(out) :: shoc_ql
+
+    call shoc_assumed_pdf_compute_sgs_liquid(&
+                              a,ql1,ql2,shoc_ql)
+
+  end subroutine shoc_assumed_pdf_compute_sgs_liquid_c 
+  
+  subroutine shoc_assumed_pdf_compute_cloud_liquid_variance_c(&
+                                           a,s1,ql1,C1,std_s1,&
+                                           s2,ql2,C2,std_s2,shoc_ql,&
+                                           shoc_ql2) bind (C)
+    use shoc, only: shoc_assumed_pdf_compute_cloud_liquid_variance
+
+    real(kind=c_real), intent(in), value :: a
+    real(kind=c_real), intent(in), value :: s1
+    real(kind=c_real), intent(in), value :: ql1
+    real(kind=c_real), intent(in), value :: C1
+    real(kind=c_real), intent(in), value :: std_s1
+    real(kind=c_real), intent(in), value :: s2
+    real(kind=c_real), intent(in), value :: ql2
+    real(kind=c_real), intent(in), value :: C2
+    real(kind=c_real), intent(in), value :: std_s2
+    real(kind=c_real), intent(in), value :: shoc_ql
+    
+    real(kind=c_real), intent(out) :: shoc_ql2
+
+    call shoc_assumed_pdf_compute_cloud_liquid_variance(&
+                                           a,s1,ql1,C1,std_s1,&
+                                           s2,ql2,C2,std_s2,shoc_ql,&
+                                           shoc_ql2)
+
+  end subroutine shoc_assumed_pdf_compute_cloud_liquid_variance_c 
+  
+  subroutine shoc_assumed_pdf_compute_liquid_water_flux_c(&
+                                     a,w1_1,w_first,ql1,w1_2,ql2,&
+                                     wqls) bind (C)
+    use shoc, only: shoc_assumed_pdf_compute_liquid_water_flux
+
+    real(kind=c_real), intent(in), value :: a
+    real(kind=c_real), intent(in), value :: w1_1
+    real(kind=c_real), intent(in), value :: w_first
+    real(kind=c_real), intent(in), value :: ql1
+    real(kind=c_real), intent(in), value :: w1_2
+    real(kind=c_real), intent(in), value :: ql2
+    
+    real(kind=c_real), intent(out) :: wqls
+
+    call shoc_assumed_pdf_compute_liquid_water_flux(&
+                                     a,w1_1,w_first,ql1,w1_2,ql2,&
+                                     wqls)
+
+  end subroutine shoc_assumed_pdf_compute_liquid_water_flux_c  
+  
+  subroutine shoc_assumed_pdf_compute_buoyancy_flux_c(&
+                                     wthlsec,epsterm,wqwsec,pval,wqls,&
+                                     wthv_sec) bind (C)
+    use shoc, only: shoc_assumed_pdf_compute_buoyancy_flux
+
+    real(kind=c_real), intent(in), value :: wthlsec
+    real(kind=c_real), intent(in), value :: epsterm
+    real(kind=c_real), intent(in), value :: wqwsec
+    real(kind=c_real), intent(in), value :: pval
+    real(kind=c_real), intent(in), value :: wqls
+    
+    real(kind=c_real), intent(out) :: wthv_sec
+
+    call shoc_assumed_pdf_compute_buoyancy_flux(&
+                                     wthlsec,epsterm,wqwsec,pval,wqls,&
+                                     wthv_sec)
+
+  end subroutine shoc_assumed_pdf_compute_buoyancy_flux_c            
 
 end module shoc_iso_c

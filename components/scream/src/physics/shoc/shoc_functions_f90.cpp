@@ -122,7 +122,28 @@ void shoc_assumed_pdf_inplume_correlations_c(Real sqrtqw2_1, Real sqrtthl2_1,
 				     Real thl1_2, Real *r_qwthl_1);
 				     
 void shoc_assumed_pdf_compute_temperature_c(Real thl1, Real basepres, 
-                                            Real pval, Real *Tl1);				       			       
+                                            Real pval, Real *Tl1);
+					    
+void shoc_assumed_pdf_compute_qs_c(Real Tl1_1, Real Tl1_2, Real pval,
+                              Real *qs1, Real *beta1, Real *qs2, Real *beta2);
+			      
+void shoc_assumed_pdf_compute_s_c(Real qw1, Real qs1, Real beta, Real pval, Real thl2,
+                              Real qw2,Real sqrtthl2, Real sqrtqw2, Real r_qwthl,
+                              Real *s, Real *cthl, Real *cqt, Real *std_s,
+			      Real *qn, Real *C);
+			      
+void shoc_assumed_pdf_compute_sgs_liquid_c(Real a, Real ql1, Real ql2, Real *shoc_ql);
+
+void shoc_assumed_pdf_compute_cloud_liquid_variance_c(Real a, Real s1, Real ql1, 
+                               Real C1, Real std_s1, Real s2, Real ql2, Real C2,
+			       Real std_s2, Real shoc_ql, Real *shoc_ql2);
+			       
+void shoc_assumed_pdf_compute_liquid_water_flux_c(Real a, Real w1_1, Real w_first,
+                               Real ql1, Real w1_2, Real ql2, Real *wqls);
+			       
+void shoc_assumed_pdf_compute_buoyancy_flux_c(Real wthlsec, Real epsterm, Real wqwsec,
+                               Real pval, Real wqls, Real *wthv_sec);
+			      
 }
 
 namespace scream {
@@ -480,6 +501,41 @@ void shoc_assumed_pdf_compute_temperature(SHOCPDFcomptempData &d)
 {
   shoc_init(1, true);
   shoc_assumed_pdf_compute_temperature_c(d.thl1, d.basepres, d.pval, &d.Tl1);
+}
+
+void shoc_assumed_pdf_compute_qs(SHOCPDFcompqsData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_compute_qs_c(d.Tl1_1,d.Tl1_2,d.pval,
+                                &d.qs1,&d.beta1,&d.qs2,&d.beta2);
+}
+
+void shoc_assumed_pdf_compute_sgs_liquid(SHOCPDFcompsgsliqData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_compute_sgs_liquid_c(d.a, d.ql1, d.ql2, &d.shoc_ql);
+}
+
+void shoc_assumed_pdf_compute_cloud_liquid_variance(SHOCPDFcompcloudvarData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_compute_cloud_liquid_variance_c(d.a,d.s1,d.ql1,d.C1,
+                                   d.std_s1,d.s2,d.ql2,d.C2,d.std_s2,d.shoc_ql,
+                                   &d.shoc_ql2);
+}
+
+void shoc_assumed_pdf_compute_liquid_water_flux(SHOCPDFcompliqfluxData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_compute_liquid_water_flux_c(d.a,d.w1_1,d.w_first,d.ql1,
+                                               d.w1_2,d.ql2,&d.wqls);
+}
+
+void shoc_assumed_pdf_compute_buoyancy_flux(SHOCPDFcompbuoyfluxData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_compute_buoyancy_flux_c(d.wthlsec,d.epsterm,d.wqwsec,
+                                           d.pval,d.wqls,&d.wthv_sec);
 }
 
 //

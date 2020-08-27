@@ -480,6 +480,72 @@ struct SHOCPDFcomptempData
 
 };
 
+//Create data structure to hold data for shoc_assumed_pdf_compute_qs
+struct SHOCPDFcompqsData
+{
+  // inputs
+  Real Tl1_1, Tl1_2, pval;
+  
+  // outputs
+  Real qs1, beta1, qs2, beta2;
+
+};
+
+//Create data structure to hold data for shoc_assumed_pdf_compute_s
+struct SHOCPDFcompsData
+{
+  // inputs
+  Real qw1, qs1, beta, pval, thl2, qw2, sqrtthl2, sqrtqw2, r_qwthl;
+  
+  // outputs
+  Real s, cthl, cqt, std_s, qn, C;
+
+};
+
+//Create data structure to hold data for shoc_assumed_pdf_compute_sgs_liquid
+struct SHOCPDFcompsgsliqData
+{
+  // inputs
+  Real a, ql1, ql2;
+  
+  // outputs
+  Real shoc_ql;
+
+};
+
+//Create data structure to hold data for shoc_assumed_pdf_compute_cloud_liquid_variance
+struct SHOCPDFcompcloudvarData
+{
+  // inputs
+  Real a, s1, ql1, C1, std_s1, s2, ql2, C2, std_s2, shoc_ql;
+  
+  // outputs
+  Real shoc_ql2;
+
+};
+
+//Create data structure to hold data for shoc_assumed_pdf_compute_liquid_water_flux
+struct SHOCPDFcompliqfluxData
+{
+  // inputs
+  Real a, w1_1, w_first, ql1, w1_2, ql2;
+  
+  // outputs
+  Real wqls;
+
+};
+
+//Create data structure to hold data for shoc_assumed_pdf_compute_buoyancy_flux
+struct SHOCPDFcompbuoyfluxData
+{
+  // inputs
+  Real wthlsec, epsterm, wqwsec, pval, wqls;
+  
+  // outputs
+  Real wthv_sec;
+
+};
+
 //
 // Glue functions to call fortran from from C++ with the Data struct
 //
@@ -515,6 +581,10 @@ void shoc_assumed_pdf_thl_parameters(SHOCPDFthlparamData &d);
 void shoc_assumed_pdf_qw_parameters(SHOCPDFqwparamData &d);
 void shoc_assumed_pdf_inplume_correlations(SHOCPDFinplumeData &d);
 void shoc_assumed_pdf_compute_temperature(SHOCPDFcomptempData &d);
+void shoc_assumed_pdf_compute_qs(SHOCPDFcompqsData &d);
+void shoc_assumed_pdf_compute_cloud_liquid_variance(SHOCPDFcompcloudvarData &d);
+void shoc_assumed_pdf_compute_cloud_liquid_water_flux(SHOCPDFcompliqfluxData &d);
+void shoc_assumed_pdf_compute_buoyancy_flux(SHOCPDFcompbuoyfluxData &d);
 
 //
 // _f functions decls
