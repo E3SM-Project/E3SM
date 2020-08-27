@@ -6,7 +6,6 @@
 
 	<add_link source="../culled_mesh/culled_mesh.nc" dest="mesh.nc"/>
 	<add_link source_path="bathymetry_database" source="SRTM15_plus_earth_relief_15s.nc" dest="earth_relief_15s.nc"/>
-	<add_link source_path="mpas_model" source="testing_and_setup/compass/ocean/jigsaw_to_MPAS/inject_bathymetry.py" dest="inject_bathymetry.py"/>
 
 	<run_script name="run.py">
 		<step executable="MpasMeshConverter.x">
@@ -14,7 +13,7 @@
 			<argument flag="mesh_with_metrics.nc"></argument>
 		</step>
 
-		<step executable="./inject_bathymetry.py">
+		<step executable="inject_bathymetry">
 			<argument flag="mesh_with_metrics.nc"></argument>
 		</step>
 

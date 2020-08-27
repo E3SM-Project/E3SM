@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import numpy as np
-import jigsaw_to_MPAS.coastal_tools as ct
+import mpas_tools.mesh.creation.coastal_tools as ct
 
 def cellWidthVsLatLon():
     km = 1000.0
@@ -11,7 +11,7 @@ def cellWidthVsLatLon():
     print("****QU 60 background mesh and enhanced Atlantic (30km)****")
     params["mesh_type"] = "QU"
     params["dx_max_global"] = 60.0 * km
-    params["region_box"] = ct.Atlantic 
+    params["region_box"] = ct.Atlantic
     params["restrict_box"] = ct.Atlantic_restrict
     params["plot_box"] = ct.Western_Atlantic
     params["dx_min_coastal"] = 15.0 * km

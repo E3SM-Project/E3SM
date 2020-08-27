@@ -20,7 +20,7 @@ import sys
 from geometric_features import GeometricFeatures, FeatureCollection
 from mpas_tools.ocean.moc import make_moc_basins_and_transects
 from mpas_tools.io import write_netcdf
-import mpas_tools.conversion
+import mpas_tools.mesh.conversion
 import pyproj
 from pyremap import MpasMeshDescriptor, ProjectionGridDescriptor, Remapper, \
     get_lat_lon_descriptor, get_polar_descriptor
@@ -982,7 +982,7 @@ def make_region_masks(mesh_name, suffix, fcMask):  # {{{
 
     dsMesh = xr.open_dataset(mesh_filename)
 
-    dsMask = mpas_tools.conversion.mask(dsMesh, fcMask=fcMask)
+    dsMask = mpas_tools.mesh.conversion.mask(dsMesh, fcMask=fcMask)
 
     write_netcdf(dsMask, mask_filename)
 

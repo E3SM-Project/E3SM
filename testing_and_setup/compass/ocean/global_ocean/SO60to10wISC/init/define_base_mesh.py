@@ -1,7 +1,7 @@
 import numpy as np
-import jigsaw_to_MPAS.mesh_definition_tools as mdt
-from jigsaw_to_MPAS.coastal_tools import signed_distance_from_geojson, \
-    compute_cell_width
+import mpas_tools.mesh.creation.mesh_definition_tools as mdt
+from mpas_tools.mesh.creation.coastal_tools import \
+    signed_distance_from_geojson, compute_cell_width
 from geometric_features import read_feature_collection
 # import matplotlib
 # matplotlib.use('Agg')

@@ -3,7 +3,7 @@
 name: define_base_mesh
 authors: Phillip J. Wolfram
 
-This function specifies the resolution for a coastal refined mesh for the CA coast from SF to LA for 
+This function specifies the resolution for a coastal refined mesh for the CA coast from SF to LA for
 Chris Jeffrey and Mark Galassi.
 It contains the following resolution resgions:
   1) a QU 120km global background resolution
@@ -11,7 +11,7 @@ It contains the following resolution resgions:
 
 '''
 import numpy as np
-import jigsaw_to_MPAS.coastal_tools as ct
+import mpas_tools.mesh.creation.coastal_tools as ct
 
 
 def cellWidthVsLatLon():

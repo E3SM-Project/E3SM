@@ -7,7 +7,7 @@
 %    lon - longitude, vector of length n, with entries between -180 and 180, degrees
 """
 import numpy as np
-import jigsaw_to_MPAS.mesh_definition_tools as mdt
+import mpas_tools.mesh.creation.mesh_definition_tools as mdt
 
 
 def cellWidthVsLatLon():
