@@ -282,7 +282,7 @@ contains
              '  Output spectrally resolved fluxes:                  ',l5/, &
              '  Do aerosol radiative calculations:                  ',l5/, &
              '  Fixed solar consant (disabled with -1):             ',f10.4/, &
-             '  Enable limiter warnings:                            ',l5/ )
+             '  Enable temperature warnings:                        ',l5/ )
 
    end subroutine radiation_readnl
 

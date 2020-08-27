@@ -317,10 +317,8 @@ contains
       character(len=*), intent(in) :: error_message
       logical, intent(in), optional :: fatal
       logical, intent(in), optional :: warn
-      logical :: fatal_local = .true.
-      logical :: warn_local = .true.
-
-      if (present(warn)) warn_local = warn
+      logical :: fatal_local
+      logical :: warn_local
 
       ! Allow passing of an optional flag to not stop the run if an error is
       ! encountered. This allows this subroutine to be used when inquiring if a
@@ -329,6 +327,14 @@ contains
          fatal_local = fatal
       else
          fatal_local = .true.
+      end if
+
+      ! Allow optional flag to disable warning messages.
+      ! Useful for avoiding low temperature messages in aquaplanet cases.
+      if (present(warn)) then
+         warn_local = warn
+      else
+         warn_local = .true.
       end if
 
       ! If we encounter an error, fail if we require success. Otherwise do
