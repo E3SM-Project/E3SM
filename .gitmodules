@@ -35,3 +35,5 @@
 	path = cime
 	url = git@github.com:ESMCI/cime.git
 	branch = master
+[submodule "Submod"]
+	branch = rljacob/e3smconfig/elm-name
