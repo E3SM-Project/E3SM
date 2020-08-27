@@ -988,7 +988,7 @@ is the value of that variable from the *previous* time level!
                 <var name="eigencalvingParameter" type="real" dimensions="nCells Time" units="m s" time_levs="1"
                      description="proportionality constant K2+- used in eigencalving formulation"
                 />
-                <var name="calvingVelocity" type="real" dimensions="nEdges Time" units="m s^{-1}" time_levs="1"
+                <var name="calvingVelocity" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
                      description="rate of calving front retreat due to calving, represented as a velocity normal to the calving front (in the x-y plane)."
                 />
                 <var name="uncalvedVolumeNonDynCell" type="real" dimensions="nCells Time" units="m^3" time_levs="1"
