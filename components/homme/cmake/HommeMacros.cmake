@@ -589,7 +589,9 @@ macro(createTest testFile)
     ADD_DEPENDENCIES(baseline ${EXEC_NAME})
 
     # Force cprnc to be built when the individual test is run
-    ADD_DEPENDENCIES(${THIS_TEST_INDIV} cprnc)
+    IF (TARGET cprnc)
+      ADD_DEPENDENCIES(${THIS_TEST_INDIV} cprnc)
+    ENDIF()
 
     # This helped in some builds on GPU, where the test hanged for a VERY long time
     IF (NOT "${TIMEOUT}" STREQUAL "")
