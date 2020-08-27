@@ -206,9 +206,9 @@
       <value datm_mode="CORE2_IAF" >CORE2_IAF.GCGCS.PREC,CORE2_IAF.GISS.LWDN,CORE2_IAF.GISS.SWDN,CORE2_IAF.GISS.SWUP,CORE2_IAF.NCEP.DN10,CORE2_IAF.NCEP.Q_10,CORE2_IAF.NCEP.SLP_,CORE2_IAF.NCEP.T_10,CORE2_IAF.NCEP.U_10,CORE2_IAF.NCEP.V_10,CORE2_IAF.CORE2.ArcFactor</value>
       <value datm_mode="CORE_IAF_JRA_1p4_2018" >CORE_IAF_JRA_1p4_2018.GCGCS.PREC,CORE_IAF_JRA_1p4_2018.GISS.LWDN,CORE_IAF_JRA_1p4_2018.GISS.SWDN,CORE_IAF_JRA_1p4_2018.NCEP.Q_10,CORE_IAF_JRA_1p4_2018.NCEP.SLP_,CORE_IAF_JRA_1p4_2018.NCEP.T_10,CORE_IAF_JRA_1p4_2018.NCEP.U_10,CORE_IAF_JRA_1p4_2018.NCEP.V_10</value>
       <value datm_mode="CORE_IAF_JRA" >CORE_IAF_JRA.GCGCS.PREC,CORE_IAF_JRA.GISS.LWDN,CORE_IAF_JRA.GISS.SWDN,CORE_IAF_JRA.NCEP.Q_10,CORE_IAF_JRA.NCEP.SLP_,CORE_IAF_JRA.NCEP.T_10,CORE_IAF_JRA.NCEP.U_10,CORE_IAF_JRA.NCEP.V_10</value>
-      <value datm_mode="CORE_RYF8485_JRA" >CORE_RYF8485_JRA.GISS,CORE_RYF8485_JRA.GCGCS,CORE_RYF8485_JRA.NCEP</value>
-      <value datm_mode="CORE_RYF9091_JRA" >CORE_RYF9091_JRA.GISS,CORE_RYF9091_JRA.GCGCS,CORE_RYF9091_JRA.NCEP</value>
-      <value datm_mode="CORE_RYF0304_JRA" >CORE_RYF0304_JRA.GISS,CORE_RYF0304_JRA.GCGCS,CORE_RYF0304_JRA.NCEP</value>
+      <value datm_mode="CORE_RYF8485_JRA" >CORE_RYF8485_JRA.GISS.LWDN,CORE_RYF8485_JRA.GISS.SWDN,CORE_RYF8485_JRA.GCGCS,CORE_RYF8485_JRA.NCEP</value>
+      <value datm_mode="CORE_RYF9091_JRA" >CORE_RYF9091_JRA.GISS.LWDN,CORE_RYF9091_JRA.GISS.SWDN,CORE_RYF9091_JRA.GCGCS,CORE_RYF9091_JRA.NCEP</value>
+      <value datm_mode="CORE_RYF0304_JRA" >CORE_RYF0304_JRA.GISS.LWDN,CORE_RYF0304_JRA.GISS.SWDN,CORE_RYF0304_JRA.GCGCS,CORE_RYF0304_JRA.NCEP</value>
       <value datm_mode="CORE2_IAF" atm_grid="01col" >CORE2_IAF.NCEP.DENS.SOFS,CORE2_IAF.NCEP.PSLV.SOFS,CORE2_IAF.PREC.SOFS.DAILY,CORE2_IAF.LWDN.SOFS.DAILY,CORE2_IAF.SWDN.SOFS.DAILY,CORE2_IAF.SWUP.SOFS.DAILY,CORE2_IAF.SHUM.SOFS.6HOUR,CORE2_IAF.TBOT.SOFS.6HOUR,CORE2_IAF.U.SOFS.6HOUR,CORE2_IAF.V.SOFS.6HOUR,CORE2_IAF.CORE2.ArcFactor</value>
       <value datm_mode="CPLHIST">CPLHISTForcing.Solar,CPLHISTForcing.nonSolarFlux,CPLHISTForcing.State3hr,CPLHISTForcing.State1hr</value>
     </values>
@@ -2178,13 +2178,16 @@
         JRA.v1.3.v_10.TL319.2017.190528.nc
         JRA.v1.3.v_10.TL319.2018.190528.nc
       </value> 
-      <value stream="CORE_RYF8485_JRA.GISS">RAF_8485.JRA.v1.3.radiation.TL319.180404.nc</value>
+      <value stream="CORE_RYF8485_JRA.GISS.LWDN">RAF_8485.JRA.v1.3.radiation.lwdn.TL319.180404.nc</value>
+      <value stream="CORE_RYF8485_JRA.GISS.SWDN">RAF_8485.JRA.v1.3.radiation.swdn.TL319.180404.nc</value>
       <value stream="CORE_RYF8485_JRA.GCGCS">RAF_8485.JRA.v1.3.prec.TL319.180404.nc</value>
       <value stream="CORE_RYF8485_JRA.NCEP">RAF_8485.JRA.v1.3.states.TL319.180404.nc</value>
-      <value stream="CORE_RYF9091_JRA.GISS">RAF_9091.JRA.v1.3.radiation.TL319.180404.nc</value>
+      <value stream="CORE_RYF9091_JRA.GISS.LWDN">RAF_9091.JRA.v1.3.radiation.lwdn.TL319.180404.nc</value>
+      <value stream="CORE_RYF9091_JRA.GISS.SWDN">RAF_9091.JRA.v1.3.radiation.swdn.TL319.180404.nc</value>
       <value stream="CORE_RYF9091_JRA.GCGCS">RAF_9091.JRA.v1.3.prec.TL319.180404.nc</value>
       <value stream="CORE_RYF9091_JRA.NCEP">RAF_9091.JRA.v1.3.states.TL319.180404.nc</value>
-      <value stream="CORE_RYF0304_JRA.GISS">RAF_0304.JRA.v1.3.radiation.TL319.180404.nc</value>
+      <value stream="CORE_RYF0304_JRA.GISS.LWDN">RAF_0304.JRA.v1.3.radiation.lwdn.TL319.180404.nc</value>
+      <value stream="CORE_RYF0304_JRA.GISS.SWDN">RAF_0304.JRA.v1.3.radiation.swdn.TL319.180404.nc</value>
       <value stream="CORE_RYF0304_JRA.GCGCS">RAF_0304.JRA.v1.3.prec.TL319.180404.nc</value>
       <value stream="CORE_RYF0304_JRA.NCEP">RAF_0304.JRA.v1.3.states.TL319.180404.nc</value>
       <value stream="co2tseries.20tr.latbnd">fco2_datm_lat-bands_simyr_1750-2015_CMIP6_c180929.nc</value>
@@ -2517,8 +2520,10 @@
       <value  stream="CORE_IAF_JRA.*.NCEP.V_10">
         v_10  v
       </value>
-      <value stream="CORE_RYF.*.GISS">
+      <value stream="CORE_RYF.*.GISS.LWDN">
         lwdn  lwdn
+      </value>
+      <value stream="CORE_RYF.*.GISS.SWDN">
         swdn  swdn
       </value>
       <value stream="CORE_RYF.*.GCGCS">
@@ -2802,6 +2807,7 @@
     <values>
       <value>0</value>
       <value stream="CORE_IAF_JRA.*.GISS.SWDN">-5400</value>
+      <value stream="CORE_RYF.*.GISS.SWDN">-5400</value>
       <value stream="CPLHISTForcing.Solar">2700</value>
       <value stream="CPLHISTForcing.nonSolarFlux">900</value>
       <value stream="CPLHISTForcing.State3hr">900</value>
@@ -3081,6 +3087,7 @@
       <value stream="topo.observed">lower</value>
       <value stream="CORE2_IAF.GISS.SWDN">coszen</value>
       <value stream="CORE_IAF_JRA.*.GISS.SWDN">coszen</value>
+      <value stream="CORE_RYF.*.GISS.SWDN">coszen</value>
     </values>
   </entry>
 
