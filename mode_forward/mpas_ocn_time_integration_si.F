@@ -39,6 +39,7 @@ module ocn_time_integration_si
    use ocn_tendency
    use ocn_diagnostics
    use ocn_gm
+   use ocn_config
 
    use ocn_equation_of_state
    use ocn_vmix
@@ -145,32 +146,7 @@ module ocn_time_integration_si
       integer :: neededHalos
 
       ! Config options
-      character (len=StrKIND), pointer :: config_time_integrator
-      integer, pointer :: config_n_bcl_iter_mid, config_n_bcl_iter_beg, config_n_bcl_iter_end
-      integer, pointer :: config_n_ts_iter, config_btr_subcycle_loop_factor
-      integer, pointer :: config_n_btr_cor_iter, config_num_halos
-      logical, pointer :: config_use_GM
-
-      logical, pointer :: config_use_freq_filtered_thickness, config_btr_solve_SSH2, config_filter_btr_mode
-      logical, pointer :: config_vel_correction, config_prescribe_velocity, config_prescribe_thickness
-      logical, pointer :: config_disable_thick_all_tend
-      logical, pointer :: config_disable_vel_all_tend
-      logical, pointer :: config_disable_tr_all_tend
-      logical, pointer :: config_use_cvmix_kpp
       logical, pointer :: config_use_tracerGroup
-      logical, pointer :: config_compute_active_tracer_budgets
-      logical, pointer :: config_use_tidal_potential_forcing
-
-      character (len=StrKIND), pointer :: config_land_ice_flux_mode
-
-      real (kind=RKIND), pointer :: config_mom_del4, config_btr_gam1_velWt1, config_btr_gam2_SSHWt1
-      real (kind=RKIND), pointer :: config_btr_gam3_velWt2
-      real (kind=RKIND), pointer :: config_self_attraction_and_loading_beta
-
-      ! Configs for the semi-implicit solver 
-      character (len=StrKIND), pointer :: config_btr_si_preconditioner
-      real (kind=RKIND), pointer :: config_btr_si_tolerance
-      integer, pointer :: config_n_btr_si_outer_iter
 
       ! Dimensions
       integer :: nCells, nEdges
@@ -272,52 +248,9 @@ module ocn_time_integration_si
       integer :: threadNum
       integer :: temp_mask
 
-
       dminfo = domain % dminfo
 
       call mpas_timer_start("si timestep")
-
-      call mpas_pool_get_config(domain % configs, 'config_n_bcl_iter_beg', config_n_bcl_iter_beg)
-      call mpas_pool_get_config(domain % configs, 'config_n_bcl_iter_mid', config_n_bcl_iter_mid)
-      call mpas_pool_get_config(domain % configs, 'config_n_bcl_iter_end', config_n_bcl_iter_end)
-      call mpas_pool_get_config(domain % configs, 'config_n_ts_iter', config_n_ts_iter)
-      call mpas_pool_get_config(domain % configs, 'config_btr_subcycle_loop_factor', config_btr_subcycle_loop_factor)
-      call mpas_pool_get_config(domain % configs, 'config_btr_gam1_velWt1', config_btr_gam1_velWt1)
-      call mpas_pool_get_config(domain % configs, 'config_btr_gam3_velWt2', config_btr_gam3_velWt2)
-      call mpas_pool_get_config(domain % configs, 'config_btr_solve_SSH2', config_btr_solve_SSH2)
-      call mpas_pool_get_config(domain % configs, 'config_n_btr_cor_iter', config_n_btr_cor_iter)
-      call mpas_pool_get_config(domain % configs, 'config_btr_gam2_SSHWt1', config_btr_gam2_SSHWt1)
-      call mpas_pool_get_config(domain % configs, 'config_filter_btr_mode', config_filter_btr_mode)
-
-      call mpas_pool_get_config(domain % configs, 'config_mom_del4', config_mom_del4)
-      call mpas_pool_get_config(domain % configs, 'config_use_freq_filtered_thickness', config_use_freq_filtered_thickness)
-      call mpas_pool_get_config(domain % configs, 'config_time_integrator', config_time_integrator)
-      call mpas_pool_get_config(domain % configs, 'config_vel_correction', config_vel_correction)
-      call mpas_pool_get_config(domain % configs, 'config_disable_vel_all_tend', config_disable_vel_all_tend)
-      call mpas_pool_get_config(domain % configs, 'config_disable_thick_all_tend', config_disable_thick_all_tend)
-      call mpas_pool_get_config(domain % configs, 'config_disable_tr_all_tend', config_disable_tr_all_tend)
-      call mpas_pool_get_config(domain % configs, 'config_use_tidal_potential_forcing', config_use_tidal_potential_forcing)
-      call mpas_pool_get_config(domain % configs, 'config_self_attraction_and_loading_beta',config_self_attraction_and_loading_beta)
-
-      call mpas_pool_get_config(domain % configs, 'config_prescribe_velocity', config_prescribe_velocity)
-      call mpas_pool_get_config(domain % configs, 'config_prescribe_thickness', config_prescribe_thickness)
-
-      call mpas_pool_get_config(domain % configs, 'config_prescribe_velocity', config_prescribe_velocity)
-      call mpas_pool_get_config(domain % configs, 'config_prescribe_thickness', config_prescribe_thickness)
-
-      call mpas_pool_get_config(domain % configs, 'config_use_GM', config_use_GM)
-      call mpas_pool_get_config(domain % configs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
-      call mpas_pool_get_config(domain % configs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
-
-      call mpas_pool_get_config(domain % configs, 'config_num_halos', config_num_halos)
-
-      call mpas_pool_get_config(domain % configs, 'config_compute_active_tracer_budgets', config_compute_active_tracer_budgets)
-
-
-      ! configurations for the semi-implicit barotropic mode solver
-      call mpas_pool_get_config(domain % configs, 'config_btr_si_preconditioner', config_btr_si_preconditioner)
-      call mpas_pool_get_config(domain % configs, 'config_btr_si_tolerance'     , config_btr_si_tolerance     )
-      call mpas_pool_get_config(domain % configs, 'config_n_btr_si_outer_iter'  , config_n_btr_si_outer_iter  )
 
       ! Tolerance for main iteration -- !
       crit_main  = config_btr_si_tolerance * area_mean
@@ -383,6 +316,7 @@ module ocn_time_integration_si
 
          ! Initialize * variables that are used to compute baroclinic tendencies below.
 
+         !$omp parallel
          !$omp do schedule(runtime) private(k)
          do iEdge = 1, nEdges
             do k = 1, nVertLevels !maxLevelEdgeTop % array(iEdge)
@@ -412,6 +346,7 @@ module ocn_time_integration_si
             end do
          end do
          !$omp end do
+         !$omp end parallel
 
          call mpas_pool_begin_iteration(tracersPool)
          do while ( mpas_pool_get_next_member(tracersPool, groupItr))
@@ -420,6 +355,7 @@ module ocn_time_integration_si
                call mpas_pool_get_array(tracersPool, groupItr % memberName, tracersGroupNew, 2)
 
                if ( associated(tracersGroupCur) .and. associated(tracersGroupNew) ) then
+                  !$omp parallel
                   !$omp do schedule(runtime) private(k)
                   do iCell = 1, nCells
                      do k = 1, maxLevelCell(iCell)
@@ -427,25 +363,30 @@ module ocn_time_integration_si
                      end do
                   end do
                   !$omp end do
+                  !$omp end parallel
                end if
             end if
          end do
 
 
          if (associated(highFreqThicknessNew)) then
+            !$omp parallel
             !$omp do schedule(runtime)
             do iCell = 1, nCells
                highFreqThicknessNew(:, iCell) = highFreqThicknessCur(:, iCell)
             end do
             !$omp end do
+            !$omp end parallel
          end if
 
          if (associated(lowFreqDivergenceNew)) then
+            !$omp parallel
             !$omp do schedule(runtime)
             do iCell = 1, nCells
                lowFreqDivergenceNew(:, iCell) = lowFreqDivergenceCur(:, iCell)
             end do
             !$omp end do
+            !$omp end parallel
          endif
 
          block => block % next
@@ -541,6 +482,7 @@ module ocn_time_integration_si
 
                nCells = nCellsPtr
 
+               !$omp parallel
                !$omp do schedule(runtime) private(k)
                do iCell = 1, nCells
                   do k = 1, maxLevelCell(iCell)
@@ -549,6 +491,7 @@ module ocn_time_integration_si
                   end do
                end do
                !$omp end do
+               !$omp end parallel
 
                block => block % next
             end do
@@ -629,7 +572,9 @@ module ocn_time_integration_si
 
                allocate(uTemp(nVertLevels))
 
-               !$omp do schedule(runtime)
+               !$omp parallel
+               !$omp do schedule(runtime) private(cell1, cell2, uTemp, k, normalThicknessFluxSum, &
+               !$omp             thicknessSum)
                do iEdge = 1, nEdges
                   cell1 = cellsOnEdge(1,iEdge)
                   cell2 = cellsOnEdge(2,iEdge)
@@ -670,6 +615,7 @@ module ocn_time_integration_si
                   enddo
                enddo ! iEdge
                !$omp end do
+               !$omp end parallel
 
                deallocate(uTemp)
 
@@ -746,11 +692,13 @@ module ocn_time_integration_si
                nEdges = nEdgesArray(3)
    
                if (config_filter_btr_mode) then
+                  !$omp parallel
                   !$omp do schedule(runtime)
                   do iEdge = 1, nEdges
                      barotropicForcing(iEdge) = 0.0_RKIND
                   end do
                   !$omp end do
+                  !$omp end parallel
                endif
    
                        sshNew(:) = sshCur(:)
@@ -807,11 +755,13 @@ module ocn_time_integration_si
                nEdges = nEdgesArray(3)
    
                if (config_filter_btr_mode) then
+                  !$omp parallel
                   !$omp do schedule(runtime)
                   do iEdge = 1, nEdges
                      barotropicForcing(iEdge) = 0.0_RKIND
                   end do
                   !$omp end do
+                  !$omp end parallel
                endif
    
                        sshCur(:) = sshNew(:)
@@ -966,7 +916,6 @@ module ocn_time_integration_si
             call mpas_timer_start("si halo r0")
             call mpas_dmpar_exch_group_create(domain, iterGroupName)
             call mpas_dmpar_exch_group_add_field(domain, iterGroupName, 'CGvec_r0', 1)
-            call mpas_threading_barrier()
             call mpas_dmpar_exch_group_full_halo_exch(domain, iterGroupName)
             call mpas_dmpar_exch_group_destroy(domain, iterGroupName)
             call mpas_timer_stop("si halo r0")
@@ -993,11 +942,15 @@ module ocn_time_integration_si
 
             if ( trim(config_btr_si_preconditioner) == 'ras' ) then
                ! RAS preconditioning: Use BLAS for symmetric matrix-vector multiplication
+#ifdef USE_LAPACK
                call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_r0(1:nPrecVec), 1, 0.0_RKIND, CGvec_rh0(1:nPrecVec), 1)
+#endif
 
             elseif ( trim(config_btr_si_preconditioner) == 'block_jacobi' ) then
                ! Block-Jacobi preconditioning: Use BLAS for symmetric matrix-vector multiplication
+#ifdef USE_LAPACK
                call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_r0(1:nPrecVec), 1, 0.0_RKIND, CGvec_rh0(1:nPrecVec), 1)
+#endif
 
             elseif ( trim(config_btr_si_preconditioner) == 'jacobi' ) then
                ! Jacobi preconditioning 
@@ -1014,7 +967,6 @@ module ocn_time_integration_si
          call mpas_timer_start("si halo r0")
          call mpas_dmpar_exch_group_create(domain, iterGroupName)
          call mpas_dmpar_exch_group_add_field(domain, iterGroupName, 'CGvec_rh0', 1)
-         call mpas_threading_barrier()
          call mpas_dmpar_exch_group_full_halo_exch(domain, iterGroupName)
          call mpas_dmpar_exch_group_destroy(domain, iterGroupName)
          call mpas_timer_stop("si halo r0")
@@ -1101,7 +1053,6 @@ module ocn_time_integration_si
             call mpas_timer_start("si halo r0")
             call mpas_dmpar_exch_group_create(domain, iterGroupName)
             call mpas_dmpar_exch_group_add_field(domain, iterGroupName, 'CGvec_w0', 1)
-            call mpas_threading_barrier()
             call mpas_dmpar_exch_group_full_halo_exch(domain, iterGroupName)
             call mpas_dmpar_exch_group_destroy(domain, iterGroupName)
             call mpas_timer_stop("si halo r0")
@@ -1128,11 +1079,15 @@ module ocn_time_integration_si
  
             if ( trim(config_btr_si_preconditioner) == 'ras' ) then
                ! RAS preconditioning: Use BLAS for symmetric matrix-vector multiplication
+#ifdef USE_LAPACK
                call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_w0(1:nPrecVec), 1, 0.0_RKIND, CGvec_wh0(1:nPrecVec), 1)
+#endif
  
             elseif ( trim(config_btr_si_preconditioner) == 'block_jacobi' ) then
                ! Block-Jacobi preconditioning: Use BLAS for symmetric matrix-vector multiplication
+#ifdef USE_LAPACK
                call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_w0(1:nPrecVec), 1, 0.0_RKIND, CGvec_wh0(1:nPrecVec), 1)
+#endif
  
             elseif ( trim(config_btr_si_preconditioner) == 'jacobi' ) then
                ! Jacobi preconditioning 
@@ -1149,7 +1104,6 @@ module ocn_time_integration_si
          call mpas_timer_start("si halo r0")
          call mpas_dmpar_exch_group_create(domain, iterGroupName)
          call mpas_dmpar_exch_group_add_field(domain, iterGroupName, 'CGvec_wh0', 1)
-         call mpas_threading_barrier()
          call mpas_dmpar_exch_group_full_halo_exch(domain, iterGroupName)
          call mpas_dmpar_exch_group_destroy(domain, iterGroupName)
          call mpas_timer_stop("si halo r0")
@@ -1351,7 +1305,6 @@ module ocn_time_integration_si
                call mpas_timer_start("si halo iter")
                call mpas_dmpar_exch_group_create(domain, iterGroupName)
                call mpas_dmpar_exch_group_add_field(domain, iterGroupName, 'CGvec_z1', 1)
-               call mpas_threading_barrier()
                call mpas_dmpar_exch_group_full_halo_exch(domain, iterGroupName)
                call mpas_dmpar_exch_group_destroy(domain, iterGroupName)
                call mpas_timer_stop("si halo iter")
@@ -1377,11 +1330,15 @@ module ocn_time_integration_si
 
                if ( trim(config_btr_si_preconditioner) == 'ras' ) then
                   ! RAS preconditioning: Use BLAS for symmetric matrix-vector multiplication
+#ifdef USE_LAPACK
                   call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_z1(1:nPrecVec), 1, 0.0_RKIND, CGvec_zh1(1:nPrecVec), 1)
+#endif
    
                elseif ( trim(config_btr_si_preconditioner) == 'block_jacobi' ) then
                   ! Block-Jacobi preconditioning: Use BLAS for symmetric matrix-vector multiplication
+#ifdef USE_LAPACK
                   call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_z1(1:nPrecVec), 1, 0.0_RKIND, CGvec_zh1(1:nPrecVec), 1)
+#endif
    
                elseif ( trim(config_btr_si_preconditioner) == 'jacobi' ) then
                   ! Jacobi preconditioning 
@@ -1398,7 +1355,6 @@ module ocn_time_integration_si
             call mpas_timer_start("si halo iter")
             call mpas_dmpar_exch_group_create(domain, iterGroupName)
             call mpas_dmpar_exch_group_add_field(domain, iterGroupName, 'CGvec_zh1', 1)
-            call mpas_threading_barrier()
             call mpas_dmpar_exch_group_full_halo_exch(domain, iterGroupName)
             call mpas_dmpar_exch_group_destroy(domain, iterGroupName)
             call mpas_timer_stop("si halo iter")
@@ -1531,7 +1487,6 @@ module ocn_time_integration_si
                call mpas_timer_start("si halo iter")
                call mpas_dmpar_exch_group_create(domain, iterGroupName)
                call mpas_dmpar_exch_group_add_field(domain, iterGroupName, 'CGvec_w1', 1)
-               call mpas_threading_barrier()
                call mpas_dmpar_exch_group_full_halo_exch(domain, iterGroupName)
                call mpas_dmpar_exch_group_destroy(domain, iterGroupName)
                call mpas_timer_stop("si halo iter")
@@ -1558,11 +1513,15 @@ module ocn_time_integration_si
    
                if ( trim(config_btr_si_preconditioner) == 'ras' ) then
                   ! RAS preconditioning: Use BLAS for symmetric matrix-vector multiplication
+#ifdef USE_LAPACK
                   call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_w1(1:nPrecVec), 1, 0.0_RKIND, CGvec_wh1(1:nPrecVec), 1)
+#endif
    
                elseif ( trim(config_btr_si_preconditioner) == 'block_jacobi' ) then
                   ! Block-Jacobi preconditioning: Use BLAS for symmetric matrix-vector multiplication
+#ifdef USE_LAPACK
                   call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_w1(1:nPrecVec), 1, 0.0_RKIND, CGvec_wh1(1:nPrecVec), 1)
+#endif
                elseif ( trim(config_btr_si_preconditioner) == 'jacobi' ) then
                   ! Jacobi preconditioning 
                   CGvec_wh1(1:nPrecVec) = CGvec_w1(1:nPrecVec) * prec_ivmat(1:nPrecVec,1)
@@ -1578,7 +1537,6 @@ module ocn_time_integration_si
             call mpas_timer_start("si halo iter")
             call mpas_dmpar_exch_group_create(domain, iterGroupName)
             call mpas_dmpar_exch_group_add_field(domain, iterGroupName, 'CGvec_wh1', 1)
-            call mpas_threading_barrier()
             call mpas_dmpar_exch_group_full_halo_exch(domain, iterGroupName)
             call mpas_dmpar_exch_group_destroy(domain, iterGroupName)
             call mpas_timer_stop("si halo iter")
@@ -1701,7 +1659,6 @@ module ocn_time_integration_si
          call mpas_dmpar_exch_group_create(domain, iterGroupName)
          call mpas_dmpar_exch_group_add_field(domain, iterGroupName, 'sshSubcycle', timeLevel=1)
          call mpas_dmpar_exch_group_add_field(domain, iterGroupName, 'ssh', timeLevel=2)
-         call mpas_threading_barrier()
          call mpas_dmpar_exch_group_full_halo_exch(domain, iterGroupName)
          call mpas_dmpar_exch_group_destroy(domain, iterGroupName)
          call mpas_timer_stop("si halo iter")
@@ -1743,7 +1700,8 @@ module ocn_time_integration_si
             nCells = nCellsArray( cellHaloComputeCounter )
             nEdges = nEdgesArray( edgeHaloComputeCounter )
 
-            !$omp do schedule(runtime) private(cell1, cell2, CoriolisTerm, i, eoe)
+            !$omp parallel
+            !$omp do schedule(runtime) private(temp_mask, cell1, cell2, CoriolisTerm, i, eoe, wgt)
             do iEdge = 1, nEdges
 
                temp_mask = edgeMask(1, iEdge)
@@ -1760,7 +1718,7 @@ module ocn_time_integration_si
                   CoriolisTerm = CoriolisTerm + wgt  &
                                * normalBarotropicVelocityCur(eoe) * fEdge(eoe)
                end do
-                    barotropicCoriolisTerm(iEdge) = CoriolisTerm
+               barotropicCoriolisTerm(iEdge) = CoriolisTerm
 
                normalBarotropicVelocitySubcycleNew(iEdge) &
                   = temp_mask &
@@ -1769,6 +1727,8 @@ module ocn_time_integration_si
                   * ( (alpha1*sshNew(cell2)+alpha2*sshCur(cell2)) - (alpha1*sshNew(cell1)+alpha2*sshCur(cell1))) &
                   / dcEdge(iEdge) - barotropicForcing(iEdge)))
             end do ! iEdge
+            !$omp end do
+            !$omp end parallel
 
             do iEdge = 1, nEdges
                normalBarotropicVelocitySubcycleCur(iEdge) =  0.5d0* normalBarotropicVelocitySubcycleNew(iEdge)  &
@@ -1804,7 +1764,8 @@ module ocn_time_integration_si
             nCells = nCellsArray( cellHaloComputeCounter-1 )
             nEdges = nEdgesArray( edgeHaloComputeCounter-1 )
 
-            !$omp do schedule(runtime) private(cell1, cell2, CoriolisTerm, i, eoe)
+            !$omp parallel
+            !$omp do schedule(runtime) private(cell1, cell2, temp1, i, eoe)
             do iEdge = 1, nEdges
 
                cell1 = cellsOnEdge(1,iEdge)
@@ -1821,6 +1782,7 @@ module ocn_time_integration_si
                barotropicCoriolisTerm(iEdge) = temp1
             end do
             !$omp end do
+            !$omp end parallel
 
             block => block % next
          end do  ! block
@@ -1926,7 +1888,6 @@ module ocn_time_integration_si
             call mpas_timer_start("si halo r0")
             call mpas_dmpar_exch_group_create(domain, iterGroupName)
             call mpas_dmpar_exch_group_add_field(domain, iterGroupName, 'CGvec_r0', 1)
-            call mpas_threading_barrier()
             call mpas_dmpar_exch_group_full_halo_exch(domain, iterGroupName)
             call mpas_dmpar_exch_group_destroy(domain, iterGroupName)
             call mpas_timer_stop("si halo r0")
@@ -1953,11 +1914,15 @@ module ocn_time_integration_si
 
             if ( trim(config_btr_si_preconditioner) == 'ras' ) then
                ! RAS preconditioning: Use BLAS for symmetric matrix-vector multiplication
+#ifdef USE_LAPACK
                call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_r0(1:nPrecVec), 1, 0.0_RKIND, CGvec_rh0(1:nPrecVec), 1)
+#endif
 
             elseif ( trim(config_btr_si_preconditioner) == 'block_jacobi' ) then
                ! Block-Jacobi preconditioning: Use BLAS for symmetric matrix-vector multiplication
+#ifdef USE_LAPACK
                call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_r0(1:nPrecVec), 1, 0.0_RKIND, CGvec_rh0(1:nPrecVec), 1)
+#endif
 
             elseif ( trim(config_btr_si_preconditioner) == 'jacobi' ) then
                ! Jacobi preconditioning
@@ -1975,7 +1940,6 @@ module ocn_time_integration_si
          call mpas_timer_start("si halo r0")
          call mpas_dmpar_exch_group_create(domain, iterGroupName)
          call mpas_dmpar_exch_group_add_field(domain, iterGroupName, 'CGvec_rh0', 1)
-         call mpas_threading_barrier()
          call mpas_dmpar_exch_group_full_halo_exch(domain, iterGroupName)
          call mpas_dmpar_exch_group_destroy(domain, iterGroupName)
          call mpas_timer_stop("si halo r0")
@@ -2063,7 +2027,6 @@ module ocn_time_integration_si
             call mpas_timer_start("si halo r0")
             call mpas_dmpar_exch_group_create(domain, iterGroupName)
             call mpas_dmpar_exch_group_add_field(domain, iterGroupName, 'CGvec_w0', 1)
-            call mpas_threading_barrier()
             call mpas_dmpar_exch_group_full_halo_exch(domain, iterGroupName)
             call mpas_dmpar_exch_group_destroy(domain, iterGroupName)
             call mpas_timer_stop("si halo r0")
@@ -2089,11 +2052,15 @@ module ocn_time_integration_si
  
             if ( trim(config_btr_si_preconditioner) == 'ras' ) then
                ! RAS preconditioning: Use BLAS for symmetric matrix-vector multiplication
+#ifdef USE_LAPACK
                call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_w0(1:nPrecVec), 1, 0.0_RKIND, CGvec_wh0(1:nPrecVec), 1)
+#endif
  
             elseif ( trim(config_btr_si_preconditioner) == 'block_jacobi' ) then
                ! Block-Jacobi preconditioning: Use BLAS for symmetric matrix-vector multiplication
+#ifdef USE_LAPACK
                call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_w0(1:nPrecVec), 1, 0.0_RKIND, CGvec_wh0(1:nPrecVec), 1)
+#endif
  
             elseif ( trim(config_btr_si_preconditioner) == 'jacobi' ) then
                ! Jacobi preconditioning
@@ -2110,7 +2077,6 @@ module ocn_time_integration_si
          call mpas_timer_start("si halo r0")
          call mpas_dmpar_exch_group_create(domain, iterGroupName)
          call mpas_dmpar_exch_group_add_field(domain, iterGroupName, 'CGvec_wh0', 1)
-         call mpas_threading_barrier()
          call mpas_dmpar_exch_group_full_halo_exch(domain, iterGroupName)
          call mpas_dmpar_exch_group_destroy(domain, iterGroupName)
          call mpas_timer_stop("si halo r0")
@@ -2312,7 +2278,6 @@ module ocn_time_integration_si
                call mpas_timer_start("si halo iter")
                call mpas_dmpar_exch_group_create(domain, iterGroupName)
                call mpas_dmpar_exch_group_add_field(domain, iterGroupName, 'CGvec_z1', 1)
-               call mpas_threading_barrier()
                call mpas_dmpar_exch_group_full_halo_exch(domain, iterGroupName)
                call mpas_dmpar_exch_group_destroy(domain, iterGroupName)
                call mpas_timer_stop("si halo iter")
@@ -2337,11 +2302,15 @@ module ocn_time_integration_si
    
                if ( trim(config_btr_si_preconditioner) == 'ras' ) then
                   ! RAS preconditioning: Use BLAS for symmetric matrix-vector multiplication
+#ifdef USE_LAPACK
                   call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_z1(1:nPrecVec), 1, 0.0_RKIND, CGvec_zh1(1:nPrecVec), 1)
+#endif
    
                elseif ( trim(config_btr_si_preconditioner) == 'block_jacobi' ) then
                   ! Block-Jacobi preconditioning: Use BLAS for symmetric matrix-vector multiplication
+#ifdef USE_LAPACK
                   call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_z1(1:nPrecVec), 1, 0.0_RKIND, CGvec_zh1(1:nPrecVec), 1)
+#endif
    
                elseif ( trim(config_btr_si_preconditioner) == 'jacobi' ) then
                   ! Jacobi preconditioning 
@@ -2358,7 +2327,6 @@ module ocn_time_integration_si
             call mpas_timer_start("si halo iter")
             call mpas_dmpar_exch_group_create(domain, iterGroupName)
             call mpas_dmpar_exch_group_add_field(domain, iterGroupName, 'CGvec_zh1', 1)
-            call mpas_threading_barrier()
             call mpas_dmpar_exch_group_full_halo_exch(domain, iterGroupName)
             call mpas_dmpar_exch_group_destroy(domain, iterGroupName)
             call mpas_timer_stop("si halo iter")
@@ -2489,7 +2457,6 @@ module ocn_time_integration_si
                call mpas_timer_start("si halo iter")
                call mpas_dmpar_exch_group_create(domain, iterGroupName)
                call mpas_dmpar_exch_group_add_field(domain, iterGroupName, 'CGvec_w1', 1)
-               call mpas_threading_barrier()
                call mpas_dmpar_exch_group_full_halo_exch(domain, iterGroupName)
                call mpas_dmpar_exch_group_destroy(domain, iterGroupName)
                call mpas_timer_stop("si halo iter")
@@ -2515,11 +2482,15 @@ module ocn_time_integration_si
    
                if ( trim(config_btr_si_preconditioner) == 'ras' ) then
                   ! RAS preconditioning: Use BLAS for symmetric matrix-vector multiplication
+#ifdef USE_LAPACK
                   call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_w1(1:nPrecVec), 1, 0.0_RKIND, CGvec_wh1(1:nPrecVec), 1)
+#endif
    
                elseif ( trim(config_btr_si_preconditioner) == 'block_jacobi' ) then
                   ! Block-Jacobi preconditioning: Use BLAS for symmetric matrix-vector multiplication
+#ifdef USE_LAPACK
                   call DSYMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, nPrecVec, CGvec_w1(1:nPrecVec), 1, 0.0_RKIND, CGvec_wh1(1:nPrecVec), 1)
+#endif
                elseif ( trim(config_btr_si_preconditioner) == 'jacobi' ) then
                   ! Jacobi preconditioning 
                   CGvec_wh1(1:nPrecVec) = CGvec_w1(1:nPrecVec) * prec_ivmat(1:nPrecVec,1)
@@ -2535,7 +2506,6 @@ module ocn_time_integration_si
             call mpas_timer_start("si halo iter")
             call mpas_dmpar_exch_group_create(domain, iterGroupName)
             call mpas_dmpar_exch_group_add_field(domain, iterGroupName, 'CGvec_wh1', 1)
-            call mpas_threading_barrier()
             call mpas_dmpar_exch_group_full_halo_exch(domain, iterGroupName)
             call mpas_dmpar_exch_group_destroy(domain, iterGroupName)
             call mpas_timer_stop("si halo iter")
@@ -2667,7 +2637,6 @@ module ocn_time_integration_si
          call mpas_timer_start("si halo iter")
          call mpas_dmpar_exch_group_create(domain, iterGroupName)
          call mpas_dmpar_exch_group_add_field(domain, iterGroupName, 'sshSubcycle', timeLevel=1)
-         call mpas_threading_barrier()
          call mpas_dmpar_exch_group_full_halo_exch(domain, iterGroupName)
          call mpas_dmpar_exch_group_destroy(domain, iterGroupName)
          call mpas_timer_stop("si halo iter")
@@ -2781,15 +2750,11 @@ module ocn_time_integration_si
          call mpas_dmpar_exch_group_add_field(domain, finalBtrGroupName, 'barotropicThicknessFlux')
          call mpas_dmpar_exch_group_add_field(domain, finalBtrGroupName, 'normalBarotropicVelocity',2)
          call mpas_dmpar_exch_group_add_field(domain, finalBtrGroupName, 'normalBarotropicVelocitySubcycle',1)
-         call mpas_threading_barrier()
          call mpas_dmpar_exch_group_full_halo_exch(domain, finalBtrGroupName)
          call mpas_dmpar_exch_group_destroy(domain, finalBtrGroupName)
          call mpas_timer_stop("si halo btr vel")
-         call mpas_threading_barrier()
 
          call mpas_timer_stop("si btr vel update")
-
-         call mpas_threading_barrier()
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !
@@ -2843,7 +2808,9 @@ module ocn_time_integration_si
                useVelocityCorrection = 0
             endif
 
-            !$omp do schedule(runtime)
+            !$omp parallel
+            !$omp do schedule(runtime) private(uTemp, normalThicknessFluxSum, thicknessSum, &
+            !$omp             k, normalVelocityCorrection)
             do iEdge = 1, nEdges
 
                ! velocity for normalVelocityCorrectionection is normalBarotropicVelocity + normalBaroclinicVelocity + uBolus
@@ -2880,6 +2847,7 @@ module ocn_time_integration_si
 
             end do ! iEdge
             !$omp end do
+            !$omp end parallel
 
             deallocate(uTemp)
 
@@ -3050,6 +3018,7 @@ module ocn_time_integration_si
                ! Only need T & S for earlier iterations,
                ! then all the tracers needed the last time through.
 
+               !$omp parallel
                !$omp do schedule(runtime) private(k, temp_h, temp, i)
                do iCell = 1, nCells
                   ! sshNew is a pointer, defined above.
@@ -3072,8 +3041,10 @@ module ocn_time_integration_si
                   end do
                end do ! iCell
                !$omp end do
+               !$omp end parallel
 
                if (config_use_freq_filtered_thickness) then
+                  !$omp parallel
                   !$omp do schedule(runtime) private(k, temp)
                   do iCell = 1, nCells
                      do k = 1, maxLevelCell(iCell)
@@ -3092,8 +3063,10 @@ module ocn_time_integration_si
                      end do
                   end do
                   !$omp end do
+                  !$omp end parallel
                end if
 
+               !$omp parallel
                !$omp do schedule(runtime) private(k)
                do iEdge = 1, nEdges
 
@@ -3109,6 +3082,7 @@ module ocn_time_integration_si
 
                end do ! iEdge
                !$omp end do
+               !$omp end parallel
 
                ! Efficiency note: We really only need this to compute layerThicknessEdge, density, pressure, and SSH
                ! in this diagnostics solve.
@@ -3122,6 +3096,7 @@ module ocn_time_integration_si
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             elseif (split_implicit_step == config_n_ts_iter) then
 
+               !$omp parallel
                !$omp do schedule(runtime) private(k)
                do iCell = 1, nCells
                   do k = 1, maxLevelCell(iCell)
@@ -3130,6 +3105,7 @@ module ocn_time_integration_si
                   end do
                end do
                !$omp end do
+               !$omp end parallel
 
                if (config_compute_active_tracer_budgets) then
                   call mpas_pool_get_array(diagnosticsPool,'activeTracerHorizontalAdvectionTendency', &
@@ -3143,6 +3119,7 @@ module ocn_time_integration_si
                           activeTracerHorizontalAdvectionEdgeFlux)
                   call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
 
+                  !$omp parallel
                   !$omp do schedule(runtime) private(k)
                   do iEdge = 1, nEdges
                      do k= 1, maxLevelEdgeTop(iEdge)
@@ -3178,6 +3155,7 @@ module ocn_time_integration_si
                      end do
                   end do
                   !$omp end do
+                  !$omp end parallel
                endif
 
                call mpas_pool_begin_iteration(tracersPool)
@@ -3193,6 +3171,7 @@ module ocn_time_integration_si
                         modifiedGroupName = trim(groupItr % memberName) // 'Tend'
                         call mpas_pool_get_array(tracersTendPool, modifiedGroupName, tracersGroupTend)
 
+                        !$omp parallel
                         !$omp do schedule(runtime) private(k)
                         do iCell = 1, nCells
                            do k = 1, maxLevelCell(iCell)
@@ -3201,9 +3180,11 @@ module ocn_time_integration_si
                            end do
                         end do
                         !$omp end do
+                        !$omp end parallel
 
                         ! limit salinity in separate loop
                         if ( trim(groupItr % memberName) == 'activeTracers' ) then
+                           !$omp parallel
                            !$omp do schedule(runtime) private(k)
                            do iCell = 1, nCells
                               do k = 1, maxLevelCell(iCell)
@@ -3211,6 +3192,7 @@ module ocn_time_integration_si
                               end do
                            end do
                            !$omp end do
+                           !$omp end parallel
                         end if
 
                      end if
@@ -3218,6 +3200,7 @@ module ocn_time_integration_si
                end do
 
                if (config_use_freq_filtered_thickness) then
+                  !$omp parallel
                   !$omp do schedule(runtime) private(k)
                   do iCell = 1, nCells
                      do k = 1, maxLevelCell(iCell)
@@ -3229,6 +3212,7 @@ module ocn_time_integration_si
                      end do
                   end do
                   !$omp end do
+                  !$omp end parallel
                end if
 
 
@@ -3241,6 +3225,7 @@ module ocn_time_integration_si
                ! note that normalBaroclinicVelocity is recomputed at the beginning of the next timestep due to Imp Vert mixing,
                ! so normalBaroclinicVelocity does not have to be recomputed here.
 
+               !$omp parallel
                !$omp do schedule(runtime) private(k)
                do iEdge = 1, nEdges
                   do k = 1, maxLevelEdgeTop(iEdge)
@@ -3249,6 +3234,7 @@ module ocn_time_integration_si
                   end do
                end do ! iEdges
                !$omp end do
+               !$omp end parallel
 
             endif ! split_implicit_step
 
@@ -3284,7 +3270,6 @@ module ocn_time_integration_si
 
         block => block % next
       end do
-      call mpas_threading_barrier()
 
       call mpas_dmpar_field_halo_exch(domain, 'surfaceFrictionVelocity')
 
@@ -3376,25 +3361,29 @@ module ocn_time_integration_si
          nEdges = nEdgesPtr
 
          if (config_prescribe_velocity) then
+            !$omp parallel
             !$omp do schedule(runtime)
             do iEdge = 1, nEdges
                normalVelocityNew(:, iEdge) = normalVelocityCur(:, iEdge)
             end do
             !$omp end do
+            !$omp end parallel
          end if
 
          if (config_prescribe_thickness) then
+            !$omp parallel
             !$omp do schedule(runtime)
             do iCell = 1, nCells
                layerThicknessNew(:, iCell) = layerThicknessCur(:, iCell)
             end do
             !$omp end do
+            !$omp end parallel
          end if
 
          call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 2)
 
          ! Update the effective desnity in land ice if we're coupling to land ice
-         call ocn_effective_density_in_land_ice_update(meshPool, forcingPool, statePool, scratchPool, err)
+         call ocn_effective_density_in_land_ice_update(meshPool, forcingPool, statePool, err)
 
          ! Compute normalGMBolusVelocity; it will be added to normalVelocity in Stage 2 of the next cycle.
          ! mrp delete these lines, it is called from driver now.
@@ -3416,6 +3405,7 @@ module ocn_time_integration_si
 
          call mpas_timer_stop('si final mpas reconstruct')
 
+         !$omp parallel
          !$omp do schedule(runtime)
          do iCell = 1, nCells
             surfaceVelocity(indexSurfaceVelocityZonal, iCell) = velocityZonal(1, iCell)
@@ -3425,6 +3415,7 @@ module ocn_time_integration_si
             SSHGradient(indexSSHGradientMeridional, iCell) = gradSSHMeridional(iCell)
          end do
          !$omp end do
+         !$omp end parallel
 
          call ocn_time_average_coupled_accumulate(diagnosticsPool, statePool, forcingPool, 2)
 
@@ -3495,6 +3486,10 @@ module ocn_time_integration_si
       real (kind=RKIND) :: local_num_cells,sum1,total_area_sum,local_area_sum
       real (kind=RKIND), dimension(:), pointer :: areaCell
       integer :: ncpus
+
+#ifndef USE_LAPACK
+      call mpas_log_write('MPAS was not compiled with LAPACK / BLAS.  LAPACK required for SI', MPAS_LOG_CRIT)
+#endif
 
       dminfo = domain % dminfo
       ncpus = dminfo % nprocs
@@ -3683,7 +3678,6 @@ module ocn_time_integration_si
       type (block_type), pointer :: block
       real (kind=RKIND) :: thicknessSum,fluxAx
       integer :: iCell, i,k,j, iEdge, cell1, cell2
-      character (len=StrKIND), pointer :: config_btr_si_preconditioner
 
       ! Dimensions
       integer :: nCells, nEdges
@@ -3703,8 +3697,6 @@ module ocn_time_integration_si
       integer :: local_start,local_end,nCellsA2,nCellsA3
 
       dminfo = domain % dminfo
-
-      call mpas_pool_get_config(domain % configs, 'config_btr_si_preconditioner', config_btr_si_preconditioner)
 
       block => domain % blocklist
       do while (associated(block))
@@ -3913,16 +3905,20 @@ subroutine inverse (n,Ainv) !{{{
 
     ! DPOTRF computes the Cholesky factorizaton of a symmetric positive
     ! defnitie matrix.
+#ifdef USE_LAPACK
     call DPOTRF('U',n,Ainv,n,info)
 !   call DGETRF(n,n,Ainv,n,ipiv,info) ! For unsymmetric matrix
+#endif
 
     if (info.lt.0) stop 'ERROR in inverse routine: Matrix is numerically singular!'
     if (info.gt.0) stop 'ERROR in inverse routine: Matrix is not positive definite!'
 
     ! DPOTRI computes the inverse of a symmetric positive definite matrix,
     ! using the Cholesky factorization computed by DPOTRF
+#ifdef USE_LAPACK
     call DPOTRI('U',n,Ainv,n,info)
 !   call DGETRI(n,Ainv,n,ipiv,work,n,info) ! For unsymmetric matrix
+#endif
 
     Ainv = -Ainv ! (-) sign to restore a matrix sign
     if (info.ne.0) stop 'ERROR in inverse routine: Matrix inversion failed!'
