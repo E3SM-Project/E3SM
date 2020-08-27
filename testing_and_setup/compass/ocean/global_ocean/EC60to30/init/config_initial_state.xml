@@ -39,6 +39,7 @@
 	<namelist name="namelist.ocean" mode="init">
 		<template file="template_initial_state.xml" path_base="script_configuration_dir"/>
 		<template file="template_critical_passages.xml" path_base="script_core_dir" path="global_ocean"/>
+    <template file="template_GEBCO_bathymetry.xml" path_base="script_resolution_dir"/>
 		<option name="config_global_ocean_depth_file">'layer_depth.nc'</option>
 		<option name="config_global_ocean_depth_conversion_factor">0.01</option>
 		<option name="config_global_ocean_tracer_depth_conversion_factor">0.01</option>
