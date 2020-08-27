@@ -318,6 +318,9 @@ contains
       logical, intent(in), optional :: fatal
       logical, intent(in), optional :: warn
       logical :: fatal_local = .true.
+      logical :: warn_local = .true.
+
+      if (present(warn)) warn_local = warn
 
       ! Allow passing of an optional flag to not stop the run if an error is
       ! encountered. This allows this subroutine to be used when inquiring if a
@@ -333,10 +336,8 @@ contains
       if (len(trim(error_message)) > 0) then
          if (fatal_local) then
             call endrun(trim(error_message))
-         else
-            if (present(warn)) then
-               print *, trim(error_message)
-            end if
+         else if (warn_local) then
+            print *, trim(error_message)
          end if
       end if
    end subroutine handle_error

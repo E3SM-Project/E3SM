@@ -504,7 +504,9 @@
 <rrtmgp_coefficients_file_lw rad="rrtmgp">atm/cam/rad/rrtmgp_coefficients_lw_20181204.nc</rrtmgp_coefficients_file_lw>
 <rrtmgp_coefficients_file_sw rad="rrtmgp">atm/cam/rad/rrtmgp_coefficients_sw_20181204.nc</rrtmgp_coefficients_file_sw>
 
-<rrtmgp_enable_limiter_warnings rad="rrtmgp">.true.</rrtmgp_enable_limiter_warnings>
+<rrtmgp_enable_temperature_warnings rad="rrtmgp"               >.true.</rrtmgp_enable_temperature_warnings>
+<rrtmgp_enable_temperature_warnings rad="rrtmgp" aquaplanet="1">.false.</rrtmgp_enable_temperature_warnings>
+
 
 <!-- CAM-RT absorptivity/emissivity lookup table -->
 <absems_data>atm/cam/rad/abs_ems_factors_fastvx.c030508.nc</absems_data>

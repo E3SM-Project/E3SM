@@ -1600,9 +1600,9 @@ if ($rad_pkg eq 'rrtmgp') {
 if ($rad_pkg eq 'rrtmgp') {
   if ($aqua_mode) {
     # disable warnings for aqua planet to avoid filling up the logs
-    add_default($nl, 'rrtmgp_enable_limiter_warnings', 'val'=>".false.");
+    add_default($nl, 'rrtmgp_enable_temperature_warnings', 'val'=>".false.");
   } else {
-    add_default($nl, 'rrtmgp_enable_limiter_warnings');
+    add_default($nl, 'rrtmgp_enable_temperature_warnings');
   }
 }
 
