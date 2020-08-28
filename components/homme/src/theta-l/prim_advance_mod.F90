@@ -613,10 +613,6 @@ contains
         elem(ie)%state%vtheta_dp(:,:,k,nt)=&
              elem(ie)%state%vtheta_dp(:,:,k,nt)/elem(ie)%state%dp3d(:,:,k,nt)
      enddo
-
-   call outfld('HOMMEu',elem(ie)%state%vtheta_dp(1,1,1,nt),np*np,ie)
-
-
   enddo
 
 

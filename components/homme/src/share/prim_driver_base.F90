@@ -33,7 +33,7 @@ module prim_driver_base
 #endif
 
 #ifdef CAM
-  use cam_history,      only : addfld
+  use cam_history,      only : addfld, outfld, horiz_only
 #endif
 
 
@@ -978,6 +978,11 @@ contains
 
 #ifdef CAM
     call addfld('HOMMEu', (/ 'lev' /), 'A', 'm/s', 'description', gridname='GLL')
+
+    call addfld('HVke', horiz_only, 'A', 'm/s', 'description', gridname='GLL')
+    call addfld('HVie', horiz_only, 'A', 'm/s', 'description', gridname='GLL')
+    call addfld('HVpe', horiz_only, 'A', 'm/s', 'description', gridname='GLL')
+    call addfld('HVte', horiz_only, 'A', 'm/s', 'description', gridname='GLL')
 #endif
 
 
@@ -1028,7 +1033,7 @@ contains
     integer,              intent(in)    :: nsubstep                     ! nsubstep = 1 .. nsplit
 
     real(kind=real_kind) :: dp, dt_q, dt_remap
-    real(kind=real_kind) :: dp_np1(np,np)
+    real(kind=real_kind) :: dp_np1(np,np), tempfield(np,np)
     integer :: ie,i,j,k,n,q,t,scm_dum
     integer :: n0_qdp,np1_qdp,r,nstep_end,nets_in,nete_in,step_factor
     logical :: compute_diagnostics, independent_time_steps
@@ -1155,6 +1160,27 @@ contains
     !   u(nm1)   dynamics at  t+dt_remap - dt       
     !   u(n0)    dynamics at  t+dt_remap
     !   u(np1)   undefined
+
+
+  do ie=nets,nete
+
+     tempfield = elem(ie)%accum%kener(:,:,6) - elem(ie)%accum%kener(:,:,5)
+     call outfld('HVke',tempfield(:,:),np*np,ie)
+
+     tempfield = elem(ie)%accum%iener(:,:,6) - elem(ie)%accum%iener(:,:,5)
+     call outfld('HVie',tempfield(:,:),np*np,ie)
+
+     tempfield = elem(ie)%accum%pener(:,:,6) - elem(ie)%accum%pener(:,:,5)
+     call outfld('HVpe',tempfield(:,:),np*np,ie)
+
+     tempfield = elem(ie)%accum%kener(:,:,6)+elem(ie)%accum%iener(:,:,6)+elem(ie)%accum%pener(:,:,6) - &
+                 elem(ie)%accum%kener(:,:,5)-elem(ie)%accum%iener(:,:,5)-elem(ie)%accum%pener(:,:,5)
+     call outfld('HVte',tempfield(:,:),np*np,ie)
+
+    
+     call outfld('HOMMEu',elem(ie)%state%vtheta_dp(:,:,:,tl%n0),np*np,ie)
+
+  enddo
 
     ! ============================================================
     ! Print some diagnostic information
