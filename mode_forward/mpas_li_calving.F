@@ -45,7 +45,7 @@ module li_calving
    !
    !--------------------------------------------------------------------
 
-   public :: li_calve_ice, li_restore_calving_front
+   public :: li_calve_ice, li_restore_calving_front, apply_front_ablation_velocity
 
    !--------------------------------------------------------------------
    !
@@ -1315,7 +1315,7 @@ module li_calving
 
       err = 0
 
-      ! Logical arrays needed for apply_ablation_velocity
+      ! Logical arrays needed for apply_front_ablation_velocity
       applyToGrounded = .true.
       applyToFloating = .true.
       applyCalving = .true.
