@@ -774,6 +774,10 @@ contains
             (IEner(6)-IEner(5))/tstep,(IEner(2)-IEner(4))/dt
        write(iulog,'(a,3e15.7)') 'dPE/dt(W/m^2): ',(PEner(1)-PEner(3))/dt_f,&
             (PEner(6)-PEner(5))/tstep,(PEner(2)-PEner(4))/dt
+
+       write(iulog,'(a,3e15.7)') 'dTE/dt(W/m^2) for HV: ', (KEner(6)-KEner(5) + &
+            + PEner(6)-PEner(5) + IEner(6)-IEner(5) )/tstep
+
        q=1
        if (qsize>0) write(iulog,'(a,2e15.7)') 'dQ1/dt(kg/sm^2)',(Qmass(q,1)-Qmass(q,3))/dt
 
