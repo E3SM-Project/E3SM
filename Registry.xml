@@ -1050,11 +1050,11 @@ is the value of that variable from the *previous* time level!
                 <var name="calvingVelocity" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
                      description="rate of calving front retreat due to calving, represented as a velocity normal to the calving front (in the x-y plane)."
                 />
-                <var name="uncalvedVolumeNonDynCell" type="real" dimensions="nCells Time" units="m^3" time_levs="1"
-                     description="volume of ice that was left uncalved from required calving flux at non-dynamic cells"
+                <var name="unablatedVolumeNonDynCell" type="real" dimensions="nCells Time" units="m^3" time_levs="1"
+                     description="volume of ice that was left uncalved or unmelted from required calving or melting flux at non-dynamic cells"
                 />
-                <var name="uncalvedVolumeDynCell" type="real" dimensions="nCells Time" units="m^3" time_levs="1"
-                     description="volume of ice that was left uncalved from required calving flux at dynamic cells"
+                <var name="unablatedVolumeDynCell" type="real" dimensions="nCells Time" units="m^3" time_levs="1"
+                     description="volume of ice that was left uncalved or unmelted from required calving or melting flux at dynamic cells"
                 />
                 <var name="calvedVolumeNonDynCell" type="real" dimensions="nCells Time" units="m^3" time_levs="1"
                      description="volume of ice that was calved from non-dynamic cells"
