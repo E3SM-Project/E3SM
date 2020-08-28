@@ -3760,6 +3760,13 @@ File path for RRTMGP longwave gaseous absorption coefficients file.
 File path for RRTMGP shortwave gaseous absorption coefficients file.
 </entry>
 
+<entry id="rrtmgp_enable_temperature_warnings" type="logical"
+       category="radiation" group="radiation_nl" valid_values="">
+Enables low temperature warnings in RRTMGP.
+Disabling this is useful to avoid filling up logs for aqua planet cases.
+Default: TRUE
+</entry>
+
 <!-- Rayleigh Friction Parameterization -->
 
 <entry id="rayk0" type="integer" category="rayleigh_friction"

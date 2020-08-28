@@ -1596,6 +1596,16 @@ if ($rad_pkg eq 'rrtmgp') {
     add_default($nl, 'rrtmgp_coefficients_file_lw');
 }
 
+# RRTMGP limiter warnings
+if ($rad_pkg eq 'rrtmgp') {
+  if ($aqua_mode) {
+    # disable warnings for aqua planet to avoid filling up the logs
+    add_default($nl, 'rrtmgp_enable_temperature_warnings', 'val'=>".false.");
+  } else {
+    add_default($nl, 'rrtmgp_enable_temperature_warnings');
+  }
+}
+
 # Volcanic Aerosol Mass climatology dataset
 if ($nl->get_value('strat_volcanic')) { add_default($nl, 'bndtvvolc'); }
 

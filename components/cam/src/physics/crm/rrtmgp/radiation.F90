@@ -111,6 +111,12 @@ module radiation
    ! Disabled when value is less than 0.
    real(r8) :: fixed_total_solar_irradiance = -1
 
+   ! The RRTMGP warnings are printed when the state variables need to be limted,
+   ! such as when the temperature drops too low. This is not normally an issue,
+   ! but in aquaplanet and RCE configurations these situations occur much more 
+   ! frequently, so this flag was added to be able to disable those messages.
+   logical :: rrtmgp_enable_temperature_warnings = .true.
+
    ! Model data that is not controlled by namelist fields specifically follows
    ! below.
 
@@ -215,7 +221,9 @@ contains
                               rrtmgp_coefficients_file_sw,     &
                               iradsw, iradlw, irad_always,     &
                               use_rad_dt_cosz, spectralflux,   &
-                              do_aerosol_rad, fixed_total_solar_irradiance
+                              do_aerosol_rad,                  &
+                              fixed_total_solar_irradiance,    &
+                              rrtmgp_enable_temperature_warnings
 
       ! Read the namelist, only if called from master process
       ! TODO: better documentation and cleaner logic here?
@@ -244,6 +252,7 @@ contains
       call mpibcast(spectralflux, 1, mpi_logical, mstrid, mpicom, ierr)
       call mpibcast(do_aerosol_rad, 1, mpi_logical, mstrid, mpicom, ierr)
       call mpibcast(fixed_total_solar_irradiance, 1, mpi_real8, mstrid, mpicom, ierr)
+      call mpibcast(rrtmgp_enable_temperature_warnings, 1, mpi_logical, mstrid, mpicom, ierr)
 #endif
 
       ! Set module data
@@ -266,7 +275,8 @@ contains
          write(iulog,10) trim(coefficients_file_lw), trim(coefficients_file_sw), &
                          iradsw, iradlw, irad_always, &
                          use_rad_dt_cosz, spectralflux, &
-                         do_aerosol_rad, fixed_total_solar_irradiance
+                         do_aerosol_rad, fixed_total_solar_irradiance, &
+                         rrtmgp_enable_temperature_warnings
       end if
    10 format('  LW coefficents file: ',                                a/, &
              '  SW coefficents file: ',                                a/, &
@@ -276,7 +286,8 @@ contains
              '  Use average zenith angle:                           ',l5/, &
              '  Output spectrally resolved fluxes:                  ',l5/, &
              '  Do aerosol radiative calculations:                  ',l5/, &
-             '  Fixed solar consant (disabled with -1):             ',f10.4/ )
+             '  Fixed solar consant (disabled with -1):             ',f10.4/, &
+             '  Enable temperature warnings:                        ',l5/ )
 
    end subroutine radiation_readnl
 
@@ -1530,11 +1541,11 @@ contains
                      call handle_error(clip_values( &
                         tmid_col(1:ncol,1:nlev_rad), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
                         trim(subname) // ' tmid' &
-                     ), fatal=.false.)
+                     ), fatal=.false., warn=rrtmgp_enable_temperature_warnings)
                      call handle_error(clip_values( &
                         tint_col(1:ncol,1:nlev_rad+1), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
                         trim(subname) // ' tint' &
-                     ), fatal=.false.)
+                     ), fatal=.false., warn=rrtmgp_enable_temperature_warnings)
                      call t_stopf('rad_check_temperatures')
 
                      ! Set gas concentrations
