@@ -93,7 +93,10 @@ mpas_ocn_vel_hmix_del2.f90.o \
 mpas_ocn_vel_hmix_del4.f90.o \
 mpas_ocn_vel_hmix_leith.f90.o \
 mpas_ocn_vel_pressure_grad.f90.o \
-mpas_ocn_vel_vadv.f90.o
+mpas_ocn_vel_vadv.f90.o \
+mpas_seaice_mesh_pool.f90 \
+mpas_seaice_velocity_solver_variational.f90 \
+mpas_seaice_velocity_solver.f90
 
 override CPPFLAGS += -DMPAS_OPENACC
 

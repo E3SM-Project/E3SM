@@ -94,6 +94,10 @@ list(APPEND MPAS_ADD_ACC_FLAGS
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_vel_hmix_leith.f90
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_vel_pressure_grad.f90
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_vel_vadv.f90
+  # seaice
+  ${CMAKE_BINARY_DIR}/core_seaice/shared/mpas_seaice_mesh_pool.f90
+  ${CMAKE_BINARY_DIR}/core_seaice/shared/mpas_seaice_velocity_solver_variational.f90
+  ${CMAKE_BINARY_DIR}/core_seaice/shared/mpas_seaice_velocity_solver.f90
 )
 
 foreach(ITEM IN LISTS FILES_NEED_OPENACC_FLAGS)
