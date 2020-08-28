@@ -202,7 +202,7 @@ contains
       else
         ! assumes we just need to build vertical mesh to deepest point (e.g., no "on land' vertical mesh)
         do k = 1, nVertLevels
-          refBottomDepth(k) = \
+          refBottomDepth(k) = &
           max(config_tidal_boundary_left_bottom_depth, config_tidal_boundary_right_bottom_depth) * interfaceLocations(k+1)
         end do
       end if
