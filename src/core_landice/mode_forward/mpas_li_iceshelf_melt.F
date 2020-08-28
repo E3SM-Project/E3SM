@@ -1166,6 +1166,7 @@ module li_iceshelf_melt
 
     subroutine grounded_face_melt_ismip6(domain, err)
 
+      use li_calving  
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
@@ -1207,8 +1208,16 @@ module li_iceshelf_melt
       integer, dimension(:), pointer :: groundedMarineMarginMask
       real (kind=RKIND), dimension(:), pointer :: faceMeltRateApplied, faceMeltSpeed
       integer :: err_tmp
+      logical :: applyToFloating, applyToGrounded
+      logical :: applyMelting, applyCalving
 
       err = 0
+
+      ! Define logicals for call to apply_front_ablation_velocity
+      applyToFloating = .false.
+      applyToGrounded = .true.
+      applyMelting = .true.
+      applyCalving = .false.
 
       ! Get sea level, bedTopography, ice density
       call mpas_pool_get_config(liConfigs, 'config_ice_density', rhoi)
@@ -1301,7 +1310,10 @@ module li_iceshelf_melt
          enddo
 
          ! Distribute melt among neighbors
-         call distribute_face_melt_flux(meshPool, geometryPool, scratchPool, groundedMarineMarginMask, err_tmp)
+       !  call distribute_face_melt_flux(meshPool, geometryPool, scratchPool, groundedMarineMarginMask, err_tmp)
+         call apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, applyToGrounded, &
+                                            applyToFloating, applyCalving, applyMelting, domain, err)
+
          err = ior(err, err_tmp)
 
          ! Apply facemelt: open the Ark
@@ -1310,6 +1322,7 @@ module li_iceshelf_melt
          ! update mask
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
          err = ior(err, err_tmp)
+
          block => block % next
       enddo    ! associated(block)
 
