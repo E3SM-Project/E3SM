@@ -571,6 +571,7 @@ contains
          supplement_to_sminp       => col_pf%supplement_to_sminp       , & ! Input:  [real(r8) (:)]  supplemental P supply (gP/m2/s)
          sminp_leached             => col_pf%sminp_leached             , & ! Input:  [real(r8) (:)]  soil mineral P pool loss to leaching (gP/m2/s)
          col_fire_ploss            => col_pf%fire_ploss                , & ! Input:  [real(r8) (:)]  total column-level fire P loss (gP/m2/s)
+         biochem_pmin_to_plant     => col_pf%biochem_pmin_to_plant     , & ! Input:  total column level biochemical p flux to plant (gP/m2/s)
          primp_to_labilep          => col_pf%primp_to_labilep          , &
          secondp_to_occlp          => col_pf%secondp_to_occlp          , &
          fert_p_to_sminp           => col_pf%fert_p_to_sminp           , &
@@ -667,7 +668,7 @@ contains
 
          if(use_fates) then
 
-            col_poutputs(c) = secondp_to_occlp(c) + sminp_leached(c) + sminp_to_plant(c)
+            col_poutputs(c) = secondp_to_occlp(c) + sminp_leached(c) + sminp_to_plant(c) + biochem_pmin_to_plant(c)
             ! plant_to_litter_nflux is used by FATES to store
             ! column level fragmentation fluxes of nitrogen FATES litter to 
             ! ELM litter
@@ -740,7 +741,8 @@ contains
          write(iulog,*)'secondp_to_occlp = ',secondp_to_occlp(c)*dt
          write(iulog,*)'sminp_leached = ',sminp_leached(c)*dt
          if(use_fates)then
-             write(iulog,*) 'plant_to_litter_flux = ',plant_to_litter_pflux(c)*dt
+            write(iulog,*) 'plant_to_litter_flux = ',plant_to_litter_pflux(c)*dt
+            write(iulog,*) 'biochem_pmin_to_plant = ',biochem_pmin_to_plant(c)*dt
          end if
          if (ero_ccycle) then
             write(iulog,*)'SOP erosion = ',som_p_yield(c)*dt

@@ -140,8 +140,8 @@ module CLMFatesInterfaceMod
    use EDCanopyStructureMod  , only : canopy_summarization, update_hlm_dynamics
    use FatesPlantRespPhotosynthMod, only : FatesPlantRespPhotosynthDrive
    use EDAccumulateFluxesMod , only : AccumulateFluxes_ED
-   use EDPhysiologyMod       , only : UnPackNutrientAquisitionBCs
-   use EDPhysiologyMod       , only : FluxIntoLitterPools
+   use FatesSoilBGCFluxMod   , only : UnPackNutrientAquisitionBCs
+   use FatesSoilBGCFluxMod   , only : FluxIntoLitterPools
    use PRTGenericMod, only : prt_cnp_flex_allom_hyp
    use FatesPlantHydraulicsMod, only : hydraulics_drive
    use FatesPlantHydraulicsMod, only : HydrSiteColdStart

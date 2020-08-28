@@ -644,6 +644,7 @@ contains
          biochem_pmin_ppools_vr_col  => col_pf%biochem_pmin_ppools_vr ,&
          biochem_pmin_to_ecosysp_vr_col => col_pf%biochem_pmin_to_ecosysp_vr , &
          biochem_pmin_to_plant_patch    => veg_pf%biochem_pmin_to_plant , &
+         biochem_pmin_to_plant => col_pf%biochem_pmin_to_plant, & 
          npimbalance          => veg_ns%npimbalance     , &
          vmax_ptase           => veg_vp%vmax_ptase                    , &
          km_ptase             => veg_vp%km_ptase                      , &
@@ -676,6 +677,7 @@ contains
 
         if(use_fates) s = alm_fates%f2hmap(ci)%hsites(c)
 
+        biochem_pmin_to_plant(c) = 0._r8
 
         do j = 1,nlevdecomp
             
@@ -793,6 +795,9 @@ contains
                     alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(p,j_f) = & 
                           alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(p,j_f) + & 
                           biochem_pmin_to_plant_vr_patch(p,j)*dt*dzsoi_decomp(j)
+
+                    biochem_pmin_to_plant(c) =  biochem_pmin_to_plant(c) + &
+                         biochem_pmin_to_plant_vr_patch(p,j)*dzsoi_decomp(j)
                 end do
 
             end do
@@ -824,8 +829,10 @@ contains
                         !biochem_pmin_to_plant_patch(p) = 0._r8
                         do j = 1,nlevdecomp
                             biochem_pmin_to_plant_patch(p) = biochem_pmin_to_plant_patch(p) + &
-                                  biochem_pmin_to_plant_vr_patch(p,j) * col_pp%dz(c,j)
-                        end do
+                                 biochem_pmin_to_plant_vr_patch(p,j) * col_pp%dz(c,j)
+                         end do
+                         biochem_pmin_to_plant(c) = biochem_pmin_to_plant(c) + &
+                              biochem_pmin_to_plant_patch(p)*veg_pp%wtcol(p)
                     end if
                 end do
             else

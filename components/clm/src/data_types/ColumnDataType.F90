@@ -865,6 +865,7 @@ module ColumnDataType
     real(r8), pointer :: actual_immob_p                        (:)     ! vert-int (diagnostic) actual P immobilization (gP/m2/s)
     real(r8), pointer :: sminp_to_plant_vr                     (:,:)   ! vertically-resolved plant uptake of soil mineral P (gP/m3/s)
     real(r8), pointer :: sminp_to_plant                        (:)     ! vert-int (diagnostic) plant uptake of soil mineral P (gP/m2/s)
+    
     real(r8), pointer :: supplement_to_sminp_vr                (:,:)   ! vertically-resolved supplemental P supply (gP/m3/s)
     real(r8), pointer :: supplement_to_sminp                   (:)     ! vert-int (diagnostic) supplemental P supply (gP/m2/s)
     real(r8), pointer :: gross_pmin_vr                         (:,:)   ! vertically-resolved gross rate of P mineralization (gP/m3/s)
@@ -875,6 +876,7 @@ module ColumnDataType
     real(r8), pointer :: biochem_pmin_vr                       (:,:)   ! vertically-resolved total biochemical P mineralization (gP/m3/s)
     real(r8), pointer :: biochem_pmin_to_ecosysp_vr            (:,:)   ! biochemical P mineralization directly goes to soil (gP/m3/s)
     real(r8), pointer :: biochem_pmin                          (:)     ! vert-int (diagnostic) total biochemical P mineralization (gP/m3/s)
+    real(r8), pointer :: biochem_pmin_to_plant                 (:)     ! vert-int total biochemical P mineralization to plants (gP/m2/s)
     real(r8), pointer :: primp_to_labilep_vr                   (:,:)   ! (gP/m3/s) flux of P from primary mineral to labile 
     real(r8), pointer :: primp_to_labilep                      (:)     ! (gP/m3/s) flux of P from primary mineral to labile 
     real(r8), pointer :: labilep_to_secondp_vr                 (:,:)   ! (gP/m3/s) flux of labile P to secondary mineral P 
@@ -9672,6 +9674,7 @@ contains
     allocate(this%biochem_pmin_ppools_vr           (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%biochem_pmin_ppools_vr      (:,:,:) = nan
     allocate(this%biochem_pmin_vr                  (begc:endc,1:nlevdecomp_full)) ; this%biochem_pmin_vr               (:,:) = nan
     allocate(this%biochem_pmin                     (begc:endc))                   ; this%biochem_pmin                  (:)   = nan
+    allocate(this%biochem_pmin_to_plant            (begc:endc))                   ; this%biochem_pmin_to_plant         (:)   = nan
     allocate(this%dwt_slash_pflux                  (begc:endc))                   ; this%dwt_slash_pflux               (:)   = nan
     allocate(this%dwt_conv_pflux                   (begc:endc))                   ; this%dwt_conv_pflux                (:)   = nan
     allocate(this%dwt_prod10p_gain                 (begc:endc))                   ; this%dwt_prod10p_gain              (:)   = nan
@@ -10180,6 +10183,12 @@ contains
          avgflag='A', long_name='biochemical rate of P mineralization', &
          ptr_col=this%biochem_pmin)
 
+    this%biochem_pmin_to_plant(begc:endc) = spval
+    call hist_addfld1d (fname='BIOCHEM_PMIN_TO_PLANT', units='gP/m^2/s', &
+         avgflag='A', long_name='plant uptake of biochemical P mineralization', &
+         ptr_col=this%biochem_pmin_to_plant)
+    
+
     this%fire_ploss(begc:endc) = spval
     call hist_addfld1d (fname='COL_FIRE_PLOSS', units='gP/m^2/s', &
          avgflag='A', long_name='total column-level fire P loss', &
@@ -10468,6 +10477,7 @@ contains
        this%gross_pmin(i)                = value_column
        this%net_pmin(i)                  = value_column
        this%biochem_pmin(i)              = value_column
+       this%biochem_pmin_to_plant(i)     = value_column
        this%primp_to_labilep(i)          = value_column
        this%labilep_to_secondp(i)        = value_column
        this%secondp_to_labilep(i)        = value_column
@@ -10916,6 +10926,7 @@ contains
     end do
 
     if(.not.use_fates)then
+
        do fc = 1,num_soilc
           c = filter_soilc(fc)
           this%plant_to_litter_pflux(c) = 0._r8
