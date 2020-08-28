@@ -81,6 +81,8 @@ contains
 
     use physical_constants,     only: dd_pi
 
+    use eos, only : phi_from_eos
+
     type(element_t),            intent(inout), target :: elem(:)
     type(TimeLevel_t),target,   intent(in) :: tl
     type(hybrid_t),             intent(in) :: hybrid
@@ -153,6 +155,9 @@ contains
     integer               :: npts,n,q
     integer :: max_itercnt_g
     real (kind=real_kind) :: max_deltaerr_g, max_reserr_g
+
+    real (kind=real_kind) :: hydro_phi(np,np,nlevp)
+
 
     call t_startf('prim_printstate')
     if (hybrid%masterthread) then 
@@ -230,12 +235,33 @@ contains
        endif
 
        ! layer thickness
-       call get_phi(elem(ie),dphi,phi_i,hvcoord,n0)
+!       call get_phi(elem(ie),dphi,phi_i,hvcoord,n0)
+
+       call phi_from_eos(hvcoord,elem(ie)%state%phis,elem(ie)%state%vtheta_dp(:,:,:,n0),&
+                         elem(ie)%state%dp3d(:,:,:,n0),hydro_phi)
+
        do k=1,nlev
-          dphi(:,:,k)=-(phi_i(:,:,k+1)-phi_i(:,:,k))
-          w_over_dz(:,:,k)=&
-             g*max(elem(ie)%state%w_i(:,:,k,n0)/dphi(:,:,k),&
-             elem(ie)%state%w_i(:,:,k+1,n0)/dphi(:,:,k))
+
+#if 0
+    if(theta_hydrostatic_mode) then
+       dp=elem%state%dp3d(:,:,:,nt)
+       call phi_from_eos(hvcoord,elem%state%phis,elem%state%vtheta_dp(:,:,:,nt),dp,phi_i)
+    else
+       phi_i = elem%state%phinh_i(:,:,:,nt)
+    endif
+
+    do k=1,nlev
+       phi(:,:,k) = (phi_i(:,:,k)+phi_i(:,:,k+1))/2
+    end do
+#endif
+
+           !w_over_dz(:,:,k)=abs(elem(ie)%state%phinh_i(:,:,k+1,n0) - hydro_phi(:,:,k+1))
+           w_over_dz(:,:,k)= 0.0 !hydro_phi(:,:,k+1)
+
+!          dphi(:,:,k)=-(phi_i(:,:,k+1)-phi_i(:,:,k))       
+!          w_over_dz(:,:,k)=&
+!             g*max(elem(ie)%state%w_i(:,:,k,n0)/dphi(:,:,k),&
+!             elem(ie)%state%w_i(:,:,k+1,n0)/dphi(:,:,k))
        enddo
 
        ! surface pressure
@@ -415,8 +441,11 @@ contains
                                  fqmax_local(1)," (",nint(fqmax_local(2)),")",fqsum_p
 
        if (.not.theta_hydrostatic_mode) then
-          write(iulog,110) "   min dz/w (CFL condition) = ",1/max(1d-12,w_over_dz_max_local(1)),&
-               " (",nint(w_over_dz_max_local(2)),")"
+
+write(iulog,110) " diff phi =",w_over_dz_max_local(1)," (",nint(w_over_dz_max_local(2)),")"
+
+!          write(iulog,110) "   min dz/w (CFL condition) = ",1/max(1d-12,w_over_dz_max_local(1)),&
+!               " (",nint(w_over_dz_max_local(2)),")"
        endif
 
        do q=1,qsize
