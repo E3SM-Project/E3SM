@@ -1106,27 +1106,23 @@ contains
       !  Implicit vertical solve for momentum
       !
       call mpas_timer_start('vmix solve momentum', .false.)
-      if (.not. (config_Rayleigh_friction .or. &
-                 config_Rayleigh_bottom_friction .or. &
-                 config_Rayleigh_damping_depth_variable .or. &
-                 config_use_implicit_bottom_drag_variable .or. &
-                 config_use_implicit_bottom_drag_variable_mannings)) then
-        call ocn_vel_vmix_tend_implicit(meshPool, dt, kineticEnergyCell, &
+      if (config_use_implicit_bottom_drag_variable) then
+        call ocn_vel_vmix_tend_implicit_spatially_variable(meshPool, bottomDrag, dt, kineticEnergyCell, &
+          vertViscTopOfEdge, layerThickness, layerThicknessEdge, normalVelocity, err)
+      else if (config_use_implicit_bottom_drag_variable_mannings) then
+        ! update bottomDrag via Cd=g*n^2*h^(-1/3)
+        call ocn_vel_vmix_tend_implicit_spatially_variable_mannings(meshPool, forcingPool, bottomDrag, &
+          dt, kineticEnergyCell, &
+          vertViscTopOfEdge, layerThickness, layerThicknessEdge, normalVelocity, &
+          ssh, bottomDepth, err)
+      else if (config_Rayleigh_friction.or. &
+               config_Rayleigh_bottom_friction.or. &
+               config_Rayleigh_damping_depth_variable) then
+        call ocn_vel_vmix_tend_implicit_rayleigh(meshPool, dt, kineticEnergyCell, &
           vertViscTopOfEdge, layerThickness, layerThicknessEdge, normalVelocity, err)
       else
-        if (config_use_implicit_bottom_drag_variable) then
-          call ocn_vel_vmix_tend_implicit_spatially_variable(meshPool, bottomDrag, dt, kineticEnergyCell, &
-            vertViscTopOfEdge, layerThickness, layerThicknessEdge, normalVelocity, err)
-        else if (config_use_implicit_bottom_drag_variable_mannings) then
-          ! update bottomDrag via Cd=g*n^2*h^(-1/3)
-          call ocn_vel_vmix_tend_implicit_spatially_variable_mannings(meshPool, forcingPool, bottomDrag, &
-            dt, kineticEnergyCell, &
-            vertViscTopOfEdge, layerThickness, layerThicknessEdge, normalVelocity, &
-            ssh, bottomDepth, err)
-        else if (config_Rayleigh_damping_depth_variable) then
-          call ocn_vel_vmix_tend_implicit_rayleigh(meshPool, dt, kineticEnergyCell, &
-            vertViscTopOfEdge, layerThickness, layerThicknessEdge, normalVelocity, err)
-        end if
+        call ocn_vel_vmix_tend_implicit(meshPool, dt, kineticEnergyCell, &
+          vertViscTopOfEdge, layerThickness, layerThicknessEdge, normalVelocity, err)
       end if
       call mpas_timer_stop('vmix solve momentum')
 
