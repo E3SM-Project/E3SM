@@ -26,6 +26,9 @@ function(build_mpas_models)
     set(ALBANY True)
   endif()
 
+  # set CIME source path relative to components
+  set(CIMESRC_PATH "../cime/src")
+
   if (CORES)
     add_subdirectory("mpas-source/src")
   endif()
