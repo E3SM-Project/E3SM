@@ -16,6 +16,7 @@ set(SHOC_SRCS
   atmosphere_macrophysics.cpp
   scream_shoc_interface.F90
   shoc_diag_second_moments_srf.cpp
+  shoc_diag_second_moments_ubycond.cpp
 )
 
 set(SHOC_HEADERS

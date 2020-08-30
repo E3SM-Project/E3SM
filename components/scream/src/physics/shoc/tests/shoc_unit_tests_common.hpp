@@ -73,6 +73,7 @@ struct UnitWrap {
     struct TestCompShocMixLength;
     struct TestSecondMomSrf;
     struct TestShocLinearInt;
+    struct TestSecondMomUbycond;
   };
 
 };
