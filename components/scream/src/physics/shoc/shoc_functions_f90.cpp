@@ -91,9 +91,9 @@ void check_length_scale_shoc_length_c(Int nlev, Int shcol, Real *host_dx,
 
 void shoc_diag_second_moments_srf_c(Int shcol, Real* wthl, Real* uw, Real* vw,
                                    Real* ustar2, Real* wstar);
-				   
+
 void linear_interp_c(Real *x1, Real *x2, Real *y1, Real *y2, Int km1,
-                     Int km2, Int ncol, Real minthresh);			   
+                     Int km2, Int ncol, Real minthresh);
 
 }
 
@@ -103,6 +103,13 @@ namespace shoc {
 //
 // Data struct
 //
+
+SHOCDataBase::SHOCDataBase(Int shcol_, const std::vector<Real**>& ptrs_c, const std::vector<Int**>& idx_c) :
+  SHOCDataBase(shcol_, 0, 0, {}, {}, ptrs_c, idx_c)
+{}
+
+SHOCDataBase::SHOCDataBase(Int shcol_, Int nlev_, const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_c, const std::vector<Int**>& idx_c) :
+  SHOCDataBase(shcol_, nlev_, 0, ptrs, {}, ptrs_c, idx_c) {}
 
 SHOCDataBase::SHOCDataBase(Int shcol_, Int nlev_, Int nlevi_,
                            const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i,
@@ -123,20 +130,30 @@ SHOCDataBase::SHOCDataBase(Int shcol_, Int nlev_, Int nlevi_,
 }
 
 SHOCDataBase::SHOCDataBase(const SHOCDataBase &rhs,
-                           const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i,
-                           const std::vector<Real**>& ptrs_c, const std::vector<Int**>& idx_c) :
+                           const std::vector<Real**>& real_ptrs, const std::vector<Int**>& int_ptrs) :
   shcol(rhs.shcol),
   nlev(rhs.nlev),
   nlevi(rhs.nlevi),
   m_total(rhs.m_total),
   m_totali(rhs.m_totali),
-  m_ptrs(ptrs),
-  m_ptrs_i(ptrs_i),
-  m_ptrs_c(ptrs_c),
-  m_indices_c(idx_c),
+  m_ptrs(rhs.m_ptrs.size()),
+  m_ptrs_i(rhs.m_ptrs_i.size()),
+  m_ptrs_c(rhs.m_ptrs_c.size()),
+  m_indices_c(rhs.m_indices_c.size()),
   m_data(rhs.m_data),
   m_idx_data(rhs.m_idx_data)
 {
+  EKAT_ASSERT(real_ptrs.size() == (m_ptrs.size() + m_ptrs_i.size() + m_ptrs_c.size()));
+  EKAT_ASSERT_MSG(int_ptrs.size() == m_indices_c.size(), int_ptrs.size() << " != " << m_indices_c.size());
+
+  size_t real_offset = 0;
+  for (auto& item : {&m_ptrs, &m_ptrs_i, &m_ptrs_c}) {
+    std::copy(real_ptrs.begin() + real_offset, real_ptrs.begin() + real_offset + item->size(), item->begin());
+    real_offset += item->size();
+  }
+
+  std::copy(int_ptrs.begin(), int_ptrs.end(), m_indices_c.begin());
+
   init_ptrs();
 }
 

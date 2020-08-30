@@ -36,7 +36,7 @@ static void run_second_mom_srf_bfb()
   static constexpr Int num_runs = sizeof(mom_srf_data_f90) / sizeof(SHOCSecondMomentSrfData);
 
   for (Int i = 0; i < num_runs; ++i) {
-    mom_srf_data_f90[i].randomize({ {-1, 1} });
+    mom_srf_data_f90[i].randomize({}, {}, { {-1, 1} });
   }
 
   SHOCSecondMomentSrfData mom_srf_data_cxx[] = {
