@@ -29,7 +29,6 @@ module li_calving
    use li_mask
    use li_constants
 
-
    implicit none
    private
 
@@ -1472,6 +1471,7 @@ module li_calving
       integer :: nEmptyNeighbors
       real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:), pointer :: bedTopography
+      real (kind=RKIND), dimension(:), pointer :: lowerSurface
       integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
       integer, dimension(:,:), pointer :: edgesOnCell
       integer, dimension(:), pointer :: cellMask, edgeMask
@@ -1523,6 +1523,7 @@ module li_calving
       call mpas_pool_get_array(geometryPool, 'faceMeltSpeed', faceMeltSpeed)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+      call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
       call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
@@ -1596,10 +1597,15 @@ module li_calving
       thicknessForAblation = 0.0_RKIND
       allocate(ablationVelocity(nCells+1))
 
+      ablationVelocity(:) = 0.0_RKIND
+
       if ( applyCalving ) then
          ablationVelocity(:) = calvingVelocity(:)
       else if ( applyMelting ) then
-         ablationVelocity(:) = faceMeltSpeed(:)
+         !ablationVelocity(:) = faceMeltSpeed(:) * abs(config_sea_level - lowerSurface(:)) / thickness(:) ! faceMeltSpeed is only submarine, so spread this across the whole height of the ice front
+         where (thickness > 0.0_RKIND)
+               ablationVelocity(:) = faceMeltSpeed(:) * lowerSurface(:) / thickness(:)
+         end where
       end if
 
       ! 1. Calculate ablation rate for all non-dynamic cells by working with their ocean-going edges
@@ -1825,7 +1831,7 @@ module li_calving
       if ( applyMelting ) then 
          meltingThickness(:) = ablationThickness(:)
          call mpas_dmpar_field_halo_exch(domain, 'meltingThickness')
-      else if (applyCalving ) then
+      else if ( applyCalving ) then
          calvingThickness(:) = ablationThickness(:)
          call mpas_dmpar_field_halo_exch(domain, 'calvingThickness')
       end if
@@ -1838,6 +1844,7 @@ module li_calving
       deallocate(requiredAblationVolumeDynCell)
       deallocate(thicknessForAblation)
       deallocate(ablationVelocity)
+      call mpas_log_write("Finished with apply_front_ablation_velocity")
 
     end subroutine apply_front_ablation_velocity
 

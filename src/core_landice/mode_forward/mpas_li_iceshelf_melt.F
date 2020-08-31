@@ -48,7 +48,7 @@ module li_iceshelf_melt
    !
    !--------------------------------------------------------------------
 
-   public :: li_basal_melt_floating_ice
+   public :: li_basal_melt_floating_ice, grounded_face_melt_ismip6
 
    !--------------------------------------------------------------------
    !
@@ -1210,8 +1210,9 @@ module li_iceshelf_melt
       integer :: err_tmp
       logical :: applyToFloating, applyToGrounded
       logical :: applyMelting, applyCalving
-
+       
       err = 0
+      call mpas_log_write('Starting face melt routine')
 
       ! Define logicals for call to apply_front_ablation_velocity
       applyToFloating = .false.
@@ -1309,12 +1310,13 @@ module li_iceshelf_melt
             endif           
          enddo
 
+         call mpas_log_write("calling apply_front_ablation_velocity")
          ! Distribute melt among neighbors
        !  call distribute_face_melt_flux(meshPool, geometryPool, scratchPool, groundedMarineMarginMask, err_tmp)
          call apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, applyToGrounded, &
                                             applyToFloating, applyCalving, applyMelting, domain, err)
 
-         err = ior(err, err_tmp)
+         call mpas_log_write("Back to melting routine")
 
          ! Apply facemelt: open the Ark
          thickness(:) = thickness(:) - faceMeltingThickness(:)
