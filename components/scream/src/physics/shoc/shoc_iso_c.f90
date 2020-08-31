@@ -682,9 +682,7 @@ contains
     call shoc_assumed_pdf_compute_s(&
                               qw1,qs1,beta,pval,thl2,&
                               qw2,sqrtthl2,sqrtqw2,r_qwthl,&
-                              s,std_s,qn,C)
-			      
-    write(*,*) 'OUTPUT ', s, std_s, qn, C		      
+                              s,std_s,qn,C)		      
 
   end subroutine shoc_assumed_pdf_compute_s_c 
   
