@@ -1966,7 +1966,6 @@ subroutine shoc_assumed_pdf(&
   real(rtype) thl_first,qw_first,w_first
   real(rtype) Tl1_1,Tl1_2,pval
   real(rtype) thlsec,qwsec,qwthlsec,wqwsec,wthlsec
-  real(rtype) cqt1,cthl1,cqt2,cthl2
   real(rtype) qn1,qn2
   real(rtype) beta1, beta2, qs1, qs2
   real(rtype) sqrtw2, sqrtthl, sqrtqt
@@ -2105,7 +2104,7 @@ subroutine shoc_assumed_pdf(&
       call shoc_assumed_pdf_compute_s(&
         qw1_1,qs1,beta1,pval,thl2_1,&          ! Input
         qw2_1,sqrtthl2_1,sqrtqw2_1,r_qwthl_1,& ! Input
-        s1,cthl1,cqt1,std_s1,qn1,C1)           ! Output
+        s1,std_s1,qn1,C1)                      ! Output
 
       !!!!! now compute non-precipitating cloud condensate
 
@@ -2113,8 +2112,6 @@ subroutine shoc_assumed_pdf(&
       ! variables to themselves to save on computation.
       if (qw1_1 .eq. qw1_2 .and. thl2_1 .eq. thl2_2 .and. qs1 .eq. qs2) then
         s2=s1
-        cthl2=cthl1
-        cqt2=cqt1
         std_s2=std_s1
         C2=C1
         qn2=qn1
@@ -2122,7 +2119,7 @@ subroutine shoc_assumed_pdf(&
         call shoc_assumed_pdf_compute_s(&
         qw1_2,qs2,beta2,pval,thl2_2,&          ! Input
         qw2_2,sqrtthl2_2,sqrtqw2_2,r_qwthl_1,& ! Input
-        s2,cthl2,cqt2,std_s2,qn2,C2)           ! Output
+        s2,std_s2,qn2,C2)           ! Output
       endif
 
       ql1=min(qn1,qw1_1)
@@ -2503,7 +2500,7 @@ end subroutine shoc_assumed_pdf_compute_qs
 subroutine shoc_assumed_pdf_compute_s(&
   qw1,qs1,beta,pval,thl2,&        ! Input
   qw2,sqrtthl2,sqrtqw2,r_qwthl,&  ! Input
-  s,cthl,cqt,std_s,qn,C)          ! Ouput
+  s,std_s,qn,C)                   ! Ouput
 
   !!!!!!  compute s term
   implicit none
@@ -2521,11 +2518,12 @@ subroutine shoc_assumed_pdf_compute_s(&
 
   ! intent-out
   real(rtype), intent(out) :: s
-  real(rtype), intent(out) :: cthl
-  real(rtype), intent(out) :: cqt
   real(rtype), intent(out) :: std_s
   real(rtype), intent(out) :: qn
   real(rtype), intent(out) :: C
+  
+  ! local variables
+  real(rtype) :: cthl, cqt
 
   ! Parameters
   real(rtype), parameter :: sqrt2 = sqrt(2._rtype)

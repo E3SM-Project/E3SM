@@ -661,7 +661,7 @@ contains
   subroutine shoc_assumed_pdf_compute_s_c(&
                               qw1,qs1,beta,pval,thl2,&
                               qw2,sqrtthl2,sqrtqw2,r_qwthl,&
-                              s,cthl,cqt,std_s,qn,C) bind (C)
+                              s,std_s,qn,C) bind (C)
     use shoc, only: shoc_assumed_pdf_compute_s
 
     real(kind=c_real), intent(in), value :: qw1
@@ -675,8 +675,6 @@ contains
     real(kind=c_real), intent(in), value :: r_qwthl
     
     real(kind=c_real), intent(out) :: s
-    real(kind=c_real), intent(out) :: cthl
-    real(kind=c_real), intent(out) :: cqt
     real(kind=c_real), intent(out) :: std_s
     real(kind=c_real), intent(out) :: qn
     real(kind=c_real), intent(out) :: C
@@ -684,7 +682,9 @@ contains
     call shoc_assumed_pdf_compute_s(&
                               qw1,qs1,beta,pval,thl2,&
                               qw2,sqrtthl2,sqrtqw2,r_qwthl,&
-                              s,cthl,cqt,std_s,qn,C)
+                              s,std_s,qn,C)
+			      
+    write(*,*) 'OUTPUT ', s, std_s, qn, C		      
 
   end subroutine shoc_assumed_pdf_compute_s_c 
   

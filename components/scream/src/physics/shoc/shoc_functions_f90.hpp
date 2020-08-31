@@ -498,7 +498,7 @@ struct SHOCPDFcompsData
   Real qw1, qs1, beta, pval, thl2, qw2, sqrtthl2, sqrtqw2, r_qwthl;
   
   // outputs
-  Real s, cthl, cqt, std_s, qn, C;
+  Real s, std_s, qn, C;
 
 };
 
@@ -582,6 +582,7 @@ void shoc_assumed_pdf_qw_parameters(SHOCPDFqwparamData &d);
 void shoc_assumed_pdf_inplume_correlations(SHOCPDFinplumeData &d);
 void shoc_assumed_pdf_compute_temperature(SHOCPDFcomptempData &d);
 void shoc_assumed_pdf_compute_qs(SHOCPDFcompqsData &d);
+void shoc_assumed_pdf_compute_s(SHOCPDFcompsData &d);
 void shoc_assumed_pdf_compute_sgs_liquid(SHOCPDFcompsgsliqData &d);
 void shoc_assumed_pdf_compute_cloud_liquid_variance(SHOCPDFcompcloudvarData &d);
 void shoc_assumed_pdf_compute_liquid_water_flux(SHOCPDFcompliqfluxData &d);

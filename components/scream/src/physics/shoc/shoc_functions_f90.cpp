@@ -129,8 +129,7 @@ void shoc_assumed_pdf_compute_qs_c(Real Tl1_1, Real Tl1_2, Real pval,
 			      
 void shoc_assumed_pdf_compute_s_c(Real qw1, Real qs1, Real beta, Real pval, Real thl2,
                               Real qw2,Real sqrtthl2, Real sqrtqw2, Real r_qwthl,
-                              Real *s, Real *cthl, Real *cqt, Real *std_s,
-			      Real *qn, Real *C);
+                              Real *s, Real *std_s, Real *qn, Real *C);
 			      
 void shoc_assumed_pdf_compute_sgs_liquid_c(Real a, Real ql1, Real ql2, Real *shoc_ql);
 
@@ -508,6 +507,14 @@ void shoc_assumed_pdf_compute_qs(SHOCPDFcompqsData &d)
   shoc_init(1, true);
   shoc_assumed_pdf_compute_qs_c(d.Tl1_1,d.Tl1_2,d.pval,
                                 &d.qs1,&d.beta1,&d.qs2,&d.beta2);
+}
+
+void shoc_assumed_pdf_compute_s(SHOCPDFcompsData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_compute_s_c(d.qw1,d.qs1,d.beta,d.pval,d.thl2,d.qw2,
+                               d.sqrtthl2,d.sqrtqw2,d.r_qwthl,
+			       &d.s,&d.std_s,&d.qn,&d.C);
 }
 
 void shoc_assumed_pdf_compute_sgs_liquid(SHOCPDFcompsgsliqData &d)
