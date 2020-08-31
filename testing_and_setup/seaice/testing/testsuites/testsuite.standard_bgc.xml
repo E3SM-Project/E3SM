@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="standard">
+<testsuite name="standard_bgc">
 	<configuration name="standard_bgc">
 		<domain name="domain_QU240km">
 			<test name="regression"/>

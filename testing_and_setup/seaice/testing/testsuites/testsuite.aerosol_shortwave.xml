@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="standard">
+<testsuite name="aerosol_shortwave">
 	<configuration name="aerosol_shortwave_physics">
 		<domain name="domain_QU240km">
 			<test name="regression"/>

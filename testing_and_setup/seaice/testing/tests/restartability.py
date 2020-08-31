@@ -6,7 +6,7 @@ from testing_utils import *
 
 #-------------------------------------------------------------------------
 
-def restartability(mpasDevelopmentDir, domainsDir, domain, configuration, options, check, oversubscribe):
+def restartability(mpasDevelopmentDir, domainsDir, domain, configuration, options, check, oversubscribe, np1, np2):
 
     # find available directory name
     iTest = 1
@@ -27,7 +27,7 @@ def restartability(mpasDevelopmentDir, domainsDir, domain, configuration, option
     logfile.write(title)
 
     # base run
-    nProcs = 16
+    nProcs = np1
 
     nmlChanges = {"seaice_model": {"config_run_duration":'24:00:00'}}
     if (check):
@@ -42,7 +42,7 @@ def restartability(mpasDevelopmentDir, domainsDir, domain, configuration, option
         return 1
 
     # first restart run
-    nProcs = 16
+    nProcs = np1
 
     nmlChanges = {"seaice_model": {"config_run_duration":'12:00:00'}}
     if (check):
@@ -57,7 +57,7 @@ def restartability(mpasDevelopmentDir, domainsDir, domain, configuration, option
         return 1
 
     # restart
-    nProcs = 32
+    nProcs = np2
 
     bgcRestart = False
     if ("bgc" in options.keys() and options["bgc"] == "True"):

@@ -24,6 +24,8 @@ parser.add_argument("-o", "--domainsdir",    required=False, dest="domainsDir", 
 parser.add_argument("-a", "--avail",         required=False, dest="avail",         action='store_true', help="Print available tests to stdout")
 parser.add_argument("-c", "--check",         required=False, dest="check",         action='store_true', help="Check that the testing system is working")
 parser.add_argument("-s", "--oversubscribe", required=False, dest="oversubscribe", action='store_true', help="Oversubscribe processors in mpi calls")
+parser.add_argument("--np1", required=False, default=16,     dest="np1",           type=int,            help="Number of processors in first simulation")
+parser.add_argument("--np2", required=False, default=32,     dest="np2",           type=int,            help="Number of processors in second simulation")
 
 args = parser.parse_args()
 
@@ -126,9 +128,9 @@ for configuration in testsuite:
                     module = imp.load_source(testAvail["name"], os.path.dirname(os.path.abspath(__file__)) + "/tests/" + testAvail["name"]+".py")
                     test_function = getattr(module, testAvail["name"])
                     if (testAvail["needsBase"]):
-                        failed = test_function(mpasDevelopmentDir, mpasBaseDir, domainsDir, domain.get('name'), configuration.get('name'), options, args.check, args.oversubscribe)
+                        failed = test_function(mpasDevelopmentDir, mpasBaseDir, domainsDir, domain.get('name'), configuration.get('name'), options, args.check, args.oversubscribe, args.np1, args.np2)
                     else:
-                        failed = test_function(mpasDevelopmentDir,              domainsDir, domain.get('name'), configuration.get('name'), options, args.check, args.oversubscribe)
+                        failed = test_function(mpasDevelopmentDir,              domainsDir, domain.get('name'), configuration.get('name'), options, args.check, args.oversubscribe, args.np1, args.np2)
 
                     nTests = nTests + 1
                     nFails = nFails + failed
