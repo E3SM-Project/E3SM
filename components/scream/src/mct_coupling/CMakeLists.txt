@@ -45,12 +45,12 @@ set(ATM_SRC
   dead_mct_mod.F90
   dead_data_mod.F90
   dead_mod.F90
-  scream_scorpio_interface.F90
-  scream_scorpio_interface.cpp
-  scream_scorpio_interface_iso_c2f.F90
-  ${SCREAM_BASE_DIR}/../eam/src/physics/cam/physics_utils.F90
+#  scream_scorpio_interface.F90
+#  scream_scorpio_interface.cpp
+#  scream_scorpio_interface_iso_c2f.F90
+  ${SCREAM_BASE_DIR}/../cam/src/physics/cam/physics_utils.F90
 )
-
+# COMMENT FOR LUCA: If we move IO out of mct_coupling, ther must be cmake directives here that we can remove.
 if (USE_ESMF_LIB)
   set(ESMFDIR "esmf")
 else()
@@ -90,6 +90,6 @@ set_target_properties(atm PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR
 # Link libraries
 target_link_libraries(atm PRIVATE ${SCREAM_LIBS} ${SCREAM_CIME_LIBS})
 
-if (NOT SCREAM_LIB_ONLY)
-  add_subdirectory(tests)
-endif()
+#if (NOT SCREAM_LIB_ONLY)
+#  add_subdirectory(io)
+#endif()

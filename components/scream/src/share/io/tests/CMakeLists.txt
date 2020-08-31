@@ -11,7 +11,7 @@ set (ARRAY_SCORPIO_SRCS
 set (SCREAM_LIBS
      scream_share
      scream_control
-     atm
+     io
      scream_piof
      scream_csm_share
      scream_pioc
