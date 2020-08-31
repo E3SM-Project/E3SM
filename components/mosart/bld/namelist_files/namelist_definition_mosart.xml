@@ -359,6 +359,14 @@ External Demand Flag, 0 = false
 Demand variable from external file
 </entry>
 
+<entry id="DamConstructionFlag" 
+       type="integer" 
+       category="wrm"
+       group="wrm_inparm" 
+       valid_values="" >
+Dam construction, 0 = false
+</entry>
+
 <!-- ========================================================================================  -->
 <!-- Inundation Namelist -->
 <!-- ========================================================================================  -->

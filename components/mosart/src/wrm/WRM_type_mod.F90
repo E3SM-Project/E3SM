@@ -32,6 +32,7 @@ MODULE WRM_type_mod
      integer :: TotalDemandFlag  ! Flag to indicate if the demand includes irrigation and non irrigation demands
      integer :: GroundWaterFlag  ! Flag to know if demand needs to be separated with GW-SW
      integer :: ExternalDemandFlag  ! Flag to decide where does the demand come from, external files or ELM
+     integer :: DamConstructionFlag  ! Flag to indicate if the dam construction year is considered
 
      character(len=256) :: paraFile         ! the path of the parameter files
      character(len=256) :: demandPath       ! the path of the water demand data
@@ -78,6 +79,7 @@ MODULE WRM_type_mod
      real(r8), pointer :: MaxStorTarget(:)  ! (nd)
 
      integer , pointer :: YEAR(:)           ! (nd) year dam was constructed and operationnal
+     integer , pointer :: active(:)         ! (nd) whether dam is not functional (before construction) or during filling (<10 yrs after built and <80% of capacity) or fully functional (10 yrs after built or >80% of capacity) 
      integer , pointer :: use_Irrig(:)      ! (nd) reservoir purpose irrigation 
      integer , pointer :: use_Elec(:)       ! (nd) hydropower
      integer , pointer :: use_FCon(:)       ! (nd) flood control
