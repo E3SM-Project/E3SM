@@ -583,7 +583,7 @@ void shoc_assumed_pdf_inplume_correlations(SHOCPDFinplumeData &d);
 void shoc_assumed_pdf_compute_temperature(SHOCPDFcomptempData &d);
 void shoc_assumed_pdf_compute_qs(SHOCPDFcompqsData &d);
 void shoc_assumed_pdf_compute_cloud_liquid_variance(SHOCPDFcompcloudvarData &d);
-void shoc_assumed_pdf_compute_cloud_liquid_water_flux(SHOCPDFcompliqfluxData &d);
+void shoc_assumed_pdf_compute_liquid_water_flux(SHOCPDFcompliqfluxData &d);
 void shoc_assumed_pdf_compute_buoyancy_flux(SHOCPDFcompbuoyfluxData &d);
 
 //

@@ -31,6 +31,7 @@ set(SHOC_TESTS_SRCS
     shoc_pdf_inplume_corr_tests.cpp
     shoc_pdf_computetemp_tests.cpp
     shoc_pdf_compute_buoyflux_tests.cpp
+    shoc_pdf_compute_liqflux_tests.cpp
     shoc_unit_tests.cpp)
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build
