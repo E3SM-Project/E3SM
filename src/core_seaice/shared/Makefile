@@ -23,13 +23,16 @@ OBJS = 	mpas_seaice_time_integration.o \
 	mpas_seaice_constants.o \
 	mpas_seaice_column.o \
 	mpas_seaice_diagnostics.o \
-	mpas_seaice_error.o
+	mpas_seaice_error.o \
+	mpas_seaice_mesh_pool.o
 
 all: $(OBJS)
 
 mpas_seaice_constants.o: 
 
 mpas_seaice_error.o:
+
+mpas_seaice_mesh_pool.o:
 
 mpas_seaice_column.o: mpas_seaice_error.o
 

@@ -30,14 +30,13 @@ module seaice_velocity_solver_constitutive_relation
   ! general EVP parameters
   real(kind=RKIND), parameter, private :: &
        eccentricity = 2.0_RKIND, &
-       dampingTimescaleParameter = 0.36_RKIND, &
-       puny = 1.0e-11_RKIND
+       dampingTimescaleParameter = 0.36_RKIND
 
   real(kind=RKIND), parameter, public :: &
-       eccentricitySquared = eccentricity**2
+       eccentricitySquared = eccentricity**2, &
+       puny = 1.0e-11_RKIND
 
   real(kind=RKIND), private :: &
-       dampingTimescale, &
        evpDampingCriterion
 
   ! Bouillon et al. 2013 parameters
@@ -46,6 +45,7 @@ module seaice_velocity_solver_constitutive_relation
        dampingRatio = 5.5e-3_RKIND  ! xi = Sv/Sc < 1
 
   real(kind=RKIND), public :: &
+       dampingTimescale, &
        numericalInertiaCoefficient ! brlx
 
 contains
@@ -159,8 +159,9 @@ contains
        replacementPressure, &
        areaCell, &
        dtElastic)
-#if !defined(__GFORTRAN__) && !defined(CPRGNU)
-!$omp declare simd(seaice_evp_constitutive_relation)
+#ifdef CPRINTEL
+!$omp declare simd(seaice_evp_constitutive_relation) uniform(dtElastic), notinbranch &
+!$omp& linear(ref(stress11,stress22,stress12,strain11,strain22,strain12,replacementPressure,icePressure,areaCell))
 #endif
 
     real(kind=RKIND), intent(inout) :: &
@@ -241,8 +242,9 @@ contains
        icePressure, &
        replacementPressure, &
        areaCell)
-#if !defined(__GFORTRAN__) && !defined(CPRGNU)
-!$omp declare simd(seaice_evp_constitutive_relation_revised)
+#ifdef CPRINTEL
+!$omp declare simd(seaice_evp_constitutive_relation_revised) uniform(icePressure,areaCell), notinbranch &
+!$omp& linear(ref(stress11,stress22,stress12,strain11,strain22,strain12,replacementPressure))
 #endif
 
     real(kind=RKIND), intent(inout) :: &
@@ -319,8 +321,9 @@ contains
        strain11, &
        strain22, &
        strain12)
-#if !defined(__GFORTRAN__) && !defined(CPRGNU)
-!$omp declare simd(seaice_linear_constitutive_relation)
+#ifdef CPRINTEL
+!$omp declare simd(seaice_linear_constitutive_relation) notinbranch &
+!$omp& linear(ref(stress11,stress22,stress12,strain11,strain22,strain12))
 #endif
 
     real(kind=RKIND), intent(out) :: &
