@@ -428,7 +428,7 @@ MODULE WRM_modules
      character(len=*),parameter :: subname='(WRM_storage_targets)'
 
      call get_curr_date(yr, month, day, tod)
-   if (WRMUnit%YEAR(idam) > yr) then
+   if (WRMUnit%active(idam) == 2) then !only do this when dam is fully functional
      do idam=1,ctlSubwWRM%LocalNumDam
 
         drop = 0
