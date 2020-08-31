@@ -60,7 +60,8 @@ contains
     use seaice_forcing, only: seaice_forcing_init, seaice_reset_coupler_fluxes
     use seaice_diagnostics, only: &
          seaice_set_testing_system_test_arrays
-    use seaice_mesh_pool
+    use seaice_mesh_pool, only: &
+         seaice_mesh_pool_create
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:

@@ -20,7 +20,6 @@ module seaice_velocity_solver
   use mpas_dmpar
   use mpas_timer
   use mpas_log, only: mpas_log_write, mpas_log_info
-  use seaice_mesh_pool
 
   implicit none
 
@@ -547,6 +546,9 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine velocity_solver_pre_subcycle(domain)
+
+    use seaice_mesh_pool, only: &
+         seaice_mesh_pool_update
 
     type(domain_type), intent(inout) :: &
          domain
