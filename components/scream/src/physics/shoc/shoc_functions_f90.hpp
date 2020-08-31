@@ -22,13 +22,13 @@ struct SHOCDataBase
   Int shcol, nlev, nlevi;
 
   SHOCDataBase(Int shcol_,
-               const std::vector<Real**>& ptrs_c,           // [shcol]
+               const std::vector<Real**>& ptrs_c,     // [shcol]
                const std::vector<Int**>& idx_c = {}); // [shcol] (optional)
 
   SHOCDataBase(Int shcol_, Int nlev_,
-               const std::vector<Real**>& ptrs,             // [shcol x nlev]
-               const std::vector<Real**>& ptrs_c = {},      // [shcol] (optional)
-               const std::vector<Int**>& idx_c = {}); // [shcol] (optional)
+               const std::vector<Real**>& ptrs,        // [shcol x nlev]
+               const std::vector<Real**>& ptrs_c = {}, // [shcol] (optional)
+               const std::vector<Int**>& idx_c = {});  // [shcol] (optional)
 
   SHOCDataBase(Int shcol_, Int nlev_, Int nlevi_,
                const std::vector<Real**>& ptrs,        // [schol x nlev]
@@ -73,10 +73,12 @@ struct SHOCDataBase
     }
   }
 
-  void randomize(const std::vector<std::pair<Real, Real> >& ranges = {},
-                 const std::vector<std::pair<Real, Real> >& ranges_i = {},
-                 const std::vector<std::pair<Real, Real> >& ranges_c = {},
-                 const std::vector<std::pair<Int, Int> >&   ranges_idx = {});
+  // Initialize with random values. The default range is 0..1
+  // To use non-default ranges, you'll need to provide a pair of pairs, mapping
+  // the member to a range.
+  // Example, to use a -1 to 1 range for wthl member:
+  // d.randomize({ {d.wthl, {-1, 1}} });
+  void randomize(const std::vector<std::pair<void*, std::pair<Real, Real> > >& ranges = {});
 
   Int total() const { return m_total; }
   Int totali() const { return m_totali; }

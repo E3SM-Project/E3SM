@@ -143,8 +143,9 @@ SHOCDataBase::SHOCDataBase(const SHOCDataBase &rhs,
   m_data(rhs.m_data),
   m_idx_data(rhs.m_idx_data)
 {
-  EKAT_ASSERT(real_ptrs.size() == (m_ptrs.size() + m_ptrs_i.size() + m_ptrs_c.size()));
-  EKAT_ASSERT_MSG(int_ptrs.size() == m_indices_c.size(), int_ptrs.size() << " != " << m_indices_c.size());
+  const size_t expected_real_ptrs = m_ptrs.size() + m_ptrs_i.size() + m_ptrs_c.size();
+  EKAT_REQUIRE_MSG(real_ptrs.size() == expected_real_ptrs, real_ptrs.size() << " != " << expected_real_ptrs);
+  EKAT_REQUIRE_MSG(int_ptrs.size() == m_indices_c.size(), int_ptrs.size() << " != " << m_indices_c.size());
 
   size_t real_offset = 0;
   for (auto& item : {&m_ptrs, &m_ptrs_i, &m_ptrs_c}) {
@@ -197,46 +198,51 @@ void SHOCDataBase::init_ptrs()
   }
 }
 
-void SHOCDataBase::randomize(const std::vector<std::pair<Real, Real> >& ranges,
-                             const std::vector<std::pair<Real, Real> >& ranges_i,
-                             const std::vector<std::pair<Real, Real> >& ranges_c,
-                             const std::vector<std::pair<Int, Int> >&   ranges_idx)
+void SHOCDataBase::randomize(const std::vector<std::pair<void*, std::pair<Real, Real> > >& ranges)
 {
+  using range_type = std::remove_const<std::remove_reference<decltype(ranges)>::type >::type;
+
   std::default_random_engine generator;
 
-  EKAT_ASSERT_MSG(ranges.size() <= m_ptrs.size(), "Provided more ranges than data items");
-  for (size_t i = 0; i < m_ptrs.size(); ++i) {
-    std::uniform_real_distribution<Real> data_dist(i < ranges.size() ? ranges[i].first  : 0.0,
-                                                   i < ranges.size() ? ranges[i].second : 1.0);
-    for (int j = 0; j < m_total; ++j) {
-      (*(m_ptrs[i]))[j] = data_dist(generator);
+  range_type ranges_copy(ranges);
+
+  for (auto& item : { std::make_pair(&m_ptrs, m_total) , std::make_pair(&m_ptrs_i, m_totali), std::make_pair(&m_ptrs_c, shcol) }) {
+    auto& ptrs = *item.first;
+    const Int num_per = item.second;
+    for (Real** ptr : ptrs) {
+      std::pair<Real, Real> random_range = {0.0, 1.0};
+      for (auto itr = ranges_copy.begin(); itr != ranges_copy.end(); ++itr) {
+        Real* range_ptr = reinterpret_cast<Real*>(itr->first);
+        if (*ptr == range_ptr) {
+          random_range = itr->second;
+          ranges_copy.erase(itr);
+          break;
+        }
+      }
+      std::uniform_real_distribution<Real> data_dist(random_range.first, random_range.second);
+      for (Int i = 0; i < num_per; ++i) {
+        (*ptr)[i] = data_dist(generator);
+      }
     }
   }
 
-  EKAT_ASSERT_MSG(ranges_i.size() <= m_ptrs_i.size(), "Provided more ranges_i than data items");
-  for (size_t i = 0; i < m_ptrs_i.size(); ++i) {
-    std::uniform_real_distribution<Real> data_dist(i < ranges_i.size() ? ranges_i[i].first  : 0.0,
-                                                   i < ranges_i.size() ? ranges_i[i].second : 1.0);
-
-    for (int j = 0; j < m_totali; ++j) {
-      (*(m_ptrs_i[i]))[j] = data_dist(generator);
+  for (Int** ptr : m_indices_c) {
+    std::pair<Int, Int> random_range = {0, 1};
+    for (auto itr = ranges_copy.begin(); itr != ranges_copy.end(); ++itr) {
+      Int* range_ptr = reinterpret_cast<Int*>(itr->first);
+      if (*ptr == range_ptr) {
+        const Real bottom_range = itr->second.first;
+        const Real top_range    = itr->second.second;
+        EKAT_REQUIRE_MSG(std::ceil(bottom_range) == bottom_range, "Use of non-round float for integer random range:" << bottom_range);
+        EKAT_REQUIRE_MSG(std::ceil(top_range) == top_range, "Use of non-round float for integer random range:" << top_range);
+        random_range = std::make_pair(std::lround(bottom_range), std::lround(top_range));
+        ranges_copy.erase(itr);
+        break;
+      }
     }
-  }
-
-  EKAT_ASSERT_MSG(ranges_i.size() <= m_ptrs_i.size(), "Provided more ranges_c than data items");
-  for (size_t i = 0; i < m_ptrs_c.size(); ++i) {
-    std::uniform_real_distribution<Real> data_dist(i < ranges_c.size() ? ranges_c[i].first  : 0.0,
-                                                   i < ranges_c.size() ? ranges_c[i].second : 1.0);
-    for (int j = 0; j < shcol; ++j) {
-      (*(m_ptrs_c[i]))[j] = data_dist(generator);
-    }
-  }
-
-  EKAT_ASSERT_MSG(ranges_idx.size() == m_indices_c.size(), "Must provide ranges_idx for index data");
-  for (size_t i = 0; i < m_indices_c.size(); ++i) {
-    std::uniform_int_distribution<Int> data_dist(ranges_idx[i].first, ranges_idx[i].second);
-    for (int j = 0; j < shcol; ++j) {
-      (*(m_indices_c[i]))[j] = data_dist(generator);
+    std::uniform_int_distribution<Int> data_dist(random_range.first, random_range.second);
+    for (Int i = 0; i < shcol; ++i) {
+      (*ptr)[i] = data_dist(generator);
     }
   }
 }

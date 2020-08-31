@@ -35,8 +35,8 @@ static void run_second_mom_srf_bfb()
 
   static constexpr Int num_runs = sizeof(mom_srf_data_f90) / sizeof(SHOCSecondMomentSrfData);
 
-  for (Int i = 0; i < num_runs; ++i) {
-    mom_srf_data_f90[i].randomize({}, {}, { {-1, 1} });
+  for (auto& d : mom_srf_data_f90) {
+    d.randomize({ {d.wthl, {-1, 1}} });
   }
 
   SHOCSecondMomentSrfData mom_srf_data_cxx[] = {
@@ -46,13 +46,12 @@ static void run_second_mom_srf_bfb()
     SHOCSecondMomentSrfData(mom_srf_data_f90[3]),
   };
 
-  for (Int i = 0; i < num_runs; ++i) {
+  for (auto& d : mom_srf_data_f90) {
     // expects data in C layout
-    shoc_diag_second_moments_srf(mom_srf_data_f90[i]);
+    shoc_diag_second_moments_srf(d);
   }
 
-  for (Int i = 0; i < num_runs; ++i) {
-    SHOCSecondMomentSrfData& d = mom_srf_data_cxx[i];
+  for (auto& d : mom_srf_data_cxx) {
     shoc_diag_second_moments_srf_f(d.shcol, d.wthl, d.uw, d.vw, d.ustar2, d.wstar);
   }
 
