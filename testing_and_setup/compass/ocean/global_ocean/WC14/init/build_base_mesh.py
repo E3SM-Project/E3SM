@@ -35,7 +35,7 @@ def cellWidthVsLatLon():
     dlon = 0.1
     dlat = dlon
     #earth_radius = constants['SHR_CONST_REARTH']
-    earth_radius = 6371.0e3
+    earth_radius = 6378206.4
     print('\nCreating cellWidth on a lat-lon grid of: {0:.2f} x {0:.2f} '
           'degrees'.format(dlon, dlat))
     print('This can be set higher for faster test generation\n')
