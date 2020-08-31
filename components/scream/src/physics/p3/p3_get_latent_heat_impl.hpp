@@ -1,7 +1,7 @@
 #ifndef P3_GET_LATENT_HEAT_IMPL_HPP
 #define P3_GET_LATENT_HEAT_IMPL_HPP
 
-#include "p3_functions.hpp" // for ETI only but harmless for GPU
+#include "physics/p3/p3_functions.hpp" // for ETI only but harmless for GPU
 
 namespace scream {
 namespace p3 {
@@ -15,7 +15,7 @@ void Functions<S,D>
   constexpr Scalar lapvap  = C::LatVap;
   constexpr Scalar latice  = C::LatIce;
 
-  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk);
+  auto policy = ekat::util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk);
   Kokkos::parallel_for("get_latent_heat", policy, KOKKOS_LAMBDA(const MemberType& team) {
     int i = team.league_rank();
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nk), [&] (const int& k) {
@@ -30,4 +30,4 @@ void Functions<S,D>
 } // namespace p3
 } // namespace scream
 
-#endif
+#endif // P3_GET_LATENT_HEAT_IMPL_HPP

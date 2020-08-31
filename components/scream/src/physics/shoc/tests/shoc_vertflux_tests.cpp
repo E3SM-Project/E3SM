@@ -1,21 +1,19 @@
 #include "catch2/catch.hpp"
 
-//#include "share/scream_types.hpp"
+#include "shoc_unit_tests_common.hpp"
+#include "physics/share/physics_constants.hpp"
+#include "physics/shoc/shoc_functions.hpp"
+#include "physics/shoc/shoc_functions_f90.hpp"
+#include "share/scream_types.hpp"
+
+#include "ekat/ekat_pack.hpp"
+#include "ekat/util/ekat_arch.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
+
 #include <algorithm>
 #include <array>
 #include <random>
 #include <thread>
-
-#include "ekat/scream_kokkos.hpp"
-#include "ekat/scream_pack.hpp"
-#include "ekat/scream_types.hpp"
-#include "ekat/util/scream_arch.hpp"
-#include "ekat/util/scream_kokkos_utils.hpp"
-#include "ekat/util/scream_utils.hpp"
-#include "physics/share/physics_constants.hpp"
-#include "physics/shoc/shoc_functions.hpp"
-#include "physics/shoc/shoc_functions_f90.hpp"
-#include "shoc_unit_tests_common.hpp"
 
 namespace scream {
 namespace shoc {
@@ -163,10 +161,10 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux {
     // Get data from cxx
     for (Int i = 0; i < num_runs; ++i) {
       SHOCVertfluxData& d = SDS_cxx[i];
-      d.transpose<util::TransposeDirection::c2f>();
+      d.transpose<ekat::util::TransposeDirection::c2f>();
       // expects data in fortran layout
       calc_shoc_vertflux_f(d.shcol, d.nlev, d.nlevi, d.tkh_zi, d.dz_zi, d.invar, d.vertflux);
-      d.transpose<util::TransposeDirection::f2c>();
+      d.transpose<ekat::util::TransposeDirection::f2c>();
     }
 
     // Verify BFB results, all data should be in C layout

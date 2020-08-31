@@ -102,9 +102,6 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE USE_PIO USE_ENERGY)
                             Did you forget to set 'HOMME_TARGET' before calling 'CreateDynamicsLib'?\n")
     endif()
 
-    # get homme include dirs. This var is set by the ${HOMME_TARGET}_setup macro
-    set (HOMME_INCLUDE_DIRS ${EXEC_INCLUDE_DIRS})
-
     set (SCREAM_DYNAMICS_SOURCES
          ${SCREAM_DYNAMICS_SRC_DIR}/atmosphere_dynamics.cpp
          ${SCREAM_DYNAMICS_SRC_DIR}/dynamics_driven_grids_manager.cpp

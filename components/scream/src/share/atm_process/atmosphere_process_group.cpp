@@ -1,27 +1,26 @@
 #include "share/atm_process/atmosphere_process_group.hpp"
 
-#include "ekat/util/scream_std_utils.hpp"
+#include "ekat/std_meta/ekat_std_utils.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
-#include "ekat/util/scream_std_utils.hpp"
 
 namespace scream {
 
 AtmosphereProcessGroup::
-AtmosphereProcessGroup (const Comm& comm, const ParameterList& params)
+AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& params)
  : m_comm(comm)
 {
   // Get number of processes in the group and the scheduling type (Sequential vs Parallel)
   m_group_size = params.get<int>("Number of Entries");
-  scream_require_msg (m_group_size>0, "Error! Invalid group size.\n");
+  EKAT_REQUIRE_MSG (m_group_size>0, "Error! Invalid group size.\n");
 
   if (m_group_size>1) {
     if (params.get<std::string>("Schedule Type") == "Sequential") {
       m_group_schedule_type = ScheduleType::Sequential;
     } else if (params.get<std::string>("Schedule Type") == "Parallel") {
       m_group_schedule_type = ScheduleType::Parallel;
-      error::runtime_abort("Error! Parallel schedule not yet implemented.\n");
+      ekat::error::runtime_abort("Error! Parallel schedule not yet implemented.\n");
     } else {
-      error::runtime_abort("Error! Invalid 'Schedule Type'. Available choices are 'Parallel' and 'Sequential'.\n");
+      ekat::error::runtime_abort("Error! Invalid 'Schedule Type'. Available choices are 'Parallel' and 'Sequential'.\n");
     }
   } else {
     // Pointless to handle this group as parallel, if only one process is in it
@@ -36,7 +35,7 @@ AtmosphereProcessGroup (const Comm& comm, const ParameterList& params)
     // The comm to be passed to the processes construction is
     //  - the same as the input comm if num_entries=1 or sched_type=Sequential
     //  - a sub-comm of the input comm otherwise
-    Comm proc_comm = m_comm;
+    ekat::Comm proc_comm = m_comm;
     if (m_group_schedule_type==ScheduleType::Parallel) {
       // This is what's going to happen:
       //  - the processes in the group are going to be run in parallel
@@ -50,10 +49,10 @@ AtmosphereProcessGroup (const Comm& comm, const ParameterList& params)
       //  - this class is then responsible of 'combining' the results togehter,
       //    including remapping input/output fields to/from the sub-comm
       //    distribution.
-      error::runtime_abort("Error! Parallel schedule type not yet implemented.\n");
+      ekat::error::runtime_abort("Error! Parallel schedule type not yet implemented.\n");
     }
 
-    const auto& params_i = params.sublist(util::strint("Process",i));
+    const auto& params_i = params.sublist(ekat::util::strint("Process",i));
     const std::string& process_name = params_i.get<std::string>("Process Name");
     m_atm_processes.emplace_back(AtmosphereProcessFactory::instance().create(process_name,proc_comm,params_i));
 
@@ -63,7 +62,7 @@ AtmosphereProcessGroup (const Comm& comm, const ParameterList& params)
     //       function to be registered in the AtmosphereProcessFactory, he/she may have forgot to set the self pointer
     //       in the process. To make sure this is not the case, we check that the weak_ptr in the newly created
     //       atmosphere process (which comes through inheritance from enable_shared_from_this) is valid.
-    scream_require_msg(!m_atm_processes.back()->weak_from_this().expired(),
+    EKAT_REQUIRE_MSG(!m_atm_processes.back()->weak_from_this().expired(),
                        "Error! The newly created std::shared_ptr<AtmosphereProcess> does not correctly setup the 'enable_shared_from_this' interface.\n"
                        "       Did you by chance register your own creator function in the AtmosphereProccessFactory class?\n"
                        "       If so, don't. Instead, use the instantiation of create_atmosphere_process<T>, with T = YourAtmProcessClassName.\n");
@@ -210,7 +209,7 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
   }
 }
 
-void AtmosphereProcessGroup::initialize (const util::TimeStamp& t0) {
+void AtmosphereProcessGroup::initialize (const TimeStamp& t0) {
   // Now that we have the comm for the processes in the group, we can initialize them
   for (int i=0; i<m_group_size; ++i) {
     m_atm_processes[i]->initialize(t0);
@@ -256,7 +255,7 @@ setup_remappers (const FieldRepository<Real, device_type>& field_repo) {
   for (const auto& atm_proc : m_atm_processes) {
     if (atm_proc->type()==AtmosphereProcessType::Group) {
       auto group = std::dynamic_pointer_cast<AtmosphereProcessGroup>(atm_proc);
-      scream_require_msg(static_cast<bool>(group),
+      EKAT_REQUIRE_MSG(static_cast<bool>(group),
                          "Error! Something went is wrong with the atmosphere process\n" +
                          ("          " + atm_proc->name() + "\n") +
                          "       Its type returns 'Group', but casting to AtmosphereProcessGroup\n" +
@@ -310,12 +309,12 @@ void AtmosphereProcessGroup::run_sequential (const Real dt) {
           const auto& gn = fid.get_grid_name();
           auto& f_old = m_bkp_field_repo->get_field(fid);
           bool field_is_unchanged = views_are_equal(f_old,f.second);
-          if (util::contains(computed,fid) ||
+          if (ekat::util::contains(computed,fid) ||
               (inputs_remappers.find(gn)!=inputs_remappers.end() &&
                inputs_remappers.at(gn)->has_tgt_field(fid))) {
             // For fields that changed, make sure the time stamp has been updated
             const auto& ts = f.second.get_header().get_tracking().get_time_stamp();
-            scream_require_msg(field_is_unchanged || ts==m_current_ts,
+            EKAT_REQUIRE_MSG(field_is_unchanged || ts==m_current_ts,
                                "Error! Process '" + atm_proc->name() + "' updated field '" +
                                 fid.get_id_string() + "', but it did not update its time stamp.\n");
           } else {
@@ -323,7 +322,7 @@ void AtmosphereProcessGroup::run_sequential (const Real dt) {
             // the copy in m_bkp_repo, and update the copy in m_bkp_repo.
             // There are three ok scenarios: 1) field is unchanged, 2) field is computed,
             // 3) field is a remapped input.
-            scream_require_msg(field_is_unchanged,
+            EKAT_REQUIRE_MSG(field_is_unchanged,
                                "Error! Process '" + atm_proc->name() + "' updated field '" +
                                 fid.get_id_string() + "', which it wasn't allowed to update.\n");
 
@@ -361,7 +360,7 @@ void AtmosphereProcessGroup::run_sequential (const Real dt) {
 }
 
 void AtmosphereProcessGroup::run_parallel (const Real /* dt */) {
-  scream_require_msg (false,"Error! Parallel splitting not yet implemented.\n");
+  EKAT_REQUIRE_MSG (false,"Error! Parallel splitting not yet implemented.\n");
 }
 
 void AtmosphereProcessGroup::finalize (/* what inputs? */) {
@@ -377,15 +376,15 @@ void AtmosphereProcessGroup::register_fields (FieldRepository<Real, device_type>
 
 #ifdef SCREAM_DEBUG
     // Make sure processes are not calling methods they shouldn't on the repo
-    scream_require_msg(field_repo.repository_state()==RepoState::Open,
+    EKAT_REQUIRE_MSG(field_repo.repository_state()==RepoState::Open,
                          "Error! Atmosphere processes are *not* allowed to modify the state of the repository.\n");
 
     // Check that the required fields are indeed in the repo now
     for (const auto& id : atm_proc->get_required_fields()) {
-      scream_require_msg(field_repo.has_field(id), "Error! Process '" + atm_proc->name() + "' failed to register required field '" + id.get_id_string() + "'.\n");
+      EKAT_REQUIRE_MSG(field_repo.has_field(id), "Error! Process '" + atm_proc->name() + "' failed to register required field '" + id.get_id_string() + "'.\n");
     }
     for (const auto& id : atm_proc->get_computed_fields()) {
-      scream_require_msg(field_repo.has_field(id), "Error! Process '" + atm_proc->name() + "' failed to register computed field '" + id.get_id_string() + "'.\n");
+      EKAT_REQUIRE_MSG(field_repo.has_field(id), "Error! Process '" + atm_proc->name() + "' failed to register computed field '" + id.get_id_string() + "'.\n");
     }
 #endif
 
@@ -444,7 +443,7 @@ set_field_repos (const FieldRepository<Real, device_type>& repo,
   for (auto atm_proc : m_atm_processes) {
     if (atm_proc->type()==AtmosphereProcessType::Group) {
       auto group = std::dynamic_pointer_cast<AtmosphereProcessGroup>(atm_proc);
-      scream_require_msg(static_cast<bool>(group),
+      EKAT_REQUIRE_MSG(static_cast<bool>(group),
                          "Error! Something went is wrong with the atmosphere process\n" +
                          ("          " + atm_proc->name() + "\n") +
                          "       Its type returns 'Group', but casting to AtmosphereProcessGroup\n" +
@@ -497,7 +496,7 @@ void AtmosphereProcessGroup::set_internal_field (const Field<Real, device_type>&
       proc->set_computed_field(f);
     }
     if (static_cast<bool>(group)) {
-      if (util::contains(group->get_internal_fields(),fid)) {
+      if (ekat::util::contains(group->get_internal_fields(),fid)) {
         group->set_internal_field(f);
       }
     }
@@ -518,7 +517,7 @@ AtmosphereProcessGroup::create_ref_fid (const FieldIdentifier& fid,
     return FieldIdentifier (fid.name(),ref_layout,fid.get_units(),remapper->get_src_grid()->name());
   } else {
     // Something went wrong
-    scream_require_msg(false,"Error! Input FieldIdentifier's grid name is neither the source nor the target grid of the input remapper.\n");
+    EKAT_REQUIRE_MSG(false,"Error! Input FieldIdentifier's grid name is neither the source nor the target grid of the input remapper.\n");
   }
 }
 

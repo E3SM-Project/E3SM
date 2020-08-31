@@ -47,7 +47,7 @@ void Functions<S,D>
     Kokkos::PerTeam(team), [&] () {
       const Int k = k_top_pack;
       {
-        const auto range_pack = scream::pack::range<IntSmallPack>(k_top_pack*Spack::n);
+        const auto range_pack = ekat::pack::range<IntSmallPack>(k_top_pack*Spack::n);
         const auto mask = range_pack > kmax_scalar || range_pack < kmin_scalar;
         if (mask.any()) {
           for (int f = 0; f < nfield; ++f) {
@@ -103,7 +103,7 @@ void Functions<S,D>
 {
   // compute dt_sub
   const Int tmpint1 = static_cast<int>(Co_max + 1);
-  const Scalar dt_sub = util::min(dt_left, dt_left/tmpint1);
+  const Scalar dt_sub = ekat::util::min(dt_left, dt_left/tmpint1);
 
   // Move bottom cell down by 1 if not at ground already
   const Int k_temp = (k_qxbot == kbot) ? k_qxbot : k_qxbot - kdir;

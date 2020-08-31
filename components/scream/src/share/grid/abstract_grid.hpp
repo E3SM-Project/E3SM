@@ -2,7 +2,7 @@
 #define SCREAM_ABSTRACT_GRID_HPP
 
 #include "share/grid/grid_utils.hpp"
-#include "ekat/scream_types.hpp"
+#include "share/scream_types.hpp"
 
 namespace scream
 {
@@ -10,7 +10,7 @@ namespace scream
 class AbstractGrid
 {
 public:
-  using gid_type       = long;          // TODO: template class on gid type
+  using gid_type       = long;          // TODO: template class on gid type?
   using device_type    = DefaultDevice; // TODO: template class on device type
   using kokkos_types   = KokkosTypes<device_type>;
   using dofs_list_type = kokkos_types::view_1d<gid_type>;

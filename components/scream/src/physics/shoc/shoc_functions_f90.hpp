@@ -1,8 +1,7 @@
 #ifndef SCREAM_SHOC_FUNCTIONS_F90_HPP
 #define SCREAM_SHOC_FUNCTIONS_F90_HPP
 
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_types.hpp"
+#include "share/scream_types.hpp"
 
 #include "shoc_functions.hpp"
 
@@ -36,18 +35,18 @@ struct SHOCDataBase
 
   // Since we are also preparing index data, this function is doing more than transposing. It's shifting the
   // format of all data from one language to another
-  template <util::TransposeDirection::Enum D>
+  template <ekat::util::TransposeDirection::Enum D>
   void transpose() {
     std::vector<Real> data(m_data.size());
 
     // Transpose on the zt grid
     for (size_t i = 0; i < m_ptrs.size(); ++i) {
-      util::transpose<D>(*(m_ptrs[i]), data.data() + (m_total*i) , shcol, nlev);
+      ekat::util::transpose<D>(*(m_ptrs[i]), data.data() + (m_total*i) , shcol, nlev);
     }
 
     // Transpose on the zi grid
     for (size_t i = 0; i < m_ptrs_i.size(); ++i) {
-      util::transpose<D>(*(m_ptrs_i[i]), data.data() + (m_ptrs.size()*m_total) + (m_totali*i), shcol, nlevi);
+      ekat::util::transpose<D>(*(m_ptrs_i[i]), data.data() + (m_ptrs.size()*m_total) + (m_totali*i), shcol, nlevi);
     }
 
     // Copy the column only grid
@@ -58,8 +57,8 @@ struct SHOCDataBase
 
     // Shift the indices
     for (size_t i = 0; i < m_idx_data.size(); ++i) {
-      m_idx_data[i] += (D == util::TransposeDirection::c2f ? 1 : -1);
-      scream_assert_msg(m_idx_data[i] >= 0, "Bad index: " << m_idx_data[i]);
+      m_idx_data[i] += (D == ekat::util::TransposeDirection::c2f ? 1 : -1);
+      EKAT_ASSERT_MSG(m_idx_data[i] >= 0, "Bad index: " << m_idx_data[i]);
     }
   }
 
@@ -222,7 +221,7 @@ struct SHOCEnergytotData : public SHOCDataBase {
 
   //functions to initialize data for shoc_energy_total_fixer
   SHOCEnergytotData(Int shcol_, Int nlev_, Int nlevi_, Real dtime_, Int nadv_) :
-    SHOCDataBase(shcol_, nlev_, nlevi_, {&zt_grid, &rho_zt}, {&zi_grid}, {&se_b, &ke_b, &wv_b, &wl_b, &se_a, &ke_a, &wv_a, &wl_a, &wthl_sfc, &wqw_sfc, &te_a, &te_b}), dtime(dtime_), nadv(nadv_) {}
+    SHOCDataBase(shcol_, nlev_, nlevi_, {&zt_grid, &rho_zt}, {&zi_grid}, {&se_b, &ke_b, &wv_b, &wl_b, &se_a, &ke_a, &wv_a, &wl_a, &wthl_sfc, &wqw_sfc, &te_a, &te_b}), nadv(nadv_), dtime(dtime_) {}
   SHOCEnergytotData(const SHOCEnergytotData &rhs) : SHOCDataBase(rhs, {&zt_grid, &rho_zt}, {&zi_grid}, {&se_b, &ke_b, &wv_b, &wl_b, &se_a, &ke_a, &wv_a, &wl_a, &wthl_sfc, &wqw_sfc, &te_a, &te_b}) {}
   SHOCEnergytotData &operator=(const SHOCEnergytotData &rhs) { SHOCDataBase::operator=(rhs); dtime = rhs.dtime; nadv = rhs.nadv; return *this; }
 };//SHOCEnergytotData
@@ -603,4 +602,4 @@ void shoc_diag_second_moments_srf_f(Int shcol, Real* wthl, Real* uw, Real* vw,
 }  // namespace shoc
 }  // namespace scream
 
-#endif
+#endif // SCREAM_SHOC_FUNCTIONS_F90_HPP

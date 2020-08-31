@@ -19,13 +19,12 @@ if ("${SCREAM_DYNAMICS_DYCORE}" STREQUAL "HOMME")
   # We set them to a default, but each compset should set its values anyways.
   set (SCREAM_DYN_TARGET none CACHE STRING "The name of the desired Homme target.")
   set (SCREAM_NP 4 CACHE STRING "The number of Gauss points per element.")
-  set (SCREAM_NUM_LEV FALSE CACHE STRING "The number of vertical levels.")
   set (SCREAM_NUM_TRACERS 4 CACHE STRING "The max number of tracers.")
   set (SCREAM_USE_PIO FALSE CACHE STRING "Whether Homme can use PIO.")
   set (SCREAM_USE_ENERGY FALSE CACHE STRING "Whether Homme has extra energy checks.")
 
   add_definitions(-DHOMME_WITHOUT_PIOLIBRARY)
-  CreateDynamicsLib (${SCREAM_DYN_TARGET} ${SCREAM_NP} ${SCREAM_NUM_LEV} ${SCREAM_NUM_TRACERS} ${SCREAM_USE_PIO} ${SCREAM_USE_ENERGY})
+  CreateDynamicsLib (${SCREAM_DYN_TARGET} ${SCREAM_NP} ${SCREAM_NUM_VERTICAL_LEV} ${SCREAM_NUM_TRACERS} ${SCREAM_USE_PIO} ${SCREAM_USE_ENERGY})
 
   target_include_directories (
     ${dynLibName}

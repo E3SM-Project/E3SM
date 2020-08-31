@@ -1,4 +1,4 @@
-#include "ekat/scream_assert.hpp"
+#include "ekat/ekat_assert.hpp"
 #include "physics/shoc/scream_shoc_interface.hpp"
 #include "physics/shoc/atmosphere_macrophysics.hpp"
 
@@ -6,7 +6,7 @@ namespace scream
 {
 
 // =========================================================================================
-SHOCMacrophysics::SHOCMacrophysics (const Comm& comm,const ParameterList& /* params */)
+SHOCMacrophysics::SHOCMacrophysics (const ekat::Comm& comm,const ekat::ParameterList& /* params */)
   : m_shoc_comm (comm)
 {
 /* Anything that can be initialized without grid information can be initialized here.
@@ -17,14 +17,14 @@ SHOCMacrophysics::SHOCMacrophysics (const Comm& comm,const ParameterList& /* par
 // =========================================================================================
 void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
+  using namespace ekat::units;
 
-  using namespace units;
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
   auto Q = kg/kg;
   Q.set_string("kg/kg");
 
-  constexpr int NVL = 72;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
+  constexpr int NVL = SCREAM_NUM_VERTICAL_LEV;
   constexpr int QSZ =  35;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
 
   auto grid = grids_manager->get_grid("Physics");

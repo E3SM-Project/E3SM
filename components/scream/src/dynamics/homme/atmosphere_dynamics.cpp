@@ -1,8 +1,9 @@
 #include "atmosphere_dynamics.hpp"
-#include "dynamics/homme/homme_dynamics_helpers.hpp"
-#include "ekat/scream_assert.hpp"
 #include "dynamics/homme/scream_homme_interface.hpp"
 #include "dynamics/homme/hommexx_dimensions.hpp"
+#include "dynamics/homme/homme_dynamics_helpers.hpp"
+
+#include "ekat/ekat_assert.hpp"
 
 // HOMMEXX Includes
 #include "CaarFunctor.hpp"
@@ -20,7 +21,7 @@
 namespace scream
 {
 
-HommeDynamics::HommeDynamics (const Comm& comm,const ParameterList& /* params */)
+HommeDynamics::HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList& /* params */)
  : m_dynamics_comm (comm)
 {
   init_homme1(comm);
@@ -32,7 +33,7 @@ HommeDynamics::HommeDynamics (const Comm& comm,const ParameterList& /* params */
 
 void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_manager)
 {
-  using namespace units;
+  using namespace ekat::units;
 
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
@@ -52,7 +53,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   const int ne = dyn_grid->get_num_local_dofs()/(NGP*NGP);
 
   // Sanity check for the grid. This should *always* pass, since Homme builds the grids
-  scream_require_msg(get_homme_param_value<int>("nelemd")==ne,
+  EKAT_REQUIRE_MSG(get_homme_param_value<int>("nelemd")==ne,
                      "Error! The number of elements computed from the Dynamis grid num_dof()\n"
                      "       does not match the number of elements internal in Homme.\n");
   const int nmf = get_homme_param_value<int>("num momentum forcings");
@@ -85,7 +86,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   m_computed_fields.emplace("qdp",dyn_tracers_layout,       Qdp, dyn_grid_name);
 
   const int ftype = get_homme_param_value<int>("ftype");
-  scream_require_msg(ftype==0 || ftype==2 || ftype==4,
+  EKAT_REQUIRE_MSG(ftype==0 || ftype==2 || ftype==4,
                      "Error! The scream interface to homme *assumes* ftype to be 2 or 4.\n"
                      "       Found " + std::to_string(ftype) + " instead.\n");
 }
@@ -143,7 +144,7 @@ void HommeDynamics::initialize (const util::TimeStamp& t0)
       using qdp_type = std::remove_reference<decltype(qdp)>::type;
       qdp = qdp_type(qdp_in.data(),num_elems);
     } else {
-      error::runtime_abort("Error! Unexpected field name. This is an internal error. Please, contact developers.\n");
+      ekat::error::runtime_abort("Error! Unexpected field name. This is an internal error. Please, contact developers.\n");
     }
   }
 
@@ -179,7 +180,7 @@ void HommeDynamics::initialize (const util::TimeStamp& t0)
       auto non_const_ptr = const_cast<Scalar*>(ft_in.data());
       ft = ft_type(non_const_ptr,num_elems);
     } else {
-      error::runtime_abort("Error! Unexpected field name. This is an internal error. Please, contact developers.\n");
+      ekat::error::runtime_abort("Error! Unexpected field name. This is an internal error. Please, contact developers.\n");
     }
   }
 
@@ -210,9 +211,9 @@ void HommeDynamics::run (const Real dt)
       it.second.get_header().get_tracking().update_time_stamp(m_current_ts);
     }
   } catch (std::exception& e) {
-    error::runtime_abort(e.what());
+    ekat::error::runtime_abort(e.what());
   } catch (...) {
-    error::runtime_abort("Something went wrong, but we don't know what.\n");
+    ekat::error::runtime_abort("Something went wrong, but we don't know what.\n");
   }
 }
 
@@ -257,7 +258,7 @@ void HommeDynamics::set_computed_field_impl (const Field<      Real, device_type
     tl_ptr = &Homme::Context::singleton().get_time_level().np1;
     is_tracer = false;
   }
-  util::any tl, tracer;
+  ekat::util::any tl, tracer;
   tl.reset<int*>(tl_ptr);
   tracer.reset<bool>(is_tracer);
 

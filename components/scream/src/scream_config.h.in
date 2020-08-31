@@ -19,6 +19,9 @@
 // The number of scalars in a possibly-no-pack. Use this packsize when a routine does better with pksize=1 on some architectures (SKX).
 #cmakedefine SCREAM_POSSIBLY_NO_PACK_SIZE ${SCREAM_POSSIBLY_NO_PACK_SIZE}
 
+// How many levels to use for the vertical grid
+#cmakedefine SCREAM_NUM_VERTICAL_LEV ${SCREAM_NUM_VERTICAL_LEV}
+
 // Whether MPI errors should abort
 #cmakedefine SCREAM_MPI_ERRORS_ARE_FATAL
 

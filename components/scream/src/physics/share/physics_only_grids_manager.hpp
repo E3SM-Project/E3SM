@@ -2,7 +2,8 @@
 #define SCREAM_PHYSICS_ONLY_GRIDS_MANAGER_HPP
 
 #include "share/grid/grids_manager.hpp"
-#include "ekat/mpi/scream_comm.hpp"
+
+#include "ekat/mpi/ekat_comm.hpp"
 
 namespace scream
 {
@@ -17,7 +18,7 @@ public:
   using string_pair = std::pair<std::string,std::string>;
   using remap_repo_type = std::map<string_pair,remapper_ptr_type>;
 
-  PhysicsOnlyGridsManager (const Comm& comm, const ParameterList& p);
+  PhysicsOnlyGridsManager (const ekat::Comm& comm, const ekat::ParameterList& p);
 
   virtual ~PhysicsOnlyGridsManager () = default;
 
@@ -37,13 +38,13 @@ protected:
 
   remap_repo_type m_remappers;
 
-  ParameterList m_params;
+  ekat::ParameterList m_params;
 
-  Comm          m_comm;
+  ekat::Comm          m_comm;
 };
 
 inline std::shared_ptr<GridsManager>
-create_physics_only_grids_manager (const Comm& comm, const ParameterList& p) {
+create_physics_only_grids_manager (const ekat::Comm& comm, const ekat::ParameterList& p) {
   return std::make_shared<PhysicsOnlyGridsManager>(comm,p);
 }
 

@@ -13,11 +13,11 @@ FieldHeader::FieldHeader (const identifier_type& id)
 
 void FieldHeader::
 set_extra_data (const std::string& key,
-                const util::any& data,
+                const ekat::util::any& data,
                 const bool throw_if_existing)
 {
   if (throw_if_existing) {
-    scream_require_msg (m_extra_data.find(key)==m_extra_data.end(),
+    EKAT_REQUIRE_MSG (m_extra_data.find(key)==m_extra_data.end(),
                         "Error! Key '" + key + "' already existing in "
                         "the extra data map of field '" + m_identifier.get_id_string() + "'.\n");
     m_extra_data[key] = data;

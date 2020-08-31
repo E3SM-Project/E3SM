@@ -1,7 +1,8 @@
 #ifndef SCREAM_ATMOSPHERE_PROCESS_UTILS_HPP
 #define SCREAM_ATMOSPHERE_PROCESS_UTILS_HPP
 
-#include "ekat/scream_assert.hpp"
+#include "ekat/ekat_assert.hpp"
+
 #include <string>
 
 namespace scream {
@@ -20,7 +21,7 @@ inline std::string e2str (const AtmosphereProcessType ap_type) {
     case AtmosphereProcessType::Physics:   return "Atmosphere Physics Parametrization";
     case AtmosphereProcessType::Group:     return "Atmosphere Process Group";
     default:
-      error::runtime_abort("Error! Unrecognized atmosphere process type.\n");
+      ekat::error::runtime_abort("Error! Unrecognized atmosphere process type.\n");
   }
   return "INVALID";
 }

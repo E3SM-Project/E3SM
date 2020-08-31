@@ -1,11 +1,12 @@
 #ifndef SCREAM_FIELD_HPP
 #define SCREAM_FIELD_HPP
 
-#include "field_header.hpp"
-#include "ekat/scream_types.hpp"
-#include "ekat/scream_kokkos_meta.hpp"
-#include "ekat/util/scream_std_meta.hpp"
-#include "ekat/util/scream_kokkos_utils.hpp"
+#include "share/field/field_header.hpp"
+#include "share/scream_types.hpp"
+
+#include "ekat/ekat_type_traits.hpp"
+#include "ekat/kokkos/ekat_kokkos_meta.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 
 #include <memory>   // For std::shared_ptr
 
@@ -71,7 +72,7 @@ public:
   // allocation. This allows each field to be stored as a 1d array, but then
   // be reshaped to the desired layout before being used.
   template<typename DT>
-  ko::Unmanaged<typename KokkosTypes<device_type>::template view<DT> >
+  ekat::util::Unmanaged<typename KokkosTypes<device_type>::template view<DT> >
   get_reshaped_view () const;
 
   // Checks whether the underlying view has been already allocated.
@@ -151,7 +152,7 @@ operator= (const Field<SrcScalarType,Device>& src) {
 
   // If the field has a valid header, we only allow assignment of fields with
   // the *same* identifier.
-  scream_require_msg(m_header->get_identifier().get_id_string()=="" ||
+  EKAT_REQUIRE_MSG(m_header->get_identifier().get_id_string()=="" ||
                      m_header->get_identifier()==src.get_header().get_identifier(),
                      "Error! Assignment of fields with different (and non-null) identifiers is prohibited.\n");
 
@@ -172,27 +173,27 @@ operator= (const Field<SrcScalarType,Device>& src) {
 
 template<typename ScalarType, typename Device>
 template<typename DT>
-ko::Unmanaged<typename KokkosTypes<Device>::template view<DT> >
+ekat::util::Unmanaged<typename KokkosTypes<Device>::template view<DT> >
 Field<ScalarType,Device>::get_reshaped_view () const {
   // The dst value types
-  using DstValueType = typename util::ValueType<DT>::type;
+  using DstValueType = typename ekat::ValueType<DT>::type;
 
   // Get src details
   const auto& alloc_prop = m_header->get_alloc_properties();
   const auto& field_layout = m_header->get_identifier().get_layout();
 
   // Make sure input field is allocated
-  scream_require_msg(m_allocated, "Error! Cannot reshape a field that has not been allocated yet.\n");
+  EKAT_REQUIRE_MSG(m_allocated, "Error! Cannot reshape a field that has not been allocated yet.\n");
 
   // Make sure DstDT has an eligible rank: can only reinterpret if the data type rank does not change or if either src or dst have rank 1.
-  constexpr int DstRank = util::GetRanks<DT>::rank;
+  constexpr int DstRank = ekat::GetRanks<DT>::rank;
 
   // Check the reinterpret cast makes sense for the two value types (need integer sizes ratio)
-  scream_require_msg(alloc_prop.template is_allocation_compatible_with_value_type<DstValueType>(),
+  EKAT_REQUIRE_MSG(alloc_prop.template is_allocation_compatible_with_value_type<DstValueType>(),
                        "Error! Source field allocation is not compatible with the destination field's value type.\n");
 
   // The destination view type
-  using DstView = ko::Unmanaged<typename KokkosTypes<Device>::template view<DT> >;
+  using DstView = ekat::util::Unmanaged<typename KokkosTypes<Device>::template view<DT> >;
   typename DstView::traits::array_layout kokkos_layout;
 
   const int num_values = alloc_prop.get_alloc_size() / sizeof(DstValueType);
@@ -206,7 +207,7 @@ Field<ScalarType,Device>::get_reshaped_view () const {
       kokkos_layout.dimension[i] = field_layout.dim(i);
 
       // Safety check: field_layout.dim(0)*...*field_layout.dim(field_layout.rank()-2) should divide num_values, so we check
-      scream_require_msg(num_last_dim_values % field_layout.dim(i) == 0, "Error! Something is wrong with the allocation properties.\n");
+      EKAT_REQUIRE_MSG(num_last_dim_values % field_layout.dim(i) == 0, "Error! Something is wrong with the allocation properties.\n");
       num_last_dim_values /= field_layout.dim(i);
     }
     kokkos_layout.dimension[field_layout.rank()-1] = num_last_dim_values;
@@ -223,7 +224,7 @@ void Field<ScalarType,Device>::allocate_view ()
   // a subview of the field). However, it *seems* suspicious to call
   // this method twice, and I think it's more likely than not that
   // such a scenario would indicate a bug. Therefore, I am prohibiting it.
-  scream_require_msg(!m_allocated, "Error! View was already allocated.\n");
+  EKAT_REQUIRE_MSG(!m_allocated, "Error! View was already allocated.\n");
 
   // Short names
   const auto& id     = m_header->get_identifier();
@@ -231,7 +232,7 @@ void Field<ScalarType,Device>::allocate_view ()
   auto& alloc_prop   = m_header->get_alloc_properties();
 
   // Check the identifier has all the dimensions set
-  scream_require_msg(layout.are_dimensions_set(), "Error! Cannot allocate the view until all the field's dimensions are set.\n");
+  EKAT_REQUIRE_MSG(layout.are_dimensions_set(), "Error! Cannot allocate the view until all the field's dimensions are set.\n");
 
   // Commit the allocation properties
   alloc_prop.commit();

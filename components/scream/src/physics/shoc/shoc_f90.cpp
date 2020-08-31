@@ -3,8 +3,7 @@
 #include "physics_constants.hpp"
 #include "shoc_ic_cases.hpp"
 
-#include "ekat/scream_assert.hpp"
-#include "ekat/util/scream_utils.hpp"
+#include "ekat/ekat_assert.hpp"
 
 using scream::Real;
 using scream::Int;
@@ -123,7 +122,7 @@ void FortranDataIterator::init (const FortranData::Ptr& dp) {
 
 const FortranDataIterator::RawArray&
 FortranDataIterator::getfield (Int i) const {
-  scream_assert(i >= 0 || i < nfield());
+  EKAT_ASSERT(i >= 0 || i < nfield());
   return fields_[i];
 }
 

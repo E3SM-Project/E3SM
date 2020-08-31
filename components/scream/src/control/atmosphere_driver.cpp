@@ -4,7 +4,8 @@
 #include "share/atm_process/atmosphere_process_dag.hpp"
 #include "share/field/field_initializer.hpp"
 #include "share/field/field_utils.hpp"
-#include "ekat/scream_assert.hpp"
+
+#include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
 
 namespace scream {
@@ -76,8 +77,8 @@ namespace control {
  */
 
 
-void AtmosphereDriver::initialize (const Comm& atm_comm,
-                                   const ParameterList& params,
+void AtmosphereDriver::initialize (const ekat::Comm& atm_comm,
+                                   const ekat::ParameterList& params,
                                    const util::TimeStamp& t0)
 {
   m_atm_comm = atm_comm;
@@ -157,7 +158,7 @@ void AtmosphereDriver::initialize (const Comm& atm_comm,
 
 void AtmosphereDriver::run (const Real dt) {
   // Make sure the end of the time step is after the current start_time
-  scream_require_msg (dt>0, "Error! Input time step must be positive.\n");
+  EKAT_REQUIRE_MSG (dt>0, "Error! Input time step must be positive.\n");
 
   // The class AtmosphereProcessGroup will take care of dispatching arguments to
   // the individual processes, which will be called in the correct order.
@@ -183,7 +184,7 @@ void AtmosphereDriver::init_atm_inputs () {
     auto init_type = f.get_header_ptr()->get_tracking().get_init_type();
     if (init_type!=InitType::None) {
       auto initializer = f.get_header_ptr()->get_tracking().get_initializer().lock();
-      scream_require_msg (static_cast<bool>(initializer),
+      EKAT_REQUIRE_MSG (static_cast<bool>(initializer),
                           "Error! Field '" + f.get_header().get_identifier().name() + "' has initialization type '" + e2str(init_type) + "',\n" +
                           "       but its initializer pointer is not valid.\n");
 
@@ -215,11 +216,11 @@ void AtmosphereDriver::inspect_atm_dag () {
   if (dag.has_unmet_dependencies()) {
     const int err_verb_lev = deb_pl.get<int>("Atmosphere DAG Verbosity Level",int(AtmProcDAG::VERB_MAX));
     dag.write_dag("error_atm_dag.dot",err_verb_lev);
-    scream_error_msg("Error! There are unmet dependencies in the atmosphere internal dag.\n"
-                     "       Use the graphviz package to inspect the dependency graph:\n"
-                     "    \n"
-                     "    $ dot -Tjpg -o error_atm_dag.jpg error_atm_dag.dot\n"
-                     "    $ eog error_atm_dag.dot\n");
+    EKAT_ERROR_MSG("Error! There are unmet dependencies in the atmosphere internal dag.\n"
+                   "       Use the graphviz package to inspect the dependency graph:\n"
+                   "    \n"
+                   "    $ dot -Tjpg -o error_atm_dag.jpg error_atm_dag.dot\n"
+                   "    $ eog error_atm_dag.dot\n");
   }
 
   // If requested, write a dot file for visualization

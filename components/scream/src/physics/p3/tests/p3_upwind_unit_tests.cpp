@@ -1,14 +1,15 @@
 #include "catch2/catch.hpp"
 
-#include "ekat/scream_types.hpp"
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_kokkos.hpp"
-#include "ekat/scream_pack.hpp"
-#include "ekat/util/scream_kokkos_utils.hpp"
+#include "p3_unit_tests_common.hpp"
+
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
 
-#include "p3_unit_tests_common.hpp"
+#include "share/scream_types.hpp"
+
+#include "ekat/ekat_pack.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "ekat/ekat_pack_kokkos.hpp"
 
 #include <thread>
 #include <array>
@@ -36,6 +37,9 @@ struct UnitWrap::UnitTest<D>::TestUpwind {
 
 static void run_phys()
 {
+  using ekat::pack::repack;
+  constexpr auto SPS = SCREAM_SMALL_PACK_SIZE;
+
   static const Int nfield = 2;
 
   const auto eps = std::numeric_limits<Scalar>::epsilon();
@@ -47,14 +51,14 @@ static void run_phys()
     const Real dt = min_dz/max_speed;
 
     view_1d<Pack> rho("rho", npack), inv_rho("inv_rho", npack), inv_dz("inv_dz", npack);
-    const auto lrho = smallize(rho), linv_rho = smallize(inv_rho), linv_dz = smallize(inv_dz);
+    const auto lrho = repack<SPS>(rho), linv_rho = repack<SPS>(inv_rho), linv_dz = repack<SPS>(inv_dz);
 
     Kokkos::Array<view_1d<Pack>, nfield> flux, V, r;
     Kokkos::Array<uview_1d<Spack>, nfield> lflux, lV, lr;
-    const auto init_array = [&] (const std::string& name, const Int& i, decltype(flux)& f,
+    const auto init_array = [&] (const std::string& /* name */, const Int& i, decltype(flux)& f,
                                  decltype(lflux)& lf) {
       f[i] = view_1d<Pack>("f", npack);
-      lf[i] = smallize(f[i]);
+      lf[i] = repack<SPS>(f[i]);
     };
     for (int i = 0; i < nfield; ++i) {
       init_array("flux", i, flux, lflux);
@@ -70,7 +74,7 @@ static void run_phys()
       const auto init_fields = KOKKOS_LAMBDA (const MemberType& team) {
         const auto set_fields = [&] (const Int& k) {
           for (Int i = 0; i < nfield; ++i) {
-            const auto range = scream::pack::range<Pack>(k*Pack::n);
+            const auto range = ekat::pack::range<Pack>(k*Pack::n);
             rho(k) = 1 + range/nk;
             inv_rho(k) = 1 / rho(k);
             inv_dz(k) = 1 / (min_dz + range*range / (nk*nk));
@@ -82,15 +86,15 @@ static void run_phys()
             } else {
               r[i](k) = 1; // Evolve the background density field.
             }
-            scream_kassert((V[i](k) >= 0).all());
-            scream_kassert((V[i](k) <= max_speed || (range >= nk)).all());
+            EKAT_KERNEL_ASSERT((V[i](k) >= 0).all());
+            EKAT_KERNEL_ASSERT((V[i](k) <= max_speed || (range >= nk)).all());
           }
-          scream_kassert((V[0](k) == V[1](k)).all());
+          EKAT_KERNEL_ASSERT((V[0](k) == V[1](k)).all());
         };
         Kokkos::parallel_for(Kokkos::TeamThreadRange(team, npack), set_fields);
         team.team_barrier();
       };
-      Kokkos::parallel_for(util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, npack),
+      Kokkos::parallel_for(ekat::util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, npack),
                            init_fields);
 
       const auto sflux = scalarize(flux[1]);
@@ -126,14 +130,14 @@ static void run_phys()
               // but it works, so we might as well use it.
               if (eps*sr0(k) < eps) return;
               const auto mixing_ratio_true = sr(k)/sr0(k);
-              r_max = util::max(mixing_ratio_true, r_max);
+              r_max = ekat::util::max(mixing_ratio_true, r_max);
             };
             Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, nk), find_max_r,
                                     Kokkos::Max<Scalar>(r_max));
 
             const auto find_min_r = [&] (const Int& k, Scalar& r_min) {
               const auto mixing_ratio_true = sr(k)/sr0(k);
-              r_min = util::min(mixing_ratio_true, r_min);
+              r_min = ekat::util::min(mixing_ratio_true, r_min);
             };
             Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, nk), find_min_r,
                                     Kokkos::Min<Scalar>(r_min));
@@ -178,13 +182,13 @@ static void run_phys()
 
           // Check diagnostics.
           //   1. Check for conservation of mass.
-          if (util::reldif(mass0, mass1) > 1e1*eps) ++nerr;
+          if (ekat::util::rel_diff(mass0, mass1) > 1e1*eps) ++nerr;
           //   2. Check for non-violation of global extrema.
           if (r_min1 < r_min0 - 10*eps) ++nerr;
           if (r_max1 > r_max0 + 10*eps) ++nerr;
         };
         Int lnerr;
-        Kokkos::parallel_reduce(util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, npack),
+        Kokkos::parallel_reduce(ekat::util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, npack),
                                 step, lnerr);
         nerr += lnerr;
         Kokkos::fence();

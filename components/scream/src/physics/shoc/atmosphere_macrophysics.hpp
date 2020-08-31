@@ -2,7 +2,7 @@
 #define SCREAM_SHOC_MACROPHYSICS_HPP
 
 #include "share/atm_process/atmosphere_process.hpp"
-#include "ekat/scream_parameter_list.hpp"
+#include "ekat/ekat_parameter_list.hpp"
 
 #include <string>
 
@@ -25,7 +25,7 @@ public:
   using const_field_type = Field<const Real,device_type>;
 
   // Constructors
-  SHOCMacrophysics (const Comm& comm, const ParameterList& params);
+  SHOCMacrophysics (const ekat::Comm& comm, const ekat::ParameterList& params);
 
   // The type of subcomponent
   AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
@@ -34,7 +34,7 @@ public:
   std::string name () const { return "Macrophysics"; }
 
   // The communicator used by subcomponent
-  const Comm& get_comm () const { return m_shoc_comm; }
+  const ekat::Comm& get_comm () const { return m_shoc_comm; }
 
   // Get the required grid for subcomponent
   std::set<std::string> get_required_grids () const {
@@ -71,7 +71,7 @@ protected:
   std::map<std::string,field_type>        m_shoc_fields_out;
 
   util::TimeStamp   m_current_ts;
-  Comm              m_shoc_comm;
+  ekat::Comm              m_shoc_comm;
 
 }; // class SHOCMacrophysics
 

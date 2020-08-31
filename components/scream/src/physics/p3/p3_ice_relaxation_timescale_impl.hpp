@@ -31,7 +31,7 @@ void Functions<S,D>
    * note 'f1pr' values are normalized, so we need to multiply by N
    */
   epsi.set(any_if,
-           ((table_val_qi2qr_melting+table_val_qi2qr_vent_melt*pack::cbrt(sc)*sqrt(rhofaci*rho/mu))*
+           ((table_val_qi2qr_melting+table_val_qi2qr_vent_melt*cbrt(sc)*sqrt(rhofaci*rho/mu))*
             sp(2.0)*pi*rho*dv)*ni_incld);
 
   epsi_tot.set(any_if, epsi_tot+epsi);
@@ -42,4 +42,4 @@ void Functions<S,D>
 } // namespace p3
 } // namespace scream
 
-#endif
+#endif // P3_ICE_RELAXATION_TIMESCALE_IMPL_HPP

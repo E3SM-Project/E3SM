@@ -36,7 +36,7 @@ template<AtmosphereProcessType PType>
 class DummyProcess : public scream::AtmosphereProcess {
 public:
 
-  DummyProcess (const Comm& comm,const ParameterList& params)
+  DummyProcess (const ekat::Comm& comm,const ekat::ParameterList& params)
    : m_comm(comm)
   {
     m_name = params.get<std::string> ("Process Name");
@@ -57,7 +57,7 @@ public:
   std::string name () const { return m_name; }
 
   // The communicator associated with this atm process
-  const Comm& get_comm () const { return m_comm; }
+  const ekat::Comm& get_comm () const { return m_comm; }
 
   // The initialization method should prepare all stuff needed to import/export from/to
   // f90 structures.
@@ -92,7 +92,7 @@ protected:
   std::string m_name;
   std::string m_grid_name;
 
-  Comm    m_comm;
+  ekat::Comm    m_comm;
 };
 
 class MyDynamics : public DummyProcess<AtmosphereProcessType::Dynamics>
@@ -100,11 +100,11 @@ class MyDynamics : public DummyProcess<AtmosphereProcessType::Dynamics>
 public:
   using base = DummyProcess<AtmosphereProcessType::Dynamics>;
 
-  MyDynamics (const Comm& comm,const ParameterList& params)
+  MyDynamics (const ekat::Comm& comm,const ekat::ParameterList& params)
    : base(comm,params)
   {
     using namespace ShortFieldTagsNames;
-    using namespace units;
+    using namespace ekat::units;
 
     FieldIdentifier tend("Temperature tendency",{EL,GP,GP,VL},K/s);
     m_vec_fids_in.push_back(tend);
@@ -134,11 +134,11 @@ class MyPhysicsA : public DummyProcess<AtmosphereProcessType::Physics>
 public:
   using base = DummyProcess<AtmosphereProcessType::Physics>;
 
-  MyPhysicsA (const Comm& comm,const ParameterList& params)
+  MyPhysicsA (const ekat::Comm& comm,const ekat::ParameterList& params)
    : base(comm,params)
   {
     using namespace ShortFieldTagsNames;
-    using namespace units;
+    using namespace ekat::units;
 
     FieldIdentifier temp("Temperature",{COL,VL},K);
     m_vec_fids_in.push_back(temp);
@@ -168,11 +168,11 @@ class MyPhysicsB : public DummyProcess<AtmosphereProcessType::Physics>
 public:
   using base = DummyProcess<AtmosphereProcessType::Physics>;
 
-  MyPhysicsB (const Comm& comm,const ParameterList& params)
+  MyPhysicsB (const ekat::Comm& comm,const ekat::ParameterList& params)
    : base(comm,params)
   {
     using namespace ShortFieldTagsNames;
-    using namespace units;
+    using namespace ekat::units;
 
     FieldIdentifier temp("Temperature",{COL,VL},K);
     m_vec_fids_in.push_back(temp);
@@ -230,10 +230,10 @@ TEST_CASE("process_factory", "") {
   using namespace scream;
 
   // A world comm
-  Comm comm(MPI_COMM_WORLD);
+  ekat::Comm comm(MPI_COMM_WORLD);
 
   // Create a parameter list for inputs
-  ParameterList params ("Atmosphere Processes");
+  ekat::ParameterList params ("Atmosphere Processes");
 
   params.set("Number of Entries",2);
   params.set<std::string>("Schedule Type","Sequential");
@@ -290,10 +290,10 @@ TEST_CASE("atm_proc_dag", "") {
   constexpr int ne = 4;
 
   // A world comm
-  Comm comm(MPI_COMM_WORLD);
+  ekat::Comm comm(MPI_COMM_WORLD);
 
   // Create a parameter list for inputs
-  ParameterList params ("Atmosphere Processes");
+  ekat::ParameterList params ("Atmosphere Processes");
 
   params.set("Number of Entries",2);
   params.set<std::string>("Schedule Type","Sequential");

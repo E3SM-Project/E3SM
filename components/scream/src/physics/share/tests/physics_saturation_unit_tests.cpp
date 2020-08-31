@@ -1,14 +1,13 @@
 #include "catch2/catch.hpp"
 
-#include "ekat/scream_types.hpp"
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_kokkos.hpp"
-#include "ekat/scream_pack.hpp"
-#include "ekat/util/scream_kokkos_utils.hpp"
 #include "physics/share/physics_functions.hpp"
 #include "physics/share/physics_saturation_impl.hpp"
-
 #include "physics_unit_tests_common.hpp"
+
+#include "share/scream_types.hpp"
+
+#include "ekat/ekat_pack.hpp"
+#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 
 #include <thread>
 #include <array>
@@ -58,10 +57,10 @@ struct UnitWrap::UnitTest<D>::TestSaturation
 
     return latent*svp/(RV*temp - svp/rho); //return condition number
 
-    }
+  }
 
   KOKKOS_FUNCTION  static void saturation_tests(const Scalar& temperature, const Scalar& pressure,
-						const Scalar *expected_vals, int& errors ){
+          const Scalar *expected_vals, int& errors ){
 
     //Nomenclature:
     //subscript "_fp"  stands for "Flatau Pressure"
@@ -125,24 +124,28 @@ struct UnitWrap::UnitTest<D>::TestSaturation
     // Now check that computed vs expected values are small enough.
     if ( std::abs(sat_ice_fp[0] - expected_sat_ice_fp ) > Cond_ice_fp*tol ) {
       printf("esi_fp for T = %f abs diff is %e but max allowed is %e\n",
-	     temperature,std::abs(sat_ice_fp[0] - expected_sat_ice_fp ),tol*Cond_ice_fp );
-    errors++;}
+             temperature,std::abs(sat_ice_fp[0] - expected_sat_ice_fp ),tol*Cond_ice_fp );
+      errors++;
+    }
     if (std::abs(sat_liq_fp[0] - expected_sat_liq_fp) > Cond_liq_fp*tol)  {
       printf("esl_fp  for T = %f abs diff is %e but max allowed is %e\n",
-	     temperature,std::abs(sat_liq_fp[0] - expected_sat_liq_fp ),tol*Cond_liq_fp);
-      errors++;}
+             temperature,std::abs(sat_liq_fp[0] - expected_sat_liq_fp ),tol*Cond_liq_fp);
+      errors++;
+    }
 
     // Test vapor pressure against Murphy and Koop:
     // ---------------------------------------------------------
     // Now check that computed vs expected values are small enough.
     if ( std::abs(sat_ice_mkp[0] - expected_sat_ice_mkp ) > Cond_ice_mkp*tol ) {
       printf("esi_mkp for T = %f abs diff is %e but max allowed is %e\n",
-	     temperature,std::abs(sat_ice_mkp[0] - expected_sat_ice_mkp ),tol*Cond_ice_mkp );
-      errors++;}
+             temperature,std::abs(sat_ice_mkp[0] - expected_sat_ice_mkp ),tol*Cond_ice_mkp );
+      errors++;
+    }
     if (std::abs(sat_liq_mkp[0] - expected_sat_liq_mkp) > Cond_liq_mkp*tol)  {
       printf("esl_mkp  for T = %f abs diff is %e but max allowed is %e\n",
-	     temperature,std::abs(sat_liq_mkp[0] - expected_sat_liq_mkp ),tol*Cond_liq_mkp);
-      errors++;}
+             temperature,std::abs(sat_liq_mkp[0] - expected_sat_liq_mkp ),tol*Cond_liq_mkp);
+      errors++;
+    }
 
     //Set constant values
     //--------------------------------------
@@ -164,19 +167,22 @@ struct UnitWrap::UnitTest<D>::TestSaturation
     // Now check that computed vs expected values are small enough (Flatau).
     if (std::abs(mix_ice_fr[0] -  expected_mix_ice_fr) > Cond_ice_r*tol ) {
       printf("qsi_fp: abs(calc-expected)=%e %e\n",std::abs(mix_ice_fr[0] -  expected_mix_ice_fr),tol*Cond_ice_r);
-      errors++;}
+      errors++;
+    }
     if (std::abs(mix_liq_fr[0] -  expected_mix_liq_fr) > Cond_liq_r*tol ) {
       printf("qsl_fp: abs(calc-expected)=%e %e\n",std::abs(mix_liq_fr[0] -  expected_mix_liq_fr),tol*Cond_liq_r);
-      errors++;}
+      errors++;
+    }
 
     // Now check that computed vs expected values are small enough (Murphy and Koop).
     if (std::abs(mix_ice_mkr[0] -  expected_mix_ice_mkr) > Cond_ice_r*tol ) {
       printf("qsi_mkp: abs(calc-expected)=%e %e\n",std::abs(mix_ice_mkr[0] -  expected_mix_ice_mkr),tol*Cond_ice_r);
-      errors++;}
+      errors++;
+    }
     if (std::abs(mix_liq_mkr[0] -  expected_mix_liq_mkr) > Cond_liq_r*tol ) {
       printf("qsl_mkp: abs(calc-expected)=%e %e\n",std::abs(mix_liq_mkr[0] -  expected_mix_liq_mkr),tol*Cond_liq_r);
-      errors++;}
-
+      errors++;
+    }
   }
 
   static void run()
@@ -191,8 +197,8 @@ struct UnitWrap::UnitTest<D>::TestSaturation
      */
 
     int nerr = 0;
-    TeamPolicy policy(util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
-    Kokkos::parallel_reduce("TestTableIce::run", policy, KOKKOS_LAMBDA(const MemberType& team, int& errors) {
+    TeamPolicy policy(ekat::util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
+    Kokkos::parallel_reduce("TestTableIce::run", policy, KOKKOS_LAMBDA(const MemberType&, int& errors) {
 
       errors = 0;
 
@@ -210,10 +216,10 @@ struct UnitWrap::UnitTest<D>::TestSaturation
       static constexpr int ncrv = 8; // 4 for each saturation scheme
 
       struct sat_test_args {
-      	Scalar t_atm; //temperature [K]
-      	Scalar pres; //pressure [Pa]
-      	Scalar dp_data[ncrv]; // double precision expected vals for MK and polysvp1
-      	Scalar sp_data[ncrv]; // single precision expected vals for MK and polysvp1
+        Scalar t_atm; //temperature [K]
+        Scalar pres; //pressure [Pa]
+        Scalar dp_data[ncrv]; // double precision expected vals for MK and polysvp1
+        Scalar sp_data[ncrv]; // single precision expected vals for MK and polysvp1
       };
 
       static constexpr auto ncases   = 10; //total number of test cases
@@ -231,29 +237,29 @@ struct UnitWrap::UnitTest<D>::TestSaturation
       static constexpr auto atm_pres = 1e5;
 
       stargs[0] = {tmelt,
-		   atm_pres,
-		   //dp_data
-		   {611.23992100000009, 611.23992100000009,
-		    0.0038251131382843278, 0.0038251131382843278,
-		    611.2126978267946, 611.2126978267946,
-		    0.0038249417291628678, 0.0038249417291628678},
-		   //sp_data
-		   {611.2399, 611.2399, 0.0038251132, 0.0038251132,
-		    611.2123, 611.2123, 0.003824939, 0.003824939}
+                   atm_pres,
+                   //dp_data
+                  {611.23992100000009, 611.23992100000009,
+                   0.0038251131382843278, 0.0038251131382843278,
+                   611.2126978267946, 611.2126978267946,
+                   0.0038249417291628678, 0.0038249417291628678},
+                   //sp_data
+                  {611.2399, 611.2399, 0.0038251132, 0.0038251132,
+                   611.2123, 611.2123, 0.003824939, 0.003824939}
       };
 
       // Cold Case: Test values @ 243.15K @ 1e5 Pa
       //---------------------------------------
       stargs[1] = {243.15,
-		   atm_pres,
-		   //dp_data
-		   {38.024844602056795, 51.032583257624964,
-		    0.00023659331311441935, 0.00031756972127516819,
-		    38.01217277745647, 50.93561537896607,
-		    0.00023651443812988484, 0.0003169659941390894},
-		   //sp_data
-		   {38.024666, 51.03264, 0.00023659221, 0.00031757005,
-		    38.012142, 50.935585, 0.00023651426, 0.0003169658}
+                   atm_pres,
+                   //dp_data
+                  {38.024844602056795, 51.032583257624964,
+                   0.00023659331311441935, 0.00031756972127516819,
+                   38.01217277745647, 50.93561537896607,
+                   0.00023651443812988484, 0.0003169659941390894},
+                   //sp_data
+                  {38.024666, 51.03264, 0.00023659221, 0.00031757005,
+                   38.012142, 50.935585, 0.00023651426, 0.0003169658}
       };
 
       //Warm Case: Test values @ 303.15K @ 1e5 Pa
@@ -261,13 +267,13 @@ struct UnitWrap::UnitTest<D>::TestSaturation
       stargs[2] = {303.15,
                    atm_pres,
                    //dp_data
-		   {4245.1933273786717, 4245.1933273786717,
-		    0.027574442204332306, 0.027574442204332306,
-		    4246.814076877233, 4246.814076877233,
-		    0.027585436614272162, 0.027585436614272162},
+                  {4245.1933273786717, 4245.1933273786717,
+                   0.027574442204332306, 0.027574442204332306,
+                   4246.814076877233, 4246.814076877233,
+                   0.027585436614272162, 0.027585436614272162},
                    //sp_data
-                   {4245.1934, 4245.1934, 0.027574444, 0.027574444,
-		    4246.8115, 4246.8115, 0.027585419, 0.027585419}
+                  {4245.1934, 4245.1934, 0.027574444, 0.027574444,
+                   4246.8115, 4246.8115, 0.027585419, 0.027585419}
       };
 
       //Following values are picked from Murphy and Koop (2005)
@@ -282,77 +288,77 @@ struct UnitWrap::UnitTest<D>::TestSaturation
       stargs[3] = {150,
                    atm_pres,
                    //dp_data
-		   {0.0565113360640801, 0.17827185346988017,
-		    3.514840868181163e-07, 1.1088004687434155e-06,
-		    6.1061006509816675e-06, 1.5621037177920032e-05,
-		    3.79781500154674e-11, 9.715825652191167e-11},
-		   //sp_data
-		   {0.05517006, 0.17905235, 3.4314175e-07, 1.113655e-06,
-		    6.1060973e-06, 1.5621057e-05, 3.797813e-11, 9.715838e-11}
+                  {0.0565113360640801, 0.17827185346988017,
+                   3.514840868181163e-07, 1.1088004687434155e-06,
+                   6.1061006509816675e-06, 1.5621037177920032e-05,
+                   3.79781500154674e-11, 9.715825652191167e-11},
+                   //sp_data
+                  {0.05517006, 0.17905235, 3.4314175e-07, 1.113655e-06,
+                   6.1060973e-06, 1.5621057e-05, 3.797813e-11, 9.715838e-11}
       };
 
       //Test values @ 180K @ 1e5 Pa
       stargs[4] = {180,
                    atm_pres,
                    //dp_data
-		   {0.0565113360640801, 0.17827185346988017,
-		    3.514840868181163e-07, 1.1088004687434155e-06,
-		    0.005397500125274297, 0.01123923029036248,
-		    3.3570864981545485e-08, 6.990471437859482e-08},
-		   //sp_data
-		   {0.05517006, 0.17905235, 3.4314175e-07, 1.113655e-06,
-		    0.0053975, 0.011239249, 3.3570867e-08, 6.990483e-08}
+                  {0.0565113360640801, 0.17827185346988017,
+                   3.514840868181163e-07, 1.1088004687434155e-06,
+                   0.005397500125274297, 0.01123923029036248,
+                   3.3570864981545485e-08, 6.990471437859482e-08},
+                   //sp_data
+                  {0.05517006, 0.17905235, 3.4314175e-07, 1.113655e-06,
+                   0.0053975, 0.011239249, 3.3570867e-08, 6.990483e-08}
       };
 
       //Test values @ 210K  @ 1e5 Pa
       stargs[5] = {210,
                    atm_pres,
                    //dp_data
-                   {0.7021857060894199, 1.2688182238880685,
-		    4.3674192198021676e-06, 7.891776277281936e-06,
-		    0.7020234713180218, 1.2335424085746476,
-		    4.366410153074117e-06, 7.672365591576349e-06},
-		   //sp_data
-		   {0.7016659, 1.2685776, 4.364186e-06, 7.890279e-06,
-		    0.70202345, 1.2335398, 4.36641e-06, 7.67235e-06}
+                  {0.7021857060894199, 1.2688182238880685,
+                   4.3674192198021676e-06, 7.891776277281936e-06,
+                   0.7020234713180218, 1.2335424085746476,
+                   4.366410153074117e-06, 7.672365591576349e-06},
+                   //sp_data
+                  {0.7016659, 1.2685776, 4.364186e-06, 7.890279e-06,
+                   0.70202345, 1.2335398, 4.36641e-06, 7.67235e-06}
       };
 
       //Test values @ 240K @ 1e5 Pa
       stargs[6] = {240,
                    atm_pres,
                    //dp_data
-                   {27.280908658710246, 37.77676490183603,
-		    0.00016972553017335565, 0.0002350491600776575,
-		    27.272365420780556, 37.66700070557609,
-		    0.00016967236474679822, 0.0002343659437158037},
-		   //sp_data
-		   {27.28076, 37.776802, 0.0001697246, 0.00023504937,
-		    27.27235, 37.666973, 0.00016967228, 0.00023436577}
+                  {27.280908658710246, 37.77676490183603,
+                   0.00016972553017335565, 0.0002350491600776575,
+                   27.272365420780556, 37.66700070557609,
+                   0.00016967236474679822, 0.0002343659437158037},
+                   //sp_data
+                  {27.28076, 37.776802, 0.0001697246, 0.00023504937,
+                   27.27235, 37.666973, 0.00016967228, 0.00023436577}
       };
 
       //Test values @ 273.16K @ 1e5 Pa
       stargs[7] = {273.16,
                    atm_pres,
                    //dp_data
-                   {611.6840516537769, 611.6840516537769,
-		    0.003827909594290528, 0.003827909594290528,
-		    611.6570436443282, 611.6570436443282,
-		    0.0038277395384149105, 0.0038277395384149105},
-		   //sp_data
-		   {611.68445, 611.68445, 0.0038279123, 0.0038279123,
-		    611.65607, 611.65607, 0.0038277335, 0.0038277335}
+                  {611.6840516537769, 611.6840516537769,
+                   0.003827909594290528, 0.003827909594290528,
+                   611.6570436443282, 611.6570436443282,
+                   0.0038277395384149105, 0.0038277395384149105},
+                   //sp_data
+                  {611.68445, 611.68445, 0.0038279123, 0.0038279123,
+                   611.65607, 611.65607, 0.0038277335, 0.0038277335}
       };
       //Test values @ 300K @ 1e5 Pa
       stargs[8] = {300,
                    atm_pres,
                    //dp_data
-                   {3535.4066341569387, 3535.4066341569387,
-		    0.022795088436007804, 0.022795088436007804,
-		    3536.7644130514645, 3536.7644130514645,
-		    0.022804163906259393, 0.022804163906259393},
-		   //sp_data
-		   {3535.4077, 3535.4077, 0.022795096, 0.022795096,
-		    3536.7559, 3536.7559, 0.022804108, 0.022804108}
+                  {3535.4066341569387, 3535.4066341569387,
+                   0.022795088436007804, 0.022795088436007804,
+                   3536.7644130514645, 3536.7644130514645,
+                   0.022804163906259393, 0.022804163906259393},
+                   //sp_data
+                  {3535.4077, 3535.4077, 0.022795096, 0.022795096,
+                   3536.7559, 3536.7559, 0.022804108, 0.022804108}
       };
 
       //Change Pressure Case: Test values @ 243.15 @ 500 mb
@@ -360,32 +366,31 @@ struct UnitWrap::UnitTest<D>::TestSaturation
       stargs[9] = {243.15,
                    5e4,
                    //dp_data
-                   {38.024844602056795, 51.032583257624964,
-		    0.00047336669164733106, 0.00063546390177500586,
-		    38.01217277745647, 50.93561537896607,
-		    0.00047320882161578, 0.0006342552147122389},
-		   //sp_data
-		   {38.024666, 51.03264, 0.00047336446, 0.00063546456,
-		    38.012142, 50.935585, 0.00047320846, 0.00063425483}
+                  {38.024844602056795, 51.032583257624964,
+                   0.00047336669164733106, 0.00063546390177500586,
+                   38.01217277745647, 50.93561537896607,
+                   0.00047320882161578, 0.0006342552147122389},
+                   //sp_data
+                  {38.024666, 51.03264, 0.00047336446, 0.00063546456,
+                   38.012142, 50.935585, 0.00047320846, 0.00063425483}
       };
 
       //Launch Tests:
       //---------------------------------------------
 
       //find out which precision to use
-      constexpr auto is_single_prec = util::is_single_precision<Scalar>::value;
+      constexpr auto is_single_prec = ekat::is_single_precision<Scalar>::value;
 
       if(is_single_prec){
-	for (size_t ista = 0; ista < ncases; ista++) {
-	  //use sp_data values
-	  saturation_tests(stargs[ista].t_atm,stargs[ista].pres,stargs[ista].sp_data,errors);
-	}
-      }
-      else{
-	for (size_t ista = 0; ista < ncases; ista++) {
-	  //use dp_data values
-	  saturation_tests(stargs[ista].t_atm,stargs[ista].pres,stargs[ista].dp_data,errors);
-	}
+        for (size_t ista = 0; ista < ncases; ista++) {
+          //use sp_data values
+          saturation_tests(stargs[ista].t_atm,stargs[ista].pres,stargs[ista].sp_data,errors);
+        }
+      } else{
+        for (size_t ista = 0; ista < ncases; ista++) {
+          //use dp_data values
+          saturation_tests(stargs[ista].t_atm,stargs[ista].pres,stargs[ista].dp_data,errors);
+        }
       }
 
 

@@ -28,12 +28,12 @@ void FieldTracking::set_initializer (const std::weak_ptr<FieldInitializer>& init
   set_init_type (InitType::Initializer);
 
   // Make sure nobody else already claimed this role
-  scream_require_msg (!static_cast<bool>(m_initializer.lock()),
+  EKAT_REQUIRE_MSG (!static_cast<bool>(m_initializer.lock()),
                       "Error! There is already an initializer for field '" + m_name + "'.\n" +
                       "       Current initializer: " + m_initializer.lock()->name() + "\n");
 
   // Make sure the initializer is nonnull
-  scream_require_msg (static_cast<bool>(initializer.lock()),
+  EKAT_REQUIRE_MSG (static_cast<bool>(initializer.lock()),
                       "Error! Input initializer process is invalid.\n");
 
   m_initializer = initializer;
@@ -45,7 +45,7 @@ void FieldTracking::set_value_initializer (const Real value) {
   set_init_type (InitType::Value);
 
   // Make sure nobody else already claimed this role
-  scream_require_msg (!static_cast<bool>(m_initializer.lock()),
+  EKAT_REQUIRE_MSG (!static_cast<bool>(m_initializer.lock()),
                       "Error! There is already an initializer for field '" + m_name + "'.\n" +
                       "       Current initializer: " + m_initializer.lock()->name() + "\n");
 
@@ -54,7 +54,7 @@ void FieldTracking::set_value_initializer (const Real value) {
 
 void FieldTracking::set_init_type (const InitType init_type) {
 
-  // scream_require_msg(m_init_type!=InitType::NotNeeded,
+  // EKAT_REQUIRE_MSG(m_init_type!=InitType::NotNeeded,
   //   "Error! This field was not expected to need an initialization.\n");
 
   // The following changes are the only allowed ones
@@ -66,7 +66,7 @@ void FieldTracking::set_init_type (const InitType init_type) {
   if (m_init_type==InitType::None) {
     m_init_type = init_type;
   } else if (init_type!=InitType::None) {
-    scream_require_msg (init_type==m_init_type,
+    EKAT_REQUIRE_MSG (init_type==m_init_type,
                         "Error! Invalid attempt made to modify initialization type for field '" + m_name + "'.\n" +
                         "       Old init type: " + e2str(m_init_type) + "\n" +
                         "       New init type: " + e2str(init_type) + "\n");
@@ -77,10 +77,10 @@ void FieldTracking::add_to_group (const std::string& group_name) {
   m_groups.insert(group_name);
 }
 
-void FieldTracking::update_time_stamp (const util::TimeStamp& ts) {
+void FieldTracking::update_time_stamp (const TimeStamp& ts) {
   // We check that the given time stamp is not in the past.
   // This is to prevent users from tampering with time stamps (e.g., rewinding time).
-  scream_require_msg(!m_time_stamp.is_valid() || !(ts<m_time_stamp), "Error! Input time stamp is in the past.\n");
+  EKAT_REQUIRE_MSG(!m_time_stamp.is_valid() || !(ts<m_time_stamp), "Error! Input time stamp is in the past.\n");
 
   m_time_stamp = ts;
 }

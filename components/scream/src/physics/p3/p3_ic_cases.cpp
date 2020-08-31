@@ -1,8 +1,7 @@
 #include "p3_ic_cases.hpp"
 #include "physics_constants.hpp"
 
-#include "ekat/util/scream_utils.hpp"
-#include "ekat/scream_assert.hpp"
+#include "ekat/ekat_assert.hpp"
 
 namespace scream {
 namespace p3 {
@@ -118,7 +117,7 @@ FortranData::Ptr Factory::create (IC ic, Int ncol) {
  switch (ic) {
    case mixed: return make_mixed(ncol);
  default:
-   scream_require_msg(false, "Not an IC: " << ic);
+   EKAT_REQUIRE_MSG(false, "Not an IC: " << ic);
  }
 }
 

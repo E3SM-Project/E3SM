@@ -3,8 +3,7 @@
 #include "physics_constants.hpp"
 #include "p3_ic_cases.hpp"
 
-#include "ekat/scream_assert.hpp"
-#include "ekat/util/scream_utils.hpp"
+#include "ekat/ekat_assert.hpp"
 
 using scream::Real;
 using scream::Int;
@@ -103,7 +102,7 @@ void FortranDataIterator::init (const FortranData::Ptr& dp) {
 
 const FortranDataIterator::RawArray&
 FortranDataIterator::getfield (Int i) const {
-  scream_assert(i >= 0 || i < nfield());
+  EKAT_ASSERT(i >= 0 || i < nfield());
   return fields_[i];
 }
 
@@ -121,7 +120,7 @@ void p3_init () {
     static const char* dir = "./data";
     Int info;
     p3_init_c(&dir, &info);
-    scream_require_msg(info == 0, "p3_init_c returned info " << info);
+    EKAT_REQUIRE_MSG(info == 0, "p3_init_c returned info " << info);
     is_init = true;
   }
 }

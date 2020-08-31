@@ -1,7 +1,9 @@
 #include "catch2/catch.hpp"
-#include "ekat/util/scream_test_utils.hpp"
+
 #include "physics/shoc/shoc_f90.hpp"
 #include "physics/shoc/shoc_ic_cases.hpp"
+
+#include "ekat/util/ekat_test_utils.hpp"
 
 namespace {
 
@@ -33,7 +35,7 @@ TEST_CASE("shoc_init_f", "shoc") {
 // plotting scripts, false otherwise.
 bool generating_plot_scripts() {
   bool gen_plot_scripts = false;
-  auto& ts = scream::util::TestSession::get();
+  auto& ts = ekat::util::TestSession::get();
   auto iter = ts.params.find("gen_plot_scripts");
   if (iter != ts.params.end()) {
     // Here's val, passed as gen_plot_scripts=val

@@ -14,7 +14,7 @@ namespace physics {
 template <typename S, typename D>
 KOKKOS_FUNCTION
 void  Functions<S,D>
-::check_temperature(const Spack& t_atm, const char* func_name, const Smask& range_mask)
+::check_temperature(const Spack& t_atm, const char* /* func_name */, const Smask& range_mask)
 {
 
   //"range_mask" masks out packs which are padded with uninitialized values
@@ -23,15 +23,15 @@ void  Functions<S,D>
   Make error message dynamic so that it tells the user the function name (func_name) from where
   this error is coming from. Currently func_name is not used in this function */
 
-  //NOTE: scream_krequire_msg requires first argument to be "False" to exit with an error message
+  //NOTE: EKAT_KERNEL_REQUIRE_MSG requires first argument to be "False" to exit with an error message
 
   //find out if there are any negative temperatures in the pack
   const auto is_neg_t_atm = (t_atm <= 0) && range_mask;
-  scream_krequire_msg(!(is_neg_t_atm.any()), "Error! Temperature has <= 0 values.\n"); //exit with an error message
+  EKAT_KERNEL_REQUIRE_MSG(!(is_neg_t_atm.any()), "Error! Temperature has <= 0 values.\n"); //exit with an error message
 
   //find out if there are any NaN temperatures in the pack
   const auto is_nan_t_atm = isnan(t_atm) && range_mask;
-  scream_krequire_msg(!(is_nan_t_atm.any()), "Error! Temperature has NaN values.\n"); //exit with an error message
+  EKAT_KERNEL_REQUIRE_MSG(!(is_nan_t_atm.any()), "Error! Temperature has NaN values.\n"); //exit with an error message
 
 }
 
@@ -84,7 +84,7 @@ Functions<S,D>::polysvp1(const Spack& t, const bool ice)
 {
   // REPLACE GOFF-GRATCH WITH FASTER FORMULATION FROM FLATAU ET AL. 1992, TABLE 4 (RIGHT-HAND COLUMN)
 
-  const Spack dt = pack::max(t - sp(273.15), sp(-80));
+  const Spack dt = max(t - sp(273.15), sp(-80));
   Spack result;
   static constexpr  auto tmelt = C::Tmelt;
   const Smask ice_mask = (t < tmelt) && ice;
@@ -145,14 +145,14 @@ Functions<S,D>::qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice, c
       e_pres = MurphyKoop_svp(t_atm, ice);
       break;
     default:
-      scream_kerror_msg("Error! Invalid func_idx supplied to qv_sat.");
+      EKAT_KERNEL_ERROR_MSG("Error! Invalid func_idx supplied to qv_sat.");
     }
 
   static constexpr  auto ep_2 = C::ep_2;
-  return ep_2 * e_pres / pack::max(p_atm-e_pres, sp(1.e-3));
+  return ep_2 * e_pres / max(p_atm-e_pres, sp(1.e-3));
 }
 
 } // namespace physics
 } // namespace scream
 
-#endif
+#endif // PHYSICS_SATURATION_IMPL_HPP

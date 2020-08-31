@@ -14,7 +14,7 @@ class DynamicsDrivenGridsManager : public GridsManager
 {
 public:
 
-  DynamicsDrivenGridsManager (const Comm& comm, const ParameterList& p);
+  DynamicsDrivenGridsManager (const ekat::Comm& comm, const ekat::ParameterList& p);
 
   ~DynamicsDrivenGridsManager () = default;
 
@@ -35,11 +35,11 @@ protected:
 
   grid_repo_type  m_grids;
 
-  ParameterList m_params;
+  ekat::ParameterList m_params;
 };
 
 inline std::shared_ptr<GridsManager>
-create_dynamics_driven_grids_manager (const Comm& comm, const ParameterList& p) {
+create_dynamics_driven_grids_manager (const ekat::Comm& comm, const ekat::ParameterList& p) {
   return std::make_shared<DynamicsDrivenGridsManager>(comm,p);
 }
 

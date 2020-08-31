@@ -2,10 +2,12 @@
 #define SCREAM_FIELD_TRACKING_HPP
 
 #include "share/field/field_utils.hpp"
-#include "ekat/util/time_stamp.hpp"
+#include "share/scream_types.hpp"
+
+#include "share/util/scream_time_stamp.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
-#include "ekat/util/scream_std_utils.hpp"
-#include "ekat/scream_assert.hpp"
+#include "ekat/std_meta/ekat_std_utils.hpp"
+#include "ekat/ekat_assert.hpp"
 
 #include <memory>   // For std::weak_ptr
 #include <string>
@@ -20,9 +22,10 @@ class FieldInitializer;
 class FieldTracking {
 public:
 
-  using ci_string         = util::CaseInsensitiveString;
+  using TimeStamp         = util::TimeStamp;
+  using ci_string         = ekat::util::CaseInsensitiveString;
   using atm_proc_ptr_type = std::weak_ptr<AtmosphereProcess>;
-  using atm_proc_set_type = std::set<atm_proc_ptr_type>;
+  using atm_proc_set_type = ekat::WeakPtrSet<AtmosphereProcess>;
 
   FieldTracking() = delete;
   FieldTracking(const std::string&);
@@ -35,7 +38,7 @@ public:
 
   // The time stamp of the field. This can be used to check when it was last updated.
   // Please, notice this is not the OS time stamp (see time_stamp.hpp for details).
-  const util::TimeStamp& get_time_stamp () const { return m_time_stamp; }
+  const TimeStamp& get_time_stamp () const { return m_time_stamp; }
 
   // List of providers/customers for this field
   const atm_proc_set_type& get_providers () const { return m_providers; }
@@ -58,7 +61,7 @@ public:
   void add_to_group (const std::string& group_name);
 
   // Set the time stamp for this field. This can only be called once, due to TimeStamp implementation.
-  void update_time_stamp (const util::TimeStamp& ts);
+  void update_time_stamp (const TimeStamp& ts);
 
 protected:
 
@@ -68,7 +71,7 @@ protected:
   std::string m_name;
 
   // Tracking the updates of the field
-  util::TimeStamp         m_time_stamp;
+  TimeStamp         m_time_stamp;
 
   // These are to be used to track the order in which providers update the field at each time step.
   // One can use this information to track when a field gets updated during a timestep. It can be

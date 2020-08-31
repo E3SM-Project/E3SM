@@ -80,13 +80,13 @@ void Functions<S,D>
       team.team_barrier();
 
       // Convert top/bot to pack indices
-      util::set_min_max(k_qxbot, k_qxtop, kmin, kmax, Spack::n);
+      ekat::util::set_min_max(k_qxbot, k_qxtop, kmin, kmax, Spack::n);
 
       Kokkos::parallel_reduce(
         Kokkos::TeamThreadRange(team, kmax-kmin+1), [&] (int pk_, Scalar& lmax) {
           const int pk = kmin + pk_;
-          const auto range_pack  = scream::pack::range<IntSmallPack>(pk*Spack::n);
-          const auto range_mask  = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
+          const auto range_pack = ekat::pack::range<IntSmallPack>(pk*Spack::n);
+          const auto range_mask = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
           const auto qc_gt_small = range_mask && qc_incld(pk) > qsmall;
           if (qc_gt_small.any()) {
             // compute Vq, Vn
@@ -98,10 +98,10 @@ void Functions<S,D>
 	    //between nc_incld and nc
             nc(pk).set(qc_gt_small, nc_incld(pk)*cld_frac_l(pk));
 
-	    dum = 1 / (pack::pow(lamc(pk), bcn));
-            V_qc(pk).set(qc_gt_small, acn(pk)*pack::tgamma(4 + bcn + mu_c(pk)) * dum / (pack::tgamma(mu_c(pk)+4)));
+	          dum = 1 / pow(lamc(pk), bcn);
+            V_qc(pk).set(qc_gt_small, acn(pk)*tgamma(4 + bcn + mu_c(pk)) * dum / tgamma(mu_c(pk)+4));
             if (do_predict_nc) {
-              V_nc(pk).set(qc_gt_small, acn(pk)*pack::tgamma(1 + bcn + mu_c(pk)) * dum / (pack::tgamma(mu_c(pk)+1)));
+              V_nc(pk).set(qc_gt_small, acn(pk)*tgamma(1 + bcn + mu_c(pk)) * dum / tgamma(mu_c(pk)+1));
             }
 
             const auto Co_max_local = max(qc_gt_small, -1,

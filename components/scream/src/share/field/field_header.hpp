@@ -4,11 +4,13 @@
 #include "share/field/field_identifier.hpp"
 #include "share/field/field_tracking.hpp"
 #include "share/field/field_alloc_prop.hpp"
-#include "ekat/scream_types.hpp"
-#include "ekat/util/time_stamp.hpp"
-#include "ekat/util/scream_std_any.hpp"
+#include "share/scream_types.hpp"
+
+#include "share/util/scream_time_stamp.hpp"
+#include "ekat/std_meta/ekat_std_any.hpp"
 
 #include <vector>
+#include <map>
 #include <memory>   // For std::shared_ptr and std::weak_ptr
 
 namespace scream
@@ -35,7 +37,7 @@ public:
 
   using identifier_type = FieldIdentifier;
   using tracking_type   = FieldTracking;
-  using extra_data_type = std::map<std::string,util::any>;
+  using extra_data_type = std::map<std::string,ekat::util::any>;
 
   // Constructor(s)
   FieldHeader (const FieldHeader&) = default;
@@ -46,14 +48,14 @@ public:
 
   // Set extra data
   void set_extra_data (const std::string& key,
-                       const util::any& data,
+                       const ekat::util::any& data,
                        const bool throw_if_existing = false);
 
   template<typename T>
   void set_extra_data (const std::string& key,
                        const T& data,
                        const bool throw_if_existing = false) {
-    util::any data_any;
+    ekat::util::any data_any;
     data_any.reset<T>(data);
     set_extra_data(key,data_any,throw_if_existing);
   }

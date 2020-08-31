@@ -1,9 +1,9 @@
-#include "ekat/scream_assert.hpp"
+#include "ekat/ekat_assert.hpp"
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "physics/rrtmgp/atmosphere_radiation.hpp"
 
 namespace scream {
-    RRTMGPRadiation::RRTMGPRadiation (const Comm& comm, const ParameterList& params) : m_rrtmgp_comm (comm), m_rrtmgp_params (params) {
+    RRTMGPRadiation::RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params) : m_rrtmgp_comm (comm), m_rrtmgp_params (params) {
         /*
          * Anything that can be initialized without grid information can be initialized here.
          * I.e., universal constants, options, etc.

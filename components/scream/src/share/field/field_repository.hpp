@@ -1,10 +1,9 @@
 #ifndef SCREAM_FIELD_REPOSITORY_HPP
 #define SCREAM_FIELD_REPOSITORY_HPP
 
-#include "ekat/scream_types.hpp"
-#include "ekat/scream_assert.hpp"
+#include "share/scream_types.hpp"
+#include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
-#include "ekat/util/scream_std_utils.hpp"
 #include "share/field/field.hpp"
 
 #include <map>
@@ -139,25 +138,27 @@ template<typename RequestedValueType>
 void FieldRepository<ScalarType,Device>::
 register_field (const identifier_type& id, const std::set<std::string>& groups_names) {
 
+  using ekat::ScalarTraits;
+
   // Check that the requested value type is either ScalarType or Pack<ScalarType,N>, for some N>0.
   static_assert(std::is_same<ScalarType,RequestedValueType>::value ||
-                std::is_same<ScalarType,typename util::ScalarProperties<RequestedValueType>::scalar_type>::value,
+                std::is_same<ScalarType,typename ScalarTraits<RequestedValueType>::scalar_type>::value,
                 "Error! The template argument 'RequestedValueType' of this function must either match "
                 "the template argument 'ScalarType' of this class or be a Pack type based on ScalarType.\n");
 
   // Sanity checks
-  scream_require_msg(m_repo_state==RepoState::Open,"Error! Registration of new fields not started or no longer allowed.\n");
+  EKAT_REQUIRE_MSG(m_repo_state==RepoState::Open,"Error! Registration of new fields not started or no longer allowed.\n");
 
   // Get the map of all fields with this name
   auto& map = m_fields[id.name()];
 
   if (map.size()>0) {
-    using units::to_string;
+    using ekat::units::to_string;
     // Make sure the new field id stores the same units as all the other ones.
     // TODO: this is the easiest way to ensure everyone uses the same units.
     //       However, in the future, we *may* allow different units, providing
     //       the users with conversion routines perhaps.
-    scream_require_msg(id.get_units()==map.begin()->first.get_units(),
+    EKAT_REQUIRE_MSG(id.get_units()==map.begin()->first.get_units(),
                        "Error! Request to register field '" + id.name() + "' with units '" +
                        to_string(id.get_units()) + "',\n"
                        "       but there is already a request for the same field with units '" +
@@ -174,7 +175,7 @@ register_field (const identifier_type& id, const std::set<std::string>& groups_n
   // Finally, add the field to the given groups
   for (const auto& group_name : groups_names) {
     // First, make sure it's not a reserved group
-    scream_require_msg(!util::contains(m_reserved_groups,group_name),"");
+    EKAT_REQUIRE_MSG(!ekat::util::contains(m_reserved_groups,group_name),"");
 
     // Add the group name to the field tracking of all the fields with that name
     // Remember: fields with the same name can differ only because of tags/extents (i.e., different grids).
@@ -208,12 +209,12 @@ has_field (const identifier_type& identifier) const {
 template<typename ScalarType, typename Device>
 const typename FieldRepository<ScalarType,Device>::field_type&
 FieldRepository<ScalarType,Device>::get_field (const identifier_type& id) const {
-  scream_require_msg(m_repo_state==RepoState::Closed,"Error! You are not allowed to grab fields from the repo until after the registration phase is completed.\n");
+  EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,"Error! You are not allowed to grab fields from the repo until after the registration phase is completed.\n");
 
   const auto& map = m_fields.find(id.name());
-  scream_require_msg(map!=m_fields.end(), "Error! Field not found.\n");
+  EKAT_REQUIRE_MSG(map!=m_fields.end(), "Error! Field not found.\n");
   auto it = map->second.find(id);
-  scream_require_msg(it!=map->second.end(), "Error! Field not found.\n");
+  EKAT_REQUIRE_MSG(it!=map->second.end(), "Error! Field not found.\n");
   return it->second;
 }
 

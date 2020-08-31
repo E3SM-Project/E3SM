@@ -53,7 +53,7 @@ void AtmProcDAG::create_dag(const group_type& atm_procs) {
     }
 
     for (auto fid : to_be_erased) {
-      util::erase(unmet,fid);
+      ekat::util::erase(unmet,fid);
     }
   }
 
@@ -62,7 +62,7 @@ void AtmProcDAG::create_dag(const group_type& atm_procs) {
 
 void AtmProcDAG::add_field_initializer (const FieldInitializer& initializer)
 {
-  scream_require_msg (m_nodes.size()>0,
+  EKAT_REQUIRE_MSG (m_nodes.size()>0,
     "Error! You need to create the dag before adding field initializers.\n");
 
   const auto& inited_fields = initializer.get_inited_fields();
@@ -185,10 +185,10 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
       }
       for (const auto& fid : n.required) {
         std::string fc = "<font color=\"";
-        fc += (util::contains(unmet,fid) ? "red" : "black");
+        fc += (ekat::util::contains(unmet,fid) ? "red" : "black");
         fc += "\">  ";
         ofile << "      <tr><td align=\"left\">" << fc << html_fix(print_fid(m_fids[fid],fid_verb));
-        if (util::contains(m_unmet_deps.at(n.id),fid)) {
+        if (ekat::util::contains(m_unmet_deps.at(n.id),fid)) {
           ofile << "<b>  *** MISSING ***</b>";
         }
         ofile << "</font></td></tr>\n";
@@ -224,7 +224,7 @@ void AtmProcDAG::add_nodes (const group_type& atm_procs) {
   const auto& remappers_out = atm_procs.get_outputs_remappers ();
   const bool sequential = (atm_procs.get_schedule_type()==ScheduleType::Sequential);
 
-  scream_require_msg (sequential, "Error! Parallel splitting dag not yet supported.\n");
+  EKAT_REQUIRE_MSG (sequential, "Error! Parallel splitting dag not yet supported.\n");
 
   int id = m_nodes.size();
   for (int i=0; i<num_procs; ++i) {
@@ -232,7 +232,7 @@ void AtmProcDAG::add_nodes (const group_type& atm_procs) {
     const bool is_group = (proc->type()==AtmosphereProcessType::Group);
     if (is_group) {
       auto group = std::dynamic_pointer_cast<const group_type>(proc);
-      scream_require_msg(group, "Error! Unexpected failure in dynamic_pointer_cast.\n"
+      EKAT_REQUIRE_MSG(group, "Error! Unexpected failure in dynamic_pointer_cast.\n"
                                 "       Please, contact developers.\n");
       // Add all the stuff in the group.
       // Note: no need to add remappers for this process, because
@@ -316,7 +316,7 @@ void AtmProcDAG::add_nodes (const group_type& atm_procs) {
             node.required.push_back(fid_in_id);
             // A remapper for outputs of proc should *not* have unmet dependencies.
             auto it = m_fid_to_last_provider.find(fid_in_id);
-            scream_require_msg (it!=m_fid_to_last_provider.end(),
+            EKAT_REQUIRE_MSG (it!=m_fid_to_last_provider.end(),
                                 "Internal error! Something is off with outputs remapper for atm proc '" + proc->name() + "'.\n"
                                 "   Please, contact developers.\n");
 
@@ -337,7 +337,7 @@ void AtmProcDAG::add_nodes (const group_type& atm_procs) {
 }
 
 int AtmProcDAG::add_fid (const FieldIdentifier& fid) {
-  auto it = util::find(m_fids,fid);
+  auto it = ekat::util::find(m_fids,fid);
   if (it==m_fids.end()) {
     m_fids.push_back(fid);
     return m_fids.size()-1;
