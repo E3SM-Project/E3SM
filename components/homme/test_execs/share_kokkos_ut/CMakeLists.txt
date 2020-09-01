@@ -82,8 +82,6 @@ SET (BOUNDARY_EXCHANGE_UT_F90_SRCS
   ${UTILS_SHARE_DIR}/shr_kind_mod.F90
   ${UTILS_SHARE_DIR}/shr_mpi_mod.F90
   ${UTILS_SHARE_DIR}/shr_sys_mod.F90
-  ${UTILS_TIMING_DIR}/perf_mod.F90
-  ${UTILS_TIMING_DIR}/perf_utils.F90
 )
 SET (BOUNDARY_EXCHANGE_UT_CXX_SRCS
   ${SRC_SHARE_DIR}/cxx/Context.cpp
@@ -241,8 +239,6 @@ SET (PPM_REMAP_UT_F90_SRCS
   ${SRC_SHARE_DIR}/physical_constants.F90
   ${SRC_SHARE_DIR}/vertremap_base.F90
   ${SHARE_UT_DIR}/ppm_remap_interface.F90
-  ${UTILS_TIMING_DIR}/perf_mod.F90
-  ${UTILS_TIMING_DIR}/perf_utils.F90
 )
 
 SET (PPM_REMAP_UT_CXX_SRCS
