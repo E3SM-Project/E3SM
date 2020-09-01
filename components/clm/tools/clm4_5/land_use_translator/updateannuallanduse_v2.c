@@ -5901,7 +5901,7 @@ updateannuallanduse_main(double glmo[][GLMONFLDS], double plodata[][PLONFLDS], i
    // set the default historical file name if sfname is 1850
    char usesfname[1000];
    if (!strcmp(sfname, "1850")) {
-      sprintf(usesfname, "LUH2_HIST_LUH1_format.nc");
+      sprintf(usesfname, "LUH2_HIST_LUH1f_c07182019.nc");
    } else {
       // use the input file name
       strcpy(usesfname, sfname);
