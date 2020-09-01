@@ -83,7 +83,7 @@ contains
     use decompMod         , only : get_proc_clumps, get_clump_bounds
     use dynpftFileMod     , only : dynpft_init
     use dynHarvestMod     , only : dynHarvest_init
-    use dynpftFileMod     , only : dynpft_interp
+    use dynpftFileMod     , only : dynpft_interp_harvest_types
     !
     ! !ARGUMENTS:
     type(bounds_type) , intent(in)    :: bounds  ! processor-level bounds
@@ -259,7 +259,7 @@ contains
     end if
 
     if (get_do_harvest()) then
-       call dynHarvest_interp(bounds_proc)
+       call dynHarvest_interp_harvest_types(bounds_proc)
     end if
 
     ! ==========================================================================
