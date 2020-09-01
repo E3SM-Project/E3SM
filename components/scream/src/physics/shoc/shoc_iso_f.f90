@@ -43,6 +43,16 @@ interface
 
  end subroutine shoc_diag_second_moments_srf_f
 
+ subroutine shoc_diag_second_moments_ubycond_f(shcol, thl, qw, wthl, wqw, qwthl, uw, vw, wtke) bind(C)
+   use iso_c_binding
+
+   ! argmens
+   integer(kind=c_int), value, intent(in) :: shcol
+   real(kind=c_real), intent(out)  :: thl(shcol), qw(shcol), qwthl(shcol),wthl(shcol),wqw(shcol), &
+        uw(shcol), vw(shcol), wtke(shcol)
+
+ end subroutine shoc_diag_second_moments_ubycond_f
+
 end interface
 
 end module shoc_iso_f

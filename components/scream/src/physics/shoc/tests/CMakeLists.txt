@@ -24,6 +24,7 @@ set(SHOC_TESTS_SRCS
     shoc_eddy_diffusivities_tests.cpp
     shoc_diag_second_mom_srf_test.cpp
     shoc_linearinterp_tests.cpp
+    shoc_diag_second_mom_ubycond_test.cpp
     shoc_unit_tests.cpp)
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build

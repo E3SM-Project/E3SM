@@ -95,6 +95,9 @@ void shoc_diag_second_moments_srf_c(Int shcol, Real* wthl, Real* uw, Real* vw,
 void linear_interp_c(Real *x1, Real *x2, Real *y1, Real *y2, Int km1,
                      Int km2, Int ncol, Real minthresh);			   
 
+void shoc_diag_second_moments_ubycond_c(Int shcol, Real* thl, Real* qw, Real* wthl,
+                                       Real* wqw, Real* qwthl, Real* uw, Real* vw,
+                                       Real* wtke);
 }
 
 namespace scream {
@@ -407,6 +410,14 @@ void linear_interp(SHOCLinearintData& d)
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
+void shoc_diag_second_moments_ubycond(SHOCSecondMomentUbycondData& d)
+{
+  shoc_init(d.nlev, true);
+  d.transpose<ekat::util::TransposeDirection::c2f>();
+  shoc_diag_second_moments_ubycond_c(d.shcol, d.thl, d.qw, d.wthl, d.wqw, d.qwthl, d.uw, d.vw, d.wtke);
+  d.transpose<ekat::util::TransposeDirection::f2c>();
+}
+
 //
 // _f function definitions. These expect data in C layout
 //
@@ -494,6 +505,54 @@ void shoc_diag_second_moments_srf_f(Int shcol, Real* wthl, Real* uw, Real* vw, R
   Kokkos::Array<view_1d, 2> out_views = {ustar2_d, wstar_d};
   ekat::pack::device_to_host({ustar2, wstar}, shcol, out_views);
 }
+
+void shoc_diag_second_moments_ubycond_f(Int shcol, Real* thl, Real* qw, Real* wthl, Real* wqw, Real* qwthl, Real* uw, Real* vw,
+      Real* wtke)
+{
+  using SHOC       = Functions<Real, DefaultDevice>;
+  using Spack      = typename SHOC::Spack;
+  using Scalar     = typename SHOC::Scalar;
+  using Pack1      = typename ekat::pack::Pack<Real, 1>;
+  using view_1d    = typename SHOC::view_1d<Pack1>;
+
+  view_1d thl_d  ("thl"  ,shcol),
+          qw_d   ("qw"   ,shcol),
+          qwthl_d("qwthl",shcol),
+          wthl_d ("wthl" ,shcol),
+          wqw_d  ("wqw"  ,shcol),
+          uw_d   ("uw"   ,shcol),
+          vw_d   ("vw"   ,shcol),
+          wtke_d ("wtke" ,shcol);
+
+  Kokkos::parallel_for("parallel_moments_ubycond", shcol, KOKKOS_LAMBDA (const int& i) {
+
+    Scalar thl_s{0.};
+    Scalar qw_s{0.};
+    Scalar wthl_s{0.};
+    Scalar wqw_s{0.};
+    Scalar qwthl_s{0.};
+    Scalar uw_s{0.};
+    Scalar vw_s{0.};
+    Scalar wtke_s{0.};
+
+    SHOC::shoc_diag_second_moments_ubycond(thl_s, qw_s, wthl_s, wqw_s, qwthl_s, uw_s, vw_s, wtke_s);
+
+    thl_d(i)[0]   = thl_s;
+    qw_d(i)[0]    = qw_s;
+    wthl_d(i)[0]  = wthl_s;
+    wqw_d(i)[0]   = wqw_s;
+    qwthl_d(i)[0] = qwthl_s;
+    uw_d(i)[0]    = uw_s;
+    vw_d(i)[0]    = vw_s;
+    wtke_d(i)[0]  = wtke_s;
+
+  });
+
+  Kokkos::Array<view_1d, 8> host_views = {thl_d, qw_d, qwthl_d, wthl_d, wqw_d, uw_d, vw_d, wtke_d};
+
+  ekat::pack::device_to_host({thl, qw, qwthl, wthl, wqw, uw, vw, wtke}, shcol, host_views);
+}
+
 
 } // namespace shoc
 } // namespace scream

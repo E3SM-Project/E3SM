@@ -991,7 +991,7 @@ subroutine diag_second_shoc_moments(&
   ! Diagnose the second order moments,
   !  calculate the upper boundary conditions
   call diag_second_moments_ubycond(&
-     shcol,num_tracer, &                    ! Input
+     shcol,                              &  ! Input
      thl_sec(:shcol,1), qw_sec(:shcol,1),&  ! Output
      wthl_sec(:shcol,1),wqw_sec(:shcol,1),& ! Output
      qwthl_sec(:shcol,1), uw_sec(:shcol,1),&! Output
@@ -1417,7 +1417,7 @@ subroutine calc_shoc_vertflux(&
 end subroutine calc_shoc_vertflux
 
 subroutine diag_second_moments_ubycond(&
-         shcol,num_tracer, &                    ! Input
+         shcol, &                               ! Input
          thl_sec, qw_sec,&                      ! Output
          wthl_sec,wqw_sec,&                     ! Output
          qwthl_sec, uw_sec, vw_sec, wtke_sec)   ! Output
@@ -1427,13 +1427,14 @@ subroutine diag_second_moments_ubycond(&
   !  needed for the SHOC parameterization.  Currently
   !  set all to zero.
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use shoc_iso_f, only: shoc_diag_second_moments_ubycond_f
+#endif
   implicit none
 
   ! INPUT VARIABLES
   ! number of SHOC columns
   integer, intent(in) :: shcol
-  ! number of tracers
-  integer, intent(in) :: num_tracer
 
   ! OUTPUT VARIABLES
   ! second order liquid wat. potential temp. [K^2]
@@ -1455,6 +1456,17 @@ subroutine diag_second_moments_ubycond(&
 
   ! LOCAL VARIABLES
   integer :: i
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+       call shoc_diag_second_moments_ubycond_f(&
+                             shcol, &                    ! Input
+                             thl_sec, qw_sec,&                      ! Output
+                             wthl_sec,wqw_sec,&                     ! Output
+                             qwthl_sec, uw_sec, vw_sec, wtke_sec)   ! Output
+      return
+   endif
+#endif
 
   ! apply the upper boundary condition
   do i=1,shcol
