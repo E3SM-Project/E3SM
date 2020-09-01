@@ -417,7 +417,8 @@ module seaice_core
       use mpas_decomp
       use seaice_column, only: &
            seaice_column_finalize
-      use seaice_mesh_pool
+      use seaice_mesh_pool, only: &
+           seaice_mesh_pool_destroy
 
       implicit none
 
