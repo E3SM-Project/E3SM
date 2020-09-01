@@ -386,7 +386,7 @@ IF (${HOMME_USE_KOKKOS})
   INCLUDE(Kokkos)
 ENDIF ()
 
-#??? sort this out
+# This folder contains the CMake macro used to build cxx unit tests
 IF (${HOMME_USE_KOKKOS} AND ${HOMME_BUILD_EXECS})
   # Add unit tests for C++ code
   ADD_SUBDIRECTORY(test/unit_tests)
@@ -440,6 +440,10 @@ ENDIF()
 
 # Tests and execs only if this is a standalone build
 IF (${HOMME_BUILD_EXECS})
+  # Set a default value for USE_MPIEXEC.
+  # NOTE: if USE_MPIEXEC is already set, this line has no effect.
+  SET (USE_MPIEXEC "mpiexec" CACHE STRING "")
+
   ADD_SUBDIRECTORY(test_execs)
   ADD_SUBDIRECTORY(dcmip_tests)
 ENDIF()
