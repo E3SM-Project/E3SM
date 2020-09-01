@@ -28,7 +28,9 @@ to `SCREAM_SRC_DIR` using the following command:
 git clone --recurse-submodules https://github.com/E3SM-Project/scream
 ```
 
-If you have already cloned the project and forgot to type `--recurse-submodules`, you can change to `$SCREAM_SRC_DIR` and using the following command to initialize, fetch and checkout all submodules:
+If you have already cloned the project and forgot to type `--recurse-submodules`,
+you can change to `$SCREAM_SRC_DIR` and using the following command to initialize,
+fetch and checkout all submodules:
 
 ```
 git submodule update --init --recursive
@@ -43,7 +45,26 @@ git checkout <branch>
 ## 2. Configure Your SCREAM Build
 
 Change to your `$RUN_ROOT_DIR` directory and use CMake to configure your build.
-This usually looks something like the following:
+
+If you're building SCREAM on one of our supported platforms, you can tell CMake
+to use the appropriate machine file using the `-C` flag. Machine files are
+located in `$SCREAM_SRC_DIR/components/scream/cmake/machine-files`. Take a look
+and see whether your favorite machine has one.
+
+For example, to configure SCREAM on the Quartz machine at LLNL:
+
+```
+cd $RUN_ROOT_DIR
+cmake \
+    -DCMAKE_CXX_COMPILER=$(which mpicxx) \
+    -DCMAKE_BUILD_TYPE=Debug \
+    -C ${SCREAM_SRC_DIR}/components/scream/cmake/machine-files/quartz.cmake \
+    ${SCREAM_SRC_DIR}/components/scream
+```
+
+If you're building on a machine that doesn't have a ready-made machine file,
+you can try configuring your build by manually passing options to CMake. This
+usually looks something like the following:
 ```
 cd $RUN_ROOT_DIR
 cmake \
@@ -55,20 +76,16 @@ cmake \
     -D KOKKOS_ENABLE_PROFILING=OFF \
     -D KOKKOS_ENABLE_DEPRECATED_CODE=OFF \
     -D KOKKOS_ENABLE_EXPLICIT_INSTANTIATION:BOOL=OFF \
-    ${SCREAM_SRC_DIR}/components/scream
-```
-
-If you're building on your local laptop or workstation, make sure you have MPI
-compilers installed, and tell SCREAM about them by inserting these options before
-the last line of the above command:
-
-```
     -D CMAKE_C_COMPILER=mpicc \
     -D CMAKE_CXX_COMPILER=mpicxx \
     -D CMAKE_Fortran_COMPILER=mpif90 \
+    ${SCREAM_SRC_DIR}/components/scream
 ```
 
-Here, we've configured a `Debug` build to make it easier to find and fix errors.
+In either case, SCREAM requires MPI-savvy compilers, which can be specified
+using the `CMAKE_xyz_COMPІLER` options.
+
+Above, we've configured `Debug` builds to make it easier to find and fix errors.
 For performance testing, you should configure a `Release` build and make use of
 other options, depending on your architecture.
 
@@ -79,6 +96,10 @@ Now you can build SCREAM from that same directory:
 ```
 make -j
 ```
+
+The `-j` flag tells Make to use threads to compile in parallel. If you like, you
+can set the number of threads by passing it as an argument to `-j` (e.g.
+`make -j8`).
 
 ## 4. Run SCREAM's Tests
 
