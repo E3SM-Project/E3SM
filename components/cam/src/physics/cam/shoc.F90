@@ -2119,7 +2119,7 @@ subroutine shoc_assumed_pdf(&
         call shoc_assumed_pdf_compute_s(&
         qw1_2,qs2,beta2,pval,thl2_2,&          ! Input
         qw2_2,sqrtthl2_2,sqrtqw2_2,r_qwthl_1,& ! Input
-        s2,std_s2,qn2,C2)           ! Output
+        s2,std_s2,qn2,C2)                      ! Output
       endif
 
       ql1=min(qn1,qw1_1)
