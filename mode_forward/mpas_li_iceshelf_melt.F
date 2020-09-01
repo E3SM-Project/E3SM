@@ -1189,6 +1189,7 @@ module li_iceshelf_melt
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: geometryPool, meshPool, scratchPool, velocityPool
       real (kind=RKIND), pointer :: seaLevel
+      real (kind=RKIND), pointer :: deltat
       real (kind=RKIND), dimension(:), pointer :: dvEdge
       real (kind=RKIND), dimension(:), pointer :: thickness, lowerSurface, faceMeltingThickness
       real (kind=RKIND), dimension(:), pointer :: bedTopography
@@ -1263,7 +1264,10 @@ module li_iceshelf_melt
          call mpas_pool_get_array(geometryPool, 'groundedMarineMarginMask', groundedMarineMarginMask)
          call mpas_pool_get_array(geometryPool, 'faceMeltRateApplied', faceMeltRateApplied)
          call mpas_pool_get_array(geometryPool, 'faceMeltSpeed', faceMeltSpeed)
-         
+         call mpas_pool_get_array(meshPool, 'deltat', deltat)
+
+         faceMeltRateApplied(:) = 0.0_RKIND
+         faceMeltSpeed(:) = 0.0_RKIND 
        ! Calculate retreat rate for each cell
          do iCell = 1, nCellsSolve
             ! Define grounded marine marginal cells as those that have at least one 
@@ -1285,18 +1289,17 @@ module li_iceshelf_melt
                  endif
             enddo 
             
-            if ( nEmptyNeighbors > 0 &
-               .and. li_mask_is_grounded_ice(cellMask(iCell)) &
-               .and. bedTopography(iCell) < seaLevel ) then
-                
-                groundedMarineMarginMask(iCell) = 1
+            if ( bedTopography(iCell) < 0.0_RKIND ) then
                 waterDepth = seaLevel - bedTopography(iCell)
-                          
-                submergedFaceArea = waterDepth * oceanEdgeLength
+            else
+                waterDepth = 0.0
+            endif
+           
+            submergedFaceArea = waterDepth * oceanEdgeLength
                 
                 if (trim(config_front_mass_bal_grounded) == 'ismip6') then                
                 ! Calculate ice front melt rate at each cell
-                   faceMeltSpeed(iCell) = (aSubglacial * waterDepth * & ! m s^-1
+               faceMeltSpeed(iCell) = (aSubglacial * waterDepth * & ! m s^-1
                          (ismip6Runoff(iCell) / rhow * secPerDay)**alphaSubglacial &
                          + B) * (TFocean(iCell) + addTFocean)**betaTF / secPerDay
                 elseif (trim(config_front_mass_bal_grounded) == 'uniform') then   
