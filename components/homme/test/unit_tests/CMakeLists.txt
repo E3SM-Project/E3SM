@@ -23,6 +23,13 @@ macro(cxx_unit_test target_name target_f90_srcs target_cxx_srcs include_dirs con
   IF(UNIX AND NOT APPLE)
     TARGET_LINK_LIBRARIES(${target_name} rt)
   ENDIF()
+  IF(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
+    IF(HOMME_USE_SCORPIO)
+      TARGET_LINK_LIBRARIES(${target_name} piof pioc)
+    ELSE ()
+      TARGET_LINK_LIBRARIES(${target_name} pio)
+    ENDIF ()
+  ENDIF ()
 
   link_to_kokkos(${target_name})
 
