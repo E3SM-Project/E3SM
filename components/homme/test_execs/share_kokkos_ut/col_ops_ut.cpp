@@ -261,24 +261,26 @@ TEST_CASE("col_ops_reduction", "packed_reduction") {
             Real sum_mid = 0.0;
             Real sum_int = 0.0;
 
-            Real tmp;
+            Real tmp_m[VECTOR_SIZE] = {0};
+            Real tmp_i[VECTOR_SIZE] = {0};
             for (int ivec=0; ivec<VECTOR_SIZE; ++ivec) {
-              tmp = 0.0;
               for (int ilev=0; ilev<NUM_LEV-1; ++ilev) {
-                tmp += mid_data[ilev*VECTOR_SIZE+ivec];
+                tmp_m[ivec] += mid_data[ilev*VECTOR_SIZE+ivec];
               }
-              sum_mid += tmp; 
-              tmp = 0.0;
               for (int ilev=0; ilev<NUM_LEV_P-1; ++ilev) {
-                tmp += int_data[ilev*VECTOR_SIZE+ivec];
+                tmp_i[ivec] += int_data[ilev*VECTOR_SIZE+ivec];
               }
-              sum_int += tmp;
             }
             for (int ivec=0; ivec<ColInfo<NUM_PHYSICAL_LEV>::LastPackLen; ++ivec) {
-              sum_mid += mid_data[(NUM_LEV-1)*VECTOR_SIZE+ivec];
+              tmp_m[ivec] += mid_data[(NUM_LEV-1)*VECTOR_SIZE+ivec];
             }
             for (int ivec=0; ivec<ColInfo<NUM_INTERFACE_LEV>::LastPackLen; ++ivec) {
-              sum_int += int_data[(NUM_LEV_P-1)*VECTOR_SIZE+ivec];
+              tmp_i[ivec] += int_data[(NUM_LEV_P-1)*VECTOR_SIZE+ivec];
+            }
+
+            for (int ivec=0; ivec<VECTOR_SIZE; ++ivec) {
+              sum_mid += tmp_m[ivec];
+              sum_int += tmp_i[ivec];
             }
 
             // Check answer
