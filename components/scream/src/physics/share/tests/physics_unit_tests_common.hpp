@@ -53,6 +53,7 @@ struct UnitWrap {
 
     // Put struct decls here
     struct TestSaturation;
+    struct TestTestData;
   };
 
 };
