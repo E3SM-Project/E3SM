@@ -26,18 +26,18 @@ void Functions<S,D>
 
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
     // Calculate shift
-    Spack up_grid1, grid1, up_grid2, grid2;
+    Spack invar1_s, invar1_sm1, invar2_s, invar2_sm1;
     auto range_pack1 = ekat::pack::range<IntSmallPack>(k*Spack::n);
     auto range_pack2 = range_pack1;
     range_pack2.set(range_pack1 < 1, 1); // don't want the shift to go below zero. we mask out that result anyway
-    ekat::pack::index_and_shift<-1>(sinvar1, range_pack2, grid1, up_grid1);
-    ekat::pack::index_and_shift<-1>(sinvar2, range_pack2, grid2, up_grid2);
+    ekat::pack::index_and_shift<-1>(sinvar1, range_pack2, invar1_s, invar1_sm1);
+    ekat::pack::index_and_shift<-1>(sinvar2, range_pack2, invar2_s, invar2_sm1);
 
     const Spack grid_dz = 1 / dz_zi(k);
     const Spack grid_dz2 = ekat::pack::square(grid_dz); // vertical grid diff squared
 
     // Compute the variance or covariance
-    varorcovar(k).set(range_pack1 > 0 && range_pack1 < nlev, tunefac*isotropy_zi(k)*tkh_zi(k)*grid_dz2*(up_grid1 - grid1)*(up_grid2 - grid2));
+    varorcovar(k).set(range_pack1 > 0 && range_pack1 < nlev, tunefac*isotropy_zi(k)*tkh_zi(k)*grid_dz2*(invar1_sm1 - invar1_s)*(invar2_sm1 - invar2_s));
   });
 }
 

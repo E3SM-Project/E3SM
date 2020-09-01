@@ -5,8 +5,7 @@ namespace scream {
 namespace shoc {
 
 /*
- * Explicit instantiation for doing variance or covariance on Reals 
- * using the default device.
+ * Explicit instantiation using the default device.
  */
 
 template struct Functions<Real,DefaultDevice>;
