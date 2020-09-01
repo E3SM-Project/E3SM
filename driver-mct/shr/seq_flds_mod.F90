@@ -702,6 +702,17 @@ contains
     units    = 'kg m-3'
     attname  = 'Sa_dens'
     call metadata_set(attname, longname, stdname, units)
+    
+    ! UoverN for use by topounits
+    if (trim(cime_model) == 'e3sm') then
+       call seq_flds_add(a2x_states,"Sa_uovern")
+       call seq_flds_add(x2l_states,"Sa_uovern")
+       longname = 'Froude Number'
+       stdname  = 'Froude Number'
+       units    = 'Unitless'
+       attname  = 'Sa_uovern'
+       call metadata_set(attname, longname, stdname, units)
+    end if
 
     ! convective precipitation rate
     ! large-scale (stable) snow rate (water equivalent)
