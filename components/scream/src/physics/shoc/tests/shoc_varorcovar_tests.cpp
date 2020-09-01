@@ -22,7 +22,7 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocVarorCovar {
+struct UnitWrap::UnitTest<D>::TestShocVarorcovar {
 
   static void run_property()
   {
@@ -270,6 +270,58 @@ struct UnitWrap::UnitTest<D>::TestShocVarorCovar {
     }
   }
 
+
+static void run_bfb()
+  {
+    SHOCVarorcovarData SDS_f90[] = {
+      //               shcol, nlev, nlevi
+      SHOCVarorcovarData(10, 71, 72, 1),
+      SHOCVarorcovarData(10, 12, 13, 1),
+      SHOCVarorcovarData(7,  16, 17, 1),
+      SHOCVarorcovarData(2, 7, 8, 1),
+    };
+
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCVarorcovarData);
+
+    for (Int i = 0; i < num_runs; ++i) {
+      SDS_f90[i].randomize();
+    }
+
+    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // inout data is in original state
+    SHOCVarorcovarData SDS_cxx[] = {
+      SHOCVarorcovarData(SDS_f90[0]),
+      SHOCVarorcovarData(SDS_f90[1]),
+      SHOCVarorcovarData(SDS_f90[2]),
+      SHOCVarorcovarData(SDS_f90[3]),
+    };
+
+    // Assume all data is in C layout
+
+    // Get data from fortran
+    for (Int i = 0; i < num_runs; ++i) {
+      // expects data in C layout
+      calc_shoc_varorcovar(SDS_f90[i]);
+    }
+
+    // Get data from cxx
+    for (Int i = 0; i < num_runs; ++i) {
+      SHOCVarorcovarData& d = SDS_cxx[i];
+      d.transpose<ekat::util::TransposeDirection::c2f>();
+      // expects data in fortran layout
+      calc_shoc_varorcovar_f(d.shcol, d.nlev, d.nlevi, d.tunefac, d.isotropy_zi, d.tkh_zi, d.dz_zi, d.invar1, d.invar2, d.varorcovar);
+      d.transpose<ekat::util::TransposeDirection::f2c>();
+    }
+
+    // Verify BFB results, all data should be in C layout
+    for (Int i = 0; i < num_runs; ++i) {
+      SHOCVarorcovarData& d_f90 = SDS_f90[i];
+      SHOCVarorcovarData& d_cxx = SDS_cxx[i];
+      for (Int k = 0; k < d_f90.totali(); ++k) {
+        REQUIRE(d_f90.varorcovar[k] == d_cxx.varorcovar[k]);
+      }
+    }
+  }  
 };
 
 }  // namespace unit_test
@@ -280,15 +332,16 @@ namespace {
 
 TEST_CASE("shoc_varorcovar_property", "shoc")
 {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocVarorCovar;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocVarorcovar;
 
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_varorcovar_b4b", "shoc")
+TEST_CASE("shoc_varorcovar_bfb", "shoc")
 {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocVarorCovar;
-
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocVarorcovar;
+  
+  TestStruct::run_bfb();
 }
 
 } // namespace

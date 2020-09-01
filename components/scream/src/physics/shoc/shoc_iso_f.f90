@@ -15,6 +15,23 @@ module shoc_iso_f
 
 interface
 
+  subroutine calc_shoc_varorcovar_f(shcol, nlev, nlevi, tunefac, isotropy_zi, tkh_zi, dz_zi, invar1, invar2, varorcovar) bind (C)
+    use iso_c_binding
+
+    integer(kind=c_int), intent(in), value :: shcol
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: nlevi
+    real(kind=c_real), intent(in) :: tunefac
+    real(kind=c_real), intent(in) :: isotropy_zi(shcol,nlevi)
+    real(kind=c_real), intent(in) :: tkh_zi(shcol,nlevi)
+    real(kind=c_real), intent(in) :: dz_zi(shcol,nlevi)
+    real(kind=c_real), intent(in) :: invar1(shcol,nlev)
+    real(kind=c_real), intent(in) :: invar2(shcol,nlev)
+
+    real(kind=c_real), intent(inout) :: varorcovar(shcol,nlevi)
+
+  end subroutine calc_shoc_varorcovar_f
+  
   subroutine calc_shoc_vertflux_f(shcol, nlev, nlevi, tkh_zi, dz_zi, invar, vertflux) bind (C)
     use iso_c_binding
 
