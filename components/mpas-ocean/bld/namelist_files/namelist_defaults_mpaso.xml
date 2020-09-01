@@ -867,7 +867,7 @@
 
 <!-- AM_mixedLayerHeatBudget -->
 <config_AM_mixedLayerHeatBudget_enable>.true.</config_AM_mixedLayerHeatBudget_enable>
-<config_AM_mixedLayerHeatBudget_compute_interval>'output_interval'</config_AM_mixedLayerHeatBudget_compute_interval>
+<config_AM_mixedLayerHeatBudget_compute_interval>'>'0000-00-00_01:00:00'</config_AM_mixedLayerHeatBudget_compute_interval>
 <config_AM_mixedLayerHeatBudget_output_stream>'mixedLayerHeatBudgetOutput'</config_AM_mixedLayerHeatBudget_output_stream>
 <config_AM_mixedLayerHeatBudget_compute_on_startup>.false.</config_AM_mixedLayerHeatBudget_compute_on_startup>
 <config_AM_mixedLayerHeatBudget_write_on_startup>.false.</config_AM_mixedLayerHeatBudget_write_on_startup>
