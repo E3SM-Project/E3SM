@@ -16,6 +16,7 @@ list(APPEND RAW_SOURCES
   core_ocean/mode_forward/mpas_ocn_time_integration.F
   core_ocean/mode_forward/mpas_ocn_time_integration_rk4.F
   core_ocean/mode_forward/mpas_ocn_time_integration_split.F
+  core_ocean/mode_forward/mpas_ocn_time_integration_si.F
 
   core_ocean/mode_analysis/mpas_ocn_analysis_mode.F
 
