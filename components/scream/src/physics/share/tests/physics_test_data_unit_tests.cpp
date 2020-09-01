@@ -27,12 +27,38 @@ struct FakeClass1 : public PhysicsTestData
   FakeClass1& operator=(const FakeClass1& rhs) { PhysicsTestData::operator=(rhs); return *this; }
 };
 
+struct FakeClass2 : public PhysicsTestData
+{
+  Real *one12, *two1;
+
+  FakeClass2(Int dim1, Int dim2) :
+    PhysicsTestData(dim1, dim2, {&one12}, {&two1}) {}
+
+  FakeClass2(const FakeClass2& rhs) :
+    PhysicsTestData(rhs, {&one12, &two1}) {}
+
+  FakeClass2& operator=(const FakeClass2& rhs) { PhysicsTestData::operator=(rhs); return *this; }
+};
+
+struct FakeClass3 : public PhysicsTestData
+{
+  Real *one1, *two1;
+
+  FakeClass3(Int dim1) :
+    PhysicsTestData(dim1, {&one1, &two1}) {}
+
+  FakeClass3(const FakeClass3& rhs) :
+    PhysicsTestData(rhs, {&one1, &two1}) {}
+
+  FakeClass3& operator=(const FakeClass3& rhs) { PhysicsTestData::operator=(rhs); return *this; }
+};
+
 } // empty namespace
 
 template <typename D>
 struct UnitWrap::UnitTest<D>::TestTestData
 {
-  static void run()
+  static void test_fake_class1()
   {
     const std::vector<std::tuple<Int, Int, Int>> dims = { std::make_tuple(7, 13, 29), std::make_tuple(4, 8, 16) };
     FakeClass1 fakes1_1[] = {
@@ -147,6 +173,153 @@ struct UnitWrap::UnitTest<D>::TestTestData
       REQUIRE(d1.ints[0] != d2.ints[0]);
       REQUIRE(d1.ints[0] != d3.ints[0]);
     }
+  }
+
+  static void test_fake_class2()
+  {
+    const std::vector<std::tuple<Int, Int>> dims = { std::make_tuple(7, 13), std::make_tuple(4, 8) };
+    FakeClass2 fakes1_1[] = {
+      FakeClass2(std::get<0>(dims[0]), std::get<1>(dims[0])),
+      FakeClass2(std::get<0>(dims[1]), std::get<1>(dims[1])),
+    };
+
+    for (auto& d : fakes1_1) {
+      d.randomize({ {d.two1, {-2.0, -1.0}} });
+    }
+
+    static constexpr Int num_runs = sizeof(fakes1_1) / sizeof(FakeClass2);
+
+    // Copy construction
+    FakeClass2 fakes1_2[] = {
+      FakeClass2(fakes1_1[0]),
+      FakeClass2(fakes1_1[1]),
+    };
+
+    FakeClass2 fakes1_3[] = {
+      FakeClass2(1, 1),
+      FakeClass2(1, 1),
+    };
+
+    // Assignment
+    for (Int n = 0; n < num_runs; ++n) {
+      fakes1_3[n] = fakes1_2[n];
+    }
+
+    for (Int n = 0; n < num_runs; ++n) {
+      auto& d1 = fakes1_1[n];
+      auto& d2 = fakes1_2[n];
+      auto& d3 = fakes1_3[n];
+
+      // Check dimensions
+      REQUIRE(d1.total() == std::get<0>(dims[n]) * std::get<1>(dims[n]));
+      REQUIRE(d1.total() == d2.total());
+      REQUIRE(d1.total() == d3.total());
+
+      REQUIRE(d1.shcol == std::get<0>(dims[n]));
+      REQUIRE(d1.shcol == d2.shcol);
+      REQUIRE(d1.shcol == d3.shcol);
+
+      // Check randomization and correct copy construction, assignment
+      for (Int i = 0; i < d1.total(); ++i) {
+        REQUIRE( (d1.one12[i] > 0.0  && d1.one12[i] < 1.0) );
+
+        REQUIRE(d1.one12[i] == d2.one12[i]);
+        REQUIRE(d1.one12[i] == d3.one12[i]);
+      }
+      for (Int i = 0; i < d1.shcol; ++i) {
+        REQUIRE( (d1.two1[i] > -2.0 && d1.two1[i] < -1.0) );
+
+        REQUIRE(d1.two1[i] == d2.two1[i]);
+        REQUIRE(d1.two1[i] == d3.two1[i]);
+      }
+
+      // Check transpose
+      d1.transpose<ekat::util::TransposeDirection::c2f>();
+      for (Int i = 0; i < d1.shcol; ++i) {
+        for (Int j = 0; j < d1.nlev; ++j) {
+          const Int cidx = d1.nlev*i + j;
+          const Int fidx = d1.shcol*j + i;
+
+          REQUIRE(d1.one12[fidx] == d2.one12[cidx]);
+        }
+      }
+
+      d1.transpose<ekat::util::TransposeDirection::f2c>();
+      for (Int i = 0; i < d1.total(); ++i) {
+        REQUIRE(d1.one12[i] == d2.one12[i]);
+      }
+
+      // Check that different data obj are using different memory spaces
+      d1.one12[0] = 123.0;
+      d1.two1[0]  = 123;
+
+      REQUIRE(d1.one12[0] != d2.one12[0]);
+      REQUIRE(d1.one12[0] != d3.one12[0]);
+
+      REQUIRE(d1.two1[0] != d2.two1[0]);
+      REQUIRE(d1.two1[0] != d3.two1[0]);
+    }
+  }
+
+  static void test_fake_class3()
+  {
+    const std::vector<Int> dims = { 7, 8 };
+    FakeClass3 fakes1_1[] = {
+      FakeClass3(dims[0]),
+      FakeClass3(dims[1]),
+    };
+
+    for (auto& d : fakes1_1) {
+      d.randomize({ {d.two1, {-2.0, -1.0}} });
+    }
+
+    static constexpr Int num_runs = sizeof(fakes1_1) / sizeof(FakeClass3);
+
+    // Copy construction
+    FakeClass3 fakes1_2[] = {
+      FakeClass3(fakes1_1[0]),
+      FakeClass3(fakes1_1[1]),
+    };
+
+    FakeClass3 fakes1_3[] = {
+      FakeClass3(1),
+      FakeClass3(1),
+    };
+
+    // Assignment
+    for (Int n = 0; n < num_runs; ++n) {
+      fakes1_3[n] = fakes1_2[n];
+    }
+
+    for (Int n = 0; n < num_runs; ++n) {
+      auto& d1 = fakes1_1[n];
+      auto& d2 = fakes1_2[n];
+      auto& d3 = fakes1_3[n];
+
+      // Check dimensions
+      REQUIRE(d1.shcol == dims[n]);
+      REQUIRE(d1.shcol == d2.shcol);
+      REQUIRE(d1.shcol == d3.shcol);
+
+      // Check randomization and correct copy construction, assignment
+      for (Int i = 0; i < d1.shcol; ++i) {
+        REQUIRE( (d1.one1[i] > 0.0  && d2.one1[i] < 1.0) );
+        REQUIRE( (d1.two1[i] > -2.0 && d1.two1[i] < -1.0) );
+      }
+
+      // Check that different data obj are using different memory spaces
+      d1.one1[0] = 123.0;
+
+      REQUIRE(d1.one1[0] != d2.one1[0]);
+      REQUIRE(d1.one1[0] != d3.one1[0]);
+    }
+  }
+
+  static void run()
+  {
+    test_fake_class1();
+    test_fake_class2();
+    test_fake_class3();
   }
 
 };
