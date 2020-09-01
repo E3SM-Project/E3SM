@@ -26,8 +26,7 @@ def cellWidthVsLatLon():
     """
     dlon = 0.1
     dlat = dlon
-    #earth_radius = constants['SHR_CONST_REARTH']
-    earth_radius = 6378206.4
+    earth_radius = constants['SHR_CONST_REARTH']
     nlon = int(360./dlon) + 1
     nlat = int(180./dlat) + 1
     lon = np.linspace(-180., 180., nlon)
