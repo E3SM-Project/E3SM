@@ -35,12 +35,12 @@ struct UnitWrap::UnitTest<D>::TestShocQwParameters {
 
     // Define the flux of total water [kg/kg m/s] small value
     static constexpr Real wqwsec_small = 0.0001;
-    // Define the flux of total water [kg/kg m/s] small value
+    // Define the flux of total water [kg/kg m/s] large value
     static constexpr Real wqwsec_large = 0.0005;    
     // Define the standard deviation of vertical velocity [m/s]
     static constexpr Real sqrtw2_test1 = 0.5;
-    // Define the variance of total water [kg^2/kg^2] small
-    static constexpr Real qwsec_test1 = 1e-5;
+    // Define the variance of total water [kg^2/kg^2]
+    static constexpr Real qwsec_test1 = 1e-4;
     // Define grid mean total water [kg/kg]
     static constexpr Real qw_first_test1 = 0.015;
     // Define first gaussian vertical velocity [m/s]
@@ -110,6 +110,39 @@ struct UnitWrap::UnitTest<D>::TestShocQwParameters {
     
     // Now check the result
     REQUIRE(qwgaus_diff_result2 > qwgaus_diff_result1);       
+    
+    // TEST TWO
+    // Run the test two times given idential inputs, except one test
+    //  where qwsec is larger.  Verify that qw2_1 and qw2_2 are larger
+
+    // Define the variance of total water [kg^2/kg^2] small
+    static constexpr Real qwsec_small = 1e-4;      
+    // Define the variance of total water [kg^2/kg^2] large
+    static constexpr Real qwsec_large = 2e-4;  
+    
+    REQUIRE(qwsec_large > qwsec_small);
+    
+    // Fill in test data 
+    SDS.qwsec = qwsec_small;
+    SDS.sqrtqt = sqrt(qwsec_small);
+    
+    // Call the Fortran implementaiton
+    shoc_assumed_pdf_qw_parameters(SDS);
+    
+    // Save the result to compare with next test 
+    Real qw2_1_result1 = SDS.qw2_1;
+    Real qw2_2_result1 = SDS.qw2_2;
+    
+    // Now load up input, with larger variances   
+    SDS.qwsec = qwsec_large;
+    SDS.sqrtqt = sqrt(qwsec_large);        
+      
+    // Call the fortran implementation  
+    shoc_assumed_pdf_qw_parameters(SDS);
+    
+    // Now check the result
+    REQUIRE(SDS.qw2_1 > qw2_1_result1);
+    REQUIRE(SDS.qw2_2 > qw2_2_result1);
       
   }
   

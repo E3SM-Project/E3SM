@@ -1956,7 +1956,7 @@ subroutine shoc_assumed_pdf(&
 
 ! LOCAL VARIABLES
   integer i,k
-  real(rtype) skew_w,skew_thl,skew_qw,a
+  real(rtype) skew_w,a
   real(rtype) w1_1,w1_2,w2_1,w2_2,w3var
   real(rtype) thl1_1,thl1_2,thl2_1,thl2_2
   real(rtype) qw1_1,qw1_2,qw2_1,qw2_2
@@ -2044,7 +2044,7 @@ subroutine shoc_assumed_pdf(&
          wthlsec,sqrtw2,sqrtthl,thlsec,thl_first,& ! Input
          w1_1,w1_2,Skew_w,a,dothetal_skew,&        ! Input
          thl1_1,thl1_2,thl2_1,thl2_2,sqrtthl2_1,&  ! Output
-         sqrtthl2_2,Skew_thl)                      ! Output
+         sqrtthl2_2)                               ! Output
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !  FIND PARAMETERS FOR TOTAL WATER MIXING RATIO
@@ -2052,7 +2052,7 @@ subroutine shoc_assumed_pdf(&
       call shoc_assumed_pdf_qw_parameters(&
          wqwsec,sqrtw2,Skew_w,sqrtqt,& ! Input
          qwsec,w1_2,w1_1,qw_first,a,&  ! Input
-         qw1_1,qw1_2,Skew_qw,qw2_1,&   ! Input
+         qw1_1,qw1_2,qw2_1,&           ! Output
          qw2_2,sqrtqw2_1,sqrtqw2_2)    ! Output
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2215,7 +2215,7 @@ subroutine shoc_assumed_pdf_thl_parameters(&
   wthlsec,sqrtw2,sqrtthl,thlsec,thl_first,& ! Input
   w1_1,w1_2,Skew_w,a,dothetal_skew,&        ! Input
   thl1_1,thl1_2,thl2_1,thl2_2,sqrtthl2_1,&  ! Output
-  sqrtthl2_2,Skew_thl)                      ! Output
+  sqrtthl2_2)                               ! Output
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !  FIND PARAMETERS FOR TOTAL WATER MIXING RATIO
@@ -2240,10 +2240,9 @@ subroutine shoc_assumed_pdf_thl_parameters(&
   real(rtype), intent(out) :: thl2_2
   real(rtype), intent(out) :: sqrtthl2_1
   real(rtype), intent(out) :: sqrtthl2_2
-  real(rtype), intent(out) :: Skew_thl
 
   ! local vars
-  real(rtype) :: corrtest1, tsign
+  real(rtype) :: corrtest1, tsign, Skew_thl
 
   ! parameters
   real(rtype), parameter :: thl_tol = 1.e-2_rtype
@@ -2298,7 +2297,7 @@ end subroutine shoc_assumed_pdf_thl_parameters
 
 subroutine shoc_assumed_pdf_qw_parameters(&
   wqwsec, sqrtw2, Skew_w, sqrtqt, qwsec, w1_2, w1_1, qw_first, a, &
-  qw1_1, qw1_2, Skew_qw, qw2_1, qw2_2, sqrtqw2_1, sqrtqw2_2)
+  qw1_1, qw1_2, qw2_1, qw2_2, sqrtqw2_1, sqrtqw2_2)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !  FIND PARAMETERS FOR TOTAL WATER MIXING RATIO
@@ -2319,14 +2318,13 @@ subroutine shoc_assumed_pdf_qw_parameters(&
   ! intent-out
   real(rtype), intent(out) :: qw1_1
   real(rtype), intent(out) :: qw1_2
-  real(rtype), intent(out) :: Skew_qw
   real(rtype), intent(out) :: qw2_1
   real(rtype), intent(out) :: qw2_2
   real(rtype), intent(out) :: sqrtqw2_1
   real(rtype), intent(out) :: sqrtqw2_2
 
   ! local vars
-  real(rtype) :: corrtest2, tsign
+  real(rtype) :: corrtest2, tsign, Skew_qw
 
   ! Parameters
   real(rtype), parameter :: rt_tol=1.e-4_rtype
@@ -2356,8 +2354,7 @@ subroutine shoc_assumed_pdf_qw_parameters(&
     else
       Skew_qw=((1.2_rtype*Skew_w)/0.2_rtype)*(tsign-0.2_rtype)
     endif
-
-    qw2_1=min(100._rtype,max(0._rtype,(3._rtype*qw1_2*(1._rtype-a*qw1_1**2-(1._rtype-a)*qw1_2**2) &
+     qw2_1=min(100._rtype,max(0._rtype,(3._rtype*qw1_2*(1._rtype-a*qw1_1**2-(1._rtype-a)*qw1_2**2) &
       -(Skew_qw-a*qw1_1**3-(1._rtype-a)*qw1_2**3))/ &
       (3._rtype*a*(qw1_2-qw1_1))))*qwsec
 

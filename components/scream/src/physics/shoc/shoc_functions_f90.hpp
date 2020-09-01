@@ -444,7 +444,7 @@ struct SHOCPDFthlparamData
   bool dothetal_skew;
   
   // outputs
-  Real thl1_1, thl1_2, thl2_1, thl2_2, sqrtthl2_1, sqrtthl2_2, Skew_thl;
+  Real thl1_1, thl1_2, thl2_1, thl2_2, sqrtthl2_1, sqrtthl2_2;
 };
 
 // Create data structure to hold data for shoc_assumed_pdf_qw_parameters
@@ -454,7 +454,7 @@ struct SHOCPDFqwparamData
   Real wqwsec, qwsec, sqrtw2, sqrtqt, qw_first, w1_1, w1_2, Skew_w, a;
   
   // outputs
-  Real qw1_1, qw1_2, qw2_1, qw2_2, sqrtqw2_1, sqrtqw2_2, Skew_qw;
+  Real qw1_1, qw1_2, qw2_1, qw2_2, sqrtqw2_1, sqrtqw2_2;
 };
 
 // Create data structure to hold data for shoc_assumed_pdf_inplume_correlations

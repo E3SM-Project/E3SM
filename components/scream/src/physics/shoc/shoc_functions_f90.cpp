@@ -106,14 +106,14 @@ void shoc_assumed_pdf_thl_parameters_c(Real wthlsec, Real sqrtw2, Real sqrtthl,
 				       Real w1_2, Real Skew_w, Real a, bool dothetal_skew,
                                        Real *thl1_1, Real *thl1_2, Real *thl2_1,
 				       Real *thl2_2, Real *sqrtthl2_1,
-                                       Real *sqrtthl2_2, Real *Skew_thl);
+                                       Real *sqrtthl2_2);
 				       
 void shoc_assumed_pdf_qw_parameters_c(Real wqwsec, Real sqrtw2, Real Skew_w,
                                        Real sqrtqt, Real qw_sec, Real w1_1, 
 				       Real w1_2, Real qw_first, Real a,
                                        Real *qw1_1, Real *qw1_2, Real *qw2_1,
 				       Real *qw2_2, Real *sqrtqw2_1,
-                                       Real *sqrtqw2_2, Real *Skew_qw);	
+                                       Real *sqrtqw2_2);	
 				       
 void shoc_assumed_pdf_inplume_correlations_c(Real sqrtqw2_1, Real sqrtthl2_1,
                                      Real a, Real sqrtqw2_2, Real sqrtthl2_2,
@@ -474,7 +474,7 @@ void shoc_assumed_pdf_thl_parameters(SHOCPDFthlparamData &d)
   shoc_assumed_pdf_thl_parameters_c(d.wthlsec,d.sqrtw2,d.sqrtthl,d.thlsec,d.thl_first,
                                     d.w1_1,d.w1_2,d.Skew_w,d.a,d.dothetal_skew,
                                     &d.thl1_1,&d.thl1_2,&d.thl2_1,&d.thl2_2,&d.sqrtthl2_1,
-                                    &d.sqrtthl2_2,&d.Skew_thl);
+                                    &d.sqrtthl2_2);
 }
 
 void shoc_assumed_pdf_qw_parameters(SHOCPDFqwparamData &d)
@@ -483,7 +483,7 @@ void shoc_assumed_pdf_qw_parameters(SHOCPDFqwparamData &d)
   shoc_assumed_pdf_qw_parameters_c(d.wqwsec,d.sqrtw2,d.Skew_w,d.sqrtqt,d.qwsec,
                                     d.w1_1,d.w1_2,d.qw_first,d.a,
                                     &d.qw1_1,&d.qw1_2,&d.qw2_1,&d.qw2_2,&d.sqrtqw2_1,
-                                    &d.sqrtqw2_2,&d.Skew_qw);
+                                    &d.sqrtqw2_2);
 }
 
 void shoc_assumed_pdf_inplume_correlations(SHOCPDFinplumeData &d)

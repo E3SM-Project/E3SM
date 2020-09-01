@@ -533,7 +533,7 @@ contains
                            wthlsec,sqrtw2,sqrtthl,thlsec,thl_first,& 
                            w1_1,w1_2,Skew_w,a,dothetal_skew,&
                            thl1_1,thl1_2,thl2_1,thl2_2,sqrtthl2_1,&
-                           sqrtthl2_2,Skew_thl) bind (C)
+                           sqrtthl2_2) bind (C)
     use shoc, only: shoc_assumed_pdf_thl_parameters
 
     real(kind=c_real), intent(in), value :: wthlsec
@@ -553,13 +553,12 @@ contains
     real(kind=c_real), intent(out) :: thl2_2
     real(kind=c_real), intent(out) :: sqrtthl2_1
     real(kind=c_real), intent(out) :: sqrtthl2_2
-    real(kind=c_real), intent(out) :: Skew_thl
 
     call shoc_assumed_pdf_thl_parameters(&
                            wthlsec,sqrtw2,sqrtthl,thlsec,thl_first,& 
                            w1_1,w1_2,Skew_w,a,dothetal_skew,&
                            thl1_1,thl1_2,thl2_1,thl2_2,sqrtthl2_1,&
-                           sqrtthl2_2,Skew_thl)
+                           sqrtthl2_2)
 
   end subroutine shoc_assumed_pdf_thl_parameters_c  
   
@@ -567,7 +566,7 @@ contains
                            wqwsec,sqrtw2,Skew_w,sqrtqt,qwsec,& 
                            w1_1,w1_2,qw_first,a,&
                            qw1_1,qw1_2,qw2_1,qw2_2,sqrtqw2_1,&
-                           sqrtqw2_2,Skew_qw) bind (C)
+                           sqrtqw2_2) bind (C)
     use shoc, only: shoc_assumed_pdf_qw_parameters
 
     real(kind=c_real), intent(in), value :: wqwsec
@@ -586,13 +585,12 @@ contains
     real(kind=c_real), intent(out) :: qw2_2
     real(kind=c_real), intent(out) :: sqrtqw2_1
     real(kind=c_real), intent(out) :: sqrtqw2_2
-    real(kind=c_real), intent(out) :: Skew_qw
 
     call shoc_assumed_pdf_qw_parameters(&
                           wqwsec,sqrtw2,Skew_w,sqrtqt,qwsec,& 
                           w1_1,w1_2,qw_first,a,&
                           qw1_1,qw1_2,qw2_1,qw2_2,sqrtqw2_1,&
-                          sqrtqw2_2,Skew_qw)
+                          sqrtqw2_2)
 
   end subroutine shoc_assumed_pdf_qw_parameters_c
   
