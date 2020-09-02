@@ -20,7 +20,7 @@
 <config_tracer_advection>'none'</config_tracer_advection>
 
 <!-- calving -->
-<config_calving>'thickness_threshold'</config_calving>
+<config_calving>'none'</config_calving>
 <config_calving_topography>-500.0</config_calving_topography>
 <config_calving_thickness>300.0</config_calving_thickness>
 <config_calving_eigencalving_parameter_source>'scalar'</config_calving_eigencalving_parameter_source>

@@ -462,7 +462,11 @@ if ($MALI_DYNAMIC eq 'TRUE') {
 # Namelist group: calving #
 ###########################
 
-add_default($nl, 'config_calving');
+if ($MALI_DYNAMIC eq 'TRUE') {
+    add_default($nl, 'config_calving');
+} else {
+    add_default($nl, 'config_calving', 'val'=>"none");
+}
 add_default($nl, 'config_calving_topography');
 add_default($nl, 'config_calving_thickness');
 add_default($nl, 'config_calving_eigencalving_parameter_source');
