@@ -621,81 +621,64 @@ sub write_filepath_cesmbld
          print $fh "$dir\n";
        }
     } else {
-         print $fh "../SourceMods/src.clm\n";
+         print $fh "../SourceMods/src.elm\n";
     }
 
-    if ($phys->as_long() == $phys->as_long("clm4_0") ) {
-	# source root
-	my $srcdir = "$clm_root/src_clm40";
-	if ( ! &is_valid_directory( "$srcdir", %opts )  ) { die "** source directory does not exist: $srcdir\n"; }
+    # source root
+    my $srcdir = "$clm_root/src";
+    if ( ! &is_valid_directory( "$srcdir", %opts )  ) { die "** source directory does not exist: $srcdir\n"; }
 
-	# source directories under root
-	my @dirs = ( "main", "biogeophys", "biogeochem" );
-	foreach my $dir ( @dirs ) {
-	    if ( &is_valid_directory( "$srcdir/$dir", %opts )  ) {
-		print $fh "$srcdir/$dir\n";
-	    } else {
-		die "** source directory does not exist: $srcdir/$dir\n";
-	    }
-	}
-    } else {
-	# source root
-	my $srcdir = "$clm_root/src";
-	if ( ! &is_valid_directory( "$srcdir", %opts )  ) { die "** source directory does not exist: $srcdir\n"; }
+    # source directories under root
+    my @dirs = ( "main", 
+                 "data_types",
+		 "biogeophys",
+		 "biogeochem", 
+		 "dyn_subgrid",
+		 "external_models/fates/main",
+		 "external_models/fates/biogeophys",
+		 "external_models/fates/biogeochem",
+		 "external_models/fates/fire",
+		 "external_models/fates/parteh",
+		 "external_models/mpp/src/mpp/dtypes",
+		 "external_models/mpp/src/mpp/thermal",
+		 "external_models/mpp/src/mpp/util",
+		 "external_models/mpp/src/mpp/vsfm",
+		 "external_models/emi/src/",
+		 "external_models/emi/src/constants",
+	         "external_models/emi/src/em/base",
+                 "external_models/emi/src/em/betr",
+	         "external_models/emi/src/em/fates",
+                 "external_models/emi/src/em/ptm",
+	         "external_models/emi/src/em/stub",
+	         "external_models/emi/src/em/vsfm",
+	         "external_models/emi/src/emi",
+	         "external_models/emi/src/emi_data_definition",
+	         "external_models/emi/src/emi_data_exchange",
+                 "external_models/emi/src/emi_data_types",
+                 "external_models/sbetr/src/betr/betr_core",
+                 "external_models/sbetr/src/betr/betr_dtype",
+                 "external_models/sbetr/src/betr/betr_bgc",
+                 "external_models/sbetr/src/betr/betr_grid",
+                 "external_models/sbetr/src/betr/betr_para",
+                 "external_models/sbetr/src/betr/betr_main",
+                 "external_models/sbetr/src/betr/betr_math",
+                 "external_models/sbetr/src/betr/betr_rxns",
+                 "external_models/sbetr/src/betr/betr_util",
+                 "external_models/sbetr/src/driver/shared",
+                 "external_models/sbetr/src/driver/alm",
+                 "external_models/sbetr/src/Applications/app_util",
+                 "external_models/sbetr/src/Applications/soil-farm/bgcfarm_util",
+                 "external_models/sbetr/src/Applications/soil-farm/CENT_ECACNP",
+		 "utils", 
+		 "cpl" );
 
-	# source directories under root
-	my @dirs = ( "main", 
-		     "data_types",
-		     "biogeophys",
-		     "biogeochem", 
-		     "dyn_subgrid",
-		     "external_models/fates/main",
-		     "external_models/fates/biogeophys",
-		     "external_models/fates/biogeochem",
-		     "external_models/fates/fire",
-		     "external_models/fates/parteh",
-		     "external_models/mpp/src/mpp/dtypes",
-		     "external_models/mpp/src/mpp/thermal",
-		     "external_models/mpp/src/mpp/util",
-		     "external_models/mpp/src/mpp/vsfm",
-		     "external_models/emi/src/",
-		     "external_models/emi/src/constants",
-		     "external_models/emi/src/em/base",
-		     "external_models/emi/src/em/betr",
-		     "external_models/emi/src/em/fates",
-		     "external_models/emi/src/em/ptm",
-		     "external_models/emi/src/em/stub",
-		     "external_models/emi/src/em/vsfm",
-		     "external_models/emi/src/emi",
-		     "external_models/emi/src/emi_data_definition",
-		     "external_models/emi/src/emi_data_exchange",
-		     "external_models/emi/src/emi_data_types",
-                     "external_models/sbetr/src/betr/betr_core",
-                     "external_models/sbetr/src/betr/betr_dtype",
-                     "external_models/sbetr/src/betr/betr_bgc",
-                     "external_models/sbetr/src/betr/betr_grid",
-                     "external_models/sbetr/src/betr/betr_para",
-                     "external_models/sbetr/src/betr/betr_main",
-                     "external_models/sbetr/src/betr/betr_math",
-                     "external_models/sbetr/src/betr/betr_rxns",
-                     "external_models/sbetr/src/betr/betr_util",
-                     "external_models/sbetr/src/driver/shared",
-                     "external_models/sbetr/src/driver/alm",
-                     "external_models/sbetr/src/Applications/app_util",
-                     "external_models/sbetr/src/Applications/soil-farm/bgcfarm_util",
-                     "external_models/sbetr/src/Applications/soil-farm/CENT_ECACNP",
-		     "utils", 
-		     "cpl" );
-
-	foreach my $dir ( @dirs ) {
-	    if ( &is_valid_directory( "$srcdir/$dir", %opts )  ) {
-		print $fh "$srcdir/$dir\n";
-	    } else {
-		die "** source directory does not exist: $srcdir/$dir\n";
-	    }
-	}
+    foreach my $dir ( @dirs ) {
+        if ( &is_valid_directory( "$srcdir/$dir", %opts )  ) {
+	    print $fh "$srcdir/$dir\n";
+	} else {
+	    die "** source directory does not exist: $srcdir/$dir\n";
+        }
     }
-
 
     $fh->close;
 }

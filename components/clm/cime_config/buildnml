@@ -94,7 +94,7 @@ def buildnml(case, caseroot, compname):
     # TODO: clm/bld/configure needs to be converted to python
     sysmod = "{}/components/clm/bld/configure".format(srcroot)
     sysmod += "  {} -comp_intf {} {}".format(config_opts, comp_interface, clm_config_opts)
-    sysmod += " -usr_src {}/SourceMods/src.clm".format(caseroot)
+    sysmod += " -usr_src {}/SourceMods/src.elm".format(caseroot)
     run_cmd_no_fail(sysmod, from_dir=clmconf_dir)
 
     #--------------------------------------------------------------------
