@@ -76,7 +76,7 @@ contains
 
   end function search_in
 
-  subroutine create_moab_mesh_fine(par, elem)
+  subroutine create_moab_meshes(par, elem)
 
     use ISO_C_BINDING
     use coordinate_systems_mod, only :  cartesian3D_t,  spherical_to_cart, spherical_polar_t
@@ -644,7 +644,7 @@ contains
        ! copy the coordinates from the middle
        j1 = 0 ! index in edge vertices; increase only for positive edges
        !  still need some
-       if (fv_nphys .eq. 3) then
+       if (fv_nphys .eq. 2) then
           current_2d_vertex%r = 1.
           do ie = 1,nelemd
               do j=1,4
@@ -712,29 +712,30 @@ contains
 
               ! now form the local 2x2 cells, one by one; set the global id tag too!
               idx = (ie-1)*4
+              ix = idx * 4 !
               ! first
-              moabconn_pg(idx + 1) = moabconn_c(4*(ie-1)+1)
-              moabconn_pg(idx + 2) = edge_verts(1)
-              moabconn_pg(idx + 3) = middle_vertex
-              moabconn_pg(idx + 4) = edge_verts(4)
+              moabconn_pg(ix + 1) = moabconn_c(4*(ie-1)+1)
+              moabconn_pg(ix + 2) = edge_verts(1)
+              moabconn_pg(ix + 3) = middle_vertex
+              moabconn_pg(ix + 4) = edge_verts(4)
               elemids(idx+1) = (elem(ie)%GlobalId-1)*4+1
               ! second
-              moabconn_pg(idx + 4 + 1) = edge_verts(1)
-              moabconn_pg(idx + 4 + 2) = moabconn_c(4*(ie-1)+2)
-              moabconn_pg(idx + 4 + 3) = edge_verts(2)
-              moabconn_pg(idx + 4 + 4) = middle_vertex
+              moabconn_pg(ix + 4 + 1) = edge_verts(1)
+              moabconn_pg(ix + 4 + 2) = moabconn_c(4*(ie-1)+2)
+              moabconn_pg(ix + 4 + 3) = edge_verts(2)
+              moabconn_pg(ix + 4 + 4) = middle_vertex
               elemids(idx+2) = (elem(ie)%GlobalId-1)*4+2
               ! third
-              moabconn_pg(idx + 8 + 1) = edge_verts(4)
-              moabconn_pg(idx + 8 + 2) = middle_vertex
-              moabconn_pg(idx + 8 + 3) = edge_verts(3)
-              moabconn_pg(idx + 8 + 4) = moabconn_c(4*(ie-1)+4)
+              moabconn_pg(ix + 8 + 1) = edge_verts(4)
+              moabconn_pg(ix + 8 + 2) = middle_vertex
+              moabconn_pg(ix + 8 + 3) = edge_verts(3)
+              moabconn_pg(ix + 8 + 4) = moabconn_c(4*(ie-1)+4)
               elemids(idx+3) = (elem(ie)%GlobalId-1)*4+3
               ! fourth
-              moabconn_pg(idx + 12 + 1) = middle_vertex
-              moabconn_pg(idx + 12 + 2) = edge_verts(2)
-              moabconn_pg(idx + 12 + 3) = moabconn_c(4*(ie-1)+3)
-              moabconn_pg(idx + 12 + 4) = edge_verts(3)
+              moabconn_pg(ix + 12 + 1) = middle_vertex
+              moabconn_pg(ix + 12 + 2) = edge_verts(2)
+              moabconn_pg(ix + 12 + 3) = moabconn_c(4*(ie-1)+3)
+              moabconn_pg(ix + 12 + 4) = edge_verts(3)
               elemids(idx+4) = (elem(ie)%GlobalId-1)*4+4
 
           enddo
@@ -806,7 +807,7 @@ contains
      deallocate(vdone_c)
 !    end copy
 
-  end subroutine create_moab_mesh_fine
+  end subroutine create_moab_meshes
 
   subroutine moab_export_data(elem)
 
