@@ -15,7 +15,7 @@
     Where for the CAM specific compsets below the following is supported
     TIME = Time period (e.g. 2000, HIST, RCP8...)
     ATM  = [CAM4, CAM5, SATM]
-    LND  = [CLM40, CLM45, CLM50, SLND]
+    LND  = [ELM, SLND]
     ICE  = [MPASSI, CICE, DICE, SICE]
     OCN  = [MPASO, DOCN, ,AQUAP, SOCN]
     ROF  = [RTM, MOSART, SROF]
