@@ -74,7 +74,7 @@ real(rtype), parameter :: c_diag_3rd_mom = 7.0_rtype
 
 ! Allow temperature skewness to be independent of moisture
 !  variance
-logical, parameter :: dothetal_skew = .false.
+logical(btype), parameter :: dothetal_skew = .false.
 
 ! ========
 ! Below define some parameters for SHOC
@@ -2243,7 +2243,7 @@ subroutine shoc_assumed_pdf_thl_parameters(&
   real(rtype), intent(in) :: w1_2
   real(rtype), intent(in) :: Skew_w
   real(rtype), intent(in) ::  a
-  logical, intent(in)     :: dothetal_skew
+  logical(btype), intent(in)  :: dothetal_skew
 
   ! intent-outs
   real(rtype), intent(out) :: thl1_1
