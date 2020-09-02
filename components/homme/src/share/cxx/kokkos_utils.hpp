@@ -44,7 +44,7 @@ class _TeamUtilsCommonBase
     // We will never run more teams than the policy needs
     _num_teams = _num_teams > _league_size ? _league_size : _num_teams;
 
-    assert(_num_teams > 0);
+    assert(_league_size==0 || _num_teams > 0);
   }
 
   // How many thread teams can run concurrently

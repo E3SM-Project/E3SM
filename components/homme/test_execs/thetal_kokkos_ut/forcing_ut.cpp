@@ -256,6 +256,16 @@ TEST_CASE("forcing", "forcing") {
                   REQUIRE(h_q(ie,iq,igp,jgp,ilev)[ivec]==q_f90(ie,iq,k,igp,jgp));
                 }
               }
+              int k = NUM_INTERFACE_LEV-1;
+              const int ilev = k / VECTOR_SIZE;
+              const int ivec = k % VECTOR_SIZE;
+
+              if(h_fphi(ie,igp,jgp,ilev)[ivec]!=fphi_f90(ie,k,igp,jgp)) {
+                printf ("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
+                printf ("fphi_cxx: %3.16f\n",h_fphi(ie,igp,jgp,ilev)[ivec]);
+                printf ("fphi_f90: %3.16f\n",fphi_f90(ie,k,igp,jgp));
+              }
+              REQUIRE(h_fphi(ie,igp,jgp,ilev)[ivec]==fphi_f90(ie,k,igp,jgp));
             }
           }
         }
