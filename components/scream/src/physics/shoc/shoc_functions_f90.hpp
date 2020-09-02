@@ -537,6 +537,17 @@ struct SHOCPDFcompbuoyfluxData
   Real wthv_sec;
 };
 
+struct SHOCSecondMomentUbycondData : public SHOCDataBase {
+  // Outputs
+  Real *thl, *qw, *wthl, *wqw, *qwthl, *uw, *vw, *wtke;
+
+  SHOCSecondMomentUbycondData(Int shcol_) :
+     SHOCDataBase(shcol_, 1, 0, {&thl, &qw, &wthl, &wqw, &qwthl, &uw, &vw, &wtke}, {}, {}) {}
+  SHOCSecondMomentUbycondData(const SHOCSecondMomentUbycondData &rhs) :
+     SHOCDataBase(rhs, {&thl, &qw, &wthl, &wqw, &qwthl, &uw, &vw, &wtke}, {}, {}) {}
+  SHOCSecondMomentUbycondData &operator=(const SHOCSecondMomentUbycondData &rhs) { SHOCDataBase::operator=(rhs); return *this; }
+};
+
 //
 // Glue functions to call fortran from from C++ with the Data struct
 //
@@ -578,6 +589,7 @@ void shoc_assumed_pdf_compute_sgs_liquid(SHOCPDFcompsgsliqData &d);
 void shoc_assumed_pdf_compute_cloud_liquid_variance(SHOCPDFcompcloudvarData &d);
 void shoc_assumed_pdf_compute_liquid_water_flux(SHOCPDFcompliqfluxData &d);
 void shoc_assumed_pdf_compute_buoyancy_flux(SHOCPDFcompbuoyfluxData &d);
+void shoc_diag_second_moments_ubycond(SHOCSecondMomentUbycondData& d);
 
 //
 // _f functions decls
@@ -587,7 +599,9 @@ extern "C" {
 void calc_shoc_vertflux_f(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 			  Real *dz_zi, Real *invar, Real *vertflux);
 void shoc_diag_second_moments_srf_f(Int shcol, Real* wthl, Real* uw, Real* vw,
-                         Real* ustar2, Real* wstar);
+                          Real* ustar2, Real* wstar);
+void shoc_diag_second_moments_ubycond_f(Int shcol, Real* thl, Real* qw, Real* wthl,
+                          Real* wqw, Real* qwthl, Real* uw, Real* vw, Real* wtke);
 
 }
 
