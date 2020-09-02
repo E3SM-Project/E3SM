@@ -69,12 +69,14 @@ void HybridVCoord::init(const Real ps0_in,
 }
 
 void HybridVCoord::random_init(int seed) {
-  hybrid_ai = ExecViewManaged<Real[NUM_INTERFACE_LEV]>("Hybrid a_interface coefs");
-  hybrid_bi = ExecViewManaged<Real[NUM_INTERFACE_LEV]>("Hybrid b_interface coefs");
+  hybrid_ai_packed = ExecViewManaged<Scalar[NUM_LEV_P]>("Hybrid coordinates; coefficient A_interfaces");
+  hybrid_bi_packed = ExecViewManaged<Scalar[NUM_LEV_P]>("Hybrid coordinates; coefficient B_interfaces");
+
+  hybrid_ai = ExecViewUnmanaged<Real[NUM_INTERFACE_LEV]>(reinterpret_cast<Real*>(hybrid_ai_packed.data()));
+  hybrid_bi = ExecViewUnmanaged<Real[NUM_INTERFACE_LEV]>(reinterpret_cast<Real*>(hybrid_bi_packed.data()));
+
   hybrid_am = ExecViewManaged<Scalar[NUM_LEV]>("Hybrid a_interface coefs");
   hybrid_bm = ExecViewManaged<Scalar[NUM_LEV]>("Hybrid b_interface coefs");
-  hybrid_ai_packed = decltype(hybrid_ai_packed)(reinterpret_cast<Scalar*>(hybrid_ai.data()));
-  hybrid_bi_packed = decltype(hybrid_bi_packed)(reinterpret_cast<Scalar*>(hybrid_bi.data()));
 
   std::mt19937_64 engine(seed);
   ps0 = 1.0;
