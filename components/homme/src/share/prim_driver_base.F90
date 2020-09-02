@@ -44,6 +44,10 @@ module prim_driver_base
   public :: prim_init1_no_cam
 #endif
 
+#ifdef HAVE_MOAB
+  public :: prim_init_moab_mesh
+#endif
+
   public :: smooth_topo_datasets, deriv1
 
   public :: applyCAMforcing_tracers
@@ -694,9 +698,7 @@ contains
     use dimensions_mod,     only : max_corner_elem
     use compose_mod,        only : compose_query_bufsz, compose_set_bufs
 #endif
-#ifdef HAVE_MOAB
-    use semoab_mod,         only :  create_moab_mesh_fine
-#endif
+
 
     !
     ! Inputs
@@ -705,10 +707,6 @@ contains
     type (parallel_t),  intent(in)  :: par
 
     integer :: edgesz, sendsz, recvsz, n, den
-
-#ifdef HAVE_MOAB
-    call create_moab_mesh_fine(par, elem)
-#endif
 
     call prim_advance_init1(par,elem,integration)
 #ifdef TRILINOS
@@ -742,6 +740,22 @@ contains
 
   end subroutine prim_init1_buffers
 
+#ifdef HAVE_MOAB
+  subroutine  prim_init_moab_mesh(elem,par)
+
+    use parallel_mod,       only : parallel_t
+    use semoab_mod,         only :  create_moab_meshes
+
+    !
+    ! Inputs
+    !
+    type (element_t),   pointer     :: elem(:)
+    type (parallel_t),  intent(in)  :: par
+
+    call create_moab_meshes(par, elem)
+
+  end subroutine prim_init_moab_mesh
+#endif
   !_____________________________________________________________________
   subroutine prim_init2(elem, hybrid, nets, nete, tl, hvcoord)
 

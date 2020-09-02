@@ -106,6 +106,7 @@ CONTAINS
     use seq_comm_mct,      only: MHID, MHFID  ! id of homme moab coarse and fine applications
     use seq_comm_mct,      only: ATMID
     use seq_comm_mct,      only: mhpgid       ! id of pgx moab application
+    use prim_driver_base,  only: prim_init_moab_mesh ! insertion point for MOAB; after phys grid init
 #endif
 
     ! PARAMETERS:
@@ -248,6 +249,9 @@ CONTAINS
       call fv_physgrid_init()
     end if
 
+#ifdef HAVE_MOAB
+    call prim_init_moab_mesh(elem,par)
+#endif
     ! Define the CAM grids (this has to be after dycore spinup).
     ! Physics-grid will be defined later by phys_grid_init
     call define_cam_grids()
