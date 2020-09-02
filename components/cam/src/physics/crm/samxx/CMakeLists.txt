@@ -19,7 +19,7 @@ target_link_libraries(samxx yakl)
 # Set fortran compiler flags
 set_source_files_properties(${F90_SRC} PROPERTIES COMPILE_FLAGS "${CPPDEFS} ${FFLAGS}")
 # Set YAKL and CPP flags for C++ source files
-set_source_files_properties(${CXX_SRC} PROPERTIES COMPILE_FLAGS "${CPPDEFS} ${YAKL_CXX_FLAGS}")
+set_source_files_properties(${CXX_SRC} PROPERTIES COMPILE_FLAGS "${YAKL_CXX_FLAGS}")
 if ("${ARCH}" STREQUAL "CUDA")
   # Set C++ source files to be treated like CUDA files by CMake
   set_source_files_properties(${CXX_SRC} PROPERTIES LANGUAGE CUDA)

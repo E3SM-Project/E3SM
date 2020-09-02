@@ -132,6 +132,9 @@ flags should be captured within MPAS CMake files.
     <!-- http://gcc.gnu.org/onlinedocs/gfortran/ -->
     <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRGNU</append>
   </CPPDEFS>
+  <CPPDEFS>
+    <append DEBUG="TRUE"> -DYAKL_DEBUG </append>
+  </CPPDEFS>
   <CXX_LINKER>FORTRAN</CXX_LINKER>
   <FC_AUTO_R8>
     <base> -fdefault-real-8 </base>
@@ -1576,7 +1579,7 @@ flags should be captured within MPAS CMake files.
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <CUDA_FLAGS>
-    <append> -O3 -arch sm_70 --use_fast_math </append>
+    <append> -O3 -arch sm_70 --use_fast_math --std=c++14 </append>
   </CUDA_FLAGS>
   <USE_CUDA>TRUE</USE_CUDA>
 </compiler>

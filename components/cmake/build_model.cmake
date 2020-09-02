@@ -65,7 +65,12 @@ function(build_model COMP_CLASS COMP_NAME)
       if (USE_CUDA)
         set(ARCH "CUDA")
         # CUDA_FLAGS is set through Macros.cmake / config_compilers.xml
+        # We can't have duplicate flags with nvcc, so we only specify CPPDEFS,
+        # and the rest is up to CUDAFLAGS
+        set(YAKL_CXX_FLAGS "${CPPDEFS}")
       else()
+        # For normal C++ compilers duplicate flags are fine, the last ones win typically
+        set(YAKL_CXX_FLAGS "${CPPDEFS} ${CXXFLAGS} --std=c++14")
         set(ARCH "")
       endif()
       message(STATUS "Building YAKL")

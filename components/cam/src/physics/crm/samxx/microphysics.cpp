@@ -224,7 +224,7 @@ void precip_fall(int hydro_type, real4d &omega) {
       //  for (int i=0; i<nx; i++) {
       //    for (int k=0; k<nzm; k++) {
       //       for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<4>(ny,nx,nzm,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
         real tmp = term_vel_qp(icrm,i,j,k,micro_field(1,k,j+offy_s,i+offx_s,icrm), 
                                vrain, vsnow, vgrau, crain, csnow, cgrau, rho(k,icrm),
                                tabs(k,j,i,icrm), a_pr, a_gr);
