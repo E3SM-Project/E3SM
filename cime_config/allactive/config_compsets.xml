@@ -390,36 +390,6 @@
 
 <!-- Slab ocean cases -->
 <compset>
-  <alias>ETEST</alias>
-  <lname>2000_CAM4_CLM40%SP_CICE_DOCN%SOM_MOSART_SGLC_SWAV_TEST</lname>
-</compset>
-
-<compset>
-  <alias>E1850C5</alias>
-  <lname>1850_CAM5_CLM40%SP_CICE_DOCN%SOM_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
-  <alias>E1850C5TEST</alias>
-  <lname>1850_CAM5_CLM40%SP_CICE_DOCN%SOM_MOSART_SGLC_SWAV_TEST</lname>
-</compset>
-
-<compset>
-  <alias>E1850CN</alias>
-  <lname>1850_CAM4_CLM40%CN_CICE_DOCN%SOM_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
-  <alias>E1850C5CN</alias>
-  <lname>1850_CAM5_CLM40%CN_CICE_DOCN%SOM_MOSART_SGLC_SWAV</lname>
-</compset>
-
-<compset>
-  <alias>E1850C5CNTEST</alias>
-  <lname>1850_CAM5_CLM40%CN_CICE_DOCN%SOM_MOSART_SGLC_SWAV_TEST </lname>
-</compset>
-
-<compset>
   <alias>E1850C5CLM45</alias>
   <lname>1850_CAM5_CLM45%SP_CICE_DOCN%SOM_MOSART_SGLC_SWAV</lname>
 </compset>

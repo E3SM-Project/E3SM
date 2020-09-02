@@ -17,10 +17,6 @@
     <type>char</type>
     <default_value></default_value>
     <values modifier='additive'>
-      <value compset="_CLM40"                >-phys clm4_0</value>
-      <value compset="_CLM40%[^_]*CN"        >-bgc cn</value>
-      <value compset="_CLM40%[^_]*CNDV"      >-bgc cndv</value>
-      <value compset="_CLM40%[^_]*CROP"      >-crop on</value>
       <value compset="_CLM45"                >-phys clm4_5</value>
       <value compset="_CLM50"                >-phys clm5_0</value>
       <value compset="_CLM45%[^_]*BC" >-phys clm4_5 -cppdefs -DMODAL_AER</value>
@@ -218,11 +214,6 @@
   </entry>
 
   <description>
-    <desc compset="_CLM40"          >clm4.0 physics:</desc>
-    <desc compset="_CLM40%[^_]*SP"  >clm4.0 Satellite phenology:</desc>
-    <desc compset="_CLM40%[^_]*CN"  >clm4.0 cn:</desc>
-    <desc compset="_CLM40%[^_]*CNDV">clm4.0 cndv:</desc>
-    <desc compset="_CLM40%[^_]*CROP">clm4.0 prognostic crop:</desc>
     <desc compset="_CLM45"               >clm4.5 physics:</desc>
     <desc compset="_CLM45%[^_]*SP"       >clm4.5 Satellite phenology:</desc>
     <desc compset="_CLM45%[^_]*SPBC"     >clm4.5 Satellite phenology with black carbon deposition:</desc>
