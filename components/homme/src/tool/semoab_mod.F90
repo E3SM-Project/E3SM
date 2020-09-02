@@ -17,12 +17,15 @@ module semoab_mod
  
   use cam_grid_support, only:  iMap
   use cam_abortutils,   only : endrun
+  use edgetype_mod,           only: edgedescriptor_t
+  use gridgraph_mod,          only: gridvertex_t
 
   use seq_comm_mct,  only: MHID, MHFID !  app id on moab side, for homme moab coarse and fine mesh
   use seq_comm_mct,  only: MHPGID      !  app id on moab side, for PGx style mesh, uniform from se
 
   use dyn_grid,      only: fv_nphys, fv_physgrid ! phys grid mesh will be replicated too
 
+  use control_mod, only :  west, east, south, north  ! 1, 2, 3, 4
   implicit none
 
   save
@@ -32,6 +35,46 @@ module semoab_mod
   integer  ::                     num_calls_export
   
 contains
+
+  integer function search_in(intarr, leng, value)
+     integer, intent(in) :: leng
+     integer, intent(in) :: intarr(leng)
+     integer, intent(in) :: value
+
+     ! binary search, as the array is ordered
+     integer current, left, right
+     left = 1
+     right = leng
+
+     search_in = 0
+     if ( (value .gt. intarr(leng) ) .or.  ( value .lt. intarr(1) ) ) goto 10
+
+     if ( value .eq. intarr(1) ) then
+        search_in = 1
+        goto 10
+     endif
+
+     if ( value .eq. intarr(leng) ) then
+        search_in = leng
+        goto 10
+     endif
+
+     do while (left < right )
+        current = (right+left)/2
+        if ( intarr(current) .eq. value ) then
+            search_in = current
+            goto 10
+        else if ( intarr(current) .lt. value ) then
+            left = current
+        else
+            right = current
+        endif
+        if ( left .eq. right -1) goto 10
+     enddo
+10  continue
+    if ( intarr(right) .eq. value) search_in = right
+
+  end function search_in
 
   subroutine create_moab_mesh_fine(par, elem)
 
@@ -67,9 +110,16 @@ contains
     character*100 outfile, wopts, localmeshfile, lnum, tagname, newtagg
     integer  tagtype, numco, tag_sto_len, ent_type, tagindex
     type (cartesian3D_t)             :: cart
-    integer  igcol, ii
+    integer  igcol, ii, neigh
 
-    integer nedges_c, nverts_pg, nelem_pg
+    integer nedges_c, nverts_pg, nelem_pg, edge_index, j1
+    integer, dimension(:), allocatable :: local_cell_gids, indx_cell
+    integer, dimension(:,:), allocatable :: elem_edge, edge
+
+    integer nat_edge_order(4)
+    integer  internal_edges, boundary_edges, reverse_edges
+
+    nat_edge_order = (/south, east, north, west/)
 
     ! for np=4,
     !      28, 32, 36, 35
@@ -187,12 +237,12 @@ contains
       if (ierr > 0 )  &
         call endrun('Error: fail to create MOAB vertices ')
 
-      num_el = nelemd2
+      !!num_el = nelemd2
       mbtype = 3 !  quadrilateral
       nve = 4;
       block_ID = 200 ! this will be for coarse mesh
 
-      ierr = iMOAB_CreateElements( MHFID, num_el, mbtype, nve, moabconn, block_ID );
+      ierr = iMOAB_CreateElements( MHFID, nelemd2, mbtype, nve, moabconn, block_ID );
       if (ierr > 0 )  &
         call endrun('Error: fail to create MOAB elements')
       ! nverts: num vertices; vdone will store now the markers used in global resolve
@@ -291,10 +341,10 @@ contains
 
 
 !    now create the coarse mesh, but the global dofs will come from fine mesh, after solving
-     nelemd2 = nelemd
+     ! nelemd2 = nelemd
      moab_dim_cquads = (nelemd)*4
 
-     allocate(gdofel(nelemd2*np*np))
+     allocate(gdofel(nelemd*np*np))
      k=0 !   will be the index for element global dofs
      do ie=1,nelemd
        ix = ie-1
@@ -356,12 +406,12 @@ contains
       if (ierr > 0 )  &
         call endrun('Error: fail to create MOAB vertices ')
 
-      num_el = nelemd
+      ! num_el = nelemd
       mbtype = 3 !  quadrilateral
       nve = 4;
       block_ID = 100 ! this will be for coarse mesh
 
-      ierr = iMOAB_CreateElements( MHID, num_el, mbtype, nve, moabconn_c, block_ID );
+      ierr = iMOAB_CreateElements( MHID, nelemd, mbtype, nve, moabconn_c, block_ID );
       if (ierr > 0 )  &
         call endrun('Error: fail to create MOAB elements')
       ! idx: num vertices; vdone will store now the markers used in global resolve
@@ -384,7 +434,7 @@ contains
         call endrun('Error: fail to set GDOFV tag for vertices')
       ! set global id tag for coarse elements, too; they will start at nets=1, end at nete=nelemd
       ent_type = 1 ! now set the global id tag on elements
-      ierr = iMOAB_SetIntTagStorage ( MHID, newtagg, nelemd2 , ent_type, elemids)
+      ierr = iMOAB_SetIntTagStorage ( MHID, newtagg, nelemd , ent_type, elemids)
       if (ierr > 0 )  &
         call endrun('Error: fail to set global id tag for vertices')
 
@@ -402,9 +452,9 @@ contains
       ! now set the values
       ! set global dofs tag for coarse elements, too; they will start at nets=1, end at nete=nelemd
       ent_type = 1 ! now set the global id tag on elements
-      numvals = nelemd2*np*np ! input is the total number of values
+      numvals = nelemd*np*np ! input is the total number of values
       ! form gdofel from vgids
-      do ie=1, nelemd2
+      do ie=1, nelemd
         ix = (ie-1)*np*np ! ie: index in coarse element
         je = (ie-1) * 4 * (np-1) * (np -1) !  index in moabconn array
         ! vgids are global ids for fine vertices (1,nverts)
@@ -487,16 +537,95 @@ contains
        ! create FV mesh, base on PGx
        ! first count the number of edges in the coarse mesh;
        ! use euler: v-m+f = 2 => m = v + f - 2
-       nedges_c = nverts_c + nelemd - 2
+       nedges_c = nverts_c + nelemd - 1 ! could be more, if unconnected regions ?
+       internal_edges = 0
+       boundary_edges = 0
+       reverse_edges = 0
        nelem_pg =  fv_nphys * fv_nphys * nelemd ! each coarse cell is divided in fv_nphys x fv_nphys subcells
        !
        ! there are new vertices on each coarse edge (fv_phys - 1) , and (fv_nphys - 1) * (fv_nphys - 1)
        !   new vertices on each coarse cell
-       nverts_pg = nverts_c + (fv_nphys - 1) * nedges_c + (fv_nphys - 1) * (fv_nphys - 1) * nelemd
 
+       allocate (local_cell_gids(nelemd))
+       allocate (indx_cell(nelemd))
+       allocate (edge(2,nedges_c)) !
+       do ie=1, nelemd !
+           local_cell_gids(ie) = elem(ie)%GlobalID
+       enddo
+       call IndexSet(nelemd, indx_cell)
+       call IndexSort(nelemd, indx_cell, local_cell_gids, descend=.false.)
+       print *, ' local_cell_gids ', local_cell_gids
+       print *, ' indx_cell ', indx_cell
+       allocate( elem_edge (4, nelemd) )
+       edge_index = 0
+       do ie=1, nelemd !
+           ! we need to check if neighbor is with id smaller; that means it was already created ?
+           print *, '-------------- '
+           print *, ' elem ', ie, elem(ie)%desc%actual_neigh_edges, elem(ie)%vertex%number, elem(ie)%GlobalID
+           print *, '   nodes ', ( moabconn_c( (ie-1)*4+j), j=1,4 )
+           print *, '   ids ', (vdone_c( moabconn_c( (ie-1)*4+j) ), j=1,4)
+           print *, '   neigh: ', (elem(ie)%desc%globalID(j), j=1,4)
+           print *, '   neigh order ', ( elem(ie)%desc%globalID(nat_edge_order(j)),j = 1,4 )
+           k = elem(ie)%GlobalID ! current id
+           do j = 1,4
+               ix = j+1
+               if (ix .eq. 5) ix = 1 ! next vertex in connectivity array
+               neigh = elem(ie)%desc%globalID(nat_edge_order(j)) ! id neighbor
+               idx = search_in(local_cell_gids, nelemd, neigh) ! index in local cells
+               print *, '   ', j, 'neigh:', neigh, ' index' , idx
+
+               if ( idx .gt. 0 ) then
+                   ! a local edge is interior
+
+                   if (k < neigh) then ! form the edge, increment edge index
+                       edge_index = edge_index + 1
+                       edge(1, edge_index) = moabconn_c(4*(ie-1) + j) ! first vertex
+                       edge(2, edge_index) = moabconn_c(4*(ie-1) + ix) ! second vertex index
+                       elem_edge(j, ie) = edge_index
+                       internal_edges = internal_edges + 1
+                       print *, ' edge:', edge_index, edge(1, edge_index), edge(2, edge_index), 'verts:' , &
+                          vdone_c(edge(1, edge_index)), vdone_c(edge(2, edge_index)), ' element ', ie, ' intedge:', internal_edges
+
+                   else
+                       ! find the edge in the other list elem(idx)%globalID( nat_edge_order(j) )
+                       do j1 = 1,4
+                           if ( elem(idx)%desc%globalID( nat_edge_order(j1) ) .eq. k ) then
+                               elem_edge(j, ie) = - elem_edge(j1, idx) ! inverse oriented
+                               reverse_edges = reverse_edges + 1
+                               print *, ' negative edge: ', elem_edge(j, ie), edge(1, -elem_edge(j, ie)), edge(2, -elem_edge(j, ie)), &
+                                'verts:', vdone_c(edge(1, -elem_edge(j, ie))), vdone_c(edge(2, -elem_edge(j, ie))), 'indx neg', reverse_edges
+                           endif
+                       enddo
+
+                   endif
+               else ! idx is 0, so it means the edge is on the boundary, form it
+                   edge_index = edge_index + 1
+                   edge(1, edge_index) = moabconn_c(4*(ie-1) + j) ! first vertex
+                   edge(2, edge_index) = moabconn_c(4*(ie-1) + ix) ! second vertex index
+                   elem_edge(j, ie) = edge_index
+                   boundary_edges = boundary_edges + 1
+                   print *, ' edge:', edge_index, edge(1, edge_index), edge(2, edge_index), 'verts:' , &
+                          vdone_c(edge(1, edge_index)), vdone_c(edge(2, edge_index)), ' element ', ie, &
+                          ' bedge:', boundary_edges
+               endif
+           enddo
+       enddo
+       ! show off
+       nverts_pg = nverts_c + (fv_nphys - 1) * edge_index + (fv_nphys - 1) * (fv_nphys - 1) * nelemd
+       print *, " MOAB: there are ", nverts_pg, " local vertices on master task on pg mesh ", edge_index , " local coarse edges ", &
+         boundary_edges , ' boundary edges '
        if(par%masterproc) then
-         write (iulog, *) " MOAB: there are ", nverts_pg, " local vertices on master task on pg mesh ", nedges_c , " local coarse edges "
+         write (iulog, *) " MOAB: there are ", nverts_pg, " local vertices on master task on pg mesh ", edge_index , " local coarse edges "
        endif
+       print *, '\n ELEMENTS: '
+       do ie=1,nelemd
+           print *, ie, elem(ie)%GlobalID, ' local nodes:', ( moabconn_c( (ie-1)*4+j), j=1,4 ), ' edges:', (elem_edge(j, ie), j=1,4)
+       enddo
+       print *, '\n EDGES:'
+       do ie=1,edge_index
+           print *, ie, (edge(j, ie), j=1,2)
+       enddo
+
 
      endif
 
