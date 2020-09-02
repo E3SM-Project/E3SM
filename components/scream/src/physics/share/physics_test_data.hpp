@@ -68,7 +68,7 @@ struct PhysicsTestData
                   const std::vector<Real**>& real_ptrs, // ALL Real* members, listed in same order as constructor but without breaking them into multiple vectors
                   const std::vector<Int**>& int_ptrs = {}); // ALL Int* members (optional)
 
-  PhysicsTestData &operator=(const PhysicsTestData &rhs);
+  PhysicsTestData &operator=(const PhysicsTestData &rhs) = delete;
 
   // Since we are also preparing index data, this function is doing more than transposing. It's shifting the
   // format of all data from one language to another

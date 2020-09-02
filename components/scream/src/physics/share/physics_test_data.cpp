@@ -62,21 +62,6 @@ PhysicsTestData::PhysicsTestData(const PhysicsTestData &rhs,
   init_ptrs();
 }
 
-PhysicsTestData& PhysicsTestData::operator=(const PhysicsTestData& rhs)
-{
-  shcol      = rhs.shcol;
-  nlev       = rhs.nlev;
-  nlevi      = rhs.nlevi;
-  m_total    = rhs.m_total;
-  m_totali   = rhs.m_totali;
-  m_data     = rhs.m_data;      // Copy
-  m_idx_data = rhs.m_idx_data;  // Copy
-
-  init_ptrs();
-
-  return *this;
-}
-
 void PhysicsTestData::init_ptrs()
 {
   Int offset       = 0;
