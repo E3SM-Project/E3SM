@@ -384,7 +384,7 @@
 
 <compset>
   <alias>A_BGWCYCL1850</alias>
-  <lname>1850_CAM5%AV1C-L_CLM45%SPBC_MPASSI_MPASO_MOSART_MALI_SWAV</lname>
+  <lname>1850_CAM5%AV1C-L_CLM45%SPBC_MPASSI_MPASO_MOSART_MALI%STATIC_SWAV</lname>
 </compset>
 
 <!-- OCN + CICE + GLC Only Compsets -->
