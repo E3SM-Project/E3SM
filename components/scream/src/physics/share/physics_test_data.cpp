@@ -16,8 +16,8 @@ PhysicsTestData::PhysicsTestData(Int shcol_, Int nlev_, const std::vector<Real**
   PhysicsTestData(shcol_, nlev_, 0, ptrs, {}, ptrs_c, idx_c) {}
 
 PhysicsTestData::PhysicsTestData(Int shcol_, Int nlev_, Int nlevi_,
-                           const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i,
-			   const std::vector<Real**>& ptrs_c, const std::vector<Int**>& idx_c) :
+                                 const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i,
+                                 const std::vector<Real**>& ptrs_c, const std::vector<Int**>& idx_c) :
   shcol(shcol_),
   nlev(nlev_),
   nlevi(nlevi_),
@@ -34,7 +34,7 @@ PhysicsTestData::PhysicsTestData(Int shcol_, Int nlev_, Int nlevi_,
 }
 
 PhysicsTestData::PhysicsTestData(const PhysicsTestData &rhs,
-                           const std::vector<Real**>& real_ptrs, const std::vector<Int**>& int_ptrs) :
+                                 const std::vector<Real**>& real_ptrs, const std::vector<Int**>& int_ptrs) :
   shcol(rhs.shcol),
   nlev(rhs.nlev),
   nlevi(rhs.nlevi),
@@ -149,6 +149,8 @@ void PhysicsTestData::randomize(const std::vector<std::pair<void*, std::pair<Rea
       (*ptr)[i] = data_dist(generator);
     }
   }
+
+  EKAT_REQUIRE_MSG(ranges_copy.empty(), "Some randomize specializations had no matches");
 }
 
 } // namespace scream

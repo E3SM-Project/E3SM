@@ -27,32 +27,21 @@ static void run_phys()
 
 static void run_bfb()
 {
-  const std::array< std::pair<Real, Real>, CloudSedData::NUM_ARRAYS > ranges = {
-    std::make_pair(5.100E-03, 9.952E-07), // qc_incld_range
-    std::make_pair(4.056E-03, 1.153E+00), // rho_range
-    std::make_pair(0,         1.),        // inv_rho (ignored)
-    std::make_pair(0.9, 1.1),             // cld_frac_l_range
-    std::make_pair(2.959E+07, 5.348E+07), // acn_range
-    std::make_pair(2.863E-05, 8.141E-03), // inv_dz_range
-    std::make_pair(7.701E-16, 2.119E-04), // qc_range
-    std::make_pair(7.701E-16, 2.119E-04), // nc_range
-    std::make_pair(9.952E+05, 1.734E+08), // nc_incld_range
-    std::make_pair(5.722E+00, 1.253E+01), // mu_c_range
-    std::make_pair(3.381E+05, 2.519E+06), // lamc_range
-    std::make_pair(9.952E-07, 9.982E-07), // qc_tend_range
-    std::make_pair(9.952E+05, 1.743E+08), // nc_tend_range
-  };
-
   CloudSedData csds_fortran[] = {
-    //         kts, kte, ktop, kbot, kdir,        dt,       inv_dt, do_predict_nc, precip_liq_surf, ranges
-    CloudSedData(1,  72,   27,   72,   -1, 1.800E+03, 5.556E-04,         false,     0.0, ranges),
-    CloudSedData(1,  72,   72,   27,    1, 1.800E+03, 5.556E-04,         false,     0.0, ranges),
-    CloudSedData(1,  72,   27,   72,   -1, 1.800E+03, 5.556E-04,          true,     0.0, ranges),
-    CloudSedData(1,  72,   72,   27,    1, 1.800E+03, 5.556E-04,          true,     0.0, ranges),
-    CloudSedData(1,  72,   27,   27,   -1, 1.800E+03, 5.556E-04,          true,     0.0, ranges),
+    //         kts, kte, ktop, kbot, kdir,        dt,    inv_dt, do_predict_nc,     precip_liq_surf,
+    CloudSedData(1,  72,   27,   72,   -1, 1.800E+03, 5.556E-04,         false,     0.0),
+    CloudSedData(1,  72,   72,   27,    1, 1.800E+03, 5.556E-04,         false,     0.0),
+    CloudSedData(1,  72,   27,   72,   -1, 1.800E+03, 5.556E-04,          true,     0.0),
+    CloudSedData(1,  72,   72,   27,    1, 1.800E+03, 5.556E-04,          true,     0.0),
+    CloudSedData(1,  72,   27,   27,   -1, 1.800E+03, 5.556E-04,          true,     0.0),
   };
 
   static constexpr Int num_runs = sizeof(csds_fortran) / sizeof(CloudSedData);
+
+  // Set up random input data
+  for (auto& d : csds_fortran) {
+    d.randomize({ {d.qc_incld, {C::QSMALL/2, C::QSMALL*2}} });
+  }
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
   // inout data is in original state
@@ -65,13 +54,12 @@ static void run_bfb()
   };
 
   // Get data from fortran
-  for (Int i = 0; i < num_runs; ++i) {
-    cloud_sedimentation(csds_fortran[i]);
+  for (auto& d : csds_fortran) {
+    cloud_sedimentation(d);
   }
 
   // Get data from cxx
-  for (Int i = 0; i < num_runs; ++i) {
-    CloudSedData& d = csds_cxx[i];
+  for (auto& d : csds_cxx) {
     cloud_sedimentation_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
                           d.qc_incld, d.rho, d.inv_rho, d.cld_frac_l, d.acn, d.inv_dz,
                           d.dt, d.inv_dt, d.do_predict_nc,

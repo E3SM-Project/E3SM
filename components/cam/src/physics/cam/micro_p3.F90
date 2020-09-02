@@ -3468,7 +3468,7 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
                   !bounds by modifying nc_incld. The next line maintains consistency
                   !between nc_incld and nc
                   nc(k) = nc_incld(k)*cld_frac_l(k)
-                  
+
                   dum = 1._rtype / bfb_pow(lamc(k), bcn)
                   V_qc(k) = acn(k)*bfb_gamma(4._rtype+bcn+mu_c(k))*dum/(bfb_gamma(mu_c(k)+4._rtype))
                   V_nc(k) = acn(k)*bfb_gamma(1._rtype+bcn+mu_c(k))*dum/(bfb_gamma(mu_c(k)+1._rtype))
@@ -3498,12 +3498,12 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
                qc_notsmall_c1: if (qc_incld(k)>qsmall) then
                   call get_cloud_dsd2(qc_incld(k),nc_incld(k),mu_c(k),rho(k),nu,dnu,   &
                        lamc(k),tmp1,tmp2,cld_frac_l(k))
-                  
+
                   !get_cloud_dsd2 keeps the drop-size distribution within reasonable
                   !bounds by modifying nc_incld. The next line maintains consistency
                   !between nc_incld and nc
                   nc(k) = nc_incld(k)*cld_frac_l(k)
-                  
+
                   dum = 1._rtype / bfb_pow(lamc(k), bcn)
                   V_qc(k) = acn(k)*bfb_gamma(4._rtype+bcn+mu_c(k))*dum/(bfb_gamma(mu_c(k)+4._rtype))
                endif qc_notsmall_c1
@@ -3519,7 +3519,7 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
             !so dividing by it is fine.
             qc_incld(:) = qc(:)/cld_frac_l(:)
             nc_incld(:) = nc(:)/cld_frac_l(:)
-            
+
          enddo substep_sedi_c1
 
       endif two_moment
@@ -3646,7 +3646,7 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
          !so dividing by it is fine.
          qr_incld(:) = qr(:)/cld_frac_r(:)
          nr_incld(:) = nr(:)/cld_frac_r(:)
-         
+
       enddo substep_sedi_r
 
       precip_liq_surf = precip_liq_surf + prt_accum*inv_rho_h2o*inv_dt
@@ -3839,7 +3839,7 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
          ni_incld(:) = ni(:)/cld_frac_i(:)
          qm_incld(:) = qm(:)/cld_frac_i(:)
          bm_incld(:) = bm(:)/cld_frac_i(:)
-         
+
       enddo substep_sedi_i
 
       precip_ice_surf = precip_ice_surf + prt_accum*inv_rho_h2o*inv_dt

@@ -201,52 +201,22 @@ static void run_phys()
 static void run_bfb()
 {
   CalcUpwindData cuds_fortran[] = {
-                // kts, kte, kdir, kbot, k_qxtop, na,   dt_sub,  rho range, inv_dz range, vs range, qnx range
-    CalcUpwindData(  1,  72,   -1,   72,      36,  2,  1.833E+03,
-                   std::make_pair(4.056E-03, 1.153E+00),
-                   std::make_pair(2.863E-05, 8.141E-03),
-                   std::make_pair(2.965E-02, 3.555E+00),
-                   std::make_pair(7.701E-16, 2.119E-04)),
-
-    CalcUpwindData(  1,  72,    1,   36,      72,  2,  1.833E+03,
-                   std::make_pair(4.056E-03, 1.153E+00),
-                   std::make_pair(2.863E-05, 8.141E-03),
-                   std::make_pair(2.965E-02, 3.555E+00),
-                   std::make_pair(7.701E-16, 2.119E-04)),
-
-    CalcUpwindData(  1,  72,   -1,   72,      36,  4,  1.833E+03,
-                   std::make_pair(4.056E-03, 1.153E+00),
-                   std::make_pair(2.863E-05, 8.141E-03),
-                   std::make_pair(2.965E-02, 3.555E+00),
-                   std::make_pair(7.701E-16, 2.119E-04)),
-
-    CalcUpwindData(  1,  72,   -1,   72,      72,  2,  1.833E+03,
-                   std::make_pair(4.056E-03, 1.153E+00),
-                   std::make_pair(2.863E-05, 8.141E-03),
-                   std::make_pair(2.965E-02, 3.555E+00),
-                   std::make_pair(7.701E-16, 2.119E-04)),
-
-    CalcUpwindData(  1,  32,   -1,   24,      8,  2,  1.833E+03,
-                   std::make_pair(4.056E-03, 1.153E+00),
-                   std::make_pair(2.863E-05, 8.141E-03),
-                   std::make_pair(2.965E-02, 3.555E+00),
-                   std::make_pair(7.701E-16, 2.119E-04)),
-
-    CalcUpwindData(  1,  32,    1,    7,      21,  1,  1.833E+03,
-                   std::make_pair(4.056E-03, 1.153E+00),
-                   std::make_pair(2.863E-05, 8.141E-03),
-                   std::make_pair(2.965E-02, 3.555E+00),
-                   std::make_pair(7.701E-16, 2.119E-04)),
-
-    CalcUpwindData(  1,  32,   -1,   21,      7,  1,  1.833E+03,
-                   std::make_pair(4.056E-03, 1.153E+00),
-                   std::make_pair(2.863E-05, 8.141E-03),
-                   std::make_pair(2.965E-02, 3.555E+00),
-                   std::make_pair(7.701E-16, 2.119E-04)),
-
+                // kts, kte, kdir, kbot, k_qxtop, na,   dt_sub,
+    CalcUpwindData(  1,  72,   -1,   72,      36,  2,  1.833E+03),
+    CalcUpwindData(  1,  72,    1,   36,      72,  2,  1.833E+03),
+    CalcUpwindData(  1,  72,   -1,   72,      36,  4,  1.833E+03),
+    CalcUpwindData(  1,  72,   -1,   72,      72,  2,  1.833E+03),
+    CalcUpwindData(  1,  32,   -1,   24,      8,  2,  1.833E+03),
+    CalcUpwindData(  1,  32,    1,    7,      21,  1,  1.833E+03),
+    CalcUpwindData(  1,  32,   -1,   21,      7,  1,  1.833E+03),
   };
 
   static constexpr Int num_runs = sizeof(cuds_fortran) / sizeof(CalcUpwindData);
+
+  // Set up random input data
+  for (auto& d : cuds_fortran) {
+    d.randomize();
+  }
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
   // inout data is in original state
@@ -261,26 +231,34 @@ static void run_bfb()
   };
 
   // Get data from fortran
-  for (Int i = 0; i < num_runs; ++i) {
-    calc_first_order_upwind_step(cuds_fortran[i]);
+  for (auto& d : cuds_fortran) {
+    calc_first_order_upwind_step(d);
   }
 
   // Get data from cxx
-  for (Int i = 0; i < num_runs; ++i) {
+  std::vector<Real*> tmp1, tmp2;
+  for (auto& d : cuds_cxx) {
+    Real** fluxes, **vs, **qnx;
+    d.convert_to_ptr_arr(tmp1, fluxes, vs, qnx);
     calc_first_order_upwind_step_f(
-      cuds_cxx[i].kts, cuds_cxx[i].kte, cuds_cxx[i].kdir, cuds_cxx[i].kbot, cuds_cxx[i].k_qxtop, cuds_cxx[i].dt_sub,
-      cuds_cxx[i].rho, cuds_cxx[i].inv_rho, cuds_cxx[i].inv_dz,
-      cuds_cxx[i].num_arrays, cuds_cxx[i].fluxes, cuds_cxx[i].vs, cuds_cxx[i].qnx);
+      d.kts, d.kte, d.kdir, d.kbot, d.k_qxtop, d.dt_sub,
+      d.rho, d.inv_rho, d.inv_dz,
+      d.num_arrays, fluxes, vs, qnx);
   }
 
   for (Int i = 0; i < num_runs; ++i) {
+    // Due to pack issues, we must restrict checks to the active k space
+    Int start = std::min(cuds_fortran[i].kbot, cuds_fortran[i].k_qxtop) - 1; // 0-based indx
+    Int end   = std::max(cuds_fortran[i].kbot, cuds_fortran[i].k_qxtop); // 0-based indx
+
+    Real** fluxesf90, **vsf90, **qnxf90, **fluxescxx, **vscxx, **qnxcxx;
+    cuds_fortran[i].convert_to_ptr_arr(tmp1, fluxesf90, vsf90, qnxf90);
+    cuds_cxx[i].convert_to_ptr_arr(tmp1, fluxescxx, vscxx, qnxcxx);
+
     for (int n = 0; n < cuds_fortran[i].num_arrays; ++n) {
-      // Due to pack issues, we must restrict checks to the active k space
-      Int start = std::min(cuds_fortran[i].kbot, cuds_fortran[i].k_qxtop) - 1; // 0-based indx
-      Int end   = std::max(cuds_fortran[i].kbot, cuds_fortran[i].k_qxtop); // 0-based indx
       for (Int k = start; k < end; ++k) {
-        REQUIRE(cuds_fortran[i].fluxes[n][k] == cuds_cxx[i].fluxes[n][k]);
-        REQUIRE(cuds_fortran[i].qnx[n][k]    == cuds_cxx[i].qnx[n][k]);
+        REQUIRE(fluxesf90[n][k] == fluxescxx[n][k]);
+        REQUIRE(qnxf90[n][k]    == qnxcxx[n][k]);
       }
     }
   }
@@ -298,44 +276,20 @@ static void run_phys()
 
 static void run_bfb()
 {
-//   Co_max = 9.196837456784E-02 - 9.827330928362E+01
-//     dt_left =1.818181818182E+01 - 1.800000000000E+03
-// prt_accum = 4.959754212038E-05 - 6.211745579368E-07
-
-  // GenSedData(Int kts_, Int kte_, Int kdir_, Int k_qxtop_, Int k_qxbot_, Int kbot_, Real Co_max_, Real dt_left_,
-  //            Real prt_accum_, Int num_arrays_,
-  //            std::pair<Real, Real> rho_range, std::pair<Real, Real> inv_dz_range,
-  //            std::pair<Real, Real> vs_range, std::pair<Real, Real> qnx_range);
-
   GenSedData gsds_fortran[] = {
     //       kts, kte, kdir, k_qxtop, k_qxbot, kbot,     Co_max,   dt_left, prt_accum, num_arrays
-    GenSedData(1,  72,    -1,     36,      72,   72,  9.196E-02, 1.818E+01, 4.959E-05, 2,
-               std::make_pair(4.056E-03, 1.153E+00),
-               std::make_pair(2.863E-05, 8.141E-03),
-               std::make_pair(2.965E-02, 3.555E+00),
-               std::make_pair(7.701E-16, 2.119E-04)),
-
-    GenSedData(1,  72,    -1,     36,      57,   72,  4.196E-01, 1.418E+02, 4.959E-06, 1,
-               std::make_pair(4.056E-03, 1.153E+00),
-               std::make_pair(2.863E-05, 8.141E-03),
-               std::make_pair(2.965E-02, 3.555E+00),
-               std::make_pair(7.701E-16, 2.119E-04)),
-
-    GenSedData(1,  72,     1,     57,      37,   36,  4.196E-01, 1.418E+02, 4.959E-06, 1,
-               std::make_pair(4.056E-03, 1.153E+00),
-               std::make_pair(2.863E-05, 8.141E-03),
-               std::make_pair(2.965E-02, 3.555E+00),
-               std::make_pair(7.701E-16, 2.119E-04)),
-
-    GenSedData(1,  72,    -1,     72,      72,   72,  4.196E-01, 1.418E+02, 4.959E-06, 1,
-               std::make_pair(4.056E-03, 1.153E+00),
-               std::make_pair(2.863E-05, 8.141E-03),
-               std::make_pair(2.965E-02, 3.555E+00),
-               std::make_pair(7.701E-16, 2.119E-04)),
-
+    GenSedData(1,  72,    -1,     36,      72,   72,  9.196E-02, 1.818E+01, 4.959E-05, 2),
+    GenSedData(1,  72,    -1,     36,      57,   72,  4.196E-01, 1.418E+02, 4.959E-06, 1),
+    GenSedData(1,  72,     1,     57,      37,   36,  4.196E-01, 1.418E+02, 4.959E-06, 1),
+    GenSedData(1,  72,    -1,     72,      72,   72,  4.196E-01, 1.418E+02, 4.959E-06, 1),
   };
 
   static constexpr Int num_runs = sizeof(gsds_fortran) / sizeof(GenSedData);
+
+  // Set up random input data
+  for (auto& d : gsds_fortran) {
+    d.randomize();
+  }
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
   // inout data is in original state
@@ -347,31 +301,39 @@ static void run_bfb()
   };
 
   // Get data from fortran
-  for (Int i = 0; i < num_runs; ++i) {
-    generalized_sedimentation(gsds_fortran[i]);
+  for (auto& d : gsds_fortran) {
+    generalized_sedimentation(d);
   }
 
   // Get data from cxx
-  for (Int i = 0; i < num_runs; ++i) {
-    generalized_sedimentation_f(gsds_cxx[i].kts, gsds_cxx[i].kte, gsds_cxx[i].kdir, gsds_cxx[i].k_qxtop,
-                                &gsds_cxx[i].k_qxbot, gsds_cxx[i].kbot, gsds_cxx[i].Co_max,
-                                &gsds_cxx[i].dt_left, &gsds_cxx[i].prt_accum, gsds_cxx[i].inv_dz, gsds_cxx[i].inv_rho, gsds_cxx[i].rho,
-                                gsds_cxx[i].num_arrays, gsds_cxx[i].vs, gsds_cxx[i].fluxes, gsds_cxx[i].qnx);
+  std::vector<Real*> tmp1, tmp2;
+  for (auto& d : gsds_cxx) {
+    Real** fluxes, **vs, **qnx;
+    d.convert_to_ptr_arr(tmp1, fluxes, vs, qnx);
+    generalized_sedimentation_f(d.kts, d.kte, d.kdir, d.k_qxtop,
+                                &d.k_qxbot, d.kbot, d.Co_max,
+                                &d.dt_left, &d.prt_accum, d.inv_dz, d.inv_rho, d.rho,
+                                d.num_arrays, fluxes, vs, qnx);
   }
 
   for (Int i = 0; i < num_runs; ++i) {
+    // Due to pack issues, we must restrict checks to the active k space
+    Int start = std::min(gsds_fortran[i].k_qxbot, gsds_fortran[i].k_qxtop) - 1; // 0-based indx
+    Int end   = std::max(gsds_fortran[i].k_qxbot, gsds_fortran[i].k_qxtop); // 0-based indx
+
+    Real** fluxesf90, **vsf90, **qnxf90, **fluxescxx, **vscxx, **qnxcxx;
+    gsds_fortran[i].convert_to_ptr_arr(tmp1, fluxesf90, vsf90, qnxf90);
+    gsds_cxx[i].convert_to_ptr_arr(tmp1, fluxescxx, vscxx, qnxcxx);
+
     for (int n = 0; n < gsds_fortran[i].num_arrays; ++n) {
-      // Due to pack issues, we must restrict checks to the active k space
-      Int start = std::min(gsds_fortran[i].k_qxbot, gsds_fortran[i].k_qxtop) - 1; // 0-based indx
-      Int end   = std::max(gsds_fortran[i].k_qxbot, gsds_fortran[i].k_qxtop); // 0-based indx
       for (Int k = start; k < end; ++k) {
-        REQUIRE(gsds_fortran[i].fluxes[n][k] == gsds_cxx[i].fluxes[n][k]);
-        REQUIRE(gsds_fortran[i].qnx[n][k]    == gsds_cxx[i].qnx[n][k]);
+        REQUIRE(fluxesf90[n][k] == fluxescxx[n][k]);
+        REQUIRE(qnxf90[n][k]    == qnxcxx[n][k]);
       }
-      REQUIRE(gsds_fortran[i].k_qxbot   == gsds_cxx[i].k_qxbot);
-      REQUIRE(gsds_fortran[i].dt_left   == gsds_cxx[i].dt_left);
-      REQUIRE(gsds_fortran[i].prt_accum == gsds_cxx[i].prt_accum);
     }
+    REQUIRE(gsds_fortran[i].k_qxbot   == gsds_cxx[i].k_qxbot);
+    REQUIRE(gsds_fortran[i].dt_left   == gsds_cxx[i].dt_left);
+    REQUIRE(gsds_fortran[i].prt_accum == gsds_cxx[i].prt_accum);
   }
 }
 

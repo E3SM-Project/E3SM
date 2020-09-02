@@ -450,8 +450,6 @@ static void run_bfb_p3_main_part3()
 
 static void run_bfb_p3_main()
 {
-  constexpr Scalar qsmall     = C::QSMALL;
-
   const std::array< std::pair<Real, Real>, P3MainData::NUM_INPUT_ARRAYS > ranges = {
     std::make_pair(1.00000000E+02 , 9.87111111E+04), // pres
     std::make_pair(1.22776609E+02 , 3.49039167E+04), // dz

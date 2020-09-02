@@ -2,6 +2,7 @@
 #define SCREAM_P3_FUNCTIONS_F90_HPP
 
 #include "physics/p3/p3_functions.hpp"
+#include "physics/share/physics_test_data.hpp"
 #include "share/scream_types.hpp"
 
 #include <array>
@@ -479,34 +480,34 @@ void get_rain_dsd2_f(Real qr, Real* nr, Real* mu_r, Real* lamr, Real* cdistr, Re
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct CalcUpwindData
+struct CalcUpwindData : public PhysicsTestData
 {
   // Inputs
   Int kts, kte, kdir, kbot, k_qxtop, num_arrays;
   Real dt_sub;
   Real* rho, *inv_rho, *inv_dz;
-  Real **vs;
+  Real *vs; // num_arrays x nk
 
   // In/out
-  Real **qnx;
+  Real *qnx; // num_arrays x nk
 
   // Outputs
-  Real** fluxes;
+  Real *fluxes; // num_arrays x nk
 
-  CalcUpwindData(Int kts_, Int kte_, Int kdir_, Int kbot_, Int k_qxtop_, Int num_arrays_, Real dt_sub_,
-                 std::pair<Real, Real> rho_range, std::pair<Real, Real> inv_dz_range,
-                 std::pair<Real, Real> vs_range, std::pair<Real, Real> qnx_range);
+  CalcUpwindData(Int kts_, Int kte_, Int kdir_, Int kbot_, Int k_qxtop_, Int num_arrays_, Real dt_sub_);
 
   // deep copy
   CalcUpwindData(const CalcUpwindData& rhs);
 
+  CalcUpwindData& operator=(const CalcUpwindData& rhs) = delete;
+
   Int nk() const { return m_nk; }
+
+  void convert_to_ptr_arr(std::vector<Real*>& mem_space, Real**& fluxes_, Real**& vs_, Real**& qnx_);
 
  private:
   // Internals
   Int m_nk;
-  std::vector<Real> m_data;
-  std::vector<Real*> m_ptr_data;
 };
 void calc_first_order_upwind_step(CalcUpwindData& d);
 
@@ -529,10 +530,7 @@ struct GenSedData : public CalcUpwindData
   Real dt_left, prt_accum;
 
   GenSedData(Int kts_, Int kte_, Int kdir_, Int k_qxtop_, Int k_qxbot_, Int kbot_, Real Co_max_, Real dt_left_,
-             Real prt_accum_, Int num_arrays_,
-             std::pair<Real, Real> rho_range, std::pair<Real, Real> inv_dz_range,
-             std::pair<Real, Real> vs_range, std::pair<Real, Real> qnx_range);
-
+             Real prt_accum_, Int num_arrays_);
 };
 void generalized_sedimentation(GenSedData& d);
 
@@ -546,7 +544,7 @@ void generalized_sedimentation_f(Int kts, Int kte, Int kdir, Int k_qxtop, Int *k
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct CloudSedData
+struct CloudSedData : public PhysicsTestData
 {
   static constexpr size_t NUM_ARRAYS = 13;
 
@@ -561,8 +559,7 @@ struct CloudSedData
   Real precip_liq_surf;
 
   CloudSedData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
-               Real dt_, Real inv_dt_, bool do_predict_nc_, Real precip_liq_surf_,
-               const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+               Real dt_, Real inv_dt_, bool do_predict_nc_, Real precip_liq_surf_);
 
   // deep copy
   CloudSedData(const CloudSedData& rhs);
@@ -1005,7 +1002,7 @@ struct LatentHeatData
 
   LatentHeatData(Int its_, Int ite_, Int kts_, Int kte_);
   LatentHeatData(const LatentHeatData& rhs);
-  LatentHeatData& operator=(const LatentHeatData& rhs);
+  LatentHeatData& operator=(const LatentHeatData& rhs) = delete;
 
   void transpose();
   void init_ptrs();
