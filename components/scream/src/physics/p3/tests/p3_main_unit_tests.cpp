@@ -55,57 +55,23 @@ static void run_bfb_p3_main_part1()
   constexpr Scalar sup_upper = -0.05;
   constexpr Scalar sup_lower = -0.1;
 
-  const std::array< std::pair<Real, Real>, P3MainPart1Data::NUM_ARRAYS > ranges = {
-    std::make_pair(0, 1), // pres
-    std::make_pair(0, 1), // dpres
-    std::make_pair(0, 1), // dz
-    std::make_pair(0, 1), // nc_nuceat_tend
-    std::make_pair(0, 1), // exner
-    std::make_pair(0, 1), // inv_exner
-    std::make_pair(0, 1), // inv_cld_frac_l
-    std::make_pair(0, 1), // inv_cld_frac_i
-    std::make_pair(0, 1), // inv_cld_frac_r
-    std::make_pair(0, 1), // latent_heat_vapor
-    std::make_pair(0, 1), // latent_heat_sublim
-    std::make_pair(0, 1), // latent_heat_fusion
-    std::make_pair(zerodegc - 10, zerodegc + 10), // t
-    std::make_pair(0, 1), // rho
-    std::make_pair(0, 1), // inv_rho
-    std::make_pair(0, 1), // qv_sat_l
-    std::make_pair(0, 1), // qv_sat_i
-    std::make_pair(sup_lower -.05, sup_upper + .05), // qv_supersat_i
-    std::make_pair(0, 1), // rhofacr
-    std::make_pair(0, 1), // rhofaci
-    std::make_pair(0, 1), // acn
-    std::make_pair(0, 1), // qv
-    std::make_pair(0, 1), // th
-    std::make_pair(0, qsmall * 2), // qc
-    std::make_pair(0, 1), // nc
-    std::make_pair(0, qsmall * 2), // qr
-    std::make_pair(0, 1), // nr
-    std::make_pair(0, qsmall * 2), // qi
-    std::make_pair(0, 1), // ni
-    std::make_pair(0, 1), // qm
-    std::make_pair(0, 1), // bm
-    std::make_pair(0, 1), // qc_incld
-    std::make_pair(0, 1), // qr_incld
-    std::make_pair(0, 1), // qi_incld
-    std::make_pair(0, 1), // qm_incld
-    std::make_pair(0, 1), // nc_incld
-    std::make_pair(0, 1), // nr_incld
-    std::make_pair(0, 1), // ni_incld
-    std::make_pair(0, 1), // bm_incld
-  };
-
   P3MainPart1Data isds_fortran[] = {
-    //              kts, kte, ktop, kbot, kdir, do_predict_nc,        dt, ranges
-    P3MainPart1Data(1,  72,    1,   72,    1, false,         1.800E+03, ranges),
-    P3MainPart1Data(1,  72,    1,   72,    1, true,          1.800E+03, ranges),
-    P3MainPart1Data(1,  72,   72,    1,   -1, false,         1.800E+03, ranges),
-    P3MainPart1Data(1,  72,   72,    1,   -1, true,          1.800E+03, ranges),
+    //            kts, kte, ktop, kbot, kdir, do_predict_nc,        dt
+    P3MainPart1Data(1,  72,    1,   72,    1, false,         1.800E+03),
+    P3MainPart1Data(1,  72,    1,   72,    1, true,          1.800E+03),
+    P3MainPart1Data(1,  72,   72,    1,   -1, false,         1.800E+03),
+    P3MainPart1Data(1,  72,   72,    1,   -1, true,          1.800E+03),
   };
 
   static constexpr Int num_runs = sizeof(isds_fortran) / sizeof(P3MainPart1Data);
+
+  for (auto& d : isds_fortran) {
+    const auto qsmall_r = std::make_pair(0, qsmall*2);
+    d.randomize({
+        {d.t, {zerodegc - 10, zerodegc + 10}},
+        {d.qv_supersat_i, {sup_lower -.05, sup_upper + .05}},
+        {d.qc, qsmall_r}, {d.qr, qsmall_r}, {d.qi, qsmall_r} });
+  }
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
   // inout data is in original state
@@ -117,20 +83,19 @@ static void run_bfb_p3_main_part1()
   };
 
     // Get data from fortran
-  for (Int i = 0; i < num_runs; ++i) {
-    p3_main_part1(isds_fortran[i]);
+  for (auto& d : isds_fortran) {
+    p3_main_part1(d);
   }
 
   // Get data from cxx
-  for (Int i = 0; i < num_runs; ++i) {
-    P3MainPart1Data& d = isds_cxx[i];
+  for (auto& d : isds_cxx) {
     p3_main_part1_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir, d.do_predict_nc, d.dt,
-                            d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.exner, d.inv_exner, d.inv_cld_frac_l, d.inv_cld_frac_i, 
-                            d.inv_cld_frac_r, d.latent_heat_vapor, d.latent_heat_sublim, d.latent_heat_fusion,
-                            d.t, d.rho, d.inv_rho, d.qv_sat_l, d.qv_sat_i, d.qv_supersat_i, d.rhofacr, d.rhofaci,
-                            d.acn, d.qv, d.th, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni, d.qm, d.bm, d.qc_incld, d.qr_incld, d.qi_incld,
-                            d.qm_incld, d.nc_incld, d.nr_incld, d.ni_incld, d.bm_incld,
-                            &d.is_nucleat_possible, &d.is_hydromet_present);
+                    d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.exner, d.inv_exner, d.inv_cld_frac_l, d.inv_cld_frac_i,
+                    d.inv_cld_frac_r, d.latent_heat_vapor, d.latent_heat_sublim, d.latent_heat_fusion,
+                    d.t, d.rho, d.inv_rho, d.qv_sat_l, d.qv_sat_i, d.qv_supersat_i, d.rhofacr, d.rhofaci,
+                    d.acn, d.qv, d.th, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni, d.qm, d.bm, d.qc_incld, d.qr_incld, d.qi_incld,
+                    d.qm_incld, d.nc_incld, d.nr_incld, d.ni_incld, d.bm_incld,
+                    &d.is_nucleat_possible, &d.is_hydromet_present);
   }
 
   for (Int i = 0; i < num_runs; ++i) {
@@ -177,80 +142,23 @@ static void run_bfb_p3_main_part2()
   constexpr Scalar sup_upper = -0.05;
   constexpr Scalar sup_lower = -0.1;
 
-  const std::array< std::pair<Real, Real>, P3MainPart2Data::NUM_ARRAYS > ranges = {
-    std::make_pair(0, 1), // pres
-    std::make_pair(0, 1), // dpres
-    std::make_pair(0, 1), // dz
-    std::make_pair(0, 1), // npccn
-    std::make_pair(0, 1), // exner
-    std::make_pair(0, 1), // inv_exner
-    std::make_pair(0, 1), // inv_cld_frac_l
-    std::make_pair(0, 1), // inv_cld_frac_i
-    std::make_pair(0, 1), // inv_cld_frac_r
-    std::make_pair(0, 1), // ni_activated
-    std::make_pair(0, 1), // inv_qc_relvar
-    std::make_pair(0, 1), // cld_frac_i
-    std::make_pair(0, 1), // cld_frac_l
-    std::make_pair(0, 1), // cld_frac_r
-    std::make_pair(zerodegc - 10, zerodegc + 10), // t
-    std::make_pair(0, 1), // rho
-    std::make_pair(0, 1), // inv_rho
-    std::make_pair(0, 1), // qv_sat_l
-    std::make_pair(0, 1), // qv_sat_i
-    std::make_pair(sup_lower -.05, sup_upper + .05), // qv_supersat_i
-    std::make_pair(0, 1), // rhofacr
-    std::make_pair(0, 1), // rhofaci
-    std::make_pair(0, 1), // acn
-    std::make_pair(0, 1), // qv
-    std::make_pair(0, 1), // th
-    std::make_pair(0, qsmall * 2), // qc
-    std::make_pair(0, 1), // nc
-    std::make_pair(0, qsmall * 2), // qr
-    std::make_pair(0, 1), // nr
-    std::make_pair(0, qsmall * 2), // qi
-    std::make_pair(0, 1), // ni
-    std::make_pair(0, 1), // qm
-    std::make_pair(0, 1), // bm
-    std::make_pair(0, 1), // latent_heat_vapor
-    std::make_pair(0, 1), // latent_heat_sublim
-    std::make_pair(0, 1), // latent_heat_fusion
-    std::make_pair(0, 1), // qc_incld
-    std::make_pair(0, 1), // qr_incld
-    std::make_pair(0, 1), // qi_incld
-    std::make_pair(0, 1), // qm_incld
-    std::make_pair(0, 1), // nc_incld
-    std::make_pair(0, 1), // nr_incld
-    std::make_pair(0, 1), // ni_incld
-    std::make_pair(0, 1), // bm_incld
-    std::make_pair(0, 1), // mu_c
-    std::make_pair(0, 1), // nu
-    std::make_pair(0, 1), // lamc
-    std::make_pair(0, 1), // cdist
-    std::make_pair(0, 1), // cdist1
-    std::make_pair(0, 1), // cdistr
-    std::make_pair(0, 1), // mu_r
-    std::make_pair(0, 1), // lamr
-    std::make_pair(0, 1), // logn0r
-    std::make_pair(0, 1), // cmeiout
-    std::make_pair(0, 1), // precip_total_tend
-    std::make_pair(0, 1), // nevapr
-    std::make_pair(0, 1), // qr_evap_tend
-    std::make_pair(0, 1), // vap_liq_exchange
-    std::make_pair(0, 1), // vap_ice_exchange
-    std::make_pair(0, 1), // liq_ice_exchange
-    std::make_pair(0, 1), // pratot
-    std::make_pair(0, 1)  // prctot
-  };
-
   P3MainPart2Data isds_fortran[] = {
-    //              kts, kte, ktop, kbot, kdir, do_predict_nc,        dt, ranges
-    P3MainPart2Data(1,  72,    1,   72,    1, false,         1.800E+03, ranges),
-    P3MainPart2Data(1,  72,    1,   72,    1, true,          1.800E+03, ranges),
-    P3MainPart2Data(1,  72,   72,    1,   -1, false,         1.800E+03, ranges),
-    P3MainPart2Data(1,  72,   72,    1,   -1, true,          1.800E+03, ranges),
+    //            kts, kte, ktop, kbot, kdir, do_predict_nc,        dt
+    P3MainPart2Data(1,  72,    1,   72,    1, false,         1.800E+03),
+    P3MainPart2Data(1,  72,    1,   72,    1, true,          1.800E+03),
+    P3MainPart2Data(1,  72,   72,    1,   -1, false,         1.800E+03),
+    P3MainPart2Data(1,  72,   72,    1,   -1, true,          1.800E+03),
   };
 
   static constexpr Int num_runs = sizeof(isds_fortran) / sizeof(P3MainPart2Data);
+
+  for (auto& d : isds_fortran) {
+    const auto qsmall_r = std::make_pair(0, qsmall*2);
+    d.randomize({
+        {d.t, {zerodegc - 10, zerodegc + 10}},
+        {d.qv_supersat_i, {sup_lower -.05, sup_upper + .05}},
+        {d.qc, qsmall_r}, {d.qr, qsmall_r}, {d.qi, qsmall_r} });
+  }
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
   // inout data is in original state
@@ -261,17 +169,16 @@ static void run_bfb_p3_main_part2()
     P3MainPart2Data(isds_fortran[3]),
   };
 
-    // Get data from fortran
-  for (Int i = 0; i < num_runs; ++i) {
-    p3_main_part2(isds_fortran[i]);
+  // Get data from fortran
+  for (auto& d : isds_fortran) {
+    p3_main_part2(d);
   }
 
   // Get data from cxx
-  for (Int i = 0; i < num_runs; ++i) {
-    P3MainPart2Data& d = isds_cxx[i];
+  for (auto& d : isds_cxx) {
     p3_main_part2_f(
       d.kts, d.kte, d.kbot, d.ktop, d.kdir, d.do_predict_nc, d.dt, d.inv_dt,
-      d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.exner, d.inv_exner, d.inv_cld_frac_l, d.inv_cld_frac_i, 
+      d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.exner, d.inv_exner, d.inv_cld_frac_l, d.inv_cld_frac_i,
       d.inv_cld_frac_r, d.ni_activated, d.inv_qc_relvar, d.cld_frac_i, d.cld_frac_l, d.cld_frac_r,
       d.t, d.rho, d.inv_rho, d.qv_sat_l, d.qv_sat_i, d.qv_supersat_i, d.rhofacr, d.rhofaci, d.acn, d.qv, d.th, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni,
       d.qm, d.bm, d.latent_heat_vapor, d.latent_heat_sublim, d.latent_heat_fusion, d.qc_incld, d.qr_incld, d.qi_incld, d.qm_incld, d.nc_incld, d.nr_incld,
@@ -341,50 +248,20 @@ static void run_bfb_p3_main_part3()
 {
   constexpr Scalar qsmall     = C::QSMALL;
 
-  const std::array< std::pair<Real, Real>, P3MainPart3Data::NUM_ARRAYS > ranges = {
-    std::make_pair(0, 1), // exner
-    std::make_pair(0, 1), // cld_frac_l
-    std::make_pair(0, 1), // cld_frac_r
-    std::make_pair(0, 1), // rho
-    std::make_pair(0, 1), // inv_rho
-    std::make_pair(0, 1), // rhofaci
-    std::make_pair(0, 1), // qv
-    std::make_pair(0, 1), // th
-    std::make_pair(0, qsmall * 2), // qc
-    std::make_pair(0, 1), // nc
-    std::make_pair(0, qsmall * 2), // qr
-    std::make_pair(0, 1), // nr
-    std::make_pair(0, qsmall * 2), // qi
-    std::make_pair(0, 1), // ni
-    std::make_pair(0, 1), // qm
-    std::make_pair(0, 1), // bm
-    std::make_pair(0, 1), // latent_heat_vapor
-    std::make_pair(0, 1), // latent_heat_sublim
-    std::make_pair(0, 1), // mu_c
-    std::make_pair(0, 1), // nu
-    std::make_pair(0, 1), // lamc
-    std::make_pair(0, 1), // mu_r
-    std::make_pair(0, 1), // lamr
-    std::make_pair(0, 1), // vap_liq_exchange
-    std::make_pair(0, 1), // ze_rain
-    std::make_pair(0, 1), // ze_ice
-    std::make_pair(0, 1), // diag_vmi
-    std::make_pair(0, 1), // diag_effi
-    std::make_pair(0, 1), // diag_di
-    std::make_pair(0, 1), // rho_qi
-    std::make_pair(0, 1), // diag_ze
-    std::make_pair(0, 1), // diag_effc
-  };
-
   P3MainPart3Data isds_fortran[] = {
-    //               kts, kte, ktop, kbot, kdir, ranges
-    P3MainPart3Data(1,  72,    1,   72,    1, ranges),
-    P3MainPart3Data(1,  72,    1,   72,    1, ranges),
-    P3MainPart3Data(1,  72,   72,    1,   -1, ranges),
-    P3MainPart3Data(1,  72,   72,    1,   -1, ranges),
+    //            kts, kte, ktop, kbot, kdir
+    P3MainPart3Data(1,  72,    1,   72,    1),
+    P3MainPart3Data(1,  72,    1,   72,    1),
+    P3MainPart3Data(1,  72,   72,    1,   -1),
+    P3MainPart3Data(1,  72,   72,    1,   -1),
   };
 
   static constexpr Int num_runs = sizeof(isds_fortran) / sizeof(P3MainPart3Data);
+
+  for (auto& d : isds_fortran) {
+    const auto qsmall_r = std::make_pair(0, qsmall*2);
+    d.randomize({ {d.qc, qsmall_r}, {d.qr, qsmall_r}, {d.qi, qsmall_r} });
+  }
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
   // inout data is in original state
@@ -395,14 +272,13 @@ static void run_bfb_p3_main_part3()
     P3MainPart3Data(isds_fortran[3]),
   };
 
-    // Get data from fortran
-  for (Int i = 0; i < num_runs; ++i) {
-    p3_main_part3(isds_fortran[i]);
+  // Get data from fortran
+  for (auto& d : isds_fortran) {
+    p3_main_part3(d);
   }
 
   // Get data from cxx
-  for (Int i = 0; i < num_runs; ++i) {
-    P3MainPart3Data& d = isds_cxx[i];
+  for (auto& d : isds_cxx) {
     p3_main_part3_f(
       d.kts, d.kte, d.kbot, d.ktop, d.kdir,
       d.exner, d.cld_frac_l, d.cld_frac_r,
@@ -450,36 +326,37 @@ static void run_bfb_p3_main_part3()
 
 static void run_bfb_p3_main()
 {
-  const std::array< std::pair<Real, Real>, P3MainData::NUM_INPUT_ARRAYS > ranges = {
-    std::make_pair(1.00000000E+02 , 9.87111111E+04), // pres
-    std::make_pair(1.22776609E+02 , 3.49039167E+04), // dz
-    std::make_pair(0              , 0), // nc_nuceat_tend
-    std::make_pair(0              , 0), // ni_activated
-    std::make_pair(1.37888889E+03 , 1.39888889E+03), // dpres
-    std::make_pair(1.00371345E+00 , 3.19721007E+00), // exner
-    std::make_pair(1              , 1), // cld_frac_i
-    std::make_pair(1              , 1), // cld_frac_l
-    std::make_pair(1              , 1), // cld_frac_r
-    std::make_pair(1              , 1), // inv_qc_relvar
-    std::make_pair(0              , 1.00000000E-04), // qc
-    std::make_pair(1.00000000E+06 , 1.00000000E+06), // nc
-    std::make_pair(0              , 1.00000000E-05), // qr
-    std::make_pair(1.00000000E+06 , 1.00000000E+06), // nr
-    std::make_pair(0              , 1.00000000E-04), // qi
-    std::make_pair(0              , 1.00000000E-04), // qm
-    std::make_pair(1.00000000E+06 , 1.00000000E+06), // ni
-    std::make_pair(0              , 1.00000000E-02), // bm
-    std::make_pair(0              , 5.00000000E-02), // qv
-    std::make_pair(6.72653866E+02 , 1.07954335E+03), // th
-  };
-
   P3MainData isds_fortran[] = {
-    //      its,  ite, kts, kte,   it,        dt, do_predict_nc, ranges
-    P3MainData(1, 10,   1,  72,    1, 1.800E+03, false, ranges),
-    P3MainData(1, 10,   1,  72,    1, 1.800E+03, true,  ranges),
+    //      its, ite, kts, kte,   it,        dt, do_predict_nc
+    P3MainData(1, 10,   1,  72,    1, 1.800E+03, false),
+    P3MainData(1, 10,   1,  72,    1, 1.800E+03, true),
   };
 
   static constexpr Int num_runs = sizeof(isds_fortran) / sizeof(P3MainData);
+
+  for (auto& d : isds_fortran) {
+    d.randomize( {
+        {d.pres           , {1.00000000E+02 , 9.87111111E+04}},
+        {d.dz             , {1.22776609E+02 , 3.49039167E+04}},
+        {d.nc_nuceat_tend , {0              , 0}},
+        {d.ni_activated   , {0              , 0}},
+        {d.dpres          , {1.37888889E+03, 1.39888889E+03}},
+        {d.exner          , {1.00371345E+00, 3.19721007E+00}},
+        {d.cld_frac_i     , {1              , 1}},
+        {d.cld_frac_l     , {1              , 1}},
+        {d.cld_frac_r     , {1              , 1}},
+        {d.inv_qc_relvar  , {1              , 1}},
+        {d.qc             , {0              , 1.00000000E-04}},
+        {d.nc             , {1.00000000E+06 , 1.00000000E+06}},
+        {d.qr             , {0              , 1.00000000E-05}},
+        {d.nr             , {1.00000000E+06 , 1.00000000E+06}},
+        {d.qi             , {0              , 1.00000000E-04}},
+        {d.qm             , {0              , 1.00000000E-04}},
+        {d.ni             , {1.00000000E+06 , 1.00000000E+06}},
+        {d.bm             , {0              , 1.00000000E-02}},
+        {d.qv             , {0              , 5.00000000E-02}},
+        {d.th             , {6.72653866E+02 , 1.07954335E+03}} });
+  }
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
   // inout data is in original state
@@ -488,14 +365,13 @@ static void run_bfb_p3_main()
     P3MainData(isds_fortran[1]),
   };
 
-    // Get data from fortran
-  for (Int i = 0; i < num_runs; ++i) {
-    p3_main(isds_fortran[i]);
+  // Get data from fortran
+  for (auto& d : isds_fortran) {
+    p3_main(d);
   }
 
   // Get data from cxx
-  for (Int i = 0; i < num_runs; ++i) {
-    P3MainData& d = isds_cxx[i];
+  for (auto& d : isds_cxx) {
     d.transpose<ekat::util::TransposeDirection::c2f>();
     p3_main_f(
       d.qc, d.nc, d.qr, d.nr, d.th, d.qv, d.dt, d.qi, d.qm, d.ni,
@@ -508,34 +384,39 @@ static void run_bfb_p3_main()
   }
 
   for (Int i = 0; i < num_runs; ++i) {
-    for (Int t = 0; t < isds_fortran[i].nt(); ++t) {
-      REQUIRE(isds_fortran[i].qc[t]                == isds_cxx[i].qc[t]);
-      REQUIRE(isds_fortran[i].nc[t]                == isds_cxx[i].nc[t]);
-      REQUIRE(isds_fortran[i].qr[t]                == isds_cxx[i].qr[t]);
-      REQUIRE(isds_fortran[i].nr[t]                == isds_cxx[i].nr[t]);
-      REQUIRE(isds_fortran[i].qi[t]                == isds_cxx[i].qi[t]);
-      REQUIRE(isds_fortran[i].qm[t]                == isds_cxx[i].qm[t]);
-      REQUIRE(isds_fortran[i].ni[t]                == isds_cxx[i].ni[t]);
-      REQUIRE(isds_fortran[i].bm[t]                == isds_cxx[i].bm[t]);
-      REQUIRE(isds_fortran[i].qv[t]                == isds_cxx[i].qv[t]);
-      REQUIRE(isds_fortran[i].th[t]                == isds_cxx[i].th[t]);
-      REQUIRE(isds_fortran[i].diag_effc[t]         == isds_cxx[i].diag_effc[t]);
-      REQUIRE(isds_fortran[i].diag_effi[t]         == isds_cxx[i].diag_effi[t]);
-      REQUIRE(isds_fortran[i].rho_qi[t]            == isds_cxx[i].rho_qi[t]);
-      REQUIRE(isds_fortran[i].mu_c[t]              == isds_cxx[i].mu_c[t]);
-      REQUIRE(isds_fortran[i].lamc[t]              == isds_cxx[i].lamc[t]);
-      REQUIRE(isds_fortran[i].cmeiout[t]           == isds_cxx[i].cmeiout[t]);
-      REQUIRE(isds_fortran[i].precip_total_tend[t] == isds_cxx[i].precip_total_tend[t]);
-      REQUIRE(isds_fortran[i].nevapr[t]            == isds_cxx[i].nevapr[t]);
-      REQUIRE(isds_fortran[i].qr_evap_tend[t]      == isds_cxx[i].qr_evap_tend[t]);
-      REQUIRE(isds_fortran[i].liq_ice_exchange[t]  == isds_cxx[i].liq_ice_exchange[t]);
-      REQUIRE(isds_fortran[i].vap_liq_exchange[t]  == isds_cxx[i].vap_liq_exchange[t]);
-      REQUIRE(isds_fortran[i].vap_ice_exchange[t]  == isds_cxx[i].vap_ice_exchange[t]);
-      REQUIRE(isds_fortran[i].precip_liq_flux[t]   == isds_cxx[i].precip_liq_flux[t]);
-      REQUIRE(isds_fortran[i].precip_ice_flux[t]   == isds_cxx[i].precip_ice_flux[t]);
-      REQUIRE(isds_fortran[i].precip_liq_surf[t]   == isds_cxx[i].precip_liq_surf[t]);
-      REQUIRE(isds_fortran[i].precip_ice_surf[t]   == isds_cxx[i].precip_ice_surf[t]);
+    const auto tot = isds_fortran[i].total();
+    const auto& df90 = isds_fortran[i];
+    const auto& dcxx = isds_fortran[i];
+    for (Int t = 0; t < tot; ++t) {
+      REQUIRE(df90.qc[t]                == dcxx.qc[t]);
+      REQUIRE(df90.nc[t]                == dcxx.nc[t]);
+      REQUIRE(df90.qr[t]                == dcxx.qr[t]);
+      REQUIRE(df90.nr[t]                == dcxx.nr[t]);
+      REQUIRE(df90.qi[t]                == dcxx.qi[t]);
+      REQUIRE(df90.qm[t]                == dcxx.qm[t]);
+      REQUIRE(df90.ni[t]                == dcxx.ni[t]);
+      REQUIRE(df90.bm[t]                == dcxx.bm[t]);
+      REQUIRE(df90.qv[t]                == dcxx.qv[t]);
+      REQUIRE(df90.th[t]                == dcxx.th[t]);
+      REQUIRE(df90.diag_effc[t]         == dcxx.diag_effc[t]);
+      REQUIRE(df90.diag_effi[t]         == dcxx.diag_effi[t]);
+      REQUIRE(df90.rho_qi[t]            == dcxx.rho_qi[t]);
+      REQUIRE(df90.mu_c[t]              == dcxx.mu_c[t]);
+      REQUIRE(df90.lamc[t]              == dcxx.lamc[t]);
+      REQUIRE(df90.cmeiout[t]           == dcxx.cmeiout[t]);
+      REQUIRE(df90.precip_total_tend[t] == dcxx.precip_total_tend[t]);
+      REQUIRE(df90.nevapr[t]            == dcxx.nevapr[t]);
+      REQUIRE(df90.qr_evap_tend[t]      == dcxx.qr_evap_tend[t]);
+      REQUIRE(df90.liq_ice_exchange[t]  == dcxx.liq_ice_exchange[t]);
+      REQUIRE(df90.vap_liq_exchange[t]  == dcxx.vap_liq_exchange[t]);
+      REQUIRE(df90.vap_ice_exchange[t]  == dcxx.vap_ice_exchange[t]);
+      REQUIRE(df90.precip_liq_flux[t]   == dcxx.precip_liq_flux[t]);
+      REQUIRE(df90.precip_ice_flux[t]   == dcxx.precip_ice_flux[t]);
+      REQUIRE(df90.precip_liq_surf[t]   == dcxx.precip_liq_surf[t]);
+      REQUIRE(df90.precip_ice_surf[t]   == dcxx.precip_ice_surf[t]);
     }
+    REQUIRE(df90.precip_liq_surf[tot]   == dcxx.precip_liq_surf[tot]);
+    REQUIRE(df90.precip_ice_surf[tot]   == dcxx.precip_ice_surf[tot]);
   }
 }
 

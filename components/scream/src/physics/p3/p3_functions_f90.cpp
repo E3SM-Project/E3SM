@@ -83,11 +83,11 @@ void rain_self_collection_c(Real rho, Real qr_incld, Real nr_incld, Real* nr_sel
 void impose_max_total_ni_c(Real* ni_local, Real max_total_Ni, Real inv_rho_local);
 
 void ice_melting_c(Real rho,Real t,Real pres,Real rhofaci,Real table_val_qi2qr_melting,Real table_val_qi2qr_vent_melt,
-                   Real latent_heat_vapor,Real latent_heat_fusion,Real dv,Real sc,Real mu,Real kap,Real qv,Real qi_incld, 
+                   Real latent_heat_vapor,Real latent_heat_fusion,Real dv,Real sc,Real mu,Real kap,Real qv,Real qi_incld,
                    Real ni_incld,Real* qi2qr_melt_tend,Real* ni2nr_melt_tend);
 
-void calc_first_order_upwind_step_c(Int kts, Int kte, Int kdir, Int kbot, Int k_qxtop, Real dt_sub, Real* rho, 
-                                   Real* inv_rho, Real* inv_dz, Int num_arrays, Real** fluxes, Real** vs, Real** qnx);
+void calc_first_order_upwind_step_c(Int kts, Int kte, Int kdir, Int kbot, Int k_qxtop, Real dt_sub, Real* rho,
+                                    Real* inv_rho, Real* inv_dz, Int num_arrays, Real** fluxes, Real** vs, Real** qnx);
 
 void generalized_sedimentation_c(Int kts, Int kte, Int kdir, Int k_qxtop, Int* k_qxbot, Int kbot, Real Co_max,
                                  Real* dt_left, Real* prt_accum, Real* inv_dz, Real* inv_rho, Real* rho,
@@ -192,7 +192,7 @@ void p3_main_part1_c(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
   bool do_predict_nc,
   Real dt,
-  Real* pres, Real* dpres, Real* dz, Real* nc_nuceat_tend, Real* exner, Real* inv_exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i, 
+  Real* pres, Real* dpres, Real* dz, Real* nc_nuceat_tend, Real* exner, Real* inv_exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i,
   Real* inv_cld_frac_r, Real* latent_heat_vapor, Real* latent_heat_sublim, Real* latent_heat_fusion,
   Real* t, Real* rho, Real* inv_rho, Real* qv_sat_l, Real* qv_sat_i, Real* qv_supersat_i, Real* rhofacr, Real* rhofaci,
   Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni, Real* qm, Real* bm, Real* qc_incld, Real* qr_incld, Real* qi_incld,
@@ -201,13 +201,13 @@ void p3_main_part1_c(
 
 void p3_main_part2_c(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir, bool do_predict_nc, Real dt, Real inv_dt,
-  Real* pres, Real* dpres, Real* dz, Real* nc_nuceat_tend, Real* exner, Real* inv_exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i, 
+  Real* pres, Real* dpres, Real* dz, Real* nc_nuceat_tend, Real* exner, Real* inv_exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i,
   Real* inv_cld_frac_r, Real* ni_activated, Real* inv_qc_relvar, Real* cld_frac_i, Real* cld_frac_l, Real* cld_frac_r,
-  Real* t, Real* rho, Real* inv_rho, Real* qv_sat_l, Real* qv_sat_i, Real* qv_supersat_i, Real* rhofacr, Real* rhofaci, Real* acn, 
+  Real* t, Real* rho, Real* inv_rho, Real* qv_sat_l, Real* qv_sat_i, Real* qv_supersat_i, Real* rhofacr, Real* rhofaci, Real* acn,
   Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni,
-  Real* qm, Real* bm, Real* latent_heat_vapor, Real* latent_heat_sublim, Real* latent_heat_fusion, Real* qc_incld, 
+  Real* qm, Real* bm, Real* latent_heat_vapor, Real* latent_heat_sublim, Real* latent_heat_fusion, Real* qc_incld,
   Real* qr_incld, Real* qi_incld, Real* qm_incld, Real* nc_incld, Real* nr_incld,
-  Real* ni_incld, Real* bm_incld, Real* mu_c, Real* nu, Real* lamc, Real* cdist, Real* cdist1, 
+  Real* ni_incld, Real* bm_incld, Real* mu_c, Real* nu, Real* lamc, Real* cdist, Real* cdist1,
   Real* cdistr, Real* mu_r, Real* lamr, Real* logn0r, Real* cmeiout, Real* precip_total_tend,
   Real* nevapr, Real* qr_evap_tend, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* liq_ice_exchange, Real* pratot,
   Real* prctot, bool* is_hydromet_present);
@@ -215,7 +215,7 @@ void p3_main_part2_c(
 void p3_main_part3_c(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
   Real* exner, Real* cld_frac_l, Real* cld_frac_r,
-  Real* rho, Real* inv_rho, Real* rhofaci, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, 
+  Real* rho, Real* inv_rho, Real* rhofaci, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr,
   Real* qi, Real* ni, Real* qm, Real* bm, Real* latent_heat_vapor, Real* latent_heat_sublim,
   Real* mu_c, Real* nu, Real* lamc, Real* mu_r, Real* lamr, Real* vap_liq_exchange,
   Real*  ze_rain, Real* ze_ice, Real* diag_vmi, Real* diag_effi, Real* diag_di, Real* rho_qi, Real* diag_ze, Real* diag_effc);
@@ -234,37 +234,6 @@ void p3_main_c(
 
 namespace scream {
 namespace p3 {
-
-// helper functions
-namespace {
-
-template <size_t N, size_t M>
-void gen_random_data(const std::array<std::pair<Real, Real>, N>& ranges,
-                     const std::array<Real**, M>& ptrs,
-                     Real* data, Int nk)
-{
-  // You can provide more ptrs than ranges to initialize non-input data
-  static_assert(N <= M, "Require at least as many ptrs as ranges");
-
-  Int offset = 0;
-  std::default_random_engine generator;
-
-  for (size_t i = 0; i < N; ++i) {
-    std::uniform_real_distribution<Real> data_dist(ranges[i].first, ranges[i].second);
-    *ptrs[i] = data + offset;
-    offset += nk;
-    for(Int k = 0; k < nk; ++k) {
-      (*ptrs[i])[k] = data_dist(generator);
-    }
-  }
-
-  for (size_t i = N; i < M; ++i) {
-    *ptrs[i] = data + offset;
-    offset += nk;
-  }
-}
-
-}
 
 //
 // In all C++ -> Fortran bridge functions you should see p3_init(). P3 needs
@@ -383,68 +352,23 @@ void cldliq_immersion_freezing(CldliqImmersionFreezingData& d)
 }
 
 LatentHeatData::LatentHeatData(Int kts_, Int kte_, Int its_, Int ite_) :
+  PhysicsTestData((ite_ - its_) + 1, (kte_ - kts_) + 1, {&v, &s, &f}),
   its(its_), ite(ite_), kts(kts_), kte(kte_),
-  m_ni((ite_ - its_) + 1), m_nk((kte_ - kts_) + 1), m_total(m_ni*m_nk),
-  m_data( NUM_ARRAYS * m_total, 0.0)
-{
-  init_ptrs();
-}
+  m_ni(shcol), m_nk(nlev)
+{}
 
 LatentHeatData::LatentHeatData(const LatentHeatData& rhs) :
+  PhysicsTestData(rhs, {&v, &s, &f}),
   its(rhs.its), ite(rhs.ite), kts(rhs.kts), kte(rhs.kte),
-  m_ni(rhs.m_ni), m_nk(rhs.m_nk), m_total(rhs.m_total),
-  m_data(rhs.m_data)
-{
-  init_ptrs();
-}
-
-LatentHeatData& LatentHeatData::operator=(const LatentHeatData& rhs)
-{
-  its     = rhs.its;
-  ite     = rhs.ite;
-  kts     = rhs.kts;
-  kte     = rhs.kte;
-  m_ni    = rhs.m_ni;
-  m_nk    = rhs.m_nk;
-  m_total = rhs.m_total;
-  m_data  = rhs.m_data; // copy
-
-  init_ptrs();
-
-  return *this;
-}
-
-void LatentHeatData::transpose()
-{
-  constexpr auto f2c = ekat::util::TransposeDirection::f2c;
-  using ekat::util::transpose;
-
-  LatentHeatData d_trans(*this);
-  transpose<f2c>(v, d_trans.v, m_ni, m_nk);
-  transpose<f2c>(s, d_trans.s, m_ni, m_nk);
-  transpose<f2c>(f, d_trans.f, m_ni, m_nk);
-
-  *this = d_trans;
-}
-
-void LatentHeatData::init_ptrs()
-{
-  Int offset = 0;
-  Real* data_begin = m_data.data();
-
-  std::array<Real**, NUM_ARRAYS> ptrs = {&v, &s, &f};
-
-  for (size_t i = 0; i < NUM_ARRAYS; ++i) {
-    *ptrs[i] = data_begin + offset;
-    offset += m_total;
-  }
-}
+  m_ni(rhs.m_ni), m_nk(rhs.m_nk)
+{}
 
 void get_latent_heat(LatentHeatData& d)
 {
   p3_init();
+  d.transpose<ekat::util::TransposeDirection::c2f>();
   get_latent_heat_c(d.its, d.ite, d.kts, d.kte, d.v, d.s, d.f);
-  d.transpose();
+  d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void droplet_self_collection(DropletSelfCollectionData& d)
@@ -476,7 +400,7 @@ void cloud_water_conservation(CloudWaterConservationData& d){
 
 void rain_water_conservation(RainWaterConservationData& d){
   p3_init();
-  rain_water_conservation_c(d.qr, d.qc2qr_autoconv_tend, d.qc2qr_accret_tend, d.qi2qr_melt_tend, d.qc2qr_ice_shed_tend, 
+  rain_water_conservation_c(d.qr, d.qc2qr_autoconv_tend, d.qc2qr_accret_tend, d.qi2qr_melt_tend, d.qc2qr_ice_shed_tend,
                             d.dt, &d.qr2qv_evap_tend, &d.qr2qi_collect_tend, &d.qr2qi_immers_freeze_tend);
 }
 
@@ -602,38 +526,20 @@ void ice_cldliq_wet_growth(IceWetGrowthData& d)
 }
 
 CheckValuesData::CheckValuesData(
-  Int kts_, Int kte_, Int timestepcount_, Int source_ind_, bool force_abort_,
-  const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges) :
+  Int kts_, Int kte_, Int timestepcount_, Int source_ind_, bool force_abort_) :
+  PhysicsTestData((kte_-kts_)+1, {&qv, &temp, &col_loc}),
   kts(kts_), kte(kte_), timestepcount(timestepcount_), source_ind(source_ind_), force_abort(force_abort_),
-  m_nk((kte_-kts_)+1),
-  m_data(NUM_ARRAYS*m_nk+3, 1.0)
+  m_nk((kte_-kts_)+1)
 {
-  std::array<Real**, NUM_ARRAYS> ptrs = {&qv, &temp};
-  gen_random_data(ranges, ptrs, m_data.data(), m_nk);
-
-  Real* data_begin = m_data.data();
-  Int offset = m_nk*NUM_ARRAYS;
-  col_loc = data_begin + offset;
-  col_loc[1] = 2.0;
-  col_loc[2] = 3.0;
+  EKAT_REQUIRE_MSG(m_nk >= 3, "nk too small to use for col_loc");
 }
 
 CheckValuesData::CheckValuesData(const CheckValuesData& rhs) :
+  PhysicsTestData(rhs, {&qv, &temp, &col_loc}),
   kts(rhs.kts), kte(rhs.kte), timestepcount(rhs.timestepcount), source_ind(rhs.source_ind),
   force_abort(rhs.force_abort),
-  m_nk(rhs.m_nk),
-  m_data(rhs.m_data)
-{
-  Int offset = 0;
-  Real* data_begin = m_data.data();
-
-  Real** ptrs[NUM_ARRAYS+1] = {&qv, &temp, &col_loc};
-
-  for (size_t i = 0; i < NUM_ARRAYS+1; ++i) {
-    *ptrs[i] = data_begin + offset;
-    offset += m_nk;
-  }
-}
+  m_nk(rhs.m_nk)
+{}
 
 void check_values(CheckValuesData& d)
 {
@@ -677,140 +583,82 @@ void  update_prognostic_liquid(P3UpdatePrognosticLiqData& d){
 			      d.nc_selfcollect_tend, d. qr2qv_evap_tend, d.nr_evap_tend, d.nr_selfcollect_tend , d.do_predict_nc,
 			      d.inv_rho, d.exner, d.latent_heat_vapor, d.dt, &d.th, &d.qv,
 			      &d.qc, &d.nc, &d.qr, &d.nr);
-  }
+}
 
 void ice_deposition_sublimation(IceDepSublimationData& d){
   p3_init();
   ice_deposition_sublimation_c(d.qi_incld, d.ni_incld, d.t, d.qv_sat_l, d.qv_sat_i, d.epsi, d.abi,
 			       d.qv, &d.qv2qi_vapdep_tend, &d.qi2qv_sublim_tend, &d.ni_sublim_tend, &d.qc2qi_berg_tend);
-  }
-
-CalcUpwindData::CalcUpwindData(
-  Int kts_, Int kte_, Int kdir_, Int kbot_, Int k_qxtop_, Int num_arrays_, Real dt_sub_,
-  std::pair<Real, Real> rho_range, std::pair<Real, Real> inv_dz_range,
-  std::pair<Real, Real> vs_range, std::pair<Real, Real> qnx_range) :
-  kts(kts_), kte(kte_), kdir(kdir_), kbot(kbot_), k_qxtop(k_qxtop_), num_arrays(num_arrays_), dt_sub(dt_sub_),
-  m_nk((kte_ - kts_) + 1),
-  m_data( (3 + num_arrays_*3) * m_nk, 0.0),
-  m_ptr_data(num_arrays_*3)
-{
-  Int offset = 0;
-
-  rho     = m_data.data();
-  inv_rho = rho + (offset+=m_nk);
-  inv_dz = rho + (offset+=m_nk);
-
-  fluxes = m_ptr_data.data();
-  vs     = fluxes + num_arrays;
-  qnx    = vs + num_arrays;
-
-  for (Int i = 0; i < num_arrays; ++i) {
-    fluxes[i]  = rho + (offset+=m_nk);
-    vs[i]      = rho + (offset+=m_nk);
-    qnx[i]     = rho + (offset+=m_nk);
-  }
-
-  std::default_random_engine generator;
-  std::uniform_real_distribution<Real>
-    rho_dist(rho_range.first, rho_range.second),
-    inv_dz_dist(inv_dz_range.first, inv_dz_range.second),
-    vs_dist(vs_range.first, vs_range.second),
-    qnx_dist(qnx_range.first, qnx_range.second);
-
-  for (Int k = 0; k < m_nk; ++k) {
-    rho[k]     = rho_dist(generator);
-    inv_rho[k] = 1 / rho[k];
-    inv_dz[k] = inv_dz_dist(generator);
-
-    for (Int i = 0; i < num_arrays; ++i) {
-      vs    [i][k] = vs_dist(generator);
-      qnx   [i][k] = qnx_dist(generator);
-    }
-  }
 }
 
+CalcUpwindData::CalcUpwindData(
+  Int kts_, Int kte_, Int kdir_, Int kbot_, Int k_qxtop_, Int num_arrays_, Real dt_sub_) :
+  PhysicsTestData((kte_ - kts_) + 1, num_arrays_, {&vs, &qnx, &fluxes}, {&rho, &inv_rho, &inv_dz}),
+  kts(kts_), kte(kte_), kdir(kdir_), kbot(kbot_), k_qxtop(k_qxtop_), num_arrays(num_arrays_), dt_sub(dt_sub_),
+  m_nk((kte_ - kts_) + 1)
+{}
+
 CalcUpwindData::CalcUpwindData(const CalcUpwindData& rhs) :
+  PhysicsTestData(rhs, {&vs, &qnx, &fluxes, &rho, &inv_rho, &inv_dz}),
   kts(rhs.kts), kte(rhs.kte), kdir(rhs.kdir), kbot(rhs.kbot), k_qxtop(rhs.k_qxtop), num_arrays(rhs.num_arrays), dt_sub(rhs.dt_sub),
-  m_nk(rhs.m_nk),
-  m_data(rhs.m_data),
-  m_ptr_data(rhs.m_ptr_data.size())
+  m_nk(rhs.m_nk)
+{}
+
+void CalcUpwindData::convert_to_ptr_arr(std::vector<Real*>& mem_space, Real**& fluxes_, Real**& vs_, Real**& qnx_)
 {
-  Int offset = 0;
-
-  rho     = m_data.data();
-  inv_rho = rho + (offset+=m_nk);
-  inv_dz = rho + (offset+=m_nk);
-
-  fluxes = m_ptr_data.data();
-  vs     = fluxes + num_arrays;
-  qnx    = vs + num_arrays;
-
+  mem_space.resize(num_arrays*3);
   for (Int i = 0; i < num_arrays; ++i) {
-    fluxes[i] = rho + (offset+=m_nk);
-    vs[i]     = rho + (offset+=m_nk);
-    qnx[i]    = rho + (offset+=m_nk);
+    mem_space[i]              = fluxes + (i*nk());
+    mem_space[i+num_arrays]   = vs     + (i*nk());
+    mem_space[i+num_arrays*2] = qnx    + (i*nk());
   }
+  fluxes_ = mem_space.data();
+  vs_     = mem_space.data() + num_arrays;
+  qnx_    = mem_space.data() + num_arrays*2;
 }
 
 void calc_first_order_upwind_step(CalcUpwindData& d)
 {
   p3_init();
-  calc_first_order_upwind_step_c(d.kts, d.kte, d.kdir, d.kbot, d.k_qxtop, d.dt_sub, d.rho, d.inv_rho, d.inv_dz, d.num_arrays, d.fluxes, d.vs, d.qnx);
+  std::vector<Real*> tmp;
+  Real** fluxes, **vs, **qnx;
+  d.convert_to_ptr_arr(tmp, fluxes, vs, qnx);
+  calc_first_order_upwind_step_c(d.kts, d.kte, d.kdir, d.kbot, d.k_qxtop, d.dt_sub, d.rho, d.inv_rho, d.inv_dz, d.num_arrays, fluxes, vs, qnx);
 }
 
 GenSedData::GenSedData(
   Int kts_, Int kte_, Int kdir_, Int k_qxtop_, Int k_qxbot_, Int kbot_, Real Co_max_, Real dt_left_,
-  Real prt_accum_, Int num_arrays_,
-  std::pair<Real, Real> rho_range, std::pair<Real, Real> inv_dz_range,
-  std::pair<Real, Real> vs_range, std::pair<Real, Real> qnx_range) :
-  CalcUpwindData(kts_, kte_, kdir_, kbot_, k_qxtop_, num_arrays_, 0.0, rho_range, inv_dz_range, vs_range, qnx_range),
+  Real prt_accum_, Int num_arrays_) :
+  CalcUpwindData(kts_, kte_, kdir_, kbot_, k_qxtop_, num_arrays_, 0.0),
   Co_max(Co_max_), k_qxbot(k_qxbot_), dt_left(dt_left_), prt_accum(prt_accum_)
 { }
 
 void generalized_sedimentation(GenSedData& d)
 {
   p3_init();
+  std::vector<Real*> tmp;
+  Real** fluxes, **vs, **qnx;
+  d.convert_to_ptr_arr(tmp, fluxes, vs, qnx);
   generalized_sedimentation_c(d.kts, d.kte, d.kdir, d.k_qxtop, &d.k_qxbot, d.kbot, d.Co_max,
                               &d.dt_left, &d.prt_accum, d.inv_dz, d.inv_rho, d.rho,
-                              d.num_arrays, d.vs, d.fluxes, d.qnx);
+                              d.num_arrays, fluxes, vs, qnx);
 }
 
 CloudSedData::CloudSedData(
   Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
-  Real dt_, Real inv_dt_, bool do_predict_nc_, Real precip_liq_surf_,
-  const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges) :
+  Real dt_, Real inv_dt_, bool do_predict_nc_, Real precip_liq_surf_) :
+  PhysicsTestData((kte_ - kts_) + 1, {&qc_incld, &rho, &inv_rho, &cld_frac_l, &acn, &inv_dz, &qc, &nc, &nc_incld, &mu_c, &lamc, &qc_tend, &nc_tend}),
   kts(kts_), kte(kte_), ktop(ktop_), kbot(kbot_), kdir(kdir_),
   dt(dt_), inv_dt(inv_dt_), do_predict_nc(do_predict_nc_), precip_liq_surf(precip_liq_surf_),
-  m_nk((kte_ - kts_) + 1),
-  m_data( NUM_ARRAYS * m_nk, 0.0)
-{
-  std::array<Real**, NUM_ARRAYS> ptrs =
-    {&qc_incld, &rho, &inv_rho, &cld_frac_l, &acn, &inv_dz, &qc, &nc, &nc_incld, &mu_c, &lamc, &qc_tend, &nc_tend};
-  gen_random_data(ranges, ptrs, m_data.data(), m_nk);
-
-  // overwrite inv_rho
-  for (Int k = 0; k < m_nk; ++k) {
-    inv_rho[k] = 1 / rho[k];
-  }
-}
+  m_nk((kte_ - kts_) + 1)
+{}
 
 CloudSedData::CloudSedData(const CloudSedData& rhs) :
+  PhysicsTestData(rhs, {&qc_incld, &rho, &inv_rho, &cld_frac_l, &acn, &inv_dz, &qc, &nc, &nc_incld, &mu_c, &lamc, &qc_tend, &nc_tend}),
   kts(rhs.kts), kte(rhs.kte), ktop(rhs.ktop), kbot(rhs.kbot), kdir(rhs.kdir),
   dt(rhs.dt), inv_dt(rhs.inv_dt), do_predict_nc(rhs.do_predict_nc), precip_liq_surf(rhs.precip_liq_surf),
-  m_nk(rhs.m_nk),
-  m_data(rhs.m_data)
-{
-  Int offset = 0;
-  Real* data_begin = m_data.data();
-
-  Real** ptrs[NUM_ARRAYS] =
-    {&qc_incld, &rho, &inv_rho, &cld_frac_l, &acn, &inv_dz, &qc, &nc, &nc_incld, &mu_c, &lamc, &qc_tend, &nc_tend};
-
-  for (size_t i = 0; i < NUM_ARRAYS; ++i) {
-    *ptrs[i] = data_begin + offset;
-    offset += m_nk;
-  }
-}
+  m_nk(rhs.m_nk)
+{}
 
 void cloud_sedimentation(CloudSedData& d)
 {
@@ -823,42 +671,19 @@ void cloud_sedimentation(CloudSedData& d)
 
 IceSedData::IceSedData(
   Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
-  Real dt_, Real inv_dt_, Real precip_ice_surf_,
-  const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges) :
+  Real dt_, Real inv_dt_, Real precip_ice_surf_) :
+  PhysicsTestData((kte_ - kts_) + 1, {&rho, &inv_rho, &rhofaci, &cld_frac_i, &inv_dz, &qi, &qi_incld, &ni, &ni_incld, &qm, &qm_incld, &bm, &bm_incld, &qi_tend, &ni_tend}),
   kts(kts_), kte(kte_), ktop(ktop_), kbot(kbot_), kdir(kdir_),
   dt(dt_), inv_dt(inv_dt_), precip_ice_surf(precip_ice_surf_),
-  m_nk((kte_ - kts_) + 1),
-  m_data( NUM_ARRAYS * m_nk, 0.0)
-{
-  std::array<Real**, NUM_ARRAYS> ptrs =
-    {&rho, &inv_rho, &rhofaci, &cld_frac_i, &inv_dz, &qi, &qi_incld, &ni, &ni_incld, &qm, &qm_incld,
-     &bm, &bm_incld, &qi_tend, &ni_tend};
-  gen_random_data(ranges, ptrs, m_data.data(), m_nk);
-
-  // overwrite inv_rho
-  for (Int k = 0; k < m_nk; ++k) {
-    inv_rho[k] = 1 / rho[k];
-  }
-}
+  m_nk((kte_ - kts_) + 1)
+{}
 
 IceSedData::IceSedData(const IceSedData& rhs) :
+  PhysicsTestData(rhs, {&rho, &inv_rho, &rhofaci, &cld_frac_i, &inv_dz, &qi, &qi_incld, &ni, &ni_incld, &qm, &qm_incld, &bm, &bm_incld, &qi_tend, &ni_tend}),
   kts(rhs.kts), kte(rhs.kte), ktop(rhs.ktop), kbot(rhs.kbot), kdir(rhs.kdir),
   dt(rhs.dt), inv_dt(rhs.inv_dt), precip_ice_surf(rhs.precip_ice_surf),
-  m_nk(rhs.m_nk),
-  m_data(rhs.m_data)
-{
-  Int offset = 0;
-  Real* data_begin = m_data.data();
-
-  Real** ptrs[NUM_ARRAYS] =
-    {&rho, &inv_rho, &rhofaci, &cld_frac_i, &inv_dz, &qi, &qi_incld, &ni, &ni_incld, &qm, &qm_incld,
-     &bm, &bm_incld, &qi_tend, &ni_tend};
-
-  for (size_t i = 0; i < NUM_ARRAYS; ++i) {
-    *ptrs[i] = data_begin + offset;
-    offset += m_nk;
-  }
-}
+  m_nk(rhs.m_nk)
+{}
 
 void ice_sedimentation(IceSedData& d)
 {
@@ -871,43 +696,20 @@ void ice_sedimentation(IceSedData& d)
 
 RainSedData::RainSedData(
   Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
-  Real dt_, Real inv_dt_, Real precip_liq_surf_,
-  const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges) :
+  Real dt_, Real inv_dt_, Real precip_liq_surf_) :
+  PhysicsTestData((kte_ - kts_) + 2, // extra real at end for precip_liq_flux, so just add 1 to all
+                  {&rho, &inv_rho, &rhofacr, &cld_frac_r, &inv_dz, &qr_incld, &qr, &nr, &nr_incld, &mu_r, &lamr, &qr_tend, &nr_tend, &precip_liq_flux}),
   kts(kts_), kte(kte_), ktop(ktop_), kbot(kbot_), kdir(kdir_),
   dt(dt_), inv_dt(inv_dt_), precip_liq_surf(precip_liq_surf_),
-  m_nk((kte_ - kts_) + 1),
-  m_data( NUM_ARRAYS * m_nk + 1 /*extra real at end for precip_liq_flux*/, 0.0)
-{
-  // harmless to leave last precip_liq_flux value set to 0.0
-  std::array<Real**, NUM_ARRAYS> ptrs =
-    {&rho, &inv_rho, &rhofacr, &cld_frac_r, &inv_dz, &qr_incld,
-     &qr, &nr, &nr_incld, &mu_r, &lamr, &qr_tend, &nr_tend, &precip_liq_flux};
-  gen_random_data(ranges, ptrs, m_data.data(), m_nk);
-
-  // overwrite inv_rho
-  for (Int k = 0; k < m_nk; ++k) {
-    inv_rho[k] = 1 / rho[k];
-  }
-}
+  m_nk((kte_ - kts_) + 1)
+{}
 
 RainSedData::RainSedData(const RainSedData& rhs) :
+  PhysicsTestData(rhs, {&rho, &inv_rho, &rhofacr, &cld_frac_r, &inv_dz, &qr_incld, &qr, &nr, &nr_incld, &mu_r, &lamr, &qr_tend, &nr_tend, &precip_liq_flux}),
   kts(rhs.kts), kte(rhs.kte), ktop(rhs.ktop), kbot(rhs.kbot), kdir(rhs.kdir),
   dt(rhs.dt), inv_dt(rhs.inv_dt), precip_liq_surf(rhs.precip_liq_surf),
-  m_nk(rhs.m_nk),
-  m_data(rhs.m_data)
-{
-  Int offset = 0;
-  Real* data_begin = m_data.data();
-
-  Real** ptrs[NUM_ARRAYS] =
-    {&rho, &inv_rho, &rhofacr, &cld_frac_r, &inv_dz, &qr_incld,
-     &qr, &nr, &nr_incld, &mu_r, &lamr, &qr_tend, &nr_tend, &precip_liq_flux};
-
-  for (size_t i = 0; i < NUM_ARRAYS; ++i) {
-    *ptrs[i] = data_begin + offset;
-    offset += m_nk;
-  }
-}
+  m_nk(rhs.m_nk)
+{}
 
 void rain_sedimentation(RainSedData& d)
 {
@@ -925,33 +727,17 @@ void calc_bulk_rho_rime(CalcBulkRhoRimeData& d)
 }
 
 HomogeneousFreezingData::HomogeneousFreezingData(
-  Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
-  const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges) :
+  Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_) :
+  PhysicsTestData((kte_ - kts_) + 1, {&t, &exner, &latent_heat_fusion, &qc, &nc, &qr, &nr, &qi, &ni, &qm, &bm, &th}),
   kts(kts_), kte(kte_), ktop(ktop_), kbot(kbot_), kdir(kdir_),
-  m_nk((kte_ - kts_) + 1),
-  m_data( NUM_ARRAYS * m_nk, 0.0)
-{
-  std::array<Real**, NUM_ARRAYS> ptrs =
-    {&t, &exner, &latent_heat_fusion, &qc, &nc, &qr, &nr, &qi, &ni, &qm, &bm, &th};
-  gen_random_data(ranges, ptrs, m_data.data(), m_nk);
-}
+  m_nk((kte_ - kts_) + 1)
+{}
 
 HomogeneousFreezingData::HomogeneousFreezingData(const HomogeneousFreezingData& rhs) :
+  PhysicsTestData(rhs, {&t, &exner, &latent_heat_fusion, &qc, &nc, &qr, &nr, &qi, &ni, &qm, &bm, &th}),
   kts(rhs.kts), kte(rhs.kte), ktop(rhs.ktop), kbot(rhs.kbot), kdir(rhs.kdir),
-  m_nk(rhs.m_nk),
-  m_data(rhs.m_data)
-{
-  Int offset = 0;
-  Real* data_begin = m_data.data();
-
-  Real** ptrs[NUM_ARRAYS] =
-    {&t, &exner, &latent_heat_fusion, &qc, &nc, &qr, &nr, &qi, &ni, &qm, &bm, &th};
-
-  for (size_t i = 0; i < NUM_ARRAYS; ++i) {
-    *ptrs[i] = data_begin + offset;
-    offset += m_nk;
-  }
-}
+  m_nk(rhs.m_nk)
+{}
 
 void homogeneous_freezing(HomogeneousFreezingData& d)
 {
@@ -982,48 +768,27 @@ void compute_rain_fall_velocity(ComputeRainFallVelocityData& d)
 
 P3MainPart1Data::P3MainPart1Data(
   Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
-  bool do_predict_nc_, Real dt_,
-  const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges) :
+  bool do_predict_nc_, Real dt_) :
+  PhysicsTestData((kte_ - kts_) + 1, {
+    &pres, &dpres, &dz, &nc_nuceat_tend, &exner, &inv_exner, &inv_cld_frac_l, &inv_cld_frac_i, &inv_cld_frac_r, &latent_heat_vapor, &latent_heat_sublim, &latent_heat_fusion,
+    &t, &rho, &inv_rho, &qv_sat_l, &qv_sat_i, &qv_supersat_i, &rhofacr, &rhofaci,
+    &acn, &qv, &th, &qc, &nc, &qr, &nr, &qi, &ni, &qm, &bm, &qc_incld, &qr_incld, &qi_incld,
+    &qm_incld, &nc_incld, &nr_incld, &ni_incld, &bm_incld}),
   kts(kts_), kte(kte_), kbot(kbot_), ktop(ktop_), kdir(kdir_),
   do_predict_nc(do_predict_nc_), dt(dt_),
-  m_nk((kte_ - kts_) + 1),
-  m_data( NUM_ARRAYS * m_nk, 0.0)
-{
-  std::array<Real**, NUM_ARRAYS> ptrs = {
-    &pres, &dpres, &dz, &nc_nuceat_tend, &exner, &inv_exner, &inv_cld_frac_l, &inv_cld_frac_i, &inv_cld_frac_r, &latent_heat_vapor, &latent_heat_sublim, &latent_heat_fusion,
-    &t, &rho, &inv_rho, &qv_sat_l, &qv_sat_i, &qv_supersat_i, &rhofacr, &rhofaci,
-    &acn, &qv, &th, &qc, &nc, &qr, &nr, &qi, &ni, &qm, &bm, &qc_incld, &qr_incld, &qi_incld,
-    &qm_incld, &nc_incld, &nr_incld, &ni_incld, &bm_incld};
-
-  gen_random_data(ranges, ptrs, m_data.data(), m_nk);
-
-  // overwrite invs
-  for (Int k = 0; k < m_nk; ++k) {
-    inv_rho[k] = 1 / rho[k];
-    inv_exner[k] = 1 / exner[k];
-  }
-}
+  m_nk((kte_ - kts_) + 1)
+{}
 
 P3MainPart1Data::P3MainPart1Data(const P3MainPart1Data& rhs) :
-  kts(rhs.kts), kte(rhs.kte), kbot(rhs.kbot), ktop(rhs.ktop), kdir(rhs.kdir),
-  do_predict_nc(rhs.do_predict_nc), dt(rhs.dt),
-  m_nk(rhs.m_nk),
-  m_data(rhs.m_data)
-{
-  Int offset = 0;
-  Real* data_begin = m_data.data();
-
-  std::array<Real**, NUM_ARRAYS> ptrs = {
+  PhysicsTestData(rhs, {
     &pres, &dpres, &dz, &nc_nuceat_tend, &exner, &inv_exner, &inv_cld_frac_l, &inv_cld_frac_i, &inv_cld_frac_r, &latent_heat_vapor, &latent_heat_sublim, &latent_heat_fusion,
     &t, &rho, &inv_rho, &qv_sat_l, &qv_sat_i, &qv_supersat_i, &rhofacr, &rhofaci,
     &acn, &qv, &th, &qc, &nc, &qr, &nr, &qi, &ni, &qm, &bm, &qc_incld, &qr_incld, &qi_incld,
-    &qm_incld, &nc_incld, &nr_incld, &ni_incld, &bm_incld};
-
-  for (size_t i = 0; i < NUM_ARRAYS; ++i) {
-    *ptrs[i] = data_begin + offset;
-    offset += m_nk;
-  }
-}
+    &qm_incld, &nc_incld, &nr_incld, &ni_incld, &bm_incld}),
+  kts(rhs.kts), kte(rhs.kte), kbot(rhs.kbot), ktop(rhs.ktop), kdir(rhs.kdir),
+  do_predict_nc(rhs.do_predict_nc), dt(rhs.dt),
+  m_nk(rhs.m_nk)
+{}
 
 void p3_main_part1(P3MainPart1Data& d)
 {
@@ -1043,57 +808,31 @@ void p3_main_part1(P3MainPart1Data& d)
 
 P3MainPart2Data::P3MainPart2Data(
   Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
-  bool do_predict_nc_, Real dt_,
-  const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges) :
+  bool do_predict_nc_, Real dt_) :
+  PhysicsTestData((kte_ - kts_) + 1, {
+    &pres, &dpres, &dz, &nc_nuceat_tend, &exner, &inv_exner, &inv_cld_frac_l, &inv_cld_frac_i, &inv_cld_frac_r, &ni_activated, &inv_qc_relvar, &cld_frac_i, &cld_frac_l, &cld_frac_r,
+    &t, &rho, &inv_rho, &qv_sat_l, &qv_sat_i, &qv_supersat_i, &rhofacr, &rhofaci, &acn,
+    &qv, &th, &qc, &nc, &qr, &nr, &qi, &ni, &qm, &bm, &latent_heat_vapor, &latent_heat_sublim, &latent_heat_fusion, &qc_incld, &qr_incld,
+    &qi_incld, &qm_incld, &nc_incld, &nr_incld, &ni_incld, &bm_incld, &mu_c, &nu, &lamc, &cdist, &cdist1,
+    &cdistr, &mu_r, &lamr, &logn0r, &cmeiout, &precip_total_tend, &nevapr, &qr_evap_tend, &vap_liq_exchange,
+    &vap_ice_exchange, &liq_ice_exchange, &pratot, &prctot}),
   kts(kts_), kte(kte_), kbot(kbot_), ktop(ktop_), kdir(kdir_),
   do_predict_nc(do_predict_nc_), dt(dt_), inv_dt(1 / dt),
-  m_nk((kte_ - kts_) + 1),
-  m_data( NUM_ARRAYS * m_nk, 0.0)
-{
-  std::array<Real**, NUM_ARRAYS> ptrs = {
-    &pres, &dpres, &dz, &nc_nuceat_tend, &exner, &inv_exner, &inv_cld_frac_l, &inv_cld_frac_i, &inv_cld_frac_r, &ni_activated, &inv_qc_relvar, &cld_frac_i, &cld_frac_l, &cld_frac_r,
-    &t, &rho, &inv_rho, &qv_sat_l, &qv_sat_i, &qv_supersat_i, &rhofacr, &rhofaci, &acn,
-    &qv, &th, &qc, &nc, &qr, &nr, &qi, &ni, &qm, &bm, &latent_heat_vapor, &latent_heat_sublim, &latent_heat_fusion, &qc_incld, &qr_incld,
-    &qi_incld, &qm_incld, &nc_incld, &nr_incld, &ni_incld, &bm_incld, &mu_c, &nu, &lamc, &cdist, &cdist1,
-    &cdistr, &mu_r, &lamr, &logn0r, &cmeiout, &precip_total_tend, &nevapr, &qr_evap_tend, &vap_liq_exchange,
-    &vap_ice_exchange, &liq_ice_exchange, &pratot, &prctot
-  };
-
-  gen_random_data(ranges, ptrs, m_data.data(), m_nk);
-
-  // overwrite invs
-  for (Int k = 0; k < m_nk; ++k) {
-    inv_rho[k]   = 1 / rho[k];
-    inv_exner[k] = 1 / exner[k];
-    inv_cld_frac_l[k] = 1 / cld_frac_l[k];
-    inv_cld_frac_i[k] = 1 / cld_frac_i[k];
-    inv_cld_frac_r[k] = 1 / cld_frac_r[k];
-  }
-}
+  m_nk((kte_ - kts_) + 1)
+{}
 
 P3MainPart2Data::P3MainPart2Data(const P3MainPart2Data& rhs) :
-  kts(rhs.kts), kte(rhs.kte), kbot(rhs.kbot), ktop(rhs.ktop), kdir(rhs.kdir),
-  do_predict_nc(rhs.do_predict_nc), dt(rhs.dt), inv_dt(rhs.inv_dt),
-  m_nk(rhs.m_nk),
-  m_data(rhs.m_data)
-{
-  Int offset = 0;
-  Real* data_begin = m_data.data();
-
-  std::array<Real**, NUM_ARRAYS> ptrs = {
+  PhysicsTestData(rhs, {
     &pres, &dpres, &dz, &nc_nuceat_tend, &exner, &inv_exner, &inv_cld_frac_l, &inv_cld_frac_i, &inv_cld_frac_r, &ni_activated, &inv_qc_relvar, &cld_frac_i, &cld_frac_l, &cld_frac_r,
     &t, &rho, &inv_rho, &qv_sat_l, &qv_sat_i, &qv_supersat_i, &rhofacr, &rhofaci, &acn,
     &qv, &th, &qc, &nc, &qr, &nr, &qi, &ni, &qm, &bm, &latent_heat_vapor, &latent_heat_sublim, &latent_heat_fusion, &qc_incld, &qr_incld,
     &qi_incld, &qm_incld, &nc_incld, &nr_incld, &ni_incld, &bm_incld, &mu_c, &nu, &lamc, &cdist, &cdist1,
     &cdistr, &mu_r, &lamr, &logn0r, &cmeiout, &precip_total_tend, &nevapr, &qr_evap_tend, &vap_liq_exchange,
-    &vap_ice_exchange, &liq_ice_exchange, &pratot, &prctot
-  };
-
-  for (size_t i = 0; i < NUM_ARRAYS; ++i) {
-    *ptrs[i] = data_begin + offset;
-    offset += m_nk;
-  }
-}
+    &vap_ice_exchange, &liq_ice_exchange, &pratot, &prctot}),
+  kts(rhs.kts), kte(rhs.kte), kbot(rhs.kbot), ktop(rhs.ktop), kdir(rhs.kdir),
+  do_predict_nc(rhs.do_predict_nc), dt(rhs.dt), inv_dt(rhs.inv_dt),
+  m_nk(rhs.m_nk)
+{}
 
 void p3_main_part2(P3MainPart2Data& d)
 {
@@ -1111,51 +850,29 @@ void p3_main_part2(P3MainPart2Data& d)
 ///////////////////////////////////////////////////////////////////////////////
 
 P3MainPart3Data::P3MainPart3Data(
-  Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
-  const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges) :
-  kts(kts_), kte(kte_), kbot(kbot_), ktop(ktop_), kdir(kdir_),
-  m_nk((kte_ - kts_) + 1),
-  m_data( NUM_ARRAYS * m_nk, 0.0)
-{
-  std::array<Real**, NUM_ARRAYS> ptrs = {
+  Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_) :
+  PhysicsTestData((kte_ - kts_) + 1, {
     &exner, &cld_frac_l, &cld_frac_r,
     &rho, &inv_rho, &rhofaci,
     &qv, &th, &qc, &nc, &qr, &nr, &qi, &ni, &qm, &bm, &latent_heat_vapor, &latent_heat_sublim,
     &mu_c, &nu, &lamc, &mu_r,
     &lamr, &vap_liq_exchange,
-    &ze_rain, &ze_ice, &diag_vmi, &diag_effi, &diag_di, &rho_qi, &diag_ze, &diag_effc
-  };
-
-  gen_random_data(ranges, ptrs, m_data.data(), m_nk);
-
-  // overwrite invs
-  for (Int k = 0; k < m_nk; ++k) {
-    inv_rho[k]   = 1 / rho[k];
-  }
-}
+    &ze_rain, &ze_ice, &diag_vmi, &diag_effi, &diag_di, &rho_qi, &diag_ze, &diag_effc}),
+  kts(kts_), kte(kte_), kbot(kbot_), ktop(ktop_), kdir(kdir_),
+  m_nk((kte_ - kts_) + 1)
+{}
 
 P3MainPart3Data::P3MainPart3Data(const P3MainPart3Data& rhs) :
-  kts(rhs.kts), kte(rhs.kte), kbot(rhs.kbot), ktop(rhs.ktop), kdir(rhs.kdir),
-  m_nk(rhs.m_nk),
-  m_data(rhs.m_data)
-{
-  Int offset = 0;
-  Real* data_begin = m_data.data();
-
-  std::array<Real**, NUM_ARRAYS> ptrs = {
+  PhysicsTestData(rhs, {
     &exner, &cld_frac_l, &cld_frac_r,
     &rho, &inv_rho, &rhofaci,
     &qv, &th, &qc, &nc, &qr, &nr, &qi, &ni, &qm, &bm, &latent_heat_vapor, &latent_heat_sublim,
     &mu_c, &nu, &lamc, &mu_r,
     &lamr, &vap_liq_exchange,
-    &ze_rain, &ze_ice, &diag_vmi, &diag_effi, &diag_di, &rho_qi, &diag_ze, &diag_effc
-  };
-
-  for (size_t i = 0; i < NUM_ARRAYS; ++i) {
-    *ptrs[i] = data_begin + offset;
-    offset += m_nk;
-  }
-}
+    &ze_rain, &ze_ice, &diag_vmi, &diag_effi, &diag_di, &rho_qi, &diag_ze, &diag_effc}),
+  kts(rhs.kts), kte(rhs.kte), kbot(rhs.kbot), ktop(rhs.ktop), kdir(rhs.kdir),
+  m_nk(rhs.m_nk)
+{}
 
 void p3_main_part3(P3MainPart3Data& d)
 {
@@ -1171,45 +888,28 @@ void p3_main_part3(P3MainPart3Data& d)
 ///////////////////////////////////////////////////////////////////////////////
 
 P3MainData::P3MainData(
-  Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool do_predict_nc_,
-  const std::array< std::pair<Real, Real>, NUM_INPUT_ARRAYS >& ranges) :
-  its(its_), ite(ite_), kts(kts_), kte(kte_), it(it_), dt(dt_), do_predict_nc(do_predict_nc_),
-  m_ni((ite_ - its_) + 1), m_nk((kte_ - kts_) + 1),
-  m_nt(m_ni * (m_nk + 1)), // overprovision since a couple data blocks are bigger than (nj, nk)
-  m_data( NUM_ARRAYS * m_nt, 0.0)
-{
-  std::array<Real**, NUM_ARRAYS> ptrs = {
+  Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool do_predict_nc_) :
+  PhysicsTestData( (ite_ - its_) + 1, (kte_ - kts_) + 1, (kte_ - kts_) + 2, {
     &pres, &dz, &nc_nuceat_tend, &ni_activated, &dpres, &exner, &cld_frac_i, &cld_frac_l, &cld_frac_r,
     &inv_qc_relvar, &qc, &nc, &qr, &nr, &qi, &qm, &ni, &bm, &qv, &th,
     &diag_effc, &diag_effi, &rho_qi, &mu_c, &lamc, &cmeiout, &precip_total_tend, &nevapr,
     &qr_evap_tend, &liq_ice_exchange, &vap_liq_exchange, &vap_ice_exchange, &precip_liq_flux,
-    &precip_ice_flux, &precip_liq_surf, &precip_ice_surf
-  };
-
-  gen_random_data(ranges, ptrs, m_data.data(), m_nt);
-}
+    &precip_ice_flux},
+    {&precip_liq_surf, &precip_ice_surf}), // these two are (ni, nk+1)
+  its(its_), ite(ite_), kts(kts_), kte(kte_), it(it_), dt(dt_), do_predict_nc(do_predict_nc_),
+  m_ni(shcol), m_nk(nlev)
+{}
 
 P3MainData::P3MainData(const P3MainData& rhs) :
-  its(rhs.its), ite(rhs.ite), kts(rhs.kts), kte(rhs.kte), it(rhs.it), dt(rhs.dt), do_predict_nc(rhs.do_predict_nc),
-  m_ni(rhs.m_ni), m_nk(rhs.m_nk), m_nt(rhs.m_nt),
-  m_data(rhs.m_data)
-{
-  Int offset = 0;
-  Real* data_begin = m_data.data();
-
-  std::array<Real**, NUM_ARRAYS> ptrs = {
+  PhysicsTestData( rhs, {
     &pres, &dz, &nc_nuceat_tend, &ni_activated, &dpres, &exner, &cld_frac_i, &cld_frac_l, &cld_frac_r,
     &inv_qc_relvar, &qc, &nc, &qr, &nr, &qi, &qm, &ni, &bm, &qv, &th,
     &diag_effc, &diag_effi, &rho_qi, &mu_c, &lamc, &cmeiout, &precip_total_tend, &nevapr,
     &qr_evap_tend, &liq_ice_exchange, &vap_liq_exchange, &vap_ice_exchange, &precip_liq_flux,
-    &precip_ice_flux, &precip_liq_surf, &precip_ice_surf
-  };
-
-  for (size_t i = 0; i < NUM_ARRAYS; ++i) {
-    *ptrs[i] = data_begin + offset;
-    offset += m_nt;
-  }
-}
+    &precip_ice_flux, &precip_liq_surf, &precip_ice_surf}),
+  its(rhs.its), ite(rhs.ite), kts(rhs.kts), kte(rhs.kte), it(rhs.it), dt(rhs.dt), do_predict_nc(rhs.do_predict_nc),
+  m_ni(rhs.m_ni), m_nk(rhs.m_nk)
+{}
 
 void p3_main(P3MainData& d)
 {
@@ -3067,7 +2767,7 @@ void rain_water_conservation_f(Real qr_, Real qc2qr_autoconv_tend_, Real qc2qr_a
   using P3F = Functions<Real, HostDevice>;
   using Spack   = typename P3F::Spack;
 
-  Spack qr(qr_), qc2qr_autoconv_tend(qc2qr_autoconv_tend_), qc2qr_accret_tend(qc2qr_accret_tend_), qi2qr_melt_tend(qi2qr_melt_tend_), 
+  Spack qr(qr_), qc2qr_autoconv_tend(qc2qr_autoconv_tend_), qc2qr_accret_tend(qc2qr_accret_tend_), qi2qr_melt_tend(qi2qr_melt_tend_),
         qc2qr_ice_shed_tend(qc2qr_ice_shed_tend_), qr2qv_evap_tend(*qr2qv_evap_tend_);
   Spack qr2qi_collect_tend(*qr2qi_collect_tend_), qr2qi_immers_freeze_tend(*qr2qi_immers_freeze_tend_);
 
@@ -3083,12 +2783,12 @@ void ice_water_conservation_f(Real qi_, Real qv2qi_vapdep_tend_, Real qv2qi_nucl
   using P3F = Functions<Real, HostDevice>;
   using Spack   = typename P3F::Spack;
 
-  Spack qi(qi_), qv2qi_vapdep_tend(qv2qi_vapdep_tend_), qv2qi_nucleat_tend(qv2qi_nucleat_tend_), qc2qi_berg_tend(qc2qi_berg_tend_), 
+  Spack qi(qi_), qv2qi_vapdep_tend(qv2qi_vapdep_tend_), qv2qi_nucleat_tend(qv2qi_nucleat_tend_), qc2qi_berg_tend(qc2qi_berg_tend_),
         qr2qi_collect_tend(qr2qi_collect_tend_), qc2qi_collect_tend(qc2qi_collect_tend_);
-  Spack qr2qi_immers_freeze_tend(qr2qi_immers_freeze_tend_), qc2qi_hetero_freeze_tend(qc2qi_hetero_freeze_tend_), 
+  Spack qr2qi_immers_freeze_tend(qr2qi_immers_freeze_tend_), qc2qi_hetero_freeze_tend(qc2qi_hetero_freeze_tend_),
         qi2qv_sublim_tend(*qi2qv_sublim_tend_), qi2qr_melt_tend(*qi2qr_melt_tend_);
 
-  P3F::ice_water_conservation(qi, qv2qi_vapdep_tend, qv2qi_nucleat_tend, qc2qi_berg_tend, qr2qi_collect_tend, qc2qi_collect_tend, 
+  P3F::ice_water_conservation(qi, qv2qi_vapdep_tend, qv2qi_nucleat_tend, qc2qi_berg_tend, qr2qi_collect_tend, qc2qi_collect_tend,
        qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, dt, qi2qv_sublim_tend, qi2qr_melt_tend);
   *qi2qv_sublim_tend_ = qi2qv_sublim_tend[0];
   *qi2qr_melt_tend_ = qi2qr_melt_tend[0];
@@ -3098,7 +2798,7 @@ void p3_main_part1_f(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
   bool do_predict_nc,
   Real dt,
-  Real* pres, Real* dpres, Real* dz, Real* nc_nuceat_tend, Real* exner, Real* inv_exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i, 
+  Real* pres, Real* dpres, Real* dz, Real* nc_nuceat_tend, Real* exner, Real* inv_exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i,
   Real* inv_cld_frac_r, Real* latent_heat_vapor, Real* latent_heat_sublim, Real* latent_heat_fusion,
   Real* t, Real* rho, Real* inv_rho, Real* qv_sat_l, Real* qv_sat_i, Real* qv_supersat_i, Real* rhofacr, Real* rhofaci,
   Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni, Real* qm, Real* bm, Real* qc_incld, Real* qr_incld, Real* qi_incld,
@@ -3182,7 +2882,7 @@ void p3_main_part1_f(
 
     P3F::p3_main_part1(
       team, nk, do_predict_nc, dt,
-      pres_d, dpres_d, dz_d, nc_nuceat_tend_d, exner_d, inv_exner_d, inv_cld_frac_l_d, inv_cld_frac_i_d, 
+      pres_d, dpres_d, dz_d, nc_nuceat_tend_d, exner_d, inv_exner_d, inv_cld_frac_l_d, inv_cld_frac_i_d,
       inv_cld_frac_r_d, latent_heat_vapor_d, latent_heat_sublim_d, latent_heat_fusion_d,
       t_d, rho_d, inv_rho_d, qv_sat_l_d, qv_sat_i_d, qv_supersat_i_d, rhofacr_d, rhofaci_d,
       acn_d, qv_d, th_d, qc_d, nc_d, qr_d, nr_d, qi_d, ni_d, qm_d, bm_d, qc_incld_d, qr_incld_d, qi_incld_d,
@@ -3210,9 +2910,9 @@ void p3_main_part1_f(
 
 void p3_main_part2_f(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir, bool do_predict_nc, Real dt, Real inv_dt,
-  Real* pres, Real* dpres, Real* dz, Real* nc_nuceat_tend, Real* exner, Real* inv_exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i, 
+  Real* pres, Real* dpres, Real* dz, Real* nc_nuceat_tend, Real* exner, Real* inv_exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i,
   Real* inv_cld_frac_r, Real* ni_activated, Real* inv_qc_relvar, Real* cld_frac_i, Real* cld_frac_l, Real* cld_frac_r,
-  Real* t, Real* rho, Real* inv_rho, Real* qv_sat_l, Real* qv_sat_i, Real* qv_supersat_i, Real* rhofacr, Real* rhofaci, 
+  Real* t, Real* rho, Real* inv_rho, Real* qv_sat_l, Real* qv_sat_i, Real* qv_supersat_i, Real* rhofacr, Real* rhofaci,
   Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni,
   Real* qm, Real* bm, Real* latent_heat_vapor, Real* latent_heat_sublim, Real* latent_heat_fusion, Real* qc_incld, Real* qr_incld, Real* qi_incld, Real* qm_incld, Real* nc_incld, Real* nr_incld,
   Real* ni_incld, Real* bm_incld, Real* mu_c, Real* nu, Real* lamc, Real* cdist, Real* cdist1, Real* cdistr, Real* mu_r, Real* lamr, Real* logn0r, Real* cmeiout, Real* precip_total_tend,

@@ -569,7 +569,6 @@ struct CloudSedData : public PhysicsTestData
  private:
   // Internals
   Int m_nk;
-  std::vector<Real> m_data;
 };
 void cloud_sedimentation(CloudSedData& d);
 
@@ -585,7 +584,7 @@ void cloud_sedimentation_f(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct IceSedData
+struct IceSedData : public PhysicsTestData
 {
   static constexpr size_t NUM_ARRAYS = 15;
 
@@ -599,8 +598,7 @@ struct IceSedData
   Real precip_ice_surf;
 
   IceSedData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
-             Real dt_, Real inv_dt_, Real precip_ice_surf_,
-             const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+             Real dt_, Real inv_dt_, Real precip_ice_surf_);
 
   // deep copy
   IceSedData(const IceSedData& rhs);
@@ -610,7 +608,6 @@ struct IceSedData
  private:
   // Internals
   Int m_nk;
-  std::vector<Real> m_data;
 };
 
 void ice_sedimentation(IceSedData& d);
@@ -628,7 +625,7 @@ void ice_sedimentation_f(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct RainSedData
+struct RainSedData : public PhysicsTestData
 {
   static constexpr size_t NUM_ARRAYS = 14;
 
@@ -643,8 +640,7 @@ struct RainSedData
   Real precip_liq_surf;
 
   RainSedData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
-              Real dt_, Real inv_dt_, Real precip_liq_surf_,
-              const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+              Real dt_, Real inv_dt_, Real precip_liq_surf_);
 
   // deep copy
   RainSedData(const RainSedData& rhs);
@@ -654,7 +650,6 @@ struct RainSedData
  private:
   // Internals
   Int m_nk;
-  std::vector<Real> m_data;
 };
 
 void rain_sedimentation(RainSedData& d);
@@ -692,7 +687,7 @@ void calc_bulk_rho_rime_f(Real qi_tot, Real* qi_rim, Real* bi_rim, Real* rho_rim
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct HomogeneousFreezingData
+struct HomogeneousFreezingData : public PhysicsTestData
 {
   static constexpr size_t NUM_ARRAYS = 12;
 
@@ -703,8 +698,7 @@ struct HomogeneousFreezingData
   // In/out
   Real* qc, *nc, *qr, *nr, *qi, *ni, *qm, *bm, *th;
 
-  HomogeneousFreezingData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
-                          const std::array<std::pair<Real, Real>, NUM_ARRAYS>& ranges);
+  HomogeneousFreezingData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_);
 
   // deep copy
   HomogeneousFreezingData(const HomogeneousFreezingData& rhs);
@@ -714,7 +708,6 @@ struct HomogeneousFreezingData
  private:
   // Internals
   Int m_nk;
-  std::vector<Real> m_data;
 
 };
 void homogeneous_freezing(HomogeneousFreezingData& d);
@@ -990,7 +983,7 @@ void ice_cldliq_wet_growth_f(Real rho, Real temp, Real pres, Real rhofaci, Real 
                              Real* qr2qi_collect_tend, Real* qc2qi_collect_tend, Real* qc_growth_rate, Real* nr_ice_shed_tend, Real* qc2qr_ice_shed_tend);
 }
 
-struct LatentHeatData
+struct LatentHeatData : public PhysicsTestData
 {
   static constexpr size_t NUM_ARRAYS = 3;
 
@@ -1002,14 +995,9 @@ struct LatentHeatData
 
   LatentHeatData(Int its_, Int ite_, Int kts_, Int kte_);
   LatentHeatData(const LatentHeatData& rhs);
-  LatentHeatData& operator=(const LatentHeatData& rhs) = delete;
-
-  void transpose();
-  void init_ptrs();
 
   // Internals
-  Int m_ni, m_nk, m_total;
-  std::vector<Real> m_data;
+  Int m_ni, m_nk;
 };
 void get_latent_heat(LatentHeatData& d);
 
@@ -1017,20 +1005,19 @@ extern "C" {
 void get_latent_heat_f(Int its, Int ite, Int kts, Int kte, Real* v, Real* s, Real* f);
 }
 
-struct CheckValuesData
+struct CheckValuesData : public PhysicsTestData
 {
   static constexpr size_t NUM_ARRAYS = 2;
 
   // Inputs
-   Int kts, kte;
-   Int timestepcount, source_ind;
+  Int kts, kte;
+  Int timestepcount, source_ind;
 
-   bool force_abort;
+  bool force_abort;
 
-   Real *qv, *temp, *col_loc;
+  Real *qv, *temp, *col_loc;
 
-   CheckValuesData(Int kts_, Int kte_, Int timestepcount_, Int source_ind_, bool force_abort_,
-                   const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+  CheckValuesData(Int kts_, Int kte_, Int timestepcount_, Int source_ind_, bool force_abort_);
 
   // deep copy
 
@@ -1040,9 +1027,7 @@ struct CheckValuesData
 
   private:
   // Internals
-
   Int m_nk;
-  std::vector<Real> m_data;
 };
 void check_values(CheckValuesData& d);
 
@@ -1070,7 +1055,7 @@ void calculate_incloud_mixingratios_f(Real qc, Real qr, Real qi, Real qm, Real n
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct P3MainPart1Data
+struct P3MainPart1Data : public PhysicsTestData
 {
   static constexpr size_t NUM_ARRAYS = 39;
 
@@ -1089,8 +1074,7 @@ struct P3MainPart1Data
   bool is_nucleat_possible, is_hydromet_present;
 
   P3MainPart1Data(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
-                    bool do_predict_nc_, Real dt_,
-                    const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+                  bool do_predict_nc_, Real dt_);
 
   // deep copy
   P3MainPart1Data(const P3MainPart1Data& rhs);
@@ -1100,7 +1084,6 @@ struct P3MainPart1Data
  private:
   // Internals
   Int m_nk;
-  std::vector<Real> m_data;
 };
 
 void p3_main_part1(P3MainPart1Data& d);
@@ -1121,7 +1104,7 @@ void p3_main_part1_f(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct P3MainPart2Data
+struct P3MainPart2Data : public PhysicsTestData
 {
   static constexpr size_t NUM_ARRAYS = 62;
 
@@ -1141,8 +1124,7 @@ struct P3MainPart2Data
   bool is_hydromet_present;
 
   P3MainPart2Data(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
-                     bool do_predict_nc_, Real dt_,
-                     const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+                  bool do_predict_nc_, Real dt_);
 
   // deep copy
   P3MainPart2Data(const P3MainPart2Data& rhs);
@@ -1152,7 +1134,6 @@ struct P3MainPart2Data
  private:
   // Internals
   Int m_nk;
-  std::vector<Real> m_data;
 };
 
 void p3_main_part2(P3MainPart2Data& d);
@@ -1172,7 +1153,7 @@ void p3_main_part2_f(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct P3MainPart3Data
+struct P3MainPart3Data : public PhysicsTestData
 {
   static constexpr size_t NUM_ARRAYS = 32;
 
@@ -1187,8 +1168,7 @@ struct P3MainPart3Data
     *lamr, *vap_liq_exchange,
     *ze_rain, *ze_ice, *diag_vmi, *diag_effi, *diag_di, *rho_qi, *diag_ze, *diag_effc;
 
-  P3MainPart3Data(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
-                     const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+  P3MainPart3Data(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_);
 
   // deep copy
   P3MainPart3Data(const P3MainPart3Data& rhs);
@@ -1198,7 +1178,6 @@ struct P3MainPart3Data
  private:
   // Internals
   Int m_nk;
-  std::vector<Real> m_data;
 };
 
 void p3_main_part3(P3MainPart3Data& d);
@@ -1215,7 +1194,7 @@ void p3_main_part3_f(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct P3MainData
+struct P3MainData : public PhysicsTestData
 {
   static constexpr size_t NUM_ARRAYS = 36;
   static constexpr size_t NUM_INPUT_ARRAYS = 20;
@@ -1234,65 +1213,14 @@ struct P3MainData
        *qr_evap_tend, *liq_ice_exchange, *vap_liq_exchange, *vap_ice_exchange,
        *precip_liq_flux, *precip_ice_flux, *precip_liq_surf, *precip_ice_surf;
 
-  P3MainData(Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool do_predict_nc_,
-             const std::array< std::pair<Real, Real>, NUM_INPUT_ARRAYS >& ranges);
-
-  template <ekat::util::TransposeDirection::Enum D>
-  void transpose()
-  {
-    using ekat::util::transpose;
-
-    P3MainData d_trans(*this);
-
-    transpose<D>(pres, d_trans.pres, m_ni, m_nk);
-    transpose<D>(dz, d_trans.dz, m_ni, m_nk);
-    transpose<D>(nc_nuceat_tend, d_trans.nc_nuceat_tend, m_ni, m_nk);
-    transpose<D>(ni_activated, d_trans.ni_activated, m_ni, m_nk);
-    transpose<D>(dpres, d_trans.dpres, m_ni, m_nk);
-    transpose<D>(exner, d_trans.exner, m_ni, m_nk);
-    transpose<D>(cld_frac_i, d_trans.cld_frac_i, m_ni, m_nk);
-    transpose<D>(cld_frac_l, d_trans.cld_frac_l, m_ni, m_nk);
-    transpose<D>(cld_frac_r, d_trans.cld_frac_r, m_ni, m_nk);
-    transpose<D>(inv_qc_relvar, d_trans.inv_qc_relvar, m_ni, m_nk);
-    transpose<D>(qc, d_trans.qc, m_ni, m_nk);
-    transpose<D>(nc, d_trans.nc, m_ni, m_nk);
-    transpose<D>(qr, d_trans.qr, m_ni, m_nk);
-    transpose<D>(nr, d_trans.nr, m_ni, m_nk);
-    transpose<D>(qi, d_trans.qi, m_ni, m_nk);
-    transpose<D>(qm, d_trans.qm, m_ni, m_nk);
-    transpose<D>(ni, d_trans.ni, m_ni, m_nk);
-    transpose<D>(bm, d_trans.bm, m_ni, m_nk);
-    transpose<D>(qv, d_trans.qv, m_ni, m_nk);
-    transpose<D>(th, d_trans.th, m_ni, m_nk);
-    transpose<D>(diag_effc, d_trans.diag_effc, m_ni, m_nk);
-    transpose<D>(diag_effi, d_trans.diag_effi, m_ni, m_nk);
-    transpose<D>(rho_qi, d_trans.rho_qi, m_ni, m_nk);
-    transpose<D>(mu_c, d_trans.mu_c, m_ni, m_nk);
-    transpose<D>(lamc, d_trans.lamc, m_ni, m_nk);
-    transpose<D>(cmeiout, d_trans.cmeiout, m_ni, m_nk);
-    transpose<D>(precip_total_tend, d_trans.precip_total_tend, m_ni, m_nk);
-    transpose<D>(nevapr, d_trans.nevapr, m_ni, m_nk);
-    transpose<D>(qr_evap_tend, d_trans.qr_evap_tend, m_ni, m_nk);
-    transpose<D>(liq_ice_exchange, d_trans.liq_ice_exchange, m_ni, m_nk);
-    transpose<D>(vap_liq_exchange, d_trans.vap_liq_exchange, m_ni, m_nk);
-    transpose<D>(vap_ice_exchange, d_trans.vap_ice_exchange, m_ni, m_nk);
-    transpose<D>(precip_liq_flux, d_trans.precip_liq_flux, m_ni, m_nk+1);
-    transpose<D>(precip_ice_flux, d_trans.precip_ice_flux, m_ni, m_nk+1);
-
-    *this = std::move(d_trans);
-  }
+  P3MainData(Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool do_predict_nc_);
 
   // deep copy
   P3MainData(const P3MainData& rhs);
 
-  P3MainData& operator=(P3MainData&&) = default;
-
-  Int nt() const { return m_nt; }
-
  private:
   // Internals
-  Int m_ni, m_nk, m_nt;
-  std::vector<Real> m_data;
+  Int m_ni, m_nk;
 };
 
 void p3_main(P3MainData& d);

@@ -3542,7 +3542,6 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
    integer, intent(in) :: kts, kte
    integer, intent(in) :: ktop, kbot, kdir
 
-
    real(rtype), intent(in), dimension(kts:kte) :: rho
    real(rtype), intent(in), dimension(kts:kte) :: inv_rho
    real(rtype), intent(in), dimension(kts:kte) :: rhofacr
