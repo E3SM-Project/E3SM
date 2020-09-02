@@ -86,8 +86,6 @@ contains
     use shr_kind_mod,  only : r8 => shr_kind_r8
     use cam_history,   only : outfld
     use mo_tracname,   only : solsym
-    use cam_logfile,  only : iulog
-    use spmd_utils,   only : masterproc
 
     implicit none
     !-----------------------------------------------------------------------
@@ -150,58 +148,58 @@ contains
              !
              do k = 1,ltrop(i)
                 if (uci_CH2O_ndx > 0 .and. trim(solsym(l)) == 'CH2O') then
-                   base_sol(i,k,l)  = base_sol(i,k,l) - delt * reaction_rates(i,k,uci_CH2O_ndx)
+                   base_sol(i,k,l)  = base_sol(i,k,l) * (1 - delt * reaction_rates(i,k,uci_CH2O_ndx))
                 end if
                 if (uci_CH3O2_ndx > 0 .and. trim(solsym(l)) == 'CH3O2') then
-                   base_sol(i,k,l)  = base_sol(i,k,l) - delt * reaction_rates(i,k,uci_CH3O2_ndx)
+                   base_sol(i,k,l)  = base_sol(i,k,l) * (1 - delt * reaction_rates(i,k,uci_CH3O2_ndx))
                 end if
                 if (uci_CH3OOH_ndx > 0 .and. trim(solsym(l)) == 'CH3OOH') then
-                   base_sol(i,k,l)  = base_sol(i,k,l) - delt * reaction_rates(i,k,uci_CH3OOH_ndx)
+                   base_sol(i,k,l)  = base_sol(i,k,l) * (1 - delt * reaction_rates(i,k,uci_CH3OOH_ndx))
                 end if
                 if (uci_PAN_ndx > 0 .and. trim(solsym(l)) == 'PAN') then
-                   base_sol(i,k,l)  = base_sol(i,k,l) - delt * reaction_rates(i,k,uci_PAN_ndx)
+                   base_sol(i,k,l)  = base_sol(i,k,l) * (1 - delt * reaction_rates(i,k,uci_PAN_ndx))
                 end if
                 if (uci_CO_ndx > 0 .and. trim(solsym(l)) == 'CO') then
-                   base_sol(i,k,l)  = base_sol(i,k,l) - delt * reaction_rates(i,k,uci_CO_ndx)
+                   base_sol(i,k,l)  = base_sol(i,k,l) * (1 - delt * reaction_rates(i,k,uci_CO_ndx))
                 end if
                 if (uci_C2H6_ndx > 0 .and. trim(solsym(l)) == 'C2H6') then
-                   base_sol(i,k,l)  = base_sol(i,k,l) - delt * reaction_rates(i,k,uci_C2H6_ndx)
+                   base_sol(i,k,l)  = base_sol(i,k,l) * (1 - delt * reaction_rates(i,k,uci_C2H6_ndx))
                 end if
                 if (uci_C3H8_ndx > 0 .and. trim(solsym(l)) == 'C3H8') then
-                   base_sol(i,k,l)  = base_sol(i,k,l) - delt * reaction_rates(i,k,uci_C3H8_ndx)
+                   base_sol(i,k,l)  = base_sol(i,k,l) * (1 - delt * reaction_rates(i,k,uci_C3H8_ndx))
                 end if
                 if (uci_C2H4_ndx > 0 .and. trim(solsym(l)) == 'C2H4') then
-                   base_sol(i,k,l)  = base_sol(i,k,l) - delt * reaction_rates(i,k,uci_C2H4_ndx)
+                   base_sol(i,k,l)  = base_sol(i,k,l) * (1 - delt * reaction_rates(i,k,uci_C2H4_ndx))
                 end if
                 if (uci_ROHO2_ndx > 0 .and. trim(solsym(l)) == 'ROHO2') then
-                   base_sol(i,k,l)  = base_sol(i,k,l) - delt * reaction_rates(i,k,uci_ROHO2_ndx)
+                   base_sol(i,k,l)  = base_sol(i,k,l) * (1 - delt * reaction_rates(i,k,uci_ROHO2_ndx))
                 end if
                 if (uci_CH3COCH3_ndx > 0 .and. trim(solsym(l)) == 'CH3COCH3') then
-                   base_sol(i,k,l)  = base_sol(i,k,l) - delt * reaction_rates(i,k,uci_CH3COCH3_ndx)
+                   base_sol(i,k,l)  = base_sol(i,k,l) * (1 - delt * reaction_rates(i,k,uci_CH3COCH3_ndx))
                 end if
                 if (uci_C2H5O2_ndx > 0 .and. trim(solsym(l)) == 'C2H5O2') then
-                   base_sol(i,k,l)  = base_sol(i,k,l) - delt * reaction_rates(i,k,uci_C2H5O2_ndx)
+                   base_sol(i,k,l)  = base_sol(i,k,l) * (1 - delt * reaction_rates(i,k,uci_C2H5O2_ndx))
                 end if
                 if (uci_C2H5OOH_ndx > 0 .and. trim(solsym(l)) == 'C2H5OOH') then
-                   base_sol(i,k,l)  = base_sol(i,k,l) - delt * reaction_rates(i,k,uci_C2H5OOH_ndx)
+                   base_sol(i,k,l)  = base_sol(i,k,l) * (1 - delt * reaction_rates(i,k,uci_C2H5OOH_ndx))
                 end if
                 if (uci_CH3CHO_ndx > 0 .and. trim(solsym(l)) == 'CH3CHO') then
-                   base_sol(i,k,l)  = base_sol(i,k,l) - delt * reaction_rates(i,k,uci_CH3CHO_ndx)
+                   base_sol(i,k,l)  = base_sol(i,k,l) * (1 - delt * reaction_rates(i,k,uci_CH3CHO_ndx))
                 end if
                 if (uci_CH3CO3_ndx > 0 .and. trim(solsym(l)) == 'CH3CO3') then
-                   base_sol(i,k,l)  = base_sol(i,k,l) - delt * reaction_rates(i,k,uci_CH3CO3_ndx)
+                   base_sol(i,k,l)  = base_sol(i,k,l) * (1 - delt * reaction_rates(i,k,uci_CH3CO3_ndx))
                 end if
                 if (uci_ISOP_ndx > 0 .and. trim(solsym(l)) == 'ISOP') then
-                   base_sol(i,k,l)  = base_sol(i,k,l) - delt * reaction_rates(i,k,uci_ISOP_ndx)
+                   base_sol(i,k,l)  = base_sol(i,k,l) * (1 - delt * reaction_rates(i,k,uci_ISOP_ndx))
                 end if
                 if (uci_ISOPO2_ndx > 0 .and. trim(solsym(l)) == 'ISOPO2') then
-                   base_sol(i,k,l)  = base_sol(i,k,l) - delt * reaction_rates(i,k,uci_ISOPO2_ndx)
+                   base_sol(i,k,l)  = base_sol(i,k,l) * (1 - delt * reaction_rates(i,k,uci_ISOPO2_ndx))
                 end if
                 if (uci_MVKMACR_ndx > 0 .and. trim(solsym(l)) == 'MVKMACR') then
-                   base_sol(i,k,l)  = base_sol(i,k,l) - delt * reaction_rates(i,k,uci_MVKMACR_ndx)
+                   base_sol(i,k,l)  = base_sol(i,k,l) * (1 - delt * reaction_rates(i,k,uci_MVKMACR_ndx))
                 end if
                 if (uci_MVKO2_ndx > 0 .and. trim(solsym(l)) == 'MVKO2') then
-                   base_sol(i,k,l)  = base_sol(i,k,l) - delt * reaction_rates(i,k,uci_MVKO2_ndx)
+                   base_sol(i,k,l)  = base_sol(i,k,l) * (1 - delt * reaction_rates(i,k,uci_MVKO2_ndx))
                 end if
              end do
           end do
@@ -214,17 +212,6 @@ contains
        
     end do
 
-    if (masterproc) then
-       write(iulog,*) ' '
-       write(iulog,*) 'exp_sol: diagnostics uci rates'
-       write(iulog,*) reaction_rates(1,1,uci_CH2O_ndx),reaction_rates(1,1,uci_CH3O2_ndx),&
-         reaction_rates(1,1,uci_CH3OOH_ndx),reaction_rates(1,1,uci_PAN_ndx),reaction_rates(1,1,uci_CO_ndx), &
-         reaction_rates(1,1,uci_C2H6_ndx),reaction_rates(1,1,uci_C3H8_ndx),reaction_rates(1,1,uci_C2H4_ndx),&
-         reaction_rates(1,1,uci_ROHO2_ndx),reaction_rates(1,1,uci_CH3COCH3_ndx),&
-         reaction_rates(1,1,uci_C2H5O2_ndx),reaction_rates(1,1,uci_C2H5OOH_ndx),reaction_rates(1,1,uci_CH3CHO_ndx),&
-         reaction_rates(1,1,uci_CH3CO3_ndx),reaction_rates(1,1,uci_ISOP_ndx),reaction_rates(1,1,uci_ISOPO2_ndx),&
-         reaction_rates(1,1,uci_MVKMACR_ndx),reaction_rates(1,1,uci_MVKO2_ndx)
-    end if
   end subroutine exp_sol
 
 end module mo_exp_sol
