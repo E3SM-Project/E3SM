@@ -184,9 +184,11 @@ IF(${BUILD_HOMME_PREQX})
 ENDIF()
 
 # Add the test exec subdirs for the prim executable
+IF(BUILD_HOMME_TOOL)
+  ADD_SUBDIRECTORY(tool-nlev26)
+ENDIF()
 
 IF(${BUILD_HOMME_THETA})
-  ADD_SUBDIRECTORY(tool-nlev26)
   ADD_SUBDIRECTORY(theta-l-nlev20)
   ADD_SUBDIRECTORY(theta-l-nlev30)
   ADD_SUBDIRECTORY(theta-l-nlev40)
