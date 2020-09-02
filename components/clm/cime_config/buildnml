@@ -92,7 +92,7 @@ def buildnml(case, caseroot, compname):
         config_opts = " -sitespf_pt reg"
 
     # TODO: clm/bld/configure needs to be converted to python
-    sysmod = "{}/components/clm/bld/configure".format(srcroot)
+    sysmod = "{}/components/elm/bld/configure".format(srcroot)
     sysmod += "  {} -comp_intf {} {}".format(config_opts, comp_interface, clm_config_opts)
     sysmod += " -usr_src {}/SourceMods/src.elm".format(caseroot)
     run_cmd_no_fail(sysmod, from_dir=clmconf_dir)
@@ -171,7 +171,7 @@ def buildnml(case, caseroot, compname):
         start_ymd = run_startdate.replace("-", "")
         ignore = "-ignore_ic_year" if ("-01-01" in run_startdate or "-09-01" in run_startdate) else "-ignore_ic_date"
 
-        sysmod =  "{}/components/clm/bld/build-namelist -infile {}/Buildconf/clmconf/namelist ".format(srcroot, caseroot)
+        sysmod =  "{}/components/elm/bld/build-namelist -infile {}/Buildconf/clmconf/namelist ".format(srcroot, caseroot)
         sysmod += " -csmdata {} -inputdata {}/Buildconf/clm.input_data_list {}".format(din_loc_root, caseroot, ignore)
         sysmod += ' -namelist " &clm_inparm  start_ymd={} {} /"'.format(start_ymd, clm_namelist_opts)
         sysmod += " {} {} -res {} {} -clm_start_type {}".format(usecase, glc_opts, resolution, clmusr, start_type)
