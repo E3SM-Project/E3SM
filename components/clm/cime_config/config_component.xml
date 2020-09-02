@@ -18,7 +18,6 @@
     <default_value></default_value>
     <values modifier='additive'>
       <value compset="_CLM45"                >-phys clm4_5</value>
-      <value compset="_CLM50"                >-phys clm5_0</value>
       <value compset="_CLM45%[^_]*BC" >-phys clm4_5 -cppdefs -DMODAL_AER</value>
       <value compset="1950_CAM5%CMIP6-[LH]R[^_]*_CLM45%[^_]*BC"                >-phys clm4_5 -cppdefs '-DMODAL_AER -DAPPLY_POST_DECK_BUGFIXES'</value>
       <value compset="2010_CAM5%CMIP6-[LH]R[^_]*_CLM45%[^_]*BC"                >-phys clm4_5 -cppdefs '-DMODAL_AER -DAPPLY_POST_DECK_BUGFIXES'</value>
@@ -124,8 +123,6 @@
       <value compset="_CLM45%[^_]*CNECACTCBC" >-bgc bgc -nutrient cn  -nutrient_comp_pathway eca -soil_decomp ctc     -methane -nitrif_denitrif </value>
       <value compset="_CLM45%[^_]*CNPECACTCBC">-bgc bgc -nutrient cnp -nutrient_comp_pathway eca -soil_decomp ctc     -methane -nitrif_denitrif </value>
 
-      <value compset="_CLM50%[^_]*SP"        >-bgc sp</value>
-      <value compset="_CLM50%[^_]*BGC"       >-bgc bgc</value>
     </values>
     <group>run_component_clm</group>
     <file>env_run.xml</file>
@@ -229,9 +226,6 @@
     <desc compset="_CLM45%[^_]*CNPRDCTCBC" >alm1.0 C-N-P, nutirent competition via relative demand, ctc soil cascade with black carbon deposition:</desc>
     <desc compset="_CLM45%[^_]*CNECACTCBC" >alm1.0 C-N, nutirent competition via equilibrium chemistry approximation, ctc soil cascade with black carbon deposition:</desc>
     <desc compset="_CLM45%[^_]*CNPECACTCBC">alm1.0 C-N-P, nutirent competition via equilibrium chemistry approximation, ctc soil cascade with black carbon deposition:</desc>
-    <desc compset="_CLM50"               >clm5.0 physics:</desc>
-    <desc compset="_CLM50%[^_]*SP"       >clm5.0 Satellite phenology:</desc>
-    <desc compset="_CLM50%[^_]*BGC"      >clm5.0 bgc (cn and methane):</desc>
   </description>
 
   <help>
