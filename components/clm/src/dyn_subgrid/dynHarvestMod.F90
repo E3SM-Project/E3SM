@@ -80,12 +80,12 @@ module dynHarvestMod
   ! the units flag must match the units of harvest_varnames
   ! set this here because dynHarvest_init is called after alm_fates%init
   ! this flag is accessed only if namelist do_harvest is TRUE
-  integer, public          :: wood_harvest_units = harvest_area_fraction
+  integer, public          :: wood_harvest_units = hlm_harvest_area_fraction
   
   type(dyn_var_time_uninterp_type) :: harvest_vars(num_harvest_vars)   ! value of each harvest variable
 
   real(r8) , allocatable   :: harvest(:) ! harvest rates
-  real(r8) , allocatable   :: harvest_rates(:,:) ! category harvest rates (d1) in each gridcell (d2)
+  real(r8) , allocatable, public   :: harvest_rates(:,:) ! category harvest rates (d1) in each gridcell (d2)
 
   logical, private         :: do_harvest ! whether we're in a period when we should do harvest
   !---------------------------------------------------------------------------
@@ -122,7 +122,7 @@ contains
 
     SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
 
-    allocate(harvest_rates(bounds%begg:bounds%endg),stat=ier)
+    allocate(harvest_rates(num_harvest_vars,bounds%begg:bounds%endg),stat=ier)
     harvest(bounds%begg:bounds%endg) = 0._r8
     if (ier /= 0) then
        call endrun(msg=' allocation error for harvest_rates'//errMsg(__FILE__, __LINE__))
@@ -134,7 +134,7 @@ contains
     ! Get initial harvest data
     if (use_cn .or. use_fates) then
        num_points = (bounds%endg - bounds%begg + 1)
-       do varnum = 1, num_harvest_types
+       do varnum = 1, num_harvest_vars
           harvest_vars(varnum) = dyn_var_time_uninterp_type( &
                dyn_file=dynHarvest_file, varname=harvest_varnames(varnum), &
                dim1name=grlnd, conversion_factor=1.0_r8, &
@@ -247,7 +247,7 @@ contains
           ! year of the file for all years past the end of this specified time series.
           do_harvest = .true.
           allocate(this_data(bounds%begg:bounds%endg))
-          do varnum = 1, num_harvest_types
+          do varnum = 1, num_harvest_vars
              call harvest_vars(varnum)%get_current_data(this_data)
              harvest_rates(varnum,bounds%begg:bounds%endg) = this_data(bounds%begg:bounds%endg)
           end do
@@ -448,7 +448,7 @@ contains
 
          if (do_harvest) then
             am = 0._r8
-            do varnum = 1, num_harvest_types
+            do varnum = 1, num_harvest_vars
                am = am + harvest_rates(varnum,g)
             end do
             m  = am/(days_per_year * secspday)

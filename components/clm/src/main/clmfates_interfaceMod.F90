@@ -758,7 +758,7 @@ contains
          ! the harvest data are zero if today is before the start of the harvest time series
          g = col_pp%gridcell(c)
          if (get_do_harvest()) then
-            this%fates(nc)%bc_in(s)%hlm_harvest = harvest_rates(:,g)
+            this%fates(nc)%bc_in(s)%hlm_harvest_rates = harvest_rates(:,g)
             this%fates(nc)%bc_in(s)%hlm_harvest_catnames = harvest_varnames
             this%fates(nc)%bc_in(s)%hlm_harvest_units = wood_harvest_units
          end if
