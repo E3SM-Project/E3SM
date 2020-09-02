@@ -79,7 +79,7 @@ contains
   subroutine create_moab_mesh_fine(par, elem)
 
     use ISO_C_BINDING
-    use coordinate_systems_mod, only :  cartesian3D_t,  spherical_to_cart
+    use coordinate_systems_mod, only :  cartesian3D_t,  spherical_to_cart, spherical_polar_t
 
     type (element_t), intent(inout) :: elem(:)
     type (parallel_t)      , intent(in) :: par
@@ -115,9 +115,14 @@ contains
     integer nedges_c, nverts_pg, nelem_pg, edge_index, j1
     integer, dimension(:), allocatable :: local_cell_gids, indx_cell
     integer, dimension(:,:), allocatable :: elem_edge, edge
+    integer, dimension(:), allocatable :: vdone_pg, moabconn_pg
 
     integer nat_edge_order(4)
     integer  internal_edges, boundary_edges, reverse_edges
+    integer  edge_verts(4) ! local per coarse element ! nverts_c < edge_verts <= nverts_c + edge_index
+    integer  middle_vertex ! nverts_c + edge_index  < middle_vertex <= verts_pg
+    type (spherical_polar_t)  ::  current_2d_vertex
+    logical  pos_edge ! when looping over edges , use gdof for marking !!
 
     nat_edge_order = (/south, east, north, west/)
 
@@ -625,7 +630,163 @@ contains
        do ie=1,edge_index
            print *, ie, (edge(j, ie), j=1,2)
        enddo
+       ! now generate phys grid, uniform FV type mesh;
+       ! 2 cases: fv_nphys is 1 or 2; when 2, we need new nodes; will use the same id as
+       ! the gdof on edge is used, with the smaller id chosen, among
+       allocate(moabconn_pg(4*nelem_pg)) ! connectivity
+       ! reuse moab_vert_coords for coordinates of pg mesh
+       ! the first nverts_c coords are the same as coarse mesh; but we do create new
+       allocate(vdone_pg(nverts_pg))
+       do iv = 1, nverts_c
+          vdone_pg(iv) = vdone_c(iv) ! also the coordinates will be the same !!
+       enddo
 
+       ! copy the coordinates from the middle
+       j1 = 0 ! index in edge vertices; increase only for positive edges
+       !  still need some
+       if (fv_nphys .eq. 3) then
+          current_2d_vertex%r = 1.
+          do ie = 1,nelemd
+              do j=1,4
+                 idx = elem_edge(j, ie) !
+                 if (idx .gt. 0) then ! increment edges, add vertex !
+                     j1 = j1 + 1 ! index in moab_vert_coords for edges ! nverts_c + j1 for vertex edges !
+                     ! current_2d_vertex%lat, current_2d_vertex%lon
+                     pos_edge = .true.
+                     iv = nverts_c + j1
+                     edge_verts(j) = iv !  to form the local connectivity array
+                     if ( vdone_c(edge(1, idx)) .gt.  vdone_c(edge(2, edge_index)) ) pos_edge = .false.
+                     if (j .eq. 1) then
+                         current_2d_vertex%lat = fv_physgrid(ie)%corner_lat(1,1,2)
+                         current_2d_vertex%lon = fv_physgrid(ie)%corner_lon(1,1,2)
+                         if (pos_edge) then
+                             vdone_pg (iv) = elem(ie)%gdofP(2,1) !
+                         else
+                             vdone_pg (iv) = elem(ie)%gdofP(np-1,1) !
+                         endif
+                     else if (j .eq. 2) then
+                         current_2d_vertex%lat = fv_physgrid(ie)%corner_lat(1,2,3)
+                         current_2d_vertex%lon = fv_physgrid(ie)%corner_lon(1,2,3)
+                         if (pos_edge) then
+                             vdone_pg (iv) = elem(ie)%gdofP(np,2) !
+                         else
+                             vdone_pg (iv) = elem(ie)%gdofP(np,np - 1) !
+                         endif
+                     else if (j .eq. 3) then
+                         current_2d_vertex%lat = fv_physgrid(ie)%corner_lat(2,2,4)
+                         current_2d_vertex%lon = fv_physgrid(ie)%corner_lon(2,2,4)
+                         if (pos_edge) then
+                             vdone_pg (iv) = elem(ie)%gdofP(np-1,np) !
+                         else
+                             vdone_pg (iv) = elem(ie)%gdofP(2,np) !
+                         endif
+                     else ! if (j .eq. 4)
+                         current_2d_vertex%lat = fv_physgrid(ie)%corner_lat(1,2,1)
+                         current_2d_vertex%lon = fv_physgrid(ie)%corner_lon(1,2,1)
+                         if (pos_edge) then
+                             vdone_pg (iv) = elem(ie)%gdofP(1,np-1) !
+                         else
+                             vdone_pg (iv) = elem(ie)%gdofP(1,2) !
+                         endif
+                     endif
+                     ! create the 3d vertex !
+                     cart = spherical_to_cart (current_2d_vertex )
+                     moab_vert_coords ( 3*(iv-1)+1 ) = cart%x
+                     moab_vert_coords ( 3*(iv-1)+2 ) = cart%y
+                     moab_vert_coords ( 3*(iv-1)+3 ) = cart%z
+                 else ! the vertex was already created, but we need the index for connectivity of local fv cells
+                     edge_verts(j) = nverts_c + ( -idx ) ! idx is index of edge (negative for already created)
+                 endif
+
+              enddo ! do j=1,4
+              ! create the middle vertex too, in the center
+              current_2d_vertex%lat = fv_physgrid(ie)%corner_lat(1,1,3)
+              current_2d_vertex%lon = fv_physgrid(ie)%corner_lon(1,1,3)
+              iv = nverts_c + edge_index + ie ! middle vertices are after corners, and edge vertices
+              middle_vertex = iv
+              vdone_pg (middle_vertex) = elem(ie)%gdofP(2,2) ! first in the interior, not on edges!
+              cart = spherical_to_cart (current_2d_vertex )
+              moab_vert_coords ( 3*(iv-1)+1 ) = cart%x
+              moab_vert_coords ( 3*(iv-1)+2 ) = cart%y
+              moab_vert_coords ( 3*(iv-1)+3 ) = cart%z
+
+              ! now form the local 2x2 cells, one by one; set the global id tag too!
+              idx = (ie-1)*4
+              ! first
+              moabconn_pg(idx + 1) = moabconn_c(4*(ie-1)+1)
+              moabconn_pg(idx + 2) = edge_verts(1)
+              moabconn_pg(idx + 3) = middle_vertex
+              moabconn_pg(idx + 4) = edge_verts(4)
+              elemids(idx+1) = (elem(ie)%GlobalId-1)*4+1
+              ! second
+              moabconn_pg(idx + 4 + 1) = edge_verts(1)
+              moabconn_pg(idx + 4 + 2) = moabconn_c(4*(ie-1)+2)
+              moabconn_pg(idx + 4 + 3) = edge_verts(2)
+              moabconn_pg(idx + 4 + 4) = middle_vertex
+              elemids(idx+2) = (elem(ie)%GlobalId-1)*4+2
+              ! third
+              moabconn_pg(idx + 8 + 1) = edge_verts(4)
+              moabconn_pg(idx + 8 + 2) = middle_vertex
+              moabconn_pg(idx + 8 + 3) = edge_verts(3)
+              moabconn_pg(idx + 8 + 4) = moabconn_c(4*(ie-1)+4)
+              elemids(idx+3) = (elem(ie)%GlobalId-1)*4+3
+              ! fourth
+              moabconn_pg(idx + 12 + 1) = middle_vertex
+              moabconn_pg(idx + 12 + 2) = edge_verts(2)
+              moabconn_pg(idx + 12 + 3) = moabconn_c(4*(ie-1)+3)
+              moabconn_pg(idx + 12 + 4) = edge_verts(3)
+              elemids(idx+4) = (elem(ie)%GlobalId-1)*4+4
+
+          enddo
+          ! now copy from coarse for pg mesh
+
+          dimcoord = nverts_pg*3
+          dimen = 3
+          ierr = iMOAB_CreateVertices(MHPGID, dimcoord, dimen, moab_vert_coords)
+          if (ierr > 0 )  &
+              call endrun('Error: fail to create MOAB vertices ')
+
+         ! num_el = nelem_pg  *
+          mbtype = 3 !  quadrilateral
+          nve = 4;
+          block_ID = 300 ! this will be for pg mesh
+
+          ierr = iMOAB_CreateElements( MHPGID, nelem_pg, mbtype, nve, moabconn_pg, block_ID );
+          if (ierr > 0 )  &
+             call endrun('Error: fail to create MOAB elements')
+
+          tagname='GLOBAL_ID'//CHAR(0)
+          tagtype = 0  ! dense, integer
+          numco = 1
+          ierr = iMOAB_DefineTagStorage(MHPGID, tagname, tagtype, numco,  tagindex )
+          if (ierr > 0 )  &
+             call endrun('Error: fail to retrieve GLOBAL id tag')
+
+          ! now set the values
+          ent_type = 0 ! vertex type
+          ierr = iMOAB_SetIntTagStorage ( MHPGID, tagname, nverts_pg , ent_type, vdone_pg)
+          if (ierr > 0 )  &
+              call endrun('Error: fail to set global id tag for vertices')
+          ! set global id tag for pg2 elements, too; they will start at nets=1, end at nete=nelemd*4
+          ent_type = 1 ! now set the global id tag on elements
+          ierr = iMOAB_SetIntTagStorage ( MHPGID, tagname, nelem_pg , ent_type, elemids)
+          if (ierr > 0 )  &
+             call endrun('Error: fail to set global id tag for edges')
+
+          ierr = iMOAB_ResolveSharedEntities( MHPGID, nverts_pg, vdone_pg );
+
+          ierr = iMOAB_UpdateMeshInfo(MHPGID)
+          if (ierr > 0 )  &
+             call endrun('Error: fail to update mesh info for pg2 mesh')
+#ifdef MOABDEBUG
+    !     write out the mesh file to disk, in parallel
+          outfile = 'wholeATM_PG2.h5m'//CHAR(0)
+          wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
+          ierr = iMOAB_WriteMesh(MHPGID, outfile, wopts)
+          if (ierr > 0 )  &
+            call endrun('Error: fail to write the mesh file')
+#endif
+       endif  ! only valid for pg == 2
 
      endif
 
