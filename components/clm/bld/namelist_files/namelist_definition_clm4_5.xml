@@ -571,19 +571,19 @@ Toggle to make wild-fires inactive for biogeochemistry=CN mode
 
 <entry id="use_lch4" type="logical" category="bgc"
        group="clm_inparm" valid_values="" value=".false.">
-Turn on methane model. Standard part of CLM45BGC model.
+Turn on methane model. Standard part of ELMBGC model.
 </entry>
 
 <entry id="use_cn" type="logical" category="bgc"
        group="clm_inparm" valid_values="" value=".false.">
 CLM Biogeochemistry mode : Carbon Nitrogen model (CN) 
-(or CLM45BGC if phys=clm4_5, vsoilc_centbgc='on', and clm4me='on')
+(or ELMBGC if phys=clm4_5, vsoilc_centbgc='on', and clm4me='on')
 </entry>
 
 <entry id="use_cndv" type="logical" category="bgc"
        group="clm_inparm" valid_values="" value=".false.">
 CLM Biogeochemistry mode : Carbon Nitrogen with Dynamic Global Vegetation Model (CNDV)
-(or CLM45BGCDV if phys=clm4_5, vsoilc_centbgc='on', and clm4me='on')
+(or ELMBGCDV if phys=clm4_5, vsoilc_centbgc='on', and clm4me='on')
 </entry>
 
 <entry id="use_nitrif_denitrif" type="logical" category="bgc"

@@ -95,10 +95,10 @@ OPTIONS
                                 CLM Biogeochemistry mode
                                 sp    = Satellite Phenology (SP)
                                 cn    = Carbon Nitrogen model (CN)
-                                        (or CLM45CN if phys=clm4_5/clm5_0, use_cn=true)
+                                        (or ELMCN if phys=clm4_5, use_cn=true)
                                 bgc   = Carbon Nitrogen with methane, nitrification, vertical soil C,
                                         CENTURY decomposition
-                                        (or CLM45BGC if phys=clm4_5/clm5_0, use_cn=true, use_vertsoilc=true,
+                                        (or ELMBGC if phys=clm4_5, use_cn=true, use_vertsoilc=true,
                                          use_century_decomp=true, use_nitrif_denitrif=true, and use_lch4=true,
                                          use_dynroot)
                                         This toggles on the namelist variables:
