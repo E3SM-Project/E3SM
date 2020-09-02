@@ -474,7 +474,7 @@ extern real1d crm_output_precsc;
 extern real1d crm_output_precsl; 
 extern real3d crm_output_prec_crm; 
 extern real2d crm_clear_rh;
-extern real2d crm_clear_rh_cnt;
+extern int2d  crm_clear_rh_cnt;
 extern real1d lat0; 
 extern real1d long0;
 extern int1d  gcolp;

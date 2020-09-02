@@ -427,7 +427,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    real(crm_rknd) :: crm_rotation_offset  ! offset to specify preferred rotation direction 
 #endif
 
-   real(r8), dimension(pcols,crm_nz) :: crm_clear_rh
+   real(crm_rknd), allocatable :: crm_clear_rh(:,:) ! clear air relative humidity for aerosol wateruptake
 
    real(crm_rknd), allocatable :: longitude0(:)
    real(crm_rknd), allocatable :: latitude0 (:)
@@ -843,6 +843,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
       if (.not.allocated(ptend%q)) write(*,*) '=== ptend%q not allocated ==='
       if (.not.allocated(ptend%s)) write(*,*) '=== ptend%s not allocated ==='
 
+      if (.not.allocated(crm_clear_rh)) allocate(crm_clear_rh(ncol,crm_nz))
+
       ! Load latitude, longitude, and unique column ID for all CRMs
       allocate(longitude0(ncol))
       allocate(latitude0 (ncol))
@@ -880,7 +882,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
 
       call crm(lchnk, ncol, ztodt, pver, &
                crm_input, crm_state, crm_rad, &
-               crm_ecpp_output, crm_output, crm_clear_rh(1:ncol,:), &
+               crm_ecpp_output, crm_output, crm_clear_rh, &
                latitude0, longitude0, gcolp, igstep, &
                use_crm_accel_tmp, crm_accel_factor, crm_accel_uv_tmp)
 
@@ -1166,6 +1168,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
             mmf_clear_rh(icol,k) = crm_clear_rh(icol,m)
          end do ! m = 1,crm_nz
       end do ! i = 1,ncol
+      deallocate(crm_clear_rh)
       !---------------------------------------------------------------------------------------------
       !---------------------------------------------------------------------------------------------
 

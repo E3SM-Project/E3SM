@@ -124,7 +124,7 @@ void post_icycle() {
     // by collecting statistics and doing radiation over column groups
     int i_rad = i / (nx/crm_nx_rad);
     int j_rad = j / (ny/crm_ny_rad);
-    real qsat;
+    real qsat_tmp;
     real rh_tmp;
 
     yakl::atomicAdd(crm_rad_temperature(k,j_rad,i_rad,icrm) , tabs(k,j,i,icrm));
@@ -135,8 +135,8 @@ void post_icycle() {
     if (qcl(k,j,i,icrm) + qci(k,j,i,icrm) > 0) {
       yakl::atomicAdd(crm_rad_cld(k,j_rad,i_rad,icrm) , CF3D(k,j,i,icrm));
     } else {
-      qsatw_crm(tabs(k,j,i,icrm),pres(k,icrm),qsat);
-      rh_tmp = qv(k,j,i,icrm)/qsat;
+      qsatw_crm(tabs(k,j,i,icrm),pres(k,icrm),qsat_tmp);
+      rh_tmp = qv(k,j,i,icrm)/qsat_tmp;
       yakl::atomicAdd(crm_clear_rh(k,icrm) , rh_tmp);
       crm_clear_rh_cnt(k,icrm) = crm_clear_rh_cnt(k,icrm) + 1;
     }

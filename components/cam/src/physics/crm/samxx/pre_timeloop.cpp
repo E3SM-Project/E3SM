@@ -261,7 +261,7 @@ void pre_timeloop() {
   //   for (int k=0; k<nzm; k++) {
   parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     crm_clear_rh(k,icrm)     = 0.0 ;
-    crm_clear_rh_cnt(k,icrm) = 0.0 ;
+    crm_clear_rh_cnt(k,icrm) = 0 ;
   });
 
   //  Initialize CRM fields:
