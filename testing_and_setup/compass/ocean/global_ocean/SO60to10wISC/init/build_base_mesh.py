@@ -1,11 +1,11 @@
+#!/usr/bin/env python
 import numpy as np
 import mpas_tools.mesh.creation.mesh_definition_tools as mdt
-from mpas_tools.mesh.creation.coastal_tools import \
-    signed_distance_from_geojson, compute_cell_width
+from mpas_tools.mesh.creation.signed_distance import \
+    signed_distance_from_geojson
 from geometric_features import read_feature_collection
-# import matplotlib
-# matplotlib.use('Agg')
-# import matplotlib.pyplot as plt
+from mpas_tools.ocean import build_spherical_mesh
+from mpas_tools.cime.constants import constants
 
 
 def cellWidthVsLatLon():
@@ -13,17 +13,21 @@ def cellWidthVsLatLon():
     Create cell width array for this mesh on a regular latitude-longitude grid.
     Returns
     -------
-       cellWidth : numpy.ndarray
+       cellWidth : ndarray
             m x n array, entries are desired cell width in km
-       lat : numpy.ndarray
+
+       lat : ndarray
             latitude, vector of length m, with entries between -90 and 90,
             degrees
-       lon : numpy.ndarray
+
+       lon : ndarray
             longitude, vector of length n, with entries between -180 and 180,
             degrees
     """
     dlon = 0.1
     dlat = dlon
+    #earth_radius = constants['SHR_CONST_REARTH']
+    earth_radius = 6378206.4
     nlon = int(360./dlon) + 1
     nlat = int(180./dlat) + 1
     lon = np.linspace(-180., 180., nlon)
@@ -54,6 +58,7 @@ def cellWidthVsLatLon():
     fc = read_feature_collection('high_res_region.geojson')
 
     so_signed_distance = signed_distance_from_geojson(fc, lon, lat,
+                                                      earth_radius,
                                                       max_length=0.25)
 
     # Equivalent to 20 degrees latitude
@@ -69,11 +74,13 @@ def cellWidthVsLatLon():
     fc = read_feature_collection('north_mid_res_region.geojson')
 
     ar_signed_distance = signed_distance_from_geojson(fc, lon, lat,
+                                                      earth_radius,
                                                       max_length=0.25)
 
     fc = read_feature_collection('greenland.geojson')
 
     gr_signed_distance = signed_distance_from_geojson(fc, lon, lat,
+                                                      earth_radius,
                                                       max_length=0.25)
 
     frac = (-ar_signed_distance/(-ar_signed_distance + gr_signed_distance))
@@ -93,24 +100,13 @@ def cellWidthVsLatLon():
 
     cellWidth = arctic_widths * (1 - weights) + cellWidth * weights
 
-    # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=[12, 4.5])
-    # index = np.argmin(np.abs(lon - (-30.5)))
-    # ax1.plot(lat, cellWidth[:, index])
-    # ax1.set_ylim([12., 60.])
-    # ax1.set_title('lon = {}'.format(lon[index]))
-    # index = np.argmin(np.abs(lon - (179.5)))
-    # ax2.plot(lat, cellWidth[:, index])
-    # ax2.set_ylim([12., 60.])
-    # ax2.set_title('lon = {}'.format(lon[index]))
-    # plt.tight_layout()
-    # plt.savefig('res_vs_lat.png', dpi=200)
-    #
-    # fig, ax1 = plt.subplots(1, 1, figsize=[6, 4.5])
-    # index = np.argmin(np.abs(lon - (-62.5)))
-    # ax1.plot(lat, cellWidth[:, index])
-    # ax1.set_ylim([12., 60.])
-    # ax1.set_title('Drake Passage lon = {}'.format(lon[index]))
-    # plt.tight_layout()
-    # plt.savefig('drake_res_vs_lat.png', dpi=200)
-
     return cellWidth, lon, lat
+
+
+def main():
+    cellWidth, lon, lat = cellWidthVsLatLon()
+    build_spherical_mesh(cellWidth, lon, lat, out_filename='base_mesh.nc')
+
+
+if __name__ == '__main__':
+    main()

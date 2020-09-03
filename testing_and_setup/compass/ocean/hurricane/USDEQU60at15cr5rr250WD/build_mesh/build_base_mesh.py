@@ -1,9 +1,26 @@
 #!/usr/bin/env python
+import mpas_tools.ocean.coastal_tools as ct
+from mpas_tools.ocean import build_spherical_mesh
 
-import numpy as np
-import mpas_tools.mesh.creation.coastal_tools as ct
 
 def cellWidthVsLatLon():
+    """
+    This function creates cell width array for this mesh on a regular
+    latitude-longitude grid.
+
+    Returns
+    -------
+       cellWidth : ndarray
+            m x n array, entries are desired cell width in km
+
+       lat : ndarray
+            latitude, vector of length m, with entries between -90 and 90,
+            degrees
+
+       lon : ndarray
+            longitude, vector of length n, with entries between -180 and 180,
+            degrees
+    """
     km = 1000.0
 
     params = ct.default_params
@@ -40,11 +57,11 @@ def cellWidthVsLatLon():
     cell_width, lon, lat = ct.coastal_refined_mesh(
         params, cell_width, lon, lat)
 
-    print("****Delaware Bay high-resolution (1km)****")
+    print("****Delaware Bay high-resolution (0.25km)****")
     params["region_box"] = ct.Delaware_Bay
     params["plot_box"] = ct.Delaware
     params["restrict_box"] = ct.Delaware_restrict
-    params["dx_min_coastal"] = 1.0 * km
+    params["dx_min_coastal"] = 0.25 * km
     params["trans_width"] = 100.0 * km
     params["trans_start"] = 17.0 * km
 
@@ -52,3 +69,14 @@ def cellWidthVsLatLon():
         params, cell_width, lon, lat)
 
     return cell_width / 1000, lon, lat
+
+
+def main():
+    cellWidth, lon, lat = cellWidthVsLatLon()
+    build_spherical_mesh(cellWidth, lon, lat, out_filename='base_mesh.nc',
+                         do_inject_bathymetry=True, preserve_floodplain=True,
+                         floodplain_elevation=10.0)
+
+
+if __name__ == '__main__':
+    main()
