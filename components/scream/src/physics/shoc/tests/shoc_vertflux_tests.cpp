@@ -137,8 +137,9 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux {
 
     static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCVertfluxData);
 
-    for (Int i = 0; i < num_runs; ++i) {
-      SDS_f90[i].randomize();
+    // Generate random input data
+    for (auto& d : SDS_f90) {
+      d.randomize();
     }
 
     // Create copies of data for use by cxx. Needs to happen before fortran calls so that
@@ -153,14 +154,13 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux {
     // Assume all data is in C layout
 
     // Get data from fortran
-    for (Int i = 0; i < num_runs; ++i) {
+    for (auto& d : SDS_f90) {
       // expects data in C layout
-      calc_shoc_vertflux(SDS_f90[i]);
+      calc_shoc_vertflux(d);
     }
 
     // Get data from cxx
-    for (Int i = 0; i < num_runs; ++i) {
-      SHOCVertfluxData& d = SDS_cxx[i];
+    for (auto& d : SDS_cxx) {
       d.transpose<ekat::util::TransposeDirection::c2f>();
       // expects data in fortran layout
       calc_shoc_vertflux_f(d.shcol, d.nlev, d.nlevi, d.tkh_zi, d.dz_zi, d.invar, d.vertflux);
