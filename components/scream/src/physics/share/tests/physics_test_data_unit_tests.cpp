@@ -24,7 +24,7 @@ struct FakeClass1 : public PhysicsTestData
   FakeClass1(const FakeClass1& rhs) :
     PhysicsTestData(rhs, {&one12, &two12, &three13, &four13}, {&ints}) {}
 
-  //FakeClass1& operator=(const FakeClass1& rhs) { PhysicsTestData::operator=(rhs); return *this; }
+  FakeClass1& operator=(const FakeClass1& rhs) { PhysicsTestData::operator=(rhs); return *this; }
 };
 
 struct FakeClass2 : public PhysicsTestData
@@ -37,7 +37,7 @@ struct FakeClass2 : public PhysicsTestData
   FakeClass2(const FakeClass2& rhs) :
     PhysicsTestData(rhs, {&one12, &two1}) {}
 
-  //FakeClass2& operator=(const FakeClass2& rhs) { PhysicsTestData::operator=(rhs); return *this; }
+  FakeClass2& operator=(const FakeClass2& rhs) { PhysicsTestData::operator=(rhs); return *this; }
 };
 
 struct FakeClass3 : public PhysicsTestData
@@ -50,7 +50,7 @@ struct FakeClass3 : public PhysicsTestData
   FakeClass3(const FakeClass3& rhs) :
     PhysicsTestData(rhs, {&one1, &two1}) {}
 
-  //FakeClass3& operator=(const FakeClass3& rhs) { PhysicsTestData::operator=(rhs); return *this; }
+  FakeClass3& operator=(const FakeClass3& rhs) { PhysicsTestData::operator=(rhs); return *this; }
 };
 
 } // empty namespace
@@ -78,19 +78,33 @@ struct UnitWrap::UnitTest<D>::TestTestData
       FakeClass1(fakes1_1[1]),
     };
 
+    FakeClass1 fakes1_3[] = {
+      FakeClass1(1, 1, 1),
+      FakeClass1(1, 1, 1),
+    };
+
+    // Assignment
+    for (Int n = 0; n < num_runs; ++n) {
+      fakes1_3[n] = fakes1_2[n];
+    }
+
     for (Int n = 0; n < num_runs; ++n) {
       auto& d1 = fakes1_1[n];
       auto& d2 = fakes1_2[n];
+      auto& d3 = fakes1_3[n];
 
       // Check dimensions
       REQUIRE(d1.total() == std::get<0>(dims[n]) * std::get<1>(dims[n]));
       REQUIRE(d1.total() == d2.total());
+      REQUIRE(d1.total() == d3.total());
 
       REQUIRE(d1.totali() == std::get<0>(dims[n]) * std::get<2>(dims[n]));
       REQUIRE(d1.totali() == d2.totali());
+      REQUIRE(d1.totali() == d3.totali());
 
       REQUIRE(d1.shcol == std::get<0>(dims[n]));
       REQUIRE(d1.shcol == d2.shcol);
+      REQUIRE(d1.shcol == d3.shcol);
 
       // Check randomization and correct copy construction, assignment
       for (Int i = 0; i < d1.total(); ++i) {
@@ -98,19 +112,26 @@ struct UnitWrap::UnitTest<D>::TestTestData
         REQUIRE( (d1.two12[i] > -2.0 && d1.two12[i] < -1.0) );
 
         REQUIRE(d1.one12[i] == d2.one12[i]);
+        REQUIRE(d1.one12[i] == d3.one12[i]);
+
         REQUIRE(d1.two12[i] == d2.two12[i]);
+        REQUIRE(d1.two12[i] == d3.two12[i]);
       }
       for (Int i = 0; i < d1.totali(); ++i) {
         REQUIRE( (d1.three13[i] > -3.0 && d1.three13[i] < -2.0) );
         REQUIRE( (d1.four13[i] > 0.0   && d1.four13[i] < 1.0) );
 
         REQUIRE(d1.three13[i] == d2.three13[i]);
+        REQUIRE(d1.three13[i] == d3.three13[i]);
+
         REQUIRE(d1.four13[i] == d2.four13[i]);
+        REQUIRE(d1.four13[i] == d3.four13[i]);
       }
       for (Int i = 0; i < d1.shcol; ++i) {
         REQUIRE( (d1.ints[i] >= 42 && d1.ints[i] <= 84) );
 
         REQUIRE(d1.ints[i] == d2.ints[i]);
+        REQUIRE(d1.ints[i] == d3.ints[i]);
       }
 
       // Check transpose
@@ -147,7 +168,10 @@ struct UnitWrap::UnitTest<D>::TestTestData
       d1.ints[0]  = 123;
 
       REQUIRE(d1.one12[0] != d2.one12[0]);
+      REQUIRE(d1.one12[0] != d3.one12[0]);
+
       REQUIRE(d1.ints[0] != d2.ints[0]);
+      REQUIRE(d1.ints[0] != d3.ints[0]);
     }
   }
 
@@ -171,27 +195,42 @@ struct UnitWrap::UnitTest<D>::TestTestData
       FakeClass2(fakes1_1[1]),
     };
 
+    FakeClass2 fakes1_3[] = {
+      FakeClass2(1, 1),
+      FakeClass2(1, 1),
+    };
+
+    // Assignment
+    for (Int n = 0; n < num_runs; ++n) {
+      fakes1_3[n] = fakes1_2[n];
+    }
+
     for (Int n = 0; n < num_runs; ++n) {
       auto& d1 = fakes1_1[n];
       auto& d2 = fakes1_2[n];
+      auto& d3 = fakes1_3[n];
 
       // Check dimensions
       REQUIRE(d1.total() == std::get<0>(dims[n]) * std::get<1>(dims[n]));
       REQUIRE(d1.total() == d2.total());
+      REQUIRE(d1.total() == d3.total());
 
       REQUIRE(d1.shcol == std::get<0>(dims[n]));
       REQUIRE(d1.shcol == d2.shcol);
+      REQUIRE(d1.shcol == d3.shcol);
 
       // Check randomization and correct copy construction, assignment
       for (Int i = 0; i < d1.total(); ++i) {
         REQUIRE( (d1.one12[i] > 0.0  && d1.one12[i] < 1.0) );
 
         REQUIRE(d1.one12[i] == d2.one12[i]);
+        REQUIRE(d1.one12[i] == d3.one12[i]);
       }
       for (Int i = 0; i < d1.shcol; ++i) {
         REQUIRE( (d1.two1[i] > -2.0 && d1.two1[i] < -1.0) );
 
         REQUIRE(d1.two1[i] == d2.two1[i]);
+        REQUIRE(d1.two1[i] == d3.two1[i]);
       }
 
       // Check transpose
@@ -215,7 +254,10 @@ struct UnitWrap::UnitTest<D>::TestTestData
       d1.two1[0]  = 123;
 
       REQUIRE(d1.one12[0] != d2.one12[0]);
+      REQUIRE(d1.one12[0] != d3.one12[0]);
+
       REQUIRE(d1.two1[0] != d2.two1[0]);
+      REQUIRE(d1.two1[0] != d3.two1[0]);
     }
   }
 
@@ -239,13 +281,25 @@ struct UnitWrap::UnitTest<D>::TestTestData
       FakeClass3(fakes1_1[1]),
     };
 
+    FakeClass3 fakes1_3[] = {
+      FakeClass3(1),
+      FakeClass3(1),
+    };
+
+    // Assignment
+    for (Int n = 0; n < num_runs; ++n) {
+      fakes1_3[n] = fakes1_2[n];
+    }
+
     for (Int n = 0; n < num_runs; ++n) {
       auto& d1 = fakes1_1[n];
       auto& d2 = fakes1_2[n];
+      auto& d3 = fakes1_3[n];
 
       // Check dimensions
       REQUIRE(d1.shcol == dims[n]);
       REQUIRE(d1.shcol == d2.shcol);
+      REQUIRE(d1.shcol == d3.shcol);
 
       // Check randomization and correct copy construction, assignment
       for (Int i = 0; i < d1.shcol; ++i) {
@@ -257,6 +311,7 @@ struct UnitWrap::UnitTest<D>::TestTestData
       d1.one1[0] = 123.0;
 
       REQUIRE(d1.one1[0] != d2.one1[0]);
+      REQUIRE(d1.one1[0] != d3.one1[0]);
     }
   }
 
