@@ -13,7 +13,7 @@ fi
 # MPAS-Model tag or release
 echo "Docs version: $DOCS_VERSION"
 
-DOCS_PATH="${DOCS_VERSION//\//_}"
+DOCS_PATH="${DOCS_VERSION// /_}"
 
 PUBLICATION_BRANCH=gh-pages
 # Checkout the branch
