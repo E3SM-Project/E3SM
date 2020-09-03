@@ -467,7 +467,20 @@ contains
 
     call check_length_scale_shoc_length(nlev,shcol,host_dx,host_dy,shoc_mix)
 
-  end subroutine check_length_scale_shoc_length_c         
+  end subroutine check_length_scale_shoc_length_c
+  
+  subroutine clipping_diag_third_shoc_moments_c(nlevi,shcol,w_sec_zi,w3) bind (C)
+    use shoc, only: clipping_diag_third_shoc_moments
+
+    integer(kind=c_int), intent(in), value :: nlevi
+    integer(kind=c_int), intent(in), value :: shcol
+    real(kind=c_real), intent(in) :: w_sec_zi(shcol,nlevi) 
+
+    real(kind=c_real), intent(inout) :: w3(shcol,nlevi)
+
+    call clipping_diag_third_shoc_moments(nlevi,shcol,w_sec_zi,w3)
+
+  end subroutine clipping_diag_third_shoc_moments_c
 
   subroutine shoc_diag_second_moments_srf_c(shcol, wthl, uw, vw, ustar2, wstar) bind(C)
    use shoc, only: diag_second_moments_srf

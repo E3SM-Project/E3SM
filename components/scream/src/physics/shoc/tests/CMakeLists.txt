@@ -17,6 +17,7 @@ set(SHOC_TESTS_SRCS
     shoc_check_length_tests.cpp
     shoc_conv_time_length_tests.cpp
     shoc_mix_length_tests.cpp
+    shoc_clip_third_moms_tests.cpp
     shoc_tke_column_stab_tests.cpp
     shoc_tke_shr_prod_tests.cpp
     shoc_tke_isotropic_ts_tests.cpp

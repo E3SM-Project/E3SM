@@ -88,6 +88,9 @@ void compute_shoc_mix_shoc_length_c(Int nlev, Int shcol, Real *tke, Real* brunt,
 
 void check_length_scale_shoc_length_c(Int nlev, Int shcol, Real *host_dx,
                                     Real *host_dy, Real *shoc_mix);
+				    
+void clipping_diag_third_shoc_moments_c(Int nlevi, Int shcol, Real *w_sec_zi,
+                                    Real *w3);				    
 
 void shoc_diag_second_moments_srf_c(Int shcol, Real* wthl, Real* uw, Real* vw,
                                    Real* ustar2, Real* wstar);
@@ -391,6 +394,13 @@ void check_length_scale_shoc_length(SHOCMixcheckData &d) {
   shoc_init(d.nlev, true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
   check_length_scale_shoc_length_c(d.nlev,d.shcol,d.host_dx,d.host_dy,d.shoc_mix);
+  d.transpose<ekat::util::TransposeDirection::f2c>();
+}
+
+void clipping_diag_third_shoc_moments(SHOCClipthirdmomsData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<ekat::util::TransposeDirection::c2f>();
+  clipping_diag_third_shoc_moments_c(d.nlevi,d.shcol,d.w_sec_zi,d.w3);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 

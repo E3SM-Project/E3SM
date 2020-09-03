@@ -1865,7 +1865,7 @@ end function w3_diag_third_shoc_moment
 
 subroutine clipping_diag_third_shoc_moments(&
            nlevi,shcol,w_sec_zi,& ! Input
-	   w3)                    ! Output
+	   w3)                    ! Input/Output
 
   ! perform clipping to prevent unrealistically large values from occuring
 
