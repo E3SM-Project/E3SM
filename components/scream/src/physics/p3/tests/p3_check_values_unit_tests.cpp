@@ -24,7 +24,7 @@ struct UnitWrap::UnitTest<D>::TestCheckValues {
 static void run_check_values_bfb()
 {
   CheckValuesData cvd_fortran[] = {
-    //          kts_, kte_, timestepcount_, source_ind_, force_abort_, ranges
+    //          kts_, kte_, timestepcount_, source_ind_, force_abort_
     CheckValuesData(1,  72,              2,         100,       false),
     CheckValuesData(1,  72,              3,         100,       false),
     CheckValuesData(1,  72,              4,         100,       false),

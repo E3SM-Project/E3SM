@@ -180,21 +180,6 @@ static void run_bfb_ice_sed()
 
 static void run_bfb_homogeneous_freezing()
 {
-  const std::array< std::pair<Real, Real>, HomogeneousFreezingData::NUM_ARRAYS > ranges = {
-    std::make_pair(C::homogfrze - 10, C::homogfrze + 10), // t
-    std::make_pair(0.000E+00, 1.000E+00), // exner
-    std::make_pair(0.000E+00, 1.000E+00), // latent_heat_fusion
-    std::make_pair(0.000E+00, C::QSMALL*2), // qc
-    std::make_pair(0.000E+00, 1.000E+00), // nc
-    std::make_pair(0.000E+00, C::QSMALL*2), // qr
-    std::make_pair(0.000E+00, 1.000E+00), // nr
-    std::make_pair(0.000E+00, 1.000E+00), // qi
-    std::make_pair(0.000E+00, 1.000E+00), // ni
-    std::make_pair(0.000E+00, 1.000E+00), // qm
-    std::make_pair(0.000E+00, 1.000E+00), // bm
-    std::make_pair(0.000E+00, 1.000E+00), // th
-  };
-
   HomogeneousFreezingData hfds_fortran[] = {
     //                    kts, kte, ktop, kbot, kdir
     HomogeneousFreezingData(1,  72,   27,   72,   -1),

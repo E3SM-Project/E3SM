@@ -48,8 +48,12 @@ PhysicsTestData::PhysicsTestData(const PhysicsTestData &rhs,
   m_idx_data(rhs.m_idx_data)
 {
   const size_t expected_real_ptrs = m_ptrs.size() + m_ptrs_i.size() + m_ptrs_c.size();
-  EKAT_REQUIRE_MSG(real_ptrs.size() == expected_real_ptrs, real_ptrs.size() << " != " << expected_real_ptrs);
-  EKAT_REQUIRE_MSG(int_ptrs.size() == m_indices_c.size(), int_ptrs.size() << " != " << m_indices_c.size());
+  EKAT_REQUIRE_MSG(
+    real_ptrs.size() == expected_real_ptrs,
+    "PhysicsTestData: not enough Real* members given to copy constructor: " << real_ptrs.size() << " != " << expected_real_ptrs);
+  EKAT_REQUIRE_MSG(
+    int_ptrs.size() == m_indices_c.size(),
+    "PhysicsTestData: not enough Int* members given to copy constructor: " << int_ptrs.size() << " != " << m_indices_c.size());
 
   size_t real_offset = 0;
   for (auto& item : {&m_ptrs, &m_ptrs_i, &m_ptrs_c}) {
@@ -90,12 +94,13 @@ void PhysicsTestData::init_ptrs()
 void PhysicsTestData::randomize(const std::vector<std::pair<void*, std::pair<Real, Real> > >& ranges)
 {
   using range_type = std::remove_const<std::remove_reference<decltype(ranges)>::type >::type;
+  using PT = std::pair<decltype(m_ptrs)*,Int>;
 
   std::default_random_engine generator;
 
   range_type ranges_copy(ranges);
 
-  for (auto& item : { std::make_pair(&m_ptrs, m_total) , std::make_pair(&m_ptrs_i, m_totali), std::make_pair(&m_ptrs_c, shcol) }) {
+  for (auto& item : { PT{&m_ptrs, m_total} , PT{&m_ptrs_i, m_totali}, PT{&m_ptrs_c, shcol} }) {
     auto& ptrs = *item.first;
     const Int num_per = item.second;
     for (Real** ptr : ptrs) {
