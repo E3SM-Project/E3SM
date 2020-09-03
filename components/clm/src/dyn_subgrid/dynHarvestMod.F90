@@ -236,7 +236,7 @@ contains
 
     call dynHarvest_file%time_info%set_current_year_get_year()
     if (use_cn .or. use_fates) then
-       harvest_rates(1:num_harvest_cats,bounds%begg:bounds%endg) = 0._r8
+       harvest_rates(1:num_harvest_vars,bounds%begg:bounds%endg) = 0._r8
 
        if (dynHarvest_file%time_info%is_before_time_series()) then
           ! Turn off harvest before the start of the harvest time series
