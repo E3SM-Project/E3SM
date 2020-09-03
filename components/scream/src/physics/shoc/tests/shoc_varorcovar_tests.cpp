@@ -278,7 +278,7 @@ static void run_bfb()
       SHOCVarorcovarData(10, 71, 72, 1),
       SHOCVarorcovarData(10, 12, 13, 1),
       SHOCVarorcovarData(7,  16, 17, 1),
-      SHOCVarorcovarData(2, 7, 8, 1),
+      SHOCVarorcovarData(2, 7, 8, 0.005),
     };
 
     static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCVarorcovarData);

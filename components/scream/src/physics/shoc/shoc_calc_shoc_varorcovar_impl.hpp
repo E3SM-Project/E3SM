@@ -37,7 +37,7 @@ void Functions<S,D>
     const Spack grid_dz2 = ekat::pack::square(grid_dz); // vertical grid diff squared
 
     // Compute the variance or covariance
-    varorcovar(k).set(range_pack1 > 0 && range_pack1 < nlev, tunefac*isotropy_zi(k)*tkh_zi(k)*grid_dz2*(invar1_sm1 - invar1_s)*(invar2_sm1 - invar2_s));
+    varorcovar(k).set(range_pack1 > 0 && range_pack1 < nlev, tunefac*(isotropy_zi(k)*tkh_zi(k))*grid_dz2*(invar1_sm1 - invar1_s)*(invar2_sm1 - invar2_s));
   });
 }
 

@@ -1355,7 +1355,7 @@ subroutine calc_shoc_varorcovar(&
     kt=k-1 ! define upper grid point indicee
     do i=1,shcol
 
-      grid_dz2=(1._rtype/dz_zi(i,k))**2 ! vertical grid diff squared
+      grid_dz2=bfb_square(1._rtype/dz_zi(i,k)) ! vertical grid diff squared
       sm=isotropy_zi(i,k)*tkh_zi(i,k) ! coefficient for variances
 
       ! Compute the variance or covariance
