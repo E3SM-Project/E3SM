@@ -18,7 +18,9 @@
 //   * (dim1 x dim3) of Real
 //   * dim1 of Int
 //
-// Subclasses of PhysicsTestData should look like the following:
+// Subclasses of PhysicsTestData should look like the following. Note that the copy
+// constructor and assignment operators must be defined if you want to be able to copy
+// objects of this type. The DATA_COPY_CONS and ASSIGNX macros are there to help you do this.
 /*
 struct SHOCGridData : public PhysicsTestData {
   // Inputs
@@ -32,13 +34,43 @@ struct SHOCGridData : public PhysicsTestData {
       {&zt_grid, &dz_zt, &pdel, &rho_zt},  // list of (shcol x nlev) members
       {&zi_grid, &dz_zi}) {}               // list of (shcol x nlevi) members
 
-  SHOCGridData(const SHOCGridData &rhs) : PhysicsTestData(rhs,
-    {&zt_grid, &dz_zt, &pdel, &rho_zt, &zi_grid, &dz_zi}) {} // list of all PhysicsTestData managed Real members
-    // order of these members should match the order they appeared in the constructor
-
-  SHOCGridData &operator=(const SHOCGridData &rhs) { PhysicsTestData::operator=(rhs); return *this; }
+  DATA_COPY_CONS(SHOCGridData, 3); // 3 => number of arguments constructor expects
+  ASSIGN0(SHOCGridData); // 0 => number of scalars
 };
 */
+
+// Convenience macros for up to 10 arguments, beyond that, you're on your own :)
+
+#define REP0()
+#define REP1() 0
+#define REP2() REP1(), 0
+#define REP3() REP2(), 0
+#define REP4() REP3(), 0
+#define REP5() REP4(), 0
+#define REP6() REP5(), 0
+#define REP7() REP6(), 0
+#define REP8() REP7(), 0
+#define REP9() REP8(), 0
+#define REP10() REP9(), 0
+
+#define DATA_COPY_CONS(name, num_args) \
+  name(const name& rhs) : name(REP##num_args()) { *this = rhs; }
+
+#define  ASS0(                                           ) ((void) (0))
+#define  ASS1(a_                                         )                                                 a_ = rhs.a_
+#define  ASS2(a_, b_                                     )  ASS1(a_)                                     ; b_ = rhs.b_
+#define  ASS3(a_, b_, c_                                 )  ASS2(a_, b_)                                 ; c_ = rhs.c_
+#define  ASS4(a_, b_, c_, d_                             )  ASS3(a_, b_, c_)                             ; d_ = rhs.d_
+#define  ASS5(a_, b_, c_, d_, e_                         )  ASS4(a_, b_, c_, d_)                         ; e_ = rhs.e_
+#define  ASS6(a_, b_, c_, d_, e_, f_                     )  ASS5(a_, b_, c_, d_, e_)                     ; f_ = rhs.f_
+#define  ASS7(a_, b_, c_, d_, e_, f_, g_                 )  ASS6(a_, b_, c_, d_, e_, f_)                 ; g_ = rhs.g_
+#define  ASS8(a_, b_, c_, d_, e_, f_, g_, h_             )  ASS7(a_, b_, c_, d_, e_, f_, g_)             ; h_ = rhs.h_
+#define  ASS9(a_, b_, c_, d_, e_, f_, g_, h_, i_         )  ASS8(a_, b_, c_, d_, e_, f_, g_, h_)         ; i_ = rhs.i_
+#define ASS10(a_, b_, c_, d_, e_, f_, g_, h_, i_, j_     )  ASS9(a_, b_, c_, d_, e_, f_, g_, h_, i_)     ; j_ = rhs.j_
+#define ASS11(a_, b_, c_, d_, e_, f_, g_, h_, i_, j_, k_ ) ASS10(a_, b_, c_, d_, e_, f_, g_, h_, i_, j_) ; k_ = rhs.k_
+
+#define ASSIGN(name, num_scalars, ...)                                  \
+  name& operator=(const name& rhs) { ASS##num_scalars(__VA_ARGS__); assignment_impl(rhs); return *this; }
 
 namespace scream {
 
@@ -62,12 +94,8 @@ struct PhysicsTestData
                   const std::vector<Real**>& ptrs_c = {}, // [schol] (optional)
                   const std::vector<Int**>& idx_c = {});  // [schol] (optional)
 
+  // Delete this to block subclasses getting the default impls, which would be incorrect
   PhysicsTestData(const PhysicsTestData &rhs) = delete;
-
-  PhysicsTestData(const PhysicsTestData &rhs,
-                  const std::vector<Real**>& real_ptrs, // ALL Real* members, listed in same order as constructor but without breaking them into multiple vectors
-                  const std::vector<Int**>& int_ptrs = {}); // ALL Int* members (optional)
-
   PhysicsTestData &operator=(const PhysicsTestData &rhs) = delete;
 
   // Since we are also preparing index data, this function is doing more than transposing. It's shifting the
@@ -108,6 +136,10 @@ struct PhysicsTestData
 
   Int total() const { return m_total; }
   Int totali() const { return m_totali; }
+
+ protected:
+
+  PhysicsTestData& assignment_impl(const PhysicsTestData& rhs);
 
  private:
   void init_ptrs();

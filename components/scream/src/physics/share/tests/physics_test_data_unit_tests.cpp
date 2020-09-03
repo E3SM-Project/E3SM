@@ -21,10 +21,8 @@ struct FakeClass1 : public PhysicsTestData
     PhysicsTestData(dim1, dim2, dim3,
                     {&one12, &two12}, {&three13, &four13}, {}, {&ints}) {}
 
-  FakeClass1(const FakeClass1& rhs) :
-    PhysicsTestData(rhs, {&one12, &two12, &three13, &four13}, {&ints}) {}
-
-  FakeClass1& operator=(const FakeClass1& rhs) { PhysicsTestData::operator=(rhs); return *this; }
+  DATA_COPY_CONS(FakeClass1, 3);
+  ASSIGN(FakeClass1, 0);
 };
 
 struct FakeClass2 : public PhysicsTestData
@@ -34,23 +32,20 @@ struct FakeClass2 : public PhysicsTestData
   FakeClass2(Int dim1, Int dim2) :
     PhysicsTestData(dim1, dim2, {&one12}, {&two1}) {}
 
-  FakeClass2(const FakeClass2& rhs) :
-    PhysicsTestData(rhs, {&one12, &two1}) {}
-
-  FakeClass2& operator=(const FakeClass2& rhs) { PhysicsTestData::operator=(rhs); return *this; }
+  DATA_COPY_CONS(FakeClass2, 2);
+  ASSIGN(FakeClass2, 0);
 };
 
 struct FakeClass3 : public PhysicsTestData
 {
   Real *one1, *two1;
+  Real scalar;
 
-  FakeClass3(Int dim1) :
-    PhysicsTestData(dim1, {&one1, &two1}) {}
+  FakeClass3(Int dim1, Real scalar_) :
+    PhysicsTestData(dim1, {&one1, &two1}), scalar(scalar_) {}
 
-  FakeClass3(const FakeClass3& rhs) :
-    PhysicsTestData(rhs, {&one1, &two1}) {}
-
-  FakeClass3& operator=(const FakeClass3& rhs) { PhysicsTestData::operator=(rhs); return *this; }
+  DATA_COPY_CONS(FakeClass3, 2);
+  ASSIGN(FakeClass3, 1, scalar);
 };
 
 } // empty namespace
@@ -265,8 +260,8 @@ struct UnitWrap::UnitTest<D>::TestTestData
   {
     const std::vector<Int> dims = { 7, 8 };
     FakeClass3 fakes1_1[] = {
-      FakeClass3(dims[0]),
-      FakeClass3(dims[1]),
+      FakeClass3(dims[0], 42.1),
+      FakeClass3(dims[1], 42.2),
     };
 
     for (auto& d : fakes1_1) {
@@ -282,8 +277,8 @@ struct UnitWrap::UnitTest<D>::TestTestData
     };
 
     FakeClass3 fakes1_3[] = {
-      FakeClass3(1),
-      FakeClass3(1),
+      FakeClass3(1, 0),
+      FakeClass3(1, 0),
     };
 
     // Assignment
@@ -300,6 +295,10 @@ struct UnitWrap::UnitTest<D>::TestTestData
       REQUIRE(d1.shcol == dims[n]);
       REQUIRE(d1.shcol == d2.shcol);
       REQUIRE(d1.shcol == d3.shcol);
+
+      // Check scalar
+      REQUIRE(d1.scalar == d2.scalar);
+      REQUIRE(d1.scalar == d3.scalar);
 
       // Check randomization and correct copy construction, assignment
       for (Int i = 0; i < d1.shcol; ++i) {

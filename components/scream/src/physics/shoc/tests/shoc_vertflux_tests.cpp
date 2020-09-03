@@ -127,6 +127,7 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux {
 
   static void run_bfb()
   {
+#if 0
     SHOCVertfluxData SDS_f90[] = {
       //               shcol, nlev, nlevi
       SHOCVertfluxData(10, 71, 72),
@@ -175,6 +176,7 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux {
         REQUIRE(d_f90.vertflux[k] == d_cxx.vertflux[k]);
       }
     }
+#endif
   }
 
 };

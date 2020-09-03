@@ -496,18 +496,12 @@ struct CalcUpwindData : public PhysicsTestData
 
   CalcUpwindData(Int kts_, Int kte_, Int kdir_, Int kbot_, Int k_qxtop_, Int num_arrays_, Real dt_sub_);
 
-  // deep copy
-  CalcUpwindData(const CalcUpwindData& rhs);
+  DATA_COPY_CONS(CalcUpwindData, 7);
+  ASSIGN(CalcUpwindData, 7, kts, kte, kdir, kbot, k_qxtop, num_arrays, dt_sub);
 
-  CalcUpwindData& operator=(const CalcUpwindData& rhs) = delete;
-
-  Int nk() const { return m_nk; }
+  Int nk() const { return shcol; }
 
   void convert_to_ptr_arr(std::vector<Real*>& mem_space, Real**& fluxes_, Real**& vs_, Real**& qnx_);
-
- private:
-  // Internals
-  Int m_nk;
 };
 void calc_first_order_upwind_step(CalcUpwindData& d);
 
@@ -531,6 +525,9 @@ struct GenSedData : public CalcUpwindData
 
   GenSedData(Int kts_, Int kte_, Int kdir_, Int k_qxtop_, Int k_qxbot_, Int kbot_, Real Co_max_, Real dt_left_,
              Real prt_accum_, Int num_arrays_);
+
+  DATA_COPY_CONS(GenSedData, 10);
+  ASSIGN(GenSedData, 11, kts, kte, kdir, kbot, k_qxtop, num_arrays, dt_sub, Co_max, k_qxbot, dt_left, prt_accum);
 };
 void generalized_sedimentation(GenSedData& d);
 
@@ -561,14 +558,10 @@ struct CloudSedData : public PhysicsTestData
   CloudSedData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
                Real dt_, Real inv_dt_, bool do_predict_nc_, Real precip_liq_surf_);
 
-  // deep copy
-  CloudSedData(const CloudSedData& rhs);
+  DATA_COPY_CONS(CloudSedData, 9);
+  ASSIGN(CloudSedData, 9, kts, kte, ktop, kbot, kdir, dt, inv_dt, do_predict_nc, precip_liq_surf);
 
-  Int nk() const { return m_nk; }
-
- private:
-  // Internals
-  Int m_nk;
+  Int nk() const { return shcol; }
 };
 void cloud_sedimentation(CloudSedData& d);
 
@@ -600,14 +593,10 @@ struct IceSedData : public PhysicsTestData
   IceSedData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
              Real dt_, Real inv_dt_, Real precip_ice_surf_);
 
-  // deep copy
-  IceSedData(const IceSedData& rhs);
+  DATA_COPY_CONS(IceSedData, 8);
+  ASSIGN(IceSedData, 8, kts, kte, ktop, kbot, kdir, dt, inv_dt, precip_ice_surf);
 
-  Int nk() const { return m_nk; }
-
- private:
-  // Internals
-  Int m_nk;
+  Int nk() const { return shcol; }
 };
 
 void ice_sedimentation(IceSedData& d);
@@ -642,14 +631,10 @@ struct RainSedData : public PhysicsTestData
   RainSedData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
               Real dt_, Real inv_dt_, Real precip_liq_surf_);
 
-  // deep copy
-  RainSedData(const RainSedData& rhs);
+  DATA_COPY_CONS(RainSedData, 8);
+  ASSIGN(RainSedData, 8, kts, kte, ktop, kbot, kdir, dt, inv_dt, precip_liq_surf);
 
-  Int nk() const { return m_nk; }
-
- private:
-  // Internals
-  Int m_nk;
+  Int nk() const { return shcol; }
 };
 
 void rain_sedimentation(RainSedData& d);
@@ -700,8 +685,8 @@ struct HomogeneousFreezingData : public PhysicsTestData
 
   HomogeneousFreezingData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_);
 
-  // deep copy
-  HomogeneousFreezingData(const HomogeneousFreezingData& rhs);
+  DATA_COPY_CONS(HomogeneousFreezingData, 5);
+  ASSIGN(HomogeneousFreezingData, 5, kts, kte, ktop, kbot, kdir);
 
   Int nk() const { return m_nk; }
 
@@ -994,10 +979,9 @@ struct LatentHeatData : public PhysicsTestData
   Real* v, *s, *f;
 
   LatentHeatData(Int its_, Int ite_, Int kts_, Int kte_);
-  LatentHeatData(const LatentHeatData& rhs);
 
-  // Internals
-  Int m_ni, m_nk;
+  DATA_COPY_CONS(LatentHeatData, 4);
+  ASSIGN(LatentHeatData, 4, its, ite, kts, kte);
 };
 void get_latent_heat(LatentHeatData& d);
 
@@ -1020,14 +1004,10 @@ struct CheckValuesData : public PhysicsTestData
   CheckValuesData(Int kts_, Int kte_, Int timestepcount_, Int source_ind_, bool force_abort_);
 
   // deep copy
+  DATA_COPY_CONS(CheckValuesData, 5);
+  ASSIGN(CheckValuesData, 5, kts, kte, timestepcount, source_ind, force_abort);
 
-  CheckValuesData(const CheckValuesData& rhs);
-
-  Int nk() const { return m_nk; }
-
-  private:
-  // Internals
-  Int m_nk;
+  Int nk() const { return shcol; }
 };
 void check_values(CheckValuesData& d);
 
@@ -1076,14 +1056,10 @@ struct P3MainPart1Data : public PhysicsTestData
   P3MainPart1Data(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
                   bool do_predict_nc_, Real dt_);
 
-  // deep copy
-  P3MainPart1Data(const P3MainPart1Data& rhs);
+  DATA_COPY_CONS(P3MainPart1Data, 7);
+  ASSIGN(P3MainPart1Data, 7, kts, kte, kbot, ktop, kdir, do_predict_nc, dt);
 
-  Int nk() const { return m_nk; }
-
- private:
-  // Internals
-  Int m_nk;
+  Int nk() const { return shcol; }
 };
 
 void p3_main_part1(P3MainPart1Data& d);
@@ -1126,14 +1102,10 @@ struct P3MainPart2Data : public PhysicsTestData
   P3MainPart2Data(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
                   bool do_predict_nc_, Real dt_);
 
-  // deep copy
-  P3MainPart2Data(const P3MainPart2Data& rhs);
+  DATA_COPY_CONS(P3MainPart2Data, 7);
+  ASSIGN(P3MainPart2Data, 9, kts, kte, kbot, ktop, kdir, do_predict_nc, dt, inv_dt, is_hydromet_present);
 
-  Int nk() const { return m_nk; }
-
- private:
-  // Internals
-  Int m_nk;
+  Int nk() const { return shcol; }
 };
 
 void p3_main_part2(P3MainPart2Data& d);
@@ -1170,14 +1142,10 @@ struct P3MainPart3Data : public PhysicsTestData
 
   P3MainPart3Data(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_);
 
-  // deep copy
-  P3MainPart3Data(const P3MainPart3Data& rhs);
+  DATA_COPY_CONS(P3MainPart3Data, 5);
+  ASSIGN(P3MainPart3Data, 5, kts, kte, kbot, ktop, kdir);
 
-  Int nk() const { return m_nk; }
-
- private:
-  // Internals
-  Int m_nk;
+  Int nk() const { return shcol; }
 };
 
 void p3_main_part3(P3MainPart3Data& d);
@@ -1215,12 +1183,8 @@ struct P3MainData : public PhysicsTestData
 
   P3MainData(Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool do_predict_nc_);
 
-  // deep copy
-  P3MainData(const P3MainData& rhs);
-
- private:
-  // Internals
-  Int m_ni, m_nk;
+  DATA_COPY_CONS(P3MainData, 7);
+  ASSIGN(P3MainData, 7, its, ite, kts, kte, it, dt, do_predict_nc);
 };
 
 void p3_main(P3MainData& d);

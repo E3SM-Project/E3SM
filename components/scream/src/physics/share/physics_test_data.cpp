@@ -33,37 +33,19 @@ PhysicsTestData::PhysicsTestData(Int shcol_, Int nlev_, Int nlevi_,
   init_ptrs();
 }
 
-PhysicsTestData::PhysicsTestData(const PhysicsTestData &rhs,
-                                 const std::vector<Real**>& real_ptrs, const std::vector<Int**>& int_ptrs) :
-  shcol(rhs.shcol),
-  nlev(rhs.nlev),
-  nlevi(rhs.nlevi),
-  m_total(rhs.m_total),
-  m_totali(rhs.m_totali),
-  m_ptrs(rhs.m_ptrs.size()),
-  m_ptrs_i(rhs.m_ptrs_i.size()),
-  m_ptrs_c(rhs.m_ptrs_c.size()),
-  m_indices_c(rhs.m_indices_c.size()),
-  m_data(rhs.m_data),
-  m_idx_data(rhs.m_idx_data)
+PhysicsTestData& PhysicsTestData::assignment_impl(const PhysicsTestData& rhs)
 {
-  const size_t expected_real_ptrs = m_ptrs.size() + m_ptrs_i.size() + m_ptrs_c.size();
-  EKAT_REQUIRE_MSG(
-    real_ptrs.size() == expected_real_ptrs,
-    "PhysicsTestData: not enough Real* members given to copy constructor: " << real_ptrs.size() << " != " << expected_real_ptrs);
-  EKAT_REQUIRE_MSG(
-    int_ptrs.size() == m_indices_c.size(),
-    "PhysicsTestData: not enough Int* members given to copy constructor: " << int_ptrs.size() << " != " << m_indices_c.size());
-
-  size_t real_offset = 0;
-  for (auto& item : {&m_ptrs, &m_ptrs_i, &m_ptrs_c}) {
-    std::copy(real_ptrs.begin() + real_offset, real_ptrs.begin() + real_offset + item->size(), item->begin());
-    real_offset += item->size();
-  }
-
-  std::copy(int_ptrs.begin(), int_ptrs.end(), m_indices_c.begin());
+  shcol      = rhs.shcol;
+  nlev       = rhs.nlev;
+  nlevi      = rhs.nlevi;
+  m_total    = rhs.m_total;
+  m_totali   = rhs.m_totali;
+  m_data     = rhs.m_data;      // Copy
+  m_idx_data = rhs.m_idx_data;  // Copy
 
   init_ptrs();
+
+  return *this;
 }
 
 void PhysicsTestData::init_ptrs()

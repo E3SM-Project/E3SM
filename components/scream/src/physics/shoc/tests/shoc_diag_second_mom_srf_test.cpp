@@ -25,6 +25,7 @@ struct UnitWrap::UnitTest<D>::TestSecondMomSrf {
 
 static void run_second_mom_srf_bfb()
 {
+#if 0
   SHOCSecondMomentSrfData mom_srf_data_f90[] = {
     //                      shcol
     SHOCSecondMomentSrfData(36),
@@ -62,6 +63,7 @@ static void run_second_mom_srf_bfb()
       REQUIRE(mom_srf_data_f90[i].wstar[k]  == mom_srf_data_cxx[i].wstar[k]);
     }
   }
+#endif
 }
 
 static void run_second_mom_srf_phys()

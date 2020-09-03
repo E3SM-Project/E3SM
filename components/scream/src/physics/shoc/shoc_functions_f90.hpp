@@ -28,7 +28,8 @@ struct SHOCGridData : public PhysicsTestData {
   SHOCGridData(Int shcol_, Int nlev_, Int nlevi_) :
     PhysicsTestData(shcol_, nlev_, nlevi_, {&zt_grid, &dz_zt, &pdel, &rho_zt}, {&zi_grid, &dz_zi}) {}
 
-  SHOCGridData(const SHOCGridData &rhs) : PhysicsTestData(rhs, {&zt_grid, &dz_zt, &pdel, &rho_zt, &zi_grid, &dz_zi}) {}
+  DATA_COPY_CONS(SHOCGridData, 3);
+  ASSIGN(SHOCGridData, 0);
 };
 
 //Create data structure to hold data for integ_column_stability
@@ -41,7 +42,9 @@ struct SHOCColstabData : public PhysicsTestData {
 
   SHOCColstabData(Int shcol_, Int nlev_) :
     PhysicsTestData(shcol_, nlev_, {&dz_zt, &pres, &brunt}, {&brunt_int}) {}
-  SHOCColstabData(const SHOCColstabData &rhs) : PhysicsTestData(rhs, {&dz_zt, &pres, &brunt, &brunt_int}) {}
+
+  DATA_COPY_CONS(SHOCColstabData, 2);
+  ASSIGN(SHOCColstabData, 0);
 };//SHOCColstabData
 
 //Create data structure to hold data for compute_shr_prod
@@ -55,7 +58,9 @@ struct SHOCTkeshearData : public PhysicsTestData {
   //functions to initialize data
   SHOCTkeshearData(Int shcol_, Int nlev_, Int nlevi_) :
     PhysicsTestData(shcol_, nlev_, nlevi_, {&u_wind, &v_wind}, {&dz_zi, &sterm}) {}
-  SHOCTkeshearData(const SHOCTkeshearData &rhs) : PhysicsTestData(rhs, {&u_wind, &v_wind, &dz_zi, &sterm}) {}
+
+  DATA_COPY_CONS(SHOCTkeshearData, 3);
+  ASSIGN(SHOCTkeshearData, 0);
 };//SHOCTkeshearData
 
 //Create data structure to hold data for isotropic_ts
@@ -69,7 +74,9 @@ struct SHOCIsotropicData : public PhysicsTestData {
   //functions to initialize data
   SHOCIsotropicData(Int shcol_, Int nlev_) :
     PhysicsTestData(shcol_, nlev_, {&tke, &a_diss, &brunt, &isotropy}, {&brunt_int}) {}
-  SHOCIsotropicData(const SHOCIsotropicData &rhs) : PhysicsTestData(rhs, {&tke, &a_diss, &brunt, &isotropy, &brunt_int}) {}
+
+  DATA_COPY_CONS(SHOCIsotropicData, 2);
+  ASSIGN(SHOCIsotropicData, 0);
 };//SHOCIsotropicData
 
 //Create data structure to hold data for adv_sgs_tke
@@ -87,7 +94,9 @@ struct SHOCAdvsgstkeData : public PhysicsTestData {
   //functions to initialize data
   SHOCAdvsgstkeData(Int shcol_, Int nlev_, Real dtime_) :
     PhysicsTestData(shcol_, nlev_, {&shoc_mix, &wthv_sec, &sterm_zt, &tk, &tke, &a_diss}), dtime(dtime_) {}
-  SHOCAdvsgstkeData(const SHOCAdvsgstkeData &rhs) : PhysicsTestData(rhs, {&shoc_mix, &wthv_sec, &sterm_zt, &tk, &tke, &a_diss}), dtime(rhs.dtime) {}
+
+  DATA_COPY_CONS(SHOCAdvsgstkeData, 3);
+  ASSIGN(SHOCAdvsgstkeData, 1, dtime);
 };//SHOCAdvsgstkeData
 
 //Create data structure to hold data for eddy_diffusivities
@@ -102,7 +111,9 @@ struct SHOCEddydiffData : public PhysicsTestData {
   //functions to initialize data
   SHOCEddydiffData(Int shcol_, Int nlev_) :
     PhysicsTestData(shcol_, nlev_, {&zt_grid, &shoc_mix, &isotropy, &tke, &tk, &tkh, &sterm_zt}, {&obklen, &pblh}) {}
-  SHOCEddydiffData(const SHOCEddydiffData &rhs) : PhysicsTestData(rhs, {&zt_grid, &shoc_mix, &isotropy, &tke, &tk, &tkh, &sterm_zt, &obklen, &pblh}) {}
+
+  DATA_COPY_CONS(SHOCEddydiffData, 2);
+  ASSIGN(SHOCEddydiffData, 0);
 };//SHOCEddydiffData
 
 
@@ -117,7 +128,9 @@ struct SHOCEnergydseData : public PhysicsTestData {
   //functions to initialize data
   SHOCEnergydseData(Int shcol_, Int nlev_) :
     PhysicsTestData(shcol_, nlev_, {&thlm, &shoc_ql, &exner, &zt_grid, &host_dse}, {&phis}) {}
-  SHOCEnergydseData(const SHOCEnergydseData &rhs) : PhysicsTestData(rhs, {&thlm, &shoc_ql, &exner, &zt_grid, &host_dse, &phis}) {}
+
+  DATA_COPY_CONS(SHOCEnergydseData, 2);
+  ASSIGN(SHOCEnergydseData, 0);
 };//SHOCEnergydseData
 
 //create data structure for shoc_energy_integrals
@@ -131,7 +144,9 @@ struct SHOCEnergyintData : public PhysicsTestData {
   //functions to initialize data
   SHOCEnergyintData(Int shcol_, Int nlev_) :
     PhysicsTestData(shcol_, nlev_, {&host_dse, &pdel, &rtm, &rcm, &u_wind, &v_wind}, {&se_int, &ke_int, &wv_int, &wl_int}) {}
-  SHOCEnergyintData(const SHOCEnergyintData &rhs) : PhysicsTestData(rhs, {&host_dse, &pdel, &rtm, &rcm, &u_wind, &v_wind, &se_int, &ke_int, &wv_int, &wl_int}) {}
+
+  DATA_COPY_CONS(SHOCEnergyintData, 2);
+  ASSIGN(SHOCEnergyintData, 0);
 };//SHOCEnergyintData
 
 //Create data structure for shoc_energy_total_fixer
@@ -148,7 +163,9 @@ struct SHOCEnergytotData : public PhysicsTestData {
   //functions to initialize data for shoc_energy_total_fixer
   SHOCEnergytotData(Int shcol_, Int nlev_, Int nlevi_, Real dtime_, Int nadv_) :
     PhysicsTestData(shcol_, nlev_, nlevi_, {&zt_grid, &rho_zt}, {&zi_grid}, {&se_b, &ke_b, &wv_b, &wl_b, &se_a, &ke_a, &wv_a, &wl_a, &wthl_sfc, &wqw_sfc, &te_a, &te_b}), nadv(nadv_), dtime(dtime_) {}
-  SHOCEnergytotData(const SHOCEnergytotData &rhs) : PhysicsTestData(rhs, {&zt_grid, &rho_zt, &zi_grid, &se_b, &ke_b, &wv_b, &wl_b, &se_a, &ke_a, &wv_a, &wl_a, &wthl_sfc, &wqw_sfc, &te_a, &te_b}) {}
+
+  DATA_COPY_CONS(SHOCEnergytotData, 5);
+  ASSIGN(SHOCEnergytotData, 2, dtime, nadv);
 };//SHOCEnergytotData
 
 //create data structure for shoc_energy_threshold_fixer
@@ -163,7 +180,9 @@ struct SHOCEnergythreshfixerData : public PhysicsTestData {
   //functions to initialize data
   SHOCEnergythreshfixerData(Int shcol_, Int nlev_, Int nlevi_) :
     PhysicsTestData(shcol_, nlev_, nlevi_, {&tke}, {&pint}, {&se_dis, &te_a, &te_b}, {&shoctop}) {}
-  SHOCEnergythreshfixerData(const SHOCEnergythreshfixerData &rhs) : PhysicsTestData(rhs, {&tke, &pint, &se_dis, &te_a, &te_b}, {&shoctop}) {}
+
+  DATA_COPY_CONS(SHOCEnergythreshfixerData, 3);
+  ASSIGN(SHOCEnergythreshfixerData, 0);
 };//SHOCEnergythreshfixerData
 
 //create data structure for shoc_energy_dse_fixer
@@ -178,7 +197,9 @@ struct SHOCEnergydsefixerData : public PhysicsTestData {
   //functions to initialize data
   SHOCEnergydsefixerData(Int shcol_, Int nlev_) :
     PhysicsTestData(shcol_, nlev_, {&host_dse}, {&se_dis}, {&shoctop}) {}
-  SHOCEnergydsefixerData(const SHOCEnergydsefixerData &rhs) : PhysicsTestData(rhs, {&host_dse, &se_dis}, {&shoctop}) {}
+
+  DATA_COPY_CONS(SHOCEnergydsefixerData, 2);
+  ASSIGN(SHOCEnergydsefixerData, 0);
 };//SHOCEnergydsefixerData
 
 //Create data structure to hold data for calc_shoc_vertflux
@@ -191,7 +212,9 @@ struct SHOCVertfluxData : public PhysicsTestData {
 
   SHOCVertfluxData(Int shcol_, Int nlev_, Int nlevi_) :
     PhysicsTestData(shcol_, nlev_, nlevi_, {&invar}, {&tkh_zi, &dz_zi, &vertflux}) {}
-  SHOCVertfluxData(const SHOCVertfluxData &rhs) : PhysicsTestData(rhs, {&invar, &tkh_zi, &dz_zi, &vertflux}) {}
+
+  DATA_COPY_CONS(SHOCVertfluxData, 3);
+  ASSIGN(SHOCVertfluxData, 0);
 }; //SHOCVertfluxData
 
 //Create data structure to hold data for calc_shoc_varorcovar
@@ -205,8 +228,9 @@ struct SHOCVarorcovarData : public PhysicsTestData {
 
   SHOCVarorcovarData(Int shcol_, Int nlev_, Int nlevi_, Real tunefac_) :
     PhysicsTestData(shcol_, nlev_, nlevi_, {&invar1, &invar2}, {&tkh_zi, &dz_zi, &isotropy_zi, &varorcovar}), tunefac(tunefac_) {}
-  SHOCVarorcovarData(const SHOCVarorcovarData &rhs) :
-    PhysicsTestData(rhs, {&invar1, &invar2, &tkh_zi, &dz_zi, &isotropy_zi, &varorcovar}), tunefac(rhs.tunefac) {}
+
+  DATA_COPY_CONS(SHOCVarorcovarData, 4);
+  ASSIGN(SHOCVarorcovarData, 1, tunefac);
 };//SHOCVarorcovarData
 
 //Create data structure to hold data for compute_brunt_shoc_length
@@ -219,8 +243,9 @@ struct SHOCBruntlengthData : public PhysicsTestData {
 
   SHOCBruntlengthData(Int shcol_, Int nlev_, Int nlevi_) :
     PhysicsTestData(shcol_, nlev_, nlevi_, {&dz_zt, &thv, &brunt}, {&thv_zi}) {}
-  SHOCBruntlengthData(const SHOCBruntlengthData &rhs) :
-    PhysicsTestData(rhs, {&dz_zt, &thv, &brunt, &thv_zi}) {}
+
+  DATA_COPY_CONS(SHOCBruntlengthData, 3);
+  ASSIGN(SHOCBruntlengthData, 0)
 };//SHOCBruntlengthData
 
 //Create data structure to hold data for compute_l_inf_shoc_length
@@ -233,8 +258,9 @@ struct SHOCInflengthData : public PhysicsTestData {
 
   SHOCInflengthData(Int shcol_, Int nlev_) :
     PhysicsTestData(shcol_, nlev_, {&zt_grid, &dz_zt, &tke}, {&l_inf}) {}
-  SHOCInflengthData(const SHOCInflengthData &rhs) :
-    PhysicsTestData(rhs, {&zt_grid, &dz_zt, &tke, &l_inf}) {}
+
+  DATA_COPY_CONS(SHOCInflengthData, 2);
+  ASSIGN(SHOCInflengthData, 0);
 };//SHOCInflengthData
 
 //Create data structure to hold data for compute_vel_shoc_length
@@ -247,8 +273,9 @@ struct SHOCConvvelData : public PhysicsTestData {
 
   SHOCConvvelData(Int shcol_, Int nlev_) :
     PhysicsTestData(shcol_, nlev_, {&zt_grid, &dz_zt, &thv, &wthv_sec}, {&conv_vel, &pblh}) {}
-  SHOCConvvelData(const SHOCConvvelData &rhs) :
-    PhysicsTestData(rhs, {&zt_grid, &dz_zt, &thv, &wthv_sec, &conv_vel, &pblh}) {}
+
+  DATA_COPY_CONS(SHOCConvvelData, 2);
+  ASSIGN(SHOCConvvelData, 0);
 };//SHOCConvvelData
 
 //Create data structure to hold data for compute_conv_time_shoc_length
@@ -261,8 +288,9 @@ struct SHOCConvtimeData : public PhysicsTestData {
 
   SHOCConvtimeData(Int shcol_) :
     PhysicsTestData(shcol_, {&conv_vel, &pblh, &tscale}) {}
-  SHOCConvtimeData(const SHOCConvtimeData &rhs) :
-    PhysicsTestData(rhs, {&conv_vel, &pblh, &tscale}) {}
+
+  DATA_COPY_CONS(SHOCConvtimeData, 1);
+  ASSIGN(SHOCConvtimeData, 0);
 };//SHOCConvtimeData
 
 //Create data structure to hold data for compute_shoc_mix_shoc_length
@@ -275,8 +303,9 @@ struct SHOCMixlengthData : public PhysicsTestData {
 
   SHOCMixlengthData(Int shcol_, Int nlev_) :
     PhysicsTestData(shcol_, nlev_, {&tke, &brunt, &zt_grid, &shoc_mix}, {&l_inf, &tscale}) {}
-  SHOCMixlengthData(const SHOCMixlengthData &rhs) :
-    PhysicsTestData(rhs, {&tke, &brunt, &zt_grid, &shoc_mix, &l_inf, &tscale}) {}
+
+  DATA_COPY_CONS(SHOCMixlengthData, 2);
+  ASSIGN(SHOCMixlengthData, 0);
 };//SHOCMixlengthData
 
 //Create data structure to hold data for check_length_scale_shoc_length
@@ -289,8 +318,9 @@ struct SHOCMixcheckData : public PhysicsTestData {
 
   SHOCMixcheckData(Int shcol_, Int nlev_) :
     PhysicsTestData(shcol_, nlev_, {&shoc_mix}, {&host_dx, &host_dy}) {}
-  SHOCMixcheckData(const SHOCMixcheckData &rhs) :
-    PhysicsTestData(rhs, {&shoc_mix, &host_dx, &host_dy}) {}
+
+  DATA_COPY_CONS(SHOCMixcheckData, 2);
+  ASSIGN(SHOCMixcheckData, 0);
 };//SHOCMixcheckData
 
 struct SHOCSecondMomentSrfData : public PhysicsTestData {
@@ -301,8 +331,10 @@ struct SHOCSecondMomentSrfData : public PhysicsTestData {
   Real *ustar2, *wstar;
 
   SHOCSecondMomentSrfData(Int shcol_) :
-  PhysicsTestData(shcol_, {&wthl, &uw, &vw, &ustar2, &wstar}) {}
-  SHOCSecondMomentSrfData(const SHOCSecondMomentSrfData &rhs) : PhysicsTestData(rhs, {&wthl, &uw, &vw, &ustar2, &wstar}) {}
+    PhysicsTestData(shcol_, {&wthl, &uw, &vw, &ustar2, &wstar}) {}
+
+  DATA_COPY_CONS(SHOCSecondMomentSrfData, 1);
+  ASSIGN(SHOCSecondMomentSrfData, 0);
 };
 
 //Create data structure to hold data for linear_interp
@@ -316,8 +348,9 @@ struct SHOCLinearintData : public PhysicsTestData {
 
   SHOCLinearintData(Int shcol_, Int nlev_, Int nlevi_, Real minthresh_) :
     PhysicsTestData(shcol_, nlev_, nlevi_, {&x1, &y1}, {&x2, &y2}), minthresh(minthresh_) {}
-  SHOCLinearintData(const SHOCLinearintData &rhs) :
-    PhysicsTestData(rhs, {&x1, &y1, &x2, &y2}), minthresh(rhs.minthresh) {}
+
+  DATA_COPY_CONS(SHOCLinearintData, 4);
+  ASSIGN(SHOCLinearintData, 1, minthresh);
 };//SHOCLinearintData
 
 //
@@ -328,27 +361,27 @@ struct SHOCLinearintData : public PhysicsTestData {
 // locations of the cell center (location of thermodynaics quantities), cell
 // interfaces, and pressure gradient the functon returns dz_zi, dz_zt,
 // and density.
-void shoc_grid(SHOCGridData &d);
-void update_host_dse(SHOCEnergydseData &d);
-void shoc_energy_integrals(SHOCEnergyintData &d);
-void shoc_energy_total_fixer(SHOCEnergytotData &d);
-void shoc_energy_threshold_fixer(SHOCEnergythreshfixerData &d);
-void shoc_energy_dse_fixer(SHOCEnergydsefixerData &d);
-void calc_shoc_vertflux(SHOCVertfluxData &d);
-void calc_shoc_varorcovar(SHOCVarorcovarData &d);
-void integ_column_stability(SHOCColstabData &d);
-void compute_shr_prod(SHOCTkeshearData &d);
-void isotropic_ts(SHOCIsotropicData &d);
-void adv_sgs_tke(SHOCAdvsgstkeData &d);
-void eddy_diffusivities(SHOCEddydiffData &d);
-void compute_brunt_shoc_length(SHOCBruntlengthData &d);
-void compute_l_inf_shoc_length(SHOCInflengthData &d);
-void compute_conv_vel_shoc_length(SHOCConvvelData &d);
-void compute_conv_time_shoc_length(SHOCConvtimeData &d);
-void compute_shoc_mix_shoc_length(SHOCMixlengthData &d);
-void check_length_scale_shoc_length(SHOCMixcheckData &d);
-void shoc_diag_second_moments_srf(SHOCSecondMomentSrfData& d);
-void linear_interp(SHOCLinearintData &d);
+void shoc_grid                      (SHOCGridData &d);
+void update_host_dse                (SHOCEnergydseData &d);
+void shoc_energy_integrals          (SHOCEnergyintData &d);
+void shoc_energy_total_fixer        (SHOCEnergytotData &d);
+void shoc_energy_threshold_fixer    (SHOCEnergythreshfixerData &d);
+void shoc_energy_dse_fixer          (SHOCEnergydsefixerData &d);
+void calc_shoc_vertflux             (SHOCVertfluxData &d);
+void calc_shoc_varorcovar           (SHOCVarorcovarData &d);
+void integ_column_stability         (SHOCColstabData &d);
+void compute_shr_prod               (SHOCTkeshearData &d);
+void isotropic_ts                   (SHOCIsotropicData &d);
+void adv_sgs_tke                    (SHOCAdvsgstkeData &d);
+void eddy_diffusivities             (SHOCEddydiffData &d);
+void compute_brunt_shoc_length      (SHOCBruntlengthData &d);
+void compute_l_inf_shoc_length      (SHOCInflengthData &d);
+void compute_conv_vel_shoc_length   (SHOCConvvelData &d);
+void compute_conv_time_shoc_length  (SHOCConvtimeData &d);
+void compute_shoc_mix_shoc_length   (SHOCMixlengthData &d);
+void check_length_scale_shoc_length (SHOCMixcheckData &d);
+void shoc_diag_second_moments_srf   (SHOCSecondMomentSrfData& d);
+void linear_interp                  (SHOCLinearintData &d);
 
 //
 // _f functions decls
