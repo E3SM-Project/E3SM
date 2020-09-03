@@ -21,7 +21,7 @@ interface
     integer(kind=c_int), intent(in), value :: shcol
     integer(kind=c_int), intent(in), value :: nlev
     integer(kind=c_int), intent(in), value :: nlevi
-    real(kind=c_real), intent(in) :: tunefac
+    real(kind=c_real), intent(in), value :: tunefac
     real(kind=c_real), intent(in) :: isotropy_zi(shcol,nlevi)
     real(kind=c_real), intent(in) :: tkh_zi(shcol,nlevi)
     real(kind=c_real), intent(in) :: dz_zi(shcol,nlevi)
