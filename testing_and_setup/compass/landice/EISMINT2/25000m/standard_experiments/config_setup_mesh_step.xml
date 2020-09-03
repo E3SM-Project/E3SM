@@ -16,9 +16,28 @@
                         <argument flag="">mpas_grid.nc</argument>
                 </step>
 
+                <!-- run though mesh converter to make sure MPAS compliant -->
+                <step executable="define_cullMask.py" >
+                        <argument flag="-f">mpas_grid.nc</argument>
+                        <argument flag="-m">radius</argument>
+                        <argument flag="-d">750.0</argument>
+                </step>
+
+                <!-- cull cells -->
+                <step executable="MpasCellCuller.x" >
+                        <argument flag="">mpas_grid.nc</argument>
+                        <argument flag="">culled_grid.nc</argument>
+                </step>
+
+                <!-- run though mesh converter to make sure MPAS compliant -->
+                <step executable="MpasMeshConverter.x" pre_message="\n\n### Creating MPAS mesh\n\n" post_message="\n\n### MPAS mesh creation complete\n\n">
+                        <argument flag="">culled_grid.nc</argument>
+                        <argument flag="">mpas_grid2.nc</argument>
+                </step>
+
                 <!-- Convert from basic MPAS mesh to MPASLI mesh -->
                 <step executable="create_landice_grid_from_generic_MPAS_grid.py" pre_message="\n\n### Creating LI mesh\n\n" post_message="\n\n### LI mesh creation complete\n\n">
-                        <argument flag="-i">mpas_grid.nc</argument>
+                        <argument flag="-i">mpas_grid2.nc</argument>
                         <argument flag="-o">landice_grid.nc</argument>
                         <argument flag="-l">10</argument>
                         <argument flag="--thermal"></argument>

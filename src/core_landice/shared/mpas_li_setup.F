@@ -49,6 +49,7 @@ module li_setup
              li_setup_vertical_grid, &
              li_setup_sign_and_index_fields, &
              li_setup_wachspress_vertex_to_cell_weights, &
+             li_interpolate_vertex_to_cell_1d, &
              li_interpolate_vertex_to_cell_2d, &
              li_cells_to_vertices_1dfield_using_kiteAreas, &
              li_calculate_layerThickness, &
@@ -186,6 +187,7 @@ contains
       ! Pool pointers
       integer, pointer :: nVertLevels ! Dimensions
       real (kind=RKIND), dimension(:), pointer :: layerThicknessFractions, layerCenterSigma, layerInterfaceSigma
+      real (kind=RKIND), dimension(:), pointer :: layerInterfaceFractions
       real (kind=RKIND), dimension(:), pointer :: thickness
       logical, pointer :: config_do_restart
       ! Truly locals
@@ -199,6 +201,7 @@ contains
       call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
       call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
       call mpas_pool_get_array(meshPool, 'layerInterfaceSigma', layerInterfaceSigma)
+      call mpas_pool_get_array(meshPool, 'layerInterfaceFractions', layerInterfaceFractions)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
 
       ! Check that layerThicknessFractions are valid
@@ -230,6 +233,13 @@ contains
          layerInterfaceSigma(k) = layerInterfaceSigma(k-1) + layerThicknessFractions(k-1)
       end do
       layerInterfaceSigma(nVertLevels+1) = 1.0_RKIND
+
+      ! layerInterfaceFractions are the fraction associated with each interface
+      layerInterfaceFractions(1) = 0.5_RKIND * layerThicknessFractions(1)
+      do k = 2, nVertLevels
+         layerInterfaceFractions(k) = 0.5_RKIND * (layerThicknessFractions(k-1) + layerThicknessFractions(k))
+      end do
+      layerInterfaceFractions(nVertLevels+1) = 0.5_RKIND * layerThicknessFractions(nVertLevels)
 
    !--------------------------------------------------------------------
    end subroutine li_setup_vertical_grid
@@ -371,7 +381,7 @@ contains
       integer :: nVerticesOnThisCell
       real(kind=RKIND), dimension(:,:), allocatable :: vertexCoordsOnCell
       type (mpas_pool_type), pointer :: meshPoolPointer
-
+      real(kind=RKIND), dimension(3) :: coords
       ! Get pool stuff
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'maxEdges', maxEdges)
@@ -396,14 +406,79 @@ contains
             iVertex = verticesOnCell(v, iCell)
             vertexCoordsOnCell(:, v) = (/ xVertex(iVertex), yVertex(iVertex), zVertex(iVertex) /)
          enddo
+         coords(1) = xCell(iCell)
+         coords(2) = yCell(iCell)
+         coords(3) = zCell(iCell)
          wachspressWeightVertex(1:nVerticesOnThisCell, iCell) = mpas_wachspress_coordinates( &
                nVerticesOnThisCell, vertexCoordsOnCell(:, 1:nVerticesOnThisCell), &
-               (/ xCell(iCell), yCell(iCell), zCell(iCell) /), meshPoolPointer)
+               coords, meshPoolPointer)
       end do
 
       deallocate(vertexCoordsOnCell)
    !--------------------------------------------------------------------
    end subroutine li_setup_wachspress_vertex_to_cell_weights
+
+
+!***********************************************************************
+!
+!  routine li_interpolate_vertex_to_cell_1d
+!
+!> \brief   Interpolates from vertices to cell centers using Wachspress functions
+!> \author  Matt Hoffman
+!> \date    03 March 2020
+!> \details
+!>  This routine interpolated from vertices to cell center values using
+!>  Wachspress functions in MPAS operators.
+!
+!-----------------------------------------------------------------------
+   subroutine li_interpolate_vertex_to_cell_1d(meshPool, vertexValue, cellValue)
+      use mpas_geometry_utils
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(in) :: meshPool  !< Input: mesh object
+
+      real(kind=RKIND), dimension(:), pointer, intent(in) :: vertexValue  !< value on vertices
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      real(kind=RKIND), dimension(:), intent(out) :: cellValue  !< value on cells
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      ! Pool pointers
+      real(kind=RKIND), dimension(:,:), pointer :: wachspressWeightVertex
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:,:), pointer :: verticesOnCell
+      integer, pointer :: nCells, maxEdges
+      integer :: iCell, iVertex, v
+      integer :: nVerticesOnThisCell
+
+      ! Get pool stuff
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'maxEdges', maxEdges)
+      call mpas_pool_get_array(meshPool, 'wachspressWeightVertex', wachspressWeightVertex)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'verticesOnCell', verticesOnCell)
+
+      cellValue(:) = 0.0_RKIND
+      do iCell = 1, nCells
+         nVerticesOnThisCell = nEdgesOnCell(iCell)
+         do v = 1, nVerticesOnThisCell
+            iVertex = verticesOnCell(v, iCell)
+            cellValue(iCell) = cellValue(iCell) + wachspressWeightVertex(v, iCell) * vertexValue(iVertex)
+         enddo
+      end do
+
+   !--------------------------------------------------------------------
+   end subroutine li_interpolate_vertex_to_cell_1d
 
 
 !***********************************************************************
@@ -435,7 +510,7 @@ contains
       !-----------------------------------------------------------------
       ! output variables
       !-----------------------------------------------------------------
-      real(kind=RKIND), dimension(:,:), pointer, intent(in) :: cellValue  !< value on cells
+      real(kind=RKIND), dimension(:,:), intent(out) :: cellValue  !< value on cells
 
       !-----------------------------------------------------------------
       ! local variables

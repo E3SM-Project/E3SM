@@ -213,6 +213,11 @@ module li_calving
          call eigencalving(domain, err_tmp)
          err = ior(err, err_tmp)
 
+      elseif (trim(config_calving) == 'mask') then
+
+         call mask_calving(domain, err_tmp)
+         err = ior(err, err_tmp)
+
       else
 
          call mpas_log_write("Invalid option for config_calving specified: " // trim(config_calving), MPAS_LOG_ERR)
@@ -354,7 +359,7 @@ module li_calving
       ! These are needed to initialize the temperature profile in restored columns.
       real (kind=RKIND), dimension(:,:), pointer :: &
            temperature,           &   ! interior ice temperature
-           waterfrac                  ! interior water fraction
+           waterFrac                  ! interior water fraction
 
       real (kind=RKIND), dimension(:), pointer :: &
            surfaceAirTemperature, &   ! surface air temperature
@@ -401,7 +406,7 @@ module li_calving
 
          ! get required fields from the thermal pool
          call mpas_pool_get_array(thermalPool, 'temperature', temperature)
-         call mpas_pool_get_array(thermalPool, 'waterfrac', waterfrac)
+         call mpas_pool_get_array(thermalPool, 'waterFrac', waterFrac)
          call mpas_pool_get_array(thermalPool, 'surfaceAirTemperature', surfaceAirTemperature)
          call mpas_pool_get_array(thermalPool, 'surfaceTemperature', surfaceTemperature)
          call mpas_pool_get_array(thermalPool, 'basalTemperature', basalTemperature)
@@ -480,7 +485,7 @@ module li_calving
                        thickness(iCell),              &
                        surfaceAirTemperature(iCell),  &
                        temperature(:,iCell),          &
-                       waterfrac(:,iCell),            &
+                       waterFrac(:,iCell),            &
                        surfaceTemperature(iCell),     &
                        basalTemperature(iCell))
 
@@ -1439,6 +1444,85 @@ module li_calving
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
+!    routine mask_calving
+!
+!> \brief Calve ice based on a mask that is input
+!> \author Matthew Hoffman
+!> \date   July 2019
+!> \details  This routine uses the field calvingMask to eliminate floating
+!> ice.  Locations marked with 0 will not be calved.  Locations with all
+!> all other values will be calved.  Note that time-varying values
+!> can be input.
+!-----------------------------------------------------------------------
+   subroutine mask_calving(domain, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: &
+         domain          !< Input/Output: domain object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: velocityPool
+      real (kind=RKIND), dimension(:), pointer :: thickness
+      real (kind=RKIND), dimension(:), pointer :: calvingThickness
+      integer, dimension(:), pointer :: calvingMask
+      integer, dimension(:), pointer :: cellMask
+      integer :: err_tmp
+
+      err = 0
+
+      ! block loop
+      block => domain % blocklist
+      do while (associated(block))
+
+         ! get pools
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+
+         ! get fields
+         call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
+         call mpas_pool_get_array(geometryPool, 'calvingMask', calvingMask)
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+
+         calvingThickness = 0.0_RKIND
+
+         ! === apply calving ===
+         where (li_mask_is_floating_ice(cellMask) .and. (calvingMask >= 1))
+            calvingThickness = thickness
+            thickness = 0.0_RKIND
+         end where
+
+         ! update mask
+         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         err = ior(err, err_tmp)
+
+         call remove_small_islands(meshPool, geometryPool)
+
+         block => block % next
+      enddo
+
+   end subroutine mask_calving
+
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
 !    routine calculate_calving_front_mask
 !
 !> \brief  Calculate mask indicating position of effective calving front
@@ -1575,6 +1659,7 @@ module li_calving
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
          call mpas_pool_get_array(geometryPool, 'contiguousDynamicIce', contiguousDynamicIce)
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+         call mpas_pool_get_dimension(geometryPool, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
          call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
 
@@ -1582,10 +1667,10 @@ module li_calving
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
          err = ior(err, err_tmp)
 
-      call mpas_log_write("Iceberg-detection flood-fill: updated masks.")
+         call mpas_log_write("Iceberg-detection flood-fill: updated masks.")
          contiguousDynamicIce(:) = 0  ! initialize
          newMaskCountLocal = 0
-         do iCell = 1, nCells
+         do iCell = 1, nCellsSolve
             if (li_mask_is_grounded_ice(cellMask(iCell)) .and. li_mask_is_dynamic_ice(cellMask(iCell))) then
                contiguousDynamicIce(iCell) = 1
                newMaskCountLocal = newMaskCountLocal + 1
@@ -1643,7 +1728,7 @@ module li_calving
                newMaskCountLocal = 0
                contiguousDynamicIceOld(:) = contiguousDynamicIce(:)
 
-               do iCell = 1, nCellsArray(2) ! this gives owned cells plus 1-halo
+               do iCell = 1, nCellsArray(1) ! this gives owned cells only
                   if (contiguousDynamicIceOld(iCell) == 0 .and. &   ! this cell not yet marked
                      li_mask_is_dynamic_ice(cellMask(iCell))) then  ! and is dynamic
                      ! If it has a marked neighbor, then add it to the mask
@@ -1669,6 +1754,10 @@ module li_calving
          ! update count of cells added to mask globally
          call mpas_dmpar_sum_int(domain % dminfo, newMaskCountLocalAccum, newMaskCountGlobal)
          call mpas_log_write("  Added $i new cells to global mask", intArgs=(/newMaskCountGlobal/))
+
+         if (globalLoopCount>200) then
+            call mpas_log_write("Too many global loops!", MPAS_LOG_ERR)
+         endif
       end do ! global loop
 
 

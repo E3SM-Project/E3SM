@@ -252,6 +252,9 @@ module li_time_integration_fe
       logical, pointer :: config_adaptive_timestep
       logical, pointer :: config_adaptive_timestep_include_DCFL
 
+      character (len=StrKIND), pointer :: &
+           config_thickness_advection   ! method for advecting thickness and tracers
+
       integer :: &
            allowableAdvecDtProcNumberHere, &
            allowableAdvecDtProcNumber
@@ -301,6 +304,11 @@ module li_time_integration_fe
       call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
       call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep', config_adaptive_timestep)
       call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_DCFL', config_adaptive_timestep_include_DCFL)
+      call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
+
+      if (trim(config_thickness_advection) == 'none') then
+         return ! skip this routine
+      endif
 
       allowableAdvecDtAllProcs = 0.0_RKIND
       allowableDiffDtAllProcs = 0.0_RKIND
@@ -308,8 +316,6 @@ module li_time_integration_fe
       dminfo => domain % dminfo
 
       ! Initialize
-
-      err = 0
 
       allowableAdvecDtOnProc = 1.0e36_RKIND ! set to large number
       allowableDiffDtOnProc = 1.0e36_RKIND ! set to large number
@@ -571,7 +577,7 @@ module li_time_integration_fe
       real (kind=RKIND), dimension(:), pointer :: thickness
 
       real (kind=RKIND), dimension(:,:), pointer :: temperature
-      real (kind=RKIND), dimension(:,:), pointer :: waterfrac
+      real (kind=RKIND), dimension(:,:), pointer :: waterFrac
       real (kind=RKIND), dimension(:,:), pointer :: enthalpy
 
       integer, pointer :: nCells
@@ -597,7 +603,7 @@ module li_time_integration_fe
 
       ! Halo updates
       ! Note: The layer thickness and tracers must be up to date in halos before calling the advection subroutines.
-      !   The thermal tracers (temperature, waterfrac, enthalpy) are updated at the end of li_thermal_solver.
+      !   The thermal tracers (temperature, waterFrac, enthalpy) are updated at the end of li_thermal_solver.
       !   But thickness (which is used by subroutine li_advection_thickness_tracers) needs an update here. TODO: confirm this
 
       call mpas_timer_start("halo updates")
@@ -733,7 +739,7 @@ module li_time_integration_fe
 
       call mpas_dmpar_field_halo_exch(domain, 'thickness')
       call mpas_dmpar_field_halo_exch(domain, 'temperature')
-      call mpas_dmpar_field_halo_exch(domain, 'waterfrac')
+      call mpas_dmpar_field_halo_exch(domain, 'waterFrac')
       call mpas_dmpar_field_halo_exch(domain, 'enthalpy')
 
       call mpas_timer_stop("halo updates")
