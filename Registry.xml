@@ -39,6 +39,9 @@
 		<dim name="nVertInterfaces" definition="nVertLevels+1" units="unitless"
 		     description="The number of interfaces in the vertical direction."
 		/>
+		<dim name="nISMIP6OceanLayers" units="unitless"
+		     description="The number of layers in the ISMIP6 ocean temperature dataset."
+		/>
 		<dim name="maxTracersAdvect" definition="1" units="unitless"
 		     description="The maximum number of tracers to be advected."
 		/>
@@ -85,13 +88,17 @@
 		            description="If true, then apply Albany's grounding line parameterization"
 		            possible_values=".true. or .false."
 		/>
-		<nml_option name="config_beta_use_effective_pressure" type="logical" default_value=".false." units="unitless"
-		            description="If true, then multiply beta by effective pressure before passing to Albany.  This allows, e.g., a Weertman basal friction law with an effective pressure term.  Note that basal friction still needs to be selected in Albany xml file."
+		<nml_option name="config_beta_thawed_only" type="logical" default_value=".false." units="unitless"
+		            description="If true, then beta is zeroed wherever the basal temperature is below the pressure-melting temperature"
 		            possible_values=".true. or .false."
 		/>
         <nml_option name="config_unrealistic_velocity" type="real" default_value="0.01592356685" units="m s^{-1}"
 		            description="Ice is removed at any locations with surface speed faster than this value and sent to the calving flux. The presence of icebergs can lead to unrealistically large velocities.  A simple method to remove icebergs is to remove ice where the velocity is faster than an arbitrarily large value."
 		            possible_values="Any positive, real number."
+		/>
+		<nml_option name="config_nonconvergence_error" type="logical" default_value=".true." units="unitless"
+		            description="If true, nonconvergence of the velocity solver results in a fatal error.  If false, it is a warning."
+		            possible_values=".true. or .false."
 		/>
 	</nml_record>
 
@@ -116,7 +123,7 @@
 	<nml_record name="calving" in_defaults="true">
 		<nml_option name="config_calving" type="character" default_value="none" units="unitless"
 		            description="Selection of the method for calving ice (as defined further below)."
-		            possible_values="'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving' "
+		            possible_values="'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving', 'mask'"
 		/>
 		<nml_option name="config_calving_topography" type="real" default_value="-500.0" units="m"
 		            description="Defines the topographic height below which ice calves (for topographic_threshold option)."
@@ -206,8 +213,8 @@
 
         <nml_record name="iceshelf_melt" in_defaults="true">
                 <nml_option name="config_basal_mass_bal_float" type="character" default_value="none" units="unitless"
-                            description="Selection of the method for computing the basal mass balance of floating ice.  'none' sets the basalMassBal field to 0 everywhere.  'file' uses without modification whatever value was read in through an input or forcing file or the value set by an ESM coupler.  'constant', 'mismip', 'seroussi' use hardcoded fields defined in the code applicable to Thwaites Glacier. 'temperature_profile' generates a depth-melt relation based on an ocean temperature profile and sill depth."
-                            possible_values="'none', 'file', 'constant', 'mismip', 'seroussi', 'temperature_profile'"
+                            description="Selection of the method for computing the basal mass balance of floating ice.  'none' sets the basalMassBal field to 0 everywhere.  'file' uses without modification whatever value was read in through an input or forcing file or the value set by an ESM coupler.  'constant', 'mismip', 'seroussi' use hardcoded fields defined in the code applicable to Thwaites Glacier. 'temperature_profile' generates a depth-melt relation based on an ocean temperature profile and sill depth. ISMIP6 is the method prescribed by ISMIP6."
+                            possible_values="'none', 'file', 'constant', 'mismip', 'seroussi', 'temperature_profile', 'ismip6'"
                 />
                 <nml_option name="config_bmlt_float_flux" type="real" default_value="0.0" units="W m^{-2}"
 		            description="Value of the constant heat flux applied to the base of floating ice (positive upward)."
@@ -471,6 +478,10 @@
 
                 <package name="observations" description="This package includes variables required for observations in Albany."/>
 
+                <package name="ismip6Melt" description="This package includes variables required for the ISMIP6 melt parameterization."/>
+
+                <package name="thermal" description="This package includes variables required for the thermal solver."/>
+
 	</packages>
 
 
@@ -523,7 +534,7 @@
 			<var name="meshDensity"/>
 		</stream>
 
-<!-- WHL: When using the enthalpy heat-balance solver, will need to add waterfrac to the streams with temperature. -->
+<!-- WHL: When using the enthalpy heat-balance solver, will need to add waterFrac to the streams with temperature. -->
 		<stream name="input"
 				type="input"
 				immutable="true"
@@ -535,19 +546,23 @@
 			<var name="basalWaterThickness"/>
 			<var name="bedTopography"/>
 			<var name="temperature"/>
+			<var name="waterFrac"/>
 			<var name="sfcMassBal"/>
                         <var name="floatingBasalMassBal"/>
                         <var name="surfaceAirTemperature"/>
                         <var name="basalHeatFlux"/>
                         <var name="eigencalvingParameter"/>
                         <var name="stiffnessFactor"/>
+                        <var name="calvingMask"/>
 <!-- The following variables are used by HO only, and only enabled by the higherOrderVelocity package. -->
 <!-- They do not need to be in the input file for the SIA dycore, and will be ignored if they are. -->
 			<var name="beta" packages="higherOrderVelocity"/>
+			<var name="muFriction" packages="higherOrderVelocity"/>
 			<var name="effectivePressure" packages="higherOrderVelocity"/>
 			<var name="dirichletVelocityMask" packages="higherOrderVelocity"/>
             <var name="uReconstructX" packages="higherOrderVelocity"/>
 			<var name="uReconstructY" packages="higherOrderVelocity"/>
+                        <var name="basalFrictionFlux"/>
 			<var name="basalMeltInput" packages="hydro"/>
 			<var name="externalWaterInput" packages="hydro"/>
 			<var name="waterThickness" packages="hydro"/>
@@ -563,6 +578,13 @@
                         <var name="sfcMassBalUncertainty" packages="observations"/>
                         <var name="thicknessUncertainty" packages="observations"/>
                         <var name="floatingBasalMassBalUncertainty" packages="observations"/>
+                        <!-- these variables just for ISMIP6 forcing -->
+                        <var name="ismip6shelfMelt_basin" packages="ismip6Melt"/>
+                        <var name="ismip6shelfMelt_gamma0" packages="ismip6Melt"/>
+                        <var name="ismip6shelfMelt_3dThermalForcing" packages="ismip6Melt"/>
+                        <var name="ismip6shelfMelt_deltaT" packages="ismip6Melt"/>
+                        <var name="ismip6shelfMelt_zOcean" packages="ismip6Melt"/>
+                        <var name="ismip6shelfMelt_offset" packages="ismip6Melt"/>
 		</stream>
 
 <!-- An alternate way to allow the HO variables to exist in a separate file.
@@ -598,16 +620,20 @@
                         <var name="xtime"/>
                         <var name="simulationStartTime"/>
 			<var name="thickness"/>
-			<var name="basalWaterThickness"/>
+			<var name="basalWaterThickness" packages="thermal"/>
 			<var name="temperature"/>
-                        <var name="surfaceAirTemperature"/>
-                        <var name="basalHeatFlux"/>
+			<var name="waterFrac" packages="thermal"/>
+                        <var name="surfaceAirTemperature" packages="thermal"/>
+                        <var name="basalHeatFlux" packages="thermal;hydro"/>
+                        <var name="basalFrictionFlux" packages="thermal;hydro"/>
+                        <var name="heatDissipation" packages="thermal"/>
 			<var name="cellMask"/>
 			<var name="bedTopography"/>
 			<var name="sfcMassBal"/>
                         <var name="floatingBasalMassBal"/>
                         <var name="eigencalvingParameter"/>
                         <var name="stiffnessFactor"/>
+                        <var name="calvingMask"/>
 			<!-- normalVelocity is needed for advection on the next timestep -->
 			<var name="normalVelocity"/>
 			<!-- uReconstructX/Y are only needed for exact restarts of HO iterative solvers -->
@@ -629,6 +655,13 @@
 			<var name="waterPressure" packages="hydro"/>
                         <var name="channelArea" packages="hydro"/>  <!-- this is only needed if running with channels - could be package-controlled -->
 			<var name="waterFluxMask" packages="hydro"/>
+                        <!-- these variables just for ISMIP6 forcing -->
+                        <var name="ismip6shelfMelt_basin" packages="ismip6Melt"/>
+                        <var name="ismip6shelfMelt_gamma0" packages="ismip6Melt"/>
+                        <var name="ismip6shelfMelt_3dThermalForcing" packages="ismip6Melt"/>
+                        <var name="ismip6shelfMelt_deltaT" packages="ismip6Melt"/>
+                        <var name="ismip6shelfMelt_zOcean" packages="ismip6Melt"/>
+                        <var name="ismip6shelfMelt_offset" packages="ismip6Melt"/>
 		</stream>
 
 
@@ -831,6 +864,9 @@ is the value of that variable from the *previous* time level!
 		<var name="layerInterfaceSigma" type="real" dimensions="nVertInterfaces" units="none"
 		     description="Sigma (fractional) level at interface between each layer (including top and bottom)"
 		/>
+		<var name="layerInterfaceFractions" type="real" dimensions="nVertInterfaces" units="none"
+		     description="fraction of total thickness associated with the interface between each layer (including top and bottom)"
+		/>
 		<var name="edgeSignOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
 		     description="Sign of edge contributions to a cell for each edge on cell. Used for bit-reproducible loops. Represents directionality of vector connecting cells."
 		/>
@@ -936,6 +972,9 @@ is the value of that variable from the *previous* time level!
                 <var name="floatingBasalMassBal" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
                      description="Basal mass balance on floating regions"
                 />
+                <var name="calvingMask" type="integer" dimensions="nCells Time" units="m" time_levs="1"
+                        description="mask of grid cells that should be calved.  0=no calving, 1=should be calved"
+                />
                 <var name="calvingThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
                         description="thickness of ice that calves on a given timestep (less than or equal to ice thickness)"
                 />
@@ -985,6 +1024,32 @@ is the value of that variable from the *previous* time level!
                 <var name="slopeEdge"            type="real"     dimensions="nEdges Time"
                      units="m m^{-1}"  description="surface slope magnitude on edges" packages="SIAvelocity"
                />
+                <!-- Variables only needed by ISMIP6 ice-shelf melt method -->
+                <var name="ismip6shelfMelt_basin" type="integer" dimensions="nCells" units="" default_value="1" 
+                     packages="ismip6Melt" description="basin number mask for ISMIP6 melt forcing, input to model"
+                />
+                <var name="ismip6shelfMelt_gamma0" type="real" dimensions="" units="m yr^{-1}" default_value="0.0"
+                     packages="ismip6Melt"
+                     description="gamma0 value prescribed for ISMIP6 ice-shelf melting method, input to model.  Defaults to 0 so that missing input value will zero melt field."
+                />
+                <var name="ismip6shelfMelt_deltaT" type="real" dimensions="nCells" units="K" default_value="0.0"
+                     packages="ismip6Melt"
+                     description="basin-by-basin temperature bias correction for ISMIP6 ice-shelf melting method, input to model"
+                />
+                <var name="ismip6shelfMelt_TFdraft" type="real" dimensions="nCells Time" units="deg. C" packages="ismip6Melt"
+                     description="thermal forcing at ice shelf draft used for ISMIP6 ice-shelf melting method, calculated by param."
+                />
+                <var name="ismip6shelfMelt_3dThermalForcing" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="deg. C" 
+                     default_value="2.0" packages="ismip6Melt"
+                     description="thermal forcing for ISMIP6 ice-shelf melting method, input to model"
+                />
+                <var name="ismip6shelfMelt_zOcean" type="real" dimensions="nISMIP6OceanLayers" units="m" packages="ismip6Melt"
+                     description="depth coordinate associated with ismip6shelfMelt_3dThermalForcing field, input to model"
+                />
+                <var name="ismip6shelfMelt_offset" type="real" dimensions="nCells" units="kg m^{-2} s^{-1}" packages="ismip6Melt" default_value="0.0"
+                     description="Optional field of offset that should be applied to the melt field calculated by the ISMIP6 melt method.  Can be used to run in anomaly mode, but this is not the anomaly.  See Registry.xml for details."
+                        />
+                <!--  description="Optional field of offset that should be appliped to the melt field calculated by the ISMIP6 melt method.  This field is added directly to the melt field calculated by the method and can be used to use the method in anomaly mode.  Note this field is NOT the anomaly.  Let m be the final melt field generated, m_t be the ISMIP6 melt calculation at any time, m_t0 the ISMIP6 melt at time 0, and m_0 a reference melt field (e.g. observed melt field used for initialization).  The melt anomaly would be defined as (delta m)=m_t-m_t0. Then, m=(delta m) + m_0.  Rearranging, m=m_t+(m_0-m_t0).  ismip6shelfMelt_offset is the term in parentheses.  Note that the general usage requires that the first time step be run with ismip6shelfMelt_offset=0 in order to determine m_t0, and then NCO or similar tool used to generate the (m_0-m_t0) field to be input as ismip6shelfMelt_offset in the forward run." -->
                <!-- Scratch variables related to geometry -->
 	       <var name="cellMaskTemporary" type="integer" dimensions="nCells" units="none"
 	       description="temporary copy of cellMask"
@@ -1029,11 +1094,26 @@ is the value of that variable from the *previous* time level!
                 <var name="basalSpeed"                     type="real"     dimensions="nCells Time"
                      units="m s^{-1}"  description="ice basal speed reconstructed at cell centers"
                 />
+                <var name="xvelmean"                     type="real"     dimensions="nCells Time"
+                     units="m s^{-1}"  description="x-component of vertical mean ice velocity at cell centers"
+                />
+                <var name="yvelmean"                     type="real"     dimensions="nCells Time"
+                     units="m s^{-1}"  description="y-component of vertical mean ice velocity at cell centers"
+                />
                 <var name="beta" type="real" dimensions="nCells Time" units="Pa yr m^{-1}" default_value="1.0e8"
                      description="input value of basal traction parameter for sliding law used with first-order momentum balance solver (NOTE non-SI units)"
                 />
                 <var name="betaSolve" type="real" dimensions="nCells Time" units="Pa yr m^{-1}"
                      description="value of basal traction parameter for sliding law used with first-order momentum balance solver (NOTE non-SI units); differs from beta due to any necessary adjustments made for internal consistency (e.g., zeroed out where the ice is found to be floating)"
+                />
+                <var name="drivingStressVert" type="real" dimensions="nVertices Time" units="Pa" default_value="0.0"
+                     description="driving stress calculated by Albany, on vertices"
+                />
+                <var name="drivingStress" type="real" dimensions="nCells Time" units="Pa" default_value="0.0"
+                     description="driving stress calculated by Albany, interpolated to cells"
+                />
+                <var name="muFriction" type="real" dimensions="nCells Time" units="(m yr^{-1})^(1-1/n) for Weertman, unitless for Schoof" default_value="1.0"
+                     description="input value of basal traction parameter for sliding law used with first-order momentum balance solver (NOTE non-SI units)"
                 />
 		<var name="stiffnessFactor" type="real" dimensions="nCells Time" units="none" default_value="1.0"
 		     description="stiffness factor applied to effective viscosity in higher-order velocity solve"
@@ -1077,12 +1157,6 @@ is the value of that variable from the *previous* time level!
                      units="none"  description="flag needed by external velocity solvers that indicates if the Dirichlet boundary condition mask has changed (treated as a logical)"
                         packages="higherOrderVelocity"
                 />
-                <var name="floatingEdges"
-                        type="integer" dimensions="nEdges Time"
-                        units="unitless"
-                        description="edges which are floating have a value of 1.  non floating edges have a value of 0."
-                        packages="higherOrderVelocity"
-                />
         </var_struct>
 
 <!-- ================ -->
@@ -1093,17 +1167,17 @@ is the value of that variable from the *previous* time level!
                      description="X-component of observed surface velocity" />
                 <var name="observedSurfaceVelocityY" type="real" dimensions="nCells Time" units="m s^{-1}"
                      description="Y-component of observed surface velocity" />
-                <var name="observedSurfaceVelocityUncertainty" type="real" dimensions="nCells Time" units="m s^{-1}"
+                <var name="observedSurfaceVelocityUncertainty" type="real" dimensions="nCells Time" units="m s^{-1}" default_value="1.0e20"
                      description="uncertainty in observed surface velocity magnitude" />
                 <var name="observedThicknessTendency" type="real" dimensions="nCells Time" units="m s^{-1}"
                         description="observed tendency in thickness (dH/dt)" />
-                <var name="observedThicknessTendencyUncertainty" type="real" dimensions="nCells Time" units="m s^{-1}"
+                <var name="observedThicknessTendencyUncertainty" type="real" dimensions="nCells Time" units="m s^{-1}" default_value="1.0e20"
                         description="uncertainty in observed tendency in thickness (dH/dt)" />
-                <var name="sfcMassBalUncertainty" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                <var name="sfcMassBalUncertainty" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" default_value="1.0e20"
                         description="uncertainty in observed surface mass balance" />
-                <var name="thicknessUncertainty" type="real" dimensions="nCells Time" units="m"
+                <var name="thicknessUncertainty" type="real" dimensions="nCells Time" units="m" default_value="0.0"
                         description="uncertainty in observed thickness" />
-                <var name="floatingBasalMassBalUncertainty" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                <var name="floatingBasalMassBalUncertainty" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" default_value="1.0e20"
                         description="uncertainty in observed floating basal mass balance" />
         </var_struct>
 
@@ -1114,7 +1188,7 @@ is the value of that variable from the *previous* time level!
                 <var name="temperature" type="real" dimensions="nVertLevels nCells Time" units="K" default_value="273.15"
                      description="interior ice temperature"
                 />
-                <var name="waterfrac" type="real" dimensions="nVertLevels nCells Time" units="unitless"
+                <var name="waterFrac" type="real" dimensions="nVertLevels nCells Time" units="unitless"
                      description="interior ice water fraction"
                 />
                 <var name="enthalpy" type="real" dimensions="nVertLevels nCells Time" units="J m^{-3}"

@@ -457,8 +457,13 @@ contains
          groundingLineFlux = reductions(15)
          groundingLineMigrationFlux = reductions(16)
 
-         iceThicknessMean = totalIceVolume / totalIceArea
-         avgNetAccumulation = totalSfcMassBal / totalIceArea / rhoi
+         if (totalIceArea > 0.0_RKIND) then
+            iceThicknessMean = totalIceVolume / totalIceArea
+            avgNetAccumulation = totalSfcMassBal / totalIceArea / rhoi
+         else
+            iceThicknessMean = 0.0_RKIND
+            avgNetAccumulation = 0.0_RKIND
+         endif
          if (groundedIceArea > 0.0_RKIND) then
             avgGroundedBasalMelt = -1.0_RKIND * totalGroundedBasalMassBal / groundedIceArea / rhoi
          else

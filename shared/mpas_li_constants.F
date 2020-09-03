@@ -29,6 +29,7 @@ module li_constants
           triple_point => SHR_CONST_TKTRIP,&
           rho_water => SHR_CONST_RHOFW, &
           cp_freshwater => SHR_CONST_CPFW, &
+          cp_seawater => SHR_CONST_CPSW, &
           pii => SHR_CONST_PI, &
           gravity => SHR_CONST_G
    implicit none
@@ -45,6 +46,7 @@ module li_constants
    real (kind=RKIND), parameter, public :: triple_point = 273.16_RKIND  !< Triple point of water (K)
    real (kind=RKIND), parameter, public :: rho_water = 1000.0_RKIND     !< Density of fresh water (kg m^-3)
    real (kind=RKIND), parameter, public :: cp_freshwater = 4.188e3_RKIND        !< heat capacity of freshwater (J/kg/K)
+   real (kind=RKIND), parameter, public :: cp_seawater = 3.974e3_RKIND        !< heat capacity of seawater (J/kg/K)
    real (kind=RKIND), parameter, public :: pii = 3.141592653589793_RKIND !< Constant: Pi
    real (kind=RKIND), parameter, public :: gravity = 9.80616_RKIND       !< Constant: Acceleration due to gravity [m s-2]
 
