@@ -90,8 +90,29 @@ void check_length_scale_shoc_length_c(Int nlev, Int shcol, Real *host_dx,
                                     Real *host_dy, Real *shoc_mix);
 				    
 void clipping_diag_third_shoc_moments_c(Int nlevi, Int shcol, Real *w_sec_zi,
-                                    Real *w3);				    
-
+                                    Real *w3);	
+				    
+void fterms_input_for_diag_third_shoc_moment_c(Real dz_zi, Real dz_zt, Real dz_zt_kc,
+                                    Real isotropy_zi, Real brunt_zi, Real thetal_zi,
+                                    Real *thedz, Real *thedz2, Real *iso, 
+                                    Real *isosqrt, Real *buoy_sgs2, Real *bet2);				    			
+void f0_to_f5_diag_third_shoc_moment_c(Real thedz, Real thedz2, Real bet2, Real iso, 
+                                    Real isosqrt, Real wthl_sec, Real wthl_sec_kc, 
+				    Real wthl_sec_kb, Real thl_sec, Real thl_sec_kc, 
+				    Real thl_sec_kb, Real w_sec, Real w_sec_kc, Real w_sec_zi,
+                                    Real tke, Real tke_kc, Real *f0, Real *f1, 
+                                    Real *f2, Real *f3, Real *f4, Real *f5);
+				    
+void omega_terms_diag_third_shoc_moment_c(Real buoy_sgs2, Real f3, Real f4,
+                                    Real *omega0, Real *omega1, Real *omega2);
+				    
+void x_y_terms_diag_third_shoc_moment_c(Real buoy_sgs2, Real f0, Real f1, Real f2, 
+                                    Real *x0, Real *y0, Real *x1, Real *y1);
+				    
+void aa_terms_diag_third_shoc_moment_c(Real omega0, Real omega1, Real omega2, 
+                                    Real x0, Real x1, Real y0, Real y1, 
+				    Real *aa0, Real *aa1);			   
+				   			    				    
 void shoc_diag_second_moments_srf_c(Int shcol, Real* wthl, Real* uw, Real* vw,
                                    Real* ustar2, Real* wstar);
 				   
@@ -402,6 +423,42 @@ void clipping_diag_third_shoc_moments(SHOCClipthirdmomsData &d) {
   d.transpose<ekat::util::TransposeDirection::c2f>();
   clipping_diag_third_shoc_moments_c(d.nlevi,d.shcol,d.w_sec_zi,d.w3);
   d.transpose<ekat::util::TransposeDirection::f2c>();
+}
+
+void aa_terms_diag_third_shoc_moment(SHOCAAdiagthirdmomsData &d){
+  shoc_init(1, true);
+  aa_terms_diag_third_shoc_moment_c(d.omega0,d.omega1,d.omega2,d.x0,d.x1,d.y0,d.y1,
+                                    &d.aa0,&d.aa1);
+}
+
+void fterms_input_for_diag_third_shoc_moment(SHOCFterminputthirdmomsData &d){
+  shoc_init(1, true);
+  fterms_input_for_diag_third_shoc_moment_c(d.dz_zi,d.dz_zt,d.dz_zt_kc,
+                                     d.isotropy_zi,d.brunt_zi,d.thetal_zi,
+				     &d.thedz,&d.thedz2,&d.iso,
+				     &d.isosqrt,&d.buoy_sgs2,&d.bet2);
+}
+
+void f0_to_f5_diag_third_shoc_moment(SHOCFtermdiagthirdmomsData &d){
+  shoc_init(1, true);
+  f0_to_f5_diag_third_shoc_moment_c(d.thedz,d.thedz2,d.bet2,d.iso,d.isosqrt,
+                                    d.wthl_sec,d.wthl_sec_kc,d.wthl_sec_kb,
+                                    d.thl_sec,d.thl_sec_kc,d.thl_sec_kb,
+                                    d.w_sec,d.w_sec_kc,d.w_sec_zi,
+                                    d.tke,d.tke_kc,
+                                    &d.f0,&d.f1,&d.f2,&d.f3,&d.f4,&d.f5);
+}
+
+void omega_terms_diag_third_shoc_moment(SHOCOmegadiagthirdmomsData &d){
+  shoc_init(1, true);
+  omega_terms_diag_third_shoc_moment_c(d.buoy_sgs2,d.f3,d.f4,
+                                       &d.omega0,&d.omega1,&d.omega2);
+}
+
+void x_y_terms_diag_third_shoc_moment(SHOCXYdiagthirdmomsData &d){
+  shoc_init(1, true);
+  x_y_terms_diag_third_shoc_moment_c(d.buoy_sgs2,d.f0,d.f1,d.f2,
+                                     &d.x0,&d.y0,&d.x1,&d.y1);
 }
 
 void shoc_diag_second_moments_srf(SHOCSecondMomentSrfData& d)

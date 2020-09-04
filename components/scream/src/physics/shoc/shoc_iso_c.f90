@@ -481,6 +481,139 @@ contains
     call clipping_diag_third_shoc_moments(nlevi,shcol,w_sec_zi,w3)
 
   end subroutine clipping_diag_third_shoc_moments_c
+  
+  subroutine fterms_input_for_diag_third_shoc_moment_c(&
+                         dz_zi, dz_zt, dz_zt_kc, &
+                         isotropy_zi, brunt_zi, thetal_zi, &
+                         thedz, thedz2, iso, isosqrt, buoy_sgs2, bet2) bind (C)
+    use shoc, only: fterms_input_for_diag_third_shoc_moment
+
+    real(kind=c_real), intent(in), value :: dz_zi
+    real(kind=c_real), intent(in), value :: dz_zt
+    real(kind=c_real), intent(in), value :: dz_zt_kc
+    real(kind=c_real), intent(in), value :: isotropy_zi
+    real(kind=c_real), intent(in), value :: brunt_zi
+    real(kind=c_real), intent(in), value :: thetal_zi
+
+    real(kind=c_real), intent(out) :: thedz
+    real(kind=c_real), intent(out) :: thedz2
+    real(kind=c_real), intent(out) :: iso
+    real(kind=c_real), intent(out) :: isosqrt
+    real(kind=c_real), intent(out) :: buoy_sgs2
+    real(kind=c_real), intent(out) :: bet2
+
+    call fterms_input_for_diag_third_shoc_moment(dz_zi, dz_zt, dz_zt_kc, &
+                         isotropy_zi, brunt_zi, thetal_zi, &
+                         thedz, thedz2, iso, isosqrt, buoy_sgs2, bet2)
+
+  end subroutine fterms_input_for_diag_third_shoc_moment_c
+  
+  subroutine f0_to_f5_diag_third_shoc_moment_c(&
+                          thedz, thedz2, bet2, iso, isosqrt, &
+                          wthl_sec, wthl_sec_kc, wthl_sec_kb, &
+                          thl_sec, thl_sec_kc, thl_sec_kb, & 
+                          w_sec, w_sec_kc,w_sec_zi, &
+                          tke, tke_kc, &
+                          f0, f1, f2, f3, f4, f5) bind (C)
+    use shoc, only: f0_to_f5_diag_third_shoc_moment
+
+    real(kind=c_real), intent(in), value :: thedz
+    real(kind=c_real), intent(in), value :: thedz2
+    real(kind=c_real), intent(in), value :: bet2
+    real(kind=c_real), intent(in), value :: iso
+    real(kind=c_real), intent(in), value :: isosqrt
+    real(kind=c_real), intent(in), value :: wthl_sec
+    real(kind=c_real), intent(in), value :: wthl_sec_kc
+    real(kind=c_real), intent(in), value :: wthl_sec_kb
+    real(kind=c_real), intent(in), value :: thl_sec
+    real(kind=c_real), intent(in), value :: thl_sec_kc
+    real(kind=c_real), intent(in), value :: thl_sec_kb
+    real(kind=c_real), intent(in), value :: w_sec
+    real(kind=c_real), intent(in), value :: w_sec_kc
+    real(kind=c_real), intent(in), value :: w_sec_zi
+    real(kind=c_real), intent(in), value :: tke
+    real(kind=c_real), intent(in), value :: tke_kc
+
+    real(kind=c_real), intent(out) :: f0
+    real(kind=c_real), intent(out) :: f1
+    real(kind=c_real), intent(out) :: f2
+    real(kind=c_real), intent(out) :: f3
+    real(kind=c_real), intent(out) :: f4
+    real(kind=c_real), intent(out) :: f5
+
+    call f0_to_f5_diag_third_shoc_moment(&
+                          thedz, thedz2, bet2, iso, isosqrt, &
+                          wthl_sec, wthl_sec_kc, wthl_sec_kb, &
+                          thl_sec, thl_sec_kc, thl_sec_kb, & 
+                          w_sec, w_sec_kc,w_sec_zi, &
+                          tke, tke_kc, &
+                          f0, f1, f2, f3, f4, f5)
+
+  end subroutine f0_to_f5_diag_third_shoc_moment_c
+  
+  subroutine omega_terms_diag_third_shoc_moment_c(&
+                          buoy_sgs2, f3, f4,&
+			  omega0, omega1, omega2) bind (C)
+    use shoc, only: omega_terms_diag_third_shoc_moment
+
+    real(kind=c_real), intent(in), value :: buoy_sgs2
+    real(kind=c_real), intent(in), value :: f3
+    real(kind=c_real), intent(in), value :: f4
+
+    real(kind=c_real), intent(out) :: omega0
+    real(kind=c_real), intent(out) :: omega1
+    real(kind=c_real), intent(out) :: omega2
+
+    call omega_terms_diag_third_shoc_moment(&
+                          buoy_sgs2, f3, f4, &
+			  omega0, omega1, omega2)
+
+  end subroutine omega_terms_diag_third_shoc_moment_c 
+  
+  subroutine x_y_terms_diag_third_shoc_moment_c(&
+                          buoy_sgs2, f0, f1, f2,&
+			  x0, y0, x1, y1) bind (C)
+    use shoc, only: x_y_terms_diag_third_shoc_moment
+
+    real(kind=c_real), intent(in), value :: buoy_sgs2
+    real(kind=c_real), intent(in), value :: f0
+    real(kind=c_real), intent(in), value :: f1
+    real(kind=c_real), intent(in), value :: f2
+
+    real(kind=c_real), intent(out) :: x0
+    real(kind=c_real), intent(out) :: y0
+    real(kind=c_real), intent(out) :: x1
+    real(kind=c_real), intent(out) :: y1
+
+    call x_y_terms_diag_third_shoc_moment(&
+                          buoy_sgs2, f0, f1, f2,&
+			  x0, y0, x1, y1)
+
+  end subroutine x_y_terms_diag_third_shoc_moment_c 
+  
+  subroutine aa_terms_diag_third_shoc_moment_c(&
+                          omega0, omega1, omega2,&
+			  x0, x1, y0, y1, &
+			  aa0, aa1) bind (C)
+    use shoc, only: aa_terms_diag_third_shoc_moment
+
+    real(kind=c_real), intent(in), value :: omega0
+    real(kind=c_real), intent(in), value :: omega1
+    real(kind=c_real), intent(in), value :: omega2
+    real(kind=c_real), intent(in), value :: x0
+    real(kind=c_real), intent(in), value :: x1
+    real(kind=c_real), intent(in), value :: y0
+    real(kind=c_real), intent(in), value :: y1
+
+    real(kind=c_real), intent(out) :: aa0
+    real(kind=c_real), intent(out) :: aa1
+
+    call aa_terms_diag_third_shoc_moment(&
+                          omega0, omega1, omega2,&
+			  x0, x1, y0, y1, &
+			  aa0, aa1)
+
+  end subroutine aa_terms_diag_third_shoc_moment_c        
 
   subroutine shoc_diag_second_moments_srf_c(shcol, wthl, uw, vw, ustar2, wstar) bind(C)
    use shoc, only: diag_second_moments_srf
