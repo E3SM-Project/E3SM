@@ -414,7 +414,7 @@ struct SHOCAAdiagthirdmomsData
 struct SHOCFtermdiagthirdmomsData
 {
   // inputs
-  Real thedz, thedz2, bet2, iso, isosqrt, wthl_sec, wthl_sec_kc;
+  Real thedz, thedz2, bet2, iso, isosqrd, wthl_sec, wthl_sec_kc;
   Real wthl_sec_kb, thl_sec, thl_sec_kc, thl_sec_kb, w_sec;
   Real w_sec_kc, w_sec_zi, tke, tke_kc;
   
@@ -449,7 +449,7 @@ struct SHOCFterminputthirdmomsData
   Real dz_zi, dz_zt, dz_zt_kc, isotropy_zi, brunt_zi, thetal_zi;
   
   // outputs
-  Real thedz, thedz2, iso, isosqrt, buoy_sgs2, bet2;
+  Real thedz, thedz2, iso, isosqrd, buoy_sgs2, bet2;
 
 };
 

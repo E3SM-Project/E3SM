@@ -95,9 +95,9 @@ void clipping_diag_third_shoc_moments_c(Int nlevi, Int shcol, Real *w_sec_zi,
 void fterms_input_for_diag_third_shoc_moment_c(Real dz_zi, Real dz_zt, Real dz_zt_kc,
                                     Real isotropy_zi, Real brunt_zi, Real thetal_zi,
                                     Real *thedz, Real *thedz2, Real *iso, 
-                                    Real *isosqrt, Real *buoy_sgs2, Real *bet2);				    			
+                                    Real *isosqrd, Real *buoy_sgs2, Real *bet2);				    			
 void f0_to_f5_diag_third_shoc_moment_c(Real thedz, Real thedz2, Real bet2, Real iso, 
-                                    Real isosqrt, Real wthl_sec, Real wthl_sec_kc, 
+                                    Real isosqrd, Real wthl_sec, Real wthl_sec_kc, 
 				    Real wthl_sec_kb, Real thl_sec, Real thl_sec_kc, 
 				    Real thl_sec_kb, Real w_sec, Real w_sec_kc, Real w_sec_zi,
                                     Real tke, Real tke_kc, Real *f0, Real *f1, 
@@ -436,12 +436,12 @@ void fterms_input_for_diag_third_shoc_moment(SHOCFterminputthirdmomsData &d){
   fterms_input_for_diag_third_shoc_moment_c(d.dz_zi,d.dz_zt,d.dz_zt_kc,
                                      d.isotropy_zi,d.brunt_zi,d.thetal_zi,
 				     &d.thedz,&d.thedz2,&d.iso,
-				     &d.isosqrt,&d.buoy_sgs2,&d.bet2);
+				     &d.isosqrd,&d.buoy_sgs2,&d.bet2);
 }
 
 void f0_to_f5_diag_third_shoc_moment(SHOCFtermdiagthirdmomsData &d){
   shoc_init(1, true);
-  f0_to_f5_diag_third_shoc_moment_c(d.thedz,d.thedz2,d.bet2,d.iso,d.isosqrt,
+  f0_to_f5_diag_third_shoc_moment_c(d.thedz,d.thedz2,d.bet2,d.iso,d.isosqrd,
                                     d.wthl_sec,d.wthl_sec_kc,d.wthl_sec_kb,
                                     d.thl_sec,d.thl_sec_kc,d.thl_sec_kb,
                                     d.w_sec,d.w_sec_kc,d.w_sec_zi,

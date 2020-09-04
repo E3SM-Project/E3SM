@@ -28,16 +28,57 @@ struct UnitWrap::UnitTest<D>::TestFtermInputThirdMoms {
     // Tests for the SHOC function:
     //   fterms_input_for_diag_third_shoc_moment
   
-    //  Test to be sure that very high values of w3
-    //    are reduced but still the same sign   
-  
-
+    // TEST
+    // Given inputs, verify that output is reasonable  
+    
+    // grid spacing on interface grid [m]
+    constexpr static Real dz_zi = 100;
+    // grid spacing on midpoint grid [m]
+    constexpr static Real dz_zt = 80;
+    // grid spacing on adjacent midpoint grid [m]
+    constexpr static Real dz_zt_kc = 120;
+    // Return to isotropic timescale [s]
+    constexpr static Real isotropy_zi = 1000;
+    // Brunt vaisalla frequency [s] 
+    constexpr static Real brunt_zi = -0.05;
+    // Potential temperature on interface grid [K]
+    constexpr static Real thetal_zi = 300;
+    
     // Initialize data structure for bridging to F90
     SHOCFterminputthirdmomsData SDS;
-
+    
+    SDS.dz_zi = dz_zi;
+    SDS.dz_zt = dz_zt;
+    SDS.dz_zt_kc = dz_zt_kc;
+    SDS.isotropy_zi = isotropy_zi;
+    SDS.brunt_zi = brunt_zi;
+    SDS.thetal_zi = thetal_zi;
+    
+    // Check that input is physical 
+    REQUIRE(SDS.dz_zi > 0);
+    REQUIRE(SDS.dz_zt > 0);
+    REQUIRE(SDS.dz_zt_kc > 0);
+    REQUIRE(SDS.isotropy_zi > 0);
+    REQUIRE(SDS.thetal_zi > 0);
     
     // Call the fortran implementation    
-    fterms_input_for_diag_third_shoc_moment(SDS);    
+    fterms_input_for_diag_third_shoc_moment(SDS);  
+    
+    // Verify the result
+    
+    // Check that thedz2 is smaller than thedz.
+    REQUIRE(SDS.thedz2 < SDS.thedz);
+    
+    // Check that bet2 is smaller than thetal
+    REQUIRE(SDS.bet2 < SDS.thetal_zi);
+    
+    // Be sure that iso and isosqrd relationships hold
+    if (SDS.isotropy_zi > 1){
+      REQUIRE(SDS.isosqrd > SDS.iso);
+    }  
+    else{
+      REQUIRE(SDS.isosqrd < SDS.iso);
+    }
     
   }
 

@@ -485,7 +485,7 @@ contains
   subroutine fterms_input_for_diag_third_shoc_moment_c(&
                          dz_zi, dz_zt, dz_zt_kc, &
                          isotropy_zi, brunt_zi, thetal_zi, &
-                         thedz, thedz2, iso, isosqrt, buoy_sgs2, bet2) bind (C)
+                         thedz, thedz2, iso, isosqrd, buoy_sgs2, bet2) bind (C)
     use shoc, only: fterms_input_for_diag_third_shoc_moment
 
     real(kind=c_real), intent(in), value :: dz_zi
@@ -498,18 +498,18 @@ contains
     real(kind=c_real), intent(out) :: thedz
     real(kind=c_real), intent(out) :: thedz2
     real(kind=c_real), intent(out) :: iso
-    real(kind=c_real), intent(out) :: isosqrt
+    real(kind=c_real), intent(out) :: isosqrd
     real(kind=c_real), intent(out) :: buoy_sgs2
     real(kind=c_real), intent(out) :: bet2
 
     call fterms_input_for_diag_third_shoc_moment(dz_zi, dz_zt, dz_zt_kc, &
                          isotropy_zi, brunt_zi, thetal_zi, &
-                         thedz, thedz2, iso, isosqrt, buoy_sgs2, bet2)
+                         thedz, thedz2, iso, isosqrd, buoy_sgs2, bet2)
 
   end subroutine fterms_input_for_diag_third_shoc_moment_c
   
   subroutine f0_to_f5_diag_third_shoc_moment_c(&
-                          thedz, thedz2, bet2, iso, isosqrt, &
+                          thedz, thedz2, bet2, iso, isosqrd, &
                           wthl_sec, wthl_sec_kc, wthl_sec_kb, &
                           thl_sec, thl_sec_kc, thl_sec_kb, & 
                           w_sec, w_sec_kc,w_sec_zi, &
@@ -521,7 +521,7 @@ contains
     real(kind=c_real), intent(in), value :: thedz2
     real(kind=c_real), intent(in), value :: bet2
     real(kind=c_real), intent(in), value :: iso
-    real(kind=c_real), intent(in), value :: isosqrt
+    real(kind=c_real), intent(in), value :: isosqrd
     real(kind=c_real), intent(in), value :: wthl_sec
     real(kind=c_real), intent(in), value :: wthl_sec_kc
     real(kind=c_real), intent(in), value :: wthl_sec_kb
@@ -542,7 +542,7 @@ contains
     real(kind=c_real), intent(out) :: f5
 
     call f0_to_f5_diag_third_shoc_moment(&
-                          thedz, thedz2, bet2, iso, isosqrt, &
+                          thedz, thedz2, bet2, iso, isosqrd, &
                           wthl_sec, wthl_sec_kc, wthl_sec_kb, &
                           thl_sec, thl_sec_kc, thl_sec_kb, & 
                           w_sec, w_sec_kc,w_sec_zi, &
