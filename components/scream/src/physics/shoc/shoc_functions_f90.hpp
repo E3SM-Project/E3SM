@@ -415,6 +415,128 @@ struct SHOCLinearintData : public SHOCDataBase {
   { SHOCDataBase::operator=(rhs); minthresh = rhs.minthresh; return *this; }
 };//SHOCLinearintData
 
+//Create data structure to hold data for shoc_assumed_pdf_tilda_to_real
+struct SHOCPDFtildaData
+{
+  // inputs
+  Real w_first, sqrtw2;
+  
+  // outputs
+  Real w1;
+};
+
+// Create data structure to hold data for shoc_assumed_pdf_vv_parameters
+struct SHOCPDFvvparamData
+{
+  // inputs
+  Real w_first, w_sec, w3var;
+  
+  // outputs
+  Real Skew_w, w1_1, w1_2, w2_1, w2_2, a;
+};
+
+// Create data structure to hold data for shoc_assumed_pdf_thl_parameters
+struct SHOCPDFthlparamData
+{
+  // inputs
+  Real wthlsec, sqrtw2, sqrtthl, thlsec, thl_first, w1_1, w1_2, Skew_w, a;
+  bool dothetal_skew;
+  
+  // outputs
+  Real thl1_1, thl1_2, thl2_1, thl2_2, sqrtthl2_1, sqrtthl2_2;
+};
+
+// Create data structure to hold data for shoc_assumed_pdf_qw_parameters
+struct SHOCPDFqwparamData
+{
+  // inputs
+  Real wqwsec, qwsec, sqrtw2, sqrtqt, qw_first, w1_1, w1_2, Skew_w, a;
+  
+  // outputs
+  Real qw1_1, qw1_2, qw2_1, qw2_2, sqrtqw2_1, sqrtqw2_2;
+};
+
+// Create data structure to hold data for shoc_assumed_pdf_inplume_correlations
+struct SHOCPDFinplumeData
+{
+  // inputs
+  Real sqrtqw2_1,sqrtthl2_1,a,sqrtqw2_2,sqrtthl2_2;
+  Real qwthlsec,qw1_1,qw_first,thl1_1,thl_first,qw1_2,thl1_2;
+  
+  // outputs
+  Real r_qwthl_1;
+};
+
+//Create data structure to hold data for shoc_assumed_pdf_compute_temperature
+struct SHOCPDFcomptempData
+{
+  // inputs
+  Real thl1, basepres, pval;
+  
+  // outputs
+  Real Tl1;
+};
+
+//Create data structure to hold data for shoc_assumed_pdf_compute_qs
+struct SHOCPDFcompqsData
+{
+  // inputs
+  Real Tl1_1, Tl1_2, pval;
+  
+  // outputs
+  Real qs1, beta1, qs2, beta2;
+};
+
+//Create data structure to hold data for shoc_assumed_pdf_compute_s
+struct SHOCPDFcompsData
+{
+  // inputs
+  Real qw1, qs1, beta, pval, thl2, qw2, sqrtthl2, sqrtqw2, r_qwthl;
+  
+  // outputs
+  Real s, std_s, qn, C;
+};
+
+//Create data structure to hold data for shoc_assumed_pdf_compute_sgs_liquid
+struct SHOCPDFcompsgsliqData
+{
+  // inputs
+  Real a, ql1, ql2;
+  
+  // outputs
+  Real shoc_ql;
+};
+
+//Create data structure to hold data for shoc_assumed_pdf_compute_cloud_liquid_variance
+struct SHOCPDFcompcloudvarData
+{
+  // inputs
+  Real a, s1, ql1, C1, std_s1, s2, ql2, C2, std_s2, shoc_ql;
+  
+  // outputs
+  Real shoc_ql2;
+};
+
+//Create data structure to hold data for shoc_assumed_pdf_compute_liquid_water_flux
+struct SHOCPDFcompliqfluxData
+{
+  // inputs
+  Real a, w1_1, w_first, ql1, w1_2, ql2;
+  
+  // outputs
+  Real wqls;
+};
+
+//Create data structure to hold data for shoc_assumed_pdf_compute_buoyancy_flux
+struct SHOCPDFcompbuoyfluxData
+{
+  // inputs
+  Real wthlsec, epsterm, wqwsec, pval, wqls;
+  
+  // outputs
+  Real wthv_sec;
+};
+
 struct SHOCSecondMomentUbycondData : public SHOCDataBase {
   // Outputs
   Real *thl, *qw, *wthl, *wqw, *qwthl, *uw, *vw, *wtke;
@@ -455,6 +577,18 @@ void compute_shoc_mix_shoc_length(SHOCMixlengthData &d);
 void check_length_scale_shoc_length(SHOCMixcheckData &d);
 void shoc_diag_second_moments_srf(SHOCSecondMomentSrfData& d);
 void linear_interp(SHOCLinearintData &d);
+void shoc_assumed_pdf_tilda_to_real(SHOCPDFtildaData &d);
+void shoc_assumed_pdf_vv_parameters(SHOCPDFvvparamData &d);
+void shoc_assumed_pdf_thl_parameters(SHOCPDFthlparamData &d);
+void shoc_assumed_pdf_qw_parameters(SHOCPDFqwparamData &d);
+void shoc_assumed_pdf_inplume_correlations(SHOCPDFinplumeData &d);
+void shoc_assumed_pdf_compute_temperature(SHOCPDFcomptempData &d);
+void shoc_assumed_pdf_compute_qs(SHOCPDFcompqsData &d);
+void shoc_assumed_pdf_compute_s(SHOCPDFcompsData &d);
+void shoc_assumed_pdf_compute_sgs_liquid(SHOCPDFcompsgsliqData &d);
+void shoc_assumed_pdf_compute_cloud_liquid_variance(SHOCPDFcompcloudvarData &d);
+void shoc_assumed_pdf_compute_liquid_water_flux(SHOCPDFcompliqfluxData &d);
+void shoc_assumed_pdf_compute_buoyancy_flux(SHOCPDFcompbuoyfluxData &d);
 void shoc_diag_second_moments_ubycond(SHOCSecondMomentUbycondData& d);
 
 //

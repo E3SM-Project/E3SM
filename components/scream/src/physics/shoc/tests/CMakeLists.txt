@@ -24,6 +24,18 @@ set(SHOC_TESTS_SRCS
     shoc_eddy_diffusivities_tests.cpp
     shoc_diag_second_mom_srf_test.cpp
     shoc_linearinterp_tests.cpp
+    shoc_pdf_tildatoreal_tests.cpp
+    shoc_pdf_vv_parameters_tests.cpp
+    shoc_pdf_thl_parameters_tests.cpp
+    shoc_pdf_qw_parameters_tests.cpp
+    shoc_pdf_inplume_corr_tests.cpp
+    shoc_pdf_computetemp_tests.cpp
+    shoc_pdf_compute_qs_tests.cpp
+    shoc_pdf_compute_s_tests.cpp
+    shoc_pdf_compute_buoyflux_tests.cpp
+    shoc_pdf_compute_liqflux_tests.cpp
+    shoc_pdf_compute_cloudvar_tests.cpp
+    shoc_pdf_compute_sgsliq_tests.cpp
     shoc_diag_second_mom_ubycond_test.cpp
     shoc_unit_tests.cpp)
 
