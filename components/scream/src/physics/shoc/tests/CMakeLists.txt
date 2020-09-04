@@ -19,6 +19,9 @@ set(SHOC_TESTS_SRCS
     shoc_mix_length_tests.cpp
     shoc_fterm_input_third_moms_tests.cpp
     shoc_fterm_diag_third_moms_tests.cpp
+    shoc_omega_diag_third_moms_tests.cpp
+    shoc_xy_diag_third_moms_tests.cpp
+    shoc_aa_diag_third_moms_tests.cpp
     shoc_clip_third_moms_tests.cpp
     shoc_tke_column_stab_tests.cpp
     shoc_tke_shr_prod_tests.cpp
