@@ -1,0 +1,230 @@
+trigger:
+  branches:
+    include:
+    - master
+    - develop
+    - ocean/develop
+    - lanice/develop
+    - ocean/coastal
+  tags:
+    include:
+    - '*'
+pr:
+  branches:
+    include:
+    - master
+    - develop
+    - ocean/develop
+    - lanice/develop
+    - ocean/coastal
+
+jobs:
+- job:
+  displayName: docs
+  pool:
+    vmImage: 'ubuntu-16.04'
+  strategy:
+    matrix:
+      Python38:
+        python.version: '3.8'
+
+  steps:
+  - bash: echo "##vso[task.prependpath]$CONDA/bin"
+    displayName: Add conda to PATH
+
+  - bash: |
+      set -e
+      eval "$(conda shell.bash hook)"
+      conda config --add channels conda-forge
+      conda config --set channel_priority strict
+    displayName: Configure conda
+
+  - bash: |
+      set -e
+      eval "$(conda shell.bash hook)"
+      conda create -y -n docs python=$PYTHON_VERSION sphinx mock sphinx_rtd_theme m2r
+    displayName: Create docs environment
+
+  - bash: |
+      set -e
+      eval "$(conda shell.bash hook)"
+      conda activate docs
+
+      echo "source branch: $(Build.SourceBranch)"
+      echo "repository: $(Build.Repository.Name)"
+
+      tag=$(git describe --tags $(git rev-list --tags --max-count=1))
+      echo "tag: $tag"
+
+      REPO_PATH=$PWD
+
+      if [[ "$(Build.SourceBranch)" == refs/tags/* ]]; then
+        echo "this is a tag build"
+        export DOCS_VERSION="$tag"
+        deploy=True
+        run=True
+      elif [[ "$(Build.SourceBranch)" == refs/heads/* ]]; then
+        branch="$(Build.SourceBranchName)"
+        echo "this is a merge build of $branch"
+        deploy=True
+      elif [[ "$(Build.SourceBranch)" == refs/pull/*/merge ]]; then
+        branch="$(System.PullRequest.TargetBranch)"
+        echo "this is a pull request into $branch"
+        deploy=False
+      fi
+
+      if [ -n ${branch} ]; then
+        echo "This build is for branch $branch"
+        if [[ ${branch} == "master" ]]; then
+          export DOCS_VERSION="stable"
+          run=True
+        elif [[ ${branch} == "develop" ]]; then
+          export DOCS_VERSION="latest"
+          run=True
+        elif [[ ${branch} == "ocean/develop" ]]; then
+          export DOCS_VERSION="latest ocean"
+          run=True
+        elif [[ ${branch} == "ocean/coastal" ]]; then
+          export DOCS_VERSION="latest coastal"
+          run=True
+        elif [[ ${branch} == "landice/develop" ]]; then
+          export DOCS_VERSION="latest landice"
+          run=True
+        else
+          echo "We don't build docs for $branch"
+          deploy=False
+          run=False
+        fi
+      fi
+
+      if [[ "${run}" == "False" ]]; then
+        echo "Not building docs for branch ${branch}"
+        exit 0
+      fi
+
+      echo "Docs version: $DOCS_VERSION"
+      echo "Deploy to gh-pages? $deploy"
+      cd docs || exit 1
+      make html
+
+      cd "$REPO_PATH" || exit 1
+
+      if [[ "$deploy" == "False" ]]; then
+        exit 0
+      fi
+
+      PUBLICATION_BRANCH=gh-pages
+      DOCS_PATH="${DOCS_VERSION// /_}"
+      # Checkout the branch
+      pushd $HOME || exit 1
+      git clone --branch=$PUBLICATION_BRANCH https://$(GitHubToken)@github.com/$(Build.Repository.Name) publish
+      cd publish || exit 1
+
+      # Update pages
+      if [[ -d "$DOCS_PATH" ]]; then
+        git rm -rf "$DOCS_PATH" > /dev/null
+      fi
+      mkdir "$DOCS_PATH"
+      cp -r "$REPO_PATH"/docs/_build/html/* "$DOCS_PATH"
+      # Commit and push latest version
+      git add .
+      if git diff-index --quiet HEAD; then
+        echo "No changes in the docs."
+      else
+        git config --local user.name "Azure Pipelines"
+        git config --local user.email "azuredevops@microsoft.com"
+        git commit -m "[skip ci] Update $DOCS_VERSION"
+        git push -fq origin $PUBLICATION_BRANCH
+      fi
+      popd || exit 1
+    displayName: build and deploy docs
+
+- job:
+  displayName: compass-linux
+  pool:
+    vmImage: 'ubuntu-16.04'
+  strategy:
+    matrix:
+      Python36:
+        python.version: '3.6'
+      Python37:
+        python.version: '3.7'
+      Python38:
+        python.version: '3.8'
+
+  steps:
+  - bash: echo "##vso[task.prependpath]$CONDA/bin"
+    displayName: Add conda to PATH
+
+  - bash: |
+      set -e
+      eval "$(conda shell.bash hook)"
+      conda config --add channels conda-forge
+      conda config --set channel_priority strict
+    displayName: Configure conda
+
+  - bash: |
+      set -e
+      eval "$(conda shell.bash hook)"
+      conda create -y -n compass --override-channels -c conda-forge -c e3sm -c defaults \
+          python=$PYTHON_VERSION "compass=*=nompi*"
+    displayName: Create compass conda environment
+
+  - bash: |
+      set -e
+      eval "$(conda shell.bash hook)"
+      conda activate compass
+
+      cd testing_and_setup/compass || exit 1
+      ./list_testcases.py -h
+      ./setup_testcase.py -h
+      ./clean_testcase.py -h
+      ./manage_regression_suite.py -h
+      cd ../..
+    displayName: Test compass
+
+
+- job:
+  displayName: compass-osx
+  pool:
+    vmImage: 'macOS-10.14'
+  strategy:
+    matrix:
+      Python36:
+        python.version: '3.6'
+      Python37:
+        python.version: '3.7'
+      Python38:
+        python.version: '3.8'
+
+  steps:
+  - bash: echo "##vso[task.prependpath]$CONDA/bin"
+    displayName: Add conda to PATH
+
+  - bash: |
+      set -e
+      eval "$(conda shell.bash hook)"
+      conda config --add channels conda-forge
+      conda config --set channel_priority strict
+    displayName: Configure conda
+
+  - bash: |
+      set -e
+      eval "$(conda shell.bash hook)"
+      conda create -y -n compass --override-channels -c conda-forge -c e3sm -c defaults \
+          python=$PYTHON_VERSION "compass=*=nompi*"
+    displayName: Create compass conda environment
+
+  - bash: |
+      set -e
+      eval "$(conda shell.bash hook)"
+      conda activate compass
+
+      cd testing_and_setup/compass || exit 1
+      ./list_testcases.py -h
+      ./setup_testcase.py -h
+      ./clean_testcase.py -h
+      ./manage_regression_suite.py -h
+      cd ../..
+    displayName: Test compass
+
