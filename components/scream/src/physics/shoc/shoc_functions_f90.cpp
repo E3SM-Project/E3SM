@@ -94,7 +94,57 @@ void shoc_diag_second_moments_srf_c(Int shcol, Real* wthl, Real* uw, Real* vw,
 
 void linear_interp_c(Real *x1, Real *x2, Real *y1, Real *y2, Int km1,
                      Int km2, Int ncol, Real minthresh);
+void shoc_assumed_pdf_tilda_to_real_c(Real w_first, Real sqrtw2, Real* w1);
 
+void shoc_assumed_pdf_vv_parameters_c(Real w_first, Real w_sec, Real w3var,
+                                      Real *Skew_w, Real *w1_1, Real *w1_2,
+				      Real *w2_1, Real *w2_2, Real *a);
+
+void shoc_assumed_pdf_thl_parameters_c(Real wthlsec, Real sqrtw2, Real sqrtthl,
+                                       Real thlsec, Real thl_first, Real w1_1,
+				       Real w1_2, Real Skew_w, Real a, bool dothetal_skew,
+                                       Real *thl1_1, Real *thl1_2, Real *thl2_1,
+				       Real *thl2_2, Real *sqrtthl2_1,
+                                       Real *sqrtthl2_2);
+
+void shoc_assumed_pdf_qw_parameters_c(Real wqwsec, Real sqrtw2, Real Skew_w,
+                                       Real sqrtqt, Real qw_sec, Real w1_1,
+				       Real w1_2, Real qw_first, Real a,
+                                       Real *qw1_1, Real *qw1_2, Real *qw2_1,
+				       Real *qw2_2, Real *sqrtqw2_1,
+                                       Real *sqrtqw2_2);
+
+void shoc_assumed_pdf_inplume_correlations_c(Real sqrtqw2_1, Real sqrtthl2_1,
+                                     Real a, Real sqrtqw2_2, Real sqrtthl2_2,
+                                     Real qwthlsec, Real qw1_1, Real qw_first,
+				     Real thl1_1, Real thl_first, Real qw1_2,
+				     Real thl1_2, Real *r_qwthl_1);
+
+void shoc_assumed_pdf_compute_temperature_c(Real thl1, Real basepres,
+                                            Real pval, Real *Tl1);
+
+void shoc_assumed_pdf_compute_qs_c(Real Tl1_1, Real Tl1_2, Real pval,
+                              Real *qs1, Real *beta1, Real *qs2, Real *beta2);
+
+void shoc_assumed_pdf_compute_s_c(Real qw1, Real qs1, Real beta, Real pval, Real thl2,
+                              Real qw2,Real sqrtthl2, Real sqrtqw2, Real r_qwthl,
+                              Real *s, Real *std_s, Real *qn, Real *C);
+
+void shoc_assumed_pdf_compute_sgs_liquid_c(Real a, Real ql1, Real ql2, Real *shoc_ql);
+
+void shoc_assumed_pdf_compute_cloud_liquid_variance_c(Real a, Real s1, Real ql1,
+                               Real C1, Real std_s1, Real s2, Real ql2, Real C2,
+			       Real std_s2, Real shoc_ql, Real *shoc_ql2);
+
+void shoc_assumed_pdf_compute_liquid_water_flux_c(Real a, Real w1_1, Real w_first,
+                               Real ql1, Real w1_2, Real ql2, Real *wqls);
+
+void shoc_assumed_pdf_compute_buoyancy_flux_c(Real wthlsec, Real epsterm, Real wqwsec,
+                               Real pval, Real wqls, Real *wthv_sec);
+
+void shoc_diag_second_moments_ubycond_c(Int shcol, Real* thl, Real* qw, Real* wthl,
+                                       Real* wqw, Real* qwthl, Real* uw, Real* vw,
+                                       Real* wtke);
 }
 
 namespace scream {
@@ -283,6 +333,104 @@ void linear_interp(SHOCLinearintData& d)
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
+void shoc_assumed_pdf_tilda_to_real(SHOCPDFtildaData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_tilda_to_real_c(d.w_first, d.sqrtw2, &d.w1);
+}
+
+void shoc_assumed_pdf_vv_parameters(SHOCPDFvvparamData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_vv_parameters_c(d.w_first,d.w_sec,d.w3var,
+                                   &d.Skew_w,&d.w1_1,&d.w1_2,&d.w2_1,&d.w2_2,&d.a);
+}
+
+void shoc_assumed_pdf_thl_parameters(SHOCPDFthlparamData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_thl_parameters_c(d.wthlsec,d.sqrtw2,d.sqrtthl,d.thlsec,d.thl_first,
+                                    d.w1_1,d.w1_2,d.Skew_w,d.a,d.dothetal_skew,
+                                    &d.thl1_1,&d.thl1_2,&d.thl2_1,&d.thl2_2,&d.sqrtthl2_1,
+                                    &d.sqrtthl2_2);
+}
+
+void shoc_assumed_pdf_qw_parameters(SHOCPDFqwparamData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_qw_parameters_c(d.wqwsec,d.sqrtw2,d.Skew_w,d.sqrtqt,d.qwsec,
+                                    d.w1_1,d.w1_2,d.qw_first,d.a,
+                                    &d.qw1_1,&d.qw1_2,&d.qw2_1,&d.qw2_2,&d.sqrtqw2_1,
+                                    &d.sqrtqw2_2);
+}
+
+void shoc_assumed_pdf_inplume_correlations(SHOCPDFinplumeData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_inplume_correlations_c(d.sqrtqw2_1,d.sqrtthl2_1,d.a,
+                                          d.sqrtqw2_2,d.sqrtthl2_2,
+                                          d.qwthlsec,d.qw1_1,d.qw_first,d.thl1_1,
+			                  d.thl_first,d.qw1_2,d.thl1_2,
+                                          &d.r_qwthl_1);
+}
+
+void shoc_assumed_pdf_compute_temperature(SHOCPDFcomptempData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_compute_temperature_c(d.thl1, d.basepres, d.pval, &d.Tl1);
+}
+
+void shoc_assumed_pdf_compute_qs(SHOCPDFcompqsData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_compute_qs_c(d.Tl1_1,d.Tl1_2,d.pval,
+                                &d.qs1,&d.beta1,&d.qs2,&d.beta2);
+}
+
+void shoc_assumed_pdf_compute_s(SHOCPDFcompsData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_compute_s_c(d.qw1,d.qs1,d.beta,d.pval,d.thl2,d.qw2,
+                               d.sqrtthl2,d.sqrtqw2,d.r_qwthl,
+			       &d.s,&d.std_s,&d.qn,&d.C);
+}
+
+void shoc_assumed_pdf_compute_sgs_liquid(SHOCPDFcompsgsliqData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_compute_sgs_liquid_c(d.a, d.ql1, d.ql2, &d.shoc_ql);
+}
+
+void shoc_assumed_pdf_compute_cloud_liquid_variance(SHOCPDFcompcloudvarData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_compute_cloud_liquid_variance_c(d.a,d.s1,d.ql1,d.C1,
+                                   d.std_s1,d.s2,d.ql2,d.C2,d.std_s2,d.shoc_ql,
+                                   &d.shoc_ql2);
+}
+
+void shoc_assumed_pdf_compute_liquid_water_flux(SHOCPDFcompliqfluxData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_compute_liquid_water_flux_c(d.a,d.w1_1,d.w_first,d.ql1,
+                                               d.w1_2,d.ql2,&d.wqls);
+}
+
+void shoc_assumed_pdf_compute_buoyancy_flux(SHOCPDFcompbuoyfluxData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_compute_buoyancy_flux_c(d.wthlsec,d.epsterm,d.wqwsec,
+                                           d.pval,d.wqls,&d.wthv_sec);
+}
+
+void shoc_diag_second_moments_ubycond(SHOCSecondMomentUbycondData& d)
+{
+  shoc_init(d.nlev, true);
+  d.transpose<ekat::util::TransposeDirection::c2f>();
+  shoc_diag_second_moments_ubycond_c(d.shcol, d.thl, d.qw, d.wthl, d.wqw, d.qwthl, d.uw, d.vw, d.wtke);
+  d.transpose<ekat::util::TransposeDirection::f2c>();
+}
+
 //
 // _f function definitions. These expect data in C layout
 //
@@ -370,6 +518,54 @@ void shoc_diag_second_moments_srf_f(Int shcol, Real* wthl, Real* uw, Real* vw, R
   Kokkos::Array<view_1d, 2> out_views = {ustar2_d, wstar_d};
   ekat::pack::device_to_host({ustar2, wstar}, shcol, out_views);
 }
+
+void shoc_diag_second_moments_ubycond_f(Int shcol, Real* thl, Real* qw, Real* wthl, Real* wqw, Real* qwthl, Real* uw, Real* vw,
+      Real* wtke)
+{
+  using SHOC       = Functions<Real, DefaultDevice>;
+  using Spack      = typename SHOC::Spack;
+  using Scalar     = typename SHOC::Scalar;
+  using Pack1      = typename ekat::pack::Pack<Real, 1>;
+  using view_1d    = typename SHOC::view_1d<Pack1>;
+
+  view_1d thl_d  ("thl"  ,shcol),
+          qw_d   ("qw"   ,shcol),
+          qwthl_d("qwthl",shcol),
+          wthl_d ("wthl" ,shcol),
+          wqw_d  ("wqw"  ,shcol),
+          uw_d   ("uw"   ,shcol),
+          vw_d   ("vw"   ,shcol),
+          wtke_d ("wtke" ,shcol);
+
+  Kokkos::parallel_for("parallel_moments_ubycond", shcol, KOKKOS_LAMBDA (const int& i) {
+
+    Scalar thl_s{0.};
+    Scalar qw_s{0.};
+    Scalar wthl_s{0.};
+    Scalar wqw_s{0.};
+    Scalar qwthl_s{0.};
+    Scalar uw_s{0.};
+    Scalar vw_s{0.};
+    Scalar wtke_s{0.};
+
+    SHOC::shoc_diag_second_moments_ubycond(thl_s, qw_s, wthl_s, wqw_s, qwthl_s, uw_s, vw_s, wtke_s);
+
+    thl_d(i)[0]   = thl_s;
+    qw_d(i)[0]    = qw_s;
+    wthl_d(i)[0]  = wthl_s;
+    wqw_d(i)[0]   = wqw_s;
+    qwthl_d(i)[0] = qwthl_s;
+    uw_d(i)[0]    = uw_s;
+    vw_d(i)[0]    = vw_s;
+    wtke_d(i)[0]  = wtke_s;
+
+  });
+
+  Kokkos::Array<view_1d, 8> host_views = {thl_d, qw_d, qwthl_d, wthl_d, wqw_d, uw_d, vw_d, wtke_d};
+
+  ekat::pack::device_to_host({thl, qw, qwthl, wthl, wqw, uw, vw, wtke}, shcol, host_views);
+}
+
 
 } // namespace shoc
 } // namespace scream

@@ -74,7 +74,7 @@ real(rtype), parameter :: c_diag_3rd_mom = 7.0_rtype
 
 ! Allow temperature skewness to be independent of moisture
 !  variance
-logical, parameter :: dothetal_skew = .false.
+logical(btype), parameter :: dothetal_skew = .false.
 
 ! ========
 ! Below define some parameters for SHOC
@@ -991,7 +991,7 @@ subroutine diag_second_shoc_moments(&
   ! Diagnose the second order moments,
   !  calculate the upper boundary conditions
   call diag_second_moments_ubycond(&
-     shcol,num_tracer, &                    ! Input
+     shcol,                              &  ! Input
      thl_sec(:shcol,1), qw_sec(:shcol,1),&  ! Output
      wthl_sec(:shcol,1),wqw_sec(:shcol,1),& ! Output
      qwthl_sec(:shcol,1), uw_sec(:shcol,1),&! Output
@@ -1417,7 +1417,7 @@ subroutine calc_shoc_vertflux(&
 end subroutine calc_shoc_vertflux
 
 subroutine diag_second_moments_ubycond(&
-         shcol,num_tracer, &                    ! Input
+         shcol, &                               ! Input
          thl_sec, qw_sec,&                      ! Output
          wthl_sec,wqw_sec,&                     ! Output
          qwthl_sec, uw_sec, vw_sec, wtke_sec)   ! Output
@@ -1427,13 +1427,14 @@ subroutine diag_second_moments_ubycond(&
   !  needed for the SHOC parameterization.  Currently
   !  set all to zero.
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use shoc_iso_f, only: shoc_diag_second_moments_ubycond_f
+#endif
   implicit none
 
   ! INPUT VARIABLES
   ! number of SHOC columns
   integer, intent(in) :: shcol
-  ! number of tracers
-  integer, intent(in) :: num_tracer
 
   ! OUTPUT VARIABLES
   ! second order liquid wat. potential temp. [K^2]
@@ -1455,6 +1456,17 @@ subroutine diag_second_moments_ubycond(&
 
   ! LOCAL VARIABLES
   integer :: i
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+       call shoc_diag_second_moments_ubycond_f(&
+                             shcol, &                    ! Input
+                             thl_sec, qw_sec,&                      ! Output
+                             wthl_sec,wqw_sec,&                     ! Output
+                             qwthl_sec, uw_sec, vw_sec, wtke_sec)   ! Output
+      return
+   endif
+#endif
 
   ! apply the upper boundary condition
   do i=1,shcol
@@ -1956,7 +1968,7 @@ subroutine shoc_assumed_pdf(&
 
 ! LOCAL VARIABLES
   integer i,k
-  real(rtype) skew_w,skew_thl,skew_qw,a
+  real(rtype) skew_w,a
   real(rtype) w1_1,w1_2,w2_1,w2_2,w3var
   real(rtype) thl1_1,thl1_2,thl2_1,thl2_2
   real(rtype) qw1_1,qw1_2,qw2_1,qw2_2
@@ -1966,7 +1978,6 @@ subroutine shoc_assumed_pdf(&
   real(rtype) thl_first,qw_first,w_first
   real(rtype) Tl1_1,Tl1_2,pval
   real(rtype) thlsec,qwsec,qwthlsec,wqwsec,wthlsec
-  real(rtype) cqt1,cthl1,cqt2,cthl2
   real(rtype) qn1,qn2
   real(rtype) beta1, beta2, qs1, qs2
   real(rtype) sqrtw2, sqrtthl, sqrtqt
@@ -2045,7 +2056,7 @@ subroutine shoc_assumed_pdf(&
          wthlsec,sqrtw2,sqrtthl,thlsec,thl_first,& ! Input
          w1_1,w1_2,Skew_w,a,dothetal_skew,&        ! Input
          thl1_1,thl1_2,thl2_1,thl2_2,sqrtthl2_1,&  ! Output
-         sqrtthl2_2,Skew_thl)                      ! Output
+         sqrtthl2_2)                               ! Output
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !  FIND PARAMETERS FOR TOTAL WATER MIXING RATIO
@@ -2053,7 +2064,7 @@ subroutine shoc_assumed_pdf(&
       call shoc_assumed_pdf_qw_parameters(&
          wqwsec,sqrtw2,Skew_w,sqrtqt,& ! Input
          qwsec,w1_2,w1_1,qw_first,a,&  ! Input
-         qw1_1,qw1_2,Skew_qw,qw2_1,&   ! Input
+         qw1_1,qw1_2,qw2_1,&           ! Output
          qw2_2,sqrtqw2_1,sqrtqw2_2)    ! Output
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2105,7 +2116,7 @@ subroutine shoc_assumed_pdf(&
       call shoc_assumed_pdf_compute_s(&
         qw1_1,qs1,beta1,pval,thl2_1,&          ! Input
         qw2_1,sqrtthl2_1,sqrtqw2_1,r_qwthl_1,& ! Input
-        s1,cthl1,cqt1,std_s1,qn1,C1)           ! Output
+        s1,std_s1,qn1,C1)                      ! Output
 
       !!!!! now compute non-precipitating cloud condensate
 
@@ -2113,8 +2124,6 @@ subroutine shoc_assumed_pdf(&
       ! variables to themselves to save on computation.
       if (qw1_1 .eq. qw1_2 .and. thl2_1 .eq. thl2_2 .and. qs1 .eq. qs2) then
         s2=s1
-        cthl2=cthl1
-        cqt2=cqt1
         std_s2=std_s1
         C2=C1
         qn2=qn1
@@ -2122,7 +2131,7 @@ subroutine shoc_assumed_pdf(&
         call shoc_assumed_pdf_compute_s(&
         qw1_2,qs2,beta2,pval,thl2_2,&          ! Input
         qw2_2,sqrtthl2_2,sqrtqw2_2,r_qwthl_1,& ! Input
-        s2,cthl2,cqt2,std_s2,qn2,C2)           ! Output
+        s2,std_s2,qn2,C2)                      ! Output
       endif
 
       ql1=min(qn1,qw1_1)
@@ -2218,7 +2227,7 @@ subroutine shoc_assumed_pdf_thl_parameters(&
   wthlsec,sqrtw2,sqrtthl,thlsec,thl_first,& ! Input
   w1_1,w1_2,Skew_w,a,dothetal_skew,&        ! Input
   thl1_1,thl1_2,thl2_1,thl2_2,sqrtthl2_1,&  ! Output
-  sqrtthl2_2,Skew_thl)                      ! Output
+  sqrtthl2_2)                               ! Output
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !  FIND PARAMETERS FOR TOTAL WATER MIXING RATIO
@@ -2234,7 +2243,7 @@ subroutine shoc_assumed_pdf_thl_parameters(&
   real(rtype), intent(in) :: w1_2
   real(rtype), intent(in) :: Skew_w
   real(rtype), intent(in) ::  a
-  logical, intent(in)     :: dothetal_skew
+  logical(btype), intent(in)  :: dothetal_skew
 
   ! intent-outs
   real(rtype), intent(out) :: thl1_1
@@ -2243,10 +2252,9 @@ subroutine shoc_assumed_pdf_thl_parameters(&
   real(rtype), intent(out) :: thl2_2
   real(rtype), intent(out) :: sqrtthl2_1
   real(rtype), intent(out) :: sqrtthl2_2
-  real(rtype), intent(out) :: Skew_thl
 
   ! local vars
-  real(rtype) :: corrtest1, tsign
+  real(rtype) :: corrtest1, tsign, Skew_thl
 
   ! parameters
   real(rtype), parameter :: thl_tol = 1.e-2_rtype
@@ -2301,7 +2309,7 @@ end subroutine shoc_assumed_pdf_thl_parameters
 
 subroutine shoc_assumed_pdf_qw_parameters(&
   wqwsec, sqrtw2, Skew_w, sqrtqt, qwsec, w1_2, w1_1, qw_first, a, &
-  qw1_1, qw1_2, Skew_qw, qw2_1, qw2_2, sqrtqw2_1, sqrtqw2_2)
+  qw1_1, qw1_2, qw2_1, qw2_2, sqrtqw2_1, sqrtqw2_2)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !  FIND PARAMETERS FOR TOTAL WATER MIXING RATIO
@@ -2322,14 +2330,13 @@ subroutine shoc_assumed_pdf_qw_parameters(&
   ! intent-out
   real(rtype), intent(out) :: qw1_1
   real(rtype), intent(out) :: qw1_2
-  real(rtype), intent(out) :: Skew_qw
   real(rtype), intent(out) :: qw2_1
   real(rtype), intent(out) :: qw2_2
   real(rtype), intent(out) :: sqrtqw2_1
   real(rtype), intent(out) :: sqrtqw2_2
 
   ! local vars
-  real(rtype) :: corrtest2, tsign
+  real(rtype) :: corrtest2, tsign, Skew_qw
 
   ! Parameters
   real(rtype), parameter :: rt_tol=1.e-4_rtype
@@ -2359,8 +2366,7 @@ subroutine shoc_assumed_pdf_qw_parameters(&
     else
       Skew_qw=((1.2_rtype*Skew_w)/0.2_rtype)*(tsign-0.2_rtype)
     endif
-
-    qw2_1=min(100._rtype,max(0._rtype,(3._rtype*qw1_2*(1._rtype-a*qw1_1**2-(1._rtype-a)*qw1_2**2) &
+     qw2_1=min(100._rtype,max(0._rtype,(3._rtype*qw1_2*(1._rtype-a*qw1_1**2-(1._rtype-a)*qw1_2**2) &
       -(Skew_qw-a*qw1_1**3-(1._rtype-a)*qw1_2**3))/ &
       (3._rtype*a*(qw1_2-qw1_1))))*qwsec
 
@@ -2503,7 +2509,7 @@ end subroutine shoc_assumed_pdf_compute_qs
 subroutine shoc_assumed_pdf_compute_s(&
   qw1,qs1,beta,pval,thl2,&        ! Input
   qw2,sqrtthl2,sqrtqw2,r_qwthl,&  ! Input
-  s,cthl,cqt,std_s,qn,C)          ! Ouput
+  s,std_s,qn,C)                   ! Ouput
 
   !!!!!!  compute s term
   implicit none
@@ -2521,11 +2527,12 @@ subroutine shoc_assumed_pdf_compute_s(&
 
   ! intent-out
   real(rtype), intent(out) :: s
-  real(rtype), intent(out) :: cthl
-  real(rtype), intent(out) :: cqt
   real(rtype), intent(out) :: std_s
   real(rtype), intent(out) :: qn
   real(rtype), intent(out) :: C
+  
+  ! local variables
+  real(rtype) :: cthl, cqt
 
   ! Parameters
   real(rtype), parameter :: sqrt2 = sqrt(2._rtype)
