@@ -4314,6 +4314,9 @@ module advance_xm_wpxp_module
     use grid_class, only: & 
         gr ! Variable(s)
 
+    use parameters_tunable, only: &
+        altitude_threshold ! Variable(s)   
+
     implicit none
 
     ! Input variables
@@ -4327,9 +4330,9 @@ module advance_xm_wpxp_module
       Cx_Skw_fnc            ! Initial skewness function before damping
 
     ! Local variables
-    real( kind = core_rknd ), parameter :: &
+!    real( kind = core_rknd ), parameter :: &
       ! Added to prevent large damping at low altitudes where Lscale is small
-      altitude_threshold = one_hundred  ! Altitude above which damping should occur
+!      altitude_threshold = one_hundred  ! Altitude above which damping should occur
 
     ! Return Variable
     real( kind = core_rknd ), dimension(gr%nz) :: damped_value

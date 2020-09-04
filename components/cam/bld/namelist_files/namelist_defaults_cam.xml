@@ -957,7 +957,8 @@
 <clubb_wpxp_L_thresh                              > 60.0D0   </clubb_wpxp_L_thresh>
 <relvar_fix                                       > .false.  </relvar_fix>      
 <clubb_use_sgv                                    > .false. </clubb_use_sgv>
-
+<clubb_vert_avg_closure                           > .true.  </clubb_vert_avg_closure>
+<clubb_ipdf_call_placement                        > 1       </clubb_ipdf_call_placement>
 
 <!-- CLUBB_history -->
 <clubb_history               > .false. </clubb_history>

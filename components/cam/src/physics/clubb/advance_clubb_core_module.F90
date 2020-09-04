@@ -88,6 +88,8 @@ module advance_clubb_core_module
 ! Joshua Fasching, Adam Smith, and Michael Falk).
 !-----------------------------------------------------------------------
 
+  use model_flags, only: ipdf_call_placement 
+
   implicit none
 
   public ::  &
@@ -105,8 +107,8 @@ module advance_clubb_core_module
                                        ! predictive fields
 
   ! Select the placement of the call to CLUBB's PDF.
-  integer, parameter :: &
-    ipdf_call_placement = ipdf_pre_advance_fields
+  !integer, parameter :: &
+  !  ipdf_call_placement = ipdf_pre_advance_fields
 
   private ! Default Scope
 
