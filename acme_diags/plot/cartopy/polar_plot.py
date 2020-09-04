@@ -65,6 +65,13 @@ def plot_panel(n, fig, proj, pole, var, clevels,
         ax.set_extent([-180, 180, -55, -90], crs=ccrs.PlateCarree())
 
     cmap = get_colormap(cmap, parameters)
+
+    theta = np.linspace(0, 2 * np.pi, 100)
+    center, radius = [0.5, 0.5], 0.5
+    verts = np.vstack([np.sin(theta), np.cos(theta)]).T
+    circle = mpath.Path(verts * radius + center)
+    ax.set_boundary(circle, transform=ax.transAxes)
+
     p1 = ax.contourf(lon, lat, var,
                      transform=ccrs.PlateCarree(),
                      norm=norm,
@@ -74,12 +81,6 @@ def plot_panel(n, fig, proj, pole, var, clevels,
                      )
     ax.set_aspect('auto')
     ax.coastlines(lw=0.3)
-
-    theta = np.linspace(0, 2 * np.pi, 100)
-    center, radius = [0.5, 0.5], 0.5
-    verts = np.vstack([np.sin(theta), np.cos(theta)]).T
-    circle = mpath.Path(verts * radius + center)
-    #ax.set_boundary(circle, transform=ax.transAxes)
 
     # Plot titles
     for i in range(3):
