@@ -1445,8 +1445,6 @@ contains
   integer,                intent(in)    :: n0,n0qdp,nets,nete
   integer                               :: ie
 
-#ifndef HOMMEXX_GB_CONFIG
-
   call t_startf("ApplyCAMForcing_remap")
   if (ftype==-1) then
     !do nothing
@@ -1473,9 +1471,6 @@ contains
     enddo
 #endif
   endif
-
-#endif
-!if GB
 
   call t_stopf("ApplyCAMForcing_remap")
   end subroutine applyCAMforcing_remap
@@ -1527,8 +1522,6 @@ contains
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: np1,np1_qdp
   logical,                intent(in)    :: adjustment
-
-#ifndef HOMMEXX_GB_CONFIG
 
   ! local
   integer :: i,j,k,ie,q
@@ -1698,10 +1691,6 @@ contains
         (phi_n1 - elem%state%phinh_i(:,:,:,np1))/dt
    
 #endif
-     
-
-#endif
-!if GB
 
   end subroutine applyCAMforcing_tracers
   

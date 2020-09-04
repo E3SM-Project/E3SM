@@ -35,10 +35,8 @@ void Tracers::init(const int num_elems, const int num_tracers)
   qtens_biharmonic = decltype(qtens_biharmonic)("qtens(_biharmonic)", num_elems);
   qlim = decltype(qlim)("qlim", num_elems);
 
-#ifndef HOMMEXX_GB_CONFIG
   Q = decltype(Q)("tracers concentration", num_elems);
   fq = decltype(fq)("fq",num_elems);
-#endif
 
   m_inited = true;
 }
@@ -54,10 +52,8 @@ void Tracers::randomize(const int seed) {
   genRandArray(qdp, engine, random_dist);
   genRandArray(qtens_biharmonic, engine, random_dist);
   genRandArray(qlim, engine, random_dist);
-#ifndef HOMMEXX_GB_CONFIG
   genRandArray(fq, engine, random_dist);
   genRandArray(Q, engine, random_dist);
-#endif
 }
 
 void Tracers::pull_qdp(CF90Ptr &state_qdp) {
