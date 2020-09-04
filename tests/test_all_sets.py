@@ -34,9 +34,6 @@ class TestAllSets(unittest.TestCase):
         if backend == 'mpl':
             backend_option = ''
             expected_num_diags = 9
-        elif backend == 'vcs':
-            backend_option = ' --backend vcs'
-            expected_num_diags = 7
         else:
             raise RuntimeError('Invalid backend: {}'.format(backend))
         # *_data_path needs to be added b/c the tests runs the diags from a different location
@@ -56,8 +53,6 @@ class TestAllSets(unittest.TestCase):
     def test_all_sets_mpl(self):
         self.run_test('mpl')
 
-    def test_all_sets_vcs(self):
-        self.run_test('vcs')
 
 if __name__ == '__main__':
     unittest.main()

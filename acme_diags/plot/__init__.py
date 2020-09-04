@@ -8,7 +8,6 @@ import importlib
 import traceback
 import numpy
 from matplotlib.colors import LinearSegmentedColormap
-from vcs.colors import matplotlib2vcs
 import acme_diags
 
 
@@ -34,9 +33,9 @@ def plot(set_name, ref, test, diff, metrics_dict, parameter):
     if hasattr(parameter, 'plot'):
         parameter.plot(ref, test, diff, metrics_dict, parameter)
     else:
-        if parameter.backend not in ['vcs', 'cartopy', 'mpl', 'matplotlib']:
+        if parameter.backend not in ['cartopy', 'mpl', 'matplotlib']:
             raise RuntimeError(
-                'Invalid backend, choose either "vcs" or "matplotlib"/"mpl"/"cartopy"')
+                'Invalid backend, use "matplotlib"/"mpl"/"cartopy"')
 
         plot_fcn = _get_plot_fcn(parameter.backend, set_name)
         if plot_fcn:
@@ -49,8 +48,8 @@ def plot(set_name, ref, test, diff, metrics_dict, parameter):
                     sys.exit()
 
 def get_colormap(colormap, parameters):
-    """Get the colormap (string, list for vcs, or mpl colormap obj), which can be
-    loaded from a local file in the cwd, installed file, or a predefined mpl/vcs one."""
+    """Get the colormap (string or mpl colormap obj), which can be
+    loaded from a local file in the cwd, installed file, or a predefined mpl one."""
     colormap = str(
         colormap)  # unicode don't seem to work well with string.endswith()
     if not colormap.endswith('.rgb'):  # predefined vcs/mpl colormap
@@ -75,13 +74,6 @@ def get_colormap(colormap, parameters):
     if parameters.backend in ['cartopy', 'mpl', 'matplotlib']:
         cmap = LinearSegmentedColormap.from_list(name=colormap, colors=rgb_arr)
         return cmap
-
-    elif parameters.backend in ['vcs']:
-        n_levels = 240
-        cmap = LinearSegmentedColormap.from_list(name=colormap, colors=rgb_arr, N=n_levels)
-        vcs_cmap = matplotlib2vcs(cmap, vcs_name=colormap)
-
-        return vcs_cmap, list(range(n_levels))
 
     else:
         raise RuntimeError('Invalid backend: {}'.format(parameters.backend))
