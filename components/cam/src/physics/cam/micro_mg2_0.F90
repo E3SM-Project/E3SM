@@ -2759,7 +2759,7 @@ subroutine micro_mg_tend ( &
 
            ! impose minimum droplet number conc (in-cloud) 
            if (mincdnc.gt.0._r8) then
-              nctend(i,k)=( max(nc(i,k)+nctend(i,k)*deltat, mincdnc/rho(i,k)) - nc(i,k))/deltat
+              nctend(i,k)=( max(nc(i,k)+nctend(i,k)*deltat, mincdnc/rho(i,k)*lcldm(i,k)) - nc(i,k))/deltat
            end if
 
            ! switch for specification of droplet and crystal number
