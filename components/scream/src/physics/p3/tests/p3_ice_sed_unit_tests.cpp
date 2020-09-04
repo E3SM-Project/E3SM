@@ -120,33 +120,20 @@ static void run_bfb_calc_bulk_rhime()
 
 static void run_bfb_ice_sed()
 {
-  const std::array< std::pair<Real, Real>, IceSedData::NUM_ARRAYS > ranges = {
-    std::make_pair(4.056E-03, 1.153E+00), // rho_range
-    std::make_pair(0,         1.),        // inv_rho (ignored)
-    std::make_pair(8.852E-01, 1.069E+00), // rhofaci
-    std::make_pair(1.000E+00, 1.100E+00), // cld_frac_i
-    std::make_pair(2.863E-05, 8.141E-03), // inv_dz_range
-    std::make_pair(1.221E-14, 2.708E-03), // qi
-    std::make_pair(5.164E-10, 2.293E-03), // qi_incld
-    std::make_pair(9.558E+04, 6.596E+05), // ni
-    std::make_pair(9.538E+04, 6.596E+05), // ni_incld
-    std::make_pair(6.774E-15, 2.293E-03), // qm
-    std::make_pair(7.075E-08, 2.418E-03), // qm_incld
-    std::make_pair(4.469E-14, 2.557E-03), // bm
-    std::make_pair(7.861E-11, 4.179E-06), // bm_incld
-    std::make_pair(5.164E-10, 2.733E-03), // qi_tend
-    std::make_pair(1.370E+05, 6.582E+05), // ni_tend
-  };
-
   IceSedData isds_fortran[] = {
-    //       kts, kte, ktop, kbot, kdir,        dt,       inv_dt, precip_ice_surf, ranges
-    IceSedData(1,  72,   27,   72,   -1, 1.800E+03, 5.556E-04,     0.0, ranges),
-    IceSedData(1,  72,   72,   27,    1, 1.800E+03, 5.556E-04,     1.0, ranges),
-    IceSedData(1,  72,   27,   27,   -1, 1.800E+03, 5.556E-04,     0.0, ranges),
-    IceSedData(1,  72,   27,   27,    1, 1.800E+03, 5.556E-04,     2.0, ranges),
+    //       kts, kte, ktop, kbot, kdir,        dt,   inv_dt, precip_ice_surf
+    IceSedData(1,  72,   27,   72,   -1, 1.800E+03, 5.556E-04,            0.0),
+    IceSedData(1,  72,   72,   27,    1, 1.800E+03, 5.556E-04,            1.0),
+    IceSedData(1,  72,   27,   27,   -1, 1.800E+03, 5.556E-04,            0.0),
+    IceSedData(1,  72,   27,   27,    1, 1.800E+03, 5.556E-04,            2.0),
   };
 
   static constexpr Int num_runs = sizeof(isds_fortran) / sizeof(IceSedData);
+
+  // Set up random input data
+  for (auto& d : isds_fortran) {
+    d.randomize({ {d.qi_incld, {C::QSMALL/2, C::QSMALL*2}} });
+  }
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
   // inout data is in original state
@@ -157,14 +144,13 @@ static void run_bfb_ice_sed()
     IceSedData(isds_fortran[3]),
   };
 
-    // Get data from fortran
-  for (Int i = 0; i < num_runs; ++i) {
-    ice_sedimentation(isds_fortran[i]);
+  // Get data from fortran
+  for (auto& d : isds_fortran) {
+    ice_sedimentation(d);
   }
 
   // Get data from cxx
-  for (Int i = 0; i < num_runs; ++i) {
-    IceSedData& d = isds_cxx[i];
+  for (auto& d : isds_cxx) {
     ice_sedimentation_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
                         d.rho, d.inv_rho, d.rhofaci, d.cld_frac_i, d.inv_dz,
                         d.dt, d.inv_dt,
@@ -194,30 +180,21 @@ static void run_bfb_ice_sed()
 
 static void run_bfb_homogeneous_freezing()
 {
-  const std::array< std::pair<Real, Real>, HomogeneousFreezingData::NUM_ARRAYS > ranges = {
-    std::make_pair(C::homogfrze - 10, C::homogfrze + 10), // t
-    std::make_pair(0.000E+00, 1.000E+00), // exner
-    std::make_pair(0.000E+00, 1.000E+00), // latent_heat_fusion
-    std::make_pair(0.000E+00, C::QSMALL*2), // qc
-    std::make_pair(0.000E+00, 1.000E+00), // nc
-    std::make_pair(0.000E+00, C::QSMALL*2), // qr
-    std::make_pair(0.000E+00, 1.000E+00), // nr
-    std::make_pair(0.000E+00, 1.000E+00), // qi
-    std::make_pair(0.000E+00, 1.000E+00), // ni
-    std::make_pair(0.000E+00, 1.000E+00), // qm
-    std::make_pair(0.000E+00, 1.000E+00), // bm
-    std::make_pair(0.000E+00, 1.000E+00), // th
-  };
-
   HomogeneousFreezingData hfds_fortran[] = {
-    //                    kts, kte, ktop, kbot, kdir, ranges
-    HomogeneousFreezingData(1,  72,   27,   72,   -1, ranges),
-    HomogeneousFreezingData(1,  72,   72,   27,    1, ranges),
-    HomogeneousFreezingData(1,  72,   27,   27,   -1, ranges),
-    HomogeneousFreezingData(1,  72,   27,   27,    1, ranges),
+    //                    kts, kte, ktop, kbot, kdir
+    HomogeneousFreezingData(1,  72,   27,   72,   -1),
+    HomogeneousFreezingData(1,  72,   72,   27,    1),
+    HomogeneousFreezingData(1,  72,   27,   27,   -1),
+    HomogeneousFreezingData(1,  72,   27,   27,    1),
   };
 
   static constexpr Int num_runs = sizeof(hfds_fortran) / sizeof(HomogeneousFreezingData);
+
+  // Set up random input data
+  for (auto& d : hfds_fortran) {
+    const auto qsmall_r = std::make_pair(C::QSMALL/2, C::QSMALL*2);
+    d.randomize({ {d.t, {C::homogfrze - 10, C::homogfrze + 10}}, {d.qc, qsmall_r}, {d.qr, qsmall_r} });
+  }
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
   // inout data is in original state
@@ -229,13 +206,12 @@ static void run_bfb_homogeneous_freezing()
   };
 
     // Get data from fortran
-  for (Int i = 0; i < num_runs; ++i) {
-    homogeneous_freezing(hfds_fortran[i]);
+  for (auto& d : hfds_fortran) {
+    homogeneous_freezing(d);
   }
 
   // Get data from cxx
-  for (Int i = 0; i < num_runs; ++i) {
-    HomogeneousFreezingData& d = hfds_cxx[i];
+  for (auto& d : hfds_cxx) {
     homogeneous_freezing_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
                            d.t, d.exner, d.latent_heat_fusion,
                            d.qc, d.nc, d.qr, d.nr, d.qi, d.ni, d.qm, d.bm, d.th);

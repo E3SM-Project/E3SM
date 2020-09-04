@@ -122,32 +122,20 @@ static void run_bfb_rain_vel()
 
 static void run_bfb_rain_sed()
 {
-  const std::array< std::pair<Real, Real>, RainSedData::NUM_ARRAYS > ranges = {
-    std::make_pair(4.056E-03, 1.153E+00), // rho_range
-    std::make_pair(0,         1.),        // inv_rho (ignored)
-    std::make_pair(8.852E-01, 1.069E+00), // rhofacr
-    std::make_pair(1.000E+00, 1.100E+00), // cld_frac_r
-    std::make_pair(2.863E-05, 8.141E-03), // inv_dz_range
-    std::make_pair(1.221E-14, 2.708E-03), // qr_incld
-    std::make_pair(5.164E-10, 2.293E-03), // qr
-    std::make_pair(9.558E+04, 6.596E+05), // nr
-    std::make_pair(9.538E+04, 6.596E+05), // nr_incld
-    std::make_pair(6.774E-15, 2.293E-03), // mu_r
-    std::make_pair(7.075E-08, 2.418E-03), // lamr
-    std::make_pair(7.861E-11, 4.179E-06), // qr_tend
-    std::make_pair(5.164E-10, 2.733E-03), // nr_tend
-    std::make_pair(4.469E-14, 2.557E-03), // precip_liq_flux
-  };
-
   RainSedData rsds_fortran[] = {
-    //        kts, kte, ktop, kbot, kdir,        dt,       inv_dt, precip_liq_surf, ranges
-    RainSedData(1,  72,   27,   72,   -1, 1.800E+03, 5.556E-04,     0.0, ranges),
-    RainSedData(1,  72,   72,   27,    1, 1.800E+03, 5.556E-04,     1.0, ranges),
-    RainSedData(1,  72,   27,   27,   -1, 1.800E+03, 5.556E-04,     0.0, ranges),
-    RainSedData(1,  72,   27,   27,    1, 1.800E+03, 5.556E-04,     2.0, ranges),
+    //        kts, kte, ktop, kbot, kdir,        dt,   inv_dt, precip_liq_surf
+    RainSedData(1,  72,   27,   72,   -1, 1.800E+03, 5.556E-04,            0.0),
+    RainSedData(1,  72,   72,   27,    1, 1.800E+03, 5.556E-04,            1.0),
+    RainSedData(1,  72,   27,   27,   -1, 1.800E+03, 5.556E-04,            0.0),
+    RainSedData(1,  72,   27,   27,    1, 1.800E+03, 5.556E-04,            2.0),
   };
 
   static constexpr Int num_runs = sizeof(rsds_fortran) / sizeof(RainSedData);
+
+  // Set up random input data
+  for (auto& d : rsds_fortran) {
+    d.randomize({ {d.qr_incld, {C::QSMALL/2, C::QSMALL*2}} });
+  }
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
   // inout data is in original state
@@ -158,14 +146,13 @@ static void run_bfb_rain_sed()
     RainSedData(rsds_fortran[3]),
   };
 
-    // Get data from fortran
-  for (Int i = 0; i < num_runs; ++i) {
-    rain_sedimentation(rsds_fortran[i]);
+  // Get data from fortran
+  for (auto& d : rsds_fortran) {
+    rain_sedimentation(d);
   }
 
   // Get data from cxx
-  for (Int i = 0; i < num_runs; ++i) {
-    RainSedData& d = rsds_cxx[i];
+  for (auto& d : rsds_cxx) {
     rain_sedimentation_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
                          d.qr_incld, d.rho, d.inv_rho, d.rhofacr, d.cld_frac_r, d.inv_dz,
                          d.dt, d.inv_dt,
