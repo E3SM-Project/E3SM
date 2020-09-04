@@ -1,15 +1,22 @@
 trigger:
-- master
-- develop
-- ocean/develop
-- lanice/develop
-- ocean/coastal
+  branches:
+    include:
+    - master
+    - develop
+    - ocean/develop
+    - lanice/develop
+    - ocean/coastal
+  tags:
+    include:
+    - '*'
 pr:
-- master
-- develop
-- ocean/develop
-- lanice/develop
-- ocean/coastal
+  branches:
+    include:
+    - master
+    - develop
+    - ocean/develop
+    - lanice/develop
+    - ocean/coastal
 
 jobs:
 - job:
