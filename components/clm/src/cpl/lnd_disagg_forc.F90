@@ -155,7 +155,7 @@ contains
           hrise = 0.
        end if
     
-      do t = grc_pp%topi(g), grc_pp%topf(g)
+       do t = grc_pp%topi(g), grc_pp%topf(g)
        !do t = 1, numt_pg                                 !loop through the valid topounits only  
           t2 = t - grc_pp%topi(g) + 1
           topoElv  = top_pp%elevation(t)             ! Topounit sfc elevation  
@@ -182,33 +182,25 @@ contains
           top_as%vbot(t)    = x2l(index_x2l_Sa_v,i)         ! forc_vxy  Atm state m/s
           top_as%zbot(t)    = x2l(index_x2l_Sa_z,i)         ! zgcmxy    Atm state m
           
-             sum_qbot_g = sum_qbot_g + top_pp%wtgcell(t)*top_as%qbot(t)
-             sum_wtsq_g = sum_wtsq_g + top_pp%wtgcell(t)
+          sum_qbot_g = sum_qbot_g + top_pp%wtgcell(t)*top_as%qbot(t)
+          sum_wtsq_g = sum_wtsq_g + top_pp%wtgcell(t)
                 
           ! assign the state forcing fields derived from other inputs
           ! Horizontal windspeed (m/s)
-         top_as%windbot(t) = sqrt(top_as%ubot(t)**2 + top_as%vbot(t)**2)
+          top_as%windbot(t) = sqrt(top_as%ubot(t)**2 + top_as%vbot(t)**2)
          ! partial pressure of oxygen (Pa)
-         top_as%po2bot(t) = o2_molar_const * top_as%pbot(t)
+          top_as%po2bot(t) = o2_molar_const * top_as%pbot(t)
          ! air density (kg/m**3) - uses a temporary calculation
          ! of water vapor pressure (Pa)
-         vp = top_as%qbot(t) * top_as%pbot(t)  / (0.622_r8 + 0.378_r8 * top_as%qbot(t))
-         top_as%rhobot(t) = (top_as%pbot(t) - 0.378_r8 * vp) / (rair * top_as%tbot(t))
-         !if (masterproc) then  ! TKT debugging
-         !   write (iulog,*) 'top_as%rhobot(t):    ', top_as%rhobot(t)
-         !   write (iulog,*) 'top_as%pbot(t):    ', top_as%pbot(t)
-         !   write (iulog,*) 'rair:     ', rair
-         !   write (iulog,*) 'top_as%tbot(t):    ', top_as%tbot(t)
-         !   write (iulog,*) 'vp:    ', vp
-         !end if
-  
-         top_af%solad(t,2) = x2l(index_x2l_Faxa_swndr,i)
-         top_af%solad(t,1) = x2l(index_x2l_Faxa_swvdr,i)
-         top_af%solai(t,2) = x2l(index_x2l_Faxa_swndf,i)
-         top_af%solai(t,1) = x2l(index_x2l_Faxa_swvdf,i)
+          vp = top_as%qbot(t) * top_as%pbot(t)  / (0.622_r8 + 0.378_r8 * top_as%qbot(t))
+          top_as%rhobot(t) = (top_as%pbot(t) - 0.378_r8 * vp) / (rair * top_as%tbot(t))
+          top_af%solad(t,2) = x2l(index_x2l_Faxa_swndr,i)
+          top_af%solad(t,1) = x2l(index_x2l_Faxa_swvdr,i)
+          top_af%solai(t,2) = x2l(index_x2l_Faxa_swndf,i)
+          top_af%solai(t,1) = x2l(index_x2l_Faxa_swvdf,i)
          ! derived flux forcings
-         top_af%solar(t) = top_af%solad(t,2) + top_af%solad(t,1) + &
-         top_af%solai(t,2) + top_af%solai(t,1)
+          top_af%solar(t) = top_af%solad(t,2) + top_af%solad(t,1) + &
+          top_af%solai(t,2) + top_af%solai(t,1)
 
          ! Keep track of the gridcell-level weighted sum for later normalization.
          !
@@ -216,17 +208,23 @@ contains
          ! downscaling (e.g., glc_mec points). Thus the contributing weights
          ! generally do not add to 1. So to do the normalization properly, we also
          ! need to keep track of the weights that have contributed to this sum.
-         sum_lwrad_g = sum_lwrad_g + top_pp%wtgcell(t)*top_af%lwrad(t)
-         sum_wtslw_g = sum_wtslw_g + top_pp%wtgcell(t)
+          sum_lwrad_g = sum_lwrad_g + top_pp%wtgcell(t)*top_af%lwrad(t)
+          sum_wtslw_g = sum_wtslw_g + top_pp%wtgcell(t)
        end do
        if (precip_downscaling_method == 'FNM') then
-          do t = 1, numt_pg
+          do t = grc_pp%topi(g), grc_pp%topf(g)
+             t2 = t - grc_pp%topi(g) + 1
              if (mxElv == 0.) then  ! avoid dividing by 0
                 top_af%rain(t) = rain_g
                 top_af%snow(t) = snow_g
              else
-                top_af%rain(t) = rain_g + (deltaRain(t) - (rain_g/mxElv)*(sum_of_hrise/numt_pg))
-                top_af%snow(t) = snow_g + (deltaSnow(t) - (snow_g/mxElv)*(sum_of_hrise/numt_pg))
+                top_af%rain(t) = rain_g + (deltaRain(t2) - (rain_g/mxElv)*(sum_of_hrise/numt_pg))
+                top_af%snow(t) = snow_g + (deltaSnow(t2) - (snow_g/mxElv)*(sum_of_hrise/numt_pg))
+             end if
+             if (masterproc) then  ! TKT debugging
+                write(iulog,*) ' top_af%rain(t) = ', top_af%rain(t)
+                write(iulog,*) ' top_af%snow(t) = ', top_af%snow(t)
+                write(iulog,*) ' mxElv =  ', mxElv
              end if
           end do
           deallocate(deltaRain)
@@ -554,14 +552,14 @@ contains
     !--------------------------------------------------------------------------------------
     
     if (mxElv < 0) then
-       mxEl = abs(mxElv) ! avoid the situation where -ve r can force lower areas more rain than higher elevation areas.
+       mxEl = abs(mxElv) ! avoid situations where -ve r can force lower areas more rain than higher elevation areas.
        topoEl = abs(topoElv)
        grdEl = abs(grdElv)
     else 
-       mxEl = mxElv ! avoid the situation where -ve r can force lower areas more rain than higher elevation areas.
+       mxEl = mxElv ! avoid situations where -ve r can force lower areas more rain than higher elevation areas.
        topoEl = topoElv
        grdEl = grdElv
-    end if
+    end if    
     
     r = 0.  
     r = topoEl - grdEl
@@ -582,7 +580,17 @@ contains
     else
        deltaS = (snow_g*(hrise/mxEl))
     end if
-
+    if (masterproc) then  ! TKT debugging
+       write(iulog,*) ' uovern_t =  ', uovern_t 
+       write(iulog,*) ' grdElv ', grdElv 
+       write(iulog,*) ' topoElv ', topoElv       
+       write(iulog,*) ' mxElv ', mxElv
+       write(iulog,*) ' rain_g ', rain_g
+       write(iulog,*) ' snow_g ', snow_g
+       write(iulog,*) ' hrise ', hrise
+       write(iulog,*) ' deltaR ', deltaR
+       write(iulog,*) ' deltaS ', deltaS
+    end if
   end subroutine downscale_precip_to_topounit_FNM  
   
   !-------------------------------------------------------
