@@ -21,8 +21,8 @@ struct FakeClass1 : public PhysicsTestData
     PhysicsTestData(dim1, dim2, dim3,
                     {&one12, &two12}, {&three13, &four13}, {}, {&ints}) {}
 
-  DATA_COPY_CONS(FakeClass1, 3);
-  ASSIGN(FakeClass1, 0);
+  PTD_DATA_COPY_CTOR(FakeClass1, 3);
+  PTD_ASSIGN_OP(FakeClass1, 0);
 };
 
 struct FakeClass2 : public PhysicsTestData
@@ -32,8 +32,8 @@ struct FakeClass2 : public PhysicsTestData
   FakeClass2(Int dim1, Int dim2) :
     PhysicsTestData(dim1, dim2, {&one12}, {&two1}) {}
 
-  DATA_COPY_CONS(FakeClass2, 2);
-  ASSIGN(FakeClass2, 0);
+  PTD_DATA_COPY_CTOR(FakeClass2, 2);
+  PTD_ASSIGN_OP(FakeClass2, 0);
 };
 
 struct FakeClass3 : public PhysicsTestData
@@ -44,8 +44,8 @@ struct FakeClass3 : public PhysicsTestData
   FakeClass3(Int dim1, Real scalar_) :
     PhysicsTestData(dim1, {&one1, &two1}), scalar(scalar_) {}
 
-  DATA_COPY_CONS(FakeClass3, 2);
-  ASSIGN(FakeClass3, 1, scalar);
+  PTD_DATA_COPY_CTOR(FakeClass3, 2);
+  PTD_ASSIGN_OP(FakeClass3, 1, scalar);
 };
 
 } // empty namespace

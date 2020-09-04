@@ -20,7 +20,7 @@
 //
 // Subclasses of PhysicsTestData should look like the following. Note that the copy
 // constructor and assignment operators must be defined if you want to be able to copy
-// objects of this type. The DATA_COPY_CONS and ASSIGNX macros are there to help you do this.
+// objects of this type. The PTR_DATA_COPY_CTOR and PTD_ASSIGN_OP macros are there to help you do this.
 /*
 struct SHOCGridData : public PhysicsTestData {
   // Inputs
@@ -34,43 +34,43 @@ struct SHOCGridData : public PhysicsTestData {
       {&zt_grid, &dz_zt, &pdel, &rho_zt},  // list of (shcol x nlev) members
       {&zi_grid, &dz_zi}) {}               // list of (shcol x nlevi) members
 
-  DATA_COPY_CONS(SHOCGridData, 3); // 3 => number of arguments constructor expects
-  ASSIGN0(SHOCGridData); // 0 => number of scalars
+  PTD_DATA_COPY_CTOR(SHOCGridData, 3); // 3 => number of arguments constructor expects
+  PTD_ASSIGN_OP(SHOCGridData, 0); // 0 => number of scalars
 };
 */
 
-// Convenience macros for up to 10 arguments, beyond that, you're on your own :)
+// Convenience macros for up to 11 arguments, beyond that, you're on your own :)
 
-#define REP0()
-#define REP1() 0
-#define REP2() REP1(), 0
-#define REP3() REP2(), 0
-#define REP4() REP3(), 0
-#define REP5() REP4(), 0
-#define REP6() REP5(), 0
-#define REP7() REP6(), 0
-#define REP8() REP7(), 0
-#define REP9() REP8(), 0
-#define REP10() REP9(), 0
+#define PTD_ZEROES0
+#define PTD_ZEROES1 0
+#define PTD_ZEROES2 PTD_ZEROES1, 0
+#define PTD_ZEROES3 PTD_ZEROES2, 0
+#define PTD_ZEROES4 PTD_ZEROES3, 0
+#define PTD_ZEROES5 PTD_ZEROES4, 0
+#define PTD_ZEROES6 PTD_ZEROES5, 0
+#define PTD_ZEROES7 PTD_ZEROES6, 0
+#define PTD_ZEROES8 PTD_ZEROES7, 0
+#define PTD_ZEROES9 PTD_ZEROES8, 0
+#define PTD_ZEROES10 PTD_ZEROES9, 0
 
-#define DATA_COPY_CONS(name, num_args) \
-  name(const name& rhs) : name(REP##num_args()) { *this = rhs; }
+#define PTD_DATA_COPY_CTOR(name, num_args) \
+  name(const name& rhs) : name(PTD_ZEROES##num_args) { *this = rhs; }
 
-#define  ASS0(                                           ) ((void) (0))
-#define  ASS1(a_                                         )                                                 a_ = rhs.a_
-#define  ASS2(a_, b_                                     )  ASS1(a_)                                     ; b_ = rhs.b_
-#define  ASS3(a_, b_, c_                                 )  ASS2(a_, b_)                                 ; c_ = rhs.c_
-#define  ASS4(a_, b_, c_, d_                             )  ASS3(a_, b_, c_)                             ; d_ = rhs.d_
-#define  ASS5(a_, b_, c_, d_, e_                         )  ASS4(a_, b_, c_, d_)                         ; e_ = rhs.e_
-#define  ASS6(a_, b_, c_, d_, e_, f_                     )  ASS5(a_, b_, c_, d_, e_)                     ; f_ = rhs.f_
-#define  ASS7(a_, b_, c_, d_, e_, f_, g_                 )  ASS6(a_, b_, c_, d_, e_, f_)                 ; g_ = rhs.g_
-#define  ASS8(a_, b_, c_, d_, e_, f_, g_, h_             )  ASS7(a_, b_, c_, d_, e_, f_, g_)             ; h_ = rhs.h_
-#define  ASS9(a_, b_, c_, d_, e_, f_, g_, h_, i_         )  ASS8(a_, b_, c_, d_, e_, f_, g_, h_)         ; i_ = rhs.i_
-#define ASS10(a_, b_, c_, d_, e_, f_, g_, h_, i_, j_     )  ASS9(a_, b_, c_, d_, e_, f_, g_, h_, i_)     ; j_ = rhs.j_
-#define ASS11(a_, b_, c_, d_, e_, f_, g_, h_, i_, j_, k_ ) ASS10(a_, b_, c_, d_, e_, f_, g_, h_, i_, j_) ; k_ = rhs.k_
+#define  PTD_ASS0(                                ) ((void) (0))
+#define  PTD_ASS1(a                               )                                           a = rhs.a
+#define  PTD_ASS2(a, b                            )  PTD_ASS1(a)                            ; b = rhs.b
+#define  PTD_ASS3(a, b, c                         )  PTD_ASS2(a, b)                         ; c = rhs.c
+#define  PTD_ASS4(a, b, c, d                      )  PTD_ASS3(a, b, c)                      ; d = rhs.d
+#define  PTD_ASS5(a, b, c, d, e                   )  PTD_ASS4(a, b, c, d)                   ; e = rhs.e
+#define  PTD_ASS6(a, b, c, d, e, f                )  PTD_ASS5(a, b, c, d, e)                ; f = rhs.f
+#define  PTD_ASS7(a, b, c, d, e, f, g             )  PTD_ASS6(a, b, c, d, e, f)             ; g = rhs.g
+#define  PTD_ASS8(a, b, c, d, e, f, g, h          )  PTD_ASS7(a, b, c, d, e, f, g)          ; h = rhs.h
+#define  PTD_ASS9(a, b, c, d, e, f, g, h, i       )  PTD_ASS8(a, b, c, d, e, f, g, h)       ; i = rhs.i
+#define PTD_ASS10(a, b, c, d, e, f, g, h, i, j    )  PTD_ASS9(a, b, c, d, e, f, g, h, i)    ; j = rhs.j
+#define PTD_ASS11(a, b, c, d, e, f, g, h, i, j, k ) PTD_ASS10(a, b, c, d, e, f, g, h, i, j) ; k = rhs.k
 
-#define ASSIGN(name, num_scalars, ...)                                  \
-  name& operator=(const name& rhs) { ASS##num_scalars(__VA_ARGS__); assignment_impl(rhs); return *this; }
+#define PTD_ASSIGN_OP(name, num_scalars, ...)                                  \
+  name& operator=(const name& rhs) { PTD_ASS##num_scalars(__VA_ARGS__); assignment_impl(rhs); return *this; }
 
 namespace scream {
 

@@ -28,8 +28,8 @@ struct SHOCGridData : public PhysicsTestData {
   SHOCGridData(Int shcol_, Int nlev_, Int nlevi_) :
     PhysicsTestData(shcol_, nlev_, nlevi_, {&zt_grid, &dz_zt, &pdel, &rho_zt}, {&zi_grid, &dz_zi}) {}
 
-  DATA_COPY_CONS(SHOCGridData, 3);
-  ASSIGN(SHOCGridData, 0);
+  PTD_DATA_COPY_CTOR(SHOCGridData, 3);
+  PTD_ASSIGN_OP(SHOCGridData, 0);
 };
 
 //Create data structure to hold data for integ_column_stability
@@ -43,8 +43,8 @@ struct SHOCColstabData : public PhysicsTestData {
   SHOCColstabData(Int shcol_, Int nlev_) :
     PhysicsTestData(shcol_, nlev_, {&dz_zt, &pres, &brunt}, {&brunt_int}) {}
 
-  DATA_COPY_CONS(SHOCColstabData, 2);
-  ASSIGN(SHOCColstabData, 0);
+  PTD_DATA_COPY_CTOR(SHOCColstabData, 2);
+  PTD_ASSIGN_OP(SHOCColstabData, 0);
 };//SHOCColstabData
 
 //Create data structure to hold data for compute_shr_prod
@@ -59,8 +59,8 @@ struct SHOCTkeshearData : public PhysicsTestData {
   SHOCTkeshearData(Int shcol_, Int nlev_, Int nlevi_) :
     PhysicsTestData(shcol_, nlev_, nlevi_, {&u_wind, &v_wind}, {&dz_zi, &sterm}) {}
 
-  DATA_COPY_CONS(SHOCTkeshearData, 3);
-  ASSIGN(SHOCTkeshearData, 0);
+  PTD_DATA_COPY_CTOR(SHOCTkeshearData, 3);
+  PTD_ASSIGN_OP(SHOCTkeshearData, 0);
 };//SHOCTkeshearData
 
 //Create data structure to hold data for isotropic_ts
@@ -75,8 +75,8 @@ struct SHOCIsotropicData : public PhysicsTestData {
   SHOCIsotropicData(Int shcol_, Int nlev_) :
     PhysicsTestData(shcol_, nlev_, {&tke, &a_diss, &brunt, &isotropy}, {&brunt_int}) {}
 
-  DATA_COPY_CONS(SHOCIsotropicData, 2);
-  ASSIGN(SHOCIsotropicData, 0);
+  PTD_DATA_COPY_CTOR(SHOCIsotropicData, 2);
+  PTD_ASSIGN_OP(SHOCIsotropicData, 0);
 };//SHOCIsotropicData
 
 //Create data structure to hold data for adv_sgs_tke
@@ -95,8 +95,8 @@ struct SHOCAdvsgstkeData : public PhysicsTestData {
   SHOCAdvsgstkeData(Int shcol_, Int nlev_, Real dtime_) :
     PhysicsTestData(shcol_, nlev_, {&shoc_mix, &wthv_sec, &sterm_zt, &tk, &tke, &a_diss}), dtime(dtime_) {}
 
-  DATA_COPY_CONS(SHOCAdvsgstkeData, 3);
-  ASSIGN(SHOCAdvsgstkeData, 1, dtime);
+  PTD_DATA_COPY_CTOR(SHOCAdvsgstkeData, 3);
+  PTD_ASSIGN_OP(SHOCAdvsgstkeData, 1, dtime);
 };//SHOCAdvsgstkeData
 
 //Create data structure to hold data for eddy_diffusivities
@@ -112,8 +112,8 @@ struct SHOCEddydiffData : public PhysicsTestData {
   SHOCEddydiffData(Int shcol_, Int nlev_) :
     PhysicsTestData(shcol_, nlev_, {&zt_grid, &shoc_mix, &isotropy, &tke, &tk, &tkh, &sterm_zt}, {&obklen, &pblh}) {}
 
-  DATA_COPY_CONS(SHOCEddydiffData, 2);
-  ASSIGN(SHOCEddydiffData, 0);
+  PTD_DATA_COPY_CTOR(SHOCEddydiffData, 2);
+  PTD_ASSIGN_OP(SHOCEddydiffData, 0);
 };//SHOCEddydiffData
 
 
@@ -129,8 +129,8 @@ struct SHOCEnergydseData : public PhysicsTestData {
   SHOCEnergydseData(Int shcol_, Int nlev_) :
     PhysicsTestData(shcol_, nlev_, {&thlm, &shoc_ql, &exner, &zt_grid, &host_dse}, {&phis}) {}
 
-  DATA_COPY_CONS(SHOCEnergydseData, 2);
-  ASSIGN(SHOCEnergydseData, 0);
+  PTD_DATA_COPY_CTOR(SHOCEnergydseData, 2);
+  PTD_ASSIGN_OP(SHOCEnergydseData, 0);
 };//SHOCEnergydseData
 
 //create data structure for shoc_energy_integrals
@@ -145,8 +145,8 @@ struct SHOCEnergyintData : public PhysicsTestData {
   SHOCEnergyintData(Int shcol_, Int nlev_) :
     PhysicsTestData(shcol_, nlev_, {&host_dse, &pdel, &rtm, &rcm, &u_wind, &v_wind}, {&se_int, &ke_int, &wv_int, &wl_int}) {}
 
-  DATA_COPY_CONS(SHOCEnergyintData, 2);
-  ASSIGN(SHOCEnergyintData, 0);
+  PTD_DATA_COPY_CTOR(SHOCEnergyintData, 2);
+  PTD_ASSIGN_OP(SHOCEnergyintData, 0);
 };//SHOCEnergyintData
 
 //Create data structure for shoc_energy_total_fixer
@@ -164,8 +164,8 @@ struct SHOCEnergytotData : public PhysicsTestData {
   SHOCEnergytotData(Int shcol_, Int nlev_, Int nlevi_, Real dtime_, Int nadv_) :
     PhysicsTestData(shcol_, nlev_, nlevi_, {&zt_grid, &rho_zt}, {&zi_grid}, {&se_b, &ke_b, &wv_b, &wl_b, &se_a, &ke_a, &wv_a, &wl_a, &wthl_sfc, &wqw_sfc, &te_a, &te_b}), nadv(nadv_), dtime(dtime_) {}
 
-  DATA_COPY_CONS(SHOCEnergytotData, 5);
-  ASSIGN(SHOCEnergytotData, 2, dtime, nadv);
+  PTD_DATA_COPY_CTOR(SHOCEnergytotData, 5);
+  PTD_ASSIGN_OP(SHOCEnergytotData, 2, dtime, nadv);
 };//SHOCEnergytotData
 
 //create data structure for shoc_energy_threshold_fixer
@@ -181,8 +181,8 @@ struct SHOCEnergythreshfixerData : public PhysicsTestData {
   SHOCEnergythreshfixerData(Int shcol_, Int nlev_, Int nlevi_) :
     PhysicsTestData(shcol_, nlev_, nlevi_, {&tke}, {&pint}, {&se_dis, &te_a, &te_b}, {&shoctop}) {}
 
-  DATA_COPY_CONS(SHOCEnergythreshfixerData, 3);
-  ASSIGN(SHOCEnergythreshfixerData, 0);
+  PTD_DATA_COPY_CTOR(SHOCEnergythreshfixerData, 3);
+  PTD_ASSIGN_OP(SHOCEnergythreshfixerData, 0);
 };//SHOCEnergythreshfixerData
 
 //create data structure for shoc_energy_dse_fixer
@@ -198,8 +198,8 @@ struct SHOCEnergydsefixerData : public PhysicsTestData {
   SHOCEnergydsefixerData(Int shcol_, Int nlev_) :
     PhysicsTestData(shcol_, nlev_, {&host_dse}, {&se_dis}, {&shoctop}) {}
 
-  DATA_COPY_CONS(SHOCEnergydsefixerData, 2);
-  ASSIGN(SHOCEnergydsefixerData, 0);
+  PTD_DATA_COPY_CTOR(SHOCEnergydsefixerData, 2);
+  PTD_ASSIGN_OP(SHOCEnergydsefixerData, 0);
 };//SHOCEnergydsefixerData
 
 //Create data structure to hold data for calc_shoc_vertflux
@@ -213,8 +213,8 @@ struct SHOCVertfluxData : public PhysicsTestData {
   SHOCVertfluxData(Int shcol_, Int nlev_, Int nlevi_) :
     PhysicsTestData(shcol_, nlev_, nlevi_, {&invar}, {&tkh_zi, &dz_zi, &vertflux}) {}
 
-  DATA_COPY_CONS(SHOCVertfluxData, 3);
-  ASSIGN(SHOCVertfluxData, 0);
+  PTD_DATA_COPY_CTOR(SHOCVertfluxData, 3);
+  PTD_ASSIGN_OP(SHOCVertfluxData, 0);
 }; //SHOCVertfluxData
 
 //Create data structure to hold data for calc_shoc_varorcovar
@@ -229,8 +229,8 @@ struct SHOCVarorcovarData : public PhysicsTestData {
   SHOCVarorcovarData(Int shcol_, Int nlev_, Int nlevi_, Real tunefac_) :
     PhysicsTestData(shcol_, nlev_, nlevi_, {&invar1, &invar2}, {&tkh_zi, &dz_zi, &isotropy_zi, &varorcovar}), tunefac(tunefac_) {}
 
-  DATA_COPY_CONS(SHOCVarorcovarData, 4);
-  ASSIGN(SHOCVarorcovarData, 1, tunefac);
+  PTD_DATA_COPY_CTOR(SHOCVarorcovarData, 4);
+  PTD_ASSIGN_OP(SHOCVarorcovarData, 1, tunefac);
 };//SHOCVarorcovarData
 
 //Create data structure to hold data for compute_brunt_shoc_length
@@ -244,8 +244,8 @@ struct SHOCBruntlengthData : public PhysicsTestData {
   SHOCBruntlengthData(Int shcol_, Int nlev_, Int nlevi_) :
     PhysicsTestData(shcol_, nlev_, nlevi_, {&dz_zt, &thv, &brunt}, {&thv_zi}) {}
 
-  DATA_COPY_CONS(SHOCBruntlengthData, 3);
-  ASSIGN(SHOCBruntlengthData, 0)
+  PTD_DATA_COPY_CTOR(SHOCBruntlengthData, 3);
+  PTD_ASSIGN_OP(SHOCBruntlengthData, 0)
 };//SHOCBruntlengthData
 
 //Create data structure to hold data for compute_l_inf_shoc_length
@@ -259,8 +259,8 @@ struct SHOCInflengthData : public PhysicsTestData {
   SHOCInflengthData(Int shcol_, Int nlev_) :
     PhysicsTestData(shcol_, nlev_, {&zt_grid, &dz_zt, &tke}, {&l_inf}) {}
 
-  DATA_COPY_CONS(SHOCInflengthData, 2);
-  ASSIGN(SHOCInflengthData, 0);
+  PTD_DATA_COPY_CTOR(SHOCInflengthData, 2);
+  PTD_ASSIGN_OP(SHOCInflengthData, 0);
 };//SHOCInflengthData
 
 //Create data structure to hold data for compute_vel_shoc_length
@@ -274,8 +274,8 @@ struct SHOCConvvelData : public PhysicsTestData {
   SHOCConvvelData(Int shcol_, Int nlev_) :
     PhysicsTestData(shcol_, nlev_, {&zt_grid, &dz_zt, &thv, &wthv_sec}, {&conv_vel, &pblh}) {}
 
-  DATA_COPY_CONS(SHOCConvvelData, 2);
-  ASSIGN(SHOCConvvelData, 0);
+  PTD_DATA_COPY_CTOR(SHOCConvvelData, 2);
+  PTD_ASSIGN_OP(SHOCConvvelData, 0);
 };//SHOCConvvelData
 
 //Create data structure to hold data for compute_conv_time_shoc_length
@@ -289,8 +289,8 @@ struct SHOCConvtimeData : public PhysicsTestData {
   SHOCConvtimeData(Int shcol_) :
     PhysicsTestData(shcol_, {&conv_vel, &pblh, &tscale}) {}
 
-  DATA_COPY_CONS(SHOCConvtimeData, 1);
-  ASSIGN(SHOCConvtimeData, 0);
+  PTD_DATA_COPY_CTOR(SHOCConvtimeData, 1);
+  PTD_ASSIGN_OP(SHOCConvtimeData, 0);
 };//SHOCConvtimeData
 
 //Create data structure to hold data for compute_shoc_mix_shoc_length
@@ -304,8 +304,8 @@ struct SHOCMixlengthData : public PhysicsTestData {
   SHOCMixlengthData(Int shcol_, Int nlev_) :
     PhysicsTestData(shcol_, nlev_, {&tke, &brunt, &zt_grid, &shoc_mix}, {&l_inf, &tscale}) {}
 
-  DATA_COPY_CONS(SHOCMixlengthData, 2);
-  ASSIGN(SHOCMixlengthData, 0);
+  PTD_DATA_COPY_CTOR(SHOCMixlengthData, 2);
+  PTD_ASSIGN_OP(SHOCMixlengthData, 0);
 };//SHOCMixlengthData
 
 //Create data structure to hold data for check_length_scale_shoc_length
@@ -319,8 +319,8 @@ struct SHOCMixcheckData : public PhysicsTestData {
   SHOCMixcheckData(Int shcol_, Int nlev_) :
     PhysicsTestData(shcol_, nlev_, {&shoc_mix}, {&host_dx, &host_dy}) {}
 
-  DATA_COPY_CONS(SHOCMixcheckData, 2);
-  ASSIGN(SHOCMixcheckData, 0);
+  PTD_DATA_COPY_CTOR(SHOCMixcheckData, 2);
+  PTD_ASSIGN_OP(SHOCMixcheckData, 0);
 };//SHOCMixcheckData
 
 struct SHOCSecondMomentSrfData : public PhysicsTestData {
@@ -333,8 +333,8 @@ struct SHOCSecondMomentSrfData : public PhysicsTestData {
   SHOCSecondMomentSrfData(Int shcol_) :
     PhysicsTestData(shcol_, {&wthl, &uw, &vw, &ustar2, &wstar}) {}
 
-  DATA_COPY_CONS(SHOCSecondMomentSrfData, 1);
-  ASSIGN(SHOCSecondMomentSrfData, 0);
+  PTD_DATA_COPY_CTOR(SHOCSecondMomentSrfData, 1);
+  PTD_ASSIGN_OP(SHOCSecondMomentSrfData, 0);
 };
 
 //Create data structure to hold data for linear_interp
@@ -349,8 +349,8 @@ struct SHOCLinearintData : public PhysicsTestData {
   SHOCLinearintData(Int shcol_, Int nlev_, Int nlevi_, Real minthresh_) :
     PhysicsTestData(shcol_, nlev_, nlevi_, {&x1, &y1}, {&x2, &y2}), minthresh(minthresh_) {}
 
-  DATA_COPY_CONS(SHOCLinearintData, 4);
-  ASSIGN(SHOCLinearintData, 1, minthresh);
+  PTD_DATA_COPY_CTOR(SHOCLinearintData, 4);
+  PTD_ASSIGN_OP(SHOCLinearintData, 1, minthresh);
 };//SHOCLinearintData
 
 //Create data structure to hold data for shoc_assumed_pdf_tilda_to_real
@@ -482,8 +482,8 @@ struct SHOCSecondMomentUbycondData : public PhysicsTestData {
   SHOCSecondMomentUbycondData(Int shcol_) :
     PhysicsTestData(shcol_, {&thl, &qw, &wthl, &wqw, &qwthl, &uw, &vw, &wtke}) {}
 
-  DATA_COPY_CONS(SHOCSecondMomentUbycondData, 1);
-  ASSIGN(SHOCSecondMomentUbycondData, 0);
+  PTD_DATA_COPY_CTOR(SHOCSecondMomentUbycondData, 1);
+  PTD_ASSIGN_OP(SHOCSecondMomentUbycondData, 0);
 };
 
 //
