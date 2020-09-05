@@ -133,9 +133,9 @@ contains
       real(kind=RKIND)                 :: h1, h2, areaEdge, c, BruntVaisalaFreqTopEdge, rtmp
       real(kind=RKIND)                 :: kappaGMEdge, sumN2, countN2, maxN, kappaSum, ltSum
       real(kind=RKIND)                 :: sumRi, RiTopOfEdge, zEdge, zMLD, sshEdge, sfcTaper
-      real(kind=RKIND) :: gradDensityTopOfEdge, dcEdgeInv, drhoDx, drhoDT, drhoDS, dTdx, dSdx, BVFcent
+      real(kind=RKIND) :: dcEdgeInv, drhoDx, drhoDT, drhoDS, dTdx, dSdx, BVFcent
       real(kind=RKIND) :: slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown, invAreaCell
-      real(kind=RKIND) :: lt1, lt2, dzdxTopOfEdge, drhodz1, drhodz2, dTdz, dSdz, gradDensityConstZTopOfEdge
+      real(kind=RKIND) :: lt1, lt2, dzdxTopOfEdge, drhodz1, drhodz2, dTdz, dSdz!, gradDensityConstZTopOfEdge
       real(kind=RKIND), dimension(:), allocatable :: dzTop, dTdzTop, dSdzTop, k33Norm
       ! Dimensions
       integer :: nsmooth, nCells, nEdges
@@ -144,7 +144,9 @@ contains
 
       ! gradDensityEdge: Normal gradient of density
       !           units: none
-      real(kind=RKIND), dimension(:, :), allocatable :: gradDensityEdge
+      real(kind=RKIND), dimension(:, :), allocatable :: gradDensityEdge, gradDensityTopOfEdge, &
+        gradDensityConstZTopOfEdge, dDensityDzTopOfCell, dDensityDzTopOfEdge, &
+        gradZMidEdge, gradZMidTopOfEdge
       ! drhoDzTopOfEdge: Gradient of density in vertical on edges
       !           units: None
       real(kind=RKIND), dimension(:, :), allocatable :: drhoDzTopOfEdge
@@ -219,7 +221,13 @@ contains
 
       allocate(gradDensityEdge(nVertLevels, nEdges), &
                dzdxEdge(nVertLevels, nEdges), &
-               drhoDzTopOfEdge(nVertLevels, nEdges))
+               drhoDzTopOfEdge(nVertLevels, nEdges), &
+              dDensityDzTopOfCell(nVertLevels, nCells), &
+              gradDensityTopOfEdge(nVertLevels, nEdges), &
+              dDensityDzTopOfEdge(nVertLevels, nEdges), &
+              gradZMidEdge(nVertLevels, nEdges), &
+              gradZMidTopOfEdge(nVertLevels, nEdges), &
+              gradDensityConstZTopOfEdge(nVertLevels, nEdges))
 
       !$omp parallel
       !$omp do schedule(runtime) private(k)
@@ -456,71 +464,83 @@ contains
 
       if (config_use_GM) then
          nEdges = nEdgesArray(3)
-         !$omp parallel
-         !$omp do schedule(runtime) &
-         !$omp private(cell1, cell2, dcEdgeInv, k, drhoDT, drhoDS, dTdx, dSdx, drhoDx, dTdz, dSdz, &
-         !$omp         drhodz1, drhodz2)
+         !$omp do schedule(runtime) private(k, rtmp)
+         do iCell = 1, nCells
+            do k = 2, maxLevelCell(iCell)
+               rtmp = (displacedDensity(k-1,iCell) - density(k,iCell)) / (zMid(k-1,iCell) - zMid(k,iCell))
+               dDensityDzTopOfCell(k,iCell) = min(rtmp, -epsGM)
+            end do
+
+            ! Approximation of dDensityDzTopOfCell on the top and bottom interfaces through the idea of having
+            ! ghost cells above the top and below the bottom layers of the same depths and density.
+            ! Essentially, this enforces the boundary condition (d density)/dz = 0 at the top and bottom.
+            dDensityDzTopOfCell(1,iCell) = 0.0_RKIND
+            dDensityDzTopOfCell(maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
+         end do
+         !$omp end do
+
+         nEdges = nEdgesArray( 3 )
+
+         ! Interpolate dDensityDzTopOfCell to edge and layer interface
+         !$omp do schedule(runtime) private(k, cell1, cell2)
          do iEdge = 1, nEdges
-            cell1 = cellsOnEdge(1, iEdge)
-            cell2 = cellsOnEdge(2, iEdge)
-            dcEdgeInv = 1.0_RKIND/dcEdge(iEdge)
-
-            k=1
-            drhoDT = -0.5_RKIND*(inSituThermalExpansionCoeff(k, cell1) + &
-                                 inSituThermalExpansionCoeff(k, cell2))
-            drhoDS = 0.5_RKIND*(inSituSalineContractionCoeff(k, cell1) + &
-                                inSituSalineContractionCoeff(k, cell2))
-            dTdx = (activeTracers(indexTemperature, k, cell2) &
-                    - activeTracers(indexTemperature, k, cell1))*dcEdgeInv
-            dSdx = (activeTracers(indexSalinity, k, cell2) &
-                    - activeTracers(indexTemperature, k, cell1))*dcEdgeInv
-            drhoDx = drhoDT*dTdx + drhoDS*dSdx
-            gradDensityEdge(k, iEdge) = drhoDx*rho_sw
-            drhoDzTopOfEdge(k, iEdge) = 0.0_RKIND
-            dzdxEdge(k,iEdge) = 0.0_RKIND
-
-            do k = 2, maxLevelEdgeTop(iEdge)
-               drhoDT = -0.5_RKIND*(inSituThermalExpansionCoeff(k, cell1) + &
-                                    inSituThermalExpansionCoeff(k, cell2))
-               drhoDS = 0.5_RKIND*(inSituSalineContractionCoeff(k, cell1) + &
-                                   inSituSalineContractionCoeff(k, cell2))
-               dTdx = (activeTracers(indexTemperature, k, cell2) &
-                       - activeTracers(indexTemperature, k, cell1)) &
-                      *dcEdgeInv
-               dSdx = (activeTracers(indexSalinity, k, cell2) &
-                       - activeTracers(indexSalinity, k, cell1)) &
-                      *dcEdgeInv
-               drhoDx = drhoDT*dTdx + drhoDS*dSdx
-
-               gradDensityEdge(k, iEdge) = drhoDx*rho_sw
-!
-               dTdz = (activeTracers(indexTemperature, k - 1, cell1) &
-                          - activeTracers(indexTemperature, k, cell1)) &
-                         /(zMid(k - 1, cell1) - zMid(k, cell1))
-               dSdz = (activeTracers(indexSalinity, k - 1, cell1) &
-                          - activeTracers(indexSalinity, k, cell1)) &
-                         /(zMid(k - 1, cell1) - zMid(k, cell1))
-               drhoDT = -inSituThermalExpansionCoeff(k, cell1)
-               drhoDS = inSituSalineContractionCoeff(k, cell1)
-               drhodz1 = drhoDT*dTdz + drhoDS*dSdz
-
-               dTdz = (activeTracers(indexTemperature, k - 1, cell2) &
-                          - activeTracers(indexTemperature, k, cell2)) &
-                         /(zMid(k - 1, cell2) - zMid(k, cell2))
-               dSdz = (activeTracers(indexSalinity, k - 1, cell2) &
-                          - activeTracers(indexSalinity, k, cell2)) &
-                         /(zMid(k - 1, cell2) - zMid(k, cell2))
-               drhoDT = -inSituThermalExpansionCoeff(k, cell2)
-               drhoDS = inSituSalineContractionCoeff(k, cell2)
-               drhodz2 = drhoDT*dTdz + drhoDS*dSdz
-
-               dzdxEdge(k, iEdge) = (zMid(k,cell2) - zMid(k,cell1))*dcEdgeInv
-               drhoDzTopOfEdge(k, iEdge) = rho_sw*0.5_RKIND*(drhodz1 + drhodz2)
-
+            do k = 1, maxLevelEdgeTop(iEdge)+1
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
+               dDensityDzTopOfEdge(k,iEdge) = 0.5_RKIND * (dDensityDzTopOfCell(k,cell1) + dDensityDzTopOfCell(k,cell2))
             end do
          end do
          !$omp end do
-         !$omp end parallel
+
+ 
+      ! Compute density gradient (gradDensityEdge) and gradient of zMid (gradZMidEdge)
+      ! along the constant coordinate surface.
+      ! The computed variables lives at edge and mid-layer depth
+      !$omp do schedule(runtime) private(cell1, cell2, k)
+      do iEdge = 1, nEdges
+         cell1 = cellsOnEdge(1,iEdge)
+         cell2 = cellsOnEdge(2,iEdge)
+
+         do k=1,maxLevelEdgeTop(iEdge)
+            gradDensityEdge(k,iEdge) = (density(k,cell2) - density(k,cell1)) / dcEdge(iEdge)
+            gradZMidEdge(k,iEdge) = (zMid(k,cell2) - zMid(k,cell1)) / dcEdge(iEdge)
+         end do
+      end do
+      !$omp end do
+
+      !$omp do schedule(runtime) private(k, h1, h2)
+      do iEdge = 1, nEdges
+         ! The interpolation can only be carried out on non-boundary edges
+         if (maxLevelEdgeTop(iEdge) .GE. 1) then
+            do k = 2, maxLevelEdgeTop(iEdge)
+               h1 = layerThicknessEdge(k-1,iEdge)
+               h2 = layerThicknessEdge(k,iEdge)
+               ! Using second-order interpolation below
+               gradDensityTopOfEdge(k,iEdge) = (h2 * gradDensityEdge(k-1,iEdge) + h1 * gradDensityEdge(k,iEdge)) / (h1 + h2)
+               gradZMidTopOfEdge(k,iEdge) = (h2 * gradZMidEdge(k-1,iEdge) + h1 * gradZMidEdge(k,iEdge)) / (h1 + h2)
+
+            end do
+
+            ! Approximation of values on the top and bottom interfaces through the idea of having ghost cells above
+            ! the top and below the bottom layers of the same depths and density.
+            gradDensityTopOfEdge(1,iEdge) = gradDensityEdge(1,iEdge)
+            gradDensityTopOfEdge(maxLevelEdgeTop(iEdge)+1,iEdge) = gradDensityEdge(maxLevelEdgeTop(iEdge),iEdge)
+            gradZMidTopOfEdge(1,iEdge) = gradZMidEdge(1,iEdge)
+            gradZMidTopOfEdge(maxLevelEdgeTop(iEdge)+1,iEdge) = gradZMidEdge(maxLevelEdgeTop(iEdge),iEdge)
+         end if
+      end do
+      !$omp end do
+
+      !$omp do schedule(runtime) private(k)
+      do iEdge = 1, nEdges
+         if (maxLevelEdgeTop(iEdge) .GE. 1) then
+            do k = 1, maxLevelEdgeTop(iEdge)+1
+               gradDensityConstZTopOfEdge(k,iEdge) = gradDensityTopOfEdge(k,iEdge) - dDensityDzTopOfEdge(k,iEdge) &
+                                                   * gradZMidTopOfEdge(k,iEdge)
+            end do
+         end if
+      end do
+      !$omp end do
 
          ! For config_GM_closure = 'N2_dependent' use a scaling to taper gmBolusKappa
          ! based on stratification relative to the maximum in the column
@@ -691,7 +711,7 @@ contains
                tridiagC(k - 1) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThicknessEdge(k, iEdge) &
                                  /(layerThicknessEdge(k - 1, iEdge) + layerThicknessEdge(k, iEdge))
                rightHandSide(k - 1) = gmBolusKappa(iEdge)*kappaGMEdge*gravity/rho_sw &
-                                      *gradDensityConstZTopOfEdge
+                                      *gradDensityConstZTopOfEdge(k,iEdge)
 
                ! Second to next to the last rows
                do k = 3, maxLevelEdgeTop(iEdge) - 1
@@ -715,7 +735,7 @@ contains
                   tridiagC(k - 1) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThicknessEdge(k, iEdge) &
                                     /(layerThicknessEdge(k - 1, iEdge) + layerThicknessEdge(k, iEdge))
                   rightHandSide(k - 1) = gmBolusKappa(iEdge)*kappaGMEdge*gravity/rho_sw &
-                                         *gradDensityConstZTopOfEdge
+                                         *gradDensityConstZTopOfEdge(k,iEdge)
                end do
 
                ! Last row
@@ -737,8 +757,7 @@ contains
                tridiagB(k - 1) = -2.0_RKIND*cGMphaseSpeed(iEdge)**2/(layerThicknessEdge(k - 1, iEdge) &
                                                                      *layerThicknessEdge(k, iEdge)) - BruntVaisalaFreqTopEdge
                rightHandSide(k - 1) = gmBolusKappa(iEdge)*kappaGMEdge*gravity/rho_sw &
-                                      *gradDensityConstZTopOfEdge
-
+                                      *gradDensityConstZTopOfEdge(k,iEdge)
                ! Total number of rows
                N = maxLevelEdgeTop(iEdge) - 1
 
@@ -796,11 +815,18 @@ contains
          deallocate (tridiagC)
 
       end if !end config_use_GM
+      deallocate(gradDensityEdge, &
+              dDensityDzTopOfCell, &
+              gradDensityTopOfEdge, &
+              dDensityDzTopOfEdge, &
+              gradZMidEdge, &
+              gradZMidTopOfEdge, &
+              gradDensityConstZTopOfEdge)
+
 
       ! Deallocate scratch variables
       deallocate(dzdxEdge, &
-                 drhoDzTopOfEdge, &
-                 gradDensityEdge)
+                 drhoDzTopOfEdge)
       call mpas_timer_stop('gm bolus velocity')
 
    end subroutine ocn_GM_compute_Bolus_velocity!}}}
