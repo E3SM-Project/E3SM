@@ -111,8 +111,10 @@ void x_y_terms_diag_third_shoc_moment_c(Real buoy_sgs2, Real f0, Real f1, Real f
 				    
 void aa_terms_diag_third_shoc_moment_c(Real omega0, Real omega1, Real omega2, 
                                     Real x0, Real x1, Real y0, Real y1, 
-				    Real *aa0, Real *aa1);			   
-				   			    				    
+				    Real *aa0, Real *aa1);
+				    
+void w3_diag_third_shoc_moment_c(Real aa0, Real aa1, Real x0, 
+                                    Real x1, Real f5, Real *w3);				    		   				   			    				    
 void shoc_diag_second_moments_srf_c(Int shcol, Real* wthl, Real* uw, Real* vw,
                                    Real* ustar2, Real* wstar);
 				   
@@ -459,6 +461,11 @@ void x_y_terms_diag_third_shoc_moment(SHOCXYdiagthirdmomsData &d){
   shoc_init(1, true);
   x_y_terms_diag_third_shoc_moment_c(d.buoy_sgs2,d.f0,d.f1,d.f2,
                                      &d.x0,&d.y0,&d.x1,&d.y1);
+}
+
+void w3_diag_third_shoc_moment(SHOCW3diagthirdmomsData &d){
+  shoc_init(1, true);
+  w3_diag_third_shoc_moment_c(d.aa0,d.aa1,d.x0,d.x1,d.f5,&d.w3);
 }
 
 void shoc_diag_second_moments_srf(SHOCSecondMomentSrfData& d)

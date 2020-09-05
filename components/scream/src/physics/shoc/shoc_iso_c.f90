@@ -551,6 +551,21 @@ contains
 
   end subroutine f0_to_f5_diag_third_shoc_moment_c
   
+  subroutine w3_diag_third_shoc_moment_c(aa0, aa1, x0, x1, f5, w3) bind (c)
+    use shoc, only: w3_diag_third_shoc_moment
+    
+    real(kind=c_real), intent(in), value :: aa0
+    real(kind=c_real), intent(in), value :: aa1
+    real(kind=c_real), intent(in), value :: x0
+    real(kind=c_real), intent(in), value :: x1
+    real(kind=c_real), intent(in), value :: f5
+    
+    real(kind=c_real), intent(out) :: w3
+
+    w3 = w3_diag_third_shoc_moment(aa0, aa1, x0, x1, f5)
+    
+  end subroutine w3_diag_third_shoc_moment_c
+  
   subroutine omega_terms_diag_third_shoc_moment_c(&
                           buoy_sgs2, f3, f4,&
 			  omega0, omega1, omega2) bind (C)

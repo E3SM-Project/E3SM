@@ -443,6 +443,16 @@ struct SHOCXYdiagthirdmomsData
 
 };
 
+struct SHOCW3diagthirdmomsData
+{
+  // inputs
+  Real aa0, aa1, x0, x1, f5;
+  
+  // outputs
+  Real w3;
+
+};
+
 struct SHOCFterminputthirdmomsData
 {
   // inputs
@@ -521,15 +531,16 @@ void compute_conv_vel_shoc_length(SHOCConvvelData &d);
 void compute_conv_time_shoc_length(SHOCConvtimeData &d);
 void compute_shoc_mix_shoc_length(SHOCMixlengthData &d);
 void check_length_scale_shoc_length(SHOCMixcheckData &d);
-void clipping_diag_third_shoc_moments(SHOCClipthirdmomsData &d);
-void shoc_diag_second_moments_srf(SHOCSecondMomentSrfData& d);
-void linear_interp(SHOCLinearintData &d);
-void shoc_diag_second_moments_ubycond(SHOCSecondMomentUbycondData& d);
 void fterms_input_for_diag_third_shoc_moment(SHOCFterminputthirdmomsData &d);
 void aa_terms_diag_third_shoc_moment(SHOCAAdiagthirdmomsData &d);
 void f0_to_f5_diag_third_shoc_moment(SHOCFtermdiagthirdmomsData &d);
 void omega_terms_diag_third_shoc_moment(SHOCOmegadiagthirdmomsData &d);
 void x_y_terms_diag_third_shoc_moment(SHOCXYdiagthirdmomsData &d);
+void w3_diag_third_shoc_moment(SHOCW3diagthirdmomsData &d);
+void clipping_diag_third_shoc_moments(SHOCClipthirdmomsData &d);
+void shoc_diag_second_moments_srf(SHOCSecondMomentSrfData& d);
+void linear_interp(SHOCLinearintData &d);
+void shoc_diag_second_moments_ubycond(SHOCSecondMomentUbycondData& d);
 
 //
 // _f functions decls

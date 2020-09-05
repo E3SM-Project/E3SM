@@ -26,18 +26,76 @@ struct UnitWrap::UnitTest<D>::TestW3diagThirdMoms {
   {
 
     // Tests for the SHOC function:
-    //   w3_diag_third_shoc_moment
+    //   w3_diag_third_shoc_moment 
+    
+    // TEST ONE
+    // Do series of tests to make sure output is as expected
   
-    //  Test to be sure that very high values of w3
-    //    are reduced but still the same sign   
-  
+    // aa0 term
+    constexpr static Real aa0_test1 = -0.2;
+    // aa1 term
+    constexpr static Real aa1_test1 = 5.65;
+    // x0 term
+    constexpr static Real x0_test1 = -4.31;
+    // y0 term
+    constexpr static Real x1_test1 = 41.05;    
+    // f5 term
+    constexpr static Real f5_test1 = 4;        
 
     // Initialize data structure for bridging to F90
     SHOCW3diagthirdmomsData SDS;
 
+    // Load up the data
+    SDS.aa0 = aa0_test1;
+    SDS.aa1 = aa1_test1;
+    SDS.x0 = x0_test1;
+    SDS.x1 = x1_test1;
+    SDS.f5 = f5_test1;
+      
+    // Call the fortran implementation    
+    w3_diag_third_shoc_moment(SDS);      
+
+    // Verify result is negative
+    REQUIRE(SDS.w3 < 0);
+ 
+    // save output
+    Real w3_test1 = SDS.w3;
+
+    // TEST TWO
+    // Modify parameters to decrease w3
+    // decrease this term
+    constexpr static Real aa1_test2 = 2.65;    
+    
+    SDS.aa1 = aa1_test2;
     
     // Call the fortran implementation    
-    w3_diag_third_shoc_moment(SDS);    
+    w3_diag_third_shoc_moment(SDS);      
+     
+    // Verify result has decreased
+    REQUIRE(SDS.w3 < SDS.aa1);
+    
+    // Save result
+    Real w3_test2 = SDS.w3;
+    
+    // TEST THREE
+    // Modify parameters to get positive result
+    // x0 term
+    constexpr static Real x0_test3 = -4.31;
+    // y0 term
+    constexpr static Real x1_test3 = -41.05;    
+    // f5 term
+    constexpr static Real f5_test3 = -4;
+    
+    SDS.x0 = x0_test3;
+    SDS.x1 = x1_test3;
+    SDS.f5 = f5_test3; 
+    
+    // Call the fortran implementation    
+    w3_diag_third_shoc_moment(SDS);
+    
+    // Verify the result is positive
+    REQUIRE(SDS.w3 > 0);       
+    
     
   }
 
