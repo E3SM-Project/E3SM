@@ -25,7 +25,8 @@ struct UnitWrap::UnitTest<D>::TestClipThirdMoms {
   static void run_property()
   {
     static constexpr Int shcol    = 2;
-    static constexpr Int nlevi     = 5;
+    static constexpr Int nlevi    = 5;
+    static constexpr Int nlev     = nlevi-1;
 
     // Tests for the SHOC function:
     //   clipping_diag_third_shoc_moments
@@ -42,7 +43,7 @@ struct UnitWrap::UnitTest<D>::TestClipThirdMoms {
     bool w3_large;
 
     // Initialize data structure for bridgeing to F90
-    SHOCClipthirdmomsData SDS(shcol, nlevi);
+    SHOCClipthirdmomsData SDS(shcol, nlev, nlevi);
 
     // Test that the inputs are reasonable.
     REQUIRE(SDS.shcol > 0);

@@ -17,22 +17,22 @@ void Functions<S,D>
 {
  // Purpose of this subroutine is to diagnose surface
  // properties needed for the the lower
- // boundary condition for the second order moments needed 
- // for the SHOC parameterization.  
+ // boundary condition for the second order moments needed
+ // for the SHOC parameterization.
 
  const auto one      = C::ONE;
  const auto zero     = C::ZERO;
  const auto third    = C::THIRD;
  const auto ggr      = C::gravit;
  const auto basetemp = C::basetemp;
- 
+
  ustar2 = std::sqrt(uw_sfc*uw_sfc+vw_sfc*vw_sfc);
 
  const auto is_wthl_ge_zero = wthl_sfc >= zero;
 
  if (is_wthl_ge_zero) {
    wstar = std::pow(one/basetemp*ggr*wthl_sfc*one, third);
- } 
+ }
  else {
    wstar = zero;
  }

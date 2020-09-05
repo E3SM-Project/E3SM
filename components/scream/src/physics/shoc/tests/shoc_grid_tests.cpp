@@ -36,7 +36,7 @@ struct UnitWrap::UnitTest<D>::TestShocGrid {
     // Define the interface height grid [m]
     static constexpr Real zi_pts[nlevi] = {12500., 7500., 3000., 750., 250.0, 0.};
     // Define the air density [kg/m3]
-    static constexpr Real density_zt[nlev] {0.4, 0.6, 0.8, 1.0, 1.2};
+    static constexpr Real density_zt[nlev] = {0.4, 0.6, 0.8, 1.0, 1.2};
 
     // Initialzie data structure for bridgeing to F90
     SHOCGridData SDS(shcol, nlev, nlevi);

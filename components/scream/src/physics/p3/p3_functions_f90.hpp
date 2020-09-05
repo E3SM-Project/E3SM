@@ -2,6 +2,7 @@
 #define SCREAM_P3_FUNCTIONS_F90_HPP
 
 #include "physics/p3/p3_functions.hpp"
+#include "physics/share/physics_test_data.hpp"
 #include "share/scream_types.hpp"
 
 #include <array>
@@ -479,34 +480,28 @@ void get_rain_dsd2_f(Real qr, Real* nr, Real* mu_r, Real* lamr, Real* cdistr, Re
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct CalcUpwindData
+struct CalcUpwindData : public PhysicsTestData
 {
   // Inputs
   Int kts, kte, kdir, kbot, k_qxtop, num_arrays;
   Real dt_sub;
   Real* rho, *inv_rho, *inv_dz;
-  Real **vs;
+  Real *vs; // num_arrays x nk
 
   // In/out
-  Real **qnx;
+  Real *qnx; // num_arrays x nk
 
   // Outputs
-  Real** fluxes;
+  Real *fluxes; // num_arrays x nk
 
-  CalcUpwindData(Int kts_, Int kte_, Int kdir_, Int kbot_, Int k_qxtop_, Int num_arrays_, Real dt_sub_,
-                 std::pair<Real, Real> rho_range, std::pair<Real, Real> inv_dz_range,
-                 std::pair<Real, Real> vs_range, std::pair<Real, Real> qnx_range);
+  CalcUpwindData(Int kts_, Int kte_, Int kdir_, Int kbot_, Int k_qxtop_, Int num_arrays_, Real dt_sub_);
 
-  // deep copy
-  CalcUpwindData(const CalcUpwindData& rhs);
+  PTD_DATA_COPY_CTOR(CalcUpwindData, 7);
+  PTD_ASSIGN_OP(CalcUpwindData, 7, kts, kte, kdir, kbot, k_qxtop, num_arrays, dt_sub);
 
-  Int nk() const { return m_nk; }
+  Int nk() const { return shcol; }
 
- private:
-  // Internals
-  Int m_nk;
-  std::vector<Real> m_data;
-  std::vector<Real*> m_ptr_data;
+  void convert_to_ptr_arr(std::vector<Real*>& mem_space, Real**& fluxes_, Real**& vs_, Real**& qnx_);
 };
 void calc_first_order_upwind_step(CalcUpwindData& d);
 
@@ -529,10 +524,10 @@ struct GenSedData : public CalcUpwindData
   Real dt_left, prt_accum;
 
   GenSedData(Int kts_, Int kte_, Int kdir_, Int k_qxtop_, Int k_qxbot_, Int kbot_, Real Co_max_, Real dt_left_,
-             Real prt_accum_, Int num_arrays_,
-             std::pair<Real, Real> rho_range, std::pair<Real, Real> inv_dz_range,
-             std::pair<Real, Real> vs_range, std::pair<Real, Real> qnx_range);
+             Real prt_accum_, Int num_arrays_);
 
+  PTD_DATA_COPY_CTOR(GenSedData, 10);
+  PTD_ASSIGN_OP(GenSedData, 11, kts, kte, kdir, kbot, k_qxtop, num_arrays, dt_sub, Co_max, k_qxbot, dt_left, prt_accum);
 };
 void generalized_sedimentation(GenSedData& d);
 
@@ -546,7 +541,7 @@ void generalized_sedimentation_f(Int kts, Int kte, Int kdir, Int k_qxtop, Int *k
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct CloudSedData
+struct CloudSedData : public PhysicsTestData
 {
   static constexpr size_t NUM_ARRAYS = 13;
 
@@ -561,18 +556,12 @@ struct CloudSedData
   Real precip_liq_surf;
 
   CloudSedData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
-               Real dt_, Real inv_dt_, bool do_predict_nc_, Real precip_liq_surf_,
-               const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+               Real dt_, Real inv_dt_, bool do_predict_nc_, Real precip_liq_surf_);
 
-  // deep copy
-  CloudSedData(const CloudSedData& rhs);
+  PTD_DATA_COPY_CTOR(CloudSedData, 9);
+  PTD_ASSIGN_OP(CloudSedData, 9, kts, kte, ktop, kbot, kdir, dt, inv_dt, do_predict_nc, precip_liq_surf);
 
-  Int nk() const { return m_nk; }
-
- private:
-  // Internals
-  Int m_nk;
-  std::vector<Real> m_data;
+  Int nk() const { return shcol; }
 };
 void cloud_sedimentation(CloudSedData& d);
 
@@ -588,7 +577,7 @@ void cloud_sedimentation_f(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct IceSedData
+struct IceSedData : public PhysicsTestData
 {
   static constexpr size_t NUM_ARRAYS = 15;
 
@@ -602,18 +591,12 @@ struct IceSedData
   Real precip_ice_surf;
 
   IceSedData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
-             Real dt_, Real inv_dt_, Real precip_ice_surf_,
-             const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+             Real dt_, Real inv_dt_, Real precip_ice_surf_);
 
-  // deep copy
-  IceSedData(const IceSedData& rhs);
+  PTD_DATA_COPY_CTOR(IceSedData, 8);
+  PTD_ASSIGN_OP(IceSedData, 8, kts, kte, ktop, kbot, kdir, dt, inv_dt, precip_ice_surf);
 
-  Int nk() const { return m_nk; }
-
- private:
-  // Internals
-  Int m_nk;
-  std::vector<Real> m_data;
+  Int nk() const { return shcol; }
 };
 
 void ice_sedimentation(IceSedData& d);
@@ -631,7 +614,7 @@ void ice_sedimentation_f(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct RainSedData
+struct RainSedData : public PhysicsTestData
 {
   static constexpr size_t NUM_ARRAYS = 14;
 
@@ -646,18 +629,12 @@ struct RainSedData
   Real precip_liq_surf;
 
   RainSedData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
-              Real dt_, Real inv_dt_, Real precip_liq_surf_,
-              const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+              Real dt_, Real inv_dt_, Real precip_liq_surf_);
 
-  // deep copy
-  RainSedData(const RainSedData& rhs);
+  PTD_DATA_COPY_CTOR(RainSedData, 8);
+  PTD_ASSIGN_OP(RainSedData, 8, kts, kte, ktop, kbot, kdir, dt, inv_dt, precip_liq_surf);
 
-  Int nk() const { return m_nk; }
-
- private:
-  // Internals
-  Int m_nk;
-  std::vector<Real> m_data;
+  Int nk() const { return shcol; }
 };
 
 void rain_sedimentation(RainSedData& d);
@@ -695,7 +672,7 @@ void calc_bulk_rho_rime_f(Real qi_tot, Real* qi_rim, Real* bi_rim, Real* rho_rim
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct HomogeneousFreezingData
+struct HomogeneousFreezingData : public PhysicsTestData
 {
   static constexpr size_t NUM_ARRAYS = 12;
 
@@ -706,18 +683,16 @@ struct HomogeneousFreezingData
   // In/out
   Real* qc, *nc, *qr, *nr, *qi, *ni, *qm, *bm, *th;
 
-  HomogeneousFreezingData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
-                          const std::array<std::pair<Real, Real>, NUM_ARRAYS>& ranges);
+  HomogeneousFreezingData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_);
 
-  // deep copy
-  HomogeneousFreezingData(const HomogeneousFreezingData& rhs);
+  PTD_DATA_COPY_CTOR(HomogeneousFreezingData, 5);
+  PTD_ASSIGN_OP(HomogeneousFreezingData, 5, kts, kte, ktop, kbot, kdir);
 
   Int nk() const { return m_nk; }
 
  private:
   // Internals
   Int m_nk;
-  std::vector<Real> m_data;
 
 };
 void homogeneous_freezing(HomogeneousFreezingData& d);
@@ -993,7 +968,7 @@ void ice_cldliq_wet_growth_f(Real rho, Real temp, Real pres, Real rhofaci, Real 
                              Real* qr2qi_collect_tend, Real* qc2qi_collect_tend, Real* qc_growth_rate, Real* nr_ice_shed_tend, Real* qc2qr_ice_shed_tend);
 }
 
-struct LatentHeatData
+struct LatentHeatData : public PhysicsTestData
 {
   static constexpr size_t NUM_ARRAYS = 3;
 
@@ -1004,15 +979,9 @@ struct LatentHeatData
   Real* v, *s, *f;
 
   LatentHeatData(Int its_, Int ite_, Int kts_, Int kte_);
-  LatentHeatData(const LatentHeatData& rhs);
-  LatentHeatData& operator=(const LatentHeatData& rhs);
 
-  void transpose();
-  void init_ptrs();
-
-  // Internals
-  Int m_ni, m_nk, m_total;
-  std::vector<Real> m_data;
+  PTD_DATA_COPY_CTOR(LatentHeatData, 4);
+  PTD_ASSIGN_OP(LatentHeatData, 4, its, ite, kts, kte);
 };
 void get_latent_heat(LatentHeatData& d);
 
@@ -1020,32 +989,25 @@ extern "C" {
 void get_latent_heat_f(Int its, Int ite, Int kts, Int kte, Real* v, Real* s, Real* f);
 }
 
-struct CheckValuesData
+struct CheckValuesData : public PhysicsTestData
 {
   static constexpr size_t NUM_ARRAYS = 2;
 
   // Inputs
-   Int kts, kte;
-   Int timestepcount, source_ind;
+  Int kts, kte;
+  Int timestepcount, source_ind;
 
-   bool force_abort;
+  bool force_abort;
 
-   Real *qv, *temp, *col_loc;
+  Real *qv, *temp, *col_loc;
 
-   CheckValuesData(Int kts_, Int kte_, Int timestepcount_, Int source_ind_, bool force_abort_,
-                   const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+  CheckValuesData(Int kts_, Int kte_, Int timestepcount_, Int source_ind_, bool force_abort_);
 
   // deep copy
+  PTD_DATA_COPY_CTOR(CheckValuesData, 5);
+  PTD_ASSIGN_OP(CheckValuesData, 5, kts, kte, timestepcount, source_ind, force_abort);
 
-  CheckValuesData(const CheckValuesData& rhs);
-
-  Int nk() const { return m_nk; }
-
-  private:
-  // Internals
-
-  Int m_nk;
-  std::vector<Real> m_data;
+  Int nk() const { return shcol; }
 };
 void check_values(CheckValuesData& d);
 
@@ -1073,7 +1035,7 @@ void calculate_incloud_mixingratios_f(Real qc, Real qr, Real qi, Real qm, Real n
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct P3MainPart1Data
+struct P3MainPart1Data : public PhysicsTestData
 {
   static constexpr size_t NUM_ARRAYS = 39;
 
@@ -1092,18 +1054,12 @@ struct P3MainPart1Data
   bool is_nucleat_possible, is_hydromet_present;
 
   P3MainPart1Data(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
-                    bool do_predict_nc_, Real dt_,
-                    const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+                  bool do_predict_nc_, Real dt_);
 
-  // deep copy
-  P3MainPart1Data(const P3MainPart1Data& rhs);
+  PTD_DATA_COPY_CTOR(P3MainPart1Data, 7);
+  PTD_ASSIGN_OP(P3MainPart1Data, 7, kts, kte, kbot, ktop, kdir, do_predict_nc, dt);
 
-  Int nk() const { return m_nk; }
-
- private:
-  // Internals
-  Int m_nk;
-  std::vector<Real> m_data;
+  Int nk() const { return shcol; }
 };
 
 void p3_main_part1(P3MainPart1Data& d);
@@ -1124,7 +1080,7 @@ void p3_main_part1_f(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct P3MainPart2Data
+struct P3MainPart2Data : public PhysicsTestData
 {
   static constexpr size_t NUM_ARRAYS = 62;
 
@@ -1144,18 +1100,12 @@ struct P3MainPart2Data
   bool is_hydromet_present;
 
   P3MainPart2Data(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
-                     bool do_predict_nc_, Real dt_,
-                     const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+                  bool do_predict_nc_, Real dt_);
 
-  // deep copy
-  P3MainPart2Data(const P3MainPart2Data& rhs);
+  PTD_DATA_COPY_CTOR(P3MainPart2Data, 7);
+  PTD_ASSIGN_OP(P3MainPart2Data, 9, kts, kte, kbot, ktop, kdir, do_predict_nc, dt, inv_dt, is_hydromet_present);
 
-  Int nk() const { return m_nk; }
-
- private:
-  // Internals
-  Int m_nk;
-  std::vector<Real> m_data;
+  Int nk() const { return shcol; }
 };
 
 void p3_main_part2(P3MainPart2Data& d);
@@ -1175,7 +1125,7 @@ void p3_main_part2_f(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct P3MainPart3Data
+struct P3MainPart3Data : public PhysicsTestData
 {
   static constexpr size_t NUM_ARRAYS = 32;
 
@@ -1190,18 +1140,12 @@ struct P3MainPart3Data
     *lamr, *vap_liq_exchange,
     *ze_rain, *ze_ice, *diag_vmi, *diag_effi, *diag_di, *rho_qi, *diag_ze, *diag_effc;
 
-  P3MainPart3Data(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_,
-                     const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+  P3MainPart3Data(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_);
 
-  // deep copy
-  P3MainPart3Data(const P3MainPart3Data& rhs);
+  PTD_DATA_COPY_CTOR(P3MainPart3Data, 5);
+  PTD_ASSIGN_OP(P3MainPart3Data, 5, kts, kte, kbot, ktop, kdir);
 
-  Int nk() const { return m_nk; }
-
- private:
-  // Internals
-  Int m_nk;
-  std::vector<Real> m_data;
+  Int nk() const { return shcol; }
 };
 
 void p3_main_part3(P3MainPart3Data& d);
@@ -1218,7 +1162,7 @@ void p3_main_part3_f(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct P3MainData
+struct P3MainData : public PhysicsTestData
 {
   static constexpr size_t NUM_ARRAYS = 36;
   static constexpr size_t NUM_INPUT_ARRAYS = 20;
@@ -1237,65 +1181,10 @@ struct P3MainData
        *qr_evap_tend, *liq_ice_exchange, *vap_liq_exchange, *vap_ice_exchange,
        *precip_liq_flux, *precip_ice_flux, *precip_liq_surf, *precip_ice_surf;
 
-  P3MainData(Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool do_predict_nc_,
-             const std::array< std::pair<Real, Real>, NUM_INPUT_ARRAYS >& ranges);
+  P3MainData(Int its_, Int ite_, Int kts_, Int kte_, Int it_, Real dt_, bool do_predict_nc_);
 
-  template <ekat::util::TransposeDirection::Enum D>
-  void transpose()
-  {
-    using ekat::util::transpose;
-
-    P3MainData d_trans(*this);
-
-    transpose<D>(pres, d_trans.pres, m_ni, m_nk);
-    transpose<D>(dz, d_trans.dz, m_ni, m_nk);
-    transpose<D>(nc_nuceat_tend, d_trans.nc_nuceat_tend, m_ni, m_nk);
-    transpose<D>(ni_activated, d_trans.ni_activated, m_ni, m_nk);
-    transpose<D>(dpres, d_trans.dpres, m_ni, m_nk);
-    transpose<D>(exner, d_trans.exner, m_ni, m_nk);
-    transpose<D>(cld_frac_i, d_trans.cld_frac_i, m_ni, m_nk);
-    transpose<D>(cld_frac_l, d_trans.cld_frac_l, m_ni, m_nk);
-    transpose<D>(cld_frac_r, d_trans.cld_frac_r, m_ni, m_nk);
-    transpose<D>(inv_qc_relvar, d_trans.inv_qc_relvar, m_ni, m_nk);
-    transpose<D>(qc, d_trans.qc, m_ni, m_nk);
-    transpose<D>(nc, d_trans.nc, m_ni, m_nk);
-    transpose<D>(qr, d_trans.qr, m_ni, m_nk);
-    transpose<D>(nr, d_trans.nr, m_ni, m_nk);
-    transpose<D>(qi, d_trans.qi, m_ni, m_nk);
-    transpose<D>(qm, d_trans.qm, m_ni, m_nk);
-    transpose<D>(ni, d_trans.ni, m_ni, m_nk);
-    transpose<D>(bm, d_trans.bm, m_ni, m_nk);
-    transpose<D>(qv, d_trans.qv, m_ni, m_nk);
-    transpose<D>(th, d_trans.th, m_ni, m_nk);
-    transpose<D>(diag_effc, d_trans.diag_effc, m_ni, m_nk);
-    transpose<D>(diag_effi, d_trans.diag_effi, m_ni, m_nk);
-    transpose<D>(rho_qi, d_trans.rho_qi, m_ni, m_nk);
-    transpose<D>(mu_c, d_trans.mu_c, m_ni, m_nk);
-    transpose<D>(lamc, d_trans.lamc, m_ni, m_nk);
-    transpose<D>(cmeiout, d_trans.cmeiout, m_ni, m_nk);
-    transpose<D>(precip_total_tend, d_trans.precip_total_tend, m_ni, m_nk);
-    transpose<D>(nevapr, d_trans.nevapr, m_ni, m_nk);
-    transpose<D>(qr_evap_tend, d_trans.qr_evap_tend, m_ni, m_nk);
-    transpose<D>(liq_ice_exchange, d_trans.liq_ice_exchange, m_ni, m_nk);
-    transpose<D>(vap_liq_exchange, d_trans.vap_liq_exchange, m_ni, m_nk);
-    transpose<D>(vap_ice_exchange, d_trans.vap_ice_exchange, m_ni, m_nk);
-    transpose<D>(precip_liq_flux, d_trans.precip_liq_flux, m_ni, m_nk+1);
-    transpose<D>(precip_ice_flux, d_trans.precip_ice_flux, m_ni, m_nk+1);
-
-    *this = std::move(d_trans);
-  }
-
-  // deep copy
-  P3MainData(const P3MainData& rhs);
-
-  P3MainData& operator=(P3MainData&&) = default;
-
-  Int nt() const { return m_nt; }
-
- private:
-  // Internals
-  Int m_ni, m_nk, m_nt;
-  std::vector<Real> m_data;
+  PTD_DATA_COPY_CTOR(P3MainData, 7);
+  PTD_ASSIGN_OP(P3MainData, 7, its, ite, kts, kte, it, dt, do_predict_nc);
 };
 
 void p3_main(P3MainData& d);

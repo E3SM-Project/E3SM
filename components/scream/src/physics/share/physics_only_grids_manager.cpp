@@ -11,7 +11,7 @@ PhysicsOnlyGridsManager (const ekat::Comm& comm, const ekat::ParameterList& p)
  , m_comm   (comm)
 {
   // Nothing else to do here
-} 
+}
 
 PhysicsOnlyGridsManager::remapper_ptr_type
 PhysicsOnlyGridsManager::
