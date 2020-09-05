@@ -205,6 +205,9 @@ function(build_model COMP_CLASS COMP_NAME)
     set(TARGET_NAME ${COMP_CLASS})
     add_library(${TARGET_NAME})
     target_sources(${TARGET_NAME} PRIVATE ${REAL_SOURCES})
+    if (USE_KOKKOS)
+      target_link_libraries (${TARGET_NAME} Kokkos::kokkos)
+    endif ()
   endif()
 
   # Subtle: In order for fortran dependency scanning to work, our CPPFPP/DEFS must be registered
