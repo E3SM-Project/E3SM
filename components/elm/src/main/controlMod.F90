@@ -487,7 +487,9 @@ contains
 
        if (use_pflotran) then
           if (use_var_soil_thick) then
-             use_var_soil_thick = .false.
+             call endrun(msg='ERROR: use_var_soil_thick and use_pflotran cannot
+both be set to true.'//&
+                      errMsg(__FILE__, __LINE__))
           end if
        end if
 

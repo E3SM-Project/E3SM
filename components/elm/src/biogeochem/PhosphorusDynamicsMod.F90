@@ -412,9 +412,9 @@ contains
       ! calculate the total soil water
       tot_water(bounds%begc:bounds%endc) = 0._r8
       do fc = 1,num_soilc
-      	 c = filter_soilc(fc)
-	 nlevbed = nlev2bed(c)
-      	 do j = 1,nlevbed
+         c = filter_soilc(fc)
+         nlevbed = nlev2bed(c)
+         do j = 1,nlevbed
             tot_water(c) = tot_water(c) + h2osoi_liq(c,j)
          end do
       end do
@@ -423,11 +423,11 @@ contains
       surface_water(bounds%begc:bounds%endc) = 0._r8
       do fc = 1,num_soilc
          c = filter_soilc(fc)
-	 nlevbed = nlev2bed(c)
-      	 do j = 1,nlevbed
+         nlevbed = nlev2bed(c)
+         do j = 1,nlevbed
             if ( zisoi(j) <= depth_runoff_Ploss)  then
                surface_water(c) = surface_water(c) + h2osoi_liq(c,j)
-	    elseif ( zisoi(j-1) < depth_runoff_Ploss)  then
+            elseif ( zisoi(j-1) < depth_runoff_Ploss)  then
                surface_water(c) = surface_water(c) + h2osoi_liq(c,j) * ((depth_runoff_Ploss - zisoi(j-1)) / col_pp%dz(c,j))
             end if
          end do

@@ -279,9 +279,9 @@ contains
       ! calculate the total soil water
       tot_water(bounds%begc:bounds%endc) = 0._r8
       do fc = 1,num_soilc
-      	 c = filter_soilc(fc)
-	 nlevbed = nlev2bed(c)
-      	 do j = 1,nlevbed
+         c = filter_soilc(fc)
+         nlevbed = nlev2bed(c)
+         do j = 1,nlevbed
             tot_water(c) = tot_water(c) + h2osoi_liq(c,j)
          end do
       end do
@@ -289,14 +289,14 @@ contains
       ! for runoff calculation; calculate total water to a given depth
       surface_water(bounds%begc:bounds%endc) = 0._r8
       do fc = 1,num_soilc
-      	 c = filter_soilc(fc)
-	 nlevbed = nlev2bed(c)
-      	 do j = 1,nlevbed
+         c = filter_soilc(fc)
+         nlevbed = nlev2bed(c)
+         do j = 1,nlevbed
             if ( zisoi(j) <= depth_runoff_Nloss)  then
                surface_water(c) = surface_water(c) + h2osoi_liq(c,j)
             elseif ( zisoi(j-1) < depth_runoff_Nloss)  then
                surface_water(c) = surface_water(c) + h2osoi_liq(c,j) * ( (depth_runoff_Nloss - zisoi(j-1)) / col_pp%dz(c,j))
-	    end if
+            end if
          end do
       end do
 
@@ -608,7 +608,8 @@ contains
           do p = col_pp%pfti(c), col_pp%pftf(c)
               if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                   ! calculate c cost of n2 fixation: fisher 2010 gbc doi:10.1029/2009gb003621
-                  r_fix = -6.25_r8*(exp(-3.62_r8 + 0.27_r8*(t_soi10cm_col(c)-273.15_r8)*(1.0_r8-0.5_r8*(t_soi10cm_col(c)-273.15_r8)/25.15_r8))-2.0_r8) 
+                  r_fix = -6.25_r8*(exp(-3.62_r8 + 0.27_r8*(t_soi10cm_col(c)-273.15_r8)*(1.0_r8-0.5_r8&
+                       *(t_soi10cm_col(c)-273.15_r8)/25.15_r8))-2.0_r8) 
                   ! calculate c cost of root n uptake: rastetter 2001, ecosystems, 4(4), 369-388.
                   r_nup = benefit_pgpp_pleafc(p) / max(pnup_pfrootc(p),1e-20_r8)
                   ! calculate fraction of root that is nodulated: wang 2007 gbc doi:10.1029/2006gb002797
