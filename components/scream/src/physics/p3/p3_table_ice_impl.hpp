@@ -81,7 +81,7 @@ template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::lookup_ice (const Spack& qi, const Spack& ni,
-              const Spack& qm, const Spack& rhop, TableIce& T_atm,
+              const Spack& qm, const Spack& rhop, TableIce& tab,
               const Smask& context)
 {
   // find index for qi (normalized ice mass mixing ratio = qi/ni)
@@ -94,53 +94,53 @@ void Functions<S,D>
   if (!context.any()) return;
 
   const auto lookup_table_1a_dum1_c = P3C::lookup_table_1a_dum1_c;
-  T_atm.dum1 = (log10(qi/ni)+18) * lookup_table_1a_dum1_c - 10;
-  T_atm.dumi = IntSmallPack(T_atm.dum1);
+  tab.dum1 = (log10(qi/ni)+18) * lookup_table_1a_dum1_c - 10;
+  tab.dumi = IntSmallPack(tab.dum1);
 
   // set limits (to make sure the calculated index doesn't exceed range of lookup table)
-  T_atm.dum1 = min(T_atm.dum1, static_cast<Scalar>(P3C::isize));
-  T_atm.dum1 = max(T_atm.dum1, sp(1.));
-  T_atm.dumi = max(1, T_atm.dumi);
-  T_atm.dumi = min(P3C::isize-1, T_atm.dumi);
+  tab.dum1 = min(tab.dum1, static_cast<Scalar>(P3C::isize));
+  tab.dum1 = max(tab.dum1, sp(1.));
+  tab.dumi = max(1, tab.dumi);
+  tab.dumi = min(P3C::isize-1, tab.dumi);
 
   // find index for rime mass fraction
-  T_atm.dum4  = (qm/qi)*3 + 1;
-  T_atm.dumii = IntSmallPack(T_atm.dum4);
+  tab.dum4  = (qm/qi)*3 + 1;
+  tab.dumii = IntSmallPack(tab.dum4);
 
   // set limits
-  T_atm.dum4  = min(T_atm.dum4, static_cast<Scalar>(P3C::rimsize));
-  T_atm.dum4  = max(T_atm.dum4, sp(1.));
-  T_atm.dumii = max(1, T_atm.dumii);
-  T_atm.dumii = min(P3C::rimsize-1, T_atm.dumii);
+  tab.dum4  = min(tab.dum4, static_cast<Scalar>(P3C::rimsize));
+  tab.dum4  = max(tab.dum4, sp(1.));
+  tab.dumii = max(1, tab.dumii);
+  tab.dumii = min(P3C::rimsize-1, tab.dumii);
 
   // find index for bulk rime density
   // (account for uneven spacing in lookup table for density)
   const auto rhop_le_650 = context && (rhop <= 650);
   const auto rhop_gt_650 = !rhop_le_650 && context;
-  T_atm.dum5.set(rhop_le_650, (rhop-50)*sp(0.005) + 1);
-  T_atm.dum5.set(rhop_gt_650, (rhop-650)*sp(0.004) + 4);
+  tab.dum5.set(rhop_le_650, (rhop-50)*sp(0.005) + 1);
+  tab.dum5.set(rhop_gt_650, (rhop-650)*sp(0.004) + 4);
 
   // set limits
-  T_atm.dumjj = IntSmallPack(T_atm.dum5);
-  T_atm.dum5  = min(T_atm.dum5, static_cast<Scalar>(P3C::densize));
-  T_atm.dum5  = max(T_atm.dum5, sp(1.));
-  T_atm.dumjj = max(1, T_atm.dumjj);
-  T_atm.dumjj = min(P3C::densize-1, T_atm.dumjj);
+  tab.dumjj = IntSmallPack(tab.dum5);
+  tab.dum5  = min(tab.dum5, static_cast<Scalar>(P3C::densize));
+  tab.dum5  = max(tab.dum5, sp(1.));
+  tab.dumjj = max(1, tab.dumjj);
+  tab.dumjj = min(P3C::densize-1, tab.dumjj);
 
-  T_atm.dum6  = -99;
-  T_atm.dumzz = -99;
+  tab.dum6  = -99;
+  tab.dumzz = -99;
 
   // adjust for 0-based indexing
-  T_atm.dumi  -= 1;
-  T_atm.dumjj -= 1;
-  T_atm.dumii -= 1;
-  T_atm.dumzz -= 1;
+  tab.dumi  -= 1;
+  tab.dumjj -= 1;
+  tab.dumii -= 1;
+  tab.dumzz -= 1;
 }
 
 template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::lookup_rain(const Spack& qr, const Spack& nr, TableRain& T_atm,
+::lookup_rain(const Spack& qr, const Spack& nr, TableRain& tab,
               const Smask& context)
 {
   if (!context.any()) return;
@@ -156,26 +156,26 @@ void Functions<S,D>
   if (gt_small.any()) {
     dumlr.set(gt_small, cbrt(qr/(C::Pi * C::RHO_H2O * nr)));
   }
-  T_atm.dum3 = (log10(1*dumlr) + 5)*sp(10.70415);
-  T_atm.dumj = IntSmallPack(T_atm.dum3);
+  tab.dum3 = (log10(1*dumlr) + 5)*sp(10.70415);
+  tab.dumj = IntSmallPack(tab.dum3);
 
   // set limits
-  T_atm.dum3 = min(T_atm.dum3, static_cast<Scalar>(P3C::rcollsize));
-  T_atm.dum3 = max(T_atm.dum3, 1);
-  T_atm.dumj = max(1, T_atm.dumj);
-  T_atm.dumj = min(P3C::rcollsize-1, T_atm.dumj);
+  tab.dum3 = min(tab.dum3, static_cast<Scalar>(P3C::rcollsize));
+  tab.dum3 = max(tab.dum3, 1);
+  tab.dumj = max(1, tab.dumj);
+  tab.dumj = min(P3C::rcollsize-1, tab.dumj);
 
-  T_atm.dumj.set(lt_small, 1);
-  T_atm.dum3.set(lt_small, 1);
+  tab.dumj.set(lt_small, 1);
+  tab.dum3.set(lt_small, 1);
 
   // adjust for 0-based indexing
-  T_atm.dumj -= 1;
+  tab.dumj -= 1;
 }
 
 template <typename S, typename D>
 KOKKOS_FUNCTION
 typename Functions<S,D>::Spack Functions<S,D>
-::apply_table_ice(const int& idx, const view_itab_table& itab, const TableIce& T_atm,
+::apply_table_ice(const int& idx, const view_itab_table& itab, const TableIce& tab,
                   const Smask& context)
 {
   using ekat::pack::index;
@@ -188,31 +188,31 @@ typename Functions<S,D>::Spack Functions<S,D>
   // get value at current density index
 
   // first interpolate for current rimed fraction index
-  auto iproc1 = index(itab, T_atm.dumjj, T_atm.dumii, T_atm.dumi, idxpk) + (T_atm.dum1-Spack(T_atm.dumi)-1) *
-    (index(itab, T_atm.dumjj, T_atm.dumii, T_atm.dumi+1, idxpk) - index(itab, T_atm.dumjj, T_atm.dumii, T_atm.dumi, idxpk));
+  auto iproc1 = index(itab, tab.dumjj, tab.dumii, tab.dumi, idxpk) + (tab.dum1-Spack(tab.dumi)-1) *
+    (index(itab, tab.dumjj, tab.dumii, tab.dumi+1, idxpk) - index(itab, tab.dumjj, tab.dumii, tab.dumi, idxpk));
 
   // linearly interpolate to get process rates for rimed fraction index + 1
-  auto gproc1 = index(itab, T_atm.dumjj, T_atm.dumii+1, T_atm.dumi, idxpk) + (T_atm.dum1-Spack(T_atm.dumi)-1) *
-    (index(itab, T_atm.dumjj, T_atm.dumii+1, T_atm.dumi+1, idxpk) - index(itab, T_atm.dumjj, T_atm.dumii+1, T_atm.dumi, idxpk));
+  auto gproc1 = index(itab, tab.dumjj, tab.dumii+1, tab.dumi, idxpk) + (tab.dum1-Spack(tab.dumi)-1) *
+    (index(itab, tab.dumjj, tab.dumii+1, tab.dumi+1, idxpk) - index(itab, tab.dumjj, tab.dumii+1, tab.dumi, idxpk));
 
-  const auto tmp1   = iproc1 + (T_atm.dum4-Spack(T_atm.dumii)-1) * (gproc1-iproc1);
+  const auto tmp1   = iproc1 + (tab.dum4-Spack(tab.dumii)-1) * (gproc1-iproc1);
 
   // get value at density index + 1
 
   // first interpolate for current rimed fraction index
 
-  iproc1 = index(itab, T_atm.dumjj+1, T_atm.dumii, T_atm.dumi, idxpk) + (T_atm.dum1-Spack(T_atm.dumi)-1) *
-    (index(itab, T_atm.dumjj+1, T_atm.dumii, T_atm.dumi+1, idxpk) - index(itab, T_atm.dumjj+1, T_atm.dumii, T_atm.dumi, idxpk));
+  iproc1 = index(itab, tab.dumjj+1, tab.dumii, tab.dumi, idxpk) + (tab.dum1-Spack(tab.dumi)-1) *
+    (index(itab, tab.dumjj+1, tab.dumii, tab.dumi+1, idxpk) - index(itab, tab.dumjj+1, tab.dumii, tab.dumi, idxpk));
 
   // linearly interpolate to get process rates for rimed fraction index + 1
 
-  gproc1 = index(itab, T_atm.dumjj+1, T_atm.dumii+1, T_atm.dumi, idxpk) + (T_atm.dum1-Spack(T_atm.dumi)-1) *
-    (index(itab, T_atm.dumjj+1, T_atm.dumii+1, T_atm.dumi+1, idxpk)-index(itab, T_atm.dumjj+1, T_atm.dumii+1, T_atm.dumi, idxpk));
+  gproc1 = index(itab, tab.dumjj+1, tab.dumii+1, tab.dumi, idxpk) + (tab.dum1-Spack(tab.dumi)-1) *
+    (index(itab, tab.dumjj+1, tab.dumii+1, tab.dumi+1, idxpk)-index(itab, tab.dumjj+1, tab.dumii+1, tab.dumi, idxpk));
 
-  const auto tmp2 = iproc1+(T_atm.dum4 - Spack(T_atm.dumii) - 1) * (gproc1-iproc1);
+  const auto tmp2 = iproc1+(tab.dum4 - Spack(tab.dumii) - 1) * (gproc1-iproc1);
 
   // get final process rate
-  proc = tmp1 + (T_atm.dum5 - Spack(T_atm.dumjj) - 1) * (tmp2-tmp1);
+  proc = tmp1 + (tab.dum5 - Spack(tab.dumjj) - 1) * (tmp2-tmp1);
   return proc;
 }
 

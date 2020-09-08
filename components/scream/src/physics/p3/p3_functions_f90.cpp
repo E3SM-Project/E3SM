@@ -859,18 +859,18 @@ void find_lookuptable_indices_1a_f(Int* dumi, Int* dumjj, Int* dumii, Int* dumzz
     P3F::lookup_ice(qi, ni, qm, rhop, t_d(0));
   });
   Kokkos::deep_copy(t_h, t_d);
-  auto& T_atm = t_h(0);
+  auto& tab = t_h(0);
 
   // adjust for 1-based indexing
-  *dumi  = T_atm.dumi[0]  + 1;
-  *dumjj = T_atm.dumjj[0] + 1;
-  *dumii = T_atm.dumii[0] + 1;
-  *dumzz = T_atm.dumzz[0] + 1;
+  *dumi  = tab.dumi[0]  + 1;
+  *dumjj = tab.dumjj[0] + 1;
+  *dumii = tab.dumii[0] + 1;
+  *dumzz = tab.dumzz[0] + 1;
 
-  *dum1 = T_atm.dum1[0];
-  *dum4 = T_atm.dum4[0];
-  *dum5 = T_atm.dum5[0];
-  *dum6 = T_atm.dum6[0];
+  *dum1 = tab.dum1[0];
+  *dum4 = tab.dum4[0];
+  *dum5 = tab.dum5[0];
+  *dum6 = tab.dum6[0];
 }
 
 void find_lookuptable_indices_1b_f(Int* dumj, Real* dum3, Real qr_, Real nr_)
@@ -885,12 +885,12 @@ void find_lookuptable_indices_1b_f(Int* dumj, Real* dum3, Real qr_, Real nr_)
     P3F::lookup_rain(qr, nr, t_d(0));
   });
   Kokkos::deep_copy(t_h, t_d);
-  auto& T_atm = t_h(0);
+  auto& tab = t_h(0);
 
   // adjust for 1-based indexing
-  *dumj = T_atm.dumj[0] + 1;
+  *dumj = tab.dumj[0] + 1;
 
-  *dum3 = T_atm.dum3[0];
+  *dum3 = tab.dum3[0];
 }
 
 void access_lookup_table_f(Int dumjj, Int dumii, Int dumi, Int index,

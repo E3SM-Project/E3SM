@@ -286,12 +286,12 @@ struct Functions
   // Finds indices in 3D rain lookup table
   //------------------------------------------------------------------------------------------!
   KOKKOS_FUNCTION
-  static void lookup_rain(const Spack& qr, const Spack& nr, TableRain& T_atm,
+  static void lookup_rain(const Spack& qr, const Spack& nr, TableRain& tab,
                           const Smask& context = Smask(true) );
 
   // Apply Table3 data to the table to return a value. This performs bilinear
-  // interpolation within the quad given by {t.dumii, T_atm.dumjj} x {t.dumii+1,
-  // T_atm.dumjj+1}.
+  // interpolation within the quad given by {tab.dumii, tab.dumjj} x {t.dumii+1,
+  // tab.dumjj+1}.
   KOKKOS_FUNCTION
   static Spack apply_table(const view_2d_table& table,
                            const Table3& t);

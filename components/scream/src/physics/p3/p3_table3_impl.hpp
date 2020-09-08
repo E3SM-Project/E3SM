@@ -15,13 +15,13 @@ template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::lookup (const Spack& mu_r,
-          const Spack& lamr, Table3& T_atm,
+          const Spack& lamr, Table3& tab,
           const Smask& context)
 {
   // find location in scaled mean size space
   const auto dum1 = (mu_r+1) / lamr;
   const auto dum1_lt = context && (dum1 <= sp(195.e-6));
-  T_atm.dumii = 1;
+  tab.dumii = 1;
   if (dum1_lt.any()) {
     ekat_masked_loop(dum1_lt, s) {
       const auto inv_dum3 = sp(0.1);
@@ -31,8 +31,8 @@ void Functions<S,D>
       Int dumii = rdumii;
       dumii = ekat::util::max(dumii,  1);
       dumii = ekat::util::min(dumii, 20);
-      T_atm.rdumii[s] = rdumii;
-      T_atm.dumii[s] = dumii;
+      tab.rdumii[s] = rdumii;
+      tab.dumii[s] = dumii;
     }
   }
   const auto dum1_gte = context && !dum1_lt;
@@ -45,8 +45,8 @@ void Functions<S,D>
       Int dumii = rdumii;
       dumii = ekat::util::max(dumii, 20);
       dumii = ekat::util::min(dumii,299);
-      T_atm.rdumii[s] = rdumii;
-      T_atm.dumii[s] = dumii;
+      tab.rdumii[s] = rdumii;
+      tab.dumii[s] = dumii;
     }
   }
 
@@ -58,9 +58,9 @@ void Functions<S,D>
     IntSmallPack dumjj(rdumjj);
     dumjj  = max(dumjj, 1);
     dumjj  = min(dumjj, 9);
-    T_atm.rdumjj.set(context, rdumjj);
-    T_atm.dumjj = 1;
-    T_atm.dumjj.set(context, dumjj);
+    tab.rdumjj.set(context, rdumjj);
+    tab.dumjj = 1;
+    tab.dumjj.set(context, dumjj);
   }
 }
 
