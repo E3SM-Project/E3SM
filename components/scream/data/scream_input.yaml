@@ -17,4 +17,6 @@ Atmosphere Driver:
     Physics Only:
       Number of global columns: 1024
       Number of vertical levels: 128
+Output YAML Files:
+  File 1: "scream_output1.yaml"
 ...

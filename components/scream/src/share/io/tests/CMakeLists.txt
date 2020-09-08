@@ -6,6 +6,7 @@ CreateCsmShareTarget()
 
 set (ARRAY_SCORPIO_SRCS
   scorpio_tests.cpp
+  scorpio_yaml_test.cpp
   ${SCREAM_BASE_DIR}/../cam/src/physics/cam/physics_utils.F90
 )
 set (SCREAM_LIBS
@@ -26,9 +27,16 @@ set (SCREAM_INCLUDE
 )
 
 # Test atmosphere processes
-CreateUnitTest(scorpio_interface "${ARRAY_SCORPIO_SRCS}" "${SCREAM_LIBS}"
+CreateUnitTest(scorpio_interface "scorpio_tests.cpp" "${SCREAM_LIBS}"
+  INCLUDE_DIRS ${SCREAM_INCLUDE}
+  MPI_RANKS 1 4
+)
+CreateUnitTest(scorpio_yaml "scorpio_yaml_test.cpp" "${SCREAM_LIBS}"
   INCLUDE_DIRS ${SCREAM_INCLUDE}
   MPI_RANKS 1 4
 )
 
 configure_file(${SCREAM_DATA_DIR}/scorpio_output_baseline.nc scorpio_output_baseline.nc COPYONLY)
+configure_file(${SCREAM_DATA_DIR}/scorpio_control.yaml scorpio_control.yaml COPYONLY)
+configure_file(${SCREAM_DATA_DIR}/scorpio_output1.yaml scorpio_output1.yaml COPYONLY)
+configure_file(${SCREAM_DATA_DIR}/scorpio_output2.yaml scorpio_output2.yaml COPYONLY)

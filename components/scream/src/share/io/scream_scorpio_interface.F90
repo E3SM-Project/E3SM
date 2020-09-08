@@ -230,6 +230,7 @@ contains
 
     type(pio_atm_file_t), pointer :: current_atm_file => null()
 
+    if (.not.associated(pio_subsystem)) call errorHandle("PIO ERROR: local pio_subsystem pointer has not been established yet.",-999)
     call get_new_pio_atm_file(filename,current_atm_file,1)
     call eam_pio_createHeader(current_atm_file%pioFileDesc)
     

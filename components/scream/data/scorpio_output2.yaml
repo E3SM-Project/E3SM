@@ -1,0 +1,20 @@
+%YAML 1.1
+---
+FILENAME: scorpio_output_test_yaml.nc
+AVERAGING TYPE: Instant
+GRID: Physics
+FREQUENCY:
+  OUT_N: 2
+  OUT_OPTION: Steps
+  OUT_MAX_STEPS: 10
+FIELDS:
+  Number of Fields: 6
+  f1: x
+  f2: y
+  f3: z
+  f4: time
+  f7: data_3d
+  f10: index_3d
+
+...
+

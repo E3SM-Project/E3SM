@@ -2,10 +2,15 @@
 
 #include "scream_config.h"
 #include "ekat/ekat_pack.hpp"
+
 #include "share/io/scream_scorpio_interface.hpp"
+#include "share/io/io.hpp"
+
 #include "ekat/mpi/ekat_comm.hpp"
 #include "share/scream_types.hpp"
 #include "ekat/util/ekat_md_array.hpp"
+#include "ekat/ekat_parse_yaml_file.hpp"
+#include "ekat/util/ekat_string_utils.hpp"
 
 
 
@@ -22,7 +27,177 @@ Int ind_y(const Int jj);
 Int ind_z(const Int kk);
 Int ind_t(const Int tt);
 void get_dof(const std::size_t dimsize, const Int myrank, const Int numranks, Int &dof_len, Int &istart, Int &istop);
+#if 0
+/* ================================================================================================================ */
+TEST_CASE("scorpio_output_yaml", "") {
+  using namespace scream;
+  using namespace scream::scorpio;
 
+  /* Gather control data for scorpio test as though this were a typical YAML input file */
+  MPI_Fint fcomm = MPI_Comm_c2f(MPI_COMM_WORLD);  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a sub
+  char *input_yaml_file = "scorpio_control.yaml";
+  printf("[scream] reading parameters from yaml file: %s\n",input_yaml_file);
+  ekat::ParameterList scorpio_params("Scorpio Parameters");
+  parse_yaml_file (input_yaml_file, scorpio_params);
+
+  /* Retrieve the list of scorpio output control files from scream_params */
+  auto& output_params = scorpio_params.sublist("Output YAML Files");    // First grab the list of Output files from the control YAML
+  const auto& num_of_files = output_params.get<int>("Number of Files"); // Grab the number of files for iteration
+  // Iterate over all files listed.  TODO: Once EKAT can handle string arrays for a parameter we should be able to simplify this loop.
+  std::vector<AtmosphereOutput> OutputFiles;
+  for (int it=1;it<=num_of_files;it++) {
+    const std::string& filename = output_params.get<std::string>("File " + std::to_string(it));  // Grab the it-th File name
+//    ekat::ParameterList file_params("Output File Parameters"); // Create local parameter list to parse the YAML file 
+//    parse_yaml_file (filename, file_params); // Parse the YAML file associated with that name
+//    file_params.print();  // Print what is in this file: TODO Delete eventually once we know things are working.
+    AtmosphereOutput myout_class (filename.c_str());
+    myout_class.set_comm(fcomm);
+    OutputFiles.push_back(myout_class);
+  }  
+/* ======================== Psuedo-FM ============================= */
+// Create a psuedo FM to store information about all of the variables
+// in this test.
+  std::map<std::string,ekat::ParameterList> psuedo_fm;  // Map to store information about each variable in test
+  std::map<std::string,ekat::ParameterList> psuedo_grid; // Map to store information about each dimension in simulation
+  auto& scorpio_test_params = scorpio_params.sublist("SCORPIO TEST PARAMETERS");
+  auto& scorpio_dimensions = scorpio_test_params.sublist("Dimensions");
+  auto& scorpio_variables  = scorpio_test_params.sublist("Variables");
+  for (Int ii=0;ii<scorpio_dimensions.get<Int>("Number of Dimensions");ii++)
+  {
+    auto& dim_ii = scorpio_dimensions.sublist(ekat::util::strint("Dimension",ii+1));
+    psuedo_grid[dim_ii.get<std::string>("short name")] = dim_ii;
+  }
+  for (Int ii=0;ii<scorpio_variables.get<Int>("Number of Variables");ii++)
+  {
+    auto& field_ii = scorpio_variables.sublist(ekat::util::strint("Variable",ii+1));
+    // Determine total number of data values in this field
+    Int length=0;
+    auto& field_dims = field_ii.get<std::vector<std::string>>("dimensions");
+    for (Int ii=0;ii<field_dims.size();ii++) 
+    {
+      Int loc_len = psuedo_grid.at(field_dims[ii]).get<Int>("length");
+      if (loc_len>0) { 
+        if (length == 0) {
+          length += loc_len;
+        } else { 
+          length *= loc_len; 
+        }
+      }
+    }
+    field_ii.set("dof_len",length);
+    // Add this field to psuedo_fm map
+    psuedo_fm[field_ii.get<std::string>("short name")] = field_ii;
+  }
+
+//ASD/* =========================    INIT   ============================ */
+//ASD  /* Use the set of AtmosphereOutput objects to produce output files */
+  int compid=0;  // For CIME based builds this will be the integer ID assigned to the atm by the component coupler.  For testing we simply set to 0
+//ASD  Int myrank, numranks;
+//ASD  MPI_Comm_rank(fcomm, &myrank);
+//ASD  MPI_Comm_size(fcomm, &numranks);
+  eam_init_pio_subsystem(fcomm,compid,true);   // Gather the initial PIO subsystem data creater by component coupler
+//ASD
+//ASD//  auto& scorpio_test_params = scorpio_params.sublist("SCORPIO TEST PARAMETERS");
+//ASD//  auto& scorpio_dimensions = scorpio_test_params.sublist("Dimensions");
+//ASD//  auto& scorpio_variables  = scorpio_test_params.sublist("Variables");
+//ASD
+//ASD  std::map<std::string,std::vector<Int>> var_dof;  // TODO make this a part of the io class instead of being handled here.
+  for (auto& out_instance : OutputFiles) 
+  {
+    auto& filename = out_instance.filename;
+    register_outfile(filename);                       // Register this output file with the scorpio interface module.
+    // Register Dimensions using psuedo_grid
+    for ( auto const& dim : psuedo_grid)
+    {
+      auto& dim_param = dim.second;
+      register_dimension(filename, dim_param.get<std::string>("short name"), dim_param.get<std::string>("long name"), dim_param.get<Int>("length"));
+    }
+    // Register Variables using the List of Fields from output class and the psuedo_fm
+    for (auto& field : out_instance.List_of_Fields) 
+    {
+      auto& field_param = psuedo_fm[field];
+      // dtype and iodecomp
+      Int dtype;
+      std::string iodecomp = field_param.get<std::string>("dtype");
+      if (iodecomp == "REAL") 
+      {
+        dtype = PIO_REAL;
+      } else if (iodecomp == "INT") 
+      {
+        dtype = PIO_INT;
+      }
+      auto& field_dims = field_param.get<std::vector<std::string>>("dimensions");
+      const char* field_dims_char[field_dims.size()];
+      for (int ii=0;ii< field_dims.size();ii++) {
+        iodecomp += "-" + field_dims[ii];
+        field_dims_char[ii] = field_dims[ii].c_str();
+      }
+      out_instance.set_decomp(field, iodecomp);
+      out_instance.set_dtype(field, dtype);
+//      register_variable(filename, field_param.get<std::string>("short name"), field_param.get<std::string>("long name"), 
+//        field_param.get<Int>("number of dimensions"), field_dims_char, dtype, iodecomp);
+      // Aaron - What you were doing here: You wanted to copy the get_dof function to the io.hpp class and use it to determine the dof for every field and save to class.  When "set_dof" is called on the class.
+//      set_dof(filename,field_param.get<std::string>("short name"),out_instance.get_dof(field)[0],dof_vec.data());
+    }
+//ASD    std::vector<std::string> file_dims;
+//ASD    file_dims.push_back("x");
+//ASD    file_dims.push_back("y");
+//ASD    file_dims.push_back("z");
+//ASD    file_dims.push_back("time");
+//ASD    out_instance.set_dimensions(file_dims);
+//ASD    for (auto& dim : out_instance.List_of_Dimensions) 
+//ASD    {
+//ASD      auto& dim_param = scorpio_dimensions.sublist(dim);
+//ASD      register_dimension(out_instance.filename, dim_param.get<std::string>("short name"), dim_param.get<std::string>("long name"), dim_param.get<Int>("length"));
+//ASD    }
+//ASD    // Register Variables
+//ASD    for (auto& field : out_instance.List_of_Fields) 
+//ASD    {
+//ASD      
+//ASD      auto& field_param = scorpio_variables.sublist(field);
+//ASD      auto& field_dims = field_param.get<std::vector<std::string>>("dimensions");
+//ASD      Int dtype;
+//ASD    
+//ASD      std::string field_iodecomp = field_param.get<std::string>("dtype");
+//ASD      if (field_iodecomp == "REAL") 
+//ASD      {
+//ASD        dtype = PIO_REAL;
+//ASD      } else if (field_iodecomp == "INT") 
+//ASD      {
+//ASD        dtype = PIO_INT;
+//ASD      }
+//ASD      const char* field_dims_char[field_dims.size()];
+//ASD      for (int ii=0;ii< field_dims.size();ii++) {
+//ASD        field_iodecomp += "-" + field_dims[ii];
+//ASD        field_dims_char[ii] = field_dims[ii].c_str();
+//ASD      }
+//ASD      std::cout << field_iodecomp << "\n" << std::flush;
+//ASD      register_variable(out_instance.filename, field_param.get<std::string>("short name"), field_param.get<std::string>("long name"), 
+//ASD        field_param.get<Int>("number of dimensions"), field_dims_char, dtype, field_iodecomp);
+//ASD      // Determine and assign dof for this rank.
+//ASD      Int dof_tot=0;
+//ASD      for (Int ii=0;ii<field_dims.size();ii++) {
+//ASD        auto& dim_param = scorpio_dimensions.sublist(field_dims[ii]);
+//ASD        dof_tot += dim_param.get<Int>("length");
+//ASD      }
+//ASD      Int dof_len, xstart, xstop;
+//ASD      get_dof(dof_tot, myrank, numranks, dof_len, xstart,xstop);
+//ASD      std::vector<Int> dof_vec;
+//ASD      for (Int ii=xstart;ii<=xstop;ii++) { dof_vec.push_back(ii+1); }
+//ASD      set_dof(out_instance.filename,field_param.get<std::string>("short name"),dof_len,dof_vec.data());
+//ASD      var_dof[field_param.get<std::string>("short name")] = {dof_len,xstart};
+//ASD    }
+//ASD
+    eam_pio_enddef  (out_instance.filename);                       // Finish the definition phase for this file.
+  } // auto& out_instance : OutputFiles
+   
+/* =========================     RUN    ============================ */
+/* =========================  FINALIZE  ============================ */
+  /* Finished with out, now finalize PIO */ 
+  eam_pio_finalize();
+}  //END TEST_CASE
+#endif
+/* ================================================================================================================ */
 TEST_CASE("scorpio_interface_output", "") {
 /* 
  * A test to check that both output and input are behaving properly in the scream interface.

@@ -2,6 +2,8 @@
 
 #include "dynamics/register_dynamics.hpp"
 
+#include "share/io/register_io.hpp"
+
 #include "physics/register_physics.hpp"
 #include "physics/p3/scream_p3_interface.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
@@ -53,7 +55,7 @@ void scream_init (const MPI_Fint& f_comm,
 
 
   // Create a parameter list for inputs
-  printf("[scream] reading parameterr from yaml file: %s\n",input_yaml_file);
+  printf("[scream] reading parameters from yaml file: %s\n",input_yaml_file);
   ekat::ParameterList scream_params("Scream Parameters");
   parse_yaml_file (input_yaml_file, scream_params);
   scream_params.print();
@@ -66,6 +68,11 @@ void scream_init (const MPI_Fint& f_comm,
 
   // Need to register products in the factories *before* we attempt to create any.
   // In particular, register all atm processes, and all grids managers.
+  if ( scream_params.isSublist("Output YAML Files") ) 
+  {
+    auto& io_file_params = scream_params.sublist("Output YAML Files");
+    register_io( io_file_params );
+  }
   register_dynamics();
   register_physics();
 

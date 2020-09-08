@@ -51,6 +51,7 @@ void eam_pio_finalize() {
 /* ----------------------------------------------------------------- */
 void register_outfile(const std::string& filename) {
 
+
   register_outfile_c2f(filename.c_str());
 }
 /* ----------------------------------------------------------------- */
