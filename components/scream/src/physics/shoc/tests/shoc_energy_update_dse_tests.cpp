@@ -127,6 +127,36 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse {
     }
   }
 
+  static void run_bfb()
+  {
+    SHOCEnergydseData SDS_f90[] = {
+          //               shcol, nlev
+          SHOCEnergydseData(10, 71),
+          SHOCEnergydseData(10, 12),
+          SHOCEnergydseData(7,  16),
+          SHOCEnergydseData(2, 7)
+        };
+
+        for (auto& d_f90 : SDS_f90) {
+          // Randomize remaining inputs
+          d_f90.randomize();
+
+          // Get data from fortran, expects data in C layout
+          update_host_dse(d_f90);
+
+          // Get data from cxx, expects data in fortran layout
+          SHOCEnergydseData d_cxx = SHOCEnergydseData(d_f90);
+          d_cxx.transpose<ekat::util::TransposeDirection::c2f>();
+          update_host_dse_f(d_cxx.shcol, d_cxx.nlev, d_cxx.thlm, d_cxx.shoc_ql, d_cxx.exner, d_cxx.zt_grid, d_cxx.phis, d_cxx.host_dse);
+          d_cxx.transpose<ekat::util::TransposeDirection::f2c>();
+
+          // Verify BFB results, all data should be in C layout
+          for (Int k = 0; k < d_f90.total(); ++k) {
+            REQUIRE(d_f90.host_dse[k] == d_cxx.host_dse[k]);
+          }
+        }
+  }
+
 };
 
 }  // namespace unit_test
@@ -145,6 +175,8 @@ TEST_CASE("shoc_energy_host_dse_property", "shoc")
 TEST_CASE("shoc_energy_host_dse_b4b", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocUpdateDse;
+
+  TestStruct::run_bfb();
 
 }
 

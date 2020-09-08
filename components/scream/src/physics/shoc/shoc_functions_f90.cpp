@@ -566,6 +566,58 @@ void shoc_diag_second_moments_ubycond_f(Int shcol, Real* thl, Real* qw, Real* wt
   ekat::pack::device_to_host({thl, qw, qwthl, wthl, wqw, uw, vw, wtke}, shcol, host_views);
 }
 
+void update_host_dse_f(Int shcol, Int nlev, Real* thlm, Real* shoc_ql, Real* exner, Real* zt_grid,
+                       Real* phis, Real* host_dse)
+{
+  using SHF = Functions<Real, DefaultDevice>;
+
+  using Scalar     = typename SHF::Scalar;
+  using Spack      = typename SHF::Spack;
+  using view_1d    = typename SHF::view_1d<Spack>;
+  using view_2d    = typename SHF::view_2d<Spack>;
+  using KT         = typename SHF::KT;
+  using ExeSpace   = typename KT::ExeSpace;
+  using MemberType = typename SHF::MemberType;
+
+  Kokkos::Array<view_1d, 1> temp_1d_d;
+  Kokkos::Array<view_2d, 5> temp_2d_d;
+  Kokkos::Array<size_t, 5> dim1_sizes     = {shcol,  shcol, shcol, shcol, shcol};
+  Kokkos::Array<size_t, 5> dim2_sizes     = {nlev,  nlev, nlev,  nlev, nlev};
+  Kokkos::Array<const Real*, 5> ptr_array = {thlm, shoc_ql, exner, zt_grid, host_dse};
+
+  // Sync to device
+  ekat::pack::host_to_device({phis}, shcol, temp_1d_d);
+  ekat::pack::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_2d_d, true);
+
+  view_1d phis_d(temp_1d_d[0]);
+
+  view_2d
+    thlm_d    (temp_2d_d[0]),
+    shoc_ql_d (temp_2d_d[1]),
+    exner_d   (temp_2d_d[2]),
+    zt_grid_d (temp_2d_d[3]),
+    host_dse_d(temp_2d_d[4]);
+
+  const Int nk_pack = ekat::pack::npack<Spack>(nlev);
+  const auto policy = ekat::util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    const Scalar phis_s{phis_d(i)[0]};
+    const auto thlm_s   = ekat::util::subview(thlm_d, i);
+    const auto shoc_ql_s    = ekat::util::subview(shoc_ql_d, i);
+    const auto exner_s    = ekat::util::subview(exner_d, i);
+    const auto zt_grid_s = ekat::util::subview(zt_grid_d, i);
+    const auto host_dse_s = ekat::util::subview(host_dse_d, i);
+
+    SHF::update_host_dse(team, nlev, thlm_s, shoc_ql_s, exner_s, zt_grid_s, phis_s, host_dse_s);
+  });
+
+  // Sync back to host
+  Kokkos::Array<view_2d, 1> inout_views = {host_dse_d};
+  ekat::pack::device_to_host({host_dse}, {shcol}, {nlev}, inout_views, true);
+}
+
 
 } // namespace shoc
 } // namespace scream
