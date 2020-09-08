@@ -120,7 +120,7 @@ flags should be captured within MPAS CMake files.
     <append COMP_NAME="csm_share"> -std=c99 </append>
   </CFLAGS>
   <CXXFLAGS>
-    <base> -std=c++11 </base>
+    <base> -std=c++14 </base>
     <append compile_threaded="TRUE"> -fopenmp </append>
     <append DEBUG="TRUE"> -g -Wall -fbacktrace </append>
     <append DEBUG="FALSE"> -O </append>
@@ -183,7 +183,7 @@ flags should be captured within MPAS CMake files.
     <append COMP_NAME="csm_share"> -std=c99 </append>
   </CFLAGS>
   <CXXFLAGS>
-    <base> -std=c++11 </base>
+    <base> -std=c++14 </base>
     <append compile_threaded="TRUE"> -fopenmp </append>
     <append DEBUG="TRUE"> -g -Wall -fbacktrace </append>
     <append DEBUG="FALSE"> -O </append>
@@ -292,7 +292,7 @@ flags should be captured within MPAS CMake files.
     <append DEBUG="TRUE"> -O0 -g </append>
   </CFLAGS>
   <CXXFLAGS>
-    <base> -std=c++11 -fp-model source </base>
+    <base> -std=c++14 -fp-model source </base>
     <append compile_threaded="TRUE"> -qopenmp </append>
     <append DEBUG="TRUE"> -O0 -g </append>
     <append DEBUG="FALSE"> -O2 </append>
@@ -767,7 +767,7 @@ flags should be captured within MPAS CMake files.
     <append DEBUG="TRUE"> -O0 -g </append>
   </CFLAGS>
   <CXXFLAGS>
-    <base> -std=c++11 -fp-model source </base>
+    <base> -std=c++14 -fp-model source </base>
     <append compile_threaded="TRUE"> -qopenmp -static-intel</append>
     <append DEBUG="TRUE"> -O0 -g </append>
     <append DEBUG="FALSE"> -O2 </append>
@@ -1108,7 +1108,7 @@ flags should be captured within MPAS CMake files.
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align </append>
   </FFLAGS>
   <CXXFLAGS>
-    <base> -std=c++11 -fp-model consistent </base>
+    <base> -std=c++14 -fp-model consistent </base>
     <append compile_threaded="TRUE"> -qopenmp </append>
     <append DEBUG="TRUE"> -O0 -g </append>
     <append DEBUG="FALSE"> -O2 </append>
@@ -1141,7 +1141,7 @@ flags should be captured within MPAS CMake files.
     <append> -DHAVE_ERF_INTRINSICS </append>
   </FFLAGS>
   <CXXFLAGS>
-    <base> -std=c++11 -fp-model consistent </base>
+    <base> -std=c++14 -fp-model consistent </base>
     <append compile_threaded="TRUE"> -qopenmp </append>
     <append DEBUG="TRUE"> -O0 -g </append>
     <append DEBUG="FALSE"> -O2 </append>
@@ -1421,7 +1421,7 @@ flags should be captured within MPAS CMake files.
     <append DEBUG="TRUE"> -O0 -g </append>
   </CFLAGS>
   <CXXFLAGS>
-    <base> -xCORE_AVX512 -mkl -std=c++11 </base>
+    <base> -xCORE_AVX512 -mkl -std=c++14 </base>
     <append DEBUG="FALSE"> -O3 -g -debug minimal </append>
     <append DEBUG="TRUE"> -O0 -g </append>
     <append compile_threaded="TRUE"> -qopenmp </append>
@@ -1579,7 +1579,7 @@ flags should be captured within MPAS CMake files.
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
   <CUDA_FLAGS>
-    <append> -O3 -arch sm_70 --use_fast_math --std=c++14 </append>
+    <append> -O3 -arch sm_70 --use_fast_math </append>
   </CUDA_FLAGS>
   <USE_CUDA>TRUE</USE_CUDA>
 </compiler>
@@ -1876,7 +1876,7 @@ flags should be captured within MPAS CMake files.
     <append DEBUG="TRUE"> -O0 -g </append>
   </CFLAGS>
   <CXXFLAGS>
-    <base> -std=c++11 -fp-model source </base>
+    <base> -std=c++14 -fp-model source </base>
     <append compile_threaded="TRUE"> -qopenmp </append>
     <append DEBUG="FALSE"> -O2 </append>
     <append DEBUG="TRUE"> -O0 -g </append>

@@ -15,6 +15,7 @@ if ("${ARCH}" STREQUAL "CUDA")
 endif()
 # samxx needs to link with the yakl library
 target_link_libraries(samxx yakl)
+target_compile_features(samxx PUBLIC cxx_std_14)
 
 # Set fortran compiler flags
 set_source_files_properties(${F90_SRC} PROPERTIES COMPILE_FLAGS "${CPPDEFS} ${FFLAGS}")

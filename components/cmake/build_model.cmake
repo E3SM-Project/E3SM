@@ -70,7 +70,7 @@ function(build_model COMP_CLASS COMP_NAME)
         set(YAKL_CXX_FLAGS "${CPPDEFS}")
       else()
         # For normal C++ compilers duplicate flags are fine, the last ones win typically
-        set(YAKL_CXX_FLAGS "${CPPDEFS} ${CXXFLAGS} --std=c++14")
+        set(YAKL_CXX_FLAGS "${CPPDEFS} ${CXXFLAGS}")
         set(ARCH "")
       endif()
       message(STATUS "Building YAKL")
