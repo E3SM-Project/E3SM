@@ -274,49 +274,27 @@ struct UnitWrap::UnitTest<D>::TestShocVarorcovar {
 static void run_bfb()
   {
     SHOCVarorcovarData SDS_f90[] = {
-      //               shcol, nlev, nlevi
+      //               shcol, nlev, nlevi, tunefac
       SHOCVarorcovarData(10, 71, 72, 1),
       SHOCVarorcovarData(10, 12, 13, 1),
       SHOCVarorcovarData(7,  16, 17, 1),
       SHOCVarorcovarData(2, 7, 8, 0.005),
     };
 
-    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCVarorcovarData);
+    for (auto& d_f90 : SDS_f90) {
+      // Randomize remaining inputs
+      d_f90.randomize();
 
-    for (Int i = 0; i < num_runs; ++i) {
-      SDS_f90[i].randomize();
-    }
+      // Get data from fortran, expects data in C layout
+      calc_shoc_varorcovar(d_f90);
 
-    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
-    // inout data is in original state
-    SHOCVarorcovarData SDS_cxx[] = {
-      SHOCVarorcovarData(SDS_f90[0]),
-      SHOCVarorcovarData(SDS_f90[1]),
-      SHOCVarorcovarData(SDS_f90[2]),
-      SHOCVarorcovarData(SDS_f90[3]),
-    };
+      // Get data from cxx, expects data in fortran layout
+      SHOCVarorcovarData d_cxx = SHOCVarorcovarData(d_f90);
+      d_cxx.transpose<ekat::util::TransposeDirection::c2f>();
+      calc_shoc_varorcovar_f(d_cxx.shcol, d_cxx.nlev, d_cxx.nlevi, d_cxx.tunefac, d_cxx.isotropy_zi, d_cxx.tkh_zi, d_cxx.dz_zi, d_cxx.invar1, d_cxx.invar2, d_cxx.varorcovar);
+      d_cxx.transpose<ekat::util::TransposeDirection::f2c>();
 
-    // Assume all data is in C layout
-
-    // Get data from fortran
-    for (Int i = 0; i < num_runs; ++i) {
-      // expects data in C layout
-      calc_shoc_varorcovar(SDS_f90[i]);
-    }
-
-    // Get data from cxx
-    for (Int i = 0; i < num_runs; ++i) {
-      SHOCVarorcovarData& d = SDS_cxx[i];
-      d.transpose<ekat::util::TransposeDirection::c2f>();
-      // expects data in fortran layout
-      calc_shoc_varorcovar_f(d.shcol, d.nlev, d.nlevi, d.tunefac, d.isotropy_zi, d.tkh_zi, d.dz_zi, d.invar1, d.invar2, d.varorcovar);
-      d.transpose<ekat::util::TransposeDirection::f2c>();
-    }
-
-    // Verify BFB results, all data should be in C layout
-    for (Int i = 0; i < num_runs; ++i) {
-      SHOCVarorcovarData& d_f90 = SDS_f90[i];
-      SHOCVarorcovarData& d_cxx = SDS_cxx[i];
+      // Verify BFB results, all data should be in C layout
       for (Int k = 0; k < d_f90.totali(); ++k) {
         REQUIRE(d_f90.varorcovar[k] == d_cxx.varorcovar[k]);
       }
