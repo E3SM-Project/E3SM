@@ -235,7 +235,8 @@ if (USE_KOKKOS)
   find_package(Kokkos REQUIRED
                PATHS ${INSTALL_SHAREDPATH}/lib/cmake
                      ${INSTALL_SHAREDPATH}/lib64/cmake
-                     ${INSTALL_SHAREDPATH})
+                     ${INSTALL_SHAREDPATH}
+               NO_DEFAULT_PATH)
 endif()
 
 # JGF: No one seems to be using this
