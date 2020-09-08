@@ -835,8 +835,8 @@ MODULE WRM_subw_IO_mod
 
      call get_curr_date(yr, mon, day, tod)
 
-   if (ctlSubwWRM%DamConstructionFlag .eq. 1) then ! allow reseroirs to be filled to 80% of storage within 10 years after construction
-     do idam = 1, ctlSubwWRM%localNumDam
+   do idam = 1, ctlSubwWRM%localNumDam
+    if (ctlSubwWRM%DamConstructionFlag .eq. 1) then ! allow reseroirs to be filled to 80% of storage within 10 years after construction
       if (WRMUnit%active(idam) < 2) then ! 2 means fully functional, 1 means during filling, 0 means not built yet
        if (WRMUnit%YEAR(idam) <= yr .and. WRMUnit%YEAR(idam) > yr-10) then
            WRMUnit%active(idam) = 1
@@ -848,11 +848,11 @@ MODULE WRM_subw_IO_mod
        if (WRMUnit%YEAR(idam) <= yr-10) then
          WRMUnit%active(idam) = 2
        endif
-      endif 
-     enddo
-   else
+      endif     
+    else
       WRMUnit%active(idam) = 2
-   endif
+    endif
+   enddo    
 
      do idam=1,ctlSubwWRM%localNumDam
         if ( mon .eq. WRMUnit%MthStOp(idam)) then

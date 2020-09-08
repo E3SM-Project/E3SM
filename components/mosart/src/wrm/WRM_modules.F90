@@ -652,7 +652,11 @@ MODULE WRM_modules
         StorWater%storage(damID) = StorWater%storage(damID) + flow_vol - flow_res - evap 
      end if
    elseif (WRMUnit%active(damID) == 1) then
-      flow_res = min_flow * 5
+     if (flow_vol < min_flow * 2._r8) then
+         flow_res = flow_vol
+      else
+         flow_res = min_flow * 2._r8 ! outflow during filling period is twice of minimum flow
+      endif     
       evap = 0._r8
       StorWater%storage(damID) = StorWater%storage(damID) + flow_vol - flow_res - evap
    else
