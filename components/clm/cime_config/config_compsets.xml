@@ -758,7 +758,7 @@
 
   <compset>
     <alias>IGCLM45_MLI</alias>
-    <lname>2000_DATM%QIA_CLM45%SP_SICE_SOCN_MOSART_MALI%SIA_SWAV</lname>
+    <lname>2000_DATM%QIA_CLM45%SP_SICE_SOCN_MOSART_MALI%SIASTATIC_SWAV</lname>
   </compset>
 
   <compset>

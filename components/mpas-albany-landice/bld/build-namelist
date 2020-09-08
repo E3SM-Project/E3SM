@@ -46,7 +46,7 @@ OPTIONS
      -cimeroot             CIMEROOT directory variable
      -glc_grid             GLC_GRID variable
      -decomp_prefix        decomp_prefix variable
-     -date_stamp           date_stamp variable
+     -decomp_date_stamp    decomp date_stamp variable
      -cfg_grid             Directory containing MALI configuration scripts.
                            If not defined, location is set as \$ProgDir or \$cwd
                            (Needed to run build-namelist from SourceMods dir)
@@ -85,40 +85,40 @@ if ($ProgDir) {
 
 # Process command-line options.
 
-my %opts = ( help          => 0,
-             test          => 0,
-             verbose       => 0,
-             preview       => 0,
-             caseroot      => undef,
-             casebuild     => undef,
-             cimeroot      => undef,
-             inst_string   => undef,
-             glc_grid      => undef,
-             decomp_prefix => undef,
-             date_stamp    => undef,
-             cfg_dir       => $cfgdir,
-             ntasks_glc    => 0,
-             ninst_glc     => 0,
-             mali_dynamic  => undef,
+my %opts = ( help              => 0,
+             test              => 0,
+             verbose           => 0,
+             preview           => 0,
+             caseroot          => undef,
+             casebuild         => undef,
+             cimeroot          => undef,
+             inst_string       => undef,
+             glc_grid          => undef,
+             decomp_prefix     => undef,
+             decomp_date_stamp => undef,
+             cfg_dir           => $cfgdir,
+             ntasks_glc        => 0,
+             ninst_glc         => 0,
+             mali_dynamic      => undef,
            );
 
 GetOptions(
-    "h|help"          => \$opts{'help'},
-    "infile=s"        => \$opts{'infile'},
-    "namelist=s"      => \$opts{'namelist'},
-    "v|verbose"       => \$opts{'verbose'},
-    "caseroot=s"      => \$opts{'caseroot'},
-    "casebuild=s"     => \$opts{'casebuild'},
-    "cimeroot=s"      => \$opts{'cimeroot'},
-    "inst_string=s"   => \$opts{'inst_string'},	   
-    "glc_grid=s"      => \$opts{'glc_grid'},
-    "decomp_prefix=s" => \$opts{'decomp_prefix'},
-    "date_stamp=s"    => \$opts{'date_stamp'},
-    "cfg_dir=s"       => \$opts{'cfg_dir'},
-    "preview"         => \$opts{'preview'},
-    "ntasks_glc=i"    => \$opts{'ntasks_glc'},
-    "ninst_glc=i"     => \$opts{'ninst_glc'},
-    "mali_dynamic=s"  => \$opts{'mali_dynamic'},
+    "h|help"              => \$opts{'help'},
+    "infile=s"            => \$opts{'infile'},
+    "namelist=s"          => \$opts{'namelist'},
+    "v|verbose"           => \$opts{'verbose'},
+    "caseroot=s"          => \$opts{'caseroot'},
+    "casebuild=s"         => \$opts{'casebuild'},
+    "cimeroot=s"          => \$opts{'cimeroot'},
+    "inst_string=s"       => \$opts{'inst_string'},
+    "glc_grid=s"          => \$opts{'glc_grid'},
+    "decomp_prefix=s"     => \$opts{'decomp_prefix'},
+    "decomp_date_stamp=s" => \$opts{'decomp_date_stamp'},
+    "cfg_dir=s"           => \$opts{'cfg_dir'},
+    "preview"             => \$opts{'preview'},
+    "ntasks_glc=i"        => \$opts{'ntasks_glc'},
+    "ninst_glc=i"         => \$opts{'ninst_glc'},
+    "mali_dynamic=s"      => \$opts{'mali_dynamic'},
 
 )  or usage();
 
@@ -143,17 +143,17 @@ my $eol = "\n";
 
 if ($print>=2) { print "Setting MALI configuration script directory to $cfgdir$eol"; }
 
-my $CASEROOT      = $opts{'caseroot'};
-my $CASEBUILD     = $opts{'casebuild'};
-my $CIMEROOT      = $opts{'cimeroot'};
-my $inst_string   = $opts{'inst_string'};
-my $GLC_GRID      = $opts{'glc_grid'};
-my $decomp_prefix = $opts{'decomp_prefix'};
-my $date_stamp    = $opts{'date_stamp'};
-$cfgdir           = $opts{'cfg_dir'};
-my $NINST_GLC     = $opts{'ninst_glc'};
-my $NTASKS_GLC    = $opts{'ntasks_glc'};
-my $MALI_DYNAMIC  = $opts{'mali_dynamic'};
+my $CASEROOT          = $opts{'caseroot'};
+my $CASEBUILD         = $opts{'casebuild'};
+my $CIMEROOT          = $opts{'cimeroot'};
+my $inst_string       = $opts{'inst_string'};
+my $GLC_GRID          = $opts{'glc_grid'};
+my $decomp_prefix     = $opts{'decomp_prefix'};
+my $decomp_date_stamp = $opts{'decomp_date_stamp'};
+$cfgdir               = $opts{'cfg_dir'};
+my $NINST_GLC         = $opts{'ninst_glc'};
+my $NTASKS_GLC        = $opts{'ntasks_glc'};
+my $MALI_DYNAMIC      = uc($opts{'mali_dynamic'});
 
 my $CIMEROOT;
 if ( defined $opts{'cimeroot'} ) {
@@ -175,7 +175,7 @@ print $fh  <<"EOF";
 <config_definition>
 <entry id="glc_grid" value="$GLC_GRID">
 <entry id="decomp_prefix" value="$decomp_prefix">
-<entry id="date_stamp" value="$date_stamp">
+<entry id="decomp_date_stamp" value="$decomp_date_stamp">
 </config_definition>
 EOF
 $fh->close;
@@ -412,6 +412,8 @@ my $ntasks = $NTASKS_GLC / $NINST_GLC;
 if ($CONTINUE_RUN eq 'TRUE') {$RUN_TYPE = "continue";}
 
 print "MALI build-namelist: glc_grid is $GLC_GRID \n";
+print "MALI build-namelist: MALI_DYNAMIC is $MALI_DYNAMIC \n";
+print "MALI build-namelist: MALI_USE_ALBANY is $MALI_USE_ALBANY \n";
 
 (-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
 if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
@@ -428,7 +430,7 @@ if ($MALI_USE_ALBANY eq 'TRUE') {
 ###################################
 
 if ($MALI_DYNAMIC eq 'TRUE') {
-    add_default($nl, 'config_velocity_solver', 'masi_use_albany'=>"$MALI_USE_ALBANY");
+    add_default($nl, 'config_velocity_solver', 'mali_use_albany'=>"$MALI_USE_ALBANY");
 } else {
     add_default($nl, 'config_velocity_solver', 'val'=>"none");
 }
@@ -437,8 +439,9 @@ add_default($nl, 'config_flowParamA_calculation');
 add_default($nl, 'config_do_velocity_reconstruction_for_external_dycore');
 add_default($nl, 'config_simple_velocity_type');
 add_default($nl, 'config_use_glp');
-add_default($nl, 'config_beta_use_effective_pressure');
+add_default($nl, 'config_beta_thawed_only');
 add_default($nl, 'config_unrealistic_velocity');
+add_default($nl, 'config_nonconvergence_error');
 
 #############################
 # Namelist group: advection #
@@ -459,7 +462,11 @@ if ($MALI_DYNAMIC eq 'TRUE') {
 # Namelist group: calving #
 ###########################
 
-add_default($nl, 'config_calving');
+if ($MALI_DYNAMIC eq 'TRUE') {
+    add_default($nl, 'config_calving');
+} else {
+    add_default($nl, 'config_calving', 'val'=>"none");
+}
 add_default($nl, 'config_calving_topography');
 add_default($nl, 'config_calving_thickness');
 add_default($nl, 'config_calving_eigencalving_parameter_source');
@@ -569,7 +576,7 @@ add_default($nl, 'config_write_albany_ascii_mesh');
 #################################
 
 add_default($nl, 'config_num_halos');
-add_default($nl, 'config_block_decomp_file_prefix', 'val'=>"'${DIN_LOC_ROOT}/glc/mpasli/${GLC_GRID}/${decomp_prefix}${date_stamp}.part.'");
+add_default($nl, 'config_block_decomp_file_prefix', 'val'=>"'${DIN_LOC_ROOT}/glc/mpasli/${GLC_GRID}/${decomp_prefix}${decomp_date_stamp}.part.'");
 add_default($nl, 'config_number_of_blocks');
 add_default($nl, 'config_explicit_proc_decomp');
 add_default($nl, 'config_proc_decomp_file_prefix');
@@ -604,6 +611,7 @@ add_default($nl, 'config_SGH_creep_coefficient');
 add_default($nl, 'config_SGH_englacial_porosity');
 add_default($nl, 'config_SGH_till_max');
 add_default($nl, 'config_SGH_chnl_active');
+add_default($nl, 'config_SGH_chnl_include_DCFL');
 add_default($nl, 'config_SGH_chnl_alpha');
 add_default($nl, 'config_SGH_chnl_beta');
 add_default($nl, 'config_SGH_chnl_conduc_coeff');
