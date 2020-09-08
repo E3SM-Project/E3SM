@@ -27,10 +27,8 @@ void Functions<S,D>
   const auto ggr = C::gravit;
 
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
-      auto range_pack = ekat::pack::range<IntSmallPack>(k*Spack::n);
-
       Spack temp = (thlm(k)+(lcond/cp)*shoc_ql(k))/exner(k);
-      host_dse(k).set(range_pack < nlev, cp*temp+ggr*zt_grid(k)+phis);
+      host_dse(k) = cp*temp+ggr*zt_grid(k)+phis;
   });
 }
 
