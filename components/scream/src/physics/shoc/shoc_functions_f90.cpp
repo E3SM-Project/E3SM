@@ -48,6 +48,12 @@ void shoc_energy_dse_fixer_c(Int shcol, Int nlev,
 void calc_shoc_varorcovar_c(Int shcol, Int nlev, Int nlevi,  Real tunefac,
                             Real *isotropy_zi, Real *tkh_zi, Real *dz_zi,
 			    Real *invar1, Real *invar2, Real *varorcovar);
+			    
+void shoc_tke_c(Int shcol, Int nlev, Int nlevi, Real dtime, Real *wthv_sec, 
+                Real *shoc_mix, Real *dz_zi, Real *dz_zt, Real *pres, 
+		Real *u_wind, Real *v_wind, Real *brunt, Real *obklen, 
+		Real *zt_grid, Real *zi_grid, Real *pblh, Real *tke, 
+		Real *tk, Real *tkh, Real *isotropy);
 
 void integ_column_stability_c(Int nlev, Int shcol, Real *dz_zt, Real *pres,
 			      Real *brunt, Real *brunt_int);
@@ -231,6 +237,15 @@ void calc_shoc_vertflux(SHOCVertfluxData &d) {
   d.transpose<ekat::util::TransposeDirection::c2f>();
   calc_shoc_vertflux_c(d.shcol, d.nlev, d.nlevi, d.tkh_zi, d.dz_zi, d.invar,
 		       d.vertflux);
+  d.transpose<ekat::util::TransposeDirection::f2c>();
+}
+
+void shoc_tke(SHOCTkeData &d){
+  shoc_init(d.nlev, true);
+  d.transpose<ekat::util::TransposeDirection::c2f>();
+  shoc_tke_c(d.shcol, d.nlev, d.nlevi, d.dtime, d.wthv_sec, d.shoc_mix, d.dz_zi,
+             d.dz_zt, d.pres, d.u_wind, d.v_wind, d.brunt, d.obklen, d.zt_grid,
+             d.zi_grid, d.pblh, d.tke, d.tk, d.tkh, d.isotropy);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 

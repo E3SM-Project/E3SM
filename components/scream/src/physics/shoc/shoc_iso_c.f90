@@ -140,6 +140,39 @@ contains
            varorcovar)
 
   end subroutine calc_shoc_varorcovar_c
+  
+  subroutine shoc_tke_c(shcol, nlev, nlevi, dtime, wthv_sec, shoc_mix, dz_zi, &
+                        dz_zt, pres, u_wind, v_wind, brunt, obklen, zt_grid, &
+			zi_grid, pblh, tke, tk, tkh, isotropy) bind(C)
+    use shoc, only: shoc_tke
+    
+    integer(kind=c_int), intent(in), value :: shcol
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: nlevi
+    real(kind=c_real), intent(in), value :: dtime
+    real(kind=c_real), intent(in) :: wthv_sec(shcol,nlev)
+    real(kind=c_real), intent(in) :: shoc_mix(shcol,nlev)
+    real(kind=c_real), intent(in) :: dz_zi(shcol,nlevi)
+    real(kind=c_real), intent(in) :: dz_zt(shcol,nlev)
+    real(kind=c_real), intent(in) :: pres(shcol,nlev)
+    real(kind=c_real), intent(in) :: u_wind(shcol,nlev)
+    real(kind=c_real), intent(in) :: v_wind(shcol,nlev)
+    real(kind=c_real), intent(in) :: brunt(shcol,nlev)
+    real(kind=c_real), intent(in) :: obklen(shcol)
+    real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
+    real(kind=c_real), intent(in) :: zi_grid(shcol,nlevi)
+    real(kind=c_real), intent(in) :: pblh(shcol)
+
+    real(kind=c_real), intent(inout) :: tke(shcol,nlev)
+    real(kind=c_real), intent(inout) :: tk(shcol,nlev)
+    real(kind=c_real), intent(inout) :: tkh(shcol,nlev)
+    real(kind=c_real), intent(out) :: isotropy(shcol,nlev) 
+    
+    call shoc_tke(shcol, nlev, nlevi, dtime, wthv_sec, shoc_mix, dz_zi, &
+                        dz_zt, pres, u_wind, v_wind, brunt, obklen, zt_grid, &
+			zi_grid, pblh, tke, tk, tkh, isotropy)
+			
+  end subroutine shoc_tke_c
 
   subroutine integ_column_stability_c(nlev, shcol, dz_zt, pres, brunt, brunt_int) bind (C)
     use shoc, only: integ_column_stability
@@ -170,7 +203,7 @@ contains
 
     call compute_shr_prod(nlevi, nlev, shcol, dz_zi, u_wind, v_wind, sterm)
 
-  end subroutine compute_shr_prod_c
+  end subroutine compute_shr_prod_c			                   
 
   subroutine isotropic_ts_c(nlev, shcol, brunt_int, tke, a_diss, brunt, isotropy) bind (C)
     use shoc, only: isotropic_ts
