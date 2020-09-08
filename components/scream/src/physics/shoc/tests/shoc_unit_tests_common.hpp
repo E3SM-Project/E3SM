@@ -60,6 +60,7 @@ struct UnitWrap {
     struct TestShocEnergyThreshFixer;
     struct TestShocEddyDiff;
     struct TestShocGrid;
+    struct TestShocTke;
     struct TestShocAdvSgsTke;
     struct TestShocIntColStab;
     struct TestShocIsotropicTs;
