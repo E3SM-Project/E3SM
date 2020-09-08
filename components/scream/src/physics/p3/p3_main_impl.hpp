@@ -34,7 +34,7 @@ void Functions<S,D>
   const uview_1d<Spack>& inv_cld_frac_l,
   const uview_1d<Spack>& inv_cld_frac_r,
   const uview_1d<Spack>& inv_exner,
-  const uview_1d<Spack>& t,
+  const uview_1d<Spack>& T_atm,
   const uview_1d<Spack>& qv,
   const uview_1d<Spack>& inv_dz,
   Scalar& precip_liq_surf,
@@ -56,7 +56,7 @@ void Functions<S,D>
     inv_cld_frac_l(k)    = 1 / cld_frac_l(k);
     inv_cld_frac_r(k)    = 1 / cld_frac_r(k);
     inv_exner(k)         = 1 / exner(k);
-    t(k)                 = th(k) * inv_exner(k);
+    T_atm(k)                 = th(k) * inv_exner(k);
     qv(k)                = max(qv(k), 0);
     inv_dz(k)            = 1 / dz(k);
 
@@ -87,7 +87,7 @@ void Functions<S,D>
   const uview_1d<const Spack>& latent_heat_vapor,
   const uview_1d<const Spack>& latent_heat_sublim,
   const uview_1d<const Spack>& latent_heat_fusion,
-  const uview_1d<Spack>& t,
+  const uview_1d<Spack>& T_atm,
   const uview_1d<Spack>& rho,
   const uview_1d<Spack>& inv_rho,
   const uview_1d<Spack>& qv_sat_l,
@@ -152,17 +152,17 @@ void Functions<S,D>
 
     rho(k)          = dpres(k)/dz(k) / g;
     inv_rho(k)      = 1 / rho(k);
-    qv_sat_l(k)     = physics::qv_sat(t(k), pres(k), false, range_mask);
-    qv_sat_i(k)     = physics::qv_sat(t(k), pres(k), true,  range_mask);
+    qv_sat_l(k)     = physics::qv_sat(T_atm(k), pres(k), false, range_mask);
+    qv_sat_i(k)     = physics::qv_sat(T_atm(k), pres(k), true,  range_mask);
 
     qv_supersat_i(k) = qv(k) / qv_sat_i(k) - 1;
 
     rhofacr(k) = pow(rho_1000mb * inv_rho(k), sp(.54));
     rhofaci(k) = pow(rho_600mb * inv_rho(k), sp(.54));
-    Spack dum  = sp(1.496e-6) * pow(t(k), sp(1.5)) / (t(k) + 120); // this is mu
+    Spack dum  = sp(1.496e-6) * pow(T_atm(k), sp(1.5)) / (T_atm(k) + 120); // this is mu
     acn(k)     = g * rho_h2o / (18 * dum); // 'a' parameter for droplet fallspeed (Stokes' law)
 
-    if ( (t(k) < zerodegc && qv_supersat_i(k) >= -0.05).any() ) {
+    if ( (T_atm(k) < zerodegc && qv_supersat_i(k) >= -0.05).any() ) {
       nucleationPossible = true;
     }
 
@@ -208,7 +208,7 @@ void Functions<S,D>
       hydrometeorsPresent = true; // final update
     }
 
-    drymass = (qi(k) >= qsmall && qi(k) < 1.e-8 && t(k) >= zerodegc);
+    drymass = (qi(k) >= qsmall && qi(k) < 1.e-8 && T_atm(k) >= zerodegc);
     qr(k).set(drymass, qr(k) + qi(k));
     th(k).set(drymass, th(k) - exner(k) * qi(k) * latent_heat_fusion(k) * inv_cp);
     qi(k).set(drymass, 0);
@@ -216,7 +216,7 @@ void Functions<S,D>
     qm(k).set(drymass, 0);
     bm(k).set(drymass, 0);
 
-    t(k) = th(k) * inv_exner(k);
+    T_atm(k) = th(k) * inv_exner(k);
 
     calculate_incloud_mixingratios(
       qc(k), qr(k), qi(k), qm(k), nc(k), nr(k), ni(k), bm(k),
@@ -253,7 +253,7 @@ void Functions<S,D>
   const uview_1d<const Spack>& cld_frac_i,
   const uview_1d<const Spack>& cld_frac_l,
   const uview_1d<const Spack>& cld_frac_r,
-  const uview_1d<Spack>& t,
+  const uview_1d<Spack>& T_atm,
   const uview_1d<Spack>& rho,
   const uview_1d<Spack>& inv_rho,
   const uview_1d<Spack>& qv_sat_l,
@@ -306,7 +306,7 @@ void Functions<S,D>
   constexpr Scalar qsmall       = C::QSMALL;
   constexpr Scalar nsmall       = C::NSMALL;
   constexpr Scalar zerodegc     = C::ZeroDegC;
-  constexpr Scalar max_total_Ni = C::max_total_Ni;
+  constexpr Scalar max_total_ni = C::max_total_ni;
   constexpr Scalar f1r          = C::f1r;
   constexpr Scalar f2r          = C::f2r;
   constexpr Scalar nmltratio    = C::nmltratio;
@@ -321,7 +321,7 @@ void Functions<S,D>
 
     // if relatively dry and no hydrometeors at this level, skip to end of k-loop (i.e. skip this level)
     const auto skip_all = !(qc(k) >= qsmall || qr(k) >= qsmall || qi(k) >= qsmall) &&
-      (t(k) < zerodegc && qv_supersat_i(k) < -0.05);
+      (T_atm(k) < zerodegc && qv_supersat_i(k) < -0.05);
     const auto not_skip_all = !skip_all;
     if (skip_all.all()) {
       return; // skip all process rates
@@ -414,7 +414,7 @@ void Functions<S,D>
     if (not_skip_micro.any()) {
       // time/space varying physical variables
       get_time_space_phys_variables(
-        t(k), pres(k), rho(k), latent_heat_vapor(k), latent_heat_sublim(k), qv_sat_l(k), qv_sat_i(k),
+        T_atm(k), pres(k), rho(k), latent_heat_vapor(k), latent_heat_sublim(k), qv_sat_l(k), qv_sat_i(k),
         mu, dv, sc, dqsdt, dqsidt, ab, abi, kap, eii, not_skip_micro);
 
       get_cloud_dsd2(qc_incld(k), nc_incld(k), mu_c(k), rho(k), nu(k), dnu,
@@ -424,7 +424,7 @@ void Functions<S,D>
       get_rain_dsd2(qr_incld(k), nr_incld(k), mu_r(k), lamr(k), cdistr(k), logn0r(k), cld_frac_r(k), not_skip_micro);
       nr(k).set(not_skip_micro, nr_incld(k) * cld_frac_r(k));
 
-      impose_max_total_Ni(ni_incld(k), max_total_Ni, inv_rho(k), not_skip_micro);
+      impose_max_total_ni(ni_incld(k), max_total_ni, inv_rho(k), not_skip_micro);
 
       const auto qi_gt_small = qi_incld(k) >= qsmall && not_skip_micro;
 
@@ -471,12 +471,12 @@ void Functions<S,D>
 
       // collection of droplets
       ice_cldliq_collection(
-        rho(k), t(k), rhofaci(k), table_val_qc2qi_collect, qi_incld(k), qc_incld(k), ni_incld(k), nc_incld(k),
+        rho(k), T_atm(k), rhofaci(k), table_val_qc2qi_collect, qi_incld(k), qc_incld(k), ni_incld(k), nc_incld(k),
         qc2qi_collect_tend, nc_collect_tend, qc2qr_ice_shed_tend, ncshdc, not_skip_micro);
 
       // collection of rain
       ice_rain_collection(
-        rho(k), t(k), rhofaci(k), logn0r(k), table_val_nr_collect, table_val_qr2qi_collect, qi_incld(k), ni_incld(k), qr_incld(k),
+        rho(k), T_atm(k), rhofaci(k), logn0r(k), table_val_nr_collect, table_val_qr2qi_collect, qi_incld(k), ni_incld(k), qr_incld(k),
         qr2qi_collect_tend, nr_collect_tend, not_skip_micro);
 
       // collection between ice categories
@@ -490,34 +490,34 @@ void Functions<S,D>
 
       // melting
       ice_melting(
-        rho(k), t(k), pres(k), rhofaci(k), table_val_qi2qr_melting, table_val_qi2qr_vent_melt, latent_heat_vapor(k), latent_heat_fusion(k), dv, sc, mu, kap, qv(k), qi_incld(k), ni_incld(k),
+        rho(k), T_atm(k), pres(k), rhofaci(k), table_val_qi2qr_melting, table_val_qi2qr_vent_melt, latent_heat_vapor(k), latent_heat_fusion(k), dv, sc, mu, kap, qv(k), qi_incld(k), ni_incld(k),
         qi2qr_melt_tend, ni2nr_melt_tend, range_mask, not_skip_micro);
 
       // calculate wet growth
       ice_cldliq_wet_growth(
-        rho(k), t(k), pres(k), rhofaci(k), table_val_qi2qr_melting, table_val_qi2qr_vent_melt, latent_heat_vapor(k), 
+        rho(k), T_atm(k), pres(k), rhofaci(k), table_val_qi2qr_melting, table_val_qi2qr_vent_melt, latent_heat_vapor(k), 
         latent_heat_fusion(k), dv, kap, mu, sc, qv(k), qc_incld(k), qi_incld(k), ni_incld(k), qr_incld(k),
         wetgrowth, qr2qi_collect_tend, qc2qi_collect_tend, qc_growth_rate, nr_ice_shed_tend, qc2qr_ice_shed_tend, range_mask, not_skip_micro);
 
       // calcualte total inverse ice relaxation timescale combined for all ice categories
       // note 'f1pr' values are normalized, so we need to multiply by N
       ice_relaxation_timescale(
-        rho(k), t(k), rhofaci(k), table_val_qi2qr_melting, table_val_qi2qr_vent_melt, dv, mu, sc, qi_incld(k), ni_incld(k),
+        rho(k), T_atm(k), rhofaci(k), table_val_qi2qr_melting, table_val_qi2qr_vent_melt, dv, mu, sc, qi_incld(k), ni_incld(k),
         epsi, epsi_tot, not_skip_micro);
 
       // calculate rime density
       calc_rime_density(
-        t(k), rhofaci(k), table_val_qi_fallspd, acn(k), lamc(k), mu_c(k), qc_incld(k), qc2qi_collect_tend,
+        T_atm(k), rhofaci(k), table_val_qi_fallspd, acn(k), lamc(k), mu_c(k), qc_incld(k), qc2qi_collect_tend,
         vtrmi1, rho_qm_cloud, not_skip_micro);
 
       // contact and immersion freezing droplets
       cldliq_immersion_freezing(
-        t(k), lamc(k), mu_c(k), cdist1(k), qc_incld(k), inv_qc_relvar(k),
+        T_atm(k), lamc(k), mu_c(k), cdist1(k), qc_incld(k), inv_qc_relvar(k),
         qc2qi_hetero_freeze_tend, nc2ni_immers_freeze_tend, not_skip_micro);
 
       // for future: get rid of log statements below for rain freezing
       rain_immersion_freezing(
-        t(k), lamr(k), mu_r(k), cdistr(k), qr_incld(k),
+        T_atm(k), lamr(k), mu_r(k), cdistr(k), qr_incld(k),
         qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend, not_skip_micro);
 
       //  rime splintering (Hallet-Mossop 1974)
@@ -539,13 +539,13 @@ void Functions<S,D>
         qr2qv_evap_tend, nr_evap_tend, not_skip_micro);
 
       ice_deposition_sublimation(
-        qi_incld(k), ni_incld(k), t(k), qv_sat_l(k), qv_sat_i(k), epsi, abi, qv(k),
+        qi_incld(k), ni_incld(k), T_atm(k), qv_sat_l(k), qv_sat_i(k), epsi, abi, qv(k),
         qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend, not_skip_micro);
     }
 
     // deposition/condensation-freezing nucleation
     ice_nucleation(
-      t(k), inv_rho(k), ni(k), ni_activated(k), qv_supersat_i(k), inv_dt, predictNc,
+      T_atm(k), inv_rho(k), ni(k), ni_activated(k), qv_supersat_i(k), inv_dt, predictNc,
       qv2qi_nucleat_tend, ni_nucleat_tend, not_skip_all);
 
     // cloud water autoconversion
@@ -602,7 +602,7 @@ void Functions<S,D>
     //   1) Should we be taking qv2qi_nucleat_tend into consideration too?
     //   2) Is MG correct in NOT limiting qi2qv_sublim_tend?
 
-    prevent_ice_overdepletion(pres(k), t(k), qv(k), latent_heat_sublim(k), inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend, range_mask, not_skip_all);
+    prevent_ice_overdepletion(pres(k), T_atm(k), qv(k), latent_heat_sublim(k), inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend, range_mask, not_skip_all);
 
     // vapor -- not needed, since all sinks already have limits imposed and the sum, therefore,
     //          cannot possibly overdeplete qv
@@ -691,7 +691,7 @@ void Functions<S,D>
     pratot(k).set(not_skip_all, qc2qr_accret_tend); // cloud drop accretion by rain
     prctot(k).set(not_skip_all, qc2qr_autoconv_tend); // cloud drop autoconversion to rain
 
-    impose_max_total_Ni(ni(k), max_total_Ni, inv_rho(k), not_skip_all);
+    impose_max_total_ni(ni(k), max_total_ni, inv_rho(k), not_skip_all);
 
     // Recalculate in-cloud values for sedimentation
     calculate_incloud_mixingratios(
@@ -744,7 +744,7 @@ void Functions<S,D>
 {
   constexpr Scalar qsmall       = C::QSMALL;
   constexpr Scalar inv_cp       = C::INV_CP;
-  constexpr Scalar max_total_Ni = C::max_total_Ni;
+  constexpr Scalar max_total_ni = C::max_total_ni;
   constexpr Scalar nsmall       = C::NSMALL;
 
   Kokkos::parallel_for(
@@ -795,7 +795,7 @@ void Functions<S,D>
 
     // Ice
     {
-      impose_max_total_Ni(ni(k), max_total_Ni, inv_rho(k));
+      impose_max_total_ni(ni(k), max_total_ni, inv_rho(k));
 
       const auto qi_gt_small = qi(k) >= qsmall;
       const auto qi_small    = !qi_gt_small;
@@ -912,7 +912,7 @@ void Functions<S,D>
     //
     uview_1d<Spack>
       mu_r,   // shape parameter of rain
-      t,      // temperature at the beginning of the microhpysics step [K]
+      T_atm,      // temperature at the beginning of the microhpysics step [K]
 
       // 2D size distribution and fallspeed parameters
       lamr, logn0r, nu, cdist, cdist1, cdistr,
@@ -932,7 +932,7 @@ void Functions<S,D>
 
     workspace.template take_many_and_reset<41>(
       {
-        "mu_r", "t", "lamr", "logn0r", "nu", "cdist", "cdist1", "cdistr",
+        "mu_r", "T_atm", "lamr", "logn0r", "nu", "cdist", "cdist1", "cdistr",
         "inv_cld_frac_i", "inv_cld_frac_l", "inv_cld_frac_r", "qc_incld", "qr_incld", "qi_incld", "qm_incld",
         "nc_incld", "nr_incld", "ni_incld", "bm_incld",
         "inv_dz", "inv_rho", "ze_ice", "ze_rain", "prec", "rho",
@@ -941,7 +941,7 @@ void Functions<S,D>
         "pratot", "prctot", "qtend_ignore", "ntend_ignore"
       },
       {
-        &mu_r, &t, &lamr, &logn0r, &nu, &cdist, &cdist1, &cdistr,
+        &mu_r, &T_atm, &lamr, &logn0r, &nu, &cdist, &cdist1, &cdistr,
         &inv_cld_frac_i, &inv_cld_frac_l, &inv_cld_frac_r, &qc_incld, &qr_incld, &qi_incld, &qm_incld,
         &nc_incld, &nr_incld, &ni_incld, &bm_incld,
         &inv_dz, &inv_rho, &ze_ice, &ze_rain, &prec, &rho,
@@ -1009,12 +1009,12 @@ void Functions<S,D>
       team, nk_pack,
       ocld_frac_i, ocld_frac_l, ocld_frac_r, oexner, oth, odz, diag_ze,
       ze_ice, ze_rain, odiag_effc, odiag_effi, inv_cld_frac_i, inv_cld_frac_l,
-      inv_cld_frac_r, inv_exner, t, oqv, inv_dz,
+      inv_cld_frac_r, inv_exner, T_atm, oqv, inv_dz,
       diagnostic_outputs.precip_liq_surf(i), diagnostic_outputs.precip_ice_surf(i), zero_init);
     p3_main_part1(
       team, nk, infrastructure.predictNc, infrastructure.dt,
       opres, odpres, odz, onc_nuceat_tend, oexner, inv_exner, inv_cld_frac_l, inv_cld_frac_i,
-      inv_cld_frac_r, olatent_heat_vapor, olatent_heat_sublim, olatent_heat_fusion, t, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr,
+      inv_cld_frac_r, olatent_heat_vapor, olatent_heat_sublim, olatent_heat_fusion, T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr,
       rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqi, oni, oqm,
       obm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld,
       ni_incld, bm_incld, nucleationPossible, hydrometeorsPresent);
@@ -1030,7 +1030,7 @@ void Functions<S,D>
       team, nk_pack, infrastructure.predictNc, infrastructure.dt, inv_dt,
       dnu, itab, itabcol, revap_table, opres, odpres, odz, onc_nuceat_tend, oexner,
       inv_exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, oni_activated, oinv_qc_relvar, ocld_frac_i,
-      ocld_frac_l, ocld_frac_r, t, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
+      ocld_frac_l, ocld_frac_r, T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
       oqv, oth, oqc, onc, oqr, onr, oqi, oni, oqm, obm, olatent_heat_vapor,
       olatent_heat_sublim, olatent_heat_fusion, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld,
       nr_incld, ni_incld, bm_incld, omu_c, nu, olamc, cdist, cdist1, cdistr,
@@ -1075,7 +1075,7 @@ void Functions<S,D>
 
     // homogeneous freezing of cloud and rain
     homogeneous_freezing(
-      t, oexner, olatent_heat_fusion, team, nk, ktop, kbot, kdir, oqc, onc, oqr, onr, oqi,
+      T_atm, oexner, olatent_heat_fusion, team, nk, ktop, kbot, kdir, oqc, onc, oqr, onr, oqi,
       oni, oqm, obm, oth);
 
     //

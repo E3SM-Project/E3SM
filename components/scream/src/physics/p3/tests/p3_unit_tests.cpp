@@ -701,7 +701,7 @@ struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables
 
     //fortran generated data is input to the following
     GetTimeSpacePhysVarsData gtspvd[max_pack_size] = {
-      //        t,       pres,        rho,       latent_heat_vapor,       latent_heat_sublim,        qv_sat_l,        qv_sat_i
+      //        T_atm,       pres,        rho,       latent_heat_vapor,       latent_heat_sublim,        qv_sat_l,        qv_sat_i
       {2.9792E+02, 9.8711E+04, 1.1532E+00, 2.5010E+06, 2.8347E+06, 2.0321E-02, 2.0321E-02},
       {2.9792E+02, 9.8711E+04, 1.1532E+00, 2.5010E+06, 2.8347E+06, 2.0321E-02, 2.0321E-02},
       {2.9583E+02, 9.7322E+04, 1.1449E+00, 2.5010E+06, 2.8347E+06, 1.8120E-02, 1.8120E-02},
@@ -738,16 +738,16 @@ struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables
       const Int offset = i * Spack::n;
 
       // Init pack inputs
-      Spack t, pres, rho, latent_heat_vapor, latent_heat_sublim, qv_sat_l, qv_sat_i, mu, dv, sc, dqsdt, dqsidt, ab, abi, kap, eii;
+      Spack T_atm, pres, rho, latent_heat_vapor, latent_heat_sublim, qv_sat_l, qv_sat_i, mu, dv, sc, dqsdt, dqsidt, ab, abi, kap, eii;
 
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        t[s]      = gtspvd_device(vs).t;
-        pres[s]   = gtspvd_device(vs).pres;
-        rho[s]    = gtspvd_device(vs).rho;
-        latent_heat_vapor[s]   = gtspvd_device(vs).latent_heat_vapor;
+        T_atm[s]                = gtspvd_device(vs).T_atm;
+        pres[s]                 = gtspvd_device(vs).pres;
+        rho[s]                  = gtspvd_device(vs).rho;
+        latent_heat_vapor[s]    = gtspvd_device(vs).latent_heat_vapor;
         latent_heat_sublim[s]   = gtspvd_device(vs).latent_heat_sublim;
-        qv_sat_l[s]    = gtspvd_device(vs).qv_sat_l;
-        qv_sat_i[s]    = gtspvd_device(vs).qv_sat_i;
+        qv_sat_l[s]             = gtspvd_device(vs).qv_sat_l;
+        qv_sat_i[s]             = gtspvd_device(vs).qv_sat_i;
 
         mu[s]     = gtspvd_device(vs).mu;
         dv[s]     = gtspvd_device(vs).dv;
@@ -760,18 +760,18 @@ struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables
         eii[s]    = gtspvd_device(vs).eii;
       }
 
-      Functions::get_time_space_phys_variables(t, pres, rho, latent_heat_vapor, latent_heat_sublim, qv_sat_l, qv_sat_i, mu, dv, sc, dqsdt, dqsidt,
+      Functions::get_time_space_phys_variables(T_atm, pres, rho, latent_heat_vapor, latent_heat_sublim, qv_sat_l, qv_sat_i, mu, dv, sc, dqsdt, dqsidt,
                                                ab, abi, kap, eii);
 
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        gtspvd_device(vs).t      = t[s];
-        gtspvd_device(vs).pres   = pres[s];
-        gtspvd_device(vs).rho    = rho[s];
-        gtspvd_device(vs).latent_heat_vapor   = latent_heat_vapor[s];
+        gtspvd_device(vs).T_atm                = T_atm[s];
+        gtspvd_device(vs).pres                 = pres[s];
+        gtspvd_device(vs).rho                  = rho[s];
+        gtspvd_device(vs).latent_heat_vapor    = latent_heat_vapor[s];
         gtspvd_device(vs).latent_heat_sublim   = latent_heat_sublim[s];
-        gtspvd_device(vs).qv_sat_l    = qv_sat_l[s];
-        gtspvd_device(vs).qv_sat_i    = qv_sat_i[s];
+        gtspvd_device(vs).qv_sat_l             = qv_sat_l[s];
+        gtspvd_device(vs).qv_sat_i             = qv_sat_i[s];
 
         gtspvd_device(vs).mu     = mu[s];
         gtspvd_device(vs).dv     = dv[s];
@@ -1124,38 +1124,38 @@ struct UnitWrap::UnitTest<D>::TestP3IceDepSublimation
       const Int offset = i * Spack::n;
 
       // Init pack inputs
-      Spack qi_incld, ni_incld, t, qv_sat_l, qv_sat_i, epsi, abi, qv, qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend;
+      Spack qi_incld, ni_incld, T_atm, qv_sat_l, qv_sat_i, epsi, abi, qv, qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend;
 
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        qi_incld[s] = ids_device(vs).qi_incld;
-        ni_incld[s] = ids_device(vs).ni_incld;
-        t[s]           = ids_device(vs).t;
-        qv_sat_l[s]         = ids_device(vs).qv_sat_l;
-        qv_sat_i[s]         = ids_device(vs).qv_sat_i;
-        epsi[s]        = ids_device(vs).epsi;
-        abi[s]         = ids_device(vs).abi;
-        qv[s]          = ids_device(vs).qv;
+        qi_incld[s]                = ids_device(vs).qi_incld;
+        ni_incld[s]                = ids_device(vs).ni_incld;
+        T_atm[s]                   = ids_device(vs).T_atm;
+        qv_sat_l[s]                = ids_device(vs).qv_sat_l;
+        qv_sat_i[s]                = ids_device(vs).qv_sat_i;
+        epsi[s]                    = ids_device(vs).epsi;
+        abi[s]                     = ids_device(vs).abi;
+        qv[s]                      = ids_device(vs).qv;
         qv2qi_vapdep_tend[s]       = ids_device(vs).qv2qi_vapdep_tend;
         qi2qv_sublim_tend[s]       = ids_device(vs).qi2qv_sublim_tend;
-        ni_sublim_tend[s]       = ids_device(vs).ni_sublim_tend;
-        qc2qi_berg_tend[s]      = ids_device(vs).qc2qi_berg_tend;
+        ni_sublim_tend[s]          = ids_device(vs).ni_sublim_tend;
+        qc2qi_berg_tend[s]         = ids_device(vs).qc2qi_berg_tend;
       }
 
-      Functions::ice_deposition_sublimation(qi_incld, ni_incld, t, qv_sat_l, qv_sat_i, epsi, abi, qv,
+      Functions::ice_deposition_sublimation(qi_incld, ni_incld, T_atm, qv_sat_l, qv_sat_i, epsi, abi, qv,
                                             qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend);
 
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        ids_device(vs).qi_incld = qi_incld[s];
-        ids_device(vs).ni_incld = ni_incld[s];
-        ids_device(vs).t           = t[s];
-        ids_device(vs).qv_sat_l         = qv_sat_l[s];
-        ids_device(vs).qv_sat_i         = qv_sat_i[s];
-        ids_device(vs).epsi        = epsi[s];
-        ids_device(vs).abi         = abi[s];
-        ids_device(vs).qv          = qv[s];
-        ids_device(vs).qv2qi_vapdep_tend       = qv2qi_vapdep_tend[s];
-        ids_device(vs).qi2qv_sublim_tend       = qi2qv_sublim_tend[s];
+        ids_device(vs).qi_incld             = qi_incld[s];
+        ids_device(vs).ni_incld             = ni_incld[s];
+        ids_device(vs).T_atm                = T_atm[s];
+        ids_device(vs).qv_sat_l             = qv_sat_l[s];
+        ids_device(vs).qv_sat_i             = qv_sat_i[s];
+        ids_device(vs).epsi                 = epsi[s];
+        ids_device(vs).abi                  = abi[s];
+        ids_device(vs).qv                   = qv[s];
+        ids_device(vs).qv2qi_vapdep_tend    = qv2qi_vapdep_tend[s];
+        ids_device(vs).qi2qv_sublim_tend    = qi2qv_sublim_tend[s];
         ids_device(vs).ni_sublim_tend       = ni_sublim_tend[s];
         ids_device(vs).qc2qi_berg_tend      = qc2qi_berg_tend[s];
       }
@@ -1184,29 +1184,29 @@ template <typename D>
 struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi
 {
   static void impose_max_total_ni_bfb_test(){
-    constexpr Scalar max_total_Ni = C::max_total_Ni;
+    constexpr Scalar max_total_ni = C::max_total_ni;
 
     ImposeMaxTotalNiData dc[max_pack_size]= {
-      // ni_local, max_total_Ni, inv_rho_local
-      {0.000E0, max_total_Ni, 5.466E3},
-      {3.358E4, max_total_Ni, 9.691E-1},
-      {0.000E0, max_total_Ni, 9.105E-1},
-      {0.000E3, max_total_Ni, 3.371E0},
+      // ni_local, max_total_ni, inv_rho_local
+      {0.000E0, max_total_ni, 5.466E3},
+      {3.358E4, max_total_ni, 9.691E-1},
+      {0.000E0, max_total_ni, 9.105E-1},
+      {0.000E3, max_total_ni, 3.371E0},
 
-      {0.000E0, max_total_Ni, 5.466E3},
-      {3.358E4, max_total_Ni, 9.691E-1},
-      {0.000E0, max_total_Ni, 9.105E-1},
-      {0.000E3, max_total_Ni, 3.371E0},
+      {0.000E0, max_total_ni, 5.466E3},
+      {3.358E4, max_total_ni, 9.691E-1},
+      {0.000E0, max_total_ni, 9.105E-1},
+      {0.000E3, max_total_ni, 3.371E0},
 
-      {0.000E0, max_total_Ni, 5.466E3},
-      {3.358E4, max_total_Ni, 9.691E-1},
-      {0.000E0, max_total_Ni, 9.105E-1},
-      {0.000E3, max_total_Ni, 3.371E0},
+      {0.000E0, max_total_ni, 5.466E3},
+      {3.358E4, max_total_ni, 9.691E-1},
+      {0.000E0, max_total_ni, 9.105E-1},
+      {0.000E3, max_total_ni, 3.371E0},
 
-      {0.000E0, max_total_Ni, 5.466E3},
-      {3.358E4, max_total_Ni, 9.691E-1},
-      {0.000E0, max_total_Ni, 9.105E-1},
-      {0.000E3, max_total_Ni, 3.371E0},
+      {0.000E0, max_total_ni, 5.466E3},
+      {3.358E4, max_total_ni, 9.691E-1},
+      {0.000E0, max_total_ni, 9.105E-1},
+      {0.000E3, max_total_ni, 3.371E0},
     };
 
     //Sync to device
@@ -1219,7 +1219,7 @@ struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi
 
     //Get data from fortran
     for (Int i = 0; i < max_pack_size; ++i) {
-      impose_max_total_Ni(dc[i]);
+      impose_max_total_ni(dc[i]);
     }
 
     //Run function from a kernal and copy results back to the host
@@ -1233,7 +1233,7 @@ struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi
         inv_rho_local[s] = dc_device(vs).inv_rho_local;
       }
 
-      Functions::impose_max_total_Ni(ni_local, dc_device(0).max_total_Ni, inv_rho_local);
+      Functions::impose_max_total_ni(ni_local, dc_device(0).max_total_ni, inv_rho_local);
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         dc_device(vs).ni_local   = ni_local[s];

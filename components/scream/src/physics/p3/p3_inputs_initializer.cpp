@@ -61,7 +61,7 @@ void P3InputsInitializer::initialize_fields ()
 
   // Get host mirros' raw pointers
   auto q     = h_q.data();
-  auto T     = h_T.data();
+  auto T_atm     = h_T.data();
   auto ast   = h_ast.data();
   auto ni_activated  = h_ni_activated.data();
   auto nc_nuceat_tend = h_nc_nuceat_tend.data();
@@ -70,7 +70,7 @@ void P3InputsInitializer::initialize_fields ()
   auto zi    = h_zi.data();
 
   // Call f90 routine
-  p3_standalone_init_f90 (q, T, zi, pmid, dpres, ast, ni_activated, nc_nuceat_tend);
+  p3_standalone_init_f90 (q, T_atm, zi, pmid, dpres, ast, ni_activated, nc_nuceat_tend);
 
   // Deep copy back to device
   Kokkos::deep_copy(d_q,h_q);

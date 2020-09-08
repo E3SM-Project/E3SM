@@ -57,12 +57,12 @@ contains
 
   end subroutine p3_init_f90
   !====================================================================!
-  subroutine p3_standalone_init_f90 (q,T,zi,pmid,dpres,ast,ni_activated,nc_nuceat_tend) bind(c)
+  subroutine p3_standalone_init_f90 (q,T_atm,zi,pmid,dpres,ast,ni_activated,nc_nuceat_tend) bind(c)
     use micro_p3,       only: p3_init
     use micro_p3_utils, only: micro_p3_utils_init
 
     real(kind=c_real), intent(inout) :: q(pcols,pver,qsize)  ! State array  kg/kg Pa
-    real(kind=c_real), intent(inout) :: T(pcols,pver)        !
+    real(kind=c_real), intent(inout) :: T_atm(pcols,pver)        !
     real(kind=c_real), intent(inout) :: zi(pcols,pver+1)     !
     real(kind=c_real), intent(inout) :: pmid(pcols,pver)     !
     real(kind=c_real), intent(inout) :: dpres(pcols,pver)     !
@@ -87,7 +87,7 @@ contains
     read(981,'(12E16.8)') cpair,rair,rh2o,rhoh2o,mwh2o,mwdry,gravit,latvap,latice,cpliq,tmelt,pi
     do i = 1,ncol
       do k = 1,nlev
-        read(981,'(16E16.8)') ast(i,k), ni_activated(i,k), nc_nuceat_tend(i,k), pmid(i,k), zi(i,k), T(i,k), &
+        read(981,'(16E16.8)') ast(i,k), ni_activated(i,k), nc_nuceat_tend(i,k), pmid(i,k), zi(i,k), T_atm(i,k), &
                          q(i,k,1), q(i,k,2), q(i,k,3), q(i,k,4), q(i,k,5), q(i,k,6), &
                          q(i,k,7), q(i,k,8), q(i,k,9), dpres(i,k)
       end do
@@ -101,14 +101,14 @@ contains
     print *, 'P3-Standalone-Init Finished'
   end subroutine p3_standalone_init_f90
   !====================================================================!
-  subroutine p3_main_f90 (dtime,zi,pmid,dpres,ast,ni_activated,nc_nuceat_tend,q,FQ,T) bind(c)
+  subroutine p3_main_f90 (dtime,zi,pmid,dpres,ast,ni_activated,nc_nuceat_tend,q,FQ,T_atm) bind(c)
     use micro_p3,       only: p3_main
 
 !    real, intent(in) :: q(pcols,pver,9) ! Tracer mass concentrations from SCREAM      kg/kg
     real(kind=c_real), intent(in)    :: dtime ! Timestep
     real(kind=c_real), intent(inout) :: q(pcols,pver,qsize) ! Tracer mass concentrations from SCREAM kg/kg
     real(kind=c_real), intent(inout) :: FQ(pcols,4,pver)    ! Tracer mass tendency for physics
-    real(kind=c_real), intent(inout) :: T(pcols,pver)       ! temperature
+    real(kind=c_real), intent(inout) :: T_atm(pcols,pver)       ! temperature
     real(kind=c_real), intent(in)    :: zi(pcols,pver+1)    ! vertical level interfaces
     real(kind=c_real), intent(in)    :: pmid(pcols,pver)    ! pressure mid-levels
     real(kind=c_real), intent(in)    :: dpres(pcols,pver)    ! pressure thickness
@@ -184,7 +184,7 @@ contains
     ! WHAT DOES P3 NEED FROM THE OUTSIDE WORLD?
     ! Q                      tracer concentrations
     ! pres                   vertical pressure profile
-    ! T                      temperature profile
+    ! T_atm                      temperature profile
     ! zi                     vertical height of layer interfaces.  Note this could be backed out from pres and rho using the hydrostatic approximation
     ! dpres                   pressure layer thickness, again can be gotten from pres
     ! lcdlm, cld_frac_i, cld_frac_r    cloud fractions
@@ -231,7 +231,7 @@ contains
 ! Note: dz is calculated in the opposite direction that dpres is calculated,
 ! thus when considering any dp/dz calculation we must also change the sign.
           dz(icol,k) = zi(icol,k) - zi(icol,k+1) !100.0_rtype   !state%zi(icol,k) - state%zi(icol,k+1)
-          th(icol,k)  = t(icol,k)*exner(icol,k) !/(state%pmid(icol,k)*1.e-5)**(rd*inv_cp)
+          th(icol,k)  = T_atm(icol,k)*exner(icol,k) !/(state%pmid(icol,k)*1.e-5)**(rd*inv_cp)
 !          dpres(icol,k)  = (1e3_rtype-0.1)/real(pver) ! should be changed to come from model state.
        end do
     end do

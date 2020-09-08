@@ -68,7 +68,7 @@ static void run_bfb_p3_main_part1()
   for (auto& d : isds_fortran) {
     const auto qsmall_r = std::make_pair(0, qsmall*2);
     d.randomize({
-        {d.t, {zerodegc - 10, zerodegc + 10}},
+        {d.T_atm, {zerodegc - 10, zerodegc + 10}},
         {d.qv_supersat_i, {sup_lower -.05, sup_upper + .05}},
         {d.qc, qsmall_r}, {d.qr, qsmall_r}, {d.qi, qsmall_r} });
   }
@@ -92,7 +92,7 @@ static void run_bfb_p3_main_part1()
     p3_main_part1_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir, d.do_predict_nc, d.dt,
                     d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.exner, d.inv_exner, d.inv_cld_frac_l, d.inv_cld_frac_i,
                     d.inv_cld_frac_r, d.latent_heat_vapor, d.latent_heat_sublim, d.latent_heat_fusion,
-                    d.t, d.rho, d.inv_rho, d.qv_sat_l, d.qv_sat_i, d.qv_supersat_i, d.rhofacr, d.rhofaci,
+                    d.T_atm, d.rho, d.inv_rho, d.qv_sat_l, d.qv_sat_i, d.qv_supersat_i, d.rhofacr, d.rhofaci,
                     d.acn, d.qv, d.th, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni, d.qm, d.bm, d.qc_incld, d.qr_incld, d.qi_incld,
                     d.qm_incld, d.nc_incld, d.nr_incld, d.ni_incld, d.bm_incld,
                     &d.is_nucleat_possible, &d.is_hydromet_present);
@@ -102,7 +102,7 @@ static void run_bfb_p3_main_part1()
     Int start = std::min(isds_fortran[i].kbot, isds_fortran[i].ktop) - 1; // 0-based indx
     Int end   = std::max(isds_fortran[i].kbot, isds_fortran[i].ktop);     // 0-based indx
     for (Int k = start; k < end; ++k) {
-      REQUIRE(isds_fortran[i].t[k]             == isds_cxx[i].t[k]);
+      REQUIRE(isds_fortran[i].T_atm[k]             == isds_cxx[i].T_atm[k]);
       REQUIRE(isds_fortran[i].rho[k]           == isds_cxx[i].rho[k]);
       REQUIRE(isds_fortran[i].inv_rho[k]       == isds_cxx[i].inv_rho[k]);
       REQUIRE(isds_fortran[i].qv_sat_l[k]      == isds_cxx[i].qv_sat_l[k]);
@@ -155,7 +155,7 @@ static void run_bfb_p3_main_part2()
   for (auto& d : isds_fortran) {
     const auto qsmall_r = std::make_pair(0, qsmall*2);
     d.randomize({
-        {d.t, {zerodegc - 10, zerodegc + 10}},
+        {d.T_atm, {zerodegc - 10, zerodegc + 10}},
         {d.qv_supersat_i, {sup_lower -.05, sup_upper + .05}},
         {d.qc, qsmall_r}, {d.qr, qsmall_r}, {d.qi, qsmall_r} });
   }
@@ -180,7 +180,7 @@ static void run_bfb_p3_main_part2()
       d.kts, d.kte, d.kbot, d.ktop, d.kdir, d.do_predict_nc, d.dt, d.inv_dt,
       d.pres, d.dpres, d.dz, d.nc_nuceat_tend, d.exner, d.inv_exner, d.inv_cld_frac_l, d.inv_cld_frac_i,
       d.inv_cld_frac_r, d.ni_activated, d.inv_qc_relvar, d.cld_frac_i, d.cld_frac_l, d.cld_frac_r,
-      d.t, d.rho, d.inv_rho, d.qv_sat_l, d.qv_sat_i, d.qv_supersat_i, d.rhofacr, d.rhofaci, d.acn, d.qv, d.th, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni,
+      d.T_atm, d.rho, d.inv_rho, d.qv_sat_l, d.qv_sat_i, d.qv_supersat_i, d.rhofacr, d.rhofaci, d.acn, d.qv, d.th, d.qc, d.nc, d.qr, d.nr, d.qi, d.ni,
       d.qm, d.bm, d.latent_heat_vapor, d.latent_heat_sublim, d.latent_heat_fusion, d.qc_incld, d.qr_incld, d.qi_incld, d.qm_incld, d.nc_incld, d.nr_incld,
       d.ni_incld, d.bm_incld, d.mu_c, d.nu, d.lamc, d.cdist, d.cdist1, d.cdistr, d.mu_r, d.lamr, d.logn0r, d.cmeiout, d.precip_total_tend,
       d.nevapr, d.qr_evap_tend, d.vap_liq_exchange, d.vap_ice_exchange, d.liq_ice_exchange, d.pratot,
@@ -191,7 +191,7 @@ static void run_bfb_p3_main_part2()
     Int start = std::min(isds_fortran[i].kbot, isds_fortran[i].ktop) - 1; // 0-based indx
     Int end   = std::max(isds_fortran[i].kbot, isds_fortran[i].ktop);     // 0-based indx
     for (Int k = start; k < end; ++k) {
-      REQUIRE(isds_fortran[i].t[k]                  == isds_cxx[i].t[k]);
+      REQUIRE(isds_fortran[i].T_atm[k]                  == isds_cxx[i].T_atm[k]);
       REQUIRE(isds_fortran[i].rho[k]                == isds_cxx[i].rho[k]);
       REQUIRE(isds_fortran[i].inv_rho[k]            == isds_cxx[i].inv_rho[k]);
       REQUIRE(isds_fortran[i].qv_sat_l[k]           == isds_cxx[i].qv_sat_l[k]);

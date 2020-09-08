@@ -193,7 +193,7 @@ static void run_bfb_homogeneous_freezing()
   // Set up random input data
   for (auto& d : hfds_fortran) {
     const auto qsmall_r = std::make_pair(C::QSMALL/2, C::QSMALL*2);
-    d.randomize({ {d.t, {C::homogfrze - 10, C::homogfrze + 10}}, {d.qc, qsmall_r}, {d.qr, qsmall_r} });
+    d.randomize({ {d.T_atm, {C::homogfrze - 10, C::homogfrze + 10}}, {d.qc, qsmall_r}, {d.qr, qsmall_r} });
   }
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
@@ -213,7 +213,7 @@ static void run_bfb_homogeneous_freezing()
   // Get data from cxx
   for (auto& d : hfds_cxx) {
     homogeneous_freezing_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
-                           d.t, d.exner, d.latent_heat_fusion,
+                           d.T_atm, d.exner, d.latent_heat_fusion,
                            d.qc, d.nc, d.qr, d.nr, d.qi, d.ni, d.qm, d.bm, d.th);
   }
 

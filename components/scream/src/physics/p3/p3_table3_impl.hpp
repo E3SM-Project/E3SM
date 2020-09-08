@@ -15,13 +15,13 @@ template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::lookup (const Spack& mu_r,
-          const Spack& lamr, Table3& t,
+          const Spack& lamr, Table3& T_atm,
           const Smask& context)
 {
   // find location in scaled mean size space
   const auto dum1 = (mu_r+1) / lamr;
   const auto dum1_lt = context && (dum1 <= sp(195.e-6));
-  t.dumii = 1;
+  T_atm.dumii = 1;
   if (dum1_lt.any()) {
     ekat_masked_loop(dum1_lt, s) {
       const auto inv_dum3 = sp(0.1);
@@ -31,8 +31,8 @@ void Functions<S,D>
       Int dumii = rdumii;
       dumii = ekat::util::max(dumii,  1);
       dumii = ekat::util::min(dumii, 20);
-      t.rdumii[s] = rdumii;
-      t.dumii[s] = dumii;
+      T_atm.rdumii[s] = rdumii;
+      T_atm.dumii[s] = dumii;
     }
   }
   const auto dum1_gte = context && !dum1_lt;
@@ -45,8 +45,8 @@ void Functions<S,D>
       Int dumii = rdumii;
       dumii = ekat::util::max(dumii, 20);
       dumii = ekat::util::min(dumii,299);
-      t.rdumii[s] = rdumii;
-      t.dumii[s] = dumii;
+      T_atm.rdumii[s] = rdumii;
+      T_atm.dumii[s] = dumii;
     }
   }
 
@@ -58,9 +58,9 @@ void Functions<S,D>
     IntSmallPack dumjj(rdumjj);
     dumjj  = max(dumjj, 1);
     dumjj  = min(dumjj, 9);
-    t.rdumjj.set(context, rdumjj);
-    t.dumjj = 1;
-    t.dumjj.set(context, dumjj);
+    T_atm.rdumjj.set(context, rdumjj);
+    T_atm.dumjj = 1;
+    T_atm.dumjj.set(context, dumjj);
   }
 }
 
@@ -68,18 +68,18 @@ template <typename S, typename D>
 KOKKOS_FUNCTION
 typename Functions<S,D>::Spack Functions<S,D>
 ::apply_table (const view_2d_table& table,
-               const Table3& t) {
-  const auto rdumii_m_dumii = t.rdumii - Spack(t.dumii);
-  const auto t_im1_jm1 = index(table, t.dumii-1, t.dumjj-1);
+               const Table3& tab3) {
+  const auto rdumii_m_dumii = tab3.rdumii - Spack(tab3.dumii);
+  const auto t_im1_jm1 = index(table, tab3.dumii-1, tab3.dumjj-1);
   // Linear interpolant.
   const auto dum1 = (t_im1_jm1 + rdumii_m_dumii *
-                     (index(table, t.dumii, t.dumjj-1) - t_im1_jm1));
-  const auto t_im1_j = index(table, t.dumii-1, t.dumjj);
+                     (index(table, tab3.dumii, tab3.dumjj-1) - t_im1_jm1));
+  const auto t_im1_j = index(table, tab3.dumii-1, tab3.dumjj);
   // Linear interpolant.
   const auto dum2 = (t_im1_j + rdumii_m_dumii *
-                     (index(table, t.dumii, t.dumjj) - t_im1_j));
+                     (index(table, tab3.dumii, tab3.dumjj) - t_im1_j));
   // Linear interpolation in other direction to complete bilinear interpolant.
-  return dum1 + (t.rdumjj - Spack(t.dumjj)) * (dum2 - dum1);
+  return dum1 + (tab3.rdumjj - Spack(tab3.dumjj)) * (dum2 - dum1);
 }
 
 template <typename S, typename D>

@@ -16,7 +16,7 @@ template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::cldliq_immersion_freezing(
-  const Spack& t, const Spack& lamc,
+  const Spack& T_atm, const Spack& lamc,
   const Spack& mu_c, const Spack& cdist1,
   const Spack& qc_incld, const Spack& inv_qc_relvar,
   Spack& qc2qi_hetero_freeze_tend, Spack& nc2ni_immers_freeze_tend,
@@ -30,10 +30,10 @@ void Functions<S,D>
   constexpr Scalar CONS6    = C::CONS6;
 
   const auto qc_not_small_and_t_freezing = (qc_incld >= qsmall) &&
-                                           (t <= RainFrze) && context;
+                                           (T_atm <= RainFrze) && context;
   if (qc_not_small_and_t_freezing.any()) {
     Spack expAimmDt, inv_lamc3;
-    expAimmDt.set(qc_not_small_and_t_freezing, exp(AIMM * (ZeroDegC-t)));
+    expAimmDt.set(qc_not_small_and_t_freezing, exp(AIMM * (ZeroDegC-T_atm)));
     inv_lamc3.set(qc_not_small_and_t_freezing, cube(1/lamc));
 
     Spack sgs_var_coef;

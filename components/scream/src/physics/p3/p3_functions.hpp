@@ -246,7 +246,7 @@ struct Functions
   // Map (mu_r, lamr) to Table3 data.
   KOKKOS_FUNCTION
   static void lookup(const Spack& mu_r, const Spack& lamr,
-                     Table3& t,
+                     Table3& T_atm,
                      const Smask& context = Smask(true) );
 
   // Converts quantities to cell averages
@@ -270,7 +270,7 @@ struct Functions
   // time step.
   KOKKOS_FUNCTION
   static void prevent_ice_overdepletion(
-    const Spack& pres, const Spack& t, const Spack& qv, const Spack& latent_heat_sublim, const Scalar& inv_dt,
+    const Spack& pres, const Spack& T_atm, const Spack& qv, const Spack& latent_heat_sublim, const Scalar& inv_dt,
     Spack& qv2qi_vapdep_tend, Spack& qi2qv_sublim_tend, const Smask& range_mask = Smask(true),
     const Smask& context = Smask(true) );
 
@@ -279,19 +279,19 @@ struct Functions
   // ------------------------------------------------------------------------------------------!
   KOKKOS_FUNCTION
   static void lookup_ice(const Spack& qi, const Spack& ni,
-                         const Spack& qm, const Spack& rhop, TableIce& t,
+                         const Spack& qm, const Spack& rhop, TableIce& T_atm,
                          const Smask& context = Smask(true) );
 
   //------------------------------------------------------------------------------------------!
   // Finds indices in 3D rain lookup table
   //------------------------------------------------------------------------------------------!
   KOKKOS_FUNCTION
-  static void lookup_rain(const Spack& qr, const Spack& nr, TableRain& t,
+  static void lookup_rain(const Spack& qr, const Spack& nr, TableRain& T_atm,
                           const Smask& context = Smask(true) );
 
   // Apply Table3 data to the table to return a value. This performs bilinear
-  // interpolation within the quad given by {t.dumii, t.dumjj} x {t.dumii+1,
-  // t.dumjj+1}.
+  // interpolation within the quad given by {t.dumii, T_atm.dumjj} x {t.dumii+1,
+  // T_atm.dumjj+1}.
   KOKKOS_FUNCTION
   static Spack apply_table(const view_2d_table& table,
                            const Table3& t);
@@ -299,7 +299,7 @@ struct Functions
   // Apply TableIce data to the ice tables to return a value.
   KOKKOS_FUNCTION
   static Spack apply_table_ice(const int& index, const view_itab_table& itab,
-                               const TableIce& t,
+                               const TableIce& T_atm,
                                const Smask& context = Smask(true) );
 
   // Interpolates lookup table values for rain/ice collection processes
@@ -447,7 +447,7 @@ struct Functions
   // homogeneous freezing of cloud and rain
   KOKKOS_FUNCTION
   static void homogeneous_freezing(
-    const uview_1d<const Spack>& t,
+    const uview_1d<const Spack>& T_atm,
     const uview_1d<const Spack>& exner,
     const uview_1d<const Spack>& latent_heat_fusion,
     const MemberType& team,
@@ -515,7 +515,7 @@ struct Functions
 
   // Calculates rime density
   KOKKOS_FUNCTION
-  static void calc_rime_density(const Spack& t, const Spack& rhofaci,
+  static void calc_rime_density(const Spack& T_atm, const Spack& rhofaci,
     const Spack& table_val_qi_fallspd, const Spack& acn, const Spack& lamc,
     const Spack& mu_c, const Spack& qc_incld, const Spack& qc2qi_collect_tend,
     Spack& vtrmi1, Spack& rho_qm_cloud,
@@ -523,14 +523,14 @@ struct Functions
 
   // Computes contact and immersion freezing droplets
   KOKKOS_FUNCTION
-  static void cldliq_immersion_freezing(const Spack& t, const Spack& lamc,
+  static void cldliq_immersion_freezing(const Spack& T_atm, const Spack& lamc,
     const Spack& mu_c, const Spack& cdist1, const Spack& qc_incld, const Spack& inv_qc_relvar,
     Spack& qc2qi_hetero_freeze_tend, Spack& nc2ni_immers_freeze_tend,
     const Smask& context = Smask(true) );
 
   // Computes the immersion freezing of rain
   KOKKOS_FUNCTION
-  static void rain_immersion_freezing(const Spack& t, const Spack& lamr,
+  static void rain_immersion_freezing(const Spack& T_atm, const Spack& lamr,
     const Spack& mu_r, const Spack& cdistr, const Spack& qr_incld,
     Spack& qr2qi_immers_freeze_tend, Spack& nr2ni_immers_freeze_tend,
     const Smask& context = Smask(true) );
@@ -563,7 +563,7 @@ struct Functions
 
   // Impose maximum ice number
   KOKKOS_FUNCTION
-  static void impose_max_total_Ni(Spack& ni_local, const Scalar& max_total_Ni, const Spack& inv_rho_local,
+  static void impose_max_total_ni(Spack& ni_local, const Scalar& max_total_ni, const Spack& inv_rho_local,
                                   const Smask& context = Smask(true) );
 
   //--------------------------------------------------------------------------------
@@ -602,7 +602,7 @@ struct Functions
 
   // TODO (comments)
   KOKKOS_FUNCTION
-  static void get_time_space_phys_variables(const Spack& t, const Spack& pres, const Spack& rho,
+  static void get_time_space_phys_variables(const Spack& T_atm, const Spack& pres, const Spack& rho,
 					    const Spack& latent_heat_vapor, const Spack& latent_heat_sublim,
 					    const Spack& qv_sat_l, const Spack& qv_sat_i, Spack& mu,
 					    Spack& dv, Spack& sc, Spack& dqsdt, Spack& dqsidt,
@@ -648,7 +648,7 @@ struct Functions
 
   //get number and mass tendencies due to melting ice
   KOKKOS_FUNCTION
-  static void ice_melting(const Spack& rho, const Spack& t, const Spack& pres, const Spack& rhofaci,
+  static void ice_melting(const Spack& rho, const Spack& T_atm, const Spack& pres, const Spack& rhofaci,
 			  const Spack& table_val_qi2qr_melting, const Spack& table_val_qi2qr_vent_melt, const Spack& latent_heat_vapor, const Spack& latent_heat_fusion,
 			  const Spack& dv, const Spack& sc, const Spack& mu, const Spack& kap,
 			  const Spack& qv, const Spack& qi_incld, const Spack& ni_incld,
@@ -667,7 +667,7 @@ struct Functions
   // TODO (comments)
   KOKKOS_FUNCTION
   static void ice_deposition_sublimation(const Spack& qi_incld,
-    const Spack& ni_incld, const Spack& t, const Spack& qv_sat_l, const Spack& qv_sat_i,
+    const Spack& ni_incld, const Spack& T_atm, const Spack& qv_sat_l, const Spack& qv_sat_i,
     const Spack& epsi, const Spack& abi, const Spack& qv, Spack& qv2qi_vapdep_tend,
     Spack& qi2qv_sublim_tend, Spack& ni_sublim_tend, Spack& qc2qi_berg_tend,
     const Smask& context = Smask(true));
@@ -751,7 +751,7 @@ struct Functions
     const uview_1d<Spack>& inv_cld_frac_l,
     const uview_1d<Spack>& inv_cld_frac_r,
     const uview_1d<Spack>& inv_exner,
-    const uview_1d<Spack>& t,
+    const uview_1d<Spack>& T_atm,
     const uview_1d<Spack>& qv,
     const uview_1d<Spack>& inv_dz,
     Scalar& precip_liq_surf,
@@ -776,7 +776,7 @@ struct Functions
     const uview_1d<const Spack>& latent_heat_vapor,
     const uview_1d<const Spack>& latent_heat_sublim,
     const uview_1d<const Spack>& latent_heat_fusion,
-    const uview_1d<Spack>& t,
+    const uview_1d<Spack>& T_atm,
     const uview_1d<Spack>& rho,
     const uview_1d<Spack>& inv_rho,
     const uview_1d<Spack>& qv_sat_l,
@@ -831,7 +831,7 @@ struct Functions
     const uview_1d<const Spack>& cld_frac_i,
     const uview_1d<const Spack>& cld_frac_l,
     const uview_1d<const Spack>& cld_frac_r,
-    const uview_1d<Spack>& t,
+    const uview_1d<Spack>& T_atm,
     const uview_1d<Spack>& rho,
     const uview_1d<Spack>& inv_rho,
     const uview_1d<Spack>& qv_sat_l,
@@ -957,7 +957,7 @@ void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data,
 # include "p3_conservation_impl.hpp"
 # include "p3_autoconversion_impl.hpp"
 # include "p3_rain_self_collection_impl.hpp"
-# include "p3_impose_max_total_Ni_impl.hpp"
+# include "p3_impose_max_total_ni_impl.hpp"
 # include "p3_calc_rime_density_impl.hpp"
 # include "p3_cldliq_imm_freezing_impl.hpp"
 # include "p3_droplet_self_coll_impl.hpp"

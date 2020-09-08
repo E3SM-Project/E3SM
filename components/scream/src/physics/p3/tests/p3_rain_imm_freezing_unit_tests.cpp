@@ -40,7 +40,7 @@ static void run_bfb()
   constexpr Scalar cdistr1 = 0.25, cdistr2 = 0.5, cdistr3 = 0.75, cdistr4 = 1.0;
 
   RainImmersionFreezingData rain_imm_freezing_data[max_pack_size] = {
-    // t, lamr, mu_r, cdistr, qr_incld, qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend
+    // T_atm, lamr, mu_r, cdistr, qr_incld, qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend
     {t_not_freezing, lamr1, mu_r1, cdistr1, qr_incld_small},
     {t_not_freezing, lamr2, mu_r2, cdistr2, qr_incld_small},
     {t_not_freezing, lamr3, mu_r3, cdistr3, qr_incld_small},
@@ -79,9 +79,9 @@ static void run_bfb()
     const Int offset = i * Spack::n;
 
     // Init pack inputs
-    Spack t, lamr, mu_r, cdistr, qr_incld;
+    Spack T_atm, lamr, mu_r, cdistr, qr_incld;
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-      t[s]        = device_data(vs).t;
+      T_atm[s]    = device_data(vs).T_atm;
       lamr[s]     = device_data(vs).lamr;
       mu_r[s]     = device_data(vs).mu_r;
       cdistr[s]   = device_data(vs).cdistr;
@@ -91,7 +91,7 @@ static void run_bfb()
     Spack qr2qi_immers_freeze_tend{0.0};
     Spack nr2ni_immers_freeze_tend{0.0};
 
-    Functions::rain_immersion_freezing(t, lamr, mu_r, cdistr, qr_incld,
+    Functions::rain_immersion_freezing(T_atm, lamr, mu_r, cdistr, qr_incld,
                                        qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend);
 
     // Copy results back into views

@@ -63,11 +63,11 @@ FortranData::Ptr make_mixed (const Int ncol) {
     // To get potential temperature, start by making absolute temperature vary
     // between 150K at top of atmos and 300k at surface, then convert to potential
     // temp.
-    FortranData::Array1 T("T", nk);
+    FortranData::Array1 T_atm("T", nk);
     for (k = 0; k < nk; ++k) {
-      T(k) = 150 + 150/double(nk)*k;
-      if (i > 0) T(k) += ((i % 3) - 0.5)/double(nk)*k;
-      d.th(i,k) = T(k)*std::pow(Real(consts::P0/d.pres(i,k)), Real(consts::RD/consts::CP));
+      T_atm(k) = 150 + 150/double(nk)*k;
+      if (i > 0) T_atm(k) += ((i % 3) - 0.5)/double(nk)*k;
+      d.th(i,k) = T_atm(k)*std::pow(Real(consts::P0/d.pres(i,k)), Real(consts::RD/consts::CP));
     }
 
     // The next section modifies inout variables to satisfy weird conditions
@@ -106,7 +106,7 @@ FortranData::Ptr make_mixed (const Int ncol) {
         d.pres(i,nk-1) + 0.5*(d.pres(i,nk-1) - d.pres(i,nk-2))/(1 - 0) :
         0.5*(d.pres(i,k) + d.pres(i,k+1));
       const auto dpres = phi - plo;
-      d.dz(i,k) = consts::RD*T(k)/(g*d.pres(i,k))*dpres;
+      d.dz(i,k) = consts::RD*T_atm(k)/(g*d.pres(i,k))*dpres;
     }
   }
 

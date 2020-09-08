@@ -142,13 +142,13 @@ void Functions<S,D>
 
           const auto rhop = calc_bulk_rho_rime(qi_incld(pk), qm_incld(pk), bm_incld(pk), qi_gt_small);
 
-          TableIce t;
-          lookup_ice(qi_incld(pk), ni_incld(pk), qm_incld(pk), rhop, t, qi_gt_small);
+          TableIce tab;
+          lookup_ice(qi_incld(pk), ni_incld(pk), qm_incld(pk), rhop, tab, qi_gt_small);
 
-          const auto table_val_ni_fallspd = apply_table_ice(0, itab, t, qi_gt_small);
-          const auto table_val_qi_fallspd = apply_table_ice(1, itab, t, qi_gt_small);
-          const auto table_val_ni_lammax = apply_table_ice(6, itab, t, qi_gt_small);
-          const auto table_val_ni_lammin = apply_table_ice(7, itab, t, qi_gt_small);
+          const auto table_val_ni_fallspd = apply_table_ice(0, itab, tab, qi_gt_small);
+          const auto table_val_qi_fallspd = apply_table_ice(1, itab, tab, qi_gt_small);
+          const auto table_val_ni_lammax = apply_table_ice(6, itab, tab, qi_gt_small);
+          const auto table_val_ni_lammin = apply_table_ice(7, itab, tab, qi_gt_small);
 
           // impose mean ice size bounds (i.e. apply lambda limiters)
           // note that the Nmax and Nmin are normalized and thus need to be multiplied by existing N
@@ -200,7 +200,7 @@ template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::homogeneous_freezing(
-  const uview_1d<const Spack>& t,
+  const uview_1d<const Spack>& T_atm,
   const uview_1d<const Spack>& exner,
   const uview_1d<const Spack>& latent_heat_fusion,
   const MemberType& team,
@@ -236,7 +236,7 @@ void Functions<S,D>
     // Set up masks
     const auto range_pack    = ekat::pack::range<IntSmallPack>(pk*Spack::n);
     const auto range_mask    = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
-    const auto t_lt_homogf   = t(pk) < homogfrze;
+    const auto t_lt_homogf   = T_atm(pk) < homogfrze;
     const auto qc_gt_small   = range_mask && t_lt_homogf && qc(pk) > qsmall;
     const auto qr_gt_small   = range_mask && t_lt_homogf && qr(pk) > qsmall;
 
