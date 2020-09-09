@@ -102,26 +102,20 @@ struct CaarFunctorImpl {
   struct TagDp3dLimiter {};
 
   // Policies
-  Kokkos::TeamPolicy<ExecSpace, TagPreExchange>   m_policy_pre;
+#ifndef NDEBUG
+  template<typename Tag>
+  using TeamPolicyType = Kokkos::TeamPolicy<ExecSpace,Kokkos::LaunchBounds<512,1>,Tag>;
+#else
+  template<typename Tag>
+  using TeamPolicyType = Kokkos::TeamPolicy<ExecSpace,Tag>;
+#endif
+
+  TeamPolicyType<TagPreExchange>   m_policy_pre;
+  TeamPolicyType<TagDp3dLimiter>   m_policy_dp3d_lim;
+
   Kokkos::RangePolicy<ExecSpace, TagPostExchange> m_policy_post;
-  Kokkos::TeamPolicy<ExecSpace, TagDp3dLimiter>   m_policy_dp3d_lim;
 
   TeamUtils<ExecSpace> m_tu;
-
-  Kokkos::TeamPolicy<ExecSpace, TagPreExchange>
-  get_policy_pre_exchange () const {
-    return m_policy_pre;
-  }
-
-  Kokkos::RangePolicy<ExecSpace, TagPostExchange>
-  get_policy_post_exchange () const {
-    return m_policy_post;
-  }
-
-  Kokkos::TeamPolicy<ExecSpace, TagDp3dLimiter>
-  get_policy_limiter () const {
-    return m_policy_dp3d_lim;
-  }
 
   Kokkos::Array<std::shared_ptr<BoundaryExchange>, NUM_TIME_LEVELS> m_bes;
 

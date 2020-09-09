@@ -457,7 +457,7 @@ TEST_CASE("caar", "caar_testing") {
     caar.set_rk_stage_data(data);
 
     // Run cxx limiter
-    Kokkos::parallel_for("limiter_dp3d", caar.get_policy_limiter(), caar);
+    Kokkos::parallel_for("limiter_dp3d", caar.m_policy_dp3d_lim, caar);
 
     // Run f90 limiter
     run_limiter_f90(np1+1, dp3d_ptr, vtheta_dp_ptr);
