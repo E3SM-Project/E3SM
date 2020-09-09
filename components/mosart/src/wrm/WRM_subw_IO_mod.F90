@@ -486,8 +486,8 @@ MODULE WRM_subw_IO_mod
 
      allocate (WRMUnit%YEAR(ctlSubwWRM%localNumDam))
      WRMUnit%YEAR = 1900
-     allocate (WRMUnit%active(ctlSubwWRM%localNumDam))
-     WRMUnit%active = 0
+     allocate (WRMUnit%active_stage(ctlSubwWRM%localNumDam))
+     WRMUnit%active_stage = 0
      allocate (WRMUnit%SurfArea(ctlSubwWRM%localNumDam))
      WRMUnit%SurfArea = 0._r8
      allocate (WRMUnit%InstCap(ctlSubwWRM%localNumDam))
@@ -837,20 +837,20 @@ MODULE WRM_subw_IO_mod
 
    do idam = 1, ctlSubwWRM%localNumDam
     if (ctlSubwWRM%DamConstructionFlag .eq. 1) then ! allow reseroirs to be filled to 80% of storage within 10 years after construction
-      if (WRMUnit%active(idam) < 2) then ! 2 means fully functional, 1 means during filling, 0 means not built yet
+      if (WRMUnit%active_stage(idam) < 2) then ! 2 means fully functional, 1 means during filling, 0 means not built yet
        if (WRMUnit%YEAR(idam) <= yr .and. WRMUnit%YEAR(idam) > yr-10) then
-           WRMUnit%active(idam) = 1
+           WRMUnit%active_stage(idam) = 1
            if (StorWater%storage(idam) > 0.8_r8 * WRMUnit%StorCap(idam)) then
-             WRMUnit%active(idam) = 2
+             WRMUnit%active_stage(idam) = 2
            endif
        endif
        
        if (WRMUnit%YEAR(idam) <= yr-10) then
-         WRMUnit%active(idam) = 2
+         WRMUnit%active_stage(idam) = 2
        endif
       endif     
     else
-      WRMUnit%active(idam) = 2
+      WRMUnit%active_stage(idam) = 2
     endif
    enddo    
 

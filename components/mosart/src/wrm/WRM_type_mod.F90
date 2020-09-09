@@ -79,7 +79,7 @@ MODULE WRM_type_mod
      real(r8), pointer :: MaxStorTarget(:)  ! (nd)
 
      integer , pointer :: YEAR(:)           ! (nd) year dam was constructed and operationnal
-     integer , pointer :: active(:)         ! (nd) whether dam is not functional (before construction) or during filling (<10 yrs after built and <80% of capacity) or fully functional (10 yrs after built or >80% of capacity) 
+     integer , pointer :: active_stage(:)   ! (nd) whether dam is not functional (before construction) or during filling (<10 yrs after built and <80% of capacity) or fully functional (10 yrs after built or >80% of capacity) 
      integer , pointer :: use_Irrig(:)      ! (nd) reservoir purpose irrigation 
      integer , pointer :: use_Elec(:)       ! (nd) hydropower
      integer , pointer :: use_FCon(:)       ! (nd) flood control
