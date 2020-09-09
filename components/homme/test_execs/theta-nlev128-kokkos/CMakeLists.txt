@@ -1,8 +1,5 @@
 THETAL_KOKKOS_SETUP()
 
-# This will be used to determine that we need to link to kokkos
-SET(USE_KOKKOS_KERNELS ON)
-
 # Set the variables for this test executable        NP  NC PLEV USE_PIO WITH_ENERGY QSIZE_D
 createTestExec(theta-nlev128-kokkos theta-l_kokkos  4  4  128   ${PREQX_USE_PIO}   FALSE        10)
 
