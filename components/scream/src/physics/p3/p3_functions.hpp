@@ -246,7 +246,7 @@ struct Functions
   // Map (mu_r, lamr) to Table3 data.
   KOKKOS_FUNCTION
   static void lookup(const Spack& mu_r, const Spack& lamr,
-                     Table3& T_atm,
+                     Table3& tab,
                      const Smask& context = Smask(true) );
 
   // Converts quantities to cell averages
@@ -279,7 +279,7 @@ struct Functions
   // ------------------------------------------------------------------------------------------!
   KOKKOS_FUNCTION
   static void lookup_ice(const Spack& qi, const Spack& ni,
-                         const Spack& qm, const Spack& rhop, TableIce& T_atm,
+                         const Spack& qm, const Spack& rhop, TableIce& tab,
                          const Smask& context = Smask(true) );
 
   //------------------------------------------------------------------------------------------!
@@ -299,7 +299,7 @@ struct Functions
   // Apply TableIce data to the ice tables to return a value.
   KOKKOS_FUNCTION
   static Spack apply_table_ice(const int& index, const view_itab_table& itab,
-                               const TableIce& T_atm,
+                               const TableIce& tab,
                                const Smask& context = Smask(true) );
 
   // Interpolates lookup table values for rain/ice collection processes
