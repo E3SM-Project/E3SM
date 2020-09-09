@@ -84,8 +84,8 @@ typename Functions<S,D>::Spack Functions<S,D>
 
 template <typename S, typename D>
 void Functions<S,D>
-::init_kokkos_tables (view_2d_table& vn_table, view_2d_table& vm_table,
-                      view_2d_table& revap_table, view_1d_table& mu_r_table,
+::init_kokkos_tables (view_2d_table& vn_table_vals, view_2d_table& vm_table_vals,
+                      view_2d_table& revap_table_vals, view_1d_table& mu_r_table_vals,
                       view_dnu_table& dnu) {
   // initialize on host
 
@@ -93,27 +93,27 @@ void Functions<S,D>
   using DeviceTable2   = typename view_2d_table::non_const_type;
   using DeviceDnuTable = typename view_dnu_table::non_const_type;
 
-  const auto vn_table_d    = DeviceTable2("vn_table");
-  const auto vm_table_d    = DeviceTable2("vm_table");
-  const auto revap_table_d = DeviceTable2("revap_table");
-  const auto mu_r_table_d  = DeviceTable1("mu_r_table");
+  const auto vn_table_vals_d    = DeviceTable2("vn_table_vals");
+  const auto vm_table_vals_d    = DeviceTable2("vm_table_vals");
+  const auto revap_table_vals_d = DeviceTable2("revap_table_vals");
+  const auto mu_r_table_vals_d  = DeviceTable1("mu_r_table_vals");
   const auto dnu_table_d   = DeviceDnuTable("dnu");
-  const auto vn_table_h    = Kokkos::create_mirror_view(vn_table_d);
-  const auto vm_table_h    = Kokkos::create_mirror_view(vm_table_d);
-  const auto revap_table_h = Kokkos::create_mirror_view(revap_table_d);
-  const auto mu_table_h    = Kokkos::create_mirror_view(mu_r_table_d);
+  const auto vn_table_vals_h    = Kokkos::create_mirror_view(vn_table_vals_d);
+  const auto vm_table_vals_h    = Kokkos::create_mirror_view(vm_table_vals_d);
+  const auto revap_table_vals_h = Kokkos::create_mirror_view(revap_table_vals_d);
+  const auto mu_table_h    = Kokkos::create_mirror_view(mu_r_table_vals_d);
   const auto dnu_table_h   = Kokkos::create_mirror_view(dnu_table_d);
 
   // Need 2d-tables with fortran-style layout
   using P3F         = Functions<Real, HostDevice>;
   using LHostTable2 = typename P3F::KT::template lview<Real[C::VTABLE_DIM0][C::VTABLE_DIM1]>;
-  LHostTable2 vn_table_lh("vn_table_lh"), vm_table_lh("vm_table_lh"), revap_table_lh("revap_table_lh");
-  init_tables_from_f90_c(vn_table_lh.data(), vm_table_lh.data(), revap_table_lh.data(), mu_table_h.data());
+  LHostTable2 vn_table_vals_lh("vn_table_vals_lh"), vm_table_vals_lh("vm_table_vals_lh"), revap_table_vals_lh("revap_table_vals_lh");
+  init_tables_from_f90_c(vn_table_vals_lh.data(), vm_table_vals_lh.data(), revap_table_vals_lh.data(), mu_table_h.data());
   for (int i = 0; i < C::VTABLE_DIM0; ++i) {
     for (int j = 0; j < C::VTABLE_DIM1; ++j) {
-      vn_table_h(i, j) = vn_table_lh(i, j);
-      vm_table_h(i, j) = vm_table_lh(i, j);
-      revap_table_h(i, j) = revap_table_lh(i, j);
+      vn_table_vals_h(i, j) = vn_table_vals_lh(i, j);
+      vm_table_vals_h(i, j) = vm_table_vals_lh(i, j);
+      revap_table_vals_h(i, j) = revap_table_vals_lh(i, j);
     }
   }
 
@@ -135,15 +135,15 @@ void Functions<S,D>
   dnu_table_h(15) = -0.966;
 
   // deep copy to device
-  Kokkos::deep_copy(vn_table_d, vn_table_h);
-  Kokkos::deep_copy(vm_table_d, vm_table_h);
-  Kokkos::deep_copy(revap_table_d, revap_table_h);
-  Kokkos::deep_copy(mu_r_table_d, mu_table_h);
+  Kokkos::deep_copy(vn_table_vals_d, vn_table_vals_h);
+  Kokkos::deep_copy(vm_table_vals_d, vm_table_vals_h);
+  Kokkos::deep_copy(revap_table_vals_d, revap_table_vals_h);
+  Kokkos::deep_copy(mu_r_table_vals_d, mu_table_h);
   Kokkos::deep_copy(dnu_table_d, dnu_table_h);
-  vn_table   = vn_table_d;
-  vm_table   = vm_table_d;
-  revap_table   = revap_table_d;
-  mu_r_table = mu_r_table_d;
+  vn_table_vals   = vn_table_vals_d;
+  vm_table_vals   = vm_table_vals_d;
+  revap_table_vals   = revap_table_vals_d;
+  mu_r_table_vals = mu_r_table_vals_d;
   dnu        = dnu_table_d;
 }
 

@@ -116,7 +116,7 @@ contains
     real(kind=c_real), intent(in)    :: ni_activated(pcols,pver)    ! ice nucleation number
     real(kind=c_real), intent(in)    :: nc_nuceat_tend(pcols,pver)   ! liquid activation number tendency
     !INTERNAL VARIABLES
-    real(kind=c_real) :: th(pcols,pver)         !potential temperature  K
+    real(kind=c_real) :: th_atm(pcols,pver)         !potential temperature  K
     real(kind=c_real) :: dz(pcols,pver)        !geometric layer thickness              m
     real(kind=c_real) :: cldliq(pcols,pver)     !cloud liquid water mixing ratio        kg/kg
     real(kind=c_real) :: numliq(pcols,pver)     !cloud liquid water drop concentraiton  #/kg
@@ -131,11 +131,11 @@ contains
     ! real(kind=c_real) :: rim(pcols,pver)        !rime mixing ratio                      kg/kg
     real(kind=c_real) :: precip_liq_surf(pcols)         !precipitation rate, liquid             m s-1
     real(kind=c_real) :: precip_ice_surf(pcols)         !precipitation rate, solid              m s-1
-    real(kind=c_real) :: diag_ze(pcols,pver)    !equivalent reflectivity                dBZ
-    ! real(kind=c_real) :: diag_effc(pcols,pver)  !effective radius, cloud                m
-    ! real(kind=c_real) :: diag_effi(pcols,pver)  !effective radius, ice                  m
-    real(kind=c_real) :: diag_vmi(pcols,pver)   !mass-weighted fall speed of ice        m s-1
-    real(kind=c_real) :: diag_di(pcols,pver)    !mean diameter of ice                   m
+    real(kind=c_real) :: diag_equiv_reflectivity(pcols,pver)    !equivalent reflectivity                dBZ
+    ! real(kind=c_real) :: diag_eff_rad_qc(pcols,pver)  !effective radius, cloud                m
+    ! real(kind=c_real) :: diag_eff_rad_qi(pcols,pver)  !effective radius, ice                  m
+    real(kind=c_real) :: diag_vm_qi(pcols,pver)   !mass-weighted fall speed of ice        m s-1
+    real(kind=c_real) :: diag_diam_qi(pcols,pver)    !mean diameter of ice                   m
     real(kind=c_real) :: rho_qi(pcols,pver)  !bulk density of ice                    kg m-1
     real(kind=c_real) :: precip_liq_flux(pcols,pver+1)     !grid-box average rain flux (kg m^-2s^-1) pverp
     real(kind=c_real) :: precip_ice_flux(pcols,pver+1)     !grid-box average ice/snow flux (kg m^-2s^-1) pverp
@@ -146,7 +146,7 @@ contains
     real(kind=c_real) :: tend_out(pcols,pver,49) !microphysical tendencies
     real(kind=c_real) :: rel(pcols,pver)        !liq. effective drop radius (microns)
     real(kind=c_real) :: rei(pcols,pver)        !ice effective drop radius (microns)
-    real(kind=c_real) :: cmeiout(pcols,pver)    !deposition/sublimation rate of cloud ice
+    real(kind=c_real) :: qv2qi_depos_tend(pcols,pver)    !deposition/sublimation rate of cloud ice
     real(kind=c_real) :: precip_total_tend(pcols,pver)      !total precip
     real(kind=c_real) :: nevapr(pcols,pver)     !evap. of total precip
     real(kind=c_real) :: qr_evap_tend(pcols,pver)  !rain evaporation
@@ -231,7 +231,7 @@ contains
 ! Note: dz is calculated in the opposite direction that dpres is calculated,
 ! thus when considering any dp/dz calculation we must also change the sign.
           dz(icol,k) = zi(icol,k) - zi(icol,k+1) !100.0_rtype   !state%zi(icol,k) - state%zi(icol,k+1)
-          th(icol,k)  = T_atm(icol,k)*exner(icol,k) !/(state%pmid(icol,k)*1.e-5)**(rd*inv_cp)
+          th_atm(icol,k)  = T_atm(icol,k)*exner(icol,k) !/(state%pmid(icol,k)*1.e-5)**(rd*inv_cp)
 !          dpres(icol,k)  = (1e3_rtype-0.1)/real(pver) ! should be changed to come from model state.
        end do
     end do
@@ -257,7 +257,7 @@ contains
          numliq(its:ite,kts:kte),     & ! INOUT  cloud, number mixing ratio       #  kg-1
          rain(its:ite,kts:kte),       & ! INOUT  rain, mass mixing ratio          kg kg-1
          numrain(its:ite,kts:kte),    & ! INOUT  rain, number mixing ratio        #  kg-1
-         th(its:ite,kts:kte),         & ! INOUT  potential temperature            K
+         th_atm(its:ite,kts:kte),         & ! INOUT  potential temperature            K
          qv(its:ite,kts:kte),         & ! INOUT  water vapor mixing ratio         kg kg-1
          dtime,                       & ! IN     model time step                  s
          ice(its:ite,kts:kte),        & ! INOUT  ice, total mass mixing ratio     kg kg-1
@@ -283,7 +283,7 @@ contains
          ! AaronDonahue new stuff
          dpres(its:ite,kts:kte), & ! IN pressure level thickness for computing total mass
          exner(its:ite,kts:kte),      & ! IN exner values
-         cmeiout(its:ite,kts:kte),    & ! OUT Deposition/sublimation rate of cloud ice
+         qv2qi_depos_tend(its:ite,kts:kte),    & ! OUT Deposition/sublimation rate of cloud ice
          precip_total_tend(its:ite,kts:kte),      & ! OUT Total precipitation (rain + snow)
          nevapr(its:ite,kts:kte),     & ! OUT evaporation of total precipitation (rain + snow)
          qr_evap_tend(its:ite,kts:kte),  & ! OUT rain evaporation

@@ -27,19 +27,19 @@ struct P3GlobalForFortran
 
   using view_1d_table = typename P3F::view_1d_table;
   using view_2d_table = typename P3F::view_2d_table;
-  using view_itab_table = typename P3F::view_itab_table;
-  using view_itabcol_table = typename P3F::view_itabcol_table;
+  using view_ice_table = typename P3F::view_ice_table;
+  using view_collect_table = typename P3F::view_collect_table;
   using view_dnu_table = typename P3F::view_dnu_table;
 
   // All kokkos views must be destructed before Kokkos::finalize
   static void deinit();
 
-  static const view_1d_table& mu_r_table()   { return get().m_mu_r_table; }
-  static const view_2d_table& vn_table()     { return get().m_vn_table; }
-  static const view_2d_table& vm_table()     { return get().m_vm_table; }
-  static const view_2d_table& revap_table()  { return get().m_revap_table; }
-  static const view_itab_table& itab()       { return get().m_itab; }
-  static const view_itabcol_table& itabcol() { return get().m_itabcol; }
+  static const view_1d_table& mu_r_table_vals()   { return get().m_mu_r_table_vals; }
+  static const view_2d_table& vn_table_vals()     { return get().m_vn_table_vals; }
+  static const view_2d_table& vm_table_vals()     { return get().m_vm_table_vals; }
+  static const view_2d_table& revap_table_vals()  { return get().m_revap_table_vals; }
+  static const view_ice_table& ice_table_vals()       { return get().m_ice_table_vals; }
+  static const view_collect_table& collect_table_vals() { return get().m_collect_table_vals; }
   static const view_dnu_table& dnu()         { return get().m_dnu; }
 
   P3GlobalForFortran() = delete;
@@ -49,10 +49,10 @@ struct P3GlobalForFortran
 
  private:
   struct Views {
-    view_1d_table m_mu_r_table;
-    view_2d_table m_vn_table, m_vm_table, m_revap_table;
-    view_itab_table m_itab;
-    view_itabcol_table m_itabcol;
+    view_1d_table m_mu_r_table_vals;
+    view_2d_table m_vn_table_vals, m_vm_table_vals, m_revap_table_vals;
+    view_ice_table m_ice_table_vals;
+    view_collect_table m_collect_table_vals;
     view_dnu_table m_dnu;
   };
 
@@ -68,16 +68,16 @@ struct P3InitAFortranData
   using P3F = Functions<Real, HostDevice>;
   using P3C = typename P3F::P3C;
 
-  using view_itab_table = typename P3F::KT::template lview<Real[P3C::densize][P3C::rimsize][P3C::isize][P3C::tabsize]>;
-  using view_itabcol_table = typename P3F::KT::template lview<Real[P3C::densize][P3C::rimsize][P3C::isize][P3C::rcollsize][P3C::coltabsize]>;
+  using view_ice_table = typename P3F::KT::template lview<Real[P3C::densize][P3C::rimsize][P3C::isize][P3C::ice_table_size]>;
+  using view_collect_table = typename P3F::KT::template lview<Real[P3C::densize][P3C::rimsize][P3C::isize][P3C::rcollsize][P3C::collect_table_size]>;
 
   // Need to be LayoutLeft to be fortran compatible
-  view_itab_table itab;
-  view_itabcol_table itabcol;
+  view_ice_table ice_table_vals;
+  view_collect_table collect_table_vals;
 
   P3InitAFortranData() :
-    itab("P3InitAFortranData::itab"),
-    itabcol("P3InitAFortranData::itabcol")
+    ice_table_vals("P3InitAFortranData::ice_table_vals"),
+    collect_table_vals("P3InitAFortranData::collect_table_vals")
   {}
 };
 void p3_init_a(P3InitAFortranData& d);
@@ -681,7 +681,7 @@ struct HomogeneousFreezingData : public PhysicsTestData
   Real* T_atm, *exner, *latent_heat_fusion;
 
   // In/out
-  Real* qc, *nc, *qr, *nr, *qi, *ni, *qm, *bm, *th;
+  Real* qc, *nc, *qr, *nr, *qi, *ni, *qm, *bm, *th_atm;
 
   HomogeneousFreezingData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_);
 
@@ -702,7 +702,7 @@ extern "C" {
 void homogeneous_freezing_f(
   Int kts, Int kte, Int ktop, Int kbot, Int kdir,
   Real* T_atm, Real* exner, Real* latent_heat_fusion,
-  Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni, Real* qm, Real* bm, Real* th);
+  Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni, Real* qm, Real* bm, Real* th_atm);
 
 }
 
@@ -759,7 +759,7 @@ struct P3UpdatePrognosticIceData
   Real dt, nmltratio, rho_qm_cloud;
 
   // In/outs
-  Real th, qv, qi, ni, qm, bm, qc, nc, qr, nr;
+  Real th_atm, qv, qi, ni, qm, bm, qc, nc, qr, nr;
 };
 
 void update_prognostic_ice(P3UpdatePrognosticIceData& d);
@@ -769,7 +769,7 @@ extern "C"{
 void update_prognostic_ice_f( Real qc2qi_hetero_freeze_tend,Real qc2qi_collect_tend, Real qc2qr_ice_shed_tend,  Real nc_collect_tend,  Real nc2ni_immers_freeze_tend, Real ncshdc,
 Real qr2qi_collect_tend,  Real nr_collect_tend, Real qr2qi_immers_freeze_tend, Real nr2ni_immers_freeze_tend, Real nr_ice_shed_tend, Real qi2qr_melt_tend, Real ni2nr_melt_tend, Real qi2qv_sublim_tend,
 Real qv2qi_vapdep_tend, Real qv2qi_nucleat_tend, Real ni_nucleat_tend, Real ni_selfcollect_tend, Real ni_sublim_tend, Real qc2qi_berg_tend, Real exner, Real latent_heat_sublim, Real latent_heat_fusion,
-bool do_predict_nc, bool log_wetgrowth, Real dt, Real nmltratio, Real rho_qm_cloud, Real* th, Real* qv,
+bool do_predict_nc, bool log_wetgrowth, Real dt, Real nmltratio, Real rho_qm_cloud, Real* th_atm, Real* qv,
 Real* qi, Real* ni, Real* qm, Real* bm, Real* qc, Real* nc, Real* qr, Real* nr);
 
 }
@@ -805,7 +805,7 @@ struct P3UpdatePrognosticLiqData
   Real inv_rho, exner, latent_heat_vapor, dt;
 
   // In/outs
-  Real th, qv, qc, nc, qr, nr;
+  Real th_atm, qv, qc, nc, qr, nr;
 };
 
 void update_prognostic_liquid(P3UpdatePrognosticLiqData& d);
@@ -814,7 +814,7 @@ extern "C"{
 
 void update_prognostic_liquid_f( Real qc2qr_accret_tend, Real nc_accret_tend, Real qc2qr_autoconv_tend, Real nc2nr_autoconv_tend, Real ncautr,
 Real nc_selfcollect_tend, Real  qr2qv_evap_tend, Real nr_evap_tend, Real nr_selfcollect_tend , bool do_predict_nc,
-Real inv_rho, Real exner, Real latent_heat_vapor, Real dt, Real* th, Real* qv,
+Real inv_rho, Real exner, Real latent_heat_vapor, Real dt, Real* th_atm, Real* qv,
 Real* qc, Real* nc, Real* qr, Real* nr);
 }
 
@@ -1047,7 +1047,7 @@ struct P3MainPart1Data : public PhysicsTestData
 
   // In/out
   Real* T_atm, *rho, *inv_rho, *qv_sat_l, *qv_sat_i, *qv_supersat_i, *rhofacr, *rhofaci,
-    *acn, *qv, *th, *qc, *nc, *qr, *nr, *qi, *ni, *qm, *bm, *qc_incld, *qr_incld, *qi_incld,
+    *acn, *qv, *th_atm, *qc, *nc, *qr, *nr, *qi, *ni, *qm, *bm, *qc_incld, *qr_incld, *qi_incld,
     *qm_incld, *nc_incld, *nr_incld, *ni_incld, *bm_incld;
 
   // Output
@@ -1072,7 +1072,7 @@ void p3_main_part1_f(
   Real dt,
   Real* pres, Real* dpres, Real* dz, Real* nc_nuceat_tend, Real* exner, Real* inv_exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i, Real* inv_cld_frac_r, Real* latent_heat_vapor, Real* latent_heat_sublim, Real* latent_heat_fusion,
   Real* T_atm, Real* rho, Real* inv_rho, Real* qv_sat_l, Real* qv_sat_i, Real* qv_supersat_i, Real* rhofacr, Real* rhofaci,
-  Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni, Real* qm, Real* bm, Real* qc_incld, Real* qr_incld, Real* qi_incld,
+  Real* acn, Real* qv, Real* th_atm, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni, Real* qm, Real* bm, Real* qc_incld, Real* qr_incld, Real* qi_incld,
   Real* qm_incld, Real* nc_incld, Real* nr_incld, Real* ni_incld, Real* bm_incld,
   bool* is_nucleat_possible, bool* is_hydromet_present);
 
@@ -1092,9 +1092,9 @@ struct P3MainPart2Data : public PhysicsTestData
 
   // In/out
   Real* T_atm, *rho, *inv_rho, *qv_sat_l, *qv_sat_i, *qv_supersat_i, *rhofacr, *rhofaci, *acn,
-    *qv, *th, *qc, *nc, *qr, *nr, *qi, *ni, *qm, *bm, *latent_heat_vapor, *latent_heat_sublim, *latent_heat_fusion, *qc_incld, *qr_incld,
+    *qv, *th_atm, *qc, *nc, *qr, *nr, *qi, *ni, *qm, *bm, *latent_heat_vapor, *latent_heat_sublim, *latent_heat_fusion, *qc_incld, *qr_incld,
     *qi_incld, *qm_incld, *nc_incld, *nr_incld, *ni_incld, *bm_incld, *mu_c, *nu, *lamc, *cdist, *cdist1,
-    *cdistr, *mu_r, *lamr, *logn0r, *cmeiout, *precip_total_tend, *nevapr, *qr_evap_tend, *vap_liq_exchange,
+    *cdistr, *mu_r, *lamr, *logn0r, *qv2qi_depos_tend, *precip_total_tend, *nevapr, *qr_evap_tend, *vap_liq_exchange,
     *vap_ice_exchange, *liq_ice_exchange, *pratot, *prctot;
 
   bool is_hydromet_present;
@@ -1115,9 +1115,9 @@ extern "C" {
 void p3_main_part2_f(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir, bool do_predict_nc, Real dt, Real inv_dt,
   Real* pres, Real* dpres, Real* dz, Real* nc_nuceat_tend, Real* exner, Real* inv_exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i, Real* inv_cld_frac_r, Real* ni_activated, Real* inv_qc_relvar, Real* cld_frac_i, Real* cld_frac_l, Real* cld_frac_r,
-  Real* T_atm, Real* rho, Real* inv_rho, Real* qv_sat_l, Real* qv_sat_i, Real* qv_supersat_i, Real* rhofacr, Real* rhofaci, Real* acn, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni,
+  Real* T_atm, Real* rho, Real* inv_rho, Real* qv_sat_l, Real* qv_sat_i, Real* qv_supersat_i, Real* rhofacr, Real* rhofaci, Real* acn, Real* qv, Real* th_atm, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni,
   Real* qm, Real* bm, Real* latent_heat_vapor, Real* latent_heat_sublim, Real* latent_heat_fusion, Real* qc_incld, Real* qr_incld, Real* qi_incld, Real* qm_incld, Real* nc_incld, Real* nr_incld,
-  Real* ni_incld, Real* bm_incld, Real* mu_c, Real* nu, Real* lamc, Real* cdist, Real* cdist1, Real* cdistr, Real* mu_r, Real* lamr, Real* logn0r, Real* cmeiout, Real* precip_total_tend,
+  Real* ni_incld, Real* bm_incld, Real* mu_c, Real* nu, Real* lamc, Real* cdist, Real* cdist1, Real* cdistr, Real* mu_r, Real* lamr, Real* logn0r, Real* qv2qi_depos_tend, Real* precip_total_tend,
   Real* nevapr, Real* qr_evap_tend, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* liq_ice_exchange, Real* pratot,
   Real* prctot, bool* is_hydromet_present);
 
@@ -1135,10 +1135,10 @@ struct P3MainPart3Data : public PhysicsTestData
 
   // In/out
   Real* rho, *inv_rho, *rhofaci,
-    *qv, *th, *qc, *nc, *qr, *nr, *qi, *ni, *qm, *bm, *latent_heat_vapor, *latent_heat_sublim,
+    *qv, *th_atm, *qc, *nc, *qr, *nr, *qi, *ni, *qm, *bm, *latent_heat_vapor, *latent_heat_sublim,
     *mu_c, *nu, *lamc, *mu_r,
     *lamr, *vap_liq_exchange,
-    *ze_rain, *ze_ice, *diag_vmi, *diag_effi, *diag_di, *rho_qi, *diag_ze, *diag_effc;
+    *ze_rain, *ze_ice, *diag_vm_qi, *diag_eff_rad_qi, *diag_diam_qi, *rho_qi, *diag_equiv_reflectivity, *diag_eff_rad_qc;
 
   P3MainPart3Data(Int kts_, Int kte_, Int kbot_, Int ktop_, Int kdir_);
 
@@ -1155,9 +1155,9 @@ extern "C" {
 void p3_main_part3_f(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
   Real* exner, Real* cld_frac_l, Real* cld_frac_r,
-  Real* rho, Real* inv_rho, Real* rhofaci, Real* qv, Real* th, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni, Real* qm, Real* bm, Real* latent_heat_vapor, Real* latent_heat_sublim,
+  Real* rho, Real* inv_rho, Real* rhofaci, Real* qv, Real* th_atm, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni, Real* qm, Real* bm, Real* latent_heat_vapor, Real* latent_heat_sublim,
   Real* mu_c, Real* nu, Real* lamc, Real* mu_r, Real* lamr, Real* vap_liq_exchange,
-  Real*  ze_rain, Real* ze_ice, Real* diag_vmi, Real* diag_effi, Real* diag_di, Real* rho_qi, Real* diag_ze, Real* diag_effc);
+  Real*  ze_rain, Real* ze_ice, Real* diag_vm_qi, Real* diag_eff_rad_qi, Real* diag_diam_qi, Real* rho_qi, Real* diag_equiv_reflectivity, Real* diag_eff_rad_qc);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1174,10 +1174,10 @@ struct P3MainData : public PhysicsTestData
   bool do_predict_nc;
 
   // In/out
-  Real* qc, *nc, *qr, *nr, *qi, *qm, *ni, *bm, *qv, *th;
+  Real* qc, *nc, *qr, *nr, *qi, *qm, *ni, *bm, *qv, *th_atm;
 
   // Out
-  Real *diag_effc, *diag_effi, *rho_qi, *mu_c, *lamc, *cmeiout, *precip_total_tend, *nevapr,
+  Real *diag_eff_rad_qc, *diag_eff_rad_qi, *rho_qi, *mu_c, *lamc, *qv2qi_depos_tend, *precip_total_tend, *nevapr,
        *qr_evap_tend, *liq_ice_exchange, *vap_liq_exchange, *vap_ice_exchange,
        *precip_liq_flux, *precip_ice_flux, *precip_liq_surf, *precip_ice_surf;
 
@@ -1192,12 +1192,12 @@ void p3_main(P3MainData& d);
 extern "C" {
 
 void p3_main_f(
-  Real* qc, Real* nc, Real* qr, Real* nr, Real* th, Real* qv, Real dt,
+  Real* qc, Real* nc, Real* qr, Real* nr, Real* th_atm, Real* qv, Real dt,
   Real* qi, Real* qm, Real* ni, Real* bm, Real* pres, Real* dz,
   Real* nc_nuceat_tend, Real* ni_activated, Real* inv_qc_relvar, Int it, Real* precip_liq_surf,
-  Real* precip_ice_surf, Int its, Int ite, Int kts, Int kte, Real* diag_effc,
-  Real* diag_effi, Real* rho_qi, bool do_predict_nc, Real* dpres, Real* exner,
-  Real* cmeiout, Real* precip_total_tend, Real* nevapr, Real* qr_evap_tend, Real* precip_liq_flux,
+  Real* precip_ice_surf, Int its, Int ite, Int kts, Int kte, Real* diag_eff_rad_qc,
+  Real* diag_eff_rad_qi, Real* rho_qi, bool do_predict_nc, Real* dpres, Real* exner,
+  Real* qv2qi_depos_tend, Real* precip_total_tend, Real* nevapr, Real* qr_evap_tend, Real* precip_liq_flux,
   Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i, Real* mu_c, Real* lamc,
   Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange);
 }

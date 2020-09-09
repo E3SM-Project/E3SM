@@ -31,8 +31,8 @@ static void run_bfb()
   // large enough to affect the warm-phase process rates qc2qr_accret_tend and nc_accret_tend.
   constexpr Scalar qsmall = C::QSMALL;
 
-  constexpr Scalar t_freezing = 0.9 * C::RainFrze,
-                   t_not_freezing = 2.0 * C::RainFrze;
+  constexpr Scalar t_freezing = 0.9 * C::T_rainfrz,
+                   t_not_freezing = 2.0 * C::T_rainfrz;
   constexpr Scalar qr_incld_small = 0.9 * qsmall;
   constexpr Scalar qr_incld_not_small = 2.0 * qsmall;
   constexpr Scalar lamr1 = 0.1, lamr2 = 0.2, lamr3 = 0.3, lamr4 = 0.4;

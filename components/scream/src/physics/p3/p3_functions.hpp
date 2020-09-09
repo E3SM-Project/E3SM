@@ -32,9 +32,9 @@ struct Functions
       densize     = 5,
       rimsize     = 4,
       isize       = 50,
-      tabsize     = 12, // number of quantities used from lookup table
+      ice_table_size     = 12, // number of quantities used from lookup table
       rcollsize   = 30,
-      coltabsize  = 2,  // number of ice-rain collection  quantities used from lookup table
+      collect_table_size  = 2,  // number of ice-rain collection  quantities used from lookup table
 
       // switch for warm-rain parameterization
       // 1 => Seifert and Beheng 2001
@@ -144,15 +144,15 @@ struct Functions
     // Size distribution slope parameter for radiation
     view_2d<Spack> lamc;
     // qitend due to deposition/sublimation
-    view_2d<Spack> cmeiout;
+    view_2d<Spack> qv2qi_depos_tend;
     // Precipitation rate, liquid [m s-1]
     view_1d<Scalar> precip_liq_surf;
     // Precipitation rate, solid [m s-1]
     view_1d<Scalar> precip_ice_surf;
     // Effective cloud radius [m]
-    view_2d<Spack> diag_effc;
+    view_2d<Spack> diag_eff_rad_qc;
     // Effective ice radius [m]
-    view_2d<Spack> diag_effi;
+    view_2d<Spack> diag_eff_rad_qi;
     // Bulk density of ice [kg m-3]
     view_2d<Spack> rho_qi;
     // Total precipitation (rain + snow)
@@ -222,10 +222,10 @@ struct Functions
   using view_2d_table = typename KT::template view_2d_table<Scalar, C::VTABLE_DIM0, C::VTABLE_DIM1>;
 
   // ice lookup table values
-  using view_itab_table    = typename KT::template view<const Scalar[P3C::densize][P3C::rimsize][P3C::isize][P3C::tabsize]>;
+  using view_ice_table    = typename KT::template view<const Scalar[P3C::densize][P3C::rimsize][P3C::isize][P3C::ice_table_size]>;
 
   // ice lookup table values for ice-rain collision/collection
-  using view_itabcol_table = typename KT::template view<const Scalar[P3C::densize][P3C::rimsize][P3C::isize][P3C::rcollsize][P3C::coltabsize]>;
+  using view_collect_table = typename KT::template view<const Scalar[P3C::densize][P3C::rimsize][P3C::isize][P3C::rcollsize][P3C::collect_table_size]>;
 
   // droplet spectral shape parameter for mass spectra, used for Seifert and Beheng (2001)
   // warm rain autoconversion/accretion option only (iparam = 1)
@@ -237,11 +237,11 @@ struct Functions
 
   // Call from host to initialize the static table entries.
   static void init_kokkos_tables(
-    view_2d_table& vn_table, view_2d_table& vm_table, view_2d_table& revap_table,
-    view_1d_table& mu_r_table, view_dnu_table& dnu);
+    view_2d_table& vn_table_vals, view_2d_table& vm_table_vals, view_2d_table& revap_table_vals,
+    view_1d_table& mu_r_table_vals, view_dnu_table& dnu);
 
   static void init_kokkos_ice_lookup_tables(
-    view_itab_table& itab, view_itabcol_table& itabcol);
+    view_ice_table& ice_table_vals, view_collect_table& collect_table_vals);
 
   // Map (mu_r, lamr) to Table3 data.
   KOKKOS_FUNCTION
@@ -298,13 +298,13 @@ struct Functions
 
   // Apply TableIce data to the ice tables to return a value.
   KOKKOS_FUNCTION
-  static Spack apply_table_ice(const int& index, const view_itab_table& itab,
+  static Spack apply_table_ice(const int& index, const view_ice_table& ice_table_vals,
                                const TableIce& tab,
                                const Smask& context = Smask(true) );
 
   // Interpolates lookup table values for rain/ice collection processes
   KOKKOS_FUNCTION
-  static Spack apply_table_coll(const int& index, const view_itabcol_table& itabcoll,
+  static Spack apply_table_coll(const int& index, const view_collect_table& collect_table_vals,
                                 const TableIce& ti, const TableRain& tr,
                                 const Smask& context = Smask(true) );
 
@@ -408,7 +408,7 @@ struct Functions
     const uview_1d<Spack>& qr_incld,
     const MemberType& team,
     const Workspace& workspace,
-    const view_2d_table& vn_table, const view_2d_table& vm_table,
+    const view_2d_table& vn_table_vals, const view_2d_table& vm_table_vals,
     const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir, const Scalar& dt, const Scalar& inv_dt,
     const uview_1d<Spack>& qr,
     const uview_1d<Spack>& nr,
@@ -441,7 +441,7 @@ struct Functions
     const uview_1d<Spack>& bm_incld,
     const uview_1d<Spack>& qi_tend,
     const uview_1d<Spack>& ni_tend,
-    const view_itab_table& itab,
+    const view_ice_table& ice_table_vals,
     Scalar& precip_ice_surf);
 
   // homogeneous freezing of cloud and rain
@@ -460,7 +460,7 @@ struct Functions
     const uview_1d<Spack>& ni,
     const uview_1d<Spack>& qm,
     const uview_1d<Spack>& bm,
-    const uview_1d<Spack>& th);
+    const uview_1d<Spack>& th_atm);
 
   // -- Find layers
 
@@ -578,7 +578,7 @@ struct Functions
   // TODO - comment
   KOKKOS_FUNCTION
   static void compute_rain_fall_velocity(
-    const view_2d_table& vn_table, const view_2d_table& vm_table,
+    const view_2d_table& vn_table_vals, const view_2d_table& vm_table_vals,
     const Spack& qr_incld, const Spack& cld_frac_r, const Spack& rhofacr, 
     Spack& nr_incld, Spack& mu_r, Spack& lamr, Spack& V_qr, Spack& V_nr,
     const Smask& context = Smask(true));
@@ -596,7 +596,7 @@ struct Functions
     const Spack& qv2qi_vapdep_tend,  const Spack& qv2qi_nucleat_tend,  const Spack& ni_nucleat_tend,  const Spack& ni_selfcollect_tend,
     const Spack& ni_sublim_tend,  const Spack& qc2qi_berg_tend, const Spack& exner,  const Spack& latent_heat_sublim,
     const Spack& latent_heat_fusion,    const bool do_predict_nc, const Smask& log_wetgrowth, const Scalar dt,
-    const Scalar& nmltratio, const Spack& rho_qm_cloud, Spack& th, Spack& qv, Spack& qi,
+    const Scalar& nmltratio, const Spack& rho_qm_cloud, Spack& th_atm, Spack& qv, Spack& qi,
     Spack& ni, Spack& qm, Spack& bm, Spack& qc,  Spack& nc, Spack& qr, Spack& nr,
     const Smask& context = Smask(true));
 
@@ -661,7 +661,7 @@ struct Functions
     const Spack& qc2qr_autoconv_tend,const Spack& nc2nr_autoconv_tend, const Spack& ncautr,
     const Spack& nc_selfcollect_tend, const Spack& qr2qv_evap_tend, const Spack& nr_evap_tend, const Spack& nr_selfcollect_tend,
     const bool do_predict_nc, const Spack& inv_rho, const Spack& exner, const Spack& latent_heat_vapor,
-    const Scalar dt, Spack& th, Spack& qv, Spack& qc, Spack& nc, Spack& qr, Spack& nr,
+    const Scalar dt, Spack& th_atm, Spack& qv, Spack& qc, Spack& nc, Spack& qr, Spack& nr,
     const Smask& context = Smask(true));
 
   // TODO (comments)
@@ -682,7 +682,7 @@ struct Functions
 
   KOKKOS_FUNCTION
   static void calc_liq_relaxation_timescale(
-    const view_2d_table& revap_table,
+    const view_2d_table& revap_table_vals,
     const Spack& rho, const Scalar& f1r, const Scalar& f2r,
     const Spack& dv, const Spack& mu, const Spack& sc,
     const Spack& mu_r, const Spack& lamr, const Spack& cdistr,
@@ -740,13 +740,13 @@ struct Functions
     const uview_1d<const Spack>& cld_frac_l,
     const uview_1d<const Spack>& cld_frac_r,
     const uview_1d<const Spack>& exner,
-    const uview_1d<const Spack>& th,
+    const uview_1d<const Spack>& th_atm,
     const uview_1d<const Spack>& dz,
-    const uview_1d<Spack>& diag_ze,
+    const uview_1d<Spack>& diag_equiv_reflectivity,
     const uview_1d<Spack>& ze_ice,
     const uview_1d<Spack>& ze_rain,
-    const uview_1d<Spack>& diag_effc,
-    const uview_1d<Spack>& diag_effi,
+    const uview_1d<Spack>& diag_eff_rad_qc,
+    const uview_1d<Spack>& diag_eff_rad_qi,
     const uview_1d<Spack>& inv_cld_frac_i,
     const uview_1d<Spack>& inv_cld_frac_l,
     const uview_1d<Spack>& inv_cld_frac_r,
@@ -786,7 +786,7 @@ struct Functions
     const uview_1d<Spack>& rhofaci,
     const uview_1d<Spack>& acn,
     const uview_1d<Spack>& qv,
-    const uview_1d<Spack>& th,
+    const uview_1d<Spack>& th_atm,
     const uview_1d<Spack>& qc,
     const uview_1d<Spack>& nc,
     const uview_1d<Spack>& qr,
@@ -814,9 +814,9 @@ struct Functions
     const Scalar& dt,
     const Scalar& inv_dt,
     const view_dnu_table& dnu,
-    const view_itab_table& itab,
-    const view_itabcol_table& itabcol,
-    const view_2d_table& revap_table,
+    const view_ice_table& ice_table_vals,
+    const view_collect_table& collect_table_vals,
+    const view_2d_table& revap_table_vals,
     const uview_1d<const Spack>& pres,
     const uview_1d<const Spack>& dpres,
     const uview_1d<const Spack>& dz,
@@ -841,7 +841,7 @@ struct Functions
     const uview_1d<Spack>& rhofaci,
     const uview_1d<Spack>& acn,
     const uview_1d<Spack>& qv,
-    const uview_1d<Spack>& th,
+    const uview_1d<Spack>& th_atm,
     const uview_1d<Spack>& qc,
     const uview_1d<Spack>& nc,
     const uview_1d<Spack>& qr,
@@ -870,7 +870,7 @@ struct Functions
     const uview_1d<Spack>& mu_r,
     const uview_1d<Spack>& lamr,
     const uview_1d<Spack>& logn0r,
-    const uview_1d<Spack>& cmeiout,
+    const uview_1d<Spack>& qv2qi_depos_tend,
     const uview_1d<Spack>& precip_total_tend,
     const uview_1d<Spack>& nevapr,
     const uview_1d<Spack>& qr_evap_tend,
@@ -887,7 +887,7 @@ struct Functions
     const MemberType& team,
     const Int& nk_pack,
     const view_dnu_table& dnu,
-    const view_itab_table& itab,
+    const view_ice_table& ice_table_vals,
     const uview_1d<const Spack>& exner,
     const uview_1d<const Spack>& cld_frac_l,
     const uview_1d<const Spack>& cld_frac_r,
@@ -895,7 +895,7 @@ struct Functions
     const uview_1d<Spack>& inv_rho,
     const uview_1d<Spack>& rhofaci,
     const uview_1d<Spack>& qv,
-    const uview_1d<Spack>& th,
+    const uview_1d<Spack>& th_atm,
     const uview_1d<Spack>& qc,
     const uview_1d<Spack>& nc,
     const uview_1d<Spack>& qr,
@@ -914,12 +914,12 @@ struct Functions
     const uview_1d<Spack>& vap_liq_exchange,
     const uview_1d<Spack>& ze_rain,
     const uview_1d<Spack>& ze_ice,
-    const uview_1d<Spack>& diag_vmi,
-    const uview_1d<Spack>& diag_effi,
-    const uview_1d<Spack>& diag_di,
+    const uview_1d<Spack>& diag_vm_qi,
+    const uview_1d<Spack>& diag_eff_rad_qi,
+    const uview_1d<Spack>& diag_diam_qi,
     const uview_1d<Spack>& rho_qi,
-    const uview_1d<Spack>& diag_ze,
-    const uview_1d<Spack>& diag_effc);
+    const uview_1d<Spack>& diag_equiv_reflectivity,
+    const uview_1d<Spack>& diag_eff_rad_qc);
 
   static void p3_main(
     const P3PrognosticState& prognostic_state,
@@ -937,8 +937,8 @@ constexpr ScalarT Functions<ScalarT, DeviceT>::P3C::lookup_table_1a_dum1_c;
 extern "C" {
 // decl of fortran function for loading tables from fortran p3. This will
 // continue to be a bit awkward until we have fully ported all of p3.
-void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data,
-                            Real* revap_table_data, Real* mu_table_data);
+void init_tables_from_f90_c(Real* vn_table_vals_data, Real* vm_table_vals_data,
+                            Real* revap_table_vals_data, Real* mu_table_data);
 }
 
 } // namespace p3

@@ -67,7 +67,7 @@ FortranData::Ptr make_mixed (const Int ncol) {
     for (k = 0; k < nk; ++k) {
       T_atm(k) = 150 + 150/double(nk)*k;
       if (i > 0) T_atm(k) += ((i % 3) - 0.5)/double(nk)*k;
-      d.th(i,k) = T_atm(k)*std::pow(Real(consts::P0/d.pres(i,k)), Real(consts::RD/consts::CP));
+      d.th_atm(i,k) = T_atm(k)*std::pow(Real(consts::P0/d.pres(i,k)), Real(consts::RD/consts::CP));
     }
 
     // The next section modifies inout variables to satisfy weird conditions
