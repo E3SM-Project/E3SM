@@ -233,6 +233,22 @@ struct SHOCVarorcovarData : public PhysicsTestData {
   PTD_ASSIGN_OP(SHOCVarorcovarData, 1, tunefac);
 };//SHOCVarorcovarData
 
+//Create data structure to hold data for shoc_length
+struct SHOCLengthData : public PhysicsTestData {
+  // Inputs
+  Real *tke, *host_dx, *host_dy, *pblh, *zt_grid, *zi_grid;
+  Real *dz_zt, *dz_zi, *wthv_sec, *thetal, *thv;
+
+  // Outputs
+  Real *brunt, *shoc_mix;
+
+  SHOCLengthData(Int shcol_, Int nlev_, Int nlevi_) :
+    PhysicsTestData(shcol_, nlev_, nlevi_, {&tke, &zt_grid, &dz_zt, &wthv_sec, &thetal, &thv, &brunt, &shoc_mix}, {&zi_grid, &dz_zi}, {&host_dx, &host_dy, &pblh}) {}
+
+  PTD_DATA_COPY_CTOR(SHOCLengthData, 3);
+  PTD_ASSIGN_OP(SHOCLengthData, 0)
+};//SHOCLengthData
+
 //Create data structure to hold data for compute_brunt_shoc_length
 struct SHOCBruntlengthData : public PhysicsTestData {
   // Inputs
@@ -507,6 +523,7 @@ void compute_shr_prod                               (SHOCTkeshearData &d);
 void isotropic_ts                                   (SHOCIsotropicData &d);
 void adv_sgs_tke                                    (SHOCAdvsgstkeData &d);
 void eddy_diffusivities                             (SHOCEddydiffData &d);
+void shoc_length                                    (SHOCLengthData &d);
 void compute_brunt_shoc_length                      (SHOCBruntlengthData &d);
 void compute_l_inf_shoc_length                      (SHOCInflengthData &d);
 void compute_conv_vel_shoc_length                   (SHOCConvvelData &d);

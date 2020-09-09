@@ -387,6 +387,20 @@ contains
     real(kind=c_real), intent(in) :: pblh(shcol)
     real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
     real(kind=c_real), intent(in) :: zi_grid(shcol,nlevi)
+    real(kind=c_real), intent(in) :: dz_zt(shcol,nlev)
+    real(kind=c_real), intent(in) :: dz_zi(shcol,nlevi)
+    real(kind=c_real), intent(in) :: wthv_sec(shcol,nlev)
+    real(kind=c_real), intent(in) :: thetal(shcol,nlev)
+    real(kind=c_real), intent(in) :: thv(shcol,nlev)
+    
+    real(kind=c_real), intent(out) :: brunt(shcol,nlev)
+    real(kind=c_real), intent(out) :: shoc_mix(shcol,nlev)
+    
+    call shoc_length(shcol, nlev, nlevi, tke, host_dx, host_dy, pblh, &
+                zt_grid, zi_grid, dz_zt, dz_zi, thetal, wthv_sec, thv, &
+		brunt, shoc_mix)
+		
+  end subroutine shoc_length_c
 
   subroutine compute_brunt_shoc_length_c(nlev,nlevi,shcol,dz_zt,thv,thv_zi,brunt) bind (C)
     use shoc, only: compute_brunt_shoc_length
