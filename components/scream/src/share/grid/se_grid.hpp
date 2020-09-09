@@ -12,7 +12,7 @@ class SEGrid : public AbstractGrid
 {
 public:
 
-  using idx_to_lid_map_type = kokkos_types::view<int***>; // (elem, igp, jgp) -> int
+  using elgpgp_to_lid_map_type = kokkos_types::view<int***>; // (elem, igp, jgp) -> int
 
   SEGrid (const std::string& grid_name,
           const GridType type,
@@ -35,26 +35,30 @@ public:
   // Dofs gids utilities
   int get_num_local_dofs () const override { return m_num_local_dofs; }
   const dofs_list_type& get_dofs_gids () const override { return m_dofs_gids; }
-  lid_to_idx_map_type get_lid_to_idx_map () const override { return m_lid_to_elgpgp; }
+  lid_to_idx_map_type get_lid_to_idx_map () const override { return m_lid_to_idx; }
 
   // Methods specific to SEGrid
-  idx_to_lid_map_type get_idx_to_lid_map () const { return m_elgpgp_to_gid; }
+  void create_elgpgp_to_lid_map ();
+  elgpgp_to_lid_map_type get_idx_to_lid_map () const { return m_elgpgp_to_lid; }
   void set_dofs (const dofs_list_type&      dofs,
-                 const lid_to_idx_map_type& lid_to_elgp);
+                 const lid_to_idx_map_type& lid_to_elgpgp);
 
 protected:
 
-  const std::string     m_grid_name;
-  const GridType        m_type;
+  // Description variables
+  const std::string         m_grid_name;
+  const GridType            m_type;
 
-  int                   m_num_local_elem;
-  int                   m_num_gp;
-  int                   m_num_vl;
+  // Counters
+  int                       m_num_local_elem;
+  int                       m_num_gp;
+  int                       m_num_vl;
+  int                       m_num_local_dofs;
 
-  int                   m_num_local_dofs;
-  dofs_list_type        m_dofs_gids;
-  lid_to_idx_map_type   m_lid_to_elgpgp;
-  idx_to_lid_map_type   m_elgpgp_to_gid;
+  // Dofs info variables
+  dofs_list_type            m_dofs_gids;
+  lid_to_idx_map_type       m_lid_to_idx;
+  elgpgp_to_lid_map_type    m_elgpgp_to_lid;
 };
 
 } // namespace scream

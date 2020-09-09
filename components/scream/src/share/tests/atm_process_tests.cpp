@@ -106,7 +106,7 @@ public:
 
     auto& temp = m_vec_fids_out.front();
     temp.set_grid_name(grid->name());
-    tend.set_dimensions({dyn_lt.dim(0),dyn_lt.dim(1),dyn_lt.dim(2),nvl});
+    temp.set_dimensions({dyn_lt.dim(0),dyn_lt.dim(1),dyn_lt.dim(2),nvl});
     m_fids_out.insert(temp);
   }
 };
@@ -141,7 +141,7 @@ public:
 
     auto& qA = m_vec_fids_out.front();
     qA.set_grid_name(grid->name());
-    temp.set_dimensions({phys_lt.dim(0),nvl});
+    qA.set_dimensions({phys_lt.dim(0),nvl});
     m_fids_out.insert(qA);
   }
 };
@@ -178,12 +178,12 @@ public:
 
     auto& qA = m_vec_fids_in[1];
     qA.set_grid_name(grid->name());
-    temp.set_dimensions({phys_lt.dim(0),nvl});
+    qA.set_dimensions({phys_lt.dim(0),nvl});
     m_fids_in.insert(qA);
 
     auto& tend = m_vec_fids_out.front();
     tend.set_grid_name(grid->name());
-    temp.set_dimensions({phys_lt.dim(0),nvl});
+    tend.set_dimensions({phys_lt.dim(0),nvl});
     m_fids_out.insert(tend);
   }
 };
@@ -193,11 +193,22 @@ setup_upgm (const int ne) {
   const int nelem = 6*ne*ne;
   const int np = 4;
   const int nvl = 128;
+  const int ncols = 6*ne*ne*9 + 2;
+
+  // Note: our test does not use actual dof info, but we need to set these
+  //       views in the SEGrid's, so that the num local dofs is set
+  SEGrid::dofs_list_type dyn_dofs("",nelem*np*np);
+  SEGrid::dofs_list_type phys_dofs("",ncols);
+
+  SEGrid::lid_to_idx_map_type dyn_dofs_map ("",nelem*np*np,3);
+  SEGrid::lid_to_idx_map_type phys_dofs_map ("",ncols,1);
 
   // Greate a grids manager
   auto upgm = std::make_shared<UserProvidedGridsManager>();
   auto dummy_dyn_grid  = std::make_shared<SEGrid>(e2str(SEDyn), SEDyn, nelem,np,nvl);
   auto dummy_phys_grid = std::make_shared<SEGrid>(e2str(SEPhys),SEPhys,nelem,np,nvl);
+  dummy_dyn_grid->set_dofs(dyn_dofs,dyn_dofs_map);
+  dummy_phys_grid->set_dofs(phys_dofs,phys_dofs_map);
   upgm->set_grid(dummy_dyn_grid);
   upgm->set_grid(dummy_phys_grid);
   upgm->set_reference_grid(dummy_phys_grid->name());

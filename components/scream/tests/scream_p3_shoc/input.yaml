@@ -16,7 +16,7 @@ Atmosphere Processes:
 
 Grids Manager:
   Type: Physics Only
-  Reference Grid: SE Physics
+  Reference Grid: Physics
   Physics Only:
     Number of global columns:   32
     Number of vertical levels: 128
