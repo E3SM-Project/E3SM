@@ -35,3 +35,9 @@
 	path = cime
 	url = git@github.com:ESMCI/cime.git
 	branch = master
+[submodule "externals/YAKL"]
+	path = externals/YAKL
+	url = git@github.com:mrnorman/YAKL.git
+[submodule "externals/cub"]
+	path = externals/cub
+	url = git@github.com:NVlabs/cub.git

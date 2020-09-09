@@ -412,6 +412,11 @@
     <lname>2000_CAM5%MMF1-RCE_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
   </compset>
 
+  <compset>
+    <alias>F-MMFXX-RCEMIP</alias>
+    <lname>2000_CAM5%MMFXX-RCE_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
+  </compset>
+
   <!-- *********************************** -->
   <!-- idealized / adiabatic -->
   <!-- *********************************** -->
@@ -462,6 +467,10 @@
   <compset>
     <alias>F-MMF1</alias>
     <lname>2000_CAM5%MMF1_CLM45%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+  <compset>
+    <alias>F-MMFXX</alias>
+    <lname>2000_CAM5%MMFXX_CLM45%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
   <compset>
     <alias>F-MMF1-MAML</alias>
