@@ -10,27 +10,8 @@
 
 namespace scream {
 
-class DummySEGrid : public SEGrid
-{
-public:
-  static constexpr int nlev = 128;
-
-  DummySEGrid (const int ne, const GridType gt)
-   : SEGrid(std::string(e2str(gt)),gt,
-            gt==GridType::SE_NodeBased ? 6*ne*ne*4*4 : 6*ne*ne*9+2)
-  {
-    m_ne = ne;
-    m_ncol = 6*ne*ne*9 + 2;
-  }
-  ~DummySEGrid () = default;
-
-  int get_ne   () const { return m_ne; }
-  int get_ncol () const { return m_ncol; }
-
-protected:
-  int m_ne;
-  int m_ncol;
-};
+static constexpr auto SEDyn  = GridType::SE_CellBased;
+static constexpr auto SEPhys = GridType::SE_NodeBased;
 
 template<AtmosphereProcessType PType>
 class DummyProcess : public scream::AtmosphereProcess {
@@ -115,16 +96,17 @@ public:
 
   void set_grids (const std::shared_ptr<const GridsManager> gm) {
     auto grid = gm->get_grid(m_grid_name);
-    auto dummy_se_grid = std::dynamic_pointer_cast<const DummySEGrid>(grid);
+    const auto nvl = grid->get_num_vertical_levels();
+    auto dyn_lt = grid->get_native_dof_layout();
 
     auto& tend = m_vec_fids_in.front();
     tend.set_grid_name(grid->name());
-    tend.set_dimensions({dummy_se_grid->get_ne(),4,4,DummySEGrid::nlev});
+    tend.set_dimensions({dyn_lt.dim(0),dyn_lt.dim(1),dyn_lt.dim(2),nvl});
     m_fids_in.insert(tend);
 
     auto& temp = m_vec_fids_out.front();
     temp.set_grid_name(grid->name());
-    temp.set_dimensions({dummy_se_grid->get_ne(),4,4,DummySEGrid::nlev});
+    tend.set_dimensions({dyn_lt.dim(0),dyn_lt.dim(1),dyn_lt.dim(2),nvl});
     m_fids_out.insert(temp);
   }
 };
@@ -149,16 +131,17 @@ public:
 
   void set_grids (const std::shared_ptr<const GridsManager> gm) {
     auto grid = gm->get_grid(m_grid_name);
-    auto dummy_se_grid = std::dynamic_pointer_cast<const DummySEGrid>(grid);
+    const auto nvl = grid->get_num_vertical_levels();
+    auto phys_lt = grid->get_native_dof_layout();
 
     auto& temp = m_vec_fids_in.front();
     temp.set_grid_name(grid->name());
-    temp.set_dimensions({dummy_se_grid->get_ncol(),DummySEGrid::nlev});
+    temp.set_dimensions({phys_lt.dim(0),nvl});
     m_fids_in.insert(temp);
 
     auto& qA = m_vec_fids_out.front();
     qA.set_grid_name(grid->name());
-    qA.set_dimensions({dummy_se_grid->get_ncol(),DummySEGrid::nlev});
+    temp.set_dimensions({phys_lt.dim(0),nvl});
     m_fids_out.insert(qA);
   }
 };
@@ -185,30 +168,36 @@ public:
 
   void set_grids (const std::shared_ptr<const GridsManager> gm) {
     auto grid = gm->get_grid(m_grid_name);
-    auto dummy_se_grid = std::dynamic_pointer_cast<const DummySEGrid>(grid);
+    const auto nvl = grid->get_num_vertical_levels();
+    auto phys_lt = grid->get_native_dof_layout();
 
     auto& temp = m_vec_fids_in.front();
     temp.set_grid_name(grid->name());
-    temp.set_dimensions({dummy_se_grid->get_ncol(),DummySEGrid::nlev});
+    temp.set_dimensions({phys_lt.dim(0),nvl});
     m_fids_in.insert(temp);
+
     auto& qA = m_vec_fids_in[1];
     qA.set_grid_name(grid->name());
-    qA.set_dimensions({dummy_se_grid->get_ncol(),DummySEGrid::nlev});
+    temp.set_dimensions({phys_lt.dim(0),nvl});
     m_fids_in.insert(qA);
 
     auto& tend = m_vec_fids_out.front();
     tend.set_grid_name(grid->name());
-    tend.set_dimensions({dummy_se_grid->get_ncol(),DummySEGrid::nlev});
+    temp.set_dimensions({phys_lt.dim(0),nvl});
     m_fids_out.insert(tend);
   }
 };
 
 std::shared_ptr<UserProvidedGridsManager>
 setup_upgm (const int ne) {
+  const int nelem = 6*ne*ne;
+  const int np = 4;
+  const int nvl = 128;
+
   // Greate a grids manager
   auto upgm = std::make_shared<UserProvidedGridsManager>();
-  auto dummy_dyn_grid = std::make_shared<DummySEGrid>(ne,GridType::SE_CellBased);
-  auto dummy_phys_grid = std::make_shared<DummySEGrid>(ne,GridType::SE_NodeBased);
+  auto dummy_dyn_grid  = std::make_shared<SEGrid>(e2str(SEDyn), SEDyn, nelem,np,nvl);
+  auto dummy_phys_grid = std::make_shared<SEGrid>(e2str(SEPhys),SEPhys,nelem,np,nvl);
   upgm->set_grid(dummy_dyn_grid);
   upgm->set_grid(dummy_phys_grid);
   upgm->set_reference_grid(dummy_phys_grid->name());
@@ -240,7 +229,7 @@ TEST_CASE("process_factory", "") {
 
   auto& p0 = params.sublist("Process 0");
   p0.set<std::string>("Process Name", "MyDynamics");
-  p0.set<std::string>("Grid Name", e2str(GridType::SE_CellBased));
+  p0.set<std::string>("Grid Name", e2str(SEDyn));
 
   auto& p1 = params.sublist("Process 1");
   p1.set<std::string>("Process Name", "Group");
@@ -249,11 +238,11 @@ TEST_CASE("process_factory", "") {
 
   auto& p1_0 = p1.sublist("Process 0");
   p1_0.set<std::string>("Process Name", "MyPhysicsA");
-  p1_0.set<std::string>("Grid Name", e2str(GridType::SE_NodeBased));
+  p1_0.set<std::string>("Grid Name", e2str(SEPhys));
 
   auto& p1_1 = p1.sublist("Process 1");
   p1_1.set<std::string>("Process Name", "MyPhysicsB");
-  p1_1.set<std::string>("Grid Name", e2str(GridType::SE_NodeBased));
+  p1_1.set<std::string>("Grid Name", e2str(SEPhys));
 
   // Create then factory, and register constructors
   auto& factory = AtmosphereProcessFactory::instance();

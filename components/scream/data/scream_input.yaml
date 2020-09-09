@@ -16,4 +16,5 @@ Atmosphere Driver:
     Reference Grid: SE Physics
     Physics Only:
       Number of global columns: 1024
+      Number of vertical levels: 128
 ...
