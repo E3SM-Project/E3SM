@@ -26,6 +26,9 @@ module prim_driver_base
   use reduction_mod,    only: reductionbuffer_ordered_1d_t, red_min, red_max, red_max_int, &
                               red_sum, red_sum_int, red_flops, initreductionbuffer, &
                               red_max_index, red_min_index
+
+  use prim_state_mod,     only: prim_energy_halftimes_eam_def
+
 #ifndef CAM
   use prim_restart_mod, only : initrestartfile
   use restart_io_mod ,  only : readrestart
@@ -1053,6 +1056,8 @@ contains
 
     ! compute scalar diagnostics if currently active
     if (compute_diagnostics) call run_diagnostics(elem,hvcoord,tl,3,.true.,nets,nete)
+!elem,hvcoord,tl,n,t_before_advance,nets,nete
+    if (compute_diagnostics) call prim_energy_halftimes_eam_def(elem,hvcoord,tl,10,.true.,nets,nete)
 
     if (.not. independent_time_steps) then
        call TimeLevel_Qdp(tl, dt_tracer_factor, n0_qdp, np1_qdp)
@@ -1320,6 +1325,7 @@ contains
           ! diagnostics will be incorrect
           call ApplyCAMforcing_dynamics(elem,hvcoord,tl%n0,dt,nets,nete)
           if (compute_diagnostics_it) call run_diagnostics(elem,hvcoord,tl,1,.true.,nets,nete)
+          if (compute_diagnostics_it) call prim_energy_halftimes_eam_def(elem,hvcoord,tl,11,.true.,nets,nete)
        else if (ftype == 2 .or. ftype == 0) then
           ! Apply dynamics forcing over the dynamics (vertically Eulerian) or
           ! vertical remap time step if we're at reference levels.
@@ -1331,6 +1337,7 @@ contains
           if (apply_forcing) then
              call ApplyCAMforcing_dynamics(elem,hvcoord,tl%n0,dt_remap,nets,nete)
              if (compute_diagnostics_it) call run_diagnostics(elem,hvcoord,tl,1,.true.,nets,nete)
+             if (compute_diagnostics_it) call prim_energy_halftimes_eam_def(elem,hvcoord,tl,11,.true.,nets,nete)
           end if
        end if
 

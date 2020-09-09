@@ -20,7 +20,7 @@ module prim_state_mod
   use hybvcoord_mod,    only: hvcoord_t
   use global_norms_mod, only: global_integral, linf_snorm, l1_snorm, l2_snorm
   use element_mod,      only: element_t
-  use element_ops,      only: get_field, get_phi, get_field_i
+  use element_ops,      only: get_field, get_phi, get_field_i, get_temperature
   use element_state,    only: max_itercnt,max_deltaerr,max_reserr,diagtimes
   use eos,              only: pnh_and_exner_from_eos
   use viscosity_mod,    only: compute_zeta_C0
@@ -39,7 +39,9 @@ private
   public :: prim_printstate
   public :: prim_printstate_init
   public :: prim_energy_halftimes
+  public :: prim_energy_halftimes_eam_def
   public :: prim_diag_scalars
+  public :: en_eam
 
 contains
 !=======================================================================================================! 
@@ -820,6 +822,31 @@ contains
 
        endif
 
+       write(iulog,'(a)') 'Change from pressure work, total TE, used dt_run_sub:'
+       write(iulog,'(a,1e22.14)') 'pressurework dTE/dt: ',&
+              (KEner(9)+IEner(9)+PEner(9)-KEner(8)-IEner(8)-PEner(8))/dt_run_sub 
+       write(iulog,'(a,3e22.14)') 'presswork -- K, I(I+P), P(moist)',&
+              (KEner(9)-KEner(8))/dt_run_sub,(IEner(9)-IEner(8))/dt_run_sub,(PEner(9)-PEner(8))/dt_run_sub
+
+
+     write(iulog,'(a,6e22.14)') 'pswork details -- K, I, P after,before',&
+             KEner(9),KEner(8),IEner(9),IEner(8),PEner(9),PEner(8)
+
+       write(iulog,'(a)') 'Change from dribbling:'
+       write(iulog,'(a,1e22.14)') 'dribbling dTE/dt: ',&
+              (KEner(11)+IEner(11)+PEner(11)-KEner(10)-IEner(10)-PEner(10))/dt_run_sub
+       write(iulog,'(a,3e22.14)') 'drib -- K, I(I+P), P(moist)',&
+              (KEner(11)-KEner(10))/dt_run_sub,(IEner(11)-IEner(10))/dt_run_sub,(PEner(11)-PEner(10))/dt_run_sub
+
+
+       !sanity checks so that no pressure level is zero
+       write(iulog,'(a)') 'Sanity: all energy levels:'
+       do i=1,diagtimes 
+          write(iulog,'(a,i3,1e22.14)') 'level, TE', i,&
+          KEner(i)+IEner(i)+PEner(i)
+       enddo
+
+
        q=1
        if (qsize>0) write(iulog,'(a,2e15.7)') 'dQ1/dt(kg/sm^2)',(Qmass(q,1)-Qmass(q,3))/dt
 
@@ -980,9 +1007,107 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        enddo
     
 end subroutine prim_energy_halftimes
-    
+  
+!======================================
+
+subroutine prim_energy_halftimes_eam_def(elem,hvcoord,tl,n,t_before_advance,nets,nete)
+
+    use kinds, only : real_kind
+    use dimensions_mod, only : np, np, nlev,nlevp
+    use hybvcoord_mod, only : hvcoord_t
+    use element_mod, only : element_t
+    use physical_constants, only : Cp, cpwater_vapor
+    use physics_mod, only : Virtual_Specific_Heat
+    use prim_si_mod, only : preq_hydrostatic
+
+    integer :: t1,n,nets,nete
+    type (element_t)     , intent(inout), target :: elem(:)
+    type (hvcoord_t)                  :: hvcoord
+    type (TimeLevel_t), intent(in)       :: tl
+    logical :: t_before_advance
+
+    integer:: tmp, t1_qdp   ! the time pointers for Qdp are not the same
+
+    if (t_before_advance) then
+       t1=tl%n0
+       call TimeLevel_Qdp( tl, qsplit, t1_qdp) !get n0 level into t2_qdp 
+    else
+       t1=tl%np1
+       call TimeLevel_Qdp(tl, qsplit, tmp, t1_qdp) !get np1 into t2_qdp
+    endif
+
+    call en_eam(elem,hvcoord,t1,t1_qdp,n,nets,nete)
+
+end subroutine prim_energy_halftimes_eam_def
+
+  
 !=======================================================================================================! 
   
+! eam def up to 1/gravity multiplier
+subroutine en_eam(elem,hvcoord,n0,n0q,lev,nets,nete)
+    use kinds, only : real_kind
+    use dimensions_mod, only : np, np, nlev,nlevp
+    use hybvcoord_mod, only : hvcoord_t
+    use element_mod, only : element_t
+    use physical_constants, only : Cp, cpwater_vapor
+    use physics_mod, only : Virtual_Specific_Heat
+    use prim_si_mod, only : preq_hydrostatic
+
+    integer :: n0,n0q,lev,nets,nete
+    type (element_t)     , intent(inout), target :: elem(:)
+    type (hvcoord_t)                  :: hvcoord
+
+    integer :: ie,k,i,j
+    real (kind=real_kind), dimension(np,np,nlev)  :: dpt1  ! delta pressure
+    real (kind=real_kind), dimension(np,np)  :: E
+    real (kind=real_kind), dimension(np,np)  :: suml,suml2,v1,v2
+    real (kind=real_kind), dimension(np,np,nlev)  :: sumlk, suml2k
+    real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
+    real (kind=real_kind) :: temperature(np,np,nlev)  ! exner nh pressure
+    real (kind=real_kind) :: ps(np,np)  ! pressure on intefaces
+
+    real (kind=real_kind), parameter:: latvap = 2501000.00000000, latice= 333700.000000000
+    integer, parameter::ixrain =      6,  ixcldliq =      2
+
+    do ie=nets,nete
+       dpt1=elem(ie)%state%dp3d(:,:,:,n0)
+       call get_temperature(elem(ie),temperature,hvcoord,n0)
+
+       !   KE   .5 dp/dn U^2
+       suml=0
+       ps=hvcoord%ps0
+
+       do k=1,nlev
+          E = ( elem(ie)%state%v(:,:,1,k,n0)**2 +  &
+               elem(ie)%state%v(:,:,2,k,n0)**2  )/2
+          suml(:,:) = suml(:,:) + E*dpt1(:,:,k)
+          ps(:,:) = ps(:,:) + dpt1(:,:,k)
+       enddo
+
+       elem(ie)%accum%KEner(:,:,lev)=suml(:,:)
+
+    !  IE = c_p dp T + ps*phi_surf //not IE but total sum of IE+KE will be ok
+       suml=0
+       do k=1,nlev
+          suml(:,:) = suml(:,:) + Cp*dpt1(:,:,k)*temperature(:,:,k)
+       enddo
+       elem(ie)%accum%IEner(:,:,lev)=suml(:,:) + elem(ie)%state%phis(:,:)* ps(:,:)
+
+    !move latent heat to PE
+       suml=0
+       do k=1,nlev
+          suml(:,:) = suml(:,:) +&
+              elem(ie)%state%Qdp(:,:,k,1,n0q)*(latvap+latice) + &
+             (elem(ie)%state%Qdp(:,:,k,ixrain,n0q) + elem(ie)%state%Qdp(:,:,k,ixcldliq,n0q))*latice
+       enddo
+       elem(ie)%accum%PEner(:,:,lev)=suml(:,:)
+
+    enddo !ie
+
+end subroutine en_eam
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 
 subroutine prim_diag_scalars(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 ! 

@@ -450,6 +450,7 @@ end subroutine check_energy_get_integrals
 
 !print *, 'ixcldice = ' , ixcldice
 !print *, 'ixcldliq = ' , ixcldliq
+!print *, 'ixrain = '   , ixrain
 !print *, 'latvap, latice', latvap, latice
 !stop
 

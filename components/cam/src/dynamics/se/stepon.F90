@@ -30,6 +30,8 @@ module stepon
    use element_mod,    only: element_t
    use shr_const_mod,       only: SHR_CONST_PI
 
+   use prim_state_mod, only : en_eam
+
    implicit none
    private
    save
@@ -406,6 +408,9 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    enddo
    endif
 
+
+   call en_eam(dyn_in%elem, hvcoord, tl_f, tl_fQdp, 8, 1, nelemd)
+
    do ie=1,nelemd
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -421,6 +426,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
     enddo
 
+   call en_eam(dyn_in%elem, hvcoord, tl_f, tl_fQdp, 9, 1, nelemd)
 
 !dumping state before ps adjust
    if (hist_fld_active('Ud2') .or. hist_fld_active('Vd2') ) then
