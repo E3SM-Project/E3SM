@@ -18,7 +18,6 @@ module seaice_velocity_solver_variational
   use mpas_pool_routines
   use mpas_timer
   use mpas_log, only: mpas_log_write
-  use seaice_mesh_pool
 
   implicit none
 
@@ -127,6 +126,23 @@ contains
 
   subroutine seaice_internal_stress_variational(&
        domain)!{{{
+
+    use seaice_mesh_pool, only: &
+         basisGradientU, &
+         basisGradientV, &
+         basisIntegralsMetric, &
+         basisIntegralsU, &
+         basisIntegralsV, &
+         cellVerticesAtVertex, &
+         icePressure, &
+         solveStress, &
+         solveVelocity, &
+         stress11, &
+         stress22, &
+         stress12, &
+         tanLatVertexRotatedOverRadius, &
+         uVelocity, &
+         vVelocity
 
     type(domain_type), intent(inout) :: &
          domain
@@ -239,6 +255,22 @@ contains
   subroutine seaice_internal_stress_variational_linear(&
        domain)!{{{
 
+    use seaice_mesh_pool, only: &
+         basisGradientU, &
+         basisGradientV, &
+         basisIntegralsMetric, &
+         basisIntegralsU, &
+         basisIntegralsV, &
+         cellVerticesAtVertex, &
+         solveStress, &
+         solveVelocity, &
+         stress11, &
+         stress22, &
+         stress12, &
+         tanLatVertexRotatedOverRadius, &
+         uVelocity, &
+         vVelocity
+
     type(domain_type), intent(inout) :: &
          domain
 
@@ -343,6 +375,11 @@ contains
        basisGradientV, &
        tanLatVertexRotatedOverRadius, &
        solveStress)!{{{
+
+    use seaice_mesh_pool, only: &
+         nCells, &
+         verticesOnCell, &
+         nEdgesOnCell
 
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input:
@@ -454,6 +491,10 @@ contains
          seaice_evp_constitutive_relation, &
          eccentricitySquared, puny, dampingTimescale, &
          seaice_evp_constitutive_relation_revised
+
+    use seaice_mesh_pool, only: &
+         nCells, &
+         nEdgesOnCell
 
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input:
@@ -630,6 +671,10 @@ contains
     use seaice_velocity_solver_constitutive_relation, only: &
          seaice_linear_constitutive_relation
 
+    use seaice_mesh_pool, only: &
+         nCells, &
+         nEdgesOnCell
+
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input:
 
@@ -701,6 +746,12 @@ contains
        tanLatVertexRotatedOverRadius, &
        cellVerticesAtVertex, &
        solveVelocity)!{{{
+
+    use seaice_mesh_pool, only: &
+         nVerticesSolve, &
+         cellsOnVertex, &
+         nEdgesOnCell, &
+         areaTriangle
 
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input:
@@ -817,6 +868,11 @@ contains
 
     use seaice_velocity_solver_constitutive_relation, only: &
          eccentricitySquared
+
+    use seaice_mesh_pool, only: &
+         nCells, &
+         solveStress, &
+         nEdgesOnCell
 
     type(block_type), intent(inout) :: &
          block
