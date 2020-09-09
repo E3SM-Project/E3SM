@@ -481,7 +481,7 @@ end subroutine clubb_init_cnst
       call mpibcast(relvar_fix,               1,   mpilog,  0, mpicom)
       call mpibcast(clubb_use_sgv,            1,   mpilog,   0, mpicom)
       call mpibcast(clubb_vert_avg_closure,   1,   mpilog,   0, mpicom)
-      call mpibcast(clubb_ipdf_call_placement,   1,   mpilog,   0, mpicom)
+      call mpibcast(clubb_ipdf_call_placement,   1,   mpiint,   0, mpicom)
 #endif
 
     !  Overwrite defaults if they are true
