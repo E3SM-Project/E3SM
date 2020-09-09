@@ -1,12 +1,11 @@
 <?xml version="1.0"?>
 <config case="base_mesh">
 
-	<copy_file source_path="script_test_dir" source="define_base_mesh.py" dest="define_base_mesh.py"/>
+	<add_link source_path="script_test_dir" source="build_base_mesh.py" dest="build_base_mesh.py"/>
 	<add_link source_path="bathymetry_database" source="SRTM15_plus/earth_relief_15s.nc" dest="earth_relief_15s.nc"/>
 
 	<run_script name="run.py">
-		<step executable="build_mesh">
-			<argument flag="--inject_bathymetry"></argument>
+		<step executable="./build_base_mesh.py">
 		</step>
 	</run_script>
 
