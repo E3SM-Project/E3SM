@@ -205,6 +205,19 @@ def buildnml(case, caseroot, compname):
         decomp_prefix += 'mpas-o.graph.info.'
         restoring_file += 'sss.monthlyClimatology.PHC2_salx.2004_08_03.ARRM60to6.190214.nc'
         analysis_mask_file += 'ARRM60to6_SingleRegionAtlanticWTransportTransects_masks.nc'
+    elif ocn_grid == 'EC30to60E2r2':
+        ic_date += '200908'
+        ic_prefix += 'ocean.EC30to60E2r2'
+        decomp_date += '200904'
+        decomp_prefix += 'mpas-o.graph.info.'
+        restoring_file += 'sss.monthlyClimatology.PHC2_salx_040803.EC30to60E2r2.200908.nc'
+        analysis_mask_file += 'EC30to60E2r2_moc_masks_and_transects.nc'
+    elif ocn_grid == 'EC30to60E2r2_ICG':
+        ic_date += '200908'
+        ic_prefix += 'ocean.EC30to60E2r2'
+        decomp_date += '200904'
+        decomp_prefix += 'mpas-o.graph.info.'
+        analysis_mask_file += 'EC30to60E2r2_moc_masks_and_transects.nc'
 
     #--------------------------------------------------------------------
     # Set OCN_FORCING = datm_forced_restoring if restoring file is available
