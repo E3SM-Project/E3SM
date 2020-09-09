@@ -48,6 +48,8 @@ void shoc_energy_dse_fixer_c(Int shcol, Int nlev,
 void calc_shoc_varorcovar_c(Int shcol, Int nlev, Int nlevi,  Real tunefac,
                             Real *isotropy_zi, Real *tkh_zi, Real *dz_zi,
 			    Real *invar1, Real *invar2, Real *varorcovar);
+
+void check_tke_c(Int shcol, Int nlev, Real *tke);
 			    
 void shoc_tke_c(Int shcol, Int nlev, Int nlevi, Real dtime, Real *wthv_sec, 
                 Real *shoc_mix, Real *dz_zi, Real *dz_zt, Real *pres, 
@@ -238,6 +240,13 @@ void calc_shoc_vertflux(SHOCVertfluxData &d) {
   calc_shoc_vertflux_c(d.shcol, d.nlev, d.nlevi, d.tkh_zi, d.dz_zi, d.invar,
 		       d.vertflux);
   d.transpose<ekat::util::TransposeDirection::f2c>();
+}
+
+void check_tke(SHOCCheckTkeData &d){
+  shoc_init(d.nlev, true);
+  d.transpose<ekat::util::TransposeDirection::c2f>();
+  check_tke_c(d.shcol, d.nlev, d.tke);
+  d.transpose<ekat::util::TransposeDirection::f2c>();    
 }
 
 void shoc_tke(SHOCTkeData &d){

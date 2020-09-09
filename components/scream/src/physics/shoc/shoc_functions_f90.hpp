@@ -33,6 +33,19 @@ struct SHOCGridData : public PhysicsTestData {
 };
 
 //Create data structure to hold data for shoc_tke
+struct SHOCCheckTkeData : public PhysicsTestData {
+
+  // Output
+  Real *tke;
+
+  SHOCCheckTkeData(Int shcol_, Int nlev_) :
+    PhysicsTestData(shcol_, nlev_, {&tke}) {}
+
+  PTD_DATA_COPY_CTOR(SHOCCheckTkeData, 2);
+  PTD_ASSIGN_OP(SHOCCheckTkeData, 0);
+};//SHOCTkeData
+
+//Create data structure to hold data for shoc_tke
 struct SHOCTkeData : public PhysicsTestData {
   // Inputs
   Real dtime; 
@@ -520,6 +533,7 @@ void shoc_energy_dse_fixer                          (SHOCEnergydsefixerData &d);
 void calc_shoc_vertflux                             (SHOCVertfluxData &d);
 void calc_shoc_varorcovar                           (SHOCVarorcovarData &d);
 void integ_column_stability                         (SHOCColstabData &d);
+void check_tke                                      (SHOCCheckTkeData &d);
 void shoc_tke                                       (SHOCTkeData &d);
 void compute_shr_prod                               (SHOCTkeshearData &d);
 void isotropic_ts                                   (SHOCIsotropicData &d);

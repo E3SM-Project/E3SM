@@ -141,6 +141,18 @@ contains
 
   end subroutine calc_shoc_varorcovar_c
   
+  subroutine check_tke_c(shcol, nlev, tke) bind(C)
+    use shoc, only: check_tke
+    
+    integer(kind=c_int), intent(in), value :: shcol
+    integer(kind=c_int), intent(in), value :: nlev
+    
+    real(kind=c_real), intent(inout) :: tke(shcol,nlev)
+    
+    call check_tke(shcol,nlev,tke)    
+  
+  end subroutine check_tke_c
+  
   subroutine shoc_tke_c(shcol, nlev, nlevi, dtime, wthv_sec, shoc_mix, dz_zi, &
                         dz_zt, pres, u_wind, v_wind, brunt, obklen, zt_grid, &
 			zi_grid, pblh, tke, tk, tkh, isotropy) bind(C)
