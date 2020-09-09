@@ -372,6 +372,21 @@ contains
     call calc_shoc_vertflux(shcol, nlev, nlevi, tkh_zi, dz_zi, invar, vertflux)
 
   end subroutine calc_shoc_vertflux_c
+  
+  subroutine shoc_length_c(shcol, nlev, nlevi, tke, host_dx, host_dy, pblh, &
+                zt_grid, zi_grid, dz_zt, dz_zi, thetal, wthv_sec, thv, &
+		brunt, shoc_mix) bind (C)
+    use shoc, only: shoc_length
+    
+    integer(kind=c_int), intent(in), value :: shcol
+    integer(kind=c_int), intent(in), value :: nlev
+    integer(kind=c_int), intent(in), value :: nlevi
+    real(kind=c_real), intent(in) :: tke(shcol,nlev)
+    real(kind=c_real), intent(in) :: host_dx(shcol)
+    real(kind=c_real), intent(in) :: host_dy(shcol)  
+    real(kind=c_real), intent(in) :: pblh(shcol)
+    real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
+    real(kind=c_real), intent(in) :: zi_grid(shcol,nlevi)
 
   subroutine compute_brunt_shoc_length_c(nlev,nlevi,shcol,dz_zt,thv,thv_zi,brunt) bind (C)
     use shoc, only: compute_brunt_shoc_length
