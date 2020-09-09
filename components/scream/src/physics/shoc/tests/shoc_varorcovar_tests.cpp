@@ -281,25 +281,50 @@ static void run_bfb()
       SHOCVarorcovarData(2, 7, 8, 0.005),
     };
 
-    for (auto& d_f90 : SDS_f90) {
-      // Randomize remaining inputs
-      d_f90.randomize();
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCVarorcovarData);
 
-      // Get data from fortran, expects data in C layout
-      calc_shoc_varorcovar(d_f90);
+    // Generate random input data
+    for (auto& d : SDS_f90) {
+      d.randomize();
+    }
 
-      // Get data from cxx, expects data in fortran layout
-      SHOCVarorcovarData d_cxx = SHOCVarorcovarData(d_f90);
-      d_cxx.transpose<ekat::util::TransposeDirection::c2f>();
-      calc_shoc_varorcovar_f(d_cxx.shcol, d_cxx.nlev, d_cxx.nlevi, d_cxx.tunefac, d_cxx.isotropy_zi, d_cxx.tkh_zi, d_cxx.dz_zi, d_cxx.invar1, d_cxx.invar2, d_cxx.varorcovar);
-      d_cxx.transpose<ekat::util::TransposeDirection::f2c>();
+    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // inout data is in original state
+    SHOCVarorcovarData SDS_cxx[] = {
+      SHOCVarorcovarData(SDS_f90[0]),
+      SHOCVarorcovarData(SDS_f90[1]),
+      SHOCVarorcovarData(SDS_f90[2]),
+      SHOCVarorcovarData(SDS_f90[3]),
+    };
 
-      // Verify BFB results, all data should be in C layout
+    // Assume all data is in C layout
+
+    // Get data from fortran
+    for (auto& d : SDS_f90) {
+      // expects data in C layout
+      calc_shoc_varorcovar(d);
+    }
+
+    // Get data from cxx
+    for (auto& d : SDS_cxx) {
+      d.transpose<ekat::util::TransposeDirection::c2f>();
+      // expects data in fortran layout
+      calc_shoc_varorcovar_f(d.shcol, d.nlev, d.nlevi,
+                             d.tunefac, d.isotropy_zi,
+                             d.tkh_zi, d.dz_zi,
+                             d.invar1, d.invar2, d.varorcovar);
+      d.transpose<ekat::util::TransposeDirection::f2c>();
+    }
+
+    // Verify BFB results, all data should be in C layout
+    for (Int i = 0; i < num_runs; ++i) {
+      SHOCVarorcovarData& d_f90 = SDS_f90[i];
+      SHOCVarorcovarData& d_cxx = SDS_cxx[i];
       for (Int k = 0; k < d_f90.totali(); ++k) {
         REQUIRE(d_f90.varorcovar[k] == d_cxx.varorcovar[k]);
       }
     }
-  }  
+  }
 };
 
 }  // namespace unit_test
