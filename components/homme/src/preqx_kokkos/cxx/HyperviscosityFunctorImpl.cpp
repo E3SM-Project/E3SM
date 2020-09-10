@@ -52,18 +52,18 @@ HyperviscosityFunctorImpl (const SimulationParams&     params,
 }
 
 int HyperviscosityFunctorImpl::requested_buffer_size () const {
-  constexpr int size_scalar =   NP*NP*NUM_LEV;
-  constexpr int size_vector = 2*NP*NP*NUM_LEV;
+  constexpr int size_scalar =   NP*NP*NUM_LEV*VECTOR_SIZE;
+  constexpr int size_vector = 2*NP*NP*NUM_LEV*VECTOR_SIZE;
 
   const int ne = m_geometry.num_elems();
   const int nteams = get_num_concurrent_teams(m_policy_pre_exchange); 
 
-  return ne * (Buffers::num_scalars*size_scalar+Buffers::num_vectors*size_vector) +
+  return ne     * (Buffers::num_scalars*    size_scalar+Buffers::num_vectors  *  size_vector) +
          nteams * (Buffers::num_tmp_scalars*size_scalar+Buffers::num_tmp_vectors*size_vector);
 }
 
 void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm) {
-  Errors::runtime_check(fbm.allocated_size()>requested_buffer_size(), "Error! Buffers size not sufficient.\n");
+  Errors::runtime_check(fbm.allocated_size()>=requested_buffer_size(), "Error! Buffers size not sufficient.\n");
 
   constexpr int size_scalar =   NP*NP*NUM_LEV;
   constexpr int size_vector = 2*NP*NP*NUM_LEV;

@@ -128,6 +128,7 @@ public:
    , m_prev_num_elems(0)
    , m_prev_qsize    (0)
   {
+    m_kernel_will_run_limiters = false;
     m_tpref.prefer_larger_team = true;
   }
 
