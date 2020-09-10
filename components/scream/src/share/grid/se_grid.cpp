@@ -25,16 +25,22 @@ FieldLayout
 SEGrid::get_native_dof_layout () const
 {
   using namespace ShortFieldTagsNames;
+  std::vector<FieldTag> tags;
+  std::vector<int> dims;
   switch (m_type) {
     case GridType::SE_CellBased:
-      return FieldLayout({EL,GP,GP},{m_num_local_elem,m_num_gp,m_num_gp});
+      tags = {EL,GP,GP};
+      dims = {m_num_local_elem,m_num_gp,m_num_gp};
+      break;
     case GridType::SE_NodeBased:
-      return FieldLayout({COL},{m_num_local_dofs});
+      tags = {COL};
+      dims = {m_num_local_dofs};
+      break;
     default:
       EKAT_ERROR_MSG ("Error! Unexpected grid type. Please, contact developers.\n");
   }
 
-  return FieldLayout({});
+  return FieldLayout(tags,dims);
 }
 
 void SEGrid::

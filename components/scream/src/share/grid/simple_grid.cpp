@@ -1,5 +1,16 @@
 #include "share/grid/simple_grid.hpp"
 
+namespace {
+// Utility function, used in SimpleGrid ctor, to get around an issue with nvcc
+void create_identity_map(scream::AbstractGrid::lid_to_idx_map_type view) {
+  using RangePolicy = scream::AbstractGrid::kokkos_types::RangePolicy;
+  Kokkos::parallel_for(RangePolicy(0,view.extent_int(0)),
+                       KOKKOS_LAMBDA(const int i) {
+    view(i,0) = i;
+  });
+}
+} // anonymous namespace
+
 namespace scream {
 
 SimpleGrid::
@@ -32,11 +43,12 @@ SimpleGrid (const std::string& grid_name,
 
   // The lid->idx map is the identity map.
   m_lid_to_idx = decltype(m_lid_to_idx)("lid to idx",m_num_my_cols,1);
-  auto lid_to_idx = m_lid_to_idx;
-  Kokkos::parallel_for(kokkos_types::RangePolicy(0,m_num_my_cols),
-                       KOKKOS_LAMBDA(const int i) {
-    lid_to_idx(i,0) = i;
-  });
+
+  // Note: a KOKKOS_LAMBDA cannot be used in the c-tor, cause nvcc requires
+  //       to be able to take the address of the enclosing function, and the
+  //       c-tor of a class does not satisfy that. So wrap this in a utility
+  //       free function, in an anonymous namespace 
+  create_identity_map(m_lid_to_idx);
 }
 
 FieldLayout
