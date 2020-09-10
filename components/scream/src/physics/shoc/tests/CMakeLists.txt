@@ -11,6 +11,7 @@ set(SHOC_TESTS_SRCS
     shoc_energy_total_fixer_tests.cpp
     shoc_energy_dse_fixer_tests.cpp
     shoc_energy_threshold_fixer_tests.cpp
+    shoc_length_tests.cpp
     shoc_brunt_length_tests.cpp
     shoc_l_inf_length_tests.cpp
     shoc_conv_vel_length_tests.cpp
