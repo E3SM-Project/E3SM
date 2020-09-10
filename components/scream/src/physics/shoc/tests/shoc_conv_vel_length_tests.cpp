@@ -56,13 +56,14 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvVel {
     SHOCConvvelData SDS(shcol, nlev);
 
     // Test that the inputs are reasonable.
-    REQUIRE(SDS.shcol > 0);
+    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev) );
+    REQUIRE(shcol > 0);
 
     // Fill in test data on zt_grid.
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       SDS.pblh[s] = pblh;
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 
 	SDS.dz_zt[offset] = dz_zt[n];
 	SDS.zt_grid[offset] = zt_grid[n];
@@ -73,9 +74,9 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvVel {
 
     // Check that the inputs make sense
 
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 	// Be sure that relevant variables are greater than zero
 	REQUIRE(SDS.dz_zt[offset] > 0.0);
 	REQUIRE(SDS.thv[offset] > 0.0);
@@ -94,7 +95,7 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvVel {
 
     // Check the results
     // Make sure that conv_vel is negative
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       REQUIRE(SDS.conv_vel[s] < 0.0);
     }
 
@@ -111,9 +112,9 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvVel {
     static constexpr Real wthv_sec_sym[nlev] = {0.04, 0.02, 0.00, -0.02, -0.04};
 
     // Fill in new test data on zt_grid.
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 
 	SDS.dz_zt[offset] = dz_zt_sym[n];
 	SDS.thv[offset] = thv_sym[n];
@@ -123,10 +124,10 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvVel {
 
     // Check that the inputs make sense
 
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       Real wthv_sum = 0.0;
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 	// Be sure that relevant variables are greater than zero
 	REQUIRE(SDS.dz_zt[offset] > 0.0);
 	REQUIRE(SDS.thv[offset] > 0.0);
@@ -141,9 +142,14 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvVel {
 
     // Check the results
     // Make sure that conv_vel is zero
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       REQUIRE(SDS.conv_vel[s] == approx_zero);
     }
+  }
+
+  static void run_bfb()
+  {
+    // TODO
   }
 
 };
@@ -161,10 +167,11 @@ TEST_CASE("shoc_conv_vel_length_property", "shoc")
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_conv_vel_length_b4b", "shoc")
+TEST_CASE("shoc_conv_vel_length_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCompShocConvVel;
 
+  TestStruct::run_bfb();
 }
 
 } // namespace

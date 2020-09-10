@@ -47,13 +47,14 @@ struct UnitWrap::UnitTest<D>::TestCompBruntShocLength {
     SHOCBruntlengthData SDS(shcol, nlev, nlevi);
 
     // Test that the inputs are reasonable.
-    REQUIRE(SDS.nlevi - SDS.nlev == 1);
-    REQUIRE(SDS.shcol > 0);
+    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev && SDS.nlevi() == nlevi) );
+    REQUIRE(nlevi - nlev == 1);
+    REQUIRE(shcol > 0);
 
     // Fill in test data on zt_grid.
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for(Int n = 0; n < SDS.nlev; ++n) {
-        const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
 
         SDS.dz_zt[offset] = dz_zt[n];
         // For theta_v on thermo grid just take the vertical average
@@ -63,8 +64,8 @@ struct UnitWrap::UnitTest<D>::TestCompBruntShocLength {
       }
 
       // Fill in test data on zi_grid.
-      for(Int n = 0; n < SDS.nlevi; ++n) {
-        const auto offset   = n + s * SDS.nlevi;
+      for(Int n = 0; n < nlevi; ++n) {
+        const auto offset   = n + s * nlevi;
         SDS.thv_zi[offset] = thv_zi[n];
       }
     }
@@ -72,15 +73,15 @@ struct UnitWrap::UnitTest<D>::TestCompBruntShocLength {
     // Check that the inputs make sense
 
     // Be sure that relevant variables are greater than zero
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for(Int n = 0; n < SDS.nlev - 1; ++n) {
-        const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev - 1; ++n) {
+        const auto offset = n + s * nlev;
         REQUIRE(SDS.dz_zt[offset] > 0.0);
         REQUIRE(SDS.thv[offset] > 0.0);
       }
 
-      for(Int n = 0; n < SDS.nlevi - 1; ++n) {
-        const auto offset = n + s * SDS.nlevi;
+      for(Int n = 0; n < nlevi - 1; ++n) {
+        const auto offset = n + s * nlevi;
         REQUIRE(SDS.thv_zi[offset] > 0.0);
       }
     }
@@ -89,9 +90,9 @@ struct UnitWrap::UnitTest<D>::TestCompBruntShocLength {
     compute_brunt_shoc_length(SDS);
 
     // Check the results
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for(Int n = 0; n < SDS.nlev; ++n) {
-        const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
 
         // Validate that brunt vaisalla frequency
         //  is the correct sign given atmospheric conditions
@@ -113,11 +114,14 @@ struct UnitWrap::UnitTest<D>::TestCompBruntShocLength {
         //  reasonable bounds for this variable.
         REQUIRE(SDS.brunt[offset < 1.0]);
         REQUIRE(SDS.brunt[offset > -1.0]);
-
       }
     }
   }
 
+  static void run_bfb()
+  {
+    // TODO
+  }
 };
 
 }  // namespace unit_test
@@ -137,6 +141,7 @@ TEST_CASE("shoc_brunt_length_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCompBruntShocLength;
 
+  TestStruct::run_bfb();
 }
 
 } // namespace
