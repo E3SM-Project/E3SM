@@ -454,6 +454,7 @@ contains
 
       if (config_use_GM) then
          nEdges = nEdgesArray(3)
+         !$omp parallel
          !$omp do schedule(runtime) private(k, rtmp)
          do iCell = 1, nCells
             do k = 2, maxLevelCell(iCell)
@@ -468,10 +469,12 @@ contains
             dDensityDzTopOfCell(maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
          end do
          !$omp end do
+         !$omp end parallel
 
          nEdges = nEdgesArray( 3 )
 
          ! Interpolate dDensityDzTopOfCell to edge and layer interface
+         !$omp parallel
          !$omp do schedule(runtime) private(k, cell1, cell2)
          do iEdge = 1, nEdges
             do k = 1, maxLevelEdgeTop(iEdge)+1
@@ -481,11 +484,12 @@ contains
             end do
          end do
          !$omp end do
-
+         !$omp end parallel
  
       ! Compute density gradient (gradDensityEdge) and gradient of zMid (gradZMidEdge)
       ! along the constant coordinate surface.
       ! The computed variables lives at edge and mid-layer depth
+      !$omp parallel
       !$omp do schedule(runtime) private(cell1, cell2, k)
       do iEdge = 1, nEdges
          cell1 = cellsOnEdge(1,iEdge)
@@ -531,10 +535,12 @@ contains
          end if
       end do
       !$omp end do
+      !$omp end parallel
 
          ! For config_GM_closure = 'N2_dependent' use a scaling to taper gmBolusKappa
          ! based on stratification relative to the maximum in the column
          if (local_config_GM_kappa_lat_depth_variable) then
+            !$omp parallel
             !$omp do schedule(runtime) private(k, BruntVaisalaFreqTopEdge, maxN)
             do iCell=1,nCells
                k=1
@@ -553,6 +559,7 @@ contains
                end do
            enddo
            !$omp end do
+           !$omp end parallel
          end if
 
          nEdges = nEdgesArray(3)
