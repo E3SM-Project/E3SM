@@ -147,12 +147,6 @@ contains
       real(kind=RKIND), dimension(:, :), allocatable :: gradDensityEdge, gradDensityTopOfEdge, &
         gradDensityConstZTopOfEdge, dDensityDzTopOfCell, dDensityDzTopOfEdge, &
         gradZMidEdge, gradZMidTopOfEdge
-      ! drhoDzTopOfEdge: Gradient of density in vertical on edges
-      !           units: None
-      real(kind=RKIND), dimension(:, :), allocatable :: drhoDzTopOfEdge
-      ! dzdxEdge: Gradient of depth at constant cell indes
-      !    units: None
-      real(kind=RKIND), dimension(:, :), allocatable :: dzdxEdge
 
       type(mpas_pool_type), pointer :: tracersPool
       real(kind=RKIND), dimension(:, :, :), pointer :: activeTracers
@@ -220,22 +214,18 @@ contains
       nEdges = nEdgesArray(size(nEdgesArray))
 
       allocate(gradDensityEdge(nVertLevels, nEdges), &
-               dzdxEdge(nVertLevels, nEdges), &
-               drhoDzTopOfEdge(nVertLevels, nEdges), &
-              dDensityDzTopOfCell(nVertLevels, nCells), &
-              gradDensityTopOfEdge(nVertLevels, nEdges), &
-              dDensityDzTopOfEdge(nVertLevels, nEdges), &
-              gradZMidEdge(nVertLevels, nEdges), &
-              gradZMidTopOfEdge(nVertLevels, nEdges), &
-              gradDensityConstZTopOfEdge(nVertLevels, nEdges))
+               dDensityDzTopOfCell(nVertLevels+1, nCells+1), &
+               gradDensityTopOfEdge(nVertLevels+1, nEdges), &
+               dDensityDzTopOfEdge(nVertLevels+1, nEdges), &
+               gradZMidEdge(nVertLevels, nEdges), &
+               gradZMidTopOfEdge(nVertLevels+1, nEdges), &
+               gradDensityConstZTopOfEdge(nVertLevels+1, nEdges))
 
       !$omp parallel
       !$omp do schedule(runtime) private(k)
       do iEdge = 1, nEdges
          do k = 1, nVertLevels
             gradDensityEdge(k, iEdge) = 0.0_RKIND
-            dzdxEdge(k, iEdge) = 0.0_RKIND
-            drhoDzTopOfEdge(k, iEdge) = 0.0_RKIND
             normalGMBolusVelocity(k, iEdge) = 0.0_RKIND
          end do
       end do
@@ -797,10 +787,6 @@ contains
               gradZMidTopOfEdge, &
               gradDensityConstZTopOfEdge)
 
-
-      ! Deallocate scratch variables
-      deallocate(dzdxEdge, &
-                 drhoDzTopOfEdge)
       call mpas_timer_stop('gm bolus velocity')
 
    end subroutine ocn_GM_compute_Bolus_velocity!}}}
