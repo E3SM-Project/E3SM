@@ -50,51 +50,62 @@ void DynamicsDrivenGridsManager::build_grid (const std::string& grid_name)
 
 void DynamicsDrivenGridsManager::build_dynamics_grid () {
   if (m_grids.find("SE Dynamics")==m_grids.end()) {
-    // Create dynamics dofs map
+
+    // Initialize the dyn grid
     const int nelemd = get_homme_param_value<int>("nelemd");
-    SEGrid::dofs_list_type dyn_dofs("dyn dofs",nelemd*NP*NP);
-    SEGrid::dofs_map_type dyn_dofs_map("dyn dofs",nelemd*NP*NP);
-    auto h_dyn_dofs = Kokkos::create_mirror_view(dyn_dofs);
+    auto dyn_grid = std::make_shared<SEGrid>("SE Dynamics",GridType::SE_CellBased,nelemd,NP);
 
-    get_elem_cols_gids_f90(h_dyn_dofs.data());
+    // Create dynamics dofs map
+    SEGrid::dofs_list_type      dofs("dyn dofs",nelemd*NP*NP);
+    SEGrid::lid_to_idx_map_type lids_to_elgpgp("dyn lid to elgpgp",nelemd*NP*NP,3);
+    auto h_dofs = Kokkos::create_mirror_view(dofs);
 
-    auto h_dyn_dofs_map = Kokkos::create_mirror_view(dyn_dofs_map);
+    get_elem_cols_gids_f90(h_dofs.data());
+
+    auto h_lids_to_elgpgp = Kokkos::create_mirror_view(lids_to_elgpgp);
     for (int ie=0; ie<nelemd; ++ie) {
       for (int i=0; i<NP; ++i) {
         for (int j=0; j<NP; ++j) {
           const int idof = ie*NP*NP+i*NP+j;
-          h_dyn_dofs_map(idof,0) = ie;
-          h_dyn_dofs_map(idof,1) = i;
-          h_dyn_dofs_map(idof,2) = j;
+          h_lids_to_elgpgp(idof,0) = ie;
+          h_lids_to_elgpgp(idof,1) = i;
+          h_lids_to_elgpgp(idof,2) = j;
         }
       }
     }
-    Kokkos::deep_copy(dyn_dofs,h_dyn_dofs);
-    Kokkos::deep_copy(dyn_dofs_map,h_dyn_dofs_map);
+    Kokkos::deep_copy(dofs,h_dofs);
+    Kokkos::deep_copy(lids_to_elgpgp,h_lids_to_elgpgp);
 
-    // Not much to do: simply create a DefaultGrid
-    m_grids["SE Dynamics"] = std::make_shared<SEGrid>(dyn_dofs_map,dyn_dofs,"SE Dynamics",GridType::SE_CellBased);
+    dyn_grid->set_dofs (dofs, lids_to_elgpgp);
+
+    // Set the grid in the map
+    m_grids["SE Dynamics"] = dyn_grid;
   }
 }
 
 void DynamicsDrivenGridsManager::build_physics_grid () {
   if (m_grids.find("SE Physics")==m_grids.end()) {
+
+    // Initialize the phys grid
+    const int nelemd = get_homme_param_value<int>("nelemd");
+    auto phys_grid = std::make_shared<SEGrid>("SE Physics",GridType::SE_NodeBased,nelemd,NP);
+
     // Create the physics dofs map
     const int num_cols = get_num_owned_columns_f90 ();
-    SEGrid::dofs_list_type phys_dofs("phys dofs",num_cols);
-    SEGrid::dofs_map_type phys_dofs_map("phys dofs_map",num_cols);
-    auto h_phys_dofs = Kokkos::create_mirror_view(phys_dofs);
-    auto h_phys_dofs_map = Kokkos::create_mirror_view(phys_dofs_map);
+    SEGrid::dofs_list_type      dofs("phys dofs",num_cols);
+    SEGrid::lid_to_idx_map_type lids_to_elgpgp("phys lid to elgpgp", num_cols, 3);
+    auto h_dofs = Kokkos::create_mirror_view(dofs);
+    auto h_lids_to_elgpgp = Kokkos::create_mirror_view(lids_to_elgpgp);
     std::set<int> gdofs;
 
     // Get (ie,igp,jgp,gid) data for each dof
-    get_unique_cols_f90(h_phys_dofs.data(),h_phys_dofs_map.data());
+    get_unique_cols_f90(h_dofs.data(),h_lids_to_elgpgp.data());
 
-    Kokkos::deep_copy(phys_dofs,h_phys_dofs);
-    Kokkos::deep_copy(phys_dofs_map,h_phys_dofs_map);
+    Kokkos::deep_copy(dofs,h_dofs);
+    Kokkos::deep_copy(lids_to_elgpgp,h_lids_to_elgpgp);
 
-    // Not much to do: simply create a DefaultGrid
-    m_grids["SE Physics"] = std::make_shared<SEGrid>(phys_dofs_map,phys_dofs,"SE Physics",GridType::SE_NodeBased);
+    // Set the grid in the map
+    m_grids["SE Physics"] = phys_grid;
   }
 }
 

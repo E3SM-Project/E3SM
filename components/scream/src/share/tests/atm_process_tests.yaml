@@ -1,0 +1,20 @@
+%YAML 1.1
+---
+Number of Entries: 2
+Schedule Type: Sequential
+
+Process 0:
+  Process Name: MyDynamics
+  Grid Name: SE Dynamics
+Process 1:
+  Process Name: Group
+  Number of Entries: 2
+  Schedule Type: Sequential
+
+  Process 0:
+    Process Name: MyPhysicsA
+    Grid Name: SE Physics
+  Process 1:
+    Process Name: MyPhysicsB
+    Grid Name: SE Physics
+...
