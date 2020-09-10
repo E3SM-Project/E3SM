@@ -125,7 +125,7 @@
     <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
     <default_value>never</default_value>
     <values match="last">
-      <value compset="_DATM.+_CLM">ndays</value>
+      <value compset="_DATM.+_ELM">ndays</value>
     </values>
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
@@ -271,9 +271,9 @@
       <value compset="_SLND.*SOCN.*_MALI">day</value>
       <value compset="_MPASO"       >day</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">day</value>
-      <value compset="_CAM.*_CLM.*MPASO">day</value>
-      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">day</value>
-      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">day</value>
+      <value compset="_CAM.*_ELM.*MPASO">day</value>
+      <value compset="_CAM.*_ELM.*MPASO" grid="a%ne11np4">day</value>
+      <value compset="_CAM.*_ELM.*MPASO" grid="a%ne120np4">day</value>
     </values>
     <desc>Base period associated with NCPL coupling frequency.
     This xml variable is only used to set the driver namelist variables,
@@ -294,7 +294,7 @@
       <value compset="_CAM%ADIAB">48</value>
       <value compset="_CAM%IDEAL">48</value>
       <value compset="_DATM%COPYALL_NPS">72</value>
-      <value compset="_DATM.*_CLM">48</value>
+      <value compset="_DATM.*_ELM">48</value>
       <value compset="_DATM.*_DICE.*_POP2">4</value>
       <value compset="_DATM.*_SLND.*_CICE.*_POP2">24</value>
       <value compset="_DATM.*_CICE.*_DOCN">24</value>
@@ -319,10 +319,10 @@
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS15to5">96</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oARRM60to10">96</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oARRM60to6">96</value>
-      <value compset="_CAM.*_CLM.*MPASO">48</value>
-      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</value>
-      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">96</value>
-      <value compset="_CAM.*_CLM.*MPASO" grid="oi%oARRM60to10">96</value>
+      <value compset="_CAM.*_ELM.*MPASO">48</value>
+      <value compset="_CAM.*_ELM.*MPASO" grid="a%ne11np4">12</value>
+      <value compset="_CAM.*_ELM.*MPASO" grid="a%ne120np4">96</value>
+      <value compset="_CAM.*_ELM.*MPASO" grid="oi%oARRM60to10">96</value>
       <value compset=".+" grid="a%0.23x0.31">96</value>
       <value compset=".+" grid="a%ne4np4">12</value>
       <value compset=".+" grid="a%ne4np4.pg2">24</value>
@@ -374,11 +374,11 @@
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">$ATM_NCPL</value>
-      <value compset="_CAM.*_CLM.*MPASO">48</value>
-      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne4np4">$ATM_NCPL</value>
-      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</value>
-      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">96</value>
-      <value compset="_CAM.*_CLM.*MPASO" grid="oi%oARRM60to10">96</value>
+      <value compset="_CAM.*_ELM.*MPASO">48</value>
+      <value compset="_CAM.*_ELM.*MPASO" grid="a%ne4np4">$ATM_NCPL</value>
+      <value compset="_CAM.*_ELM.*MPASO" grid="a%ne11np4">12</value>
+      <value compset="_CAM.*_ELM.*MPASO" grid="a%ne120np4">96</value>
+      <value compset="_CAM.*_ELM.*MPASO" grid="oi%oARRM60to10">96</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -395,7 +395,7 @@
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">$ATM_NCPL</value>
-      <value compset="_CAM.*_CLM.*MPASO">$ATM_NCPL</value>
+      <value compset="_CAM.*_ELM.*MPASO">$ATM_NCPL</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -410,12 +410,12 @@
     <values match="last">
       <value compset="_POP2">1</value>
       <value compset="_POP2" grid="oi%tx0.1v2">4</value>
-      <value compset="_DATM.*_CLM4.*_SICE.*_SOCN">1</value>
+      <value compset="_DATM.*_ELM.*_SICE.*_SOCN">1</value>
       <value compset="_DATM.*_DLND.*_DICE.*_DOCN.*_SWAV">1</value>
       <value compset="_DATM.*_DLND.*_DICE.*_DOCN.*_DWAV">1</value>
       <value compset="_DATM%NYF.*_SLND.*_DICE.*_DOCN.*_SWAV">1</value>
       <value compset="_XATM.*_XLND.*_XICE.*_XOCN">1</value>
-      <value compset="_DATM.*_CLM4.*_SICE.*_SOCN">1</value>
+      <value compset="_DATM.*_ELM.*_SICE.*_SOCN">1</value>
       <value compset="_SATM.*_SLND.*_SICE.*_SOCN">1</value>
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_DLND.*_MALI">1</value>
@@ -454,9 +454,9 @@
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">1</value>
-      <value compset="_CAM.*_CLM.*MPASO">1</value>
-      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">1</value>
-      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">1</value>
+      <value compset="_CAM.*_ELM.*MPASO">1</value>
+      <value compset="_CAM.*_ELM.*MPASO" grid="a%ne11np4">1</value>
+      <value compset="_CAM.*_ELM.*MPASO" grid="a%ne120np4">1</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -499,10 +499,10 @@
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
-      <value compset="_CAM.*_CLM.*MPASO">8</value>
-      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne4np4">6</value>
-      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">4</value>
-      <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">8</value>
+      <value compset="_CAM.*_ELM.*MPASO">8</value>
+      <value compset="_CAM.*_ELM.*MPASO" grid="a%ne4np4">6</value>
+      <value compset="_CAM.*_ELM.*MPASO" grid="a%ne11np4">4</value>
+      <value compset="_CAM.*_ELM.*MPASO" grid="a%ne120np4">8</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -698,7 +698,7 @@
     </values>
     <group>run_co2</group>
     <file>env_run.xml</file>
-    <desc>This set the namelist values of CO2 ppmv for CAM and CLM. This variables is
+    <desc>This set the namelist values of CO2 ppmv for CAM and ELM. This variables is
       introduced to coordinate this value among multiple components.</desc>
   </entry>
 
@@ -730,7 +730,7 @@
     <group>run_glc</group>
     <file>env_run.xml</file>
     <desc>Glacier model number of elevation classes, 0 implies no glacier land unit in clm
-    Used by both CLM and CISM (even if CISM is not running, and only SGLC is used).</desc>
+    Used by both ELM and CISM (even if CISM is not running, and only SGLC is used).</desc>
   </entry>
 
   <entry id="GLC_TWO_WAY_COUPLING">
@@ -738,9 +738,8 @@
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
     <values match="last">
-      <value compset="_CLM45.+CISM\d">TRUE</value>
-      <value compset="_CLM45.*_MALI">TRUE</value>
-      <value compset="_CLM50.+CISM\d">TRUE</value>
+      <value compset="_ELM.+CISM\d">TRUE</value>
+      <value compset="_ELM.*_MALI">TRUE</value>
       <!-- Turn on two-way coupling for TG compsets - even though there are no
 	   feedbacks for a TG compset, this will give us additional diagnostics -->
       <value compset="_DLND.+CISM\d">TRUE</value>
@@ -749,7 +748,7 @@
     <file>env_run.xml</file>
     <desc>Whether the glacier component feeds back to the rest of the system
       This affects:
-      (1) Whether CLM updates its areas based on glacier areas sent from GLC
+      (1) Whether ELM updates its areas based on glacier areas sent from GLC
       (2) Whether GLC sends fluxes (e.g., calving fluxes) to the coupler
       Note that this is set to TRUE by default for TG compsets - even though there are
       no feedbacks for TG compsets, this enables extra coupler diagnostics for these
@@ -806,8 +805,8 @@
     <desc compset="SDYN_CAM">prescribed meteorology: for stand-alone cam</desc>
     <desc compset="AR95_CAM">ARM95 IOP: for stand-alone cam</desc>
     <desc compset="AR97_CAM">ARM97 IOP: for stand-alone cam</desc>
-    <desc compset="HIST_CLM4[05]%CN">CLM transient land use:</desc>
-    <desc compset="20TR_CLM4[05]%CN">CLM transient land use:</desc>
+    <desc compset="HIST_ELM%CN">ELM transient land use:</desc>
+    <desc compset="20TR_ELM%CN">ELM transient land use:</desc>
     <desc compset="PIPD">
       pre-industrial (1850) to present day:
       -----------------------------WARNING ------------------------------------------------
