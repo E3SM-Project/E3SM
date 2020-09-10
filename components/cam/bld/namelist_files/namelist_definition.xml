@@ -2877,6 +2877,19 @@ Temporary variable for a bug fix. Introduced to maintain BFB, must be REMOVED la
 Default: FALSE
 </entry>
 
+<!--Clubb config flags  -->
+<entry id="clubb_vert_avg_closure" type="logical" category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+CLUBB flag to determine 1) if the trapezoidal rule is called for the thermodynamic-level variables output from pdf_closure; 2) if the trapezoidal rule is called for three momentum-level variables output from pdf_closure; and 3) if call subroutine pdf_closure twice. True means all three options are True, while FALSE means all three options are false.
+Default: TRUE
+</entry>
+
+<entry id="clubb_ipdf_call_placement" type="integer" category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="1,2,3" >
+Select the placement of the call to CLUBB's PDF: 1) ipdf_pre_advance_fields --> Call before advancing predictive fields ; 2) ipdf_post_advance_fields --> Call after advancing predictive fields ; 3) ipdf_pre_post_advance_fields --> Call both before and after advancing predictive fields 
+Default: 1
+</entry>
+
 
 <!-- Clubb tunable parameters -->
 
@@ -3129,6 +3142,11 @@ Lscale threshold: damp C6 & C7  [m]
 Default: 60.0D0
 </entry>
 
+<entry id="clubb_altitude_thresh"  type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Lscale threshold: prevent large damping at low altitudes where Lscale is small
+Default: 100.0D0
+</entry>
 
 =======
 <!-- Ozone: Data (original CAM version) -->
