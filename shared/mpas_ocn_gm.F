@@ -398,18 +398,6 @@ contains
                sfcTaperUp = 1.0_RKIND + sfcTaperFactor*(sfcTaper - 1.0_RKIND)
                sfcTaperDown = 1.0_RKIND + sfcTaperFactor*(sfcTaper - 1.0_RKIND)
 
-               ! Griffies 1998 eqn 34
-               if (k > 1) then
-                  k33(k, iCell) = k33(k, iCell) + slopeTaperUp*sfcTaperUp* &
-                                  areaEdge*dzTop(k)*slopeTriadUp(k, iCellSelf, iEdge)**2
-                  k33Norm(k) = k33Norm(k) + areaEdge*dzTop(k)
-               end if
-
-               !Taper Redi by tapering the slopes
-               k33(k + 1, iCell) = k33(k + 1, iCell) + slopeTaperDown*sfcTaperDown* &
-                                   areaEdge*dzTop(k + 1)*slopeTriadDown(k, iCellSelf, iEdge)**2
-               k33Norm(k + 1) = k33Norm(k + 1) + areaEdge*dzTop(k + 1)
-
                slopeTriadUp(k, iCellSelf, iEdge) = &
                   slopeTaperUp*sfcTaperUp*slopeTriadUp(k, iCellSelf, iEdge)
                slopeTriadDown(k, iCellSelf, iEdge) = &
