@@ -483,9 +483,9 @@ contains
   subroutine compute_diag_third_shoc_moment_c(&
                              shcol, nlev, nlevi, w_sec, thl_sec, &
                              qw_sec, qwthl_sec, wthl_sec, tke, dz_zt, &
-		             dz_zi, zt_grid, zi_grid, isotropy_zi, &
-		             brunt_zi, w_sec_zi, thetal_zi, wthv_sec_zi, &
-		             shoc_mix_zi, w3) bind(C)
+                             dz_zi, zt_grid, zi_grid, isotropy_zi, &
+                             brunt_zi, w_sec_zi, thetal_zi, wthv_sec_zi, &
+                             shoc_mix_zi, w3) bind(C)
     use shoc, only: compute_diag_third_shoc_moment
 
     integer(kind=c_int), intent(in), value :: shcol
@@ -513,9 +513,9 @@ contains
     call compute_diag_third_shoc_moment(&
                              shcol, nlev, nlevi, w_sec, thl_sec, &
                              qw_sec, qwthl_sec, wthl_sec, tke, dz_zt, &
-		             dz_zi, zt_grid, zi_grid, isotropy_zi, &
-		             brunt_zi, w_sec_zi, thetal_zi, wthv_sec_zi, &
-		             shoc_mix_zi, w3)
+                             dz_zi, zt_grid, zi_grid, isotropy_zi, &
+                             brunt_zi, w_sec_zi, thetal_zi, wthv_sec_zi, &
+                             shoc_mix_zi, w3)
 
   end subroutine compute_diag_third_shoc_moment_c
  
