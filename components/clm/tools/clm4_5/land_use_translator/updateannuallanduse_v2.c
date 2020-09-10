@@ -33,7 +33,7 @@
  
  For example:
  >> make
- >> ./land_use_translator LUH2_HIST_LUH1_format.nc /global/cfs/cdirs/e3sm/inputdata/lnd/clm2/rawdata/LUT_input_files_current/
+ >> ./land_use_translator LUH2_HIST_LUH1f_c07182019.nc /global/cfs/cdirs/e3sm/inputdata/lnd/clm2/rawdata/LUT_input_files_current/
  
  There is also an optional third arugment that is the path to the output files, which will otherwise
  go into a new directory ./output by default.
@@ -54,7 +54,7 @@
  place of the file name argument (otherwise the default files will be used). This step isn't necessary
  if only changing this code.
  Search for the following to find the line to update:
- sprintf(usesfname, "LUH2_HIST_LUH1_format.nc");
+ sprintf(usesfname, "LUH2_HIST_LUH1f_c07182019.nc");
  
  Second, create new 1850 initial files by replacing the data in the original files with the 1850
  data from the two new dynamic LUT files. The original files are currently named:
@@ -5916,7 +5916,10 @@ updateannuallanduse_main(double glmo[][GLMONFLDS], double plodata[][PLONFLDS], i
    char *extaddr = strrchr(usesfname, '.');
    int numkeep = (int) (extaddr - usesfname);
    strncpy(inbase, usesfname, numkeep);
-   sprintf(out_land_filebase, "LUT_%s", inbase);
+   numkeep = numkeep - 10;
+   char outbase[1000];
+   strncpy(outbase, usesfname, numkeep);
+   sprintf(out_land_filebase, "LUT_%s", outbase);
    
    // input luh file names
    char luh_state_file[1000];
