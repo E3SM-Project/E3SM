@@ -42,7 +42,7 @@ struct UnitWrap::UnitTest<D>::TestShocGrid {
     SHOCGridData SDS(shcol, nlev, nlevi);
 
     // Test that the inputs are reasonable.
-    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev && SDS.nlevi()) );
+    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev && SDS.nlevi() == nlevi) );
     REQUIRE(nlevi - nlev == 1);
     REQUIRE(shcol > 0);
 
