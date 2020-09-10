@@ -24,6 +24,7 @@ _TESTS = {
             "ERS_Ld20.f45_f45.IELMFATES.elm-fates",
             "ERS.f19_g16.I1850ELM.elm-betr",
             "ERS.f19_g16.I1850ELM.elm-vst",
+            "ERS.f09_g16.I1850GSWCNPRDCTCBC.elm-vstrd",
             "ERS.f09_g16.I1850ELMCN.elm-bgcinterface",
             "ERS.ne11_oQU240.I20TRELM",
             "ERS.f19_g16.I1850CNRDCTCBC.elm-rd",
