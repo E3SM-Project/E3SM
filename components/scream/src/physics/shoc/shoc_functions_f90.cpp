@@ -92,6 +92,14 @@ void check_length_scale_shoc_length_c(Int nlev, Int shcol, Real *host_dx,
 void shoc_diag_second_moments_srf_c(Int shcol, Real* wthl, Real* uw, Real* vw,
                                    Real* ustar2, Real* wstar);
 
+void compute_diag_third_shoc_moment_c(Int shcol, Int nlev, Int nlevi, Real *w_sec,
+                                      Real *thl_sec, Real *qw_sec, Real *qwthl_sec,
+				      Real *wthl_sec, Real *tke, Real *dz_zt, 
+				      Real *dz_zi, Real *zt_grid, Real *zi_grid,
+				      Real *isotropy_zi, Real *brunt_zi, Real *w_sec_zi,
+				      Real *thetal_zi, Real *wthv_sec_zi, 
+				      Real *shoc_mix_zi, Real *w3);
+
 void linear_interp_c(Real *x1, Real *x2, Real *y1, Real *y2, Int km1,
                      Int km2, Int ncol, Real minthresh);
 void shoc_assumed_pdf_tilda_to_real_c(Real w_first, Real sqrtw2, Real* w1);
@@ -324,6 +332,17 @@ void shoc_diag_second_moments_srf(SHOCSecondMomentSrfData& d)
   shoc_diag_second_moments_srf_c(d.shcol, d.wthl, d.uw, d.vw, d.ustar2, d.wstar);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
+
+void compute_diag_third_shoc_moment(SHOCCompThirdMomData &d) {
+  shoc_init(d.nlev, true);
+  d.transpose<ekat::util::TransposeDirection::c2f>();
+  compute_diag_third_shoc_moment_c(d.shcol,d.nlev,d.nlevi,d.w_sec,d.thl_sec,d.qw_sec,
+                                   d.qwthl_sec,d.wthl_sec,d.tke,d.dz_zt,d.dz_zi,
+				   d.zt_grid,d.zi_grid,d.isotropy_zi,d.brunt_zi,
+				   d.w_sec_zi,d.thetal_zi,d.wthv_sec_zi,
+				   d.shoc_mix_zi,d.w3);
+  d.transpose<ekat::util::TransposeDirection::f2c>();
+} 
 
 void linear_interp(SHOCLinearintData& d)
 {
