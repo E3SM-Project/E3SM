@@ -394,6 +394,10 @@
 					description="If true, use the Community Vertical MIXing routines to compute vertical diffusivity and viscosity"
 					possible_values="True or False"
 		/>
+		<nml_option name="config_cvmix_use_kpp_buoyancyForcing_fix" type="logical" default_value=".false." units="NA"
+					description="If true CVMix KPP buoyancy forcing fix for sea ice is enabled"
+					possible_values="True or False"
+		/>
 		<nml_option name="config_cvmix_prandtl_number" type="real" default_value="1.0" units="non-dimensional"
 					description="Prandtl number to be used within the CVMix parameterization suite"
 					possible_values="Any non-negative real value."
@@ -2894,11 +2898,9 @@
 		/>
 		<var name="seaIceFreshWaterFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Fresh water flux from sea ice at cell centers from coupler. Positive into the ocean."
-			 packages="thicknessBulkPKG"
 		/>
 		<var name="icebergFreshWaterFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Fresh water flux from iceberg melt at cell centers from coupler. Positive into the ocean."
-			 packages="thicknessBulkPKG"
 		/>
 		<var name="riverRunoffFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Fresh water flux from river runoff at cell centers from coupler. Positive into the ocean."
