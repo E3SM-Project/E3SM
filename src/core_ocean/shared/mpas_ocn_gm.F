@@ -398,30 +398,30 @@ contains
                sfcTaperUp = 1.0_RKIND + sfcTaperFactor*(sfcTaper - 1.0_RKIND)
                sfcTaperDown = 1.0_RKIND + sfcTaperFactor*(sfcTaper - 1.0_RKIND)
 
+               slopeTriadUp(k, iCellSelf, iEdge) = &
+                  slopeTaperUp*sfcTaperUp*slopeTriadUp(k, iCellSelf, iEdge)
+               slopeTriadDown(k, iCellSelf, iEdge) = &
+                  slopeTaperDown*sfcTaperDown*slopeTriadDown(k, iCellSelf, iEdge)
+
                ! Griffies 1998 eqn 34
                if (k > 1) then
-                  k33(k, iCell) = k33(k, iCell) + slopeTaperUp*sfcTaperUp* &
+                  k33(k, iCell) = k33(k, iCell) +  &
                                   areaEdge*dzTop(k)*slopeTriadUp(k, iCellSelf, iEdge)**2
                   k33Norm(k) = k33Norm(k) + areaEdge*dzTop(k)
                end if
 
                !Taper Redi by tapering the slopes
-               k33(k + 1, iCell) = k33(k + 1, iCell) + slopeTaperDown*sfcTaperDown* &
+               k33(k + 1, iCell) = k33(k + 1, iCell) +  &
                                    areaEdge*dzTop(k + 1)*slopeTriadDown(k, iCellSelf, iEdge)**2
                k33Norm(k + 1) = k33Norm(k + 1) + areaEdge*dzTop(k + 1)
 
-               slopeTriadUp(k, iCellSelf, iEdge) = &
-                  slopeTaperUp*sfcTaperUp*slopeTriadUp(k, iCellSelf, iEdge)
-               slopeTriadDown(k, iCellSelf, iEdge) = &
-                  slopeTaperDown*sfcTaperDown*slopeTriadDown(k, iCellSelf, iEdge)
 
             end do ! maxLevelEdgeTop(iEdge)
          end do ! nEdgesOnCell(iCell)
 
          ! Normalize k33
          do k = 2, maxLevelCell(iCell)
-            k33(k, iCell) = k33(k, iCell)/k33Norm(k)*RediKappaSfcTaper(k, iCell)* &
-                            RediKappaScaling(k, iCell)
+            k33(k, iCell) = k33(k, iCell)/k33Norm(k)*RediKappaScaling(k, iCell)
          end do
          k33(1, iCell) = 0.0_RKIND
          k33(maxLevelCell(iCell) + 1, iCell) = 0.0_RKIND
