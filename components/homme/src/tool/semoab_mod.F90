@@ -562,6 +562,8 @@ contains
        print *, ' local_cell_gids ', local_cell_gids
        print *, ' indx_cell ', indx_cell
        allocate( elem_edge (4, nelemd) )
+       print *, '------------------------------- '
+       print *, "RANK:", par%rank
        edge_index = 0
        do ie=1, nelemd !
            ! we need to check if neighbor is with id smaller; that means it was already created ?
@@ -647,6 +649,7 @@ contains
        if (fv_nphys .eq. 2) then
           current_2d_vertex%r = 1.
           do ie = 1,nelemd
+              ix = (ie-1)*np*np ! ie: index in coarse element
               do j=1,4
                  idx = elem_edge(j, ie) !
                  if (idx .gt. 0) then ! increment edges, add vertex !
@@ -655,38 +658,38 @@ contains
                      pos_edge = .true.
                      iv = nverts_c + j1
                      edge_verts(j) = iv !  to form the local connectivity array
-                     if ( vdone_c(edge(1, idx)) .gt.  vdone_c(edge(2, edge_index)) ) pos_edge = .false.
+                     if ( vdone_c(edge(1, idx)) .gt.  vdone_c(edge(2, idx)) ) pos_edge = .false.
                      if (j .eq. 1) then
                          current_2d_vertex%lat = fv_physgrid(ie)%corner_lat(1,1,2)
                          current_2d_vertex%lon = fv_physgrid(ie)%corner_lon(1,1,2)
                          if (pos_edge) then
-                             vdone_pg (iv) = elem(ie)%gdofP(2,1) !
+                             vdone_pg (iv) = gdofel(ix + 2) ! elem(ie)%gdofP(2,1) ! gdofel(ix+ (j-1)*np + i)
                          else
-                             vdone_pg (iv) = elem(ie)%gdofP(np-1,1) !
+                             vdone_pg (iv) = gdofel(ix + np - 1) !elem(ie)%gdofP(np-1,1) !
                          endif
                      else if (j .eq. 2) then
-                         current_2d_vertex%lat = fv_physgrid(ie)%corner_lat(1,2,3)
-                         current_2d_vertex%lon = fv_physgrid(ie)%corner_lon(1,2,3)
+                         current_2d_vertex%lat = fv_physgrid(ie)%corner_lat(2,1,3)
+                         current_2d_vertex%lon = fv_physgrid(ie)%corner_lon(2,1,3)
                          if (pos_edge) then
-                             vdone_pg (iv) = elem(ie)%gdofP(np,2) !
+                             vdone_pg (iv) = gdofel(ix + (2 - 1) * np + np)!elem(ie)%gdofP(np,2) ! ! gdofel(ix+ (j-1)*np + i)
                          else
-                             vdone_pg (iv) = elem(ie)%gdofP(np,np - 1) !
+                             vdone_pg (iv) = gdofel(ix + (np - 2) * np + np)!elem(ie)%gdofP(np,np - 1) !
                          endif
                      else if (j .eq. 3) then
                          current_2d_vertex%lat = fv_physgrid(ie)%corner_lat(2,2,4)
                          current_2d_vertex%lon = fv_physgrid(ie)%corner_lon(2,2,4)
                          if (pos_edge) then
-                             vdone_pg (iv) = elem(ie)%gdofP(np-1,np) !
+                             vdone_pg (iv) = gdofel(ix+ (np - 1) * np + np - 1)!elem(ie)%gdofP(np-1,np) !
                          else
-                             vdone_pg (iv) = elem(ie)%gdofP(2,np) !
+                             vdone_pg (iv) = gdofel(ix+ (np-1)*np + 2) !elem(ie)%gdofP(2,np) !
                          endif
                      else ! if (j .eq. 4)
                          current_2d_vertex%lat = fv_physgrid(ie)%corner_lat(1,2,1)
                          current_2d_vertex%lon = fv_physgrid(ie)%corner_lon(1,2,1)
                          if (pos_edge) then
-                             vdone_pg (iv) = elem(ie)%gdofP(1,np-1) !
+                             vdone_pg (iv) = gdofel(ix+ (np - 2)*np + 1) !elem(ie)%gdofP(1,np-1) !
                          else
-                             vdone_pg (iv) = elem(ie)%gdofP(1,2) !
+                             vdone_pg (iv) = gdofel(ix+ ( 2 - 1 )*np + 1) ! elem(ie)%gdofP(1,2) !
                          endif
                      endif
                      ! create the 3d vertex !
@@ -694,6 +697,7 @@ contains
                      moab_vert_coords ( 3*(iv-1)+1 ) = cart%x
                      moab_vert_coords ( 3*(iv-1)+2 ) = cart%y
                      moab_vert_coords ( 3*(iv-1)+3 ) = cart%z
+                     print *, 'ie, j, iv, vdone_pg(iv): ', ie, j, iv, vdone_pg(iv)
                  else ! the vertex was already created, but we need the index for connectivity of local fv cells
                      edge_verts(j) = nverts_c + ( -idx ) ! idx is index of edge (negative for already created)
                  endif
@@ -704,7 +708,8 @@ contains
               current_2d_vertex%lon = fv_physgrid(ie)%corner_lon(1,1,3)
               iv = nverts_c + edge_index + ie ! middle vertices are after corners, and edge vertices
               middle_vertex = iv
-              vdone_pg (middle_vertex) = elem(ie)%gdofP(2,2) ! first in the interior, not on edges!
+              vdone_pg (middle_vertex) = gdofel(ix+ np + 2)!elem(ie)%gdofP(2,2) ! first in the interior, not on edges!
+              print *, 'ie, middle = iv, vdone_pg(iv): ', ie, iv, vdone_pg(iv)
               cart = spherical_to_cart (current_2d_vertex )
               moab_vert_coords ( 3*(iv-1)+1 ) = cart%x
               moab_vert_coords ( 3*(iv-1)+2 ) = cart%y
