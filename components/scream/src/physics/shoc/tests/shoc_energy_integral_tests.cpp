@@ -27,18 +27,17 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
   {
     static constexpr Int shcol    = 2;
     static constexpr Int nlev     = 5;
-    static constexpr auto nlevi   = nlev + 1;
 
     // Tests for the SHOC function
     //     shoc_energy_integrals
 
     // FIRST TEST and SECOND TEST
-    //   FIRST: kinetic energy test.  Given at least two columns with 
+    //   FIRST: kinetic energy test.  Given at least two columns with
     //   identical inputs but with increasing winds in each column
-    //   verify that the column with stronger winds results 
-    //   in a higher kinetic energy test.  
+    //   verify that the column with stronger winds results
+    //   in a higher kinetic energy test.
     //   SECOND: vapor test.  verify that columns with no vapor
-    //   or moisture result in zero integral outputs.  If the 
+    //   or moisture result in zero integral outputs.  If the
     //   column is positive then verify that wl_int >= wv_int
 
     // Define host model dry static energy [K]
@@ -59,18 +58,19 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
 
     // Test that the inputs are reasonable.
     // for this test we need exactly two columns
-    REQUIRE(SDS.shcol == 2);
+    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev) );
+    REQUIRE(shcol == 2);
 
     // Fill in test data on zt_grid.
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 
 	// Add one degree K in the second column
 	SDS.host_dse[offset] = s+host_dse[n];
 
 	// convert to [kg/kg]
-	// Force the first column of cloud liquid 
+	// Force the first column of cloud liquid
 	//   to be zero!
 	SDS.rcm[offset] = s*rcm[n]/1000.0;
 	SDS.rtm[offset] = rtm[n]/1000.0;
@@ -86,9 +86,9 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
 
     // Check that the inputs make sense
 
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for (Int n = 0; n < SDS.nlev; ++n){
-	const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n){
+	const auto offset = n + s * nlev;
 
 	REQUIRE(SDS.host_dse[offset] > 0.0);
 	REQUIRE(SDS.rcm[offset] >= 0.0);
@@ -97,13 +97,13 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
 	// make sure the two columns are different and
 	//  as expected for the relevant variables
 	if (s == 0){
-          const auto offsets = n + (s+1) * SDS.nlev;
+          const auto offsets = n + (s+1) * nlev;
 
           REQUIRE(abs(SDS.u_wind[offsets]) > abs(SDS.u_wind[offset]));
           REQUIRE(abs(SDS.v_wind[offsets]) > abs(SDS.v_wind[offset]));
           REQUIRE(SDS.rcm[offset] == 0.0);
           REQUIRE(SDS.rcm[offsets] > SDS.rcm[offset]);
-	}      
+	}
       }
     }
 
@@ -126,7 +126,11 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyInt {
       }
     }
   }
-  
+
+  static void run_bfb()
+  {
+    // TODO
+  }
 };
 
 }  // namespace unit_test
@@ -142,10 +146,11 @@ TEST_CASE("shoc_energy_integrals_property", "shoc")
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_energy_integrals_b4b", "shoc")
+TEST_CASE("shoc_energy_integrals_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEnergyInt;
 
+  TestStruct::run_bfb();
 }
 
 } // namespace
