@@ -210,7 +210,7 @@ def buildnml(case, caseroot, compname):
         ic_prefix += 'ocean.EC30to60E2r2'
         decomp_date += '200904'
         decomp_prefix += 'mpas-o.graph.info.'
-        restoring_file += 'sss.monthlyClimatology.PHC2_salx_040803.EC30to60E2r2.200908.nc'
+        restoring_file += 'sss.PHC2_monthlyClimatology.EC30to60E2r2.200910.nc'
         analysis_mask_file += 'EC30to60E2r2_moc_masks_and_transects.nc'
     elif ocn_grid == 'EC30to60E2r2_ICG':
         ic_date += '200908'
