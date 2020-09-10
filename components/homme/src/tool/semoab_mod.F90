@@ -559,27 +559,27 @@ contains
        enddo
        call IndexSet(nelemd, indx_cell)
        call IndexSort(nelemd, indx_cell, local_cell_gids, descend=.false.)
-       print *, ' local_cell_gids ', local_cell_gids
-       print *, ' indx_cell ', indx_cell
+       ! print *, ' local_cell_gids ', local_cell_gids
+       ! print *, ' indx_cell ', indx_cell
        allocate( elem_edge (4, nelemd) )
-       print *, '------------------------------- '
-       print *, "RANK:", par%rank
+       ! print *, '------------------------------- '
+       ! print *, "RANK:", par%rank
        edge_index = 0
        do ie=1, nelemd !
            ! we need to check if neighbor is with id smaller; that means it was already created ?
-           print *, '-------------- '
-           print *, ' elem ', ie, elem(ie)%desc%actual_neigh_edges, elem(ie)%vertex%number, elem(ie)%GlobalID
-           print *, '   nodes ', ( moabconn_c( (ie-1)*4+j), j=1,4 )
-           print *, '   ids ', (vdone_c( moabconn_c( (ie-1)*4+j) ), j=1,4)
-           print *, '   neigh: ', (elem(ie)%desc%globalID(j), j=1,4)
-           print *, '   neigh order ', ( elem(ie)%desc%globalID(nat_edge_order(j)),j = 1,4 )
+           ! print *, '-------------- '
+           ! print *, ' elem ', ie, elem(ie)%desc%actual_neigh_edges, elem(ie)%vertex%number, elem(ie)%GlobalID
+           ! print *, '   nodes ', ( moabconn_c( (ie-1)*4+j), j=1,4 )
+           ! print *, '   ids ', (vdone_c( moabconn_c( (ie-1)*4+j) ), j=1,4)
+           ! print *, '   neigh: ', (elem(ie)%desc%globalID(j), j=1,4)
+           ! print *, '   neigh order ', ( elem(ie)%desc%globalID(nat_edge_order(j)),j = 1,4 )
            k = elem(ie)%GlobalID ! current id
            do j = 1,4
                ix = j+1
                if (ix .eq. 5) ix = 1 ! next vertex in connectivity array
                neigh = elem(ie)%desc%globalID(nat_edge_order(j)) ! id neighbor
                idx = search_in(local_cell_gids, nelemd, neigh) ! index in local cells
-               print *, '   ', j, 'neigh:', neigh, ' index' , idx
+               ! print *, '   ', j, 'neigh:', neigh, ' index' , idx
 
                if ( idx .gt. 0 ) then
                    ! a local edge is interior
@@ -590,8 +590,8 @@ contains
                        edge(2, edge_index) = moabconn_c(4*(ie-1) + ix) ! second vertex index
                        elem_edge(j, ie) = edge_index
                        internal_edges = internal_edges + 1
-                       print *, ' edge:', edge_index, edge(1, edge_index), edge(2, edge_index), 'verts:' , &
-                          vdone_c(edge(1, edge_index)), vdone_c(edge(2, edge_index)), ' element ', ie, ' intedge:', internal_edges
+                       ! print *, ' edge:', edge_index, edge(1, edge_index), edge(2, edge_index), 'verts:' , &
+                       !   vdone_c(edge(1, edge_index)), vdone_c(edge(2, edge_index)), ' element ', ie, ' intedge:', internal_edges
 
                    else
                        ! find the edge in the other list elem(idx)%globalID( nat_edge_order(j) )
@@ -599,8 +599,8 @@ contains
                            if ( elem(idx)%desc%globalID( nat_edge_order(j1) ) .eq. k ) then
                                elem_edge(j, ie) = - elem_edge(j1, idx) ! inverse oriented
                                reverse_edges = reverse_edges + 1
-                               print *, ' negative edge: ', elem_edge(j, ie), edge(1, -elem_edge(j, ie)), edge(2, -elem_edge(j, ie)), &
-                                'verts:', vdone_c(edge(1, -elem_edge(j, ie))), vdone_c(edge(2, -elem_edge(j, ie))), 'indx neg', reverse_edges
+                               ! print *, ' negative edge: ', elem_edge(j, ie), edge(1, -elem_edge(j, ie)), edge(2, -elem_edge(j, ie)), &
+                               ! 'verts:', vdone_c(edge(1, -elem_edge(j, ie))), vdone_c(edge(2, -elem_edge(j, ie))), 'indx neg', reverse_edges
                            endif
                        enddo
 
@@ -611,27 +611,27 @@ contains
                    edge(2, edge_index) = moabconn_c(4*(ie-1) + ix) ! second vertex index
                    elem_edge(j, ie) = edge_index
                    boundary_edges = boundary_edges + 1
-                   print *, ' edge:', edge_index, edge(1, edge_index), edge(2, edge_index), 'verts:' , &
-                          vdone_c(edge(1, edge_index)), vdone_c(edge(2, edge_index)), ' element ', ie, &
-                          ' bedge:', boundary_edges
+                   ! print *, ' edge:', edge_index, edge(1, edge_index), edge(2, edge_index), 'verts:' , &
+                   !       vdone_c(edge(1, edge_index)), vdone_c(edge(2, edge_index)), ' element ', ie, &
+                   !       ' bedge:', boundary_edges
                endif
            enddo
        enddo
        ! show off
        nverts_pg = nverts_c + (fv_nphys - 1) * edge_index + (fv_nphys - 1) * (fv_nphys - 1) * nelemd
-       print *, " MOAB: there are ", nverts_pg, " local vertices on master task on pg mesh ", edge_index , " local coarse edges ", &
-         boundary_edges , ' boundary edges '
+       ! print *, " MOAB: there are ", nverts_pg, " local vertices on master task on pg mesh ", edge_index , " local coarse edges ", &
+       !  boundary_edges , ' boundary edges '
        if(par%masterproc) then
          write (iulog, *) " MOAB: there are ", nverts_pg, " local vertices on master task on pg mesh ", edge_index , " local coarse edges "
        endif
-       print *, '\n ELEMENTS: '
-       do ie=1,nelemd
-           print *, ie, elem(ie)%GlobalID, ' local nodes:', ( moabconn_c( (ie-1)*4+j), j=1,4 ), ' edges:', (elem_edge(j, ie), j=1,4)
-       enddo
-       print *, '\n EDGES:'
-       do ie=1,edge_index
-           print *, ie, (edge(j, ie), j=1,2)
-       enddo
+       !print *, '\n ELEMENTS: '
+       !do ie=1,nelemd
+       !    print *, ie, elem(ie)%GlobalID, ' local nodes:', ( moabconn_c( (ie-1)*4+j), j=1,4 ), ' edges:', (elem_edge(j, ie), j=1,4)
+       !enddo
+       !print *, '\n EDGES:'
+       !do ie=1,edge_index
+       !    print *, ie, (edge(j, ie), j=1,2)
+       !enddo
        ! now generate phys grid, uniform FV type mesh;
        ! 2 cases: fv_nphys is 1 or 2; when 2, we need new nodes; will use the same id as
        ! the gdof on edge is used, with the smaller id chosen, among
@@ -697,7 +697,7 @@ contains
                      moab_vert_coords ( 3*(iv-1)+1 ) = cart%x
                      moab_vert_coords ( 3*(iv-1)+2 ) = cart%y
                      moab_vert_coords ( 3*(iv-1)+3 ) = cart%z
-                     print *, 'ie, j, iv, vdone_pg(iv): ', ie, j, iv, vdone_pg(iv)
+                     ! print *, 'ie, j, iv, vdone_pg(iv): ', ie, j, iv, vdone_pg(iv)
                  else ! the vertex was already created, but we need the index for connectivity of local fv cells
                      edge_verts(j) = nverts_c + ( -idx ) ! idx is index of edge (negative for already created)
                  endif
@@ -709,7 +709,7 @@ contains
               iv = nverts_c + edge_index + ie ! middle vertices are after corners, and edge vertices
               middle_vertex = iv
               vdone_pg (middle_vertex) = gdofel(ix+ np + 2)!elem(ie)%gdofP(2,2) ! first in the interior, not on edges!
-              print *, 'ie, middle = iv, vdone_pg(iv): ', ie, iv, vdone_pg(iv)
+              ! print *, 'ie, middle = iv, vdone_pg(iv): ', ie, iv, vdone_pg(iv)
               cart = spherical_to_cart (current_2d_vertex )
               moab_vert_coords ( 3*(iv-1)+1 ) = cart%x
               moab_vert_coords ( 3*(iv-1)+2 ) = cart%y
