@@ -119,10 +119,7 @@ real(r8) :: micro_mg_dcs = -1._r8
 
 logical :: microp_uniform
 
-!!== KZ_DCS
 logical :: micro_mg_dcs_tdep  = .false.! if set to true, use temperature dependent dcs
-!!== KZ_DCS
-
 
 character(len=16) :: micro_mg_precip_frac_method = 'max_overlap' ! type of precipitation fraction method
 real(r8) :: micro_mg_mass_gradient_alpha = -1._r8                ! Parameters used in mass_gradient method.
@@ -249,6 +246,7 @@ integer :: &
    real(r8) :: cld_sed_in               = huge(1.0_r8) !scale fac for cloud sedimentation velocity
    real(r8) :: nccons                   = huge(1.0_r8)
    real(r8) :: nicons                   = huge(1.0_r8)
+   real(r8) :: mincdnc                  = huge(1.0_r8)
    logical  :: mg_prc_coeff_fix_in      = .false. !temporary variable to maintain BFB, MUST be removed
    logical  :: rrtmg_temp_fix           = .false. !temporary variable to maintain BFB, MUST be removed
 
@@ -277,6 +275,7 @@ subroutine micro_mg_cam_readnl(nlfile)
   logical :: micro_do_nicons    = .false.! micro_do_nicons = .true.,MG does NOT predict numice
   integer :: micro_mg_num_steps = 1      ! Number of substepping iterations done by MG (1.5 only for now).
   real(r8) :: micro_nccons, micro_nicons
+  real(r8) :: micro_mincdnc     = -999.  ! namelist for mincdnc 
 
   ! Local variables
   integer :: unitn, ierr
@@ -284,13 +283,11 @@ subroutine micro_mg_cam_readnl(nlfile)
 
   namelist /micro_mg_nl/ micro_mg_version, micro_mg_sub_version, &
        micro_mg_do_cldice, micro_mg_do_cldliq, micro_mg_num_steps, ice_sed_ai,&
-!!== KZ_DCS
        micro_mg_dcs_tdep, & 
-!!== KZ_DCS
        microp_uniform, micro_mg_dcs, micro_mg_precip_frac_method, &
        micro_mg_mass_gradient_alpha, micro_mg_mass_gradient_beta, &
        micro_mg_berg_eff_factor, micro_do_nccons, micro_do_nicons, &
-       micro_nccons, micro_nicons
+       micro_nccons, micro_nicons, micro_mincdnc 
 
   !-----------------------------------------------------------------------------
 
@@ -314,6 +311,7 @@ subroutine micro_mg_cam_readnl(nlfile)
      do_nicons = micro_do_nicons
      nccons = micro_nccons
      nicons = micro_nicons
+     mincdnc = micro_mincdnc
      
      num_steps = micro_mg_num_steps
      
@@ -373,6 +371,7 @@ subroutine micro_mg_cam_readnl(nlfile)
   call mpibcast(ice_sed_ai,                  1, mpir8,  0, mpicom)
   call mpibcast(nccons,                      1, mpir8,  0, mpicom)
   call mpibcast(nicons,                      1, mpir8,  0, mpicom)
+  call mpibcast(mincdnc,                     1, mpir8,  0, mpicom)
   call mpibcast(micro_mg_precip_frac_method, 16, mpichar,0, mpicom)
   call mpibcast(micro_mg_mass_gradient_alpha, 1, mpir8, 0, mpicom)
   call mpibcast(micro_mg_mass_gradient_beta, 1, mpir8,  0, mpicom)
@@ -721,7 +720,7 @@ subroutine micro_mg_cam_init(pbuf2d)
               micro_mg_dcs,                  &
               micro_mg_dcs_tdep,             &
               microp_uniform, do_cldice, use_hetfrz_classnuc, &
-	      do_nccons, do_nicons, nccons, nicons, &
+	      do_nccons, do_nicons, nccons, nicons, mincdnc, &
               micro_mg_precip_frac_method, micro_mg_berg_eff_factor, &
               allow_sed_supersat, ice_sed_ai, prc_coef1_in,prc_exp_in, &
               prc_exp1_in, cld_sed_in, mg_prc_coeff_fix_in, &
@@ -859,9 +858,7 @@ subroutine micro_mg_cam_init(pbuf2d)
    call addfld ('CV_REFFLIQ', (/ 'lev' /), 'A', 'micron', 'convective cloud liq effective radius')
    call addfld ('CV_REFFICE', (/ 'lev' /), 'A', 'micron', 'convective cloud ice effective radius')
 
-!!== KZ_DCS
    call addfld ('DCST',(/ 'lev' /), 'A','m','dcs')
-!!== KZ_DCS
    ! diagnostic precip
    call addfld ('QRAIN',(/ 'lev' /), 'A','kg/kg','Diagnostic grid-mean rain mixing ratio'         )
    call addfld ('QSNOW',(/ 'lev' /), 'A','kg/kg','Diagnostic grid-mean snow mixing ratio'         )
