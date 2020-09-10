@@ -2,8 +2,6 @@
 #bsub -W 2:00 -nnodes 1 -P cli115 -Is /bin/bash
 
 
-#cmake -C ~/acme-fork-lb/components/homme/cmake/machineFiles/summit.cmake -DHOMMEXX_MPI_ON_DEVICE=FALSE ~/acme-fork-lb/components/homme/
-
 #SET (HOMMEXX_MPI_ON_DEVICE FALSE CACHE BOOL "")
 SET (HOMMEXX_CUDA_MAX_WARP_PER_TEAM "16" CACHE STRING  "")
 
@@ -52,4 +50,9 @@ set (HOMME_TESTING_PROFILE "dev" CACHE STRING "")
 set (USE_NUM_PROCS 4 CACHE STRING "")
 
 #set (OPT_FLAGS "-mcpu=power9 -mtune=power9" CACHE STRING "")
+
+#temp change to have bngry exchange file compile with cuda
+#will get rid of this later
+set (OPT_FLAGS "--save-temps" CACHE STRING "")
+
 SET (USE_MPI_OPTIONS "--bind-to core" CACHE FILEPATH "")
