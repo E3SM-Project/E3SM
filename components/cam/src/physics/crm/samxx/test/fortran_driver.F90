@@ -168,7 +168,7 @@ program driver
   call dmdf_read( crm_input%fluxv00          , fname_in , trim("in_fluxv00       ") , myTasks_beg , myTasks_end , .false. , .false. )
   call dmdf_read( crm_input%fluxt00          , fname_in , trim("in_fluxt00       ") , myTasks_beg , myTasks_end , .false. , .false. )
   call dmdf_read( crm_input%fluxq00          , fname_in , trim("in_fluxq00       ") , myTasks_beg , myTasks_end , .false. , .false. )
-  call dmdf_read( crm_output%timing_factor   , fname_in , trim("out_timing_factor") , myTasks_beg , myTasks_end , .false. , .true.  )
+  call dmdf_read( crm_output%subcycle_factor   , fname_in , trim("out_subcycle_factor") , myTasks_beg , myTasks_end , .false. , .true.  )
 
   do icrm = 1 , ncrms
     crm_input%zmid       (icrm,:)     = read_crm_input_zmid       (:    ,icrm)                       
@@ -299,7 +299,7 @@ program driver
         call dmdf_write( crm_output%taux          (icrm)       , 1 , fprefix , trim('output_taux         ')                                              , .false. , .false. )
         call dmdf_write( crm_output%tauy          (icrm)       , 1 , fprefix , trim('output_tauy         ')                                              , .false. , .false. )
         call dmdf_write( crm_output%z0m           (icrm)       , 1 , fprefix , trim('output_z0m          ')                                              , .false. , .false. )
-        call dmdf_write( crm_output%timing_factor (icrm)       , 1 , fprefix , trim('output_timing_factor')                                              , .false. , .false. )
+        call dmdf_write( crm_output%subcycle_factor (icrm)       , 1 , fprefix , trim('output_subcycle_factor')                                              , .false. , .false. )
         call dmdf_write( crm_rad%qrad             (icrm,:,:,:) , 1 , fprefix , trim('rad_qrad            ') , (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .false. )
         call dmdf_write( crm_rad%temperature      (icrm,:,:,:) , 1 , fprefix , trim('rad_temperature     ') , (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .false. )
         call dmdf_write( crm_rad%qv               (icrm,:,:,:) , 1 , fprefix , trim('rad_qv              ') , (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .false. )

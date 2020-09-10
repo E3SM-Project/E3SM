@@ -2,7 +2,7 @@
 #include "timeloop.h"
 
 void timeloop() {
-  auto &crm_output_timing_factor = :: crm_output_timing_factor;
+  auto &crm_output_subcycle_factor = :: crm_output_subcycle_factor;
   auto &t                        = :: t;
   auto &crm_rad_qrad             = :: crm_rad_qrad;
   auto &dtn                      = :: dtn;
@@ -30,7 +30,7 @@ void timeloop() {
       dtfactor = dtn/dt;
 
       parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
-        crm_output_timing_factor(icrm) = crm_output_timing_factor(icrm)+1;
+        crm_output_subcycle_factor(icrm) = crm_output_subcycle_factor(icrm)+1;
       });
 
       //---------------------------------------------

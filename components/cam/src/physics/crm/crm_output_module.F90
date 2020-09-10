@@ -129,7 +129,7 @@ module crm_output_module
       real(crm_rknd), allocatable :: taux     (:)    ! zonal CRM surface stress perturbation      [N/m2]
       real(crm_rknd), allocatable :: tauy     (:)    ! merid CRM surface stress perturbation      [N/m2]
       real(crm_rknd), allocatable :: z0m          (:)    ! surface stress                             [N/m2]
-      real(crm_rknd), allocatable :: timing_factor(:)    ! crm cpu efficiency
+      real(crm_rknd), allocatable :: subcycle_factor(:)    ! crm cpu efficiency
 
 #ifdef MAML
       ! MAML variables
@@ -298,7 +298,7 @@ contains
          if (.not. allocated(output%taux         )) allocate(output%taux         (ncol))
          if (.not. allocated(output%tauy         )) allocate(output%tauy         (ncol))
          if (.not. allocated(output%z0m          )) allocate(output%z0m          (ncol))
-         if (.not. allocated(output%timing_factor)) allocate(output%timing_factor(ncol))
+         if (.not. allocated(output%subcycle_factor)) allocate(output%subcycle_factor(ncol))
 
          call prefetch(output%sltend  )
          call prefetch(output%qltend  )
@@ -340,7 +340,7 @@ contains
          call prefetch(output%taux          )
          call prefetch(output%tauy          )
          call prefetch(output%z0m           )
-         call prefetch(output%timing_factor )
+         call prefetch(output%subcycle_factor )
 
       end if ! present(ncol)
 
@@ -458,7 +458,7 @@ contains
       output%taux      = 0
       output%tauy      = 0
       output%z0m           = 0
-      output%timing_factor = 0
+      output%subcycle_factor = 0
 
    end subroutine crm_output_initialize
    !------------------------------------------------------------------------------------------------
@@ -573,7 +573,7 @@ contains
       if (allocated(output%taux)) deallocate(output%taux)
       if (allocated(output%tauy)) deallocate(output%tauy)
       if (allocated(output%z0m)) deallocate(output%z0m)
-      if (allocated(output%timing_factor)) deallocate(output%timing_factor)
+      if (allocated(output%subcycle_factor)) deallocate(output%subcycle_factor)
 
    end subroutine crm_output_finalize
    !------------------------------------------------------------------------------------------------

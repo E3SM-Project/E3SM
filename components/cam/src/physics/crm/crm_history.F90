@@ -266,7 +266,6 @@ subroutine crm_history_init(species_class)
    call addfld('SPQVFLUX ',(/'lev'/), 'A', 'W/m2',  'Water Wapor Flux from CRM' )
    call addfld('SPQRL    ',(/'lev'/), 'A','K/s',    'long-wave heating rate')
    call addfld('SPQRS    ',(/'lev'/), 'A','K/s',    'short-wave heating rate')
-   call addfld('TIMINGF ', horiz_only,'A',' ',      'CRM subcycle ratio: 1.0 = no subcycling' )
    call addfld('CLOUDTOP',(/'lev'/),  'A',' ',      'Cloud Top PDF' )
 #if defined(MMF_MOMENTUM_FEEDBACK) || defined(MMF_ESMT)
    call addfld('UCONVMOM',(/'lev'/), 'A', 'm/s2 ','U tendency due to CRM' )
@@ -283,6 +282,8 @@ subroutine crm_history_init(species_class)
    call addfld('SPNDROPMIX',(/'lev'/), 'A','#/kg/s','Droplet number mixing')
    call addfld('SPNDROPSRC',(/'lev'/), 'A','#/kg/s','Droplet number source')
    call addfld('SPNDROPCOL',horiz_only,'A','#/m2',  'Column droplet number')
+
+   call addfld('MMF_SUBCYCLE_FAC', horiz_only,'A',' ', 'CRM subcycle ratio: 1.0 = no subcycling' )
 
    !----------------------------------------------------------------------------
    ! add dropmixnuc tendencies for all modal aerosol species
@@ -348,7 +349,7 @@ subroutine crm_history_init(species_class)
    call add_default('SPTK    ', 1, ' ')
    call add_default('SPQTLS  ', 1, ' ')
    call add_default('SPTLS   ', 1, ' ')
-   call add_default('TIMINGF ', 1, ' ')
+   call add_default('MMF_SUBCYCLE_FAC', 1, ' ')
 
    if (MMF_microphysics_scheme .eq. 'm2005') then
       call add_default('SPNC    ', 1, ' ')
@@ -501,7 +502,7 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, crm_ecp
    call outfld('CLDLOW  ',crm_output%cllow,  pcols, lchnk )
    call outfld('CLOUDTOP',crm_output%cldtop, pcols, lchnk )
 
-   call outfld('TIMINGF ',crm_output%timing_factor  ,pcols,lchnk)
+   call outfld('MMF_SUBCYCLE_FAC',crm_output%subcycle_factor  ,pcols,lchnk)
 
    ! CRM mass flux
    call outfld('SPMC    ', crm_output%mctot,  pcols, lchnk )

@@ -90,7 +90,7 @@ void pre_timeloop() {
   auto &crm_input_tau00          = :: crm_input_tau00;
   auto &ustar                    = :: ustar;
   auto &z0                       = :: z0;
-  auto &crm_output_timing_factor = :: crm_output_timing_factor;
+  auto &crm_output_subcycle_factor = :: crm_output_subcycle_factor;
   auto &rhow                     = :: rhow;
   auto &qv                       = :: qv;
   auto &crm_output_prectend      = :: crm_output_prectend;
@@ -390,7 +390,7 @@ void pre_timeloop() {
     //z0(icrm) = z0_est(z(icrm,1),bflx(icrm),wnd(icrm),ustar(icrm))
     z0_est(z(0,icrm),bflx(icrm),wnd(icrm),ustar(icrm),z0(icrm));
     z0(icrm) = max(0.00001,min(1.0,z0(icrm)));
-    crm_output_timing_factor(icrm) = 0.0;
+    crm_output_subcycle_factor(icrm) = 0.0;
     crm_output_prectend (icrm)=colprec (icrm);
     crm_output_precstend(icrm)=colprecs(icrm);
   });

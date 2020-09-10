@@ -140,7 +140,7 @@ void post_timeloop() {
   auto &rho                     = :: rho;
   auto &sgs_field               = :: sgs_field;
   auto &dtn                     = :: dtn;
-  auto &crm_output_timing_factor= :: crm_output_timing_factor;
+  auto &crm_output_subcycle_factor= :: crm_output_subcycle_factor;
   auto &ncrms                   = :: ncrms;
 
   factor_xyt = factor_xy/nstop;
@@ -475,7 +475,7 @@ void post_timeloop() {
   });
 
   parallel_for( ncrms , YAKL_LAMBDA(int icrm) {
-    crm_output_timing_factor(icrm) = crm_output_timing_factor(icrm)/nstop;
+    crm_output_subcycle_factor(icrm) = crm_output_subcycle_factor(icrm)/nstop;
   });
 }
 
