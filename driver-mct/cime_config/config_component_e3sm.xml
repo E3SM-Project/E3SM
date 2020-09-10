@@ -429,6 +429,8 @@
       <value compset="_MPASO" grid="oi%oEC60to30v3">48</value>
       <value compset="_MPASO" grid="oi%oEC60to30wLI">48</value>
       <value compset="_MPASO" grid="oi%ECwISC30to60E1r2">48</value>
+      <value compset="_MPASO" grid="oi%EC30to60E2r2">48</value>
+      <value compset="_MPASO" grid="oi%WC14to60E2r3">48</value>
       <value compset="_MPASO" grid="oi%oRRS30to10v3">48</value>
       <value compset="_MPASO" grid="oi%oRRS30to10wLI">48</value>
       <value compset="_MPASO" grid="oi%oRRS18to6v3">48</value>
