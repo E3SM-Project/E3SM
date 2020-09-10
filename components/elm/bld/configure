@@ -621,7 +621,7 @@ sub write_filepath_cesmbld
          print $fh "$dir\n";
        }
     } else {
-         print $fh "../SourceMods/src.clm\n";
+         print $fh "../SourceMods/src.elm\n";
     }
 
     if ($phys->as_long() == $phys->as_long("clm4_0") ) {
