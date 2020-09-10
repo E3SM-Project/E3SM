@@ -708,11 +708,6 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   do while (nstep < nstop)
     nstep = nstep + 1
 
-    !$acc parallel loop async(asyncid)
-    do icrm = 1 , ncrms
-      crm_output%timing_factor(icrm) = crm_output%timing_factor(icrm)+1
-    enddo
-
     !------------------------------------------------------------------
     !  Check if the dynamical time step should be decreased
     !  to handle the cases when the flow being locally linearly unstable
@@ -725,6 +720,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       dtn = dt/ncycle
       dt3(na) = dtn
       dtfactor = dtn/dt
+
+      !$acc parallel loop async(asyncid)
+      do icrm = 1 , ncrms
+        crm_output%timing_factor(icrm) = crm_output%timing_factor(icrm)+1
+      enddo
 
       !---------------------------------------------
       !  	the Adams-Bashforth scheme in time

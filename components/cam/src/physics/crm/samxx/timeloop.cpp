@@ -15,10 +15,6 @@ void timeloop() {
   do {
     nstep = nstep + 1;
 
-    parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
-      crm_output_timing_factor(icrm) = crm_output_timing_factor(icrm)+1;
-    });
-
     //------------------------------------------------------------------
     //  Check if the dynamical time step should be decreased
     //  to handle the cases when the flow being locally linearly unstable
@@ -32,6 +28,10 @@ void timeloop() {
         dt3(na-1) = dtn;
       });
       dtfactor = dtn/dt;
+
+      parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
+        crm_output_timing_factor(icrm) = crm_output_timing_factor(icrm)+1;
+      });
 
       //---------------------------------------------
       //    the Adams-Bashforth scheme in time
