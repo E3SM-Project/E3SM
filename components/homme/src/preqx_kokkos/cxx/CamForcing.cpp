@@ -98,10 +98,10 @@ void tracer_forcing(
                   v1 = -qdp_s;
                 }
               }
-              accumulator += v1;
+              accumulator += v1/dt;
             },
             ps_v_forcing);
-        ps_v(ie, np1, igp, jgp) += ps_v_forcing;
+        ps_v(ie, np1, igp, jgp) += dt*ps_v_forcing;
       });
     });
   }

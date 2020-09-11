@@ -123,15 +123,15 @@ void Diagnostics::prim_energy_halftimes (const bool before_advance, const int iv
   const Elements& elements = Context::singleton().get<Elements>();
   const Tracers& tracers = Context::singleton().get<Tracers>();
 
-  auto h_ps_v = Kokkos::create_mirror_view(elements.m_state.m_ps_v);
+  auto h_dp = Kokkos::create_mirror_view(elements.m_state.m_dp3d);
   auto h_phis = Kokkos::create_mirror_view(elements.m_geometry.m_phis);
   auto h_T = Kokkos::create_mirror_view(elements.m_state.m_t);
   auto h_v = Kokkos::create_mirror_view(elements.m_state.m_v);
   auto qdp_h = Kokkos::create_mirror_view(tracers.qdp);
-  Kokkos::deep_copy(h_ps_v, elements.m_state.m_ps_v);
   Kokkos::deep_copy(h_phis, elements.m_geometry.m_phis);
   Kokkos::deep_copy(h_T, elements.m_state.m_t);
   Kokkos::deep_copy(h_v, elements.m_state.m_v);
+  Kokkos::deep_copy(h_dp, elements.m_state.m_dp3d);
 
   if (params.use_cpstar) {
     Kokkos::deep_copy(qdp_h, tracers.qdp);
@@ -160,23 +160,23 @@ void Diagnostics::prim_energy_halftimes (const bool before_advance, const int iv
         auto u = Homme::subview(h_v, ie, t1, 0,igp, jgp);
         auto v = Homme::subview(h_v, ie, t1, 1,igp, jgp);
         auto T = Homme::subview(h_T, ie, t1, igp, jgp);
+        auto dpt1 = Homme::subview(h_dp, ie, t1, igp, jgp);
 
         for (int ilev=0; ilev<NUM_LEV; ++ilev) {
-          Scalar dpt1 = dhyai(ilev)*hvcoord.ps0 + dhybi(ilev)*h_ps_v(ie, t1, igp, jgp);
 
           const int vector_end = (ilev==NUM_LEV-1 ? (NUM_PHYSICAL_LEV + VECTOR_SIZE - 1) % VECTOR_SIZE : VECTOR_SIZE - 1);
           for (int ivec=0; ivec<=vector_end; ++ivec) {
             if (params.use_cpstar) {
-              Real qval_t1 = qdp_h(ie, t1_qdp, 0, igp, jgp, ilev)[ivec]/dpt1[ivec];
+              Real qval_t1 = qdp_h(ie, t1_qdp, 0, igp, jgp, ilev)[ivec]/dpt1(ilev)[ivec];
               cp_star1 = virtual_specific_heat(qval_t1);
             } else {
               cp_star1 = cp;
             }
 
-            IEner     += cp_star1*T(ilev)[ivec]*dpt1[ivec];
-            IEner_wet += (cp_star1 - cp)*T(ilev)[ivec]*dpt1[ivec];
-            KEner     += (std::pow(u(ilev)[ivec],2) + std::pow(v(ilev)[ivec],2))*0.5*dpt1[ivec];
-            PEner     += h_phis(ie, igp, jgp)*dpt1[ivec];
+            IEner     += cp_star1*T(ilev)[ivec]*dpt1(ilev)[ivec];
+            IEner_wet += (cp_star1 - cp)*T(ilev)[ivec]*dpt1(ilev)[ivec];
+            KEner     += (std::pow(u(ilev)[ivec],2) + std::pow(v(ilev)[ivec],2))*0.5*dpt1(ilev)[ivec];
+            PEner     += h_phis(ie, igp, jgp)*dpt1(ilev)[ivec];
           }
         } // ilev
         h_IEner(ie, ivar, igp, jgp) = IEner;
