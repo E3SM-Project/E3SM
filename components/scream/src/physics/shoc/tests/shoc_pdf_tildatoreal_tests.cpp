@@ -24,12 +24,11 @@ struct UnitWrap::UnitTest<D>::TestShocPdfTildatoReal {
 
   static void run_property()
   {
-  
     // Property tests for the SHOC function
     //  shoc_assumed_pdf_tilda_to_real
 
     // TEST ONE
-    // If variance of vertical velocity is zero then 
+    // If variance of vertical velocity is zero then
     //  verify that vertical velocity is equal grid mean
 
     // Define the grid mean vertical velocity [m/s]
@@ -38,10 +37,10 @@ struct UnitWrap::UnitTest<D>::TestShocPdfTildatoReal {
     static constexpr Real sqrtw2 = 0;
     // Define the normalized input of vertical velocity
     Real w1 = 0.1;
-    
+
     // Initialize data structure for bridging to F90
     SHOCPDFtildaData SDS;
-    
+
     // Fill the test data
     SDS.w_first = w_first;
     SDS.sqrtw2 = sqrtw2;
@@ -50,14 +49,14 @@ struct UnitWrap::UnitTest<D>::TestShocPdfTildatoReal {
     // Call the fortran implementation
     shoc_assumed_pdf_tilda_to_real(SDS);
 
-    // Check the test, verify that vertical velocity is equal 
+    // Check the test, verify that vertical velocity is equal
     //  to the grid mean value
-    
+
     REQUIRE(SDS.w1 == SDS.w_first);
-    
+
     // TEST TWO
     // Given a series of tests with increasing values of standard
-    //  deviation, verify that the gaussian value of w1 also 
+    //  deviation, verify that the gaussian value of w1 also
     //  is gradually increasing
 
     // Use value from test one
@@ -68,36 +67,39 @@ struct UnitWrap::UnitTest<D>::TestShocPdfTildatoReal {
     static constexpr Real incr = 0.1;
     // Define number of tests we want to do
     static constexpr Int num_tests = 10;
-    
+
     // Require at least two tests
     REQUIRE(num_tests >= 2);
-    
+
     // Initialize to a large neg value
     Real w1_previous = -999;
-    
+
     for (Int s = 0; s < num_tests; ++s){
-      // must initialize w1 at every test, 
+      // must initialize w1 at every test,
       //  since it is input/output
       SDS.w1 = w1;
       // increase value of sqrtw2 at every test
       SDS.sqrtw2 = SDS.sqrtw2 + incr;
-      
+
       REQUIRE(SDS.sqrtw2 >= 0.0);
-      
+
       // Call the fortran implementation
       shoc_assumed_pdf_tilda_to_real(SDS);
 
-      // Make sure test value is greater than 
+      // Make sure test value is greater than
       //  previous iteration
       REQUIRE(SDS.w1 > w1_previous);
-      
+
       // Save the result of this sample
       w1_previous = SDS.w1;
-      
-    }
 
+    }
   }
-  
+
+  static void run_bfb()
+  {
+    // TODO
+  }
 };
 
 }  // namespace unit_test
@@ -113,10 +115,11 @@ TEST_CASE("shoc_pdf_tildatoreal_property", "shoc")
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_pdf_tildatoreal_b4b", "shoc")
+TEST_CASE("shoc_pdf_tildatoreal_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfTildatoReal;
 
+  TestStruct::run_bfb();
 }
 
 } // namespace

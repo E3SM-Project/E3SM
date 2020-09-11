@@ -11,6 +11,8 @@ namespace scream {
 
 TEST_CASE ("dag_check","[!throws]")
 {
+  constexpr int num_cols = 1;
+  constexpr int num_vl   = 1;
   // This test checks that unmet dependencies in the Atm DAG will throw
 
   // Load ad parameter list
@@ -18,11 +20,11 @@ TEST_CASE ("dag_check","[!throws]")
   ekat::ParameterList ad_params("Atmosphere Driver");
   REQUIRE_NOTHROW ( parse_yaml_file(fname,ad_params) );
 
-  // Setup the atm factories and grid manager
-  dummy_atm_init(1);
-
   // Create a comm
   ekat::Comm atm_comm (MPI_COMM_WORLD);
+
+  // Setup the atm factories and grid manager
+  dummy_atm_init(num_cols, num_vl, atm_comm);
 
   // Create the driver
   control::AtmosphereDriver ad;

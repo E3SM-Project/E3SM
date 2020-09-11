@@ -8,36 +8,36 @@
 
 namespace scream {
 
-PhysicsTestData::PhysicsTestData(Int shcol_, const std::vector<Real**>& ptrs_c, const std::vector<Int**>& idx_c) :
-  PhysicsTestData(shcol_, 0, 0, {}, {}, ptrs_c, idx_c)
+PhysicsTestData::PhysicsTestData(Int dim1_, const std::vector<Real**>& ptrs_c, const std::vector<Int**>& idx_c) :
+  PhysicsTestData(dim1_, 0, 0, {}, {}, ptrs_c, idx_c)
 {}
 
-PhysicsTestData::PhysicsTestData(Int shcol_, Int nlev_, const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_c, const std::vector<Int**>& idx_c) :
-  PhysicsTestData(shcol_, nlev_, 0, ptrs, {}, ptrs_c, idx_c) {}
+PhysicsTestData::PhysicsTestData(Int dim1_, Int dim2_, const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_c, const std::vector<Int**>& idx_c) :
+  PhysicsTestData(dim1_, dim2_, 0, ptrs, {}, ptrs_c, idx_c) {}
 
-PhysicsTestData::PhysicsTestData(Int shcol_, Int nlev_, Int nlevi_,
+PhysicsTestData::PhysicsTestData(Int dim1_, Int dim2_, Int dim3_,
                                  const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i,
                                  const std::vector<Real**>& ptrs_c, const std::vector<Int**>& idx_c) :
-  shcol(shcol_),
-  nlev(nlev_),
-  nlevi(nlevi_),
-  m_total(shcol_ * nlev_),
-  m_totali(shcol_ * nlevi_),
+  dim1(dim1_),
+  dim2(dim2_),
+  dim3(dim3_),
+  m_total(dim1_ * dim2_),
+  m_totali(dim1_ * dim3_),
   m_ptrs(ptrs),
   m_ptrs_i(ptrs_i),
   m_ptrs_c(ptrs_c),
   m_indices_c(idx_c),
-  m_data(m_ptrs.size() * m_total + m_ptrs_i.size() * m_totali + m_ptrs_c.size() * shcol, 0),
-  m_idx_data(idx_c.size() * shcol, 0)
+  m_data(m_ptrs.size() * m_total + m_ptrs_i.size() * m_totali + m_ptrs_c.size() * dim1, 0),
+  m_idx_data(idx_c.size() * dim1, 0)
 {
   init_ptrs();
 }
 
 PhysicsTestData& PhysicsTestData::assignment_impl(const PhysicsTestData& rhs)
 {
-  shcol      = rhs.shcol;
-  nlev       = rhs.nlev;
-  nlevi      = rhs.nlevi;
+  dim1       = rhs.dim1;
+  dim2       = rhs.dim2;
+  dim3       = rhs.dim3;
   m_total    = rhs.m_total;
   m_totali   = rhs.m_totali;
   m_data     = rhs.m_data;      // Copy
@@ -65,11 +65,11 @@ void PhysicsTestData::init_ptrs()
 
   for (size_t i = 0; i < m_ptrs_c.size(); ++i) {
     *(m_ptrs_c[i]) = data_begin + offset;
-    offset += shcol;
+    offset += dim1;
   }
 
   for (size_t i = 0; i < m_indices_c.size(); ++i) {
-    *(m_indices_c[i]) = m_idx_data.data() + shcol*i;
+    *(m_indices_c[i]) = m_idx_data.data() + dim1*i;
   }
 }
 
@@ -82,7 +82,7 @@ void PhysicsTestData::randomize(const std::vector<std::pair<void*, std::pair<Rea
 
   range_type ranges_copy(ranges);
 
-  for (auto& item : { PT{&m_ptrs, m_total} , PT{&m_ptrs_i, m_totali}, PT{&m_ptrs_c, shcol} }) {
+  for (auto& item : { PT{&m_ptrs, m_total} , PT{&m_ptrs_i, m_totali}, PT{&m_ptrs_c, dim1} }) {
     auto& ptrs = *item.first;
     const Int num_per = item.second;
     for (Real** ptr : ptrs) {
@@ -117,7 +117,7 @@ void PhysicsTestData::randomize(const std::vector<std::pair<void*, std::pair<Rea
       }
     }
     std::uniform_int_distribution<Int> data_dist(random_range.first, random_range.second);
-    for (Int i = 0; i < shcol; ++i) {
+    for (Int i = 0; i < dim1; ++i) {
       (*ptr)[i] = data_dist(generator);
     }
   }

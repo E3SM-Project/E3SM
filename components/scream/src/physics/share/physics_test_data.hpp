@@ -29,13 +29,13 @@ struct SHOCGridData : public PhysicsTestData {
   // In/out
   Real *dz_zt, *dz_zi, *rho_zt;
 
-  SHOCGridData(Int shcol_, Int nlev_, Int nlevi_) :
-    PhysicsTestData(shcol_, nlev_, nlevi_,
-      {&zt_grid, &dz_zt, &pdel, &rho_zt},  // list of (shcol x nlev) members
-      {&zi_grid, &dz_zi}) {}               // list of (shcol x nlevi) members
+  SHOCGridData(Int dim1_, Int dim2_, Int dim3_) :
+    PhysicsTestData(dim1_, dim2_, dim3_,
+      {&zt_grid, &dz_zt, &pdel, &rho_zt},  // list of (dim1 x dim2) members
+      {&zi_grid, &dz_zi}) {}               // list of (dim1 x dim3) members
 
-  PTD_DATA_COPY_CTOR(SHOCGridData, 3); // 3 => number of arguments constructor expects
-  PTD_ASSIGN_OP(SHOCGridData, 0); // 0 => number of scalars
+  PTD_STD_DEF(SHOCGridData, 3, 0); // 3 => number of dimensions (1-3), 0 => number of scalars (0-10)
+  // If you have scalars, you'll have to add names after the count
 };
 */
 
@@ -53,8 +53,10 @@ struct SHOCGridData : public PhysicsTestData {
 #define PTD_ZEROES9 PTD_ZEROES8, 0
 #define PTD_ZEROES10 PTD_ZEROES9, 0
 
+#define PTD_ZEROES(a) PTD_ZEROES##a
+
 #define PTD_DATA_COPY_CTOR(name, num_args) \
-  name(const name& rhs) : name(PTD_ZEROES##num_args) { *this = rhs; }
+  name(const name& rhs) : name(PTD_ZEROES(num_args)) { *this = rhs; }
 
 #define  PTD_ASS0(                                ) ((void) (0))
 #define  PTD_ASS1(a                               )                                           a = rhs.a
@@ -72,25 +74,69 @@ struct SHOCGridData : public PhysicsTestData {
 #define PTD_ASSIGN_OP(name, num_scalars, ...)                                  \
   name& operator=(const name& rhs) { PTD_ASS##num_scalars(__VA_ARGS__); assignment_impl(rhs); return *this; }
 
+#define PTD_DIM_RENAME1(ndim1)                                              Int ndim1() const { return dim1; }
+#define PTD_DIM_RENAME2(ndim1, ndim2)        PTD_DIM_RENAME1(ndim1);        Int ndim2() const { return dim2; }
+#define PTD_DIM_RENAME3(ndim1, ndim2, ndim3) PTD_DIM_RENAME2(ndim1, ndim2); Int ndim3() const { return dim3; }
+
+#define PTD_DIM_RENAME(num_args, ...)           \
+  PTD_DIM_RENAME##num_args(__VA_ARGS__)
+
+#define PTD_ADD_1_0 1
+#define PTD_ADD_1_1 2
+#define PTD_ADD_1_2 3
+#define PTD_ADD_1_3 4
+#define PTD_ADD_1_4 5
+#define PTD_ADD_1_5 6
+#define PTD_ADD_1_6 7
+#define PTD_ADD_1_7 8
+#define PTD_ADD_1_8 9
+#define PTD_ADD_1_9 10
+
+#define PTD_ADD_2_0 2
+#define PTD_ADD_2_1 3
+#define PTD_ADD_2_2 4
+#define PTD_ADD_2_3 5
+#define PTD_ADD_2_4 6
+#define PTD_ADD_2_5 7
+#define PTD_ADD_2_6 8
+#define PTD_ADD_2_7 9
+#define PTD_ADD_2_8 10
+#define PTD_ADD_2_9 11
+
+#define PTD_ADD_3_0 3
+#define PTD_ADD_3_1 4
+#define PTD_ADD_3_2 5
+#define PTD_ADD_3_3 6
+#define PTD_ADD_3_4 7
+#define PTD_ADD_3_5 8
+#define PTD_ADD_3_6 9
+#define PTD_ADD_3_7 10
+#define PTD_ADD_3_8 11
+#define PTD_ADD_3_9 12
+
+#define PTD_STD_DEF(name, dim, num_scalars, ...)        \
+  PTD_DATA_COPY_CTOR(name, PTD_ADD_##dim##_##num_scalars);  \
+  PTD_ASSIGN_OP(name, num_scalars, __VA_ARGS__)
+
 namespace scream {
 
 // Base class for common test data setup
 struct PhysicsTestData
 {
-  Int shcol, nlev, nlevi;
+  Int dim1, dim2, dim3;
 
-  PhysicsTestData(Int shcol_,
-                  const std::vector<Real**>& ptrs_c,     // [shcol]
-                  const std::vector<Int**>& idx_c = {}); // [shcol] (optional)
+  PhysicsTestData(Int dim1_,
+                  const std::vector<Real**>& ptrs_c,     // [dim1]
+                  const std::vector<Int**>& idx_c = {}); // [dim1] (optional)
 
-  PhysicsTestData(Int shcol_, Int nlev_,
-                  const std::vector<Real**>& ptrs,        // [shcol x nlev]
-                  const std::vector<Real**>& ptrs_c = {}, // [shcol] (optional)
-                  const std::vector<Int**>& idx_c = {});  // [shcol] (optional)
+  PhysicsTestData(Int dim1_, Int dim2_,
+                  const std::vector<Real**>& ptrs,        // [dim1 x dim2]
+                  const std::vector<Real**>& ptrs_c = {}, // [dim1] (optional)
+                  const std::vector<Int**>& idx_c = {});  // [dim1] (optional)
 
-  PhysicsTestData(Int shcol_, Int nlev_, Int nlevi_,
-                  const std::vector<Real**>& ptrs,        // [schol x nlev]
-                  const std::vector<Real**>& ptrs_i,      // [schol x nlevi]
+  PhysicsTestData(Int dim1_, Int dim2_, Int dim3_,
+                  const std::vector<Real**>& ptrs,        // [schol x dim2]
+                  const std::vector<Real**>& ptrs_i,      // [schol x dim3]
                   const std::vector<Real**>& ptrs_c = {}, // [schol] (optional)
                   const std::vector<Int**>& idx_c = {});  // [schol] (optional)
 
@@ -106,12 +152,12 @@ struct PhysicsTestData
 
     // Transpose on the zt grid
     for (size_t i = 0; i < m_ptrs.size(); ++i) {
-      ekat::util::transpose<D>(*(m_ptrs[i]), data.data() + (m_total*i) , shcol, nlev);
+      ekat::util::transpose<D>(*(m_ptrs[i]), data.data() + (m_total*i) , dim1, dim2);
     }
 
     // Transpose on the zi grid
     for (size_t i = 0; i < m_ptrs_i.size(); ++i) {
-      ekat::util::transpose<D>(*(m_ptrs_i[i]), data.data() + (m_ptrs.size()*m_total) + (m_totali*i), shcol, nlevi);
+      ekat::util::transpose<D>(*(m_ptrs_i[i]), data.data() + (m_ptrs.size()*m_total) + (m_totali*i), dim1, dim3);
     }
 
     // Copy the column only grid
@@ -134,8 +180,8 @@ struct PhysicsTestData
   // d.randomize({ {d.wthl, {-1, 1}} });
   void randomize(const std::vector<std::pair<void*, std::pair<Real, Real> > >& ranges = {});
 
-  Int total() const { return m_total; }
-  Int totali() const { return m_totali; }
+  Int total1x2() const { return m_total; }
+  Int total1x3() const { return m_totali; }
 
  protected:
 

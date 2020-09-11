@@ -28,11 +28,11 @@ struct UnitWrap::UnitTest<D>::TestLInfShocLength {
     static constexpr Int nlev     = 5;
 
     // Tests for the SHOC function:
-    //   compute_l_inf_shoc_length   
+    //   compute_l_inf_shoc_length
 
     // Multi-column test, where the input heights for zt_grid
     //  are increased uniformly by 100 m per column to verify
-    //  that l_inf always gets larger per column.        
+    //  that l_inf always gets larger per column.
 
     // Grid difference centered on thermo grid [m]
     static constexpr Real dz_zt[nlev] = {100.0, 100.0, 100.0, 100.0, 100.0};
@@ -46,41 +46,42 @@ struct UnitWrap::UnitTest<D>::TestLInfShocLength {
 
     // Test that the inputs are reasonable.
     //  At least two columns are needed for this test!
-    REQUIRE(SDS.shcol > 1);
+    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev) );
+    REQUIRE(shcol > 1);
 
     // Fill in test data on zt_grid.
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 
 	SDS.dz_zt[offset] = dz_zt[n];
 	// Testing identical columns but one with larger zt heights.
 	//  first column set as "base" column, and the others
 	//  to a larger value of TKE uniformly.
-	SDS.zt_grid[offset] = (s*100.0)+zt_grid[n];  
+	SDS.zt_grid[offset] = (s*100.0)+zt_grid[n];
 	SDS.tke[offset] = tke[n];
       }
     }
 
     // Check that the inputs make sense
 
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 	// Be sure that relevant variables are greater than zero
 	REQUIRE(SDS.dz_zt[offset] > 0.0);
-	REQUIRE(SDS.tke[offset] > 0.0); 
+	REQUIRE(SDS.tke[offset] > 0.0);
 	REQUIRE(SDS.zt_grid[offset] > 0.0);
 	if (n < nlev-1){
           // check that zt increases upward
-          REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0.0);       
-	}      
+          REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0.0);
+	}
 	if (s < shcol-1){
           // Verify that zt_grid is offset larger column by column
-          const auto offsets = n + (s+1) * SDS.nlev;
+          const auto offsets = n + (s+1) * nlev;
 	  REQUIRE(SDS.zt_grid[offset] < SDS.zt_grid[offsets]);
 	}
-      } 
+      }
     }
 
     // Call the fortran implementation
@@ -88,17 +89,21 @@ struct UnitWrap::UnitTest<D>::TestLInfShocLength {
 
     // Check the results
     // Make sure that conv_vel is negative
-    for(Int s = 0; s < SDS.shcol; ++s) {   
+    for(Int s = 0; s < shcol; ++s) {
       REQUIRE(SDS.l_inf[s] > 0.0);
-    } 
+    }
 
     // Make sure that l_inf is getting larger
-    //  per column 
-    for (Int s = 0; s < SDS.shcol-1; ++s){
+    //  per column
+    for (Int s = 0; s < shcol-1; ++s){
       REQUIRE(SDS.l_inf[s] < SDS.l_inf[s+1]);
     }
   }
 
+  static void run_bfb()
+  {
+    // TODO
+  }
 };
 
 }  // namespace unit_test
@@ -114,10 +119,11 @@ TEST_CASE("shoc_l_inf_length_property", "shoc")
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_l_inf_length_b4b", "shoc")
+TEST_CASE("shoc_l_inf_length_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestLInfShocLength;
 
+  TestStruct::run_bfb();
 }
 
 } // namespace

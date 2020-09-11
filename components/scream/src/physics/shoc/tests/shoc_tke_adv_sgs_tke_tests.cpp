@@ -60,12 +60,13 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
     SHOCAdvsgstkeData SDS(shcol, nlev, dtime);
 
     // Test that the inputs are reasonable.
-    REQUIRE(SDS.shcol > 0);
+    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev && SDS.dtime == dtime) );
+    REQUIRE(shcol > 0);
 
     // Fill in test data on zt_grid.
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 
 	SDS.shoc_mix[offset] = shoc_mix_gr[s];
 	SDS.wthv_sec[offset] = wthv_sec_gr[s];
@@ -75,9 +76,9 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
     }
 
     // Check that the inputs make sense
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for (Int n = 0; n < SDS.nlev; ++n){
-	const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n){
+	const auto offset = n + s * nlev;
 	// time step, mixing length, TKE values,
 	// shear terms should all be greater than zero
 	REQUIRE(SDS.dtime > 0.0);
@@ -92,9 +93,9 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
 
     // Check to make sure that there has been
     //  TKE growth
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 
 	if (s == 0){
           // Growth check
@@ -122,9 +123,9 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
     Real tke_init_diss= 0.1;
 
     // Fill in test data on zt_grid.
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 
 	SDS.shoc_mix[offset] = shoc_mix_diss[s];
 	SDS.wthv_sec[offset] = wthv_sec_diss;
@@ -134,9 +135,9 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
     }
 
     // Check that the inputs make sense
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for (Int n = 0; n < SDS.nlev; ++n){
-	const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n){
+	const auto offset = n + s * nlev;
 	// time step, mixing length, TKE values,
 	// shear terms should all be greater than zero
 	REQUIRE(SDS.dtime > 0.0);
@@ -152,11 +153,11 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
     // Check to make sure that the column with
     //  the smallest length scale has larger
     //  dissipation rate
-    for(Int s = 0; s < SDS.shcol-1; ++s) {
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol-1; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 	// Get value corresponding to next column
-	const auto offsets = n + (s+1) * SDS.nlev;
+	const auto offsets = n + (s+1) * nlev;
 	if(SDS.shoc_mix[offset] > SDS.shoc_mix[offsets]){
           REQUIRE(SDS.a_diss[offset] < SDS.a_diss[offsets]);
 	}
@@ -167,6 +168,10 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
     }
   }
 
+  static void run_bfb()
+  {
+    // TODO
+  }
 };
 
 }  // namespace unit_test
@@ -182,10 +187,11 @@ TEST_CASE("shoc_tke_adv_sgs_tke_property", "shoc")
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_tke_adv_sgs_tke_b4b", "shoc")
+TEST_CASE("shoc_tke_adv_sgs_tke_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocAdvSgsTke;
 
+  TestStruct::run_bfb();
 }
 
 } // namespace
