@@ -394,7 +394,7 @@
 					description="If true, use the Community Vertical MIXing routines to compute vertical diffusivity and viscosity"
 					possible_values="True or False"
 		/>
-		<nml_option name="config_cvmix_use_kpp_buoyancyForcing_fix" type="logical" default_value=".false." units="NA"
+		<nml_option name="config_cvmix_use_kpp_buoyancyForcing_fix" type="logical" default_value=".true." units="NA"
 					description="If true CVMix KPP buoyancy forcing fix for sea ice is enabled"
 					possible_values="True or False"
 		/>
