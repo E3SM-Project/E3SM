@@ -42,8 +42,9 @@ IF ("${CPR_OUTPUT}" MATCHES "ifort.*")
   SET (ADD_C_FLAGS "-traceback -fp-model strict -qopenmp -O3" CACHE STRING "")
   SET (ADD_CXX_FLAGS "-traceback -fp-model strict -qopenmp -O3" CACHE STRING "")
   SET (BUILD_HOMME_PREQX_KOKKOS TRUE CACHE BOOL "")
-  SET (ENABLE_PREQX_KOKKOS_BFB_TESTS TRUE CACHE BOOL "")
+  SET (HOMMEXX_BFB_TESTING TRUE CACHE BOOL "")
   SET (HOMME_TESTING_PROFILE "short" CACHE STRING "")
+  SET (BUILD_HOMME_THETA_KOKKOS TRUE CACHE BOOL "")
 
 #or just these? was used before
 #SET (ADD_Fortran_FLAGS "-fp-model strict -diag-disable 10411" CACHE STRING "")
