@@ -252,9 +252,9 @@ void check_tke(SHOCCheckTkeData &d){
 void shoc_tke(SHOCTkeData &d){
   shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  shoc_tke_c(d.shcol(), d.nlev(), d.nlevi(), d.dtime, d.wthv_sec, d.shoc_mix, d.dz_zi,
-             d.dz_zt, d.pres, d.u_wind, d.v_wind, d.brunt, d.obklen, d.zt_grid,
-             d.zi_grid, d.pblh, d.tke, d.tk, d.tkh, d.isotropy);
+  shoc_tke_c(d.shcol(), d.nlev(), d.nlevi(), d.dtime, d.wthv_sec, d.shoc_mix,
+              d.dz_zi, d.dz_zt, d.pres, d.u_wind, d.v_wind, d.brunt, d.obklen,
+	      d.zt_grid, d.zi_grid, d.pblh, d.tke, d.tk, d.tkh, d.isotropy);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
