@@ -103,6 +103,12 @@ def buildnml(case, caseroot, compname):
         grid_prefix += 'seaiceEC60to30v3wLI60lev.restart_theta_year26'
         decomp_date += '170905'
         decomp_prefix += 'mpas-cice.graph.info.'
+    elif ice_grid == 'ECwISC30to60E1r2':
+        grid_date += '200408'
+        grid_prefix += 'seaice.ECwISC30to60E1r2'
+        decomp_date += '200408'
+        decomp_prefix += 'mpas-o.graph.info.'
+        data_iceberg_file += 'Iceberg_Interannual_Merino_ECwISC30to60E1r2.nc'
     elif ice_grid == 'mpas120':
         grid_date += '121116'
         grid_prefix += 'cice120km'

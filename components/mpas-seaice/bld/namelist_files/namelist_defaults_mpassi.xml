@@ -14,6 +14,7 @@
 <config_dt ice_grid="oEC60to30v3">1800.0</config_dt>
 <config_dt ice_grid="oEC60to30wLI">1800.0</config_dt>
 <config_dt ice_grid="oEC60to30v3wLI">1800.0</config_dt>
+<config_dt ice_grid="ECwISC30to60E1r2">1800.0</config_dt>
 <config_dt ice_grid="oRRS30to10">900.0</config_dt>
 <config_dt ice_grid="oRRS30to10v3">900.0</config_dt>
 <config_dt ice_grid="oRRS30to10wLI">900.0</config_dt>
@@ -68,9 +69,11 @@
 <config_initial_snow_volume>0.0</config_initial_snow_volume>
 <config_initial_latitude_north>70.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="oEC60to30v3wLI">75.0</config_initial_latitude_north>
+<config_initial_latitude_north ice_grid="ECwISC30to60E1r2">75.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="oRRS30to10v3wLI">85.0</config_initial_latitude_north>
 <config_initial_latitude_south>-60.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="oEC60to30v3wLI">-75.0</config_initial_latitude_south>
+<config_initial_latitude_south ice_grid="ECwISC30to60E1r2">-75.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="oRRS30to10v3wLI">-85.0</config_initial_latitude_south>
 <config_initial_velocity_type>'uniform'</config_initial_velocity_type>
 <config_initial_uvelocity>0.0</config_initial_uvelocity>
@@ -109,6 +112,7 @@
 <config_dynamics_subcycle_number ice_grid="oEC60to30">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oEC60to30v3">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oEC60to30v3wLI">1</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="ECwISC30to60E1r2">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oRRS30to10">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oRRS30to10v3">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="oRRS30to10wLI">1</config_dynamics_subcycle_number>
