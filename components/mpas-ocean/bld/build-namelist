@@ -595,6 +595,7 @@ add_default($nl, 'config_Rayleigh_bottom_damping_coeff');
 #########################
 
 add_default($nl, 'config_use_cvmix');
+add_default($nl, 'config_cvmix_use_kpp_buoyancyForcing_fix');
 add_default($nl, 'config_cvmix_prandtl_number');
 add_default($nl, 'config_use_cvmix_background');
 add_default($nl, 'config_cvmix_background_diffusion');

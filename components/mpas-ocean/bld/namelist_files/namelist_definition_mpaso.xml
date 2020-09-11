@@ -595,6 +595,14 @@ Valid values: True or False
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_cvmix_use_kpp_buoyancyForcing_fix" type="logical"
+	category="cvmix" group="cvmix">
+If true CVMix KPP buoyancy forcing fix for sea ice is enabled
+
+Valid values: True or False
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_cvmix_prandtl_number" type="real"
 	category="cvmix" group="cvmix">
 Prandtl number to be used within the CVMix parameterization suite
