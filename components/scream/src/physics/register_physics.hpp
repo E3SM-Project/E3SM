@@ -23,7 +23,7 @@ inline void register_physics () {
 
   // A physics-only grids manager, in case we run a physics-only test
   auto& gm_factory = GridsManagerFactory::instance();
-  gm_factory.register_product("Physics Only",&create_physics_only_grids_manager);
+  gm_factory.register_product("Physics Only",&physics::create_physics_only_grids_manager);
 }
 
 } // namespace scream

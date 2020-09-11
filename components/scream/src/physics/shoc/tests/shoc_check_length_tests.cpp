@@ -29,16 +29,16 @@ struct UnitWrap::UnitTest<D>::TestCheckShocLength {
 
     // Tests for the SHOC function:
     //   check_length_scale_shoc_length
-  
+
     // Test this simple function.  Feed the routine values of
     //  mixing length that are zero and much larger than the
     //  host grid box size to make sure that the function
-    //  corrects these erroneous values.  
-  
+    //  corrects these erroneous values.
+
     // Define the host grid box size x-direction [m]
-    static constexpr Real host_dx = 3000.0; 
+    static constexpr Real host_dx = 3000.0;
     // Defin the host grid box size y-direction [m]
-    static constexpr Real host_dy = 5000.0; 
+    static constexpr Real host_dy = 5000.0;
     // Define mixing length [m]
     //   In profile include values of zero and very large values
     Real shoc_mix[nlev] = {50000.0, 4000.0, 2000.0, 0.0, 500.0};
@@ -47,17 +47,18 @@ struct UnitWrap::UnitTest<D>::TestCheckShocLength {
     SHOCMixcheckData SDS(shcol, nlev);
 
     // Test that the inputs are reasonable.
-    REQUIRE(SDS.shcol > 0);
-  
+    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev) );
+    REQUIRE(shcol > 0);
+
     // compute geometric grid mesh
     const auto grid_mesh = sqrt(host_dx*host_dy);
 
     // Fill in test data on zt_grid.
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       SDS.host_dx[s] = host_dx;
       SDS.host_dy[s] = host_dy;
-      for(Int n = 0; n < SDS.nlev; ++n) {
-        const auto offset = n + s * SDS.nlev;
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
 
         SDS.shoc_mix[offset] = shoc_mix[n];
       }
@@ -66,7 +67,7 @@ struct UnitWrap::UnitTest<D>::TestCheckShocLength {
     // Check that the inputs make sense
 
     // Be sure that relevant variables are greater than zero
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       REQUIRE(SDS.host_dx[s] > 0.0);
       REQUIRE(SDS.host_dy[s] > 0.0);
     }
@@ -75,17 +76,21 @@ struct UnitWrap::UnitTest<D>::TestCheckShocLength {
     check_length_scale_shoc_length(SDS);
 
     // Check the results
-    for(Int s = 0; s < SDS.shcol; ++s) {   
-      for(Int n = 0; n < SDS.nlev; ++n) {
-        const auto offset = n + s * SDS.nlev;   
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
         // Require mixing length is greater than zero and is
         //  less than geometric grid mesh length + 1 m
-        REQUIRE(SDS.shoc_mix[offset] > 0.0); 
-        REQUIRE(SDS.shoc_mix[offset] < 1.0+grid_mesh); 
-      }   
+        REQUIRE(SDS.shoc_mix[offset] > 0.0);
+        REQUIRE(SDS.shoc_mix[offset] < 1.0+grid_mesh);
+      }
     }
   }
 
+  static void run_bfb()
+  {
+    // TODO
+  }
 };
 
 }  // namespace unit_test
@@ -97,14 +102,15 @@ namespace{
 TEST_CASE("shoc_check_length_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCheckShocLength;
-  
+
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_check_length_b4b", "shoc")
+TEST_CASE("shoc_check_length_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCheckShocLength;
 
+  TestStruct::run_bfb();
 }
 
 } // namespace

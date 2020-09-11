@@ -12,6 +12,9 @@ Atmosphere Processes:
     Can Initialize All Inputs: true
 
 Grids Manager:
-  Type: User Provided
+  Type: Physics Only
   Reference Grid: Physics
+  Physics Only:
+    Number of global columns:   32
+    Number of vertical levels: 128
 ...
