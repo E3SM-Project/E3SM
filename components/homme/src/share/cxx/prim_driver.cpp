@@ -124,7 +124,7 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
 
   if (compute_diagnostics) {
     Diagnostics& diags = context.get<Diagnostics>();
-    diags.run_diagnostics(true,3);
+    diags.run_diagnostics(false,3);
   }
 
   ////////////////////////////////////////////////////////////////////////
