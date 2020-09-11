@@ -2,6 +2,8 @@
 
 MACRO(PREQX_KOKKOS_SETUP)
 
+SET (KOKKOS_TARGET TRUE)
+
 INCLUDE_DIRECTORIES ( SYSTEM ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS} )
 LINK_DIRECTORIES    ( ${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS} )
 
@@ -96,6 +98,7 @@ SET (SRC_SHARE_F90
   ${SRC_SHARE_DIR}/compose_test_mod.F90
   ${SRC_SHARE_DIR}/scalable_grid_init_mod.F90
   ${SRC_SHARE_DIR}/cxx/prim_cxx_driver_base.F90
+  ${SRC_SHARE_DIR}/cxx/utilities/bfb_mod.F90
 )
 
 SET(TEST_SRC_F90
@@ -177,6 +180,7 @@ SET(PREQX_DEPS_CXX
   ${SRC_SHARE_DIR}/cxx/prim_driver.cpp
   ${SRC_SHARE_DIR}/cxx/prim_step.cpp
   ${SRC_SHARE_DIR}/cxx/vertical_remap.cpp
+  ${SRC_SHARE_DIR}/cxx/utilities/BfbUtils.cpp
 )
 
 IF (${HOMME_USE_TRILINOS})
