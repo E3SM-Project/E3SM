@@ -705,6 +705,9 @@ contains
        call ncd_io(ncid=ncid, varname='land1d_lat'    , flag='read', data=subgrid%lat  ) 
        call ncd_io(ncid=ncid, varname='land1d_ityplun', flag='read', data=subgrid%ltype)
        call ncd_io(ncid=ncid, varname='land1d_active' , flag='read', data=itemp) 
+    else if (dimname == 'gridcell') then
+       call ncd_io(ncid=ncid, varname='grid1d_lon'    , flag='read', data=subgrid%lon  )
+       call ncd_io(ncid=ncid, varname='grid1d_lat'    , flag='read', data=subgrid%lat  )
     end if
 
     do n = beg,end
