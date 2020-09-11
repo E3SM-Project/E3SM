@@ -22,7 +22,7 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocVarorcovar {
+struct UnitWrap::UnitTest<D>::TestShocVarorCovar {
 
   static void run_property()
   {
@@ -309,7 +309,7 @@ static void run_bfb()
     for (auto& d : SDS_cxx) {
       d.transpose<ekat::util::TransposeDirection::c2f>();
       // expects data in fortran layout
-      calc_shoc_varorcovar_f(d.shcol, d.nlev, d.nlevi,
+      calc_shoc_varorcovar_f(d.shcol(), d.nlev(), d.nlevi(),
                              d.tunefac, d.isotropy_zi,
                              d.tkh_zi, d.dz_zi,
                              d.invar1, d.invar2, d.varorcovar);
@@ -320,7 +320,7 @@ static void run_bfb()
     for (Int i = 0; i < num_runs; ++i) {
       SHOCVarorcovarData& d_f90 = SDS_f90[i];
       SHOCVarorcovarData& d_cxx = SDS_cxx[i];
-      for (Int k = 0; k < d_f90.totali(); ++k) {
+      for (Int k = 0; k < d_f90.total1x3(); ++k) {
         REQUIRE(d_f90.varorcovar[k] == d_cxx.varorcovar[k]);
       }
     }
@@ -335,7 +335,7 @@ namespace {
 
 TEST_CASE("shoc_varorcovar_property", "shoc")
 {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocVarorcovar;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocVarorCovar;
 
   TestStruct::run_property();
 }
