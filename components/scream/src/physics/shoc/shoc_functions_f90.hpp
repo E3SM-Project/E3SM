@@ -244,8 +244,7 @@ struct SHOCLengthData : public PhysicsTestData {
   SHOCLengthData(Int shcol_, Int nlev_, Int nlevi_) :
     PhysicsTestData(shcol_, nlev_, nlevi_, {&tke, &zt_grid, &dz_zt, &wthv_sec, &thetal, &thv, &brunt, &shoc_mix}, {&zi_grid, &dz_zi}, {&host_dx, &host_dy, &pblh}) {}
 
-  PTD_DATA_COPY_CTOR(SHOCLengthData, 3);
-  PTD_ASSIGN_OP(SHOCLengthData, 0)
+  SHOC_NO_SCALAR(SHOCLengthData, 3);
 };//SHOCLengthData
 
 //Create data structure to hold data for compute_brunt_shoc_length

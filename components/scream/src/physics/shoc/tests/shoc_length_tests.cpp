@@ -78,13 +78,13 @@ struct UnitWrap::UnitTest<D>::TestShocLength {
     SHOCLengthData SDS(shcol, nlev, nlevi);
     
     // Load up input data
-    for(Int s = 0; s < SDS.shcol; ++s) {    
+    for(Int s = 0; s < shcol; ++s) {    
       SDS.host_dx[s] = host_dx;
       SDS.host_dy[s] = host_dy;
       SDS.pblh[s] = pblh;
       // Fill in test data on zt_grid.     
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 	
 	// for subsequent columns, increase TKE
 	SDS.tke[offset] = (s+1)*tke[n];
@@ -96,8 +96,8 @@ struct UnitWrap::UnitTest<D>::TestShocLength {
       }
       
       // Fill in test data on zi_grid
-      for(Int n = 0; n < SDS.nlevi; ++n) {
-	const auto offset = n + s * SDS.nlevi;
+      for(Int n = 0; n < nlevi; ++n) {
+	const auto offset = n + s * nlevi;
 	
 	SDS.zi_grid[offset] = zi_grid[n];
 	SDS.dz_zi[offset] = dz_zi[n];
@@ -106,12 +106,12 @@ struct UnitWrap::UnitTest<D>::TestShocLength {
     
     // Check input data
     // for this test we need more than one column
-    REQUIRE(SDS.shcol > 1);
-    REQUIRE(SDS.nlevi == SDS.nlev+1);    
+    REQUIRE(SDS.shcol() > 1);
+    REQUIRE(SDS.nlevi() == SDS.nlev()+1);    
     
-    for(Int s = 0; s < SDS.shcol; ++s) {     
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol; ++s) {     
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 	
 	REQUIRE(SDS.zt_grid[offset] > 0);
 	REQUIRE(SDS.tke[offset] > 0);
@@ -119,15 +119,15 @@ struct UnitWrap::UnitTest<D>::TestShocLength {
 	REQUIRE(SDS.dz_zt[offset] > 0);
 	
 	// Make sure TKE is larger in next column over
-	if (s < SDS.shcol-1){
+	if (s < shcol-1){
 	  // get offset for "neighboring" column
-	  const auto offsets = n + (s+1) * SDS.nlev;
+	  const auto offsets = n + (s+1) * nlev;
 	  REQUIRE(SDS.tke[offsets] > SDS.tke[offset]);
 	}
       }
       
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 	
 	REQUIRE(SDS.zi_grid[offset] >= 0);
 	REQUIRE(SDS.dz_zi[offset] >= 0);
@@ -138,9 +138,9 @@ struct UnitWrap::UnitTest<D>::TestShocLength {
     shoc_length(SDS);
 
     // Verify output
-    for(Int s = 0; s < SDS.shcol; ++s) {   
-      for(Int n = 0; n < SDS.nlev; ++n) { 
-        const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol; ++s) {   
+      for(Int n = 0; n < nlev; ++n) { 
+        const auto offset = n + s * nlev;
         // Require mixing length is greater than zero and is
         //  less than geometric grid mesh length + 1 m
         REQUIRE(SDS.shoc_mix[offset] > 0.0); 
@@ -151,9 +151,9 @@ struct UnitWrap::UnitTest<D>::TestShocLength {
 	REQUIRE(SDS.brunt[offset] > -1);
 	
 	// Make sure length scale is larger when TKE is larger
-	if (s < SDS.shcol-1){
+	if (s < shcol-1){
 	  // get offset for "neighboring" column
-	  const auto offsets = n + (s+1) * SDS.nlev;
+	  const auto offsets = n + (s+1) * nlev;
 	  if (SDS.tke[offsets] > SDS.tke[offset]){
 	    REQUIRE(SDS.shoc_mix[offsets] > SDS.shoc_mix[offset]);
 	  }
@@ -178,7 +178,7 @@ struct UnitWrap::UnitTest<D>::TestShocLength {
     const auto grid_mesh_small = sqrt(host_dx_small*host_dy_small);
     
     // Load new input
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       SDS.host_dx[s] = host_dx_small;
       SDS.host_dy[s] = host_dy_small;
     }
@@ -187,16 +187,21 @@ struct UnitWrap::UnitTest<D>::TestShocLength {
     shoc_length(SDS);
     
     // Verify output
-    for(Int s = 0; s < SDS.shcol; ++s) {   
-      for(Int n = 0; n < SDS.nlev; ++n) { 
-        const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol; ++s) {   
+      for(Int n = 0; n < nlev; ++n) { 
+        const auto offset = n + s * nlev;
         // Require mixing length is greater than zero and is
         //  less than geometric grid mesh length + 1 m
-        REQUIRE(SDS.shoc_mix[offset] > 0.0); 
+        REQUIRE(SDS.shoc_mix[offset] > 0.0);
         REQUIRE(SDS.shoc_mix[offset] < 1.0+grid_mesh_small);	
       }
     }
 
+  }
+
+  static void run_bfb()
+  {
+    // TODO
   }
 
 };
@@ -214,10 +219,11 @@ TEST_CASE("shoc_length_property", "shoc")
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_length_b4b", "shoc")
+TEST_CASE("shoc_length_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocLength;
 
+  TestStruct::run_bfb();
 }
 
 } // namespace

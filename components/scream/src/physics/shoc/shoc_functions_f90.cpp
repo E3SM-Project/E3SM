@@ -279,12 +279,12 @@ void eddy_diffusivities(SHOCEddydiffData &d) {
 }
 
 void shoc_length(SHOCLengthData &d){
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  shoc_length_c(d.shcol,d.nlev,d.nlevi,d.tke,d.host_dx,d.host_dy,d.pblh,
-                d.zt_grid,d.zi_grid,d.dz_zt,d.dz_zi,d.thetal,d.wthv_sec,
-		d.thv,d.brunt,d.shoc_mix);
-  d.transpose<ekat::util::TransposeDirection::f2c>();		
+  shoc_length_c(d.shcol(),d.nlev(),d.nlevi(),d.tke,d.host_dx,d.host_dy,
+                d.pblh,d.zt_grid,d.zi_grid,d.dz_zt,d.dz_zi,d.thetal,
+		d.wthv_sec,d.thv,d.brunt,d.shoc_mix);
+  d.transpose<ekat::util::TransposeDirection::f2c>();	
 }
 
 void compute_brunt_shoc_length(SHOCBruntlengthData &d) {
