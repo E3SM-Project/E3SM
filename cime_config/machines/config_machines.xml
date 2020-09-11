@@ -3013,6 +3013,77 @@
        </environment_variables>
   </machine>
 
+  <machine MACH="tulip">
+    <DESC>ORNL experimental/evaluation cluster</DESC>
+    <NODENAME_REGEX>tulip.*</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>openmpi</MPILIBS>
+    <CIME_OUTPUT_ROOT>/home/groups/coegroup/e3sm/scratch/$USER</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/home/groups/coegroup/e3sm/inputdata2</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/home/groups/coegroup/e3sm/inputdata2/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/home/groups/coegroup/e3sm/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/home/groups/coegroup/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>16</GMAKE_J>
+    <TESTS>e3sm_developer</TESTS>
+    <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>e3sm</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
+    <mpirun mpilib="openmpi">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="num_tasks">--tag-output -n {{ total_tasks }} </arg>
+        <arg name="tasks_per_node"> --map-by ppr:1:core:PE=$ENV{OMP_NUM_THREADS} --bind-to core </arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="python">/cm/local/apps/environment-modules/current/init/python</init_path>
+      <init_path lang="sh">/cm/local/apps/environment-modules/current/init/sh</init_path>
+      <init_path lang="csh">/cm/local/apps/environment-modules/current/init/csh</init_path>
+      <cmd_path lang="python">/cm/local/apps/environment-modules/current/bin/modulecmd python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+        <command name="rm">gcc</command>
+        <command name="rm">cce</command>
+        <command name="rm">PrgEnv-cray</command>
+        <command name="rm">cray-mvapich2</command>
+        <command name="load">cmake/3.17.0</command>
+        <command name="use">/home/users/twhite/share/modulefiles</command>
+        <command name="load">svn/1.10.6</command>
+      </modules>
+      <modules compiler="gnu">
+        <command name="load">gcc/8.2.0</command>
+        <command name="load">blas/gcc/64/3.8.0</command>
+        <command name="load">lapack/gcc/64/3.8.0</command>
+      </modules>
+    </module_system>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <environment_variables>
+      <env name="PERL5LIB">/home/groups/coegroup/e3sm/soft/perl5/lib/perl5</env>
+    </environment_variables>
+    <environment_variables compiler="gnu">
+      <env name="NETCDF_PATH">/home/groups/coegroup/e3sm/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/gcc/8.2.0</env>
+    </environment_variables>
+    <environment_variables compiler="gnu" mpilib="openmpi">
+      <env name="OMPI_CC">gcc</env>
+      <env name="OMPI_CXX">g++</env>
+      <env name="OMPI_FC">gfortran</env>
+      <env name="PATH">/home/groups/coegroup/e3sm/soft/openmpi/2.1.6/gcc/8.2.0/bin:$ENV{PATH}</env>
+      <env name="LD_LIBRARY_PATH">/home/groups/coegroup/e3sm/soft/openmpi/2.1.6/gcc/8.2.0/lib:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="PNETCDF_PATH">/home/groups/coegroup/e3sm/soft/pnetcdf/1.12.1/gcc/8.2.0/openmpi/2.1.6</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE">
+      <env name="OMP_STACKSIZE">128M</env>
+      <env name="OMP_PLACES">threads</env>
+    </environment_variables>
+  </machine>
+
   <default_run_suffix>
     <default_run_exe>${EXEROOT}/e3sm.exe </default_run_exe>
     <default_run_misc_suffix> &gt;&gt; e3sm.log.$LID 2&gt;&amp;1 </default_run_misc_suffix>
