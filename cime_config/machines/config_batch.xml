@@ -272,6 +272,9 @@
     </batch_system>
 
     <batch_system MACH="anvil" type="slurm" >
+	  <submit_args>
+		<arg flag="--qos=acme_high"/>
+	  </submit_args>
       <queues>
 	<queue walltimemax="48:00:00" nodemax="5" default="true" strict="true">acme-small</queue>
 	<queue walltimemax="24:00:00" nodemin="6" nodemax="60" strict="true">acme-medium</queue>
@@ -395,6 +398,9 @@
    </batch_system>
 
    <batch_system MACH="compy" type="slurm">
+	 <submit_args>
+	   <arg flag="--qos=watercycle"/>
+	 </submit_args>
     <queues>
       <queue walltimemax="02:00:00" strict="true" nodemin="1" nodemax="40" default="true">short</queue>
       <queue walltimemax="06:00:00" nodemin="1" nodemax="460">slurm</queue>
