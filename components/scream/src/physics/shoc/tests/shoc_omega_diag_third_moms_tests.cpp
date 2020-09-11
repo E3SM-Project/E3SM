@@ -100,6 +100,7 @@ TEST_CASE("shoc_omega_diag_third_moms_b4b", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestOmegadiagThirdMoms;
 
+  TestStruct::run_bfb();
 }
 
 } // namespace

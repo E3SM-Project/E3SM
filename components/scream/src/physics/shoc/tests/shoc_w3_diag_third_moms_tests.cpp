@@ -123,6 +123,7 @@ TEST_CASE("shoc_w3_diag_third_moms_b4b", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestW3diagThirdMoms;
 
+  TestStruct::run_bfb();
 }
 
 } // namespace

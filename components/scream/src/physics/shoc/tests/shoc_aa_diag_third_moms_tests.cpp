@@ -103,6 +103,8 @@ TEST_CASE("shoc_aa_diag_third_moms_b4b", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestAAdiagThirdMoms;
 
+  TestStruct::run_bfb();
+
 }
 
 } // namespace

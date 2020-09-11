@@ -173,6 +173,7 @@ TEST_CASE("shoc_fterm_diag_third_moms_b4b", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestFtermdiagThirdMoms;
 
+  TestStruct::run_bfb();
 }
 
 } // namespace
