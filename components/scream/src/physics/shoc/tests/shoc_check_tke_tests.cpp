@@ -39,21 +39,24 @@ struct UnitWrap::UnitTest<D>::TestShocCheckTke {
     SHOCCheckTkeData SDS(shcol, nlev);
     
     // Load the data
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for(Int n = 0; n < SDS.nlev; ++n) {
-        const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
 	
 	SDS.tke[offset] = tke_input[n];
       }
     }
     
+    // Check some input
+    REQUIRE((SDS.shcol() > 0 && SDS.nlev() > 0));
+    
     // call the fortran implementation 
     check_tke(SDS);
     
     // Check the result against the input values
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for(Int n = 0; n < SDS.nlev; ++n) {
-        const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
 	
 	// if input TKE was less than zero, verify it was adjusted
 	if (tke_input[n] < 0){
@@ -67,6 +70,11 @@ struct UnitWrap::UnitTest<D>::TestShocCheckTke {
     } 
 
   }
+  
+  static void run_bfb()
+  {
+    // TODO
+  }  
 
 };
 
@@ -83,9 +91,11 @@ TEST_CASE("shoc_check_tke_property", "shoc")
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_check_tke_b4b", "shoc")
+TEST_CASE("shoc_check_tke_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocCheckTke;
+
+  TestStruct::run_bfb();
 
 }
 

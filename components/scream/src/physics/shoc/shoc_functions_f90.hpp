@@ -43,7 +43,7 @@ struct SHOCGridData : public PhysicsTestData {
   SHOC_NO_SCALAR(SHOCGridData, 3);
 };
 
-//Create data structure to hold data for shoc_tke
+//Create data structure to hold data for check_tke
 struct SHOCCheckTkeData : public PhysicsTestData {
 
   // Output
@@ -52,9 +52,8 @@ struct SHOCCheckTkeData : public PhysicsTestData {
   SHOCCheckTkeData(Int shcol_, Int nlev_) :
     PhysicsTestData(shcol_, nlev_, {&tke}) {}
 
-  PTD_DATA_COPY_CTOR(SHOCCheckTkeData, 2);
-  PTD_ASSIGN_OP(SHOCCheckTkeData, 0);
-};//SHOCTkeData
+  SHOC_NO_SCALAR(SHOCCheckTkeData, 2);
+};//SHOCCheckTkeData
 
 //Create data structure to hold data for shoc_tke
 struct SHOCTkeData : public PhysicsTestData {
@@ -69,8 +68,7 @@ struct SHOCTkeData : public PhysicsTestData {
   SHOCTkeData(Int shcol_, Int nlev_, Int nlevi_, Real dtime_) :
     PhysicsTestData(shcol_, nlev_, nlevi_, {&wthv_sec, &shoc_mix, &dz_zt, &pres, &u_wind, &v_wind, &zt_grid, &brunt, &tke, &tk, &tkh, &isotropy}, {&dz_zi, &zi_grid}, {&obklen, &pblh}), dtime(dtime_) {}
 
-  PTD_DATA_COPY_CTOR(SHOCTkeData, 4);
-  PTD_ASSIGN_OP(SHOCTkeData, 1, dtime);
+  SHOC_SCALARS(SHOCTkeData, 3, 1, dtime);
 };//SHOCTkeData
 
 //Create data structure to hold data for integ_column_stability

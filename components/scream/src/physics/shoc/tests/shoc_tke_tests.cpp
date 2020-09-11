@@ -85,16 +85,16 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
     SHOCTkeData SDS(shcol, nlev, nlevi, dtime);
 
     // Test that the inputs are reasonable.
-    REQUIRE(SDS.nlevi - SDS.nlev == 1);
-    REQUIRE(SDS.shcol > 0);
+    REQUIRE(SDS.nlevi() - SDS.nlev() == 1);
+    REQUIRE(SDS.shcol() > 0);
 
     SDS.dtime = dtime;
     // Fill in test data on zt_grid.
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       SDS.pblh[s] = pblh;
       SDS.obklen[s] = obklen;
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 
 	SDS.wthv_sec[offset] = wthv_sec[n];
 	SDS.shoc_mix[offset] = shoc_mix[n];
@@ -109,8 +109,8 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
       }
 
       // Fill in test data on zi_grid.
-      for(Int n = 0; n < SDS.nlevi; ++n) {
-	const auto offset   = n + s * SDS.nlevi;
+      for(Int n = 0; n < nlevi; ++n) {
+	const auto offset   = n + s * nlevi;
 	SDS.dz_zi[offset] = dz_zi[n];
 	SDS.zi_grid[offset] = zi_grid[n];
       }
@@ -118,10 +118,10 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
 
     // Check that the inputs make sense
 
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       // nlevi loop
-      for (Int n = 0; n < SDS.nlevi; ++n){
-	const auto offset = n + s * SDS.nlevi;
+      for (Int n = 0; n < nlevi; ++n){
+	const auto offset = n + s * nlevi;
 	// Make sure top level dz_zi value is zero
 	if (n == 0){
           REQUIRE(SDS.dz_zi[offset] == 0.0);
@@ -136,8 +136,8 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
 	}
       }
       // nlev loop 
-      for (Int n = 0; n < SDS.nlev; ++n){
-	const auto offset = n + s * SDS.nlev;
+      for (Int n = 0; n < nlev; ++n){
+	const auto offset = n + s * nlev;
 	// Check that zt increases upward
 	if (n < nlev-1){
 	  REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0.0);
@@ -163,8 +163,8 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
     Real tke_test1[nlev*shcol];
 
     for(Int s = 0; s < shcol; ++s) {
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 	REQUIRE(SDS.tke[offset] > tke_init[n]);
 	REQUIRE(SDS.tke[offset] > 0.0);
 	REQUIRE(SDS.tke[offset] <= 50.0);
@@ -195,9 +195,9 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
     Real v_wind_decay[nlev] = {-2, -2, -2, -2, -2};
     
     // Fill in test data on zt_grid.
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 	
 	SDS.wthv_sec[offset] = wthv_sec_decay[n];
 	SDS.shoc_mix[offset] = shoc_mix_decay[n];
@@ -207,10 +207,10 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
       }
     }    
 
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       // nlev loop 
-      for (Int n = 0; n < SDS.nlev; ++n){
-	const auto offset = n + s * SDS.nlev;
+      for (Int n = 0; n < nlev; ++n){
+	const auto offset = n + s * nlev;
 	// be sure wind has no gradient
 	if (n < nlev-1){
 	  REQUIRE(SDS.u_wind[offset + 1] - SDS.u_wind[offset] == 0.0);
@@ -230,8 +230,8 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
     
     // Verify ALL outputs are reasonable and that TKE has decayed
     for(Int s = 0; s < shcol; ++s) {
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 	REQUIRE(SDS.tke[offset] < tke_test1[offset]);
 	REQUIRE(SDS.tke[offset] > 0.0);
 	REQUIRE(SDS.tke[offset] <= 50.0);
@@ -242,6 +242,11 @@ struct UnitWrap::UnitTest<D>::TestShocTke {
     }    
 
   }
+  
+  static void run_bfb()
+  {
+    // TODO
+  }   
 
 };
 
@@ -258,9 +263,11 @@ TEST_CASE("shoc_tke_property", "shoc")
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_tke_b4b", "shoc")
+TEST_CASE("shoc_tke_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocTke;
+
+  TestStruct::run_bfb();
 
 }
 
