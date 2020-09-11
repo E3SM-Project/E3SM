@@ -381,6 +381,8 @@ struct CaarFunctorImpl {
       const int igp = idx / NP;
       const int jgp = idx % NP;
 
+      constexpr int last_vec = (NUM_INTERFACE_LEV-1) % VECTOR_SIZE;
+      m_buffers.eta_dot_dpdn(kv.team_idx, igp, jgp, NUM_LEV_P-1)[last_vec] = 0.0;
       for(int k = 0; k < NUM_PHYSICAL_LEV-1; ++k){
         const int ilev = k / VECTOR_SIZE;
         const int ivec = k % VECTOR_SIZE;
@@ -584,11 +586,13 @@ struct CaarFunctorImpl {
                          [&](const int idx) {
       const int igp = idx / NP;
       const int jgp = idx % NP;
+      constexpr int last_vec_end = (NUM_PHYSICAL_LEV - 1) % VECTOR_SIZE;
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV),
                            [&](const int &ilev) {
         Scalar tmp = m_buffers.eta_dot_dpdn(kv.team_idx, igp, jgp, ilev);
         tmp.shift_left(1);
-        tmp[VECTOR_SIZE - 1] = (ilev + 1 < NUM_LEV)
+        const int vec_end = ilev==(NUM_LEV-1) ? last_vec_end : VECTOR_SIZE - 1;
+        tmp[vec_end] = (ilev + 1 < NUM_LEV)
                                    ? m_buffers.eta_dot_dpdn(
                                          kv.team_idx, igp, jgp, ilev + 1)[0]
                                    : 0;
