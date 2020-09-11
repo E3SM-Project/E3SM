@@ -98,17 +98,17 @@ void Functions<S,D>
 	    //between nc_incld and nc
             nc(pk).set(qc_gt_small, nc_incld(pk)*cld_frac_l(pk));
 
-	          dum = 1 / pow(lamc(pk), bcn);
+            dum = 1 / pow(lamc(pk), bcn);
             V_qc(pk).set(qc_gt_small, acn(pk)*tgamma(4 + bcn + mu_c(pk)) * dum / tgamma(mu_c(pk)+4));
             if (do_predict_nc) {
               V_nc(pk).set(qc_gt_small, acn(pk)*tgamma(1 + bcn + mu_c(pk)) * dum / tgamma(mu_c(pk)+1));
             }
-
-            const auto Co_max_local = max(qc_gt_small, -1,
-                                          V_qc(pk) * dt_left * inv_dz(pk));
-            if (Co_max_local > lmax)
-              lmax = Co_max_local;
           }
+
+          const auto Co_max_local = max(qc_gt_small, -1,
+                                        V_qc(pk) * dt_left * inv_dz(pk));
+          if (Co_max_local > lmax)
+            lmax = Co_max_local;
       }, Kokkos::Max<Scalar>(Co_max));
       team.team_barrier();
 
@@ -126,7 +126,7 @@ void Functions<S,D>
 	  qc_incld(pk)=qc(pk)/cld_frac_l(pk);
 	  nc_incld(pk)=nc(pk)/cld_frac_l(pk);
 	});
-      
+
     } //end CFL substep loop
 
     Kokkos::single(

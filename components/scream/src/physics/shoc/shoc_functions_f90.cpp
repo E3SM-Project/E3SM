@@ -91,9 +91,56 @@ void check_length_scale_shoc_length_c(Int nlev, Int shcol, Real *host_dx,
 
 void shoc_diag_second_moments_srf_c(Int shcol, Real* wthl, Real* uw, Real* vw,
                                    Real* ustar2, Real* wstar);
-				   
+
 void linear_interp_c(Real *x1, Real *x2, Real *y1, Real *y2, Int km1,
-                     Int km2, Int ncol, Real minthresh);			   
+                     Int km2, Int ncol, Real minthresh);
+void shoc_assumed_pdf_tilda_to_real_c(Real w_first, Real sqrtw2, Real* w1);
+
+void shoc_assumed_pdf_vv_parameters_c(Real w_first, Real w_sec, Real w3var,
+                                      Real *Skew_w, Real *w1_1, Real *w1_2,
+				      Real *w2_1, Real *w2_2, Real *a);
+
+void shoc_assumed_pdf_thl_parameters_c(Real wthlsec, Real sqrtw2, Real sqrtthl,
+                                       Real thlsec, Real thl_first, Real w1_1,
+				       Real w1_2, Real Skew_w, Real a, bool dothetal_skew,
+                                       Real *thl1_1, Real *thl1_2, Real *thl2_1,
+				       Real *thl2_2, Real *sqrtthl2_1,
+                                       Real *sqrtthl2_2);
+
+void shoc_assumed_pdf_qw_parameters_c(Real wqwsec, Real sqrtw2, Real Skew_w,
+                                       Real sqrtqt, Real qw_sec, Real w1_1,
+				       Real w1_2, Real qw_first, Real a,
+                                       Real *qw1_1, Real *qw1_2, Real *qw2_1,
+				       Real *qw2_2, Real *sqrtqw2_1,
+                                       Real *sqrtqw2_2);
+
+void shoc_assumed_pdf_inplume_correlations_c(Real sqrtqw2_1, Real sqrtthl2_1,
+                                     Real a, Real sqrtqw2_2, Real sqrtthl2_2,
+                                     Real qwthlsec, Real qw1_1, Real qw_first,
+				     Real thl1_1, Real thl_first, Real qw1_2,
+				     Real thl1_2, Real *r_qwthl_1);
+
+void shoc_assumed_pdf_compute_temperature_c(Real thl1, Real basepres,
+                                            Real pval, Real *Tl1);
+
+void shoc_assumed_pdf_compute_qs_c(Real Tl1_1, Real Tl1_2, Real pval,
+                              Real *qs1, Real *beta1, Real *qs2, Real *beta2);
+
+void shoc_assumed_pdf_compute_s_c(Real qw1, Real qs1, Real beta, Real pval, Real thl2,
+                              Real qw2,Real sqrtthl2, Real sqrtqw2, Real r_qwthl,
+                              Real *s, Real *std_s, Real *qn, Real *C);
+
+void shoc_assumed_pdf_compute_sgs_liquid_c(Real a, Real ql1, Real ql2, Real *shoc_ql);
+
+void shoc_assumed_pdf_compute_cloud_liquid_variance_c(Real a, Real s1, Real ql1,
+                               Real C1, Real std_s1, Real s2, Real ql2, Real C2,
+			       Real std_s2, Real shoc_ql, Real *shoc_ql2);
+
+void shoc_assumed_pdf_compute_liquid_water_flux_c(Real a, Real w1_1, Real w_first,
+                               Real ql1, Real w1_2, Real ql2, Real *wqls);
+
+void shoc_assumed_pdf_compute_buoyancy_flux_c(Real wthlsec, Real epsterm, Real wqwsec,
+                               Real pval, Real wqls, Real *wthv_sec);
 
 void shoc_diag_second_moments_ubycond_c(Int shcol, Real* thl, Real* qw, Real* wthl,
                                        Real* wqw, Real* qwthl, Real* uw, Real* vw,
@@ -102,130 +149,6 @@ void shoc_diag_second_moments_ubycond_c(Int shcol, Real* thl, Real* qw, Real* wt
 
 namespace scream {
 namespace shoc {
-
-//
-// Data struct
-//
-
-SHOCDataBase::SHOCDataBase(Int shcol_, Int nlev_, Int nlevi_,
-                           const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i,
-			   const std::vector<Real**>& ptrs_c, const std::vector<Int**>& idx_c) :
-  shcol(shcol_),
-  nlev(nlev_),
-  nlevi(nlevi_),
-  m_total(shcol_ * nlev_),
-  m_totali(shcol_ * nlevi_),
-  m_ptrs(ptrs),
-  m_ptrs_i(ptrs_i),
-  m_ptrs_c(ptrs_c),
-  m_indices_c(idx_c),
-  m_data(m_ptrs.size() * m_total + m_ptrs_i.size() * m_totali + m_ptrs_c.size() * shcol, 0),
-  m_idx_data(idx_c.size() * shcol, 0)
-{
-  init_ptrs();
-}
-
-SHOCDataBase::SHOCDataBase(const SHOCDataBase &rhs,
-                           const std::vector<Real**>& ptrs, const std::vector<Real**>& ptrs_i,
-                           const std::vector<Real**>& ptrs_c, const std::vector<Int**>& idx_c) :
-  shcol(rhs.shcol),
-  nlev(rhs.nlev),
-  nlevi(rhs.nlevi),
-  m_total(rhs.m_total),
-  m_totali(rhs.m_totali),
-  m_ptrs(ptrs),
-  m_ptrs_i(ptrs_i),
-  m_ptrs_c(ptrs_c),
-  m_indices_c(idx_c),
-  m_data(rhs.m_data),
-  m_idx_data(rhs.m_idx_data)
-{
-  init_ptrs();
-}
-
-SHOCDataBase& SHOCDataBase::operator=(const SHOCDataBase& rhs)
-{
-  shcol      = rhs.shcol;
-  nlev       = rhs.nlev;
-  nlevi      = rhs.nlevi;
-  m_total    = rhs.m_total;
-  m_totali   = rhs.m_totali;
-  m_data     = rhs.m_data;      // Copy
-  m_idx_data = rhs.m_idx_data;  // Copy
-
-  init_ptrs();
-
-  return *this;
-}
-
-void SHOCDataBase::init_ptrs()
-{
-  Int offset       = 0;
-  Real *data_begin = m_data.data();
-
-  for (size_t i = 0; i < m_ptrs.size(); ++i) {
-    *(m_ptrs[i]) = data_begin + offset;
-    offset += m_total;
-  }
-
-  for (size_t i = 0; i < m_ptrs_i.size(); ++i) {
-    *(m_ptrs_i[i]) = data_begin + offset;
-    offset += m_totali;
-  }
-
-  for (size_t i = 0; i < m_ptrs_c.size(); ++i) {
-    *(m_ptrs_c[i]) = data_begin + offset;
-    offset += shcol;
-  }
-
-  for (size_t i = 0; i < m_indices_c.size(); ++i) {
-    *(m_indices_c[i]) = m_idx_data.data() + shcol*i;
-  }
-}
-
-void SHOCDataBase::randomize(const std::vector<std::pair<Real, Real> >& ranges,
-                             const std::vector<std::pair<Real, Real> >& ranges_i,
-                             const std::vector<std::pair<Real, Real> >& ranges_c,
-                             const std::vector<std::pair<Int, Int> >&   ranges_idx)
-{
-  std::default_random_engine generator;
-
-  EKAT_ASSERT_MSG(ranges.size() <= m_ptrs.size(), "Provided more ranges than data items");
-  for (size_t i = 0; i < m_ptrs.size(); ++i) {
-    std::uniform_real_distribution<Real> data_dist(i < ranges.size() ? ranges[i].first  : 0.0,
-                                                   i < ranges.size() ? ranges[i].second : 1.0);
-    for (int j = 0; j < m_total; ++j) {
-      (*(m_ptrs[i]))[j] = data_dist(generator);
-    }
-  }
-
-  EKAT_ASSERT_MSG(ranges_i.size() <= m_ptrs_i.size(), "Provided more ranges_i than data items");
-  for (size_t i = 0; i < m_ptrs_i.size(); ++i) {
-    std::uniform_real_distribution<Real> data_dist(i < ranges_i.size() ? ranges_i[i].first  : 0.0,
-                                                   i < ranges_i.size() ? ranges_i[i].second : 1.0);
-
-    for (int j = 0; j < m_totali; ++j) {
-      (*(m_ptrs_i[i]))[j] = data_dist(generator);
-    }
-  }
-
-  EKAT_ASSERT_MSG(ranges_i.size() <= m_ptrs_i.size(), "Provided more ranges_c than data items");
-  for (size_t i = 0; i < m_ptrs_c.size(); ++i) {
-    std::uniform_real_distribution<Real> data_dist(i < ranges_c.size() ? ranges_c[i].first  : 0.0,
-                                                   i < ranges_c.size() ? ranges_c[i].second : 1.0);
-    for (int j = 0; j < shcol; ++j) {
-      (*(m_ptrs_c[i]))[j] = data_dist(generator);
-    }
-  }
-
-  EKAT_ASSERT_MSG(ranges_idx.size() == m_indices_c.size(), "Must provide ranges_idx for index data");
-  for (size_t i = 0; i < m_indices_c.size(); ++i) {
-    std::uniform_int_distribution<Int> data_dist(ranges_idx[i].first, ranges_idx[i].second);
-    for (int j = 0; j < shcol; ++j) {
-      (*(m_indices_c[i]))[j] = data_dist(generator);
-    }
-  }
-}
 
 //
 // Glue functions to call fortran from from C++ with the Data struct
@@ -242,42 +165,42 @@ void SHOCDataBase::randomize(const std::vector<std::pair<Real, Real> >& ranges,
 //
 
 void calc_shoc_varorcovar(SHOCVarorcovarData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  calc_shoc_varorcovar_c(d.shcol, d.nlev, d.nlevi, d.tunefac, d.isotropy_zi, d.tkh_zi,
+  calc_shoc_varorcovar_c(d.shcol(), d.nlev(), d.nlevi(), d.tunefac, d.isotropy_zi, d.tkh_zi,
                          d.dz_zi, d.invar1, d.invar2, d.varorcovar);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void shoc_grid(SHOCGridData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  shoc_grid_c(d.shcol, d.nlev, d.nlevi, d.zt_grid, d.zi_grid, d.pdel, d.dz_zt,
+  shoc_grid_c(d.shcol(), d.nlev(), d.nlevi(), d.zt_grid, d.zi_grid, d.pdel, d.dz_zt,
               d.dz_zi, d.rho_zt);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void update_host_dse(SHOCEnergydseData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  update_host_dse_c(d.shcol, d.nlev, d.thlm, d.shoc_ql, d.exner,
+  update_host_dse_c(d.shcol(), d.nlev(), d.thlm, d.shoc_ql, d.exner,
                     d.zt_grid, d.phis, d.host_dse);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void shoc_energy_integrals(SHOCEnergyintData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  shoc_energy_integrals_c(d.shcol, d.nlev, d.host_dse, d.pdel,
+  shoc_energy_integrals_c(d.shcol(), d.nlev(), d.host_dse, d.pdel,
                           d.rtm, d.rcm, d.u_wind, d.v_wind,
                           d.se_int, d.ke_int, d.wv_int, d.wl_int);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void shoc_energy_total_fixer(SHOCEnergytotData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  shoc_energy_total_fixer_c(d.shcol, d.nlev, d.nlevi, d.dtime, d.nadv,
+  shoc_energy_total_fixer_c(d.shcol(), d.nlev(), d.nlevi(), d.dtime, d.nadv,
                             d.zt_grid, d.zi_grid,
                             d.se_b, d.ke_b, d.wv_b, d.wl_b,
                             d.se_a, d.ke_a, d.wv_a, d.wl_a,
@@ -287,134 +210,224 @@ void shoc_energy_total_fixer(SHOCEnergytotData &d) {
 }
 
 void shoc_energy_threshold_fixer(SHOCEnergythreshfixerData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  shoc_energy_threshold_fixer_c(d.shcol, d.nlev, d.nlevi,
+  shoc_energy_threshold_fixer_c(d.shcol(), d.nlev(), d.nlevi(),
                           d.pint, d.tke, d.te_a, d.te_b,
 			  d.se_dis, d.shoctop);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void shoc_energy_dse_fixer(SHOCEnergydsefixerData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  shoc_energy_dse_fixer_c(d.shcol, d.nlev,
+  shoc_energy_dse_fixer_c(d.shcol(), d.nlev(),
                           d.se_dis, d.shoctop, d.host_dse);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void calc_shoc_vertflux(SHOCVertfluxData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  calc_shoc_vertflux_c(d.shcol, d.nlev, d.nlevi, d.tkh_zi, d.dz_zi, d.invar,
+  calc_shoc_vertflux_c(d.shcol(), d.nlev(), d.nlevi(), d.tkh_zi, d.dz_zi, d.invar,
 		       d.vertflux);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void integ_column_stability(SHOCColstabData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  integ_column_stability_c(d.nlev, d.shcol, d.dz_zt, d.pres, d.brunt, d.brunt_int);
+  integ_column_stability_c(d.nlev(), d.shcol(), d.dz_zt, d.pres, d.brunt, d.brunt_int);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void compute_shr_prod(SHOCTkeshearData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  compute_shr_prod_c(d.nlevi, d.nlev, d.shcol, d.dz_zi, d.u_wind,
+  compute_shr_prod_c(d.nlevi(), d.nlev(), d.shcol(), d.dz_zi, d.u_wind,
                        d.v_wind, d.sterm);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void isotropic_ts(SHOCIsotropicData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  isotropic_ts_c(d.nlev, d.shcol, d.brunt_int, d.tke, d.a_diss,
+  isotropic_ts_c(d.nlev(), d.shcol(), d.brunt_int, d.tke, d.a_diss,
                  d.brunt, d.isotropy);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void adv_sgs_tke(SHOCAdvsgstkeData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  adv_sgs_tke_c(d.nlev, d.shcol, d.dtime, d.shoc_mix, d.wthv_sec,
+  adv_sgs_tke_c(d.nlev(), d.shcol(), d.dtime, d.shoc_mix, d.wthv_sec,
                 d.sterm_zt, d.tk, d.tke, d.a_diss);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void eddy_diffusivities(SHOCEddydiffData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  eddy_diffusivities_c(d.nlev, d.shcol, d.obklen, d.pblh, d.zt_grid,
+  eddy_diffusivities_c(d.nlev(), d.shcol(), d.obklen, d.pblh, d.zt_grid,
      d.shoc_mix, d.sterm_zt, d.isotropy, d.tke, d.tkh, d.tk);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void compute_brunt_shoc_length(SHOCBruntlengthData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  compute_brunt_shoc_length_c(d.nlev,d.nlevi,d.shcol,d.dz_zt,d.thv,d.thv_zi,d.brunt);
+  compute_brunt_shoc_length_c(d.nlev(),d.nlevi(),d.shcol(),d.dz_zt,d.thv,d.thv_zi,d.brunt);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void compute_l_inf_shoc_length(SHOCInflengthData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  compute_l_inf_shoc_length_c(d.nlev,d.shcol,d.zt_grid,d.dz_zt,d.tke,d.l_inf);
+  compute_l_inf_shoc_length_c(d.nlev(),d.shcol(),d.zt_grid,d.dz_zt,d.tke,d.l_inf);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void compute_conv_vel_shoc_length(SHOCConvvelData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  compute_conv_vel_shoc_length_c(d.nlev,d.shcol,d.pblh,d.zt_grid,
+  compute_conv_vel_shoc_length_c(d.nlev(),d.shcol(),d.pblh,d.zt_grid,
                                  d.dz_zt,d.thv,d.wthv_sec,d.conv_vel);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void compute_conv_time_shoc_length(SHOCConvtimeData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(42, true); // fake nlev
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  compute_conv_time_shoc_length_c(d.shcol,d.pblh,d.conv_vel,d.tscale);
+  compute_conv_time_shoc_length_c(d.shcol(),d.pblh,d.conv_vel,d.tscale);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void compute_shoc_mix_shoc_length(SHOCMixlengthData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  compute_shoc_mix_shoc_length_c(d.nlev,d.shcol,d.tke,d.brunt,d.tscale,
+  compute_shoc_mix_shoc_length_c(d.nlev(),d.shcol(),d.tke,d.brunt,d.tscale,
                                  d.zt_grid,d.l_inf,d.shoc_mix);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void check_length_scale_shoc_length(SHOCMixcheckData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  check_length_scale_shoc_length_c(d.nlev,d.shcol,d.host_dx,d.host_dy,d.shoc_mix);
+  check_length_scale_shoc_length_c(d.nlev(),d.shcol(),d.host_dx,d.host_dy,d.shoc_mix);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void shoc_diag_second_moments_srf(SHOCSecondMomentSrfData& d)
 {
-  shoc_init(d.nlev, true);
+  shoc_init(42, true); // fake nlev
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  shoc_diag_second_moments_srf_c(d.shcol, d.wthl, d.uw, d.vw, d.ustar2, d.wstar);
+  shoc_diag_second_moments_srf_c(d.shcol(), d.wthl, d.uw, d.vw, d.ustar2, d.wstar);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void linear_interp(SHOCLinearintData& d)
 {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  linear_interp_c(d.x1,d.x2,d.y1,d.y2,d.nlev,d.nlevi,d.shcol,d.minthresh);
+  linear_interp_c(d.x1,d.x2,d.y1,d.y2,d.nlev(),d.nlevi(),d.shcol(),d.minthresh);
   d.transpose<ekat::util::TransposeDirection::f2c>();
+}
+
+void shoc_assumed_pdf_tilda_to_real(SHOCPDFtildaData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_tilda_to_real_c(d.w_first, d.sqrtw2, &d.w1);
+}
+
+void shoc_assumed_pdf_vv_parameters(SHOCPDFvvparamData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_vv_parameters_c(d.w_first,d.w_sec,d.w3var,
+                                   &d.Skew_w,&d.w1_1,&d.w1_2,&d.w2_1,&d.w2_2,&d.a);
+}
+
+void shoc_assumed_pdf_thl_parameters(SHOCPDFthlparamData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_thl_parameters_c(d.wthlsec,d.sqrtw2,d.sqrtthl,d.thlsec,d.thl_first,
+                                    d.w1_1,d.w1_2,d.Skew_w,d.a,d.dothetal_skew,
+                                    &d.thl1_1,&d.thl1_2,&d.thl2_1,&d.thl2_2,&d.sqrtthl2_1,
+                                    &d.sqrtthl2_2);
+}
+
+void shoc_assumed_pdf_qw_parameters(SHOCPDFqwparamData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_qw_parameters_c(d.wqwsec,d.sqrtw2,d.Skew_w,d.sqrtqt,d.qwsec,
+                                    d.w1_1,d.w1_2,d.qw_first,d.a,
+                                    &d.qw1_1,&d.qw1_2,&d.qw2_1,&d.qw2_2,&d.sqrtqw2_1,
+                                    &d.sqrtqw2_2);
+}
+
+void shoc_assumed_pdf_inplume_correlations(SHOCPDFinplumeData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_inplume_correlations_c(d.sqrtqw2_1,d.sqrtthl2_1,d.a,
+                                          d.sqrtqw2_2,d.sqrtthl2_2,
+                                          d.qwthlsec,d.qw1_1,d.qw_first,d.thl1_1,
+			                  d.thl_first,d.qw1_2,d.thl1_2,
+                                          &d.r_qwthl_1);
+}
+
+void shoc_assumed_pdf_compute_temperature(SHOCPDFcomptempData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_compute_temperature_c(d.thl1, d.basepres, d.pval, &d.Tl1);
+}
+
+void shoc_assumed_pdf_compute_qs(SHOCPDFcompqsData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_compute_qs_c(d.Tl1_1,d.Tl1_2,d.pval,
+                                &d.qs1,&d.beta1,&d.qs2,&d.beta2);
+}
+
+void shoc_assumed_pdf_compute_s(SHOCPDFcompsData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_compute_s_c(d.qw1,d.qs1,d.beta,d.pval,d.thl2,d.qw2,
+                               d.sqrtthl2,d.sqrtqw2,d.r_qwthl,
+			       &d.s,&d.std_s,&d.qn,&d.C);
+}
+
+void shoc_assumed_pdf_compute_sgs_liquid(SHOCPDFcompsgsliqData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_compute_sgs_liquid_c(d.a, d.ql1, d.ql2, &d.shoc_ql);
+}
+
+void shoc_assumed_pdf_compute_cloud_liquid_variance(SHOCPDFcompcloudvarData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_compute_cloud_liquid_variance_c(d.a,d.s1,d.ql1,d.C1,
+                                   d.std_s1,d.s2,d.ql2,d.C2,d.std_s2,d.shoc_ql,
+                                   &d.shoc_ql2);
+}
+
+void shoc_assumed_pdf_compute_liquid_water_flux(SHOCPDFcompliqfluxData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_compute_liquid_water_flux_c(d.a,d.w1_1,d.w_first,d.ql1,
+                                               d.w1_2,d.ql2,&d.wqls);
+}
+
+void shoc_assumed_pdf_compute_buoyancy_flux(SHOCPDFcompbuoyfluxData &d)
+{
+  shoc_init(1, true);
+  shoc_assumed_pdf_compute_buoyancy_flux_c(d.wthlsec,d.epsterm,d.wqwsec,
+                                           d.pval,d.wqls,&d.wthv_sec);
 }
 
 void shoc_diag_second_moments_ubycond(SHOCSecondMomentUbycondData& d)
 {
-  shoc_init(d.nlev, true);
+  shoc_init(42, true); // Fake nlev
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  shoc_diag_second_moments_ubycond_c(d.shcol, d.thl, d.qw, d.wthl, d.wqw, d.qwthl, d.uw, d.vw, d.wtke);
+  shoc_diag_second_moments_ubycond_c(d.shcol(), d.thl, d.qw, d.wthl, d.wqw, d.qwthl, d.uw, d.vw, d.wtke);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 

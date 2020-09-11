@@ -1179,7 +1179,7 @@ end subroutine micro_p3_readnl
    !! Effective radius for cloud ice
    rei(:ncol,top_lev:) = rei(:ncol,top_lev:) * 1e6_rtype  ! Rescale rei to be in microns
    !! Effective diameter for cloud ice
-   dei(:ncol,top_lev:) = rei(:ncol,top_lev:) * rho_qi(:ncol,top_lev:)/rho_h2os * 2._rtype
+   dei(:ncol,top_lev:) = rei(:ncol,top_lev:) * 2._rtype
 
    !!
    !! Limiters for low cloud fraction

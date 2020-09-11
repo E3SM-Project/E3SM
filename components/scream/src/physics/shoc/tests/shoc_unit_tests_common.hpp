@@ -73,6 +73,18 @@ struct UnitWrap {
     struct TestCompShocMixLength;
     struct TestSecondMomSrf;
     struct TestShocLinearInt;
+    struct TestShocPdfTildatoReal;
+    struct TestShocVVParameters;
+    struct TestShocThlParameters;
+    struct TestShocQwParameters;
+    struct TestShocInPlumeCorr;
+    struct TestShocPdfComputeTemp;
+    struct TestShocPdfComputeQs;
+    struct TestShocPdfComputeS;
+    struct TestShocPdfComputeSgsLiq;
+    struct TestShocPdfCompCldVar;
+    struct TestShocPdfCompLiqFlux;
+    struct TestShocPdfCompBuoyFlux;
     struct TestSecondMomUbycond;
   };
 

@@ -1,6 +1,6 @@
 INCLUDE (ScreamUtils)
 
-SET (NEED_LIBS shoc physics_share scream_control scream_share)
+SET (NEED_LIBS shoc physics_share scream_share)
 set(SHOC_TESTS_SRCS
     shoc_tests.cpp
     shoc_grid_tests.cpp
@@ -24,13 +24,24 @@ set(SHOC_TESTS_SRCS
     shoc_eddy_diffusivities_tests.cpp
     shoc_diag_second_mom_srf_test.cpp
     shoc_linearinterp_tests.cpp
+    shoc_pdf_tildatoreal_tests.cpp
+    shoc_pdf_vv_parameters_tests.cpp
+    shoc_pdf_thl_parameters_tests.cpp
+    shoc_pdf_qw_parameters_tests.cpp
+    shoc_pdf_inplume_corr_tests.cpp
+    shoc_pdf_computetemp_tests.cpp
+    shoc_pdf_compute_qs_tests.cpp
+    shoc_pdf_compute_s_tests.cpp
+    shoc_pdf_compute_buoyflux_tests.cpp
+    shoc_pdf_compute_liqflux_tests.cpp
+    shoc_pdf_compute_cloudvar_tests.cpp
+    shoc_pdf_compute_sgsliq_tests.cpp
     shoc_diag_second_mom_ubycond_test.cpp
     shoc_unit_tests.cpp)
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build
 if (NOT ${SCREAM_BASELINES_ONLY})
   CreateUnitTest(shoc_tests "${SHOC_TESTS_SRCS}" "${NEED_LIBS}" THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC} DEP shoc_tests_ut_np1_omp1)
-  # CreateUnitTest(shoc_stand_alone "shoc_stand_alone.cpp" "${NEED_LIBS}")
 endif()
 
 CreateUnitTest(shoc_run_and_cmp "shoc_run_and_cmp.cpp" "${NEED_LIBS}" THREADS ${SCREAM_TEST_MAX_THREADS} EXE_ARGS "${SCREAM_TEST_DATA_DIR}/shoc_run_and_cmp.baseline" DEP shoc_tests_ut_np1_omp1 EXCLUDE_MAIN_CPP)

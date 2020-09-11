@@ -27,7 +27,6 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyDseFixer {
   {
     static constexpr Int shcol    = 6;
     static constexpr Int nlev     = 5;
-    static constexpr auto nlevi   = nlev + 1;
 
     // Tests for the SHOC function
     //     shoc_energy_dse_fixer
@@ -52,14 +51,14 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyDseFixer {
 
     // Test that the inputs are reasonable.
     // for this test we need exactly six columns
-    REQUIRE(SDS.shcol == 6);
+    REQUIRE( (SDS.shcol() == 6 && SDS.nlev() == nlev) );
 
     // Fill in test data on zt_grid.
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       SDS.shoctop[s] = shoctop[s];
       SDS.se_dis[s] = se_dis;
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 
 	SDS.host_dse[offset] = host_dse_input[n];
       }
@@ -67,13 +66,13 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyDseFixer {
 
     // Check that the inputs make sense
 
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       // For this test we WANT se_dis > 0
       REQUIRE(SDS.se_dis[s] > 0.0);
       REQUIRE(SDS.shoctop[s] >= 1);
       REQUIRE(SDS.shoctop[s] <= nlev);
-      for (Int n = 0; n < SDS.nlev; ++n){
-	const auto offset = n + s * SDS.nlev;
+      for (Int n = 0; n < nlev; ++n){
+	const auto offset = n + s * nlev;
 
 	REQUIRE(SDS.host_dse[offset] > 0.0);
       }
@@ -81,20 +80,20 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyDseFixer {
 
     // Call the fortran implementation
     shoc_energy_dse_fixer(SDS);
-    
+
     // Check the results
     Real temp_sum[shcol];
     for(Int s = 0; s < shcol; ++s) {
       temp_sum[s] = 0.0;
-      for(Int n = 0; n < SDS.nlev; ++n) {
-        const auto offset = n + s * SDS.nlev;
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
         temp_sum[s] += SDS.host_dse[offset];
       }
     }
-    
+
     // Verify that as shoctop values get lower that the
     // summation of temperatures also gets lower.  This is proportionally
-    // to the amount of energy we expect to be removed from a column. 
+    // to the amount of energy we expect to be removed from a column.
     for (Int s = 0; s < shcol-1; ++s) {
       if (shoctop[s] < shoctop[s+1]){
         REQUIRE(temp_sum[s] < temp_sum[s+1]);
@@ -106,9 +105,13 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyDseFixer {
         REQUIRE(temp_sum[s] == temp_sum[s+1]);
       }
     }
-    
+
   }
 
+  static void run_bfb()
+  {
+    // TODO
+  }
 };
 
 }  // namespace unit_test
@@ -124,10 +127,11 @@ TEST_CASE("shoc_energy_dse_fixer_property", "shoc")
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_energy_dse_fixer_b4b", "shoc")
+TEST_CASE("shoc_energy_dse_fixer_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEnergyDseFixer;
 
+  TestStruct::run_bfb();
 }
 
 } // namespace

@@ -93,10 +93,7 @@
 
 <!-- Settings related to the SCREAM NH dycore -->
 <theta_hydrostatic_mode>.false.</theta_hydrostatic_mode>
-<tstep_type>10</tstep_type>
-
-<!-- Use se_ftype = 1 to improve dynamics/physics coupling -->
-<se_ftype>1</se_ftype>
+<tstep_type>9</tstep_type>
 
 <!-- Use the less sensitive advection scheme -->
 <semi_lagrange_cdr_alg>3</semi_lagrange_cdr_alg>

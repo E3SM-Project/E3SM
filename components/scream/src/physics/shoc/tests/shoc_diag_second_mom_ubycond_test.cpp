@@ -27,7 +27,7 @@ struct UnitWrap::UnitTest<D>::TestSecondMomUbycond {
 static void run_second_mom_ubycond_bfb()
 {
   SHOCSecondMomentUbycondData uby_fortran[] = {
-    // shcol 
+    // shcol
     SHOCSecondMomentUbycondData(128),
     SHOCSecondMomentUbycondData(128),
     SHOCSecondMomentUbycondData(128),
@@ -35,6 +35,10 @@ static void run_second_mom_ubycond_bfb()
   };
 
   static constexpr Int num_runs = sizeof(uby_fortran) / sizeof(SHOCSecondMomentUbycondData);
+
+  for (auto& d : uby_fortran) {
+    d.randomize();
+  }
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
   // inout data is in original state
@@ -46,18 +50,17 @@ static void run_second_mom_ubycond_bfb()
   };
 
   // Get data from fortran
-  for (Int i = 0; i < num_runs; ++i) {
-    shoc_diag_second_moments_ubycond(uby_fortran[i]);
+  for (auto& d : uby_fortran) {
+    shoc_diag_second_moments_ubycond(d);
   }
 
-  for (Int i = 0; i < num_runs; ++i) {
-    SHOCSecondMomentUbycondData& d = uby_cxx[i];
-    shoc_diag_second_moments_ubycond_f(d.shcol, d.thl, d.qw, d.qwthl, d.wthl, d.wqw, d.uw, d.vw, d.wtke);
+  for (auto& d : uby_cxx) {
+    shoc_diag_second_moments_ubycond_f(d.shcol(), d.thl, d.qw, d.qwthl, d.wthl, d.wqw, d.uw, d.vw, d.wtke);
   }
 
 
   for (Int i = 0; i < num_runs; ++i) {
-    Int shcol = uby_cxx[i].shcol;
+    Int shcol = uby_cxx[i].shcol();
     for (Int k = 0; k < shcol; ++k) {
       REQUIRE(uby_fortran[i].thl[k]      == uby_cxx[i].thl[k]);
       REQUIRE(uby_fortran[i].qw[k]       == uby_cxx[i].qw[k]);
