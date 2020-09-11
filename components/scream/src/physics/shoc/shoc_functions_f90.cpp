@@ -334,12 +334,12 @@ void shoc_diag_second_moments_srf(SHOCSecondMomentSrfData& d)
 }
 
 void compute_diag_third_shoc_moment(SHOCCompThirdMomData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  compute_diag_third_shoc_moment_c(d.shcol,d.nlev,d.nlevi,d.w_sec,d.thl_sec,d.qw_sec,
-                                   d.qwthl_sec,d.wthl_sec,d.tke,d.dz_zt,d.dz_zi,
-				   d.zt_grid,d.zi_grid,d.isotropy_zi,d.brunt_zi,
-				   d.w_sec_zi,d.thetal_zi,d.wthv_sec_zi,
+  compute_diag_third_shoc_moment_c(d.shcol(),d.nlev(),d.nlevi(),d.w_sec,d.thl_sec,
+                                   d.qw_sec,d.qwthl_sec,d.wthl_sec,d.tke,d.dz_zt,
+				   d.dz_zi,d.zt_grid,d.zi_grid,d.isotropy_zi,
+				   d.brunt_zi,d.w_sec_zi,d.thetal_zi,d.wthv_sec_zi,
 				   d.shoc_mix_zi,d.w3);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 } 

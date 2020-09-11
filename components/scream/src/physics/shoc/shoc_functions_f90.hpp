@@ -342,8 +342,7 @@ struct SHOCCompThirdMomData : public PhysicsTestData {
   SHOCCompThirdMomData(Int shcol_, Int nlev_, Int nlevi_) :
     PhysicsTestData(shcol_, nlev_, nlevi_, {&w_sec, &tke, &dz_zt, &zt_grid}, {&thl_sec, &wthl_sec, &qw_sec, &qwthl_sec, &zi_grid, &isotropy_zi, &dz_zi, &brunt_zi, &w_sec_zi, &thetal_zi, &wthv_sec_zi, &shoc_mix_zi}) {}
 
-  PTD_DATA_COPY_CTOR(SHOCCompThirdMomData, 3);
-  PTD_ASSIGN_OP(SHOCCompThirdMomData, 0);
+  SHOC_NO_SCALAR(SHOCCompThirdMomData, 3);
 };//SHOCCompThirdMomData
 
 //Create data structure to hold data for linear_interp
