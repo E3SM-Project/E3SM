@@ -2377,7 +2377,9 @@ contains
 
     enddo
 
+#if defined(MPAS_OPENMP_OFFLOAD) || defined(MPAS_OPENACC)
 !$GPU DATA_END
+#endif
 
   end subroutine subcycle_velocity_solver!}}}
 
@@ -2452,7 +2454,9 @@ contains
 
     endif
 
+#if defined(MPAS_OPENMP_OFFLOAD) || defined(MPAS_OPENACC)
 !$GPU UPDATE_H((stressDivergenceU, stressDivergenceV))
+#endif
 
     ! ocean stress coefficient
     call mpas_timer_start("ocn stress coef")
@@ -2519,7 +2523,9 @@ contains
 
     call seaice_load_balance_timers(domain, "vel after")
 
+#if defined(MPAS_OPENMP_OFFLOAD) || defined(MPAS_OPENACC)
 !$GPU UPDATE_D((uVelocity, vVelocity))
+#endif
 
   end subroutine single_subcycle_velocity_solver!}}}
 

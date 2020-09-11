@@ -138,6 +138,7 @@ contains
        call MPAS_pool_get_array(velocityVariationalPool, "stress22",             stress22)
        call MPAS_pool_get_array(velocityVariationalPool, "stress12",             stress12)
 
+#if defined(MPAS_OPENMP_OFFLOAD) || defined(MPAS_OPENACC)
 !$GPU ENTER_DATA COPY_IN_LP             &
 !$GPUC   nCells,                        &
 !$GPUC   nVerticesSolve,                &
@@ -163,6 +164,7 @@ contains
 !$GPUC   stress12,                      &
 !$GPUC   stress22                       &
 !$GPUF
+#endif
 
        block => block % next
     end do
@@ -186,6 +188,7 @@ contains
 
     err = 0
 
+#if defined(MPAS_OPENMP_OFFLOAD) || defined(MPAS_OPENACC)
     ! first delete on device
 !$GPU EXIT_DATA COPY_DEL_LP             &
 !$GPUC   nCells,                        &
@@ -212,6 +215,7 @@ contains
 !$GPUC   stress12,                      &
 !$GPUC   stress22                       &
 !$GPUF
+#endif
 
     ! then nullify on host
     nullify(nEdgesOnCell,      &
@@ -254,6 +258,7 @@ contains
     type(domain_type) :: &
          domain
 
+#if defined(MPAS_OPENMP_OFFLOAD) || defined(MPAS_OPENACC)
     ! update arrays on device
 !$GPU UPDATE_D_LP       &
 !$GPUC   solveStress,   &
@@ -265,6 +270,7 @@ contains
 !$GPUC   stress12,      &
 !$GPUC   stress22       &
 !$GPUF
+#endif
 
   end subroutine seaice_mesh_pool_update!}}}
 !-----------------------------------------------------------------------
