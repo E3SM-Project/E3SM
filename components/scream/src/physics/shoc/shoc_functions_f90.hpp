@@ -324,11 +324,10 @@ struct SHOCClipthirdmomsData : public PhysicsTestData {
   // In/out
   Real *w3;
 
-  SHOCClipthirdmomsData(Int shcol_, Int nlev_, Int nlevi_) :
-    PhysicsTestData(shcol_, nlev_, nlevi_,{},{&w_sec_zi, &w3}){}
+  SHOCClipthirdmomsData(Int shcol_, Int nlevi_) :
+    PhysicsTestData(shcol_, nlevi_,{&w_sec_zi, &w3}){}
 
-  PTD_DATA_COPY_CTOR(SHOCClipthirdmomsData, 3);
-  PTD_ASSIGN_OP(SHOCClipthirdmomsData, 0);
+  SHOC_NO_SCALAR(SHOCClipthirdmomsData, 2);
 
 };//SHOCClipthirdmomsData
 

@@ -344,9 +344,9 @@ void check_length_scale_shoc_length(SHOCMixcheckData &d) {
 }
 
 void clipping_diag_third_shoc_moments(SHOCClipthirdmomsData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  clipping_diag_third_shoc_moments_c(d.nlevi,d.shcol,d.w_sec_zi,d.w3);
+  clipping_diag_third_shoc_moments_c(d.nlevi(),d.shcol(),d.w_sec_zi,d.w3);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 

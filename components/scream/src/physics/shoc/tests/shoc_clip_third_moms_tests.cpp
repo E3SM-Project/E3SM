@@ -26,7 +26,6 @@ struct UnitWrap::UnitTest<D>::TestClipThirdMoms {
   {
     static constexpr Int shcol    = 2;
     static constexpr Int nlevi    = 5;
-    static constexpr Int nlev     = nlevi-1;
 
     // Tests for the SHOC function:
     //   clipping_diag_third_shoc_moments
@@ -42,18 +41,18 @@ struct UnitWrap::UnitTest<D>::TestClipThirdMoms {
     // Define a local logical
     bool w3_large;
 
-    // Initialize data structure for bridgeing to F90
-    SHOCClipthirdmomsData SDS(shcol, nlev, nlevi);
+    // Initialize data structure for bridging to F90
+    SHOCClipthirdmomsData SDS(shcol, nlevi);
 
     // Test that the inputs are reasonable.
-    REQUIRE(SDS.shcol > 0);
-    REQUIRE(SDS.nlevi > 1);
+    REQUIRE(SDS.shcol() > 0);
+    REQUIRE(SDS.nlevi() > 1);
     
     // load up the input data
     // Fill in test data on zt_grid.
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for(Int n = 0; n < SDS.nlevi; ++n) {
-        const auto offset = n + s * SDS.nlevi;
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlevi; ++n) {
+        const auto offset = n + s * nlevi;
 
         SDS.w_sec_zi[offset] = w_sec_zi[n];
 	SDS.w3[offset] = w3_in[n];
@@ -65,12 +64,12 @@ struct UnitWrap::UnitTest<D>::TestClipThirdMoms {
     //   the input has relatively small values of w2 (let's say
     //   all smaller than 1, which is reasonable) and let's 
     //   be sure that w3 has some very large unreasonable values
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       // Initialize conditional to make sure there are
       //   large values of w3 in input
       w3_large = false;
-      for(Int n = 0; n < SDS.nlevi; ++n) {
-        const auto offset = n + s * SDS.nlevi;
+      for(Int n = 0; n < nlevi; ++n) {
+        const auto offset = n + s * nlevi;
 
         REQUIRE(SDS.w_sec_zi[offset] <= 1);
 	if (abs(SDS.w3[offset]) > 1000){
@@ -88,9 +87,9 @@ struct UnitWrap::UnitTest<D>::TestClipThirdMoms {
     // Check the result
     // For large values of w3, verify that the result has been 
     //  reduced and is of the same sign
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for(Int n = 0; n < SDS.nlevi; ++n) {
-        const auto offset = n + s * SDS.nlevi;
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlevi; ++n) {
+        const auto offset = n + s * nlevi;
 	
 	if (abs(w3_in[n]) > 1000){
 	  REQUIRE(abs(SDS.w3[offset]) < abs(w3_in[n]));
