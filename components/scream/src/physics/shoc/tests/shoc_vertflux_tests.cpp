@@ -55,21 +55,22 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux {
     SHOCVertfluxData SDS(shcol, nlev, nlevi);
 
     // Test that the inputs are reasonable.
-    REQUIRE(SDS.nlevi - SDS.nlev == 1);
-    REQUIRE(SDS.shcol > 0);
+    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev && SDS.nlevi() == nlevi) );
+    REQUIRE(nlevi - nlev == 1);
+    REQUIRE(shcol > 0);
 
     // Fill in test data
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       // First on the nlev grid
-      for(Int n = 0; n < SDS.nlev; ++n) {
-        const auto offset = n + s * SDS.nlev;
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
 
         SDS.invar[offset] = invar[n];
       }
 
       // Now for data on the nlevi grid
-      for(Int n = 0; n < SDS.nlevi; ++n) {
-        const auto offset = n + s * SDS.nlevi;
+      for(Int n = 0; n < nlevi; ++n) {
+        const auto offset = n + s * nlevi;
 
         SDS.tkh_zi[offset] = tkh_zi[n];
         SDS.dz_zi[offset] = dz_zi[n];
@@ -81,10 +82,10 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux {
 
     // Check to make sure that dz_zi are tkh_zi
     //  (outside of the boundaries) are greater than zero
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       // do NOT check boundaries!
-      for(Int n = 1; n < SDS.nlevi-1; ++n) {
-        const auto offset = n + s * SDS.nlevi;
+      for(Int n = 1; n < nlevi-1; ++n) {
+        const auto offset = n + s * nlevi;
         REQUIRE(SDS.dz_zi[offset] > 0);
         REQUIRE(SDS.tkh_zi[offset] > 0);
       }
@@ -94,9 +95,9 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux {
     calc_shoc_vertflux(SDS);
 
     // Check the results
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for(Int n = 0; n < SDS.nlevi; ++n) {
-        const auto offset = n + s * SDS.nlevi;
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlevi; ++n) {
+        const auto offset = n + s * nlevi;
 
         // validate that the boundary points
         //   have NOT been modified
@@ -127,7 +128,6 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux {
 
   static void run_bfb()
   {
-#if 0
     SHOCVertfluxData SDS_f90[] = {
       //               shcol, nlev, nlevi
       SHOCVertfluxData(10, 71, 72),
@@ -164,7 +164,7 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux {
     for (auto& d : SDS_cxx) {
       d.transpose<ekat::util::TransposeDirection::c2f>();
       // expects data in fortran layout
-      calc_shoc_vertflux_f(d.shcol, d.nlev, d.nlevi, d.tkh_zi, d.dz_zi, d.invar, d.vertflux);
+      calc_shoc_vertflux_f(d.shcol(), d.nlev(), d.nlevi(), d.tkh_zi, d.dz_zi, d.invar, d.vertflux);
       d.transpose<ekat::util::TransposeDirection::f2c>();
     }
 
@@ -172,11 +172,10 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux {
     for (Int i = 0; i < num_runs; ++i) {
       SHOCVertfluxData& d_f90 = SDS_f90[i];
       SHOCVertfluxData& d_cxx = SDS_cxx[i];
-      for (Int k = 0; k < d_f90.totali(); ++k) {
+      for (Int k = 0; k < d_f90.total1x3(); ++k) {
         REQUIRE(d_f90.vertflux[k] == d_cxx.vertflux[k]);
       }
     }
-#endif
   }
 
 };

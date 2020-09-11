@@ -1,26 +1,9 @@
-#include "share/grid/se_grid.hpp"
+#include "share/grid/simple_grid.hpp"
 #include "share/grid/remap/abstract_remapper.hpp"
 
 namespace scream {
 
 // === A dummy physics grids for this test === //
-
-class DummyPhysicsGrid : public SEGrid
-{
-public:
-  DummyPhysicsGrid (const int num_cols)
-   : SEGrid(std::string("Physics"),GridType::SE_NodeBased,num_cols)
-  {
-    // Nothing to do here
-  }
-
-  DummyPhysicsGrid (const int num_cols, const bool fwd)
-   : SEGrid(std::string("Physics") + (fwd ? "_fwd" : "_bwd"),GridType::SE_NodeBased,num_cols)
-  {
-    // Nothing to do here
-  }
-  ~DummyPhysicsGrid () = default;
-};
 
 template<typename ScalarType, typename DeviceType>
 class DummyPhysicsGridRemapper : public AbstractRemapper<ScalarType,DeviceType>
@@ -40,14 +23,14 @@ public:
     const auto& g1n = grid1->name();
     const auto& g2n = grid2->name();
 
-    auto g1 = std::dynamic_pointer_cast<const DummyPhysicsGrid>(grid1);
-    auto g2 = std::dynamic_pointer_cast<const DummyPhysicsGrid>(grid2);
+    auto g1 = std::dynamic_pointer_cast<const SimpleGrid>(grid1);
+    auto g2 = std::dynamic_pointer_cast<const SimpleGrid>(grid2);
     EKAT_REQUIRE_MSG (static_cast<bool>(g1) && static_cast<bool>(g2),
-                      "Error! This dummy remapper only works with DummyPhysicsGrid.\n");
+                      "Error! This dummy remapper only works with SimpleGrid.\n");
 
     EKAT_REQUIRE_MSG((g1n=="Physics_fwd" && g2n=="Physics_bwd") ||
                      (g1n=="Physics_bwd" && g2n=="Physics_fwd"),
-                     "Error! This dummy remapper only works if the two grids are one fwd and the other bwd.\n");
+                     "Error! This dummy remapper only works if the two grids are called Physics_fwd and Physics_bwd.\n");
   }
 
   FieldLayout create_src_layout (const FieldLayout& tgt_layout) const override {
