@@ -75,6 +75,11 @@ struct UnitWrap::UnitTest<D>::TestOmegadiagThirdMoms {
     REQUIRE(SDS.omega2 > omega2_test1a);    
     
   }
+  
+  static void run_bfb()
+  {
+    // TODO
+  }  
 
 };
 

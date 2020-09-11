@@ -327,7 +327,8 @@ struct SHOCClipthirdmomsData : public PhysicsTestData {
   SHOCClipthirdmomsData(Int shcol_, Int nlevi_) :
     PhysicsTestData(shcol_, nlevi_,{&w_sec_zi, &w3}){}
 
-  SHOC_NO_SCALAR(SHOCClipthirdmomsData, 2);
+  PTD_STD_DEF(SHOCClipthirdmomsData, 2, 0);
+  PTD_DIM_RENAME(2, shcol, nlevi);
 
 };//SHOCClipthirdmomsData
 
