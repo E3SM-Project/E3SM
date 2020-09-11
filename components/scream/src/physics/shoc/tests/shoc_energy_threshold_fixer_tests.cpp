@@ -48,12 +48,12 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyThreshFixer {
 
     // Tke minimum value
     static constexpr Real tke_min = 0.0004;
-    
+
     // convert pressure to Pa
     for(Int n = 0; n < nlevi; ++n) {
       pint[n] = 100.0*pint[n];
     }
-    
+
     // convert TKE from dimensionaless to [m2/s2]
     for(Int n = 0; n < nlev; ++n) {
       tke_input[n] = tke_min*tke_input[n];
@@ -63,31 +63,32 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyThreshFixer {
     SHOCEnergythreshfixerData SDS(shcol, nlev, nlevi);
 
     // Test that the inputs are reasonable.
-    REQUIRE(SDS.shcol > 1);
-    REQUIRE(SDS.nlev+1 == SDS.nlevi);
+    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev && SDS.nlevi() == nlevi) );
+    REQUIRE(SDS.shcol() > 1);
+    REQUIRE(nlev+1 == nlevi);
 
     // Fill in test data on zt_grid.
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       SDS.te_a[s] = te_a;
       SDS.te_b[s] = te_b;
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 
 	SDS.tke[offset] = tke_input[n];
       }
-      
-      for(Int n = 0; n < SDS.nlevi; ++n) {
-	const auto offset = n + s * SDS.nlevi;
+
+      for(Int n = 0; n < nlevi; ++n) {
+	const auto offset = n + s * nlevi;
 
 	SDS.pint[offset] = pint[n];
-      }      
+      }
     }
 
     // Check that the inputs make sense
 
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for (Int n = 0; n < SDS.nlev; ++n){
-	const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n){
+	const auto offset = n + s * nlev;
 
 	REQUIRE(SDS.tke[offset] >= tke_min);
       }
@@ -95,28 +96,32 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyThreshFixer {
 
     // Call the fortran implementation
     shoc_energy_threshold_fixer(SDS);
-    
+
     // Verify the result
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       // Make sure value of shoctop is within reasonable range
       REQUIRE(SDS.shoctop[s] < nlev);
       REQUIRE(SDS.shoctop[s] > 1);
-      
+
       // Verify that shoctop represents what we want it to
       // Make sure that thickness that bounds shoctop is positive
-      const auto offset_stopi = (SDS.shoctop[s]-1) + s * SDS.nlevi;
-      const auto offset_bot = (nlevi-1) + s * SDS.nlevi;
+      const auto offset_stopi = (SDS.shoctop[s]-1) + s * nlevi;
+      const auto offset_bot = (nlevi-1) + s * nlevi;
       REQUIRE(SDS.pint[offset_bot] - SDS.pint[offset_stopi] > 0.0);
 
       if (SDS.shoctop[s] < nlev){
-        const auto offset_stop = (SDS.shoctop[s]-1) + s * SDS.nlev;     
+        const auto offset_stop = (SDS.shoctop[s]-1) + s * nlev;
         REQUIRE(SDS.tke[offset_stop] == tke_min);
         REQUIRE(SDS.tke[offset_stop+1] > tke_min);
       }
-    } 
-      
+    }
+
   }
 
+  static void run_bfb()
+  {
+    // TODO
+  }
 };
 
 }  // namespace unit_test
@@ -132,10 +137,11 @@ TEST_CASE("shoc_energy_threshold_fixer_property", "shoc")
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_energy_threshold_fixer_b4b", "shoc")
+TEST_CASE("shoc_energy_threshold_fixer_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEnergyThreshFixer;
 
+  TestStruct::run_bfb();
 }
 
 } // namespace

@@ -53,14 +53,15 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs {
     SHOCIsotropicData SDS(shcol, nlev);
 
     // Test that the inputs are reasonable.
-    REQUIRE(SDS.shcol > 0);
+    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev) );
+    REQUIRE(shcol > 0);
 
     // Fill in test data on zt_grid.
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       // Column only input
       SDS.brunt_int[s] = brunt_int_st;
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 
 	SDS.tke[offset] = tke_st;
 	SDS.a_diss[offset] = diss_st;
@@ -69,9 +70,9 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs {
     }
 
     // Check that the inputs make sense
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for (Int n = 0; n < SDS.nlev; ++n){
-	const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n){
+	const auto offset = n + s * nlev;
 	// Should be greater than zero
 	REQUIRE(SDS.tke[offset] > 0.0);
 	REQUIRE(SDS.a_diss[offset] > 0.0);
@@ -83,11 +84,11 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs {
 
     // Check to make sure that column with positive
     //  brunt vaisalla frequency is smaller
-    for(Int s = 0; s < SDS.shcol-1; ++s) {
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol-1; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 	// Get value corresponding to next column
-	const auto offsets = n + (s+1) * SDS.nlev;
+	const auto offsets = n + (s+1) * nlev;
 	if(SDS.brunt[offset] < 0.0 & SDS.brunt[offsets] > 0.0){
           REQUIRE(SDS.isotropy[offset] > SDS.isotropy[offsets]);
 	}
@@ -112,10 +113,10 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs {
     static constexpr Real brunt_diss = 0.004;
 
     // Fill in test data on zt_grid.
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       SDS.brunt_int[s] = brunt_int_diss;
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 
 	SDS.tke[offset] = tke_diss;
 	SDS.a_diss[offset] = diss_diss[s];
@@ -124,9 +125,9 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs {
     }
 
     // Check that the inputs make sense
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for (Int n = 0; n < SDS.nlev; ++n){
-	const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n){
+	const auto offset = n + s * nlev;
 	// Should be greater than zero
 	REQUIRE(SDS.tke[offset] > 0.0);
 	REQUIRE(SDS.a_diss[offset] > 0.0);
@@ -138,11 +139,11 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs {
 
     // Check to make sure that column with positive
     //  brunt vaisalla frequency is smaller
-    for(Int s = 0; s < SDS.shcol-1; ++s) {
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol-1; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 	// Get value corresponding to next column
-	const auto offsets = n + (s+1) * SDS.nlev;
+	const auto offsets = n + (s+1) * nlev;
 	if(SDS.a_diss[offset] < SDS.a_diss[offsets]){
           REQUIRE(SDS.isotropy[offset] > SDS.isotropy[offsets]);
 	}
@@ -151,6 +152,11 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs {
 	}
       }
     }
+  }
+
+  static void run_bfb()
+  {
+    // TODO
   }
 
 };
@@ -168,10 +174,11 @@ TEST_CASE("shoc_tke_isotropic_ts_property", "shoc")
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_tke_isotropic_ts_b4b", "shoc")
+TEST_CASE("shoc_tke_isotropic_ts_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocIsotropicTs;
 
+  TestStruct::run_bfb();
 }
 
 } // namespace
