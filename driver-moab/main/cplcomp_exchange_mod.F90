@@ -14,9 +14,12 @@ module cplcomp_exchange_mod
   use seq_diag_mct
 
   use seq_comm_mct, only : mhid, mpoid, mbaxid, mboxid  ! iMOAB app ids, for atm, ocean, ax mesh, ox mesh
+  use seq_comm_mct, only : mhpgid         !    iMOAB app id for atm pgx grid, on atm pes
+  use seq_comm_mct, only : atm_pg_active  ! flag if PG mesh instanced
   use seq_comm_mct, only : mlnid , mblxid !    iMOAB app id for land , on land pes and coupler pes
   use seq_comm_mct, only : mphaid !            iMOAB app id for phys atm; comp atm is 5, phys 5+200
   use shr_mpi_mod,  only: shr_mpi_max
+  use dimensions_mod, only : np     ! for atmosphere
 
   implicit none
   private  ! except
@@ -1035,7 +1038,7 @@ contains
     call seq_comm_getinfo(ID_new ,mpicom=mpicom_new)
     call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
 
-    call shr_mpi_max(mhid, maxMH, mpicom_join, all=.true.)
+    call shr_mpi_max(mhid, maxMH, mpicom_join, all=.true.) ! if on atm / cpl joint, maxMH /= -1
     call shr_mpi_max(mpoid, maxMPO, mpicom_join, all=.true.)
     call shr_mpi_max(mlnid, maxMLID, mpicom_join, all=.true.)
     if (seq_comm_iamroot(CPLID) ) then
@@ -1049,7 +1052,12 @@ contains
       ! now, if on coupler pes, receive mesh; if on comp pes, send mesh
       if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
         !  send mesh to coupler
-        ierr = iMOAB_SendMesh(mhid, mpicom_join, mpigrp_cplid, id_join, partMethod)
+        if (atm_pg_active) then !  change : send the pg2 mesh, not coarse mesh, when atm pg active
+          ierr = iMOAB_SendMesh(mhpgid, mpicom_join, mpigrp_cplid, id_join, partMethod)
+        else
+          ! still use the mhid, original coarse mesh
+          ierr = iMOAB_SendMesh(mhid, mpicom_join, mpigrp_cplid, id_join, partMethod)
+        endif
       endif
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
         appname = "COUPLE_ATM"//CHAR(0)
@@ -1064,9 +1072,14 @@ contains
         ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
 #endif
       endif
-      !  iMOAB_FreeSenderBuffers needs to be called after receiving
+      !  iMOAB_FreeSenderBuffers needs to be called after receiving the mesh
+
       if (mhid .ge. 0) then  ! we are on component atm pes
-         ierr = iMOAB_FreeSenderBuffers(mhid, context_id)
+         if (atm_pg_active) then! we send mesh from mhpgid app
+           ierr = iMOAB_FreeSenderBuffers(mhpgid, context_id)
+         else
+           ierr = iMOAB_FreeSenderBuffers(mhid, context_id)
+         endif
       endif
 
 !  comment out now; we will not send directly to atm spectral on coupler; we need to send in the
@@ -1093,7 +1106,11 @@ contains
       if (mbaxid .ge. 0 ) then
         tagnameProj = 'T_ph16'//CHAR(0)
         tagtype = 1  ! dense, double
-        numco = 16 !  hard coded, 16 values per cell!
+        if (atm_pg_active) then
+          numco = 1 ! just one value per cell !
+        else
+          numco = np*np !  usually 16 values per cell, GLL points; should be 4 x 4 = 16
+        endif
         ierr = iMOAB_DefineTagStorage(mbaxid, tagnameProj, tagtype, numco,  tagindex )
         ! define more tags
         tagnameProj = 'u_ph16'//CHAR(0)  ! U component of velocity
