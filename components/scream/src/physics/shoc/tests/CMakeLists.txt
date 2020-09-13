@@ -17,6 +17,13 @@ set(SHOC_TESTS_SRCS
     shoc_check_length_tests.cpp
     shoc_conv_time_length_tests.cpp
     shoc_mix_length_tests.cpp
+    shoc_fterm_input_third_moms_tests.cpp
+    shoc_fterm_diag_third_moms_tests.cpp
+    shoc_omega_diag_third_moms_tests.cpp
+    shoc_xy_diag_third_moms_tests.cpp
+    shoc_aa_diag_third_moms_tests.cpp
+    shoc_w3_diag_third_moms_tests.cpp
+    shoc_clip_third_moms_tests.cpp
     shoc_tke_tests.cpp
     shoc_check_tke_tests.cpp
     shoc_tke_column_stab_tests.cpp
