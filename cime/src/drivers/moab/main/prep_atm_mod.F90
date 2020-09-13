@@ -23,8 +23,11 @@ module prep_atm_mod
   use seq_comm_mct, only : mboxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes
   use seq_comm_mct, only : mbintxoa ! iMOAB id for intx mesh between ocean and atmosphere; output from this
   use seq_comm_mct, only : mhid     ! iMOAB id for atm instance
+  use seq_comm_mct, only : mhpgid   ! iMOAB id for atm pgx grid, on atm pes; created with se and gll grids
+  use seq_comm_mct, only : atm_pg_active  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
   use seq_comm_mct, only : mblxid   ! iMOAB id for land migrated to coupler pes !! old name : mlnxid
   use seq_comm_mct, only : mbintxla ! iMOAB id for intx mesh between land and atmosphere
+  use seq_comm_mct, only : diff_atm_land ! false by default, so land and atm on same mesh
   use seq_comm_mct, only : seq_comm_getinfo => seq_comm_setptrs
   use dimensions_mod, only : np     ! for atmosphere
 
@@ -266,7 +269,7 @@ contains
             ! idintx is a unique number of MOAB app that takes care of intx between lnd and atm mesh
             idintx = 100*atm(1)%cplcompid + lnd(1)%cplcompid ! something different, to differentiate it
             ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_CPLID, idintx, mbintxla)
-            ierr =  iMOAB_ComputePointDoFIntersection (mbaxid, mblxid, mbintxla)
+!            ierr =  iMOAB_ComputePointDoFIntersection (mbaxid, mblxid, mbintxla)
           endif
        end if
 
@@ -321,52 +324,68 @@ contains
     call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
 
     ! it happens over joint communicator
-    ierr = iMOAB_CoverageGraph(mpicom_join, mhid, mbaxid, mbintxoa, context_id);
+    if ( mbintxoa .ge. 0 ) then
+      if (atm_pg_active ) then ! use mhpgid mesh
+        ierr = iMOAB_CoverageGraph(mpicom_join, mhpgid, mbaxid, mbintxoa, context_id);
+      else
+        ierr = iMOAB_CoverageGraph(mpicom_join, mhid, mbaxid, mbintxoa, context_id);
+      endif
 
-    wgtIdef = 'scalar'//CHAR(0)
-    dm1 = "cgll"//CHAR(0)
-    dm2 = "fv"//CHAR(0)
-    dofnameATM="GLOBAL_DOFS"//CHAR(0)
-    dofnameOCN="GLOBAL_ID"//CHAR(0)
-    orderATM = np !  it should be 4
-    orderOCN = 1  !  not much arguing
-    monotonicity = 0 !
-    volumetric = 0
-    noConserve = 0
-    validate = 1
-    if (mbintxoa .ge. 0 ) then
+      wgtIdef = 'scalar'//CHAR(0)
+      if (atm_pg_active) then
+        dm1 = "fv"//CHAR(0)
+        dofnameATM="GLOBAL_ID"//CHAR(0)
+        orderATM = 1 !  fv-fv
+        volumetric = 1 ! maybe volumetric ?
+      else
+        dm1 = "cgll"//CHAR(0)
+        dofnameATM="GLOBAL_DOFS"//CHAR(0)
+        orderATM = np !  it should be 4
+        volumetric = 0
+      endif
+      dm2 = "fv"//CHAR(0)
+      dofnameOCN="GLOBAL_ID"//CHAR(0)
+      orderOCN = 1  !  not much arguing
+      monotonicity = 0 !
+      noConserve = 0
+      validate = 1
+
       ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxoa, wgtIdef, &
                                                 trim(dm1), orderATM, trim(dm2), orderOCN, &
                                                 monotonicity, volumetric, noConserve, validate, &
                                                 trim(dofnameATM), trim(dofnameOCN) )
-    endif
 
-    ! compute the comm graph between phys atm and intx-atm-ocn, to be able to send directly from phys atm
-    ! towards coverage mesh on atm for intx to ocean
-    ! this is similar to imoab_phatm_ocn_coupler.cpp test in moab
-    !    int typeA = 2; // point cloud
-    !    int typeB = 1; // quads in coverage set
-    !    ierr = iMOAB_ComputeCommGraph(cmpPhAtmPID, cplAtmOcnPID, &atmCouComm, &atmPEGroup, &couPEGroup,
-    !        &typeA, &typeB, &cmpatm, &atmocnid);
-    call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
-    call seq_comm_getinfo(atm_id, mpigrp=mpigrp_old)    !  component group pes, from atm id ( also ATMID(1) )
+      ! compute the comm graph between phys atm and intx-atm-ocn, to be able to send directly from phys atm
+      ! towards coverage mesh on atm for intx to ocean
+      ! this is similar to imoab_phatm_ocn_coupler.cpp test in moab
+      !    int typeA = 2; // point cloud
+      !    int typeB = 1; // quads in coverage set
+      !    ierr = iMOAB_ComputeCommGraph(cmpPhAtmPID, cplAtmOcnPID, &atmCouComm, &atmPEGroup, &couPEGroup,
+      !        &typeA, &typeB, &cmpatm, &atmocnid);
+      call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
+      call seq_comm_getinfo(atm_id, mpigrp=mpigrp_old)    !  component group pes, from atm id ( also ATMID(1) )
 
-    typeA = 2 ! point cloud, phys atm in this case
-    typeB = 1 ! atm cells involved in intersection (spectral in this case)
-    ! idintx is a unique number of MOAB app that takes care of intx between ocn and atm mesh
-    idintx = 100*atm(1)%cplcompid + ocn(1)%cplcompid ! something different, to differentiate it; ~ 618 !
-    ierr = iMOAB_ComputeCommGraph( mphaid, mbintxoa, mpicom_join, mpigrp_old, mpigrp_CPLID, &
-          typeA, typeB, atm_id, idintx)
+      typeA = 2 ! point cloud, phys atm in this case
+      ! idintx is a unique number of MOAB app that takes care of intx between ocn and atm mesh
+      idintx = 100*atm(1)%cplcompid + ocn(1)%cplcompid ! something different, to differentiate it; ~ 618 !
+      if (atm_pg_active) then
+        typeB = 2 ! fv on atm side too !! imoab_apg2_ol  coupler example
+      else
+        typeB = 1 ! atm cells involved in intersection (spectral in this case)
+      endif
+      ierr = iMOAB_ComputeCommGraph( mphaid, mbintxoa, mpicom_join, mpigrp_old, mpigrp_CPLID, &
+            typeA, typeB, atm_id, idintx)
 
+
+    endif ! only if atm and ocn intersect  mbintxoa >= 0
   end subroutine prep_atm_ocn_moab
 
   subroutine prep_atm_lnd_moab(infodata)
     !---------------------------------------------------------------
     ! Description
-    ! After intersection of atm and land mesh, correct the communication graph
-    !   between atm instance and atm on coupler (due to coverage), in the context of land
-    !  also, compute the map; this would be equivalent to seq_map_init_rcfile on the
-    !  mapping file computed offline (this will be now online)
+    ! If the land is on the same mesh as atm, we do not need to compute intx
+    !  Just use compute graph between phys atm and lnd on coupler, to be able to send
+    !  data from atm phys to atm on coupler for projection on land
     !
     ! Arguments
     type(seq_infodata_type) , intent(in)    :: infodata
@@ -382,44 +401,71 @@ contains
     character*32             :: dm1, dm2, dofnameATM, dofnameLND, wgtIdef
     integer                  :: orderLND, orderATM, volumetric, noConserve, validate
     integer                  :: monotonicity
+    integer                  :: mpigrp_CPLID ! coupler pes group, used for comm graph phys <-> atm-ocn
+    integer                  :: mpigrp_old   !  component group pes (phys grid atm) == atm group
+    integer                  :: typeA, typeB ! type for computing graph;
 
-    integer, external :: iMOAB_CoverageGraph, iMOAB_ComputeScalarProjectionWeights
+    integer, external :: iMOAB_CoverageGraph, iMOAB_ComputeScalarProjectionWeights, iMOAB_ComputeCommGraph
 
     call seq_infodata_getData(infodata, &
          atm_present=atm_present,       &
          lnd_present=lnd_present)
 
-  !  it involves initial atm app; mhid; also migrate atm mesh on coupler pes, mbaxid
-  !  intx lnd atm are in mbintxla ; remapper also has some info about coverage mesh
-  ! after this, the sending of tags from atm pes to coupler pes, in land context will use the new par
-  ! comm graph, that has more precise info about
-  ! how to get mpicomm for joint atm + coupler
-    id_join = atm(1)%cplcompid
-    atm_id   = atm(1)%compid
-    ! maybe we can use a moab-only id, defined like mbintxoa, mhid, somewhere else (seq_comm_mct)
-    ! we cannot use mbintxla because it may not exist on atm comp yet;
-    context_id = lnd(1)%cplcompid
-    call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
-
-    ! it happens over joint communicator
-    ierr = iMOAB_CoverageGraph(mpicom_join, mhid, mbaxid, mbintxla, context_id);
-
-    wgtIdef = 'scalar-pc'//CHAR(0)
-    dm1 = "cgll"//CHAR(0)
-    dm2 = "pcloud"//CHAR(0)
-    dofnameATM="GLOBAL_DOFS"//CHAR(0)
-    dofnameLND="GLOBAL_ID"//CHAR(0)
-    orderATM = np !  it should be 4
-    orderLND = 1  !  not much arguing
-    monotonicity = 0 !
-    volumetric = 0
-    noConserve = 0
-    validate = 1
     if (mbintxla .ge. 0 ) then
-      ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxla, wgtIdef, &
-                                                trim(dm1), orderATM, trim(dm2), orderLND, &
-                                                monotonicity, volumetric, noConserve, validate, &
-                                                trim(dofnameATM), trim(dofnameLND) )
+    !  it involves initial atm app; mhid; also migrate atm mesh on coupler pes, mbaxid
+    !  intx lnd atm are in mbintxla ; remapper also has some info about coverage mesh
+    ! after this, the sending of tags from atm pes to coupler pes, in land context will use the new par
+    ! comm graph, that has more precise info about
+    ! how to get mpicomm for joint atm + coupler
+      id_join = atm(1)%cplcompid
+      atm_id   = atm(1)%compid
+      ! maybe we can use a moab-only id, defined like mbintxoa, mhid, somewhere else (seq_comm_mct)
+      ! we cannot use mbintxla because it may not exist on atm comp yet;
+      context_id = lnd(1)%cplcompid
+      call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
+      if (diff_atm_land) then
+        ierr = iMOAB_CoverageGraph(mpicom_join, mhpgid, mbaxid, mbintxla, context_id);
+        dm1 = "fv"//CHAR(0)
+        dofnameATM="GLOBAL_ID"//CHAR(0)
+        orderATM = 1
+        wgtIdef = 'scalar-pc'//CHAR(0)
+
+        dm2 = "pcloud"//CHAR(0)
+
+        dofnameLND="GLOBAL_ID"//CHAR(0)
+
+        orderLND = 1  !  not much arguing
+        monotonicity = 0 !
+        volumetric = 1
+        noConserve = 0
+        validate = 1
+
+        ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxla, wgtIdef, &
+                                                  trim(dm1), orderATM, trim(dm2), orderLND, &
+                                                  monotonicity, volumetric, noConserve, validate, &
+                                                  trim(dofnameATM), trim(dofnameLND) )
+      else
+       ! it happens over joint communicator
+       ! we do not need intx, just comm graph computation; see imoab_phatm_ocn_coupler.cpp
+       ! prepare to send from phys atm towards land, based on GLOBAL_ID
+
+!      if( atmCouComm != MPI_COMM_NULL )
+!      {
+!          int typeA = 2;  // point cloud
+!          int typeB = 2;  // point cloud for land on coupler, too
+!          ierr = iMOAB_ComputeCommGraph( cmpPhAtmPID, cplLndPID, &atmCouComm, &atmPEGroup, &couPEGroup, &typeA, &typeB,
+!                                         &cmpatm, &cpllnd );
+!      }
+        call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
+        call seq_comm_getinfo(atm_id, mpigrp=mpigrp_old)    !  component group pes, from atm id ( also ATMID(1) )
+        typeA = 2 ! point cloud
+        typeB = 2 ! point cloud too, for land on coupler lnd(1)%cplcompid
+        ierr = iMOAB_ComputeCommGraph( mphaid, mblxid, mpicom_join, mpigrp_old, mpigrp_CPLID, &
+            typeA, typeB, atm_id, lnd(1)%cplcompid)
+
+      endif
+
+
     endif
   end subroutine prep_atm_lnd_moab
 
@@ -440,7 +486,7 @@ contains
     integer                  :: id_join
     integer                  :: mpicom_join
     integer                  :: atm_id
-    integer                  :: context_id ! we will use ocean context
+    integer                  :: context_id ! we will use ocean context or land context
     character*32             :: dm1, dm2, tagName, wgtIdef
     character*50             :: outfile, wopts, tagnameProj, lnum
     integer                  :: orderOCN, orderATM, volumetric, noConserve, validate
@@ -518,46 +564,128 @@ contains
     context_id = lnd(1)%cplcompid
     wgtIdef = 'scalar-pc'//CHAR(0)
     if (atm_present .and. lnd_present) then
-      if (mhid .ge. 0) then !  send because we are on atm pes
+      if (diff_atm_land) then ! we need to send either from pg mhpgid or coarse mhid
+        if (atm_pg_active ) then ! use mhpgid mesh
+          if (mhpgid .ge. 0) then !  send because we are on atm pes
 
-        ! basically, adjust the migration of the tag we want to project; it was sent initially with
-        ! original partitioning, now we need to adjust it for "coverage" mesh
-        ! as always, use nonblocking sends
+            ! basically, adjust the migration of the tag we want to project; it was sent initially with
+            ! original partitioning, now we need to adjust it for "coverage" mesh
+            ! as always, use nonblocking sends
 
-         ierr = iMOAB_SendElementTag(mhid, tagName, mpicom_join, context_id)
+             ierr = iMOAB_SendElementTag(mhpgid, tagName, mpicom_join, context_id)
 
-      endif
-      if (mbaxid .ge. 0 ) then !  we are on coupler pes, for sure
-        ! receive on atm on coupler pes, that was redistributed according to coverage
-         ierr = iMOAB_ReceiveElementTag(mbaxid, tagName, mpicom_join, context_id)
-      !CHECKRC(ierr, "cannot receive tag values")
-      endif
+          endif
+          if (mbaxid .ge. 0 ) then !  we are on coupler pes, for sure
+            ! receive on atm on coupler pes, that was redistributed according to coverage
+             ierr = iMOAB_ReceiveElementTag(mbaxid, tagName, mpicom_join, context_id)
+          !CHECKRC(ierr, "cannot receive tag values")
+          endif
 
-      ! we can now free the sender buffers
-      if (mhid .ge. 0) then
-         ierr = iMOAB_FreeSenderBuffers(mhid, context_id)
-         ! CHECKRC(ierr, "cannot free buffers used to resend atm mesh tag towards the coverage mesh")
-      endif
+          ! we can now free the sender buffers
+          if (mhpgid .ge. 0) then
+             ierr = iMOAB_FreeSenderBuffers(mhid, context_id)
+             ! CHECKRC(ierr, "cannot free buffers used to resend atm mesh tag towards the coverage mesh")
+          endif
+        else ! regular coarse homme mesh
+          if (mhid .ge. 0) then !  send because we are on atm pes
 
-      ! we could do the projection now, on the land mesh, because we are on the coupler pes;
-      ! the actual migrate back could happen later , from coupler pes to the land pes
-      if (mbintxla .ge. 0 ) then !  we are on coupler pes, for sure
-        ! we could apply weights; need to use the same weight identifier wgtIdef as when we generated it
-        !  hard coded now, it should be a runtime option in the future
-        ierr = iMOAB_ApplyScalarProjectionWeights ( mbintxla, wgtIdef, tagName, tagNameProj)
+            ! basically, adjust the migration of the tag we want to project; it was sent initially with
+            ! original partitioning, now we need to adjust it for "coverage" mesh
+            ! as always, use nonblocking sends
+
+             ierr = iMOAB_SendElementTag(mhid, tagName, mpicom_join, context_id)
+
+          endif
+          if (mbaxid .ge. 0 ) then !  we are on coupler pes, for sure
+            ! receive on atm on coupler pes, that was redistributed according to coverage
+             ierr = iMOAB_ReceiveElementTag(mbaxid, tagName, mpicom_join, context_id)
+          !CHECKRC(ierr, "cannot receive tag values")
+          endif
+
+          ! we can now free the sender buffers
+          if (mhid .ge. 0) then
+             ierr = iMOAB_FreeSenderBuffers(mhid, context_id)
+             ! CHECKRC(ierr, "cannot free buffers used to resend atm mesh tag towards the coverage mesh")
+          endif
+        endif
+
+        ! we could do the projection now, on the land mesh, because we are on the coupler pes;
+        ! the actual migrate back could happen later , from coupler pes to the land pes
+        if (mbintxla .ge. 0 ) then !  we are on coupler pes, for sure
+          ! we could apply weights; need to use the same weight identifier wgtIdef as when we generated it
+          !  hard coded now, it should be a runtime option in the future
+          ierr = iMOAB_ApplyScalarProjectionWeights ( mbintxla, wgtIdef, tagName, tagNameProj)
 
 #ifdef MOABDEBUG
-        ! we can also write the ocean mesh to file, just to see the projectd tag
-        !      write out the mesh file to disk
-        write(lnum,"(I0.2)")num_proj
-        outfile = 'lndCplProj'//trim(lnum)//'.h5m'//CHAR(0)
-        wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
-        ierr = iMOAB_WriteMesh(mblxid, trim(outfile), trim(wopts))
+          ! we can also write the ocean mesh to file, just to see the projectd tag
+          !      write out the mesh file to disk
+          write(lnum,"(I0.2)")num_proj
+          outfile = 'lndCplProj'//trim(lnum)//'.h5m'//CHAR(0)
+          wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
+          ierr = iMOAB_WriteMesh(mblxid, trim(outfile), trim(wopts))
 #endif
 
-      !CHECKRC(ierr, "cannot receive tag values")
-      endif
+        !CHECKRC(ierr, "cannot receive tag values")
+        endif
+      else ! we are on same mesh, just send from phys grid atm directly to land cpl, no projection needed
+        ! we will do the same send , as imoab_phatm_ocn_coupler.cpp; no  projection needed, just send to land coupler
+        ! directly, and data will be where we want it !!
+        !  this is how we are sending from phys grid directly to land coupler, in imoab_phatm_ocn_coupler.cpp
+!        if( atmComm != MPI_COMM_NULL )
+!    {
+!
+!        // as always, use nonblocking sends
+!        // this is for projection to land:
+!        ierr =
+!            iMOAB_SendElementTag( cmpPhAtmPID, "T_ph;u_ph;v_ph;", &atmCouComm, &cpllnd, strlen( "T_ph;u_ph;v_ph;" ) );
+!        CHECKIERR( ierr, "cannot send tag values towards cpl on land" )
+!    }
+!    if( couComm != MPI_COMM_NULL )
+!    {
+!        // receive on lnd on coupler pes
+!        ierr = iMOAB_ReceiveElementTag( cplLndPID, "T_proj;u_proj;v_proj;", &atmCouComm, &cmpatm,
+!                                        strlen( "T_proj;u_proj;v_proj;" ) );
+!        CHECKIERR( ierr, "cannot receive tag values on land on coupler" )
+!    }
+!    POP_TIMER( MPI_COMM_WORLD, rankInGlobalComm )
+!
+!    // we can now free the sender buffers
+!    if( atmComm != MPI_COMM_NULL )
+!    {
+!        ierr = iMOAB_FreeSenderBuffers( cmpPhAtmPID, &cpllnd );
+!        CHECKIERR( ierr, "cannot free buffers used to resend atm tag towards the land on coupler" )
+!    }
+        if (mphaid .ge. 0) then
+      ! we are on atm phys pes (atm pes)
+           tagname = 'T_ph;u_ph;v_ph'//CHAR(0)
+           ! context_id is the other comp id, in this case it has to be coupler on land,
+           context_id = lnd(1)%cplcompid
+           ierr = iMOAB_SendElementTag(mphaid, tagname, mpicom_join, context_id) ! it will fail if intx is not done
+           ! if intx is not done, context does not exist !
+        endif
 
+        if (mblxid .ge. 0 ) then !  we are on coupler pes, for sure, on land
+          ! receive on land tag on coupler pes, in original migrate
+          ! receive from ATM PHYS, which in this case is 200 + 5
+          !
+          context_id = atm_id ! 5 for atm
+          ierr = iMOAB_ReceiveElementTag(mblxid, tagNameProj, mpicom_join, context_id)
+          !CHECKRC(ierr, "cannot receive tag values")
+#ifdef MOABDEBUG
+          !
+          !      write out the lnd coupler mesh file to disk
+          write(lnum,"(I0.2)")num_proj
+          outfile = 'lndCplProj_PH'//trim(lnum)//'.h5m'//CHAR(0)
+          wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
+          ierr = iMOAB_WriteMesh(mblxid, trim(outfile), trim(wopts))
+#endif
+        endif
+        if (mphaid .ge. 0) then  ! free buffers
+          context_id = lnd(1)%cplcompid
+          ierr = iMOAB_FreeSenderBuffers(mphaid, context_id)
+         ! CHECKRC(ierr, "cannot free buffers used to phys atm tag towards the coupler atm spectral mesh")
+        endif
+      endif ! endif for diff_atm_land, we are on same mesh land and satm, use direct send, no projection
     endif
 
     ! we also know that phys atm was loaded with some data; send it to the coupler atm
@@ -630,10 +758,11 @@ contains
     endif
 
     ! we can now free the sender buffers
-    if (mhid .ge. 0) then
+    if (mphaid .ge. 0) then
        ierr = iMOAB_FreeSenderBuffers(mphaid, context_id)
        ! CHECKRC(ierr, "cannot free buffers used to phys atm tag towards the coupler atm spectral mesh")
     endif
+
 
     ! we could do the projection now, on the ocean mesh, because we are on the coupler pes;
     ! the actual migrate could happen later , from coupler pes to the ocean pes
