@@ -25,7 +25,7 @@
     </test_file_names>
   </comp_archive_spec>
 
-  <comp_archive_spec compname="clm" compclass="lnd">
+  <comp_archive_spec compname="elm" compclass="lnd">
     <rest_file_extension>r</rest_file_extension>
     <rest_file_extension>rh\d?</rest_file_extension>
     <hist_file_extension>h\d*.*\.nc$</hist_file_extension>

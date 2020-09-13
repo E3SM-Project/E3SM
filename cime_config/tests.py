@@ -125,7 +125,7 @@ _TESTS = {
             "ERS_Ld5.T62_oQU120.CMPASO-NYF",
             "ERS.f09_g16_g.MALISIA",
             "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
-            "SMS.f09_g16_a.IGCLM45_MLI",
+            "SMS.f09_g16_a.IGELM_MLI",
             "SMS_P12x2.ne4_oQU240.A_WCYCL1850.allactive-mach_mods",
             "SMS_B.ne4_ne4.F-EAMv1-AQP1.cam-hommexx",
             )
