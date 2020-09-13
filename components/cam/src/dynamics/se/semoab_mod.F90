@@ -22,6 +22,7 @@ module semoab_mod
 
   use seq_comm_mct,  only: MHID, MHFID !  app id on moab side, for homme moab coarse and fine mesh
   use seq_comm_mct,  only: MHPGID      !  app id on moab side, for PGx style mesh, uniform from se
+  use seq_comm_mct,  only: atm_pg_active ! turn it on when PG style mesh active
 
   use dyn_grid,      only: fv_nphys, fv_physgrid ! phys grid mesh will be replicated too
 
@@ -540,6 +541,7 @@ contains
 
      if (fv_nphys > 0 ) then
        ! create FV mesh, base on PGx
+       atm_pg_active = .true. ! from now on, we will migrate / send tags for FV / ATM_PG2 mesh
        ! first count the number of edges in the coarse mesh;
        ! use euler: v-m+f = 2 => m = v + f - 2
        nedges_c = nverts_c + nelemd - 1 ! could be more, if unconnected regions ?
@@ -826,6 +828,7 @@ contains
     real(kind=real_kind), allocatable :: valuesTag(:)
     character*100 outfile, wopts, tagname, lnum
 
+    if (atm_pg_active) return ! do nothing here, as we do not have to migrate from here;
     ! count number of calls
     num_calls_export = num_calls_export + 1
 
