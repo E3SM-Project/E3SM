@@ -53,6 +53,9 @@ TEST_CASE("scorpio_yaml", "") {
   auto gids       = upgm.get_grid("Physics")->get_dofs_gids();
   auto phys_lt    = upgm.get_grid("Physics")->get_native_dof_layout();
 
+  // Need to register grids managers before we create the driver
+  auto& gm_factory = GridsManagerFactory::instance();
+  gm_factory.register_product("User Provided",create_user_provided_grids_manager);
 /* The first step is to establish a Field Manager Repo to work with.  This example is fashioned from the 'field_repo'
  * test from /share/tests/field_tests.hpp                                                                          */ 
   std::vector<FieldTag> tag1d  = {FieldTag::Column};
@@ -201,6 +204,9 @@ TEST_CASE("scorpio_yaml", "") {
 /* ================================================================================================================ */
 /* ====================                           INTERNAL FUNCTIONS                           ==================== */
 /* ================================================================================================================ */
+/* ====================                           INTERNAL FUNCTIONS                           ==================== */
+/* ================================================================================================================ */
+
 
 
 void set_spatial_vectors(Real* x, Real* y, Real* z, std::vector<int> dims3d, const dofs_list_type gids, const Int total_cols) 
