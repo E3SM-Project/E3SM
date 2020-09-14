@@ -79,8 +79,8 @@ void calc_shoc_vertflux_c(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 
 void shoc_length_c(Int shcol, Int nlev, Int nlevi, Real *tke, Real *host_dx,
                    Real *host_dy, Real *pblh, Real *zt_grid, Real *zi_grid,
-		   Real *dz_zt, Real *dz_zi, Real *thetal, Real *wthv_sec, 
-		   Real *thv, Real *brunt, Real *shoc_mix);
+                   Real *dz_zt, Real *dz_zi, Real *thetal, Real *wthv_sec,
+                   Real *thv, Real *brunt, Real *shoc_mix);
 
 void compute_brunt_shoc_length_c(Int nlev, Int nlevi, Int shcol ,Real *dz_zt,
                                  Real *thv, Real *thv_zi, Real *brunt);
