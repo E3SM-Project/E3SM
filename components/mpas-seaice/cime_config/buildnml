@@ -195,6 +195,21 @@ def buildnml(case, caseroot, compname):
         grid_prefix += 'seaice.ARRM60to6'
         decomp_date += '180820'
         decomp_prefix += 'mpas-cice.graph.info.'
+    elif ice_grid == 'EC30to60E2r2':
+        grid_date += '200908'
+        grid_prefix += 'seaice.EC30to60E2r2'
+        decomp_date += '200908'
+        decomp_prefix += 'mpas-seaice.graph.info.'
+    elif ice_grid == 'EC30to60E2r2_ICG':
+        grid_date += '200910'
+        grid_prefix += 'mpassi.EC30to60E2r2.rstFromG-anvil'
+        decomp_date += '200908'
+        decomp_prefix += 'mpas-seaice.graph.info.'
+    elif ice_grid == 'EC30to60E2r2-1900_ICG':
+        grid_date += '200910'
+        grid_prefix += 'mpassi.EC30to60E2r2-1900.rstFromG-anvil'
+        decomp_date += '200908'
+        decomp_prefix += 'mpas-seaice.graph.info.'
 
 
     #--------------------------------------------------------------------
