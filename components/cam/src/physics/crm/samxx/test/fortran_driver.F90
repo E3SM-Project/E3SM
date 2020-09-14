@@ -1,12 +1,13 @@
 
 program driver
   use crmdims
-  use params, only: crm_rknd, crm_iknd, crm_lknd, r8
+  use params_kind, only: crm_rknd
   use crm_input_module
   use crm_output_module
   use crm_state_module
   use crm_rad_module
   use accelerate_crm_mod
+  use crm_ecpp_output_module
   use dmdf
   use crm_module
 #if HAVE_MPI
@@ -17,6 +18,7 @@ program driver
   type(crm_output_type)        :: crm_output
   type(crm_state_type)         :: crm_state
   type(crm_rad_type)           :: crm_rad
+  type(crm_ecpp_output_type)   :: crm_ecpp_output
   integer          , parameter :: plev   = PLEV
   character(len=64), parameter :: fname_in = 'input.nc'
   real(crm_rknd), allocatable  :: lat0  (:)
@@ -48,6 +50,8 @@ program driver
   real(crm_rknd), allocatable :: read_crm_rad_qc           (:,:,:,:)
   real(crm_rknd), allocatable :: read_crm_rad_qi           (:,:,:,:)
   real(crm_rknd), allocatable :: read_crm_rad_cld          (:,:,:,:)
+  real(crm_rknd), allocatable :: crm_clear_rh(:,:)
+  integer       , allocatable :: gcolp(:)
   character(len=64) :: fprefix = 'fortran_output'
   integer(8) :: t1, t2, tr
   integer :: ierr
@@ -100,6 +104,8 @@ program driver
   allocate( lat0                 (ncrms) )
   allocate( long0                (ncrms) )
   allocate( dt_gl                (ncrms) )
+  allocate( gcolp                (ncrms) )
+  allocate( crm_clear_rh         (ncrms,crm_nz) )
   
   ! Allocate transposed arrays because this is the storage format in netcdf
   allocate( read_crm_input_zmid       (plev  ,ncrms))
@@ -201,12 +207,11 @@ program driver
     write(*,*) 'Running the CRM'
   endif
 
-  call crm_accel_init()
-
   call system_clock(t1)
 
   ! Run the code
-  call crm( ncrms, dt_gl(1), plev, crm_input, crm_state, crm_rad, crm_output, lat0, long0 )
+  call crm(1 , ncrms, dt_gl(1), plev, crm_input, crm_state, crm_rad, crm_ecpp_output, crm_output, crm_clear_rh, &
+           lat0, long0, gcolp, 2, .true., 2.D0, .true.)
 
   call system_clock(t2,tr)
   write(*,*) "Elapsed Time: " , real(t2-t1,8) / real(tr,8)
@@ -305,7 +310,8 @@ program driver
         call dmdf_write( crm_rad%qv               (icrm,:,:,:) , 1 , fprefix , trim('rad_qv              ') , (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .false. )
         call dmdf_write( crm_rad%qc               (icrm,:,:,:) , 1 , fprefix , trim('rad_qc              ') , (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .false. )
         call dmdf_write( crm_rad%qi               (icrm,:,:,:) , 1 , fprefix , trim('rad_qi              ') , (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .false. )
-        call dmdf_write( crm_rad%cld              (icrm,:,:,:) , 1 , fprefix , trim('rad_cld             ') , (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .true.  )
+        call dmdf_write( crm_rad%cld              (icrm,:,:,:) , 1 , fprefix , trim('rad_cld             ') , (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .false. )
+        call dmdf_write( crm_clear_rh             (icrm,:)     , 1 , fprefix , trim('crm_clear_rh        ') , (/'crm_nz'/)                               , .false. , .true.  )
       enddo
     endif
 #if HAVE_MPI

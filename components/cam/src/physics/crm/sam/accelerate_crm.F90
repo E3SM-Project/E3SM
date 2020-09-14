@@ -20,11 +20,10 @@
 ! -----------------------------------------------------------------------------
 module accelerate_crm_mod
     use grid, only: nx, ny
-    use shr_kind_mod, only: r8=>shr_kind_r8
     use params, only: asyncid, rc=>crm_rknd
-
     implicit none
     public
+    integer, parameter :: r8 = selected_real_kind(13)
 
     real(rc), parameter :: coef = 1._r8 / dble(nx * ny)  ! coefficient for horizontal averaging
     logical :: crm_accel_uv  ! (false) apply MSA only to scalar fields (T and QT)
@@ -53,19 +52,17 @@ module accelerate_crm_mod
       ! Argument(s):
       !  nstop (inout) - number of crm iterations to apply MSA
       ! -----------------------------------------------------------------------
-      use cam_abortutils, only: endrun
-      use cam_logfile,  only: iulog
-  
       implicit none
   
       integer, intent(inout) :: nstop
   
       if (mod(nstop, int(1 + crm_accel_factor)) .ne. 0) then
-        write(iulog,*) "CRM acceleration unexpected exception:"
-        write(iulog,*) "(1+crm_accel_factor) does not divide equally into nstop"
-        write(iulog,*) "nstop = ", nstop
-        write(iulog,*) "crm_accel_factor = ", crm_accel_factor
-        call endrun('crm main: bad crm_accel_factor and nstop pair')
+        write(*,*) "CRM acceleration unexpected exception:"
+        write(*,*) "(1+crm_accel_factor) does not divide equally into nstop"
+        write(*,*) "nstop = ", nstop
+        write(*,*) "crm_accel_factor = ", crm_accel_factor
+        write(*,*) 'crm main: bad crm_accel_factor and nstop pair'
+        stop
       else
         nstop = nstop / (1 + crm_accel_factor)
       endif
@@ -97,7 +94,6 @@ module accelerate_crm_mod
       use grid, only: nzm
       use vars, only: u, v, u0, v0, t0,q0, t,qcl,qci,qv
       use microphysics, only: micro_field, idx_qt=>index_water_vapor
-      use cam_logfile,  only: iulog
       use openacc_utils
       implicit none
       integer, intent(in   ) :: ncrms
@@ -223,8 +219,8 @@ module accelerate_crm_mod
         ! Because we set nstop = crm_run_time / dt_a in crm_accel_nstop, subbing
         ! crm_run_time = nstop * dt_a and working through algebra yields 
         !     updated nstop = nstop + (nstop - nstep + 1) * crm_accel_factor.
-        write (iulog, *) 'accelerate_crm: mean-state acceleration not applied this step'
-        write (iulog,*) 'crm: nstop increased from ', nstop, ' to ', int(nstop+(nstop-nstep+1)*crm_accel_factor)
+        write (*,*) 'accelerate_crm: mean-state acceleration not applied this step'
+        write (*,*) 'crm: nstop increased from ', nstop, ' to ', int(nstop+(nstop-nstep+1)*crm_accel_factor)
         nstop = nstop + (nstop - nstep + 1)*crm_accel_factor ! only can happen once
         return
       endif

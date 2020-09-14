@@ -50,9 +50,8 @@
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
 module RNG_MT
-   use shr_kind_mod,  only: r8 => shr_kind_r8
-
    implicit none
+   integer, parameter :: r8 = selected_real_kind(13)
 
    integer, private, parameter :: N      = 624      ! why are these parameters so big?
    integer, private, parameter :: N1     = 625

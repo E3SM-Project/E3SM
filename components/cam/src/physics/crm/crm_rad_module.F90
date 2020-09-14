@@ -8,9 +8,9 @@ module crm_rad_module
    ! update the radiation in the future, should we choose to put the radiation
    ! calculations on the CRM.
    use params_kind,       only: crm_rknd
-   use shr_kind_mod, only: r8 => shr_kind_r8
 
    implicit none
+   integer, parameter :: r8 = selected_real_kind(13)
 
    public crm_rad_type
 
