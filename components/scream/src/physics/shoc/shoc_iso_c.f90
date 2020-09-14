@@ -516,6 +516,8 @@ contains
                              dz_zi, zt_grid, zi_grid, isotropy_zi, &
                              brunt_zi, w_sec_zi, thetal_zi, wthv_sec_zi, &
                              shoc_mix_zi, w3)
+			     
+    write(*,*) 'w3 ', w3
 
   end subroutine compute_diag_third_shoc_moment_c
  
