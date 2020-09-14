@@ -43,6 +43,34 @@ struct SHOCGridData : public PhysicsTestData {
   SHOC_NO_SCALAR(SHOCGridData, 3);
 };
 
+//Create data structure to hold data for check_tke
+struct SHOCCheckTkeData : public PhysicsTestData {
+
+  // Output
+  Real *tke;
+
+  SHOCCheckTkeData(Int shcol_, Int nlev_) :
+    PhysicsTestData(shcol_, nlev_, {&tke}) {}
+
+  SHOC_NO_SCALAR(SHOCCheckTkeData, 2);
+};//SHOCCheckTkeData
+
+//Create data structure to hold data for shoc_tke
+struct SHOCTkeData : public PhysicsTestData {
+  // Inputs
+  Real dtime; 
+  Real *wthv_sec, *shoc_mix, *dz_zi, *u_wind, *v_wind, *pblh;
+  Real *brunt, *obklen, *zt_grid, *zi_grid, *dz_zt, *pres;
+
+  // Output
+  Real *tke, *tkh, *tk, *isotropy;
+
+  SHOCTkeData(Int shcol_, Int nlev_, Int nlevi_, Real dtime_) :
+    PhysicsTestData(shcol_, nlev_, nlevi_, {&wthv_sec, &shoc_mix, &dz_zt, &pres, &u_wind, &v_wind, &zt_grid, &brunt, &tke, &tk, &tkh, &isotropy}, {&dz_zi, &zi_grid}, {&obklen, &pblh}), dtime(dtime_) {}
+
+  SHOC_SCALARS(SHOCTkeData, 3, 1, dtime);
+};//SHOCTkeData
+
 //Create data structure to hold data for integ_column_stability
 struct SHOCColstabData : public PhysicsTestData {
   // Inputs
@@ -331,6 +359,84 @@ struct SHOCMixcheckData : public PhysicsTestData {
   SHOC_NO_SCALAR(SHOCMixcheckData, 2);
 };//SHOCMixcheckData
 
+//Create data structure to hold data for clipping_diag_third_shoc_moments
+struct SHOCClipthirdmomsData : public PhysicsTestData {
+  // Inputs
+  Real *w_sec_zi;
+
+  // In/out
+  Real *w3;
+
+  SHOCClipthirdmomsData(Int shcol_, Int nlevi_) :
+    PhysicsTestData(shcol_, nlevi_,{&w_sec_zi, &w3}){}
+
+  PTD_STD_DEF(SHOCClipthirdmomsData, 2, 0);
+  PTD_DIM_RENAME(2, shcol, nlevi);
+
+};//SHOCClipthirdmomsData
+
+struct SHOCAAdiagthirdmomsData
+{
+  // inputs
+  Real omega0, omega1, omega2, x0, x1, y0, y1;
+  
+  // outputs
+  Real aa0, aa1;
+
+};
+
+struct SHOCFtermdiagthirdmomsData
+{
+  // inputs
+  Real thedz, thedz2, bet2, iso, isosqrd, wthl_sec, wthl_sec_kc;
+  Real wthl_sec_kb, thl_sec, thl_sec_kc, thl_sec_kb, w_sec;
+  Real w_sec_kc, w_sec_zi, tke, tke_kc;
+  
+  // outputs
+  Real f0, f1, f2, f3, f4, f5;
+
+};
+
+struct SHOCOmegadiagthirdmomsData
+{
+  // inputs
+  Real buoy_sgs2, f3, f4;
+  
+  // outputs
+  Real omega0, omega1, omega2;
+
+};
+
+struct SHOCXYdiagthirdmomsData
+{
+  // inputs
+  Real buoy_sgs2, f0, f1, f2;
+  
+  // outputs
+  Real x0, y0, x1, y1;
+
+};
+
+struct SHOCW3diagthirdmomsData
+{
+  // inputs
+  Real aa0, aa1, x0, x1, f5;
+  
+  // outputs
+  Real w3;
+
+};
+
+struct SHOCFterminputthirdmomsData
+{
+  // inputs
+  Real dz_zi, dz_zt, dz_zt_kc, isotropy_zi, brunt_zi, thetal_zi;
+  
+  // outputs
+  Real thedz, thedz2, iso, isosqrd, buoy_sgs2, bet2;
+
+};
+
 struct SHOCSecondMomentSrfData : public PhysicsTestData {
   // Inputs
   Real *wthl, *uw, *vw;
@@ -499,6 +605,7 @@ struct SHOCSecondMomentUbycondData : public PhysicsTestData {
 // locations of the cell center (location of thermodynaics quantities), cell
 // interfaces, and pressure gradient the functon returns dz_zi, dz_zt,
 // and density.
+
 void shoc_grid                                      (SHOCGridData &d);
 void update_host_dse                                (SHOCEnergydseData &d);
 void shoc_energy_integrals                          (SHOCEnergyintData &d);
@@ -508,6 +615,8 @@ void shoc_energy_dse_fixer                          (SHOCEnergydsefixerData &d);
 void calc_shoc_vertflux                             (SHOCVertfluxData &d);
 void calc_shoc_varorcovar                           (SHOCVarorcovarData &d);
 void integ_column_stability                         (SHOCColstabData &d);
+void check_tke                                      (SHOCCheckTkeData &d);
+void shoc_tke                                       (SHOCTkeData &d);
 void compute_shr_prod                               (SHOCTkeshearData &d);
 void isotropic_ts                                   (SHOCIsotropicData &d);
 void adv_sgs_tke                                    (SHOCAdvsgstkeData &d);
@@ -519,6 +628,13 @@ void compute_conv_vel_shoc_length                   (SHOCConvvelData &d);
 void compute_conv_time_shoc_length                  (SHOCConvtimeData &d);
 void compute_shoc_mix_shoc_length                   (SHOCMixlengthData &d);
 void check_length_scale_shoc_length                 (SHOCMixcheckData &d);
+void fterms_input_for_diag_third_shoc_moment        (SHOCFterminputthirdmomsData &d);
+void aa_terms_diag_third_shoc_moment                (SHOCAAdiagthirdmomsData &d);
+void f0_to_f5_diag_third_shoc_moment                (SHOCFtermdiagthirdmomsData &d);
+void omega_terms_diag_third_shoc_moment             (SHOCOmegadiagthirdmomsData &d);
+void x_y_terms_diag_third_shoc_moment               (SHOCXYdiagthirdmomsData &d);
+void w3_diag_third_shoc_moment                      (SHOCW3diagthirdmomsData &d);
+void clipping_diag_third_shoc_moments               (SHOCClipthirdmomsData &d);
 void shoc_diag_second_moments_srf                   (SHOCSecondMomentSrfData& d);
 void linear_interp                                  (SHOCLinearintData &d);
 void shoc_assumed_pdf_tilda_to_real                 (SHOCPDFtildaData &d);
