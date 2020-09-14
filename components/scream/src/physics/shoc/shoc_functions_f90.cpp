@@ -99,6 +99,12 @@ void compute_diag_third_shoc_moment_c(Int shcol, Int nlev, Int nlevi, Real *w_se
 				      Real *isotropy_zi, Real *brunt_zi, Real *w_sec_zi,
 				      Real *thetal_zi, Real *wthv_sec_zi, 
 				      Real *shoc_mix_zi, Real *w3);
+				      
+void diag_third_shoc_moments_c(Int shoc, Int nlev, Int nlevi, Real *w_sec, 
+                               Real *thl_sec, Real *isotropy, Real *brunt,
+			       Real *thetal, Real *tke, Real *wthv_sec,
+			       Real *shoc_mix, Real *dz_zt, Real *dz_zi,
+			       Real *zt_grid, Real *zi_grid);
 
 void linear_interp_c(Real *x1, Real *x2, Real *y1, Real *y2, Int km1,
                      Int km2, Int ncol, Real minthresh);
@@ -341,6 +347,16 @@ void compute_diag_third_shoc_moment(SHOCCompThirdMomData &d) {
 				   d.dz_zi,d.zt_grid,d.zi_grid,d.isotropy_zi,
 				   d.brunt_zi,d.w_sec_zi,d.thetal_zi,d.wthv_sec_zi,
 				   d.shoc_mix_zi,d.w3);
+  d.transpose<ekat::util::TransposeDirection::f2c>();
+}
+
+void diag_third_shoc_moments(SHOCDiagThirdMomData &d) {
+  shoc_init(d.nlev(), true);
+  d.transpose<ekat::util::TransposeDirection::c2f>();
+  diag_third_shoc_moments_c(d.shcol(),d.nlev(),d.nlevi(),d.w_sec,d.thl_sec,d.qw_sec,
+                            d.qwthl_sec,d.wthl_sec,d.isotropy,d.brunt,d.thetal,d.tke,
+			    d.wthv_sec,d.shoc_mix,d.dz_zt,d.dz_zi,d.zt_grid,d.zi_grid,
+			    d.w3);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 } 
 
