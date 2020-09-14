@@ -44,7 +44,7 @@ void diagnose() {
 
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     u0   (k,icrm)=0.0;
     v0   (k,icrm)=0.0;
     t01  (k,icrm) = tabs0(k,icrm);
@@ -61,7 +61,7 @@ void diagnose() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     real coef1 = rho(k,icrm)*dz(icrm)*adz(k,icrm)*dtfactor;
     tabs(k,j,i,icrm) = t(k,j+offy_s,i+offx_s,icrm)-gamaz(k,icrm)+ fac_cond *
                        (qcl(k,j,i,icrm)+qpl(k,j,i,icrm)) + fac_sub *(qci(k,j,i,icrm) + qpi(k,j,i,icrm));
@@ -82,7 +82,7 @@ void diagnose() {
 
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     u0   (k,icrm)=u0   (k,icrm)*coef;
     v0   (k,icrm)=v0   (k,icrm)*coef;
     t0   (k,icrm)=t0   (k,icrm)*coef;
@@ -96,14 +96,14 @@ void diagnose() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     usfc_xy(j,i,icrm) = usfc_xy(j,i,icrm) + u(0,j+offy_s,i+offx_s,icrm)*dtfactor;
     vsfc_xy(j,i,icrm) = vsfc_xy(j,i,icrm) + v(0,j+offy_s,i+offx_s,icrm)*dtfactor;
   });
 
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     qv0(k,icrm) = q0(k,icrm) - qn0(k,icrm);
   });
 
@@ -115,7 +115,7 @@ void diagnose() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     real coef1 = rho(k,icrm)*dz(icrm)*adz(k,icrm)*dtfactor;
     // Saturated water vapor path with respect to water. Can be used
     // with water vapor path (= pw) to compute column-average
@@ -131,7 +131,7 @@ void diagnose() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     psfc_xy(j,i,icrm) = psfc_xy(j,i,icrm) + (100.0*pres(0,icrm) + p(0,j+offy_p,i+offx_p,icrm))*dtfactor;
   });
 
@@ -144,7 +144,7 @@ void diagnose() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     cloudtopheight(j,i,icrm) = 0.0;
     cloudtoptemp(j,i,icrm) = sstxy(j+offy_sstxy,i+offx_sstxy,icrm);
     echotopheight(j,i,icrm) = 0.0;
@@ -154,7 +154,7 @@ void diagnose() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     // FIND CLOUD TOP HEIGHT
     real tmp_lwp = 0.0;
     for(int k=nzm-1; k>=0; k--) {

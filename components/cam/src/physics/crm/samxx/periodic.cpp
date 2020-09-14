@@ -12,7 +12,7 @@ void periodic(int flag) {
     //   for (int j=0; j<ny; j++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
       w(nz-1,j+offy_w,i+offx_w,icrm) = sstxy(j+offy_sstxy,i+offx_sstxy,icrm);
     });
 
@@ -20,7 +20,7 @@ void periodic(int flag) {
     //   for (int j=0; j<ny+2*YES3D; j++) {
     //     for (int i=0; i<nxp3; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(ny+2*YES3D,nxp3,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(ny+2*YES3D,nxp3,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
       int jStart = 1-YES3D-1;
       int jInd = 1-YES3D-1 +j;
       int jEnd = ny+YES3D-1;
@@ -35,7 +35,7 @@ void periodic(int flag) {
     //   for (int j=0; j<ny+2*YES3D; j++) {
     //     for (int i=0; i<nxp3; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(ny+2*YES3D,nxp3,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(ny+2*YES3D,nxp3,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
       int jStart = 1-YES3D-1;
       int jInd = 1-YES3D-1+j;
       int jEnd = ny+YES3D-1;

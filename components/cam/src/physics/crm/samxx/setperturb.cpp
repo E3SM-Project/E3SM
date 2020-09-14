@@ -22,7 +22,7 @@ void setperturb() {
   auto t     = ::t;
   auto t0    = ::t0;
   auto gcolp = ::gcolp;
-  parallel_for( Bounds<4>(perturb_num_layers,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(perturb_num_layers,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     // set perturb_k_scaling so that perturbation magnitude decreases with altitude
     real perturb_k_scaling = ((real)perturb_num_layers-k) / (real)perturb_num_layers;
     // Get the random number
@@ -40,7 +40,7 @@ void setperturb() {
   //   do j = 1,ny
   //     do i = 1,nx
   //       do icrm = 1 , ncrms
-  parallel_for( Bounds<4>(perturb_num_layers,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(perturb_num_layers,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     t(k,j+offy_s,i+offx_s,icrm) = t(k,j+offy_s,i+offx_s,icrm) * t0(k,icrm) / t02(k,icrm);
   });
 }

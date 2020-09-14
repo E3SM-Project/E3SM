@@ -20,7 +20,7 @@ void cloud(real5d &q, int ind_q, real5d &qp, int ind_qp) {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     q(ind_q,k,j+offy_s,i+offx_s,icrm)=max(0.0,q(ind_q,k,j+offy_s,i+offx_s,icrm));
     // Initial guess for temperature assuming no cloud water/ice:
     tabs(k,j,i,icrm) = t(k,j+offy_s,i+offx_s,icrm)-gamaz(k,icrm);

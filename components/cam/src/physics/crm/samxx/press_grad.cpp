@@ -19,7 +19,7 @@ void press_grad() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int kb=max(0,k-1);
     real rdz = 1.0/(dz(icrm)*adzw(k,icrm));
     int jb=j-YES3D;
@@ -33,7 +33,7 @@ void press_grad() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny+YES3D,nx+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny+YES3D,nx+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     p(k,j,i,icrm)=p(k,j,i,icrm)*rho(k,icrm);  // convert p'/rho to p'
   });
 
@@ -41,7 +41,7 @@ void press_grad() {
     // for (int k=0; k<nzm; k++) {
     //  for (int j=0; j<ny; j++) {
     //    for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzm,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
+    parallel_for( SimpleBounds<3>(nzm,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
       dudt(na-1,k,j,0,icrm) = 0.0;
     });
   }
@@ -50,7 +50,7 @@ void press_grad() {
     // for (int k=0; k<nzm; k++) {
     //  for (int i=0; i<nx; i++) {
     //    for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       dvdt(na-1,k,0,i,icrm) = 0.0;
     });
   }

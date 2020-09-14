@@ -25,7 +25,7 @@ void advect2_mom_xy() {
     //   for (int j=0; j<ny; j++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int kc= k+1;
       int kcu = min(kc, nzm-1);
       real irho = 1.0/(rhow(kc,icrm)*adzw(kc,icrm));
@@ -75,7 +75,7 @@ void advect2_mom_xy() {
     // for (int k=0; k<nzm; k++) {
     //    for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       int j=0;
       int kc= k+1;
       int kcu =min(kc, nzm-1);

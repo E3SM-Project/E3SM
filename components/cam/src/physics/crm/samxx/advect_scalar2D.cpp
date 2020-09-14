@@ -27,7 +27,7 @@ void advect_scalar2D(real4d &f, real2d &flux) {
 
   // for (int i=0; i<nx+4; i++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<2>(nx+4,ncrms) , YAKL_LAMBDA (int i, int icrm) {
+  parallel_for( SimpleBounds<2>(nx+4,ncrms) , YAKL_LAMBDA (int i, int icrm) {
     www(nz-1,j,i,icrm)=0.0;
   });
 
@@ -36,7 +36,7 @@ void advect_scalar2D(real4d &f, real2d &flux) {
       // for (int k=0; k<nzm; k++) {
       //  for (int i=0; i<1-dimx1_u+1; i++) {
       //    for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+      parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
         u(k,j,i,icrm) = 0.0;
       });
     }
@@ -44,7 +44,7 @@ void advect_scalar2D(real4d &f, real2d &flux) {
       // for (int k=0; k<nzm; k++) {
       //  for (int i=0; i<dimx2_u-(nx+1)+1; i++) {
       //    for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+      parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
         int iInd = i+ (nx+2);
         u(k,j,iInd,icrm) = 0.0;
       });
@@ -55,7 +55,7 @@ void advect_scalar2D(real4d &f, real2d &flux) {
     // for (int k=0; k<nzm; k++) {
     //  for (int i=0; i<nx+2; i++) {
     //    for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzm,nx+2,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(nzm,nx+2,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       int kc=min(nzm-1,k+1);
       int kb=max(0,k-1);
       int ib=i-1;
@@ -70,7 +70,7 @@ void advect_scalar2D(real4d &f, real2d &flux) {
   // for (int k=0; k<nzm; k++) {
   //  for (int i=0; i<nx+5; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<3>(nzm,nx+5,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(nzm,nx+5,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
     int kb=max(0,k-1);
     uuu(k,j,i,icrm)=max(0.0,u(k,j,i,icrm))*f(k,j,i-1+offx_s-2,icrm)+
                     min(0.0,u(k,j,i,icrm))*f(k,j,i+offx_s-2,icrm);
@@ -85,7 +85,7 @@ void advect_scalar2D(real4d &f, real2d &flux) {
 
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     irho(k,icrm) = 1.0/rho(k,icrm);
     iadz(k,icrm) = 1.0/adz(k,icrm);
     irhow(k,icrm) = 1.0/(rhow(k,icrm)*adz(k,icrm));
@@ -94,7 +94,7 @@ void advect_scalar2D(real4d &f, real2d &flux) {
   // for (int k=0; k<nzm; k++) {
   //  for (int i=0; i<nx+4; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<3>(nzm,nx+4,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(nzm,nx+4,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
     if (i >= 2 && i <= nx+1) {
       yakl::atomicAdd(flux(k,icrm),www(k,j,i,icrm));
     }
@@ -105,7 +105,7 @@ void advect_scalar2D(real4d &f, real2d &flux) {
   // for (int k=0; k<nzm; k++) {
   //  for (int i=0; i<nx+3; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<3>(nzm,nx+3,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(nzm,nx+3,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
     int kc=min(nzm-1,k+1);
     int kb=max(0,k-1);
     real dd=2.0/(kc-kb)/adz(k,icrm);
@@ -127,7 +127,7 @@ void advect_scalar2D(real4d &f, real2d &flux) {
 
   //  for (int i=0; i<nx+4; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<2>(nx+4,ncrms) , YAKL_LAMBDA (int i, int icrm) {
+  parallel_for( SimpleBounds<2>(nx+4,ncrms) , YAKL_LAMBDA (int i, int icrm) {
     www(0,j,i,icrm) = 0.0;
   });
 
@@ -135,7 +135,7 @@ void advect_scalar2D(real4d &f, real2d &flux) {
     // for (int k=0; k<nzm; k++) {
     //  for (int i=0; i<nx+2; i++) {
     //    for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzm,nx+2,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(nzm,nx+2,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       int kc=min(nzm-1,k+1);
       int kb=max(0,k-1);
       int ib=i-1;
@@ -149,7 +149,7 @@ void advect_scalar2D(real4d &f, real2d &flux) {
     // for (int k=0; k<nzm; k++) {
     //  for (int i=0; i<nx+2; i++) {
     //    for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzm,nx+2,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(nzm,nx+2,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       int kc=min(nzm-1,k+1);
       int ic=i+1;
       mx(k,j,i,icrm)=rho(k,icrm)*(mx(k,j,i,icrm)-f(k,j,i+offx_s-1,icrm))/(pn2(uuu(k,j,ic+offx_uuu-1,icrm)) +
@@ -163,7 +163,7 @@ void advect_scalar2D(real4d &f, real2d &flux) {
     // for (int k=0; k<nzm; k++) {
     //  for (int i=0; i<nx+1; i++) {
     //    for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzm,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(nzm,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       int ib=i-1;
       uuu(k,j,i+offx_uuu,icrm) =
             pp2(uuu(k,j,i+offx_uuu,icrm))*min(1.0,min(mx(k,j,i+offx_m,icrm), mn(k,j,ib+offx_m,icrm))) -
@@ -181,7 +181,7 @@ void advect_scalar2D(real4d &f, real2d &flux) {
   // for (int k=0; k<nzm; k++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
     int kc=k+1;
     // MK: added fix for very small negative values (relative to positive values)
     //     especially  when such large numbers as
@@ -222,7 +222,7 @@ void advect_scalar2D(real5d &f, int ind_f, real2d &flux) {
 
   // for (int i=0; i<nx+4; i++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<2>(nx+4,ncrms) , YAKL_LAMBDA (int i, int icrm) {
+  parallel_for( SimpleBounds<2>(nx+4,ncrms) , YAKL_LAMBDA (int i, int icrm) {
     www(nz-1,j,i,icrm)=0.0;
   });
 
@@ -231,7 +231,7 @@ void advect_scalar2D(real5d &f, int ind_f, real2d &flux) {
       // for (int k=0; k<nzm; k++) {
       //  for (int i=0; i<1-dimx1_u+1; i++) {
       //    for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+      parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
         u(k,j,i,icrm) = 0.0;
       });
     }
@@ -239,7 +239,7 @@ void advect_scalar2D(real5d &f, int ind_f, real2d &flux) {
       // for (int k=0; k<nzm; k++) {
       //  for (int i=0; i<dimx2_u-(nx+1)+1; i++) {
       //    for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+      parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
         int iInd = i+ (nx+2);
         u(k,j,iInd,icrm) = 0.0;
       });
@@ -250,7 +250,7 @@ void advect_scalar2D(real5d &f, int ind_f, real2d &flux) {
     // for (int k=0; k<nzm; k++) {
     //  for (int i=0; i<nx+2; i++) {
     //    for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzm,nx+2,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(nzm,nx+2,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       int kc=min(nzm-1,k+1);
       int kb=max(0,k-1);
       int ib=i-1;
@@ -265,7 +265,7 @@ void advect_scalar2D(real5d &f, int ind_f, real2d &flux) {
   // for (int k=0; k<nzm; k++) {
   //  for (int i=0; i<nx+5; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<3>(nzm,nx+5,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(nzm,nx+5,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
     int kb=max(0,k-1);
     uuu(k,j,i,icrm)=max(0.0,u(k,j,i,icrm))*f(ind_f,k,j,i-1+offx_s-2,icrm)+
                     min(0.0,u(k,j,i,icrm))*f(ind_f,k,j,i+offx_s-2,icrm);
@@ -281,7 +281,7 @@ void advect_scalar2D(real5d &f, int ind_f, real2d &flux) {
 
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     irho(k,icrm) = 1.0/rho(k,icrm);
     iadz(k,icrm) = 1.0/adz(k,icrm);
     irhow(k,icrm) = 1.0/(rhow(k,icrm)*adz(k,icrm));
@@ -290,7 +290,7 @@ void advect_scalar2D(real5d &f, int ind_f, real2d &flux) {
   // for (int k=0; k<nzm; k++) {
   //  for (int i=0; i<nx+4; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<3>(nzm,nx+4,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(nzm,nx+4,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
     if (i >= 2 && i <= nx+1) {
       yakl::atomicAdd(flux(k,icrm),www(k,j,i,icrm));
     }
@@ -302,7 +302,7 @@ void advect_scalar2D(real5d &f, int ind_f, real2d &flux) {
   // for (int k=0; k<nzm; k++) {
   //  for (int i=0; i<nx+3; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<3>(nzm,nx+3,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(nzm,nx+3,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
     int kc=min(nzm-1,k+1);
     int kb=max(0,k-1);
     real dd=2.0/(kc-kb)/adz(k,icrm);
@@ -326,7 +326,7 @@ void advect_scalar2D(real5d &f, int ind_f, real2d &flux) {
 
   //  for (int i=0; i<nx+4; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<2>(nx+4,ncrms) , YAKL_LAMBDA (int i, int icrm) {
+  parallel_for( SimpleBounds<2>(nx+4,ncrms) , YAKL_LAMBDA (int i, int icrm) {
     www(0,j,i,icrm) = 0.0;
   });
 
@@ -334,7 +334,7 @@ void advect_scalar2D(real5d &f, int ind_f, real2d &flux) {
     // for (int k=0; k<nzm; k++) {
     //  for (int i=0; i<nx+2; i++) {
     //    for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzm,nx+2,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(nzm,nx+2,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       int kc=min(nzm-1,k+1);
       int kb=max(0,k-1);
       int ib=i-1;
@@ -348,7 +348,7 @@ void advect_scalar2D(real5d &f, int ind_f, real2d &flux) {
     // for (int k=0; k<nzm; k++) {
     //  for (int i=0; i<nx+2; i++) {
     //    for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzm,nx+2,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(nzm,nx+2,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       int kc=min(nzm-1,k+1);
       int ic=i+1;
       mx(k,j,i,icrm)=rho(k,icrm)*(mx(k,j,i,icrm)-f(ind_f,k,j,i+offx_s-1,icrm))/(pn2(uuu(k,j,ic+offx_uuu-1,icrm)) +
@@ -362,7 +362,7 @@ void advect_scalar2D(real5d &f, int ind_f, real2d &flux) {
     // for (int k=0; k<nzm; k++) {
     //  for (int i=0; i<nx+1; i++) {
     //    for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzm,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(nzm,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       int ib=i-1;
       uuu(k,j,i+offx_uuu,icrm)= pp2(uuu(k,j,i+offx_uuu,icrm))*min(1.0,min(mx(k,j,i+offx_m,icrm), mn(k,j,ib+offx_m,icrm))) -
                        pn2(uuu(k,j,i+offx_uuu,icrm))*min(1.0,min(mx(k,j,ib+offx_m,icrm),mn(k,j,i+offx_m,icrm)));
@@ -379,7 +379,7 @@ void advect_scalar2D(real5d &f, int ind_f, real2d &flux) {
   // for (int k=0; k<nzm; k++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
     int kc=k+1;
     // MK: added fix for very small negative values (relative to positive values)
     //     especially  when such large numbers as
@@ -418,7 +418,7 @@ void advect_scalar2D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
 
   // for (int i=0; i<nx+4; i++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<2>(nx+4,ncrms) , YAKL_LAMBDA (int i, int icrm) {
+  parallel_for( SimpleBounds<2>(nx+4,ncrms) , YAKL_LAMBDA (int i, int icrm) {
     www(nz-1,j,i,icrm)=0.0;
   });
 
@@ -427,7 +427,7 @@ void advect_scalar2D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
       // for (int k=0; k<nzm; k++) {
       //  for (int i=0; i<1-dimx1_u+1; i++) {
       //    for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+      parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
         u(k,j,i,icrm) = 0.0;
       });
     }
@@ -435,7 +435,7 @@ void advect_scalar2D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
       // for (int k=0; k<nzm; k++) {
       //  for (int i=0; i<dimx2_u-(nx+1)+1; i++) {
       //    for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+      parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
         int iInd = i+ (nx+2);
         u(k,j,iInd,icrm) = 0.0;
       });
@@ -447,7 +447,7 @@ void advect_scalar2D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
     // for (int k=0; k<nzm; k++) {
     //  for (int i=0; i<nx+2; i++) {
     //    for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzm,nx+2,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(nzm,nx+2,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       int kc=min(nzm-1,k+1);
       int kb=max(0,k-1);
       int ib=i-1;
@@ -462,7 +462,7 @@ void advect_scalar2D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
   // for (int k=0; k<nzm; k++) {
   //  for (int i=0; i<nx+5; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<3>(nzm,nx+5,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(nzm,nx+5,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
     int kb=max(0,k-1);
     uuu(k,j,i,icrm)=max(0.0,u(k,j,i,icrm))*f(ind_f,k,j,i-1+offx_s-2,icrm)+
                     min(0.0,u(k,j,i,icrm))*f(ind_f,k,j,i+offx_s-2,icrm);
@@ -477,7 +477,7 @@ void advect_scalar2D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
 
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     irho(k,icrm) = 1.0/rho(k,icrm);
     iadz(k,icrm) = 1.0/adz(k,icrm);
     irhow(k,icrm) = 1.0/(rhow(k,icrm)*adz(k,icrm));
@@ -486,7 +486,7 @@ void advect_scalar2D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
   // for (int k=0; k<nzm; k++) {
   //  for (int i=0; i<nx+4; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<3>(nzm,nx+4,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(nzm,nx+4,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
     if (i >= 2 && i <= nx+1) {
       yakl::atomicAdd(flux(ind_flux,k,icrm),www(k,j,i,icrm));
     }
@@ -497,7 +497,7 @@ void advect_scalar2D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
   // for (int k=0; k<nzm; k++) {
   //  for (int i=0; i<nx+3; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<3>(nzm,nx+3,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(nzm,nx+3,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
     int kc=min(nzm-1,k+1);
     int kb=max(0,k-1);
     real dd=2.0/(kc-kb)/adz(k,icrm);
@@ -521,7 +521,7 @@ void advect_scalar2D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
 
   //  for (int i=0; i<nx+4; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<2>(nx+4,ncrms) , YAKL_LAMBDA (int i, int icrm) {
+  parallel_for( SimpleBounds<2>(nx+4,ncrms) , YAKL_LAMBDA (int i, int icrm) {
     www(0,j,i,icrm) = 0.0;
   });
 
@@ -529,7 +529,7 @@ void advect_scalar2D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
     // for (int k=0; k<nzm; k++) {
     //  for (int i=0; i<nx+2; i++) {
     //    for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzm,nx+2,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(nzm,nx+2,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       int kc=min(nzm-1,k+1);
       int kb=max(0,k-1);
       int ib=i-1;
@@ -543,7 +543,7 @@ void advect_scalar2D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
     // for (int k=0; k<nzm; k++) {
     //  for (int i=0; i<nx+2; i++) {
     //    for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzm,nx+2,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(nzm,nx+2,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       int kc=min(nzm-1,k+1);
       int ic=i+1;
       mx(k,j,i,icrm)=rho(k,icrm)*(mx(k,j,i,icrm)-f(ind_f,k,j,i+offx_s-1,icrm))/(pn2(uuu(k,j,ic+offx_uuu-1,icrm)) +
@@ -557,7 +557,7 @@ void advect_scalar2D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
     // for (int k=0; k<nzm; k++) {
     //  for (int i=0; i<nx+1; i++) {
     //    for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzm,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(nzm,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       int ib=i-1;
       uuu(k,j,i+offx_uuu,icrm)= pp2(uuu(k,j,i+offx_uuu,icrm))*min(1.0,min(mx(k,j,i+offx_m,icrm), mn(k,j,ib+offx_m,icrm))) -
                                 pn2(uuu(k,j,i+offx_uuu,icrm))*min(1.0,min(mx(k,j,ib+offx_m,icrm),mn(k,j,i+offx_m,icrm)));
@@ -574,7 +574,7 @@ void advect_scalar2D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
   // for (int k=0; k<nzm; k++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
     int kc=k+1;
     // MK: added fix for very small negative values (relative to positive values)
     //     especially  when such large numbers as

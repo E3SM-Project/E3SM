@@ -377,7 +377,7 @@ void init_values() {
   nb=2;
   nc=3;
 
-  parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     CF3D(k,j,i,icrm) = 1.;
   });
 

@@ -6,6 +6,7 @@
 #include <iomanip>
 
 using yakl::c::Bounds;
+using yakl::c::SimpleBounds;
 using yakl::min;
 using yakl::max;
 using yakl::abs;

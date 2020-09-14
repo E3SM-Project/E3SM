@@ -39,7 +39,7 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
 
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     tbaccel(k,icrm) = 0.0;
     qtbaccel(k,icrm) = 0.0;
     if (crm_accel_uv) {
@@ -52,7 +52,7 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     // calculate tendency * dtn
     yakl::atomicAdd( tbaccel(k,icrm) , t(k,j+offy_s,i+offx_s,icrm) * crm_accel_coef );
     yakl::atomicAdd( qtbaccel(k,icrm) , (qcl(k,j,i,icrm) + qci(k,j,i,icrm) + qv(k,j,i,icrm)) * crm_accel_coef );
@@ -70,7 +70,7 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
 
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     ttend_acc(k,icrm) = tbaccel(k,icrm) - t0(k,icrm);
     qtend_acc(k,icrm) = qtbaccel(k,icrm) - q0(k,icrm);
     if (crm_accel_uv) {
@@ -117,7 +117,7 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     // don't let T go negative!
     t(k,j+offy_s,i+offx_s,icrm) = max(tmin, t(k,j+offy_s,i+offx_s,icrm) + crm_accel_factor * ttend_acc(k,icrm));
     if (crm_accel_uv) {
@@ -134,7 +134,7 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
 
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     qpoz(k,icrm) = 0.0;
     qneg(k,icrm) = 0.0;
   });
@@ -144,7 +144,7 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     if (micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) < 0.0) {
       yakl::atomicAdd( qneg(k,icrm) , micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) ); 
     }
@@ -157,7 +157,7 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     real factor;
     if (qpoz(k,icrm) + qneg(k,icrm) <= 0.0) {
       // all moisture depleted in layer

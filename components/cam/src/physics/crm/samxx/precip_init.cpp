@@ -42,7 +42,7 @@ void precip_init() {
 
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     real pratio = sqrt(1.29 / rho(k,icrm));
     real rrr1=393.0/(tabs0(k,icrm)+120.0)*pow((tabs0(k,icrm)/273.0),1.5);
     real rrr2=pow((tabs0(k,icrm)/273.0),1.94)*(1000.0/pres(k,icrm));

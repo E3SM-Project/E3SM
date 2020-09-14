@@ -49,7 +49,7 @@ void post_icycle() {
   // for (int j=0; j<ny; j++) {
   //  for (int i=0; i<nx; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     cwp     (j,i,icrm) = 0.0;
     cwph    (j,i,icrm) = 0.0;
     cwpm    (j,i,icrm) = 0.0;
@@ -64,7 +64,7 @@ void post_icycle() {
   // for (int j=0; j<ny; j++) {
   //  for (int i=0; i<nx; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     for (int k=0; k<nzm; k++) {
       int l = plev-(k+1);
       real tmp1 = rho(nz-(k+1)-1,icrm)*adz(nz-(k+1)-1,icrm)*dz(icrm)*(qcl(nz-(k+1)-1,j,i,icrm)+qci(nz-(k+1)-1,j,i,icrm));
@@ -119,7 +119,7 @@ void post_icycle() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     // Reduced radiation method allows for fewer radiation calculations
     // by collecting statistics and doing radiation over column groups
     int i_rad = i / (nx/crm_nx_rad);
@@ -138,7 +138,7 @@ void post_icycle() {
       qsatw_crm(tabs(k,j,i,icrm),pres(k,icrm),qsat_tmp);
       rh_tmp = qv(k,j,i,icrm)/qsat_tmp;
       yakl::atomicAdd(crm_clear_rh(k,icrm) , rh_tmp);
-      crm_clear_rh_cnt(k,icrm) = crm_clear_rh_cnt(k,icrm) + 1;
+      yakl::atomicAdd(crm_clear_rh_cnt(k,icrm),1);
     }
   });
 
@@ -149,7 +149,7 @@ void post_icycle() {
   //  for (int i=0; i<nx; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
   //      for (int k=0; k<nzm+1; k++) {
-  parallel_for( Bounds<4>(nzm+1,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm+1,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int l=plev+1-(k+1);
     int kx;
     real qsat;
@@ -177,7 +177,7 @@ void post_icycle() {
   // for (int j=0; j<ny; j++) {
   //  for (int i=0; i<nx; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     if(cwp(j,i,icrm) > cwp_threshold) {
       yakl::atomicAdd(crm_output_cltot(icrm) , cttemp(j,i,icrm));
     }

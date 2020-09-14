@@ -36,7 +36,7 @@ void advect_scalar3D(real4d &f, real2d &flux) {
   //   for (int j=0; j<ny+4; j++) {
   //     for (int i=0; i<nx+4; i++) {
   //       for(int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny+4,nx+4,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny+4,nx+4,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     www(nz-1,j,i,icrm)=0.0;
   });
 
@@ -46,7 +46,7 @@ void advect_scalar3D(real4d &f, real2d &flux) {
       //   for (int j=0; j<dimy_u; j++) {
       //     for (int i=0; i<1-dimx1_u+1; i++) {
       //       for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<4>(nzm,dimy_u,1-dimx1_u+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      parallel_for( SimpleBounds<4>(nzm,dimy_u,1-dimx1_u+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
         u(k,j,i,icrm) = 0.0;
       });
     }
@@ -55,7 +55,7 @@ void advect_scalar3D(real4d &f, real2d &flux) {
       //   for (int j=0; j<dimy_u; j++) {
       //     for (int i=0; i<dimx2_u-(nx+1)+1; i++) {
       //       for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<4>(nzm,dimy_u,dimx2_u-(nx+1)+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      parallel_for( SimpleBounds<4>(nzm,dimy_u,dimx2_u-(nx+1)+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
         int iInd = i+(nx+2);
         u(k,j,iInd,icrm) = 0.0;
       });
@@ -68,7 +68,7 @@ void advect_scalar3D(real4d &f, real2d &flux) {
       //   for (int j=0; j<1-dimy1_v+1; j++) {
       //     for (int i=0; i<dimx_v; i++) {
       //       for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<4>(nzm,1-dimy1_v+1,dimx_v,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      parallel_for( SimpleBounds<4>(nzm,1-dimy1_v+1,dimx_v,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
         v(k,j,i,icrm) = 0.0;
       });
     }
@@ -77,7 +77,7 @@ void advect_scalar3D(real4d &f, real2d &flux) {
       //   for (int j=0; j<dimy2_v-(ny+1)+1; j++) {
       //     for (int i=0; i<dimx_v; i++) {
       //       for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<4>(nzm,dimy2_v-(ny+1)+1,dimx_v,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      parallel_for( SimpleBounds<4>(nzm,dimy2_v-(ny+1)+1,dimx_v,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
         int jInd = j+(ny+2);
         v(k,jInd,i,icrm) = 0.0;
       });
@@ -89,7 +89,7 @@ void advect_scalar3D(real4d &f, real2d &flux) {
     //   for (int j=0; j<ny+2; j++) {
     //     for (int i=0; i<nx+2; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<4>(nzm,ny+2,nx+2,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm,ny+2,nx+2,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int kc=min(nzm-1,k+1);
       int kb=max(0,k-1);
       int jb=j-1;
@@ -111,7 +111,7 @@ void advect_scalar3D(real4d &f, real2d &flux) {
   //   for (int j=0; j<ny+5; j++) {
   //     for (int i=0; i<nx+5; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny+5,nx+5,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny+5,nx+5,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int kb=max(0,k-1);
     if (j <= ny+3){
       uuu(k,j,i,icrm)=max(0.0,u(k,j,i,icrm))*f(k,j+offy_s-2,i-1+offx_s-2,icrm)+
@@ -132,7 +132,7 @@ void advect_scalar3D(real4d &f, real2d &flux) {
 
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     irho(k,icrm) = 1.0/rho(k,icrm);
     iadz(k,icrm) = 1.0/adz(k,icrm);
     irhow(k,icrm) = 1.0/(rhow(k,icrm)*adz(k,icrm));
@@ -142,7 +142,7 @@ void advect_scalar3D(real4d &f, real2d &flux) {
   //   for (int j=0; j<ny+4; j++) {
   //     for (int i=0; i<nx+4; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny+4,nx+4,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny+4,nx+4,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     if (i >= 2 && i <= nx+1 && j >= 2 && j <= ny+1) {
       yakl::atomicAdd(flux(k,icrm),www(k,j,i,icrm));
     }
@@ -155,7 +155,7 @@ void advect_scalar3D(real4d &f, real2d &flux) {
   //   for (int j=0; j<ny+3; j++) {
   //     for (int i=0; i<nx+3; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny+3,nx+3,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny+3,nx+3,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     if (j <= ny+1) {
       int kc=min(nzm-1,k+1);
       int kb=max(0,k-1);
@@ -208,7 +208,7 @@ void advect_scalar3D(real4d &f, real2d &flux) {
   //   for (int j=0; j<ny+4; j++) {
   //     for (int i=0; i<nx+4; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny+4,nx+4,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny+4,nx+4,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     www(0,j,i,icrm) = 0.0;
   });
 
@@ -217,7 +217,7 @@ void advect_scalar3D(real4d &f, real2d &flux) {
     //   for (int j=0; j<ny+2; j++) {
     //     for (int i=0; i<nx+2; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<4>(nzm,ny+2,nx+2,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm,ny+2,nx+2,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int kc=min(nzm-1,k+1);
       int kb=max(0,k-1);
       int jb=j-1;
@@ -238,7 +238,7 @@ void advect_scalar3D(real4d &f, real2d &flux) {
     //   for (int j=0; j<ny+2; j++) {
     //     for (int i=0; i<nx+2; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<4>(nzm,ny+2,nx+2,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm,ny+2,nx+2,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int kc=min(nzm-1,k+1);
       int jc=j+1;
       int ic=i+1;
@@ -256,7 +256,7 @@ void advect_scalar3D(real4d &f, real2d &flux) {
     //   for (int j=0; j<ny+1; j++) {
     //     for (int i=0; i<nx+1; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<4>(nzm,ny+1,nx+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm,ny+1,nx+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       if (j <= ny-1) {
         int ib=i-1;
         uuu(k,j+offy_uuu,i+offx_uuu,icrm) = 
@@ -283,7 +283,7 @@ void advect_scalar3D(real4d &f, real2d &flux) {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     // MK: added fix for very small negative values (relative to positive values)
     //     especially  when such large numbers as
     //     hydrometeor concentrations are advected. The reason for negative values is
@@ -333,7 +333,7 @@ void advect_scalar3D(real5d &f, int ind_f, real2d &flux) {
   //   for (int j=0; j<ny+4; j++) {
   //     for (int i=0; i<nx+4; i++) {
   //       for(int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny+4,nx+4,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny+4,nx+4,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     www(nz-1,j,i,icrm)=0.0;
   });
 
@@ -343,7 +343,7 @@ void advect_scalar3D(real5d &f, int ind_f, real2d &flux) {
       //   for (int j=0; j<dimy_u; j++) {
       //     for (int i=0; i<1-dimx1_u+1; i++) {
       //       for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<4>(nzm,dimy_u,1-dimx1_u+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      parallel_for( SimpleBounds<4>(nzm,dimy_u,1-dimx1_u+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
         u(k,j,i,icrm) = 0.0;
       });
     }
@@ -352,7 +352,7 @@ void advect_scalar3D(real5d &f, int ind_f, real2d &flux) {
       //   for (int j=0; j<dimy_u; j++) {
       //     for (int i=0; i<dimx2_u-(nx+1)+1; i++) {
       //       for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<4>(nzm,dimy_u,dimx2_u-(nx+1)+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      parallel_for( SimpleBounds<4>(nzm,dimy_u,dimx2_u-(nx+1)+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
         int iInd = i+(nx+2);
         u(k,j,iInd,icrm) = 0.0;
       });
@@ -365,7 +365,7 @@ void advect_scalar3D(real5d &f, int ind_f, real2d &flux) {
       //   for (int j=0; j<1-dimy1_v+1; j++) {
       //     for (int i=0; i<dimx_v; i++) {
       //       for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<4>(nzm,1-dimy1_v+1,dimx_v,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      parallel_for( SimpleBounds<4>(nzm,1-dimy1_v+1,dimx_v,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
         v(k,j,i,icrm) = 0.0;
       });
     }
@@ -374,7 +374,7 @@ void advect_scalar3D(real5d &f, int ind_f, real2d &flux) {
       //   for (int j=0; j<dimy2_v-(ny+1)+1; j++) {
       //     for (int i=0; i<dimx_v; i++) {
       //       for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<4>(nzm,dimy2_v-(ny+1)+1,dimx_v,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      parallel_for( SimpleBounds<4>(nzm,dimy2_v-(ny+1)+1,dimx_v,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
         int jInd = j+(ny+2);
         v(k,jInd,i,icrm) = 0.0;
       });
@@ -386,7 +386,7 @@ void advect_scalar3D(real5d &f, int ind_f, real2d &flux) {
     //   for (int j=0; j<ny+2; j++) {
     //     for (int i=0; i<nx+2; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<4>(nzm,ny+2,nx+2,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm,ny+2,nx+2,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int kc=min(nzm-1,k+1);
       int kb=max(0,k-1);
       int jb=j-1;
@@ -408,7 +408,7 @@ void advect_scalar3D(real5d &f, int ind_f, real2d &flux) {
   //   for (int j=0; j<ny+5; j++) {
   //     for (int i=0; i<nx+5; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny+5,nx+5,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny+5,nx+5,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int kb=max(0,k-1);
     if (j <= ny+3){
       uuu(k,j,i,icrm)=max(0.0,u(k,j,i,icrm))*f(ind_f,k,j+offy_s-2,i-1+offx_s-2,icrm)+
@@ -429,7 +429,7 @@ void advect_scalar3D(real5d &f, int ind_f, real2d &flux) {
 
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     irho(k,icrm) = 1.0/rho(k,icrm);
     iadz(k,icrm) = 1.0/adz(k,icrm);
     irhow(k,icrm) = 1.0/(rhow(k,icrm)*adz(k,icrm));
@@ -439,7 +439,7 @@ void advect_scalar3D(real5d &f, int ind_f, real2d &flux) {
   //   for (int j=0; j<ny+4; j++) {
   //     for (int i=0; i<nx+4; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny+4,nx+4,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny+4,nx+4,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     if (i >= 2 && i <= nx+1 && j >= 2 && j <= ny+1) {
       yakl::atomicAdd(flux(k,icrm),www(k,j,i,icrm));
     }
@@ -452,7 +452,7 @@ void advect_scalar3D(real5d &f, int ind_f, real2d &flux) {
   //   for (int j=0; j<ny+3; j++) {
   //     for (int i=0; i<nx+3; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny+3,nx+3,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny+3,nx+3,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     if (j <= ny+1) {
       int kc=min(nzm-1,k+1);
       int kb=max(0,k-1);
@@ -505,7 +505,7 @@ void advect_scalar3D(real5d &f, int ind_f, real2d &flux) {
   //   for (int j=0; j<ny+4; j++) {
   //     for (int i=0; i<nx+4; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny+4,nx+4,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny+4,nx+4,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     www(0,j,i,icrm) = 0.0;
   });
 
@@ -514,7 +514,7 @@ void advect_scalar3D(real5d &f, int ind_f, real2d &flux) {
     //   for (int j=0; j<ny+2; j++) {
     //     for (int i=0; i<nx+2; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<4>(nzm,ny+2,nx+2,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm,ny+2,nx+2,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int kc=min(nzm-1,k+1);
       int kb=max(0,k-1);
       int jb=j-1;
@@ -535,7 +535,7 @@ void advect_scalar3D(real5d &f, int ind_f, real2d &flux) {
     //   for (int j=0; j<ny+2; j++) {
     //     for (int i=0; i<nx+2; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<4>(nzm,ny+2,nx+2,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm,ny+2,nx+2,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int kc=min(nzm-1,k+1);
       int jc=j+1;
       int ic=i+1;
@@ -553,7 +553,7 @@ void advect_scalar3D(real5d &f, int ind_f, real2d &flux) {
     //   for (int j=0; j<ny+1; j++) {
     //     for (int i=0; i<nx+1; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<4>(nzm,ny+1,nx+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm,ny+1,nx+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       if (j <= ny-1) {
         int ib=i-1;
         uuu(k,j+offy_uuu,i+offx_uuu,icrm) = 
@@ -580,7 +580,7 @@ void advect_scalar3D(real5d &f, int ind_f, real2d &flux) {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     // MK: added fix for very small negative values (relative to positive values)
     //     especially  when such large numbers as
     //     hydrometeor concentrations are advected. The reason for negative values is
@@ -630,7 +630,7 @@ void advect_scalar3D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
   //   for (int j=0; j<ny+4; j++) {
   //     for (int i=0; i<nx+4; i++) {
   //       for(int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny+4,nx+4,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny+4,nx+4,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     www(nz-1,j,i,icrm)=0.0;
   });
 
@@ -640,7 +640,7 @@ void advect_scalar3D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
       //   for (int j=0; j<dimy_u; j++) {
       //     for (int i=0; i<1-dimx1_u+1; i++) {
       //       for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<4>(nzm,dimy_u,1-dimx1_u+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      parallel_for( SimpleBounds<4>(nzm,dimy_u,1-dimx1_u+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
         u(k,j,i,icrm) = 0.0;
       });
     }
@@ -649,7 +649,7 @@ void advect_scalar3D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
       //   for (int j=0; j<dimy_u; j++) {
       //     for (int i=0; i<dimx2_u-(nx+1)+1; i++) {
       //       for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<4>(nzm,dimy_u,dimx2_u-(nx+1)+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      parallel_for( SimpleBounds<4>(nzm,dimy_u,dimx2_u-(nx+1)+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
         int iInd = i+(nx+2);
         u(k,j,iInd,icrm) = 0.0;
       });
@@ -662,7 +662,7 @@ void advect_scalar3D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
       //   for (int j=0; j<1-dimy1_v+1; j++) {
       //     for (int i=0; i<dimx_v; i++) {
       //       for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<4>(nzm,1-dimy1_v+1,dimx_v,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      parallel_for( SimpleBounds<4>(nzm,1-dimy1_v+1,dimx_v,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
         v(k,j,i,icrm) = 0.0;
       });
     }
@@ -671,7 +671,7 @@ void advect_scalar3D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
       //   for (int j=0; j<dimy2_v-(ny+1)+1; j++) {
       //     for (int i=0; i<dimx_v; i++) {
       //       for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<4>(nzm,dimy2_v-(ny+1)+1,dimx_v,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      parallel_for( SimpleBounds<4>(nzm,dimy2_v-(ny+1)+1,dimx_v,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
         int jInd = j+(ny+2);
         v(k,jInd,i,icrm) = 0.0;
       });
@@ -683,7 +683,7 @@ void advect_scalar3D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
     //   for (int j=0; j<ny+2; j++) {
     //     for (int i=0; i<nx+2; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<4>(nzm,ny+2,nx+2,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm,ny+2,nx+2,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int kc=min(nzm-1,k+1);
       int kb=max(0,k-1);
       int jb=j-1;
@@ -707,7 +707,7 @@ void advect_scalar3D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
   //   for (int j=0; j<ny+5; j++) {
   //     for (int i=0; i<nx+5; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny+5,nx+5,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny+5,nx+5,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int kb=max(0,k-1);
     if (j <= ny+3){
       uuu(k,j,i,icrm)=max(0.0,u(k,j,i,icrm))*f(ind_f,k,j+offy_s-2,i-1+offx_s-2,icrm)+
@@ -728,7 +728,7 @@ void advect_scalar3D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
 
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     irho(k,icrm) = 1.0/rho(k,icrm);
     iadz(k,icrm) = 1.0/adz(k,icrm);
     irhow(k,icrm) = 1.0/(rhow(k,icrm)*adz(k,icrm));
@@ -738,7 +738,7 @@ void advect_scalar3D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
   //   for (int j=0; j<ny+4; j++) {
   //     for (int i=0; i<nx+4; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny+4,nx+4,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny+4,nx+4,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     if (i >= 2 && i <= nx+1 && j >= 2 && j <= ny+1) {
       yakl::atomicAdd(flux(ind_flux,k,icrm),www(k,j,i,icrm));
     }
@@ -751,7 +751,7 @@ void advect_scalar3D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
   //   for (int j=0; j<ny+3; j++) {
   //     for (int i=0; i<nx+3; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny+3,nx+3,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny+3,nx+3,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     if (j <= ny+1) {
       int kc=min(nzm-1,k+1);
       int kb=max(0,k-1);
@@ -825,7 +825,7 @@ void advect_scalar3D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
   //   for (int j=0; j<ny+4; j++) {
   //     for (int i=0; i<nx+4; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny+4,nx+4,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny+4,nx+4,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     www(0,j,i,icrm) = 0.0;
   });
 
@@ -834,7 +834,7 @@ void advect_scalar3D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
     //   for (int j=0; j<ny+2; j++) {
     //     for (int i=0; i<nx+2; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<4>(nzm,ny+2,nx+2,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm,ny+2,nx+2,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int kc=min(nzm-1,k+1);
       int kb=max(0,k-1);
       int jb=j-1;
@@ -859,7 +859,7 @@ void advect_scalar3D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
     //   for (int j=0; j<ny+2; j++) {
     //     for (int i=0; i<nx+2; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<4>(nzm,ny+2,nx+2,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm,ny+2,nx+2,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int kc=min(nzm-1,k+1);
       int jc=j+1;
       int ic=i+1;
@@ -879,7 +879,7 @@ void advect_scalar3D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
     //   for (int j=0; j<ny+1; j++) {
     //     for (int i=0; i<nx+1; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<4>(nzm,ny+1,nx+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm,ny+1,nx+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       if (j <= ny-1) {
         int ib=i-1;
         uuu(k,j+offy_uuu,i+offx_uuu,icrm) = 
@@ -912,7 +912,7 @@ void advect_scalar3D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( Bounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     // MK: added fix for very small negative values (relative to positive values)
     //     especially  when such large numbers as
     //     hydrometeor concentrations are advected. The reason for negative values is

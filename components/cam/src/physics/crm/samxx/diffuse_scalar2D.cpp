@@ -26,7 +26,7 @@ void diffuse_scalar2D(real4d &field, real3d &fluxb, real3d &fluxt, real5d &tkh,
     // for (int k=0; k<nzm; k++) {
     //  for (int i=0; i<nx; i++) {
     //    for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       dfdt(k,j,i,icrm)=0.0;
     });
 
@@ -34,7 +34,7 @@ void diffuse_scalar2D(real4d &field, real3d &fluxb, real3d &fluxt, real5d &tkh,
       // for (int k=0; k<nzm; k++) {
       //  for (int i=0; i<nx+1; i++) {
       //    for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<3>(nzm,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+      parallel_for( SimpleBounds<3>(nzm,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
         real rdx5=0.5*rdx2 * grdf_x(k,icrm);
         int ic=i+1;
         real tkx=rdx5*(tkh(ind_tkh,k,j,i+offx_d-1,icrm)+tkh(ind_tkh,k,j,ic+offx_d-1,icrm));
@@ -44,7 +44,7 @@ void diffuse_scalar2D(real4d &field, real3d &fluxb, real3d &fluxt, real5d &tkh,
       // for (int k=0; k<nzm; k++) {
       //  for (int i=0; i<nx; i++) {
       //    for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+      parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
         int ib=i-1;
         dfdt(k,j,i,icrm)=dfdt(k,j,i,icrm)-(flx(k+offz_flx,j,i+offx_flx,icrm)-flx(k+offz_flx,j,ib+offx_flx,icrm));
       });
@@ -52,14 +52,14 @@ void diffuse_scalar2D(real4d &field, real3d &fluxb, real3d &fluxt, real5d &tkh,
 
     // for (int k=0; k<nzm; k++) {
     //  for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+    parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
       flux(k,icrm) = 0.0;
     });
 
     // for (int k=0; k<nzm; k++) {
     //  for (int i=0; i<nx; i++) {
     //    for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       if (k <= nzm-2) {
         int kc=k+1;
         real rhoi = rhow(kc,icrm)/adzw(kc,icrm);
@@ -80,7 +80,7 @@ void diffuse_scalar2D(real4d &field, real3d &fluxb, real3d &fluxt, real5d &tkh,
     // for (int k=0; k<nzm; k++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       int kb=k-1;
       real rhoi = 1.0/(adz(k,icrm)*rho(k,icrm));
       dfdt(k,j,i,icrm)=dtn*(dfdt(k,j,i,icrm)-(flx(k+offz_flx,j,i+offx_flx,icrm)-flx(kb+offz_flx,j,i+offx_flx,icrm))*rhoi);
@@ -115,7 +115,7 @@ void diffuse_scalar2D(real5d &field, int ind_field, real3d &fluxb, real3d &fluxt
     // for (int k=0; k<nzm; k++) {
     //  for (int i=0; i<nx; i++) {
     //    for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       dfdt(k,j,i,icrm)=0.0;
     });
 
@@ -123,7 +123,7 @@ void diffuse_scalar2D(real5d &field, int ind_field, real3d &fluxb, real3d &fluxt
       // for (int k=0; k<nzm; k++) {
       //  for (int i=0; i<nx+1; i++) {
       //    for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<3>(nzm,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+      parallel_for( SimpleBounds<3>(nzm,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
         real rdx5=0.5*rdx2 * grdf_x(k,icrm);
         int ic=i+1;
         real tkx=rdx5*(tkh(ind_tkh,k,j,i+offx_d-1,icrm)+tkh(ind_tkh,k,j,ic+offx_d-1,icrm));
@@ -133,7 +133,7 @@ void diffuse_scalar2D(real5d &field, int ind_field, real3d &fluxb, real3d &fluxt
       // for (int k=0; k<nzm; k++) {
       //  for (int i=0; i<nx; i++) {
       //    for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+      parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
         int ib=i-1;
         dfdt(k,j,i,icrm)=dfdt(k,j,i,icrm)-(flx(k+offz_flx,j,i+offx_flx,icrm)-flx(k+offz_flx,j,ib+offx_flx,icrm));
       });
@@ -141,14 +141,14 @@ void diffuse_scalar2D(real5d &field, int ind_field, real3d &fluxb, real3d &fluxt
 
     // for (int k=0; k<nzm; k++) {
     //  for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+    parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
       flux(k,icrm) = 0.0;
     });
 
     // for (int k=0; k<nzm; k++) {
     //  for (int i=0; i<nx; i++) {
     //    for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       if (k <= nzm-2) {
         int kc=k+1;
         real rhoi = rhow(kc,icrm)/adzw(kc,icrm);
@@ -170,7 +170,7 @@ void diffuse_scalar2D(real5d &field, int ind_field, real3d &fluxb, real3d &fluxt
     // for (int k=0; k<nzm; k++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       int kb=k-1;
       real rhoi = 1.0/(adz(k,icrm)*rho(k,icrm));
       dfdt(k,j,i,icrm)=dtn*(dfdt(k,j,i,icrm)-(flx(k+offz_flx,j,i+offx_flx,icrm)-flx(kb+offz_flx,j,i+offx_flx,icrm))*rhoi);
@@ -204,7 +204,7 @@ void diffuse_scalar2D(real5d &field, int ind_field, real4d &fluxb, int ind_fluxb
     // for (int k=0; k<nzm; k++) {
     //  for (int i=0; i<nx; i++) {
     //    for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       dfdt(k,j,i,icrm)=0.0;
     });
 
@@ -212,7 +212,7 @@ void diffuse_scalar2D(real5d &field, int ind_field, real4d &fluxb, int ind_fluxb
       // for (int k=0; k<nzm; k++) {
       //  for (int i=0; i<nx+1; i++) {
       //    for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<3>(nzm,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+      parallel_for( SimpleBounds<3>(nzm,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
         real rdx5=0.5*rdx2 * grdf_x(k,icrm);
         int ic=i+1;
         real tkx=rdx5*(tkh(ind_tkh,k,j,i+offx_d-1,icrm)+tkh(ind_tkh,k,j,ic+offx_d-1,icrm));
@@ -222,7 +222,7 @@ void diffuse_scalar2D(real5d &field, int ind_field, real4d &fluxb, int ind_fluxb
       // for (int k=0; k<nzm; k++) {
       //  for (int i=0; i<nx; i++) {
       //    for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+      parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
         int ib=i-1;
         dfdt(k,j,i,icrm)=dfdt(k,j,i,icrm)-(flx(k+offz_flx,j,i+offx_flx,icrm)-flx(k+offz_flx,j,ib+offx_flx,icrm));
       });
@@ -230,14 +230,14 @@ void diffuse_scalar2D(real5d &field, int ind_field, real4d &fluxb, int ind_fluxb
 
     // for (int k=0; k<nzm; k++) {
     //  for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+    parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
       flux(ind_flux,k,icrm) = 0.0;
     });
 
     // for (int k=0; k<nzm; k++) {
     //  for (int i=0; i<nx; i++) {
     //    for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       if (k <= nzm-2) {
         int kc=k+1;
         real rhoi = rhow(kc,icrm)/adzw(kc,icrm);
@@ -260,7 +260,7 @@ void diffuse_scalar2D(real5d &field, int ind_field, real4d &fluxb, int ind_fluxb
     // for (int k=0; k<nzm; k++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( Bounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       int kb=k-1;
       real rhoi = 1.0/(adz(k,icrm)*rho(k,icrm));
       dfdt(k,j,i,icrm)=dtn*(dfdt(k,j,i,icrm)-(flx(k+offz_flx,j,i+offx_flx,icrm)-flx(kb+offz_flx,j,i+offx_flx,icrm))*rhoi);
