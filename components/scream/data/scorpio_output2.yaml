@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-FILENAME: scorpio_output_test_yaml.nc
+FILENAME: scorpio_output_test_yaml_2.nc
 AVERAGING TYPE: Instant
 GRID: Physics
 FREQUENCY:
@@ -13,8 +13,8 @@ FIELDS:
   f2: y
   f3: z
   f4: time
-  f7: data_3d
-  f10: index_3d
+  f5: data_3d
+  f6: index_3d
 
 ...
 

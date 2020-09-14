@@ -1,9 +1,6 @@
 %YAML 1.1
 ---
-Output YAML Files:
-  Number of Files: 2
-  File 1: "scorpio_output1.yaml"
-  File 2: "scorpio_output2.yaml"
+Output YAML Files: ["scorpio_output1.yaml", "scorpio_output2.yaml"]
 
 SCORPIO TEST PARAMETERS:
   Dimensions:

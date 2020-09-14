@@ -95,6 +95,17 @@ void get_variable(const std::string &filename, const std::string& shortname, con
   get_variable_c2f(filename.c_str(), shortname.c_str(), longname.c_str(), numdims, var_dimensions, dtype, pio_decomp_tag.c_str());
 }
 /* ----------------------------------------------------------------- */
+void register_variable(const std::string &filename, const std::string& shortname, const std::string& longname, const int numdims, const std::vector<std::string>& var_dimensions, const int dtype, const std::string& pio_decomp_tag) {
+
+  /* Convert the vector of strings that contains the variable dimensions to a char array */
+  const char* var_dimensions_c[numdims];
+  for (int ii = 0;ii<numdims;++ii) 
+  {
+    var_dimensions_c[ii] = var_dimensions[ii].c_str();
+  }
+  register_variable_c2f(filename.c_str(), shortname.c_str(), longname.c_str(), numdims, var_dimensions_c, dtype, pio_decomp_tag.c_str());
+}
+/* ----------------------------------------------------------------- */
 void register_variable(const std::string &filename, const std::string& shortname, const std::string& longname, const int numdims, const char**&& var_dimensions, const int dtype, const std::string& pio_decomp_tag) {
 
   register_variable_c2f(filename.c_str(), shortname.c_str(), longname.c_str(), numdims, var_dimensions, dtype, pio_decomp_tag.c_str());

@@ -4,7 +4,7 @@
 #include "ekat/ekat_pack.hpp"
 
 #include "share/io/scream_scorpio_interface.hpp"
-#include "share/io/io.hpp"
+#include "share/io/scorpio.hpp"
 
 #include "ekat/mpi/ekat_comm.hpp"
 #include "share/scream_types.hpp"
