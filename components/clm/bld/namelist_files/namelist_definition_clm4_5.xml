@@ -1263,7 +1263,7 @@ Note: 0.1x0.1, 0.5x0.5, 5x5min, 10x10min, 3x3min and 0.33x0.33 are only used for
 
 <entry id="rcp" type="real" category="default_settings"
        group="default_settings"  
-       valid_values="-999.9,2.6,4.5,6,8.5">
+       valid_values="-999.9,1-1.9,1-2.6,4-3.4,5-3.4OS,2-4.5,4-6.0,3-7.0,5-8.5,2.6,4.5,6,8.5">
 Representative concentration pathway for future scenarios [radiative forcing at peak or 2100 in W/m^2]
 -999.9 means do NOT use a future scenario, just use historical data.
 </entry> 
