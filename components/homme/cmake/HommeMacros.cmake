@@ -226,7 +226,7 @@ macro (setUpTestDir TEST_DIR)
   copyDirFiles(${TEST_DIR})
   copyDirFiles(${THIS_BASELINE_TEST_DIR})
 
-  # Create a run script
+  # Create a template TEST.sh for a run script
   SET(THIS_TEST_SCRIPT ${TEST_DIR}/${TEST_NAME}.sh)
 
   FILE(WRITE  ${THIS_TEST_SCRIPT} "${POUND}!/bin/bash\n")
@@ -254,7 +254,29 @@ macro (setUpTestDir TEST_DIR)
     ENDIF ()
   ENDIF ()
   FILE(APPEND ${THIS_TEST_SCRIPT} "NUM_CPUS=${NUM_CPUS}\n") # new line
+  FILE(APPEND ${THIS_TEST_SCRIPT} "EXEC=${EXEC_NAME}\n")
+
+  #not making it more general due to jsrun, p9/gpu, loading modules...
+  if (HOMME_MACHINE MATCHES "summit")
+    #cmake 3.17
+    #foreach(varn varv IN ZIP_LISTS ${varnames} ${varvals})
+    #  file(APPEND ${THIS_TEST_SCRIPT} "${varn}=\"${varv}\"")
+    #  FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
+    #endforeach()
+
+    list(LENGTH varnames len1)
+    math(EXPR len2 "${len1} - 1")
+
+    foreach(val RANGE ${len2})
+      list(GET varnames ${val} varn)
+      list(GET varvals ${val} varv)
+      file(APPEND ${THIS_TEST_SCRIPT} "${varn}=\"${varv}\"")
+      FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
+    endforeach()
+  endif()
+
   FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
+
   SET (TEST_INDEX 1)
   FOREACH (singleFile ${NAMELIST_FILES})
     GET_FILENAME_COMPONENT(fileName ${singleFile} NAME)

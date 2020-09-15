@@ -127,6 +127,13 @@ CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/testing-utils.sh
 CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/diffTol.py
                ${CMAKE_BINARY_DIR}/tests/diffTol.py COPYONLY)
 
+if (HOMME_MACHINE MATCHES "summit")
+CONFIGURE_FILE(${HOMME_SOURCE_DIR}/cmake/machineFiles/summit-modules/load-modules-gpu
+               ${CMAKE_BINARY_DIR}/load-modules-gpu COPYONLY)
+CONFIGURE_FILE(${HOMME_SOURCE_DIR}/cmake/machineFiles/summit-modules/load-modules-p9
+               ${CMAKE_BINARY_DIR}/load-modules-p9 COPYONLY)
+endif()
+
 # create list of all executables needed by tests
 ADD_CUSTOM_TARGET(test-execs)
 
@@ -286,12 +293,16 @@ FOREACH(TEST_DIR ${TEST_DIR_LIST})
            "Copying test results ${TEST_DIR} to baseline directory ${Homme_Baseline_DIR}/${TEST_BASE_NAME}")
 ENDFOREACH()
 
-# Now create the submission-list.sh
+# Now create run scripts
+# To monitor the process, disable RESULT OUTPUT ERROR lines below
+# and add -x to the 1st line in createRunScripts
 EXECUTE_PROCESS(
   COMMAND ${CMAKE_BINARY_DIR}/tests/createRunScripts.sh "all"
   RESULT_VARIABLE CREATE_RUNS_RESULT
   OUTPUT_VARIABLE CREATE_RUNS_OUTPUT
   ERROR_VARIABLE CREATE_RUNS_ERROR)
+
+
 
 IF (NOT ${CREATE_RUNS_RESULT} EQUAL 0) 
   MESSAGE(FATAL_ERROR "The script \"createRunScripts.sh all\" has failed with error

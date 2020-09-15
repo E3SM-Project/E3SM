@@ -56,3 +56,49 @@ set (USE_NUM_PROCS 4 CACHE STRING "")
 set (OPT_FLAGS "--save-temps" CACHE STRING "")
 
 SET (USE_MPI_OPTIONS "--bind-to core" CACHE FILEPATH "")
+
+
+###################################################################
+
+set(HOMME_MACHINE "summit" CACHE STRING "")
+
+set(SUMMIT_NODES "2" CACHE STRING "")
+set(SUMMIT_RES_PER_NODE "6" CACHE STRING "")
+math(EXPR SUMMIT_NRES "${SUMMIT_NODES} * ${SUMMIT_RES_PER_NODE}")
+
+set(varnames  CACHE STRING "")
+set(varvals  CACHE STRING "")
+
+set(varnames ${varnames}  "SUMMIT_NODES" CACHE INTERNAL "")
+set(varvals ${varvals} "${SUMMIT_NODES}" CACHE INTERNAL "")
+
+set(varnames ${varnames}  "SUMMIT_MODULES_GPU" CACHE INTERNAL "")
+set(varvals ${varvals} "load-modules-gpu" CACHE INTERNAL "")
+
+set(varnames ${varnames}  "SUMMIT_MODULES_P9" CACHE INTERNAL "")
+set(varvals ${varvals} "load-modules-p9" CACHE INTERNAL "")
+
+set(varnames ${varnames}  "SUMMIT_JSRUN_GPU"  CACHE INTERNAL "")
+set(varvals ${varvals}  "jsrun -n ${SUMMIT_NRES} -r ${SUMMIT_RES_PER_NODE} -l gpu-gpu -b packed:1 -d plane:1 -a1 -c7 -g1 -smpiargs \"-gpu\" " CACHE INTERNAL "")
+
+set(varnames ${varnames}  "SUMMIT_JSRUN_P9" CACHE INTERNAL "")
+set(varvals ${varvals}  "jsrun -n ${SUMMIT_NRES} -r ${SUMMIT_RES_PER_NODE} -l cpu-cpu -b packed:1 -d plane:1 -a7 -c7 -g0 "  CACHE INTERNAL "")
+
+set(varnames ${varnames}  "SUMMIT_JSRUN_TAIL" CACHE INTERNAL "")
+set(varvals ${varvals}  "|& grep -v \"IEEE_UNDERFLOW_FLAG\""  CACHE INTERNAL "")
+
+set(varnames ${varnames}  "SUMMIT_OMP_OPTIONS" CACHE INTERNAL "")
+set(varvals ${varvals}  "export OMP_PLACES=threads\; export OMP_PROC_BIND=close\;export OMP_NUM_THREADS=4"  CACHE INTERNAL "")
+
+
+
+
+
+
+
+
+
+
+
+
+

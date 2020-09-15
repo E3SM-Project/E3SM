@@ -256,12 +256,98 @@ runTestsStd() {
   done
 }
 
+
 createAllRunScripts() {
   touch $subListFile
   echo "num_submissions=${NUM_TEST_FILES}" > $subListFile
 
   for testFileNum in $(seq 1 ${NUM_TEST_FILES})
   do
+    if [ "${HOMME_MACHINE}" == "summit" ] ; then
+       createRunScriptSummit
+    else
+       createAllRunScriptsGeneric
+    fi
+
+    echo "subFile$testFileNum=$thisRunScript" >>  $subListFile
+
+    # Make the script executable
+    chmod u+x ${thisRunScript}
+
+    # Reset the variables (in case they are not redefined in the next iteration)
+    unset OMP_NUM_TESTS
+    unset NUM_TESTS
+
+  done
+}
+
+emptyLine(){
+echo "" >> $1
+}
+
+
+createRunScriptSummit() {
+    testFile=TEST_FILE_${testFileNum}
+    source ${!testFile}
+
+    TEST_NAME=`basename ${!testFile} .sh`
+
+    if [ "${CREATE_BASELINE}" == true ] ; then
+      # Create the run script
+      thisRunScript="${HOMME_DEFAULT_BASELINE_DIR}/${TEST_NAME}/${TEST_NAME}-run.sh"
+      outputDir="${HOMME_DEFAULT_BASELINE_DIR}/${TEST_NAME}"
+    else
+      # Create the run script
+      thisRunScript=`dirname ${!testFile}`/${TEST_NAME}-run.sh
+      outputDir=`dirname ${!testFile}`
+    fi
+
+    # delete the run script file if it exists
+    rm -f ${thisRunScript}
+
+    # Set up header
+    #add more for sbatch
+    echo "#!/bin/bash" > $thisRunScript
+    emptyLine $thisRunScript
+
+    # cd into the correct dir
+    echo "cd $outputDir " >> $thisRunScript
+    emptyLine $thisRunScript
+
+    # Remove all existing netcdf files
+    echo "rm -f movies/* " >> $thisRunScript
+    emptyLine $thisRunScript
+
+    #check if this is a gpu exec
+    if [[ "$EXEC" == *"kokkos"* ]] ; then
+      echo "source ${HOMME_DIR}/${SUMMIT_MODULES_GPU}">> $thisRunScript
+    else
+      echo "source ${HOMME_DIR}/${SUMMIT_MODULES_P9}">> $thisRunScript
+    fi
+    emptyLine $thisRunScript
+
+    #kokkos needs omp_num_threads set
+    if [ -n "${OMP_NUMBER_THREADS_KOKKOS}" ]; then
+      echo "export OMP_NUM_THREADS=${OMP_NUMBER_THREADS_KOKKOS}" >> $thisRunScript
+      #do we need this?
+      echo "" >> $thisRunScript # new line
+    fi
+
+    testExec=TEST_1
+
+    #check if this is a gpu exec
+#    if [[ "$EXEC" == *"kokkos"* ]] ; then
+#      echo "${SUMMIT_JSRUN_GPU} /\ \n" >> $RUN_SCRIPT
+#      echo "${testExec} ${SUMMIT_JSRUN_TAIL} \n"
+#execLine $thisRunScript "${!testExec}" ${NUM_CPUS} ${TEST_NAME}_${testNum}
+#    echo "" >> $thisRunScript # new line
+    
+}
+
+
+
+
+createAllRunScriptsGeneric() {
 
     testFile=TEST_FILE_${testFileNum}
     source ${!testFile}
@@ -414,17 +500,6 @@ createAllRunScripts() {
     ############################################################
     # Finished setting up cprnc
     ############################################################
-
-    echo "subFile$testFileNum=$thisRunScript" >>  $subListFile
-
-    # Make the script executable
-    chmod u+x ${thisRunScript}
-
-    # Reset the variables (in case they are not redefined in the next iteration)
-    unset OMP_NUM_TESTS
-    unset NUM_TESTS
-
-  done
 
 }
 
