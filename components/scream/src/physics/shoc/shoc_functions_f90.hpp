@@ -166,6 +166,25 @@ struct SHOCEnergydseData : public PhysicsTestData {
   SHOC_NO_SCALAR(SHOCEnergydseData, 2);
 };//SHOCEnergydseData
 
+//create data structure for shoc_energy_fixer
+struct SHOCEnergyfixerData : public PhysicsTestData {
+  // Inputs
+  Int nadv;
+  Real dtime;
+  Real *zt_grid, *zi_grid, *se_b, *wv_b, *pint;
+  Real *se_a, *ke_b, *wl_b, *ke_a, *tke, *pdel;
+  Real *wv_a, *wl_a, *wthl_sfc, *wqw_sfc, *rho_zt;
+
+  // Output
+  Real *host_dse;
+
+  //functions to initialize data
+  SHOCEnergyfixerData(Int shcol_, Int nlev_, Int nlevi_, Real dtime_, Real nadv_) :
+    PhysicsTestData(shcol_, nlev_, nlevi_, {&host_dse, &zt_grid, &pdel, &rho_zt, &tke}, {&zi_grid, &pint}, {&se_b, &ke_b, &wv_b, &wl_b, &se_a, &ke_a, &wv_a, &wl_a, &wthl_sfc, &wqw_sfc}), nadv(nadv_), dtime(dtime_) {}
+
+  SHOC_SCALARS(SHOCEnergyfixerData, 3, 2, dtime, nadv);
+};//SHOCEnergyfixerData
+
 //create data structure for shoc_energy_integrals
 struct SHOCEnergyintData : public PhysicsTestData {
   // Inputs
@@ -653,6 +672,7 @@ struct SHOCPblintdInitPotData : public PhysicsTestData {
 
 void shoc_grid                                      (SHOCGridData &d);
 void update_host_dse                                (SHOCEnergydseData &d);
+void shoc_energy_fixer                              (SHOCEnergyfixerData &d);
 void shoc_energy_integrals                          (SHOCEnergyintData &d);
 void shoc_energy_total_fixer                        (SHOCEnergytotData &d);
 void shoc_energy_threshold_fixer                    (SHOCEnergythreshfixerData &d);

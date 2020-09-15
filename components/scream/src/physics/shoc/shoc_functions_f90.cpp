@@ -26,6 +26,13 @@ void shoc_grid_c(int shcol, int nlev, int nlevi, Real *zt_grid, Real *zi_grid,
 void update_host_dse_c(Int shcol, Int nlev, Real *thlm, Real *shoc_ql,
                        Real *exner, Real *zt_grid, Real *phis, Real *host_dse);
 
+void shoc_energy_fixer_c(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv,
+                         Real *zt_grid, Real *zi_grid, Real *se_b, Real *ke_b,
+                         Real *wv_b, Real *wl_b, Real *se_a, Real *ke_a, 
+                         Real *wv_a, Real *wl_a, Real *wthl_sfc, Real *wqw_sfc,
+                         Real *pdel, Real *rho_zt, Real *tke, Real *pint, 
+                         Real *host_dse);
+
 void shoc_energy_integrals_c(Int shcol, Int nlev, Real *host_dse, Real *pdel,
                              Real *rtm, Real *rcm, Real *u_wind, Real *v_wind,
                              Real *se_int, Real *ke_int, Real *wv_int, Real *wl_int);
@@ -243,6 +250,17 @@ void update_host_dse(SHOCEnergydseData &d) {
   update_host_dse_c(d.shcol(), d.nlev(), d.thlm, d.shoc_ql, d.exner,
                     d.zt_grid, d.phis, d.host_dse);
   d.transpose<ekat::TransposeDirection::f2c>();
+}
+
+void shoc_energy_fixer(SHOCEnergyfixerData &d){
+  shoc_init(d.nlev(), true);
+  d.transpose<ekat::util::TransposeDirection::c2f>();
+  shoc_energy_fixer_c(d.shcol(), d.nlev(), d.nlevi(), d.dtime, d.nadv,
+                      d.zt_grid, d.zi_grid, d.se_b, d.ke_b, d.wv_b,
+                      d.wl_b, d.se_a, d.ke_a, d.wv_a, d.wl_a, d.wthl_sfc,
+                      d.wqw_sfc, d.pdel, d.rho_zt, d.tke, d.pint,
+                      d.host_dse);
+  d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void shoc_energy_integrals(SHOCEnergyintData &d) {
