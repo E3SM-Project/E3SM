@@ -16,7 +16,7 @@ extern "C" void crm(int ncrms_in, int pcols_in, real dt_gl, int plev, real *crm_
                     real *crm_state_qt_p, real *crm_state_qp_p, real *crm_state_qn_p, real *crm_rad_qrad_p, 
                     real *crm_rad_temperature_p, 
                     real *crm_rad_qv_p, real *crm_rad_qc_p, real *crm_rad_qi_p, real *crm_rad_cld_p, 
-                    real *crm_output_timing_factor_p, 
+                    real *crm_output_subcycle_factor_p, 
                     real *crm_output_prectend_p, real *crm_output_precstend_p, real *crm_output_cld_p, 
                     real *crm_output_cldtop_p, 
                     real *crm_output_gicewp_p, real *crm_output_gliqwp_p, real *crm_output_mctot_p, 
@@ -56,13 +56,13 @@ extern "C" void crm(int ncrms_in, int pcols_in, real dt_gl, int plev, real *crm_
                          crm_input_pmid_p, crm_input_pint_p, crm_input_pdel_p, crm_input_ul_p, crm_input_vl_p, 
                          crm_input_tl_p, crm_input_qccl_p, crm_input_qiil_p, crm_input_ql_p, crm_input_tau00_p, 
                          crm_state_u_wind_p, crm_state_v_wind_p, crm_state_w_wind_p, crm_state_temperature_p, 
-                         crm_state_qt_p, crm_state_qp_p, crm_state_qn_p, crm_rad_qrad_p, crm_output_timing_factor_p, 
+                         crm_state_qt_p, crm_state_qp_p, crm_state_qn_p, crm_rad_qrad_p, crm_output_subcycle_factor_p, 
                          lat0_p, long0_p, gcolp_p, crm_output_cltot_p, crm_output_clhgh_p, crm_output_clmed_p, 
                          crm_output_cllow_p);
 
   copy_outputs(crm_state_u_wind_p, crm_state_v_wind_p, crm_state_w_wind_p, crm_state_temperature_p, 
                crm_state_qt_p, crm_state_qp_p, crm_state_qn_p, crm_rad_temperature_p, 
-               crm_rad_qv_p, crm_rad_qc_p, crm_rad_qi_p, crm_rad_cld_p, crm_output_timing_factor_p, 
+               crm_rad_qv_p, crm_rad_qc_p, crm_rad_qi_p, crm_rad_cld_p, crm_output_subcycle_factor_p, 
                crm_output_prectend_p, crm_output_precstend_p, crm_output_cld_p, crm_output_cldtop_p, 
                crm_output_gicewp_p, crm_output_gliqwp_p, 
                crm_output_mctot_p, crm_output_mcup_p, crm_output_mcdn_p, 
@@ -96,7 +96,7 @@ extern "C" void crm(int ncrms_in, int pcols_in, real dt_gl, int plev, real *crm_
 
   copy_outputs_and_destroy(crm_state_u_wind_p, crm_state_v_wind_p, crm_state_w_wind_p, crm_state_temperature_p, 
                            crm_state_qt_p, crm_state_qp_p, crm_state_qn_p, crm_rad_temperature_p, 
-                           crm_rad_qv_p, crm_rad_qc_p, crm_rad_qi_p, crm_rad_cld_p, crm_output_timing_factor_p, 
+                           crm_rad_qv_p, crm_rad_qc_p, crm_rad_qi_p, crm_rad_cld_p, crm_output_subcycle_factor_p, 
                            crm_output_prectend_p, crm_output_precstend_p, crm_output_cld_p, crm_output_cldtop_p, 
                            crm_output_gicewp_p, crm_output_gliqwp_p, 
                            crm_output_mctot_p, crm_output_mcup_p, crm_output_mcdn_p, 

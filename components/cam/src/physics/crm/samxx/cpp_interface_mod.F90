@@ -14,7 +14,7 @@ module cpp_interface_mod
                    crm_input_tl, crm_input_qccl, crm_input_qiil, crm_input_ql, crm_input_tau00, &
                    crm_state_u_wind, crm_state_v_wind, crm_state_w_wind, crm_state_temperature, &
                    crm_state_qt, crm_state_qp, crm_state_qn, crm_rad_qrad, crm_rad_temperature, &
-                   crm_rad_qv, crm_rad_qc, crm_rad_qi, crm_rad_cld, crm_output_timing_factor, &
+                   crm_rad_qv, crm_rad_qc, crm_rad_qi, crm_rad_cld, crm_output_subcycle_factor, &
                    crm_output_prectend, crm_output_precstend, crm_output_cld, crm_output_cldtop, &
                    crm_output_gicewp, crm_output_gliqwp, crm_output_mctot, crm_output_mcup, crm_output_mcdn, &
                    crm_output_mcuup, crm_output_mcudn, crm_output_qc_mean, crm_output_qi_mean, crm_output_qs_mean, &
@@ -41,7 +41,7 @@ module cpp_interface_mod
                                       crm_input_tl, crm_input_qccl, crm_input_qiil, crm_input_ql, crm_input_tau00, &
                                       crm_state_u_wind, crm_state_v_wind, crm_state_w_wind, crm_state_temperature, &
                                       crm_state_qt, crm_state_qp, crm_state_qn, crm_rad_qrad, crm_rad_temperature, &
-                                      crm_rad_qv, crm_rad_qc, crm_rad_qi, crm_rad_cld, crm_output_timing_factor, &
+                                      crm_rad_qv, crm_rad_qc, crm_rad_qi, crm_rad_cld, crm_output_subcycle_factor, &
                                       crm_output_prectend, crm_output_precstend, crm_output_cld, crm_output_cldtop, &
                                       crm_output_gicewp, crm_output_gliqwp, crm_output_mctot, crm_output_mcup, crm_output_mcdn, &
                                       crm_output_mcuup, crm_output_mcudn, crm_output_qc_mean, crm_output_qi_mean, crm_output_qs_mean, &
