@@ -237,26 +237,6 @@ CHEMISTRY
 
 [usr_e90]  E90 ->                                 ; 1.286E-7, 0.
 
-* Stratospheric decay
-[uci_CH2O] CH2O -> CH2O                           ; 3.858E-7, 0.
-[uci_CH3O2] CH3O2 -> CH3O2                        ; 3.858E-7, 0.
-[uci_CH3OOH] CH3OOH -> CH3OOH                     ; 3.858E-7, 0.
-[uci_PAN] PAN -> PAN                              ; 3.858E-7, 0.
-[uci_CO]  CO -> CO                                ; 3.858E-7, 0.
-[uci_C2H6] C2H6 -> C2H6                           ; 3.858E-7, 0.
-[uci_C3H8] C3H8 -> C3H8                           ; 3.858E-7, 0.
-[uci_C2H4] C2H4 -> C2H4                           ; 3.858E-7, 0.
-[uci_ROHO2] ROHO2 -> ROHO2                        ; 3.858E-7, 0.
-[uci_CH3COCH3] CH3COCH3 -> CH3COCH3               ; 3.858E-7, 0.
-[uci_C2H5O2] C2H5O2 -> C2H5O2                     ; 3.858E-7, 0.
-[uci_C2H5OOH] C2H5OOH -> C2H5OOH                  ; 3.858E-7, 0.
-[uci_CH3CHO] CH3CHO -> CH3CHO                     ; 3.858E-7, 0.
-[uci_CH3CO3] CH3CO3 -> CH3CO3                     ; 3.858E-7, 0.
-[uci_ISOP] ISOP -> ISOP                           ; 3.858E-7, 0.
-[uci_ISOPO2] ISOPO2 -> ISOPO2                     ; 3.858E-7, 0.
-[uci_MVKMACR] MVKMACR -> MVKMACR                  ; 3.858E-7, 0.
-[uci_MVKO2] MVKO2 -> MVKO2                        ; 3.858E-7, 0.
-
 * MAM4 chemistry below
               DMS + OH -> SO2                     ; 9.600E-12, -234
 [usr_DMS_OH]  DMS + OH ->  .5 * SO2 + .5 * HO2
