@@ -98,10 +98,10 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
       for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 	
-	SDS.w_sec[offset] = w_sec[n];
-	SDS.dz_zt[offset] = dz_zt[n];
-	SDS.zt_grid[offset] = zt_grid[n];
-	SDS.tke[offset] = tke[n];
+        SDS.w_sec[offset] = w_sec[n];
+        SDS.dz_zt[offset] = dz_zt[n];
+        SDS.zt_grid[offset] = zt_grid[n];
+        SDS.tke[offset] = tke[n];
 	
         SDS.isotropy[offset] = isotropy[n];
         SDS.brunt[offset] = brunt[n];
@@ -114,12 +114,12 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
 	
-	SDS.dz_zi[offset] = dz_zi[n];
-	SDS.zi_grid[offset] = zi_grid[n];
-	SDS.thl_sec[offset] = thl_sec[n];
-	SDS.qw_sec[offset] = qw_sec[n];
-	SDS.qwthl_sec[offset] = qwthl_sec[n];
-	SDS.wthl_sec[offset] = wthl_sec[n];
+        SDS.dz_zi[offset] = dz_zi[n];
+        SDS.zi_grid[offset] = zi_grid[n];
+        SDS.thl_sec[offset] = thl_sec[n];
+        SDS.qw_sec[offset] = qw_sec[n];
+        SDS.qwthl_sec[offset] = qwthl_sec[n];
+        SDS.wthl_sec[offset] = wthl_sec[n];
 	
       }
     }      
@@ -132,7 +132,7 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
         const auto offset = n + s * nlev;
 	
         REQUIRE(SDS.w_sec[offset] >= 0);
-	// for this test make sure w_sec <= 1
+	       // for this test make sure w_sec <= 1
         REQUIRE(SDS.w_sec[offset] <= 1);
 	
         REQUIRE(SDS.dz_zt[offset] > 0);
@@ -166,13 +166,13 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
 
-	// For this test make sure w3 has been clipped.
-	//  Given input w2, this should be less than 1
+	       // For this test make sure w3 has been clipped.
+	       //  Given input w2, this should be less than 1
         REQUIRE(abs(SDS.w3[offset]) < 1);
 	
-	if (SDS.w3[offset] > 0){
-	  is_skew = true;
-	}	
+        if (SDS.w3[offset] > 0){
+	         is_skew = true;
+        }	
 	
       }
       REQUIRE(is_skew == true);
@@ -184,7 +184,7 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
 	
-	w3_test1[offset] = SDS.w3[offset];
+	       w3_test1[offset] = SDS.w3[offset];
       }
     }
     
@@ -193,9 +193,9 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
 	
-	SDS.w_sec[offset] = 10*w_sec[n];
-	// update new TKE value
-	SDS.tke[offset] = 1.5*SDS.w_sec[offset];
+        SDS.w_sec[offset] = 10*w_sec[n];
+        // update new TKE value
+        SDS.tke[offset] = 1.5*SDS.w_sec[offset];
       }
     }
     
@@ -207,9 +207,9 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
     for(Int s = 0; s < shcol; ++s) { 
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
-	if (n != 0 && n != nlevi-1){
+        if (n != 0 && n != nlevi-1){
           REQUIRE(std::abs(SDS.w3[offset]) > std::abs(w3_test1[offset]));
-	}
+	       }
       }
     }
 

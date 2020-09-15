@@ -105,10 +105,10 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird {
       for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 	
-	SDS.w_sec[offset] = w_sec[n];
-	SDS.dz_zt[offset] = dz_zt[n];
-	SDS.zt_grid[offset] = zt_grid[n];
-	SDS.tke[offset] = tke[n];
+        SDS.w_sec[offset] = w_sec[n];
+        SDS.dz_zt[offset] = dz_zt[n];
+        SDS.zt_grid[offset] = zt_grid[n];
+        SDS.tke[offset] = tke[n];
 	
       }
 
@@ -116,18 +116,18 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird {
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
 	
-	SDS.dz_zi[offset] = dz_zi[n];
-	SDS.zi_grid[offset] = zi_grid[n];
-	SDS.thl_sec[offset] = (s+1)*thl_sec[n];
-	SDS.qw_sec[offset] = (s+1)*qw_sec[n];
-	SDS.qwthl_sec[offset] = qwthl_sec[n];
-	SDS.wthl_sec[offset] = wthl_sec[n];
+        SDS.dz_zi[offset] = dz_zi[n];
+        SDS.zi_grid[offset] = zi_grid[n];
+        SDS.thl_sec[offset] = (s+1)*thl_sec[n];
+        SDS.qw_sec[offset] = (s+1)*qw_sec[n];
+        SDS.qwthl_sec[offset] = qwthl_sec[n];
+        SDS.wthl_sec[offset] = wthl_sec[n];
 	
-	SDS.w_sec_zi[offset] = w_sec_zi[n];
-	SDS.isotropy_zi[offset] = isotropy_zi[n];
-	SDS.brunt_zi[offset] = brunt_zi[n];
-	SDS.thetal_zi[offset] = thetal_zi[n];
-	SDS.wthv_sec_zi[offset] = wthv_sec_zi[n];
+        SDS.w_sec_zi[offset] = w_sec_zi[n];
+        SDS.isotropy_zi[offset] = isotropy_zi[n];
+        SDS.brunt_zi[offset] = brunt_zi[n];
+        SDS.thetal_zi[offset] = thetal_zi[n];
+        SDS.wthv_sec_zi[offset] = wthv_sec_zi[n];
 	
       }
     }      
@@ -173,26 +173,26 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird {
       is_skew = false; // Initialize
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
-	//offset for "neighboring" column
-	const auto offsets = n + (s+1) * nlevi;
+        //offset for "neighboring" column
+        const auto offsets = n + (s+1) * nlevi;
 	
-	// Given this profile, values should fall within
-	//  reasonable bounds
+        // Given this profile, values should fall within
+        //  reasonable bounds
         REQUIRE(abs(SDS.w3[offset]) < 10);
 	
-	if (n == 0 || n == nlevi-1){
+        if (n == 0 || n == nlevi-1){
           REQUIRE(SDS.w3[n] == 0);
-	}
+        }
 	
-	if (SDS.w3[offset] > 0){
-	  is_skew = true;
-	}
+	       if (SDS.w3[offset] > 0){
+	         is_skew = true;
+	       }
 	
-	// Verify points increase in magnitude as 
-	//  scalar variances increase
-	if (s < shcol-1 && n != 0 && n != nlevi-1){ 
+	       // Verify points increase in magnitude as 
+	       //  scalar variances increase
+	       if (s < shcol-1 && n != 0 && n != nlevi-1){ 
           REQUIRE(std::abs(SDS.w3[offsets]) > std::abs(SDS.w3[offset]));
-	}
+        }
 	    
       }
       // Verify each column has at least one positive vertical
