@@ -53,9 +53,24 @@ TEST_CASE("scorpio_yaml", "") {
   auto gids       = upgm.get_grid("Physics")->get_dofs_gids();
   auto phys_lt    = upgm.get_grid("Physics")->get_native_dof_layout();
 
+  Int num_cols = 10;
+  Int num_levs = 5;
+  Int num_comp = 2;
+
+  int compid=0;  // For CIME based builds this will be the integer ID assigned to the atm by the component coupler.  For testing we simply set to 0
+  ekat::Comm io_comm(MPI_COMM_WORLD);  // MPI communicator group used for I/O set as ekat object.
+  MPI_Fint fcomm = MPI_Comm_c2f(MPI_COMM_WORLD);  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.
+
   // Need to register grids managers before we create the driver
   auto& gm_factory = GridsManagerFactory::instance();
   gm_factory.register_product("User Provided",create_user_provided_grids_manager);
+  // Set the dummy grid in the UserProvidedGridManager
+  // Recall that this class stores *static* members, so whatever
+  // we set here, will be reflected in the GM built by the factory.
+  UserProvidedGridsManager upgm;
+  auto dummy_grid= std::make_shared<SimpleGrid>("Physics",num_cols,num_levs,io_comm);
+  upgm.set_grid(dummy_grid);
+
 /* The first step is to establish a Field Manager Repo to work with.  This example is fashioned from the 'field_repo'
  * test from /share/tests/field_tests.hpp                                                                          */ 
   std::vector<FieldTag> tag1d  = {FieldTag::Column};
@@ -63,6 +78,8 @@ TEST_CASE("scorpio_yaml", "") {
   std::vector<FieldTag> tag1dc = {FieldTag::Component};
   std::vector<FieldTag> tag2d  = {FieldTag::Column, FieldTag::VerticalLevel};
   std::vector<FieldTag> tag3d  = {FieldTag::Column, FieldTag::VerticalLevel, FieldTag::Component};
+  //std::vector<FieldTag> tag2d  = {FieldTag::VerticalLevel,FieldTag::Column};
+  //std::vector<FieldTag> tag3d  = {FieldTag::Component,FieldTag::VerticalLevel,FieldTag::Column};
 
   FieldIdentifier fid_x("x", tag1d,  m);
   FieldIdentifier fid_y("y", tag1db, m);

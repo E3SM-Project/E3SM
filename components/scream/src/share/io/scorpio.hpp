@@ -230,7 +230,7 @@ inline void AtmosphereOutput::run(const FieldRepository<Real, device_type>& fiel
 
 } // run
 /* ---------------------------------------------------------- */
-inline void AtmosphereOutput::finalize() 
+inline void AtmosphereOutput::run(const FieldRepository<Real, device_type>& field_repo, const Real time) 
 {
   using namespace scream;
   using namespace scream::scorpio;
