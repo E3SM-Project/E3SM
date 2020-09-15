@@ -12,9 +12,12 @@
 
 module seaice_velocity_solver_variational
 
+#include "gpu_macros.inc"
+
   use mpas_derived_types
   use mpas_pool_routines
   use mpas_timer
+  use mpas_log, only: mpas_log_write
 
   implicit none
 
@@ -124,6 +127,23 @@ contains
   subroutine seaice_internal_stress_variational(&
        domain)!{{{
 
+    use seaice_mesh_pool, only: &
+         basisGradientU, &
+         basisGradientV, &
+         basisIntegralsMetric, &
+         basisIntegralsU, &
+         basisIntegralsV, &
+         cellVerticesAtVertex, &
+         icePressure, &
+         solveStress, &
+         solveVelocity, &
+         stress11, &
+         stress22, &
+         stress12, &
+         tanLatVertexRotatedOverRadius, &
+         uVelocity, &
+         vVelocity
+
     type(domain_type), intent(inout) :: &
          domain
 
@@ -136,9 +156,6 @@ contains
          velocitySolverPool
 
     real(kind=RKIND), dimension(:), pointer :: &
-         uVelocity, &
-         vVelocity, &
-         icePressure, &
          stressDivergenceU, &
          stressDivergenceV
 
@@ -148,31 +165,11 @@ contains
     logical, pointer :: &
          revisedEVP
 
-    integer, dimension(:), pointer :: &
-         solveStress, &
-         solveVelocity
-
-    integer, dimension(:,:), pointer :: &
-         cellVerticesAtVertex
-
-    real(kind=RKIND), dimension(:), pointer :: &
-         tanLatVertexRotatedOverRadius
-
     real(kind=RKIND), dimension(:,:), pointer :: &
          replacementPressure, &
          strain11, &
          strain22, &
-         strain12, &
-         stress11, &
-         stress22, &
-         stress12
-
-    real(kind=RKIND), dimension(:,:,:), pointer :: &
-         basisGradientU, &
-         basisGradientV, &
-         basisIntegralsU, &
-         basisIntegralsV, &
-         basisIntegralsMetric
+         strain12
 
     block => domain % blocklist
     do while (associated(block))
@@ -183,11 +180,6 @@ contains
        call MPAS_pool_get_subpool(block % structs, "velocity_variational", velocityVariationalPool)
        call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
 
-       call MPAS_pool_get_array(velocitySolverPool, "solveStress", solveStress)
-       call MPAS_pool_get_array(velocitySolverPool, "solveVelocity", solveVelocity)
-       call MPAS_pool_get_array(velocitySolverPool, "uVelocity", uVelocity)
-       call MPAS_pool_get_array(velocitySolverPool, "vVelocity", vVelocity)
-       call MPAS_pool_get_array(velocitySolverPool, "icePressure", icePressure)
        call MPAS_pool_get_array(velocitySolverPool, "elasticTimeStep", elasticTimeStep)
        call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceU", stressDivergenceU)
        call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceV", stressDivergenceV)
@@ -195,16 +187,6 @@ contains
        call MPAS_pool_get_array(velocityVariationalPool, "strain11", strain11)
        call MPAS_pool_get_array(velocityVariationalPool, "strain22", strain22)
        call MPAS_pool_get_array(velocityVariationalPool, "strain12", strain12)
-       call MPAS_pool_get_array(velocityVariationalPool, "stress11", stress11)
-       call MPAS_pool_get_array(velocityVariationalPool, "stress22", stress22)
-       call MPAS_pool_get_array(velocityVariationalPool, "stress12", stress12)
-       call MPAS_pool_get_array(velocityVariationalPool, "cellVerticesAtVertex", cellVerticesAtVertex)
-       call MPAS_pool_get_array(velocityVariationalPool, "tanLatVertexRotatedOverRadius", tanLatVertexRotatedOverRadius)
-       call MPAS_pool_get_array(velocityVariationalPool, "basisGradientU", basisGradientU)
-       call MPAS_pool_get_array(velocityVariationalPool, "basisGradientV", basisGradientV)
-       call MPAS_pool_get_array(velocityVariationalPool, "basisIntegralsU", basisIntegralsU)
-       call MPAS_pool_get_array(velocityVariationalPool, "basisIntegralsV", basisIntegralsV)
-       call MPAS_pool_get_array(velocityVariationalPool, "basisIntegralsMetric", basisIntegralsMetric)
        call MPAS_pool_get_array(velocityVariationalPool, "replacementPressure", replacementPressure)
 
        call mpas_timer_start("Velocity solver strain tensor")
@@ -273,6 +255,22 @@ contains
   subroutine seaice_internal_stress_variational_linear(&
        domain)!{{{
 
+    use seaice_mesh_pool, only: &
+         basisGradientU, &
+         basisGradientV, &
+         basisIntegralsMetric, &
+         basisIntegralsU, &
+         basisIntegralsV, &
+         cellVerticesAtVertex, &
+         solveStress, &
+         solveVelocity, &
+         stress11, &
+         stress22, &
+         stress12, &
+         tanLatVertexRotatedOverRadius, &
+         uVelocity, &
+         vVelocity
+
     type(domain_type), intent(inout) :: &
          domain
 
@@ -285,35 +283,13 @@ contains
          velocitySolverPool
 
     real(kind=RKIND), dimension(:), pointer :: &
-         uVelocity, &
-         vVelocity, &
          stressDivergenceU, &
          stressDivergenceV
-
-    integer, dimension(:), pointer :: &
-         solveStress, &
-         solveVelocity
-
-    integer, dimension(:,:), pointer :: &
-         cellVerticesAtVertex
-
-    real(kind=RKIND), dimension(:), pointer :: &
-         tanLatVertexRotatedOverRadius
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          strain11, &
          strain22, &
-         strain12, &
-         stress11, &
-         stress22, &
-         stress12
-
-    real(kind=RKIND), dimension(:,:,:), pointer :: &
-         basisGradientU, &
-         basisGradientV, &
-         basisIntegralsU, &
-         basisIntegralsV, &
-         basisIntegralsMetric
+         strain12
 
     block => domain % blocklist
     do while (associated(block))
@@ -322,26 +298,12 @@ contains
        call MPAS_pool_get_subpool(block % structs, "velocity_variational", velocityVariationalPool)
        call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
 
-       call MPAS_pool_get_array(velocitySolverPool, "solveStress", solveStress)
-       call MPAS_pool_get_array(velocitySolverPool, "solveVelocity", solveVelocity)
-       call MPAS_pool_get_array(velocitySolverPool, "uVelocity", uVelocity)
-       call MPAS_pool_get_array(velocitySolverPool, "vVelocity", vVelocity)
        call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceU", stressDivergenceU)
        call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceV", stressDivergenceV)
 
        call MPAS_pool_get_array(velocityVariationalPool, "strain11", strain11)
        call MPAS_pool_get_array(velocityVariationalPool, "strain22", strain22)
        call MPAS_pool_get_array(velocityVariationalPool, "strain12", strain12)
-       call MPAS_pool_get_array(velocityVariationalPool, "stress11", stress11)
-       call MPAS_pool_get_array(velocityVariationalPool, "stress22", stress22)
-       call MPAS_pool_get_array(velocityVariationalPool, "stress12", stress12)
-       call MPAS_pool_get_array(velocityVariationalPool, "cellVerticesAtVertex", cellVerticesAtVertex)
-       call MPAS_pool_get_array(velocityVariationalPool, "tanLatVertexRotatedOverRadius", tanLatVertexRotatedOverRadius)
-       call MPAS_pool_get_array(velocityVariationalPool, "basisGradientU", basisGradientU)
-       call MPAS_pool_get_array(velocityVariationalPool, "basisGradientV", basisGradientV)
-       call MPAS_pool_get_array(velocityVariationalPool, "basisIntegralsU", basisIntegralsU)
-       call MPAS_pool_get_array(velocityVariationalPool, "basisIntegralsV", basisIntegralsV)
-       call MPAS_pool_get_array(velocityVariationalPool, "basisIntegralsMetric", basisIntegralsMetric)
 
        call mpas_timer_start("Velocity solver strain tensor")
        call seaice_strain_tensor_variational(&
@@ -414,6 +376,11 @@ contains
        tanLatVertexRotatedOverRadius, &
        solveStress)!{{{
 
+    use seaice_mesh_pool, only: &
+         nCells, &
+         verticesOnCell, &
+         nEdgesOnCell
+
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input:
 
@@ -446,24 +413,15 @@ contains
          strain22Tmp, &
          strain12Tmp
 
-    integer, pointer :: &
-         nCells
-
-    integer, dimension(:), pointer :: &
-         nEdgesOnCell
-
-    integer, dimension(:,:), contiguous, pointer :: &
-         verticesOnCell
-
-    ! init variables
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
-
-    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
-    call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
-
     ! loop over cells
-    !$omp parallel do default(shared) private(iCell, iGradientVertex, iBasisVertex, iVertex, jVertex,&
-    !$omp&                                    strain11Tmp, strain22Tmp, strain12Tmp)
+#ifdef MPAS_OPENMP_OFFLOAD
+!$omp target teams distribute parallel do
+#elif MPAS_OPENACC
+!$acc parallel loop gang worker
+#else
+!$omp parallel do default(shared) private(iGradientVertex, iBasisVertex, iVertex, jVertex, &
+!$omp&                                    strain11Tmp, strain22Tmp, strain12Tmp)
+#endif
     do iCell = 1, nCells
 
        if (solveStress(iCell) == 1) then
@@ -531,7 +489,12 @@ contains
 
     use seaice_velocity_solver_constitutive_relation, only: &
          seaice_evp_constitutive_relation, &
+         eccentricitySquared, puny, dampingTimescale, &
          seaice_evp_constitutive_relation_revised
+
+    use seaice_mesh_pool, only: &
+         nCells, &
+         nEdgesOnCell
 
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input:
@@ -565,30 +528,70 @@ contains
          iCell, &
          iVertexOnCell
 
-    integer, pointer :: &
-         nCells
-
-    integer, dimension(:), pointer :: &
-         nEdgesOnCell
-
     real(kind=RKIND), dimension(:), pointer :: &
          areaCell
 
-    ! init variables
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    real(kind=RKIND) :: &
+         strainDivergence,    &
+         strainTension,       &
+         strainShearing,      &
+         stress1,             &
+         stress2,             &
+         Delta,               &
+         pressureCoefficient, &
+         denominator
 
-    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
+    ! init variables
     call MPAS_pool_get_array(mesh, "areaCell", areaCell)
 
     if (.not. revisedEVP) then
 
-       !$omp parallel do default(shared) private(iCell, iVertexOnCell)
+       denominator = 1.0_RKIND + (0.5_RKIND * dtElastic) / dampingTimescale
+
+#ifdef MPAS_OPENMP_OFFLOAD
+!$omp target teams distribute parallel do
+#elif MPAS_OPENACC
+!$acc parallel loop gang worker
+#else
+!$omp parallel do default(shared) private(iVertexOnCell)
+#endif
        do iCell = 1, nCells
 
           replacementPressure(:,iCell) = 0.0_RKIND
 
           if (solveStress(iCell) == 1) then
 
+#if defined(MPAS_OPENMP_OFFLOAD) || defined(MPAS_OPENACC)
+             ! inline call to seaice_evp_constitutive_relation for GPUs
+             do iVertexOnCell = 1, nEdgesOnCell(iCell)
+
+                ! convert from stress11 to stress1 etc
+                strainDivergence = strain11(iVertexOnCell,iCell) + strain22(iVertexOnCell,iCell)
+                strainTension    = strain11(iVertexOnCell,iCell) - strain22(iVertexOnCell,iCell)
+                strainShearing   = strain12(iVertexOnCell,iCell) * 2.0_RKIND
+
+                stress1 = stress11(iVertexOnCell,iCell) + stress22(iVertexOnCell,iCell)
+                stress2 = stress11(iVertexOnCell,iCell) - stress22(iVertexOnCell,iCell)
+
+                ! perform the constituitive relation
+                Delta = sqrt(strainDivergence*strainDivergence + &
+                             (strainTension*strainTension + strainShearing*strainShearing) / eccentricitySquared)
+
+                pressureCoefficient                      = icePressure(iCell) / max(Delta,puny)
+                replacementPressure(iVertexOnCell,iCell) = pressureCoefficient * Delta
+
+                pressureCoefficient = (pressureCoefficient * dtElastic) / (2.0_RKIND * dampingTimescale)
+
+                stress1  = (stress1  +  pressureCoefficient                        * (strainDivergence - Delta)) / denominator
+                stress2  = (stress2  + (pressureCoefficient / eccentricitySquared) *  strainTension            ) / denominator
+                stress12(iVertexOnCell,iCell) = (stress12(iVertexOnCell,iCell) &
+                                     + (pressureCoefficient / eccentricitysquared) * strainShearing * 0.5_RKIND) / denominator
+
+                ! convert back
+                stress11(iVertexOnCell,iCell) = 0.5_RKIND * (stress1 + stress2)
+                stress22(iVertexOnCell,iCell) = 0.5_RKIND * (stress1 - stress2)
+
+#else
              !$omp simd
              do iVertexOnCell = 1, nEdgesOnCell(iCell)
 
@@ -603,7 +606,7 @@ contains
                      replacementPressure(iVertexOnCell,iCell), &
                      areaCell(iCell), &
                      dtElastic)
-
+#endif
              enddo ! iVertexOnCell
 
           endif ! solveStress
@@ -612,7 +615,9 @@ contains
 
     else
 
-       !$omp parallel do default(shared) private(iCell, iVertexOnCell)
+#ifdef MPAS_OPENMP
+!$omp parallel do default(shared) private(iVertexOnCell)
+#endif
        do iCell = 1, nCells
 
           if (solveStress(iCell) == 1) then
@@ -666,6 +671,10 @@ contains
     use seaice_velocity_solver_constitutive_relation, only: &
          seaice_linear_constitutive_relation
 
+    use seaice_mesh_pool, only: &
+         nCells, &
+         nEdgesOnCell
+
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input:
 
@@ -686,18 +695,9 @@ contains
          iCell, &
          iVertexOnCell
 
-    integer, pointer :: &
-         nCells
-
-    integer, dimension(:), pointer :: &
-         nEdgesOnCell
-
-    ! init variables
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
-
-    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
-
-    !$omp parallel do default(shared) private(iCell, iVertexOnCell)
+#ifdef MPAS_OPENMP
+!$omp parallel do default(shared) private(iCell, iVertexOnCell)
+#endif
     do iCell = 1, nCells
 
        if (solveStress(iCell) == 1) then
@@ -747,6 +747,12 @@ contains
        cellVerticesAtVertex, &
        solveVelocity)!{{{
 
+    use seaice_mesh_pool, only: &
+         nVerticesSolve, &
+         cellsOnVertex, &
+         nEdgesOnCell, &
+         areaTriangle
+
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input:
 
@@ -774,6 +780,8 @@ contains
          solveVelocity !< Input:
 
     real(kind=RKIND) :: &
+         stressDivergenceUVertex, &
+         stressDivergenceVVertex, &
          stressDivergenceUCell, &
          stressDivergenceVCell
 
@@ -784,38 +792,24 @@ contains
          iStressVertex, &
          iVelocityVertex
 
-    integer, pointer :: &
-         nVertices, &
-         vertexDegree
-
-    integer, dimension(:), pointer :: &
-         nEdgesOnCell
-
-    integer, dimension(:,:), pointer :: &
-         cellsOnVertex
-
-    real(kind=RKIND), dimension(:), pointer :: &
-         areaTriangle
-
-    ! init variables
-    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
-    call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
-
-    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
-    call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
-    call MPAS_pool_get_array(mesh, "areaTriangle", areaTriangle)
-
     ! loop over velocity positions
-    !$omp parallel do default(shared) private(iVertex, iSurroundingCell, iCell, iVelocityVertex, stressDivergenceUCell, stressDivergenceVCell, iStressVertex)
-    do iVertex = 1, nVertices
+#ifdef MPAS_OPENMP_OFFLOAD
+!$omp target teams distribute parallel do
+#elif MPAS_OPENACC
+!$acc parallel loop gang worker
+#else
+!$omp parallel do default(shared) private(stressDivergenceUVertex, stressDivergenceVVertex, &
+!$omp&   iSurroundingCell, iCell, iVelocityVertex, stressDivergenceUCell, stressDivergenceVCell, iStressVertex)
+#endif
+    do iVertex = 1, nVerticesSolve
 
        if (solveVelocity(iVertex) == 1) then
 
-          stressDivergenceU(iVertex) = 0.0_RKIND
-          stressDivergenceV(iVertex) = 0.0_RKIND
+          stressDivergenceUVertex = 0.0_RKIND
+          stressDivergenceVVertex = 0.0_RKIND
 
           ! loop over surrounding cells
-          do iSurroundingCell = 1, vertexDegree
+          do iSurroundingCell = 1, 3 !vertexDegree
 
              ! get the cell number of this cell
              iCell = cellsOnVertex(iSurroundingCell, iVertex)
@@ -844,13 +838,13 @@ contains
 
              enddo ! iStressVertex
 
-             stressDivergenceU(iVertex) = stressDivergenceU(iVertex) + stressDivergenceUCell
-             stressDivergenceV(iVertex) = stressDivergenceV(iVertex) + stressDivergenceVCell
+             stressDivergenceUVertex = stressDivergenceUVertex + stressDivergenceUCell
+             stressDivergenceVVertex = stressDivergenceVVertex + stressDivergenceVCell
 
           enddo ! iSurroundingCell
 
-          stressDivergenceU(iVertex) = stressDivergenceU(iVertex) / areaTriangle(iVertex)
-          stressDivergenceV(iVertex) = stressDivergenceV(iVertex) / areaTriangle(iVertex)
+          stressDivergenceU(iVertex) = stressDivergenceUVertex / areaTriangle(iVertex)
+          stressDivergenceV(iVertex) = stressDivergenceVVertex / areaTriangle(iVertex)
 
        endif ! solveVelocity
 
@@ -875,21 +869,18 @@ contains
     use seaice_velocity_solver_constitutive_relation, only: &
          eccentricitySquared
 
+    use seaice_mesh_pool, only: &
+         nCells, &
+         solveStress, &
+         nEdgesOnCell
+
     type(block_type), intent(inout) :: &
          block
 
     type(MPAS_pool_type), pointer :: &
-         meshPool, &
          velocityVariationalPool, &
          velocitySolverPool, &
          ridgingPool
-
-    integer, pointer :: &
-         nCells
-
-    integer, dimension(:), pointer :: &
-         nEdgesOnCell, &
-         solveStress
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          strain11, &
@@ -921,13 +912,8 @@ contains
          iCell, &
          iVertexOnCell
 
-    call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
     call MPAS_pool_get_subpool(block % structs, "velocity_variational", velocityVariationalPool)
     call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
-
-    call MPAS_pool_get_dimension(meshPool, "nCells", nCells)
-
-    call MPAS_pool_get_array(meshPool, "nEdgesOnCell", nEdgesOnCell)
 
     call MPAS_pool_get_array(velocityVariationalPool, "strain11", strain11)
     call MPAS_pool_get_array(velocityVariationalPool, "strain22", strain22)
@@ -935,7 +921,6 @@ contains
 
     call MPAS_pool_get_array(velocitySolverPool, "divergence", divergence)
     call MPAS_pool_get_array(velocitySolverPool, "shear", shear)
-    call MPAS_pool_get_array(velocitySolverPool, "solveStress", solveStress)
 
     allocate(DeltaAverage(nCells))
 

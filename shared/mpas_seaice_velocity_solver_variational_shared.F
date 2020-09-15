@@ -221,6 +221,11 @@ contains
 
     do iCell = 1, nCells
 
+       call seaice_grid_rotation_forward(&
+            xCellRotated, yCellRotated, zCellRotated, &
+            xCell(iCell), yCell(iCell), zCell(iCell), &
+            rotateCartesianGrid)
+
        do iVertexOnCell = 1, nEdgesOnCell(iCell)
 
           iVertex = verticesOnCell(iVertexOnCell, iCell)
@@ -228,11 +233,6 @@ contains
           call seaice_grid_rotation_forward(&
                normalVector3D(1), normalVector3D(2), normalVector3D(3), &
                xVertex(iVertex),  yVertex(iVertex),  zVertex(iVertex), &
-               rotateCartesianGrid)
-
-          call seaice_grid_rotation_forward(&
-               xCellRotated, yCellRotated, zCellRotated, &
-               xCell(iCell), yCell(iCell), zCell(iCell), &
                rotateCartesianGrid)
 
           call seaice_project_3D_vector_onto_local_2D(&
