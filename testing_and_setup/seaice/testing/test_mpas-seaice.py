@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-
+from __future__ import print_function
 from testing_utils import colour_init, print_colour, final_summary
 import argparse
 import sys
@@ -31,18 +30,18 @@ args = parser.parse_args()
 
 # output available tests
 if (args.avail):
-    print "Available tests: "
+    print("Available tests: ")
     for test in tests:
-        print "  %s: %s" %(test["name"], test["description"])
+        print("  %s: %s" %(test["name"], test["description"]))
     sys.exit()
 
 # check dev directory and model exists
 if (not os.path.exists(args.mpasDevelopmentDir)):
-    print "Requested development MPAS directory does not exist"
+    print("Requested development MPAS directory does not exist")
     sys.exit()
 
 if (not os.path.exists(args.mpasDevelopmentDir + "/seaice_model")):
-    print "Requested development MPAS executable does not exist"
+    print("Requested development MPAS executable does not exist")
     sys.exit()
 
 mpasDevelopmentDir = os.path.abspath(args.mpasDevelopmentDir)
@@ -51,11 +50,11 @@ mpasDevelopmentDir = os.path.abspath(args.mpasDevelopmentDir)
 if (args.mpasBaseDir != None):
 
     if (not os.path.exists(args.mpasBaseDir)):
-        print "Requested base MPAS directory does not exist"
+        print("Requested base MPAS directory does not exist")
         sys.exit()
 
     if (not os.path.exists(args.mpasBaseDir + "/seaice_model")):
-        print "Requested base MPAS executable does not exist"
+        print("Requested base MPAS executable does not exist")
         sys.exit()
 
     mpasBaseDir = os.path.abspath(args.mpasBaseDir)
@@ -66,7 +65,7 @@ if (args.testSuite == None):
     testSuite = scriptDirectory + "/testsuites/testsuite.standard.xml"
 else:
     if (not os.path.exists(args.testSuite)):
-        print "Requested test suite does not exist"
+        print("Requested test suite does not exist")
         sys.exit()
     testSuite = args.testSuite
 
@@ -74,12 +73,12 @@ else:
 if (args.domainsDir == None):
     domainsDir = os.environ.get('MPAS_SEAICE_DOMAINS_DIR')
     if (domainsDir == None):
-        print "Environment variable MPAS_SEAICE_DOMAINS_DIR must be set if no domains directory specified"
+        print("Environment variable MPAS_SEAICE_DOMAINS_DIR must be set if no domains directory specified")
         sys.exit()
 else:
     domainsDir = args.domainsDir
     if (not os.path.exists(domainsDir)):
-        print "Requested domains directory does not exist"
+        print("Requested domains directory does not exist")
         sys.exit()
 
 
@@ -94,10 +93,10 @@ testsuite = tree.getroot()
 
 print_colour("Testing MPAS-Seaice", "title")
 
-print "Test suite: ", testSuite
-print
-print "Domains directory: ", domainsDir
-print
+print("Test suite: ", testSuite)
+print()
+print("Domains directory: ", domainsDir)
+print()
 
 # loop over configurations
 for configuration in testsuite:
@@ -105,7 +104,7 @@ for configuration in testsuite:
     # loop over domain
     for domain in configuration:
 
-        print "Using configuration " + configuration.get('name') + " and domain " + domain.get('name') + "..."
+        print("Using configuration " + configuration.get('name') + " and domain " + domain.get('name') + "...")
 
         # loop over tests
         for test in domain:
@@ -138,7 +137,7 @@ for configuration in testsuite:
             # see if test wasnt available
             if (not foundTest):
 
-                print "Requested test %s not available" %(test.get('name'))
+                print("Requested test %s not available" %(test.get('name')))
                 sys.exit()
 
 

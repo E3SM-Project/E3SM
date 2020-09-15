@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import os, shutil
 from compare_mpas_files import compare_files
 from testing_utils import *

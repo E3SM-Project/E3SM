@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-
+from __future__ import print_function
 import os, shutil
 from compare_mpas_files import compare_files
 from testing_utils import *
@@ -30,7 +29,7 @@ def parallelism(mpasDevelopmentDir, domainsDir, domain, configuration, options, 
     if ("multipleBlocks" in options.keys() and options["multipleBlocks"] == "True"):
         multipleBlocks = True
 
-    print "multipleBlocks: ", multipleBlocks
+    print("multipleBlocks: ", multipleBlocks)
     logfile.write("multipleBlocks: %s" %(multipleBlocks))
 
     # development run
