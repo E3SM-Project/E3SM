@@ -307,28 +307,28 @@ TEST_CASE("scorpio_interface_output", "") {
   get_dof(ekat::size(x_data), myrank, numranks, dof_x[0], xstart,xstop);
   std::vector<Int> x_dof(dof_x[0]);
   for (int ii=xstart,cnt=0;ii<=xstop;++ii,++cnt) {
-    x_dof[cnt] = ii+1;  // Add one to index since C++ starts at 0 and Fortran starts at 1
+    x_dof[cnt] = ii;  // Add one to index since C++ starts at 0 and Fortran starts at 1
   }
   set_dof(outfilename,"x",dof_x[0],x_dof.data());
   // next y
   get_dof(ekat::size(y_data), myrank, numranks, dof_y[0], ystart,ystop);
   std::vector<Int> y_dof(dof_y[0]);
   for (int ii=ystart,cnt=0;ii<=ystop;++ii,++cnt) {
-    y_dof[cnt] = ii+1;
+    y_dof[cnt] = ii;
   }
   set_dof(outfilename,"y",dof_y[0],y_dof.data());
   // next z
   get_dof(ekat::size(z_data), myrank, numranks, dof_z[0], zstart,zstop);
   std::vector<Int> z_dof(dof_z[0]);
   for (int ii=zstart,cnt=0;ii<=zstop;++ii,++cnt) {
-    z_dof[cnt] = ii+1;
+    z_dof[cnt] = ii;
   }
   set_dof(outfilename,"z",dof_z[0],z_dof.data());
   // now 1d, 2d and 3d data arrays.
   get_dof(dimlen_1d[0], myrank, numranks, dof_test_1d[0], test_1d_start,test_1d_stop);
   std::vector<Int> test1d_dof(dof_test_1d[0]);
   for (int ii=test_1d_start,cnt=0;ii<=test_1d_stop;++ii,++cnt) {
-    test1d_dof[cnt] = ii+1;
+    test1d_dof[cnt] = ii;
   }
   set_dof(outfilename,"index_1d",dof_test_1d[0],test1d_dof.data());
   set_dof(outfilename,"data_1d",dof_test_1d[0],test1d_dof.data());
@@ -336,7 +336,7 @@ TEST_CASE("scorpio_interface_output", "") {
   get_dof(dimlen_2d[0]*dimlen_2d[1], myrank, numranks, dof_test_2d[0], test_2d_start,test_2d_stop);
   std::vector<Int> test2d_dof(dof_test_2d[0]);
   for (int ii=test_2d_start,cnt=0;ii<=test_2d_stop;++ii,++cnt) {
-    test2d_dof[cnt] = ii+1;
+    test2d_dof[cnt] = ii;
   }
   set_dof(outfilename,"index_2d",dof_test_2d[0],test2d_dof.data());
   set_dof(outfilename,"data_2d",dof_test_2d[0],test2d_dof.data());
@@ -344,7 +344,7 @@ TEST_CASE("scorpio_interface_output", "") {
   get_dof(dimlen_3d[0]*dimlen_3d[1]*dimlen_3d[2], myrank, numranks, dof_test_3d[0], test_3d_start,test_3d_stop);
   std::vector<Int> test3d_dof(dof_test_3d[0]);
   for (int ii=test_3d_start,cnt=0;ii<=test_3d_stop;++ii,++cnt) {
-    test3d_dof[cnt] = ii+1;
+    test3d_dof[cnt] = ii;
   }
   set_dof(outfilename,"index_3d",dof_test_3d[0],test3d_dof.data());
   set_dof(outfilename,"data_3d",dof_test_3d[0],test3d_dof.data());
@@ -617,28 +617,28 @@ TEST_CASE("scorpio_interface_input", "") {
   get_dof(ekat::size(x_data), myrank, numranks, dof_x[0], xstart,xstop);
   std::vector<Int> x_dof(dof_x[0]);
   for (int ii=xstart,cnt=0;ii<=xstop;++ii,++cnt) {
-    x_dof[cnt] = ii+1;
+    x_dof[cnt] = ii;
   }
   set_dof(infilename,"x",dof_x[0],x_dof.data());
 
   get_dof(ekat::size(y_data), myrank, numranks, dof_y[0], ystart,ystop);
   std::vector<Int> y_dof(dof_y[0]);
   for (int ii=ystart,cnt=0;ii<=ystop;++ii,++cnt) {
-    y_dof[cnt] = ii+1;
+    y_dof[cnt] = ii;
   }
   set_dof(infilename,"y",dof_y[0],y_dof.data());
 
   get_dof(ekat::size(z_data), myrank, numranks, dof_z[0], zstart,zstop);
   std::vector<Int> z_dof(dof_z[0]);
   for (int ii=zstart,cnt=0;ii<=zstop;++ii,++cnt) {
-    z_dof[cnt] = ii+1;
+    z_dof[cnt] = ii;
   }
   set_dof(infilename,"z",dof_z[0],z_dof.data());
 
   get_dof(dimlen_1d[0], myrank, numranks, dof_test_1d[0], test_1d_start,test_1d_stop);
   std::vector<Int> test1d_dof(dof_test_1d[0]);
   for (int ii=test_1d_start,cnt=0;ii<=test_1d_stop;++ii,++cnt) {
-    test1d_dof[cnt] = ii+1;
+    test1d_dof[cnt] = ii;
   }
   set_dof(infilename,"index_1d",dof_test_1d[0],test1d_dof.data());
   set_dof(infilename,"data_1d",dof_test_1d[0],test1d_dof.data());
@@ -646,7 +646,7 @@ TEST_CASE("scorpio_interface_input", "") {
   get_dof(dimlen_2d[0]*dimlen_2d[1], myrank, numranks, dof_test_2d[0], test_2d_start,test_2d_stop);
   std::vector<Int> test2d_dof(dof_test_2d[0]);
   for (int ii=test_2d_start,cnt=0;ii<=test_2d_stop;++ii,++cnt) {
-    test2d_dof[cnt] = ii+1;
+    test2d_dof[cnt] = ii;
   }
   set_dof(infilename,"index_2d",dof_test_2d[0],test2d_dof.data());
   set_dof(infilename,"data_2d",dof_test_2d[0],test2d_dof.data());
@@ -654,7 +654,7 @@ TEST_CASE("scorpio_interface_input", "") {
   get_dof(dimlen_3d[0]*dimlen_3d[1]*dimlen_3d[2], myrank, numranks, dof_test_3d[0], test_3d_start,test_3d_stop);
   std::vector<Int> test3d_dof(dof_test_3d[0]);
   for (int ii=test_3d_start,cnt=0;ii<=test_3d_stop;++ii,++cnt) {
-    test3d_dof[cnt] = ii+1;
+    test3d_dof[cnt] = ii;
   }
   set_dof(infilename,"index_3d",dof_test_3d[0],test3d_dof.data());
   set_dof(infilename,"data_3d",dof_test_3d[0],test3d_dof.data());
