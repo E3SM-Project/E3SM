@@ -31,6 +31,8 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird {
     // Tests for the SHOC function:
     //   compute_diag_third_shoc_moment
     
+    // Mid-level function for w3
+    
     // convective boundary layer test
     //  Feed in profiles that are representative of a convective boundary
     //  layer and verify that results are as expected i.e. boundary points

@@ -24,12 +24,22 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
 
   static void run_property()
   {
-    static constexpr Int shcol    = 1;
+    static constexpr Int shcol    = 2;
     static constexpr Int nlev     = 5;
     static constexpr Int nlevi    = nlev+1;
 
     // Tests for the SHOC function:
     //   diag_third_shoc_moments
+    
+    // Upper level test for w3
+    
+    // Convective boundary layer test with extreme gradients
+    // Most physics of the test have been applied in midlayer function.
+    //  Here we give the profile very small dz and hence extreme gardients
+    //  to be sure that w3 is clipped appropriately.  
+    
+    // Then we will increase w_sec and tke for a second test to verify that
+    //  the magnitude of w3 has increased.
 
     // Define vertical velocity second moment [m2/s2]
     static constexpr Real w_sec[nlev] = {0.2, 0.3, 0.5, 0.3, 0.1};
@@ -42,7 +52,7 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
     // Define vertical flux of temperature [K m/s]
     static constexpr Real wthl_sec[nlevi] = {0.003, -0.03, -0.04, -0.01, 0.01, 0.03};
     // Define the heights on the zi grid [m]
-    static constexpr Real zi_grid[nlevi] = {9000, 5000, 1500, 900, 500, 0};
+    static constexpr Real zi_grid[nlevi] = {900, 500, 150, 90, 50, 0};
     // Define the return to isotropy timescale [s]
     static constexpr Real isotropy[nlev] = {1000, 2000, 4000, 1000, 500};
     // Define the brunt vaisalla frequency
@@ -93,6 +103,11 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
 	SDS.zt_grid[offset] = zt_grid[n];
 	SDS.tke[offset] = tke[n];
 	
+        SDS.isotropy[offset] = isotropy[n];
+        SDS.brunt[offset] = brunt[n];
+        SDS.thetal[offset] = thetal[n];
+        SDS.wthv_sec[offset] = wthv_sec[n];	
+	
       }
 
       // Fill in test data on zi_grid.     
@@ -106,11 +121,6 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
 	SDS.qwthl_sec[offset] = qwthl_sec[n];
 	SDS.wthl_sec[offset] = wthl_sec[n];
 	
-	SDS.isotropy[offset] = isotropy[n];
-	SDS.brunt[offset] = brunt[n];
-	SDS.thetal[offset] = thetal[n];
-	SDS.wthv_sec[offset] = wthv_sec[n];
-	
       }
     }      
 
@@ -122,9 +132,14 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
         const auto offset = n + s * nlev;
 	
         REQUIRE(SDS.w_sec[offset] >= 0);
+	// for this test make sure w_sec <= 1
+	REQUIRE(SDS.w_sec[offset] <= 1);
+	
 	REQUIRE(SDS.dz_zt[offset] > 0);
 	REQUIRE(SDS.zt_grid[offset] > 0);
-	REQUIRE(SDS.tke[offset] > 0);  
+	REQUIRE(SDS.tke[offset] > 0);
+        REQUIRE(SDS.isotropy[offset] >= 0);
+        REQUIRE(SDS.thetal[offset] >= 0);
       }
       
       for(Int n = 0; n < nlevi; ++n) {
@@ -134,8 +149,6 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
 	REQUIRE(SDS.zi_grid[offset] >= 0);
 	REQUIRE(SDS.thl_sec[offset] >= 0);
 	REQUIRE(SDS.qw_sec[offset] >= 0);
-	REQUIRE(SDS.isotropy[offset] >= 0);
-	REQUIRE(SDS.thetal[offset] >= 0);
 	
       }    
       
@@ -143,6 +156,62 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
 
     // Call the fortran implementation
     diag_third_shoc_moments(SDS);
+    
+    // Check to make sure there is at least one
+    //  positive w3 value for convective boundary layer
+    bool is_skew;
+    // Verify that boundary points are zero
+    for(Int s = 0; s < shcol; ++s) { 
+      is_skew = false; // Initialize
+      for(Int n = 0; n < nlevi; ++n) {
+        const auto offset = n + s * nlevi;
+
+	// For this test make sure w3 has been clipped.
+	//  Given input w2, this should be less than 1
+	REQUIRE(abs(SDS.w3[offset]) < 1);
+	
+	if (SDS.w3[offset] > 0){
+	  is_skew = true;
+	}	
+	
+      }
+      REQUIRE(is_skew == true);
+    }
+    
+    // Now save the result from first column
+    Real w3_test1[nlevi*shcol];
+    for(Int s = 0; s < shcol; ++s) { 
+      for(Int n = 0; n < nlevi; ++n) {
+        const auto offset = n + s * nlevi;
+	
+	w3_test1[offset] = SDS.w3[offset];
+      }
+    }
+    
+    // Load up new and increased TKE values
+    for(Int s = 0; s < shcol; ++s) { 
+      for(Int n = 0; n < nlevi; ++n) {
+        const auto offset = n + s * nlevi;
+	
+	SDS.w_sec[offset] = 10*w_sec[n];
+	// update new TKE value
+	SDS.tke[offset] = 1.5*SDS.w_sec[offset];
+      }
+    }
+    
+    // Call the fortran implementation
+    diag_third_shoc_moments(SDS);
+    
+    // Verify that new result is greater in magnitude
+    //  that the result from test one
+    for(Int s = 0; s < shcol; ++s) { 
+      for(Int n = 0; n < nlevi; ++n) {
+        const auto offset = n + s * nlevi;
+	if (n != 0 && n != nlevi-1){
+          REQUIRE(std::abs(SDS.w3[offset]) > std::abs(w3_test1[offset]));
+	}
+      }
+    }
 
   }
 
