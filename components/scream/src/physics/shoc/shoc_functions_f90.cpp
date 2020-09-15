@@ -547,6 +547,57 @@ void shoc_diag_second_moments_ubycond(SHOCSecondMomentUbycondData& d)
 // _f function definitions. These expect data in C layout
 //
 
+void calc_shoc_varorcovar_f(Int shcol, Int nlev, Int nlevi, Real tunefac,
+                            Real *isotropy_zi, Real *tkh_zi, Real *dz_zi,
+                            Real *invar1, Real *invar2, Real *varorcovar)
+{
+  using SHF = Functions<Real, DefaultDevice>;
+
+  using Spack      = typename SHF::Spack;
+  using view_2d    = typename SHF::view_2d<Spack>;
+  using KT         = typename SHF::KT;
+  using ExeSpace   = typename KT::ExeSpace;
+  using MemberType = typename SHF::MemberType;
+
+  static constexpr Int num_arrays = 6;
+
+  Kokkos::Array<view_2d, num_arrays> temp_d;
+  Kokkos::Array<size_t, num_arrays> dim1_sizes     = {shcol,       shcol,  shcol, shcol,  shcol,  shcol};
+  Kokkos::Array<size_t, num_arrays> dim2_sizes     = {nlevi,       nlevi,  nlevi, nlev,   nlev,   nlevi};
+  Kokkos::Array<const Real*, num_arrays> ptr_array = {isotropy_zi, tkh_zi, dz_zi, invar1, invar2, varorcovar};
+
+  // Sync to device
+  ekat::pack::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d, true);
+
+  view_2d
+    isotropy_zi_d  (temp_d[0]),
+    tkh_zi_d    (temp_d[1]),
+    dz_zi_d     (temp_d[2]),
+    invar1_d    (temp_d[3]),
+    invar2_d    (temp_d[4]),
+    varorcovar_d(temp_d[5]);
+
+  const Int nk_pack = ekat::pack::npack<Spack>(nlev);
+  const auto policy = ekat::util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    const auto oisotropy_zi_d = ekat::util::subview(isotropy_zi_d, i);
+    const auto otkh_zi_d      = ekat::util::subview(tkh_zi_d, i);
+    const auto odz_zi_d       = ekat::util::subview(dz_zi_d, i);
+    const auto oinvar1_d      = ekat::util::subview(invar1_d, i);
+    const auto oinvar2_d      = ekat::util::subview(invar2_d, i);
+    const auto ovarorcovar_d  = ekat::util::subview(varorcovar_d, i);
+
+    SHF::calc_shoc_varorcovar(team, nlev, tunefac, oisotropy_zi_d, otkh_zi_d, odz_zi_d,
+                              oinvar1_d, oinvar2_d, ovarorcovar_d);
+  });
+
+  // Sync back to host
+  Kokkos::Array<view_2d, 1> inout_views = {varorcovar_d};
+  ekat::pack::device_to_host({varorcovar}, {shcol}, {nlevi}, inout_views, true);
+}
+
 void calc_shoc_vertflux_f(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 			  Real *dz_zi, Real *invar, Real *vertflux)
 {

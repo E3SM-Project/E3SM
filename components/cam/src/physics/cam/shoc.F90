@@ -1308,6 +1308,10 @@ subroutine calc_shoc_varorcovar(&
   !  (depending on if invar1 is the same as invar2)
   !  for a given set of inputs
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use shoc_iso_f, only: calc_shoc_varorcovar_f
+#endif
+
   implicit none
 
 ! INPUT VARIABLES
@@ -1338,12 +1342,20 @@ subroutine calc_shoc_varorcovar(&
   integer :: i, k, kt
   real(rtype) :: sm, grid_dz2
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call calc_shoc_varorcovar_f(shcol,nlev,nlevi,tunefac,isotropy_zi,tkh_zi,dz_zi,invar1,invar2,&  ! Input
+           varorcovar)                              ! Input/Output)
+      return
+   endif
+#endif
+   
   do k=2,nlev
 
     kt=k-1 ! define upper grid point indicee
     do i=1,shcol
 
-      grid_dz2=(1._rtype/dz_zi(i,k))**2 ! vertical grid diff squared
+      grid_dz2=bfb_square(1._rtype/dz_zi(i,k)) ! vertical grid diff squared
       sm=isotropy_zi(i,k)*tkh_zi(i,k) ! coefficient for variances
 
       ! Compute the variance or covariance

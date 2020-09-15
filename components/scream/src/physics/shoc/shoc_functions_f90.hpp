@@ -656,6 +656,9 @@ void shoc_diag_second_moments_ubycond               (SHOCSecondMomentUbycondData
 //
 extern "C" {
 
+void calc_shoc_varorcovar_f(Int shcol, Int nlev, Int nlevi, Real tunefac,
+                            Real *isotropy_zi, Real *tkh_zi, Real *dz_zi,
+                            Real *invar1, Real *invar2, Real *varorcovar);
 void calc_shoc_vertflux_f(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 			  Real *dz_zi, Real *invar, Real *vertflux);
 void shoc_diag_second_moments_srf_f(Int shcol, Real* wthl, Real* uw, Real* vw,
