@@ -6,6 +6,7 @@ set(SHOC_TESTS_SRCS
     shoc_grid_tests.cpp
     shoc_vertflux_tests.cpp
     shoc_varorcovar_tests.cpp
+    shoc_energy_fixer_tests.cpp
     shoc_energy_update_dse_tests.cpp
     shoc_energy_integral_tests.cpp
     shoc_energy_total_fixer_tests.cpp

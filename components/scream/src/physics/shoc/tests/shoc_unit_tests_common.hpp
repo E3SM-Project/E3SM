@@ -54,8 +54,9 @@ struct UnitWrap {
     // Put struct decls here
     struct TestCalcShocVertflux;
     struct TestShocUpdateDse;
-    struct TestShocEnergyInt;
     struct TestShocEnergyFixer;
+    struct TestShocEnergyInt;
+    struct TestShocTotEnergyFixer;
     struct TestShocEnergyDseFixer;
     struct TestShocEnergyThreshFixer;
     struct TestShocEddyDiff;
