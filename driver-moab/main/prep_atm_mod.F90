@@ -324,13 +324,15 @@ contains
     call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
 
     ! it happens over joint communicator
-    if ( mbintxoa .ge. 0 ) then
-      if (atm_pg_active ) then ! use mhpgid mesh
-        ierr = iMOAB_CoverageGraph(mpicom_join, mhpgid, mbaxid, mbintxoa, context_id);
-      else
-        ierr = iMOAB_CoverageGraph(mpicom_join, mhid, mbaxid, mbintxoa, context_id);
-      endif
 
+    if (atm_pg_active ) then ! use mhpgid mesh
+      ierr = iMOAB_CoverageGraph(mpicom_join, mhpgid, mbaxid, mbintxoa, context_id);
+    else
+      ierr = iMOAB_CoverageGraph(mpicom_join, mhid, mbaxid, mbintxoa, context_id);
+    endif
+
+
+    if ( mbintxoa .ge. 0 ) then
       wgtIdef = 'scalar'//CHAR(0)
       if (atm_pg_active) then
         dm1 = "fv"//CHAR(0)
@@ -349,35 +351,32 @@ contains
       monotonicity = 0 !
       noConserve = 0
       validate = 1
-
       ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxoa, wgtIdef, &
                                                 trim(dm1), orderATM, trim(dm2), orderOCN, &
                                                 monotonicity, volumetric, noConserve, validate, &
                                                 trim(dofnameATM), trim(dofnameOCN) )
-
-      ! compute the comm graph between phys atm and intx-atm-ocn, to be able to send directly from phys atm
-      ! towards coverage mesh on atm for intx to ocean
-      ! this is similar to imoab_phatm_ocn_coupler.cpp test in moab
-      !    int typeA = 2; // point cloud
-      !    int typeB = 1; // quads in coverage set
-      !    ierr = iMOAB_ComputeCommGraph(cmpPhAtmPID, cplAtmOcnPID, &atmCouComm, &atmPEGroup, &couPEGroup,
-      !        &typeA, &typeB, &cmpatm, &atmocnid);
-      call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
-      call seq_comm_getinfo(atm_id, mpigrp=mpigrp_old)    !  component group pes, from atm id ( also ATMID(1) )
-
-      typeA = 2 ! point cloud, phys atm in this case
-      ! idintx is a unique number of MOAB app that takes care of intx between ocn and atm mesh
-      idintx = 100*atm(1)%cplcompid + ocn(1)%cplcompid ! something different, to differentiate it; ~ 618 !
-      if (atm_pg_active) then
-        typeB = 2 ! fv on atm side too !! imoab_apg2_ol  coupler example
-      else
-        typeB = 1 ! atm cells involved in intersection (spectral in this case)
-      endif
-      ierr = iMOAB_ComputeCommGraph( mphaid, mbintxoa, mpicom_join, mpigrp_old, mpigrp_CPLID, &
-            typeA, typeB, atm_id, idintx)
-
-
     endif ! only if atm and ocn intersect  mbintxoa >= 0
+    ! compute the comm graph between phys atm and intx-atm-ocn, to be able to send directly from phys atm
+    ! towards coverage mesh on atm for intx to ocean
+    ! this is similar to imoab_phatm_ocn_coupler.cpp test in moab
+    !    int typeA = 2; // point cloud
+    !    int typeB = 1; // quads in coverage set
+    !    ierr = iMOAB_ComputeCommGraph(cmpPhAtmPID, cplAtmOcnPID, &atmCouComm, &atmPEGroup, &couPEGroup,
+    !        &typeA, &typeB, &cmpatm, &atmocnid);
+    call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
+    call seq_comm_getinfo(atm_id, mpigrp=mpigrp_old)    !  component group pes, from atm id ( also ATMID(1) )
+
+    typeA = 2 ! point cloud, phys atm in this case
+    ! idintx is a unique number of MOAB app that takes care of intx between ocn and atm mesh
+    idintx = 100*atm(1)%cplcompid + ocn(1)%cplcompid ! something different, to differentiate it; ~ 618 !
+    if (atm_pg_active) then
+      typeB = 2 ! fv on atm side too !! imoab_apg2_ol  coupler example
+    else
+      typeB = 1 ! atm cells involved in intersection (spectral in this case)
+    endif
+    ierr = iMOAB_ComputeCommGraph( mphaid, mbintxoa, mpicom_join, mpigrp_old, mpigrp_CPLID, &
+          typeA, typeB, atm_id, idintx)
+
   end subroutine prep_atm_ocn_moab
 
   subroutine prep_atm_lnd_moab(infodata)
@@ -411,20 +410,21 @@ contains
          atm_present=atm_present,       &
          lnd_present=lnd_present)
 
-    if (mbintxla .ge. 0 ) then
+
     !  it involves initial atm app; mhid; also migrate atm mesh on coupler pes, mbaxid
     !  intx lnd atm are in mbintxla ; remapper also has some info about coverage mesh
     ! after this, the sending of tags from atm pes to coupler pes, in land context will use the new par
     ! comm graph, that has more precise info about
     ! how to get mpicomm for joint atm + coupler
-      id_join = atm(1)%cplcompid
-      atm_id   = atm(1)%compid
-      ! maybe we can use a moab-only id, defined like mbintxoa, mhid, somewhere else (seq_comm_mct)
-      ! we cannot use mbintxla because it may not exist on atm comp yet;
-      context_id = lnd(1)%cplcompid
-      call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
-      if (diff_atm_land) then
-        ierr = iMOAB_CoverageGraph(mpicom_join, mhpgid, mbaxid, mbintxla, context_id);
+    id_join = atm(1)%cplcompid
+    atm_id   = atm(1)%compid
+    ! maybe we can use a moab-only id, defined like mbintxoa, mhid, somewhere else (seq_comm_mct)
+    ! we cannot use mbintxla because it may not exist on atm comp yet;
+    context_id = lnd(1)%cplcompid
+    call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
+    if (diff_atm_land) then
+      ierr = iMOAB_CoverageGraph(mpicom_join, mhpgid, mbaxid, mbintxla, context_id);
+      if (mbintxla .ge. 0 ) then ! weights are computed over coupler pes
         dm1 = "fv"//CHAR(0)
         dofnameATM="GLOBAL_ID"//CHAR(0)
         orderATM = 1
@@ -444,10 +444,11 @@ contains
                                                   trim(dm1), orderATM, trim(dm2), orderLND, &
                                                   monotonicity, volumetric, noConserve, validate, &
                                                   trim(dofnameATM), trim(dofnameLND) )
-      else
-       ! it happens over joint communicator
-       ! we do not need intx, just comm graph computation; see imoab_phatm_ocn_coupler.cpp
-       ! prepare to send from phys atm towards land, based on GLOBAL_ID
+      endif
+    else
+     ! it happens over joint communicator
+     ! we do not need intx, just comm graph computation; see imoab_phatm_ocn_coupler.cpp
+     ! prepare to send from phys atm towards land, based on GLOBAL_ID
 
 !      if( atmCouComm != MPI_COMM_NULL )
 !      {
@@ -456,17 +457,15 @@ contains
 !          ierr = iMOAB_ComputeCommGraph( cmpPhAtmPID, cplLndPID, &atmCouComm, &atmPEGroup, &couPEGroup, &typeA, &typeB,
 !                                         &cmpatm, &cpllnd );
 !      }
-        call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
-        call seq_comm_getinfo(atm_id, mpigrp=mpigrp_old)    !  component group pes, from atm id ( also ATMID(1) )
-        typeA = 2 ! point cloud
-        typeB = 2 ! point cloud too, for land on coupler lnd(1)%cplcompid
-        ierr = iMOAB_ComputeCommGraph( mphaid, mblxid, mpicom_join, mpigrp_old, mpigrp_CPLID, &
-            typeA, typeB, atm_id, lnd(1)%cplcompid)
-
-      endif
-
+      call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
+      call seq_comm_getinfo(atm_id, mpigrp=mpigrp_old)    !  component group pes, from atm id ( also ATMID(1) )
+      typeA = 2 ! point cloud
+      typeB = 2 ! point cloud too, for land on coupler lnd(1)%cplcompid
+      ierr = iMOAB_ComputeCommGraph( mphaid, mblxid, mpicom_join, mpigrp_old, mpigrp_CPLID, &
+          typeA, typeB, atm_id, lnd(1)%cplcompid)
 
     endif
+
   end subroutine prep_atm_lnd_moab
 
   subroutine prep_atm_migrate_moab(infodata)
