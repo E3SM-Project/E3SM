@@ -1492,15 +1492,12 @@ contains
          call mpas_pool_get_array(okuboWeissAMPool, 'eddyID', OW_cc_id)
          call mpas_pool_get_array(okuboWeissAMPool, 'vorticity', om)
 
-         !$omp master
          allocate(velocityGradient(3, 3, nVertLevels, nCells), &
                   OW_thresh(nVertLevels, nCells), &
                   S(nVertLevels, nCells + 1), &
                   Lam1(nVertLevels, nCells + 1), &
                   Lam2(nVertLevels, nCells + 1), &
                   Lam2_R3(nVertLevels, nCells + 1))
-         !$omp end master
-         !$omp barrier
 
          ! Compute velocity gradient
          call mpas_velocity_gradient_R3Cell(normalVelocity, tangentialVelocity, &
@@ -1522,15 +1519,12 @@ contains
             call mpas_timer_stop("OW connected components")
          end if
 
-         !$omp barrier
-         !$omp master
          deallocate(velocityGradient, &
                     OW_thresh, &
                     S, &
                     Lam1, &
                     Lam2, &
                     Lam2_R3)
-         !$omp end master
 
          block => block % next
       end do

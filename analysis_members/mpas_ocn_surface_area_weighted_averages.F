@@ -295,14 +295,11 @@ contains
                    "    increase size of ocn_layer_volume_weighted_averages scratch space", MPAS_LOG_CRIT )
             endif
    
-            !$omp master
             allocate(workArray(nDefinedDataFields, size(areaCell)), &
                      workMask(size(areaCell)), &
                      workMin(nDefinedDataFields), &
                      workMax(nDefinedDataFields), &
                      workSum(nDefinedDataFields))
-            !$omp end master
-            !$omp barrier
    
             ! get pointers to data that will be analyzed
             ! listed in the order in which the fields appear in {avg,min,max}SurfaceStatistics
@@ -441,14 +438,11 @@ contains
             enddo
    
             ! deallocate scratch fields
-            !$omp barrier
-            !$omp master
             deallocate(workArray, &
                        workMask, &
                        workMin, &
                        workMax, &
                        workSum)
-            !$omp end master
 
             block => block % next
          end do
