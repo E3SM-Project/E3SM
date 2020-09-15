@@ -482,9 +482,9 @@ contains
 
   subroutine diag_third_shoc_moments_c(&
                              shcol, nlev, nlevi, w_sec, thl_sec, qw_sec, &
-			     qwthl_sec, wthl_sec, isotropy, brunt, thetal, &
-			     tke, wthv_sec, dz_zt, dz_zi, &
-			     zt_grid, zi_grid, w3) bind(C)
+                             qwthl_sec, wthl_sec, isotropy, brunt, thetal, &
+                             tke, wthv_sec, dz_zt, dz_zi, &
+                             zt_grid, zi_grid, w3) bind(C)
   use shoc, only: diag_third_shoc_moments
   
     integer(kind=c_int), intent(in), value :: shcol
