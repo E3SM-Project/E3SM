@@ -345,7 +345,7 @@ void diag_third_shoc_moments(SHOCDiagThirdMomData &d) {
   d.transpose<ekat::util::TransposeDirection::c2f>();
   diag_third_shoc_moments_c(d.shcol(),d.nlev(),d.nlevi(),d.w_sec,d.thl_sec,d.qw_sec,
                             d.qwthl_sec,d.wthl_sec,d.isotropy,d.brunt,d.thetal,
-			    d.tke,d.wthv_sec,d.dz_zt,d.dz_zi,d.zt_grid,d.zi_grid,
+                            d.tke,d.wthv_sec,d.dz_zt,d.dz_zi,d.zt_grid,d.zi_grid,
                             d.w3);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
