@@ -77,6 +77,11 @@ void eddy_diffusivities_c(Int nlev, Int shcol, Real *obklen, Real *pblh,
 void calc_shoc_vertflux_c(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 			  Real *dz_zi, Real *invar, Real *vertflux);
 
+void shoc_length_c(Int shcol, Int nlev, Int nlevi, Real *tke, Real *host_dx,
+                   Real *host_dy, Real *pblh, Real *zt_grid, Real *zi_grid,
+                   Real *dz_zt, Real *dz_zi, Real *thetal, Real *wthv_sec,
+                   Real *thv, Real *brunt, Real *shoc_mix);
+
 void compute_brunt_shoc_length_c(Int nlev, Int nlevi, Int shcol ,Real *dz_zt,
                                  Real *thv, Real *thv_zi, Real *brunt);
 
@@ -321,6 +326,15 @@ void eddy_diffusivities(SHOCEddydiffData &d) {
   eddy_diffusivities_c(d.nlev(), d.shcol(), d.obklen, d.pblh, d.zt_grid,
      d.shoc_mix, d.sterm_zt, d.isotropy, d.tke, d.tkh, d.tk);
   d.transpose<ekat::util::TransposeDirection::f2c>();
+}
+
+void shoc_length(SHOCLengthData &d){
+  shoc_init(d.nlev(), true);
+  d.transpose<ekat::util::TransposeDirection::c2f>();
+  shoc_length_c(d.shcol(),d.nlev(),d.nlevi(),d.tke,d.host_dx,d.host_dy,
+                d.pblh,d.zt_grid,d.zi_grid,d.dz_zt,d.dz_zi,d.thetal,
+                d.wthv_sec,d.thv,d.brunt,d.shoc_mix);
+  d.transpose<ekat::util::TransposeDirection::f2c>();	
 }
 
 void compute_brunt_shoc_length(SHOCBruntlengthData &d) {
