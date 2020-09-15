@@ -18,7 +18,7 @@ def add_variable_to_diag_file(file1,variableArray1,variableArray2,variableName):
     varIn = file1[variableName]
     for dimension in varIn.dimensions:
         if (dimension not in fileDiag.dimensions):
-            fileDiag.createDimension(dimension,len(fileIn.dimensions[dimension\]))
+            fileDiag.createDimension(dimension,len(fileIn.dimensions[dimension]))
 
     varOut = fileDiag.createVariable(varIn.name, varIn.dtype, varIn.dimensions)
     varOut[:] = variableArray2[:] - variableArray1[:]

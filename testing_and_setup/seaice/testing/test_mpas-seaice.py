@@ -4,7 +4,7 @@ import argparse
 import sys
 import os
 import xml.etree.ElementTree as ET
-import imp
+import importlib.util
 
 # tests defined
 tests = [{"name":"regression"     , "needsBase":True,  "description":"Tests whether development and base MPAS models are bit reproducible."},
@@ -124,7 +124,10 @@ for configuration in testsuite:
                         options[option.get('name')] = option.get('value')
 
                     # run test
-                    module = imp.load_source(testAvail["name"], os.path.dirname(os.path.abspath(__file__)) + "/tests/" + testAvail["name"]+".py")
+                    spec = importlib.util.spec_from_file_location(testAvail["name"], os.path.dirname(os.path.abspath(__file__)) + "/tests/" + testAvail["name"]+".py")
+                    module = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(module)
+
                     test_function = getattr(module, testAvail["name"])
                     if (testAvail["needsBase"]):
                         failed = test_function(mpasDevelopmentDir, mpasBaseDir, domainsDir, domain.get('name'), configuration.get('name'), options, args.check, args.oversubscribe, args.np1, args.np2)
