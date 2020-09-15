@@ -12,12 +12,14 @@
 
 module seaice_velocity_solver
 
+#include "gpu_macros.inc"
+
   use mpas_derived_types
   use mpas_pool_routines
   use mpas_timekeeping
   use mpas_dmpar
   use mpas_timer
-  use mpas_log, only: mpas_log_write
+  use mpas_log, only: mpas_log_write, mpas_log_info
 
   implicit none
 
@@ -545,6 +547,9 @@ contains
 
   subroutine velocity_solver_pre_subcycle(domain)
 
+    use seaice_mesh_pool, only: &
+         seaice_mesh_pool_update
+
     type(domain_type), intent(inout) :: &
          domain
 
@@ -592,6 +597,11 @@ contains
     call mpas_timer_start("init subcycle var")
     call init_subcycle_variables(domain)
     call mpas_timer_stop("init subcycle var")
+
+    ! update mesh pool variables
+    call mpas_timer_start("update mesh pool")
+    call seaice_mesh_pool_update(domain)
+    call mpas_timer_stop("update mesh pool")
 
   end subroutine velocity_solver_pre_subcycle
 
@@ -2339,6 +2349,23 @@ contains
     integer :: &
          iElasticSubcycle
 
+#if defined(MPAS_OPENMP_OFFLOAD) || defined(MPAS_OPENACC)
+    type (MPAS_pool_type), pointer :: &
+         velocityVariationalPool
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         replacementPressure
+
+    call MPAS_pool_get_subpool(domain % blocklist % structs, "velocity_variational", velocityVariationalPool)
+    call MPAS_pool_get_array(velocityVariationalPool, "replacementPressure", replacementPressure)
+
+    call mpas_timer_start("Velocity solver memcpy HtoD")
+!$GPU DATA COPY_OUT_LP &
+!$GPUC  replacementPressure &
+!$GPUF
+    call mpas_timer_stop("Velocity solver memcpy HtoD")
+#endif
+
     call MPAS_pool_get_config(domain % configs, "config_elastic_subcycle_number", config_elastic_subcycle_number)
 
     do iElasticSubcycle = 1, config_elastic_subcycle_number
@@ -2349,6 +2376,10 @@ contains
             iElasticSubcycle)
 
     enddo
+
+#if defined(MPAS_OPENMP_OFFLOAD) || defined(MPAS_OPENACC)
+!$GPU DATA_END
+#endif
 
   end subroutine subcycle_velocity_solver!}}}
 
@@ -2377,6 +2408,12 @@ contains
 
     use seaice_diagnostics, only: &
          seaice_load_balance_timers
+
+    use seaice_mesh_pool, only: &
+         stressDivergenceU, &
+         stressDivergenceV, &
+         uVelocity, &
+         vVelocity
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -2416,6 +2453,10 @@ contains
        call mpas_timer_stop("Velocity solver internal stress")
 
     endif
+
+#if defined(MPAS_OPENMP_OFFLOAD) || defined(MPAS_OPENACC)
+!$GPU UPDATE_H((stressDivergenceU, stressDivergenceV))
+#endif
 
     ! ocean stress coefficient
     call mpas_timer_start("ocn stress coef")
@@ -2481,6 +2522,10 @@ contains
     call mpas_timer_stop("Velocity solver halo")
 
     call seaice_load_balance_timers(domain, "vel after")
+
+#if defined(MPAS_OPENMP_OFFLOAD) || defined(MPAS_OPENACC)
+!$GPU UPDATE_D((uVelocity, vVelocity))
+#endif
 
   end subroutine single_subcycle_velocity_solver!}}}
 
@@ -2565,7 +2610,6 @@ contains
              endif
 
           enddo ! iVertex
-
        else
 
           ! no ocean stress
@@ -2608,8 +2652,6 @@ contains
     real(kind=RKIND), dimension(:), pointer :: &
          uVelocity, &
          vVelocity, &
-         uVelocityInitial, &
-         vVelocityInitial, &
          totalMassVertex, &
          totalMassVertexfVertex, &
          stressDivergenceU, &
@@ -2654,8 +2696,6 @@ contains
        call MPAS_pool_get_array(velocitySolverPool, "solveVelocity", solveVelocity)
        call MPAS_pool_get_array(velocitySolverPool, "uVelocity", uVelocity)
        call MPAS_pool_get_array(velocitySolverPool, "vVelocity", vVelocity)
-       call MPAS_pool_get_array(velocitySolverPool, "uVelocityInitial", uVelocityInitial)
-       call MPAS_pool_get_array(velocitySolverPool, "vVelocityInitial", vVelocityInitial)
        call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceU", stressDivergenceU)
        call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceV", stressDivergenceV)
        call MPAS_pool_get_array(velocitySolverPool, "airStressVertexU", airStressVertexU)
@@ -2667,7 +2707,9 @@ contains
        call MPAS_pool_get_array(velocitySolverPool, "oceanStressV", oceanStressV)
        call MPAS_pool_get_array(velocitySolverPool, "oceanStressCoeff", oceanStressCoeff)
 
-       !$omp parallel do default(shared) private(iVertex, leftMatrix, rightHandSide, solutionDenominator)
+#ifdef MPAS_OPENMP
+!$omp parallel do default(shared) private(iVertex, leftMatrix, rightHandSide, solutionDenominator)
+#endif
        do iVertex = 1, nVerticesSolve
 
           if (solveVelocity(iVertex) == 1) then

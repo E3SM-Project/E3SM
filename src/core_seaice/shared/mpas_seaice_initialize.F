@@ -20,6 +20,7 @@ module seaice_initialize
   use mpas_io_units
   use mpas_abort
   use mpas_log, only: mpas_log_write
+  use mpas_timer, only: mpas_timer_start, mpas_timer_stop
 
   implicit none
 
@@ -59,6 +60,8 @@ contains
     use seaice_forcing, only: seaice_forcing_init, seaice_reset_coupler_fluxes
     use seaice_diagnostics, only: &
          seaice_set_testing_system_test_arrays
+    use seaice_mesh_pool, only: &
+         seaice_mesh_pool_create
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -90,6 +93,9 @@ contains
     call mpas_log_write(" Initialize mesh...")
     call seaice_init_mesh(domain)
 
+    call mpas_log_write(" Initialize mesh pool...")
+    call seaice_mesh_pool_create(domain)
+
     ! init the basic column physics package
     call mpas_log_write(" Initialize column parameters...")
     call seaice_init_column_physics_package_parameters(domain)
@@ -104,7 +110,9 @@ contains
 
     ! init dynamics
     call mpas_log_write(" Initialize velocity solver...")
+    call mpas_timer_start("Velocity solver init")
     call seaice_init_velocity_solver(domain)
+    call mpas_timer_stop("Velocity solver init")
 
     ! init advection
     call mpas_log_write(" Initialize advection...")
