@@ -140,21 +140,21 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird {
         const auto offset = n + s * nlev;
 	
         REQUIRE(SDS.w_sec[offset] >= 0);
-	REQUIRE(SDS.dz_zt[offset] > 0);
-	REQUIRE(SDS.zt_grid[offset] > 0);
-	REQUIRE(SDS.tke[offset] > 0);  
+        REQUIRE(SDS.dz_zt[offset] > 0);
+        REQUIRE(SDS.zt_grid[offset] > 0);
+        REQUIRE(SDS.tke[offset] > 0);  
       }
       
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
 	
-	REQUIRE(SDS.dz_zi[offset] >= 0);
-	REQUIRE(SDS.zi_grid[offset] >= 0);
-	REQUIRE(SDS.thl_sec[offset] >= 0);
-	REQUIRE(SDS.qw_sec[offset] >= 0);
-	REQUIRE(SDS.w_sec_zi[offset] >= 0);
-	REQUIRE(SDS.isotropy_zi[offset] >= 0);
-	REQUIRE(SDS.thetal_zi[offset] >= 0);
+        REQUIRE(SDS.dz_zi[offset] >= 0);
+        REQUIRE(SDS.zi_grid[offset] >= 0);
+        REQUIRE(SDS.thl_sec[offset] >= 0);
+        REQUIRE(SDS.qw_sec[offset] >= 0);
+        REQUIRE(SDS.w_sec_zi[offset] >= 0);
+        REQUIRE(SDS.isotropy_zi[offset] >= 0);
+        REQUIRE(SDS.thetal_zi[offset] >= 0);
 	
       }    
       
@@ -178,10 +178,10 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird {
 	
 	// Given this profile, values should fall within
 	//  reasonable bounds
-	REQUIRE(abs(SDS.w3[offset]) < 10);
+        REQUIRE(abs(SDS.w3[offset]) < 10);
 	
 	if (n == 0 || n == nlevi-1){
-	  REQUIRE(SDS.w3[n] == 0);
+          REQUIRE(SDS.w3[n] == 0);
 	}
 	
 	if (SDS.w3[offset] > 0){
@@ -191,7 +191,7 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird {
 	// Verify points increase in magnitude as 
 	//  scalar variances increase
 	if (s < shcol-1 && n != 0 && n != nlevi-1){ 
-	  REQUIRE(std::abs(SDS.w3[offsets]) > std::abs(SDS.w3[offset]));
+          REQUIRE(std::abs(SDS.w3[offsets]) > std::abs(SDS.w3[offset]));
 	}
 	    
       }

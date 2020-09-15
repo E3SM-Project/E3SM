@@ -133,11 +133,11 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
 	
         REQUIRE(SDS.w_sec[offset] >= 0);
 	// for this test make sure w_sec <= 1
-	REQUIRE(SDS.w_sec[offset] <= 1);
+        REQUIRE(SDS.w_sec[offset] <= 1);
 	
-	REQUIRE(SDS.dz_zt[offset] > 0);
-	REQUIRE(SDS.zt_grid[offset] > 0);
-	REQUIRE(SDS.tke[offset] > 0);
+        REQUIRE(SDS.dz_zt[offset] > 0);
+        REQUIRE(SDS.zt_grid[offset] > 0);
+        REQUIRE(SDS.tke[offset] > 0);
         REQUIRE(SDS.isotropy[offset] >= 0);
         REQUIRE(SDS.thetal[offset] >= 0);
       }
@@ -145,10 +145,10 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
 	
-	REQUIRE(SDS.dz_zi[offset] >= 0);
-	REQUIRE(SDS.zi_grid[offset] >= 0);
-	REQUIRE(SDS.thl_sec[offset] >= 0);
-	REQUIRE(SDS.qw_sec[offset] >= 0);
+        REQUIRE(SDS.dz_zi[offset] >= 0);
+        REQUIRE(SDS.zi_grid[offset] >= 0);
+        REQUIRE(SDS.thl_sec[offset] >= 0);
+        REQUIRE(SDS.qw_sec[offset] >= 0);
 	
       }    
       
@@ -168,7 +168,7 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
 
 	// For this test make sure w3 has been clipped.
 	//  Given input w2, this should be less than 1
-	REQUIRE(abs(SDS.w3[offset]) < 1);
+        REQUIRE(abs(SDS.w3[offset]) < 1);
 	
 	if (SDS.w3[offset] > 0){
 	  is_skew = true;
