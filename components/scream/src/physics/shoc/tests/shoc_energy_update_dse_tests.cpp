@@ -130,33 +130,55 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse {
   static void run_bfb()
   {
     SHOCEnergydseData SDS_f90[] = {
-          //               shcol, nlev
-          SHOCEnergydseData(10, 71),
-          SHOCEnergydseData(10, 12),
-          SHOCEnergydseData(7,  16),
-          SHOCEnergydseData(2, 7)
-        };
+      //               shcol, nlev
+      SHOCEnergydseData(10, 71),
+      SHOCEnergydseData(10, 12),
+      SHOCEnergydseData(7,  16),
+      SHOCEnergydseData(2, 7),
+    };
 
-        for (auto& d_f90 : SDS_f90) {
-          // Randomize remaining inputs
-          d_f90.randomize();
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCEnergydseData);
 
-          // Get data from fortran, expects data in C layout
-          update_host_dse(d_f90);
+    // Generate random input data
+    for (auto& d : SDS_f90) {
+      d.randomize();
+    }
 
-          // Get data from cxx, expects data in fortran layout
-          SHOCEnergydseData d_cxx = SHOCEnergydseData(d_f90);
-          d_cxx.transpose<ekat::util::TransposeDirection::c2f>();
-          update_host_dse_f(d_cxx.shcol, d_cxx.nlev, d_cxx.thlm, d_cxx.shoc_ql, d_cxx.exner, d_cxx.zt_grid, d_cxx.phis, d_cxx.host_dse);
-          d_cxx.transpose<ekat::util::TransposeDirection::f2c>();
+    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // inout data is in original state
+    SHOCEnergydseData SDS_cxx[] = {
+      SHOCEnergydseData(SDS_f90[0]),
+      SHOCEnergydseData(SDS_f90[1]),
+      SHOCEnergydseData(SDS_f90[2]),
+      SHOCEnergydseData(SDS_f90[3]),
+    };
 
-          // Verify BFB results, all data should be in C layout
-          for (Int k = 0; k < d_f90.total(); ++k) {
-            REQUIRE(d_f90.host_dse[k] == d_cxx.host_dse[k]);
-          }
-        }
+    // Assume all data is in C layout
+
+    // Get data from fortran
+    for (auto& d : SDS_f90) {
+      // expects data in C layout
+      update_host_dse(d);
+    }
+
+    // Get data from cxx
+    for (auto& d : SDS_cxx) {
+      d.transpose<ekat::util::TransposeDirection::c2f>();
+      // expects data in fortran layout
+      update_host_dse_f(d.shcol,d.nlev,d.thlm,d.shoc_ql,d.exner,d.zt_grid,
+                         d.phis,d.host_dse);
+      d.transpose<ekat::util::TransposeDirection::f2c>();
+    }
+
+    // Verify BFB results, all data should be in C layout
+    for (Int i = 0; i < num_runs; ++i) {
+      SHOCEnergydseData& d_f90 = SDS_f90[i];
+      SHOCEnergydseData& d_cxx = SDS_cxx[i];
+      for (Int k = 0; k < d_f90.totali(); ++k) {
+        REQUIRE(d_f90.host_dse[k] == d_cxx.host_dse[k]);
+      }
+    }
   }
-
 };
 
 }  // namespace unit_test
