@@ -132,7 +132,7 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
         const auto offset = n + s * nlev;
 	
         REQUIRE(SDS.w_sec[offset] >= 0);
-	       // for this test make sure w_sec <= 1
+        // for this test make sure w_sec <= 1
         REQUIRE(SDS.w_sec[offset] <= 1);
 	
         REQUIRE(SDS.dz_zt[offset] > 0);
@@ -166,12 +166,12 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
 
-	       // For this test make sure w3 has been clipped.
-	       //  Given input w2, this should be less than 1
+        // For this test make sure w3 has been clipped.
+        //  Given input w2, this should be less than 1
         REQUIRE(abs(SDS.w3[offset]) < 1);
 	
         if (SDS.w3[offset] > 0){
-	         is_skew = true;
+          is_skew = true;
         }	
 	
       }
@@ -184,7 +184,7 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
 	
-	       w3_test1[offset] = SDS.w3[offset];
+        w3_test1[offset] = SDS.w3[offset];
       }
     }
     
@@ -209,7 +209,7 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird {
         const auto offset = n + s * nlevi;
         if (n != 0 && n != nlevi-1){
           REQUIRE(std::abs(SDS.w3[offset]) > std::abs(w3_test1[offset]));
-	       }
+        }
       }
     }
 

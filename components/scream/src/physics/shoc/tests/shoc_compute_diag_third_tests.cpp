@@ -184,13 +184,13 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird {
           REQUIRE(SDS.w3[n] == 0);
         }
 	
-	       if (SDS.w3[offset] > 0){
-	         is_skew = true;
-	       }
+        if (SDS.w3[offset] > 0){
+          is_skew = true;
+        }
 	
-	       // Verify points increase in magnitude as 
-	       //  scalar variances increase
-	       if (s < shcol-1 && n != 0 && n != nlevi-1){ 
+        // Verify points increase in magnitude as 
+        //  scalar variances increase
+        if (s < shcol-1 && n != 0 && n != nlevi-1){ 
           REQUIRE(std::abs(SDS.w3[offsets]) > std::abs(SDS.w3[offset]));
         }
 	    
