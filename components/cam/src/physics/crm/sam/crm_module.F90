@@ -109,6 +109,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     real(r8)        :: crm_run_time                             ! length of CRM integration
     real(r8)        :: icrm_run_time                            ! = 1 / crm_run_time
     real(r8)        :: factor_xy, factor_xyt, idt_gl
+    real(r8)        :: factor_xy_alt, factor_xyt_alt, cpl_x1
     real(crm_rknd)  :: tmp1, tmp2, tmp
     real(crm_rknd)  :: u2z,v2z,w2z
     integer         :: i,j,k,l,ptop,nn,icyc,icrm
@@ -117,6 +118,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     real(crm_rknd), allocatable  :: colprec(:), colprecs(:)
     real(crm_rknd), allocatable  :: ustar(:), bflx(:), wnd(:)
     real(r8)      , allocatable  :: qtot (:,:)    ! Total water for water conservation check
+
+#ifdef MMF_ALT_CPL_DAMP
+    real(r8)              :: damp_tend_t, damp_tend_q
+    real(r8), allocatable :: damp_mean_t(:,:), damp_mean_q(:,:)
+#endif
 
     ! These should all be inputs
     integer         :: iseed             ! seed for random perturbation
@@ -175,6 +181,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 
   !-----------------------------------------------------------------------------------------------
   !-----------------------------------------------------------------------------------------------
+
+#ifdef MMF_ALT_CPL_DAMP
+  allocate( damp_mean_t(ncrms,nz) )
+  allocate( damp_mean_q(ncrms,nz) )
+#endif
 
   allocate( t00(ncrms,nz) )
   allocate( tln(ncrms,plev) )
@@ -265,6 +276,13 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   crm_accel_ceaseflag = .false.
 
 !-----------------------------------------------
+
+#ifdef MMF_ALT_CPL
+  cpl_x1 = nx/4+1
+#else
+  cpl_x1 = 1
+#endif
+  factor_xy_alt = 1._r8/dble( (nx-(cpl_x1-1)) *ny)
 
   dostatis  = .false.    ! no statistics are collected.
   idt_gl    = 1._r8/dt_gl
@@ -849,6 +867,49 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
       !    Compute diagnostics fields:
       call diagnose(ncrms)
 
+      !-----------------------------------------------------------
+      !   Damping half of the un-coupled region
+#ifdef MMF_ALT_CPL_DAMP
+    ! zero out mean variables
+    do k=1,nzm
+      do icrm = 1 , ncrms
+        damp_mean_t(icrm,k) = 0
+        damp_mean_q(icrm,k) = 0
+      enddo
+    enddo
+    ! Calculate mean of coupled region
+    do k=1,nzm
+      do j=1,ny
+        do i=cpl_x1,nx
+          do icrm = 1 , ncrms
+            damp_mean_t(icrm,k) = damp_mean_t(icrm,k) + t(icrm,i,j,k)
+            damp_mean_q(icrm,k) = damp_mean_q(icrm,k) + micro_field(icrm,i,j,k,1)
+          enddo
+        enddo
+      enddo
+    enddo
+    ! convert sums to means
+    do k=1,nzm
+      do icrm = 1 , ncrms
+        damp_mean_t(icrm,k) = damp_mean_t(icrm,k) / factor_xy_alt
+        damp_mean_q(icrm,k) = damp_mean_q(icrm,k) / factor_xy_alt
+      enddo
+    enddo
+    ! apply damping
+    do k=1,nzm
+      do j=1,ny
+        do i=1,(cpl_x1-1)/2
+          do icrm = 1 , ncrms
+            damp_tend_t = 1/100 * ( damp_mean_t(icrm,k) - t(icrm,i,j,k) )
+            damp_tend_q = 1/100 * ( damp_mean_q(icrm,k) - micro_field(icrm,i,j,k,1) )
+            t(icrm,i,j,k)             = t(icrm,i,j,k)             + dtn*damp_tend_t
+            micro_field(icrm,i,j,k,1) = micro_field(icrm,i,j,k,1) + dtn*damp_tend_q
+          enddo
+        enddo
+      enddo
+    enddo
+#endif
+
       !----------------------------------------------------------
       ! Rotate the dynamic tendency arrays for Adams-bashforth scheme:
       nn=na
@@ -882,7 +943,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 
     !$acc parallel loop gang vector collapse(3) async(asyncid)
     do j=1,ny
-      do i=1,nx
+      do i=cpl_x1,nx
         do icrm = 1 , ncrms
           do k=1,nzm
             l = plev-k+1
@@ -949,7 +1010,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     !$acc parallel loop gang vector collapse(4) async(asyncid)
     do k=1,nzm
       do j=1,ny
-        do i=1,nx
+        do i=cpl_x1,nx
           do icrm = 1 , ncrms
             ! Reduced radiation method allows for fewer radiation calculations
             ! by collecting statistics and doing radiation over column groups
@@ -1025,7 +1086,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     enddo
 
     !$acc parallel loop collapse(3) async(asyncid)
-    do j=1,ny
+    do j=cpl_x1,ny
       do i=1,nx
         do icrm = 1 , ncrms
           if(cwp(icrm,i,j).gt.cwp_threshold) then
@@ -1052,6 +1113,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 
   ! for time-averaging crm output statistics
   factor_xyt = factor_xy / real(nstop,crm_rknd) 
+  factor_xyt_alt = factor_xy_alt / real(nstop,crm_rknd) 
 
   !========================================================================================
   !----------------------------------------------------------------------------------------
@@ -1143,7 +1205,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 
   !$acc parallel loop collapse(4) async(asyncid)
   do k = 1,nzm
-    do i=1,nx
+    do i=cpl_x1,nx
       do j=1,ny
         do icrm=1,ncrms
           l = plev-k+1
@@ -1211,12 +1273,12 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   !$acc parallel loop collapse(2) async(asyncid)
   do k = ptop , plev
     do icrm = 1 , ncrms
-      tln  (icrm,k) = tln  (icrm,k) * factor_xy
-      qln  (icrm,k) = qln  (icrm,k) * factor_xy
-      qccln(icrm,k) = qccln(icrm,k) * factor_xy
-      qiiln(icrm,k) = qiiln(icrm,k) * factor_xy
-      uln  (icrm,k) = uln  (icrm,k) * factor_xy
-      vln  (icrm,k) = vln  (icrm,k) * factor_xy
+      tln  (icrm,k) = tln  (icrm,k) * factor_xy_alt
+      qln  (icrm,k) = qln  (icrm,k) * factor_xy_alt
+      qccln(icrm,k) = qccln(icrm,k) * factor_xy_alt
+      qiiln(icrm,k) = qiiln(icrm,k) * factor_xy_alt
+      uln  (icrm,k) = uln  (icrm,k) * factor_xy_alt
+      vln  (icrm,k) = vln  (icrm,k) * factor_xy_alt
     enddo
   enddo
 
@@ -1355,21 +1417,21 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
   !$acc parallel loop collapse(2) async(asyncid)
   do k = 1 , plev
     do icrm = 1 , ncrms
-      crm_output%cld   (icrm,k) = min( 1._r8, crm_output%cld   (icrm,k) * factor_xyt )
-      crm_output%cldtop(icrm,k) = min( 1._r8, crm_output%cldtop(icrm,k) * factor_xyt )
-      crm_output%gicewp(icrm,k) = crm_output%gicewp(icrm,k)*crm_input%pdel(icrm,k)*1000./ggr * factor_xyt
-      crm_output%gliqwp(icrm,k) = crm_output%gliqwp(icrm,k)*crm_input%pdel(icrm,k)*1000./ggr * factor_xyt
-      crm_output%mcup  (icrm,k) = crm_output%mcup (icrm,k) * factor_xyt
-      crm_output%mcdn  (icrm,k) = crm_output%mcdn (icrm,k) * factor_xyt
-      crm_output%mcuup (icrm,k) = crm_output%mcuup(icrm,k) * factor_xyt
-      crm_output%mcudn (icrm,k) = crm_output%mcudn(icrm,k) * factor_xyt
+      crm_output%cld   (icrm,k) = min( 1._r8, crm_output%cld   (icrm,k) * factor_xyt_alt )
+      crm_output%cldtop(icrm,k) = min( 1._r8, crm_output%cldtop(icrm,k) * factor_xyt_alt )
+      crm_output%gicewp(icrm,k) = crm_output%gicewp(icrm,k)*crm_input%pdel(icrm,k)*1000./ggr * factor_xyt_alt
+      crm_output%gliqwp(icrm,k) = crm_output%gliqwp(icrm,k)*crm_input%pdel(icrm,k)*1000./ggr * factor_xyt_alt
+      crm_output%mcup  (icrm,k) = crm_output%mcup (icrm,k) * factor_xyt_alt
+      crm_output%mcdn  (icrm,k) = crm_output%mcdn (icrm,k) * factor_xyt_alt
+      crm_output%mcuup (icrm,k) = crm_output%mcuup(icrm,k) * factor_xyt_alt
+      crm_output%mcudn (icrm,k) = crm_output%mcudn(icrm,k) * factor_xyt_alt
       crm_output%mctot (icrm,k) = crm_output%mcup(icrm,k) + crm_output%mcdn(icrm,k) + crm_output%mcuup(icrm,k) + crm_output%mcudn(icrm,k)
 
-      crm_output%qc_mean(icrm,k) = crm_output%qc_mean(icrm,k) * factor_xy
-      crm_output%qi_mean(icrm,k) = crm_output%qi_mean(icrm,k) * factor_xy
-      crm_output%qs_mean(icrm,k) = crm_output%qs_mean(icrm,k) * factor_xy
-      crm_output%qg_mean(icrm,k) = crm_output%qg_mean(icrm,k) * factor_xy
-      crm_output%qr_mean(icrm,k) = crm_output%qr_mean(icrm,k) * factor_xy
+      crm_output%qc_mean(icrm,k) = crm_output%qc_mean(icrm,k) * factor_xy_alt
+      crm_output%qi_mean(icrm,k) = crm_output%qi_mean(icrm,k) * factor_xy_alt
+      crm_output%qs_mean(icrm,k) = crm_output%qs_mean(icrm,k) * factor_xy_alt
+      crm_output%qg_mean(icrm,k) = crm_output%qg_mean(icrm,k) * factor_xy_alt
+      crm_output%qr_mean(icrm,k) = crm_output%qr_mean(icrm,k) * factor_xy_alt
     enddo
   enddo
 
@@ -1421,7 +1483,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 
   !$acc parallel loop collapse(3) async(asyncid)
   do j=1,ny
-    do i=1,nx
+    do i=cpl_x1,nx
       do icrm = 1 , ncrms
 #ifdef sam1mom
         precsfc(icrm,i,j) = precsfc(icrm,i,j)*dz(icrm)/dt/dble(nstop)
@@ -1464,15 +1526,15 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 
   !$acc parallel loop async(asyncid)
   do icrm = 1 , ncrms
-    crm_output%precc (icrm) = crm_output%precc (icrm)*factor_xy/1000.
-    crm_output%precl (icrm) = crm_output%precl (icrm)*factor_xy/1000.
-    crm_output%precsc(icrm) = crm_output%precsc(icrm)*factor_xy/1000.
-    crm_output%precsl(icrm) = crm_output%precsl(icrm)*factor_xy/1000.
+    crm_output%precc (icrm) = crm_output%precc (icrm)*factor_xy_alt/1000.
+    crm_output%precl (icrm) = crm_output%precl (icrm)*factor_xy_alt/1000.
+    crm_output%precsc(icrm) = crm_output%precsc(icrm)*factor_xy_alt/1000.
+    crm_output%precsl(icrm) = crm_output%precsl(icrm)*factor_xy_alt/1000.
 
-    crm_output%cltot(icrm) = crm_output%cltot(icrm) * factor_xyt
-    crm_output%clhgh(icrm) = crm_output%clhgh(icrm) * factor_xyt
-    crm_output%clmed(icrm) = crm_output%clmed(icrm) * factor_xyt
-    crm_output%cllow(icrm) = crm_output%cllow(icrm) * factor_xyt
+    crm_output%cltot(icrm) = crm_output%cltot(icrm) * factor_xyt_alt
+    crm_output%clhgh(icrm) = crm_output%clhgh(icrm) * factor_xyt_alt
+    crm_output%clmed(icrm) = crm_output%clmed(icrm) * factor_xyt_alt
+    crm_output%cllow(icrm) = crm_output%cllow(icrm) * factor_xyt_alt
 
     crm_output%jt_crm(icrm) = plev * 1.0
     crm_output%mx_crm(icrm) = 1.0
@@ -1703,6 +1765,11 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 #endif
 #if defined( MMF_ESMT )
   call deallocate_scalar_momentum()
+#endif
+
+#ifdef MMF_ALT_CPL_DAMP
+  deallocate( damp_mean_t )
+  deallocate( damp_mean_q )
 #endif
 
 end subroutine crm
