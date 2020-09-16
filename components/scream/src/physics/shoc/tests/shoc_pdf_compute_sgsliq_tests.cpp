@@ -24,15 +24,14 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeSgsLiq {
 
   static void run_property()
   {
-  
     // Property tests for the SHOC function
     //  shoc_assumed_pdf_compute_sgs_liquid
 
     // TEST ONE
-    // Symmetric test.  For conditions of zero skewness, verify that 
-    //  that the SGS cloud condensate is equal to that of the two 
-    //  Gaussians.  
-    
+    // Symmetric test.  For conditions of zero skewness, verify that
+    //  that the SGS cloud condensate is equal to that of the two
+    //  Gaussians.
+
     // Define the gaussian fraction
     static constexpr Real a = 0.5;
     // Define the liquid water mixing ratio, gaussian 1 [kg/kg]
@@ -40,89 +39,89 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeSgsLiq {
     // Define the liquid water mixing ratio, gaussian 2 [kg/kg]
     // for this test, set equal to the first
     static constexpr Real ql2 = ql1;
-  
+
     // Initialize data structure for bridging to F90
     SHOCPDFcompsgsliqData SDS;
-    
+
     // Fill in the data
     SDS.a = a;
     SDS.ql1 = ql1;
     SDS.ql2 = ql2;
-    
+
     // Check the inputs
-    // For this test should be symmetric 
+    // For this test should be symmetric
     REQUIRE(SDS.a == 0.5);
     REQUIRE(SDS.ql1 == SDS.ql2);
-    
-    // Call the fortran implementation 
+
+    // Call the fortran implementation
     shoc_assumed_pdf_compute_sgs_liquid(SDS);
-    
+
     // Check the result
     REQUIRE(SDS.shoc_ql == SDS.ql1);
-    
-    // TEST TWO 
+
+    // TEST TWO
     // Negative test.  Assume that this routine is wrongly fed negative values
     //  of ql1 and ql2.  Verify that the result is zero.
-    
+
     // Define the gaussian fraction
     static constexpr Real a_neg = 0.2;
     // Define the liquid water mixing ratio, gaussian 1 [kg/kg]
     static constexpr Real ql1_neg = -0.02;
     // Define the liquid water mixing ratio, gaussian 2 [kg/kg]
     static constexpr Real ql2_neg =-0.01;
-    
+
     // Fill in the data
     SDS.a = a_neg;
     SDS.ql1 = ql1_neg;
     SDS.ql2 = ql2_neg;
-    
+
     // Check the inputs
     REQUIRE(SDS.a > 0);
     REQUIRE(SDS.a < 1);
-    
+
     // For this test we want mixing ratios to be negative
     REQUIRE(SDS.ql1 < 0);
     REQUIRE(SDS.ql2 < 0);
 
-    // Call the fortran implementation 
+    // Call the fortran implementation
     shoc_assumed_pdf_compute_sgs_liquid(SDS);
-    
+
     // Check the result.  Make sure mixing ratio is zero
     REQUIRE(SDS.shoc_ql == 0);
-    
+
     // TEST THREE
     // Positively skewed test. For test with positive skewness, verify that
     //  the resulting SGS cloud water lies between the two input values, given
-    //  a dry downdraft.  
-    
-    // Define the gaussian fraction
-    static constexpr Real a_skew = 0.1;
+    //  a dry downdraft.
+
     // Define the liquid water mixing ratio, gaussian 1 [kg/kg]
     static constexpr Real ql1_skew = 0.02;
     // Define the liquid water mixing ratio, gaussian 2 [kg/kg]
     static constexpr Real ql2_skew =0;
-    
+
     // Fill in the data
     SDS.a = a_neg;
     SDS.ql1 = ql1_skew;
     SDS.ql2 = ql2_skew;
-    
+
     // Check the data
     REQUIRE (SDS.a < 0.5);
     REQUIRE (SDS.ql1 > 0);
     REQUIRE (SDS.ql2 == 0);
 
-    // Call the fortran implementation 
+    // Call the fortran implementation
     shoc_assumed_pdf_compute_sgs_liquid(SDS);
-    
-    // Check the result.  Make sure SDS value is between the lower and 
+
+    // Check the result.  Make sure SDS value is between the lower and
     //  upper bound of the Gaussians
     REQUIRE(SDS.shoc_ql > SDS.ql2);
     REQUIRE(SDS.shoc_ql < SDS.ql1);
-     
-
   }
-  
+
+  static void run_bfb()
+  {
+    // TODO
+  }
 };
 
 }  // namespace unit_test
@@ -138,10 +137,11 @@ TEST_CASE("shoc_pdf_compute_sgsliq_property", "shoc")
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_pdf_compute_sgsliq_b4b", "shoc")
+TEST_CASE("shoc_pdf_compute_sgsliq_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfComputeSgsLiq;
 
+  TestStruct::run_bfb();
 }
 
 } // namespace

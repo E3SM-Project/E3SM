@@ -47,17 +47,18 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvTime {
     SHOCConvtimeData SDS(shcol);
 
     // Test that the inputs are reasonable.
-    REQUIRE(SDS.shcol > 0);
+    REQUIRE(SDS.shcol() == shcol);
+    REQUIRE(shcol > 0);
 
     // Fill in test data, all one dimensional
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       SDS.pblh[s] = pblh[s];
       SDS.conv_vel[s] = conv_vel[s];
     }
 
     // Check that the inputs make sense
 
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       REQUIRE(SDS.pblh[s] > 0.0);
     }
 
@@ -66,7 +67,7 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvTime {
 
     // Check the results
     // Make sure that timescale is positive always
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       REQUIRE(SDS.tscale[s] > 0.0);
     }
 
@@ -84,14 +85,14 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvTime {
     static constexpr Real conv_vel_cons1[shcol] = {10.0, 3.5, 0.1, 100.0, 0.4};
 
     // Fill in test data, all one dimensional
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       SDS.pblh[s] = pblh_cons1[s];
       SDS.conv_vel[s] = conv_vel_cons1[s];
     }
 
     // Check that the inputs make sense
 
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       REQUIRE(SDS.pblh[s] > 0.0);
       // For this test all values of conv_vel must be positive
       REQUIRE(SDS.conv_vel[s] > 0.0);
@@ -103,7 +104,7 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvTime {
     // Verify Results
     // Make sure that if conv_vel is smaller than in a neighboring
     //  column, that the tscale is larger
-    for (Int s = 0; s < SDS.shcol-1; ++s){
+    for (Int s = 0; s < shcol-1; ++s){
       if (SDS.tscale[s] > SDS.tscale[s+1]){
 	REQUIRE(SDS.conv_vel[s] < SDS.conv_vel[s+1]);
       }
@@ -123,14 +124,14 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvTime {
     static constexpr Real conv_vel_cons2[shcol] = {0.5, 0.5, 0.5, 0.5, 0.5};
 
     // Fill in test data, all one dimensional
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       SDS.pblh[s] = pblh_cons2[s];
       SDS.conv_vel[s] = conv_vel_cons2[s];
     }
 
     // Check that the inputs make sense
 
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       REQUIRE(SDS.pblh[s] > 0.0);
       // For this test all values of conv_vel must be positive
       REQUIRE(SDS.conv_vel[s] > 0.0);
@@ -142,13 +143,17 @@ struct UnitWrap::UnitTest<D>::TestCompShocConvTime {
     // Verify Results
     // Make sure that if tscale is larger than in a
     //  neighboring column, that the PBL depth is larger
-    for (Int s = 0; s < SDS.shcol-1; ++s){
+    for (Int s = 0; s < shcol-1; ++s){
       if (SDS.tscale[s] > SDS.tscale[s+1]){
 	REQUIRE(SDS.pblh[s] > SDS.pblh[s+1]);
       }
     }
   }
 
+  static void run_bfb()
+  {
+    // TODO
+  }
 };
 
 }  // namespace unit_test
@@ -164,10 +169,11 @@ TEST_CASE("shoc_conv_time_length_property", "shoc")
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_conv_time_length_b4b", "shoc")
+TEST_CASE("shoc_conv_time_length_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCompShocConvTime;
 
+  TestStruct::run_bfb();
 }
 
 } // namespace

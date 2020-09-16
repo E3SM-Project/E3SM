@@ -1308,6 +1308,10 @@ subroutine calc_shoc_varorcovar(&
   !  (depending on if invar1 is the same as invar2)
   !  for a given set of inputs
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use shoc_iso_f, only: calc_shoc_varorcovar_f
+#endif
+
   implicit none
 
 ! INPUT VARIABLES
@@ -1338,12 +1342,20 @@ subroutine calc_shoc_varorcovar(&
   integer :: i, k, kt
   real(rtype) :: sm, grid_dz2
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call calc_shoc_varorcovar_f(shcol,nlev,nlevi,tunefac,isotropy_zi,tkh_zi,dz_zi,invar1,invar2,&  ! Input
+           varorcovar)                              ! Input/Output)
+      return
+   endif
+#endif
+   
   do k=2,nlev
 
     kt=k-1 ! define upper grid point indicee
     do i=1,shcol
 
-      grid_dz2=(1._rtype/dz_zi(i,k))**2 ! vertical grid diff squared
+      grid_dz2=bfb_square(1._rtype/dz_zi(i,k)) ! vertical grid diff squared
       sm=isotropy_zi(i,k)*tkh_zi(i,k) ! coefficient for variances
 
       ! Compute the variance or covariance
@@ -1635,7 +1647,7 @@ subroutine compute_diag_third_shoc_moment(&
   real(rtype) :: X0, Y0, X1, Y1, AA0, AA1
   real(rtype) :: zvar, x5var, iso, thedz, thedz2
   real(rtype) :: theterm, tsign
-  real(rtype) :: isosqrt
+  real(rtype) :: isosqrd
   real(rtype) :: buoy_sgs2, bet2
   real(rtype) :: f0, f1, f2, f3, f4, f5
 
@@ -1652,11 +1664,11 @@ subroutine compute_diag_third_shoc_moment(&
         call fterms_input_for_diag_third_shoc_moment(&
 	     dz_zi(i,k), dz_zt(i,k), dz_zt(i,kc), &               ! Input
              isotropy_zi(i,k), brunt_zi(i,k), thetal_zi(i,k), &   ! Input
-             thedz, thedz2, iso, isosqrt, buoy_sgs2, bet2)        ! Output
+             thedz, thedz2, iso, isosqrd, buoy_sgs2, bet2)        ! Output
 
         !Compute f0 to f5 terms
         call f0_to_f5_diag_third_shoc_moment(&
-	     thedz, thedz2, bet2, iso, isosqrt, &                 ! Input
+	     thedz, thedz2, bet2, iso, isosqrd, &                 ! Input
 	     wthl_sec (i,k), wthl_sec(i,kc), wthl_sec(i,kb), &    ! Input
 	     thl_sec(i,k), thl_sec(i,kc), thl_sec(i,kb), &        ! Input
              w_sec(i,k), w_sec(i,kc), w_sec_zi(i,k), &            ! Input
@@ -1693,7 +1705,7 @@ end subroutine compute_diag_third_shoc_moment
 subroutine fterms_input_for_diag_third_shoc_moment(&
      dz_zi, dz_zt, dz_zt_kc, &                      ! Input
      isotropy_zi, brunt_zi, thetal_zi, &            ! Input
-     thedz, thedz2, iso, isosqrt, buoy_sgs2, bet2)  ! Output
+     thedz, thedz2, iso, isosqrd, buoy_sgs2, bet2)  ! Output
 
   !Compute inputs for computing f0 to f5 terms
 
@@ -1704,22 +1716,22 @@ subroutine fterms_input_for_diag_third_shoc_moment(&
   real(rtype), intent(in) :: isotropy_zi, brunt_zi, thetal_zi
 
   !intent-outs
-  real(rtype), intent(out) :: thedz, thedz2, iso, isosqrt
+  real(rtype), intent(out) :: thedz, thedz2, iso, isosqrd
   real(rtype), intent(out) :: buoy_sgs2, bet2
 
   thedz  = 1._rtype/dz_zi
   thedz2 = 1._rtype/(dz_zt+dz_zt_kc)
 
   iso       = isotropy_zi
-  isosqrt   = iso**2
-  buoy_sgs2 = isosqrt*brunt_zi
+  isosqrd   = iso**2
+  buoy_sgs2 = isosqrd*brunt_zi
   bet2      = ggr/thetal_zi
 
   return
 end subroutine fterms_input_for_diag_third_shoc_moment
 
 subroutine f0_to_f5_diag_third_shoc_moment(&
-     thedz, thedz2, bet2, iso, isosqrt, &    ! Input
+     thedz, thedz2, bet2, iso, isosqrd, &    ! Input
      wthl_sec, wthl_sec_kc, wthl_sec_kb, &   ! Input
      thl_sec, thl_sec_kc, thl_sec_kb, &      ! Input
      w_sec, w_sec_kc,w_sec_zi, &             ! Input
@@ -1731,7 +1743,7 @@ subroutine f0_to_f5_diag_third_shoc_moment(&
   implicit none
 
   !intent-ins
-  real(rtype), intent(in) :: thedz, thedz2, bet2, iso, isosqrt
+  real(rtype), intent(in) :: thedz, thedz2, bet2, iso, isosqrd
   real(rtype), intent(in) :: wthl_sec, wthl_sec_kc, wthl_sec_kb
   real(rtype), intent(in) :: thl_sec, thl_sec_kc, thl_sec_kb
   real(rtype), intent(in) :: w_sec, w_sec_kc, w_sec_zi, tke, tke_kc
@@ -1755,13 +1767,13 @@ subroutine f0_to_f5_diag_third_shoc_moment(&
        wthl_sec_diff + 0.5_rtype * &
        w_sec_zi*thl_sec_diff)
 
-  f2 = thedz * bet2 * isosqrt * wthl_sec * &
+  f2 = thedz * bet2 * isosqrd * wthl_sec * &
        wsec_diff+ 2._rtype * thedz2 * bet2 * &
-       isosqrt * w_sec_zi * wthl_sec_diff
+       isosqrd * w_sec_zi * wthl_sec_diff
 
-  f3 = thedz2 * bet2 * isosqrt * w_sec_zi * &
+  f3 = thedz2 * bet2 * isosqrd * w_sec_zi * &
        wthl_sec_diff + thedz * &
-       bet2 * isosqrt * (wthl_sec * tke_diff)
+       bet2 * isosqrd * (wthl_sec * tke_diff)
 
   f4 = thedz * iso * w_sec_zi * (wsec_diff + &
        tke_diff)
@@ -1865,7 +1877,7 @@ end function w3_diag_third_shoc_moment
 
 subroutine clipping_diag_third_shoc_moments(&
            nlevi,shcol,w_sec_zi,& ! Input
-	   w3)                    ! Output
+	   w3)                    ! Input/Output
 
   ! perform clipping to prevent unrealistically large values from occuring
 
@@ -3114,7 +3126,7 @@ subroutine shoc_length(&
   ! heights on midpoint grid [m]
   real(rtype), intent(in) :: zt_grid(shcol,nlev)
   ! heights on interface grid [m]
-  real(rtype), intent(in) :: zi_grid(shcol,nlev)
+  real(rtype), intent(in) :: zi_grid(shcol,nlevi)
   ! dz on midpoint grid [m]
   real(rtype), intent(in) :: dz_zt(shcol,nlev)
   ! dz on interface grid [m]

@@ -24,16 +24,15 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeTemp {
 
   static void run_property()
   {
-  
     // Property tests for the SHOC function
     //  shoc_assumed_pdf_compute_temperature
 
     // TEST ONE
     // Keep liquid water potential temperature constant and
     //  decrease pressure by 10000 Pa each iteration.  Verify
-    //  that the liquid water temperature behaves as expected 
+    //  that the liquid water temperature behaves as expected
     //  (i.e. temperature decreases with decreasing pressure and
-    //  value is as expected relative to base pressure).  
+    //  value is as expected relative to base pressure).
 
     // Input liquid water potential temperature [K]
     static constexpr Real thl1 = 305;
@@ -41,42 +40,42 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeTemp {
     static constexpr Real basepres = 100000;
     // Input value of pval [Pa]
     Real pval = 110000;
-    
+
     // Decrease base pres by a certain amount each test
     static constexpr Real presincr = -10000;
-    
+
     Real Tl1_save;
-    
+
     // Initialize data structure for bridging to F90
     SHOCPDFcomptempData SDS;
-    
+
     // Fill in data
     SDS.thl1 = thl1;
     SDS.basepres = basepres;
     SDS.pval = pval;
-    
+
     Int num_tests = SDS.pval/abs(presincr);
-    
+
     REQUIRE(num_tests > 1);
     REQUIRE(presincr < 0);
-    // Make sure our starting pressure is greater than 
+    // Make sure our starting pressure is greater than
     //  basepres just so we test a range
     REQUIRE(SDS.pval > SDS.basepres);
-    
+
     for (Int s = 0; s < num_tests; ++s){
-      
+
       // make sure base pres is greater than zero
-      REQUIRE(basepres > 0);    
+      REQUIRE(basepres > 0);
 
       // Call the fortran implementation
-      shoc_assumed_pdf_compute_temperature(SDS);   
-      
-      // Check the result   
+      shoc_assumed_pdf_compute_temperature(SDS);
+
+      // Check the result
       // If pressure is greater than basepressure then
       //  make sure that temperature is greater than thetal
       if (SDS.pval > SDS.basepres){
         REQUIRE(SDS.Tl1 > SDS.thl1);
-      } 
+      }
       // otherwise temperature should be less than thetal
       else if(SDS.pval < SDS.basepres){
         REQUIRE(SDS.Tl1 < SDS.thl1);
@@ -86,24 +85,27 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeTemp {
       else
       {
         REQUIRE(SDS.Tl1 == SDS.thl1);
-      } 
-      
+      }
+
       // Make sure temperature are decreasing
       if (s > 0){
         REQUIRE(SDS.Tl1 < Tl1_save);
       }
-      
+
       // Save result to make sure that temperatures
       //  are decreasing as pressure decreases
-      Tl1_save = SDS.Tl1; 
-      
+      Tl1_save = SDS.Tl1;
+
       // Decrease pressure value
       SDS.pval = SDS.pval+presincr;
-     
-    }
 
+    }
   }
-  
+
+  static void run_bfb()
+  {
+    // TODO
+  }
 };
 
 }  // namespace unit_test
@@ -119,10 +121,11 @@ TEST_CASE("shoc_pdf_computetemp_property", "shoc")
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_pdf_computetemp_b4b", "shoc")
+TEST_CASE("shoc_pdf_computetemp_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfComputeTemp;
 
+  TestStruct::run_bfb();
 }
 
 } // namespace

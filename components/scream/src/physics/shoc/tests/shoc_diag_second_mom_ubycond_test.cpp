@@ -55,12 +55,12 @@ static void run_second_mom_ubycond_bfb()
   }
 
   for (auto& d : uby_cxx) {
-    shoc_diag_second_moments_ubycond_f(d.shcol, d.thl, d.qw, d.qwthl, d.wthl, d.wqw, d.uw, d.vw, d.wtke);
+    shoc_diag_second_moments_ubycond_f(d.shcol(), d.thl, d.qw, d.qwthl, d.wthl, d.wqw, d.uw, d.vw, d.wtke);
   }
 
 
   for (Int i = 0; i < num_runs; ++i) {
-    Int shcol = uby_cxx[i].shcol;
+    Int shcol = uby_cxx[i].shcol();
     for (Int k = 0; k < shcol; ++k) {
       REQUIRE(uby_fortran[i].thl[k]      == uby_cxx[i].thl[k]);
       REQUIRE(uby_fortran[i].qw[k]       == uby_cxx[i].qw[k]);

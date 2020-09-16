@@ -67,14 +67,15 @@ struct UnitWrap::UnitTest<D>::TestShocVarorCovar {
     SHOCVarorcovarData SDS(shcol, nlev, nlevi, tunefac);
 
     // Test that the inputs are reasonable.
-    REQUIRE(SDS.nlevi - SDS.nlev == 1);
-    REQUIRE(SDS.shcol > 0);
+    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev && SDS.nlevi() && SDS.tunefac == tunefac) );
+    REQUIRE(nlevi - nlev == 1);
+    REQUIRE(shcol > 0);
 
     // Fill in test data
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       // First on the nlev grid
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 
 	// Fill invar1 and invar2 with the SAME
 	//  variable for this case to test the
@@ -84,8 +85,8 @@ struct UnitWrap::UnitTest<D>::TestShocVarorCovar {
       }
 
       // Now for data on the nlevi grid
-      for(Int n = 0; n < SDS.nlevi; ++n) {
-	const auto offset = n + s * SDS.nlevi;
+      for(Int n = 0; n < nlevi; ++n) {
+	const auto offset = n + s * nlevi;
 
 	SDS.tkh_zi[offset] = tkh_zi[n];
 	SDS.isotropy_zi[offset] = isotropy_zi[n];
@@ -99,17 +100,17 @@ struct UnitWrap::UnitTest<D>::TestShocVarorCovar {
     REQUIRE(SDS.tunefac > 0.0);
     // Check to make sure that dz_zi, tkh_zi, and isotropy_zi
     //  (outside of the boundaries) are greater than zero
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       // do NOT check boundaries!
-      for(Int n = 1; n < SDS.nlevi-1; ++n) {
-	const auto offset = n + s * SDS.nlevi;
+      for(Int n = 1; n < nlevi-1; ++n) {
+	const auto offset = n + s * nlevi;
 	REQUIRE(SDS.dz_zi[offset] > 0.0);
 	REQUIRE(SDS.tkh_zi[offset] > 0.0);
 	REQUIRE(SDS.isotropy_zi[offset] > 0.0);
       }
       // For this test make sure that invar1 = invar2
-      for(Int n = 0; n < SDS.nlev; ++n){
-	const auto offset = n + s * SDS.nlev;
+      for(Int n = 0; n < nlev; ++n){
+	const auto offset = n + s * nlev;
 	REQUIRE(SDS.invar1[offset] == SDS.invar2[offset]);
       }
     }
@@ -118,9 +119,9 @@ struct UnitWrap::UnitTest<D>::TestShocVarorCovar {
     calc_shoc_varorcovar(SDS);
 
     // Check the results
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for(Int n = 0; n < SDS.nlevi; ++n) {
-	const auto offset = n + s * SDS.nlevi;
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlevi; ++n) {
+	const auto offset = n + s * nlevi;
 
 	// validate that the boundary points have NOT been modified
 	if (n == 0 || n == nlevi){
@@ -152,26 +153,26 @@ struct UnitWrap::UnitTest<D>::TestShocVarorCovar {
     // NOTE: all other inputs are reused from test one
 
     // convert total water to [kg/kg]
-    for (Int n = 0; n < SDS.nlev; ++n){
+    for (Int n = 0; n < nlev; ++n){
       invar_qw[n] = invar_qw[n]/1000.;
     }
 
     // Update invar2 to be total water
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       // First on the nlev grid
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 
 	SDS.invar2[offset] = invar_qw[n];
       }
     }
 
     // Check inputs
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       // For this test make sure that invar1 is NOT
       //  equal to invar2
-      for(Int n = 0; n < SDS.nlev; ++n){
-	const auto offset = n + s * SDS.nlev;
+      for(Int n = 0; n < nlev; ++n){
+	const auto offset = n + s * nlev;
 	REQUIRE(SDS.invar1[offset] != SDS.invar2[offset]);
       }
     }
@@ -180,9 +181,9 @@ struct UnitWrap::UnitTest<D>::TestShocVarorCovar {
     calc_shoc_varorcovar(SDS);
 
     // Check the results
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for(Int n = 0; n < SDS.nlevi; ++n) {
-	const auto offset = n + s * SDS.nlevi;
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlevi; ++n) {
+	const auto offset = n + s * nlevi;
 
 	// validate that the boundary points
 	//   have NOT been modified
@@ -229,10 +230,10 @@ struct UnitWrap::UnitTest<D>::TestShocVarorCovar {
     static constexpr Real invar_th2[nlev] = {320.0, 315.0, 310.0, 305.0};
 
     // Update invar1 and invar2 to be identical
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       // First on the nlev grid
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 
 	// Set both inputs to the same value
 	SDS.invar1[offset] = invar_th2[n];
@@ -241,15 +242,15 @@ struct UnitWrap::UnitTest<D>::TestShocVarorCovar {
     }
 
     // Check the inputs
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for(Int n = 1; n < SDS.nlevi-1; ++n) {
-	const auto offset = n + s * SDS.nlevi;
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 1; n < nlevi-1; ++n) {
+	const auto offset = n + s * nlevi;
 	// Validate that values of dz_zi are INCREASING with height
 	REQUIRE(SDS.dz_zi[offset]-SDS.dz_zi[offset+1] > 0.0);
       }
       // For this test make sure that invar1 = invar2
-      for(Int n = 0; n < SDS.nlev; ++n){
-	const auto offset = n + s * SDS.nlev;
+      for(Int n = 0; n < nlev; ++n){
+	const auto offset = n + s * nlev;
 	REQUIRE(SDS.invar1[offset] == SDS.invar2[offset]);
       }
     }
@@ -258,9 +259,9 @@ struct UnitWrap::UnitTest<D>::TestShocVarorCovar {
     calc_shoc_varorcovar(SDS);
 
     // Check the results
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for(Int n = 1; n < SDS.nlev-1; ++n) {
-	const auto offset = n + s * SDS.nlevi;
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 1; n < nlev-1; ++n) {
+	const auto offset = n + s * nlevi;
 
 	// Validate that values of varorcovar
 	//  are decreasing with height
@@ -270,6 +271,60 @@ struct UnitWrap::UnitTest<D>::TestShocVarorCovar {
     }
   }
 
+static void run_bfb()
+  {
+    SHOCVarorcovarData SDS_f90[] = {
+      //               shcol, nlev, nlevi, tunefac
+      SHOCVarorcovarData(10, 71, 72, 1),
+      SHOCVarorcovarData(10, 12, 13, 1),
+      SHOCVarorcovarData(7,  16, 17, 1),
+      SHOCVarorcovarData(2, 7, 8, 0.005),
+    };
+
+    static constexpr Int num_runs = sizeof(SDS_f90) / sizeof(SHOCVarorcovarData);
+
+    // Generate random input data
+    for (auto& d : SDS_f90) {
+      d.randomize();
+    }
+
+    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // inout data is in original state
+    SHOCVarorcovarData SDS_cxx[] = {
+      SHOCVarorcovarData(SDS_f90[0]),
+      SHOCVarorcovarData(SDS_f90[1]),
+      SHOCVarorcovarData(SDS_f90[2]),
+      SHOCVarorcovarData(SDS_f90[3]),
+    };
+
+    // Assume all data is in C layout
+
+    // Get data from fortran
+    for (auto& d : SDS_f90) {
+      // expects data in C layout
+      calc_shoc_varorcovar(d);
+    }
+
+    // Get data from cxx
+    for (auto& d : SDS_cxx) {
+      d.transpose<ekat::util::TransposeDirection::c2f>();
+      // expects data in fortran layout
+      calc_shoc_varorcovar_f(d.shcol(), d.nlev(), d.nlevi(),
+                             d.tunefac, d.isotropy_zi,
+                             d.tkh_zi, d.dz_zi,
+                             d.invar1, d.invar2, d.varorcovar);
+      d.transpose<ekat::util::TransposeDirection::f2c>();
+    }
+
+    // Verify BFB results, all data should be in C layout
+    for (Int i = 0; i < num_runs; ++i) {
+      SHOCVarorcovarData& d_f90 = SDS_f90[i];
+      SHOCVarorcovarData& d_cxx = SDS_cxx[i];
+      for (Int k = 0; k < d_f90.total1x3(); ++k) {
+        REQUIRE(d_f90.varorcovar[k] == d_cxx.varorcovar[k]);
+      }
+    }
+  }
 };
 
 }  // namespace unit_test
@@ -285,10 +340,11 @@ TEST_CASE("shoc_varorcovar_property", "shoc")
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_varorcovar_b4b", "shoc")
+TEST_CASE("shoc_varorcovar_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocVarorCovar;
 
+  TestStruct::run_bfb();
 }
 
 } // namespace

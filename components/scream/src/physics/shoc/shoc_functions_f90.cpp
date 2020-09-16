@@ -49,6 +49,14 @@ void calc_shoc_varorcovar_c(Int shcol, Int nlev, Int nlevi,  Real tunefac,
                             Real *isotropy_zi, Real *tkh_zi, Real *dz_zi,
 			    Real *invar1, Real *invar2, Real *varorcovar);
 
+void check_tke_c(Int shcol, Int nlev, Real *tke);
+			    
+void shoc_tke_c(Int shcol, Int nlev, Int nlevi, Real dtime, Real *wthv_sec, 
+                Real *shoc_mix, Real *dz_zi, Real *dz_zt, Real *pres, 
+		Real *u_wind, Real *v_wind, Real *brunt, Real *obklen, 
+		Real *zt_grid, Real *zi_grid, Real *pblh, Real *tke, 
+		Real *tk, Real *tkh, Real *isotropy);
+
 void integ_column_stability_c(Int nlev, Int shcol, Real *dz_zt, Real *pres,
 			      Real *brunt, Real *brunt_int);
 
@@ -69,6 +77,11 @@ void eddy_diffusivities_c(Int nlev, Int shcol, Real *obklen, Real *pblh,
 void calc_shoc_vertflux_c(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 			  Real *dz_zi, Real *invar, Real *vertflux);
 
+void shoc_length_c(Int shcol, Int nlev, Int nlevi, Real *tke, Real *host_dx,
+                   Real *host_dy, Real *pblh, Real *zt_grid, Real *zi_grid,
+                   Real *dz_zt, Real *dz_zi, Real *thetal, Real *wthv_sec,
+                   Real *thv, Real *brunt, Real *shoc_mix);
+
 void compute_brunt_shoc_length_c(Int nlev, Int nlevi, Int shcol ,Real *dz_zt,
                                  Real *thv, Real *thv_zi, Real *brunt);
 
@@ -88,7 +101,33 @@ void compute_shoc_mix_shoc_length_c(Int nlev, Int shcol, Real *tke, Real* brunt,
 
 void check_length_scale_shoc_length_c(Int nlev, Int shcol, Real *host_dx,
                                     Real *host_dy, Real *shoc_mix);
-
+				    
+void clipping_diag_third_shoc_moments_c(Int nlevi, Int shcol, Real *w_sec_zi,
+                                    Real *w3);	
+				    
+void fterms_input_for_diag_third_shoc_moment_c(Real dz_zi, Real dz_zt, Real dz_zt_kc,
+                                    Real isotropy_zi, Real brunt_zi, Real thetal_zi,
+                                    Real *thedz, Real *thedz2, Real *iso, 
+                                    Real *isosqrd, Real *buoy_sgs2, Real *bet2);				    			
+void f0_to_f5_diag_third_shoc_moment_c(Real thedz, Real thedz2, Real bet2, Real iso, 
+                                    Real isosqrd, Real wthl_sec, Real wthl_sec_kc, 
+				    Real wthl_sec_kb, Real thl_sec, Real thl_sec_kc, 
+				    Real thl_sec_kb, Real w_sec, Real w_sec_kc, Real w_sec_zi,
+                                    Real tke, Real tke_kc, Real *f0, Real *f1, 
+                                    Real *f2, Real *f3, Real *f4, Real *f5);
+				    
+void omega_terms_diag_third_shoc_moment_c(Real buoy_sgs2, Real f3, Real f4,
+                                    Real *omega0, Real *omega1, Real *omega2);
+				    
+void x_y_terms_diag_third_shoc_moment_c(Real buoy_sgs2, Real f0, Real f1, Real f2, 
+                                    Real *x0, Real *y0, Real *x1, Real *y1);
+				    
+void aa_terms_diag_third_shoc_moment_c(Real omega0, Real omega1, Real omega2, 
+                                    Real x0, Real x1, Real y0, Real y1, 
+				    Real *aa0, Real *aa1);
+				    
+void w3_diag_third_shoc_moment_c(Real aa0, Real aa1, Real x0, 
+                                    Real x1, Real f5, Real *w3);				    		   				   			    				    
 void shoc_diag_second_moments_srf_c(Int shcol, Real* wthl, Real* uw, Real* vw,
                                    Real* ustar2, Real* wstar);
 
@@ -165,42 +204,42 @@ namespace shoc {
 //
 
 void calc_shoc_varorcovar(SHOCVarorcovarData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  calc_shoc_varorcovar_c(d.shcol, d.nlev, d.nlevi, d.tunefac, d.isotropy_zi, d.tkh_zi,
+  calc_shoc_varorcovar_c(d.shcol(), d.nlev(), d.nlevi(), d.tunefac, d.isotropy_zi, d.tkh_zi,
                          d.dz_zi, d.invar1, d.invar2, d.varorcovar);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void shoc_grid(SHOCGridData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  shoc_grid_c(d.shcol, d.nlev, d.nlevi, d.zt_grid, d.zi_grid, d.pdel, d.dz_zt,
+  shoc_grid_c(d.shcol(), d.nlev(), d.nlevi(), d.zt_grid, d.zi_grid, d.pdel, d.dz_zt,
               d.dz_zi, d.rho_zt);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void update_host_dse(SHOCEnergydseData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  update_host_dse_c(d.shcol, d.nlev, d.thlm, d.shoc_ql, d.exner,
+  update_host_dse_c(d.shcol(), d.nlev(), d.thlm, d.shoc_ql, d.exner,
                     d.zt_grid, d.phis, d.host_dse);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void shoc_energy_integrals(SHOCEnergyintData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  shoc_energy_integrals_c(d.shcol, d.nlev, d.host_dse, d.pdel,
+  shoc_energy_integrals_c(d.shcol(), d.nlev(), d.host_dse, d.pdel,
                           d.rtm, d.rcm, d.u_wind, d.v_wind,
                           d.se_int, d.ke_int, d.wv_int, d.wl_int);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void shoc_energy_total_fixer(SHOCEnergytotData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  shoc_energy_total_fixer_c(d.shcol, d.nlev, d.nlevi, d.dtime, d.nadv,
+  shoc_energy_total_fixer_c(d.shcol(), d.nlev(), d.nlevi(), d.dtime, d.nadv,
                             d.zt_grid, d.zi_grid,
                             d.se_b, d.ke_b, d.wv_b, d.wl_b,
                             d.se_a, d.ke_a, d.wv_a, d.wl_a,
@@ -210,126 +249,199 @@ void shoc_energy_total_fixer(SHOCEnergytotData &d) {
 }
 
 void shoc_energy_threshold_fixer(SHOCEnergythreshfixerData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  shoc_energy_threshold_fixer_c(d.shcol, d.nlev, d.nlevi,
+  shoc_energy_threshold_fixer_c(d.shcol(), d.nlev(), d.nlevi(),
                           d.pint, d.tke, d.te_a, d.te_b,
 			  d.se_dis, d.shoctop);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void shoc_energy_dse_fixer(SHOCEnergydsefixerData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  shoc_energy_dse_fixer_c(d.shcol, d.nlev,
+  shoc_energy_dse_fixer_c(d.shcol(), d.nlev(),
                           d.se_dis, d.shoctop, d.host_dse);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void calc_shoc_vertflux(SHOCVertfluxData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  calc_shoc_vertflux_c(d.shcol, d.nlev, d.nlevi, d.tkh_zi, d.dz_zi, d.invar,
+  calc_shoc_vertflux_c(d.shcol(), d.nlev(), d.nlevi(), d.tkh_zi, d.dz_zi, d.invar,
 		       d.vertflux);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
-void integ_column_stability(SHOCColstabData &d) {
-  shoc_init(d.nlev, true);
+void check_tke(SHOCCheckTkeData &d){
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  integ_column_stability_c(d.nlev, d.shcol, d.dz_zt, d.pres, d.brunt, d.brunt_int);
+  check_tke_c(d.shcol(), d.nlev(), d.tke);
+  d.transpose<ekat::util::TransposeDirection::f2c>();    
+}
+
+void shoc_tke(SHOCTkeData &d){
+  shoc_init(d.nlev(), true);
+  d.transpose<ekat::util::TransposeDirection::c2f>();
+  shoc_tke_c(d.shcol(), d.nlev(), d.nlevi(), d.dtime, d.wthv_sec, d.shoc_mix,
+              d.dz_zi, d.dz_zt, d.pres, d.u_wind, d.v_wind, d.brunt, d.obklen,
+	      d.zt_grid, d.zi_grid, d.pblh, d.tke, d.tk, d.tkh, d.isotropy);
+  d.transpose<ekat::util::TransposeDirection::f2c>();
+}
+
+void integ_column_stability(SHOCColstabData &d) {
+  shoc_init(d.nlev(), true);
+  d.transpose<ekat::util::TransposeDirection::c2f>();
+  integ_column_stability_c(d.nlev(), d.shcol(), d.dz_zt, d.pres, d.brunt, d.brunt_int);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void compute_shr_prod(SHOCTkeshearData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  compute_shr_prod_c(d.nlevi, d.nlev, d.shcol, d.dz_zi, d.u_wind,
+  compute_shr_prod_c(d.nlevi(), d.nlev(), d.shcol(), d.dz_zi, d.u_wind,
                        d.v_wind, d.sterm);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void isotropic_ts(SHOCIsotropicData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  isotropic_ts_c(d.nlev, d.shcol, d.brunt_int, d.tke, d.a_diss,
+  isotropic_ts_c(d.nlev(), d.shcol(), d.brunt_int, d.tke, d.a_diss,
                  d.brunt, d.isotropy);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void adv_sgs_tke(SHOCAdvsgstkeData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  adv_sgs_tke_c(d.nlev, d.shcol, d.dtime, d.shoc_mix, d.wthv_sec,
+  adv_sgs_tke_c(d.nlev(), d.shcol(), d.dtime, d.shoc_mix, d.wthv_sec,
                 d.sterm_zt, d.tk, d.tke, d.a_diss);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void eddy_diffusivities(SHOCEddydiffData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  eddy_diffusivities_c(d.nlev, d.shcol, d.obklen, d.pblh, d.zt_grid,
+  eddy_diffusivities_c(d.nlev(), d.shcol(), d.obklen, d.pblh, d.zt_grid,
      d.shoc_mix, d.sterm_zt, d.isotropy, d.tke, d.tkh, d.tk);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
-void compute_brunt_shoc_length(SHOCBruntlengthData &d) {
-  shoc_init(d.nlev, true);
+void shoc_length(SHOCLengthData &d){
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  compute_brunt_shoc_length_c(d.nlev,d.nlevi,d.shcol,d.dz_zt,d.thv,d.thv_zi,d.brunt);
+  shoc_length_c(d.shcol(),d.nlev(),d.nlevi(),d.tke,d.host_dx,d.host_dy,
+                d.pblh,d.zt_grid,d.zi_grid,d.dz_zt,d.dz_zi,d.thetal,
+                d.wthv_sec,d.thv,d.brunt,d.shoc_mix);
+  d.transpose<ekat::util::TransposeDirection::f2c>();	
+}
+
+void compute_brunt_shoc_length(SHOCBruntlengthData &d) {
+  shoc_init(d.nlev(), true);
+  d.transpose<ekat::util::TransposeDirection::c2f>();
+  compute_brunt_shoc_length_c(d.nlev(),d.nlevi(),d.shcol(),d.dz_zt,d.thv,d.thv_zi,d.brunt);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void compute_l_inf_shoc_length(SHOCInflengthData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  compute_l_inf_shoc_length_c(d.nlev,d.shcol,d.zt_grid,d.dz_zt,d.tke,d.l_inf);
+  compute_l_inf_shoc_length_c(d.nlev(),d.shcol(),d.zt_grid,d.dz_zt,d.tke,d.l_inf);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void compute_conv_vel_shoc_length(SHOCConvvelData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  compute_conv_vel_shoc_length_c(d.nlev,d.shcol,d.pblh,d.zt_grid,
+  compute_conv_vel_shoc_length_c(d.nlev(),d.shcol(),d.pblh,d.zt_grid,
                                  d.dz_zt,d.thv,d.wthv_sec,d.conv_vel);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void compute_conv_time_shoc_length(SHOCConvtimeData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(42, true); // fake nlev
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  compute_conv_time_shoc_length_c(d.shcol,d.pblh,d.conv_vel,d.tscale);
+  compute_conv_time_shoc_length_c(d.shcol(),d.pblh,d.conv_vel,d.tscale);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void compute_shoc_mix_shoc_length(SHOCMixlengthData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  compute_shoc_mix_shoc_length_c(d.nlev,d.shcol,d.tke,d.brunt,d.tscale,
+  compute_shoc_mix_shoc_length_c(d.nlev(),d.shcol(),d.tke,d.brunt,d.tscale,
                                  d.zt_grid,d.l_inf,d.shoc_mix);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void check_length_scale_shoc_length(SHOCMixcheckData &d) {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  check_length_scale_shoc_length_c(d.nlev,d.shcol,d.host_dx,d.host_dy,d.shoc_mix);
+  check_length_scale_shoc_length_c(d.nlev(),d.shcol(),d.host_dx,d.host_dy,d.shoc_mix);
   d.transpose<ekat::util::TransposeDirection::f2c>();
+}
+
+void clipping_diag_third_shoc_moments(SHOCClipthirdmomsData &d) {
+  shoc_init(d.nlevi()-1, true); // nlev = nlevi - 1
+  d.transpose<ekat::util::TransposeDirection::c2f>();
+  clipping_diag_third_shoc_moments_c(d.nlevi(),d.shcol(),d.w_sec_zi,d.w3);
+  d.transpose<ekat::util::TransposeDirection::f2c>();
+}
+
+void aa_terms_diag_third_shoc_moment(SHOCAAdiagthirdmomsData &d){
+  shoc_init(1, true);
+  aa_terms_diag_third_shoc_moment_c(d.omega0,d.omega1,d.omega2,d.x0,d.x1,d.y0,d.y1,
+                                    &d.aa0,&d.aa1);
+}
+
+void fterms_input_for_diag_third_shoc_moment(SHOCFterminputthirdmomsData &d){
+  shoc_init(1, true);
+  fterms_input_for_diag_third_shoc_moment_c(d.dz_zi,d.dz_zt,d.dz_zt_kc,
+                                     d.isotropy_zi,d.brunt_zi,d.thetal_zi,
+				     &d.thedz,&d.thedz2,&d.iso,
+				     &d.isosqrd,&d.buoy_sgs2,&d.bet2);
+}
+
+void f0_to_f5_diag_third_shoc_moment(SHOCFtermdiagthirdmomsData &d){
+  shoc_init(1, true);
+  f0_to_f5_diag_third_shoc_moment_c(d.thedz,d.thedz2,d.bet2,d.iso,d.isosqrd,
+                                    d.wthl_sec,d.wthl_sec_kc,d.wthl_sec_kb,
+                                    d.thl_sec,d.thl_sec_kc,d.thl_sec_kb,
+                                    d.w_sec,d.w_sec_kc,d.w_sec_zi,
+                                    d.tke,d.tke_kc,
+                                    &d.f0,&d.f1,&d.f2,&d.f3,&d.f4,&d.f5);
+}
+
+void omega_terms_diag_third_shoc_moment(SHOCOmegadiagthirdmomsData &d){
+  shoc_init(1, true);
+  omega_terms_diag_third_shoc_moment_c(d.buoy_sgs2,d.f3,d.f4,
+                                       &d.omega0,&d.omega1,&d.omega2);
+}
+
+void x_y_terms_diag_third_shoc_moment(SHOCXYdiagthirdmomsData &d){
+  shoc_init(1, true);
+  x_y_terms_diag_third_shoc_moment_c(d.buoy_sgs2,d.f0,d.f1,d.f2,
+                                     &d.x0,&d.y0,&d.x1,&d.y1);
+}
+
+void w3_diag_third_shoc_moment(SHOCW3diagthirdmomsData &d){
+  shoc_init(1, true);
+  w3_diag_third_shoc_moment_c(d.aa0,d.aa1,d.x0,d.x1,d.f5,&d.w3);
 }
 
 void shoc_diag_second_moments_srf(SHOCSecondMomentSrfData& d)
 {
-  shoc_init(d.nlev, true);
+  shoc_init(42, true); // fake nlev
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  shoc_diag_second_moments_srf_c(d.shcol, d.wthl, d.uw, d.vw, d.ustar2, d.wstar);
+  shoc_diag_second_moments_srf_c(d.shcol(), d.wthl, d.uw, d.vw, d.ustar2, d.wstar);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 void linear_interp(SHOCLinearintData& d)
 {
-  shoc_init(d.nlev, true);
+  shoc_init(d.nlev(), true);
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  linear_interp_c(d.x1,d.x2,d.y1,d.y2,d.nlev,d.nlevi,d.shcol,d.minthresh);
+  linear_interp_c(d.x1,d.x2,d.y1,d.y2,d.nlev(),d.nlevi(),d.shcol(),d.minthresh);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
@@ -425,15 +537,66 @@ void shoc_assumed_pdf_compute_buoyancy_flux(SHOCPDFcompbuoyfluxData &d)
 
 void shoc_diag_second_moments_ubycond(SHOCSecondMomentUbycondData& d)
 {
-  shoc_init(d.nlev, true);
+  shoc_init(42, true); // Fake nlev
   d.transpose<ekat::util::TransposeDirection::c2f>();
-  shoc_diag_second_moments_ubycond_c(d.shcol, d.thl, d.qw, d.wthl, d.wqw, d.qwthl, d.uw, d.vw, d.wtke);
+  shoc_diag_second_moments_ubycond_c(d.shcol(), d.thl, d.qw, d.wthl, d.wqw, d.qwthl, d.uw, d.vw, d.wtke);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
 
 //
 // _f function definitions. These expect data in C layout
 //
+
+void calc_shoc_varorcovar_f(Int shcol, Int nlev, Int nlevi, Real tunefac,
+                            Real *isotropy_zi, Real *tkh_zi, Real *dz_zi,
+                            Real *invar1, Real *invar2, Real *varorcovar)
+{
+  using SHF = Functions<Real, DefaultDevice>;
+
+  using Spack      = typename SHF::Spack;
+  using view_2d    = typename SHF::view_2d<Spack>;
+  using KT         = typename SHF::KT;
+  using ExeSpace   = typename KT::ExeSpace;
+  using MemberType = typename SHF::MemberType;
+
+  static constexpr Int num_arrays = 6;
+
+  Kokkos::Array<view_2d, num_arrays> temp_d;
+  Kokkos::Array<size_t, num_arrays> dim1_sizes     = {shcol,       shcol,  shcol, shcol,  shcol,  shcol};
+  Kokkos::Array<size_t, num_arrays> dim2_sizes     = {nlevi,       nlevi,  nlevi, nlev,   nlev,   nlevi};
+  Kokkos::Array<const Real*, num_arrays> ptr_array = {isotropy_zi, tkh_zi, dz_zi, invar1, invar2, varorcovar};
+
+  // Sync to device
+  ekat::pack::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_d, true);
+
+  view_2d
+    isotropy_zi_d  (temp_d[0]),
+    tkh_zi_d    (temp_d[1]),
+    dz_zi_d     (temp_d[2]),
+    invar1_d    (temp_d[3]),
+    invar2_d    (temp_d[4]),
+    varorcovar_d(temp_d[5]);
+
+  const Int nk_pack = ekat::pack::npack<Spack>(nlev);
+  const auto policy = ekat::util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    const auto oisotropy_zi_d = ekat::util::subview(isotropy_zi_d, i);
+    const auto otkh_zi_d      = ekat::util::subview(tkh_zi_d, i);
+    const auto odz_zi_d       = ekat::util::subview(dz_zi_d, i);
+    const auto oinvar1_d      = ekat::util::subview(invar1_d, i);
+    const auto oinvar2_d      = ekat::util::subview(invar2_d, i);
+    const auto ovarorcovar_d  = ekat::util::subview(varorcovar_d, i);
+
+    SHF::calc_shoc_varorcovar(team, nlev, tunefac, oisotropy_zi_d, otkh_zi_d, odz_zi_d,
+                              oinvar1_d, oinvar2_d, ovarorcovar_d);
+  });
+
+  // Sync back to host
+  Kokkos::Array<view_2d, 1> inout_views = {varorcovar_d};
+  ekat::pack::device_to_host({varorcovar}, {shcol}, {nlevi}, inout_views, true);
+}
 
 void calc_shoc_vertflux_f(Int shcol, Int nlev, Int nlevi, Real *tkh_zi,
 			  Real *dz_zi, Real *invar, Real *vertflux)

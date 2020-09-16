@@ -30,10 +30,6 @@ function(CreateUnitTest target_name target_srcs scream_libs)
   set (test_libs "${scream_libs}")
   list(APPEND test_libs "${SCREAM_TPL_LIBRARIES}")
 
-  if ("${target_name}" MATCHES "field")
-    message ("field libs: ${test_libs}")
-  endif()
-
   if (NOT CreateUnitTest_MPI_RANKS)
     set (CreateUnitTest_MPI_RANKS 1)
   endif ()

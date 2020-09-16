@@ -32,7 +32,7 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
     // Tests for the SHOC function
     //     shoc_energy_total_fixer
 
-    // FIRST TEST 
+    // FIRST TEST
 
     // Timestep [s]
     static constexpr Real dtime = 300.0;
@@ -49,7 +49,7 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
     static constexpr Real wv = 0.5;
     static constexpr Real wl = 0.1;
     // Define surface sensible heat flux [K m/s]
-    static constexpr Real wthl_sfc = 0.5; 
+    static constexpr Real wthl_sfc = 0.5;
     // Define surface total water flux [kg/kg m/s]
     static constexpr Real wqw_sfc = 0.01;
 
@@ -58,12 +58,11 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
 
     // Test that the inputs are reasonable.
     // for this test we need exactly two columns
-    REQUIRE(SDS.shcol == 2);
-    REQUIRE(SDS.nlevi == SDS.nlev+1);
+    REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev && SDS.nlevi() && SDS.dtime == dtime && SDS.nadv == nadv) );
+    REQUIRE(shcol == 2);
+    REQUIRE(nlevi == nlev+1);
 
-//    SDS.dtime = dtime;
-//    SDS.nadv = nadv;
-    for(Int s = 0; s < SDS.shcol; ++s) {
+    for(Int s = 0; s < shcol; ++s) {
       // Set before and after integrals equal
       SDS.se_a[s] = se;
       SDS.se_b[s] = se;
@@ -76,48 +75,48 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
 
       // Make first column be zero for the surface fluxes
       SDS.wthl_sfc[s] = s*wthl_sfc;
-      SDS.wqw_sfc[s] = s*wqw_sfc;     
+      SDS.wqw_sfc[s] = s*wqw_sfc;
 
-      // Fill in test data on zt_grid.     
-      for(Int n = 0; n < SDS.nlev; ++n) {
-	const auto offset = n + s * SDS.nlev;
+      // Fill in test data on zt_grid.
+      for(Int n = 0; n < nlev; ++n) {
+	const auto offset = n + s * nlev;
 
 	// For zt grid, set as midpoint of zi grid
 	SDS.zt_grid[offset] = 0.5*(zi_grid[n]+zi_grid[n+1]);
 	SDS.rho_zt[offset] = rho_zt[n];
       }
-      // Fill in test data on zi_grid.     
-      for(Int n = 0; n < SDS.nlevi; ++n) {
-	const auto offset = n + s * SDS.nlevi;
+      // Fill in test data on zi_grid.
+      for(Int n = 0; n < nlevi; ++n) {
+	const auto offset = n + s * nlevi;
 
 	SDS.zi_grid[offset] = zi_grid[n];
-      }    
+      }
     }
 
     // Check that the inputs make sense
 
-    for(Int s = 0; s < SDS.shcol; ++s) {
-      for (Int n = 0; n < SDS.nlev; ++n){
-	const auto offset = n + s * SDS.nlev;
+    for(Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n){
+	const auto offset = n + s * nlev;
 
-	REQUIRE(SDS.zt_grid[offset] >= 0.0);  
+	REQUIRE(SDS.zt_grid[offset] >= 0.0);
 	REQUIRE(SDS.rho_zt[offset] > 0.0);
 
 	// Check that heights increase upward
 	if (n > nlev-1){
           REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0.0);
-	}    
+	}
       }
-      for (Int n = 0; n < SDS.nlevi; ++n){
-	const auto offset = n + s * SDS.nlevi;
+      for (Int n = 0; n < nlevi; ++n){
+	const auto offset = n + s * nlevi;
 
-	REQUIRE(SDS.zi_grid[offset] >= 0.0);  
+	REQUIRE(SDS.zi_grid[offset] >= 0.0);
 
 	// Check that heights increase upward
 	if (n > nlevi-1){
           REQUIRE(SDS.zi_grid[offset + 1] - SDS.zi_grid[offset] < 0.0);
-	}    
-      }    
+	}
+      }
     }
 
     // Call the fortran implementation
@@ -130,10 +129,13 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
 
     // Verify that second column "before" energy is greater than
     //  the first column, since here we have active surface fluxes
-    REQUIRE(SDS.te_b[1] > SDS.te_b[0]); 
-  
+    REQUIRE(SDS.te_b[1] > SDS.te_b[0]);
   }
-  
+
+  static void run_bfb()
+  {
+    // TODO
+  }
 };
 
 }  // namespace unit_test
@@ -149,10 +151,11 @@ TEST_CASE("shoc_energy_total_fixer_property", "shoc")
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_energy_total_fixer_b4b", "shoc")
+TEST_CASE("shoc_energy_total_fixer_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEnergyFixer;
 
+  TestStruct::run_bfb();
 }
 
 } // namespace
