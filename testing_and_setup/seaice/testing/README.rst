@@ -96,3 +96,16 @@ dev MPAS checkout.
 
 3. **Restartability**: Bit reproducibility is tested between a standard run and a run with a restart
 half way through.
+
+
+Required python packages
+========================
+
+Required python packages can be installed with Conda:
+
+.. code::
+
+   > conda create -n mpas_seaice python=3.6
+   > conda install -n mpas_seaice netCDF4
+   > conda install -n mpas_seaice -c conda-forge f90nml
+   > conda install -n mpas_seaice -c anaconda colorama

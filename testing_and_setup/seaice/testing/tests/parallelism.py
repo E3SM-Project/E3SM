@@ -1,12 +1,11 @@
-#!/usr/bin/env python
-
+from __future__ import print_function
 import os, shutil
 from compare_mpas_files import compare_files
 from testing_utils import *
 
 #-------------------------------------------------------------------------
 
-def parallelism(mpasDevelopmentDir, domainsDir, domain, configuration, options, check, oversubscribe):
+def parallelism(mpasDevelopmentDir, domainsDir, domain, configuration, options, check, oversubscribe, np1, np2):
 
     # find available directory name
     iTest = 1
@@ -30,11 +29,11 @@ def parallelism(mpasDevelopmentDir, domainsDir, domain, configuration, options, 
     if ("multipleBlocks" in options.keys() and options["multipleBlocks"] == "True"):
         multipleBlocks = True
 
-    print "multipleBlocks: ", multipleBlocks
+    print("multipleBlocks: ", multipleBlocks)
     logfile.write("multipleBlocks: %s" %(multipleBlocks))
 
     # development run
-    nProcs = 16
+    nProcs = np1
 
     nmlChanges = {"seaice_model": {"config_run_duration":'24:00:00'}}
     if (check):
@@ -49,7 +48,7 @@ def parallelism(mpasDevelopmentDir, domainsDir, domain, configuration, options, 
         return 1
 
     # base run
-    nProcs = 32
+    nProcs = np2
 
     if (not multipleBlocks):
         nmlChanges = {"seaice_model": {"config_run_duration":'24:00:00'}}

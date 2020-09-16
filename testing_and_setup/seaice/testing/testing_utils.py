@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-
+from __future__ import print_function
 import os, shutil, sys
 
 #-------------------------------------------------------------------------
@@ -37,7 +36,7 @@ def print_colour(message, messageType):
 
         elif (messageType == "title"):
 
-            print
+            print()
             print(colorama.Style.BRIGHT + colorama.Fore.MAGENTA + message + colorama.Style.RESET_ALL)
             underline = "=" * len(message)
             print(colorama.Style.BRIGHT + colorama.Fore.MAGENTA + underline + colorama.Style.RESET_ALL)
@@ -62,7 +61,7 @@ def print_colour(message, messageType):
 
         elif (messageType == "title"):
 
-            print
+            print()
             print(message)
             underline = "=" * len(message)
             print(underline)
@@ -82,7 +81,7 @@ def run_failed(testname):
 def test_summary(nErrorsNonArray, nErrorsArray, logfile, testname):
 
     if (nErrorsNonArray == 0):
-        print "No non-contents errors"
+        print("No non-contents errors")
         logfile.write("No non-contents errors\n")
     else:
         print_colour("%i non-content errors" %(nErrorsNonArray), "red")
@@ -154,7 +153,7 @@ def create_new_namelist(filenameIn, filenameOut, nmlPatch):
     try:
         import f90nml
     except ImportError:
-        print "Module f90nml needed and not available"
+        print("Module f90nml needed and not available")
         sys.exit()
 
     f90nml.patch(filenameIn, nmlPatch, filenameOut)
@@ -168,7 +167,7 @@ def create_new_streams(filenameIn, filenameOut, changes):
     try:
         import xml.etree.ElementTree as ET
     except ImportError:
-        print "Module xml.etree.ElementTree needed and not available"
+        print("Module xml.etree.ElementTree needed and not available")
         sys.exit()
 
     tree = ET.parse(filenameIn)
@@ -286,9 +285,9 @@ def execute_model(nProcs, logfile, oversubscribe=False):
 
     # execute mpirun -np np seaice_model
     if (oversubscribe):
-        process = subprocess.Popen(["mpirun", "--oversubscribe", "-np", "%i" %(nProcs), "seaice_model"], stdout=logfile, stderr=logfile)
+        process = subprocess.Popen(["mpirun", "--oversubscribe", "-np", "%i" %(nProcs), "./seaice_model"], stdout=logfile, stderr=logfile)
     else:
-        process = subprocess.Popen(["mpirun", "-np", "%i" %(nProcs), "seaice_model"], stdout=logfile, stderr=logfile)
+        process = subprocess.Popen(["mpirun", "-np", "%i" %(nProcs), "./seaice_model"], stdout=logfile, stderr=logfile)
     returnCode = process.wait()
     logfile.flush()
     logfile.write("Return code: %i\n" %(returnCode))

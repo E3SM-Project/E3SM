@@ -1,9 +1,29 @@
-#!/usr/bin/env python
-
+from __future__ import print_function
 import argparse
 from netCDF4 import Dataset
 import numpy as np
-import os, sys
+import os, sys, os.path
+
+#------------------------------------------------------------------
+
+def add_variable_to_diag_file(file1,variableArray1,variableArray2,variableName):
+
+    filenameDiag = "vars_differ.nc"
+
+    if (not os.path.isfile(filenameDiag)):
+        fileDiag = Dataset(filenameDiag,"w",format="NETCDF3_CLASSIC")
+    else:
+        fileDiag = Dataset(filenameDiag,"a")
+
+    varIn = file1[variableName]
+    for dimension in varIn.dimensions:
+        if (dimension not in fileDiag.dimensions):
+            fileDiag.createDimension(dimension,len(fileIn.dimensions[dimension]))
+
+    varOut = fileDiag.createVariable(varIn.name, varIn.dtype, varIn.dimensions)
+    varOut[:] = variableArray2[:] - variableArray1[:]
+
+    fileDiag.close()
 
 #------------------------------------------------------------------
 
@@ -126,6 +146,7 @@ def compare_files(filename1, filename2, logfile, variableNamesIgnore=[]):
                 if (not np.array_equal(variableArray1,variableArray2) and variableName not in variableNamesIgnore):
 
                     logfile.write("Arrays %s differ!\n" %(variableName))
+                    add_variable_to_diag_file(file1,variableArray1,variableArray2,variableName)
                     nErrorsArray = nErrorsArray + 1
 
 
@@ -161,7 +182,7 @@ if __name__ == "__main__":
     logfile = open("log_test.txt")
 
     nErrorsArray, nErrorsNonArray = compare_files(args.filename1, args.filename2, logfile, variableNamesIgnore)
-    print "Number of array errors:     ", nErrorsArray
-    print "Number of non-array errors: ", nErrorsNonArray
+    print("Number of array errors:     ", nErrorsArray)
+    print("Number of non-array errors: ", nErrorsNonArray)
 
     logfile.close()
