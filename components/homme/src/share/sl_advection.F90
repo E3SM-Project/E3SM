@@ -339,7 +339,7 @@ contains
     !  x(t-ts) = x(t)) -ts * [ 1/2( U(x(t),t-ts)+U(x(t),t)) - ts 1/2 U(x(t),t) gradU(x(t),t-ts) ]
 
     nlyr = 2*nlev
-    if (independent_time_steps) nlyr = nlyr + nlevp
+    if (independent_time_steps) nlyr = nlyr + nlev
 
     do ie = nets,nete
        ! vstarn0 = U(x,t)
@@ -361,7 +361,7 @@ contains
           end if
        enddo
        call edgeVpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%derived%vstar,2*nlev,0,nlyr)
-       if (independent_time_steps) call edgeVpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%derived%divdp,nlevp,2*nlev,nlyr)
+       if (independent_time_steps) call edgeVpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%derived%divdp,nlev,2*nlev,nlyr)
     enddo
 
     call t_startf('ALE_RKdss_bexchV')
