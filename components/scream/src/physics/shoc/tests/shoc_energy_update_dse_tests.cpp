@@ -165,7 +165,7 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse {
     for (auto& d : SDS_cxx) {
       d.transpose<ekat::util::TransposeDirection::c2f>();
       // expects data in fortran layout
-      update_host_dse_f(d.shcol,d.nlev,d.thlm,d.shoc_ql,d.exner,d.zt_grid,
+      update_host_dse_f(d.shcol(),d.nlev(),d.thlm,d.shoc_ql,d.exner,d.zt_grid,
                          d.phis,d.host_dse);
       d.transpose<ekat::util::TransposeDirection::f2c>();
     }
@@ -174,11 +174,10 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse {
     for (Int i = 0; i < num_runs; ++i) {
       SHOCEnergydseData& d_f90 = SDS_f90[i];
       SHOCEnergydseData& d_cxx = SDS_cxx[i];
-      for (Int k = 0; k < d_f90.totali(); ++k) {
+      for (Int k = 0; k < d_f90.total1x2(); ++k) {
         REQUIRE(d_f90.host_dse[k] == d_cxx.host_dse[k]);
       }
     }
-  }
   }
 };
 
