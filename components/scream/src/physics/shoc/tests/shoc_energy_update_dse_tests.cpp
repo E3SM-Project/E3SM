@@ -163,11 +163,11 @@ struct UnitWrap::UnitTest<D>::TestShocUpdateDse {
 
     // Get data from cxx
     for (auto& d : SDS_cxx) {
-      d.transpose<ekat::util::TransposeDirection::c2f>();
+      d.transpose<ekat::TransposeDirection::c2f>();
       // expects data in fortran layout
       update_host_dse_f(d.shcol(),d.nlev(),d.thlm,d.shoc_ql,d.exner,d.zt_grid,
                          d.phis,d.host_dse);
-      d.transpose<ekat::util::TransposeDirection::f2c>();
+      d.transpose<ekat::TransposeDirection::f2c>();
     }
 
     // Verify BFB results, all data should be in C layout

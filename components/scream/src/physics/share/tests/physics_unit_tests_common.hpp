@@ -38,7 +38,7 @@ struct UnitWrap {
     using view_3d = typename KokkosTypes<Device>::template view_3d<S>;
 
     template <typename S>
-    using uview_1d = typename ekat::util::template Unmanaged<view_1d<S> >;
+    using uview_1d = typename ekat::template Unmanaged<view_1d<S> >;
 
     using Functions          = scream::physics::Functions<Real, Device>;
     using Scalar             = typename Functions::Scalar;

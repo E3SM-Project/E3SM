@@ -35,7 +35,7 @@ TEST_CASE("shoc_init_f", "shoc") {
 // plotting scripts, false otherwise.
 bool generating_plot_scripts() {
   bool gen_plot_scripts = false;
-  auto& ts = ekat::util::TestSession::get();
+  auto& ts = ekat::TestSession::get();
   auto iter = ts.params.find("gen_plot_scripts");
   if (iter != ts.params.end()) {
     // Here's val, passed as gen_plot_scripts=val
