@@ -1798,7 +1798,7 @@ contains
           call shr_sys_flush(iulog)
        end if
        call ncd_pio_createfile(lnfid, trim(locfnh(t)), avoid_pnetcdf=avoid_pnetcdf)
-       call ncd_putatt(lnfid, ncd_global, 'title', 'CLM History file information' )
+       call ncd_putatt(lnfid, ncd_global, 'title', 'ELM History file information' )
        call ncd_putatt(lnfid, ncd_global, 'comment', &
           "NOTE: None of the variables are weighted by land fraction!" )
     else
@@ -1809,7 +1809,7 @@ contains
        end if
        call ncd_pio_createfile(lnfid, trim(locfnhr(t)), avoid_pnetcdf=avoid_pnetcdf)
        call ncd_putatt(lnfid, ncd_global, 'title', &
-          'CLM Restart History information, required to continue a simulation' )
+          'ELM Restart History information, required to continue a simulation' )
        call ncd_putatt(lnfid, ncd_global, 'comment', &
                        "This entire file NOT needed for startup or branch simulations")
     end if

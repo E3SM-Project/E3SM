@@ -63,7 +63,7 @@ module clm_varctl
   character(len=256), public :: username = ' '                           
 
   ! description of this source
-  character(len=256), public :: source   = "Community Land Model CLM4.0" 
+  character(len=256), public :: source   = "E3SM Land Model" 
 
   ! version of program
   character(len=256), public :: version  = " "                           
