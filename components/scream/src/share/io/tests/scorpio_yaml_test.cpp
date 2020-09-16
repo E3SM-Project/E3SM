@@ -145,7 +145,6 @@ TEST_CASE("scorpio_yaml", "") {
   for (auto& out_ins : AtmOutput_Instances)
   {
     out_ins.init(repo);
-    out_ins.check_status();
   }
 
   // Run and record data:
@@ -180,7 +179,6 @@ TEST_CASE("scorpio_yaml", "") {
     for (auto& out_ins : AtmOutput_Instances)
     {
       out_ins.run(repo,l_time);
-      out_ins.check_status();
     }
   }
 
