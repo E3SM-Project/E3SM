@@ -376,8 +376,6 @@ _TESTS = {
 
     "e3sm_gpu" : {
         "tests"    : (
-                 "SMS_P36x1_Ld1.ne4pg2_ne4pg2.FC5AV1C-H01A.cam-crm_gpu",
-                 "SMS_P36x1_Ld1.ne4_ne4.FC5AV1C-H01A.cam-crm_gpu",
                  "SMS_P36x1_Ld1.T62_oEC60to30v3.CMPASO-NYF",
                  "SMS_P36x1_Ld1.T62_oEC60to30v3.DTESTM",
                  )
