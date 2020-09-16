@@ -736,7 +736,8 @@ void update_host_dse_f(Int shcol, Int nlev, Real* thlm, Real* shoc_ql, Real* exn
 
   using Scalar     = typename SHF::Scalar;
   using Spack      = typename SHF::Spack;
-  using view_1d    = typename SHF::view_1d<Spack>;
+  using Pack1d     = typename ekat::pack::Pack<Real,1>;
+  using view_1d    = typename SHF::view_1d<Pack1d>;
   using view_2d    = typename SHF::view_2d<Spack>;
   using KT         = typename SHF::KT;
   using ExeSpace   = typename KT::ExeSpace;
