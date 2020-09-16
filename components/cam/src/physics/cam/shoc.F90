@@ -4359,7 +4359,12 @@ end subroutine compute_conv_time_shoc_length
 
 subroutine compute_shoc_mix_shoc_length(nlev,shcol,tke,brunt,tscale,zt_grid,l_inf,shoc_mix)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use shoc_iso_f, only: compute_shoc_mix_shoc_length_f
+#endif
+
   implicit none
+
   integer, intent(in) :: nlev, shcol
   ! turbulent kinetic energy [m^2/s^2]
   real(rtype), intent(in) :: tke(shcol,nlev)
@@ -4378,6 +4383,14 @@ subroutine compute_shoc_mix_shoc_length(nlev,shcol,tke,brunt,tscale,zt_grid,l_in
   real(rtype) :: brunt2(shcol,nlev)
   integer k, i
   real(rtype) :: tkes
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  if (use_cxx) then
+    call compute_shoc_mix_shoc_length_f(nlev,shcol,tke,brunt,tscale,zt_grid,l_inf,& !Input
+                                        shoc_mix) ! Ouptut
+    return
+  endif
+#endif
 
   brunt2(:,:) = 0.0
 

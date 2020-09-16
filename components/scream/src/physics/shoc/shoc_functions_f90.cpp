@@ -884,5 +884,61 @@ void shoc_pblintd_init_pot_f(Int shcol, Int nlev, Real *thl, Real* ql, Real* q,
   ekat::device_to_host<int,1>({thv}, {shcol}, {nlev}, inout_views, true);
 }
 
+void compute_shoc_mix_shoc_length_f(Int nlev, Int shcol, Real* tke, Real* brunt, Real* tscale,
+                                    Real* zt_grid, Real* l_inf, Real* shoc_mix)
+{
+  using SHF = Functions<Real, DefaultDevice>;
+
+   using Scalar     = typename SHF::Scalar;
+   using Spack      = typename SHF::Spack;
+   using Pack1d     = typename ekat::pack::Pack<Real,1>;
+   using view_1d    = typename SHF::view_1d<Pack1d>;
+   using view_2d    = typename SHF::view_2d<Spack>;
+   using KT         = typename SHF::KT;
+   using ExeSpace   = typename KT::ExeSpace;
+   using MemberType = typename SHF::MemberType;
+
+  Kokkos::Array<view_1d, 2> temp_1d_d;
+  Kokkos::Array<view_2d, 4> temp_2d_d;
+  Kokkos::Array<size_t, 4> dim1_sizes     = {shcol, shcol, shcol,   shcol};
+  Kokkos::Array<size_t, 4> dim2_sizes     = {nlev,  nlev,  nlev,    nlev};
+  Kokkos::Array<const Real*, 4> ptr_array = {tke,   brunt, zt_grid, shoc_mix};
+
+  // Sync to device
+  ekat::pack::host_to_device({tscale,l_inf}, shcol, temp_1d_d);
+  ekat::pack::host_to_device(ptr_array, dim1_sizes, dim2_sizes, temp_2d_d, true);
+
+  view_1d
+    tscale_d (temp_1d_d[0]),
+    l_inf_d  (temp_1d_d[1]);
+
+  view_2d
+    tke_d     (temp_2d_d[0]),
+    brunt_d   (temp_2d_d[1]),
+    zt_grid_d (temp_2d_d[2]),
+    shoc_mix_d  (temp_2d_d[3]);
+
+  const Int nk_pack = ekat::pack::npack<Spack>(nlev);
+  const auto policy = ekat::util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    const Scalar tscale_s{tscale_d(i)[0]};
+    const Scalar l_inf_s {l_inf_d(i)[0]};
+
+    const auto tke_s      = ekat::util::subview(tke_d, i);
+    const auto brunt_s    = ekat::util::subview(brunt_d, i);
+    const auto zt_grid_s  = ekat::util::subview(zt_grid_d, i);
+    const auto shoc_mix_s = ekat::util::subview(shoc_mix_d, i);
+
+    SHF::compute_shoc_mix_shoc_length(team, nlev, tke_s, brunt_s, tscale_s, zt_grid_s, l_inf_s,
+                                      shoc_mix_s);
+  });
+
+  // Sync back to host
+  Kokkos::Array<view_2d, 1> inout_views = {shoc_mix_d};
+  ekat::pack::device_to_host({shoc_mix}, {shcol}, {nlev}, inout_views, true);
+}
+
 } // namespace shoc
 } // namespace scream
