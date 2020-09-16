@@ -1,12 +1,10 @@
-#!/usr/bin/env python
-
 import os, shutil
 from compare_mpas_files import compare_files
 from testing_utils import *
 
 #-------------------------------------------------------------------------
 
-def regression(mpasDevelopmentDir, mpasBaseDir, domainsDir, domain, configuration, options, check, oversubscribe):
+def regression(mpasDevelopmentDir, mpasBaseDir, domainsDir, domain, configuration, options, check, oversubscribe, np1, np2):
 
     # find available directory name
     iTest = 1
@@ -27,7 +25,7 @@ def regression(mpasDevelopmentDir, mpasBaseDir, domainsDir, domain, configuratio
     logfile.write(title)
 
     # development run
-    nProcs = 16
+    nProcs = np1
 
     nmlChanges = {"seaice_model": {"config_run_duration":'24:00:00'}}
     if (check):
@@ -42,7 +40,7 @@ def regression(mpasDevelopmentDir, mpasBaseDir, domainsDir, domain, configuratio
         return 1
 
     # base run
-    nProcs = 16
+    nProcs = np1
 
     nmlChanges = {"seaice_model": {"config_run_duration":'24:00:00'}}
     if (check):
