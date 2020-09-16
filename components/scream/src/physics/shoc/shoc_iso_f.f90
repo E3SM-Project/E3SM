@@ -95,6 +95,22 @@ end subroutine update_host_dse_f
 
  end subroutine shoc_pblintd_init_pot_f
 
+subroutine compute_shoc_mix_shoc_length_f(nlev,shcol,tke,brunt,tscale,&
+                                          zt_grid,l_inf,shoc_mix) bind (C)
+  use iso_c_binding
+
+  integer(kind=c_int), intent(in), value :: nlev
+  integer(kind=c_int), intent(in), value :: shcol
+  real(kind=c_real), intent(in) :: tke(shcol,nlev)
+  real(kind=c_real), intent(in) :: brunt(shcol,nlev)
+  real(kind=c_real), intent(in) :: tscale(shcol)
+  real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
+  real(kind=c_real), intent(in) :: l_inf(shcol)
+
+  real(kind=c_real), intent(out) :: shoc_mix(shcol,nlev)
+
+end subroutine compute_shoc_mix_shoc_length_f
+
 end interface
 
 end module shoc_iso_f
