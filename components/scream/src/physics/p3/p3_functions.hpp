@@ -57,16 +57,16 @@ struct Functions
   using Device = DeviceT;
 
   template <typename S>
-  using BigPack = ekat::pack::Pack<S,SCREAM_PACK_SIZE>;
+  using BigPack = ekat::Pack<S,SCREAM_PACK_SIZE>;
   template <typename S>
-  using SmallPack = ekat::pack::Pack<S,SCREAM_SMALL_PACK_SIZE>;
+  using SmallPack = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
 
   using IntSmallPack = SmallPack<Int>;
   using Pack = BigPack<Scalar>;
   using Spack = SmallPack<Scalar>;
 
-  using Mask = ekat::pack::Mask<BigPack<Scalar>::n>;
-  using Smask = ekat::pack::Mask<SmallPack<Scalar>::n>;
+  using Mask = ekat::Mask<BigPack<Scalar>::n>;
+  using Smask = ekat::Mask<SmallPack<Scalar>::n>;
 
   using KT = KokkosTypes<Device>;
 
@@ -81,9 +81,9 @@ struct Functions
   using view_1d_ptr_array = typename KT::template view_1d_ptr_carray<S, N>;
 
   template <typename S>
-  using uview_1d = typename ekat::util::template Unmanaged<view_1d<S> >;
+  using uview_1d = typename ekat::template Unmanaged<view_1d<S> >;
   template <typename S>
-  using uview_2d = typename ekat::util::template Unmanaged<view_2d<S> >;
+  using uview_2d = typename ekat::template Unmanaged<view_2d<S> >;
 
   using MemberType = typename KT::MemberType;
 

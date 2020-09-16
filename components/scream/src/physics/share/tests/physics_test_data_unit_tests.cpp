@@ -128,7 +128,7 @@ struct UnitWrap::UnitTest<D>::TestTestData
       }
 
       // Check transpose
-      d1.transpose<ekat::util::TransposeDirection::c2f>();
+      d1.transpose<ekat::TransposeDirection::c2f>();
       for (Int i = 0; i < d1.dim1; ++i) {
         for (Int j = 0; j < d1.dim2; ++j) {
           const Int cidx = d1.dim2*i + j;
@@ -146,7 +146,7 @@ struct UnitWrap::UnitTest<D>::TestTestData
         }
       }
 
-      d1.transpose<ekat::util::TransposeDirection::f2c>();
+      d1.transpose<ekat::TransposeDirection::f2c>();
       for (Int i = 0; i < d1.total1x2(); ++i) {
         REQUIRE(d1.one12[i] == d2.one12[i]);
         REQUIRE(d1.two12[i] == d2.two12[i]);
@@ -227,7 +227,7 @@ struct UnitWrap::UnitTest<D>::TestTestData
       }
 
       // Check transpose
-      d1.transpose<ekat::util::TransposeDirection::c2f>();
+      d1.transpose<ekat::TransposeDirection::c2f>();
       for (Int i = 0; i < d1.dim1; ++i) {
         for (Int j = 0; j < d1.dim2; ++j) {
           const Int cidx = d1.dim2*i + j;
@@ -237,7 +237,7 @@ struct UnitWrap::UnitTest<D>::TestTestData
         }
       }
 
-      d1.transpose<ekat::util::TransposeDirection::f2c>();
+      d1.transpose<ekat::TransposeDirection::f2c>();
       for (Int i = 0; i < d1.total1x2(); ++i) {
         REQUIRE(d1.one12[i] == d2.one12[i]);
       }

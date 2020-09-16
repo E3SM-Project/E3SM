@@ -26,11 +26,11 @@ void Functions<S,D>
     ekat_masked_loop(dum1_lt, s) {
       const auto inv_dum3 = sp(0.1);
       auto rdumii = (dum1[s] * sp(1.e6) + 5) * inv_dum3;
-      rdumii = ekat::util::max<Scalar>(rdumii,  1);
-      rdumii = ekat::util::min<Scalar>(rdumii, 20);
+      rdumii = ekat::impl::max(rdumii, sp( 1.0));
+      rdumii = ekat::impl::min(rdumii, sp(20.0));
       Int dumii = rdumii;
-      dumii = ekat::util::max(dumii,  1);
-      dumii = ekat::util::min(dumii, 20);
+      dumii = ekat::impl::max(dumii,  1);
+      dumii = ekat::impl::min(dumii, 20);
       t.rdumii[s] = rdumii;
       t.dumii[s] = dumii;
     }
@@ -40,11 +40,11 @@ void Functions<S,D>
     ekat_masked_loop(dum1_gte, s) {
       const auto inv_dum3 = C::THIRD * sp(0.1);
       auto rdumii = (dum1[s] * sp(1.e+6) - 195) * inv_dum3 + 20;
-      rdumii = ekat::util::max<Scalar>(rdumii, 20);
-      rdumii = ekat::util::min<Scalar>(rdumii,300);
+      rdumii = ekat::impl::max(rdumii,sp( 20.0));
+      rdumii = ekat::impl::min(rdumii,sp(300.0));
       Int dumii = rdumii;
-      dumii = ekat::util::max(dumii, 20);
-      dumii = ekat::util::min(dumii,299);
+      dumii = ekat::impl::max(dumii, 20);
+      dumii = ekat::impl::min(dumii,299);
       t.rdumii[s] = rdumii;
       t.dumii[s] = dumii;
     }

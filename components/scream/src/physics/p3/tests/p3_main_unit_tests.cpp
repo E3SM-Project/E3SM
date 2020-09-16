@@ -372,7 +372,7 @@ static void run_bfb_p3_main()
 
   // Get data from cxx
   for (auto& d : isds_cxx) {
-    d.transpose<ekat::util::TransposeDirection::c2f>();
+    d.transpose<ekat::TransposeDirection::c2f>();
     p3_main_f(
       d.qc, d.nc, d.qr, d.nr, d.th, d.qv, d.dt, d.qi, d.qm, d.ni,
       d.bm, d.pres, d.dz, d.nc_nuceat_tend, d.ni_activated, d.inv_qc_relvar, d.it, d.precip_liq_surf,
@@ -380,7 +380,7 @@ static void run_bfb_p3_main()
       d.rho_qi, d.do_predict_nc, d.dpres, d.exner, d.cmeiout, d.precip_total_tend,
       d.nevapr, d.qr_evap_tend, d.precip_liq_flux, d.precip_ice_flux, d.cld_frac_r, d.cld_frac_l, d.cld_frac_i, d.mu_c,
       d.lamc, d.liq_ice_exchange, d.vap_liq_exchange, d.vap_ice_exchange);
-    d.transpose<ekat::util::TransposeDirection::f2c>();
+    d.transpose<ekat::TransposeDirection::f2c>();
   }
 
   for (Int i = 0; i < num_runs; ++i) {

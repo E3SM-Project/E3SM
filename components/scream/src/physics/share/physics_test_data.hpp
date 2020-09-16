@@ -146,18 +146,18 @@ struct PhysicsTestData
 
   // Since we are also preparing index data, this function is doing more than transposing. It's shifting the
   // format of all data from one language to another
-  template <ekat::util::TransposeDirection::Enum D>
+  template <ekat::TransposeDirection::Enum D>
   void transpose() {
     std::vector<Real> data(m_data.size());
 
     // Transpose on the zt grid
     for (size_t i = 0; i < m_ptrs.size(); ++i) {
-      ekat::util::transpose<D>(*(m_ptrs[i]), data.data() + (m_total*i) , dim1, dim2);
+      ekat::transpose<D>(*(m_ptrs[i]), data.data() + (m_total*i) , dim1, dim2);
     }
 
     // Transpose on the zi grid
     for (size_t i = 0; i < m_ptrs_i.size(); ++i) {
-      ekat::util::transpose<D>(*(m_ptrs_i[i]), data.data() + (m_ptrs.size()*m_total) + (m_totali*i), dim1, dim3);
+      ekat::transpose<D>(*(m_ptrs_i[i]), data.data() + (m_ptrs.size()*m_total) + (m_totali*i), dim1, dim3);
     }
 
     // Copy the column only grid
@@ -168,7 +168,7 @@ struct PhysicsTestData
 
     // Shift the indices. We might not be able to make the assumption that int data represented indices
     for (size_t i = 0; i < m_idx_data.size(); ++i) {
-      m_idx_data[i] += (D == ekat::util::TransposeDirection::c2f ? 1 : -1);
+      m_idx_data[i] += (D == ekat::TransposeDirection::c2f ? 1 : -1);
       EKAT_ASSERT_MSG(m_idx_data[i] >= 0, "Bad index: " << m_idx_data[i]);
     }
   }

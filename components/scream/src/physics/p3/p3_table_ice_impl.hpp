@@ -178,7 +178,7 @@ typename Functions<S,D>::Spack Functions<S,D>
 ::apply_table_ice(const int& idx, const view_itab_table& itab, const TableIce& t,
                   const Smask& context)
 {
-  using ekat::pack::index;
+  using ekat::index;
 
   Spack proc;
   IntSmallPack idxpk(idx);
@@ -223,7 +223,7 @@ typename Functions<S,D>::Spack Functions<S,D>
                    const TableIce& ti, const TableRain& tr,
                    const Smask& context)
 {
-  using ekat::pack::index;
+  using ekat::index;
 
   Spack proc;
   IntSmallPack idxpk(idx);

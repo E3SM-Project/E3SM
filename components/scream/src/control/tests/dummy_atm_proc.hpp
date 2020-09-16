@@ -98,7 +98,7 @@ public:
 
   // Register all fields in the given repo
   void register_fields (FieldRepository<Real, device_type>& field_repo) const {
-    using pack_type = ekat::pack::Pack<Real,PackSize>;
+    using pack_type = ekat::Pack<Real,PackSize>;
     field_repo.template register_field<pack_type>(*m_input_fids.begin());
     field_repo.template register_field<pack_type>(*m_output_fids.begin());
   }

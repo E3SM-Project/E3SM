@@ -197,7 +197,7 @@ struct UnitWrap::UnitTest<D>::TestSaturation
      */
 
     int nerr = 0;
-    TeamPolicy policy(ekat::util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
+    TeamPolicy policy(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
     Kokkos::parallel_reduce("TestTableIce::run", policy, KOKKOS_LAMBDA(const MemberType&, int& errors) {
 
       errors = 0;
