@@ -370,9 +370,16 @@ contains
     ! idintx is a unique number of MOAB app that takes care of intx between ocn and atm mesh
     idintx = 100*atm(1)%cplcompid + ocn(1)%cplcompid ! something different, to differentiate it; ~ 618 !
     if (atm_pg_active) then
-      typeB = 2 ! fv on atm side too !! imoab_apg2_ol  coupler example
+      typeB = 3 ! fv on atm side too !! imoab_apg2_ol  coupler example
+                ! atm cells involved in intersection (pg 2 in this case)
+                ! this will be used now to send
+                ! data from phys grid directly to atm-ocn intx , for later projection
+                ! context is the same, atm - ocn intx id !
+
     else
-      typeB = 1 ! atm cells involved in intersection (spectral in this case)
+      typeB = 1 ! atm cells involved in intersection (spectral in this case) ! this will be used now to send
+                ! data from phys grid directly to atm-ocn intx , for later projection
+                ! context is the same, atm - ocn intx id !
     endif
     ierr = iMOAB_ComputeCommGraph( mphaid, mbintxoa, mpicom_join, mpigrp_old, mpigrp_CPLID, &
           typeA, typeB, atm_id, idintx)
@@ -510,32 +517,56 @@ contains
 ! we should do this only of ocn_present
 
     context_id = ocn(1)%cplcompid
-    ! now send the tags a2o?bot  from original atmosphere mhid(pid1) towards migrated coverage mesh (pid3), using the new coverage graph communicator
-    tagName = 'a2oTbot;a2oUbot;a2oVbot;'//CHAR(0) ! they are defined in semoab_mod.F90!!!
-    !  the separator will be ';' semicolon
-    tagNameProj = 'a2oTbot_proj;a2oUbot_proj;a2oVbot_proj;'//CHAR(0)
     wgtIdef = 'scalar'//CHAR(0)
     num_proj = num_proj + 1
+
     if (atm_present .and. ocn_present) then
-      if (mhid .ge. 0) then !  send because we are on atm pes
+      if (atm_pg_active ) then ! use data from AtmPhys mesh, but mesh from pg
+        ! in this case, we will send from phys grid directly to intx atm ocn context!
+        if (mhpgid .ge. 0) then !  send because we are on atm pes,
 
-        ! basically, adjust the migration of the tag we want to project; it was sent initially with
-        ! trivial partitioning, now we need to adjust it for "coverage" mesh
-        ! as always, use nonblocking sends
+          ! basically, adjust the migration of the tag we want to project; it was sent initially with
+          ! trivial partitioning, now we need to adjust it for "coverage" mesh
+          ! as always, use nonblocking sends
+          tagName = 'T_ph;u_ph;v_ph;'//CHAR(0) ! they are defined in initialize_moab_atm_phys in atm_comp_mct
+          context_id = 100*atm(1)%cplcompid + ocn(1)%cplcompid !send to atm/ocn intx !
+          ierr = iMOAB_SendElementTag(mphaid, tagName, mpicom_join, context_id)
+        endif
 
-         ierr = iMOAB_SendElementTag(mhid, tagName, mpicom_join, context_id)
+        if (mbintxoa .ge. 0 ) then ! we are for sure on coupler pes!
+          tagName = 'T_ph16;u_ph16;v_ph16;'//CHAR(0) ! they are defined in cplcomp_exchange mod
+          ! context_id = atm(1)%cplcompid == atm_id above (5)
+          ierr = iMOAB_ReceiveElementTag(mbintxoa, tagName, mpicom_join, atm_id)
+        endif
+        ! we can now free the sender buffers
+        if (mhpgid .ge. 0) then
+           ierr = iMOAB_FreeSenderBuffers(mhpgid, context_id)
+           ! CHECKRC(ierr, "cannot free buffers used to resend atm mesh tag towards the coverage mesh")
+        endif
+      else  ! original send from spectral elements
+        tagName = 'a2oTbot;a2oUbot;a2oVbot;'//CHAR(0) ! they are defined in semoab_mod.F90!!!
+        !  the separator will be ';' semicolon
+        tagNameProj = 'a2oTbot_proj;a2oUbot_proj;a2oVbot_proj;'//CHAR(0)
+        if (mhid .ge. 0) then !  send because we are on atm pes
 
-      endif
-      if (mbaxid .ge. 0 ) then !  we are on coupler pes, for sure
-        ! receive on atm on coupler pes, that was redistributed according to coverage
-         ierr = iMOAB_ReceiveElementTag(mbaxid, tagName, mpicom_join, context_id)
-      !CHECKRC(ierr, "cannot receive tag values")
-      endif
+          ! basically, adjust the migration of the tag we want to project; it was sent initially with
+          ! trivial partitioning, now we need to adjust it for "coverage" mesh
+          ! as always, use nonblocking sends
 
-      ! we can now free the sender buffers
-      if (mhid .ge. 0) then
-         ierr = iMOAB_FreeSenderBuffers(mhid, context_id)
-         ! CHECKRC(ierr, "cannot free buffers used to resend atm mesh tag towards the coverage mesh")
+          ierr = iMOAB_SendElementTag(mhid, tagName, mpicom_join, context_id)
+        endif
+        if (mbaxid .ge. 0 ) then !  we are on coupler pes, for sure
+          ! receive on atm on coupler pes, that was redistributed according to coverage
+          ierr = iMOAB_ReceiveElementTag(mbaxid, tagName, mpicom_join, context_id)
+          !CHECKRC(ierr, "cannot receive tag values")
+        endif
+
+        ! we can now free the sender buffers
+        if (mhid .ge. 0) then
+           ierr = iMOAB_FreeSenderBuffers(mhid, context_id)
+           ! CHECKRC(ierr, "cannot free buffers used to resend atm mesh tag towards the coverage mesh")
+        endif
+
       endif
 
       ! we could do the projection now, on the ocean mesh, because we are on the coupler pes;
