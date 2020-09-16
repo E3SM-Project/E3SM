@@ -25,23 +25,37 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
 
   static void run_property()
   {
-    static constexpr Int shcol    = 2;
+    static constexpr Real gravit  = scream::physics::Constants<Real>::gravit;
+    static constexpr Real Cpair   = scream::physics::Constants<Real>::Cpair;
+    static constexpr Int shcol    = 1;
     static constexpr Int nlev     = 5;
     static constexpr auto nlevi   = nlev + 1;
 
     // Tests for the SHOC function
     //     shoc_energy_fixer
+    
+    // TEST ONE and TWO
+    // No energy change and surface flux test.  
+    //  In one column, given inputs where the energy has not changed
+    //  from timestep to timestep, verify that the host model dry static
+    //  energy also has not changed. 
+    
+    // In other, give positive surface fluxes, 
+    //  all other information being the same.  Verify that energy was added 
+    //  in to the system and verify that energy was added into the system AND
+    //  verify that energy was only adjust at the levels where TKE is greater
+    //  than zero.  
 
     // Timestep [s]
-    static constexpr Real dtime = 300.0;
+    static constexpr Real dtime = 300;
     // Number of macmic steps
     static constexpr Int nadv = 2;
     // Air density [km/m3]
     static constexpr Real rho_zt[nlev] = {0.4, 0.6, 0.7, 0.9, 1.0};
     // Interface heights [m]
-    static constexpr Real zi_grid[nlevi] = {11000.0, 7500.0, 5000.0, 3000.0, 1500.0, 0.0};
-    // Host model dry static energy [K]
-    static constexpr Real host_dse_input[nlev] = {350.0, 325.0, 315.0, 310.0, 300.0};
+    static constexpr Real zi_grid[nlevi] = {11000, 7500, 5000, 3000, 1500, 0};
+    // Host model temperture [K]
+    static constexpr Real host_temp_input[nlev] = {250, 275, 285, 290, 300};
     // Define TKE inputs
     static constexpr Real tke[nlev] = {0, 0, 0.3, 0.4, 0.1};
    //  Pressure at interface [Pa]
@@ -55,7 +69,9 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
     // Define surface sensible heat flux [K m/s]
     static constexpr Real wthl_sfc = 0.5;
     // Define surface total water flux [kg/kg m/s]
-    static constexpr Real wqw_sfc = 0.01;
+    static constexpr Real wqw_sfc = 0.001;
+    Real host_dse_input[nlev];
+    Real zt_grid[nlev];
 
     // Initialzie data structure for bridgeing to F90
     SHOCEnergyfixerData SDS(shcol, nlev, nlevi, dtime, nadv);
@@ -63,8 +79,15 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
     // Test that the inputs are reasonable.
     // for this test we need exactly two columns
     REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev && SDS.nlevi() && SDS.dtime == dtime && SDS.nadv == nadv) );
+    // Want exactly two columns for this case
     REQUIRE(shcol == 2);
     REQUIRE(nlevi == nlev+1);
+    
+    // compute host model dry static energy
+    for(Int n = 0; n < nlev; ++n) {
+      zt_grid[n] = 0.5*(zi_grid[n]+zi_grid[n+1]);
+      host_dse_input[n] = Cpair*host_temp_input[n]+gravit*zt_grid[n];
+    }
 
     for(Int s = 0; s < shcol; ++s) {
       // Set before and after integrals equal
@@ -83,19 +106,23 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
 
       // Fill in test data on zt_grid.
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+      const auto offset = n + s * nlev;
 
-	// For zt grid, set as midpoint of zi grid
-	SDS.zt_grid[offset] = 0.5*(zi_grid[n]+zi_grid[n+1]);
-	SDS.rho_zt[offset] = rho_zt[n];
-	SDS.tke[offset] = tke[n];
+        // For zt grid, set as midpoint of zi grid
+        SDS.zt_grid[offset] = zt_grid[n];
+        // For pdel, compute from pint
+        SDS.pdel[offset] = pint[n+1]-pint[n];
+        SDS.rho_zt[offset] = rho_zt[n];
+        SDS.tke[offset] = tke[n];
+        SDS.host_dse[offset] = host_dse_input[n];
       }
+      
       // Fill in test data on zi_grid.
       for(Int n = 0; n < nlevi; ++n) {
-	const auto offset = n + s * nlevi;
+        const auto offset = n + s * nlevi;
 
         SDS.pint[offset] = pint[n];
-	SDS.zi_grid[offset] = zi_grid[n];
+        SDS.zi_grid[offset] = zi_grid[n];
       }
     }
 
@@ -103,25 +130,27 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
 
     for(Int s = 0; s < shcol; ++s) {
       for (Int n = 0; n < nlev; ++n){
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
-	REQUIRE(SDS.zt_grid[offset] >= 0.0);
-	REQUIRE(SDS.rho_zt[offset] > 0.0);
+        REQUIRE(SDS.zt_grid[offset] >= 0);
+        REQUIRE(SDS.rho_zt[offset] > 0);
+        REQUIRE(SDS.pdel[offset] > 0);
+        REQUIRE(SDS.tke[offset] >= 0);
 
-	// Check that heights increase upward
-	if (n > nlev-1){
-          REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0.0);
-	}
+        // Check that heights increase upward
+        if (n > nlev-1){
+          REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0);
+        }
       }
       for (Int n = 0; n < nlevi; ++n){
-	const auto offset = n + s * nlevi;
+        const auto offset = n + s * nlevi;
 
-	REQUIRE(SDS.zi_grid[offset] >= 0.0);
+        REQUIRE(SDS.zi_grid[offset] >= 0);
 
-	// Check that heights increase upward
-	if (n > nlevi-1){
-          REQUIRE(SDS.zi_grid[offset + 1] - SDS.zi_grid[offset] < 0.0);
-	}
+        // Check that heights increase upward
+        if (n > nlevi-1){
+          REQUIRE(SDS.zi_grid[offset + 1] - SDS.zi_grid[offset] < 0);
+        }
       }
     }
 
@@ -129,13 +158,23 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
     shoc_energy_fixer(SDS);
 
     // Check test
+    // Verify that the dry static energy has not changed
+    for(Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n){
+        const auto offset = n + s * nlev;
+        
+        REQUIRE(SDS.host_dse[offset] == host_dse_input[n]);
+      }
+    }
+    
+    // TEST TWO
 
     // For first column verify that total energies are the same
-//    REQUIRE(SDS.te_a[0] == SDS.te_b[0]);
+    // REQUIRE(SDS.te_a[0] == SDS.te_b[0]);
 
     // Verify that second column "before" energy is greater than
     //  the first column, since here we have active surface fluxes
-//    REQUIRE(SDS.te_b[1] > SDS.te_b[0]);
+    //  REQUIRE(SDS.te_b[1] > SDS.te_b[0]);
   }
 
   static void run_bfb()
