@@ -14,7 +14,6 @@ module physpkg
 
 
   use shr_kind_mod,     only: i8 => shr_kind_i8, r8 => shr_kind_r8
-  use shr_sys_mod,      only: shr_sys_irtc
   use spmd_utils,       only: masterproc
   use physconst,        only: latvap, latice, rh2o
   use physics_types,    only: physics_state, physics_tend, physics_state_set_grid, &
@@ -129,7 +128,6 @@ subroutine phys_register
     use physconst,          only: mwdry, cpair, mwh2o, cpwv
     use tracers,            only: tracers_register
     use check_energy,       only: check_energy_register
-    use carma_intr,         only: carma_register
     use cam3_aero_data,     only: cam3_aero_data_on, cam3_aero_data_register
     use cam3_ozone_data,    only: cam3_ozone_data_on, cam3_ozone_data_register
     use ghg_data,           only: ghg_data_register
@@ -281,10 +279,6 @@ subroutine phys_register
 
        ! register various data model gasses with pbuf
        call ghg_data_register()
-
-       ! carma microphysics
-       ! 
-       call carma_register()
 
        ! Register iondrag variables with pbuf
        call iondrag_register()
@@ -681,8 +675,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
                                   latvap, latice, rh2o, rhoh2o, pstd, zvir, &
                                   karman, rhodair, physconst_init 
     use ref_pres,           only: pref_edge, pref_mid
-
-    use carma_intr,         only: carma_init
     use cloud_rad_props,    only: cloud_rad_props_init
     use cam_control_mod,    only: nsrest  ! restart flag
     use check_energy,       only: check_energy_init
@@ -804,9 +796,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     call rad_cnst_init()
     call aer_rad_props_init()
     call cloud_rad_props_init()
-
-    ! initialize carma
-    call carma_init()
 
     ! solar irradiance data modules
     call solar_data_init()
@@ -1212,7 +1201,6 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     use cam_diagnostics,only: diag_deallocate, diag_surf
     use comsrf,         only: trefmxav, trefmnav, sgh, sgh30, fsds 
     use physconst,      only: stebol, latvap
-    use carma_intr,     only: carma_accumulate_stats
 #if ( defined OFFLINE_DYN )
     use metdata,        only: get_met_srf2
 #endif
@@ -1335,10 +1323,6 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     call gmean_mass ('after tphysac FV:WET)', phys_state)
 #endif
 
-    call t_startf ('carma_accumulate_stats')
-    call carma_accumulate_stats()
-    call t_stopf ('carma_accumulate_stats')
-
     call t_startf ('physpkg_st2')
     call pbuf_deallocate(pbuf2d, 'physpkg')
 
@@ -1355,7 +1339,6 @@ end subroutine phys_run2
 subroutine phys_final( phys_state, phys_tend, pbuf2d )
     use physics_buffer, only : physics_buffer_desc, pbuf_deallocate
     use chemistry, only : chem_final
-    use carma_intr, only : carma_final
     use wv_saturation, only : wv_sat_final
     !----------------------------------------------------------------------- 
     ! 
@@ -1461,9 +1444,6 @@ subroutine tphysac (ztodt,   cam_in,  &
     type(physics_state), intent(inout) :: state
     type(physics_tend ), intent(inout) :: tend
     type(physics_buffer_desc), pointer :: pbuf(:)
-
-
-    type(check_tracers_data):: tracerint             ! tracer mass integrals and cummulative boundary fluxes
 
     !
     !---------------------------Local workspace-----------------------------
@@ -1581,12 +1561,6 @@ if (l_tracer_aero) then
 
     ! emissions of aerosols and gas-phase chemistry constituents at surface
     call chem_emissions( state, cam_in )
-
-    if (carma_do_emission) then
-       ! carma emissions
-       call carma_emission_tend (state, ptend, cam_in, ztodt)
-       call physics_update(state, ptend, ztodt, tend)
-    end if
 
 end if ! l_tracer_aero
 
@@ -1713,22 +1687,6 @@ if (l_tracer_aero) then
     call physics_update(state, ptend, ztodt, tend)
     call t_stopf('aero_drydep')
 
-   ! CARMA microphysics
-   !
-   ! NOTE: This does both the timestep_tend for CARMA aerosols as well as doing the dry
-   ! deposition for CARMA aerosols. It needs to follow vertical_diffusion_tend, so that
-   ! obklen and surfric have been calculated. It needs to follow aero_model_drydep, so
-   ! that cam_out%xxxdryxxx fields have already been set for CAM aerosols and cam_out
-   ! can be added to for CARMA aerosols.
-   if (carma_do_aerosol) then
-     call t_startf('carma_timestep_tend')
-     call carma_timestep_tend(state, cam_in, cam_out, ptend, ztodt, pbuf, obklen=obklen, ustar=surfric)
-     call physics_update(state, ptend, ztodt, tend)
-   
-     call check_energy_chng(state, tend, "carma_tend", nstep, ztodt, zero, zero, zero, zero)
-     call t_stopf('carma_timestep_tend')
-   end if
-
     !---------------------------------------------------------------------------------
     !	... enforce charge neutrality
     !---------------------------------------------------------------------------------
@@ -1807,11 +1765,7 @@ if (l_ac_energy_chk) then
 
     end if
 
-
-    !*** BAB's FV heating kludge *** apply the heating as temperature tendency.
-    !*** BAB's FV heating kludge *** modify the temperature in the state structure
     tmp_t(:ncol,:pver) = state%t(:ncol,:pver)
-    state%t(:ncol,:pver) = tini(:ncol,:pver) + ztodt*tend%dtdt(:ncol,:pver)
 
     ! store dse after tphysac in buffer
     do k = 1,pver
@@ -1848,14 +1802,6 @@ end if ! l_ac_energy_chk
        if (labort) then
           call endrun ('TPHYSAC error:  grid contains non-ocean point')
        endif
-    endif
-
-    !===================================================
-    ! Update Nudging values, if needed
-    !===================================================
-    if((Nudge_Model).and.(Nudge_ON)) then
-      call nudging_timestep_tend(state,ptend)
-      call physics_update(state,ptend,ztodt,tend)
     endif
 
     call diag_phys_tend_writeout (state, pbuf,  tend, ztodt, tmp_q, tmp_cldliq, tmp_cldice, &
@@ -1955,8 +1901,6 @@ subroutine tphysbc (ztodt,               &
     use dycore,          only: dycore_is
     use aero_model,      only: aero_model_wetdep
     use froude,          only: calc_uovern
-    use carma_intr,      only: carma_wetdep_tend, carma_timestep_tend
-    use carma_flags_mod, only: carma_do_detrain, carma_do_cldice, carma_do_cldliq,  carma_do_wetdep
     use radiation,       only: radiation_tend
     use cloud_diagnostics, only: cloud_diagnostics_calc
     use perf_mod
@@ -2058,10 +2002,6 @@ subroutine tphysbc (ztodt,               &
     real(r8),pointer :: snow_sh(:)                ! snow from Hack convection
 
     real(r8),pointer :: rice2(:)                  ! reserved ice from UNICON [m/s]
-
-    ! carma precipitation variables
-    real(r8) :: prec_sed_carma(pcols)          ! total precip from cloud sedimentation (CARMA)
-    real(r8) :: snow_sed_carma(pcols)          ! snow from cloud ice sedimentation (CARMA)
 
     ! stratiform precipitation variables
     real(r8),pointer :: prec_str(:)    ! sfc flux of precip from stratiform (m/s)
@@ -2335,7 +2275,6 @@ if (l_bc_energy_fix) then
 
     call t_startf('energy_fixer')
 
-    !*** BAB's FV heating kludge *** save the initial temperature
     tini(:ncol,:pver) = state%t(:ncol,:pver)
     if (dycore_is('LR') .or. dycore_is('SE'))  then
        call check_energy_fix(state, ptend, nstep, flx_heat)
@@ -2463,34 +2402,6 @@ if (l_tracer_aero) then
     ! code.
     call sslt_rebin_adv(pbuf,  state)
     
-    !===================================================
-    ! Calculate tendencies from CARMA bin microphysics.
-    !===================================================
-    !
-    ! If CARMA is doing detrainment, then on output, rliq no longer represents water reserved
-    ! for detrainment, but instead represents potential snow fall. The mass and number of the
-    ! snow are stored in the physics buffer and will be incorporated by the MG microphysics.
-    !
-    ! Currently CARMA cloud microphysics is only supported with the MG microphysics.
-    call t_startf('carma_timestep_tend')
-
-    if (carma_do_cldice .or. carma_do_cldliq) then
-       call carma_timestep_tend(state, cam_in, cam_out, ptend, ztodt, pbuf, dlf=dlf, rliq=rliq, &
-            prec_str=prec_str, snow_str=snow_str, prec_sed=prec_sed_carma, snow_sed=snow_sed_carma)
-       call physics_update(state, ptend, ztodt, tend)
-
-       ! Before the detrainment, the reserved condensate is all liquid, but if CARMA is doing
-       ! detrainment, then the reserved condensate is snow.
-       if (carma_do_detrain) then
-          call check_energy_chng(state, tend, "carma_tend", &
-               nstep, ztodt, zero, prec_str(:ncol)+rliq(:ncol), snow_str(:ncol)+rliq(:ncol), zero)
-       else
-          call check_energy_chng(state, tend, "carma_tend", nstep, ztodt, zero, prec_str(:ncol), snow_str(:ncol), zero)
-       end if
-    end if
-
-    call t_stopf('carma_timestep_tend')
-
 end if
 
 
@@ -2858,7 +2769,6 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   use chem_surfvals,       only: chem_surfvals_set
   use physics_types,       only: physics_state
   use physics_buffer,      only: physics_buffer_desc
-  use carma_intr,          only: carma_timestep_init
   use ghg_data,            only: ghg_data_timestep_init
   use cam3_aero_data,      only: cam3_aero_data_on, cam3_aero_data_timestep_init
   use cam3_ozone_data,     only: cam3_ozone_data_on, cam3_ozone_data_timestep_init
@@ -2941,8 +2851,6 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
      call get_efield
      call t_stopf ('efield')
   endif
-
-  call carma_timestep_init()
 
   ! Time interpolate for tracers, if appropriate
   call tracers_timestep_init(phys_state)

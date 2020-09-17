@@ -138,7 +138,7 @@ contains
 
   !------------------------------------------------------------------------
   subroutine lnd2atm(bounds, &
-       atm2lnd_vars, surfalb_vars, temperature_vars, frictionvel_vars, &
+       atm2lnd_vars, surfalb_vars, frictionvel_vars, &
        waterstate_vars, waterflux_vars, energyflux_vars, &
        solarabs_vars, carbonflux_vars, drydepvel_vars, &
        vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, lnd2atm_vars) 
@@ -153,7 +153,6 @@ contains
     type(bounds_type)      , intent(in)     :: bounds  
     type(atm2lnd_type)     , intent(in)     :: atm2lnd_vars
     type(surfalb_type)     , intent(in)     :: surfalb_vars
-    type(temperature_type) , intent(in)     :: temperature_vars
     type(frictionvel_type) , intent(in)     :: frictionvel_vars
     type(waterstate_type)  , intent(inout)  :: waterstate_vars
     type(waterflux_type)   , intent(in)     :: waterflux_vars

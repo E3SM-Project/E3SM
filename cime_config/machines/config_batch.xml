@@ -396,12 +396,8 @@
 
    <batch_system MACH="compy" type="slurm">
     <queues>
-<<<<<<< HEAD:cime_config/machines/config_batch.xml
       <queue walltimemax="02:00:00" strict="true" nodemin="1" nodemax="40" default="true">short</queue>
       <queue walltimemax="06:00:00" nodemin="1" nodemax="460">slurm</queue>
-=======
-      <queue walltimemax="00:59:00" default="true">slurm</queue>
->>>>>>> Adds downscaling to topounit module:cime/config/e3sm/machines/config_batch.xml
     </queues>
    </batch_system>
 

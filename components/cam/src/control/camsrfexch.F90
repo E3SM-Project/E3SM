@@ -479,6 +479,9 @@ CONTAINS
 
        allocate (cam_out(c)%dstdry4(pcols), stat=ierror)
        if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error dstdry4')
+       
+       allocate (cam_out(c)%uovern(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('ATM2HUB_ALLOC error: allocation error uovern')
     enddo  
 
     do c = begchunk,endchunk
@@ -564,6 +567,7 @@ CONTAINS
           deallocate(cam_out(c)%dstdry3)
           deallocate(cam_out(c)%dstwet4)
           deallocate(cam_out(c)%dstdry4)
+          deallocate(cam_out(c)%uovern)
        enddo  
 
        deallocate(cam_out)

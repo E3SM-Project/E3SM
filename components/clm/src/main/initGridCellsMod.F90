@@ -132,10 +132,10 @@ contains
           if(has_topounit .and. max_topounits > 1) then
              ntopos = tmp_tpu                                
              !! TKT debugging begin
-             !if (masterproc) then
-             !   write(iulog,*) 'grc_pp%ntopounits(gdc), grc_pp%ntopounits2(gdc), tpu_lnd(gdc), gdc  ',grc_pp%ntopounits(gdc), ', ',grc_pp%ntopounits2(gdc), ', ',tmp_tpu, ', ',gdc
-             !   write(iulog,*) 'bounds_clump%begg, bounds_clump%endg  ',bounds_clump%begg, ', ',bounds_clump%endg
-             !endif
+             if (masterproc) then
+                write(iulog,*) 'grc_pp%ntopounits(gdc), grc_pp%ntopounits2(gdc), tpu_lnd(gdc), gdc  ',grc_pp%ntopounits(gdc), ', ',grc_pp%ntopounits2(gdc), ', ',tmp_tpu, ', ',gdc
+                write(iulog,*) 'bounds_clump%begg, bounds_clump%endg  ',bounds_clump%begg, ', ',bounds_clump%endg
+             endif
              !! TKT debugging end
           else 
              ntopos = max_topounits

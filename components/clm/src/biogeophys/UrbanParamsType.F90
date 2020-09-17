@@ -153,7 +153,7 @@ module UrbanParamsType
     begp = bounds%begp; endp = bounds%endp
     begc = bounds%begc; endc = bounds%endc
     begl = bounds%begl; endl = bounds%endl
-	begt = bounds%begt; endt = bounds%endt
+    begt = bounds%begt; endt = bounds%endt
     begg = bounds%begg; endg = bounds%endg
 
     ! Allocate urbanparams data structure
@@ -471,14 +471,23 @@ module UrbanParamsType
        endif
 
        call ncd_inqfdims (ncid, isgrid2d, ni, nj, ns)
-       if (ldomain%ns /= ns .or. ldomain%ni /= ni .or. ldomain%nj /= nj) then
-          write(iulog,*)trim(subname), 'ldomain and input file do not match dims '
-          write(iulog,*)trim(subname), 'ldomain%ni,ni,= ',ldomain%ni,ni
-          write(iulog,*)trim(subname), 'ldomain%nj,nj,= ',ldomain%nj,nj
+       if (.not. has_topounit) then
+          if (ldomain%ns /= ns .or. ldomain%ni /= ni .or. ldomain%nj /= nj) then
+             write(iulog,*)trim(subname), 'ldomain and input file do not match dims '
+             write(iulog,*)trim(subname), 'ldomain%ni,ni,= ',ldomain%ni,ni
+             write(iulog,*)trim(subname), 'ldomain%nj,nj,= ',ldomain%nj,nj
+             write(iulog,*)trim(subname), 'ldomain%ns,ns,= ',ldomain%ns,ns
+             call endrun(msg=errmsg(__FILE__, __LINE__))
+          end if
+       else
           write(iulog,*)trim(subname), 'ldomain%ns,ns,= ',ldomain%ns,ns
-          call endrun(msg=errmsg(__FILE__, __LINE__))
+          if (ldomain%ns /= ns) then
+             write(iulog,*)trim(subname), 'ldomain and input file do not match dims '
+             write(iulog,*)trim(subname), 'ldomain%ns,ns,= ',ldomain%ns,ns
+             call endrun(msg=errmsg(__FILE__, __LINE__))
+          end if
        end if
-
+       
        call ncd_inqdid(ncid, 'nlevurb', dimid)
        call ncd_inqdlen(ncid, dimid, nlevurb_i)
        if (nlevurb_i /= nlevurb) then
@@ -755,7 +764,7 @@ module UrbanParamsType
        else
           tm = ntpu(ti) ! Get number of valid topounits per grid
        end if
-	   do t = 1, tm 
+     do t = 1, tm 
        do n = 1, numurbl
           if ( pcturb(nl,t,n) > 0.0_r8 ) then
              if ( .not. urban_valid(nl,t) .or. &
@@ -803,7 +812,7 @@ module UrbanParamsType
              if (found) exit
           end if
        end do
-	   end do
+      end do
     end do
     if ( found ) then
        write(iulog,*) trim(caller), ' ERROR: no valid urban data for nl=',nindx

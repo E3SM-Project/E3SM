@@ -89,7 +89,7 @@ contains
     ! Initialize topounits, landunits, pfts, columns and cohorts counters for gridcell
     ! -------------------------------------------------------------------------
 
-    itopounits = 0
+    itunits    = 0
     ilunits    = 0
     icols      = 0
     ipfts      = 0

@@ -499,7 +499,9 @@ contains
        endif
 
     enddo
-
+    !if (masterproc) then
+    !   write(iulog,*) 'TKT numt ',numt 
+    !endif
     ! determine offset for XXX (topounits/lunits/cols/pfts/cohorts) index
     ! for each process
 

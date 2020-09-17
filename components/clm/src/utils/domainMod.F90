@@ -68,8 +68,6 @@ module domainMod
 ! Originally clm_varsur by Mariana Vertenstein
 ! Migrated from clm_varsur to domainMod by T Craig
 !
-  character*16,parameter :: set   = 'domain_set      '
-  character*16,parameter :: unset = 'NOdomain_unsetNO'
 !
 !EOP
 !------------------------------------------------------------------------------
@@ -213,10 +211,10 @@ end subroutine domain_init
        if (masterproc) then
           write(iulog,*) 'domain_clean: cleaning ',domain%ni,domain%nj
        endif
-       deallocate(domain%mask(nb:ne),domain%frac(nb:ne),domain%latc(nb:ne), &
-             domain%pftm(nb:ne),domain%area(nb:ne),domain%firrig(nb:ne),domain%lonc(nb:ne), &
-             domain%topo(nb:ne),domain%f_surf(nb:ne),domain%f_grd(nb:ne),domain%topo2(nb:ne),domain%num_tunits_per_grd(nb:ne),domain%glcmask(nb:ne), &
-             domain%xCell(nb:ne),domain%yCell(nb:ne),stat=ier)
+       deallocate(domain%mask,domain%frac,domain%latc, &
+             domain%pftm,domain%area,domain%firrig,domain%lonc, &
+             domain%topo,domain%f_surf,domain%f_grd,domain%topo2,domain%num_tunits_per_grd,domain%glcmask, &
+             domain%xCell,domain%yCell,stat=ier)
        if (ier /= 0) then
           call shr_sys_abort('domain_clean ERROR: deallocate mask, frac, lat, lon, area ')
        endif

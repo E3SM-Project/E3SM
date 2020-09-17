@@ -328,7 +328,7 @@ contains
     type(bounds_type), intent(in) :: bounds  
     !
                                                         ! !LOCAL VARIABLES:
-    integer            :: p, lev, c, l, g, j            ! indices
+    integer            :: p, lev, c, l, g, j,t,ti,topi            ! indices
     real(r8)           :: om_frac                       ! organic matter fraction
     real(r8)           :: om_tkm         = 0.25_r8      ! thermal conductivity of organic soil (Farouki, 1986) [W/m/K]
     real(r8)           :: om_watsat_lake = 0.9_r8       ! porosity of organic soil
@@ -364,6 +364,7 @@ contains
     real(r8) ,pointer  :: gti (:,:)                       ! read in - fmax 
     real(r8) ,pointer  :: sand3d (:,:,:)                  ! read in - soil texture: percent sand (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: clay3d (:,:,:)                  ! read in - soil texture: percent clay (needs to be a pointer for use in ncdio)
+    real(r8) ,pointer  :: grvl3d (:,:,:)                  ! read in - soil texture: percent gravel (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: organic3d (:,:,:)               ! read in - organic matter: kg/m3 (needs to be a pointer for use in ncdio)
     character(len=256) :: locfn                         ! local filename
     integer            :: nlevbed                       ! # of layers above bedrock
@@ -468,7 +469,7 @@ contains
           call endrun(msg=' ERROR: PCT_GRVL NOT on surfdata file'//errMsg(__FILE__, __LINE__))
        end if
     else
-       grvl3d(:,:) = 0._r8
+       grvl3d(:,:,:) = 0._r8
     end if
 
     do p = bounds%begp,bounds%endp
@@ -490,6 +491,7 @@ contains
 
        this%sandfrac_patch(p) = sand3d(g,ti,1)/100.0_r8
        this%clayfrac_patch(p) = clay3d(g,ti,1)/100.0_r8
+       this%grvlfrac_patch(p) = grvl3d(g,ti,1)/100.0_r8
     end do
 
     ! Read fmax
@@ -635,9 +637,9 @@ contains
                       endif
                    end do
                 else
-                   clay = clay3d(g,nlevsoifl)
-                   sand = sand3d(g,nlevsoifl)
-                   gravel = grvl3d(g,nlevsoifl)
+                   clay = clay3d(g,ti,nlevsoifl)
+                   sand = sand3d(g,ti,nlevsoifl)
+                   gravel = grvl3d(g,ti,nlevsoifl)
                    om_frac = 0._r8
                 endif
              else
