@@ -438,6 +438,14 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
    logical(c_bool)             :: use_crm_accel
    logical(c_bool)             :: crm_accel_uv
    integer                     :: igstep
+   integer                     :: cpl_x1
+
+#ifdef MMF_ALT_CPL
+  ! cpl_x1 = nx/4+1 ! coupled region = 3/4 of domain
+  cpl_x1 = nx/2+1 ! coupled region = 1/2 of domain
+#else
+  cpl_x1 = 1
+#endif
 
    !------------------------------------------------------------------------------------------------
    !------------------------------------------------------------------------------------------------
@@ -736,7 +744,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
             k = pver-m+1
             dp_g = state%pdel(i,k)/gravit
             do jj = 1,crm_ny
-               do ii = 1,crm_nx
+               do ii = cpl_x1,crm_nx
                   if (MMF_microphysics_scheme .eq. 'm2005') then
                      qli_hydro_before(i) = qli_hydro_before(i)+(crm_state%qr(i,ii,jj,m)+ &
                                                                 crm_state%qs(i,ii,jj,m)+ &
@@ -752,8 +760,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
             end do ! jj
          end do ! m
 
-         qli_hydro_before(i) = qli_hydro_before(i)/(crm_nx*crm_ny)
-         qi_hydro_before(i)  =  qi_hydro_before(i)/(crm_nx*crm_ny)
+         qli_hydro_before(i) = qli_hydro_before(i)/((crm_nx-(cpl_x1-1)))*crm_ny)
+         qi_hydro_before(i)  =  qi_hydro_before(i)/((crm_nx-(cpl_x1-1)))*crm_ny)
       end do ! i = 1,ncol
 
       ! Set CRM inputs
@@ -1133,7 +1141,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
             k = pver-m+1
             dp_g = state%pdel(i,k)/gravit
             do jj = 1,crm_ny
-               do ii = 1,crm_nx
+               do ii = cpl_x1,crm_nx
                   if(MMF_microphysics_scheme .eq. 'm2005') then
                      qli_hydro_after(i) = qli_hydro_after(i)+(crm_state%qr(i,ii,jj,m)+ &
                                                               crm_state%qs(i,ii,jj,m)+ &
@@ -1148,8 +1156,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out, &
                end do ! ii
             end do ! jj
          end do ! m = 1,crm_nz
-         qli_hydro_after(i) = qli_hydro_after(i)/(crm_nx*crm_ny)
-         qi_hydro_after(i)  =  qi_hydro_after(i)/(crm_nx*crm_ny)
+         qli_hydro_after(i) = qli_hydro_after(i)/((crm_nx-(cpl_x1-1)))*crm_ny)
+         qi_hydro_after(i)  =  qi_hydro_after(i)/((crm_nx-(cpl_x1-1)))*crm_ny)
       end do ! i = 1,ncold
 
       mmf_qchk_prec_dp(:ncol) = prec_dp(:ncol) + (qli_hydro_after (:ncol) - &

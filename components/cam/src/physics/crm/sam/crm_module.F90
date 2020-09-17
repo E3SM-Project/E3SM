@@ -109,7 +109,8 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     real(r8)        :: crm_run_time                             ! length of CRM integration
     real(r8)        :: icrm_run_time                            ! = 1 / crm_run_time
     real(r8)        :: factor_xy, factor_xyt, idt_gl
-    real(r8)        :: factor_xy_alt, factor_xyt_alt, cpl_x1
+    real(r8)        :: factor_xy_alt, factor_xyt_alt
+    integer         :: cpl_x1
     real(crm_rknd)  :: tmp1, tmp2, tmp
     real(crm_rknd)  :: u2z,v2z,w2z
     integer         :: i,j,k,l,ptop,nn,icyc,icrm
@@ -278,7 +279,8 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
 !-----------------------------------------------
 
 #ifdef MMF_ALT_CPL
-  cpl_x1 = nx/4+1
+  ! cpl_x1 = nx/4+1 ! coupled region = 3/4 of domain
+  cpl_x1 = nx/2+1 ! coupled region = 1/2 of domain
 #else
   cpl_x1 = 1
 #endif
@@ -898,10 +900,10 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     ! apply damping
     do k=1,nzm
       do j=1,ny
-        do i=1,(cpl_x1-1)/2
+        do i=(cpl_x1-1)*1/4+1, (cpl_x1-1)*3/4
           do icrm = 1 , ncrms
-            damp_tend_t = 1/100 * ( damp_mean_t(icrm,k) - t(icrm,i,j,k) )
-            damp_tend_q = 1/100 * ( damp_mean_q(icrm,k) - micro_field(icrm,i,j,k,1) )
+            damp_tend_t = 0.02 * ( damp_mean_t(icrm,k) - t(icrm,i,j,k) )
+            damp_tend_q = 0.02 * ( damp_mean_q(icrm,k) - micro_field(icrm,i,j,k,1) )
             t(icrm,i,j,k)             = t(icrm,i,j,k)             + dtn*damp_tend_t
             micro_field(icrm,i,j,k,1) = micro_field(icrm,i,j,k,1) + dtn*damp_tend_q
           enddo
@@ -1010,7 +1012,7 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     !$acc parallel loop gang vector collapse(4) async(asyncid)
     do k=1,nzm
       do j=1,ny
-        do i=cpl_x1,nx
+        do i=1,nx
           do icrm = 1 , ncrms
             ! Reduced radiation method allows for fewer radiation calculations
             ! by collecting statistics and doing radiation over column groups
@@ -1086,8 +1088,8 @@ subroutine crm(lchnk, ncrms, dt_gl, plev,       &
     enddo
 
     !$acc parallel loop collapse(3) async(asyncid)
-    do j=cpl_x1,ny
-      do i=1,nx
+    do j=1,ny
+      do i=cpl_x1,nx
         do icrm = 1 , ncrms
           if(cwp(icrm,i,j).gt.cwp_threshold) then
             !$acc atomic update
