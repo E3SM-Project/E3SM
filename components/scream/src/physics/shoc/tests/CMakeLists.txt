@@ -33,6 +33,8 @@ set(SHOC_TESTS_SRCS
     shoc_tke_adv_sgs_tke_tests.cpp
     shoc_eddy_diffusivities_tests.cpp
     shoc_diag_second_mom_srf_test.cpp
+    shoc_diag_third_tests.cpp
+    shoc_compute_diag_third_tests.cpp
     shoc_linearinterp_tests.cpp
     shoc_pdf_tildatoreal_tests.cpp
     shoc_pdf_vv_parameters_tests.cpp

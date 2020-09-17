@@ -423,9 +423,8 @@ subroutine shoc_main ( &
        shcol,nlev,nlevi,&                   ! Input
        w_sec,thl_sec,qw_sec,qwthl_sec,&     ! Input
        wthl_sec,isotropy,brunt,&            ! Input
-       thetal,tke,wthv_sec,shoc_mix,&       ! Input
-       dz_zt,dz_zi,&                        ! Input
-       zt_grid,zi_grid,&                    ! Input
+       thetal,tke,wthv_sec,&                ! Input
+       dz_zt,dz_zi,zt_grid,zi_grid,&        ! Input
        w3)                                  ! Output
 
     ! Call the PDF to close on SGS cloud and turbulence
@@ -1502,9 +1501,8 @@ subroutine diag_third_shoc_moments(&
           shcol,nlev,nlevi, &                 ! Input
           w_sec, thl_sec, qw_sec, qwthl_sec,& ! Input
           wthl_sec, isotropy, brunt,&         ! Input
-          thetal,tke,wthv_sec,shoc_mix,&      ! Input
-          dz_zt, dz_zi,&                      ! Input
-          zt_grid,zi_grid,&                   ! Input
+          thetal,tke,wthv_sec,&               ! Input
+          dz_zt, dz_zi, zt_grid, zi_grid,&    ! Input
           w3)                                 ! Output
 
   ! Purpose of this subroutine is to diagnose the third
@@ -1542,8 +1540,6 @@ subroutine diag_third_shoc_moments(&
   real(rtype), intent(in) :: tke(shcol,nlev)
   ! buoyancy flux [K m/s]
   real(rtype), intent(in) :: wthv_sec(shcol,nlev)
-  ! mixing length [m]
-  real(rtype), intent(in) :: shoc_mix(shcol,nlev)
   ! thickness centered on thermodynamic grid [m]
   real(rtype), intent(in) :: dz_zt(shcol,nlev)
   ! thickness centered on interface grid [m]
@@ -1563,7 +1559,6 @@ subroutine diag_third_shoc_moments(&
   real(rtype) :: brunt_zi(shcol,nlevi)
   real(rtype) :: thetal_zi(shcol,nlevi)
   real(rtype) :: wthv_sec_zi(shcol,nlevi)
-  real(rtype) :: shoc_mix_zi(shcol,nlevi)
 
   ! Interpolate variables onto the interface levels
   call linear_interp(zt_grid,zi_grid,isotropy,isotropy_zi,nlev,nlevi,shcol,0._rtype)
@@ -1571,7 +1566,6 @@ subroutine diag_third_shoc_moments(&
   call linear_interp(zt_grid,zi_grid,w_sec,w_sec_zi,nlev,nlevi,shcol,(2._rtype/3._rtype)*mintke)
   call linear_interp(zt_grid,zi_grid,thetal,thetal_zi,nlev,nlevi,shcol,0._rtype)
   call linear_interp(zt_grid,zi_grid,wthv_sec,wthv_sec_zi,nlev,nlevi,shcol,largeneg)
-  call linear_interp(zt_grid,zi_grid,shoc_mix,shoc_mix_zi,nlev,nlevi,shcol,minlen)
 
   !Diagnose the third moment of the vertical-velocity
   call compute_diag_third_shoc_moment(&
@@ -1580,10 +1574,8 @@ subroutine diag_third_shoc_moments(&
           wthl_sec, tke, dz_zt, dz_zi,&       ! Input
           zt_grid,zi_grid, isotropy_zi,&      ! Input
           brunt_zi,w_sec_zi,thetal_zi,&       ! Input
-          wthv_sec_zi,shoc_mix_zi,&           ! Input
+          wthv_sec_zi,&                       ! Input
           w3)                                 ! Output
-
-
 
   ! perform clipping to prevent unrealistically large values from occuring
   call clipping_diag_third_shoc_moments(&
@@ -1600,7 +1592,7 @@ subroutine compute_diag_third_shoc_moment(&
           wthl_sec, tke, dz_zt, dz_zi,&       ! Input
           zt_grid,zi_grid, isotropy_zi,&      ! Input
           brunt_zi,w_sec_zi,thetal_zi,&       ! Input
-          wthv_sec_zi,shoc_mix_zi,&           ! Input
+          wthv_sec_zi,&                       ! Input
           w3)                                 ! Output
 
   implicit none
@@ -1638,7 +1630,6 @@ subroutine compute_diag_third_shoc_moment(&
   real(rtype), intent(in) :: w_sec_zi(shcol,nlevi)
   real(rtype), intent(in) :: thetal_zi(shcol,nlevi)
   real(rtype), intent(in) :: wthv_sec_zi(shcol,nlevi)
-  real(rtype), intent(in) :: shoc_mix_zi(shcol,nlevi)
   ! third moment of vertical velocity
   real(rtype), intent(out) :: w3(shcol,nlevi)
 ! LOCAL VARIABLES
