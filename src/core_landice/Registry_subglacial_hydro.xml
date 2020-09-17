@@ -41,9 +41,9 @@
 		            description="conductivity coefficient for subglacial water flux"
 		            possible_values="positive real number"
 		/>
-		<nml_option name="config_SGH_till_drainage" type="real" default_value="3.1709792e-11" units="m s^{-1}"
+		<nml_option name="config_SGH_till_drainage" type="real" default_value="0.0" units="m s^{-1}"
 		            description="background subglacial till drainage rate"
-                            possible_values="positive real number.  Default value is 0.001 m/yr in SI units."
+                            possible_values="positive real number.  Disabled by default.  A typical value would be 3.1709792e-11 m/s (0.001 m/yr)."
 		/>
 		<nml_option name="config_SGH_advection" type="character" default_value="fo" units="none"
 		            description="Advection method for SGH. 'fo'=first-order upwind; 'fct'=flux-corrected transport. FCT currently not enabled."
