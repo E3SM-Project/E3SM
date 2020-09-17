@@ -192,6 +192,9 @@ struct CaarFunctorImpl {
   void run (const RKStageData& data)
   {
     set_rk_stage_data(data);
+    if (m_rsplit>0) {
+      Kokkos::deep_copy(m_buffers.eta_dot_dpdn,0.0);
+    }
 
     profiling_resume();
     GPTLstart("caar compute");
