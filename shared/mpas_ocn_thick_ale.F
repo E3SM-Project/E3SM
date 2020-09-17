@@ -110,8 +110,10 @@ contains
       !-----------------------------------------------------------------
 
       integer :: iCell, k, i, kMax
-      integer, pointer :: nCells, nVertLevels
+      integer, pointer :: nVertLevels
+      integer :: nCells
       integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:), pointer :: nCellsArray
 
       real (kind=RKIND) :: weightSum, thicknessSum, remainder, newThickness, thicknessWithRemainder
       real (kind=RKIND), dimension(:), pointer :: vertCoordMovementWeights
@@ -133,11 +135,13 @@ contains
 
       call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
 
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
       allocate(prelim_ALE_thickness(nVertLevels), &
          min_ALE_thickness_down(nVertLevels), min_ALE_thickness_up(nVertLevels))
+
+      nCells = nCellsArray( 2 )
 
       !
       ! ALE thickness alteration due to SSH (z-star)
