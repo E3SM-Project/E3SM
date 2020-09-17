@@ -98,6 +98,17 @@ struct Functions
     Scalar& thl_sec, Scalar& qw_sec, Scalar& wthl_sec, Scalar& wqw_sec,
     Scalar& qwthl_sec, Scalar& uw_sec, Scalar& vw_sec, Scalar& wtke_sec);
 
+  KOKKOS_FUNCTION
+  static void update_host_dse(
+    const MemberType& team,
+    const Int& nlev,
+    const uview_1d<const Spack>& thlm,
+    const uview_1d<const Spack>& shoc_ql,
+    const uview_1d<const Spack>& exner,
+    const uview_1d<const Spack>& zt_grid,
+    const Scalar& phis,
+    const uview_1d<Spack>& host_dse);
+
 }; // struct Functions
 
 } // namespace shoc
@@ -110,6 +121,7 @@ struct Functions
 # include "shoc_calc_shoc_vertflux_impl.hpp"
 # include "shoc_diag_second_moments_srf_impl.hpp"
 # include "shoc_diag_second_moments_ubycond_impl.hpp"
+# include "shoc_update_host_dse_impl.hpp"
 #endif
 
 #endif

@@ -70,6 +70,22 @@ interface
 
  end subroutine shoc_diag_second_moments_ubycond_f
 
+subroutine update_host_dse_f(shcol, nlev, thlm, shoc_ql, exner, zt_grid, &
+                             phis, host_dse) bind (C)
+  use iso_c_binding
+
+  integer(kind=c_int), intent(in), value :: shcol
+  integer(kind=c_int), intent(in), value :: nlev
+  real(kind=c_real), intent(in) :: thlm(shcol,nlev)
+  real(kind=c_real), intent(in) :: shoc_ql(shcol,nlev)
+  real(kind=c_real), intent(in) :: exner(shcol,nlev)
+  real(kind=c_real), intent(in) :: zt_grid(shcol,nlev)
+  real(kind=c_real), intent(in) :: phis(shcol)
+
+  real(kind=c_real), intent(out) :: host_dse(shcol,nlev)
+
+end subroutine update_host_dse_f
+
 end interface
 
 end module shoc_iso_f

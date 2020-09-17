@@ -3426,6 +3426,10 @@ subroutine update_host_dse(&
          shoc_ql,exner,zt_grid,phis,&      ! Input
          host_dse)                         ! Output
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use shoc_iso_f, only: update_host_dse_f
+#endif
+
   implicit none
 
   ! INPUT VARIABLES
@@ -3454,6 +3458,14 @@ subroutine update_host_dse(&
 
   integer :: i, k
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call update_host_dse_f(shcol,nlev,thlm,shoc_ql,exner,zt_grid,phis, &  ! Input
+           host_dse)                              ! Input/Output)
+      return
+   endif
+#endif
+
   do k=1,nlev
     do i=1,shcol
       temp = (thlm(i,k)+(lcond/cp)*shoc_ql(i,k))/exner(i,k)
@@ -3466,7 +3478,7 @@ subroutine update_host_dse(&
 end subroutine update_host_dse
 
 !==============================================================
-! Subroutine foe SHOC energy fixer with host model temp
+! Subroutine for SHOC energy fixer with host model temp
 
 subroutine shoc_energy_fixer(&
          shcol,nlev,nlevi,dtime,nadv,&  ! Input
