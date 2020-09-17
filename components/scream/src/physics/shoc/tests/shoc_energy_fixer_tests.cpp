@@ -65,8 +65,8 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
     static constexpr Real pint[nlevi] = {50000, 60000, 70000, 80000, 90000, 100000};
     // Define integrated static energy, kinetic energy, water vapor,
     //  and liquid water respectively
-    static constexpr Real se = 200.0;
-    static constexpr Real ke = 150.0;
+    static constexpr Real se = 200;
+    static constexpr Real ke = 150;
     static constexpr Real wv = 0.5;
     static constexpr Real wl = 0.1;
     // Define surface sensible heat flux [K m/s]
@@ -167,6 +167,8 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
       for (Int n = 0; n < nlev; ++n){
         const auto offset = n + s * nlev;
         
+        // If TKE is at minimum threshold then make sure that
+        //  host_dse has not been modified
         if (SDS.tke[offset] == 0.0004){
         
           REQUIRE(SDS.host_dse[offset] == host_dse_input[n]);
@@ -213,16 +215,57 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
     
     // Load up the data
     // This will alternate between a positive and negative 
-    Real gainloss_fac = 1
+    Real gainloss_fac[shcol];
+    // Initialize value
+    gainloss_fac[0] = 1;
     for(Int s = 0; s < shcol; ++s) {
       SDS.wthl_sfc[s] = wthl_sfc_gainloss;
       SDS.wqw_sfc[s] = wqw_sfc_gainloss;
 
-      SDS.se_a[s] = se+gainloss_fac*se_gainloss;
-      SDS.ke_a[s] = ke+gainloss_fac*ke_gainloss;
-      SDS.wv_a[s] = wv+gainloss_fac*wv_gainloss;
-      SDS.wl_a[s] = wl+gainloss_fac*wl_gainloss;      
+      REQUIRE( (gainloss_fac[s] == 1 || gainloss_fac[s] == -1) );
+
+      SDS.se_a[s] = se+gainloss_fac[s]*se_gainloss;
+      SDS.ke_a[s] = ke+gainloss_fac[s]*ke_gainloss;
+      SDS.wv_a[s] = wv+gainloss_fac[s]*wv_gainloss;
+      SDS.wl_a[s] = wl+gainloss_fac[s]*wl_gainloss;      
       
+      // Alternate between positive and negative loss, 
+      //  change sign for next column
+      if (s < shcol-1){
+        gainloss_fac[s+1] = gainloss_fac[s]*-1;
+      }
+    }
+    
+    // Call the fortran implementation
+    shoc_energy_fixer(SDS);
+    
+    // Verify the result
+    for(Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n){
+        const auto offset = n + s * nlev;
+
+        // If TKE is at minimum threshold then make sure that
+        //  host_dse has not been modified
+        if (SDS.tke[offset] == 0.0004){
+        
+          REQUIRE(SDS.host_dse[offset] == host_dse_input[n]);
+          
+        } 
+        
+        else{
+        
+          // If the system gained energy, make sure that host_dse
+          //  has decreased to compensate for this
+          if (gainloss_fac[s] > 0){
+            REQUIRE(SDS.host_dse[offset] < host_dse_input[n]);
+          }
+          // Else, the vice versa of above
+          else{
+            REQUIRE(SDS.host_dse[offset] > host_dse_input[n]);
+          }    
+        }
+
+      }
     }
 
   }
