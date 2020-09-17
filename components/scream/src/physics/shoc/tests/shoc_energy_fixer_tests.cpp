@@ -173,8 +173,7 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
         
           REQUIRE(SDS.host_dse[offset] == host_dse_input[n]);
           
-        }
-          
+        }         
         else{
         
           if (SDS.wthl_sfc[s] == 0){
@@ -250,8 +249,7 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
         
           REQUIRE(SDS.host_dse[offset] == host_dse_input[n]);
           
-        } 
-        
+        }         
         else{
         
           // If the system gained energy, make sure that host_dse
@@ -264,7 +262,7 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
             REQUIRE(SDS.host_dse[offset] > host_dse_input[n]);
           }    
         }
-
+        
       }
     }
 
