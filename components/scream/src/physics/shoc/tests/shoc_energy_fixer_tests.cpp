@@ -170,12 +170,9 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
         // If TKE is at minimum threshold then make sure that
         //  host_dse has not been modified
         if (SDS.tke[offset] == 0.0004){
-        
           REQUIRE(SDS.host_dse[offset] == host_dse_input[n]);
-          
         }         
-        else{
-        
+        else{        
           if (SDS.wthl_sfc[s] == 0){
             REQUIRE(SDS.wqw_sfc[s] == 0); // verify input
             REQUIRE(SDS.host_dse[offset] == host_dse_input[n]);
@@ -187,8 +184,7 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
           else {
             REQUIRE(SDS.wqw_sfc[s] > 0);
             REQUIRE(SDS.host_dse[offset] > host_dse_input[n]);
-          }
-        
+          }  
         }
 
       }
@@ -245,13 +241,10 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
 
         // If TKE is at minimum threshold then make sure that
         //  host_dse has not been modified
-        if (SDS.tke[offset] == 0.0004){
-        
+        if (SDS.tke[offset] == 0.0004){     
           REQUIRE(SDS.host_dse[offset] == host_dse_input[n]);
-          
         }         
-        else{
-        
+        else{       
           // If the system gained energy, make sure that host_dse
           //  has decreased to compensate for this
           if (gainloss_fac[s] > 0){
