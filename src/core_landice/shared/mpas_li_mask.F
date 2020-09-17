@@ -358,7 +358,9 @@ contains
           if (li_mask_is_ice(cellMask(i))) then
               isMargin = .false.
               do j=1,nEdgesOnCell(i) ! Check if any neighbors are non-ice
-                  isMargin = ( isMargin .or. (.not. li_mask_is_ice(cellMask(cellsOnCell(j,i)))) )
+                  if (cellsOnCell(j,i) > 0) then
+                     isMargin = ( isMargin .or. (.not. li_mask_is_ice(cellMask(cellsOnCell(j,i)))) )
+                  endif
               enddo
               if (isMargin) then
                  cellMask(i) = ior(cellMask(i), li_mask_ValueMargin)
