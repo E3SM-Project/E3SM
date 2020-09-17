@@ -700,10 +700,10 @@ contains
     if (fv_nphys>0) then
 
       gridname = 'physgrid_d'
-      latname  = 'lat_p'
-      lonname  = 'lon_p'
+      latname  = 'lat'
+      lonname  = 'lon'
       ncolname = 'ncol'
-      areaname = 'area_p'
+      areaname = 'area'
 
       ncols_p_lcl = fv_nphys * fv_nphys * nelemd
       ncols_p_gbl = fv_nphys * fv_nphys * nelem
@@ -784,7 +784,7 @@ contains
     if (fv_nphys > 0) then
       gridname = 'physgrid_d'
       allocate(grid_attribute_names(3))
-      grid_attribute_names(1) = 'area_p'
+      grid_attribute_names(1) = 'area'
       grid_attribute_names(2) = 'fv_nphys'
       grid_attribute_names(3) = 'ne'
     else
