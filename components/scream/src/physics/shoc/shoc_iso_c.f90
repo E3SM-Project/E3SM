@@ -331,9 +331,7 @@ contains
                            wl_b, se_a, ke_a, wv_a, wl_a, wthl_sfc, &
                            wqw_sfc, pdel, rho_zt, tke, pint, &
                            host_dse)
-                           
-    write(*,*) 'DSE ', host_dse                      
-				 
+
   end subroutine shoc_energy_fixer_c
 
   subroutine shoc_energy_integrals_c(shcol, nlev, host_dse, pdel,&
