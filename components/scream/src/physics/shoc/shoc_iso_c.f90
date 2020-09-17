@@ -762,6 +762,7 @@ contains
     real(kind=c_real), intent(out) :: wthv_sec(shcol,nlev)
     real(kind=c_real), intent(out) :: shoc_ql2(shcol,nlev)
     
+    write(*,*) 'THETAL ', thetal
     call shoc_assumed_pdf(shcol, nlev, nlevi, thetal, qw, &
                           w_field, thl_sec, qw_sec, wthl_sec, &
                           w_sec, wqw_sec, qwthl_sec, w3, pres, &

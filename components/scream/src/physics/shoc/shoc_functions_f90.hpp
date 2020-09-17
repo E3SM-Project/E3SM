@@ -653,6 +653,7 @@ void w3_diag_third_shoc_moment                      (SHOCW3diagthirdmomsData &d)
 void clipping_diag_third_shoc_moments               (SHOCClipthirdmomsData &d);
 void shoc_diag_second_moments_srf                   (SHOCSecondMomentSrfData& d);
 void linear_interp                                  (SHOCLinearintData &d);
+void shoc_assumed_pdf                               (SHOCAssumedpdfData &d);
 void shoc_assumed_pdf_tilda_to_real                 (SHOCPDFtildaData &d);
 void shoc_assumed_pdf_vv_parameters                 (SHOCPDFvvparamData &d);
 void shoc_assumed_pdf_thl_parameters                (SHOCPDFthlparamData &d);
