@@ -12,6 +12,7 @@ set(SHOC_TESTS_SRCS
     shoc_energy_total_fixer_tests.cpp
     shoc_energy_dse_fixer_tests.cpp
     shoc_energy_threshold_fixer_tests.cpp
+    shoc_length_tests.cpp
     shoc_brunt_length_tests.cpp
     shoc_l_inf_length_tests.cpp
     shoc_conv_vel_length_tests.cpp
@@ -33,6 +34,8 @@ set(SHOC_TESTS_SRCS
     shoc_tke_adv_sgs_tke_tests.cpp
     shoc_eddy_diffusivities_tests.cpp
     shoc_diag_second_mom_srf_test.cpp
+    shoc_diag_third_tests.cpp
+    shoc_compute_diag_third_tests.cpp
     shoc_linearinterp_tests.cpp
     shoc_pdf_tildatoreal_tests.cpp
     shoc_pdf_vv_parameters_tests.cpp
