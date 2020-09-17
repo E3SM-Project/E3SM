@@ -1,0 +1,106 @@
+#!/usr/bin/env python3
+
+"""
+Generate boiler-plate for converting a fortran subroutine to cxx.
+
+This script is designed to facilitate f90->cxx conversion of p3 and shoc
+subroutines, with the potential to be expanded to additional packages later.
+This script should also help maintain the latest approved coding patterns.
+
+To test this tool, run:
+% python3 -m doctest gen_boiler.py
+"""
+
+from utils import expect, check_minimum_python_version, get_git_toplevel_dir
+check_minimum_python_version(3, 5)
+
+import argparse, sys, pathlib
+
+from gen_boiler import GenBoiler, get_supported_pieces, get_supported_physics
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} <subroutine-name> [<subroutine-name> ...] [--piece] [--kernel] [--verbose]
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Generate all boilerplate p3 subroutine foo_bar \033[0m
+    > {0} foo_bar
+
+    \033[1;32m# Generate all boilerplate for shoc subroutine bar_baz and func_name \033[0m
+    > {0} bar_baz func_name
+
+    \033[1;32m# Generate only f90->cxx bindings for p3 subroutine foo_bar \033[0m
+    > {0} foo_bar --piece=f90_f2c_bind
+
+    \033[1;32m# Overwrite only f90->cxx and cxx->f90 bindings for p3 subroutine foo_bar \033[0m
+    > {0} foo_bar --piece=f90_f2c_bind --piece=f90_c2f_bind -o
+""".format(pathlib.Path(args[0]).name),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    default_repo = get_git_toplevel_dir()
+
+    parser.add_argument("subs", nargs="+",
+                        help="fortran subroutine name[s]")
+
+    parser.add_argument("-p", "--piece", dest="pieces", default=[], action="append", choices=get_supported_pieces(),
+                        help="Select which pieces of boilerplate to generate")
+
+    parser.add_argument("--physics", default=[], action="append", choices=get_supported_physics(),
+                        help=\
+"""
+Limit generation to a specific set of physics. This should only be
+needed to disambiguate cases where a subroutine has the same name in
+multiple physics. This may also improve performance.
+"""
+                    )
+
+    parser.add_argument("-o", "--overwrite", action="store_true", help="Overwrite existing boilerplate")
+
+    parser.add_argument("-k", "--kernel", action="store_true",
+                        help="The generate cxx functions need the ability to launch kokkos kernels")
+
+    parser.add_argument("-s", "--source-repo", default=default_repo,
+                        help="The repo you wish to scan for fortran subroutines")
+
+    parser.add_argument("-t", "--target-repo", default=default_repo,
+                        help="The repo you wish to generate boilerplate into")
+
+    parser.add_argument("-d", "--dry-run", action="store_true",
+                        help="Do a dry run instead of modifying files")
+
+    args = parser.parse_args(args[1:])
+
+    expect(args.source_repo is not None, "Must either run from a valid repo or provide a --source-repo")
+    expect(args.target_repo is not None, "Must either run from a valid repo or provide a --target-repo")
+
+    if (args.source_repo != default_repo):
+        normalized_source_repo = get_git_toplevel_dir(repo=args.source_repo)
+        expect(normalized_source_repo is not None, "source repo {} is not a valid repo".format(args.source_repo))
+        args.source_repo = normalized_source_repo
+
+    if (args.target_repo != default_repo):
+        normalized_target_repo = get_git_toplevel_dir(repo=args.target_repo)
+        expect(normalized_target_repo is not None, "target repo {} is not a valid repo".format(args.target_repo))
+        args.target_repo = normalized_target_repo
+
+    return args
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    gb = GenBoiler(**vars(parse_command_line(sys.argv, description)))
+
+    success = gb.gen_boiler()
+
+    sys.exit(0 if success else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)
