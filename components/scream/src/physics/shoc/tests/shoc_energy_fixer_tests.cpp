@@ -27,24 +27,27 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
   {
     static constexpr Real gravit  = scream::physics::Constants<Real>::gravit;
     static constexpr Real Cpair   = scream::physics::Constants<Real>::Cpair;
-    static constexpr Int shcol    = 1;
+    static constexpr Int shcol    = 3;
     static constexpr Int nlev     = 5;
     static constexpr auto nlevi   = nlev + 1;
 
     // Tests for the SHOC function
     //     shoc_energy_fixer
     
-    // TEST ONE and TWO
+    // TESTs ONE through THREE
     // No energy change and surface flux test.  
     //  In one column, given inputs where the energy has not changed
     //  from timestep to timestep, verify that the host model dry static
     //  energy also has not changed. 
     
-    // In other, give positive surface fluxes, 
+    // In second column, give positive surface fluxes, 
     //  all other information being the same.  Verify that energy was added 
     //  in to the system and verify that energy was added into the system AND
     //  verify that energy was only adjust at the levels where TKE is greater
-    //  than zero.  
+    //  than zero.
+    
+    // In third column, give negative surface fluxes and verify energy 
+    //  was removed from the system.  
 
     // Timestep [s]
     static constexpr Real dtime = 300;
@@ -57,7 +60,7 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
     // Host model temperture [K]
     static constexpr Real host_temp_input[nlev] = {250, 275, 285, 290, 300};
     // Define TKE inputs
-    static constexpr Real tke[nlev] = {0, 0, 0.3, 0.4, 0.1};
+    static constexpr Real tke[nlev] = {0.0004, 0.0004, 0.3, 0.4, 0.1};
    //  Pressure at interface [Pa]
     static constexpr Real pint[nlevi] = {50000, 60000, 70000, 80000, 90000, 100000};
     // Define integrated static energy, kinetic energy, water vapor,
@@ -67,9 +70,9 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
     static constexpr Real wv = 0.5;
     static constexpr Real wl = 0.1;
     // Define surface sensible heat flux [K m/s]
-    static constexpr Real wthl_sfc = 0.5;
+    static constexpr Real wthl_sfc[shcol] = {0, 0.5, -0.5};
     // Define surface total water flux [kg/kg m/s]
-    static constexpr Real wqw_sfc = 0.001;
+    static constexpr Real wqw_sfc[shcol] = {0, 0.001, -0.001};
     Real host_dse_input[nlev];
     Real zt_grid[nlev];
 
@@ -79,8 +82,8 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
     // Test that the inputs are reasonable.
     // for this test we need exactly two columns
     REQUIRE( (SDS.shcol() == shcol && SDS.nlev() == nlev && SDS.nlevi() && SDS.dtime == dtime && SDS.nadv == nadv) );
-    // Want exactly two columns for this case
-    REQUIRE(shcol == 2);
+    // Want exactly three columns for this case
+    REQUIRE(shcol == 3);
     REQUIRE(nlevi == nlev+1);
     
     // compute host model dry static energy
@@ -101,8 +104,8 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
       SDS.wl_b[s] = wl;
 
       // Make first column be zero for the surface fluxes
-      SDS.wthl_sfc[s] = s*wthl_sfc;
-      SDS.wqw_sfc[s] = s*wqw_sfc;
+      SDS.wthl_sfc[s] = wthl_sfc[s];
+      SDS.wqw_sfc[s] = wqw_sfc[s];
 
       // Fill in test data on zt_grid.
       for(Int n = 0; n < nlev; ++n) {
@@ -158,23 +161,70 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer {
     shoc_energy_fixer(SDS);
 
     // Check test
-    // Verify that the dry static energy has not changed
+    // Verify that the dry static energy has not changed if surface 
+    //  fluxes are zero, else verify host_dse has increased
     for(Int s = 0; s < shcol; ++s) {
       for (Int n = 0; n < nlev; ++n){
         const auto offset = n + s * nlev;
         
-        REQUIRE(SDS.host_dse[offset] == host_dse_input[n]);
+        if (SDS.tke[offset] == 0.0004){
+        
+          REQUIRE(SDS.host_dse[offset] == host_dse_input[n]);
+          
+        }
+          
+        else{
+        
+          if (SDS.wthl_sfc[s] == 0){
+            REQUIRE(SDS.wqw_sfc[s] == 0); // verify input
+            REQUIRE(SDS.host_dse[offset] == host_dse_input[n]);
+          }
+          else if (SDS.wthl_sfc[s] < 0){
+            REQUIRE(SDS.wqw_sfc[s] < 0); // verify input
+            REQUIRE(SDS.host_dse[offset] < host_dse_input[n]);
+          }
+          else {
+            REQUIRE(SDS.wqw_sfc[s] > 0);
+            REQUIRE(SDS.host_dse[offset] > host_dse_input[n]);
+          }
+        
+        }
+
       }
     }
     
-    // TEST TWO
+    // TEST FOUR
+    // Energy loss, gain test.
+    // Now set surface fluxes to zero and set all *_a scalar arrays
+    //  to be less/more than the *_b arrays.  This will signify that SHOC
+    //  lost/gained energy during integration and thus host_dse should be
+    //  INCREASED/DECREASED at all levels where TKE is sufficient
+        
+    // Define by how much each energy integral array will 
+    //  be perturbed
+    static constexpr Real se_gainloss = 2;
+    static constexpr Real ke_gainloss = 1;
+    static constexpr Real wv_gainloss = 0.01;
+    static constexpr Real wl_gainloss = 0.001;
 
-    // For first column verify that total energies are the same
-    // REQUIRE(SDS.te_a[0] == SDS.te_b[0]);
+    // For this test set to zero
+    static constexpr Real wthl_sfc_gainloss = 0;
+    static constexpr Real wqw_sfc_gainloss = 0;
+    
+    // Load up the data
+    // This will alternate between a positive and negative 
+    Real gainloss_fac = 1
+    for(Int s = 0; s < shcol; ++s) {
+      SDS.wthl_sfc[s] = wthl_sfc_gainloss;
+      SDS.wqw_sfc[s] = wqw_sfc_gainloss;
 
-    // Verify that second column "before" energy is greater than
-    //  the first column, since here we have active surface fluxes
-    //  REQUIRE(SDS.te_b[1] > SDS.te_b[0]);
+      SDS.se_a[s] = se+gainloss_fac*se_gainloss;
+      SDS.ke_a[s] = ke+gainloss_fac*ke_gainloss;
+      SDS.wv_a[s] = wv+gainloss_fac*wv_gainloss;
+      SDS.wl_a[s] = wl+gainloss_fac*wl_gainloss;      
+      
+    }
+
   }
 
   static void run_bfb()
