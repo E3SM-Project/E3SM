@@ -31,8 +31,9 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
     // Tests for the top level subroutine
     //   shoc_assumed_pdf
 
-    // Tests will start simple, and gradually add complexity.
-    // NOTE: for this test we want exactly two columns
+    // Tests will start simple, and gradually add complexity to test
+    //  the physics.
+    // NOTE: for this test we want exactly two columns.
 
     // TEST ONE
     // No SGS variability test.  Given inputs where there is a saturated
@@ -198,7 +199,7 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
     }
 
     // TEST THREE and FOUR
-    // Add in Scalar variances, and test vertical velocity skewness.
+    // Add in Scalar variances, and POSITIVE vertical velocity skewness test.
 
     // Add strong scalar variances as such that will produce cloud at every level.
 
@@ -257,6 +258,10 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
         }
       }
 
+      // Verify output falls within reasonable bounds.  For this positive
+      //  vertical velocity skewness test and with the give inputs there
+      //  should be cloud everywhere and all flux terms should be positive.
+
       for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
         const auto offsets = n + (s+1) * nlev;
@@ -272,6 +277,9 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
         REQUIRE(SDS.shoc_ql2[offset] < 0.1);
         REQUIRE(SDS.shoc_ql[offset] < 0.1);
 
+        // Now verify that the relationships in a strongly positive vertical
+        //  velocity flux regime hold true, relative to a symmetric vertical
+        //  velocity regime.
         if (s < shcol-1){
 
           if (SDS.shoc_cldfrac[offset] < 0.5){
@@ -293,7 +301,92 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
           // liquid water variance increased
           REQUIRE(SDS.shoc_ql2[offsets] > SDS.shoc_ql2[offset]);
         }
+      }
+    }
 
+    // TEST FIVE
+    // Negative vertical velocity skewness.
+
+    // Using same input as the above test, feed one column with zero skeweness
+    //  and another test with negative vertical velocity skewness and verify
+    //  result is physical.
+
+    // Load input data
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlevi; ++n) {
+	const auto offset = n + s * nlevi;
+
+        SDS.w3[offset] = s*-1.0;
+      }
+    }
+
+    // Call the fortran implementation
+    shoc_assumed_pdf(SDS);
+
+    // Check the result
+
+    // Verify that output lies within some reasonable bounds.
+
+    // Then verify vertical velocity skewness info
+
+    for(Int s = 0; s < shcol; ++s) {
+
+      for(Int n = 0; n < nlevi; ++n) {
+        const auto offset = n + s * nlevi;
+        const auto offsets = n + (s+1) * nlevi;
+        if (s < shcol-1){
+          // Verify input w3 is greater in subsequent columns
+          REQUIRE(SDS.w3[offsets] < SDS.w3[offset]);
+        }
+      }
+
+      // Verify output falls within reasonable bounds
+      //   For this negative vertical velocity test some variables
+      //   will be expected to be less than zero.
+
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+        const auto offsets = n + (s+1) * nlev;
+
+        REQUIRE( (SDS.shoc_cldfrac[offset] >= 0  || SDS.shoc_cldfrac[offset] < 1) );
+        REQUIRE(SDS.shoc_ql2[offset] > 0);
+        REQUIRE(SDS.shoc_ql[offset] >= 0);
+
+        REQUIRE(std::abs(SDS.wqls[offset] )< 0.1);
+        REQUIRE(std::abs(SDS.wthv_sec[offset]) < 10.0);
+        REQUIRE(SDS.shoc_ql2[offset] < 0.1);
+        REQUIRE(SDS.shoc_ql[offset] < 0.1);
+
+
+        // Now verify that the relationships in a strongly negative vertical
+        //  velocity flux regime hold true, relative to a symmetric vertical
+        //  velocity regime.
+        if (s < shcol-1){
+
+          if (SDS.shoc_cldfrac[offset] < 0.5){
+            REQUIRE(SDS.shoc_cldfrac[offsets] < SDS.shoc_cldfrac[offset]);
+          }
+          else if (SDS.shoc_cldfrac[offset] > 0.5){
+            REQUIRE(SDS.shoc_cldfrac[offsets] > SDS.shoc_cldfrac[offset]);
+          }
+
+          // In addition, in a positive skewness environment, the following
+          //  should also be true
+
+          // Grid mean liquid water decreased
+          REQUIRE(SDS.shoc_ql[offsets] < SDS.shoc_ql[offset]);
+          // if cloud present, verify liquid water and buoyancy flux is negative
+          if (SDS.shoc_ql[offsets] > 0){
+            REQUIRE(SDS.wqls[offsets] < SDS.wqls[offset]);
+            REQUIRE(SDS.wqls[offsets] < 0);
+
+            REQUIRE(SDS.wthv_sec[offsets] < SDS.wthv_sec[offset]);
+            REQUIRE(SDS.wthv_sec[offsets] < 0);
+          }
+
+          // liquid water variance increased
+          REQUIRE(SDS.shoc_ql2[offsets] > SDS.shoc_ql2[offset]);
+        }
       }
     }
 

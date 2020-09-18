@@ -762,18 +762,11 @@ contains
     real(kind=c_real), intent(out) :: wthv_sec(shcol,nlev)
     real(kind=c_real), intent(out) :: shoc_ql2(shcol,nlev)
 
-    write(*,*) 'w3 ', w3
     call shoc_assumed_pdf(shcol, nlev, nlevi, thetal, qw, &
                           w_field, thl_sec, qw_sec, wthl_sec, &
                           w_sec, wqw_sec, qwthl_sec, w3, pres, &
                           zt_grid, zi_grid, shoc_cldfrac, &
                           shoc_ql, wqls, wthv_sec, shoc_ql2)
-
-    write(*,*) 'CLDFRAC ', shoc_cldfrac
-    write(*,*) 'shoc_ql ', shoc_ql
-    write(*,*) 'wqls ', wqls
-    write(*,*) 'wthv_sec ', wthv_sec
-    write(*,*) 'shoc_ql2 ', shoc_ql2
 
   end subroutine shoc_assumed_pdf_c
 
