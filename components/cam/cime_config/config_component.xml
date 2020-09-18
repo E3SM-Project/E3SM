@@ -139,7 +139,7 @@
       <value compset="CAM[45]%SCAM"   >-scam</value>
       <value compset="AR97_CAM[45]"   >-phys cam5 -scam -nlev 72 -clubb_sgs -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates</value>
       <value compset="_CAM.%L60"      >-nlev 60</value>
-      <value compset="_CLM45%[^_]*BC"     >-bc_dep_to_snow_updates</value>
+      <value compset="_ELM%[^_]*BC"     >-bc_dep_to_snow_updates</value>
 
       <!-- Simple/idealized configurations -->
       <value compset="_CAM%IDEAL"     >-phys ideal</value>              

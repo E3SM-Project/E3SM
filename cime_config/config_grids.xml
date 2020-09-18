@@ -58,37 +58,37 @@
       <mask>gx1v6</mask>
     </model_grid>
 
-    <model_grid alias="CLM_USRDAT" compset="(DATM|SATM).+CLM">
-      <grid name="atm">CLM_USRDAT</grid>
-      <grid name="lnd">CLM_USRDAT</grid>
-      <grid name="ocnice">CLM_USRDAT</grid>
+    <model_grid alias="ELM_USRDAT" compset="(DATM|SATM).+ELM">
+      <grid name="atm">ELM_USRDAT</grid>
+      <grid name="lnd">ELM_USRDAT</grid>
+      <grid name="ocnice">ELM_USRDAT</grid>
       <grid name="rof">null</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
       <mask>reg</mask>
     </model_grid>
 
-    <model_grid alias="CLMMOS_USRDAT" compset="(DATM|SATM).+CLM.+MOSART">
-      <grid name="atm">CLM_USRDAT</grid>
-      <grid name="lnd">CLM_USRDAT</grid>
-      <grid name="ocnice">CLM_USRDAT</grid>
-      <grid name="rof">CLM_USRDAT</grid>
+    <model_grid alias="ELMMOS_USRDAT" compset="(DATM|SATM).+ELM.+MOSART">
+      <grid name="atm">ELM_USRDAT</grid>
+      <grid name="lnd">ELM_USRDAT</grid>
+      <grid name="ocnice">ELM_USRDAT</grid>
+      <grid name="rof">ELM_USRDAT</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
       <mask>reg</mask>
     </model_grid>
 
     <model_grid alias="MOS_USRDAT" compset="(DATM|SATM).+DLND.+MOSART">
-      <grid name="atm">CLM_USRDAT</grid>
-      <grid name="lnd">CLM_USRDAT</grid>
-      <grid name="ocnice">CLM_USRDAT</grid>
-      <grid name="rof">CLM_USRDAT</grid>
+      <grid name="atm">ELM_USRDAT</grid>
+      <grid name="lnd">ELM_USRDAT</grid>
+      <grid name="ocnice">ELM_USRDAT</grid>
+      <grid name="rof">ELM_USRDAT</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
       <mask>reg</mask>
     </model_grid>
 
-    <model_grid alias="1x1_numaIA" compset="DATM.+CLM">
+    <model_grid alias="1x1_numaIA" compset="DATM.+ELM">
       <grid name="atm">1x1_numaIA</grid>
       <grid name="lnd">1x1_numaIA</grid>
       <grid name="ocnice">1x1_numaIA</grid>
@@ -98,7 +98,7 @@
       <mask>reg</mask>
     </model_grid>
 
-    <model_grid alias="1x1_brazil" compset="DATM.+CLM">
+    <model_grid alias="1x1_brazil" compset="DATM.+ELM">
       <grid name="atm">1x1_brazil</grid>
       <grid name="lnd">1x1_brazil</grid>
       <grid name="ocnice">1x1_brazil</grid>
@@ -108,7 +108,7 @@
       <mask>reg</mask>
     </model_grid>
 
-    <model_grid alias="1x1_smallvilleIA" compset="(DATM|SATM).+CLM">
+    <model_grid alias="1x1_smallvilleIA" compset="(DATM|SATM).+ELM">
       <grid name="atm">1x1_smallvilleIA</grid>
       <grid name="lnd">1x1_smallvilleIA</grid>
       <grid name="ocnice">1x1_smallvilleIA</grid>
@@ -118,7 +118,7 @@
       <mask>reg</mask>
     </model_grid>
 
-    <model_grid alias="1x1_camdenNJ" compset="DATM.+CLM">
+    <model_grid alias="1x1_camdenNJ" compset="DATM.+ELM">
       <grid name="atm">1x1_camdenNJ</grid>
       <grid name="lnd">1x1_camdenNJ</grid>
       <grid name="ocnice">1x1_camdenNJ</grid>
@@ -128,7 +128,7 @@
       <mask>reg</mask>
     </model_grid>
 
-    <model_grid alias="1x1_mexicocityMEX" compset="DATM.+CLM">
+    <model_grid alias="1x1_mexicocityMEX" compset="DATM.+ELM">
       <grid name="atm">1x1_mexicocityMEX</grid>
       <grid name="lnd">1x1_mexicocityMEX</grid>
       <grid name="ocnice">1x1_mexicocityMEX</grid>
@@ -138,7 +138,7 @@
       <mask>reg</mask>
     </model_grid>
 
-    <model_grid alias="1x1_vancouverCAN" compset="DATM.+CLM">
+    <model_grid alias="1x1_vancouverCAN" compset="DATM.+ELM">
       <grid name="atm">1x1_vancouverCAN</grid>
       <grid name="lnd">1x1_vancouverCAN</grid>
       <grid name="ocnice">1x1_vancouverCAN</grid>
@@ -148,7 +148,7 @@
       <mask>reg</mask>
     </model_grid>
 
-    <model_grid alias="1x1_tropicAtl" compset="DATM.+CLM">
+    <model_grid alias="1x1_tropicAtl" compset="DATM.+ELM">
       <grid name="atm">1x1_tropicAtl</grid>
       <grid name="lnd">1x1_tropicAtl</grid>
       <grid name="ocnice">1x1_tropicAtl</grid>
@@ -158,7 +158,7 @@
       <mask>reg</mask>
     </model_grid>
 
-    <model_grid alias="1x1_urbanc_alpha" compset="DATM.+CLM">
+    <model_grid alias="1x1_urbanc_alpha" compset="DATM.+ELM">
       <grid name="atm">1x1_urbanc_alpha</grid>
       <grid name="lnd">1x1_urbanc_alpha</grid>
       <grid name="ocnice">1x1_urbanc_alpha</grid>
@@ -168,7 +168,7 @@
       <mask>reg</mask>
     </model_grid>
 
-    <model_grid alias="5amazon" compset="DATM.+CLM">
+    <model_grid alias="5amazon" compset="DATM.+ELM">
       <grid name="atm">5x5_amazon</grid>
       <grid name="lnd">5x5_amazon</grid>
       <grid name="ocnice">5x5_amazon</grid>
@@ -178,7 +178,7 @@
       <mask>reg</mask>
     </model_grid>
 
-    <model_grid alias="hcru_hcru" compset="(DATM|SATM).+CLM">
+    <model_grid alias="hcru_hcru" compset="(DATM|SATM).+ELM">
       <grid name="atm">360x720cru</grid>
       <grid name="lnd">360x720cru</grid>
       <grid name="ocnice">360x720cru</grid>
@@ -854,7 +854,7 @@
       <mask>oQU240</mask>
     </model_grid>
 
-    <model_grid alias="ne4pg2_r05_oQU480" compset="(CAM5.+CLM.+MPASO)">
+    <model_grid alias="ne4pg2_r05_oQU480" compset="(CAM5.+ELM.+MPASO)">
       <grid name="atm">ne4np4.pg2</grid>
       <grid name="lnd">r05</grid>
       <grid name="ocnice">oQU480</grid>
@@ -1004,7 +1004,7 @@
       <mask>gx3v7</mask>
     </model_grid>
 
-    <model_grid alias="ne16pg2_r05_oQU240" compset="(CAM5.+CLM.+MPASO)">
+    <model_grid alias="ne16pg2_r05_oQU240" compset="(CAM5.+ELM.+MPASO)">
       <grid name="atm">ne16np4.pg2</grid>
       <grid name="lnd">r05</grid>
       <grid name="ocnice">oQU240</grid>
@@ -1124,7 +1124,7 @@
       <mask>gx1v6</mask>
     </model_grid>
 
-    <model_grid alias="ne30_oEC_ICG" compset="(CAM5.+CLM.+MPASO%SPUNUP)">
+    <model_grid alias="ne30_oEC_ICG" compset="(CAM5.+ELM.+MPASO%SPUNUP)">
       <grid name="atm">ne30np4</grid>
       <grid name="lnd">ne30np4</grid>
       <grid name="ocnice">oEC60to30_ICG</grid>
@@ -1134,7 +1134,7 @@
       <mask>oEC60to30</mask>
     </model_grid>
 
-    <model_grid alias="ne30_oECv3_ICG" compset="(CAM5.+CLM.+MPASO%SPUNUP)">
+    <model_grid alias="ne30_oECv3_ICG" compset="(CAM5.+ELM.+MPASO%SPUNUP)">
       <grid name="atm">ne30np4</grid>
       <grid name="lnd">ne30np4</grid>
       <grid name="ocnice">oEC60to30v3_ICG</grid>
@@ -1144,7 +1144,7 @@
       <mask>oEC60to30v3</mask>
     </model_grid>
 
-    <model_grid alias="ne30pg2_r05_oECv3_ICG" compset="(CAM5.+CLM.+MPASO%SPUNUP)">
+    <model_grid alias="ne30pg2_r05_oECv3_ICG" compset="(CAM5.+ELM.+MPASO%SPUNUP)">
       <grid name="atm">ne30np4.pg2</grid>
       <grid name="lnd">r05</grid>
       <grid name="ocnice">oEC60to30v3_ICG</grid>
@@ -1154,7 +1154,7 @@
       <mask>oEC60to30v3</mask>
     </model_grid>
 
-    <model_grid alias="ne30pg2_r05_oARRM60to10_ICG" compset="(CAM5.+CLM.+MPASO%SPUNUP)">
+    <model_grid alias="ne30pg2_r05_oARRM60to10_ICG" compset="(CAM5.+ELM.+MPASO%SPUNUP)">
       <grid name="atm">ne30np4.pg2</grid>
       <grid name="lnd">r05</grid>
       <grid name="ocnice">oARRM60to10_ICG</grid>
@@ -1164,7 +1164,7 @@
       <mask>oARRM60to10</mask>
     </model_grid>
 
-    <model_grid alias="ne30pg2_r05_EC30to60E2r2_ICG" compset="(CAM5.+CLM.+MPASO%SPUNUP)">
+    <model_grid alias="ne30pg2_r05_EC30to60E2r2_ICG" compset="(CAM5.+ELM.+MPASO%SPUNUP)">
       <grid name="atm">ne30np4.pg2</grid>
       <grid name="lnd">r05</grid>
       <grid name="ocnice">EC30to60E2r2_ICG</grid>
@@ -1174,7 +1174,7 @@
       <mask>EC30to60E2r2</mask>
     </model_grid>
 	
-	<model_grid alias="ne30pg2_r05_EC30to60E2r2-1900_ICG" compset="(CAM5.+CLM.+MPASO%SPUNUP)">
+	<model_grid alias="ne30pg2_r05_EC30to60E2r2-1900_ICG" compset="(CAM5.+ELM.+MPASO%SPUNUP)">
       <grid name="atm">ne30np4.pg2</grid>
       <grid name="lnd">r05</grid>
       <grid name="ocnice">EC30to60E2r2-1900_ICG</grid>
@@ -1184,7 +1184,7 @@
       <mask>EC30to60E2r2</mask>
     </model_grid>
 
-    <model_grid alias="ne30_r05_oECv3_ICG" compset="(CAM5.+CLM.+MPASO%SPUNUP)">
+    <model_grid alias="ne30_r05_oECv3_ICG" compset="(CAM5.+ELM.+MPASO%SPUNUP)">
       <grid name="atm">ne30np4</grid>
       <grid name="lnd">r05</grid>
       <grid name="ocnice">oEC60to30v3_ICG</grid>
@@ -1194,7 +1194,7 @@
       <mask>oEC60to30v3</mask>
     </model_grid>
 
-    <model_grid alias="ne30_r0125_oECv3" compset="(CAM5.+CLM.+MPASO)">
+    <model_grid alias="ne30_r0125_oECv3" compset="(CAM5.+ELM.+MPASO)">
       <grid name="atm">ne30np4</grid>
       <grid name="lnd">r0125</grid>
       <grid name="ocnice">oEC60to30v3</grid>
@@ -1204,7 +1204,7 @@
       <mask>oEC60to30v3</mask>
     </model_grid>
 
-    <model_grid alias="ne30_r0125_oECv3_ICG" compset="(CAM5.+CLM.+MPASO%SPUNUP)">
+    <model_grid alias="ne30_r0125_oECv3_ICG" compset="(CAM5.+ELM.+MPASO%SPUNUP)">
       <grid name="atm">ne30np4</grid>
       <grid name="lnd">r0125</grid>
       <grid name="ocnice">oEC60to30v3_ICG</grid>
@@ -1214,7 +1214,7 @@
       <mask>oEC60to30v3</mask>
     </model_grid>
 
-    <model_grid alias="ne30_oECv3wLI_ICG" compset="(CAM5.+CLM.+MPASO%SPUNUP)">
+    <model_grid alias="ne30_oECv3wLI_ICG" compset="(CAM5.+ELM.+MPASO%SPUNUP)">
       <grid name="atm">ne30np4</grid>
       <grid name="lnd">ne30np4</grid>
       <grid name="ocnice">oEC60to30v3wLI_ICG</grid>
@@ -1297,7 +1297,7 @@
       <mask>oEC60to30v3</mask>
     </model_grid>
 
-    <model_grid alias="ne120_oRRS18v3_ICG" compset="(CAM5.+CLM.+MPASO%SPUNUP)">
+    <model_grid alias="ne120_oRRS18v3_ICG" compset="(CAM5.+ELM.+MPASO%SPUNUP)">
       <grid name="atm">ne120np4</grid>
       <grid name="lnd">ne120np4</grid>
       <grid name="ocnice">oRRS18to6v3_ICG</grid>
@@ -1986,74 +1986,74 @@
       <desc>null is no grid: </desc>
     </domain>
 
-    <domain name="CLM_USRDAT">
+    <domain name="ELM_USRDAT">
       <nx>1</nx>
       <ny>1</ny>
-      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.${CLM_USRDAT_NAME}_navy.nc</file>
-      <desc>user specified domain - only valid for DATM/CLM compset</desc>
+      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.${ELM_USRDAT_NAME}_navy.nc</file>
+      <desc>user specified domain - only valid for DATM/ELM compset</desc>
     </domain>
 
     <domain name="1x1_numaIA">
       <nx>1</nx>
       <ny>1</ny>
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-numaIA_navy.110106.nc</file>
-      <desc>1x1 Numa Iowa -- only valid for DATM/CLM compset</desc>
+      <desc>1x1 Numa Iowa -- only valid for DATM/ELM compset</desc>
     </domain>
 
     <domain name="1x1_brazil">
       <nx>1</nx>
       <ny>1</ny>
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-brazil_navy.090715.nc</file>
-      <desc>1x1 Brazil -- only valid for DATM/CLM compset</desc>
+      <desc>1x1 Brazil -- only valid for DATM/ELM compset</desc>
     </domain>
 
     <domain name="1x1_smallvilleIA">
       <nx>1</nx>
       <ny>1</ny>
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-smallvilleIA_test.110106.nc</file>
-      <desc>1x1 Smallville Iowa Crop Test Case -- only valid for DATM/CLM compset</desc>
+      <desc>1x1 Smallville Iowa Crop Test Case -- only valid for DATM/ELM compset</desc>
     </domain>
 
     <domain name="1x1_camdenNJ">
       <nx>1</nx>
       <ny>1</ny>
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-camdenNJ_navy.111004.nc</file>
-      <desc>1x1 Camden New Jersey -- only valid for DATM/CLM compset</desc>
+      <desc>1x1 Camden New Jersey -- only valid for DATM/ELM compset</desc>
     </domain>
 
     <domain name="1x1_mexicocityMEX">
       <nx>1</nx>
       <ny>1</ny>
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-mexicocityMEX_navy.090715.nc</file>
-      <desc>1x1 Mexico City Mexico -- only valid for DATM/CLM compset</desc>
+      <desc>1x1 Mexico City Mexico -- only valid for DATM/ELM compset</desc>
     </domain>
 
     <domain name="1x1_vancouverCAN">
       <nx>1</nx>
       <ny>1</ny>
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-vancouverCAN_navy.090715.nc</file>
-      <desc>1x1 Vancouver Canada -- only valid for DATM/CLM compset</desc>
+      <desc>1x1 Vancouver Canada -- only valid for DATM/ELM compset</desc>
     </domain>
 
     <domain name="1x1_tropicAtl">
       <nx>1</nx>
       <ny>1</ny>
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-tropicAtl_test.111004.nc</file>
-      <desc>1x1 Tropical Atlantic Test Case -- only valid for DATM/CLM compset</desc>
+      <desc>1x1 Tropical Atlantic Test Case -- only valid for DATM/ELM compset</desc>
     </domain>
 
     <domain name="1x1_urbanc_alpha">
       <nx>1</nx>
       <ny>1</ny>
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.1x1pt-urbanc_alpha_test.110201.nc</file>
-      <desc>1x1 Urban C Alpha Test Case -- only valid for DATM/CLM compset</desc>
+      <desc>1x1 Urban C Alpha Test Case -- only valid for DATM/ELM compset</desc>
     </domain>
 
     <domain name="5x5_amazon">
       <nx>1</nx>
       <ny>1</ny>
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.5x5pt-amazon_navy.090715.nc</file>
-      <desc>5x5 Amazon regional case -- only valid for DATM/CLM compset</desc>
+      <desc>5x5 Amazon regional case -- only valid for DATM/ELM compset</desc>
     </domain>
 
     <domain name="360x720cru">
@@ -2061,14 +2061,14 @@
       <ny>360</ny>
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.360x720_cruncep.100429.nc</file>
       <file grid="atm|lnd" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.lnd.360x720cru_oRRS15to5.190417.nc</file>
-      <desc>Exact half-degree CRUNCEP datm forcing grid with CRUNCEP land-mask -- only valid for DATM/CLM compset</desc>
+      <desc>Exact half-degree CRUNCEP datm forcing grid with CRUNCEP land-mask -- only valid for DATM/ELM compset</desc>
     </domain>
 
     <domain name="NLDAS">
       <nx>464</nx>
       <ny>224</ny>
       <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.nldas2_0224x0464_c110415.nc</file>
-      <desc>NLDAS US one eighth degree grid -- only valid for DATM/CLM compset</desc>
+      <desc>NLDAS US one eighth degree grid -- only valid for DATM/ELM compset</desc>
     </domain>
 
     <domain name="0.23x0.31">
