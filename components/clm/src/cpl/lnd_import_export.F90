@@ -325,6 +325,14 @@ contains
             !Figure out the closest point and which zone file to open
             mindist=99999
             do g3 = 1,ng
+              ! in CPL_BYPASS met dataset, longitude is in format of 0-360, but
+              ! 'ldomain%lonc(g)' may or may not, or verse vice.
+              if (ldomain%lonc(g) .lt. 0) then
+                if (longxy(g3) >= 180) longxy(g3) = longxy(g3)-360._r8
+              else if (ldomain%lonc(g) .ge. 180) then
+                if (longxy(g3) < 0) longxy(g3) = longxy(g3) + 360._r8
+              end if
+ 
               thisdist = 100*((latixy(g3) - ldomain%latc(g))**2 + &
                               (longxy(g3) - ldomain%lonc(g))**2)**0.5
               if (thisdist .lt. mindist) then 
@@ -332,6 +340,9 @@ contains
                 ztoget = zone_map(g3)
                 gtoget = grid_map(g3)
               end if
+              
+              ! if 'mindist' is zero, exit do-loop (may save some cost)
+              if (abs(mindist) <= 0._r8) exit
             end do
           else
             gtoget = 1
@@ -382,6 +393,9 @@ contains
 
                 if (use_livneh .and. ztoget .ge. 16 .and. ztoget .le. 20) then 
                     metdata_fname = 'GSWP3_Livneh_' // trim(metvars(v)) // '_1950-2010_z' // zst(2:3) // '.nc'                
+                else if (use_daymet .and. (index(metdata_type, 'daymet4') .gt. 0) ) then
+                    !daymet v4 with GSWP3 v2 for NA with user-defined zone-mappings.txt (i.e. zone index not hard-embedded here)
+                    metdata_fname = 'GSWP3_daymet4_' // trim(metvars(v)) // '_1980-2014_z' // zst(2:3) // '.nc'
                 else if (use_daymet .and. ztoget .ge. 16 .and. ztoget .le. 20) then 
                     metdata_fname = 'GSWP3_Daymet3_' // trim(metvars(v)) // '_1980-2010_z' // zst(2:3) // '.nc' 
                 end if

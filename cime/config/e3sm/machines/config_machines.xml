@@ -2146,10 +2146,11 @@
           <env name="PFLOTRAN_INC"> -I$ENV{CLM_PFLOTRAN_SOURCE_DIR} -I$ENV{PETSC_PATH}/include</env>
           <env name="PFLOTRAN_LIB"> -L$ENV{CLM_PFLOTRAN_SOURCE_DIR} -lpflotran -L$ENV{PETSC_PATH}/lib -lpetsc -lparmetis -lmetis</env> -->
       </environment_variables>
+<!--
     <environment_variables>
       <env name="PERL5LIB">/software/user_tools/current/cades-ccsi/perl5/lib/perl5/</env>
     </environment_variables>
-      
+-->      
 </machine>
 
 <machine MACH="titan">
