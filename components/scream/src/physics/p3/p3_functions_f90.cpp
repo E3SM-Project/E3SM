@@ -230,7 +230,7 @@ void p3_main_c(
   Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i, Real* mu_c, Real* lamc,
   Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange);
 
-}
+} // extern "C" : end _c decls
 
 namespace scream {
 namespace p3 {
@@ -820,6 +820,8 @@ void p3_main(P3MainData& d)
     d.liq_ice_exchange, d.vap_liq_exchange, d.vap_ice_exchange);
   d.transpose<ekat::util::TransposeDirection::f2c>();
 }
+
+// end _c impls
 
 ///////////////////////////////////////////////////////////////////////////////
 
