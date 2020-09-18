@@ -6884,11 +6884,6 @@ contains
 
     if  (.not. is_active_betr_bgc) then
 
-       ! (cWDC_HR) - coarse woody debris heterotrophic respiration
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%cwdc_hr(c) = 0._r8
-       end do
 
        ! (cWDC_LOSS) - coarse woody debris C loss
        do l = 1, ndecomp_pools
@@ -7000,6 +6995,7 @@ contains
        c = filter_soilc(fc)
        this%somhr(c)              = 0._r8
        this%lithr(c)              = 0._r8
+       this%cwdc_hr(c)            = 0._r8
        this%hr_vr(c,1:nlevdecomp) = 0._r8
      enddo
      if ((.not. (use_pflotran .and. pf_cmode))) then
@@ -7039,6 +7035,15 @@ contains
               this%decomp_cascade_hr(c,k)
           end do
         end if
+       ! (cWDC_HR) - coarse woody debris heterotrophic respiration
+        if(is_cwd((decomp_cascade_con%cascade_donor_pool(k)))) then
+          do fc = 1, num_soilc
+            c = filter_soilc(fc)
+            this%cwdc_hr(c) = &
+              this%cwdc_hr(c)+ &
+              this%decomp_cascade_hr(c,k)
+          enddo
+        endif
       end do
 
       ! soil organic matter heterotrophic respiration (SOMHR)
