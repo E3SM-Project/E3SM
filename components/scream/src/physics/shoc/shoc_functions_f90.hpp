@@ -476,7 +476,7 @@ struct SHOCAssumedpdfData : public PhysicsTestData {
 
   //functions to initialize data
   SHOCAssumedpdfData(Int shcol_, Int nlev_, Int nlevi_) :
-    PhysicsTestData(shcol_, nlev_, nlevi_, {&thetal, &qw, &w_field, &w_sec, &pres, &zt_grid, &shoc_cldfrac, &shoc_ql, &wqls, &wthv_sec, &shoc_ql2}, {&thl_sec, &qw_sec, &wthl_sec, &wqw_sec, &qwthl_sec, &zi_grid}) {}
+    PhysicsTestData(shcol_, nlev_, nlevi_, {&thetal, &qw, &w_field, &w_sec, &pres, &zt_grid, &shoc_cldfrac, &shoc_ql, &wqls, &wthv_sec, &shoc_ql2}, {&w3, &thl_sec, &qw_sec, &wthl_sec, &wqw_sec, &qwthl_sec, &zi_grid}) {}
 
   SHOC_NO_SCALAR(SHOCAssumedpdfData, 3);
 };//SHOCAssumedpdfData
