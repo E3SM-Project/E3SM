@@ -257,7 +257,7 @@ macro (setUpTestDir TEST_DIR)
   FILE(APPEND ${THIS_TEST_SCRIPT} "EXEC=${EXEC_NAME}\n")
 
   #not making it more general due to jsrun, p9/gpu, loading modules...
-  if (HOMME_MACHINE MATCHES "summit")
+  if (HOMME_MACHINE MATCHES "summit-gpu")
     #cmake 3.17
     #foreach(varn varv IN ZIP_LISTS ${varnames} ${varvals})
     #  file(APPEND ${THIS_TEST_SCRIPT} "${varn}=\"${varv}\"")

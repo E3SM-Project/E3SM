@@ -263,7 +263,8 @@ createAllRunScripts() {
 
   for testFileNum in $(seq 1 ${NUM_TEST_FILES})
   do
-    if [ "${HOMME_MACHINE}" == "summit" ] ; then
+    #add summit-p9 here later
+    if [ "${HOMME_MACHINE}" == "summit-gpu" ] ; then
        createRunScriptSummit
     else
        createAllRunScriptsGeneric
@@ -329,19 +330,19 @@ createRunScriptSummit() {
     #kokkos needs omp_num_threads set
     if [ -n "${OMP_NUMBER_THREADS_KOKKOS}" ]; then
       echo "export OMP_NUM_THREADS=${OMP_NUMBER_THREADS_KOKKOS}" >> $thisRunScript
-      #do we need this?
-      echo "" >> $thisRunScript # new line
+      emptyLine $thisRunScript
     fi
 
-    testExec=TEST_1
+    testExec=$TEST_1
 
     #check if this is a gpu exec
-#    if [[ "$EXEC" == *"kokkos"* ]] ; then
-#      echo "${SUMMIT_JSRUN_GPU} /\ \n" >> $RUN_SCRIPT
-#      echo "${testExec} ${SUMMIT_JSRUN_TAIL} \n"
+    if [[ "$EXEC" == *"kokkos"* ]] ; then
+      echo "${SUMMIT_JSRUN_GPU} \ " >> $thisRunScript
+      echo "${testExec} \ " >> $thisRunScript
+      echo "${SUMMIT_JSRUN_TAIL} " >>$thisRunScript
 #execLine $thisRunScript "${!testExec}" ${NUM_CPUS} ${TEST_NAME}_${testNum}
 #    echo "" >> $thisRunScript # new line
-    
+    fi   
 }
 
 

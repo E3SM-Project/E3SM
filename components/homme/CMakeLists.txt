@@ -97,7 +97,7 @@ ENDIF ()
 OPTION(BUILD_HOMME_SWEQX "Shallow water equations FEM" ON)
 OPTION(BUILD_HOMME_PREQX "Primitive equations FEM" ON)
 OPTION(BUILD_HOMME_THETA "SB81 NH model with theta and Exner pressure" ON)
-OPTION(BUILD_HOMME_THETA_KOKKOS"SB81 NH model with theta and Exner pressure, Kokkos target" OFF)
+OPTION(BUILD_HOMME_THETA_KOKKOS "SB81 NH model with theta and Exner pressure, Kokkos target" OFF)
 OPTION(BUILD_HOMME_PREQX_ACC "Primitive equations FEM with OpenACC" ON)
 OPTION(BUILD_HOMME_PREQX_KOKKOS "Primitive equations FEM with Kokkos" OFF)
 OPTION(BUILD_HOMME_SWIM  "Shallow water equations implicit" OFF)
@@ -130,13 +130,6 @@ IF (BUILD_HOMME_PREQX_KOKKOS OR BUILD_HOMME_THETA_KOKKOS)
 
     # We need to compare against F90 implementation, so turn this on
     SET (BUILD_HOMME_PREQX TRUE)
-  ENDIF ()
-
-  IF (NOT BUILD_HOMME_THETA AND BUILD_HOMME_THETA_KOKKOS AND HOMME_BUILD_EXECS)
-    # If we build theta kokkos, we also build theta, so we can compare
-    MESSAGE (STATUS "Setting manually disabled BUILD_HOMME_THETA to ON, since BUILD_HOMME_THETA_KOKKOS is ON.")
-    # We need to compare against F90 implementation, so turn this on
-    SET (BUILD_HOMME_THETA TRUE)
   ENDIF ()
 ENDIF ()
 

@@ -127,9 +127,11 @@ CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/testing-utils.sh
 CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/diffTol.py
                ${CMAKE_BINARY_DIR}/tests/diffTol.py COPYONLY)
 
-if (HOMME_MACHINE MATCHES "summit")
+if (HOMME_MACHINE MATCHES "summit-gpu")
 CONFIGURE_FILE(${HOMME_SOURCE_DIR}/cmake/machineFiles/summit-modules/load-modules-gpu
                ${CMAKE_BINARY_DIR}/load-modules-gpu COPYONLY)
+endif()
+if (HOMME_MACHINE MATCHES "summit-p9")
 CONFIGURE_FILE(${HOMME_SOURCE_DIR}/cmake/machineFiles/summit-modules/load-modules-p9
                ${CMAKE_BINARY_DIR}/load-modules-p9 COPYONLY)
 endif()
@@ -203,18 +205,23 @@ IF(${BUILD_HOMME_THETA})
 ENDIF()
 
 IF (${BUILD_HOMME_THETA_KOKKOS})
-  ADD_SUBDIRECTORY(theta-l-nlev30-kokkos)
-  ADD_SUBDIRECTORY(theta-l-nlev72-kokkos)
+  #summit-gpu will have only gpu targets
+  if (${HOMME_MACHINE} MATCHES "summit-gpu")
 
-  #for future
-  #ADD_SUBDIRECTORY(theta-nlev72-kokkos)
-  #ADD_SUBDIRECTORY(theta-nlev72)
+    ADD_SUBDIRECTORY(theta-nlev128-kokkos)
 
-  #for now
-  ADD_SUBDIRECTORY(theta-nlev128-kokkos)
-  ADD_SUBDIRECTORY(theta-nlev128)
+  else()
 
-  ADD_SUBDIRECTORY(thetal_kokkos_ut)
+    ADD_SUBDIRECTORY(theta-l-nlev30-kokkos)
+    ADD_SUBDIRECTORY(theta-l-nlev72-kokkos)
+
+    ADD_SUBDIRECTORY(theta-nlev128-kokkos)
+    ADD_SUBDIRECTORY(theta-nlev128)
+
+    ADD_SUBDIRECTORY(thetal_kokkos_ut)
+
+  endif()
+
 ENDIF()
 
 # Add the test exec subdirs for the prim executable
