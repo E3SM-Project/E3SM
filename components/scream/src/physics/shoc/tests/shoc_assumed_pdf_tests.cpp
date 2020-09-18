@@ -79,7 +79,6 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
         SDS.zt_grid[offset] = zt_grid[n];
         SDS.w_field[offset] = 0;
         SDS.w_sec[offset] = 0.004;
-
       }
 
       for(Int n = 0; n < nlevi; ++n) {
@@ -92,7 +91,6 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
         SDS.qwthl_sec[offset] = 0;
         SDS.w3[offset] = 0;
         SDS.zi_grid[offset] = zi_grid[n];
-
       }
     }
 
@@ -107,7 +105,6 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
         REQUIRE(SDS.thetal[offset] > 0);
         REQUIRE(SDS.pres[offset] > 0);
         REQUIRE(SDS.zt_grid[offset] > 0);
-
       }
 
       for(Int n = 0; n < nlevi; ++n) {
@@ -120,15 +117,15 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
     // Check that zt increase updward and pres decrease upward
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev - 1; ++n) {
-	const auto offset = n + s * nlev;
-	REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0.0);
+        const auto offset = n + s * nlev;
+        REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0.0);
         REQUIRE(SDS.pres[offset + 1] - SDS.pres[offset] > 0.0);
       }
 
       // Check that zi increase upward
       for(Int n = 0; n < nlevi - 1; ++n) {
-	const auto offset = n + s * nlevi;
-	REQUIRE(SDS.zi_grid[offset + 1] - SDS.zi_grid[offset] < 0.0);
+        const auto offset = n + s * nlevi;
+        REQUIRE(SDS.zi_grid[offset + 1] - SDS.zi_grid[offset] < 0.0);
       }
 
     }
@@ -171,7 +168,7 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
 
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlevi; ++n) {
-	const auto offset = n + s * nlevi;
+        const auto offset = n + s * nlevi;
 
         SDS.wthl_sec[offset] = wthl_sec;
         SDS.wqw_sec[offset] = wqw_sec;
@@ -194,7 +191,6 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
         REQUIRE(SDS.wthv_sec[offset] != 0);
         REQUIRE(SDS.shoc_ql2[offset] == 0);
         REQUIRE(SDS.shoc_ql[offset] >= 0);
-
       }
     }
 
@@ -220,13 +216,13 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
     // Load input data
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
-	const auto offset = n + s * nlev;
+        const auto offset = n + s * nlev;
 
         SDS.w_sec[offset] = w_sec;
       }
 
       for(Int n = 0; n < nlevi; ++n) {
-	const auto offset = n + s * nlevi;
+        const auto offset = n + s * nlevi;
 
         SDS.thl_sec[offset] = thl_sec;
         SDS.qw_sec[offset] = qw_sec;
@@ -248,7 +244,6 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
     // Then verify vertical velocity skewness info
 
     for(Int s = 0; s < shcol; ++s) {
-
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
         const auto offsets = n + (s+1) * nlevi;
@@ -330,7 +325,6 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
     // Then verify vertical velocity skewness info
 
     for(Int s = 0; s < shcol; ++s) {
-
       for(Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
         const auto offsets = n + (s+1) * nlevi;
@@ -356,7 +350,6 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf {
         REQUIRE(std::abs(SDS.wthv_sec[offset]) < 10.0);
         REQUIRE(SDS.shoc_ql2[offset] < 0.1);
         REQUIRE(SDS.shoc_ql[offset] < 0.1);
-
 
         // Now verify that the relationships in a strongly negative vertical
         //  velocity flux regime hold true, relative to a symmetric vertical
