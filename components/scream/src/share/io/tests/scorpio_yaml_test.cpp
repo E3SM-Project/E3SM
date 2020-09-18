@@ -6,6 +6,7 @@
 
 #include "share/grid/user_provided_grids_manager.hpp"
 #include "share/grid/simple_grid.hpp"
+#include "share/grid/grids_manager.hpp"
 
 #include "share/field/field_identifier.hpp"
 #include "share/field/field_header.hpp"
@@ -17,9 +18,10 @@
 namespace {
 /* ======= Internal Functions needed for test ======*/
 
-void set_spatial_vectors(Real* x, Real* y, Real* z, std::vector<int> dims3d);
-void update_index_output(Kokkos::View<Real*> index_1d, Kokkos::View<Real**> index_2d, Kokkos::View<Real***> index_3d, std::vector<int> dims3d, Int tt);
-void update_data_output(Kokkos::View<Real*> data_1d, Kokkos::View<Real**> data_2d, Kokkos::View<Real***> data_3d, Real* x, Real* y, Real* z, const std::vector<int> dims3d, const Real t);
+using namespace scream;
+void set_spatial_vectors(const Int ncol,const  Int num_comp, const GridsManager& gm, Real* x, Real* y, Real* z);
+void update_index_output(const Int num_comp, Int tt, const GridsManager& gm, Kokkos::View<Real*> index_1d, Kokkos::View<Real**> index_2d, Kokkos::View<Real***> index_3d);
+void update_data_output(const Int num_comp, const Real t, const GridsManager& gm, Kokkos::View<Real*> data_1d, Kokkos::View<Real**> data_2d, Kokkos::View<Real***> data_3d, Real* x, Real* y, Real* z);
  
 /* ================================================================================================================ */
 TEST_CASE("scorpio_yaml", "") {
@@ -47,6 +49,10 @@ TEST_CASE("scorpio_yaml", "") {
   auto dummy_grid= std::make_shared<SimpleGrid>("Physics",num_cols,num_levs,io_comm);
   upgm.set_grid(dummy_grid);
 
+  auto grid = upgm.get_grid("Physics");
+  const auto nvl = grid->get_num_vertical_levels();
+  auto phys_lt = grid->get_native_dof_layout();
+
 /* The first step is to establish a Field Manager Repo to work with.  This example is fashioned from the 'field_repo'
  * test from /share/tests/field_tests.hpp                                                                          */ 
   std::vector<FieldTag> tag1d  = {FieldTag::Column};
@@ -54,8 +60,6 @@ TEST_CASE("scorpio_yaml", "") {
   std::vector<FieldTag> tag1dc = {FieldTag::Component};
   std::vector<FieldTag> tag2d  = {FieldTag::Column, FieldTag::VerticalLevel};
   std::vector<FieldTag> tag3d  = {FieldTag::Column, FieldTag::VerticalLevel, FieldTag::Component};
-  //std::vector<FieldTag> tag2d  = {FieldTag::VerticalLevel,FieldTag::Column};
-  //std::vector<FieldTag> tag3d  = {FieldTag::Component,FieldTag::VerticalLevel,FieldTag::Column};
 
   FieldIdentifier fid_x("x", tag1d,  m);
   FieldIdentifier fid_y("y", tag1db, m);
@@ -67,22 +71,15 @@ TEST_CASE("scorpio_yaml", "") {
   FieldIdentifier fid_data_2d("data_2d", tag2d, m/s);
   FieldIdentifier fid_data_3d("data_3d", tag3d, m/s);
 
-  std::vector<int> dimsx = {num_cols};
-  std::vector<int> dimsy = {num_levs};
-  std::vector<int> dimsz = {num_comp};
-  std::vector<int> dims1d = {dimsx[0]};
-  std::vector<int> dims2d = {dimsx[0], dimsy[0]};
-  std::vector<int> dims3d = {dimsx[0], dimsy[0], dimsz[0]};
-
-  fid_x.set_dimensions(dimsx);
-  fid_y.set_dimensions(dimsy);
-  fid_z.set_dimensions(dimsz);
-  fid_index_1d.set_dimensions(dims1d);
-  fid_index_2d.set_dimensions(dims2d);
-  fid_index_3d.set_dimensions(dims3d);
-  fid_data_1d.set_dimensions(dims1d);
-  fid_data_2d.set_dimensions(dims2d);
-  fid_data_3d.set_dimensions(dims3d);
+  fid_x.set_dimensions({phys_lt.dim(0)});
+  fid_y.set_dimensions({nvl});
+  fid_z.set_dimensions({num_comp});
+  fid_index_1d.set_dimensions({phys_lt.dim(0)});
+  fid_index_2d.set_dimensions({phys_lt.dim(0),nvl});
+  fid_index_3d.set_dimensions({phys_lt.dim(0),nvl,num_comp});
+  fid_data_1d.set_dimensions({phys_lt.dim(0)});               
+  fid_data_2d.set_dimensions({phys_lt.dim(0),nvl});          
+  fid_data_3d.set_dimensions({phys_lt.dim(0),nvl,num_comp}); 
 
   fid_x.set_grid_name("Physics");
   fid_y.set_grid_name("Physics");
@@ -116,7 +113,7 @@ TEST_CASE("scorpio_yaml", "") {
   auto xh = Kokkos::create_mirror_view( xd );
   auto yh = Kokkos::create_mirror_view( yd );
   auto zh = Kokkos::create_mirror_view( zd );
-  set_spatial_vectors(xh.data(), yh.data(), zh.data(), dims3d);
+  set_spatial_vectors(num_cols, num_comp, upgm, xh.data(), yh.data(), zh.data());
   Kokkos::deep_copy(xd,xh);
   Kokkos::deep_copy(yd,yh);
   Kokkos::deep_copy(zd,zh);
@@ -144,7 +141,7 @@ TEST_CASE("scorpio_yaml", "") {
   // Initialize the output files:
   for (auto& out_ins : AtmOutput_Instances)
   {
-    out_ins.init(repo);
+    out_ins.init(repo,upgm);
   }
 
   // Run and record data:
@@ -160,7 +157,7 @@ TEST_CASE("scorpio_yaml", "") {
     auto index_1d_h = Kokkos::create_mirror_view( index_1d_dev );
     auto index_2d_h = Kokkos::create_mirror_view( index_2d_dev );
     auto index_3d_h = Kokkos::create_mirror_view( index_3d_dev );
-    update_index_output(index_1d_dev, index_2d_dev, index_3d_dev, dims3d, l_time);
+    update_index_output(num_cols, l_time, upgm, index_1d_dev, index_2d_dev, index_3d_dev);
     Kokkos::deep_copy(index_1d_dev,index_1d_h);
     Kokkos::deep_copy(index_2d_dev,index_2d_h);
     Kokkos::deep_copy(index_3d_dev,index_3d_h);
@@ -171,14 +168,14 @@ TEST_CASE("scorpio_yaml", "") {
     auto data_1d_h = Kokkos::create_mirror_view( data_1d_dev );
     auto data_2d_h = Kokkos::create_mirror_view( data_2d_dev );
     auto data_3d_h = Kokkos::create_mirror_view( data_3d_dev );
-    update_data_output(data_1d_dev, data_2d_dev, data_3d_dev, xh.data(), yh.data(), zh.data(), dims3d, l_time);
+    update_data_output(num_cols, l_time, upgm, data_1d_dev, data_2d_dev, data_3d_dev, xh.data(), yh.data(), zh.data());
     Kokkos::deep_copy(data_1d_dev,data_1d_h);
     Kokkos::deep_copy(data_2d_dev,data_2d_h);
     Kokkos::deep_copy(data_3d_dev,data_3d_h);
 
     for (auto& out_ins : AtmOutput_Instances)
     {
-      out_ins.run(repo,l_time);
+      out_ins.run(repo,upgm,l_time);
     }
   }
 
@@ -188,8 +185,8 @@ TEST_CASE("scorpio_yaml", "") {
     out_ins.finalize();
     out_ins.check_status();
   }
-  eam_pio_finalize();
-  upgm.clean_up();
+  //eam_pio_finalize();
+  //upgm.clean_up();
 } // TEST_CASE scorpio_yaml
 
 
@@ -198,49 +195,57 @@ TEST_CASE("scorpio_yaml", "") {
 /* ================================================================================================================ */
 
 
-void set_spatial_vectors(Real* x, Real* y, Real* z, std::vector<int> dims3d) 
+void set_spatial_vectors(const Int ncol,const  Int num_comp, const GridsManager& gm, Real* x, Real* y, Real* z) 
 {
   Real pi = 2*acos(0.0);
 
-  for (int ii=0;ii<dims3d[0];ii++)
+  auto grid = gm.get_grid("Physics");
+  auto gids       = grid->get_dofs_gids();
+  const auto nlvl = grid->get_num_vertical_levels();
+  auto phys_lt    = grid->get_native_dof_layout();
+  for (int ii=0;ii<phys_lt.dim(0);ii++)
   {
-    x[ii] = 2.0*pi/dims3d[0]*(ii+1);
+    x[ii] = 2.0*pi/ncol*(gids(ii)+1);
   }
-  for (int jj=0;jj<dims3d[1];jj++) 
+  for (int jj=0;jj<nlvl;jj++) 
   {
-    y[jj] = 4.0*pi/dims3d[1]*(jj+1);
+    y[jj] = 4.0*pi/nlvl*(jj+1);
   }
-  for (int kk=0;kk<dims3d[2];kk++)
+  for (int kk=0;kk<num_comp;kk++)
   {
     z[kk] = 100*(kk+1);
   }
 }
 
-void update_index_output(Kokkos::View<Real*> index_1d, Kokkos::View<Real**> index_2d, Kokkos::View<Real***> index_3d, const std::vector<int> dims3d, const Int tt)
+void update_index_output(const Int num_comp, const Int tt, const GridsManager& gm, Kokkos::View<Real*> index_1d, Kokkos::View<Real**> index_2d, Kokkos::View<Real***> index_3d)
 {
-  for (int ii=0;ii<dims3d[0];ii++)
+  auto gids = gm.get_grid("Physics")->get_dofs_gids();
+  const auto nlvl = gm.get_grid("Physics")->get_num_vertical_levels();
+  for (int ii=0;ii<gids.size();ii++)
   {
-    index_1d(ii) = ii*1. + 10000.*tt;
-    for (int jj=0;jj<dims3d[1];jj++) 
+    index_1d(ii) = gids(ii)*1. + 10000.*tt;
+    for (int jj=0;jj<nlvl;jj++) 
     {
-      index_2d(ii,jj) = ii*1. + jj*100. + 10000.*tt;
-      for (int kk=0;kk<dims3d[2];kk++)
+      index_2d(ii,jj) = gids(ii)*1. + jj*100. + 10000.*tt;
+      for (int kk=0;kk<num_comp;kk++)
       {
-        index_3d(ii,jj,kk) = ii*1. + jj*100. + kk*1000. + 10000.*tt;
+        index_3d(ii,jj,kk) = gids(ii)*1. + jj*100. + kk*1000. + 10000.*tt;
       }
     }
   }
 }
 
-void update_data_output(Kokkos::View<Real*> data_1d, Kokkos::View<Real**> data_2d, Kokkos::View<Real***> data_3d, Real* x, Real* y, Real* z, const std::vector<int> dims3d, const Real t)
+void update_data_output(const Int num_comp, const Real t, const GridsManager& gm, Kokkos::View<Real*> data_1d, Kokkos::View<Real**> data_2d, Kokkos::View<Real***> data_3d, Real* x, Real* y, Real* z)
 {
-  for (int ii=0;ii<dims3d[0];ii++)
+  auto gids = gm.get_grid("Physics")->get_dofs_gids();
+  const auto nlvl = gm.get_grid("Physics")->get_num_vertical_levels();
+  for (int ii=0;ii<gids.size();ii++)
   {
     data_1d(ii) = 0.1 * cos(x[ii]+t);
-    for (int jj=0;jj<dims3d[1];jj++) 
+    for (int jj=0;jj<nlvl;jj++) 
     {
       data_2d(ii,jj) = sin(y[jj]+t) * data_1d(ii);
-      for (int kk=0;kk<dims3d[2];kk++)
+      for (int kk=0;kk<num_comp;kk++)
       {
         data_3d(ii,jj,kk) = z[kk] + data_2d(ii,jj);
       }

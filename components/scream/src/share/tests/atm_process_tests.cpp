@@ -203,7 +203,7 @@ setup_upgm (const int ne) {
   SEGrid::lid_to_idx_map_type dyn_dofs_map ("",nelem*np*np,3);
   SEGrid::lid_to_idx_map_type phys_dofs_map ("",ncols,1);
 
-  // Greate a grids manager
+  // Create a grids manager
   auto upgm = std::make_shared<UserProvidedGridsManager>();
   auto dummy_dyn_grid  = std::make_shared<SEGrid>("Dynamics",nelem,np,nvl);
   auto dummy_phys_grid = std::make_shared<PointGrid>(create_point_grid("Physics",ncols,nvl,comm));
@@ -326,7 +326,7 @@ TEST_CASE("atm_proc_dag", "") {
     // Create the processes
     std::shared_ptr<AtmosphereProcess> atm_process (factory.create("group",comm,params));
 
-    // Greate a grids manager
+    // Create a grids manager
     auto upgm = setup_upgm (ne);
 
     // Set the grids, so the remappers in the group are not empty

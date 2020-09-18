@@ -309,7 +309,7 @@ contains
     curr => prev%next
     allocate(curr%coord)
     hist_coord => curr%coord
-    pio_atm_file%dimcounter = pio_atm_file%dimcounter + 1
+    pio_atm_file%DimCounter = pio_atm_file%DimCounter + 1  ! AaronDonahue - Is this even still needed?
     ! Register this dimension
     hist_coord%name      = trim(shortname)
     hist_coord%long_name = trim(longname)
